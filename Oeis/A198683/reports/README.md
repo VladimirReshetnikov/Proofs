@@ -1,20 +1,17 @@
 # A198683 Reports
 
-- Status: Informational, clarified-conflict index
+- Status: Informational, clarified-conflict index with two root-cause analyses
 - Audience: Maintainers, OEIS contributors, and future agents
 - Scope: Historical and exploratory reports about OEIS A198683
 - Created (UTC): 2026-05-21T00:59:34Z
-- Repository HEAD: aa49ba4ec1370dbbaf8b3228f8b2c085b72ed5df
+- Last updated (UTC): 2026-05-21T02:27:23Z
+- Repository HEAD: 9e45d165358c99eb3554980b4a9de38a77536bcb
 
 This directory preserves reports about A198683. Some reports make mutually
-incompatible claims about `A198683(12)`. The corpus keeps those reports adjacent,
-but the current interpretation is no longer symmetric: the `2919` result is now
-understood as a finite-precision mpmath deduplication artifact, while the `2926`
-result is the strongest recorded local computation.
-
-Read
-[`a198683-n12-contradiction-root-cause__9e7681d48134.md`](a198683-n12-contradiction-root-cause__9e7681d48134.md)
-before citing either result report.
+incompatible claims about `A198683(12)`. The corpus keeps those reports
+adjacent, and two independently prepared root-cause reports (described below)
+explain why they disagree. Read at least one root-cause report before citing
+either of the result reports.
 
 ## Result Reports
 
@@ -31,21 +28,45 @@ before citing either result report.
   certificate independent of Wolfram's equality engine.
 
 The numerical difference is seven classes. Both reports agree on the lower
-terms and on `5139` pairwise candidate powers at `n=12`; the old disagreement is
-whether seven additional equalities should be recognized. The root-cause pass
-shows that the Python-side extra merges are not certified equalities.
+terms and on `5139` pairwise candidate powers at `n=12`; the old disagreement
+is whether seven additional equalities should be recognized. Both root-cause
+passes below conclude that the Python-side extra merges are not certified
+equalities.
 
-## Root-Cause Report
+## Root-Cause Reports
+
+Two follow-up reports were prepared independently and in parallel. They reach
+the same substantive conclusion via different diagnostics, and they take
+slightly different stances on whether to treat `2926` as a recommended value.
+Both are preserved.
 
 - [`a198683-n12-contradiction-root-cause__9e7681d48134.md`](a198683-n12-contradiction-root-cause__9e7681d48134.md)
-  records the current explanation. Rerunning the Python script beyond the
-  original precision window changes the result from `2919` to larger counts
-  (`2920`, `2921`, `2922`, and `2924` in the recorded checks), which identifies
-  the `2919` conclusion as a numerical-clustering artifact.
+  uses a **precision-sweep** diagnostic. Rerunning the Python script beyond
+  the original precision window changes the result from `2919` upward
+  (`2920` at `--dps 800`, `2921` at `1000`, `2922` through `2000`, and `2924`
+  at `3000`), which identifies the `2919` plateau as a numerical-clustering
+  artifact. It takes the bottom-line position that `2919` is *invalidated*
+  and `2926` is *the strongest recorded local value*.
+- [`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md)
+  uses a **tolerance-policy** diagnostic. It isolates the disagreement to
+  three structurally-degenerate clusters of candidate values (near `0`, near
+  `i^i = e^(-pi/2)`, near `1`) and shows that the dominant cause is the
+  `abs_eps` floor in Python's `mpmath.almosteq` policy, not a branch-choice
+  or wrap-integer ambiguity. Setting `abs_eps = 0` in the Python dedup at the
+  `n=12` stage raises the count from `2919` to `2925`, recovering six of the
+  seven missing classes. The remaining single-class gap lives in the
+  "near `i^i`" and "near `1`" clusters and cannot be settled without
+  proof-quality interval arithmetic. This report keeps a strictly neutral
+  stance: `2925`, `2926`, and `2927` are *all* heuristics, and it declines
+  to declare either historical number authoritative.
+
+The two stances are not in direct contradiction; they differ only in how
+cautious they are about treating `2926` as the recommended value pending a
+formal certificate.
 
 ## Exploratory Reports
 
 [`exploratory/`](exploratory/README.md) contains generated explanatory reports
 that discuss the sequence, the `2919` vs `2926` historical dispute, and possible
-certification strategies. They predate the root-cause report and do not contain
-a completed proof-quality resolution.
+certification strategies. They predate the root-cause reports and do not
+contain a completed proof-quality resolution.

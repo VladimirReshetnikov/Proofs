@@ -37,6 +37,20 @@ The monotone upward drift shows that the script merged near candidates too
 aggressively. The body below is retained as a historical record of the method
 and its assumptions, not as a current recommendation to use `2919`.
 
+> **Subsequent root-cause finding** —
+> [`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md)
+> traces the 7-class gap reported below largely to the `mpmath.almosteq`
+> tolerance policy used by `_dedupe_mpc` in [`compute_a198683.py`](../computations/python/compute_a198683.py).
+> The call `mp.almosteq(z1, z2, rel_eps=cmp_tol, abs_eps=cmp_tol)` declares any
+> two values smaller in magnitude than `abs_eps` to be equal, lumping together
+> an eight-element cluster of mathematically-distinct "near-zero" candidates
+> that arise from `(I)^(huge n=11 value)` splits and analogous tiny-magnitude
+> paths. Setting `abs_eps = 0` in the same script at the `n=12` stage raises
+> the reported count from `2919` to `2925`, recovering six of the seven
+> missing classes. The remaining gap lives in clusters near `i^i` and `1`
+> that cannot be settled by either heuristic without certified interval
+> arithmetic.
+
 ## Goal
 
 Establish the true value of `A198683(12)`, where `A198683(n)` is the number of *distinct* values taken by
