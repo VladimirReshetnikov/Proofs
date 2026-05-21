@@ -58,7 +58,7 @@ set recurrence.
 
 ## Why the Python method is insufficient
 
-The script in `../computations/python/compute_a198683.py` represents ordinary
+The script in `../../computations/python/compute_a198683.py` represents ordinary
 candidates as `mpmath` complex bigfloats and then deduplicates those approximate
 values:
 

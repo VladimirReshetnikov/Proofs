@@ -7,13 +7,13 @@
 - Repository HEAD: f906a31c0f82f92946a3524ac72e70d392258403
 
 This report is preserved as one side of the local contradiction described in
-[the A198683 corpus README](../README.md). It historically concluded
+[the A198683 corpus README](../../README.md). It historically concluded
 `A198683(12) = 2919`. A later root-cause pass invalidates that conclusion as
 exact evidence: the `2919` count is a finite-precision numerical-deduplication
 artifact, not a certified equality count.
 
 See
-[`a198683-n12-contradiction-root-cause__9e7681d48134.md`](a198683-n12-contradiction-root-cause__9e7681d48134.md)
+[`a198683-n12-contradiction-root-cause__9e7681d48134.md`](../wave-2/a198683-n12-contradiction-root-cause__9e7681d48134.md)
 before citing this report.
 
 ## Erratum: Precision Plateau Was False Evidence
@@ -38,9 +38,9 @@ aggressively. The body below is retained as a historical record of the method
 and its assumptions, not as a current recommendation to use `2919`.
 
 > **Subsequent root-cause finding** —
-> [`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md)
+> [`a198683-n12-discrepancy-root-cause.md`](../wave-2/a198683-n12-discrepancy-root-cause.md)
 > traces the 7-class gap reported below largely to the `mpmath.almosteq`
-> tolerance policy used by `_dedupe_mpc` in [`compute_a198683.py`](../computations/python/compute_a198683.py).
+> tolerance policy used by `_dedupe_mpc` in [`compute_a198683.py`](../../computations/python/compute_a198683.py).
 > The call `mp.almosteq(z1, z2, rel_eps=cmp_tol, abs_eps=cmp_tol)` declares any
 > two values smaller in magnitude than `abs_eps` to be equal, lumping together
 > an eight-element cluster of mathematically-distinct "near-zero" candidates

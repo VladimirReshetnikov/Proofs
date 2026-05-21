@@ -10,7 +10,7 @@
 
 The two implementations agree on the OEIS lower terms through `n = 11`, on the dynamic-programming recurrence over distinct lower-level values, and on the `5139` pairwise candidate powers generated at `n = 12`. They disagree on the deduplication policy. The 7-class gap is **not** a deep mathematical disagreement about branch decisions or wrap integers; it is a localised artefact of the Python script's tolerance policy. Specifically:
 
-1. Python's [`compute_a198683.py`](../computations/python/compute_a198683.py) deduplicates with `mp.almosteq(z1, z2, rel_eps=cmp_tol, abs_eps=cmp_tol)` where `cmp_tol = 10^-(dps/2)`. Because `abs_eps` is set equal to `rel_eps` (and therefore to a fixed positive constant), the *absolute*-tolerance branch of `almosteq` declares **any** two values smaller in magnitude than `cmp_tol` to be equal, regardless of their actual structure.
+1. Python's [`compute_a198683.py`](../../computations/python/compute_a198683.py) deduplicates with `mp.almosteq(z1, z2, rel_eps=cmp_tol, abs_eps=cmp_tol)` where `cmp_tol = 10^-(dps/2)`. Because `abs_eps` is set equal to `rel_eps` (and therefore to a fixed positive constant), the *absolute*-tolerance branch of `almosteq` declares **any** two values smaller in magnitude than `cmp_tol` to be equal, regardless of their actual structure.
 
 2. At `n = 12` the bulk of the candidates produced by `(I)^(huge n=11 exponent)` and related splits have computed magnitudes far below `10^-130`. They are mathematically distinct but the `abs_eps` floor of `almosteq` lumps them into a single equivalence class.
 
@@ -18,7 +18,7 @@ The two implementations agree on the OEIS lower terms through `n = 11`, on the d
 
 4. The remaining single-class gap (between Python with `abs_eps = 0` at `n = 12` and Wolfram with `Equal`) is small and consistent with secondary tolerance choices at lower levels and with the still-special-cased "overflow" candidate; this report does not certify which of `2925`, `2926`, or `2927` is the true count, only that the *bulk* of the discrepancy is explained by the `abs_eps` policy.
 
-Neither side of the historical OEIS disagreement is therefore a "wrong wrap" certification. The Wolfram side is closer to the true count because it avoids the `abs_eps` artefact, but it is also not a proof-quality computation — both numbers come from heuristic equality predicates evaluated at finite precision. The exploratory reports under [`exploratory/`](exploratory/README.md) describe the interval-arithmetic certification strategy that would be needed to settle the value rigorously.
+Neither side of the historical OEIS disagreement is therefore a "wrong wrap" certification. The Wolfram side is closer to the true count because it avoids the `abs_eps` artefact, but it is also not a proof-quality computation — both numbers come from heuristic equality predicates evaluated at finite precision. The exploratory reports under [`exploratory/`](../exploratory/README.md) describe the interval-arithmetic certification strategy that would be needed to settle the value rigorously.
 
 ## Quick reproduction
 
@@ -83,7 +83,7 @@ This is harmless for moderate values, but at `n = 12` it collapses a structurall
 
 ### Wolfram (the 2926 side)
 
-The Wolfram recurrence in [`computations/wolfram/a198683-n12-check__2026-05-20.wl`](../computations/wolfram/a198683-n12-check__2026-05-20.wl) uses
+The Wolfram recurrence in [`computations/wolfram/a198683-n12-check__2026-05-20.wl`](../../computations/wolfram/a198683-n12-check__2026-05-20.wl) uses
 
 ```wolfram
 Union[..., SameTest -> Equal]
@@ -93,7 +93,7 @@ Union[..., SameTest -> Equal]
 
 ## Where the seven classes come from
 
-The diagnostic [`diagnose_dedup.py`](../computations/python/diagnose_dedup.py) re-runs both the Python value-space dedup and a canonical-form dedup that uses
+The diagnostic [`diagnose_dedup.py`](../../computations/python/diagnose_dedup.py) re-runs both the Python value-space dedup and a canonical-form dedup that uses
 
 ```text
 v1 = v2  iff  e1 - e2 = 2 pi i k  for some integer k
@@ -101,7 +101,7 @@ v1 = v2  iff  e1 - e2 = 2 pi i k  for some integer k
 
 (written equivalently as a comparison of `(Re(e), Im(e) mod 2 pi)` on the level-12 exponent `e = b * Log(a)`, so the huge value `exp(e)` never has to be materialised).
 
-At `dps = 260`, only three of the Python equivalence classes get split by that canonical form. They are visible in [`diagnose_pairs.py`](../computations/python/diagnose_pairs.py) output:
+At `dps = 260`, only three of the Python equivalence classes get split by that canonical form. They are visible in [`diagnose_pairs.py`](../../computations/python/diagnose_pairs.py) output:
 
 ### Class A — "near 0" cluster (`s1` class 128, 8 candidates)
 
@@ -128,7 +128,7 @@ Indices `2207` and `3777` agree on `Re(e)` and `Im(e)` to all displayed digits; 
 
 All 14 candidates have `Re(e)` numerically indistinguishable from `-pi/2` and `Im(e)` of order `10^-261` to `10^-263`. So `exp(e)` is computed as a value indistinguishable from `e^{-pi/2} = i^i ≈ 0.207879...` at the working precision.
 
-This is the structurally interesting case: many parenthesizations of twelve copies of `i` evaluate to `i^i` because the OEIS comment's "islands of associativity" (sub-trees that reduce to positive-real intermediates) give exact algebraic coincidences. Whether all 14 are truly mathematically equal to `i^i`, or whether some lie infinitesimally to one side of `e^{-pi/2}`, is exactly the kind of question the proof-quality interval evaluator in [`exploratory/A198683-report-2.md`](exploratory/A198683-report-2.md) is designed to settle.
+This is the structurally interesting case: many parenthesizations of twelve copies of `i` evaluate to `i^i` because the OEIS comment's "islands of associativity" (sub-trees that reduce to positive-real intermediates) give exact algebraic coincidences. Whether all 14 are truly mathematically equal to `i^i`, or whether some lie infinitesimally to one side of `e^{-pi/2}`, is exactly the kind of question the proof-quality interval evaluator in [`exploratory/A198683-report-2.md`](../exploratory/A198683-report-2.md) is designed to settle.
 
 The canonical-form diagnostic (which is itself heuristic at this magnitude) splits the 14 into a small number of sub-classes that are visible in `diagnose_pairs.py` but does not yield a definitive count. This cluster is therefore a candidate for *part* of the residual 2925 → 2926 gap, but the diagnostic in this report does not assign blame here.
 
@@ -147,23 +147,23 @@ Three candidates with `Re(e)` and `Im(e)` smaller than `10^-1300`. Their `exp(e)
 
 These four numbers are *all* heuristics. They differ by at most eight classes out of 5139 candidates, all concentrated in three structurally-degenerate regions of the candidate space (near `0`, near `i^i`, and near `1`). None of the four is a proof.
 
-The OEIS entry's historical "2919 or 2926" alternative is therefore a snapshot of the same three-cluster ambiguity expressed by two different tolerance policies. Settling the value rigorously requires the interval-arithmetic certification strategy described in [`exploratory/A198683-report-2.md`](exploratory/A198683-report-2.md) (interval `(rho, theta)` propagation with bounded wrap integers) or a more compact symbolic-algebraic argument that the relevant sub-trees do or do not reduce to one of the special values `0`, `1`, or `i^i`.
+The OEIS entry's historical "2919 or 2926" alternative is therefore a snapshot of the same three-cluster ambiguity expressed by two different tolerance policies. Settling the value rigorously requires the interval-arithmetic certification strategy described in [`exploratory/A198683-report-2.md`](../exploratory/A198683-report-2.md) (interval `(rho, theta)` propagation with bounded wrap integers) or a more compact symbolic-algebraic argument that the relevant sub-trees do or do not reduce to one of the special values `0`, `1`, or `i^i`.
 
 ## What to add to the corpus README, briefly
 
-The current [`README.md`](../README.md) says the disagreement is "about equality certification for a small number of candidate classes". That is correct but unspecific. A more concrete statement, supported by the diagnostics:
+The current [`README.md`](../../README.md) says the disagreement is "about equality certification for a small number of candidate classes". That is correct but unspecific. A more concrete statement, supported by the diagnostics:
 
 > The Python/`mpmath` script and the Wolfram recurrence agree on the OEIS lower terms and on the `5139` candidate powers at `n = 12`. The 7-class gap is explained as follows. Python uses `mpmath.almosteq(rel_eps, abs_eps)` with `abs_eps` set to a fixed positive constant; this declares **any** two values smaller in magnitude than `abs_eps` to be equal, lumping together an eight-element cluster of structurally-distinct "near-zero" candidates (six spurious merges). Setting `abs_eps = 0` in the same script raises the count from `2919` to `2925`. The remaining `2925` vs `2926` gap lives in two further small clusters near `i^i` and `1`, where the answer depends on whether tiny imaginary residuals are interpreted as numerical noise (Python's almosteq under any tolerance) or as genuine non-equalities (Wolfram's `Equal`). Neither implementation is a proof; the rigorous certification described in `exploratory/A198683-report-2.md` would be needed to settle the value.
 
 ## Files added or referenced by this diagnostic
 
-- [`computations/python/compute_a198683.py`](../computations/python/compute_a198683.py) — original Python recurrence (reports `2919`).
-- [`computations/wolfram/a198683-n12-check__2026-05-20.wl`](../computations/wolfram/a198683-n12-check__2026-05-20.wl) — Wolfram recurrence (reports `2926`).
-- [`computations/python/diagnose_dedup.py`](../computations/python/diagnose_dedup.py) — runs both the value-space dedup and a canonical-exponent dedup, prints the partition refinement.
-- [`computations/python/diagnose_pairs.py`](../computations/python/diagnose_pairs.py) — prints per-candidate exponent data for the three disputed clusters.
-- [`computations/python/diagnose_tol.py`](../computations/python/diagnose_tol.py) — sweeps `(rel_eps, abs_eps)` at the `n = 12` stage; shows the `2919 -> 2925` jump on `abs_eps = 0`.
-- [`computations/python/diagnose_naive.py`](../computations/python/diagnose_naive.py) — naive `O(N^2)` canonical-exponent dedup; useful as a structural cross-check (and as a witness that strict canonical-form comparison without interval arithmetic over-splits).
-- [`computations/python/diagnose_levels.py`](../computations/python/diagnose_levels.py) — recomputes `|V[n]|` for `n <= 11` under both `abs_eps` policies; shows the artefact is localised to `n = 12`.
+- [`computations/python/compute_a198683.py`](../../computations/python/compute_a198683.py) — original Python recurrence (reports `2919`).
+- [`computations/wolfram/a198683-n12-check__2026-05-20.wl`](../../computations/wolfram/a198683-n12-check__2026-05-20.wl) — Wolfram recurrence (reports `2926`).
+- [`computations/python/diagnose_dedup.py`](../../computations/python/diagnose_dedup.py) — runs both the value-space dedup and a canonical-exponent dedup, prints the partition refinement.
+- [`computations/python/diagnose_pairs.py`](../../computations/python/diagnose_pairs.py) — prints per-candidate exponent data for the three disputed clusters.
+- [`computations/python/diagnose_tol.py`](../../computations/python/diagnose_tol.py) — sweeps `(rel_eps, abs_eps)` at the `n = 12` stage; shows the `2919 -> 2925` jump on `abs_eps = 0`.
+- [`computations/python/diagnose_naive.py`](../../computations/python/diagnose_naive.py) — naive `O(N^2)` canonical-exponent dedup; useful as a structural cross-check (and as a witness that strict canonical-form comparison without interval arithmetic over-splits).
+- [`computations/python/diagnose_levels.py`](../../computations/python/diagnose_levels.py) — recomputes `|V[n]|` for `n <= 11` under both `abs_eps` policies; shows the artefact is localised to `n = 12`.
 
 ## What this report does not claim
 

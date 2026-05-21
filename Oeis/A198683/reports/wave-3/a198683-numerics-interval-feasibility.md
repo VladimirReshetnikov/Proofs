@@ -10,7 +10,7 @@
 
 `src/Numerics/python` is a strong **structural fit** for the certified-arithmetic
 core that
-[`exploratory/A198683-report-2.md`](exploratory/A198683-report-2.md) calls for,
+[`exploratory/A198683-report-2.md`](../exploratory/A198683-report-2.md) calls for,
 and a **partial fit** for the full A198683(12) pipeline. It already provides
 the hardest-to-build piece — sound interval arithmetic with outward rounding,
 tower-shaped magnitudes (representing values up to roughly `10^^h(top)` for
@@ -32,15 +32,15 @@ layer on top.
 The extensions are well-scoped and naturally fit the existing
 proposal-driven architecture. The application layer is the larger piece of
 work but is straightforwardly bounded: roughly the same DP recurrence as
-[`computations/python/compute_a198683.py`](../computations/python/compute_a198683.py),
+[`computations/python/compute_a198683.py`](../../computations/python/compute_a198683.py),
 with the per-value representation upgraded from `mpmath.mpc` to a
 certified-interval polar form and with `mp.almosteq` replaced by the tri-valued
 `numerics.equal` (whose `Undefined` branch drives adaptive precision instead of
 the silent merges that produced the historical `2919` artefact diagnosed by
 the two existing root-cause reports
-[`a198683-n12-contradiction-root-cause__9e7681d48134.md`](a198683-n12-contradiction-root-cause__9e7681d48134.md)
+[`a198683-n12-contradiction-root-cause__9e7681d48134.md`](../wave-2/a198683-n12-contradiction-root-cause__9e7681d48134.md)
 and
-[`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md)).
+[`a198683-n12-discrepancy-root-cause.md`](../wave-2/a198683-n12-discrepancy-root-cause.md)).
 
 **Recommendation**: pursue this path. It is the most direct route from the
 current heuristic state to a certificate, and it builds on infrastructure
@@ -53,7 +53,7 @@ this report.
 ## 1. What the certification target requires
 
 This section paraphrases
-[`exploratory/A198683-report-2.md`](exploratory/A198683-report-2.md) §2–§4
+[`exploratory/A198683-report-2.md`](../exploratory/A198683-report-2.md) §2–§4
 in terms of the primitive operations a certified engine has to expose.
 
 ### 1.1 Per-value representation
@@ -68,7 +68,7 @@ Both endpoints are exact rationals; both intervals contain the true
 mathematical value; widening is outward.
 
 Magnitudes range from sub-`10^(-1300)` (the "near-zero" cluster diagnosed by
-[`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md))
+[`a198683-n12-discrepancy-root-cause.md`](../wave-2/a198683-n12-discrepancy-root-cause.md))
 to roughly `10^(10^34)` (the OEIS-comment `n = 11` example). The representation
 must accommodate at least this dynamic range, and at `n = 12` the upper bound
 can stack one further level.
@@ -195,7 +195,7 @@ constants "will land as the operations that need them are added."
 This is exactly the semantics the A198683 dedup loop needs:
 `Undefined` is the cue to refine precision, not the cue to silently merge.
 The `mp.almosteq(abs_eps = rel_eps)` policy diagnosed by
-[`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md)
+[`a198683-n12-discrepancy-root-cause.md`](../wave-2/a198683-n12-discrepancy-root-cause.md)
 has no counterpart in the `numerics` surface — there is no operation that
 declares two distinct values equal because both are small.
 
@@ -249,7 +249,7 @@ alternatives (extending the `mpmath` script, or porting to Arb / Wolfram).
 3. **Tower magnitudes are first-class.** `TowerPoint` and `TowerBall` are
    designed for exactly the `10^^h(top)` regime A198683 produces at `n >= 11`.
    The "overflow bucket" special-case in
-   [`compute_a198683.py`](../computations/python/compute_a198683.py) becomes
+   [`compute_a198683.py`](../../computations/python/compute_a198683.py) becomes
    unnecessary: an unmaterialisable mpmath complex magnitude is just a tower
    interval to `numerics`.
 4. **Per-context precision and adaptive widening.**
@@ -385,7 +385,7 @@ def dedup(values, *, ctx):
 `refine_and_decide` doubles `working_precision_digits` and recomputes `v`,
 `r`, and the equality predicate, up to a configurable cap. Genuinely
 undecidable clusters (the "near `i^i`" and "near `1`" residues identified by
-[`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md))
+[`a198683-n12-discrepancy-root-cause.md`](../wave-2/a198683-n12-discrepancy-root-cause.md))
 surface explicitly rather than being collapsed.
 
 For each `UndecidableCluster`, the operator chooses:
@@ -552,7 +552,7 @@ over a real-line representation that natively spans the magnitudes
 A198683(12) produces — and its tri-valued equality predicate is exactly the
 hook that the silent-merge artefact (root cause: `mp.almosteq`'s `abs_eps`
 floor; see
-[`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md))
+[`a198683-n12-discrepancy-root-cause.md`](../wave-2/a198683-n12-discrepancy-root-cause.md))
 cannot survive.
 
 The missing pieces are well-scoped: `pi`, `sin`, `cos`, a complex-interval
@@ -575,15 +575,15 @@ would do so without depending on Wolfram's symbolic equality engine.
 
 ## 9. References
 
-- [`exploratory/A198683-report-2.md`](exploratory/A198683-report-2.md)
+- [`exploratory/A198683-report-2.md`](../exploratory/A198683-report-2.md)
   — the certification strategy this report operationalises.
-- [`a198683-n12-contradiction-root-cause__9e7681d48134.md`](a198683-n12-contradiction-root-cause__9e7681d48134.md)
+- [`a198683-n12-contradiction-root-cause__9e7681d48134.md`](../wave-2/a198683-n12-contradiction-root-cause__9e7681d48134.md)
   — the precision-sweep root-cause analysis.
-- [`a198683-n12-discrepancy-root-cause.md`](a198683-n12-discrepancy-root-cause.md)
+- [`a198683-n12-discrepancy-root-cause.md`](../wave-2/a198683-n12-discrepancy-root-cause.md)
   — the tolerance-policy root-cause analysis, including the structural
   diagnosis of the `near-zero`, `near-i^i`, and `near-1` clusters that
   the certified pipeline must either resolve or report as undecidable.
-- [`../computations/python/compute_a198683.py`](../computations/python/compute_a198683.py)
+- [`../../computations/python/compute_a198683.py`](../../computations/python/compute_a198683.py)
   — the existing heuristic Python pipeline that the certified pipeline
   replaces.
 - `src/Numerics/python/README.md` — `numerics` package overview and

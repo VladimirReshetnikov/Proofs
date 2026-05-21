@@ -9,8 +9,13 @@
 This directory contains exploratory writeups about A198683. They are useful for
 background, but they should not be treated as an authoritative resolution of
 `A198683(12)`. For the current interpretation of the `2919` versus `2926`
-reports, read
-[`../a198683-n12-contradiction-root-cause__9e7681d48134.md`](../a198683-n12-contradiction-root-cause__9e7681d48134.md).
+reports, read the wave-3 synthesis at
+[`../wave-3/a198683-post-wave2-synthesis.md`](../wave-3/a198683-post-wave2-synthesis.md)
+or any of the wave-2 root-cause reports under
+[`../wave-2/`](../wave-2/README.md). The certification strategy proposed in
+[`A198683-report-2.md`](A198683-report-2.md) is operationalised by the wave-3
+feasibility study at
+[`../wave-3/a198683-numerics-interval-feasibility.md`](../wave-3/a198683-numerics-interval-feasibility.md).
 
 ## Contents
 
