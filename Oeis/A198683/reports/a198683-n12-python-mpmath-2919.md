@@ -1,4 +1,15 @@
-# OEIS A198683(12)
+# OEIS A198683(12) Python/mpmath Investigation
+
+- Status: Historical investigation (conflicting)
+- Audience: Vladimir Reshetnikov, OEIS contributors, and future agents revisiting A198683
+- Scope: Compute `A198683(12)` with Python, `mpmath`, numerical deduplication, and special handling for one unmaterializable candidate
+- Created (UTC): 2026-05-20T22:13:19Z
+- Repository HEAD: f906a31c0f82f92946a3524ac72e70d392258403
+
+This report is preserved as one side of the local contradiction described in
+[the A198683 corpus README](../README.md). It concludes `A198683(12) = 2919`.
+The sibling Wolfram/Tungsten investigation concludes `2926`; this consolidation
+does not resolve that disagreement.
 
 ## Goal
 
@@ -18,9 +29,9 @@ The OEIS entry records:
 
 and historically `A198683(12)` was reported as “either 2919 or 2926”.
 
-This report documents a reproducible computation that resolves the ambiguity.
+This report presents a reproducible computation that claims to resolve the ambiguity.
 
-## Executive Result
+## Reported Result
 
 `A198683(12) = 2919`.
 
@@ -93,15 +104,15 @@ Empirically this “overflow bucket” contains exactly one value and no collisi
 
 Script:
 
-- `docs/research/oeis/A198683/compute_a198683.py`
+- `docs/research/oeis/A198683/computations/python/compute_a198683.py`
 
 Runs:
 
 ```powershell
-python .\docs\research\oeis\A198683\compute_a198683.py --dps 160 --n 12
-python .\docs\research\oeis\A198683\compute_a198683.py --dps 180 --n 12
-python .\docs\research\oeis\A198683\compute_a198683.py --dps 220 --n 12
-python .\docs\research\oeis\A198683\compute_a198683.py --dps 260 --n 12
+python .\docs\research\oeis\A198683\computations\python\compute_a198683.py --dps 160 --n 12
+python .\docs\research\oeis\A198683\computations\python\compute_a198683.py --dps 180 --n 12
+python .\docs\research\oeis\A198683\computations\python\compute_a198683.py --dps 220 --n 12
+python .\docs\research\oeis\A198683\computations\python\compute_a198683.py --dps 260 --n 12
 ```
 
 Observed stability (all runs produced identical totals):
@@ -126,4 +137,3 @@ bigfloat magnitude.
 
 The Python approach above avoids this by never requiring full materialization of that single extreme `n=12`
 result.
-

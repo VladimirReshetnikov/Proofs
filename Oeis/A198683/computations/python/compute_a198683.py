@@ -25,8 +25,8 @@ Key engineering points:
 
 Run examples (PowerShell):
 
-    python .\\docs\\research\\oeis\\A198683\\compute_a198683.py --dps 180 --n 12
-    python .\\docs\\research\\oeis\\A198683\\compute_a198683.py --dps 260 --n 12
+    python .\\docs\\research\\oeis\\A198683\\computations\\python\\compute_a198683.py --dps 180 --n 12
+    python .\\docs\\research\\oeis\\A198683\\computations\\python\\compute_a198683.py --dps 260 --n 12
 """
 
 from __future__ import annotations
@@ -209,4 +209,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
