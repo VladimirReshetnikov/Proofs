@@ -179,6 +179,46 @@ The structurally-degenerate clusters identified by `cc`:
   `10^-1300`). The number of genuinely-distinct classes here is also
   unsettled.
 
+A Schoenfield-style equivalence-class extension to `n = 12` derived from
+running [`compute_a198683.py`](../../computations/python/compute_a198683.py)
+and its instrumented siblings
+[`dump_n12_candidates.py`](../../computations/python/dump_n12_candidates.py),
+[`group_n12_candidates.py`](../../computations/python/group_n12_candidates.py),
+and [`probe_tentative_classes.py`](../../computations/python/probe_tentative_classes.py)
+at `--dps 260` (initial dump) and `--dps in {260, 500, 1000}` (probe) is
+preserved at
+[`../../data/a198683-n12-equivalence-classes.txt`](../../data/a198683-n12-equivalence-classes.txt).
+It lists all 5139 candidates, grouped under a probe-refined partition
+that starts from the strict-policy partition (2925 classes, the
+abs_eps=0 fix from wave-2 `cc`) and refines each of the four tentative
+classes using multi-precision algebraic probing:
+
+| Strict tentative class | Members | Probe verdict at dps ∈ {260, 500, 1000} | Refined partition |
+|---|---|---|---|
+| `25` (near-`1`) | `{25, 1404, 4239}` | `diff_Re(e_25, e_1404) = 2.306566301e-1305` **stable** at all three dps (not numerical noise); `diff_Re(e_1404, e_4239) = 0` exact | **splits** into `{25}` ∪ `{1404, 4239}` (+1 class) |
+| `561` (near-`i^i`) | 14 members | pairwise `diff_Re`, `diff_Im` shrink ~`10^-dps` with precision (noise) | conclusive merge: all 14 algebraically equal to `i^i = e^(-π/2)` |
+| `2199` (near-`0`) | `{2207, 3777}` | pairwise differences at precision floor for every dps | conclusive merge: algebraically equal |
+| `2924` (near-`0` overflow) | `{57}` | `|Im(e)| ~ 10^41232...` cannot be reduced mod `2π` at any finite precision | **tentative** — equality with any other candidate undecidable at finite precision |
+
+The probe-refined partition gives exactly **2926 classes** — matching
+Wolfram's `Union[..., SameTest -> Equal]` count. The `+1` over strict's
+2925 is the cluster C split: `idx=25` separates from `{1404, 4239}`
+because their level-12 exponents differ by `2.306566301e-1305`
+algebraically (stable across all probed precisions; would shrink with
+precision if it were numerical noise).
+
+Of the 2926 refined classes, **2925 are conclusive** (1389 singletons
++ 1536 multi-member classes; multi-precision evidence consistent across
+dps) and **1 is tentative** (the overflow singleton `{57}`, which
+cannot be probed because its `|Im(e)|` is astronomical and beyond mod-2π
+reduction at finite precision).
+
+'Conclusive' here means *multi-precision heuristic evidence agrees across
+dps ∈ {260, 500, 1000}*, not a formal proof. A certified pipeline (see
+[`a198683-numerics-interval-feasibility.md`](a198683-numerics-interval-feasibility.md))
+would still be needed to convert "all probed precisions agree" into
+"proved", and to settle the one remaining tentative class.
+
 ## 6. Remaining unsettled questions
 
 The following questions are explicitly open after wave-2. Each is the

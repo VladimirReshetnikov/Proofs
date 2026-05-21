@@ -68,6 +68,23 @@ The residual ambiguity localises to three structurally-degenerate clusters
 in the candidate space — near `0`, near `i^i = e^(-pi/2)`, and near `1` —
 identified by the wave-2 tolerance-policy diagnostic
 [`reports/wave-2/a198683-n12-discrepancy-root-cause.md`](reports/wave-2/a198683-n12-discrepancy-root-cause.md).
+A Schoenfield-style equivalence-class extension to `n = 12` listing all
+**5139** candidate powers is preserved at
+[`data/a198683-n12-equivalence-classes.txt`](data/a198683-n12-equivalence-classes.txt).
+It uses a probe-refined partition: starting from the 2925 strict-policy
+classes (`abs_eps = 0` value-space dedup), each of the four tentative
+classes is re-examined at dps ∈ {260, 500, 1000} to distinguish
+algebraic from numerical-noise differences. The probe shows that cluster C
+(near `1`, members `{25, 1404, 4239}`) **splits** into `{25}` and
+`{1404, 4239}` because `Re(e_25) - Re(e_1404) = 2.306566301e-1305` is
+stable across all three precisions (precision-floor noise would shrink as
+dps grows); the other three tentative classes either merge conclusively
+or remain undecidable (the overflow singleton). The refined partition has
+exactly **2926 classes** — matching the Wolfram count.
+**2925** of those are conclusive (multi-precision evidence agrees) and
+**1** remains tentative: the overflow singleton `{57}`, whose
+`|Im(e)| ~ 10^41232...` is beyond mod-`2π` reduction at any finite
+precision.
 
 ## Directory Layout
 

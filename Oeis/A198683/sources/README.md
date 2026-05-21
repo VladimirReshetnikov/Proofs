@@ -17,7 +17,8 @@ self-contained and avoids depending on downloads from a prior local session.
   unresolved note that `a(12)` was said to be either `2919` or `2926`.
 - [`schoenfield-a198683.txt`](schoenfield-a198683.txt) is Jon E. Schoenfield's
   table for `n=1..11`, listing parenthesizations and duplicate-value
-  identifications.
+  identifications. A derived equivalence-class extension to `n=12` lives at
+  [`../data/a198683-n12-equivalence-classes.txt`](../data/a198683-n12-equivalence-classes.txt).
 - [`a003018/`](a003018/) contains a local copy and extracted assets for Guy and
   Selfridge, "The nesting and roosting habits of the laddered parenthesis",
   which is background for related parenthesized exponentiation problems.
