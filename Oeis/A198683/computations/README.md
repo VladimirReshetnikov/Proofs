@@ -67,6 +67,23 @@ different angles:
   `mpmath.almosteq` policy and shows that setting `abs_eps = 0` at the `n=12`
   stage raises the count from `2919` to `2925`.
 
+A third independent precision-sweep diagnostic (also using
+`compute_a198683.py`) extended the sweep further:
+
+| `--dps` | `a(12)` |
+|---:|---:|
+| 260 | 2919 |
+| 600 | 2920 |
+| 1000 | 2921 |
+| 1200 | 2922 |
+| 3000 | 2924 |
+| 8000 | 2924 |
+
+The Python output stabilises at `2924` somewhere between `--dps 2000` and
+`8000`, but `2924` is *still* below the Wolfram `2926`. The remaining gap is
+the residue that requires proof-quality interval arithmetic, not more
+precision.
+
 Use the precision settings documented by the result reports only to reproduce
 historical behavior; they are not enough to certify `A198683(12)`.
 Lower-precision runs are useful only as path smoke tests; for example,

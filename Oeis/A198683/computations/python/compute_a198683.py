@@ -10,9 +10,12 @@ imaginary part in (-pi, pi]).
 
 This script is a historical finite-precision diagnostic. It reproduces the
 known counts for n<=11 and the old low-precision A198683(12)=2919 plateau, but
-it does not certify A198683(12). Reruns above the original precision window
-change the n=12 count, so use the root-cause report before treating this script's
-output as evidence.
+it does not certify A198683(12). The n=12 deduplication is numerical
+(`almosteq` on rounded bigfloats), so the reported count depends on the chosen
+working precision (`mp.mp.dps`); reruns above the original precision window
+change the n=12 count (stabilising around 2924 between --dps 2000 and 8000,
+still below the Wolfram 2926). Use the root-cause reports under
+src/Oeis/A198683/reports/ before treating this script's output as evidence.
 
 Key engineering points:
 
@@ -36,6 +39,7 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 from dataclasses import dataclass
+import sys
 from typing import Iterable, List, Tuple
 
 import mpmath as mp
@@ -187,6 +191,13 @@ def main() -> int:
     ap.add_argument("--overflow-digits-limit", type=int, default=10_000)
     args = ap.parse_args()
 
+    if hasattr(sys, "set_int_max_str_digits"):
+        # High-precision runs can trigger CPython's int<->str digit limit when
+        # formatting enormous intermediate magnitudes for diagnostics. This
+        # script never converts untrusted user input, so disable the guardrail
+        # for reproducible research output.
+        sys.set_int_max_str_digits(0)
+
     if args.n == 11:
         values = compute_values_upto_11(dps=args.dps)
         counts = [len(values[i]) for i in range(1, 12)]
@@ -194,6 +205,10 @@ def main() -> int:
         return 0
 
     r = compute_a12(dps=args.dps, overflow_digits_limit=args.overflow_digits_limit)
+    try:
+        overflow_sample = mp.nstr(r.overflow_exponent_sample, 50) if r.overflow_exponent_sample else None
+    except ValueError:
+        overflow_sample = "<mp.nstr failed (see CPython int_max_str_digits)>"
     out = {
         "dps": r.dps,
         "a11": r.a11,
@@ -203,7 +218,7 @@ def main() -> int:
         "uniq_success": r.uniq_success,
         "uniq_overflow": r.uniq_overflow,
         "a12": r.a12,
-        "overflow_exponent_sample": (mp.nstr(r.overflow_exponent_sample, 50) if r.overflow_exponent_sample else None),
+        "overflow_exponent_sample": overflow_sample,
     }
     print(out)
     return 0

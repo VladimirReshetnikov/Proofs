@@ -51,6 +51,18 @@ and its assumptions, not as a current recommendation to use `2919`.
 > that cannot be settled by either heuristic without certified interval
 > arithmetic.
 
+## Errata (2026-05-21)
+
+This report originally claimed that `2919` was “stable under multiple precision
+settings” because it did not change for `--dps` values in the low-hundreds
+(roughly `160..260`).
+
+Rerunning the *same* script with much higher precision shows that `2919` is not
+stable: the reported count increases (for example `2921` at `--dps 1000` and
+`2924` at `--dps 3000`/`8000`). In other words, the `2919` value is a
+precision-dependent artifact of the numerical deduplication strategy, not a
+proof-quality resolution of the OEIS dispute.
+
 ## Goal
 
 Establish the true value of `A198683(12)`, where `A198683(n)` is the number of *distinct* values taken by
@@ -76,11 +88,14 @@ resolve the ambiguity. That claim is superseded by the erratum above.
 
 The original reported result was:
 
-`A198683(12) = 2919`.
+Historical output (low-hundreds precision regime): `A198683(12) = 2919`.
 
 This value is stable only across the limited precision settings tested by the
-original report. It is not stable under larger precision reruns, even though the
-same implementation reproduces the accepted `A198683(n)` counts for `n <= 11`.
+original report. It is not stable under larger precision reruns: the same
+implementation reproduces the accepted `A198683(n)` counts for `n <= 11`, but
+higher-precision `n = 12` reruns increase the count, stabilising around `2924`
+between `--dps 2000` and `8000`. See errata above and the root-cause reports
+referenced from the corpus README.
 
 ## What Makes n=12 Special
 
