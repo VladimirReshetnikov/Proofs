@@ -1,11 +1,11 @@
 # A198683 Reports
 
-- Status: Informational, clarified-conflict index with two root-cause analyses
+- Status: Informational, clarified-conflict index with two root-cause analyses and one feasibility study
 - Audience: Maintainers, OEIS contributors, and future agents
 - Scope: Historical and exploratory reports about OEIS A198683
 - Created (UTC): 2026-05-21T00:59:34Z
-- Last updated (UTC): 2026-05-21T02:27:23Z
-- Repository HEAD: 9e45d165358c99eb3554980b4a9de38a77536bcb
+- Last updated (UTC): 2026-05-21T03:59:13Z
+- Repository HEAD: f17b75114d0553b54fde626b9d9e325cf0f9eb4a
 
 This directory preserves reports about A198683. Some reports make mutually
 incompatible claims about `A198683(12)`. The corpus keeps those reports
@@ -63,6 +63,22 @@ Both are preserved.
 The two stances are not in direct contradiction; they differ only in how
 cautious they are about treating `2926` as the recommended value pending a
 formal certificate.
+
+## Forward-Looking Feasibility Studies
+
+- [`a198683-numerics-interval-feasibility.md`](a198683-numerics-interval-feasibility.md)
+  evaluates whether the in-repo `src/Numerics/python` (`numerics`) package
+  can serve as the sound real-line interval-arithmetic engine for a certified
+  evaluation of `A198683(12)`, per the strategy in
+  [`exploratory/A198683-report-2.md`](exploratory/A198683-report-2.md). The
+  verdict is *yes, with three well-scoped engine extensions* (a `pi` constant,
+  `sin` / `cos` on bounded ground intervals, and a complex-interval wrapper)
+  plus an application-layer `i^Z`-form pipeline that replaces `mpmath.almosteq`
+  with the tri-valued `numerics.equal`. The report sizes the work in LoC,
+  explains why `numerics`'s soundness contract structurally excludes the
+  silent-merge artefact identified by the two root-cause reports above, and
+  describes how the residual `near-i^i` / `near-1` clusters would surface as
+  explicit `UndecidableCluster` events rather than being collapsed.
 
 ## Exploratory Reports
 

@@ -1,11 +1,11 @@
 # OEIS A198683 Research Corpus
 
-- Status: Informational, clarified-conflict index
+- Status: Informational, clarified-conflict index with feasibility study for a certified pipeline
 - Audience: Vladimir Reshetnikov, OEIS contributors, maintainers, and future agents
 - Scope: Local artifacts for OEIS A198683 and the disputed value of `A198683(12)`
 - Created (UTC): 2026-05-21T00:59:34Z
-- Last updated (UTC): 2026-05-21T02:27:23Z
-- Repository HEAD: 9e45d165358c99eb3554980b4a9de38a77536bcb
+- Last updated (UTC): 2026-05-21T03:59:13Z
+- Repository HEAD: f17b75114d0553b54fde626b9d9e325cf0f9eb4a
 
 OEIS A198683 counts the number of distinct values produced by all binary
 parenthesizations of `i^i^...^i`, using the principal value of complex
@@ -87,6 +87,25 @@ Divergence in framing and diagnostic depth:
 The two stances are not in direct contradiction. They differ in how cautious
 they are about treating `2926` as a recommended value. This README preserves
 both reports rather than choosing between their bottom-line wordings.
+
+## Forward-Looking Feasibility Study
+
+A separate feasibility report,
+[`reports/a198683-numerics-interval-feasibility.md`](reports/a198683-numerics-interval-feasibility.md),
+evaluates whether the in-repo `src/Numerics/python` (`numerics`) package can
+serve as the sound real-line interval-arithmetic engine for a certified
+evaluation of `A198683(12)`, per
+[`reports/exploratory/A198683-report-2.md`](reports/exploratory/A198683-report-2.md).
+The verdict is *yes, with three well-scoped engine extensions* (a `pi`
+constant, `sin` / `cos` on bounded ground intervals, and a complex-interval
+wrapper) plus an application-layer `i^Z`-form pipeline that replaces
+`mpmath.almosteq` with the tri-valued `numerics.equal`. That predicate
+returns `True` / `False` / `Undefined` (see
+`src/Numerics/python/numerics/arithmetic.py::equal`), so the silent-merge
+artefact identified by both root-cause reports is structurally impossible:
+overlapping intervals demand adaptive precision, never a quiet collapse.
+Residual `near-i^i` / `near-1` clusters surface as explicit
+`UndecidableCluster` events rather than being absorbed.
 
 ## Directory Layout
 
