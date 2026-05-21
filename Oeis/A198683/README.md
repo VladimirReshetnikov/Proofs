@@ -100,8 +100,8 @@ both reports rather than choosing between their bottom-line wordings.
 ## Reading Order
 
 1. Read this file for the current-state map and the contradiction summary.
-2. Read [`reports/README.md`](reports/README.md) and the root-cause report
-   before treating any individual result report as evidence.
+2. Read [`reports/README.md`](reports/README.md) and the two root-cause
+   reports before treating any individual result report as evidence.
 3. Inspect [`computations/README.md`](computations/README.md) when rerunning or
    comparing the Python and Wolfram computations.
 4. Use [`sources/README.md`](sources/README.md) to locate the OEIS snapshot,
