@@ -25,6 +25,11 @@ The numerical difference is seven classes. Both reports agree on the lower
 terms and on `5139` pairwise candidate powers at `n=12`; they disagree over
 whether seven additional equalities should be recognized.
 
+Note: rerunning the Python computation with much larger `--dps` increases the
+reported value (e.g. `2919` at `--dps 260`, `2924` at `--dps 3000`/`8000`). That
+means the `2919` conclusion is precision-dependent and should be treated as a
+historical artifact of the low-hundreds precision regime, not a settled value.
+
 ## Exploratory Reports
 
 [`exploratory/`](exploratory/README.md) contains generated explanatory reports

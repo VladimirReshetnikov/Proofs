@@ -31,8 +31,8 @@ how those candidates should be deduplicated:
 
 | Report | Method | Reported `A198683(12)` | Nature of the disagreement |
 |---|---|---:|---|
-| [`reports/a198683-n12-python-mpmath-2919.md`](reports/a198683-n12-python-mpmath-2919.md) | Python `mpmath`, scale-invariant numerical buckets, `almosteq`, and one special overflow bucket | 2919 | Treats one unmaterializable candidate separately and reports seven more effective merges than the Wolfram result. |
-| [`reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md`](reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md) | Wolfram Language recurrence using `Union[..., SameTest -> Equal]` through the local Tungsten runner | 2926 | Reports exact Wolfram equality classes and notes that `2919` would require seven additional exact equalities among those classes. |
+| [`reports/a198683-n12-python-mpmath-2919.md`](reports/a198683-n12-python-mpmath-2919.md) | Python `mpmath`, scale-invariant numerical buckets, `almosteq`, and one special overflow bucket | 2919 | Precision-dependent numerical dedupe: the historical `2919` comes from low-hundreds precision; reruns at higher `--dps` increase the count (e.g. `2924` at `--dps 3000`/`8000`). |
+| [`reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md`](reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md) | Wolfram Language recurrence using `Union[..., SameTest -> Equal]` through the local Tungsten runner | 2926 | Exact Wolfram evaluation and equality as implemented by WL (`Equal` inside `Union`). Slow to rerun; still not a proof artifact independent of Wolfram’s symbolic engine. |
 
 The contradiction is therefore not about the OEIS definition, the lower terms,
 or the number of generated `n=12` candidate powers. It is about equality
@@ -42,6 +42,58 @@ choice sensitivity.
 
 This README is a neutral index. It does not declare either `2919` or `2926` to
 be authoritative.
+
+## Root cause of the `2919` vs `2926` contradiction
+
+The local conflict is not “two different recurrences” or “two different ways of
+generating the `n=12` candidates”. Both pipelines:
+
+- Use the same OEIS principal-power semantics (`z^w := Exp[w Log[z]]`).
+- Use the same dynamic-programming recurrence over distinct lower-level sets.
+- Agree on the lower-term counts through `n=11`.
+- Agree that `n=12` produces `5139` pairwise candidate powers.
+
+The divergence is in the **equality test** applied to those `5139` candidates:
+
+- The Wolfram/Tungsten report uses exact Wolfram Language expressions and
+  deduplicates with `Union[..., SameTest -> Equal]`.
+- The Python/mpmath report evaluates candidates as arbitrary-precision
+  bigfloats and deduplicates with numerical bucketing plus `mpmath.almosteq`,
+  along with a special “overflow bucket” for the single unmaterializable case.
+
+At `n=12`, a handful of candidates live in knife-edge regimes (extreme
+magnitudes and branch-cut sensitivity). In that setting, *finite precision*
+evaluation can make distinct values numerically indistinguishable, so any
+numerical dedupe can accidentally merge classes.
+
+### Evidence: the Python result is not stable under higher precision
+
+The Python report validated stability only for `--dps` in the low-hundreds. If
+you rerun the same script with substantially larger precision, the reported
+count **increases**, meaning the `2919` claim is a precision artifact of that
+workflow:
+
+| `--dps` | `compute_a198683.py` `a(12)` |
+|---:|---:|
+| 260 | 2919 |
+| 600 | 2920 |
+| 1000 | 2921 |
+| 1200 | 2922 |
+| 3000 | 2924 |
+| 8000 | 2924 |
+
+So the historical `2919` is best viewed as a **lower bound produced by an
+insufficient-precision numeric equality heuristic**, not as a settled value.
+
+### What is still missing
+
+Even `2926` is not a proof artifact independent of Wolfram’s symbolic engine;
+it is the result returned by Wolfram Language’s exact recurrence plus
+`Union[..., SameTest -> Equal]` under the local WL version. The remaining work,
+if the goal is to actually resolve the OEIS dispute, is a **proof-quality**
+equality check for the remaining near-collision candidates (e.g., interval
+arithmetic / certified bounds that can decide each of the few hard
+equalities/inequalities without relying on a specific CAS).
 
 ## Directory Layout
 

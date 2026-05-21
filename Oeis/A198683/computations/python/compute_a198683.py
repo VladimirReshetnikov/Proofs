@@ -9,9 +9,13 @@ and Log is the principal complex log (branch cut along negative reals,
 imaginary part in (-pi, pi]).
 
 This script is designed to reproduce the known values for n<=11 and to
-compute A198683(12) in a way that remains stable even when a small number
-of values become too large/small to represent as a normal bigfloat
-complex number.
+explore A198683(12) without crashing when a small number of values become
+too large/small to represent as a normal bigfloat complex number.
+
+Important: the n=12 deduplication is numerical (`almosteq` on rounded
+bigfloats), so the reported count depends on the chosen working precision
+(`mp.mp.dps`). Treat the output as evidence, not as a proof-quality
+certificate.
 
 Key engineering points:
 
@@ -34,6 +38,7 @@ from __future__ import annotations
 import argparse
 from collections import defaultdict
 from dataclasses import dataclass
+import sys
 from typing import Iterable, List, Tuple
 
 import mpmath as mp
@@ -185,6 +190,13 @@ def main() -> int:
     ap.add_argument("--overflow-digits-limit", type=int, default=10_000)
     args = ap.parse_args()
 
+    if hasattr(sys, "set_int_max_str_digits"):
+        # High-precision runs can trigger CPython's int<->str digit limit when
+        # formatting enormous intermediate magnitudes for diagnostics. This
+        # script never converts untrusted user input, so disable the guardrail
+        # for reproducible research output.
+        sys.set_int_max_str_digits(0)
+
     if args.n == 11:
         values = compute_values_upto_11(dps=args.dps)
         counts = [len(values[i]) for i in range(1, 12)]
@@ -192,6 +204,10 @@ def main() -> int:
         return 0
 
     r = compute_a12(dps=args.dps, overflow_digits_limit=args.overflow_digits_limit)
+    try:
+        overflow_sample = mp.nstr(r.overflow_exponent_sample, 50) if r.overflow_exponent_sample else None
+    except ValueError:
+        overflow_sample = "<mp.nstr failed (see CPython int_max_str_digits)>"
     out = {
         "dps": r.dps,
         "a11": r.a11,
@@ -201,7 +217,7 @@ def main() -> int:
         "uniq_success": r.uniq_success,
         "uniq_overflow": r.uniq_overflow,
         "a12": r.a12,
-        "overflow_exponent_sample": (mp.nstr(r.overflow_exponent_sample, 50) if r.overflow_exponent_sample else None),
+        "overflow_exponent_sample": overflow_sample,
     }
     print(out)
     return 0

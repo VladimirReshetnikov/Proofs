@@ -11,6 +11,18 @@ This report is preserved as one side of the local contradiction described in
 The sibling Wolfram/Tungsten investigation concludes `2926`; this consolidation
 does not resolve that disagreement.
 
+## Errata (2026-05-21)
+
+This report originally claimed that `2919` was “stable under multiple precision
+settings” because it did not change for `--dps` values in the low-hundreds
+(roughly `160..260`).
+
+Rerunning the *same* script with much higher precision shows that `2919` is not
+stable: the reported count increases (for example `2921` at `--dps 1000` and
+`2924` at `--dps 3000`/`8000`). In other words, the `2919` value is a
+precision-dependent artifact of the numerical deduplication strategy, not a
+proof-quality resolution of the OEIS dispute.
+
 ## Goal
 
 Establish the true value of `A198683(12)`, where `A198683(n)` is the number of *distinct* values taken by
@@ -33,10 +45,10 @@ This report presents a reproducible computation that claims to resolve the ambig
 
 ## Reported Result
 
-`A198683(12) = 2919`.
+Historical output (low-hundreds precision regime): `A198683(12) = 2919`.
 
-This value is stable under multiple independent precision settings, and the same implementation reproduces
-all known `A198683(n)` values for `n <= 11`.
+The implementation still reproduces all known `A198683(n)` values for `n <= 11`,
+but higher-precision reruns increase the `n=12` count (see errata above).
 
 ## What Makes n=12 Special
 
