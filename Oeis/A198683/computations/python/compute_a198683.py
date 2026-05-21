@@ -25,8 +25,8 @@ Key engineering points:
 
 Run examples (PowerShell):
 
-    python .\\docs\\research\\oeis\\A198683\\computations\\python\\compute_a198683.py --dps 180 --n 12
-    python .\\docs\\research\\oeis\\A198683\\computations\\python\\compute_a198683.py --dps 260 --n 12
+    python .\\src\\Oeis\\A198683\\computations\\python\\compute_a198683.py --dps 180 --n 12
+    python .\\src\\Oeis\\A198683\\computations\\python\\compute_a198683.py --dps 260 --n 12
 """
 
 from __future__ import annotations
