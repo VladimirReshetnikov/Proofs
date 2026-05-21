@@ -8,17 +8,19 @@ complex power:
 and Log is the principal complex log (branch cut along negative reals,
 imaginary part in (-pi, pi]).
 
-This script is designed to reproduce the known values for n<=11 and to
-compute A198683(12) in a way that remains stable even when a small number
-of values become too large/small to represent as a normal bigfloat
-complex number.
+This script is a historical finite-precision diagnostic. It reproduces the
+known counts for n<=11 and the old low-precision A198683(12)=2919 plateau, but
+it does not certify A198683(12). Reruns above the original precision window
+change the n=12 count, so use the root-cause report before treating this script's
+output as evidence.
 
 Key engineering points:
 
 1. We use dynamic programming on sets of *distinct* subexpression values,
    so n=12 requires only ~5k exponentiations rather than Catalan(11)=58786.
 2. We use mpmath's principal-branch complex log/power.
-3. We deduplicate numerically using scale-invariant bucketing + almosteq.
+3. We deduplicate numerically using scale-invariant bucketing + almosteq; this
+   is the known weak point for n=12.
 4. For n=12, exactly one candidate value becomes so tiny (double-exponential
    scale) that mpmath cannot materialize exp(e). For counting purposes we
    treat it as a separate value, keyed by the exponent e=b*log(a).

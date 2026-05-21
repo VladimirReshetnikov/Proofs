@@ -1,6 +1,6 @@
 # OEIS A198683 Research Corpus
 
-- Status: Informational, unresolved-conflict index
+- Status: Informational, clarified-conflict index
 - Audience: Vladimir Reshetnikov, OEIS contributors, maintainers, and future agents
 - Scope: Local artifacts for OEIS A198683 and the disputed value of `A198683(12)`
 - Created (UTC): 2026-05-21T00:59:34Z
@@ -21,8 +21,12 @@ records the accepted values through `n=11`:
 ```
 
 It also records the historical unresolved note that `a(12)` was said to be
-either `2919` or `2926`. The local corpus preserves the same contradiction
-rather than resolving it.
+either `2919` or `2926`. A root-cause pass on 2026-05-21 clarified why the
+preserved local reports disagreed: the `2919` report used finite-precision
+mpmath clustering and found only a low-precision plateau; higher-precision
+reruns drift upward. The `2926` report remains the strongest recorded local
+result because it uses the OEIS-style exact Wolfram Language recurrence with
+`Union[..., SameTest -> Equal]`.
 
 Two later local investigations both reproduce the accepted values through
 `n=11` and both use the dynamic-programming recurrence over distinct lower-level
@@ -31,8 +35,9 @@ how those candidates should be deduplicated:
 
 | Report | Method | Reported `A198683(12)` | Nature of the disagreement |
 |---|---|---:|---|
-| [`reports/a198683-n12-python-mpmath-2919.md`](reports/a198683-n12-python-mpmath-2919.md) | Python `mpmath`, scale-invariant numerical buckets, `almosteq`, and one special overflow bucket | 2919 | Treats one unmaterializable candidate separately and reports seven more effective merges than the Wolfram result. |
-| [`reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md`](reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md) | Wolfram Language recurrence using `Union[..., SameTest -> Equal]` through the local Tungsten runner | 2926 | Reports exact Wolfram equality classes and notes that `2919` would require seven additional exact equalities among those classes. |
+| [`reports/a198683-n12-python-mpmath-2919.md`](reports/a198683-n12-python-mpmath-2919.md) | Python `mpmath`, scale-invariant numerical buckets, `almosteq`, and one special overflow bucket | 2919 | Historical finite-precision result. The claimed plateau breaks at higher precision (`2919 -> 2920 -> 2921 -> 2922 -> 2924` in local reruns), so it should not be cited as exact evidence. |
+| [`reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md`](reports/a198683-n12-wolfram-2926__2026-05-20__20-31-16-000000.md) | Wolfram Language recurrence using `Union[..., SameTest -> Equal]` through the local Tungsten runner | 2926 | Strongest recorded local result. It is exact with respect to Wolfram's symbolic equality engine, but it is not a standalone proof certificate independent of Wolfram. |
+| [`reports/a198683-n12-contradiction-root-cause__9e7681d48134.md`](reports/a198683-n12-contradiction-root-cause__9e7681d48134.md) | Follow-up root-cause analysis | N/A | Explains that the contradiction comes from the Python report's approximate equality heuristic, not from the recurrence, candidate count, or OEIS definition. |
 
 The contradiction is therefore not about the OEIS definition, the lower terms,
 or the number of generated `n=12` candidate powers. It is about equality
@@ -40,8 +45,11 @@ certification for a small number of candidate classes under principal complex
 power semantics, in the presence of extreme intermediate magnitudes and branch
 choice sensitivity.
 
-This README is a neutral index. It does not declare either `2919` or `2926` to
-be authoritative.
+This README is no longer a neutral "either value may be right" index. It
+preserves the conflicting reports, but the local evidence now invalidates `2919`
+as a finite-precision artifact. Treat `2926` as the best recorded local value
+while keeping the caveat that a formal independent certificate has not yet been
+added to this corpus.
 
 ## Directory Layout
 
@@ -55,8 +63,8 @@ be authoritative.
 ## Reading Order
 
 1. Read this file for the current-state map and the contradiction summary.
-2. Read [`reports/README.md`](reports/README.md) before treating any individual
-   report as evidence.
+2. Read [`reports/README.md`](reports/README.md) and the root-cause report
+   before treating any individual result report as evidence.
 3. Inspect [`computations/README.md`](computations/README.md) when rerunning or
    comparing the Python and Wolfram computations.
 4. Use [`sources/README.md`](sources/README.md) to locate the OEIS snapshot,

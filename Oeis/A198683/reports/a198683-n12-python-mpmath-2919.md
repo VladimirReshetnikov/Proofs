@@ -1,15 +1,41 @@
 # OEIS A198683(12) Python/mpmath Investigation
 
-- Status: Historical investigation (conflicting)
+- Status: Historical investigation (invalidated as exact evidence)
 - Audience: Vladimir Reshetnikov, OEIS contributors, and future agents revisiting A198683
 - Scope: Compute `A198683(12)` with Python, `mpmath`, numerical deduplication, and special handling for one unmaterializable candidate
 - Created (UTC): 2026-05-20T22:13:19Z
 - Repository HEAD: f906a31c0f82f92946a3524ac72e70d392258403
 
 This report is preserved as one side of the local contradiction described in
-[the A198683 corpus README](../README.md). It concludes `A198683(12) = 2919`.
-The sibling Wolfram/Tungsten investigation concludes `2926`; this consolidation
-does not resolve that disagreement.
+[the A198683 corpus README](../README.md). It historically concluded
+`A198683(12) = 2919`. A later root-cause pass invalidates that conclusion as
+exact evidence: the `2919` count is a finite-precision numerical-deduplication
+artifact, not a certified equality count.
+
+See
+[`a198683-n12-contradiction-root-cause__9e7681d48134.md`](a198683-n12-contradiction-root-cause__9e7681d48134.md)
+before citing this report.
+
+## Erratum: Precision Plateau Was False Evidence
+
+The original report treated stability across `160`, `180`, `220`, and `260`
+decimal digits as evidence for `2919`. Rerunning the same script at higher
+precision breaks that plateau:
+
+| Decimal digits | Script result |
+|---:|---:|
+| 180 | 2919 |
+| 260 | 2919 |
+| 500 | 2919 |
+| 800 | 2920 |
+| 1000 | 2921 |
+| 1200 | 2922 |
+| 2000 | 2922 |
+| 3000 | 2924 |
+
+The monotone upward drift shows that the script merged near candidates too
+aggressively. The body below is retained as a historical record of the method
+and its assumptions, not as a current recommendation to use `2919`.
 
 ## Goal
 
@@ -29,14 +55,18 @@ The OEIS entry records:
 
 and historically `A198683(12)` was reported as “either 2919 or 2926”.
 
-This report presents a reproducible computation that claims to resolve the ambiguity.
+This report presents a reproducible computation that originally claimed to
+resolve the ambiguity. That claim is superseded by the erratum above.
 
-## Reported Result
+## Historical Reported Result
+
+The original reported result was:
 
 `A198683(12) = 2919`.
 
-This value is stable under multiple independent precision settings, and the same implementation reproduces
-all known `A198683(n)` values for `n <= 11`.
+This value is stable only across the limited precision settings tested by the
+original report. It is not stable under larger precision reruns, even though the
+same implementation reproduces the accepted `A198683(n)` counts for `n <= 11`.
 
 ## What Makes n=12 Special
 
@@ -87,7 +117,8 @@ We dedupe values using:
 1. A scale-invariant bucket key on `(Re, Im)` to keep candidate comparisons small.
 2. A tight `almosteq` check to confirm equality inside a bucket.
 
-This same dedupe logic reproduces the known values for `n<=11` exactly.
+This same dedupe logic reproduces the known counts for `n<=11`, but the erratum
+above shows that this is not enough to certify the `n=12` near-collision cases.
 
 ### 4. Special handling for the single “too-small-to-materialize” `n=12` value
 
@@ -115,7 +146,8 @@ python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 220 --n 1
 python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 260 --n 12
 ```
 
-Observed stability (all runs produced identical totals):
+Originally observed stability (all listed runs produced identical totals, now
+understood as a low-precision plateau):
 
 - `A198683(12) = 2919`
 - `candidate_total = 5139`

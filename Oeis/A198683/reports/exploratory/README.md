@@ -8,7 +8,9 @@
 
 This directory contains exploratory writeups about A198683. They are useful for
 background, but they should not be treated as an authoritative resolution of
-`A198683(12)`.
+`A198683(12)`. For the current interpretation of the `2919` versus `2926`
+reports, read
+[`../a198683-n12-contradiction-root-cause__9e7681d48134.md`](../a198683-n12-contradiction-root-cause__9e7681d48134.md).
 
 ## Contents
 
