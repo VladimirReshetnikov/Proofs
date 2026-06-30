@@ -1151,3 +1151,147 @@ Proof.
   - intros H Dom m v Hg. exact (soundness Dom m (v 0) G phi H v Hg).
   - apply completeness.
 Qed.
+
+(* ===================================================================== *)
+(*  [5] Infinite-theory completeness (compactness) for SENTENCE theories. *)
+(*  A sentence has no free variables, so any variable is fresh w.r.t. the  *)
+(*  (possibly infinite) base theory B -- which is what lets the Henkin     *)
+(*  witnesses work over an infinite theory.                                *)
+(* ===================================================================== *)
+
+(* robust membership solver for list app/cons rearrangements *)
+Ltac mem := rewrite ?in_app_iff in *; cbn [In] in *;
+            rewrite ?in_app_iff in *; cbn [In] in *; tauto.
+
+Definition Sentence (f : form) : Prop := forall n, ~ Free n f.
+Definition Sentences (B : form -> Prop) : Prop := forall f, B f -> Sentence f.
+
+(* "B together with the finite list G proves phi" *)
+Definition BProv (B : form -> Prop) (G : list form) (phi : form) : Prop :=
+  exists Gb, (forall x, In x Gb -> B x) /\ Prov (Gb ++ G) phi.
+Definition BCon (B : form -> Prop) (G : list form) : Prop := ~ BProv B G fBot.
+
+Lemma BProv_mono :
+  forall B G G' phi, (forall x, In x G -> In x G') -> BProv B G phi -> BProv B G' phi.
+Proof.
+  intros B G G' phi Hsub [Gb [HGb Hp]]. exists Gb. split; [ exact HGb | ].
+  apply (Prov_weaken (Gb ++ G) phi Hp). intros x Hx.
+  apply in_app_iff in Hx. apply in_app_iff. destruct Hx as [Hx | Hx];
+    [ left; exact Hx | right; apply Hsub; exact Hx ].
+Qed.
+
+Lemma BCon_cons_or :
+  forall B L phi, BCon B L -> BCon B (phi :: L) \/ BCon B (fImp phi fBot :: L).
+Proof.
+  intros B L phi HL. destruct (classic (BCon B (phi :: L))) as [H | H];
+    [ left; exact H | right ].
+  apply NNPP in H. destruct H as [Gb1 [HGb1 Hbad1]].
+  intros [Gb2 [HGb2 Hbad2]]. apply HL. exists (Gb1 ++ Gb2). split.
+  - intros x Hx. apply in_app_iff in Hx. destruct Hx as [Hx | Hx];
+      [ apply HGb1; exact Hx | apply HGb2; exact Hx ].
+  - apply (P_impE ((Gb1 ++ Gb2) ++ L) (fImp phi fBot) fBot).
+    + apply P_impI. apply (Prov_weaken (fImp phi fBot :: (Gb2 ++ L))).
+      * apply (Prov_exch (Gb2 ++ fImp phi fBot :: L)); [ intro x; mem | exact Hbad2 ].
+      * intros x Hx; mem.
+    + apply P_impI. apply (Prov_weaken (phi :: (Gb1 ++ L))).
+      * apply (Prov_exch (Gb1 ++ phi :: L)); [ intro x; mem | exact Hbad1 ].
+      * intros x Hx; mem.
+Qed.
+
+Lemma BCon_henkin_ex :
+  forall B L a, Sentences B -> BCon B (fEx a :: L) ->
+    BCon B (rename (inst (freshFor (fEx a :: L))) a :: fEx a :: L).
+Proof.
+  intros B L a HB Hcon [Gb [HGb Hbad]]. apply Hcon. exists Gb. split; [ exact HGb | ].
+  set (w := freshFor (fEx a :: L)) in *.
+  apply (Prov_exch (fEx a :: (Gb ++ L))); [ intro x; mem | ].
+  apply (henkin_ex_core (Gb ++ L) a w).
+  - exact (freshFor_not_free (fEx a :: L) (fEx a) (or_introl eq_refl)).
+  - intros g Hg. apply in_app_iff in Hg. destruct Hg as [Hg | Hg].
+    + exact (HB g (HGb g Hg) w).
+    + apply (freshFor_not_free (fEx a :: L) g). right. exact Hg.
+  - apply (Prov_exch (Gb ++ rename (inst w) a :: fEx a :: L)); [ intro x; mem | exact Hbad ].
+Qed.
+
+Lemma BCon_henkin_all :
+  forall B L a, Sentences B -> BCon B (fImp (fAll a) fBot :: L) ->
+    BCon B (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: L))) a) fBot
+            :: fImp (fAll a) fBot :: L).
+Proof.
+  intros B L a HB Hcon [Gb [HGb Hbad]]. apply Hcon. exists Gb. split; [ exact HGb | ].
+  set (w := freshFor (fImp (fAll a) fBot :: L)) in *.
+  apply (Prov_exch (fImp (fAll a) fBot :: (Gb ++ L))); [ intro x; mem | ].
+  apply (henkin_all_core (Gb ++ L) a w).
+  - intro Hf. apply (freshFor_not_free (fImp (fAll a) fBot :: L) (fImp (fAll a) fBot)
+                      (or_introl eq_refl)). simpl. left. exact Hf.
+  - intros g Hg. apply in_app_iff in Hg. destruct Hg as [Hg | Hg].
+    + exact (HB g (HGb g Hg) w).
+    + apply (freshFor_not_free (fImp (fAll a) fBot :: L) g). right. exact Hg.
+  - apply (Prov_exch (Gb ++ fImp (rename (inst w) a) fBot :: fImp (fAll a) fBot :: L));
+      [ intro x; mem | exact Hbad ].
+Qed.
+
+(* ---- the B-relative Lindenbaum chain ---- *)
+
+Definition stepB (B : form -> Prop) (L : list form) (phi : form) : list form :=
+  match excluded_middle_informative (BCon B (phi :: L)) with
+  | left _ =>
+      match phi with
+      | fEx a => rename (inst (freshFor (fEx a :: L))) a :: fEx a :: L
+      | _ => phi :: L
+      end
+  | right _ =>
+      match phi with
+      | fAll a => fImp (rename (inst (freshFor (fImp (fAll a) fBot :: L))) a) fBot
+                  :: fImp (fAll a) fBot :: L
+      | _ => fImp phi fBot :: L
+      end
+  end.
+
+Lemma stepB_con : forall B L phi, Sentences B -> BCon B L -> BCon B (stepB B L phi).
+Proof.
+  intros B L phi HB HL. unfold stepB.
+  destruct (excluded_middle_informative (BCon B (phi :: L))) as [Hc | Hnc].
+  - destruct phi; try exact Hc; apply BCon_henkin_ex; [ exact HB | exact Hc ].
+  - destruct (BCon_cons_or B L phi HL) as [Hbad | Hcn]; [ contradiction | ].
+    destruct phi; try exact Hcn; apply BCon_henkin_all; [ exact HB | exact Hcn ].
+Qed.
+
+Lemma stepB_incl : forall B L phi x, In x L -> In x (stepB B L phi).
+Proof.
+  intros B L phi x Hx. unfold stepB.
+  destruct (excluded_middle_informative (BCon B (phi :: L)));
+    destruct phi; cbn [In]; tauto.
+Qed.
+
+Lemma stepB_decides :
+  forall B L phi, In phi (stepB B L phi) \/ In (fImp phi fBot) (stepB B L phi).
+Proof.
+  intros B L phi. unfold stepB.
+  destruct (excluded_middle_informative (BCon B (phi :: L)));
+    [ left | right ]; destruct phi; cbn [In]; tauto.
+Qed.
+
+Fixpoint chainB (B : form -> Prop) (n : nat) : list form :=
+  match n with O => nil | S m => stepB B (chainB B m) (Enum m) end.
+
+Lemma chainB_incl : forall B m x, In x (chainB B m) -> In x (chainB B (S m)).
+Proof. intros B m x Hx. cbn [chainB]. apply stepB_incl. exact Hx. Qed.
+
+Lemma chainB_mono :
+  forall B n m, m <= n -> forall x, In x (chainB B m) -> In x (chainB B n).
+Proof.
+  intros B n. induction n as [| n IHn]; intros m Hle x Hx.
+  - assert (m = 0) by lia. subst m. exact Hx.
+  - apply Nat.le_succ_r in Hle. destruct Hle as [Hle | Heq].
+    + apply chainB_incl. exact (IHn m Hle x Hx).
+    + subst m. exact Hx.
+Qed.
+
+Lemma chainB_con :
+  forall B, Sentences B -> BCon B nil -> forall n, BCon B (chainB B n).
+Proof.
+  intros B HB H0. induction n as [| n IHn].
+  - exact H0.
+  - cbn [chainB]. apply stepB_con; [ exact HB | exact IHn ].
+Qed.
