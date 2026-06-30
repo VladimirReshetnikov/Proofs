@@ -36,7 +36,7 @@ The system is **exactly ZF** (and with the shared Choice axiom, exactly ZFC):
 | direction | statement | status | file |
 |-----------|-----------|--------|------|
 | forward   | `{Ext, Sep, Pow, Closure}` ⊢ Pairing, Union, Replacement, Infinity | **machine-checked** | [`Forward.v`](Forward.v) |
-| reverse   | ZF ⊢ Closure (every set-like relation admits a transitive closure) | **in progress** | [`Reverse.v`](Reverse.v) |
+| reverse   | ZF ⊢ Closure (every set-like relation admits a transitive closure) | **machine-checked** | [`Reverse.v`](Reverse.v) |
 
 Regularity and Choice are **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
@@ -82,6 +82,34 @@ trailing `Check` commands in `Forward.v` print these, certifying:
 
 The `Powerset` hypothesis appears in Pairing/Replacement/Infinity precisely in its
 host-providing role.
+
+The same audit on the reverse direction (`Check Closure_holds` in `Reverse.v`)
+shows `Closure_holds` depends on a nonempty domain, **Extensionality, Separation,
+Pairing, Union, Infinity, Replacement, Regularity** — but **not Powerset**. So the
+machine certifies the sharper statement *ZF − Powerset ⊢ Closure*. Note the
+pleasant mirror image:
+
+- **Powerset** is load-bearing forward (it hosts every set) and idle in reverse;
+- **Regularity** is idle forward and load-bearing in reverse (it powers
+  `no_self_mem`, hence injectivity of the numerals `onat`, which is what pins the
+  Replacement index when collecting `{Wₙ}`).
+
+## How the reverse direction works
+
+`Reverse.v` builds the transitive closure of `s` under a set-like `R` the textbook
+way, with the iteration carried on the *meta-level* `nat`:
+
+1. set-likeness yields a bounding function `boundf` (one bound per node, via
+   classical description), so the one-step predecessor set
+   `predsf t = { u : ∃ v ∈ t, R u v }` is a genuine set
+   (`⋃` of the `boundf`-image of `t`, then Separation);
+2. `gstep t = t ∪ predsf t`, and `Wₙ = iterate gstep s n` (Coq `Fixpoint` on `nat`);
+3. to collect `{Wₙ : n}` into one object set we feed the object numerals
+   `onat n ∈ Inf` (from Infinity) through Replacement via a map `Ffun` with
+   `Ffun (onat n) = Wₙ` — well-defined because `onat` is injective
+   (`onat_inj`, from `no_self_mem`);
+4. `w = ⋃ (image)` then contains `s = W₀` and is closed under `R`-predecessors
+   (`u R v`, `v ∈ Wₙ ⟹ u ∈ predsf Wₙ ⊆ W₍ₙ₊₁₎ ⊆ w`).
 
 ## Faithfulness (deep vs. shallow embedding)
 
