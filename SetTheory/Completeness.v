@@ -1536,3 +1536,94 @@ Lemma seal_valid :
   forall (V : Type) (mem : V -> V -> Prop) g,
     (forall e, Sat V mem e (seal g)) <-> (forall e, Sat V mem e g).
 Proof. intros V mem g. apply closeN_valid. Qed.
+
+
+(* ===================================================================== *)
+(*  [6b] The Closure schema as a closed formula, and its satisfaction     *)
+(*  bridge to AxClosureFO.                                                 *)
+(* ===================================================================== *)
+
+(* set-like binders  forall x, exists y, forall z   (z=0,y=1,x=2);
+   psi(z,x): 0->0, 1->2, (2+j)->(3+j) *)
+Definition r_sl : nat -> nat := fun n => match n with O => 0 | 1 => 2 | S (S j) => S (S (S j)) end.
+(* closure body binders forall s, exists w, forall d1, forall d2 (d2=0,d1=1,w=2,s=3);
+   psi(d1,d2): 0->1, 1->0, (2+j)->(4+j) *)
+Definition r_cl : nat -> nat := fun n => match n with O => 1 | 1 => O | S (S j) => S (S (S (S j))) end.
+
+Definition SetLikeForm (psi : form) : form :=
+  fAll (fEx (fAll (fImp (rename r_sl psi) (fMem 0 1)))).
+Definition ClosureBodyForm (psi : form) : form :=
+  fAll (fEx (fAnd (fAll (fImp (fMem 0 2) (fMem 0 1)))
+                  (fAll (fAll (fImp (fAnd (rename r_cl psi) (fMem 0 2)) (fMem 1 2)))))).
+Definition Closure_form (psi : form) : form :=
+  fImp (SetLikeForm psi) (ClosureBodyForm psi).
+
+Section ClosureBridge.
+  Variable V : Type.
+  Variable mem : V -> V -> Prop.
+
+  Lemma r_sl_env : forall z y x (e : nat -> V) n,
+    scons V z (scons V y (scons V x e)) (r_sl n) = scons V z (scons V x e) n.
+  Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+  Lemma r_cl_env : forall d2 d1 w s (e : nat -> V) n,
+    scons V d2 (scons V d1 (scons V w (scons V s e))) (r_cl n) = scons V d1 (scons V d2 e) n.
+  Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+  (* the rename-r_cl atom denotes relOf psi e d1 d2 *)
+  Lemma rcl_rel : forall psi e d1 d2 w s,
+    Sat V mem (scons V d2 (scons V d1 (scons V w (scons V s e)))) (rename r_cl psi)
+    <-> relOf V mem psi e d1 d2.
+  Proof.
+    intros psi e d1 d2 w s. unfold relOf.
+    rewrite (Sat_rename V mem d2 psi r_cl (scons V d2 (scons V d1 (scons V w (scons V s e))))).
+    apply (Sat_ext V mem d2 psi
+             (fun n => scons V d2 (scons V d1 (scons V w (scons V s e))) (r_cl n))
+             (scons V d1 (scons V d2 e)) (r_cl_env d2 d1 w s e)).
+  Qed.
+
+  Lemma bridge_SetLike : forall psi e,
+    Sat V mem e (SetLikeForm psi) <-> SetLike V mem (relOf V mem psi e).
+  Proof.
+    intros psi e. unfold SetLikeForm, SetLike. cbn [Sat]. split.
+    - intros H x. destruct (H x) as [y Hy]. exists y. intros z Hz.
+      apply Hy. unfold relOf in Hz.
+      rewrite (Sat_rename V mem z psi r_sl (scons V z (scons V y (scons V x e)))).
+      rewrite (Sat_ext V mem z psi (fun n => scons V z (scons V y (scons V x e)) (r_sl n))
+                       (scons V z (scons V x e)) (r_sl_env z y x e)).
+      exact Hz.
+    - intros H x. destruct (H x) as [y Hy]. exists y. intros z Hz.
+      apply Hy. unfold relOf.
+      rewrite (Sat_rename V mem z psi r_sl (scons V z (scons V y (scons V x e)))) in Hz.
+      rewrite (Sat_ext V mem z psi (fun n => scons V z (scons V y (scons V x e)) (r_sl n))
+                       (scons V z (scons V x e)) (r_sl_env z y x e)) in Hz.
+      exact Hz.
+  Qed.
+
+  Lemma bridge_ClosureBody : forall psi e,
+    Sat V mem e (ClosureBodyForm psi) <->
+    (forall s, exists w, Sub V mem s w /\
+        (forall u v, relOf V mem psi e u v -> mem v w -> mem u w)).
+  Proof.
+    intros psi e. unfold ClosureBodyForm, Sub. cbn [Sat]. split.
+    - intros H s. destruct (H s) as [w [Hsub Hcl]]. exists w. split.
+      + intros t Ht. exact (Hsub t Ht).
+      + intros u v Hrel Hvw. apply (Hcl u v). split; [ | exact Hvw ].
+        apply (proj2 (rcl_rel psi e u v w s)). exact Hrel.
+    - intros H s. destruct (H s) as [w [Hsub Hcl]]. exists w. split.
+      + intros t Ht. exact (Hsub t Ht).
+      + intros d1 d2 [Hr Hvw]. apply (Hcl d1 d2); [ | exact Hvw ].
+        apply (proj1 (rcl_rel psi e d1 d2 w s)). exact Hr.
+  Qed.
+
+  Lemma bridge_Closure : forall psi e,
+    Sat V mem e (Closure_form psi) <->
+    (SetLike V mem (relOf V mem psi e) ->
+     forall s, exists w, Sub V mem s w /\
+        (forall u v, relOf V mem psi e u v -> mem v w -> mem u w)).
+  Proof.
+    intros psi e. unfold Closure_form. cbn [Sat].
+    rewrite bridge_SetLike, bridge_ClosureBody. tauto.
+  Qed.
+
+End ClosureBridge.
