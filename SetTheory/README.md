@@ -37,6 +37,7 @@ The system is **exactly ZF** (and with the shared Choice axiom, exactly ZFC):
 |-----------|-----------|--------|------|
 | forward   | `{Ext, Sep, Pow, Closure}` ⊢ Pairing, Union, Replacement, Infinity | **machine-checked** | [`Forward.v`](Forward.v) |
 | reverse   | ZF ⊢ Closure (every set-like relation admits a transitive closure) | **machine-checked** | [`Reverse.v`](Reverse.v) |
+| forward, first-order | same trade with the schemas as genuine syntactic formulas | **machine-checked** | [`Deep.v`](Deep.v) |
 
 Regularity and Choice are **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
@@ -133,6 +134,47 @@ existential axioms `Separation`/`Powerset` as the operators `sep`/`power`, and, 
 `Reverse.v`, to extract a bounding function from set-likeness and to index the
 iteration). Set theory is classical anyway, and Choice rides along.
 
+## Closing the first-order gap (`Deep.v`)
+
+`Deep.v` removes the second-order rendering for the forward direction. It defines
+
+- a `form` datatype for the first-order language of set theory (`=`, `∈`, with De
+  Bruijn variables) and a Tarski satisfaction relation `Sat : (nat→V) → form → Prop`;
+- the schemas `SeparationFO` and `ClosureFO` quantifying over genuine **formulas**
+  `phi`, `psi` (interpreted by `Sat`/`relOf`), not over arbitrary `V→Prop`.
+
+It then re-derives Pairing, Union, **first-order Replacement**, and Infinity from
+those first-order schemas, *exhibiting the relation each step uses as a concrete
+formula* and verifying its `Sat`-meaning (`Hrel_pair`, `Hrel_mem`, `Hrel_succ`, and
+for Replacement the renamed graph via `Sat_rename`/`chi_spec`). This certifies
+formally — not as a meta-remark — that the schema-trade uses only **first-order
+definable** instances. The development is self-contained: `form`, `Sat`, the
+environment-extensionality lemma `Sat_ext`, and a De Bruijn renaming lemma
+`Sat_rename` (the one piece Replacement needs, to express "∃x∈a, ψ(y,x)" as a
+formula).
+
+**Why only the forward direction is deepened.** The forward trade ports cleanly
+because every relation it uses (`pairing`, `∈`, `successor`, a function graph) is a
+short first-order formula. The reverse direction does **not** port cheaply: its use
+of Replacement is essential, and the collected map `n ↦ Wₙ` is first-order
+definable only through the *syntactic recursion theorem*. `Reverse.v` deliberately
+sidesteps that with a meta-level `nat` iteration; rendering it first-order would
+mean formalizing the recursion theorem's defining formula — the genuinely heavy
+object-level construction. So the first-order content of the reverse direction *is*
+the recursion theorem, which is left at the (already verified) shallow level.
+
+## What remains
+
+`Deep.v` upgrades faithfulness from second-order to **first-order schemas** for the
+forward direction, but everything here is still **model-theoretic** (satisfaction in
+Coq models). A fully **proof-theoretic** certificate — a syntactic
+`Provable(T, φ) ↔ Provable(ZF, φ)` — would additionally need a deductive calculus
+with Gödel soundness+completeness (so that `⊨` over all models coincides with `⊢`),
+or hand-built object derivations of every traded axiom (infeasible for the reverse
+direction's recursion). That is the identified last mile; the model-theoretic
+equivalence proven here is what the standard meta-theorem turns into deductive
+equivalence.
+
 ## Building
 
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
@@ -140,6 +182,8 @@ Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 ```sh
 coqc Forward.v
 coqc Reverse.v
+coqc Deep.v
 ```
 
 No external libraries beyond the standard library (`Stdlib.Logic.ClassicalEpsilon`).
+The three files are independent (no inter-file `Require`).

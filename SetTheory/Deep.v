@@ -63,6 +63,79 @@ Fixpoint Sat (e : nat -> V) (f : form) {struct f} : Prop :=
 
 Definition fIff (a b : form) : form := fAnd (fImp a b) (fImp b a).
 
+(* ------------ satisfaction respects pointwise-equal environments ------- *)
+
+Lemma scons_ext :
+  forall d e1 e2, (forall n, e1 n = e2 n) -> forall n, scons d e1 n = scons d e2 n.
+Proof. intros d e1 e2 H n. destruct n; simpl; [ reflexivity | apply H ]. Qed.
+
+Lemma Sat_ext :
+  forall f e1 e2, (forall n, e1 n = e2 n) -> (Sat e1 f <-> Sat e2 f).
+Proof.
+  induction f; intros e1 e2 H; simpl.
+  - rewrite (H n), (H n0); tauto.
+  - rewrite (H n), (H n0); tauto.
+  - tauto.
+  - specialize (IHf1 e1 e2 H); specialize (IHf2 e1 e2 H); tauto.
+  - specialize (IHf1 e1 e2 H); specialize (IHf2 e1 e2 H); tauto.
+  - specialize (IHf1 e1 e2 H); specialize (IHf2 e1 e2 H); tauto.
+  - split; intros HH d.
+    + apply (proj1 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). apply HH.
+    + apply (proj2 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). apply HH.
+  - split; intros [d HH]; exists d.
+    + apply (proj1 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). exact HH.
+    + apply (proj2 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). exact HH.
+Qed.
+
+(* ------------------ renaming of De Bruijn variables -------------------- *)
+
+Definition up (r : nat -> nat) : nat -> nat :=
+  fun n => match n with O => O | S k => S (r k) end.
+
+Fixpoint rename (r : nat -> nat) (f : form) {struct f} : form :=
+  match f with
+  | fMem i j => fMem (r i) (r j)
+  | fEq i j  => fEq (r i) (r j)
+  | fBot     => fBot
+  | fImp a b => fImp (rename r a) (rename r b)
+  | fAnd a b => fAnd (rename r a) (rename r b)
+  | fOr a b  => fOr (rename r a) (rename r b)
+  | fAll a   => fAll (rename (up r) a)
+  | fEx a    => fEx (rename (up r) a)
+  end.
+
+Lemma up_env :
+  forall r d e n, scons d e (up r n) = scons d (fun m => e (r m)) n.
+Proof. intros r d e n. destruct n; reflexivity. Qed.
+
+Lemma Sat_rename :
+  forall f r e, Sat e (rename r f) <-> Sat (fun n => e (r n)) f.
+Proof.
+  induction f; intros r e; simpl.
+  - tauto.
+  - tauto.
+  - tauto.
+  - specialize (IHf1 r e); specialize (IHf2 r e); tauto.
+  - specialize (IHf1 r e); specialize (IHf2 r e); tauto.
+  - specialize (IHf1 r e); specialize (IHf2 r e); tauto.
+  - split; intros HH d; specialize (HH d).
+    + apply (proj1 (Sat_ext f (fun n => scons d e (up r n))
+                            (scons d (fun m => e (r m))) (fun n => up_env r d e n))).
+      apply (proj1 (IHf (up r) (scons d e))). exact HH.
+    + apply (proj2 (IHf (up r) (scons d e))).
+      apply (proj2 (Sat_ext f (fun n => scons d e (up r n))
+                            (scons d (fun m => e (r m))) (fun n => up_env r d e n))).
+      exact HH.
+  - split; intros [d HH]; exists d.
+    + apply (proj1 (Sat_ext f (fun n => scons d e (up r n))
+                            (scons d (fun m => e (r m))) (fun n => up_env r d e n))).
+      apply (proj1 (IHf (up r) (scons d e))). exact HH.
+    + apply (proj2 (IHf (up r) (scons d e))).
+      apply (proj2 (Sat_ext f (fun n => scons d e (up r n))
+                            (scons d (fun m => e (r m))) (fun n => up_env r d e n))).
+      exact HH.
+Qed.
+
 (* --------------- the surviving axioms, as first-order schemas ---------- *)
 
 Hypothesis Extensionality :
@@ -301,8 +374,68 @@ Proof.
     + exact Hsx.
 Qed.
 
+(* ============================ REPLACEMENT =========================== *)
+
+Definition Functional (R : V -> V -> Prop) : Prop :=
+  forall x y1 y2, R y1 x -> R y2 x -> y1 = y2.
+
+(* swap vars 0,1 and shift the rest up by one (to pass a new binder) *)
+Definition rho : nat -> nat :=
+  fun n => match n with 0 => 1 | 1 => 0 | S (S k) => S (S (S k)) end.
+
+(* separation predicate for the image: "exists x (=var0 here), x in a /\ psi(y,x)" *)
+Definition chi (psi : form) : form := fEx (fAnd (fMem 0 2) (rename rho psi)).
+
+Lemma rho_env :
+  forall d y a e n, (scons d (scons y (scons a e))) (rho n) = (scons y (scons d e)) n.
+Proof. intros d y a e n. destruct n as [| [| k]]; reflexivity. Qed.
+
+Lemma chi_spec :
+  forall psi e a y,
+    Sat (scons y (scons a e)) (chi psi) <-> exists d, d ∈ a /\ relOf psi e y d.
+Proof.
+  intros psi e a y. unfold chi, relOf. simpl. split.
+  - intros [d [Hda Hpsi]]. exists d. split.
+    + exact Hda.
+    + apply (proj1 (Sat_rename psi rho (scons d (scons y (scons a e))))) in Hpsi.
+      apply (proj1 (Sat_ext psi (fun n => scons d (scons y (scons a e)) (rho n))
+                            (scons y (scons d e)) (fun n => rho_env d y a e n))) in Hpsi.
+      exact Hpsi.
+  - intros [d [Hda Hpsi]]. exists d. split.
+    + exact Hda.
+    + apply (proj2 (Sat_rename psi rho (scons d (scons y (scons a e))))).
+      apply (proj2 (Sat_ext psi (fun n => scons d (scons y (scons a e)) (rho n))
+                            (scons y (scons d e)) (fun n => rho_env d y a e n))).
+      exact Hpsi.
+Qed.
+
+Theorem ReplacementFO :
+  forall (psi : form) (e : nat -> V),
+    Functional (relOf psi e) ->
+    forall a, exists r, forall y, y ∈ r <-> exists x, x ∈ a /\ relOf psi e y x.
+Proof.
+  intros psi e Hfun a.
+  assert (HSL : SetLike (relOf psi e)).
+  { intro x. destruct (classic (exists y0, relOf psi e y0 x)) as [[y0 Hy0] | Hno].
+    - exists (power y0). intros z Hz.
+      assert (z = y0) by (apply (Hfun x z y0); [ exact Hz | exact Hy0 ]).
+      subst z. apply self_in_power.
+    - exists emptyset. intros z Hz. exfalso. apply Hno. exists z. exact Hz. }
+  destruct (ClosureFO psi e HSL a) as [w [Hsub Hclosed]].
+  exists (sepF w (chi psi) (scons a e)).
+  intro y. split.
+  - intro H. apply (proj1 (sepF_spec w (chi psi) (scons a e) y)) in H.
+    destruct H as [_ Hpred]. exact (proj1 (chi_spec psi e a y) Hpred).
+  - intro H. apply (proj2 (sepF_spec w (chi psi) (scons a e) y)). split.
+    + destruct H as [x [Hxa Hyx]]. apply (Hclosed y x).
+      * exact Hyx.
+      * apply Hsub. exact Hxa.
+    + exact (proj2 (chi_spec psi e a y) H).
+Qed.
+
 End Deep.
 
 Check Pairing.
 Check Union.
+Check ReplacementFO.
 Check Infinity.
