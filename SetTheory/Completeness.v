@@ -1272,16 +1272,16 @@ Proof.
     [ left | right ]; destruct phi; cbn [In]; tauto.
 Qed.
 
-Fixpoint chainB (B : form -> Prop) (n : nat) : list form :=
-  match n with O => nil | S m => stepB B (chainB B m) (Enum m) end.
+Fixpoint chainB (B : form -> Prop) (L0 : list form) (n : nat) : list form :=
+  match n with O => L0 | S m => stepB B (chainB B L0 m) (Enum m) end.
 
-Lemma chainB_incl : forall B m x, In x (chainB B m) -> In x (chainB B (S m)).
-Proof. intros B m x Hx. cbn [chainB]. apply stepB_incl. exact Hx. Qed.
+Lemma chainB_incl : forall B L0 m x, In x (chainB B L0 m) -> In x (chainB B L0 (S m)).
+Proof. intros B L0 m x Hx. cbn [chainB]. apply stepB_incl. exact Hx. Qed.
 
 Lemma chainB_mono :
-  forall B n m, m <= n -> forall x, In x (chainB B m) -> In x (chainB B n).
+  forall B L0 n m, m <= n -> forall x, In x (chainB B L0 m) -> In x (chainB B L0 n).
 Proof.
-  intros B n. induction n as [| n IHn]; intros m Hle x Hx.
+  intros B L0 n. induction n as [| n IHn]; intros m Hle x Hx.
   - assert (m = 0) by lia. subst m. exact Hx.
   - apply Nat.le_succ_r in Hle. destruct Hle as [Hle | Heq].
     + apply chainB_incl. exact (IHn m Hle x Hx).
@@ -1289,9 +1289,212 @@ Proof.
 Qed.
 
 Lemma chainB_con :
-  forall B, Sentences B -> BCon B nil -> forall n, BCon B (chainB B n).
+  forall B L0, Sentences B -> BCon B L0 -> forall n, BCon B (chainB B L0 n).
 Proof.
-  intros B HB H0. induction n as [| n IHn].
+  intros B L0 HB H0. induction n as [| n IHn].
   - exact H0.
   - cbn [chainB]. apply stepB_con; [ exact HB | exact IHn ].
+Qed.
+
+(* ---- the maximal-consistent Henkin theory over (B, L0), and completeness ---- *)
+
+Definition Tinf (B : form -> Prop) (L0 : list form) (phi : form) : Prop :=
+  exists n, BProv B (chainB B L0 n) phi.
+
+Lemma BProv_weaken_chain :
+  forall B L0 n n' phi, n <= n' ->
+    BProv B (chainB B L0 n) phi -> BProv B (chainB B L0 n') phi.
+Proof.
+  intros B L0 n n' phi Hle H. apply (BProv_mono B (chainB B L0 n)); [ | exact H ].
+  intros x Hx. apply (chainB_mono B L0 n' n Hle x Hx).
+Qed.
+
+Lemma BProv_mp : forall B L a b, BProv B L (fImp a b) -> BProv B L a -> BProv B L b.
+Proof.
+  intros B L a b [Gb1 [HGb1 H1]] [Gb2 [HGb2 H2]]. exists (Gb1 ++ Gb2). split.
+  - intros x Hx. apply in_app_iff in Hx. destruct Hx as [Hx | Hx];
+      [ apply HGb1; exact Hx | apply HGb2; exact Hx ].
+  - apply (P_impE ((Gb1 ++ Gb2) ++ L) a b).
+    + apply (Prov_weaken (Gb1 ++ L) (fImp a b) H1). intros x Hx; mem.
+    + apply (Prov_weaken (Gb2 ++ L) a H2). intros x Hx; mem.
+Qed.
+
+Lemma stepB_pos_in : forall B L phi, BCon B (phi :: L) -> In phi (stepB B L phi).
+Proof.
+  intros B L phi Hc. unfold stepB.
+  destruct (excluded_middle_informative (BCon B (phi :: L))) as [H | H];
+    [ destruct phi; cbn [In]; tauto | contradiction ].
+Qed.
+
+Lemma stepB_neg_in : forall B L phi, ~ BCon B (phi :: L) -> In (fImp phi fBot) (stepB B L phi).
+Proof.
+  intros B L phi Hnc. unfold stepB.
+  destruct (excluded_middle_informative (BCon B (phi :: L))) as [H | H];
+    [ contradiction | destruct phi; cbn [In]; tauto ].
+Qed.
+
+Lemma stepB_ex_pos :
+  forall B L a, BCon B (fEx a :: L) ->
+    In (rename (inst (freshFor (fEx a :: L))) a) (stepB B L (fEx a)).
+Proof.
+  intros B L a Hc. unfold stepB.
+  destruct (excluded_middle_informative (BCon B (fEx a :: L))) as [H | H];
+    [ cbn [In]; tauto | contradiction ].
+Qed.
+
+Lemma stepB_all_neg :
+  forall B L a, ~ BCon B (fAll a :: L) ->
+    In (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: L))) a) fBot) (stepB B L (fAll a)).
+Proof.
+  intros B L a Hnc. unfold stepB.
+  destruct (excluded_middle_informative (BCon B (fAll a :: L))) as [H | H];
+    [ contradiction | cbn [In]; tauto ].
+Qed.
+
+Lemma Tinf_cons : forall B L0, Sentences B -> BCon B L0 -> ~ Tinf B L0 fBot.
+Proof. intros B L0 HB H0 [n Hn]. exact (chainB_con B L0 HB H0 n Hn). Qed.
+
+Lemma Tinf_compl : forall B L0 phi, Tinf B L0 phi \/ Tinf B L0 (fImp phi fBot).
+Proof.
+  intros B L0 phi. destruct (Enum_surj phi) as [n Hn]. subst phi.
+  destruct (stepB_decides B (chainB B L0 n) (Enum n)) as [Hin | Hin].
+  - left. exists (S n). exists nil. split; [ intros x [] | ].
+    cbn [chainB app]. apply P_ass. exact Hin.
+  - right. exists (S n). exists nil. split; [ intros x [] | ].
+    cbn [chainB app]. apply P_ass. exact Hin.
+Qed.
+
+Lemma Tinf_bound :
+  forall B L0 G, (forall x, In x G -> Tinf B L0 x) ->
+    exists n Gb, (forall x, In x Gb -> B x) /\
+                 (forall x, In x G -> Prov (Gb ++ chainB B L0 n) x).
+Proof.
+  intros B L0 G. induction G as [| g G' IHG]; intro Hall.
+  - exists 0, nil. split; [ intros x [] | intros x [] ].
+  - destruct (Hall g (or_introl eq_refl)) as [ng [Gbg [HGbg Hpg]]].
+    destruct IHG as [N' [Gb' [HGb' HG']]]; [ intros x Hx; apply Hall; right; exact Hx | ].
+    exists (Nat.max ng N'), (Gbg ++ Gb'). split.
+    + intros x Hx. apply in_app_iff in Hx. destruct Hx as [Hx | Hx];
+        [ apply HGbg; exact Hx | apply HGb'; exact Hx ].
+    + intros x [Heq | Hx].
+      * subst x. apply (Prov_weaken (Gbg ++ chainB B L0 ng) g Hpg).
+        intros y Hy. apply in_app_iff in Hy. apply in_app_iff. destruct Hy as [Hy | Hy].
+        -- left. apply in_app_iff. left. exact Hy.
+        -- right. apply (chainB_mono B L0 (Nat.max ng N') ng); [ lia | exact Hy ].
+      * apply (Prov_weaken (Gb' ++ chainB B L0 N') x (HG' x Hx)).
+        intros y Hy. apply in_app_iff in Hy. apply in_app_iff. destruct Hy as [Hy | Hy].
+        -- left. apply in_app_iff. right. exact Hy.
+        -- right. apply (chainB_mono B L0 (Nat.max ng N') N'); [ lia | exact Hy ].
+Qed.
+
+Lemma Tinf_closed :
+  forall B L0 G phi, (forall x, In x G -> Tinf B L0 x) -> Prov G phi -> Tinf B L0 phi.
+Proof.
+  intros B L0 G phi Hall Hp. destruct (Tinf_bound B L0 G Hall) as [N [Gb [HGb HN]]].
+  exists N. exists Gb. split; [ exact HGb | ].
+  exact (Prov_cut G phi Hp (Gb ++ chainB B L0 N) HN).
+Qed.
+
+Lemma Tinf_henkin_ex :
+  forall B L0, Sentences B -> BCon B L0 -> forall a,
+    Tinf B L0 (fEx a) -> exists k, Tinf B L0 (rename (inst k) a).
+Proof.
+  intros B L0 HB H0 a [N HN]. destruct (Enum_surj (fEx a)) as [m Hm].
+  destruct (classic (BCon B (fEx a :: chainB B L0 m))) as [Hpos | Hnc].
+  - exists (freshFor (fEx a :: chainB B L0 m)). exists (S m). exists nil. split;
+      [ intros x [] | ].
+    cbn [chainB app]. rewrite Hm. apply P_ass. apply stepB_ex_pos. exact Hpos.
+  - exfalso.
+    assert (Hneg : BProv B (chainB B L0 (S m)) (fImp (fEx a) fBot)).
+    { exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
+      apply P_ass. apply stepB_neg_in. exact Hnc. }
+    apply (chainB_con B L0 HB H0 (Nat.max N (S m))).
+    apply (BProv_mp B (chainB B L0 (Nat.max N (S m))) (fEx a) fBot).
+    + apply (BProv_weaken_chain B L0 (S m) (Nat.max N (S m))); [ lia | exact Hneg ].
+    + apply (BProv_weaken_chain B L0 N (Nat.max N (S m))); [ lia | exact HN ].
+Qed.
+
+Lemma Tinf_henkin_all :
+  forall B L0, Sentences B -> BCon B L0 -> forall a,
+    (forall k, Tinf B L0 (rename (inst k) a)) -> Tinf B L0 (fAll a).
+Proof.
+  intros B L0 HB H0 a Hall.
+  destruct (Tinf_compl B L0 (fAll a)) as [Hpos | Hneg]; [ exact Hpos | ].
+  exfalso. destruct (Enum_surj (fAll a)) as [m Hm].
+  destruct (classic (BCon B (fAll a :: chainB B L0 m))) as [Hc | Hnc].
+  - assert (Hposfa : Tinf B L0 (fAll a)).
+    { exists (S m). exists nil. split; [ intros x [] | ].
+      cbn [chainB app]. rewrite Hm. apply P_ass. apply stepB_pos_in. exact Hc. }
+    apply (Tinf_cons B L0 HB H0).
+    destruct Hposfa as [n1 H1]. destruct Hneg as [n2 H2]. exists (Nat.max n1 n2).
+    apply (BProv_mp B (chainB B L0 (Nat.max n1 n2)) (fAll a) fBot).
+    + apply (BProv_weaken_chain B L0 n2 (Nat.max n1 n2)); [ lia | exact H2 ].
+    + apply (BProv_weaken_chain B L0 n1 (Nat.max n1 n2)); [ lia | exact H1 ].
+  - assert (Hnegw : BProv B (chainB B L0 (S m))
+                      (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a) fBot)).
+    { exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
+      apply P_ass. apply stepB_all_neg. exact Hnc. }
+    set (w := freshFor (fImp (fAll a) fBot :: chainB B L0 m)) in *.
+    destruct (Hall w) as [n1 H1].
+    apply (Tinf_cons B L0 HB H0). exists (Nat.max n1 (S m)).
+    apply (BProv_mp B (chainB B L0 (Nat.max n1 (S m))) (rename (inst w) a) fBot).
+    + apply (BProv_weaken_chain B L0 (S m) (Nat.max n1 (S m))); [ lia | exact Hnegw ].
+    + apply (BProv_weaken_chain B L0 n1 (Nat.max n1 (S m))); [ lia | exact H1 ].
+Qed.
+
+(* MODEL EXISTENCE for a consistent sentence theory with a finite extra list. *)
+Theorem model_of_BCon :
+  forall B L0, Sentences B -> BCon B L0 ->
+    exists (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+      (forall g, B g -> Sat Dom m v g) /\ (forall g, In g L0 -> Sat Dom m v g).
+Proof.
+  intros B L0 HB H0.
+  destruct (model_exists (Tinf B L0)
+              (Tinf_cons B L0 HB H0) (Tinf_compl B L0) (Tinf_closed B L0)
+              (Tinf_henkin_ex B L0 HB H0) (Tinf_henkin_all B L0 HB H0)) as [Dom [m [v Hsat]]].
+  exists Dom, m, v. split.
+  - intros g Hg. apply (proj2 (Hsat g)). exists 0. exists (g :: nil). split.
+    + intros x [Heq | []]. subst x. exact Hg.
+    + cbn [chainB app]. apply P_ass. left. reflexivity.
+  - intros g Hg. apply (proj2 (Hsat g)). exists 0. exists nil. split.
+    + intros x [].
+    + cbn [chainB app]. apply P_ass. exact Hg.
+Qed.
+
+(* INFINITE COMPLETENESS: validity in all models of a sentence theory B
+   implies provability of a sentence psi from B. *)
+Theorem completeness_inf :
+  forall B psi, Sentences B -> Sentence psi ->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, B g -> Sat Dom m v g) -> Sat Dom m v psi) ->
+    BProv B nil psi.
+Proof.
+  intros B psi HB Hpsi Hval. apply NNPP. intro Hnp.
+  assert (HBcon : BCon B (fImp psi fBot :: nil)).
+  { intros [Gb [HGb Hbad]]. apply Hnp. exists Gb. split; [ exact HGb | ].
+    rewrite app_nil_r. apply Prov_dne. apply P_impI.
+    apply (Prov_exch (Gb ++ fImp psi fBot :: nil)); [ intro x; mem | exact Hbad ]. }
+  destruct (model_of_BCon B (fImp psi fBot :: nil) HB HBcon) as [Dom [m [v [HsatB HsatL]]]].
+  assert (Hp : Sat Dom m v psi) by (apply Hval; exact HsatB).
+  assert (Hnpv : Sat Dom m v (fImp psi fBot)) by (apply HsatL; left; reflexivity).
+  simpl in Hnpv. exact (Hnpv Hp).
+Qed.
+
+(* DEDUCTIVE EQUIVALENCE: two sentence theories with the same models prove
+   the same sentences. *)
+Theorem theory_equiv :
+  forall B1 B2, Sentences B1 -> Sentences B2 ->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, B1 g -> Sat Dom m v g) <-> (forall g, B2 g -> Sat Dom m v g)) ->
+    forall psi, Sentence psi -> (BProv B1 nil psi <-> BProv B2 nil psi).
+Proof.
+  intros B1 B2 HB1 HB2 Hsame psi Hpsi. split; intro H.
+  - apply completeness_inf; [ exact HB2 | exact Hpsi | ]. intros Dom m v HB2sat.
+    destruct H as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
+    apply (soundness Dom m (v 0) Gb psi Hp v).
+    intros x Hx. apply (proj2 (Hsame Dom m v) HB2sat). apply HGb. exact Hx.
+  - apply completeness_inf; [ exact HB1 | exact Hpsi | ]. intros Dom m v HB1sat.
+    destruct H as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
+    apply (soundness Dom m (v 0) Gb psi Hp v).
+    intros x Hx. apply (proj1 (Hsame Dom m v) HB1sat). apply HGb. exact Hx.
 Qed.
