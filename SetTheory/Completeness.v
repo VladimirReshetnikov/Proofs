@@ -18,7 +18,9 @@
 (* ===================================================================== *)
 
 From SetTheory Require Import Deep.
-From Stdlib Require Import List PeanoNat Classical.
+From Stdlib Require Import List PeanoNat Classical Lia Setoid.
+From Stdlib Require Import ClassicalEpsilon.
+From Stdlib Require Import FunctionalExtensionality PropExtensionality ProofIrrelevance.
 Import ListNotations.
 
 (* ====================== [1] proof-theory infrastructure =============== *)
@@ -219,6 +221,58 @@ Proof.
   - rewrite (IHf (up r)); reflexivity.
 Qed.
 
+(* renamings agreeing pointwise act equally *)
+Lemma rename_ext : forall f r r', (forall n, r n = r' n) -> rename r f = rename r' f.
+Proof.
+  induction f; intros r r' H; simpl; try reflexivity.
+  - rewrite (H n), (H n0); reflexivity.
+  - rewrite (H n), (H n0); reflexivity.
+  - rewrite (IHf1 r r' H), (IHf2 r r' H); reflexivity.
+  - rewrite (IHf1 r r' H), (IHf2 r r' H); reflexivity.
+  - rewrite (IHf1 r r' H), (IHf2 r r' H); reflexivity.
+  - f_equal. apply IHf. intro n; destruct n; simpl; [ reflexivity | rewrite H; reflexivity ].
+  - f_equal. apply IHf. intro n; destruct n; simpl; [ reflexivity | rewrite H; reflexivity ].
+Qed.
+
+(* renaming composition *)
+Lemma rename_comp :
+  forall f r r', rename r (rename r' f) = rename (fun n => r (r' n)) f.
+Proof.
+  induction f; intros r r'; simpl; try reflexivity.
+  - rewrite IHf1, IHf2; reflexivity.
+  - rewrite IHf1, IHf2; reflexivity.
+  - rewrite IHf1, IHf2; reflexivity.
+  - f_equal. rewrite IHf. apply rename_ext. intro n; destruct n; simpl; reflexivity.
+  - f_equal. rewrite IHf. apply rename_ext. intro n; destruct n; simpl; reflexivity.
+Qed.
+
+(* cons on renamings, and the identity inst k . up sigma = scons_nat k sigma *)
+Definition scons_nat (k : nat) (s : nat -> nat) : nat -> nat :=
+  fun n => match n with O => k | S m => s m end.
+
+Lemma inst_up : forall k s n, inst k (up s n) = scons_nat k s n.
+Proof. intros k s n. destruct n; reflexivity. Qed.
+
+Lemma rename_inst_up :
+  forall a k s, rename (inst k) (rename (up s) a) = rename (scons_nat k s) a.
+Proof.
+  intros a k s. rewrite rename_comp. apply rename_ext. intro n. apply inst_up.
+Qed.
+
+Lemma rename_id : forall a, rename (fun n => n) a = a.
+Proof.
+  induction a; simpl; try reflexivity.
+  - rewrite IHa1, IHa2; reflexivity.
+  - rewrite IHa1, IHa2; reflexivity.
+  - rewrite IHa1, IHa2; reflexivity.
+  - f_equal. transitivity (rename (fun n => n) a).
+    + apply rename_ext. intro n; destruct n; reflexivity.
+    + exact IHa.
+  - f_equal. transitivity (rename (fun n => n) a).
+    + apply rename_ext. intro n; destruct n; reflexivity.
+    + exact IHa.
+Qed.
+
 (* ================ [3a] maximal-consistent Henkin theory =============== *)
 
 (* discharge "every element of an explicit context is in T" *)
@@ -347,5 +401,119 @@ Section CanonicalModel.
       + apply P_ass. left. reflexivity.
       + apply P_ass. right. right. left. reflexivity.
   Qed.
+
+  (* ---- [3b] the quotient term model and the truth lemma ---- *)
+
+  (* canonical representative of a ceq-class, via Hilbert epsilon *)
+  Definition rep (i : nat) : nat := epsilon (inhabits 0) (fun j => ceq i j).
+
+  Lemma rep_ceq : forall i, ceq i (rep i).
+  Proof.
+    intro i. apply (epsilon_spec (inhabits 0) (fun j => ceq i j)).
+    exists i. apply ceq_refl.
+  Qed.
+
+  Lemma rep_respects : forall i j, ceq i j -> rep i = rep j.
+  Proof.
+    intros i j H. unfold rep. f_equal.
+    apply functional_extensionality. intro k. apply propositional_extensionality.
+    split; intro Hk.
+    - apply (ceq_trans j i k); [ apply ceq_sym; exact H | exact Hk ].
+    - apply (ceq_trans i j k); [ exact H | exact Hk ].
+  Qed.
+
+  Lemma rep_idem : forall i, rep (rep i) = rep i.
+  Proof. intro i. apply rep_respects. apply ceq_sym. apply rep_ceq. Qed.
+
+  Definition D : Type := { n : nat | rep n = n }.
+  Definition mkD (i : nat) : D := exist _ (rep i) (rep_idem i).
+  Definition memD (x y : D) : Prop := cmem (proj1_sig x) (proj1_sig y).
+
+  Lemma D_eq : forall x y : D, proj1_sig x = proj1_sig y -> x = y.
+  Proof.
+    intros [x px] [y py] H. simpl in H. subst y. f_equal. apply proof_irrelevance.
+  Qed.
+
+  Lemma mkD_proj : forall x : D, mkD (proj1_sig x) = x.
+  Proof. intro x. destruct x as [v pv]. apply D_eq. simpl. exact pv. Qed.
+
+  (* The truth lemma, by strong induction on formula size: under the canonical *)
+  (* variable assignment i |-> [s i], satisfaction matches membership in T.    *)
+  Lemma truth :
+    forall n a, fsize a <= n ->
+      forall s : nat -> nat,
+        Sat D memD (fun i => mkD (s i)) a <-> T (rename s a).
+  Proof.
+    induction n as [| n IH]; intros a Hsz s.
+    - destruct a; simpl in Hsz; lia.
+    - destruct a as [i j | i j | | a1 a2 | a1 a2 | a1 a2 | a1 | a1 ]; simpl in Hsz.
+      + (* fMem *) simpl. unfold memD. simpl. split; intro Hm.
+        * apply (cmem_cong (rep (s i)) (s i) (rep (s j)) (s j));
+            [ apply ceq_sym; apply rep_ceq | apply ceq_sym; apply rep_ceq | exact Hm ].
+        * apply (cmem_cong (s i) (rep (s i)) (s j) (rep (s j)));
+            [ apply rep_ceq | apply rep_ceq | exact Hm ].
+      + (* fEq *) simpl. split; intro He.
+        * assert (Hr : rep (s i) = rep (s j)).
+          { change (proj1_sig (mkD (s i)) = proj1_sig (mkD (s j))). rewrite He. reflexivity. }
+          apply (ceq_trans (s i) (rep (s j)) (s j)).
+          -- rewrite <- Hr. apply rep_ceq.
+          -- apply ceq_sym. apply rep_ceq.
+        * apply D_eq. simpl. apply rep_respects. exact He.
+      + (* fBot *) simpl. split; [ intro H; destruct H | intro H; exfalso; exact (T_cons H) ].
+      + (* fImp *) simpl.
+        rewrite (IH a1 ltac:(lia) s), (IH a2 ltac:(lia) s).
+        symmetry. apply T_imp_iff.
+      + (* fAnd *) simpl.
+        rewrite (IH a1 ltac:(lia) s), (IH a2 ltac:(lia) s).
+        symmetry. apply T_and_iff.
+      + (* fOr *) simpl.
+        rewrite (IH a1 ltac:(lia) s), (IH a2 ltac:(lia) s).
+        symmetry. apply T_or_iff.
+      + (* fAll *) simpl. split.
+        * intros HSat. apply (proj2 (T_all_iff (rename (up s) a1))). intro k.
+          rewrite (rename_inst_up a1 k s).
+          apply (proj1 (IH a1 ltac:(lia) (scons_nat k s))).
+          assert (Hpt : forall n0, scons D (mkD k) (fun i => mkD (s i)) n0
+                                   = (fun i => mkD (scons_nat k s i)) n0).
+          { intro n0; destruct n0; reflexivity. }
+          apply (proj1 (Sat_ext D memD (mkD 0) a1 _ _ Hpt)). apply (HSat (mkD k)).
+        * intros HT d.
+          pose proof (proj1 (T_all_iff (rename (up s) a1)) HT (proj1_sig d)) as Hk.
+          rewrite (rename_inst_up a1 (proj1_sig d) s) in Hk.
+          apply (proj2 (IH a1 ltac:(lia) (scons_nat (proj1_sig d) s))) in Hk.
+          assert (Hpt : forall n0, (fun i => mkD (scons_nat (proj1_sig d) s i)) n0
+                                   = scons D d (fun i => mkD (s i)) n0).
+          { intro n0; destruct n0; simpl; [ apply mkD_proj | reflexivity ]. }
+          apply (proj1 (Sat_ext D memD (mkD 0) a1 _ _ Hpt)). exact Hk.
+      + (* fEx *) simpl. split.
+        * intros [d HSat]. apply (proj2 (T_ex_iff (rename (up s) a1))).
+          exists (proj1_sig d). rewrite (rename_inst_up a1 (proj1_sig d) s).
+          apply (proj1 (IH a1 ltac:(lia) (scons_nat (proj1_sig d) s))).
+          assert (Hpt : forall n0, scons D d (fun i => mkD (s i)) n0
+                                   = (fun i => mkD (scons_nat (proj1_sig d) s i)) n0).
+          { intro n0; destruct n0; simpl; [ symmetry; apply mkD_proj | reflexivity ]. }
+          apply (proj1 (Sat_ext D memD (mkD 0) a1 _ _ Hpt)). exact HSat.
+        * intro HT. destruct (proj1 (T_ex_iff (rename (up s) a1)) HT) as [k Hk].
+          rewrite (rename_inst_up a1 k s) in Hk.
+          apply (proj2 (IH a1 ltac:(lia) (scons_nat k s))) in Hk.
+          exists (mkD k).
+          assert (Hpt : forall n0, (fun i => mkD (scons_nat k s i)) n0
+                                   = scons D (mkD k) (fun i => mkD (s i)) n0).
+          { intro n0; destruct n0; reflexivity. }
+          apply (proj1 (Sat_ext D memD (mkD 0) a1 _ _ Hpt)). exact Hk.
+  Qed.
+
+  (* canonical assignment: satisfaction matches T outright *)
+  Corollary truth_id : forall a, Sat D memD (fun i => mkD i) a <-> T a.
+  Proof.
+    intro a. pose proof (truth (fsize a) a (le_n _) (fun i => i)) as H.
+    rewrite rename_id in H. exact H.
+  Qed.
+
+  (* MODEL EXISTENCE: every maximal-consistent Henkin theory is satisfiable. *)
+  Theorem model_exists :
+    exists (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+      forall a, Sat Dom m v a <-> T a.
+  Proof. exists D, memD, (fun i => mkD i). exact truth_id. Qed.
 
 End CanonicalModel.
