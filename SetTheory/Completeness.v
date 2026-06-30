@@ -752,3 +752,61 @@ Proof.
   - apply P_ass. left. reflexivity.
   - exact Hgen.
 Qed.
+
+(* ---- [4c] cut: replacing assumptions by derivations ---- *)
+
+Lemma Prov_cut :
+  forall G phi, Prov G phi -> forall De, (forall x, In x G -> Prov De x) -> Prov De phi.
+Proof.
+  intros G phi H.
+  induction H as
+    [ G a Hin
+    | G a b Hpre IH
+    | G a b H1 IHab H2 IHa
+    | G a Hpre IH
+    | G a
+    | G a b H1 IHa H2 IHb
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b c H1 IHor H2 IHa H3 IHb
+    | G a Hpre IH
+    | G a k Hpre IH
+    | G a k Hpre IH
+    | G a c H1 IHex H2 IHbody
+    | G k
+    | G i j a H1 IHeq H2 IHa ];
+    intros De HD.
+  - exact (HD a Hin).
+  - apply P_impI. apply IH. intros x Hx. destruct Hx as [Heq | HxG].
+    + subst x. apply P_ass. left. reflexivity.
+    + apply Prov_cons. exact (HD x HxG).
+  - exact (P_impE _ a b (IHab De HD) (IHa De HD)).
+  - apply (P_botE _ a). exact (IH De HD).
+  - apply P_lem.
+  - apply P_andI; [ exact (IHa De HD) | exact (IHb De HD) ].
+  - exact (P_andE1 _ a b (IH De HD)).
+  - exact (P_andE2 _ a b (IH De HD)).
+  - apply P_orI1. exact (IH De HD).
+  - apply P_orI2. exact (IH De HD).
+  - apply (P_orE _ a b c).
+    + exact (IHor De HD).
+    + apply IHa. intros x Hx. destruct Hx as [Heq | HxG];
+        [ subst x; apply P_ass; left; reflexivity | apply Prov_cons; exact (HD x HxG) ].
+    + apply IHb. intros x Hx. destruct Hx as [Heq | HxG];
+        [ subst x; apply P_ass; left; reflexivity | apply Prov_cons; exact (HD x HxG) ].
+  - apply P_allI. apply IH. intros x Hx.
+    apply in_map_iff in Hx. destruct Hx as [x0 [Heq Hx0]]. subst x.
+    exact (Prov_rename _ _ (HD x0 Hx0) S).
+  - apply (P_allE _ a k). exact (IH De HD).
+  - apply (P_exI _ a k). exact (IH De HD).
+  - apply (P_exE _ a c).
+    + exact (IHex De HD).
+    + apply IHbody. intros x Hx. destruct Hx as [Heq | HxM].
+      * subst x. apply P_ass. left. reflexivity.
+      * apply in_map_iff in HxM. destruct HxM as [x0 [Heq Hx0]]. subst x.
+        apply Prov_cons. exact (Prov_rename _ _ (HD x0 Hx0) S).
+  - apply P_eqRefl.
+  - apply (P_eqElim _ i j a); [ exact (IHeq De HD) | exact (IHa De HD) ].
+Qed.
