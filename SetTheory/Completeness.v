@@ -158,3 +158,41 @@ Proof.
   - apply P_impI. exact Hbad.
   - exact Hp.
 Qed.
+
+(* --- equality kit: the proper Leibniz rule makes equality an equivalence  *)
+(* with full congruence (impossible with the old replace-everywhere rule).  *)
+
+Lemma Prov_eq_sym : forall G i j, Prov G (fEq i j) -> Prov G (fEq j i).
+Proof.
+  intros G i j H. change (Prov G (rename (inst j) (fEq 0 (S i)))).
+  apply (P_eqElim G i j (fEq 0 (S i))).
+  - exact H.
+  - change (Prov G (fEq i i)). apply P_eqRefl.
+Qed.
+
+Lemma Prov_eq_trans :
+  forall G i j k, Prov G (fEq i j) -> Prov G (fEq j k) -> Prov G (fEq i k).
+Proof.
+  intros G i j k H1 H2. change (Prov G (rename (inst k) (fEq (S i) 0))).
+  apply (P_eqElim G j k (fEq (S i) 0)).
+  - exact H2.
+  - change (Prov G (fEq i j)). exact H1.
+Qed.
+
+Lemma Prov_mem_cong1 :
+  forall G i j k, Prov G (fEq i j) -> Prov G (fMem i k) -> Prov G (fMem j k).
+Proof.
+  intros G i j k H1 H2. change (Prov G (rename (inst j) (fMem 0 (S k)))).
+  apply (P_eqElim G i j (fMem 0 (S k))).
+  - exact H1.
+  - change (Prov G (fMem i k)). exact H2.
+Qed.
+
+Lemma Prov_mem_cong2 :
+  forall G i j k, Prov G (fEq i j) -> Prov G (fMem k i) -> Prov G (fMem k j).
+Proof.
+  intros G i j k H1 H2. change (Prov G (rename (inst j) (fMem (S k) 0))).
+  apply (P_eqElim G i j (fMem (S k) 0)).
+  - exact H1.
+  - change (Prov G (fMem k i)). exact H2.
+Qed.
