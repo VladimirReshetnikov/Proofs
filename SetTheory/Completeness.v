@@ -1627,3 +1627,171 @@ Section ClosureBridge.
   Qed.
 
 End ClosureBridge.
+
+(* ===================================================================== *)
+(*  [6c] ZF and T as sentence theories; every T-model is a ZF-model;       *)
+(*  hence the forward syntactic direction  ZF |- phi  ->  T |- phi.        *)
+(* ===================================================================== *)
+
+Lemma Sat_ext_free :
+  forall (V : Type) (mem : V -> V -> Prop) f e1 e2,
+    (forall n, Free n f -> e1 n = e2 n) -> (Sat V mem e1 f <-> Sat V mem e2 f).
+Proof.
+  intros V mem f. induction f; intros e1 e2 H; cbn [Sat].
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); tauto.
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); tauto.
+  - tauto.
+  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
+    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
+  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
+    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
+  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
+    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
+  - assert (Hd : forall d, forall n, Free n f -> scons V d e1 n = scons V d e2 n).
+    { intros d n Hn. destruct n as [| m]; [ reflexivity | apply H; exact Hn ]. }
+    split; intros HH d;
+      [ apply (proj1 (IHf (scons V d e1) (scons V d e2) (Hd d)))
+      | apply (proj2 (IHf (scons V d e1) (scons V d e2) (Hd d))) ]; apply HH.
+  - assert (Hd : forall d, forall n, Free n f -> scons V d e1 n = scons V d e2 n).
+    { intros d n Hn. destruct n as [| m]; [ reflexivity | apply H; exact Hn ]. }
+    split; intros [d HH]; exists d;
+      [ apply (proj1 (IHf (scons V d e1) (scons V d e2) (Hd d)))
+      | apply (proj2 (IHf (scons V d e1) (scons V d e2) (Hd d))) ]; exact HH.
+Qed.
+
+Lemma Sat_sentence_inv :
+  forall (V : Type) (mem : V -> V -> Prop) g,
+    Sentence g -> forall v1 v2, Sat V mem v1 g <-> Sat V mem v2 g.
+Proof.
+  intros V mem g Hg v1 v2. apply Sat_ext_free. intros n Hn. exfalso. exact (Hg n Hn).
+Qed.
+
+(* extract a universal instance of a sealed axiom from a model of a theory *)
+Lemma extract :
+  forall (B : form -> Prop) (V : Type) (mem : V -> V -> Prop) v g,
+    (forall g', B g' -> Sat V mem v g') -> B (seal g) -> forall e, Sat V mem e g.
+Proof.
+  intros B V mem v g HT Hin.
+  apply (proj1 (closeN_valid V mem (bound g) g)). intro e'.
+  apply (proj1 (Sat_sentence_inv V mem (seal g) (Sentence_seal g) v e')). apply HT. exact Hin.
+Qed.
+
+(* --- bridges: model satisfaction of the (open) axioms <-> abstract axioms --- *)
+
+Lemma bridge_Ext_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Ext_form) ->
+    (forall a b, (forall x, mem x a <-> mem x b) -> a = b).
+Proof. intros V mem H a b Hab. exact (H (fun _ => a) a b Hab). Qed.
+
+Lemma bridge_Pow_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Pow_form) ->
+    (forall a, exists p, forall x, mem x p <-> Sub V mem x a).
+Proof. intros V mem H a. exact (H (fun _ => a) a). Qed.
+
+Lemma bridge_Reg_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Reg_form) ->
+    (forall a, (exists x, mem x a) -> exists m, mem m a /\ ~ (exists z, mem z m /\ mem z a)).
+Proof. intros V mem H a. exact (H (fun _ => a) a). Qed.
+
+Lemma rsep_rel :
+  forall (V : Type) (mem : V -> V -> Prop) phi x s da e,
+    Sat V mem (scons V x (scons V s (scons V da e))) (rename rsep phi)
+    <-> Sat V mem (scons V x e) phi.
+Proof.
+  intros V mem phi x s da e.
+  rewrite (Sat_rename V mem x phi rsep (scons V x (scons V s (scons V da e)))).
+  apply (Sat_ext V mem x phi
+           (fun n => scons V x (scons V s (scons V da e)) (rsep n))
+           (scons V x e) (rsep_env V x s da e)).
+Qed.
+
+Lemma bridge_Sep_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall phi e, Sat V mem e (Sep_form phi)) ->
+    (forall phi e a, exists s, forall x, mem x s <-> (mem x a /\ Sat V mem (scons V x e) phi)).
+Proof.
+  intros V mem H phi e a.
+  pose proof (H phi e) as He. unfold Sep_form, fIff in He. cbn [Sat] in He.
+  destruct (He a) as [s Hs]. exists s. intro x. specialize (Hs x). split.
+  - intro Hin. destruct (proj1 Hs Hin) as [Hxa Hsat]. split;
+      [ exact Hxa | apply (proj1 (rsep_rel V mem phi x s a e)); exact Hsat ].
+  - intros [Hxa Hsat]. apply (proj2 Hs). split;
+      [ exact Hxa | apply (proj2 (rsep_rel V mem phi x s a e)); exact Hsat ].
+Qed.
+
+Lemma bridge_Closure_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall psi e, Sat V mem e (Closure_form psi)) ->
+    (forall psi e, SetLike V mem (relOf V mem psi e) ->
+       forall s, exists w, Sub V mem s w /\
+          (forall u v, relOf V mem psi e u v -> mem v w -> mem u w)).
+Proof. intros V mem H psi e. exact (proj1 (bridge_Closure V mem psi e) (H psi e)). Qed.
+
+(* --- ZF and T as sentence theories --- *)
+
+Definition Tax_s (f : form) : Prop :=
+  f = seal Ext_form \/ f = seal Reg_form \/ f = seal Pow_form \/
+  (exists phi, f = seal (Sep_form phi)) \/ (exists psi, f = seal (Closure_form psi)).
+
+Definition ZFax_s (f : form) : Prop :=
+  f = seal Ext_form \/ f = seal Reg_form \/ f = seal Pow_form \/
+  f = seal Pair_form \/ f = seal Union_form \/ f = seal Inf_form \/
+  (exists phi, f = seal (Sep_form phi)) \/ (exists psi, f = seal (Repl_form psi)).
+
+Lemma Sentences_Tax : Sentences Tax_s.
+Proof. intros f Hf. destruct Hf as [->|[->|[->|[[phi ->]|[psi ->]]]]]; apply Sentence_seal. Qed.
+
+Lemma Sentences_ZF : Sentences ZFax_s.
+Proof.
+  intros f Hf.
+  destruct Hf as [->|[->|[->|[->|[->|[->|[[phi ->]|[psi ->]]]]]]]]; apply Sentence_seal.
+Qed.
+
+(* every T-model is a ZF-model *)
+Lemma Tmodel_sat_ZF :
+  forall (V : Type) (mem : V -> V -> Prop) v,
+    (forall g, Tax_s g -> Sat V mem v g) -> (forall g, ZFax_s g -> Sat V mem v g).
+Proof.
+  intros V mem v HT.
+  assert (HE : forall e, Sat V mem e Ext_form)
+    by (apply (extract Tax_s V mem v Ext_form HT); left; reflexivity).
+  assert (HR : forall e, Sat V mem e Reg_form)
+    by (apply (extract Tax_s V mem v Reg_form HT); right; left; reflexivity).
+  assert (HP : forall e, Sat V mem e Pow_form)
+    by (apply (extract Tax_s V mem v Pow_form HT); right; right; left; reflexivity).
+  assert (HS : forall phi e, Sat V mem e (Sep_form phi)).
+  { intro phi. apply (extract Tax_s V mem v (Sep_form phi) HT).
+    right; right; right; left. exists phi. reflexivity. }
+  assert (HC : forall psi e, Sat V mem e (Closure_form psi)).
+  { intro psi. apply (extract Tax_s V mem v (Closure_form psi) HT).
+    right; right; right; right. exists psi. reflexivity. }
+  pose proof (bridge_Ext_fwd V mem HE) as AxE.
+  pose proof (bridge_Reg_fwd V mem HR) as AxR.
+  pose proof (bridge_Pow_fwd V mem HP) as AxP.
+  pose proof (bridge_Sep_fwd V mem HS) as AxS.
+  pose proof (bridge_Closure_fwd V mem HC) as AxC.
+  intros g Hg.
+  destruct Hg as [->|[->|[->|[->|[->|[->|[[phi ->]|[psi ->]]]]]]]].
+  - apply HT. left. reflexivity.
+  - apply HT. right; left. reflexivity.
+  - apply HT. right; right; left. reflexivity.
+  - exact (proj2 (closeN_valid V mem (bound Pair_form) Pair_form)
+                 (sat_Pair V mem (v 0) AxE AxS AxP AxC) v).
+  - exact (proj2 (closeN_valid V mem (bound Union_form) Union_form)
+                 (sat_Union V mem (v 0) AxS AxC) v).
+  - exact (proj2 (closeN_valid V mem (bound Inf_form) Inf_form)
+                 (sat_Inf V mem (v 0) AxE AxS AxP AxC) v).
+  - apply HT. right; right; right; left. exists phi. reflexivity.
+  - exact (proj2 (closeN_valid V mem (bound (Repl_form psi)) (Repl_form psi))
+                 (sat_Repl V mem (v 0) AxS AxP AxC psi) v).
+Qed.
+
+(* FORWARD SYNTACTIC DIRECTION: everything ZF proves, T proves. *)
+Theorem ZF_implies_T :
+  forall phi, Sentence phi -> BProv ZFax_s nil phi -> BProv Tax_s nil phi.
+Proof.
+  intros phi Hphi HZF.
+  apply completeness_inf; [ exact Sentences_Tax | exact Hphi | ].
+  intros Dom m v HTsat.
+  destruct HZF as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
+  apply (soundness Dom m (v 0) Gb phi Hp v).
+  intros x Hx. apply (Tmodel_sat_ZF Dom m v HTsat). apply HGb. exact Hx.
+Qed.
