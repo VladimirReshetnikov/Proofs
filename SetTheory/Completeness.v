@@ -885,3 +885,103 @@ Definition Enum (n : nat) : form := decode (S n) n.
 
 Lemma Enum_surj : forall f, exists n, Enum n = f.
 Proof. intro f. exists (code f). unfold Enum. apply decode_code. lia. Qed.
+
+(* ---- [4e] the Lindenbaum chain and its first three theory properties ---- *)
+
+Definition step (G : list form) (phi : form) : list form :=
+  match excluded_middle_informative (Con (phi :: G)) with
+  | left _ =>
+      match phi with
+      | fEx a => rename (inst (freshFor (fEx a :: G))) a :: fEx a :: G
+      | _ => phi :: G
+      end
+  | right _ =>
+      match phi with
+      | fAll a => fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot
+                  :: fImp (fAll a) fBot :: G
+      | _ => fImp phi fBot :: G
+      end
+  end.
+
+Lemma step_con : forall G phi, Con G -> Con (step G phi).
+Proof.
+  intros G phi HG. unfold step.
+  destruct (excluded_middle_informative (Con (phi :: G))) as [Hc | Hnc].
+  - destruct phi; try exact Hc; apply henkin_ex; exact Hc.
+  - destruct (Con_cons_or G phi HG) as [Hbad | Hcn]; [ contradiction | ].
+    destruct phi; try exact Hcn; apply henkin_all; exact Hcn.
+Qed.
+
+Lemma step_incl : forall G phi x, In x G -> In x (step G phi).
+Proof.
+  intros G phi x Hx. unfold step.
+  destruct (excluded_middle_informative (Con (phi :: G)));
+    destruct phi; simpl; tauto.
+Qed.
+
+Lemma step_decides :
+  forall G phi, In phi (step G phi) \/ In (fImp phi fBot) (step G phi).
+Proof.
+  intros G phi. unfold step.
+  destruct (excluded_middle_informative (Con (phi :: G))).
+  - left. destruct phi; simpl; tauto.
+  - right. destruct phi; simpl; tauto.
+Qed.
+
+Fixpoint chain (G0 : list form) (n : nat) : list form :=
+  match n with O => G0 | S m => step (chain G0 m) (Enum m) end.
+
+Lemma chain_incl : forall G0 m x, In x (chain G0 m) -> In x (chain G0 (S m)).
+Proof. intros G0 m x Hx. cbn [chain]. apply step_incl. exact Hx. Qed.
+
+Lemma chain_mono :
+  forall G0 n m, m <= n -> forall x, In x (chain G0 m) -> In x (chain G0 n).
+Proof.
+  intros G0 n. induction n as [| n IHn]; intros m Hle x Hx.
+  - assert (m = 0) by lia. subst m. exact Hx.
+  - apply Nat.le_succ_r in Hle. destruct Hle as [Hle | Heq].
+    + apply chain_incl. exact (IHn m Hle x Hx).
+    + subst m. exact Hx.
+Qed.
+
+Lemma chain_con : forall G0, Con G0 -> forall n, Con (chain G0 n).
+Proof.
+  intros G0 HG0. induction n as [| n IHn].
+  - exact HG0.
+  - cbn [chain]. apply step_con. exact IHn.
+Qed.
+
+Definition TL (G0 : list form) (phi : form) : Prop := exists n, Prov (chain G0 n) phi.
+
+Lemma TL_cons : forall G0, Con G0 -> ~ TL G0 fBot.
+Proof. intros G0 HG0 [n Hn]. exact (chain_con G0 HG0 n Hn). Qed.
+
+Lemma TL_compl : forall G0 phi, TL G0 phi \/ TL G0 (fImp phi fBot).
+Proof.
+  intros G0 phi. destruct (Enum_surj phi) as [n Hn]. subst phi.
+  destruct (step_decides (chain G0 n) (Enum n)) as [Hin | Hin].
+  - left. exists (S n). cbn [chain]. apply P_ass. exact Hin.
+  - right. exists (S n). cbn [chain]. apply P_ass. exact Hin.
+Qed.
+
+Lemma TL_bound :
+  forall G0 G, (forall x, In x G -> TL G0 x) ->
+    exists N, forall x, In x G -> Prov (chain G0 N) x.
+Proof.
+  intros G0 G. induction G as [| g G' IHG]; intro Hall.
+  - exists 0. intros x [].
+  - destruct (Hall g (or_introl eq_refl)) as [ng Hng].
+    destruct IHG as [N' HN']; [ intros x Hx; apply Hall; right; exact Hx | ].
+    exists (Nat.max ng N'). intros x [Heq | Hx].
+    + subst x. apply (Prov_weaken (chain G0 ng) g Hng).
+      intros y Hy. apply (chain_mono G0 (Nat.max ng N') ng); [ lia | exact Hy ].
+    + apply (Prov_weaken (chain G0 N') x (HN' x Hx)).
+      intros y Hy. apply (chain_mono G0 (Nat.max ng N') N'); [ lia | exact Hy ].
+Qed.
+
+Lemma TL_closed :
+  forall G0 G phi, (forall x, In x G -> TL G0 x) -> Prov G phi -> TL G0 phi.
+Proof.
+  intros G0 G phi Hall Hp. destruct (TL_bound G0 G Hall) as [N HN].
+  exists N. exact (Prov_cut G phi Hp (chain G0 N) HN).
+Qed.
