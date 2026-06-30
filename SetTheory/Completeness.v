@@ -985,3 +985,87 @@ Proof.
   intros G0 G phi Hall Hp. destruct (TL_bound G0 G Hall) as [N HN].
   exists N. exact (Prov_cut G phi Hp (chain G0 N) HN).
 Qed.
+
+(* ---- [4f] the two Henkin properties ---- *)
+
+Lemma step_pos_in : forall G phi, Con (phi :: G) -> In phi (step G phi).
+Proof.
+  intros G phi Hc. unfold step.
+  destruct (excluded_middle_informative (Con (phi :: G))) as [H | H];
+    [ destruct phi; simpl; tauto | contradiction ].
+Qed.
+
+Lemma step_neg_in : forall G phi, ~ Con (phi :: G) -> In (fImp phi fBot) (step G phi).
+Proof.
+  intros G phi Hnc. unfold step.
+  destruct (excluded_middle_informative (Con (phi :: G))) as [H | H];
+    [ contradiction | destruct phi; simpl; tauto ].
+Qed.
+
+Lemma step_ex_pos :
+  forall G a, Con (fEx a :: G) ->
+    In (rename (inst (freshFor (fEx a :: G))) a) (step G (fEx a)).
+Proof.
+  intros G a Hc. unfold step.
+  destruct (excluded_middle_informative (Con (fEx a :: G))) as [H | H];
+    [ simpl; left; reflexivity | contradiction ].
+Qed.
+
+Lemma step_all_neg :
+  forall G a, ~ Con (fAll a :: G) ->
+    In (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot) (step G (fAll a)).
+Proof.
+  intros G a Hnc. unfold step.
+  destruct (excluded_middle_informative (Con (fAll a :: G))) as [H | H];
+    [ contradiction | simpl; left; reflexivity ].
+Qed.
+
+Lemma TL_henkin_ex :
+  forall G0, Con G0 -> forall a, TL G0 (fEx a) -> exists k, TL G0 (rename (inst k) a).
+Proof.
+  intros G0 HG0 a [N HN]. destruct (Enum_surj (fEx a)) as [m Hm].
+  destruct (classic (Con (fEx a :: chain G0 m))) as [Hpos | Hnc].
+  - exists (freshFor (fEx a :: chain G0 m)). exists (S m). cbn [chain]. rewrite Hm.
+    apply P_ass. apply step_ex_pos. exact Hpos.
+  - exfalso.
+    assert (Hneg : Prov (chain G0 (S m)) (fImp (fEx a) fBot)).
+    { cbn [chain]. rewrite Hm. apply P_ass. apply step_neg_in. exact Hnc. }
+    apply (chain_con G0 HG0 (Nat.max N (S m))).
+    apply (P_impE (chain G0 (Nat.max N (S m))) (fEx a) fBot).
+    + apply (Prov_weaken (chain G0 (S m)) (fImp (fEx a) fBot) Hneg).
+      intros y Hy. apply (chain_mono G0 (Nat.max N (S m)) (S m)); [ lia | exact Hy ].
+    + apply (Prov_weaken (chain G0 N) (fEx a) HN).
+      intros y Hy. apply (chain_mono G0 (Nat.max N (S m)) N); [ lia | exact Hy ].
+Qed.
+
+Lemma TL_henkin_all :
+  forall G0, Con G0 -> forall a,
+    (forall k, TL G0 (rename (inst k) a)) -> TL G0 (fAll a).
+Proof.
+  intros G0 HG0 a Hall.
+  destruct (TL_compl G0 (fAll a)) as [Hpos | Hneg]; [ exact Hpos | ].
+  exfalso. destruct (Enum_surj (fAll a)) as [m Hm].
+  destruct (classic (Con (fAll a :: chain G0 m))) as [Hc | Hnc].
+  - assert (Hposfa : TL G0 (fAll a)).
+    { exists (S m). cbn [chain]. rewrite Hm. apply P_ass. apply step_pos_in. exact Hc. }
+    apply (TL_cons G0 HG0).
+    destruct Hposfa as [n1 H1]. destruct Hneg as [n2 H2].
+    exists (Nat.max n1 n2).
+    apply (P_impE (chain G0 (Nat.max n1 n2)) (fAll a) fBot).
+    + apply (Prov_weaken (chain G0 n2) (fImp (fAll a) fBot) H2).
+      intros y Hy. apply (chain_mono G0 (Nat.max n1 n2) n2); [ lia | exact Hy ].
+    + apply (Prov_weaken (chain G0 n1) (fAll a) H1).
+      intros y Hy. apply (chain_mono G0 (Nat.max n1 n2) n1); [ lia | exact Hy ].
+  - assert (Hnegw : Prov (chain G0 (S m))
+                      (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chain G0 m))) a) fBot)).
+    { cbn [chain]. rewrite Hm. apply P_ass. apply step_all_neg. exact Hnc. }
+    set (w := freshFor (fImp (fAll a) fBot :: chain G0 m)) in *.
+    destruct (Hall w) as [n1 H1].
+    apply (TL_cons G0 HG0).
+    exists (Nat.max n1 (S m)).
+    apply (P_impE (chain G0 (Nat.max n1 (S m))) (rename (inst w) a) fBot).
+    + apply (Prov_weaken (chain G0 (S m)) (fImp (rename (inst w) a) fBot) Hnegw).
+      intros y Hy. apply (chain_mono G0 (Nat.max n1 (S m)) (S m)); [ lia | exact Hy ].
+    + apply (Prov_weaken (chain G0 n1) (rename (inst w) a) H1).
+      intros y Hy. apply (chain_mono G0 (Nat.max n1 (S m)) n1); [ lia | exact Hy ].
+Qed.
