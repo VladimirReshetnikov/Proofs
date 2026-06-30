@@ -1069,3 +1069,47 @@ Proof.
     + apply (Prov_weaken (chain G0 n1) (rename (inst w) a) H1).
       intros y Hy. apply (chain_mono G0 (Nat.max n1 (S m)) n1); [ lia | exact Hy ].
 Qed.
+
+(* ---- [4g] model existence for a consistent set, and completeness ---- *)
+
+Theorem model_of_con :
+  forall G0, Con G0 ->
+    exists (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+      forall g, In g G0 -> Sat Dom m v g.
+Proof.
+  intros G0 HG0.
+  destruct (model_exists (TL G0)
+              (TL_cons G0 HG0) (TL_compl G0) (TL_closed G0)
+              (TL_henkin_ex G0 HG0) (TL_henkin_all G0 HG0)) as [Dom [m [v Hsat]]].
+  exists Dom, m, v. intros g Hg. apply (proj2 (Hsat g)).
+  exists 0. cbn [chain]. apply P_ass. exact Hg.
+Qed.
+
+(* COMPLETENESS: validity in all models implies provability. *)
+Theorem completeness :
+  forall G phi,
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi) ->
+    Prov G phi.
+Proof.
+  intros G phi Hval. apply NNPP. intro Hnp.
+  assert (Hcon : Con (fImp phi fBot :: G)).
+  { intro Hbad. apply Hnp. apply Prov_byContra. exact Hbad. }
+  destruct (model_of_con (fImp phi fBot :: G) Hcon) as [Dom [m [v Hsat]]].
+  assert (Hphi : Sat Dom m v phi).
+  { apply Hval. intros g Hg. apply Hsat. right. exact Hg. }
+  assert (Hnphi : Sat Dom m v (fImp phi fBot)) by (apply Hsat; left; reflexivity).
+  simpl in Hnphi. exact (Hnphi Hphi).
+Qed.
+
+(* SOUNDNESS + COMPLETENESS: provability coincides with validity. *)
+Corollary prov_iff_valid :
+  forall G phi,
+    Prov G phi <->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi).
+Proof.
+  intros G phi. split.
+  - intros H Dom m v Hg. exact (soundness Dom m (v 0) G phi H v Hg).
+  - apply completeness.
+Qed.

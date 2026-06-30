@@ -40,7 +40,7 @@ The system is **exactly ZF** (and with the shared Choice axiom, exactly ZFC):
 | forward, first-order | same trade with the schemas as genuine syntactic formulas | **machine-checked** | [`Deep.v`](Deep.v) |
 | proof calculus | ND calculus + soundness, and `ZF ⊢ φ ⟹ T ⊨ φ` | **machine-checked** | [`Deep.v`](Deep.v) |
 | model existence | every maximal-consistent Henkin theory is satisfiable (truth lemma) | **machine-checked** | [`Completeness.v`](Completeness.v) |
-| completeness | `Γ ⊨ φ ⟹ Γ ⊢ φ` (needs Lindenbaum/Henkin) | **in progress** | [`Completeness.v`](Completeness.v) |
+| completeness | `Γ ⊢ φ ⟺ Γ ⊨ φ` (soundness + Gödel completeness) | **machine-checked** | [`Completeness.v`](Completeness.v) |
 
 Regularity and Choice are **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
@@ -200,38 +200,59 @@ The symmetric corollary `T ⊢ φ ⟹ ZF ⊨ φ` needs "every ZF-model satisfies
 `ClosureFO`", i.e. the *deep reverse* direction — blocked at the same point as
 above (the recursion theorem as a first-order formula).
 
-## Completeness (`Completeness.v`, staged)
+## Completeness (`Completeness.v`)
 
-The last mile to a fully **proof-theoretic** `Provable(T, φ) ⟺ Provable(ZF, φ)` is
-**completeness** of the calculus, `Γ ⊨ φ ⟹ Γ ⊢ φ`, built from scratch in
-[`Completeness.v`](Completeness.v) (requires the `SetTheory` namespace:
-`coqc -Q . SetTheory Deep.v` then `coqc -Q . SetTheory Completeness.v`). Green so far:
+[`Completeness.v`](Completeness.v) builds **Gödel completeness** for the `Deep.v`
+calculus from scratch (requires the `SetTheory` namespace:
+`coqc -Q . SetTheory Deep.v` then `coqc -Q . SetTheory Completeness.v`). The
+headline results:
 
-1. **Proof-theory infrastructure** — weakening, the deduction theorem,
-   proof-by-contradiction, double-negation, consistency (`Con`), the Lindenbaum
-   step `Con_cons_or`, and the equality kit (symmetry/transitivity/congruence,
-   which the corrected `P_eqElim` rule finally makes derivable).
-2. **Maximal-consistent Henkin theory** (abstract, `Section CanonicalModel`) — the
-   connective characterizations and `ceq`/`cmem` congruence.
-3. **The model-existence theorem** `model_exists`: *every maximal-consistent Henkin
-   theory is satisfiable.* This is the heart — a quotient term model (domain =
-   canonical `ceq`-representatives via Hilbert ε, `D = {n | rep n = n}`) and the
-   **truth lemma** by strong induction on formula size (renaming preserves size, so
-   the De Bruijn quantifier cases recurse).
+```coq
+completeness   : (forall Dom m v, (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi)
+                 -> Prov G phi.
+prov_iff_valid : Prov G phi <-> (forall Dom m v, (... |= G) -> Sat Dom m v phi).
+```
 
-Remaining: the **Lindenbaum/Henkin construction** (turn a consistent set into such a
-theory) — a formula enumeration, renaming-admissibility for `Prov`, the
-eigenvariable/generalization lemma, and the Henkin witness lemma — then assembling
-`Γ ⊨ φ ⟹ Γ ⊢ φ`. With that, soundness+completeness upgrade the model-theoretic
-equivalence here to deductive equivalence (`ZF ⊢ φ ⟺ T ⊢ φ` modulo the deep reverse
-direction; the general `Γ ⊨ φ ⟺ Γ ⊢ φ` outright).
+i.e. **a formula is provable in the calculus iff it is valid in every model** —
+soundness (`Deep.v`) and completeness together. The development:
+
+1. **Proof-theory infrastructure** — weakening, deduction theorem,
+   proof-by-contradiction, double-negation, consistency (`Con`), the Lindenbaum step
+   `Con_cons_or`, the equality kit (symmetry/transitivity/congruence — derivable
+   only after `Deep.v`'s equality rule was corrected to the Leibniz `P_eqElim`),
+   renaming-admissibility `Prov_rename`, and cut `Prov_cut`.
+2. **Model existence** `model_exists` (abstract maximal-consistent Henkin theory):
+   a quotient term model (domain = canonical `ceq`-representatives via Hilbert ε,
+   `D = {n | rep n = n}`) and the **truth lemma** by strong induction on formula
+   size (renaming preserves size, so the De Bruijn quantifier cases recurse).
+3. **Lindenbaum/Henkin** — a Cantor-pairing formula enumeration (`Enum`,
+   surjective), the eigenvariable lemma and Henkin witness lemmas (`henkin_ex`,
+   `henkin_all`, from `Prov_rename` + freshness), and the chain `chain G0 n` whose
+   limit theory `TL` is shown maximal-consistent and Henkin (all five
+   `model_exists` hypotheses).
+4. **Completeness** — `model_of_con` (a consistent set has a model), then the
+   contrapositive gives `completeness`, and with soundness, `prov_iff_valid`.
+
+`Print Assumptions completeness` lists only the standard classical-mathematics
+axioms (`classic`, `constructive_indefinite_description`, and
+`functional_extensionality` / `propositional_extensionality` /
+`proof_irrelevance`) — no `Admitted`.
 
 ## What is proven
 
-The equivalence semantically (both directions, `Forward.v` + `Reverse.v`),
-first-order for the forward direction (`Deep.v`), a sound proof calculus with the
-one-way bridge `ZF ⊢ φ ⟹ T ⊨ φ` (`Deep.v`), and model existence for
-maximal-consistent Henkin theories (`Completeness.v`).
+- The equivalence **semantically**, both directions: `Forward.v` (T ⟹ ZF axioms)
+  and `Reverse.v` (ZF ⟹ Closure).
+- The forward direction with **genuine first-order schemas**: `Deep.v`.
+- A **sound** proof calculus and the bridge `ZF ⊢ φ ⟹ T ⊨ φ`: `Deep.v`.
+- **Soundness + completeness** for the calculus, `Prov G φ ⟺ G ⊨ φ`: `Completeness.v`.
+
+The one piece beyond this for a literal syntactic `ZF ⊢ φ ⟺ T ⊢ φ` is lifting
+completeness from finite contexts to **infinite theories** (compactness): `ZF` and
+`T` are infinite axiom sets, so `ZF ⊢ φ` means provability from a finite subset.
+With infinite-theory completeness, soundness + the `Deep.v` forward equivalence give
+`ZF ⊢ φ ⟹ T ⊢ φ` outright (the reverse syntactic direction still also needs the
+deep reverse, i.e. the recursion theorem as a formula). The general
+`Prov G φ ⟺ G ⊨ φ` proven here is the substance; the lift is routine.
 
 ## Building
 
