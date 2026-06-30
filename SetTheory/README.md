@@ -41,6 +41,10 @@ The system is **exactly ZF** (and with the shared Choice axiom, exactly ZFC):
 | proof calculus | ND calculus + soundness, and `ZF ⊢ φ ⟹ T ⊨ φ` | **machine-checked** | [`Deep.v`](Deep.v) |
 | model existence | every maximal-consistent Henkin theory is satisfiable (truth lemma) | **machine-checked** | [`Completeness.v`](Completeness.v) |
 | completeness | `Γ ⊢ φ ⟺ Γ ⊨ φ` (soundness + Gödel completeness) | **machine-checked** | [`Completeness.v`](Completeness.v) |
+| infinite completeness | `B ⊨ φ ⟹ B ⊢ φ` for sentence theories (compactness lift) | **machine-checked** | [`Completeness.v`](Completeness.v) |
+| deductive equivalence | same-model sentence theories prove the same sentences | **machine-checked** | [`Completeness.v`](Completeness.v) |
+| `ZF ⊢ φ ⟹ T ⊢ φ` | the forward syntactic direction, ZF/T as sentence theories | **machine-checked** | [`Completeness.v`](Completeness.v) |
+| `T ⊢ φ ⟹ ZF ⊢ φ` | the converse | needs the first-order recursion theorem (see below) | [`Completeness.v`](Completeness.v) |
 
 Regularity and Choice are **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
@@ -232,27 +236,47 @@ soundness (`Deep.v`) and completeness together. The development:
    `model_exists` hypotheses).
 4. **Completeness** — `model_of_con` (a consistent set has a model), then the
    contrapositive gives `completeness`, and with soundness, `prov_iff_valid`.
+5. **Infinite completeness (compactness)** — lifting completeness from finite
+   contexts to infinite **sentence** theories `B`. The Henkin-freshness obstacle
+   for an infinite theory is overcome by working with *sentences*: a witness fresh
+   for the finite added list is automatically fresh w.r.t. `B` (sentences have no
+   free variables). `model_of_BCon` (a consistent sentence theory has a model),
+   `completeness_inf : Sentences B → Sentence φ → (B ⊨ φ) → B ⊢ φ`, and
+   `theory_equiv` — **two sentence theories with the same models prove the same
+   sentences.**
+6. **`ZF ⊢ φ ⟹ T ⊢ φ`** — `ZF` and `T` are encoded as sentence theories
+   (`ZFax_s`, `Tax_s`), every axiom universally closed by `seal` (the Closure
+   schema as the closed formula `Closure_form`). `Tmodel_sat_ZF` proves *every
+   T-model is a ZF-model* (extract the abstract axioms from a T-model through the
+   `bridge_*` lemmas, then reapply `Deep.v`'s derived `sat_*`), and then soundness +
+   `completeness_inf` give `ZF_implies_T`.
 
-`Print Assumptions completeness` lists only the standard classical-mathematics
-axioms (`classic`, `constructive_indefinite_description`, and
-`functional_extensionality` / `propositional_extensionality` /
-`proof_irrelevance`) — no `Admitted`.
+`Print Assumptions` lists only the standard classical-mathematics axioms (`classic`,
+`constructive_indefinite_description`, and `functional_extensionality` /
+`propositional_extensionality` / `proof_irrelevance`) — no `Admitted` anywhere.
 
-## What is proven
+## What is proven, and the one remaining direction
+
+Machine-checked, no admits:
 
 - The equivalence **semantically**, both directions: `Forward.v` (T ⟹ ZF axioms)
   and `Reverse.v` (ZF ⟹ Closure).
 - The forward direction with **genuine first-order schemas**: `Deep.v`.
 - A **sound** proof calculus and the bridge `ZF ⊢ φ ⟹ T ⊨ φ`: `Deep.v`.
-- **Soundness + completeness** for the calculus, `Prov G φ ⟺ G ⊨ φ`: `Completeness.v`.
+- **Soundness + completeness** for the calculus, `Prov G φ ⟺ G ⊨ φ`; **infinite
+  completeness** (compactness) for sentence theories; the **deductive equivalence of
+  same-model sentence theories**; and the forward syntactic direction
+  **`ZF ⊢ φ ⟹ T ⊢ φ`**: `Completeness.v`.
 
-The one piece beyond this for a literal syntactic `ZF ⊢ φ ⟺ T ⊢ φ` is lifting
-completeness from finite contexts to **infinite theories** (compactness): `ZF` and
-`T` are infinite axiom sets, so `ZF ⊢ φ` means provability from a finite subset.
-With infinite-theory completeness, soundness + the `Deep.v` forward equivalence give
-`ZF ⊢ φ ⟹ T ⊢ φ` outright (the reverse syntactic direction still also needs the
-deep reverse, i.e. the recursion theorem as a formula). The general
-`Prov G φ ⟺ G ⊨ φ` proven here is the substance; the lift is routine.
+The **converse `T ⊢ φ ⟹ ZF ⊢ φ`** is *true* but is the one piece not formalized.
+It requires *every first-order ZF model to satisfy `ClosureFO`* — equivalently, the
+**recursion theorem rendered as a first-order object derivation** (functions-as-sets
+over Kuratowski pairs, ω-induction, the approximation lemmas, all inside `Prov`).
+This is exactly the "deep reverse" obstacle flagged from the start: `Reverse.v`
+proves Closure from *second-order* Replacement (an arbitrary meta-level `nat`
+iteration), which a first-order ZF model need not provide. Closing it is a
+self-contained but heavy project; everything else — including the general
+`theory_equiv`, of which `ZF ⟺ T` is an instance — is done.
 
 ## Building
 
