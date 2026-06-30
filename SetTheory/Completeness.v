@@ -517,3 +517,75 @@ Section CanonicalModel.
   Proof. exists D, memD, (fun i => mkD i). exact truth_id. Qed.
 
 End CanonicalModel.
+
+(* ===================== [4] Lindenbaum / Henkin ======================= *)
+
+(* ---- [4a] renaming admissibility for the calculus ---- *)
+
+Lemma map_rename_up_S :
+  forall r G, map (rename (up r)) (map (rename S) G) = map (rename S) (map (rename r) G).
+Proof.
+  intros r G. rewrite !map_map. apply map_ext. intro x.
+  rewrite !rename_comp. apply rename_ext. intro n; reflexivity.
+Qed.
+
+Lemma Prov_rename :
+  forall G phi, Prov G phi -> forall r, Prov (map (rename r) G) (rename r phi).
+Proof.
+  intros G phi H.
+  induction H as
+    [ G a Hin
+    | G a b Hpre IH
+    | G a b H1 IHab H2 IHa
+    | G a Hpre IH
+    | G a
+    | G a b H1 IHa H2 IHb
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b c H1 IHor H2 IHa H3 IHb
+    | G a Hpre IH
+    | G a k Hpre IH
+    | G a k Hpre IH
+    | G a c H1 IHex H2 IHbody
+    | G k
+    | G i j a H1 IHeq H2 IHa ];
+    intro r.
+  - apply P_ass. apply in_map. exact Hin.
+  - apply P_impI. exact (IH r).
+  - exact (P_impE _ (rename r a) (rename r b) (IHab r) (IHa r)).
+  - apply (P_botE _ (rename r a)). exact (IH r).
+  - apply P_lem.
+  - apply P_andI; [ exact (IHa r) | exact (IHb r) ].
+  - exact (P_andE1 _ (rename r a) (rename r b) (IH r)).
+  - exact (P_andE2 _ (rename r a) (rename r b) (IH r)).
+  - apply P_orI1. exact (IH r).
+  - apply P_orI2. exact (IH r).
+  - exact (P_orE _ (rename r a) (rename r b) (rename r c) (IHor r) (IHa r) (IHb r)).
+  - apply P_allI. rewrite <- (map_rename_up_S r G). exact (IH (up r)).
+  - (* P_allE *)
+    assert (Heqj : rename r (rename (inst k) a) = rename (inst (r k)) (rename (up r) a)).
+    { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+    rewrite Heqj. apply (P_allE _ (rename (up r) a) (r k)). exact (IH r).
+  - (* P_exI *)
+    apply (P_exI _ (rename (up r) a) (r k)).
+    assert (Heqj : rename r (rename (inst k) a) = rename (inst (r k)) (rename (up r) a)).
+    { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+    rewrite <- Heqj. exact (IH r).
+  - (* P_exE *)
+    apply (P_exE _ (rename (up r) a) (rename r c)).
+    + exact (IHex r).
+    + assert (Hc : rename S (rename r c) = rename (up r) (rename S c)).
+      { rewrite !rename_comp. apply rename_ext. intro n; reflexivity. }
+      rewrite Hc. rewrite <- (map_rename_up_S r G). exact (IHbody (up r)).
+  - apply P_eqRefl.
+  - (* P_eqElim *)
+    assert (Heqj : rename r (rename (inst j) a) = rename (inst (r j)) (rename (up r) a)).
+    { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+    rewrite Heqj. apply (P_eqElim _ (r i) (r j) (rename (up r) a)).
+    + exact (IHeq r).
+    + assert (Heqi : rename r (rename (inst i) a) = rename (inst (r i)) (rename (up r) a)).
+      { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+      rewrite <- Heqi. exact (IHa r).
+Qed.
