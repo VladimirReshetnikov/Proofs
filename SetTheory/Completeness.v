@@ -589,3 +589,166 @@ Proof.
       { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
       rewrite <- Heqi. exact (IHa r).
 Qed.
+
+(* ---- [4b] free variables, freshness, and Henkin witness lemmas ---- *)
+
+Fixpoint Free (n : nat) (f : form) : Prop :=
+  match f with
+  | fMem i j => n = i \/ n = j
+  | fEq i j  => n = i \/ n = j
+  | fBot     => False
+  | fImp a b => Free n a \/ Free n b
+  | fAnd a b => Free n a \/ Free n b
+  | fOr a b  => Free n a \/ Free n b
+  | fAll a   => Free (S n) a
+  | fEx a    => Free (S n) a
+  end.
+
+Lemma rename_ext_free :
+  forall f r r', (forall n, Free n f -> r n = r' n) -> rename r f = rename r' f.
+Proof.
+  induction f; intros r r' H; simpl.
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); reflexivity.
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); reflexivity.
+  - reflexivity.
+  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
+  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
+  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
+  - f_equal. apply IHf. intros m Hm. destruct m as [| k]; simpl;
+      [ reflexivity | f_equal; apply H; exact Hm ].
+  - f_equal. apply IHf. intros m Hm. destruct m as [| k]; simpl;
+      [ reflexivity | f_equal; apply H; exact Hm ].
+Qed.
+
+Fixpoint bound (f : form) : nat :=
+  match f with
+  | fMem i j => S i + S j
+  | fEq i j  => S i + S j
+  | fBot     => 0
+  | fImp a b => bound a + bound b
+  | fAnd a b => bound a + bound b
+  | fOr a b  => bound a + bound b
+  | fAll a   => bound a
+  | fEx a    => bound a
+  end.
+
+Lemma free_lt_bound : forall f n, Free n f -> n < bound f.
+Proof.
+  induction f as [i j | i j | | a IHa b IHb | a IHa b IHb | a IHa b IHb | a IHa | a IHa ];
+    intros n Hn; simpl in *.
+  - destruct Hn; lia.
+  - destruct Hn; lia.
+  - destruct Hn.
+  - destruct Hn as [Hn|Hn]; [ apply IHa in Hn | apply IHb in Hn ]; lia.
+  - destruct Hn as [Hn|Hn]; [ apply IHa in Hn | apply IHb in Hn ]; lia.
+  - destruct Hn as [Hn|Hn]; [ apply IHa in Hn | apply IHb in Hn ]; lia.
+  - apply IHa in Hn; lia.
+  - apply IHa in Hn; lia.
+Qed.
+
+Fixpoint lmax (l : list nat) : nat :=
+  match l with [] => 0 | x :: r => max x (lmax r) end.
+
+Lemma le_lmax : forall x l, In x l -> x <= lmax l.
+Proof.
+  induction l as [| y r IHr]; intros Hin; simpl in *.
+  - destruct Hin.
+  - destruct Hin as [<- | Hin].
+    + apply Nat.le_max_l.
+    + apply Nat.le_trans with (lmax r); [ apply IHr; exact Hin | apply Nat.le_max_r ].
+Qed.
+
+Definition freshFor (L : list form) : nat := lmax (map bound L).
+
+Lemma freshFor_not_free : forall L f, In f L -> ~ Free (freshFor L) f.
+Proof.
+  intros L f Hin Hfree. apply free_lt_bound in Hfree.
+  assert (bound f <= freshFor L) by (unfold freshFor; apply le_lmax; apply in_map; exact Hin).
+  lia.
+Qed.
+
+Definition rho_w (w : nat) : nat -> nat := fun n => if Nat.eqb n w then 0 else S n.
+
+Lemma rho_inst :
+  forall a w, ~ Free (S w) a -> rename (rho_w w) (rename (inst w) a) = a.
+Proof.
+  intros a w Hfree. rewrite rename_comp.
+  rewrite (rename_ext_free a (fun n => rho_w w (inst w n)) (fun n => n)).
+  - apply rename_id.
+  - intros n Hn. destruct n as [| m]; simpl.
+    + unfold rho_w. rewrite Nat.eqb_refl. reflexivity.
+    + unfold rho_w. destruct (Nat.eqb m w) eqn:E.
+      * apply Nat.eqb_eq in E. subst m. exfalso. apply Hfree. exact Hn.
+      * reflexivity.
+Qed.
+
+Lemma rho_under :
+  forall a w, ~ Free (S w) a -> rename (up (rho_w w)) a = rename (up S) a.
+Proof.
+  intros a w Hfree. apply rename_ext_free. intros n Hn.
+  destruct n as [| m]; simpl.
+  - reflexivity.
+  - unfold rho_w. destruct (Nat.eqb m w) eqn:E.
+    + apply Nat.eqb_eq in E. subst m. exfalso. apply Hfree. exact Hn.
+    + reflexivity.
+Qed.
+
+Lemma map_rho_S :
+  forall G w, (forall g, In g G -> ~ Free w g) ->
+    map (rename (rho_w w)) G = map (rename S) G.
+Proof.
+  intros G w H. apply map_ext_in. intros g Hg. apply rename_ext_free. intros n Hn.
+  unfold rho_w. destruct (Nat.eqb n w) eqn:E.
+  - apply Nat.eqb_eq in E. subst n. exfalso. apply (H g Hg). exact Hn.
+  - reflexivity.
+Qed.
+
+(* eigenvariable generalization: from G |- a[w/0] with w fresh, G shifted |- a *)
+Lemma generalize_fresh :
+  forall G a w, (forall g, In g G -> ~ Free w g) -> ~ Free (S w) a ->
+    Prov G (rename (inst w) a) -> Prov (map (rename S) G) a.
+Proof.
+  intros G a w HwG Hwa Hp.
+  pose proof (Prov_rename _ _ Hp (rho_w w)) as Hr.
+  rewrite (rho_inst a w Hwa) in Hr.
+  rewrite (map_rho_S G w HwG) in Hr.
+  exact Hr.
+Qed.
+
+(* existential Henkin witness *)
+Lemma henkin_ex :
+  forall G a, Con (fEx a :: G) ->
+    Con (rename (inst (freshFor (fEx a :: G))) a :: fEx a :: G).
+Proof.
+  intros G a Hcon. unfold Con. set (w := freshFor (fEx a :: G)). intro Hbad.
+  assert (Hwa : ~ Free (S w) a).
+  { exact (freshFor_not_free (fEx a :: G) (fEx a) (or_introl eq_refl)). }
+  assert (HwG : forall g, In g G -> ~ Free w g).
+  { intros g Hg. apply (freshFor_not_free (fEx a :: G) g). right. exact Hg. }
+  apply Hcon. apply (P_exE (fEx a :: G) a fBot).
+  - apply P_ass. left. reflexivity.
+  - pose proof (Prov_rename _ _ Hbad (rho_w w)) as Hr. simpl in Hr.
+    rewrite (rho_inst a w Hwa), (rho_under a w Hwa), (map_rho_S G w HwG) in Hr.
+    simpl. exact Hr.
+Qed.
+
+(* universal Henkin witness (for the negation of a universal) *)
+Lemma henkin_all :
+  forall G a, Con (fImp (fAll a) fBot :: G) ->
+    Con (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot
+         :: fImp (fAll a) fBot :: G).
+Proof.
+  intros G a Hcon. unfold Con. set (w := freshFor (fImp (fAll a) fBot :: G)). intro Hbad.
+  assert (Hwa : ~ Free (S w) a).
+  { intro Hf. apply (freshFor_not_free (fImp (fAll a) fBot :: G) (fImp (fAll a) fBot)
+                       (or_introl eq_refl)). simpl. left. exact Hf. }
+  assert (HwG : forall g, In g (fImp (fAll a) fBot :: G) -> ~ Free w g).
+  { intros g Hg. apply (freshFor_not_free (fImp (fAll a) fBot :: G) g). exact Hg. }
+  apply Hcon.
+  apply Prov_byContra in Hbad.
+  pose proof (generalize_fresh (fImp (fAll a) fBot :: G) a w HwG Hwa Hbad) as Hgen.
+  apply P_allI in Hgen.
+  apply (P_impE (fImp (fAll a) fBot :: G) (fAll a) fBot).
+  - apply P_ass. left. reflexivity.
+  - exact Hgen.
+Qed.
