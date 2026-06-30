@@ -204,9 +204,10 @@ statement about transitive closures into a fully general principle of collection
 
 \paragraph{What this article does.} There are two interleaved goals. The first is
 mathematical: state the two theories precisely, prove the equivalence, exhibit the
-four derivations as one schema-instance family, and isolate the role of Powerset
-(and, by a pleasant mirror symmetry, the role of Regularity in the reverse
-direction). The second is to explain, in tutorial style, the
+four derivations as one schema-instance family, and isolate the one axiom that
+genuinely powers the trade --- Powerset --- while showing that Regularity, like
+Choice, is a passenger of the equivalence, used in neither direction. The second is
+to explain, in tutorial style, the
 \emph{machine-verified} proof we built in the Rocq/Coq proof assistant. That
 formalization grew well past the original equivalence: it now includes a deep
 embedding of first-order logic, a sound and \emph{complete} proof calculus
@@ -296,9 +297,10 @@ amount of input.
 
 \begin{remark}[The trade is purely ``generative'']
 Regularity is shared identically by both theories and (as the audit in
-\S\ref{sec:mech-shallow} certifies) is never used in the forward trade. The
-equivalence therefore reduces to the purely ``generative'' content: over the common
-base $\{\text{Ext},\text{Sep},\text{Pow}\}$ (with Regularity along for the ride),
+\S\ref{sec:mech-shallow} certifies) is used in \emph{neither} direction of the trade.
+The equivalence therefore reduces to the purely ``generative'' content: over the
+common base $\{\text{Ext},\text{Sep},\text{Pow}\}$ (with Regularity along for the
+ride),
 the four axioms $\{\text{Pairing},\text{Union},\text{Infinity},\text{Replacement}\}$
 are interderivable with the single schema Closure.
 \end{remark}
@@ -412,9 +414,11 @@ replacement for the four axioms and miss that it is \emph{Closure together with
 Powerset} that does the work. Strip Powerset away and the set-like hypothesis of
 Closure stops being free: there is no longer a uniform host for a
 singleton-valued relation, and the collection power evaporates. We will see the
-machine certify this load-bearing role automatically, and --- by a pleasing
-symmetry --- certify that Powerset is \emph{idle} in the reverse direction, where
-Regularity becomes the load-bearing axiom instead.
+machine certify this load-bearing role automatically, and --- on the other side ---
+certify that Powerset is \emph{idle} in the reverse direction. Powerset turns out to
+be the \emph{only} axiom that genuinely powers the equivalence: as
+\S\ref{sec:reverse} shows, the reverse direction needs neither Powerset nor
+Regularity, so Regularity (like Choice) merely rides along.
 
 % =====================================================================
 \section{The reverse direction: \texorpdfstring{$\ZF \proves \text{Closure}$}{ZF proves Closure}}\label{sec:reverse}
@@ -450,24 +454,35 @@ $w = \bigcup_n W_n$.
 For this to be well defined we need the numerals to be \emph{distinct}, i.e.\
 $\underline m = \underline n \Rightarrow m = n$, so that ``$\underline n \mapsto
 W_n$'' is unambiguous. Distinctness follows from $\underline m \in \underline n$
-whenever $m < n$, together with the fact that \emph{no set is a member of itself}
---- which is precisely where \textbf{Regularity} enters (apply Regularity to
-$\{x\}$ to refute $x \in x$). Finally, $w$ contains $s = W_0$ and is closed under
+whenever $m < n$, together with the fact that no \emph{numeral} is a member of
+itself. One might reach for Regularity here (apply it to $\{\underline n\}$), but
+that is a \emph{convenience}, not a necessity. The finite von~Neumann numerals are
+non-self-membered already in $\ZF$ \emph{without} Foundation: each $\underline n$ is
+a genuine finite ordinal --- a transitive set strictly well-ordered by $\in$ --- and
+an ordinal is never a member of itself (that would violate the irreflexivity of its
+own $\in$-ordering), a fact established by a plain induction on $n$ rather than by
+the global Foundation axiom. So Regularity is \emph{not} needed for the reverse
+direction; we make this precise, and let the machine certify it, in
+\S\ref{sec:mech-shallow}. Finally, $w$ contains $s = W_0$ and is closed under
 $R$-predecessors: if $u \mathrel R v$ and $v \in w$, then $v \in W_n$ for some
 $n$, hence $u \in g(W_n) = W_{n+1} \subseteq w$.
 
-\begin{remark}[The reverse mirror: Regularity load-bearing, Powerset idle]
+\begin{remark}[Regularity is a passenger, in both directions]
 \label{rem:mirror}
-Notice what powered the reverse construction: Replacement, Union, Infinity (to
-collect the family) and Regularity (to make the numerals injective). Powerset was
-\emph{not} used. The machine audit in \S\ref{sec:mech-shallow} confirms this,
-yielding the sharper statement
+What actually powers the reverse construction is Replacement, Union, and Infinity (to
+collect the family) --- not Powerset, and (by the Foundation-free argument above) not
+Regularity either. The machine audit in \S\ref{sec:mech-shallow} confirms both
+omissions, yielding the sharper statement
 \[
-  \ZF - \text{Powerset} \ \proves\ \text{Closure}.
+  \ZF - \text{Powerset} - \text{Regularity} \ \proves\ \text{Closure}.
 \]
-So the two directions exhibit a clean mirror image:
-\textbf{Powerset is load-bearing forward and idle in reverse; Regularity is idle
-forward and load-bearing in reverse.}
+Together with the forward audit (which uses neither Regularity nor Choice), this says
+that \textbf{Regularity, like Choice, is a passenger of the whole trade}: the
+interderivability of Closure with $\{$Pairing, Union, Infinity, Replacement$\}$ holds
+over the bare base $\{$Extensionality, Separation, Powerset$\}$, with Regularity and
+Choice added equally to both sides and used by neither. The one axiom that is
+genuinely \emph{asymmetric} --- load-bearing forward, idle in reverse --- is
+Powerset.
 \end{remark}
 
 % =====================================================================
@@ -475,8 +490,10 @@ forward and load-bearing in reverse.}
 % =====================================================================
 
 \begin{theorem}[Equivalence]\label{thm:equiv}
-Over the common base $\{\text{Extensionality}, \text{Separation},
-\text{Powerset}, \text{Regularity}\}$, the theory $\T$ (adding Closure) and the
+Over the base $\{\text{Extensionality}, \text{Separation}, \text{Powerset}\}$, the
+schema Closure is interderivable with $\{\text{Pairing}, \text{Union},
+\text{Infinity}, \text{Replacement}\}$. Consequently --- adding Regularity to both
+sides, where it is used by neither --- the theory $\T$ (adding Closure) and the
 theory $\ZF$ (adding Pairing, Union, Infinity, Replacement) have exactly the same
 theorems.
 \end{theorem}
@@ -659,11 +676,12 @@ The printed signatures certify:
 
 The same audit on \texttt{Reverse.v} (\cq{Check Closure_holds}) shows
 \cq{Closure_holds} depending on a nonempty domain, Extensionality, Separation,
-Pairing, Union, Infinity, Replacement, and \textbf{Regularity} --- but
-\textbf{not Powerset}. This is the machine confirming the sharper
-$\ZF - \text{Powerset} \proves \text{Closure}$ and the forward/reverse mirror of
-Remark~\ref{rem:mirror}: Powerset load-bearing forward and idle in reverse,
-Regularity idle forward and load-bearing in reverse.
+Pairing, Union, Infinity, and Replacement --- but \textbf{neither Powerset nor
+Regularity}. This is the machine confirming the sharper
+$\ZF - \text{Powerset} - \text{Regularity} \proves \text{Closure}$ of
+Remark~\ref{rem:mirror}, and with it the asymmetry: Powerset is load-bearing
+forward and idle in reverse, while Regularity is idle in \emph{both} directions ---
+a passenger of the trade alongside Choice.
 
 \subsection{The reverse construction in Coq}
 
@@ -675,17 +693,20 @@ Fixpoint iterate (g : V -> V) (s : V) (n : nat) : V :=
   match n with O => s | S k => g (iterate g s k) end.
 \end{lstlisting}
 
-The non-self-membership fact --- the load-bearing use of Regularity --- and the
-injectivity of the numerals it powers are:
+The numerals' distinctness is established \emph{without} Regularity: each numeral is
+a transitive set (\cq{onat_trans}), hence non-self-membered (\cq{onat_no_self}), both
+by induction on \cq{nat}, from which injectivity follows:
 
 \begin{lstlisting}
-Lemma no_self_mem : forall x, ~ x ∈ x.   (* from Regularity on {x} *)
-Lemma onat_inj : forall i j, onat i = onat j -> i = j.
+Lemma onat_trans   : forall n x, x ∈ onat n -> Sub x (onat n).   (* Foundation-free *)
+Lemma onat_no_self : forall n, ~ onat n ∈ onat n.                (* no Regularity *)
+Lemma onat_inj     : forall i j, onat i = onat j -> i = j.
 \end{lstlisting}
 
-\cq{onat_inj} is what makes the map ``numeral $\mapsto$ iterate'' well defined,
-so Replacement can collect $\{W_n\}$ into a set and Union flatten it. The headline
-theorem is then
+\cq{onat_inj} is what makes the map ``numeral $\mapsto$ iterate'' well defined, so
+Replacement can collect $\{W_n\}$ into a set and Union flatten it. Because this path
+no longer touches Regularity, \cq{Check Closure_holds} drops it from the dependency
+list (Remark~\ref{rem:mirror}). The headline theorem is then
 
 \begin{lstlisting}
 Theorem Closure_holds :
@@ -1217,11 +1238,14 @@ all four. The non-obvious lesson is \emph{where the power comes from}: not from
 Closure alone but from Closure resting on Powerset, through the one-line fact that
 every set is a member of its own powerset. That fact makes ``has a definable
 predecessor'' imply ``is set-like'' for free, which is what turns a statement about
-transitive closures into general collection. The forward/reverse symmetry is a
-small gem: Powerset is the load-bearing axiom forward and idle in reverse, while
-Regularity is idle forward and load-bearing in reverse --- and the proof assistant
-\emph{certifies} this for us, by reading off exactly which hypotheses each
-derivation discharged.
+transitive closures into general collection. And the proof assistant pins down
+exactly how much is doing the work, by reading off which hypotheses each derivation
+discharged: \emph{Powerset is the single axiom that genuinely powers the trade} ---
+load-bearing forward, idle in reverse --- while Regularity, like Choice, turns out to
+be a passenger used in neither direction (the reverse needs only the Foundation-free
+distinctness of the finite numerals). What looked at first like a Powerset/Regularity
+mirror was an artifact of a convenient proof; the machine-checked
+$\ZF - \text{Powerset} - \text{Regularity} \proves \text{Closure}$ sets it straight.
 
 \paragraph{The formalization.} We did not stop at the equivalence. The development
 ascends from a shallow model argument, to a deep embedding with genuinely
@@ -1251,7 +1275,7 @@ The development is four Rocq/Coq files under \texttt{src/SetTheory/}.
 File & Contents \\
 \midrule
 \texttt{Forward.v} & shallow embedding; $\{$Ext, Sep, Pow, Closure$\}$ derive Pairing/Union/Replacement/Infinity; the linchpin \cq{self_in_power}; dependency-audit \cq{Check}s. \\
-\texttt{Reverse.v} & shallow embedding; $\ZF$ derives Closure via the transitive-closure recursion; \cq{no_self_mem}, \cq{onat_inj}; audit shows Powerset unused. \\
+\texttt{Reverse.v} & shallow embedding; $\ZF$ derives Closure via the transitive-closure recursion; numerals distinct Foundation-free (\cq{onat_trans}, \cq{onat_no_self}, \cq{onat_inj}); audit shows \emph{both} Powerset and Regularity unused. \\
 \texttt{Deep.v} & deep embedding (\cq{form}, \cq{Sat}, \cq{rename}, \cq{Sat_rename}); first-order \cq{SeparationFO}/\cq{ClosureFO}; forward trade re-proved; ND calculus \cq{Prov}; \cq{soundness}; \cq{ZF_provable_holds_in_T}. \\
 \texttt{Completeness.v} & from-scratch G\"odel \cq{completeness}/\cq{prov_iff_valid}; \cq{completeness_inf} (compactness); \cq{theory_equiv}; \cq{ZF_implies_T}. \\
 \bottomrule

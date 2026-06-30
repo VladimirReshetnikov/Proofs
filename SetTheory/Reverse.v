@@ -17,7 +17,7 @@
 (*  To collect { W_n : n } into one object set we map the object          *)
 (*  numerals `onat n` (which live in the inductive set `Inf` from         *)
 (*  Infinity) to W_n via Replacement; pinning the index needs `onat`      *)
-(*  injective, proved from `no_self_mem` (Regularity).  Then              *)
+(*  injective, Foundation-free, no Regularity needed.  Then              *)
 (*      w = Union (image) = Union_n W_n.                                  *)
 (*                                                                       *)
 (*  Together with Forward.v this gives both directions of                 *)
@@ -148,19 +148,18 @@ Definition imageR (F : V -> V) (a : V) : V :=
 Lemma imageR_spec : forall F a y, y ∈ imageR F a <-> exists x, x ∈ a /\ y = F x.
 Proof. intros F a. exact (proj2_sig (constructive_indefinite_description _ (Replacement F a))). Qed.
 
-(* ---------------------- no set is a member of itself ------------------- *)
-
-Lemma no_self_mem : forall x, ~ x ∈ x.
-Proof.
-  intros x Hx.
-  destruct (Regularity (osingle x)
-              (ex_intro _ x (proj2 (osingle_spec x x) eq_refl)))
-    as [m [Hm Hno]].
-  apply (proj1 (osingle_spec x m)) in Hm. subst m.
-  apply Hno. exists x. split.
-  - exact Hx.
-  - apply (proj2 (osingle_spec x x)). reflexivity.
-Qed.
+(* ----- Regularity is a CONVENIENCE here, not a necessity --------------- *)
+(* The construction below needs the numerals  onat n  to be pairwise        *)
+(* distinct.  The original proof got this from Regularity, via the fact      *)
+(* that no set is a member of itself.  But that global fact is far more than  *)
+(* we need: the finite von Neumann numerals are distinct in ZF WITHOUT       *)
+(* Foundation,                                                               *)
+(* because each onat n is a genuine ordinal -- a transitive set on which     *)
+(* membership is irreflexive -- which we prove by induction on n             *)
+(* (onat_trans, onat_no_self) using only Pairing/Union (osucc).  So          *)
+(* Regularity, like Choice, is a passenger of the trade: the trailing        *)
+(* `Check Closure_holds` does not list it.  (The Regularity hypothesis is    *)
+(* kept above for completeness as a ZF axiom; it is simply never used.)      *)
 
 (* --------------------- object numerals onat : nat -> V ----------------- *)
 
@@ -194,14 +193,44 @@ Proof.
   - apply onat_self_in_succ.
 Qed.
 
+(* Each numeral is a transitive set -- proved by induction, Foundation-free. *)
+Lemma onat_trans : forall n x, x ∈ onat n -> Sub x (onat n).
+Proof.
+  induction n; intros x Hx.
+  - simpl in Hx. exfalso. exact (emptyset_spec x Hx).
+  - simpl in Hx. apply (proj1 (osucc_spec (onat n) x)) in Hx.
+    destruct Hx as [Hxin | Hxeq].
+    + apply Sub_trans with (onat n).
+      * apply IHn. exact Hxin.
+      * apply osucc_super.
+    + subst x. apply osucc_super.
+Qed.
+
+(* Hence no numeral is a member of itself -- WITHOUT Regularity.  If         *)
+(* onat n in onat n then, since onat n is transitive, onat n would be a      *)
+(* subset of itself containing itself, contradicting the inductive case.     *)
+Lemma onat_no_self : forall n, ~ onat n ∈ onat n.
+Proof.
+  induction n; intro H.
+  - simpl in H. exact (emptyset_spec _ H).
+  - simpl in H. apply (proj1 (osucc_spec (onat n) (osucc (onat n)))) in H.
+    destruct H as [Hin | Heq].
+    + apply IHn. apply (onat_trans n (osucc (onat n)) Hin).
+      apply (proj2 (osucc_spec (onat n) (onat n))). right. reflexivity.
+    + apply IHn.
+      assert (Hmem : onat n ∈ osucc (onat n)).
+      { apply (proj2 (osucc_spec (onat n) (onat n))). right. reflexivity. }
+      rewrite Heq in Hmem. exact Hmem.
+Qed.
+
 Lemma onat_inj : forall i j, onat i = onat j -> i = j.
 Proof.
   intros i j H. destruct (Nat.lt_trichotomy i j) as [Hlt | [Heq | Hgt]].
   - exfalso. assert (Hm : onat i ∈ onat j) by (apply onat_lt_mem; exact Hlt).
-    rewrite <- H in Hm. exact (no_self_mem (onat i) Hm).
+    rewrite <- H in Hm. exact (onat_no_self i Hm).
   - exact Heq.
   - exfalso. assert (Hm : onat j ∈ onat i) by (apply onat_lt_mem; exact Hgt).
-    rewrite H in Hm. exact (no_self_mem (onat j) Hm).
+    rewrite H in Hm. exact (onat_no_self j Hm).
 Qed.
 
 (* --------------------- an inductive set from Infinity ------------------ *)

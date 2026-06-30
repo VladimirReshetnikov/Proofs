@@ -57,8 +57,9 @@ The system is **exactly ZF**:
 Regularity is **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
 Infinity, Replacement}` for the single schema `Closure` over the common base
-`{Ext, Sep, Pow}` (+ Regularity). The forward file proves the
-interesting half; the reverse file proves the standard half.
+`{Ext, Sep, Pow}` (with Regularity and Choice as shared passengers, used by neither
+direction). The forward file proves the interesting half; the reverse file proves
+the standard half.
 
 ## Why it works — the linchpin
 
@@ -101,14 +102,17 @@ host-providing role.
 
 The same audit on the reverse direction (`Check Closure_holds` in `Reverse.v`)
 shows `Closure_holds` depends on a nonempty domain, **Extensionality, Separation,
-Pairing, Union, Infinity, Replacement, Regularity** — but **not Powerset**. So the
-machine certifies the sharper statement *ZF − Powerset ⊢ Closure*. Note the
-pleasant mirror image:
+Pairing, Union, Infinity, Replacement** — but **neither Powerset nor Regularity**.
+So the machine certifies the sharper statement *ZF − Powerset − Regularity ⊢
+Closure*. The upshot for the two structural axioms:
 
-- **Powerset** is load-bearing forward (it hosts every set) and idle in reverse;
-- **Regularity** is idle forward and load-bearing in reverse (it powers
-  `no_self_mem`, hence injectivity of the numerals `onat`, which is what pins the
-  Replacement index when collecting `{Wₙ}`).
+- **Powerset** is the one genuinely *asymmetric* axiom: load-bearing forward (it
+  hosts every set) and idle in reverse;
+- **Regularity** is idle in **both** directions — a passenger of the trade alongside
+  Choice. The reverse direction needs only that the finite numerals `onat n` are
+  distinct, which is a theorem of ZF *without* Foundation (each `onat n` is a
+  transitive set with irreflexive membership — `onat_trans`, `onat_no_self`), so the
+  global "no set is self-membered" fact (and hence Regularity) is never invoked.
 
 ## How the reverse direction works
 
@@ -123,8 +127,9 @@ way, with the iteration carried on the *meta-level* `nat`:
 2. `gstep t = t ∪ predsf t`, and `Wₙ = iterate gstep s n` (Coq `Fixpoint` on `nat`);
 3. to collect `{Wₙ : n}` into one object set we feed the object numerals
    `onat n ∈ Inf` (from Infinity) through Replacement via a map `Ffun` with
-   `Ffun (onat n) = Wₙ` — well-defined because `onat` is injective
-   (`onat_inj`, from `no_self_mem`);
+   `Ffun (onat n) = Wₙ` — well-defined because `onat` is injective (`onat_inj`),
+   which in turn follows from the numerals being non-self-membered (`onat_no_self`,
+   proved Foundation-free from `onat_trans` — *not* from Regularity);
 4. `w = ⋃ (image)` then contains `s = W₀` and is closed under `R`-predecessors
    (`u R v`, `v ∈ Wₙ ⟹ u ∈ predsf Wₙ ⊆ W₍ₙ₊₁₎ ⊆ w`).
 
@@ -298,8 +303,9 @@ self-contained but heavy project; everything else — including the general
 (rendered to [`article/closure-axiomatization.pdf`](article/closure-axiomatization.pdf))
 is a detailed, tutorial-style article covering both the mathematics and this
 formalization: the equivalence theorem, the four derivations as one
-schema-instance family, the Powerset-is-load-bearing remark and its
-forward/reverse mirror with Regularity, the reverse transitive-closure recursion,
+schema-instance family, the Powerset-is-load-bearing remark (and why Regularity,
+like Choice, is a passenger used in neither direction), the reverse
+transitive-closure recursion,
 and then a section-by-section walkthrough of all four Coq developments (the shallow
 embedding and the free dependency audit, the deep embedding closing the first-order
 gap, the proof calculus and soundness, and the from-scratch Gödel completeness /
