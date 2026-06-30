@@ -1498,3 +1498,41 @@ Proof.
     apply (soundness Dom m (v 0) Gb psi Hp v).
     intros x Hx. apply (proj1 (Hsame Dom m v) HB1sat). apply HGb. exact Hx.
 Qed.
+
+(* ===================================================================== *)
+(*  [6] Sealing: the universal closure of a formula is a sentence, and    *)
+(*  closing variables does not change satisfaction-in-a-model.  This lets  *)
+(*  the parametrized schema instances be packaged as sentences.           *)
+(* ===================================================================== *)
+
+Fixpoint closeN (k : nat) (f : form) : form :=
+  match k with O => f | S k' => closeN k' (fAll f) end.
+
+Lemma Free_closeN : forall k f n, Free n (closeN k f) -> Free (k + n) f.
+Proof. induction k as [| k IHk]; intros f n H; [ exact H | exact (IHk (fAll f) n H) ]. Qed.
+
+Definition seal (f : form) : form := closeN (bound f) f.
+
+Lemma Sentence_seal : forall f, Sentence (seal f).
+Proof.
+  intros f n H. unfold seal in H. apply Free_closeN in H. apply free_lt_bound in H. lia.
+Qed.
+
+Lemma closeN_valid :
+  forall (V : Type) (mem : V -> V -> Prop) k g,
+    (forall e, Sat V mem e (closeN k g)) <-> (forall e, Sat V mem e g).
+Proof.
+  intros V mem k. induction k as [| k IHk]; intro g; [ tauto | ].
+  cbn [closeN]. rewrite (IHk (fAll g)). split.
+  - intros H e'.
+    assert (PF : forall n, scons V (e' 0) (fun n => e' (S n)) n = e' n)
+      by (intro n; destruct n; reflexivity).
+    apply (proj1 (Sat_ext V mem (e' 0) g (scons V (e' 0) (fun n => e' (S n))) e' PF)).
+    exact (H (fun n => e' (S n)) (e' 0)).
+  - intros H e d. apply H.
+Qed.
+
+Lemma seal_valid :
+  forall (V : Type) (mem : V -> V -> Prop) g,
+    (forall e, Sat V mem e (seal g)) <-> (forall e, Sat V mem e g).
+Proof. intros V mem g. apply closeN_valid. Qed.
