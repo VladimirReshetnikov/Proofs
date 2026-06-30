@@ -1265,13 +1265,27 @@ There is no \cq{Admitted} and no custom \cq{Axiom} anywhere in the four files.
 These five are exactly the principles one expects when mechanizing classical set
 theory with a quotient term model: classical logic, a description operator to turn
 existence axioms into operations, and the extensionality/irrelevance principles
-that make the quotient an honest type. Note that
-\cq{constructive_indefinite_description} is \emph{metatheoretic} choice (Hilbert's
-$\varepsilon$ in the ambient logic), not the set-theoretic Axiom of Choice --- which,
-as \S\ref{sec:theories} explained, appears in neither $\T$ nor $\ZF$ here, so these
-certificates do not list it. In particular, the metatheory is \emph{not} assumed to
-be stronger than $\ZF$ --- the development does not, for instance, rely on a universe
-of $\ZF$-sets supplied by a library.
+that make the quotient an honest type.
+
+A word on \cq{constructive_indefinite_description} (with \cq{epsilon}), since it is
+easy to misread. It is \emph{metatheoretic} choice --- Hilbert's $\varepsilon$ in the
+ambient logic --- and lives at a different level from the set-theoretic Axiom of
+Choice, which (as \S\ref{sec:theories} explained) appears in neither $\T$ nor $\ZF$
+here, and which these certificates accordingly do not list. Moreover the two are not
+even the same \emph{kind} of principle. Hilbert's $\varepsilon$ is a uniform,
+definable selector: it returns a canonical witness for every existence statement at
+once. In the set-theoretic reading that is the \emph{global} form of choice ---
+$\varepsilon x.(x \in a)$ is a global choice function, picking from every nonempty
+set --- rather than the set-by-set Axiom of Choice; the two are inter-definable over
+a base set theory, and global choice is stronger in character than AC (though
+conservative over $\ZFC$). So the metatheory is, if anything, helping itself to
+\emph{more} choice than the object theories ever mention --- but only ever in the
+harmless \emph{descriptive} way: $\varepsilon$ is used solely to \emph{name}
+witnesses already proved to exist (turning the existential axioms into the operators
+\cq{power}, \cq{sep}, \cq{host}, \dots) and to pick canonical representatives for the
+quotient term model. It never proves a choice statement that was not already present,
+and it adds no object-level set-theoretic strength. Beyond these standard classical
+axioms the development assumes no set-theoretic universe or large-cardinal strength.
 
 % =====================================================================
 \section{Conclusion}\label{sec:conclusion}
