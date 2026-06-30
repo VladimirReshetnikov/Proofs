@@ -754,6 +754,44 @@ Proof.
   - exact Hgen.
 Qed.
 
+(* context exchange (same elements => same provability) *)
+Lemma Prov_exch :
+  forall G G' phi, (forall x, In x G <-> In x G') -> Prov G phi -> Prov G' phi.
+Proof.
+  intros G G' phi H Hp. apply (Prov_weaken G phi Hp). intros x Hx. apply H. exact Hx.
+Qed.
+
+(* the Prov-level cores of the Henkin lemmas, with an arbitrary fresh witness *)
+Lemma henkin_ex_core :
+  forall G a w, ~ Free (S w) a -> (forall g, In g G -> ~ Free w g) ->
+    Prov (rename (inst w) a :: fEx a :: G) fBot -> Prov (fEx a :: G) fBot.
+Proof.
+  intros G a w Hwa HwG Hbad.
+  apply (P_exE (fEx a :: G) a fBot).
+  - apply P_ass. left. reflexivity.
+  - pose proof (Prov_rename _ _ Hbad (rho_w w)) as Hr. simpl in Hr.
+    rewrite (rho_inst a w Hwa), (rho_under a w Hwa), (map_rho_S G w HwG) in Hr.
+    simpl. exact Hr.
+Qed.
+
+Lemma henkin_all_core :
+  forall G a w, ~ Free (S w) a -> (forall g, In g G -> ~ Free w g) ->
+    Prov (fImp (rename (inst w) a) fBot :: fImp (fAll a) fBot :: G) fBot ->
+    Prov (fImp (fAll a) fBot :: G) fBot.
+Proof.
+  intros G a w Hwa HwG Hbad.
+  apply Prov_byContra in Hbad.
+  assert (HwG' : forall g, In g (fImp (fAll a) fBot :: G) -> ~ Free w g).
+  { intros g [<- | Hg].
+    - intro Hf. simpl in Hf. destruct Hf as [Hf | Hf]; [ exact (Hwa Hf) | exact Hf ].
+    - exact (HwG g Hg). }
+  pose proof (generalize_fresh (fImp (fAll a) fBot :: G) a w HwG' Hwa Hbad) as Hgen.
+  apply P_allI in Hgen.
+  apply (P_impE (fImp (fAll a) fBot :: G) (fAll a) fBot).
+  - apply P_ass. left. reflexivity.
+  - exact Hgen.
+Qed.
+
 (* ---- [4c] cut: replacing assumptions by derivations ---- *)
 
 Lemma Prov_cut :
