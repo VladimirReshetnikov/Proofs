@@ -24,7 +24,8 @@
 (*  - Repository HEAD: adeba87107a01ad82de9c28edd492a3d7d816ef9          *)
 (* ===================================================================== *)
 
-From Stdlib Require Import ClassicalEpsilon.
+From Stdlib Require Import ClassicalEpsilon List PeanoNat Setoid.
+Import ListNotations.
 
 Section Deep.
 
@@ -162,6 +163,13 @@ Hypothesis ClosureFO :
   forall (psi : form) (e : nat -> V),
     SetLike (relOf psi e) ->
     forall s, exists w, Sub s w /\ (forall u v, relOf psi e u v -> v ∈ w -> u ∈ w).
+
+(* Regularity is a T-axiom (shared with ZF).  Unused by the forward trade *)
+(* below, but needed so that a T-model satisfies ZF's Regularity axiom in   *)
+(* the soundness corollary.                                                 *)
+Hypothesis Regularity :
+  forall a, (exists x, x ∈ a) ->
+            exists m, m ∈ a /\ ~ (exists z, z ∈ m /\ z ∈ a).
 
 (* --------------------------- operators -------------------------------- *)
 
@@ -433,8 +441,276 @@ Proof.
     + exact (proj2 (chi_spec psi e a y) H).
 Qed.
 
+(* ===================================================================== *)
+(*  A natural-deduction proof calculus over `form`, and its SOUNDNESS.    *)
+(*  Terms are variables only (the signature is purely relational), so      *)
+(*  quantifier instantiation substitutes a variable for de Bruijn 0 --     *)
+(*  which is just a renaming, handled by `rename`/`Sat_rename`.            *)
+(* ===================================================================== *)
+
+(* instantiate de Bruijn 0 by variable k (and decrement the rest) *)
+Definition inst (k : nat) : nat -> nat :=
+  fun n => match n with O => k | S m => m end.
+(* replace variable i by j (used by the equality-congruence rule) *)
+Definition repl (i j : nat) : nat -> nat :=
+  fun n => if Nat.eqb n i then j else n.
+
+Inductive Prov : list form -> form -> Prop :=
+| P_ass    : forall G a, In a G -> Prov G a
+| P_impI   : forall G a b, Prov (a :: G) b -> Prov G (fImp a b)
+| P_impE   : forall G a b, Prov G (fImp a b) -> Prov G a -> Prov G b
+| P_botE   : forall G a, Prov G fBot -> Prov G a
+| P_lem    : forall G a, Prov G (fOr a (fImp a fBot))
+| P_andI   : forall G a b, Prov G a -> Prov G b -> Prov G (fAnd a b)
+| P_andE1  : forall G a b, Prov G (fAnd a b) -> Prov G a
+| P_andE2  : forall G a b, Prov G (fAnd a b) -> Prov G b
+| P_orI1   : forall G a b, Prov G a -> Prov G (fOr a b)
+| P_orI2   : forall G a b, Prov G b -> Prov G (fOr a b)
+| P_orE    : forall G a b c, Prov G (fOr a b) -> Prov (a :: G) c -> Prov (b :: G) c -> Prov G c
+| P_allI   : forall G a, Prov (map (rename S) G) a -> Prov G (fAll a)
+| P_allE   : forall G a k, Prov G (fAll a) -> Prov G (rename (inst k) a)
+| P_exI    : forall G a k, Prov G (rename (inst k) a) -> Prov G (fEx a)
+| P_exE    : forall G a c, Prov G (fEx a) -> Prov (a :: map (rename S) G) (rename S c) -> Prov G c
+| P_eqRefl : forall G k, Prov G (fEq k k)
+| P_eqCong : forall G i j a, Prov G (fEq i j) -> Prov G a -> Prov G (rename (repl i j) a).
+
+(* environment lemmas for the quantifier/equality cases *)
+Lemma inst_env : forall k e n, e (inst k n) = scons (e k) e n.
+Proof. intros k e n. destruct n; reflexivity. Qed.
+
+Lemma repl_env : forall i j (e : nat -> V), e i = e j -> forall n, e (repl i j n) = e n.
+Proof.
+  intros i j e Heq n. unfold repl. destruct (Nat.eqb n i) eqn:E.
+  - apply Nat.eqb_eq in E. subst n. symmetry. exact Heq.
+  - reflexivity.
+Qed.
+
+Lemma shift_sat :
+  forall G e d, (forall x, In x G -> Sat e x) ->
+                forall y, In y (map (rename S) G) -> Sat (scons d e) y.
+Proof.
+  intros G e d HG y Hy. apply in_map_iff in Hy. destruct Hy as [x [Hxr Hxin]]. subst y.
+  apply (proj2 (Sat_rename x S (scons d e))).
+  apply (proj2 (Sat_ext x (fun n => scons d e (S n)) e (fun n => eq_refl))).
+  exact (HG x Hxin).
+Qed.
+
+Theorem soundness :
+  forall G a, Prov G a -> forall e, (forall x, In x G -> Sat e x) -> Sat e a.
+Proof.
+  intros G a H.
+  induction H as
+    [ G a Hin
+    | G a b Hpre IH
+    | G a b H1 IHab H2 IHa
+    | G a Hpre IH
+    | G a
+    | G a b H1 IHa H2 IHb
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b Hpre IH
+    | G a b c H1 IHor H2 IHa H3 IHb
+    | G a Hpre IH
+    | G a k Hpre IH
+    | G a k Hpre IH
+    | G a c H1 IHex H2 IHbody
+    | G k
+    | G i j a H1 IHeq H2 IHa ];
+    intros e HG.
+  - exact (HG a Hin).
+  - simpl. intro Ha. apply (IH e). intros x Hx. destruct Hx as [Hxa | HxG].
+    + subst x. exact Ha.
+    + exact (HG x HxG).
+  - exact (IHab e HG (IHa e HG)).
+  - destruct (IH e HG).
+  - simpl. exact (classic (Sat e a)).
+  - simpl. split; [ exact (IHa e HG) | exact (IHb e HG) ].
+  - exact (proj1 (IH e HG)).
+  - exact (proj2 (IH e HG)).
+  - simpl. left. exact (IH e HG).
+  - simpl. right. exact (IH e HG).
+  - destruct (IHor e HG) as [Ha | Hb].
+    + apply (IHa e). intros x Hx. destruct Hx as [Hxa | HxG]; [ subst x; exact Ha | exact (HG x HxG) ].
+    + apply (IHb e). intros x Hx. destruct Hx as [Hxb | HxG]; [ subst x; exact Hb | exact (HG x HxG) ].
+  - simpl. intro d. exact (IH (scons d e) (shift_sat G e d HG)).
+  - apply (proj2 (Sat_rename a (inst k) e)).
+    apply (proj2 (Sat_ext a (fun n => e (inst k n)) (scons (e k) e) (inst_env k e))).
+    exact (IH e HG (e k)).
+  - simpl. exists (e k).
+    apply (proj1 (Sat_ext a (fun n => e (inst k n)) (scons (e k) e) (inst_env k e))).
+    apply (proj1 (Sat_rename a (inst k) e)). exact (IH e HG).
+  - destruct (IHex e HG) as [d Hd].
+    assert (Hc : Sat (scons d e) (rename S c)).
+    { apply (IHbody (scons d e)). intros y Hy. destruct Hy as [Hya | HyG].
+      - subst y. exact Hd.
+      - exact (shift_sat G e d HG y HyG). }
+    apply (proj1 (Sat_rename c S (scons d e))) in Hc.
+    apply (proj1 (Sat_ext c (fun n => scons d e (S n)) e (fun n => eq_refl))) in Hc.
+    exact Hc.
+  - simpl. reflexivity.
+  - apply (proj2 (Sat_rename a (repl i j) e)).
+    apply (proj2 (Sat_ext a (fun n => e (repl i j n)) e (repl_env i j e (IHeq e HG)))).
+    exact (IHa e HG).
+Qed.
+
+(* ===================================================================== *)
+(*  CROSS-THEORY COROLLARY:  everything ZF proves holds in every model    *)
+(*  of the Closure axiomatization T.                                      *)
+(*                                                                       *)
+(*  We encode the ZF axioms as closed `form`s, show this T-model          *)
+(*  satisfies each (via the derived theorems Pairing/Union/Replacement/    *)
+(*  Infinity and the T-hypotheses), and combine with soundness.           *)
+(* ===================================================================== *)
+
+(* renamings used to place a schema's formula under fresh binders *)
+Definition rsep : nat -> nat := fun n => match n with O => O | S i => S (S (S i)) end.
+Definition rf1  : nat -> nat := fun n => match n with O => 1 | 1 => 2 | S (S j) => S (S (S j)) end.
+Definition rf2  : nat -> nat := fun n => match n with O => O | 1 => 2 | S (S j) => S (S (S j)) end.
+Definition ri   : nat -> nat := fun n => match n with O => 1 | 1 => O | S (S j) => S (S (S (S j))) end.
+
+Lemma rsep_env : forall dx s da (e : nat -> V) n,
+  scons dx (scons s (scons da e)) (rsep n) = scons dx e n.
+Proof. intros. destruct n; reflexivity. Qed.
+
+Lemma rf1_env : forall y2 y1 x (e : nat -> V) n,
+  scons y2 (scons y1 (scons x e)) (rf1 n) = scons y1 (scons x e) n.
+Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+Lemma rf2_env : forall y2 y1 x (e : nat -> V) n,
+  scons y2 (scons y1 (scons x e)) (rf2 n) = scons y2 (scons x e) n.
+Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+Lemma ri_env : forall x y r a (e : nat -> V) n,
+  scons x (scons y (scons r (scons a e))) (ri n) = scons y (scons x e) n.
+Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+(* --- the ZF axioms as closed formulas --- *)
+
+Definition Ext_form : form :=
+  fAll (fAll (fImp (fAll (fIff (fMem 0 2) (fMem 0 1))) (fEq 1 0))).
+Definition Pair_form : form :=
+  fAll (fAll (fEx (fAll (fIff (fMem 0 1) (fOr (fEq 0 3) (fEq 0 2)))))).
+Definition Union_form : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fEx (fAnd (fMem 1 0) (fMem 0 3)))))).
+Definition Pow_form : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fAll (fImp (fMem 0 1) (fMem 0 3)))))).
+Definition Inf_form : form :=
+  fEx (fAnd
+        (fEx (fAnd (fMem 0 1) (fAll (fImp (fMem 0 1) fBot))))
+        (fAll (fImp (fMem 0 1)
+                 (fEx (fAnd (fMem 0 2)
+                         (fAll (fIff (fMem 0 1) (fOr (fMem 0 2) (fEq 0 2))))))))).
+Definition Reg_form : form :=
+  fAll (fImp (fEx (fMem 0 1))
+          (fEx (fAnd (fMem 0 1)
+                  (fImp (fEx (fAnd (fMem 0 1) (fMem 0 2))) fBot)))).
+Definition Sep_form (phi : form) : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fAnd (fMem 0 2) (rename rsep phi))))).
+Definition Func_form (psi : form) : form :=
+  fAll (fAll (fAll (fImp (fAnd (rename rf1 psi) (rename rf2 psi)) (fEq 1 0)))).
+Definition Image_form (psi : form) : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fEx (fAnd (fMem 0 3) (rename ri psi)))))).
+Definition Repl_form (psi : form) : form := fImp (Func_form psi) (Image_form psi).
+
+(* --- this T-model satisfies each ZF axiom --- *)
+
+Lemma sat_Ext : forall e, Sat e Ext_form.
+Proof. intro e. simpl. intros a b H. apply Extensionality. exact H. Qed.
+
+Lemma sat_Pair : forall e, Sat e Pair_form.
+Proof. intro e. simpl. intros a b. destruct (Pairing a b) as [p Hp]. exists p. intro x. exact (Hp x). Qed.
+
+Lemma sat_Union : forall e, Sat e Union_form.
+Proof. intro e. simpl. intro s. destruct (Union s) as [u Hu]. exists u. intro x. exact (Hu x). Qed.
+
+Lemma sat_Pow : forall e, Sat e Pow_form.
+Proof. intro e. simpl. intro a. destruct (Powerset a) as [p Hp]. exists p. intro x. exact (Hp x). Qed.
+
+Lemma sat_Inf : forall e, Sat e Inf_form.
+Proof. intro e. simpl. destruct Infinity as [I [He Hs]]. exists I. split; [ exact He | exact Hs ]. Qed.
+
+Lemma sat_Reg : forall e, Sat e Reg_form.
+Proof.
+  intro e. simpl. intros a Hne. destruct (Regularity a Hne) as [m [Hm Hno]].
+  exists m. split; [ exact Hm | exact Hno ].
+Qed.
+
+Lemma sat_Sep : forall phi e, Sat e (Sep_form phi).
+Proof.
+  intros phi e. simpl. intro da. destruct (SeparationFO phi e da) as [s Hs].
+  exists s. intro dx.
+  rewrite (Sat_rename phi rsep (scons dx (scons s (scons da e)))).
+  rewrite (Sat_ext phi (fun n => scons dx (scons s (scons da e)) (rsep n))
+                   (scons dx e) (rsep_env dx s da e)).
+  exact (Hs dx).
+Qed.
+
+Lemma sat_Repl : forall psi e, Sat e (Repl_form psi).
+Proof.
+  intros psi e. unfold Repl_form, Func_form, Image_form. simpl. intro Hfunc.
+  assert (Hfun : Functional (relOf psi e)).
+  { intros x y1 y2 H1 H2. apply (Hfunc x y1 y2). split.
+    - rewrite (Sat_rename psi rf1 (scons y2 (scons y1 (scons x e)))).
+      rewrite (Sat_ext psi (fun n => scons y2 (scons y1 (scons x e)) (rf1 n))
+                       (scons y1 (scons x e)) (rf1_env y2 y1 x e)).
+      exact H1.
+    - rewrite (Sat_rename psi rf2 (scons y2 (scons y1 (scons x e)))).
+      rewrite (Sat_ext psi (fun n => scons y2 (scons y1 (scons x e)) (rf2 n))
+                       (scons y2 (scons x e)) (rf2_env y2 y1 x e)).
+      exact H2. }
+  intro da. destruct (ReplacementFO psi e Hfun da) as [r Hr].
+  exists r. intro dy. split.
+  - intro Hin. apply (proj1 (Hr dy)) in Hin. destruct Hin as [dx [Hdx Hrel]].
+    exists dx. split; [ exact Hdx | ].
+    rewrite (Sat_rename psi ri (scons dx (scons dy (scons r (scons da e))))).
+    rewrite (Sat_ext psi (fun n => scons dx (scons dy (scons r (scons da e))) (ri n))
+                     (scons dy (scons dx e)) (ri_env dx dy r da e)).
+    exact Hrel.
+  - intros [dx [Hdx Hsat]]. apply (proj2 (Hr dy)). exists dx. split; [ exact Hdx | ].
+    rewrite (Sat_rename psi ri (scons dx (scons dy (scons r (scons da e))))) in Hsat.
+    rewrite (Sat_ext psi (fun n => scons dx (scons dy (scons r (scons da e))) (ri n))
+                     (scons dy (scons dx e)) (ri_env dx dy r da e)) in Hsat.
+    exact Hsat.
+Qed.
+
+(* --- the ZF axiom set, ZF-provability, and the corollary --- *)
+
+Definition ZFax (f : form) : Prop :=
+  f = Ext_form \/ f = Pair_form \/ f = Union_form \/ f = Pow_form \/
+  f = Inf_form \/ f = Reg_form \/
+  (exists phi, f = Sep_form phi) \/ (exists psi, f = Repl_form psi).
+
+Lemma sat_ZFax : forall f, ZFax f -> forall e, Sat e f.
+Proof.
+  intros f Hf e.
+  destruct Hf as [-> | [-> | [-> | [-> | [-> | [-> | [[phi ->] | [psi ->]]]]]]]].
+  - apply sat_Ext.
+  - apply sat_Pair.
+  - apply sat_Union.
+  - apply sat_Pow.
+  - apply sat_Inf.
+  - apply sat_Reg.
+  - apply sat_Sep.
+  - apply sat_Repl.
+Qed.
+
+Definition ZFprov (phi : form) : Prop :=
+  exists G, (forall x, In x G -> ZFax x) /\ Prov G phi.
+
+(* In this (arbitrary) model of T, every ZF-provable formula holds. *)
+Theorem ZF_provable_holds_in_T :
+  forall phi, ZFprov phi -> forall e, Sat e phi.
+Proof.
+  intros phi [G [HG Hprov]] e.
+  apply (soundness G phi Hprov e).
+  intros x Hx. exact (sat_ZFax x (HG x Hx) e).
+Qed.
+
 End Deep.
 
+Check soundness.
+Check ZF_provable_holds_in_T.
 Check Pairing.
 Check Union.
 Check ReplacementFO.

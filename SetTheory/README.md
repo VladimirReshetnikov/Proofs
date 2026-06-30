@@ -38,6 +38,7 @@ The system is **exactly ZF** (and with the shared Choice axiom, exactly ZFC):
 | forward   | `{Ext, Sep, Pow, Closure}` ⊢ Pairing, Union, Replacement, Infinity | **machine-checked** | [`Forward.v`](Forward.v) |
 | reverse   | ZF ⊢ Closure (every set-like relation admits a transitive closure) | **machine-checked** | [`Reverse.v`](Reverse.v) |
 | forward, first-order | same trade with the schemas as genuine syntactic formulas | **machine-checked** | [`Deep.v`](Deep.v) |
+| proof calculus | ND calculus + soundness, and `ZF ⊢ φ ⟹ T ⊨ φ` | **machine-checked** | [`Deep.v`](Deep.v) |
 
 Regularity and Choice are **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
@@ -163,17 +164,49 @@ mean formalizing the recursion theorem's defining formula — the genuinely heav
 object-level construction. So the first-order content of the reverse direction *is*
 the recursion theorem, which is left at the (already verified) shallow level.
 
+## A proof calculus, soundness, and a cross-theory corollary (`Deep.v`)
+
+`Deep.v` also carries a genuine **syntactic** layer:
+
+- `Prov : list form → form → Prop`, a natural-deduction calculus over `form`
+  (assumption, `→`/`∧`/`∨`/`∀`/`∃` intro+elim, ex falso, excluded middle,
+  equality reflexivity and a congruence rule). Because the signature is purely
+  relational, terms are just variables, so quantifier instantiation is a *renaming*
+  — handled by the existing `rename`/`Sat_rename`, with no separate substitution
+  operation.
+- `soundness : Prov G a → ∀ e, (e ⊨ G) → Sat e a` — the calculus is sound for Tarski
+  semantics (one case per rule; the quantifier/equality cases use `Sat_rename` and
+  `Sat_ext`).
+
+Encoding the ZF axioms as closed `form`s (`Ext_form … Reg_form`, plus the `Sep_form`
+and `Repl_form` schemas) and proving this T-model satisfies each (via the derived
+`Pairing`/`Union`/`ReplacementFO`/`Infinity` and the T-hypotheses) yields the
+**cross-theory corollary**
+
+```
+ZF_provable_holds_in_T :
+  (T-model) → ∀ φ, ZFprov φ → ∀ e, Sat e φ
+```
+
+i.e. **everything ZF proves holds in every model of the Closure axiomatization T**
+(`ZF ⊢ φ ⟹ T ⊨ φ`), where `ZFprov` is provability in the ND calculus from the deep
+ZF axiom set (all eight axioms; Separation and Replacement as schemas over `form`).
+This combines the syntactic `soundness` with the forward semantic equivalence.
+
+The symmetric corollary `T ⊢ φ ⟹ ZF ⊨ φ` needs "every ZF-model satisfies
+`ClosureFO`", i.e. the *deep reverse* direction — blocked at the same point as
+above (the recursion theorem as a first-order formula).
+
 ## What remains
 
-`Deep.v` upgrades faithfulness from second-order to **first-order schemas** for the
-forward direction, but everything here is still **model-theoretic** (satisfaction in
-Coq models). A fully **proof-theoretic** certificate — a syntactic
-`Provable(T, φ) ↔ Provable(ZF, φ)` — would additionally need a deductive calculus
-with Gödel soundness+completeness (so that `⊨` over all models coincides with `⊢`),
-or hand-built object derivations of every traded axiom (infeasible for the reverse
-direction's recursion). That is the identified last mile; the model-theoretic
-equivalence proven here is what the standard meta-theorem turns into deductive
-equivalence.
+A fully **proof-theoretic** certificate — a syntactic `Provable(T, φ) ↔
+Provable(ZF, φ)` — would additionally need **completeness** of the calculus (so that
+`⊨` over all models coincides with `⊢`); then the model-theoretic equivalence here
+upgrades to deductive equivalence in both directions. Completeness (a Henkin/term-model
+construction) is the remaining last mile, deliberately not reproduced from scratch.
+What is proven here is: the equivalence semantically (both directions, `Forward.v` +
+`Reverse.v`), first-order for the forward direction (`Deep.v`), a sound proof calculus,
+and the one-way syntactic→semantic bridge `ZF ⊢ φ ⟹ T ⊨ φ`.
 
 ## Building
 
