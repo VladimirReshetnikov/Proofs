@@ -21,6 +21,7 @@ From SetTheory Require Import Deep.
 From Stdlib Require Import List PeanoNat Classical Lia Setoid.
 From Stdlib Require Import ClassicalEpsilon.
 From Stdlib Require Import FunctionalExtensionality PropExtensionality ProofIrrelevance.
+From Stdlib Require Import Cantor.
 Import ListNotations.
 
 (* ====================== [1] proof-theory infrastructure =============== *)
@@ -810,3 +811,77 @@ Proof.
   - apply P_eqRefl.
   - apply (P_eqElim _ i j a); [ exact (IHeq De HD) | exact (IHa De HD) ].
 Qed.
+
+(* ---- [4d] enumeration of formulas (a surjection nat -> form) ---- *)
+
+Fixpoint code (f : form) : nat :=
+  match f with
+  | fMem i j => Cantor.to_nat (0, Cantor.to_nat (i, j))
+  | fEq i j  => Cantor.to_nat (1, Cantor.to_nat (i, j))
+  | fBot     => Cantor.to_nat (2, 0)
+  | fImp a b => Cantor.to_nat (3, Cantor.to_nat (code a, code b))
+  | fAnd a b => Cantor.to_nat (4, Cantor.to_nat (code a, code b))
+  | fOr a b  => Cantor.to_nat (5, Cantor.to_nat (code a, code b))
+  | fAll a   => Cantor.to_nat (6, code a)
+  | fEx a    => Cantor.to_nat (7, code a)
+  end.
+
+Fixpoint decode (fuel n : nat) : form :=
+  match fuel with
+  | O => fBot
+  | S fuel' =>
+    let p := snd (Cantor.of_nat n) in
+    match fst (Cantor.of_nat n) with
+    | 0 => fMem (fst (Cantor.of_nat p)) (snd (Cantor.of_nat p))
+    | 1 => fEq (fst (Cantor.of_nat p)) (snd (Cantor.of_nat p))
+    | 2 => fBot
+    | 3 => fImp (decode fuel' (fst (Cantor.of_nat p))) (decode fuel' (snd (Cantor.of_nat p)))
+    | 4 => fAnd (decode fuel' (fst (Cantor.of_nat p))) (decode fuel' (snd (Cantor.of_nat p)))
+    | 5 => fOr (decode fuel' (fst (Cantor.of_nat p))) (decode fuel' (snd (Cantor.of_nat p)))
+    | 6 => fAll (decode fuel' p)
+    | 7 => fEx (decode fuel' p)
+    | _ => fBot
+    end
+  end.
+
+Lemma decode_code : forall f fuel, code f < fuel -> decode fuel (code f) = f.
+Proof.
+  induction f as [i j | i j | | a IHa b IHb | a IHa b IHb | a IHa b IHb | a IHa | a IHa ];
+    intros fuel Hlt; destruct fuel as [| fuel']; try (cbn [code] in Hlt; lia).
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    rewrite !Cantor.cancel_of_to. cbn [fst snd]. reflexivity.
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    rewrite !Cantor.cancel_of_to. cbn [fst snd]. reflexivity.
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd]. reflexivity.
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    pose proof (Cantor.to_nat_non_decreasing 3 (Cantor.to_nat (code a, code b))) as B1.
+    pose proof (Cantor.to_nat_non_decreasing (code a) (code b)) as B2.
+    cbn [code] in Hlt.
+    rewrite (IHa fuel' ltac:(lia)), (IHb fuel' ltac:(lia)). reflexivity.
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    pose proof (Cantor.to_nat_non_decreasing 4 (Cantor.to_nat (code a, code b))) as B1.
+    pose proof (Cantor.to_nat_non_decreasing (code a) (code b)) as B2.
+    cbn [code] in Hlt.
+    rewrite (IHa fuel' ltac:(lia)), (IHb fuel' ltac:(lia)). reflexivity.
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    pose proof (Cantor.to_nat_non_decreasing 5 (Cantor.to_nat (code a, code b))) as B1.
+    pose proof (Cantor.to_nat_non_decreasing (code a) (code b)) as B2.
+    cbn [code] in Hlt.
+    rewrite (IHa fuel' ltac:(lia)), (IHb fuel' ltac:(lia)). reflexivity.
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    pose proof (Cantor.to_nat_non_decreasing 6 (code a)) as B1.
+    cbn [code] in Hlt.
+    rewrite (IHa fuel' ltac:(lia)). reflexivity.
+  - cbn [decode code]. rewrite !Cantor.cancel_of_to. cbn [fst snd].
+    pose proof (Cantor.to_nat_non_decreasing 7 (code a)) as B1.
+    cbn [code] in Hlt.
+    rewrite (IHa fuel' ltac:(lia)). reflexivity.
+Qed.
+
+Definition Enum (n : nat) : form := decode (S n) n.
+
+Lemma Enum_surj : forall f, exists n, Enum n = f.
+Proof. intro f. exists (code f). unfold Enum. apply decode_code. lia. Qed.
