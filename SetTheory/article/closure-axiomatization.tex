@@ -115,8 +115,10 @@ We study an alternative axiomatization $\T$ of Zermelo--Fraenkel set theory
 obtained by deleting the four ``generative'' axioms --- Pairing, Union, Infinity,
 and Replacement --- and adding in their place a single new schema, \emph{Closure}:
 the transitive closure of any set under any \emph{set-like} definable relation is a
-set. Keeping Extensionality, Regularity, Separation, Powerset, and Choice, we show
-that $\T$ is \emph{exactly} $\ZF(\mathsf C)$. The forward half (the four deleted
+set. Keeping Extensionality, Regularity, Separation, and Powerset, we show
+that $\T$ is \emph{exactly} $\ZF$. (Choice plays no part in the trade and is omitted
+from both theories; adding it back, $\T\cup\{\mathsf C\}$ and $\ZFC$ coincide.) The
+forward half (the four deleted
 axioms are theorems of $\T$) is the interesting direction; it rests on one small
 fact --- Powerset gives every set a host --- which turns Closure into a fully
 general principle of collection. The reverse half (every $\ZF$ model satisfies
@@ -140,7 +142,7 @@ to formalizing the recursion theorem as a first-order object derivation.
 \tableofcontents
 
 % =====================================================================
-\section{Introduction}
+\section{Introduction}\label{sec:intro}
 % =====================================================================
 
 The usual axiomatization of Zermelo--Fraenkel set theory carries several
@@ -153,7 +155,7 @@ object.
 
 This article studies what happens when we replace all four with a \emph{single}
 collection principle. Keep the ``structural'' axioms --- Extensionality,
-Regularity, Separation, Powerset, Choice --- and add the following schema.
+Regularity, Separation, and Powerset --- and add the following schema.
 
 \begin{quote}
 \textbf{Closure.} For every \emph{set-like} definable binary relation $\prec$ and
@@ -171,9 +173,22 @@ Call the resulting theory $\T$. The thesis of this article --- proved on paper a
 then in full inside a proof assistant --- is:
 
 \begin{quote}\itshape
-$\T$ and $\ZF$ have exactly the same theorems. With the shared axiom of Choice,
-$\T$ and $\ZFC$ coincide.
+$\T$ and $\ZF$ have exactly the same theorems.
 \end{quote}
+
+\paragraph{A word on Choice.} We work throughout in $\ZF$ rather than $\ZFC$. The
+Axiom of Choice plays no part in the trade between the four generative axioms and
+the Closure schema --- neither direction uses it --- so we omit it from both
+theories and state everything for $\ZF$ and $\T$. Adding it back is harmless and
+symmetric: since $\T$ and $\ZF$ prove the same theorems, $\T\cup\{\mathsf C\}$ and
+$\ZFC$ also coincide (Corollary~\ref{cor:addC}). By the Axiom of Choice we mean any
+of its standard equivalents, for instance \emph{``the Cartesian product of any
+collection of nonempty sets is nonempty.''} One caveat, returned to in
+\S\ref{sec:mech-shallow} and \S\ref{sec:remaining}: the \emph{proof assistant}
+still uses a metatheoretic description operator (Hilbert's $\varepsilon$) to name
+objects asserted to exist. That is choice in the ambient logic we reason
+\emph{in}, not the set-theoretic axiom we are setting aside; the two are
+independent, and we flag the metatheoretic use wherever it occurs.
 
 What makes this more than a bookkeeping exercise is the \emph{forward} direction:
 deriving Pairing, Union, Infinity, and Replacement from the lone Closure schema.
@@ -232,8 +247,10 @@ Both theories contain:
   $\forall \bar p\,\forall a\,\exists s\,\forall x\,\bigl(x\in s \leftrightarrow (x\in a \wedge \varphi(x,\bar p))\bigr)$.
 \item[Powerset] $\forall a\,\exists p\,\forall x\,(x\in p \leftrightarrow x \subseteq a)$.
 \item[Regularity] every nonempty set has an $\in$-minimal element.
-\item[Choice] (in the $\mathsf C$-variants) every set of nonempty sets has a choice function.
 \end{description}
+
+(We work in $\ZF$, so Choice is not part of the common base; see the note in
+\S\ref{sec:intro} and Corollary~\ref{cor:addC} for the $\ZFC$ statement.)
 
 \subsection{The theory $\ZF$}
 
@@ -277,13 +294,13 @@ bounding set,'' which is what makes the set-like hypothesis exactly the right
 amount of input.
 \end{remark}
 
-\begin{remark}[Choice is a passenger]
-Choice is stated identically in both theories and is never used in the trade
-between the generative axioms and Closure. The equivalence therefore reduces to the
-purely ``generative'' content: over the common base
-$\{\text{Ext},\text{Sep},\text{Pow},\text{Reg}\}$, the four axioms
-$\{\text{Pairing},\text{Union},\text{Infinity},\text{Replacement}\}$ are
-interderivable with the single schema Closure.
+\begin{remark}[The trade is purely ``generative'']
+Regularity is shared identically by both theories and (as the audit in
+\S\ref{sec:mech-shallow} certifies) is never used in the forward trade. The
+equivalence therefore reduces to the purely ``generative'' content: over the common
+base $\{\text{Ext},\text{Sep},\text{Pow}\}$ (with Regularity along for the ride),
+the four axioms $\{\text{Pairing},\text{Union},\text{Infinity},\text{Replacement}\}$
+are interderivable with the single schema Closure.
 \end{remark}
 
 % =====================================================================
@@ -292,8 +309,8 @@ interderivable with the single schema Closure.
 
 This is the interesting half. We assume only
 $\{\text{Extensionality},\text{Separation},\text{Powerset},\text{Closure}\}$ and
-derive Pairing, Union, Replacement, and Infinity. (Regularity and Choice are not
-needed here; they are genuine passengers, as the dependency audit in
+derive Pairing, Union, Replacement, and Infinity. (Regularity is not
+needed here; it is a genuine passenger, as the dependency audit in
 \S\ref{sec:mech-shallow} will certify.)
 
 \subsection{The linchpin: Powerset hosts every set}
@@ -411,10 +428,14 @@ Fix a set-like relation $R$ and a set $s$. Define the one-step operator
 \[
   g(t) \ =\ t \ \cup\ \{\,u : \exists v \in t,\ u \mathrel{R} v\,\}.
 \]
-The bracketed predecessor-set is genuinely a set: set-likeness gives, for each
-$v$, a bounding set $b(v)$ of $\{u : u \mathrel R v\}$; Replacement collects
-$\{b(v) : v \in t\}$, Union flattens it, and Separation carves out the actual
-predecessors. So $g : V \to V$ is a definable total operation.
+The bracketed predecessor-set is genuinely a set. Set-likeness says that for each
+$v$ there \emph{exists} a set bounding $\{u : u \mathrel R v\}$; the \emph{Collection}
+schema --- a theorem of $\ZF$ (provable from Replacement together with Foundation,
+and itself choice-free) --- gathers these into a single set $B$ holding a bound for
+every $v \in t$, so $\bigcup B$ bounds all predecessors at once and Separation carves
+out the exact predecessor-set. (Collection delivers a bounding \emph{set}, not a
+chosen function, so no Choice is needed --- cf.\ the note in \S\ref{sec:intro}.) So
+$g : V \to V$ is a definable total operation.
 
 Now iterate: $W_0 = s$ and $W_{n+1} = g(W_n)$, indexing on the \emph{metatheory's}
 natural numbers. The closure we want is $w = \bigcup_n W_n$. To produce $w$ as a
@@ -455,10 +476,9 @@ forward and load-bearing in reverse.}
 
 \begin{theorem}[Equivalence]\label{thm:equiv}
 Over the common base $\{\text{Extensionality}, \text{Separation},
-\text{Powerset}, \text{Regularity}\}$ (and the shared Choice), the theory $\T$
-(adding Closure) and the theory $\ZF$ (adding Pairing, Union, Infinity,
-Replacement) have exactly the same theorems. In particular $\T$ and $\ZFC$ are the
-same theory.
+\text{Powerset}, \text{Regularity}\}$, the theory $\T$ (adding Closure) and the
+theory $\ZF$ (adding Pairing, Union, Infinity, Replacement) have exactly the same
+theorems.
 \end{theorem}
 \begin{proof}
 $\T \proves \ZF$: Pairing, Union, Replacement, and Infinity are
@@ -466,6 +486,17 @@ Theorems by the four derivations of \S\ref{sec:forward}, none of which uses any
 $\ZF$-only axiom. $\ZF \proves \T$: Closure is a Theorem by the construction of
 \S\ref{sec:reverse}. Since the two theories share their remaining axioms verbatim,
 they prove the same sentences.
+\end{proof}
+
+\begin{corollary}[Adding Choice]\label{cor:addC}
+$\T \cup \{\mathsf C\}$ and $\ZFC$ have exactly the same theorems.
+\end{corollary}
+\begin{proof}
+Choice is the \emph{same} sentence $\mathsf C$ adjoined to both theories. For any
+$\varphi$, the deduction theorem gives $\T \cup \{\mathsf C\} \proves \varphi$ iff
+$\T \proves (\mathsf C \to \varphi)$ iff (Theorem~\ref{thm:equiv})
+$\ZF \proves (\mathsf C \to \varphi)$ iff $\ZFC \proves \varphi$. The argument is
+insensitive to which standard form of $\mathsf C$ one adopts.
 \end{proof}
 
 The rest of the article is about making Theorem~\ref{thm:equiv} --- and a good deal
@@ -666,15 +697,25 @@ with $w = \bigcup_n W_n$ realized as \cq{ounion (imageR (Ffun R HSL s) Inf)} ---
 the object union of the Replacement-image, over the inductive set \cq{Inf}, of the
 numeral-to-iterate map \cq{Ffun}.
 
-\subsection{Where classical logic enters}
+\subsection{Where classical logic --- and metatheoretic choice --- enter}
 
 Both files import \cq{ClassicalEpsilon}. It is used to \emph{package} the
 existential axioms as operations --- turning ``$\exists p,\ \dots$'' (Powerset)
 into a function \cq{power : V -> V} with a specification lemma, via
 \cq{constructive_indefinite_description} --- and, in \texttt{Reverse.v}, to extract
-a bounding function from set-likeness and to index the iteration. Set theory is
-classical anyway and Choice rides along, so this is exactly the intended
-metatheoretic setting.
+a bounding function \cq{boundf} from set-likeness and to index the iteration.
+
+It is worth being precise about what kind of choice this is, since we went to some
+trouble in \S\ref{sec:theories} to keep the \emph{set-theoretic} Axiom of Choice out
+of both theories. The description operator here is choice in the \emph{ambient
+logic} we reason \emph{in} --- it only gives a name to an object the theory already
+asserts to exist --- and it is independent of the object-level Axiom of Choice,
+present in both directions regardless. In particular \cq{boundf} is a
+\emph{convenience}: as \S\ref{sec:reverse} explained, the underlying $\ZF$
+mathematics needs only the choice-free Collection schema to form the
+predecessor-set, so no set-theoretic Choice is smuggled in through the back door.
+The \cq{Print Assumptions} audit in \S\ref{sec:remaining} confirms that neither
+direction depends on an object-level Choice axiom.
 
 % =====================================================================
 \section{Mechanization II: closing the first-order gap}\label{sec:mech-deep}
@@ -1154,9 +1195,13 @@ There is no \cq{Admitted} and no custom \cq{Axiom} anywhere in the four files.
 These five are exactly the principles one expects when mechanizing classical set
 theory with a quotient term model: classical logic, a description operator to turn
 existence axioms into operations, and the extensionality/irrelevance principles
-that make the quotient an honest type. In particular, the metatheory is \emph{not}
-assumed to be stronger than $\ZF$ --- the development does not, for instance, rely
-on a universe of $\ZF$-sets supplied by a library.
+that make the quotient an honest type. Note that
+\cq{constructive_indefinite_description} is \emph{metatheoretic} choice (Hilbert's
+$\varepsilon$ in the ambient logic), not the set-theoretic Axiom of Choice --- which,
+as \S\ref{sec:theories} explained, appears in neither $\T$ nor $\ZF$ here, so these
+certificates do not list it. In particular, the metatheory is \emph{not} assumed to
+be stronger than $\ZF$ --- the development does not, for instance, rely on a universe
+of $\ZF$-sets supplied by a library.
 
 % =====================================================================
 \section{Conclusion}\label{sec:conclusion}

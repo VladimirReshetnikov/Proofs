@@ -4,11 +4,11 @@
 - Repository HEAD: adeba87107a01ad82de9c28edd492a3d7d816ef9
 
 A Rocq/Coq formalization of Vladimir Reshetnikov's alternative axiomatization of
-set theory and its equivalence with ordinary ZF(C).
+set theory and its equivalence with ordinary ZF.
 
 ## The axiomatization
 
-Keep **Extensionality, Regularity, Separation, Powerset, Choice**. Drop
+Keep **Extensionality, Regularity, Separation, Powerset**. Drop
 **Pairing, Union, Infinity, Replacement**. Add one schema:
 
 > **Closure.** For every *set-like* class relation `≺`, the transitive closure of
@@ -29,9 +29,17 @@ allowed) is
 ( ∀x ∃y ∀z (z ≺ x ⇒ z ∈ y) )  ⇒  ∀s ∃w ( s ⊆ w ∧ ∀u ∀v (u ≺ v ∈ w ⇒ u ∈ w) ).
 ```
 
+**A note on Choice.** We work in ZF, not ZFC. The Axiom of Choice plays no part in
+the trade between the four generative axioms and the Closure schema (neither
+direction uses it), so it is omitted from both theories here; the Coq sources
+declare no Choice hypothesis in either `T` or `ZF`. Adding it back is symmetric:
+since `T` and `ZF` prove the same theorems, `T ∪ {C}` and `ZFC` coincide. (The
+metatheoretic description operator the formalization uses — Hilbert's ε — is choice
+in the *ambient logic*, not the set-theoretic axiom; see *Faithfulness* below.)
+
 ## The result
 
-The system is **exactly ZF** (and with the shared Choice axiom, exactly ZFC):
+The system is **exactly ZF**:
 
 | direction | statement | status | file |
 |-----------|-----------|--------|------|
@@ -46,10 +54,10 @@ The system is **exactly ZF** (and with the shared Choice axiom, exactly ZFC):
 | `ZF ⊢ φ ⟹ T ⊢ φ` | the forward syntactic direction, ZF/T as sentence theories | **machine-checked** | [`Completeness.v`](Completeness.v) |
 | `T ⊢ φ ⟹ ZF ⊢ φ` | the converse | needs the first-order recursion theorem (see below) | [`Completeness.v`](Completeness.v) |
 
-Regularity and Choice are **shared verbatim** between the two theories, so the
+Regularity is **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
 Infinity, Replacement}` for the single schema `Closure` over the common base
-`{Ext, Sep, Pow}` (+ Regularity, + Choice). The forward file proves the
+`{Ext, Sep, Pow}` (+ Regularity). The forward file proves the
 interesting half; the reverse file proves the standard half.
 
 ## Why it works — the linchpin
@@ -107,10 +115,11 @@ pleasant mirror image:
 `Reverse.v` builds the transitive closure of `s` under a set-like `R` the textbook
 way, with the iteration carried on the *meta-level* `nat`:
 
-1. set-likeness yields a bounding function `boundf` (one bound per node, via
-   classical description), so the one-step predecessor set
-   `predsf t = { u : ∃ v ∈ t, R u v }` is a genuine set
-   (`⋃` of the `boundf`-image of `t`, then Separation);
+1. for each node the predecessors are bounded (set-likeness), so the one-step
+   predecessor set `predsf t = { u : ∃ v ∈ t, R u v }` is a genuine set — in ZF by
+   Collection (a choice-free theorem) + Union + Separation. (The Coq code realizes
+   this with a metatheoretic bounding function `boundf` via classical description:
+   a convenience, not an object-level use of Choice.)
 2. `gstep t = t ∪ predsf t`, and `Wₙ = iterate gstep s n` (Coq `Fixpoint` on `nat`);
 3. to collect `{Wₙ : n}` into one object set we feed the object numerals
    `onat n ∈ Inf` (from Infinity) through Replacement via a map `Ffun` with
@@ -139,7 +148,12 @@ additional mathematical insight.
 Classical logic enters only through `ClassicalEpsilon` (used to package the
 existential axioms `Separation`/`Powerset` as the operators `sep`/`power`, and, in
 `Reverse.v`, to extract a bounding function from set-likeness and to index the
-iteration). Set theory is classical anyway, and Choice rides along.
+iteration). This is *metatheoretic* choice — Hilbert's ε in the ambient logic, used
+only to name objects the theory already asserts to exist — and is distinct from the
+set-theoretic Axiom of Choice, which appears in neither theory (see *A note on
+Choice* above). In `Reverse.v` the bounding function is a convenience: the
+underlying ZF argument needs only the choice-free Collection schema, so no
+object-level Choice is incurred.
 
 ## Closing the first-order gap (`Deep.v`)
 

@@ -21,7 +21,7 @@
 (*      w = Union (image) = Union_n W_n.                                  *)
 (*                                                                       *)
 (*  Together with Forward.v this gives both directions of                 *)
-(*      {Ext, Reg, Sep, Pow, Choice, Closure}  ==  ZF(C).                 *)
+(*      {Ext, Reg, Sep, Pow, Closure}  ==  ZF.                            *)
 (*                                                                       *)
 (*  - Created (UTC): 2026-06-30T04:48:30Z                                 *)
 (*  - Repository HEAD: adeba87107a01ad82de9c28edd492a3d7d816ef9          *)
