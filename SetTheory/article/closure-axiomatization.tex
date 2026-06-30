@@ -1,0 +1,1231 @@
+% =====================================================================
+%  closure-axiomatization.tex
+%
+%  An equivalent axiomatization of ZF via a single Closure schema:
+%  the mathematics and its machine-verified Rocq/Coq formalization.
+%
+%  Author: Vladimir Reshetnikov (formalization assisted by Claude Code).
+%
+%  - Created (UTC): 2026-06-30T17:33:23Z
+%  - Repository HEAD: 9838ea000b4398278ea4b53d48ab379c0f5e6a97
+%
+%  Build:  lualatex closure-axiomatization.tex   (run twice for refs)
+% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm,mathtools}
+\usepackage[margin=1in]{geometry}
+\usepackage{microtype}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!55!black,urlcolor=blue!55!black,
+            citecolor=blue!55!black]{hyperref}
+
+% ---------- theorem environments ----------
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{example}[theorem]{Example}
+
+% ---------- notation ----------
+\newcommand{\mem}{\in}
+\newcommand{\Pow}{\mathcal{P}}
+\newcommand{\ZF}{\mathsf{ZF}}
+\renewcommand{\ZF}{\textsf{ZF}}
+\newcommand{\ZFC}{\textsf{ZFC}}
+\newcommand{\T}{\textsf{T}}
+\newcommand{\proves}{\vdash}
+\newcommand{\emptys}{\varnothing}
+\DeclareMathOperator{\Sat}{Sat}
+\DeclareMathOperator{\Prov}{Prov}
+
+% ---------- Coq listing style ----------
+\definecolor{coqkw}{rgb}{0.13,0.29,0.53}
+\definecolor{coqcomment}{rgb}{0.40,0.40,0.40}
+\definecolor{coqbg}{rgb}{0.975,0.975,0.965}
+
+\lstdefinelanguage{Coq}{
+  morekeywords={Theorem,Lemma,Definition,Fixpoint,Inductive,Hypothesis,
+    Variable,Section,End,Proof,Qed,forall,exists,fun,match,with,end,
+    Prop,Type,nat,list,let,in,Corollary,Check,Require,Import,From,Infix,
+    Print,Assumptions},
+  sensitive=true,
+  morecomment=[s]{(*}{*)},
+  morestring=[b]",
+}
+\lstset{
+  language=Coq,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{coqkw}\bfseries,
+  commentstyle=\color{coqcomment}\itshape,
+  backgroundcolor=\color{coqbg},
+  frame=single,
+  framerule=0.3pt,
+  rulecolor=\color{black!20},
+  columns=fullflexible,
+  keepspaces=true,
+  showstringspaces=false,
+  breaklines=true,
+  breakatwhitespace=true,
+  inputencoding=utf8,
+  extendedchars=true,
+  xleftmargin=1.2em,
+  xrightmargin=0.6em,
+  aboveskip=0.9em,
+  belowskip=0.9em,
+  literate=
+    {∈}{{\ensuremath{\in}}}1
+    {∉}{{\ensuremath{\notin}}}1
+    {⊆}{{\ensuremath{\subseteq}}}1
+    {∅}{{\ensuremath{\varnothing}}}1
+    {∪}{{\ensuremath{\cup}}}1
+    {≺}{{\ensuremath{\prec}}}1
+    {→}{{\ensuremath{\rightarrow}}}1
+    {⟹}{{\ensuremath{\Longrightarrow}}}1
+    {⊢}{{\ensuremath{\vdash}}}1
+    {⊨}{{\ensuremath{\vDash}}}1
+    {φ}{{\ensuremath{\varphi}}}1
+    {ψ}{{\ensuremath{\psi}}}1
+    {ω}{{\ensuremath{\omega}}}1
+    {≠}{{\ensuremath{\neq}}}1
+    {⋃}{{\ensuremath{\bigcup}}}1
+}
+% inline Coq snippet
+\newcommand{\cq}[1]{\lstinline[basicstyle=\ttfamily]|#1|}
+
+\title{\bfseries An Equivalent Axiomatization of ZF\\[2pt]
+       via a Single \emph{Closure} Schema\\[6pt]
+       \large Mathematics and a Machine-Verified Rocq/Coq Proof}
+\author{Vladimir Reshetnikov\\[2pt]
+        \small\itshape Formalization carried out with Claude Code (Rocq 9.0.1)}
+\date{2026-06-30}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We study an alternative axiomatization $\T$ of Zermelo--Fraenkel set theory
+obtained by deleting the four ``generative'' axioms --- Pairing, Union, Infinity,
+and Replacement --- and adding in their place a single new schema, \emph{Closure}:
+the transitive closure of any set under any \emph{set-like} definable relation is a
+set. Keeping Extensionality, Regularity, Separation, Powerset, and Choice, we show
+that $\T$ is \emph{exactly} $\ZF(\mathsf C)$. The forward half (the four deleted
+axioms are theorems of $\T$) is the interesting direction; it rests on one small
+fact --- Powerset gives every set a host --- which turns Closure into a fully
+general principle of collection. The reverse half (every $\ZF$ model satisfies
+Closure) is the textbook transitive-closure recursion. We then describe in
+tutorial detail a complete machine-checked formalization in the Rocq/Coq proof
+assistant, organized in four developments: a shallow embedding proving the
+semantic equivalence in both directions with a ``free dependency audit'' that
+certifies \emph{which} axioms each derivation actually uses; a deep embedding of
+first-order logic that re-proves the forward trade from genuinely syntactic
+schemas; a sound natural-deduction calculus with the cross-theory corollary
+$\ZF \proves \varphi \Rightarrow \T \models \varphi$; and a from-scratch proof of
+G\"odel completeness, compactness for sentence theories, and the forward
+\emph{syntactic} direction $\ZF \proves \varphi \Rightarrow \T \proves \varphi$.
+The whole development contains no admitted goals and rests only on the standard
+axioms of classical mathematics. We close by characterizing precisely the one
+direction that is true but not formalized --- the converse
+$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ --- and explain why it amounts
+to formalizing the recursion theorem as a first-order object derivation.
+\end{abstract}
+
+\tableofcontents
+
+% =====================================================================
+\section{Introduction}
+% =====================================================================
+
+The usual axiomatization of Zermelo--Fraenkel set theory carries several
+\emph{generative} axioms whose common job is to assert that certain sets exist:
+\textbf{Pairing} ($\{a,b\}$ exists), \textbf{Union} ($\bigcup s$ exists),
+\textbf{Infinity} (an inductive set exists), and \textbf{Replacement} (the image
+of a set under a definable function-class is a set). Each of these is, in
+isolation, a recipe for collecting a previously described family of sets into one
+object.
+
+This article studies what happens when we replace all four with a \emph{single}
+collection principle. Keep the ``structural'' axioms --- Extensionality,
+Regularity, Separation, Powerset, Choice --- and add the following schema.
+
+\begin{quote}
+\textbf{Closure.} For every \emph{set-like} definable binary relation $\prec$ and
+every set $s$, there is a set $w$ that contains $s$ and is closed under taking
+$\prec$-predecessors. (Such a $w$ is a superset of the transitive closure of $s$
+under $\prec$.)
+\end{quote}
+
+Here ``set-like'' is the natural smallness condition that makes the principle
+consistent: each node's class of immediate $\prec$-predecessors must already be
+bounded by some set. Without it, ``$z \prec x$'' could be ``$z = z$'', and the
+closure of $\{\emptyset\}$ would be the universe.
+
+Call the resulting theory $\T$. The thesis of this article --- proved on paper and
+then in full inside a proof assistant --- is:
+
+\begin{quote}\itshape
+$\T$ and $\ZF$ have exactly the same theorems. With the shared axiom of Choice,
+$\T$ and $\ZFC$ coincide.
+\end{quote}
+
+What makes this more than a bookkeeping exercise is the \emph{forward} direction:
+deriving Pairing, Union, Infinity, and Replacement from the lone Closure schema.
+We will see that all four are instances of \emph{one} idea, and that the engine
+which makes them go is not Closure by itself but Closure standing on
+\textbf{Powerset}. The single fact
+\[
+  a \subseteq a \quad\Longrightarrow\quad a \in \Pow(a)
+\]
+--- ``Powerset gives every set a host'' --- is what lets us certify that the
+relations we care about are set-like, and hence what upgrades Closure from a
+statement about transitive closures into a fully general principle of collection.
+
+\paragraph{What this article does.} There are two interleaved goals. The first is
+mathematical: state the two theories precisely, prove the equivalence, exhibit the
+four derivations as one schema-instance family, and isolate the role of Powerset
+(and, by a pleasant mirror symmetry, the role of Regularity in the reverse
+direction). The second is to explain, in tutorial style, the
+\emph{machine-verified} proof we built in the Rocq/Coq proof assistant. That
+formalization grew well past the original equivalence: it now includes a deep
+embedding of first-order logic, a sound and \emph{complete} proof calculus
+(G\"odel completeness proved from scratch), a compactness theorem for sentence
+theories, and the forward syntactic statement
+$\ZF \proves \varphi \Rightarrow \T \proves \varphi$. We will walk through each
+layer, quote the actual definitions and theorem statements, and explain the design
+decisions and the one genuine obstacle that remains.
+
+\paragraph{Roadmap.}
+Sections~\ref{sec:theories}--\ref{sec:equivalence} are the mathematics: the two
+theories, the forward direction (with the Powerset remark), the reverse direction,
+and the equivalence theorem. Sections~\ref{sec:mech-shallow}--\ref{sec:mech-compl}
+are the formalization: the shallow embedding and the dependency audit
+(\S\ref{sec:mech-shallow}), the deep embedding closing the first-order gap
+(\S\ref{sec:mech-deep}), the proof calculus and soundness
+(\S\ref{sec:mech-calculus}), and completeness, compactness, and the syntactic
+equivalence (\S\ref{sec:mech-compl}). Section~\ref{sec:remaining} states precisely
+what is proven and characterizes the single remaining direction.
+Section~\ref{sec:conclusion} reflects on both punchlines.
+
+% =====================================================================
+\section{The two theories}\label{sec:theories}
+% =====================================================================
+
+We work in the first-order language with one binary relation symbol $\in$ and
+equality. All schemas allow parameters (free variables other than the displayed
+ones). Throughout, $\subseteq$ abbreviates the definable inclusion
+$a \subseteq b \coloneqq \forall x\,(x \in a \to x \in b)$.
+
+\subsection{The common base}
+
+Both theories contain:
+
+\begin{description}[leftmargin=2.2em,style=nextline]
+\item[Extensionality] $\forall a\,\forall b\,\bigl(\forall x\,(x\in a \leftrightarrow x\in b)\to a=b\bigr)$.
+\item[Separation (schema)] for each formula $\varphi(x,\bar p)$,
+  $\forall \bar p\,\forall a\,\exists s\,\forall x\,\bigl(x\in s \leftrightarrow (x\in a \wedge \varphi(x,\bar p))\bigr)$.
+\item[Powerset] $\forall a\,\exists p\,\forall x\,(x\in p \leftrightarrow x \subseteq a)$.
+\item[Regularity] every nonempty set has an $\in$-minimal element.
+\item[Choice] (in the $\mathsf C$-variants) every set of nonempty sets has a choice function.
+\end{description}
+
+\subsection{The theory $\ZF$}
+
+$\ZF$ adds the four generative axioms:
+
+\begin{description}[leftmargin=2.2em,style=nextline]
+\item[Pairing] $\forall a\,\forall b\,\exists p\,\forall x\,(x\in p \leftrightarrow (x=a \vee x=b))$.
+\item[Union] $\forall s\,\exists u\,\forall x\,\bigl(x\in u \leftrightarrow \exists v\,(x\in v \wedge v\in s)\bigr)$.
+\item[Infinity] there is a set containing $\emptyset$ and closed under $x \mapsto x\cup\{x\}$.
+\item[Replacement (schema)] for each functional formula, the image of a set is a set.
+\end{description}
+
+\subsection{The theory $\T$}
+
+$\T$ drops all four and adds the single \textbf{Closure} schema. Two definitions
+make it precise. A binary relation $\prec$ is \emph{set-like} when
+\begin{equation}\label{eq:setlike}
+  \forall x\,\exists y\,\forall z\,(z \prec x \to z \in y),
+\end{equation}
+i.e.\ the class of immediate $\prec$-predecessors of each node is bounded by a set.
+A set $w$ is \emph{closed under $\prec$-predecessors above $s$} when
+\begin{equation}\label{eq:closed}
+  s \subseteq w \ \wedge\ \forall u\,\forall v\,(u \prec v \wedge v \in w \to u \in w).
+\end{equation}
+The Closure schema asserts one such $w$ for every set-like definable $\prec$ and
+every $s$:
+\begin{equation}\label{eq:closure}
+  \underbrace{\bigl(\forall x\,\exists y\,\forall z\,(z\prec x \to z\in y)\bigr)}_{\text{$\prec$ set-like}}
+  \ \Longrightarrow\
+  \forall s\,\exists w\,\underbrace{\bigl(s\subseteq w \ \wedge\ \forall u\,\forall v\,(u\prec v \wedge v\in w \to u\in w)\bigr)}_{\text{$w$ contains the transitive closure of $s$}}.
+\end{equation}
+There is one instance of \eqref{eq:closure} per definable binary relation $\prec$,
+parameters allowed.
+
+\begin{remark}[Why $w$ is a \emph{superset}, not the exact transitive closure]
+We deliberately ask only for a set $w$ \emph{containing} the transitive closure,
+not for the transitive closure itself. This is harmless: once $w$ exists,
+Separation carves out the exact transitive closure as a subset of $w$. Asking only
+for a superset keeps each Closure instance about an existential ``there is a
+bounding set,'' which is what makes the set-like hypothesis exactly the right
+amount of input.
+\end{remark}
+
+\begin{remark}[Choice is a passenger]
+Choice is stated identically in both theories and is never used in the trade
+between the generative axioms and Closure. The equivalence therefore reduces to the
+purely ``generative'' content: over the common base
+$\{\text{Ext},\text{Sep},\text{Pow},\text{Reg}\}$, the four axioms
+$\{\text{Pairing},\text{Union},\text{Infinity},\text{Replacement}\}$ are
+interderivable with the single schema Closure.
+\end{remark}
+
+% =====================================================================
+\section{The forward direction: \texorpdfstring{$\T \proves \ZF$}{T proves ZF}}\label{sec:forward}
+% =====================================================================
+
+This is the interesting half. We assume only
+$\{\text{Extensionality},\text{Separation},\text{Powerset},\text{Closure}\}$ and
+derive Pairing, Union, Replacement, and Infinity. (Regularity and Choice are not
+needed here; they are genuine passengers, as the dependency audit in
+\S\ref{sec:mech-shallow} will certify.)
+
+\subsection{The linchpin: Powerset hosts every set}
+
+\begin{lemma}[self-membership in the powerset]\label{lem:self}
+For every set $a$, $\ a \in \Pow(a)$.
+\end{lemma}
+\begin{proof}
+$a \subseteq a$ holds trivially, and by Powerset $x \in \Pow(a) \leftrightarrow x \subseteq a$;
+take $x = a$.
+\end{proof}
+
+Lemma~\ref{lem:self} looks too small to matter, but it is the entire engine.
+Consider any class relation $\prec$ that is \emph{singleton-valued} above each node
+--- i.e.\ for each $x$ there is at most one $z$ with $z \prec x$, given by some
+class function $z = G(x)$. Is such a $\prec$ set-like? The set-like condition
+\eqref{eq:setlike} asks for a set $y$ bounding $\{\,z : z \prec x\,\} = \{G(x)\}$.
+By Lemma~\ref{lem:self}, $G(x) \in \Pow(G(x))$, so $y = \Pow(G(x))$ works
+\emph{for free}. More generally, whenever the predecessor-class above each node is
+already known to sit inside a definable set, Powerset hands us the bound.
+
+\begin{quote}\itshape
+This is the conceptual heart of the whole equivalence: \textbf{Powerset turns
+``has a definable predecessor'' into ``is set-like.''} Closure then collects the
+predecessors. The four generative axioms are four ways of choosing the relation
+$\prec$ and the seed $s$.
+\end{quote}
+
+\subsection{Four derivations, one schema-instance family}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabular}{@{}lll@{}}
+\toprule
+Axiom & Relation $\prec$ (read $z \prec x$) & Seed $s$ \\
+\midrule
+Union       & $z \in x$ \hfill (membership) & the given set $s$ \\
+Replacement & $x \in a \wedge z = F(x)$ \hfill (function graph) & the domain $a$ \\
+Pairing     & $(x{=}\emptyset \wedge z{=}a)\vee(x{=}\{\emptyset\}\wedge z{=}b)$ & the 2-node seed $\{\emptyset,\{\emptyset\}\}$ \\
+Infinity    & $z = x \cup \{x\}$ \hfill (successor) & $\{\emptyset\}$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+In each case the recipe is the same: (i) check the relation is set-like (using
+Lemma~\ref{lem:self}); (ii) apply Closure to get a closed superset $w$; (iii) use
+Separation to carve the exact set we wanted out of $w$.
+
+\paragraph{Union} is closure under $\in$. The relation $z \prec x \coloneqq z \in x$
+is set-like because the predecessors of $x$ are exactly the elements of $x$,
+bounded by $x$ itself ($y = x$). Closure applied to $s$ gives a $w$ with
+$s \subseteq w$ and $w$ closed under $\in$-predecessors. Hence every element of
+every member of $s$ lies in $w$, and Separation extracts
+$\{\,x \in w : \exists v\,(x \in v \wedge v \in s)\,\} = \bigcup s$.
+
+\paragraph{Replacement} is closure along a function graph. For a class function
+$F$ and domain $a$, take $z \prec x \coloneqq x \in a \wedge z = F(x)$. The
+predecessors of $x$ form the singleton $\{F(x)\}$ (or $\emptyset$ if
+$x \notin a$), bounded by $\Pow(F(x))$ via Lemma~\ref{lem:self} --- this is where
+Powerset is used. Closure applied to $a$ yields a $w$ containing the whole image
+$\{F(x) : x \in a\}$, and Separation carves out exactly that image.
+
+\paragraph{Pairing} is the subtle one, and it is precisely where Powerset's
+host-providing role becomes visible as a \emph{design constraint}. We want
+$\{a,b\}$ for arbitrary $a,b$. The naive attempt --- one seed node whose
+predecessors are $\{a,b\}$ --- is self-defeating: to certify that relation
+set-like we would need a set bounding $\{a,b\}$, which is Pairing itself. The fix
+is to \emph{split $a$ and $b$ across two different seed nodes}. Use the two-node
+seed $\{\emptyset,\{\emptyset\}\}$ (built from $\emptyset$ and $\Pow$ alone) and
+the relation
+\[
+  z \prec x \ \coloneqq\ (x = \emptyset \wedge z = a)\ \vee\ (x = \{\emptyset\} \wedge z = b).
+\]
+Now each node has a \emph{singleton} predecessor-class --- $\{a\}$ above
+$\emptyset$, $\{b\}$ above $\{\emptyset\}$ --- so Lemma~\ref{lem:self} makes it
+set-like ($\Pow(a)$ and $\Pow(b)$ are the hosts), with no circular appeal to
+Pairing. Closure of the seed then drags both $a$ and $b$ into one set $w$, and
+Separation gives $\{x \in w : x = a \vee x = b\} = \{a,b\}$.
+
+\paragraph{Infinity} is closure of $\{\emptyset\}$ under the successor relation
+$z \prec x \coloneqq z = x \cup \{x\}$. The successor is unique, so the
+predecessor-class is again a singleton, hostable by Powerset; the relation is
+set-like. Closure applied to $\{\emptyset\}$ gives a set $w$ containing
+$\emptyset$ and closed under successors --- an inductive set, which is exactly what
+Infinity asserts. (Once Pairing and Union are available, the successor
+$x \cup \{x\}$ is itself a set, so the relation is genuinely definable.)
+
+\subsection{Powerset is load-bearing}\label{sec:powerset-loadbearing}
+
+The four derivations above use Powerset in a single, uniform role: as the source
+of hosts in Lemma~\ref{lem:self}, the fact that makes singleton-valued (and more
+generally suitably bounded) relations set-like. Union is the lone exception --- its
+relation $z \in x$ is bounded by $x$ directly, with no powerset needed --- which is
+why the audit in \S\ref{sec:mech-shallow} will show Union depending on Separation
+and Closure \emph{only}.
+
+This is worth stating sharply, because it is easy to read Closure as ``the''
+replacement for the four axioms and miss that it is \emph{Closure together with
+Powerset} that does the work. Strip Powerset away and the set-like hypothesis of
+Closure stops being free: there is no longer a uniform host for a
+singleton-valued relation, and the collection power evaporates. We will see the
+machine certify this load-bearing role automatically, and --- by a pleasing
+symmetry --- certify that Powerset is \emph{idle} in the reverse direction, where
+Regularity becomes the load-bearing axiom instead.
+
+% =====================================================================
+\section{The reverse direction: \texorpdfstring{$\ZF \proves \text{Closure}$}{ZF proves Closure}}\label{sec:reverse}
+% =====================================================================
+
+The reverse direction is the standard transitive-closure construction; the only
+care needed is in collecting an $\omega$-indexed family of sets into one object,
+which is exactly the job Replacement and Infinity exist to do.
+
+Fix a set-like relation $R$ and a set $s$. Define the one-step operator
+\[
+  g(t) \ =\ t \ \cup\ \{\,u : \exists v \in t,\ u \mathrel{R} v\,\}.
+\]
+The bracketed predecessor-set is genuinely a set: set-likeness gives, for each
+$v$, a bounding set $b(v)$ of $\{u : u \mathrel R v\}$; Replacement collects
+$\{b(v) : v \in t\}$, Union flattens it, and Separation carves out the actual
+predecessors. So $g : V \to V$ is a definable total operation.
+
+Now iterate: $W_0 = s$ and $W_{n+1} = g(W_n)$, indexing on the \emph{metatheory's}
+natural numbers. The closure we want is $w = \bigcup_n W_n$. To produce $w$ as a
+single set we must turn the meta-indexed family $\{W_n\}$ into an
+\emph{object}-indexed family. Use Infinity to obtain an inductive set, and inside it
+the von~Neumann numerals $\underline n$ ($\underline 0 = \emptyset$,
+$\underline{n+1} = \underline n \cup \{\underline n\}$). The assignment
+$\underline n \mapsto W_n$ is a definable class function on the numerals, so
+Replacement makes its image $\{W_n : n\}$ a set, and Union gives
+$w = \bigcup_n W_n$.
+
+For this to be well defined we need the numerals to be \emph{distinct}, i.e.\
+$\underline m = \underline n \Rightarrow m = n$, so that ``$\underline n \mapsto
+W_n$'' is unambiguous. Distinctness follows from $\underline m \in \underline n$
+whenever $m < n$, together with the fact that \emph{no set is a member of itself}
+--- which is precisely where \textbf{Regularity} enters (apply Regularity to
+$\{x\}$ to refute $x \in x$). Finally, $w$ contains $s = W_0$ and is closed under
+$R$-predecessors: if $u \mathrel R v$ and $v \in w$, then $v \in W_n$ for some
+$n$, hence $u \in g(W_n) = W_{n+1} \subseteq w$.
+
+\begin{remark}[The reverse mirror: Regularity load-bearing, Powerset idle]
+\label{rem:mirror}
+Notice what powered the reverse construction: Replacement, Union, Infinity (to
+collect the family) and Regularity (to make the numerals injective). Powerset was
+\emph{not} used. The machine audit in \S\ref{sec:mech-shallow} confirms this,
+yielding the sharper statement
+\[
+  \ZF - \text{Powerset} \ \proves\ \text{Closure}.
+\]
+So the two directions exhibit a clean mirror image:
+\textbf{Powerset is load-bearing forward and idle in reverse; Regularity is idle
+forward and load-bearing in reverse.}
+\end{remark}
+
+% =====================================================================
+\section{The equivalence theorem}\label{sec:equivalence}
+% =====================================================================
+
+\begin{theorem}[Equivalence]\label{thm:equiv}
+Over the common base $\{\text{Extensionality}, \text{Separation},
+\text{Powerset}, \text{Regularity}\}$ (and the shared Choice), the theory $\T$
+(adding Closure) and the theory $\ZF$ (adding Pairing, Union, Infinity,
+Replacement) have exactly the same theorems. In particular $\T$ and $\ZFC$ are the
+same theory.
+\end{theorem}
+\begin{proof}
+$\T \proves \ZF$: Pairing, Union, Replacement, and Infinity are
+Theorems by the four derivations of \S\ref{sec:forward}, none of which uses any
+$\ZF$-only axiom. $\ZF \proves \T$: Closure is a Theorem by the construction of
+\S\ref{sec:reverse}. Since the two theories share their remaining axioms verbatim,
+they prove the same sentences.
+\end{proof}
+
+The rest of the article is about making Theorem~\ref{thm:equiv} --- and a good deal
+more --- checkable by machine.
+
+% =====================================================================
+\section{Mechanization I: the shallow embedding and the dependency audit}\label{sec:mech-shallow}
+% =====================================================================
+
+The formalization lives in the \texttt{src/SetTheory/} directory of the
+repository, in four Rocq/Coq source files. This section covers the two that prove
+the semantic equivalence directly: \texttt{Forward.v} and \texttt{Reverse.v}.
+
+\subsection{Why Rocq/Coq, and what a ``shallow embedding'' is}
+
+We use Rocq/Coq (version 9.0.1). The decisive feature is the
+\textbf{Section/Hypothesis} idiom, which fits our problem like a glove. A Coq
+\cq{Section} lets us fix an abstract structure and assume axioms about it as local
+\cq{Hypothesis}es; every theorem proved inside is, after the section closes,
+automatically generalized over the structure \emph{and over exactly the hypotheses
+it used}. That is precisely the shape of a metatheorem of the form ``every model of
+these axioms satisfies that conclusion.''
+
+The structure is modelled \emph{shallowly}: the universe of sets is an abstract Coq
+type \cq{V}, membership is an abstract relation \cq{mem : V -> V -> Prop}, and the
+axiom schemas are rendered with the metatheory's own predicates. For instance
+Separation quantifies over a Coq predicate \cq{P : V -> Prop}:
+
+\begin{lstlisting}
+Variable V : Type.
+Variable mem : V -> V -> Prop.
+Infix "∈" := mem (at level 70, no associativity).
+Definition Sub (a b : V) : Prop := forall x, x ∈ a -> x ∈ b.
+
+Hypothesis Extensionality :
+  forall a b, (forall x, x ∈ a <-> x ∈ b) -> a = b.
+Hypothesis Separation :
+  forall (a : V) (P : V -> Prop),
+    exists s, forall x, x ∈ s <-> (x ∈ a /\ P x).
+Hypothesis Powerset :
+  forall a, exists p, forall x, x ∈ p <-> Sub x a.
+\end{lstlisting}
+
+The Closure schema becomes a quantification over a Coq relation
+\cq{R : V -> V -> Prop}, with set-likeness defined exactly as in
+\eqref{eq:setlike}:
+
+\begin{lstlisting}
+Definition SetLike (R : V -> V -> Prop) : Prop :=
+  forall x, exists y, forall z, R z x -> z ∈ y.
+
+Hypothesis Closure :
+  forall R : V -> V -> Prop, SetLike R ->
+    forall s, exists w, Sub s w /\ (forall u v, R u v -> v ∈ w -> u ∈ w).
+\end{lstlisting}
+
+\paragraph{What a shallow embedding proves, and its faithfulness.} Because the
+schemas range over \emph{all} Coq predicates/relations, the artifact establishes
+the \emph{second-order} statement: every structure $(V,\in)$ satisfying these
+axioms also satisfies the derived ones. This is the standard, accepted way to
+mechanize an equivalence of axiomatizations, and it is strictly stronger than the
+first-order schematic reading on the model side. It stays faithful to the genuine
+first-order claim because \emph{every derivation instantiates a schema at one
+concrete, definable relation} --- the membership relation, a function graph, the
+two-branch pairing relation, the successor relation --- exactly the instances a
+first-order proof would write down. (Section~\ref{sec:mech-deep} removes even this
+caveat for the forward direction, by re-proving it with schemas that range over
+syntactic formulas.)
+
+\subsection{The linchpin and the four theorems, in Coq}
+
+Lemma~\ref{lem:self} is a two-line Coq proof, and it is exactly the pivot the
+informal argument advertised:
+
+\begin{lstlisting}
+Lemma Sub_refl : forall a, Sub a a.
+Proof. intros a x H. exact H. Qed.
+
+(* THE LINCHPIN: Powerset gives every set a host. *)
+Lemma self_in_power : forall a, a ∈ power a.
+Proof. intro a. apply power_intro. apply Sub_refl. Qed.
+\end{lstlisting}
+
+The four relations of the schema-instance family are declared verbatim:
+
+\begin{lstlisting}
+Definition pairRel (a b : V) : V -> V -> Prop :=
+  fun z x => (x = emptyset /\ z = a) \/ (x = single_empty /\ z = b).
+Definition memRel : V -> V -> Prop := fun z x => z ∈ x.
+Definition graphRel (F : V -> V) (a : V) : V -> V -> Prop :=
+  fun z x => x ∈ a /\ z = F x.
+Definition succRel : V -> V -> Prop :=
+  fun z x => forall t, t ∈ z <-> (t ∈ x \/ t = x).
+\end{lstlisting}
+
+Each of Pairing, Union, Replacement, Infinity is then proved by the three-step
+recipe (set-like check $\to$ Closure $\to$ Separation). Union is the shortest and
+shows the pattern cleanly:
+
+\begin{lstlisting}
+Theorem Union :
+  forall s, exists u, forall x, x ∈ u <-> exists v, x ∈ v /\ v ∈ s.
+Proof.
+  intro s.
+  assert (HSL : SetLike memRel).
+  { intro x. exists x. intros z Hz. unfold memRel in Hz. exact Hz. }
+  destruct (Closure memRel HSL s) as [w [Hsub Hclosed]].
+  exists (sep w (fun x => exists v, x ∈ v /\ v ∈ s)).
+  intro x. split.
+  - intro H. exact (sep_elim2 _ _ _ H).
+  - intro H. apply sep_intro.
+    + destruct H as [v [Hxv Hvs]]. apply (Hclosed x v).
+      * unfold memRel. exact Hxv.
+      * apply Hsub. exact Hvs.
+    + exact H.
+Qed.
+\end{lstlisting}
+
+Read it as English: ``\cq{memRel} is set-like (host $= x$ itself); apply
+\cq{Closure} to get a closed superset $w$ of $s$; separate out the genuine union
+elements; membership in either direction is immediate from
+closure/Separation.''
+
+The Pairing proof is where the two-node seed appears and where the set-like check
+does real work: it splits on whether the node is $\emptyset$ or $\{\emptyset\}$ and
+supplies $\Pow(a)$ or $\Pow(b)$ as the host accordingly --- the Coq transcription
+of the ``split $a$ and $b$ across different nodes'' argument from
+\S\ref{sec:forward}.
+
+\subsection{The free dependency audit}
+
+Here is the part that turns the ``Powerset is load-bearing'' remark from rhetoric
+into a machine certificate. When a Coq \cq{Section} closes, each theorem is
+generalized over precisely the hypotheses it referenced; the trailing \cq{Check}
+commands print those generalized types, so we can simply \emph{read off} which
+axioms each derivation used:
+
+\begin{lstlisting}
+End ClosureEquivalence_Forward.
+Check Pairing.
+Check Union.
+Check Replacement.
+Check Infinity.
+\end{lstlisting}
+
+The printed signatures certify:
+
+\begin{itemize}[leftmargin=1.4em]
+\item \textbf{Union} depends on \emph{Separation and Closure only} --- not
+  Powerset, not Extensionality, not the nonempty-domain assumption. (Its relation
+  $z\in x$ is self-bounding.)
+\item \textbf{Replacement} depends on \emph{Separation, Powerset, and Closure} ---
+  Powerset in exactly its host-providing role.
+\item \textbf{Pairing} and \textbf{Infinity} additionally need
+  \emph{Extensionality} and a \emph{nonempty domain} (to build $\emptyset$ and to
+  tell $\emptyset \neq \{\emptyset\}$ apart).
+\item \textbf{Regularity} is referenced by \emph{none} of the four --- a genuine
+  passenger, just as \S\ref{sec:forward} claimed.
+\end{itemize}
+
+The same audit on \texttt{Reverse.v} (\cq{Check Closure_holds}) shows
+\cq{Closure_holds} depending on a nonempty domain, Extensionality, Separation,
+Pairing, Union, Infinity, Replacement, and \textbf{Regularity} --- but
+\textbf{not Powerset}. This is the machine confirming the sharper
+$\ZF - \text{Powerset} \proves \text{Closure}$ and the forward/reverse mirror of
+Remark~\ref{rem:mirror}: Powerset load-bearing forward and idle in reverse,
+Regularity idle forward and load-bearing in reverse.
+
+\subsection{The reverse construction in Coq}
+
+\texttt{Reverse.v} transcribes \S\ref{sec:reverse} directly. The meta-level
+iteration is an ordinary Coq \cq{Fixpoint} on \cq{nat}:
+
+\begin{lstlisting}
+Fixpoint iterate (g : V -> V) (s : V) (n : nat) : V :=
+  match n with O => s | S k => g (iterate g s k) end.
+\end{lstlisting}
+
+The non-self-membership fact --- the load-bearing use of Regularity --- and the
+injectivity of the numerals it powers are:
+
+\begin{lstlisting}
+Lemma no_self_mem : forall x, ~ x ∈ x.   (* from Regularity on {x} *)
+Lemma onat_inj : forall i j, onat i = onat j -> i = j.
+\end{lstlisting}
+
+\cq{onat_inj} is what makes the map ``numeral $\mapsto$ iterate'' well defined,
+so Replacement can collect $\{W_n\}$ into a set and Union flatten it. The headline
+theorem is then
+
+\begin{lstlisting}
+Theorem Closure_holds :
+  forall R : V -> V -> Prop, SetLike R ->
+    forall s, exists w, Sub s w /\ (forall u v, R u v -> v ∈ w -> u ∈ w).
+\end{lstlisting}
+
+with $w = \bigcup_n W_n$ realized as \cq{ounion (imageR (Ffun R HSL s) Inf)} ---
+the object union of the Replacement-image, over the inductive set \cq{Inf}, of the
+numeral-to-iterate map \cq{Ffun}.
+
+\subsection{Where classical logic enters}
+
+Both files import \cq{ClassicalEpsilon}. It is used to \emph{package} the
+existential axioms as operations --- turning ``$\exists p,\ \dots$'' (Powerset)
+into a function \cq{power : V -> V} with a specification lemma, via
+\cq{constructive_indefinite_description} --- and, in \texttt{Reverse.v}, to extract
+a bounding function from set-likeness and to index the iteration. Set theory is
+classical anyway and Choice rides along, so this is exactly the intended
+metatheoretic setting.
+
+% =====================================================================
+\section{Mechanization II: closing the first-order gap}\label{sec:mech-deep}
+% =====================================================================
+
+The shallow embedding's one honest caveat is that its schemas range over arbitrary
+Coq predicates rather than over first-order \emph{formulas}. \texttt{Deep.v}
+removes that caveat for the forward direction by building a genuine deep embedding
+of the first-order language of set theory and re-proving the trade from schemas
+that quantify over syntactic formulas.
+
+\subsection{Syntax, environments, and Tarski satisfaction}
+
+A formula is an element of an inductive type, with De~Bruijn indices for variables
+(so a variable is a \cq{nat} counting binders outward, and $\alpha$-equivalence is
+syntactic equality):
+
+\begin{lstlisting}
+Inductive form : Type :=
+| fMem : nat -> nat -> form
+| fEq  : nat -> nat -> form
+| fBot : form
+| fImp : form -> form -> form
+| fAnd : form -> form -> form
+| fOr  : form -> form -> form
+| fAll : form -> form
+| fEx  : form -> form.
+\end{lstlisting}
+
+An \emph{environment} \cq{e : nat -> V} assigns a domain element to each variable.
+\cq{scons d e} pushes a new binding \cq{d} at index $0$ and shifts the rest ---
+this is how a quantifier extends the environment under its binder. Tarski
+satisfaction is then a straightforward structural recursion:
+
+\begin{lstlisting}
+Definition scons (d : V) (e : nat -> V) : nat -> V :=
+  fun n => match n with O => d | S k => e k end.
+
+Fixpoint Sat (e : nat -> V) (f : form) {struct f} : Prop :=
+  match f with
+  | fMem i j => (e i) ∈ (e j)
+  | fEq i j  => e i = e j
+  | fBot     => False
+  | fImp a b => Sat e a -> Sat e b
+  | fAnd a b => Sat e a /\ Sat e b
+  | fOr a b  => Sat e a \/ Sat e b
+  | fAll a   => forall d, Sat (scons d e) a
+  | fEx a    => exists d, Sat (scons d e) a
+  end.
+\end{lstlisting}
+
+Two infrastructural lemmas carry the whole development. \cq{Sat_ext} says
+satisfaction depends only on the environment's values on the variables that occur;
+\cq{Sat_rename} relates satisfaction of a renamed formula to satisfaction under the
+renamed environment:
+\[
+  \Sat\ e\ (\mathtt{rename}\ r\ f)\ \leftrightarrow\ \Sat\ (e\circ r)\ f.
+\]
+Renaming is the deep-embedding analogue of variable substitution; because our
+signature is \emph{purely relational}, there are no function symbols and hence no
+compound terms --- a ``term'' is just a variable --- so substitution of a variable
+for a variable is exactly a renaming. This single observation keeps the entire
+metatheory free of a general substitution operation, which is usually the most
+painful part of a deep embedding.
+
+\subsection{First-order Separation and Closure}
+
+Now the schemas range over formulas. A formula \cq{phi} with free variable $0$
+denotes a unary predicate (its other free variables are parameters, read from the
+environment \cq{e}); a formula \cq{psi} with free variables $0,1$ denotes a binary
+relation \cq{relOf psi e}:
+
+\begin{lstlisting}
+Hypothesis SeparationFO :
+  forall (phi : form) (e : nat -> V) (a : V),
+    exists s, forall x, x ∈ s <-> (x ∈ a /\ Sat (scons x e) phi).
+
+Definition relOf (psi : form) (e : nat -> V) : V -> V -> Prop :=
+  fun z x => Sat (scons z (scons x e)) psi.
+
+Hypothesis ClosureFO :
+  forall (psi : form) (e : nat -> V),
+    SetLike (relOf psi e) ->
+    forall s, exists w, Sub s w /\ (forall u v, relOf psi e u v -> v ∈ w -> u ∈ w).
+\end{lstlisting}
+
+\texttt{Deep.v} then re-derives Pairing, Union, first-order Replacement, and
+Infinity from \emph{these} schemas. The new obligation, compared to the shallow
+version, is that each relation used must be exhibited as a concrete \cq{form} and
+its \cq{Sat}-meaning verified. For the simple cases the defining formula is short;
+for Replacement, expressing ``$\exists x \in a,\ \psi(y,x)$'' as a formula requires
+shuffling De~Bruijn indices, which is exactly what \cq{Sat_rename} is for. The
+upshot is a \emph{formal} certificate --- not a meta-remark --- that the
+schema-trade uses only first-order definable instances:
+
+\begin{lstlisting}
+Theorem Pairing       : forall a b, exists p, forall x, x ∈ p <-> (x = a \/ x = b).
+Theorem Union         : forall s, exists u, forall x, x ∈ u <-> exists v, x ∈ v /\ v ∈ s.
+Theorem ReplacementFO : (* image of a set under a formula-defined functional relation *)
+Theorem Infinity      : (* an inductive set *)
+\end{lstlisting}
+
+\paragraph{Why only the forward direction deepens.} The forward trade ports to the
+deep setting cheaply because every relation it uses is a short first-order formula.
+The reverse direction does \emph{not}: its essential use of Replacement collects
+the family $\{W_n\}$ via the map $\underline n \mapsto W_n$, and that map is
+first-order definable only through the \emph{recursion theorem}. \texttt{Reverse.v}
+deliberately sidesteps the recursion theorem by iterating on the meta-level
+\cq{nat}; rendering the same construction first-order would mean formalizing the
+recursion theorem's defining formula --- a heavy object-level construction. So the
+genuine first-order content of the reverse direction \emph{is} the recursion
+theorem, and we leave it at the (already verified) shallow level. We return to this
+point in \S\ref{sec:remaining}.
+
+% =====================================================================
+\section{Mechanization III: a proof calculus, soundness, and a cross-theory bridge}\label{sec:mech-calculus}
+% =====================================================================
+
+So far everything has been semantic (about models). \texttt{Deep.v} also builds a
+\emph{syntactic} layer: an actual proof calculus over \cq{form}, a soundness
+theorem, and a first bridge between the two theories at the level of provability.
+
+\subsection{A natural-deduction calculus}
+
+\cq{Prov G a} means ``$a$ is derivable from the context \cq{G} (a list of
+formulas).'' The calculus is classical natural deduction:
+
+\begin{lstlisting}
+Inductive Prov : list form -> form -> Prop :=
+| P_ass    : forall G a, In a G -> Prov G a
+| P_impI   : forall G a b, Prov (a :: G) b -> Prov G (fImp a b)
+| P_impE   : forall G a b, Prov G (fImp a b) -> Prov G a -> Prov G b
+| P_botE   : forall G a, Prov G fBot -> Prov G a
+| P_lem    : forall G a, Prov G (fOr a (fImp a fBot))
+| P_andI   : forall G a b, Prov G a -> Prov G b -> Prov G (fAnd a b)
+| P_andE1  : forall G a b, Prov G (fAnd a b) -> Prov G a
+| P_andE2  : forall G a b, Prov G (fAnd a b) -> Prov G b
+| P_orI1   : forall G a b, Prov G a -> Prov G (fOr a b)
+| P_orI2   : forall G a b, Prov G b -> Prov G (fOr a b)
+| P_orE    : forall G a b c, Prov G (fOr a b) -> Prov (a :: G) c -> Prov (b :: G) c -> Prov G c
+| P_allI   : forall G a, Prov (map (rename S) G) a -> Prov G (fAll a)
+| P_allE   : forall G a k, Prov G (fAll a) -> Prov G (rename (inst k) a)
+| P_exI    : forall G a k, Prov G (rename (inst k) a) -> Prov G (fEx a)
+| P_exE    : forall G a c, Prov G (fEx a) -> Prov (a :: map (rename S) G) (rename S c) -> Prov G c
+| P_eqRefl : forall G k, Prov G (fEq k k)
+| P_eqElim : forall G i j a,
+    Prov G (fEq i j) -> Prov G (rename (inst i) a) -> Prov G (rename (inst j) a).
+\end{lstlisting}
+
+The De~Bruijn discipline shows up in the quantifier rules. In \cq{P_allI}
+(universal introduction), to prove $\forall a$ we shift the context outward by
+\cq{rename S} --- index $0$ becomes the fresh ``eigenvariable'' bound by the new
+$\forall$, and the old context variables move up by one. In \cq{P_allE} (universal
+elimination), instantiating $\forall a$ at variable $k$ is the renaming
+\cq{rename (inst k) a}, where \cq{inst k} maps the bound index $0$ to $k$ and
+decrements the rest. The existential rules are dual. Crucially, instantiation is
+\emph{just renaming} --- the purely relational signature again paying off ---
+so the same \cq{rename}/\cq{Sat_rename} machinery handles quantifiers with no
+separate substitution.
+
+\subsection{The equality rule: a genuine correctness fix}
+
+The two equality rules deserve a word, because getting them right was a real
+correction during development. The reflexivity rule \cq{P_eqRefl} is obvious. For
+the elimination rule, a tempting but \emph{too weak} design is a
+``replace-the-variable-everywhere'' congruence: from $i = j$ and $\varphi$, infer
+$\varphi$ with every occurrence of $i$ rewritten to $j$. That rule cannot even
+derive \emph{symmetry} of equality: to get $j = i$ from $i = j$ you would rewrite
+$i$ to $j$ in the formula $j = i$, but $j = i$ contains no $i$ in the right slot to
+key on, and the rewrite erases the very occurrence you need.
+
+The fix is the proper \textbf{Leibniz} rule \cq{P_eqElim}: a formula \cq{a} is
+treated as a property with a hole at De~Bruijn index $0$; from $i = j$ and
+``\cq{a} with the hole filled by $i$'' (\cq{rename (inst i) a}) we infer ``\cq{a}
+with the hole filled by $j$'' (\cq{rename (inst j) a}). This single rule yields
+symmetry, transitivity, and full congruence, and --- as we verify --- it is sound.
+Without it the completeness theorem of \S\ref{sec:mech-compl} would have been
+unreachable, since the term model is a quotient by provable equality and needs all
+the equality reasoning. A small example of the rule earning its keep: it is exactly
+what makes the term-model congruence lemmas go through.
+
+\subsection{Soundness, and the bridge $\ZF \proves \varphi \Rightarrow \T \models \varphi$}
+
+Soundness says the calculus only proves things that are true in every model
+satisfying the context:
+
+\begin{lstlisting}
+Theorem soundness :
+  forall G a, Prov G a -> forall e, (forall x, In x G -> Sat e x) -> Sat e a.
+\end{lstlisting}
+
+The proof is one case per rule; the quantifier and equality cases are where
+\cq{Sat_rename} and \cq{Sat_ext} are spent.
+
+Now encode the $\ZF$ axioms as closed formulas (\cq{Ext_form}, \cq{Pair_form},
+\dots, \cq{Reg_form}, with Separation and Replacement as schemas over \cq{form}),
+collect them into a predicate \cq{ZFax}, and define provability from the $\ZF$
+axioms:
+
+\begin{lstlisting}
+Definition ZFprov (phi : form) : Prop :=
+  exists G, (forall x, In x G -> ZFax x) /\ Prov G phi.
+
+Theorem ZF_provable_holds_in_T :
+  forall phi, ZFprov phi -> forall e, Sat e phi.
+\end{lstlisting}
+
+Because the ambient section assumes the $\T$-axioms, this theorem says: \emph{in
+any model of the Closure axiomatization $\T$, every $\ZF$-provable formula holds},
+i.e.\ $\ZF \proves \varphi \Rightarrow \T \models \varphi$. It is the marriage of
+syntactic soundness with the forward semantic equivalence: each encoded $\ZF$ axiom
+is checked to hold in the $\T$-model (using the derived \cq{Pairing}, \cq{Union},
+\cq{ReplacementFO}, \cq{Infinity} for the four traded ones, and the $\T$-hypotheses
+for the shared ones), and then \cq{soundness} propagates truth through any $\ZF$
+derivation.
+
+The symmetric statement $\T \proves \varphi \Rightarrow \ZF \models \varphi$ needs
+``every $\ZF$-model satisfies \cq{ClosureFO}'' --- the deep reverse direction,
+blocked at the recursion theorem as discussed.
+
+% =====================================================================
+\section{Mechanization IV: G\"odel completeness, compactness, and the syntactic equivalence}\label{sec:mech-compl}
+% =====================================================================
+
+The fourth file, \texttt{Completeness.v}, proves the converse of soundness ---
+\textbf{G\"odel completeness} --- from scratch, then leverages it to obtain
+compactness for sentence theories and the forward \emph{syntactic} equivalence
+$\ZF \proves \varphi \Rightarrow \T \proves \varphi$. (It builds on \texttt{Deep.v}
+through Coq's namespacing: \cq{coqc -Q . SetTheory Deep.v} then
+\cq{coqc -Q . SetTheory Completeness.v}.)
+
+\subsection{The goal}
+
+\begin{lstlisting}
+Theorem completeness :
+  forall G phi,
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi) ->
+    Prov G phi.
+
+Corollary prov_iff_valid :
+  forall G phi,
+    Prov G phi <->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi).
+\end{lstlisting}
+
+In words: \emph{a formula is provable in the calculus if and only if it is valid in
+every model.} The ``only if'' is soundness; the ``if'' is the content of
+completeness. The standard route is Henkin's: show that a \emph{consistent} set of
+formulas has a model (then contrapose). We outline the construction as it appears
+in the file.
+
+\subsection{Proof-theory infrastructure}
+
+The file first develops the usual admissible rules: weakening, the deduction
+theorem, proof by contradiction and double-negation elimination, a notion of
+consistency \cq{Con G := ~ Prov G fBot}, the Lindenbaum extension step
+\cq{Con_cons_or} (a consistent set stays consistent when extended by a formula or
+its negation), the equality kit (symmetry/transitivity/congruence --- available
+only \emph{because} the equality rule was corrected to the Leibniz \cq{P_eqElim}),
+the admissibility of renaming \cq{Prov_rename}, and cut \cq{Prov_cut}.
+
+\subsection{Model existence: the term model and the truth lemma}
+
+The heart is \cq{model_exists}: an abstract \emph{maximal-consistent Henkin}
+theory \cq{T} (one that decides every formula and provides a witness for every
+existential) has a model. The model is the \emph{quotient term model}. Since terms
+are just variables (\cq{nat}), the domain ought to be variables modulo provable
+equality \cq{ceq i j}. To get an honest Coq type rather than a setoid, we pick
+\emph{canonical representatives} with Hilbert's $\varepsilon$:
+
+\begin{lstlisting}
+Definition rep (i : nat) : nat := epsilon (inhabits 0) (fun j => ceq i j).
+Definition D : Type := { n : nat | rep n = n }.       (* canonical reps *)
+Definition memD (x y : D) : Prop := cmem (proj1_sig x) (proj1_sig y).
+\end{lstlisting}
+
+The linchpin is the \textbf{truth lemma}: in this model, satisfaction of a formula
+coincides with its membership in the theory \cq{T}. It is proved by strong
+induction on formula \emph{size} (\cq{fsize}), because the quantifier cases recurse
+on an instantiated formula --- and instantiation is a renaming, which preserves
+size:
+
+\begin{lstlisting}
+Lemma truth :
+  forall n a, fsize a <= n ->
+    forall s : nat -> nat,
+      Sat D memD (fun i => mkD (s i)) a <-> T (rename s a).
+\end{lstlisting}
+
+The atomic cases use the congruence of \cq{cmem}/\cq{ceq} under the
+representative map; the connective cases use that \cq{T} is maximal-consistent
+(it respects $\to$, $\wedge$, $\vee$, $\neg$); the quantifier cases use that \cq{T}
+is Henkin (an existential is in \cq{T} iff some witness instance is, and dually for
+$\forall$).
+
+\subsection{Lindenbaum and Henkin: building the maximal theory}
+
+To apply \cq{model_exists} we must \emph{construct} a maximal-consistent Henkin
+extension of any consistent set. This needs an enumeration of all formulas; we
+build one from Cantor's pairing function and prove it surjective:
+
+\begin{lstlisting}
+Definition Enum (n : nat) : form := decode (S n) n.
+Lemma Enum_surj : forall f, exists n, Enum n = f.
+\end{lstlisting}
+
+Then a chain \cq{chain G0 n} processes formulas one at a time: at each step it
+decides the next formula (adding it or its negation, by \cq{Con_cons_or}) and, when
+it adds an existential, also adds a \emph{fresh-witness} instance (the eigenvariable
+and Henkin-witness lemmas, from \cq{Prov_rename} plus a freshness analysis of free
+variables). The limit theory \cq{TL} is shown to satisfy all five hypotheses of
+\cq{model_exists} --- consistent, complete, deductively closed, and Henkin for both
+$\exists$ and $\forall$. Combining: \cq{model_of_con} (every consistent set has a
+model), and contraposing gives \cq{completeness}, hence \cq{prov_iff_valid}.
+
+\subsection{Compactness: infinite completeness for sentence theories}
+
+Completeness as stated is about a \emph{finite} context \cq{G} (a list). To reach
+genuinely infinite theories --- such as $\ZF$ and $\T$, whose Separation/Closure
+schemas have infinitely many instances --- we need the compactness-style lift: if
+every model of an infinite theory $B$ satisfies $\varphi$, then $B$ proves
+$\varphi$ from a finite subset.
+
+The obstacle is Henkin freshness. The witness-adding step needs a variable
+\emph{fresh for the whole theory}; for an infinite theory that mentions all
+variables, there is none. The resolution is to restrict to \emph{sentence}
+theories --- theories all of whose axioms are sentences (no free variables):
+
+\begin{lstlisting}
+Definition Sentence (f : form) : Prop := forall n, ~ Free n f.
+Definition Sentences (B : form -> Prop) : Prop := forall f, B f -> Sentence f.
+Definition BProv (B : form -> Prop) (G : list form) (phi : form) : Prop :=
+  exists Gb, (forall x, In x Gb -> B x) /\ Prov (Gb ++ G) phi.
+\end{lstlisting}
+
+A witness fresh for the \emph{finite} list of formulas added so far is then
+automatically fresh with respect to the sentence base $B$ --- sentences contribute
+no free variables to clash with. This yields:
+
+\begin{lstlisting}
+Theorem model_of_BCon :
+  forall B L0, Sentences B -> BCon B L0 ->
+    exists Dom m v, (forall g, B g -> Sat Dom m v g)
+                 /\ (forall g, In g L0 -> Sat Dom m v g).
+
+Theorem completeness_inf :
+  forall B psi, Sentences B -> Sentence psi ->
+    (forall Dom m v, (forall g, B g -> Sat Dom m v g) -> Sat Dom m v psi) ->
+    BProv B nil psi.
+\end{lstlisting}
+
+and, as an immediate corollary, the model-theoretic characterization of deductive
+equivalence:
+
+\begin{lstlisting}
+Theorem theory_equiv :
+  forall B1 B2, Sentences B1 -> Sentences B2 ->
+    (forall Dom m v, (forall g, B1 g -> Sat Dom m v g) <-> (forall g, B2 g -> Sat Dom m v g)) ->
+    forall psi, Sentence psi -> (BProv B1 nil psi <-> BProv B2 nil psi).
+\end{lstlisting}
+
+\cq{theory_equiv} is the abstract engine behind the whole article:
+\emph{two sentence theories with the same models prove the same sentences.}
+
+\subsection{$\ZF$ and $\T$ as sentence theories, and $\ZF \proves \varphi \Rightarrow \T \proves \varphi$}
+
+To feed $\ZF$ and $\T$ into this machinery we encode them as sentence theories.
+Each axiom is universally closed by \cq{seal} (close every free variable with
+$\forall$), so the parametrized schema instances become genuine sentences;
+crucially, the Closure schema is encoded as a closed formula \cq{Closure_form}
+whose \cq{Sat}-meaning is bridged back to the abstract \cq{SetLike}/closure
+statement (\cq{bridge_Closure} and friends):
+
+\begin{lstlisting}
+Definition seal (f : form) : form := closeN (bound f) f.    (* universal closure *)
+Definition Tax_s  (f : form) : Prop := (* sealed Ext, Reg, Pow, Sep-schema, Closure-schema *)
+Definition ZFax_s (f : form) : Prop := (* sealed Ext, Reg, Pow, Pair, Union, Inf, Sep-schema, Repl-schema *)
+\end{lstlisting}
+
+The semantic content of the forward equivalence is repackaged as: \emph{every model
+of $\T$ is a model of $\ZF$.}
+
+\begin{lstlisting}
+Lemma Tmodel_sat_ZF :
+  forall (V : Type) (mem : V -> V -> Prop) v,
+    (forall g, Tax_s g -> Sat V mem v g) -> (forall g, ZFax_s g -> Sat V mem v g).
+\end{lstlisting}
+
+The proof extracts the abstract axioms from a $\T$-model through the \cq{bridge_*}
+lemmas, then reuses \texttt{Deep.v}'s derived satisfaction facts (\cq{sat_Pair},
+\cq{sat_Union}, \cq{sat_Inf}, \cq{sat_Repl}) to discharge the four traded $\ZF$
+axioms. Soundness plus \cq{completeness_inf} then deliver the forward
+\emph{syntactic} direction:
+
+\begin{lstlisting}
+Theorem ZF_implies_T :
+  forall phi, Sentence phi -> BProv ZFax_s nil phi -> BProv Tax_s nil phi.
+\end{lstlisting}
+
+Everything $\ZF$ proves, $\T$ proves. Read against \cq{theory_equiv}, this is one
+half of the statement that $\ZF$ and $\T$ are the same theory --- and the half that
+goes through cleanly.
+
+% =====================================================================
+\section{What is proven, and the one remaining direction}\label{sec:remaining}
+% =====================================================================
+
+\begin{center}
+\renewcommand{\arraystretch}{1.3}
+\begin{tabular}{@{}p{0.46\textwidth}p{0.30\textwidth}l@{}}
+\toprule
+Statement & Status & File \\
+\midrule
+$\T \models$ Pairing, Union, Replacement, Infinity & machine-checked & \texttt{Forward.v} \\
+$\ZF \models$ Closure (set-like relations) & machine-checked & \texttt{Reverse.v} \\
+forward trade from \emph{first-order} schemas & machine-checked & \texttt{Deep.v} \\
+sound ND calculus; $\ZF\proves\varphi \Rightarrow \T\models\varphi$ & machine-checked & \texttt{Deep.v} \\
+truth lemma / model existence & machine-checked & \texttt{Completeness.v} \\
+completeness $\Prov G\,\varphi \Leftrightarrow G\models\varphi$ & machine-checked & \texttt{Completeness.v} \\
+compactness ($B\models\varphi \Rightarrow B\proves\varphi$, sentences) & machine-checked & \texttt{Completeness.v} \\
+same-model sentence theories are deductively equal & machine-checked & \texttt{Completeness.v} \\
+$\ZF \proves \varphi \Rightarrow \T \proves \varphi$ & machine-checked & \texttt{Completeness.v} \\
+$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ & needs the recursion theorem & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection{The converse, characterized precisely}
+
+The one direction we have \emph{not} formalized is the converse syntactic
+statement $\T \proves \varphi \Rightarrow \ZF \proves \varphi$. It is true. By
+\cq{theory_equiv} it would follow from ``every $\ZF$-model satisfies
+\cq{ClosureFO},'' the dual of \cq{Tmodel_sat_ZF}. That is exactly the
+\emph{deep reverse} direction --- and it is genuinely hard, for a reason that has
+been visible since \S\ref{sec:mech-deep}.
+
+\texttt{Reverse.v} proves Closure using a \emph{second-order} ingredient: the
+iteration $W_n$ lives on the metatheory's \cq{nat}, and the family $\{W_n\}$ is
+collected by an external recursion. A first-order $\ZF$-model is not handed such a
+meta-recursion; it must \emph{build} the family internally, as a set-coded
+function, using only first-order $\ZF$ derivations. Doing that is precisely the
+content of the \textbf{recursion theorem} on $\omega$:
+
+\begin{itemize}[leftmargin=1.4em]
+\item encode functions as sets of Kuratowski pairs;
+\item formalize the ``$n$-approximation'' of the iteration and prove existence and
+  uniqueness of approximations by $\omega$-induction, \emph{inside} the object
+  calculus \cq{Prov};
+\item take the union of approximations to obtain the total iteration function, then
+  its range.
+\end{itemize}
+
+None of this is conceptually mysterious --- it is standard textbook set theory ---
+but rendering it as first-order \emph{object derivations} (rather than meta-level
+Coq recursion) is a self-contained and heavy formalization in its own right. It is
+the honest boundary of the present development: we prove the converse
+\emph{semantically} (it is implicit in \texttt{Reverse.v}'s shallow model
+argument) but not \emph{syntactically inside \cq{Prov}}, because the syntactic
+content of the reverse direction simply \emph{is} the recursion theorem.
+
+\subsection{Trust: axioms used, no admitted goals}
+
+Running \cq{Print Assumptions} on the headline theorems reports only the standard
+axioms of classical mathematics, and nothing else:
+
+\begin{lstlisting}
+classic                              (* excluded middle in Prop *)
+constructive_indefinite_description  (* Hilbert epsilon / description *)
+functional_extensionality
+propositional_extensionality
+proof_irrelevance
+\end{lstlisting}
+
+There is no \cq{Admitted} and no custom \cq{Axiom} anywhere in the four files.
+These five are exactly the principles one expects when mechanizing classical set
+theory with a quotient term model: classical logic, a description operator to turn
+existence axioms into operations, and the extensionality/irrelevance principles
+that make the quotient an honest type. In particular, the metatheory is \emph{not}
+assumed to be stronger than $\ZF$ --- the development does not, for instance, rely
+on a universe of $\ZF$-sets supplied by a library.
+
+% =====================================================================
+\section{Conclusion}\label{sec:conclusion}
+% =====================================================================
+
+Two punchlines, one mathematical and one about formalization.
+
+\paragraph{The mathematics.} Four of $\ZF$'s axioms --- Pairing, Union, Infinity,
+Replacement --- are not four independent ideas but four instances of \emph{one}:
+collect the predecessors of a seed under a set-like relation. The single Closure
+schema packages that idea, and over the structural base it is interderivable with
+all four. The non-obvious lesson is \emph{where the power comes from}: not from
+Closure alone but from Closure resting on Powerset, through the one-line fact that
+every set is a member of its own powerset. That fact makes ``has a definable
+predecessor'' imply ``is set-like'' for free, which is what turns a statement about
+transitive closures into general collection. The forward/reverse symmetry is a
+small gem: Powerset is the load-bearing axiom forward and idle in reverse, while
+Regularity is idle forward and load-bearing in reverse --- and the proof assistant
+\emph{certifies} this for us, by reading off exactly which hypotheses each
+derivation discharged.
+
+\paragraph{The formalization.} We did not stop at the equivalence. The development
+ascends from a shallow model argument, to a deep embedding with genuinely
+first-order schemas, to a sound and \emph{complete} proof calculus built from
+scratch (truth lemma, Lindenbaum/Henkin, G\"odel completeness), to compactness for
+sentence theories, to the abstract theorem that same-model sentence theories are
+deductively equivalent --- of which ``$\ZF$ and $\T$ prove the same sentences'' is
+an instance, with its forward half $\ZF \proves \varphi \Rightarrow \T \proves
+\varphi$ now a machine-checked corollary. The single remaining direction is
+characterized exactly: it is the recursion theorem rendered as a first-order object
+derivation, the deep reverse obstacle, and nothing less. Everything else is done,
+with no admitted goals and only the standard classical axioms --- a complete and
+honest account of what it takes to certify that a slogan (``one closure schema'')
+really is $\ZF$ in disguise.
+
+\appendix
+% =====================================================================
+\section{File inventory and build instructions}
+% =====================================================================
+
+The development is four Rocq/Coq files under \texttt{src/SetTheory/}.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.25}
+\begin{tabular}{@{}lp{0.62\textwidth}@{}}
+\toprule
+File & Contents \\
+\midrule
+\texttt{Forward.v} & shallow embedding; $\{$Ext, Sep, Pow, Closure$\}$ derive Pairing/Union/Replacement/Infinity; the linchpin \cq{self_in_power}; dependency-audit \cq{Check}s. \\
+\texttt{Reverse.v} & shallow embedding; $\ZF$ derives Closure via the transitive-closure recursion; \cq{no_self_mem}, \cq{onat_inj}; audit shows Powerset unused. \\
+\texttt{Deep.v} & deep embedding (\cq{form}, \cq{Sat}, \cq{rename}, \cq{Sat_rename}); first-order \cq{SeparationFO}/\cq{ClosureFO}; forward trade re-proved; ND calculus \cq{Prov}; \cq{soundness}; \cq{ZF_provable_holds_in_T}. \\
+\texttt{Completeness.v} & from-scratch G\"odel \cq{completeness}/\cq{prov_iff_valid}; \cq{completeness_inf} (compactness); \cq{theory_equiv}; \cq{ZF_implies_T}. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\texttt{Forward.v}, \texttt{Reverse.v}, and \texttt{Deep.v} are independent (no
+inter-file \cq{Require}) and need only the standard library.
+\texttt{Completeness.v} \cq{Require}s \cq{Deep} (hence the namespace flag) and
+additionally uses the standard classical/extensionality modules.
+
+\begin{lstlisting}[language={}]
+# developed against Rocq 9.0.1
+coqc Forward.v
+coqc Reverse.v
+coqc Deep.v
+# Completeness.v builds on Deep via the SetTheory namespace:
+coqc -Q . SetTheory Deep.v
+coqc -Q . SetTheory Completeness.v
+\end{lstlisting}
+
+\end{document}

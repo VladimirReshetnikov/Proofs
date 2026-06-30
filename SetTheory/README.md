@@ -278,6 +278,22 @@ iteration), which a first-order ZF model need not provide. Closing it is a
 self-contained but heavy project; everything else — including the general
 `theory_equiv`, of which `ZF ⟺ T` is an instance — is done.
 
+## A written account
+
+[`article/closure-axiomatization.tex`](article/closure-axiomatization.tex)
+(rendered to [`article/closure-axiomatization.pdf`](article/closure-axiomatization.pdf))
+is a detailed, tutorial-style article covering both the mathematics and this
+formalization: the equivalence theorem, the four derivations as one
+schema-instance family, the Powerset-is-load-bearing remark and its
+forward/reverse mirror with Regularity, the reverse transitive-closure recursion,
+and then a section-by-section walkthrough of all four Coq developments (the shallow
+embedding and the free dependency audit, the deep embedding closing the first-order
+gap, the proof calculus and soundness, and the from-scratch Gödel completeness /
+compactness / `ZF ⊢ φ ⟹ T ⊢ φ` layer), ending with a precise characterization of
+the one direction that is true but unformalized. Build it with
+`lualatex closure-axiomatization.tex` (run twice for the table of contents and
+cross-references).
+
 ## Building
 
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):

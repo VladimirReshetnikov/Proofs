@@ -10,3 +10,11 @@
 *.cmi
 *.cmo
 *.cmx
+
+# LaTeX build artifacts (article/) -- keep the .tex and .pdf
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
