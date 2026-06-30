@@ -18,7 +18,7 @@
 (* ===================================================================== *)
 
 From SetTheory Require Import Deep.
-From Stdlib Require Import List PeanoNat.
+From Stdlib Require Import List PeanoNat Classical.
 Import ListNotations.
 
 (* ====================== [1] proof-theory infrastructure =============== *)
@@ -75,7 +75,7 @@ Proof.
       * right. apply in_map_iff in HxM. destruct HxM as [x0 [Heq Hx0]]. subst x.
         apply in_map. exact (Hsub x0 Hx0).
   - apply P_eqRefl.
-  - apply (P_eqCong G' i j a); [ exact (IHeq G' Hsub) | exact (IHa G' Hsub) ].
+  - apply (P_eqElim G' i j a); [ exact (IHeq G' Hsub) | exact (IHa G' Hsub) ].
 Qed.
 
 (* A handy corollary: prepend an unused hypothesis. *)
@@ -113,4 +113,48 @@ Proof.
   apply (P_impE (fImp a fBot :: G) (fImp a fBot) fBot).
   - apply Prov_cons. exact H.
   - apply P_ass. left. reflexivity.
+Qed.
+
+(* ====================== [2] consistency + classical kit =============== *)
+
+Definition Con (G : list form) : Prop := ~ Prov G fBot.
+
+(* phi is provable iff its negation is refutable *)
+Lemma Prov_neg_refute : forall G phi, Prov G phi <-> Prov (fImp phi fBot :: G) fBot.
+Proof.
+  intros G phi. split.
+  - intro H. apply (P_impE (fImp phi fBot :: G) phi fBot).
+    + apply P_ass. left. reflexivity.
+    + apply Prov_cons. exact H.
+  - apply Prov_byContra.
+Qed.
+
+(* The Lindenbaum step: a consistent context can be consistently extended by *)
+(* phi or by ~phi. *)
+Lemma Con_cons_or :
+  forall G phi, Con G -> Con (phi :: G) \/ Con (fImp phi fBot :: G).
+Proof.
+  intros G phi HG. destruct (classic (Con (phi :: G))) as [H | H].
+  - left. exact H.
+  - right. intro Hbad.
+    assert (Hphi : Prov (phi :: G) fBot) by (apply NNPP; exact H).
+    apply HG.
+    apply (P_impE G (fImp phi fBot) fBot).
+    + apply P_impI. exact Hbad.
+    + apply P_impI. exact Hphi.
+Qed.
+
+(* If neither phi nor ~phi can be consistently added, G was inconsistent. *)
+Lemma Con_cons_neg :
+  forall G phi, Con G -> ~ Prov (phi :: G) fBot -> Con (phi :: G).
+Proof. intros G phi HG H. exact H. Qed.
+
+(* Extending a context by something it already proves keeps consistency. *)
+Lemma Con_redundant :
+  forall G phi, Con G -> Prov G phi -> Con (phi :: G).
+Proof.
+  intros G phi HG Hp Hbad. apply HG.
+  apply (P_impE G phi fBot).
+  - apply P_impI. exact Hbad.
+  - exact Hp.
 Qed.

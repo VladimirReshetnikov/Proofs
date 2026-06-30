@@ -451,9 +451,6 @@ Qed.
 (* instantiate de Bruijn 0 by variable k (and decrement the rest) *)
 Definition inst (k : nat) : nat -> nat :=
   fun n => match n with O => k | S m => m end.
-(* replace variable i by j (used by the equality-congruence rule) *)
-Definition repl (i j : nat) : nat -> nat :=
-  fun n => if Nat.eqb n i then j else n.
 
 Inductive Prov : list form -> form -> Prop :=
 | P_ass    : forall G a, In a G -> Prov G a
@@ -472,18 +469,14 @@ Inductive Prov : list form -> form -> Prop :=
 | P_exI    : forall G a k, Prov G (rename (inst k) a) -> Prov G (fEx a)
 | P_exE    : forall G a c, Prov G (fEx a) -> Prov (a :: map (rename S) G) (rename S c) -> Prov G c
 | P_eqRefl : forall G k, Prov G (fEq k k)
-| P_eqCong : forall G i j a, Prov G (fEq i j) -> Prov G a -> Prov G (rename (repl i j) a).
+(* proper Leibniz: from i=j and a[0:=i] infer a[0:=j] (a is the property with
+   a hole at de Bruijn 0). Gives symmetry/transitivity/congruence; still sound. *)
+| P_eqElim : forall G i j a,
+    Prov G (fEq i j) -> Prov G (rename (inst i) a) -> Prov G (rename (inst j) a).
 
 (* environment lemmas for the quantifier/equality cases *)
 Lemma inst_env : forall k e n, e (inst k n) = scons (e k) e n.
 Proof. intros k e n. destruct n; reflexivity. Qed.
-
-Lemma repl_env : forall i j (e : nat -> V), e i = e j -> forall n, e (repl i j n) = e n.
-Proof.
-  intros i j e Heq n. unfold repl. destruct (Nat.eqb n i) eqn:E.
-  - apply Nat.eqb_eq in E. subst n. symmetry. exact Heq.
-  - reflexivity.
-Qed.
 
 Lemma shift_sat :
   forall G e d, (forall x, In x G -> Sat e x) ->
@@ -549,9 +542,14 @@ Proof.
     apply (proj1 (Sat_ext c (fun n => scons d e (S n)) e (fun n => eq_refl))) in Hc.
     exact Hc.
   - simpl. reflexivity.
-  - apply (proj2 (Sat_rename a (repl i j) e)).
-    apply (proj2 (Sat_ext a (fun n => e (repl i j n)) e (repl_env i j e (IHeq e HG)))).
-    exact (IHa e HG).
+  - (* P_eqElim *)
+    assert (Hij : e i = e j) by exact (IHeq e HG).
+    apply (proj2 (Sat_rename a (inst j) e)).
+    apply (proj2 (Sat_ext a (fun n => e (inst j n)) (scons (e j) e) (inst_env j e))).
+    pose proof (IHa e HG) as Ha.
+    apply (proj1 (Sat_rename a (inst i) e)) in Ha.
+    apply (proj1 (Sat_ext a (fun n => e (inst i n)) (scons (e i) e) (inst_env i e))) in Ha.
+    rewrite Hij in Ha. exact Ha.
 Qed.
 
 (* ===================================================================== *)
