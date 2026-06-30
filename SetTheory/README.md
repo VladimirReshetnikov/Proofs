@@ -63,25 +63,34 @@ the standard half.
 
 ## Why it works — the linchpin
 
-`Forward.v` isolates the one fact that makes the whole collapse happen:
+`Forward.v` isolates the one fact that makes the whole collapse happen — **hosting:
+every set is a member of some set**:
 
 ```coq
-Lemma self_in_power : forall a, a ∈ power a.   (* a ⊆ a, so a ∈ 𝒫(a) *)
+Hypothesis Hosting : forall a, exists y, a ∈ y.
+Definition host (a : V) : V := proj1_sig (constructive_indefinite_description _ (Hosting a)).
+Lemma host_spec : forall a, a ∈ host a.
 ```
 
-**Powerset gives every set a host.** Consequently every singleton-valued (more
-generally, suitably bounded) class relation is automatically set-like — its
-predecessor-class `{G(x)}` at each node `x` is bounded by `𝒫(G(x))`. That turns
-`Closure` into a fully general *collection* principle, and the four lost axioms
-become four instances of one idea:
+Consequently every singleton-valued (more generally, suitably bounded) class
+relation is automatically set-like — its predecessor-class `{G(x)}` at each node `x`
+is bounded by `host (G(x))`. That turns `Closure` into a fully general *collection*
+principle, and the four lost axioms become four instances of one idea:
 
 - **Union** = closure under `∈` (one step), then Separation;
 - **Pairing** = closure of the seed `{∅,{∅}}` under the two-branch relation
   `(x=∅ ∧ z=a) ∨ (x={∅} ∧ z=b)` — `a` and `b` ride *different* seed nodes so each
-  predecessor-class stays a singleton, hostable by a powerset (putting both on one
-  node would require bounding `{a,b}`, i.e. Pairing itself);
+  predecessor-class stays a singleton, hostable (putting both on one node would
+  require bounding `{a,b}`, i.e. Pairing itself);
 - **Replacement** = closure along a function graph `z = F(x)`, then Separation;
 - **Infinity** = closure of `{∅}` under the successor relation `z = x ∪ {x}`.
+
+**Powerset is more than this needs.** The trade never opens a powerset up; it uses
+only hosting (`a ∈ 𝒫(a)` is one way to get it — `powerset_gives_hosting`). Hosting is
+far weaker than Powerset (it holds in `H(ℵ₁)`, which has no `𝒫(ω)`). And *Powerset
+restricted to finite sets is **not** enough*: the predecessors we must host (`a`,
+`b`, `F x`, `x ∪ {x}`) are arbitrary, possibly infinite sets, which finite Powerset
+cannot host. The genuine forward engine is `{Ext, Sep, Closure}` + hosting.
 
 ## Free dependency audit
 
@@ -89,16 +98,17 @@ Because the development is a Coq `Section` with the axioms as hypotheses, closin
 the section generalizes each theorem over *exactly* the hypotheses it used. The
 trailing `Check` commands in `Forward.v` print these, certifying:
 
-- **Union** needs only **Separation + Closure** (not Powerset, not Extensionality,
-  not the nonempty-domain assumption);
-- **Replacement** needs **Separation + Powerset + Closure** (no Extensionality, no
-  nonemptiness);
-- **Pairing** and **Infinity** additionally need **Extensionality** and a
-  **nonempty domain** (to build `∅` and tell `∅ ≠ {∅}` apart);
-- **Regularity** is used by **none** of the four — it is a genuine passenger.
-
-The `Powerset` hypothesis appears in Pairing/Replacement/Infinity precisely in its
-host-providing role.
+- **Union** needs only **Separation + Closure** (not hosting, not Powerset, not
+  Extensionality, not the nonempty-domain assumption);
+- **Replacement** needs **Separation + Hosting + Closure** (no Powerset, no
+  Extensionality, no nonemptiness);
+- **Pairing** needs **Separation + Hosting + Closure** and a **nonempty domain** (to
+  build `∅`) — and, now that the seed is built by Closure rather than a powerset, not
+  even Extensionality;
+- **Infinity** additionally needs **Extensionality** (inductive-set uniqueness);
+- **Powerset** is used by **none** of the four (only by the side lemma
+  `powerset_gives_hosting`); **Regularity** by none either — both, with Choice, are
+  genuine passengers.
 
 The same audit on the reverse direction (`Check Closure_holds` in `Reverse.v`)
 shows `Closure_holds` depends on a nonempty domain, **Extensionality, Separation,
@@ -106,8 +116,9 @@ Pairing, Union, Infinity, Replacement** — but **neither Powerset nor Regularit
 So the machine certifies the sharper statement *ZF − Powerset − Regularity ⊢
 Closure*. The upshot for the two structural axioms:
 
-- **Powerset** is the one genuinely *asymmetric* axiom: load-bearing forward (it
-  hosts every set) and idle in reverse;
+- **Powerset** is the one *asymmetric* axiom, but even forward it is used only
+  through its hosting shadow `∀a ∃y a∈y` (never as a powerset), and is idle in
+  reverse;
 - **Regularity** is idle in **both** directions — a passenger of the trade alongside
   Choice. The reverse direction needs only that the finite numerals `onat n` are
   distinct, which is a theorem of ZF *without* Foundation (each `onat n` is a
@@ -303,9 +314,9 @@ self-contained but heavy project; everything else — including the general
 (rendered to [`article/closure-axiomatization.pdf`](article/closure-axiomatization.pdf))
 is a detailed, tutorial-style article covering both the mathematics and this
 formalization: the equivalence theorem, the four derivations as one
-schema-instance family, the Powerset-is-load-bearing remark (and why Regularity,
-like Choice, is a passenger used in neither direction), the reverse
-transitive-closure recursion,
+schema-instance family, the "how much Powerset?" analysis (the forward trade needs
+only hosting — not full, nor even finite, Powerset — and Regularity and Choice are
+passengers used in neither direction), the reverse transitive-closure recursion,
 and then a section-by-section walkthrough of all four Coq developments (the shallow
 embedding and the free dependency audit, the deep embedding closing the first-order
 gap, the proof calculus and soundness, and the from-scratch Gödel completeness /

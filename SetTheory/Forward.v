@@ -14,10 +14,14 @@
 (*  From these we DERIVE, as theorems:                                   *)
 (*      Pairing, Union, Replacement, Infinity.                           *)
 (*                                                                       *)
-(*  The linchpin is `self_in_power : a in power a`, i.e. Powerset gives   *)
-(*  every set a host.  That single fact makes every singleton-valued     *)
-(*  (more generally, suitably bounded) class relation set-like, which     *)
-(*  turns Closure into a fully general collection principle.             *)
+(*  The linchpin is HOSTING: every set has a host, a in host a.  That    *)
+(*  single fact makes every singleton-valued (more generally, suitably    *)
+(*  bounded) class relation set-like, which turns Closure into a fully     *)
+(*  general collection principle.  Hosting is ALL the trade uses of        *)
+(*  Powerset (a in P(a) gives it); the four `Check`s below confirm none    *)
+(*  of the derivations touches Powerset itself.  Note Hosting is far       *)
+(*  weaker than Powerset and is NOT given by Powerset on finite sets,      *)
+(*  since the hosted predecessors (a, b, F x, x u {x}) are arbitrary.      *)
 (*                                                                       *)
 (*  Shallow embedding: schemas (Separation, Closure, and the derived     *)
 (*  Replacement) are rendered with the metatheory's predicates           *)
@@ -54,6 +58,17 @@ Hypothesis Separation :
 Hypothesis Powerset :
   forall a, exists p, forall x, x ∈ p <-> Sub x a.
 
+(* Hosting: every set is a member of some set.  This is the ONLY consequence  *)
+(* of Powerset that the forward trade uses (via a in P(a); see               *)
+(* powerset_gives_hosting below): to bound the singleton predecessor-class of *)
+(* a node we only need a set CONTAINING the predecessor.  It is far weaker    *)
+(* than Powerset, and is NOT supplied by Powerset restricted to finite sets,  *)
+(* since the predecessors we must bound (a, b, F x, x u {x}) are arbitrary,   *)
+(* possibly infinite, sets.  The four derivations below use only Hosting;     *)
+(* the trailing `Check`s certify they are Powerset-free.                      *)
+Hypothesis Hosting :
+  forall a, exists y, a ∈ y.
+
 Definition SetLike (R : V -> V -> Prop) : Prop :=
   forall x, exists y, forall z, R z x -> z ∈ y.
 
@@ -68,15 +83,6 @@ Hypothesis Regularity :
 
 (* ----------- derived operators via classical description -------------- *)
 
-Definition power (a : V) : V :=
-  proj1_sig (constructive_indefinite_description _ (Powerset a)).
-
-Lemma power_spec : forall a x, x ∈ power a <-> Sub x a.
-Proof.
-  intro a.
-  exact (proj2_sig (constructive_indefinite_description _ (Powerset a))).
-Qed.
-
 Definition sep (a : V) (P : V -> Prop) : V :=
   proj1_sig (constructive_indefinite_description _ (Separation a P)).
 
@@ -85,13 +91,6 @@ Proof.
   intros a P.
   exact (proj2_sig (constructive_indefinite_description _ (Separation a P))).
 Qed.
-
-(* convenient one-directional forms *)
-Lemma power_intro : forall a x, Sub x a -> x ∈ power a.
-Proof. intros a x H. exact (proj2 (power_spec a x) H). Qed.
-
-Lemma power_elim : forall a x, x ∈ power a -> Sub x a.
-Proof. intros a x H. exact (proj1 (power_spec a x) H). Qed.
 
 Lemma sep_intro : forall a P x, x ∈ a -> P x -> x ∈ sep a P.
 Proof. intros a P x H1 H2. exact (proj2 (sep_spec a P x) (conj H1 H2)). Qed.
@@ -105,9 +104,23 @@ Proof. intros a P x H. exact (proj2 (proj1 (sep_spec a P x) H)). Qed.
 Lemma Sub_refl : forall a, Sub a a.
 Proof. intros a x H. exact H. Qed.
 
-(* THE LINCHPIN: Powerset gives every set a host. *)
-Lemma self_in_power : forall a, a ∈ power a.
-Proof. intro a. apply power_intro. apply Sub_refl. Qed.
+(* THE LINCHPIN, in its minimal form: every set has a host, a in host a.     *)
+(* This single fact is all the forward trade needs from Powerset; it makes    *)
+(* every singleton-valued (suitably bounded) class relation set-like.         *)
+Definition host (a : V) : V :=
+  proj1_sig (constructive_indefinite_description _ (Hosting a)).
+Lemma host_spec : forall a, a ∈ host a.
+Proof. intro a. exact (proj2_sig (constructive_indefinite_description _ (Hosting a))). Qed.
+
+(* Powerset is one way to satisfy Hosting (a in P(a)); Powerset restricted to *)
+(* finite sets is NOT, since it cannot host an infinite set.  This is the      *)
+(* file's sole use of the Powerset hypothesis -- the four derivations use only *)
+(* host, so `Check` shows them free of Powerset.                               *)
+Lemma powerset_gives_hosting : forall a, exists y, a ∈ y.
+Proof.
+  intro a. destruct (Powerset a) as [p Hp]. exists p.
+  apply (proj2 (Hp a)). apply Sub_refl.
+Qed.
 
 (* --------------------------- empty set -------------------------------- *)
 
@@ -116,19 +129,20 @@ Definition emptyset : V := sep witness (fun _ => False).
 Lemma emptyset_spec : forall x, ~ x ∈ emptyset.
 Proof. intros x H. exact (sep_elim2 witness (fun _ => False) x H). Qed.
 
-(* ------------- the two-element seed  {empty, {empty}} ----------------- *)
+(* --------- the singleton {empty} and the two-node seed {empty,{empty}} --- *)
+(* Built from Hosting + Separation (+ a one-edge Closure for the 2-node seed),*)
+(* NOT from Powerset.  host empty contains empty, so Separation carves out    *)
+(* {empty}; a one-edge Closure then merges empty into the seed {{empty}} to   *)
+(* yield a set holding both empty and {empty}, from which Separation extracts *)
+(* {empty,{empty}}.                                                           *)
 
-Definition single_empty : V := power emptyset.   (* {empty}      *)
-Definition pair_empty   : V := power single_empty. (* {empty,{empty}} *)
+Definition single_empty : V := sep (host emptyset) (fun x => x = emptyset).
 
 Lemma in_single_empty : forall x, x ∈ single_empty <-> x = emptyset.
 Proof.
   intro x. unfold single_empty. split.
-  - intro H. apply power_elim in H.            (* H : Sub x emptyset *)
-    apply Extensionality. intro y. split.
-    + intro Hy. exact (H y Hy).
-    + intro Hy. exfalso. exact (emptyset_spec y Hy).
-  - intro H. subst x. apply power_intro. apply Sub_refl.
+  - intro H. exact (sep_elim2 _ _ _ H).
+  - intro H. apply sep_intro; [ rewrite H; apply host_spec | exact H ].
 Qed.
 
 Lemma empty_in_single : emptyset ∈ single_empty.
@@ -142,14 +156,55 @@ Proof.
   exact (emptyset_spec emptyset H).
 Qed.
 
-Lemma empty_in_pair : emptyset ∈ pair_empty.
+(* the singleton {{empty}}, the seed of the one-edge merge *)
+Definition seed_single : V := sep (host single_empty) (fun x => x = single_empty).
+Lemma in_seed_single : forall x, x ∈ seed_single <-> x = single_empty.
 Proof.
-  unfold pair_empty. apply power_intro.
-  intros y Hy. exfalso. exact (emptyset_spec y Hy).
+  intro x. unfold seed_single. split.
+  - intro H. exact (sep_elim2 _ _ _ H).
+  - intro H. apply sep_intro; [ rewrite H; apply host_spec | exact H ].
 Qed.
 
+(* the one-edge relation: empty is the sole predecessor of {empty} *)
+Definition mergeRel : V -> V -> Prop :=
+  fun z x => x = single_empty /\ z = emptyset.
+Lemma mergeRel_setlike : SetLike mergeRel.
+Proof.
+  intro x. exists (host emptyset). intros z HR. unfold mergeRel in HR.
+  destruct HR as [_ Hz]. subst z. apply host_spec.
+Qed.
+
+Definition merge_w : V :=
+  proj1_sig (constructive_indefinite_description _
+              (Closure mergeRel mergeRel_setlike seed_single)).
+Lemma merge_w_spec :
+  Sub seed_single merge_w /\
+  (forall u v, mergeRel u v -> v ∈ merge_w -> u ∈ merge_w).
+Proof.
+  exact (proj2_sig (constructive_indefinite_description _
+                     (Closure mergeRel mergeRel_setlike seed_single))).
+Qed.
+
+Lemma single_in_merge_w : single_empty ∈ merge_w.
+Proof.
+  apply (proj1 merge_w_spec).
+  apply (proj2 (in_seed_single single_empty)). reflexivity.
+Qed.
+
+Lemma empty_in_merge_w : emptyset ∈ merge_w.
+Proof.
+  apply (proj2 merge_w_spec emptyset single_empty).
+  - unfold mergeRel. split; reflexivity.
+  - exact single_in_merge_w.
+Qed.
+
+Definition pair_empty : V := sep merge_w (fun x => x = emptyset \/ x = single_empty).
+
+Lemma empty_in_pair : emptyset ∈ pair_empty.
+Proof. apply sep_intro; [ exact empty_in_merge_w | left; reflexivity ]. Qed.
+
 Lemma single_in_pair : single_empty ∈ pair_empty.
-Proof. unfold pair_empty. apply power_intro. apply Sub_refl. Qed.
+Proof. apply sep_intro; [ exact single_in_merge_w | right; reflexivity ]. Qed.
 
 (* ------------------------ the four relations -------------------------- *)
 
@@ -173,15 +228,15 @@ Proof.
   assert (HSL : SetLike (pairRel a b)).
   { intro x.
     destruct (classic (x = emptyset)) as [Hx | Hx].
-    - exists (power a). intros z HR. unfold pairRel in HR.
+    - exists (host a). intros z HR. unfold pairRel in HR.
       destruct HR as [[_ Hz] | [Hxs _]].
-      + subst z. apply self_in_power.
+      + subst z. apply host_spec.
       + exfalso. apply empty_neq_single. rewrite <- Hx. exact Hxs.
     - destruct (classic (x = single_empty)) as [Hs | Hs].
-      + exists (power b). intros z HR. unfold pairRel in HR.
+      + exists (host b). intros z HR. unfold pairRel in HR.
         destruct HR as [[Hxe _] | [_ Hz]].
         * exfalso. apply Hx. exact Hxe.
-        * subst z. apply self_in_power.
+        * subst z. apply host_spec.
       + exists emptyset. intros z HR. unfold pairRel in HR.
         destruct HR as [[Hxe _] | [Hxs _]].
         * exfalso. apply Hx. exact Hxe.
@@ -230,8 +285,8 @@ Theorem Replacement :
 Proof.
   intros F a.
   assert (HSL : SetLike (graphRel F a)).
-  { intro x. exists (power (F x)). intros z HR. unfold graphRel in HR.
-    destruct HR as [_ Hz]. subst z. apply self_in_power. }
+  { intro x. exists (host (F x)). intros z HR. unfold graphRel in HR.
+    destruct HR as [_ Hz]. subst z. apply host_spec. }
   destruct (Closure (graphRel F a) HSL a) as [w [Hsub Hclosed]].
   exists (sep w (fun y => exists x, x ∈ a /\ y = F x)).
   intro y. split.
@@ -279,12 +334,12 @@ Theorem Infinity :
 Proof.
   assert (HSL : SetLike succRel).
   { intro x. destruct (succ_exists x) as [sx Hsx].
-    exists (power sx). intros z HR. unfold succRel in HR.
+    exists (host sx). intros z HR. unfold succRel in HR.
     assert (Hz : z = sx).
     { apply Extensionality. intro t. split.
       - intro Ht. apply (proj2 (Hsx t)). exact (proj1 (HR t) Ht).
       - intro Ht. apply (proj2 (HR t)).  exact (proj1 (Hsx t) Ht). }
-    subst z. apply self_in_power. }
+    subst z. apply host_spec. }
   destruct (Closure succRel HSL single_empty) as [w [Hsub Hclosed]].
   exists w. split.
   - exists emptyset. split.

@@ -120,8 +120,9 @@ that $\T$ is \emph{exactly} $\ZF$. (Choice plays no part in the trade and is omi
 from both theories; adding it back, $\T\cup\{\mathsf C\}$ and $\ZFC$ coincide.) The
 forward half (the four deleted
 axioms are theorems of $\T$) is the interesting direction; it rests on one small
-fact --- Powerset gives every set a host --- which turns Closure into a fully
-general principle of collection. The reverse half (every $\ZF$ model satisfies
+fact --- every set has a host, i.e.\ is a member of some set --- which turns Closure
+into a fully general principle of collection. The reverse half (every $\ZF$ model
+satisfies
 Closure) is the textbook transitive-closure recursion. We then describe in
 tutorial detail a complete machine-checked formalization in the Rocq/Coq proof
 assistant, organized in four developments: a shallow embedding proving the
@@ -193,20 +194,23 @@ independent, and we flag the metatheoretic use wherever it occurs.
 What makes this more than a bookkeeping exercise is the \emph{forward} direction:
 deriving Pairing, Union, Infinity, and Replacement from the lone Closure schema.
 We will see that all four are instances of \emph{one} idea, and that the engine
-which makes them go is not Closure by itself but Closure standing on
-\textbf{Powerset}. The single fact
+which makes them go is not Closure by itself but Closure standing on a single,
+almost-trivial principle of \textbf{hosting} --- that every set is a member of some
+set:
 \[
-  a \subseteq a \quad\Longrightarrow\quad a \in \Pow(a)
+  \forall a\,\exists y\;(a \in y).
 \]
---- ``Powerset gives every set a host'' --- is what lets us certify that the
-relations we care about are set-like, and hence what upgrades Closure from a
+(Powerset supplies it, since $a \subseteq a$ gives $a \in \Pow(a)$, but hosting is
+far weaker --- see \S\ref{sec:powerset-loadbearing}.) Hosting is what lets us certify
+that the relations we care about are set-like, and hence what upgrades Closure from a
 statement about transitive closures into a fully general principle of collection.
 
 \paragraph{What this article does.} There are two interleaved goals. The first is
 mathematical: state the two theories precisely, prove the equivalence, exhibit the
-four derivations as one schema-instance family, and isolate the one axiom that
-genuinely powers the trade --- Powerset --- while showing that Regularity, like
-Choice, is a passenger of the equivalence, used in neither direction. The second is
+four derivations as one schema-instance family, and isolate what genuinely powers
+the trade --- the \emph{hosting} principle, a trivial shadow of Powerset --- while
+showing that Powerset in full, Regularity, and Choice are all more than the trade
+needs (Regularity and Choice being used in neither direction). The second is
 to explain, in tutorial style, the
 \emph{machine-verified} proof we built in the Rocq/Coq proof assistant. That
 formalization grew well past the original equivalence: it now includes a deep
@@ -219,7 +223,8 @@ decisions and the one genuine obstacle that remains.
 
 \paragraph{Roadmap.}
 Sections~\ref{sec:theories}--\ref{sec:equivalence} are the mathematics: the two
-theories, the forward direction (with the Powerset remark), the reverse direction,
+theories, the forward direction (with the ``how much Powerset?'' analysis), the
+reverse direction,
 and the equivalence theorem. Sections~\ref{sec:mech-shallow}--\ref{sec:mech-compl}
 are the formalization: the shallow embedding and the dependency audit
 (\S\ref{sec:mech-shallow}), the deep embedding closing the first-order gap
@@ -315,7 +320,13 @@ derive Pairing, Union, Replacement, and Infinity. (Regularity is not
 needed here; it is a genuine passenger, as the dependency audit in
 \S\ref{sec:mech-shallow} will certify.)
 
-\subsection{The linchpin: Powerset hosts every set}
+\subsection{The linchpin: every set has a host}\label{sec:linchpin}
+
+The engine of the forward direction is one almost-trivial fact: every set is a
+\emph{member} of some set. Call a set $y$ a \emph{host} of $a$ when $a \in y$. As we
+will see, the trade needs nothing about $a$ beyond its \emph{having} a host.
+
+Powerset is one ready source of hosts:
 
 \begin{lemma}[self-membership in the powerset]\label{lem:self}
 For every set $a$, $\ a \in \Pow(a)$.
@@ -325,20 +336,22 @@ $a \subseteq a$ holds trivially, and by Powerset $x \in \Pow(a) \leftrightarrow 
 take $x = a$.
 \end{proof}
 
-Lemma~\ref{lem:self} looks too small to matter, but it is the entire engine.
-Consider any class relation $\prec$ that is \emph{singleton-valued} above each node
---- i.e.\ for each $x$ there is at most one $z$ with $z \prec x$, given by some
-class function $z = G(x)$. Is such a $\prec$ set-like? The set-like condition
-\eqref{eq:setlike} asks for a set $y$ bounding $\{\,z : z \prec x\,\} = \{G(x)\}$.
-By Lemma~\ref{lem:self}, $G(x) \in \Pow(G(x))$, so $y = \Pow(G(x))$ works
-\emph{for free}. More generally, whenever the predecessor-class above each node is
-already known to sit inside a definable set, Powerset hands us the bound.
+It is worth seeing how little of Powerset this uses. Consider any class relation
+$\prec$ that is \emph{singleton-valued} above each node --- i.e.\ for each $x$ there
+is at most one $z$ with $z \prec x$, given by some class function $z = G(x)$. Is such
+a $\prec$ set-like? The set-like condition \eqref{eq:setlike} asks for a set $y$
+bounding $\{\,z : z \prec x\,\} = \{G(x)\}$ --- that is, a \emph{host of $G(x)$}.
+Lemma~\ref{lem:self} supplies one ($\Pow(G(x))$), but any host would do; the
+powerset is never opened up. More generally, whenever the predecessor-class above
+each node already sits inside some set, that set is the bound.
 
 \begin{quote}\itshape
-This is the conceptual heart of the whole equivalence: \textbf{Powerset turns
-``has a definable predecessor'' into ``is set-like.''} Closure then collects the
-predecessors. The four generative axioms are four ways of choosing the relation
-$\prec$ and the seed $s$.
+This is the conceptual heart of the whole equivalence: \textbf{hosting --- ``every
+set is a member of some set'' --- turns ``has a definable predecessor'' into ``is
+set-like.''} Closure then collects the predecessors. The four generative axioms are
+four ways of choosing the relation $\prec$ and the seed $s$. We will see in
+\S\ref{sec:powerset-loadbearing} that hosting is \emph{all} that is used, so full
+Powerset is more than the trade needs.
 \end{quote}
 
 \subsection{Four derivations, one schema-instance family}
@@ -371,54 +384,80 @@ $\{\,x \in w : \exists v\,(x \in v \wedge v \in s)\,\} = \bigcup s$.
 \paragraph{Replacement} is closure along a function graph. For a class function
 $F$ and domain $a$, take $z \prec x \coloneqq x \in a \wedge z = F(x)$. The
 predecessors of $x$ form the singleton $\{F(x)\}$ (or $\emptyset$ if
-$x \notin a$), bounded by $\Pow(F(x))$ via Lemma~\ref{lem:self} --- this is where
-Powerset is used. Closure applied to $a$ yields a $w$ containing the whole image
+$x \notin a$), bounded by any host of $F(x)$ (Lemma~\ref{lem:self} gives one,
+$\Pow(F(x))$) --- this is where hosting is used. Closure applied to $a$ yields a $w$
+containing the whole image
 $\{F(x) : x \in a\}$, and Separation carves out exactly that image.
 
-\paragraph{Pairing} is the subtle one, and it is precisely where Powerset's
-host-providing role becomes visible as a \emph{design constraint}. We want
+\paragraph{Pairing} is the subtle one, and it is precisely where the host-providing
+role becomes visible as a \emph{design constraint}. We want
 $\{a,b\}$ for arbitrary $a,b$. The naive attempt --- one seed node whose
 predecessors are $\{a,b\}$ --- is self-defeating: to certify that relation
 set-like we would need a set bounding $\{a,b\}$, which is Pairing itself. The fix
 is to \emph{split $a$ and $b$ across two different seed nodes}. Use the two-node
-seed $\{\emptyset,\{\emptyset\}\}$ (built from $\emptyset$ and $\Pow$ alone) and
-the relation
+seed $\{\emptyset,\{\emptyset\}\}$ (a fixed two-element set, built without Pairing)
+and the relation
 \[
   z \prec x \ \coloneqq\ (x = \emptyset \wedge z = a)\ \vee\ (x = \{\emptyset\} \wedge z = b).
 \]
 Now each node has a \emph{singleton} predecessor-class --- $\{a\}$ above
-$\emptyset$, $\{b\}$ above $\{\emptyset\}$ --- so Lemma~\ref{lem:self} makes it
-set-like ($\Pow(a)$ and $\Pow(b)$ are the hosts), with no circular appeal to
-Pairing. Closure of the seed then drags both $a$ and $b$ into one set $w$, and
+$\emptyset$, $\{b\}$ above $\{\emptyset\}$ --- so hosting makes it set-like (any
+hosts of $a$ and $b$ work --- e.g.\ $\Pow(a)$, $\Pow(b)$), with no circular appeal
+to Pairing. Closure of the seed then drags both $a$ and $b$ into one set $w$, and
 Separation gives $\{x \in w : x = a \vee x = b\} = \{a,b\}$.
 
 \paragraph{Infinity} is closure of $\{\emptyset\}$ under the successor relation
 $z \prec x \coloneqq z = x \cup \{x\}$. The successor is unique, so the
-predecessor-class is again a singleton, hostable by Powerset; the relation is
-set-like. Closure applied to $\{\emptyset\}$ gives a set $w$ containing
+predecessor-class is again a singleton, hostable (any host of the successor works);
+the relation is set-like. Closure applied to $\{\emptyset\}$ gives a set $w$ containing
 $\emptyset$ and closed under successors --- an inductive set, which is exactly what
 Infinity asserts. (Once Pairing and Union are available, the successor
 $x \cup \{x\}$ is itself a set, so the relation is genuinely definable.)
 
-\subsection{Powerset is load-bearing}\label{sec:powerset-loadbearing}
+\subsection{How much Powerset? Only hosting}\label{sec:powerset-loadbearing}
 
-The four derivations above use Powerset in a single, uniform role: as the source
-of hosts in Lemma~\ref{lem:self}, the fact that makes singleton-valued (and more
-generally suitably bounded) relations set-like. Union is the lone exception --- its
-relation $z \in x$ is bounded by $x$ directly, with no powerset needed --- which is
-why the audit in \S\ref{sec:mech-shallow} will show Union depending on Separation
-and Closure \emph{only}.
+The four derivations use Powerset in a single, uniform role: as a source of hosts in
+Lemma~\ref{lem:self}, the fact that makes singleton-valued (and more generally
+suitably bounded) relations set-like. Union is the lone exception --- its relation
+$z \in x$ is bounded by $x$ directly, with no host needed --- which is why the audit
+in \S\ref{sec:mech-shallow} shows Union depending on Separation and Closure
+\emph{only}.
 
-This is worth stating sharply, because it is easy to read Closure as ``the''
-replacement for the four axioms and miss that it is \emph{Closure together with
-Powerset} that does the work. Strip Powerset away and the set-like hypothesis of
-Closure stops being free: there is no longer a uniform host for a
-singleton-valued relation, and the collection power evaporates. We will see the
-machine certify this load-bearing role automatically, and --- on the other side ---
-certify that Powerset is \emph{idle} in the reverse direction. Powerset turns out to
-be the \emph{only} axiom that genuinely powers the equivalence: as
-\S\ref{sec:reverse} shows, the reverse direction needs neither Powerset nor
-Regularity, so Regularity (like Choice) merely rides along.
+This answers a natural question: \emph{do we need the full Powerset axiom?} No. The
+trade never opens a powerset up; it uses only the consequence
+\[
+  (\mathrm H)\qquad \forall a\,\exists y\;(a \in y)
+  \qquad\text{(``every set is a member of some set''),}
+\]
+the \emph{hosting} principle. Powerset yields $(\mathrm H)$ via $a \in \Pow(a)$, but
+$(\mathrm H)$ is far weaker --- it holds, for instance, in $H(\aleph_1)$, the
+hereditarily countable sets, which has no $\Pow(\omega)$. The machine confirms it:
+with the hypothesis weakened from Powerset to $(\mathrm H)$, all four derivations
+still go through, and \cq{Check} reports them depending on $(\mathrm H)$, not on
+Powerset (\S\ref{sec:mech-shallow}).
+
+\begin{remark}[Would \emph{finite} Powerset suffice? No]\label{rem:finitepow}
+A tempting weakening is ``Powerset restricted to finite sets'' (under any reasonable
+notion of finite --- Dedekind, Tarski). It is not enough. The predecessors we must
+host --- $a, b$ in Pairing, $F(x)$ in Replacement, $x \cup \{x\}$ in Infinity --- are
+\emph{arbitrary}, possibly infinite sets, and finite Powerset produces $\Pow(a)$ only
+for finite $a$, so it cannot host an infinite set; it does not yield $(\mathrm H)$.
+Hosting infinite sets is moreover unavoidable: deriving Pairing of two infinite sets
+forces, through set-likeness, a bounding set containing each of them, and the base
+$\{$Extensionality, Separation, Closure$\}$ has no other way to manufacture a host
+(Closure cannot host a set it is not already handed, on pain of circularity). Indeed
+Pairing already implies $(\mathrm H)$ --- $a \in \{a,b\}$ --- so any sufficient
+fragment must prove $(\mathrm H)$, which finite Powerset does not. The right way to
+weaken Powerset here is therefore not ``on finite sets'' but ``replace it by
+hosting.''
+\end{remark}
+
+So, on the structural side, the picture is uniform: \emph{none} of Powerset,
+Regularity, or Choice is used in full. Regularity and Choice are passengers, used in
+neither direction (\S\ref{sec:reverse}); Powerset is used only through its trivial
+hosting shadow $(\mathrm H)$, and only forward (the reverse needs no Powerset at
+all). The genuine engine of the equivalence is just
+$\{$Extensionality, Separation, Closure$\}$ together with hosting.
 
 % =====================================================================
 \section{The reverse direction: \texorpdfstring{$\ZF \proves \text{Closure}$}{ZF proves Closure}}\label{sec:reverse}
@@ -481,8 +520,8 @@ that \textbf{Regularity, like Choice, is a passenger of the whole trade}: the
 interderivability of Closure with $\{$Pairing, Union, Infinity, Replacement$\}$ holds
 over the bare base $\{$Extensionality, Separation, Powerset$\}$, with Regularity and
 Choice added equally to both sides and used by neither. The one axiom that is
-genuinely \emph{asymmetric} --- load-bearing forward, idle in reverse --- is
-Powerset.
+genuinely \emph{asymmetric} is Powerset --- and even it is used forward only through
+its hosting shadow (\S\ref{sec:powerset-loadbearing}) and is idle in reverse.
 \end{remark}
 
 % =====================================================================
@@ -585,17 +624,21 @@ syntactic formulas.)
 
 \subsection{The linchpin and the four theorems, in Coq}
 
-Lemma~\ref{lem:self} is a two-line Coq proof, and it is exactly the pivot the
-informal argument advertised:
+The linchpin is two lines of Coq --- the \cq{host} operator (from the \cq{Hosting}
+hypothesis $\forall a\,\exists y\,a\in y$, packaged by description) and its spec ---
+exactly the pivot the informal argument advertised:
 
 \begin{lstlisting}
-Lemma Sub_refl : forall a, Sub a a.
-Proof. intros a x H. exact H. Qed.
-
-(* THE LINCHPIN: Powerset gives every set a host. *)
-Lemma self_in_power : forall a, a ∈ power a.
-Proof. intro a. apply power_intro. apply Sub_refl. Qed.
+(* THE LINCHPIN, minimal form: every set has a host (a ∈ host a). *)
+Definition host (a : V) : V :=
+  proj1_sig (constructive_indefinite_description _ (Hosting a)).
+Lemma host_spec : forall a, a ∈ host a.
+Proof. intro a. exact (proj2_sig (constructive_indefinite_description _ (Hosting a))). Qed.
 \end{lstlisting}
+
+A side lemma \cq{powerset_gives_hosting} records that Powerset satisfies
+\cq{Hosting} ($a \in \Pow(a)$) --- the only place the file touches the Powerset
+hypothesis at all.
 
 The four relations of the schema-instance family are declared verbatim:
 
@@ -639,17 +682,18 @@ closure/Separation.''
 
 The Pairing proof is where the two-node seed appears and where the set-like check
 does real work: it splits on whether the node is $\emptyset$ or $\{\emptyset\}$ and
-supplies $\Pow(a)$ or $\Pow(b)$ as the host accordingly --- the Coq transcription
-of the ``split $a$ and $b$ across different nodes'' argument from
-\S\ref{sec:forward}.
+supplies \cq{host a} or \cq{host b} accordingly --- the Coq transcription of the
+``split $a$ and $b$ across different nodes'' argument from \S\ref{sec:forward}. (The
+seed $\{\emptyset,\{\emptyset\}\}$ is itself built from \cq{host} and a one-edge
+Closure, not from Powerset.)
 
 \subsection{The free dependency audit}
 
-Here is the part that turns the ``Powerset is load-bearing'' remark from rhetoric
-into a machine certificate. When a Coq \cq{Section} closes, each theorem is
-generalized over precisely the hypotheses it referenced; the trailing \cq{Check}
-commands print those generalized types, so we can simply \emph{read off} which
-axioms each derivation used:
+Here is the part that turns the ``only hosting is used'' claim from rhetoric into a
+machine certificate. When a Coq \cq{Section} closes, each theorem is generalized over
+precisely the hypotheses it referenced; the trailing \cq{Check} commands print those
+generalized types, so we can simply \emph{read off} which axioms each derivation
+used:
 
 \begin{lstlisting}
 End ClosureEquivalence_Forward.
@@ -663,15 +707,19 @@ The printed signatures certify:
 
 \begin{itemize}[leftmargin=1.4em]
 \item \textbf{Union} depends on \emph{Separation and Closure only} --- not
-  Powerset, not Extensionality, not the nonempty-domain assumption. (Its relation
-  $z\in x$ is self-bounding.)
-\item \textbf{Replacement} depends on \emph{Separation, Powerset, and Closure} ---
-  Powerset in exactly its host-providing role.
-\item \textbf{Pairing} and \textbf{Infinity} additionally need
-  \emph{Extensionality} and a \emph{nonempty domain} (to build $\emptyset$ and to
-  tell $\emptyset \neq \{\emptyset\}$ apart).
-\item \textbf{Regularity} is referenced by \emph{none} of the four --- a genuine
-  passenger, just as \S\ref{sec:forward} claimed.
+  Hosting, not Powerset, not Extensionality, not the nonempty-domain assumption.
+  (Its relation $z\in x$ is self-bounding.)
+\item \textbf{Replacement} depends on \emph{Separation, Hosting, and Closure} ---
+  Hosting in exactly its host-providing role, and \emph{not} Powerset (nor
+  Extensionality, nor nonemptiness).
+\item \textbf{Pairing} depends on \emph{Separation, Hosting, Closure} and a
+  \emph{nonempty domain} (to build $\emptyset$) --- and, now that the seed is built
+  by Closure rather than by a powerset, not even Extensionality.
+\item \textbf{Infinity} additionally needs \emph{Extensionality} (for the
+  inductive-set uniqueness step).
+\item \textbf{Powerset} is referenced by \emph{none} of the four (only by the side
+  lemma \cq{powerset_gives_hosting}); \textbf{Regularity} by none either --- both,
+  with Choice, are genuine passengers.
 \end{itemize}
 
 The same audit on \texttt{Reverse.v} (\cq{Check Closure_holds}) shows
@@ -679,9 +727,10 @@ The same audit on \texttt{Reverse.v} (\cq{Check Closure_holds}) shows
 Pairing, Union, Infinity, and Replacement --- but \textbf{neither Powerset nor
 Regularity}. This is the machine confirming the sharper
 $\ZF - \text{Powerset} - \text{Regularity} \proves \text{Closure}$ of
-Remark~\ref{rem:mirror}, and with it the asymmetry: Powerset is load-bearing
-forward and idle in reverse, while Regularity is idle in \emph{both} directions ---
-a passenger of the trade alongside Choice.
+Remark~\ref{rem:mirror}, and with it the asymmetry: Powerset is used forward (only
+through hosting, \S\ref{sec:powerset-loadbearing}) and idle in reverse, while
+Regularity is idle in \emph{both} directions --- a passenger of the trade alongside
+Choice.
 
 \subsection{The reverse construction in Coq}
 
@@ -1235,17 +1284,20 @@ Replacement --- are not four independent ideas but four instances of \emph{one}:
 collect the predecessors of a seed under a set-like relation. The single Closure
 schema packages that idea, and over the structural base it is interderivable with
 all four. The non-obvious lesson is \emph{where the power comes from}: not from
-Closure alone but from Closure resting on Powerset, through the one-line fact that
-every set is a member of its own powerset. That fact makes ``has a definable
-predecessor'' imply ``is set-like'' for free, which is what turns a statement about
-transitive closures into general collection. And the proof assistant pins down
-exactly how much is doing the work, by reading off which hypotheses each derivation
-discharged: \emph{Powerset is the single axiom that genuinely powers the trade} ---
-load-bearing forward, idle in reverse --- while Regularity, like Choice, turns out to
-be a passenger used in neither direction (the reverse needs only the Foundation-free
-distinctness of the finite numerals). What looked at first like a Powerset/Regularity
-mirror was an artifact of a convenient proof; the machine-checked
-$\ZF - \text{Powerset} - \text{Regularity} \proves \text{Closure}$ sets it straight.
+Closure alone but from Closure resting on \emph{hosting} --- the one-line fact that
+every set is a member of some set. That fact makes ``has a definable predecessor''
+imply ``is set-like'' for free, which is what turns a statement about transitive
+closures into general collection. And the proof assistant pins down exactly how much
+is doing the work, by reading off which hypotheses each derivation discharged. The
+verdict is bracing: of the ``structural'' axioms, \emph{none} is used in full.
+Regularity and Choice are passengers, used in neither direction; Powerset is used
+only through its trivial hosting shadow $\forall a\,\exists y\,(a\in y)$, and only
+forward (the reverse needs no Powerset at all). The machine-checked
+$\ZF - \text{Powerset} - \text{Regularity} \proves \text{Closure}$, and the
+host-only forward derivations, make this precise: the genuine engine of the whole
+equivalence is just $\{$Extensionality, Separation, Closure$\}$ together with
+hosting. What looked at first like a Powerset/Regularity mirror was an artifact of a
+convenient proof.
 
 \paragraph{The formalization.} We did not stop at the equivalence. The development
 ascends from a shallow model argument, to a deep embedding with genuinely
@@ -1274,7 +1326,7 @@ The development is four Rocq/Coq files under \texttt{src/SetTheory/}.
 \toprule
 File & Contents \\
 \midrule
-\texttt{Forward.v} & shallow embedding; $\{$Ext, Sep, Pow, Closure$\}$ derive Pairing/Union/Replacement/Infinity; the linchpin \cq{self_in_power}; dependency-audit \cq{Check}s. \\
+\texttt{Forward.v} & shallow embedding; $\{$Ext, Sep, Closure$\}$ + hosting derive Pairing/Union/Replacement/Infinity; linchpin \cq{host}/\cq{host_spec} (Powerset enters only via \cq{powerset_gives_hosting}); dependency-audit \cq{Check}s show the four free of Powerset. \\
 \texttt{Reverse.v} & shallow embedding; $\ZF$ derives Closure via the transitive-closure recursion; numerals distinct Foundation-free (\cq{onat_trans}, \cq{onat_no_self}, \cq{onat_inj}); audit shows \emph{both} Powerset and Regularity unused. \\
 \texttt{Deep.v} & deep embedding (\cq{form}, \cq{Sat}, \cq{rename}, \cq{Sat_rename}); first-order \cq{SeparationFO}/\cq{ClosureFO}; forward trade re-proved; ND calculus \cq{Prov}; \cq{soundness}; \cq{ZF_provable_holds_in_T}. \\
 \texttt{Completeness.v} & from-scratch G\"odel \cq{completeness}/\cq{prov_iff_valid}; \cq{completeness_inf} (compactness); \cq{theory_equiv}; \cq{ZF_implies_T}. \\
