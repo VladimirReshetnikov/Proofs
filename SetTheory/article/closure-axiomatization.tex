@@ -105,7 +105,7 @@
        \large Mathematics and a Machine-Verified Rocq/Coq Proof}
 \author{Vladimir Reshetnikov\\[2pt]
         \small\itshape Formalization carried out with Claude Code (Rocq 9.0.1)}
-\date{2026-06-30}
+\date{2026-06-30, revised 2026-07-01}
 
 \begin{document}
 \maketitle
@@ -125,19 +125,22 @@ into a fully general principle of collection. The reverse half (every $\ZF$ mode
 satisfies
 Closure) is the textbook transitive-closure recursion. We then describe in
 tutorial detail a complete machine-checked formalization in the Rocq/Coq proof
-assistant, organized in four developments: a shallow embedding proving the
+assistant, organized in five developments: a shallow embedding proving the
 semantic equivalence in both directions with a ``free dependency audit'' that
 certifies \emph{which} axioms each derivation actually uses; a deep embedding of
 first-order logic that re-proves the forward trade from genuinely syntactic
 schemas; a sound natural-deduction calculus with the cross-theory corollary
-$\ZF \proves \varphi \Rightarrow \T \models \varphi$; and a from-scratch proof of
+$\ZF \proves \varphi \Rightarrow \T \models \varphi$; a from-scratch proof of
 G\"odel completeness, compactness for sentence theories, and the forward
-\emph{syntactic} direction $\ZF \proves \varphi \Rightarrow \T \proves \varphi$.
+\emph{syntactic} direction $\ZF \proves \varphi \Rightarrow \T \proves \varphi$;
+and finally the \emph{deep reverse}: the finite recursion theorem rendered with
+genuine first-order formulas and carried out inside an arbitrary first-order
+$\ZF$-model, which yields the converse
+$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ and hence the full
+machine-checked deductive equivalence
+$\T \proves \varphi \Leftrightarrow \ZF \proves \varphi$.
 The whole development contains no admitted goals and rests only on the standard
-axioms of classical mathematics. We close by characterizing precisely the one
-direction that is true but not formalized --- the converse
-$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ --- and explain why it amounts
-to formalizing the recursion theorem as a first-order object derivation.
+axioms of classical mathematics.
 \end{abstract}
 
 \tableofcontents
@@ -216,10 +219,14 @@ to explain, in tutorial style, the
 formalization grew well past the original equivalence: it now includes a deep
 embedding of first-order logic, a sound and \emph{complete} proof calculus
 (G\"odel completeness proved from scratch), a compactness theorem for sentence
-theories, and the forward syntactic statement
-$\ZF \proves \varphi \Rightarrow \T \proves \varphi$. We will walk through each
-layer, quote the actual definitions and theorem statements, and explain the design
-decisions and the one genuine obstacle that remains.
+theories, the forward syntactic statement
+$\ZF \proves \varphi \Rightarrow \T \proves \varphi$, and --- via the recursion
+theorem built as genuine first-order formulas inside an arbitrary $\ZF$-model ---
+the converse, closing the machine-checked equivalence
+$\T \proves \varphi \Leftrightarrow \ZF \proves \varphi$. We will walk through
+each layer, quote the actual definitions and theorem statements, and explain the
+design decisions and how the one genuine obstacle --- the deep reverse --- was
+eventually overcome.
 
 \paragraph{Roadmap.}
 Sections~\ref{sec:theories}--\ref{sec:equivalence} are the mathematics: the two
@@ -229,10 +236,12 @@ and the equivalence theorem. Sections~\ref{sec:mech-shallow}--\ref{sec:mech-comp
 are the formalization: the shallow embedding and the dependency audit
 (\S\ref{sec:mech-shallow}), the deep embedding closing the first-order gap
 (\S\ref{sec:mech-deep}), the proof calculus and soundness
-(\S\ref{sec:mech-calculus}), and completeness, compactness, and the syntactic
-equivalence (\S\ref{sec:mech-compl}). Section~\ref{sec:remaining} states precisely
-what is proven and characterizes the single remaining direction.
-Section~\ref{sec:conclusion} reflects on both punchlines.
+(\S\ref{sec:mech-calculus}), and completeness, compactness, and the forward
+syntactic direction (\S\ref{sec:mech-compl}). Section~\ref{sec:mech-deeprev} is
+the deep reverse: the recursion theorem as a first-order formula, the converse
+syntactic direction, and the full equivalence. Section~\ref{sec:remaining} states
+precisely what is proven. Section~\ref{sec:conclusion} reflects on both
+punchlines.
 
 % =====================================================================
 \section{The two theories}\label{sec:theories}
@@ -888,17 +897,16 @@ Theorem ReplacementFO : (* image of a set under a formula-defined functional rel
 Theorem Infinity      : (* an inductive set *)
 \end{lstlisting}
 
-\paragraph{Why only the forward direction deepens.} The forward trade ports to the
-deep setting cheaply because every relation it uses is a short first-order formula.
-The reverse direction does \emph{not}: its essential use of Replacement collects
-the family $\{W_n\}$ via the map $\underline n \mapsto W_n$, and that map is
-first-order definable only through the \emph{recursion theorem}. \texttt{Reverse.v}
-deliberately sidesteps the recursion theorem by iterating on the meta-level
-\cq{nat}; rendering the same construction first-order would mean formalizing the
-recursion theorem's defining formula --- a heavy object-level construction. So the
-genuine first-order content of the reverse direction \emph{is} the recursion
-theorem, and we leave it at the (already verified) shallow level. We return to this
-point in \S\ref{sec:remaining}.
+\paragraph{Why the reverse direction is harder to deepen.} The forward trade ports
+to the deep setting cheaply because every relation it uses is a short first-order
+formula. The reverse direction does \emph{not}: its essential use of Replacement
+collects the family $\{W_n\}$ via the map $\underline n \mapsto W_n$, and that map
+is first-order definable only through the \emph{recursion theorem}.
+\texttt{Reverse.v} deliberately sidesteps the recursion theorem by iterating on
+the meta-level \cq{nat}; rendering the same construction first-order means
+formalizing the recursion theorem's defining formula --- a heavy object-level
+construction, and the genuine first-order content of the reverse direction.
+Section~\ref{sec:mech-deeprev} carries it out.
 
 % =====================================================================
 \section{Mechanization III: a proof calculus, soundness, and a cross-theory bridge}\label{sec:mech-calculus}
@@ -1004,7 +1012,8 @@ derivation.
 
 The symmetric statement $\T \proves \varphi \Rightarrow \ZF \models \varphi$ needs
 ``every $\ZF$-model satisfies \cq{ClosureFO}'' --- the deep reverse direction,
-blocked at the recursion theorem as discussed.
+i.e.\ the recursion theorem as discussed; it is proved in
+\S\ref{sec:mech-deeprev}.
 
 % =====================================================================
 \section{Mechanization IV: G\"odel completeness, compactness, and the syntactic equivalence}\label{sec:mech-compl}
@@ -1188,11 +1197,164 @@ Theorem ZF_implies_T :
 \end{lstlisting}
 
 Everything $\ZF$ proves, $\T$ proves. Read against \cq{theory_equiv}, this is one
-half of the statement that $\ZF$ and $\T$ are the same theory --- and the half that
-goes through cleanly.
+half of the statement that $\ZF$ and $\T$ are the same theory --- the half that
+goes through cleanly, because \cq{Tmodel_sat_ZF} could reuse \texttt{Deep.v}'s
+forward derivations wholesale. The other half needs the dual model inclusion, and
+that is where the recursion theorem finally has to be paid for.
 
 % =====================================================================
-\section{What is proven, and the one remaining direction}\label{sec:remaining}
+\section{Mechanization V: the deep reverse --- the recursion theorem as a first-order formula}\label{sec:mech-deeprev}
+% =====================================================================
+
+The fifth file, \texttt{DeepReverse.v}, closes the converse. By
+\cq{theory_equiv} (or directly by \cq{completeness_inf} plus soundness), the
+syntactic statement $\T \proves \varphi \Rightarrow \ZF \proves \varphi$ follows
+from the dual of \cq{Tmodel_sat_ZF}: \emph{every first-order $\ZF$-model
+satisfies every instance of \cq{Closure_form}}. That is the \emph{deep reverse}
+direction, and it is genuinely hard, for a reason that has been visible since
+\S\ref{sec:mech-deep}.
+
+\subsection{The obstacle, and the shape of the solution}
+
+\texttt{Reverse.v} proves Closure using a \emph{second-order} ingredient: the
+iteration $W_n$ lives on the metatheory's \cq{nat}, and the family $\{W_n\}$ is
+collected by an external recursion. A first-order $\ZF$-model is not handed such
+a meta-recursion --- a nonstandard model has stages at nonstandard levels that no
+meta-level \cq{nat} ever reaches --- so it must \emph{build} the family
+internally, as a set-coded function. Doing that is precisely the content of the
+\textbf{finite recursion theorem} on $\omega$:
+
+\begin{itemize}[leftmargin=1.4em]
+\item encode functions as sets of Kuratowski pairs;
+\item formalize the ``$m$-approximation'' of the iteration and prove existence
+  and uniqueness of approximations by $\omega$-induction, with every
+  set-existence step passing through the model's \emph{first-order}
+  Separation and Replacement --- i.e.\ through genuine formulas;
+\item feed the (now provably functional) stage relation to first-order
+  Replacement over $\omega$ and take the union.
+\end{itemize}
+
+One design decision deserves emphasis. We do \emph{not} write raw object
+derivations in the calculus \cq{Prov}; we prove \emph{satisfaction in an
+arbitrary first-order model}, quantifying over models inside Coq, and let the
+completeness theorem of \S\ref{sec:mech-compl} convert model-theoretic truth
+into provability. This is the standard model-theoretic route, and it is what the
+completeness layer was built for --- but nothing conceptual is skipped by it:
+the recursion theorem's \emph{defining formula} still has to be constructed, as
+an actual De~Bruijn \cq{form}, because the model's Separation and Replacement
+schemas accept nothing else. The heavy lifting is exactly where the textbook
+says it is; only the final conversion from truth to proof is outsourced to
+G\"odel.
+
+\subsection{An internal $\omega$ and a definable-induction schema}
+
+Fix a model $(V,\in)$ of the first-order $\ZF$ axioms (the file extracts them
+from \cq{ZFax_s} through \cq{bridge_*} lemmas; notably the list is
+$\{$Ext, Sep, Pair, Union, Inf, Repl$\}$ --- \emph{neither Powerset nor
+Regularity is needed}, so the deep reverse inherits the sharpening of
+\S\ref{sec:powerset-loadbearing} at the first-order level). Inside $V$ the file
+rebuilds the basic algebra --- pairs, unions, successors \cq{vsucc}, and
+Kuratowski pairs \cq{kpair} with machine-checked injectivity \cq{kpair_inj} ---
+and then carves the internal $\omega$ out of the Infinity witness \emph{by a
+formula}: $\omega$ is the set of members of the inductive witness that belong to
+every inductive set, where ``inductive'' is itself a \cq{form} (\cq{fInd}). The
+payoff is the \textbf{definable-induction schema}, the engine that replaces the
+meta-level \cq{nat}:
+
+\begin{lstlisting}
+Lemma omega_ind :
+  forall (phi : form) (e : nat -> V),
+    SAT (SC vempty e) phi ->
+    (forall n, n ∈ omega -> SAT (SC n e) phi -> SAT (SC (vsucc n) e) phi) ->
+    forall n, n ∈ omega -> SAT (SC n e) phi.
+\end{lstlisting}
+
+Induction holds for \emph{any property expressible by a formula with
+parameters} --- and only for those, which is exactly the discipline the
+first-order setting imposes. The internal arithmetic needed later
+(transitivity of $\omega$ and of each natural, irreflexivity
+\cq{nat_no_self}, successor injectivity \cq{succ_inj_nat}) is proved through
+\cq{omega_ind} with small explicit formulas, Foundation-free, mirroring the
+numeral lemmas of \texttt{Reverse.v} one level down.
+
+\subsection{The recursion theorem's defining formula}
+
+The construction is parameterized by the closure relation: a formula \cq{psiC}
+with argument slots $0,1$ and parameters \cq{eC} (the instance of the schema
+being proved). Two preliminary canonicalizations tame the choice functions that
+\texttt{Reverse.v} used freely:
+
+\begin{itemize}[leftmargin=1.4em]
+\item the \emph{canonical predecessor set}
+  $\mathrm{predSet}(v) = \{z : z \prec v\}$ (\cq{predSet})
+  --- carved by Separation inside an $\varepsilon$-chosen bound from
+  set-likeness, but unique by Extensionality, so the $\varepsilon$ leaks nothing
+  into the object level; its graph ``$y = \mathrm{predSet}(x)$'' is a formula
+  (\cq{psiPS}), provably functional, so first-order Replacement can push it
+  through a set;
+\item the canonical one-step operator
+  $\mathrm{gstep}(t) = t \cup \bigcup\{\mathrm{predSet}(v) : v \in t\}$, with
+  ``$y = \mathrm{gstep}(t)$'' again a formula (\cq{fStepF}).
+\end{itemize}
+
+A library of formula macros with satisfaction specs (\cq{fEmptyF}, \cq{fSingF},
+\cq{fUPairF}, \cq{fKPairF}, \cq{fPairMemF}, \cq{fSuccF}, \dots) then assembles
+the \textbf{approximation predicate}: $\mathrm{Approx}(f,m)$ (\cq{Approx}) says
+$f$ is (the graph of) a function on $\{0,\dots,m\}$ recording the stages
+$s,\,g(s),\,g(g(s)),\dots$ --- five clauses: functionality, domain bound, the
+base pair $\langle 0,s\rangle \in f$, domain coverage, and the recurrence
+$f(k{+}1) = g(f(k))$. Each clause is both a Coq predicate and a \cq{form}
+(\cq{fAppC1}--\cq{fAppC5}, packaged as \cq{fApproxF}), with a spec lemma
+equating the two readings. This \cq{fApproxF} --- roughly the formula
+$\exists f\,[\mathrm{Fun}(f) \wedge \mathrm{dom}\,f = m{+}1 \wedge f(0)=s
+\wedge \forall k{<}m\ f(k{+}1)=g(f(k))]$ of the textbook proof --- \emph{is}
+the recursion theorem's defining formula, built for real.
+
+Existence and agreement of approximations are proved by \cq{omega_ind}
+(existence extends an $m$-approximation by one new Kuratowski pair, where
+injectivity \cq{kpair_inj} and the arithmetic lemmas guarantee the extension
+stays functional; agreement runs a second internal induction with $f, f'$ as
+parameters). Agreement is the crucial one: it makes the \textbf{stage relation}
+\[
+  \Theta(y,m) \;:\equiv\; m \in \omega \wedge \exists f\,
+  (\mathrm{Approx}(f,m) \wedge \langle m,y\rangle \in f)
+\]
+\emph{functional} (\cq{theta_functional}) --- exactly the premise first-order
+Replacement demands. Replacement applied to $\Theta$ (as the formula
+\cq{fThetaF}) over $\omega$ collects the stages; the union of the image is the
+closure set:
+
+\begin{lstlisting}
+Theorem ClosureFO_of_ZF :  (* inside an arbitrary FO ZF-model *)
+  forall psiC eC, SetLike (relOf psiC eC) ->
+    forall s, exists w, Sub s w /\
+      (forall u v, relOf psiC eC u v -> v ∈ w -> u ∈ w).
+\end{lstlisting}
+
+\subsection{The converse, and the equivalence}
+
+Bridging back through \cq{Closure_form} gives \cq{ZFmodel_sat_Closure} (every
+$\ZF$-model satisfies every sealed Closure instance), hence
+\cq{ZFmodel_sat_T} --- every $\ZF$-model is a $\T$-model, the dual of
+\cq{Tmodel_sat_ZF}. Soundness plus \cq{completeness_inf} then deliver the
+converse syntactic direction, and with \cq{ZF_implies_T} the headline:
+
+\begin{lstlisting}
+Theorem T_implies_ZF :
+  forall phi, Sentence phi -> BProv Tax_s nil phi -> BProv ZFax_s nil phi.
+
+Theorem T_iff_ZF :
+  forall phi, Sentence phi -> (BProv Tax_s nil phi <-> BProv ZFax_s nil phi).
+\end{lstlisting}
+
+The two theories also provably have \emph{the same models}
+(\cq{T_ZF_same_models}), so \cq{T_iff_ZF} falls out a second time as an
+instance of the abstract \cq{theory_equiv} --- a pleasant cross-check that the
+general machinery and the concrete construction agree
+(\cq{T_iff_ZF_via_theory_equiv}).
+
+% =====================================================================
+\section{What is proven}\label{sec:remaining}
 % =====================================================================
 
 \begin{center}
@@ -1210,43 +1372,16 @@ completeness $\Prov G\,\varphi \Leftrightarrow G\models\varphi$ & machine-checke
 compactness ($B\models\varphi \Rightarrow B\proves\varphi$, sentences) & machine-checked & \texttt{Completeness.v} \\
 same-model sentence theories are deductively equal & machine-checked & \texttt{Completeness.v} \\
 $\ZF \proves \varphi \Rightarrow \T \proves \varphi$ & machine-checked & \texttt{Completeness.v} \\
-$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ & needs the recursion theorem & --- \\
+deep reverse: every FO $\ZF$-model satisfies Closure & machine-checked & \texttt{DeepReverse.v} \\
+$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ & machine-checked & \texttt{DeepReverse.v} \\
+$\T \proves \varphi \Leftrightarrow \ZF \proves \varphi$ & machine-checked & \texttt{DeepReverse.v} \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\subsection{The converse, characterized precisely}
-
-The one direction we have \emph{not} formalized is the converse syntactic
-statement $\T \proves \varphi \Rightarrow \ZF \proves \varphi$. It is true. By
-\cq{theory_equiv} it would follow from ``every $\ZF$-model satisfies
-\cq{ClosureFO},'' the dual of \cq{Tmodel_sat_ZF}. That is exactly the
-\emph{deep reverse} direction --- and it is genuinely hard, for a reason that has
-been visible since \S\ref{sec:mech-deep}.
-
-\texttt{Reverse.v} proves Closure using a \emph{second-order} ingredient: the
-iteration $W_n$ lives on the metatheory's \cq{nat}, and the family $\{W_n\}$ is
-collected by an external recursion. A first-order $\ZF$-model is not handed such a
-meta-recursion; it must \emph{build} the family internally, as a set-coded
-function, using only first-order $\ZF$ derivations. Doing that is precisely the
-content of the \textbf{recursion theorem} on $\omega$:
-
-\begin{itemize}[leftmargin=1.4em]
-\item encode functions as sets of Kuratowski pairs;
-\item formalize the ``$n$-approximation'' of the iteration and prove existence and
-  uniqueness of approximations by $\omega$-induction, \emph{inside} the object
-  calculus \cq{Prov};
-\item take the union of approximations to obtain the total iteration function, then
-  its range.
-\end{itemize}
-
-None of this is conceptually mysterious --- it is standard textbook set theory ---
-but rendering it as first-order \emph{object derivations} (rather than meta-level
-Coq recursion) is a self-contained and heavy formalization in its own right. It is
-the honest boundary of the present development: we prove the converse
-\emph{semantically} (it is implicit in \texttt{Reverse.v}'s shallow model
-argument) but not \emph{syntactically inside \cq{Prov}}, because the syntactic
-content of the reverse direction simply \emph{is} the recursion theorem.
+The table is closed everywhere: both semantic directions, both syntactic
+directions, and the logical infrastructure (soundness, completeness,
+compactness, deductive equivalence of same-model theories) that connects them.
 
 \subsection{Trust: axioms used, no admitted goals}
 
@@ -1261,7 +1396,7 @@ propositional_extensionality
 proof_irrelevance
 \end{lstlisting}
 
-There is no \cq{Admitted} and no custom \cq{Axiom} anywhere in the four files.
+There is no \cq{Admitted} and no custom \cq{Axiom} anywhere in the five files.
 These five are exactly the principles one expects when mechanizing classical set
 theory with a quotient term model: classical logic, a description operator to turn
 existence axioms into operations, and the extensionality/irrelevance principles
@@ -1318,21 +1453,24 @@ ascends from a shallow model argument, to a deep embedding with genuinely
 first-order schemas, to a sound and \emph{complete} proof calculus built from
 scratch (truth lemma, Lindenbaum/Henkin, G\"odel completeness), to compactness for
 sentence theories, to the abstract theorem that same-model sentence theories are
-deductively equivalent --- of which ``$\ZF$ and $\T$ prove the same sentences'' is
-an instance, with its forward half $\ZF \proves \varphi \Rightarrow \T \proves
-\varphi$ now a machine-checked corollary. The single remaining direction is
-characterized exactly: it is the recursion theorem rendered as a first-order object
-derivation, the deep reverse obstacle, and nothing less. Everything else is done,
-with no admitted goals and only the standard classical axioms --- a complete and
-honest account of what it takes to certify that a slogan (``one closure schema'')
-really is $\ZF$ in disguise.
+deductively equivalent --- and finally to the deep reverse: the finite recursion
+theorem built as an actual first-order formula (Kuratowski pairs, an internal
+$\omega$ with a definable-induction schema, the approximation predicate and its
+functionality) and run inside an arbitrary first-order $\ZF$-model, so that
+G\"odel completeness converts model-theoretic truth into the converse
+$\T \proves \varphi \Rightarrow \ZF \proves \varphi$. The result is the full
+machine-checked deductive equivalence
+$\T \proves \varphi \Leftrightarrow \ZF \proves \varphi$, with no admitted goals
+and only the standard classical axioms --- a complete and honest account of what
+it takes to certify that a slogan (``one closure schema'') really is $\ZF$ in
+disguise.
 
 \appendix
 % =====================================================================
 \section{File inventory and build instructions}
 % =====================================================================
 
-The development is four Rocq/Coq files under \texttt{src/SetTheory/}.
+The development is five Rocq/Coq files under \texttt{src/SetTheory/}.
 
 \begin{center}
 \renewcommand{\arraystretch}{1.25}
@@ -1344,6 +1482,7 @@ File & Contents \\
 \texttt{Reverse.v} & shallow embedding; $\ZF$ derives Closure via the transitive-closure recursion; numerals distinct Foundation-free (\cq{onat_trans}, \cq{onat_no_self}, \cq{onat_inj}); audit shows \emph{both} Powerset and Regularity unused. \\
 \texttt{Deep.v} & deep embedding (\cq{form}, \cq{Sat}, \cq{rename}, \cq{Sat_rename}); first-order \cq{SeparationFO}/\cq{ClosureFO}; forward trade re-proved; ND calculus \cq{Prov}; \cq{soundness}; \cq{ZF_provable_holds_in_T}. \\
 \texttt{Completeness.v} & from-scratch G\"odel \cq{completeness}/\cq{prov_iff_valid}; \cq{completeness_inf} (compactness); \cq{theory_equiv}; \cq{ZF_implies_T}. \\
+\texttt{DeepReverse.v} & the deep reverse: internal set algebra with \cq{kpair_inj}; internal $\omega$ and the definable-induction schema \cq{omega_ind}; the formula-macro library; \cq{Approx}/\cq{fApproxF} with existence and agreement; \cq{theta_functional}; \cq{ClosureFO_of_ZF}; \cq{ZFmodel_sat_T}; \cq{T_implies_ZF}; \cq{T_iff_ZF}. \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1351,16 +1490,18 @@ File & Contents \\
 \texttt{Forward.v}, \texttt{Reverse.v}, and \texttt{Deep.v} are independent (no
 inter-file \cq{Require}) and need only the standard library.
 \texttt{Completeness.v} \cq{Require}s \cq{Deep} (hence the namespace flag) and
-additionally uses the standard classical/extensionality modules.
+additionally uses the standard classical/extensionality modules;
+\texttt{DeepReverse.v} \cq{Require}s both.
 
 \begin{lstlisting}[language={}]
 # developed against Rocq 9.0.1
 coqc Forward.v
 coqc Reverse.v
 coqc Deep.v
-# Completeness.v builds on Deep via the SetTheory namespace:
+# Completeness.v and DeepReverse.v build on Deep via the SetTheory namespace:
 coqc -Q . SetTheory Deep.v
 coqc -Q . SetTheory Completeness.v
+coqc -Q . SetTheory DeepReverse.v
 \end{lstlisting}
 
 \end{document}

@@ -52,7 +52,9 @@ The system is **exactly ZF**:
 | infinite completeness | `B ⊨ φ ⟹ B ⊢ φ` for sentence theories (compactness lift) | **machine-checked** | [`Completeness.v`](Completeness.v) |
 | deductive equivalence | same-model sentence theories prove the same sentences | **machine-checked** | [`Completeness.v`](Completeness.v) |
 | `ZF ⊢ φ ⟹ T ⊢ φ` | the forward syntactic direction, ZF/T as sentence theories | **machine-checked** | [`Completeness.v`](Completeness.v) |
-| `T ⊢ φ ⟹ ZF ⊢ φ` | the converse | needs the first-order recursion theorem (see below) | [`Completeness.v`](Completeness.v) |
+| deep reverse | every first-order ZF model satisfies `Closure_form` (the internal recursion theorem) | **machine-checked** | [`DeepReverse.v`](DeepReverse.v) |
+| `T ⊢ φ ⟹ ZF ⊢ φ` | the converse syntactic direction | **machine-checked** | [`DeepReverse.v`](DeepReverse.v) |
+| **`T ⊢ φ ⟺ ZF ⊢ φ`** | **full deductive equivalence** (`T_iff_ZF`) | **machine-checked** | [`DeepReverse.v`](DeepReverse.v) |
 
 Regularity is **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
@@ -190,15 +192,16 @@ environment-extensionality lemma `Sat_ext`, and a De Bruijn renaming lemma
 `Sat_rename` (the one piece Replacement needs, to express "∃x∈a, ψ(y,x)" as a
 formula).
 
-**Why only the forward direction is deepened.** The forward trade ports cleanly
+**Why the reverse direction is harder to deepen.** The forward trade ports cleanly
 because every relation it uses (`pairing`, `∈`, `successor`, a function graph) is a
 short first-order formula. The reverse direction does **not** port cheaply: its use
 of Replacement is essential, and the collected map `n ↦ Wₙ` is first-order
 definable only through the *syntactic recursion theorem*. `Reverse.v` deliberately
-sidesteps that with a meta-level `nat` iteration; rendering it first-order would
-mean formalizing the recursion theorem's defining formula — the genuinely heavy
-object-level construction. So the first-order content of the reverse direction *is*
-the recursion theorem, which is left at the (already verified) shallow level.
+sidesteps that with a meta-level `nat` iteration; rendering it first-order means
+formalizing the recursion theorem's defining formula — the genuinely heavy
+object-level construction. That construction is now done: [`DeepReverse.v`](DeepReverse.v)
+builds the defining formula for real (see below), so the first-order content of the
+reverse direction — the recursion theorem — is machine-checked too.
 
 ## A proof calculus, soundness, and a cross-theory corollary (`Deep.v`)
 
@@ -230,9 +233,9 @@ i.e. **everything ZF proves holds in every model of the Closure axiomatization T
 ZF axiom set (all eight axioms; Separation and Replacement as schemas over `form`).
 This combines the syntactic `soundness` with the forward semantic equivalence.
 
-The symmetric corollary `T ⊢ φ ⟹ ZF ⊨ φ` needs "every ZF-model satisfies
-`ClosureFO`", i.e. the *deep reverse* direction — blocked at the same point as
-above (the recursion theorem as a first-order formula).
+The symmetric corollary needs "every ZF-model satisfies `ClosureFO`", i.e. the
+*deep reverse* direction — the recursion theorem as a first-order formula, proved
+in [`DeepReverse.v`](DeepReverse.v) (`ZFmodel_sat_Closure`).
 
 ## Completeness (`Completeness.v`)
 
@@ -285,9 +288,72 @@ soundness (`Deep.v`) and completeness together. The development:
 `constructive_indefinite_description`, and `functional_extensionality` /
 `propositional_extensionality` / `proof_irrelevance`) — no `Admitted` anywhere.
 
-## What is proven, and the one remaining direction
+## The deep reverse: the recursion theorem as a first-order formula (`DeepReverse.v`)
 
-Machine-checked, no admits:
+[`DeepReverse.v`](DeepReverse.v) closes the last gap: **every first-order model of
+ZF satisfies every instance of `Closure_form`** (`ZFmodel_sat_Closure`), hence
+**`T ⊢ φ ⟹ ZF ⊢ φ`** (`T_implies_ZF`) and the full deductive equivalence
+
+```coq
+T_iff_ZF : forall phi, Sentence phi ->
+           (BProv Tax_s nil phi <-> BProv ZFax_s nil phi).
+```
+
+`Reverse.v` proves Closure from *second-order* Replacement, iterating the one-step
+operator `g` on the metatheory's `nat` and collecting the stages with a
+metatheoretic map — which a first-order model need not supply (a nonstandard model
+has stages at nonstandard levels the meta-`nat` never reaches). `DeepReverse.v`
+instead runs the iteration **inside** an arbitrary first-order ZF model — the
+finite recursion theorem rendered with genuine syntactic formulas:
+
+1. **Internal set algebra** — pairs, unions, successors, and Kuratowski ordered
+   pairs `kpair` with machine-checked injectivity (`kpair_inj`), all canonical by
+   Extensionality.
+2. **An internal ω** — carved out of the Infinity witness by the *formula* "x
+   belongs to every inductive set", yielding the **definable-induction schema**
+   `omega_ind`: induction over the internal naturals for any property given by a
+   formula `phi` with parameters in the environment. This is the engine that
+   replaces the meta-level `nat`. Internal arithmetic (`nat_transitive`,
+   `nat_no_self`, `succ_inj_nat`, …) is proved by that schema, Foundation-free.
+3. **A formula-macro library with satisfaction specs** — `fEmptyF`, `fSingF`,
+   `fUPairF`, `fKPairF`, `fPairMemF`, `fSuccF`, `fInd`, and, relative to the
+   closure relation `psi`, `fRF` (the renamed relation), `fStepF`
+   ("y = g(t)"), `fApproxF`, `fThetaF`. Each macro is a genuine de Bruijn `form`
+   whose satisfaction provably means the intended semantic statement; macros are
+   made locally opaque after their spec so `cbn` composes them cleanly.
+4. **The approximation predicate** `Approx f m` — "f is (the graph of) a function
+   on `{0,…,m}` recording the stages `s, g(s), g(g(s)), …`", five clauses
+   (functionality, domain bound, base pair `⟨0,s⟩`, domain coverage, recurrence
+   `f(k+1) = g(f(k))`) — with **existence** (`Approx_exists`) and **agreement**
+   (`Approx_agree`) both proved by internal induction. Agreement makes the stage
+   relation `Theta y m := m ∈ ω ∧ ∃f (Approx f m ∧ ⟨m,y⟩ ∈ f)` **functional**
+   (`theta_functional`) — exactly what first-order Replacement demands.
+5. **Collection** — FO Replacement applied to `Theta` over ω collects the stages;
+   their union is the closure set (`ClosureFO_of_ZF`).
+
+Two structural points worth noting:
+
+- **The one-step operator is canonical.** `Reverse.v` fed a *choice* of
+  predecessor-bounds (Hilbert ε on set-likeness) through second-order Replacement.
+  First-order Replacement cannot swallow a choice function, so `DeepReverse.v`
+  uses the canonical predecessor set `predSet v = { z : z ≺ v }` (carved by
+  Separation inside an ε-chosen bound, but unique by Extensionality) and the
+  definable graph formula "y = predSet(x)" (`psiPS`) — the ε leaks nothing into
+  the object level.
+- **Neither Powerset nor Regularity is used.** The model-side hypothesis list is
+  `{Ext, Sep, Pair, Union, Inf, Repl}`, so the deep reverse inherits the
+  sharpening *ZF − Powerset − Regularity ⊢ Closure* at the first-order level
+  (visible in the `Check ClosureFO_of_ZF` output).
+
+With `ZFmodel_sat_T` (every ZF-model is a T-model) and `Tmodel_sat_ZF` from
+`Completeness.v`, the two theories have **exactly the same models**
+(`T_ZF_same_models`); `T_iff_ZF` also falls out of the general `theory_equiv` as a
+cross-check (`T_iff_ZF_via_theory_equiv`). `Print Assumptions T_iff_ZF` lists only
+the same five classical axioms — no `Admitted` anywhere.
+
+## What is proven
+
+Machine-checked, no admits — the table is closed everywhere:
 
 - The equivalence **semantically**, both directions: `Forward.v` (T ⟹ ZF axioms)
   and `Reverse.v` (ZF ⟹ Closure).
@@ -297,16 +363,9 @@ Machine-checked, no admits:
   completeness** (compactness) for sentence theories; the **deductive equivalence of
   same-model sentence theories**; and the forward syntactic direction
   **`ZF ⊢ φ ⟹ T ⊢ φ`**: `Completeness.v`.
-
-The **converse `T ⊢ φ ⟹ ZF ⊢ φ`** is *true* but is the one piece not formalized.
-It requires *every first-order ZF model to satisfy `ClosureFO`* — equivalently, the
-**recursion theorem rendered as a first-order object derivation** (functions-as-sets
-over Kuratowski pairs, ω-induction, the approximation lemmas, all inside `Prov`).
-This is exactly the "deep reverse" obstacle flagged from the start: `Reverse.v`
-proves Closure from *second-order* Replacement (an arbitrary meta-level `nat`
-iteration), which a first-order ZF model need not provide. Closing it is a
-self-contained but heavy project; everything else — including the general
-`theory_equiv`, of which `ZF ⟺ T` is an instance — is done.
+- The **deep reverse** (every FO ZF model satisfies `Closure_form`; the internal
+  recursion theorem), the converse **`T ⊢ φ ⟹ ZF ⊢ φ`**, and the headline
+  **`T ⊢ φ ⟺ ZF ⊢ φ`** (`T_iff_ZF`): `DeepReverse.v`.
 
 ## A written account
 
@@ -317,11 +376,11 @@ formalization: the equivalence theorem, the four derivations as one
 schema-instance family, the "how much Powerset?" analysis (the forward trade needs
 only hosting — not full, nor even finite, Powerset — and Regularity and Choice are
 passengers used in neither direction), the reverse transitive-closure recursion,
-and then a section-by-section walkthrough of all four Coq developments (the shallow
+and then a section-by-section walkthrough of all five Coq developments (the shallow
 embedding and the free dependency audit, the deep embedding closing the first-order
-gap, the proof calculus and soundness, and the from-scratch Gödel completeness /
-compactness / `ZF ⊢ φ ⟹ T ⊢ φ` layer), ending with a precise characterization of
-the one direction that is true but unformalized. Build it with
+gap, the proof calculus and soundness, the from-scratch Gödel completeness /
+compactness / `ZF ⊢ φ ⟹ T ⊢ φ` layer, and the deep reverse — the recursion theorem
+as a first-order formula, closing `T ⊢ φ ⟺ ZF ⊢ φ`). Build it with
 `lualatex closure-axiomatization.tex` (run twice for the table of contents and
 cross-references).
 
@@ -333,9 +392,10 @@ Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 coqc Forward.v
 coqc Reverse.v
 coqc Deep.v
-# Completeness.v builds on Deep via the SetTheory namespace:
+# Completeness.v and DeepReverse.v build on Deep via the SetTheory namespace:
 coqc -Q . SetTheory Deep.v
 coqc -Q . SetTheory Completeness.v
+coqc -Q . SetTheory DeepReverse.v
 ```
 
 `Forward.v`, `Reverse.v`, `Deep.v` are independent (no inter-file `Require`) and need
@@ -343,4 +403,4 @@ only the standard library. `Completeness.v` `Require`s `Deep` (hence the `-Q`
 namespace) and additionally uses the standard classical/extensionality axiom modules
 (`ClassicalEpsilon`, `FunctionalExtensionality`, `PropExtensionality`,
 `ProofIrrelevance`) for the quotient term model — all consistent with the classical
-setting already in use.
+setting already in use. `DeepReverse.v` `Require`s both `Deep` and `Completeness`.
