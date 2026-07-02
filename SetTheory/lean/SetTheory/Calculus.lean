@@ -106,20 +106,6 @@ theorem Prov_weaken {G : List Form} {a : Form} (h : Prov G a) :
 theorem Prov_cons {G : List Form} {a b : Form} (h : Prov G b) : Prov (a :: G) b :=
   Prov_weaken h _ (fun _ hx => List.mem_cons.mpr (Or.inr hx))
 
-/-- Deduction theorem.  One direction is the `P_impI` constructor; here is the
-converse. -/
-theorem Prov_deduction_elim {G : List Form} {a b : Form}
-    (h : Prov G (fImp a b)) : Prov (a :: G) b :=
-  .P_impE _ a b (Prov_cons h) (.P_ass _ _ (List.mem_cons.mpr (Or.inl rfl)))
-
-/-- Modus ponens as a derived rule. -/
-theorem Prov_mp {G : List Form} {a b : Form}
-    (h1 : Prov G (fImp a b)) (h2 : Prov G a) : Prov G b := .P_impE _ a b h1 h2
-
-theorem Prov_absurd {G : List Form} {a : Form}
-    (ha : Prov G a) (hna : Prov G (fImp a fBot)) : Prov G fBot :=
-  .P_impE _ a fBot hna ha
-
 /-- Proof by contradiction. -/
 theorem Prov_byContra {G : List Form} {a : Form}
     (h : Prov (fImp a fBot :: G) fBot) : Prov G a :=
@@ -133,38 +119,9 @@ theorem Prov_dne {G : List Form} {a : Form}
   Prov_byContra (.P_impE _ (fImp a fBot) fBot (Prov_cons h)
     (.P_ass _ _ (List.mem_cons.mpr (Or.inl rfl))))
 
-/-! ## [2] Consistency + classical kit -/
+/-! ## [2] Consistency -/
 
 def Con (G : List Form) : Prop := ¬ Prov G fBot
-
-/-- `phi` is provable iff its negation is refutable. -/
-theorem Prov_neg_refute (G : List Form) (phi : Form) :
-    Prov G phi ↔ Prov (fImp phi fBot :: G) fBot := by
-  constructor
-  · intro h
-    exact .P_impE _ phi fBot (.P_ass _ _ (List.mem_cons.mpr (Or.inl rfl)))
-      (Prov_cons h)
-  · exact Prov_byContra
-
-/-- The Lindenbaum step: a consistent context can be consistently extended by
-`phi` or by `¬phi`. -/
-theorem Con_cons_or (G : List Form) (phi : Form) (hG : Con G) :
-    Con (phi :: G) ∨ Con (fImp phi fBot :: G) := by
-  rcases Classical.em (Con (phi :: G)) with h | h
-  · exact Or.inl h
-  · right
-    intro hbad
-    have hphi : Prov (phi :: G) fBot := Classical.byContradiction h
-    exact hG (.P_impE G (fImp phi fBot) fBot (.P_impI _ _ _ hbad) (.P_impI _ _ _ hphi))
-
-/-- If `phi` cannot be inconsistently added, `phi :: G` is consistent. -/
-theorem Con_cons_neg (G : List Form) (phi : Form) (_ : Con G)
-    (h : ¬ Prov (phi :: G) fBot) : Con (phi :: G) := h
-
-/-- Extending a context by something it already proves keeps consistency. -/
-theorem Con_redundant (G : List Form) (phi : Form) (hG : Con G)
-    (hp : Prov G phi) : Con (phi :: G) := fun hbad =>
-  hG (.P_impE G phi fBot (.P_impI _ _ _ hbad) hp)
 
 /-! ### Equality kit: the proper Leibniz rule makes equality an equivalence
 with full congruence. -/
@@ -315,26 +272,6 @@ theorem henkin_all_core (G : List Form) (a : Form) (w : Nat)
   have hgen := generalize_fresh _ a w hwG' hwa hbad'
   exact .P_impE _ (fAll a) fBot (.P_ass _ _ (List.mem_cons.mpr (Or.inl rfl)))
     (.P_allI _ a hgen)
-
-/-- Existential Henkin witness. -/
-theorem henkin_ex (G : List Form) (a : Form) (hcon : Con (fEx a :: G)) :
-    Con (rename (inst (freshFor (fEx a :: G))) a :: fEx a :: G) := fun hbad => by
-  have hwa : ¬ Free (freshFor (fEx a :: G)) (fEx a) :=
-    freshFor_not_free (List.mem_cons.mpr (Or.inl rfl))
-  exact hcon (henkin_ex_core G a (freshFor (fEx a :: G)) hwa
-    (fun g hg => freshFor_not_free (List.mem_cons.mpr (Or.inr hg)))
-    hbad)
-
-/-- Universal Henkin witness (for the negation of a universal). -/
-theorem henkin_all (G : List Form) (a : Form)
-    (hcon : Con (fImp (fAll a) fBot :: G)) :
-    Con (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot
-         :: fImp (fAll a) fBot :: G) := fun hbad =>
-  hcon (henkin_all_core G a (freshFor (fImp (fAll a) fBot :: G))
-    (fun hf => freshFor_not_free (L := fImp (fAll a) fBot :: G)
-      (List.mem_cons.mpr (Or.inl rfl)) (Or.inl hf))
-    (fun _ hg => freshFor_not_free (List.mem_cons.mpr (Or.inr hg)))
-    hbad)
 
 /-! ## [4c] Cut: replacing assumptions by derivations -/
 

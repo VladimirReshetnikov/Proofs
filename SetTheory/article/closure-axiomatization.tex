@@ -1056,11 +1056,10 @@ in the file.
 \subsection{Proof-theory infrastructure}
 
 The construction leans on the usual admissible rules, all provided by
-\texttt{Calculus.v}: weakening, the deduction
-theorem, proof by contradiction and double-negation elimination, a notion of
-consistency \cq{Con G := ~ Prov G fBot}, the Lindenbaum extension step
-\cq{Con_cons_or} (a consistent set stays consistent when extended by a formula or
-its negation), the equality kit (symmetry/transitivity/congruence --- available
+\texttt{Calculus.v}: weakening, proof by contradiction and double-negation
+elimination, a notion of
+consistency \cq{Con G := ~ Prov G fBot}, the equality kit
+(symmetry/transitivity/congruence --- available
 only \emph{because} the equality rule was corrected to the Leibniz \cq{P_eqElim}),
 the admissibility of renaming \cq{Prov_rename}, and cut \cq{Prov_cut}.
 
@@ -1080,16 +1079,16 @@ Definition memD (x y : D) : Prop := cmem (proj1_sig x) (proj1_sig y).
 \end{lstlisting}
 
 The linchpin is the \textbf{truth lemma}: in this model, satisfaction of a formula
-coincides with its membership in the theory \cq{T}. It is proved by strong
-induction on formula \emph{size} (\cq{fsize}), because the quantifier cases recurse
-on an instantiated formula --- and instantiation is a renaming, which preserves
-size:
+coincides with its membership in the theory \cq{T}. It is proved by structural
+induction on the formula, with the substitution \cq{s} generalized: a quantifier
+case recurses on the \emph{body} of the quantified formula, at a substitution
+extended by the witness variable (\cq{rename_inst_up} rewrites the instantiated
+renaming into that form):
 
 \begin{lstlisting}
 Lemma truth :
-  forall n a, fsize a <= n ->
-    forall s : nat -> nat,
-      Sat D memD (fun i => mkD (s i)) a <-> T (rename s a).
+  forall a (s : nat -> nat),
+    Sat D memD (fun i => mkD (s i)) a <-> T (rename s a).
 \end{lstlisting}
 
 The atomic cases use the congruence of \cq{cmem}/\cq{ceq} under the
@@ -1101,36 +1100,11 @@ $\forall$).
 \subsection{Lindenbaum and Henkin: building the maximal theory}
 
 To apply \cq{model_exists} we must \emph{construct} a maximal-consistent Henkin
-extension of any consistent set. This needs an enumeration of all formulas;
-\texttt{Fol.v} builds one from Cantor's pairing function and proves it
-surjective:
-
-\begin{lstlisting}
-Definition Enum (n : nat) : form := decode (S n) n.
-Lemma Enum_surj : forall f, exists n, Enum n = f.
-\end{lstlisting}
-
-Then a chain \cq{chain G0 n} processes formulas one at a time: at each step it
-decides the next formula (adding it or its negation, by \cq{Con_cons_or}) and, when
-it adds an existential, also adds a \emph{fresh-witness} instance (the eigenvariable
-and Henkin-witness lemmas, from \cq{Prov_rename} plus a freshness analysis of free
-variables). The limit theory \cq{TL} is shown to satisfy all five hypotheses of
-\cq{model_exists} --- consistent, complete, deductively closed, and Henkin for both
-$\exists$ and $\forall$. Combining: \cq{model_of_con} (every consistent set has a
-model), and contraposing gives \cq{completeness}, hence \cq{prov_iff_valid}.
-
-\subsection{Compactness: infinite completeness for sentence theories}
-
-Completeness as stated is about a \emph{finite} context \cq{G} (a list). To reach
-genuinely infinite theories --- such as $\ZF$ and $\T$, whose Separation/Closure
-schemas have infinitely many instances --- we need the compactness-style lift: if
-every model of an infinite theory $B$ satisfies $\varphi$, then $B$ proves
-$\varphi$ from a finite subset.
-
-The obstacle is Henkin freshness. The witness-adding step needs a variable
-\emph{fresh for the whole theory}; for an infinite theory that mentions all
-variables, there is none. The resolution is to restrict to \emph{sentence}
-theories --- theories all of whose axioms are sentences (no free variables):
+extension of any consistent set. The construction is carried out once, in the
+generality that the endgame needs: relative to a base theory $B$ of
+\emph{sentences} --- axioms with no free variables, as $\ZF$ and $\T$ will be ---
+together with a finite working context. Provability and consistency relative to
+$B$ mean: some finite batch of $B$-axioms joins the derivation.
 
 \begin{lstlisting}
 Definition Sentence (f : form) : Prop := forall n, ~ Free n f.
@@ -1139,16 +1113,47 @@ Definition BProv (B : form -> Prop) (G : list form) (phi : form) : Prop :=
   exists Gb, (forall x, In x Gb -> B x) /\ Prov (Gb ++ G) phi.
 \end{lstlisting}
 
-A witness fresh for the \emph{finite} list of formulas added so far is then
-automatically fresh with respect to the sentence base $B$ --- sentences contribute
-no free variables to clash with. This yields:
+The construction needs an enumeration of all formulas; \texttt{Fol.v} builds one
+from Cantor's pairing function and proves it surjective:
+
+\begin{lstlisting}
+Definition Enum (n : nat) : form := decode (S n) n.
+Lemma Enum_surj : forall f, exists n, Enum n = f.
+\end{lstlisting}
+
+Then a chain \cq{chainB B L0 n} processes formulas one at a time: at each step it
+decides the next formula (adding it or its negation, by the Lindenbaum step
+\cq{BCon_cons_or}) and, when it adds an existential, also adds a
+\emph{fresh-witness} instance (the eigenvariable
+and Henkin-witness lemmas, from \cq{Prov_rename} plus a freshness analysis of free
+variables). Freshness is exactly where the sentence restriction earns its keep:
+the witness variable must be fresh for everything in play, and for an infinite
+base theory that mentions all variables there would be none --- but a witness
+fresh for the \emph{finite} list of formulas added so far is automatically fresh
+with respect to the sentence base $B$, since sentences contribute no free
+variables to clash with. The limit theory \cq{Tinf} is shown to satisfy all five
+hypotheses of \cq{model_exists} --- consistent, complete, deductively closed, and
+Henkin for both $\exists$ and $\forall$. Combining:
 
 \begin{lstlisting}
 Theorem model_of_BCon :
   forall B L0, Sentences B -> BCon B L0 ->
     exists Dom m v, (forall g, B g -> Sat Dom m v g)
                  /\ (forall g, In g L0 -> Sat Dom m v g).
+\end{lstlisting}
 
+\subsection{Completeness, finite and infinite}
+
+Finite-context completeness is now the \emph{empty-base} instance $B = \emptyset$:
+\cq{BProv (fun _ => False) G phi} is plain \cq{Prov G phi} (\cq{BProv_empty}), so
+\cq{model_of_BCon} specializes to \cq{model_of_con} (every consistent finite
+context has a model), and contraposing gives \cq{completeness}, hence
+\cq{prov_iff_valid}. At the other end, taking $L_0$ to carry a negated goal
+sentence gives the compactness-style lift to genuinely infinite theories --- such
+as $\ZF$ and $\T$, whose Separation/Closure schemas have infinitely many
+instances:
+
+\begin{lstlisting}
 Theorem completeness_inf :
   forall B psi, Sentences B -> Sentence psi ->
     (forall Dom m v, (forall g, B g -> Sat Dom m v g) -> Sat Dom m v psi) ->

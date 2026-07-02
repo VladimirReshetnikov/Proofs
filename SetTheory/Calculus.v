@@ -7,10 +7,10 @@
 (*   - the calculus `Prov : list form -> form -> Prop` (assumption,       *)
 (*     intro/elim rules for the connectives and quantifiers, excluded     *)
 (*     middle, equality reflexivity and the Leibniz rule `P_eqElim`);     *)
-(*   - admissible rules: weakening, deduction, ex falso, proof by          *)
-(*     contradiction, double negation elimination, cut, and renaming      *)
-(*     admissibility `Prov_rename`;                                       *)
-(*   - consistency `Con` with the Lindenbaum step `Con_cons_or`;          *)
+(*   - admissible rules: weakening, proof by contradiction, double        *)
+(*     negation elimination, cut, and renaming admissibility              *)
+(*     `Prov_rename`;                                                     *)
+(*   - consistency `Con`;                                                 *)
 (*   - the derived equality kit (symmetry, transitivity, congruence);     *)
 (*   - eigenvariable generalization and the Henkin-witness core lemmas;   *)
 (*   - SOUNDNESS: `Prov G a -> forall e, (e |= G) -> Sat e a` over any    *)
@@ -112,22 +112,7 @@ Qed.
 Lemma Prov_cons : forall G a b, Prov G b -> Prov (a :: G) b.
 Proof. intros G a b H. apply (Prov_weaken G b H). intros x Hx. right. exact Hx. Qed.
 
-(* Deduction theorem.  One direction is the P_impI constructor; here is the  *)
-(* converse. *)
-Lemma Prov_deduction_elim : forall G a b, Prov G (fImp a b) -> Prov (a :: G) b.
-Proof.
-  intros G a b H. apply (P_impE (a :: G) a b).
-  - apply Prov_cons. exact H.
-  - apply P_ass. left. reflexivity.
-Qed.
-
-(* Modus ponens, explosion, and proof by contradiction as derived rules. *)
-Lemma Prov_mp : forall G a b, Prov G (fImp a b) -> Prov G a -> Prov G b.
-Proof. intros G a b. apply P_impE. Qed.
-
-Lemma Prov_absurd : forall G a, Prov G a -> Prov G (fImp a fBot) -> Prov G fBot.
-Proof. intros G a Ha Hna. exact (P_impE G a fBot Hna Ha). Qed.
-
+(* Proof by contradiction as a derived rule. *)
 Lemma Prov_byContra : forall G a, Prov (fImp a fBot :: G) fBot -> Prov G a.
 Proof.
   intros G a H. apply (P_orE G a (fImp a fBot)).
@@ -144,49 +129,9 @@ Proof.
   - apply Prov_cons. exact H.
   - apply P_ass. left. reflexivity.
 Qed.
-(* ====================== [2] consistency + classical kit =============== *)
+(* ====================== [2] consistency ================================ *)
 
 Definition Con (G : list form) : Prop := ~ Prov G fBot.
-
-(* phi is provable iff its negation is refutable *)
-Lemma Prov_neg_refute : forall G phi, Prov G phi <-> Prov (fImp phi fBot :: G) fBot.
-Proof.
-  intros G phi. split.
-  - intro H. apply (P_impE (fImp phi fBot :: G) phi fBot).
-    + apply P_ass. left. reflexivity.
-    + apply Prov_cons. exact H.
-  - apply Prov_byContra.
-Qed.
-
-(* The Lindenbaum step: a consistent context can be consistently extended by *)
-(* phi or by ~phi. *)
-Lemma Con_cons_or :
-  forall G phi, Con G -> Con (phi :: G) \/ Con (fImp phi fBot :: G).
-Proof.
-  intros G phi HG. destruct (classic (Con (phi :: G))) as [H | H].
-  - left. exact H.
-  - right. intro Hbad.
-    assert (Hphi : Prov (phi :: G) fBot) by (apply NNPP; exact H).
-    apply HG.
-    apply (P_impE G (fImp phi fBot) fBot).
-    + apply P_impI. exact Hbad.
-    + apply P_impI. exact Hphi.
-Qed.
-
-(* If neither phi nor ~phi can be consistently added, G was inconsistent. *)
-Lemma Con_cons_neg :
-  forall G phi, Con G -> ~ Prov (phi :: G) fBot -> Con (phi :: G).
-Proof. intros G phi HG H. exact H. Qed.
-
-(* Extending a context by something it already proves keeps consistency. *)
-Lemma Con_redundant :
-  forall G phi, Con G -> Prov G phi -> Con (phi :: G).
-Proof.
-  intros G phi HG Hp Hbad. apply HG.
-  apply (P_impE G phi fBot).
-  - apply P_impI. exact Hbad.
-  - exact Hp.
-Qed.
 
 (* --- equality kit: the proper Leibniz rule makes equality an equivalence  *)
 (* with full congruence (impossible with the old replace-everywhere rule).  *)
@@ -306,44 +251,6 @@ Proof.
   rewrite (rho_inst a w Hwa) in Hr.
   rewrite (map_rho_S G w HwG) in Hr.
   exact Hr.
-Qed.
-
-(* existential Henkin witness *)
-Lemma henkin_ex :
-  forall G a, Con (fEx a :: G) ->
-    Con (rename (inst (freshFor (fEx a :: G))) a :: fEx a :: G).
-Proof.
-  intros G a Hcon. unfold Con. set (w := freshFor (fEx a :: G)). intro Hbad.
-  assert (Hwa : ~ Free (S w) a).
-  { exact (freshFor_not_free (fEx a :: G) (fEx a) (or_introl eq_refl)). }
-  assert (HwG : forall g, In g G -> ~ Free w g).
-  { intros g Hg. apply (freshFor_not_free (fEx a :: G) g). right. exact Hg. }
-  apply Hcon. apply (P_exE (fEx a :: G) a fBot).
-  - apply P_ass. left. reflexivity.
-  - pose proof (Prov_rename _ _ Hbad (rho_w w)) as Hr. simpl in Hr.
-    rewrite (rho_inst a w Hwa), (rho_under a w Hwa), (map_rho_S G w HwG) in Hr.
-    simpl. exact Hr.
-Qed.
-
-(* universal Henkin witness (for the negation of a universal) *)
-Lemma henkin_all :
-  forall G a, Con (fImp (fAll a) fBot :: G) ->
-    Con (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot
-         :: fImp (fAll a) fBot :: G).
-Proof.
-  intros G a Hcon. unfold Con. set (w := freshFor (fImp (fAll a) fBot :: G)). intro Hbad.
-  assert (Hwa : ~ Free (S w) a).
-  { intro Hf. apply (freshFor_not_free (fImp (fAll a) fBot :: G) (fImp (fAll a) fBot)
-                       (or_introl eq_refl)). simpl. left. exact Hf. }
-  assert (HwG : forall g, In g (fImp (fAll a) fBot :: G) -> ~ Free w g).
-  { intros g Hg. apply (freshFor_not_free (fImp (fAll a) fBot :: G) g). exact Hg. }
-  apply Hcon.
-  apply Prov_byContra in Hbad.
-  pose proof (generalize_fresh (fImp (fAll a) fBot :: G) a w HwG Hwa Hbad) as Hgen.
-  apply P_allI in Hgen.
-  apply (P_impE (fImp (fAll a) fBot :: G) (fAll a) fBot).
-  - apply P_ass. left. reflexivity.
-  - exact Hgen.
 Qed.
 
 (* context exchange (same elements => same provability) *)

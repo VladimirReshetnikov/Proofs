@@ -122,40 +122,58 @@ def inst (k : Nat) : Nat → Nat
   | 0 => k
   | m+1 => m
 
-/-! ### Formula size (for strong inductions) -/
+/-! ### Free variables, and the equational theory of renaming -/
 
-def fsize : Form → Nat
-  | fMem _ _ => 1
-  | fEq _ _  => 1
-  | fBot     => 1
-  | fImp a b => fsize a + fsize b + 1
-  | fAnd a b => fsize a + fsize b + 1
-  | fOr a b  => fsize a + fsize b + 1
-  | fAll a   => fsize a + 1
-  | fEx a    => fsize a + 1
+def Free : Nat → Form → Prop
+  | n, fMem i j => n = i ∨ n = j
+  | n, fEq i j  => n = i ∨ n = j
+  | _, fBot     => False
+  | n, fImp a b => Free n a ∨ Free n b
+  | n, fAnd a b => Free n a ∨ Free n b
+  | n, fOr a b  => Free n a ∨ Free n b
+  | n, fAll a   => Free (n+1) a
+  | n, fEx a    => Free (n+1) a
 
-theorem fsize_pos (f : Form) : 0 < fsize f := by
-  cases f <;> simp [fsize] <;> omega
-
-theorem rename_size (f : Form) : ∀ r, fsize (rename r f) = fsize f := by
-  induction f <;> intro r <;> simp [rename, fsize, *]
-
-/-- Renamings agreeing pointwise act equally. -/
-theorem rename_ext (f : Form) :
-    ∀ r r', (∀ n, r n = r' n) → rename r f = rename r' f := by
+/-- Renamings agreeing on the free variables act equally. -/
+theorem rename_ext_free (f : Form) :
+    ∀ r r', (∀ n, Free n f → r n = r' n) → rename r f = rename r' f := by
   induction f with
-  | fMem i j => intro r r' h; simp [rename, h]
-  | fEq i j => intro r r' h; simp [rename, h]
+  | fMem i j =>
+    intro r r' h
+    simp [rename, h i (Or.inl rfl), h j (Or.inr rfl)]
+  | fEq i j =>
+    intro r r' h
+    simp [rename, h i (Or.inl rfl), h j (Or.inr rfl)]
   | fBot => intro r r' h; rfl
-  | fImp a b iha ihb => intro r r' h; simp [rename, iha _ _ h, ihb _ _ h]
-  | fAnd a b iha ihb => intro r r' h; simp [rename, iha _ _ h, ihb _ _ h]
-  | fOr a b iha ihb => intro r r' h; simp [rename, iha _ _ h, ihb _ _ h]
+  | fImp a b iha ihb =>
+    intro r r' h
+    simp [rename, iha _ _ (fun n hn => h n (Or.inl hn)),
+          ihb _ _ (fun n hn => h n (Or.inr hn))]
+  | fAnd a b iha ihb =>
+    intro r r' h
+    simp [rename, iha _ _ (fun n hn => h n (Or.inl hn)),
+          ihb _ _ (fun n hn => h n (Or.inr hn))]
+  | fOr a b iha ihb =>
+    intro r r' h
+    simp [rename, iha _ _ (fun n hn => h n (Or.inl hn)),
+          ihb _ _ (fun n hn => h n (Or.inr hn))]
   | fAll a ih =>
     intro r r' h; simp [rename]
-    exact ih _ _ (fun n => by cases n <;> simp [up, h])
+    exact ih _ _ (fun n hn => by
+      cases n with
+      | zero => rfl
+      | succ k => simp [up, h k hn])
   | fEx a ih =>
     intro r r' h; simp [rename]
-    exact ih _ _ (fun n => by cases n <;> simp [up, h])
+    exact ih _ _ (fun n hn => by
+      cases n with
+      | zero => rfl
+      | succ k => simp [up, h k hn])
+
+/-- Renamings agreeing pointwise act equally. -/
+theorem rename_ext (f : Form) (r r' : Nat → Nat) (h : ∀ n, r n = r' n) :
+    rename r f = rename r' f :=
+  rename_ext_free f r r' (fun n _ => h n)
 
 /-- Renaming composition. -/
 theorem rename_comp (f : Form) :
@@ -206,52 +224,7 @@ theorem rename_id (a : Form) : rename (fun n => n) a = a := by
           rename_ext a _ _ (fun n => by cases n <;> rfl)
       _ = a := ih
 
-/-! ## Free variables, sentences, sealing -/
-
-def Free : Nat → Form → Prop
-  | n, fMem i j => n = i ∨ n = j
-  | n, fEq i j  => n = i ∨ n = j
-  | _, fBot     => False
-  | n, fImp a b => Free n a ∨ Free n b
-  | n, fAnd a b => Free n a ∨ Free n b
-  | n, fOr a b  => Free n a ∨ Free n b
-  | n, fAll a   => Free (n+1) a
-  | n, fEx a    => Free (n+1) a
-
-theorem rename_ext_free (f : Form) :
-    ∀ r r', (∀ n, Free n f → r n = r' n) → rename r f = rename r' f := by
-  induction f with
-  | fMem i j =>
-    intro r r' h
-    simp [rename, h i (Or.inl rfl), h j (Or.inr rfl)]
-  | fEq i j =>
-    intro r r' h
-    simp [rename, h i (Or.inl rfl), h j (Or.inr rfl)]
-  | fBot => intro r r' h; rfl
-  | fImp a b iha ihb =>
-    intro r r' h
-    simp [rename, iha _ _ (fun n hn => h n (Or.inl hn)),
-          ihb _ _ (fun n hn => h n (Or.inr hn))]
-  | fAnd a b iha ihb =>
-    intro r r' h
-    simp [rename, iha _ _ (fun n hn => h n (Or.inl hn)),
-          ihb _ _ (fun n hn => h n (Or.inr hn))]
-  | fOr a b iha ihb =>
-    intro r r' h
-    simp [rename, iha _ _ (fun n hn => h n (Or.inl hn)),
-          ihb _ _ (fun n hn => h n (Or.inr hn))]
-  | fAll a ih =>
-    intro r r' h; simp [rename]
-    exact ih _ _ (fun n hn => by
-      cases n with
-      | zero => rfl
-      | succ k => simp [up, h k hn])
-  | fEx a ih =>
-    intro r r' h; simp [rename]
-    exact ih _ _ (fun n hn => by
-      cases n with
-      | zero => rfl
-      | succ k => simp [up, h k hn])
+/-! ## Bounds on free variables, sentences, sealing -/
 
 def bound : Form → Nat
   | fMem i j => (i+1) + (j+1)
@@ -507,33 +480,45 @@ theorem Sat_fIff {e : Nat → V} {a b : Form} :
   · intro ⟨h1, h2⟩; exact ⟨h1, h2⟩
   · intro h; exact ⟨h.mp, h.mpr⟩
 
-/-! ### Satisfaction respects pointwise-equal environments -/
+/-! ### Satisfaction depends only on the free variables -/
 
-theorem scons_ext (d : V) (e1 e2 : Nat → V) (h : ∀ n, e1 n = e2 n) :
-    ∀ n, scons d e1 n = scons d e2 n := by
-  intro n; cases n <;> simp [scons, h]
-
-theorem Sat_ext (f : Form) :
-    ∀ e1 e2 : Nat → V, (∀ n, e1 n = e2 n) → (Sat mem e1 f ↔ Sat mem e2 f) := by
+theorem Sat_ext_free (f : Form) :
+    ∀ e1 e2 : Nat → V, (∀ n, Free n f → e1 n = e2 n) →
+      (Sat mem e1 f ↔ Sat mem e2 f) := by
   induction f with
-  | fMem i j => intro e1 e2 h; simp [Sat, h]
-  | fEq i j => intro e1 e2 h; simp [Sat, h]
+  | fMem i j =>
+    intro e1 e2 h
+    simp [Sat, h i (Or.inl rfl), h j (Or.inr rfl)]
+  | fEq i j =>
+    intro e1 e2 h
+    simp [Sat, h i (Or.inl rfl), h j (Or.inr rfl)]
   | fBot => intro e1 e2 h; simp [Sat]
   | fImp a b iha ihb =>
     intro e1 e2 h; simp only [Sat]
-    rw [iha _ _ h, ihb _ _ h]
+    rw [iha _ _ (fun n hn => h n (Or.inl hn)), ihb _ _ (fun n hn => h n (Or.inr hn))]
   | fAnd a b iha ihb =>
     intro e1 e2 h; simp only [Sat]
-    rw [iha _ _ h, ihb _ _ h]
+    rw [iha _ _ (fun n hn => h n (Or.inl hn)), ihb _ _ (fun n hn => h n (Or.inr hn))]
   | fOr a b iha ihb =>
     intro e1 e2 h; simp only [Sat]
-    rw [iha _ _ h, ihb _ _ h]
+    rw [iha _ _ (fun n hn => h n (Or.inl hn)), ihb _ _ (fun n hn => h n (Or.inr hn))]
   | fAll a ih =>
     intro e1 e2 h; simp only [Sat]
-    exact forall_congr' fun d => ih _ _ (scons_ext d e1 e2 h)
+    refine forall_congr' fun d => ih _ _ (fun n hn => ?_)
+    cases n with
+    | zero => rfl
+    | succ m => simp only [scons]; exact h m hn
   | fEx a ih =>
     intro e1 e2 h; simp only [Sat]
-    exact exists_congr fun d => ih _ _ (scons_ext d e1 e2 h)
+    refine exists_congr fun d => ih _ _ (fun n hn => ?_)
+    cases n with
+    | zero => rfl
+    | succ m => simp only [scons]; exact h m hn
+
+/-- Satisfaction respects pointwise-equal environments. -/
+theorem Sat_ext (f : Form) (e1 e2 : Nat → V) (h : ∀ n, e1 n = e2 n) :
+    Sat mem e1 f ↔ Sat mem e2 f :=
+  Sat_ext_free f e1 e2 (fun n _ => h n)
 
 theorem up_env (r : Nat → Nat) (d : V) (e : Nat → V) (n : Nat) :
     scons d e (up r n) = scons d (fun m => e (r m)) n := by
@@ -608,39 +593,6 @@ theorem closeN_valid (k : Nat) :
 theorem seal_valid (g : Form) :
     (∀ e : Nat → V, Sat mem e (sealF g)) ↔ (∀ e, Sat mem e g) :=
   closeN_valid (bound g) g
-
-theorem Sat_ext_free (f : Form) :
-    ∀ e1 e2 : Nat → V, (∀ n, Free n f → e1 n = e2 n) →
-      (Sat mem e1 f ↔ Sat mem e2 f) := by
-  induction f with
-  | fMem i j =>
-    intro e1 e2 h
-    simp [Sat, h i (Or.inl rfl), h j (Or.inr rfl)]
-  | fEq i j =>
-    intro e1 e2 h
-    simp [Sat, h i (Or.inl rfl), h j (Or.inr rfl)]
-  | fBot => intro e1 e2 h; simp [Sat]
-  | fImp a b iha ihb =>
-    intro e1 e2 h; simp only [Sat]
-    rw [iha _ _ (fun n hn => h n (Or.inl hn)), ihb _ _ (fun n hn => h n (Or.inr hn))]
-  | fAnd a b iha ihb =>
-    intro e1 e2 h; simp only [Sat]
-    rw [iha _ _ (fun n hn => h n (Or.inl hn)), ihb _ _ (fun n hn => h n (Or.inr hn))]
-  | fOr a b iha ihb =>
-    intro e1 e2 h; simp only [Sat]
-    rw [iha _ _ (fun n hn => h n (Or.inl hn)), ihb _ _ (fun n hn => h n (Or.inr hn))]
-  | fAll a ih =>
-    intro e1 e2 h; simp only [Sat]
-    refine forall_congr' fun d => ih _ _ (fun n hn => ?_)
-    cases n with
-    | zero => rfl
-    | succ m => simp only [scons]; exact h m hn
-  | fEx a ih =>
-    intro e1 e2 h; simp only [Sat]
-    refine exists_congr fun d => ih _ _ (fun n hn => ?_)
-    cases n with
-    | zero => rfl
-    | succ m => simp only [scons]; exact h m hn
 
 theorem Sat_sentence_inv (g : Form) (hg : Sentence g) (v1 v2 : Nat → V) :
     Sat mem v1 g ↔ Sat mem v2 g :=

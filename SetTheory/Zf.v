@@ -627,19 +627,6 @@ Qed.
 
 (* -------------------- arithmetic of internal naturals ----------------- *)
 
-Lemma omega_transitive : forall n, n ∈ omega -> forall k, k ∈ n -> k ∈ omega.
-Proof.
-  assert (H : forall n, n ∈ omega ->
-              SAT (SC n (fun _ => omega)) (fAll (fImp (fMem 0 1) (fMem 0 2)))).
-  { apply omega_ind.
-    - cbn. intros d Hd. exfalso. exact (vempty_spec d Hd).
-    - intros n Hn IH. cbn in IH |- *. intros d Hd.
-      apply (proj1 (vsucc_spec n d)) in Hd. destruct Hd as [Hd | Hd].
-      + exact (IH d Hd).
-      + rewrite Hd. exact Hn. }
-  intros n Hn k Hk. specialize (H n Hn). cbn in H. exact (H k Hk).
-Qed.
-
 Lemma nat_transitive :
   forall n, n ∈ omega -> forall y, y ∈ n -> forall x, x ∈ y -> x ∈ n.
 Proof.

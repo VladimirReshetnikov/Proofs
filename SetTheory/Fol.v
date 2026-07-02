@@ -63,42 +63,40 @@ Fixpoint rename (r : nat -> nat) (f : form) {struct f} : form :=
 Definition inst (k : nat) : nat -> nat :=
   fun n => match n with O => k | S m => m end.
 
-(* ---------------------- formula size (for inductions) ----------------- *)
+(* ------------- free variables, and the renaming equational theory ------ *)
 
-(* formula size, used for the strong induction in the truth lemma          *)
-(* (renaming-instantiation preserves size, so the quantifier cases recurse) *)
-Fixpoint fsize (f : form) : nat :=
+Fixpoint Free (n : nat) (f : form) : Prop :=
   match f with
-  | fMem _ _ => 1 | fEq _ _ => 1 | fBot => 1
-  | fImp a b => S (fsize a + fsize b)
-  | fAnd a b => S (fsize a + fsize b)
-  | fOr a b  => S (fsize a + fsize b)
-  | fAll a   => S (fsize a)
-  | fEx a    => S (fsize a)
+  | fMem i j => n = i \/ n = j
+  | fEq i j  => n = i \/ n = j
+  | fBot     => False
+  | fImp a b => Free n a \/ Free n b
+  | fAnd a b => Free n a \/ Free n b
+  | fOr a b  => Free n a \/ Free n b
+  | fAll a   => Free (S n) a
+  | fEx a    => Free (S n) a
   end.
 
-Lemma rename_size : forall f r, fsize (rename r f) = fsize f.
+(* renamings agreeing on the free variables act equally *)
+Lemma rename_ext_free :
+  forall f r r', (forall n, Free n f -> r n = r' n) -> rename r f = rename r' f.
 Proof.
-  induction f; intro r; simpl; try reflexivity.
-  - rewrite (IHf1 r), (IHf2 r); reflexivity.
-  - rewrite (IHf1 r), (IHf2 r); reflexivity.
-  - rewrite (IHf1 r), (IHf2 r); reflexivity.
-  - rewrite (IHf (up r)); reflexivity.
-  - rewrite (IHf (up r)); reflexivity.
+  induction f; intros r r' H; simpl.
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); reflexivity.
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); reflexivity.
+  - reflexivity.
+  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
+  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
+  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
+  - f_equal. apply IHf. intros m Hm. destruct m as [| k]; simpl;
+      [ reflexivity | f_equal; apply H; exact Hm ].
+  - f_equal. apply IHf. intros m Hm. destruct m as [| k]; simpl;
+      [ reflexivity | f_equal; apply H; exact Hm ].
 Qed.
 
 (* renamings agreeing pointwise act equally *)
 Lemma rename_ext : forall f r r', (forall n, r n = r' n) -> rename r f = rename r' f.
-Proof.
-  induction f; intros r r' H; simpl; try reflexivity.
-  - rewrite (H n), (H n0); reflexivity.
-  - rewrite (H n), (H n0); reflexivity.
-  - rewrite (IHf1 r r' H), (IHf2 r r' H); reflexivity.
-  - rewrite (IHf1 r r' H), (IHf2 r r' H); reflexivity.
-  - rewrite (IHf1 r r' H), (IHf2 r r' H); reflexivity.
-  - f_equal. apply IHf. intro n; destruct n; simpl; [ reflexivity | rewrite H; reflexivity ].
-  - f_equal. apply IHf. intro n; destruct n; simpl; [ reflexivity | rewrite H; reflexivity ].
-Qed.
+Proof. intros f r r' H. apply rename_ext_free. intros n _. apply H. Qed.
 
 (* renaming composition *)
 Lemma rename_comp :
@@ -139,37 +137,7 @@ Proof.
     + exact IHa.
 Qed.
 
-(* ==================== free variables, sentences, sealing ============== *)
-
-(* ---- [4b] free variables, freshness, and Henkin witness lemmas ---- *)
-
-Fixpoint Free (n : nat) (f : form) : Prop :=
-  match f with
-  | fMem i j => n = i \/ n = j
-  | fEq i j  => n = i \/ n = j
-  | fBot     => False
-  | fImp a b => Free n a \/ Free n b
-  | fAnd a b => Free n a \/ Free n b
-  | fOr a b  => Free n a \/ Free n b
-  | fAll a   => Free (S n) a
-  | fEx a    => Free (S n) a
-  end.
-
-Lemma rename_ext_free :
-  forall f r r', (forall n, Free n f -> r n = r' n) -> rename r f = rename r' f.
-Proof.
-  induction f; intros r r' H; simpl.
-  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); reflexivity.
-  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); reflexivity.
-  - reflexivity.
-  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
-  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
-  - f_equal; [ apply IHf1 | apply IHf2 ]; intros m Hm; apply H; [ left | right ]; exact Hm.
-  - f_equal. apply IHf. intros m Hm. destruct m as [| k]; simpl;
-      [ reflexivity | f_equal; apply H; exact Hm ].
-  - f_equal. apply IHf. intros m Hm. destruct m as [| k]; simpl;
-      [ reflexivity | f_equal; apply H; exact Hm ].
-Qed.
+(* ============== variable bounds, freshness, sentences, sealing ======== *)
 
 Fixpoint bound (f : form) : nat :=
   match f with
@@ -368,29 +336,37 @@ Fixpoint Sat (e : nat -> V) (f : form) {struct f} : Prop :=
   | fAll a   => forall d, Sat (scons d e) a
   | fEx a    => exists d, Sat (scons d e) a
   end.
-(* ------------ satisfaction respects pointwise-equal environments ------- *)
+(* ---------- satisfaction depends only on the free variables ------------ *)
 
-Lemma scons_ext :
-  forall d e1 e2, (forall n, e1 n = e2 n) -> forall n, scons d e1 n = scons d e2 n.
-Proof. intros d e1 e2 H n. destruct n; simpl; [ reflexivity | apply H ]. Qed.
+Lemma Sat_ext_free :
+  forall f e1 e2, (forall n, Free n f -> e1 n = e2 n) -> (Sat e1 f <-> Sat e2 f).
+Proof.
+  induction f; intros e1 e2 H; cbn [Sat].
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); tauto.
+  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); tauto.
+  - tauto.
+  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
+    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
+  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
+    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
+  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
+    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
+  - assert (Hd : forall d, forall n, Free n f -> scons d e1 n = scons d e2 n).
+    { intros d n Hn. destruct n as [| m]; [ reflexivity | apply H; exact Hn ]. }
+    split; intros HH d;
+      [ apply (proj1 (IHf (scons d e1) (scons d e2) (Hd d)))
+      | apply (proj2 (IHf (scons d e1) (scons d e2) (Hd d))) ]; apply HH.
+  - assert (Hd : forall d, forall n, Free n f -> scons d e1 n = scons d e2 n).
+    { intros d n Hn. destruct n as [| m]; [ reflexivity | apply H; exact Hn ]. }
+    split; intros [d HH]; exists d;
+      [ apply (proj1 (IHf (scons d e1) (scons d e2) (Hd d)))
+      | apply (proj2 (IHf (scons d e1) (scons d e2) (Hd d))) ]; exact HH.
+Qed.
 
+(* satisfaction respects pointwise-equal environments *)
 Lemma Sat_ext :
   forall f e1 e2, (forall n, e1 n = e2 n) -> (Sat e1 f <-> Sat e2 f).
-Proof.
-  induction f; intros e1 e2 H; simpl.
-  - rewrite (H n), (H n0); tauto.
-  - rewrite (H n), (H n0); tauto.
-  - tauto.
-  - specialize (IHf1 e1 e2 H); specialize (IHf2 e1 e2 H); tauto.
-  - specialize (IHf1 e1 e2 H); specialize (IHf2 e1 e2 H); tauto.
-  - specialize (IHf1 e1 e2 H); specialize (IHf2 e1 e2 H); tauto.
-  - split; intros HH d.
-    + apply (proj1 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). apply HH.
-    + apply (proj2 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). apply HH.
-  - split; intros [d HH]; exists d.
-    + apply (proj1 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). exact HH.
-    + apply (proj2 (IHf (scons d e1) (scons d e2) (scons_ext d e1 e2 H))). exact HH.
-Qed.
+Proof. intros f e1 e2 H. apply Sat_ext_free. intros n _. apply H. Qed.
 Lemma up_env :
   forall r d e n, scons d e (up r n) = scons d (fun m => e (r m)) n.
 Proof. intros r d e n. destruct n; reflexivity. Qed.
@@ -458,31 +434,6 @@ Lemma seal_valid :
   forall (V : Type) (mem : V -> V -> Prop) g,
     (forall e, Sat V mem e (seal g)) <-> (forall e, Sat V mem e g).
 Proof. intros V mem g. apply closeN_valid. Qed.
-Lemma Sat_ext_free :
-  forall (V : Type) (mem : V -> V -> Prop) f e1 e2,
-    (forall n, Free n f -> e1 n = e2 n) -> (Sat V mem e1 f <-> Sat V mem e2 f).
-Proof.
-  intros V mem f. induction f; intros e1 e2 H; cbn [Sat].
-  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); tauto.
-  - rewrite (H n (or_introl eq_refl)), (H n0 (or_intror eq_refl)); tauto.
-  - tauto.
-  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
-    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
-  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
-    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
-  - assert (Ha := IHf1 e1 e2 (fun n Hn => H n (or_introl Hn)));
-    assert (Hb := IHf2 e1 e2 (fun n Hn => H n (or_intror Hn))); tauto.
-  - assert (Hd : forall d, forall n, Free n f -> scons V d e1 n = scons V d e2 n).
-    { intros d n Hn. destruct n as [| m]; [ reflexivity | apply H; exact Hn ]. }
-    split; intros HH d;
-      [ apply (proj1 (IHf (scons V d e1) (scons V d e2) (Hd d)))
-      | apply (proj2 (IHf (scons V d e1) (scons V d e2) (Hd d))) ]; apply HH.
-  - assert (Hd : forall d, forall n, Free n f -> scons V d e1 n = scons V d e2 n).
-    { intros d n Hn. destruct n as [| m]; [ reflexivity | apply H; exact Hn ]. }
-    split; intros [d HH]; exists d;
-      [ apply (proj1 (IHf (scons V d e1) (scons V d e2) (Hd d)))
-      | apply (proj2 (IHf (scons V d e1) (scons V d e2) (Hd d))) ]; exact HH.
-Qed.
 
 Lemma Sat_sentence_inv :
   forall (V : Type) (mem : V -> V -> Prop) g,

@@ -81,8 +81,8 @@ Forward.v   Reverse.v   Equivalence.v        the Closure axiomatization T, and T
   any theory whose signature is one binary relation** — set theories, graph
   theories, order theories.
 - [`Calculus.v`](Calculus.v) — classical natural deduction `Prov` over those
-  formulas, its admissible rules (weakening, cut, deduction, renaming
-  admissibility, the equality kit), the Henkin-witness core lemmas, and
+  formulas, its admissible rules (weakening, cut, renaming admissibility, the
+  equality kit), the Henkin-witness core lemmas, and
   **soundness** w.r.t. `Sat`. Theory-independent.
 - [`Completeness.v`](Completeness.v) — **Gödel completeness** (`Prov G φ ⟺ G ⊨ φ`,
   via a quotient term model and a Lindenbaum/Henkin chain), the compactness-style
@@ -311,28 +311,34 @@ prov_iff_valid : Prov G phi <-> (forall Dom m v, (... |= G) -> Sat Dom m v phi).
 i.e. **a formula is provable in the calculus iff it is valid in every model** —
 soundness (`Calculus.v`) and completeness together. The development:
 
-1. **Proof-theory infrastructure** (in `Calculus.v`) — weakening, deduction
-   theorem, proof-by-contradiction, double-negation, consistency (`Con`), the
-   Lindenbaum step `Con_cons_or`, the equality kit
+1. **Proof-theory infrastructure** (in `Calculus.v`) — weakening,
+   proof-by-contradiction, double-negation, consistency (`Con`), the equality kit
    (symmetry/transitivity/congruence — derivable only after the calculus's
    equality rule was corrected to the Leibniz `P_eqElim`),
    renaming-admissibility `Prov_rename`, and cut `Prov_cut`.
 2. **Model existence** `model_exists` (abstract maximal-consistent Henkin theory):
    a quotient term model (domain = canonical `ceq`-representatives via Hilbert ε,
-   `D = {n | rep n = n}`) and the **truth lemma** by strong induction on formula
-   size (renaming preserves size, so the De Bruijn quantifier cases recurse).
+   `D = {n | rep n = n}`) and the **truth lemma** by structural induction on the
+   formula with the substitution generalized (the De Bruijn quantifier cases
+   recurse on the body at a consed substitution, via `rename_inst_up`).
 3. **Lindenbaum/Henkin** — a Cantor-pairing formula enumeration (`Enum`,
-   surjective, from `Fol.v`), the eigenvariable lemma and Henkin witness lemmas
-   (`henkin_ex`, `henkin_all`, from `Prov_rename` + freshness, in `Calculus.v`),
-   and the chain `chain G0 n` whose limit theory `TL` is shown
-   maximal-consistent and Henkin (all five `model_exists` hypotheses).
-4. **Completeness** — `model_of_con` (a consistent set has a model), then the
-   contrapositive gives `completeness`, and with soundness, `prov_iff_valid`.
-5. **Infinite completeness (compactness)** — lifting completeness from finite
-   contexts to infinite **sentence** theories `B`. The Henkin-freshness obstacle
-   for an infinite theory is overcome by working with *sentences*: a witness fresh
-   for the finite added list is automatically fresh w.r.t. `B` (sentences have no
-   free variables). `model_of_BCon` (a consistent sentence theory has a model),
+   surjective, from `Fol.v`), the eigenvariable lemma and the Henkin witness core
+   lemmas (`henkin_ex_core`, `henkin_all_core`, from `Prov_rename` + freshness,
+   in `Calculus.v`), and — built once, relative to a **sentence** base theory `B`
+   plus a finite context (`BProv`) — the chain `chainB B L0 n` whose limit theory
+   `Tinf` is shown maximal-consistent and Henkin (all five `model_exists`
+   hypotheses). The Henkin-freshness obstacle for an infinite theory is overcome
+   by the sentence restriction: a witness fresh for the finite added list is
+   automatically fresh w.r.t. `B` (sentences have no free variables).
+   `model_of_BCon`: a consistent sentence theory (plus finite context) has a
+   model.
+4. **Completeness** — finite-context completeness is the empty-base instance
+   `B = ∅`: `BProv_empty` identifies `BProv (fun _ => False)` with plain `Prov`,
+   so `model_of_BCon` specializes to `model_of_con` (a consistent set has a
+   model); the contrapositive gives `completeness`, and with soundness,
+   `prov_iff_valid`.
+5. **Infinite completeness (compactness)** — the same machinery at an infinite
+   sentence theory `B`:
    `completeness_inf : Sentences B → Sentence φ → (B ⊨ φ) → B ⊢ φ`, and
    `theory_equiv` — **two sentence theories with the same models prove the same
    sentences.**

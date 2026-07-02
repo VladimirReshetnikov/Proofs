@@ -7,15 +7,16 @@
 
    - the quotient term model of an abstract maximal-consistent Henkin
      theory, and the TRUTH LEMMA (`model_exists`);
-   - the Lindenbaum/Henkin chain: every consistent finite context
-     extends to such a theory (`model_of_con`);
-   - COMPLETENESS `completeness` and `prov_iff_valid`:
-         Prov G phi  ↔  G ⊨ phi;
-   - the compactness-style lift to infinite SENTENCE theories:
-     `BProv`, `model_of_BCon`, `completeness_inf`;
-   - DEDUCTIVE EQUIVALENCE `theory_equiv`: two sentence theories with
-     the same models prove the same sentences — the abstract engine
-     for proving any two axiomatizations deductively equivalent.
+   - the B-relative Lindenbaum/Henkin chain over a sentence theory `B`
+     plus a finite context: `BProv`, `model_of_BCon`;
+   - COMPLETENESS `completeness` and `prov_iff_valid`
+     (`Prov G phi ↔ G ⊨ phi`) — obtained from `model_of_BCon` at the
+     EMPTY base theory `B = ∅` (`model_of_con` is that instance);
+   - infinite-theory completeness for sentence theories
+     (`completeness_inf`), and DEDUCTIVE EQUIVALENCE `theory_equiv`:
+     two sentence theories with the same models prove the same
+     sentences — the abstract engine for proving any two
+     axiomatizations deductively equivalent.
 
   Lean 4 port of the Rocq/Coq development `src/SetTheory/Completeness.v`.
 -/
@@ -72,14 +73,6 @@ theorem T_prov0 (h : MCHT T) (phi : Form) (hp : Prov [] phi) : T phi :=
 theorem T_mp (h : MCHT T) (a b : Form) (hab : T (fImp a b)) (ha : T a) : T b := by
   apply h.closed [fImp a b, a] b (mem_T_cons hab (mem_T_cons ha mem_T_nil))
   exact .P_impE _ a b (.P_ass _ _ (by simp)) (.P_ass _ _ (by simp))
-
-theorem T_neg_iff (h : MCHT T) (phi : Form) : T (fImp phi fBot) ↔ ¬ T phi := by
-  constructor
-  · intro hn hp; exact h.cons (T_mp h phi fBot hn hp)
-  · intro hn
-    rcases h.compl phi with hp | hnp
-    · exact absurd hp hn
-    · exact hnp
 
 theorem T_imp_iff (h : MCHT T) (a b : Form) : T (fImp a b) ↔ (T a → T b) := by
   constructor
@@ -199,112 +192,105 @@ theorem D_eq {x y : D T} (h : x.val = y.val) : x = y := Subtype.ext h
 theorem mkD_proj (h : MCHT T) (x : D T) : mkD h x.val = x :=
   Subtype.ext x.property
 
-/-- The truth lemma, by strong induction on formula size: under the canonical
-variable assignment `i ↦ [s i]`, satisfaction matches membership in `T`. -/
+/-- The truth lemma, by structural induction on the formula with the
+substitution generalized (the quantifier cases recurse on the body at a
+consed substitution, via `rename_inst_up`): under the canonical variable
+assignment `i ↦ [s i]`, satisfaction matches membership in `T`. -/
 theorem truth (h : MCHT T) :
-    ∀ (n : Nat) (a : Form), fsize a ≤ n →
-      ∀ s : Nat → Nat,
-        (Sat (memD T) (fun i => mkD h (s i)) a ↔ T (rename s a)) := by
-  intro n
-  induction n with
-  | zero =>
-    intro a hsz
-    exfalso
-    have := fsize_pos a
-    omega
-  | succ n IH =>
-    intro a hsz s
-    cases a with
-    | fMem i j =>
-      show memD T (mkD h (s i)) (mkD h (s j)) ↔ T (fMem (s i) (s j))
-      constructor
-      · intro hm
-        exact cmem_cong h (ceq_sym h (rep_ceq h (s i)))
-          (ceq_sym h (rep_ceq h (s j))) hm
-      · intro hm
-        exact cmem_cong h (rep_ceq h (s i)) (rep_ceq h (s j)) hm
-    | fEq i j =>
-      show mkD h (s i) = mkD h (s j) ↔ T (fEq (s i) (s j))
-      constructor
-      · intro he
-        have hr : rep T (s i) = rep T (s j) := congrArg Subtype.val he
-        exact ceq_trans h (hr ▸ rep_ceq h (s i)) (ceq_sym h (rep_ceq h (s j)))
-      · intro he
-        exact Subtype.ext (rep_respects h he)
-    | fBot =>
-      exact ⟨False.elim, fun ht => absurd ht h.cons⟩
-    | fImp a1 a2 =>
-      have h1 : fsize a1 ≤ n := by simp only [fsize] at hsz; omega
-      have h2 : fsize a2 ≤ n := by simp only [fsize] at hsz; omega
-      show (Sat (memD T) _ a1 → Sat (memD T) _ a2) ↔ T (fImp (rename s a1) (rename s a2))
-      rw [IH a1 h1 s, IH a2 h2 s]
-      exact (T_imp_iff h _ _).symm
-    | fAnd a1 a2 =>
-      have h1 : fsize a1 ≤ n := by simp only [fsize] at hsz; omega
-      have h2 : fsize a2 ≤ n := by simp only [fsize] at hsz; omega
-      show (Sat (memD T) _ a1 ∧ Sat (memD T) _ a2) ↔ T (fAnd (rename s a1) (rename s a2))
-      rw [IH a1 h1 s, IH a2 h2 s]
-      exact (T_and_iff h _ _).symm
-    | fOr a1 a2 =>
-      have h1 : fsize a1 ≤ n := by simp only [fsize] at hsz; omega
-      have h2 : fsize a2 ≤ n := by simp only [fsize] at hsz; omega
-      show (Sat (memD T) _ a1 ∨ Sat (memD T) _ a2) ↔ T (fOr (rename s a1) (rename s a2))
-      rw [IH a1 h1 s, IH a2 h2 s]
-      exact (T_or_iff h _ _).symm
-    | fAll a1 =>
-      have h1 : fsize a1 ≤ n := by simp only [fsize] at hsz; omega
-      show (∀ d, Sat (memD T) (scons d _) a1) ↔ T (fAll (rename (up s) a1))
-      constructor
-      · intro HSat
-        apply (T_all_iff h (rename (up s) a1)).mpr
-        intro k
-        rw [rename_inst_up a1 k s]
-        apply (IH a1 h1 (scons_nat k s)).mp
-        have hpt : ∀ n0, scons (mkD h k) (fun i => mkD h (s i)) n0
-            = (fun i => mkD h (scons_nat k s i)) n0 := by
-          intro n0; cases n0 <;> rfl
-        exact (Sat_ext a1 _ _ hpt).mp (HSat (mkD h k))
-      · intro HT d
-        have hk := (T_all_iff h (rename (up s) a1)).mp HT d.val
-        rw [rename_inst_up a1 d.val s] at hk
-        have hk' := (IH a1 h1 (scons_nat d.val s)).mpr hk
-        have hpt : ∀ n0, (fun i => mkD h (scons_nat d.val s i)) n0
-            = scons d (fun i => mkD h (s i)) n0 := by
-          intro n0
-          cases n0 with
-          | zero => exact mkD_proj h d
-          | succ m => rfl
-        exact (Sat_ext a1 _ _ hpt).mp hk'
-    | fEx a1 =>
-      have h1 : fsize a1 ≤ n := by simp only [fsize] at hsz; omega
-      show (∃ d, Sat (memD T) (scons d _) a1) ↔ T (fEx (rename (up s) a1))
-      constructor
-      · intro ⟨d, HSat⟩
-        apply (T_ex_iff h (rename (up s) a1)).mpr
-        refine ⟨d.val, ?_⟩
-        rw [rename_inst_up a1 d.val s]
-        apply (IH a1 h1 (scons_nat d.val s)).mp
-        have hpt : ∀ n0, scons d (fun i => mkD h (s i)) n0
-            = (fun i => mkD h (scons_nat d.val s i)) n0 := by
-          intro n0
-          cases n0 with
-          | zero => exact (mkD_proj h d).symm
-          | succ m => rfl
-        exact (Sat_ext a1 _ _ hpt).mp HSat
-      · intro HT
-        obtain ⟨k, hk⟩ := (T_ex_iff h (rename (up s) a1)).mp HT
-        rw [rename_inst_up a1 k s] at hk
-        have hk' := (IH a1 h1 (scons_nat k s)).mpr hk
-        refine ⟨mkD h k, ?_⟩
-        have hpt : ∀ n0, (fun i => mkD h (scons_nat k s i)) n0
-            = scons (mkD h k) (fun i => mkD h (s i)) n0 := by
-          intro n0; cases n0 <;> rfl
-        exact (Sat_ext a1 _ _ hpt).mp hk'
+    ∀ (a : Form) (s : Nat → Nat),
+      Sat (memD T) (fun i => mkD h (s i)) a ↔ T (rename s a) := by
+  intro a
+  induction a with
+  | fMem i j =>
+    intro s
+    show memD T (mkD h (s i)) (mkD h (s j)) ↔ T (fMem (s i) (s j))
+    constructor
+    · intro hm
+      exact cmem_cong h (ceq_sym h (rep_ceq h (s i)))
+        (ceq_sym h (rep_ceq h (s j))) hm
+    · intro hm
+      exact cmem_cong h (rep_ceq h (s i)) (rep_ceq h (s j)) hm
+  | fEq i j =>
+    intro s
+    show mkD h (s i) = mkD h (s j) ↔ T (fEq (s i) (s j))
+    constructor
+    · intro he
+      have hr : rep T (s i) = rep T (s j) := congrArg Subtype.val he
+      exact ceq_trans h (hr ▸ rep_ceq h (s i)) (ceq_sym h (rep_ceq h (s j)))
+    · intro he
+      exact Subtype.ext (rep_respects h he)
+  | fBot =>
+    intro s
+    exact ⟨False.elim, fun ht => absurd ht h.cons⟩
+  | fImp a1 a2 IH1 IH2 =>
+    intro s
+    show (Sat (memD T) _ a1 → Sat (memD T) _ a2) ↔ T (fImp (rename s a1) (rename s a2))
+    rw [IH1 s, IH2 s]
+    exact (T_imp_iff h _ _).symm
+  | fAnd a1 a2 IH1 IH2 =>
+    intro s
+    show (Sat (memD T) _ a1 ∧ Sat (memD T) _ a2) ↔ T (fAnd (rename s a1) (rename s a2))
+    rw [IH1 s, IH2 s]
+    exact (T_and_iff h _ _).symm
+  | fOr a1 a2 IH1 IH2 =>
+    intro s
+    show (Sat (memD T) _ a1 ∨ Sat (memD T) _ a2) ↔ T (fOr (rename s a1) (rename s a2))
+    rw [IH1 s, IH2 s]
+    exact (T_or_iff h _ _).symm
+  | fAll a1 IH =>
+    intro s
+    show (∀ d, Sat (memD T) (scons d _) a1) ↔ T (fAll (rename (up s) a1))
+    constructor
+    · intro HSat
+      apply (T_all_iff h (rename (up s) a1)).mpr
+      intro k
+      rw [rename_inst_up a1 k s]
+      apply (IH (scons_nat k s)).mp
+      have hpt : ∀ n0, scons (mkD h k) (fun i => mkD h (s i)) n0
+          = (fun i => mkD h (scons_nat k s i)) n0 := by
+        intro n0; cases n0 <;> rfl
+      exact (Sat_ext a1 _ _ hpt).mp (HSat (mkD h k))
+    · intro HT d
+      have hk := (T_all_iff h (rename (up s) a1)).mp HT d.val
+      rw [rename_inst_up a1 d.val s] at hk
+      have hk' := (IH (scons_nat d.val s)).mpr hk
+      have hpt : ∀ n0, (fun i => mkD h (scons_nat d.val s i)) n0
+          = scons d (fun i => mkD h (s i)) n0 := by
+        intro n0
+        cases n0 with
+        | zero => exact mkD_proj h d
+        | succ m => rfl
+      exact (Sat_ext a1 _ _ hpt).mp hk'
+  | fEx a1 IH =>
+    intro s
+    show (∃ d, Sat (memD T) (scons d _) a1) ↔ T (fEx (rename (up s) a1))
+    constructor
+    · intro ⟨d, HSat⟩
+      apply (T_ex_iff h (rename (up s) a1)).mpr
+      refine ⟨d.val, ?_⟩
+      rw [rename_inst_up a1 d.val s]
+      apply (IH (scons_nat d.val s)).mp
+      have hpt : ∀ n0, scons d (fun i => mkD h (s i)) n0
+          = (fun i => mkD h (scons_nat d.val s i)) n0 := by
+        intro n0
+        cases n0 with
+        | zero => exact (mkD_proj h d).symm
+        | succ m => rfl
+      exact (Sat_ext a1 _ _ hpt).mp HSat
+    · intro HT
+      obtain ⟨k, hk⟩ := (T_ex_iff h (rename (up s) a1)).mp HT
+      rw [rename_inst_up a1 k s] at hk
+      have hk' := (IH (scons_nat k s)).mpr hk
+      refine ⟨mkD h k, ?_⟩
+      have hpt : ∀ n0, (fun i => mkD h (scons_nat k s i)) n0
+          = scons (mkD h k) (fun i => mkD h (s i)) n0 := by
+        intro n0; cases n0 <;> rfl
+      exact (Sat_ext a1 _ _ hpt).mp hk'
 
 /-- Canonical assignment: satisfaction matches `T` outright. -/
 theorem truth_id (h : MCHT T) (a : Form) :
     Sat (memD T) (fun i => mkD h i) a ↔ T a := by
-  have H := truth h (fsize a) a (Nat.le_refl _) (fun i => i)
+  have H := truth h a (fun i => i)
   rwa [rename_id] at H
 
 /-- MODEL EXISTENCE: every maximal-consistent Henkin theory is satisfiable. -/
@@ -315,224 +301,12 @@ theorem model_exists (T : Form → Prop) (h : MCHT T) :
 
 end CanonicalModel
 
-/-! ## [4e] The Lindenbaum chain and its first three theory properties -/
-
-open Classical in
-noncomputable def step (G : List Form) (phi : Form) : List Form :=
-  if Con (phi :: G) then
-    match phi with
-    | fEx a => rename (inst (freshFor (fEx a :: G))) a :: fEx a :: G
-    | _ => phi :: G
-  else
-    match phi with
-    | fAll a => fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot
-                :: fImp (fAll a) fBot :: G
-    | _ => fImp phi fBot :: G
-
-theorem step_con (G : List Form) (phi : Form) (hG : Con G) : Con (step G phi) := by
-  unfold step
-  rcases Classical.em (Con (phi :: G)) with hc | hc
-  · rw [if_pos hc]
-    cases phi <;> first
-      | exact hc
-      | exact henkin_ex _ _ hc
-  · rw [if_neg hc]
-    rcases Con_cons_or G phi hG with hbad | hcn
-    · exact absurd hbad hc
-    · cases phi <;> first
-        | exact hcn
-        | exact henkin_all _ _ hcn
-
-theorem step_incl (G : List Form) (phi x : Form) (hx : x ∈ G) : x ∈ step G phi := by
-  unfold step
-  rcases Classical.em (Con (phi :: G)) with hc | hc
-  · rw [if_pos hc]; cases phi <;> simp [hx]
-  · rw [if_neg hc]; cases phi <;> simp [hx]
-
-theorem step_decides (G : List Form) (phi : Form) :
-    phi ∈ step G phi ∨ (fImp phi fBot) ∈ step G phi := by
-  unfold step
-  rcases Classical.em (Con (phi :: G)) with hc | hc
-  · left; rw [if_pos hc]; cases phi <;> simp
-  · right; rw [if_neg hc]; cases phi <;> simp
-
-noncomputable def chain (G0 : List Form) : Nat → List Form
-  | 0 => G0
-  | n+1 => step (chain G0 n) (Enum n)
-
-theorem chain_incl (G0 : List Form) (m : Nat) (x : Form)
-    (hx : x ∈ chain G0 m) : x ∈ chain G0 (m+1) :=
-  step_incl _ _ x hx
-
-theorem chain_mono (G0 : List Form) (n m : Nat) (hle : m ≤ n) :
-    ∀ x ∈ chain G0 m, x ∈ chain G0 n := by
-  induction n with
-  | zero =>
-    intro x hx
-    have : m = 0 := by omega
-    subst this; exact hx
-  | succ n IHn =>
-    intro x hx
-    rcases Nat.le_succ_iff.mp hle with hle' | heq
-    · exact chain_incl G0 n x (IHn hle' x hx)
-    · subst heq; exact hx
-
-theorem chain_con (G0 : List Form) (hG0 : Con G0) : ∀ n, Con (chain G0 n) := by
-  intro n
-  induction n with
-  | zero => exact hG0
-  | succ n IHn => exact step_con _ _ IHn
-
-def TL (G0 : List Form) (phi : Form) : Prop := ∃ n, Prov (chain G0 n) phi
-
-theorem TL_cons (G0 : List Form) (hG0 : Con G0) : ¬ TL G0 fBot :=
-  fun ⟨n, hn⟩ => chain_con G0 hG0 n hn
-
-theorem TL_compl (G0 : List Form) (phi : Form) :
-    TL G0 phi ∨ TL G0 (fImp phi fBot) := by
-  obtain ⟨n, rfl⟩ := Enum_surj phi
-  rcases step_decides (chain G0 n) (Enum n) with hin | hin
-  · exact Or.inl ⟨n+1, .P_ass _ _ hin⟩
-  · exact Or.inr ⟨n+1, .P_ass _ _ hin⟩
-
-theorem TL_bound (G0 : List Form) :
-    ∀ G : List Form, (∀ x ∈ G, TL G0 x) →
-      ∃ N, ∀ x ∈ G, Prov (chain G0 N) x := by
-  intro G
-  induction G with
-  | nil => intro _; exact ⟨0, fun x hx => nomatch hx⟩
-  | cons g G' IHG =>
-    intro hall
-    obtain ⟨ng, hng⟩ := hall g (by simp)
-    obtain ⟨N', hN'⟩ := IHG (fun x hx => hall x (by simp [hx]))
-    refine ⟨max ng N', ?_⟩
-    intro x hx
-    rcases List.mem_cons.mp hx with rfl | hx
-    · exact Prov_weaken hng _ (chain_mono G0 _ ng (by omega))
-    · exact Prov_weaken (hN' x hx) _ (chain_mono G0 _ N' (by omega))
-
-theorem TL_closed (G0 : List Form) (G : List Form) (phi : Form)
-    (hall : ∀ x ∈ G, TL G0 x) (hp : Prov G phi) : TL G0 phi := by
-  obtain ⟨N, hN⟩ := TL_bound G0 G hall
-  exact ⟨N, Prov_cut hp (chain G0 N) hN⟩
-
-/-! ## [4f] The two Henkin properties -/
-
-theorem step_pos_in (G : List Form) (phi : Form) (hc : Con (phi :: G)) :
-    phi ∈ step G phi := by
-  unfold step
-  rw [if_pos hc]
-  cases phi <;> simp
-
-theorem step_neg_in (G : List Form) (phi : Form) (hnc : ¬ Con (phi :: G)) :
-    (fImp phi fBot) ∈ step G phi := by
-  unfold step
-  rw [if_neg hnc]
-  cases phi <;> simp
-
-theorem step_ex_pos (G : List Form) (a : Form) (hc : Con (fEx a :: G)) :
-    rename (inst (freshFor (fEx a :: G))) a ∈ step G (fEx a) := by
-  unfold step
-  rw [if_pos hc]
-  simp
-
-theorem step_all_neg (G : List Form) (a : Form) (hnc : ¬ Con (fAll a :: G)) :
-    fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot
-      ∈ step G (fAll a) := by
-  unfold step
-  rw [if_neg hnc]
-  simp
-
-theorem TL_henkin_ex (G0 : List Form) (hG0 : Con G0) (a : Form)
-    (hex : TL G0 (fEx a)) : ∃ k, TL G0 (rename (inst k) a) := by
-  obtain ⟨N, hN⟩ := hex
-  obtain ⟨m, hm⟩ := Enum_surj (fEx a)
-  rcases Classical.em (Con (fEx a :: chain G0 m)) with hpos | hnc
-  · refine ⟨freshFor (fEx a :: chain G0 m), m+1, ?_⟩
-    show Prov (step (chain G0 m) (Enum m)) _
-    rw [hm]
-    exact .P_ass _ _ (step_ex_pos _ a hpos)
-  · exfalso
-    have hneg : Prov (chain G0 (m+1)) (fImp (fEx a) fBot) := by
-      show Prov (step (chain G0 m) (Enum m)) _
-      rw [hm]
-      exact .P_ass _ _ (step_neg_in _ (fEx a) hnc)
-    apply chain_con G0 hG0 (max N (m+1))
-    apply Prov.P_impE _ (fEx a) fBot
-    · exact Prov_weaken hneg _ (chain_mono G0 _ (m+1) (by omega))
-    · exact Prov_weaken hN _ (chain_mono G0 _ N (by omega))
-
-theorem TL_henkin_all (G0 : List Form) (hG0 : Con G0) (a : Form)
-    (hall : ∀ k, TL G0 (rename (inst k) a)) : TL G0 (fAll a) := by
-  rcases TL_compl G0 (fAll a) with hpos | hneg
-  · exact hpos
-  exfalso
-  obtain ⟨m, hm⟩ := Enum_surj (fAll a)
-  rcases Classical.em (Con (fAll a :: chain G0 m)) with hc | hnc
-  · have hposfa : TL G0 (fAll a) := by
-      refine ⟨m+1, ?_⟩
-      show Prov (step (chain G0 m) (Enum m)) _
-      rw [hm]
-      exact .P_ass _ _ (step_pos_in _ (fAll a) hc)
-    apply TL_cons G0 hG0
-    obtain ⟨n1, h1⟩ := hposfa
-    obtain ⟨n2, h2⟩ := hneg
-    refine ⟨max n1 n2, ?_⟩
-    apply Prov.P_impE _ (fAll a) fBot
-    · exact Prov_weaken h2 _ (chain_mono G0 _ n2 (by omega))
-    · exact Prov_weaken h1 _ (chain_mono G0 _ n1 (by omega))
-  · have hnegw : Prov (chain G0 (m+1))
-        (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chain G0 m))) a) fBot) := by
-      show Prov (step (chain G0 m) (Enum m)) _
-      rw [hm]
-      exact .P_ass _ _ (step_all_neg _ a hnc)
-    obtain ⟨n1, h1⟩ := hall (freshFor (fImp (fAll a) fBot :: chain G0 m))
-    apply TL_cons G0 hG0
-    refine ⟨max n1 (m+1), ?_⟩
-    apply Prov.P_impE _
-      (rename (inst (freshFor (fImp (fAll a) fBot :: chain G0 m))) a) fBot
-    · exact Prov_weaken hnegw _ (chain_mono G0 _ (m+1) (by omega))
-    · exact Prov_weaken h1 _ (chain_mono G0 _ n1 (by omega))
-
-/-! ## [4g] Model existence for a consistent set, and completeness -/
-
-theorem model_of_con (G0 : List Form) (hG0 : Con G0) :
-    ∃ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
-      ∀ g ∈ G0, Sat m v g := by
-  obtain ⟨Dom, m, v, hsat⟩ := model_exists (TL G0)
-    ⟨TL_cons G0 hG0, TL_compl G0, TL_closed G0,
-     TL_henkin_ex G0 hG0, TL_henkin_all G0 hG0⟩
-  refine ⟨Dom, m, v, fun g hg => ?_⟩
-  exact (hsat g).mpr ⟨0, .P_ass _ _ hg⟩
-
-/-- COMPLETENESS: validity in all models implies provability. -/
-theorem completeness (G : List Form) (phi : Form)
-    (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
-      (∀ g ∈ G, Sat m v g) → Sat m v phi) :
-    Prov G phi := by
-  apply Classical.byContradiction
-  intro hnp
-  have hcon : Con (fImp phi fBot :: G) := fun hbad => hnp (Prov_byContra hbad)
-  obtain ⟨Dom, m, v, hsat⟩ := model_of_con (fImp phi fBot :: G) hcon
-  have hphi : Sat m v phi := hval Dom m v (fun g hg => hsat g (by simp [hg]))
-  have hnphi : Sat m v (fImp phi fBot) := hsat _ (by simp)
-  exact hnphi hphi
-
-/-- SOUNDNESS + COMPLETENESS: provability coincides with validity. -/
-theorem prov_iff_valid (G : List Form) (phi : Form) :
-    Prov G phi ↔
-      ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
-        (∀ g ∈ G, Sat m v g) → Sat m v phi := by
-  constructor
-  · intro h Dom m v hg
-    exact soundness h v hg
-  · exact completeness G phi
-
-/-! ## [5] Infinite-theory completeness (compactness) for SENTENCE theories.
+/-! ## The Lindenbaum/Henkin chain, relative to a SENTENCE base theory `B`.
 
 A sentence has no free variables, so any variable is fresh w.r.t. the
 (possibly infinite) base theory `B` — which is what lets the Henkin witnesses
-work over an infinite theory. -/
+work over an infinite theory.  Ordinary finite-context completeness is the
+`B = ∅` instance (`BProv_empty` / `model_of_con` below). -/
 
 /-- Robust membership solver for list app/cons rearrangements (Coq: `mem`). -/
 macro "mem_tac" : tactic =>
@@ -863,6 +637,52 @@ theorem model_of_BCon (B : Form → Prop) (L0 : List Form)
     refine ⟨0, [], mem_T_nil, .P_ass _ _ ?_⟩
     show g ∈ ([] ++ L0 : List Form)
     simpa using hg
+
+/-! ## Finite-context completeness, as the `B = ∅` instance -/
+
+/-- Provability from the empty base theory is plain provability. -/
+theorem BProv_empty (G : List Form) (phi : Form) :
+    BProv (fun _ => False) G phi ↔ Prov G phi := by
+  constructor
+  · intro ⟨Gb, hGb, hp⟩
+    match Gb, hp with
+    | [], hp => exact hp
+    | x :: _, _ => exact (hGb x (by simp)).elim
+  · intro h
+    exact ⟨[], mem_T_nil, h⟩
+
+/-- Every consistent finite context has a model (the `B = ∅` instance of
+`model_of_BCon`). -/
+theorem model_of_con (G0 : List Form) (hG0 : Con G0) :
+    ∃ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+      ∀ g ∈ G0, Sat m v g := by
+  obtain ⟨Dom, m, v, _, hsatL⟩ :=
+    model_of_BCon (fun _ => False) G0 (fun _ hf => hf.elim)
+      (fun hbad => hG0 ((BProv_empty G0 fBot).mp hbad))
+  exact ⟨Dom, m, v, hsatL⟩
+
+/-- COMPLETENESS: validity in all models implies provability. -/
+theorem completeness (G : List Form) (phi : Form)
+    (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+      (∀ g ∈ G, Sat m v g) → Sat m v phi) :
+    Prov G phi := by
+  apply Classical.byContradiction
+  intro hnp
+  have hcon : Con (fImp phi fBot :: G) := fun hbad => hnp (Prov_byContra hbad)
+  obtain ⟨Dom, m, v, hsat⟩ := model_of_con (fImp phi fBot :: G) hcon
+  have hphi : Sat m v phi := hval Dom m v (fun g hg => hsat g (by simp [hg]))
+  have hnphi : Sat m v (fImp phi fBot) := hsat _ (by simp)
+  exact hnphi hphi
+
+/-- SOUNDNESS + COMPLETENESS: provability coincides with validity. -/
+theorem prov_iff_valid (G : List Form) (phi : Form) :
+    Prov G phi ↔
+      ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+        (∀ g ∈ G, Sat m v g) → Sat m v phi := by
+  constructor
+  · intro h Dom m v hg
+    exact soundness h v hg
+  · exact completeness G phi
 
 /-- INFINITE COMPLETENESS: validity in all models of a sentence theory `B`
 implies provability of a sentence `psi` from `B`. -/

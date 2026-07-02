@@ -7,15 +7,16 @@
 (*                                                                       *)
 (*   - the quotient term model of an abstract maximal-consistent Henkin   *)
 (*     theory, and the TRUTH LEMMA (`model_exists`);                      *)
-(*   - the Lindenbaum/Henkin chain: every consistent finite context       *)
-(*     extends to such a theory (`model_of_con`);                         *)
-(*   - COMPLETENESS `completeness` and `prov_iff_valid`:                  *)
-(*         Prov G phi  <->  G |= phi;                                     *)
-(*   - the compactness-style lift to infinite SENTENCE theories:          *)
-(*     `BProv`, `model_of_BCon`, `completeness_inf`;                      *)
-(*   - DEDUCTIVE EQUIVALENCE `theory_equiv`: two sentence theories with   *)
-(*     the same models prove the same sentences -- the abstract engine    *)
-(*     for proving any two axiomatizations deductively equivalent.        *)
+(*   - the B-relative Lindenbaum/Henkin chain over a sentence theory B    *)
+(*     plus a finite context: `BProv`, `model_of_BCon`;                   *)
+(*   - COMPLETENESS `completeness` and `prov_iff_valid`                   *)
+(*     (Prov G phi <-> G |= phi) -- obtained from `model_of_BCon` at the  *)
+(*     EMPTY base theory B = emptyset (`model_of_con` is that instance);  *)
+(*   - infinite-theory completeness for sentence theories                 *)
+(*     (`completeness_inf`), and DEDUCTIVE EQUIVALENCE `theory_equiv`:    *)
+(*     two sentence theories with the same models prove the same          *)
+(*     sentences -- the abstract engine for proving any two               *)
+(*     axiomatizations deductively equivalent.                            *)
 (*                                                                       *)
 (*  - Created (UTC): 2026-07-01T21:20:00Z                                 *)
 (*  - Repository HEAD: c73d98802cf8385db7100480fdc5019105812718           *)
@@ -51,13 +52,6 @@ Section CanonicalModel.
   Proof.
     intros a b Hab Ha. apply (T_closed (fImp a b :: a :: nil) b); [ ctxT | ].
     apply (P_impE _ a b); apply P_ass; [ left; reflexivity | right; left; reflexivity ].
-  Qed.
-
-  Lemma T_neg_iff : forall phi, T (fImp phi fBot) <-> ~ T phi.
-  Proof.
-    intro phi. split.
-    - intros Hn Hp. exact (T_cons (T_mp phi fBot Hn Hp)).
-    - intro Hn. destruct (T_compl phi) as [Hp | Hnp]; [ contradiction | exact Hnp ].
   Qed.
 
   Lemma T_imp_iff : forall a b, T (fImp a b) <-> (T a -> T b).
@@ -189,76 +183,77 @@ Section CanonicalModel.
   Lemma mkD_proj : forall x : D, mkD (proj1_sig x) = x.
   Proof. intro x. destruct x as [v pv]. apply D_eq. simpl. exact pv. Qed.
 
-  (* The truth lemma, by strong induction on formula size: under the canonical *)
-  (* variable assignment i |-> [s i], satisfaction matches membership in T.    *)
+  (* The truth lemma, by structural induction on the formula with the        *)
+  (* substitution generalized (the quantifier cases recurse on the body at a *)
+  (* consed substitution, via rename_inst_up): under the canonical variable  *)
+  (* assignment i |-> [s i], satisfaction matches membership in T.           *)
   Lemma truth :
-    forall n a, fsize a <= n ->
-      forall s : nat -> nat,
-        Sat D memD (fun i => mkD (s i)) a <-> T (rename s a).
+    forall a (s : nat -> nat),
+      Sat D memD (fun i => mkD (s i)) a <-> T (rename s a).
   Proof.
-    induction n as [| n IH]; intros a Hsz s.
-    - destruct a; simpl in Hsz; lia.
-    - destruct a as [i j | i j | | a1 a2 | a1 a2 | a1 a2 | a1 | a1 ]; simpl in Hsz.
-      + (* fMem *) simpl. unfold memD. simpl. split; intro Hm.
-        * apply (cmem_cong (rep (s i)) (s i) (rep (s j)) (s j));
-            [ apply ceq_sym; apply rep_ceq | apply ceq_sym; apply rep_ceq | exact Hm ].
-        * apply (cmem_cong (s i) (rep (s i)) (s j) (rep (s j)));
-            [ apply rep_ceq | apply rep_ceq | exact Hm ].
-      + (* fEq *) simpl. split; intro He.
-        * assert (Hr : rep (s i) = rep (s j)).
-          { change (proj1_sig (mkD (s i)) = proj1_sig (mkD (s j))). rewrite He. reflexivity. }
-          apply (ceq_trans (s i) (rep (s j)) (s j)).
-          -- rewrite <- Hr. apply rep_ceq.
-          -- apply ceq_sym. apply rep_ceq.
-        * apply D_eq. simpl. apply rep_respects. exact He.
-      + (* fBot *) simpl. split; [ intro H; destruct H | intro H; exfalso; exact (T_cons H) ].
-      + (* fImp *) simpl.
-        rewrite (IH a1 ltac:(lia) s), (IH a2 ltac:(lia) s).
-        symmetry. apply T_imp_iff.
-      + (* fAnd *) simpl.
-        rewrite (IH a1 ltac:(lia) s), (IH a2 ltac:(lia) s).
-        symmetry. apply T_and_iff.
-      + (* fOr *) simpl.
-        rewrite (IH a1 ltac:(lia) s), (IH a2 ltac:(lia) s).
-        symmetry. apply T_or_iff.
-      + (* fAll *) simpl. split.
-        * intros HSat. apply (proj2 (T_all_iff (rename (up s) a1))). intro k.
-          rewrite (rename_inst_up a1 k s).
-          apply (proj1 (IH a1 ltac:(lia) (scons_nat k s))).
-          assert (Hpt : forall n0, scons D (mkD k) (fun i => mkD (s i)) n0
-                                   = (fun i => mkD (scons_nat k s i)) n0).
-          { intro n0; destruct n0; reflexivity. }
-          apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). apply (HSat (mkD k)).
-        * intros HT d.
-          pose proof (proj1 (T_all_iff (rename (up s) a1)) HT (proj1_sig d)) as Hk.
-          rewrite (rename_inst_up a1 (proj1_sig d) s) in Hk.
-          apply (proj2 (IH a1 ltac:(lia) (scons_nat (proj1_sig d) s))) in Hk.
-          assert (Hpt : forall n0, (fun i => mkD (scons_nat (proj1_sig d) s i)) n0
-                                   = scons D d (fun i => mkD (s i)) n0).
-          { intro n0; destruct n0; simpl; [ apply mkD_proj | reflexivity ]. }
-          apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact Hk.
-      + (* fEx *) simpl. split.
-        * intros [d HSat]. apply (proj2 (T_ex_iff (rename (up s) a1))).
-          exists (proj1_sig d). rewrite (rename_inst_up a1 (proj1_sig d) s).
-          apply (proj1 (IH a1 ltac:(lia) (scons_nat (proj1_sig d) s))).
-          assert (Hpt : forall n0, scons D d (fun i => mkD (s i)) n0
-                                   = (fun i => mkD (scons_nat (proj1_sig d) s i)) n0).
-          { intro n0; destruct n0; simpl; [ symmetry; apply mkD_proj | reflexivity ]. }
-          apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact HSat.
-        * intro HT. destruct (proj1 (T_ex_iff (rename (up s) a1)) HT) as [k Hk].
-          rewrite (rename_inst_up a1 k s) in Hk.
-          apply (proj2 (IH a1 ltac:(lia) (scons_nat k s))) in Hk.
-          exists (mkD k).
-          assert (Hpt : forall n0, (fun i => mkD (scons_nat k s i)) n0
-                                   = scons D (mkD k) (fun i => mkD (s i)) n0).
-          { intro n0; destruct n0; reflexivity. }
-          apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact Hk.
+    intro a.
+    induction a as [i j | i j | | a1 IH1 a2 IH2 | a1 IH1 a2 IH2
+                   | a1 IH1 a2 IH2 | a1 IH | a1 IH ]; intro s.
+    - (* fMem *) simpl. unfold memD. simpl. split; intro Hm.
+      + apply (cmem_cong (rep (s i)) (s i) (rep (s j)) (s j));
+          [ apply ceq_sym; apply rep_ceq | apply ceq_sym; apply rep_ceq | exact Hm ].
+      + apply (cmem_cong (s i) (rep (s i)) (s j) (rep (s j)));
+          [ apply rep_ceq | apply rep_ceq | exact Hm ].
+    - (* fEq *) simpl. split; intro He.
+      + assert (Hr : rep (s i) = rep (s j)).
+        { change (proj1_sig (mkD (s i)) = proj1_sig (mkD (s j))). rewrite He. reflexivity. }
+        apply (ceq_trans (s i) (rep (s j)) (s j)).
+        * rewrite <- Hr. apply rep_ceq.
+        * apply ceq_sym. apply rep_ceq.
+      + apply D_eq. simpl. apply rep_respects. exact He.
+    - (* fBot *) simpl. split; [ intro H; destruct H | intro H; exfalso; exact (T_cons H) ].
+    - (* fImp *) simpl.
+      rewrite (IH1 s), (IH2 s).
+      symmetry. apply T_imp_iff.
+    - (* fAnd *) simpl.
+      rewrite (IH1 s), (IH2 s).
+      symmetry. apply T_and_iff.
+    - (* fOr *) simpl.
+      rewrite (IH1 s), (IH2 s).
+      symmetry. apply T_or_iff.
+    - (* fAll *) simpl. split.
+      + intros HSat. apply (proj2 (T_all_iff (rename (up s) a1))). intro k.
+        rewrite (rename_inst_up a1 k s).
+        apply (proj1 (IH (scons_nat k s))).
+        assert (Hpt : forall n0, scons D (mkD k) (fun i => mkD (s i)) n0
+                                 = (fun i => mkD (scons_nat k s i)) n0).
+        { intro n0; destruct n0; reflexivity. }
+        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). apply (HSat (mkD k)).
+      + intros HT d.
+        pose proof (proj1 (T_all_iff (rename (up s) a1)) HT (proj1_sig d)) as Hk.
+        rewrite (rename_inst_up a1 (proj1_sig d) s) in Hk.
+        apply (proj2 (IH (scons_nat (proj1_sig d) s))) in Hk.
+        assert (Hpt : forall n0, (fun i => mkD (scons_nat (proj1_sig d) s i)) n0
+                                 = scons D d (fun i => mkD (s i)) n0).
+        { intro n0; destruct n0; simpl; [ apply mkD_proj | reflexivity ]. }
+        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact Hk.
+    - (* fEx *) simpl. split.
+      + intros [d HSat]. apply (proj2 (T_ex_iff (rename (up s) a1))).
+        exists (proj1_sig d). rewrite (rename_inst_up a1 (proj1_sig d) s).
+        apply (proj1 (IH (scons_nat (proj1_sig d) s))).
+        assert (Hpt : forall n0, scons D d (fun i => mkD (s i)) n0
+                                 = (fun i => mkD (scons_nat (proj1_sig d) s i)) n0).
+        { intro n0; destruct n0; simpl; [ symmetry; apply mkD_proj | reflexivity ]. }
+        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact HSat.
+      + intro HT. destruct (proj1 (T_ex_iff (rename (up s) a1)) HT) as [k Hk].
+        rewrite (rename_inst_up a1 k s) in Hk.
+        apply (proj2 (IH (scons_nat k s))) in Hk.
+        exists (mkD k).
+        assert (Hpt : forall n0, (fun i => mkD (scons_nat k s i)) n0
+                                 = scons D (mkD k) (fun i => mkD (s i)) n0).
+        { intro n0; destruct n0; reflexivity. }
+        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact Hk.
   Qed.
 
   (* canonical assignment: satisfaction matches T outright *)
   Corollary truth_id : forall a, Sat D memD (fun i => mkD i) a <-> T a.
   Proof.
-    intro a. pose proof (truth (fsize a) a (le_n _) (fun i => i)) as H.
+    intro a. pose proof (truth a (fun i => i)) as H.
     rewrite rename_id in H. exact H.
   Qed.
 
@@ -269,238 +264,13 @@ Section CanonicalModel.
   Proof. exists D, memD, (fun i => mkD i). exact truth_id. Qed.
 
 End CanonicalModel.
-(* ---- [4e] the Lindenbaum chain and its first three theory properties ---- *)
-
-Definition step (G : list form) (phi : form) : list form :=
-  match excluded_middle_informative (Con (phi :: G)) with
-  | left _ =>
-      match phi with
-      | fEx a => rename (inst (freshFor (fEx a :: G))) a :: fEx a :: G
-      | _ => phi :: G
-      end
-  | right _ =>
-      match phi with
-      | fAll a => fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot
-                  :: fImp (fAll a) fBot :: G
-      | _ => fImp phi fBot :: G
-      end
-  end.
-
-Lemma step_con : forall G phi, Con G -> Con (step G phi).
-Proof.
-  intros G phi HG. unfold step.
-  destruct (excluded_middle_informative (Con (phi :: G))) as [Hc | Hnc].
-  - destruct phi; try exact Hc; apply henkin_ex; exact Hc.
-  - destruct (Con_cons_or G phi HG) as [Hbad | Hcn]; [ contradiction | ].
-    destruct phi; try exact Hcn; apply henkin_all; exact Hcn.
-Qed.
-
-Lemma step_incl : forall G phi x, In x G -> In x (step G phi).
-Proof.
-  intros G phi x Hx. unfold step.
-  destruct (excluded_middle_informative (Con (phi :: G)));
-    destruct phi; simpl; tauto.
-Qed.
-
-Lemma step_decides :
-  forall G phi, In phi (step G phi) \/ In (fImp phi fBot) (step G phi).
-Proof.
-  intros G phi. unfold step.
-  destruct (excluded_middle_informative (Con (phi :: G))).
-  - left. destruct phi; simpl; tauto.
-  - right. destruct phi; simpl; tauto.
-Qed.
-
-Fixpoint chain (G0 : list form) (n : nat) : list form :=
-  match n with O => G0 | S m => step (chain G0 m) (Enum m) end.
-
-Lemma chain_incl : forall G0 m x, In x (chain G0 m) -> In x (chain G0 (S m)).
-Proof. intros G0 m x Hx. cbn [chain]. apply step_incl. exact Hx. Qed.
-
-Lemma chain_mono :
-  forall G0 n m, m <= n -> forall x, In x (chain G0 m) -> In x (chain G0 n).
-Proof.
-  intros G0 n. induction n as [| n IHn]; intros m Hle x Hx.
-  - assert (m = 0) by lia. subst m. exact Hx.
-  - apply Nat.le_succ_r in Hle. destruct Hle as [Hle | Heq].
-    + apply chain_incl. exact (IHn m Hle x Hx).
-    + subst m. exact Hx.
-Qed.
-
-Lemma chain_con : forall G0, Con G0 -> forall n, Con (chain G0 n).
-Proof.
-  intros G0 HG0. induction n as [| n IHn].
-  - exact HG0.
-  - cbn [chain]. apply step_con. exact IHn.
-Qed.
-
-Definition TL (G0 : list form) (phi : form) : Prop := exists n, Prov (chain G0 n) phi.
-
-Lemma TL_cons : forall G0, Con G0 -> ~ TL G0 fBot.
-Proof. intros G0 HG0 [n Hn]. exact (chain_con G0 HG0 n Hn). Qed.
-
-Lemma TL_compl : forall G0 phi, TL G0 phi \/ TL G0 (fImp phi fBot).
-Proof.
-  intros G0 phi. destruct (Enum_surj phi) as [n Hn]. subst phi.
-  destruct (step_decides (chain G0 n) (Enum n)) as [Hin | Hin].
-  - left. exists (S n). cbn [chain]. apply P_ass. exact Hin.
-  - right. exists (S n). cbn [chain]. apply P_ass. exact Hin.
-Qed.
-
-Lemma TL_bound :
-  forall G0 G, (forall x, In x G -> TL G0 x) ->
-    exists N, forall x, In x G -> Prov (chain G0 N) x.
-Proof.
-  intros G0 G. induction G as [| g G' IHG]; intro Hall.
-  - exists 0. intros x [].
-  - destruct (Hall g (or_introl eq_refl)) as [ng Hng].
-    destruct IHG as [N' HN']; [ intros x Hx; apply Hall; right; exact Hx | ].
-    exists (Nat.max ng N'). intros x [Heq | Hx].
-    + subst x. apply (Prov_weaken (chain G0 ng) g Hng).
-      intros y Hy. apply (chain_mono G0 (Nat.max ng N') ng); [ lia | exact Hy ].
-    + apply (Prov_weaken (chain G0 N') x (HN' x Hx)).
-      intros y Hy. apply (chain_mono G0 (Nat.max ng N') N'); [ lia | exact Hy ].
-Qed.
-
-Lemma TL_closed :
-  forall G0 G phi, (forall x, In x G -> TL G0 x) -> Prov G phi -> TL G0 phi.
-Proof.
-  intros G0 G phi Hall Hp. destruct (TL_bound G0 G Hall) as [N HN].
-  exists N. exact (Prov_cut G phi Hp (chain G0 N) HN).
-Qed.
-
-(* ---- [4f] the two Henkin properties ---- *)
-
-Lemma step_pos_in : forall G phi, Con (phi :: G) -> In phi (step G phi).
-Proof.
-  intros G phi Hc. unfold step.
-  destruct (excluded_middle_informative (Con (phi :: G))) as [H | H];
-    [ destruct phi; simpl; tauto | contradiction ].
-Qed.
-
-Lemma step_neg_in : forall G phi, ~ Con (phi :: G) -> In (fImp phi fBot) (step G phi).
-Proof.
-  intros G phi Hnc. unfold step.
-  destruct (excluded_middle_informative (Con (phi :: G))) as [H | H];
-    [ contradiction | destruct phi; simpl; tauto ].
-Qed.
-
-Lemma step_ex_pos :
-  forall G a, Con (fEx a :: G) ->
-    In (rename (inst (freshFor (fEx a :: G))) a) (step G (fEx a)).
-Proof.
-  intros G a Hc. unfold step.
-  destruct (excluded_middle_informative (Con (fEx a :: G))) as [H | H];
-    [ simpl; left; reflexivity | contradiction ].
-Qed.
-
-Lemma step_all_neg :
-  forall G a, ~ Con (fAll a :: G) ->
-    In (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: G))) a) fBot) (step G (fAll a)).
-Proof.
-  intros G a Hnc. unfold step.
-  destruct (excluded_middle_informative (Con (fAll a :: G))) as [H | H];
-    [ contradiction | simpl; left; reflexivity ].
-Qed.
-
-Lemma TL_henkin_ex :
-  forall G0, Con G0 -> forall a, TL G0 (fEx a) -> exists k, TL G0 (rename (inst k) a).
-Proof.
-  intros G0 HG0 a [N HN]. destruct (Enum_surj (fEx a)) as [m Hm].
-  destruct (classic (Con (fEx a :: chain G0 m))) as [Hpos | Hnc].
-  - exists (freshFor (fEx a :: chain G0 m)). exists (S m). cbn [chain]. rewrite Hm.
-    apply P_ass. apply step_ex_pos. exact Hpos.
-  - exfalso.
-    assert (Hneg : Prov (chain G0 (S m)) (fImp (fEx a) fBot)).
-    { cbn [chain]. rewrite Hm. apply P_ass. apply step_neg_in. exact Hnc. }
-    apply (chain_con G0 HG0 (Nat.max N (S m))).
-    apply (P_impE (chain G0 (Nat.max N (S m))) (fEx a) fBot).
-    + apply (Prov_weaken (chain G0 (S m)) (fImp (fEx a) fBot) Hneg).
-      intros y Hy. apply (chain_mono G0 (Nat.max N (S m)) (S m)); [ lia | exact Hy ].
-    + apply (Prov_weaken (chain G0 N) (fEx a) HN).
-      intros y Hy. apply (chain_mono G0 (Nat.max N (S m)) N); [ lia | exact Hy ].
-Qed.
-
-Lemma TL_henkin_all :
-  forall G0, Con G0 -> forall a,
-    (forall k, TL G0 (rename (inst k) a)) -> TL G0 (fAll a).
-Proof.
-  intros G0 HG0 a Hall.
-  destruct (TL_compl G0 (fAll a)) as [Hpos | Hneg]; [ exact Hpos | ].
-  exfalso. destruct (Enum_surj (fAll a)) as [m Hm].
-  destruct (classic (Con (fAll a :: chain G0 m))) as [Hc | Hnc].
-  - assert (Hposfa : TL G0 (fAll a)).
-    { exists (S m). cbn [chain]. rewrite Hm. apply P_ass. apply step_pos_in. exact Hc. }
-    apply (TL_cons G0 HG0).
-    destruct Hposfa as [n1 H1]. destruct Hneg as [n2 H2].
-    exists (Nat.max n1 n2).
-    apply (P_impE (chain G0 (Nat.max n1 n2)) (fAll a) fBot).
-    + apply (Prov_weaken (chain G0 n2) (fImp (fAll a) fBot) H2).
-      intros y Hy. apply (chain_mono G0 (Nat.max n1 n2) n2); [ lia | exact Hy ].
-    + apply (Prov_weaken (chain G0 n1) (fAll a) H1).
-      intros y Hy. apply (chain_mono G0 (Nat.max n1 n2) n1); [ lia | exact Hy ].
-  - assert (Hnegw : Prov (chain G0 (S m))
-                      (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chain G0 m))) a) fBot)).
-    { cbn [chain]. rewrite Hm. apply P_ass. apply step_all_neg. exact Hnc. }
-    set (w := freshFor (fImp (fAll a) fBot :: chain G0 m)) in *.
-    destruct (Hall w) as [n1 H1].
-    apply (TL_cons G0 HG0).
-    exists (Nat.max n1 (S m)).
-    apply (P_impE (chain G0 (Nat.max n1 (S m))) (rename (inst w) a) fBot).
-    + apply (Prov_weaken (chain G0 (S m)) (fImp (rename (inst w) a) fBot) Hnegw).
-      intros y Hy. apply (chain_mono G0 (Nat.max n1 (S m)) (S m)); [ lia | exact Hy ].
-    + apply (Prov_weaken (chain G0 n1) (rename (inst w) a) H1).
-      intros y Hy. apply (chain_mono G0 (Nat.max n1 (S m)) n1); [ lia | exact Hy ].
-Qed.
-
-(* ---- [4g] model existence for a consistent set, and completeness ---- *)
-
-Theorem model_of_con :
-  forall G0, Con G0 ->
-    exists (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
-      forall g, In g G0 -> Sat Dom m v g.
-Proof.
-  intros G0 HG0.
-  destruct (model_exists (TL G0)
-              (TL_cons G0 HG0) (TL_compl G0) (TL_closed G0)
-              (TL_henkin_ex G0 HG0) (TL_henkin_all G0 HG0)) as [Dom [m [v Hsat]]].
-  exists Dom, m, v. intros g Hg. apply (proj2 (Hsat g)).
-  exists 0. cbn [chain]. apply P_ass. exact Hg.
-Qed.
-
-(* COMPLETENESS: validity in all models implies provability. *)
-Theorem completeness :
-  forall G phi,
-    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
-       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi) ->
-    Prov G phi.
-Proof.
-  intros G phi Hval. apply NNPP. intro Hnp.
-  assert (Hcon : Con (fImp phi fBot :: G)).
-  { intro Hbad. apply Hnp. apply Prov_byContra. exact Hbad. }
-  destruct (model_of_con (fImp phi fBot :: G) Hcon) as [Dom [m [v Hsat]]].
-  assert (Hphi : Sat Dom m v phi).
-  { apply Hval. intros g Hg. apply Hsat. right. exact Hg. }
-  assert (Hnphi : Sat Dom m v (fImp phi fBot)) by (apply Hsat; left; reflexivity).
-  simpl in Hnphi. exact (Hnphi Hphi).
-Qed.
-
-(* SOUNDNESS + COMPLETENESS: provability coincides with validity. *)
-Corollary prov_iff_valid :
-  forall G phi,
-    Prov G phi <->
-    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
-       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi).
-Proof.
-  intros G phi. split.
-  - intros H Dom m v Hg. exact (soundness Dom m G phi H v Hg).
-  - apply completeness.
-Qed.
 (* ===================================================================== *)
-(*  [5] Infinite-theory completeness (compactness) for SENTENCE theories. *)
+(*  The Lindenbaum/Henkin chain, relative to a SENTENCE base theory B.    *)
 (*  A sentence has no free variables, so any variable is fresh w.r.t. the  *)
 (*  (possibly infinite) base theory B -- which is what lets the Henkin     *)
-(*  witnesses work over an infinite theory.                                *)
+(*  witnesses work over an infinite theory.  Ordinary finite-context       *)
+(*  completeness is the B = emptyset instance (BProv_empty / model_of_con  *)
+(*  below).                                                                *)
 (* ===================================================================== *)
 
 (* robust membership solver for list app/cons rearrangements *)
@@ -799,6 +569,65 @@ Proof.
   - intros g Hg. apply (proj2 (Hsat g)). exists 0. exists nil. split.
     + intros x [].
     + cbn [chainB app]. apply P_ass. exact Hg.
+Qed.
+
+(* ===================================================================== *)
+(*  Finite-context completeness, as the B = emptyset instance.            *)
+(* ===================================================================== *)
+
+(* Provability from the empty base theory is plain provability. *)
+Lemma BProv_empty :
+  forall G phi, BProv (fun _ => False) G phi <-> Prov G phi.
+Proof.
+  intros G phi. split.
+  - intros [Gb [HGb Hp]]. destruct Gb as [| x Gb'].
+    + exact Hp.
+    + exfalso. apply (HGb x). left. reflexivity.
+  - intro H. exists nil. split; [ intros x [] | exact H ].
+Qed.
+
+(* Every consistent finite context has a model (the B = emptyset instance
+   of model_of_BCon). *)
+Theorem model_of_con :
+  forall G0, Con G0 ->
+    exists (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+      forall g, In g G0 -> Sat Dom m v g.
+Proof.
+  intros G0 HG0.
+  assert (HB : Sentences (fun _ : form => False)) by (intros f Hf; destruct Hf).
+  assert (H0 : BCon (fun _ => False) G0).
+  { intro Hbad. apply HG0. apply (proj1 (BProv_empty G0 fBot)). exact Hbad. }
+  destruct (model_of_BCon (fun _ => False) G0 HB H0) as [Dom [m [v [_ HsatL]]]].
+  exists Dom, m, v. exact HsatL.
+Qed.
+
+(* COMPLETENESS: validity in all models implies provability. *)
+Theorem completeness :
+  forall G phi,
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi) ->
+    Prov G phi.
+Proof.
+  intros G phi Hval. apply NNPP. intro Hnp.
+  assert (Hcon : Con (fImp phi fBot :: G)).
+  { intro Hbad. apply Hnp. apply Prov_byContra. exact Hbad. }
+  destruct (model_of_con (fImp phi fBot :: G) Hcon) as [Dom [m [v Hsat]]].
+  assert (Hphi : Sat Dom m v phi).
+  { apply Hval. intros g Hg. apply Hsat. right. exact Hg. }
+  assert (Hnphi : Sat Dom m v (fImp phi fBot)) by (apply Hsat; left; reflexivity).
+  simpl in Hnphi. exact (Hnphi Hphi).
+Qed.
+
+(* SOUNDNESS + COMPLETENESS: provability coincides with validity. *)
+Corollary prov_iff_valid :
+  forall G phi,
+    Prov G phi <->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi).
+Proof.
+  intros G phi. split.
+  - intros H Dom m v Hg. exact (soundness Dom m G phi H v Hg).
+  - apply completeness.
 Qed.
 
 (* INFINITE COMPLETENESS: validity in all models of a sentence theory B

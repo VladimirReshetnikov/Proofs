@@ -635,20 +635,6 @@ theorem omega_ind (H : ZFAxioms mem) (phi : Form) (e : Nat → V)
 
 /-! ### Arithmetic of internal naturals -/
 
-theorem omega_transitive (H : ZFAxioms mem) :
-    ∀ n, mem n (omegaV H) → ∀ k, mem k n → mem k (omegaV H) := by
-  have h : ∀ n, mem n (omegaV H) →
-      Sat mem (scons n (fun _ => omegaV H)) (fAll (fImp (fMem 0 1) (fMem 0 2))) := by
-    apply omega_ind H
-    · intro d hd
-      exact absurd hd (vempty_spec H d)
-    · intro n hn IH d hd
-      rcases (vsucc_spec H n d).mp hd with hd | hd
-      · exact IH d hd
-      · rw [hd]; exact hn
-  intro n hn k hk
-  exact h n hn k hk
-
 theorem nat_transitive (H : ZFAxioms mem) :
     ∀ n, mem n (omegaV H) → ∀ y, mem y n → ∀ x, mem x y → mem x n := by
   have h : ∀ n, mem n (omegaV H) →
