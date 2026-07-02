@@ -125,7 +125,7 @@ into a fully general principle of collection. The reverse half (every $\ZF$ mode
 satisfies
 Closure) is the textbook transitive-closure recursion. We then describe in
 tutorial detail a complete machine-checked formalization in the Rocq/Coq proof
-assistant, organized in five developments: a shallow embedding proving the
+assistant, organized as a small reusable library: a shallow embedding proving the
 semantic equivalence in both directions with a ``free dependency audit'' that
 certifies \emph{which} axioms each derivation actually uses; a deep embedding of
 first-order logic that re-proves the forward trade from genuinely syntactic
@@ -572,8 +572,10 @@ more --- checkable by machine.
 % =====================================================================
 
 The formalization lives in the \texttt{src/SetTheory/} directory of the
-repository, in four Rocq/Coq source files. This section covers the two that prove
-the semantic equivalence directly: \texttt{Forward.v} and \texttt{Reverse.v}.
+repository, in seven Rocq/Coq source files organized as a small library (see the
+appendix for the module map). This section covers the two self-contained files
+that prove the semantic equivalence directly: \texttt{Forward.v} and
+\texttt{Reverse.v}.
 
 \subsection{Why Rocq/Coq, and what a ``shallow embedding'' is}
 
@@ -801,10 +803,12 @@ direction depends on an object-level Choice axiom.
 % =====================================================================
 
 The shallow embedding's one honest caveat is that its schemas range over arbitrary
-Coq predicates rather than over first-order \emph{formulas}. \texttt{Deep.v}
-removes that caveat for the forward direction by building a genuine deep embedding
-of the first-order language of set theory and re-proving the trade from schemas
-that quantify over syntactic formulas.
+Coq predicates rather than over first-order \emph{formulas}. The library removes
+that caveat by building a genuine deep embedding of the first-order language of
+set theory (\texttt{Fol.v} --- syntax, renaming, free variables, sealing, a
+formula enumeration, and Tarski satisfaction over an arbitrary structure) and
+re-proving the trade from schemas that quantify over syntactic formulas
+(the \cq{DeepForward} section of \texttt{Equivalence.v}).
 
 \subsection{Syntax, environments, and Tarski satisfaction}
 
@@ -881,8 +885,8 @@ Hypothesis ClosureFO :
     forall s, exists w, Sub s w /\ (forall u v, relOf psi e u v -> v ∈ w -> u ∈ w).
 \end{lstlisting}
 
-\texttt{Deep.v} then re-derives Pairing, Union, first-order Replacement, and
-Infinity from \emph{these} schemas. The new obligation, compared to the shallow
+\texttt{Equivalence.v} then re-derives Pairing, Union, first-order Replacement,
+and Infinity from \emph{these} schemas. The new obligation, compared to the shallow
 version, is that each relation used must be exhibited as a concrete \cq{form} and
 its \cq{Sat}-meaning verified. For the simple cases the defining formula is short;
 for Replacement, expressing ``$\exists x \in a,\ \psi(y,x)$'' as a formula requires
@@ -912,9 +916,10 @@ Section~\ref{sec:mech-deeprev} carries it out.
 \section{Mechanization III: a proof calculus, soundness, and a cross-theory bridge}\label{sec:mech-calculus}
 % =====================================================================
 
-So far everything has been semantic (about models). \texttt{Deep.v} also builds a
-\emph{syntactic} layer: an actual proof calculus over \cq{form}, a soundness
-theorem, and a first bridge between the two theories at the level of provability.
+So far everything has been semantic (about models). \texttt{Calculus.v} builds
+the \emph{syntactic} layer: an actual proof calculus over \cq{form}, its
+admissible rules, and a soundness theorem; \texttt{Equivalence.v} then draws a
+first bridge between the two theories at the level of provability.
 
 \subsection{A natural-deduction calculus}
 
@@ -1019,12 +1024,12 @@ i.e.\ the recursion theorem as discussed; it is proved in
 \section{Mechanization IV: G\"odel completeness, compactness, and the syntactic equivalence}\label{sec:mech-compl}
 % =====================================================================
 
-The fourth file, \texttt{Completeness.v}, proves the converse of soundness ---
+\texttt{Completeness.v} proves the converse of soundness ---
 \textbf{G\"odel completeness} --- from scratch, then leverages it to obtain
-compactness for sentence theories and the forward \emph{syntactic} equivalence
-$\ZF \proves \varphi \Rightarrow \T \proves \varphi$. (It builds on \texttt{Deep.v}
-through Coq's namespacing: \cq{coqc -Q . SetTheory Deep.v} then
-\cq{coqc -Q . SetTheory Completeness.v}.)
+compactness for sentence theories; the forward \emph{syntactic} equivalence
+$\ZF \proves \varphi \Rightarrow \T \proves \varphi$ follows in
+\texttt{Equivalence.v}. (\texttt{Completeness.v} is fully generic: it applies to
+any theory over this language, and nothing in it mentions set theory.)
 
 \subsection{The goal}
 
@@ -1050,7 +1055,8 @@ in the file.
 
 \subsection{Proof-theory infrastructure}
 
-The file first develops the usual admissible rules: weakening, the deduction
+The construction leans on the usual admissible rules, all provided by
+\texttt{Calculus.v}: weakening, the deduction
 theorem, proof by contradiction and double-negation elimination, a notion of
 consistency \cq{Con G := ~ Prov G fBot}, the Lindenbaum extension step
 \cq{Con_cons_or} (a consistent set stays consistent when extended by a formula or
@@ -1095,8 +1101,9 @@ $\forall$).
 \subsection{Lindenbaum and Henkin: building the maximal theory}
 
 To apply \cq{model_exists} we must \emph{construct} a maximal-consistent Henkin
-extension of any consistent set. This needs an enumeration of all formulas; we
-build one from Cantor's pairing function and prove it surjective:
+extension of any consistent set. This needs an enumeration of all formulas;
+\texttt{Fol.v} builds one from Cantor's pairing function and proves it
+surjective:
 
 \begin{lstlisting}
 Definition Enum (n : nat) : form := decode (S n) n.
@@ -1186,7 +1193,7 @@ Lemma Tmodel_sat_ZF :
 \end{lstlisting}
 
 The proof extracts the abstract axioms from a $\T$-model through the \cq{bridge_*}
-lemmas, then reuses \texttt{Deep.v}'s derived satisfaction facts (\cq{sat_Pair},
+lemmas, then reuses the derived satisfaction facts of the forward trade (\cq{sat_Pair},
 \cq{sat_Union}, \cq{sat_Inf}, \cq{sat_Repl}) to discharge the four traded $\ZF$
 axioms. Soundness plus \cq{completeness_inf} then deliver the forward
 \emph{syntactic} direction:
@@ -1198,15 +1205,15 @@ Theorem ZF_implies_T :
 
 Everything $\ZF$ proves, $\T$ proves. Read against \cq{theory_equiv}, this is one
 half of the statement that $\ZF$ and $\T$ are the same theory --- the half that
-goes through cleanly, because \cq{Tmodel_sat_ZF} could reuse \texttt{Deep.v}'s
-forward derivations wholesale. The other half needs the dual model inclusion, and
+goes through cleanly, because \cq{Tmodel_sat_ZF} could reuse the deep forward
+derivations wholesale. The other half needs the dual model inclusion, and
 that is where the recursion theorem finally has to be paid for.
 
 % =====================================================================
 \section{Mechanization V: the deep reverse --- the recursion theorem as a first-order formula}\label{sec:mech-deeprev}
 % =====================================================================
 
-The fifth file, \texttt{DeepReverse.v}, closes the converse. By
+\texttt{Zf.v} and \texttt{Equivalence.v} close the converse. By
 \cq{theory_equiv} (or directly by \cq{completeness_inf} plus soundness), the
 syntactic statement $\T \proves \varphi \Rightarrow \ZF \proves \varphi$ follows
 from the dual of \cq{Tmodel_sat_ZF}: \emph{every first-order $\ZF$-model
@@ -1365,16 +1372,16 @@ Statement & Status & File \\
 \midrule
 $\T \models$ Pairing, Union, Replacement, Infinity & machine-checked & \texttt{Forward.v} \\
 $\ZF \models$ Closure (set-like relations) & machine-checked & \texttt{Reverse.v} \\
-forward trade from \emph{first-order} schemas & machine-checked & \texttt{Deep.v} \\
-sound ND calculus; $\ZF\proves\varphi \Rightarrow \T\models\varphi$ & machine-checked & \texttt{Deep.v} \\
+forward trade from \emph{first-order} schemas & machine-checked & \texttt{Equivalence.v} \\
+sound ND calculus; $\ZF\proves\varphi \Rightarrow \T\models\varphi$ & machine-checked & \texttt{Calculus.v}, \texttt{Equivalence.v} \\
 truth lemma / model existence & machine-checked & \texttt{Completeness.v} \\
 completeness $\Prov G\,\varphi \Leftrightarrow G\models\varphi$ & machine-checked & \texttt{Completeness.v} \\
 compactness ($B\models\varphi \Rightarrow B\proves\varphi$, sentences) & machine-checked & \texttt{Completeness.v} \\
 same-model sentence theories are deductively equal & machine-checked & \texttt{Completeness.v} \\
-$\ZF \proves \varphi \Rightarrow \T \proves \varphi$ & machine-checked & \texttt{Completeness.v} \\
-deep reverse: every FO $\ZF$-model satisfies Closure & machine-checked & \texttt{DeepReverse.v} \\
-$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ & machine-checked & \texttt{DeepReverse.v} \\
-$\T \proves \varphi \Leftrightarrow \ZF \proves \varphi$ & machine-checked & \texttt{DeepReverse.v} \\
+$\ZF \proves \varphi \Rightarrow \T \proves \varphi$ & machine-checked & \texttt{Equivalence.v} \\
+deep reverse: every FO $\ZF$-model satisfies Closure & machine-checked & \texttt{Zf.v} \\
+$\T \proves \varphi \Rightarrow \ZF \proves \varphi$ & machine-checked & \texttt{Equivalence.v} \\
+$\T \proves \varphi \Leftrightarrow \ZF \proves \varphi$ & machine-checked & \texttt{Equivalence.v} \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -1396,7 +1403,7 @@ propositional_extensionality
 proof_irrelevance
 \end{lstlisting}
 
-There is no \cq{Admitted} and no custom \cq{Axiom} anywhere in the five files.
+There is no \cq{Admitted} and no custom \cq{Axiom} anywhere in the development.
 These five are exactly the principles one expects when mechanizing classical set
 theory with a quotient term model: classical logic, a description operator to turn
 existence axioms into operations, and the extensionality/irrelevance principles
@@ -1470,7 +1477,16 @@ disguise.
 \section{File inventory and build instructions}
 % =====================================================================
 
-The development is five Rocq/Coq files under \texttt{src/SetTheory/}.
+The development is seven Rocq/Coq files under \texttt{src/SetTheory/}, organized
+as a small library: three files of generic first-order logic (usable for any
+theory over the language of one binary relation and equality), one file of
+first-order $\ZF$, one file for the axiomatization $\T$ and the equivalence, and
+the two original self-contained shallow files. The import DAG:
+\[
+  \texttt{Fol} \to \texttt{Calculus} \to \texttt{Completeness}, \qquad
+  \{\texttt{Fol}, \texttt{Calculus}\} \to \texttt{Zf}, \qquad
+  \text{all} \to \texttt{Equivalence}.
+\]
 
 \begin{center}
 \renewcommand{\arraystretch}{1.25}
@@ -1480,28 +1496,30 @@ File & Contents \\
 \midrule
 \texttt{Forward.v} & shallow embedding; $\{$Ext, Sep, Closure$\}$ + hosting derive Pairing/Union/Replacement/Infinity; linchpin \cq{host}/\cq{host_spec} (Powerset enters only via \cq{powerset_gives_hosting}); dependency-audit \cq{Check}s show the four free of Powerset. \\
 \texttt{Reverse.v} & shallow embedding; $\ZF$ derives Closure via the transitive-closure recursion; numerals distinct Foundation-free (\cq{onat_trans}, \cq{onat_no_self}, \cq{onat_inj}); audit shows \emph{both} Powerset and Regularity unused. \\
-\texttt{Deep.v} & deep embedding (\cq{form}, \cq{Sat}, \cq{rename}, \cq{Sat_rename}); first-order \cq{SeparationFO}/\cq{ClosureFO}; forward trade re-proved; ND calculus \cq{Prov}; \cq{soundness}; \cq{ZF_provable_holds_in_T}. \\
-\texttt{Completeness.v} & from-scratch G\"odel \cq{completeness}/\cq{prov_iff_valid}; \cq{completeness_inf} (compactness); \cq{theory_equiv}; \cq{ZF_implies_T}. \\
-\texttt{DeepReverse.v} & the deep reverse: internal set algebra with \cq{kpair_inj}; internal $\omega$ and the definable-induction schema \cq{omega_ind}; the formula-macro library; \cq{Approx}/\cq{fApproxF} with existence and agreement; \cq{theta_functional}; \cq{ClosureFO_of_ZF}; \cq{ZFmodel_sat_T}; \cq{T_implies_ZF}; \cq{T_iff_ZF}. \\
+\texttt{Fol.v} & \emph{generic}: deep embedding of first-order logic over $\{\in,=\}$ (\cq{form}, \cq{rename}, \cq{Free}, \cq{seal}, the formula enumeration \cq{Enum}, Tarski \cq{Sat}, \cq{Sat_ext}/\cq{Sat_rename}, \cq{relOf}). \\
+\texttt{Calculus.v} & \emph{generic}: classical ND calculus \cq{Prov}, admissible rules (weakening, cut, deduction, \cq{Prov_rename}, the equality kit, Henkin cores), \cq{soundness}. \\
+\texttt{Completeness.v} & \emph{generic}: from-scratch G\"odel \cq{completeness}/\cq{prov_iff_valid}; \cq{completeness_inf} (compactness for sentence theories); \cq{theory_equiv}. \\
+\texttt{Zf.v} & first-order $\ZF$: the axioms as formulas, \cq{ZFax_s}, extraction bridges; internal model mathematics --- set algebra with \cq{kpair_inj}, internal $\omega$ and the definable-induction schema \cq{omega_ind}, the formula-macro library, \cq{Approx}/\cq{fApproxF} with existence and agreement, \cq{theta_functional}, \cq{ClosureFO_of_ZF}. \\
+\texttt{Equivalence.v} & the axiomatization $\T$: deep forward trade; \cq{ZF_provable_holds_in_T}; \cq{Closure_form}; \cq{Tax_s}; \cq{Tmodel_sat_ZF}/\cq{ZFmodel_sat_T}; \cq{ZF_implies_T}; \cq{T_implies_ZF}; \cq{T_iff_ZF}. \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\texttt{Forward.v}, \texttt{Reverse.v}, and \texttt{Deep.v} are independent (no
-inter-file \cq{Require}) and need only the standard library.
-\texttt{Completeness.v} \cq{Require}s \cq{Deep} (hence the namespace flag) and
-additionally uses the standard classical/extensionality modules;
-\texttt{DeepReverse.v} \cq{Require}s both.
+\texttt{Forward.v} and \texttt{Reverse.v} are independent (no inter-file
+\cq{Require}) and need only the standard library; the library files import along
+the DAG above. \texttt{Completeness.v} additionally uses the standard
+classical/extensionality modules for the quotient term model.
 
 \begin{lstlisting}[language={}]
 # developed against Rocq 9.0.1
 coqc Forward.v
 coqc Reverse.v
-coqc Deep.v
-# Completeness.v and DeepReverse.v build on Deep via the SetTheory namespace:
-coqc -Q . SetTheory Deep.v
+# the library builds in dependency order under the SetTheory namespace:
+coqc -Q . SetTheory Fol.v
+coqc -Q . SetTheory Calculus.v
 coqc -Q . SetTheory Completeness.v
-coqc -Q . SetTheory DeepReverse.v
+coqc -Q . SetTheory Zf.v
+coqc -Q . SetTheory Equivalence.v
 \end{lstlisting}
 
 \end{document}

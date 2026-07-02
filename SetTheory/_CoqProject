@@ -1,6 +1,8 @@
 -Q . SetTheory
 Forward.v
 Reverse.v
-Deep.v
+Fol.v
+Calculus.v
 Completeness.v
-DeepReverse.v
+Zf.v
+Equivalence.v

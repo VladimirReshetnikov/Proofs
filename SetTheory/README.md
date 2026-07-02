@@ -45,16 +45,70 @@ The system is **exactly ZF**:
 |-----------|-----------|--------|------|
 | forward   | `{Ext, Sep, Pow, Closure}` ⊢ Pairing, Union, Replacement, Infinity | **machine-checked** | [`Forward.v`](Forward.v) |
 | reverse   | ZF ⊢ Closure (every set-like relation admits a transitive closure) | **machine-checked** | [`Reverse.v`](Reverse.v) |
-| forward, first-order | same trade with the schemas as genuine syntactic formulas | **machine-checked** | [`Deep.v`](Deep.v) |
-| proof calculus | ND calculus + soundness, and `ZF ⊢ φ ⟹ T ⊨ φ` | **machine-checked** | [`Deep.v`](Deep.v) |
+| forward, first-order | same trade with the schemas as genuine syntactic formulas | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
+| proof calculus | ND calculus + soundness, and `ZF ⊢ φ ⟹ T ⊨ φ` | **machine-checked** | [`Calculus.v`](Calculus.v), [`Equivalence.v`](Equivalence.v) |
 | model existence | every maximal-consistent Henkin theory is satisfiable (truth lemma) | **machine-checked** | [`Completeness.v`](Completeness.v) |
 | completeness | `Γ ⊢ φ ⟺ Γ ⊨ φ` (soundness + Gödel completeness) | **machine-checked** | [`Completeness.v`](Completeness.v) |
 | infinite completeness | `B ⊨ φ ⟹ B ⊢ φ` for sentence theories (compactness lift) | **machine-checked** | [`Completeness.v`](Completeness.v) |
 | deductive equivalence | same-model sentence theories prove the same sentences | **machine-checked** | [`Completeness.v`](Completeness.v) |
-| `ZF ⊢ φ ⟹ T ⊢ φ` | the forward syntactic direction, ZF/T as sentence theories | **machine-checked** | [`Completeness.v`](Completeness.v) |
-| deep reverse | every first-order ZF model satisfies `Closure_form` (the internal recursion theorem) | **machine-checked** | [`DeepReverse.v`](DeepReverse.v) |
-| `T ⊢ φ ⟹ ZF ⊢ φ` | the converse syntactic direction | **machine-checked** | [`DeepReverse.v`](DeepReverse.v) |
-| **`T ⊢ φ ⟺ ZF ⊢ φ`** | **full deductive equivalence** (`T_iff_ZF`) | **machine-checked** | [`DeepReverse.v`](DeepReverse.v) |
+| `ZF ⊢ φ ⟹ T ⊢ φ` | the forward syntactic direction, ZF/T as sentence theories | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
+| deep reverse | every first-order ZF model satisfies `Closure_form` (the internal recursion theorem) | **machine-checked** | [`Zf.v`](Zf.v), [`Equivalence.v`](Equivalence.v) |
+| `T ⊢ φ ⟹ ZF ⊢ φ` | the converse syntactic direction | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
+| **`T ⊢ φ ⟺ ZF ⊢ φ`** | **full deductive equivalence** (`T_iff_ZF`) | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
+
+## Module structure — the reusable core vs. the T-specific shell
+
+The development is organized as a small library. Three modules are **generic
+first-order logic** (nothing in them mentions ZF, let alone the Closure
+axiomatization), one is **generic first-order ZF**, and only one file is about
+the axiomatization T itself:
+
+```text
+Fol.v ──► Calculus.v ──► Completeness.v      generic FOL over the language {∈, =}
+  │             │
+  └──► Zf.v ◄───┘                            first-order ZF (no Powerset/Regularity needed)
+                │
+Forward.v   Reverse.v   Equivalence.v        the Closure axiomatization T, and T ⟺ ZF
+(shallow, self-contained)   (imports all of the above)
+```
+
+- [`Fol.v`](Fol.v) — a deep embedding of first-order logic over one binary
+  relation symbol and equality (De Bruijn variables): syntax, renaming and its
+  equational theory, free variables, sentences, universal closure (`seal`), a
+  surjective formula enumeration, Tarski satisfaction `Sat` over an arbitrary
+  structure `(V, mem)`, and formula-definable relations (`relOf`). **Reusable for
+  any theory whose signature is one binary relation** — set theories, graph
+  theories, order theories.
+- [`Calculus.v`](Calculus.v) — classical natural deduction `Prov` over those
+  formulas, its admissible rules (weakening, cut, deduction, renaming
+  admissibility, the equality kit), the Henkin-witness core lemmas, and
+  **soundness** w.r.t. `Sat`. Theory-independent.
+- [`Completeness.v`](Completeness.v) — **Gödel completeness** (`Prov G φ ⟺ G ⊨ φ`,
+  via a quotient term model and a Lindenbaum/Henkin chain), the compactness-style
+  lift to infinite **sentence theories** (`completeness_inf`), and
+  **`theory_equiv`** — *two sentence theories with the same models prove the same
+  sentences* — the abstract engine for proving any two axiomatizations
+  deductively equivalent. Theory-independent.
+- [`Zf.v`](Zf.v) — **first-order ZF**, with no reference to T: the ZF axioms as
+  formulas and as a sentence theory (`ZFax_s`), extraction bridges from
+  satisfaction to abstract semantic axioms, and the **internal mathematics of an
+  arbitrary FO model of {Ext, Sep, Pair, Union, Inf, Repl}**: internal set
+  algebra, Kuratowski pairs with injectivity, an internal ω with the
+  definable-induction schema `omega_ind`, and the **finite recursion theorem**,
+  culminating in `ClosureFO_of_ZF` (every definable set-like relation admits a
+  closure superset, inside every such model). Reusable for any future "does
+  first-order ZF prove schema S?" question.
+- [`Equivalence.v`](Equivalence.v) — everything specific to the Closure
+  axiomatization: the deep forward trade, `Closure_form`, `Tax_s`, the mutual
+  model inclusions, and the syntactic equivalence `T_iff_ZF`.
+- [`Forward.v`](Forward.v) / [`Reverse.v`](Reverse.v) — the original shallow
+  (second-order) equivalence, kept self-contained with no inter-file imports.
+
+The honest genericity boundary: the language is hard-wired to a *single binary
+relation symbol plus equality* (with equality interpreted as genuine equality —
+"normal" models), and the compactness lift applies to *sentence* theories.
+Within that boundary, `Fol.v`/`Calculus.v`/`Completeness.v` are a self-contained,
+axioms-clean Gödel-completeness library.
 
 Regularity is **shared verbatim** between the two theories, so the
 equivalence reduces to trading the four generative axioms `{Pairing, Union,
@@ -159,9 +213,10 @@ It stays faithful to the genuine first-order claim because **every derivation
 instantiates a schema at one concrete, definable relation** (the two-branch
 relation, a function graph, `∈`, successor) — exactly the instances a first-order
 proof would use. What a shallow embedding does *not* deliver is a syntactic
-`Provable(T, φ) ↔ Provable(ZF, φ)` theorem; that would require a deep embedding of
-first-order logic and its proof calculus, a much larger project with little
-additional mathematical insight.
+`Provable(T, φ) ↔ Provable(ZF, φ)` theorem; that requires a deep embedding of
+first-order logic and its proof calculus — which the rest of the library then
+went on to build (`Fol.v` … `Equivalence.v`), culminating in exactly that
+theorem, `T_iff_ZF`.
 
 Classical logic enters only through `ClassicalEpsilon` (used to package the
 existential axioms `Separation`/`Powerset` as the operators `sep`/`power`, and, in
@@ -173,21 +228,23 @@ Choice* above). In `Reverse.v` the bounding function is a convenience: the
 underlying ZF argument needs only the choice-free Collection schema, so no
 object-level Choice is incurred.
 
-## Closing the first-order gap (`Deep.v`)
+## Closing the first-order gap (`Fol.v` + `Equivalence.v`)
 
-`Deep.v` removes the second-order rendering for the forward direction. It defines
+The deep embedding removes the second-order rendering for the forward direction.
+[`Fol.v`](Fol.v) supplies the language — a `form` datatype for the first-order
+language of set theory (`=`, `∈`, with De Bruijn variables) and a Tarski
+satisfaction relation `Sat : (nat→V) → form → Prop` — and
+[`Equivalence.v`](Equivalence.v)'s `DeepForward` section states T's schemas
+`SeparationFO` and `ClosureFO` over genuine **formulas** `phi`, `psi`
+(interpreted by `Sat`/`relOf`), not over arbitrary `V→Prop`.
 
-- a `form` datatype for the first-order language of set theory (`=`, `∈`, with De
-  Bruijn variables) and a Tarski satisfaction relation `Sat : (nat→V) → form → Prop`;
-- the schemas `SeparationFO` and `ClosureFO` quantifying over genuine **formulas**
-  `phi`, `psi` (interpreted by `Sat`/`relOf`), not over arbitrary `V→Prop`.
-
-It then re-derives Pairing, Union, **first-order Replacement**, and Infinity from
+[`Equivalence.v`](Equivalence.v) (section `DeepForward`) then re-derives Pairing,
+Union, **first-order Replacement**, and Infinity from
 those first-order schemas, *exhibiting the relation each step uses as a concrete
 formula* and verifying its `Sat`-meaning (`Hrel_pair`, `Hrel_mem`, `Hrel_succ`, and
 for Replacement the renamed graph via `Sat_rename`/`chi_spec`). This certifies
 formally — not as a meta-remark — that the schema-trade uses only **first-order
-definable** instances. The development is self-contained: `form`, `Sat`, the
+definable** instances. `Fol.v` supplies everything the trade needs: `form`, `Sat`, the
 environment-extensionality lemma `Sat_ext`, and a De Bruijn renaming lemma
 `Sat_rename` (the one piece Replacement needs, to express "∃x∈a, ψ(y,x)" as a
 formula).
@@ -199,13 +256,13 @@ of Replacement is essential, and the collected map `n ↦ Wₙ` is first-order
 definable only through the *syntactic recursion theorem*. `Reverse.v` deliberately
 sidesteps that with a meta-level `nat` iteration; rendering it first-order means
 formalizing the recursion theorem's defining formula — the genuinely heavy
-object-level construction. That construction is now done: [`DeepReverse.v`](DeepReverse.v)
+object-level construction. That construction is now done: [`Zf.v`](Zf.v)
 builds the defining formula for real (see below), so the first-order content of the
 reverse direction — the recursion theorem — is machine-checked too.
 
-## A proof calculus, soundness, and a cross-theory corollary (`Deep.v`)
+## A proof calculus, soundness, and a cross-theory corollary (`Calculus.v` + `Equivalence.v`)
 
-`Deep.v` also carries a genuine **syntactic** layer:
+[`Calculus.v`](Calculus.v) carries the genuine **syntactic** layer:
 
 - `Prov : list form → form → Prop`, a natural-deduction calculus over `form`
   (assumption, `→`/`∧`/`∨`/`∀`/`∃` intro+elim, ex falso, excluded middle,
@@ -235,14 +292,14 @@ This combines the syntactic `soundness` with the forward semantic equivalence.
 
 The symmetric corollary needs "every ZF-model satisfies `ClosureFO`", i.e. the
 *deep reverse* direction — the recursion theorem as a first-order formula, proved
-in [`DeepReverse.v`](DeepReverse.v) (`ZFmodel_sat_Closure`).
+in [`Zf.v`](Zf.v) and applied in [`Equivalence.v`](Equivalence.v)
+(`ZFmodel_sat_Closure`).
 
 ## Completeness (`Completeness.v`)
 
-[`Completeness.v`](Completeness.v) builds **Gödel completeness** for the `Deep.v`
-calculus from scratch (requires the `SetTheory` namespace:
-`coqc -Q . SetTheory Deep.v` then `coqc -Q . SetTheory Completeness.v`). The
-headline results:
+[`Completeness.v`](Completeness.v) builds **Gödel completeness** for the
+`Calculus.v` calculus from scratch — a fully generic module: nothing in it
+mentions any particular theory. The headline results:
 
 ```coq
 completeness   : (forall Dom m v, (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi)
@@ -251,22 +308,23 @@ prov_iff_valid : Prov G phi <-> (forall Dom m v, (... |= G) -> Sat Dom m v phi).
 ```
 
 i.e. **a formula is provable in the calculus iff it is valid in every model** —
-soundness (`Deep.v`) and completeness together. The development:
+soundness (`Calculus.v`) and completeness together. The development:
 
-1. **Proof-theory infrastructure** — weakening, deduction theorem,
-   proof-by-contradiction, double-negation, consistency (`Con`), the Lindenbaum step
-   `Con_cons_or`, the equality kit (symmetry/transitivity/congruence — derivable
-   only after `Deep.v`'s equality rule was corrected to the Leibniz `P_eqElim`),
+1. **Proof-theory infrastructure** (in `Calculus.v`) — weakening, deduction
+   theorem, proof-by-contradiction, double-negation, consistency (`Con`), the
+   Lindenbaum step `Con_cons_or`, the equality kit
+   (symmetry/transitivity/congruence — derivable only after the calculus's
+   equality rule was corrected to the Leibniz `P_eqElim`),
    renaming-admissibility `Prov_rename`, and cut `Prov_cut`.
 2. **Model existence** `model_exists` (abstract maximal-consistent Henkin theory):
    a quotient term model (domain = canonical `ceq`-representatives via Hilbert ε,
    `D = {n | rep n = n}`) and the **truth lemma** by strong induction on formula
    size (renaming preserves size, so the De Bruijn quantifier cases recurse).
 3. **Lindenbaum/Henkin** — a Cantor-pairing formula enumeration (`Enum`,
-   surjective), the eigenvariable lemma and Henkin witness lemmas (`henkin_ex`,
-   `henkin_all`, from `Prov_rename` + freshness), and the chain `chain G0 n` whose
-   limit theory `TL` is shown maximal-consistent and Henkin (all five
-   `model_exists` hypotheses).
+   surjective, from `Fol.v`), the eigenvariable lemma and Henkin witness lemmas
+   (`henkin_ex`, `henkin_all`, from `Prov_rename` + freshness, in `Calculus.v`),
+   and the chain `chain G0 n` whose limit theory `TL` is shown
+   maximal-consistent and Henkin (all five `model_exists` hypotheses).
 4. **Completeness** — `model_of_con` (a consistent set has a model), then the
    contrapositive gives `completeness`, and with soundness, `prov_iff_valid`.
 5. **Infinite completeness (compactness)** — lifting completeness from finite
@@ -277,20 +335,22 @@ soundness (`Deep.v`) and completeness together. The development:
    `completeness_inf : Sentences B → Sentence φ → (B ⊨ φ) → B ⊢ φ`, and
    `theory_equiv` — **two sentence theories with the same models prove the same
    sentences.**
-6. **`ZF ⊢ φ ⟹ T ⊢ φ`** — `ZF` and `T` are encoded as sentence theories
-   (`ZFax_s`, `Tax_s`), every axiom universally closed by `seal` (the Closure
-   schema as the closed formula `Closure_form`). `Tmodel_sat_ZF` proves *every
-   T-model is a ZF-model* (extract the abstract axioms from a T-model through the
-   `bridge_*` lemmas, then reapply `Deep.v`'s derived `sat_*`), and then soundness +
-   `completeness_inf` give `ZF_implies_T`.
+
+The syntactic endgame **`ZF ⊢ φ ⟹ T ⊢ φ`** is then played out downstream: `ZF`
+and `T` are encoded as sentence theories (`ZFax_s` in `Zf.v`, `Tax_s` in
+`Equivalence.v`), every axiom universally closed by `seal` (the Closure schema as
+the closed formula `Closure_form`). `Tmodel_sat_ZF` (in `Equivalence.v`) proves
+*every T-model is a ZF-model* (extract the abstract axioms from a T-model through
+the `bridge_*` lemmas, then reapply the derived `sat_*` of the forward trade), and
+then soundness + `completeness_inf` give `ZF_implies_T`.
 
 `Print Assumptions` lists only the standard classical-mathematics axioms (`classic`,
 `constructive_indefinite_description`, and `functional_extensionality` /
 `propositional_extensionality` / `proof_irrelevance`) — no `Admitted` anywhere.
 
-## The deep reverse: the recursion theorem as a first-order formula (`DeepReverse.v`)
+## The deep reverse: the recursion theorem as a first-order formula (`Zf.v` + `Equivalence.v`)
 
-[`DeepReverse.v`](DeepReverse.v) closes the last gap: **every first-order model of
+[`Zf.v`](Zf.v) and [`Equivalence.v`](Equivalence.v) close the last gap: **every first-order model of
 ZF satisfies every instance of `Closure_form`** (`ZFmodel_sat_Closure`), hence
 **`T ⊢ φ ⟹ ZF ⊢ φ`** (`T_implies_ZF`) and the full deductive equivalence
 
@@ -302,7 +362,7 @@ T_iff_ZF : forall phi, Sentence phi ->
 `Reverse.v` proves Closure from *second-order* Replacement, iterating the one-step
 operator `g` on the metatheory's `nat` and collecting the stages with a
 metatheoretic map — which a first-order model need not supply (a nonstandard model
-has stages at nonstandard levels the meta-`nat` never reaches). `DeepReverse.v`
+has stages at nonstandard levels the meta-`nat` never reaches). `Zf.v`
 instead runs the iteration **inside** an arbitrary first-order ZF model — the
 finite recursion theorem rendered with genuine syntactic formulas:
 
@@ -335,7 +395,7 @@ Two structural points worth noting:
 
 - **The one-step operator is canonical.** `Reverse.v` fed a *choice* of
   predecessor-bounds (Hilbert ε on set-likeness) through second-order Replacement.
-  First-order Replacement cannot swallow a choice function, so `DeepReverse.v`
+  First-order Replacement cannot swallow a choice function, so `Zf.v`
   uses the canonical predecessor set `predSet v = { z : z ≺ v }` (carved by
   Separation inside an ε-chosen bound, but unique by Extensionality) and the
   definable graph formula "y = predSet(x)" (`psiPS`) — the ε leaks nothing into
@@ -345,8 +405,8 @@ Two structural points worth noting:
   sharpening *ZF − Powerset − Regularity ⊢ Closure* at the first-order level
   (visible in the `Check ClosureFO_of_ZF` output).
 
-With `ZFmodel_sat_T` (every ZF-model is a T-model) and `Tmodel_sat_ZF` from
-`Completeness.v`, the two theories have **exactly the same models**
+With `ZFmodel_sat_T` (every ZF-model is a T-model) and the converse
+`Tmodel_sat_ZF` (both in `Equivalence.v`), the two theories have **exactly the same models**
 (`T_ZF_same_models`); `T_iff_ZF` also falls out of the general `theory_equiv` as a
 cross-check (`T_iff_ZF_via_theory_equiv`). `Print Assumptions T_iff_ZF` lists only
 the same five classical axioms — no `Admitted` anywhere.
@@ -357,15 +417,18 @@ Machine-checked, no admits — the table is closed everywhere:
 
 - The equivalence **semantically**, both directions: `Forward.v` (T ⟹ ZF axioms)
   and `Reverse.v` (ZF ⟹ Closure).
-- The forward direction with **genuine first-order schemas**: `Deep.v`.
-- A **sound** proof calculus and the bridge `ZF ⊢ φ ⟹ T ⊨ φ`: `Deep.v`.
+- The forward direction with **genuine first-order schemas**: `Fol.v` +
+  `Equivalence.v`.
+- A **sound** proof calculus and the bridge `ZF ⊢ φ ⟹ T ⊨ φ`: `Calculus.v` +
+  `Equivalence.v`.
 - **Soundness + completeness** for the calculus, `Prov G φ ⟺ G ⊨ φ`; **infinite
-  completeness** (compactness) for sentence theories; the **deductive equivalence of
-  same-model sentence theories**; and the forward syntactic direction
-  **`ZF ⊢ φ ⟹ T ⊢ φ`**: `Completeness.v`.
+  completeness** (compactness) for sentence theories; and the **deductive
+  equivalence of same-model sentence theories**: `Completeness.v`.
+- The forward syntactic direction **`ZF ⊢ φ ⟹ T ⊢ φ`** (`ZF_implies_T`):
+  `Equivalence.v`, on `Completeness.v`'s machinery.
 - The **deep reverse** (every FO ZF model satisfies `Closure_form`; the internal
   recursion theorem), the converse **`T ⊢ φ ⟹ ZF ⊢ φ`**, and the headline
-  **`T ⊢ φ ⟺ ZF ⊢ φ`** (`T_iff_ZF`): `DeepReverse.v`.
+  **`T ⊢ φ ⟺ ZF ⊢ φ`** (`T_iff_ZF`): `Zf.v` + `Equivalence.v`.
 
 ## A written account
 
@@ -376,11 +439,11 @@ formalization: the equivalence theorem, the four derivations as one
 schema-instance family, the "how much Powerset?" analysis (the forward trade needs
 only hosting — not full, nor even finite, Powerset — and Regularity and Choice are
 passengers used in neither direction), the reverse transitive-closure recursion,
-and then a section-by-section walkthrough of all five Coq developments (the shallow
+and then a section-by-section walkthrough of the whole Coq library (the shallow
 embedding and the free dependency audit, the deep embedding closing the first-order
 gap, the proof calculus and soundness, the from-scratch Gödel completeness /
 compactness / `ZF ⊢ φ ⟹ T ⊢ φ` layer, and the deep reverse — the recursion theorem
-as a first-order formula, closing `T ⊢ φ ⟺ ZF ⊢ φ`). Build it with
+as a first-order formula, closing `T ⊢ φ ⟺ ZF ⊢ φ`), including the module map. Build it with
 `lualatex closure-axiomatization.tex` (run twice for the table of contents and
 cross-references).
 
@@ -389,18 +452,21 @@ cross-references).
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 
 ```sh
+# the shallow layer is self-contained:
 coqc Forward.v
 coqc Reverse.v
-coqc Deep.v
-# Completeness.v and DeepReverse.v build on Deep via the SetTheory namespace:
-coqc -Q . SetTheory Deep.v
+# the library builds in dependency order under the SetTheory namespace:
+coqc -Q . SetTheory Fol.v
+coqc -Q . SetTheory Calculus.v
 coqc -Q . SetTheory Completeness.v
-coqc -Q . SetTheory DeepReverse.v
+coqc -Q . SetTheory Zf.v
+coqc -Q . SetTheory Equivalence.v
 ```
 
-`Forward.v`, `Reverse.v`, `Deep.v` are independent (no inter-file `Require`) and need
-only the standard library. `Completeness.v` `Require`s `Deep` (hence the `-Q`
-namespace) and additionally uses the standard classical/extensionality axiom modules
-(`ClassicalEpsilon`, `FunctionalExtensionality`, `PropExtensionality`,
-`ProofIrrelevance`) for the quotient term model — all consistent with the classical
-setting already in use. `DeepReverse.v` `Require`s both `Deep` and `Completeness`.
+`Forward.v` and `Reverse.v` are independent (no inter-file `Require`) and need only
+the standard library. The library files import along the DAG shown above
+(`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
+`Equivalence`). `Completeness.v` additionally uses the standard
+classical/extensionality axiom modules (`ClassicalEpsilon`,
+`FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the
+quotient term model — all consistent with the classical setting already in use.

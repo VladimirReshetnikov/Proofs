@@ -1,58 +1,164 @@
 (* ===================================================================== *)
-(*  DeepReverse.v                                                         *)
+(*  Zf.v                                                                  *)
 (*                                                                       *)
-(*  The DEEP REVERSE direction: every first-order model of ZF satisfies   *)
-(*  every instance of the Closure schema `Closure_form psi` -- and hence  *)
-(*  (with completeness_inf from Completeness.v) the converse syntactic    *)
-(*  direction  T |- phi  ->  ZF |- phi,  closing the last gap in          *)
-(*      T |- phi  <->  ZF |- phi.                                         *)
+(*  FIRST-ORDER ZF, independent of the Closure axiomatization T:          *)
 (*                                                                       *)
-(*  Reverse.v proves Closure from SECOND-order Replacement, iterating the *)
-(*  one-step operator g on the metatheory's `nat` and collecting the      *)
-(*  stages with a metatheoretic map -- which a first-order model need not *)
-(*  supply.  Here the iteration is carried out INSIDE an arbitrary        *)
-(*  first-order ZF model: this file is the finite recursion theorem       *)
-(*  rendered with genuine first-order formulas.  The ingredients:         *)
+(*   - the ZF axioms as formulas (Ext_form ... Reg_form, with the         *)
+(*     Separation and Replacement schemas over `form`), the axiom set     *)
+(*     `ZFax` and provability `ZFprov`, and the SENTENCE theory `ZFax_s`  *)
+(*     (every axiom universally closed by `seal`);                        *)
+(*   - extraction bridges: satisfaction of each (open) axiom formula in   *)
+(*     a structure (V, mem) is equivalent to the abstract semantic axiom  *)
+(*     (`bridge_Ext_fwd` ... `bridge_Repl_fwd`);                          *)
+(*   - INTERNAL MATHEMATICS of an arbitrary first-order model of          *)
+(*     {Ext, Sep, Pair, Union, Inf, Repl} (note: no Powerset, no          *)
+(*     Regularity): internal set algebra, Kuratowski pairs with           *)
+(*     injectivity, an internal omega with the definable-induction        *)
+(*     schema `omega_ind`, a formula-macro library with satisfaction      *)
+(*     specs, and the FINITE RECURSION THEOREM (approximations `Approx`,  *)
+(*     existence + agreement, functional stage relation Theta), giving    *)
 (*                                                                       *)
-(*   1. internal set algebra: pairs, unions, successors, and Kuratowski   *)
-(*      ordered pairs `kpair` with machine-checked injectivity;           *)
-(*   2. an internal omega, carved out of the Infinity witness by the      *)
-(*      FORMULA "x belongs to every inductive set", giving a definable-   *)
-(*      induction schema `omega_ind` (induction for any property that is  *)
-(*      first-order definable with parameters -- the engine that replaces *)
-(*      the meta-level `nat`);                                            *)
-(*   3. a formula-macro library with satisfaction specs (fEmptyF,         *)
-(*      fSingF, fUPairF, fKPairF, fPairMemF, fSuccF, fInd, and --         *)
-(*      relative to the closure relation psi -- fRF, fStepF, fApproxF,    *)
-(*      fThetaF): the recursion theorem's defining formula, built for     *)
-(*      real, clause by clause;                                           *)
-(*   4. `Approx f m` -- f is a function on {0,...,m} recording the        *)
-(*      stages of the iteration -- with existence and uniqueness proved   *)
-(*      by internal induction; uniqueness makes the stage relation Theta  *)
-(*      FUNCTIONAL, which is exactly what first-order Replacement needs   *)
-(*      to collect the stages into the closure set  w = U {W_m : m in w}. *)
+(*       ClosureFO_of_ZF : every definable set-like relation admits a     *)
+(*       closure superset of any seed -- inside every such model.         *)
 (*                                                                       *)
-(*  Neither Powerset nor Regularity is used: the model-side hypothesis    *)
-(*  list is {Ext, Sep, Pair, Union, Inf, Repl}, so the deep reverse       *)
-(*  inherits the sharpening  ZF - Powerset - Regularity |- Closure.       *)
+(*  These are reusable tools for interpreting or proving ANY schema in    *)
+(*  first-order ZF models, not just the Closure schema of Equivalence.v.  *)
 (*                                                                       *)
-(*  Build:  coqc -Q . SetTheory Deep.v                                    *)
-(*          coqc -Q . SetTheory Completeness.v                            *)
-(*          coqc -Q . SetTheory DeepReverse.v                             *)
-(*                                                                       *)
-(*  - Created (UTC): 2026-07-01T20:33:29Z                                 *)
-(*  - Repository HEAD: 0508384514368c8f742bbe461bfb46e672fed4df           *)
+(*  - Created (UTC): 2026-07-01T21:20:00Z                                 *)
+(*  - Repository HEAD: c73d98802cf8385db7100480fdc5019105812718           *)
 (* ===================================================================== *)
 
-From SetTheory Require Import Deep Completeness.
+From SetTheory Require Import Fol Calculus.
 From Stdlib Require Import List Setoid ClassicalEpsilon.
 Import ListNotations.
 
-(* ===================================================================== *)
-(*  Part A.  Extraction bridges for the four generative ZF axioms.        *)
-(*  (Ext / Sep / Pow / Reg / Closure already have bridges in              *)
-(*  Completeness.v; here we add Pair / Union / Inf / Repl.)               *)
-(* ===================================================================== *)
+(* ================= the ZF axioms as first-order formulas ============== *)
+
+
+(* renamings used to place a schema's formula under fresh binders *)
+Definition rsep : nat -> nat := fun n => match n with O => O | S i => S (S (S i)) end.
+Definition rf1  : nat -> nat := fun n => match n with O => 1 | 1 => 2 | S (S j) => S (S (S j)) end.
+Definition rf2  : nat -> nat := fun n => match n with O => O | 1 => 2 | S (S j) => S (S (S j)) end.
+Definition ri   : nat -> nat := fun n => match n with O => 1 | 1 => O | S (S j) => S (S (S (S j))) end.
+
+(* environment lemmas for the schema renamings *)
+Section EnvLemmas.
+
+Variable V : Type.
+Local Notation scons := (Fol.scons V).
+
+Lemma rsep_env : forall dx s da (e : nat -> V) n,
+  scons dx (scons s (scons da e)) (rsep n) = scons dx e n.
+Proof. intros. destruct n; reflexivity. Qed.
+
+Lemma rf1_env : forall y2 y1 x (e : nat -> V) n,
+  scons y2 (scons y1 (scons x e)) (rf1 n) = scons y1 (scons x e) n.
+Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+Lemma rf2_env : forall y2 y1 x (e : nat -> V) n,
+  scons y2 (scons y1 (scons x e)) (rf2 n) = scons y2 (scons x e) n.
+Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+Lemma ri_env : forall x y r a (e : nat -> V) n,
+  scons x (scons y (scons r (scons a e))) (ri n) = scons y (scons x e) n.
+Proof. intros. destruct n as [| [| j]]; reflexivity. Qed.
+
+End EnvLemmas.
+
+(* --- the ZF axioms as closed formulas --- *)
+
+(* --- the ZF axioms as closed formulas --- *)
+
+Definition Ext_form : form :=
+  fAll (fAll (fImp (fAll (fIff (fMem 0 2) (fMem 0 1))) (fEq 1 0))).
+Definition Pair_form : form :=
+  fAll (fAll (fEx (fAll (fIff (fMem 0 1) (fOr (fEq 0 3) (fEq 0 2)))))).
+Definition Union_form : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fEx (fAnd (fMem 1 0) (fMem 0 3)))))).
+Definition Pow_form : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fAll (fImp (fMem 0 1) (fMem 0 3)))))).
+Definition Inf_form : form :=
+  fEx (fAnd
+        (fEx (fAnd (fMem 0 1) (fAll (fImp (fMem 0 1) fBot))))
+        (fAll (fImp (fMem 0 1)
+                 (fEx (fAnd (fMem 0 2)
+                         (fAll (fIff (fMem 0 1) (fOr (fMem 0 2) (fEq 0 2))))))))).
+Definition Reg_form : form :=
+  fAll (fImp (fEx (fMem 0 1))
+          (fEx (fAnd (fMem 0 1)
+                  (fImp (fEx (fAnd (fMem 0 1) (fMem 0 2))) fBot)))).
+Definition Sep_form (phi : form) : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fAnd (fMem 0 2) (rename rsep phi))))).
+Definition Func_form (psi : form) : form :=
+  fAll (fAll (fAll (fImp (fAnd (rename rf1 psi) (rename rf2 psi)) (fEq 1 0)))).
+Definition Image_form (psi : form) : form :=
+  fAll (fEx (fAll (fIff (fMem 0 1) (fEx (fAnd (fMem 0 3) (rename ri psi)))))).
+Definition Repl_form (psi : form) : form := fImp (Func_form psi) (Image_form psi).
+
+(* --- the ZF axiom set: list-context provability, and as a sentence theory --- *)
+
+(* --- the ZF axiom set, ZF-provability, and the corollary --- *)
+
+Definition ZFax (f : form) : Prop :=
+  f = Ext_form \/ f = Pair_form \/ f = Union_form \/ f = Pow_form \/
+  f = Inf_form \/ f = Reg_form \/
+  (exists phi, f = Sep_form phi) \/ (exists psi, f = Repl_form psi).
+Definition ZFprov (phi : form) : Prop :=
+  exists G, (forall x, In x G -> ZFax x) /\ Prov G phi.
+Definition ZFax_s (f : form) : Prop :=
+  f = seal Ext_form \/ f = seal Reg_form \/ f = seal Pow_form \/
+  f = seal Pair_form \/ f = seal Union_form \/ f = seal Inf_form \/
+  (exists phi, f = seal (Sep_form phi)) \/ (exists psi, f = seal (Repl_form psi)).
+Lemma Sentences_ZF : Sentences ZFax_s.
+Proof.
+  intros f Hf.
+  destruct Hf as [->|[->|[->|[->|[->|[->|[[phi ->]|[psi ->]]]]]]]]; apply Sentence_seal.
+Qed.
+
+(* ===== extraction bridges: open-axiom satisfaction <-> semantic axioms ==== *)
+
+(* --- bridges: model satisfaction of the (open) axioms <-> abstract axioms --- *)
+
+Lemma bridge_Ext_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Ext_form) ->
+    (forall a b, (forall x, mem x a <-> mem x b) -> a = b).
+Proof. intros V mem H a b Hab. exact (H (fun _ => a) a b Hab). Qed.
+
+Lemma bridge_Pow_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Pow_form) ->
+    (forall a, exists p, forall x, mem x p <-> Sub V mem x a).
+Proof. intros V mem H a. exact (H (fun _ => a) a). Qed.
+
+Lemma bridge_Reg_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Reg_form) ->
+    (forall a, (exists x, mem x a) -> exists m, mem m a /\ ~ (exists z, mem z m /\ mem z a)).
+Proof. intros V mem H a. exact (H (fun _ => a) a). Qed.
+
+Lemma rsep_rel :
+  forall (V : Type) (mem : V -> V -> Prop) phi x s da e,
+    Sat V mem (scons V x (scons V s (scons V da e))) (rename rsep phi)
+    <-> Sat V mem (scons V x e) phi.
+Proof.
+  intros V mem phi x s da e.
+  rewrite (Sat_rename V mem phi rsep (scons V x (scons V s (scons V da e)))).
+  apply (Sat_ext V mem phi
+           (fun n => scons V x (scons V s (scons V da e)) (rsep n))
+           (scons V x e) (rsep_env V x s da e)).
+Qed.
+
+Lemma bridge_Sep_fwd :
+  forall (V : Type) (mem : V -> V -> Prop), (forall phi e, Sat V mem e (Sep_form phi)) ->
+    (forall phi e a, exists s, forall x, mem x s <-> (mem x a /\ Sat V mem (scons V x e) phi)).
+Proof.
+  intros V mem H phi e a.
+  pose proof (H phi e) as He. unfold Sep_form, fIff in He. cbn [Sat] in He.
+  destruct (He a) as [s Hs]. exists s. intro x. specialize (Hs x). split.
+  - intro Hin. destruct (proj1 Hs Hin) as [Hxa Hsat]. split;
+      [ exact Hxa | apply (proj1 (rsep_rel V mem phi x s a e)); exact Hsat ].
+  - intros [Hxa Hsat]. apply (proj2 Hs). split;
+      [ exact Hxa | apply (proj2 (rsep_rel V mem phi x s a e)); exact Hsat ].
+Qed.
+(* --- bridges for the four generative axioms --- *)
 
 Lemma bridge_Pair_fwd :
   forall (V : Type) (mem : V -> V -> Prop),
@@ -107,13 +213,13 @@ Proof.
   assert (Hfunc : Sat V mem e (Func_form psi)).
   { unfold Func_form. cbn [Sat]. intros x y1 y2 [H1 H2].
     apply (Hfun x y1 y2).
-    - rewrite (Sat_rename V mem y2 psi rf1 (scons V y2 (scons V y1 (scons V x e)))) in H1.
-      rewrite (Sat_ext V mem y2 psi
+    - rewrite (Sat_rename V mem psi rf1 (scons V y2 (scons V y1 (scons V x e)))) in H1.
+      rewrite (Sat_ext V mem psi
                  (fun n => scons V y2 (scons V y1 (scons V x e)) (rf1 n))
                  (scons V y1 (scons V x e)) (rf1_env V y2 y1 x e)) in H1.
       exact H1.
-    - rewrite (Sat_rename V mem y2 psi rf2 (scons V y2 (scons V y1 (scons V x e)))) in H2.
-      rewrite (Sat_ext V mem y2 psi
+    - rewrite (Sat_rename V mem psi rf2 (scons V y2 (scons V y1 (scons V x e)))) in H2.
+      rewrite (Sat_ext V mem psi
                  (fun n => scons V y2 (scons V y1 (scons V x e)) (rf2 n))
                  (scons V y2 (scons V x e)) (rf2_env V y2 y1 x e)) in H2.
       exact H2. }
@@ -122,25 +228,25 @@ Proof.
   exists r. intro y. specialize (Himg y). split.
   - intro Hy. destruct (proj1 Himg Hy) as [x [Hxa Hsat]].
     exists x. split; [ exact Hxa | ].
-    rewrite (Sat_rename V mem x psi ri (scons V x (scons V y (scons V r (scons V a e))))) in Hsat.
-    rewrite (Sat_ext V mem x psi
+    rewrite (Sat_rename V mem psi ri (scons V x (scons V y (scons V r (scons V a e))))) in Hsat.
+    rewrite (Sat_ext V mem psi
                (fun n => scons V x (scons V y (scons V r (scons V a e))) (ri n))
                (scons V y (scons V x e)) (ri_env V x y r a e)) in Hsat.
     exact Hsat.
   - intros [x [Hxa Hrel]]. apply (proj2 Himg). exists x. split; [ exact Hxa | ].
-    rewrite (Sat_rename V mem x psi ri (scons V x (scons V y (scons V r (scons V a e))))).
-    rewrite (Sat_ext V mem x psi
+    rewrite (Sat_rename V mem psi ri (scons V x (scons V y (scons V r (scons V a e))))).
+    rewrite (Sat_ext V mem psi
                (fun n => scons V x (scons V y (scons V r (scons V a e))) (ri n))
                (scons V y (scons V x e)) (ri_env V x y r a e)).
     exact Hrel.
 Qed.
 
 (* ===================================================================== *)
-(*  Part B.  Inside an arbitrary first-order ZF model:                    *)
-(*  the internal finite recursion theorem, and Closure.                   *)
+(*  Inside an arbitrary first-order ZF model (no Powerset, no             *)
+(*  Regularity): the internal finite recursion theorem, and closure of    *)
+(*  any seed under any definable set-like relation.                       *)
 (* ===================================================================== *)
-
-Section DeepReverse.
+Section ZfModel.
 
 Variable V : Type.
 Variable mem : V -> V -> Prop.
@@ -637,9 +743,9 @@ Proof.
   assert (Hin : forall u,
       Sat V mem (SC u (SC y (SC x eC))) (rename rPS psiC) <-> RC u x).
   { intro u.
-    rewrite (Sat_rename V mem vempty psiC rPS (SC u (SC y (SC x eC)))).
+    rewrite (Sat_rename V mem psiC rPS (SC u (SC y (SC x eC)))).
     unfold relOf.
-    apply (Sat_ext V mem vempty psiC).
+    apply (Sat_ext V mem psiC).
     intro n. destruct n as [| [| k]]; reflexivity. }
   split.
   - intros H u. specialize (H u). specialize (Hin u). tauto.
@@ -705,9 +811,9 @@ Lemma fRF_spec :
     (SAT ee (fRF i j off) <-> RC (ee i) (ee j)).
 Proof.
   intros ee i j off Hoff. unfold fRF.
-  rewrite (Sat_rename V mem vempty psiC (rRF i j off) ee).
+  rewrite (Sat_rename V mem psiC (rRF i j off) ee).
   unfold relOf.
-  apply (Sat_ext V mem vempty psiC).
+  apply (Sat_ext V mem psiC).
   intro n. destruct n as [| [| k]]; cbn.
   - reflexivity.
   - reflexivity.
@@ -1173,117 +1279,6 @@ Qed.
 
 End FixedRelation.
 
-End DeepReverse.
+End ZfModel.
 
 Check ClosureFO_of_ZF.
-
-(* ===================================================================== *)
-(*  Part C.  Every first-order ZF model satisfies the Closure schema,     *)
-(*  hence is a T-model; with completeness_inf this yields the converse    *)
-(*  syntactic direction and the full deductive equivalence.               *)
-(* ===================================================================== *)
-
-(* every ZF model satisfies every instance of the (open) Closure formula *)
-Lemma ZFmodel_sat_Closure :
-  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
-    (forall g, ZFax_s g -> Sat V mem v g) ->
-    forall psi (e : nat -> V), Sat V mem e (Closure_form psi).
-Proof.
-  intros V mem v HZ psi e.
-  assert (AxE : forall a b, (forall x, mem x a <-> mem x b) -> a = b).
-  { apply bridge_Ext_fwd.
-    apply (extract ZFax_s V mem v Ext_form HZ). left. reflexivity. }
-  assert (AxS : forall (phi : form) (e' : nat -> V) (a : V),
-             exists s, forall x, mem x s <-> (mem x a /\ Sat V mem (scons V x e') phi)).
-  { apply bridge_Sep_fwd. intros phi e'.
-    apply (extract ZFax_s V mem v (Sep_form phi) HZ).
-    do 6 right. left. exists phi. reflexivity. }
-  assert (AxP : forall a b, exists p, forall x, mem x p <-> (x = a \/ x = b)).
-  { apply bridge_Pair_fwd.
-    apply (extract ZFax_s V mem v Pair_form HZ). do 3 right. left. reflexivity. }
-  assert (AxU : forall u, exists w, forall x, mem x w <-> exists y, mem x y /\ mem y u).
-  { apply bridge_Union_fwd.
-    apply (extract ZFax_s V mem v Union_form HZ). do 4 right. left. reflexivity. }
-  assert (AxI : exists I,
-             (exists e0, mem e0 I /\ forall z, ~ mem z e0) /\
-             (forall x, mem x I ->
-                exists sx, mem sx I /\ forall t, mem t sx <-> (mem t x \/ t = x))).
-  { apply (bridge_Inf_fwd V mem v).
-    apply (extract ZFax_s V mem v Inf_form HZ).
-    do 5 right. left. reflexivity. }
-  assert (AxR : forall (psi' : form) (e' : nat -> V),
-             Functional V (relOf V mem psi' e') ->
-             forall a, exists r, forall y,
-               mem y r <-> exists x, mem x a /\ relOf V mem psi' e' y x).
-  { apply bridge_Repl_fwd. intros psi' e'.
-    apply (extract ZFax_s V mem v (Repl_form psi') HZ).
-    do 7 right. exists psi'. reflexivity. }
-  apply (proj2 (bridge_Closure V mem psi e)).
-  intros HSL s.
-  exact (ClosureFO_of_ZF V mem AxE AxS AxP AxU AxI AxR psi e HSL s).
-Qed.
-
-(* every ZF-model is a T-model (converse of Tmodel_sat_ZF) *)
-Lemma ZFmodel_sat_T :
-  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
-    (forall g, ZFax_s g -> Sat V mem v g) ->
-    forall g, Tax_s g -> Sat V mem v g.
-Proof.
-  intros V mem v HZ g Hg.
-  destruct Hg as [-> | [-> | [-> | [[phi ->] | [psi ->]]]]].
-  - apply HZ. left. reflexivity.
-  - apply HZ. right; left. reflexivity.
-  - apply HZ. right; right; left. reflexivity.
-  - apply HZ. do 6 right. left. exists phi. reflexivity.
-  - exact (proj2 (closeN_valid V mem (bound (Closure_form psi)) (Closure_form psi))
-                 (ZFmodel_sat_Closure V mem v HZ psi) v).
-Qed.
-
-(* T and ZF have exactly the same models *)
-Theorem T_ZF_same_models :
-  forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
-    (forall g, Tax_s g -> Sat Dom m v g) <-> (forall g, ZFax_s g -> Sat Dom m v g).
-Proof.
-  intros Dom m v. split.
-  - exact (Tmodel_sat_ZF Dom m v).
-  - exact (ZFmodel_sat_T Dom m v).
-Qed.
-
-(* THE CONVERSE SYNTACTIC DIRECTION: everything T proves, ZF proves. *)
-Theorem T_implies_ZF :
-  forall phi, Sentence phi -> BProv Tax_s nil phi -> BProv ZFax_s nil phi.
-Proof.
-  intros phi Hphi HT.
-  apply completeness_inf; [ exact Sentences_ZF | exact Hphi | ].
-  intros Dom m v HZsat.
-  destruct HT as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
-  apply (soundness Dom m (v 0) Gb phi Hp v).
-  intros x Hx. apply (ZFmodel_sat_T Dom m v HZsat). apply HGb. exact Hx.
-Qed.
-
-(* THE HEADLINE: deductive equivalence of T and ZF, both directions. *)
-Theorem T_iff_ZF :
-  forall phi, Sentence phi -> (BProv Tax_s nil phi <-> BProv ZFax_s nil phi).
-Proof.
-  intros phi Hphi. split.
-  - exact (T_implies_ZF phi Hphi).
-  - exact (ZF_implies_T phi Hphi).
-Qed.
-
-(* cross-check: the same equivalence, derived instead as an instance of    *)
-(* the general same-models theorem `theory_equiv` from Completeness.v      *)
-Theorem T_iff_ZF_via_theory_equiv :
-  forall phi, Sentence phi -> (BProv Tax_s nil phi <-> BProv ZFax_s nil phi).
-Proof.
-  exact (theory_equiv Tax_s ZFax_s Sentences_Tax Sentences_ZF T_ZF_same_models).
-Qed.
-
-Check ZFmodel_sat_Closure.
-Check ZFmodel_sat_T.
-Check T_ZF_same_models.
-Check T_implies_ZF.
-Check T_iff_ZF.
-Print Assumptions T_iff_ZF.
-
-
-
