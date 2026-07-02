@@ -1,0 +1,122 @@
+# SetTheory — Lean 4 port
+
+- Created (UTC): 2026-07-02T02:12:50Z
+- Repository HEAD: 50a14cc6ba5c0dfca20cafd0a24df7b224a5e817
+
+A complete Lean 4 port of the Rocq/Coq development in [`../`](../) —
+Vladimir Reshetnikov's **"Closure" axiomatization of set theory and its
+machine-checked equivalence with ZF**, up to and including the headline
+syntactic theorem
+
+```lean
+theorem T_iff_ZF (phi : Form) (hphi : Sentence phi) :
+    BProv Tax_s [] phi ↔ BProv ZFax_s [] phi
+```
+
+— *T and ZF prove exactly the same sentences* — plus the Gödel-completeness
+library it stands on. Every Coq statement has a Lean counterpart with the
+same logical content; no `sorry`, no extra axioms.
+
+## Module map
+
+| Lean module | Coq file | contents |
+|---|---|---|
+| [`SetTheory/Fol.lean`](SetTheory/Fol.lean) | `Fol.v` | formulas over {∈, =} with De Bruijn variables, renaming, free variables, sentences, sealing, a surjective enumeration (self-contained Cantor pairing), Tarski satisfaction `Sat`, `relOf` |
+| [`SetTheory/Calculus.lean`](SetTheory/Calculus.lean) | `Calculus.v` | the ND calculus `Prov`, weakening/deduction/cut, the equality kit, renaming admissibility, Henkin-witness cores, **soundness** |
+| [`SetTheory/Completeness.lean`](SetTheory/Completeness.lean) | `Completeness.v` | the quotient term model + truth lemma (`model_exists`), Lindenbaum/Henkin chains, **Gödel completeness** (`prov_iff_valid`), the sentence-theory lift (`completeness_inf`), **`theory_equiv`** |
+| [`SetTheory/Zf.lean`](SetTheory/Zf.lean) | `Zf.v` | the ZF axioms as formulas, `ZFax_s`, extraction bridges, and the internal mathematics of a FO model of {Ext, Sep, Pair, Union, Inf, Repl}: Kuratowski pairs, internal ω with `omega_ind`, the formula-macro library, the finite recursion theorem, **`ClosureFO_of_ZF`** |
+| [`SetTheory/Equivalence.lean`](SetTheory/Equivalence.lean) | `Equivalence.v` | the deep forward trade, `Closure_form` + bridges, `Tax_s`, `Tmodel_sat_ZF` / `ZFmodel_sat_T`, `ZF_implies_T`, `T_implies_ZF`, **`T_iff_ZF`** |
+| [`SetTheory/Forward.lean`](SetTheory/Forward.lean) | `Forward.v` | the shallow (second-order) forward trade, self-contained, dependency-audited |
+| [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
+| [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | trailing `Check` / `Print Assumptions` commands | type-checks the headline results and prints their axioms |
+
+## Building
+
+Lean 4.31.0 via elan/lake; **no external dependencies** (no Mathlib, no
+Batteries — Lean core only):
+
+```sh
+cd src/SetTheory/lean
+lake build                            # builds all seven modules
+lake env lean SetTheory/Audit.lean    # re-runs the assumption audit
+```
+
+## The assumption audit
+
+`SetTheory/Audit.lean` is the Lean analogue of the Coq files' trailing
+`Print Assumptions` commands. Its output certifies:
+
+```
+'SetTheory.T_iff_ZF' depends on axioms: [propext, Classical.choice, Quot.sound]
+```
+
+— only Lean's three standard axioms, which together provide exactly the
+classical-mathematics package the Coq development drew from
+`ClassicalEpsilon` + `FunctionalExtensionality` + `PropExtensionality` +
+`ProofIrrelevance` (in Lean, functional extensionality is a theorem of
+`Quot.sound`, and proof irrelevance is definitional). No `axiom`
+declarations, no `sorry` anywhere in the port.
+
+The **free dependency audit** of the Coq development survives — in a
+stronger, statement-level form. Where Coq's `Section` mechanism made the
+audit visible only in the post-hoc `Check` output, the Lean port names each
+axiom schema as a `def` (`ExtAx`, `SepAx`, `HostAx`, `ClosureAx`, …) and
+each theorem takes **exactly the hypotheses it uses** as explicit
+parameters. So the signatures themselves certify, e.g.:
+
+- `Forward.Union (hSep) (hClo)` — Union needs only Separation + Closure;
+- `Forward.Replacement (hSep) (hHost) (hClo)` — no Powerset, no Extensionality;
+- `Forward.Pairing (witness) (hSep) (hHost) (hClo)` — plus a nonempty domain,
+  and not even Extensionality;
+- `Forward.Infinity (witness) (hExt) (hSep) (hHost) (hClo)`;
+- `Reverse.Closure_holds (witness) (hExt) (hSep) (hPair) (hUnion) (hInf) (hRepl)`
+  — **neither Powerset nor Regularity**, i.e. *ZF − Powerset − Regularity ⊢
+  Closure*;
+- `ZFAxioms` (the model-side bundle behind `ClosureFO_of_ZF`) contains
+  exactly {Ext, Sep, Pair, Union, Inf, Repl} — the deep reverse likewise
+  needs neither Powerset nor Regularity.
+
+## Translation notes (Coq → Lean)
+
+Statements are 1:1; proofs are re-idiomatized. The deliberate deviations,
+all mechanical:
+
+- **`seal` → `sealF`.** `seal` is a reserved keyword in Lean 4.
+- **`omega` → `omegaV`.** The internal ω is renamed to avoid the `omega`
+  tactic.
+- **Cantor pairing is self-contained.** Coq used `Stdlib.Cantor`; the port
+  builds the pairing in `SetTheory/Fol.lean` from recursively-defined
+  triangular numbers (`tri`), avoiding division arithmetic entirely.
+- **De Bruijn offset convention.** Where the Coq file writes an offset
+  lookup `off + k`, the port writes `k + off` (and `S i` becomes `i + 1`):
+  Lean's `Nat.add` recurses on its *second* argument, so this keeps the
+  environment lookups reducing definitionally, exactly as Coq's `plus`
+  (which recurses on the first) did there.
+- **Hypothesis packaging.** Coq `Section` hypotheses become either explicit
+  named parameters (`Forward`, `Reverse`, the DeepForward section of
+  `Equivalence` — preserving the dependency audit) or `Prop`-valued
+  structure bundles where the Coq development always used the whole set:
+  `MCHT` (the five maximal-consistent-Henkin-theory properties in
+  `Completeness`) and `ZFAxioms` (the six model-side ZF axioms in `Zf`).
+- **Classical description.** `constructive_indefinite_description` ↦
+  `Exists.choose`/`Exists.choose_spec`; `epsilon` (with an inhabited
+  default, used for the canonical `ceq`-representatives) is defined locally
+  in `Completeness.lean`; `excluded_middle_informative` ↦ a classical
+  `if … then … else`.
+- **The quotient term model** uses `Subtype` (`D T = {n : Nat // rep T n = n}`)
+  with `Subtype.ext` where Coq needed `proof_irrelevance`.
+- **`Local Opaque` macros** need no counterpart: Lean's `simp only [Sat]`
+  reduces satisfaction through connectives while leaving the formula-macro
+  `def`s (`fEmptyF`, `fKPairF`, `fApproxF`, …) folded, which is exactly the
+  discipline the Coq proofs enforced by hand.
+
+## Relation to the Coq development
+
+The Coq sources in [`../`](../) remain the canonical development; this port
+is a faithful second machine-checking of the same mathematics in an
+independent proof assistant (different kernel, different axiom base,
+different standard library). The article
+[`../article/closure-axiomatization.tex`](../article/closure-axiomatization.tex)
+describes the mathematics and the Coq formalization; everything it says
+about the structure of the proofs applies verbatim to the Lean port via the
+module map above.

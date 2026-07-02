@@ -4,7 +4,8 @@
 - Repository HEAD: adeba87107a01ad82de9c28edd492a3d7d816ef9
 
 A Rocq/Coq formalization of Vladimir Reshetnikov's alternative axiomatization of
-set theory and its equivalence with ordinary ZF.
+set theory and its equivalence with ordinary ZF — plus a complete, independent
+**Lean 4 port** of the whole development under [`lean/`](lean/README.md).
 
 ## The axiomatization
 
@@ -470,3 +471,20 @@ the standard library. The library files import along the DAG shown above
 classical/extensionality axiom modules (`ClassicalEpsilon`,
 `FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the
 quotient term model — all consistent with the classical setting already in use.
+
+## The Lean 4 port (`lean/`)
+
+The entire development is also machine-checked a **second time, in Lean 4**
+(4.31.0, core only — no Mathlib), under [`lean/`](lean/):
+seven modules mirroring the seven Coq files one-to-one
+(`Fol.lean` … `Equivalence.lean`, `Forward.lean`, `Reverse.lean`), every
+statement with the same logical content, through the same headline theorem
+`T_iff_ZF`. `lean/SetTheory/Audit.lean` replays the `Print Assumptions`
+audit: the Lean proof depends only on `propext`, `Classical.choice`, and
+`Quot.sound` — Lean's standard classical axioms — with no `sorry` anywhere.
+Because Lean generalizes hypotheses as explicit named parameters rather than
+via Coq's `Section` mechanism, the free dependency audit is *visible in each
+theorem's signature* there (e.g. `Reverse.Closure_holds` literally takes no
+Powerset and no Regularity argument). Build with `cd lean && lake build`;
+see [`lean/README.md`](lean/README.md) for the module map and the full list
+of (mechanical) translation deviations.
