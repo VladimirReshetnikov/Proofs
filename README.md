@@ -21,6 +21,19 @@ positive integers satisfying `a^4 + b^4 = c^4`. The same module also records
 the stronger integer descent statement `a^4 + b^4 != c^2`, which is the
 classical route to Fermat's `n = 4` case.
 
+[`LeanProofs/FloorSqrtSum.lean`](LeanProofs/FloorSqrtSum.lean) records the
+reconstructed blurred formula:
+
+```lean
+theorem sum_floor_sqrt_eq (n : Nat) :
+    ((∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) : Rat) =
+      (Nat.sqrt n : Rat) * (n + 1 : Rat)
+        - (Nat.sqrt n : Rat) * ((Nat.sqrt n : Rat) + 1)
+          * (2 * (Nat.sqrt n : Rat) + 1) / 6
+```
+
+Here `Nat.sqrt k` is Lean's natural-number floor square-root.
+
 ## Building
 
 ```powershell
