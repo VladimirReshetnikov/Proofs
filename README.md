@@ -26,13 +26,14 @@ reconstructed blurred formula:
 
 ```lean
 theorem sum_floor_sqrt_eq (n : Nat) :
-    ((∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) : Rat) =
-      (Nat.sqrt n : Rat) * (n + 1 : Rat)
-        - (Nat.sqrt n : Rat) * ((Nat.sqrt n : Rat) + 1)
-          * (2 * (Nat.sqrt n : Rat) + 1) / 6
+    (∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) =
+      Nat.sqrt n * (n + 1)
+        - Nat.sqrt n * (Nat.sqrt n + 1)
+          * (2 * Nat.sqrt n + 1) / 6
 ```
 
-Here `Nat.sqrt k` is Lean's natural-number floor square-root.
+Here `Nat.sqrt k` is Lean's natural-number floor square-root, and the
+formula is stated as a natural-number identity.
 
 ## Building
 

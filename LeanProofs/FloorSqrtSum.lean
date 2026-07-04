@@ -1,5 +1,9 @@
 import Mathlib.Algebra.BigOperators.Intervals
+import Mathlib.Algebra.Order.Ring.Int
+import Mathlib.Data.Nat.Cast.Field
 import Mathlib.Data.Nat.Sqrt
+import Mathlib.Tactic.Linarith.Frontend
+import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Ring
 
 /-!
@@ -20,27 +24,32 @@ open scoped BigOperators
 
 namespace LeanProofs
 
-/-- The reconstructed right-hand side, as a rational number. -/
-noncomputable def floorSqrtSumClosedForm (n : Nat) : Rat :=
+/-- The reconstructed right-hand side, as a natural number. -/
+def floorSqrtSumClosedForm (n : Nat) : Nat :=
+  let s : Nat := Nat.sqrt n
+  s * (n + 1) - s * (s + 1) * (2 * s + 1) / 6
+
+/-- The same right-hand side in `Rat`, used internally for the algebraic proof. -/
+private noncomputable def floorSqrtSumClosedFormRat (n : Nat) : Rat :=
   let s : Rat := Nat.sqrt n
   s * (n + 1 : Rat) - s * (s + 1) * (2 * s + 1) / 6
 
-private lemma floorSqrtSumClosedForm_step_same
+private lemma floorSqrtSumClosedFormRat_step_same
     (n q : Nat) (hq : Nat.sqrt n = q) (hs : Nat.sqrt (n + 1) = q) :
-    floorSqrtSumClosedForm (n + 1) = floorSqrtSumClosedForm n + (q : Rat) := by
-  unfold floorSqrtSumClosedForm
+    floorSqrtSumClosedFormRat (n + 1) = floorSqrtSumClosedFormRat n + (q : Rat) := by
+  unfold floorSqrtSumClosedFormRat
   simp only [hq, hs, Nat.cast_add, Nat.cast_one]
   ring
 
-private lemma floorSqrtSumClosedForm_step_jump
+private lemma floorSqrtSumClosedFormRat_step_jump
     (n q : Nat) (hq : Nat.sqrt n = q) (hs : Nat.sqrt (n + 1) = q + 1)
     (hn : n + 1 = (q + 1) ^ 2) :
-    floorSqrtSumClosedForm (n + 1) =
-      floorSqrtSumClosedForm n + ((q + 1 : Nat) : Rat) := by
+    floorSqrtSumClosedFormRat (n + 1) =
+      floorSqrtSumClosedFormRat n + ((q + 1 : Nat) : Rat) := by
   have hn' : n = (q + 1) ^ 2 - 1 := by
     rw [← hn]
     simp
-  unfold floorSqrtSumClosedForm
+  unfold floorSqrtSumClosedFormRat
   simp only [hq, hs, Nat.cast_add, Nat.cast_one]
   rw [hn']
   norm_num
@@ -74,36 +83,83 @@ private lemma sqrt_jump_square
     simpa [hq, Nat.pow_two] using Nat.lt_succ_sqrt n
   · exact Nat.le_sqrt'.mp (by simp [hs] : q + 1 ≤ Nat.sqrt (n + 1))
 
+private lemma six_dvd_sqrt_sum_numer (s : Nat) :
+    6 ∣ s * (s + 1) * (2 * s + 1) := by
+  induction s with
+  | zero =>
+      norm_num
+  | succ s ih =>
+      have hstep : (s + 1) * (s + 1 + 1) * (2 * (s + 1) + 1) =
+          s * (s + 1) * (2 * s + 1) + 6 * ((s + 1) * (s + 1)) := by
+        ring
+      rw [hstep]
+      exact Nat.dvd_add ih (dvd_mul_right 6 ((s + 1) * (s + 1)))
+
+private lemma floorSqrtSumClosedForm_subtrahend_le (n : Nat) :
+    Nat.sqrt n * (Nat.sqrt n + 1) * (2 * Nat.sqrt n + 1) / 6 ≤
+      Nat.sqrt n * (n + 1) := by
+  let s := Nat.sqrt n
+  have hs : s * s ≤ n := by
+    dsimp [s]
+    exact Nat.sqrt_le n
+  have hpoly : (s + 1) * (2 * s + 1) ≤ 6 * (s * s + 1) := by
+    apply Int.ofNat_le.mp
+    push_cast
+    nlinarith [sq_nonneg ((s : Int) - 1)]
+  have hs' : s * s + 1 ≤ n + 1 := Nat.succ_le_succ hs
+  apply Nat.div_le_of_le_mul
+  calc
+    s * (s + 1) * (2 * s + 1) = s * ((s + 1) * (2 * s + 1)) := by ring
+    _ ≤ s * (6 * (s * s + 1)) := Nat.mul_le_mul_left s hpoly
+    _ ≤ s * (6 * (n + 1)) := Nat.mul_le_mul_left s (Nat.mul_le_mul_left 6 hs')
+    _ = 6 * (s * (n + 1)) := by ring
+
+private lemma floorSqrtSumClosedForm_cast (n : Nat) :
+    (floorSqrtSumClosedForm n : Rat) = floorSqrtSumClosedFormRat n := by
+  dsimp [floorSqrtSumClosedForm, floorSqrtSumClosedFormRat]
+  rw [Nat.cast_sub (floorSqrtSumClosedForm_subtrahend_le n)]
+  rw [Nat.cast_div_charZero (six_dvd_sqrt_sum_numer (Nat.sqrt n))]
+  push_cast
+  ring
+
 /--
 For `s = floor(sqrt(n))`,
 
 `sum_{k=1}^n floor(sqrt(k)) = s (n + 1) - s (s + 1) (2 s + 1) / 6`.
 
-The equality is stated in `Rat` so that the displayed division by `6` is literal.
+This private lemma keeps the algebra in `Rat`; the public theorem below states the
+same identity in `Nat`.
 -/
-theorem sum_floor_sqrt_eq_closedForm (n : Nat) :
+private theorem sum_floor_sqrt_eq_closedForm_rat (n : Nat) :
     ((∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) : Rat) =
-      floorSqrtSumClosedForm n := by
+      floorSqrtSumClosedFormRat n := by
   induction n with
   | zero =>
-      simp [floorSqrtSumClosedForm]
+      simp [floorSqrtSumClosedFormRat]
   | succ n ih =>
       rw [Finset.sum_Icc_succ_top (Nat.succ_pos n)]
       simp only [Nat.cast_add]
       rw [ih]
       rcases sqrt_succ_eq_self_or_succ n with hs | hs
-      · rw [floorSqrtSumClosedForm_step_same n (Nat.sqrt n) rfl hs]
+      · rw [floorSqrtSumClosedFormRat_step_same n (Nat.sqrt n) rfl hs]
         simp [hs]
       · have hn := sqrt_jump_square n (Nat.sqrt n) rfl hs
-        rw [floorSqrtSumClosedForm_step_jump n (Nat.sqrt n) rfl hs hn]
+        rw [floorSqrtSumClosedFormRat_step_jump n (Nat.sqrt n) rfl hs hn]
         simp [hs]
+
+/-- The reconstructed formula, stated as an equality of natural numbers. -/
+theorem sum_floor_sqrt_eq_closedForm (n : Nat) :
+    (∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) =
+      floorSqrtSumClosedForm n := by
+  apply Nat.cast_injective (R := Rat)
+  rw [sum_floor_sqrt_eq_closedForm_rat, floorSqrtSumClosedForm_cast]
 
 /-- The reconstructed formula, expanded without the named right-hand side. -/
 theorem sum_floor_sqrt_eq (n : Nat) :
-    ((∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) : Rat) =
-      (Nat.sqrt n : Rat) * (n + 1 : Rat)
-        - (Nat.sqrt n : Rat) * ((Nat.sqrt n : Rat) + 1)
-          * (2 * (Nat.sqrt n : Rat) + 1) / 6 := by
+    (∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) =
+      Nat.sqrt n * (n + 1)
+        - Nat.sqrt n * (Nat.sqrt n + 1)
+          * (2 * Nat.sqrt n + 1) / 6 := by
   simpa [floorSqrtSumClosedForm] using sum_floor_sqrt_eq_closedForm n
 
 end LeanProofs
