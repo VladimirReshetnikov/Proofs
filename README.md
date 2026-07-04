@@ -35,6 +35,18 @@ theorem sum_floor_sqrt_eq (n : Nat) :
 Here `Nat.sqrt k` is Lean's natural-number floor square-root, and the
 formula is stated as a natural-number identity.
 
+[`LeanProofs/RationalFloorOrbit.lean`](LeanProofs/RationalFloorOrbit.lean)
+proves that the orbit starting at `0` under
+`q ↦ 1 / (1 - q + 2 * floor q)` visits every nonnegative rational exactly
+once:
+
+```lean
+theorem rationalFloorOrbit_visits_each_nonnegative_rat_exactly_once
+    (q : Rat) (hq : 0 ≤ q) :
+    ∃ n : Nat, rationalFloorOrbit n = q ∧
+      ∀ m : Nat, rationalFloorOrbit m = q → m = n
+```
+
 ## Building
 
 ```powershell
