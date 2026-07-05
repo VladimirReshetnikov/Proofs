@@ -47,6 +47,24 @@ theorem rationalFloorOrbit_visits_each_nonnegative_rat_exactly_once
       ∀ m : Nat, rationalFloorOrbit m = q → m = n
 ```
 
+[`LeanProofs/TinyExponentTower.lean`](LeanProofs/TinyExponentTower.lean)
+proves the tiny-exponent power-tower floor identity:
+
+```lean
+theorem floor_tinyExponentTower_sub :
+    ⌊tinyExponentTower⌋ - (10 : Int) ^ (10 ^ 10 : Nat) =
+      (2811012357389 : Int)
+
+theorem floor_expanded_tinyExponentTower_sub :
+    Int.floor
+      ((10 : ℝ) ^
+        ((10 : ℝ) ^
+          ((10 : ℝ) ^
+            ((10 : ℝ) ^
+              ((10 : ℝ) ^ (-((10 ^ 10 : Nat) : ℝ))))))) -
+      (10 : Int) ^ (10 ^ 10 : Nat) = (2811012357389 : Int)
+```
+
 ## Building
 
 ```powershell
