@@ -111,6 +111,42 @@ ponens for NAND-defined implication, formalized as
 `Formula.implementsLukasiewicz`, so every theorem of that standard classical
 propositional calculus has a Nicod proof.
 
+[`LeanProofs/WolframBoolean.lean`](LeanProofs/WolframBoolean.lean)
+formalizes Wolfram's single Sheffer-stroke equation
+
+```text
+((a ↑ b) ↑ c) ↑ (a ↑ ((a ↑ c) ↑ a)) = c
+```
+
+and Meredith's two-axiom Sheffer-stroke system.  Since Lean uses `↑` for
+coercions, the formal notation uses `⊙`.  A small equational checker in
+[`LeanProofs/EquationalLogic.lean`](LeanProofs/EquationalLogic.lean), applied
+to generated certificates in
+[`LeanProofs/WolframBooleanCertificates.lean`](LeanProofs/WolframBooleanCertificates.lean),
+proves over an arbitrary carrier with one binary operation that Wolfram's
+equation derives the standard three Sheffer axioms, and that Meredith's pair
+derives Wolfram's equation.  The public entry points are:
+
+```lean
+theorem wolfram_derives_sheffer_axioms {α : Type u} (op : α → α → α)
+    (h : WolframAxiom op) : ShefferAxioms op
+
+theorem meredith_derives_wolfram_axiom {α : Type u} (op : α → α → α)
+    (h : MeredithAxioms op) : WolframAxiom op
+
+theorem meredith_derives_sheffer_axioms {α : Type u} (op : α → α → α)
+    (h : MeredithAxioms op) : ShefferAxioms op
+```
+
+The same module separately proves that, on the two-element Boolean algebra,
+Wolfram's equation and Meredith's pair each have exactly the two Sheffer
+truth-table models, NAND and its dual NOR; consequently any Boolean binary
+operation satisfying either system expresses every ordinary classical
+connective.  It also includes a native-checked finite enumeration of all
+canonical single equations with at most five primitive binary-operation
+occurrences, proving that none characterizes NAND alone, NOR alone, or exactly
+the two Sheffer truth tables, while Wolfram's six-operation equation does.
+
 ## Building
 
 ```powershell
