@@ -75,6 +75,24 @@ theorem sin_deg9_add_sin_deg21_add_sin_deg39 :
         Real.sin (39 * Real.pi / 180) = φ / √2
 ```
 
+[`LeanProofs/ArctanSquareIdentity.lean`](LeanProofs/ArctanSquareIdentity.lean)
+proves the quadratic arctangent identity:
+
+```lean
+theorem arctan_square_identity :
+    (2939 : ℝ) * Real.arctan (2 : ℝ) ^ 2 -
+      1250 * Real.arctan (3 : ℝ) ^ 2 -
+      252 * Real.arctan (4 : ℝ) ^ 2 -
+      360 * Real.arctan (5 : ℝ) ^ 2 -
+      870 * Real.arctan (7 : ℝ) ^ 2 +
+      450 * Real.arctan (8 : ℝ) ^ 2 +
+      84 * Real.arctan (13 : ℝ) ^ 2 +
+      330 * Real.arctan (18 : ℝ) ^ 2 -
+      210 * Real.arctan (21 : ℝ) ^ 2 +
+      147 * Real.arctan (38 : ℝ) ^ 2 -
+      210 * Real.arctan (47 : ℝ) ^ 2 = 0
+```
+
 ## Building
 
 ```powershell
