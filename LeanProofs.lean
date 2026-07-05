@@ -4,3 +4,4 @@ import LeanProofs.RationalFloorOrbit
 import LeanProofs.TinyExponentTower
 import LeanProofs.TrigGoldenRatio
 import LeanProofs.ArctanSquareIdentity
+import LeanProofs.Nicod

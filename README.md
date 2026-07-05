@@ -93,6 +93,20 @@ theorem arctan_square_identity :
       210 * Real.arctan (47 : ℝ) ^ 2 = 0
 ```
 
+[`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes the
+Sheffer-stroke/NAND language for Nicod's one-axiom propositional calculus,
+including the exact axiom schema
+
+```text
+(p ↑ (q ↑ r)) ↑ ((u ↑ (u ↑ u)) ↑ ((w ↑ q) ↑ ((p ↑ w) ↑ (p ↑ w))))
+```
+
+and the exact rule `(p ↑ (q ↑ r)), p ⊢ r`.  Lean uses `↑` for coercions, so
+the formal notation uses `⊼` for the same NAND connective.  The module proves
+that NAND expresses the usual classical connectives, that the Nicod axiom is
+classically valid, that the rule is classically sound, and therefore that every
+formula derivable in the one-axiom/one-rule calculus is a classical tautology.
+
 ## Building
 
 ```powershell
