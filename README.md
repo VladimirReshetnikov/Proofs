@@ -65,6 +65,16 @@ theorem floor_expanded_tinyExponentTower_sub :
       (10 : Int) ^ (10 ^ 10 : Nat) = (2811012357389 : Int)
 ```
 
+[`LeanProofs/TrigGoldenRatio.lean`](LeanProofs/TrigGoldenRatio.lean) proves
+the trigonometric golden-ratio identity from the degree angles in the image:
+
+```lean
+theorem sin_deg9_add_sin_deg21_add_sin_deg39 :
+    Real.sin (9 * Real.pi / 180) +
+        Real.sin (21 * Real.pi / 180) +
+        Real.sin (39 * Real.pi / 180) = φ / √2
+```
+
 ## Building
 
 ```powershell

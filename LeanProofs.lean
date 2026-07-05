@@ -2,3 +2,4 @@ import LeanProofs.FermatFour
 import LeanProofs.FloorSqrtSum
 import LeanProofs.RationalFloorOrbit
 import LeanProofs.TinyExponentTower
+import LeanProofs.TrigGoldenRatio
