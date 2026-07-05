@@ -106,6 +106,10 @@ the formal notation uses `⊼` for the same NAND connective.  The module proves
 that NAND expresses the usual classical connectives, that the Nicod axiom is
 classically valid, that the rule is classically sound, and therefore that every
 formula derivable in the one-axiom/one-rule calculus is a classical tautology.
+It also derives the three Lukasiewicz Hilbert axiom schemas and standard modus
+ponens for NAND-defined implication, formalized as
+`Formula.implementsLukasiewicz`, so every theorem of that standard classical
+propositional calculus has a Nicod proof.
 
 ## Building
 
