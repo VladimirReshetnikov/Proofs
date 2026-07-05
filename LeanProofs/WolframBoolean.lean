@@ -1,4 +1,4 @@
-import LeanProofs.WolframBooleanCertificates
+import LeanProofs.WolframBooleanHuntingtonCertificates
 
 /-!
 # Wolfram's and Meredith's Sheffer-stroke axioms
@@ -14,22 +14,24 @@ The file proves:
 * Wolfram's single equation
   `((a ⊙ b) ⊙ c) ⊙ (a ⊙ ((a ⊙ c) ⊙ a)) = c`
   equationally derives the standard three Sheffer-stroke axioms for every
-  carrier type with one binary operation.
+  carrier type with one binary operation, and therefore a standard Huntington
+  Boolean-algebra basis for the derived operations.
 * Meredith's two equations equationally derive Wolfram's single equation, and
-  therefore also the standard Sheffer-stroke axioms.
+  therefore also the same Boolean-algebra basis.
 * On the two-element Boolean algebra, Wolfram's equation and Meredith's pair
   each have exactly the two Sheffer truth-table models, NAND and NOR.
 * Both Sheffer truth tables express all ordinary classical connectives.
 * Wolfram's equation has six occurrences of the primitive binary operation and
   characterizes the Sheffer truth tables on the two-element Boolean algebra.
-  A finite Lean-checked enumeration shows no single equation with at most five
-  primitive binary-operation occurrences has exactly NAND, exactly NOR, or
-  exactly the two Sheffer truth tables as its Boolean truth-table models.
+  A finite Lean-checked countermodel certificate shows that every single
+  equation with at most five primitive binary-operation occurrences that is
+  true in those Boolean Sheffer tables is also true in some finite algebra
+  where Wolfram's axiom fails.
 
 The last point is the formalized finite-model obstruction behind the usual
 "minimal number of operators" statement for single equations: any shorter
 single-equation axiomatization of the one-binary-operation Boolean theory would
-also hold in a non-Sheffer two-element algebra.
+also hold in a finite non-Wolfram algebra.
 -/
 
 namespace LeanProofs
@@ -62,6 +64,25 @@ def ShefferAxioms {α : Type u} (op : α → α → α) : Prop :=
   (∀ a b c,
     op (op a (op b c)) (op a (op b c)) =
       op (op (op b b) a) (op (op c c) a))
+
+/-- Complement derived from a Sheffer stroke: `¬ a = a ⊙ a`. -/
+def strokeCompl {α : Type u} (op : α → α → α) (a : α) : α :=
+  op a a
+
+/-- Join derived from a Sheffer stroke: `a ∨ b = ¬a ⊙ ¬b`. -/
+def strokeJoin {α : Type u} (op : α → α → α) (a b : α) : α :=
+  op (strokeCompl op a) (strokeCompl op b)
+
+/--
+Huntington's three-equation Boolean-algebra basis, in the language of join and
+complement.
+-/
+def HuntingtonAxioms {α : Type u} (sup : α → α → α) (compl : α → α) : Prop :=
+  (∀ a b, sup a b = sup b a) ∧
+  (∀ a b c, sup a (sup b c) = sup (sup a b) c) ∧
+  (∀ a b,
+    sup (compl (sup (compl a) b))
+      (compl (sup (compl a) (compl b))) = a)
 
 /-- The two Boolean Sheffer truth tables, allowing the order-dual convention. -/
 def IsBooleanSheffer (op : Bool → Bool → Bool) : Prop :=
@@ -126,6 +147,83 @@ theorem meredith_derives_wolfram_axiom {α : Type u} (op : α → α → α)
 theorem meredith_derives_sheffer_axioms {α : Type u} (op : α → α → α)
     (h : MeredithAxioms op) : ShefferAxioms op :=
   wolfram_derives_sheffer_axioms op (meredith_derives_wolfram_axiom op h)
+
+/--
+The standard Sheffer axioms derive Huntington's equational basis for Boolean
+algebra under the usual definitions `¬a = a ⊙ a` and
+`a ∨ b = ¬a ⊙ ¬b`.
+-/
+theorem sheffer_derives_huntington_axioms {α : Type u} (op : α → α → α)
+    (h : ShefferAxioms op) : HuntingtonAxioms (strokeJoin op) (strokeCompl op) := by
+  have hS1 :
+      EquationalLogic.Equation.Valid op
+        WolframBooleanCertificates.shefferEquation1 := by
+    intro env
+    exact h.1 (env 0)
+  have hS2 :
+      EquationalLogic.Equation.Valid op
+        WolframBooleanCertificates.shefferEquation2 := by
+    intro env
+    exact h.2.1 (env 0) (env 1)
+  have hS3 :
+      EquationalLogic.Equation.Valid op
+        WolframBooleanCertificates.shefferEquation3 := by
+    intro env
+    exact h.2.2 (env 0) (env 1) (env 2)
+  rcases WolframBooleanHuntingtonCertificates.shefferToHuntington_valid
+    op hS1 hS2 hS3 with ⟨hComm, hAssoc, hHunt⟩
+  constructor
+  · intro a b
+    simpa [strokeJoin, strokeCompl, WolframBooleanHuntingtonCertificates.hJoin,
+      WolframBooleanHuntingtonCertificates.hCompl,
+      WolframBooleanHuntingtonCertificates.huntingtonEquation1,
+      WolframBooleanHuntingtonCertificates.C.e,
+      WolframBooleanHuntingtonCertificates.C.o,
+      WolframBooleanHuntingtonCertificates.C.v,
+      EquationalLogic.Term.eval]
+      using hComm (fun n =>
+        match n with
+        | 0 => a
+        | 1 => b
+        | _ => a)
+  constructor
+  · intro a b c
+    simpa [strokeJoin, strokeCompl, WolframBooleanHuntingtonCertificates.hJoin,
+      WolframBooleanHuntingtonCertificates.hCompl,
+      WolframBooleanHuntingtonCertificates.huntingtonEquation2,
+      WolframBooleanHuntingtonCertificates.C.e,
+      WolframBooleanHuntingtonCertificates.C.o,
+      WolframBooleanHuntingtonCertificates.C.v,
+      EquationalLogic.Term.eval]
+      using hAssoc (fun n =>
+        match n with
+        | 0 => a
+        | 1 => b
+        | 2 => c
+        | _ => a)
+  · intro a b
+    simpa [strokeJoin, strokeCompl, WolframBooleanHuntingtonCertificates.hJoin,
+      WolframBooleanHuntingtonCertificates.hCompl,
+      WolframBooleanHuntingtonCertificates.huntingtonEquation3,
+      WolframBooleanHuntingtonCertificates.C.e,
+      WolframBooleanHuntingtonCertificates.C.o,
+      WolframBooleanHuntingtonCertificates.C.v,
+      EquationalLogic.Term.eval]
+      using hHunt (fun n =>
+        match n with
+        | 0 => a
+        | 1 => b
+        | _ => a)
+
+/-- Wolfram's single axiom derives Huntington's Boolean-algebra basis. -/
+theorem wolfram_derives_huntington_axioms {α : Type u} (op : α → α → α)
+    (h : WolframAxiom op) : HuntingtonAxioms (strokeJoin op) (strokeCompl op) :=
+  sheffer_derives_huntington_axioms op (wolfram_derives_sheffer_axioms op h)
+
+/-- Meredith's two axioms derive Huntington's Boolean-algebra basis. -/
+theorem meredith_derives_huntington_axioms {α : Type u} (op : α → α → α)
+    (h : MeredithAxioms op) : HuntingtonAxioms (strokeJoin op) (strokeCompl op) :=
+  sheffer_derives_huntington_axioms op (meredith_derives_sheffer_axioms op h)
 
 theorem boolNand_wolfram : WolframAxiom boolNand := by
   intro a b c
@@ -406,6 +504,11 @@ def nodeCount : Term → Nat
   | var _ => 0
   | app l r => nodeCount l + nodeCount r + 1
 
+/-- One more than the largest variable index occurring in a term. -/
+def varBound : Term → Nat
+  | var i => i + 1
+  | app l r => max (varBound l) (varBound r)
+
 /-- Interpret a term in a tabulated two-element algebra. -/
 def eval (op : BinOp) (env : List Bool) : Term → Bool
   | var i => env.getD i false
@@ -443,23 +546,31 @@ def canonicalTermsAux : Nat → Nat → Nat → List (Term × Nat)
 def canonicalTerms (nodes : Nat) : List Term :=
   (canonicalTermsAux nodes nodes 0).map Prod.fst
 
-/-- All canonical equations whose two sides contain at most `maxNodes` nodes in total. -/
+/-- All canonical equations whose two sides contain at most `maxNodes` nodes in total.
+
+Variables are introduced from left to right across the whole equation, first
+through the left-hand side and then through the right-hand side.  This is the
+canonical representative scheme used by the finite lower-bound search.
+-/
 def equationsUpTo (maxNodes : Nat) : List (Term × Term) :=
   List.flatMap (fun leftNodes =>
     List.flatMap (fun rightNodes =>
       List.flatMap (fun lhs =>
-        (canonicalTerms rightNodes).map fun rhs => (lhs, rhs))
-        (canonicalTerms leftNodes))
+        (canonicalTermsAux rightNodes rightNodes lhs.2).map fun rhs => (lhs.1, rhs.1))
+        (canonicalTermsAux leftNodes leftNodes 0))
       (List.range (maxNodes + 1 - leftNodes)))
     (List.range (maxNodes + 1))
 
 /-- Whether an equation holds in the two-element algebra represented by `op`. -/
 def equationHolds (op : BinOp) (lhs rhs : Term) : Bool :=
-  (allEnvs 6).all fun env => Term.eval op env lhs == Term.eval op env rhs
+  (allEnvs 7).all fun env => Term.eval op env lhs == Term.eval op env rhs
 
 /-- The list of two-element truth-table models of an equation. -/
 def equationModels (lhs rhs : Term) : List BinOp :=
   allBinOps.filter fun op => equationHolds op lhs rhs
+
+def validInBooleanShefferTables (lhs rhs : Term) : Bool :=
+  equationHolds nandTable lhs rhs && equationHolds norTable lhs rhs
 
 def hasExactlyModels (models : List BinOp) (lhs rhs : Term) : Bool :=
   equationModels lhs rhs == models
@@ -492,34 +603,119 @@ theorem wolfram_equation_characterizes_sheffer_tables :
     characterizesShefferTables wolframLhs wolframRhs = true := by
   native_decide
 
-theorem no_short_equation_characterizes_nand_only :
-    (equationsUpTo 5).any (fun e => characterizesNandOnly e.1 e.2) = false := by
-  native_decide
+/-! ## Finite countermodel certificate for the five-operator lower bound -/
 
-theorem no_short_equation_characterizes_nor_only :
-    (equationsUpTo 5).any (fun e => characterizesNorOnly e.1 e.2) = false := by
-  native_decide
+/-- A finite one-operation algebra, represented by a flattened multiplication table. -/
+structure FiniteOp where
+  size : Nat
+  table : List Nat
+  deriving DecidableEq, Repr
 
-theorem no_short_equation_characterizes_sheffer_tables :
-    (equationsUpTo 5).any (fun e => characterizesShefferTables e.1 e.2) = false := by
+namespace FiniteOp
+
+def apply (op : FiniteOp) (x y : Nat) : Nat :=
+  if op.size = 0 then
+    0
+  else
+    (op.table.getD (x * op.size + y) 0) % op.size
+
+end FiniteOp
+
+/-- All environments of a fixed length over `{0, ..., size - 1}`. -/
+def allFiniteEnvs (size : Nat) : Nat → List (List Nat)
+  | 0 => [[]]
+  | n + 1 =>
+      List.flatMap (fun env => (List.range size).map fun x => x :: env)
+        (allFiniteEnvs size n)
+
+namespace Term
+
+def evalFinite (op : FiniteOp) (env : List Nat) : Term → Nat
+  | var i => env.getD i 0
+  | app l r => op.apply (evalFinite op env l) (evalFinite op env r)
+
+end Term
+
+def finiteEquationHolds (op : FiniteOp) (lhs rhs : Term) : Bool :=
+  (allFiniteEnvs op.size (max lhs.varBound rhs.varBound)).all fun env =>
+    lhs.evalFinite op env == rhs.evalFinite op env
+
+def finiteWolframHolds (op : FiniteOp) : Bool :=
+  (allFiniteEnvs op.size 3).all fun env =>
+    let a := env.getD 0 0
+    let b := env.getD 1 0
+    let c := env.getD 2 0
+    let lhs := op.apply (op.apply (op.apply a b) c)
+      (op.apply a (op.apply (op.apply a c) a))
+    lhs == c
+
+/--
+A pool of finite non-Wolfram algebras used by the lower-bound certificate.
+The tables were found by finite-model search and are rechecked by Lean.
+-/
+def shortCountermodelPool : List FiniteOp := [
+  { size := 2, table := [0, 0, 0, 0] },
+  { size := 2, table := [0, 0, 0, 1] },
+  { size := 2, table := [0, 0, 1, 1] },
+  { size := 2, table := [0, 1, 0, 1] },
+  { size := 2, table := [0, 1, 1, 0] },
+  { size := 3, table := [0, 2, 1, 2, 2, 0, 1, 0, 1] },
+  { size := 4, table := [0, 3, 3, 0, 2, 1, 1, 2, 0, 3, 3, 0, 2, 1, 1, 2] },
+  { size := 4, table := [0, 2, 0, 2, 0, 2, 0, 2, 1, 3, 1, 3, 1, 3, 1, 3] },
+  { size := 2, table := [0, 0, 1, 0] },
+  { size := 4, table := [0, 3, 3, 0, 0, 3, 3, 0, 1, 2, 2, 1, 1, 2, 2, 1] },
+  { size := 3, table := [0, 0, 1, 2, 2, 1, 0, 0, 1] },
+  { size := 3, table := [0, 0, 1, 2, 0, 2, 0, 0, 2] },
+  { size := 3, table := [0, 0, 1, 2, 0, 2, 2, 0, 2] },
+  { size := 4, table := [1, 2, 2, 1, 3, 0, 0, 3, 1, 2, 2, 1, 3, 0, 0, 3] },
+  { size := 3, table := [0, 1, 2, 2, 0, 1, 1, 2, 0] },
+  { size := 3, table := [0, 0, 1, 0, 2, 1, 1, 1, 1] },
+  { size := 4, table := [0, 2, 0, 2, 3, 1, 3, 1, 3, 1, 3, 1, 0, 2, 0, 2] },
+  { size := 4, table := [1, 3, 1, 3, 2, 0, 2, 0, 2, 0, 2, 0, 1, 3, 1, 3] },
+  { size := 3, table := [0, 2, 1, 1, 0, 2, 2, 1, 0] },
+  { size := 3, table := [0, 0, 1, 2, 2, 2, 0, 0, 1] },
+  { size := 3, table := [0, 0, 1, 2, 2, 0, 1, 0, 1] },
+  { size := 4, table := [0, 0, 1, 1, 3, 3, 2, 2, 3, 3, 2, 2, 0, 0, 1, 1] },
+  { size := 3, table := [0, 0, 1, 2, 1, 1, 2, 0, 2] },
+  { size := 4, table := [3, 1, 3, 1, 3, 1, 3, 1, 2, 0, 2, 0, 2, 0, 2, 0] },
+  { size := 3, table := [0, 0, 1, 2, 1, 1, 0, 0, 0] },
+  { size := 3, table := [0, 0, 1, 2, 2, 2, 0, 0, 2] },
+  { size := 4, table := [2, 1, 1, 2, 2, 1, 1, 2, 3, 0, 0, 3, 3, 0, 0, 3] },
+  { size := 4, table := [3, 3, 2, 2, 1, 1, 0, 0, 3, 3, 2, 2, 1, 1, 0, 0] },
+  { size := 4, table := [0, 0, 1, 1, 2, 2, 3, 3, 0, 0, 1, 1, 2, 2, 3, 3] },
+  { size := 4, table := [2, 2, 3, 3, 1, 1, 0, 0, 1, 1, 0, 0, 2, 2, 3, 3] }
+]
+
+def hasFiniteNonWolframCountermodel (lhs rhs : Term) : Bool :=
+  shortCountermodelPool.any fun op =>
+    finiteEquationHolds op lhs rhs && !finiteWolframHolds op
+
+/--
+Every equation with at most five operation occurrences that is true in the two
+Boolean Sheffer tables is true in one of the finite algebras above while
+Wolfram's axiom is false there.
+-/
+def shortEquationCountermodelCheck : Bool :=
+  (equationsUpTo 5).all fun e =>
+    !validInBooleanShefferTables e.1 e.2 ||
+      hasFiniteNonWolframCountermodel e.1 e.2
+
+theorem every_short_boolean_sheffer_equation_has_finite_nonwolfram_countermodel :
+    shortEquationCountermodelCheck = true := by
   native_decide
 
 /--
 Entry-point theorem for the finite lower-bound result: Wolfram's equation has
 six primitive binary-operation occurrences, it characterizes the Sheffer truth
-tables on the two-element Boolean algebra, and no single equation with at most
-five such occurrences characterizes NAND alone, NOR alone, or exactly the two
-Sheffer truth tables.
+tables on the two-element Boolean algebra, and every shorter equation that is
+even true of those Boolean Sheffer tables has a finite non-Wolfram model.
 -/
-theorem wolfram_six_operations_is_minimal_for_boolean_sheffer_tables :
+theorem wolfram_six_operations_is_minimal_for_single_equational_axioms :
     wolframLhs.nodeCount + wolframRhs.nodeCount = 6 ∧
       characterizesShefferTables wolframLhs wolframRhs = true ∧
-      (equationsUpTo 5).any (fun e => characterizesNandOnly e.1 e.2) = false ∧
-      (equationsUpTo 5).any (fun e => characterizesNorOnly e.1 e.2) = false ∧
-      (equationsUpTo 5).any (fun e => characterizesShefferTables e.1 e.2) = false := by
+      shortEquationCountermodelCheck = true := by
   exact ⟨wolfram_operator_count, wolfram_equation_characterizes_sheffer_tables,
-    no_short_equation_characterizes_nand_only, no_short_equation_characterizes_nor_only,
-    no_short_equation_characterizes_sheffer_tables⟩
+    every_short_boolean_sheffer_equation_has_finite_nonwolfram_countermodel⟩
 
 end WolframBoolean
 
