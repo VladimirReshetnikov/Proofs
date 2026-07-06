@@ -1712,6 +1712,77 @@ private theorem p6H_ne_p6M :
   rw [hn] at hlt
   linarith [hlt, p6M_norm_gt_one]
 
+private theorem ne_of_im_pos_of_im_zero {z w : ℂ}
+    (hz : 0 < z.im) (hw : w.im = 0) : z ≠ w := by
+  intro h
+  have him := congrArg Complex.im h
+  linarith
+
+private theorem ne_of_im_neg_of_im_zero {z w : ℂ}
+    (hz : z.im < 0) (hw : w.im = 0) : z ≠ w := by
+  intro h
+  have him := congrArg Complex.im h
+  linarith
+
+private theorem ne_of_im_pos_of_im_neg {z w : ℂ}
+    (hz : 0 < z.im) (hw : w.im < 0) : z ≠ w := by
+  intro h
+  have him := congrArg Complex.im h
+  linarith
+
+private theorem ne_of_re_lt {z w : ℂ} (h : z.re < w.re) : z ≠ w := by
+  intro hz
+  have hre := congrArg Complex.re hz
+  linarith
+
+private theorem p6I_ne_p6E : p6I ≠ p6E :=
+  ne_of_re_lt p6I_re_lt_p6E_re
+
+private theorem p6I_ne_p6O : p6I ≠ p6O :=
+  ne_of_re_lt (p6I_re_lt_p6E_re.trans p6E_re_lt_p6O_re)
+
+private theorem p6I_ne_p6J : p6I ≠ p6J :=
+  ne_of_re_lt ((p6I_re_lt_p6E_re.trans p6E_re_lt_p6O_re).trans p6O_re_lt_p6J_re)
+
+private theorem p6I_ne_p6N : p6I ≠ p6N :=
+  ne_of_re_lt (((p6I_re_lt_p6E_re.trans p6E_re_lt_p6O_re).trans
+    p6O_re_lt_p6J_re).trans p6J_re_lt_p6N_re)
+
+private theorem p6I_ne_p6L : p6I ≠ p6L :=
+  ne_of_re_lt ((((p6I_re_lt_p6E_re.trans p6E_re_lt_p6O_re).trans
+    p6O_re_lt_p6J_re).trans p6J_re_lt_p6N_re).trans p6N_re_lt_p6L_re)
+
+private theorem p6E_ne_p6O : p6E ≠ p6O :=
+  ne_of_re_lt p6E_re_lt_p6O_re
+
+private theorem p6E_ne_p6J : p6E ≠ p6J :=
+  ne_of_re_lt (p6E_re_lt_p6O_re.trans p6O_re_lt_p6J_re)
+
+private theorem p6E_ne_p6N : p6E ≠ p6N :=
+  ne_of_re_lt ((p6E_re_lt_p6O_re.trans p6O_re_lt_p6J_re).trans p6J_re_lt_p6N_re)
+
+private theorem p6E_ne_p6L : p6E ≠ p6L :=
+  ne_of_re_lt (((p6E_re_lt_p6O_re.trans p6O_re_lt_p6J_re).trans
+    p6J_re_lt_p6N_re).trans p6N_re_lt_p6L_re)
+
+private theorem p6O_ne_p6J : p6O ≠ p6J :=
+  ne_of_re_lt p6O_re_lt_p6J_re
+
+private theorem p6O_ne_p6N : p6O ≠ p6N :=
+  ne_of_re_lt (p6O_re_lt_p6J_re.trans p6J_re_lt_p6N_re)
+
+private theorem p6O_ne_p6L : p6O ≠ p6L :=
+  ne_of_re_lt ((p6O_re_lt_p6J_re.trans p6J_re_lt_p6N_re).trans p6N_re_lt_p6L_re)
+
+private theorem p6J_ne_p6N : p6J ≠ p6N :=
+  ne_of_re_lt p6J_re_lt_p6N_re
+
+private theorem p6J_ne_p6L : p6J ≠ p6L :=
+  ne_of_re_lt (p6J_re_lt_p6N_re.trans p6N_re_lt_p6L_re)
+
+private theorem p6N_ne_p6L : p6N ≠ p6L :=
+  ne_of_re_lt p6N_re_lt_p6L_re
+
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
   simp only [a198683ValueSet]
