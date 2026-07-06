@@ -1,3 +1,4 @@
+import LeanProofs.PowTower
 import Mathlib.Data.Set.Card
 import Mathlib.Data.Nat.BitIndices
 import Std.Data.HashSet.Basic
@@ -30,10 +31,56 @@ namespace PowExpr
 
 open PowExpr
 
+/-- Translate the existing A002845 syntax into the shared one-token lexical syntax. -/
+def toSharedLex : PowExpr -> PowTower.Expr
+  | two => PowTower.Expr.atom
+  | pow a b => PowTower.Expr.pow (toSharedLex a) (toSharedLex b)
+
+/-- Translate the shared one-token lexical syntax back to the existing A002845 syntax. -/
+def ofSharedLex : PowTower.Expr -> PowExpr
+  | .atom => two
+  | .pow a b => pow (ofSharedLex a) (ofSharedLex b)
+
+theorem toSharedLex_ofSharedLex (e : PowTower.Expr) :
+    toSharedLex (ofSharedLex e) = e := by
+  induction e with
+  | atom => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
+theorem ofSharedLex_toSharedLex (e : PowExpr) :
+    ofSharedLex (toSharedLex e) = e := by
+  induction e with
+  | two => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
 /-- Evaluate a parenthesized power expression using natural-number exponentiation. -/
 def eval : PowExpr → Nat
   | two => 2
   | pow a b => eval a ^ eval b
+
+/-- Shared lexical interpretation for A002845: atom is `2`, node is `Nat.pow`. -/
+def sharedEval : PowTower.Expr -> Nat :=
+  PowTower.Expr.eval 2 (fun a b : Nat => a ^ b)
+
+/-- The existing A002845 syntax evaluates the same way as the shared lexical syntax. -/
+theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
+    eval e = sharedEval (toSharedLex e) := by
+  induction e with
+  | two =>
+      rfl
+  | pow a b iha ihb =>
+      simp [eval, sharedEval, toSharedLex, iha, ihb]
+
+/--
+The shared canonical lexical value set for A002845.
+
+TODO: after the four OEIS branches have converged on `PowTower.Expr`, make this
+the primary definition and keep `PowExpr` only as a compatibility view.
+-/
+def canonicalValueSet (n : Nat) : Set Nat :=
+  PowTower.Expr.valueSet 2 (fun a b : Nat => a ^ b) n
 
 /-- The number of literal `2` leaves in a power expression. -/
 def size : PowExpr → Nat
