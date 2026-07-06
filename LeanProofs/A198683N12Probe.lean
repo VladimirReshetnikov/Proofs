@@ -14,10 +14,10 @@ research corpus:
 The TSV's strict value-space partition has 2925 classes. The equivalence-class
 report then applies the documented multi-precision probe refinement: strict
 class 25 splits into `{25}` and `{1404, 4239}`, while the other probed
-classes stay merged or remain a singleton tentative class. The label list below
-records that probe-refined partition by candidate index: it keeps each TSV
-`strict_class`, except that candidates 1404 and 4239 receive the new class label
-2925.
+classes stay merged or remain a singleton tentative class. The strict label list
+below is read from the TSV by candidate index. The probe-refined list is then
+derived from it by keeping each `strict_class`, except that candidates 1404 and
+4239 receive the new class label 2925.
 
 This is deliberately only a data-integrity certificate for the retained local
 corpus. It is not a proof of the semantic Lean statement `a198683 12 = 2926` in
@@ -44,11 +44,24 @@ def partitionCertificateOk (labels : List Nat) (rows classes : Nat) : Bool :=
     distinctClassCount labels == classes &&
     allLabelsLt classes labels
 
+/-- Candidate indices whose label is `target`. -/
+def positionsWithLabelFrom (target idx : Nat) : List Nat -> List Nat
+  | [] => []
+  | label :: rest =>
+      if label = target then
+        idx :: positionsWithLabelFrom target (idx + 1) rest
+      else
+        positionsWithLabelFrom target (idx + 1) rest
+
+/-- Candidate indices whose label is `target`, starting at index 0. -/
+def positionsWithLabel (target : Nat) (labels : List Nat) : List Nat :=
+  positionsWithLabelFrom target 0 labels
+
 /--
-Probe-refined class labels for the 5139 n = 12 candidate powers, indexed by the
-`idx` column of `a198683-n12-candidates.tsv`.
+Strict value-space class labels for the 5139 n = 12 candidate powers, indexed
+by the `idx` column of `a198683-n12-candidates.tsv`.
 -/
-def n12ProbeRefinedLabels : List Nat :=
+def n12StrictLabels : List Nat :=
   List.flatten
     [
       [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23],
@@ -109,7 +122,7 @@ def n12ProbeRefinedLabels : List Nat :=
       [1319, 1320, 1321, 1322, 1323, 1324, 1325, 1326, 1327, 1328, 1329, 1330, 1331, 1332, 1333, 1334, 1335, 1336, 1337, 1338, 1339, 1340, 1341, 1342],
       [1343, 1344, 1345, 1346, 1347, 1348, 1349, 1350, 1351, 1352, 1353, 1354, 1355, 1356, 1357, 1358, 1359, 1360, 1361, 1362, 1363, 1364, 1365, 1366],
       [1367, 1368, 1369, 1370, 1371, 1372, 1373, 1374, 1375, 1376, 1377, 1378, 1379, 1380, 1381, 1382, 1383, 1384, 1385, 1386, 1387, 1388, 1389, 1390],
-      [1391, 1392, 1393, 1394, 1395, 1396, 1397, 1398, 1399, 1400, 1401, 1402, 2925, 1403, 1404, 1405, 1406, 1407, 1408, 1409, 1410, 1411, 1412, 1413],
+      [1391, 1392, 1393, 1394, 1395, 1396, 1397, 1398, 1399, 1400, 1401, 1402, 25, 1403, 1404, 1405, 1406, 1407, 1408, 1409, 1410, 1411, 1412, 1413],
       [1414, 1415, 1416, 1417, 1418, 1419, 1420, 1421, 1422, 1423, 1424, 1425, 1426, 1427, 1428, 1429, 1430, 1431, 1432, 1433, 1434, 1435, 1436, 1437],
       [1438, 1439, 1440, 1441, 1442, 1443, 1444, 1445, 1446, 1447, 1448, 1449, 1450, 1451, 1452, 1453, 1454, 1455, 1456, 1457, 1458, 1459, 1460, 1461],
       [1462, 1463, 1464, 1465, 1466, 1467, 1468, 1469, 1470, 1471, 1472, 1473, 1474, 1475, 1476, 1477, 1478, 1479, 1480, 1481, 1482, 1483, 1484, 1485],
@@ -227,7 +240,7 @@ def n12ProbeRefinedLabels : List Nat :=
       [1316, 1317, 1318, 1319, 1320, 1321, 1322, 1323, 1324, 1325, 2866, 1327, 1328, 1329, 1330, 1331, 1332, 1333, 1334, 1335, 1336, 1337, 1338, 1339],
       [1340, 1341, 1342, 1343, 1344, 1345, 1346, 1347, 1348, 1349, 1350, 1351, 1352, 1353, 1354, 1355, 1356, 1357, 1358, 1359, 1360, 1361, 1362, 1363],
       [1364, 1365, 1366, 1367, 1368, 1369, 1370, 1371, 1372, 1373, 1374, 1375, 1376, 1377, 2867, 1379, 1380, 1381, 1382, 1383, 2868, 1385, 1386, 1387],
-      [1388, 1389, 1390, 1391, 1392, 1393, 1394, 1395, 1396, 1397, 1398, 1399, 1400, 1401, 1402, 2925, 1403, 1404, 1405, 1406, 1407, 1408, 1409, 1410],
+      [1388, 1389, 1390, 1391, 1392, 1393, 1394, 1395, 1396, 1397, 1398, 1399, 1400, 1401, 1402, 25, 1403, 1404, 1405, 1406, 1407, 1408, 1409, 1410],
       [1411, 1412, 1413, 1414, 1415, 1416, 1417, 1418, 1419, 1420, 1421, 1422, 1423, 1424, 1425, 1426, 1427, 1428, 1429, 1430, 1431, 1432, 1433, 1434],
       [1435, 1436, 1437, 1438, 1439, 1440, 1441, 1442, 1443, 1444, 1445, 1446, 1447, 1448, 1449, 2869, 1451, 1452, 1453, 2870, 1455, 1456, 2871, 2872],
       [2873, 2874, 1461, 1462, 1463, 1464, 1465, 1466, 1467, 1468, 1469, 1470, 1471, 1472, 1473, 2875, 1475, 1476, 1477, 1478, 1479, 1480, 1481, 1482],
@@ -268,9 +281,44 @@ def n12ProbeRefinedLabels : List Nat :=
       [2822, 2823, 2825]
     ]
 
+/-- Apply the documented probe split of strict class 25. -/
+def probeRefinedLabelsFrom (idx : Nat) : List Nat -> List Nat
+  | [] => []
+  | label :: rest =>
+      (if idx = 1404 ∨ idx = 4239 then 2925 else label) ::
+        probeRefinedLabelsFrom (idx + 1) rest
+
+/--
+Probe-refined class labels for the 5139 n = 12 candidate powers. This is the
+strict TSV partition plus the documented split `{25, 1404, 4239} -> {25},
+{1404, 4239}`.
+-/
+def n12ProbeRefinedLabels : List Nat :=
+  probeRefinedLabelsFrom 0 n12StrictLabels
+
+/-- The strict value-space n = 12 table has 2925 classes among 5139 candidates. -/
+theorem a198683_twelve_strict_policy_class_count :
+    partitionCertificateOk n12StrictLabels 5139 2925 = true := by
+  native_decide
+
+/-- Strict class 25 is exactly the near-1 cluster split by the probe. -/
+theorem a198683_twelve_strict_class_twenty_five_members :
+    positionsWithLabel 25 n12StrictLabels = [25, 1404, 4239] := by
+  native_decide
+
+/-- The strict policy's tentative overflow singleton has class label 2924. -/
+theorem a198683_twelve_strict_tentative_singleton :
+    positionsWithLabel 2924 n12StrictLabels = [57] := by
+  native_decide
+
 /-- The local probe-refined n = 12 table has 2926 classes among 5139 candidates. -/
 theorem a198683_twelve_probe_refined_class_count :
     partitionCertificateOk n12ProbeRefinedLabels 5139 2926 = true := by
+  native_decide
+
+/-- The probe's new class 2925 is exactly the retained half of strict class 25. -/
+theorem a198683_twelve_probe_new_class_members :
+    positionsWithLabel 2925 n12ProbeRefinedLabels = [1404, 4239] := by
   native_decide
 
 end A198683N12Probe
