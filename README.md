@@ -132,8 +132,9 @@ around `nearOne25Level2` plus four endpoint `exp`/`cos` estimates; that
 `nearOne25Level2` box is itself reduced to a tighter rational box around
 `nearOne25Level1` plus endpoint product estimates; and the `nearOne25Level1`
 box is reduced to a rational box around the seed using a shifted third-quadrant
-trigonometric monotonicity argument.  The module also exposes exact
-real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
+trigonometric monotonicity argument.  The seed box is reduced one level further
+to a narrow rational box around `v = i^(i^(i^i))`.  The module also exposes
+exact real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
 layers of representative `25`, including the expansion of
 `v = i^(i^(i^i))` and the seed itself through the scalar `theta`, so the
 remaining interval certificate can be pushed down level by level.

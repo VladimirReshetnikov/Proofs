@@ -1244,6 +1244,108 @@ theorem nearOne25Level1_box_of_seed_box_and_endpoint_bounds
   exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
 
 /--
+A rational box around `v`, plus endpoint product estimates, is enough to
+certify the rational box around the representative-`25` seed used by the next
+reduction.
+-/
+theorem nearOne25Seed_box_of_v_box_and_endpoint_bounds
+    (hre0 : (50092236 : ℝ) / 1000000000 < v.re)
+    (hre1 : v.re < (50092237 : ℝ) / 1000000000)
+    (him0 : (602116527 : ℝ) / 1000000000 < v.im)
+    (him1 : v.im < (602116528 : ℝ) / 1000000000)
+    (hrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (himlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (himhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000) :
+    (25669119 : ℝ) / 10000000 < nearOne25Seed.re ∧
+      nearOne25Seed.re < (320864 : ℝ) / 125000 ∧
+      (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im ∧
+      nearOne25Seed.im < (-(404789 : ℝ) / 2000000) := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  have hexp0 :
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) <
+        Real.exp (Real.pi / 2 * v.im) :=
+    Real.exp_lt_exp.mpr (mul_lt_mul_of_pos_left him0 hpi2_pos)
+  have hexp1 :
+      Real.exp (Real.pi / 2 * v.im) <
+        Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) :=
+    Real.exp_lt_exp.mpr (mul_lt_mul_of_pos_left him1 hpi2_pos)
+  have hangle0 :
+      Real.pi / 2 * ((50092236 : ℝ) / 1000000000) < Real.pi / 2 * v.re :=
+    mul_lt_mul_of_pos_left hre0 hpi2_pos
+  have hangle1 :
+      Real.pi / 2 * v.re < Real.pi / 2 * ((50092237 : ℝ) / 1000000000) :=
+    mul_lt_mul_of_pos_left hre1 hpi2_pos
+  have hcos0 :
+      Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+        Real.cos (Real.pi / 2 * v.re) := by
+    have hangle_nonneg : 0 ≤ Real.pi / 2 * v.re := by
+      nlinarith [Real.pi_pos, hre0]
+    have hhi_le_pi : Real.pi / 2 * ((50092237 : ℝ) / 1000000000) ≤ Real.pi := by
+      nlinarith [Real.pi_pos]
+    exact Real.cos_lt_cos_of_nonneg_of_le_pi hangle_nonneg hhi_le_pi hangle1
+  have hcos1 :
+      Real.cos (Real.pi / 2 * v.re) <
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) := by
+    have hlo_nonneg : 0 ≤ Real.pi / 2 * ((50092236 : ℝ) / 1000000000) := by positivity
+    have hangle_le_pi : Real.pi / 2 * v.re ≤ Real.pi := by
+      nlinarith [Real.pi_pos, hre1]
+    exact Real.cos_lt_cos_of_nonneg_of_le_pi hlo_nonneg hangle_le_pi hangle0
+  have hsin0 :
+      Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+        Real.sin (Real.pi / 2 * v.re) := by
+    have hx : -(Real.pi / 2) ≤
+        Real.pi / 2 * ((50092236 : ℝ) / 1000000000) := by
+      nlinarith [Real.pi_pos]
+    have hy : Real.pi / 2 * v.re ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos, hre1]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle0
+  have hsin1 :
+      Real.sin (Real.pi / 2 * v.re) <
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) := by
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * v.re := by
+      nlinarith [Real.pi_pos, hre0]
+    have hy : Real.pi / 2 * ((50092237 : ℝ) / 1000000000) ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle1
+  have hcos_lo_pos :
+      0 < Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) := by
+    exact Real.cos_pos_of_mem_Ioo ⟨by nlinarith [Real.pi_pos], by nlinarith [Real.pi_pos]⟩
+  have hsin_lo_pos :
+      0 < Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) := by
+    exact Real.sin_pos_of_pos_of_lt_pi
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hre_bounds :
+      (25669119 : ℝ) / 10000000 < nearOne25Seed.re ∧
+        nearOne25Seed.re < (320864 : ℝ) / 125000 := by
+    rw [nearOne25Seed_re_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hcos0 hcos1 hrelo hrehi
+      (Real.exp_pos _) hcos_lo_pos
+  have hprod_bounds :
+      (404789 : ℝ) / 2000000 <
+          Real.exp (Real.pi / 2 * v.im) * Real.sin (Real.pi / 2 * v.re) ∧
+        Real.exp (Real.pi / 2 * v.im) * Real.sin (Real.pi / 2 * v.re) <
+          (1011973 : ℝ) / 5000000 :=
+    mul_mem_pos_pos_interval hexp0 hexp1 hsin0 hsin1 himlo himhi
+      (Real.exp_pos _) hsin_lo_pos
+  have him_bounds :
+      (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im ∧
+        nearOne25Seed.im < (-(404789 : ℝ) / 2000000) := by
+    rw [nearOne25Seed_im_eq]
+    constructor <;> nlinarith [hprod_bounds.1, hprod_bounds.2]
+  exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
+
+/--
 The hard sign condition for `idx = 25` follows from a certified interval for
 the previous level's real part. Numerically this level is about `-765.4119`.
 -/
