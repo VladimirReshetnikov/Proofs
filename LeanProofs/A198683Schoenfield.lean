@@ -578,6 +578,11 @@ theorem schoenfield_a198683_eleven :
     certificateOk labelsEleven 16796 1152 = true := by
   native_decide
 
+/-- Direct class-count consequence of the Schoenfield certificate for `A198683(11) = 1152`. -/
+theorem schoenfield_a198683_eleven_class_count :
+    normalizedClassCount labelsEleven = 1152 :=
+  certificateOk_class_count_of schoenfield_a198683_eleven
+
 end A198683Schoenfield
 
 end LeanProofs
