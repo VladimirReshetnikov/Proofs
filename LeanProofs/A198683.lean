@@ -3406,6 +3406,116 @@ theorem a198683_seven_le_forty_five : a198683 7 ≤ 45 := by
     _ = a198683SevenMoreCollapsedReps.length := by simp
     _ = 45 := by norm_num [a198683SevenMoreCollapsedReps]
 
+private noncomputable def a198683SevenPeriodicCollapsedReps : List ℂ :=
+  [principalPow Complex.I p6A, principalPow Complex.I p6B, principalPow Complex.I p6C,
+    principalPow Complex.I p6D, principalPow Complex.I p6E, principalPow Complex.I p6F,
+    principalPow Complex.I p6G, principalPow Complex.I p6H, principalPow Complex.I p6I,
+    principalPow Complex.I p6J, principalPow Complex.I p6K, principalPow Complex.I p6L,
+    principalPow Complex.I p6M, principalPow Complex.I p6N, principalPow Complex.I p6O,
+    principalPow p2 p5A, principalPow p2 p5B, principalPow p2 p5C,
+    principalPow p2 p5D, principalPow p2 p5E, principalPow p2 p5F,
+    principalPow p2 p5G,
+    principalPow p3L p4A, principalPow p3L p4B, principalPow p3L p4C,
+    principalPow p3R p4A, principalPow p3R p4B, principalPow p3R p4C,
+    principalPow p4A p3L, principalPow p4A p3R, principalPow p4B p3L,
+    principalPow p4C p3L,
+    principalPow p5B p2, principalPow p5F p2, principalPow p5G p2,
+    principalPow p6A Complex.I, principalPow p6B Complex.I, principalPow p6C Complex.I,
+    principalPow p6D Complex.I, principalPow p6F Complex.I, principalPow p6G Complex.I,
+    principalPow p6H Complex.I, principalPow p6K Complex.I, principalPow p6M Complex.I]
+
+private theorem a198683_seven_subset_periodicCollapsedReps :
+    a198683ValueSet 7 ⊆
+      Set.range (fun i : Fin a198683SevenPeriodicCollapsedReps.length =>
+        a198683SevenPeriodicCollapsedReps.get i) := by
+  classical
+  let rep45 : Fin a198683SevenMoreCollapsedReps.length → ℂ :=
+    fun i => a198683SevenMoreCollapsedReps.get i
+  let rep44 : Fin a198683SevenPeriodicCollapsedReps.length → ℂ :=
+    fun i => a198683SevenPeriodicCollapsedReps.get i
+  have hsubset45 : a198683ValueSet 7 ⊆ Set.range rep45 := by
+    simpa [rep45] using a198683_seven_subset_moreCollapsedReps
+  have reps44_length : a198683SevenPeriodicCollapsedReps.length = 44 := by
+    norm_num [a198683SevenPeriodicCollapsedReps]
+  have inRange44 (i : Nat) (h : i < a198683SevenPeriodicCollapsedReps.length) :
+      a198683SevenPeriodicCollapsedReps.get ⟨i, h⟩ ∈ Set.range rep44 := by
+    exact ⟨⟨i, h⟩, rfl⟩
+  have hrange : Set.range rep45 ⊆ Set.range rep44 := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    fin_cases i
+    · exact inRange44 0 (by rw [reps44_length]; norm_num)
+    · exact inRange44 1 (by rw [reps44_length]; norm_num)
+    · exact inRange44 2 (by rw [reps44_length]; norm_num)
+    · exact inRange44 3 (by rw [reps44_length]; norm_num)
+    · exact inRange44 4 (by rw [reps44_length]; norm_num)
+    · exact inRange44 5 (by rw [reps44_length]; norm_num)
+    · exact inRange44 6 (by rw [reps44_length]; norm_num)
+    · exact inRange44 7 (by rw [reps44_length]; norm_num)
+    · exact inRange44 8 (by rw [reps44_length]; norm_num)
+    · exact inRange44 9 (by rw [reps44_length]; norm_num)
+    · exact inRange44 10 (by rw [reps44_length]; norm_num)
+    · exact inRange44 11 (by rw [reps44_length]; norm_num)
+    · exact inRange44 12 (by rw [reps44_length]; norm_num)
+    · exact inRange44 13 (by rw [reps44_length]; norm_num)
+    · exact inRange44 14 (by rw [reps44_length]; norm_num)
+    · exact inRange44 15 (by rw [reps44_length]; norm_num)
+    · exact inRange44 16 (by rw [reps44_length]; norm_num)
+    · exact inRange44 17 (by rw [reps44_length]; norm_num)
+    · exact inRange44 18 (by rw [reps44_length]; norm_num)
+    · exact inRange44 19 (by rw [reps44_length]; norm_num)
+    · exact inRange44 20 (by rw [reps44_length]; norm_num)
+    · exact inRange44 21 (by rw [reps44_length]; norm_num)
+    · exact inRange44 22 (by rw [reps44_length]; norm_num)
+    · exact inRange44 23 (by rw [reps44_length]; norm_num)
+    · exact inRange44 24 (by rw [reps44_length]; norm_num)
+    · exact inRange44 25 (by rw [reps44_length]; norm_num)
+    · exact inRange44 26 (by rw [reps44_length]; norm_num)
+    · exact inRange44 27 (by rw [reps44_length]; norm_num)
+    · exact inRange44 28 (by rw [reps44_length]; norm_num)
+    · exact inRange44 29 (by rw [reps44_length]; norm_num)
+    · exact inRange44 30 (by rw [reps44_length]; norm_num)
+    · exact inRange44 31 (by rw [reps44_length]; norm_num)
+    · exact inRange44 32 (by rw [reps44_length]; norm_num)
+    · exact inRange44 33 (by rw [reps44_length]; norm_num)
+    · exact inRange44 34 (by rw [reps44_length]; norm_num)
+    · exact inRange44 35 (by rw [reps44_length]; norm_num)
+    · exact inRange44 36 (by rw [reps44_length]; norm_num)
+    · exact inRange44 37 (by rw [reps44_length]; norm_num)
+    · exact inRange44 38 (by rw [reps44_length]; norm_num)
+    · exact inRange44 39 (by rw [reps44_length]; norm_num)
+    · exact inRange44 40 (by rw [reps44_length]; norm_num)
+    · exact inRange44 41 (by rw [reps44_length]; norm_num)
+    · exact inRange44 42 (by rw [reps44_length]; norm_num)
+    · exact inRange44 43 (by rw [reps44_length]; norm_num)
+    · change principalPow p6O Complex.I ∈ Set.range rep44
+      rw [p6O_pow_I_eq_p3R_pow_p4B]
+      exact inRange44 26 (by rw [reps44_length]; norm_num)
+  exact hsubset45.trans hrange
+
+theorem a198683_seven_le_forty_four : a198683 7 ≤ 44 := by
+  classical
+  rw [a198683]
+  let rep : Fin a198683SevenPeriodicCollapsedReps.length → ℂ :=
+    fun i => a198683SevenPeriodicCollapsedReps.get i
+  have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+    simpa [rep] using a198683_seven_subset_periodicCollapsedReps
+  let repFinset : Finset ℂ := Finset.univ.image rep
+  have hRangeSubset : Set.range rep ⊆ (repFinset : Set ℂ) := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    change rep i ∈ repFinset
+    exact Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩
+  calc
+    (a198683ValueSet 7).ncard ≤ (Set.range rep).ncard :=
+      Set.ncard_le_ncard hsubset
+    _ ≤ (repFinset : Set ℂ).ncard := Set.ncard_le_ncard hRangeSubset
+    _ = repFinset.card := by rw [Set.ncard_coe_finset]
+    _ ≤ (Finset.univ : Finset (Fin a198683SevenPeriodicCollapsedReps.length)).card :=
+      Finset.card_image_le
+    _ = a198683SevenPeriodicCollapsedReps.length := by simp
+    _ = 44 := by norm_num [a198683SevenPeriodicCollapsedReps]
+
 end
 
 end LeanProofs
