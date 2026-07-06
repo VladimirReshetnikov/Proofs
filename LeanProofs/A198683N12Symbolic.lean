@@ -1244,6 +1244,64 @@ theorem nearOne25Level1_box_of_seed_box_and_endpoint_bounds
   exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
 
 /--
+Scalar rational bounds for the exponential, cosine, and sine factors in the
+exact formula for `v` are enough to certify the narrow rational box for `v`.
+-/
+theorem v_box_of_exp_cos_sin_bounds
+    (hexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * Real.sin theta))
+    (hexp1 :
+      Real.exp (-(Real.pi / 2) * Real.sin theta) <
+        (60419661060 : ℝ) / 100000000000)
+    (hcos0 : (8290717828 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * Real.cos theta))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * Real.cos theta) <
+        (8290717829 : ℝ) / 100000000000)
+    (hsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * Real.cos theta))
+    (hsin1 :
+      Real.sin (Real.pi / 2 * Real.cos theta) <
+        (99655727372 : ℝ) / 100000000000) :
+    (50092236 : ℝ) / 1000000000 < v.re ∧
+      v.re < (50092237 : ℝ) / 1000000000 ∧
+      (602116527 : ℝ) / 1000000000 < v.im ∧
+      v.im < (602116528 : ℝ) / 1000000000 := by
+  have hrelo :
+      (50092236 : ℝ) / 1000000000 <
+        ((60419661058 : ℝ) / 100000000000) *
+          ((8290717828 : ℝ) / 100000000000) := by
+    norm_num
+  have hrehi :
+      ((60419661060 : ℝ) / 100000000000) *
+          ((8290717829 : ℝ) / 100000000000) <
+        (50092237 : ℝ) / 1000000000 := by
+    norm_num
+  have himlo :
+      (602116527 : ℝ) / 1000000000 <
+        ((60419661058 : ℝ) / 100000000000) *
+          ((99655727371 : ℝ) / 100000000000) := by
+    norm_num
+  have himhi :
+      ((60419661060 : ℝ) / 100000000000) *
+          ((99655727372 : ℝ) / 100000000000) <
+        (602116528 : ℝ) / 1000000000 := by
+    norm_num
+  have hre_bounds :
+      (50092236 : ℝ) / 1000000000 < v.re ∧
+        v.re < (50092237 : ℝ) / 1000000000 := by
+    rw [v_re_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hcos0 hcos1 hrelo hrehi
+      (by norm_num) (by norm_num)
+  have him_bounds :
+      (602116527 : ℝ) / 1000000000 < v.im ∧
+        v.im < (602116528 : ℝ) / 1000000000 := by
+    rw [v_im_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hsin0 hsin1 himlo himhi
+      (by norm_num) (by norm_num)
+  exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
+
+/--
 A rational box around `v`, plus endpoint product estimates, is enough to
 certify the rational box around the representative-`25` seed used by the next
 reduction.
