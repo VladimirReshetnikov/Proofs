@@ -1794,6 +1794,34 @@ private theorem p4C_pow_p2_eq_p6N :
     principalPow p4C p2 = p6N := by
   rfl
 
+private theorem p6E_pow_I_eq_p2_pow_p5E :
+    principalPow p6E Complex.I = principalPow p2 p5E := by
+  rw [p6E_eq_p2, p5E_eq_I]
+
+private theorem p4B_pow_p3R_eq_p2_pow_p5E :
+    principalPow p4B p3R = principalPow p2 p5E := by
+  dsimp [principalPow]
+  rw [log_p4B_eq, p3R_eq_neg_I, log_p2_eq, p5E_eq_I]
+  congr 1
+  ring
+
+private theorem I_pow_p6E_eq_p3L :
+    principalPow Complex.I p6E = p3L := by
+  rw [p6E_eq_p2]
+  rfl
+
+private theorem p5E_pow_p2_eq_p3L :
+    principalPow p5E p2 = p3L := by
+  rw [p5E_eq_I]
+  rfl
+
+private theorem p4C_pow_p3R_eq_p3L :
+    principalPow p4C p3R = p3L := by
+  dsimp [principalPow]
+  rw [log_p4C_eq, p3R_eq_neg_I, p3L_eq_exp_theta]
+  congr 1
+  ring
+
 private theorem p6E_eq_exp_neg_pi_div_two :
     p6E = (Real.exp (-(Real.pi / 2)) : ℂ) := by
   rw [p6E_eq_p2, p2_eq_rho]
@@ -1822,6 +1850,12 @@ private theorem p6L_eq_exp_theta :
       _ = (theta : ℂ) * 1 := by rw [mul_neg, Complex.I_mul_I]; ring
       _ = (theta : ℂ) := by ring]
   exact (Complex.ofReal_exp theta).symm
+
+private theorem p6L_pow_I_eq_p3L :
+    principalPow p6L Complex.I = p3L := by
+  dsimp [principalPow]
+  rw [p6L_eq_exp_theta, p3L_eq_exp_theta]
+  rw [← Complex.ofReal_log (Real.exp_pos theta).le, Real.log_exp]
 
 private theorem p6N_eq_exp_neg_angleF :
     p6N = (Real.exp (-(theta * rho)) : ℂ) := by
