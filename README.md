@@ -130,8 +130,10 @@ and then to scalar interval bounds for the exponential and cosine factors in
 the exact formula for `nearOne25Level3.re`, and then to a small rational box
 around `nearOne25Level2` plus four endpoint `exp`/`cos` estimates; that
 `nearOne25Level2` box is itself reduced to a tighter rational box around
-`nearOne25Level1` plus endpoint product estimates.  The module also exposes
-exact real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
+`nearOne25Level1` plus endpoint product estimates; and the `nearOne25Level1`
+box is reduced to a rational box around the seed using a shifted third-quadrant
+trigonometric monotonicity argument.  The module also exposes exact
+real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
 layers of representative `25`, including the expansion of
 `v = i^(i^(i^i))` and the seed itself through the scalar `theta`, so the
 remaining interval certificate can be pushed down level by level.
