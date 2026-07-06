@@ -4466,7 +4466,9 @@ private noncomputable def a198683SixCandidateSet : Set ℂ :=
 
 private theorem a198683SixCandidateSet_ncard :
     a198683SixCandidateSet.ncard = 15 := by
-  simpa [a198683SixCandidateSet, a198683, valueSet_six_eq_candidates] using a198683_six
+  have hsix := a198683_six
+  rw [a198683_eq_valueSet_ncard, valueSet_six_eq_candidates] at hsix
+  simpa [a198683SixCandidateSet] using hsix
 
 private noncomputable def a198683SevenStripLowerExponents : Set ℂ :=
   ({p6A, p6B, p6C, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N,
