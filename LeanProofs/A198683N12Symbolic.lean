@@ -1533,6 +1533,31 @@ theorem theta_box_of_pi_div_two_rho_bounds
     exact (h1.trans h2).trans hhi
 
 /--
+Bounds for `pi/2`, plus endpoint exponential estimates, are enough to certify
+the rational box for `rho = exp(-pi/2)`.
+-/
+theorem rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000) :
+    (207879576350 : ℝ) / 1000000000000 < rho ∧
+      rho < (207879576351 : ℝ) / 1000000000000 := by
+  dsimp [rho]
+  constructor
+  · have harg :
+        -((1570796326795 : ℝ) / 1000000000000) < -(Real.pi / 2) := by
+      linarith
+    exact hexp0.trans (Real.exp_lt_exp.mpr harg)
+  · have harg :
+        -(Real.pi / 2) < -((1570796326794 : ℝ) / 1000000000000) := by
+      linarith
+    exact (Real.exp_lt_exp.mpr harg).trans hexp1
+
+/--
 A rational box around `v`, plus endpoint product estimates, is enough to
 certify the rational box around the representative-`25` seed used by the next
 reduction.
