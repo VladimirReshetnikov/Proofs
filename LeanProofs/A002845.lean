@@ -9,10 +9,11 @@ import Std.Data.HashSet.Basic
 OEIS A002845 counts the distinct values taken by `2^2^...^2`, with `n`
 copies of `2` and all binary parenthesizations allowed.
 
-The primary definition below is deliberately the direct semantic one: binary
-expression trees whose leaves are literal `2`, evaluated by natural-number
-exponentiation.  The later sparse-binary logarithm code is only an executable
-backend, and is kept separate from the canonical OEIS definition.
+The primary definition below is the shared lexical one from `PowTower.Expr`:
+the single atom is interpreted as the literal `2`, and the binary node is
+interpreted as natural-number exponentiation.  The older local syntax and the
+later sparse-binary logarithm code are retained as computation-facing views,
+with Lean proofs connecting them back to the shared lexical definition.
 -/
 
 set_option maxRecDepth 100000
@@ -75,9 +76,6 @@ theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
 
 /--
 The shared canonical lexical value set for A002845.
-
-TODO: after the four OEIS branches have converged on `PowTower.Expr`, make this
-the primary definition and keep `PowExpr` only as a compatibility view.
 -/
 def canonicalValueSet (n : Nat) : Set Nat :=
   PowTower.Expr.valueSet 2 (fun a b : Nat => a ^ b) n
@@ -126,10 +124,7 @@ theorem parenthesizations_map_toSharedLex (n : Nat) :
               simp [parenthesizations, PowTower.Expr.parenthesizations, toSharedLex,
                 List.map_flatMap, List.map_map, hleft, hright]
 
-/--
-The canonical semantic value set for A002845: distinct natural numbers arising
-from all legal parenthesizations of `2^2^...^2`.
--/
+/-- Compatibility value set computed through the old local literal-`2` syntax. -/
 def valueSet (n : Nat) : Set Nat :=
   {v | ∃ e ∈ parenthesizations n, eval e = v}
 
@@ -150,16 +145,16 @@ theorem valueSet_eq_canonicalValueSet (n : Nat) :
     rw [eval_eq_sharedEval_toSharedLex, hshared, hv]
 
 /--
-OEIS A002845, defined canonically as the cardinality of the semantic
+OEIS A002845, defined canonically as the cardinality of the shared lexical
 natural-number exponentiation value set.
 -/
 noncomputable def a002845 (n : Nat) : Nat :=
-  (valueSet n).ncard
+  PowTower.Expr.valueCard 2 (fun a b : Nat => a ^ b) n
 
 /-- A002845 can equivalently be read from the shared canonical lexical syntax. -/
 theorem a002845_eq_canonicalValueSet_ncard (n : Nat) :
     a002845 n = (canonicalValueSet n).ncard := by
-  rw [a002845, valueSet_eq_canonicalValueSet]
+  rfl
 
 /-- The exact base-two logarithm of a semantic power expression. -/
 def logEval : PowExpr → Nat
@@ -203,7 +198,8 @@ the first proof boundary: switching from values to logarithms is justified by
 injectivity of `m ↦ 2^m`.
 -/
 theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n := by
-  rw [a002845, a002845LogCard, valueSet_eq_pow2_image_logValueSet]
+  rw [a002845_eq_canonicalValueSet_ncard, ← valueSet_eq_canonicalValueSet,
+    a002845LogCard, valueSet_eq_pow2_image_logValueSet]
   exact Set.InjOn.ncard_image
     ((Nat.pow_right_injective (by decide : 2 ≤ (2 : Nat))).injOn)
 
