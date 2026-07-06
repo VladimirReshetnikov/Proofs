@@ -500,6 +500,11 @@ theorem a002845_eq_certifiedSparseCard (n : Nat) : a002845 n = certifiedSparseCa
   rw [coe_certifiedSparseLogFinset]
   exact (Set.InjOn.ncard_image Sparse.ofNat_injective.injOn).symm
 
+/-- OEIS A002845 has value `17` at `n = 7`. -/
+theorem a002845_seven : a002845 7 = 17 := by
+  rw [a002845_eq_certifiedSparseCard]
+  native_decide
+
 /-- Insert all values produced by one binary split of an expression of size
 `n` into an accumulator. -/
 partial def insertSplitValues (levels : Array (List Sparse)) (leftSize rightSize : Nat)
