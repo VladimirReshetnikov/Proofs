@@ -1,4 +1,5 @@
 import LeanProofs.A198683
+import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Tactic.NormNum
@@ -1557,6 +1558,90 @@ theorem rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds
         -(Real.pi / 2) < -((1570796326794 : ℝ) / 1000000000000) := by
       linarith
     exact (Real.exp_lt_exp.mpr harg).trans hexp1
+
+/--
+The concrete `pi/2` box needed by the downstream `theta` and `rho` reductions,
+proved from mathlib's 20-decimal `pi` certificate.
+-/
+theorem pi_div_two_bounds_for_theta_rho :
+    (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2 ∧
+      Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000 := by
+  constructor
+  · have hpi :
+        (3141592653588 : ℝ) / 1000000000000 < Real.pi := by
+      exact (by norm_num :
+        (3141592653588 : ℝ) / 1000000000000 <
+          3.14159265358979323846).trans Real.pi_gt_d20
+    linarith
+  · have hpi :
+        Real.pi < (3141592653590 : ℝ) / 1000000000000 := by
+      exact Real.pi_lt_d20.trans
+        (by norm_num :
+          3.14159265358979323847 <
+            (3141592653590 : ℝ) / 1000000000000)
+    linarith
+
+/--
+The `rho = exp(-pi/2)` box after discharging the `pi/2` interval from
+mathlib's certified `pi` bounds.  The remaining assumptions are the two
+endpoint estimates for `exp` at the rational endpoints of the `pi/2` box.
+-/
+theorem rho_bounds_of_endpoint_bounds
+    (hexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000) :
+    (207879576350 : ℝ) / 1000000000000 < rho ∧
+      rho < (207879576351 : ℝ) / 1000000000000 := by
+  rcases pi_div_two_bounds_for_theta_rho with ⟨hpi0, hpi1⟩
+  exact rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds hpi0 hpi1 hexp0 hexp1
+
+/--
+The `theta = (pi/2) * rho` box reduced to the two rational endpoint
+exponential estimates used for `rho`; the `pi/2` box itself is certified
+above from mathlib's `pi` bounds.
+-/
+theorem theta_box_of_rho_endpoint_bounds
+    (hexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000) :
+    (326536474946 : ℝ) / 1000000000000 < theta ∧
+      theta < (326536474949 : ℝ) / 1000000000000 := by
+  rcases pi_div_two_bounds_for_theta_rho with ⟨hpi0, hpi1⟩
+  have hrho := rho_bounds_of_endpoint_bounds hexp0 hexp1
+  exact theta_box_of_pi_div_two_rho_bounds hpi0 hpi1 hrho.1 hrho.2
+
+/--
+The `sin theta` and `cos theta` boxes reduced to the two `rho` exponential
+endpoint estimates plus endpoint estimates for `sin` and `cos` at the rational
+ends of the resulting `theta` box.
+-/
+theorem sin_cos_theta_bounds_of_rho_endpoint_bounds_and_endpoint_bounds
+    (hrhoExp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hrhoExp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000)
+    (hsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (hsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (hcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (hcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000) :
+    (320764449975 : ℝ) / 1000000000000 < Real.sin theta ∧
+      Real.sin theta < (320764449985 : ℝ) / 1000000000000 ∧
+      (947158998071 : ℝ) / 1000000000000 < Real.cos theta ∧
+      Real.cos theta < (947158998073 : ℝ) / 1000000000000 := by
+  have htheta := theta_box_of_rho_endpoint_bounds hrhoExp0 hrhoExp1
+  exact sin_cos_theta_bounds_of_theta_box_and_endpoint_bounds
+    htheta.1 htheta.2 hsin0 hsin1 hcos0 hcos1
 
 /--
 A rational box around `v`, plus endpoint product estimates, is enough to
