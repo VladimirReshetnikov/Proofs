@@ -1,6 +1,7 @@
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
+import Mathlib.Analysis.SpecialFunctions.Trigonometric.Bounds
 import Mathlib.Data.Set.Card
 import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith.Frontend
@@ -944,6 +945,18 @@ private theorem theta_gt_one_div_four :
     linarith [Real.pi_gt_d2]
   nlinarith [hpi, rho_gt_one_div_five]
 
+private theorem theta_lt_one_div_three :
+    theta < (1 : ℝ) / 3 := by
+  have hpi : Real.pi / 2 < (63 : ℝ) / 40 := by
+    linarith [Real.pi_lt_d2]
+  have htheta_mul :
+      theta * Real.exp (Real.pi / 2) = Real.pi / 2 := by
+    dsimp [theta, rho]
+    rw [Real.exp_neg]
+    field_simp [(Real.exp_pos (Real.pi / 2)).ne']
+  have hexp_pos : 0 < Real.exp (Real.pi / 2) := Real.exp_pos _
+  nlinarith [hpi, exp_pi_div_two_gt_24_div_5, htheta_mul, theta_pos, hexp_pos]
+
 private theorem exp_neg_theta_lt_four_div_five :
     Real.exp (-theta) < (4 : ℝ) / 5 := by
   have hmono : Real.exp (-theta) < Real.exp (-(1 : ℝ) / 4) :=
@@ -1611,6 +1624,35 @@ private theorem p6K_im_pos :
   have harg_lt_pi : theta * Real.cos theta < Real.pi := by
     nlinarith [theta_lt_pi_div_two, Real.pi_pos, hcos_le_one, hcos_pos]
   exact mul_pos (by positivity) (Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩)
+
+private theorem p6K_re_gt_four_div_five :
+    (4 : ℝ) / 5 < p6K.re := by
+  dsimp [p6K, principalPow]
+  rw [log_p3L_eq, p3L_eq_exp_theta, Complex.exp_re]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hsin_pos : 0 < Real.sin theta := sin_theta_pos
+  have hsin_lt_theta : Real.sin theta < theta := Real.sin_lt theta_pos
+  have hu_pos : 0 < theta * Real.sin theta := mul_pos theta_pos hsin_pos
+  have hu_lt : theta * Real.sin theta < (1 : ℝ) / 9 := by
+    nlinarith [theta_pos, theta_lt_one_div_three, hsin_pos, hsin_lt_theta]
+  have hexp_lb : (8 : ℝ) / 9 < Real.exp (-(theta * Real.sin theta)) := by
+    have h := Real.one_sub_lt_exp_neg hu_pos.ne'
+    nlinarith [h, hu_lt]
+  have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+  have hcos_le_one : Real.cos theta ≤ 1 := Real.cos_le_one theta
+  have harg_pos : 0 ≤ theta * Real.cos theta := by nlinarith [theta_pos, hcos_pos]
+  have harg_lt : theta * Real.cos theta < (1 : ℝ) / 3 := by
+    nlinarith [theta_pos, theta_lt_one_div_three, hcos_pos, hcos_le_one]
+  have harg_sq_lt : (theta * Real.cos theta) ^ 2 < (1 : ℝ) / 9 := by
+    nlinarith [harg_pos, harg_lt]
+  have hcos_lb : (17 : ℝ) / 18 < Real.cos (theta * Real.cos theta) := by
+    have h := Real.one_sub_sq_div_two_le_cos (x := theta * Real.cos theta)
+    nlinarith [h, harg_sq_lt]
+  have hprod :
+      (8 : ℝ) / 9 * ((17 : ℝ) / 18) <
+        Real.exp (-(theta * Real.sin theta)) * Real.cos (theta * Real.cos theta) :=
+    mul_lt_mul hexp_lb hcos_lb.le (by norm_num) (Real.exp_pos _).le
+  nlinarith [hprod]
 
 private theorem p6E_im_zero :
     p6E.im = 0 := by
