@@ -213,9 +213,10 @@ box is reduced one level further to a narrow rational box around
 conditions for the split.  The scalar rational bounds for the exact
 exponential, cosine, and sine factors defining `v` are now also composed into
 direct sufficient conditions for the split, and are reduced
-to rational boxes for `sin theta` and `cos theta` plus endpoint estimates;
-those trigonometric boxes are reduced to a narrow rational box for `theta`
-itself; and the `theta` box is reduced to rational boxes for `pi/2` and
+to rational boxes for `sin theta` and `cos theta` plus endpoint estimates,
+which are now likewise composed into direct sufficient conditions for the
+split; those trigonometric boxes are reduced to a narrow rational box for
+`theta` itself; and the `theta` box is reduced to rational boxes for `pi/2` and
 `rho = exp(-pi/2)`, with the `rho` box further reduced to the same `pi/2` box
 plus endpoint exponential estimates.  The module also exposes exact
 real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`

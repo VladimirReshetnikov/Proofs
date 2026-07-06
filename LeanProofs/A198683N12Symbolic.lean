@@ -2285,6 +2285,174 @@ theorem nearOne25_ne_nearOne4239_of_v_exp_cos_sin_bounds_and_endpoint_bounds
     h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
 
 /--
+The strict class-25 split from `1404` follows from rational boxes for
+`sin theta` and `cos theta`, endpoint estimates for the scalar factors defining
+`v = i^(i^(i^i))`, and the endpoint estimates propagating `v` through the
+remaining levels.
+-/
+theorem nearOne25_ne_nearOne1404_of_sin_cos_theta_bounds_and_endpoint_bounds
+    (hsinTheta0 : (320764449975 : ℝ) / 1000000000000 < Real.sin theta)
+    (hsinTheta1 : Real.sin theta < (320764449985 : ℝ) / 1000000000000)
+    (hcosTheta0 : (947158998071 : ℝ) / 1000000000000 < Real.cos theta)
+    (hcosTheta1 : Real.cos theta < (947158998073 : ℝ) / 1000000000000)
+    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
+    (hvexp1 :
+      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
+        (60419661060 : ℝ) / 100000000000)
+    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
+    (hvcos1 :
+      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+        (8290717829 : ℝ) / 100000000000)
+    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
+    (hvsin1 :
+      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+        (99655727372 : ℝ) / 100000000000)
+    (hsrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hsrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (hsimlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (hsimhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000)
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne1404 := by
+  rcases v_box_of_sin_cos_theta_bounds_and_endpoint_bounds
+      hsinTheta0 hsinTheta1 hcosTheta0 hcosTheta1
+      hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1 with
+    ⟨hvre0, hvre1, hvim0, hvim1⟩
+  exact nearOne25_ne_nearOne1404_of_v_box_and_endpoint_bounds
+    hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi
+    h1relo h1rehi h1imlo h1imhi
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
+The same trigonometric boxes and endpoint estimates separate representative
+`25` from the other retained representative `4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_sin_cos_theta_bounds_and_endpoint_bounds
+    (hsinTheta0 : (320764449975 : ℝ) / 1000000000000 < Real.sin theta)
+    (hsinTheta1 : Real.sin theta < (320764449985 : ℝ) / 1000000000000)
+    (hcosTheta0 : (947158998071 : ℝ) / 1000000000000 < Real.cos theta)
+    (hcosTheta1 : Real.cos theta < (947158998073 : ℝ) / 1000000000000)
+    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
+    (hvexp1 :
+      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
+        (60419661060 : ℝ) / 100000000000)
+    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
+    (hvcos1 :
+      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+        (8290717829 : ℝ) / 100000000000)
+    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
+    (hvsin1 :
+      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+        (99655727372 : ℝ) / 100000000000)
+    (hsrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hsrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (hsimlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (hsimhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000)
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne4239 := by
+  rcases v_box_of_sin_cos_theta_bounds_and_endpoint_bounds
+      hsinTheta0 hsinTheta1 hcosTheta0 hcosTheta1
+      hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1 with
+    ⟨hvre0, hvre1, hvim0, hvim1⟩
+  exact nearOne25_ne_nearOne4239_of_v_box_and_endpoint_bounds
+    hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi
+    h1relo h1rehi h1imlo h1imhi
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written
 with the same principal-power expression as the local trace:
 
