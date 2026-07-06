@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
 import Mathlib.Data.Set.Card
 import Mathlib.Tactic.FinCases
@@ -108,6 +110,9 @@ private noncomputable def rho : ℝ :=
 
 private noncomputable def theta : ℝ :=
   Real.pi / 2 * rho
+
+private noncomputable def beta : ℝ :=
+  Real.pi / 2 * (Real.exp (Real.pi / 2) - 4)
 
 private theorem theta_pos : 0 < theta := by
   dsimp [theta, rho]
@@ -528,6 +533,24 @@ private theorem I_eq_exp_pi_div_two_I :
   rw [show (((Real.pi / 2 : ℝ) : ℂ) = (Real.pi : ℂ) / 2) by norm_num]
   exact Complex.exp_pi_div_two_mul_I.symm
 
+private theorem p5B_eq_exp_beta :
+    p5B = Complex.exp ((beta : ℂ) * Complex.I) := by
+  dsimp [p5B, principalPow]
+  rw [log_I_real, p4B_eq_exp_pi_div_two]
+  have harg :
+      (((Real.pi / 2 : ℝ) : ℂ) * Complex.I * (Real.exp (Real.pi / 2) : ℂ)) =
+        (((beta + 2 * Real.pi : ℝ) : ℂ) * Complex.I) := by
+    apply Complex.ext
+    · simp [Complex.mul_re, Complex.mul_im, beta]
+    · simp [Complex.mul_re, Complex.mul_im, beta]
+      ring
+  rw [harg]
+  rw [show (((beta + 2 * Real.pi : ℝ) : ℂ) * Complex.I) =
+      (beta : ℂ) * Complex.I + (1 : ℤ) * (2 * (Real.pi : ℂ) * Complex.I) by
+    apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
+  rw [Complex.exp_add, Complex.exp_int_mul_two_pi_mul_I]
+  ring
+
 private theorem p5G_eq_exp_neg_theta :
     p5G = Complex.exp (-(theta : ℂ) * Complex.I) := by
   dsimp [p5G, principalPow]
@@ -840,6 +863,80 @@ private theorem angleE_lt_pi :
     Real.pi / 2 < Real.pi := by
   linarith [Real.pi_pos]
 
+private theorem exp_pi_div_two_gt_24_div_5 :
+    (24 : ℝ) / 5 < Real.exp (Real.pi / 2) := by
+  have hpi : (157 : ℝ) / 100 < Real.pi / 2 := by
+    linarith [Real.pi_gt_d2]
+  have hsum_le :
+      (∑ i ∈ Finset.range 7, ((157 : ℝ) / 100) ^ i / (i.factorial : ℝ)) ≤
+        Real.exp ((157 : ℝ) / 100) :=
+    Real.sum_le_exp_of_nonneg (by norm_num) 7
+  have hsum_gt :
+      (24 : ℝ) / 5 <
+        ∑ i ∈ Finset.range 7, ((157 : ℝ) / 100) ^ i / (i.factorial : ℝ) := by
+    norm_num [Finset.sum_range_succ]
+  exact hsum_gt.trans_le (hsum_le.trans ((Real.exp_le_exp).2 hpi.le))
+
+private theorem exp_pi_div_two_lt_five :
+    Real.exp (Real.pi / 2) < 5 := by
+  have hpi_log : Real.pi / 2 < Real.log 5 := by
+    have hpi : Real.pi / 2 < (1.6094379123 : ℝ) := by
+      linarith [Real.pi_lt_d2]
+    exact hpi.trans Real.log_five_gt_d9
+  exact (Real.lt_log_iff_exp_lt (by norm_num : (0 : ℝ) < 5)).1 hpi_log
+
+private theorem rho_gt_one_div_five :
+    (1 : ℝ) / 5 < rho := by
+  dsimp [rho]
+  rw [Real.exp_neg]
+  simpa [one_div] using
+    (one_div_lt_one_div_of_lt (Real.exp_pos (Real.pi / 2)) exp_pi_div_two_lt_five)
+
+private theorem theta_gt_one_div_four :
+    (1 : ℝ) / 4 < theta := by
+  dsimp [theta]
+  have hpi : (157 : ℝ) / 100 < Real.pi / 2 := by
+    linarith [Real.pi_gt_d2]
+  nlinarith [hpi, rho_gt_one_div_five]
+
+private theorem exp_neg_theta_lt_four_div_five :
+    Real.exp (-theta) < (4 : ℝ) / 5 := by
+  have hmono : Real.exp (-theta) < Real.exp (-(1 : ℝ) / 4) :=
+    (Real.exp_lt_exp).2 (by linarith [theta_gt_one_div_four])
+  have hquarter : (5 : ℝ) / 4 < Real.exp ((1 : ℝ) / 4) := by
+    have h := Real.add_one_lt_exp (by norm_num : ((1 : ℝ) / 4) ≠ 0)
+    linarith
+  have hrec :
+      Real.exp (-(1 : ℝ) / 4) < (4 : ℝ) / 5 := by
+    rw [show (-(1 : ℝ) / 4) = -((1 : ℝ) / 4) by ring]
+    rw [Real.exp_neg]
+    have h :=
+      one_div_lt_one_div_of_lt (by norm_num : (0 : ℝ) < (5 : ℝ) / 4) hquarter
+    norm_num [one_div] at h
+    exact h
+  exact hmono.trans hrec
+
+private theorem beta_pos :
+    0 < beta := by
+  dsimp [beta]
+  nlinarith [Real.pi_pos, exp_pi_div_two_gt_24_div_5]
+
+private theorem beta_lt_angleE :
+    beta < Real.pi / 2 := by
+  dsimp [beta]
+  have hdiff : Real.exp (Real.pi / 2) - 4 < 1 := by
+    linarith [exp_pi_div_two_lt_five]
+  simpa using
+    mul_lt_mul_of_pos_left hdiff (show 0 < Real.pi / 2 by positivity)
+
+private theorem angleC_lt_beta :
+    Real.pi / 2 * Real.exp (-theta) < beta := by
+  dsimp [beta]
+  have hdiff : Real.exp (-theta) < Real.exp (Real.pi / 2) - 4 := by
+    linarith [exp_neg_theta_lt_four_div_five, exp_pi_div_two_gt_24_div_5]
+  simpa using
+    mul_lt_mul_of_pos_left hdiff (show 0 < Real.pi / 2 by positivity)
+
 private theorem p5F_ne_p5C :
     p5F ≠ p5C := by
   rw [p5F_eq_exp_theta_mul_rho, p5C_eq_exp_pi_mul_exp_neg_theta]
@@ -879,6 +976,54 @@ private theorem p5C_ne_p5E :
     (by linarith [Real.pi_pos])
     angleE_lt_pi.le
     (ne_of_lt angleC_lt_angleE)) h'
+
+private theorem p5B_ne_p5C :
+    p5B ≠ p5C := by
+  rw [p5B_eq_exp_beta, p5C_eq_exp_pi_mul_exp_neg_theta]
+  apply exp_I_ne_of_angle_ne
+  · linarith [beta_pos, Real.pi_pos]
+  · exact (beta_lt_angleE.trans angleE_lt_pi).le
+  · linarith [angleC_pos, Real.pi_pos]
+  · exact (angleC_lt_angleE.trans angleE_lt_pi).le
+  · exact ne_of_gt angleC_lt_beta
+
+private theorem p5B_ne_p5E :
+    p5B ≠ p5E := by
+  intro h
+  have h' :
+      Complex.exp ((beta : ℂ) * Complex.I) =
+        Complex.exp (((Real.pi / 2 : ℝ) : ℂ) * Complex.I) := by
+    rw [← p5B_eq_exp_beta, ← I_eq_exp_pi_div_two_I, ← p5E_eq_I]
+    exact h
+  exact (exp_I_ne_of_angle_ne
+    (by linarith [beta_pos, Real.pi_pos])
+    (beta_lt_angleE.trans angleE_lt_pi).le
+    (by linarith [Real.pi_pos])
+    angleE_lt_pi.le
+    (ne_of_lt beta_lt_angleE)) h'
+
+private theorem p5B_ne_p5F :
+    p5B ≠ p5F := by
+  rw [p5B_eq_exp_beta, p5F_eq_exp_theta_mul_rho]
+  apply exp_I_ne_of_angle_ne
+  · linarith [beta_pos, Real.pi_pos]
+  · exact (beta_lt_angleE.trans angleE_lt_pi).le
+  · linarith [angleF_pos, Real.pi_pos]
+  · exact ((angleF_lt_angleC.trans angleC_lt_beta).trans
+      (beta_lt_angleE.trans angleE_lt_pi)).le
+  · exact ne_of_gt (angleF_lt_angleC.trans angleC_lt_beta)
+
+private theorem p5B_ne_p5G :
+    p5B ≠ p5G := by
+  rw [p5B_eq_exp_beta, p5G_eq_exp_neg_theta]
+  rw [show -(theta : ℂ) * Complex.I = ((-theta : ℝ) : ℂ) * Complex.I by
+    norm_num]
+  apply exp_I_ne_of_angle_ne
+  · linarith [beta_pos, Real.pi_pos]
+  · exact (beta_lt_angleE.trans angleE_lt_pi).le
+  · linarith [theta_lt_pi_div_two, Real.pi_pos]
+  · linarith [theta_pos, Real.pi_pos]
+  · exact ne_of_gt (by linarith [beta_pos, theta_pos])
 
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
@@ -1048,8 +1193,35 @@ theorem a198683_five_le_seven : a198683 5 ≤ 7 := by
   calc
     ({p5A, p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤
         ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard + 1 :=
-      Set.ncard_insert_le p5A ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ)
+        Set.ncard_insert_le p5A ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ)
     _ ≤ 7 := by linarith
+
+/-- `A198683(5) = 7`. -/
+theorem a198683_five : a198683 5 = 7 := by
+  rw [a198683, valueSet_five_eq_candidates]
+  have hA :
+      p5A ∉ ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ) := by
+    simp [p5A_ne_p5B, p5A_ne_p5C, p5A_ne_p5D, p5A_ne_p5E, p5A_ne_p5F,
+      p5A_ne_p5G]
+  have hB :
+      p5B ∉ ({p5C, p5D, p5E, p5F, p5G} : Set ℂ) := by
+    simp [p5B_ne_p5C, p5D_ne_p5B.symm, p5B_ne_p5E, p5B_ne_p5F, p5B_ne_p5G]
+  have hC :
+      p5C ∉ ({p5D, p5E, p5F, p5G} : Set ℂ) := by
+    simp [p5D_ne_p5C.symm, p5C_ne_p5E, p5F_ne_p5C.symm, p5G_ne_p5C.symm]
+  have hD :
+      p5D ∉ ({p5E, p5F, p5G} : Set ℂ) := by
+    simp [p5D_ne_p5E, p5D_ne_p5F, p5D_ne_p5G]
+  have hE :
+      p5E ∉ ({p5F, p5G} : Set ℂ) := by
+    simp [p5F_ne_p5E.symm, p5G_ne_p5E.symm]
+  have hF :
+      p5F ∉ ({p5G} : Set ℂ) := by
+    simp [p5G_ne_p5F.symm]
+  rw [Set.ncard_insert_of_notMem hA, Set.ncard_insert_of_notMem hB,
+    Set.ncard_insert_of_notMem hC, Set.ncard_insert_of_notMem hD,
+    Set.ncard_insert_of_notMem hE, Set.ncard_insert_of_notMem hF]
+  simp
 
 end
 
