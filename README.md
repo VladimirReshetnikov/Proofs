@@ -142,9 +142,12 @@ theorem a002845_nineteen : a002845 19 = 293543
 theorem a002845_twenty : a002845 20 = 688366
 ```
 
-[`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683
-semantically as the number of distinct principal complex-power values obtained
-from all binary parenthesizations of `i^i^...^i`. It proves the accepted values
+[`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683 from
+the canonical lexical syntax of all binary parenthesizations of
+`i^i^...^i`, interpreting every binary node as the principal complex power
+`exp (log z * w)`, and taking the number of distinct evaluated values.  Its
+recursive value-set helper is Lean-proved equivalent to that lexical definition
+before being used by the computational proofs. It proves the accepted values
 through `n = 7` directly over `ℂ`, with public theorems
 `a198683_one` through `a198683_seven`; the final `n = 7` lower bound is
 `thirty_four_le_a198683_seven`, matched against `a198683_seven_le_thirty_four`.

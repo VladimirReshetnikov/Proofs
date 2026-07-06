@@ -12,8 +12,14 @@ import Mathlib.Tactic.Ring
 # Initial values of OEIS A198683
 
 OEIS A198683 counts the distinct principal values of all binary
-parenthesizations of `i^i^...^i`.  This module defines the value set directly
-over `ℂ`, with principal power interpreted as `exp (log z * w)`.
+parenthesizations of `i^i^...^i`.  This module takes the lexical syntax of
+binary parenthesizations as canonical, interprets every binary node by
+principal complex power `exp (log z * w)`, and defines the sequence as the
+cardinality of the resulting evaluated syntax set.
+
+The recursive value-set presentation used by the computational proofs below is
+proved extensionally equivalent to that canonical lexical definition; it is not
+used as an unproved replacement definition.
 
 The accepted OEIS data currently run through `n = 11`; `n = 12` is deliberately
 not included in the OEIS data field because the local corpus records it as
@@ -30,6 +36,48 @@ open Complex
 the definition used for the sequence is visible in this module. -/
 def principalPow (z w : ℂ) : ℂ :=
   Complex.exp (Complex.log z * w)
+
+/-- The lexical binary parenthesizations built from copies of the token `i`. -/
+inductive IPowExpr where
+  | atom
+  | pow (a b : IPowExpr)
+deriving Repr, DecidableEq
+
+namespace IPowExpr
+
+open IPowExpr
+
+/-- Interpret a lexical expression by principal complex exponentiation. -/
+noncomputable def eval : IPowExpr → ℂ
+  | atom => Complex.I
+  | pow a b => principalPow (eval a) (eval b)
+
+/-- The number of `i` tokens in a lexical expression. -/
+def size : IPowExpr → Nat
+  | atom => 1
+  | pow a b => size a + size b
+
+/-- All lexical binary parenthesizations with exactly `n` copies of `i`. -/
+def parenthesizations : Nat → List IPowExpr
+  | 0 => []
+  | 1 => [atom]
+  | n + 2 =>
+      (List.finRange (n + 1)).flatMap fun k =>
+        (parenthesizations (k.1 + 1)).flatMap fun a =>
+          (parenthesizations (n + 1 - k.1)).map fun b => pow a b
+termination_by n => n
+decreasing_by
+  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+  · exact Nat.succ_lt_succ k.2
+
+end IPowExpr
+
+/--
+The canonical lexical value set for A198683: evaluate every binary
+parenthesization of `n` copies of `i` using principal complex power.
+-/
+def a198683LexicalValueSet (n : Nat) : Set ℂ :=
+  {z | ∃ e ∈ IPowExpr.parenthesizations n, IPowExpr.eval e = z}
 
 /--
 The set of values produced by all binary parenthesizations of `n` copies of
@@ -50,9 +98,67 @@ decreasing_by
   · exact Nat.succ_lt_succ k.2
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
 
-/-- OEIS A198683, as a cardinality of the semantic value set above. -/
+/--
+The recursive value-set presentation is extensionally equal to the canonical
+lexical syntax-and-evaluation presentation.  Computation-oriented certificates
+may use `a198683ValueSet`, but only through this proved equivalence.
+-/
+@[simp] theorem a198683LexicalValueSet_eq_valueSet (n : Nat) :
+    a198683LexicalValueSet n = a198683ValueSet n := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+    cases n with
+    | zero =>
+        ext z
+        simp [a198683LexicalValueSet, IPowExpr.parenthesizations, a198683ValueSet]
+    | succ n =>
+        cases n with
+        | zero =>
+            ext z
+            simp [a198683LexicalValueSet, IPowExpr.parenthesizations, IPowExpr.eval,
+              a198683ValueSet]
+        | succ n =>
+            ext z
+            constructor
+            · rintro ⟨e, he, rfl⟩
+              simp only [IPowExpr.parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [a198683ValueSet]
+              refine ⟨k, IPowExpr.eval a, ?_, IPowExpr.eval b, ?_, rfl⟩
+              · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
+                rw [← hleft]
+                exact ⟨a, ha, rfl⟩
+              · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
+                rw [← hright]
+                exact ⟨b, hb, rfl⟩
+            · intro hz
+              simp only [a198683ValueSet] at hz
+              rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+              have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
+              have hxlex : x ∈ a198683LexicalValueSet (k.1 + 1) := by
+                rw [hleft]
+                exact hx
+              have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
+              have hylex : y ∈ a198683LexicalValueSet (n + 1 - k.1) := by
+                rw [hright]
+                exact hy
+              rcases hxlex with ⟨a, ha, rfl⟩
+              rcases hylex with ⟨b, hb, rfl⟩
+              refine ⟨IPowExpr.pow a b, ?_, rfl⟩
+              simp only [IPowExpr.parenthesizations, List.mem_flatMap, List.mem_map]
+              exact ⟨k, List.mem_finRange k, a, ha, b, hb, rfl⟩
+
+/-- OEIS A198683, as a cardinality of the canonical lexical value set. -/
 def a198683 (n : Nat) : Nat :=
-  (a198683ValueSet n).ncard
+  (a198683LexicalValueSet n).ncard
+
+/--
+The recursive value-set cardinality used by the small-value proofs computes
+the same number as the canonical lexical definition.
+-/
+@[simp] theorem a198683_eq_valueSet_ncard (n : Nat) :
+    a198683 n = (a198683ValueSet n).ncard := by
+  simp [a198683]
 
 private noncomputable def p2 : ℂ :=
   principalPow Complex.I Complex.I
@@ -3166,7 +3272,7 @@ private theorem mem_valueSet_six {z : ℂ} :
 
 /-- Semantic upper bound for the next OEIS value: `A198683(5) <= 7`. -/
 theorem a198683_five_le_seven : a198683 5 ≤ 7 := by
-  rw [a198683, valueSet_five_eq_candidates]
+  rw [a198683_eq_valueSet_ncard, valueSet_five_eq_candidates]
   have hG : ({p5G} : Set ℂ).ncard ≤ 1 := by simp
   have hFG : ({p5F, p5G} : Set ℂ).ncard ≤ 2 := by
     calc
@@ -3204,7 +3310,7 @@ theorem a198683_five_le_seven : a198683 5 ≤ 7 := by
 
 /-- `A198683(5) = 7`. -/
 theorem a198683_five : a198683 5 = 7 := by
-  rw [a198683, valueSet_five_eq_candidates]
+  rw [a198683_eq_valueSet_ncard, valueSet_five_eq_candidates]
   have hA :
       p5A ∉ ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ) := by
     simp [p5A_ne_p5B, p5A_ne_p5C, p5A_ne_p5D, p5A_ne_p5E, p5A_ne_p5F,
@@ -3232,7 +3338,7 @@ theorem a198683_five : a198683 5 = 7 := by
 /-- Semantic upper bound for the next OEIS value: `A198683(6) <= 15`. -/
 theorem a198683_six_le_fifteen : a198683 6 ≤ 15 := by
   classical
-  rw [a198683, valueSet_six_eq_candidates]
+  rw [a198683_eq_valueSet_ncard, valueSet_six_eq_candidates]
   let reps : List ℂ :=
     [p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N, p6O]
   have hsubset :
@@ -3250,7 +3356,7 @@ theorem a198683_six_le_fifteen : a198683 6 ≤ 15 := by
 
 /-- `A198683(6) = 15`. -/
 theorem a198683_six : a198683 6 = 15 := by
-  rw [a198683, valueSet_six_eq_candidates]
+  rw [a198683_eq_valueSet_ncard, valueSet_six_eq_candidates]
   have hA :
       p6A ∉ ({p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M,
         p6N, p6O} : Set ℂ) := by
@@ -3376,7 +3482,7 @@ level split using the exact representative sets already proved for `n <= 6`.
 -/
 theorem a198683_seven_le_fifty_six : a198683 7 ≤ 56 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let reps : List ℂ :=
     [principalPow Complex.I p6A, principalPow Complex.I p6B, principalPow Complex.I p6C,
       principalPow Complex.I p6D, principalPow Complex.I p6E, principalPow Complex.I p6F,
@@ -3669,7 +3775,7 @@ from the naive top-level cover by normalizing the easiest exact collisions.
 -/
 theorem a198683_seven_le_fifty_one : a198683 7 ≤ 51 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let rep : Fin a198683SevenCollapsedReps.length → ℂ :=
     fun i => a198683SevenCollapsedReps.get i
   have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
@@ -3800,7 +3906,7 @@ straight-line logarithmic collisions that do not require new branch estimates.
 -/
 theorem a198683_seven_le_forty_five : a198683 7 ≤ 45 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let rep : Fin a198683SevenMoreCollapsedReps.length → ℂ :=
     fun i => a198683SevenMoreCollapsedReps.get i
   have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
@@ -3910,7 +4016,7 @@ private theorem a198683_seven_subset_periodicCollapsedReps :
 
 theorem a198683_seven_le_forty_four : a198683 7 ≤ 44 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let rep : Fin a198683SevenPeriodicCollapsedReps.length → ℂ :=
     fun i => a198683SevenPeriodicCollapsedReps.get i
   have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
@@ -4027,7 +4133,7 @@ private theorem a198683_seven_subset_branchCollapsedReps :
 
 theorem a198683_seven_le_thirty_eight : a198683 7 ≤ 38 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let rep : Fin a198683SevenBranchCollapsedReps.length → ℂ :=
     fun i => a198683SevenBranchCollapsedReps.get i
   have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
@@ -4133,7 +4239,7 @@ private theorem a198683_seven_subset_canonicalReps :
 /-- Semantic upper bound matching the accepted OEIS value `A198683(7) = 34`. -/
 theorem a198683_seven_le_thirty_four : a198683 7 ≤ 34 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
     fun i => a198683SevenCanonicalReps.get i
   have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
@@ -4268,7 +4374,7 @@ private theorem I_pow_image_easyLowerExponents_subset_seven :
 /-- Semantic lower bound for `A198683(7)` from an injective 11-element subfamily. -/
 theorem eleven_le_a198683_seven : 11 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   have hfinite7 : (a198683ValueSet 7).Finite := by
     let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
       fun i => a198683SevenCanonicalReps.get i
@@ -4383,7 +4489,7 @@ private theorem I_pow_image_stripLowerExponents_subset_seven :
 /-- Semantic lower bound for `A198683(7)` from a 14-element real-strip subfamily. -/
 theorem fourteen_le_a198683_seven : 14 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   have hfinite7 : (a198683ValueSet 7).Finite := by
     let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
       fun i => a198683SevenCanonicalReps.get i
@@ -4512,7 +4618,7 @@ private theorem I_pow_image_sixCandidateSet_subset_seven :
 /-- Semantic lower bound for `A198683(7)` from all 15 sixth-level values under `z ↦ i^z`. -/
 theorem fifteen_le_a198683_seven : 15 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   have hfinite7 : (a198683ValueSet 7).Finite := by
     let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
       fun i => a198683SevenCanonicalReps.get i
@@ -4650,7 +4756,7 @@ private theorem p2_pow_image_p2NegativeExponents_im_neg {z : ℂ}
 /-- Semantic lower bound for `A198683(7)` from two sign-separated split families. -/
 theorem twenty_le_a198683_seven : 20 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   have hfinite7 : (a198683ValueSet 7).Finite := by
@@ -4745,7 +4851,7 @@ private theorem p3R_pow_p4A_mem_seven :
 /-- Semantic lower bound for `A198683(7)` after adding the isolated `p3R^p4A` value. -/
 theorem twenty_one_le_a198683_seven : 21 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -5015,7 +5121,7 @@ private theorem p4B_pow_p3L_notMem_I_pow_sixCandidateSet :
 /-- Semantic lower bound for `A198683(7)` after adding the isolated `p4B^p3L` value. -/
 theorem twenty_two_le_a198683_seven : 22 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -5225,7 +5331,7 @@ private theorem I_notMem_I_pow_sixCandidateSet :
 /-- Semantic lower bound for `A198683(7)` after adding the exact value `p3L^p4B = I`. -/
 theorem twenty_three_le_a198683_seven : 23 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -5451,7 +5557,7 @@ private theorem unit_re_pos_notMem_p2NegativeExponents {x : ℂ}
 /-- Semantic lower bound for `A198683(7)` after adding the unit value `p3R^p4B`. -/
 theorem twenty_four_le_a198683_seven : 24 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -5683,7 +5789,7 @@ private theorem p3R_pow_p4C_mem_seven :
 /-- Semantic lower bound for `A198683(7)` after adding the unit value `p3R^p4C`. -/
 theorem twenty_five_le_a198683_seven : 25 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -5943,7 +6049,7 @@ private theorem p5G_pow_p2_mem_seven :
 /-- Semantic lower bound for `A198683(7)` after adding the unit value `p5G^p2`. -/
 theorem twenty_six_le_a198683_seven : 26 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -6357,7 +6463,7 @@ private theorem p5F_pow_p2_mem_seven :
 /-- Semantic lower bound for `A198683(7)` after adding the unit value `p5F^p2`. -/
 theorem twenty_seven_le_a198683_seven : 27 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -6855,7 +6961,7 @@ private theorem p5B_pow_p2_mem_seven :
 /-- Semantic lower bound for `A198683(7)` after adding the unit value `p5B^p2`. -/
 theorem twenty_eight_le_a198683_seven : 28 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
@@ -8417,7 +8523,7 @@ private theorem p2_pow_p5D_mem_seven :
 
 theorem thirty_four_le_a198683_seven : 34 ≤ a198683 7 := by
   classical
-  rw [a198683]
+  rw [a198683_eq_valueSet_ncard]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
   let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
   let u : Set ℂ := s ∪ t
