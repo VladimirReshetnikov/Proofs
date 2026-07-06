@@ -224,6 +224,14 @@ theorem a002845_seventeen : a002845 17 = 53948 := by
 theorem a002845_eighteen : a002845 18 = 125608 := by
   native_decide
 
+/-- `A002845(19) = 293543`. -/
+theorem a002845_nineteen : a002845 19 = 293543 := by
+  native_decide
+
+/-- `A002845(20) = 688366`. -/
+theorem a002845_twenty : a002845 20 = 688366 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
