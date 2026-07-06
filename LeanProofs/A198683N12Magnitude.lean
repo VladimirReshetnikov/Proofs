@@ -1,5 +1,7 @@
 import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Analysis.SpecialFunctions.Complex.Log
 import Mathlib.Tactic.Linarith.Frontend
+import Mathlib.Tactic.Ring
 import LeanProofs.A198683N12Probe
 
 set_option maxRecDepth 50000
@@ -40,6 +42,32 @@ theorem exp_ne_of_re_lt {x y : ℂ} (h : x.re < y.re) : Complex.exp x ≠ Comple
   rw [Complex.norm_exp, Complex.norm_exp] at hn
   have hre : x.re = y.re := Real.exp_eq_exp.mp hn
   linarith
+
+/-- For an exponent with base `i`, the real part is controlled by the imaginary part. -/
+theorem re_mul_log_I (z : ℂ) :
+    (z * Complex.log Complex.I).re = -(Real.pi / 2) * z.im := by
+  rw [Complex.log_I]
+  simp [Complex.mul_re, Complex.mul_im]
+  ring
+
+/--
+If the exponent `z` has large positive imaginary part, then `z * Log(i)` has
+large negative real part.
+-/
+theorem re_mul_log_I_lt_of_im_gt {z : ℂ} {bound : ℝ} (h : bound < z.im) :
+    (z * Complex.log Complex.I).re < -(Real.pi / 2) * bound := by
+  rw [re_mul_log_I]
+  nlinarith [Real.pi_pos, h]
+
+/--
+To separate `exp (z * Log(i))` from another exponential, it is enough to bound
+`Im(z)` below and the other exponent's real part above the resulting
+log-modulus threshold.
+-/
+theorem exp_mul_log_I_ne_of_im_gt_of_re_gt {z y : ℂ} {bound : ℝ}
+    (hz : bound < z.im) (hy : -(Real.pi / 2) * bound < y.re) :
+    Complex.exp (z * Complex.log Complex.I) ≠ Complex.exp y := by
+  exact exp_ne_of_re_lt ((re_mul_log_I_lt_of_im_gt hz).trans hy)
 
 /--
 Flags for TSV rows whose displayed `Re(e)` is negative with scientific exponent
