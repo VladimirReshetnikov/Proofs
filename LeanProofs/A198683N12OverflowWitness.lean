@@ -149,6 +149,19 @@ theorem overflowCandidate12_ne_principalPow_of_re_gt {a b : ℂ}
   dsimp [principalPow]
   exact overflowCandidate12_ne_exp_of_re_gt h
 
+/--
+Bounded version of the same separation criterion. It is enough to prove a
+lower bound on the overflow base's imaginary part and a corresponding lower
+bound on the other candidate's exponent real part.
+-/
+theorem overflowCandidate12_ne_principalPow_of_im_gt_of_re_gt {a b : ℂ} {bound : ℝ}
+    (hbase : bound < overflowBase11.im)
+    (hother : -(Real.pi / 2) * bound < (Complex.log a * b).re) :
+    overflowCandidate12 ≠ principalPow a b := by
+  dsimp [overflowCandidate12, principalPow]
+  rw [mul_comm (Complex.log Complex.I) overflowBase11]
+  exact A198683N12Magnitude.exp_mul_log_I_ne_of_im_gt_of_re_gt hbase hother
+
 end
 
 end A198683N12OverflowWitness
