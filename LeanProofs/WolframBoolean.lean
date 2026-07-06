@@ -542,10 +542,6 @@ def canonicalTermsAux : Nat → Nat → Nat → List (Term × Nat)
           (canonicalTermsAux fuel leftNodes next))
         (List.range (nodes + 1))
 
-/-- Canonical terms with exactly `nodes` primitive-operation occurrences. -/
-def canonicalTerms (nodes : Nat) : List Term :=
-  (canonicalTermsAux nodes nodes 0).map Prod.fst
-
 /-- All canonical equations whose two sides contain at most `maxNodes` nodes in total.
 
 Variables are introduced from left to right across the whole equation, first
@@ -574,12 +570,6 @@ def validInBooleanShefferTables (lhs rhs : Term) : Bool :=
 
 def hasExactlyModels (models : List BinOp) (lhs rhs : Term) : Bool :=
   equationModels lhs rhs == models
-
-def characterizesNandOnly (lhs rhs : Term) : Bool :=
-  hasExactlyModels [nandTable] lhs rhs
-
-def characterizesNorOnly (lhs rhs : Term) : Bool :=
-  hasExactlyModels [norTable] lhs rhs
 
 def characterizesShefferTables (lhs rhs : Term) : Bool :=
   hasExactlyModels [norTable, nandTable] lhs rhs

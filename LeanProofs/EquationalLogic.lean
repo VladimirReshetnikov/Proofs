@@ -436,37 +436,6 @@ theorem runItems_sound {α : Type u} {op : α → α → α}
         · exact Item.check_sound hcheck hinitial
         · exact hinitial e hmem
 
-/-- Run a certificate, consing each checked target onto the known-equation list. -/
-def run : List Equation → List Step → Option (List Equation)
-  | eqs, [] => some eqs
-  | eqs, step :: rest =>
-      if step.check eqs then
-        run (step.target :: eqs) rest
-      else
-        none
-
-theorem run_sound {α : Type u} {op : α → α → α}
-    {initial final : List Equation} {steps : List Step}
-    (hrun : run initial steps = some final)
-    (hinitial : AllValid op initial) :
-    AllValid op final := by
-  induction steps generalizing initial with
-  | nil =>
-      simp [run] at hrun
-      cases hrun
-      exact hinitial
-  | cons step rest ih =>
-      unfold run at hrun
-      cases hcheck : step.check initial
-      · simp [hcheck] at hrun
-      · simp [hcheck] at hrun
-        apply ih hrun
-        intro e he
-        simp at he
-        rcases he with rfl | hmem
-        · exact Step.check_sound hcheck hinitial
-        · exact hinitial e hmem
-
 end Certificate
 
 end EquationalLogic
