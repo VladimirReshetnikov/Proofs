@@ -218,9 +218,10 @@ which are now likewise composed into direct sufficient conditions for the
 split; those trigonometric boxes are reduced to a narrow rational box for
 `theta` itself, and that `theta` box is now also composed into direct
 sufficient conditions for the split; the `theta` box is reduced to rational
-boxes for `pi/2` and
-`rho = exp(-pi/2)`, with the `rho` box further reduced to the same `pi/2` box
-plus endpoint exponential estimates.  The module also exposes exact
+boxes for `pi/2` and `rho = exp(-pi/2)`, and those boxes are now also composed
+into direct sufficient conditions for the split; the `rho` box is further
+reduced to the same `pi/2` box plus endpoint exponential estimates.  The module
+also exposes exact
 real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
 layers of representative `25`, including the
 expansion of
