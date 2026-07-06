@@ -188,6 +188,10 @@ theorem a002845_eight : a002845 8 = 36 := by
 theorem a002845_nine : a002845 9 = 78 := by
   native_decide
 
+/-- `A002845(10) = 171`. -/
+theorem a002845_ten : a002845 10 = 171 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
