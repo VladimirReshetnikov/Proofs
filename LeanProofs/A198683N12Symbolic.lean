@@ -712,6 +712,32 @@ theorem v_im_eq :
   dsimp [v]
   rw [I_pow_im, u_im_eq_sin_theta, u_re_eq_cos_theta]
 
+/-- Exact real part of the representative-`25` seed, fully expanded through `theta`. -/
+theorem nearOne25Seed_re_eq_theta :
+    nearOne25Seed.re =
+      Real.exp
+          (Real.pi / 2 *
+            (Real.exp (-(Real.pi / 2) * Real.sin theta) *
+              Real.sin (Real.pi / 2 * Real.cos theta))) *
+        Real.cos
+          (Real.pi / 2 *
+            (Real.exp (-(Real.pi / 2) * Real.sin theta) *
+              Real.cos (Real.pi / 2 * Real.cos theta))) := by
+  rw [nearOne25Seed_re_eq, v_im_eq, v_re_eq]
+
+/-- Exact imaginary part of the representative-`25` seed, fully expanded through `theta`. -/
+theorem nearOne25Seed_im_eq_theta :
+    nearOne25Seed.im =
+      -(Real.exp
+          (Real.pi / 2 *
+            (Real.exp (-(Real.pi / 2) * Real.sin theta) *
+              Real.sin (Real.pi / 2 * Real.cos theta))) *
+        Real.sin
+          (Real.pi / 2 *
+            (Real.exp (-(Real.pi / 2) * Real.sin theta) *
+              Real.cos (Real.pi / 2 * Real.cos theta)))) := by
+  rw [nearOne25Seed_im_eq, v_im_eq, v_re_eq]
+
 /-- Exact real part recurrence for the first `i^...` layer of representative `25`. -/
 theorem nearOne25Level1_re_eq :
     nearOne25Level1.re =
