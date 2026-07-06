@@ -643,6 +643,44 @@ private theorem valueSet_five_eq_candidates :
       · exact mem_valueSet_two.2 rfl
       · simpa [p5G] using hz
 
+/-- Semantic upper bound for the next OEIS value: `A198683(5) <= 7`. -/
+theorem a198683_five_le_seven : a198683 5 ≤ 7 := by
+  rw [a198683, valueSet_five_eq_candidates]
+  have hG : ({p5G} : Set ℂ).ncard ≤ 1 := by simp
+  have hFG : ({p5F, p5G} : Set ℂ).ncard ≤ 2 := by
+    calc
+      ({p5F, p5G} : Set ℂ).ncard ≤ ({p5G} : Set ℂ).ncard + 1 :=
+        Set.ncard_insert_le p5F ({p5G} : Set ℂ)
+      _ ≤ 2 := by linarith
+  have hEFG : ({p5E, p5F, p5G} : Set ℂ).ncard ≤ 3 := by
+    calc
+      ({p5E, p5F, p5G} : Set ℂ).ncard ≤ ({p5F, p5G} : Set ℂ).ncard + 1 :=
+        Set.ncard_insert_le p5E ({p5F, p5G} : Set ℂ)
+      _ ≤ 3 := by linarith
+  have hDEFG : ({p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤ 4 := by
+    calc
+      ({p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤
+          ({p5E, p5F, p5G} : Set ℂ).ncard + 1 :=
+        Set.ncard_insert_le p5D ({p5E, p5F, p5G} : Set ℂ)
+      _ ≤ 4 := by linarith
+  have hCDEFG : ({p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤ 5 := by
+    calc
+      ({p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤
+          ({p5D, p5E, p5F, p5G} : Set ℂ).ncard + 1 :=
+        Set.ncard_insert_le p5C ({p5D, p5E, p5F, p5G} : Set ℂ)
+      _ ≤ 5 := by linarith
+  have hBCDEFG : ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤ 6 := by
+    calc
+      ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤
+          ({p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard + 1 :=
+        Set.ncard_insert_le p5B ({p5C, p5D, p5E, p5F, p5G} : Set ℂ)
+      _ ≤ 6 := by linarith
+  calc
+    ({p5A, p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard ≤
+        ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ).ncard + 1 :=
+      Set.ncard_insert_le p5A ({p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ)
+    _ ≤ 7 := by linarith
+
 end
 
 end LeanProofs
