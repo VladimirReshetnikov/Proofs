@@ -1654,6 +1654,69 @@ private theorem p6K_re_gt_four_div_five :
     mul_lt_mul hexp_lb hcos_lb.le (by norm_num) (Real.exp_pos _).le
   nlinarith [hprod]
 
+private theorem exp_neg_pi_div_four_lt_four_div_five :
+    Real.exp (-(Real.pi / 4)) < (4 : ℝ) / 5 := by
+  rw [Real.exp_neg]
+  have hquarter : (1 : ℝ) / 4 < Real.pi / 4 := by
+    linarith [Real.pi_gt_d2]
+  have h_exp_quarter : (5 : ℝ) / 4 < Real.exp ((1 : ℝ) / 4) := by
+    have h := Real.add_one_lt_exp (by norm_num : ((1 : ℝ) / 4) ≠ 0)
+    linarith
+  have h_exp_pi : (5 : ℝ) / 4 < Real.exp (Real.pi / 4) :=
+    h_exp_quarter.trans ((Real.exp_lt_exp).2 hquarter)
+  have hrec := one_div_lt_one_div_of_lt (by norm_num : (0 : ℝ) < (5 : ℝ) / 4) h_exp_pi
+  norm_num [one_div] at hrec
+  exact hrec
+
+private theorem p6B_norm_lt_four_div_five :
+    ‖p6B‖ < (4 : ℝ) / 5 := by
+  dsimp [p6B, principalPow]
+  rw [Complex.norm_exp, log_I_real, p5B_eq_exp_beta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hbeta_gt_pi_div_six : Real.pi / 6 < beta := by
+    dsimp [beta]
+    nlinarith [Real.pi_pos, exp_pi_div_two_gt_24_div_5]
+  have hsin_gt_half : (1 : ℝ) / 2 < Real.sin beta := by
+    have h := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+      (x := Real.pi / 6) (y := beta)
+      (by linarith [Real.pi_pos])
+      beta_lt_angleE.le
+      hbeta_gt_pi_div_six
+    simpa [Real.sin_pi_div_six] using h
+  have harg_gt : Real.pi / 4 < Real.pi / 2 * Real.sin beta := by
+    nlinarith [Real.pi_pos, hsin_gt_half]
+  exact ((Real.exp_lt_exp).2 (by linarith)).trans exp_neg_pi_div_four_lt_four_div_five
+
+private theorem p6C_norm_lt_four_div_five :
+    ‖p6C‖ < (4 : ℝ) / 5 := by
+  dsimp [p6C, principalPow]
+  rw [Complex.norm_exp, log_I_real, p5C_eq_exp_pi_mul_exp_neg_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have h_exp_neg_theta_gt_two_div_three :
+      (2 : ℝ) / 3 < Real.exp (-theta) := by
+    have h := Real.one_sub_lt_exp_neg theta_pos.ne'
+    nlinarith [h, theta_lt_one_div_three]
+  have hangle_gt_pi_div_six : Real.pi / 6 < Real.pi / 2 * Real.exp (-theta) := by
+    nlinarith [Real.pi_pos, h_exp_neg_theta_gt_two_div_three]
+  have hsin_gt_half : (1 : ℝ) / 2 < Real.sin (Real.pi / 2 * Real.exp (-theta)) := by
+    have h := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+      (x := Real.pi / 6) (y := Real.pi / 2 * Real.exp (-theta))
+      (by linarith [Real.pi_pos])
+      angleC_lt_angleE.le
+      hangle_gt_pi_div_six
+    simpa [Real.sin_pi_div_six] using h
+  have harg_gt : Real.pi / 4 < Real.pi / 2 * Real.sin (Real.pi / 2 * Real.exp (-theta)) := by
+    nlinarith [Real.pi_pos, hsin_gt_half]
+  exact ((Real.exp_lt_exp).2 (by linarith)).trans exp_neg_pi_div_four_lt_four_div_five
+
+private theorem p6B_re_lt_four_div_five :
+    p6B.re < (4 : ℝ) / 5 :=
+  (Complex.re_le_norm p6B).trans_lt p6B_norm_lt_four_div_five
+
+private theorem p6C_re_lt_four_div_five :
+    p6C.re < (4 : ℝ) / 5 :=
+  (Complex.re_le_norm p6C).trans_lt p6C_norm_lt_four_div_five
+
 private theorem p6E_im_zero :
     p6E.im = 0 := by
   rw [p6E_eq_exp_neg_pi_div_two]
@@ -1776,6 +1839,14 @@ private theorem ne_of_re_lt {z w : ℂ} (h : z.re < w.re) : z ≠ w := by
   intro hz
   have hre := congrArg Complex.re hz
   linarith
+
+private theorem p6K_ne_p6B :
+    p6K ≠ p6B :=
+  (ne_of_re_lt (p6B_re_lt_four_div_five.trans p6K_re_gt_four_div_five)).symm
+
+private theorem p6K_ne_p6C :
+    p6K ≠ p6C :=
+  (ne_of_re_lt (p6C_re_lt_four_div_five.trans p6K_re_gt_four_div_five)).symm
 
 private theorem p6I_ne_p6E : p6I ≠ p6E :=
   ne_of_re_lt p6I_re_lt_p6E_re
