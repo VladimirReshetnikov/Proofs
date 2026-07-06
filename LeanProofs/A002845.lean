@@ -156,6 +156,10 @@ def a002845 (n : Nat) : Nat :=
 theorem a002845_one : a002845 1 = 1 := by
   native_decide
 
+/-- `A002845(2) = 1`. -/
+theorem a002845_two : a002845 2 = 1 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
