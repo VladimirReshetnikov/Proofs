@@ -3756,6 +3756,112 @@ theorem a198683_seven_le_thirty_eight : a198683 7 ≤ 38 := by
     _ = a198683SevenBranchCollapsedReps.length := by simp
     _ = 38 := by norm_num [a198683SevenBranchCollapsedReps]
 
+private noncomputable def a198683SevenCanonicalReps : List ℂ :=
+  [principalPow Complex.I p6A, principalPow Complex.I p6B, principalPow Complex.I p6C,
+    principalPow Complex.I p6D, principalPow Complex.I p6E, principalPow Complex.I p6F,
+    principalPow Complex.I p6G, principalPow Complex.I p6H, principalPow Complex.I p6I,
+    principalPow Complex.I p6J, principalPow Complex.I p6K, principalPow Complex.I p6L,
+    principalPow Complex.I p6M, principalPow Complex.I p6N, principalPow Complex.I p6O,
+    principalPow p2 p5A, principalPow p2 p5B, principalPow p2 p5C,
+    principalPow p2 p5D, principalPow p2 p5E, principalPow p2 p5F,
+    principalPow p2 p5G,
+    principalPow p3L p4A, principalPow p3L p4B, principalPow p3L p4C,
+    principalPow p3R p4A, principalPow p3R p4B, principalPow p3R p4C,
+    principalPow p4A p3L, principalPow p4B p3L, principalPow p4C p3L,
+    principalPow p5B p2, principalPow p5F p2, principalPow p5G p2]
+
+private theorem a198683_seven_subset_canonicalReps :
+    a198683ValueSet 7 ⊆
+      Set.range (fun i : Fin a198683SevenCanonicalReps.length =>
+        a198683SevenCanonicalReps.get i) := by
+  classical
+  let rep38 : Fin a198683SevenBranchCollapsedReps.length → ℂ :=
+    fun i => a198683SevenBranchCollapsedReps.get i
+  let rep34 : Fin a198683SevenCanonicalReps.length → ℂ :=
+    fun i => a198683SevenCanonicalReps.get i
+  have hsubset38 : a198683ValueSet 7 ⊆ Set.range rep38 := by
+    simpa [rep38] using a198683_seven_subset_branchCollapsedReps
+  have reps34_length : a198683SevenCanonicalReps.length = 34 := by
+    norm_num [a198683SevenCanonicalReps]
+  have inRange34 (i : Nat) (h : i < a198683SevenCanonicalReps.length) :
+      a198683SevenCanonicalReps.get ⟨i, h⟩ ∈ Set.range rep34 := by
+    exact ⟨⟨i, h⟩, rfl⟩
+  have hrange : Set.range rep38 ⊆ Set.range rep34 := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    fin_cases i
+    · exact inRange34 0 (by rw [reps34_length]; norm_num)
+    · exact inRange34 1 (by rw [reps34_length]; norm_num)
+    · exact inRange34 2 (by rw [reps34_length]; norm_num)
+    · exact inRange34 3 (by rw [reps34_length]; norm_num)
+    · exact inRange34 4 (by rw [reps34_length]; norm_num)
+    · exact inRange34 5 (by rw [reps34_length]; norm_num)
+    · exact inRange34 6 (by rw [reps34_length]; norm_num)
+    · exact inRange34 7 (by rw [reps34_length]; norm_num)
+    · exact inRange34 8 (by rw [reps34_length]; norm_num)
+    · exact inRange34 9 (by rw [reps34_length]; norm_num)
+    · exact inRange34 10 (by rw [reps34_length]; norm_num)
+    · exact inRange34 11 (by rw [reps34_length]; norm_num)
+    · exact inRange34 12 (by rw [reps34_length]; norm_num)
+    · exact inRange34 13 (by rw [reps34_length]; norm_num)
+    · exact inRange34 14 (by rw [reps34_length]; norm_num)
+    · exact inRange34 15 (by rw [reps34_length]; norm_num)
+    · exact inRange34 16 (by rw [reps34_length]; norm_num)
+    · exact inRange34 17 (by rw [reps34_length]; norm_num)
+    · exact inRange34 18 (by rw [reps34_length]; norm_num)
+    · exact inRange34 19 (by rw [reps34_length]; norm_num)
+    · exact inRange34 20 (by rw [reps34_length]; norm_num)
+    · exact inRange34 21 (by rw [reps34_length]; norm_num)
+    · exact inRange34 22 (by rw [reps34_length]; norm_num)
+    · exact inRange34 23 (by rw [reps34_length]; norm_num)
+    · exact inRange34 24 (by rw [reps34_length]; norm_num)
+    · exact inRange34 25 (by rw [reps34_length]; norm_num)
+    · exact inRange34 26 (by rw [reps34_length]; norm_num)
+    · exact inRange34 27 (by rw [reps34_length]; norm_num)
+    · exact inRange34 28 (by rw [reps34_length]; norm_num)
+    · change principalPow p4A p3R ∈ Set.range rep34
+      rw [p4A_pow_p3R_eq_p4B_pow_p3L]
+      exact inRange34 29 (by rw [reps34_length]; norm_num)
+    · exact inRange34 29 (by rw [reps34_length]; norm_num)
+    · exact inRange34 30 (by rw [reps34_length]; norm_num)
+    · exact inRange34 31 (by rw [reps34_length]; norm_num)
+    · exact inRange34 32 (by rw [reps34_length]; norm_num)
+    · exact inRange34 33 (by rw [reps34_length]; norm_num)
+    · change principalPow p6H Complex.I ∈ Set.range rep34
+      rw [p6H_pow_I_eq_p3R_pow_p4A]
+      exact inRange34 25 (by rw [reps34_length]; norm_num)
+    · change principalPow p6K Complex.I ∈ Set.range rep34
+      rw [p6K_pow_I_eq_p4C_pow_p3L]
+      exact inRange34 30 (by rw [reps34_length]; norm_num)
+    · change principalPow p6M Complex.I ∈ Set.range rep34
+      rw [p6M_pow_I_eq_p4B_pow_p3L]
+      exact inRange34 29 (by rw [reps34_length]; norm_num)
+  exact hsubset38.trans hrange
+
+/-- Semantic upper bound matching the accepted OEIS value `A198683(7) = 34`. -/
+theorem a198683_seven_le_thirty_four : a198683 7 ≤ 34 := by
+  classical
+  rw [a198683]
+  let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
+    fun i => a198683SevenCanonicalReps.get i
+  have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+    simpa [rep] using a198683_seven_subset_canonicalReps
+  let repFinset : Finset ℂ := Finset.univ.image rep
+  have hRangeSubset : Set.range rep ⊆ (repFinset : Set ℂ) := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    change rep i ∈ repFinset
+    exact Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩
+  calc
+    (a198683ValueSet 7).ncard ≤ (Set.range rep).ncard :=
+      Set.ncard_le_ncard hsubset
+    _ ≤ (repFinset : Set ℂ).ncard := Set.ncard_le_ncard hRangeSubset
+    _ = repFinset.card := by rw [Set.ncard_coe_finset]
+    _ ≤ (Finset.univ : Finset (Fin a198683SevenCanonicalReps.length)).card :=
+      Finset.card_image_le
+    _ = a198683SevenCanonicalReps.length := by simp
+    _ = 34 := by norm_num [a198683SevenCanonicalReps]
+
 end
 
 end LeanProofs
