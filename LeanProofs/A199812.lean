@@ -337,10 +337,16 @@ theorem a199812_eight : a199812 8 = 193 := by
   rw [a199812_eq_computedCount]
   native_decide
 
+/-- `A199812(9) = 478`. -/
+theorem a199812_nine : a199812 9 = 478 := by
+  rw [a199812_eq_computedCount]
+  native_decide
+
 end TowerExpr
 
 export TowerExpr (a199812 a199812_eq_noteCount a199812_one a199812_two a199812_three
-  a199812_four a199812_five a199812_six a199812_seven a199812_eight)
+  a199812_four a199812_five a199812_six a199812_seven a199812_eight
+  a199812_nine)
 
 end A199812
 
