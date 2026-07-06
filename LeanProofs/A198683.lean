@@ -967,6 +967,34 @@ private theorem theta_lt_one_div_three :
   have hexp_pos : 0 < Real.exp (Real.pi / 2) := Real.exp_pos _
   nlinarith [hpi, exp_pi_div_two_gt_24_div_5, htheta_mul, theta_pos, hexp_pos]
 
+private theorem cos_theta_gt_seventeen_div_eighteen :
+    (17 : ℝ) / 18 < Real.cos theta := by
+  have hcos := Real.one_sub_sq_div_two_le_cos (x := theta)
+  have htheta_sq : theta ^ 2 < ((1 : ℝ) / 3) ^ 2 := by
+    nlinarith [theta_pos, theta_lt_one_div_three]
+  nlinarith [hcos, htheta_sq]
+
+private theorem log_three_lt_seven_div_six :
+    Real.log 3 < (7 : ℝ) / 6 := by
+  nlinarith [Real.log_three_lt_d9]
+
+private theorem p5D_norm_lt_one_div_three :
+    ‖p5D‖ < (1 : ℝ) / 3 := by
+  dsimp [p5D, principalPow]
+  rw [Complex.norm_exp, log_p2_eq, p3L_eq_exp_theta]
+  have hre :
+      ((-(Real.pi / 2) : ℂ) * Complex.exp ((theta : ℂ) * Complex.I)).re =
+        -(Real.pi / 2) * Real.cos theta := by
+    simp [Complex.exp_re, Complex.exp_im, Complex.mul_re]
+  rw [hre]
+  have harg : Real.log 3 < Real.pi / 2 * Real.cos theta := by
+    nlinarith [Real.pi_gt_d2, cos_theta_gt_seventeen_div_eighteen,
+      log_three_lt_seven_div_six]
+  rw [show ((1 : ℝ) / 3) = Real.exp (-(Real.log 3)) by
+    rw [Real.exp_neg, Real.exp_log (by norm_num : (0 : ℝ) < 3)]
+    norm_num]
+  exact Real.exp_lt_exp.mpr (by linarith)
+
 private theorem sin_theta_gt_seven_div_thirty :
     (7 : ℝ) / 30 < Real.sin theta := by
   have hquarter : (7 : ℝ) / 30 < Real.sin ((1 : ℝ) / 4) := by
@@ -2558,6 +2586,24 @@ private theorem p6D_norm_gt_one :
   have hpos : Real.pi / 2 * p5D.im < 0 := by
     nlinarith [Real.pi_pos, p5D_im_neg]
   exact hpos
+
+private theorem p6D_norm_lt_two :
+    ‖p6D‖ < 2 := by
+  dsimp [p6D, principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  apply exp_lt_two_of_lt_log_two
+  have hneg_im_le_norm : -p5D.im ≤ ‖p5D‖ := by
+    have him := Complex.abs_im_le_norm p5D
+    have hleft := (abs_le.mp him).1
+    linarith
+  have harg_le : -(Real.pi / 2 * p5D.im) ≤ Real.pi / 2 * ‖p5D‖ := by
+    nlinarith [Real.pi_pos, hneg_im_le_norm]
+  have harg_lt : Real.pi / 2 * ‖p5D‖ < Real.pi / 6 := by
+    nlinarith [Real.pi_pos, p5D_norm_lt_one_div_three]
+  have hpi_div_six_lt_log_two : Real.pi / 6 < Real.log 2 := by
+    nlinarith [Real.pi_lt_d2, Real.log_two_gt_d9]
+  linarith
 
 private theorem p6G_norm_gt_one :
     1 < ‖p6G‖ := by
@@ -4218,6 +4264,69 @@ theorem fourteen_le_a198683_seven : 14 ≤ a198683 7 := by
       hcard.symm
     _ ≤ (a198683ValueSet 7).ncard :=
       Set.ncard_le_ncard I_pow_image_stripLowerExponents_subset_seven hfinite7
+
+private theorem a198683SixCandidateSet_re_bounds {z : ℂ}
+    (hz : z ∈ a198683SixCandidateSet) :
+    -2 < z.re ∧ z.re ≤ 2 := by
+  dsimp [a198683SixCandidateSet] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl
+  · exact re_bounds_of_norm_le_one p6A_norm_le_one
+  · exact re_bounds_of_norm_le_one p6B_norm_le_one
+  · exact re_bounds_of_norm_le_one p6C_norm_le_one
+  · exact re_bounds_of_norm_lt_two p6D_norm_lt_two
+  · exact re_bounds_of_norm_le_one p6E_norm_le_one
+  · exact re_bounds_of_norm_le_one p6F_norm_le_one
+  · exact re_bounds_of_norm_lt_two p6G_norm_lt_two
+  · exact re_bounds_of_norm_le_one p6H_norm_le_one
+  · exact re_bounds_of_norm_le_one p6I_norm_le_one
+  · exact re_bounds_of_norm_le_one p6J_norm_le_one
+  · exact re_bounds_of_norm_le_one p6K_norm_le_one
+  · exact re_bounds_of_norm_lt_two p6L_norm_lt_two
+  · exact re_bounds_of_norm_lt_two p6M_norm_lt_two
+  · exact re_bounds_of_norm_le_one p6N_norm_le_one
+  · exact re_bounds_of_norm_le_one p6O_norm_le_one
+
+private theorem a198683SixCandidateSet_subset_six :
+    a198683SixCandidateSet ⊆ a198683ValueSet 6 := by
+  intro z hz
+  rw [valueSet_six_eq_candidates]
+  simpa [a198683SixCandidateSet] using hz
+
+private theorem I_pow_injOn_a198683SixCandidateSet :
+    Set.InjOn (fun z : ℂ => principalPow Complex.I z) a198683SixCandidateSet := by
+  intro x hx y hy hxy
+  have hxre := a198683SixCandidateSet_re_bounds hx
+  have hyre := a198683SixCandidateSet_re_bounds hy
+  exact I_pow_inj_of_re_mem_two hxre.1 hxre.2 hyre.1 hyre.2 hxy
+
+private theorem I_pow_image_sixCandidateSet_subset_seven :
+    (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet ⊆
+      a198683ValueSet 7 := by
+  rintro z ⟨x, hx, rfl⟩
+  simp only [a198683ValueSet]
+  refine ⟨0, Complex.I, ?_, x, ?_, rfl⟩
+  · exact mem_valueSet_one.2 rfl
+  · exact a198683SixCandidateSet_subset_six hx
+
+/-- Semantic lower bound for `A198683(7)` from all 15 sixth-level values under `z ↦ i^z`. -/
+theorem fifteen_le_a198683_seven : 15 ≤ a198683 7 := by
+  classical
+  rw [a198683]
+  have hfinite7 : (a198683ValueSet 7).Finite := by
+    let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
+      fun i => a198683SevenCanonicalReps.get i
+    have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+      simpa [rep] using a198683_seven_subset_canonicalReps
+    exact (Set.finite_range rep).subset hsubset
+  have hcard :
+      ((fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet).ncard = 15 := by
+    rw [I_pow_injOn_a198683SixCandidateSet.ncard_image, a198683SixCandidateSet_ncard]
+  calc
+    15 = ((fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet).ncard :=
+      hcard.symm
+    _ ≤ (a198683ValueSet 7).ncard :=
+      Set.ncard_le_ncard I_pow_image_sixCandidateSet_subset_seven hfinite7
 
 end
 
