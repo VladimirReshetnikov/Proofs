@@ -335,8 +335,8 @@ mutual
     · simp_wf
       have hle : sizeOf x + sizeOf y ≤
           sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) := by
-        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-          (Nat.le_add_right (sizeOf x + sizeOf y) (sizeOf xs + sizeOf ys))
+        rw [← Nat.add_assoc]
+        exact Nat.le_add_right (sizeOf x + sizeOf y) (sizeOf xs + sizeOf ys)
       have hlt : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
           1 + (1 + (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)))) := by
         simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
