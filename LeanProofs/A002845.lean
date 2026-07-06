@@ -658,6 +658,61 @@ theorem a002845_eq_certifiedLevelCard (n : Nat) : a002845 n = certifiedLevelCard
   rw [coe_certifiedLevel]
   exact (Set.InjOn.ncard_image Sparse.ofNat_injective.injOn).symm
 
+/--
+The A002845 sparse-log recurrence is an instance of the shared
+`PowTower.Expr` finite recurrence, with atom `1` and combine operation
+`a * 2^b` represented sparsely.
+-/
+theorem certifiedLevel_eq_sharedSparseLogLevel (n : Nat) :
+    certifiedLevel n =
+      PowTower.Expr.recursiveValueFinset (Sparse.ofNat 1) certifiedCombineLog n := by
+  induction n using certifiedLevel.induct with
+  | case1 =>
+      simp [certifiedLevel, PowTower.Expr.recursiveValueFinset]
+  | case2 =>
+      simp [certifiedLevel, PowTower.Expr.recursiveValueFinset]
+  | case3 n ihLeft ihRight =>
+      simp [certifiedLevel, PowTower.Expr.recursiveValueFinset, ihLeft, ihRight]
+
+/-- Shared memoized sparse-log count corresponding to A002845. -/
+def sharedSparseLogCountMemo (n : Nat) : Nat :=
+  (PowTower.Expr.recursiveValueFinsetMemo (Sparse.ofNat 1) certifiedCombineLog n).card
+
+/-- Shared memoized sparse-log counts for sizes `1, ..., n`. -/
+def sharedSparseLogCountsMemoThrough (n : Nat) : List Nat :=
+  PowTower.Expr.recursiveValueCountsMemoThrough (Sparse.ofNat 1) certifiedCombineLog n
+
+theorem a002845_eq_sharedSparseLogCountMemo (n : Nat) :
+    a002845 n = sharedSparseLogCountMemo n := by
+  rw [a002845_eq_certifiedLevelCard, sharedSparseLogCountMemo, certifiedLevelCard]
+  rw [PowTower.Expr.recursiveValueFinsetMemo_eq]
+  rw [← certifiedLevel_eq_sharedSparseLogLevel]
+
+theorem sharedSparseLogCountMemo_eq_countsMemoThrough_getD {N n : Nat}
+    (hpos : 0 < n) (hN : n ≤ N) :
+    sharedSparseLogCountMemo n =
+      (sharedSparseLogCountsMemoThrough N).getD (n - 1) 0 := by
+  cases n with
+  | zero =>
+      exact (Nat.not_lt_zero _ hpos).elim
+  | succ i =>
+      have hi : i < N := Nat.succ_le_iff.mp hN
+      unfold sharedSparseLogCountMemo sharedSparseLogCountsMemoThrough
+      simpa using
+        (PowTower.Expr.recursiveValueCountsMemoThrough_getD
+          (atomValue := Sparse.ofNat 1) (powValue := certifiedCombineLog)
+          (N := N) (i := i) hi).symm
+
+theorem a002845_eq_of_sharedSparseLogCountsMemoThrough {N n value : Nat}
+    (hpos : 0 < n) (hN : n ≤ N)
+    (hcount : (sharedSparseLogCountsMemoThrough N).getD (n - 1) 0 = value) :
+    a002845 n = value := by
+  calc
+    a002845 n = sharedSparseLogCountMemo n := a002845_eq_sharedSparseLogCountMemo n
+    _ = (sharedSparseLogCountsMemoThrough N).getD (n - 1) 0 :=
+      sharedSparseLogCountMemo_eq_countsMemoThrough_getD hpos hN
+    _ = value := hcount
+
 /-- OEIS A002845 has value `17` at `n = 7`. -/
 theorem a002845_seven : a002845 7 = 17 := by
   rw [a002845_eq_certifiedSparseCard]
