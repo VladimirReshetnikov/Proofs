@@ -93,6 +93,35 @@ theorem arctan_square_identity :
       210 * Real.arctan (47 : ℝ) ^ 2 = 0
 ```
 
+[`LeanProofs/A002845.lean`](LeanProofs/A002845.lean) defines OEIS A002845
+as the number of distinct values of the fully parenthesized expression
+`2^2^...^2`, using exact hereditary sparse-binary logarithms so the tower
+values themselves never have to be materialized.  It proves the first twenty
+values as separate public theorems, `a002845_one` through `a002845_twenty`:
+
+```lean
+theorem a002845_one : a002845 1 = 1
+theorem a002845_two : a002845 2 = 1
+theorem a002845_three : a002845 3 = 1
+theorem a002845_four : a002845 4 = 2
+theorem a002845_five : a002845 5 = 4
+theorem a002845_six : a002845 6 = 8
+theorem a002845_seven : a002845 7 = 17
+theorem a002845_eight : a002845 8 = 36
+theorem a002845_nine : a002845 9 = 78
+theorem a002845_ten : a002845 10 = 171
+theorem a002845_eleven : a002845 11 = 379
+theorem a002845_twelve : a002845 12 = 851
+theorem a002845_thirteen : a002845 13 = 1928
+theorem a002845_fourteen : a002845 14 = 4396
+theorem a002845_fifteen : a002845 15 = 10087
+theorem a002845_sixteen : a002845 16 = 23273
+theorem a002845_seventeen : a002845 17 = 53948
+theorem a002845_eighteen : a002845 18 = 125608
+theorem a002845_nineteen : a002845 19 = 293543
+theorem a002845_twenty : a002845 20 = 688366
+```
+
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683
 semantically as the number of distinct principal complex-power values obtained
 from all binary parenthesizations of `i^i^...^i`. It proves the accepted values
