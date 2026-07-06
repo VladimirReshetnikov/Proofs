@@ -1,4 +1,5 @@
 import LeanProofs.A198683
+import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
 import Mathlib.Analysis.SpecialFunctions.Trigonometric.Basic
 import Mathlib.Tactic.NormNum
@@ -1559,6 +1560,90 @@ theorem rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds
     exact (Real.exp_lt_exp.mpr harg).trans hexp1
 
 /--
+The concrete `pi/2` box needed by the downstream `theta` and `rho` reductions,
+proved from mathlib's 20-decimal `pi` certificate.
+-/
+theorem pi_div_two_bounds_for_theta_rho :
+    (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2 ∧
+      Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000 := by
+  constructor
+  · have hpi :
+        (3141592653588 : ℝ) / 1000000000000 < Real.pi := by
+      exact (by norm_num :
+        (3141592653588 : ℝ) / 1000000000000 <
+          3.14159265358979323846).trans Real.pi_gt_d20
+    linarith
+  · have hpi :
+        Real.pi < (3141592653590 : ℝ) / 1000000000000 := by
+      exact Real.pi_lt_d20.trans
+        (by norm_num :
+          3.14159265358979323847 <
+            (3141592653590 : ℝ) / 1000000000000)
+    linarith
+
+/--
+The `rho = exp(-pi/2)` box after discharging the `pi/2` interval from
+mathlib's certified `pi` bounds.  The remaining assumptions are the two
+endpoint estimates for `exp` at the rational endpoints of the `pi/2` box.
+-/
+theorem rho_bounds_of_endpoint_bounds
+    (hexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000) :
+    (207879576350 : ℝ) / 1000000000000 < rho ∧
+      rho < (207879576351 : ℝ) / 1000000000000 := by
+  rcases pi_div_two_bounds_for_theta_rho with ⟨hpi0, hpi1⟩
+  exact rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds hpi0 hpi1 hexp0 hexp1
+
+/--
+The `theta = (pi/2) * rho` box reduced to the two rational endpoint
+exponential estimates used for `rho`; the `pi/2` box itself is certified
+above from mathlib's `pi` bounds.
+-/
+theorem theta_box_of_rho_endpoint_bounds
+    (hexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000) :
+    (326536474946 : ℝ) / 1000000000000 < theta ∧
+      theta < (326536474949 : ℝ) / 1000000000000 := by
+  rcases pi_div_two_bounds_for_theta_rho with ⟨hpi0, hpi1⟩
+  have hrho := rho_bounds_of_endpoint_bounds hexp0 hexp1
+  exact theta_box_of_pi_div_two_rho_bounds hpi0 hpi1 hrho.1 hrho.2
+
+/--
+The `sin theta` and `cos theta` boxes reduced to the two `rho` exponential
+endpoint estimates plus endpoint estimates for `sin` and `cos` at the rational
+ends of the resulting `theta` box.
+-/
+theorem sin_cos_theta_bounds_of_rho_endpoint_bounds_and_endpoint_bounds
+    (hrhoExp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hrhoExp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000)
+    (hsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (hsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (hcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (hcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000) :
+    (320764449975 : ℝ) / 1000000000000 < Real.sin theta ∧
+      Real.sin theta < (320764449985 : ℝ) / 1000000000000 ∧
+      (947158998071 : ℝ) / 1000000000000 < Real.cos theta ∧
+      Real.cos theta < (947158998073 : ℝ) / 1000000000000 := by
+  have htheta := theta_box_of_rho_endpoint_bounds hrhoExp0 hrhoExp1
+  exact sin_cos_theta_bounds_of_theta_box_and_endpoint_bounds
+    htheta.1 htheta.2 hsin0 hsin1 hcos0 hcos1
+
+/--
 A rational box around `v`, plus endpoint product estimates, is enough to
 certify the rational box around the representative-`25` seed used by the next
 reduction.
@@ -2633,6 +2718,387 @@ theorem nearOne25_ne_nearOne4239_of_theta_box_and_endpoint_bounds
     ⟨hsinTheta0, hsinTheta1, hcosTheta0, hcosTheta1⟩
   exact nearOne25_ne_nearOne4239_of_sin_cos_theta_bounds_and_endpoint_bounds
     hsinTheta0 hsinTheta1 hcosTheta0 hcosTheta1
+    hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
+    hsrelo hsrehi hsimlo hsimhi
+    h1relo h1rehi h1imlo h1imhi
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
+The strict class-25 split from `1404` follows from rational boxes for `pi/2`
+and `rho = exp(-pi/2)`, endpoint estimates proving the downstream trigonometric
+and exponential boxes, and the endpoint estimates propagating through the
+remaining levels.
+-/
+theorem nearOne25_ne_nearOne1404_of_pi_div_two_rho_bounds_and_endpoint_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hrho0 : (207879576350 : ℝ) / 1000000000000 < rho)
+    (hrho1 : rho < (207879576351 : ℝ) / 1000000000000)
+    (htsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (htsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (htcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (htcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000)
+    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
+    (hvexp1 :
+      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
+        (60419661060 : ℝ) / 100000000000)
+    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
+    (hvcos1 :
+      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+        (8290717829 : ℝ) / 100000000000)
+    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
+    (hvsin1 :
+      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+        (99655727372 : ℝ) / 100000000000)
+    (hsrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hsrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (hsimlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (hsimhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000)
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne1404 := by
+  have htheta := theta_box_of_pi_div_two_rho_bounds hpi0 hpi1 hrho0 hrho1
+  exact nearOne25_ne_nearOne1404_of_theta_box_and_endpoint_bounds
+    htheta.1 htheta.2 htsin0 htsin1 htcos0 htcos1
+    hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
+    hsrelo hsrehi hsimlo hsimhi
+    h1relo h1rehi h1imlo h1imhi
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
+The same `pi/2` and `rho` boxes plus endpoint estimates separate
+representative `25` from the other retained representative `4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_pi_div_two_rho_bounds_and_endpoint_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hrho0 : (207879576350 : ℝ) / 1000000000000 < rho)
+    (hrho1 : rho < (207879576351 : ℝ) / 1000000000000)
+    (htsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (htsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (htcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (htcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000)
+    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
+    (hvexp1 :
+      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
+        (60419661060 : ℝ) / 100000000000)
+    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
+    (hvcos1 :
+      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+        (8290717829 : ℝ) / 100000000000)
+    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
+    (hvsin1 :
+      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+        (99655727372 : ℝ) / 100000000000)
+    (hsrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hsrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (hsimlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (hsimhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000)
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne4239 := by
+  have htheta := theta_box_of_pi_div_two_rho_bounds hpi0 hpi1 hrho0 hrho1
+  exact nearOne25_ne_nearOne4239_of_theta_box_and_endpoint_bounds
+    htheta.1 htheta.2 htsin0 htsin1 htcos0 htcos1
+    hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
+    hsrelo hsrehi hsimlo hsimhi
+    h1relo h1rehi h1imlo h1imhi
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
+The strict class-25 split from `1404` follows from a rational box for `pi/2`,
+endpoint exponential estimates proving the corresponding `rho = exp(-pi/2)`
+box, and the downstream endpoint estimates propagating through `theta`, `v`,
+the seed, and the higher levels.
+-/
+theorem nearOne25_ne_nearOne1404_of_pi_div_two_bounds_and_endpoint_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hrhoexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hrhoexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000)
+    (htsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (htsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (htcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (htcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000)
+    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
+    (hvexp1 :
+      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
+        (60419661060 : ℝ) / 100000000000)
+    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
+    (hvcos1 :
+      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+        (8290717829 : ℝ) / 100000000000)
+    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
+    (hvsin1 :
+      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+        (99655727372 : ℝ) / 100000000000)
+    (hsrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hsrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (hsimlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (hsimhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000)
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne1404 := by
+  have hrho := rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds
+    hpi0 hpi1 hrhoexp0 hrhoexp1
+  exact nearOne25_ne_nearOne1404_of_pi_div_two_rho_bounds_and_endpoint_bounds
+    hpi0 hpi1 hrho.1 hrho.2 htsin0 htsin1 htcos0 htcos1
+    hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
+    hsrelo hsrehi hsimlo hsimhi
+    h1relo h1rehi h1imlo h1imhi
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
+The same `pi/2` box, `rho` endpoint estimates, and downstream endpoint
+estimates separate representative `25` from the other retained representative
+`4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_pi_div_two_bounds_and_endpoint_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hrhoexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hrhoexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000)
+    (htsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (htsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (htcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (htcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000)
+    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
+    (hvexp1 :
+      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
+        (60419661060 : ℝ) / 100000000000)
+    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
+    (hvcos1 :
+      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+        (8290717829 : ℝ) / 100000000000)
+    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
+    (hvsin1 :
+      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+        (99655727372 : ℝ) / 100000000000)
+    (hsrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hsrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (hsimlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (hsimhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000)
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne4239 := by
+  have hrho := rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds
+    hpi0 hpi1 hrhoexp0 hrhoexp1
+  exact nearOne25_ne_nearOne4239_of_pi_div_two_rho_bounds_and_endpoint_bounds
+    hpi0 hpi1 hrho.1 hrho.2 htsin0 htsin1 htcos0 htcos1
     hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
     hsrelo hsrehi hsimlo hsimhi
     h1relo h1rehi h1imlo h1imhi

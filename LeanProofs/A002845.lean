@@ -1,7 +1,8 @@
 import LeanProofs.PowTower
 import Mathlib.Data.Set.Card
 import Mathlib.Data.Nat.BitIndices
-import Std.Data.HashSet.Basic
+import Mathlib.Data.Finset.NAry
+import Std.Data.HashSet.Lemmas
 
 /-!
 # Initial values of OEIS A002845
@@ -314,9 +315,7 @@ end
 instance : DecidableEq Sparse :=
   decEq
 
-/-- Structural equality for sparse-binary trees.  The arithmetic operations
-maintain canonical bit lists, so structural equality is numeric equality for
-the values produced here. -/
+/-- Structural equality for sparse-binary trees. -/
 partial def beq : Sparse → Sparse → Bool
   | .bits xs, .bits ys => beqList xs ys
 where
@@ -324,9 +323,6 @@ where
     | [], [] => true
     | x :: xs, y :: ys => beq x y && beqList xs ys
     | _, _ => false
-
-instance : BEq Sparse where
-  beq := beq
 
 /-- Structural hash matching `Sparse.beq`. -/
 partial def hash : Sparse → UInt64
@@ -609,6 +605,59 @@ theorem a002845_eq_certifiedSparseCard (n : Nat) : a002845 n = certifiedSparseCa
   rw [coe_certifiedSparseLogFinset]
   exact (Set.InjOn.ncard_image Sparse.ofNat_injective.injOn).symm
 
+/--
+Certified dynamic-programming level of exact sparse logarithms.  Unlike
+`certifiedSparseLogFinset`, this constructs the semantic set by expression
+size, reusing smaller certified levels instead of enumerating all Catalan many
+expression trees.
+-/
+def certifiedLevel : Nat → Finset Sparse
+  | 0 => ∅
+  | 1 => {Sparse.ofNat 1}
+  | n + 2 =>
+      (Finset.univ : Finset (Fin (n + 1))).biUnion fun k =>
+        Finset.image₂ certifiedCombineLog
+          (certifiedLevel (k.1 + 1))
+          (certifiedLevel (n + 1 - k.1))
+termination_by n => n
+decreasing_by
+  · exact Nat.succ_lt_succ k.2
+  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+
+/-- Cardinality of the certified dynamic-programming sparse-logarithm level. -/
+def certifiedLevelCard (n : Nat) : Nat :=
+  (certifiedLevel n).card
+
+theorem coe_certifiedLevel (n : Nat) :
+    (certifiedLevel n : Set Sparse) =
+      Sparse.ofNat '' PowExpr.logValueSet n := by
+  induction n using certifiedLevel.induct with
+  | case1 =>
+      ext s
+      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations]
+  | case2 =>
+      ext s
+      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations, PowExpr.logEval]
+  | case3 n ihLeft ihRight =>
+      ext s
+      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations,
+        PowExpr.logEval, ihLeft, ihRight, certifiedCombineLog, Sparse.eval_ofNat]
+      constructor
+      · rintro ⟨i, a, ha, b, hb, hs⟩
+        exact ⟨i, a, b, ⟨ha, hb⟩, hs⟩
+      · rintro ⟨i, a, b, ⟨ha, hb⟩, hs⟩
+        exact ⟨i, a, ha, b, hb, hs⟩
+
+/--
+The certified dynamic-programming sparse-logarithm levels compute exactly the
+canonical semantic A002845 count.
+-/
+theorem a002845_eq_certifiedLevelCard (n : Nat) : a002845 n = certifiedLevelCard n := by
+  rw [PowExpr.a002845_eq_logCard, PowExpr.a002845LogCard, certifiedLevelCard]
+  rw [← Set.ncard_coe_finset (certifiedLevel n)]
+  rw [coe_certifiedLevel]
+  exact (Set.InjOn.ncard_image Sparse.ofNat_injective.injOn).symm
+
 /-- OEIS A002845 has value `17` at `n = 7`. -/
 theorem a002845_seven : a002845 7 = 17 := by
   rw [a002845_eq_certifiedSparseCard]
@@ -647,7 +696,7 @@ partial def insertSplitValues (levels : Array (List Sparse)) (leftSize rightSize
   let right := levels[rightSize - 1]!
   left.foldl
     (fun seen a =>
-      right.foldl (fun seen b => seen.insert (combineLog a b)) seen)
+      right.foldl (fun seen b => seen.insert (certifiedCombineLog a b)) seen)
     seen
 
 /-- Compute all distinct logarithms for expressions of a given positive size,
@@ -679,6 +728,58 @@ def a002845SparseLogValues (n : Nat) : List Sparse :=
 /-- Executable sparse-binary backend count for A002845 logarithms. -/
 def a002845Sparse (n : Nat) : Nat :=
   (a002845SparseLogValues n).length
+
+attribute [implemented_by a002845Sparse] certifiedLevelCard
+
+/-- OEIS A002845 has value `1928` at `n = 13`. -/
+theorem a002845_thirteen : a002845 13 = 1928 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `4396` at `n = 14`. -/
+theorem a002845_fourteen : a002845 14 = 4396 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `10087` at `n = 15`. -/
+theorem a002845_fifteen : a002845 15 = 10087 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `23273` at `n = 16`. -/
+theorem a002845_sixteen : a002845 16 = 23273 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `53948` at `n = 17`. -/
+theorem a002845_seventeen : a002845 17 = 53948 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `125608` at `n = 18`. -/
+theorem a002845_eighteen : a002845 18 = 125608 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `293543` at `n = 19`. -/
+theorem a002845_nineteen : a002845 19 = 293543 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `688366` at `n = 20`. -/
+theorem a002845_twenty : a002845 20 = 688366 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `1619087` at `n = 21`. -/
+theorem a002845_twenty_one : a002845 21 = 1619087 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
+/-- OEIS A002845 has value `3818818` at `n = 22`. -/
+theorem a002845_twenty_two : a002845 22 = 3818818 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
 
 /-- The sparse backend computes `1` at `n = 1`. -/
 theorem a002845Sparse_one : a002845Sparse 1 = 1 := by
