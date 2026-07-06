@@ -107,21 +107,21 @@ partial def shift (x b : Sparse) : Sparse :=
 
 end Sparse
 
-/-- Remove duplicates from a list of sparse values. -/
-def dedup (xs : List Sparse) : List Sparse :=
-  (Std.HashSet.ofList xs).toList
-
 /-- The exact logarithm-combine operation:
 `log₂ ((2^a)^(2^b)) = a * 2^b`. -/
 def combineLog (a b : Sparse) : Sparse :=
   Sparse.shift a b
 
-/-- Raw values produced by one binary split of an expression of size `n`. -/
-partial def splitValues (levels : Array (List Sparse)) (leftSize rightSize : Nat) :
-    List Sparse :=
+/-- Insert all values produced by one binary split of an expression of size
+`n` into an accumulator. -/
+partial def insertSplitValues (levels : Array (List Sparse)) (leftSize rightSize : Nat)
+    (seen : Std.HashSet Sparse) : Std.HashSet Sparse :=
   let left := levels[leftSize - 1]!
   let right := levels[rightSize - 1]!
-  List.flatten (List.map (fun a => List.map (fun b => combineLog a b) right) left)
+  left.foldl
+    (fun seen a =>
+      right.foldl (fun seen b => seen.insert (combineLog a b)) seen)
+    seen
 
 /-- Compute all distinct logarithms for expressions of a given positive size,
 assuming all smaller levels have already been computed. -/
@@ -130,10 +130,11 @@ partial def nextLevel (levels : Array (List Sparse)) : List Sparse :=
   if size = 1 then
     [Sparse.one]
   else
-    let raw :=
-      List.flatten (List.map (fun k =>
-        splitValues levels (k + 1) (size - 1 - k)) (List.range (size - 1)))
-    dedup raw
+    let seen :=
+      (List.range (size - 1)).foldl
+        (fun seen k => insertSplitValues levels (k + 1) (size - 1 - k) seen)
+        (∅ : Std.HashSet Sparse)
+    seen.toList
 
 /-- Build the table of distinct logarithm lists through size `fuel`. -/
 partial def buildLevels : Nat → Array (List Sparse) → Array (List Sparse)
