@@ -109,6 +109,9 @@ that the strict `n = 12` candidate table has 2925 classes among 5139
 candidates and that the documented probe split refines it to 2926 classes.
 [`LeanProofs/A198683N12Magnitude.lean`](LeanProofs/A198683N12Magnitude.lean)
 checks that the retained overflow/magnitude metadata isolates candidate `57`.
+[`LeanProofs/A198683N12OverflowWitness.lean`](LeanProofs/A198683N12OverflowWitness.lean)
+records the traced candidate-57 expression semantically and proves it lies in
+the `n = 11` and `n = 12` value sets.
 The latter is intentionally a data-integrity theorem, not a semantic proof of
 `a198683 12 = 2926`.
 
