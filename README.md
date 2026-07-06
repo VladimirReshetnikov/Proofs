@@ -110,6 +110,14 @@ theorem arctan_square_identity :
       210 * Real.arctan (47 : ℝ) ^ 2 = 0
 ```
 
+[`LeanProofs/PowTower.lean`](LeanProofs/PowTower.lean) is the shared lexical
+layer for the power-tower OEIS formalizations.  It defines the one-token
+binary parenthesization syntax `PowTower.Expr`, its canonical semantic
+`valueSet`/`valueCard`, and proved computation-oriented bridges such as
+`valueSet_eq_recursiveValueSet`, `valueCard_eq_recursiveValueSet_ncard`, and
+the finite/memoized recursive finite-set variants used by decidable
+interpretations.
+
 [`LeanProofs/A000081.lean`](LeanProofs/A000081.lean) defines OEIS A000081
 from the exponent-function description itself: it enumerates all legal binary
 parenthesizations of `x^x^...^x`, interprets them as functions

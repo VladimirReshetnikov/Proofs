@@ -34,6 +34,14 @@ abbrev PosReal := {x : ℝ // 0 < x}
 noncomputable def PosReal.rpow (x : PosReal) (y : ℝ) : PosReal :=
   ⟨x.1 ^ y, Real.rpow_pos_of_pos x.2 y⟩
 
+/-- A000081's shared-lexical atom interpretation: the positive-real identity function. -/
+noncomputable def atomFunction : PosReal -> PosReal :=
+  fun t => t
+
+/-- A000081's shared-lexical binary interpretation: pointwise positive-real exponentiation. -/
+noncomputable def powFunction (f g : PosReal -> PosReal) : PosReal -> PosReal :=
+  fun t => PosReal.rpow (f t) (g t).1
+
 /-- Binary parenthesized expressions built from copies of the variable `x`. -/
 inductive PowExpr where
   | x
@@ -78,8 +86,7 @@ Shared lexical interpretation for A000081: the atom is the identity function
 on positive reals, and the binary node exponentiates pointwise.
 -/
 noncomputable def sharedEval : PowTower.Expr -> PosReal -> PosReal :=
-  PowTower.Expr.eval (fun t : PosReal => t)
-    (fun f g : PosReal -> PosReal => fun t => PosReal.rpow (f t) (g t).1)
+  PowTower.Expr.eval atomFunction powFunction
 
 /-- The existing A000081 syntax evaluates the same way as the shared lexical syntax. -/
 theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
@@ -89,19 +96,13 @@ theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
       rfl
   | pow a b iha ihb =>
       funext t
-      simp [eval, sharedEval, toSharedLex, iha, ihb]
+      simp [eval, sharedEval, toSharedLex, powFunction, iha, ihb]
 
 /--
 The shared canonical lexical value set for A000081.
 -/
 def canonicalValueSet (n : Nat) : Set (PosReal -> PosReal) :=
-  PowTower.Expr.valueSet (fun t : PosReal => t)
-    (fun f g : PosReal -> PosReal => fun t => PosReal.rpow (f t) (g t).1) n
-
-/-- The number of variable occurrences in a power expression. -/
-def size : PowExpr -> Nat
-  | x => 1
-  | pow a b => size a + size b
+  PowTower.Expr.valueSet atomFunction powFunction n
 
 /-- All legal binary parenthesizations with exactly `n` copies of `x`. -/
 def parenthesizations : Nat -> List PowExpr
@@ -183,8 +184,7 @@ theorem valueSet_eq_canonicalValueSet (n : Nat) :
 
 /-- OEIS A000081, defined as the cardinality of the shared lexical exponent-function set. -/
 noncomputable def a000081 (n : Nat) : Nat :=
-  PowTower.Expr.valueCard (fun t : PosReal => t)
-    (fun f g : PosReal -> PosReal => fun t => PosReal.rpow (f t) (g t).1) n
+  PowTower.Expr.valueCard atomFunction powFunction n
 
 /-- A000081 can equivalently be read from the shared canonical lexical syntax. -/
 theorem a000081_eq_canonicalValueSet_ncard (n : Nat) :
@@ -195,6 +195,17 @@ theorem a000081_eq_canonicalValueSet_ncard (n : Nat) :
 theorem a000081_eq_valueSet_ncard (n : Nat) :
     a000081 n = (valueSet n).ncard := by
   rw [a000081_eq_canonicalValueSet_ncard, valueSet_eq_canonicalValueSet]
+
+/--
+A000081 also equals the cardinality of the split-recursive value set induced
+by the same shared lexical interpretation.  This is a proved bridge from the
+canonical lexical definition to the recursive value-set presentation; it is
+not a replacement definition.
+-/
+theorem a000081_eq_recursiveValueSet_ncard (n : Nat) :
+    a000081 n =
+      (PowTower.Expr.recursiveValueSet atomFunction powFunction n).ncard := by
+  exact PowTower.Expr.valueCard_eq_recursiveValueSet_ncard atomFunction powFunction n
 
 /-- A fixed positive real used only to separate functions by evaluation. -/
 def three : PosReal :=
@@ -592,8 +603,8 @@ theorem a000081_five : a000081 5 = 9 := by
 
 end PowExpr
 
-export PowExpr (a000081 a000081_zero a000081_one a000081_two a000081_three a000081_four
-  a000081_five)
+export PowExpr (a000081 a000081_eq_recursiveValueSet_ncard a000081_zero a000081_one
+  a000081_two a000081_three a000081_four a000081_five)
 
 end A000081
 

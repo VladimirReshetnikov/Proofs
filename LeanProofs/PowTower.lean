@@ -42,6 +42,21 @@ decreasing_by
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
   · exact Nat.succ_lt_succ k.2
 
+theorem parenthesizations_zero_eq :
+    parenthesizations 0 = [] := by
+  rw [parenthesizations.eq_def]
+
+theorem parenthesizations_one_eq :
+    parenthesizations 1 = [atom] := by
+  rw [parenthesizations.eq_def]
+
+theorem parenthesizations_succ_succ (n : Nat) :
+    parenthesizations (n + 2) =
+      (List.finRange (n + 1)).flatMap fun k =>
+        (parenthesizations (k.1 + 1)).flatMap fun a =>
+          (parenthesizations (n + 1 - k.1)).map fun b => pow a b := by
+  rw [parenthesizations.eq_def]
+
 /-- Interpret the shared lexical syntax by supplying an atom and a binary operation. -/
 def eval (atomValue : α) (powValue : α -> α -> α) : Expr -> α
   | atom => atomValue
@@ -91,12 +106,12 @@ theorem valueSet_eq_recursiveValueSet (atomValue : α) (powValue : α -> α -> �
       cases n with
       | zero =>
           ext v
-          simp [valueSet, parenthesizations, recursiveValueSet]
+          simp [valueSet, parenthesizations_zero_eq, recursiveValueSet]
       | succ n =>
           cases n with
           | zero =>
               ext v
-              simp [valueSet, parenthesizations, recursiveValueSet]
+              simp [valueSet, parenthesizations_one_eq, recursiveValueSet]
           | succ n =>
               ext v
               constructor
@@ -128,6 +143,17 @@ theorem valueSet_eq_recursiveValueSet (atomValue : α) (powValue : α -> α -> �
                 refine ⟨pow a b, ?_, rfl⟩
                 simp only [parenthesizations, List.mem_flatMap, List.mem_map]
                 exact ⟨k, List.mem_finRange k, a, ha, b, hb, rfl⟩
+
+/--
+The canonical lexical count can be computed as the cardinality of the
+split-recursive value set.  This version does not require decidable equality,
+so it applies also to function-valued interpretations such as A000081.
+-/
+theorem valueCard_eq_recursiveValueSet_ncard (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    valueCard atomValue powValue n =
+      (recursiveValueSet atomValue powValue n).ncard := by
+  rw [valueCard, valueSet_eq_recursiveValueSet]
 
 /--
 Finite-set version of `recursiveValueSet`, for interpretations whose values
