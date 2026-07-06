@@ -58,6 +58,12 @@ def overflowBase11 : ℂ := principalPow Complex.I w10
 /-- The corresponding n = 12 overflow candidate. -/
 def overflowCandidate12 : ℂ := principalPow Complex.I overflowBase11
 
+private theorem overflowExponent_re :
+    (Complex.log Complex.I * overflowBase11).re =
+      -(Real.pi / 2) * overflowBase11.im := by
+  rw [Complex.log_I]
+  simp [Complex.mul_re, Complex.mul_im]
+
 private theorem mem_one : Complex.I ∈ a198683ValueSet 1 := by
   simp [a198683ValueSet]
 
@@ -106,6 +112,12 @@ theorem overflowCandidate12_mem : overflowCandidate12 ∈ a198683ValueSet 12 := 
   refine ⟨⟨0, by norm_num⟩, Complex.I, mem_one, overflowBase11, overflowBase11_mem, ?_⟩
   simp [overflowCandidate12]
 
+/-- The overflow witness modulus is determined by the imaginary part of its n = 11 base. -/
+theorem overflowCandidate12_norm :
+    ‖overflowCandidate12‖ = Real.exp (-(Real.pi / 2) * overflowBase11.im) := by
+  dsimp [overflowCandidate12, principalPow]
+  rw [Complex.norm_exp, overflowExponent_re]
+
 /--
 The real part of the level-12 exponent for this witness is controlled by the
 imaginary part of the n = 11 base.
@@ -114,6 +126,28 @@ theorem overflowCandidate12_exponent_re :
     (overflowBase11 * Complex.log Complex.I).re =
       -(Real.pi / 2) * overflowBase11.im :=
   A198683N12Magnitude.re_mul_log_I overflowBase11
+
+/--
+Any candidate whose exponent has larger real part than the overflow witness's
+exponent is distinct from the overflow witness. This is the formal version of
+the log-modulus separation target from the local n = 12 magnitude note.
+-/
+theorem overflowCandidate12_ne_exp_of_re_gt {e : ℂ}
+    (h : -(Real.pi / 2) * overflowBase11.im < e.re) :
+    overflowCandidate12 ≠ Complex.exp e := by
+  dsimp [overflowCandidate12, principalPow]
+  exact A198683N12Magnitude.exp_ne_of_re_lt (by
+    rw [overflowExponent_re]
+    exact h)
+
+/--
+The same separation criterion specialized to another principal power candidate.
+-/
+theorem overflowCandidate12_ne_principalPow_of_re_gt {a b : ℂ}
+    (h : -(Real.pi / 2) * overflowBase11.im < (Complex.log a * b).re) :
+    overflowCandidate12 ≠ principalPow a b := by
+  dsimp [principalPow]
+  exact overflowCandidate12_ne_exp_of_re_gt h
 
 end
 

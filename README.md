@@ -113,7 +113,9 @@ candidates and that the documented probe split refines it to 2926 classes.
 checks that the retained overflow/magnitude metadata isolates candidate `57`.
 [`LeanProofs/A198683N12OverflowWitness.lean`](LeanProofs/A198683N12OverflowWitness.lean)
 records the traced candidate-57 expression semantically and proves it lies in
-the `n = 11` and `n = 12` value sets.
+the `n = 11` and `n = 12` value sets, with a log-modulus separation criterion
+for comparing that overflow witness against candidates whose exponent real
+part is certified larger.
 The latter is intentionally a data-integrity theorem, not a semantic proof of
 `a198683 12 = 2926`.
 
