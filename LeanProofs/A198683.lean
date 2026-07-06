@@ -157,6 +157,9 @@ private noncomputable def rho : ℝ :=
 private noncomputable def theta : ℝ :=
   Real.pi / 2 * rho
 
+private noncomputable def thetaDelta : ℝ :=
+  Real.pi / 2 * (1 - Real.cos theta)
+
 private noncomputable def beta : ℝ :=
   Real.pi / 2 * (Real.exp (Real.pi / 2) - 4)
 
@@ -945,6 +948,13 @@ private theorem theta_gt_one_div_four :
     linarith [Real.pi_gt_d2]
   nlinarith [hpi, rho_gt_one_div_five]
 
+private theorem theta_gt_three_div_ten :
+    (3 : ℝ) / 10 < theta := by
+  dsimp [theta]
+  have hpi : (157 : ℝ) / 100 < Real.pi / 2 := by
+    linarith [Real.pi_gt_d2]
+  nlinarith [hpi, rho_gt_one_div_five]
+
 private theorem theta_lt_one_div_three :
     theta < (1 : ℝ) / 3 := by
   have hpi : Real.pi / 2 < (63 : ℝ) / 40 := by
@@ -956,6 +966,239 @@ private theorem theta_lt_one_div_three :
     field_simp [(Real.exp_pos (Real.pi / 2)).ne']
   have hexp_pos : 0 < Real.exp (Real.pi / 2) := Real.exp_pos _
   nlinarith [hpi, exp_pi_div_two_gt_24_div_5, htheta_mul, theta_pos, hexp_pos]
+
+private theorem sin_theta_gt_seven_div_thirty :
+    (7 : ℝ) / 30 < Real.sin theta := by
+  have hquarter : (7 : ℝ) / 30 < Real.sin ((1 : ℝ) / 4) := by
+    have h := Real.sin_gt_sub_cube
+      (x := (1 : ℝ) / 4) (by norm_num) (by norm_num)
+    norm_num at h ⊢
+    linarith
+  have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+    (x := (1 : ℝ) / 4) (y := theta)
+    (by linarith [Real.pi_pos]) theta_lt_pi_div_two.le theta_gt_one_div_four
+  exact hquarter.trans hmono
+
+private theorem sin_theta_gt_twenty_nine_div_hundred :
+    (29 : ℝ) / 100 < Real.sin theta := by
+  have hthree_tenths : (29 : ℝ) / 100 < Real.sin ((3 : ℝ) / 10) := by
+    have h := Real.sin_gt_sub_cube
+      (x := (3 : ℝ) / 10) (by norm_num) (by norm_num)
+    norm_num at h ⊢
+    linarith
+  have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+    (x := (3 : ℝ) / 10) (y := theta)
+    (by linarith [Real.pi_pos]) theta_lt_pi_div_two.le theta_gt_three_div_ten
+  exact hthree_tenths.trans hmono
+
+private theorem p4A_exp_factor_lt_three_div_four :
+    Real.exp (-(Real.pi / 2 * Real.sin theta)) < (3 : ℝ) / 4 := by
+  have hu_gt : (1 : ℝ) / 3 < Real.pi / 2 * Real.sin theta := by
+    nlinarith [Real.pi_gt_d2, sin_theta_gt_seven_div_thirty]
+  rw [Real.exp_neg]
+  have hexp_gt : (4 : ℝ) / 3 < Real.exp (Real.pi / 2 * Real.sin theta) := by
+    have h := Real.add_one_lt_exp (by nlinarith [hu_gt] :
+      Real.pi / 2 * Real.sin theta ≠ 0)
+    nlinarith [h, hu_gt]
+  have hrec := one_div_lt_one_div_of_lt
+    (by norm_num : (0 : ℝ) < (4 : ℝ) / 3) hexp_gt
+  norm_num [one_div] at hrec
+  exact hrec
+
+private theorem p4A_exp_factor_lt_two_div_three :
+    Real.exp (-(Real.pi / 2 * Real.sin theta)) < (2 : ℝ) / 3 := by
+  have hu_gt : (9 : ℝ) / 20 < Real.pi / 2 * Real.sin theta := by
+    nlinarith [Real.pi_gt_d2, sin_theta_gt_twenty_nine_div_hundred]
+  rw [Real.exp_neg]
+  have hsum_le := Real.sum_le_exp_of_nonneg (x := Real.pi / 2 * Real.sin theta)
+    (by nlinarith [hu_gt]) 3
+  have hsum_gt :
+      (3 : ℝ) / 2 <
+        ∑ m ∈ Finset.range 3,
+          (Real.pi / 2 * Real.sin theta) ^ m / (m.factorial : ℝ) := by
+    norm_num [Finset.sum_range_succ]
+    nlinarith [hu_gt]
+  have hexp_gt : (3 : ℝ) / 2 < Real.exp (Real.pi / 2 * Real.sin theta) :=
+    hsum_gt.trans_le hsum_le
+  have hrec := one_div_lt_one_div_of_lt
+    (by norm_num : (0 : ℝ) < (3 : ℝ) / 2) hexp_gt
+  norm_num [one_div] at hrec
+  exact hrec
+
+private theorem exp_neg_eight_div_fifteen_gt_seven_div_twelve :
+    (7 : ℝ) / 12 < Real.exp (-(8 / 15 : ℝ)) := by
+  rw [Real.exp_neg]
+  have hupper := Real.exp_bound' (x := (8 : ℝ) / 15)
+    (by norm_num) (by norm_num) (n := 4) (by norm_num)
+  have hpoly :
+      (∑ m ∈ Finset.range 4, ((8 : ℝ) / 15) ^ m / (m.factorial : ℝ)) +
+          ((8 : ℝ) / 15) ^ 4 * ((4 : ℝ) + 1) / ((Nat.factorial 4 : ℝ) * (4 : ℝ)) <
+        (12 : ℝ) / 7 := by
+    norm_num [Finset.sum_range_succ, Nat.factorial]
+  have hexp_lt : Real.exp ((8 : ℝ) / 15) < (12 : ℝ) / 7 :=
+    hupper.trans_lt hpoly
+  have hrec := one_div_lt_one_div_of_lt (Real.exp_pos ((8 : ℝ) / 15)) hexp_lt
+  norm_num [one_div] at hrec
+  exact hrec
+
+private theorem p4A_exp_factor_gt_seven_div_twelve :
+    (7 : ℝ) / 12 < Real.exp (-(Real.pi / 2 * Real.sin theta)) := by
+  have hu_lt : Real.pi / 2 * Real.sin theta < (8 : ℝ) / 15 := by
+    have hsin_le_theta : Real.sin theta ≤ theta := Real.sin_le theta_pos.le
+    have hpi : Real.pi < (16 : ℝ) / 5 := by
+      linarith [Real.pi_lt_d2]
+    nlinarith [Real.pi_pos, hsin_le_theta, theta_lt_one_div_three, hpi]
+  have hmono : Real.exp (-(8 / 15 : ℝ)) <
+      Real.exp (-(Real.pi / 2 * Real.sin theta)) :=
+    (Real.exp_lt_exp).2 (by linarith [hu_lt])
+  exact exp_neg_eight_div_fifteen_gt_seven_div_twelve.trans hmono
+
+private theorem thetaDelta_nonneg :
+    0 ≤ thetaDelta := by
+  dsimp [thetaDelta]
+  nlinarith [Real.pi_pos, Real.cos_le_one theta]
+
+private theorem thetaDelta_pos :
+    0 < thetaDelta := by
+  dsimp [thetaDelta]
+  nlinarith [Real.pi_pos, cos_theta_lt_one]
+
+private theorem thetaDelta_lt_four_div_fortyfive :
+    thetaDelta < (4 : ℝ) / 45 := by
+  dsimp [thetaDelta]
+  have hcos_lb := Real.one_sub_sq_div_two_le_cos (x := theta)
+  have hdelta_le : Real.pi / 2 * (1 - Real.cos theta) ≤
+      Real.pi / 2 * (theta ^ 2 / 2) := by
+    nlinarith [Real.pi_pos, hcos_lb]
+  have htheta_sq_lt : theta ^ 2 < ((1 : ℝ) / 3) ^ 2 := by
+    nlinarith [theta_pos, theta_lt_one_div_three]
+  have hpi : Real.pi < (16 : ℝ) / 5 := by
+    linarith [Real.pi_lt_d2]
+  nlinarith [hdelta_le, htheta_sq_lt, hpi, Real.pi_pos]
+
+private theorem cos_thetaDelta_gt_six_div_seven :
+    (6 : ℝ) / 7 < Real.cos thetaDelta := by
+  have h := Real.one_sub_sq_div_two_lt_cos (x := thetaDelta)
+    (by nlinarith [thetaDelta_pos] : thetaDelta ≠ 0)
+  have hsq : thetaDelta ^ 2 < ((4 : ℝ) / 45) ^ 2 := by
+    nlinarith [thetaDelta_nonneg, thetaDelta_lt_four_div_fortyfive]
+  nlinarith [h, hsq]
+
+private theorem p4A_re_lt_one_div_fifteen :
+    p4A.re < (1 : ℝ) / 15 := by
+  dsimp [p4A, principalPow]
+  rw [Complex.exp_re, log_I_real, p3L_eq_exp_theta]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, Complex.exp_re, Complex.exp_im, mul_zero, zero_mul,
+    add_zero, sub_zero]
+  norm_num [Real.exp_zero]
+  rw [show Real.pi / 2 * Real.cos theta = Real.pi / 2 - thetaDelta by
+    dsimp [thetaDelta]
+    ring]
+  rw [Real.cos_pi_div_two_sub]
+  have hsin_le_delta : Real.sin thetaDelta ≤ thetaDelta :=
+    Real.sin_le thetaDelta_nonneg
+  have hmul_le₁ :
+      Real.exp (-(Real.pi / 2 * Real.sin theta)) * Real.sin thetaDelta ≤
+        Real.exp (-(Real.pi / 2 * Real.sin theta)) * thetaDelta :=
+    mul_le_mul_of_nonneg_left hsin_le_delta (Real.exp_pos _).le
+  have hmul_lt₂ :
+      Real.exp (-(Real.pi / 2 * Real.sin theta)) * thetaDelta <
+        (3 : ℝ) / 4 * ((4 : ℝ) / 45) := by
+    calc
+      Real.exp (-(Real.pi / 2 * Real.sin theta)) * thetaDelta
+          ≤ Real.exp (-(Real.pi / 2 * Real.sin theta)) * ((4 : ℝ) / 45) := by
+            exact mul_le_mul_of_nonneg_left thetaDelta_lt_four_div_fortyfive.le
+              (Real.exp_pos _).le
+      _ < (3 : ℝ) / 4 * ((4 : ℝ) / 45) := by
+            exact mul_lt_mul_of_pos_right p4A_exp_factor_lt_three_div_four
+              (by norm_num)
+  nlinarith [hmul_le₁, hmul_lt₂]
+
+private theorem p4A_im_gt_one_div_two :
+    (1 : ℝ) / 2 < p4A.im := by
+  dsimp [p4A, principalPow]
+  rw [Complex.exp_im, log_I_real, p3L_eq_exp_theta]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, Complex.exp_re, Complex.exp_im, mul_zero, zero_mul,
+    add_zero, sub_zero]
+  norm_num [Real.exp_zero]
+  rw [show Real.pi / 2 * Real.cos theta = Real.pi / 2 - thetaDelta by
+    dsimp [thetaDelta]
+    ring]
+  rw [Real.sin_pi_div_two_sub]
+  have hprod :
+      (7 : ℝ) / 12 * ((6 : ℝ) / 7) <
+        Real.exp (-(Real.pi / 2 * Real.sin theta)) * Real.cos thetaDelta :=
+    mul_lt_mul p4A_exp_factor_gt_seven_div_twelve cos_thetaDelta_gt_six_div_seven.le
+      (by norm_num) (Real.exp_pos _).le
+  nlinarith [hprod]
+
+private theorem p4A_im_lt_three_div_four :
+    p4A.im < (3 : ℝ) / 4 := by
+  dsimp [p4A, principalPow]
+  rw [Complex.exp_im, log_I_real, p3L_eq_exp_theta]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, Complex.exp_re, Complex.exp_im, mul_zero, zero_mul,
+    add_zero, sub_zero]
+  norm_num [Real.exp_zero]
+  have hsin_le_one : Real.sin (Real.pi / 2 * Real.cos theta) ≤ 1 :=
+    Real.sin_le_one _
+  have hmul_le :
+      Real.exp (-(Real.pi / 2 * Real.sin theta)) *
+          Real.sin (Real.pi / 2 * Real.cos theta) ≤
+        Real.exp (-(Real.pi / 2 * Real.sin theta)) * 1 :=
+    mul_le_mul_of_nonneg_left hsin_le_one (Real.exp_pos _).le
+  nlinarith [hmul_le, p4A_exp_factor_lt_three_div_four]
+
+private theorem p4A_im_lt_two_div_three :
+    p4A.im < (2 : ℝ) / 3 := by
+  dsimp [p4A, principalPow]
+  rw [Complex.exp_im, log_I_real, p3L_eq_exp_theta]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, Complex.exp_re, Complex.exp_im, mul_zero, zero_mul,
+    add_zero, sub_zero]
+  norm_num [Real.exp_zero]
+  have hsin_le_one : Real.sin (Real.pi / 2 * Real.cos theta) ≤ 1 :=
+    Real.sin_le_one _
+  have hmul_le :
+      Real.exp (-(Real.pi / 2 * Real.sin theta)) *
+          Real.sin (Real.pi / 2 * Real.cos theta) ≤
+        Real.exp (-(Real.pi / 2 * Real.sin theta)) * 1 :=
+    mul_le_mul_of_nonneg_left hsin_le_one (Real.exp_pos _).le
+  nlinarith [hmul_le, p4A_exp_factor_lt_two_div_three]
+
+private theorem exp_neg_pi_div_three_gt_three_div_ten :
+    (3 : ℝ) / 10 < Real.exp (-(Real.pi / 3)) := by
+  rw [Real.exp_neg]
+  have hx_pos : 0 < Real.pi / 3 := by positivity
+  have hx_lt_two : Real.pi / 3 < 2 := by
+    linarith [Real.pi_lt_d2]
+  have hbound := Real.exp_lt_two_add_div_two_sub hx_pos hx_lt_two
+  have hfrac : (2 + Real.pi / 3) / (2 - Real.pi / 3) < (10 : ℝ) / 3 := by
+    have hden : 0 < 2 - Real.pi / 3 := by
+      linarith [Real.pi_lt_d2]
+    rw [div_lt_iff₀ hden]
+    nlinarith [Real.pi_lt_d2]
+  have hexp_lt : Real.exp (Real.pi / 3) < (10 : ℝ) / 3 :=
+    hbound.trans hfrac
+  have hrec := one_div_lt_one_div_of_lt (Real.exp_pos (Real.pi / 3)) hexp_lt
+  norm_num [one_div] at hrec
+  exact hrec
+
+private theorem exp_neg_pi_div_four_lt_one_div_two :
+    Real.exp (-(Real.pi / 4)) < (1 : ℝ) / 2 := by
+  rw [Real.exp_neg]
+  have hsum_le := Real.sum_le_exp_of_nonneg (x := Real.pi / 4) (by positivity) 4
+  have hsum_gt :
+      (2 : ℝ) < ∑ m ∈ Finset.range 4, (Real.pi / 4) ^ m / (m.factorial : ℝ) := by
+    norm_num [Finset.sum_range_succ]
+    nlinarith [Real.pi_gt_d2]
+  have hexp_gt : (2 : ℝ) < Real.exp (Real.pi / 4) :=
+    hsum_gt.trans_le hsum_le
+  have hrec := one_div_lt_one_div_of_lt (by norm_num : (0 : ℝ) < (2 : ℝ)) hexp_gt
+  norm_num [one_div] at hrec
+  exact hrec
 
 private theorem exp_neg_theta_lt_four_div_five :
     Real.exp (-theta) < (4 : ℝ) / 5 := by
@@ -1170,6 +1413,71 @@ private theorem p5A_re_pos :
   simpa [p5A] using
     I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
       (z := p4A) (by linarith [p4A_re_pos]) p4A_re_lt_one
+
+private theorem p5A_re_gt_one_div_four :
+    (1 : ℝ) / 4 < p5A.re := by
+  dsimp [p5A, principalPow]
+  rw [Complex.exp_re, log_I_real]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  norm_num
+  have hu_lt : Real.pi / 2 * p4A.im < Real.pi / 3 := by
+    nlinarith [Real.pi_pos, p4A_im_lt_two_div_three]
+  have hexp_gt : (3 : ℝ) / 10 < Real.exp (-(Real.pi / 2 * p4A.im)) := by
+    have hmono : Real.exp (-(Real.pi / 3)) <
+        Real.exp (-(Real.pi / 2 * p4A.im)) :=
+      (Real.exp_lt_exp).2 (by linarith [hu_lt])
+    exact exp_neg_pi_div_three_gt_three_div_ten.trans hmono
+  have harg_nonneg : 0 ≤ Real.pi / 2 * p4A.re := by
+    nlinarith [Real.pi_pos, p4A_re_pos]
+  have harg_lt : Real.pi / 2 * p4A.re < (4 : ℝ) / 35 := by
+    have harg_lt_pi_div_thirty : Real.pi / 2 * p4A.re < Real.pi / 30 := by
+      nlinarith [Real.pi_pos, p4A_re_lt_one_div_fifteen]
+    nlinarith [harg_lt_pi_div_thirty, Real.pi_lt_d2]
+  have harg_sq_lt : (Real.pi / 2 * p4A.re) ^ 2 < ((4 : ℝ) / 35) ^ 2 := by
+    nlinarith [harg_nonneg, harg_lt]
+  have hcos_gt : (9 : ℝ) / 10 < Real.cos (Real.pi / 2 * p4A.re) := by
+    have h := Real.one_sub_sq_div_two_le_cos (x := Real.pi / 2 * p4A.re)
+    nlinarith [h, harg_sq_lt]
+  have hprod :
+      (3 : ℝ) / 10 * ((9 : ℝ) / 10) <
+        Real.exp (-(Real.pi / 2 * p4A.im)) * Real.cos (Real.pi / 2 * p4A.re) :=
+    mul_lt_mul hexp_gt hcos_gt.le (by norm_num) (Real.exp_pos _).le
+  nlinarith [hprod]
+
+private theorem p5A_im_lt_seven_div_125 :
+    p5A.im < (7 : ℝ) / 125 := by
+  dsimp [p5A, principalPow]
+  rw [Complex.exp_im, log_I_real]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  norm_num
+  have hu_gt : Real.pi / 4 < Real.pi / 2 * p4A.im := by
+    nlinarith [Real.pi_pos, p4A_im_gt_one_div_two]
+  have hexp_lt : Real.exp (-(Real.pi / 2 * p4A.im)) < (1 : ℝ) / 2 := by
+    have hmono : Real.exp (-(Real.pi / 2 * p4A.im)) < Real.exp (-(Real.pi / 4)) :=
+      (Real.exp_lt_exp).2 (by linarith [hu_gt])
+    exact hmono.trans exp_neg_pi_div_four_lt_one_div_two
+  have harg_nonneg : 0 ≤ Real.pi / 2 * p4A.re := by
+    nlinarith [Real.pi_pos, p4A_re_pos]
+  have harg_lt : Real.pi / 2 * p4A.re < Real.pi / 30 := by
+    nlinarith [Real.pi_pos, p4A_re_lt_one_div_fifteen]
+  have hsin_le : Real.sin (Real.pi / 2 * p4A.re) ≤ Real.pi / 2 * p4A.re :=
+    Real.sin_le harg_nonneg
+  have hmul_le :
+      Real.exp (-(Real.pi / 2 * p4A.im)) * Real.sin (Real.pi / 2 * p4A.re) ≤
+        Real.exp (-(Real.pi / 2 * p4A.im)) * (Real.pi / 2 * p4A.re) :=
+    mul_le_mul_of_nonneg_left hsin_le (Real.exp_pos _).le
+  have hmul_lt :
+      Real.exp (-(Real.pi / 2 * p4A.im)) * (Real.pi / 2 * p4A.re) <
+        (1 : ℝ) / 2 * (Real.pi / 30) := by
+    calc
+      Real.exp (-(Real.pi / 2 * p4A.im)) * (Real.pi / 2 * p4A.re)
+          ≤ Real.exp (-(Real.pi / 2 * p4A.im)) * (Real.pi / 30) := by
+            exact mul_le_mul_of_nonneg_left harg_lt.le (Real.exp_pos _).le
+      _ < (1 : ℝ) / 2 * (Real.pi / 30) := by
+            exact mul_lt_mul_of_pos_right hexp_lt (by positivity)
+  nlinarith [hmul_le, hmul_lt, Real.pi_lt_d2]
 
 private theorem p5B_re_pos :
     0 < p5B.re := by
@@ -1641,6 +1949,78 @@ private theorem p6K_im_pos :
     nlinarith [theta_lt_pi_div_two, Real.pi_pos, hcos_le_one, hcos_pos]
   exact mul_pos (by positivity) (Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩)
 
+private theorem p6K_im_lt_one_div_three :
+    p6K.im < (1 : ℝ) / 3 := by
+  dsimp [p6K, principalPow]
+  rw [log_p3L_eq, p3L_eq_exp_theta, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  change Real.exp (-(theta * Real.sin theta)) * Real.sin (theta * Real.cos theta) <
+    (3 : ℝ)⁻¹
+  have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+  have hcos_le_one : Real.cos theta ≤ 1 := Real.cos_le_one theta
+  have harg_nonneg : 0 ≤ theta * Real.cos theta := by
+    nlinarith [theta_pos, hcos_pos]
+  have hsin_le : Real.sin (theta * Real.cos theta) ≤ theta * Real.cos theta :=
+    Real.sin_le harg_nonneg
+  have harg_lt : theta * Real.cos theta < (3 : ℝ)⁻¹ := by
+    have h : theta * Real.cos theta < (1 : ℝ) / 3 := by
+      nlinarith [theta_pos, theta_lt_one_div_three, hcos_pos, hcos_le_one]
+    simpa [one_div] using h
+  have hexp_le_one : Real.exp (-(theta * Real.sin theta)) ≤ 1 :=
+    Real.exp_le_one_iff.mpr (by nlinarith [theta_pos, sin_theta_pos])
+  calc
+    Real.exp (-(theta * Real.sin theta)) * Real.sin (theta * Real.cos theta)
+        ≤ Real.exp (-(theta * Real.sin theta)) * (theta * Real.cos theta) := by
+          exact mul_le_mul_of_nonneg_left hsin_le (Real.exp_pos _).le
+    _ ≤ theta * Real.cos theta := by
+          simpa using mul_le_mul_of_nonneg_right hexp_le_one harg_nonneg
+    _ < (3 : ℝ)⁻¹ := harg_lt
+
+private theorem p6A_im_gt_one_div_three :
+    (1 : ℝ) / 3 < p6A.im := by
+  dsimp [p6A, principalPow]
+  rw [Complex.exp_im, log_I_real]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  norm_num
+  have hu_pos : 0 < Real.pi / 2 * p5A.im := by
+    nlinarith [Real.pi_pos, p5A_im_pos]
+  have hu_lt : Real.pi / 2 * p5A.im < (1 : ℝ) / 10 := by
+    have hpi_half : Real.pi / 2 < (63 : ℝ) / 40 := by
+      linarith [Real.pi_lt_d2]
+    nlinarith [hpi_half, p5A_im_lt_seven_div_125, p5A_im_pos]
+  have hexp_gt : (9 : ℝ) / 10 < Real.exp (-(Real.pi / 2 * p5A.im)) := by
+    have h := Real.one_sub_lt_exp_neg (by nlinarith [hu_pos] :
+      Real.pi / 2 * p5A.im ≠ 0)
+    nlinarith [h, hu_lt]
+  have hsin_pi_eighth_gt : (10 : ℝ) / 27 < Real.sin (Real.pi / 8) := by
+    have h := Real.sin_gt_sub_cube
+      (x := Real.pi / 8) (by positivity) (by linarith [Real.pi_lt_d2])
+    have harg_nonneg : 0 ≤ Real.pi / 8 := by positivity
+    have harg_gt : (157 : ℝ) / 400 < Real.pi / 8 := by
+      linarith [Real.pi_gt_d2]
+    have harg_lt : Real.pi / 8 < (63 : ℝ) / 160 := by
+      linarith [Real.pi_lt_d2]
+    have hcube_lt : (Real.pi / 8) ^ 3 < ((63 : ℝ) / 160) ^ 3 :=
+      pow_lt_pow_left₀ harg_lt harg_nonneg (by norm_num : (3 : ℕ) ≠ 0)
+    nlinarith [h, harg_gt, hcube_lt]
+  have hp5A_re_le_one : p5A.re ≤ 1 :=
+    (Complex.re_le_norm p5A).trans p5A_norm_le_one
+  have harg_gt : Real.pi / 8 < Real.pi / 2 * p5A.re := by
+    nlinarith [Real.pi_pos, p5A_re_gt_one_div_four]
+  have harg_le : Real.pi / 2 * p5A.re ≤ Real.pi / 2 := by
+    nlinarith [Real.pi_pos, hp5A_re_le_one]
+  have hsin_gt : (10 : ℝ) / 27 < Real.sin (Real.pi / 2 * p5A.re) := by
+    have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+      (x := Real.pi / 8) (y := Real.pi / 2 * p5A.re)
+      (by linarith [Real.pi_pos]) harg_le harg_gt
+    exact hsin_pi_eighth_gt.trans hmono
+  have hprod :
+      (9 : ℝ) / 10 * ((10 : ℝ) / 27) <
+        Real.exp (-(Real.pi / 2 * p5A.im)) * Real.sin (Real.pi / 2 * p5A.re) :=
+    mul_lt_mul hexp_gt hsin_gt.le (by norm_num) (Real.exp_pos _).le
+  nlinarith [hprod]
+
 private theorem p6K_re_gt_four_div_five :
     (4 : ℝ) / 5 < p6K.re := by
   dsimp [p6K, principalPow]
@@ -1896,6 +2276,15 @@ private theorem ne_of_re_lt {z w : ℂ} (h : z.re < w.re) : z ≠ w := by
   intro hz
   have hre := congrArg Complex.re hz
   linarith
+
+private theorem ne_of_im_lt {z w : ℂ} (h : z.im < w.im) : z ≠ w := by
+  intro hz
+  have him := congrArg Complex.im hz
+  linarith
+
+private theorem p6K_ne_p6A :
+    p6K ≠ p6A :=
+  ne_of_im_lt (p6K_im_lt_one_div_three.trans p6A_im_gt_one_div_three)
 
 private theorem p6K_ne_p6B :
     p6K ≠ p6B :=
@@ -2331,6 +2720,128 @@ theorem a198683_six_le_fifteen : a198683 6 ≤ 15 := by
     _ = reps.toFinset.card := by rw [Set.ncard_coe_finset]
     _ ≤ reps.length := List.toFinset_card_le reps
     _ = 15 := by norm_num [reps]
+
+/-- `A198683(6) = 15`. -/
+theorem a198683_six : a198683 6 = 15 := by
+  rw [a198683, valueSet_six_eq_candidates]
+  have hA :
+      p6A ∉ ({p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M,
+        p6N, p6O} : Set ℂ) := by
+    simp [p6A_ne_p6B, p6A_ne_p6C, p6A_ne_p6D, p6A_ne_p6E, p6A_ne_p6F,
+      p6A_ne_p6G, p6K_ne_p6A.symm,
+      ne_of_im_pos_of_im_neg p6A_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_neg p6A_im_pos p6M_im_neg,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6L_im_zero,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6O_im_zero]
+  have hB :
+      p6B ∉ ({p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N,
+        p6O} : Set ℂ) := by
+    simp [p6B_ne_p6C, p6B_ne_p6D, p6B_ne_p6E, p6B_ne_p6F, p6B_ne_p6G,
+      p6K_ne_p6B.symm,
+      ne_of_im_pos_of_im_neg p6B_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_neg p6B_im_pos p6M_im_neg,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6L_im_zero,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6O_im_zero]
+  have hC :
+      p6C ∉ ({p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N,
+        p6O} : Set ℂ) := by
+    simp [p6C_ne_p6D, p6C_ne_p6E, p6C_ne_p6F, p6C_ne_p6G,
+      p6K_ne_p6C.symm,
+      ne_of_im_pos_of_im_neg p6C_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_neg p6C_im_pos p6M_im_neg,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6L_im_zero,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6O_im_zero]
+  have hD :
+      p6D ∉ ({p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N,
+        p6O} : Set ℂ) := by
+    simp [p6D_ne_p6E, p6D_ne_p6F, p6D_ne_p6G, p6K_ne_p6D.symm,
+      ne_of_im_pos_of_im_neg p6D_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_neg p6D_im_pos p6M_im_neg,
+      ne_of_im_pos_of_im_zero p6D_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6D_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6D_im_pos p6L_im_zero,
+      ne_of_im_pos_of_im_zero p6D_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6D_im_pos p6O_im_zero]
+  have hE :
+      p6E ∉ ({p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N, p6O} : Set ℂ) := by
+    simp [p6E_ne_p6F, p6E_ne_p6G, p6I_ne_p6E.symm, p6E_ne_p6J,
+      p6E_ne_p6L, p6E_ne_p6N, p6E_ne_p6O,
+      (ne_of_im_neg_of_im_zero p6H_im_neg p6E_im_zero).symm,
+      (ne_of_im_neg_of_im_zero p6M_im_neg p6E_im_zero).symm,
+      (ne_of_im_pos_of_im_zero p6K_im_pos p6E_im_zero).symm]
+  have hF :
+      p6F ∉ ({p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N, p6O} : Set ℂ) := by
+    simp [p6F_ne_p6G, p6K_ne_p6F.symm,
+      ne_of_im_pos_of_im_neg p6F_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_neg p6F_im_pos p6M_im_neg,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6L_im_zero,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6O_im_zero]
+  have hG :
+      p6G ∉ ({p6H, p6I, p6J, p6K, p6L, p6M, p6N, p6O} : Set ℂ) := by
+    simp [p6K_ne_p6G.symm,
+      ne_of_im_pos_of_im_neg p6G_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_neg p6G_im_pos p6M_im_neg,
+      ne_of_im_pos_of_im_zero p6G_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6G_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6G_im_pos p6L_im_zero,
+      ne_of_im_pos_of_im_zero p6G_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6G_im_pos p6O_im_zero]
+  have hH :
+      p6H ∉ ({p6I, p6J, p6K, p6L, p6M, p6N, p6O} : Set ℂ) := by
+    simp [p6H_ne_p6M,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6I_im_zero,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6J_im_zero,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6L_im_zero,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6N_im_zero,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6O_im_zero,
+      (ne_of_im_pos_of_im_neg p6K_im_pos p6H_im_neg).symm]
+  have hI :
+      p6I ∉ ({p6J, p6K, p6L, p6M, p6N, p6O} : Set ℂ) := by
+    simp [p6I_ne_p6J, p6I_ne_p6L, p6I_ne_p6N, p6I_ne_p6O,
+      (ne_of_im_pos_of_im_zero p6K_im_pos p6I_im_zero).symm,
+      (ne_of_im_neg_of_im_zero p6M_im_neg p6I_im_zero).symm]
+  have hJ :
+      p6J ∉ ({p6K, p6L, p6M, p6N, p6O} : Set ℂ) := by
+    simp [p6J_ne_p6L, p6J_ne_p6N, p6O_ne_p6J.symm,
+      (ne_of_im_pos_of_im_zero p6K_im_pos p6J_im_zero).symm,
+      (ne_of_im_neg_of_im_zero p6M_im_neg p6J_im_zero).symm]
+  have hK :
+      p6K ∉ ({p6L, p6M, p6N, p6O} : Set ℂ) := by
+    simp [ne_of_im_pos_of_im_neg p6K_im_pos p6M_im_neg,
+      ne_of_im_pos_of_im_zero p6K_im_pos p6L_im_zero,
+      ne_of_im_pos_of_im_zero p6K_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6K_im_pos p6O_im_zero]
+  have hL :
+      p6L ∉ ({p6M, p6N, p6O} : Set ℂ) := by
+    simp [p6N_ne_p6L.symm, p6O_ne_p6L.symm,
+      (ne_of_im_neg_of_im_zero p6M_im_neg p6L_im_zero).symm]
+  have hM :
+      p6M ∉ ({p6N, p6O} : Set ℂ) := by
+    simp [ne_of_im_neg_of_im_zero p6M_im_neg p6N_im_zero,
+      ne_of_im_neg_of_im_zero p6M_im_neg p6O_im_zero]
+  have hN :
+      p6N ∉ ({p6O} : Set ℂ) := by
+    simp [p6O_ne_p6N.symm]
+  rw [Set.ncard_insert_of_notMem hA, Set.ncard_insert_of_notMem hB,
+    Set.ncard_insert_of_notMem hC, Set.ncard_insert_of_notMem hD,
+    Set.ncard_insert_of_notMem hE, Set.ncard_insert_of_notMem hF,
+    Set.ncard_insert_of_notMem hG, Set.ncard_insert_of_notMem hH,
+    Set.ncard_insert_of_notMem hI, Set.ncard_insert_of_notMem hJ,
+    Set.ncard_insert_of_notMem hK, Set.ncard_insert_of_notMem hL,
+    Set.ncard_insert_of_notMem hM, Set.ncard_insert_of_notMem hN]
+  simp
 
 end
 
