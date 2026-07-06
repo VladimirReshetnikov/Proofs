@@ -164,15 +164,15 @@ Empirically this “overflow bucket” contains exactly one value and no collisi
 
 Script:
 
-- `src/Oeis/A198683/computations/python/compute_a198683.py`
+- `src/Lean/Oeis/A198683/computations/python/compute_a198683.py`
 
 Runs:
 
 ```powershell
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 160 --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 180 --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 220 --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 260 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 160 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 180 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 220 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 260 --n 12
 ```
 
 Originally observed stability (all listed runs produced identical totals, now

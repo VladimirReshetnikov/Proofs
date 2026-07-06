@@ -1,5 +1,5 @@
 /-
-  SetTheory — Lean 4 port of the Rocq/Coq development in `src/SetTheory/`:
+  SetTheory — Lean 4 port of the Rocq/Coq development in `src/Lean/SetTheory/`:
   Vladimir Reshetnikov's "Closure" axiomatization of set theory and its
   machine-checked equivalence with ZF.
 

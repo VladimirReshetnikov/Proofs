@@ -116,7 +116,7 @@ preserve the conflicting reports, but readers should no longer treat `2919` and
 ## Reproducibility notes from this root-cause pass
 
 The Python drift evidence above was reproduced locally from the current
-`src/Oeis/A198683/computations/python/compute_a198683.py` script. In the same
+`src/Lean/Oeis/A198683/computations/python/compute_a198683.py` script. In the same
 session, the historical Wolfram command and a direct `wolframscript -file` run
 did not complete within a `604` second timeout. That timeout does not explain
 the contradiction; it only means the historical `2926` Wolfram run remains a

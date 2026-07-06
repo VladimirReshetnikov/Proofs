@@ -1,10 +1,27 @@
-# Lean Proofs
+# Machine-Checkable Proofs
 
 - Created (UTC): 2026-07-04T17:38:16Z
 - Repository HEAD: afe87774ab8b2530233ade60ef271aa843b2712b
 
-`src/Lean/` is a repository-local Lake workspace for Lean proofs that are
-not owned by one of the more specialized subprojects.
+`src/Lean/` is the repository home for machine-checkable proofs and the
+research artifacts that support them. Most checked proof modules here are
+Lean, but the scope is intentionally broader: Rocq/Coq developments and
+associated research code in Python, Wolfram Language, or other languages
+belong here when they are part of producing or auditing formal mathematical
+certificates.
+
+The root of this directory is a Lake/mathlib workspace named `LeanProofs`.
+Additional proof-oriented subject corpora live alongside it:
+
+- [`LeanProofs/`](LeanProofs/) — the root Lean 4 proof library, pinned to
+  Lean `4.31.0` and mathlib `v4.31.0`.
+- [`Oeis/A198683/`](Oeis/A198683/README.md) — the local research corpus for
+  the OEIS A198683 formalization, including Python/Wolfram computations,
+  source snapshots, generated data, and the wave reports around the disputed
+  `A198683(12)` value.
+- [`SetTheory/`](SetTheory/README.md) — the Rocq/Coq and independent Lean 4
+  proof of the deductive equivalence between Vladimir's Closure
+  axiomatization and ZF, plus the accompanying article.
 
 The initial module,
 [`LeanProofs/FermatFour.lean`](LeanProofs/FermatFour.lean), records the
@@ -128,18 +145,24 @@ exponentiation:
 noncomputable def a002845 (n : Nat) : Nat
 theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n
 theorem a002845_eq_directLogCard (n : Nat) : a002845 n = directLogCard n
+theorem a002845_eq_certifiedSparseCard (n : Nat) :
+  a002845 n = certifiedSparseCard n
 theorem a002845_one : a002845 1 = 1
 -- ...
-theorem a002845_six : a002845 6 = 8
+theorem a002845_twelve : a002845 12 = 851
 ```
 
 The value theorems `a002845_one` through `a002845_six` use a direct finite
 computation of the canonical logarithm set, proved equivalent to the semantic
-value set by injectivity of `m ↦ 2^m`. The module separately contains an
-executable hereditary sparse-binary logarithm backend, currently with checked
-backend certificates `a002845Sparse_one` through `a002845Sparse_twenty_two`.
-These are intentionally not treated as primary OEIS value theorems until the
-sparse backend is proved equivalent to the canonical logarithm value set.
+value set by injectivity of `m ↦ 2^m`. The value theorems
+`a002845_seven` through `a002845_twelve` use a certified sparse-log evaluator:
+its proof-facing definition is semantic (`Sparse.ofNat` of the exact
+logarithm), while native evaluation of the logarithm-combine step is implemented
+by the fast hereditary sparse operation. The module separately retains the
+older level-streaming sparse backend, currently with checked backend
+certificates `a002845Sparse_one` through `a002845Sparse_twenty_two`; those are
+not treated as primary OEIS value theorems until that backend is also proved
+equivalent to the canonical logarithm value set.
 
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683 from
 the canonical lexical syntax of all binary parenthesizations of
@@ -150,8 +173,8 @@ before being used by the computational proofs. It proves the accepted values
 through `n = 7` directly over `ℂ`, with public theorems
 `a198683_one` through `a198683_seven`; the final `n = 7` lower bound is
 `thirty_four_le_a198683_seven`, matched against `a198683_seven_le_thirty_four`.
-Two companion certificate modules record finite checked data
-from the local A198683 corpus:
+Two companion certificate modules record finite checked data from the local
+[`Oeis/A198683/`](Oeis/A198683/README.md) corpus:
 [`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
 checks the Schoenfield labels through `n = 11`,
 [`LeanProofs/A198683SchoenfieldRows.lean`](LeanProofs/A198683SchoenfieldRows.lean)
@@ -202,6 +225,17 @@ expansion of
 remaining interval certificate can be pushed down level by level.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
+
+[`LeanProofs/A199812.lean`](LeanProofs/A199812.lean) defines OEIS A199812 as
+the number of distinct ordinals represented by all binary parenthesizations of
+an ordinal exponent tower. It uses Cantor normal forms and a dynamic normal-form
+count, and proves the listed values through `n = 11`:
+
+```lean
+theorem a199812_one : a199812 1 = 1
+-- ...
+theorem a199812_eleven : a199812 11 = 3037
+```
 
 [`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes the
 Sheffer-stroke/NAND language for Nicod's one-axiom propositional calculus,
@@ -272,8 +306,24 @@ same equational class, while Wolfram's equation uses six operation symbols.
 
 ## Building
 
+Build the root Lake/mathlib workspace:
+
 ```powershell
 cd src/Lean
 lake exe cache get
+lake build
+```
+
+Build the SetTheory Rocq/Coq development and its independent Lean port:
+
+```powershell
+cd src/Lean/SetTheory
+coqc -Q . SetTheory Fol.v
+coqc -Q . SetTheory Calculus.v
+coqc -Q . SetTheory Completeness.v
+coqc -Q . SetTheory Zf.v
+coqc -Q . SetTheory Equivalence.v
+
+cd lean
 lake build
 ```

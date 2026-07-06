@@ -261,7 +261,7 @@ alternatives (extending the `mpmath` script, or porting to Arb / Wolfram).
 5. **In-repo, in-language.** No subprocess to a Wolfram kernel, no
    third-party C bindings, no opaque "magic" in the equality engine. Every
    line of every conclusion is auditable from `src/Numerics/python` and
-   `src/Oeis/A198683/computations/python/`. The certificate is
+   `src/Lean/Oeis/A198683/computations/python/`. The certificate is
    self-contained.
 6. **The remaining work matches the package's existing roadmap.** A `pi`
    constant is already telegraphed in `constants.py`'s module docstring.
@@ -276,7 +276,7 @@ alternatives (extending the `mpmath` script, or porting to Arb / Wolfram).
 
 ```
 +---------------------------------------------------------------+
-| Application: src/Oeis/A198683/computations/python/            |
+| Application: src/Lean/Oeis/A198683/computations/python/            |
 |   a198683_certified.py                                        |
 |     - PolarValue, Outcome representation                      |
 |     - DP recurrence (mirrors the existing script)             |
@@ -434,7 +434,7 @@ convention (see `CLAUDE.md`).
 3. `tan`, `atan`, `atan2` — optional; not needed for the `i^Z` form path.
    Skip unless a separate workstream needs them.
 
-### Phase B — Application layer in `src/Oeis/A198683/computations/python/`
+### Phase B — Application layer in `src/Lean/Oeis/A198683/computations/python/`
 
 4. `complex_interval.py` — `ComplexInterval` dataclass with `add`, `sub`,
    `mul`, `div`, `complex_exp`, `complex_log`. ~300-500 LoC + ~150 LoC of
@@ -465,7 +465,7 @@ convention (see `CLAUDE.md`).
 
 ### Phase D — Reporting
 
-11. Produce a result report under `src/Oeis/A198683/reports/` recording
+11. Produce a result report under `src/Lean/Oeis/A198683/reports/` recording
     the certified value, the working precision required at each cluster,
     the engine commit hash, and an audit trail of the equality verdicts.
     Cross-link from the existing root-cause reports.
