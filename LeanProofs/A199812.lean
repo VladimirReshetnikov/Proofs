@@ -317,10 +317,15 @@ theorem a199812_four : a199812 4 = 5 := by
   rw [a199812_eq_computedCount]
   native_decide
 
+/-- `A199812(5) = 13`. -/
+theorem a199812_five : a199812 5 = 13 := by
+  rw [a199812_eq_computedCount]
+  native_decide
+
 end TowerExpr
 
 export TowerExpr (a199812 a199812_eq_noteCount a199812_one a199812_two a199812_three
-  a199812_four)
+  a199812_four a199812_five)
 
 end A199812
 
