@@ -98,8 +98,8 @@ semantically as the number of distinct principal complex-power values obtained
 from all binary parenthesizations of `i^i^...^i`. It proves the accepted values
 through `n = 6` directly over `ℂ`, with public theorems
 `a198683_one` through `a198683_six`. For `n = 7`, it proves the semantic bounds
-`twenty_three_le_a198683_seven` and `a198683_seven_le_thirty_four`, matching the
-accepted value on the collapse side and covering 23 distinct values on the
+`twenty_four_le_a198683_seven` and `a198683_seven_le_thirty_four`, matching the
+accepted value on the collapse side and covering 24 distinct values on the
 lower-bound side. Two companion certificate modules record finite checked data
 from the local A198683 corpus:
 [`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)

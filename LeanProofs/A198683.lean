@@ -5340,6 +5340,245 @@ theorem twenty_three_le_a198683_seven : 23 ≤ a198683 7 := by
     23 = (insert Complex.I r).ncard := hcard.symm
     _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
 
+private theorem p3R_pow_p4B_norm_eq_one :
+    ‖principalPow p3R p4B‖ = 1 := by
+  rw [← p6O_pow_I_eq_p3R_pow_p4B]
+  dsimp [principalPow]
+  rw [p6O_eq_exp_neg_beta, ← Complex.ofReal_log (Real.exp_pos (-beta)).le, Real.log_exp]
+  rw [Complex.norm_exp]
+  simp [Complex.mul_re]
+
+private theorem p3R_pow_p4B_re_pos :
+    0 < (principalPow p3R p4B).re := by
+  rw [← p6O_pow_I_eq_p3R_pow_p4B]
+  dsimp [principalPow]
+  rw [p6O_eq_exp_neg_beta, ← Complex.ofReal_log (Real.exp_pos (-beta)).le, Real.log_exp]
+  rw [Complex.exp_re]
+  simp [Complex.mul_re, Complex.mul_im]
+  exact Real.cos_pos_of_mem_Ioo
+    ⟨by linarith [beta_pos, Real.pi_pos], beta_lt_angleE⟩
+
+private theorem p3R_pow_p4B_im_neg :
+    (principalPow p3R p4B).im < 0 := by
+  rw [← p6O_pow_I_eq_p3R_pow_p4B]
+  dsimp [principalPow]
+  rw [p6O_eq_exp_neg_beta, ← Complex.ofReal_log (Real.exp_pos (-beta)).le, Real.log_exp]
+  rw [Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im]
+  have hsin : 0 < Real.sin beta :=
+    Real.sin_pos_of_mem_Ioo ⟨beta_pos, beta_lt_angleE.trans angleE_lt_pi⟩
+  linarith
+
+private theorem p2_pow_norm_lt_one_of_re_pos {z : ℂ} (hz : 0 < z.re) :
+    ‖principalPow p2 z‖ < 1 := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_p2_eq]
+  simp [Complex.mul_re]
+  nlinarith [Real.pi_pos, hz]
+
+private theorem p2_pow_p5E_re_zero :
+    (principalPow p2 p5E).re = 0 := by
+  rw [p5E_eq_I]
+  change p3R.re = 0
+  rw [p3R_eq_neg_I]
+  norm_num
+
+private theorem p3R_pow_p4B_notMem_p2NegativeExponents :
+    principalPow p3R p4B ∉
+      (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents := by
+  rintro ⟨z, hz, hpow⟩
+  change principalPow p2 z = principalPow p3R p4B at hpow
+  dsimp [a198683SevenP2NegativeExponents] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl
+  · have hlt : ‖principalPow p2 p5A‖ < 1 :=
+      p2_pow_norm_lt_one_of_re_pos p5A_re_pos
+    rw [hpow, p3R_pow_p4B_norm_eq_one] at hlt
+    norm_num at hlt
+  · have hlt : ‖principalPow p2 p5B‖ < 1 :=
+      p2_pow_norm_lt_one_of_re_pos p5B_re_pos
+    rw [hpow, p3R_pow_p4B_norm_eq_one] at hlt
+    norm_num at hlt
+  · have hlt : ‖principalPow p2 p5C‖ < 1 :=
+      p2_pow_norm_lt_one_of_re_pos p5C_re_pos
+    rw [hpow, p3R_pow_p4B_norm_eq_one] at hlt
+    norm_num at hlt
+  · have hzero : (principalPow p2 p5E).re = 0 := p2_pow_p5E_re_zero
+    rw [hpow] at hzero
+    have hpos : 0 < (principalPow p3R p4B).re := p3R_pow_p4B_re_pos
+    linarith
+  · have hlt : ‖principalPow p2 p5F‖ < 1 :=
+      p2_pow_norm_lt_one_of_re_pos p5F_re_pos
+    rw [hpow, p3R_pow_p4B_norm_eq_one] at hlt
+    norm_num at hlt
+
+private theorem p3R_pow_p4B_mem_seven :
+    principalPow p3R p4B ∈ a198683ValueSet 7 := by
+  simp only [a198683ValueSet]
+  refine ⟨2, p3R, ?_, p4B, ?_, rfl⟩
+  · exact mem_valueSet_three.2 (Or.inr rfl)
+  · exact mem_valueSet_four.2 (Or.inr (Or.inl rfl))
+
+/-- Semantic lower bound for `A198683(7)` after adding the unit value `p3R^p4B`. -/
+theorem twenty_four_le_a198683_seven : 24 ≤ a198683 7 := by
+  classical
+  rw [a198683]
+  let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
+  let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
+  let u : Set ℂ := s ∪ t
+  let v : ℂ := principalPow p3R p4A
+  let w : ℂ := principalPow p4B p3L
+  let q : Set ℂ := insert v u
+  let r : Set ℂ := insert w q
+  let b : Set ℂ := insert Complex.I r
+  let m : ℂ := principalPow p3R p4B
+  have hfinite7 : (a198683ValueSet 7).Finite := by
+    let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
+      fun i => a198683SevenCanonicalReps.get i
+    have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+      simpa [rep] using a198683_seven_subset_canonicalReps
+    exact (Set.finite_range rep).subset hsubset
+  have hs_card : s.ncard = 15 := by
+    dsimp [s]
+    rw [I_pow_injOn_a198683SixCandidateSet.ncard_image, a198683SixCandidateSet_ncard]
+  have ht_card : t.ncard = 5 := by
+    dsimp [t]
+    rw [p2_pow_injOn_p2NegativeExponents.ncard_image,
+      a198683SevenP2NegativeExponents_ncard]
+  have hs_finite : s.Finite := by
+    dsimp [s]
+    exact (by simp [a198683SixCandidateSet] : a198683SixCandidateSet.Finite).image _
+  have ht_finite : t.Finite := by
+    dsimp [t]
+    exact (by simp [a198683SevenP2NegativeExponents] :
+      a198683SevenP2NegativeExponents.Finite).image _
+  have hdisj : Disjoint s t := by
+    rw [Set.disjoint_left]
+    intro z hzS hzT
+    have hpos : 0 < z.im := by
+      exact I_pow_image_sixCandidateSet_im_pos (by simpa [s] using hzS)
+    have hneg : z.im < 0 := by
+      exact p2_pow_image_p2NegativeExponents_im_neg (by simpa [t] using hzT)
+    exact (lt_asymm hneg hpos).elim
+  have hu_card : u.ncard = 20 := by
+    dsimp [u]
+    rw [Set.ncard_union_eq hdisj hs_finite ht_finite, hs_card, ht_card]
+  have hu_finite : u.Finite := by
+    dsimp [u]
+    exact hs_finite.union ht_finite
+  have hv_notMem : v ∉ u := by
+    intro hv
+    rcases hv with hvS | hvT
+    · have hpos : 0 < v.im := by
+        exact I_pow_image_sixCandidateSet_im_pos (by simpa [s, v] using hvS)
+      have hneg : v.im < 0 := by
+        simpa [v] using p3R_pow_p4A_im_neg
+      exact (lt_asymm hneg hpos).elim
+    · have hle : ‖v‖ ≤ 1 := by
+        exact p2_pow_image_p2NegativeExponents_norm_le_one (by simpa [t, v] using hvT)
+      have hgt : 1 < ‖v‖ := by
+        simpa [v] using p3R_pow_p4A_norm_gt_one
+      linarith
+  have hq_card : q.ncard = 21 := by
+    dsimp [q]
+    rw [Set.ncard_insert_of_notMem hv_notMem hu_finite, hu_card]
+  have hq_finite : q.Finite := by
+    dsimp [q]
+    exact hu_finite.insert v
+  have hw_notMem : w ∉ q := by
+    intro hw
+    rcases hw with hwv | hwu
+    · have hpos : 0 < w.im := by
+        simpa [w] using p4B_pow_p3L_im_pos
+      have hneg : v.im < 0 := by
+        simpa [v] using p3R_pow_p4A_im_neg
+      rw [hwv] at hpos
+      exact (lt_asymm hneg hpos).elim
+    · rcases hwu with hwS | hwT
+      · exact p4B_pow_p3L_notMem_I_pow_sixCandidateSet (by simpa [s, w] using hwS)
+      · have hle : ‖w‖ ≤ 1 := by
+          exact p2_pow_image_p2NegativeExponents_norm_le_one (by simpa [t, w] using hwT)
+        have hgt : 4 < ‖w‖ := by
+          simpa [w] using p4B_pow_p3L_norm_gt_four
+        linarith
+  have hr_card : r.ncard = 22 := by
+    dsimp [r]
+    rw [Set.ncard_insert_of_notMem hw_notMem hq_finite, hq_card]
+  have hr_finite : r.Finite := by
+    dsimp [r]
+    exact hq_finite.insert w
+  have hI_notMem : Complex.I ∉ r := by
+    intro hI
+    rcases hI with hIw | hIq
+    · have hgt : 4 < ‖w‖ := by
+        simpa [w] using p4B_pow_p3L_norm_gt_four
+      rw [← hIw] at hgt
+      norm_num at hgt
+    · rcases hIq with hIv | hIu
+      · have hpos : 0 < Complex.I.im := by norm_num
+        have hneg : v.im < 0 := by
+          simpa [v] using p3R_pow_p4A_im_neg
+        rw [hIv] at hpos
+        exact (lt_asymm hneg hpos).elim
+      · rcases hIu with hIS | hIT
+        · exact I_notMem_I_pow_sixCandidateSet (by simpa [s] using hIS)
+        · have hneg : Complex.I.im < 0 := by
+            exact p2_pow_image_p2NegativeExponents_im_neg (by simpa [t] using hIT)
+          norm_num at hneg
+  have hb_card : b.ncard = 23 := by
+    dsimp [b]
+    rw [Set.ncard_insert_of_notMem hI_notMem hr_finite, hr_card]
+  have hb_finite : b.Finite := by
+    dsimp [b]
+    exact hr_finite.insert Complex.I
+  have hm_notMem : m ∉ b := by
+    intro hm
+    rcases hm with hmI | hmr
+    · have hneg : m.im < 0 := by
+        simpa [m] using p3R_pow_p4B_im_neg
+      rw [hmI] at hneg
+      norm_num at hneg
+    · rcases hmr with hmw | hmq
+      · have hneg : m.im < 0 := by
+          simpa [m] using p3R_pow_p4B_im_neg
+        have hpos : 0 < w.im := by
+          simpa [w] using p4B_pow_p3L_im_pos
+        rw [hmw] at hneg
+        exact (lt_asymm hneg hpos).elim
+      · rcases hmq with hmv | hmu
+        · have hnorm : ‖m‖ = 1 := by
+            simpa [m] using p3R_pow_p4B_norm_eq_one
+          have hgt : 1 < ‖v‖ := by
+            simpa [v] using p3R_pow_p4A_norm_gt_one
+          rw [hmv] at hnorm
+          linarith
+        · rcases hmu with hmS | hmT
+          · have hpos : 0 < m.im := by
+              exact I_pow_image_sixCandidateSet_im_pos (by simpa [s, m] using hmS)
+            have hneg : m.im < 0 := by
+              simpa [m] using p3R_pow_p4B_im_neg
+            exact (lt_asymm hneg hpos).elim
+          · exact p3R_pow_p4B_notMem_p2NegativeExponents (by simpa [t, m] using hmT)
+  have hcard : (insert m b).ncard = 24 := by
+    rw [Set.ncard_insert_of_notMem hm_notMem hb_finite, hb_card]
+  have hsubset : insert m b ⊆ a198683ValueSet 7 := by
+    intro z hz
+    rcases hz with rfl | hz
+    · exact p3R_pow_p4B_mem_seven
+    · rcases hz with rfl | hz
+      · exact I_mem_seven
+      · rcases hz with rfl | hz
+        · exact p4B_pow_p3L_mem_seven
+        · rcases hz with rfl | hz
+          · exact p3R_pow_p4A_mem_seven
+          · rcases hz with hzS | hzT
+            · exact I_pow_image_sixCandidateSet_subset_seven
+                (by simpa [s, u, q, r, b] using hzS)
+            · exact p2_pow_image_p2NegativeExponents_subset_seven
+                (by simpa [t, u, q, r, b] using hzT)
+  calc
+    24 = (insert m b).ncard := hcard.symm
+    _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
+
 end
 
 end LeanProofs
