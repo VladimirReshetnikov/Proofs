@@ -143,6 +143,11 @@ end PowExpr
 
 export PowExpr (a002845)
 
+/-- OEIS A002845 has value `1` at `n = 1`. -/
+theorem a002845_one : a002845 1 = 1 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
+
 /-- A hereditary sparse binary nonnegative integer.
 
 `bits xs` represents `sum (x in xs), 2^x`, with the executable operations below
