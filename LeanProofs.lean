@@ -10,3 +10,4 @@ import LeanProofs.A198683
 import LeanProofs.A198683Schoenfield
 import LeanProofs.A198683N12Probe
 import LeanProofs.A198683SchoenfieldRows
+import LeanProofs.A198683N12Magnitude
