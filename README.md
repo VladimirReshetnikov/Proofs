@@ -93,6 +93,19 @@ theorem arctan_square_identity :
       210 * Real.arctan (47 : ℝ) ^ 2 = 0
 ```
 
+[`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683
+semantically as the number of distinct principal complex-power values obtained
+from all binary parenthesizations of `i^i^...^i`. It proves the accepted values
+through `n = 6` directly over `ℂ`, with public theorems
+`a198683_one` through `a198683_six`. Two companion certificate modules record
+finite checked data from the local A198683 corpus:
+[`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
+checks the Schoenfield labels through `n = 11`, and
+[`LeanProofs/A198683N12Probe.lean`](LeanProofs/A198683N12Probe.lean) checks
+that the retained probe-refined `n = 12` candidate table has 2926 classes
+among 5139 candidates. The latter is intentionally a data-integrity theorem,
+not a semantic proof of `a198683 12 = 2926`.
+
 [`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes the
 Sheffer-stroke/NAND language for Nicod's one-axiom propositional calculus,
 including the exact axiom schema
