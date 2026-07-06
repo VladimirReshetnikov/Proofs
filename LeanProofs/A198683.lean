@@ -1356,6 +1356,25 @@ private theorem I_pow_ne_of_norm_le_one {x y : ℂ}
   intro h
   exact hxy (I_pow_inj_of_norm_le_one hx hy h)
 
+private theorem I_pow_inj_of_re_mem_two {x y : ℂ}
+    (hx₁ : -2 < x.re) (hx₂ : x.re ≤ 2)
+    (hy₁ : -2 < y.re) (hy₂ : y.re ≤ 2) :
+    principalPow Complex.I x = principalPow Complex.I y → x = y := by
+  intro h
+  dsimp [principalPow] at h
+  rw [log_I_real] at h
+  have heq := Complex.exp_inj_of_neg_pi_lt_of_le_pi
+    (x := ((Real.pi / 2 : ℝ) : ℂ) * Complex.I * x)
+    (y := ((Real.pi / 2 : ℝ) : ℂ) * Complex.I * y)
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hx₁])
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hx₂])
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hy₁])
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hy₂])
+    h
+  have hc : (((Real.pi / 2 : ℝ) : ℂ) * Complex.I) ≠ 0 := by
+    exact mul_ne_zero (by norm_num [Real.pi_ne_zero]) Complex.I_ne_zero
+  exact mul_left_cancel₀ hc heq
+
 private theorem log_I_pow_eq_of_norm_le_one {z : ℂ} (hz : ‖z‖ ≤ 1) :
     Complex.log (principalPow Complex.I z) = Complex.log Complex.I * z := by
   dsimp [principalPow]
@@ -2483,6 +2502,37 @@ private theorem p6O_norm_le_one : ‖p6O‖ ≤ 1 := by
   rw [Complex.norm_of_nonneg (Real.exp_pos _).le]
   exact Real.exp_le_one_iff.mpr (by linarith [beta_pos])
 
+private theorem exp_lt_two_of_lt_log_two {x : ℝ} (hx : x < Real.log 2) :
+    Real.exp x < 2 := by
+  have h := Real.exp_lt_exp.mpr hx
+  rwa [Real.exp_log (by norm_num : (0 : ℝ) < 2)] at h
+
+private theorem theta_lt_log_two :
+    theta < Real.log 2 := by
+  nlinarith [theta_lt_one_div_three, Real.log_two_gt_d9]
+
+private theorem pi_div_two_mul_sin_theta_lt_log_two :
+    Real.pi / 2 * Real.sin theta < Real.log 2 := by
+  have hsin_lt_theta : Real.sin theta < theta := Real.sin_lt theta_pos
+  have harg_lt_pi_div_six : Real.pi / 2 * Real.sin theta < Real.pi / 6 := by
+    nlinarith [Real.pi_pos, sin_theta_pos, hsin_lt_theta, theta_lt_one_div_three]
+  have hpi_div_six_lt_log_two : Real.pi / 6 < Real.log 2 := by
+    nlinarith [Real.pi_lt_d2, Real.log_two_gt_d9]
+  exact harg_lt_pi_div_six.trans hpi_div_six_lt_log_two
+
+private theorem p6G_norm_lt_two :
+    ‖p6G‖ < 2 := by
+  dsimp [p6G, principalPow]
+  rw [Complex.norm_exp, log_I_real, p5G_eq_exp_neg_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  exact exp_lt_two_of_lt_log_two pi_div_two_mul_sin_theta_lt_log_two
+
+private theorem p6L_norm_lt_two :
+    ‖p6L‖ < 2 := by
+  rw [p6L_eq_exp_theta]
+  rw [Complex.norm_of_nonneg (Real.exp_pos _).le]
+  exact exp_lt_two_of_lt_log_two theta_lt_log_two
+
 private theorem p6M_norm_gt_one :
     1 < ‖p6M‖ := by
   dsimp [p6M, principalPow]
@@ -2492,6 +2542,13 @@ private theorem p6M_norm_gt_one :
   have hpos : 0 < Real.pi / 2 * Real.sin theta := by
     nlinarith [Real.pi_pos, hsin_pos]
   exact hpos
+
+private theorem p6M_norm_lt_two :
+    ‖p6M‖ < 2 := by
+  dsimp [p6M, principalPow]
+  rw [Complex.norm_exp, log_p3R_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  exact exp_lt_two_of_lt_log_two pi_div_two_mul_sin_theta_lt_log_two
 
 private theorem p6D_norm_gt_one :
     1 < ‖p6D‖ := by
