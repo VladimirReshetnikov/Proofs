@@ -102,7 +102,7 @@ finite checked data from the local A198683 corpus:
 [`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
 checks the Schoenfield labels through `n = 11`,
 [`LeanProofs/A198683SchoenfieldRows.lean`](LeanProofs/A198683SchoenfieldRows.lean)
-reconstructs the `n = 7` and `n = 8` labels from the source table's
+reconstructs the `n = 7` through `n = 9` labels from the source table's
 Count/Match rows, and
 [`LeanProofs/A198683N12Probe.lean`](LeanProofs/A198683N12Probe.lean) checks
 that the strict `n = 12` candidate table has 2925 classes among 5139
