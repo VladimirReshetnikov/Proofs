@@ -1485,6 +1485,54 @@ theorem sin_cos_theta_bounds_of_theta_box_and_endpoint_bounds
   exact ⟨hsinLower, hsinUpper, hcosLower, hcosUpper⟩
 
 /--
+Rational boxes for `pi/2` and `rho = exp(-pi/2)`, plus the corresponding
+endpoint product estimates, are enough to certify the narrow rational box for
+`theta = (pi/2) * rho`.
+-/
+theorem theta_box_of_pi_div_two_rho_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hrho0 : (207879576350 : ℝ) / 1000000000000 < rho)
+    (hrho1 : rho < (207879576351 : ℝ) / 1000000000000)
+    (hlo : (326536474946 : ℝ) / 1000000000000 <
+      ((1570796326794 : ℝ) / 1000000000000) *
+        ((207879576350 : ℝ) / 1000000000000))
+    (hhi :
+      ((1570796326795 : ℝ) / 1000000000000) *
+          ((207879576351 : ℝ) / 1000000000000) <
+        (326536474949 : ℝ) / 1000000000000) :
+    (326536474946 : ℝ) / 1000000000000 < theta ∧
+      theta < (326536474949 : ℝ) / 1000000000000 := by
+  dsimp [theta]
+  have hpi_pos : 0 < Real.pi / 2 :=
+    (by norm_num :
+      (0 : ℝ) < (1570796326794 : ℝ) / 1000000000000).trans hpi0
+  have hrho_pos : 0 < rho :=
+    (by norm_num :
+      (0 : ℝ) < (207879576350 : ℝ) / 1000000000000).trans hrho0
+  constructor
+  · have h1 :
+        ((1570796326794 : ℝ) / 1000000000000) *
+            ((207879576350 : ℝ) / 1000000000000) <
+          (Real.pi / 2) * ((207879576350 : ℝ) / 1000000000000) :=
+      mul_lt_mul_of_pos_right hpi0 (by norm_num)
+    have h2 :
+        (Real.pi / 2) * ((207879576350 : ℝ) / 1000000000000) <
+          (Real.pi / 2) * rho :=
+      mul_lt_mul_of_pos_left hrho0 hpi_pos
+    exact hlo.trans (h1.trans h2)
+  · have h1 :
+        (Real.pi / 2) * rho <
+          ((1570796326795 : ℝ) / 1000000000000) * rho :=
+      mul_lt_mul_of_pos_right hpi1 hrho_pos
+    have h2 :
+        ((1570796326795 : ℝ) / 1000000000000) * rho <
+          ((1570796326795 : ℝ) / 1000000000000) *
+            ((207879576351 : ℝ) / 1000000000000) :=
+      mul_lt_mul_of_pos_left hrho1 (by norm_num)
+    exact (h1.trans h2).trans hhi
+
+/--
 A rational box around `v`, plus endpoint product estimates, is enough to
 certify the rational box around the representative-`25` seed used by the next
 reduction.
