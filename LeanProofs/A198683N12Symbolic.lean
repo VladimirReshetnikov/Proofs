@@ -1419,6 +1419,72 @@ theorem v_box_of_sin_cos_theta_bounds_and_endpoint_bounds
   exact v_box_of_exp_cos_sin_bounds hExp0 hExp1 hCos0 hCos1 hSin0 hSin1
 
 /--
+A narrow rational box for `theta`, plus endpoint estimates for `sin` and
+`cos`, is enough to certify the `sin theta` and `cos theta` boxes used by the
+`v` reduction.
+-/
+theorem sin_cos_theta_bounds_of_theta_box_and_endpoint_bounds
+    (htheta0 : (326536474946 : ℝ) / 1000000000000 < theta)
+    (htheta1 : theta < (326536474949 : ℝ) / 1000000000000)
+    (hsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (hsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (hcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (hcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000) :
+    (320764449975 : ℝ) / 1000000000000 < Real.sin theta ∧
+      Real.sin theta < (320764449985 : ℝ) / 1000000000000 ∧
+      (947158998071 : ℝ) / 1000000000000 < Real.cos theta ∧
+      Real.cos theta < (947158998073 : ℝ) / 1000000000000 := by
+  have hsinLower :
+      (320764449975 : ℝ) / 1000000000000 < Real.sin theta := by
+    have hx :
+        -(Real.pi / 2) ≤ (326536474946 : ℝ) / 1000000000000 := by
+      nlinarith [Real.pi_pos]
+    have hy : theta ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_gt_d2, htheta1]
+    have hsin_lo_lt :
+        Real.sin ((326536474946 : ℝ) / 1000000000000) < Real.sin theta :=
+      Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy htheta0
+    exact hsin0.trans hsin_lo_lt
+  have hsinUpper :
+      Real.sin theta < (320764449985 : ℝ) / 1000000000000 := by
+    have hx : -(Real.pi / 2) ≤ theta := by
+      nlinarith [Real.pi_pos, htheta0]
+    have hy :
+        (326536474949 : ℝ) / 1000000000000 ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_gt_d2]
+    have hsin_lt_hi :
+        Real.sin theta < Real.sin ((326536474949 : ℝ) / 1000000000000) :=
+      Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy htheta1
+    exact hsin_lt_hi.trans hsin1
+  have hcosLower :
+      (947158998071 : ℝ) / 1000000000000 < Real.cos theta := by
+    have htheta_nonneg : 0 ≤ theta := by
+      nlinarith [htheta0]
+    have hhi_le_pi :
+        (326536474949 : ℝ) / 1000000000000 ≤ Real.pi := by
+      nlinarith [Real.pi_gt_d2]
+    have hcos_hi_lt :
+        Real.cos ((326536474949 : ℝ) / 1000000000000) < Real.cos theta :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi htheta_nonneg hhi_le_pi htheta1
+    exact hcos0.trans hcos_hi_lt
+  have hcosUpper :
+      Real.cos theta < (947158998073 : ℝ) / 1000000000000 := by
+    have hlo_nonneg : 0 ≤ (326536474946 : ℝ) / 1000000000000 := by positivity
+    have htheta_le_pi : theta ≤ Real.pi := by
+      nlinarith [Real.pi_gt_d2, htheta1]
+    have hcos_lt_lo :
+        Real.cos theta < Real.cos ((326536474946 : ℝ) / 1000000000000) :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi hlo_nonneg htheta_le_pi htheta0
+    exact hcos_lt_lo.trans hcos1
+  exact ⟨hsinLower, hsinUpper, hcosLower, hcosUpper⟩
+
+/--
 A rational box around `v`, plus endpoint product estimates, is enough to
 certify the rational box around the representative-`25` seed used by the next
 reduction.
