@@ -1,3 +1,5 @@
+import Mathlib.Data.Set.Card
+import Mathlib.Data.Nat.BitIndices
 import Std.Data.HashSet.Basic
 
 /-!
@@ -6,14 +8,10 @@ import Std.Data.HashSet.Basic
 OEIS A002845 counts the distinct values taken by `2^2^...^2`, with `n`
 copies of `2` and all binary parenthesizations allowed.
 
-Every such value is a power of two.  This module therefore works with exact
-base-two logarithms: the leaf `2` has logarithm `1`, and combining two
-subexpressions with logarithms `a` and `b` gives logarithm `a * 2^b`.
-
-The logarithms quickly exceed ordinary big-integer scale, so the executable
-certificate below represents nonnegative integers in hereditary sparse binary
-form: a number is the finite set of positions of `1` bits, and those positions
-are represented the same way.
+The primary definition below is deliberately the direct semantic one: binary
+expression trees whose leaves are literal `2`, evaluated by natural-number
+exponentiation.  The later sparse-binary logarithm code is only an executable
+backend, and is kept separate from the canonical OEIS definition.
 -/
 
 set_option maxRecDepth 100000
@@ -21,6 +19,159 @@ set_option maxRecDepth 100000
 namespace LeanProofs
 
 namespace A002845
+
+/-- Binary parenthesized expressions built from copies of the literal `2`. -/
+inductive PowExpr where
+  | two
+  | pow (a b : PowExpr)
+deriving Repr, DecidableEq
+
+namespace PowExpr
+
+open PowExpr
+
+/-- Evaluate a parenthesized power expression using natural-number exponentiation. -/
+def eval : PowExpr → Nat
+  | two => 2
+  | pow a b => eval a ^ eval b
+
+/-- The number of literal `2` leaves in a power expression. -/
+def size : PowExpr → Nat
+  | two => 1
+  | pow a b => size a + size b
+
+/-- All legal binary parenthesizations with exactly `n` copies of `2`. -/
+def parenthesizations : Nat → List PowExpr
+  | 0 => []
+  | 1 => [two]
+  | n + 2 =>
+      (List.finRange (n + 1)).flatMap fun k =>
+        (parenthesizations (k.1 + 1)).flatMap fun a =>
+          (parenthesizations (n + 1 - k.1)).map fun b => pow a b
+termination_by n => n
+decreasing_by
+  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+  · exact Nat.succ_lt_succ k.2
+
+/--
+The canonical semantic value set for A002845: distinct natural numbers arising
+from all legal parenthesizations of `2^2^...^2`.
+-/
+def valueSet (n : Nat) : Set Nat :=
+  {v | ∃ e ∈ parenthesizations n, eval e = v}
+
+/--
+OEIS A002845, defined canonically as the cardinality of the semantic
+natural-number exponentiation value set.
+-/
+noncomputable def a002845 (n : Nat) : Nat :=
+  (valueSet n).ncard
+
+/-- The exact base-two logarithm of a semantic power expression. -/
+def logEval : PowExpr → Nat
+  | two => 1
+  | pow a b => logEval a * 2 ^ logEval b
+
+/-- Every semantic value is `2` raised to its exact logarithm. -/
+theorem eval_eq_two_pow_logEval (e : PowExpr) :
+    eval e = 2 ^ logEval e := by
+  induction e with
+  | two =>
+      rfl
+  | pow a b iha ihb =>
+      simp only [eval, logEval]
+      rw [iha, ihb, pow_mul]
+
+/-- The canonical exact-logarithm value set corresponding to `valueSet`. -/
+def logValueSet (n : Nat) : Set Nat :=
+  {m | ∃ e ∈ parenthesizations n, logEval e = m}
+
+/-- Cardinality of the exact-logarithm value set. -/
+noncomputable def a002845LogCard (n : Nat) : Nat :=
+  (logValueSet n).ncard
+
+/-- Semantic values are exactly `2^m` for semantic logarithms `m`. -/
+theorem valueSet_eq_pow2_image_logValueSet (n : Nat) :
+    valueSet n = (fun m : Nat => 2 ^ m) '' logValueSet n := by
+  ext v
+  constructor
+  · intro hv
+    rcases hv with ⟨e, he, rfl⟩
+    exact ⟨logEval e, ⟨e, he, rfl⟩, (eval_eq_two_pow_logEval e).symm⟩
+  · intro hv
+    rcases hv with ⟨m, ⟨e, he, hm⟩, hv⟩
+    refine ⟨e, he, ?_⟩
+    rw [← hv, ← hm, eval_eq_two_pow_logEval]
+
+/--
+The canonical semantic count equals the count of exact logarithms.  This is
+the first proof boundary: switching from values to logarithms is justified by
+injectivity of `m ↦ 2^m`.
+-/
+theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n := by
+  rw [a002845, a002845LogCard, valueSet_eq_pow2_image_logValueSet]
+  exact Set.InjOn.ncard_image
+    ((Nat.pow_right_injective (by decide : 2 ≤ (2 : Nat))).injOn)
+
+/-- Direct finite computation of the canonical logarithm set. -/
+def directLogFinset (n : Nat) : Finset Nat :=
+  ((parenthesizations n).map logEval).toFinset
+
+/-- Direct finite computation of the canonical logarithm count. -/
+def directLogCard (n : Nat) : Nat :=
+  (directLogFinset n).card
+
+theorem logValueSet_eq_directLogFinset (n : Nat) :
+    logValueSet n = (directLogFinset n : Set Nat) := by
+  ext m
+  simp [logValueSet, directLogFinset]
+
+theorem a002845LogCard_eq_directLogCard (n : Nat) :
+    a002845LogCard n = directLogCard n := by
+  rw [a002845LogCard, directLogCard, logValueSet_eq_directLogFinset]
+  exact Set.ncard_coe_finset (directLogFinset n)
+
+/--
+The canonical semantic definition agrees with the direct logarithm-list
+computation.  This path is practical for the small initial values whose exact
+natural logarithms are still modest.
+-/
+theorem a002845_eq_directLogCard (n : Nat) : a002845 n = directLogCard n := by
+  rw [a002845_eq_logCard, a002845LogCard_eq_directLogCard]
+
+end PowExpr
+
+export PowExpr (a002845)
+
+/-- OEIS A002845 has value `1` at `n = 1`. -/
+theorem a002845_one : a002845 1 = 1 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
+
+/-- OEIS A002845 has value `1` at `n = 2`. -/
+theorem a002845_two : a002845 2 = 1 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
+
+/-- OEIS A002845 has value `1` at `n = 3`. -/
+theorem a002845_three : a002845 3 = 1 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
+
+/-- OEIS A002845 has value `2` at `n = 4`. -/
+theorem a002845_four : a002845 4 = 2 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
+
+/-- OEIS A002845 has value `4` at `n = 5`. -/
+theorem a002845_five : a002845 5 = 4 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
+
+/-- OEIS A002845 has value `8` at `n = 6`. -/
+theorem a002845_six : a002845 6 = 8 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
 
 /-- A hereditary sparse binary nonnegative integer.
 
@@ -66,12 +217,112 @@ def zero : Sparse :=
 def one : Sparse :=
   .bits [zero]
 
-/-- Numeric comparison of canonical sparse-binary values. -/
-partial def compare : Sparse → Sparse → Ordering
-  | .bits xs, .bits ys => compareDescending xs.reverse ys.reverse
-where
+/-- Natural-number denotation of a hereditary sparse binary value. -/
+def eval : Sparse → Nat
+  | .bits xs => (xs.map fun p => 2 ^ eval p).sum
+
+/--
+Canonical sparse values have canonical bit positions and strictly increasing
+denoted exponents.
+-/
+def Canonical : Sparse → Prop
+  | .bits xs => (∀ p ∈ xs, Canonical p) ∧ (xs.map eval).SortedLT
+
+/-- The bit indices of a canonical sparse value are exactly its bit positions. -/
+theorem bitIndices_eval {x : Sparse} (hx : Canonical x) :
+    x.eval.bitIndices = match x with | .bits xs => xs.map eval := by
+  cases x with
+  | bits xs =>
+      rw [Canonical.eq_1] at hx
+      rw [eval.eq_1]
+      simpa [List.map_map, Function.comp_def]
+        using Nat.bitIndices_sum_map_two_pow hx.2
+
+mutual
+  /-- Canonical sparse binary representation is injective in its denotation. -/
+  theorem eq_of_eval_eq {x y : Sparse} (hx : Canonical x) (hy : Canonical y)
+      (h : eval x = eval y) : x = y := by
+    cases x with
+    | bits xs =>
+        cases y with
+        | bits ys =>
+            rw [Canonical.eq_1] at hx hy
+            have hxidx : (bits xs).eval.bitIndices = xs.map eval :=
+              bitIndices_eval (x := bits xs) (by rw [Canonical.eq_1]; exact hx)
+            have hyidx : (bits ys).eval.bitIndices = ys.map eval :=
+              bitIndices_eval (x := bits ys) (by rw [Canonical.eq_1]; exact hy)
+            have hmaps : xs.map eval = ys.map eval := by
+              calc
+                xs.map eval = (bits xs).eval.bitIndices := hxidx.symm
+                _ = (bits ys).eval.bitIndices := by rw [h]
+                _ = ys.map eval := hyidx
+            have hxs : xs = ys := list_eq_of_map_eval_eq xs ys hx.1 hy.1 hmaps
+            simp [hxs]
+
+  theorem list_eq_of_map_eval_eq (xs ys : List Sparse)
+      (hcx : ∀ p ∈ xs, Canonical p) (hcy : ∀ p ∈ ys, Canonical p)
+      (h : xs.map eval = ys.map eval) : xs = ys := by
+    cases xs with
+    | nil =>
+        cases ys with
+        | nil => rfl
+        | cons _ _ => simp at h
+    | cons x xs =>
+        cases ys with
+        | nil => simp at h
+        | cons y ys =>
+            simp only [List.map_cons, List.cons.injEq] at h
+            have hxy : x = y :=
+              eq_of_eval_eq (hcx x (by simp)) (hcy y (by simp)) h.1
+            have htail : xs = ys :=
+              list_eq_of_map_eval_eq xs ys
+                (by intro p hp; exact hcx p (by simp [hp]))
+                (by intro p hp; exact hcy p (by simp [hp]))
+                h.2
+            simp [hxy, htail]
+end
+
+theorem eval_zero : eval zero = 0 := by
+  simp [zero, eval.eq_1]
+
+theorem eval_one : eval one = 1 := by
+  simp [one, zero, eval.eq_1]
+
+theorem canonical_zero : Canonical zero := by
+  rw [zero, Canonical.eq_1]
+  simp [List.sortedLT_iff_pairwise]
+
+theorem canonical_one : Canonical one := by
+  rw [one, Canonical.eq_1]
+  simp [canonical_zero, eval_zero, List.sortedLT_iff_pairwise]
+
+theorem sizeOf_append_singleton (xs : List Sparse) (x : Sparse) :
+    sizeOf (xs ++ [x]) = sizeOf xs + sizeOf x + 1 := by
+  induction xs with
+  | nil => simp [Nat.add_assoc]
+  | cons _ _ ih =>
+      simp [ih, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+
+theorem sizeOf_reverse (xs : List Sparse) : sizeOf xs.reverse = sizeOf xs := by
+  induction xs with
+  | nil => simp
+  | cons x xs ih =>
+      simp [List.reverse_cons, sizeOf_append_singleton, ih,
+        Nat.add_assoc, Nat.add_comm]
+
+mutual
+  /-- Numeric comparison of canonical sparse-binary values. -/
+  def compare : Sparse → Sparse → Ordering
+    | .bits xs, .bits ys => compareDescending xs.reverse ys.reverse
+  termination_by x y => sizeOf x + sizeOf y
+  decreasing_by
+    simp_wf
+    rw [sizeOf_reverse, sizeOf_reverse]
+    simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      Nat.add_lt_add (Nat.lt_succ_self (sizeOf xs)) (Nat.lt_succ_self (sizeOf ys))
+
   /-- Compare bit-position lists written from high to low. -/
-  compareDescending : List Sparse → List Sparse → Ordering
+  def compareDescending : List Sparse → List Sparse → Ordering
     | [], [] => .eq
     | [], _ :: _ => .lt
     | _ :: _, [] => .gt
@@ -79,6 +330,37 @@ where
         match compare x y with
         | .eq => compareDescending xs ys
         | order => order
+  termination_by xs ys => sizeOf xs + sizeOf ys
+  decreasing_by
+    · simp_wf
+      have hle : sizeOf x + sizeOf y ≤
+          sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) := by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          (Nat.le_add_right (sizeOf x + sizeOf y) (sizeOf xs + sizeOf ys))
+      have hlt : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
+          1 + (1 + (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)))) := by
+        simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          Nat.add_lt_add (Nat.lt_succ_self 0)
+            (Nat.lt_succ_self (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys))))
+      have hlt' : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
+          1 + sizeOf x + sizeOf xs + (1 + sizeOf y + sizeOf ys) := by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hlt
+      exact Nat.lt_of_le_of_lt hle hlt'
+    · simp_wf
+      have hle : sizeOf xs + sizeOf ys ≤
+          sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) := by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          (Nat.le_add_left (sizeOf xs + sizeOf ys) (sizeOf x + sizeOf y))
+      have hlt : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
+          1 + (1 + (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)))) := by
+        simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          Nat.add_lt_add (Nat.lt_succ_self 0)
+            (Nat.lt_succ_self (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys))))
+      have hlt' : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
+          1 + sizeOf x + sizeOf xs + (1 + sizeOf y + sizeOf ys) := by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hlt
+      exact Nat.lt_of_le_of_lt hle hlt'
+end
 
 /-- Add two hereditary sparse binary nonnegative integers. -/
 partial def add : Sparse → Sparse → Sparse
@@ -142,103 +424,103 @@ partial def buildLevels : Nat → Array (List Sparse) → Array (List Sparse)
   | fuel + 1, levels =>
       buildLevels fuel (levels.push (nextLevel levels))
 
-/-- The distinct base-two logarithms of the values counted by A002845. -/
-def a002845LogValues (n : Nat) : List Sparse :=
+/-- The sparse-binary logarithms computed by the executable backend. -/
+def a002845SparseLogValues (n : Nat) : List Sparse :=
   if n = 0 then
     []
   else
     (buildLevels n #[])[n - 1]!
 
-/-- OEIS A002845, computed from exact hereditary sparse-binary logarithms. -/
-def a002845 (n : Nat) : Nat :=
-  (a002845LogValues n).length
+/-- Executable sparse-binary backend count for A002845 logarithms. -/
+def a002845Sparse (n : Nat) : Nat :=
+  (a002845SparseLogValues n).length
 
-/-- `A002845(1) = 1`. -/
-theorem a002845_one : a002845 1 = 1 := by
+/-- The sparse backend computes `1` at `n = 1`. -/
+theorem a002845Sparse_one : a002845Sparse 1 = 1 := by
   native_decide
 
-/-- `A002845(2) = 1`. -/
-theorem a002845_two : a002845 2 = 1 := by
+/-- The sparse backend computes `1` at `n = 2`. -/
+theorem a002845Sparse_two : a002845Sparse 2 = 1 := by
   native_decide
 
-/-- `A002845(3) = 1`. -/
-theorem a002845_three : a002845 3 = 1 := by
+/-- The sparse backend computes `1` at `n = 3`. -/
+theorem a002845Sparse_three : a002845Sparse 3 = 1 := by
   native_decide
 
-/-- `A002845(4) = 2`. -/
-theorem a002845_four : a002845 4 = 2 := by
+/-- The sparse backend computes `2` at `n = 4`. -/
+theorem a002845Sparse_four : a002845Sparse 4 = 2 := by
   native_decide
 
-/-- `A002845(5) = 4`. -/
-theorem a002845_five : a002845 5 = 4 := by
+/-- The sparse backend computes `4` at `n = 5`. -/
+theorem a002845Sparse_five : a002845Sparse 5 = 4 := by
   native_decide
 
-/-- `A002845(6) = 8`. -/
-theorem a002845_six : a002845 6 = 8 := by
+/-- The sparse backend computes `8` at `n = 6`. -/
+theorem a002845Sparse_six : a002845Sparse 6 = 8 := by
   native_decide
 
-/-- `A002845(7) = 17`. -/
-theorem a002845_seven : a002845 7 = 17 := by
+/-- The sparse backend computes `17` at `n = 7`. -/
+theorem a002845Sparse_seven : a002845Sparse 7 = 17 := by
   native_decide
 
-/-- `A002845(8) = 36`. -/
-theorem a002845_eight : a002845 8 = 36 := by
+/-- The sparse backend computes `36` at `n = 8`. -/
+theorem a002845Sparse_eight : a002845Sparse 8 = 36 := by
   native_decide
 
-/-- `A002845(9) = 78`. -/
-theorem a002845_nine : a002845 9 = 78 := by
+/-- The sparse backend computes `78` at `n = 9`. -/
+theorem a002845Sparse_nine : a002845Sparse 9 = 78 := by
   native_decide
 
-/-- `A002845(10) = 171`. -/
-theorem a002845_ten : a002845 10 = 171 := by
+/-- The sparse backend computes `171` at `n = 10`. -/
+theorem a002845Sparse_ten : a002845Sparse 10 = 171 := by
   native_decide
 
-/-- `A002845(11) = 379`. -/
-theorem a002845_eleven : a002845 11 = 379 := by
+/-- The sparse backend computes `379` at `n = 11`. -/
+theorem a002845Sparse_eleven : a002845Sparse 11 = 379 := by
   native_decide
 
-/-- `A002845(12) = 851`. -/
-theorem a002845_twelve : a002845 12 = 851 := by
+/-- The sparse backend computes `851` at `n = 12`. -/
+theorem a002845Sparse_twelve : a002845Sparse 12 = 851 := by
   native_decide
 
-/-- `A002845(13) = 1928`. -/
-theorem a002845_thirteen : a002845 13 = 1928 := by
+/-- The sparse backend computes `1928` at `n = 13`. -/
+theorem a002845Sparse_thirteen : a002845Sparse 13 = 1928 := by
   native_decide
 
-/-- `A002845(14) = 4396`. -/
-theorem a002845_fourteen : a002845 14 = 4396 := by
+/-- The sparse backend computes `4396` at `n = 14`. -/
+theorem a002845Sparse_fourteen : a002845Sparse 14 = 4396 := by
   native_decide
 
-/-- `A002845(15) = 10087`. -/
-theorem a002845_fifteen : a002845 15 = 10087 := by
+/-- The sparse backend computes `10087` at `n = 15`. -/
+theorem a002845Sparse_fifteen : a002845Sparse 15 = 10087 := by
   native_decide
 
-/-- `A002845(16) = 23273`. -/
-theorem a002845_sixteen : a002845 16 = 23273 := by
+/-- The sparse backend computes `23273` at `n = 16`. -/
+theorem a002845Sparse_sixteen : a002845Sparse 16 = 23273 := by
   native_decide
 
-/-- `A002845(17) = 53948`. -/
-theorem a002845_seventeen : a002845 17 = 53948 := by
+/-- The sparse backend computes `53948` at `n = 17`. -/
+theorem a002845Sparse_seventeen : a002845Sparse 17 = 53948 := by
   native_decide
 
-/-- `A002845(18) = 125608`. -/
-theorem a002845_eighteen : a002845 18 = 125608 := by
+/-- The sparse backend computes `125608` at `n = 18`. -/
+theorem a002845Sparse_eighteen : a002845Sparse 18 = 125608 := by
   native_decide
 
-/-- `A002845(19) = 293543`. -/
-theorem a002845_nineteen : a002845 19 = 293543 := by
+/-- The sparse backend computes `293543` at `n = 19`. -/
+theorem a002845Sparse_nineteen : a002845Sparse 19 = 293543 := by
   native_decide
 
-/-- `A002845(20) = 688366`. -/
-theorem a002845_twenty : a002845 20 = 688366 := by
+/-- The sparse backend computes `688366` at `n = 20`. -/
+theorem a002845Sparse_twenty : a002845Sparse 20 = 688366 := by
   native_decide
 
-/-- `A002845(21) = 1619087`. -/
-theorem a002845_twenty_one : a002845 21 = 1619087 := by
+/-- The sparse backend computes `1619087` at `n = 21`. -/
+theorem a002845Sparse_twenty_one : a002845Sparse 21 = 1619087 := by
   native_decide
 
-/-- `A002845(22) = 3818818`. -/
-theorem a002845_twenty_two : a002845 22 = 3818818 := by
+/-- The sparse backend computes `3818818` at `n = 22`. -/
+theorem a002845Sparse_twenty_two : a002845Sparse 22 = 3818818 := by
   native_decide
 
 end A002845
