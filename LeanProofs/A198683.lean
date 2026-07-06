@@ -1642,6 +1642,76 @@ private theorem p6O_im_zero :
   rw [p6O_eq_exp_neg_beta]
   exact Complex.ofReal_im _
 
+private theorem p6H_norm_lt_one :
+    ‖p6H‖ < 1 := by
+  dsimp [p6H, principalPow]
+  rw [Complex.norm_exp, log_p2_eq]
+  simp [Complex.mul_re]
+  have hpos : 0 < Real.pi / 2 * p4A.re := by
+    nlinarith [Real.pi_pos, p4A_re_pos]
+  exact hpos
+
+private theorem p6M_norm_gt_one :
+    1 < ‖p6M‖ := by
+  dsimp [p6M, principalPow]
+  rw [Complex.norm_exp, log_p3R_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hsin_pos : 0 < Real.sin theta := sin_theta_pos
+  have hpos : 0 < Real.pi / 2 * Real.sin theta := by
+    nlinarith [Real.pi_pos, hsin_pos]
+  exact hpos
+
+private theorem p6K_norm_lt_one :
+    ‖p6K‖ < 1 := by
+  dsimp [p6K, principalPow]
+  rw [Complex.norm_exp, log_p3L_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hpos : 0 < theta * Real.sin theta := by
+    nlinarith [theta_pos, sin_theta_pos]
+  exact hpos
+
+private theorem p6D_norm_gt_one :
+    1 < ‖p6D‖ := by
+  dsimp [p6D, principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  have hpos : Real.pi / 2 * p5D.im < 0 := by
+    nlinarith [Real.pi_pos, p5D_im_neg]
+  exact hpos
+
+private theorem p6G_norm_gt_one :
+    1 < ‖p6G‖ := by
+  dsimp [p6G, principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  have hpos : Real.pi / 2 * p5G.im < 0 := by
+    nlinarith [Real.pi_pos, p5G_im_neg]
+  exact hpos
+
+private theorem p6K_ne_p6D :
+    p6K ≠ p6D := by
+  intro h
+  have hn := congrArg norm h
+  have hlt := p6K_norm_lt_one
+  rw [hn] at hlt
+  linarith [hlt, p6D_norm_gt_one]
+
+private theorem p6K_ne_p6G :
+    p6K ≠ p6G := by
+  intro h
+  have hn := congrArg norm h
+  have hlt := p6K_norm_lt_one
+  rw [hn] at hlt
+  linarith [hlt, p6G_norm_gt_one]
+
+private theorem p6H_ne_p6M :
+    p6H ≠ p6M := by
+  intro h
+  have hn := congrArg norm h
+  have hlt := p6H_norm_lt_one
+  rw [hn] at hlt
+  linarith [hlt, p6M_norm_gt_one]
+
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
   simp only [a198683ValueSet]
