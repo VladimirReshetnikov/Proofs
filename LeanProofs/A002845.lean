@@ -315,16 +315,11 @@ end
 instance : DecidableEq Sparse :=
   decEq
 
-/-- Structural equality for sparse-binary trees. -/
-partial def beq : Sparse → Sparse → Bool
-  | .bits xs, .bits ys => beqList xs ys
-where
-  beqList : List Sparse → List Sparse → Bool
-    | [], [] => true
-    | x :: xs, y :: ys => beq x y && beqList xs ys
-    | _, _ => false
+/-- Boolean equality for sparse-binary trees, definitionally tied to `DecidableEq`. -/
+def beq (x y : Sparse) : Bool :=
+  decide (x = y)
 
-/-- Structural hash matching `Sparse.beq`. -/
+/-- Structural hash for sparse-binary trees. -/
 partial def hash : Sparse → UInt64
   | .bits xs => mixHash 17 (hashList xs)
 where
@@ -334,6 +329,38 @@ where
 
 instance : Hashable Sparse where
   hash := hash
+
+instance : LawfulBEq Sparse where
+  rfl := by
+    intro a
+    simp [BEq.beq]
+  eq_of_beq := by
+    intro a b h
+    simpa [BEq.beq, beq] using h
+
+instance : EquivBEq Sparse where
+  symm := by
+    intro a b h
+    have hab : a = b := LawfulBEq.eq_of_beq h
+    subst hab
+    simp [BEq.beq]
+  trans := by
+    intro a b c hab hbc
+    have hab' : a = b := LawfulBEq.eq_of_beq hab
+    have hbc' : b = c := LawfulBEq.eq_of_beq hbc
+    subst hab'
+    subst hbc'
+    simp [BEq.beq]
+  rfl := by
+    intro a
+    simp [BEq.beq]
+
+instance : LawfulHashable Sparse where
+  hash_eq := by
+    intro a b h
+    have hab : a = b := LawfulBEq.eq_of_beq h
+    subst hab
+    rfl
 
 /-- Zero in hereditary sparse binary. -/
 def zero : Sparse :=
