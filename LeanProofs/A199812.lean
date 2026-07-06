@@ -302,9 +302,14 @@ theorem a199812_one : a199812 1 = 1 := by
   rw [a199812_eq_computedCount]
   native_decide
 
+/-- `A199812(2) = 1`. -/
+theorem a199812_two : a199812 2 = 1 := by
+  rw [a199812_eq_computedCount]
+  native_decide
+
 end TowerExpr
 
-export TowerExpr (a199812 a199812_eq_noteCount a199812_one)
+export TowerExpr (a199812 a199812_eq_noteCount a199812_one a199812_two)
 
 end A199812
 
