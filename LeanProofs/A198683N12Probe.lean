@@ -44,6 +44,30 @@ def partitionCertificateOk (labels : List Nat) (rows classes : Nat) : Bool :=
     distinctClassCount labels == classes &&
     allLabelsLt classes labels
 
+/-- A true partition certificate has the declared row count. -/
+theorem partitionCertificateOk_length_of {labels : List Nat} {rows classes : Nat}
+    (h : partitionCertificateOk labels rows classes = true) :
+    labels.length = rows := by
+  dsimp [partitionCertificateOk] at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  exact h.1.1
+
+/-- A true partition certificate has the declared distinct class count. -/
+theorem partitionCertificateOk_distinct_class_count_of {labels : List Nat} {rows classes : Nat}
+    (h : partitionCertificateOk labels rows classes = true) :
+    distinctClassCount labels = classes := by
+  dsimp [partitionCertificateOk] at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  exact h.1.2
+
+/-- A true partition certificate has all labels in the declared class range. -/
+theorem partitionCertificateOk_labels_lt_of {labels : List Nat} {rows classes : Nat}
+    (h : partitionCertificateOk labels rows classes = true) :
+    allLabelsLt classes labels = true := by
+  dsimp [partitionCertificateOk] at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  exact h.2
+
 /-- Candidate indices whose label is `target`. -/
 def positionsWithLabelFrom (target idx : Nat) : List Nat -> List Nat
   | [] => []
@@ -300,6 +324,11 @@ def n12ProbeRefinedLabels : List Nat :=
 theorem a198683_twelve_strict_policy_class_count :
     partitionCertificateOk n12StrictLabels 5139 2925 = true := by
   native_decide
+
+/-- Direct distinct-class-count consequence of the strict-policy n = 12 table. -/
+theorem a198683_twelve_strict_policy_distinct_class_count :
+    distinctClassCount n12StrictLabels = 2925 :=
+  partitionCertificateOk_distinct_class_count_of a198683_twelve_strict_policy_class_count
 
 /-- Strict class 25 is exactly the near-1 cluster split by the probe. -/
 theorem a198683_twelve_strict_class_twenty_five_members :
