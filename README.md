@@ -110,6 +110,14 @@ theorem arctan_square_identity :
       210 * Real.arctan (47 : ℝ) ^ 2 = 0
 ```
 
+[`LeanProofs/PowTower.lean`](LeanProofs/PowTower.lean) is the shared lexical
+layer for the power-tower OEIS formalizations.  It defines the one-token
+binary parenthesization syntax `PowTower.Expr`, its canonical semantic
+`valueSet`/`valueCard`, and proved computation-oriented bridges such as
+`valueSet_eq_recursiveValueSet`, `valueCard_eq_recursiveValueSet_ncard`, and
+the finite/memoized recursive finite-set variants used by decidable
+interpretations.
+
 [`LeanProofs/A000081.lean`](LeanProofs/A000081.lean) defines OEIS A000081
 from the exponent-function description itself: it enumerates all legal binary
 parenthesizations of `x^x^...^x`, interprets them as functions
@@ -223,8 +231,11 @@ into direct sufficient conditions for the split; the `rho` box is further
 reduced to the same `pi/2` box plus endpoint exponential estimates, which are
 now likewise composed into direct sufficient conditions for the split; the
 `pi/2` box itself is discharged from mathlib's 20-decimal `pi` certificate,
-and the resulting `rho`, `theta`, and `sin theta`/`cos theta` boxes are now
-composed from just the remaining rational endpoint estimates.  The
+the `rho` endpoint exponential estimates are discharged using mathlib's
+20-decimal `exp 1` certificate and a Taylor bound for the residual
+`exp(0.57079632679...)`, and the resulting `rho`, `theta`, and
+`sin theta`/`cos theta` boxes are now composed from the remaining trigonometric
+endpoint estimates.  The
 module also exposes exact
 real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
 layers of representative `25`, including the

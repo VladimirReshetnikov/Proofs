@@ -1643,6 +1643,108 @@ theorem sin_cos_theta_bounds_of_rho_endpoint_bounds_and_endpoint_bounds
   exact sin_cos_theta_bounds_of_theta_box_and_endpoint_bounds
     htheta.1 htheta.2 hsin0 hsin1 hcos0 hcos1
 
+private theorem exp_one_lower_near_20 :
+    (363916618873 : ℝ) / 133877442384 - (1 : ℝ) / 10 ^ 20 ≤ Real.exp 1 := by
+  have h := (abs_sub_le_iff.1 Real.exp_one_near_20).2
+  linarith
+
+private theorem exp_one_upper_near_20 :
+    Real.exp 1 ≤ (363916618873 : ℝ) / 133877442384 + (1 : ℝ) / 10 ^ 20 := by
+  have h := (abs_sub_le_iff.1 Real.exp_one_near_20).1
+  linarith
+
+/--
+The lower endpoint estimate needed to bound `rho = exp(-pi/2)` from below.
+It is proved by rewriting `exp(1.570796326795)` as
+`exp 1 * exp(0.570796326795)`, using mathlib's 20-decimal certificate for
+`exp 1`, and applying the Taylor upper bound `Real.exp_bound'` to the
+residual argument.
+-/
+theorem rho_lower_endpoint_exp_bound :
+    (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)) := by
+  rw [Real.exp_neg, lt_inv_comm₀ _ (Real.exp_pos _)]
+  · let y : ℝ := (570796326795 : ℝ) / 1000000000000
+    let U : ℝ :=
+      (∑ m ∈ Finset.range 14, y ^ m / (m.factorial : ℝ)) +
+        y ^ 14 * ((14 : ℝ) + 1) / ((Nat.factorial 14 : ℝ) * (14 : ℝ))
+    have hy : Real.exp y ≤ U := by
+      dsimp [U, y]
+      simpa using Real.exp_bound' (by norm_num) (by norm_num) (n := 14) (by norm_num)
+    have hprod :
+        Real.exp ((1570796326795 : ℝ) / 1000000000000) ≤
+          ((363916618873 : ℝ) / 133877442384 + (1 : ℝ) / 10 ^ 20) * U := by
+      rw [show (1570796326795 : ℝ) / 1000000000000 =
+          1 + y by dsimp [y]; norm_num, Real.exp_add]
+      exact mul_le_mul exp_one_upper_near_20 hy (Real.exp_pos _).le (by norm_num)
+    exact hprod.trans_lt (by dsimp [U, y]; norm_num [Finset.sum_range_succ])
+  · norm_num
+
+/--
+The upper endpoint estimate needed to bound `rho = exp(-pi/2)` from above.
+This uses the lower side of the same 20-decimal `exp 1` certificate and the
+nonnegative partial Taylor sum for the residual argument.
+-/
+theorem rho_upper_endpoint_exp_bound :
+    Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+      (207879576351 : ℝ) / 1000000000000 := by
+  rw [Real.exp_neg, inv_lt_comm₀ (Real.exp_pos _) (by norm_num)]
+  let y : ℝ := (570796326794 : ℝ) / 1000000000000
+  let S : ℝ := ∑ m ∈ Finset.range 14, y ^ m / (m.factorial : ℝ)
+  have hy : S ≤ Real.exp y := by
+    dsimp [S, y]
+    exact Real.sum_le_exp_of_nonneg (by norm_num) 14
+  have hS_nonneg : 0 ≤ S := by
+    dsimp [S, y]
+    norm_num [Finset.sum_range_succ]
+  have hprod :
+      ((363916618873 : ℝ) / 133877442384 - (1 : ℝ) / 10 ^ 20) * S ≤
+        Real.exp ((1570796326794 : ℝ) / 1000000000000) := by
+    rw [show (1570796326794 : ℝ) / 1000000000000 =
+        1 + y by dsimp [y]; norm_num, Real.exp_add]
+    exact mul_le_mul exp_one_lower_near_20 hy hS_nonneg (Real.exp_pos _).le
+  have hthreshold :
+      ((207879576351 : ℝ) / 1000000000000)⁻¹ <
+        ((363916618873 : ℝ) / 133877442384 - (1 : ℝ) / 10 ^ 20) * S := by
+    dsimp [S, y]
+    norm_num [Finset.sum_range_succ]
+  exact hthreshold.trans_le hprod
+
+/-- The certified rational box for `rho = exp(-pi/2)`. -/
+theorem rho_bounds :
+    (207879576350 : ℝ) / 1000000000000 < rho ∧
+      rho < (207879576351 : ℝ) / 1000000000000 :=
+  rho_bounds_of_endpoint_bounds rho_lower_endpoint_exp_bound rho_upper_endpoint_exp_bound
+
+/-- The certified rational box for `theta = (pi/2) * rho`. -/
+theorem theta_box :
+    (326536474946 : ℝ) / 1000000000000 < theta ∧
+      theta < (326536474949 : ℝ) / 1000000000000 :=
+  theta_box_of_rho_endpoint_bounds rho_lower_endpoint_exp_bound rho_upper_endpoint_exp_bound
+
+/--
+The `sin theta` and `cos theta` boxes after discharging the `rho` endpoint
+estimates.  The remaining hypotheses are only the four endpoint estimates for
+`sin` and `cos` at the rational ends of the certified `theta` box.
+-/
+theorem sin_cos_theta_bounds_of_endpoint_bounds
+    (hsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (hsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (hcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (hcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000) :
+    (320764449975 : ℝ) / 1000000000000 < Real.sin theta ∧
+      Real.sin theta < (320764449985 : ℝ) / 1000000000000 ∧
+      (947158998071 : ℝ) / 1000000000000 < Real.cos theta ∧
+      Real.cos theta < (947158998073 : ℝ) / 1000000000000 :=
+  sin_cos_theta_bounds_of_rho_endpoint_bounds_and_endpoint_bounds
+    rho_lower_endpoint_exp_bound rho_upper_endpoint_exp_bound hsin0 hsin1 hcos0 hcos1
+
 /--
 A rational box around `v`, plus endpoint product estimates, is enough to
 certify the rational box around the representative-`25` seed used by the next
