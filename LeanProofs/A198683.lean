@@ -53,6 +53,10 @@ def a198683 (n : Nat) : Nat :=
 theorem a198683_one : a198683 1 = 1 := by
   simp [a198683, a198683ValueSet]
 
+/-- `A198683(2) = 1`. -/
+theorem a198683_two : a198683 2 = 1 := by
+  simp [a198683, a198683ValueSet]
+
 end
 
 end LeanProofs
