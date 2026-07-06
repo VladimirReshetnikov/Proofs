@@ -114,33 +114,24 @@ functions by exact exponent comparisons at `x = 3`.  No Pólya recurrence or
 rooted-tree counter is used as a counting shortcut without a semantic bridge.
 
 [`LeanProofs/A002845.lean`](LeanProofs/A002845.lean) defines OEIS A002845
-as the number of distinct values of the fully parenthesized expression
-`2^2^...^2`, using exact hereditary sparse-binary logarithms so the tower
-values themselves never have to be materialized.  It proves the first twenty
-values as separate public theorems, `a002845_one` through `a002845_twenty`:
+canonically as the number of distinct natural-number values of all binary
+parenthesizations of the literal expression `2^2^...^2`.  The primary
+definition is the semantic value set of expression trees evaluated by `Nat`
+exponentiation:
 
 ```lean
-theorem a002845_one : a002845 1 = 1
-theorem a002845_two : a002845 2 = 1
-theorem a002845_three : a002845 3 = 1
-theorem a002845_four : a002845 4 = 2
-theorem a002845_five : a002845 5 = 4
-theorem a002845_six : a002845 6 = 8
-theorem a002845_seven : a002845 7 = 17
-theorem a002845_eight : a002845 8 = 36
-theorem a002845_nine : a002845 9 = 78
-theorem a002845_ten : a002845 10 = 171
-theorem a002845_eleven : a002845 11 = 379
-theorem a002845_twelve : a002845 12 = 851
-theorem a002845_thirteen : a002845 13 = 1928
-theorem a002845_fourteen : a002845 14 = 4396
-theorem a002845_fifteen : a002845 15 = 10087
-theorem a002845_sixteen : a002845 16 = 23273
-theorem a002845_seventeen : a002845 17 = 53948
-theorem a002845_eighteen : a002845 18 = 125608
-theorem a002845_nineteen : a002845 19 = 293543
-theorem a002845_twenty : a002845 20 = 688366
+noncomputable def a002845 (n : Nat) : Nat
+theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n
+theorem a002845_eq_directLogCard (n : Nat) : a002845 n = directLogCard n
 ```
+
+The direct finite computation of the canonical logarithm set is proved
+equivalent to the semantic value set by injectivity of `m ↦ 2^m`. The module
+separately contains an executable hereditary sparse-binary logarithm backend,
+currently with checked backend certificates `a002845Sparse_one` through
+`a002845Sparse_twenty_two`. These are intentionally not treated as primary OEIS
+value theorems until the sparse backend is proved equivalent to the canonical
+logarithm value set.
 
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683
 semantically as the number of distinct principal complex-power values obtained
