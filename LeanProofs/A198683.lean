@@ -7651,6 +7651,12 @@ private theorem p3L_sq_im_pos :
   have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
   nlinarith [sin_theta_pos, hcos_pos]
 
+private theorem p3L_sq_im_gt_one_div_three :
+    (1 : ℝ) / 3 < (p3L * p3L).im := by
+  rw [p3L_eq_exp_theta]
+  simp [Complex.exp_re, Complex.exp_im, Complex.mul_re, Complex.mul_im]
+  nlinarith [sin_theta_gt_seven_div_thirty, cos_theta_gt_seventeen_div_eighteen]
+
 private theorem p3L_sq_re_bounds :
     -2 < (p3L * p3L).re ∧ (p3L * p3L).re ≤ 2 := by
   exact re_bounds_of_norm_le_one (by rw [p3L_sq_norm_eq_one])
@@ -7993,7 +7999,423 @@ private theorem p3L_pow_p4A_mem_seven :
   · exact mem_valueSet_three.2 (Or.inl rfl)
   · exact mem_valueSet_four.2 (Or.inl rfl)
 
-theorem thirty_three_le_a198683_seven : 33 ≤ a198683 7 := by
+private theorem exp_neg_one_div_three_gt_five_div_seven :
+    (5 : ℝ) / 7 < Real.exp (-(1 : ℝ) / 3) := by
+  rw [show (-(1 : ℝ) / 3) = -((1 : ℝ) / 3) by ring, Real.exp_neg]
+  have hbound := Real.exp_lt_two_add_div_two_sub
+    (by norm_num : (0 : ℝ) < (1 : ℝ) / 3)
+    (by norm_num : (1 : ℝ) / 3 < 2)
+  have hexp_lt : Real.exp ((1 : ℝ) / 3) < (7 : ℝ) / 5 := by
+    calc
+      Real.exp ((1 : ℝ) / 3) <
+          (2 + ((3 : ℝ)⁻¹)) / (2 - ((3 : ℝ)⁻¹)) := by
+        simpa [one_div] using hbound
+      _ = (7 : ℝ) / 5 := by
+        norm_num
+  have hpos : 0 < Real.exp ((1 : ℝ) / 3) := Real.exp_pos _
+  have hrec : (5 : ℝ) / 7 < 1 / Real.exp ((1 : ℝ) / 3) := by
+    rw [lt_div_iff₀ hpos]
+    nlinarith [hexp_lt]
+  simpa [one_div] using hrec
+
+private theorem exp_neg_theta_gt_five_div_seven :
+    (5 : ℝ) / 7 < Real.exp (-theta) := by
+  have hmono : Real.exp (-(1 : ℝ) / 3) < Real.exp (-theta) :=
+    (Real.exp_lt_exp).2 (by linarith [theta_lt_one_div_three])
+  exact exp_neg_one_div_three_gt_five_div_seven.trans hmono
+
+private theorem cos_pi_div_seven_gt_eight_div_nine :
+    (8 : ℝ) / 9 < Real.cos (Real.pi / 7) := by
+  have h := Real.one_sub_sq_div_two_le_cos (x := Real.pi / 7)
+  have hsq : (Real.pi / 7) ^ 2 / 2 < (1 : ℝ) / 9 := by
+    have hpi_lt : Real.pi < (63 : ℝ) / 20 := by
+      have h := Real.pi_lt_d2
+      norm_num at h
+      exact h
+    have hpi_sq : Real.pi ^ 2 < ((63 : ℝ) / 20) ^ 2 :=
+      pow_lt_pow_left₀ hpi_lt Real.pi_pos.le (by norm_num : (2 : ℕ) ≠ 0)
+    nlinarith [hpi_sq]
+  nlinarith [h, hsq]
+
+private theorem sin_pi_div_seven_lt_nine_div_twenty :
+    Real.sin (Real.pi / 7) < (9 : ℝ) / 20 := by
+  have hsin_lt : Real.sin (Real.pi / 7) < Real.pi / 7 :=
+    Real.sin_lt (by positivity)
+  nlinarith [hsin_lt, Real.pi_lt_d2]
+
+private theorem angleC_gt_five_pi_div_fourteen :
+    (5 : ℝ) * Real.pi / 14 < Real.pi / 2 * Real.exp (-theta) := by
+  nlinarith [Real.pi_pos, exp_neg_theta_gt_five_div_seven]
+
+private theorem p5C_im_gt_eight_div_nine :
+    (8 : ℝ) / 9 < p5C.im := by
+  rw [p5C_eq_exp_pi_mul_exp_neg_theta]
+  simp only [Complex.exp_im, Complex.mul_re, Complex.mul_im, Complex.ofReal_re,
+    Complex.ofReal_im, Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  norm_num
+  have hbase : (8 : ℝ) / 9 < Real.sin ((5 : ℝ) * Real.pi / 14) := by
+    rw [show (5 : ℝ) * Real.pi / 14 = Real.pi / 2 - Real.pi / 7 by ring]
+    rw [Real.sin_pi_div_two_sub]
+    exact cos_pi_div_seven_gt_eight_div_nine
+  have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+    (x := (5 : ℝ) * Real.pi / 14)
+    (y := Real.pi / 2 * Real.exp (-theta))
+    (by nlinarith [Real.pi_pos])
+    angleC_lt_angleE.le
+    angleC_gt_five_pi_div_fourteen
+  exact hbase.trans hmono
+
+private theorem p5B_im_gt_eight_div_nine :
+    (8 : ℝ) / 9 < p5B.im := by
+  rw [p5B_eq_exp_beta]
+  simp [Complex.exp_im, Complex.mul_re, Complex.mul_im]
+  have hbase : (8 : ℝ) / 9 < Real.sin ((5 : ℝ) * Real.pi / 14) := by
+    rw [show (5 : ℝ) * Real.pi / 14 = Real.pi / 2 - Real.pi / 7 by ring]
+    rw [Real.sin_pi_div_two_sub]
+    exact cos_pi_div_seven_gt_eight_div_nine
+  have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+    (x := (5 : ℝ) * Real.pi / 14)
+    (y := beta)
+    (by nlinarith [Real.pi_pos])
+    beta_lt_angleE.le
+    (angleC_gt_five_pi_div_fourteen.trans angleC_lt_beta)
+  exact hbase.trans hmono
+
+private theorem p5C_re_lt_nine_div_twenty :
+    p5C.re < (9 : ℝ) / 20 := by
+  rw [p5C_eq_exp_pi_mul_exp_neg_theta]
+  simp only [Complex.exp_re, Complex.mul_re, Complex.mul_im, Complex.ofReal_re,
+    Complex.ofReal_im, Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  norm_num
+  have hcos := Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := (5 : ℝ) * Real.pi / 14)
+    (y := Real.pi / 2 * Real.exp (-theta))
+    (by nlinarith [Real.pi_pos])
+    angleC_lt_angleE.le
+    angleC_gt_five_pi_div_fourteen
+  have hcos_base :
+      Real.cos ((5 : ℝ) * Real.pi / 14) < (9 : ℝ) / 20 := by
+    rw [show (5 : ℝ) * Real.pi / 14 = Real.pi / 2 - Real.pi / 7 by ring]
+    rw [Real.cos_pi_div_two_sub]
+    exact sin_pi_div_seven_lt_nine_div_twenty
+  exact hcos.trans hcos_base
+
+private theorem p5B_re_lt_nine_div_twenty :
+    p5B.re < (9 : ℝ) / 20 := by
+  rw [p5B_eq_exp_beta]
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+  have hcos := Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := (5 : ℝ) * Real.pi / 14)
+    (y := beta)
+    (by nlinarith [Real.pi_pos])
+    beta_lt_angleE.le
+    (angleC_gt_five_pi_div_fourteen.trans angleC_lt_beta)
+  have hcos_base :
+      Real.cos ((5 : ℝ) * Real.pi / 14) < (9 : ℝ) / 20 := by
+    rw [show (5 : ℝ) * Real.pi / 14 = Real.pi / 2 - Real.pi / 7 by ring]
+    rw [Real.cos_pi_div_two_sub]
+    exact sin_pi_div_seven_lt_nine_div_twenty
+  exact hcos.trans hcos_base
+
+private theorem exp_neg_four_pi_div_nine_lt_one_div_four :
+    Real.exp (-(4 * Real.pi / 9)) < (1 : ℝ) / 4 := by
+  rw [show -(4 * Real.pi / 9) = -(4 * Real.pi / 9) by ring, Real.exp_neg]
+  have hpi18_pos : 0 < Real.pi / 18 := by positivity
+  have hpi18_lt_two : Real.pi / 18 < 2 := by nlinarith [Real.pi_lt_d2]
+  have hbound := Real.exp_lt_two_add_div_two_sub hpi18_pos hpi18_lt_two
+  have hfrac :
+      (2 + Real.pi / 18) / (2 - Real.pi / 18) < (6 : ℝ) / 5 := by
+    have hden : 0 < 2 - Real.pi / 18 := by nlinarith [Real.pi_lt_d2]
+    rw [div_lt_iff₀ hden]
+    nlinarith [Real.pi_lt_d2]
+  have hexp_pi18_lt : Real.exp (Real.pi / 18) < (6 : ℝ) / 5 :=
+    hbound.trans hfrac
+  have hprod_gt :
+      (4 : ℝ) * Real.exp (Real.pi / 18) < Real.exp (4 * Real.pi / 9) *
+        Real.exp (Real.pi / 18) := by
+    rw [← Real.exp_add]
+    have hsum : 4 * Real.pi / 9 + Real.pi / 18 = Real.pi / 2 := by ring
+    rw [hsum]
+    nlinarith [exp_pi_div_two_gt_24_div_5, hexp_pi18_lt, Real.exp_pos (Real.pi / 18)]
+  have hexp_gt : (4 : ℝ) < Real.exp (4 * Real.pi / 9) :=
+    lt_of_mul_lt_mul_right hprod_gt (Real.exp_pos (Real.pi / 18)).le
+  have hrec := one_div_lt_one_div_of_lt (by norm_num : (0 : ℝ) < (4 : ℝ)) hexp_gt
+  norm_num [one_div] at hrec
+  exact hrec
+
+private theorem I_pow_norm_lt_one_div_four_of_im_gt_eight_div_nine {z : ℂ}
+    (hz : (8 : ℝ) / 9 < z.im) :
+    ‖principalPow Complex.I z‖ < (1 : ℝ) / 4 := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  have harg : 4 * Real.pi / 9 < Real.pi / 2 * z.im := by
+    nlinarith [Real.pi_pos, hz]
+  have hmono : Real.exp (-(Real.pi / 2 * z.im)) < Real.exp (-(4 * Real.pi / 9)) :=
+    (Real.exp_lt_exp).2 (by linarith [harg])
+  exact hmono.trans (by simpa [one_div] using exp_neg_four_pi_div_nine_lt_one_div_four)
+
+private theorem sin_nine_pi_div_forty_lt_two_div_three :
+    Real.sin (9 * Real.pi / 40) < (2 : ℝ) / 3 := by
+  let a : ℝ := 9 * Real.pi / 40
+  have ha_pos : 0 < a := by
+    dsimp [a]
+    positivity
+  have hcos_lb := Real.one_sub_sq_div_two_le_cos (x := a)
+  have hsq : a ^ 2 / 2 < (63 : ℝ) / 250 := by
+    dsimp [a]
+    have hpi_lt : Real.pi < (63 : ℝ) / 20 := by
+      have h := Real.pi_lt_d2
+      norm_num at h
+      exact h
+    have hpi_sq : Real.pi ^ 2 < ((63 : ℝ) / 20) ^ 2 :=
+      pow_lt_pow_left₀ hpi_lt Real.pi_pos.le (by norm_num : (2 : ℕ) ≠ 0)
+    nlinarith [hpi_sq]
+  have hcos_gt : (187 : ℝ) / 250 < Real.cos a := by
+    nlinarith [hcos_lb, hsq]
+  have htrig := Real.sin_sq_add_cos_sq a
+  by_contra hnot
+  have hge : (2 : ℝ) / 3 ≤ Real.sin a := le_of_not_gt hnot
+  nlinarith [htrig, hcos_gt, hge]
+
+private theorem I_pow_im_lt_one_div_six_of_re_lt_nine_div_twenty_of_norm_lt_one_div_four
+    {z : ℂ} (hre_pos : 0 < z.re) (hre : z.re < (9 : ℝ) / 20)
+    (hnorm : ‖principalPow Complex.I z‖ < (1 : ℝ) / 4) :
+    (principalPow Complex.I z).im < (1 : ℝ) / 6 := by
+  dsimp [principalPow] at hnorm ⊢
+  rw [Complex.norm_exp, log_I_real] at hnorm
+  rw [log_I_real, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im] at hnorm ⊢
+  have hnorm' : Real.exp (-(Real.pi / 2 * z.im)) < (1 : ℝ) / 4 := by
+    simpa [one_div] using hnorm
+  have harg_pos : 0 < Real.pi / 2 * z.re := by
+    nlinarith [Real.pi_pos, hre_pos]
+  have harg_lt : Real.pi / 2 * z.re < 9 * Real.pi / 40 := by
+    nlinarith [Real.pi_pos, hre]
+  have hsin_lt : Real.sin (Real.pi / 2 * z.re) < (2 : ℝ) / 3 := by
+    have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+      (x := Real.pi / 2 * z.re)
+      (y := 9 * Real.pi / 40)
+      (by nlinarith [Real.pi_pos, harg_pos])
+      (by nlinarith [Real.pi_pos, Real.pi_lt_d2])
+      harg_lt
+    exact hmono.trans sin_nine_pi_div_forty_lt_two_div_three
+  have hsin_pos : 0 < Real.sin (Real.pi / 2 * z.re) :=
+    Real.sin_pos_of_mem_Ioo
+      ⟨harg_pos, by nlinarith [Real.pi_pos, harg_lt, Real.pi_lt_d2]⟩
+  have hmul₁ :
+      Real.exp (-(Real.pi / 2 * z.im)) * Real.sin (Real.pi / 2 * z.re)
+        < (1 : ℝ) / 4 * Real.sin (Real.pi / 2 * z.re) :=
+    mul_lt_mul_of_pos_right hnorm' hsin_pos
+  have hmul₂ :
+      (1 : ℝ) / 4 * Real.sin (Real.pi / 2 * z.re) <
+        (1 : ℝ) / 4 * ((2 : ℝ) / 3) :=
+    mul_lt_mul_of_pos_left hsin_lt (by norm_num)
+  nlinarith [hmul₁, hmul₂]
+
+private theorem p6C_im_lt_one_div_six :
+    p6C.im < (1 : ℝ) / 6 := by
+  have hnorm : ‖principalPow Complex.I p5C‖ < (1 : ℝ) / 4 :=
+    I_pow_norm_lt_one_div_four_of_im_gt_eight_div_nine p5C_im_gt_eight_div_nine
+  simpa [p6C] using
+    I_pow_im_lt_one_div_six_of_re_lt_nine_div_twenty_of_norm_lt_one_div_four
+      p5C_re_pos p5C_re_lt_nine_div_twenty hnorm
+
+private theorem p6B_im_lt_one_div_six :
+    p6B.im < (1 : ℝ) / 6 := by
+  have hnorm : ‖principalPow Complex.I p5B‖ < (1 : ℝ) / 4 :=
+    I_pow_norm_lt_one_div_four_of_im_gt_eight_div_nine p5B_im_gt_eight_div_nine
+  simpa [p6B] using
+    I_pow_im_lt_one_div_six_of_re_lt_nine_div_twenty_of_norm_lt_one_div_four
+      p5B_re_pos p5B_re_lt_nine_div_twenty hnorm
+
+private theorem p5D_norm_eq_exp_neg_pi_div_two_cos_theta :
+    ‖p5D‖ = Real.exp (-(Real.pi / 2 * Real.cos theta)) := by
+  dsimp [p5D, principalPow]
+  rw [Complex.norm_exp, log_p2_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+
+private theorem p5D_re_gt_one_div_six :
+    (1 : ℝ) / 6 < p5D.re := by
+  dsimp [p5D, principalPow]
+  rw [Complex.exp_re, log_p2_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hexp_gt : (1 : ℝ) / 5 < Real.exp (-(Real.pi / 2 * Real.cos theta)) := by
+    have harg : -(Real.pi / 2) < -(Real.pi / 2 * Real.cos theta) := by
+      nlinarith [Real.pi_pos, cos_theta_lt_one]
+    exact rho_gt_one_div_five.trans ((Real.exp_lt_exp).2 harg)
+  have hangle_lt : Real.pi / 2 * Real.sin theta < Real.pi / 6 := by
+    have hsin_lt_theta : Real.sin theta < theta := Real.sin_lt theta_pos
+    nlinarith [Real.pi_pos, hsin_lt_theta, theta_lt_one_div_three]
+  have hcos_lb := Real.one_sub_sq_div_two_le_cos (x := Real.pi / 2 * Real.sin theta)
+  have hsq : (Real.pi / 2 * Real.sin theta) ^ 2 / 2 < (1 : ℝ) / 6 := by
+    have hangle_pos : 0 < Real.pi / 2 * Real.sin theta := by
+      nlinarith [Real.pi_pos, sin_theta_pos]
+    have hangle_lt_rational : Real.pi / 2 * Real.sin theta < (21 : ℝ) / 40 := by
+      nlinarith [hangle_lt, Real.pi_lt_d2, Real.pi_pos]
+    have hangle_sq : (Real.pi / 2 * Real.sin theta) ^ 2 < ((21 : ℝ) / 40) ^ 2 :=
+      pow_lt_pow_left₀ hangle_lt_rational hangle_pos.le
+        (by norm_num : (2 : ℕ) ≠ 0)
+    nlinarith [hangle_sq]
+  have hcos_gt : (5 : ℝ) / 6 < Real.cos (Real.pi / 2 * Real.sin theta) := by
+    nlinarith [hcos_lb, hsq]
+  have hprod :
+      (1 : ℝ) / 5 * ((5 : ℝ) / 6) <
+        Real.exp (-(Real.pi / 2 * Real.cos theta)) *
+          Real.cos (Real.pi / 2 * Real.sin theta) :=
+    mul_lt_mul hexp_gt hcos_gt.le (by norm_num) (Real.exp_pos _).le
+  nlinarith [hprod]
+
+private theorem I_mul_p5D_norm_lt_one_div_three :
+    ‖Complex.I * p5D‖ < (1 : ℝ) / 3 := by
+  rw [norm_mul]
+  norm_num
+  exact p5D_norm_lt_one_div_three
+
+private theorem I_mul_p5D_im_gt_one_div_six :
+    (1 : ℝ) / 6 < (Complex.I * p5D).im := by
+  have h : (Complex.I * p5D).im = p5D.re := by
+    simp [Complex.mul_im]
+  rw [h]
+  exact p5D_re_gt_one_div_six
+
+private theorem I_mul_p5D_re_pos :
+    0 < (Complex.I * p5D).re := by
+  have h : (Complex.I * p5D).re = -p5D.im := by
+    simp [Complex.mul_re]
+  rw [h]
+  nlinarith [p5D_im_neg]
+
+private theorem I_mul_p5D_re_bounds :
+    -2 < (Complex.I * p5D).re ∧ (Complex.I * p5D).re ≤ 2 := by
+  exact re_bounds_of_norm_le_one (I_mul_p5D_norm_lt_one_div_three.le.trans (by norm_num))
+
+private theorem p2_pow_p5D_eq_I_pow_I_mul_p5D :
+    principalPow p2 p5D = principalPow Complex.I (Complex.I * p5D) := by
+  dsimp [principalPow]
+  rw [log_p2_eq, log_I_real]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem I_mul_p5D_im_lt_one_div_three :
+    (Complex.I * p5D).im < (1 : ℝ) / 3 := by
+  exact (Complex.im_le_norm (Complex.I * p5D)).trans_lt I_mul_p5D_norm_lt_one_div_three
+
+private theorem p5F_im_lt_one_div_three :
+    p5F.im < (1 : ℝ) / 3 := by
+  rw [p5F_eq_exp_theta_mul_rho]
+  simp [Complex.exp_im, Complex.mul_re, Complex.mul_im]
+  have hrho_lt_one : rho < 1 := by
+    dsimp [rho]
+    exact Real.exp_lt_one_iff.mpr (by linarith [Real.pi_pos])
+  have hangle_nonneg : 0 ≤ theta * rho := mul_nonneg theta_pos.le rho_pos.le
+  have hsin_le : Real.sin (theta * rho) ≤ theta * rho :=
+    Real.sin_le hangle_nonneg
+  have hangle_lt : theta * rho < (1 : ℝ) / 3 := by
+    exact (mul_lt_of_lt_one_right theta_pos hrho_lt_one).trans theta_lt_one_div_three
+  simpa [one_div] using hsin_le.trans_lt hangle_lt
+
+private theorem p6F_norm_gt_one_div_three :
+    (1 : ℝ) / 3 < ‖p6F‖ := by
+  dsimp [p6F, principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  rw [Real.exp_neg]
+  have harg_lt_log : Real.pi / 2 * p5F.im < Real.log 2 := by
+    have harg_lt_pi_div_six : Real.pi / 2 * p5F.im < Real.pi / 6 := by
+      nlinarith [Real.pi_pos, p5F_im_pos, p5F_im_lt_one_div_three]
+    have hpi_div_six_lt_log_two : Real.pi / 6 < Real.log 2 := by
+      nlinarith [Real.pi_lt_d2, Real.log_two_gt_d9]
+    exact harg_lt_pi_div_six.trans hpi_div_six_lt_log_two
+  have hexp_lt : Real.exp (Real.pi / 2 * p5F.im) < 2 :=
+    exp_lt_two_of_lt_log_two harg_lt_log
+  have hrec := one_div_lt_one_div_of_lt (Real.exp_pos (Real.pi / 2 * p5F.im)) hexp_lt
+  norm_num [one_div] at hrec
+  linarith
+
+private theorem p6K_norm_gt_one_div_three :
+    (1 : ℝ) / 3 < ‖p6K‖ := by
+  nlinarith [Complex.re_le_norm p6K, p6K_re_gt_four_div_five]
+
+private theorem a198683SixCandidateSet_ne_I_mul_p5D {z : ℂ}
+    (hz : z ∈ a198683SixCandidateSet) :
+    z ≠ Complex.I * p5D := by
+  dsimp [a198683SixCandidateSet] at hz
+  have htarget_im_pos : 0 < (Complex.I * p5D).im := by
+    linarith [I_mul_p5D_im_gt_one_div_six]
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl
+  · exact (ne_of_im_lt (I_mul_p5D_im_lt_one_div_three.trans p6A_im_gt_one_div_three)).symm
+  · exact ne_of_im_lt (p6B_im_lt_one_div_six.trans I_mul_p5D_im_gt_one_div_six)
+  · exact ne_of_im_lt (p6C_im_lt_one_div_six.trans I_mul_p5D_im_gt_one_div_six)
+  · exact ne_of_norm_gt_norm_lt (r := (1 : ℝ) / 3)
+      (by linarith [p6D_norm_gt_one]) I_mul_p5D_norm_lt_one_div_three
+  · exact (ne_of_im_pos_of_im_zero htarget_im_pos p6E_im_zero).symm
+  · exact ne_of_norm_gt_norm_lt (r := (1 : ℝ) / 3)
+      p6F_norm_gt_one_div_three I_mul_p5D_norm_lt_one_div_three
+  · exact ne_of_norm_gt_norm_lt (r := (1 : ℝ) / 3)
+      (by linarith [p6G_norm_gt_one]) I_mul_p5D_norm_lt_one_div_three
+  · exact (ne_of_im_pos_of_im_neg htarget_im_pos p6H_im_neg).symm
+  · exact (ne_of_im_pos_of_im_zero htarget_im_pos p6I_im_zero).symm
+  · exact (ne_of_im_pos_of_im_zero htarget_im_pos p6J_im_zero).symm
+  · exact ne_of_norm_gt_norm_lt (r := (1 : ℝ) / 3)
+      p6K_norm_gt_one_div_three I_mul_p5D_norm_lt_one_div_three
+  · exact (ne_of_im_pos_of_im_zero htarget_im_pos p6L_im_zero).symm
+  · exact (ne_of_im_pos_of_im_neg htarget_im_pos p6M_im_neg).symm
+  · exact (ne_of_im_pos_of_im_zero htarget_im_pos p6N_im_zero).symm
+  · exact (ne_of_im_pos_of_im_zero htarget_im_pos p6O_im_zero).symm
+
+private theorem p2_pow_p5D_notMem_I_pow_sixCandidateSet :
+    principalPow p2 p5D ∉
+      (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet := by
+  rintro ⟨z, hz, hpow⟩
+  change principalPow Complex.I z = principalPow p2 p5D at hpow
+  rw [p2_pow_p5D_eq_I_pow_I_mul_p5D] at hpow
+  have hzre := a198683SixCandidateSet_re_bounds hz
+  have heq : z = Complex.I * p5D :=
+    I_pow_inj_of_re_mem_two hzre.1 hzre.2 I_mul_p5D_re_bounds.1
+      I_mul_p5D_re_bounds.2 hpow
+  exact a198683SixCandidateSet_ne_I_mul_p5D hz heq
+
+private theorem p2_pow_p5D_norm_lt_one :
+    ‖principalPow p2 p5D‖ < 1 := by
+  rw [p2_pow_p5D_eq_I_pow_I_mul_p5D]
+  exact I_pow_norm_lt_one_of_im_pos (by linarith [I_mul_p5D_im_gt_one_div_six])
+
+private theorem p2_pow_p5D_im_pos :
+    0 < (principalPow p2 p5D).im := by
+  rw [p2_pow_p5D_eq_I_pow_I_mul_p5D]
+  exact I_pow_im_pos_of_re_pos_of_re_lt_two I_mul_p5D_re_pos
+    (re_lt_two_of_norm_le_one (I_mul_p5D_norm_lt_one_div_three.le.trans (by norm_num)))
+
+private theorem I_mul_p5D_im_lt_p3L_sq_im :
+    (Complex.I * p5D).im < (p3L * p3L).im := by
+  exact I_mul_p5D_im_lt_one_div_three.trans p3L_sq_im_gt_one_div_three
+
+private theorem p4A_pow_p3L_norm_lt_p2_pow_p5D_norm :
+    ‖principalPow p4A p3L‖ < ‖principalPow p2 p5D‖ := by
+  rw [p4A_pow_p3L_eq_I_pow_p3L_sq, p2_pow_p5D_eq_I_pow_I_mul_p5D]
+  exact I_pow_norm_lt_of_im_gt I_mul_p5D_im_lt_p3L_sq_im
+
+private theorem p2_pow_p5D_norm_lt_p3L_pow_p4A_norm :
+    ‖principalPow p2 p5D‖ < ‖principalPow p3L p4A‖ := by
+  rw [p2_pow_p5D_eq_I_pow_I_mul_p5D, p3L_pow_p4A_eq_I_pow_rho_mul_p4A]
+  exact I_pow_norm_lt_of_im_gt
+    ((Complex.im_le_norm ((rho : ℂ) * p4A)).trans_lt rho_mul_p4A_norm_lt_one_div_six
+      |>.trans I_mul_p5D_im_gt_one_div_six)
+
+private theorem p2_pow_p5G_norm_lt_p2_pow_p5D_norm :
+    ‖principalPow p2 p5G‖ < ‖principalPow p2 p5D‖ :=
+  p2_pow_p5G_norm_lt_p4A_pow_p3L_norm.trans p4A_pow_p3L_norm_lt_p2_pow_p5D_norm
+
+private theorem p2_pow_p5D_mem_seven :
+    principalPow p2 p5D ∈ a198683ValueSet 7 := by
+  simp only [a198683ValueSet]
+  refine ⟨1, p2, ?_, p5D, ?_, rfl⟩
+  · exact mem_valueSet_two.2 rfl
+  · exact mem_valueSet_five.2 (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+
+theorem thirty_four_le_a198683_seven : 34 ≤ a198683 7 := by
   classical
   rw [a198683]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
@@ -8019,6 +8441,7 @@ theorem thirty_three_le_a198683_seven : 33 ≤ a198683 7 := by
   let eta : ℂ := principalPow p4A p3L
   let xi : ℂ := principalPow p2 p5G
   let omega : ℂ := principalPow p3L p4A
+  let chi : ℂ := principalPow p2 p5D
   have hfinite7 : (a198683ValueSet 7).Finite := by
     let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
       fun i => a198683SevenCanonicalReps.get i
@@ -8763,46 +9186,156 @@ theorem thirty_three_le_a198683_seven : 33 ≤ a198683 7 := by
   have homega_card :
       (insert omega (insert xi (insert eta (insert zeta (insert x h))))).ncard = 33 := by
     rw [Set.ncard_insert_of_notMem homega_notMem hxi_finite, hxi_card]
+  have homega_finite :
+      (insert omega (insert xi (insert eta (insert zeta (insert x h))))).Finite := by
+    exact hxi_finite.insert omega
+  have hchi_notMem : chi ∉ insert omega (insert xi (insert eta (insert zeta (insert x h)))) := by
+    intro hchi_mem
+    rcases hchi_mem with hchiomega | hchix
+    · have hlt : ‖chi‖ < ‖omega‖ := by
+        simpa [chi, omega] using p2_pow_p5D_norm_lt_p3L_pow_p4A_norm
+      rw [hchiomega] at hlt
+      exact (lt_irrefl _) hlt
+    · rcases hchix with hchixi | hchieta
+      · have hlt : ‖xi‖ < ‖chi‖ := by
+          simpa [xi, chi] using p2_pow_p5G_norm_lt_p2_pow_p5D_norm
+        rw [hchixi] at hlt
+        exact (lt_irrefl _) hlt
+      · rcases hchieta with hchieta | hchizx
+        · have hlt : ‖eta‖ < ‖chi‖ := by
+            simpa [eta, chi] using p4A_pow_p3L_norm_lt_p2_pow_p5D_norm
+          rw [hchieta] at hlt
+          exact (lt_irrefl _) hlt
+        · rcases hchizx with hchizeta | hchixh
+          · have hlt : ‖chi‖ < 1 := by
+              simpa [chi] using p2_pow_p5D_norm_lt_one
+            have hnorm : ‖zeta‖ = 1 := by
+              simpa [zeta] using p3L_pow_p4C_norm_eq_one
+            rw [hchizeta, hnorm] at hlt
+            norm_num at hlt
+          · rcases hchixh with hchix | hchih
+            · have hpos : 0 < chi.im := by
+                simpa [chi] using p2_pow_p5D_im_pos
+              have hneg : x.im < 0 := by
+                simpa [x] using p4C_pow_p3L_im_neg
+              rw [hchix] at hpos
+              exact (lt_asymm hneg hpos).elim
+            · dsimp [h] at hchih
+              rcases hchih with hchiy | hchik
+              · have hlt : ‖chi‖ < 1 := by
+                  simpa [chi] using p2_pow_p5D_norm_lt_one
+                have hnorm : ‖y‖ = 1 := by
+                  simpa [y] using p5B_pow_p2_norm_eq_one
+                rw [hchiy, hnorm] at hlt
+                norm_num at hlt
+              · rcases hchik with hchif | hchie
+                · have hlt : ‖chi‖ < 1 := by
+                    simpa [chi] using p2_pow_p5D_norm_lt_one
+                  have hnorm : ‖f‖ = 1 := by
+                    simpa [f] using p5F_pow_p2_norm_eq_one
+                  rw [hchif, hnorm] at hlt
+                  norm_num at hlt
+                · rcases hchie with hchig | hchid
+                  · have hlt : ‖chi‖ < 1 := by
+                      simpa [chi] using p2_pow_p5D_norm_lt_one
+                    have hnorm : ‖g‖ = 1 := by
+                      simpa [g] using p5G_pow_p2_norm_eq_one
+                    rw [hchig, hnorm] at hlt
+                    norm_num at hlt
+                  · rcases hchid with hchin | hchic
+                    · have hlt : ‖chi‖ < 1 := by
+                        simpa [chi] using p2_pow_p5D_norm_lt_one
+                      have hnorm : ‖n‖ = 1 := by
+                        simpa [n] using p3R_pow_p4C_norm_eq_one
+                      rw [hchin, hnorm] at hlt
+                      norm_num at hlt
+                    · rcases hchic with hchim | hchib
+                      · have hlt : ‖chi‖ < 1 := by
+                          simpa [chi] using p2_pow_p5D_norm_lt_one
+                        have hnorm : ‖m‖ = 1 := by
+                          simpa [m] using p3R_pow_p4B_norm_eq_one
+                        rw [hchim, hnorm] at hlt
+                        norm_num at hlt
+                      · rcases hchib with hchiI | hchir
+                        · have hlt : ‖chi‖ < 1 := by
+                            simpa [chi] using p2_pow_p5D_norm_lt_one
+                          rw [hchiI] at hlt
+                          norm_num at hlt
+                        · rcases hchir with hchiw | hchiq
+                          · have hlt : ‖chi‖ < 1 := by
+                              simpa [chi] using p2_pow_p5D_norm_lt_one
+                            have hgt : 4 < ‖w‖ := by
+                              simpa [w] using p4B_pow_p3L_norm_gt_four
+                            rw [hchiw] at hlt
+                            linarith
+                          · rcases hchiq with hchiv | hchiu
+                            · have hlt : ‖chi‖ < 1 := by
+                                simpa [chi] using p2_pow_p5D_norm_lt_one
+                              have hgt : 1 < ‖v‖ := by
+                                simpa [v] using p3R_pow_p4A_norm_gt_one
+                              rw [hchiv] at hlt
+                              linarith
+                            · rcases hchiu with hchiS | hchiT
+                              · exact p2_pow_p5D_notMem_I_pow_sixCandidateSet
+                                  (by simpa [s, chi] using hchiS)
+                              · have hpos : 0 < chi.im := by
+                                  simpa [chi] using p2_pow_p5D_im_pos
+                                have hneg : chi.im < 0 :=
+                                  p2_pow_image_p2NegativeExponents_im_neg
+                                    (by simpa [t, chi] using hchiT)
+                                exact (lt_asymm hneg hpos).elim
+  have hchi_card :
+      (insert chi (insert omega (insert xi (insert eta (insert zeta (insert x h)))))).ncard =
+        34 := by
+    rw [Set.ncard_insert_of_notMem hchi_notMem homega_finite, homega_card]
   have hsubset :
-      insert omega (insert xi (insert eta (insert zeta (insert x h)))) ⊆
+      insert chi (insert omega (insert xi (insert eta (insert zeta (insert x h))))) ⊆
         a198683ValueSet 7 := by
     intro z hz
     rcases hz with rfl | hz
-    · exact p3L_pow_p4A_mem_seven
+    · exact p2_pow_p5D_mem_seven
     · rcases hz with rfl | hz
-      · exact p2_pow_p5G_mem_seven
+      · exact p3L_pow_p4A_mem_seven
       · rcases hz with rfl | hz
-        · exact p4A_pow_p3L_mem_seven
+        · exact p2_pow_p5G_mem_seven
         · rcases hz with rfl | hz
-          · exact p3L_pow_p4C_mem_seven
+          · exact p4A_pow_p3L_mem_seven
           · rcases hz with rfl | hz
-            · exact p4C_pow_p3L_mem_seven
-            · dsimp [h] at hz
-              rcases hz with rfl | hz
-              · exact p5B_pow_p2_mem_seven
-              · rcases hz with rfl | hz
-                · exact p5F_pow_p2_mem_seven
+            · exact p3L_pow_p4C_mem_seven
+            · rcases hz with rfl | hz
+              · exact p4C_pow_p3L_mem_seven
+              · dsimp [h] at hz
+                rcases hz with rfl | hz
+                · exact p5B_pow_p2_mem_seven
                 · rcases hz with rfl | hz
-                  · exact p5G_pow_p2_mem_seven
+                  · exact p5F_pow_p2_mem_seven
                   · rcases hz with rfl | hz
-                    · exact p3R_pow_p4C_mem_seven
+                    · exact p5G_pow_p2_mem_seven
                     · rcases hz with rfl | hz
-                      · exact p3R_pow_p4B_mem_seven
+                      · exact p3R_pow_p4C_mem_seven
                       · rcases hz with rfl | hz
-                        · exact I_mem_seven
+                        · exact p3R_pow_p4B_mem_seven
                         · rcases hz with rfl | hz
-                          · exact p4B_pow_p3L_mem_seven
+                          · exact I_mem_seven
                           · rcases hz with rfl | hz
-                            · exact p3R_pow_p4A_mem_seven
-                            · rcases hz with hzS | hzT
-                              · exact I_pow_image_sixCandidateSet_subset_seven
-                                  (by simpa [s, u, q, r, b, c, d, e, k, h] using hzS)
-                              · exact p2_pow_image_p2NegativeExponents_subset_seven
-                                  (by simpa [t, u, q, r, b, c, d, e, k, h] using hzT)
+                            · exact p4B_pow_p3L_mem_seven
+                            · rcases hz with rfl | hz
+                              · exact p3R_pow_p4A_mem_seven
+                              · rcases hz with hzS | hzT
+                                · exact I_pow_image_sixCandidateSet_subset_seven
+                                    (by simpa [s, u, q, r, b, c, d, e, k, h] using hzS)
+                                · exact p2_pow_image_p2NegativeExponents_subset_seven
+                                    (by simpa [t, u, q, r, b, c, d, e, k, h] using hzT)
   calc
-    33 = (insert omega (insert xi (insert eta (insert zeta (insert x h))))).ncard :=
-      homega_card.symm
+    34 = (insert chi (insert omega (insert xi (insert eta (insert zeta (insert x h)))))).ncard :=
+      hchi_card.symm
     _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
+
+theorem thirty_three_le_a198683_seven : 33 ≤ a198683 7 := by
+  exact (by norm_num : 33 ≤ 34).trans thirty_four_le_a198683_seven
+
+theorem a198683_seven : a198683 7 = 34 :=
+  le_antisymm a198683_seven_le_thirty_four thirty_four_le_a198683_seven
 
 theorem thirty_two_le_a198683_seven : 32 ≤ a198683 7 := by
   exact (by norm_num : 32 ≤ 33).trans thirty_three_le_a198683_seven

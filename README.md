@@ -96,11 +96,10 @@ theorem arctan_square_identity :
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683
 semantically as the number of distinct principal complex-power values obtained
 from all binary parenthesizations of `i^i^...^i`. It proves the accepted values
-through `n = 6` directly over `ℂ`, with public theorems
-`a198683_one` through `a198683_six`. For `n = 7`, it proves the semantic bounds
-`thirty_three_le_a198683_seven` and `a198683_seven_le_thirty_four`, matching the
-accepted value on the collapse side and covering 33 distinct values on the
-lower-bound side. Two companion certificate modules record finite checked data
+through `n = 7` directly over `ℂ`, with public theorems
+`a198683_one` through `a198683_seven`; the final `n = 7` lower bound is
+`thirty_four_le_a198683_seven`, matched against `a198683_seven_le_thirty_four`.
+Two companion certificate modules record finite checked data
 from the local A198683 corpus:
 [`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
 checks the Schoenfield labels through `n = 11`,
