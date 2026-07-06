@@ -53,12 +53,12 @@ high-precision runs would otherwise trip CPython's `int <-> str` digit limit
 when formatting the overflow-exponent sample for diagnostics.
 
 ```powershell
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 260  --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 600  --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 1000 --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 1200 --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 3000 --n 12
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 8000 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 260  --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 600  --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 1000 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 1200 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 3000 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 8000 --n 12
 ```
 
 Each invocation prints a single JSON-style record whose `a12` field is the

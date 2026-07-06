@@ -99,9 +99,9 @@ def read_tsv(path: str) -> List[Row]:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tsv", default="src/Oeis/A198683/data/a198683-n12-candidates.tsv")
+    ap.add_argument("--tsv", default="src/Lean/Oeis/A198683/data/a198683-n12-candidates.tsv")
     ap.add_argument(
-        "--out", default="src/Oeis/A198683/data/a198683-n12-equivalence-classes.txt"
+        "--out", default="src/Lean/Oeis/A198683/data/a198683-n12-equivalence-classes.txt"
     )
     args = ap.parse_args()
 

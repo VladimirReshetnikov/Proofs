@@ -36,7 +36,7 @@ Lean 4.31.0 via elan/lake; **no external dependencies** (no Mathlib, no
 Batteries — Lean core only):
 
 ```sh
-cd src/SetTheory/lean
+cd src/Lean/SetTheory/lean
 lake build                            # builds all seven modules
 lake env lean SetTheory/Audit.lean    # re-runs the assumption audit
 ```

@@ -2,7 +2,7 @@
 
 This script reads the retained per-candidate TSV:
 
-    src/Oeis/A198683/data/a198683-n12-candidates.tsv
+    src/Lean/Oeis/A198683/data/a198683-n12-candidates.tsv
 
 and reports the candidates with the most negative displayed Re(e), where
 e = b * Log(a) is the level-12 exponent.  It is a reproducibility helper for
@@ -20,7 +20,7 @@ from decimal import Decimal
 from pathlib import Path
 
 
-DEFAULT_TSV = Path("src/Oeis/A198683/data/a198683-n12-candidates.tsv")
+DEFAULT_TSV = Path("src/Lean/Oeis/A198683/data/a198683-n12-candidates.tsv")
 
 
 @dataclass(frozen=True)

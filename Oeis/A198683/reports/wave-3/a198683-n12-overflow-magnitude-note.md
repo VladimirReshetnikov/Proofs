@@ -41,14 +41,14 @@ the only row marked `regime = overflow`.
 This observation is reproducible with:
 
 ```powershell
-python .\src\Oeis\A198683\computations\python\diagnose_overflow_magnitude.py --top 12
+python .\src\Lean\Oeis\A198683\computations\python\diagnose_overflow_magnitude.py --top 12
 ```
 
 The dynamic-programming representative behind candidate `57` can be traced
 with:
 
 ```powershell
-python .\src\Oeis\A198683\computations\python\trace_dp_expression.py --n 11 --index 57 --dps 260
+python .\src\Lean\Oeis\A198683\computations\python\trace_dp_expression.py --n 11 --index 57 --dps 260
 ```
 
 This reports the retained `values[11][57]` representative as

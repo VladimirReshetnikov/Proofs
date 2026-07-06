@@ -25,8 +25,8 @@ Neither side of the historical OEIS disagreement is therefore a "wrong wrap" cer
 Run the original script and then the diagnostic that varies `abs_eps`:
 
 ```powershell
-python .\src\Oeis\A198683\computations\python\compute_a198683.py --dps 260 --n 12
-python .\src\Oeis\A198683\computations\python\diagnose_tol.py --dps 260
+python .\src\Lean\Oeis\A198683\computations\python\compute_a198683.py --dps 260 --n 12
+python .\src\Lean\Oeis\A198683\computations\python\diagnose_tol.py --dps 260
 ```
 
 Expected output: the original script reports `a12 = 2919` (stable across `--dps 160..260`); `diagnose_tol.py` shows that swapping `abs_eps = rel_eps` for `abs_eps = 0` raises the count from `2919` to `2925` at every precision setting, while tightening `abs_eps` (down to `rel_eps * 10^-100`) does **not** change the count. The effect is therefore not a precision artefact — it is the existence of the floor itself.
@@ -34,7 +34,7 @@ Expected output: the original script reports `a12 = 2919` (stable across `--dps 
 Check that the lower-level counts are unaffected:
 
 ```powershell
-python .\src\Oeis\A198683\computations\python\diagnose_levels.py --dps 180 --n-max 11
+python .\src\Lean\Oeis\A198683\computations\python\diagnose_levels.py --dps 180 --n-max 11
 ```
 
 Both `abs_eps = rel_eps` and `abs_eps = 0` reproduce the OEIS-accepted counts `1, 1, 2, 3, 7, 15, 34, 77, 187, 462, 1152` exactly; the `abs_eps` artefact only manifests at `n = 12`, because that is the first level where many candidate magnitudes fall well below `abs_eps`.
@@ -42,8 +42,8 @@ Both `abs_eps = rel_eps` and `abs_eps = 0` reproduce the OEIS-accepted counts `1
 To extract the structural cases that drive the discrepancy:
 
 ```powershell
-python .\src\Oeis\A198683\computations\python\diagnose_dedup.py --dps 260 --canonical-tol-frac 3
-python .\src\Oeis\A198683\computations\python\diagnose_pairs.py --dps 260
+python .\src\Lean\Oeis\A198683\computations\python\diagnose_dedup.py --dps 260 --canonical-tol-frac 3
+python .\src\Lean\Oeis\A198683\computations\python\diagnose_pairs.py --dps 260
 ```
 
 ## The deduplication policies in detail

@@ -8,7 +8,7 @@ set_option maxRecDepth 50000
 This module checks the finite equivalence-class tables published in the local
 Schoenfield source file:
 
-`src/Oeis/A198683/sources/schoenfield-a198683.txt`
+`src/Lean/Oeis/A198683/sources/schoenfield-a198683.txt`
 
 The data here are auxiliary certificates, not a replacement for the semantic
 complex-valued theorems in `LeanProofs.A198683`. A certificate row list records,

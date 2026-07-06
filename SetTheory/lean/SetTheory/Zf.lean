@@ -21,7 +21,7 @@
        ClosureFO_of_ZF : every definable set-like relation admits a
        closure superset of any seed — inside every such model.
 
-  Lean 4 port of the Rocq/Coq development `src/SetTheory/Zf.v`.
+  Lean 4 port of the Rocq/Coq development `src/Lean/SetTheory/Zf.v`.
 
   De Bruijn convention note: where the Coq file writes an offset lookup
   `off + k`, this port writes `k + off` (and `S i` becomes `i + 1`), so
