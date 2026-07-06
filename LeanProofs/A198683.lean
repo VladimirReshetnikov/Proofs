@@ -445,6 +445,11 @@ private theorem log_p3R_eq :
   rw [p3R_eq_neg_I, log_neg_I_real]
   norm_num
 
+private theorem log_p3L_eq :
+    Complex.log p3L = (theta : ℂ) * Complex.I := by
+  dsimp [p3L, p2]
+  exact log_i_pow_ii_eq
+
 private theorem log_p4B_eq :
     Complex.log p4B = (Real.pi / 2 : ℂ) := by
   rw [p4B_eq_exp_pi_div_two]
@@ -509,6 +514,83 @@ private theorem p4A_pow_I_eq_p5D :
     _ = (((Real.pi / 2 : ℝ) : ℂ) * p3L) * (-1 : ℂ) := by rw [Complex.I_mul_I]
     _ = -(((Real.pi / 2 : ℝ) : ℂ) * p3L) := by ring
     _ = (-(Real.pi / 2) : ℂ) * p3L := by simp [neg_mul]
+
+private theorem p5E_eq_I :
+    p5E = Complex.I := by
+  dsimp [p5E, principalPow]
+  rw [log_p2_eq, p3R_eq_neg_I]
+  rw [show (-(Real.pi / 2) : ℂ) * (-Complex.I) =
+      (Real.pi / 2 : ℂ) * Complex.I by ring]
+  exact Complex.exp_pi_div_two_mul_I
+
+private theorem p5G_eq_exp_neg_theta :
+    p5G = Complex.exp (-(theta : ℂ) * Complex.I) := by
+  dsimp [p5G, principalPow]
+  rw [log_p3R_eq, p2_eq_rho]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im, theta]
+
+private theorem p5F_eq_exp_theta_mul_rho :
+    p5F = Complex.exp (((theta * rho : ℝ) : ℂ) * Complex.I) := by
+  dsimp [p5F, principalPow]
+  rw [log_p3L_eq, p2_eq_rho]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p5C_eq_exp_pi_mul_exp_neg_theta :
+    p5C = Complex.exp (((Real.pi / 2 * Real.exp (-theta) : ℝ) : ℂ) * Complex.I) := by
+  dsimp [p5C, principalPow]
+  rw [log_I_real, p4C_eq_exp_neg_theta]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p5G_im_neg :
+    p5G.im < 0 := by
+  rw [p5G_eq_exp_neg_theta]
+  have hsin_pos : 0 < Real.sin theta := by
+    apply Real.sin_pos_of_mem_Ioo
+    constructor
+    · exact theta_pos
+    · linarith [theta_lt_pi_div_two, Real.pi_pos]
+  have hsin_neg : -Real.sin theta < 0 := by linarith
+  simpa [Complex.exp_im, Complex.mul_re, Complex.mul_im] using hsin_neg
+
+private theorem p5F_im_pos :
+    0 < p5F.im := by
+  rw [p5F_eq_exp_theta_mul_rho]
+  have hrho_pos : 0 < rho := by
+    dsimp [rho]
+    positivity
+  have hrho_lt_one : rho < 1 := by
+    dsimp [rho]
+    exact Real.exp_lt_one_iff.mpr (by linarith [Real.pi_pos])
+  have harg_pos : 0 < theta * rho := mul_pos theta_pos hrho_pos
+  have harg_lt_pi : theta * rho < Real.pi := by
+    have hmul_lt_theta : theta * rho < theta :=
+      mul_lt_of_lt_one_right theta_pos hrho_lt_one
+    linarith [hmul_lt_theta, theta_lt_pi_div_two, Real.pi_pos]
+  have hsin_pos : 0 < Real.sin (theta * rho) :=
+    Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩
+  simpa [Complex.exp_im, Complex.mul_re, Complex.mul_im] using hsin_pos
+
+private theorem p5C_im_pos :
+    0 < p5C.im := by
+  rw [p5C_eq_exp_pi_mul_exp_neg_theta]
+  have harg_pos : 0 < Real.pi / 2 * Real.exp (-theta) := by positivity
+  have harg_lt_pi : Real.pi / 2 * Real.exp (-theta) < Real.pi := by
+    have hexp_lt_one : Real.exp (-theta) < 1 :=
+      Real.exp_lt_one_iff.mpr (by linarith [theta_pos])
+    have hle : Real.pi / 2 * Real.exp (-theta) < Real.pi / 2 := by
+      exact mul_lt_of_lt_one_right (show 0 < Real.pi / 2 by positivity) hexp_lt_one
+    linarith [hle, Real.pi_pos]
+  have hsin_pos : 0 < Real.sin (Real.pi / 2 * Real.exp (-theta)) :=
+    Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩
+  have hexp_re : (Complex.exp (-(theta : ℂ))).re = Real.exp (-theta) := by
+    simp [Complex.exp_re]
+  have hsin_pos' :
+      0 < Real.sin (Real.pi / 2 * (Complex.exp (-(theta : ℂ))).re) := by
+    simpa [hexp_re] using hsin_pos
+  simpa [Complex.exp_im, Complex.mul_re, Complex.mul_im] using hsin_pos'
 
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
