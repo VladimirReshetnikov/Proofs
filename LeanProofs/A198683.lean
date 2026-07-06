@@ -82,10 +82,6 @@ def a198683LexicalValueSet (n : Nat) : Set ℂ :=
 
 /--
 The shared canonical lexical value set for A198683.
-
-TODO: after the four OEIS branches have converged on `PowTower.Expr`, make this
-the primary definition and keep `IPowExpr` only as a temporary compatibility
-view, or remove it outright.
 -/
 def a198683CanonicalValueSet (n : Nat) : Set ℂ :=
   PowTower.Expr.valueSet Complex.I principalPow n
@@ -212,12 +208,12 @@ theorem a198683LexicalValueSet_eq_canonicalValueSet (n : Nat) :
 
 /-- OEIS A198683, as a cardinality of the canonical lexical value set. -/
 def a198683 (n : Nat) : Nat :=
-  (a198683LexicalValueSet n).ncard
+  PowTower.Expr.valueCard Complex.I principalPow n
 
 /-- A198683 can equivalently be read from the shared canonical lexical syntax. -/
 theorem a198683_eq_canonicalValueSet_ncard (n : Nat) :
     a198683 n = (a198683CanonicalValueSet n).ncard := by
-  rw [a198683, a198683LexicalValueSet_eq_canonicalValueSet]
+  rfl
 
 /--
 The recursive value-set cardinality used by the small-value proofs computes
@@ -225,7 +221,7 @@ the same number as the canonical lexical definition.
 -/
 @[simp] theorem a198683_eq_valueSet_ncard (n : Nat) :
     a198683 n = (a198683ValueSet n).ncard := by
-  simp [a198683]
+  rw [a198683_eq_canonicalValueSet_ncard, a198683CanonicalValueSet_eq_valueSet]
 
 private noncomputable def p2 : ℂ :=
   principalPow Complex.I Complex.I
@@ -313,11 +309,13 @@ private noncomputable def p6O : ℂ :=
 
 /-- `A198683(1) = 1`. -/
 theorem a198683_one : a198683 1 = 1 := by
-  simp [a198683, a198683ValueSet]
+  rw [a198683_eq_valueSet_ncard]
+  simp [a198683ValueSet]
 
 /-- `A198683(2) = 1`. -/
 theorem a198683_two : a198683 2 = 1 := by
-  simp [a198683, a198683ValueSet]
+  rw [a198683_eq_valueSet_ncard]
+  simp [a198683ValueSet]
 
 private theorem log_I_real :
     Complex.log Complex.I = ((Real.pi / 2 : ℝ) : ℂ) * Complex.I := by
@@ -413,7 +411,8 @@ private theorem i_pow_ii_ne_ii_pow_i :
 
 /-- `A198683(3) = 2`. -/
 theorem a198683_three : a198683 3 = 2 := by
-  simp [a198683, a198683ValueSet]
+  rw [a198683_eq_valueSet_ncard]
+  simp [a198683ValueSet]
   simpa [Set.setOf_or] using Set.ncard_pair (Ne.symm i_pow_ii_ne_ii_pow_i)
 
 private theorem log_neg_I_real :
@@ -573,7 +572,8 @@ private theorem mem_valueSet_three {z : ℂ} :
 
 /-- `A198683(4) = 3`. -/
 theorem a198683_four : a198683 4 = 3 := by
-  simp [a198683, a198683ValueSet]
+  rw [a198683_eq_valueSet_ncard]
+  simp [a198683ValueSet]
   have hset :
       {z | ∃ k : Fin 3,
         ∃ x ∈ a198683ValueSet (k.1 + 1),

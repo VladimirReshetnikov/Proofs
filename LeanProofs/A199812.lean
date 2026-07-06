@@ -81,6 +81,52 @@ decreasing_by
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
   · exact Nat.succ_lt_succ k.2
 
+/-- Translating a local parenthesization gives a shared lexical parenthesization. -/
+theorem toSharedLex_mem_parenthesizations {n : Nat} {e : TowerExpr}
+    (he : e ∈ parenthesizations n) : toSharedLex e ∈ PowTower.Expr.parenthesizations n := by
+  revert e
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      intro e he
+      cases n with
+      | zero =>
+          simp [parenthesizations] at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rcases (by simpa [parenthesizations] using he) with rfl
+              simp [PowTower.Expr.parenthesizations, toSharedLex]
+          | succ n =>
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, toSharedLex a, ?_, toSharedLex b, ?_, rfl⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+
+/-- Translating a shared lexical parenthesization back gives a local parenthesization. -/
+theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
+    (he : e ∈ PowTower.Expr.parenthesizations n) : ofSharedLex e ∈ parenthesizations n := by
+  revert e
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      intro e he
+      cases n with
+      | zero =>
+          simp [PowTower.Expr.parenthesizations] at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rcases (by simpa [PowTower.Expr.parenthesizations] using he) with rfl
+              simp [parenthesizations, ofSharedLex]
+          | succ n =>
+              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, ofSharedLex a, ?_, ofSharedLex b, ?_, rfl⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+
 /-- Canonical ordinal interpretation of a parenthesized tower expression. -/
 noncomputable def evalOrdinal : TowerExpr -> Ordinal.{0}
   | «𝜔» => (ω : Ordinal)
@@ -88,7 +134,7 @@ noncomputable def evalOrdinal : TowerExpr -> Ordinal.{0}
 
 /-- Shared lexical interpretation for A199812: atom is `omega`, node is ordinal power. -/
 noncomputable def sharedEvalOrdinal : PowTower.Expr -> Ordinal.{0} :=
-  PowTower.Expr.eval (ω : Ordinal) (fun a b : Ordinal => a ^ b)
+  PowTower.Expr.eval (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b)
 
 /-- The existing ordinal syntax evaluates the same way as the shared lexical syntax. -/
 theorem evalOrdinal_eq_sharedEvalOrdinal_toSharedLex (e : TowerExpr) :
@@ -101,12 +147,9 @@ theorem evalOrdinal_eq_sharedEvalOrdinal_toSharedLex (e : TowerExpr) :
 
 /--
 The shared canonical lexical value set for A199812.
-
-TODO: after the parallel OEIS branches have converged on `PowTower.Expr`, make
-this the primary definition and keep `TowerExpr` only as a compatibility view.
 -/
 noncomputable def canonicalOrdinalValueSet (n : Nat) : Set Ordinal.{0} :=
-  PowTower.Expr.valueSet (ω : Ordinal) (fun a b : Ordinal => a ^ b) n
+  PowTower.Expr.valueSet (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n
 
 /-- The principal ordinal power `omega^e`, represented as an `ONote`. -/
 def principalPower (e : ONote) : ONote :=
@@ -180,9 +223,36 @@ noncomputable def ordinalValues (n : Nat) : Finset Ordinal.{0} := by
   classical
   exact (parenthesizations n).toFinset.image evalOrdinal
 
+/-- The local ordinal finite set is the shared canonical lexical value set. -/
+theorem ordinalValues_eq_canonicalOrdinalValueSet (n : Nat) :
+    (ordinalValues n : Set Ordinal.{0}) = canonicalOrdinalValueSet n := by
+  classical
+  ext o
+  simp only [ordinalValues, canonicalOrdinalValueSet, PowTower.Expr.valueSet,
+    Finset.mem_coe, Finset.mem_image, List.mem_toFinset]
+  constructor
+  · rintro ⟨e, he, h⟩
+    refine ⟨toSharedLex e, toSharedLex_mem_parenthesizations he, ?_⟩
+    change sharedEvalOrdinal (toSharedLex e) = o
+    rw [← evalOrdinal_eq_sharedEvalOrdinal_toSharedLex, h]
+  · rintro ⟨e, he, h⟩
+    refine ⟨ofSharedLex e, ofSharedLex_mem_parenthesizations he, ?_⟩
+    rw [evalOrdinal_eq_sharedEvalOrdinal_toSharedLex, toSharedLex_ofSharedLex]
+    exact h
+
 /-- OEIS A199812, from the canonical ordinal interpretation. -/
 noncomputable def a199812 (n : Nat) : Nat :=
-  (ordinalValues n).card
+  PowTower.Expr.valueCard (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n
+
+/-- A199812 can equivalently be read from the shared canonical lexical syntax. -/
+theorem a199812_eq_canonicalOrdinalValueSet_ncard (n : Nat) :
+    a199812 n = (canonicalOrdinalValueSet n).ncard := by
+  rfl
+
+/-- The local ordinal finite-set presentation computes the shared canonical count. -/
+theorem a199812_eq_ordinalValues_card (n : Nat) : a199812 n = (ordinalValues n).card := by
+  rw [a199812_eq_canonicalOrdinalValueSet_ncard, ← ordinalValues_eq_canonicalOrdinalValueSet]
+  exact Set.ncard_coe_finset (ordinalValues n)
 
 /-- The list of verified normal-form exponents for the same parenthesized expressions. -/
 def exponentNoteList (n : Nat) : List ONote :=
@@ -227,7 +297,7 @@ The executable normal-form count is equivalent to the canonical ordinal count.
 -/
 theorem a199812_eq_noteCount (n : Nat) : a199812 n = exponentNoteCount n := by
   classical
-  rw [a199812, ordinalValues_eq_exponentNoteValues_image, exponentNoteCount]
+  rw [a199812_eq_ordinalValues_card, ordinalValues_eq_exponentNoteValues_image, exponentNoteCount]
   exact Finset.card_image_of_injOn (ordinalOfNote_injOn_exponentNoteValues n)
 
 /-- Finite union over a list, used to keep the executable recurrence structurally simple. -/
