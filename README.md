@@ -129,8 +129,9 @@ to the one-dimensional interval bound `-766 < nearOne25Level3.re < -765`,
 and then to scalar interval bounds for the exponential and cosine factors in
 the exact formula for `nearOne25Level3.re`.  The module also exposes exact
 real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
-layers of representative `25`, so the remaining interval certificate can be
-pushed down level by level.
+layers of representative `25`, including the expansion of
+`v = i^(i^(i^i))` through the scalar `theta`, so the remaining interval
+certificate can be pushed down level by level.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
 

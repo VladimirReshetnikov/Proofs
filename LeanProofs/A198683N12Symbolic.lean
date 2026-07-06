@@ -242,6 +242,10 @@ private theorem u_im_eq_sin_theta : u.im = Real.sin theta := by
   rw [← I_pow_q_eq_u, I_pow_q_eq_exp_theta]
   simp [Complex.exp_im, Complex.mul_re, Complex.mul_im]
 
+private theorem u_re_eq_cos_theta : u.re = Real.cos theta := by
+  rw [← I_pow_q_eq_u, I_pow_q_eq_exp_theta]
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+
 private theorem u_im_pos : 0 < u.im := by
   rw [u_im_eq_sin_theta]
   exact Real.sin_pos_of_pos_of_lt_pi theta_pos (by linarith [theta_lt_pi_div_two, Real.pi_pos])
@@ -691,6 +695,22 @@ theorem nearOne25Seed_im_eq :
   dsimp [nearOne25Seed]
   rw [q_pow_I_eq_neg_I]
   exact neg_I_pow_im v
+
+/-- Exact real part of `v = i^(i^(i^i))`, expanded through `theta`. -/
+theorem v_re_eq :
+    v.re =
+      Real.exp (-(Real.pi / 2) * Real.sin theta) *
+        Real.cos (Real.pi / 2 * Real.cos theta) := by
+  dsimp [v]
+  rw [I_pow_re, u_im_eq_sin_theta, u_re_eq_cos_theta]
+
+/-- Exact imaginary part of `v = i^(i^(i^i))`, expanded through `theta`. -/
+theorem v_im_eq :
+    v.im =
+      Real.exp (-(Real.pi / 2) * Real.sin theta) *
+        Real.sin (Real.pi / 2 * Real.cos theta) := by
+  dsimp [v]
+  rw [I_pow_im, u_im_eq_sin_theta, u_re_eq_cos_theta]
 
 /-- Exact real part recurrence for the first `i^...` layer of representative `25`. -/
 theorem nearOne25Level1_re_eq :
