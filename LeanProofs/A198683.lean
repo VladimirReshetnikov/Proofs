@@ -4807,6 +4807,302 @@ theorem twenty_one_le_a198683_seven : 21 ≤ a198683 7 := by
     21 = (insert v u).ncard := hcard.symm
     _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
 
+private theorem I_pow_norm_eq_one_of_im_zero {z : ℂ} (hz : z.im = 0) :
+    ‖principalPow Complex.I z‖ = 1 := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im, hz]
+
+private theorem p4B_pow_p3L_norm_gt_four :
+    4 < ‖principalPow p4B p3L‖ := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_p4B_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  rw [← Real.exp_log (by norm_num : (0 : ℝ) < 4)]
+  apply Real.exp_lt_exp.mpr
+  have hlog4 : Real.log 4 < (7 : ℝ) / 5 := by
+    rw [show (4 : ℝ) = 2 * 2 by norm_num,
+      Real.log_mul (by norm_num : (2 : ℝ) ≠ 0) (by norm_num : (2 : ℝ) ≠ 0)]
+    nlinarith [Real.log_two_lt_d9]
+  have harg : (7 : ℝ) / 5 < Real.pi / 2 * Real.cos theta := by
+    nlinarith [Real.pi_gt_d2, cos_theta_gt_seventeen_div_eighteen]
+  exact hlog4.trans harg
+
+private theorem p4B_pow_p3L_norm_lt_five :
+    ‖principalPow p4B p3L‖ < 5 := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_p4B_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have harg : Real.pi / 2 * Real.cos theta < Real.pi / 2 := by
+    simpa using
+      mul_lt_mul_of_pos_left cos_theta_lt_one (show 0 < Real.pi / 2 by positivity)
+  exact (Real.exp_lt_exp.mpr harg).trans exp_pi_div_two_lt_five
+
+private theorem p4B_pow_p3L_im_pos :
+    0 < (principalPow p4B p3L).im := by
+  dsimp [principalPow]
+  rw [log_p4B_eq, p3L_eq_exp_theta, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  apply mul_pos
+  · positivity
+  apply Real.sin_pos_of_mem_Ioo
+  constructor
+  · nlinarith [Real.pi_pos, sin_theta_pos]
+  · have hsin_le_one : Real.sin theta ≤ 1 := Real.sin_le_one theta
+    nlinarith [Real.pi_pos, hsin_le_one]
+
+private theorem p4B_pow_p3L_mem_seven :
+    principalPow p4B p3L ∈ a198683ValueSet 7 := by
+  simp only [a198683ValueSet]
+  refine ⟨3, p4B, ?_, p3L, ?_, rfl⟩
+  · exact mem_valueSet_four.2 (Or.inr (Or.inl rfl))
+  · exact mem_valueSet_three.2 (Or.inl rfl)
+
+private theorem neg_p6H_im_lt_seven_div_eighth :
+    -p6H.im < (7 : ℝ) / 8 := by
+  dsimp [p6H, principalPow]
+  rw [log_p2_eq, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im]
+  have hexp_le_one :
+      Real.exp (-(Real.pi / 2 * p4A.re)) ≤ 1 :=
+    Real.exp_le_one_iff.mpr (by nlinarith [Real.pi_pos, p4A_re_pos])
+  have harg_pos : 0 < Real.pi / 2 * p4A.im := by
+    nlinarith [Real.pi_pos, p4A_im_pos]
+  have harg_lt_pi_div_three : Real.pi / 2 * p4A.im < Real.pi / 3 := by
+    nlinarith [Real.pi_pos, p4A_im_lt_two_div_three]
+  have hsin_lt_pi_div_three :
+      Real.sin (Real.pi / 2 * p4A.im) < Real.sin (Real.pi / 3) := by
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two
+      (x := Real.pi / 2 * p4A.im) (y := Real.pi / 3)
+      (by linarith [Real.pi_pos, harg_pos]) (by linarith [Real.pi_pos]) harg_lt_pi_div_three
+  have hsin_lt : Real.sin (Real.pi / 2 * p4A.im) < (7 : ℝ) / 8 := by
+    rw [Real.sin_pi_div_three] at hsin_lt_pi_div_three
+    have hsqrt : Real.sqrt 3 < (7 : ℝ) / 4 := by
+      rw [Real.sqrt_lt' (by norm_num : (0 : ℝ) < (7 : ℝ) / 4)]
+      norm_num
+    nlinarith
+  have hsin_nonneg : 0 ≤ Real.sin (Real.pi / 2 * p4A.im) :=
+    (Real.sin_pos_of_mem_Ioo ⟨harg_pos, by linarith [Real.pi_pos, harg_lt_pi_div_three]⟩).le
+  have hmul_le :
+      Real.exp (-(Real.pi / 2 * p4A.re)) *
+          Real.sin (Real.pi / 2 * p4A.im) ≤
+        1 * Real.sin (Real.pi / 2 * p4A.im) :=
+    mul_le_mul_of_nonneg_right hexp_le_one hsin_nonneg
+  nlinarith [hmul_le, hsin_lt]
+
+private theorem I_pow_p6H_norm_lt_four :
+    ‖principalPow Complex.I p6H‖ < 4 := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  rw [← Real.exp_log (by norm_num : (0 : ℝ) < 4)]
+  apply Real.exp_lt_exp.mpr
+  have hlog4 :
+      Real.pi / 2 * ((7 : ℝ) / 8) < Real.log 4 := by
+    rw [show (4 : ℝ) = 2 * 2 by norm_num,
+      Real.log_mul (by norm_num : (2 : ℝ) ≠ 0) (by norm_num : (2 : ℝ) ≠ 0)]
+    nlinarith [Real.pi_lt_d2, Real.log_two_gt_d9]
+  nlinarith [Real.pi_pos, neg_p6H_im_lt_seven_div_eighth, hlog4]
+
+private theorem neg_p6M_im_gt_eleven_div_ten :
+    (11 : ℝ) / 10 < -p6M.im := by
+  dsimp [p6M, principalPow]
+  rw [log_p3R_eq, p3L_eq_exp_theta, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hu_gt : (1 : ℝ) / 3 < Real.pi / 2 * Real.sin theta := by
+    nlinarith [Real.pi_gt_d2, sin_theta_gt_seven_div_thirty]
+  have hexp_gt : (4 : ℝ) / 3 < Real.exp (Real.pi / 2 * Real.sin theta) := by
+    have h := Real.add_one_lt_exp (by nlinarith [hu_gt] :
+      Real.pi / 2 * Real.sin theta ≠ 0)
+    nlinarith [h, hu_gt]
+  have hsin_gt :
+      (6 : ℝ) / 7 < Real.sin (Real.pi / 2 * Real.cos theta) := by
+    rw [show Real.pi / 2 * Real.cos theta = Real.pi / 2 - thetaDelta by
+      dsimp [thetaDelta]
+      ring]
+    rw [Real.sin_pi_div_two_sub]
+    exact cos_thetaDelta_gt_six_div_seven
+  have hprod :
+      (4 : ℝ) / 3 * ((6 : ℝ) / 7) <
+        Real.exp (Real.pi / 2 * Real.sin theta) *
+          Real.sin (Real.pi / 2 * Real.cos theta) :=
+    mul_lt_mul hexp_gt hsin_gt.le (by norm_num) (Real.exp_pos _).le
+  nlinarith [hprod]
+
+private theorem I_pow_p6M_norm_gt_five :
+    5 < ‖principalPow Complex.I p6M‖ := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  rw [← Real.exp_log (by norm_num : (0 : ℝ) < 5)]
+  apply Real.exp_lt_exp.mpr
+  have hlog : Real.log 5 < Real.pi / 2 * ((11 : ℝ) / 10) := by
+    nlinarith [Real.pi_gt_d2, Real.log_five_lt_d9]
+  nlinarith [Real.pi_pos, neg_p6M_im_gt_eleven_div_ten, hlog]
+
+private theorem ne_of_norm_lt_norm_gt {z w : ℂ} {r : ℝ}
+    (hz : ‖z‖ < r) (hw : r < ‖w‖) : z ≠ w := by
+  intro h
+  rw [h] at hz
+  linarith
+
+private theorem ne_of_norm_gt_norm_lt {z w : ℂ} {r : ℝ}
+    (hz : r < ‖z‖) (hw : ‖w‖ < r) : z ≠ w := by
+  intro h
+  rw [h] at hz
+  linarith
+
+private theorem p4B_pow_p3L_notMem_I_pow_sixCandidateSet :
+    principalPow p4B p3L ∉
+      (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet := by
+  rintro ⟨z, hz, hzw⟩
+  dsimp [a198683SixCandidateSet] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      ((I_pow_norm_lt_one_of_im_pos p6A_im_pos).trans (by norm_num))
+      p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      ((I_pow_norm_lt_one_of_im_pos p6B_im_pos).trans (by norm_num))
+      p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      ((I_pow_norm_lt_one_of_im_pos p6C_im_pos).trans (by norm_num))
+      p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      ((I_pow_norm_lt_one_of_im_pos p6D_im_pos).trans (by norm_num))
+      p4B_pow_p3L_norm_gt_four) hzw
+  · have hlt : ‖principalPow Complex.I p6E‖ < 4 := by
+      rw [I_pow_norm_eq_one_of_im_zero p6E_im_zero]
+      norm_num
+    exact (ne_of_norm_lt_norm_gt (r := 4) hlt p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      ((I_pow_norm_lt_one_of_im_pos p6F_im_pos).trans (by norm_num))
+      p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      ((I_pow_norm_lt_one_of_im_pos p6G_im_pos).trans (by norm_num))
+      p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      I_pow_p6H_norm_lt_four p4B_pow_p3L_norm_gt_four) hzw
+  · have hlt : ‖principalPow Complex.I p6I‖ < 4 := by
+      rw [I_pow_norm_eq_one_of_im_zero p6I_im_zero]
+      norm_num
+    exact (ne_of_norm_lt_norm_gt (r := 4) hlt p4B_pow_p3L_norm_gt_four) hzw
+  · have hlt : ‖principalPow Complex.I p6J‖ < 4 := by
+      rw [I_pow_norm_eq_one_of_im_zero p6J_im_zero]
+      norm_num
+    exact (ne_of_norm_lt_norm_gt (r := 4) hlt p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_lt_norm_gt (r := 4)
+      ((I_pow_norm_lt_one_of_im_pos p6K_im_pos).trans (by norm_num))
+      p4B_pow_p3L_norm_gt_four) hzw
+  · have hlt : ‖principalPow Complex.I p6L‖ < 4 := by
+      rw [I_pow_norm_eq_one_of_im_zero p6L_im_zero]
+      norm_num
+    exact (ne_of_norm_lt_norm_gt (r := 4) hlt p4B_pow_p3L_norm_gt_four) hzw
+  · exact (ne_of_norm_gt_norm_lt (r := 5)
+      I_pow_p6M_norm_gt_five p4B_pow_p3L_norm_lt_five) hzw
+  · have hlt : ‖principalPow Complex.I p6N‖ < 4 := by
+      rw [I_pow_norm_eq_one_of_im_zero p6N_im_zero]
+      norm_num
+    exact (ne_of_norm_lt_norm_gt (r := 4) hlt p4B_pow_p3L_norm_gt_four) hzw
+  · have hlt : ‖principalPow Complex.I p6O‖ < 4 := by
+      rw [I_pow_norm_eq_one_of_im_zero p6O_im_zero]
+      norm_num
+    exact (ne_of_norm_lt_norm_gt (r := 4) hlt p4B_pow_p3L_norm_gt_four) hzw
+
+/-- Semantic lower bound for `A198683(7)` after adding the isolated `p4B^p3L` value. -/
+theorem twenty_two_le_a198683_seven : 22 ≤ a198683 7 := by
+  classical
+  rw [a198683]
+  let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
+  let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
+  let u : Set ℂ := s ∪ t
+  let v : ℂ := principalPow p3R p4A
+  let w : ℂ := principalPow p4B p3L
+  let q : Set ℂ := insert v u
+  have hfinite7 : (a198683ValueSet 7).Finite := by
+    let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
+      fun i => a198683SevenCanonicalReps.get i
+    have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+      simpa [rep] using a198683_seven_subset_canonicalReps
+    exact (Set.finite_range rep).subset hsubset
+  have hs_card : s.ncard = 15 := by
+    dsimp [s]
+    rw [I_pow_injOn_a198683SixCandidateSet.ncard_image, a198683SixCandidateSet_ncard]
+  have ht_card : t.ncard = 5 := by
+    dsimp [t]
+    rw [p2_pow_injOn_p2NegativeExponents.ncard_image,
+      a198683SevenP2NegativeExponents_ncard]
+  have hs_finite : s.Finite := by
+    dsimp [s]
+    exact (by simp [a198683SixCandidateSet] : a198683SixCandidateSet.Finite).image _
+  have ht_finite : t.Finite := by
+    dsimp [t]
+    exact (by simp [a198683SevenP2NegativeExponents] :
+      a198683SevenP2NegativeExponents.Finite).image _
+  have hdisj : Disjoint s t := by
+    rw [Set.disjoint_left]
+    intro z hzS hzT
+    have hpos : 0 < z.im := by
+      exact I_pow_image_sixCandidateSet_im_pos (by simpa [s] using hzS)
+    have hneg : z.im < 0 := by
+      exact p2_pow_image_p2NegativeExponents_im_neg (by simpa [t] using hzT)
+    exact (lt_asymm hneg hpos).elim
+  have hu_card : u.ncard = 20 := by
+    dsimp [u]
+    rw [Set.ncard_union_eq hdisj hs_finite ht_finite, hs_card, ht_card]
+  have hu_finite : u.Finite := by
+    dsimp [u]
+    exact hs_finite.union ht_finite
+  have hv_notMem : v ∉ u := by
+    intro hv
+    rcases hv with hvS | hvT
+    · have hpos : 0 < v.im := by
+        exact I_pow_image_sixCandidateSet_im_pos (by simpa [s, v] using hvS)
+      have hneg : v.im < 0 := by
+        simpa [v] using p3R_pow_p4A_im_neg
+      exact (lt_asymm hneg hpos).elim
+    · have hle : ‖v‖ ≤ 1 := by
+        exact p2_pow_image_p2NegativeExponents_norm_le_one (by simpa [t, v] using hvT)
+      have hgt : 1 < ‖v‖ := by
+        simpa [v] using p3R_pow_p4A_norm_gt_one
+      linarith
+  have hq_card : q.ncard = 21 := by
+    dsimp [q]
+    rw [Set.ncard_insert_of_notMem hv_notMem hu_finite, hu_card]
+  have hq_finite : q.Finite := by
+    dsimp [q]
+    exact hu_finite.insert v
+  have hw_notMem : w ∉ q := by
+    intro hw
+    rcases hw with hwv | hwu
+    · have hpos : 0 < w.im := by
+        simpa [w] using p4B_pow_p3L_im_pos
+      have hneg : v.im < 0 := by
+        simpa [v] using p3R_pow_p4A_im_neg
+      rw [hwv] at hpos
+      exact (lt_asymm hneg hpos).elim
+    · rcases hwu with hwS | hwT
+      · exact p4B_pow_p3L_notMem_I_pow_sixCandidateSet (by simpa [s, w] using hwS)
+      · have hle : ‖w‖ ≤ 1 := by
+          exact p2_pow_image_p2NegativeExponents_norm_le_one (by simpa [t, w] using hwT)
+        have hgt : 4 < ‖w‖ := by
+          simpa [w] using p4B_pow_p3L_norm_gt_four
+        linarith
+  have hcard : (insert w q).ncard = 22 := by
+    rw [Set.ncard_insert_of_notMem hw_notMem hq_finite, hq_card]
+  have hsubset : insert w q ⊆ a198683ValueSet 7 := by
+    intro z hz
+    rcases hz with rfl | hz
+    · exact p4B_pow_p3L_mem_seven
+    · rcases hz with rfl | hz
+      · exact p3R_pow_p4A_mem_seven
+      · rcases hz with hzS | hzT
+        · exact I_pow_image_sixCandidateSet_subset_seven (by simpa [s, u, q] using hzS)
+        · exact p2_pow_image_p2NegativeExponents_subset_seven (by simpa [t, u, q] using hzT)
+  calc
+    22 = (insert w q).ncard := hcard.symm
+    _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
+
 end
 
 end LeanProofs
