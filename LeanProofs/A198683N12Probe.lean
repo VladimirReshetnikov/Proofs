@@ -345,6 +345,11 @@ theorem a198683_twelve_probe_refined_class_count :
     partitionCertificateOk n12ProbeRefinedLabels 5139 2926 = true := by
   native_decide
 
+/-- Direct distinct-class-count consequence of the probe-refined n = 12 table. -/
+theorem a198683_twelve_probe_refined_distinct_class_count :
+    distinctClassCount n12ProbeRefinedLabels = 2926 :=
+  partitionCertificateOk_distinct_class_count_of a198683_twelve_probe_refined_class_count
+
 /-- The probe's new class 2925 is exactly the retained half of strict class 25. -/
 theorem a198683_twelve_probe_new_class_members :
     positionsWithLabel 2925 n12ProbeRefinedLabels = [1404, 4239] := by
