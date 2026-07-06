@@ -168,6 +168,10 @@ theorem a002845_three : a002845 3 = 1 := by
 theorem a002845_four : a002845 4 = 2 := by
   native_decide
 
+/-- `A002845(5) = 4`. -/
+theorem a002845_five : a002845 5 = 4 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
