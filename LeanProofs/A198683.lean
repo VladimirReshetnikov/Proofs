@@ -2411,6 +2411,46 @@ private theorem p6O_im_zero :
   rw [p6O_eq_exp_neg_beta]
   exact Complex.ofReal_im _
 
+private theorem I_pow_norm_lt_one_of_im_pos {z : ℂ} (hz : 0 < z.im) :
+    ‖principalPow Complex.I z‖ < 1 := by
+  dsimp [principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  simp [Complex.mul_re, Complex.mul_im]
+  nlinarith [Real.pi_pos, hz]
+
+private theorem p6A_norm_lt_one :
+    ‖p6A‖ < 1 := by
+  simpa [p6A] using I_pow_norm_lt_one_of_im_pos p5A_im_pos
+
+private theorem p6F_norm_lt_one :
+    ‖p6F‖ < 1 := by
+  simpa [p6F] using I_pow_norm_lt_one_of_im_pos p5F_im_pos
+
+private theorem p6A_norm_le_one : ‖p6A‖ ≤ 1 := p6A_norm_lt_one.le
+
+private theorem p6B_norm_le_one : ‖p6B‖ ≤ 1 :=
+  p6B_norm_lt_four_div_five.le.trans (by norm_num)
+
+private theorem p6C_norm_le_one : ‖p6C‖ ≤ 1 :=
+  p6C_norm_lt_four_div_five.le.trans (by norm_num)
+
+private theorem p6E_norm_le_one : ‖p6E‖ ≤ 1 := by
+  rw [p6E_eq_exp_neg_pi_div_two]
+  rw [Complex.norm_of_nonneg (Real.exp_pos _).le]
+  exact Real.exp_le_one_iff.mpr (by linarith [Real.pi_pos])
+
+private theorem p6F_norm_le_one : ‖p6F‖ ≤ 1 := p6F_norm_lt_one.le
+
+private theorem p6I_norm_le_one : ‖p6I‖ ≤ 1 := by
+  rw [p6I_eq_exp_neg_pi_div_two_mul_exp_pi_div_two]
+  rw [Complex.norm_of_nonneg (Real.exp_pos _).le]
+  exact Real.exp_le_one_iff.mpr (by nlinarith [Real.pi_pos, Real.exp_pos (Real.pi / 2)])
+
+private theorem p6J_norm_le_one : ‖p6J‖ ≤ 1 := by
+  rw [p6J_eq_exp_neg_angleC]
+  rw [Complex.norm_of_nonneg (Real.exp_pos _).le]
+  exact Real.exp_le_one_iff.mpr (by nlinarith [Real.pi_pos, Real.exp_pos (-theta)])
+
 private theorem p6H_norm_lt_one :
     ‖p6H‖ < 1 := by
   dsimp [p6H, principalPow]
@@ -2420,15 +2460,7 @@ private theorem p6H_norm_lt_one :
     nlinarith [Real.pi_pos, p4A_re_pos]
   exact hpos
 
-private theorem p6M_norm_gt_one :
-    1 < ‖p6M‖ := by
-  dsimp [p6M, principalPow]
-  rw [Complex.norm_exp, log_p3R_eq, p3L_eq_exp_theta]
-  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
-  have hsin_pos : 0 < Real.sin theta := sin_theta_pos
-  have hpos : 0 < Real.pi / 2 * Real.sin theta := by
-    nlinarith [Real.pi_pos, hsin_pos]
-  exact hpos
+private theorem p6H_norm_le_one : ‖p6H‖ ≤ 1 := p6H_norm_lt_one.le
 
 private theorem p6K_norm_lt_one :
     ‖p6K‖ < 1 := by
@@ -2437,6 +2469,28 @@ private theorem p6K_norm_lt_one :
   simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
   have hpos : 0 < theta * Real.sin theta := by
     nlinarith [theta_pos, sin_theta_pos]
+  exact hpos
+
+private theorem p6K_norm_le_one : ‖p6K‖ ≤ 1 := p6K_norm_lt_one.le
+
+private theorem p6N_norm_le_one : ‖p6N‖ ≤ 1 := by
+  rw [p6N_eq_exp_neg_angleF]
+  rw [Complex.norm_of_nonneg (Real.exp_pos _).le]
+  exact Real.exp_le_one_iff.mpr (by linarith [angleF_pos])
+
+private theorem p6O_norm_le_one : ‖p6O‖ ≤ 1 := by
+  rw [p6O_eq_exp_neg_beta]
+  rw [Complex.norm_of_nonneg (Real.exp_pos _).le]
+  exact Real.exp_le_one_iff.mpr (by linarith [beta_pos])
+
+private theorem p6M_norm_gt_one :
+    1 < ‖p6M‖ := by
+  dsimp [p6M, principalPow]
+  rw [Complex.norm_exp, log_p3R_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hsin_pos : 0 < Real.sin theta := sin_theta_pos
+  have hpos : 0 < Real.pi / 2 * Real.sin theta := by
+    nlinarith [Real.pi_pos, hsin_pos]
   exact hpos
 
 private theorem p6D_norm_gt_one :
@@ -3861,6 +3915,137 @@ theorem a198683_seven_le_thirty_four : a198683 7 ≤ 34 := by
       Finset.card_image_le
     _ = a198683SevenCanonicalReps.length := by simp
     _ = 34 := by norm_num [a198683SevenCanonicalReps]
+
+private noncomputable def a198683SevenEasyLowerExponents : Set ℂ :=
+  ({p6A, p6B, p6C, p6E, p6F, p6H, p6I, p6J, p6K, p6N, p6O} : Set ℂ)
+
+private theorem a198683SevenEasyLowerExponents_ncard :
+    a198683SevenEasyLowerExponents.ncard = 11 := by
+  have hA :
+      p6A ∉ ({p6B, p6C, p6E, p6F, p6H, p6I, p6J, p6K, p6N, p6O} : Set ℂ) := by
+    simp [p6A_ne_p6B, p6A_ne_p6C, p6A_ne_p6E, p6A_ne_p6F, p6K_ne_p6A.symm,
+      ne_of_im_pos_of_im_neg p6A_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6A_im_pos p6O_im_zero]
+  have hB :
+      p6B ∉ ({p6C, p6E, p6F, p6H, p6I, p6J, p6K, p6N, p6O} : Set ℂ) := by
+    simp [p6B_ne_p6C, p6B_ne_p6E, p6B_ne_p6F, p6K_ne_p6B.symm,
+      ne_of_im_pos_of_im_neg p6B_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6B_im_pos p6O_im_zero]
+  have hC :
+      p6C ∉ ({p6E, p6F, p6H, p6I, p6J, p6K, p6N, p6O} : Set ℂ) := by
+    simp [p6C_ne_p6E, p6C_ne_p6F, p6K_ne_p6C.symm,
+      ne_of_im_pos_of_im_neg p6C_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6C_im_pos p6O_im_zero]
+  have hE :
+      p6E ∉ ({p6F, p6H, p6I, p6J, p6K, p6N, p6O} : Set ℂ) := by
+    simp [p6E_ne_p6F, p6I_ne_p6E.symm, p6E_ne_p6J, p6E_ne_p6N, p6E_ne_p6O,
+      (ne_of_im_neg_of_im_zero p6H_im_neg p6E_im_zero).symm,
+      (ne_of_im_pos_of_im_zero p6K_im_pos p6E_im_zero).symm]
+  have hF :
+      p6F ∉ ({p6H, p6I, p6J, p6K, p6N, p6O} : Set ℂ) := by
+    simp [p6K_ne_p6F.symm,
+      ne_of_im_pos_of_im_neg p6F_im_pos p6H_im_neg,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6I_im_zero,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6J_im_zero,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6F_im_pos p6O_im_zero]
+  have hH :
+      p6H ∉ ({p6I, p6J, p6K, p6N, p6O} : Set ℂ) := by
+    simp [ne_of_im_neg_of_im_zero p6H_im_neg p6I_im_zero,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6J_im_zero,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6N_im_zero,
+      ne_of_im_neg_of_im_zero p6H_im_neg p6O_im_zero,
+      (ne_of_im_pos_of_im_neg p6K_im_pos p6H_im_neg).symm]
+  have hI :
+      p6I ∉ ({p6J, p6K, p6N, p6O} : Set ℂ) := by
+    simp [p6I_ne_p6J, p6I_ne_p6N, p6I_ne_p6O,
+      (ne_of_im_pos_of_im_zero p6K_im_pos p6I_im_zero).symm]
+  have hJ :
+      p6J ∉ ({p6K, p6N, p6O} : Set ℂ) := by
+    simp [p6J_ne_p6N, p6O_ne_p6J.symm,
+      (ne_of_im_pos_of_im_zero p6K_im_pos p6J_im_zero).symm]
+  have hK :
+      p6K ∉ ({p6N, p6O} : Set ℂ) := by
+    simp [ne_of_im_pos_of_im_zero p6K_im_pos p6N_im_zero,
+      ne_of_im_pos_of_im_zero p6K_im_pos p6O_im_zero]
+  have hN :
+      p6N ∉ ({p6O} : Set ℂ) := by
+    simp [p6O_ne_p6N.symm]
+  dsimp [a198683SevenEasyLowerExponents]
+  rw [Set.ncard_insert_of_notMem hA, Set.ncard_insert_of_notMem hB,
+    Set.ncard_insert_of_notMem hC, Set.ncard_insert_of_notMem hE,
+    Set.ncard_insert_of_notMem hF, Set.ncard_insert_of_notMem hH,
+    Set.ncard_insert_of_notMem hI, Set.ncard_insert_of_notMem hJ,
+    Set.ncard_insert_of_notMem hK, Set.ncard_insert_of_notMem hN]
+  simp
+
+private theorem a198683SevenEasyLowerExponents_norm_le_one {z : ℂ}
+    (hz : z ∈ a198683SevenEasyLowerExponents) : ‖z‖ ≤ 1 := by
+  dsimp [a198683SevenEasyLowerExponents] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  · exact p6A_norm_le_one
+  · exact p6B_norm_le_one
+  · exact p6C_norm_le_one
+  · exact p6E_norm_le_one
+  · exact p6F_norm_le_one
+  · exact p6H_norm_le_one
+  · exact p6I_norm_le_one
+  · exact p6J_norm_le_one
+  · exact p6K_norm_le_one
+  · exact p6N_norm_le_one
+  · exact p6O_norm_le_one
+
+private theorem a198683SevenEasyLowerExponents_subset_six :
+    a198683SevenEasyLowerExponents ⊆ a198683ValueSet 6 := by
+  intro z hz
+  dsimp [a198683SevenEasyLowerExponents] at hz
+  rw [valueSet_six_eq_candidates]
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> simp
+
+private theorem I_pow_injOn_a198683SevenEasyLowerExponents :
+    Set.InjOn (fun z : ℂ => principalPow Complex.I z) a198683SevenEasyLowerExponents := by
+  intro x hx y hy hxy
+  exact I_pow_inj_of_norm_le_one
+    (a198683SevenEasyLowerExponents_norm_le_one hx)
+    (a198683SevenEasyLowerExponents_norm_le_one hy) hxy
+
+private theorem I_pow_image_easyLowerExponents_subset_seven :
+    (fun z : ℂ => principalPow Complex.I z) '' a198683SevenEasyLowerExponents ⊆
+      a198683ValueSet 7 := by
+  rintro z ⟨x, hx, rfl⟩
+  simp only [a198683ValueSet]
+  refine ⟨0, Complex.I, ?_, x, ?_, rfl⟩
+  · exact mem_valueSet_one.2 rfl
+  · exact a198683SevenEasyLowerExponents_subset_six hx
+
+/-- Semantic lower bound for `A198683(7)` from an injective 11-element subfamily. -/
+theorem eleven_le_a198683_seven : 11 ≤ a198683 7 := by
+  classical
+  rw [a198683]
+  have hfinite7 : (a198683ValueSet 7).Finite := by
+    let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
+      fun i => a198683SevenCanonicalReps.get i
+    have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+      simpa [rep] using a198683_seven_subset_canonicalReps
+    exact (Set.finite_range rep).subset hsubset
+  have hcard :
+      ((fun z : ℂ => principalPow Complex.I z) '' a198683SevenEasyLowerExponents).ncard = 11 := by
+    rw [I_pow_injOn_a198683SevenEasyLowerExponents.ncard_image,
+      a198683SevenEasyLowerExponents_ncard]
+  calc
+    11 = ((fun z : ℂ => principalPow Complex.I z) '' a198683SevenEasyLowerExponents).ncard :=
+      hcard.symm
+    _ ≤ (a198683ValueSet 7).ncard :=
+      Set.ncard_le_ncard I_pow_image_easyLowerExponents_subset_seven hfinite7
 
 end
 
