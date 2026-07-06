@@ -100,6 +100,32 @@ decreasing_by
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
   · exact Nat.succ_lt_succ k.2
 
+/-- Translating local parenthesizations gives exactly the shared lexical parenthesizations. -/
+theorem parenthesizations_map_toSharedLex (n : Nat) :
+    (parenthesizations n).map toSharedLex = PowTower.Expr.parenthesizations n := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      cases n with
+      | zero =>
+          rfl
+      | succ n =>
+          cases n with
+          | zero =>
+              rfl
+          | succ n =>
+              have hleft :
+                  ∀ k : Fin (n + 1),
+                    (parenthesizations (k.1 + 1)).map toSharedLex =
+                      PowTower.Expr.parenthesizations (k.1 + 1) :=
+                fun k => ih (k.1 + 1) (Nat.succ_lt_succ k.2)
+              have hright :
+                  ∀ k : Fin (n + 1),
+                    (parenthesizations (n + 1 - k.1)).map toSharedLex =
+                      PowTower.Expr.parenthesizations (n + 1 - k.1) :=
+                fun k => ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
+              simp [parenthesizations, PowTower.Expr.parenthesizations, toSharedLex,
+                List.map_flatMap, List.map_map, hleft, hright]
+
 /--
 The canonical semantic value set for A002845: distinct natural numbers arising
 from all legal parenthesizations of `2^2^...^2`.
@@ -107,12 +133,33 @@ from all legal parenthesizations of `2^2^...^2`.
 def valueSet (n : Nat) : Set Nat :=
   {v | ∃ e ∈ parenthesizations n, eval e = v}
 
+/-- The existing A002845 value set is the shared canonical lexical value set. -/
+theorem valueSet_eq_canonicalValueSet (n : Nat) :
+    valueSet n = canonicalValueSet n := by
+  ext v
+  constructor
+  · rintro ⟨e, he, hv⟩
+    refine ⟨toSharedLex e, ?_, ?_⟩
+    · rw [← parenthesizations_map_toSharedLex]
+      exact List.mem_map.mpr ⟨e, he, rfl⟩
+    · rw [← eval_eq_sharedEval_toSharedLex, hv]
+  · rintro ⟨e, he, hv⟩
+    rw [← parenthesizations_map_toSharedLex n] at he
+    rcases List.mem_map.mp he with ⟨eLocal, heLocal, hshared⟩
+    refine ⟨eLocal, heLocal, ?_⟩
+    rw [eval_eq_sharedEval_toSharedLex, hshared, hv]
+
 /--
 OEIS A002845, defined canonically as the cardinality of the semantic
 natural-number exponentiation value set.
 -/
 noncomputable def a002845 (n : Nat) : Nat :=
   (valueSet n).ncard
+
+/-- A002845 can equivalently be read from the shared canonical lexical syntax. -/
+theorem a002845_eq_canonicalValueSet_ncard (n : Nat) :
+    a002845 n = (canonicalValueSet n).ncard := by
+  rw [a002845, valueSet_eq_canonicalValueSet]
 
 /-- The exact base-two logarithm of a semantic power expression. -/
 def logEval : PowExpr → Nat
