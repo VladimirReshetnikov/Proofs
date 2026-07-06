@@ -3262,6 +3262,137 @@ theorem a198683_seven_le_fifty_one : a198683 7 ≤ 51 := by
     _ = a198683SevenCollapsedReps.length := by simp
     _ = 51 := by norm_num [a198683SevenCollapsedReps]
 
+private noncomputable def a198683SevenMoreCollapsedReps : List ℂ :=
+  [principalPow Complex.I p6A, principalPow Complex.I p6B, principalPow Complex.I p6C,
+    principalPow Complex.I p6D, principalPow Complex.I p6E, principalPow Complex.I p6F,
+    principalPow Complex.I p6G, principalPow Complex.I p6H, principalPow Complex.I p6I,
+    principalPow Complex.I p6J, principalPow Complex.I p6K, principalPow Complex.I p6L,
+    principalPow Complex.I p6M, principalPow Complex.I p6N, principalPow Complex.I p6O,
+    principalPow p2 p5A, principalPow p2 p5B, principalPow p2 p5C,
+    principalPow p2 p5D, principalPow p2 p5E, principalPow p2 p5F,
+    principalPow p2 p5G,
+    principalPow p3L p4A, principalPow p3L p4B, principalPow p3L p4C,
+    principalPow p3R p4A, principalPow p3R p4B, principalPow p3R p4C,
+    principalPow p4A p3L, principalPow p4A p3R, principalPow p4B p3L,
+    principalPow p4C p3L,
+    principalPow p5B p2, principalPow p5F p2, principalPow p5G p2,
+    principalPow p6A Complex.I, principalPow p6B Complex.I, principalPow p6C Complex.I,
+    principalPow p6D Complex.I, principalPow p6F Complex.I, principalPow p6G Complex.I,
+    principalPow p6H Complex.I, principalPow p6K Complex.I, principalPow p6M Complex.I,
+    principalPow p6O Complex.I]
+
+private theorem a198683_seven_subset_moreCollapsedReps :
+    a198683ValueSet 7 ⊆
+      Set.range (fun i : Fin a198683SevenMoreCollapsedReps.length =>
+        a198683SevenMoreCollapsedReps.get i) := by
+  classical
+  let rep51 : Fin a198683SevenCollapsedReps.length → ℂ :=
+    fun i => a198683SevenCollapsedReps.get i
+  let rep45 : Fin a198683SevenMoreCollapsedReps.length → ℂ :=
+    fun i => a198683SevenMoreCollapsedReps.get i
+  have hsubset51 : a198683ValueSet 7 ⊆ Set.range rep51 := by
+    simpa [rep51] using a198683_seven_subset_collapsedReps
+  have reps45_length : a198683SevenMoreCollapsedReps.length = 45 := by
+    norm_num [a198683SevenMoreCollapsedReps]
+  have inRange45 (i : Nat) (h : i < a198683SevenMoreCollapsedReps.length) :
+      a198683SevenMoreCollapsedReps.get ⟨i, h⟩ ∈ Set.range rep45 := by
+    exact ⟨⟨i, h⟩, rfl⟩
+  have hrange : Set.range rep51 ⊆ Set.range rep45 := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    fin_cases i
+    · exact inRange45 0 (by rw [reps45_length]; norm_num)
+    · exact inRange45 1 (by rw [reps45_length]; norm_num)
+    · exact inRange45 2 (by rw [reps45_length]; norm_num)
+    · exact inRange45 3 (by rw [reps45_length]; norm_num)
+    · exact inRange45 4 (by rw [reps45_length]; norm_num)
+    · exact inRange45 5 (by rw [reps45_length]; norm_num)
+    · exact inRange45 6 (by rw [reps45_length]; norm_num)
+    · exact inRange45 7 (by rw [reps45_length]; norm_num)
+    · exact inRange45 8 (by rw [reps45_length]; norm_num)
+    · exact inRange45 9 (by rw [reps45_length]; norm_num)
+    · exact inRange45 10 (by rw [reps45_length]; norm_num)
+    · exact inRange45 11 (by rw [reps45_length]; norm_num)
+    · exact inRange45 12 (by rw [reps45_length]; norm_num)
+    · exact inRange45 13 (by rw [reps45_length]; norm_num)
+    · exact inRange45 14 (by rw [reps45_length]; norm_num)
+    · exact inRange45 15 (by rw [reps45_length]; norm_num)
+    · exact inRange45 16 (by rw [reps45_length]; norm_num)
+    · exact inRange45 17 (by rw [reps45_length]; norm_num)
+    · exact inRange45 18 (by rw [reps45_length]; norm_num)
+    · exact inRange45 19 (by rw [reps45_length]; norm_num)
+    · exact inRange45 20 (by rw [reps45_length]; norm_num)
+    · exact inRange45 21 (by rw [reps45_length]; norm_num)
+    · exact inRange45 22 (by rw [reps45_length]; norm_num)
+    · exact inRange45 23 (by rw [reps45_length]; norm_num)
+    · exact inRange45 24 (by rw [reps45_length]; norm_num)
+    · exact inRange45 25 (by rw [reps45_length]; norm_num)
+    · exact inRange45 26 (by rw [reps45_length]; norm_num)
+    · exact inRange45 27 (by rw [reps45_length]; norm_num)
+    · exact inRange45 28 (by rw [reps45_length]; norm_num)
+    · exact inRange45 29 (by rw [reps45_length]; norm_num)
+    · exact inRange45 30 (by rw [reps45_length]; norm_num)
+    · exact inRange45 31 (by rw [reps45_length]; norm_num)
+    · change principalPow p5A p2 ∈ Set.range rep45
+      rw [← p3L_pow_p4A_eq_p5A_pow_p2]
+      exact inRange45 22 (by rw [reps45_length]; norm_num)
+    · exact inRange45 32 (by rw [reps45_length]; norm_num)
+    · change principalPow p5C p2 ∈ Set.range rep45
+      rw [← p3L_pow_p4C_eq_p5C_pow_p2]
+      exact inRange45 24 (by rw [reps45_length]; norm_num)
+    · change principalPow p5D p2 ∈ Set.range rep45
+      rw [← p4C_pow_p3L_eq_p5D_pow_p2]
+      exact inRange45 31 (by rw [reps45_length]; norm_num)
+    · exact inRange45 33 (by rw [reps45_length]; norm_num)
+    · exact inRange45 34 (by rw [reps45_length]; norm_num)
+    · exact inRange45 35 (by rw [reps45_length]; norm_num)
+    · exact inRange45 36 (by rw [reps45_length]; norm_num)
+    · exact inRange45 37 (by rw [reps45_length]; norm_num)
+    · exact inRange45 38 (by rw [reps45_length]; norm_num)
+    · exact inRange45 39 (by rw [reps45_length]; norm_num)
+    · exact inRange45 40 (by rw [reps45_length]; norm_num)
+    · exact inRange45 41 (by rw [reps45_length]; norm_num)
+    · change principalPow p6I Complex.I ∈ Set.range rep45
+      rw [← p3R_pow_p4B_eq_p6I_pow_I]
+      exact inRange45 26 (by rw [reps45_length]; norm_num)
+    · change principalPow p6J Complex.I ∈ Set.range rep45
+      rw [← p3R_pow_p4C_eq_p6J_pow_I]
+      exact inRange45 27 (by rw [reps45_length]; norm_num)
+    · exact inRange45 42 (by rw [reps45_length]; norm_num)
+    · exact inRange45 43 (by rw [reps45_length]; norm_num)
+    · change principalPow p6N Complex.I ∈ Set.range rep45
+      rw [← p5G_pow_p2_eq_p6N_pow_I]
+      exact inRange45 34 (by rw [reps45_length]; norm_num)
+    · exact inRange45 44 (by rw [reps45_length]; norm_num)
+  exact hsubset51.trans hrange
+
+/--
+Sharper semantic upper bound for `A198683(7)`.  This further identifies the
+straight-line logarithmic collisions that do not require new branch estimates.
+-/
+theorem a198683_seven_le_forty_five : a198683 7 ≤ 45 := by
+  classical
+  rw [a198683]
+  let rep : Fin a198683SevenMoreCollapsedReps.length → ℂ :=
+    fun i => a198683SevenMoreCollapsedReps.get i
+  have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+    simpa [rep] using a198683_seven_subset_moreCollapsedReps
+  let repFinset : Finset ℂ := Finset.univ.image rep
+  have hRangeSubset : Set.range rep ⊆ (repFinset : Set ℂ) := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    change rep i ∈ repFinset
+    exact Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩
+  calc
+    (a198683ValueSet 7).ncard ≤ (Set.range rep).ncard :=
+      Set.ncard_le_ncard hsubset
+    _ ≤ (repFinset : Set ℂ).ncard := Set.ncard_le_ncard hRangeSubset
+    _ = repFinset.card := by rw [Set.ncard_coe_finset]
+    _ ≤ (Finset.univ : Finset (Fin a198683SevenMoreCollapsedReps.length)).card :=
+      Finset.card_image_le
+    _ = a198683SevenMoreCollapsedReps.length := by simp
+    _ = 45 := by norm_num [a198683SevenMoreCollapsedReps]
+
 end
 
 end LeanProofs
