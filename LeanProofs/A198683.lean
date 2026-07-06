@@ -1070,6 +1070,139 @@ private theorem p5B_ne_p5G :
   · linarith [theta_pos, Real.pi_pos]
   · exact ne_of_gt (by linarith [beta_pos, theta_pos])
 
+private theorem I_pow_inj_of_norm_le_one {x y : ℂ}
+    (hx : ‖x‖ ≤ 1) (hy : ‖y‖ ≤ 1) :
+    principalPow Complex.I x = principalPow Complex.I y → x = y := by
+  intro h
+  dsimp [principalPow] at h
+  rw [log_I_real] at h
+  have hxabs : |x.re| ≤ 1 := (Complex.abs_re_le_norm x).trans hx
+  have hyabs : |y.re| ≤ 1 := (Complex.abs_re_le_norm y).trans hy
+  have hxge : -1 ≤ x.re := (abs_le.mp hxabs).1
+  have hxle : x.re ≤ 1 := (abs_le.mp hxabs).2
+  have hyge : -1 ≤ y.re := (abs_le.mp hyabs).1
+  have hyle : y.re ≤ 1 := (abs_le.mp hyabs).2
+  have heq := Complex.exp_inj_of_neg_pi_lt_of_le_pi
+    (x := ((Real.pi / 2 : ℝ) : ℂ) * Complex.I * x)
+    (y := ((Real.pi / 2 : ℝ) : ℂ) * Complex.I * y)
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hxge])
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hxle])
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hyge])
+    (by simp [Complex.mul_re, Complex.mul_im]; nlinarith [Real.pi_pos, hyle])
+    h
+  have hc : (((Real.pi / 2 : ℝ) : ℂ) * Complex.I) ≠ 0 := by
+    exact mul_ne_zero (by norm_num [Real.pi_ne_zero]) Complex.I_ne_zero
+  exact mul_left_cancel₀ hc heq
+
+private theorem I_pow_ne_of_norm_le_one {x y : ℂ}
+    (hx : ‖x‖ ≤ 1) (hy : ‖y‖ ≤ 1) (hxy : x ≠ y) :
+    principalPow Complex.I x ≠ principalPow Complex.I y := by
+  intro h
+  exact hxy (I_pow_inj_of_norm_le_one hx hy h)
+
+private theorem p5A_norm_le_one : ‖p5A‖ ≤ 1 := p5A_norm_lt_one.le
+
+private theorem p5B_norm_le_one : ‖p5B‖ ≤ 1 := by
+  rw [p5B_norm_eq_one]
+
+private theorem p5C_norm_le_one : ‖p5C‖ ≤ 1 := by
+  rw [p5C_norm_eq_one]
+
+private theorem p5D_norm_le_one : ‖p5D‖ ≤ 1 := p5D_norm_lt_one.le
+
+private theorem p5E_norm_le_one : ‖p5E‖ ≤ 1 := by
+  rw [p5E_norm_eq_one]
+
+private theorem p5F_norm_le_one : ‖p5F‖ ≤ 1 := by
+  rw [p5F_norm_eq_one]
+
+private theorem p5G_norm_le_one : ‖p5G‖ ≤ 1 := by
+  rw [p5G_norm_eq_one]
+
+private theorem p6A_ne_p6B : p6A ≠ p6B := by
+  simpa [p6A, p6B] using
+    I_pow_ne_of_norm_le_one p5A_norm_le_one p5B_norm_le_one p5A_ne_p5B
+
+private theorem p6A_ne_p6C : p6A ≠ p6C := by
+  simpa [p6A, p6C] using
+    I_pow_ne_of_norm_le_one p5A_norm_le_one p5C_norm_le_one p5A_ne_p5C
+
+private theorem p6A_ne_p6D : p6A ≠ p6D := by
+  simpa [p6A, p6D] using
+    I_pow_ne_of_norm_le_one p5A_norm_le_one p5D_norm_le_one p5A_ne_p5D
+
+private theorem p6A_ne_p6E : p6A ≠ p6E := by
+  simpa [p6A, p6E] using
+    I_pow_ne_of_norm_le_one p5A_norm_le_one p5E_norm_le_one p5A_ne_p5E
+
+private theorem p6A_ne_p6F : p6A ≠ p6F := by
+  simpa [p6A, p6F] using
+    I_pow_ne_of_norm_le_one p5A_norm_le_one p5F_norm_le_one p5A_ne_p5F
+
+private theorem p6A_ne_p6G : p6A ≠ p6G := by
+  simpa [p6A, p6G] using
+    I_pow_ne_of_norm_le_one p5A_norm_le_one p5G_norm_le_one p5A_ne_p5G
+
+private theorem p6B_ne_p6C : p6B ≠ p6C := by
+  simpa [p6B, p6C] using
+    I_pow_ne_of_norm_le_one p5B_norm_le_one p5C_norm_le_one p5B_ne_p5C
+
+private theorem p6B_ne_p6D : p6B ≠ p6D := by
+  simpa [p6B, p6D] using
+    I_pow_ne_of_norm_le_one p5B_norm_le_one p5D_norm_le_one p5D_ne_p5B.symm
+
+private theorem p6B_ne_p6E : p6B ≠ p6E := by
+  simpa [p6B, p6E] using
+    I_pow_ne_of_norm_le_one p5B_norm_le_one p5E_norm_le_one p5B_ne_p5E
+
+private theorem p6B_ne_p6F : p6B ≠ p6F := by
+  simpa [p6B, p6F] using
+    I_pow_ne_of_norm_le_one p5B_norm_le_one p5F_norm_le_one p5B_ne_p5F
+
+private theorem p6B_ne_p6G : p6B ≠ p6G := by
+  simpa [p6B, p6G] using
+    I_pow_ne_of_norm_le_one p5B_norm_le_one p5G_norm_le_one p5B_ne_p5G
+
+private theorem p6C_ne_p6D : p6C ≠ p6D := by
+  simpa [p6C, p6D] using
+    I_pow_ne_of_norm_le_one p5C_norm_le_one p5D_norm_le_one p5D_ne_p5C.symm
+
+private theorem p6C_ne_p6E : p6C ≠ p6E := by
+  simpa [p6C, p6E] using
+    I_pow_ne_of_norm_le_one p5C_norm_le_one p5E_norm_le_one p5C_ne_p5E
+
+private theorem p6C_ne_p6F : p6C ≠ p6F := by
+  simpa [p6C, p6F] using
+    I_pow_ne_of_norm_le_one p5C_norm_le_one p5F_norm_le_one p5F_ne_p5C.symm
+
+private theorem p6C_ne_p6G : p6C ≠ p6G := by
+  simpa [p6C, p6G] using
+    I_pow_ne_of_norm_le_one p5C_norm_le_one p5G_norm_le_one p5G_ne_p5C.symm
+
+private theorem p6D_ne_p6E : p6D ≠ p6E := by
+  simpa [p6D, p6E] using
+    I_pow_ne_of_norm_le_one p5D_norm_le_one p5E_norm_le_one p5D_ne_p5E
+
+private theorem p6D_ne_p6F : p6D ≠ p6F := by
+  simpa [p6D, p6F] using
+    I_pow_ne_of_norm_le_one p5D_norm_le_one p5F_norm_le_one p5D_ne_p5F
+
+private theorem p6D_ne_p6G : p6D ≠ p6G := by
+  simpa [p6D, p6G] using
+    I_pow_ne_of_norm_le_one p5D_norm_le_one p5G_norm_le_one p5D_ne_p5G
+
+private theorem p6E_ne_p6F : p6E ≠ p6F := by
+  simpa [p6E, p6F] using
+    I_pow_ne_of_norm_le_one p5E_norm_le_one p5F_norm_le_one p5F_ne_p5E.symm
+
+private theorem p6E_ne_p6G : p6E ≠ p6G := by
+  simpa [p6E, p6G] using
+    I_pow_ne_of_norm_le_one p5E_norm_le_one p5G_norm_le_one p5G_ne_p5E.symm
+
+private theorem p6F_ne_p6G : p6F ≠ p6G := by
+  simpa [p6F, p6G] using
+    I_pow_ne_of_norm_le_one p5F_norm_le_one p5G_norm_le_one p5G_ne_p5F.symm
+
 private theorem log_p5A_eq :
     Complex.log p5A = Complex.log Complex.I * p4A := by
   dsimp [p5A, principalPow]
