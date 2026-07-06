@@ -237,6 +237,10 @@ theorem a002845_twenty : a002845 20 = 688366 := by
 theorem a002845_twenty_one : a002845 21 = 1619087 := by
   native_decide
 
+/-- `A002845(22) = 3818818`. -/
+theorem a002845_twenty_two : a002845 22 = 3818818 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
