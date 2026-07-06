@@ -647,6 +647,11 @@ theorem a002845_seventeen : a002845 17 = 53948 := by
   rw [a002845_eq_certifiedLevelCard]
   native_decide
 
+/-- OEIS A002845 has value `125608` at `n = 18`. -/
+theorem a002845_eighteen : a002845 18 = 125608 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
 /-- The sparse backend computes `1` at `n = 1`. -/
 theorem a002845Sparse_one : a002845Sparse 1 = 1 := by
   native_decide
