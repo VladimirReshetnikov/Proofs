@@ -124,7 +124,8 @@ It also proves the exact merge of the n = 12 near-zero probe doubleton
 `{2207, 3777}` and the retained near-one pair `{1404, 4239}`.
 For the remaining near-one split, it defines representative `25` and proves
 that `25` is separated from `{1404, 4239}` once the single analytic sign
-obligation `nearOne25Base.im < 0` is discharged.
+obligation `nearOne25Base.im < 0` is discharged; this sign is further reduced
+to the one-dimensional interval bound `-766 < nearOne25Level3.re < -765`.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
 

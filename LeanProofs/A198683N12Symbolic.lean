@@ -617,12 +617,19 @@ The `n = 11` exponent subtree used by representative `idx = 25`:
 
 `i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i)))))))`.
 -/
-def nearOne25Base : ℂ :=
-  principalPow Complex.I
-    (principalPow Complex.I
-      (principalPow Complex.I
-        (principalPow Complex.I
-          (principalPow (principalPow q Complex.I) v))))
+def nearOne25Seed : ℂ := principalPow (principalPow q Complex.I) v
+
+/-- First `i^...` layer above `nearOne25Seed`. -/
+def nearOne25Level1 : ℂ := principalPow Complex.I nearOne25Seed
+
+/-- Second `i^...` layer above `nearOne25Seed`. -/
+def nearOne25Level2 : ℂ := principalPow Complex.I nearOne25Level1
+
+/-- Third `i^...` layer above `nearOne25Seed`. -/
+def nearOne25Level3 : ℂ := principalPow Complex.I nearOne25Level2
+
+/-- Fourth `i^...` layer above `nearOne25Seed`, used as the exponent of `idx = 25`. -/
+def nearOne25Base : ℂ := principalPow Complex.I nearOne25Level3
 
 /--
 Representative `idx = 25` from the n = 12 near-one probe class:
@@ -643,6 +650,40 @@ theorem nearOne1404_norm_lt_one : ‖nearOne1404‖ < 1 := by
 theorem nearOne4239_norm_lt_one : ‖nearOne4239‖ < 1 := by
   rw [← nearOne1404_eq_nearOne4239]
   exact nearOne1404_norm_lt_one
+
+private theorem sin_pi_div_two_mul_neg_of_neg766_lt_of_lt_neg765 {r : ℝ}
+    (hlo : (-766 : ℝ) < r) (hhi : r < -765) :
+    Real.sin (Real.pi / 2 * r) < 0 := by
+  have hslo : (-2 : ℝ) < r + 764 := by linarith
+  have hshi : r + 764 < -1 := by linarith
+  have hangle_neg : Real.pi / 2 * (r + 764) < 0 := by
+    nlinarith [Real.pi_pos, hshi]
+  have hangle_gt_neg_pi : -Real.pi < Real.pi / 2 * (r + 764) := by
+    nlinarith [Real.pi_pos, hslo]
+  have hsin_shift : Real.sin (Real.pi / 2 * (r + 764)) < 0 :=
+    Real.sin_neg_of_neg_of_neg_pi_lt hangle_neg hangle_gt_neg_pi
+  rw [show Real.pi / 2 * r = Real.pi / 2 * (r + 764) - (191 : ℤ) * (2 * Real.pi) by
+    norm_num
+    ring]
+  rw [Real.sin_sub_int_mul_two_pi]
+  exact hsin_shift
+
+/--
+The hard sign condition for `idx = 25` follows from a certified interval for
+the previous level's real part. Numerically this level is about `-765.4119`.
+-/
+theorem nearOne25Base_im_neg_of_level3_re_bounds
+    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -765) :
+    nearOne25Base.im < 0 := by
+  dsimp [nearOne25Base, principalPow]
+  rw [log_I_real, Complex.exp_im]
+  have hsin :
+      Real.sin (((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Level3).im) < 0 := by
+    rw [show (((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Level3).im) =
+        Real.pi / 2 * nearOne25Level3.re by
+      simp [Complex.mul_re, Complex.mul_im]]
+    exact sin_pi_div_two_mul_neg_of_neg766_lt_of_lt_neg765 hlo hhi
+  exact mul_neg_of_pos_of_neg (Real.exp_pos _) hsin
 
 /--
 If the exact `idx = 25` exponent subtree has negative imaginary part, then
@@ -683,6 +724,25 @@ theorem nearOne25_ne_nearOne4239_of_base_im_neg (h : nearOne25Base.im < 0) :
   have hgt := nearOne25_norm_gt_one_of_base_im_neg h
   have hlt := nearOne4239_norm_lt_one
   linarith
+
+/--
+An interval certificate `-766 < nearOne25Level3.re < -765` is enough to prove
+the strict class-25 split from representative `1404`.
+-/
+theorem nearOne25_ne_nearOne1404_of_level3_re_bounds
+    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -765) :
+    nearOne25 ≠ nearOne1404 :=
+  nearOne25_ne_nearOne1404_of_base_im_neg
+    (nearOne25Base_im_neg_of_level3_re_bounds hlo hhi)
+
+/--
+The same interval certificate separates representative `25` from `4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_level3_re_bounds
+    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -765) :
+    nearOne25 ≠ nearOne4239 :=
+  nearOne25_ne_nearOne4239_of_base_im_neg
+    (nearOne25Base_im_neg_of_level3_re_bounds hlo hhi)
 
 /--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written
