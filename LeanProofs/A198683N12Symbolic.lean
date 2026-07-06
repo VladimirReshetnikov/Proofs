@@ -87,6 +87,30 @@ private theorem log_I_real :
   rw [Complex.log_I]
   norm_num
 
+private theorem I_pow_re (z : ℂ) :
+    (principalPow Complex.I z).re =
+      Real.exp (-(Real.pi / 2) * z.im) * Real.cos (Real.pi / 2 * z.re) := by
+  dsimp [principalPow]
+  rw [log_I_real, Complex.exp_re]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * z).re =
+      -(Real.pi / 2) * z.im by
+    simp [Complex.mul_re, Complex.mul_im]]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * z).im =
+      Real.pi / 2 * z.re by
+    simp [Complex.mul_re, Complex.mul_im]]
+
+private theorem I_pow_im (z : ℂ) :
+    (principalPow Complex.I z).im =
+      Real.exp (-(Real.pi / 2) * z.im) * Real.sin (Real.pi / 2 * z.re) := by
+  dsimp [principalPow]
+  rw [log_I_real, Complex.exp_im]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * z).re =
+      -(Real.pi / 2) * z.im by
+    simp [Complex.mul_re, Complex.mul_im]]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * z).im =
+      Real.pi / 2 * z.re by
+    simp [Complex.mul_re, Complex.mul_im]]
+
 private theorem log_q : Complex.log q = (-(Real.pi / 2) : ℂ) := by
   dsimp [q, rho]
   rw [← Complex.ofReal_log (Real.exp_pos _).le, Real.log_exp]
@@ -638,6 +662,34 @@ Representative `idx = 25` from the n = 12 near-one probe class:
 -/
 def nearOne25 : ℂ := principalPow Complex.I nearOne25Base
 
+/-- Exact real part recurrence for the first `i^...` layer of representative `25`. -/
+theorem nearOne25Level1_re_eq :
+    nearOne25Level1.re =
+      Real.exp (-(Real.pi / 2) * nearOne25Seed.im) *
+        Real.cos (Real.pi / 2 * nearOne25Seed.re) := by
+  simpa [nearOne25Level1] using I_pow_re nearOne25Seed
+
+/-- Exact imaginary part recurrence for the first `i^...` layer of representative `25`. -/
+theorem nearOne25Level1_im_eq :
+    nearOne25Level1.im =
+      Real.exp (-(Real.pi / 2) * nearOne25Seed.im) *
+        Real.sin (Real.pi / 2 * nearOne25Seed.re) := by
+  simpa [nearOne25Level1] using I_pow_im nearOne25Seed
+
+/-- Exact real part recurrence for the second `i^...` layer of representative `25`. -/
+theorem nearOne25Level2_re_eq :
+    nearOne25Level2.re =
+      Real.exp (-(Real.pi / 2) * nearOne25Level1.im) *
+        Real.cos (Real.pi / 2 * nearOne25Level1.re) := by
+  simpa [nearOne25Level2] using I_pow_re nearOne25Level1
+
+/-- Exact imaginary part recurrence for the second `i^...` layer of representative `25`. -/
+theorem nearOne25Level2_im_eq :
+    nearOne25Level2.im =
+      Real.exp (-(Real.pi / 2) * nearOne25Level1.im) *
+        Real.sin (Real.pi / 2 * nearOne25Level1.re) := by
+  simpa [nearOne25Level2] using I_pow_im nearOne25Level1
+
 /-- The retained near-one pair has modulus strictly less than `1`. -/
 theorem nearOne1404_norm_lt_one : ‖nearOne1404‖ < 1 := by
   dsimp [nearOne1404, principalPow]
@@ -672,14 +724,14 @@ private theorem nearOne25Level3_re_eq :
     nearOne25Level3.re =
       Real.exp (-(Real.pi / 2) * nearOne25Level2.im) *
         Real.cos (Real.pi / 2 * nearOne25Level2.re) := by
-  dsimp [nearOne25Level3, principalPow]
-  rw [log_I_real, Complex.exp_re]
-  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Level2).re =
-      -(Real.pi / 2) * nearOne25Level2.im by
-    simp [Complex.mul_re, Complex.mul_im]]
-  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Level2).im =
-      Real.pi / 2 * nearOne25Level2.re by
-    simp [Complex.mul_re, Complex.mul_im]]
+  simpa [nearOne25Level3] using I_pow_re nearOne25Level2
+
+/-- Exact imaginary part recurrence for the third `i^...` layer of representative `25`. -/
+theorem nearOne25Level3_im_eq :
+    nearOne25Level3.im =
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im) *
+        Real.sin (Real.pi / 2 * nearOne25Level2.re) := by
+  simpa [nearOne25Level3] using I_pow_im nearOne25Level2
 
 private theorem mul_mem_neg766_neg765_of_exp_cos_bounds {e c : ℝ}
     (he0 : (3724 : ℝ) < e) (he1 : e < 3725)
