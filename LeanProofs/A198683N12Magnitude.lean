@@ -347,14 +347,57 @@ theorem hugeNegativeReExponentFlags_only_fifty_seven :
     A198683N12Probe.positionsWithLabel 1 hugeNegativeReExponentFlags = [57] := by
   native_decide
 
+/-- Candidate 57 has the displayed negative-exponent-above-10000 flag. -/
+theorem hugeNegativeReExponentFlags_fifty_seven :
+    hugeNegativeReExponentFlags.get ⟨57, by native_decide⟩ = 1 := by
+  native_decide
+
+/-- Every retained row except candidate 57 lacks the negative-exponent-above-10000 flag. -/
+theorem hugeNegativeReExponentFlags_zero_except_fifty_seven :
+    ∀ i : Fin hugeNegativeReExponentFlags.length,
+      i.val ≠ 57 -> hugeNegativeReExponentFlags.get i = 0 := by
+  native_decide
+
+/-- The weaker negative-exponent metadata also covers all 5139 retained candidates. -/
+theorem negativeReExponentAboveTenFlags_length :
+    negativeReExponentAboveTenFlags.length = 5139 := by
+  native_decide
+
 /-- Candidate 57 is still isolated even by the much weaker exponent-above-10 test. -/
 theorem negativeReExponentAboveTenFlags_only_fifty_seven :
     A198683N12Probe.positionsWithLabel 1 negativeReExponentAboveTenFlags = [57] := by
   native_decide
 
+/-- Candidate 57 has the weaker negative-exponent-above-10 flag. -/
+theorem negativeReExponentAboveTenFlags_fifty_seven :
+    negativeReExponentAboveTenFlags.get ⟨57, by native_decide⟩ = 1 := by
+  native_decide
+
+/-- Every retained row except candidate 57 lacks even the negative-exponent-above-10 flag. -/
+theorem negativeReExponentAboveTenFlags_zero_except_fifty_seven :
+    ∀ i : Fin negativeReExponentAboveTenFlags.length,
+      i.val ≠ 57 -> negativeReExponentAboveTenFlags.get i = 0 := by
+  native_decide
+
+/-- The overflow-regime metadata covers all 5139 retained candidates. -/
+theorem overflowRegimeFlags_length :
+    overflowRegimeFlags.length = 5139 := by
+  native_decide
+
 /-- Candidate 57 is the only row with `regime = overflow`. -/
 theorem overflowRegimeFlags_only_fifty_seven :
     A198683N12Probe.positionsWithLabel 1 overflowRegimeFlags = [57] := by
+  native_decide
+
+/-- Candidate 57 is marked as the overflow-regime row. -/
+theorem overflowRegimeFlags_fifty_seven :
+    overflowRegimeFlags.get ⟨57, by native_decide⟩ = 1 := by
+  native_decide
+
+/-- Every retained row except candidate 57 is not marked as overflow-regime. -/
+theorem overflowRegimeFlags_zero_except_fifty_seven :
+    ∀ i : Fin overflowRegimeFlags.length,
+      i.val ≠ 57 -> overflowRegimeFlags.get i = 0 := by
   native_decide
 
 /-- In the retained TSV, the huge-negative and overflow flags identify the same row. -/
