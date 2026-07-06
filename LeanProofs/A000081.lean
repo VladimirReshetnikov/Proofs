@@ -1,5 +1,6 @@
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.Set.Card
+import Mathlib.Tactic.FinCases
 import Mathlib.Tactic.Linarith.Frontend
 import Mathlib.Tactic.NormNum
 import Mathlib.Tactic.Ring
@@ -20,6 +21,8 @@ remaining functions by exact logarithmic/exponent tests.
 namespace LeanProofs
 
 namespace A000081
+
+set_option maxHeartbeats 1000000
 
 /-- Positive real numbers as the domain and codomain of the exponent functions. -/
 abbrev PosReal := {x : ℝ // 0 < x}
@@ -135,6 +138,48 @@ def e4d : PowExpr :=
 def e4e : PowExpr :=
   pow (pow (pow x x) x) x
 
+def e5a : PowExpr :=
+  pow x e4a
+
+def e5b : PowExpr :=
+  pow x e4b
+
+def e5c : PowExpr :=
+  pow x e4c
+
+def e5d : PowExpr :=
+  pow x e4d
+
+def e5e : PowExpr :=
+  pow x e4e
+
+def e5f : PowExpr :=
+  pow e2 e3a
+
+def e5g : PowExpr :=
+  pow e2 e3b
+
+def e5h : PowExpr :=
+  pow e3a e2
+
+def e5i : PowExpr :=
+  pow e3b e2
+
+def e5j : PowExpr :=
+  pow e4a x
+
+def e5k : PowExpr :=
+  pow e4b x
+
+def e5l : PowExpr :=
+  pow e4c x
+
+def e5m : PowExpr :=
+  pow e4d x
+
+def e5n : PowExpr :=
+  pow e4e x
+
 theorem parenthesizations_one :
     parenthesizations 1 = [x] := by
   native_decide
@@ -149,6 +194,11 @@ theorem parenthesizations_three :
 
 theorem parenthesizations_four :
     parenthesizations 4 = [e4a, e4b, e4c, e4d, e4e] := by
+  native_decide
+
+theorem parenthesizations_five :
+    parenthesizations 5 =
+      [e5a, e5b, e5c, e5d, e5e, e5f, e5g, e5h, e5i, e5j, e5k, e5l, e5m, e5n] := by
   native_decide
 
 theorem valueSet_one :
@@ -187,12 +237,61 @@ theorem e4c_eq_e4d : eval e4c = eval e4d := by
       ← Real.rpow_mul t.2.le (t.1 ^ t.1) t.1]
   ring_nf
 
+/-- Equal outer exponents give equal positive-real exponent functions. -/
+theorem eval_eq_of_exponent_eq {e₁ e₂ : PowExpr}
+    (h : ∀ t : PosReal, exponent e₁ t = exponent e₂ t) : eval e₁ = eval e₂ := by
+  funext t
+  apply Subtype.ext
+  rw [eval_eq_rpow_exponent e₁ t, eval_eq_rpow_exponent e₂ t, h t]
+
 theorem valueSet_four :
     valueSet 4 =
       ({eval e4a, eval e4b, eval e4d, eval e4e} : Set (PosReal -> PosReal)) := by
   ext f
   rw [valueSet, parenthesizations_four]
   simp [e4c_eq_e4d, eq_comm]
+
+theorem e5c_eq_e5d : eval e5c = eval e5d := by
+  apply eval_eq_of_exponent_eq
+  intro t
+  have h := congrArg (fun f : PosReal -> PosReal => (f t).1) e4c_eq_e4d
+  simpa [exponent, e5c, e5d] using h
+
+theorem e5f_eq_e5j : eval e5f = eval e5j := by
+  apply eval_eq_of_exponent_eq
+  intro t
+  simp [exponent, e5f, e5j, e4a, e3a, e2]
+  ring
+
+theorem e5g_eq_e5k : eval e5g = eval e5k := by
+  apply eval_eq_of_exponent_eq
+  intro t
+  simp [exponent, e5g, e5k, e4b, e3b, e2]
+  ring
+
+theorem e5i_eq_e5l : eval e5i = eval e5l := by
+  apply eval_eq_of_exponent_eq
+  intro t
+  simp [exponent, e5i, e5l, e4c, e3b, e2]
+  ring
+
+theorem e5i_eq_e5m : eval e5i = eval e5m := by
+  apply eval_eq_of_exponent_eq
+  intro t
+  simp [exponent, e5i, e5m, e4d, e3b, e2]
+  ring
+
+theorem e5l_eq_e5m : eval e5l = eval e5m :=
+  e5i_eq_e5l.symm.trans e5i_eq_e5m
+
+theorem valueSet_five :
+    valueSet 5 =
+      ({eval e5a, eval e5b, eval e5d, eval e5e, eval e5j,
+        eval e5k, eval e5h, eval e5m, eval e5n} : Set (PosReal -> PosReal)) := by
+  ext f
+  rw [valueSet, parenthesizations_five]
+  simp [e5c_eq_e5d, e5f_eq_e5j, e5g_eq_e5k, e5i_eq_e5m, e5l_eq_e5m, eq_comm]
+  tauto
 
 theorem e4a_ne_e4b : eval e4a ≠ eval e4b := by
   apply eval_ne_of_exponent_ne_at_three
@@ -217,6 +316,125 @@ theorem e4b_ne_e4e : eval e4b ≠ eval e4e := by
 theorem e4d_ne_e4e : eval e4d ≠ eval e4e := by
   apply eval_ne_of_exponent_ne_at_three
   norm_num [exponent, eval, PosReal.rpow, three, e4d, e4e]
+
+/-- The `n = 5` representatives, ordered by their exponent at `x = 3`. -/
+def repFive : Fin 9 -> PowExpr
+  | ⟨0, _⟩ => e5n
+  | ⟨1, _⟩ => e5m
+  | ⟨2, _⟩ => e5h
+  | ⟨3, _⟩ => e5k
+  | ⟨4, _⟩ => e5e
+  | ⟨5, _⟩ => e5j
+  | ⟨6, _⟩ => e5d
+  | ⟨7, _⟩ => e5b
+  | ⟨8, _⟩ => e5a
+
+/-- The semantic function represented by a chosen `n = 5` representative. -/
+noncomputable def repFiveEval (i : Fin 9) : PosReal -> PosReal :=
+  eval (repFive i)
+
+theorem e5n_exponent_lt_e5m :
+    exponent e5n three < exponent e5m three := by
+  norm_num [exponent, eval, PosReal.rpow, three, e5n, e5m, e4e, e4d, e3b, e3a, e2]
+
+theorem e5m_exponent_lt_e5h :
+    exponent e5m three < exponent e5h three := by
+  norm_num [exponent, eval, PosReal.rpow, three, e5m, e5h, e4d, e3b, e3a, e2]
+
+theorem e5h_exponent_lt_e5k :
+    exponent e5h three < exponent e5k three := by
+  norm_num [exponent, eval, PosReal.rpow, three, e5h, e5k, e4b, e3b, e3a, e2]
+
+theorem e5k_exponent_lt_e5e :
+    exponent e5k three < exponent e5e three := by
+  rw [show exponent e5k three = ((3 : ℝ) ^ (10 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5k, e4b, e3b, e2]]
+  rw [show exponent e5e three = ((3 : ℝ) ^ (27 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5e, e4e, e3b, e2]]
+  exact Real.rpow_lt_rpow_of_exponent_lt (by norm_num : (1 : ℝ) < 3)
+    (by norm_num : (10 : ℝ) < 27)
+
+theorem e5e_exponent_lt_e5j :
+    exponent e5e three < exponent e5j three := by
+  rw [show exponent e5e three = ((3 : ℝ) ^ (27 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5e, e4e, e3b, e2]]
+  rw [show exponent e5j three = ((3 : ℝ) ^ (28 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5j, e4a, e3a, e2]]
+  exact Real.rpow_lt_rpow_of_exponent_lt (by norm_num : (1 : ℝ) < 3)
+    (by norm_num : (27 : ℝ) < 28)
+
+theorem e5j_exponent_lt_e5d :
+    exponent e5j three < exponent e5d three := by
+  rw [show exponent e5j three = ((3 : ℝ) ^ (28 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5j, e4a, e3a, e2]]
+  rw [show exponent e5d three = ((3 : ℝ) ^ (81 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5d, e4d, e3a, e2]]
+  exact Real.rpow_lt_rpow_of_exponent_lt (by norm_num : (1 : ℝ) < 3)
+    (by norm_num : (28 : ℝ) < 81)
+
+theorem e5d_exponent_lt_e5b :
+    exponent e5d three < exponent e5b three := by
+  rw [show exponent e5d three = ((3 : ℝ) ^ (81 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5d, e4d, e3a, e2]]
+  rw [show exponent e5b three = ((3 : ℝ) ^ (19683 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5b, e4b, e3b, e2]]
+  exact Real.rpow_lt_rpow_of_exponent_lt (by norm_num : (1 : ℝ) < 3)
+    (by norm_num : (81 : ℝ) < 19683)
+
+theorem e5b_exponent_lt_e5a :
+    exponent e5b three < exponent e5a three := by
+  rw [show exponent e5b three = ((3 : ℝ) ^ (19683 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5b, e4b, e3b, e2]]
+  rw [show exponent e5a three = ((3 : ℝ) ^ (7625597484987 : ℝ)) by
+    norm_num [exponent, eval, PosReal.rpow, three, e5a, e4a, e3a, e2]]
+  exact Real.rpow_lt_rpow_of_exponent_lt (by norm_num : (1 : ℝ) < 3)
+    (by norm_num : (19683 : ℝ) < 7625597484987)
+
+theorem repFiveEval_injective : Function.Injective repFiveEval := by
+  intro i j h
+  have hexp : exponent (repFive i) three = exponent (repFive j) three := by
+    have hval := congrArg (fun f : PosReal -> PosReal => (f three).1) h
+    dsimp [repFiveEval] at hval
+    rw [eval_eq_rpow_exponent (repFive i) three,
+      eval_eq_rpow_exponent (repFive j) three] at hval
+    exact three_rpow_inj hval
+  have h01 := e5n_exponent_lt_e5m
+  have h12 := e5m_exponent_lt_e5h
+  have h23 := e5h_exponent_lt_e5k
+  have h34 := e5k_exponent_lt_e5e
+  have h45 := e5e_exponent_lt_e5j
+  have h56 := e5j_exponent_lt_e5d
+  have h67 := e5d_exponent_lt_e5b
+  have h78 := e5b_exponent_lt_e5a
+  fin_cases i <;> fin_cases j <;> simp [repFive] at hexp ⊢
+  all_goals first | rfl | nlinarith [h01, h12, h23, h34, h45, h56, h67, h78]
+
+theorem repFiveEval_range :
+    Set.range repFiveEval =
+      ({eval e5a, eval e5b, eval e5d, eval e5e, eval e5j,
+        eval e5k, eval e5h, eval e5m, eval e5n} : Set (PosReal -> PosReal)) := by
+  ext f
+  constructor
+  · rintro ⟨i, rfl⟩
+    fin_cases i <;> simp [repFiveEval, repFive]
+  · intro hf
+    rcases hf with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact ⟨8, by simp [repFiveEval, repFive]⟩
+    · exact ⟨7, by simp [repFiveEval, repFive]⟩
+    · exact ⟨6, by simp [repFiveEval, repFive]⟩
+    · exact ⟨4, by simp [repFiveEval, repFive]⟩
+    · exact ⟨5, by simp [repFiveEval, repFive]⟩
+    · exact ⟨3, by simp [repFiveEval, repFive]⟩
+    · exact ⟨2, by simp [repFiveEval, repFive]⟩
+    · exact ⟨1, by simp [repFiveEval, repFive]⟩
+    · exact ⟨0, by simp [repFiveEval, repFive]⟩
+
+theorem valueSet_five_ncard :
+    ({eval e5a, eval e5b, eval e5d, eval e5e, eval e5j,
+      eval e5k, eval e5h, eval e5m, eval e5n} : Set (PosReal -> PosReal)).ncard = 9 := by
+  rw [← repFiveEval_range]
+  rw [Set.ncard_range_of_injective repFiveEval_injective]
+  simp
 
 theorem valueSet_four_ncard :
     ({eval e4a, eval e4b, eval e4d, eval e4e} : Set (PosReal -> PosReal)).ncard = 4 := by
@@ -246,9 +464,14 @@ theorem a000081_three : a000081 3 = 2 := by
 theorem a000081_four : a000081 4 = 4 := by
   rw [a000081, valueSet_four, valueSet_four_ncard]
 
+/-- `A000081(5) = 9`. -/
+theorem a000081_five : a000081 5 = 9 := by
+  rw [a000081, valueSet_five, valueSet_five_ncard]
+
 end PowExpr
 
-export PowExpr (a000081 a000081_zero a000081_one a000081_two a000081_three a000081_four)
+export PowExpr (a000081 a000081_zero a000081_one a000081_two a000081_three a000081_four
+  a000081_five)
 
 end A000081
 
