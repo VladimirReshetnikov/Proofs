@@ -180,16 +180,18 @@ theorem a198683SharedRecursiveValueSet_eq_valueSet (n : Nat) :
               ext z
               constructor
               · intro hz
-                simp only [PowTower.Expr.recursiveValueSet] at hz
+                simp [PowTower.Expr.recursiveValueSet] at hz
                 rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+                simp [a198683ValueSet]
                 refine ⟨k, x, ?_, y, ?_, rfl⟩
                 · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
                   rwa [← hleft]
                 · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
                   rwa [← hright]
               · intro hz
-                simp only [a198683ValueSet] at hz
+                simp [a198683ValueSet] at hz
                 rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+                simp [PowTower.Expr.recursiveValueSet]
                 refine ⟨k, x, ?_, y, ?_, rfl⟩
                 · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
                   rwa [hleft]

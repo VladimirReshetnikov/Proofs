@@ -223,8 +223,11 @@ into direct sufficient conditions for the split; the `rho` box is further
 reduced to the same `pi/2` box plus endpoint exponential estimates, which are
 now likewise composed into direct sufficient conditions for the split; the
 `pi/2` box itself is discharged from mathlib's 20-decimal `pi` certificate,
-and the resulting `rho`, `theta`, and `sin theta`/`cos theta` boxes are now
-composed from just the remaining rational endpoint estimates.  The
+the `rho` endpoint exponential estimates are discharged using mathlib's
+20-decimal `exp 1` certificate and a Taylor bound for the residual
+`exp(0.57079632679...)`, and the resulting `rho`, `theta`, and
+`sin theta`/`cos theta` boxes are now composed from the remaining trigonometric
+endpoint estimates.  The
 module also exposes exact
 real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
 layers of representative `25`, including the
