@@ -41,6 +41,95 @@ decreasing_by
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
   · exact Nat.succ_lt_succ k.2
 
+/--
+A generic bridge from any local one-token binary syntax to the shared lexical
+parenthesizations.  The local syntax supplies its atom, binary node, and the
+standard Catalan recursion for its parenthesization list.
+-/
+theorem toExpr_mem_parenthesizations {β : Type u}
+    (localParenthesizations : Nat -> List β)
+    (localAtom : β) (localPow : β -> β -> β)
+    (toExpr : β -> Expr)
+    (hZero : localParenthesizations 0 = [])
+    (hOne : localParenthesizations 1 = [localAtom])
+    (hStep : ∀ n,
+      localParenthesizations (n + 2) =
+        (List.finRange (n + 1)).flatMap fun k =>
+          (localParenthesizations (k.1 + 1)).flatMap fun a =>
+            (localParenthesizations (n + 1 - k.1)).map fun b => localPow a b)
+    (hAtom : toExpr localAtom = atom)
+    (hPow : ∀ a b, toExpr (localPow a b) = pow (toExpr a) (toExpr b))
+    {n : Nat} {e : β}
+    (he : e ∈ localParenthesizations n) :
+    toExpr e ∈ parenthesizations n := by
+  revert e
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      intro e he
+      cases n with
+      | zero =>
+          rw [hZero] at he
+          simp at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rw [hOne] at he
+              rcases (List.mem_singleton.mp he) with rfl
+              simp [parenthesizations, hAtom]
+          | succ n =>
+              rw [hStep n] at he
+              simp only [List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, toExpr a, ?_, toExpr b, ?_, ?_⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+              · exact (hPow a b).symm
+
+/--
+A generic bridge from shared lexical parenthesizations back to a local
+one-token binary syntax with the standard Catalan parenthesization recursion.
+-/
+theorem ofExpr_mem_parenthesizations {β : Type u}
+    (localParenthesizations : Nat -> List β)
+    (localAtom : β) (localPow : β -> β -> β)
+    (ofExpr : Expr -> β)
+    (hZero : localParenthesizations 0 = [])
+    (hOne : localParenthesizations 1 = [localAtom])
+    (hStep : ∀ n,
+      localParenthesizations (n + 2) =
+        (List.finRange (n + 1)).flatMap fun k =>
+          (localParenthesizations (k.1 + 1)).flatMap fun a =>
+            (localParenthesizations (n + 1 - k.1)).map fun b => localPow a b)
+    (hAtom : ofExpr atom = localAtom)
+    (hPow : ∀ a b, ofExpr (pow a b) = localPow (ofExpr a) (ofExpr b))
+    {n : Nat} {e : Expr}
+    (he : e ∈ parenthesizations n) :
+    ofExpr e ∈ localParenthesizations n := by
+  have _hZero := hZero
+  revert e
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      intro e he
+      cases n with
+      | zero =>
+          simp [parenthesizations] at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rcases (by simpa [parenthesizations] using he) with rfl
+              rw [hOne]
+              simp [hAtom]
+          | succ n =>
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              rw [hStep n]
+              simp only [List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, ofExpr a, ?_, ofExpr b, ?_, ?_⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+              · exact (hPow a b).symm
+
 /-- Interpret the shared lexical syntax by supplying an atom and a binary operation. -/
 def eval (atomValue : α) (powValue : α -> α -> α) : Expr -> α
   | atom => atomValue

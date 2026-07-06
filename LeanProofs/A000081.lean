@@ -119,48 +119,14 @@ decreasing_by
 /-- Translating a local parenthesization gives a shared lexical parenthesization. -/
 theorem toSharedLex_mem_parenthesizations {n : Nat} {e : PowExpr}
     (he : e ∈ parenthesizations n) : toSharedLex e ∈ PowTower.Expr.parenthesizations n := by
-  revert e
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-      intro e he
-      cases n with
-      | zero =>
-          simp [parenthesizations] at he
-      | succ n =>
-          cases n with
-          | zero =>
-              rcases (by simpa [parenthesizations] using he) with rfl
-              simp [PowTower.Expr.parenthesizations, toSharedLex]
-          | succ n =>
-              simp only [parenthesizations, List.mem_flatMap, List.mem_map] at he
-              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
-              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map]
-              refine ⟨k, List.mem_finRange k, toSharedLex a, ?_, toSharedLex b, ?_, rfl⟩
-              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
-              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+  exact PowTower.Expr.toExpr_mem_parenthesizations
+    parenthesizations x pow toSharedLex rfl rfl (fun _ => rfl) rfl (fun _ _ => rfl) he
 
 /-- Translating a shared lexical parenthesization back gives a local parenthesization. -/
 theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
     (he : e ∈ PowTower.Expr.parenthesizations n) : ofSharedLex e ∈ parenthesizations n := by
-  revert e
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-      intro e he
-      cases n with
-      | zero =>
-          simp [PowTower.Expr.parenthesizations] at he
-      | succ n =>
-          cases n with
-          | zero =>
-              rcases (by simpa [PowTower.Expr.parenthesizations] using he) with rfl
-              simp [parenthesizations, ofSharedLex]
-          | succ n =>
-              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map] at he
-              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
-              simp only [parenthesizations, List.mem_flatMap, List.mem_map]
-              refine ⟨k, List.mem_finRange k, ofSharedLex a, ?_, ofSharedLex b, ?_, rfl⟩
-              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
-              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+  exact PowTower.Expr.ofExpr_mem_parenthesizations
+    parenthesizations x pow ofSharedLex rfl rfl (fun _ => rfl) rfl (fun _ _ => rfl) he
 
 /-- Compatibility value set computed through the old local variable syntax. -/
 def valueSet (n : Nat) : Set (PosReal -> PosReal) :=
