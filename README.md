@@ -157,9 +157,21 @@ obligation `nearOne25Base.im < 0` is discharged; this sign is further reduced
 to the one-dimensional interval bound `-766 < nearOne25Level3.re < -765`,
 and then to scalar interval bounds for the exponential and cosine factors in
 the exact formula for `nearOne25Level3.re`, and then to a small rational box
-around `nearOne25Level2` plus four endpoint `exp`/`cos` estimates.  The module
+around `nearOne25Level2` plus four endpoint `exp`/`cos` estimates; that
+`nearOne25Level2` box is itself reduced to a tighter rational box around
+`nearOne25Level1` plus endpoint product estimates; and the `nearOne25Level1`
+box is reduced to a rational box around the seed using a shifted third-quadrant
+trigonometric monotonicity argument.  The seed box is reduced one level further
+to a narrow rational box around `v = i^(i^(i^i))`, and that `v` box is reduced
+to scalar rational bounds for its exact exponential, cosine, and sine factors,
+then to rational boxes for `sin theta` and `cos theta` plus endpoint estimates;
+those trigonometric boxes are reduced to a narrow rational box for `theta`
+itself; and the `theta` box is reduced to rational boxes for `pi/2` and
+`rho = exp(-pi/2)` plus endpoint product estimates, with the `rho` box further
+reduced to the same `pi/2` box plus endpoint exponential estimates.  The module
 also exposes exact real/imaginary recurrence formulas for the `(-i)^z` seed and
-lower `i^z` layers of representative `25`, including the expansion of
+lower `i^z` layers of representative `25`, including the
+expansion of
 `v = i^(i^(i^i))` and the seed itself through the scalar `theta`, so the
 remaining interval certificate can be pushed down level by level.
 These n = 12 companion modules are progress toward, but still not, a semantic

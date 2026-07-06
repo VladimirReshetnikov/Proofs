@@ -827,6 +827,38 @@ private theorem mul_mem_neg766_neg765_of_exp_cos_bounds {e c : ℝ}
       mul_lt_mul_of_neg_right he0 (by norm_num)
     nlinarith
 
+private theorem mul_mem_pos_pos_interval {e c elo ehi clo chi lo hi : ℝ}
+    (he0 : elo < e) (he1 : e < ehi)
+    (hc0 : clo < c) (hc1 : c < chi)
+    (hlo : lo < elo * clo) (hhi : ehi * chi < hi)
+    (helo : 0 < elo) (hclo : 0 < clo) :
+    lo < e * c ∧ e * c < hi := by
+  have he_pos : 0 < e := helo.trans he0
+  have hehi_pos : 0 < ehi := by linarith
+  have hc_pos : 0 < c := hclo.trans hc0
+  constructor
+  · have h1 : elo * clo < e * clo := mul_lt_mul_of_pos_right he0 hclo
+    have h2 : e * clo < e * c := mul_lt_mul_of_pos_left hc0 he_pos
+    exact hlo.trans (h1.trans h2)
+  · have h1 : e * c < ehi * c := mul_lt_mul_of_pos_right he1 hc_pos
+    have h2 : ehi * c < ehi * chi := mul_lt_mul_of_pos_left hc1 hehi_pos
+    exact (h1.trans h2).trans hhi
+
+private theorem mul_mem_pos_neg_interval {e s elo ehi slo shi lo hi : ℝ}
+    (he0 : elo < e) (he1 : e < ehi)
+    (hs0 : slo < s) (hs1 : s < shi)
+    (hlo : lo < ehi * slo) (hhi : elo * shi < hi)
+    (helo : 0 < elo) (hslo : slo < 0) (hshi : shi < 0) :
+    lo < e * s ∧ e * s < hi := by
+  have he_pos : 0 < e := helo.trans he0
+  constructor
+  · have h1 : ehi * slo < e * slo := mul_lt_mul_of_neg_right he1 hslo
+    have h2 : e * slo < e * s := mul_lt_mul_of_pos_left hs0 he_pos
+    exact hlo.trans (h1.trans h2)
+  · have h1 : e * s < e * shi := mul_lt_mul_of_pos_left hs1 he_pos
+    have h2 : e * shi < elo * shi := mul_lt_mul_of_neg_right he0 hshi
+    exact (h1.trans h2).trans hhi
+
 /--
 It is enough to bound the two real scalar factors in the exact formula for
 `nearOne25Level3.re`.
@@ -930,6 +962,702 @@ theorem nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
   have hexp := nearOne25Level2_exp_bounds_of_box_and_endpoints him0 him1 hexp0 hexp1
   have hcos := nearOne25Level2_cos_bounds_of_box_and_endpoints hre0 hre1 hcos0 hcos1
   exact nearOne25Level3_re_bounds_of_exp_cos_bounds hexp.1 hexp.2 hcos.1 hcos.2
+
+/--
+A tighter rational box around `nearOne25Level1`, plus endpoint product
+estimates, is enough to certify the rational box around `nearOne25Level2` used
+by the final near-one split reduction.
+-/
+theorem nearOne25Level2_box_of_level1_box_and_endpoint_bounds
+    (hre0 : (-(864443 : ℝ) / 1000000) < nearOne25Level1.re)
+    (hre1 : nearOne25Level1.re < (-(432221 : ℝ) / 500000))
+    (him0 : (-(53417 : ℝ) / 50000) < nearOne25Level1.im)
+    (him1 : nearOne25Level1.im < (-(1068339 : ℝ) / 1000000))
+    (hrelo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (hrehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (himlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (himhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000)) :
+    (11317 : ℝ) / 10000 < nearOne25Level2.re ∧
+      nearOne25Level2.re < (5659 : ℝ) / 5000 ∧
+      (-(52347 : ℝ) / 10000) < nearOne25Level2.im ∧
+      nearOne25Level2.im < (-(52346 : ℝ) / 10000) := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  have hneg_lo : (1068339 : ℝ) / 1000000 < -nearOne25Level1.im := by linarith
+  have hneg_hi : -nearOne25Level1.im < (53417 : ℝ) / 50000 := by linarith
+  have hexp0 :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) <
+        Real.exp (-(Real.pi / 2) * nearOne25Level1.im) := by
+    have harg := mul_lt_mul_of_pos_left hneg_lo hpi2_pos
+    apply Real.exp_lt_exp.mpr
+    rwa [show Real.pi / 2 * -nearOne25Level1.im =
+        -(Real.pi / 2) * nearOne25Level1.im by ring] at harg
+  have hexp1 :
+      Real.exp (-(Real.pi / 2) * nearOne25Level1.im) <
+        Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) := by
+    have harg := mul_lt_mul_of_pos_left hneg_hi hpi2_pos
+    apply Real.exp_lt_exp.mpr
+    rwa [show Real.pi / 2 * -nearOne25Level1.im =
+        -(Real.pi / 2) * nearOne25Level1.im by ring] at harg
+  have hangle0 :
+      Real.pi / 2 * (-(864443 : ℝ) / 1000000) <
+        Real.pi / 2 * nearOne25Level1.re :=
+    mul_lt_mul_of_pos_left hre0 hpi2_pos
+  have hangle1 :
+      Real.pi / 2 * nearOne25Level1.re <
+        Real.pi / 2 * (-(432221 : ℝ) / 500000) :=
+    mul_lt_mul_of_pos_left hre1 hpi2_pos
+  have hcos0 :
+      Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) <
+        Real.cos (Real.pi / 2 * nearOne25Level1.re) := by
+    have hneg_angle :
+        -(Real.pi / 2 * nearOne25Level1.re) <
+          -(Real.pi / 2 * (-(864443 : ℝ) / 1000000)) := by linarith
+    have hx_nonneg : 0 ≤ -(Real.pi / 2 * nearOne25Level1.re) := by
+      nlinarith [Real.pi_pos, hre1]
+    have hy_le_pi : -(Real.pi / 2 * (-(864443 : ℝ) / 1000000)) ≤ Real.pi := by
+      nlinarith [Real.pi_pos]
+    have h := Real.cos_lt_cos_of_nonneg_of_le_pi hx_nonneg hy_le_pi hneg_angle
+    simpa [Real.cos_neg] using h
+  have hcos1 :
+      Real.cos (Real.pi / 2 * nearOne25Level1.re) <
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) := by
+    have hneg_angle :
+        -(Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          -(Real.pi / 2 * nearOne25Level1.re) := by linarith
+    have hx_nonneg : 0 ≤ -(Real.pi / 2 * (-(432221 : ℝ) / 500000)) := by
+      nlinarith [Real.pi_pos]
+    have hy_le_pi : -(Real.pi / 2 * nearOne25Level1.re) ≤ Real.pi := by
+      nlinarith [Real.pi_pos, hre0]
+    have h := Real.cos_lt_cos_of_nonneg_of_le_pi hx_nonneg hy_le_pi hneg_angle
+    simpa [Real.cos_neg] using h
+  have hsin0 :
+      Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) <
+        Real.sin (Real.pi / 2 * nearOne25Level1.re) := by
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * (-(864443 : ℝ) / 1000000) := by
+      nlinarith [Real.pi_pos]
+    have hy : Real.pi / 2 * nearOne25Level1.re ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos, hre1]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle0
+  have hsin1 :
+      Real.sin (Real.pi / 2 * nearOne25Level1.re) <
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) := by
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * nearOne25Level1.re := by
+      nlinarith [Real.pi_pos, hre0]
+    have hy : Real.pi / 2 * (-(432221 : ℝ) / 500000) ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle1
+  have hcos_lo_pos :
+      0 < Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) := by
+    exact Real.cos_pos_of_mem_Ioo ⟨by nlinarith [Real.pi_pos], by nlinarith [Real.pi_pos]⟩
+  have hsin_lo_neg :
+      Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) < 0 := by
+    exact Real.sin_neg_of_neg_of_neg_pi_lt
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hsin_hi_neg :
+      Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) < 0 := by
+    exact Real.sin_neg_of_neg_of_neg_pi_lt
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hre_bounds :
+      (11317 : ℝ) / 10000 < nearOne25Level2.re ∧
+        nearOne25Level2.re < (5659 : ℝ) / 5000 := by
+    rw [nearOne25Level2_re_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hcos0 hcos1 hrelo hrehi
+      (Real.exp_pos _) hcos_lo_pos
+  have him_bounds :
+      (-(52347 : ℝ) / 10000) < nearOne25Level2.im ∧
+        nearOne25Level2.im < (-(52346 : ℝ) / 10000) := by
+    rw [nearOne25Level2_im_eq]
+    exact mul_mem_pos_neg_interval hexp0 hexp1 hsin0 hsin1 himlo himhi
+      (Real.exp_pos _) hsin_lo_neg hsin_hi_neg
+  exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
+
+/--
+A rational box around the representative-`25` seed, plus endpoint product
+estimates, is enough to certify the rational box around `nearOne25Level1` used
+by the next reduction.
+-/
+theorem nearOne25Level1_box_of_seed_box_and_endpoint_bounds
+    (hre0 : (25669119 : ℝ) / 10000000 < nearOne25Seed.re)
+    (hre1 : nearOne25Seed.re < (320864 : ℝ) / 125000)
+    (him0 : (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im)
+    (him1 : nearOne25Seed.im < (-(404789 : ℝ) / 2000000))
+    (hrelo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (hrehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (himlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (himhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000)) :
+    (-(864443 : ℝ) / 1000000) < nearOne25Level1.re ∧
+      nearOne25Level1.re < (-(432221 : ℝ) / 500000) ∧
+      (-(53417 : ℝ) / 50000) < nearOne25Level1.im ∧
+      nearOne25Level1.im < (-(1068339 : ℝ) / 1000000) := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  have hneg_lo : (404789 : ℝ) / 2000000 < -nearOne25Seed.im := by linarith
+  have hneg_hi : -nearOne25Seed.im < (1011973 : ℝ) / 5000000 := by linarith
+  have hexp0 :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) <
+        Real.exp (-(Real.pi / 2) * nearOne25Seed.im) := by
+    have harg := mul_lt_mul_of_pos_left hneg_lo hpi2_pos
+    apply Real.exp_lt_exp.mpr
+    rwa [show Real.pi / 2 * -nearOne25Seed.im =
+        -(Real.pi / 2) * nearOne25Seed.im by ring] at harg
+  have hexp1 :
+      Real.exp (-(Real.pi / 2) * nearOne25Seed.im) <
+        Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) := by
+    have harg := mul_lt_mul_of_pos_left hneg_hi hpi2_pos
+    apply Real.exp_lt_exp.mpr
+    rwa [show Real.pi / 2 * -nearOne25Seed.im =
+        -(Real.pi / 2) * nearOne25Seed.im by ring] at harg
+  have hangle0 :
+      Real.pi / 2 * ((25669119 : ℝ) / 10000000) <
+        Real.pi / 2 * nearOne25Seed.re :=
+    mul_lt_mul_of_pos_left hre0 hpi2_pos
+  have hangle1 :
+      Real.pi / 2 * nearOne25Seed.re <
+        Real.pi / 2 * ((320864 : ℝ) / 125000) :=
+    mul_lt_mul_of_pos_left hre1 hpi2_pos
+  have hcos0 :
+      Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+        Real.cos (Real.pi / 2 * nearOne25Seed.re) := by
+    have ht :
+        Real.pi / 2 * ((25669119 : ℝ) / 10000000) - Real.pi <
+          Real.pi / 2 * nearOne25Seed.re - Real.pi := by linarith
+    have hx : 0 ≤ Real.pi / 2 * ((25669119 : ℝ) / 10000000) - Real.pi := by
+      nlinarith [Real.pi_pos]
+    have hy : Real.pi / 2 * nearOne25Seed.re - Real.pi ≤ Real.pi := by
+      nlinarith [Real.pi_pos, hre1]
+    have h := Real.cos_lt_cos_of_nonneg_of_le_pi hx hy ht
+    rw [show Real.pi / 2 * ((25669119 : ℝ) / 10000000) =
+        (Real.pi / 2 * ((25669119 : ℝ) / 10000000) - Real.pi) + Real.pi by ring,
+      Real.cos_add_pi]
+    rw [show Real.pi / 2 * nearOne25Seed.re =
+        (Real.pi / 2 * nearOne25Seed.re - Real.pi) + Real.pi by ring,
+      Real.cos_add_pi]
+    exact neg_lt_neg h
+  have hcos1 :
+      Real.cos (Real.pi / 2 * nearOne25Seed.re) <
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) := by
+    have ht :
+        Real.pi / 2 * nearOne25Seed.re - Real.pi <
+          Real.pi / 2 * ((320864 : ℝ) / 125000) - Real.pi := by linarith
+    have hx : 0 ≤ Real.pi / 2 * nearOne25Seed.re - Real.pi := by
+      nlinarith [Real.pi_pos, hre0]
+    have hy : Real.pi / 2 * ((320864 : ℝ) / 125000) - Real.pi ≤ Real.pi := by
+      nlinarith [Real.pi_pos]
+    have h := Real.cos_lt_cos_of_nonneg_of_le_pi hx hy ht
+    rw [show Real.pi / 2 * nearOne25Seed.re =
+        (Real.pi / 2 * nearOne25Seed.re - Real.pi) + Real.pi by ring,
+      Real.cos_add_pi]
+    rw [show Real.pi / 2 * ((320864 : ℝ) / 125000) =
+        (Real.pi / 2 * ((320864 : ℝ) / 125000) - Real.pi) + Real.pi by ring,
+      Real.cos_add_pi]
+    exact neg_lt_neg h
+  have hsin0 :
+      Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+        Real.sin (Real.pi / 2 * nearOne25Seed.re) := by
+    have ht :
+        Real.pi / 2 * nearOne25Seed.re - Real.pi <
+          Real.pi / 2 * ((320864 : ℝ) / 125000) - Real.pi := by linarith
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * nearOne25Seed.re - Real.pi := by
+      nlinarith [Real.pi_pos, hre0]
+    have hy : Real.pi / 2 * ((320864 : ℝ) / 125000) - Real.pi ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos]
+    have h := Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy ht
+    rw [show Real.pi / 2 * ((320864 : ℝ) / 125000) =
+        (Real.pi / 2 * ((320864 : ℝ) / 125000) - Real.pi) + Real.pi by ring,
+      Real.sin_add_pi]
+    rw [show Real.pi / 2 * nearOne25Seed.re =
+        (Real.pi / 2 * nearOne25Seed.re - Real.pi) + Real.pi by ring,
+      Real.sin_add_pi]
+    exact neg_lt_neg h
+  have hsin1 :
+      Real.sin (Real.pi / 2 * nearOne25Seed.re) <
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) := by
+    have ht :
+        Real.pi / 2 * ((25669119 : ℝ) / 10000000) - Real.pi <
+          Real.pi / 2 * nearOne25Seed.re - Real.pi := by linarith
+    have hx : -(Real.pi / 2) ≤
+        Real.pi / 2 * ((25669119 : ℝ) / 10000000) - Real.pi := by
+      nlinarith [Real.pi_pos]
+    have hy : Real.pi / 2 * nearOne25Seed.re - Real.pi ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos, hre1]
+    have h := Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy ht
+    rw [show Real.pi / 2 * nearOne25Seed.re =
+        (Real.pi / 2 * nearOne25Seed.re - Real.pi) + Real.pi by ring,
+      Real.sin_add_pi]
+    rw [show Real.pi / 2 * ((25669119 : ℝ) / 10000000) =
+        (Real.pi / 2 * ((25669119 : ℝ) / 10000000) - Real.pi) + Real.pi by ring,
+      Real.sin_add_pi]
+    exact neg_lt_neg h
+  have hcos_lo_neg :
+      Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) < 0 := by
+    exact Real.cos_neg_of_pi_div_two_lt_of_lt
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hcos_hi_neg :
+      Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) < 0 := by
+    exact Real.cos_neg_of_pi_div_two_lt_of_lt
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hsin_lo_neg :
+      Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)) < 0 := by
+    rw [show Real.pi / 2 * ((320864 : ℝ) / 125000) =
+        (Real.pi / 2 * ((320864 : ℝ) / 125000) - Real.pi) + Real.pi by ring,
+      Real.sin_add_pi]
+    exact neg_neg_of_pos
+      (Real.sin_pos_of_pos_of_lt_pi (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos]))
+  have hsin_hi_neg :
+      Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) < 0 := by
+    rw [show Real.pi / 2 * ((25669119 : ℝ) / 10000000) =
+        (Real.pi / 2 * ((25669119 : ℝ) / 10000000) - Real.pi) + Real.pi by ring,
+      Real.sin_add_pi]
+    exact neg_neg_of_pos
+      (Real.sin_pos_of_pos_of_lt_pi (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos]))
+  have hre_bounds :
+      (-(864443 : ℝ) / 1000000) < nearOne25Level1.re ∧
+        nearOne25Level1.re < (-(432221 : ℝ) / 500000) := by
+    rw [nearOne25Level1_re_eq]
+    exact mul_mem_pos_neg_interval hexp0 hexp1 hcos0 hcos1 hrelo hrehi
+      (Real.exp_pos _) hcos_lo_neg hcos_hi_neg
+  have him_bounds :
+      (-(53417 : ℝ) / 50000) < nearOne25Level1.im ∧
+        nearOne25Level1.im < (-(1068339 : ℝ) / 1000000) := by
+    rw [nearOne25Level1_im_eq]
+    exact mul_mem_pos_neg_interval hexp0 hexp1 hsin0 hsin1 himlo himhi
+      (Real.exp_pos _) hsin_lo_neg hsin_hi_neg
+  exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
+
+/--
+Scalar rational bounds for the exponential, cosine, and sine factors in the
+exact formula for `v` are enough to certify the narrow rational box for `v`.
+-/
+theorem v_box_of_exp_cos_sin_bounds
+    (hexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * Real.sin theta))
+    (hexp1 :
+      Real.exp (-(Real.pi / 2) * Real.sin theta) <
+        (60419661060 : ℝ) / 100000000000)
+    (hcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * Real.cos theta))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * Real.cos theta) <
+        (8290717829 : ℝ) / 100000000000)
+    (hsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * Real.cos theta))
+    (hsin1 :
+      Real.sin (Real.pi / 2 * Real.cos theta) <
+        (99655727372 : ℝ) / 100000000000) :
+    (50092236 : ℝ) / 1000000000 < v.re ∧
+      v.re < (50092237 : ℝ) / 1000000000 ∧
+      (602116527 : ℝ) / 1000000000 < v.im ∧
+      v.im < (602116528 : ℝ) / 1000000000 := by
+  have hrelo :
+      (50092236 : ℝ) / 1000000000 <
+        ((60419661058 : ℝ) / 100000000000) *
+          ((8290717827 : ℝ) / 100000000000) := by
+    norm_num
+  have hrehi :
+      ((60419661060 : ℝ) / 100000000000) *
+          ((8290717829 : ℝ) / 100000000000) <
+        (50092237 : ℝ) / 1000000000 := by
+    norm_num
+  have himlo :
+      (602116527 : ℝ) / 1000000000 <
+        ((60419661058 : ℝ) / 100000000000) *
+          ((99655727371 : ℝ) / 100000000000) := by
+    norm_num
+  have himhi :
+      ((60419661060 : ℝ) / 100000000000) *
+          ((99655727372 : ℝ) / 100000000000) <
+        (602116528 : ℝ) / 1000000000 := by
+    norm_num
+  have hre_bounds :
+      (50092236 : ℝ) / 1000000000 < v.re ∧
+        v.re < (50092237 : ℝ) / 1000000000 := by
+    rw [v_re_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hcos0 hcos1 hrelo hrehi
+      (by norm_num) (by norm_num)
+  have him_bounds :
+      (602116527 : ℝ) / 1000000000 < v.im ∧
+        v.im < (602116528 : ℝ) / 1000000000 := by
+    rw [v_im_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hsin0 hsin1 himlo himhi
+      (by norm_num) (by norm_num)
+  exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
+
+/--
+Bounds for `sin theta` and `cos theta`, plus endpoint estimates for the
+resulting one-dimensional `exp`, `cos`, and `sin` arguments, are enough to
+certify the narrow rational box for `v`.
+-/
+theorem v_box_of_sin_cos_theta_bounds_and_endpoint_bounds
+    (hsinTheta0 : (320764449975 : ℝ) / 1000000000000 < Real.sin theta)
+    (hsinTheta1 : Real.sin theta < (320764449985 : ℝ) / 1000000000000)
+    (hcosTheta0 : (947158998071 : ℝ) / 1000000000000 < Real.cos theta)
+    (hcosTheta1 : Real.cos theta < (947158998073 : ℝ) / 1000000000000)
+    (hexp0 : (60419661058 : ℝ) / 100000000000 <
+      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
+    (hexp1 :
+      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
+        (60419661060 : ℝ) / 100000000000)
+    (hcos0 : (8290717827 : ℝ) / 100000000000 <
+      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+        (8290717829 : ℝ) / 100000000000)
+    (hsin0 : (99655727371 : ℝ) / 100000000000 <
+      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
+    (hsin1 :
+      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+        (99655727372 : ℝ) / 100000000000) :
+    (50092236 : ℝ) / 1000000000 < v.re ∧
+      v.re < (50092237 : ℝ) / 1000000000 ∧
+      (602116527 : ℝ) / 1000000000 < v.im ∧
+      v.im < (602116528 : ℝ) / 1000000000 := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  have hExp0 :
+      (60419661058 : ℝ) / 100000000000 <
+        Real.exp (-(Real.pi / 2) * Real.sin theta) := by
+    have harg :
+        -(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000) <
+          -(Real.pi / 2) * Real.sin theta := by
+      nlinarith [Real.pi_pos, hsinTheta1]
+    exact hexp0.trans (Real.exp_lt_exp.mpr harg)
+  have hExp1 :
+      Real.exp (-(Real.pi / 2) * Real.sin theta) <
+        (60419661060 : ℝ) / 100000000000 := by
+    have harg :
+        -(Real.pi / 2) * Real.sin theta <
+          -(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000) := by
+      nlinarith [Real.pi_pos, hsinTheta0]
+    exact (Real.exp_lt_exp.mpr harg).trans hexp1
+  have hCos0 :
+      (8290717827 : ℝ) / 100000000000 <
+        Real.cos (Real.pi / 2 * Real.cos theta) := by
+    have hangle_lt_hi :
+        Real.pi / 2 * Real.cos theta <
+          Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000) :=
+      mul_lt_mul_of_pos_left hcosTheta1 hpi2_pos
+    have hangle_nonneg : 0 ≤ Real.pi / 2 * Real.cos theta := by
+      nlinarith [Real.pi_pos, hcosTheta0]
+    have hhi_le_pi :
+        Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000) ≤ Real.pi := by
+      nlinarith [Real.pi_pos]
+    have hcos_hi_lt :
+        Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
+          Real.cos (Real.pi / 2 * Real.cos theta) :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi hangle_nonneg hhi_le_pi hangle_lt_hi
+    exact hcos0.trans hcos_hi_lt
+  have hCos1 :
+      Real.cos (Real.pi / 2 * Real.cos theta) <
+        (8290717829 : ℝ) / 100000000000 := by
+    have hlo_lt_angle :
+        Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000) <
+          Real.pi / 2 * Real.cos theta :=
+      mul_lt_mul_of_pos_left hcosTheta0 hpi2_pos
+    have hlo_nonneg :
+        0 ≤ Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000) := by
+      positivity
+    have hangle_le_pi : Real.pi / 2 * Real.cos theta ≤ Real.pi := by
+      nlinarith [Real.pi_pos, hcosTheta1]
+    have hcos_lt_lo :
+        Real.cos (Real.pi / 2 * Real.cos theta) <
+          Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi hlo_nonneg hangle_le_pi hlo_lt_angle
+    exact hcos_lt_lo.trans hcos1
+  have hSin0 :
+      (99655727371 : ℝ) / 100000000000 <
+        Real.sin (Real.pi / 2 * Real.cos theta) := by
+    have hlo_lt_angle :
+        Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000) <
+          Real.pi / 2 * Real.cos theta :=
+      mul_lt_mul_of_pos_left hcosTheta0 hpi2_pos
+    have hx :
+        -(Real.pi / 2) ≤
+          Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000) := by
+      nlinarith [Real.pi_pos]
+    have hy : Real.pi / 2 * Real.cos theta ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos, hcosTheta1]
+    have hsin_lo_lt :
+        Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
+          Real.sin (Real.pi / 2 * Real.cos theta) :=
+      Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hlo_lt_angle
+    exact hsin0.trans hsin_lo_lt
+  have hSin1 :
+      Real.sin (Real.pi / 2 * Real.cos theta) <
+        (99655727372 : ℝ) / 100000000000 := by
+    have hangle_lt_hi :
+        Real.pi / 2 * Real.cos theta <
+          Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000) :=
+      mul_lt_mul_of_pos_left hcosTheta1 hpi2_pos
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * Real.cos theta := by
+      nlinarith [Real.pi_pos, hcosTheta0]
+    have hy :
+        Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000) ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos]
+    have hsin_lt_hi :
+        Real.sin (Real.pi / 2 * Real.cos theta) <
+          Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) :=
+      Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle_lt_hi
+    exact hsin_lt_hi.trans hsin1
+  exact v_box_of_exp_cos_sin_bounds hExp0 hExp1 hCos0 hCos1 hSin0 hSin1
+
+/--
+A narrow rational box for `theta`, plus endpoint estimates for `sin` and
+`cos`, is enough to certify the `sin theta` and `cos theta` boxes used by the
+`v` reduction.
+-/
+theorem sin_cos_theta_bounds_of_theta_box_and_endpoint_bounds
+    (htheta0 : (326536474946 : ℝ) / 1000000000000 < theta)
+    (htheta1 : theta < (326536474949 : ℝ) / 1000000000000)
+    (hsin0 : (320764449975 : ℝ) / 1000000000000 <
+      Real.sin ((326536474946 : ℝ) / 1000000000000))
+    (hsin1 :
+      Real.sin ((326536474949 : ℝ) / 1000000000000) <
+        (320764449985 : ℝ) / 1000000000000)
+    (hcos0 : (947158998071 : ℝ) / 1000000000000 <
+      Real.cos ((326536474949 : ℝ) / 1000000000000))
+    (hcos1 :
+      Real.cos ((326536474946 : ℝ) / 1000000000000) <
+        (947158998073 : ℝ) / 1000000000000) :
+    (320764449975 : ℝ) / 1000000000000 < Real.sin theta ∧
+      Real.sin theta < (320764449985 : ℝ) / 1000000000000 ∧
+      (947158998071 : ℝ) / 1000000000000 < Real.cos theta ∧
+      Real.cos theta < (947158998073 : ℝ) / 1000000000000 := by
+  have hsinLower :
+      (320764449975 : ℝ) / 1000000000000 < Real.sin theta := by
+    have hx :
+        -(Real.pi / 2) ≤ (326536474946 : ℝ) / 1000000000000 := by
+      nlinarith [Real.pi_pos]
+    have hy : theta ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_gt_d2, htheta1]
+    have hsin_lo_lt :
+        Real.sin ((326536474946 : ℝ) / 1000000000000) < Real.sin theta :=
+      Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy htheta0
+    exact hsin0.trans hsin_lo_lt
+  have hsinUpper :
+      Real.sin theta < (320764449985 : ℝ) / 1000000000000 := by
+    have hx : -(Real.pi / 2) ≤ theta := by
+      nlinarith [Real.pi_pos, htheta0]
+    have hy :
+        (326536474949 : ℝ) / 1000000000000 ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_gt_d2]
+    have hsin_lt_hi :
+        Real.sin theta < Real.sin ((326536474949 : ℝ) / 1000000000000) :=
+      Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy htheta1
+    exact hsin_lt_hi.trans hsin1
+  have hcosLower :
+      (947158998071 : ℝ) / 1000000000000 < Real.cos theta := by
+    have htheta_nonneg : 0 ≤ theta := by
+      nlinarith [htheta0]
+    have hhi_le_pi :
+        (326536474949 : ℝ) / 1000000000000 ≤ Real.pi := by
+      nlinarith [Real.pi_gt_d2]
+    have hcos_hi_lt :
+        Real.cos ((326536474949 : ℝ) / 1000000000000) < Real.cos theta :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi htheta_nonneg hhi_le_pi htheta1
+    exact hcos0.trans hcos_hi_lt
+  have hcosUpper :
+      Real.cos theta < (947158998073 : ℝ) / 1000000000000 := by
+    have hlo_nonneg : 0 ≤ (326536474946 : ℝ) / 1000000000000 := by positivity
+    have htheta_le_pi : theta ≤ Real.pi := by
+      nlinarith [Real.pi_gt_d2, htheta1]
+    have hcos_lt_lo :
+        Real.cos theta < Real.cos ((326536474946 : ℝ) / 1000000000000) :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi hlo_nonneg htheta_le_pi htheta0
+    exact hcos_lt_lo.trans hcos1
+  exact ⟨hsinLower, hsinUpper, hcosLower, hcosUpper⟩
+
+/--
+Rational boxes for `pi/2` and `rho = exp(-pi/2)`, plus the corresponding
+endpoint product estimates, are enough to certify the narrow rational box for
+`theta = (pi/2) * rho`.
+-/
+theorem theta_box_of_pi_div_two_rho_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hrho0 : (207879576350 : ℝ) / 1000000000000 < rho)
+    (hrho1 : rho < (207879576351 : ℝ) / 1000000000000)
+    (hlo : (326536474946 : ℝ) / 1000000000000 <
+      ((1570796326794 : ℝ) / 1000000000000) *
+        ((207879576350 : ℝ) / 1000000000000))
+    (hhi :
+      ((1570796326795 : ℝ) / 1000000000000) *
+          ((207879576351 : ℝ) / 1000000000000) <
+        (326536474949 : ℝ) / 1000000000000) :
+    (326536474946 : ℝ) / 1000000000000 < theta ∧
+      theta < (326536474949 : ℝ) / 1000000000000 := by
+  dsimp [theta]
+  have hpi_pos : 0 < Real.pi / 2 :=
+    (by norm_num :
+      (0 : ℝ) < (1570796326794 : ℝ) / 1000000000000).trans hpi0
+  have hrho_pos : 0 < rho :=
+    (by norm_num :
+      (0 : ℝ) < (207879576350 : ℝ) / 1000000000000).trans hrho0
+  constructor
+  · have h1 :
+        ((1570796326794 : ℝ) / 1000000000000) *
+            ((207879576350 : ℝ) / 1000000000000) <
+          (Real.pi / 2) * ((207879576350 : ℝ) / 1000000000000) :=
+      mul_lt_mul_of_pos_right hpi0 (by norm_num)
+    have h2 :
+        (Real.pi / 2) * ((207879576350 : ℝ) / 1000000000000) <
+          (Real.pi / 2) * rho :=
+      mul_lt_mul_of_pos_left hrho0 hpi_pos
+    exact hlo.trans (h1.trans h2)
+  · have h1 :
+        (Real.pi / 2) * rho <
+          ((1570796326795 : ℝ) / 1000000000000) * rho :=
+      mul_lt_mul_of_pos_right hpi1 hrho_pos
+    have h2 :
+        ((1570796326795 : ℝ) / 1000000000000) * rho <
+          ((1570796326795 : ℝ) / 1000000000000) *
+            ((207879576351 : ℝ) / 1000000000000) :=
+      mul_lt_mul_of_pos_left hrho1 (by norm_num)
+    exact (h1.trans h2).trans hhi
+
+/--
+Bounds for `pi/2`, plus endpoint exponential estimates, are enough to certify
+the rational box for `rho = exp(-pi/2)`.
+-/
+theorem rho_bounds_of_pi_div_two_bounds_and_endpoint_bounds
+    (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
+    (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
+    (hexp0 : (207879576350 : ℝ) / 1000000000000 <
+      Real.exp (-((1570796326795 : ℝ) / 1000000000000)))
+    (hexp1 :
+      Real.exp (-((1570796326794 : ℝ) / 1000000000000)) <
+        (207879576351 : ℝ) / 1000000000000) :
+    (207879576350 : ℝ) / 1000000000000 < rho ∧
+      rho < (207879576351 : ℝ) / 1000000000000 := by
+  dsimp [rho]
+  constructor
+  · have harg :
+        -((1570796326795 : ℝ) / 1000000000000) < -(Real.pi / 2) := by
+      linarith
+    exact hexp0.trans (Real.exp_lt_exp.mpr harg)
+  · have harg :
+        -(Real.pi / 2) < -((1570796326794 : ℝ) / 1000000000000) := by
+      linarith
+    exact (Real.exp_lt_exp.mpr harg).trans hexp1
+
+/--
+A rational box around `v`, plus endpoint product estimates, is enough to
+certify the rational box around the representative-`25` seed used by the next
+reduction.
+-/
+theorem nearOne25Seed_box_of_v_box_and_endpoint_bounds
+    (hre0 : (50092236 : ℝ) / 1000000000 < v.re)
+    (hre1 : v.re < (50092237 : ℝ) / 1000000000)
+    (him0 : (602116527 : ℝ) / 1000000000 < v.im)
+    (him1 : v.im < (602116528 : ℝ) / 1000000000)
+    (hrelo : (25669119 : ℝ) / 10000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
+    (hrehi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+          (320864 : ℝ) / 125000)
+    (himlo : (404789 : ℝ) / 2000000 <
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
+    (himhi :
+      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+          (1011973 : ℝ) / 5000000) :
+    (25669119 : ℝ) / 10000000 < nearOne25Seed.re ∧
+      nearOne25Seed.re < (320864 : ℝ) / 125000 ∧
+      (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im ∧
+      nearOne25Seed.im < (-(404789 : ℝ) / 2000000) := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  have hexp0 :
+      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) <
+        Real.exp (Real.pi / 2 * v.im) :=
+    Real.exp_lt_exp.mpr (mul_lt_mul_of_pos_left him0 hpi2_pos)
+  have hexp1 :
+      Real.exp (Real.pi / 2 * v.im) <
+        Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) :=
+    Real.exp_lt_exp.mpr (mul_lt_mul_of_pos_left him1 hpi2_pos)
+  have hangle0 :
+      Real.pi / 2 * ((50092236 : ℝ) / 1000000000) < Real.pi / 2 * v.re :=
+    mul_lt_mul_of_pos_left hre0 hpi2_pos
+  have hangle1 :
+      Real.pi / 2 * v.re < Real.pi / 2 * ((50092237 : ℝ) / 1000000000) :=
+    mul_lt_mul_of_pos_left hre1 hpi2_pos
+  have hcos0 :
+      Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
+        Real.cos (Real.pi / 2 * v.re) := by
+    have hangle_nonneg : 0 ≤ Real.pi / 2 * v.re := by
+      nlinarith [Real.pi_pos, hre0]
+    have hhi_le_pi : Real.pi / 2 * ((50092237 : ℝ) / 1000000000) ≤ Real.pi := by
+      nlinarith [Real.pi_pos]
+    exact Real.cos_lt_cos_of_nonneg_of_le_pi hangle_nonneg hhi_le_pi hangle1
+  have hcos1 :
+      Real.cos (Real.pi / 2 * v.re) <
+        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) := by
+    have hlo_nonneg : 0 ≤ Real.pi / 2 * ((50092236 : ℝ) / 1000000000) := by positivity
+    have hangle_le_pi : Real.pi / 2 * v.re ≤ Real.pi := by
+      nlinarith [Real.pi_pos, hre1]
+    exact Real.cos_lt_cos_of_nonneg_of_le_pi hlo_nonneg hangle_le_pi hangle0
+  have hsin0 :
+      Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
+        Real.sin (Real.pi / 2 * v.re) := by
+    have hx : -(Real.pi / 2) ≤
+        Real.pi / 2 * ((50092236 : ℝ) / 1000000000) := by
+      nlinarith [Real.pi_pos]
+    have hy : Real.pi / 2 * v.re ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos, hre1]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle0
+  have hsin1 :
+      Real.sin (Real.pi / 2 * v.re) <
+        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) := by
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * v.re := by
+      nlinarith [Real.pi_pos, hre0]
+    have hy : Real.pi / 2 * ((50092237 : ℝ) / 1000000000) ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle1
+  have hcos_lo_pos :
+      0 < Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) := by
+    exact Real.cos_pos_of_mem_Ioo ⟨by nlinarith [Real.pi_pos], by nlinarith [Real.pi_pos]⟩
+  have hsin_lo_pos :
+      0 < Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) := by
+    exact Real.sin_pos_of_pos_of_lt_pi
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hre_bounds :
+      (25669119 : ℝ) / 10000000 < nearOne25Seed.re ∧
+        nearOne25Seed.re < (320864 : ℝ) / 125000 := by
+    rw [nearOne25Seed_re_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hcos0 hcos1 hrelo hrehi
+      (Real.exp_pos _) hcos_lo_pos
+  have hprod_bounds :
+      (404789 : ℝ) / 2000000 <
+          Real.exp (Real.pi / 2 * v.im) * Real.sin (Real.pi / 2 * v.re) ∧
+        Real.exp (Real.pi / 2 * v.im) * Real.sin (Real.pi / 2 * v.re) <
+          (1011973 : ℝ) / 5000000 :=
+    mul_mem_pos_pos_interval hexp0 hexp1 hsin0 hsin1 himlo himhi
+      (Real.exp_pos _) hsin_lo_pos
+  have him_bounds :
+      (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im ∧
+        nearOne25Seed.im < (-(404789 : ℝ) / 2000000) := by
+    rw [nearOne25Seed_im_eq]
+    constructor <;> nlinarith [hprod_bounds.1, hprod_bounds.2]
+  exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
 
 /--
 The hard sign condition for `idx = 25` follows from a certified interval for
