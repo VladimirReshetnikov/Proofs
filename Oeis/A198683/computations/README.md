@@ -48,6 +48,14 @@ diagnostics and only meaningful in conjunction with that report.
   localised to the `n = 12` stage.
 - [`python/diagnose_levels.py`](python/diagnose_levels.py) — checks that
   `|V[n]|` for `n <= 11` is unaffected by the `abs_eps` policy.
+- [`python/diagnose_overflow_magnitude.py`](python/diagnose_overflow_magnitude.py)
+  — reads the retained `n = 12` candidate TSV and reports that the overflow
+  singleton `idx=57` is the only row with an astronomically negative displayed
+  `Re(e)` signature.
+- [`python/trace_dp_expression.py`](python/trace_dp_expression.py) — re-runs
+  the dynamic-programming recurrence while carrying representative expression
+  strings, useful for identifying the lower-level expression behind a retained
+  value index such as `values[11][57]`.
 
 ## Known Comparison Point
 

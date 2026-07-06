@@ -44,6 +44,30 @@ This observation is reproducible with:
 python .\src\Oeis\A198683\computations\python\diagnose_overflow_magnitude.py --top 12
 ```
 
+The dynamic-programming representative behind candidate `57` can be traced
+with:
+
+```powershell
+python .\src\Oeis\A198683\computations\python\trace_dp_expression.py --n 11 --index 57 --dps 260
+```
+
+This reports the retained `values[11][57]` representative as
+
+```text
+(i^(i^(i^(((i^i)^i)^(i^((i^i)^(i^i)))))))
+```
+
+with displayed imaginary part
+
+```text
+2.0523942547869173541776347332204601020523469760352e+41232950809707420597749203381002924.
+```
+
+Since candidate `57` at `n = 12` is the split `(k=1, ia=0, ib=57)`,
+its exponent is `e = values[11][57] Log(i) = values[11][57] * iπ/2`.
+The enormous positive imaginary part above is therefore exactly the source
+of the enormous negative `Re(e_57)`.
+
 ## Certification target
 
 A proof-quality pipeline can settle the overflow singleton without reducing
