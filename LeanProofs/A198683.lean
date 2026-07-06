@@ -592,6 +592,29 @@ private theorem p5C_im_pos :
     simpa [hexp_re] using hsin_pos
   simpa [Complex.exp_im, Complex.mul_re, Complex.mul_im] using hsin_pos'
 
+private theorem p5E_im_pos :
+    0 < p5E.im := by
+  rw [p5E_eq_I]
+  simp
+
+private theorem p5G_ne_p5C :
+    p5G ≠ p5C := by
+  intro h
+  have him := congrArg Complex.im h
+  linarith [p5G_im_neg, p5C_im_pos]
+
+private theorem p5G_ne_p5E :
+    p5G ≠ p5E := by
+  intro h
+  have him := congrArg Complex.im h
+  linarith [p5G_im_neg, p5E_im_pos]
+
+private theorem p5G_ne_p5F :
+    p5G ≠ p5F := by
+  intro h
+  have him := congrArg Complex.im h
+  linarith [p5G_im_neg, p5F_im_pos]
+
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
   simp only [a198683ValueSet]
