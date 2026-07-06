@@ -180,6 +180,10 @@ theorem a002845_six : a002845 6 = 8 := by
 theorem a002845_seven : a002845 7 = 17 := by
   native_decide
 
+/-- `A002845(8) = 36`. -/
+theorem a002845_eight : a002845 8 = 36 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
