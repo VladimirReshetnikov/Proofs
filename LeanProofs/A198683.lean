@@ -1941,6 +1941,19 @@ private theorem p6O_eq_exp_neg_beta :
   rw [show -(beta : ℂ) = ((-beta : ℝ) : ℂ) by norm_num]
   exact (Complex.ofReal_exp (-beta)).symm
 
+private theorem p6O_pow_I_eq_p3R_pow_p4B :
+    principalPow p6O Complex.I = principalPow p3R p4B := by
+  dsimp [principalPow]
+  rw [p6O_eq_exp_neg_beta, log_p3R_eq, p4B_eq_exp_pi_div_two]
+  rw [← Complex.ofReal_log (Real.exp_pos (-beta)).le, Real.log_exp]
+  rw [show (((-beta : ℝ) : ℂ) * Complex.I) =
+      (((-(Real.pi / 2) : ℂ) * Complex.I) * (Real.exp (Real.pi / 2) : ℂ)) +
+        (1 : ℤ) * (2 * (Real.pi : ℂ) * Complex.I) by
+    apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im, beta]
+    ring_nf]
+  rw [Complex.exp_add, Complex.exp_int_mul_two_pi_mul_I]
+  ring_nf
+
 private theorem p6I_re_lt_p6E_re :
     p6I.re < p6E.re := by
   have hI : p6I.re = Real.exp (-(Real.pi / 2 * Real.exp (Real.pi / 2))) := by
