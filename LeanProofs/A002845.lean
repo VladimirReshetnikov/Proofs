@@ -622,6 +622,11 @@ def a002845Sparse (n : Nat) : Nat :=
 
 attribute [implemented_by a002845Sparse] certifiedLevelCard
 
+/-- OEIS A002845 has value `1928` at `n = 13`. -/
+theorem a002845_thirteen : a002845 13 = 1928 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
 /-- The sparse backend computes `1` at `n = 1`. -/
 theorem a002845Sparse_one : a002845Sparse 1 = 1 := by
   native_decide
