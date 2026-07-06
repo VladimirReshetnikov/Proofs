@@ -160,7 +160,8 @@ the exact formula for `nearOne25Level3.re`, and then to a small rational box
 around `nearOne25Level2` plus four endpoint `exp`/`cos` estimates; that
 `nearOne25Level2` box is itself reduced to a tighter rational box around
 `nearOne25Level1` plus endpoint product estimates; and the `nearOne25Level1`
-box is reduced to a rational box around the seed using a shifted third-quadrant
+box is now also composed into direct sufficient conditions for the split, and
+is reduced to a rational box around the seed using a shifted third-quadrant
 trigonometric monotonicity argument.  The seed box is reduced one level further
 to a narrow rational box around `v = i^(i^(i^i))`, and that `v` box is reduced
 to scalar rational bounds for its exact exponential, cosine, and sine factors,
