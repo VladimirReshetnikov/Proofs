@@ -6,6 +6,7 @@ import LeanProofs.TrigGoldenRatio
 import LeanProofs.ArctanSquareIdentity
 import LeanProofs.Nicod
 import LeanProofs.WolframBoolean
+import LeanProofs.A000081
 import LeanProofs.A002845
 import LeanProofs.A198683
 import LeanProofs.A198683Schoenfield
