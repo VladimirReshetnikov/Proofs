@@ -2324,6 +2324,138 @@ private theorem p6K_re_gt_four_div_five :
     mul_lt_mul hexp_lb hcos_lb.le (by norm_num) (Real.exp_pos _).le
   nlinarith [hprod]
 
+private theorem p5B_re_lt_one :
+    p5B.re < 1 := by
+  rw [p5B_eq_exp_beta]
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+  have hcos := Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := 0) (y := beta) (by norm_num) beta_lt_angleE.le beta_pos
+  simpa using hcos
+
+private theorem p5C_re_lt_one :
+    p5C.re < 1 := by
+  rw [p5C_eq_exp_pi_mul_exp_neg_theta]
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+  rw [show (Complex.exp (-(theta : ℂ))).im = 0 by
+    simpa using Complex.exp_ofReal_im (-theta)]
+  norm_num
+  have hcos := Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := 0) (y := Real.pi / 2 * Real.exp (-theta)) (by norm_num)
+    angleC_lt_angleE.le angleC_pos
+  simpa using hcos
+
+private theorem p5F_re_lt_one :
+    p5F.re < 1 := by
+  rw [p5F_eq_exp_theta_mul_rho]
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+  have hcos := Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := 0) (y := theta * rho) (by norm_num)
+    (angleF_lt_angleC.trans angleC_lt_angleE).le angleF_pos
+  simpa using hcos
+
+private theorem p5G_re_lt_one :
+    p5G.re < 1 := by
+  rw [p5G_eq_exp_neg_theta]
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+  have hcos := Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := 0) (y := theta) (by norm_num)
+    (by linarith [theta_lt_pi_div_two]) theta_pos
+  simpa using hcos
+
+private theorem p6A_re_pos :
+    0 < p6A.re := by
+  have hlt : p5A.re < 1 := (Complex.re_le_norm p5A).trans_lt p5A_norm_lt_one
+  simpa [p6A] using
+    I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
+      (z := p5A) (by linarith [p5A_re_pos]) hlt
+
+private theorem p6B_re_pos :
+    0 < p6B.re := by
+  simpa [p6B] using
+    I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
+      (z := p5B) (by linarith [p5B_re_pos]) p5B_re_lt_one
+
+private theorem p6C_re_pos :
+    0 < p6C.re := by
+  simpa [p6C] using
+    I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
+      (z := p5C) (by linarith [p5C_re_pos]) p5C_re_lt_one
+
+private theorem p6D_re_pos :
+    0 < p6D.re := by
+  have hlt : p5D.re < 1 := (Complex.re_le_norm p5D).trans_lt p5D_norm_lt_one
+  simpa [p6D] using
+    I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
+      (z := p5D) (by linarith [p5D_re_pos]) hlt
+
+private theorem p6E_re_pos :
+    0 < p6E.re := by
+  rw [p6E_eq_exp_neg_pi_div_two]
+  exact Real.exp_pos _
+
+private theorem p6F_re_pos :
+    0 < p6F.re := by
+  simpa [p6F] using
+    I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
+      (z := p5F) (by linarith [p5F_re_pos]) p5F_re_lt_one
+
+private theorem p6G_re_pos :
+    0 < p6G.re := by
+  simpa [p6G] using
+    I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
+      (z := p5G) (by linarith [p5G_re_pos]) p5G_re_lt_one
+
+private theorem p6H_re_pos :
+    0 < p6H.re := by
+  dsimp [p6H, principalPow]
+  rw [Complex.exp_re, log_p2_eq]
+  simp [Complex.mul_re, Complex.mul_im]
+  apply mul_pos
+  · positivity
+  apply Real.cos_pos_of_mem_Ioo
+  constructor <;> nlinarith [Real.pi_pos, p4A_im_pos, p4A_im_lt_one]
+
+private theorem p6I_re_pos :
+    0 < p6I.re := by
+  rw [p6I_eq_exp_neg_pi_div_two_mul_exp_pi_div_two]
+  exact Real.exp_pos _
+
+private theorem p6J_re_pos :
+    0 < p6J.re := by
+  rw [p6J_eq_exp_neg_angleC]
+  exact Real.exp_pos _
+
+private theorem p6K_re_pos :
+    0 < p6K.re := by
+  linarith [p6K_re_gt_four_div_five]
+
+private theorem p6L_re_pos :
+    0 < p6L.re := by
+  rw [p6L_eq_exp_theta]
+  exact Real.exp_pos _
+
+private theorem p6M_re_pos :
+    0 < p6M.re := by
+  dsimp [p6M, principalPow]
+  rw [Complex.exp_re, log_p3R_eq, p3L_eq_exp_theta]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  apply mul_pos
+  · positivity
+  apply Real.cos_pos_of_mem_Ioo
+  have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+  have hcos_le_one : Real.cos theta ≤ 1 := Real.cos_le_one theta
+  constructor <;> nlinarith [Real.pi_pos, hcos_pos, hcos_le_one, cos_theta_lt_one]
+
+private theorem p6N_re_pos :
+    0 < p6N.re := by
+  rw [p6N_eq_exp_neg_angleF]
+  exact Real.exp_pos _
+
+private theorem p6O_re_pos :
+    0 < p6O.re := by
+  rw [p6O_eq_exp_neg_beta]
+  exact Real.exp_pos _
+
 private theorem exp_neg_pi_div_four_lt_four_div_five :
     Real.exp (-(Real.pi / 4)) < (4 : ℝ) / 5 := by
   rw [Real.exp_neg]
@@ -4287,6 +4419,71 @@ private theorem a198683SixCandidateSet_re_bounds {z : ℂ}
   · exact re_bounds_of_norm_le_one p6N_norm_le_one
   · exact re_bounds_of_norm_le_one p6O_norm_le_one
 
+private theorem re_lt_two_of_norm_le_one {z : ℂ} (hz : ‖z‖ ≤ 1) :
+    z.re < 2 := by
+  linarith [(Complex.re_le_norm z).trans hz]
+
+private theorem a198683SixCandidateSet_re_pos {z : ℂ}
+    (hz : z ∈ a198683SixCandidateSet) : 0 < z.re := by
+  dsimp [a198683SixCandidateSet] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl
+  · exact p6A_re_pos
+  · exact p6B_re_pos
+  · exact p6C_re_pos
+  · exact p6D_re_pos
+  · exact p6E_re_pos
+  · exact p6F_re_pos
+  · exact p6G_re_pos
+  · exact p6H_re_pos
+  · exact p6I_re_pos
+  · exact p6J_re_pos
+  · exact p6K_re_pos
+  · exact p6L_re_pos
+  · exact p6M_re_pos
+  · exact p6N_re_pos
+  · exact p6O_re_pos
+
+private theorem a198683SixCandidateSet_re_lt_two {z : ℂ}
+    (hz : z ∈ a198683SixCandidateSet) : z.re < 2 := by
+  dsimp [a198683SixCandidateSet] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl
+  · exact re_lt_two_of_norm_le_one p6A_norm_le_one
+  · exact re_lt_two_of_norm_le_one p6B_norm_le_one
+  · exact re_lt_two_of_norm_le_one p6C_norm_le_one
+  · exact (Complex.re_le_norm p6D).trans_lt p6D_norm_lt_two
+  · exact re_lt_two_of_norm_le_one p6E_norm_le_one
+  · exact re_lt_two_of_norm_le_one p6F_norm_le_one
+  · exact (Complex.re_le_norm p6G).trans_lt p6G_norm_lt_two
+  · exact re_lt_two_of_norm_le_one p6H_norm_le_one
+  · exact re_lt_two_of_norm_le_one p6I_norm_le_one
+  · exact re_lt_two_of_norm_le_one p6J_norm_le_one
+  · exact re_lt_two_of_norm_le_one p6K_norm_le_one
+  · exact (Complex.re_le_norm p6L).trans_lt p6L_norm_lt_two
+  · exact (Complex.re_le_norm p6M).trans_lt p6M_norm_lt_two
+  · exact re_lt_two_of_norm_le_one p6N_norm_le_one
+  · exact re_lt_two_of_norm_le_one p6O_norm_le_one
+
+private theorem I_pow_im_pos_of_re_pos_of_re_lt_two {z : ℂ}
+    (hzpos : 0 < z.re) (hzlt : z.re < 2) :
+    0 < (principalPow Complex.I z).im := by
+  dsimp [principalPow]
+  rw [log_I_real, Complex.exp_im]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  apply mul_pos
+  · positivity
+  apply Real.sin_pos_of_mem_Ioo
+  constructor <;> nlinarith [Real.pi_pos, hzpos, hzlt]
+
+private theorem I_pow_image_sixCandidateSet_im_pos {z : ℂ}
+    (hz : z ∈ (fun w : ℂ => principalPow Complex.I w) '' a198683SixCandidateSet) :
+    0 < z.im := by
+  rcases hz with ⟨w, hw, rfl⟩
+  exact I_pow_im_pos_of_re_pos_of_re_lt_two
+    (a198683SixCandidateSet_re_pos hw) (a198683SixCandidateSet_re_lt_two hw)
+
 private theorem a198683SixCandidateSet_subset_six :
     a198683SixCandidateSet ⊆ a198683ValueSet 6 := by
   intro z hz
@@ -4327,6 +4524,170 @@ theorem fifteen_le_a198683_seven : 15 ≤ a198683 7 := by
       hcard.symm
     _ ≤ (a198683ValueSet 7).ncard :=
       Set.ncard_le_ncard I_pow_image_sixCandidateSet_subset_seven hfinite7
+
+private theorem p5B_im_pos :
+    0 < p5B.im := by
+  rw [p5B_eq_exp_beta]
+  simp [Complex.exp_im, Complex.mul_re, Complex.mul_im]
+  apply Real.sin_pos_of_mem_Ioo
+  exact ⟨beta_pos, beta_lt_angleE.trans angleE_lt_pi⟩
+
+private theorem p2_pow_inj_of_norm_le_one {x y : ℂ}
+    (hx : ‖x‖ ≤ 1) (hy : ‖y‖ ≤ 1) :
+    principalPow p2 x = principalPow p2 y → x = y := by
+  intro h
+  dsimp [principalPow] at h
+  rw [log_p2_eq] at h
+  have hxabs : |x.im| ≤ 1 := (Complex.abs_im_le_norm x).trans hx
+  have hyabs : |y.im| ≤ 1 := (Complex.abs_im_le_norm y).trans hy
+  have hxge : -1 ≤ x.im := (abs_le.mp hxabs).1
+  have hxle : x.im ≤ 1 := (abs_le.mp hxabs).2
+  have hyge : -1 ≤ y.im := (abs_le.mp hyabs).1
+  have hyle : y.im ≤ 1 := (abs_le.mp hyabs).2
+  have heq := Complex.exp_inj_of_neg_pi_lt_of_le_pi
+    (x := (-(Real.pi / 2) : ℂ) * x)
+    (y := (-(Real.pi / 2) : ℂ) * y)
+    (by simp [Complex.mul_im]; nlinarith [Real.pi_pos, hxle])
+    (by simp [Complex.mul_im]; nlinarith [Real.pi_pos, hxge])
+    (by simp [Complex.mul_im]; nlinarith [Real.pi_pos, hyle])
+    (by simp [Complex.mul_im]; nlinarith [Real.pi_pos, hyge])
+    h
+  have hc : (-(Real.pi / 2) : ℂ) ≠ 0 := by
+    norm_num [Real.pi_ne_zero]
+  exact mul_left_cancel₀ hc heq
+
+private theorem p2_pow_im_neg_of_im_pos_of_norm_le_one {z : ℂ}
+    (hzpos : 0 < z.im) (hznorm : ‖z‖ ≤ 1) :
+    (principalPow p2 z).im < 0 := by
+  dsimp [principalPow]
+  rw [log_p2_eq, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im]
+  apply mul_pos
+  · positivity
+  apply Real.sin_pos_of_mem_Ioo
+  constructor
+  · nlinarith [Real.pi_pos, hzpos]
+  · have hle : z.im ≤ 1 := (abs_le.mp ((Complex.abs_im_le_norm z).trans hznorm)).2
+    nlinarith [Real.pi_pos, hle]
+
+private noncomputable def a198683SevenP2NegativeExponents : Set ℂ :=
+  ({p5A, p5B, p5C, p5E, p5F} : Set ℂ)
+
+private theorem a198683SevenP2NegativeExponents_ncard :
+    a198683SevenP2NegativeExponents.ncard = 5 := by
+  have hA : p5A ∉ ({p5B, p5C, p5E, p5F} : Set ℂ) := by
+    simp [p5A_ne_p5B, p5A_ne_p5C, p5A_ne_p5E, p5A_ne_p5F]
+  have hB : p5B ∉ ({p5C, p5E, p5F} : Set ℂ) := by
+    simp [p5B_ne_p5C, p5B_ne_p5E, p5B_ne_p5F]
+  have hC : p5C ∉ ({p5E, p5F} : Set ℂ) := by
+    simp [p5C_ne_p5E, p5F_ne_p5C.symm]
+  have hE : p5E ∉ ({p5F} : Set ℂ) := by
+    simp [p5F_ne_p5E.symm]
+  dsimp [a198683SevenP2NegativeExponents]
+  rw [Set.ncard_insert_of_notMem hA, Set.ncard_insert_of_notMem hB,
+    Set.ncard_insert_of_notMem hC, Set.ncard_insert_of_notMem hE]
+  simp
+
+private theorem a198683SevenP2NegativeExponents_norm_le_one {z : ℂ}
+    (hz : z ∈ a198683SevenP2NegativeExponents) : ‖z‖ ≤ 1 := by
+  dsimp [a198683SevenP2NegativeExponents] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl
+  · exact p5A_norm_le_one
+  · exact p5B_norm_le_one
+  · exact p5C_norm_le_one
+  · exact p5E_norm_le_one
+  · exact p5F_norm_le_one
+
+private theorem a198683SevenP2NegativeExponents_im_pos {z : ℂ}
+    (hz : z ∈ a198683SevenP2NegativeExponents) : 0 < z.im := by
+  dsimp [a198683SevenP2NegativeExponents] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl
+  · exact p5A_im_pos
+  · exact p5B_im_pos
+  · exact p5C_im_pos
+  · simp [p5E_eq_I]
+  · exact p5F_im_pos
+
+private theorem a198683SevenP2NegativeExponents_subset_five :
+    a198683SevenP2NegativeExponents ⊆ a198683ValueSet 5 := by
+  intro z hz
+  rw [mem_valueSet_five]
+  dsimp [a198683SevenP2NegativeExponents] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl
+  · exact Or.inl rfl
+  · exact Or.inr (Or.inl rfl)
+  · exact Or.inr (Or.inr (Or.inl rfl))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+  · exact Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+
+private theorem p2_pow_injOn_p2NegativeExponents :
+    Set.InjOn (fun z : ℂ => principalPow p2 z) a198683SevenP2NegativeExponents := by
+  intro x hx y hy hxy
+  exact p2_pow_inj_of_norm_le_one
+    (a198683SevenP2NegativeExponents_norm_le_one hx)
+    (a198683SevenP2NegativeExponents_norm_le_one hy) hxy
+
+private theorem p2_pow_image_p2NegativeExponents_subset_seven :
+    (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents ⊆
+      a198683ValueSet 7 := by
+  rintro z ⟨x, hx, rfl⟩
+  simp only [a198683ValueSet]
+  refine ⟨1, p2, ?_, x, ?_, rfl⟩
+  · exact mem_valueSet_two.2 rfl
+  · exact a198683SevenP2NegativeExponents_subset_five hx
+
+private theorem p2_pow_image_p2NegativeExponents_im_neg {z : ℂ}
+    (hz : z ∈ (fun w : ℂ => principalPow p2 w) '' a198683SevenP2NegativeExponents) :
+    z.im < 0 := by
+  rcases hz with ⟨w, hw, rfl⟩
+  exact p2_pow_im_neg_of_im_pos_of_norm_le_one
+    (a198683SevenP2NegativeExponents_im_pos hw)
+    (a198683SevenP2NegativeExponents_norm_le_one hw)
+
+/-- Semantic lower bound for `A198683(7)` from two sign-separated split families. -/
+theorem twenty_le_a198683_seven : 20 ≤ a198683 7 := by
+  classical
+  rw [a198683]
+  let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
+  let t : Set ℂ := (fun z : ℂ => principalPow p2 z) '' a198683SevenP2NegativeExponents
+  have hfinite7 : (a198683ValueSet 7).Finite := by
+    let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
+      fun i => a198683SevenCanonicalReps.get i
+    have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+      simpa [rep] using a198683_seven_subset_canonicalReps
+    exact (Set.finite_range rep).subset hsubset
+  have hs_card : s.ncard = 15 := by
+    dsimp [s]
+    rw [I_pow_injOn_a198683SixCandidateSet.ncard_image, a198683SixCandidateSet_ncard]
+  have ht_card : t.ncard = 5 := by
+    dsimp [t]
+    rw [p2_pow_injOn_p2NegativeExponents.ncard_image,
+      a198683SevenP2NegativeExponents_ncard]
+  have hs_finite : s.Finite := by
+    dsimp [s]
+    exact (by simp [a198683SixCandidateSet] : a198683SixCandidateSet.Finite).image _
+  have ht_finite : t.Finite := by
+    dsimp [t]
+    exact (by simp [a198683SevenP2NegativeExponents] :
+      a198683SevenP2NegativeExponents.Finite).image _
+  have hdisj : Disjoint s t := by
+    rw [Set.disjoint_left]
+    intro z hzS hzT
+    have hpos : 0 < z.im := by
+      exact I_pow_image_sixCandidateSet_im_pos (by simpa [s] using hzS)
+    have hneg : z.im < 0 := by
+      exact p2_pow_image_p2NegativeExponents_im_neg (by simpa [t] using hzT)
+    exact (lt_asymm hneg hpos).elim
+  have hunion_card : (s ∪ t).ncard = 20 := by
+    rw [Set.ncard_union_eq hdisj hs_finite ht_finite, hs_card, ht_card]
+  have hunion_subset : s ∪ t ⊆ a198683ValueSet 7 := by
+    intro z hz
+    rcases hz with hz | hz
+    · exact I_pow_image_sixCandidateSet_subset_seven (by simpa [s] using hz)
+    · exact p2_pow_image_p2NegativeExponents_subset_seven (by simpa [t] using hz)
+  calc
+    20 = (s ∪ t).ncard := hunion_card.symm
+    _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hunion_subset hfinite7
 
 end
 
