@@ -1485,25 +1485,26 @@ theorem sin_cos_theta_bounds_of_theta_box_and_endpoint_bounds
   exact ⟨hsinLower, hsinUpper, hcosLower, hcosUpper⟩
 
 /--
-Rational boxes for `pi/2` and `rho = exp(-pi/2)`, plus the corresponding
-endpoint product estimates, are enough to certify the narrow rational box for
-`theta = (pi/2) * rho`.
+Rational boxes for `pi/2` and `rho = exp(-pi/2)` are enough to certify the
+narrow rational box for `theta = (pi/2) * rho`.
 -/
 theorem theta_box_of_pi_div_two_rho_bounds
     (hpi0 : (1570796326794 : ℝ) / 1000000000000 < Real.pi / 2)
     (hpi1 : Real.pi / 2 < (1570796326795 : ℝ) / 1000000000000)
     (hrho0 : (207879576350 : ℝ) / 1000000000000 < rho)
-    (hrho1 : rho < (207879576351 : ℝ) / 1000000000000)
-    (hlo : (326536474946 : ℝ) / 1000000000000 <
-      ((1570796326794 : ℝ) / 1000000000000) *
-        ((207879576350 : ℝ) / 1000000000000))
-    (hhi :
-      ((1570796326795 : ℝ) / 1000000000000) *
-          ((207879576351 : ℝ) / 1000000000000) <
-        (326536474949 : ℝ) / 1000000000000) :
+    (hrho1 : rho < (207879576351 : ℝ) / 1000000000000) :
     (326536474946 : ℝ) / 1000000000000 < theta ∧
       theta < (326536474949 : ℝ) / 1000000000000 := by
   dsimp [theta]
+  have hlo : (326536474946 : ℝ) / 1000000000000 <
+      ((1570796326794 : ℝ) / 1000000000000) *
+        ((207879576350 : ℝ) / 1000000000000) := by
+    norm_num
+  have hhi :
+      ((1570796326795 : ℝ) / 1000000000000) *
+          ((207879576351 : ℝ) / 1000000000000) <
+        (326536474949 : ℝ) / 1000000000000 := by
+    norm_num
   have hpi_pos : 0 < Real.pi / 2 :=
     (by norm_num :
       (0 : ℝ) < (1570796326794 : ℝ) / 1000000000000).trans hpi0
