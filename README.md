@@ -120,6 +120,8 @@ part is certified larger.
 starts replacing the n = 12 heuristic cluster analysis with exact symbolic
 Lean reductions: it proves that all fourteen representatives from the
 near-`i^i` probe class are exactly `i^i = exp(-pi/2)`.
+It also proves the exact merge of the n = 12 near-zero probe doubleton
+`{2207, 3777}`.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
 
