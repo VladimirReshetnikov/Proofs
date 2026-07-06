@@ -234,6 +234,25 @@ decreasing_by
 def computedExponentCount (n : Nat) : Nat :=
   (computedExponentValues n).card
 
+/-- Pointwise congruence for finite unions over a list. -/
+theorem listBiUnion_congr {α β : Type} [DecidableEq β] {xs : List α}
+    {f g : α -> Finset β} (h : ∀ x ∈ xs, f x = g x) :
+    listBiUnion xs f = listBiUnion xs g := by
+  induction xs with
+  | nil =>
+      simp [listBiUnion]
+  | cons x xs ih =>
+      simp only [listBiUnion, List.foldr_cons]
+      rw [h x (by simp)]
+      have htail :
+          List.foldr (fun x acc => f x ∪ acc) ∅ xs =
+            List.foldr (fun x acc => g x ∪ acc) ∅ xs := by
+        simpa [listBiUnion] using
+          ih (by
+            intro y hy
+            exact h y (by simp [hy]))
+      rw [htail]
+
 /--
 The dynamic distinct-value recurrence computes exactly the normal-form
 exponents obtained from the lexical parenthesizations.
@@ -297,71 +316,268 @@ theorem a199812_eq_computedCount (n : Nat) : a199812 n = computedExponentCount n
   rw [a199812_eq_noteCount, exponentNoteCount, computedExponentCount,
     exponentNoteValues_eq_computedExponentValues]
 
+/--
+Compute one recurrence row from an already-built table of smaller rows.
+
+The table is only an executable optimization: the theorem
+`computedExponentValuesFromTable_eq` below proves that it computes the same
+finite set as `computedExponentValues` when the table entries are correct.
+-/
+def computedExponentValuesFromTable (levels : List (Finset ONote)) : Nat -> Finset ONote
+  | 0 => ∅
+  | 1 => {1}
+  | n + 2 =>
+      listBiUnion (List.finRange (n + 1)) fun k =>
+        Finset.image₂ combineExponent
+          (levels.getD (k.1 + 1) ∅)
+          (levels.getD (n + 1 - k.1) ∅)
+
+theorem computedExponentValuesFromTable_eq {levels : List (Finset ONote)} {n : Nat}
+    (hlevels : ∀ i < n, levels.getD i ∅ = computedExponentValues i) :
+    computedExponentValuesFromTable levels n = computedExponentValues n := by
+  cases n with
+  | zero =>
+      simp [computedExponentValuesFromTable, computedExponentValues]
+  | succ n =>
+      cases n with
+      | zero =>
+          simp [computedExponentValuesFromTable, computedExponentValues]
+      | succ n =>
+          simp only [computedExponentValuesFromTable, computedExponentValues]
+          apply listBiUnion_congr
+          intro k hk
+          rw [hlevels (k.1 + 1) (Nat.succ_lt_succ k.2)]
+          rw [hlevels (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+
+/-- Table of recurrence rows `0, ..., n - 1`, built once from left to right. -/
+def computedExponentTable : Nat -> List (Finset ONote)
+  | 0 => []
+  | n + 1 =>
+      let levels := computedExponentTable n
+      levels ++ [computedExponentValuesFromTable levels n]
+
+theorem computedExponentTable_length (n : Nat) :
+    (computedExponentTable n).length = n := by
+  induction n with
+  | zero =>
+      rfl
+  | succ n ih =>
+      simp [computedExponentTable, ih]
+
+theorem list_getD_eq_getElem {α : Type} (xs : List α) {i : Nat} (fallback : α)
+    (hi : i < xs.length) :
+    xs.getD i fallback = xs[i] := by
+  simp [List.getD, List.getElem?_eq_getElem hi]
+
+/-- The memo table agrees with the proved recurrence at every stored index. -/
+theorem computedExponentTable_getD (n i : Nat) (hi : i < n) :
+    (computedExponentTable n).getD i ∅ = computedExponentValues i := by
+  induction n generalizing i with
+  | zero =>
+      exact (Nat.not_lt_zero i hi).elim
+  | succ n ih =>
+      have hle : i ≤ n := Nat.lt_succ_iff.mp hi
+      rcases Nat.lt_or_eq_of_le hle with hlt | heq
+      · have hiTable : i < (computedExponentTable n).length := by
+          simpa [computedExponentTable_length] using hlt
+        rw [computedExponentTable]
+        rw [list_getD_eq_getElem
+          (computedExponentTable n ++ [computedExponentValuesFromTable (computedExponentTable n) n])
+          ∅ (by simpa [computedExponentTable_length] using hi)]
+        rw [List.getElem_append_left hiTable]
+        rw [← list_getD_eq_getElem (computedExponentTable n) ∅ hiTable]
+        exact ih i hlt
+      · subst i
+        rw [computedExponentTable]
+        rw [list_getD_eq_getElem
+          (computedExponentTable n ++ [computedExponentValuesFromTable (computedExponentTable n) n])
+          ∅ (by simp [computedExponentTable_length])]
+        rw [List.getElem_append_right (by simp [computedExponentTable_length])]
+        simp [computedExponentTable_length, computedExponentValuesFromTable_eq ih]
+
+/-- Memoized recurrence value set, proved equal to `computedExponentValues`. -/
+def computedExponentValuesMemo (n : Nat) : Finset ONote :=
+  (computedExponentTable (n + 1)).getD n ∅
+
+theorem computedExponentValuesMemo_eq (n : Nat) :
+    computedExponentValuesMemo n = computedExponentValues n := by
+  exact computedExponentTable_getD (n + 1) n (Nat.lt_succ_self n)
+
+/-- Memoized dynamic count corresponding to A199812. -/
+def computedExponentCountMemo (n : Nat) : Nat :=
+  (computedExponentValuesMemo n).card
+
+/-- Memoized dynamic counts for sizes `1, ..., n`, computed from one shared table. -/
+def computedExponentCountsMemoThrough (n : Nat) : List Nat :=
+  ((computedExponentTable (n + 1)).drop 1).map Finset.card
+
+/-- Indexing the shared count table gives the corresponding memoized count. -/
+theorem computedExponentCountsMemoThrough_getD {N i : Nat} (hi : i < N) :
+    (computedExponentCountsMemoThrough N).getD i 0 = computedExponentCountMemo (i + 1) := by
+  unfold computedExponentCountsMemoThrough
+  have hiDrop :
+      i < (List.drop 1 (computedExponentTable (N + 1))).length := by
+    simp [computedExponentTable_length, hi]
+  have hiCounts :
+      i < (List.map Finset.card (List.drop 1 (computedExponentTable (N + 1)))).length := by
+    simpa using hiDrop
+  have hiTable : i + 1 < (computedExponentTable (N + 1)).length := by
+    simpa [computedExponentTable_length, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+      using Nat.succ_lt_succ hi
+  rw [list_getD_eq_getElem _ _ hiCounts]
+  rw [List.getElem_map]
+  rw [List.getElem_drop]
+  have hiTable' : 1 + i < (computedExponentTable (N + 1)).length := by
+    simpa [Nat.add_comm] using hiTable
+  have hleft :
+      (computedExponentTable (N + 1))[1 + i] = computedExponentValues (i + 1) := by
+    rw [← list_getD_eq_getElem (computedExponentTable (N + 1)) ∅ hiTable']
+    simpa [Nat.add_comm] using
+      computedExponentTable_getD (N + 1) (i + 1) (Nat.succ_lt_succ hi)
+  rw [hleft]
+  unfold computedExponentCountMemo
+  rw [computedExponentValuesMemo_eq]
+
+theorem computedExponentCountMemo_eq_countsMemoThrough_getD {N n : Nat}
+    (hpos : 0 < n) (hN : n ≤ N) :
+    computedExponentCountMemo n = (computedExponentCountsMemoThrough N).getD (n - 1) 0 := by
+  cases n with
+  | zero =>
+      exact (Nat.not_lt_zero _ hpos).elim
+  | succ i =>
+      have hi : i < N := Nat.succ_le_iff.mp hN
+      simpa using (computedExponentCountsMemoThrough_getD (N := N) (i := i) hi).symm
+
+/-- The memoized recurrence count is equivalent to the canonical ordinal count. -/
+theorem a199812_eq_memoCount (n : Nat) : a199812 n = computedExponentCountMemo n := by
+  rw [a199812_eq_computedCount, computedExponentCountMemo, computedExponentValuesMemo_eq,
+    computedExponentCount]
+
+theorem a199812_eq_of_countsMemoThrough {N n value : Nat}
+    (hpos : 0 < n) (hN : n ≤ N)
+    (hcount : (computedExponentCountsMemoThrough N).getD (n - 1) 0 = value) :
+    a199812 n = value := by
+  calc
+    a199812 n = computedExponentCountMemo n := a199812_eq_memoCount n
+    _ = (computedExponentCountsMemoThrough N).getD (n - 1) 0 :=
+      computedExponentCountMemo_eq_countsMemoThrough_getD hpos hN
+    _ = value := hcount
+
+/-- Shared executable certificate for `A199812(1)` through `A199812(13)`. -/
+theorem computedExponentCountsMemoThrough_thirteen :
+    computedExponentCountsMemoThrough 13 =
+      [1, 1, 2, 5, 13, 32, 79, 193, 478, 1196, 3037, 7802, 20287] := by
+  native_decide
+
 /-- `A199812(1) = 1`. -/
 theorem a199812_one : a199812 1 = 1 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 1) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(2) = 1`. -/
 theorem a199812_two : a199812 2 = 1 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 2) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(3) = 2`. -/
 theorem a199812_three : a199812 3 = 2 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 3) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(4) = 5`. -/
 theorem a199812_four : a199812 4 = 5 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 4) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(5) = 13`. -/
 theorem a199812_five : a199812 5 = 13 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 5) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(6) = 32`. -/
 theorem a199812_six : a199812 6 = 32 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 6) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(7) = 79`. -/
 theorem a199812_seven : a199812 7 = 79 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 7) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(8) = 193`. -/
 theorem a199812_eight : a199812 8 = 193 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 8) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(9) = 478`. -/
 theorem a199812_nine : a199812 9 = 478 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 9) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(10) = 1196`. -/
 theorem a199812_ten : a199812 10 = 1196 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 10) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(11) = 3037`. -/
 theorem a199812_eleven : a199812 11 = 3037 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 11) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 /-- `A199812(12) = 7802`. -/
 theorem a199812_twelve : a199812 12 = 7802 := by
-  rw [a199812_eq_computedCount]
-  native_decide
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 12) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
+
+/-- `A199812(13) = 20287`. -/
+theorem a199812_thirteen : a199812 13 = 20287 := by
+  refine a199812_eq_of_countsMemoThrough (N := 13) (n := 13) ?_ ?_ ?_
+  · decide
+  · decide
+  · rw [computedExponentCountsMemoThrough_thirteen]
+    rfl
 
 end TowerExpr
 
 export TowerExpr (a199812 a199812_eq_noteCount a199812_one a199812_two a199812_three
   a199812_four a199812_five a199812_six a199812_seven a199812_eight
-  a199812_nine a199812_ten a199812_eleven a199812_twelve)
+  a199812_nine a199812_ten a199812_eleven a199812_twelve a199812_thirteen)
 
 end A199812
 
