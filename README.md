@@ -145,18 +145,24 @@ exponentiation:
 noncomputable def a002845 (n : Nat) : Nat
 theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n
 theorem a002845_eq_directLogCard (n : Nat) : a002845 n = directLogCard n
+theorem a002845_eq_certifiedSparseCard (n : Nat) :
+  a002845 n = certifiedSparseCard n
 theorem a002845_one : a002845 1 = 1
 -- ...
-theorem a002845_six : a002845 6 = 8
+theorem a002845_twelve : a002845 12 = 851
 ```
 
 The value theorems `a002845_one` through `a002845_six` use a direct finite
 computation of the canonical logarithm set, proved equivalent to the semantic
-value set by injectivity of `m ↦ 2^m`. The module separately contains an
-executable hereditary sparse-binary logarithm backend, currently with checked
-backend certificates `a002845Sparse_one` through `a002845Sparse_twenty_two`.
-These are intentionally not treated as primary OEIS value theorems until the
-sparse backend is proved equivalent to the canonical logarithm value set.
+value set by injectivity of `m ↦ 2^m`. The value theorems
+`a002845_seven` through `a002845_twelve` use a certified sparse-log evaluator:
+its proof-facing definition is semantic (`Sparse.ofNat` of the exact
+logarithm), while native evaluation of the logarithm-combine step is implemented
+by the fast hereditary sparse operation. The module separately retains the
+older level-streaming sparse backend, currently with checked backend
+certificates `a002845Sparse_one` through `a002845Sparse_twenty_two`; those are
+not treated as primary OEIS value theorems until that backend is also proved
+equivalent to the canonical logarithm value set.
 
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683 from
 the canonical lexical syntax of all binary parenthesizations of
