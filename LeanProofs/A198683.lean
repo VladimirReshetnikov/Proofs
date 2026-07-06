@@ -1209,6 +1209,22 @@ private theorem p5F_re_pos :
     (by linarith [angleF_pos, Real.pi_pos])
     (angleF_lt_angleC.trans angleC_lt_angleE)
 
+private theorem p5F_re_gt_half :
+    (1 : ℝ) / 2 < p5F.re := by
+  rw [p5F_eq_exp_theta_mul_rho]
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+  have hrho_lt_one : rho < 1 := by
+    dsimp [rho]
+    exact Real.exp_lt_one_iff.mpr (by linarith [Real.pi_pos])
+  have hangle_lt_theta : theta * rho < theta :=
+    mul_lt_of_lt_one_right theta_pos hrho_lt_one
+  have hangle_lt_pi_div_three : theta * rho < Real.pi / 3 := by
+    linarith [hangle_lt_theta, theta_lt_one_div_three, Real.pi_gt_d2]
+  have hcos := Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := theta * rho) (y := Real.pi / 3)
+    (by linarith [angleF_pos]) (by linarith [Real.pi_pos]) hangle_lt_pi_div_three
+  simpa [Real.cos_pi_div_three] using hcos
+
 private theorem p5G_re_pos :
     0 < p5G.re := by
   rw [p5G_eq_exp_neg_theta]
@@ -1668,6 +1684,13 @@ private theorem exp_neg_pi_div_four_lt_four_div_five :
   norm_num [one_div] at hrec
   exact hrec
 
+private theorem cos_pi_div_four_lt_four_div_five :
+    Real.cos (Real.pi / 4) < (4 : ℝ) / 5 := by
+  rw [Real.cos_pi_div_four]
+  have hsq : (Real.sqrt 2) ^ 2 = (2 : ℝ) := Real.sq_sqrt (by norm_num)
+  have hnonneg : 0 ≤ Real.sqrt 2 := Real.sqrt_nonneg 2
+  nlinarith
+
 private theorem p6B_norm_lt_four_div_five :
     ‖p6B‖ < (4 : ℝ) / 5 := by
   dsimp [p6B, principalPow]
@@ -1716,6 +1739,40 @@ private theorem p6B_re_lt_four_div_five :
 private theorem p6C_re_lt_four_div_five :
     p6C.re < (4 : ℝ) / 5 :=
   (Complex.re_le_norm p6C).trans_lt p6C_norm_lt_four_div_five
+
+private theorem p6F_re_lt_four_div_five :
+    p6F.re < (4 : ℝ) / 5 := by
+  dsimp [p6F, principalPow]
+  rw [Complex.exp_re, log_I_real]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  rw [show 0 - Real.pi / 2 * 1 * p5F.im = -(Real.pi / 2 * p5F.im) by ring,
+    show 0 + Real.pi / 2 * 1 * p5F.re = Real.pi / 2 * p5F.re by ring]
+  have hp5F_re_le_one : p5F.re ≤ 1 :=
+    (Complex.re_le_norm p5F).trans p5F_norm_le_one
+  have harg_gt : Real.pi / 4 < Real.pi / 2 * p5F.re := by
+    nlinarith [Real.pi_pos, p5F_re_gt_half]
+  have harg_le : Real.pi / 2 * p5F.re ≤ Real.pi / 2 := by
+    nlinarith [Real.pi_pos, hp5F_re_le_one]
+  have hcos_lt_cos :
+      Real.cos (Real.pi / 2 * p5F.re) < Real.cos (Real.pi / 4) :=
+    Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+      (x := Real.pi / 4) (y := Real.pi / 2 * p5F.re)
+      (by positivity) harg_le harg_gt
+  have hcos_lt : Real.cos (Real.pi / 2 * p5F.re) < (4 : ℝ) / 5 :=
+    hcos_lt_cos.trans cos_pi_div_four_lt_four_div_five
+  have hcos_nonneg : 0 ≤ Real.cos (Real.pi / 2 * p5F.re) := by
+    apply Real.cos_nonneg_of_mem_Icc
+    constructor
+    · nlinarith [Real.pi_pos, p5F_re_gt_half]
+    · exact harg_le
+  have hexp_le : Real.exp (-(Real.pi / 2 * p5F.im)) ≤ 1 :=
+    Real.exp_le_one_iff.mpr (by nlinarith [Real.pi_pos, p5F_im_pos])
+  have hmul_le :
+      Real.exp (-(Real.pi / 2 * p5F.im)) * Real.cos (Real.pi / 2 * p5F.re) ≤
+        1 * Real.cos (Real.pi / 2 * p5F.re) :=
+    mul_le_mul_of_nonneg_right hexp_le hcos_nonneg
+  exact lt_of_le_of_lt hmul_le (by simpa using hcos_lt)
 
 private theorem p6E_im_zero :
     p6E.im = 0 := by
@@ -1847,6 +1904,10 @@ private theorem p6K_ne_p6B :
 private theorem p6K_ne_p6C :
     p6K ≠ p6C :=
   (ne_of_re_lt (p6C_re_lt_four_div_five.trans p6K_re_gt_four_div_five)).symm
+
+private theorem p6K_ne_p6F :
+    p6K ≠ p6F :=
+  (ne_of_re_lt (p6F_re_lt_four_div_five.trans p6K_re_gt_four_div_five)).symm
 
 private theorem p6I_ne_p6E : p6I ≠ p6E :=
   ne_of_re_lt p6I_re_lt_p6E_re
