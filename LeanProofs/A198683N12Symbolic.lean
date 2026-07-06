@@ -1888,6 +1888,111 @@ theorem nearOne25_ne_nearOne4239_of_level1_box_and_endpoint_bounds
     h2re0 h2re1 h2im0 h2im1 hexp0 hexp1 hcos0 hcos1
 
 /--
+The strict class-25 split from `1404` follows from a rational box around the
+representative-`25` seed, endpoint product estimates propagating it through
+levels 1 and 2, and the final endpoint estimates for `nearOne25Level3.re`.
+-/
+theorem nearOne25_ne_nearOne1404_of_seed_box_and_endpoint_bounds
+    (hre0 : (25669119 : ℝ) / 10000000 < nearOne25Seed.re)
+    (hre1 : nearOne25Seed.re < (320864 : ℝ) / 125000)
+    (him0 : (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im)
+    (him1 : nearOne25Seed.im < (-(404789 : ℝ) / 2000000))
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne1404 := by
+  rcases nearOne25Level1_box_of_seed_box_and_endpoint_bounds
+      hre0 hre1 him0 him1 h1relo h1rehi h1imlo h1imhi with
+    ⟨h1re0, h1re1, h1im0, h1im1⟩
+  exact nearOne25_ne_nearOne1404_of_level1_box_and_endpoint_bounds
+    h1re0 h1re1 h1im0 h1im1
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
+The same seed box and endpoint estimates separate representative `25` from
+the other retained representative `4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_seed_box_and_endpoint_bounds
+    (hre0 : (25669119 : ℝ) / 10000000 < nearOne25Seed.re)
+    (hre1 : nearOne25Seed.re < (320864 : ℝ) / 125000)
+    (him0 : (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im)
+    (him1 : nearOne25Seed.im < (-(404789 : ℝ) / 2000000))
+    (h1relo : (-(864443 : ℝ) / 1000000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
+    (h1rehi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
+          (-(432221 : ℝ) / 500000))
+    (h1imlo : (-(53417 : ℝ) / 50000) <
+      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
+        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
+    (h1imhi :
+      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
+        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
+          (-(1068339 : ℝ) / 1000000))
+    (h2relo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2rehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (h2imlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (h2imhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne4239 := by
+  rcases nearOne25Level1_box_of_seed_box_and_endpoint_bounds
+      hre0 hre1 him0 him1 h1relo h1rehi h1imlo h1imhi with
+    ⟨h1re0, h1re1, h1im0, h1im1⟩
+  exact nearOne25_ne_nearOne4239_of_level1_box_and_endpoint_bounds
+    h1re0 h1re1 h1im0 h1im1
+    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written
 with the same principal-power expression as the local trace:
 
