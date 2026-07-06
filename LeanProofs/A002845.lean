@@ -520,6 +520,11 @@ theorem a002845_ten : a002845 10 = 171 := by
   rw [a002845_eq_certifiedSparseCard]
   native_decide
 
+/-- OEIS A002845 has value `379` at `n = 11`. -/
+theorem a002845_eleven : a002845 11 = 379 := by
+  rw [a002845_eq_certifiedSparseCard]
+  native_decide
+
 /-- Insert all values produced by one binary split of an expression of size
 `n` into an accumulator. -/
 partial def insertSplitValues (levels : Array (List Sparse)) (leftSize rightSize : Nat)
