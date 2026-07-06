@@ -3572,6 +3572,123 @@ theorem a198683_seven_le_forty_four : a198683 7 ≤ 44 := by
     _ = a198683SevenPeriodicCollapsedReps.length := by simp
     _ = 44 := by norm_num [a198683SevenPeriodicCollapsedReps]
 
+private noncomputable def a198683SevenBranchCollapsedReps : List ℂ :=
+  [principalPow Complex.I p6A, principalPow Complex.I p6B, principalPow Complex.I p6C,
+    principalPow Complex.I p6D, principalPow Complex.I p6E, principalPow Complex.I p6F,
+    principalPow Complex.I p6G, principalPow Complex.I p6H, principalPow Complex.I p6I,
+    principalPow Complex.I p6J, principalPow Complex.I p6K, principalPow Complex.I p6L,
+    principalPow Complex.I p6M, principalPow Complex.I p6N, principalPow Complex.I p6O,
+    principalPow p2 p5A, principalPow p2 p5B, principalPow p2 p5C,
+    principalPow p2 p5D, principalPow p2 p5E, principalPow p2 p5F,
+    principalPow p2 p5G,
+    principalPow p3L p4A, principalPow p3L p4B, principalPow p3L p4C,
+    principalPow p3R p4A, principalPow p3R p4B, principalPow p3R p4C,
+    principalPow p4A p3L, principalPow p4A p3R, principalPow p4B p3L,
+    principalPow p4C p3L,
+    principalPow p5B p2, principalPow p5F p2, principalPow p5G p2,
+    principalPow p6H Complex.I, principalPow p6K Complex.I, principalPow p6M Complex.I]
+
+private theorem a198683_seven_subset_branchCollapsedReps :
+    a198683ValueSet 7 ⊆
+      Set.range (fun i : Fin a198683SevenBranchCollapsedReps.length =>
+        a198683SevenBranchCollapsedReps.get i) := by
+  classical
+  let rep44 : Fin a198683SevenPeriodicCollapsedReps.length → ℂ :=
+    fun i => a198683SevenPeriodicCollapsedReps.get i
+  let rep38 : Fin a198683SevenBranchCollapsedReps.length → ℂ :=
+    fun i => a198683SevenBranchCollapsedReps.get i
+  have hsubset44 : a198683ValueSet 7 ⊆ Set.range rep44 := by
+    simpa [rep44] using a198683_seven_subset_periodicCollapsedReps
+  have reps38_length : a198683SevenBranchCollapsedReps.length = 38 := by
+    norm_num [a198683SevenBranchCollapsedReps]
+  have inRange38 (i : Nat) (h : i < a198683SevenBranchCollapsedReps.length) :
+      a198683SevenBranchCollapsedReps.get ⟨i, h⟩ ∈ Set.range rep38 := by
+    exact ⟨⟨i, h⟩, rfl⟩
+  have hrange : Set.range rep44 ⊆ Set.range rep38 := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    fin_cases i
+    · exact inRange38 0 (by rw [reps38_length]; norm_num)
+    · exact inRange38 1 (by rw [reps38_length]; norm_num)
+    · exact inRange38 2 (by rw [reps38_length]; norm_num)
+    · exact inRange38 3 (by rw [reps38_length]; norm_num)
+    · exact inRange38 4 (by rw [reps38_length]; norm_num)
+    · exact inRange38 5 (by rw [reps38_length]; norm_num)
+    · exact inRange38 6 (by rw [reps38_length]; norm_num)
+    · exact inRange38 7 (by rw [reps38_length]; norm_num)
+    · exact inRange38 8 (by rw [reps38_length]; norm_num)
+    · exact inRange38 9 (by rw [reps38_length]; norm_num)
+    · exact inRange38 10 (by rw [reps38_length]; norm_num)
+    · exact inRange38 11 (by rw [reps38_length]; norm_num)
+    · exact inRange38 12 (by rw [reps38_length]; norm_num)
+    · exact inRange38 13 (by rw [reps38_length]; norm_num)
+    · exact inRange38 14 (by rw [reps38_length]; norm_num)
+    · exact inRange38 15 (by rw [reps38_length]; norm_num)
+    · exact inRange38 16 (by rw [reps38_length]; norm_num)
+    · exact inRange38 17 (by rw [reps38_length]; norm_num)
+    · exact inRange38 18 (by rw [reps38_length]; norm_num)
+    · exact inRange38 19 (by rw [reps38_length]; norm_num)
+    · exact inRange38 20 (by rw [reps38_length]; norm_num)
+    · exact inRange38 21 (by rw [reps38_length]; norm_num)
+    · exact inRange38 22 (by rw [reps38_length]; norm_num)
+    · exact inRange38 23 (by rw [reps38_length]; norm_num)
+    · exact inRange38 24 (by rw [reps38_length]; norm_num)
+    · exact inRange38 25 (by rw [reps38_length]; norm_num)
+    · exact inRange38 26 (by rw [reps38_length]; norm_num)
+    · exact inRange38 27 (by rw [reps38_length]; norm_num)
+    · exact inRange38 28 (by rw [reps38_length]; norm_num)
+    · exact inRange38 29 (by rw [reps38_length]; norm_num)
+    · exact inRange38 30 (by rw [reps38_length]; norm_num)
+    · exact inRange38 31 (by rw [reps38_length]; norm_num)
+    · exact inRange38 32 (by rw [reps38_length]; norm_num)
+    · exact inRange38 33 (by rw [reps38_length]; norm_num)
+    · exact inRange38 34 (by rw [reps38_length]; norm_num)
+    · change principalPow p6A Complex.I ∈ Set.range rep38
+      rw [p6A_pow_I_eq_p2_pow_p5A]
+      exact inRange38 15 (by rw [reps38_length]; norm_num)
+    · change principalPow p6B Complex.I ∈ Set.range rep38
+      rw [p6B_pow_I_eq_p2_pow_p5B]
+      exact inRange38 16 (by rw [reps38_length]; norm_num)
+    · change principalPow p6C Complex.I ∈ Set.range rep38
+      rw [p6C_pow_I_eq_p2_pow_p5C]
+      exact inRange38 17 (by rw [reps38_length]; norm_num)
+    · change principalPow p6D Complex.I ∈ Set.range rep38
+      rw [p6D_pow_I_eq_p2_pow_p5D]
+      exact inRange38 18 (by rw [reps38_length]; norm_num)
+    · change principalPow p6F Complex.I ∈ Set.range rep38
+      rw [p6F_pow_I_eq_p2_pow_p5F]
+      exact inRange38 20 (by rw [reps38_length]; norm_num)
+    · change principalPow p6G Complex.I ∈ Set.range rep38
+      rw [p6G_pow_I_eq_p2_pow_p5G]
+      exact inRange38 21 (by rw [reps38_length]; norm_num)
+    · exact inRange38 35 (by rw [reps38_length]; norm_num)
+    · exact inRange38 36 (by rw [reps38_length]; norm_num)
+    · exact inRange38 37 (by rw [reps38_length]; norm_num)
+  exact hsubset44.trans hrange
+
+theorem a198683_seven_le_thirty_eight : a198683 7 ≤ 38 := by
+  classical
+  rw [a198683]
+  let rep : Fin a198683SevenBranchCollapsedReps.length → ℂ :=
+    fun i => a198683SevenBranchCollapsedReps.get i
+  have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+    simpa [rep] using a198683_seven_subset_branchCollapsedReps
+  let repFinset : Finset ℂ := Finset.univ.image rep
+  have hRangeSubset : Set.range rep ⊆ (repFinset : Set ℂ) := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    change rep i ∈ repFinset
+    exact Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩
+  calc
+    (a198683ValueSet 7).ncard ≤ (Set.range rep).ncard :=
+      Set.ncard_le_ncard hsubset
+    _ ≤ (repFinset : Set ℂ).ncard := Set.ncard_le_ncard hRangeSubset
+    _ = repFinset.card := by rw [Set.ncard_coe_finset]
+    _ ≤ (Finset.univ : Finset (Fin a198683SevenBranchCollapsedReps.length)).card :=
+      Finset.card_image_le
+    _ = a198683SevenBranchCollapsedReps.length := by simp
+    _ = 38 := by norm_num [a198683SevenBranchCollapsedReps]
+
 end
 
 end LeanProofs
