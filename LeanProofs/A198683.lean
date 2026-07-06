@@ -548,7 +548,7 @@ private theorem p4B_pow_I_eq_p5E :
   dsimp [p5E, principalPow]
   rw [log_p4B_eq, log_p2_eq, p3R_eq_neg_I]
   congr 1
-  ring
+  ring_nf
 
 private theorem p4C_pow_I_eq_p5G :
     principalPow p4C Complex.I = p5G := by
@@ -598,7 +598,7 @@ private theorem p5B_eq_exp_beta :
       (beta : ℂ) * Complex.I + (1 : ℤ) * (2 * (Real.pi : ℂ) * Complex.I) by
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
   rw [Complex.exp_add, Complex.exp_int_mul_two_pi_mul_I]
-  ring
+  ring_nf
 
 private theorem p5G_eq_exp_neg_theta :
     p5G = Complex.exp (-(theta : ℂ) * Complex.I) := by
@@ -1781,7 +1781,7 @@ private theorem p4A_pow_p2_eq_p6K :
   rw [show (((Real.pi / 2 * rho : ℝ) : ℂ) =
       ((Real.pi / 2 : ℝ) : ℂ) * (rho : ℂ)) by
     norm_num [Complex.ofReal_mul]]
-  ring
+  ring_nf
 
 private theorem p4B_pow_p2_eq_p6L :
     principalPow p4B p2 = p6L := by
@@ -1803,7 +1803,7 @@ private theorem p4B_pow_p3R_eq_p2_pow_p5E :
   dsimp [principalPow]
   rw [log_p4B_eq, p3R_eq_neg_I, log_p2_eq, p5E_eq_I]
   congr 1
-  ring
+  ring_nf
 
 private theorem I_pow_p6E_eq_p3L :
     principalPow Complex.I p6E = p3L := by
@@ -1820,7 +1820,7 @@ private theorem p4C_pow_p3R_eq_p3L :
   dsimp [principalPow]
   rw [log_p4C_eq, p3R_eq_neg_I, p3L_eq_exp_theta]
   congr 1
-  ring
+  ring_nf
 
 private theorem p6E_eq_exp_neg_pi_div_two :
     p6E = (Real.exp (-(Real.pi / 2)) : ℂ) := by
@@ -1862,6 +1862,63 @@ private theorem p6N_eq_exp_neg_angleF :
   dsimp [p6N, principalPow]
   rw [log_p4C_eq, p2_eq_rho]
   apply Complex.ext <;> simp [Complex.exp_re, Complex.exp_im, Complex.mul_re, Complex.mul_im]
+
+private theorem p3L_pow_p4A_eq_p5A_pow_p2 :
+    principalPow p3L p4A = principalPow p5A p2 := by
+  dsimp [principalPow]
+  rw [log_p3L_eq, log_p5A_eq, log_I_real, p2_eq_rho]
+  congr 1
+  dsimp [theta]
+  rw [show (((Real.pi / 2 * rho : ℝ) : ℂ) =
+      ((Real.pi / 2 : ℝ) : ℂ) * (rho : ℂ)) by
+    norm_num [Complex.ofReal_mul]]
+  ring_nf
+
+private theorem p3L_pow_p4C_eq_p5C_pow_p2 :
+    principalPow p3L p4C = principalPow p5C p2 := by
+  dsimp [principalPow]
+  rw [log_p3L_eq, log_p5C_eq, p4C_eq_exp_neg_theta, p2_eq_rho]
+  congr 1
+  dsimp [theta]
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im] <;> ring_nf
+
+private theorem p4C_pow_p3L_eq_p5D_pow_p2 :
+    principalPow p4C p3L = principalPow p5D p2 := by
+  dsimp [principalPow]
+  rw [log_p4C_eq, log_p5D_eq, log_p2_eq, p2_eq_rho]
+  congr 1
+  dsimp [theta]
+  rw [show (((Real.pi / 2 * rho : ℝ) : ℂ) =
+      ((Real.pi / 2 : ℝ) : ℂ) * (rho : ℂ)) by
+    norm_num [Complex.ofReal_mul]]
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im] <;> ring_nf
+
+private theorem p5G_pow_p2_eq_p6N_pow_I :
+    principalPow p5G p2 = principalPow p6N Complex.I := by
+  dsimp [principalPow]
+  rw [log_p5G_eq, p2_eq_rho, p6N_eq_exp_neg_angleF]
+  rw [← Complex.ofReal_log (Real.exp_pos (-(theta * rho))).le, Real.log_exp]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im, Complex.ofReal_mul]
+
+private theorem p3R_pow_p4C_eq_p6J_pow_I :
+    principalPow p3R p4C = principalPow p6J Complex.I := by
+  dsimp [principalPow]
+  rw [log_p3R_eq, p4C_eq_exp_neg_theta, p6J_eq_exp_neg_angleC]
+  rw [← Complex.ofReal_log (Real.exp_pos (-(Real.pi / 2 * Real.exp (-theta)))).le,
+    Real.log_exp]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im, Complex.ofReal_mul]
+
+private theorem p3R_pow_p4B_eq_p6I_pow_I :
+    principalPow p3R p4B = principalPow p6I Complex.I := by
+  dsimp [principalPow]
+  rw [log_p3R_eq, p4B_eq_exp_pi_div_two, p6I_eq_exp_neg_pi_div_two_mul_exp_pi_div_two]
+  rw [← Complex.ofReal_log
+      (Real.exp_pos (-(Real.pi / 2 * Real.exp (Real.pi / 2)))).le,
+    Real.log_exp]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im, Complex.ofReal_mul]
 
 private theorem log_p5B_eq :
     Complex.log p5B = (beta : ℂ) * Complex.I := by
