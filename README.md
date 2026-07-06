@@ -97,8 +97,10 @@ theorem arctan_square_identity :
 semantically as the number of distinct principal complex-power values obtained
 from all binary parenthesizations of `i^i^...^i`. It proves the accepted values
 through `n = 6` directly over `ℂ`, with public theorems
-`a198683_one` through `a198683_six`. Two companion certificate modules record
-finite checked data from the local A198683 corpus:
+`a198683_one` through `a198683_six`, and proves the semantic upper bound
+`a198683_seven_le_thirty_four`, matching the accepted value for `n = 7` on the
+collapse side. Two companion certificate modules record finite checked data
+from the local A198683 corpus:
 [`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
 checks the Schoenfield labels through `n = 11`,
 [`LeanProofs/A198683SchoenfieldRows.lean`](LeanProofs/A198683SchoenfieldRows.lean)
