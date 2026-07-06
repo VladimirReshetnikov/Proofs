@@ -827,6 +827,38 @@ private theorem mul_mem_neg766_neg765_of_exp_cos_bounds {e c : ℝ}
       mul_lt_mul_of_neg_right he0 (by norm_num)
     nlinarith
 
+private theorem mul_mem_pos_pos_interval {e c elo ehi clo chi lo hi : ℝ}
+    (he0 : elo < e) (he1 : e < ehi)
+    (hc0 : clo < c) (hc1 : c < chi)
+    (hlo : lo < elo * clo) (hhi : ehi * chi < hi)
+    (helo : 0 < elo) (hclo : 0 < clo) :
+    lo < e * c ∧ e * c < hi := by
+  have he_pos : 0 < e := helo.trans he0
+  have hehi_pos : 0 < ehi := by linarith
+  have hc_pos : 0 < c := hclo.trans hc0
+  constructor
+  · have h1 : elo * clo < e * clo := mul_lt_mul_of_pos_right he0 hclo
+    have h2 : e * clo < e * c := mul_lt_mul_of_pos_left hc0 he_pos
+    exact hlo.trans (h1.trans h2)
+  · have h1 : e * c < ehi * c := mul_lt_mul_of_pos_right he1 hc_pos
+    have h2 : ehi * c < ehi * chi := mul_lt_mul_of_pos_left hc1 hehi_pos
+    exact (h1.trans h2).trans hhi
+
+private theorem mul_mem_pos_neg_interval {e s elo ehi slo shi lo hi : ℝ}
+    (he0 : elo < e) (he1 : e < ehi)
+    (hs0 : slo < s) (hs1 : s < shi)
+    (hlo : lo < ehi * slo) (hhi : elo * shi < hi)
+    (helo : 0 < elo) (hslo : slo < 0) (hshi : shi < 0) :
+    lo < e * s ∧ e * s < hi := by
+  have he_pos : 0 < e := helo.trans he0
+  constructor
+  · have h1 : ehi * slo < e * slo := mul_lt_mul_of_neg_right he1 hslo
+    have h2 : e * slo < e * s := mul_lt_mul_of_pos_left hs0 he_pos
+    exact hlo.trans (h1.trans h2)
+  · have h1 : e * s < e * shi := mul_lt_mul_of_pos_left hs1 he_pos
+    have h2 : e * shi < elo * shi := mul_lt_mul_of_neg_right he0 hshi
+    exact (h1.trans h2).trans hhi
+
 /--
 It is enough to bound the two real scalar factors in the exact formula for
 `nearOne25Level3.re`.
@@ -930,6 +962,124 @@ theorem nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
   have hexp := nearOne25Level2_exp_bounds_of_box_and_endpoints him0 him1 hexp0 hexp1
   have hcos := nearOne25Level2_cos_bounds_of_box_and_endpoints hre0 hre1 hcos0 hcos1
   exact nearOne25Level3_re_bounds_of_exp_cos_bounds hexp.1 hexp.2 hcos.1 hcos.2
+
+/--
+A tighter rational box around `nearOne25Level1`, plus endpoint product
+estimates, is enough to certify the rational box around `nearOne25Level2` used
+by the final near-one split reduction.
+-/
+theorem nearOne25Level2_box_of_level1_box_and_endpoint_bounds
+    (hre0 : (-(864443 : ℝ) / 1000000) < nearOne25Level1.re)
+    (hre1 : nearOne25Level1.re < (-(432221 : ℝ) / 500000))
+    (him0 : (-(53417 : ℝ) / 50000) < nearOne25Level1.im)
+    (him1 : nearOne25Level1.im < (-(1068339 : ℝ) / 1000000))
+    (hrelo : (11317 : ℝ) / 10000 <
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (hrehi :
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (5659 : ℝ) / 5000)
+    (himlo : (-(52347 : ℝ) / 10000) <
+      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
+        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
+    (himhi :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          (-(52346 : ℝ) / 10000)) :
+    (11317 : ℝ) / 10000 < nearOne25Level2.re ∧
+      nearOne25Level2.re < (5659 : ℝ) / 5000 ∧
+      (-(52347 : ℝ) / 10000) < nearOne25Level2.im ∧
+      nearOne25Level2.im < (-(52346 : ℝ) / 10000) := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  have hneg_lo : (1068339 : ℝ) / 1000000 < -nearOne25Level1.im := by linarith
+  have hneg_hi : -nearOne25Level1.im < (53417 : ℝ) / 50000 := by linarith
+  have hexp0 :
+      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) <
+        Real.exp (-(Real.pi / 2) * nearOne25Level1.im) := by
+    have harg := mul_lt_mul_of_pos_left hneg_lo hpi2_pos
+    apply Real.exp_lt_exp.mpr
+    rwa [show Real.pi / 2 * -nearOne25Level1.im =
+        -(Real.pi / 2) * nearOne25Level1.im by ring] at harg
+  have hexp1 :
+      Real.exp (-(Real.pi / 2) * nearOne25Level1.im) <
+        Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) := by
+    have harg := mul_lt_mul_of_pos_left hneg_hi hpi2_pos
+    apply Real.exp_lt_exp.mpr
+    rwa [show Real.pi / 2 * -nearOne25Level1.im =
+        -(Real.pi / 2) * nearOne25Level1.im by ring] at harg
+  have hangle0 :
+      Real.pi / 2 * (-(864443 : ℝ) / 1000000) <
+        Real.pi / 2 * nearOne25Level1.re :=
+    mul_lt_mul_of_pos_left hre0 hpi2_pos
+  have hangle1 :
+      Real.pi / 2 * nearOne25Level1.re <
+        Real.pi / 2 * (-(432221 : ℝ) / 500000) :=
+    mul_lt_mul_of_pos_left hre1 hpi2_pos
+  have hcos0 :
+      Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) <
+        Real.cos (Real.pi / 2 * nearOne25Level1.re) := by
+    have hneg_angle :
+        -(Real.pi / 2 * nearOne25Level1.re) <
+          -(Real.pi / 2 * (-(864443 : ℝ) / 1000000)) := by linarith
+    have hx_nonneg : 0 ≤ -(Real.pi / 2 * nearOne25Level1.re) := by
+      nlinarith [Real.pi_pos, hre1]
+    have hy_le_pi : -(Real.pi / 2 * (-(864443 : ℝ) / 1000000)) ≤ Real.pi := by
+      nlinarith [Real.pi_pos]
+    have h := Real.cos_lt_cos_of_nonneg_of_le_pi hx_nonneg hy_le_pi hneg_angle
+    simpa [Real.cos_neg] using h
+  have hcos1 :
+      Real.cos (Real.pi / 2 * nearOne25Level1.re) <
+        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) := by
+    have hneg_angle :
+        -(Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
+          -(Real.pi / 2 * nearOne25Level1.re) := by linarith
+    have hx_nonneg : 0 ≤ -(Real.pi / 2 * (-(432221 : ℝ) / 500000)) := by
+      nlinarith [Real.pi_pos]
+    have hy_le_pi : -(Real.pi / 2 * nearOne25Level1.re) ≤ Real.pi := by
+      nlinarith [Real.pi_pos, hre0]
+    have h := Real.cos_lt_cos_of_nonneg_of_le_pi hx_nonneg hy_le_pi hneg_angle
+    simpa [Real.cos_neg] using h
+  have hsin0 :
+      Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) <
+        Real.sin (Real.pi / 2 * nearOne25Level1.re) := by
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * (-(864443 : ℝ) / 1000000) := by
+      nlinarith [Real.pi_pos]
+    have hy : Real.pi / 2 * nearOne25Level1.re ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos, hre1]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle0
+  have hsin1 :
+      Real.sin (Real.pi / 2 * nearOne25Level1.re) <
+        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) := by
+    have hx : -(Real.pi / 2) ≤ Real.pi / 2 * nearOne25Level1.re := by
+      nlinarith [Real.pi_pos, hre0]
+    have hy : Real.pi / 2 * (-(432221 : ℝ) / 500000) ≤ Real.pi / 2 := by
+      nlinarith [Real.pi_pos]
+    exact Real.sin_lt_sin_of_lt_of_le_pi_div_two hx hy hangle1
+  have hcos_lo_pos :
+      0 < Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) := by
+    exact Real.cos_pos_of_mem_Ioo ⟨by nlinarith [Real.pi_pos], by nlinarith [Real.pi_pos]⟩
+  have hsin_lo_neg :
+      Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)) < 0 := by
+    exact Real.sin_neg_of_neg_of_neg_pi_lt
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hsin_hi_neg :
+      Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) < 0 := by
+    exact Real.sin_neg_of_neg_of_neg_pi_lt
+      (by nlinarith [Real.pi_pos]) (by nlinarith [Real.pi_pos])
+  have hre_bounds :
+      (11317 : ℝ) / 10000 < nearOne25Level2.re ∧
+        nearOne25Level2.re < (5659 : ℝ) / 5000 := by
+    rw [nearOne25Level2_re_eq]
+    exact mul_mem_pos_pos_interval hexp0 hexp1 hcos0 hcos1 hrelo hrehi
+      (Real.exp_pos _) hcos_lo_pos
+  have him_bounds :
+      (-(52347 : ℝ) / 10000) < nearOne25Level2.im ∧
+        nearOne25Level2.im < (-(52346 : ℝ) / 10000) := by
+    rw [nearOne25Level2_im_eq]
+    exact mul_mem_pos_neg_interval hexp0 hexp1 hsin0 hsin1 himlo himhi
+      (Real.exp_pos _) hsin_lo_neg hsin_hi_neg
+  exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
 
 /--
 The hard sign condition for `idx = 25` follows from a certified interval for
