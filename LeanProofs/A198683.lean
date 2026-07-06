@@ -1356,6 +1356,32 @@ private theorem I_pow_ne_of_norm_le_one {x y : ℂ}
   intro h
   exact hxy (I_pow_inj_of_norm_le_one hx hy h)
 
+private theorem log_I_pow_eq_of_norm_le_one {z : ℂ} (hz : ‖z‖ ≤ 1) :
+    Complex.log (principalPow Complex.I z) = Complex.log Complex.I * z := by
+  dsimp [principalPow]
+  rw [Complex.log_exp]
+  · rw [log_I_real]
+    have hzabs : |z.re| ≤ 1 := (Complex.abs_re_le_norm z).trans hz
+    have hzge : -1 ≤ z.re := (abs_le.mp hzabs).1
+    simp [Complex.mul_re, Complex.mul_im]
+    nlinarith [Real.pi_pos, hzge]
+  · rw [log_I_real]
+    have hzabs : |z.re| ≤ 1 := (Complex.abs_re_le_norm z).trans hz
+    have hzle : z.re ≤ 1 := (abs_le.mp hzabs).2
+    simp [Complex.mul_re, Complex.mul_im]
+    nlinarith [Real.pi_pos, hzle]
+
+private theorem I_pow_pow_I_eq_p2_pow_of_norm_le_one {z : ℂ} (hz : ‖z‖ ≤ 1) :
+    principalPow (principalPow Complex.I z) Complex.I = principalPow p2 z := by
+  change Complex.exp (Complex.log (principalPow Complex.I z) * Complex.I) =
+    principalPow p2 z
+  rw [log_I_pow_eq_of_norm_le_one hz]
+  change Complex.exp (Complex.log Complex.I * z * Complex.I) =
+    Complex.exp (Complex.log p2 * z)
+  rw [log_p2_eq, log_I_real]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
 private theorem p5A_norm_le_one : ‖p5A‖ ≤ 1 := p5A_norm_lt_one.le
 
 private theorem p5B_norm_le_one : ‖p5B‖ ≤ 1 := by
@@ -1374,6 +1400,36 @@ private theorem p5F_norm_le_one : ‖p5F‖ ≤ 1 := by
 
 private theorem p5G_norm_le_one : ‖p5G‖ ≤ 1 := by
   rw [p5G_norm_eq_one]
+
+private theorem p6A_pow_I_eq_p2_pow_p5A :
+    principalPow p6A Complex.I = principalPow p2 p5A := by
+  dsimp [p6A]
+  exact I_pow_pow_I_eq_p2_pow_of_norm_le_one p5A_norm_le_one
+
+private theorem p6B_pow_I_eq_p2_pow_p5B :
+    principalPow p6B Complex.I = principalPow p2 p5B := by
+  dsimp [p6B]
+  exact I_pow_pow_I_eq_p2_pow_of_norm_le_one p5B_norm_le_one
+
+private theorem p6C_pow_I_eq_p2_pow_p5C :
+    principalPow p6C Complex.I = principalPow p2 p5C := by
+  dsimp [p6C]
+  exact I_pow_pow_I_eq_p2_pow_of_norm_le_one p5C_norm_le_one
+
+private theorem p6D_pow_I_eq_p2_pow_p5D :
+    principalPow p6D Complex.I = principalPow p2 p5D := by
+  dsimp [p6D]
+  exact I_pow_pow_I_eq_p2_pow_of_norm_le_one p5D_norm_le_one
+
+private theorem p6F_pow_I_eq_p2_pow_p5F :
+    principalPow p6F Complex.I = principalPow p2 p5F := by
+  dsimp [p6F]
+  exact I_pow_pow_I_eq_p2_pow_of_norm_le_one p5F_norm_le_one
+
+private theorem p6G_pow_I_eq_p2_pow_p5G :
+    principalPow p6G Complex.I = principalPow p2 p5G := by
+  dsimp [p6G]
+  exact I_pow_pow_I_eq_p2_pow_of_norm_le_one p5G_norm_le_one
 
 private theorem I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one {z : ℂ}
     (hz₁ : -1 < z.re) (hz₂ : z.re < 1) :
