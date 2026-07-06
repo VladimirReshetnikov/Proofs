@@ -184,6 +184,27 @@ deriving Repr, Inhabited
 
 namespace Sparse
 
+mutual
+  def decEq : (x y : Sparse) → Decidable (x = y)
+    | .bits xs, .bits ys =>
+        match decEqList xs ys with
+        | isTrue h => isTrue (by cases h; rfl)
+        | isFalse h => isFalse (by intro hxy; cases hxy; exact h rfl)
+
+  def decEqList : (xs ys : List Sparse) → Decidable (xs = ys)
+    | [], [] => isTrue rfl
+    | [], _ :: _ => isFalse (by intro h; cases h)
+    | _ :: _, [] => isFalse (by intro h; cases h)
+    | x :: xs, y :: ys =>
+        match decEq x y, decEqList xs ys with
+        | isTrue hx, isTrue hxs => isTrue (by cases hx; cases hxs; rfl)
+        | isFalse hx, _ => isFalse (by intro h; cases h; exact hx rfl)
+        | _, isFalse hxs => isFalse (by intro h; cases h; exact hxs rfl)
+end
+
+instance : DecidableEq Sparse :=
+  decEq
+
 /-- Structural equality for sparse-binary trees.  The arithmetic operations
 maintain canonical bit lists, so structural equality is numeric equality for
 the values produced here. -/
@@ -220,6 +241,36 @@ def one : Sparse :=
 /-- Natural-number denotation of a hereditary sparse binary value. -/
 def eval : Sparse → Nat
   | .bits xs => (xs.map fun p => 2 ^ eval p).sum
+
+/-- Canonical hereditary sparse binary representation of a natural number. -/
+def ofNat : Nat → Sparse
+  | n => .bits (n.bitIndices.attach.map fun i => ofNat i.1)
+termination_by n => n
+decreasing_by
+  exact lt_of_lt_of_le Nat.lt_two_pow_self (Nat.two_pow_le_of_mem_bitIndices i.2)
+
+theorem eval_ofNat (n : Nat) : eval (ofNat n) = n := by
+  induction n using ofNat.induct with
+  | case1 n _ ih =>
+      rw [ofNat.eq_1, eval.eq_1]
+      simp only [List.map_map]
+      rw [show
+        List.map
+            ((fun p => 2 ^ eval p) ∘ fun i : { x // x ∈ n.bitIndices } => ofNat ↑i)
+            n.bitIndices.attach =
+          List.map (fun x => 2 ^ eval (ofNat x)) n.bitIndices by
+            simp [Function.comp_def]]
+      have hmap : List.map (fun x => 2 ^ eval (ofNat x)) n.bitIndices =
+          List.map (fun x => 2 ^ x) n.bitIndices := by
+        apply List.map_congr_left
+        intro x hx
+        rw [ih ⟨x, hx⟩]
+      rw [hmap]
+      exact Nat.sum_map_two_pow_bitIndices n
+
+theorem ofNat_injective : Function.Injective ofNat := by
+  intro a b h
+  exact by simpa [eval_ofNat] using congrArg eval h
 
 /--
 Canonical sparse values have canonical bit positions and strictly increasing
@@ -393,6 +444,61 @@ end Sparse
 `log₂ ((2^a)^(2^b)) = a * 2^b`. -/
 def combineLog (a b : Sparse) : Sparse :=
   Sparse.shift a b
+
+/--
+Proof-facing logarithm-combine operation.  It is definitionally the semantic
+operation on sparse denotations, but native execution uses `combineLog`.
+-/
+def certifiedCombineLog (a b : Sparse) : Sparse :=
+  Sparse.ofNat (Sparse.eval a * 2 ^ Sparse.eval b)
+
+attribute [implemented_by combineLog] certifiedCombineLog
+
+theorem eval_certifiedCombineLog (a b : Sparse) :
+    Sparse.eval (certifiedCombineLog a b) = Sparse.eval a * 2 ^ Sparse.eval b := by
+  simp [certifiedCombineLog, Sparse.eval_ofNat]
+
+/-- Exact sparse logarithm of a canonical expression tree. -/
+def sparseLogEval : PowExpr → Sparse
+  | .two => Sparse.ofNat 1
+  | .pow a b => certifiedCombineLog (sparseLogEval a) (sparseLogEval b)
+
+theorem sparseLogEval_eq_ofNat_logEval (e : PowExpr) :
+    sparseLogEval e = Sparse.ofNat (PowExpr.logEval e) := by
+  induction e with
+  | two =>
+      rfl
+  | pow a b iha ihb =>
+      simp [sparseLogEval, PowExpr.logEval, certifiedCombineLog, iha, ihb,
+        Sparse.eval_ofNat]
+
+/--
+The finite sparse set obtained by evaluating every canonical expression tree.
+The proof-facing definition is intentionally direct; `certifiedCombineLog`
+supplies the efficient native implementation of each sparse logarithm combine.
+-/
+def certifiedSparseLogFinset (n : Nat) : Finset Sparse :=
+  ((PowExpr.parenthesizations n).map sparseLogEval).toFinset
+
+/-- Cardinality of the certified sparse-logarithm set. -/
+def certifiedSparseCard (n : Nat) : Nat :=
+  (certifiedSparseLogFinset n).card
+
+theorem coe_certifiedSparseLogFinset (n : Nat) :
+    (certifiedSparseLogFinset n : Set Sparse) =
+      Sparse.ofNat '' PowExpr.logValueSet n := by
+  ext s
+  simp [certifiedSparseLogFinset, PowExpr.logValueSet, sparseLogEval_eq_ofNat_logEval]
+
+/--
+Certified sparse expression evaluation computes exactly the canonical semantic
+A002845 count.
+-/
+theorem a002845_eq_certifiedSparseCard (n : Nat) : a002845 n = certifiedSparseCard n := by
+  rw [PowExpr.a002845_eq_logCard, PowExpr.a002845LogCard, certifiedSparseCard]
+  rw [← Set.ncard_coe_finset (certifiedSparseLogFinset n)]
+  rw [coe_certifiedSparseLogFinset]
+  exact (Set.InjOn.ncard_image Sparse.ofNat_injective.injOn).symm
 
 /-- Insert all values produced by one binary split of an expression of size
 `n` into an accumulator. -/
