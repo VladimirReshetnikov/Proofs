@@ -1,3 +1,4 @@
+import Mathlib.Data.Finset.NAry
 import Mathlib.Data.Set.Card
 
 /-!
@@ -127,6 +128,193 @@ theorem valueSet_eq_recursiveValueSet (atomValue : α) (powValue : α -> α -> �
                 refine ⟨pow a b, ?_, rfl⟩
                 simp only [parenthesizations, List.mem_flatMap, List.mem_map]
                 exact ⟨k, List.mem_finRange k, a, ha, b, hb, rfl⟩
+
+/--
+Finite-set version of `recursiveValueSet`, for interpretations whose values
+have decidable equality.  This is a computation-oriented presentation, not the
+canonical lexical definition; `recursiveValueFinset_coe` proves equivalence to
+the shared lexical semantics through `recursiveValueSet`.
+-/
+def recursiveValueFinset [DecidableEq α] (atomValue : α) (powValue : α -> α -> α) :
+    Nat -> Finset α
+  | 0 => ∅
+  | 1 => {atomValue}
+  | n + 2 =>
+      (Finset.univ : Finset (Fin (n + 1))).biUnion fun k =>
+        Finset.image₂ powValue
+          (recursiveValueFinset atomValue powValue (k.1 + 1))
+          (recursiveValueFinset atomValue powValue (n + 1 - k.1))
+termination_by n => n
+decreasing_by
+  · exact Nat.succ_lt_succ k.2
+  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+
+theorem recursiveValueFinset_coe [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    (recursiveValueFinset atomValue powValue n : Set α) =
+      recursiveValueSet atomValue powValue n := by
+  induction n using recursiveValueFinset.induct with
+  | case1 =>
+      ext v
+      simp [recursiveValueFinset, recursiveValueSet]
+  | case2 =>
+      ext v
+      simp [recursiveValueFinset, recursiveValueSet]
+  | case3 n ihLeft ihRight =>
+      ext v
+      simp [recursiveValueFinset, recursiveValueSet, ihLeft, ihRight]
+      constructor
+      · rintro ⟨i, a, ha, b, hb, hv⟩
+        exact ⟨i, a, ha, b, hb, hv.symm⟩
+      · rintro ⟨i, a, ha, b, hb, hv⟩
+        exact ⟨i, a, ha, b, hb, hv.symm⟩
+
+theorem valueCard_eq_recursiveValueFinset_card [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    valueCard atomValue powValue n =
+      (recursiveValueFinset atomValue powValue n).card := by
+  rw [valueCard, valueSet_eq_recursiveValueSet]
+  rw [← recursiveValueFinset_coe atomValue powValue n]
+  exact Set.ncard_coe_finset (recursiveValueFinset atomValue powValue n)
+
+/--
+Compute one finite-set recurrence row from an already-built table of smaller
+rows.  The theorem `recursiveValueFinsetFromTable_eq` proves that this
+memoized presentation computes the same finite set as `recursiveValueFinset`.
+-/
+def recursiveValueFinsetFromTable [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (levels : List (Finset α)) : Nat -> Finset α
+  | 0 => ∅
+  | 1 => {atomValue}
+  | n + 2 =>
+      (Finset.univ : Finset (Fin (n + 1))).biUnion fun k =>
+        Finset.image₂ powValue
+          (levels.getD (k.1 + 1) ∅)
+          (levels.getD (n + 1 - k.1) ∅)
+
+theorem recursiveValueFinsetFromTable_eq [DecidableEq α] {atomValue : α}
+    {powValue : α -> α -> α} {levels : List (Finset α)} {n : Nat}
+    (hlevels : ∀ i < n, levels.getD i ∅ = recursiveValueFinset atomValue powValue i) :
+    recursiveValueFinsetFromTable atomValue powValue levels n =
+      recursiveValueFinset atomValue powValue n := by
+  cases n with
+  | zero =>
+      simp [recursiveValueFinsetFromTable, recursiveValueFinset]
+  | succ n =>
+      cases n with
+      | zero =>
+          simp [recursiveValueFinsetFromTable, recursiveValueFinset]
+      | succ n =>
+          simp only [recursiveValueFinsetFromTable, recursiveValueFinset]
+          apply Finset.biUnion_congr rfl
+          intro k _hk
+          rw [hlevels (k.1 + 1) (Nat.succ_lt_succ k.2)]
+          rw [hlevels (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+
+/-- Table of finite-set recurrence rows `0, ..., n - 1`, built once left to right. -/
+def recursiveValueFinsetTable [DecidableEq α] (atomValue : α) (powValue : α -> α -> α) :
+    Nat -> List (Finset α)
+  | 0 => []
+  | n + 1 =>
+      let levels := recursiveValueFinsetTable atomValue powValue n
+      levels ++ [recursiveValueFinsetFromTable atomValue powValue levels n]
+
+theorem recursiveValueFinsetTable_length [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    (recursiveValueFinsetTable atomValue powValue n).length = n := by
+  induction n with
+  | zero =>
+      rfl
+  | succ n ih =>
+      simp [recursiveValueFinsetTable, ih]
+
+theorem list_getD_eq_getElem {β : Type u} (xs : List β) {i : Nat} (fallback : β)
+    (hi : i < xs.length) :
+    xs.getD i fallback = xs[i] := by
+  simp [List.getD, List.getElem?_eq_getElem hi]
+
+/-- The memo table agrees with `recursiveValueFinset` at every stored index. -/
+theorem recursiveValueFinsetTable_getD [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n i : Nat) (hi : i < n) :
+    (recursiveValueFinsetTable atomValue powValue n).getD i ∅ =
+      recursiveValueFinset atomValue powValue i := by
+  induction n generalizing i with
+  | zero =>
+      exact (Nat.not_lt_zero i hi).elim
+  | succ n ih =>
+      have hle : i ≤ n := Nat.lt_succ_iff.mp hi
+      rcases Nat.lt_or_eq_of_le hle with hlt | heq
+      · have hiTable : i < (recursiveValueFinsetTable atomValue powValue n).length := by
+          simpa [recursiveValueFinsetTable_length] using hlt
+        rw [recursiveValueFinsetTable]
+        rw [list_getD_eq_getElem
+          (recursiveValueFinsetTable atomValue powValue n ++
+            [recursiveValueFinsetFromTable atomValue powValue
+              (recursiveValueFinsetTable atomValue powValue n) n])
+          ∅ (by simpa [recursiveValueFinsetTable_length] using hi)]
+        rw [List.getElem_append_left hiTable]
+        rw [← list_getD_eq_getElem (recursiveValueFinsetTable atomValue powValue n) ∅
+          hiTable]
+        exact ih i hlt
+      · subst i
+        rw [recursiveValueFinsetTable]
+        rw [list_getD_eq_getElem
+          (recursiveValueFinsetTable atomValue powValue n ++
+            [recursiveValueFinsetFromTable atomValue powValue
+              (recursiveValueFinsetTable atomValue powValue n) n])
+          ∅ (by simp [recursiveValueFinsetTable_length])]
+        rw [List.getElem_append_right (by simp [recursiveValueFinsetTable_length])]
+        simp [recursiveValueFinsetTable_length,
+          recursiveValueFinsetFromTable_eq (atomValue := atomValue) (powValue := powValue) ih]
+
+/-- Memoized finite-set recurrence row, proved equal to `recursiveValueFinset`. -/
+def recursiveValueFinsetMemo [DecidableEq α] (atomValue : α) (powValue : α -> α -> α)
+    (n : Nat) : Finset α :=
+  (recursiveValueFinsetTable atomValue powValue (n + 1)).getD n ∅
+
+theorem recursiveValueFinsetMemo_eq [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    recursiveValueFinsetMemo atomValue powValue n =
+      recursiveValueFinset atomValue powValue n := by
+  exact recursiveValueFinsetTable_getD atomValue powValue (n + 1) n (Nat.lt_succ_self n)
+
+/-- Memoized finite-set counts for sizes `1, ..., n`, computed from one shared table. -/
+def recursiveValueCountsMemoThrough [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) : List Nat :=
+  ((recursiveValueFinsetTable atomValue powValue (n + 1)).drop 1).map Finset.card
+
+theorem recursiveValueCountsMemoThrough_getD [DecidableEq α] {atomValue : α}
+    {powValue : α -> α -> α} {N i : Nat} (hi : i < N) :
+    (recursiveValueCountsMemoThrough atomValue powValue N).getD i 0 =
+      (recursiveValueFinsetMemo atomValue powValue (i + 1)).card := by
+  unfold recursiveValueCountsMemoThrough
+  have hiDrop :
+      i < (List.drop 1 (recursiveValueFinsetTable atomValue powValue (N + 1))).length := by
+    simp [recursiveValueFinsetTable_length, hi]
+  have hiCounts :
+      i <
+        (List.map Finset.card
+          (List.drop 1 (recursiveValueFinsetTable atomValue powValue (N + 1)))).length := by
+    simpa using hiDrop
+  have hiTable :
+      i + 1 < (recursiveValueFinsetTable atomValue powValue (N + 1)).length := by
+    simpa [recursiveValueFinsetTable_length, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+      using Nat.succ_lt_succ hi
+  rw [list_getD_eq_getElem _ _ hiCounts]
+  rw [List.getElem_map]
+  rw [List.getElem_drop]
+  have hiTable' : 1 + i < (recursiveValueFinsetTable atomValue powValue (N + 1)).length := by
+    simpa [Nat.add_comm] using hiTable
+  have hleft :
+      (recursiveValueFinsetTable atomValue powValue (N + 1))[1 + i] =
+        recursiveValueFinset atomValue powValue (i + 1) := by
+    rw [← list_getD_eq_getElem (recursiveValueFinsetTable atomValue powValue (N + 1))
+      ∅ hiTable']
+    simpa [Nat.add_comm] using
+      recursiveValueFinsetTable_getD atomValue powValue (N + 1) (i + 1)
+        (Nat.succ_lt_succ hi)
+  rw [hleft]
+  rw [recursiveValueFinsetMemo_eq]
 
 def e2 : Expr :=
   pow atom atom
