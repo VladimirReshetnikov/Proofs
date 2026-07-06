@@ -192,6 +192,10 @@ theorem a002845_nine : a002845 9 = 78 := by
 theorem a002845_ten : a002845 10 = 171 := by
   native_decide
 
+/-- `A002845(11) = 379`. -/
+theorem a002845_eleven : a002845 11 = 379 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
