@@ -164,6 +164,10 @@ theorem a002845_two : a002845 2 = 1 := by
 theorem a002845_three : a002845 3 = 1 := by
   native_decide
 
+/-- `A002845(4) = 2`. -/
+theorem a002845_four : a002845 4 = 2 := by
+  native_decide
+
 end A002845
 
 end LeanProofs
