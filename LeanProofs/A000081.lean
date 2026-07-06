@@ -17,8 +17,7 @@ exponentiation.
 
 The first values are proved by enumerating the legal parenthesizations,
 collapsing only identities proved over positive reals, and separating the
-remaining functions by exact logarithmic/exponent tests.  The local `PowExpr`
-syntax is retained as a compatibility view for those finite proofs.
+remaining functions by exact logarithmic/exponent tests.
 -/
 
 namespace LeanProofs
@@ -43,43 +42,22 @@ noncomputable def powFunction (f g : PosReal -> PosReal) : PosReal -> PosReal :=
   fun t => PosReal.rpow (f t) (g t).1
 
 /-- Binary parenthesized expressions built from copies of the variable `x`. -/
-inductive PowExpr where
-  | x
-  | pow (a b : PowExpr)
-deriving Repr, DecidableEq
+abbrev PowExpr := PowTower.Expr
 
 namespace PowExpr
 
-open PowExpr
+/-- The shared lexical atom, read in this module as the variable `x`. -/
+abbrev x : PowExpr :=
+  PowTower.Expr.atom
 
-/-- Translate the existing A000081 syntax into the shared one-token lexical syntax. -/
-def toSharedLex : PowExpr -> PowTower.Expr
-  | x => PowTower.Expr.atom
-  | pow a b => PowTower.Expr.pow (toSharedLex a) (toSharedLex b)
-
-/-- Translate the shared one-token lexical syntax back to the existing A000081 syntax. -/
-def ofSharedLex : PowTower.Expr -> PowExpr
-  | .atom => x
-  | .pow a b => pow (ofSharedLex a) (ofSharedLex b)
-
-theorem toSharedLex_ofSharedLex (e : PowTower.Expr) :
-    toSharedLex (ofSharedLex e) = e := by
-  induction e with
-  | atom => rfl
-  | pow a b iha ihb =>
-      simp [toSharedLex, ofSharedLex, iha, ihb]
-
-theorem ofSharedLex_toSharedLex (e : PowExpr) :
-    ofSharedLex (toSharedLex e) = e := by
-  induction e with
-  | x => rfl
-  | pow a b iha ihb =>
-      simp [toSharedLex, ofSharedLex, iha, ihb]
+/-- The shared lexical binary exponentiation node. -/
+abbrev pow : PowExpr -> PowExpr -> PowExpr :=
+  PowTower.Expr.pow
 
 /-- Evaluate a parenthesized power expression as a function on positive reals. -/
 noncomputable def eval : PowExpr -> PosReal -> PosReal
-  | x, t => t
-  | pow a b, t => PosReal.rpow (eval a t) (eval b t).1
+  | .atom, t => t
+  | .pow a b, t => PosReal.rpow (eval a t) (eval b t).1
 
 /--
 Shared lexical interpretation for A000081: the atom is the identity function
@@ -88,15 +66,15 @@ on positive reals, and the binary node exponentiates pointwise.
 noncomputable def sharedEval : PowTower.Expr -> PosReal -> PosReal :=
   PowTower.Expr.eval atomFunction powFunction
 
-/-- The existing A000081 syntax evaluates the same way as the shared lexical syntax. -/
-theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
-    eval e = sharedEval (toSharedLex e) := by
+/-- A000081's recursive evaluator agrees with the shared lexical evaluator. -/
+theorem eval_eq_sharedEval (e : PowExpr) :
+    eval e = sharedEval e := by
   induction e with
-  | x =>
+  | atom =>
       rfl
   | pow a b iha ihb =>
       funext t
-      simp [eval, sharedEval, toSharedLex, powFunction, iha, ihb]
+      simp [eval, sharedEval, powFunction, iha, ihb]
 
 /--
 The shared canonical lexical value set for A000081.
@@ -105,47 +83,25 @@ def canonicalValueSet (n : Nat) : Set (PosReal -> PosReal) :=
   PowTower.Expr.valueSet atomFunction powFunction n
 
 /-- All legal binary parenthesizations with exactly `n` copies of `x`. -/
-def parenthesizations : Nat -> List PowExpr
-  | 0 => []
-  | 1 => [x]
-  | n + 2 =>
-      (List.finRange (n + 1)).flatMap fun k =>
-        (parenthesizations (k.1 + 1)).flatMap fun a =>
-          (parenthesizations (n + 1 - k.1)).map fun b => pow a b
-termination_by n => n
-decreasing_by
-  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-  · exact Nat.succ_lt_succ k.2
+def parenthesizations : Nat -> List PowExpr :=
+  PowTower.Expr.parenthesizations
 
-/-- Translating a local parenthesization gives a shared lexical parenthesization. -/
-theorem toSharedLex_mem_parenthesizations {n : Nat} {e : PowExpr}
-    (he : e ∈ parenthesizations n) : toSharedLex e ∈ PowTower.Expr.parenthesizations n := by
-  exact PowTower.Expr.toExpr_mem_parenthesizations
-    parenthesizations x pow toSharedLex rfl rfl (fun _ => rfl) rfl (fun _ _ => rfl) he
-
-/-- Translating a shared lexical parenthesization back gives a local parenthesization. -/
-theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
-    (he : e ∈ PowTower.Expr.parenthesizations n) : ofSharedLex e ∈ parenthesizations n := by
-  exact PowTower.Expr.ofExpr_mem_parenthesizations
-    parenthesizations x pow ofSharedLex rfl rfl (fun _ => rfl) rfl (fun _ _ => rfl) he
-
-/-- Compatibility value set computed through the old local variable syntax. -/
+/-- Compatibility value set computed through the A000081 positive-real evaluator. -/
 def valueSet (n : Nat) : Set (PosReal -> PosReal) :=
   {f | ∃ e ∈ parenthesizations n, eval e = f}
 
-/-- The existing A000081 value set is the shared canonical lexical value set. -/
+/-- The A000081 evaluator value set is the shared canonical lexical value set. -/
 theorem valueSet_eq_canonicalValueSet (n : Nat) :
     valueSet n = canonicalValueSet n := by
   ext f
   constructor
   · rintro ⟨e, he, hf⟩
-    refine ⟨toSharedLex e, ?_, ?_⟩
-    · exact toSharedLex_mem_parenthesizations he
-    · change sharedEval (toSharedLex e) = f
-      rw [← eval_eq_sharedEval_toSharedLex, hf]
+    refine ⟨e, he, ?_⟩
+    change sharedEval e = f
+    rw [← eval_eq_sharedEval, hf]
   · rintro ⟨e, he, hf⟩
-    refine ⟨ofSharedLex e, ofSharedLex_mem_parenthesizations he, ?_⟩
-    rw [eval_eq_sharedEval_toSharedLex, toSharedLex_ofSharedLex]
+    refine ⟨e, he, ?_⟩
+    rw [eval_eq_sharedEval]
     exact hf
 
 /-- OEIS A000081, defined as the cardinality of the shared lexical exponent-function set. -/
@@ -182,14 +138,14 @@ For a positive-real expression `e`, `exponent e t` is the exponent of the outer
 base `t`: `(eval e t).1 = t.1 ^ exponent e t`.
 -/
 noncomputable def exponent : PowExpr -> PosReal -> ℝ
-  | x, _ => 1
-  | pow a b, t => exponent a t * (eval b t).1
+  | .atom, _ => 1
+  | .pow a b, t => exponent a t * (eval b t).1
 
 /-- Every expression evaluates to `t` raised to its outer exponent. -/
 theorem eval_eq_rpow_exponent (e : PowExpr) (t : PosReal) :
     (eval e t).1 = t.1 ^ exponent e t := by
   induction e with
-  | x =>
+  | atom =>
       simp [eval, exponent, Real.rpow_one]
   | pow a b iha _ =>
       simp only [eval, exponent, PosReal.rpow]
@@ -545,7 +501,7 @@ theorem valueSet_four_ncard :
 /-- `A000081(0) = 0`. -/
 theorem a000081_zero : a000081 0 = 0 := by
   rw [a000081_eq_valueSet_ncard]
-  simp [valueSet, parenthesizations]
+  simp [valueSet, parenthesizations, PowTower.Expr.parenthesizations_zero_eq]
 
 /-- `A000081(1) = 1`. -/
 theorem a000081_one : a000081 1 = 1 := by
