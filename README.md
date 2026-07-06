@@ -127,9 +127,10 @@ that `25` is separated from `{1404, 4239}` once the single analytic sign
 obligation `nearOne25Base.im < 0` is discharged; this sign is further reduced
 to the one-dimensional interval bound `-766 < nearOne25Level3.re < -765`,
 and then to scalar interval bounds for the exponential and cosine factors in
-the exact formula for `nearOne25Level3.re`.  The module also exposes exact
-real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
-layers of representative `25`, including the expansion of
+the exact formula for `nearOne25Level3.re`, and then to a small rational box
+around `nearOne25Level2` plus four endpoint `exp`/`cos` estimates.  The module
+also exposes exact real/imaginary recurrence formulas for the `(-i)^z` seed and
+lower `i^z` layers of representative `25`, including the expansion of
 `v = i^(i^(i^i))` and the seed itself through the scalar `theta`, so the
 remaining interval certificate can be pushed down level by level.
 These n = 12 companion modules are progress toward, but still not, a semantic

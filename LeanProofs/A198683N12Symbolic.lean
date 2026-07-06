@@ -844,6 +844,93 @@ theorem nearOne25Level3_re_bounds_of_exp_cos_bounds
   rw [nearOne25Level3_re_eq]
   exact mul_mem_neg766_neg765_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
 
+private theorem nearOne25Level2_exp_bounds_of_box_and_endpoints
+    (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
+    (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725) :
+    (3724 : ℝ) < Real.exp (-(Real.pi / 2) * nearOne25Level2.im) ∧
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725 := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  have hneg_lo : (52346 : ℝ) / 10000 < -nearOne25Level2.im := by linarith
+  have hneg_hi : -nearOne25Level2.im < (52347 : ℝ) / 10000 := by linarith
+  have harg0 :
+      Real.pi / 2 * ((52346 : ℝ) / 10000) <
+        -(Real.pi / 2) * nearOne25Level2.im := by
+    have h := mul_lt_mul_of_pos_left hneg_lo hpi2_pos
+    rwa [show Real.pi / 2 * -nearOne25Level2.im =
+        -(Real.pi / 2) * nearOne25Level2.im by ring] at h
+  have harg1 :
+      -(Real.pi / 2) * nearOne25Level2.im <
+        Real.pi / 2 * ((52347 : ℝ) / 10000) := by
+    have h := mul_lt_mul_of_pos_left hneg_hi hpi2_pos
+    rwa [show Real.pi / 2 * -nearOne25Level2.im =
+        -(Real.pi / 2) * nearOne25Level2.im by ring] at h
+  constructor
+  · exact hexp0.trans (Real.exp_lt_exp.mpr harg0)
+  · exact (Real.exp_lt_exp.mpr harg1).trans hexp1
+
+private theorem nearOne25Level2_cos_bounds_of_box_and_endpoints
+    (hre0 : (11317 : ℝ) / 10000 < nearOne25Level2.re)
+    (hre1 : nearOne25Level2.re < (5659 : ℝ) / 5000)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    (-(257 : ℝ) / 1250) <
+        Real.cos (Real.pi / 2 * nearOne25Level2.re) ∧
+      Real.cos (Real.pi / 2 * nearOne25Level2.re) <
+        (-(411 : ℝ) / 2000) := by
+  have hpi2_pos : 0 < Real.pi / 2 := by positivity
+  constructor
+  · have hangle_lt_hi :
+        Real.pi / 2 * nearOne25Level2.re <
+          Real.pi / 2 * ((5659 : ℝ) / 5000) :=
+      mul_lt_mul_of_pos_left hre1 hpi2_pos
+    have hangle_nonneg : 0 ≤ Real.pi / 2 * nearOne25Level2.re := by
+      nlinarith [Real.pi_pos, hre0]
+    have hhi_le_pi : Real.pi / 2 * ((5659 : ℝ) / 5000) ≤ Real.pi := by
+      nlinarith [Real.pi_pos]
+    have hcos_hi_lt :
+        Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)) <
+          Real.cos (Real.pi / 2 * nearOne25Level2.re) :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi hangle_nonneg hhi_le_pi hangle_lt_hi
+    exact hcos0.trans hcos_hi_lt
+  · have hlo_lt_angle :
+        Real.pi / 2 * ((11317 : ℝ) / 10000) <
+          Real.pi / 2 * nearOne25Level2.re :=
+      mul_lt_mul_of_pos_left hre0 hpi2_pos
+    have hlo_nonneg : 0 ≤ Real.pi / 2 * ((11317 : ℝ) / 10000) := by positivity
+    have hangle_le_pi : Real.pi / 2 * nearOne25Level2.re ≤ Real.pi := by
+      nlinarith [Real.pi_pos, hre1]
+    have hcos_lt_lo :
+        Real.cos (Real.pi / 2 * nearOne25Level2.re) <
+          Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) :=
+      Real.cos_lt_cos_of_nonneg_of_le_pi hlo_nonneg hangle_le_pi hlo_lt_angle
+    exact hcos_lt_lo.trans hcos1
+
+/--
+A rational box around `nearOne25Level2`, plus four endpoint estimates, is
+enough to certify the interval for `nearOne25Level3.re`.
+-/
+theorem nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
+    (hre0 : (11317 : ℝ) / 10000 < nearOne25Level2.re)
+    (hre1 : nearOne25Level2.re < (5659 : ℝ) / 5000)
+    (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
+    (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    (-766 : ℝ) < nearOne25Level3.re ∧ nearOne25Level3.re < -765 := by
+  have hexp := nearOne25Level2_exp_bounds_of_box_and_endpoints him0 him1 hexp0 hexp1
+  have hcos := nearOne25Level2_cos_bounds_of_box_and_endpoints hre0 hre1 hcos0 hcos1
+  exact nearOne25Level3_re_bounds_of_exp_cos_bounds hexp.1 hexp.2 hcos.1 hcos.2
+
 /--
 The hard sign condition for `idx = 25` follows from a certified interval for
 the previous level's real part. Numerically this level is about `-765.4119`.
@@ -951,6 +1038,49 @@ theorem nearOne25_ne_nearOne4239_of_exp_cos_bounds
       Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(411 : ℝ) / 2000)) :
     nearOne25 ≠ nearOne4239 := by
   have h := nearOne25Level3_re_bounds_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
+  exact nearOne25_ne_nearOne4239_of_level3_re_bounds h.1 h.2
+
+/--
+The strict class-25 split from `1404` follows from a rational box around
+`nearOne25Level2` and endpoint estimates for the resulting `exp` and `cos`
+factors.
+-/
+theorem nearOne25_ne_nearOne1404_of_level2_box_and_endpoint_bounds
+    (hre0 : (11317 : ℝ) / 10000 < nearOne25Level2.re)
+    (hre1 : nearOne25Level2.re < (5659 : ℝ) / 5000)
+    (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
+    (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne1404 := by
+  have h := nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
+    hre0 hre1 him0 him1 hexp0 hexp1 hcos0 hcos1
+  exact nearOne25_ne_nearOne1404_of_level3_re_bounds h.1 h.2
+
+/--
+The same level-2 box and endpoint estimates separate representative `25` from
+the other retained representative `4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_level2_box_and_endpoint_bounds
+    (hre0 : (11317 : ℝ) / 10000 < nearOne25Level2.re)
+    (hre1 : nearOne25Level2.re < (5659 : ℝ) / 5000)
+    (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
+    (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
+    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
+        (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne4239 := by
+  have h := nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
+    hre0 hre1 him0 him1 hexp0 hexp1 hcos0 hcos1
   exact nearOne25_ne_nearOne4239_of_level3_re_bounds h.1 h.2
 
 /--
