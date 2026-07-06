@@ -662,6 +662,11 @@ theorem a002845_twenty : a002845 20 = 688366 := by
   rw [a002845_eq_certifiedLevelCard]
   native_decide
 
+/-- OEIS A002845 has value `1619087` at `n = 21`. -/
+theorem a002845_twenty_one : a002845 21 = 1619087 := by
+  rw [a002845_eq_certifiedLevelCard]
+  native_decide
+
 /-- The sparse backend computes `1` at `n = 1`. -/
 theorem a002845Sparse_one : a002845Sparse 1 = 1 := by
   native_decide
