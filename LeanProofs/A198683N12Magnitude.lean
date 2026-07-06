@@ -1,3 +1,5 @@
+import Mathlib.Analysis.Complex.ExponentialBounds
+import Mathlib.Tactic.Linarith.Frontend
 import LeanProofs.A198683N12Probe
 
 set_option maxRecDepth 50000
@@ -25,6 +27,19 @@ attempting astronomical argument reduction.
 namespace LeanProofs
 
 namespace A198683N12Magnitude
+
+/--
+If two complex exponents have different real parts, their exponentials are
+different. Thus a certified log-modulus separation is enough to prove two
+principal-exponential candidates unequal, without reducing their arguments
+modulo `2π`.
+-/
+theorem exp_ne_of_re_lt {x y : ℂ} (h : x.re < y.re) : Complex.exp x ≠ Complex.exp y := by
+  intro heq
+  have hn := congrArg (fun z : ℂ => ‖z‖) heq
+  rw [Complex.norm_exp, Complex.norm_exp] at hn
+  have hre : x.re = y.re := Real.exp_eq_exp.mp hn
+  linarith
 
 /--
 Flags for TSV rows whose displayed `Re(e)` is negative with scientific exponent
