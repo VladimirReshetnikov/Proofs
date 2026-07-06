@@ -93,6 +93,26 @@ theorem arctan_square_identity :
       210 * Real.arctan (47 : ℝ) ^ 2 = 0
 ```
 
+[`LeanProofs/A000081.lean`](LeanProofs/A000081.lean) defines OEIS A000081
+from the exponent-function description itself: it enumerates all legal binary
+parenthesizations of `x^x^...^x`, interprets them as functions
+`{x : ℝ // 0 < x} -> {x : ℝ // 0 < x}`, and counts the resulting semantic
+function set.  It proves the listed values through `n = 4` directly from that
+definition:
+
+```lean
+theorem a000081_zero : a000081 0 = 0
+theorem a000081_one : a000081 1 = 1
+theorem a000081_two : a000081 2 = 1
+theorem a000081_three : a000081 3 = 2
+theorem a000081_four : a000081 4 = 4
+```
+
+The `n = 4` proof includes the positive-real identity
+`(x^x)^(x^x) = (x^(x^x))^x`; the remaining representatives are separated as
+functions by exact exponent comparisons at `x = 3`.  No Pólya recurrence or
+rooted-tree counter is used as a counting shortcut without a semantic bridge.
+
 [`LeanProofs/A002845.lean`](LeanProofs/A002845.lean) defines OEIS A002845
 as the number of distinct values of the fully parenthesized expression
 `2^2^...^2`, using exact hereditary sparse-binary logarithms so the tower
