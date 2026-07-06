@@ -42,6 +42,12 @@ def u : ℂ := principalPow Complex.I q
 /-- The reciprocal of `(i^i)^(i^i)`. -/
 def qqInv : ℂ := ((Real.exp theta : ℝ) : ℂ)
 
+/-- The exact value `i^(i^(i^i))`. -/
+def v : ℂ := principalPow Complex.I u
+
+/-- The reciprocal-side value `(-i)^(i^(i^i))`. -/
+def w : ℂ := principalPow (-Complex.I) u
+
 private theorem theta_pos : 0 < theta := by
   dsimp [theta, rho]
   positivity
@@ -112,6 +118,20 @@ private theorem theta_mul_exp_pi_div_two :
             rw [Real.exp_zero]
     _ = Real.pi / 2 := by ring
 
+private theorem exp_pi_div_two_gt_24_div_5 :
+    (24 : ℝ) / 5 < Real.exp (Real.pi / 2) := by
+  have hpi : (157 : ℝ) / 100 < Real.pi / 2 := by
+    linarith [Real.pi_gt_d2]
+  have hsum_le :
+      (∑ i ∈ Finset.range 7, ((157 : ℝ) / 100) ^ i / (i.factorial : ℝ)) ≤
+        Real.exp ((157 : ℝ) / 100) :=
+    Real.sum_le_exp_of_nonneg (by norm_num) 7
+  have hsum_gt :
+      (24 : ℝ) / 5 <
+        ∑ i ∈ Finset.range 7, ((157 : ℝ) / 100) ^ i / (i.factorial : ℝ) := by
+    norm_num [Finset.sum_range_succ]
+  exact hsum_gt.trans_le (hsum_le.trans ((Real.exp_le_exp).2 hpi.le))
+
 private theorem exp_pi_div_two_mul_rho :
     Real.exp (Real.pi / 2) * rho = 1 := by
   dsimp [rho]
@@ -126,6 +146,13 @@ private theorem neg_pi_div_two_exp_mul_rho :
         -(Real.pi / 2) * (Real.exp (Real.pi / 2) * rho) := by ring
     _ = -(Real.pi / 2) * 1 := by rw [exp_pi_div_two_mul_rho]
     _ = -(Real.pi / 2) := by ring
+
+private theorem theta_lt_one_div_three : theta < (1 : ℝ) / 3 := by
+  have hpi : Real.pi / 2 < (63 : ℝ) / 40 := by
+    linarith [Real.pi_lt_d2]
+  have hexp_pos : 0 < Real.exp (Real.pi / 2) := Real.exp_pos _
+  nlinarith [hpi, exp_pi_div_two_gt_24_div_5, theta_mul_exp_pi_div_two, theta_pos,
+    hexp_pos]
 
 private theorem exp_neg_theta_mul_exp_theta :
     Real.exp (-theta) * Real.exp theta = 1 := by
@@ -154,6 +181,29 @@ private theorem neg_pi_div_two_exp_theta_mul_exp_neg_theta :
         -(Real.pi / 2) * (Real.exp theta * Real.exp (-theta)) := by ring
     _ = -(Real.pi / 2) * 1 := by rw [exp_theta_mul_exp_neg_theta]
     _ = -(Real.pi / 2) := by ring
+
+private theorem u_im_eq_sin_theta : u.im = Real.sin theta := by
+  rw [← I_pow_q_eq_u, I_pow_q_eq_exp_theta]
+  simp [Complex.exp_im, Complex.mul_re, Complex.mul_im]
+
+private theorem u_im_pos : 0 < u.im := by
+  rw [u_im_eq_sin_theta]
+  exact Real.sin_pos_of_pos_of_lt_pi theta_pos (by linarith [theta_lt_pi_div_two, Real.pi_pos])
+
+private theorem pi_div_two_mul_sin_theta_lt_log_two :
+    Real.pi / 2 * Real.sin theta < Real.log 2 := by
+  have hsin_lt_theta : Real.sin theta < theta := Real.sin_lt theta_pos
+  have harg_lt_pi_div_six : Real.pi / 2 * Real.sin theta < Real.pi / 6 := by
+    nlinarith [Real.pi_pos, u_im_pos, u_im_eq_sin_theta, hsin_lt_theta,
+      theta_lt_one_div_three]
+  have hpi_div_six_lt_log_two : Real.pi / 6 < Real.log 2 := by
+    nlinarith [Real.pi_lt_d2, Real.log_two_gt_d9]
+  exact harg_lt_pi_div_six.trans hpi_div_six_lt_log_two
+
+private theorem exp_lt_two_of_lt_log_two {x : ℝ} (hx : x < Real.log 2) :
+    Real.exp x < 2 := by
+  have h := Real.exp_lt_exp.mpr hx
+  rwa [Real.exp_log (by norm_num : (0 : ℝ) < 2)] at h
 
 /-- `(i^(i^i))^(i^(-i)) = i`. -/
 theorem u_pow_qInv_eq_I : principalPow u qInv = Complex.I := by
@@ -333,6 +383,88 @@ theorem q_pow_qqInv_pow_qq_eq_q :
   dsimp [q, rho]
   exact (Complex.ofReal_exp (-(Real.pi / 2))).symm
 
+private theorem v_mul_w_eq_one : v * w = 1 := by
+  dsimp [v, w, principalPow]
+  rw [log_I_real, log_neg_I_real]
+  rw [← Complex.exp_add]
+  rw [show (((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * u +
+      (((-(Real.pi / 2 : ℝ) : ℂ) * Complex.I) * u) = 0 by ring]
+  exact Complex.exp_zero
+
+private theorem w_mul_v_eq_one : w * v = 1 := by
+  rw [mul_comm, v_mul_w_eq_one]
+
+private theorem v_norm_lt_one : ‖v‖ < 1 := by
+  dsimp [v, principalPow]
+  rw [log_I_real, Complex.norm_exp]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * u).re =
+      -(Real.pi / 2) * u.im by
+    simp [Complex.mul_re, Complex.mul_im]]
+  exact Real.exp_lt_one_iff.mpr (by nlinarith [Real.pi_pos, u_im_pos])
+
+private theorem w_norm_lt_two : ‖w‖ < 2 := by
+  dsimp [w, principalPow]
+  rw [log_neg_I_real, Complex.norm_exp]
+  rw [show ((((-(Real.pi / 2 : ℝ) : ℂ) * Complex.I) * u).re) =
+      Real.pi / 2 * u.im by
+    simp [Complex.mul_re, Complex.mul_im]]
+  rw [u_im_eq_sin_theta]
+  exact exp_lt_two_of_lt_log_two pi_div_two_mul_sin_theta_lt_log_two
+
+private theorem abs_v_im_lt_one : |v.im| < 1 :=
+  (Complex.abs_im_le_norm v).trans_lt v_norm_lt_one
+
+private theorem abs_w_im_lt_two : |w.im| < 2 :=
+  (Complex.abs_im_le_norm w).trans_lt w_norm_lt_two
+
+private theorem log_q_pow_v :
+    Complex.log (principalPow q v) = Complex.log q * v := by
+  change Complex.log (Complex.exp (Complex.log q * v)) = Complex.log q * v
+  rw [Complex.log_exp]
+  · rw [log_q]
+    simp [Complex.mul_im]
+    nlinarith [Real.pi_pos, (abs_lt.mp abs_v_im_lt_one).1,
+      (abs_lt.mp abs_v_im_lt_one).2]
+  · rw [log_q]
+    simp [Complex.mul_im]
+    nlinarith [Real.pi_pos, (abs_lt.mp abs_v_im_lt_one).1,
+      (abs_lt.mp abs_v_im_lt_one).2]
+
+private theorem log_q_pow_w :
+    Complex.log (principalPow q w) = Complex.log q * w := by
+  change Complex.log (Complex.exp (Complex.log q * w)) = Complex.log q * w
+  rw [Complex.log_exp]
+  · rw [log_q]
+    simp [Complex.mul_im]
+    nlinarith [Real.pi_pos, (abs_lt.mp abs_w_im_lt_two).1,
+      (abs_lt.mp abs_w_im_lt_two).2]
+  · rw [log_q]
+    simp [Complex.mul_im]
+    nlinarith [Real.pi_pos, (abs_lt.mp abs_w_im_lt_two).1,
+      (abs_lt.mp abs_w_im_lt_two).2]
+
+/-- `(q^v)^w = q`, with the principal-log branch certified by norm bounds. -/
+theorem q_pow_v_pow_w_eq_q : principalPow (principalPow q v) w = q := by
+  change Complex.exp (Complex.log (principalPow q v) * w) = q
+  rw [log_q_pow_v]
+  rw [show (Complex.log q * v) * w = Complex.log q by
+    rw [mul_assoc, v_mul_w_eq_one, mul_one]]
+  rw [log_q]
+  dsimp [q, rho]
+  rw [show (-(↑Real.pi / 2) : ℂ) = (↑(-(Real.pi / 2)) : ℂ) by norm_num]
+  exact (Complex.ofReal_exp (-(Real.pi / 2))).symm
+
+/-- `(q^w)^v = q`, with the principal-log branch certified by norm bounds. -/
+theorem q_pow_w_pow_v_eq_q : principalPow (principalPow q w) v = q := by
+  change Complex.exp (Complex.log (principalPow q w) * v) = q
+  rw [log_q_pow_w]
+  rw [show (Complex.log q * w) * v = Complex.log q by
+    rw [mul_assoc, w_mul_v_eq_one, mul_one]]
+  rw [log_q]
+  dsimp [q, rho]
+  rw [show (-(↑Real.pi / 2) : ℂ) = (↑(-(Real.pi / 2)) : ℂ) by norm_num]
+  exact (Complex.ofReal_exp (-(Real.pi / 2))).symm
+
 /--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written
 with the same principal-power expression as the local trace:
@@ -437,6 +569,22 @@ theorem nearIPowerI2581_eq_q : nearIPowerI2581 = q := by
   rw [q_pow_qInv_pow_q_eq_q]
 
 /--
+Representative `idx = 2574` from the n = 12 near-`i^i` probe class:
+
+`((i^i)^(i^(i^(i^i))))^(((i^i)^i)^(i^(i^i)))`.
+-/
+def nearIPowerI2574 : ℂ :=
+  principalPow (principalPow q v)
+    (principalPow (principalPow q Complex.I) u)
+
+/-- Candidate `2574` in the n = 12 near-`i^i` class is exactly `i^i`. -/
+theorem nearIPowerI2574_eq_q : nearIPowerI2574 = q := by
+  dsimp [nearIPowerI2574]
+  rw [q_pow_I_eq_neg_I]
+  change principalPow (principalPow q v) w = q
+  exact q_pow_v_pow_w_eq_q
+
+/--
 Representative `idx = 2603` from the n = 12 near-`i^i` probe class:
 
 `((i^i)^((i^i)^(i^i)))^((i^(i^i))^((i^i)^i))`.
@@ -512,6 +660,23 @@ theorem nearIPowerI3057_eq_q : nearIPowerI3057 = q := by
   rw [I_pow_q_eq_u]
   rw [u_pow_neg_I_eq_qqInv]
   rw [q_pow_qqInv_pow_qq_eq_q]
+
+/--
+Representative `idx = 3058` from the n = 12 near-`i^i` probe class:
+
+`((i^i)^(((i^i)^i)^(i^(i^i))))^(i^(i^(i^i)))`.
+-/
+def nearIPowerI3058 : ℂ :=
+  principalPow
+    (principalPow q (principalPow (principalPow q Complex.I) u))
+    v
+
+/-- Candidate `3058` in the n = 12 near-`i^i` class is exactly `i^i`. -/
+theorem nearIPowerI3058_eq_q : nearIPowerI3058 = q := by
+  dsimp [nearIPowerI3058]
+  rw [q_pow_I_eq_neg_I]
+  change principalPow (principalPow q w) v = q
+  exact q_pow_w_pow_v_eq_q
 
 /--
 Representative `idx = 3352` from the n = 12 near-`i^i` probe class:

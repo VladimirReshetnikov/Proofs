@@ -118,7 +118,7 @@ for comparing that overflow witness against candidates whose exponent real
 part is certified larger.
 [`LeanProofs/A198683N12Symbolic.lean`](LeanProofs/A198683N12Symbolic.lean)
 starts replacing the n = 12 heuristic cluster analysis with exact symbolic
-Lean reductions: it proves that twelve representatives from the 14-member
+Lean reductions: it proves that all fourteen representatives from the
 near-`i^i` probe class are exactly `i^i = exp(-pi/2)`.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
