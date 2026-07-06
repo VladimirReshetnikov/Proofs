@@ -3034,6 +3034,177 @@ theorem a198683_seven_le_fifty_six : a198683 7 ≤ 56 := by
     _ = reps.length := by simp
     _ = 56 := by norm_num [reps]
 
+private noncomputable def a198683SevenCollapsedReps : List ℂ :=
+  [principalPow Complex.I p6A, principalPow Complex.I p6B, principalPow Complex.I p6C,
+    principalPow Complex.I p6D, principalPow Complex.I p6E, principalPow Complex.I p6F,
+    principalPow Complex.I p6G, principalPow Complex.I p6H, principalPow Complex.I p6I,
+    principalPow Complex.I p6J, principalPow Complex.I p6K, principalPow Complex.I p6L,
+    principalPow Complex.I p6M, principalPow Complex.I p6N, principalPow Complex.I p6O,
+    principalPow p2 p5A, principalPow p2 p5B, principalPow p2 p5C,
+    principalPow p2 p5D, principalPow p2 p5E, principalPow p2 p5F,
+    principalPow p2 p5G,
+    principalPow p3L p4A, principalPow p3L p4B, principalPow p3L p4C,
+    principalPow p3R p4A, principalPow p3R p4B, principalPow p3R p4C,
+    principalPow p4A p3L, principalPow p4A p3R, principalPow p4B p3L,
+    principalPow p4C p3L,
+    principalPow p5A p2, principalPow p5B p2, principalPow p5C p2,
+    principalPow p5D p2, principalPow p5F p2, principalPow p5G p2,
+    principalPow p6A Complex.I, principalPow p6B Complex.I, principalPow p6C Complex.I,
+    principalPow p6D Complex.I, principalPow p6F Complex.I, principalPow p6G Complex.I,
+    principalPow p6H Complex.I, principalPow p6I Complex.I, principalPow p6J Complex.I,
+    principalPow p6K Complex.I, principalPow p6M Complex.I, principalPow p6N Complex.I,
+    principalPow p6O Complex.I]
+
+private theorem a198683_seven_subset_collapsedReps :
+    a198683ValueSet 7 ⊆
+      Set.range (fun i : Fin a198683SevenCollapsedReps.length =>
+        a198683SevenCollapsedReps.get i) := by
+  classical
+  have reps_length : a198683SevenCollapsedReps.length = 51 := by
+    norm_num [a198683SevenCollapsedReps]
+  let rep : Fin a198683SevenCollapsedReps.length → ℂ :=
+    fun i => a198683SevenCollapsedReps.get i
+  change a198683ValueSet 7 ⊆ Set.range rep
+  have inRange (i : Nat) (h : i < a198683SevenCollapsedReps.length) :
+      a198683SevenCollapsedReps.get ⟨i, h⟩ ∈ Set.range rep := by
+    exact ⟨⟨i, h⟩, rfl⟩
+  intro z hz
+  simp only [a198683ValueSet] at hz
+  rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+  fin_cases k
+  · change x ∈ a198683ValueSet 1 at hx
+    change y ∈ a198683ValueSet 6 at hy
+    rw [mem_valueSet_one] at hx
+    rw [mem_valueSet_six] at hy
+    rcases hx
+    rcases hy with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl | rfl | rfl
+    · exact inRange 0 (by rw [reps_length]; norm_num)
+    · exact inRange 1 (by rw [reps_length]; norm_num)
+    · exact inRange 2 (by rw [reps_length]; norm_num)
+    · exact inRange 3 (by rw [reps_length]; norm_num)
+    · exact inRange 4 (by rw [reps_length]; norm_num)
+    · exact inRange 5 (by rw [reps_length]; norm_num)
+    · exact inRange 6 (by rw [reps_length]; norm_num)
+    · exact inRange 7 (by rw [reps_length]; norm_num)
+    · exact inRange 8 (by rw [reps_length]; norm_num)
+    · exact inRange 9 (by rw [reps_length]; norm_num)
+    · exact inRange 10 (by rw [reps_length]; norm_num)
+    · exact inRange 11 (by rw [reps_length]; norm_num)
+    · exact inRange 12 (by rw [reps_length]; norm_num)
+    · exact inRange 13 (by rw [reps_length]; norm_num)
+    · exact inRange 14 (by rw [reps_length]; norm_num)
+  · change x ∈ a198683ValueSet 2 at hx
+    change y ∈ a198683ValueSet 5 at hy
+    rw [mem_valueSet_two] at hx
+    rw [mem_valueSet_five] at hy
+    rcases hx
+    rcases hy with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact inRange 15 (by rw [reps_length]; norm_num)
+    · exact inRange 16 (by rw [reps_length]; norm_num)
+    · exact inRange 17 (by rw [reps_length]; norm_num)
+    · exact inRange 18 (by rw [reps_length]; norm_num)
+    · exact inRange 19 (by rw [reps_length]; norm_num)
+    · exact inRange 20 (by rw [reps_length]; norm_num)
+    · exact inRange 21 (by rw [reps_length]; norm_num)
+  · change x ∈ a198683ValueSet 3 at hx
+    change y ∈ a198683ValueSet 4 at hy
+    rw [mem_valueSet_three] at hx
+    rw [mem_valueSet_four] at hy
+    rcases hx with rfl | rfl
+    · rcases hy with rfl | rfl | rfl
+      · exact inRange 22 (by rw [reps_length]; norm_num)
+      · exact inRange 23 (by rw [reps_length]; norm_num)
+      · exact inRange 24 (by rw [reps_length]; norm_num)
+    · rcases hy with rfl | rfl | rfl
+      · exact inRange 25 (by rw [reps_length]; norm_num)
+      · exact inRange 26 (by rw [reps_length]; norm_num)
+      · exact inRange 27 (by rw [reps_length]; norm_num)
+  · change x ∈ a198683ValueSet 4 at hx
+    change y ∈ a198683ValueSet 3 at hy
+    rw [mem_valueSet_four] at hx
+    rw [mem_valueSet_three] at hy
+    rcases hx with rfl | rfl | rfl
+    · rcases hy with rfl | rfl
+      · exact inRange 28 (by rw [reps_length]; norm_num)
+      · exact inRange 29 (by rw [reps_length]; norm_num)
+    · rcases hy with rfl | rfl
+      · exact inRange 30 (by rw [reps_length]; norm_num)
+      · change principalPow p4B p3R ∈ Set.range rep
+        rw [p4B_pow_p3R_eq_p2_pow_p5E]
+        exact inRange 19 (by rw [reps_length]; norm_num)
+    · rcases hy with rfl | rfl
+      · exact inRange 31 (by rw [reps_length]; norm_num)
+      · change principalPow p4C p3R ∈ Set.range rep
+        rw [p4C_pow_p3R_eq_p3L, ← I_pow_p6E_eq_p3L]
+        exact inRange 4 (by rw [reps_length]; norm_num)
+  · change x ∈ a198683ValueSet 5 at hx
+    change y ∈ a198683ValueSet 2 at hy
+    rw [mem_valueSet_five] at hx
+    rw [mem_valueSet_two] at hy
+    rcases hy
+    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · exact inRange 32 (by rw [reps_length]; norm_num)
+    · exact inRange 33 (by rw [reps_length]; norm_num)
+    · exact inRange 34 (by rw [reps_length]; norm_num)
+    · exact inRange 35 (by rw [reps_length]; norm_num)
+    · change principalPow p5E p2 ∈ Set.range rep
+      rw [p5E_pow_p2_eq_p3L, ← I_pow_p6E_eq_p3L]
+      exact inRange 4 (by rw [reps_length]; norm_num)
+    · exact inRange 36 (by rw [reps_length]; norm_num)
+    · exact inRange 37 (by rw [reps_length]; norm_num)
+  · change x ∈ a198683ValueSet 6 at hx
+    change y ∈ a198683ValueSet 1 at hy
+    rw [mem_valueSet_six] at hx
+    rw [mem_valueSet_one] at hy
+    rcases hy
+    rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl | rfl | rfl
+    · exact inRange 38 (by rw [reps_length]; norm_num)
+    · exact inRange 39 (by rw [reps_length]; norm_num)
+    · exact inRange 40 (by rw [reps_length]; norm_num)
+    · exact inRange 41 (by rw [reps_length]; norm_num)
+    · rw [p6E_pow_I_eq_p2_pow_p5E]
+      exact inRange 19 (by rw [reps_length]; norm_num)
+    · exact inRange 42 (by rw [reps_length]; norm_num)
+    · exact inRange 43 (by rw [reps_length]; norm_num)
+    · exact inRange 44 (by rw [reps_length]; norm_num)
+    · exact inRange 45 (by rw [reps_length]; norm_num)
+    · exact inRange 46 (by rw [reps_length]; norm_num)
+    · exact inRange 47 (by rw [reps_length]; norm_num)
+    · rw [p6L_pow_I_eq_p3L, ← I_pow_p6E_eq_p3L]
+      exact inRange 4 (by rw [reps_length]; norm_num)
+    · exact inRange 48 (by rw [reps_length]; norm_num)
+    · exact inRange 49 (by rw [reps_length]; norm_num)
+    · exact inRange 50 (by rw [reps_length]; norm_num)
+
+/--
+Sharper semantic upper bound for `A198683(7)`.  This removes five duplicates
+from the naive top-level cover by normalizing the easiest exact collisions.
+-/
+theorem a198683_seven_le_fifty_one : a198683 7 ≤ 51 := by
+  classical
+  rw [a198683]
+  let rep : Fin a198683SevenCollapsedReps.length → ℂ :=
+    fun i => a198683SevenCollapsedReps.get i
+  have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+    simpa [rep] using a198683_seven_subset_collapsedReps
+  let repFinset : Finset ℂ := Finset.univ.image rep
+  have hRangeSubset : Set.range rep ⊆ (repFinset : Set ℂ) := by
+    intro z hz
+    rcases hz with ⟨i, rfl⟩
+    change rep i ∈ repFinset
+    exact Finset.mem_image.mpr ⟨i, Finset.mem_univ i, rfl⟩
+  calc
+    (a198683ValueSet 7).ncard ≤ (Set.range rep).ncard :=
+      Set.ncard_le_ncard hsubset
+    _ ≤ (repFinset : Set ℂ).ncard := Set.ncard_le_ncard hRangeSubset
+    _ = repFinset.card := by rw [Set.ncard_coe_finset]
+    _ ≤ (Finset.univ : Finset (Fin a198683SevenCollapsedReps.length)).card :=
+      Finset.card_image_le
+    _ = a198683SevenCollapsedReps.length := by simp
+    _ = 51 := by norm_num [a198683SevenCollapsedReps]
+
 end
 
 end LeanProofs
