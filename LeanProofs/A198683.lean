@@ -1,3 +1,4 @@
+import LeanProofs.PowTower
 import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Analysis.Real.Pi.Bounds
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
@@ -80,6 +81,16 @@ def a198683LexicalValueSet (n : Nat) : Set ℂ :=
   {z | ∃ e ∈ IPowExpr.parenthesizations n, IPowExpr.eval e = z}
 
 /--
+The shared canonical lexical value set for A198683.
+
+TODO: after the four OEIS branches have converged on `PowTower.Expr`, make this
+the primary definition and keep `IPowExpr` only as a temporary compatibility
+view, or remove it outright.
+-/
+def a198683CanonicalValueSet (n : Nat) : Set ℂ :=
+  PowTower.Expr.valueSet Complex.I principalPow n
+
+/--
 The set of values produced by all binary parenthesizations of `n` copies of
 `i`, with every binary node interpreted as principal complex power.
 
@@ -148,9 +159,65 @@ may use `a198683ValueSet`, but only through this proved equivalence.
               simp only [IPowExpr.parenthesizations, List.mem_flatMap, List.mem_map]
               exact ⟨k, List.mem_finRange k, a, ha, b, hb, rfl⟩
 
+/--
+The shared lexical definition computes the same recursive set used by the
+existing A198683 proof scripts.
+-/
+theorem a198683SharedRecursiveValueSet_eq_valueSet (n : Nat) :
+    PowTower.Expr.recursiveValueSet Complex.I principalPow n = a198683ValueSet n := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      cases n with
+      | zero =>
+          ext z
+          simp [PowTower.Expr.recursiveValueSet, a198683ValueSet]
+      | succ n =>
+          cases n with
+          | zero =>
+              ext z
+              simp [PowTower.Expr.recursiveValueSet, a198683ValueSet]
+          | succ n =>
+              ext z
+              constructor
+              · intro hz
+                simp only [PowTower.Expr.recursiveValueSet] at hz
+                rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+                refine ⟨k, x, ?_, y, ?_, rfl⟩
+                · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
+                  rwa [← hleft]
+                · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
+                  rwa [← hright]
+              · intro hz
+                simp only [a198683ValueSet] at hz
+                rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+                refine ⟨k, x, ?_, y, ?_, rfl⟩
+                · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
+                  rwa [hleft]
+                · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
+                  rwa [hright]
+
+theorem a198683CanonicalValueSet_eq_valueSet (n : Nat) :
+    a198683CanonicalValueSet n = a198683ValueSet n := by
+  rw [a198683CanonicalValueSet,
+    PowTower.Expr.valueSet_eq_recursiveValueSet Complex.I principalPow n,
+    a198683SharedRecursiveValueSet_eq_valueSet]
+
+/--
+The legacy local lexical syntax and the shared lexical syntax are equivalent
+for A198683.
+-/
+theorem a198683LexicalValueSet_eq_canonicalValueSet (n : Nat) :
+    a198683LexicalValueSet n = a198683CanonicalValueSet n := by
+  rw [a198683LexicalValueSet_eq_valueSet, a198683CanonicalValueSet_eq_valueSet]
+
 /-- OEIS A198683, as a cardinality of the canonical lexical value set. -/
 def a198683 (n : Nat) : Nat :=
   (a198683LexicalValueSet n).ncard
+
+/-- A198683 can equivalently be read from the shared canonical lexical syntax. -/
+theorem a198683_eq_canonicalValueSet_ncard (n : Nat) :
+    a198683 n = (a198683CanonicalValueSet n).ncard := by
+  rw [a198683, a198683LexicalValueSet_eq_canonicalValueSet]
 
 /--
 The recursive value-set cardinality used by the small-value proofs computes
