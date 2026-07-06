@@ -7,3 +7,4 @@ import LeanProofs.ArctanSquareIdentity
 import LeanProofs.Nicod
 import LeanProofs.WolframBoolean
 import LeanProofs.A198683
+import LeanProofs.A198683Schoenfield
