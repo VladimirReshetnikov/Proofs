@@ -123,15 +123,18 @@ exponentiation:
 noncomputable def a002845 (n : Nat) : Nat
 theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n
 theorem a002845_eq_directLogCard (n : Nat) : a002845 n = directLogCard n
+theorem a002845_one : a002845 1 = 1
+-- ...
+theorem a002845_six : a002845 6 = 8
 ```
 
-The direct finite computation of the canonical logarithm set is proved
-equivalent to the semantic value set by injectivity of `m ↦ 2^m`. The module
-separately contains an executable hereditary sparse-binary logarithm backend,
-currently with checked backend certificates `a002845Sparse_one` through
-`a002845Sparse_twenty_two`. These are intentionally not treated as primary OEIS
-value theorems until the sparse backend is proved equivalent to the canonical
-logarithm value set.
+The value theorems through `n = 6` use a direct finite computation of the
+canonical logarithm set, proved equivalent to the semantic value set by
+injectivity of `m ↦ 2^m`. The module separately contains an executable
+hereditary sparse-binary logarithm backend, currently with checked backend
+certificates `a002845Sparse_one` through `a002845Sparse_twenty_two`. These are
+intentionally not treated as primary OEIS value theorems until the sparse
+backend is proved equivalent to the canonical logarithm value set.
 
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683
 semantically as the number of distinct principal complex-power values obtained
