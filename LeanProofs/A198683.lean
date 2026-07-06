@@ -92,6 +92,51 @@ private noncomputable def p5F : ℂ :=
 private noncomputable def p5G : ℂ :=
   principalPow p3R p2
 
+private noncomputable def p6A : ℂ :=
+  principalPow Complex.I p5A
+
+private noncomputable def p6B : ℂ :=
+  principalPow Complex.I p5B
+
+private noncomputable def p6C : ℂ :=
+  principalPow Complex.I p5C
+
+private noncomputable def p6D : ℂ :=
+  principalPow Complex.I p5D
+
+private noncomputable def p6E : ℂ :=
+  principalPow Complex.I p5E
+
+private noncomputable def p6F : ℂ :=
+  principalPow Complex.I p5F
+
+private noncomputable def p6G : ℂ :=
+  principalPow Complex.I p5G
+
+private noncomputable def p6H : ℂ :=
+  principalPow p2 p4A
+
+private noncomputable def p6I : ℂ :=
+  principalPow p2 p4B
+
+private noncomputable def p6J : ℂ :=
+  principalPow p2 p4C
+
+private noncomputable def p6K : ℂ :=
+  principalPow p3L p3L
+
+private noncomputable def p6L : ℂ :=
+  principalPow p3L p3R
+
+private noncomputable def p6M : ℂ :=
+  principalPow p3R p3L
+
+private noncomputable def p6N : ℂ :=
+  principalPow p4C p2
+
+private noncomputable def p6O : ℂ :=
+  principalPow p5B Complex.I
+
 /-- `A198683(1) = 1`. -/
 theorem a198683_one : a198683 1 = 1 := by
   simp [a198683, a198683ValueSet]
@@ -1025,6 +1070,144 @@ private theorem p5B_ne_p5G :
   · linarith [theta_pos, Real.pi_pos]
   · exact ne_of_gt (by linarith [beta_pos, theta_pos])
 
+private theorem log_p5A_eq :
+    Complex.log p5A = Complex.log Complex.I * p4A := by
+  dsimp [p5A, principalPow]
+  rw [Complex.log_exp]
+  · rw [log_I_real]
+    simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+      Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+    nlinarith [Real.pi_pos, p4A_re_pos]
+  · rw [log_I_real]
+    simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+      Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+    nlinarith [Real.pi_pos, p4A_re_lt_one]
+
+private theorem log_p5C_eq :
+    Complex.log p5C = ((Real.pi / 2 * Real.exp (-theta) : ℝ) : ℂ) * Complex.I := by
+  dsimp [p5C, principalPow]
+  rw [log_I_real, p4C_eq_exp_neg_theta]
+  have harg :
+      (((Real.pi / 2 : ℝ) : ℂ) * Complex.I * (Real.exp (-theta) : ℂ)) =
+        ((Real.pi / 2 * Real.exp (-theta) : ℝ) : ℂ) * Complex.I := by
+    apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+  rw [harg]
+  rw [Complex.log_exp]
+  · simp [Complex.mul_re, Complex.mul_im, Complex.exp_re]
+    linarith [Real.pi_pos, angleC_pos]
+  · simp [Complex.mul_re, Complex.mul_im, Complex.exp_re]
+    exact (angleC_lt_angleE.trans angleE_lt_pi).le
+
+private theorem log_p5D_eq :
+    Complex.log p5D = Complex.log p2 * p3L := by
+  dsimp [p5D, principalPow]
+  rw [Complex.log_exp]
+  · rw [log_p2_eq, p3L_eq_exp_theta]
+    simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+    have hsin_le_one : Real.sin theta ≤ 1 := Real.sin_le_one theta
+    nlinarith [Real.pi_pos, hsin_le_one]
+  · rw [log_p2_eq, p3L_eq_exp_theta]
+    simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+    nlinarith [Real.pi_pos, sin_theta_pos]
+
+private theorem log_p5E_eq :
+    Complex.log p5E = ((Real.pi / 2 : ℝ) : ℂ) * Complex.I := by
+  rw [p5E_eq_I, log_I_real]
+
+private theorem log_p5F_eq :
+    Complex.log p5F = ((theta * rho : ℝ) : ℂ) * Complex.I := by
+  rw [p5F_eq_exp_theta_mul_rho]
+  rw [Complex.log_exp]
+  · simp [Complex.mul_im]
+    linarith [Real.pi_pos, angleF_pos]
+  · simp [Complex.mul_im]
+    exact ((angleF_lt_angleC.trans angleC_lt_angleE).trans angleE_lt_pi).le
+
+private theorem log_p5G_eq :
+    Complex.log p5G = (-(theta : ℂ) * Complex.I) := by
+  rw [p5G_eq_exp_neg_theta]
+  rw [Complex.log_exp]
+  · simp [Complex.mul_im]
+    linarith [theta_lt_pi_div_two, Real.pi_pos]
+  · simp [Complex.mul_im]
+    linarith [theta_pos, Real.pi_pos]
+
+private theorem p6E_eq_p2 :
+    p6E = p2 := by
+  dsimp [p6E]
+  rw [p5E_eq_I]
+  rfl
+
+private theorem p3R_pow_p3R_eq_p6E :
+    principalPow p3R p3R = p6E := by
+  rw [p6E_eq_p2]
+  dsimp [principalPow, p2]
+  rw [log_p3R_eq, p3R_eq_neg_I, log_I_real]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p5E_pow_I_eq_p6E :
+    principalPow p5E Complex.I = p6E := by
+  dsimp [p6E]
+  rw [p5E_eq_I]
+
+private theorem p5A_pow_I_eq_p6H :
+    principalPow p5A Complex.I = p6H := by
+  dsimp [p6H, principalPow]
+  rw [log_p5A_eq, log_p2_eq, log_I_real]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p5C_pow_I_eq_p6J :
+    principalPow p5C Complex.I = p6J := by
+  dsimp [p6J, principalPow]
+  rw [log_p5C_eq, log_p2_eq, p4C_eq_exp_neg_theta]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p5D_pow_I_eq_p6M :
+    principalPow p5D Complex.I = p6M := by
+  dsimp [p6M, principalPow]
+  rw [log_p5D_eq, log_p2_eq, log_p3R_eq]
+  congr 1
+  ring_nf
+
+private theorem p5F_pow_I_eq_p6N :
+    principalPow p5F Complex.I = p6N := by
+  dsimp [p6N, principalPow]
+  rw [log_p5F_eq, log_p4C_eq, p2_eq_rho]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p5G_pow_I_eq_p6L :
+    principalPow p5G Complex.I = p6L := by
+  dsimp [p6L, principalPow]
+  rw [log_p5G_eq, log_p3L_eq, p3R_eq_neg_I]
+  congr 1
+  ring_nf
+
+private theorem p4A_pow_p2_eq_p6K :
+    principalPow p4A p2 = p6K := by
+  dsimp [p6K, principalPow]
+  rw [log_p4A_eq, log_p3L_eq, log_I_real, p2_eq_rho]
+  congr 1
+  dsimp [theta]
+  rw [show (((Real.pi / 2 * rho : ℝ) : ℂ) =
+      ((Real.pi / 2 : ℝ) : ℂ) * (rho : ℂ)) by
+    norm_num [Complex.ofReal_mul]]
+  ring
+
+private theorem p4B_pow_p2_eq_p6L :
+    principalPow p4B p2 = p6L := by
+  dsimp [p6L, principalPow]
+  rw [log_p4B_eq, p2_eq_rho, log_p3L_eq, p3R_eq_neg_I]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im, theta]
+
+private theorem p4C_pow_p2_eq_p6N :
+    principalPow p4C p2 = p6N := by
+  rfl
+
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
   simp only [a198683ValueSet]
@@ -1158,6 +1341,164 @@ private theorem valueSet_five_eq_candidates :
       · exact mem_valueSet_two.2 rfl
       · simpa [p5G] using hz
 
+private theorem mem_valueSet_five {z : ℂ} :
+    z ∈ a198683ValueSet 5 ↔
+      z = p5A ∨ z = p5B ∨ z = p5C ∨ z = p5D ∨ z = p5E ∨ z = p5F ∨ z = p5G := by
+  rw [valueSet_five_eq_candidates]
+  simp
+
+private theorem valueSet_six_eq_candidates :
+    a198683ValueSet 6 =
+      ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M,
+        p6N, p6O} : Set ℂ) := by
+  ext z
+  constructor
+  · intro hz
+    simp only [a198683ValueSet] at hz
+    rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+    fin_cases k
+    · change x ∈ a198683ValueSet 1 at hx
+      change y ∈ a198683ValueSet 5 at hy
+      rw [mem_valueSet_one] at hx
+      rw [mem_valueSet_five] at hy
+      rcases hx
+      rcases hy with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      · simp [p6A]
+      · simp [p6B]
+      · simp [p6C]
+      · simp [p6D]
+      · simp [p6E]
+      · simp [p6F]
+      · simp [p6G]
+    · change x ∈ a198683ValueSet 2 at hx
+      change y ∈ a198683ValueSet 4 at hy
+      rw [mem_valueSet_two] at hx
+      rw [mem_valueSet_four] at hy
+      rcases hx
+      rcases hy with rfl | rfl | rfl
+      · simp [p6H, p2]
+      · simp [p6I, p2]
+      · simp [p6J, p2]
+    · change x ∈ a198683ValueSet 3 at hx
+      change y ∈ a198683ValueSet 3 at hy
+      rw [mem_valueSet_three] at hx
+      rw [mem_valueSet_three] at hy
+      rcases hx with rfl | rfl
+      · rcases hy with rfl | rfl
+        · simp [p6K, p3L, p2]
+        · simp [p6L, p3L, p3R, p2]
+      · rcases hy with rfl | rfl
+        · simp [p6M, p3R, p3L, p2]
+        · change principalPow p3R p3R ∈
+            ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L,
+              p6M, p6N, p6O} : Set ℂ)
+          rw [p3R_pow_p3R_eq_p6E]
+          simp
+    · change x ∈ a198683ValueSet 4 at hx
+      change y ∈ a198683ValueSet 2 at hy
+      rw [mem_valueSet_four] at hx
+      rw [mem_valueSet_two] at hy
+      rcases hy
+      rcases hx with rfl | rfl | rfl
+      · change principalPow p4A p2 ∈
+          ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L,
+            p6M, p6N, p6O} : Set ℂ)
+        rw [p4A_pow_p2_eq_p6K]
+        simp
+      · change principalPow p4B p2 ∈
+          ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L,
+            p6M, p6N, p6O} : Set ℂ)
+        rw [p4B_pow_p2_eq_p6L]
+        simp
+      · change principalPow p4C p2 ∈
+          ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L,
+            p6M, p6N, p6O} : Set ℂ)
+        rw [p4C_pow_p2_eq_p6N]
+        simp
+    · change x ∈ a198683ValueSet 5 at hx
+      change y ∈ a198683ValueSet 1 at hy
+      rw [mem_valueSet_five] at hx
+      rw [mem_valueSet_one] at hy
+      rcases hy
+      rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl
+      · rw [p5A_pow_I_eq_p6H]
+        simp
+      · simp [p6O]
+      · rw [p5C_pow_I_eq_p6J]
+        simp
+      · rw [p5D_pow_I_eq_p6M]
+        simp
+      · rw [p5E_pow_I_eq_p6E]
+        simp
+      · rw [p5F_pow_I_eq_p6N]
+        simp
+      · rw [p5G_pow_I_eq_p6L]
+        simp
+  · intro hz
+    simp only [a198683ValueSet]
+    rcases hz with hz | hz | hz | hz | hz | hz | hz | hz | hz | hz | hz | hz | hz | hz | hz
+    · refine ⟨0, Complex.I, ?_, p5A, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_five.2 (Or.inl rfl)
+      · simpa [p6A] using hz
+    · refine ⟨0, Complex.I, ?_, p5B, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_five.2 (Or.inr (Or.inl rfl))
+      · simpa [p6B] using hz
+    · refine ⟨0, Complex.I, ?_, p5C, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_five.2 (Or.inr (Or.inr (Or.inl rfl)))
+      · simpa [p6C] using hz
+    · refine ⟨0, Complex.I, ?_, p5D, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_five.2 (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+      · simpa [p6D] using hz
+    · refine ⟨0, Complex.I, ?_, p5E, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_five.2 (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+      · simpa [p6E] using hz
+    · refine ⟨0, Complex.I, ?_, p5F, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_five.2 (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))))
+      · simpa [p6F] using hz
+    · refine ⟨0, Complex.I, ?_, p5G, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_five.2
+          (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr rfl))))))
+      · simpa [p6G] using hz
+    · refine ⟨1, p2, ?_, p4A, ?_, ?_⟩
+      · exact mem_valueSet_two.2 rfl
+      · exact mem_valueSet_four.2 (Or.inl rfl)
+      · simpa [p6H] using hz
+    · refine ⟨1, p2, ?_, p4B, ?_, ?_⟩
+      · exact mem_valueSet_two.2 rfl
+      · exact mem_valueSet_four.2 (Or.inr (Or.inl rfl))
+      · simpa [p6I] using hz
+    · refine ⟨1, p2, ?_, p4C, ?_, ?_⟩
+      · exact mem_valueSet_two.2 rfl
+      · exact mem_valueSet_four.2 (Or.inr (Or.inr rfl))
+      · simpa [p6J] using hz
+    · refine ⟨2, p3L, ?_, p3L, ?_, ?_⟩
+      · exact mem_valueSet_three.2 (Or.inl rfl)
+      · exact mem_valueSet_three.2 (Or.inl rfl)
+      · simpa [p6K] using hz
+    · refine ⟨2, p3L, ?_, p3R, ?_, ?_⟩
+      · exact mem_valueSet_three.2 (Or.inl rfl)
+      · exact mem_valueSet_three.2 (Or.inr rfl)
+      · simpa [p6L] using hz
+    · refine ⟨2, p3R, ?_, p3L, ?_, ?_⟩
+      · exact mem_valueSet_three.2 (Or.inr rfl)
+      · exact mem_valueSet_three.2 (Or.inl rfl)
+      · simpa [p6M] using hz
+    · refine ⟨3, p4C, ?_, p2, ?_, ?_⟩
+      · exact mem_valueSet_four.2 (Or.inr (Or.inr rfl))
+      · exact mem_valueSet_two.2 rfl
+      · simpa [p6N] using hz
+    · refine ⟨4, p5B, ?_, Complex.I, ?_, ?_⟩
+      · exact mem_valueSet_five.2 (Or.inr (Or.inl rfl))
+      · exact mem_valueSet_one.2 rfl
+      · simpa [p6O] using hz
+
 /-- Semantic upper bound for the next OEIS value: `A198683(5) <= 7`. -/
 theorem a198683_five_le_seven : a198683 5 ≤ 7 := by
   rw [a198683, valueSet_five_eq_candidates]
@@ -1222,6 +1563,25 @@ theorem a198683_five : a198683 5 = 7 := by
     Set.ncard_insert_of_notMem hC, Set.ncard_insert_of_notMem hD,
     Set.ncard_insert_of_notMem hE, Set.ncard_insert_of_notMem hF]
   simp
+
+/-- Semantic upper bound for the next OEIS value: `A198683(6) <= 15`. -/
+theorem a198683_six_le_fifteen : a198683 6 ≤ 15 := by
+  classical
+  rw [a198683, valueSet_six_eq_candidates]
+  let reps : List ℂ :=
+    [p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N, p6O]
+  have hsubset :
+      ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N,
+        p6O} : Set ℂ) ⊆ (reps.toFinset : Set ℂ) := by
+    intro z hz
+    simpa [reps] using hz
+  calc
+    ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N,
+        p6O} : Set ℂ).ncard ≤ (reps.toFinset : Set ℂ).ncard :=
+      Set.ncard_le_ncard hsubset
+    _ = reps.toFinset.card := by rw [Set.ncard_coe_finset]
+    _ ≤ reps.length := List.toFinset_card_le reps
+    _ = 15 := by norm_num [reps]
 
 end
 
