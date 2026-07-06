@@ -157,6 +157,9 @@ private noncomputable def rho : ℝ :=
 private noncomputable def theta : ℝ :=
   Real.pi / 2 * rho
 
+private noncomputable def tau : ℝ :=
+  Real.exp (-theta) * rho
+
 private noncomputable def thetaDelta : ℝ :=
   Real.pi / 2 * (1 - Real.cos theta)
 
@@ -7445,7 +7448,193 @@ private theorem p4C_pow_p3L_notMem_p2NegativeExponents :
     rw [hunit, hunit_norm] at hlt
     norm_num at hlt
 
-theorem twenty_nine_le_a198683_seven : 29 ≤ a198683 7 := by
+private theorem exp_neg_theta_gt_two_div_three :
+    (2 : ℝ) / 3 < Real.exp (-theta) := by
+  have h := Real.one_sub_lt_exp_neg theta_pos.ne'
+  nlinarith [h, theta_lt_one_div_three]
+
+private theorem tau_pos : 0 < tau := by
+  dsimp [tau]
+  exact mul_pos (Real.exp_pos _) rho_pos
+
+private theorem tau_lt_rho : tau < rho := by
+  dsimp [tau]
+  have hexp_lt_one : Real.exp (-theta) < 1 :=
+    Real.exp_lt_one_iff.mpr (by linarith [theta_pos])
+  nlinarith [rho_pos, hexp_lt_one]
+
+private theorem tau_lt_one : tau < 1 := by
+  exact tau_lt_rho.trans rho_lt_one
+
+private theorem rho_cubed_lt_tau :
+    rho ^ 3 < tau := by
+  have hrho_lt_half : rho < (1 : ℝ) / 2 := by
+    linarith [rho_lt_five_div_twenty_four]
+  have hrho_sq_lt_quarter : rho ^ 2 < (1 : ℝ) / 4 := by
+    have hpow := pow_lt_pow_left₀ hrho_lt_half rho_pos.le
+      (by norm_num : (2 : ℕ) ≠ 0)
+    norm_num at hpow
+    exact hpow
+  have hsquare_lt_exp : rho ^ 2 < Real.exp (-theta) := by
+    linarith [hrho_sq_lt_quarter, exp_neg_theta_gt_two_div_three]
+  dsimp [tau]
+  calc
+    rho ^ 3 = rho * rho ^ 2 := by ring
+    _ < rho * Real.exp (-theta) := mul_lt_mul_of_pos_left hsquare_lt_exp rho_pos
+    _ = Real.exp (-theta) * rho := by ring
+
+private theorem tau_lt_one_div_six :
+    tau < (1 : ℝ) / 6 := by
+  dsimp [tau]
+  nlinarith [Real.exp_pos (-theta), rho_pos, exp_neg_theta_lt_four_div_five,
+    rho_lt_five_div_twenty_four]
+
+private theorem tau_lt_sigma :
+    tau < (1 : ℝ) - 4 * rho := by
+  have hsigma_gt : (1 : ℝ) / 6 < (1 : ℝ) - 4 * rho := by
+    nlinarith [rho_lt_five_div_twenty_four]
+  exact tau_lt_one_div_six.trans hsigma_gt
+
+private theorem tau_re_bounds :
+    -2 < (((tau : ℝ) : ℂ).re) ∧ ((((tau : ℝ) : ℂ).re) ≤ 2) := by
+  constructor
+  · rw [Complex.ofReal_re]
+    nlinarith [tau_pos]
+  · rw [Complex.ofReal_re]
+    nlinarith [tau_lt_one]
+
+private theorem p3L_pow_p4C_eq_I_pow_tau :
+    principalPow p3L p4C = principalPow Complex.I ((tau : ℝ) : ℂ) := by
+  rw [p3L_pow_p4C_eq_p5C_pow_p2]
+  dsimp [principalPow]
+  rw [log_p5C_eq, p2_eq_rho, log_I_real]
+  congr 1
+  dsimp [tau]
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im] <;> ring
+
+private theorem p6I_re_lt_tau_re :
+    p6I.re < (((tau : ℝ) : ℂ).re) := by
+  exact p6I_re_lt_rho_cubed_re.trans (by
+    rw [rho_cubed_re_eq, Complex.ofReal_re]
+    exact rho_cubed_lt_tau)
+
+private theorem tau_re_lt_p6E_re :
+    (((tau : ℝ) : ℂ).re) < p6E.re := by
+  have hE : p6E.re = rho := by
+    rw [p6E_eq_p2, p2_eq_rho]
+    exact Complex.ofReal_re _
+  rw [Complex.ofReal_re, hE]
+  exact tau_lt_rho
+
+private theorem tau_re_lt_p6O_re :
+    (((tau : ℝ) : ℂ).re) < p6O.re :=
+  tau_re_lt_p6E_re.trans p6E_re_lt_p6O_re
+
+private theorem tau_re_lt_p6J_re :
+    (((tau : ℝ) : ℂ).re) < p6J.re :=
+  tau_re_lt_p6O_re.trans p6O_re_lt_p6J_re
+
+private theorem tau_re_lt_p6N_re :
+    (((tau : ℝ) : ℂ).re) < p6N.re :=
+  tau_re_lt_p6J_re.trans p6J_re_lt_p6N_re
+
+private theorem tau_re_lt_p6L_re :
+    (((tau : ℝ) : ℂ).re) < p6L.re :=
+  tau_re_lt_p6N_re.trans p6N_re_lt_p6L_re
+
+private theorem a198683SixCandidateSet_ne_tau {z : ℂ}
+    (hz : z ∈ a198683SixCandidateSet) :
+    z ≠ ((tau : ℝ) : ℂ) := by
+  have htau_im : (((tau : ℝ) : ℂ).im = 0) := Complex.ofReal_im _
+  dsimp [a198683SixCandidateSet] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl
+  · exact ne_of_im_pos_of_im_zero p6A_im_pos htau_im
+  · exact ne_of_im_pos_of_im_zero p6B_im_pos htau_im
+  · exact ne_of_im_pos_of_im_zero p6C_im_pos htau_im
+  · exact ne_of_im_pos_of_im_zero p6D_im_pos htau_im
+  · exact ne_of_re_lt tau_re_lt_p6E_re |>.symm
+  · exact ne_of_im_pos_of_im_zero p6F_im_pos htau_im
+  · exact ne_of_im_pos_of_im_zero p6G_im_pos htau_im
+  · exact ne_of_im_neg_of_im_zero p6H_im_neg htau_im
+  · exact ne_of_re_lt p6I_re_lt_tau_re
+  · exact ne_of_re_lt tau_re_lt_p6J_re |>.symm
+  · exact ne_of_im_pos_of_im_zero p6K_im_pos htau_im
+  · exact ne_of_re_lt tau_re_lt_p6L_re |>.symm
+  · exact ne_of_im_neg_of_im_zero p6M_im_neg htau_im
+  · exact ne_of_re_lt tau_re_lt_p6N_re |>.symm
+  · exact ne_of_re_lt tau_re_lt_p6O_re |>.symm
+
+private theorem p3L_pow_p4C_notMem_I_pow_sixCandidateSet :
+    principalPow p3L p4C ∉
+      (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet := by
+  rintro ⟨z, hz, hpow⟩
+  change principalPow Complex.I z = principalPow p3L p4C at hpow
+  rw [p3L_pow_p4C_eq_I_pow_tau] at hpow
+  have hzre := a198683SixCandidateSet_re_bounds hz
+  have heq : z = ((tau : ℝ) : ℂ) :=
+    I_pow_inj_of_re_mem_two hzre.1 hzre.2 tau_re_bounds.1 tau_re_bounds.2 hpow
+  exact a198683SixCandidateSet_ne_tau hz heq
+
+private theorem p3L_pow_p4C_norm_eq_one :
+    ‖principalPow p3L p4C‖ = 1 := by
+  rw [p3L_pow_p4C_eq_I_pow_tau]
+  exact I_pow_norm_eq_one_of_im_zero (Complex.ofReal_im _)
+
+private theorem p3L_pow_p4C_re_eq_cos_tau :
+    (principalPow p3L p4C).re = Real.cos (Real.pi / 2 * tau) := by
+  rw [p3L_pow_p4C_eq_I_pow_tau]
+  dsimp [principalPow]
+  rw [log_I_real, Complex.exp_re]
+  simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p3L_pow_p4C_re_pos :
+    0 < (principalPow p3L p4C).re := by
+  rw [p3L_pow_p4C_re_eq_cos_tau]
+  apply Real.cos_pos_of_mem_Ioo
+  constructor
+  · nlinarith [Real.pi_pos, tau_pos]
+  · nlinarith [Real.pi_pos, tau_lt_one]
+
+private theorem p3L_pow_p4C_im_pos :
+    0 < (principalPow p3L p4C).im := by
+  rw [p3L_pow_p4C_eq_I_pow_tau]
+  dsimp [principalPow]
+  rw [log_I_real, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im]
+  apply Real.sin_pos_of_mem_Ioo
+  constructor
+  · nlinarith [Real.pi_pos, tau_pos]
+  · nlinarith [Real.pi_pos, tau_lt_one]
+
+private theorem p5B_pow_p2_re_lt_p3L_pow_p4C_re :
+    (principalPow p5B p2).re < (principalPow p3L p4C).re := by
+  rw [p5B_pow_p2_re_eq_cos_sigma, p3L_pow_p4C_re_eq_cos_tau]
+  apply Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := Real.pi / 2 * tau) (y := Real.pi / 2 * ((1 : ℝ) - 4 * rho))
+  · nlinarith [Real.pi_pos, tau_pos]
+  · have hsigma_lt_one : (1 : ℝ) - 4 * rho < 1 := by
+      nlinarith [rho_pos]
+    nlinarith [Real.pi_pos, hsigma_lt_one]
+  · nlinarith [Real.pi_pos, tau_lt_sigma]
+
+private theorem p3L_pow_p4C_re_lt_p5F_pow_p2_re :
+    (principalPow p3L p4C).re < (principalPow p5F p2).re := by
+  rw [p3L_pow_p4C_re_eq_cos_tau, p5F_pow_p2_re_eq_cos_rho_cubed]
+  apply Real.cos_lt_cos_of_nonneg_of_le_pi_div_two
+    (x := Real.pi / 2 * rho ^ 3) (y := Real.pi / 2 * tau)
+  · nlinarith [Real.pi_pos, pow_pos rho_pos 3]
+  · nlinarith [Real.pi_pos, tau_lt_one]
+  · nlinarith [Real.pi_pos, rho_cubed_lt_tau]
+
+private theorem p3L_pow_p4C_mem_seven :
+    principalPow p3L p4C ∈ a198683ValueSet 7 := by
+  simp only [a198683ValueSet]
+  refine ⟨2, p3L, ?_, p4C, ?_, rfl⟩
+  · exact mem_valueSet_three.2 (Or.inl rfl)
+  · exact mem_valueSet_four.2 (Or.inr (Or.inr rfl))
+
+theorem thirty_le_a198683_seven : 30 ≤ a198683 7 := by
   classical
   rw [a198683]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
@@ -7467,6 +7656,7 @@ theorem twenty_nine_le_a198683_seven : 29 ≤ a198683 7 := by
   let y : ℂ := principalPow p5B p2
   let h : Set ℂ := insert y k
   let x : ℂ := principalPow p4C p3L
+  let zeta : ℂ := principalPow p3L p4C
   have hfinite7 : (a198683ValueSet 7).Finite := by
     let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
       fun i => a198683SevenCanonicalReps.get i
@@ -7872,35 +8062,111 @@ theorem twenty_nine_le_a198683_seven : 29 ≤ a198683 7 := by
                         (by simpa [t, x] using hxT)
   have hx_card : (insert x h).ncard = 29 := by
     rw [Set.ncard_insert_of_notMem hx_notMem h_finite, h_card]
-  have hsubset : insert x h ⊆ a198683ValueSet 7 := by
+  have hx_finite : (insert x h).Finite := by
+    exact h_finite.insert x
+  have hzeta_notMem : zeta ∉ insert x h := by
+    intro hzeta_mem
+    rcases hzeta_mem with hzetax | hzetah
+    · have hpos : 0 < zeta.im := by
+        simpa [zeta] using p3L_pow_p4C_im_pos
+      have hneg : x.im < 0 := by
+        simpa [x] using p4C_pow_p3L_im_neg
+      rw [hzetax] at hpos
+      exact (lt_asymm hneg hpos).elim
+    · dsimp [h] at hzetah
+      rcases hzetah with hzetay | hzetak
+      · have hlt : y.re < zeta.re := by
+          simpa [y, zeta] using p5B_pow_p2_re_lt_p3L_pow_p4C_re
+        rw [hzetay] at hlt
+        linarith
+      · rcases hzetak with hzetaf | hzetae
+        · have hlt : zeta.re < f.re := by
+            simpa [zeta, f] using p3L_pow_p4C_re_lt_p5F_pow_p2_re
+          rw [hzetaf] at hlt
+          linarith
+        · rcases hzetae with hzetag | hzetad
+          · have hpos : 0 < zeta.im := by
+              simpa [zeta] using p3L_pow_p4C_im_pos
+            have hneg : g.im < 0 := by
+              simpa [g] using p5G_pow_p2_im_neg
+            rw [hzetag] at hpos
+            exact (lt_asymm hneg hpos).elim
+          · rcases hzetad with hzetan | hzetac
+            · have hpos : 0 < zeta.im := by
+                simpa [zeta] using p3L_pow_p4C_im_pos
+              have hneg : n.im < 0 := by
+                simpa [n] using p3R_pow_p4C_im_neg
+              rw [hzetan] at hpos
+              exact (lt_asymm hneg hpos).elim
+            · rcases hzetac with hzetam | hzetab
+              · have hpos : 0 < zeta.im := by
+                  simpa [zeta] using p3L_pow_p4C_im_pos
+                have hneg : m.im < 0 := by
+                  simpa [m] using p3R_pow_p4B_im_neg
+                rw [hzetam] at hpos
+                exact (lt_asymm hneg hpos).elim
+              · rcases hzetab with hzetaI | hzetar
+                · have hre : 0 < zeta.re := by
+                    simpa [zeta] using p3L_pow_p4C_re_pos
+                  rw [hzetaI] at hre
+                  norm_num at hre
+                · rcases hzetar with hzetaw | hzetaq
+                  · have hnorm : ‖zeta‖ = 1 := by
+                      simpa [zeta] using p3L_pow_p4C_norm_eq_one
+                    have hgt : 4 < ‖w‖ := by
+                      simpa [w] using p4B_pow_p3L_norm_gt_four
+                    rw [hzetaw] at hnorm
+                    linarith
+                  · rcases hzetaq with hzetav | hzetau
+                    · have hnorm : ‖zeta‖ = 1 := by
+                        simpa [zeta] using p3L_pow_p4C_norm_eq_one
+                      have hgt : 1 < ‖v‖ := by
+                        simpa [v] using p3R_pow_p4A_norm_gt_one
+                      rw [hzetav] at hnorm
+                      linarith
+                    · rcases hzetau with hzetaS | hzetaT
+                      · exact p3L_pow_p4C_notMem_I_pow_sixCandidateSet
+                          (by simpa [s, zeta] using hzetaS)
+                      · exact unit_re_pos_notMem_p2NegativeExponents
+                          (by simpa [zeta] using p3L_pow_p4C_norm_eq_one)
+                          (by simpa [zeta] using p3L_pow_p4C_re_pos)
+                          (by simpa [t, zeta] using hzetaT)
+  have hzeta_card : (insert zeta (insert x h)).ncard = 30 := by
+    rw [Set.ncard_insert_of_notMem hzeta_notMem hx_finite, hx_card]
+  have hsubset : insert zeta (insert x h) ⊆ a198683ValueSet 7 := by
     intro z hz
     rcases hz with rfl | hz
-    · exact p4C_pow_p3L_mem_seven
-    · dsimp [h] at hz
-      rcases hz with rfl | hz
-      · exact p5B_pow_p2_mem_seven
-      · rcases hz with rfl | hz
-        · exact p5F_pow_p2_mem_seven
+    · exact p3L_pow_p4C_mem_seven
+    · rcases hz with rfl | hz
+      · exact p4C_pow_p3L_mem_seven
+      · dsimp [h] at hz
+        rcases hz with rfl | hz
+        · exact p5B_pow_p2_mem_seven
         · rcases hz with rfl | hz
-          · exact p5G_pow_p2_mem_seven
+          · exact p5F_pow_p2_mem_seven
           · rcases hz with rfl | hz
-            · exact p3R_pow_p4C_mem_seven
+            · exact p5G_pow_p2_mem_seven
             · rcases hz with rfl | hz
-              · exact p3R_pow_p4B_mem_seven
+              · exact p3R_pow_p4C_mem_seven
               · rcases hz with rfl | hz
-                · exact I_mem_seven
+                · exact p3R_pow_p4B_mem_seven
                 · rcases hz with rfl | hz
-                  · exact p4B_pow_p3L_mem_seven
+                  · exact I_mem_seven
                   · rcases hz with rfl | hz
-                    · exact p3R_pow_p4A_mem_seven
-                    · rcases hz with hzS | hzT
-                      · exact I_pow_image_sixCandidateSet_subset_seven
-                          (by simpa [s, u, q, r, b, c, d, e, k, h] using hzS)
-                      · exact p2_pow_image_p2NegativeExponents_subset_seven
-                          (by simpa [t, u, q, r, b, c, d, e, k, h] using hzT)
+                    · exact p4B_pow_p3L_mem_seven
+                    · rcases hz with rfl | hz
+                      · exact p3R_pow_p4A_mem_seven
+                      · rcases hz with hzS | hzT
+                        · exact I_pow_image_sixCandidateSet_subset_seven
+                            (by simpa [s, u, q, r, b, c, d, e, k, h] using hzS)
+                        · exact p2_pow_image_p2NegativeExponents_subset_seven
+                            (by simpa [t, u, q, r, b, c, d, e, k, h] using hzT)
   calc
-    29 = (insert x h).ncard := hx_card.symm
+    30 = (insert zeta (insert x h)).ncard := hzeta_card.symm
     _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
+
+theorem twenty_nine_le_a198683_seven : 29 ≤ a198683 7 := by
+  exact (by norm_num : 29 ≤ 30).trans thirty_le_a198683_seven
 
 end
 
