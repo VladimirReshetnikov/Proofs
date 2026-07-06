@@ -121,6 +121,20 @@ private theorem log_neg_I_real :
   rw [Complex.log_neg_I]
   norm_num
 
+private theorem neg_I_pow_re (z : ℂ) :
+    (principalPow (-Complex.I) z).re =
+      Real.exp (Real.pi / 2 * z.im) * Real.cos (Real.pi / 2 * z.re) := by
+  dsimp [principalPow]
+  rw [log_neg_I_real, Complex.exp_re]
+  simp [Complex.mul_re, Complex.mul_im, Real.cos_neg]
+
+private theorem neg_I_pow_im (z : ℂ) :
+    (principalPow (-Complex.I) z).im =
+      -(Real.exp (Real.pi / 2 * z.im) * Real.sin (Real.pi / 2 * z.re)) := by
+  dsimp [principalPow]
+  rw [log_neg_I_real, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im, Real.sin_neg]
+
 /-- `i^i = exp(-pi/2)`. -/
 theorem I_pow_I_eq_q : principalPow Complex.I Complex.I = q := by
   dsimp [principalPow, q, rho]
@@ -661,6 +675,22 @@ Representative `idx = 25` from the n = 12 near-one probe class:
 `i^(i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i))))))))`.
 -/
 def nearOne25 : ℂ := principalPow Complex.I nearOne25Base
+
+/-- Exact real part of the `(-i)^...` seed for representative `25`. -/
+theorem nearOne25Seed_re_eq :
+    nearOne25Seed.re =
+      Real.exp (Real.pi / 2 * v.im) * Real.cos (Real.pi / 2 * v.re) := by
+  dsimp [nearOne25Seed]
+  rw [q_pow_I_eq_neg_I]
+  exact neg_I_pow_re v
+
+/-- Exact imaginary part of the `(-i)^...` seed for representative `25`. -/
+theorem nearOne25Seed_im_eq :
+    nearOne25Seed.im =
+      -(Real.exp (Real.pi / 2 * v.im) * Real.sin (Real.pi / 2 * v.re)) := by
+  dsimp [nearOne25Seed]
+  rw [q_pow_I_eq_neg_I]
+  exact neg_I_pow_im v
 
 /-- Exact real part recurrence for the first `i^...` layer of representative `25`. -/
 theorem nearOne25Level1_re_eq :
