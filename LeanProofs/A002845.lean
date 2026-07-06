@@ -168,6 +168,11 @@ theorem a002845_five : a002845 5 = 4 := by
   rw [PowExpr.a002845_eq_directLogCard]
   native_decide
 
+/-- OEIS A002845 has value `8` at `n = 6`. -/
+theorem a002845_six : a002845 6 = 8 := by
+  rw [PowExpr.a002845_eq_directLogCard]
+  native_decide
+
 /-- A hereditary sparse binary nonnegative integer.
 
 `bits xs` represents `sum (x in xs), 2^x`, with the executable operations below
