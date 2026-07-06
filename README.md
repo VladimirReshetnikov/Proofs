@@ -100,7 +100,9 @@ through `n = 6` directly over `ℂ`, with public theorems
 `a198683_one` through `a198683_six`. Two companion certificate modules record
 finite checked data from the local A198683 corpus:
 [`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
-checks the Schoenfield labels through `n = 11`, and
+checks the Schoenfield labels through `n = 11`,
+[`LeanProofs/A198683SchoenfieldRows.lean`](LeanProofs/A198683SchoenfieldRows.lean)
+reconstructs the `n = 7` labels from the source table's Count/Match rows, and
 [`LeanProofs/A198683N12Probe.lean`](LeanProofs/A198683N12Probe.lean) checks
 that the strict `n = 12` candidate table has 2925 classes among 5139
 candidates and that the documented probe split refines it to 2926 classes.
