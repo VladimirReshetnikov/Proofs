@@ -116,8 +116,12 @@ records the traced candidate-57 expression semantically and proves it lies in
 the `n = 11` and `n = 12` value sets, with a log-modulus separation criterion
 for comparing that overflow witness against candidates whose exponent real
 part is certified larger.
-The latter is intentionally a data-integrity theorem, not a semantic proof of
-`a198683 12 = 2926`.
+[`LeanProofs/A198683N12Symbolic.lean`](LeanProofs/A198683N12Symbolic.lean)
+starts replacing the n = 12 heuristic cluster analysis with exact symbolic
+Lean reductions: it proves that ten representatives from the 14-member
+near-`i^i` probe class are exactly `i^i = exp(-pi/2)`.
+These n = 12 companion modules are progress toward, but still not, a semantic
+proof of `a198683 12 = 2926`.
 
 [`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes the
 Sheffer-stroke/NAND language for Nicod's one-axiom propositional calculus,
