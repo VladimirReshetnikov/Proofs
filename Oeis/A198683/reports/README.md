@@ -1,13 +1,13 @@
 # A198683 Reports
 
-- Status: Informational index over the wave-1 / wave-2 / wave-3 report cycle
+- Status: Informational index over the wave-1 / wave-2 / wave-3 / wave-4 report cycle
 - Audience: Maintainers, OEIS contributors, future agents
 - Scope: Historical, root-cause, synthesis, and exploratory reports about OEIS A198683
 - Created (UTC): 2026-05-21T00:59:34Z
-- Last updated (UTC): 2026-05-21T14:49:21Z
-- Repository HEAD: 418b69c1727af2b40e7f02fb8afc9c2d89c8ab55
+- Last updated (UTC): 2026-07-06
+- Repository HEAD: not pinned; see git history for the exact checkpoint commit
 
-This directory groups A198683 reports into three temporal waves plus an
+This directory groups A198683 reports into four temporal waves plus an
 exploratory background-reading directory. The wave structure reflects the
 chronological order in which the work was done; each wave layer is preserved
 intact.
@@ -17,6 +17,7 @@ intact.
 | 1 | [`wave-1/`](wave-1/) | Original single-source result reports (`2919` and `2926`) | [`wave-1/README.md`](wave-1/README.md) |
 | 2 | [`wave-2/`](wave-2/) | Three independent root-cause analyses of the `2919` vs `2926` conflict | [`wave-2/README.md`](wave-2/README.md) |
 | 3 | [`wave-3/`](wave-3/) | Post-wave-2 synthesis and the feasibility study for a certified pipeline | [`wave-3/README.md`](wave-3/README.md) |
+| 4 | [`wave-4/`](wave-4/) | Lean proof-state checkpoint after the shared lexical-definition refactor | [`wave-4/README.md`](wave-4/README.md) |
 | — | [`exploratory/`](exploratory/README.md) | Background-reading writeups about the sequence and possible certification strategies | [`exploratory/README.md`](exploratory/README.md) |
 
 ## Recommended reading order
@@ -37,6 +38,10 @@ For a reader new to the corpus:
 5. Optional: the wave-3 feasibility study
    [`wave-3/a198683-numerics-interval-feasibility.md`](wave-3/a198683-numerics-interval-feasibility.md)
    for the proposed certified pipeline.
+6. The wave-4 Lean checkpoint:
+   [`wave-4/a198683-n12-lean-status-and-next-directions.md`](wave-4/a198683-n12-lean-status-and-next-directions.md) —
+   records the current formalization state, the paused `n = 12` work, and
+   promising next directions.
 
 ## What is settled and what is not
 
@@ -53,4 +58,5 @@ After wave-2 (per
   span `{2919, 2920, 2921, 2922, 2924, 2925, 2926, 2927}`; the genuine count
   is among them but no wave-1 or wave-2 pipeline can discriminate without a
   certified arithmetic engine. The wave-3 feasibility study sketches such an
-  engine; a wave-4 or later pipeline would be its execution.
+  engine; wave-4 records the current Lean proof checkpoint, not a final
+  execution of that pipeline.

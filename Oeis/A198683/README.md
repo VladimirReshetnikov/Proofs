@@ -1,11 +1,11 @@
 # OEIS A198683 Research Corpus
 
-- Status: Informational, wave-organised; current state captured by the wave-3 synthesis
+- Status: Informational, wave-organised; current Lean state captured by the wave-4 checkpoint
 - Audience: Vladimir Reshetnikov, OEIS contributors, maintainers, and future agents
 - Scope: Local artifacts for OEIS A198683 and the disputed value of `A198683(12)`
 - Created (UTC): 2026-05-21T00:59:34Z
-- Last updated (UTC): 2026-05-21T14:49:21Z
-- Repository HEAD: 418b69c1727af2b40e7f02fb8afc9c2d89c8ab55
+- Last updated (UTC): 2026-07-06
+- Repository HEAD: not pinned; see git history for the exact checkpoint commit
 
 OEIS A198683 counts the number of distinct values produced by all binary
 parenthesizations of `i^i^...^i`, using the principal value of complex
@@ -23,7 +23,7 @@ records the accepted values through `n=11`:
 
 It also records the historical note that `a(12)` was said to be either
 `2919` or `2926`. The local research on this question has been organised
-into three temporal waves, each preserved intact under
+into four temporal waves, each preserved intact under
 [`reports/`](reports/README.md):
 
 - **Wave-1** ([`reports/wave-1/`](reports/wave-1/README.md)) — the two
@@ -40,12 +40,18 @@ into three temporal waves, each preserved intact under
 - **Wave-3** ([`reports/wave-3/`](reports/wave-3/README.md)) — the
   post-wave-2 synthesis plus the feasibility study for a certified
   evaluation pipeline.
+- **Wave-4** ([`reports/wave-4/`](reports/wave-4/README.md)) — the
+  Lean proof-state checkpoint after the shared lexical-definition refactor,
+  including what has been proved, what has been tried, and promising future
+  directions while further `a(12)` pinpointing is paused.
 
 The single best entry point to the post-wave-2 corpus is
 [`reports/wave-3/a198683-post-wave2-synthesis.md`](reports/wave-3/a198683-post-wave2-synthesis.md).
 It records the eight-element plausible-value table, the three
 structurally-degenerate candidate clusters that produce the residual
 ambiguity, and the explicit inventory of unsettled questions.
+For the current Lean formalization checkpoint, read
+[`reports/wave-4/a198683-n12-lean-status-and-next-directions.md`](reports/wave-4/a198683-n12-lean-status-and-next-directions.md).
 
 ## What is settled and what is not
 
@@ -62,7 +68,8 @@ After wave-2:
   can discriminate without a certified arithmetic engine. The wave-3
   feasibility study sketches such an engine
   ([`reports/wave-3/a198683-numerics-interval-feasibility.md`](reports/wave-3/a198683-numerics-interval-feasibility.md));
-  a wave-4 or later pipeline would be its execution.
+  wave-4 records the current Lean proof checkpoint while exact pinpointing is
+  paused.
 
 The residual ambiguity localises to three structurally-degenerate clusters
 in the candidate space — near `0`, near `i^i = e^(-pi/2)`, and near `1` —
@@ -91,7 +98,7 @@ precision.
 - [`computations/`](computations/README.md) — executable checks and scripts
   (`compute_a198683.py`, the six `diagnose_*.py` scripts added by wave-2
   `investigate-cc`, and the Wolfram check).
-- [`reports/`](reports/README.md) — wave-1 / wave-2 / wave-3 reports plus
+- [`reports/`](reports/README.md) — wave-1 / wave-2 / wave-3 / wave-4 reports plus
   exploratory background reading.
 - [`data/`](data/README.md) — generated tabular data.
 - [`sources/`](sources/README.md) — downloaded or extracted source
@@ -104,9 +111,11 @@ precision.
 3. [`reports/wave-3/a198683-post-wave2-synthesis.md`](reports/wave-3/a198683-post-wave2-synthesis.md)
    for the consolidated post-wave-2 picture, including the unsettled
    questions.
-4. Any wave-1 result report or wave-2 root-cause report for depth on a
+4. [`reports/wave-4/a198683-n12-lean-status-and-next-directions.md`](reports/wave-4/a198683-n12-lean-status-and-next-directions.md)
+   for the current Lean state and next proof directions.
+5. Any wave-1 result report or wave-2 root-cause report for depth on a
    specific evidence trail.
-5. [`computations/README.md`](computations/README.md) when rerunning or
+6. [`computations/README.md`](computations/README.md) when rerunning or
    comparing the Python and Wolfram computations.
-6. [`sources/README.md`](sources/README.md) to locate the OEIS snapshot,
+7. [`sources/README.md`](sources/README.md) to locate the OEIS snapshot,
    the Schoenfield table, and the Guy-Selfridge paper assets.

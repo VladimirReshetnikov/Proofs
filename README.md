@@ -1,7 +1,7 @@
 # Machine-Checkable Proofs
 
 - Created (UTC): 2026-07-04T17:38:16Z
-- Repository HEAD: afe87774ab8b2530233ade60ef271aa843b2712b
+- Repository HEAD: not pinned; see git history for the exact checkpoint commit
 
 `src/Lean/` is the repository home for machine-checkable proofs and the
 research artifacts that support them. Most checked proof modules here are
@@ -244,11 +244,15 @@ expansion of
 remaining interval certificate can be pushed down level by level.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
+The current formalization checkpoint and next directions are summarized in
+[`Oeis/A198683/reports/wave-4/a198683-n12-lean-status-and-next-directions.md`](Oeis/A198683/reports/wave-4/a198683-n12-lean-status-and-next-directions.md).
 
-[`LeanProofs/A199812.lean`](LeanProofs/A199812.lean) defines OEIS A199812 as
-the number of distinct ordinals represented by all binary parenthesizations of
-an ordinal exponent tower. It uses Cantor normal forms and a dynamic normal-form
-count, and proves the listed values through `n = 11`:
+[`LeanProofs/A199812.lean`](LeanProofs/A199812.lean) defines OEIS A199812
+from the same shared `PowTower.Expr` lexical syntax used by the other
+power-tower OEIS modules, interpreting the atom as ordinal `omega` and each
+node as ordinal exponentiation. It uses Cantor normal forms and a dynamic
+normal-form count through a proved-equivalent finite-set presentation, and
+proves the listed values through `n = 11`:
 
 ```lean
 theorem a199812_one : a199812 1 = 1

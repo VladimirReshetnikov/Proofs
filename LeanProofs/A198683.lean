@@ -74,8 +74,10 @@ decreasing_by
 end IPowExpr
 
 /--
-The canonical lexical value set for A198683: evaluate every binary
-parenthesization of `n` copies of `i` using principal complex power.
+The legacy local lexical value set for A198683: evaluate every binary
+parenthesization of `n` copies of `i` using principal complex power.  The
+sequence definition below uses the shared `PowTower.Expr` syntax; this local
+syntax is retained as a compatibility view for older proofs.
 -/
 def a198683LexicalValueSet (n : Nat) : Set ℂ :=
   {z | ∃ e ∈ IPowExpr.parenthesizations n, IPowExpr.eval e = z}
