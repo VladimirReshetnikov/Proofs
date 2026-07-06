@@ -43,6 +43,30 @@ def certificateOk (labels : List Nat) (rows classes : Nat) : Bool :=
     normalizedClassCount labels == classes &&
     labelsAreNormalizedFrom 0 labels
 
+/-- A true certificate has the declared Catalan row count. -/
+theorem certificateOk_length_of {labels : List Nat} {rows classes : Nat}
+    (h : certificateOk labels rows classes = true) :
+    labels.length = rows := by
+  dsimp [certificateOk] at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  exact h.1.1
+
+/-- A true certificate has the declared normalized class count. -/
+theorem certificateOk_class_count_of {labels : List Nat} {rows classes : Nat}
+    (h : certificateOk labels rows classes = true) :
+    normalizedClassCount labels = classes := by
+  dsimp [certificateOk] at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  exact h.1.2
+
+/-- A true certificate introduces positive class labels with no gaps. -/
+theorem certificateOk_normalized_of {labels : List Nat} {rows classes : Nat}
+    (h : certificateOk labels rows classes = true) :
+    labelsAreNormalizedFrom 0 labels = true := by
+  dsimp [certificateOk] at h
+  simp only [Bool.and_eq_true, beq_iff_eq] at h
+  exact h.2
+
 /-- Normalized Schoenfield class labels for `n = 1`. -/
 def labelsOne : List Nat :=
   [1]
@@ -523,6 +547,11 @@ theorem schoenfield_a198683_seven :
 theorem schoenfield_a198683_eight :
     certificateOk labelsEight 429 77 = true := by
   native_decide
+
+/-- Direct class-count consequence of the Schoenfield certificate for `A198683(8) = 77`. -/
+theorem schoenfield_a198683_eight_class_count :
+    normalizedClassCount labelsEight = 77 :=
+  certificateOk_class_count_of schoenfield_a198683_eight
 
 /-- Schoenfield table certificate for `A198683(9) = 187`. -/
 theorem schoenfield_a198683_nine :
