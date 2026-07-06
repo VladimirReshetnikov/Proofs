@@ -51,6 +51,45 @@ decreasing_by
 def a198683 (n : Nat) : Nat :=
   (a198683ValueSet n).ncard
 
+private noncomputable def p2 : ℂ :=
+  principalPow Complex.I Complex.I
+
+private noncomputable def p3L : ℂ :=
+  principalPow Complex.I p2
+
+private noncomputable def p3R : ℂ :=
+  principalPow p2 Complex.I
+
+private noncomputable def p4A : ℂ :=
+  principalPow Complex.I p3L
+
+private noncomputable def p4B : ℂ :=
+  principalPow Complex.I p3R
+
+private noncomputable def p4C : ℂ :=
+  principalPow p2 p2
+
+private noncomputable def p5A : ℂ :=
+  principalPow Complex.I p4A
+
+private noncomputable def p5B : ℂ :=
+  principalPow Complex.I p4B
+
+private noncomputable def p5C : ℂ :=
+  principalPow Complex.I p4C
+
+private noncomputable def p5D : ℂ :=
+  principalPow p2 p3L
+
+private noncomputable def p5E : ℂ :=
+  principalPow p2 p3R
+
+private noncomputable def p5F : ℂ :=
+  principalPow p3L p2
+
+private noncomputable def p5G : ℂ :=
+  principalPow p3R p2
+
 /-- `A198683(1) = 1`. -/
 theorem a198683_one : a198683 1 = 1 := by
   simp [a198683, a198683ValueSet]
@@ -368,6 +407,241 @@ theorem a198683_four : a198683 4 = 3 := by
     rw [Set.mem_insert_iff, Set.mem_singleton_iff] at h
     exact h.elim v4a_ne_v4b v4a_ne_v4c
   rw [Set.ncard_insert_of_notMem hnot, Set.ncard_pair v4b_ne_v4c]
+
+private theorem p2_eq_rho :
+    p2 = (rho : ℂ) := by
+  dsimp [p2]
+  exact i_pow_i_eq_rho
+
+private theorem p3L_eq_exp_theta :
+    p3L = Complex.exp ((theta : ℂ) * Complex.I) := by
+  dsimp [p3L, p2]
+  exact i_pow_ii_eq_exp_theta
+
+private theorem p3R_eq_neg_I :
+    p3R = -Complex.I := by
+  dsimp [p3R, p2]
+  exact ii_pow_i_eq_neg_I
+
+private theorem p4B_eq_exp_pi_div_two :
+    p4B = (Real.exp (Real.pi / 2) : ℂ) := by
+  dsimp [p4B, p3R, p2]
+  rw [ii_pow_i_eq_neg_I, i_pow_neg_i_eq]
+
+private theorem p4C_eq_exp_neg_theta :
+    p4C = (Real.exp (-theta) : ℂ) := by
+  dsimp [p4C, p2]
+  exact ii_pow_ii_eq_theta
+
+private theorem log_p2_eq :
+    Complex.log p2 = (-(Real.pi / 2) : ℂ) := by
+  rw [p2_eq_rho]
+  dsimp [rho]
+  rw [← Complex.ofReal_log (Real.exp_pos _).le, Real.log_exp]
+  norm_num
+
+private theorem log_p3R_eq :
+    Complex.log p3R = (-(Real.pi / 2) : ℂ) * Complex.I := by
+  rw [p3R_eq_neg_I, log_neg_I_real]
+  norm_num
+
+private theorem log_p4B_eq :
+    Complex.log p4B = (Real.pi / 2 : ℂ) := by
+  rw [p4B_eq_exp_pi_div_two]
+  rw [← Complex.ofReal_log (Real.exp_pos _).le, Real.log_exp]
+  norm_num
+
+private theorem log_p4C_eq :
+    Complex.log p4C = (-theta : ℂ) := by
+  rw [p4C_eq_exp_neg_theta]
+  rw [← Complex.ofReal_log (Real.exp_pos _).le, Real.log_exp]
+  norm_num
+
+private theorem log_p4A_eq :
+    Complex.log p4A = Complex.log Complex.I * p3L := by
+  dsimp [p4A, p3L, p2, principalPow]
+  change Complex.log
+      (Complex.exp (Complex.log Complex.I *
+        principalPow Complex.I (principalPow Complex.I Complex.I))) =
+    Complex.log Complex.I * principalPow Complex.I (principalPow Complex.I Complex.I)
+  rw [Complex.log_exp]
+  · rw [log_I_real, i_pow_ii_eq_exp_theta]
+    simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+      Complex.I_re, Complex.I_im, Complex.exp_re, Complex.exp_im, mul_zero, zero_mul,
+      add_zero, sub_zero]
+    have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+    have harg_pos : 0 < Real.pi / 2 * Real.cos theta := by positivity
+    norm_num [Real.exp_zero] at *
+    linarith [Real.pi_pos]
+  · rw [log_I_real, i_pow_ii_eq_exp_theta]
+    simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+      Complex.I_re, Complex.I_im, Complex.exp_re, Complex.exp_im, mul_zero, zero_mul,
+      add_zero, sub_zero]
+    have hcos_le : Real.cos theta ≤ 1 := Real.cos_le_one theta
+    have hle : Real.pi / 2 * Real.cos theta ≤ Real.pi / 2 := by
+      simpa using
+        mul_le_mul_of_nonneg_left hcos_le (show 0 ≤ Real.pi / 2 by positivity)
+    norm_num [Real.exp_zero] at *
+    linarith [hle, Real.pi_pos]
+
+private theorem p4B_pow_I_eq_p5E :
+    principalPow p4B Complex.I = p5E := by
+  dsimp [p5E, principalPow]
+  rw [log_p4B_eq, log_p2_eq, p3R_eq_neg_I]
+  congr 1
+  ring
+
+private theorem p4C_pow_I_eq_p5G :
+    principalPow p4C Complex.I = p5G := by
+  dsimp [p5G, principalPow]
+  rw [log_p4C_eq, log_p3R_eq, p2_eq_rho]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im, theta]
+
+private theorem p4A_pow_I_eq_p5D :
+    principalPow p4A Complex.I = p5D := by
+  dsimp [p5D, principalPow]
+  rw [log_p4A_eq, log_p2_eq, log_I_real]
+  congr 1
+  calc
+    (((Real.pi / 2 : ℝ) : ℂ) * Complex.I * p3L) * Complex.I =
+        (((Real.pi / 2 : ℝ) : ℂ) * p3L) * (Complex.I * Complex.I) := by ring
+    _ = (((Real.pi / 2 : ℝ) : ℂ) * p3L) * (-1 : ℂ) := by rw [Complex.I_mul_I]
+    _ = -(((Real.pi / 2 : ℝ) : ℂ) * p3L) := by ring
+    _ = (-(Real.pi / 2) : ℂ) * p3L := by simp [neg_mul]
+
+private theorem mem_valueSet_four {z : ℂ} :
+    z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
+  simp only [a198683ValueSet]
+  constructor
+  · rintro ⟨k, x, hx, y, hy, rfl⟩
+    fin_cases k
+    · change x ∈ a198683ValueSet 1 at hx
+      change y ∈ a198683ValueSet 3 at hy
+      rw [mem_valueSet_one] at hx
+      rw [mem_valueSet_three] at hy
+      rcases hx
+      rcases hy with rfl | rfl
+      · left
+        rfl
+      · right
+        left
+        rfl
+    · change x ∈ a198683ValueSet 2 at hx
+      change y ∈ a198683ValueSet 2 at hy
+      rw [mem_valueSet_two] at hx
+      rw [mem_valueSet_two] at hy
+      rcases hx
+      rcases hy
+      right
+      right
+      rfl
+    · change x ∈ a198683ValueSet 3 at hx
+      change y ∈ a198683ValueSet 1 at hy
+      rw [mem_valueSet_three] at hx
+      rw [mem_valueSet_one] at hy
+      rcases hy
+      rcases hx with rfl | rfl
+      · right
+        right
+        dsimp [p4C, p3L, p2]
+        exact v4c_eq_v4d.symm
+      · right
+        left
+        dsimp [p4B, p3R, p2]
+        exact v4b_eq_v4e.symm
+  · intro hz
+    rcases hz with hz | hz | hz
+    · refine ⟨0, Complex.I, ?_, p3L, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_three.2 (Or.inl rfl)
+      · simp [hz, p4A]
+    · refine ⟨0, Complex.I, ?_, p3R, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_three.2 (Or.inr rfl)
+      · simp [hz, p4B]
+    · refine ⟨1, p2, ?_, p2, ?_, ?_⟩
+      · exact mem_valueSet_two.2 rfl
+      · exact mem_valueSet_two.2 rfl
+      · simp [hz, p4C]
+
+private theorem valueSet_five_eq_candidates :
+    a198683ValueSet 5 =
+      ({p5A, p5B, p5C, p5D, p5E, p5F, p5G} : Set ℂ) := by
+  ext z
+  constructor
+  · intro hz
+    simp only [a198683ValueSet] at hz
+    rcases hz with ⟨k, x, hx, y, hy, rfl⟩
+    fin_cases k
+    · change x ∈ a198683ValueSet 1 at hx
+      change y ∈ a198683ValueSet 4 at hy
+      rw [mem_valueSet_one] at hx
+      rw [mem_valueSet_four] at hy
+      rcases hx
+      rcases hy with rfl | rfl | rfl
+      · simp [p5A]
+      · simp [p5B]
+      · simp [p5C]
+    · change x ∈ a198683ValueSet 2 at hx
+      change y ∈ a198683ValueSet 3 at hy
+      rw [mem_valueSet_two] at hx
+      rw [mem_valueSet_three] at hy
+      rcases hx
+      rcases hy with rfl | rfl
+      · simp [p5D, p3L, p2]
+      · simp [p5E, p3R, p2]
+    · change x ∈ a198683ValueSet 3 at hx
+      change y ∈ a198683ValueSet 2 at hy
+      rw [mem_valueSet_three] at hx
+      rw [mem_valueSet_two] at hy
+      rcases hy
+      rcases hx with rfl | rfl
+      · simp [p5F, p3L, p2]
+      · simp [p5G, p3R, p2]
+    · change x ∈ a198683ValueSet 4 at hx
+      change y ∈ a198683ValueSet 1 at hy
+      rw [mem_valueSet_four] at hx
+      rw [mem_valueSet_one] at hy
+      rcases hy
+      rcases hx with rfl | rfl | rfl
+      · rw [p4A_pow_I_eq_p5D]
+        simp
+      · rw [p4B_pow_I_eq_p5E]
+        simp
+      · rw [p4C_pow_I_eq_p5G]
+        simp
+  · intro hz
+    simp only [a198683ValueSet]
+    rcases hz with hz | hz | hz | hz | hz | hz | hz
+    · refine ⟨0, Complex.I, ?_, p4A, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_four.2 (Or.inl rfl)
+      · simpa [p5A] using hz
+    · refine ⟨0, Complex.I, ?_, p4B, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_four.2 (Or.inr (Or.inl rfl))
+      · simpa [p5B] using hz
+    · refine ⟨0, Complex.I, ?_, p4C, ?_, ?_⟩
+      · exact mem_valueSet_one.2 rfl
+      · exact mem_valueSet_four.2 (Or.inr (Or.inr rfl))
+      · simpa [p5C] using hz
+    · refine ⟨1, p2, ?_, p3L, ?_, ?_⟩
+      · exact mem_valueSet_two.2 rfl
+      · exact mem_valueSet_three.2 (Or.inl rfl)
+      · simpa [p5D] using hz
+    · refine ⟨1, p2, ?_, p3R, ?_, ?_⟩
+      · exact mem_valueSet_two.2 rfl
+      · exact mem_valueSet_three.2 (Or.inr rfl)
+      · simpa [p5E] using hz
+    · refine ⟨2, p3L, ?_, p2, ?_, ?_⟩
+      · exact mem_valueSet_three.2 (Or.inl rfl)
+      · exact mem_valueSet_two.2 rfl
+      · simpa [p5F] using hz
+    · refine ⟨2, p3R, ?_, p2, ?_, ?_⟩
+      · exact mem_valueSet_three.2 (Or.inr rfl)
+      · exact mem_valueSet_two.2 rfl
+      · simpa [p5G] using hz
 
 end
 
