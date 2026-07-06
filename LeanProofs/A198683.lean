@@ -1119,6 +1119,122 @@ private theorem p5F_norm_le_one : ‖p5F‖ ≤ 1 := by
 private theorem p5G_norm_le_one : ‖p5G‖ ≤ 1 := by
   rw [p5G_norm_eq_one]
 
+private theorem I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one {z : ℂ}
+    (hz₁ : -1 < z.re) (hz₂ : z.re < 1) :
+    0 < (principalPow Complex.I z).re := by
+  dsimp [principalPow]
+  rw [log_I_real, Complex.exp_re]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  apply mul_pos
+  · positivity
+  apply Real.cos_pos_of_mem_Ioo
+  constructor <;> nlinarith [Real.pi_pos, hz₁, hz₂]
+
+private theorem I_pow_im_pos_of_re_pos_of_norm_le_one {z : ℂ}
+    (hzre : 0 < z.re) (hznorm : ‖z‖ ≤ 1) :
+    0 < (principalPow Complex.I z).im := by
+  dsimp [principalPow]
+  rw [log_I_real, Complex.exp_im]
+  simp only [Complex.mul_re, Complex.mul_im, Complex.ofReal_re, Complex.ofReal_im,
+    Complex.I_re, Complex.I_im, mul_zero, zero_mul, add_zero, sub_zero]
+  apply mul_pos
+  · positivity
+  apply Real.sin_pos_of_mem_Ioo
+  constructor
+  · nlinarith [Real.pi_pos, hzre]
+  · have hzle : z.re ≤ 1 := (Complex.re_le_norm z).trans hznorm
+    nlinarith [Real.pi_pos, hzle]
+
+private theorem exp_I_re_pos_of_angle_mem_half {a : ℝ}
+    (ha₁ : -(Real.pi / 2) < a) (ha₂ : a < Real.pi / 2) :
+    0 < (Complex.exp ((a : ℂ) * Complex.I)).re := by
+  simp [Complex.exp_re, Complex.mul_re, Complex.mul_im]
+  exact Real.cos_pos_of_mem_Ioo ⟨ha₁, ha₂⟩
+
+private theorem p5A_re_pos :
+    0 < p5A.re := by
+  simpa [p5A] using
+    I_pow_re_pos_of_neg_one_lt_re_of_re_lt_one
+      (z := p4A) (by linarith [p4A_re_pos]) p4A_re_lt_one
+
+private theorem p5B_re_pos :
+    0 < p5B.re := by
+  rw [p5B_eq_exp_beta]
+  exact exp_I_re_pos_of_angle_mem_half
+    (by linarith [beta_pos, Real.pi_pos]) beta_lt_angleE
+
+private theorem p5C_re_pos :
+    0 < p5C.re := by
+  rw [p5C_eq_exp_pi_mul_exp_neg_theta]
+  exact exp_I_re_pos_of_angle_mem_half
+    (by linarith [angleC_pos, Real.pi_pos]) angleC_lt_angleE
+
+private theorem p5D_re_pos :
+    0 < p5D.re := by
+  dsimp [p5D, principalPow]
+  rw [log_p2_eq, p3L_eq_exp_theta, Complex.exp_re]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  apply mul_pos
+  · positivity
+  apply Real.cos_pos_of_mem_Ioo
+  have hsin_lt_one : Real.sin theta < 1 := by
+    have hsin_lt := Real.sin_lt_sin_of_lt_of_le_pi_div_two
+      (x := theta) (y := Real.pi / 2)
+      (by linarith [theta_pos, Real.pi_pos])
+      (by linarith [Real.pi_pos])
+      theta_lt_pi_div_two
+    simpa using hsin_lt
+  constructor
+  · nlinarith [Real.pi_pos, sin_theta_pos]
+  · nlinarith [Real.pi_pos, hsin_lt_one]
+
+private theorem p5F_re_pos :
+    0 < p5F.re := by
+  rw [p5F_eq_exp_theta_mul_rho]
+  exact exp_I_re_pos_of_angle_mem_half
+    (by linarith [angleF_pos, Real.pi_pos])
+    (angleF_lt_angleC.trans angleC_lt_angleE)
+
+private theorem p5G_re_pos :
+    0 < p5G.re := by
+  rw [p5G_eq_exp_neg_theta]
+  rw [show -(theta : ℂ) * Complex.I = ((-theta : ℝ) : ℂ) * Complex.I by
+    norm_num]
+  exact exp_I_re_pos_of_angle_mem_half
+    (by linarith [theta_lt_pi_div_two])
+    (by linarith [theta_pos, Real.pi_pos])
+
+private theorem p6A_im_pos :
+    0 < p6A.im := by
+  simpa [p6A] using
+    I_pow_im_pos_of_re_pos_of_norm_le_one p5A_re_pos p5A_norm_le_one
+
+private theorem p6B_im_pos :
+    0 < p6B.im := by
+  simpa [p6B] using
+    I_pow_im_pos_of_re_pos_of_norm_le_one p5B_re_pos p5B_norm_le_one
+
+private theorem p6C_im_pos :
+    0 < p6C.im := by
+  simpa [p6C] using
+    I_pow_im_pos_of_re_pos_of_norm_le_one p5C_re_pos p5C_norm_le_one
+
+private theorem p6D_im_pos :
+    0 < p6D.im := by
+  simpa [p6D] using
+    I_pow_im_pos_of_re_pos_of_norm_le_one p5D_re_pos p5D_norm_le_one
+
+private theorem p6F_im_pos :
+    0 < p6F.im := by
+  simpa [p6F] using
+    I_pow_im_pos_of_re_pos_of_norm_le_one p5F_re_pos p5F_norm_le_one
+
+private theorem p6G_im_pos :
+    0 < p6G.im := by
+  simpa [p6G] using
+    I_pow_im_pos_of_re_pos_of_norm_le_one p5G_re_pos p5G_norm_le_one
+
 private theorem p6A_ne_p6B : p6A ≠ p6B := by
   simpa [p6A, p6B] using
     I_pow_ne_of_norm_le_one p5A_norm_le_one p5B_norm_le_one p5A_ne_p5B
@@ -1454,6 +1570,77 @@ private theorem p6N_re_lt_p6L_re :
     exact Complex.ofReal_re _
   rw [hN, hL]
   exact (Real.exp_lt_exp).2 (by linarith [angleF_pos, theta_pos])
+
+private theorem p4A_im_lt_one :
+    p4A.im < 1 := by
+  have habs : |p4A.im| < 1 := (Complex.abs_im_le_norm p4A).trans_lt p4A_norm_lt_one
+  exact lt_of_le_of_lt (le_abs_self p4A.im) habs
+
+private theorem p6H_im_neg :
+    p6H.im < 0 := by
+  dsimp [p6H, principalPow]
+  rw [log_p2_eq, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im]
+  have harg_pos : 0 < Real.pi / 2 * p4A.im := by
+    nlinarith [Real.pi_pos, p4A_im_pos]
+  have harg_lt_pi : Real.pi / 2 * p4A.im < Real.pi := by
+    nlinarith [Real.pi_pos, p4A_im_lt_one]
+  exact mul_pos (Real.exp_pos _) (Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩)
+
+private theorem p6M_im_neg :
+    p6M.im < 0 := by
+  dsimp [p6M, principalPow]
+  rw [log_p3R_eq, p3L_eq_exp_theta, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+  have hcos_le_one : Real.cos theta ≤ 1 := Real.cos_le_one theta
+  have harg_pos : 0 < Real.pi / 2 * Real.cos theta := by
+    nlinarith [Real.pi_pos, hcos_pos]
+  have harg_lt_pi : Real.pi / 2 * Real.cos theta < Real.pi := by
+    nlinarith [Real.pi_pos, hcos_le_one]
+  exact mul_pos (Real.exp_pos _) (Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩)
+
+private theorem p6K_im_pos :
+    0 < p6K.im := by
+  dsimp [p6K, principalPow]
+  rw [log_p3L_eq, p3L_eq_exp_theta, Complex.exp_im]
+  simp [Complex.mul_re, Complex.mul_im, Complex.exp_re, Complex.exp_im]
+  have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+  have hcos_le_one : Real.cos theta ≤ 1 := Real.cos_le_one theta
+  have harg_pos : 0 < theta * Real.cos theta := mul_pos theta_pos hcos_pos
+  have harg_lt_pi : theta * Real.cos theta < Real.pi := by
+    nlinarith [theta_lt_pi_div_two, Real.pi_pos, hcos_le_one, hcos_pos]
+  exact mul_pos (by positivity) (Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩)
+
+private theorem p6E_im_zero :
+    p6E.im = 0 := by
+  rw [p6E_eq_exp_neg_pi_div_two]
+  exact Complex.ofReal_im _
+
+private theorem p6I_im_zero :
+    p6I.im = 0 := by
+  rw [p6I_eq_exp_neg_pi_div_two_mul_exp_pi_div_two]
+  exact Complex.ofReal_im _
+
+private theorem p6J_im_zero :
+    p6J.im = 0 := by
+  rw [p6J_eq_exp_neg_angleC]
+  exact Complex.ofReal_im _
+
+private theorem p6L_im_zero :
+    p6L.im = 0 := by
+  rw [p6L_eq_exp_theta]
+  exact Complex.ofReal_im _
+
+private theorem p6N_im_zero :
+    p6N.im = 0 := by
+  rw [p6N_eq_exp_neg_angleF]
+  exact Complex.ofReal_im _
+
+private theorem p6O_im_zero :
+    p6O.im = 0 := by
+  rw [p6O_eq_exp_neg_beta]
+  exact Complex.ofReal_im _
 
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
