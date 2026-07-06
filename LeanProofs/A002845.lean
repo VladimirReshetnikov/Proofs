@@ -1,3 +1,4 @@
+import LeanProofs.PowTower
 import Mathlib.Data.Set.Card
 import Mathlib.Data.Nat.BitIndices
 import Mathlib.Data.Finset.NAry
@@ -9,10 +10,11 @@ import Std.Data.HashSet.Lemmas
 OEIS A002845 counts the distinct values taken by `2^2^...^2`, with `n`
 copies of `2` and all binary parenthesizations allowed.
 
-The primary definition below is deliberately the direct semantic one: binary
-expression trees whose leaves are literal `2`, evaluated by natural-number
-exponentiation.  The later sparse-binary logarithm code is only an executable
-backend, and is kept separate from the canonical OEIS definition.
+The primary definition below is the shared lexical one from `PowTower.Expr`:
+the single atom is interpreted as the literal `2`, and the binary node is
+interpreted as natural-number exponentiation.  The older local syntax and the
+later sparse-binary logarithm code are retained as computation-facing views,
+with Lean proofs connecting them back to the shared lexical definition.
 -/
 
 set_option maxRecDepth 100000
@@ -31,10 +33,53 @@ namespace PowExpr
 
 open PowExpr
 
+/-- Translate the existing A002845 syntax into the shared one-token lexical syntax. -/
+def toSharedLex : PowExpr -> PowTower.Expr
+  | two => PowTower.Expr.atom
+  | pow a b => PowTower.Expr.pow (toSharedLex a) (toSharedLex b)
+
+/-- Translate the shared one-token lexical syntax back to the existing A002845 syntax. -/
+def ofSharedLex : PowTower.Expr -> PowExpr
+  | .atom => two
+  | .pow a b => pow (ofSharedLex a) (ofSharedLex b)
+
+theorem toSharedLex_ofSharedLex (e : PowTower.Expr) :
+    toSharedLex (ofSharedLex e) = e := by
+  induction e with
+  | atom => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
+theorem ofSharedLex_toSharedLex (e : PowExpr) :
+    ofSharedLex (toSharedLex e) = e := by
+  induction e with
+  | two => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
 /-- Evaluate a parenthesized power expression using natural-number exponentiation. -/
 def eval : PowExpr → Nat
   | two => 2
   | pow a b => eval a ^ eval b
+
+/-- Shared lexical interpretation for A002845: atom is `2`, node is `Nat.pow`. -/
+def sharedEval : PowTower.Expr -> Nat :=
+  PowTower.Expr.eval 2 (fun a b : Nat => a ^ b)
+
+/-- The existing A002845 syntax evaluates the same way as the shared lexical syntax. -/
+theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
+    eval e = sharedEval (toSharedLex e) := by
+  induction e with
+  | two =>
+      rfl
+  | pow a b iha ihb =>
+      simp [eval, sharedEval, toSharedLex, iha, ihb]
+
+/--
+The shared canonical lexical value set for A002845.
+-/
+def canonicalValueSet (n : Nat) : Set Nat :=
+  PowTower.Expr.valueSet 2 (fun a b : Nat => a ^ b) n
 
 /-- The number of literal `2` leaves in a power expression. -/
 def size : PowExpr → Nat
@@ -54,19 +99,63 @@ decreasing_by
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
   · exact Nat.succ_lt_succ k.2
 
-/--
-The canonical semantic value set for A002845: distinct natural numbers arising
-from all legal parenthesizations of `2^2^...^2`.
--/
+/-- Translating local parenthesizations gives exactly the shared lexical parenthesizations. -/
+theorem parenthesizations_map_toSharedLex (n : Nat) :
+    (parenthesizations n).map toSharedLex = PowTower.Expr.parenthesizations n := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      cases n with
+      | zero =>
+          rfl
+      | succ n =>
+          cases n with
+          | zero =>
+              rfl
+          | succ n =>
+              have hleft :
+                  ∀ k : Fin (n + 1),
+                    (parenthesizations (k.1 + 1)).map toSharedLex =
+                      PowTower.Expr.parenthesizations (k.1 + 1) :=
+                fun k => ih (k.1 + 1) (Nat.succ_lt_succ k.2)
+              have hright :
+                  ∀ k : Fin (n + 1),
+                    (parenthesizations (n + 1 - k.1)).map toSharedLex =
+                      PowTower.Expr.parenthesizations (n + 1 - k.1) :=
+                fun k => ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
+              simp [parenthesizations, PowTower.Expr.parenthesizations, toSharedLex,
+                List.map_flatMap, List.map_map, hleft, hright]
+
+/-- Compatibility value set computed through the old local literal-`2` syntax. -/
 def valueSet (n : Nat) : Set Nat :=
   {v | ∃ e ∈ parenthesizations n, eval e = v}
 
+/-- The existing A002845 value set is the shared canonical lexical value set. -/
+theorem valueSet_eq_canonicalValueSet (n : Nat) :
+    valueSet n = canonicalValueSet n := by
+  ext v
+  constructor
+  · rintro ⟨e, he, hv⟩
+    refine ⟨toSharedLex e, ?_, ?_⟩
+    · rw [← parenthesizations_map_toSharedLex]
+      exact List.mem_map.mpr ⟨e, he, rfl⟩
+    · rw [← eval_eq_sharedEval_toSharedLex, hv]
+  · rintro ⟨e, he, hv⟩
+    rw [← parenthesizations_map_toSharedLex n] at he
+    rcases List.mem_map.mp he with ⟨eLocal, heLocal, hshared⟩
+    refine ⟨eLocal, heLocal, ?_⟩
+    rw [eval_eq_sharedEval_toSharedLex, hshared, hv]
+
 /--
-OEIS A002845, defined canonically as the cardinality of the semantic
+OEIS A002845, defined canonically as the cardinality of the shared lexical
 natural-number exponentiation value set.
 -/
 noncomputable def a002845 (n : Nat) : Nat :=
-  (valueSet n).ncard
+  PowTower.Expr.valueCard 2 (fun a b : Nat => a ^ b) n
+
+/-- A002845 can equivalently be read from the shared canonical lexical syntax. -/
+theorem a002845_eq_canonicalValueSet_ncard (n : Nat) :
+    a002845 n = (canonicalValueSet n).ncard := by
+  rfl
 
 /-- The exact base-two logarithm of a semantic power expression. -/
 def logEval : PowExpr → Nat
@@ -110,7 +199,8 @@ the first proof boundary: switching from values to logarithms is justified by
 injectivity of `m ↦ 2^m`.
 -/
 theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n := by
-  rw [a002845, a002845LogCard, valueSet_eq_pow2_image_logValueSet]
+  rw [a002845_eq_canonicalValueSet_ncard, ← valueSet_eq_canonicalValueSet,
+    a002845LogCard, valueSet_eq_pow2_image_logValueSet]
   exact Set.InjOn.ncard_image
     ((Nat.pow_right_injective (by decide : 2 ≤ (2 : Nat))).injOn)
 

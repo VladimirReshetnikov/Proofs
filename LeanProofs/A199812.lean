@@ -1,3 +1,4 @@
+import LeanProofs.PowTower
 import Mathlib.Data.Finset.Card
 import Mathlib.Data.Finset.NAry
 import Mathlib.SetTheory.Ordinal.Notation
@@ -38,6 +39,30 @@ namespace TowerExpr
 
 open TowerExpr
 
+/-- Translate the existing A199812 syntax into the shared one-token lexical syntax. -/
+def toSharedLex : TowerExpr -> PowTower.Expr
+  | «𝜔» => PowTower.Expr.atom
+  | pow a b => PowTower.Expr.pow (toSharedLex a) (toSharedLex b)
+
+/-- Translate the shared one-token lexical syntax back to the existing A199812 syntax. -/
+def ofSharedLex : PowTower.Expr -> TowerExpr
+  | .atom => «𝜔»
+  | .pow a b => pow (ofSharedLex a) (ofSharedLex b)
+
+theorem toSharedLex_ofSharedLex (e : PowTower.Expr) :
+    toSharedLex (ofSharedLex e) = e := by
+  induction e with
+  | atom => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
+theorem ofSharedLex_toSharedLex (e : TowerExpr) :
+    ofSharedLex (toSharedLex e) = e := by
+  induction e with
+  | «𝜔» => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
 /-- The number of leaves in a tower expression. -/
 def size : TowerExpr -> Nat
   | «𝜔» => 1
@@ -60,6 +85,28 @@ decreasing_by
 noncomputable def evalOrdinal : TowerExpr -> Ordinal.{0}
   | «𝜔» => (ω : Ordinal)
   | pow a b => evalOrdinal a ^ evalOrdinal b
+
+/-- Shared lexical interpretation for A199812: atom is `omega`, node is ordinal power. -/
+noncomputable def sharedEvalOrdinal : PowTower.Expr -> Ordinal.{0} :=
+  PowTower.Expr.eval (ω : Ordinal) (fun a b : Ordinal => a ^ b)
+
+/-- The existing ordinal syntax evaluates the same way as the shared lexical syntax. -/
+theorem evalOrdinal_eq_sharedEvalOrdinal_toSharedLex (e : TowerExpr) :
+    evalOrdinal e = sharedEvalOrdinal (toSharedLex e) := by
+  induction e with
+  | «𝜔» =>
+      rfl
+  | pow a b iha ihb =>
+      simp [evalOrdinal, sharedEvalOrdinal, toSharedLex, iha, ihb]
+
+/--
+The shared canonical lexical value set for A199812.
+
+TODO: after the parallel OEIS branches have converged on `PowTower.Expr`, make
+this the primary definition and keep `TowerExpr` only as a compatibility view.
+-/
+noncomputable def canonicalOrdinalValueSet (n : Nat) : Set Ordinal.{0} :=
+  PowTower.Expr.valueSet (ω : Ordinal) (fun a b : Ordinal => a ^ b) n
 
 /-- The principal ordinal power `omega^e`, represented as an `ONote`. -/
 def principalPower (e : ONote) : ONote :=

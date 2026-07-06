@@ -1,3 +1,4 @@
+import LeanProofs.PowTower
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.Set.Card
 import Mathlib.Tactic.FinCases
@@ -41,10 +42,62 @@ namespace PowExpr
 
 open PowExpr
 
+/-- Translate the existing A000081 syntax into the shared one-token lexical syntax. -/
+def toSharedLex : PowExpr -> PowTower.Expr
+  | x => PowTower.Expr.atom
+  | pow a b => PowTower.Expr.pow (toSharedLex a) (toSharedLex b)
+
+/-- Translate the shared one-token lexical syntax back to the existing A000081 syntax. -/
+def ofSharedLex : PowTower.Expr -> PowExpr
+  | .atom => x
+  | .pow a b => pow (ofSharedLex a) (ofSharedLex b)
+
+theorem toSharedLex_ofSharedLex (e : PowTower.Expr) :
+    toSharedLex (ofSharedLex e) = e := by
+  induction e with
+  | atom => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
+theorem ofSharedLex_toSharedLex (e : PowExpr) :
+    ofSharedLex (toSharedLex e) = e := by
+  induction e with
+  | x => rfl
+  | pow a b iha ihb =>
+      simp [toSharedLex, ofSharedLex, iha, ihb]
+
 /-- Evaluate a parenthesized power expression as a function on positive reals. -/
 noncomputable def eval : PowExpr -> PosReal -> PosReal
   | x, t => t
   | pow a b, t => PosReal.rpow (eval a t) (eval b t).1
+
+/--
+Shared lexical interpretation for A000081: the atom is the identity function
+on positive reals, and the binary node exponentiates pointwise.
+-/
+noncomputable def sharedEval : PowTower.Expr -> PosReal -> PosReal :=
+  PowTower.Expr.eval (fun t : PosReal => t)
+    (fun f g : PosReal -> PosReal => fun t => PosReal.rpow (f t) (g t).1)
+
+/-- The existing A000081 syntax evaluates the same way as the shared lexical syntax. -/
+theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
+    eval e = sharedEval (toSharedLex e) := by
+  induction e with
+  | x =>
+      rfl
+  | pow a b iha ihb =>
+      funext t
+      simp [eval, sharedEval, toSharedLex, iha, ihb]
+
+/--
+The shared canonical lexical value set for A000081.
+
+TODO: after the four OEIS branches have converged on `PowTower.Expr`, make this
+the primary definition and keep `PowExpr` only as a compatibility view.
+-/
+def canonicalValueSet (n : Nat) : Set (PosReal -> PosReal) :=
+  PowTower.Expr.valueSet (fun t : PosReal => t)
+    (fun f g : PosReal -> PosReal => fun t => PosReal.rpow (f t) (g t).1) n
 
 /-- The number of variable occurrences in a power expression. -/
 def size : PowExpr -> Nat
