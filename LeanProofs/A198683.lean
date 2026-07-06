@@ -2073,6 +2073,73 @@ private theorem p4A_im_lt_one :
   have habs : |p4A.im| < 1 := (Complex.abs_im_le_norm p4A).trans_lt p4A_norm_lt_one
   exact lt_of_le_of_lt (le_abs_self p4A.im) habs
 
+private theorem log_p6H_eq :
+    Complex.log p6H = Complex.log p2 * p4A := by
+  dsimp [p6H, principalPow]
+  rw [Complex.log_exp]
+  · rw [log_p2_eq]
+    simp [Complex.mul_im]
+    nlinarith [Real.pi_pos, p4A_im_lt_one]
+  · rw [log_p2_eq]
+    simp [Complex.mul_im]
+    nlinarith [Real.pi_pos, p4A_im_pos]
+
+private theorem log_p6K_eq :
+    Complex.log p6K = Complex.log p3L * p3L := by
+  dsimp [p6K, principalPow]
+  rw [Complex.log_exp]
+  · rw [log_p3L_eq, p3L_eq_exp_theta]
+    simp [Complex.mul_im, Complex.exp_re, Complex.exp_im]
+    have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+    nlinarith [theta_pos, hcos_pos, Real.pi_pos]
+  · rw [log_p3L_eq, p3L_eq_exp_theta]
+    simp [Complex.mul_im, Complex.exp_re, Complex.exp_im]
+    have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+    have hcos_le_one : Real.cos theta ≤ 1 := Real.cos_le_one theta
+    nlinarith [theta_lt_pi_div_two, Real.pi_pos, hcos_pos, hcos_le_one]
+
+private theorem log_p6M_eq :
+    Complex.log p6M = Complex.log p3R * p3L := by
+  dsimp [p6M, principalPow]
+  rw [Complex.log_exp]
+  · rw [log_p3R_eq, p3L_eq_exp_theta]
+    simp [Complex.mul_im, Complex.exp_re, Complex.exp_im]
+    have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+    have hcos_le_one : Real.cos theta ≤ 1 := Real.cos_le_one theta
+    nlinarith [Real.pi_pos, hcos_pos, hcos_le_one]
+  · rw [log_p3R_eq, p3L_eq_exp_theta]
+    simp [Complex.mul_im, Complex.exp_re, Complex.exp_im]
+    have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+    nlinarith [Real.pi_pos, hcos_pos]
+
+private theorem p6H_pow_I_eq_p3R_pow_p4A :
+    principalPow p6H Complex.I = principalPow p3R p4A := by
+  dsimp [principalPow]
+  rw [log_p6H_eq, log_p3R_eq, log_p2_eq]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p6K_pow_I_eq_p4C_pow_p3L :
+    principalPow p6K Complex.I = principalPow p4C p3L := by
+  dsimp [principalPow]
+  rw [log_p6K_eq, log_p4C_eq, log_p3L_eq]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p4A_pow_p3R_eq_p4B_pow_p3L :
+    principalPow p4A p3R = principalPow p4B p3L := by
+  dsimp [principalPow]
+  rw [log_p4A_eq, log_p4B_eq, log_I_real, p3R_eq_neg_I]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem p6M_pow_I_eq_p4B_pow_p3L :
+    principalPow p6M Complex.I = principalPow p4B p3L := by
+  dsimp [principalPow]
+  rw [log_p6M_eq, log_p4B_eq, log_p3R_eq]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
 private theorem p6H_im_neg :
     p6H.im < 0 := by
   dsimp [p6H, principalPow]
