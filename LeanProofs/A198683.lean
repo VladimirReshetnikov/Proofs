@@ -4104,6 +4104,121 @@ theorem eleven_le_a198683_seven : 11 ≤ a198683 7 := by
     _ ≤ (a198683ValueSet 7).ncard :=
       Set.ncard_le_ncard I_pow_image_easyLowerExponents_subset_seven hfinite7
 
+private noncomputable def a198683SixCandidateSet : Set ℂ :=
+  ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M,
+    p6N, p6O} : Set ℂ)
+
+private theorem a198683SixCandidateSet_ncard :
+    a198683SixCandidateSet.ncard = 15 := by
+  simpa [a198683SixCandidateSet, a198683, valueSet_six_eq_candidates] using a198683_six
+
+private noncomputable def a198683SevenStripLowerExponents : Set ℂ :=
+  ({p6A, p6B, p6C, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M, p6N,
+    p6O} : Set ℂ)
+
+private theorem p6D_notMem_a198683SevenStripLowerExponents :
+    p6D ∉ a198683SevenStripLowerExponents := by
+  dsimp [a198683SevenStripLowerExponents]
+  simp [p6A_ne_p6D.symm, p6B_ne_p6D.symm, p6C_ne_p6D.symm, p6D_ne_p6E,
+    p6D_ne_p6F, p6D_ne_p6G, p6K_ne_p6D.symm,
+    ne_of_im_pos_of_im_neg p6D_im_pos p6H_im_neg,
+    ne_of_im_pos_of_im_neg p6D_im_pos p6M_im_neg,
+    ne_of_im_pos_of_im_zero p6D_im_pos p6I_im_zero,
+    ne_of_im_pos_of_im_zero p6D_im_pos p6J_im_zero,
+    ne_of_im_pos_of_im_zero p6D_im_pos p6L_im_zero,
+    ne_of_im_pos_of_im_zero p6D_im_pos p6N_im_zero,
+    ne_of_im_pos_of_im_zero p6D_im_pos p6O_im_zero]
+
+private theorem a198683SixCandidateSet_eq_insert_p6D_stripLower :
+    a198683SixCandidateSet = insert p6D a198683SevenStripLowerExponents := by
+  ext z
+  dsimp [a198683SixCandidateSet, a198683SevenStripLowerExponents]
+  simp only [Set.mem_insert_iff, Set.mem_singleton_iff]
+  tauto
+
+private theorem a198683SevenStripLowerExponents_ncard :
+    a198683SevenStripLowerExponents.ncard = 14 := by
+  have hcard := a198683SixCandidateSet_ncard
+  rw [a198683SixCandidateSet_eq_insert_p6D_stripLower,
+    Set.ncard_insert_of_notMem p6D_notMem_a198683SevenStripLowerExponents
+      (by simp [a198683SevenStripLowerExponents])] at hcard
+  nlinarith
+
+private theorem re_bounds_of_norm_le_one {z : ℂ} (hz : ‖z‖ ≤ 1) :
+    -2 < z.re ∧ z.re ≤ 2 := by
+  have habs : |z.re| ≤ 1 := (Complex.abs_re_le_norm z).trans hz
+  exact ⟨by linarith [(abs_le.mp habs).1], by linarith [(abs_le.mp habs).2]⟩
+
+private theorem re_bounds_of_norm_lt_two {z : ℂ} (hz : ‖z‖ < 2) :
+    -2 < z.re ∧ z.re ≤ 2 := by
+  have hlt : |z.re| < 2 := (Complex.abs_re_le_norm z).trans_lt hz
+  exact ⟨by linarith [(abs_lt.mp hlt).1], by linarith [(abs_lt.mp hlt).2]⟩
+
+private theorem a198683SevenStripLowerExponents_re_bounds {z : ℂ}
+    (hz : z ∈ a198683SevenStripLowerExponents) :
+    -2 < z.re ∧ z.re ≤ 2 := by
+  dsimp [a198683SevenStripLowerExponents] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl
+  · exact re_bounds_of_norm_le_one p6A_norm_le_one
+  · exact re_bounds_of_norm_le_one p6B_norm_le_one
+  · exact re_bounds_of_norm_le_one p6C_norm_le_one
+  · exact re_bounds_of_norm_le_one p6E_norm_le_one
+  · exact re_bounds_of_norm_le_one p6F_norm_le_one
+  · exact re_bounds_of_norm_lt_two p6G_norm_lt_two
+  · exact re_bounds_of_norm_le_one p6H_norm_le_one
+  · exact re_bounds_of_norm_le_one p6I_norm_le_one
+  · exact re_bounds_of_norm_le_one p6J_norm_le_one
+  · exact re_bounds_of_norm_le_one p6K_norm_le_one
+  · exact re_bounds_of_norm_lt_two p6L_norm_lt_two
+  · exact re_bounds_of_norm_lt_two p6M_norm_lt_two
+  · exact re_bounds_of_norm_le_one p6N_norm_le_one
+  · exact re_bounds_of_norm_le_one p6O_norm_le_one
+
+private theorem a198683SevenStripLowerExponents_subset_six :
+    a198683SevenStripLowerExponents ⊆ a198683ValueSet 6 := by
+  intro z hz
+  dsimp [a198683SevenStripLowerExponents] at hz
+  rw [valueSet_six_eq_candidates]
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl <;> simp
+
+private theorem I_pow_injOn_a198683SevenStripLowerExponents :
+    Set.InjOn (fun z : ℂ => principalPow Complex.I z) a198683SevenStripLowerExponents := by
+  intro x hx y hy hxy
+  have hxre := a198683SevenStripLowerExponents_re_bounds hx
+  have hyre := a198683SevenStripLowerExponents_re_bounds hy
+  exact I_pow_inj_of_re_mem_two hxre.1 hxre.2 hyre.1 hyre.2 hxy
+
+private theorem I_pow_image_stripLowerExponents_subset_seven :
+    (fun z : ℂ => principalPow Complex.I z) '' a198683SevenStripLowerExponents ⊆
+      a198683ValueSet 7 := by
+  rintro z ⟨x, hx, rfl⟩
+  simp only [a198683ValueSet]
+  refine ⟨0, Complex.I, ?_, x, ?_, rfl⟩
+  · exact mem_valueSet_one.2 rfl
+  · exact a198683SevenStripLowerExponents_subset_six hx
+
+/-- Semantic lower bound for `A198683(7)` from a 14-element real-strip subfamily. -/
+theorem fourteen_le_a198683_seven : 14 ≤ a198683 7 := by
+  classical
+  rw [a198683]
+  have hfinite7 : (a198683ValueSet 7).Finite := by
+    let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
+      fun i => a198683SevenCanonicalReps.get i
+    have hsubset : a198683ValueSet 7 ⊆ Set.range rep := by
+      simpa [rep] using a198683_seven_subset_canonicalReps
+    exact (Set.finite_range rep).subset hsubset
+  have hcard :
+      ((fun z : ℂ => principalPow Complex.I z) '' a198683SevenStripLowerExponents).ncard = 14 := by
+    rw [I_pow_injOn_a198683SevenStripLowerExponents.ncard_image,
+      a198683SevenStripLowerExponents_ncard]
+  calc
+    14 = ((fun z : ℂ => principalPow Complex.I z) '' a198683SevenStripLowerExponents).ncard :=
+      hcard.symm
+    _ ≤ (a198683ValueSet 7).ncard :=
+      Set.ncard_le_ncard I_pow_image_stripLowerExponents_subset_seven hfinite7
+
 end
 
 end LeanProofs
