@@ -1341,6 +1341,120 @@ private theorem p4C_pow_p2_eq_p6N :
     principalPow p4C p2 = p6N := by
   rfl
 
+private theorem p6E_eq_exp_neg_pi_div_two :
+    p6E = (Real.exp (-(Real.pi / 2)) : ℂ) := by
+  rw [p6E_eq_p2, p2_eq_rho]
+  rfl
+
+private theorem p6I_eq_exp_neg_pi_div_two_mul_exp_pi_div_two :
+    p6I = (Real.exp (-(Real.pi / 2 * Real.exp (Real.pi / 2))) : ℂ) := by
+  dsimp [p6I, principalPow]
+  rw [log_p2_eq, p4B_eq_exp_pi_div_two]
+  apply Complex.ext <;> simp [Complex.exp_re, Complex.exp_im, Complex.mul_re, Complex.mul_im]
+
+private theorem p6J_eq_exp_neg_angleC :
+    p6J = (Real.exp (-(Real.pi / 2 * Real.exp (-theta))) : ℂ) := by
+  dsimp [p6J, principalPow]
+  rw [log_p2_eq, p4C_eq_exp_neg_theta]
+  apply Complex.ext <;> simp [Complex.exp_re, Complex.exp_im, Complex.mul_re, Complex.mul_im]
+
+private theorem p6L_eq_exp_theta :
+    p6L = (Real.exp theta : ℂ) := by
+  dsimp [p6L, principalPow]
+  rw [log_p3L_eq, p3R_eq_neg_I]
+  rw [show (theta : ℂ) * Complex.I * (-Complex.I) = (theta : ℂ) by
+    calc
+      (theta : ℂ) * Complex.I * (-Complex.I) =
+          (theta : ℂ) * (Complex.I * (-Complex.I)) := by ring
+      _ = (theta : ℂ) * 1 := by rw [mul_neg, Complex.I_mul_I]; ring
+      _ = (theta : ℂ) := by ring]
+  exact (Complex.ofReal_exp theta).symm
+
+private theorem p6N_eq_exp_neg_angleF :
+    p6N = (Real.exp (-(theta * rho)) : ℂ) := by
+  dsimp [p6N, principalPow]
+  rw [log_p4C_eq, p2_eq_rho]
+  apply Complex.ext <;> simp [Complex.exp_re, Complex.exp_im, Complex.mul_re, Complex.mul_im]
+
+private theorem log_p5B_eq :
+    Complex.log p5B = (beta : ℂ) * Complex.I := by
+  rw [p5B_eq_exp_beta]
+  rw [Complex.log_exp]
+  · simp [Complex.mul_im]
+    linarith [Real.pi_pos, beta_pos]
+  · simp [Complex.mul_im]
+    exact (beta_lt_angleE.trans angleE_lt_pi).le
+
+private theorem p6O_eq_exp_neg_beta :
+    p6O = (Real.exp (-beta) : ℂ) := by
+  dsimp [p6O, principalPow]
+  rw [log_p5B_eq]
+  rw [show (beta : ℂ) * Complex.I * Complex.I = (-beta : ℂ) by
+    calc
+      (beta : ℂ) * Complex.I * Complex.I = (beta : ℂ) * (Complex.I * Complex.I) := by ring
+      _ = (beta : ℂ) * (-1) := by rw [Complex.I_mul_I]
+      _ = (-beta : ℂ) := by ring]
+  rw [show -(beta : ℂ) = ((-beta : ℝ) : ℂ) by norm_num]
+  exact (Complex.ofReal_exp (-beta)).symm
+
+private theorem p6I_re_lt_p6E_re :
+    p6I.re < p6E.re := by
+  have hI : p6I.re = Real.exp (-(Real.pi / 2 * Real.exp (Real.pi / 2))) := by
+    rw [p6I_eq_exp_neg_pi_div_two_mul_exp_pi_div_two]
+    exact Complex.ofReal_re _
+  have hE : p6E.re = Real.exp (-(Real.pi / 2)) := by
+    rw [p6E_eq_exp_neg_pi_div_two]
+    exact Complex.ofReal_re _
+  rw [hI, hE]
+  apply (Real.exp_lt_exp).2
+  have hgt : 1 < Real.exp (Real.pi / 2) :=
+    Real.one_lt_exp_iff.mpr (by positivity)
+  nlinarith [Real.pi_pos, hgt]
+
+private theorem p6E_re_lt_p6O_re :
+    p6E.re < p6O.re := by
+  have hE : p6E.re = Real.exp (-(Real.pi / 2)) := by
+    rw [p6E_eq_exp_neg_pi_div_two]
+    exact Complex.ofReal_re _
+  have hO : p6O.re = Real.exp (-beta) := by
+    rw [p6O_eq_exp_neg_beta]
+    exact Complex.ofReal_re _
+  rw [hE, hO]
+  exact (Real.exp_lt_exp).2 (by linarith [beta_lt_angleE])
+
+private theorem p6O_re_lt_p6J_re :
+    p6O.re < p6J.re := by
+  have hO : p6O.re = Real.exp (-beta) := by
+    rw [p6O_eq_exp_neg_beta]
+    exact Complex.ofReal_re _
+  have hJ : p6J.re = Real.exp (-(Real.pi / 2 * Real.exp (-theta))) := by
+    rw [p6J_eq_exp_neg_angleC]
+    exact Complex.ofReal_re _
+  rw [hO, hJ]
+  exact (Real.exp_lt_exp).2 (by linarith [angleC_lt_beta])
+
+private theorem p6J_re_lt_p6N_re :
+    p6J.re < p6N.re := by
+  have hJ : p6J.re = Real.exp (-(Real.pi / 2 * Real.exp (-theta))) := by
+    rw [p6J_eq_exp_neg_angleC]
+    exact Complex.ofReal_re _
+  have hN : p6N.re = Real.exp (-(theta * rho)) := by
+    rw [p6N_eq_exp_neg_angleF]
+    exact Complex.ofReal_re _
+  rw [hJ, hN]
+  exact (Real.exp_lt_exp).2 (by linarith [angleF_lt_angleC])
+
+private theorem p6N_re_lt_p6L_re :
+    p6N.re < p6L.re := by
+  have hN : p6N.re = Real.exp (-(theta * rho)) := by
+    rw [p6N_eq_exp_neg_angleF]
+    exact Complex.ofReal_re _
+  have hL : p6L.re = Real.exp theta := by
+    rw [p6L_eq_exp_theta]
+    exact Complex.ofReal_re _
+  rw [hN, hL]
+  exact (Real.exp_lt_exp).2 (by linarith [angleF_pos, theta_pos])
+
 private theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by
   simp only [a198683ValueSet]
