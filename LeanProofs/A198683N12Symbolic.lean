@@ -613,6 +613,78 @@ theorem nearOne1404_eq_nearOne4239 : nearOne1404 = nearOne4239 := by
   apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
 
 /--
+The `n = 11` exponent subtree used by representative `idx = 25`:
+
+`i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i)))))))`.
+-/
+def nearOne25Base : ℂ :=
+  principalPow Complex.I
+    (principalPow Complex.I
+      (principalPow Complex.I
+        (principalPow Complex.I
+          (principalPow (principalPow q Complex.I) v))))
+
+/--
+Representative `idx = 25` from the n = 12 near-one probe class:
+
+`i^(i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i))))))))`.
+-/
+def nearOne25 : ℂ := principalPow Complex.I nearOne25Base
+
+/-- The retained near-one pair has modulus strictly less than `1`. -/
+theorem nearOne1404_norm_lt_one : ‖nearOne1404‖ < 1 := by
+  dsimp [nearOne1404, principalPow]
+  rw [Complex.norm_exp, log_q, nearProbeS_eq_tau]
+  rw [show ((-(Real.pi / 2) : ℂ) * (tau : ℂ)).re = -(Real.pi / 2) * tau by
+    simp [Complex.mul_re]]
+  exact Real.exp_lt_one_iff.mpr (by nlinarith [Real.pi_pos, tau_pos])
+
+/-- The second retained near-one representative also has modulus strictly less than `1`. -/
+theorem nearOne4239_norm_lt_one : ‖nearOne4239‖ < 1 := by
+  rw [← nearOne1404_eq_nearOne4239]
+  exact nearOne1404_norm_lt_one
+
+/--
+If the exact `idx = 25` exponent subtree has negative imaginary part, then
+the resulting `idx = 25` value has modulus strictly greater than `1`.
+
+This isolates the remaining hard analytic sign bound for the strict class-25
+split.
+-/
+theorem nearOne25_norm_gt_one_of_base_im_neg (h : nearOne25Base.im < 0) :
+    1 < ‖nearOne25‖ := by
+  dsimp [nearOne25, principalPow]
+  rw [Complex.norm_exp, log_I_real]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Base).re =
+      -(Real.pi / 2) * nearOne25Base.im by
+    simp [Complex.mul_re, Complex.mul_im]]
+  exact Real.one_lt_exp_iff.mpr (by nlinarith [Real.pi_pos, h])
+
+/--
+The strict class-25 split follows from the single remaining sign obligation
+`nearOne25Base.im < 0`: representative `25` is then not equal to `1404`.
+-/
+theorem nearOne25_ne_nearOne1404_of_base_im_neg (h : nearOne25Base.im < 0) :
+    nearOne25 ≠ nearOne1404 := by
+  intro heq
+  have hnorm := congrArg (fun z : ℂ => ‖z‖) heq
+  have hgt := nearOne25_norm_gt_one_of_base_im_neg h
+  have hlt := nearOne1404_norm_lt_one
+  linarith
+
+/--
+The same sign obligation separates representative `25` from the other retained
+near-one representative `4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_base_im_neg (h : nearOne25Base.im < 0) :
+    nearOne25 ≠ nearOne4239 := by
+  intro heq
+  have hnorm := congrArg (fun z : ℂ => ‖z‖) heq
+  have hgt := nearOne25_norm_gt_one_of_base_im_neg h
+  have hlt := nearOne4239_norm_lt_one
+  linarith
+
+/--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written
 with the same principal-power expression as the local trace:
 
