@@ -125,7 +125,9 @@ It also proves the exact merge of the n = 12 near-zero probe doubleton
 For the remaining near-one split, it defines representative `25` and proves
 that `25` is separated from `{1404, 4239}` once the single analytic sign
 obligation `nearOne25Base.im < 0` is discharged; this sign is further reduced
-to the one-dimensional interval bound `-766 < nearOne25Level3.re < -765`.
+to the one-dimensional interval bound `-766 < nearOne25Level3.re < -765`,
+and then to scalar interval bounds for the exponential and cosine factors in
+the exact formula for `nearOne25Level3.re`.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
 

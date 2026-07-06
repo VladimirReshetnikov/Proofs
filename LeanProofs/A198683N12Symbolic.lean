@@ -668,6 +668,54 @@ private theorem sin_pi_div_two_mul_neg_of_neg766_lt_of_lt_neg765 {r : ℝ}
   rw [Real.sin_sub_int_mul_two_pi]
   exact hsin_shift
 
+private theorem nearOne25Level3_re_eq :
+    nearOne25Level3.re =
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im) *
+        Real.cos (Real.pi / 2 * nearOne25Level2.re) := by
+  dsimp [nearOne25Level3, principalPow]
+  rw [log_I_real, Complex.exp_re]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Level2).re =
+      -(Real.pi / 2) * nearOne25Level2.im by
+    simp [Complex.mul_re, Complex.mul_im]]
+  rw [show ((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Level2).im =
+      Real.pi / 2 * nearOne25Level2.re by
+    simp [Complex.mul_re, Complex.mul_im]]
+
+private theorem mul_mem_neg766_neg765_of_exp_cos_bounds {e c : ℝ}
+    (he0 : (3724 : ℝ) < e) (he1 : e < 3725)
+    (hc0 : (-(257 : ℝ) / 1250) < c) (hc1 : c < (-(411 : ℝ) / 2000)) :
+    (-766 : ℝ) < e * c ∧ e * c < -765 := by
+  have he_pos : 0 < e := by nlinarith
+  have hc_neg : c < 0 := by nlinarith
+  constructor
+  · have h1 : (3725 : ℝ) * (-(257 : ℝ) / 1250) < 3725 * c :=
+      mul_lt_mul_of_pos_left hc0 (by norm_num)
+    have h2 : (3725 : ℝ) * c < e * c :=
+      mul_lt_mul_of_neg_right he1 hc_neg
+    nlinarith
+  · have h1 : e * c < e * (-(411 : ℝ) / 2000) :=
+      mul_lt_mul_of_pos_left hc1 he_pos
+    have h2 : e * (-(411 : ℝ) / 2000) < 3724 * (-(411 : ℝ) / 2000) :=
+      mul_lt_mul_of_neg_right he0 (by norm_num)
+    nlinarith
+
+/--
+It is enough to bound the two real scalar factors in the exact formula for
+`nearOne25Level3.re`.
+-/
+theorem nearOne25Level3_re_bounds_of_exp_cos_bounds
+    (hexp0 : (3724 : ℝ) <
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im))
+    (hexp1 :
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * nearOne25Level2.re))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(411 : ℝ) / 2000)) :
+    (-766 : ℝ) < nearOne25Level3.re ∧ nearOne25Level3.re < -765 := by
+  rw [nearOne25Level3_re_eq]
+  exact mul_mem_neg766_neg765_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
+
 /--
 The hard sign condition for `idx = 25` follows from a certified interval for
 the previous level's real part. Numerically this level is about `-765.4119`.
@@ -743,6 +791,39 @@ theorem nearOne25_ne_nearOne4239_of_level3_re_bounds
     nearOne25 ≠ nearOne4239 :=
   nearOne25_ne_nearOne4239_of_base_im_neg
     (nearOne25Base_im_neg_of_level3_re_bounds hlo hhi)
+
+/--
+The strict class-25 split from `1404` follows from scalar interval bounds for
+the exact exponential and cosine factors of `nearOne25Level3.re`.
+-/
+theorem nearOne25_ne_nearOne1404_of_exp_cos_bounds
+    (hexp0 : (3724 : ℝ) <
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im))
+    (hexp1 :
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * nearOne25Level2.re))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne1404 := by
+  have h := nearOne25Level3_re_bounds_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
+  exact nearOne25_ne_nearOne1404_of_level3_re_bounds h.1 h.2
+
+/--
+The same scalar interval bounds separate `25` from `4239`.
+-/
+theorem nearOne25_ne_nearOne4239_of_exp_cos_bounds
+    (hexp0 : (3724 : ℝ) <
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im))
+    (hexp1 :
+      Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725)
+    (hcos0 : (-(257 : ℝ) / 1250) <
+      Real.cos (Real.pi / 2 * nearOne25Level2.re))
+    (hcos1 :
+      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(411 : ℝ) / 2000)) :
+    nearOne25 ≠ nearOne4239 := by
+  have h := nearOne25Level3_re_bounds_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
+  exact nearOne25_ne_nearOne4239_of_level3_re_bounds h.1 h.2
 
 /--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written
