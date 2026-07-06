@@ -1253,7 +1253,7 @@ theorem v_box_of_exp_cos_sin_bounds
     (hexp1 :
       Real.exp (-(Real.pi / 2) * Real.sin theta) <
         (60419661060 : ℝ) / 100000000000)
-    (hcos0 : (8290717828 : ℝ) / 100000000000 <
+    (hcos0 : (8290717827 : ℝ) / 100000000000 <
       Real.cos (Real.pi / 2 * Real.cos theta))
     (hcos1 :
       Real.cos (Real.pi / 2 * Real.cos theta) <
@@ -1270,7 +1270,7 @@ theorem v_box_of_exp_cos_sin_bounds
   have hrelo :
       (50092236 : ℝ) / 1000000000 <
         ((60419661058 : ℝ) / 100000000000) *
-          ((8290717828 : ℝ) / 100000000000) := by
+          ((8290717827 : ℝ) / 100000000000) := by
     norm_num
   have hrehi :
       ((60419661060 : ℝ) / 100000000000) *
