@@ -31,6 +31,11 @@ findings and lays out a path to a certified value.
   sidesteps astronomical argument reduction, and explains why
   `numerics.equal`'s tri-valued semantics structurally exclude the
   silent-merge artefact wave-2 diagnosed.
+- [`a198683-n12-overflow-magnitude-note.md`](a198683-n12-overflow-magnitude-note.md)
+  — *Overflow singleton diagnostic*. Re-examines the sole tentative
+  retained class `{57}` and observes that it should be certifiable by
+  loose real-part/log-modulus bounds, avoiding the astronomical
+  `Im(e) mod 2π` reduction that made the candidate look intractable.
 
 ## What wave-3 is not
 
