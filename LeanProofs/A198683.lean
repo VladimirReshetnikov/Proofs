@@ -7739,7 +7739,112 @@ private theorem p4A_pow_p3L_mem_seven :
   · exact mem_valueSet_four.2 (Or.inl rfl)
   · exact mem_valueSet_three.2 (Or.inl rfl)
 
-theorem thirty_one_le_a198683_seven : 31 ≤ a198683 7 := by
+private theorem p2_pow_p5G_eq_I_pow_I_mul_p5G :
+    principalPow p2 p5G = principalPow Complex.I (Complex.I * p5G) := by
+  dsimp [principalPow]
+  rw [log_p2_eq, log_I_real]
+  congr 1
+  apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+private theorem I_mul_p5G_norm_eq_one :
+    ‖Complex.I * p5G‖ = 1 := by
+  rw [norm_mul, p5G_norm_eq_one]
+  norm_num
+
+private theorem I_mul_p5G_im_pos :
+    0 < (Complex.I * p5G).im := by
+  have h : (Complex.I * p5G).im = p5G.re := by
+    simp [Complex.mul_im]
+  rw [h]
+  exact p5G_re_pos
+
+private theorem I_mul_p5G_re_bounds :
+    -2 < (Complex.I * p5G).re ∧ (Complex.I * p5G).re ≤ 2 := by
+  exact re_bounds_of_norm_le_one (by rw [I_mul_p5G_norm_eq_one])
+
+private theorem a198683SixCandidateSet_ne_I_mul_p5G {z : ℂ}
+    (hz : z ∈ a198683SixCandidateSet) :
+    z ≠ Complex.I * p5G := by
+  dsimp [a198683SixCandidateSet] at hz
+  rcases hz with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+    rfl | rfl | rfl | rfl
+  · exact norm_lt_one_ne_norm_one p6A_norm_lt_one I_mul_p5G_norm_eq_one
+  · exact norm_lt_one_ne_norm_one (p6B_norm_lt_four_div_five.trans (by norm_num))
+      I_mul_p5G_norm_eq_one
+  · exact norm_lt_one_ne_norm_one (p6C_norm_lt_four_div_five.trans (by norm_num))
+      I_mul_p5G_norm_eq_one
+  · exact norm_gt_one_ne_norm_one p6D_norm_gt_one I_mul_p5G_norm_eq_one
+  · exact (ne_of_im_pos_of_im_zero I_mul_p5G_im_pos p6E_im_zero).symm
+  · exact norm_lt_one_ne_norm_one p6F_norm_lt_one I_mul_p5G_norm_eq_one
+  · exact norm_gt_one_ne_norm_one p6G_norm_gt_one I_mul_p5G_norm_eq_one
+  · exact (ne_of_im_pos_of_im_neg I_mul_p5G_im_pos p6H_im_neg).symm
+  · exact (ne_of_im_pos_of_im_zero I_mul_p5G_im_pos p6I_im_zero).symm
+  · exact (ne_of_im_pos_of_im_zero I_mul_p5G_im_pos p6J_im_zero).symm
+  · exact norm_lt_one_ne_norm_one p6K_norm_lt_one I_mul_p5G_norm_eq_one
+  · exact (ne_of_im_pos_of_im_zero I_mul_p5G_im_pos p6L_im_zero).symm
+  · exact (ne_of_im_pos_of_im_neg I_mul_p5G_im_pos p6M_im_neg).symm
+  · exact (ne_of_im_pos_of_im_zero I_mul_p5G_im_pos p6N_im_zero).symm
+  · exact (ne_of_im_pos_of_im_zero I_mul_p5G_im_pos p6O_im_zero).symm
+
+private theorem p2_pow_p5G_notMem_I_pow_sixCandidateSet :
+    principalPow p2 p5G ∉
+      (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet := by
+  rintro ⟨z, hz, hpow⟩
+  change principalPow Complex.I z = principalPow p2 p5G at hpow
+  rw [p2_pow_p5G_eq_I_pow_I_mul_p5G] at hpow
+  have hzre := a198683SixCandidateSet_re_bounds hz
+  have heq : z = Complex.I * p5G :=
+    I_pow_inj_of_re_mem_two hzre.1 hzre.2 I_mul_p5G_re_bounds.1
+      I_mul_p5G_re_bounds.2 hpow
+  exact a198683SixCandidateSet_ne_I_mul_p5G hz heq
+
+private theorem I_pow_norm_lt_of_im_gt {z w : ℂ} (h : w.im < z.im) :
+    ‖principalPow Complex.I z‖ < ‖principalPow Complex.I w‖ := by
+  dsimp [principalPow]
+  rw [log_I_real, Complex.norm_exp, Complex.norm_exp]
+  simp [Complex.mul_re, Complex.mul_im]
+  nlinarith [Real.pi_pos, h]
+
+private theorem p3L_sq_im_lt_I_mul_p5G_im :
+    (p3L * p3L).im < (Complex.I * p5G).im := by
+  rw [p3L_eq_exp_theta, p5G_eq_exp_neg_theta]
+  simp [Complex.exp_re, Complex.exp_im, Complex.mul_re, Complex.mul_im, Real.cos_neg,
+    Real.sin_neg]
+  have hcos_pos : 0 < Real.cos theta := Real.cos_pos_of_mem_Ioo theta_mem_half
+  have hsin_lt_half : Real.sin theta < (1 : ℝ) / 2 := by
+    nlinarith [Real.sin_lt theta_pos, theta_lt_one_div_three]
+  nlinarith [hcos_pos, hsin_lt_half]
+
+private theorem p2_pow_p5G_norm_lt_p4A_pow_p3L_norm :
+    ‖principalPow p2 p5G‖ < ‖principalPow p4A p3L‖ := by
+  rw [p2_pow_p5G_eq_I_pow_I_mul_p5G, p4A_pow_p3L_eq_I_pow_p3L_sq]
+  exact I_pow_norm_lt_of_im_gt p3L_sq_im_lt_I_mul_p5G_im
+
+private theorem p2_pow_p5G_norm_lt_one :
+    ‖principalPow p2 p5G‖ < 1 := by
+  rw [p2_pow_p5G_eq_I_pow_I_mul_p5G]
+  exact I_pow_norm_lt_one_of_im_pos I_mul_p5G_im_pos
+
+private theorem p2_pow_p5G_im_pos :
+    0 < (principalPow p2 p5G).im := by
+  rw [p2_pow_p5G_eq_I_pow_I_mul_p5G]
+  exact I_pow_im_pos_of_re_pos_of_re_lt_two
+    (by
+      have h : (Complex.I * p5G).re = -p5G.im := by
+        simp [Complex.mul_re]
+      rw [h]
+      nlinarith [p5G_im_neg])
+    (re_lt_two_of_norm_le_one (by rw [I_mul_p5G_norm_eq_one]))
+
+private theorem p2_pow_p5G_mem_seven :
+    principalPow p2 p5G ∈ a198683ValueSet 7 := by
+  simp only [a198683ValueSet]
+  refine ⟨1, p2, ?_, p5G, ?_, rfl⟩
+  · exact mem_valueSet_two.2 rfl
+  · exact mem_valueSet_five.2
+      (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr rfl))))))
+
+theorem thirty_two_le_a198683_seven : 32 ≤ a198683 7 := by
   classical
   rw [a198683]
   let s : Set ℂ := (fun z : ℂ => principalPow Complex.I z) '' a198683SixCandidateSet
@@ -7763,6 +7868,7 @@ theorem thirty_one_le_a198683_seven : 31 ≤ a198683 7 := by
   let x : ℂ := principalPow p4C p3L
   let zeta : ℂ := principalPow p3L p4C
   let eta : ℂ := principalPow p4A p3L
+  let xi : ℂ := principalPow p2 p5G
   have hfinite7 : (a198683ValueSet 7).Finite := by
     let rep : Fin a198683SevenCanonicalReps.length → ℂ :=
       fun i => a198683SevenCanonicalReps.get i
@@ -8323,39 +8429,133 @@ theorem thirty_one_le_a198683_seven : 31 ≤ a198683 7 := by
                           exact (lt_asymm hneg hpos).elim
   have heta_card : (insert eta (insert zeta (insert x h))).ncard = 31 := by
     rw [Set.ncard_insert_of_notMem heta_notMem hzeta_finite, hzeta_card]
-  have hsubset : insert eta (insert zeta (insert x h)) ⊆ a198683ValueSet 7 := by
+  have heta_finite : (insert eta (insert zeta (insert x h))).Finite := by
+    exact hzeta_finite.insert eta
+  have hxi_notMem : xi ∉ insert eta (insert zeta (insert x h)) := by
+    intro hxi_mem
+    rcases hxi_mem with hxieta | hxizx
+    · have hlt : ‖xi‖ < ‖eta‖ := by
+        simpa [xi, eta] using p2_pow_p5G_norm_lt_p4A_pow_p3L_norm
+      rw [hxieta] at hlt
+      exact (lt_irrefl ‖eta‖) hlt
+    · rcases hxizx with hxizeta | hxixh
+      · have hlt : ‖xi‖ < 1 := by
+          simpa [xi] using p2_pow_p5G_norm_lt_one
+        have hnorm : ‖zeta‖ = 1 := by
+          simpa [zeta] using p3L_pow_p4C_norm_eq_one
+        rw [hxizeta, hnorm] at hlt
+        norm_num at hlt
+      · rcases hxixh with hxix | hxih
+        · have hpos : 0 < xi.im := by
+            simpa [xi] using p2_pow_p5G_im_pos
+          have hneg : x.im < 0 := by
+            simpa [x] using p4C_pow_p3L_im_neg
+          rw [hxix] at hpos
+          exact (lt_asymm hneg hpos).elim
+        · dsimp [h] at hxih
+          rcases hxih with hxiy | hxik
+          · have hlt : ‖xi‖ < 1 := by
+              simpa [xi] using p2_pow_p5G_norm_lt_one
+            have hnorm : ‖y‖ = 1 := by
+              simpa [y] using p5B_pow_p2_norm_eq_one
+            rw [hxiy, hnorm] at hlt
+            norm_num at hlt
+          · rcases hxik with hxif | hxie
+            · have hlt : ‖xi‖ < 1 := by
+                simpa [xi] using p2_pow_p5G_norm_lt_one
+              have hnorm : ‖f‖ = 1 := by
+                simpa [f] using p5F_pow_p2_norm_eq_one
+              rw [hxif, hnorm] at hlt
+              norm_num at hlt
+            · rcases hxie with hxig | hxid
+              · have hlt : ‖xi‖ < 1 := by
+                  simpa [xi] using p2_pow_p5G_norm_lt_one
+                have hnorm : ‖g‖ = 1 := by
+                  simpa [g] using p5G_pow_p2_norm_eq_one
+                rw [hxig, hnorm] at hlt
+                norm_num at hlt
+              · rcases hxid with hxin | hxic
+                · have hlt : ‖xi‖ < 1 := by
+                    simpa [xi] using p2_pow_p5G_norm_lt_one
+                  have hnorm : ‖n‖ = 1 := by
+                    simpa [n] using p3R_pow_p4C_norm_eq_one
+                  rw [hxin, hnorm] at hlt
+                  norm_num at hlt
+                · rcases hxic with hxim | hxib
+                  · have hlt : ‖xi‖ < 1 := by
+                      simpa [xi] using p2_pow_p5G_norm_lt_one
+                    have hnorm : ‖m‖ = 1 := by
+                      simpa [m] using p3R_pow_p4B_norm_eq_one
+                    rw [hxim, hnorm] at hlt
+                    norm_num at hlt
+                  · rcases hxib with hxiI | hxir
+                    · have hlt : ‖xi‖ < 1 := by
+                        simpa [xi] using p2_pow_p5G_norm_lt_one
+                      rw [hxiI] at hlt
+                      norm_num at hlt
+                    · rcases hxir with hxiw | hxiq
+                      · have hlt : ‖xi‖ < 1 := by
+                          simpa [xi] using p2_pow_p5G_norm_lt_one
+                        have hgt : 4 < ‖w‖ := by
+                          simpa [w] using p4B_pow_p3L_norm_gt_four
+                        rw [hxiw] at hlt
+                        linarith
+                      · rcases hxiq with hxiv | hxiu
+                        · have hlt : ‖xi‖ < 1 := by
+                            simpa [xi] using p2_pow_p5G_norm_lt_one
+                          have hgt : 1 < ‖v‖ := by
+                            simpa [v] using p3R_pow_p4A_norm_gt_one
+                          rw [hxiv] at hlt
+                          linarith
+                        · rcases hxiu with hxiS | hxiT
+                          · exact p2_pow_p5G_notMem_I_pow_sixCandidateSet
+                              (by simpa [s, xi] using hxiS)
+                          · have hpos : 0 < xi.im := by
+                              simpa [xi] using p2_pow_p5G_im_pos
+                            have hneg : xi.im < 0 :=
+                              p2_pow_image_p2NegativeExponents_im_neg
+                                (by simpa [t, xi] using hxiT)
+                            exact (lt_asymm hneg hpos).elim
+  have hxi_card : (insert xi (insert eta (insert zeta (insert x h)))).ncard = 32 := by
+    rw [Set.ncard_insert_of_notMem hxi_notMem heta_finite, heta_card]
+  have hsubset : insert xi (insert eta (insert zeta (insert x h))) ⊆ a198683ValueSet 7 := by
     intro z hz
     rcases hz with rfl | hz
-    · exact p4A_pow_p3L_mem_seven
+    · exact p2_pow_p5G_mem_seven
     · rcases hz with rfl | hz
-      · exact p3L_pow_p4C_mem_seven
+      · exact p4A_pow_p3L_mem_seven
       · rcases hz with rfl | hz
-        · exact p4C_pow_p3L_mem_seven
-        · dsimp [h] at hz
-          rcases hz with rfl | hz
-          · exact p5B_pow_p2_mem_seven
-          · rcases hz with rfl | hz
-            · exact p5F_pow_p2_mem_seven
+        · exact p3L_pow_p4C_mem_seven
+        · rcases hz with rfl | hz
+          · exact p4C_pow_p3L_mem_seven
+          · dsimp [h] at hz
+            rcases hz with rfl | hz
+            · exact p5B_pow_p2_mem_seven
             · rcases hz with rfl | hz
-              · exact p5G_pow_p2_mem_seven
+              · exact p5F_pow_p2_mem_seven
               · rcases hz with rfl | hz
-                · exact p3R_pow_p4C_mem_seven
+                · exact p5G_pow_p2_mem_seven
                 · rcases hz with rfl | hz
-                  · exact p3R_pow_p4B_mem_seven
+                  · exact p3R_pow_p4C_mem_seven
                   · rcases hz with rfl | hz
-                    · exact I_mem_seven
+                    · exact p3R_pow_p4B_mem_seven
                     · rcases hz with rfl | hz
-                      · exact p4B_pow_p3L_mem_seven
+                      · exact I_mem_seven
                       · rcases hz with rfl | hz
-                        · exact p3R_pow_p4A_mem_seven
-                        · rcases hz with hzS | hzT
-                          · exact I_pow_image_sixCandidateSet_subset_seven
-                              (by simpa [s, u, q, r, b, c, d, e, k, h] using hzS)
-                          · exact p2_pow_image_p2NegativeExponents_subset_seven
-                              (by simpa [t, u, q, r, b, c, d, e, k, h] using hzT)
+                        · exact p4B_pow_p3L_mem_seven
+                        · rcases hz with rfl | hz
+                          · exact p3R_pow_p4A_mem_seven
+                          · rcases hz with hzS | hzT
+                            · exact I_pow_image_sixCandidateSet_subset_seven
+                                (by simpa [s, u, q, r, b, c, d, e, k, h] using hzS)
+                            · exact p2_pow_image_p2NegativeExponents_subset_seven
+                                (by simpa [t, u, q, r, b, c, d, e, k, h] using hzT)
   calc
-    31 = (insert eta (insert zeta (insert x h))).ncard := heta_card.symm
+    32 = (insert xi (insert eta (insert zeta (insert x h)))).ncard := hxi_card.symm
     _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
+
+theorem thirty_one_le_a198683_seven : 31 ≤ a198683 7 := by
+  exact (by norm_num : 31 ≤ 32).trans thirty_two_le_a198683_seven
 
 theorem thirty_le_a198683_seven : 30 ≤ a198683 7 := by
   exact (by norm_num : 30 ≤ 31).trans thirty_one_le_a198683_seven
