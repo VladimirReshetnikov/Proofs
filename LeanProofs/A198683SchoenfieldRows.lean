@@ -1,7 +1,7 @@
 import LeanProofs.A198683Schoenfield
 
 /-!
-# Row-level Schoenfield certificate for OEIS A198683 at n = 7
+# Row-level Schoenfield certificates for OEIS A198683
 
 `LeanProofs.A198683Schoenfield` checks normalized class-label lists. This
 module keeps one more layer of the source table: each row is either a new
@@ -64,6 +64,49 @@ theorem rows_seven_reconstruct_labels :
 /-- Row-level Schoenfield table certificate for `A198683(7) = 34`. -/
 theorem schoenfield_rows_a198683_seven :
     rowCertificateOk rowsSeven 132 34 = true := by
+  native_decide
+
+/-- Count/Match rows from the n = 8 Schoenfield table. -/
+def rowsEight : List (Option Nat) :=
+  List.flatten
+    [
+      [none, none, none, some 3, some 2, none, none, none, none, some 6, some 7, some 9, some 9, some 7, none, none],
+      [none, some 17, some 16, none, none, none, some 7, some 20, some 21, none, some 26, some 21, some 15, none, some 17, some 17],
+      [some 30, some 22, some 7, some 26, some 21, some 22, some 7, some 21, some 21, some 7, none, none, none, some 45, some 44, none],
+      [none, none, none, some 48, some 49, some 51, some 51, some 49, none, none, none, some 59, some 58, none, none, none],
+      [some 64, some 63, none, none, some 68, some 49, none, some 7, some 71, some 7, some 68, some 49, some 57, none, some 59, some 59],
+      [some 78, some 71, some 7, none, none, some 71, some 7, some 85, some 85, some 7, some 43, some 44, some 45, some 45, some 44, some 48],
+      [some 49, some 50, some 51, some 48, some 49, some 51, some 51, some 49, some 62, some 63, some 64, some 64, some 63, some 71, some 7, some 68],
+      [some 49, some 71, some 7, some 85, some 85, some 7, some 62, some 63, some 64, some 64, some 63, some 68, some 49, some 85, some 7, some 68],
+      [some 49, some 7, some 7, some 49, none, none, none, some 135, some 134, none, none, none, none, some 138, some 139, some 141],
+      [some 141, some 139, none, none, none, some 149, some 148, none, none, none, some 139, some 152, some 153, none, some 158, some 153],
+      [some 147, none, some 149, some 149, some 162, some 154, some 139, some 158, some 153, some 154, some 139, some 153, some 153, some 139, none, none],
+      [none, some 177, some 176, none, some 139, none, none, some 180, some 139, some 183, some 183, some 139, none, none, none, some 191],
+      [some 190, none, some 49, none, none, some 194, some 49, some 197, some 197, some 49, none, none, none, some 205, some 204, none],
+      [none, none, some 210, some 209, none, some 58, none, some 215, some 58, some 213, some 58, some 215, some 215, some 58, some 208, some 209],
+      [some 210, some 210, some 209, some 203, some 208, none, none, some 205, some 210, some 205, some 210, some 230, some 231, none, some 7, some 7],
+      [some 49, none, none, none, some 139, some 238, some 7, some 7, some 49, some 244, some 139, some 244, some 139, some 7, some 49, some 175],
+      [some 176, some 177, some 177, some 176, some 180, some 139, some 182, some 183, some 180, some 139, some 183, some 183, some 139, some 213, some 58, some 215],
+      [some 215, some 58, some 242, some 243, some 244, some 139, some 242, some 243, none, some 281, some 243, some 213, none, some 215, some 215, some 285],
+      [some 244, some 139, some 281, some 243, some 244, some 139, some 243, some 243, some 139, some 133, some 134, some 135, some 135, some 134, some 138, some 139],
+      [some 140, some 141, some 138, some 139, some 141, some 141, some 139, some 147, some 148, some 149, some 149, some 148, some 152, some 153, some 154, some 139],
+      [some 152, some 153, some 158, some 158, some 153, some 147, some 162, some 149, some 149, some 162, some 154, some 139, some 158, some 153, some 154, some 139],
+      [some 153, some 153, some 139, some 189, some 190, some 191, some 191, some 190, some 194, some 49, some 196, some 197, some 194, some 49, some 197, some 197],
+      [some 49, some 213, some 58, some 215, some 215, some 58, some 208, some 231, some 210, some 210, some 231, some 238, some 7, some 7, some 49, some 244],
+      [some 139, some 244, some 139, some 7, some 49, some 213, some 285, some 215, some 215, some 285, some 244, some 139, some 281, some 243, some 244, some 139],
+      [some 243, some 243, some 139, some 189, some 190, some 191, some 191, some 190, some 194, some 49, some 196, some 197, some 194, some 49, some 197, some 197],
+      [some 49, some 208, some 231, some 210, some 210, some 231, some 244, some 139, some 7, some 49, some 244, some 139, some 243, some 243, some 139, some 208],
+      [some 231, some 210, some 210, some 231, some 7, some 49, some 243, some 139, some 7, some 49, some 139, some 139, some 49]
+    ]
+
+/-- The n = 8 row data reconstruct exactly the normalized label certificate. -/
+theorem rows_eight_reconstruct_labels :
+    labelsFromRows rowsEight = some A198683Schoenfield.labelsEight := by
+  native_decide
+
+/-- Row-level Schoenfield table certificate for `A198683(8) = 77`. -/
+theorem schoenfield_rows_a198683_eight :
+    rowCertificateOk rowsEight 429 77 = true := by
   native_decide
 
 end A198683SchoenfieldRows
