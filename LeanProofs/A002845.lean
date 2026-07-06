@@ -98,31 +98,51 @@ decreasing_by
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
   · exact Nat.succ_lt_succ k.2
 
-/-- Translating local parenthesizations gives exactly the shared lexical parenthesizations. -/
-theorem parenthesizations_map_toSharedLex (n : Nat) :
-    (parenthesizations n).map toSharedLex = PowTower.Expr.parenthesizations n := by
+/-- Translating a local parenthesization gives a shared lexical parenthesization. -/
+theorem toSharedLex_mem_parenthesizations {n : Nat} {e : PowExpr}
+    (he : e ∈ parenthesizations n) : toSharedLex e ∈ PowTower.Expr.parenthesizations n := by
+  revert e
   induction n using Nat.strong_induction_on with
   | h n ih =>
+      intro e he
       cases n with
       | zero =>
-          rfl
+          simp [parenthesizations] at he
       | succ n =>
           cases n with
           | zero =>
-              rfl
+              rcases (by simpa [parenthesizations] using he) with rfl
+              simp [PowTower.Expr.parenthesizations, toSharedLex]
           | succ n =>
-              have hleft :
-                  ∀ k : Fin (n + 1),
-                    (parenthesizations (k.1 + 1)).map toSharedLex =
-                      PowTower.Expr.parenthesizations (k.1 + 1) :=
-                fun k => ih (k.1 + 1) (Nat.succ_lt_succ k.2)
-              have hright :
-                  ∀ k : Fin (n + 1),
-                    (parenthesizations (n + 1 - k.1)).map toSharedLex =
-                      PowTower.Expr.parenthesizations (n + 1 - k.1) :=
-                fun k => ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
-              simp [parenthesizations, PowTower.Expr.parenthesizations, toSharedLex,
-                List.map_flatMap, List.map_map, hleft, hright]
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, toSharedLex a, ?_, toSharedLex b, ?_, rfl⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+
+/-- Translating a shared lexical parenthesization back gives a local parenthesization. -/
+theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
+    (he : e ∈ PowTower.Expr.parenthesizations n) : ofSharedLex e ∈ parenthesizations n := by
+  revert e
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      intro e he
+      cases n with
+      | zero =>
+          simp [PowTower.Expr.parenthesizations] at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rcases (by simpa [PowTower.Expr.parenthesizations] using he) with rfl
+              simp [parenthesizations, ofSharedLex]
+          | succ n =>
+              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, ofSharedLex a, ?_, ofSharedLex b, ?_, rfl⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
 
 /-- Compatibility value set computed through the old local literal-`2` syntax. -/
 def valueSet (n : Nat) : Set Nat :=
@@ -135,14 +155,13 @@ theorem valueSet_eq_canonicalValueSet (n : Nat) :
   constructor
   · rintro ⟨e, he, hv⟩
     refine ⟨toSharedLex e, ?_, ?_⟩
-    · rw [← parenthesizations_map_toSharedLex]
-      exact List.mem_map.mpr ⟨e, he, rfl⟩
-    · rw [← eval_eq_sharedEval_toSharedLex, hv]
+    · exact toSharedLex_mem_parenthesizations he
+    · change sharedEval (toSharedLex e) = v
+      rw [← eval_eq_sharedEval_toSharedLex, hv]
   · rintro ⟨e, he, hv⟩
-    rw [← parenthesizations_map_toSharedLex n] at he
-    rcases List.mem_map.mp he with ⟨eLocal, heLocal, hshared⟩
-    refine ⟨eLocal, heLocal, ?_⟩
-    rw [eval_eq_sharedEval_toSharedLex, hshared, hv]
+    refine ⟨ofSharedLex e, ofSharedLex_mem_parenthesizations he, ?_⟩
+    rw [eval_eq_sharedEval_toSharedLex, toSharedLex_ofSharedLex]
+    exact hv
 
 /--
 OEIS A002845, defined canonically as the cardinality of the shared lexical

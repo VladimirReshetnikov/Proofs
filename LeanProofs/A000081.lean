@@ -11,12 +11,14 @@ import Mathlib.Tactic.Ring
 
 OEIS A000081 counts the distinct functions of a positive real variable obtained
 from all binary parenthesizations of `x^x^...^x`.  The primary definition in
-this module is exactly that semantic set of functions
-`{x : ℝ // 0 < x} -> {x : ℝ // 0 < x}`.
+this module is the shared lexical syntax from `PowTower.Expr`, interpreted as
+functions `{x : ℝ // 0 < x} -> {x : ℝ // 0 < x}` by positive-real
+exponentiation.
 
 The first values are proved by enumerating the legal parenthesizations,
 collapsing only identities proved over positive reals, and separating the
-remaining functions by exact logarithmic/exponent tests.
+remaining functions by exact logarithmic/exponent tests.  The local `PowExpr`
+syntax is retained as a compatibility view for those finite proofs.
 -/
 
 namespace LeanProofs
@@ -91,9 +93,6 @@ theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
 
 /--
 The shared canonical lexical value set for A000081.
-
-TODO: after the four OEIS branches have converged on `PowTower.Expr`, make this
-the primary definition and keep `PowExpr` only as a compatibility view.
 -/
 def canonicalValueSet (n : Nat) : Set (PosReal -> PosReal) :=
   PowTower.Expr.valueSet (fun t : PosReal => t)
@@ -117,16 +116,85 @@ decreasing_by
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
   · exact Nat.succ_lt_succ k.2
 
-/--
-The semantic value set for A000081: distinct functions of a positive real
-variable arising from all legal parenthesizations.
--/
+/-- Translating a local parenthesization gives a shared lexical parenthesization. -/
+theorem toSharedLex_mem_parenthesizations {n : Nat} {e : PowExpr}
+    (he : e ∈ parenthesizations n) : toSharedLex e ∈ PowTower.Expr.parenthesizations n := by
+  revert e
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      intro e he
+      cases n with
+      | zero =>
+          simp [parenthesizations] at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rcases (by simpa [parenthesizations] using he) with rfl
+              simp [PowTower.Expr.parenthesizations, toSharedLex]
+          | succ n =>
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, toSharedLex a, ?_, toSharedLex b, ?_, rfl⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+
+/-- Translating a shared lexical parenthesization back gives a local parenthesization. -/
+theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
+    (he : e ∈ PowTower.Expr.parenthesizations n) : ofSharedLex e ∈ parenthesizations n := by
+  revert e
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      intro e he
+      cases n with
+      | zero =>
+          simp [PowTower.Expr.parenthesizations] at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rcases (by simpa [PowTower.Expr.parenthesizations] using he) with rfl
+              simp [parenthesizations, ofSharedLex]
+          | succ n =>
+              simp only [PowTower.Expr.parenthesizations, List.mem_flatMap, List.mem_map] at he
+              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
+              simp only [parenthesizations, List.mem_flatMap, List.mem_map]
+              refine ⟨k, List.mem_finRange k, ofSharedLex a, ?_, ofSharedLex b, ?_, rfl⟩
+              · exact ih (k.1 + 1) (Nat.succ_lt_succ k.2) ha
+              · exact ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _)) hb
+
+/-- Compatibility value set computed through the old local variable syntax. -/
 def valueSet (n : Nat) : Set (PosReal -> PosReal) :=
   {f | ∃ e ∈ parenthesizations n, eval e = f}
 
-/-- OEIS A000081, defined as the cardinality of the semantic exponent-function set. -/
+/-- The existing A000081 value set is the shared canonical lexical value set. -/
+theorem valueSet_eq_canonicalValueSet (n : Nat) :
+    valueSet n = canonicalValueSet n := by
+  ext f
+  constructor
+  · rintro ⟨e, he, hf⟩
+    refine ⟨toSharedLex e, ?_, ?_⟩
+    · exact toSharedLex_mem_parenthesizations he
+    · change sharedEval (toSharedLex e) = f
+      rw [← eval_eq_sharedEval_toSharedLex, hf]
+  · rintro ⟨e, he, hf⟩
+    refine ⟨ofSharedLex e, ofSharedLex_mem_parenthesizations he, ?_⟩
+    rw [eval_eq_sharedEval_toSharedLex, toSharedLex_ofSharedLex]
+    exact hf
+
+/-- OEIS A000081, defined as the cardinality of the shared lexical exponent-function set. -/
 noncomputable def a000081 (n : Nat) : Nat :=
-  (valueSet n).ncard
+  PowTower.Expr.valueCard (fun t : PosReal => t)
+    (fun f g : PosReal -> PosReal => fun t => PosReal.rpow (f t) (g t).1) n
+
+/-- A000081 can equivalently be read from the shared canonical lexical syntax. -/
+theorem a000081_eq_canonicalValueSet_ncard (n : Nat) :
+    a000081 n = (canonicalValueSet n).ncard := by
+  rfl
+
+/-- The old local value-set presentation computes the shared canonical A000081 count. -/
+theorem a000081_eq_valueSet_ncard (n : Nat) :
+    a000081 n = (valueSet n).ncard := by
+  rw [a000081_eq_canonicalValueSet_ncard, valueSet_eq_canonicalValueSet]
 
 /-- A fixed positive real used only to separate functions by evaluation. -/
 def three : PosReal :=
@@ -499,27 +567,28 @@ theorem valueSet_four_ncard :
 
 /-- `A000081(0) = 0`. -/
 theorem a000081_zero : a000081 0 = 0 := by
-  simp [a000081, valueSet, parenthesizations]
+  rw [a000081_eq_valueSet_ncard]
+  simp [valueSet, parenthesizations]
 
 /-- `A000081(1) = 1`. -/
 theorem a000081_one : a000081 1 = 1 := by
-  rw [a000081, valueSet_one, Set.ncard_singleton]
+  rw [a000081_eq_valueSet_ncard, valueSet_one, Set.ncard_singleton]
 
 /-- `A000081(2) = 1`. -/
 theorem a000081_two : a000081 2 = 1 := by
-  rw [a000081, valueSet_two, Set.ncard_singleton]
+  rw [a000081_eq_valueSet_ncard, valueSet_two, Set.ncard_singleton]
 
 /-- `A000081(3) = 2`. -/
 theorem a000081_three : a000081 3 = 2 := by
-  rw [a000081, valueSet_three, Set.ncard_pair e3a_ne_e3b]
+  rw [a000081_eq_valueSet_ncard, valueSet_three, Set.ncard_pair e3a_ne_e3b]
 
 /-- `A000081(4) = 4`. -/
 theorem a000081_four : a000081 4 = 4 := by
-  rw [a000081, valueSet_four, valueSet_four_ncard]
+  rw [a000081_eq_valueSet_ncard, valueSet_four, valueSet_four_ncard]
 
 /-- `A000081(5) = 9`. -/
 theorem a000081_five : a000081 5 = 9 := by
-  rw [a000081, valueSet_five, valueSet_five_ncard]
+  rw [a000081_eq_valueSet_ncard, valueSet_five, valueSet_five_ncard]
 
 end PowExpr
 
