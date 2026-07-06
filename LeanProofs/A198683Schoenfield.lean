@@ -568,6 +568,11 @@ theorem schoenfield_a198683_ten :
     certificateOk labelsTen 4862 462 = true := by
   native_decide
 
+/-- Direct class-count consequence of the Schoenfield certificate for `A198683(10) = 462`. -/
+theorem schoenfield_a198683_ten_class_count :
+    normalizedClassCount labelsTen = 462 :=
+  certificateOk_class_count_of schoenfield_a198683_ten
+
 /-- Schoenfield table certificate for `A198683(11) = 1152`. -/
 theorem schoenfield_a198683_eleven :
     certificateOk labelsEleven 16796 1152 = true := by
