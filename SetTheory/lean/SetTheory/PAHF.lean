@@ -15975,6 +15975,54 @@ theorem BProv_formulaAt_of_PA_BProv_with_term_rules
     rcases hg with ⟨psi, hpsi, rfl⟩
     exact BProv_formulaAt_ax (ρ := ρ) (hL psi hpsi))
 
+/-- Relative PA proofs translate directly into finite HF while carrying an
+explicit PA-domain prefix.
+
+Finite PA axiom uses are cut away using their already-established HFFin
+translations; ordinary PA context assumptions remain visible as the translated
+finite context. -/
+theorem BProv_HFFin_formulaAt_of_PA_BProv_domainContext
+    {G : List PA.Formula} {phi : PA.Formula}
+    (h : PA.Formula.BProv PA.Formula.Ax_s G phi) :
+    ∃ n, ∀ ρ : Nat → Nat,
+      BProv HFFinAx_s
+        (domainContextAt ρ n ++ translateContextAt ρ G)
+        (formulaAt ρ phi) := by
+  rcases h with ⟨L, hL, hp⟩
+  rcases BProv_HFFin_formulaAt_of_Prov_domainContext hp with
+    ⟨n, htranslated⟩
+  refine ⟨n, ?_⟩
+  intro ρ
+  exact BProv_cut (htranslated ρ) (fun g hg => by
+    rw [List.mem_append] at hg
+    rcases hg with hgDomain | hgTranslated
+    · exact BProv_of_Prov (B := HFFinAx_s)
+        (Prov.P_ass
+          (domainContextAt ρ n ++ translateContextAt ρ G)
+          g (List.mem_append.mpr (Or.inl hgDomain)))
+    · simp only [translateContextAt, List.map_append, List.mem_append,
+        List.mem_map] at hgTranslated
+      rcases hgTranslated with hgAx | hgCtx
+      · rcases hgAx with ⟨psi, hpsi, rfl⟩
+        have haxTranslated : BProv translatedPAAx [] (formulaAt ρ psi) :=
+          BProv_formulaAt_ax (ρ := ρ) (hL psi hpsi)
+        have haxHF : BProv HFFinAx_s [] (formulaAt ρ psi) :=
+          BProv_lift haxTranslated
+            (fun _ hg => by
+              rcases hg with ⟨theta, htheta, rfl⟩
+              exact BProv_HFFin_translated_PA_axiom htheta)
+            (fun _ hg => nomatch hg)
+        exact BProv_mono HFFinAx_s []
+          (domainContextAt ρ n ++ translateContextAt ρ G)
+          (formulaAt ρ psi) (fun _ hnil => by cases hnil) haxHF
+      · rcases hgCtx with ⟨psi, hpsi, rfl⟩
+        exact BProv_of_Prov (B := HFFinAx_s)
+          (Prov.P_ass
+            (domainContextAt ρ n ++ translateContextAt ρ G)
+            (formulaAt ρ psi)
+            (List.mem_append.mpr
+              (Or.inr (mem_translateContextAt_of_mem (ρ := ρ) hpsi)))))
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
