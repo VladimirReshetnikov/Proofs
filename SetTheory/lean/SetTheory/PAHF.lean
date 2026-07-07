@@ -3482,6 +3482,106 @@ theorem mulRecTotal_of_ordinalLike_finite_model {α : Type u}
   · exact ha
   · exact hm
 
+/-- In finite HF, a multiplication-recursion trace with ordinal-like
+multiplicand and endpoint assigns ordinal-like values to every covered key.
+
+The multiplication step delegates to the successor-recursion closure theorem:
+if the previous product `t` is ordinal-like, then the addition trace computing
+`t + a` has an ordinal-like output. -/
+theorem mulRecApprox_value_ordinalLike {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) {a f m z : α}
+    (ha : OrdinalLike M.mem a) (hm : OrdinalLike M.mem m)
+    (hf : MulRecApprox M.toFirstOrderAdjunctionModel a f m)
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair
+      M.toFirstOrderAdjunctionModel m z) f) :
+    OrdinalLike M.mem z := by
+  let N := M.toFirstOrderAdjunctionModel
+  let phi : Form :=
+    fAll
+      (fImp (fOr (fMem 1 0) (fEq 1 0))
+        (fImp (HF_ordinalLikeAt 0)
+          (fImp (mulRecApproxAt 3 2 0)
+            (fAll (fImp (HF_pairMemAt 2 0 4) (HF_ordinalLikeAt 0))))))
+  let tail : Nat → α := fun _ => M.empty
+  have hind := M.induction_schema phi (scons a (scons f tail))
+  have hall : ∀ k, Sat M.mem (scons k (scons a (scons f tail))) phi := by
+    apply hind
+    intro k ih
+    intro m hkey hmSat hfSat z hpairSat
+    let Em : Nat → α := scons m (scons k (scons a (scons f tail)))
+    let Ez : Nat → α := scons z Em
+    have hmOrd : OrdinalLike M.mem m :=
+      (HF_ordinalLikeAt_spec Em 0).mp hmSat
+    have hfApprox : MulRecApprox N a f m := by
+      simpa [N, Em, tail, scons] using
+        (mulRecApproxAt_spec N Em 3 2 0).mp hfSat
+    have hpair : N.mem (FirstOrderAdjunctionModel.kpair N k z) f := by
+      simpa [N, Em, Ez, tail, scons] using
+        (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Ez 2 0 4).mp hpairSat
+    have hkOrd : OrdinalLike M.mem k := by
+      rcases hkey with hkm | hkm
+      · change M.mem k m at hkm
+        exact OrdinalLike.of_mem hmOrd hkm
+      · change k = m at hkm
+        subst k
+        exact hmOrd
+    rcases FirstOrderFiniteAdjunctionModel.ordinalLike_empty_or_succ M hkOrd with
+      hkEmpty | ⟨p, hpk, hkSucc⟩
+    · rcases hfApprox with ⟨hfun, _hkeys, hbase, _htotal, _hstep⟩
+      have hpairEmpty : N.mem (FirstOrderAdjunctionModel.kpair N N.empty z) f := by
+        simpa [N, hkEmpty] using hpair
+      have hz_eq_empty : z = N.empty := hfun N.empty z N.empty hpairEmpty hbase
+      apply (HF_ordinalLikeAt_spec Ez 0).mpr
+      simpa [Ez, Em, hz_eq_empty, N, scons] using
+        FirstOrderAdjunctionModel.ordinalLike_empty N
+    · rcases hfApprox with ⟨_hfun, _hkeys, _hbase, htotal, hstep⟩
+      have hpm : M.mem p m := by
+        rcases hkey with hkm | hkm
+        · change M.mem k m at hkm
+          exact hmOrd.1 k hkm p hpk
+        · change k = m at hkm
+          simpa [hkm] using hpk
+      rcases htotal p (Or.inl hpm) with ⟨t, hpt⟩
+      have hpSat : Sat M.mem (scons p (scons a (scons f tail))) phi :=
+        (Sat_rename_rSkipParam phi (scons a (scons f tail)) k p).mp (ih p hpk)
+      let Emp : Nat → α := scons m (scons p (scons a (scons f tail)))
+      let Etp : Nat → α := scons t Emp
+      have hmSatP : Sat M.mem Emp (HF_ordinalLikeAt 0) :=
+        (HF_ordinalLikeAt_spec Emp 0).mpr hmOrd
+      have hfSatP : Sat M.mem Emp (mulRecApproxAt 3 2 0) := by
+        apply (mulRecApproxAt_spec N Emp 3 2 0).mpr
+        exact ⟨_hfun, _hkeys, _hbase, htotal, hstep⟩
+      have hptSat : Sat M.mem Etp (HF_pairMemAt 2 0 4) := by
+        apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Etp 2 0 4).mpr
+        simpa [N, Emp, Etp, tail, scons] using hpt
+      have htDomain : Sat M.mem Etp (HF_ordinalLikeAt 0) :=
+        hpSat m (Or.inl hpm) hmSatP hfSatP t hptSat
+      have htOrd : OrdinalLike M.mem t :=
+        (HF_ordinalLikeAt_spec Etp 0).mp htDomain
+      have hpairSucc : N.mem
+          (FirstOrderAdjunctionModel.kpair N (N.adjoin p p) z) f := by
+        simpa [N, hkSucc] using hpair
+      rcases hstep p t z hpm hpt hpairSucc with ⟨g, hgApprox, hgy⟩
+      have hzOrd : OrdinalLike M.mem z :=
+        FirstOrderFiniteAdjunctionModel.succRecApprox_value_ordinalLike
+          M htOrd ha hgApprox hgy
+      apply (HF_ordinalLikeAt_spec Ez 0).mpr
+      exact hzOrd
+  let Em : Nat → α := scons m (scons m (scons a (scons f tail)))
+  let Ez : Nat → α := scons z Em
+  have hmain : Sat M.mem (scons m (scons a (scons f tail))) phi := hall m
+  have hmSat : Sat M.mem Em (HF_ordinalLikeAt 0) :=
+    (HF_ordinalLikeAt_spec Em 0).mpr hm
+  have hfSat : Sat M.mem Em (mulRecApproxAt 3 2 0) := by
+    apply (mulRecApproxAt_spec N Em 3 2 0).mpr
+    simpa [N, Em, tail, scons] using hf
+  have hzSat : Sat M.mem Ez (HF_pairMemAt 2 0 4) := by
+    apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Ez 2 0 4).mpr
+    simpa [N, Em, Ez, tail, scons] using hz
+  have hzDomain : Sat M.mem Ez (HF_ordinalLikeAt 0) :=
+    hmain m (Or.inr rfl) hmSat hfSat z hzSat
+  exact (HF_ordinalLikeAt_spec Ez 0).mp hzDomain
+
 theorem mulGraphAt_of_mulRecApprox_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (e : Nat → α)
     (out left right : Nat) {f : α}
