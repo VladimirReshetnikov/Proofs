@@ -137,6 +137,28 @@ theorem unaryZerosCode_eval_single (m : Nat) :
     UnaryZerosCode.eval [m] = Part.some (List.replicate m 0) := by
   simpa using unaryZerosCode_eval_cons m []
 
+/--
+In the `PartrecToTM2` stack alphabet, a zero natural contributes no bits, so a
+unary list of `m` zeros is exactly `m` separator symbols.
+-/
+theorem trList_replicate_zero (m : Nat) :
+    Turing.PartrecToTM2.trList (List.replicate m 0) =
+      List.replicate m Turing.PartrecToTM2.Γ'.cons := by
+  induction m with
+  | zero => rfl
+  | succ m IH =>
+      change Turing.PartrecToTM2.Γ'.cons ::
+          Turing.PartrecToTM2.trList (List.replicate m 0) =
+        Turing.PartrecToTM2.Γ'.cons ::
+          List.replicate m Turing.PartrecToTM2.Γ'.cons
+      rw [IH]
+
+/-- The encoded unary-zero output stack has length exactly `m`. -/
+theorem trList_replicate_zero_length (m : Nat) :
+    (Turing.PartrecToTM2.trList (List.replicate m 0)).length = m := by
+  rw [trList_replicate_zero]
+  simp
+
 end MathlibBridge
 
 /--
