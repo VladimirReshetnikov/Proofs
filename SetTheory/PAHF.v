@@ -5795,6 +5795,157 @@ Proof.
     exact hElim.
 Qed.
 
+Lemma Prov_cut : forall G phi,
+  Prov G phi ->
+  forall De, (forall x, In x G -> Prov De x) -> Prov De phi.
+Proof.
+  intros G phi h.
+  induction h; intros De hD.
+  - exact (hD a H).
+  - apply P_impI.
+    apply IHh.
+    intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx].
+    + subst x.
+      apply P_ass. simpl. left. reflexivity.
+    + apply Prov_cons.
+      exact (hD x hx).
+  - exact (P_impE De a b (IHh1 De hD) (IHh2 De hD)).
+  - exact (P_botE De a (IHh De hD)).
+  - exact (P_lem De a).
+  - exact (P_andI De a b (IHh1 De hD) (IHh2 De hD)).
+  - exact (P_andE1 De a b (IHh De hD)).
+  - exact (P_andE2 De a b (IHh De hD)).
+  - exact (P_orI1 De a b (IHh De hD)).
+  - exact (P_orI2 De a b (IHh De hD)).
+  - apply (P_orE De a b c (IHh1 De hD)).
+    + apply IHh2.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply P_ass. simpl. left. reflexivity.
+      * apply Prov_cons.
+        exact (hD x hx).
+    + apply IHh3.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply P_ass. simpl. left. reflexivity.
+      * apply Prov_cons.
+        exact (hD x hx).
+  - apply P_allI.
+    apply IHh.
+    intros x hx.
+    apply in_map_iff in hx.
+    destruct hx as [x0 [hx hx0]].
+    subst x.
+    exact (Prov_rename De x0 (hD x0 hx0) S).
+  - exact (P_allE De a t (IHh De hD)).
+  - exact (P_exI De a t (IHh De hD)).
+  - apply (P_exE De a c (IHh1 De hD)).
+    apply IHh2.
+    intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx].
+    + subst x.
+      apply P_ass. simpl. left. reflexivity.
+    + apply in_map_iff in hx.
+      destruct hx as [x0 [hx hx0]].
+      subst x.
+      apply Prov_cons.
+      exact (Prov_rename De x0 (hD x0 hx0) S).
+  - exact (P_eqRefl De t).
+  - exact (P_eqElim De s t a (IHh1 De hD) (IHh2 De hD)).
+Qed.
+
+Lemma soundness : forall (M : Model) G a,
+  Prov G a ->
+  forall e : nat -> M, (forall x, In x G -> Sat M e x) -> Sat M e a.
+Proof.
+  intros M G a h.
+  induction h; intros e hG; simpl.
+  - exact (hG a H).
+  - intros ha.
+    apply IHh.
+    intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx].
+    + subst x. exact ha.
+    + exact (hG x hx).
+  - exact (IHh1 e hG (IHh2 e hG)).
+  - exfalso. exact (IHh e hG).
+  - destruct (classic (Sat M e a)) as [ha | hna].
+    + left. exact ha.
+    + right. exact hna.
+  - split; [exact (IHh1 e hG) | exact (IHh2 e hG)].
+  - exact (proj1 (IHh e hG)).
+  - exact (proj2 (IHh e hG)).
+  - left. exact (IHh e hG).
+  - right. exact (IHh e hG).
+  - destruct (IHh1 e hG) as [ha | hb].
+    + apply IHh2.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x. exact ha.
+      * exact (hG x hx).
+    + apply IHh3.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x. exact hb.
+      * exact (hG x hx).
+  - intros d.
+    apply IHh.
+    intros x hx.
+    apply in_map_iff in hx.
+    destruct hx as [g [hg_eq hg]].
+    subst x.
+    apply (proj2 (Sat_rename_succ M g e d)).
+    exact (hG g hg).
+  - apply (proj2 (Sat_instTerm M a t e)).
+    exact (IHh e hG (Term.eval M e t)).
+  - exists (Term.eval M e t).
+    apply (proj1 (Sat_instTerm M a t e)).
+    exact (IHh e hG).
+  - destruct (IHh1 e hG) as [d hd].
+    pose proof (IHh2 (scons M d e)) as hc_shift.
+    assert (hctx : forall x, In x (a :: map (rename S) G) ->
+      Sat M (scons M d e) x).
+    {
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      - subst x. exact hd.
+      - apply in_map_iff in hx.
+        destruct hx as [g [hg_eq hg]].
+        subst x.
+        apply (proj2 (Sat_rename_succ M g e d)).
+        exact (hG g hg).
+    }
+    apply (proj1 (Sat_rename_succ M c e d)).
+    exact (hc_shift hctx).
+  - reflexivity.
+  - pose proof (IHh1 e hG) as heq.
+    pose proof (proj1 (Sat_instTerm M a s e) (IHh2 e hG)) as hs.
+    assert (henv : forall n,
+      scons M (Term.eval M e s) e n =
+        scons M (Term.eval M e t) e n).
+    {
+      intros [|n]; simpl.
+      - exact heq.
+      - reflexivity.
+    }
+    pose proof (proj1 (Sat_ext M a
+      (scons M (Term.eval M e s) e)
+      (scons M (Term.eval M e t) e) henv) hs) as ht.
+    apply (proj2 (Sat_instTerm M a t e)).
+    exact ht.
+Qed.
+
 End Formula.
 
 End PA.
