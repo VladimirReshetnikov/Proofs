@@ -13706,6 +13706,35 @@ theorem mem_domainContextAt {ρ : Nat → Nat} :
         (Or.inr (mem_domainContextAt
           (ρ := fun j => ρ (j+1)) (n := n) (k := k) (by omega)))
 
+/-- Enlarging the explicit PA-domain prefix preserves every existing domain
+assumption. -/
+theorem mem_domainContextAt_mono {ρ : Nat → Nat} :
+    ∀ {n m : Nat} {g : Form}, n ≤ m →
+      g ∈ domainContextAt ρ n → g ∈ domainContextAt ρ m
+  | 0, _m, _g, _hnm, hg => by simp [domainContextAt] at hg
+  | n+1, 0, _g, hnm, _hg => by omega
+  | n+1, m+1, g, hnm, hg => by
+      simp only [domainContextAt, List.mem_cons] at hg ⊢
+      rcases hg with hg | hg
+      · exact Or.inl hg
+      · exact Or.inr
+          (mem_domainContextAt_mono
+            (ρ := fun k => ρ (k+1)) (n := n) (m := m)
+            (g := g) (by omega) hg)
+
+/-- A relative proof using a finite PA-domain prefix remains valid with a
+larger domain prefix. -/
+theorem BProv_mono_domainContextAt {B : Form → Prop} {ρ : Nat → Nat}
+    {n m : Nat} {G : List Form} {phi : Form}
+    (hnm : n ≤ m)
+    (h : BProv B (domainContextAt ρ n ++ G) phi) :
+    BProv B (domainContextAt ρ m ++ G) phi :=
+  BProv_mono B _ _ phi (fun x hx => by
+    rw [List.mem_append] at hx ⊢
+    rcases hx with hx | hx
+    · exact Or.inl (mem_domainContextAt_mono (ρ := ρ) hnm hx)
+    · exact Or.inr hx) h
+
 /-- Under a translated PA binder, the domain context splits into the new
 variable-domain assumption followed by the shifted old domain context. -/
 theorem domainContextAt_upVarMap_succ (ρ : Nat → Nat) (n : Nat) :
@@ -13862,6 +13891,62 @@ theorem BProv_andI {B : Form → Prop} {G : List Form} {a b : Form}
       · exact Or.inl (List.mem_append.mpr (Or.inr hx))
       · exact Or.inr hx
 
+/-- Relative HF provability is closed under bottom elimination. -/
+theorem BProv_botE {B : Form → Prop} {G : List Form} {a : Form}
+    (hbot : BProv B G fBot) : BProv B G a := by
+  rcases hbot with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_botE _ a hp⟩
+
+/-- Relative HF provability is closed under the first conjunction projection. -/
+theorem BProv_andE1 {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G (fAnd a b)) : BProv B G a := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_andE1 _ a b hp⟩
+
+/-- Relative HF provability is closed under the second conjunction projection. -/
+theorem BProv_andE2 {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G (fAnd a b)) : BProv B G b := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_andE2 _ a b hp⟩
+
+/-- Relative HF provability is closed under left disjunction introduction. -/
+theorem BProv_orI1 {B : Form → Prop} {G : List Form} {a b : Form}
+    (ha : BProv B G a) : BProv B G (fOr a b) := by
+  rcases ha with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_orI1 _ a b hp⟩
+
+/-- Relative HF provability is closed under right disjunction introduction. -/
+theorem BProv_orI2 {B : Form → Prop} {G : List Form} {a b : Form}
+    (hb : BProv B G b) : BProv B G (fOr a b) := by
+  rcases hb with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_orI2 _ a b hp⟩
+
+/-- Relative HF provability is closed under disjunction elimination. -/
+theorem BProv_orE {B : Form → Prop} {G : List Form} {a b c : Form}
+    (hor : BProv B G (fOr a b))
+    (ha : BProv B (a :: G) c)
+    (hb : BProv B (b :: G) c) : BProv B G c := by
+  rcases hor with ⟨Lo, hLo, hpo⟩
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_orE _ a b c
+    · apply Prov_weaken hpo
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpa
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+
 /-- Relative HF provability is closed under universal elimination. -/
 theorem BProv_allE {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
     (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) := by
@@ -13896,6 +13981,50 @@ theorem BProv_allI_of_sentences {B : Form → Prop} (hB : Sentences B)
   rcases hx with hx | hx
   · exact Or.inl (by simpa [hLmap] using hx)
   · exact Or.inr hx
+
+/-- Existential elimination for relative HF proofs whose theory axioms are
+sentences.  The sentence premise keeps the finite list of used theory axioms
+stable under the binder shift. -/
+theorem BProv_exE_of_sentences {B : Form → Prop} (hB : Sentences B)
+    {G : List Form} {a c : Form}
+    (hex : BProv B G (fEx a))
+    (hbody : BProv B (a :: G.map (rename Nat.succ))
+      (rename Nat.succ c)) :
+    BProv B G c := by
+  rcases hex with ⟨Le, hLe, hpe⟩
+  rcases hbody with ⟨Lb, hLb, hpb⟩
+  have hLbmap : Lb.map (rename Nat.succ) = Lb := by
+    calc
+      Lb.map (rename Nat.succ) = Lb.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact rename_eq_of_sentence (hB x (hLb x hx)) Nat.succ
+      _ = Lb := by simp
+  refine ⟨Le ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_exE _ a c
+    · apply Prov_weaken hpe
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx
+      rcases hx with hx | hx
+      · apply List.mem_cons.mpr
+        apply Or.inr
+        simp only [List.map_append, List.mem_append]
+        apply Or.inl
+        exact Or.inr (by simpa [hLbmap] using hx)
+      · rw [List.mem_cons] at hx
+        rcases hx with hx | hx
+        · exact List.mem_cons.mpr (Or.inl hx)
+        · apply List.mem_cons.mpr
+          apply Or.inr
+          simp only [List.map_append, List.mem_append]
+          exact Or.inr hx
 
 /-- Translated implication introduction for the PA-in-HF translation. -/
 theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}

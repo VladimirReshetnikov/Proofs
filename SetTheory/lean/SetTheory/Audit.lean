@@ -529,6 +529,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.rename_domainForm_inst_zero
 #check @AckermannHF.PAInHF.domainContextAt_rename
 #check @AckermannHF.PAInHF.mem_domainContextAt
+#check @AckermannHF.PAInHF.mem_domainContextAt_mono
+#check @AckermannHF.PAInHF.BProv_mono_domainContextAt
 #check @AckermannHF.PAInHF.domainContextAt_upVarMap_succ
 #check @AckermannHF.PAInHF.translateContextAt_rename_succ_upVarMap
 #check @AckermannHF.PAInHF.mem_translateContext_of_mem
@@ -544,9 +546,16 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_impI
 #check @AckermannHF.PAInHF.BProv_impI_after_prefix
 #check @AckermannHF.PAInHF.BProv_andI
+#check @AckermannHF.PAInHF.BProv_botE
+#check @AckermannHF.PAInHF.BProv_andE1
+#check @AckermannHF.PAInHF.BProv_andE2
+#check @AckermannHF.PAInHF.BProv_orI1
+#check @AckermannHF.PAInHF.BProv_orI2
+#check @AckermannHF.PAInHF.BProv_orE
 #check @AckermannHF.PAInHF.BProv_allE
 #check @AckermannHF.PAInHF.BProv_exI
 #check @AckermannHF.PAInHF.BProv_allI_of_sentences
+#check @AckermannHF.PAInHF.BProv_exE_of_sentences
 #check @AckermannHF.PAInHF.BProv_translate_impI
 #check @AckermannHF.PAInHF.BProv_formulaAt_impI
 #check @AckermannHF.PAInHF.BProv_translate_impE
