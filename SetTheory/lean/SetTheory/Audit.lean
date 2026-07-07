@@ -263,11 +263,15 @@ open SetTheory
 #check @AckermannHF.ordinalHF_sat_HF
 #check @AckermannHF.ordinalPA_sat_PA
 #check @AckermannHF.standardShallowBiInterpretation
+#check @AckermannHF.BiInterpretationCertificate
+#check @AckermannHF.standardBiInterpretation
+#check @AckermannHF.PA_biinterpretable_with_HF
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
 #print axioms PA.Formula.sat_axiom
 #print axioms PA.Formula.sat_axiom_s
 #print axioms AckermannHF.sat_HF_model
 #print axioms AckermannHF.standard_sat_HF
+#print axioms AckermannHF.PA_biinterpretable_with_HF
 #print axioms AckermannHF.PA_biinterpretable_with_HF_standard
 
 -- the shallow self-contained pair, with their free dependency audits

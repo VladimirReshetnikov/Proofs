@@ -4295,6 +4295,29 @@ structure ShallowBiInterpretation where
   paRoundTrip : PA.Iso paModel paInHf
   hfRoundTrip : AdjunctionIso hfModel hfInPaInHf
 
+/-- A standard-model bi-interpretation certificate with the actual syntactic
+translations attached.  The exactness fields say that the translations have the
+intended semantics in the standard PA and Ackermann-HF models; the axiom fields
+say that each translated axiom theory is satisfied by the opposite standard
+model; the `shallow` field carries the two round-trip isomorphisms. -/
+structure BiInterpretationCertificate where
+  shallow : ShallowBiInterpretation
+  paToHf : PA.Formula → Form
+  hfToPa : Form → PA.Formula
+  paToHf_exact : ∀ (phi : PA.Formula) (v : Nat → Nat),
+    Sat Mem (fun n => ordinalCode (v n)) (paToHf phi) ↔
+      PA.Formula.Sat PA.natModel v phi
+  hfToPa_exact : ∀ (phi : Form) (v : Nat → Nat),
+    PA.Formula.Sat PA.natModel v (hfToPa phi) ↔ Sat Mem v phi
+  paAxiom_sat : ∀ (phi : PA.Formula), PA.Formula.Ax_s phi → ∀ (v : Nat → Nat),
+    Sat Mem (fun n => ordinalCode (v n)) (paToHf phi)
+  hfAxiom_sat : ∀ (phi : Form), HFAx_s phi → ∀ (v : Nat → Nat),
+    PA.Formula.Sat PA.natModel v (hfToPa phi)
+  translatedPA_sat : ∀ (e : Nat → Nat) (g : Form),
+    PAInHF.translatedPAAx g → Sat Mem e g
+  translatedHF_sat : ∀ (e : Nat → Nat) (f : PA.Formula),
+    PA.Formula.translatedHFAx f → PA.Formula.Sat PA.natModel e f
+
 /-- The HF model obtained after interpreting PA inside Ackermann HF and then
 running Ackermann's HF interpretation in that interpreted PA model. -/
 noncomputable def ordinalHFModel : AdjunctionModel OrdinalHF where
@@ -4374,6 +4397,22 @@ noncomputable def standardShallowBiInterpretation : ShallowBiInterpretation wher
   hfInPaInHf := ordinalHFModel
   paRoundTrip := paRoundTripIso
   hfRoundTrip := hfRoundTripIso
+
+/-- The standard syntactic and semantic certificate that Peano Arithmetic and
+Ackermann hereditary finite set theory are bi-interpretable. -/
+noncomputable def standardBiInterpretation : BiInterpretationCertificate where
+  shallow := standardShallowBiInterpretation
+  paToHf := PAInHF.translateFormula
+  hfToPa := PA.Formula.translateHFFormula
+  paToHf_exact := PAInHF.translateFormula_exact
+  hfToPa_exact := PA.Formula.translateHFFormula_exact
+  paAxiom_sat := PAInHF.translated_PA_axiom_sat_codes
+  hfAxiom_sat := PA.Formula.translated_HF_axiom_sat_nat
+  translatedPA_sat := PAInHF.standard_sat_translatedPAAx
+  translatedHF_sat := PA.Formula.standard_sat_translatedHFAx
+
+theorem PA_biinterpretable_with_HF : Nonempty BiInterpretationCertificate :=
+  ⟨standardBiInterpretation⟩
 
 theorem PA_biinterpretable_with_HF_standard :
     Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧
