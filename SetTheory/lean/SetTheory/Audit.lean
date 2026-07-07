@@ -48,6 +48,12 @@ open SetTheory
 #check @AckermannHF.OrdinalLike.of_mem
 #check @AckermannHF.ordinalCode_ordinalLike
 #check @AckermannHF.HF_ordinalLikeAt_of_ordinalCode
+#check @AckermannHF.PAInHF.domainForm
+#check @AckermannHF.PAInHF.zeroGraph
+#check @AckermannHF.PAInHF.succGraph
+#check @AckermannHF.PAInHF.domain_ordinalCode
+#check @AckermannHF.PAInHF.zeroGraph_ordinalCode
+#check @AckermannHF.PAInHF.succGraph_ordinalCode
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF

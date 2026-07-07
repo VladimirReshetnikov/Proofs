@@ -406,6 +406,37 @@ theorem HF_ordinalLikeAt_of_ordinalCode (e : Nat → Nat) (i n : Nat)
     (h : e i = ordinalCode n) : Sat Mem e (HF_ordinalLikeAt i) :=
   (HF_ordinalLikeAt_spec e i).mpr (by rw [h]; exact ordinalCode_ordinalLike n)
 
+/-! ### First PA-in-HF interpretation formulas already available -/
+
+namespace PAInHF
+
+/-- Domain formula for the PA interpretation in HF: finite ordinals. -/
+def domainForm : Form := HF_ordinalLikeAt 0
+
+/-- Graph formula for PA zero in HF.  Slot `0` is the candidate output. -/
+def zeroGraph : Form := HF_emptyAt 0
+
+/-- Graph formula for PA successor in HF.  Slot `0` is the output and slot `1`
+is the input. -/
+def succGraph : Form := HF_succAt 0 1
+
+theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode n) e) domainForm :=
+  HF_ordinalLikeAt_of_ordinalCode (scons (ordinalCode n) e) 0 n rfl
+
+theorem zeroGraph_ordinalCode (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode 0) e) zeroGraph := by
+  apply (HF_emptyAt_empty standardModel (scons (ordinalCode 0) e) 0).mpr
+  rfl
+
+theorem succGraph_ordinalCode (n : Nat) (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode (n+1)) (scons (ordinalCode n) e)) succGraph := by
+  apply (HF_succAt_spec standardModel
+    (scons (ordinalCode (n+1)) (scons (ordinalCode n) e)) 0 1).mpr
+  exact ordinalCode_succ n
+
+end PAInHF
+
 theorem not_mem_self (a : Nat) : ¬ Mem a a := fun h =>
   Nat.lt_irrefl a (mem_lt h)
 
