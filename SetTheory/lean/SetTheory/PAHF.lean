@@ -1002,6 +1002,20 @@ theorem semantic_induction_schema_of_HFAx_s {α : Type u} {mem : α → α → P
     ∀ e, Sat mem e (HF_induction_form phi) :=
   extract HFAx_s v (HF_induction_form phi) hHF (HFAx_s_induction phi)
 
+/-- First-order HF induction rules out self-membership in every semantic model
+of the sealed HF theory. -/
+theorem semantic_mem_irrefl_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    ∀ a, ¬ mem a a := by
+  let phi : Form := fImp (fMem 0 0) fBot
+  have hind := semantic_induction_schema_of_HFAx_s v hHF phi v
+  have hall : ∀ a, Sat mem (scons a v) phi := by
+    apply hind
+    intro a ih haa
+    exact ih a haa haa
+  intro a haa
+  exact hall a haa
+
 /-- First-order semantic content of the sealed HF theory, without pretending
 that first-order induction gives the second-order `AdjunctionModel.set_induction`
 field. -/
@@ -4899,6 +4913,48 @@ theorem termGraphAt_free (t : PA.Term) :
           · have hm := mulGraph_free h
             omega
 
+/-- The graph of a PA variable is just equality with the slot selected by the
+current slot map.  This version works over any membership relation. -/
+theorem termGraphAt_var_spec {α : Type u} {mem : α → α → Prop}
+    (ρ : Nat → Nat) (out n : Nat) (e : Nat → α) :
+    Sat mem e (termGraphAt ρ out (PA.Term.var n)) ↔ e out = e (ρ n) := by
+  rfl
+
+/-- The graph of the PA zero term says exactly that the output slot is empty.
+This version works over any membership relation. -/
+theorem termGraphAt_zero_spec {α : Type u} {mem : α → α → Prop}
+    (ρ : Nat → Nat) (out : Nat) (e : Nat → α) :
+    Sat mem e (termGraphAt ρ out PA.Term.zero) ↔ ∀ x, ¬ mem x (e out) := by
+  exact HF_emptyAt_spec e out
+
+/-- The graph of the successor of a variable says exactly that the output slot
+is the adjunction of that variable's value to itself.  This version states the
+adjunction property directly, so it works over any membership relation. -/
+theorem termGraphAt_succ_var_spec {α : Type u} {mem : α → α → Prop}
+    (ρ : Nat → Nat) (out n : Nat) (e : Nat → α) :
+    Sat mem e (termGraphAt ρ out (PA.Term.succ (PA.Term.var n))) ↔
+      ∀ x, mem x (e out) ↔ mem x (e (ρ n)) ∨ x = e (ρ n) := by
+  constructor
+  · intro h
+    rcases h with ⟨x, hx, hs⟩
+    have hx' : x = e (ρ n) := by
+      change x = scons x e (ρ n + 1) at hx
+      rwa [← Nat.succ_eq_add_one (ρ n)] at hx
+    have hs' := (HF_adjoinAt_spec (scons x e) (out+1) 0 0).mp hs
+    intro y
+    have hsy := hs' y
+    change mem y (e out) ↔ mem y x ∨ y = x at hsy
+    simpa [hx'] using hsy
+  · intro h
+    refine ⟨e (ρ n), ?_, ?_⟩
+    · change scons (e (ρ n)) e 0 = scons (e (ρ n)) e (ρ n + 1)
+      rw [← Nat.succ_eq_add_one (ρ n)]
+      rfl
+    · apply (HF_adjoinAt_spec (scons (e (ρ n)) e) (out+1) 0 0).mpr
+      intro y
+      change mem y (e out) ↔ mem y (e (ρ n)) ∨ y = e (ρ n)
+      exact h y
+
 /-- In any adjunction model, the graph of a PA variable is just equality with
 the slot selected by the current slot map. -/
 theorem termGraphAt_var_model {α : Type} (M : AdjunctionModel α)
@@ -5173,6 +5229,122 @@ theorem formulaAt_free (phi : PA.Formula) :
             · simp [upVarMap] at hi
               omega
 
+/-- Translated equality between PA variables is ordinary equality between the
+selected slots.  This version works over any membership relation. -/
+theorem formulaAt_eq_var_spec {α : Type u} {mem : α → α → Prop}
+    (ρ : Nat → Nat) (m n : Nat) (e : Nat → α) :
+    Sat mem e (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n))) ↔
+      e (ρ m) = e (ρ n) := by
+  constructor
+  · intro h
+    rcases h with ⟨x, y, hx, hy, hxy⟩
+    change x = y at hxy
+    have hx' := (termGraphAt_var_spec (fun n => ρ n + 2) 1 m
+      (scons y (scons x e)) (mem := mem)).mp hx
+    have hy' := (termGraphAt_var_spec (fun n => ρ n + 2) 0 n
+      (scons y (scons x e)) (mem := mem)).mp hy
+    have hxv : x = e (ρ m) := by simpa [scons] using hx'
+    have hyv : y = e (ρ n) := by simpa [scons] using hy'
+    rw [← hxv, ← hyv]
+    exact hxy
+  · intro h
+    refine ⟨e (ρ m), e (ρ n), ?_, ?_, ?_⟩
+    · apply (termGraphAt_var_spec (fun n => ρ n + 2) 1 m
+        (scons (e (ρ n)) (scons (e (ρ m)) e)) (mem := mem)).mpr
+      simp [scons]
+    · apply (termGraphAt_var_spec (fun n => ρ n + 2) 0 n
+        (scons (e (ρ n)) (scons (e (ρ m)) e)) (mem := mem)).mpr
+      simp [scons]
+    · exact h
+
+/-- The zero-is-not-successor PA axiom is valid under the PA-in-HF translation
+over any membership relation.  The contradiction is already contained in the
+empty and adjunction graph formulas. -/
+theorem formulaAt_zeroNotSucc_valid {α : Type u} {mem : α → α → Prop}
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat mem e (formulaAt ρ PA.Formula.zeroNotSucc) := by
+  intro a _ hEq
+  rcases hEq with ⟨sx, z, hsx, hz, heq⟩
+  change sx = z at heq
+  have hsx' := (termGraphAt_succ_var_spec (fun n => upVarMap ρ n + 2) 1 0
+    (scons z (scons sx (scons a e))) (mem := mem)).mp hsx
+  have hz' := (termGraphAt_zero_spec (fun n => upVarMap ρ n + 2) 0
+    (scons z (scons sx (scons a e))) (mem := mem)).mp hz
+  have haSucc : mem a sx := by
+    have hspec := hsx' a
+    have : mem a sx ↔ mem a a ∨ a = a := by
+      simpa [upVarMap, scons] using hspec
+    exact this.mpr (Or.inr rfl)
+  rw [heq] at haSucc
+  exact hz' a haSucc
+
+/-- Successor-injectivity for the PA-in-HF translation follows from
+irreflexivity of membership.  In semantic HF models that irreflexivity comes
+from `semantic_mem_irrefl_of_HFAx_s`. -/
+theorem formulaAt_succInj_of_irrefl {α : Type u} {mem : α → α → Prop}
+    (hIrrefl : ∀ a, ¬ mem a a) (ρ : Nat → Nat) (e : Nat → α) :
+    Sat mem e (formulaAt ρ PA.Formula.succInj) := by
+  intro a ha b hb hEq
+  rcases hEq with ⟨sa, sb, hsa, hsb, heq⟩
+  change sa = sb at heq
+  have hsa' := (termGraphAt_succ_var_spec
+    (fun n => upVarMap (upVarMap ρ) n + 2) 1 1
+    (scons sb (scons sa (scons b (scons a e)))) (mem := mem)).mp hsa
+  have hsb' := (termGraphAt_succ_var_spec
+    (fun n => upVarMap (upVarMap ρ) n + 2) 0 0
+    (scons sb (scons sa (scons b (scons a e)))) (mem := mem)).mp hsb
+  have hsaSpec : ∀ x, mem x sa ↔ mem x a ∨ x = a := by
+    intro x
+    have hx := hsa' x
+    simpa [upVarMap, scons] using hx
+  have hsbSpec : ∀ x, mem x sb ↔ mem x b ∨ x = b := by
+    intro x
+    have hx := hsb' x
+    simpa [upVarMap, scons] using hx
+  have haOrd : OrdinalLike mem a := by
+    exact (HF_ordinalLikeAt_spec (scons a e) 0).mp ha
+  have hbOrd : OrdinalLike mem b := by
+    exact (HF_ordinalLikeAt_spec (scons b (scons a e)) 0).mp hb
+  have hab : a = b := by
+    have haSucc : mem a sb := by
+      rw [← heq]
+      exact (hsaSpec a).mpr (Or.inr rfl)
+    rcases (hsbSpec a).mp haSucc with hab | hab
+    · have hbSucc : mem b sa := by
+        rw [heq]
+        exact (hsbSpec b).mpr (Or.inr rfl)
+      rcases (hsaSpec b).mp hbSucc with hba | hba
+      · have hbb : mem b b := hbOrd.1 a hab b hba
+        exact False.elim (hIrrefl b hbb)
+      · exact hba.symm
+    · exact hab
+  apply (formulaAt_eq_var_spec (upVarMap (upVarMap ρ)) 1 0
+    (scons b (scons a e)) (mem := mem)).mpr
+  simpa [upVarMap, scons] using hab
+
+/-- Harmless PA universal closures preserve validity of translated formulas
+over any membership relation. -/
+theorem formulaAt_closeN_valid {α : Type u} {mem : α → α → Prop}
+    (phi : PA.Formula) (h : ∀ ρ (e : Nat → α), Sat mem e (formulaAt ρ phi)) :
+    ∀ k ρ (e : Nat → α), Sat mem e (formulaAt ρ (PA.Formula.closeN k phi)) := by
+  intro k
+  induction k generalizing phi with
+  | zero =>
+      intro ρ e
+      exact h ρ e
+  | succ k ih =>
+      intro ρ e
+      exact ih (PA.Formula.all phi)
+        (fun ρ e x _ => h (upVarMap ρ) (scons x e)) ρ e
+
+/-- Version of `formulaAt_closeN_valid` for PA's syntactic sealing operation. -/
+theorem formulaAt_sealPA_valid {α : Type u} {mem : α → α → Prop}
+    (phi : PA.Formula) (h : ∀ ρ (e : Nat → α), Sat mem e (formulaAt ρ phi))
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat mem e (formulaAt ρ (PA.Formula.sealPA phi)) := by
+  unfold PA.Formula.sealPA
+  exact formulaAt_closeN_valid phi h (PA.Formula.bound phi) ρ e
+
 /-- In any adjunction model, translated equality between PA variables is
 ordinary equality between the selected HF slots. -/
 theorem formulaAt_eq_var_model {α : Type} (M : AdjunctionModel α)
@@ -5395,6 +5567,29 @@ theorem formulaAt_exact (phi : PA.Formula) :
 def translateFormula (phi : PA.Formula) : Form :=
   formulaAt (fun n : Nat => n) phi
 
+/-- Closed zero-is-not-successor axiom, semantically valid under the PA-in-HF
+translation over any membership relation. -/
+theorem translated_zeroNotSucc_sat {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)) :=
+  formulaAt_sealPA_valid PA.Formula.zeroNotSucc
+    (fun ρ e => formulaAt_zeroNotSucc_valid ρ e) (fun n : Nat => n) e
+
+/-- Closed successor-injectivity axiom, semantically valid under the PA-in-HF
+translation whenever membership is irreflexive. -/
+theorem translated_succInj_sat_of_irrefl {α : Type u} {mem : α → α → Prop}
+    (hIrrefl : ∀ a, ¬ mem a a) (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)) :=
+  formulaAt_sealPA_valid PA.Formula.succInj
+    (fun ρ e => formulaAt_succInj_of_irrefl hIrrefl ρ e) (fun n : Nat => n) e
+
+/-- Closed successor-injectivity axiom, semantically valid in every semantic
+model of the sealed HF theory. -/
+theorem translated_succInj_sat_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)) :=
+  translated_succInj_sat_of_irrefl (semantic_mem_irrefl_of_HFAx_s v hHF) e
+
 /-- Closed zero-is-not-successor axiom, semantically validated in every
 adjunction model under the PA-in-HF translation. -/
 theorem translated_zeroNotSucc_sat_model {α : Type} (M : AdjunctionModel α)
@@ -5435,6 +5630,24 @@ theorem translateFormula_sentence_of_PA_sentence (phi : PA.Formula)
 theorem translated_PA_axiom_sentence (phi : PA.Formula)
     (hphi : PA.Formula.Ax_s phi) : Sentence (translateFormula phi) :=
   translateFormula_sentence_of_PA_sentence phi (PA.Formula.sentence_ax_s hphi)
+
+/-- HF proves the PA-in-HF translation of PA's zero-is-not-successor axiom. -/
+theorem BProv_HF_translated_zeroNotSucc :
+    BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)) := by
+  apply completeness_inf HFAx_s
+  · exact Sentences_HF
+  · exact translated_PA_axiom_sentence _ PA.Formula.Ax_s_zeroNotSucc
+  · intro Dom mem v _hHF
+    exact translated_zeroNotSucc_sat (mem := mem) v
+
+/-- HF proves the PA-in-HF translation of PA's successor-injectivity axiom. -/
+theorem BProv_HF_translated_succInj :
+    BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.succInj)) := by
+  apply completeness_inf HFAx_s
+  · exact Sentences_HF
+  · exact translated_PA_axiom_sentence _ PA.Formula.Ax_s_succInj
+  · intro Dom mem v hHF
+    exact translated_succInj_sat_of_HFAx_s v hHF v
 
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/

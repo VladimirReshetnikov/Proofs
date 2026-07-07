@@ -305,6 +305,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.succGraph_preserves_domain
 #check @AckermannHF.PAInHF.termGraphAt
 #check @AckermannHF.PAInHF.termGraphAt_free
+#check @AckermannHF.PAInHF.termGraphAt_var_spec
+#check @AckermannHF.PAInHF.termGraphAt_zero_spec
+#check @AckermannHF.PAInHF.termGraphAt_succ_var_spec
 #check @AckermannHF.PAInHF.termGraphAt_var_model
 #check @AckermannHF.PAInHF.termGraphAt_zero_model
 #check @AckermannHF.PAInHF.termGraphAt_succ_var_model
@@ -312,6 +315,11 @@ open SetTheory
 #check @AckermannHF.PAInHF.upVarMap
 #check @AckermannHF.PAInHF.formulaAt
 #check @AckermannHF.PAInHF.formulaAt_free
+#check @AckermannHF.PAInHF.formulaAt_eq_var_spec
+#check @AckermannHF.PAInHF.formulaAt_zeroNotSucc_valid
+#check @AckermannHF.PAInHF.formulaAt_succInj_of_irrefl
+#check @AckermannHF.PAInHF.formulaAt_closeN_valid
+#check @AckermannHF.PAInHF.formulaAt_sealPA_valid
 #check @AckermannHF.PAInHF.formulaAt_eq_var_model
 #check @AckermannHF.PAInHF.formulaAt_zeroNotSucc_model
 #check @AckermannHF.PAInHF.formulaAt_succInj_model
@@ -321,11 +329,16 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_succInj_sat_model
 #check @AckermannHF.PAInHF.formulaAt_exact
 #check @AckermannHF.PAInHF.translateFormula
+#check @AckermannHF.PAInHF.translated_zeroNotSucc_sat
+#check @AckermannHF.PAInHF.translated_succInj_sat_of_irrefl
+#check @AckermannHF.PAInHF.translated_succInj_sat_of_HFAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
 #check @AckermannHF.PAInHF.translateFormula_sentence_of_PA_sentence
 #check @AckermannHF.PAInHF.translated_PA_axiom_sentence
+#check @AckermannHF.PAInHF.BProv_HF_translated_zeroNotSucc
+#check @AckermannHF.PAInHF.BProv_HF_translated_succInj
 #check @AckermannHF.PAInHF.translatedPAAx
 #check @AckermannHF.PAInHF.translatedPAAx_intro
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx
@@ -345,6 +358,7 @@ open SetTheory
 #check @AckermannHF.semantic_extensionality_of_HFAx_s
 #check @AckermannHF.semantic_adjoin_of_HFAx_s
 #check @AckermannHF.semantic_induction_schema_of_HFAx_s
+#check @AckermannHF.semantic_mem_irrefl_of_HFAx_s
 #check @AckermannHF.FirstOrderHFModel
 #check @AckermannHF.firstOrderHFModel_of_HFAx_s
 #check @AckermannHF.ordinalHF_sat_HF
