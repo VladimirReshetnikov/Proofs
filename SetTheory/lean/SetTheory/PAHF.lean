@@ -13947,6 +13947,35 @@ theorem BProv_orE {B : Form → Prop} {G : List Form} {a b c : Form}
       simp only [List.mem_append, List.mem_cons] at hx ⊢
       grind
 
+/-- Disjunction elimination with a fixed prefix of assumptions before each
+branch assumption. -/
+theorem BProv_orE_after_prefix {B : Form → Prop} {Γ Δ : List Form}
+    {a b c : Form}
+    (hor : BProv B (Γ ++ Δ) (fOr a b))
+    (ha : BProv B (Γ ++ a :: Δ) c)
+    (hb : BProv B (Γ ++ b :: Δ) c) :
+    BProv B (Γ ++ Δ) c := by
+  rcases hor with ⟨Lo, hLo, hpo⟩
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_orE _ a b c
+    · apply Prov_weaken hpo
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpa
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+
 /-- Relative HF provability is closed under universal elimination. -/
 theorem BProv_allE {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
     (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) := by
@@ -15178,6 +15207,31 @@ theorem BProv_formulaAt_allI_domainContext {ρ : Nat → Nat}
   exact BProv_allI_of_sentences Sentences_translatedPAAx
     (BProv_impI hshift)
 
+/-- Universal introduction under explicit PA-domain assumptions for any
+sentence theory of HF formulas. -/
+theorem BProv_formulaAt_allI_domainContext_of_sentences {B : Form → Prop}
+    (hB : Sentences B) {ρ : Nat → Nat}
+    {n : Nat} {G : List PA.Formula} {a : PA.Formula}
+    (h : BProv B
+      (domainContextAt (upVarMap ρ) (n+1) ++
+        translateContextAt (upVarMap ρ) (G.map (PA.Formula.rename Nat.succ)))
+      (formulaAt (upVarMap ρ) a)) :
+    BProv B
+      (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.all a)) := by
+  have hshift : BProv B
+      (domainForm ::
+        ((domainContextAt ρ n ++ translateContextAt ρ G).map
+          (rename Nat.succ)))
+      (formulaAt (upVarMap ρ) a) := by
+    simpa [domainContextAt_upVarMap_succ,
+      translateContextAt_rename_succ_upVarMap, List.map_append,
+      List.cons_append] using h
+  change BProv B
+    (domainContextAt ρ n ++ translateContextAt ρ G)
+    (fAll (fImp domainForm (formulaAt (upVarMap ρ) a)))
+  exact BProv_allI_of_sentences hB (BProv_impI hshift)
+
 /-- Raw translated universal elimination by an HF variable instance under an
 explicit slot map. -/
 theorem BProv_formulaAt_allE_raw {ρ : Nat → Nat} {G : List PA.Formula}
@@ -15498,6 +15552,63 @@ theorem BProv_formulaAt_exE {ρ : Nat → Nat} {G : List PA.Formula}
       · exact BProv_of_Prov (B := translatedPAAx)
           (Prov.P_ass rawContext g (by simp [rawContext, shiftedContext, hg]))
   exact BProv_formulaAt_exE_raw hex hraw
+
+/-- Existential elimination under explicit PA-domain assumptions for any
+sentence theory of HF formulas. -/
+theorem BProv_formulaAt_exE_domainContext_of_sentences {B : Form → Prop}
+    (hB : Sentences B) {ρ : Nat → Nat} {n : Nat}
+    {G : List PA.Formula} {a c : PA.Formula}
+    (hex : BProv B (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.ex a)))
+    (hbody : BProv B
+      (domainContextAt (upVarMap ρ) (n+1) ++
+        translateContextAt (upVarMap ρ)
+          (a :: G.map (PA.Formula.rename Nat.succ)))
+      (formulaAt (upVarMap ρ) (PA.Formula.rename Nat.succ c))) :
+    BProv B (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ c) := by
+  let body : Form := formulaAt (upVarMap ρ) a
+  let shiftedDomain : List Form :=
+    (domainContextAt ρ n).map (rename Nat.succ)
+  let shiftedContext : List Form :=
+    translateContextAt (upVarMap ρ) (G.map (PA.Formula.rename Nat.succ))
+  let rawAssumption : Form := fAnd domainForm body
+  let rawContext : List Form := rawAssumption ::
+    ((domainContextAt ρ n ++ translateContextAt ρ G).map (rename Nat.succ))
+  have hbodyShift : BProv B
+      (domainForm :: (shiftedDomain ++ body :: shiftedContext))
+      (rename Nat.succ (formulaAt ρ c)) := by
+    simpa [body, shiftedDomain, shiftedContext,
+      domainContextAt_upVarMap_succ,
+      formulaAt_rename_succ_upVarMap, translateContextAt, List.map_append,
+      List.cons_append, Function.comp_apply] using hbody
+  have hrawAssumption : BProv B rawContext rawAssumption :=
+    BProv_of_Prov (B := B)
+      (Prov.P_ass rawContext rawAssumption (by simp [rawContext]))
+  have hraw : BProv B rawContext (rename Nat.succ (formulaAt ρ c)) := by
+    apply BProv_lift hbodyShift
+    · intro b hb
+      exact BProv_ax (G := rawContext) hb
+    · intro g hg
+      simp only [List.mem_cons, List.mem_append] at hg
+      rcases hg with hg | hg
+      · subst g
+        exact BProv_andE1 hrawAssumption
+      · rcases hg with hgDomain | hg
+        · exact BProv_of_Prov (B := B)
+            (Prov.P_ass rawContext g (by
+              simp [rawContext, shiftedDomain, List.mem_append, hgDomain]))
+        · rcases hg with hg | hgContext
+          · subst g
+            exact BProv_andE2 hrawAssumption
+          · exact BProv_of_Prov (B := B)
+              (Prov.P_ass rawContext g (by
+                have hgContext' :
+                    g ∈ (translateContextAt ρ G).map (rename Nat.succ) := by
+                  simpa [shiftedContext,
+                    translateContextAt_rename_succ_upVarMap] using hgContext
+                simp [rawContext, List.mem_append, hgContext']))
+  exact BProv_exE_of_sentences hB hex hraw
 
 /-- Structural PA-proof translation into the explicit-slot PA-in-HF
 translation, with the genuinely term-sensitive proof rules left as explicit
