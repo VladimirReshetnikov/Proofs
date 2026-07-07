@@ -7364,6 +7364,55 @@ theorem termGraphAt_inst_out (t : PA.Term) (ρ : Nat → Nat) (k : Nat) :
   exact termGraphAt_map_ext t (out := k)
     (fun n => by simp [inst])
 
+/-- A satisfied term graph remains satisfied after inserting a fresh HF slot in
+front of the whole environment, with all graph slots shifted by one. -/
+theorem Sat_termGraphAt_shift_front {α : Type u} {mem : α → α → Prop}
+    (t : PA.Term) (ρ : Nat → Nat) (out : Nat)
+    (e : Nat → α) (d : α)
+    (h : Sat mem e (termGraphAt ρ out t)) :
+    Sat mem (scons d e) (termGraphAt (fun n => ρ n + 1) (out + 1) t) := by
+  have hrename :
+      rename Nat.succ (termGraphAt ρ out t) =
+        termGraphAt (fun n => ρ n + 1) (out + 1) t := by
+    simpa [Nat.succ_eq_add_one] using
+      (termGraphAt_rename t (ρ := ρ) (out := out) (r := Nat.succ))
+  rw [← hrename]
+  apply (Sat_rename (mem := mem) (termGraphAt ρ out t)
+    Nat.succ (scons d e)).mpr
+  have henv : ∀ n, scons d e (Nat.succ n) = e n := by
+    intro n
+    rfl
+  exact (Sat_ext (mem := mem) (termGraphAt ρ out t)
+    (fun n => scons d e (Nat.succ n)) e henv).mpr h
+
+/-- A satisfied term graph with output in the head slot remains satisfied after
+inserting one fresh HF slot immediately behind that output. -/
+theorem Sat_termGraphAt_insert_after_output {α : Type u}
+    {mem : α → α → Prop}
+    (t : PA.Term) (ρ : Nat → Nat) (e : Nat → α) (outSlot d : α)
+    (h : Sat mem (scons outSlot e)
+      (termGraphAt (fun n => ρ n + 1) 0 t)) :
+    Sat mem (scons outSlot (scons d e))
+      (termGraphAt (fun n => ρ n + 2) 0 t) := by
+  let r : Nat → Nat := SetTheory.up Nat.succ
+  have hrename :
+      rename r (termGraphAt (fun n => ρ n + 1) 0 t) =
+        termGraphAt (fun n => ρ n + 2) 0 t := by
+    rw [termGraphAt_rename]
+    simp [r, SetTheory.up]
+  rw [← hrename]
+  apply (Sat_rename (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
+    r (scons outSlot (scons d e))).mpr
+  have henv : ∀ n,
+      scons outSlot (scons d e) (r n) = scons outSlot e n := by
+    intro n
+    cases n with
+    | zero => rfl
+    | succ n => rfl
+  exact (Sat_ext (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
+    (fun n => scons outSlot (scons d e) (r n)) (scons outSlot e)
+    henv).mpr h
+
 /-- The graph of a PA variable is just equality with the slot selected by the
 current slot map.  This version works over any membership relation. -/
 theorem termGraphAt_var_spec {α : Type u} {mem : α → α → Prop}
