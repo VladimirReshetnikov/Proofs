@@ -62,6 +62,12 @@ Current ports:
   generated one-hot lists over the 5139 retained candidates, and Coq proves
   that candidate 57 is the unique flagged row.  The Lean file's
   complex-analytic exponential separation lemmas are not yet replayed in Coq.
+- `A198683N12Probe.v` ports the finite retained-data certificate from
+  `A198683N12Probe.lean`: the `strict_class` labels are generated from
+  `a198683-n12-candidates.tsv`, Coq checks a witness-based partition
+  certificate for 5139 rows and 2925 strict classes, verifies the documented
+  strict class-25 cluster and tentative overflow singleton, and checks the
+  probe-refined split to 2926 classes.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -87,6 +93,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Magnitude.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Probe.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
