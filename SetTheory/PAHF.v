@@ -9429,6 +9429,31 @@ Proof.
   exact hab.
 Qed.
 
+Lemma formulaAt_closeN_valid :
+  forall A (mem : A -> A -> Prop) phi,
+    (forall rho e, Sat A mem e (formulaAt rho phi)) ->
+    forall k rho e, Sat A mem e (formulaAt rho (PA.Formula.closeN k phi)).
+Proof.
+  intros A mem phi h k.
+  revert phi h.
+  induction k as [|k IH]; intros phi h rho e; simpl.
+  - apply h.
+  - apply IH.
+    intros rho' e' x _.
+    apply h.
+Qed.
+
+Lemma formulaAt_sealPA_valid :
+  forall A (mem : A -> A -> Prop) phi,
+    (forall rho e, Sat A mem e (formulaAt rho phi)) ->
+    forall rho e, Sat A mem e (formulaAt rho (PA.Formula.sealPA phi)).
+Proof.
+  intros A mem phi h rho e.
+  unfold PA.Formula.sealPA.
+  apply formulaAt_closeN_valid.
+  exact h.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
