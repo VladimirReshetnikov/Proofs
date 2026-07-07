@@ -8051,6 +8051,16 @@ Proof.
   - intros g hg. contradiction.
 Qed.
 
+Lemma BProv_lift_translatedHFFinAx_to_PA :
+  (forall f, translatedHFFinAx f -> BProv Ax_s [] f) ->
+  forall f, BProv translatedHFFinAx [] f -> BProv Ax_s [] f.
+Proof.
+  intros hAx f h.
+  apply (BProv_lift translatedHFFinAx Ax_s [] [] f h).
+  - intros b hb. exact (hAx b hb).
+  - intros g hg. contradiction.
+Qed.
+
 Lemma standard_sat_translatedHFAx : forall e,
   forall g, translatedHFAx g -> Sat natModel e g.
 Proof.
