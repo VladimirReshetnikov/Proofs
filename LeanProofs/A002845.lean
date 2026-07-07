@@ -843,6 +843,17 @@ theorem certifiedLevelCard_eq_countsThrough_getD {N n : Nat}
       rw [List.getElem_map]
       rw [List.getElem_range]
 
+theorem certifiedLevelCountsThrough_getD_eq_sharedSparseLogCountsMemoThrough_getD
+    {N i : Nat} (hi : i < N) :
+    (certifiedLevelCountsThrough N).getD i 0 =
+      (sharedSparseLogCountsMemoThrough N).getD i 0 := by
+  have hpos : 0 < i + 1 := Nat.succ_pos i
+  have hN : i + 1 ≤ N := Nat.succ_le_iff.mpr hi
+  have hcert := certifiedLevelCard_eq_countsThrough_getD (N := N) (n := i + 1) hpos hN
+  have hshared :=
+    certifiedLevelCard_eq_sharedSparseLogCountsMemoThrough_getD (N := N) (n := i + 1) hpos hN
+  simpa using hcert.symm.trans hshared
+
 theorem a002845_eq_of_certifiedLevelCountsThrough {N n value : Nat}
     (hpos : 0 < n) (hN : n ≤ N)
     (hcount : (certifiedLevelCountsThrough N).getD (n - 1) 0 = value) :
