@@ -7,6 +7,7 @@ import LeanProofs.ArctanSquareIdentity
 import LeanProofs.Nicod
 import LeanProofs.WolframBoolean
 import LeanProofs.PowTower
+import LeanProofs.SparseBinary
 import LeanProofs.A000081
 import LeanProofs.A002845
 import LeanProofs.A199812

@@ -173,17 +173,21 @@ theorem a002845_twenty_three : a002845 23 = 9029719
 The value theorems `a002845_one` through `a002845_six` use a direct finite
 computation of the canonical logarithm set, proved equivalent to the semantic
 value set by injectivity of `m ↦ 2^m`. The value theorems
-`a002845_seven` through `a002845_twelve` use a certified sparse-log evaluator:
-its proof-facing definition is semantic (`Sparse.ofNat` of the exact
-logarithm), while native evaluation of the logarithm-combine step is
-implemented by the fast hereditary sparse operation.  The value theorems
-`a002845_thirteen` through `a002845_twenty_three` come from one prefix-table
-certificate over the shared proved hash-set fast table of
+`a002845_seven` through `a002845_twelve` use the sparse-log evaluator over the
+verified hereditary sparse binary numbers of
+[`LeanProofs/SparseBinary.lean`](LeanProofs/SparseBinary.lean).  The value
+theorems `a002845_thirteen` through `a002845_twenty_three` come from one
+prefix-table certificate over the shared proved hash-set fast table of
 `PowTower.Expr` instantiated at atom `Sparse.ofNat 1` and combine
 `certifiedCombineLog`; every fast row is Lean-proved to enumerate exactly the
-shared finite recurrence, so the only execution-level substitution in the
-whole module is the native implementation of the sparse combine
-`certifiedCombineLog` by `combineLog`.
+shared finite recurrence.  The combine operation itself is the total verified
+`Sparse.shift` — `SparseBinary.lean` proves the comparator numerically correct
+on canonical values (`compare_iff`) and proves that the structural
+carry-insertion arithmetic (`incr`/`insBit`/`add`/`shift`) returns the
+canonical representation of the expected number (`shift_eq_ofNat`) — so no
+`implemented_by` substitution is involved anywhere: the executable path *is*
+the proved path, and the only remaining trust in the value certificates is
+`native_decide` itself.
 
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683 from
 the canonical lexical syntax of all binary parenthesizations of
