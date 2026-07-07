@@ -488,9 +488,9 @@ theorem a002845_twelve : a002845 12 = 851 := by
 /--
 Certified counts for sizes `1, ..., n`, computed from one shared hash-set fast
 table.  Every fast row is proved to enumerate exactly the shared finite
-recurrence, so no unproved executable backend is involved: the only
-execution-level substitution left is `certifiedCombineLog`'s native
-implementation by `combineLog`.
+recurrence, and `certifiedCombineLog` is definitionally the verified sparse
+shift operation above.  No unproved executable backend or `implemented_by`
+substitution is involved.
 -/
 def certifiedLevelCountsThrough (n : Nat) : List Nat :=
   PowTower.Expr.fastCountsThrough (Sparse.ofNat 1) certifiedCombineLog n

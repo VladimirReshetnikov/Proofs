@@ -1,0 +1,52 @@
+# Coq Ports of LeanProofs
+
+- Created (UTC): 2026-07-07T03:24:49Z
+- Initial source HEAD: f3be2772be5658f305f509b584b0cb99d97cbe7a
+
+This directory contains Rocq/Coq ports of proof modules from the root
+`src/Lean/LeanProofs/` Lean workspace.  The ports are intentionally
+Coq-idiomatic rather than line-by-line translations: each module preserves the
+mathematical certificate surface where practical, but uses Coq standard-library
+definitions, tactics, and proof organization.
+
+The SetTheory project already has its own Coq development in
+`src/Lean/SetTheory/`; it is not duplicated here.
+
+Current ports:
+
+- `Nicod.v` ports the NAND language, Nicod axiom/rule derivations, soundness,
+  and functional-completeness lemmas from `Nicod.lean`.
+- `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
+- `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
+  summation identity from `FloorSqrtSum.lean`.
+- `PowTower.v` ports the shared lexical syntax, executable
+  parenthesization/evaluation layer, and small recursive-value sanity checks.
+- `A002845.v` ports the exact-logarithm reduction for the natural power tower
+  sequence and verifies the first six values through a binary-`N` executable
+  logarithm.  The later Lean hereditary sparse-binary layer for larger values
+  is not yet ported.
+- `EquationalLogic.v` ports the executable first-order equational proof
+  checker and its soundness theorem.
+- `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
+  equational certificates against that checker.
+- `WolframBooleanHuntingtonCertificates.v` ports the generated
+  Sheffer-to-Huntington certificate.
+- `WolframBoolean.v` exposes the certificate-derived algebraic consequences,
+  Boolean truth-table characterization, NAND/NOR functional-completeness
+  theorem layer, and executable finite-search machinery.  The final Lean
+  `native_decide` lower-bound theorem is not yet replayed in Coq; the direct
+  monolithic `vm_compute`/`native_compute` check was too slow.
+
+Build from `src/Lean/`:
+
+```powershell
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBoolean.v
+```
