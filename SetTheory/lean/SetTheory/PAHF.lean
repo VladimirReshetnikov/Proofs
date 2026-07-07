@@ -12268,6 +12268,98 @@ theorem BProv_formulaAt_exE {ρ : Nat → Nat} {G : List PA.Formula}
           (Prov.P_ass rawContext g (by simp [rawContext, shiftedContext, hg]))
   exact BProv_formulaAt_exE_raw hex hraw
 
+/-- Structural PA-proof translation into the explicit-slot PA-in-HF
+translation, with the genuinely term-sensitive proof rules left as explicit
+parameters.
+
+The four hypotheses are exactly the rules whose PA version mentions arbitrary
+terms.  This theorem discharges the remaining propositional and quantifier
+plumbing once and for all without hiding term-totality proofs in a definition. -/
+theorem BProv_formulaAt_of_Prov_with_term_rules
+    (hAllE : ∀ {ρ : Nat → Nat} {G : List PA.Formula}
+      {a : PA.Formula} {t : PA.Term},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.all a)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm t) a)))
+    (hExI : ∀ {ρ : Nat → Nat} {G : List PA.Formula}
+      {a : PA.Formula} {t : PA.Term},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm t) a)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.ex a)))
+    (hEqRefl : ∀ {ρ : Nat → Nat} {G : List PA.Formula} {t : PA.Term},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.eq t t)))
+    (hEqElim : ∀ {ρ : Nat → Nat} {G : List PA.Formula}
+      {s t : PA.Term} {a : PA.Formula},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.eq s t)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm s) a)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm t) a)))
+    {G : List PA.Formula} {phi : PA.Formula}
+    (h : PA.Formula.Prov G phi) :
+    ∀ ρ : Nat → Nat,
+      BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ phi) := by
+  induction h with
+  | P_ass G a hin =>
+      intro ρ
+      exact BProv_formulaAt_ass (ρ := ρ) hin
+  | P_impI G a b _ ih =>
+      intro ρ
+      exact BProv_formulaAt_impI (ρ := ρ) (ih ρ)
+  | P_impE G a b _ _ ihab iha =>
+      intro ρ
+      exact BProv_formulaAt_impE (ρ := ρ) (ihab ρ) (iha ρ)
+  | P_botE G a _ ih =>
+      intro ρ
+      exact BProv_formulaAt_botE (ρ := ρ) (ih ρ)
+  | P_lem G a =>
+      intro ρ
+      exact BProv_formulaAt_lem ρ G a
+  | P_andI G a b _ _ iha ihb =>
+      intro ρ
+      exact BProv_formulaAt_andI (ρ := ρ) (iha ρ) (ihb ρ)
+  | P_andE1 G a b _ ih =>
+      intro ρ
+      exact BProv_formulaAt_andE1 (ρ := ρ) (ih ρ)
+  | P_andE2 G a b _ ih =>
+      intro ρ
+      exact BProv_formulaAt_andE2 (ρ := ρ) (ih ρ)
+  | P_orI1 G a b _ ih =>
+      intro ρ
+      exact BProv_formulaAt_orI1 (ρ := ρ) (a := a) (b := b) (ih ρ)
+  | P_orI2 G a b _ ih =>
+      intro ρ
+      exact BProv_formulaAt_orI2 (ρ := ρ) (a := a) (b := b) (ih ρ)
+  | P_orE G a b c _ _ _ ihor iha ihb =>
+      intro ρ
+      exact BProv_formulaAt_orE (ρ := ρ) (ihor ρ) (iha ρ) (ihb ρ)
+  | P_allI G a _ ih =>
+      intro ρ
+      exact BProv_formulaAt_allI (ρ := ρ) (ih (upVarMap ρ))
+  | P_allE G a t _ ih =>
+      intro ρ
+      exact hAllE (ih ρ)
+  | P_exI G a t _ ih =>
+      intro ρ
+      exact hExI (ih ρ)
+  | P_exE G a c _ _ ihex ihbody =>
+      intro ρ
+      exact BProv_formulaAt_exE (ρ := ρ) (ihex ρ) (ihbody (upVarMap ρ))
+  | P_eqRefl G t =>
+      intro ρ
+      exact hEqRefl
+  | P_eqElim G s t a _ _ iheq iha =>
+      intro ρ
+      exact hEqElim (iheq ρ) (iha ρ)
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
