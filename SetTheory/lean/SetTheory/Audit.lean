@@ -415,6 +415,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.formulaAt_substZeroAt_insert_model
 #check @AckermannHF.PAInHF.formulaAt_substZero_insert_model
 #check @AckermannHF.PAInHF.formulaAt_substZero_scons_model
+#check @AckermannHF.PAInHF.Sat_termGraphAt_insertAt_shift_formula_prefix
+#check @AckermannHF.PAInHF.formulaAt_substTermAt_insert_model
+#check @AckermannHF.PAInHF.formulaAt_subst_instTerm_of_termGraph_model
 #check @AckermannHF.PAInHF.formulaAt_substSuccAt_replace_model
 #check @AckermannHF.PAInHF.formulaAt_substSuccVar_scons_model
 #check @AckermannHF.PAInHF.formulaAt_induction_valid_finite_model

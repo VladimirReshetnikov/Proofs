@@ -11933,6 +11933,498 @@ theorem formulaAt_substZero_scons_model {α : Type u}
     (Sat_ext (formulaAt (upVarMap ρ) phi)
       (insertAt 0 M.empty e) (scons M.empty e) (insertAt_zero M.empty e))
 
+/-- Shift a replacement-term graph through the one fresh local witness introduced
+by a translated PA quantifier. -/
+theorem Sat_termGraphAt_insertAt_shift_formula_prefix {α : Type u}
+    {mem : α → α → Prop} (t : PA.Term) (p : Nat)
+    (ρ : Nat → Nat) (termVal d : α) (e : Nat → α)
+    (h : Sat mem (insertAt p termVal e)
+      (termGraphAt (fun n => ρ n + p + 1) p t)) :
+    Sat mem (insertAt (p+1) termVal (scons d e))
+      (termGraphAt (fun n => ρ n + (p+1) + 1) (p+1) t) := by
+  have h0 : Sat mem (insertAt (0+p) termVal e)
+      (termGraphAt (fun n => ρ n + 0 + p + 1) (0+p) t) := by
+    simpa [Nat.zero_add] using h
+  have hraw := Sat_termGraphAt_insertAt_shift_prefix t p 0 ρ termVal d e h0
+  have hslot : (0 + 1) + p = p + 1 := by omega
+  rw [hslot] at hraw
+  have hEq := termGraphAt_map_ext t
+    (ρ := fun n => ρ n + (0 + 1) + p + 1)
+    (σ := fun n => ρ n + (p+1) + 1) (out := p+1)
+    (fun n => by omega)
+  rwa [hEq] at hraw
+
+/-- Transport translated PA formulas across arbitrary PA-term substitution.
+
+The replacement term is represented by an explicit translated term graph at the
+inserted HF slot.  This keeps term totality as a semantic hypothesis, rather
+than baking it into the substitution map. -/
+theorem formulaAt_substTermAt_insert_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) (phi : PA.Formula)
+    (replacement : PA.Term) :
+    ∀ (p : Nat) (ρ : Nat → Nat) (termVal : α) (e : Nat → α),
+      (∀ n, PA.Term.Free n replacement →
+        OrdinalLike M.mem (e (ρ n + p))) →
+      Sat M.mem (insertAt p termVal e)
+        (termGraphAt (fun n => ρ n + p + 1) p replacement) →
+      (Sat M.mem e
+          (formulaAt (substZeroAfterMap p 0 ρ)
+            (PA.Formula.subst (PA.Formula.substTermAt p replacement) phi)) ↔
+        Sat M.mem (insertAt p termVal e)
+          (formulaAt (substZeroBeforeMap p 0 ρ) phi)) := by
+  induction phi with
+  | eq a b =>
+      intro p ρ termVal e hfree hterm
+      have hterm0 : Sat M.mem (insertAt (0+p) termVal e)
+          (termGraphAt (fun n => ρ n + 0 + p + 1) (0+p) replacement) := by
+        simpa [Nat.zero_add] using hterm
+      constructor
+      · intro h
+        rcases h with ⟨x, y, ha, hb, heq⟩
+        refine ⟨x, y, ?_, ?_, heq⟩
+        · have haMap : Sat M.mem (scons y (scons x e))
+              (termGraphAt (substZeroAfterMap p 2 ρ) 1
+                (PA.Term.subst (PA.Formula.substTermAt p replacement) a)) := by
+            have hEq := termGraphAt_map_ext
+              (PA.Term.subst (PA.Formula.substTermAt p replacement) a)
+              (ρ := fun n => substZeroAfterMap p 0 ρ n + 2)
+              (σ := substZeroAfterMap p 2 ρ) (out := 1)
+              (substZeroAfterMap_add p 0 2 ρ)
+            rwa [← hEq]
+          have hterm1 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 0 ρ termVal x e hterm0
+          have hterm2 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 1 ρ termVal y (scons x e) hterm1
+          have hfree2 : ∀ n, PA.Term.Free n replacement →
+              OrdinalLike M.mem
+                ((scons y (scons x e)) (ρ n + 2 + p)) := by
+            intro n hn
+            have hslot : (scons y (scons x e)) (ρ n + 2 + p) =
+                e (ρ n + p) := by
+              rw [show ρ n + 2 + p = ρ n + p + 2 by omega]
+              rfl
+            rw [hslot]
+            exact hfree n hn
+          have haIns := (termGraphAt_substTermAt_insert_model M replacement a
+            p 2 ρ 1 termVal (scons y (scons x e)) (by omega)
+            hfree2 hterm2).mp haMap
+          have henv : ∀ n,
+              scons y (scons x (insertAt p termVal e)) n =
+                insertAt (2+p) termVal (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using scons2_insertAt_prefix p 0 termVal x y e n
+          have haEnv : Sat M.mem (scons y (scons x (insertAt p termVal e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a)
+              (scons y (scons x (insertAt p termVal e)))
+              (insertAt (2+p) termVal (scons y (scons x e))) henv).mpr haIns
+          have hEq := termGraphAt_map_ext a
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 1)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          rwa [hEq] at haEnv
+        · have hbMap : Sat M.mem (scons y (scons x e))
+              (termGraphAt (substZeroAfterMap p 2 ρ) 0
+                (PA.Term.subst (PA.Formula.substTermAt p replacement) b)) := by
+            have hEq := termGraphAt_map_ext
+              (PA.Term.subst (PA.Formula.substTermAt p replacement) b)
+              (ρ := fun n => substZeroAfterMap p 0 ρ n + 2)
+              (σ := substZeroAfterMap p 2 ρ) (out := 0)
+              (substZeroAfterMap_add p 0 2 ρ)
+            rwa [← hEq]
+          have hterm1 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 0 ρ termVal x e hterm0
+          have hterm2 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 1 ρ termVal y (scons x e) hterm1
+          have hfree2 : ∀ n, PA.Term.Free n replacement →
+              OrdinalLike M.mem
+                ((scons y (scons x e)) (ρ n + 2 + p)) := by
+            intro n hn
+            have hslot : (scons y (scons x e)) (ρ n + 2 + p) =
+                e (ρ n + p) := by
+              rw [show ρ n + 2 + p = ρ n + p + 2 by omega]
+              rfl
+            rw [hslot]
+            exact hfree n hn
+          have hbIns := (termGraphAt_substTermAt_insert_model M replacement b
+            p 2 ρ 0 termVal (scons y (scons x e)) (by omega)
+            hfree2 hterm2).mp hbMap
+          have henv : ∀ n,
+              scons y (scons x (insertAt p termVal e)) n =
+                insertAt (2+p) termVal (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using scons2_insertAt_prefix p 0 termVal x y e n
+          have hbEnv : Sat M.mem (scons y (scons x (insertAt p termVal e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b)
+              (scons y (scons x (insertAt p termVal e)))
+              (insertAt (2+p) termVal (scons y (scons x e))) henv).mpr hbIns
+          have hEq := termGraphAt_map_ext b
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 0)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          rwa [hEq] at hbEnv
+      · intro h
+        rcases h with ⟨x, y, ha, hb, heq⟩
+        refine ⟨x, y, ?_, ?_, heq⟩
+        · have hEq := termGraphAt_map_ext a
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 1)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          have haMap : Sat M.mem (scons y (scons x (insertAt p termVal e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a) := by
+            rw [hEq]
+            exact ha
+          have henv : ∀ n,
+              scons y (scons x (insertAt p termVal e)) n =
+                insertAt (2+p) termVal (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using scons2_insertAt_prefix p 0 termVal x y e n
+          have haIns : Sat M.mem
+              (insertAt (2+p) termVal (scons y (scons x e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a)
+              (scons y (scons x (insertAt p termVal e)))
+              (insertAt (2+p) termVal (scons y (scons x e))) henv).mp haMap
+          have hterm1 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 0 ρ termVal x e hterm0
+          have hterm2 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 1 ρ termVal y (scons x e) hterm1
+          have hfree2 : ∀ n, PA.Term.Free n replacement →
+              OrdinalLike M.mem
+                ((scons y (scons x e)) (ρ n + 2 + p)) := by
+            intro n hn
+            have hslot : (scons y (scons x e)) (ρ n + 2 + p) =
+                e (ρ n + p) := by
+              rw [show ρ n + 2 + p = ρ n + p + 2 by omega]
+              rfl
+            rw [hslot]
+            exact hfree n hn
+          have haSub := (termGraphAt_substTermAt_insert_model M replacement a
+            p 2 ρ 1 termVal (scons y (scons x e)) (by omega)
+            hfree2 hterm2).mpr haIns
+          have hEqSub := termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substTermAt p replacement) a)
+            (ρ := fun n => substZeroAfterMap p 0 ρ n + 2)
+            (σ := substZeroAfterMap p 2 ρ) (out := 1)
+            (substZeroAfterMap_add p 0 2 ρ)
+          rwa [← hEqSub] at haSub
+        · have hEq := termGraphAt_map_ext b
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 0)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          have hbMap : Sat M.mem (scons y (scons x (insertAt p termVal e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b) := by
+            rw [hEq]
+            exact hb
+          have henv : ∀ n,
+              scons y (scons x (insertAt p termVal e)) n =
+                insertAt (2+p) termVal (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using scons2_insertAt_prefix p 0 termVal x y e n
+          have hbIns : Sat M.mem
+              (insertAt (2+p) termVal (scons y (scons x e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b)
+              (scons y (scons x (insertAt p termVal e)))
+              (insertAt (2+p) termVal (scons y (scons x e))) henv).mp hbMap
+          have hterm1 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 0 ρ termVal x e hterm0
+          have hterm2 := Sat_termGraphAt_insertAt_shift_prefix replacement
+            p 1 ρ termVal y (scons x e) hterm1
+          have hfree2 : ∀ n, PA.Term.Free n replacement →
+              OrdinalLike M.mem
+                ((scons y (scons x e)) (ρ n + 2 + p)) := by
+            intro n hn
+            have hslot : (scons y (scons x e)) (ρ n + 2 + p) =
+                e (ρ n + p) := by
+              rw [show ρ n + 2 + p = ρ n + p + 2 by omega]
+              rfl
+            rw [hslot]
+            exact hfree n hn
+          have hbSub := (termGraphAt_substTermAt_insert_model M replacement b
+            p 2 ρ 0 termVal (scons y (scons x e)) (by omega)
+            hfree2 hterm2).mpr hbIns
+          have hEqSub := termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substTermAt p replacement) b)
+            (ρ := fun n => substZeroAfterMap p 0 ρ n + 2)
+            (σ := substZeroAfterMap p 2 ρ) (out := 0)
+            (substZeroAfterMap_add p 0 2 ρ)
+          rwa [← hEqSub] at hbSub
+  | bot =>
+      intro p ρ termVal e hfree hterm
+      rfl
+  | imp a b iha ihb =>
+      intro p ρ termVal e hfree hterm
+      constructor
+      · intro h ha
+        exact (ihb p ρ termVal e hfree hterm).mp
+          (h ((iha p ρ termVal e hfree hterm).mpr ha))
+      · intro h ha
+        exact (ihb p ρ termVal e hfree hterm).mpr
+          (h ((iha p ρ termVal e hfree hterm).mp ha))
+  | and a b iha ihb =>
+      intro p ρ termVal e hfree hterm
+      exact and_congr (iha p ρ termVal e hfree hterm)
+        (ihb p ρ termVal e hfree hterm)
+  | or a b iha ihb =>
+      intro p ρ termVal e hfree hterm
+      exact or_congr (iha p ρ termVal e hfree hterm)
+        (ihb p ρ termVal e hfree hterm)
+  | all a ih =>
+      intro p ρ termVal e hfree hterm
+      constructor
+      · intro hall d hdDomain
+        have hdDomain' : Sat M.mem (scons d e) domainForm :=
+          (domainForm_scons_insertAt (mem := M.mem) p termVal d e).mp hdDomain
+        have hbody := hall d hdDomain'
+        have hbodyNorm : Sat M.mem (scons d e)
+            (formulaAt (substZeroAfterMap (p+1) 0 ρ)
+              (PA.Formula.subst (PA.Formula.substTermAt (p+1) replacement) a)) := by
+          rw [PA.Formula.upSubst_substTermAt p replacement] at hbody
+          have hEq := formulaAt_map_ext
+            (PA.Formula.subst (PA.Formula.substTermAt (p+1) replacement) a)
+            (ρ := upVarMap (substZeroAfterMap p 0 ρ))
+            (σ := substZeroAfterMap (p+1) 0 ρ)
+            (upVarMap_substZeroAfterMap_zero p ρ)
+          rwa [hEq] at hbody
+        have hfree' : ∀ n, PA.Term.Free n replacement →
+            OrdinalLike M.mem ((scons d e) (ρ n + (p+1))) := by
+          intro n hn
+          have hslot : (scons d e) (ρ n + (p+1)) = e (ρ n + p) := by
+            rw [show ρ n + (p+1) = ρ n + p + 1 by omega]
+            rfl
+          rw [hslot]
+          exact hfree n hn
+        have hterm' := Sat_termGraphAt_insertAt_shift_formula_prefix
+          replacement p ρ termVal d e hterm
+        have hbodyIns := (ih (p+1) ρ termVal (scons d e)
+          hfree' hterm').mp hbodyNorm
+        have henv : ∀ n,
+            scons d (insertAt p termVal e) n =
+              insertAt (p+1) termVal (scons d e) n := by
+          intro n
+          simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+            using scons_insertAt_prefix p 0 termVal d e n
+        have hbodyEnv : Sat M.mem (scons d (insertAt p termVal e))
+            (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+          (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+            (scons d (insertAt p termVal e))
+            (insertAt (p+1) termVal (scons d e)) henv).mpr hbodyIns
+        have hEq := formulaAt_map_ext a
+          (ρ := substZeroBeforeMap (p+1) 0 ρ)
+          (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+          (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+        rwa [hEq] at hbodyEnv
+      · intro hall d hdDomain
+        have hdDomain' : Sat M.mem (scons d (insertAt p termVal e)) domainForm :=
+          (domainForm_scons_insertAt (mem := M.mem) p termVal d e).mpr hdDomain
+        have hbody := hall d hdDomain'
+        have hbodyNorm : Sat M.mem (scons d (insertAt p termVal e))
+            (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) := by
+          have hEq := formulaAt_map_ext a
+            (ρ := substZeroBeforeMap (p+1) 0 ρ)
+            (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+            (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+          rwa [hEq]
+        have henv : ∀ n,
+            scons d (insertAt p termVal e) n =
+              insertAt (p+1) termVal (scons d e) n := by
+          intro n
+          simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+            using scons_insertAt_prefix p 0 termVal d e n
+        have hbodyIns : Sat M.mem
+            (insertAt (p+1) termVal (scons d e))
+            (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+          (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+            (scons d (insertAt p termVal e))
+            (insertAt (p+1) termVal (scons d e)) henv).mp hbodyNorm
+        have hfree' : ∀ n, PA.Term.Free n replacement →
+            OrdinalLike M.mem ((scons d e) (ρ n + (p+1))) := by
+          intro n hn
+          have hslot : (scons d e) (ρ n + (p+1)) = e (ρ n + p) := by
+            rw [show ρ n + (p+1) = ρ n + p + 1 by omega]
+            rfl
+          rw [hslot]
+          exact hfree n hn
+        have hterm' := Sat_termGraphAt_insertAt_shift_formula_prefix
+          replacement p ρ termVal d e hterm
+        have hbodyAfter := (ih (p+1) ρ termVal (scons d e)
+          hfree' hterm').mpr hbodyIns
+        have hbodyActual : Sat M.mem (scons d e)
+            (formulaAt (upVarMap (substZeroAfterMap p 0 ρ))
+              (PA.Formula.subst
+                (PA.Term.upSubst (PA.Formula.substTermAt p replacement)) a)) := by
+          rw [PA.Formula.upSubst_substTermAt p replacement]
+          have hEq := formulaAt_map_ext
+            (PA.Formula.subst (PA.Formula.substTermAt (p+1) replacement) a)
+            (ρ := upVarMap (substZeroAfterMap p 0 ρ))
+            (σ := substZeroAfterMap (p+1) 0 ρ)
+            (upVarMap_substZeroAfterMap_zero p ρ)
+          rwa [hEq]
+        exact hbodyActual
+  | ex a ih =>
+      intro p ρ termVal e hfree hterm
+      constructor
+      · intro h
+        rcases h with ⟨d, hdDomain, hbody⟩
+        refine ⟨d, ?_, ?_⟩
+        · exact (domainForm_scons_insertAt (mem := M.mem) p termVal d e).mpr hdDomain
+        · have hbodyNorm : Sat M.mem (scons d e)
+              (formulaAt (substZeroAfterMap (p+1) 0 ρ)
+                (PA.Formula.subst (PA.Formula.substTermAt (p+1) replacement) a)) := by
+            rw [PA.Formula.upSubst_substTermAt p replacement] at hbody
+            have hEq := formulaAt_map_ext
+              (PA.Formula.subst (PA.Formula.substTermAt (p+1) replacement) a)
+              (ρ := upVarMap (substZeroAfterMap p 0 ρ))
+              (σ := substZeroAfterMap (p+1) 0 ρ)
+              (upVarMap_substZeroAfterMap_zero p ρ)
+            rwa [hEq] at hbody
+          have hfree' : ∀ n, PA.Term.Free n replacement →
+              OrdinalLike M.mem ((scons d e) (ρ n + (p+1))) := by
+            intro n hn
+            have hslot : (scons d e) (ρ n + (p+1)) = e (ρ n + p) := by
+              rw [show ρ n + (p+1) = ρ n + p + 1 by omega]
+              rfl
+            rw [hslot]
+            exact hfree n hn
+          have hterm' := Sat_termGraphAt_insertAt_shift_formula_prefix
+            replacement p ρ termVal d e hterm
+          have hbodyIns := (ih (p+1) ρ termVal (scons d e)
+            hfree' hterm').mp hbodyNorm
+          have henv : ∀ n,
+              scons d (insertAt p termVal e) n =
+                insertAt (p+1) termVal (scons d e) n := by
+            intro n
+            simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+              using scons_insertAt_prefix p 0 termVal d e n
+          have hbodyEnv : Sat M.mem (scons d (insertAt p termVal e))
+              (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+            (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+              (scons d (insertAt p termVal e))
+              (insertAt (p+1) termVal (scons d e)) henv).mpr hbodyIns
+          have hEq := formulaAt_map_ext a
+            (ρ := substZeroBeforeMap (p+1) 0 ρ)
+            (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+            (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+          rwa [hEq] at hbodyEnv
+      · intro h
+        rcases h with ⟨d, hdDomain, hbody⟩
+        refine ⟨d, ?_, ?_⟩
+        · exact (domainForm_scons_insertAt (mem := M.mem) p termVal d e).mp hdDomain
+        · have hbodyNorm : Sat M.mem (scons d (insertAt p termVal e))
+              (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) := by
+            have hEq := formulaAt_map_ext a
+              (ρ := substZeroBeforeMap (p+1) 0 ρ)
+              (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+              (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+            rwa [hEq]
+          have henv : ∀ n,
+              scons d (insertAt p termVal e) n =
+                insertAt (p+1) termVal (scons d e) n := by
+            intro n
+            simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+              using scons_insertAt_prefix p 0 termVal d e n
+          have hbodyIns : Sat M.mem
+              (insertAt (p+1) termVal (scons d e))
+              (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+            (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+              (scons d (insertAt p termVal e))
+              (insertAt (p+1) termVal (scons d e)) henv).mp hbodyNorm
+          have hfree' : ∀ n, PA.Term.Free n replacement →
+              OrdinalLike M.mem ((scons d e) (ρ n + (p+1))) := by
+            intro n hn
+            have hslot : (scons d e) (ρ n + (p+1)) = e (ρ n + p) := by
+              rw [show ρ n + (p+1) = ρ n + p + 1 by omega]
+              rfl
+            rw [hslot]
+            exact hfree n hn
+          have hterm' := Sat_termGraphAt_insertAt_shift_formula_prefix
+            replacement p ρ termVal d e hterm
+          have hbodyAfter := (ih (p+1) ρ termVal (scons d e)
+            hfree' hterm').mpr hbodyIns
+          have hbodyActual : Sat M.mem (scons d e)
+              (formulaAt (upVarMap (substZeroAfterMap p 0 ρ))
+                (PA.Formula.subst
+                  (PA.Term.upSubst (PA.Formula.substTermAt p replacement)) a)) := by
+            rw [PA.Formula.upSubst_substTermAt p replacement]
+            have hEq := formulaAt_map_ext
+              (PA.Formula.subst (PA.Formula.substTermAt (p+1) replacement) a)
+              (ρ := upVarMap (substZeroAfterMap p 0 ρ))
+              (σ := substZeroAfterMap (p+1) 0 ρ)
+              (upVarMap_substZeroAfterMap_zero p ρ)
+            rwa [hEq]
+          exact hbodyActual
+
+/-- Top-level instance of arbitrary PA-term substitution into translated
+formulas.  The replacement term graph is supplied at the new front slot. -/
+theorem formulaAt_subst_instTerm_of_termGraph_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) (phi : PA.Formula)
+    (replacement : PA.Term) (ρ : Nat → Nat) (termVal : α)
+    (e : Nat → α)
+    (hfree : ∀ n, PA.Term.Free n replacement →
+      OrdinalLike M.mem (e (ρ n)))
+    (hterm : Sat M.mem (scons termVal e)
+      (termGraphAt (fun n => ρ n + 1) 0 replacement)) :
+    Sat M.mem e
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm replacement) phi)) ↔
+    Sat M.mem (scons termVal e) (formulaAt (upVarMap ρ) phi) := by
+  have hfree0 : ∀ n, PA.Term.Free n replacement →
+      OrdinalLike M.mem (e (ρ n + 0)) := by
+    intro n hn
+    simpa using hfree n hn
+  have hterm0 : Sat M.mem (insertAt 0 termVal e)
+      (termGraphAt (fun n => ρ n + 0 + 1) 0 replacement) := by
+    have hSat : Sat M.mem (insertAt 0 termVal e)
+        (termGraphAt (fun n => ρ n + 1) 0 replacement) :=
+      (Sat_ext (termGraphAt (fun n => ρ n + 1) 0 replacement)
+        (insertAt 0 termVal e) (scons termVal e)
+        (insertAt_zero termVal e)).mpr hterm
+    simpa [Nat.zero_add] using hSat
+  have hmain := formulaAt_substTermAt_insert_model M phi replacement
+    0 ρ termVal e hfree0 hterm0
+  constructor
+  · intro h
+    have hNormL : Sat M.mem e
+        (formulaAt (substZeroAfterMap 0 0 ρ)
+          (PA.Formula.subst (PA.Formula.substTermAt 0 replacement) phi)) := by
+      rw [PA.Formula.substTermAt_zero replacement]
+      have hEq := formulaAt_map_ext
+        (PA.Formula.subst (PA.Formula.instTerm replacement) phi)
+        (ρ := substZeroAfterMap 0 0 ρ) (σ := ρ)
+        (substZeroAfterMap_zero_zero ρ)
+      rwa [hEq]
+    have hNormR := hmain.mp hNormL
+    have hEnv : Sat M.mem (scons termVal e)
+        (formulaAt (substZeroBeforeMap 0 0 ρ) phi) :=
+      (Sat_ext (formulaAt (substZeroBeforeMap 0 0 ρ) phi)
+        (insertAt 0 termVal e) (scons termVal e)
+        (insertAt_zero termVal e)).mp hNormR
+    have hEq := formulaAt_map_ext phi
+      (ρ := substZeroBeforeMap 0 0 ρ) (σ := upVarMap ρ)
+      (substZeroBeforeMap_zero_zero ρ)
+    rwa [hEq] at hEnv
+  · intro h
+    have hNormR : Sat M.mem (insertAt 0 termVal e)
+        (formulaAt (substZeroBeforeMap 0 0 ρ) phi) := by
+      have hEnv : Sat M.mem (scons termVal e)
+          (formulaAt (substZeroBeforeMap 0 0 ρ) phi) := by
+        have hEq := formulaAt_map_ext phi
+          (ρ := substZeroBeforeMap 0 0 ρ) (σ := upVarMap ρ)
+          (substZeroBeforeMap_zero_zero ρ)
+        rwa [hEq]
+      exact (Sat_ext (formulaAt (substZeroBeforeMap 0 0 ρ) phi)
+        (insertAt 0 termVal e) (scons termVal e)
+        (insertAt_zero termVal e)).mpr hEnv
+    have hNormL := hmain.mpr hNormR
+    rw [PA.Formula.substTermAt_zero replacement] at hNormL
+    have hEq := formulaAt_map_ext
+      (PA.Formula.subst (PA.Formula.instTerm replacement) phi)
+      (ρ := substZeroAfterMap 0 0 ρ) (σ := ρ)
+      (substZeroAfterMap_zero_zero ρ)
+    rwa [hEq] at hNormL
+
 theorem formulaAt_substSuccAt_replace_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (phi : PA.Formula) :
     ∀ (p : Nat) (ρ : Nat → Nat) (e : Nat → α),
