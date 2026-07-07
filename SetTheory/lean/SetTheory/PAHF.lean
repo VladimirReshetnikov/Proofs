@@ -4839,6 +4839,35 @@ theorem rename_ext (t : Term) (r r' : Nat → Nat) (h : ∀ n, r n = r' n) :
   | add a b iha ihb => simp [rename, iha, ihb]
   | mul a b iha ihb => simp [rename, iha, ihb]
 
+theorem rename_ext_free (t : Term) :
+    ∀ r r', (∀ n, Free n t → r n = r' n) → rename r t = rename r' t := by
+  induction t with
+  | var n =>
+      intro r r' h
+      simp [rename, h n rfl]
+  | zero =>
+      intro r r' h
+      rfl
+  | succ t ih =>
+      intro r r' h
+      simp [rename, ih r r' h]
+  | add a b iha ihb =>
+      intro r r' h
+      simp [rename, iha r r' (fun n hn => h n (Or.inl hn)),
+        ihb r r' (fun n hn => h n (Or.inr hn))]
+  | mul a b iha ihb =>
+      intro r r' h
+      simp [rename, iha r r' (fun n hn => h n (Or.inl hn)),
+        ihb r r' (fun n hn => h n (Or.inr hn))]
+
+theorem rename_id (t : Term) : rename (fun n : Nat => n) t = t := by
+  induction t with
+  | var n => rfl
+  | zero => rfl
+  | succ t ih => simp [rename, ih]
+  | add a b iha ihb => simp [rename, iha, ihb]
+  | mul a b iha ihb => simp [rename, iha, ihb]
+
 theorem rename_comp (t : Term) (r r' : Nat → Nat) :
     rename r (rename r' t) = rename (fun n => r (r' n)) t := by
   induction t with
@@ -4957,6 +4986,8 @@ def Free : Nat → Formula → Prop
   | n, ex a => Free (n+1) a
 
 def Sentence (phi : Formula) : Prop := ∀ n, ¬ Free n phi
+
+def Sentences (B : Formula → Prop) : Prop := ∀ phi, B phi → Sentence phi
 
 theorem free_lt_bound (phi : Formula) : ∀ n, Free n phi → n < bound phi := by
   induction phi with
@@ -5226,6 +5257,85 @@ theorem rename_ext (phi : Formula) (r r' : Nat → Nat) (h : ∀ n, r n = r' n) 
         cases n with
         | zero => rfl
         | succ n => simp [SetTheory.up, h n])]
+
+theorem rename_ext_free (phi : Formula) :
+    ∀ r r', (∀ n, Free n phi → r n = r' n) →
+      rename r phi = rename r' phi := by
+  induction phi with
+  | eq a b =>
+      intro r r' h
+      simp [rename,
+        Term.rename_ext_free a r r' (fun n hn => h n (Or.inl hn)),
+        Term.rename_ext_free b r r' (fun n hn => h n (Or.inr hn))]
+  | bot =>
+      intro r r' h
+      rfl
+  | imp a b iha ihb =>
+      intro r r' h
+      simp [rename, iha r r' (fun n hn => h n (Or.inl hn)),
+        ihb r r' (fun n hn => h n (Or.inr hn))]
+  | and a b iha ihb =>
+      intro r r' h
+      simp [rename, iha r r' (fun n hn => h n (Or.inl hn)),
+        ihb r r' (fun n hn => h n (Or.inr hn))]
+  | or a b iha ihb =>
+      intro r r' h
+      simp [rename, iha r r' (fun n hn => h n (Or.inl hn)),
+        ihb r r' (fun n hn => h n (Or.inr hn))]
+  | all a ih =>
+      intro r r' h
+      simp [rename, ih (SetTheory.up r) (SetTheory.up r') (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n => simp [SetTheory.up, h n hn])]
+  | ex a ih =>
+      intro r r' h
+      simp [rename, ih (SetTheory.up r) (SetTheory.up r') (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n => simp [SetTheory.up, h n hn])]
+
+theorem rename_id (phi : Formula) : rename (fun n : Nat => n) phi = phi := by
+  induction phi with
+  | eq a b =>
+      simp [rename, Term.rename_id]
+  | bot =>
+      rfl
+  | imp a b iha ihb =>
+      simp [rename, iha, ihb]
+  | and a b iha ihb =>
+      simp [rename, iha, ihb]
+  | or a b iha ihb =>
+      simp [rename, iha, ihb]
+  | all a ih =>
+      simp only [rename]
+      apply congrArg all
+      calc
+        rename (SetTheory.up (fun n : Nat => n)) a =
+            rename (fun n : Nat => n) a := by
+          apply rename_ext
+          intro n
+          cases n <;> rfl
+        _ = a := ih
+  | ex a ih =>
+      simp only [rename]
+      apply congrArg ex
+      calc
+        rename (SetTheory.up (fun n : Nat => n)) a =
+            rename (fun n : Nat => n) a := by
+          apply rename_ext
+          intro n
+          cases n <;> rfl
+        _ = a := ih
+
+theorem rename_eq_of_sentence {phi : Formula} (hphi : Sentence phi)
+    (r : Nat → Nat) : rename r phi = phi := by
+  calc
+    rename r phi = rename (fun n : Nat => n) phi := by
+      apply rename_ext_free
+      intro n hn
+      exact False.elim (hphi n hn)
+    _ = phi := rename_id phi
 
 theorem rename_comp (phi : Formula) (r r' : Nat → Nat) :
     rename r (rename r' phi) = rename (fun n => r (r' n)) phi := by
@@ -5904,6 +6014,207 @@ theorem BProv_eqElim {B : Formula → Prop} {G : List Formula} {s t : Term}
       · rcases hg with rfl | hnil
         · exact ha
         · cases hnil)
+
+/-- A relative PA proof may ignore one extra finite-context assumption. -/
+theorem BProv_context_cons {B : Formula → Prop} {G : List Formula}
+    {a b : Formula} (h : BProv B G b) : BProv B (a :: G) b :=
+  BProv_mono B G (a :: G) b
+    (fun _ hx => List.mem_cons.mpr (Or.inr hx)) h
+
+/-- Relative PA provability is closed under implication introduction. -/
+theorem BProv_impI {B : Formula → Prop} {G : List Formula}
+    {a b : Formula} (h : BProv B (a :: G) b) :
+    BProv B G (imp a b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  rw [List.mem_append] at hx
+  rcases hx with hx | hx
+  · exact List.mem_cons.mpr
+      (Or.inr (List.mem_append.mpr (Or.inl hx)))
+  · rw [List.mem_cons] at hx
+    rcases hx with hx | hx
+    · exact List.mem_cons.mpr (Or.inl hx)
+    · exact List.mem_cons.mpr
+        (Or.inr (List.mem_append.mpr (Or.inr hx)))
+
+/-- Implication introduction with a fixed prefix of PA assumptions. -/
+theorem BProv_impI_after_prefix {B : Formula → Prop}
+    {Γ Δ : List Formula} {a b : Formula}
+    (h : BProv B (Γ ++ a :: Δ) b) :
+    BProv B (Γ ++ Δ) (imp a b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.mem_append, List.mem_cons] at hx ⊢
+  grind
+
+/-- Relative PA provability is closed under conjunction introduction. -/
+theorem BProv_andI {B : Formula → Prop} {G : List Formula}
+    {a b : Formula} (ha : BProv B G a) (hb : BProv B G b) :
+    BProv B G (and a b) := by
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hLa x hx
+    · exact hLb x hx
+  · apply Prov.P_andI
+    · apply Prov_weaken hpa
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
+      · exact Or.inr hx
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
+      · exact Or.inr hx
+
+/-- Relative PA provability is closed under bottom elimination. -/
+theorem BProv_botE {B : Formula → Prop} {G : List Formula} {a : Formula}
+    (hbot : BProv B G bot) : BProv B G a := by
+  rcases hbot with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_botE _ a hp⟩
+
+/-- Relative PA provability is closed under the first conjunction projection. -/
+theorem BProv_andE1 {B : Formula → Prop} {G : List Formula}
+    {a b : Formula} (h : BProv B G (and a b)) : BProv B G a := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_andE1 _ a b hp⟩
+
+/-- Relative PA provability is closed under the second conjunction projection. -/
+theorem BProv_andE2 {B : Formula → Prop} {G : List Formula}
+    {a b : Formula} (h : BProv B G (and a b)) : BProv B G b := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_andE2 _ a b hp⟩
+
+/-- Relative PA provability is closed under left disjunction introduction. -/
+theorem BProv_orI1 {B : Formula → Prop} {G : List Formula}
+    {a b : Formula} (ha : BProv B G a) : BProv B G (or a b) := by
+  rcases ha with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_orI1 _ a b hp⟩
+
+/-- Relative PA provability is closed under right disjunction introduction. -/
+theorem BProv_orI2 {B : Formula → Prop} {G : List Formula}
+    {a b : Formula} (hb : BProv B G b) : BProv B G (or a b) := by
+  rcases hb with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_orI2 _ a b hp⟩
+
+/-- Relative PA provability is closed under disjunction elimination. -/
+theorem BProv_orE {B : Formula → Prop} {G : List Formula}
+    {a b c : Formula}
+    (hor : BProv B G (or a b))
+    (ha : BProv B (a :: G) c)
+    (hb : BProv B (b :: G) c) : BProv B G c := by
+  rcases hor with ⟨Lo, hLo, hpo⟩
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_orE _ a b c
+    · apply Prov_weaken hpo
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpa
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+
+/-- Relative PA provability is closed under universal elimination. -/
+theorem BProv_allE {B : Formula → Prop} {G : List Formula}
+    {a : Formula} {t : Term} (h : BProv B G (all a)) :
+    BProv B G (subst (instTerm t) a) := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_allE _ _ t hp⟩
+
+/-- Relative PA provability is closed under existential introduction. -/
+theorem BProv_exI {B : Formula → Prop} {G : List Formula}
+    {a : Formula} {t : Term}
+    (h : BProv B G (subst (instTerm t) a)) :
+    BProv B G (ex a) := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_exI _ _ t hp⟩
+
+/-- Universal introduction for relative PA proofs whose theory axioms are
+sentences. -/
+theorem BProv_allI_of_sentences {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {a : Formula}
+    (h : BProv B (G.map (rename Nat.succ)) a) :
+    BProv B G (all a) := by
+  rcases h with ⟨L, hL, hp⟩
+  have hLmap : L.map (rename Nat.succ) = L := by
+    calc
+      L.map (rename Nat.succ) = L.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact rename_eq_of_sentence (hB x (hL x hx)) Nat.succ
+      _ = L := by simp
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_allI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.map_append, List.mem_append] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (by simpa [hLmap] using hx)
+  · exact Or.inr hx
+
+/-- Existential elimination for relative PA proofs whose theory axioms are
+sentences. -/
+theorem BProv_exE_of_sentences {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {a c : Formula}
+    (hex : BProv B G (ex a))
+    (hbody : BProv B (a :: G.map (rename Nat.succ)) (rename Nat.succ c)) :
+    BProv B G c := by
+  rcases hex with ⟨Le, hLe, hpe⟩
+  rcases hbody with ⟨Lb, hLb, hpb⟩
+  have hLbmap : Lb.map (rename Nat.succ) = Lb := by
+    calc
+      Lb.map (rename Nat.succ) = Lb.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact rename_eq_of_sentence (hB x (hLb x hx)) Nat.succ
+      _ = Lb := by simp
+  refine ⟨Le ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_exE _ a c
+    · apply Prov_weaken hpe
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx
+      rcases hx with hx | hx
+      · apply List.mem_cons.mpr
+        apply Or.inr
+        simp only [List.map_append, List.mem_append]
+        apply Or.inl
+        exact Or.inr (by simpa [hLbmap] using hx)
+      · rw [List.mem_cons] at hx
+        rcases hx with hx | hx
+        · exact List.mem_cons.mpr (Or.inl hx)
+        · apply List.mem_cons.mpr
+          apply Or.inr
+          simp only [List.map_append, List.mem_append]
+          exact Or.inr hx
 
 theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
     {G : List Formula} {phi : Formula} (h : BProv B G phi) :
