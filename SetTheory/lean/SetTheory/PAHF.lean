@@ -369,6 +369,34 @@ theorem ordinalCode_mem_of_lt {k n : Nat} (h : k < n) :
     Mem (ordinalCode k) (ordinalCode n) :=
   (mem_ordinalCode_iff (ordinalCode k) n).mpr ⟨k, h, rfl⟩
 
+theorem ordinalCode_transitive (n : Nat) : TransitiveObj Mem (ordinalCode n) := by
+  intro y hy x hx
+  rcases (mem_ordinalCode_iff y n).mp hy with ⟨k, hk, rfl⟩
+  rcases (mem_ordinalCode_iff x k).mp hx with ⟨j, hj, rfl⟩
+  exact ordinalCode_mem_of_lt (Nat.lt_trans hj hk)
+
+theorem ordinalCode_members_transitive (n : Nat) :
+    ∀ y, Mem y (ordinalCode n) → TransitiveObj Mem y := by
+  intro y hy
+  rcases (mem_ordinalCode_iff y n).mp hy with ⟨k, _hk, rfl⟩
+  exact ordinalCode_transitive k
+
+theorem ordinalCode_memTotalOn (n : Nat) : MemTotalOn Mem (ordinalCode n) := by
+  intro y hy z hz
+  rcases (mem_ordinalCode_iff y n).mp hy with ⟨j, _hj, rfl⟩
+  rcases (mem_ordinalCode_iff z n).mp hz with ⟨k, _hk, rfl⟩
+  rcases Nat.lt_trichotomy j k with hlt | heq | hgt
+  · exact Or.inl (ordinalCode_mem_of_lt hlt)
+  · exact Or.inr (Or.inl (by rw [heq]))
+  · exact Or.inr (Or.inr (ordinalCode_mem_of_lt hgt))
+
+theorem ordinalCode_ordinalLike (n : Nat) : OrdinalLike Mem (ordinalCode n) :=
+  ⟨ordinalCode_transitive n, ordinalCode_members_transitive n, ordinalCode_memTotalOn n⟩
+
+theorem HF_ordinalLikeAt_of_ordinalCode (e : Nat → Nat) (i n : Nat)
+    (h : e i = ordinalCode n) : Sat Mem e (HF_ordinalLikeAt i) :=
+  (HF_ordinalLikeAt_spec e i).mpr (by rw [h]; exact ordinalCode_ordinalLike n)
+
 theorem not_mem_self (a : Nat) : ¬ Mem a a := fun h =>
   Nat.lt_irrefl a (mem_lt h)
 
