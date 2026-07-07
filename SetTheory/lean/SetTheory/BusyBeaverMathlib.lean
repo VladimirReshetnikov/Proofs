@@ -587,6 +587,43 @@ theorem totalRecursiveMathlib_bool_tm1_eval_unary {f : Nat -> Nat}
   exact ⟨boolOutput, hBoolOutput, tm1Output, hMain, hBoolRel⟩
 
 /--
+Unary-output Bool-`TM1` lowering for a caller-supplied finite-alphabet encoder.
+This form is intended for the final score compiler, which should choose an
+encoding whose Bool blocks are convenient to count.
+-/
+theorem totalRecursiveMathlib_bool_tm1_eval_unary_with_encoding {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f)
+    {width : Nat}
+    (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) :
+    ∃ c : Turing.ToPartrec.Code,
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      ∀ n,
+        ∃ boolOutput,
+          boolOutput ∈ Turing.TM1.eval
+            (Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine)
+            (MathlibBridge.TM1to1EncodedInput enc
+              (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+                (Turing.PartrecToTM2.trList [n]))) ∧
+          ∃ tm1Output,
+            MathlibBridge.TM2to1MainOutput tm1Output
+              (Turing.PartrecToTM2.trList (List.replicate (f n) 0)) ∧
+            MathlibBridge.TM1to1Output enc enc0 tm1Output boolOutput := by
+  rcases totalRecursiveMathlib_tm1_eval_unary hf with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  intro n
+  rcases hc n with ⟨tm1Output, hTM1Output, hMain⟩
+  rcases tm1_eval_to_bool_tm1_eval enc dec enc0 encdec
+      MathlibBridge.PartrecToTM1Machine hTM1Output with
+    ⟨boolOutput, hBoolOutput, hBoolRel⟩
+  exact ⟨boolOutput, hBoolOutput, tm1Output, hMain, hBoolRel⟩
+
+/--
 Unary-output version of `totalRecursiveMathlib_bool_tm0_eval_main`.
 -/
 theorem totalRecursiveMathlib_bool_tm0_eval_unary {f : Nat -> Nat}
@@ -618,6 +655,42 @@ theorem totalRecursiveMathlib_bool_tm0_eval_unary {f : Nat -> Nat}
   dsimp at hEnc ⊢
   rcases hEnc with ⟨enc0, encdec, hEval⟩
   refine ⟨enc0, encdec, ?_⟩
+  intro n
+  rcases hEval n with ⟨boolOutput, hBoolTM1, hOutput⟩
+  refine ⟨boolOutput, ?_, hOutput⟩
+  rw [Turing.TM1to0.tr_eval]
+  exact hBoolTM1
+
+/--
+Unary-output Bool-`TM0` lowering for a caller-supplied finite-alphabet encoder.
+-/
+theorem totalRecursiveMathlib_bool_tm0_eval_unary_with_encoding {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f)
+    {width : Nat}
+    (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) :
+    ∃ c : Turing.ToPartrec.Code,
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+      ∀ n,
+        ∃ boolOutput,
+          boolOutput ∈ Turing.TM0.eval (Turing.TM1to0.tr tm1Bool)
+            (MathlibBridge.TM1to1EncodedInput enc
+              (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+                (Turing.PartrecToTM2.trList [n]))) ∧
+          ∃ tm1Output,
+            MathlibBridge.TM2to1MainOutput tm1Output
+              (Turing.PartrecToTM2.trList (List.replicate (f n) 0)) ∧
+            MathlibBridge.TM1to1Output enc enc0 tm1Output boolOutput := by
+  rcases totalRecursiveMathlib_bool_tm1_eval_unary_with_encoding
+      hf enc dec enc0 encdec with ⟨c, hEval⟩
+  refine ⟨c, ?_⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  dsimp at hEval ⊢
   intro n
   rcases hEval n with ⟨boolOutput, hBoolTM1, hOutput⟩
   refine ⟨boolOutput, ?_, hOutput⟩
