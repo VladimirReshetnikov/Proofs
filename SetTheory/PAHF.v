@@ -8892,6 +8892,90 @@ End Formula.
 
 End PA.
 
+Fixpoint termGraphAt (rho : nat -> nat) (out : nat) (t : PA.term) : form :=
+  match t with
+  | PA.tVar n => fEq out (rho n)
+  | PA.tZero => HF_emptyAt out
+  | PA.tSucc a =>
+      fEx (fAnd
+        (termGraphAt (fun n => rho n + 1) 0 a)
+        (HF_succAt (out + 1) 0))
+  | PA.tAdd a b =>
+      fEx (fEx (fAnd
+        (termGraphAt (fun n => rho n + 2) 1 a)
+        (fAnd
+          (termGraphAt (fun n => rho n + 2) 0 b)
+          (addGraphAt (out + 2) 1 0))))
+  | PA.tMul a b =>
+      fEx (fEx (fEx (fAnd
+        (termGraphAt (fun n => rho n + 3) 1 a)
+        (fAnd
+          (termGraphAt (fun n => rho n + 3) 2 b)
+          (fAnd (fEq 0 (out + 3)) mulGraph)))))
+  end.
+
+Lemma termGraphAt_free : forall t rho out i,
+  Free i (termGraphAt rho out t) ->
+    i = out \/ exists n, PA.Term.Free n t /\ i = rho n.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho out i h.
+  - destruct h as [h | h].
+    + left. exact h.
+    + right. exists n. split; [reflexivity | exact h].
+  - left. apply (HF_emptyAt_free i out h).
+  - destruct h as [h | h].
+    + destruct (IHa (fun n => rho n + 1) 0 (S i) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [exact hn | lia].
+    + destruct (HF_succAt_free (S i) (out + 1) 0 h) as [hi | hi]; lia.
+  - destruct h as [h | [h | h]].
+    + destruct (IHa (fun n => rho n + 2) 1 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [left; exact hn | lia].
+    + destruct (IHb (fun n => rho n + 2) 0 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [right; exact hn | lia].
+    + destruct (addGraphAt_free (S (S i)) (out + 2) 1 0 h)
+        as [hi | [hi | hi]]; lia.
+  - destruct h as [h | [h | [h | h]]].
+    + destruct (IHa (fun n => rho n + 3) 1 (S (S (S i))) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [left; exact hn | lia].
+    + destruct (IHb (fun n => rho n + 3) 2 (S (S (S i))) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [right; exact hn | lia].
+    + destruct h as [hi | hi]; lia.
+    + destruct (mulGraph_free (S (S (S i))) h) as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma termGraphAt_map_ext : forall t rho sigma out,
+  (forall n, rho n = sigma n) ->
+  termGraphAt rho out t = termGraphAt sigma out t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho sigma out h; try reflexivity.
+  - rewrite h. reflexivity.
+  - rewrite (IHa (fun n => rho n + 1) (fun n => sigma n + 1) 0).
+    + reflexivity.
+    + intro n. now rewrite h.
+  - rewrite (IHa (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (IHb (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intro n. now rewrite h.
+    + intro n. now rewrite h.
+  - rewrite (IHa (fun n => rho n + 3) (fun n => sigma n + 3) 1).
+    + rewrite (IHb (fun n => rho n + 3) (fun n => sigma n + 3) 2).
+      * reflexivity.
+      * intro n. now rewrite h.
+    + intro n. now rewrite h.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
