@@ -79,6 +79,20 @@ theorem a198683LexicalValueSet_eq_evalSet (n : Nat) :
   rfl
 
 /--
+Finite compatibility view of the same lexical values.  This is not the
+primary definition; it is a finite presentation of the canonical lexical set.
+-/
+def a198683LexicalValueFinset (n : Nat) : Finset ℂ := by
+  classical
+  exact PowTower.Expr.evalFinset IPowExpr.eval n
+
+theorem a198683LexicalValueSet_eq_finset (n : Nat) :
+    a198683LexicalValueSet n = (a198683LexicalValueFinset n : Set ℂ) := by
+  classical
+  rw [a198683LexicalValueSet_eq_evalSet, a198683LexicalValueFinset]
+  exact PowTower.Expr.evalSet_eq_evalFinset IPowExpr.eval n
+
+/--
 The shared canonical lexical value set for A198683.
 -/
 def a198683CanonicalValueSet (n : Nat) : Set ℂ :=
@@ -142,6 +156,29 @@ theorem a198683SharedRecursiveValueSet_eq_valueSet (n : Nat) :
                 · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
                   rwa [hright]
 
+/--
+Finite split-recursive view of the A198683 values, using the shared
+`PowTower.Expr` recurrence.  Computation-facing proofs may use the local
+`a198683ValueSet`; this finite view records the same shared recurrence when
+decidable equality is available.
+-/
+def a198683RecursiveValueFinset (n : Nat) : Finset ℂ := by
+  classical
+  exact PowTower.Expr.recursiveValueFinset Complex.I principalPow n
+
+theorem a198683LexicalValueFinset_eq_recursiveValueFinset (n : Nat) :
+    a198683LexicalValueFinset n = a198683RecursiveValueFinset n := by
+  classical
+  rw [a198683LexicalValueFinset, a198683RecursiveValueFinset]
+  exact PowTower.Expr.evalFinset_eq_recursiveValueFinset Complex.I principalPow n
+
+theorem a198683RecursiveValueFinset_coe (n : Nat) :
+    (a198683RecursiveValueFinset n : Set ℂ) = a198683ValueSet n := by
+  classical
+  rw [a198683RecursiveValueFinset]
+  exact a198683SharedRecursiveValueSet_eq_valueSet n ▸
+    PowTower.Expr.recursiveValueFinset_coe Complex.I principalPow n
+
 theorem a198683CanonicalValueSet_eq_valueSet (n : Nat) :
     a198683CanonicalValueSet n = a198683ValueSet n := by
   rw [a198683CanonicalValueSet,
@@ -172,6 +209,13 @@ theorem a198683_eq_canonicalValueSet_ncard (n : Nat) :
     a198683 n = (a198683CanonicalValueSet n).ncard := by
   rfl
 
+theorem a198683_eq_lexicalValueFinset_card (n : Nat) :
+    a198683 n = (a198683LexicalValueFinset n).card := by
+  classical
+  rw [a198683_eq_canonicalValueSet_ncard, ← a198683LexicalValueSet_eq_canonicalValueSet,
+    a198683LexicalValueSet_eq_finset]
+  exact Set.ncard_coe_finset (a198683LexicalValueFinset n)
+
 /--
 The shared recursive value-set cardinality computes the same number as the
 canonical lexical definition.
@@ -189,6 +233,11 @@ the same number as the canonical lexical definition.
     a198683 n = (a198683ValueSet n).ncard := by
   rw [a198683_eq_sharedRecursiveValueSet_ncard,
     a198683SharedRecursiveValueSet_eq_valueSet]
+
+theorem a198683_eq_recursiveValueFinset_card (n : Nat) :
+    a198683 n = (a198683RecursiveValueFinset n).card := by
+  classical
+  rw [a198683_eq_lexicalValueFinset_card, a198683LexicalValueFinset_eq_recursiveValueFinset]
 
 private noncomputable def p2 : ℂ :=
   principalPow Complex.I Complex.I
