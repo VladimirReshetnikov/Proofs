@@ -554,12 +554,15 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_translate_allE_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_allE_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_allE_slot_context
+#check @AckermannHF.PAInHF.BProv_formulaAt_slot_eqElim_context
+#check @AckermannHF.PAInHF.BProv_formulaAt_allE_equal_slot_context
 #check @AckermannHF.PAInHF.BProv_formulaAt_allE_var
 #check @AckermannHF.PAInHF.BProv_formulaAt_allE_var_context
 #check @AckermannHF.PAInHF.BProv_formulaAt_allE_var_domainContext
 #check @AckermannHF.PAInHF.BProv_translate_exI_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_exI_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_exI_slot_context
+#check @AckermannHF.PAInHF.BProv_formulaAt_exI_equal_slot_context
 #check @AckermannHF.PAInHF.BProv_formulaAt_exI_var
 #check @AckermannHF.PAInHF.BProv_formulaAt_exI_var_context
 #check @AckermannHF.PAInHF.BProv_formulaAt_exI_var_domainContext

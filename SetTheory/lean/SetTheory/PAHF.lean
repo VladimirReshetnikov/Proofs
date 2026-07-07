@@ -12134,6 +12134,31 @@ theorem BProv_formulaAt_allE_slot_context {Γ : List Form} {ρ : Nat → Nat}
     (rename (inst k) domainForm)
     (rename (inst k) (formulaAt (upVarMap ρ) a)) himp hdom
 
+/-- Equality of HF slots transports a translated PA body instantiated at one
+slot to the same body instantiated at the other slot. -/
+theorem BProv_formulaAt_slot_eqElim_context {Γ : List Form} {ρ : Nat → Nat}
+    {a : PA.Formula} {i j : Nat}
+    (heq : BProv translatedPAAx Γ (fEq i j))
+    (hbody : BProv translatedPAAx Γ
+      (rename (inst i) (formulaAt (upVarMap ρ) a))) :
+    BProv translatedPAAx Γ
+      (rename (inst j) (formulaAt (upVarMap ρ) a)) :=
+  BProv_eqElim heq hbody
+
+/-- Universal elimination may instantiate at one explicit domain slot and then
+transport the resulting body across an equality of HF slots. -/
+theorem BProv_formulaAt_allE_equal_slot_context {Γ : List Form}
+    {ρ : Nat → Nat} {a : PA.Formula} {i j : Nat}
+    (hall : BProv translatedPAAx Γ
+      (formulaAt ρ (PA.Formula.all a)))
+    (hdom : BProv translatedPAAx Γ (rename (inst i) domainForm))
+    (heq : BProv translatedPAAx Γ (fEq i j)) :
+    BProv translatedPAAx Γ
+      (rename (inst j) (formulaAt (upVarMap ρ) a)) :=
+  BProv_formulaAt_slot_eqElim_context (ρ := ρ) (a := a) heq
+    (BProv_formulaAt_allE_slot_context (ρ := ρ) (a := a)
+      (k := i) hall hdom)
+
 /-- Translated universal elimination by a PA variable over an arbitrary HF
 context, with the variable-domain proof kept explicit. -/
 theorem BProv_formulaAt_allE_var_context {Γ : List Form} {ρ : Nat → Nat}
@@ -12228,6 +12253,20 @@ theorem BProv_formulaAt_exI_slot_context {Γ : List Form} {ρ : Nat → Nat}
       (a := fAnd domainForm (formulaAt (upVarMap ρ) a))
       (k := k) (by simpa [rename] using hand)
   simpa [formulaAt] using hex
+
+/-- Existential introduction may transport a translated PA body across an
+equality of HF slots before using the explicit domain witness slot. -/
+theorem BProv_formulaAt_exI_equal_slot_context {Γ : List Form}
+    {ρ : Nat → Nat} {a : PA.Formula} {i j : Nat}
+    (hdom : BProv translatedPAAx Γ (rename (inst j) domainForm))
+    (heq : BProv translatedPAAx Γ (fEq i j))
+    (hbody : BProv translatedPAAx Γ
+      (rename (inst i) (formulaAt (upVarMap ρ) a))) :
+    BProv translatedPAAx Γ
+      (formulaAt ρ (PA.Formula.ex a)) :=
+  BProv_formulaAt_exI_slot_context (ρ := ρ) (a := a) (k := j)
+    hdom (BProv_formulaAt_slot_eqElim_context (ρ := ρ) (a := a)
+      heq hbody)
 
 /-- Translated existential introduction by a PA variable over an arbitrary HF
 context, with the variable-domain proof kept explicit. -/
