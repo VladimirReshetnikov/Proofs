@@ -9188,6 +9188,78 @@ Proof.
   exact (hz' a haSucc).
 Qed.
 
+Lemma addGraphAt_zero_right_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right,
+  e out = e left ->
+  e right = foam_empty V M ->
+  Sat V (foam_mem V M) e (addGraphAt out left right).
+Proof.
+  intros V M e out left right hout hright.
+  unfold addGraphAt.
+  pose (f := foam_zero_succ_rec_graph V M (e left)).
+  exists f.
+  split.
+  - apply (proj2 (foam_HF_succRecApproxAt_spec V M
+      (scons V f e) 0 (S left) (S right))).
+    change (foam_succ_rec_approx V M (e left) f (e right)).
+    rewrite hright.
+    unfold f.
+    apply foam_zero_succ_rec_graph_succRecApprox.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    rewrite hright, hout.
+    unfold f.
+    apply foam_zero_succ_rec_graph_base.
+Qed.
+
+Lemma termGraphAt_add_var_zero_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out n e,
+  e out = e (rho n) ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tAdd (PA.tVar n) PA.tZero)).
+Proof.
+  intros V M rho out n e hout.
+  simpl.
+  exists (e (rho n)).
+  exists (foam_empty V M).
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 1 n
+      (scons V (foam_empty V M) (scons V (e (rho n)) e)))).
+    change (e (rho n) =
+      scons V (foam_empty V M) (scons V (e (rho n)) e) (rho n + 2)).
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (e (rho n)) e)) 0)).
+    reflexivity.
+  - apply (addGraphAt_zero_right_model V M
+      (scons V (foam_empty V M) (scons V (e (rho n)) e))
+      (out + 2) 1 0).
+    + replace (out + 2) with (S (S out)) by lia.
+      simpl.
+      exact hout.
+    + reflexivity.
+Qed.
+
+Lemma formulaAt_addZero_valid_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho e,
+  Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addZero).
+Proof.
+  intros V M rho e x _.
+  simpl.
+  exists x.
+  exists x.
+  repeat split.
+  - change (Sat V (foam_mem V M)
+      (scons V x (scons V x (scons V x e)))
+      (termGraphAt (fun n => upVarMap rho n + 2) 1
+        (PA.tAdd (PA.tVar 0) PA.tZero))).
+    apply termGraphAt_add_var_zero_model.
+    reflexivity.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
