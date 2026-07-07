@@ -149,15 +149,9 @@ noncomputable def a002845LogCard (n : Nat) : Nat :=
 /-- Semantic values are exactly `2^m` for semantic logarithms `m`. -/
 theorem valueSet_eq_pow2_image_logValueSet (n : Nat) :
     valueSet n = (fun m : Nat => 2 ^ m) '' logValueSet n := by
-  ext v
-  constructor
-  · intro hv
-    rcases hv with ⟨e, he, rfl⟩
-    exact ⟨logEval e, ⟨e, he, rfl⟩, (eval_eq_two_pow_logEval e).symm⟩
-  · intro hv
-    rcases hv with ⟨m, ⟨e, he, hm⟩, hv⟩
-    refine ⟨e, he, ?_⟩
-    rw [← hv, ← hm, eval_eq_two_pow_logEval]
+  rw [valueSet_eq_evalSet, logValueSet]
+  exact PowTower.Expr.evalSet_eq_image_evalSet_of_eval_eq
+    eval logEval (fun m : Nat => 2 ^ m) eval_eq_two_pow_logEval n
 
 /--
 The canonical semantic count equals the count of exact logarithms.  This is
@@ -165,9 +159,10 @@ the first proof boundary: switching from values to logarithms is justified by
 injectivity of `m ↦ 2^m`.
 -/
 theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n := by
-  rw [a002845_eq_canonicalValueSet_ncard, ← valueSet_eq_canonicalValueSet,
-    a002845LogCard, valueSet_eq_pow2_image_logValueSet]
-  exact Set.InjOn.ncard_image
+  rw [a002845, a002845LogCard, logValueSet]
+  exact PowTower.Expr.valueCard_eq_evalSet_ncard_of_eval_eq_of_injOn
+    2 (fun a b : Nat => a ^ b) logEval (fun m : Nat => 2 ^ m)
+    eval_eq_two_pow_logEval n
     ((Nat.pow_right_injective (by decide : 2 ≤ (2 : Nat))).injOn)
 
 /-- Direct finite computation of the canonical logarithm set. -/

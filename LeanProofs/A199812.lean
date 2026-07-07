@@ -210,9 +210,11 @@ noncomputable def ordinalOfNote (o : ONote) : Ordinal.{0} :=
 theorem ordinalValues_eq_exponentNoteValues_image (n : Nat) :
     ordinalValues n = (exponentNoteValues n).image ordinalOfNote := by
   classical
-  ext o
-  simp [ordinalValues, exponentNoteValues, exponentNoteList, ordinalOfNote,
-    PowTower.Expr.evalFinset, sharedEvalOrdinal_eq_omega_opow_exponentNote]
+  simpa [ordinalValues, exponentNoteValues, exponentNoteList, ordinalOfNote,
+    PowTower.Expr.evalFinset] using
+    (PowTower.Expr.evalFinset_eq_image_evalFinset_of_eval_eq
+      sharedEvalOrdinal exponentNote ordinalOfNote
+      sharedEvalOrdinal_eq_omega_opow_exponentNote n)
 
 theorem exponentNoteValues_nf {n : Nat} {o : ONote} (ho : o ∈ exponentNoteValues n) :
     ONote.NF o := by

@@ -189,6 +189,45 @@ theorem evalSet_ncard_eq_evalFinset_card [DecidableEq α] (evalFn : Expr -> α)
   rw [evalSet_eq_evalFinset]
   exact Set.ncard_coe_finset (evalFinset evalFn n)
 
+/--
+If one computation-facing evaluator is pointwise an interpretation of another
+one, then its evaluated lexical set is the image of the other evaluated set.
+-/
+theorem evalSet_eq_image_evalSet_of_eval_eq {β : Type v}
+    (evalTarget : Expr -> α) (evalSource : Expr -> β) (repr : β -> α)
+    (h : ∀ e, evalTarget e = repr (evalSource e)) (n : Nat) :
+    evalSet evalTarget n = repr '' evalSet evalSource n := by
+  ext v
+  constructor
+  · rintro ⟨e, he, rfl⟩
+    exact ⟨evalSource e, ⟨e, he, rfl⟩, (h e).symm⟩
+  · rintro ⟨w, ⟨e, he, hw⟩, hv⟩
+    refine ⟨e, he, ?_⟩
+    rw [h, hw, hv]
+
+theorem evalSet_ncard_eq_of_eval_eq_of_injOn {β : Type v}
+    (evalTarget : Expr -> α) (evalSource : Expr -> β) (repr : β -> α)
+    (h : ∀ e, evalTarget e = repr (evalSource e)) (n : Nat)
+    (hInj : Set.InjOn repr (evalSet evalSource n)) :
+    (evalSet evalTarget n).ncard = (evalSet evalSource n).ncard := by
+  rw [evalSet_eq_image_evalSet_of_eval_eq evalTarget evalSource repr h n]
+  exact Set.InjOn.ncard_image hInj
+
+theorem evalFinset_eq_image_evalFinset_of_eval_eq [DecidableEq α] {β : Type v}
+    [DecidableEq β] (evalTarget : Expr -> α) (evalSource : Expr -> β)
+    (repr : β -> α) (h : ∀ e, evalTarget e = repr (evalSource e)) (n : Nat) :
+    evalFinset evalTarget n = (evalFinset evalSource n).image repr := by
+  ext v
+  simp [evalFinset, h]
+
+theorem evalFinset_card_eq_of_eval_eq_of_injOn [DecidableEq α] {β : Type v}
+    [DecidableEq β] (evalTarget : Expr -> α) (evalSource : Expr -> β)
+    (repr : β -> α) (h : ∀ e, evalTarget e = repr (evalSource e)) (n : Nat)
+    (hInj : Set.InjOn repr (evalFinset evalSource n : Set β)) :
+    (evalFinset evalTarget n).card = (evalFinset evalSource n).card := by
+  rw [evalFinset_eq_image_evalFinset_of_eval_eq evalTarget evalSource repr h n]
+  exact Finset.card_image_of_injOn hInj
+
 theorem valueSet_eq_evalSet (atomValue : α) (powValue : α -> α -> α) (n : Nat) :
     valueSet atomValue powValue n = evalSet (eval atomValue powValue) n := by
   rfl
@@ -209,6 +248,26 @@ theorem valueCard_eq_evalFinset_card [DecidableEq α] (atomValue : α)
       (evalFinset (eval atomValue powValue) n).card := by
   rw [valueCard, valueSet_eq_evalFinset]
   exact Set.ncard_coe_finset (evalFinset (eval atomValue powValue) n)
+
+theorem valueCard_eq_evalSet_ncard_of_eval_eq_of_injOn {β : Type v}
+    (atomValue : α) (powValue : α -> α -> α) (evalSource : Expr -> β)
+    (repr : β -> α)
+    (h : ∀ e, eval atomValue powValue e = repr (evalSource e)) (n : Nat)
+    (hInj : Set.InjOn repr (evalSet evalSource n)) :
+    valueCard atomValue powValue n = (evalSet evalSource n).ncard := by
+  rw [valueCard, valueSet_eq_evalSet]
+  exact evalSet_ncard_eq_of_eval_eq_of_injOn
+    (eval atomValue powValue) evalSource repr h n hInj
+
+theorem valueCard_eq_evalFinset_card_of_eval_eq_of_injOn [DecidableEq α] {β : Type v}
+    [DecidableEq β] (atomValue : α) (powValue : α -> α -> α)
+    (evalSource : Expr -> β) (repr : β -> α)
+    (h : ∀ e, eval atomValue powValue e = repr (evalSource e)) (n : Nat)
+    (hInj : Set.InjOn repr (evalFinset evalSource n : Set β)) :
+    valueCard atomValue powValue n = (evalFinset evalSource n).card := by
+  rw [valueCard_eq_evalFinset_card atomValue powValue n]
+  exact evalFinset_card_eq_of_eval_eq_of_injOn
+    (eval atomValue powValue) evalSource repr h n hInj
 
 /--
 The split-recursive presentation of the same values.  This is not the
