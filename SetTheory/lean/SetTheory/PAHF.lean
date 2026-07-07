@@ -1889,6 +1889,16 @@ theorem eval_numeral {α : Type u} (M : Model α) (e : Nat → α) :
   | n+1 => by
       simp only [numeral, numeralValue, eval, eval_numeral M e n]
 
+theorem numeralValue_natModel : ∀ n, numeralValue natModel n = n
+  | 0 => rfl
+  | n+1 => by
+      change Nat.succ (numeralValue natModel n) = n + 1
+      rw [numeralValue_natModel n]
+
+theorem eval_numeral_natModel (e : Nat → Nat) (n : Nat) :
+    eval natModel e (numeral n) = n := by
+  rw [eval_numeral, numeralValue_natModel]
+
 def bound : Term → Nat
   | var n => n + 1
   | zero => 0
@@ -2205,6 +2215,32 @@ def ltAt (a b : Nat) : Formula :=
 def dvdAt (a b : Nat) : Formula :=
   ex (eq (Term.mul (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
 
+def eqConstAt (a n : Nat) : Formula :=
+  eq (Term.var a) (Term.numeral n)
+
+def zeroAt (a : Nat) : Formula := eqConstAt a 0
+
+def oneAt (a : Nat) : Formula := eqConstAt a 1
+
+def twoAt (a : Nat) : Formula := eqConstAt a 2
+
+def nonzeroAt (a : Nat) : Formula :=
+  ex (eq (Term.succ (Term.var 0)) (Term.var (a+1)))
+
+def boolAt (a : Nat) : Formula :=
+  or (zeroAt a) (oneAt a)
+
+def doubleEqAt (value half : Nat) : Formula :=
+  eq (Term.var value) (Term.add (Term.var half) (Term.var half))
+
+def oddDoubleEqAt (value half : Nat) : Formula :=
+  eq (Term.var value) (Term.succ (Term.add (Term.var half) (Term.var half)))
+
+def div2StepAt (value half bit : Nat) : Formula :=
+  and (boolAt bit)
+    (eq (Term.var value)
+      (Term.add (Term.add (Term.var half) (Term.var half)) (Term.var bit)))
+
 theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
     Sat natModel e (leAt a b) ↔ e a ≤ e b := by
   constructor
@@ -2247,6 +2283,68 @@ theorem dvdAt_nat (e : Nat → Nat) (a b : Nat) :
     simp only [Sat, Term.eval, natModel, scons]
     change e a * q = e b
     exact hq.symm
+
+theorem eqConstAt_nat (e : Nat → Nat) (a n : Nat) :
+    Sat natModel e (eqConstAt a n) ↔ e a = n := by
+  simp only [eqConstAt, Sat, Term.eval, Term.eval_numeral_natModel]
+
+theorem zeroAt_nat (e : Nat → Nat) (a : Nat) :
+    Sat natModel e (zeroAt a) ↔ e a = 0 :=
+  eqConstAt_nat e a 0
+
+theorem oneAt_nat (e : Nat → Nat) (a : Nat) :
+    Sat natModel e (oneAt a) ↔ e a = 1 :=
+  eqConstAt_nat e a 1
+
+theorem twoAt_nat (e : Nat → Nat) (a : Nat) :
+    Sat natModel e (twoAt a) ↔ e a = 2 :=
+  eqConstAt_nat e a 2
+
+theorem nonzeroAt_nat (e : Nat → Nat) (a : Nat) :
+    Sat natModel e (nonzeroAt a) ↔ e a ≠ 0 := by
+  constructor
+  · intro h hzero
+    rcases h with ⟨d, hd⟩
+    simp only [Sat, Term.eval, natModel, scons] at hd
+    omega
+  · intro h
+    refine ⟨e a - 1, ?_⟩
+    simp only [Sat, Term.eval, natModel, scons]
+    omega
+
+theorem boolAt_nat (e : Nat → Nat) (a : Nat) :
+    Sat natModel e (boolAt a) ↔ e a = 0 ∨ e a = 1 := by
+  simp only [boolAt, Sat]
+  exact or_congr (zeroAt_nat e a) (oneAt_nat e a)
+
+theorem doubleEqAt_nat (e : Nat → Nat) (value half : Nat) :
+    Sat natModel e (doubleEqAt value half) ↔ e value = e half + e half := by
+  simp only [doubleEqAt, Sat, Term.eval, natModel]
+  rfl
+
+theorem oddDoubleEqAt_nat (e : Nat → Nat) (value half : Nat) :
+    Sat natModel e (oddDoubleEqAt value half) ↔ e value = e half + e half + 1 := by
+  simp only [oddDoubleEqAt, Sat, Term.eval, natModel]
+  change e value = Nat.succ (e half + e half) ↔ e value = e half + e half + 1
+  omega
+
+theorem div2StepAt_nat (e : Nat → Nat) (value half bit : Nat) :
+    Sat natModel e (div2StepAt value half bit) ↔
+      (e bit = 0 ∨ e bit = 1) ∧ e value = e half + e half + e bit := by
+  simp only [div2StepAt, Sat]
+  constructor
+  · intro h
+    have hval : e value = e half + e half + e bit := by
+      have hraw := h.2
+      simp only [Term.eval, natModel] at hraw
+      change e value = e half + e half + e bit at hraw
+      exact hraw
+    exact ⟨(boolAt_nat e bit).mp h.1, hval⟩
+  · intro h
+    exact ⟨(boolAt_nat e bit).mpr h.1, by
+      simp only [Term.eval, natModel]
+      change e value = e half + e half + e bit
+      omega⟩
 
 end Formula
 
