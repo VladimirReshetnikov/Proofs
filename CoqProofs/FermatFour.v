@@ -39,6 +39,21 @@ Definition Fermat42_descent_step : Prop :=
     exists a' b' c' : Z,
       Fermat42 a' b' c' /\ (cMeasure c' < cMeasure c)%nat.
 
+Definition Fermat42_mixed_parity_descent_step : Prop :=
+  forall a b c : Z,
+    Fermat42 a b c ->
+    (Z.Odd a /\ Z.Even b \/ Z.Even a /\ Z.Odd b) ->
+    exists a' b' c' : Z,
+      Fermat42 a' b' c' /\ (cMeasure c' < cMeasure c)%nat.
+
+Definition Fermat42_odd_even_descent_step : Prop :=
+  forall a b c : Z,
+    Fermat42 a b c ->
+    Z.Odd a ->
+    Z.Even b ->
+    exists a' b' c' : Z,
+      Fermat42 a' b' c' /\ (cMeasure c' < cMeasure c)%nat.
+
 Definition Fermat42_descent_statement : Prop :=
   forall a b c : Z, a <> 0 -> b <> 0 -> ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
 
@@ -253,6 +268,54 @@ Proof.
     (proj1 (Z.even_spec b) hbeven)).
 Qed.
 
+Lemma odd_true_of_even_false (z : Z) :
+    Z.even z = false -> Z.odd z = true.
+Proof.
+  intro hz.
+  rewrite <- Z.negb_even.
+  now rewrite hz.
+Qed.
+
+Theorem Fermat42_descent_step_of_mixed_parity
+    (mixed_descent : Fermat42_mixed_parity_descent_step) :
+    Fermat42_descent_step.
+Proof.
+  intros a b c h.
+  destruct (Z.even a) eqn:haeven;
+    destruct (Z.even b) eqn:hbeven.
+  - exact (Fermat42_both_even_descent_bool h haeven hbeven).
+  - exact (mixed_descent a b c h (or_intror
+      (conj
+        (proj1 (Z.even_spec a) haeven)
+        (proj1 (Z.odd_spec b) (odd_true_of_even_false b hbeven))))).
+  - exact (mixed_descent a b c h (or_introl
+      (conj
+        (proj1 (Z.odd_spec a) (odd_true_of_even_false a haeven))
+        (proj1 (Z.even_spec b) hbeven)))).
+  - exfalso.
+    apply (Fermat42_not_both_odd h).
+    split; now apply odd_true_of_even_false.
+Qed.
+
+Theorem Fermat42_mixed_parity_descent_step_of_odd_even
+    (odd_even_descent : Fermat42_odd_even_descent_step) :
+    Fermat42_mixed_parity_descent_step.
+Proof.
+  intros a b c h hparity.
+  destruct hparity as [(haodd & hbeven) | (haeven & hbodd)].
+  - exact (odd_even_descent a b c h haodd hbeven).
+  - exact (odd_even_descent b a c
+      (proj1 Fermat42_comm h) hbodd haeven).
+Qed.
+
+Theorem Fermat42_descent_step_of_odd_even
+    (odd_even_descent : Fermat42_odd_even_descent_step) :
+    Fermat42_descent_step.
+Proof.
+  exact (Fermat42_descent_step_of_mixed_parity
+    (Fermat42_mixed_parity_descent_step_of_odd_even odd_even_descent)).
+Qed.
+
 Theorem no_Fermat42_of_descent (descent : Fermat42_descent_step) :
     forall a b c : Z, ~ Fermat42 a b c.
 Proof.
@@ -274,6 +337,22 @@ Theorem Fermat42_descent_statement_of_step
 Proof.
   intros a b c ha hb heq.
   exact (no_Fermat42_of_descent descent a b c (conj ha (conj hb heq))).
+Qed.
+
+Theorem Fermat42_descent_statement_of_mixed_parity_step
+    (mixed_descent : Fermat42_mixed_parity_descent_step) :
+    Fermat42_descent_statement.
+Proof.
+  exact (Fermat42_descent_statement_of_step
+    (Fermat42_descent_step_of_mixed_parity mixed_descent)).
+Qed.
+
+Theorem Fermat42_descent_statement_of_odd_even_step
+    (odd_even_descent : Fermat42_odd_even_descent_step) :
+    Fermat42_descent_statement.
+Proof.
+  exact (Fermat42_descent_statement_of_step
+    (Fermat42_descent_step_of_odd_even odd_even_descent)).
 Qed.
 
 Section WithDescent.
@@ -311,6 +390,80 @@ Proof.
 Qed.
 
 End WithDescent.
+
+Section WithMixedParityDescent.
+
+Variable mixed_descent_step : Fermat42_mixed_parity_descent_step.
+
+Theorem no_square_right_int_solutions_of_mixed_parity_descent :
+    Fermat42_descent_statement.
+Proof.
+  exact (Fermat42_descent_statement_of_mixed_parity_step mixed_descent_step).
+Qed.
+
+Theorem fermat_four_no_square_right_int_solutions_of_mixed_parity_descent
+    {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
+    ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
+Proof.
+  exact (no_square_right_int_solutions_of_mixed_parity_descent a b c ha hb).
+Qed.
+
+Theorem fermat_four_no_positive_nat_solutions_of_mixed_parity_descent
+    {a b c : nat}
+    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (_hc : (0 < c)%nat) :
+    (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
+Proof.
+  intro hnat.
+  pose proof (f_equal Z.of_nat hnat) as hz.
+  rewrite Nat2Z.inj_add in hz.
+  repeat rewrite Nat2Z.inj_pow in hz.
+  change (Z.of_nat 4) with 4 in hz.
+  apply (no_square_right_int_solutions_of_mixed_parity_descent
+    (Z.of_nat a) (Z.of_nat b) ((Z.of_nat c) ^ 2)).
+  - lia.
+  - lia.
+  - rewrite hz.
+    ring.
+Qed.
+
+End WithMixedParityDescent.
+
+Section WithOddEvenDescent.
+
+Variable odd_even_descent_step : Fermat42_odd_even_descent_step.
+
+Theorem no_square_right_int_solutions_of_odd_even_descent :
+    Fermat42_descent_statement.
+Proof.
+  exact (Fermat42_descent_statement_of_odd_even_step odd_even_descent_step).
+Qed.
+
+Theorem fermat_four_no_square_right_int_solutions_of_odd_even_descent
+    {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
+    ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
+Proof.
+  exact (no_square_right_int_solutions_of_odd_even_descent a b c ha hb).
+Qed.
+
+Theorem fermat_four_no_positive_nat_solutions_of_odd_even_descent
+    {a b c : nat}
+    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (_hc : (0 < c)%nat) :
+    (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
+Proof.
+  intro hnat.
+  pose proof (f_equal Z.of_nat hnat) as hz.
+  rewrite Nat2Z.inj_add in hz.
+  repeat rewrite Nat2Z.inj_pow in hz.
+  change (Z.of_nat 4) with 4 in hz.
+  apply (no_square_right_int_solutions_of_odd_even_descent
+    (Z.of_nat a) (Z.of_nat b) ((Z.of_nat c) ^ 2)).
+  - lia.
+  - lia.
+  - rewrite hz.
+    ring.
+Qed.
+
+End WithOddEvenDescent.
 
 End FermatFour.
 End LeanProofs.

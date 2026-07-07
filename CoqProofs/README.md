@@ -39,8 +39,10 @@ Current ports:
   descent eliminator, records the Pythagorean-triple-of-squares bridge, proves
   scaling, non-primitive both-even descent, and parity obstruction lemmas, then
   derives the stronger integer-square theorem and the positive-natural FLT-4
-  statement from an explicit smaller-counterexample descent-step parameter.
-  The installed Coq libraries do not include a modern FLT-4 theorem; the old
+  statement either from an explicit smaller-counterexample descent-step
+  parameter, from the narrower mixed-parity primitive-descent parameter, or
+  from the canonical odd-left/even-right primitive-descent parameter.  The
+  installed Coq libraries do not include a modern FLT-4 theorem; the old
   self-contained `rocq-archive/fermat4` formalization exists but targets Coq
   8.0 and is not yet modernized here.
 - `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
@@ -89,7 +91,7 @@ Current ports:
   `A199812.lean`: inner tower exponents are represented as Cantor-normal-form
   notes below epsilon_0, tower splits combine degrees by
   `a, b |-> a + omega^b`, and the recurrence is connected to the shared
-  `PowTower.v` evaluator.  It certifies the initial values through `n = 8`;
+  `PowTower.v` evaluator.  It certifies the initial values through `n = 11`;
   the Lean module's mathlib ordinal-semantics bridge and longer table through
   `n = 13` are not yet replayed in Coq.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by

@@ -100,11 +100,11 @@ Definition computedDegreeCount (n : nat) : nat :=
 
 Definition a199812 : nat -> nat := computedDegreeCount.
 
-Definition a199812ValuesThroughEight : list nat :=
-  [1; 1; 2; 5; 13; 32; 79; 193].
+Definition a199812ValuesThroughEleven : list nat :=
+  [1; 1; 2; 5; 13; 32; 79; 193; 478; 1196; 3037].
 
-Theorem a199812_values_through_eight :
-    map a199812 (seq 1 8) = a199812ValuesThroughEight.
+Theorem a199812_values_through_eleven :
+    map a199812 (seq 1 11) = a199812ValuesThroughEleven.
 Proof. vm_compute. reflexivity. Qed.
 
 Theorem a199812_one : a199812 1 = 1.
@@ -129,6 +129,15 @@ Theorem a199812_seven : a199812 7 = 79.
 Proof. vm_compute. reflexivity. Qed.
 
 Theorem a199812_eight : a199812 8 = 193.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a199812_nine : a199812 9 = 478.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a199812_ten : a199812 10 = 1196.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a199812_eleven : a199812 11 = 3037.
 Proof. vm_compute. reflexivity. Qed.
 
 End TowerExpr.
