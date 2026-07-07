@@ -199,6 +199,32 @@ theorem Sat_rename_rSkipParam {α : Type u} {mem : α → α → Prop}
   rw [Sat_rename]
   exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
 
+/-- In the finite-generation induction step, read `phi` at the old set slot
+under the local binders for `a`, `b`, and `c = a ∪ {b}`. -/
+def rAdjStepOld : Nat → Nat
+  | 0 => 2
+  | n+1 => n+3
+
+/-- In the finite-generation induction step, read `phi` at the new adjunction
+slot under the local binders for `a`, `b`, and `c = a ∪ {b}`. -/
+def rAdjStepNew : Nat → Nat
+  | 0 => 0
+  | n+1 => n+3
+
+theorem Sat_rename_rAdjStepOld {α : Type u} {mem : α → α → Prop}
+    (phi : Form) (e : Nat → α) (a b c : α) :
+    Sat mem (scons c (scons b (scons a e))) (rename rAdjStepOld phi) ↔
+      Sat mem (scons a e) phi := by
+  rw [Sat_rename]
+  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+
+theorem Sat_rename_rAdjStepNew {α : Type u} {mem : α → α → Prop}
+    (phi : Form) (e : Nat → α) (a b c : α) :
+    Sat mem (scons c (scons b (scons a e))) (rename rAdjStepNew phi) ↔
+      Sat mem (scons c e) phi := by
+  rw [Sat_rename]
+  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+
 /-- The first-order empty-set axiom: some set has no elements. -/
 def HF_empty_form : Form :=
   fEx (fAll (fImp (fMem 0 1) fBot))
@@ -937,6 +963,58 @@ def HF_induction_form (phi : Form) : Form :=
         phi))
     (fAll phi)
 
+/-- The finite-generation induction schema for hereditary finite sets.
+
+If `phi` holds for every empty object and is preserved by one-point
+adjunction, then `phi` holds for every object.  This is the finiteness content
+missing from pure foundation-style set induction: ZF models satisfy
+`HF_induction_form`, but not this schema. -/
+def HF_finite_induction_form (phi : Form) : Form :=
+  fImp
+    (fAnd
+      (fAll (fImp (HF_emptyAt 0) phi))
+      (fAll (fAll (fAll
+        (fImp
+          (HF_adjoinAt 0 2 1)
+          (fImp (rename rAdjStepOld phi) (rename rAdjStepNew phi)))))))
+    (fAll phi)
+
+theorem HF_finite_induction_form_spec {α : Type u} {mem : α → α → Prop}
+    (phi : Form) (e : Nat → α) :
+    Sat mem e (HF_finite_induction_form phi) ↔
+      (((∀ z, (∀ x, ¬ mem x z) → Sat mem (scons z e) phi) ∧
+        (∀ a b c, (∀ x, mem x c ↔ mem x a ∨ x = b) →
+          Sat mem (scons a e) phi → Sat mem (scons c e) phi)) →
+        ∀ a, Sat mem (scons a e) phi) := by
+  constructor
+  · intro h hgen
+    apply h
+    constructor
+    · intro z hz
+      exact hgen.1 z ((HF_emptyAt_spec (scons z e) 0).mp hz)
+    · intro a b c hc hOld
+      have hc' :
+          ∀ x, mem x c ↔ mem x a ∨ x = b :=
+        (HF_adjoinAt_spec (scons c (scons b (scons a e))) 0 2 1).mp hc
+      have hOld' : Sat mem (scons a e) phi :=
+        (Sat_rename_rAdjStepOld phi e a b c).mp hOld
+      exact (Sat_rename_rAdjStepNew phi e a b c).mpr
+        (hgen.2 a b c hc' hOld')
+  · intro h hsyn
+    apply h
+    constructor
+    · intro z hz
+      exact hsyn.1 z ((HF_emptyAt_spec (scons z e) 0).mpr hz)
+    · intro a b c hc hOld
+      have hcSat :
+          Sat mem (scons c (scons b (scons a e))) (HF_adjoinAt 0 2 1) :=
+        (HF_adjoinAt_spec (scons c (scons b (scons a e))) 0 2 1).mpr hc
+      have hOldSat :
+          Sat mem (scons c (scons b (scons a e))) (rename rAdjStepOld phi) :=
+        (Sat_rename_rAdjStepOld phi e a b c).mpr hOld
+      have hNewSat := hsyn.2 a b c hcSat hOldSat
+      exact (Sat_rename_rAdjStepNew phi e a b c).mp hNewSat
+
 /-- The unsealed HF axiom schema. -/
 def HFAx (f : Form) : Prop :=
   f = HF_empty_form ∨
@@ -951,9 +1029,24 @@ def HFAx_s (f : Form) : Prop :=
   f = sealF HF_adjoin_form ∨
   ∃ phi, f = sealF (HF_induction_form phi)
 
+/-- The sentence theory of hereditary finite sets.
+
+`HFAx_s` contains the extensionality/empty/adjunction axioms and
+foundation-style set induction.  The additional finite-generation schema below
+excludes infinite sets and is the axiom needed for the PA interpretation over
+finite von Neumann ordinals. -/
+def HFFinAx_s (f : Form) : Prop :=
+  HFAx_s f ∨ ∃ phi, f = sealF (HF_finite_induction_form phi)
+
 theorem Sentences_HF : Sentences HFAx_s := by
   intro f hf
   rcases hf with rfl | rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
+
+theorem Sentences_HFFin : Sentences HFFinAx_s := by
+  intro f hf
+  rcases hf with hf | ⟨phi, rfl⟩
+  · exact Sentences_HF f hf
+  · exact Sentence_seal _
 
 theorem sat_HF_empty {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
     Sat M.mem e HF_empty_form :=
@@ -1013,6 +1106,15 @@ theorem HFAx_s_adjoin : HFAx_s (sealF HF_adjoin_form) :=
 theorem HFAx_s_induction (phi : Form) : HFAx_s (sealF (HF_induction_form phi)) :=
   Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩))
 
+theorem HFFinAx_s_of_HFAx_s {f : Form} (hf : HFAx_s f) : HFFinAx_s f :=
+  Or.inl hf
+
+/-- Named membership of a sealed finite-generation induction instance in the
+hereditary-finite theory. -/
+theorem HFFinAx_s_finite_induction (phi : Form) :
+    HFFinAx_s (sealF (HF_finite_induction_form phi)) :=
+  Or.inr ⟨phi, rfl⟩
+
 theorem semantic_empty_of_HFAx_s {α : Type u} {mem : α → α → Prop}
     (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
     ∃ e, ∀ x, ¬ mem x e :=
@@ -1041,6 +1143,13 @@ theorem semantic_induction_schema_of_HFAx_s {α : Type u} {mem : α → α → P
     (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) (phi : Form) :
     ∀ e, Sat mem e (HF_induction_form phi) :=
   extract HFAx_s v (HF_induction_form phi) hHF (HFAx_s_induction phi)
+
+theorem semantic_finite_induction_schema_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) (phi : Form) :
+    ∀ e, Sat mem e (HF_finite_induction_form phi) :=
+  extract HFFinAx_s v (HF_finite_induction_form phi) hHF
+    (HFFinAx_s_finite_induction phi)
 
 /-- First-order HF induction rules out self-membership in every semantic model
 of the sealed HF theory. -/
