@@ -7750,6 +7750,132 @@ Proof.
   - apply hfMemAt_complete.
 Qed.
 
+Definition hfUpVarMap (rho : nat -> nat) : nat -> nat :=
+  fun n =>
+    match n with
+    | 0 => 0
+    | S k => S (rho k)
+    end.
+
+Fixpoint hfFormulaAt (rho : nat -> nat) (phi : form) : formula :=
+  match phi with
+  | fMem i j => hfMemAt (rho i) (rho j)
+  | fEq i j => pEq (tVar (rho i)) (tVar (rho j))
+  | fBot => pBot
+  | fImp a b => pImp (hfFormulaAt rho a) (hfFormulaAt rho b)
+  | fAnd a b => pAnd (hfFormulaAt rho a) (hfFormulaAt rho b)
+  | fOr a b => pOr (hfFormulaAt rho a) (hfFormulaAt rho b)
+  | fAll a => pAll (hfFormulaAt (hfUpVarMap rho) a)
+  | fEx a => pEx (hfFormulaAt (hfUpVarMap rho) a)
+  end.
+
+Definition translateHFFormula (phi : form) : formula :=
+  hfFormulaAt (fun n => n) phi.
+
+Lemma hfFormulaAt_exact : forall phi rho v e,
+  (forall n, e (rho n) = v n) ->
+  Sat natModel e (hfFormulaAt rho phi) <->
+    Fol.Sat nat hf_mem v phi.
+Proof.
+  induction phi; simpl; intros rho v e hrho.
+  - change (Sat natModel e (hfMemAt (rho n) (rho n0)) <->
+      hf_mem (v n) (v n0)).
+    rewrite hfMemAt_exact.
+    rewrite hrho, hrho.
+    reflexivity.
+  - split; intro h.
+    + rewrite <- (hrho n), <- (hrho n0).
+      exact h.
+    + rewrite (hrho n), (hrho n0).
+      exact h.
+  - reflexivity.
+  - specialize (IHphi1 rho v e hrho).
+    specialize (IHphi2 rho v e hrho).
+    split; intros h ha.
+    + apply (proj1 IHphi2).
+      apply h.
+      apply (proj2 IHphi1).
+      exact ha.
+    + apply (proj2 IHphi2).
+      apply h.
+      apply (proj1 IHphi1).
+      exact ha.
+  - specialize (IHphi1 rho v e hrho).
+    specialize (IHphi2 rho v e hrho).
+    split; intros h.
+    + split.
+      * apply (proj1 IHphi1). exact (proj1 h).
+      * apply (proj1 IHphi2). exact (proj2 h).
+    + split.
+      * apply (proj2 IHphi1). exact (proj1 h).
+      * apply (proj2 IHphi2). exact (proj2 h).
+  - specialize (IHphi1 rho v e hrho).
+    specialize (IHphi2 rho v e hrho).
+    split; intros h.
+    + destruct h as [h | h].
+      * left. apply (proj1 IHphi1). exact h.
+      * right. apply (proj1 IHphi2). exact h.
+    + destruct h as [h | h].
+      * left. apply (proj2 IHphi1). exact h.
+      * right. apply (proj2 IHphi2). exact h.
+  - split; intros h d.
+    + assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj1 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact (h d).
+    + assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj2 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact (h d).
+  - split; intros h.
+    + destruct h as [d hd].
+      exists d.
+      assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj1 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact hd.
+    + destruct h as [d hd].
+      exists d.
+      assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj2 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact hd.
+Qed.
+
+Lemma translateHFFormula_exact : forall phi v,
+  Sat natModel v (translateHFFormula phi) <->
+    Fol.Sat nat hf_mem v phi.
+Proof.
+  intros phi v.
+  unfold translateHFFormula.
+  apply hfFormulaAt_exact.
+  intro n. reflexivity.
+Qed.
+
 End Formula.
 
 End PA.
