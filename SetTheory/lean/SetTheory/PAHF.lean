@@ -15702,6 +15702,227 @@ theorem BProv_formulaAt_of_Prov_with_term_rules
       intro ρ
       exact hEqElim (iheq ρ) (iha ρ)
 
+/-- Structural PA-proof translation directly into finite HF, carrying explicit
+domain assumptions for a finite prefix of PA variables.
+
+The existentially returned bound is proof-structural: it is large enough for
+every arbitrary-term rule used in the PA derivation.  The translated context is
+not strengthened by definition; the domain assumptions remain visible in the
+finite HF context. -/
+theorem BProv_HFFin_formulaAt_of_Prov_domainContext
+    {G : List PA.Formula} {phi : PA.Formula}
+    (h : PA.Formula.Prov G phi) :
+    ∃ n, ∀ ρ : Nat → Nat,
+      BProv HFFinAx_s
+        (domainContextAt ρ n ++ translateContextAt ρ G)
+        (formulaAt ρ phi) := by
+  induction h with
+  | P_ass G a hin =>
+      refine ⟨0, ?_⟩
+      intro ρ
+      exact BProv_of_Prov (B := HFFinAx_s)
+        (Prov.P_ass (domainContextAt ρ 0 ++ translateContextAt ρ G)
+          (formulaAt ρ a) (by
+            simp [domainContextAt]
+            exact mem_translateContextAt_of_mem (ρ := ρ) hin))
+  | P_impI G a b _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n, ?_⟩
+      intro ρ
+      have hbody : BProv HFFinAx_s
+          (domainContextAt ρ n ++ formulaAt ρ a :: translateContextAt ρ G)
+          (formulaAt ρ b) := by
+        simpa [translateContextAt] using ih ρ
+      simpa [formulaAt] using
+        (BProv_impI_after_prefix
+          (B := HFFinAx_s) (Γ := domainContextAt ρ n)
+          (Δ := translateContextAt ρ G)
+          (a := formulaAt ρ a) (b := formulaAt ρ b) hbody)
+  | P_impE G a b _ _ ihab iha =>
+      rcases ihab with ⟨nab, ihab⟩
+      rcases iha with ⟨na, iha⟩
+      refine ⟨nab + na, ?_⟩
+      intro ρ
+      have hab' : BProv HFFinAx_s
+          (domainContextAt ρ (nab + na) ++ translateContextAt ρ G)
+          (formulaAt ρ (PA.Formula.imp a b)) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := nab)
+          (m := nab + na) (by omega) (ihab ρ)
+      have ha' : BProv HFFinAx_s
+          (domainContextAt ρ (nab + na) ++ translateContextAt ρ G)
+          (formulaAt ρ a) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := na)
+          (m := nab + na) (by omega) (iha ρ)
+      exact BProv_mp HFFinAx_s
+        (domainContextAt ρ (nab + na) ++ translateContextAt ρ G)
+        (formulaAt ρ a) (formulaAt ρ b)
+        (by simpa [formulaAt] using hab') ha'
+  | P_botE G a _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n, ?_⟩
+      intro ρ
+      exact BProv_botE (B := HFFinAx_s) (a := formulaAt ρ a) (ih ρ)
+  | P_lem G a =>
+      refine ⟨0, ?_⟩
+      intro ρ
+      change BProv HFFinAx_s
+        (domainContextAt ρ 0 ++ translateContextAt ρ G)
+        (fOr (formulaAt ρ a) (fImp (formulaAt ρ a) fBot))
+      simpa [domainContextAt] using
+        (BProv_of_Prov (B := HFFinAx_s)
+          (Prov.P_lem (translateContextAt ρ G) (formulaAt ρ a)))
+  | P_andI G a b _ _ iha ihb =>
+      rcases iha with ⟨na, iha⟩
+      rcases ihb with ⟨nb, ihb⟩
+      refine ⟨na + nb, ?_⟩
+      intro ρ
+      have ha' : BProv HFFinAx_s
+          (domainContextAt ρ (na + nb) ++ translateContextAt ρ G)
+          (formulaAt ρ a) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := na)
+          (m := na + nb) (by omega) (iha ρ)
+      have hb' : BProv HFFinAx_s
+          (domainContextAt ρ (na + nb) ++ translateContextAt ρ G)
+          (formulaAt ρ b) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := nb)
+          (m := na + nb) (by omega) (ihb ρ)
+      simpa [formulaAt] using BProv_andI ha' hb'
+  | P_andE1 G a b _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n, ?_⟩
+      intro ρ
+      exact BProv_andE1 (a := formulaAt ρ a) (b := formulaAt ρ b)
+        (by simpa [formulaAt] using ih ρ)
+  | P_andE2 G a b _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n, ?_⟩
+      intro ρ
+      exact BProv_andE2 (a := formulaAt ρ a) (b := formulaAt ρ b)
+        (by simpa [formulaAt] using ih ρ)
+  | P_orI1 G a b _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n, ?_⟩
+      intro ρ
+      simpa [formulaAt] using
+        (BProv_orI1 (B := HFFinAx_s) (b := formulaAt ρ b) (ih ρ))
+  | P_orI2 G a b _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n, ?_⟩
+      intro ρ
+      simpa [formulaAt] using
+        (BProv_orI2 (B := HFFinAx_s) (a := formulaAt ρ a) (ih ρ))
+  | P_orE G a b c _ _ _ ihor iha ihb =>
+      rcases ihor with ⟨no, ihor⟩
+      rcases iha with ⟨na, iha⟩
+      rcases ihb with ⟨nb, ihb⟩
+      refine ⟨no + na + nb, ?_⟩
+      intro ρ
+      have hor' : BProv HFFinAx_s
+          (domainContextAt ρ (no + na + nb) ++ translateContextAt ρ G)
+          (formulaAt ρ (PA.Formula.or a b)) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := no)
+          (m := no + na + nb) (by omega) (ihor ρ)
+      have ha' : BProv HFFinAx_s
+          (domainContextAt ρ (no + na + nb) ++
+            formulaAt ρ a :: translateContextAt ρ G)
+          (formulaAt ρ c) := by
+        simpa [translateContextAt] using
+          (BProv_mono_domainContextAt (ρ := ρ) (n := na)
+            (m := no + na + nb) (by omega) (iha ρ))
+      have hb' : BProv HFFinAx_s
+          (domainContextAt ρ (no + na + nb) ++
+            formulaAt ρ b :: translateContextAt ρ G)
+          (formulaAt ρ c) := by
+        simpa [translateContextAt] using
+          (BProv_mono_domainContextAt (ρ := ρ) (n := nb)
+            (m := no + na + nb) (by omega) (ihb ρ))
+      exact BProv_orE_after_prefix
+        (B := HFFinAx_s) (Γ := domainContextAt ρ (no + na + nb))
+        (Δ := translateContextAt ρ G)
+        (a := formulaAt ρ a) (b := formulaAt ρ b)
+        (c := formulaAt ρ c) (by simpa [formulaAt] using hor') ha' hb'
+  | P_allI G a _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n, ?_⟩
+      intro ρ
+      have hbody : BProv HFFinAx_s
+          (domainContextAt (upVarMap ρ) (n+1) ++
+            translateContextAt (upVarMap ρ)
+              (G.map (PA.Formula.rename Nat.succ)))
+          (formulaAt (upVarMap ρ) a) :=
+        BProv_mono_domainContextAt (ρ := upVarMap ρ) (n := n)
+          (m := n+1) (by omega) (ih (upVarMap ρ))
+      exact BProv_formulaAt_allI_domainContext_of_sentences
+        Sentences_HFFin hbody
+  | P_allE G a t _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n + t.bound, ?_⟩
+      intro ρ
+      have hall : BProv HFFinAx_s
+          (domainContextAt ρ (n + t.bound) ++ translateContextAt ρ G)
+          (formulaAt ρ (PA.Formula.all a)) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := n)
+          (m := n + t.bound) (by omega) (ih ρ)
+      exact BProv_HFFin_formulaAt_allE_term_domainContext_le
+        (G := translateContextAt ρ G) ρ a t (by omega) hall
+  | P_exI G a t _ ih =>
+      rcases ih with ⟨n, ih⟩
+      refine ⟨n + t.bound, ?_⟩
+      intro ρ
+      have hbody : BProv HFFinAx_s
+          (domainContextAt ρ (n + t.bound) ++ translateContextAt ρ G)
+          (formulaAt ρ
+            (PA.Formula.subst (PA.Formula.instTerm t) a)) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := n)
+          (m := n + t.bound) (by omega) (ih ρ)
+      exact BProv_HFFin_formulaAt_exI_term_domainContext_le
+        (G := translateContextAt ρ G) ρ a t (by omega) hbody
+  | P_exE G a c _ _ ihex ihbody =>
+      rcases ihex with ⟨nex, ihex⟩
+      rcases ihbody with ⟨nbody, ihbody⟩
+      refine ⟨nex + nbody, ?_⟩
+      intro ρ
+      have hex' : BProv HFFinAx_s
+          (domainContextAt ρ (nex + nbody) ++ translateContextAt ρ G)
+          (formulaAt ρ (PA.Formula.ex a)) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := nex)
+          (m := nex + nbody) (by omega) (ihex ρ)
+      have hbody' : BProv HFFinAx_s
+          (domainContextAt (upVarMap ρ) (nex + nbody + 1) ++
+            translateContextAt (upVarMap ρ)
+              (a :: G.map (PA.Formula.rename Nat.succ)))
+          (formulaAt (upVarMap ρ) (PA.Formula.rename Nat.succ c)) :=
+        BProv_mono_domainContextAt (ρ := upVarMap ρ) (n := nbody)
+          (m := nex + nbody + 1) (by omega) (ihbody (upVarMap ρ))
+      exact BProv_formulaAt_exE_domainContext_of_sentences
+        Sentences_HFFin hex' hbody'
+  | P_eqRefl G t =>
+      refine ⟨t.bound, ?_⟩
+      intro ρ
+      exact BProv_HFFin_formulaAt_eqRefl_domainContext_le
+        (G := translateContextAt ρ G) ρ t (by omega)
+  | P_eqElim G s t a _ _ iheq iha =>
+      rcases iheq with ⟨neq, iheq⟩
+      rcases iha with ⟨na, iha⟩
+      refine ⟨neq + na + s.bound + t.bound, ?_⟩
+      intro ρ
+      have heq' : BProv HFFinAx_s
+          (domainContextAt ρ (neq + na + s.bound + t.bound) ++
+            translateContextAt ρ G)
+          (formulaAt ρ (PA.Formula.eq s t)) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := neq)
+          (m := neq + na + s.bound + t.bound) (by omega) (iheq ρ)
+      have ha' : BProv HFFinAx_s
+          (domainContextAt ρ (neq + na + s.bound + t.bound) ++
+            translateContextAt ρ G)
+          (formulaAt ρ
+            (PA.Formula.subst (PA.Formula.instTerm s) a)) :=
+        BProv_mono_domainContextAt (ρ := ρ) (n := na)
+          (m := neq + na + s.bound + t.bound) (by omega) (iha ρ)
+      exact BProv_HFFin_formulaAt_eqElim_term_domainContext_le
+        (G := translateContextAt ρ G) ρ s t a
+        (by omega) (by omega) heq' ha'
+
 /-- Relative PA proofs translate once the term-sensitive PA rules have been
 supplied explicitly.
 

@@ -637,6 +637,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_exE
 #check @AckermannHF.PAInHF.BProv_formulaAt_exE_domainContext_of_sentences
 #check @AckermannHF.PAInHF.BProv_formulaAt_of_Prov_with_term_rules
+#check @AckermannHF.PAInHF.BProv_HFFin_formulaAt_of_Prov_domainContext
 #check @AckermannHF.PAInHF.BProv_formulaAt_of_PA_BProv_with_term_rules
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
