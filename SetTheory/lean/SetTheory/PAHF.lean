@@ -586,6 +586,25 @@ theorem HF_pairBaseAt_spec {α : Type} (M : AdjunctionModel α)
     · exact (HF_emptyAt_empty M (scons M.empty e) 0).mpr rfl
     · exact (HF_pairMemAt_spec M (scons M.empty e) 0 (s+1) (f+1)).mpr h
 
+/-- The base clause for zero-start recursion: `f(0)=0`. -/
+def HF_pairZeroBaseAt (f : Nat) : Form :=
+  fEx (fAnd (HF_emptyAt 0) (HF_pairMemAt 0 0 (f+1)))
+
+theorem HF_pairZeroBaseAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (f : Nat) :
+    Sat M.mem e (HF_pairZeroBaseAt f) ↔
+      M.mem (kpair M M.empty M.empty) (e f) := by
+  constructor
+  · intro h
+    rcases h with ⟨z, hz, hpair⟩
+    have hz' : z = M.empty := (HF_emptyAt_empty M (scons z e) 0).mp hz
+    have hpair' := (HF_pairMemAt_spec M (scons z e) 0 0 (f+1)).mp hpair
+    rwa [hz'] at hpair'
+  · intro h
+    refine ⟨M.empty, ?_, ?_⟩
+    · exact (HF_emptyAt_empty M (scons M.empty e) 0).mpr rfl
+    · exact (HF_pairMemAt_spec M (scons M.empty e) 0 0 (f+1)).mpr h
+
 /-- Semantic package for a finite successor-recursion trace from `s` through
 the segment `m ∪ {m}`. -/
 def SuccRecApprox {α : Type} (M : AdjunctionModel α) (s f m : α) : Prop :=
@@ -1194,6 +1213,39 @@ def addGraphAt (out left right : Nat) : Form :=
 is the left input, and slot `2` is the right input. -/
 def addGraph : Form := addGraphAt 0 1 2
 
+/-- Step clause for multiplication recursion: if `f(k)=t` and `f(k+1)=y`,
+then `y = t + a`, where `a` is the fixed left multiplicand. -/
+def mulStepAt (f a m : Nat) : Form :=
+  fAll (fAll (fAll
+    (fImp
+      (fMem 2 (m+3))
+      (fImp
+        (HF_pairMemAt 2 1 (f+3))
+        (fAll
+          (fImp
+            (HF_succAt 0 3)
+            (fImp
+              (HF_pairMemAt 0 1 (f+4))
+              (addGraphAt 1 2 (a+4)))))))))
+
+/-- Formula macro for a finite multiplication-recursion trace.  Slot `f` is
+the graph of `k ↦ a*k`, defined on keys up to slot `m`. -/
+def mulRecApproxAt (f a m : Nat) : Form :=
+  fAnd (HF_pairFunctionalAt f)
+    (fAnd (HF_pairKeysBelowSuccAt f m)
+      (fAnd (HF_pairZeroBaseAt f)
+        (fAnd (HF_pairTotalBelowSuccAt f m)
+          (mulStepAt f a m))))
+
+/-- Multiplication graph formula at arbitrary slots: `out = left * right`. -/
+def mulGraphAt (out left right : Nat) : Form :=
+  fEx (fAnd (mulRecApproxAt 0 (left+1) (right+1))
+    (HF_pairMemAt (right+1) (out+1) 0))
+
+/-- Graph formula for PA multiplication in HF.  Slot `0` is the output, slot
+`1` is the left input, and slot `2` is the right input. -/
+def mulGraph : Form := mulGraphAt 0 1 2
+
 theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
   HF_ordinalLikeAt_of_ordinalCode (scons (ordinalCode n) e) 0 n rfl
@@ -1294,6 +1346,72 @@ theorem addGraph_exact_on_ordinalCodes (r m n : Nat) (e : Nat → Nat) :
   · intro h
     subst h
     exact addGraph_ordinalCode m n e
+
+theorem mulGraph_ordinalCode (m n : Nat) (e : Nat → Nat) :
+    Sat Mem
+      (scons (ordinalCode (m*n)) (scons (ordinalCode m) (scons (ordinalCode n) e)))
+      mulGraph := by
+  let f := mulRecTrace m n
+  let E := scons f
+    (scons (ordinalCode (m*n)) (scons (ordinalCode m) (scons (ordinalCode n) e)))
+  refine ⟨f, ?_, ?_⟩
+  · change Sat Mem E (mulRecApproxAt 0 2 3)
+    constructor
+    · exact (HF_pairFunctionalAt_spec standardModel E 0).mpr (mulRecTrace_functional m n)
+    · constructor
+      · apply (HF_pairKeysBelowSuccAt_spec standardModel E 0 3).mpr
+        change PairKeysBelowSucc standardModel f (ordinalCode n)
+        exact mulRecTrace_keysBelowSucc m n
+      · constructor
+        · apply (HF_pairZeroBaseAt_spec standardModel E 0).mpr
+          change Mem (kpair standardModel empty empty) f
+          simpa [f, ordinalCode_zero] using
+            (mulRecTrace_pair_mem m (k := 0) (n := n) (Nat.zero_le n))
+        · constructor
+          · apply (HF_pairTotalBelowSuccAt_spec standardModel E 0 3).mpr
+            change PairTotalBelowSucc standardModel f (ordinalCode n)
+            exact mulRecTrace_totalBelowSucc m n
+          · intro k t y hkm hkt sk hsk hsky
+            let Ekty := scons y (scons t (scons k E))
+            let Eskty := scons sk Ekty
+            have hkt' : Mem (kpair standardModel k t) f := by
+              have h := (HF_pairMemAt_spec standardModel Ekty 2 1 3).mp hkt
+              change Mem (kpair standardModel k t) f at h
+              exact h
+            have hsky' : Mem (kpair standardModel sk y) f := by
+              have h := (HF_pairMemAt_spec standardModel Eskty 0 1 4).mp hsky
+              change Mem (kpair standardModel sk y) f at h
+              exact h
+            have hsk' : sk = adjoin k k := by
+              have h := (HF_succAt_spec standardModel Eskty 0 3).mp hsk
+              change sk = adjoin k k at h
+              exact h
+            rcases (mem_ordinalCode_iff k n).mp hkm with ⟨i, hi, hk⟩
+            rcases (mulRecTrace_mem_iff m _ n).mp hkt' with ⟨j, _hj, hpair_j⟩
+            have hcomp_j := kpair_injective standardModel hpair_j
+            have hij : i = j := by
+              apply ordinalCode_injective
+              exact hk.symm.trans hcomp_j.1
+            have ht : t = ordinalCode (m * i) := by
+              rw [hcomp_j.2, ← hij]
+            have hskcode : sk = ordinalCode (i+1) := by
+              rw [hsk', hk, ordinalCode_succ]
+            rcases (mulRecTrace_mem_iff m _ n).mp hsky' with ⟨l, _hl, hpair_l⟩
+            have hcomp_l := kpair_injective standardModel hpair_l
+            have hil : i+1 = l := by
+              apply ordinalCode_injective
+              exact hskcode.symm.trans hcomp_l.1
+            have hy : y = ordinalCode (m * (i+1)) := by
+              rw [hcomp_l.2, ← hil]
+            apply addGraphAt_ordinalCode 1 2 6 (m * i) m Eskty
+            · show y = ordinalCode (m * i + m)
+              rw [hy, Nat.mul_succ]
+            · show t = ordinalCode (m * i)
+              exact ht
+            · rfl
+  · apply (HF_pairMemAt_spec standardModel E 3 1 0).mpr
+    change Mem (kpair standardModel (ordinalCode n) (ordinalCode (m*n))) f
+    exact mulRecTrace_pair_mem m (Nat.le_refl n)
 
 theorem zeroGraph_domain (e : Nat → Nat)
     (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by
