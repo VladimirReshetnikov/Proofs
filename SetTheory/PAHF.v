@@ -1438,6 +1438,132 @@ Proof.
   right. now exists phi.
 Qed.
 
+Lemma semantic_empty_of_HFAx_s : forall (V : Type) (mem : V -> V -> Prop)
+    (v : nat -> V),
+  (forall g, HFAx_s g -> Sat V mem v g) ->
+  exists e, forall x, ~ mem x e.
+Proof.
+  intros V mem v hHF.
+  exact (extract HFAx_s V mem v HF_empty_form hHF HFAx_s_empty v).
+Qed.
+
+Lemma semantic_extensionality_of_HFAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFAx_s g -> Sat V mem v g) ->
+  forall a b, (forall x, mem x a <-> mem x b) -> a = b.
+Proof.
+  intros V mem v hHF a b hab.
+  pose proof (extract HFAx_s V mem v HF_extensionality_form
+    hHF HFAx_s_extensionality) as hExt.
+  apply (hExt v a b).
+  intro x.
+  unfold fIff.
+  simpl.
+  exact (hab x).
+Qed.
+
+Lemma semantic_adjoin_of_HFAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFAx_s g -> Sat V mem v g) ->
+  forall a b, exists c, forall x, mem x c <-> mem x a \/ x = b.
+Proof.
+  intros V mem v hHF a b.
+  pose proof (extract HFAx_s V mem v HF_adjoin_form
+    hHF HFAx_s_adjoin) as hAdj.
+  destruct (hAdj v a b) as [c hc].
+  exists c.
+  intro x.
+  unfold fIff in hc.
+  simpl in hc.
+  exact (hc x).
+Qed.
+
+Lemma semantic_induction_schema_of_HFAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFAx_s g -> Sat V mem v g) ->
+  forall phi e, Sat V mem e (HF_induction_form phi).
+Proof.
+  intros V mem v hHF phi.
+  exact (extract HFAx_s V mem v (HF_induction_form phi)
+    hHF (HFAx_s_induction phi)).
+Qed.
+
+Lemma semantic_finite_induction_schema_of_HFFinAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFFinAx_s g -> Sat V mem v g) ->
+  forall phi e, Sat V mem e (HF_finite_induction_form phi).
+Proof.
+  intros V mem v hHF phi.
+  exact (extract HFFinAx_s V mem v (HF_finite_induction_form phi)
+    hHF (HFFinAx_s_finite_induction phi)).
+Qed.
+
+Lemma semantic_empty_of_HFFinAx_s : forall (V : Type) (mem : V -> V -> Prop)
+    (v : nat -> V),
+  (forall g, HFFinAx_s g -> Sat V mem v g) ->
+  exists e, forall x, ~ mem x e.
+Proof.
+  intros V mem v hHF.
+  apply (semantic_empty_of_HFAx_s V mem v).
+  intros g hg.
+  apply hHF.
+  now apply HFFinAx_s_of_HFAx_s.
+Qed.
+
+Lemma semantic_extensionality_of_HFFinAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFFinAx_s g -> Sat V mem v g) ->
+  forall a b, (forall x, mem x a <-> mem x b) -> a = b.
+Proof.
+  intros V mem v hHF.
+  apply (semantic_extensionality_of_HFAx_s V mem v).
+  intros g hg.
+  apply hHF.
+  now apply HFFinAx_s_of_HFAx_s.
+Qed.
+
+Lemma semantic_adjoin_of_HFFinAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFFinAx_s g -> Sat V mem v g) ->
+  forall a b, exists c, forall x, mem x c <-> mem x a \/ x = b.
+Proof.
+  intros V mem v hHF.
+  apply (semantic_adjoin_of_HFAx_s V mem v).
+  intros g hg.
+  apply hHF.
+  now apply HFFinAx_s_of_HFAx_s.
+Qed.
+
+Lemma semantic_induction_schema_of_HFFinAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFFinAx_s g -> Sat V mem v g) ->
+  forall phi e, Sat V mem e (HF_induction_form phi).
+Proof.
+  intros V mem v hHF.
+  apply (semantic_induction_schema_of_HFAx_s V mem v).
+  intros g hg.
+  apply hHF.
+  now apply HFFinAx_s_of_HFAx_s.
+Qed.
+
+Lemma semantic_mem_irrefl_of_HFAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFAx_s g -> Sat V mem v g) ->
+  forall a, ~ mem a a.
+Proof.
+  intros V mem v hHF.
+  pose (phi := fImp (fMem 0 0) fBot).
+  pose proof (semantic_induction_schema_of_HFAx_s V mem v hHF phi v) as hind.
+  assert (hall : forall a, Sat V mem (scons V a v) phi).
+  {
+    apply hind.
+    intros a ih haa.
+    exact (ih a haa haa).
+  }
+  intros a haa.
+  exact (hall a haa).
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
