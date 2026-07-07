@@ -207,6 +207,7 @@ open SetTheory
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.sepBy_exists
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.binUnion_exists
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel.union_exists
 #check @AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
@@ -242,6 +243,8 @@ open SetTheory
 #check @AckermannHF.HF_sepByAt_spec
 #check @AckermannHF.HF_binUnionAt
 #check @AckermannHF.HF_binUnionAt_spec
+#check @AckermannHF.HF_unionAt
+#check @AckermannHF.HF_unionAt_spec
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
 #check @AckermannHF.HF_ordinalLikeAt_spec
