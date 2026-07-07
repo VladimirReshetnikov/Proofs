@@ -24,6 +24,11 @@ open SetTheory
 #check @prov_iff_valid
 #check @completeness_inf
 #check @theory_equiv
+#check @BProv_ax
+#check @BProv_of_Prov
+#check @BProv_lift
+#check @BProv_cut
+#check @BProv_theory_mono
 #print axioms prov_iff_valid
 
 -- calculus soundness and the deep reverse (internal recursion theorem)
@@ -52,6 +57,9 @@ open SetTheory
 #check @PA.Formula.BProv_ax
 #check @PA.Formula.BProv_of_Prov
 #check @PA.Formula.BProv_mp
+#check @PA.Formula.BProv_lift
+#check @PA.Formula.BProv_cut
+#check @PA.Formula.BProv_theory_mono
 #check @PA.Formula.soundness_BProv
 #check @PA.Term.Free
 #check @PA.Term.free_lt_bound
