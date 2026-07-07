@@ -10696,6 +10696,16 @@ theorem Sentences_translatedPAAx : Sentences translatedPAAx := by
   rcases hg with ⟨phi, hphi, rfl⟩
   exact translated_PA_axiom_sentence phi hphi
 
+/-- Renaming does not change a sentence. -/
+theorem rename_eq_of_sentence {g : Form} (hg : Sentence g) (r : Nat → Nat) :
+    rename r g = g := by
+  calc
+    rename r g = rename (fun n => n) g := by
+      apply rename_ext_free
+      intro n hn
+      exact False.elim (hg n hn)
+    _ = g := rename_id g
+
 theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
     (hphi : PA.Formula.Ax_s phi) :
     BProv translatedPAAx [] (translateFormula phi) :=
@@ -10873,6 +10883,37 @@ theorem BProv_translate_orE {G : List PA.Formula} {a b c : PA.Formula}
       intro x hx
       simp only [List.mem_append, List.mem_cons] at hx ⊢
       grind
+
+/-- Raw translated universal introduction.
+
+This is the HF natural-deduction rule for the relativized translation shape:
+to prove `∀ x ∈ domain, A`, it is enough to prove the relativized body in the
+shifted translated context.  A later PA-proof translation lemma is responsible
+for turning a PA premise over `G.map rename Nat.succ` into this shifted HF
+premise. -/
+theorem BProv_translate_allI_raw {G : List PA.Formula} {a : PA.Formula}
+    (h : BProv translatedPAAx ((translateContext G).map (rename Nat.succ))
+      (fImp domainForm (formulaAt (upVarMap (fun n => n)) a))) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.all a)) := by
+  rcases h with ⟨L, hL, hp⟩
+  have hLmap : L.map (rename Nat.succ) = L := by
+    calc
+      L.map (rename Nat.succ) = L.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact rename_eq_of_sentence (Sentences_translatedPAAx x (hL x hx)) Nat.succ
+      _ = L := by simp
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ translateContext G)
+    (fAll (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))
+  apply Prov.P_allI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.map_append, List.mem_append] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (by simpa [hLmap] using hx)
+  · exact Or.inr hx
 
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
