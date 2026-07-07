@@ -2824,6 +2824,124 @@ theorem BetaModuliProduct_coprime_next_of_le {n N : Nat} (hn : n ≤ N) :
       (BetaModulus (betaFact N) n) :=
   BetaModuliProduct_coprime_modulus_of_le (Nat.le_refl n) hn
 
+theorem int_bezout_gcd (m n : Nat) :
+    ∃ s t : Int, s * (m : Int) + t * (n : Int) = (Nat.gcd m n : Int) := by
+  induction m, n using Nat.gcd.induction with
+  | H0 n =>
+      refine ⟨0, 1, ?_⟩
+      simp
+  | H1 m n hm ih =>
+      rcases ih with ⟨s, t, hst⟩
+      refine ⟨t - s * ((n / m : Nat) : Int), s, ?_⟩
+      rw [Nat.gcd_rec]
+      rw [← hst]
+      let M : Int := (m : Int)
+      let q : Int := ((n / m : Nat) : Int)
+      let r : Int := ((n % m : Nat) : Int)
+      have hdiv : M * q + r = (n : Int) := by
+        have h : ((m * (n / m) + n % m : Nat) : Int) = (n : Int) := by
+          have h0 := Nat.div_add_mod n m
+          rw [h0]
+        simpa [M, q, r, Int.natCast_add, Int.natCast_mul] using h
+      change (t - s * q) * M + s * (n : Int) = s * r + t * M
+      rw [← hdiv]
+      simp [Int.mul_add, Int.mul_sub, Int.mul_comm, Int.mul_left_comm, Int.add_comm]
+      omega
+
+theorem coprime_int_bezout {m n : Nat} (h : m.Coprime n) :
+    ∃ s t : Int, s * (m : Int) + t * (n : Int) = 1 := by
+  rcases int_bezout_gcd m n with ⟨s, t, hst⟩
+  refine ⟨s, t, ?_⟩
+  have hg : Nat.gcd m n = 1 := h.gcd_eq_one
+  simpa [hg] using hst
+
+theorem int_nonneg_shift (z : Int) {M : Nat} (hM : 0 < M) :
+    0 ≤ z + ((M : Nat) : Int) * (((z.natAbs + 1 : Nat) : Int)) := by
+  have hzlow : -((z.natAbs : Nat) : Int) ≤ z := by
+    rcases Int.natAbs_eq z with hz | hz <;> omega
+  have hprodNat : z.natAbs ≤ M * (z.natAbs + 1) := by
+    have h1 : z.natAbs ≤ z.natAbs + 1 := by omega
+    have h2 : z.natAbs + 1 ≤ M * (z.natAbs + 1) := by
+      have hm1 : 1 ≤ M := by omega
+      have hm := Nat.mul_le_mul_right (z.natAbs + 1) hm1
+      simpa [Nat.one_mul] using hm
+    exact Nat.le_trans h1 h2
+  have hprod :
+      ((z.natAbs : Nat) : Int) ≤
+        (M : Int) * (((z.natAbs + 1 : Nat) : Int)) := by
+    exact Int.ofNat_le.mpr hprodNat
+  omega
+
+theorem int_crt_shape_left {s t m n a b : Int}
+    (hbez : s * m + t * n = 1) :
+    a * (t * n) + b * (s * m) = a + m * (b * s - a * s) := by
+  have htn : t * n = 1 - s * m := by omega
+  rw [htn]
+  simp [Int.mul_sub, Int.mul_comm, Int.mul_left_comm]
+  omega
+
+theorem int_crt_shape_right {s t m n a b : Int}
+    (hbez : s * m + t * n = 1) :
+    a * (t * n) + b * (s * m) = b + n * (a * t - b * t) := by
+  have hsm : s * m = 1 - t * n := by omega
+  rw [hsm]
+  simp [Int.mul_sub, Int.mul_comm, Int.mul_left_comm]
+  omega
+
+theorem crt_two_mod {m n a b : Nat} (hm : 0 < m) (hn : 0 < n)
+    (hcop : m.Coprime n) (ha : a < m) (hb : b < n) :
+    ∃ c, c % m = a ∧ c % n = b := by
+  rcases coprime_int_bezout hcop with ⟨s, t, hbez⟩
+  let z : Int := (a : Int) * (t * (n : Int)) + (b : Int) * (s * (m : Int))
+  let K : Int := (((z.natAbs + 1 : Nat) : Int))
+  let big : Nat := m * n
+  let cInt : Int := z + (big : Int) * K
+  let c : Nat := cInt.toNat
+  have hbig : 0 < big := Nat.mul_pos hm hn
+  have hcNonneg : 0 ≤ cInt := by
+    simpa [cInt, K, big] using int_nonneg_shift z hbig
+  have hcCast : (c : Int) = cInt := by
+    exact Int.toNat_of_nonneg hcNonneg
+  refine ⟨c, ?_, ?_⟩
+  · have hzmod : z % (m : Int) = (a : Int) := by
+      have hshape :
+          z = (a : Int) + (m : Int) * ((b : Int) * s - (a : Int) * s) := by
+        exact int_crt_shape_left hbez
+      rw [hshape]
+      rw [Int.add_mul_emod_self_left]
+      apply Int.emod_eq_of_lt <;> omega
+    have hcmodInt : (c : Int) % (m : Int) = (a : Int) := by
+      rw [hcCast]
+      have hbigshape : (big : Int) * K = (m : Int) * ((n : Int) * K) := by
+        simp [big, Int.natCast_mul, Int.mul_assoc]
+      simp only [cInt]
+      rw [hbigshape]
+      rw [Int.add_mul_emod_self_left]
+      exact hzmod
+    have hcastmod : ((c % m : Nat) : Int) = (a : Int) := by
+      rw [Int.natCast_emod]
+      exact hcmodInt
+    omega
+  · have hzmod : z % (n : Int) = (b : Int) := by
+      have hshape :
+          z = (b : Int) + (n : Int) * ((a : Int) * t - (b : Int) * t) := by
+        exact int_crt_shape_right hbez
+      rw [hshape]
+      rw [Int.add_mul_emod_self_left]
+      apply Int.emod_eq_of_lt <;> omega
+    have hcmodInt : (c : Int) % (n : Int) = (b : Int) := by
+      rw [hcCast]
+      have hbigshape : (big : Int) * K = (n : Int) * ((m : Int) * K) := by
+        simp [big, Int.natCast_mul, Int.mul_assoc, Int.mul_left_comm]
+      simp only [cInt]
+      rw [hbigshape]
+      rw [Int.add_mul_emod_self_left]
+      exact hzmod
+    have hcastmod : ((c % n : Nat) : Int) = (b : Int) := by
+      rw [Int.natCast_emod]
+      exact hcmodInt
+    omega
+
 theorem BetaEntry_functional {code step idx a b : Nat}
     (ha : BetaEntry code step idx a) (hb : BetaEntry code step idx b) : a = b := by
   rcases ha with ⟨qa, hca, hla⟩

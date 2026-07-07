@@ -112,6 +112,12 @@ open SetTheory
 #check @PA.Formula.BetaModulus_pair_coprime_of_lt_le
 #check @PA.Formula.BetaModuliProduct_coprime_modulus_of_le
 #check @PA.Formula.BetaModuliProduct_coprime_next_of_le
+#check @PA.Formula.int_bezout_gcd
+#check @PA.Formula.coprime_int_bezout
+#check @PA.Formula.int_nonneg_shift
+#check @PA.Formula.int_crt_shape_left
+#check @PA.Formula.int_crt_shape_right
+#check @PA.Formula.crt_two_mod
 #check @PA.Formula.BetaEntry_functional
 #check @PA.Formula.BetaDiv2Step_div_two
 #check @PA.Formula.BetaDiv2Step_bit_one_testBit_zero
