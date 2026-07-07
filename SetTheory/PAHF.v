@@ -1577,6 +1577,133 @@ Proof.
   apply (sat_HF_model ackermannHFModel v).
 Qed.
 
+Fixpoint prefix_below (a n : nat) : nat :=
+  match n with
+  | 0 => hf_empty
+  | S k =>
+      if Nat.testbit a k
+      then hf_adjoin k (prefix_below a k)
+      else prefix_below a k
+  end.
+
+Lemma prefix_below_succ_of_mem : forall a n,
+  hf_mem n a -> prefix_below a (S n) = hf_adjoin n (prefix_below a n).
+Proof.
+  intros a n h.
+  simpl.
+  unfold hf_mem in h.
+  rewrite h.
+  reflexivity.
+Qed.
+
+Lemma prefix_below_succ_of_not_mem : forall a n,
+  ~ hf_mem n a -> prefix_below a (S n) = prefix_below a n.
+Proof.
+  intros a n h.
+  simpl.
+  destruct (Nat.testbit a n) eqn:hbit.
+  - exfalso. apply h. exact hbit.
+  - reflexivity.
+Qed.
+
+Lemma mem_prefix_below_iff : forall x a n,
+  hf_mem x (prefix_below a n) <-> x < n /\ hf_mem x a.
+Proof.
+  intros x a n.
+  induction n as [|n IH].
+  - simpl.
+    split.
+    + intro hx. exfalso. exact (hf_mem_empty x hx).
+    + intros [hlt _]. lia.
+  - simpl.
+    destruct (Nat.testbit a n) eqn:hbit.
+    + rewrite hf_mem_adjoin.
+      rewrite IH.
+      split.
+      * intros [[hlt hx] | hx].
+        -- split; [lia | exact hx].
+        -- subst x. split; [lia | exact hbit].
+      * intros [hlt hx].
+        destruct (Nat.eq_dec x n) as [hx_eq | hx_ne].
+        -- right. exact hx_eq.
+        -- left. split; [lia | exact hx].
+    + rewrite IH.
+      split.
+      * intros [hlt hx]. split; [lia | exact hx].
+      * intros [hlt hx].
+        destruct (Nat.eq_dec x n) as [hx_eq | hx_ne].
+        -- subst x.
+           unfold hf_mem in hx.
+           rewrite hbit in hx.
+           discriminate.
+        -- split; [lia | exact hx].
+Qed.
+
+Lemma prefix_below_self_eq : forall a,
+  prefix_below a a = a.
+Proof.
+  intro a.
+  apply hf_ext.
+  intro x.
+  rewrite mem_prefix_below_iff.
+  split.
+  - intros [_ hx]. exact hx.
+  - intro hx.
+    split.
+    + exact (hf_mem_lt x a hx).
+    + exact hx.
+Qed.
+
+Lemma sat_HF_finite_induction_standard : forall phi e,
+  Sat nat hf_mem e (HF_finite_induction_form phi).
+Proof.
+  intros phi e.
+  apply (proj2 (HF_finite_induction_form_spec nat hf_mem phi e)).
+  intros [hbase hstep] a.
+  assert (hpref : forall n,
+    Sat nat hf_mem (scons nat (prefix_below a n) e) phi).
+  {
+    intro n.
+    induction n as [|n IH].
+    - apply hbase.
+      simpl.
+      apply hf_mem_empty.
+    - destruct (Nat.testbit a n) eqn:hbit.
+      + assert (hn : hf_mem n a) by exact hbit.
+        assert (hAdj : forall x,
+          hf_mem x (prefix_below a (S n)) <->
+            hf_mem x (prefix_below a n) \/ x = n).
+        {
+          intro x.
+          rewrite (prefix_below_succ_of_mem a n hn).
+          apply hf_mem_adjoin.
+        }
+        exact (hstep (prefix_below a n) n
+          (prefix_below a (S n)) hAdj IH).
+      + assert (hn : ~ hf_mem n a).
+        {
+          intro hn.
+          unfold hf_mem in hn.
+          rewrite hbit in hn.
+          discriminate.
+        }
+        rewrite (prefix_below_succ_of_not_mem a n hn).
+        exact IH.
+  }
+  pose proof (hpref a) as h.
+  rewrite prefix_below_self_eq in h.
+  exact h.
+Qed.
+
+Lemma standard_sat_HFFin : forall v,
+  forall g, HFFinAx_s g -> Sat nat hf_mem v g.
+Proof.
+  intros v g [hg | [phi ->]].
+  - exact (standard_sat_HF v g hg).
+  - exact (proj2 (seal_valid nat hf_mem (HF_finite_induction_form phi))
+      (sat_HF_finite_induction_standard phi) v).
+Qed.
+
 Lemma HFAx_s_empty : HFAx_s (seal HF_empty_form).
 Proof. now left. Qed.
 
@@ -9424,6 +9551,14 @@ Proof.
   exact (standard_sat_HF v phi hphi).
 Qed.
 
+Lemma translated_HFFin_axiom_sat_nat : forall phi,
+  HFFinAx_s phi -> forall v, Sat natModel v (translateHFFormula phi).
+Proof.
+  intros phi hphi v.
+  apply (proj2 (translateHFFormula_exact phi v)).
+  exact (standard_sat_HFFin v phi hphi).
+Qed.
+
 Lemma translated_HF_axiom_sentence : forall g,
   HFAx_s g -> Sentence (translateHFFormula g).
 Proof.
@@ -9532,6 +9667,14 @@ Proof.
   intros e g [phi [hphi hg]].
   subst g.
   exact (translated_HF_axiom_sat_nat phi hphi e).
+Qed.
+
+Lemma standard_sat_translatedHFFinAx : forall e,
+  forall g, translatedHFFinAx g -> Sat natModel e g.
+Proof.
+  intros e g [phi [hphi hg]].
+  subst g.
+  exact (translated_HFFin_axiom_sat_nat phi hphi e).
 Qed.
 
 End Formula.
