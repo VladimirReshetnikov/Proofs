@@ -16,8 +16,9 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Bool.Bool Lia PeanoNat List.
+From Stdlib Require Import Logic.FunctionalExtensionality.
 From Stdlib Require Import ClassicalEpsilon ProofIrrelevance.
-From SetTheory Require Import Fol Completeness.
+From SetTheory Require Import Fol Calculus Completeness.
 Import ListNotations.
 
 Record PAModel := {
@@ -1203,6 +1204,170 @@ Proof.
       * exact (proj2 (HF_memTotalOnAt_spec V mem e a) htotal).
 Qed.
 
+Ltac solve_free_vars :=
+  simpl in *;
+  repeat match goal with
+  | H : _ \/ _ |- _ => destruct H as [H | H]
+  | H : False |- _ => contradiction
+  end;
+  lia.
+
+Lemma HF_emptyAt_free : forall i a,
+  Free i (HF_emptyAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_emptyAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_adjoinAt_free : forall i c a b,
+  Free i (HF_adjoinAt c a b) -> i = c \/ i = a \/ i = b.
+Proof.
+  intros i c a b h.
+  unfold HF_adjoinAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_succAt_free : forall i s a,
+  Free i (HF_succAt s a) -> i = s \/ i = a.
+Proof.
+  intros i s a h.
+  unfold HF_succAt, HF_adjoinAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_singleAt_free : forall i a b,
+  Free i (HF_singleAt a b) -> i = a \/ i = b.
+Proof.
+  intros i a b h.
+  unfold HF_singleAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_upairAt_free : forall i a b c,
+  Free i (HF_upairAt a b c) -> i = a \/ i = b \/ i = c.
+Proof.
+  intros i a b c h.
+  unfold HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_kpairAt_free : forall i p a b,
+  Free i (HF_kpairAt p a b) -> i = p \/ i = a \/ i = b.
+Proof.
+  intros i p a b h.
+  unfold HF_kpairAt, HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairMemAt_free : forall i a b r,
+  Free i (HF_pairMemAt a b r) -> i = a \/ i = b \/ i = r.
+Proof.
+  intros i a b r h.
+  unfold HF_pairMemAt, HF_kpairAt, HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairFunctionalAt_free : forall i f,
+  Free i (HF_pairFunctionalAt f) -> i = f.
+Proof.
+  intros i f h.
+  unfold HF_pairFunctionalAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairKeysBelowSuccAt_free : forall i f m,
+  Free i (HF_pairKeysBelowSuccAt f m) -> i = f \/ i = m.
+Proof.
+  intros i f m h.
+  unfold HF_pairKeysBelowSuccAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairTotalBelowSuccAt_free : forall i f m,
+  Free i (HF_pairTotalBelowSuccAt f m) -> i = f \/ i = m.
+Proof.
+  intros i f m h.
+  unfold HF_pairTotalBelowSuccAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairSuccStepAt_free : forall i f m,
+  Free i (HF_pairSuccStepAt f m) -> i = f \/ i = m.
+Proof.
+  intros i f m h.
+  unfold HF_pairSuccStepAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, HF_succAt, HF_adjoinAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairBaseAt_free : forall i f s,
+  Free i (HF_pairBaseAt f s) -> i = f \/ i = s.
+Proof.
+  intros i f s h.
+  unfold HF_pairBaseAt, HF_emptyAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairZeroBaseAt_free : forall i f,
+  Free i (HF_pairZeroBaseAt f) -> i = f.
+Proof.
+  intros i f h.
+  unfold HF_pairZeroBaseAt, HF_emptyAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_succRecApproxAt_free : forall i f s m,
+  Free i (HF_succRecApproxAt f s m) -> i = f \/ i = s \/ i = m.
+Proof.
+  intros i f s m h.
+  unfold HF_succRecApproxAt in h.
+  simpl in h.
+  destruct h as [h | [h | [h | [h | h]]]].
+  - pose proof (HF_pairFunctionalAt_free i f h). lia.
+  - destruct (HF_pairKeysBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - destruct (HF_pairBaseAt_free i f s h) as [hi | hi]; lia.
+  - destruct (HF_pairTotalBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - destruct (HF_pairSuccStepAt_free i f m h) as [hi | hi]; lia.
+Qed.
+
+Lemma HF_subsetAt_free : forall i a b,
+  Free i (HF_subsetAt a b) -> i = a \/ i = b.
+Proof.
+  intros i a b h.
+  unfold HF_subsetAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_transitiveAt_free : forall i a,
+  Free i (HF_transitiveAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_transitiveAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_memTotalOnAt_free : forall i a,
+  Free i (HF_memTotalOnAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_memTotalOnAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_ordinalLikeAt_free : forall i a,
+  Free i (HF_ordinalLikeAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_ordinalLikeAt, HF_transitiveAt, HF_memTotalOnAt in h.
+  solve_free_vars.
+Qed.
+
 Definition HF_memMaxAt (a : nat) : form :=
   fImp
     (fEx (fMem 0 (S a)))
@@ -1410,6 +1575,133 @@ Lemma standard_sat_HF : forall v,
 Proof.
   intros v.
   apply (sat_HF_model ackermannHFModel v).
+Qed.
+
+Fixpoint prefix_below (a n : nat) : nat :=
+  match n with
+  | 0 => hf_empty
+  | S k =>
+      if Nat.testbit a k
+      then hf_adjoin k (prefix_below a k)
+      else prefix_below a k
+  end.
+
+Lemma prefix_below_succ_of_mem : forall a n,
+  hf_mem n a -> prefix_below a (S n) = hf_adjoin n (prefix_below a n).
+Proof.
+  intros a n h.
+  simpl.
+  unfold hf_mem in h.
+  rewrite h.
+  reflexivity.
+Qed.
+
+Lemma prefix_below_succ_of_not_mem : forall a n,
+  ~ hf_mem n a -> prefix_below a (S n) = prefix_below a n.
+Proof.
+  intros a n h.
+  simpl.
+  destruct (Nat.testbit a n) eqn:hbit.
+  - exfalso. apply h. exact hbit.
+  - reflexivity.
+Qed.
+
+Lemma mem_prefix_below_iff : forall x a n,
+  hf_mem x (prefix_below a n) <-> x < n /\ hf_mem x a.
+Proof.
+  intros x a n.
+  induction n as [|n IH].
+  - simpl.
+    split.
+    + intro hx. exfalso. exact (hf_mem_empty x hx).
+    + intros [hlt _]. lia.
+  - simpl.
+    destruct (Nat.testbit a n) eqn:hbit.
+    + rewrite hf_mem_adjoin.
+      rewrite IH.
+      split.
+      * intros [[hlt hx] | hx].
+        -- split; [lia | exact hx].
+        -- subst x. split; [lia | exact hbit].
+      * intros [hlt hx].
+        destruct (Nat.eq_dec x n) as [hx_eq | hx_ne].
+        -- right. exact hx_eq.
+        -- left. split; [lia | exact hx].
+    + rewrite IH.
+      split.
+      * intros [hlt hx]. split; [lia | exact hx].
+      * intros [hlt hx].
+        destruct (Nat.eq_dec x n) as [hx_eq | hx_ne].
+        -- subst x.
+           unfold hf_mem in hx.
+           rewrite hbit in hx.
+           discriminate.
+        -- split; [lia | exact hx].
+Qed.
+
+Lemma prefix_below_self_eq : forall a,
+  prefix_below a a = a.
+Proof.
+  intro a.
+  apply hf_ext.
+  intro x.
+  rewrite mem_prefix_below_iff.
+  split.
+  - intros [_ hx]. exact hx.
+  - intro hx.
+    split.
+    + exact (hf_mem_lt x a hx).
+    + exact hx.
+Qed.
+
+Lemma sat_HF_finite_induction_standard : forall phi e,
+  Sat nat hf_mem e (HF_finite_induction_form phi).
+Proof.
+  intros phi e.
+  apply (proj2 (HF_finite_induction_form_spec nat hf_mem phi e)).
+  intros [hbase hstep] a.
+  assert (hpref : forall n,
+    Sat nat hf_mem (scons nat (prefix_below a n) e) phi).
+  {
+    intro n.
+    induction n as [|n IH].
+    - apply hbase.
+      simpl.
+      apply hf_mem_empty.
+    - destruct (Nat.testbit a n) eqn:hbit.
+      + assert (hn : hf_mem n a) by exact hbit.
+        assert (hAdj : forall x,
+          hf_mem x (prefix_below a (S n)) <->
+            hf_mem x (prefix_below a n) \/ x = n).
+        {
+          intro x.
+          rewrite (prefix_below_succ_of_mem a n hn).
+          apply hf_mem_adjoin.
+        }
+        exact (hstep (prefix_below a n) n
+          (prefix_below a (S n)) hAdj IH).
+      + assert (hn : ~ hf_mem n a).
+        {
+          intro hn.
+          unfold hf_mem in hn.
+          rewrite hbit in hn.
+          discriminate.
+        }
+        rewrite (prefix_below_succ_of_not_mem a n hn).
+        exact IH.
+  }
+  pose proof (hpref a) as h.
+  rewrite prefix_below_self_eq in h.
+  exact h.
+Qed.
+
+Lemma standard_sat_HFFin : forall v,
+  forall g, HFFinAx_s g -> Sat nat hf_mem v g.
+Proof.
+  intros v g [hg | [phi ->]].
+  - exact (standard_sat_HF v g hg).
+  - exact (proj2 (seal_valid nat hf_mem (HF_finite_induction_form phi))
+      (sat_HF_finite_induction_standard phi) v).
 Qed.
 
 Lemma HFAx_s_empty : HFAx_s (seal HF_empty_form).
@@ -2330,6 +2622,31 @@ Definition foam_succ_rec_total (V : Type)
     foam_succ_rec_approx V M s f m /\
     foam_mem V M (foam_kpair_obj V M m z) f.
 
+Definition foam_mul_step (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f a m : V) : Prop :=
+  forall k t y,
+    foam_mem V M k m ->
+    foam_mem V M (foam_kpair_obj V M k t) f ->
+    foam_mem V M (foam_kpair_obj V M (foam_adjoin V M k k) y) f ->
+    exists g,
+      foam_succ_rec_approx V M t g a /\
+        foam_mem V M (foam_kpair_obj V M a y) g.
+
+Definition foam_mul_rec_approx (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a f m : V) : Prop :=
+  foam_pair_functional V M f /\
+    foam_pair_keys_below_succ V M f m /\
+      foam_mem V M
+        (foam_kpair_obj V M (foam_empty V M) (foam_empty V M)) f /\
+        foam_pair_total_below_succ V M f m /\
+          foam_mul_step V M f a m.
+
+Definition foam_mul_rec_total (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a m : V) : Prop :=
+  exists f z,
+    foam_mul_rec_approx V M a f m /\
+    foam_mem V M (foam_kpair_obj V M m z) f.
+
 Definition HF_succRecTotalAt (s m : nat) : form :=
   fEx (fEx (fAnd
     (HF_succRecApproxAt 1 (S (S s)) (S (S m)))
@@ -2662,6 +2979,232 @@ Proof.
         rewrite hy, ht.
         unfold sz.
         reflexivity.
+Qed.
+
+Definition foam_mul_rec_graph_succ (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m y : V) : V :=
+  foam_adjoin V M f
+    (foam_kpair_obj V M (foam_adjoin V M m m) y).
+
+Lemma foam_mul_rec_graph_succ_old : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m y p : V),
+  foam_mem V M p f ->
+  foam_mem V M p (foam_mul_rec_graph_succ V M f m y).
+Proof.
+  intros V M f m y p hp.
+  apply (proj2 (foam_adjoin_spec V M p f
+    (foam_kpair_obj V M (foam_adjoin V M m m) y))).
+  now left.
+Qed.
+
+Lemma foam_mul_rec_graph_succ_new : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m y : V),
+  foam_mem V M (foam_kpair_obj V M (foam_adjoin V M m m) y)
+    (foam_mul_rec_graph_succ V M f m y).
+Proof.
+  intros V M f m y.
+  apply (proj2 (foam_adjoin_spec V M
+    (foam_kpair_obj V M (foam_adjoin V M m m) y)
+    f
+    (foam_kpair_obj V M (foam_adjoin V M m m) y))).
+  now right.
+Qed.
+
+Lemma foam_mul_rec_graph_succ_mulRecApprox : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a f m z y : V),
+  OrdinalLike (foam_mem V M) m ->
+  foam_mul_rec_approx V M a f m ->
+  foam_mem V M (foam_kpair_obj V M m z) f ->
+  (exists g,
+    foam_succ_rec_approx V M z g a /\
+      foam_mem V M (foam_kpair_obj V M a y) g) ->
+  foam_mul_rec_approx V M a
+    (foam_mul_rec_graph_succ V M f m y)
+    (foam_adjoin V M m m).
+Proof.
+  intros V M a f m z y hm hf hz hadd.
+  destruct hf as [hfun [hkeys [hbase [htotal hstep]]]].
+  set (sm := foam_adjoin V M m m).
+  set (newPair := foam_kpair_obj V M sm y).
+  set (g := foam_mul_rec_graph_succ V M f m y).
+  assert (hsm_not_mem : ~ foam_mem V M sm m).
+  {
+    unfold sm.
+    exact (foam_adjoin_self_not_mem_of_OrdinalLike V M m hm).
+  }
+  assert (hsm_ne_m : sm <> m).
+  {
+    unfold sm.
+    exact (foam_adjoin_self_ne_self V M m).
+  }
+  assert (hmem_g : forall p,
+      foam_mem V M p g <-> foam_mem V M p f \/ p = newPair).
+  {
+    intro p.
+    unfold g, newPair, sm, foam_mul_rec_graph_succ.
+    apply foam_adjoin_spec.
+  }
+  assert (old_key_ne_succ : forall k out,
+      foam_mem V M (foam_kpair_obj V M k out) f -> k <> sm).
+  {
+    intros k out hOld hk.
+    pose proof (hkeys k out hOld) as hkBound.
+    rewrite hk in hkBound.
+    destruct hkBound as [hmem | heq].
+    - exact (hsm_not_mem hmem).
+    - exact (hsm_ne_m heq).
+  }
+  assert (pair_old_of_mem_key : forall k out,
+      foam_mem V M k m ->
+      foam_mem V M (foam_kpair_obj V M k out) g ->
+      foam_mem V M (foam_kpair_obj V M k out) f).
+  {
+    intros k out hkm hkg.
+    destruct (proj1 (hmem_g (foam_kpair_obj V M k out)) hkg)
+      as [hOld | hNew].
+    - exact hOld.
+    - pose proof (proj1 (foam_kpair_injective V M k out sm y hNew)) as hk.
+      rewrite hk in hkm.
+      exfalso. exact (hsm_not_mem hkm).
+  }
+  unfold foam_mul_rec_approx.
+  repeat split.
+  - intros k u v hku hkv.
+    destruct (proj1 (hmem_g (foam_kpair_obj V M k u)) hku)
+      as [hOld | hNew].
+    + destruct (proj1 (hmem_g (foam_kpair_obj V M k v)) hkv)
+        as [hOld' | hNew'].
+      * exact (hfun k u v hOld hOld').
+      * pose proof (proj1 (foam_kpair_injective V M k v sm y hNew')) as hk.
+        exfalso. exact (old_key_ne_succ k u hOld hk).
+    + destruct (proj1 (hmem_g (foam_kpair_obj V M k v)) hkv)
+        as [hOld' | hNew'].
+      * pose proof (proj1 (foam_kpair_injective V M k u sm y hNew)) as hk.
+        exfalso. exact (old_key_ne_succ k v hOld' hk).
+      * pose proof (proj2 (foam_kpair_injective V M k u sm y hNew)) as hu.
+        pose proof (proj2 (foam_kpair_injective V M k v sm y hNew')) as hv.
+        rewrite hu, hv. reflexivity.
+  - intros k out hku.
+    destruct (proj1 (hmem_g (foam_kpair_obj V M k out)) hku)
+      as [hOld | hNew].
+    + destruct (hkeys k out hOld) as [hkm | hkm].
+      * left. apply (proj2 (foam_adjoin_spec V M k m m)). now left.
+      * left. apply (proj2 (foam_adjoin_spec V M k m m)). now right.
+    + right. exact (proj1 (foam_kpair_injective V M k out sm y hNew)).
+  - exact (foam_mul_rec_graph_succ_old V M f m y
+      (foam_kpair_obj V M (foam_empty V M) (foam_empty V M)) hbase).
+  - intros k hk.
+    destruct hk as [hksm | hksm].
+    + destruct (proj1 (foam_adjoin_spec V M k m m) hksm)
+        as [hkm | hkm].
+      * destruct (htotal k (or_introl hkm)) as [out hout].
+        exists out.
+        exact (foam_mul_rec_graph_succ_old V M f m y
+          (foam_kpair_obj V M k out) hout).
+      * destruct (htotal k (or_intror hkm)) as [out hout].
+        exists out.
+        exact (foam_mul_rec_graph_succ_old V M f m y
+          (foam_kpair_obj V M k out) hout).
+    + subst k.
+      exists y.
+      unfold sm.
+      apply foam_mul_rec_graph_succ_new.
+  - intros k t out hksm hkt hsky.
+    destruct (proj1 (foam_adjoin_spec V M k m m) hksm)
+      as [hkm | hkm].
+    + assert (hktOld : foam_mem V M (foam_kpair_obj V M k t) f).
+      {
+        exact (pair_old_of_mem_key k t hkm hkt).
+      }
+      assert (hskyOld :
+          foam_mem V M (foam_kpair_obj V M (foam_adjoin V M k k) out) f).
+      {
+        destruct (proj1 (hmem_g
+          (foam_kpair_obj V M (foam_adjoin V M k k) out)) hsky)
+          as [hOld | hNew].
+        - exact hOld.
+        - pose proof (proj1 (foam_kpair_injective V M
+            (foam_adjoin V M k k) out sm y hNew)) as hsk.
+          assert (hkOrd : OrdinalLike (foam_mem V M) k).
+          {
+            exact (OrdinalLike_of_mem V (foam_mem V M) m k hm hkm).
+          }
+          assert (hkm_eq : k = m).
+          {
+            apply (foam_adjoin_self_injective_on_OrdinalLike V M k m hkOrd hm).
+            unfold sm in hsk.
+            exact hsk.
+          }
+          rewrite hkm_eq in hkm.
+          exfalso. exact (foam_mem_irrefl V M m hkm).
+      }
+      exact (hstep k t out hkm hktOld hskyOld).
+    + subst k.
+      assert (hktOld : foam_mem V M (foam_kpair_obj V M m t) f).
+      {
+        destruct (proj1 (hmem_g (foam_kpair_obj V M m t)) hkt)
+          as [hOld | hNew].
+        - exact hOld.
+        - pose proof (proj1 (foam_kpair_injective V M m t sm y hNew))
+            as hm_eq_sm.
+          exfalso. exact (hsm_ne_m (eq_sym hm_eq_sm)).
+      }
+      pose proof (hfun m t z hktOld hz) as ht.
+      destruct (proj1 (hmem_g (foam_kpair_obj V M sm out)) hsky)
+        as [hOld | hNew].
+      * exfalso. exact (old_key_ne_succ sm out hOld eq_refl).
+      * pose proof (proj2 (foam_kpair_injective V M sm out sm y hNew)) as hout.
+        rewrite ht, hout.
+        exact hadd.
+Qed.
+
+Lemma foam_zero_mul_rec_graph_mulRecApprox : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a : V),
+  foam_mul_rec_approx V M a
+    (foam_zero_succ_rec_graph V M (foam_empty V M))
+    (foam_empty V M).
+Proof.
+  intros V M a.
+  pose proof (foam_zero_succ_rec_graph_succRecApprox V M
+    (foam_empty V M)) as hf.
+  destruct hf as [hfun [hkeys [hbase [htotal _hstep]]]].
+  unfold foam_mul_rec_approx.
+  repeat split.
+  - exact hfun.
+  - exact hkeys.
+  - exact hbase.
+  - exact htotal.
+  - intros k _t _y hkm _ _.
+    exfalso. exact (foam_empty_spec V M k hkm).
+Qed.
+
+Lemma foam_mul_rec_total_empty : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a : V),
+  foam_mul_rec_total V M a (foam_empty V M).
+Proof.
+  intros V M a.
+  exists (foam_zero_succ_rec_graph V M (foam_empty V M)),
+    (foam_empty V M).
+  split.
+  - apply foam_zero_mul_rec_graph_mulRecApprox.
+  - apply foam_zero_succ_rec_graph_base.
+Qed.
+
+Lemma foam_mul_rec_total_succ_of_addTotal : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a m : V),
+  OrdinalLike (foam_mem V M) m ->
+  (forall s, foam_succ_rec_total V M s a) ->
+  foam_mul_rec_total V M a m ->
+  foam_mul_rec_total V M a (foam_adjoin V M m m).
+Proof.
+  intros V M a m hm hAddTotal [f [z [hf hz]]].
+  destruct (hAddTotal z) as [g [y [hg hy]]].
+  exists (foam_mul_rec_graph_succ V M f m y), y.
+  split.
+  - apply (foam_mul_rec_graph_succ_mulRecApprox V M a f m z y
+      hm hf hz).
+    exists g. split; assumption.
+  - apply foam_mul_rec_graph_succ_new.
 Qed.
 
 Lemma foam_succ_rec_total_succ : forall (V : Type)
@@ -4066,6 +4609,329 @@ Definition mulGraphAt (out left right : nat) : form :=
 
 Definition mulGraph : form := mulGraphAt 0 1 2.
 
+Definition mulRecTotalAt (a m : nat) : form :=
+  fEx (fEx (fAnd
+    (mulRecApproxAt 1 (S (S a)) (S (S m)))
+    (HF_pairMemAt (S (S m)) 0 1))).
+
+Definition mulRecTotalOnOrdinalAt (a m : nat) : form :=
+  fImp (HF_ordinalLikeAt m) (mulRecTotalAt a m).
+
+Lemma foam_mulStepAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f a m,
+  Sat V (foam_mem V M) e (mulStepAt f a m) <->
+    foam_mul_step V M (e f) (e a) (e m).
+Proof.
+  intros V M e f a m.
+  split.
+  - intros h k t y hkm hkt hsky.
+    simpl in h.
+    pose (sk := foam_adjoin V M k k).
+    pose (Ekty := scons V y (scons V t (scons V k e))).
+    pose (Eskty := scons V sk Ekty).
+    assert (hktSat : Sat V (foam_mem V M) Ekty
+        (HF_pairMemAt 2 1 (S (S (S f))))).
+    {
+      apply (proj2 (foam_HF_pairMemAt_spec V M Ekty
+        2 1 (S (S (S f))))).
+      change (foam_mem V M (foam_kpair_obj V M k t) (e f)).
+      exact hkt.
+    }
+    assert (hskSat : Sat V (foam_mem V M) Eskty (HF_succAt 0 3)).
+    {
+      apply (proj2 (foam_HF_succAt_spec V M Eskty 0 3)).
+      change (sk = foam_adjoin V M k k).
+      unfold sk. reflexivity.
+    }
+    assert (hskySat : Sat V (foam_mem V M) Eskty
+        (HF_pairMemAt 0 1 (S (S (S (S f)))))).
+    {
+      apply (proj2 (foam_HF_pairMemAt_spec V M Eskty
+        0 1 (S (S (S (S f)))))).
+      change (foam_mem V M (foam_kpair_obj V M sk y) (e f)).
+      unfold sk.
+      exact hsky.
+    }
+    destruct (h k t y hkm hktSat sk hskSat hskySat)
+      as [g [hg hy]].
+    pose proof (proj1 (foam_HF_succRecApproxAt_spec V M
+      (scons V g Eskty) 0 3 (S (S (S (S (S a)))))) hg) as hg'.
+    pose proof (proj1 (foam_HF_pairMemAt_spec V M
+      (scons V g Eskty) (S (S (S (S (S a))))) 2 0) hy) as hy'.
+    exists g.
+    split.
+    + change (foam_succ_rec_approx V M t g (e a)) in hg'.
+      exact hg'.
+    + change (foam_mem V M (foam_kpair_obj V M (e a) y) g) in hy'.
+      exact hy'.
+  - intros h.
+    simpl.
+    intros k t y hkm hkt sk hsk hsky.
+    pose proof (proj1 (foam_HF_succAt_spec V M
+      (scons V sk (scons V y (scons V t (scons V k e)))) 0 3) hsk)
+      as hsk'.
+    assert (hkt' : foam_mem V M (foam_kpair_obj V M k t) (e f)).
+    {
+      exact (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V y (scons V t (scons V k e))) 2 1 (S (S (S f)))) hkt).
+    }
+    assert (hsky' : foam_mem V M
+        (foam_kpair_obj V M (foam_adjoin V M k k) y) (e f)).
+    {
+      pose proof (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V sk (scons V y (scons V t (scons V k e))))
+        0 1 (S (S (S (S f))))) hsky) as hp.
+      rewrite hsk' in hp.
+      exact hp.
+    }
+    destruct (h k t y hkm hkt' hsky') as [g [hg hy]].
+    exists g.
+    split.
+    + apply (proj2 (foam_HF_succRecApproxAt_spec V M
+        (scons V g (scons V sk (scons V y (scons V t (scons V k e)))))
+        0 3 (S (S (S (S (S a))))))).
+      change (foam_succ_rec_approx V M t g (e a)).
+      exact hg.
+    + apply (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V g (scons V sk (scons V y (scons V t (scons V k e)))))
+        (S (S (S (S (S a))))) 2 0)).
+      change (foam_mem V M (foam_kpair_obj V M (e a) y) g).
+      exact hy.
+Qed.
+
+Lemma foam_mulRecApproxAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f a m,
+  Sat V (foam_mem V M) e (mulRecApproxAt f a m) <->
+    foam_mul_rec_approx V M (e a) (e f) (e m).
+Proof.
+  intros V M e f a m.
+  split.
+  - intro h.
+    unfold mulRecApproxAt in h.
+    simpl in h.
+    destruct h as [hfun [hkeys [hbase [htotal hstep]]]].
+    unfold foam_mul_rec_approx.
+    repeat split.
+    + exact (proj1 (foam_HF_pairFunctionalAt_spec V M e f) hfun).
+    + exact (proj1 (foam_HF_pairKeysBelowSuccAt_spec V M e f m) hkeys).
+    + exact (proj1 (foam_HF_pairZeroBaseAt_spec V M e f) hbase).
+    + exact (proj1 (foam_HF_pairTotalBelowSuccAt_spec V M e f m) htotal).
+    + exact (proj1 (foam_mulStepAt_spec V M e f a m) hstep).
+  - intro h.
+    unfold foam_mul_rec_approx in h.
+    destruct h as [hfun [hkeys [hbase [htotal hstep]]]].
+    unfold mulRecApproxAt.
+    simpl.
+    repeat split.
+    + exact (proj2 (foam_HF_pairFunctionalAt_spec V M e f) hfun).
+    + exact (proj2 (foam_HF_pairKeysBelowSuccAt_spec V M e f m) hkeys).
+    + exact (proj2 (foam_HF_pairZeroBaseAt_spec V M e f) hbase).
+    + exact (proj2 (foam_HF_pairTotalBelowSuccAt_spec V M e f m) htotal).
+    + exact (proj2 (foam_mulStepAt_spec V M e f a m) hstep).
+Qed.
+
+Lemma foam_mulRecTotalAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) a m,
+  Sat V (foam_mem V M) e (mulRecTotalAt a m) <->
+    foam_mul_rec_total V M (e a) (e m).
+Proof.
+  intros V M e a m.
+  split.
+  - intros [f [z [hf hz]]].
+    exists f, z.
+    split.
+    + exact (proj1 (foam_mulRecApproxAt_spec V M
+        (scons V z (scons V f e)) 1 (S (S a)) (S (S m))) hf).
+    + exact (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V z (scons V f e)) (S (S m)) 0 1) hz).
+  - intros [f [z [hf hz]]].
+    exists f, z.
+    split.
+    + exact (proj2 (foam_mulRecApproxAt_spec V M
+        (scons V z (scons V f e)) 1 (S (S a)) (S (S m))) hf).
+    + exact (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V z (scons V f e)) (S (S m)) 0 1) hz).
+Qed.
+
+Lemma foam_mulRecTotalOnOrdinalAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) a m,
+  Sat V (foam_mem V M) e (mulRecTotalOnOrdinalAt a m) <->
+    (OrdinalLike (foam_mem V M) (e m) ->
+      foam_mul_rec_total V M (e a) (e m)).
+Proof.
+  intros V M e a m.
+  unfold mulRecTotalOnOrdinalAt.
+  split.
+  - intros h hm.
+    apply (proj1 (foam_mulRecTotalAt_spec V M e a m)).
+    apply h.
+    apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M) e m)).
+    exact hm.
+  - intros h hmSat.
+    apply (proj2 (foam_mulRecTotalAt_spec V M e a m)).
+    apply h.
+    apply (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M) e m)).
+    exact hmSat.
+Qed.
+
+Lemma foam_mul_rec_total_of_ordinalLike_of_predecessor : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V),
+  (forall a, OrdinalLike (foam_mem V M) a ->
+    a = foam_empty V M \/
+    exists p, foam_mem V M p a /\ a = foam_adjoin V M p p) ->
+  (forall s m, OrdinalLike (foam_mem V M) m ->
+    foam_succ_rec_total V M s m) ->
+  forall a m,
+    OrdinalLike (foam_mem V M) a ->
+    OrdinalLike (foam_mem V M) m ->
+    foam_mul_rec_total V M a m.
+Proof.
+  intros V M hPred hAddTotal a m ha hm.
+  pose (phi := mulRecTotalOnOrdinalAt 1 0).
+  pose (tail := fun _ : nat => a).
+  pose proof (foam_induction_schema V M phi (scons V a tail)) as hind.
+  assert (hall : forall b,
+      Sat V (foam_mem V M) (scons V b (scons V a tail)) phi).
+  {
+    apply hind.
+    intros b ih.
+    apply (proj2 (foam_mulRecTotalOnOrdinalAt_spec V M
+      (scons V b (scons V a tail)) 1 0)).
+    intro hb.
+    destruct (hPred b hb) as [hbEmpty | [p [hpb hbSucc]]].
+    - rewrite hbEmpty.
+      apply foam_mul_rec_total_empty.
+    - assert (hpOrd : OrdinalLike (foam_mem V M) p).
+      {
+        exact (OrdinalLike_of_mem V (foam_mem V M) b p hb hpb).
+      }
+      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
+        phi (scons V a tail) b p) (ih p hpb)) as hpSat.
+      assert (hpTotal : foam_mul_rec_total V M a p).
+      {
+        exact (proj1 (foam_mulRecTotalOnOrdinalAt_spec V M
+          (scons V p (scons V a tail)) 1 0) hpSat hpOrd).
+      }
+      rewrite hbSucc.
+      apply (foam_mul_rec_total_succ_of_addTotal V M a p hpOrd).
+      + intro s.
+        exact (hAddTotal s a ha).
+      + exact hpTotal.
+  }
+  exact (proj1 (foam_mulRecTotalOnOrdinalAt_spec V M
+    (scons V m (scons V a tail)) 1 0) (hall m) hm).
+Qed.
+
+Lemma fofam_mul_rec_total_of_ordinalLike : forall (V : Type)
+    (M : FirstOrderFiniteAdjunctionModel V) (a m : V),
+  OrdinalLike (foam_mem V M) a ->
+  OrdinalLike (foam_mem V M) m ->
+  foam_mul_rec_total V M a m.
+Proof.
+  intros V M a m ha hm.
+  apply (foam_mul_rec_total_of_ordinalLike_of_predecessor V M).
+  - intros b hb.
+    exact (fofam_OrdinalLike_empty_or_succ V M b hb).
+  - intros s r hr.
+    exact (fofam_succ_rec_total_of_ordinalLike V M s r hr).
+  - exact ha.
+  - exact hm.
+Qed.
+
+Lemma domainForm_free : forall i,
+  Free i domainForm -> i = 0.
+Proof.
+  intros i h.
+  unfold domainForm in h.
+  apply (HF_ordinalLikeAt_free i 0 h).
+Qed.
+
+Lemma zeroGraph_free : forall i,
+  Free i zeroGraph -> i = 0.
+Proof.
+  intros i h.
+  unfold zeroGraph in h.
+  apply (HF_emptyAt_free i 0 h).
+Qed.
+
+Lemma succGraph_free : forall i,
+  Free i succGraph -> i = 0 \/ i = 1.
+Proof.
+  intros i h.
+  unfold succGraph in h.
+  destruct (HF_succAt_free i 0 1 h) as [hi | hi]; lia.
+Qed.
+
+Lemma addGraphAt_free : forall i out left right,
+  Free i (addGraphAt out left right) ->
+    i = out \/ i = left \/ i = right.
+Proof.
+  intros i out left right h.
+  unfold addGraphAt in h.
+  simpl in h.
+  destruct h as [h | h].
+  - destruct (HF_succRecApproxAt_free (S i) 0 (S left) (S right) h)
+      as [hi | [hi | hi]]; lia.
+  - destruct (HF_pairMemAt_free (S i) (S right) (S out) 0 h)
+      as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma addGraph_free : forall i,
+  Free i addGraph -> i = 0 \/ i = 1 \/ i = 2.
+Proof.
+  intros i h.
+  unfold addGraph in h.
+  exact (addGraphAt_free i 0 1 2 h).
+Qed.
+
+Lemma mulStepAt_free : forall i f a m,
+  Free i (mulStepAt f a m) -> i = f \/ i = a \/ i = m.
+Proof.
+  intros i f a m h.
+  unfold mulStepAt, addGraphAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, HF_succAt, HF_adjoinAt,
+    HF_succRecApproxAt, HF_pairFunctionalAt, HF_pairKeysBelowSuccAt,
+    HF_pairBaseAt, HF_pairZeroBaseAt, HF_pairTotalBelowSuccAt,
+    HF_pairSuccStepAt, HF_emptyAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma mulRecApproxAt_free : forall i f a m,
+  Free i (mulRecApproxAt f a m) -> i = f \/ i = a \/ i = m.
+Proof.
+  intros i f a m h.
+  unfold mulRecApproxAt in h.
+  simpl in h.
+  destruct h as [h | [h | [h | [h | h]]]].
+  - pose proof (HF_pairFunctionalAt_free i f h). lia.
+  - destruct (HF_pairKeysBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - pose proof (HF_pairZeroBaseAt_free i f h). lia.
+  - destruct (HF_pairTotalBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - destruct (mulStepAt_free i f a m h) as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma mulGraphAt_free : forall i out left right,
+  Free i (mulGraphAt out left right) ->
+    i = out \/ i = left \/ i = right.
+Proof.
+  intros i out left right h.
+  unfold mulGraphAt in h.
+  simpl in h.
+  destruct h as [h | h].
+  - destruct (mulRecApproxAt_free (S i) 0 (S left) (S right) h)
+      as [hi | [hi | hi]]; lia.
+  - destruct (HF_pairMemAt_free (S i) (S right) (S out) 0 h)
+      as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma mulGraph_free : forall i,
+  Free i mulGraph -> i = 0 \/ i = 1 \/ i = 2.
+Proof.
+  intros i h.
+  unfold mulGraph in h.
+  exact (mulGraphAt_free i 0 1 2 h).
+Qed.
+
 Lemma mulRecApproxAt_value_of_le : forall m N f outDummy e n y,
   Sat nat hf_mem
     (scons nat f
@@ -4553,6 +5419,520 @@ Proof.
   exact (succGraph_preserves_domain_model ackermannHFModel e hin hs).
 Qed.
 
+Definition upVarMap (rho : nat -> nat) : nat -> nat :=
+  fun n =>
+    match n with
+    | 0 => 0
+    | S k => S (rho k)
+    end.
+
+Definition substZeroAfterMap (p k : nat) (rho : nat -> nat) : nat -> nat :=
+  fun n => if n <? p then k + n else rho (n - p) + k + p.
+
+Definition substZeroBeforeMap (p k : nat) (rho : nat -> nat) : nat -> nat :=
+  fun n =>
+    if n <? p then k + n
+    else if n =? p then k + p
+    else rho (n - p - 1) + k + p + 1.
+
+Lemma substZeroAfterMap_lt : forall p k n rho,
+  n < p -> substZeroAfterMap p k rho n = k + n.
+Proof.
+  intros p k n rho h.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n p); [reflexivity | lia].
+Qed.
+
+Lemma substZeroAfterMap_ge : forall p k n rho,
+  p <= n -> substZeroAfterMap p k rho n = rho (n - p) + k + p.
+Proof.
+  intros p k n rho h.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n p); [lia | reflexivity].
+Qed.
+
+Lemma substZeroBeforeMap_lt : forall p k n rho,
+  n < p -> substZeroBeforeMap p k rho n = k + n.
+Proof.
+  intros p k n rho h.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec n p); [reflexivity | lia].
+Qed.
+
+Lemma substZeroBeforeMap_eq : forall p k rho,
+  substZeroBeforeMap p k rho p = k + p.
+Proof.
+  intros p k rho.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec p p); [lia |].
+  destruct (Nat.eqb_spec p p); [reflexivity | congruence].
+Qed.
+
+Lemma substZeroBeforeMap_gt : forall p k n rho,
+  p < n -> substZeroBeforeMap p k rho n =
+    rho (n - p - 1) + k + p + 1.
+Proof.
+  intros p k n rho h.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec n p); [lia |].
+  destruct (Nat.eqb_spec n p); [lia | reflexivity].
+Qed.
+
+Lemma substZeroBeforeMap_ne_replaced_slot : forall p k n rho,
+  n <> p -> substZeroBeforeMap p k rho n <> k + p.
+Proof.
+  intros p k n rho hne hslot.
+  unfold substZeroBeforeMap in hslot.
+  destruct (Nat.ltb_spec n p) as [hlt | hnlt].
+  - lia.
+  - destruct (Nat.eqb_spec n p) as [heq | hneq].
+    + contradiction.
+    + lia.
+Qed.
+
+Lemma substZeroAfterMap_add : forall p k d rho n,
+  substZeroAfterMap p k rho n + d =
+    substZeroAfterMap p (k + d) rho n.
+Proof.
+  intros p k d rho n.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n p); lia.
+Qed.
+
+Lemma substZeroBeforeMap_add : forall p k d rho n,
+  substZeroBeforeMap p k rho n + d =
+    substZeroBeforeMap p (k + d) rho n.
+Proof.
+  intros p k d rho n.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec n p); [lia |].
+  destruct (Nat.eqb_spec n p); lia.
+Qed.
+
+Lemma upVarMap_substZeroAfterMap_zero : forall p rho n,
+  upVarMap (substZeroAfterMap p 0 rho) n =
+    substZeroAfterMap (S p) 0 rho n.
+Proof.
+  intros p rho [|n].
+  - unfold upVarMap, substZeroAfterMap.
+    destruct (Nat.ltb_spec 0 (S p)); [reflexivity | lia].
+  - unfold upVarMap.
+    simpl.
+    destruct (Nat.ltb_spec n p) as [hlt | hnlt].
+    + rewrite (substZeroAfterMap_lt p 0 n rho hlt).
+      rewrite (substZeroAfterMap_lt (S p) 0 (S n) rho); [lia | lia].
+    + assert (hge : p <= n) by lia.
+      rewrite (substZeroAfterMap_ge p 0 n rho hge).
+      rewrite (substZeroAfterMap_ge (S p) 0 (S n) rho); [|lia].
+      replace (S n - S p) with (n - p) by lia.
+      lia.
+Qed.
+
+Lemma upVarMap_substZeroBeforeMap_zero : forall p rho n,
+  upVarMap (substZeroBeforeMap p 0 rho) n =
+    substZeroBeforeMap (S p) 0 rho n.
+Proof.
+  intros p rho [|n].
+  - unfold upVarMap, substZeroBeforeMap.
+    destruct (Nat.ltb_spec 0 (S p)); [reflexivity | lia].
+  - unfold upVarMap.
+    simpl.
+    destruct (Nat.ltb_spec n p) as [hlt | hnlt].
+    + rewrite (substZeroBeforeMap_lt p 0 n rho hlt).
+      rewrite (substZeroBeforeMap_lt (S p) 0 (S n) rho); [lia | lia].
+    + destruct (Nat.eq_dec n p) as [heq | hne].
+      * subst n.
+        rewrite substZeroBeforeMap_eq.
+        rewrite substZeroBeforeMap_eq.
+        lia.
+      * assert (hgt : p < n) by lia.
+        rewrite (substZeroBeforeMap_gt p 0 n rho hgt).
+        rewrite (substZeroBeforeMap_gt (S p) 0 (S n) rho); [|lia].
+        replace (S n - S p - 1) with (n - p - 1) by lia.
+        lia.
+Qed.
+
+Lemma substZeroAfterMap_zero_zero : forall rho n,
+  substZeroAfterMap 0 0 rho n = rho n.
+Proof.
+  intros rho n.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n 0); [lia |].
+  replace (n - 0) with n by lia.
+  lia.
+Qed.
+
+Lemma substZeroBeforeMap_zero_zero : forall rho n,
+  substZeroBeforeMap 0 0 rho n = upVarMap rho n.
+Proof.
+  intros rho [|n].
+  - apply substZeroBeforeMap_eq.
+  - rewrite (substZeroBeforeMap_gt 0 0 (S n) rho); [|lia].
+    unfold upVarMap.
+    simpl.
+    replace (S n - 0 - 1) with n by lia.
+    replace (n - 0) with n by lia.
+    repeat rewrite Nat.add_0_r.
+    apply Nat.add_1_r.
+Qed.
+
+Definition insertAt {A : Type} (k : nat) (x : A) (e : nat -> A) :
+    nat -> A :=
+  fun n => if n <? k then e n else if n =? k then x else e (n - 1).
+
+Lemma insertAt_zero : forall A (x : A) e n,
+  insertAt 0 x e n = scons A x e n.
+Proof.
+  intros A x e [|n].
+  - unfold insertAt, scons.
+    destruct (Nat.ltb_spec 0 0); [lia |].
+    destruct (Nat.eqb_spec 0 0); [reflexivity | congruence].
+  - unfold insertAt, scons.
+    destruct (Nat.ltb_spec (S n) 0); [lia |].
+    destruct (Nat.eqb_spec (S n) 0); [lia |].
+    replace (S n - 1) with n by lia.
+    reflexivity.
+Qed.
+
+Lemma insertAt_lt : forall A k n (x : A) e,
+  n < k -> insertAt k x e n = e n.
+Proof.
+  intros A k n x e h.
+  unfold insertAt.
+  destruct (Nat.ltb_spec n k); [reflexivity | lia].
+Qed.
+
+Lemma insertAt_eq : forall A k (x : A) e,
+  insertAt k x e k = x.
+Proof.
+  intros A k x e.
+  unfold insertAt.
+  destruct (Nat.ltb_spec k k); [lia |].
+  destruct (Nat.eqb_spec k k); [reflexivity | congruence].
+Qed.
+
+Lemma insertAt_gt : forall A k n (x : A) e,
+  k < n -> insertAt k x e n = e (n - 1).
+Proof.
+  intros A k n x e h.
+  unfold insertAt.
+  destruct (Nat.ltb_spec n k); [lia |].
+  destruct (Nat.eqb_spec n k); [lia | reflexivity].
+Qed.
+
+Definition replaceAt {A : Type} (k : nat) (x : A) (e : nat -> A) :
+    nat -> A :=
+  fun n => if n =? k then x else e n.
+
+Lemma replaceAt_eq : forall A k (x : A) e,
+  replaceAt k x e k = x.
+Proof.
+  intros A k x e.
+  unfold replaceAt.
+  destruct (Nat.eqb_spec k k); [reflexivity | congruence].
+Qed.
+
+Lemma replaceAt_ne : forall A k n (x : A) e,
+  n <> k -> replaceAt k x e n = e n.
+Proof.
+  intros A k n x e h.
+  unfold replaceAt.
+  destruct (Nat.eqb_spec n k); [congruence | reflexivity].
+Qed.
+
+Lemma replaceAt_zero_scons : forall A (x d : A) e n,
+  replaceAt 0 x (scons A d e) n = scons A x e n.
+Proof.
+  intros A x d e [|n].
+  - apply replaceAt_eq.
+  - rewrite replaceAt_ne; [reflexivity | lia].
+Qed.
+
+Definition succReplaceAt {A : Type} (M : FirstOrderAdjunctionModel A)
+    (k : nat) (e : nat -> A) : nat -> A :=
+  replaceAt k (foam_adjoin A M (e k) (e k)) e.
+
+Lemma succReplaceAt_eq : forall A (M : FirstOrderAdjunctionModel A) k e,
+  succReplaceAt M k e k = foam_adjoin A M (e k) (e k).
+Proof.
+  intros A M k e.
+  unfold succReplaceAt.
+  apply replaceAt_eq.
+Qed.
+
+Lemma succReplaceAt_ne : forall A (M : FirstOrderAdjunctionModel A) k n e,
+  n <> k -> succReplaceAt M k e n = e n.
+Proof.
+  intros A M k n e h.
+  unfold succReplaceAt.
+  apply replaceAt_ne.
+  exact h.
+Qed.
+
+Lemma scons_insertAt : forall A k (x d : A) e n,
+  scons A d (insertAt k x e) n =
+    insertAt (S k) x (scons A d e) n.
+Proof.
+  intros A k x d e [|n].
+  - unfold scons, insertAt.
+    destruct (Nat.ltb_spec 0 (S k)); [reflexivity | lia].
+  - unfold scons at 1.
+    simpl.
+    destruct (lt_eq_lt_dec n k) as [[hlt | heq] | hgt].
+    + rewrite (insertAt_lt A k n x e hlt).
+      rewrite (insertAt_lt A (S k) (S n) x (scons A d e)); [reflexivity | lia].
+    + subst n.
+      rewrite insertAt_eq.
+      rewrite insertAt_eq.
+      reflexivity.
+    + rewrite (insertAt_gt A k n x e hgt).
+      rewrite (insertAt_gt A (S k) (S n) x (scons A d e)); [|lia].
+      replace (S n - 1) with n by lia.
+      destruct n as [|n]; [lia |].
+      simpl.
+      replace (S n - 1) with n by lia.
+      replace (n - 0) with n by lia.
+      reflexivity.
+Qed.
+
+Lemma scons2_insertAt : forall A k (x d1 d2 : A) e n,
+  scons A d2 (scons A d1 (insertAt k x e)) n =
+    insertAt (S (S k)) x (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A k x d1 d2 e [|n].
+  - unfold scons, insertAt.
+    destruct (Nat.ltb_spec 0 (S (S k))); [reflexivity | lia].
+  - simpl.
+    rewrite (scons_insertAt A k x d1 e n).
+    exact (scons_insertAt A (S k) x d2 (scons A d1 e) (S n)).
+Qed.
+
+Lemma scons3_insertAt : forall A k (x d1 d2 d3 : A) e n,
+  scons A d3 (scons A d2 (scons A d1 (insertAt k x e))) n =
+    insertAt (S (S (S k))) x
+      (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A k x d1 d2 d3 e [|n].
+  - unfold scons, insertAt.
+    destruct (Nat.ltb_spec 0 (S (S (S k)))); [reflexivity | lia].
+  - simpl.
+    rewrite (scons2_insertAt A k x d1 d2 e n).
+    exact (scons_insertAt A (S (S k)) x d3
+      (scons A d2 (scons A d1 e)) (S n)).
+Qed.
+
+Lemma scons_insertAt_prefix : forall A p k (x d : A) e n,
+  scons A d (insertAt (k + p) x e) n =
+    insertAt (S k + p) x (scons A d e) n.
+Proof.
+  intros A p k x d e n.
+  rewrite (scons_insertAt A (k + p) x d e n).
+  replace (S (k + p)) with (S k + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons2_insertAt_prefix : forall A p k (x d1 d2 : A) e n,
+  scons A d2 (scons A d1 (insertAt (k + p) x e)) n =
+    insertAt (S (S k) + p) x (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A p k x d1 d2 e n.
+  rewrite (scons2_insertAt A (k + p) x d1 d2 e n).
+  replace (S (S (k + p))) with (S (S k) + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons3_insertAt_prefix : forall A p k (x d1 d2 d3 : A) e n,
+  scons A d3 (scons A d2 (scons A d1 (insertAt (k + p) x e))) n =
+    insertAt (S (S (S k)) + p) x
+      (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A p k x d1 d2 d3 e n.
+  rewrite (scons3_insertAt A (k + p) x d1 d2 d3 e n).
+  replace (S (S (S (k + p)))) with (S (S (S k)) + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons_replaceAt : forall A k (x d : A) e n,
+  scons A d (replaceAt k x e) n =
+    replaceAt (S k) x (scons A d e) n.
+Proof.
+  intros A k x d e [|n].
+  - unfold scons, replaceAt.
+    destruct (Nat.eqb_spec 0 (S k)); [lia | reflexivity].
+  - simpl.
+    destruct (Nat.eq_dec n k) as [heq | hne].
+    + subst n.
+      rewrite replaceAt_eq.
+      rewrite replaceAt_eq.
+      reflexivity.
+    + rewrite (replaceAt_ne A k n x e hne).
+      rewrite (replaceAt_ne A (S k) (S n) x (scons A d e)); [reflexivity | lia].
+Qed.
+
+Lemma scons_replaceAt_prefix : forall A p k (x d : A) e n,
+  scons A d (replaceAt (k + p) x e) n =
+    replaceAt (S k + p) x (scons A d e) n.
+Proof.
+  intros A p k x d e n.
+  rewrite (scons_replaceAt A (k + p) x d e n).
+  replace (S (k + p)) with (S k + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons2_replaceAt_prefix : forall A p k (x d1 d2 : A) e n,
+  scons A d2 (scons A d1 (replaceAt (k + p) x e)) n =
+    replaceAt (S (S k) + p) x (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A p k x d1 d2 e [|n].
+  - unfold scons, replaceAt.
+    destruct (Nat.eqb_spec 0 (S (S k) + p)); [lia | reflexivity].
+  - simpl.
+    rewrite (scons_replaceAt_prefix A p k x d1 e n).
+    replace (S k + p) with (S (k + p)) by lia.
+    pose proof (scons_replaceAt A (S (k + p)) x d2
+      (scons A d1 e) (S n)) as h.
+    simpl in h.
+    rewrite h.
+    replace (S (S (k + p))) with (S (S k) + p) by lia.
+    reflexivity.
+Qed.
+
+Lemma scons3_replaceAt_prefix : forall A p k (x d1 d2 d3 : A) e n,
+  scons A d3 (scons A d2 (scons A d1 (replaceAt (k + p) x e))) n =
+    replaceAt (S (S (S k)) + p) x
+      (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A p k x d1 d2 d3 e [|n].
+  - unfold scons, replaceAt.
+    destruct (Nat.eqb_spec 0 (S (S (S k)) + p)); [lia | reflexivity].
+  - simpl.
+    rewrite (scons2_replaceAt_prefix A p k x d1 d2 e n).
+    replace (S (S k) + p) with (S (S (k + p))) by lia.
+    pose proof (scons_replaceAt A (S (S (k + p))) x d3
+      (scons A d2 (scons A d1 e)) (S n)) as h.
+    simpl in h.
+    rewrite h.
+    replace (S (S (S (k + p)))) with (S (S (S k)) + p) by lia.
+    reflexivity.
+Qed.
+
+Lemma scons_succReplaceAt_prefix :
+  forall A (M : FirstOrderAdjunctionModel A) p k d e n,
+    scons A d (succReplaceAt M (k + p) e) n =
+      succReplaceAt M (S k + p) (scons A d e) n.
+Proof.
+  intros A M p k d e n.
+  unfold succReplaceAt.
+  assert (hslot : scons A d e (S k + p) = e (k + p)).
+  {
+    replace (S k + p) with (S (k + p)) by lia.
+    reflexivity.
+  }
+  rewrite hslot.
+  apply scons_replaceAt_prefix.
+Qed.
+
+Lemma scons2_succReplaceAt_prefix :
+  forall A (M : FirstOrderAdjunctionModel A) p k d1 d2 e n,
+    scons A d2 (scons A d1 (succReplaceAt M (k + p) e)) n =
+      succReplaceAt M (S (S k) + p) (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A M p k d1 d2 e n.
+  unfold succReplaceAt.
+  assert (hslot :
+    scons A d2 (scons A d1 e) (S (S k) + p) = e (k + p)).
+  {
+    replace (S (S k) + p) with (S (S (k + p))) by lia.
+    reflexivity.
+  }
+  rewrite hslot.
+  apply scons2_replaceAt_prefix.
+Qed.
+
+Lemma scons3_succReplaceAt_prefix :
+  forall A (M : FirstOrderAdjunctionModel A) p k d1 d2 d3 e n,
+    scons A d3 (scons A d2 (scons A d1 (succReplaceAt M (k + p) e))) n =
+      succReplaceAt M (S (S (S k)) + p)
+        (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A M p k d1 d2 d3 e n.
+  unfold succReplaceAt.
+  assert (hslot :
+    scons A d3 (scons A d2 (scons A d1 e)) (S (S (S k)) + p) =
+      e (k + p)).
+  {
+    replace (S (S (S k)) + p) with (S (S (S (k + p)))) by lia.
+    reflexivity.
+  }
+  rewrite hslot.
+  apply scons3_replaceAt_prefix.
+Qed.
+
+Lemma scons_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) k d e n,
+    scons A d (succReplaceAt M k e) n =
+      succReplaceAt M (S k) (scons A d e) n.
+Proof.
+  intros A M k d e n.
+  pose proof (scons_succReplaceAt_prefix A M 0 k d e n) as h.
+  rewrite Nat.add_0_r in h.
+  rewrite Nat.add_0_r in h.
+  exact h.
+Qed.
+
+Lemma scons2_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) k d1 d2 e n,
+    scons A d2 (scons A d1 (succReplaceAt M k e)) n =
+      succReplaceAt M (S (S k)) (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A M k d1 d2 e n.
+  pose proof (scons2_succReplaceAt_prefix A M 0 k d1 d2 e n) as h.
+  rewrite Nat.add_0_r in h.
+  rewrite Nat.add_0_r in h.
+  exact h.
+Qed.
+
+Lemma scons3_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) k d1 d2 d3 e n,
+    scons A d3 (scons A d2 (scons A d1 (succReplaceAt M k e))) n =
+      succReplaceAt M (S (S (S k)))
+        (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A M k d1 d2 d3 e n.
+  pose proof (scons3_succReplaceAt_prefix A M 0 k d1 d2 d3 e n) as h.
+  rewrite Nat.add_0_r in h.
+  rewrite Nat.add_0_r in h.
+  exact h.
+Qed.
+
+Lemma domainForm_scons_insertAt :
+  forall A (mem : A -> A -> Prop) p x d e,
+    Sat A mem (scons A d (insertAt p x e)) domainForm <->
+      Sat A mem (scons A d e) domainForm.
+Proof.
+  intros A mem p x d e.
+  apply (Sat_ext_free A mem domainForm
+    (scons A d (insertAt p x e)) (scons A d e)).
+  intros n hn.
+  pose proof (domainForm_free n hn) as hn0.
+  subst n.
+  reflexivity.
+Qed.
+
+Lemma domainForm_scons_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) p d e,
+    Sat A (foam_mem A M) (scons A d (succReplaceAt M p e)) domainForm <->
+      Sat A (foam_mem A M) (scons A d e) domainForm.
+Proof.
+  intros A M p d e.
+  apply (Sat_ext_free A (foam_mem A M) domainForm
+    (scons A d (succReplaceAt M p e)) (scons A d e)).
+  intros n hn.
+  pose proof (domainForm_free n hn) as hn0.
+  subst n.
+  reflexivity.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
@@ -4864,6 +6244,7635 @@ Proof.
     reflexivity.
 Defined.
 
+Module PA.
+
+Record Model := {
+  carrier :> Type;
+  zero : carrier;
+  succ : carrier -> carrier;
+  add : carrier -> carrier -> carrier;
+  mul : carrier -> carrier -> carrier;
+  succ_injective : forall a b, succ a = succ b -> a = b;
+  zero_not_succ : forall a, succ a <> zero;
+  induction_schema : forall P : carrier -> Prop,
+    P zero -> (forall a, P a -> P (succ a)) -> forall a, P a;
+  add_zero : forall a, add a zero = a;
+  add_succ : forall a b, add a (succ b) = succ (add a b);
+  mul_zero : forall a, mul a zero = zero;
+  mul_succ : forall a b, mul a (succ b) = add (mul a b) a
+}.
+
+Record Iso (M N : Model) := {
+  iso_to : M -> N;
+  iso_inv : N -> M;
+  iso_left_inv : forall a, iso_inv (iso_to a) = a;
+  iso_right_inv : forall b, iso_to (iso_inv b) = b;
+  iso_map_zero : iso_to (zero M) = zero N;
+  iso_map_succ : forall a, iso_to (succ M a) = succ N (iso_to a);
+  iso_map_add : forall a b, iso_to (add M a b) = add N (iso_to a) (iso_to b);
+  iso_map_mul : forall a b, iso_to (mul M a b) = mul N (iso_to a) (iso_to b)
+}.
+
+Definition natModel : Model.
+Proof.
+  refine {| carrier := nat;
+            zero := 0;
+            succ := S;
+            add := Nat.add;
+            mul := Nat.mul |}.
+  - intros a b h. now inversion h.
+  - intros a h. discriminate h.
+  - intros P h0 hs a.
+    induction a as [|a ih].
+    + exact h0.
+    + exact (hs a ih).
+  - apply Nat.add_0_r.
+  - apply Nat.add_succ_r.
+  - apply Nat.mul_0_r.
+  - apply Nat.mul_succ_r.
+Defined.
+
+Inductive term : Type :=
+| tVar : nat -> term
+| tZero : term
+| tSucc : term -> term
+| tAdd : term -> term -> term
+| tMul : term -> term -> term.
+
+Inductive formula : Type :=
+| pEq : term -> term -> formula
+| pBot : formula
+| pImp : formula -> formula -> formula
+| pAnd : formula -> formula -> formula
+| pOr : formula -> formula -> formula
+| pAll : formula -> formula
+| pEx : formula -> formula.
+
+Module Term.
+
+Fixpoint rename (r : nat -> nat) (t : term) : term :=
+  match t with
+  | tVar n => tVar (r n)
+  | tZero => tZero
+  | tSucc a => tSucc (rename r a)
+  | tAdd a b => tAdd (rename r a) (rename r b)
+  | tMul a b => tMul (rename r a) (rename r b)
+  end.
+
+Definition upSubst (sigma : nat -> term) : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => tVar 0
+    | S k => rename S (sigma k)
+    end.
+
+Fixpoint subst (sigma : nat -> term) (t : term) : term :=
+  match t with
+  | tVar n => sigma n
+  | tZero => tZero
+  | tSucc a => tSucc (subst sigma a)
+  | tAdd a b => tAdd (subst sigma a) (subst sigma b)
+  | tMul a b => tMul (subst sigma a) (subst sigma b)
+  end.
+
+Fixpoint eval (M : Model) (e : nat -> M) (t : term) : M :=
+  match t with
+  | tVar n => e n
+  | tZero => zero M
+  | tSucc a => succ M (eval M e a)
+  | tAdd a b => add M (eval M e a) (eval M e b)
+  | tMul a b => mul M (eval M e a) (eval M e b)
+  end.
+
+Fixpoint numeral (n : nat) : term :=
+  match n with
+  | 0 => tZero
+  | S k => tSucc (numeral k)
+  end.
+
+Fixpoint numeralValue (M : Model) (n : nat) : M :=
+  match n with
+  | 0 => zero M
+  | S k => succ M (numeralValue M k)
+  end.
+
+Lemma eval_numeral : forall (M : Model) (e : nat -> M) n,
+  eval M e (numeral n) = numeralValue M n.
+Proof.
+  intros M e n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
+Lemma numeralValue_natModel : forall n,
+  numeralValue natModel n = n.
+Proof.
+  intro n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
+Lemma eval_numeral_natModel : forall (e : nat -> nat) n,
+  eval natModel e (numeral n) = n.
+Proof.
+  intros e n.
+  rewrite eval_numeral.
+  apply numeralValue_natModel.
+Qed.
+
+Fixpoint bound (t : term) : nat :=
+  match t with
+  | tVar n => S n
+  | tZero => 0
+  | tSucc a => bound a
+  | tAdd a b => bound a + bound b
+  | tMul a b => bound a + bound b
+  end.
+
+Fixpoint Free (n : nat) (t : term) : Prop :=
+  match t with
+  | tVar k => n = k
+  | tZero => False
+  | tSucc a => Free n a
+  | tAdd a b => Free n a \/ Free n b
+  | tMul a b => Free n a \/ Free n b
+  end.
+
+Lemma free_lt_bound : forall t n, Free n t -> n < bound t.
+Proof.
+  induction t; simpl; intros k hk.
+  - subst k. lia.
+  - contradiction.
+  - apply IHt. exact hk.
+  - destruct hk as [hk | hk].
+    + pose proof (IHt1 k hk). lia.
+    + pose proof (IHt2 k hk). lia.
+  - destruct hk as [hk | hk].
+    + pose proof (IHt1 k hk). lia.
+    + pose proof (IHt2 k hk). lia.
+Qed.
+
+Lemma eval_ext : forall (M : Model) (t : term) (e e' : nat -> M),
+  (forall n, e n = e' n) -> eval M e t = eval M e' t.
+Proof.
+  intros M t.
+  induction t; simpl; intros e e' h; try reflexivity.
+  - apply h.
+  - now rewrite (IHt e e' h).
+  - now rewrite (IHt1 e e' h), (IHt2 e e' h).
+  - now rewrite (IHt1 e e' h), (IHt2 e e' h).
+Qed.
+
+Lemma eval_ext_free : forall (M : Model) (t : term) (e e' : nat -> M),
+  (forall n, Free n t -> e n = e' n) -> eval M e t = eval M e' t.
+Proof.
+  intros M t.
+  induction t; simpl; intros e e' h; try reflexivity.
+  - apply h. reflexivity.
+  - now rewrite (IHt e e' h).
+  - rewrite (IHt1 e e' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 e e' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHt1 e e' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 e e' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+Qed.
+
+Lemma eval_rename : forall (M : Model) (t : term)
+    (r : nat -> nat) (e : nat -> M),
+  eval M e (rename r t) = eval M (fun n => e (r n)) t.
+Proof.
+  intros M t.
+  induction t; simpl; intros r e; try reflexivity.
+  - now rewrite (IHt r e).
+  - now rewrite (IHt1 r e), (IHt2 r e).
+  - now rewrite (IHt1 r e), (IHt2 r e).
+Qed.
+
+Lemma rename_ext : forall t (r r' : nat -> nat),
+  (forall n, r n = r' n) -> rename r t = rename r' t.
+Proof.
+  induction t; simpl; intros r r' h; try reflexivity.
+  - now rewrite h.
+  - now rewrite (IHt r r' h).
+  - now rewrite (IHt1 r r' h), (IHt2 r r' h).
+  - now rewrite (IHt1 r r' h), (IHt2 r r' h).
+Qed.
+
+Lemma rename_comp : forall t (r r' : nat -> nat),
+  rename r (rename r' t) = rename (fun n => r (r' n)) t.
+Proof.
+  induction t; simpl; intros r r'; try reflexivity.
+  - now rewrite (IHt r r').
+  - now rewrite (IHt1 r r'), (IHt2 r r').
+  - now rewrite (IHt1 r r'), (IHt2 r r').
+Qed.
+
+Lemma eval_upSubst : forall (M : Model) (sigma : nat -> term)
+    (e : nat -> M) (d : M) n,
+  eval M (scons M d e) (upSubst sigma n) =
+    scons M d (fun k => eval M e (sigma k)) n.
+Proof.
+  intros M sigma e d [|n]; simpl.
+  - reflexivity.
+  - rewrite eval_rename. reflexivity.
+Qed.
+
+Lemma eval_subst : forall (M : Model) (t : term)
+    (sigma : nat -> term) (e : nat -> M),
+  eval M e (subst sigma t) =
+    eval M (fun n => eval M e (sigma n)) t.
+Proof.
+  intros M t.
+  induction t; simpl; intros sigma e; try reflexivity.
+  - now rewrite (IHt sigma e).
+  - now rewrite (IHt1 sigma e), (IHt2 sigma e).
+  - now rewrite (IHt1 sigma e), (IHt2 sigma e).
+Qed.
+
+Lemma subst_ext : forall t (sigma tau : nat -> term),
+  (forall n, sigma n = tau n) -> subst sigma t = subst tau t.
+Proof.
+  induction t; simpl; intros sigma tau h; try reflexivity.
+  - apply h.
+  - now rewrite (IHt sigma tau h).
+  - now rewrite (IHt1 sigma tau h), (IHt2 sigma tau h).
+  - now rewrite (IHt1 sigma tau h), (IHt2 sigma tau h).
+Qed.
+
+Lemma subst_rename : forall t (sigma : nat -> term) (r : nat -> nat),
+  subst sigma (rename r t) = subst (fun n => sigma (r n)) t.
+Proof.
+  induction t; simpl; intros sigma r; try reflexivity.
+  - now rewrite (IHt sigma r).
+  - now rewrite (IHt1 sigma r), (IHt2 sigma r).
+  - now rewrite (IHt1 sigma r), (IHt2 sigma r).
+Qed.
+
+Lemma rename_subst : forall t (r : nat -> nat) (sigma : nat -> term),
+  rename r (subst sigma t) =
+    subst (fun n => rename r (sigma n)) t.
+Proof.
+  induction t; simpl; intros r sigma; try reflexivity.
+  - now rewrite (IHt r sigma).
+  - now rewrite (IHt1 r sigma), (IHt2 r sigma).
+  - now rewrite (IHt1 r sigma), (IHt2 r sigma).
+Qed.
+
+End Term.
+
+Module Formula.
+
+Definition iffForm (a b : formula) : formula :=
+  pAnd (pImp a b) (pImp b a).
+
+Fixpoint rename (r : nat -> nat) (phi : formula) : formula :=
+  match phi with
+  | pEq a b => pEq (Term.rename r a) (Term.rename r b)
+  | pBot => pBot
+  | pImp a b => pImp (rename r a) (rename r b)
+  | pAnd a b => pAnd (rename r a) (rename r b)
+  | pOr a b => pOr (rename r a) (rename r b)
+  | pAll a => pAll (rename (up r) a)
+  | pEx a => pEx (rename (up r) a)
+  end.
+
+Fixpoint subst (sigma : nat -> term) (phi : formula) : formula :=
+  match phi with
+  | pEq a b => pEq (Term.subst sigma a) (Term.subst sigma b)
+  | pBot => pBot
+  | pImp a b => pImp (subst sigma a) (subst sigma b)
+  | pAnd a b => pAnd (subst sigma a) (subst sigma b)
+  | pOr a b => pOr (subst sigma a) (subst sigma b)
+  | pAll a => pAll (subst (Term.upSubst sigma) a)
+  | pEx a => pEx (subst (Term.upSubst sigma) a)
+  end.
+
+Fixpoint Sat (M : Model) (e : nat -> M) (phi : formula) : Prop :=
+  match phi with
+  | pEq a b => Term.eval M e a = Term.eval M e b
+  | pBot => False
+  | pImp a b => Sat M e a -> Sat M e b
+  | pAnd a b => Sat M e a /\ Sat M e b
+  | pOr a b => Sat M e a \/ Sat M e b
+  | pAll a => forall d, Sat M (scons M d e) a
+  | pEx a => exists d, Sat M (scons M d e) a
+  end.
+
+Lemma Sat_iffForm : forall (M : Model) (e : nat -> M) a b,
+  Sat M e (iffForm a b) <-> (Sat M e a <-> Sat M e b).
+Proof.
+  intros M e a b.
+  unfold iffForm. simpl. tauto.
+Qed.
+
+Fixpoint bound (phi : formula) : nat :=
+  match phi with
+  | pEq a b => Term.bound a + Term.bound b
+  | pBot => 0
+  | pImp a b => bound a + bound b
+  | pAnd a b => bound a + bound b
+  | pOr a b => bound a + bound b
+  | pAll a => bound a
+  | pEx a => bound a
+  end.
+
+Fixpoint Free (n : nat) (phi : formula) : Prop :=
+  match phi with
+  | pEq a b => Term.Free n a \/ Term.Free n b
+  | pBot => False
+  | pImp a b => Free n a \/ Free n b
+  | pAnd a b => Free n a \/ Free n b
+  | pOr a b => Free n a \/ Free n b
+  | pAll a => Free (S n) a
+  | pEx a => Free (S n) a
+  end.
+
+Definition Sentence (phi : formula) : Prop := forall n, ~ Free n phi.
+
+Lemma free_lt_bound : forall phi n, Free n phi -> n < bound phi.
+Proof.
+  induction phi; simpl; intros k hk.
+  - destruct hk as [hk | hk].
+    + pose proof (Term.free_lt_bound t k hk). lia.
+    + pose proof (Term.free_lt_bound t0 k hk). lia.
+  - contradiction.
+  - destruct hk as [hk | hk].
+    + pose proof (IHphi1 k hk). lia.
+    + pose proof (IHphi2 k hk). lia.
+  - destruct hk as [hk | hk].
+    + pose proof (IHphi1 k hk). lia.
+    + pose proof (IHphi2 k hk). lia.
+  - destruct hk as [hk | hk].
+    + pose proof (IHphi1 k hk). lia.
+    + pose proof (IHphi2 k hk). lia.
+  - pose proof (IHphi (S k) hk). lia.
+  - pose proof (IHphi (S k) hk). lia.
+Qed.
+
+Fixpoint closeN (k : nat) (phi : formula) : formula :=
+  match k with
+  | 0 => phi
+  | S n => closeN n (pAll phi)
+  end.
+
+Definition sealPA (phi : formula) : formula := closeN (bound phi) phi.
+
+Lemma Free_closeN : forall k phi n,
+  Free n (closeN k phi) -> Free (k + n) phi.
+Proof.
+  induction k as [|k IH]; simpl; intros phi n h.
+  - exact h.
+  - pose proof (IH (pAll phi) n h) as h'.
+    simpl in h'.
+    exact h'.
+Qed.
+
+Lemma sealPA_sentence : forall phi, Sentence (sealPA phi).
+Proof.
+  unfold Sentence, sealPA.
+  intros phi n h.
+  pose proof (Free_closeN (bound phi) phi n h) as hfree.
+  pose proof (free_lt_bound phi (bound phi + n) hfree) as hlt.
+  lia.
+Qed.
+
+Lemma Sat_ext : forall (M : Model) phi (e e' : nat -> M),
+  (forall n, e n = e' n) -> Sat M e phi <-> Sat M e' phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros e e' h.
+  - rewrite (Term.eval_ext M t e e' h).
+    rewrite (Term.eval_ext M t0 e e' h).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 e e' h)).
+      apply hp.
+      apply (proj2 (IHphi1 e e' h)).
+      exact hi.
+    + apply (proj2 (IHphi2 e e' h)).
+      apply hp.
+      apply (proj1 (IHphi1 e e' h)).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 e e' h)); exact ha.
+      * apply (proj1 (IHphi2 e e' h)); exact hb.
+    + split.
+      * apply (proj2 (IHphi1 e e' h)); exact ha.
+      * apply (proj2 (IHphi2 e e' h)); exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 e e' h)); exact ha.
+      * right. apply (proj1 (IHphi2 e e' h)); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 e e' h)); exact ha.
+      * right. apply (proj2 (IHphi2 e e' h)); exact hb.
+  - split; intros hall d.
+    + apply (proj1 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact (hall d).
+    + apply (proj2 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact (hall d).
+  - split; intros hex.
+    + destruct hex as [d hd].
+      exists d.
+      apply (proj1 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact hd.
+    + destruct hex as [d hd].
+      exists d.
+      apply (proj2 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact hd.
+Qed.
+
+Lemma Sat_ext_free : forall (M : Model) phi (e e' : nat -> M),
+  (forall n, Free n phi -> e n = e' n) -> Sat M e phi <-> Sat M e' phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros e e' h.
+  - rewrite (Term.eval_ext_free M t e e'
+      (fun n hn => h n (or_introl hn))).
+    rewrite (Term.eval_ext_free M t0 e e'
+      (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+      apply hp.
+      apply (proj2 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+      exact hi.
+    + apply (proj2 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+      apply hp.
+      apply (proj1 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+        exact ha.
+      * apply (proj1 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+        exact hb.
+    + split.
+      * apply (proj2 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+        exact ha.
+      * apply (proj2 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+        exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 e e'
+          (fun n hn => h n (or_introl hn)))); exact ha.
+      * right. apply (proj1 (IHphi2 e e'
+          (fun n hn => h n (or_intror hn)))); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 e e'
+          (fun n hn => h n (or_introl hn)))); exact ha.
+      * right. apply (proj2 (IHphi2 e e'
+          (fun n hn => h n (or_intror hn)))); exact hb.
+  - split; intros hall d.
+    + assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj1 (IHphi (scons M d e) (scons M d e') henv)).
+      exact (hall d).
+    + assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj2 (IHphi (scons M d e) (scons M d e') henv)).
+      exact (hall d).
+  - split; intros hex.
+    + destruct hex as [d hd].
+      exists d.
+      assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj1 (IHphi (scons M d e) (scons M d e') henv)).
+      exact hd.
+    + destruct hex as [d hd].
+      exists d.
+      assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj2 (IHphi (scons M d e) (scons M d e') henv)).
+      exact hd.
+Qed.
+
+Lemma Sat_subst : forall (M : Model) phi (sigma : nat -> term)
+    (e : nat -> M),
+  Sat M e (subst sigma phi) <->
+    Sat M (fun n => Term.eval M e (sigma n)) phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros sigma e.
+  - rewrite (Term.eval_subst M t sigma e).
+    rewrite (Term.eval_subst M t0 sigma e).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 sigma e)).
+      apply hp.
+      apply (proj2 (IHphi1 sigma e)).
+      exact hi.
+    + apply (proj2 (IHphi2 sigma e)).
+      apply hp.
+      apply (proj1 (IHphi1 sigma e)).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 sigma e)); exact ha.
+      * apply (proj1 (IHphi2 sigma e)); exact hb.
+    + split.
+      * apply (proj2 (IHphi1 sigma e)); exact ha.
+      * apply (proj2 (IHphi2 sigma e)); exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 sigma e)); exact ha.
+      * right. apply (proj1 (IHphi2 sigma e)); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 sigma e)); exact ha.
+      * right. apply (proj2 (IHphi2 sigma e)); exact hb.
+  - split; intros hall d.
+    + pose proof (proj1 (IHphi (Term.upSubst sigma) (scons M d e))
+        (hall d)) as hbody.
+      apply (proj1 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))).
+      exact hbody.
+    + pose proof (proj2 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))
+        (hall d)) as hbody.
+      apply (proj2 (IHphi (Term.upSubst sigma) (scons M d e))).
+      exact hbody.
+  - split; intros hex.
+    + destruct hex as [d hd].
+      pose proof (proj1 (IHphi (Term.upSubst sigma) (scons M d e))
+        hd) as hbody.
+      exists d.
+      apply (proj1 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))).
+      exact hbody.
+    + destruct hex as [d hd].
+      exists d.
+      pose proof (proj2 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))
+        hd) as hbody.
+      apply (proj2 (IHphi (Term.upSubst sigma) (scons M d e))).
+      exact hbody.
+Qed.
+
+Lemma closeN_valid : forall (M : Model) k phi,
+  (forall e : nat -> M, Sat M e (closeN k phi)) <->
+    (forall e, Sat M e phi).
+Proof.
+  intros M k.
+  induction k as [|k IH]; intros phi.
+  - reflexivity.
+  - simpl.
+    rewrite (IH (pAll phi)).
+    split.
+    + intros h e'.
+      assert (pf : forall n,
+          scons M (e' 0) (fun n => e' (S n)) n = e' n).
+      {
+        intros [|n]; reflexivity.
+      }
+      apply (proj1 (Sat_ext M phi
+        (scons M (e' 0) (fun n => e' (S n))) e' pf)).
+      exact (h (fun n => e' (S n)) (e' 0)).
+    + intros h e d.
+      exact (h (scons M d e)).
+Qed.
+
+Lemma seal_valid : forall (M : Model) phi,
+  (forall e : nat -> M, Sat M e (sealPA phi)) <->
+    (forall e, Sat M e phi).
+Proof.
+  intros M phi.
+  unfold sealPA.
+  apply closeN_valid.
+Qed.
+
+Definition instTerm (t : term) : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => t
+    | S k => tVar k
+    end.
+
+Lemma Sat_rename : forall (M : Model) phi
+    (r : nat -> nat) (e : nat -> M),
+  Sat M e (rename r phi) <-> Sat M (fun n => e (r n)) phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros r e.
+  - rewrite (Term.eval_rename M t r e).
+    rewrite (Term.eval_rename M t0 r e).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 r e)).
+      apply hp.
+      apply (proj2 (IHphi1 r e)).
+      exact hi.
+    + apply (proj2 (IHphi2 r e)).
+      apply hp.
+      apply (proj1 (IHphi1 r e)).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 r e)); exact ha.
+      * apply (proj1 (IHphi2 r e)); exact hb.
+    + split.
+      * apply (proj2 (IHphi1 r e)); exact ha.
+      * apply (proj2 (IHphi2 r e)); exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 r e)); exact ha.
+      * right. apply (proj1 (IHphi2 r e)); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 r e)); exact ha.
+      * right. apply (proj2 (IHphi2 r e)); exact hb.
+  - split; intros hall d.
+    + pose proof (proj1 (IHphi (up r) (scons M d e))
+        (hall d)) as hbody.
+      apply (proj1 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))).
+      exact hbody.
+    + pose proof (proj2 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))
+        (hall d)) as hbody.
+      apply (proj2 (IHphi (up r) (scons M d e))).
+      exact hbody.
+  - split; intros hex.
+    + destruct hex as [d hd].
+      pose proof (proj1 (IHphi (up r) (scons M d e))
+        hd) as hbody.
+      exists d.
+      apply (proj1 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))).
+      exact hbody.
+    + destruct hex as [d hd].
+      exists d.
+      pose proof (proj2 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))
+        hd) as hbody.
+      apply (proj2 (IHphi (up r) (scons M d e))).
+      exact hbody.
+Qed.
+
+Lemma Sat_rename_succ : forall (M : Model) phi
+    (e : nat -> M) (d : M),
+  Sat M (scons M d e) (rename S phi) <-> Sat M e phi.
+Proof.
+  intros M phi e d.
+  eapply iff_trans.
+  - apply Sat_rename.
+  - apply Sat_ext.
+    intro n. reflexivity.
+Qed.
+
+Lemma rename_ext : forall phi (r r' : nat -> nat),
+  (forall n, r n = r' n) -> rename r phi = rename r' phi.
+Proof.
+  induction phi; simpl; intros r r' h; try reflexivity.
+  - rewrite (Term.rename_ext t r r' h).
+    rewrite (Term.rename_ext t0 r r' h).
+    reflexivity.
+  - now rewrite (IHphi1 r r' h), (IHphi2 r r' h).
+  - now rewrite (IHphi1 r r' h), (IHphi2 r r' h).
+  - now rewrite (IHphi1 r r' h), (IHphi2 r r' h).
+  - rewrite (IHphi (up r) (up r')).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+  - rewrite (IHphi (up r) (up r')).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+Qed.
+
+Lemma rename_comp : forall phi (r r' : nat -> nat),
+  rename r (rename r' phi) = rename (fun n => r (r' n)) phi.
+Proof.
+  induction phi; simpl; intros r r'; try reflexivity.
+  - now rewrite !Term.rename_comp.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (up r) (up r')).
+    apply f_equal.
+    apply rename_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (up r) (up r')).
+    apply f_equal.
+    apply rename_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma rename_up_succ : forall phi (r : nat -> nat),
+  rename (up r) (rename S phi) = rename S (rename r phi).
+Proof.
+  intros phi r.
+  rewrite !rename_comp.
+  apply rename_ext.
+  intro n. reflexivity.
+Qed.
+
+Lemma subst_ext : forall phi (sigma tau : nat -> term),
+  (forall n, sigma n = tau n) -> subst sigma phi = subst tau phi.
+Proof.
+  induction phi; simpl; intros sigma tau h; try reflexivity.
+  - rewrite (Term.subst_ext t sigma tau h).
+    rewrite (Term.subst_ext t0 sigma tau h).
+    reflexivity.
+  - now rewrite (IHphi1 sigma tau h), (IHphi2 sigma tau h).
+  - now rewrite (IHphi1 sigma tau h), (IHphi2 sigma tau h).
+  - now rewrite (IHphi1 sigma tau h), (IHphi2 sigma tau h).
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+Qed.
+
+Lemma subst_rename : forall phi (sigma : nat -> term) (r : nat -> nat),
+  subst sigma (rename r phi) = subst (fun n => sigma (r n)) phi.
+Proof.
+  induction phi; simpl; intros sigma r; try reflexivity.
+  - now rewrite !Term.subst_rename.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (Term.upSubst sigma) (up r)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (Term.upSubst sigma) (up r)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma rename_subst : forall phi (r : nat -> nat) (sigma : nat -> term),
+  rename r (subst sigma phi) =
+    subst (fun n => Term.rename r (sigma n)) phi.
+Proof.
+  induction phi; simpl; intros r sigma; try reflexivity.
+  - now rewrite !Term.rename_subst.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (up r) (Term.upSubst sigma)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite !Term.rename_comp.
+      apply Term.rename_ext.
+      intro k. reflexivity.
+  - rewrite (IHphi (up r) (Term.upSubst sigma)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite !Term.rename_comp.
+      apply Term.rename_ext.
+      intro k. reflexivity.
+Qed.
+
+Lemma subst_instTerm_rename_up : forall phi (r : nat -> nat) t,
+  subst (instTerm (Term.rename r t)) (rename (up r) phi) =
+    rename r (subst (instTerm t) phi).
+Proof.
+  intros phi r t.
+  rewrite subst_rename.
+  rewrite rename_subst.
+  apply subst_ext.
+  intros [|n]; reflexivity.
+Qed.
+
+Lemma Sat_instTerm : forall (M : Model) phi t (e : nat -> M),
+  Sat M e (subst (instTerm t) phi) <->
+    Sat M (scons M (Term.eval M e t) e) phi.
+Proof.
+  intros M phi t e.
+  eapply iff_trans.
+  - apply Sat_subst.
+  - apply Sat_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Inductive Prov : list formula -> formula -> Prop :=
+| P_ass : forall G a, In a G -> Prov G a
+| P_impI : forall G a b, Prov (a :: G) b -> Prov G (pImp a b)
+| P_impE : forall G a b, Prov G (pImp a b) -> Prov G a -> Prov G b
+| P_botE : forall G a, Prov G pBot -> Prov G a
+| P_lem : forall G a, Prov G (pOr a (pImp a pBot))
+| P_andI : forall G a b, Prov G a -> Prov G b -> Prov G (pAnd a b)
+| P_andE1 : forall G a b, Prov G (pAnd a b) -> Prov G a
+| P_andE2 : forall G a b, Prov G (pAnd a b) -> Prov G b
+| P_orI1 : forall G a b, Prov G a -> Prov G (pOr a b)
+| P_orI2 : forall G a b, Prov G b -> Prov G (pOr a b)
+| P_orE : forall G a b c,
+    Prov G (pOr a b) ->
+    Prov (a :: G) c ->
+    Prov (b :: G) c ->
+    Prov G c
+| P_allI : forall G a,
+    Prov (map (rename S) G) a ->
+    Prov G (pAll a)
+| P_allE : forall G a t,
+    Prov G (pAll a) ->
+    Prov G (subst (instTerm t) a)
+| P_exI : forall G a t,
+    Prov G (subst (instTerm t) a) ->
+    Prov G (pEx a)
+| P_exE : forall G a c,
+    Prov G (pEx a) ->
+    Prov (a :: map (rename S) G) (rename S c) ->
+    Prov G c
+| P_eqRefl : forall G t, Prov G (pEq t t)
+| P_eqElim : forall G s t a,
+    Prov G (pEq s t) ->
+    Prov G (subst (instTerm s) a) ->
+    Prov G (subst (instTerm t) a).
+
+Lemma cons_sub : forall (a : formula) (G G' : list formula),
+  (forall x, In x G -> In x G') ->
+  forall x, In x (a :: G) -> In x (a :: G').
+Proof.
+  intros a G G' hsub x hx.
+  simpl in hx |- *.
+  destruct hx as [hx | hx].
+  - left. exact hx.
+  - right. exact (hsub x hx).
+Qed.
+
+Lemma mem_map_sub : forall (f : formula -> formula) (G G' : list formula),
+  (forall x, In x G -> In x G') ->
+  forall x, In x (map f G) -> In x (map f G').
+Proof.
+  intros f G G' hsub x hx.
+  apply in_map_iff in hx.
+  destruct hx as [y [hy hx]].
+  subst x.
+  apply in_map.
+  exact (hsub y hx).
+Qed.
+
+Lemma Prov_weaken : forall G a,
+  Prov G a ->
+  forall G', (forall x, In x G -> In x G') -> Prov G' a.
+Proof.
+  intros G a h.
+  induction h; intros G' hsub.
+  - exact (P_ass G' a (hsub a H)).
+  - exact (P_impI G' a b (IHh (a :: G') (cons_sub a G G' hsub))).
+  - exact (P_impE G' a b (IHh1 G' hsub) (IHh2 G' hsub)).
+  - exact (P_botE G' a (IHh G' hsub)).
+  - exact (P_lem G' a).
+  - exact (P_andI G' a b (IHh1 G' hsub) (IHh2 G' hsub)).
+  - exact (P_andE1 G' a b (IHh G' hsub)).
+  - exact (P_andE2 G' a b (IHh G' hsub)).
+  - exact (P_orI1 G' a b (IHh G' hsub)).
+  - exact (P_orI2 G' a b (IHh G' hsub)).
+  - exact (P_orE G' a b c (IHh1 G' hsub)
+      (IHh2 (a :: G') (cons_sub a G G' hsub))
+      (IHh3 (b :: G') (cons_sub b G G' hsub))).
+  - exact (P_allI G' a (IHh (map (rename S) G')
+      (mem_map_sub (rename S) G G' hsub))).
+  - exact (P_allE G' a t (IHh G' hsub)).
+  - exact (P_exI G' a t (IHh G' hsub)).
+  - exact (P_exE G' a c (IHh1 G' hsub)
+      (IHh2 (a :: map (rename S) G')
+        (cons_sub a (map (rename S) G) (map (rename S) G')
+          (mem_map_sub (rename S) G G' hsub)))).
+  - exact (P_eqRefl G' t).
+  - exact (P_eqElim G' s t a (IHh1 G' hsub) (IHh2 G' hsub)).
+Qed.
+
+Lemma Prov_cons : forall G a b,
+  Prov G b -> Prov (a :: G) b.
+Proof.
+  intros G a b h.
+  apply (Prov_weaken G b h).
+  intros x hx.
+  simpl. right. exact hx.
+Qed.
+
+Lemma map_rename_up_succ : forall (r : nat -> nat) G,
+  map (rename (up r)) (map (rename S) G) =
+    map (rename S) (map (rename r) G).
+Proof.
+  intros r G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite rename_up_succ.
+    rewrite IH.
+    reflexivity.
+Qed.
+
+Lemma Prov_rename : forall G phi,
+  Prov G phi -> forall r,
+  Prov (map (rename r) G) (rename r phi).
+Proof.
+  intros G phi h.
+  induction h; intro r; simpl.
+  - apply P_ass.
+    apply in_map.
+    exact H.
+  - apply P_impI.
+    exact (IHh r).
+  - exact (P_impE (map (rename r) G) (rename r a) (rename r b)
+      (IHh1 r) (IHh2 r)).
+  - exact (P_botE (map (rename r) G) (rename r a) (IHh r)).
+  - exact (P_lem (map (rename r) G) (rename r a)).
+  - exact (P_andI (map (rename r) G) (rename r a) (rename r b)
+      (IHh1 r) (IHh2 r)).
+  - exact (P_andE1 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_andE2 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_orI1 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_orI2 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_orE (map (rename r) G) (rename r a) (rename r b)
+      (rename r c) (IHh1 r) (IHh2 r) (IHh3 r)).
+  - apply P_allI.
+    rewrite <- map_rename_up_succ.
+    exact (IHh (up r)).
+  - rewrite <- subst_instTerm_rename_up.
+    exact (P_allE (map (rename r) G) (rename (up r) a)
+      (Term.rename r t) (IHh r)).
+  - apply (P_exI (map (rename r) G) (rename (up r) a)
+      (Term.rename r t)).
+    rewrite subst_instTerm_rename_up.
+    exact (IHh r).
+  - assert (hEx : Prov (map (rename r) G) (pEx (rename (up r) a))).
+    {
+      exact (IHh1 r).
+    }
+    assert (hbody :
+        Prov (rename (up r) a :: map (rename S) (map (rename r) G))
+          (rename S (rename r c))).
+    {
+      rewrite <- map_rename_up_succ.
+      rewrite <- rename_up_succ.
+      change (Prov (map (rename (up r)) (a :: map (rename S) G))
+        (rename (up r) (rename S c))).
+      exact (IHh2 (up r)).
+    }
+    exact (P_exE (map (rename r) G) (rename (up r) a) (rename r c)
+      hEx hbody).
+  - exact (P_eqRefl (map (rename r) G) (Term.rename r t)).
+  - assert (hEq :
+        Prov (map (rename r) G)
+          (pEq (Term.rename r s) (Term.rename r t))).
+    {
+      exact (IHh1 r).
+    }
+    assert (hA :
+        Prov (map (rename r) G)
+          (subst (instTerm (Term.rename r s)) (rename (up r) a))).
+    {
+      rewrite subst_instTerm_rename_up.
+      exact (IHh2 r).
+    }
+    pose proof (P_eqElim (map (rename r) G)
+      (Term.rename r s) (Term.rename r t) (rename (up r) a)
+      hEq hA) as hElim.
+    rewrite subst_instTerm_rename_up in hElim.
+    exact hElim.
+Qed.
+
+Lemma Prov_cut : forall G phi,
+  Prov G phi ->
+  forall De, (forall x, In x G -> Prov De x) -> Prov De phi.
+Proof.
+  intros G phi h.
+  induction h; intros De hD.
+  - exact (hD a H).
+  - apply P_impI.
+    apply IHh.
+    intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx].
+    + subst x.
+      apply P_ass. simpl. left. reflexivity.
+    + apply Prov_cons.
+      exact (hD x hx).
+  - exact (P_impE De a b (IHh1 De hD) (IHh2 De hD)).
+  - exact (P_botE De a (IHh De hD)).
+  - exact (P_lem De a).
+  - exact (P_andI De a b (IHh1 De hD) (IHh2 De hD)).
+  - exact (P_andE1 De a b (IHh De hD)).
+  - exact (P_andE2 De a b (IHh De hD)).
+  - exact (P_orI1 De a b (IHh De hD)).
+  - exact (P_orI2 De a b (IHh De hD)).
+  - apply (P_orE De a b c (IHh1 De hD)).
+    + apply IHh2.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply P_ass. simpl. left. reflexivity.
+      * apply Prov_cons.
+        exact (hD x hx).
+    + apply IHh3.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply P_ass. simpl. left. reflexivity.
+      * apply Prov_cons.
+        exact (hD x hx).
+  - apply P_allI.
+    apply IHh.
+    intros x hx.
+    apply in_map_iff in hx.
+    destruct hx as [x0 [hx hx0]].
+    subst x.
+    exact (Prov_rename De x0 (hD x0 hx0) S).
+  - exact (P_allE De a t (IHh De hD)).
+  - exact (P_exI De a t (IHh De hD)).
+  - apply (P_exE De a c (IHh1 De hD)).
+    apply IHh2.
+    intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx].
+    + subst x.
+      apply P_ass. simpl. left. reflexivity.
+    + apply in_map_iff in hx.
+      destruct hx as [x0 [hx hx0]].
+      subst x.
+      apply Prov_cons.
+      exact (Prov_rename De x0 (hD x0 hx0) S).
+  - exact (P_eqRefl De t).
+  - exact (P_eqElim De s t a (IHh1 De hD) (IHh2 De hD)).
+Qed.
+
+Lemma soundness : forall (M : Model) G a,
+  Prov G a ->
+  forall e : nat -> M, (forall x, In x G -> Sat M e x) -> Sat M e a.
+Proof.
+  intros M G a h.
+  induction h; intros e hG; simpl.
+  - exact (hG a H).
+  - intros ha.
+    apply IHh.
+    intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx].
+    + subst x. exact ha.
+    + exact (hG x hx).
+  - exact (IHh1 e hG (IHh2 e hG)).
+  - exfalso. exact (IHh e hG).
+  - destruct (classic (Sat M e a)) as [ha | hna].
+    + left. exact ha.
+    + right. exact hna.
+  - split; [exact (IHh1 e hG) | exact (IHh2 e hG)].
+  - exact (proj1 (IHh e hG)).
+  - exact (proj2 (IHh e hG)).
+  - left. exact (IHh e hG).
+  - right. exact (IHh e hG).
+  - destruct (IHh1 e hG) as [ha | hb].
+    + apply IHh2.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x. exact ha.
+      * exact (hG x hx).
+    + apply IHh3.
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x. exact hb.
+      * exact (hG x hx).
+  - intros d.
+    apply IHh.
+    intros x hx.
+    apply in_map_iff in hx.
+    destruct hx as [g [hg_eq hg]].
+    subst x.
+    apply (proj2 (Sat_rename_succ M g e d)).
+    exact (hG g hg).
+  - apply (proj2 (Sat_instTerm M a t e)).
+    exact (IHh e hG (Term.eval M e t)).
+  - exists (Term.eval M e t).
+    apply (proj1 (Sat_instTerm M a t e)).
+    exact (IHh e hG).
+  - destruct (IHh1 e hG) as [d hd].
+    pose proof (IHh2 (scons M d e)) as hc_shift.
+    assert (hctx : forall x, In x (a :: map (rename S) G) ->
+      Sat M (scons M d e) x).
+    {
+      intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      - subst x. exact hd.
+      - apply in_map_iff in hx.
+        destruct hx as [g [hg_eq hg]].
+        subst x.
+        apply (proj2 (Sat_rename_succ M g e d)).
+        exact (hG g hg).
+    }
+    apply (proj1 (Sat_rename_succ M c e d)).
+    exact (hc_shift hctx).
+  - reflexivity.
+  - pose proof (IHh1 e hG) as heq.
+    pose proof (proj1 (Sat_instTerm M a s e) (IHh2 e hG)) as hs.
+    assert (henv : forall n,
+      scons M (Term.eval M e s) e n =
+        scons M (Term.eval M e t) e n).
+    {
+      intros [|n]; simpl.
+      - exact heq.
+      - reflexivity.
+    }
+    pose proof (proj1 (Sat_ext M a
+      (scons M (Term.eval M e s) e)
+      (scons M (Term.eval M e t) e) henv) hs) as ht.
+    apply (proj2 (Sat_instTerm M a t e)).
+    exact ht.
+Qed.
+
+Definition BProv (B : formula -> Prop) (G : list formula)
+    (phi : formula) : Prop :=
+  exists L, (forall x, In x L -> B x) /\ Prov (L ++ G) phi.
+
+Lemma BProv_mono : forall (B : formula -> Prop) G G' phi,
+  (forall x, In x G -> In x G') ->
+  BProv B G phi -> BProv B G' phi.
+Proof.
+  intros B G G' phi hsub [L [hL hp]].
+  exists L.
+  split; [exact hL |].
+  apply (Prov_weaken (L ++ G) phi hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left. exact hx.
+  - right. exact (hsub x hx).
+Qed.
+
+Lemma BProv_ax : forall (B : formula -> Prop) G phi,
+  B phi -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  exists [phi].
+  split.
+  - intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx]; [subst x; exact hphi | contradiction].
+  - apply P_ass.
+    simpl. left. reflexivity.
+Qed.
+
+Lemma BProv_of_Prov : forall (B : formula -> Prop) G phi,
+  Prov G phi -> BProv B G phi.
+Proof.
+  intros B G phi h.
+  exists [].
+  split.
+  - intros x hx. contradiction.
+  - simpl. exact h.
+Qed.
+
+Lemma BProv_mp : forall (B : formula -> Prop) G a b,
+  BProv B G (pImp a b) -> BProv B G a -> BProv B G b.
+Proof.
+  intros B G a b [L1 [hL1 hpimp]] [L2 [hL2 hpa]].
+  exists (L1 ++ L2).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hL1 x hx).
+    + exact (hL2 x hx).
+  - apply (P_impE ((L1 ++ L2) ++ G) a b).
+    + apply (Prov_weaken (L1 ++ G) (pImp a b) hpimp).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (L2 ++ G) a hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. right. exact hx.
+      * right. exact hx.
+Qed.
+
+Lemma BProv_bound_list : forall (B : formula -> Prop) D L,
+  (forall x, In x L -> BProv B D x) ->
+  exists Lb, (forall x, In x Lb -> B x) /\
+    forall x, In x L -> Prov (Lb ++ D) x.
+Proof.
+  intros B D L.
+  induction L as [|a L IH]; intro hL.
+  - exists [].
+    split.
+    + intros x hx. contradiction.
+    + intros x hx. contradiction.
+  - destruct (hL a (or_introl eq_refl)) as [La [hLa hpa]].
+    destruct (IH (fun x hx => hL x (or_intror hx))) as
+      [Lb [hLb hpL]].
+    exists (La ++ Lb).
+    split.
+    + intros x hx.
+      apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * exact (hLa x hx).
+      * exact (hLb x hx).
+    + intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply (Prov_weaken (La ++ D) a hpa).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. left. exact hy.
+        -- right. exact hy.
+      * apply (Prov_weaken (Lb ++ D) x (hpL x hx)).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. right. exact hy.
+        -- right. exact hy.
+Qed.
+
+Lemma BProv_lift : forall (B C : formula -> Prop) G D phi,
+  BProv B G phi ->
+  (forall b, B b -> BProv C D b) ->
+  (forall g, In g G -> BProv C D g) ->
+  BProv C D phi.
+Proof.
+  intros B C G D phi [Lb [hLb hp]] hB hG.
+  assert (hctx : forall x, In x (Lb ++ G) -> BProv C D x).
+  {
+    intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    - exact (hB x (hLb x hx)).
+    - exact (hG x hx).
+  }
+  destruct (BProv_bound_list C D (Lb ++ G) hctx) as
+    [Lc [hLc hpctx]].
+  exists Lc.
+  split; [exact hLc |].
+  exact (Prov_cut (Lb ++ G) phi hp (Lc ++ D) hpctx).
+Qed.
+
+Lemma BProv_cut : forall (B : formula -> Prop) G D phi,
+  BProv B G phi ->
+  (forall g, In g G -> BProv B D g) ->
+  BProv B D phi.
+Proof.
+  intros B G D phi h hG.
+  eapply BProv_lift.
+  - exact h.
+  - intros b hb.
+    apply BProv_ax.
+    exact hb.
+  - exact hG.
+Qed.
+
+Lemma BProv_theory_mono : forall (B C : formula -> Prop) G phi,
+  (forall b, B b -> C b) -> BProv B G phi -> BProv C G phi.
+Proof.
+  intros B C G phi hBC h.
+  eapply BProv_lift.
+  - exact h.
+  - intros b hb.
+    apply BProv_ax.
+    exact (hBC b hb).
+  - intros g hg.
+    apply BProv_of_Prov.
+    exact (P_ass G g hg).
+Qed.
+
+Lemma soundness_BProv : forall (M : Model) (B : formula -> Prop) G phi,
+  BProv B G phi ->
+  forall e : nat -> M,
+  (forall b, B b -> Sat M e b) ->
+  (forall g, In g G -> Sat M e g) ->
+  Sat M e phi.
+Proof.
+  intros M B G phi [L [hL hp]] e hB hG.
+  apply (soundness M (L ++ G) phi hp e).
+  intros x hx.
+  apply in_app_iff in hx.
+  destruct hx as [hx | hx].
+  - exact (hB x (hL x hx)).
+  - exact (hG x hx).
+Qed.
+
+Definition substZero : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => tZero
+    | S k => tVar k
+    end.
+
+Definition substZeroAt (p : nat) : nat -> term :=
+  fun n =>
+    if n <? p then tVar n
+    else if n =? p then tZero
+    else tVar (n - 1).
+
+Lemma substZeroAt_lt : forall p n,
+  n < p -> substZeroAt p n = tVar n.
+Proof.
+  intros p n h.
+  unfold substZeroAt.
+  destruct (Nat.ltb_spec n p); [reflexivity | lia].
+Qed.
+
+Lemma substZeroAt_eq : forall p,
+  substZeroAt p p = tZero.
+Proof.
+  intro p.
+  unfold substZeroAt.
+  destruct (Nat.ltb_spec p p); [lia |].
+  destruct (Nat.eqb_spec p p); [reflexivity | congruence].
+Qed.
+
+Lemma substZeroAt_gt : forall p n,
+  p < n -> substZeroAt p n = tVar (n - 1).
+Proof.
+  intros p n h.
+  unfold substZeroAt.
+  destruct (Nat.ltb_spec n p); [lia |].
+  destruct (Nat.eqb_spec n p); [lia | reflexivity].
+Qed.
+
+Lemma substZeroAt_zero :
+  substZeroAt 0 = substZero.
+Proof.
+  apply functional_extensionality.
+  intros [|n].
+  - apply substZeroAt_eq.
+  - unfold substZero.
+    rewrite substZeroAt_gt; [|lia].
+    f_equal.
+    lia.
+Qed.
+
+Lemma upSubst_substZeroAt : forall p,
+  Term.upSubst (substZeroAt p) = substZeroAt (S p).
+Proof.
+  intro p.
+  apply functional_extensionality.
+  intros [|n].
+  - reflexivity.
+  - simpl.
+    destruct (lt_eq_lt_dec n p) as [[hlt | heq] | hgt].
+    + rewrite (substZeroAt_lt p n hlt).
+      rewrite (substZeroAt_lt (S p) (S n)); [reflexivity | lia].
+    + subst n.
+      rewrite substZeroAt_eq.
+      rewrite substZeroAt_eq.
+      reflexivity.
+    + rewrite (substZeroAt_gt p n hgt).
+      rewrite (substZeroAt_gt (S p) (S n)); [|lia].
+      simpl.
+      f_equal.
+      lia.
+Qed.
+
+Definition substSuccVar : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => tSucc (tVar 0)
+    | S k => tVar (S k)
+    end.
+
+Definition substSuccAt (p : nat) : nat -> term :=
+  fun n => if n =? p then tSucc (tVar p) else tVar n.
+
+Lemma substSuccAt_eq : forall p,
+  substSuccAt p p = tSucc (tVar p).
+Proof.
+  intro p.
+  unfold substSuccAt.
+  destruct (Nat.eqb_spec p p); [reflexivity | congruence].
+Qed.
+
+Lemma substSuccAt_ne : forall p n,
+  n <> p -> substSuccAt p n = tVar n.
+Proof.
+  intros p n h.
+  unfold substSuccAt.
+  destruct (Nat.eqb_spec n p); [congruence | reflexivity].
+Qed.
+
+Lemma substSuccAt_zero :
+  substSuccAt 0 = substSuccVar.
+Proof.
+  apply functional_extensionality.
+  intros [|n].
+  - apply substSuccAt_eq.
+  - apply substSuccAt_ne. lia.
+Qed.
+
+Lemma upSubst_substSuccAt : forall p,
+  Term.upSubst (substSuccAt p) = substSuccAt (S p).
+Proof.
+  intro p.
+  apply functional_extensionality.
+  intros [|n].
+  - reflexivity.
+  - simpl.
+    destruct (Nat.eq_dec n p) as [heq | hne].
+    + subst n.
+      rewrite substSuccAt_eq.
+      rewrite substSuccAt_eq.
+      reflexivity.
+    + rewrite (substSuccAt_ne p n hne).
+      rewrite (substSuccAt_ne (S p) (S n)); [reflexivity | lia].
+Qed.
+
+Definition succInj : formula :=
+  pAll (pAll (pImp
+    (pEq (tSucc (tVar 1)) (tSucc (tVar 0)))
+    (pEq (tVar 1) (tVar 0)))).
+
+Definition zeroNotSucc : formula :=
+  pAll (pImp (pEq (tSucc (tVar 0)) tZero) pBot).
+
+Definition addZero : formula :=
+  pAll (pEq (tAdd (tVar 0) tZero) (tVar 0)).
+
+Definition addSucc : formula :=
+  pAll (pAll (pEq
+    (tAdd (tVar 1) (tSucc (tVar 0)))
+    (tSucc (tAdd (tVar 1) (tVar 0))))).
+
+Definition mulZero : formula :=
+  pAll (pEq (tMul (tVar 0) tZero) tZero).
+
+Definition mulSucc : formula :=
+  pAll (pAll (pEq
+    (tMul (tVar 1) (tSucc (tVar 0)))
+    (tAdd (tMul (tVar 1) (tVar 0)) (tVar 1)))).
+
+Definition inductionForm (phi : formula) : formula :=
+  pImp
+    (pAnd (subst substZero phi)
+      (pAll (pImp phi (subst substSuccVar phi))))
+    (pAll phi).
+
+Definition Ax (f : formula) : Prop :=
+  f = succInj \/ f = zeroNotSucc \/
+  f = addZero \/ f = addSucc \/
+  f = mulZero \/ f = mulSucc \/
+  exists phi, f = inductionForm phi.
+
+Definition Ax_s (f : formula) : Prop :=
+  f = sealPA succInj \/ f = sealPA zeroNotSucc \/
+  f = sealPA addZero \/ f = sealPA addSucc \/
+  f = sealPA mulZero \/ f = sealPA mulSucc \/
+  exists phi, f = sealPA (inductionForm phi).
+
+Lemma sentence_ax_s : forall f, Ax_s f -> Sentence f.
+Proof.
+  intros f hf.
+  unfold Ax_s in hf.
+  destruct hf as [hf | [hf | [hf | [hf | [hf | [hf | [phi hf]]]]]]];
+    subst f; apply sealPA_sentence.
+Qed.
+
+Lemma Ax_s_succInj : Ax_s (sealPA succInj).
+Proof.
+  unfold Ax_s. now left.
+Qed.
+
+Lemma Ax_s_zeroNotSucc : Ax_s (sealPA zeroNotSucc).
+Proof.
+  unfold Ax_s. right. now left.
+Qed.
+
+Lemma Ax_s_addZero : Ax_s (sealPA addZero).
+Proof.
+  unfold Ax_s. right. right. now left.
+Qed.
+
+Lemma Ax_s_addSucc : Ax_s (sealPA addSucc).
+Proof.
+  unfold Ax_s. right. right. right. now left.
+Qed.
+
+Lemma Ax_s_mulZero : Ax_s (sealPA mulZero).
+Proof.
+  unfold Ax_s. right. right. right. right. now left.
+Qed.
+
+Lemma Ax_s_mulSucc : Ax_s (sealPA mulSucc).
+Proof.
+  unfold Ax_s. right. right. right. right. right. now left.
+Qed.
+
+Lemma Ax_s_induction : forall phi, Ax_s (sealPA (inductionForm phi)).
+Proof.
+  intro phi.
+  unfold Ax_s.
+  right. right. right. right. right. right.
+  exists phi. reflexivity.
+Qed.
+
+Lemma sat_substZero : forall (M : Model) phi (e : nat -> M),
+  Sat M e (subst substZero phi) <->
+    Sat M (scons M (zero M) e) phi.
+Proof.
+  intros M phi e.
+  eapply iff_trans.
+  - apply Sat_subst.
+  - apply Sat_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma sat_substSuccVar : forall (M : Model) phi (e : nat -> M) a,
+  Sat M (scons M a e) (subst substSuccVar phi) <->
+    Sat M (scons M (succ M a) e) phi.
+Proof.
+  intros M phi e a.
+  eapply iff_trans.
+  - apply Sat_subst.
+  - apply Sat_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma sat_axiom : forall (M : Model) (e : nat -> M) f,
+  Ax f -> Sat M e f.
+Proof.
+  intros M e f hf.
+  unfold Ax in hf.
+  destruct hf as [hf | [hf | [hf | [hf | [hf | [hf | [phi hf]]]]]]];
+    subst f; simpl.
+  - intros a b h.
+    exact (succ_injective M a b h).
+  - intros a h.
+    exact (zero_not_succ M a h).
+  - intro a.
+    exact (add_zero M a).
+  - intros a b.
+    exact (add_succ M a b).
+  - intro a.
+    exact (mul_zero M a).
+  - intros a b.
+    exact (mul_succ M a b).
+  - intros [hzero hstep] a.
+    apply (induction_schema M (fun x => Sat M (scons M x e) phi)).
+    + exact (proj1 (sat_substZero M phi e) hzero).
+    + intros n ih.
+      apply (proj1 (sat_substSuccVar M phi e n)).
+      exact (hstep n ih).
+Qed.
+
+Lemma sat_axiom_s : forall (M : Model) (e : nat -> M) f,
+  Ax_s f -> Sat M e f.
+Proof.
+  intros M e f hf.
+  unfold Ax_s in hf.
+  destruct hf as [hf | [hf | [hf | [hf | [hf | [hf | [phi hf]]]]]]];
+    subst f.
+  - exact (proj2 (seal_valid M succInj)
+      (fun e0 => sat_axiom M e0 succInj (or_introl eq_refl)) e).
+  - exact (proj2 (seal_valid M zeroNotSucc)
+      (fun e0 => sat_axiom M e0 zeroNotSucc
+        (or_intror (or_introl eq_refl))) e).
+  - exact (proj2 (seal_valid M addZero)
+      (fun e0 => sat_axiom M e0 addZero
+        (or_intror (or_intror (or_introl eq_refl)))) e).
+  - exact (proj2 (seal_valid M addSucc)
+      (fun e0 => sat_axiom M e0 addSucc
+        (or_intror (or_intror (or_intror (or_introl eq_refl))))) e).
+  - exact (proj2 (seal_valid M mulZero)
+      (fun e0 => sat_axiom M e0 mulZero
+        (or_intror (or_intror (or_intror (or_intror (or_introl eq_refl)))))) e).
+  - exact (proj2 (seal_valid M mulSucc)
+      (fun e0 => sat_axiom M e0 mulSucc
+        (or_intror (or_intror (or_intror
+          (or_intror (or_intror (or_introl eq_refl))))))) e).
+  - exact (proj2 (seal_valid M (inductionForm phi))
+      (fun e0 => sat_axiom M e0 (inductionForm phi)
+          (or_intror (or_intror (or_intror
+          (or_intror (or_intror (or_intror (ex_intro _ phi eq_refl)))))))) e).
+Qed.
+
+Definition leAt (a b : nat) : formula :=
+  pEx (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))).
+
+Definition ltAt (a b : nat) : formula :=
+  pEx (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b))).
+
+Definition dvdAt (a b : nat) : formula :=
+  pEx (pEq (tMul (tVar (S a)) (tVar 0)) (tVar (S b))).
+
+Definition eqConstAt (a n : nat) : formula :=
+  pEq (tVar a) (Term.numeral n).
+
+Definition zeroAt (a : nat) : formula := eqConstAt a 0.
+
+Definition oneAt (a : nat) : formula := eqConstAt a 1.
+
+Definition twoAt (a : nat) : formula := eqConstAt a 2.
+
+Definition nonzeroAt (a : nat) : formula :=
+  pEx (pEq (tSucc (tVar 0)) (tVar (S a))).
+
+Definition boolAt (a : nat) : formula :=
+  pOr (zeroAt a) (oneAt a).
+
+Definition doubleEqAt (value half : nat) : formula :=
+  pEq (tVar value) (tAdd (tVar half) (tVar half)).
+
+Definition oddDoubleEqAt (value half : nat) : formula :=
+  pEq (tVar value) (tSucc (tAdd (tVar half) (tVar half))).
+
+Definition div2StepAt (value half bit : nat) : formula :=
+  pAnd (boolAt bit)
+    (pEq (tVar value)
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))).
+
+Definition remAt (rem value modulus : nat) : formula :=
+  pEx (pAnd
+    (ltAt (S rem) (S modulus))
+    (pEq (tVar (S value))
+      (tAdd (tMul (tVar 0) (tVar (S modulus)))
+        (tVar (S rem))))).
+
+Definition betaModTerm (step idx : nat) : term :=
+  tSucc (tMul (tSucc (tVar idx)) (tVar step)).
+
+Definition betaAt (out code step idx : nat) : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
+    (remAt (S out) (S code) 0)).
+
+Definition betaAtConstIdx (out code step idxValue : nat) : formula :=
+  pEx (pAnd (eqConstAt 0 idxValue)
+    (betaAt (S out) (S code) (S step) 0)).
+
+Definition betaAtSuccIdx (out code step idx : nat) : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (tSucc (tVar (S idx))))
+    (betaAt (S out) (S code) (S step) 0)).
+
+Definition BetaModulus (step idx : nat) : nat :=
+  1 + S idx * step.
+
+Definition BetaEntry (code step idx value : nat) : Prop :=
+  exists q, code = q * BetaModulus step idx + value /\
+    value < BetaModulus step idx.
+
+Fixpoint betaFact (n : nat) : nat :=
+  match n with
+  | 0 => 1
+  | S k => S k * betaFact k
+  end.
+
+Fixpoint BetaModuliProduct (step n : nat) : nat :=
+  match n with
+  | 0 => 1
+  | S k => BetaModuliProduct step k * BetaModulus step k
+  end.
+
+Definition BetaDiv2Step
+    (code step idx cur next bit : nat) : Prop :=
+  BetaEntry code step idx cur /\
+    BetaEntry code step (S idx) next /\
+      (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+
+Definition BetaDiv2StepsThrough (code step last : nat) : Prop :=
+  forall k, k <= last ->
+    exists cur next bit, BetaDiv2Step code step k cur next bit.
+
+Definition BetaDiv2Bit (code step idx bit : nat) : Prop :=
+  exists cur next, BetaDiv2Step code step idx cur next bit.
+
+Definition HFMemTrace (elem set code step : nat) : Prop :=
+  BetaEntry code step 0 set /\
+    BetaDiv2StepsThrough code step elem /\
+      BetaDiv2Bit code step elem 1.
+
+Definition betaDiv2StepWitnessAt (code step idx : nat) : formula :=
+  pEx (pEx (pEx
+    (pAnd
+      (betaAt 2 (S (S (S code))) (S (S (S step)))
+        (S (S (S idx))))
+      (pAnd
+        (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+          (S (S (S idx))))
+        (div2StepAt 2 1 0))))).
+
+Definition betaDiv2StepAt (code step limit : nat) : formula :=
+  pAll (pImp (ltAt 0 (S limit))
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
+Definition betaDiv2StepsThroughAt (code step last : nat) : formula :=
+  pAll (pImp (leAt 0 (S last))
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
+Definition betaDiv2BitAt (bit code step idx : nat) : formula :=
+  pEx (pEx
+    (pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit)))))).
+
+Definition hfMemAt (elem set : nat) : formula :=
+  pEx (pEx
+    (pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      (pAnd
+        (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
+
+Lemma leAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (leAt a b) <-> e a <= e b.
+Proof.
+  intros e a b.
+  unfold leAt. simpl.
+  split.
+  - intros [d hd].
+    lia.
+  - intro h.
+    exists (e b - e a).
+    lia.
+Qed.
+
+Lemma ltAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (ltAt a b) <-> e a < e b.
+Proof.
+  intros e a b.
+  unfold ltAt. simpl.
+  split.
+  - intros [d hd].
+    lia.
+  - intro h.
+    exists (e b - e a - 1).
+    lia.
+Qed.
+
+Lemma dvdAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (dvdAt a b) <-> Nat.divide (e a) (e b).
+Proof.
+  intros e a b.
+  unfold dvdAt. simpl.
+  split.
+  - intros [q hq].
+    exists q.
+    rewrite Nat.mul_comm.
+    symmetry. exact hq.
+  - intros [q hq].
+    exists q.
+    rewrite Nat.mul_comm.
+    symmetry. exact hq.
+Qed.
+
+Lemma eqConstAt_nat : forall (e : nat -> nat) a n,
+  Sat natModel e (eqConstAt a n) <-> e a = n.
+Proof.
+  intros e a n.
+  unfold eqConstAt. simpl.
+  rewrite Term.eval_numeral_natModel.
+  reflexivity.
+Qed.
+
+Lemma zeroAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (zeroAt a) <-> e a = 0.
+Proof.
+  intros e a.
+  apply eqConstAt_nat.
+Qed.
+
+Lemma oneAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (oneAt a) <-> e a = 1.
+Proof.
+  intros e a.
+  apply eqConstAt_nat.
+Qed.
+
+Lemma twoAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (twoAt a) <-> e a = 2.
+Proof.
+  intros e a.
+  apply eqConstAt_nat.
+Qed.
+
+Lemma nonzeroAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (nonzeroAt a) <-> e a <> 0.
+Proof.
+  intros e a.
+  unfold nonzeroAt. simpl.
+  split.
+  - intros [d hd] hzero.
+    lia.
+  - intro h.
+    exists (e a - 1).
+    lia.
+Qed.
+
+Lemma boolAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (boolAt a) <-> e a = 0 \/ e a = 1.
+Proof.
+  intros e a.
+  unfold boolAt, zeroAt, oneAt, eqConstAt. simpl.
+  reflexivity.
+Qed.
+
+Lemma doubleEqAt_nat : forall (e : nat -> nat) value half,
+  Sat natModel e (doubleEqAt value half) <->
+    e value = e half + e half.
+Proof.
+  intros e value half.
+  unfold doubleEqAt. simpl.
+  reflexivity.
+Qed.
+
+Lemma oddDoubleEqAt_nat : forall (e : nat -> nat) value half,
+  Sat natModel e (oddDoubleEqAt value half) <->
+    e value = e half + e half + 1.
+Proof.
+  intros e value half.
+  unfold oddDoubleEqAt. simpl.
+  split; intro h; lia.
+Qed.
+
+Lemma div2StepAt_nat : forall (e : nat -> nat) value half bit,
+  Sat natModel e (div2StepAt value half bit) <->
+    (e bit = 0 \/ e bit = 1) /\
+      e value = e half + e half + e bit.
+Proof.
+  intros e value half bit.
+  unfold div2StepAt, boolAt, zeroAt, oneAt, eqConstAt. simpl.
+  split; intros [hbit hval].
+  - split; [exact hbit | lia].
+  - split; [exact hbit | lia].
+Qed.
+
+Lemma betaModTerm_nat : forall (e : nat -> nat) step idx,
+  Term.eval natModel e (betaModTerm step idx) =
+    1 + S (e idx) * e step.
+Proof.
+  intros e step idx.
+  unfold betaModTerm. simpl.
+  lia.
+Qed.
+
+Lemma remAt_nat : forall (e : nat -> nat) rem value modulus,
+  Sat natModel e (remAt rem value modulus) <->
+    exists q, e value = q * e modulus + e rem /\
+      e rem < e modulus.
+Proof.
+  intros e rem value modulus.
+  unfold remAt. simpl.
+  split.
+  - intros [q [hlt hval]].
+    exists q.
+    split.
+    + exact hval.
+    + exact (proj1 (ltAt_nat (scons nat q e) (S rem) (S modulus)) hlt).
+  - intros [q [hval hlt]].
+    exists q.
+    split.
+    + exact (proj2 (ltAt_nat (scons nat q e) (S rem) (S modulus)) hlt).
+    + exact hval.
+Qed.
+
+Lemma betaAt_nat : forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAt out code step idx) <->
+    exists q,
+      e code = q * (1 + S (e idx) * e step) + e out /\
+        e out < 1 + S (e idx) * e step.
+Proof.
+  intros e out code step idx.
+  unfold betaAt. simpl.
+  split.
+  - intros [m [hmod hrem]].
+    assert (hm : m = 1 + S (e idx) * e step).
+    {
+      unfold betaModTerm in hmod. simpl in hmod. lia.
+    }
+    destruct (proj1 (remAt_nat (scons nat m e) (S out) (S code) 0) hrem)
+      as [q [hval hlt]].
+    exists q.
+    subst m.
+    split; simpl in *; assumption.
+  - intros [q [hval hlt]].
+    exists (1 + S (e idx) * e step).
+    split.
+    + unfold betaModTerm. simpl. lia.
+    + apply (proj2 (remAt_nat (scons nat (1 + S (e idx) * e step) e)
+        (S out) (S code) 0)).
+      exists q.
+      split; simpl; assumption.
+Qed.
+
+Lemma betaAtConstIdx_nat : forall (e : nat -> nat) out code step idxValue,
+  Sat natModel e (betaAtConstIdx out code step idxValue) <->
+    exists q,
+      e code = q * (1 + S idxValue * e step) + e out /\
+        e out < 1 + S idxValue * e step.
+Proof.
+  intros e out code step idxValue.
+  unfold betaAtConstIdx. simpl.
+  split.
+  - intros [i [hi hbeta]].
+    pose proof (proj1 (eqConstAt_nat (scons nat i e) 0 idxValue) hi) as hi'.
+    simpl in hi'.
+    subst i.
+    destruct (proj1 (betaAt_nat (scons nat idxValue e)
+        (S out) (S code) (S step) 0) hbeta) as [q [hval hlt]].
+    exists q.
+    split; simpl in *; assumption.
+  - intros [q [hval hlt]].
+    exists idxValue.
+    split.
+    + exact (proj2 (eqConstAt_nat (scons nat idxValue e) 0 idxValue) eq_refl).
+    + apply (proj2 (betaAt_nat (scons nat idxValue e)
+        (S out) (S code) (S step) 0)).
+      exists q.
+      split; simpl; assumption.
+Qed.
+
+Lemma betaAtSuccIdx_nat : forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAtSuccIdx out code step idx) <->
+    exists q,
+      e code = q * (1 + S (S (e idx)) * e step) + e out /\
+        e out < 1 + S (S (e idx)) * e step.
+Proof.
+  intros e out code step idx.
+  unfold betaAtSuccIdx. simpl.
+  split.
+  - intros [i [hi hbeta]].
+    assert (hi' : i = S (e idx)) by exact hi.
+    subst i.
+    destruct (proj1 (betaAt_nat (scons nat (S (e idx)) e)
+        (S out) (S code) (S step) 0) hbeta) as [q [hval hlt]].
+    exists q.
+    split; simpl in *; assumption.
+  - intros [q [hval hlt]].
+    exists (S (e idx)).
+    split.
+    + reflexivity.
+    + apply (proj2 (betaAt_nat (scons nat (S (e idx)) e)
+        (S out) (S code) (S step) 0)).
+      exists q.
+      split; simpl; assumption.
+Qed.
+
+Lemma betaAt_nat_entry : forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAt out code step idx) <->
+    BetaEntry (e code) (e step) (e idx) (e out).
+Proof.
+  intros e out code step idx.
+  unfold BetaEntry, BetaModulus.
+  apply betaAt_nat.
+Qed.
+
+Lemma betaAtConstIdx_nat_entry :
+    forall (e : nat -> nat) out code step idxValue,
+  Sat natModel e (betaAtConstIdx out code step idxValue) <->
+    BetaEntry (e code) (e step) idxValue (e out).
+Proof.
+  intros e out code step idxValue.
+  unfold BetaEntry, BetaModulus.
+  apply betaAtConstIdx_nat.
+Qed.
+
+Lemma betaAtSuccIdx_nat_entry :
+    forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAtSuccIdx out code step idx) <->
+    BetaEntry (e code) (e step) (S (e idx)) (e out).
+Proof.
+  intros e out code step idx.
+  unfold BetaEntry, BetaModulus.
+  apply betaAtSuccIdx_nat.
+Qed.
+
+Lemma betaDiv2StepWitnessAt_nat :
+    forall (e : nat -> nat) code step idx,
+  Sat natModel e (betaDiv2StepWitnessAt code step idx) <->
+    exists cur next bit,
+      BetaEntry (e code) (e step) (e idx) cur /\
+      BetaEntry (e code) (e step) (S (e idx)) next /\
+      (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step idx.
+  unfold betaDiv2StepWitnessAt. simpl.
+  split.
+  - intros [cur [next [bit [hcur [hnext hstep]]]]].
+    pose proof (proj1 (betaAt_nat_entry
+      (scons nat bit (scons nat next (scons nat cur e)))
+      2 (S (S (S code))) (S (S (S step))) (S (S (S idx)))) hcur)
+      as hcur'.
+    pose proof (proj1 (betaAtSuccIdx_nat_entry
+      (scons nat bit (scons nat next (scons nat cur e)))
+      1 (S (S (S code))) (S (S (S step))) (S (S (S idx)))) hnext)
+      as hnext'.
+    pose proof (proj1 (div2StepAt_nat
+      (scons nat bit (scons nat next (scons nat cur e))) 2 1 0) hstep)
+      as hstep'.
+    simpl in hcur', hnext', hstep'.
+    destruct hstep' as [hbit hval].
+    exists cur, next, bit.
+    repeat split; assumption.
+  - intros [cur [next [bit [hcur [hnext [hbit hval]]]]]].
+    exists cur, next, bit.
+    split.
+    + apply (proj2 (betaAt_nat_entry
+        (scons nat bit (scons nat next (scons nat cur e)))
+        2 (S (S (S code))) (S (S (S step))) (S (S (S idx))))).
+      simpl. exact hcur.
+    + split.
+      * apply (proj2 (betaAtSuccIdx_nat_entry
+          (scons nat bit (scons nat next (scons nat cur e)))
+          1 (S (S (S code))) (S (S (S step))) (S (S (S idx))))).
+        simpl. exact hnext.
+      * apply (proj2 (div2StepAt_nat
+          (scons nat bit (scons nat next (scons nat cur e))) 2 1 0)).
+        simpl. split; assumption.
+Qed.
+
+Lemma betaDiv2StepAt_nat : forall (e : nat -> nat) code step limit,
+  Sat natModel e (betaDiv2StepAt code step limit) <->
+    forall k, k < e limit ->
+      exists cur next bit,
+        BetaEntry (e code) (e step) k cur /\
+        BetaEntry (e code) (e step) (S k) next /\
+        (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step limit.
+  unfold betaDiv2StepAt. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat : Sat natModel (scons nat k e) (ltAt 0 (S limit))).
+    {
+      apply (proj2 (ltAt_nat (scons nat k e) 0 (S limit))).
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0) (h k hkSat)) as hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k < e limit).
+    {
+      pose proof (proj1 (ltAt_nat (scons nat k e) 0 (S limit)) hkSat)
+        as hlt.
+      simpl in hlt. exact hlt.
+    }
+    apply (proj2 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0)).
+    simpl. exact (h k hk).
+Qed.
+
+Lemma betaDiv2StepsThroughAt_nat :
+    forall (e : nat -> nat) code step last,
+  Sat natModel e (betaDiv2StepsThroughAt code step last) <->
+    forall k, k <= e last ->
+      exists cur next bit,
+        BetaEntry (e code) (e step) k cur /\
+        BetaEntry (e code) (e step) (S k) next /\
+        (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step last.
+  unfold betaDiv2StepsThroughAt. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat : Sat natModel (scons nat k e) (leAt 0 (S last))).
+    {
+      apply (proj2 (leAt_nat (scons nat k e) 0 (S last))).
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0) (h k hkSat)) as hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k <= e last).
+    {
+      pose proof (proj1 (leAt_nat (scons nat k e) 0 (S last)) hkSat)
+        as hle.
+      simpl in hle. exact hle.
+    }
+    apply (proj2 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0)).
+    simpl. exact (h k hk).
+Qed.
+
+Lemma betaDiv2BitAt_nat : forall (e : nat -> nat) bit code step idx,
+  Sat natModel e (betaDiv2BitAt bit code step idx) <->
+    BetaDiv2Bit (e code) (e step) (e idx) (e bit).
+Proof.
+  intros e bit code step idx.
+  unfold betaDiv2BitAt, BetaDiv2Bit. simpl.
+  split.
+  - intros [cur [next [hcur [hnext hstep]]]].
+    pose proof (proj1 (betaAt_nat_entry
+      (scons nat next (scons nat cur e))
+      1 (S (S code)) (S (S step)) (S (S idx))) hcur) as hcur'.
+    pose proof (proj1 (betaAtSuccIdx_nat_entry
+      (scons nat next (scons nat cur e))
+      0 (S (S code)) (S (S step)) (S (S idx))) hnext) as hnext'.
+    pose proof (proj1 (div2StepAt_nat
+      (scons nat next (scons nat cur e)) 1 0 (S (S bit))) hstep)
+      as hstep'.
+    simpl in hcur', hnext', hstep'.
+    destruct hstep' as [hbit hval].
+    exists cur, next.
+    unfold BetaDiv2Step.
+    repeat split; assumption.
+  - intros [cur [next [hcur [hnext [hbit hval]]]]].
+    exists cur, next.
+    split.
+    + apply (proj2 (betaAt_nat_entry
+        (scons nat next (scons nat cur e))
+        1 (S (S code)) (S (S step)) (S (S idx)))).
+      simpl. exact hcur.
+    + split.
+      * apply (proj2 (betaAtSuccIdx_nat_entry
+          (scons nat next (scons nat cur e))
+          0 (S (S code)) (S (S step)) (S (S idx)))).
+        simpl. exact hnext.
+      * apply (proj2 (div2StepAt_nat
+          (scons nat next (scons nat cur e)) 1 0 (S (S bit)))).
+        simpl. split; assumption.
+Qed.
+
+Lemma hfMemAt_nat_trace : forall (e : nat -> nat) elem set,
+  Sat natModel e (hfMemAt elem set) <->
+    exists code step, HFMemTrace (e elem) (e set) code step.
+Proof.
+  intros e elem set.
+  unfold hfMemAt. simpl.
+  split.
+  - intros [code [step [hstart [hsteps [bit [hone hbit]]]]]].
+    pose (E := scons nat step (scons nat code e)).
+    assert (hstart' : BetaEntry code step 0 (e set)).
+    {
+      pose proof (proj1 (betaAtConstIdx_nat_entry E (S (S set)) 1 0 0)
+        hstart) as hs.
+      unfold E in hs. simpl in hs. exact hs.
+    }
+    assert (hsteps' : BetaDiv2StepsThrough code step (e elem)).
+    {
+      pose proof (proj1 (betaDiv2StepsThroughAt_nat E 1 0 (S (S elem)))
+        hsteps) as hs.
+      unfold BetaDiv2StepsThrough.
+      intros k hk.
+      assert (hkE : k <= E (S (S elem))).
+      {
+        unfold E. simpl. exact hk.
+      }
+      destruct (hs k hkE) as [cur [next [b [hcur [hnext [hb hv]]]]]].
+      exists cur, next, b.
+      unfold BetaDiv2Step.
+      unfold E in hcur, hnext. simpl in hcur, hnext.
+      repeat split; assumption.
+    }
+    assert (hbit' : BetaDiv2Bit code step (e elem) 1).
+    {
+      pose proof (proj1 (oneAt_nat (scons nat bit E) 0) hone) as hone'.
+      pose proof (proj1 (betaDiv2BitAt_nat (scons nat bit E)
+        0 2 1 (S (S (S elem)))) hbit) as hb.
+      unfold E in hb. simpl in hb.
+      subst bit. exact hb.
+    }
+    exists code, step.
+    unfold HFMemTrace.
+    repeat split; assumption.
+  - intros [code [step [hstart [hsteps hbit]]]].
+    pose (E := scons nat step (scons nat code e)).
+    exists code, step.
+    repeat split.
+    + apply (proj2 (betaAtConstIdx_nat_entry E (S (S set)) 1 0 0)).
+      unfold E. simpl. exact hstart.
+    + apply (proj2 (betaDiv2StepsThroughAt_nat E 1 0 (S (S elem)))).
+      intros k hk.
+      unfold E in hk. simpl in hk.
+      destruct (hsteps k hk) as [cur [next [bit [hcur [hnext [hbit0 hval]]]]]].
+      exists cur, next, bit.
+      unfold E. simpl.
+      repeat split; assumption.
+    + exists 1.
+      split.
+      * apply (proj2 (oneAt_nat (scons nat 1 E) 0)).
+        reflexivity.
+      * apply (proj2 (betaDiv2BitAt_nat (scons nat 1 E)
+          0 2 1 (S (S (S elem))))).
+        unfold E. simpl. exact hbit.
+Qed.
+
+Definition Coprime (m n : nat) : Prop := Nat.gcd m n = 1.
+
+Lemma Coprime_1_l : forall n, Coprime 1 n.
+Proof.
+  intro n.
+  unfold Coprime.
+  apply Nat.gcd_unique.
+  - exists 1. lia.
+  - exists n. lia.
+  - intros q hq _.
+    exact hq.
+Qed.
+
+Lemma Coprime_sym : forall m n, Coprime m n -> Coprime n m.
+Proof.
+  unfold Coprime.
+  intros m n h.
+  rewrite Nat.gcd_comm.
+  exact h.
+Qed.
+
+Lemma Coprime_of_dvd_left : forall d m n,
+  Nat.divide d m -> Coprime m n -> Coprime d n.
+Proof.
+  unfold Coprime.
+  intros d m n hdm hcop.
+  apply Nat.gcd_unique.
+  - exists d. lia.
+  - exists n. lia.
+  - intros q hqd hqn.
+    assert (hqm : Nat.divide q m).
+    {
+      exact (Nat.divide_trans q d m hqd hdm).
+    }
+    pose proof (Nat.gcd_greatest m n q hqm hqn) as hqg.
+    rewrite hcop in hqg.
+    exact hqg.
+Qed.
+
+Lemma Coprime_eq_one_of_dvd : forall d n,
+  Coprime d n -> Nat.divide d n -> d = 1.
+Proof.
+  unfold Coprime.
+  intros d n hcop hdn.
+  assert (hdg : Nat.divide d (Nat.gcd d n)).
+  {
+    apply Nat.gcd_greatest.
+    - exists 1. lia.
+    - exact hdn.
+  }
+  rewrite hcop in hdg.
+  apply Nat.divide_1_r.
+  exact hdg.
+Qed.
+
+Lemma Coprime_dvd_of_dvd_mul_left : forall d n k,
+  Coprime d n -> Nat.divide d (k * n) -> Nat.divide d k.
+Proof.
+  unfold Coprime.
+  intros d n k hcop hdkn.
+  rewrite Nat.mul_comm in hdkn.
+  exact (Nat.gauss d n k hdkn hcop).
+Qed.
+
+Lemma Coprime_mul_left : forall a b c,
+  Coprime a c -> Coprime b c -> Coprime (a * b) c.
+Proof.
+  intros a b c hac hbc.
+  unfold Coprime in *.
+  apply Nat.gcd_unique.
+  - exists (a * b). lia.
+  - exists c. lia.
+  - intros q hqprod hqc.
+    assert (hq_b : Coprime q b).
+    {
+      apply Coprime_of_dvd_left with (m := c).
+      - exact hqc.
+      - apply Coprime_sym. exact hbc.
+    }
+    unfold Coprime in hq_b.
+    assert (hqa : Nat.divide q a).
+    {
+      rewrite Nat.mul_comm in hqprod.
+      exact (Nat.gauss q b a hqprod hq_b).
+    }
+    pose proof (Nat.gcd_greatest a c q hqa hqc) as hqg.
+    rewrite hac in hqg.
+    exact hqg.
+Qed.
+
+Lemma betaFact_pos : forall n, 0 < betaFact n.
+Proof.
+  induction n as [|n IH]; simpl; lia.
+Qed.
+
+Lemma dvd_betaFact_of_pos_le : forall k n,
+  0 < k -> k <= n -> Nat.divide k (betaFact n).
+Proof.
+  intros k n hk hkn.
+  induction n as [|n IH].
+  - lia.
+  - simpl.
+    destruct (Nat.eq_dec k (S n)) as [heq | hne].
+    + subst k.
+      exists (betaFact n). nia.
+    + assert (hkle : k <= n) by lia.
+      destruct (IH hkle) as [q hq].
+      exists (S n * q). nia.
+Qed.
+
+Lemma BetaModulus_pos : forall step idx, 0 < BetaModulus step idx.
+Proof.
+  intros step idx.
+  unfold BetaModulus.
+  lia.
+Qed.
+
+Lemma BetaModuliProduct_pos : forall step n,
+  0 < BetaModuliProduct step n.
+Proof.
+  intros step n.
+  induction n as [|n IH]; simpl.
+  - lia.
+  - pose proof (BetaModulus_pos step n).
+    nia.
+Qed.
+
+Lemma BetaModulus_coprime_step : forall step idx,
+  Coprime (BetaModulus step idx) step.
+Proof.
+  intros step idx.
+  unfold Coprime.
+  set (d := Nat.gcd (BetaModulus step idx) step).
+  change (d = 1).
+  assert (hdm : Nat.divide d (BetaModulus step idx)).
+  {
+    unfold d. apply Nat.gcd_divide_l.
+  }
+  assert (hdstep : Nat.divide d step).
+  {
+    unfold d. apply Nat.gcd_divide_r.
+  }
+  assert (hdprod : Nat.divide d (S idx * step)).
+  {
+    apply Nat.divide_mul_r.
+    exact hdstep.
+  }
+  assert (hdone : Nat.divide d 1).
+  {
+    pose proof (Nat.divide_sub_r d (BetaModulus step idx)
+      (S idx * step) hdm hdprod) as hsub.
+    replace (BetaModulus step idx - S idx * step) with 1 in hsub
+      by (unfold BetaModulus; nia).
+    exact hsub.
+  }
+  apply Nat.divide_1_r.
+  exact hdone.
+Qed.
+
+Lemma BetaModulus_sub : forall step i j,
+  i <= j ->
+  BetaModulus step j - BetaModulus step i = (j - i) * step.
+Proof.
+  intros step i j hij.
+  unfold BetaModulus.
+  nia.
+Qed.
+
+Lemma BetaModulus_pair_coprime_of_dvd_step : forall step i j,
+  i < j ->
+  Nat.divide (j - i) step ->
+  Coprime (BetaModulus step i) (BetaModulus step j).
+Proof.
+  intros step i j hij hdiff.
+  unfold Coprime.
+  set (d := Nat.gcd (BetaModulus step i) (BetaModulus step j)).
+  change (d = 1).
+  assert (hdi : Nat.divide d (BetaModulus step i)).
+  {
+    unfold d. apply Nat.gcd_divide_l.
+  }
+  assert (hdj : Nat.divide d (BetaModulus step j)).
+  {
+    unfold d. apply Nat.gcd_divide_r.
+  }
+  assert (hcopStep : Coprime d step).
+  {
+    apply Coprime_of_dvd_left with (m := BetaModulus step i).
+    - exact hdi.
+    - apply BetaModulus_coprime_step.
+  }
+  assert (hddiffstep : Nat.divide d ((j - i) * step)).
+  {
+    pose proof (Nat.divide_sub_r d (BetaModulus step j)
+      (BetaModulus step i) hdj hdi) as hsub.
+    rewrite BetaModulus_sub in hsub by lia.
+    exact hsub.
+  }
+  assert (hddiff : Nat.divide d (j - i)).
+  {
+    apply (Coprime_dvd_of_dvd_mul_left d step (j - i)).
+    - exact hcopStep.
+    - exact hddiffstep.
+  }
+  assert (hdstep' : Nat.divide d step).
+  {
+    exact (Nat.divide_trans d (j - i) step hddiff hdiff).
+  }
+  apply Coprime_eq_one_of_dvd with (n := step).
+  - exact hcopStep.
+  - exact hdstep'.
+Qed.
+
+Lemma BetaModulus_pair_coprime_of_lt_le : forall i j N,
+  i < j -> j <= N ->
+  Coprime (BetaModulus (betaFact N) i)
+    (BetaModulus (betaFact N) j).
+Proof.
+  intros i j N hij hjN.
+  apply BetaModulus_pair_coprime_of_dvd_step.
+  - exact hij.
+  - apply dvd_betaFact_of_pos_le; lia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_modulus_of_le : forall n j N,
+  n <= j -> j <= N ->
+  Coprime (BetaModuliProduct (betaFact N) n)
+    (BetaModulus (betaFact N) j).
+Proof.
+  intros n.
+  induction n as [|n IH]; intros j N hnj hjN.
+  - simpl.
+    apply Coprime_1_l.
+  - simpl.
+    apply Coprime_mul_left.
+    + apply IH; lia.
+    + apply BetaModulus_pair_coprime_of_lt_le; lia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_next_of_le : forall n N,
+  n <= N ->
+  Coprime (BetaModuliProduct (betaFact N) n)
+    (BetaModulus (betaFact N) n).
+Proof.
+  intros n N hn.
+  apply BetaModuliProduct_coprime_modulus_of_le; lia.
+Qed.
+
+Lemma BetaEntry_value_lt : forall code step idx value,
+  BetaEntry code step idx value ->
+  value < BetaModulus step idx.
+Proof.
+  intros code step idx value [_ [_ hlt]].
+  exact hlt.
+Qed.
+
+Lemma BetaEntry_mod_eq : forall code step idx value,
+  BetaEntry code step idx value ->
+  code mod BetaModulus step idx = value.
+Proof.
+  intros code step idx value [q [hcode hlt]].
+  rewrite hcode.
+  rewrite Nat.add_comm.
+  rewrite Nat.Div0.mod_add.
+  apply Nat.mod_small.
+  exact hlt.
+Qed.
+
+Lemma BetaEntry_of_mod_eq : forall code step idx value,
+  value < BetaModulus step idx ->
+  code mod BetaModulus step idx = value ->
+  BetaEntry code step idx value.
+Proof.
+  intros code step idx value hlt hmod.
+  exists (code / BetaModulus step idx).
+  split.
+  - rewrite <- hmod.
+    rewrite Nat.mul_comm.
+    apply Nat.div_mod_eq.
+  - exact hlt.
+Qed.
+
+Lemma BetaModuliProduct_dvd_of_lt : forall step i n,
+  i < n -> Nat.divide (BetaModulus step i) (BetaModuliProduct step n).
+Proof.
+  intros step i n hi.
+  induction n as [|n IH].
+  - lia.
+  - simpl.
+    destruct (Nat.eq_dec i n) as [heq | hne].
+    + subst i.
+      exists (BetaModuliProduct step n).
+      reflexivity.
+    + assert (hin : i < n) by lia.
+      destruct (IH hin) as [q hq].
+      exists (q * BetaModulus step n).
+      rewrite hq.
+      nia.
+Qed.
+
+Lemma mod_mod_of_dvd : forall a m d,
+  0 < d -> Nat.divide d m -> (a mod m) mod d = a mod d.
+Proof.
+  intros a m d hdpos [q hq].
+  subst m.
+  replace (q * d) with (d * q) by nia.
+  rewrite Nat.Div0.mod_mul_r.
+  replace (d * ((a / d) mod q)) with (((a / d) mod q) * d) by nia.
+  rewrite Nat.Div0.mod_add.
+  apply Nat.mod_small.
+  apply Nat.mod_upper_bound.
+  lia.
+Qed.
+
+Lemma mod_eq_of_mod_BetaModuliProduct_eq :
+    forall code old step idx n,
+  idx < n ->
+  code mod BetaModuliProduct step n =
+    old mod BetaModuliProduct step n ->
+  code mod BetaModulus step idx = old mod BetaModulus step idx.
+Proof.
+  intros code old step idx n hi hmod.
+  pose proof (BetaModuliProduct_dvd_of_lt step idx n hi) as hd.
+  pose proof (BetaModulus_pos step idx) as hpos.
+  rewrite <- (mod_mod_of_dvd code (BetaModuliProduct step n)
+    (BetaModulus step idx) hpos hd).
+  rewrite hmod.
+  apply mod_mod_of_dvd.
+  - exact hpos.
+  - exact hd.
+Qed.
+
+Lemma BetaEntry_of_mod_BetaModuliProduct_eq :
+    forall code old step idx n value,
+  idx < n ->
+  code mod BetaModuliProduct step n =
+    old mod BetaModuliProduct step n ->
+  BetaEntry old step idx value ->
+  BetaEntry code step idx value.
+Proof.
+  intros code old step idx n value hi hmod hold.
+  apply BetaEntry_of_mod_eq.
+  - exact (BetaEntry_value_lt old step idx value hold).
+  - rewrite (mod_eq_of_mod_BetaModuliProduct_eq code old step idx n hi hmod).
+    exact (BetaEntry_mod_eq old step idx value hold).
+Qed.
+
+Lemma BetaModulus_pair_coprime_of_lt_le_mul_betaFact :
+    forall i j N scale,
+  i < j -> j <= N ->
+  Coprime (BetaModulus (betaFact N * scale) i)
+    (BetaModulus (betaFact N * scale) j).
+Proof.
+  intros i j N scale hij hjN.
+  apply BetaModulus_pair_coprime_of_dvd_step.
+  - exact hij.
+  - destruct (dvd_betaFact_of_pos_le (j - i) N) as [q hq]; try lia.
+    exists (q * scale).
+    rewrite hq.
+    nia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_modulus_of_le_mul_betaFact :
+    forall n j N scale,
+  n <= j -> j <= N ->
+  Coprime (BetaModuliProduct (betaFact N * scale) n)
+    (BetaModulus (betaFact N * scale) j).
+Proof.
+  intros n.
+  induction n as [|n IH]; intros j N scale hnj hjN.
+  - simpl.
+    apply Coprime_1_l.
+  - simpl.
+    apply Coprime_mul_left.
+    + apply IH; lia.
+    + apply BetaModulus_pair_coprime_of_lt_le_mul_betaFact; lia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_next_of_le_mul_betaFact :
+    forall n N scale,
+  n <= N ->
+  Coprime (BetaModuliProduct (betaFact N * scale) n)
+    (BetaModulus (betaFact N * scale) n).
+Proof.
+  intros n N scale hn.
+  apply BetaModuliProduct_coprime_modulus_of_le_mul_betaFact; lia.
+Qed.
+
+Lemma coprime_bezout_left : forall m n,
+  0 < m -> Coprime m n -> exists x y, x * m = 1 + y * n.
+Proof.
+  intros m n hm hcop.
+  unfold Coprime in hcop.
+  destruct (Nat.gcd_bezout_pos m n hm) as [x [y hxy]].
+  rewrite hcop in hxy.
+  exists x, y.
+  exact hxy.
+Qed.
+
+Lemma crt_two_mod : forall m n a b,
+  0 < m -> 0 < n -> Coprime m n -> a < m -> b < n ->
+  exists c, c mod m = a /\ c mod n = b.
+Proof.
+  intros m n a b hm hn hcop ha hb.
+  destruct (coprime_bezout_left m n hm hcop) as [x [y hxy]].
+  set (delta := b + n - a mod n).
+  exists (a + m * (x * delta)).
+  split.
+  - replace (m * (x * delta)) with ((x * delta) * m) by nia.
+    rewrite Nat.Div0.mod_add.
+    apply Nat.mod_small.
+    exact ha.
+  - assert (hdelta : (a + delta) mod n = b).
+    {
+      unfold delta.
+      assert (hnneq : n <> 0) by lia.
+      pose proof (Nat.mod_upper_bound a n hnneq) as hr.
+      pose proof (Nat.div_mod_eq a n) as hdiv.
+      replace (a + (b + n - a mod n)) with
+        (b + (a / n + 1) * n) by nia.
+      rewrite Nat.Div0.mod_add.
+      apply Nat.mod_small.
+      exact hb.
+    }
+    assert (hmx : m * x = 1 + y * n) by nia.
+    replace (m * (x * delta)) with (delta + (y * delta) * n) by nia.
+    replace (a + (delta + y * delta * n)) with
+      ((a + delta) + (y * delta) * n) by nia.
+    rewrite Nat.Div0.mod_add.
+    exact hdelta.
+Qed.
+
+Lemma beta_entries_exist_lt_mul_betaFact :
+    forall N n scale,
+  n <= S N ->
+  forall value : nat -> nat,
+  (forall i, i < n ->
+    value i < BetaModulus (betaFact N * scale) i) ->
+  exists code,
+    forall i, i < n ->
+      BetaEntry code (betaFact N * scale) i (value i).
+Proof.
+  intros N n.
+  induction n as [|n IH]; intros scale hn value hsmall.
+  - exists 0.
+    intros i hi.
+    lia.
+  - assert (hnOld : n <= S N) by lia.
+    destruct (IH scale hnOld value) as [old hold].
+    {
+      intros i hi.
+      apply hsmall.
+      lia.
+    }
+    set (step := betaFact N * scale).
+    set (prod := BetaModuliProduct step n).
+    set (modn := BetaModulus step n).
+    assert (hprodPos : 0 < prod).
+    {
+      unfold prod.
+      apply BetaModuliProduct_pos.
+    }
+    assert (hmodnPos : 0 < modn).
+    {
+      unfold modn.
+      apply BetaModulus_pos.
+    }
+    assert (hnN : n <= N) by lia.
+    assert (hcop : Coprime prod modn).
+    {
+      unfold prod, modn, step.
+      apply BetaModuliProduct_coprime_next_of_le_mul_betaFact.
+      exact hnN.
+    }
+    assert (ha : old mod prod < prod).
+    {
+      apply Nat.mod_upper_bound.
+      lia.
+    }
+    assert (hb : value n < modn).
+    {
+      unfold modn, step.
+      apply hsmall.
+      lia.
+    }
+    destruct (crt_two_mod prod modn (old mod prod) (value n)
+      hprodPos hmodnPos hcop ha hb) as [code [hprod hnew]].
+    exists code.
+    intros i hi.
+    destruct (Nat.eq_dec i n) as [heq | hne].
+    + subst i.
+      apply BetaEntry_of_mod_eq.
+      * unfold step.
+        apply hsmall.
+        lia.
+      * unfold modn in hnew.
+        exact hnew.
+    + assert (hin : i < n) by lia.
+      apply BetaEntry_of_mod_BetaModuliProduct_eq with (old := old) (n := n).
+      * exact hin.
+      * unfold prod in hprod.
+        exact hprod.
+      * apply hold.
+        exact hin.
+Qed.
+
+Lemma beta_entries_exist_through_mul_betaFact :
+    forall N scale (value : nat -> nat),
+  (forall i, i <= N ->
+    value i < BetaModulus (betaFact N * scale) i) ->
+  exists code,
+    forall i, i <= N ->
+      BetaEntry code (betaFact N * scale) i (value i).
+Proof.
+  intros N scale value hsmall.
+  assert (hN : S N <= S N) by lia.
+  destruct (beta_entries_exist_lt_mul_betaFact N (S N) scale
+    hN value) as [code hcode].
+  {
+    intros i hi.
+    apply hsmall.
+    lia.
+  }
+  exists code.
+  intros i hi.
+  apply hcode.
+  lia.
+Qed.
+
+Lemma shiftr_succ_div2 : forall set k,
+  Nat.shiftr set (S k) = Nat.shiftr set k / 2.
+Proof.
+  intros set k.
+  replace (S k) with (k + 1) by lia.
+  rewrite <- (Nat.shiftr_shiftr set k 1).
+  rewrite Nat.shiftr_div_pow2.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma shiftRight_lt_trace_modulus : forall elem set i,
+  Nat.shiftr set i <
+    BetaModulus (betaFact (S elem) * S set) i.
+Proof.
+  intros elem set i.
+  pose proof (Nat.shiftr_upper_bound set i) as hshift.
+  pose proof (betaFact_pos (S elem)) as hbf.
+  unfold BetaModulus.
+  nia.
+Qed.
+
+Lemma mod_two_eq_zero_or_one : forall n, n mod 2 = 0 \/ n mod 2 = 1.
+Proof.
+  intro n.
+  assert (h2 : 2 <> 0) by lia.
+  pose proof (Nat.mod_upper_bound n 2 h2) as h.
+  lia.
+Qed.
+
+Lemma div2_step_shiftr : forall set k,
+  let cur := Nat.shiftr set k in
+  let next := Nat.shiftr set (S k) in
+  let bit := cur mod 2 in
+  (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros set k cur next bit.
+  assert (hbit : bit = 0 \/ bit = 1).
+  {
+    unfold bit.
+    apply mod_two_eq_zero_or_one.
+  }
+  assert (hnext : next = cur / 2).
+  {
+    unfold next, cur.
+    apply shiftr_succ_div2.
+  }
+  pose proof (Nat.div_mod_eq cur 2) as hdiv.
+  split.
+  - exact hbit.
+  - unfold bit.
+    nia.
+Qed.
+
+Lemma div2_step_shiftr_one : forall set elem,
+  hf_mem elem set ->
+  let cur := Nat.shiftr set elem in
+  let next := Nat.shiftr set (S elem) in
+  cur = next + next + 1.
+Proof.
+  intros set elem hmem cur next.
+  assert (hbitTrue : Nat.testbit cur 0 = true).
+  {
+    unfold cur.
+    rewrite Nat.shiftr_spec'.
+    replace (0 + elem) with elem by lia.
+    unfold hf_mem in hmem.
+    exact hmem.
+  }
+  pose proof (Nat.bit0_mod cur) as hbitmod.
+  rewrite hbitTrue in hbitmod.
+  simpl in hbitmod.
+  assert (hmod : cur mod 2 = 1).
+  {
+    symmetry.
+    exact hbitmod.
+  }
+  assert (hnext : next = cur / 2).
+  {
+    unfold next, cur.
+    apply shiftr_succ_div2.
+  }
+  pose proof (Nat.div_mod_eq cur 2) as hdiv.
+  nia.
+Qed.
+
+Lemma HFMemTrace_exists_of_mem : forall elem set,
+  hf_mem elem set -> exists code step, HFMemTrace elem set code step.
+Proof.
+  intros elem set hmem.
+  set (N := S elem).
+  set (scale := S set).
+  set (step := betaFact N * scale).
+  set (value := fun k => Nat.shiftr set k).
+  assert (hsmall : forall i, i <= N -> value i < BetaModulus step i).
+  {
+    intros i _.
+    unfold value, step, N, scale.
+    apply shiftRight_lt_trace_modulus.
+  }
+  destruct (beta_entries_exist_through_mul_betaFact N scale value hsmall)
+    as [code hcode].
+  exists code, step.
+  unfold HFMemTrace.
+  split.
+  - assert (h0le : 0 <= N) by lia.
+    pose proof (hcode 0 h0le) as h0.
+    unfold value in h0.
+    rewrite Nat.shiftr_0_r in h0.
+    exact h0.
+  - split.
+    + unfold BetaDiv2StepsThrough.
+      intros k hk.
+      set (cur := Nat.shiftr set k).
+      set (next := Nat.shiftr set (S k)).
+      set (bit := cur mod 2).
+      assert (hcur : BetaEntry code step k cur).
+      {
+        assert (hkle : k <= N) by lia.
+        pose proof (hcode k hkle) as h.
+        unfold value in h.
+        exact h.
+      }
+      assert (hnext : BetaEntry code step (S k) next).
+      {
+        assert (hskle : S k <= N) by lia.
+        pose proof (hcode (S k) hskle) as h.
+        unfold value in h.
+        exact h.
+      }
+      pose proof (div2_step_shiftr set k) as hstep.
+      exists cur, next, bit.
+      unfold BetaDiv2Step.
+      repeat split.
+      * exact hcur.
+      * exact hnext.
+      * unfold cur, bit in hstep.
+        exact (proj1 hstep).
+      * unfold cur, next, bit in hstep.
+        exact (proj2 hstep).
+    + unfold BetaDiv2Bit.
+      set (cur := Nat.shiftr set elem).
+      set (next := Nat.shiftr set (S elem)).
+      assert (hcur : BetaEntry code step elem cur).
+      {
+        assert (hemle : elem <= N) by lia.
+        pose proof (hcode elem hemle) as h.
+        unfold value in h.
+        exact h.
+      }
+      assert (hnext : BetaEntry code step (S elem) next).
+      {
+        assert (hsemle : S elem <= N) by lia.
+        pose proof (hcode (S elem) hsemle) as h.
+        unfold value in h.
+        exact h.
+      }
+      assert (hcurEq : cur = next + next + 1).
+      {
+        unfold cur, next.
+        apply div2_step_shiftr_one.
+        exact hmem.
+      }
+      exists cur, next.
+      unfold BetaDiv2Step.
+      repeat split.
+      * exact hcur.
+      * exact hnext.
+      * right. reflexivity.
+      * exact hcurEq.
+Qed.
+
+Lemma BetaEntry_functional : forall code step idx a b,
+  BetaEntry code step idx a -> BetaEntry code step idx b -> a = b.
+Proof.
+  intros code step idx a b ha hb.
+  transitivity (code mod BetaModulus step idx).
+  - symmetry. apply BetaEntry_mod_eq. exact ha.
+  - apply BetaEntry_mod_eq. exact hb.
+Qed.
+
+Lemma BetaDiv2Step_div_two : forall code step idx cur next bit,
+  BetaDiv2Step code step idx cur next bit -> cur / 2 = next.
+Proof.
+  intros code step idx cur next bit [_ [_ [hbit hcur]]].
+  destruct hbit as [hbit | hbit]; subst bit; rewrite hcur.
+  - replace (next + next + 0) with (2 * next + 0) by lia.
+    symmetry.
+    apply Nat.div_unique with (r := 0); lia.
+  - replace (next + next + 1) with (2 * next + 1) by lia.
+    symmetry.
+    apply Nat.div_unique with (r := 1); lia.
+Qed.
+
+Lemma BetaDiv2Step_bit_one_testbit_zero :
+    forall code step idx cur next,
+  BetaDiv2Step code step idx cur next 1 ->
+  Nat.testbit cur 0 = true.
+Proof.
+  intros code step idx cur next [_ [_ [_ hcur]]].
+  rewrite hcur.
+  replace (next + next + 1) with (2 * next + 1) by lia.
+  apply Nat.testbit_odd_0.
+Qed.
+
+Lemma HFMemTrace_entry_shiftr : forall elem set code step,
+  HFMemTrace elem set code step ->
+  forall k value,
+    k <= S elem ->
+    BetaEntry code step k value ->
+    value = Nat.shiftr set k.
+Proof.
+  intros elem set code step htrace k.
+  induction k as [|k IH]; intros value hle hvalue.
+  - destruct htrace as [hstart _].
+    pose proof (BetaEntry_functional code step 0 value set
+      hvalue hstart) as hv.
+    rewrite Nat.shiftr_0_r.
+    exact hv.
+  - destruct htrace as [hstart [hsteps hbit]].
+    assert (hk : k <= elem) by lia.
+    destruct (hsteps k hk) as [cur [next [bit hstep]]].
+    assert (hcur : cur = Nat.shiftr set k).
+    {
+      apply IH.
+      - lia.
+      - exact (proj1 hstep).
+    }
+    assert (hvalue_next : value = next).
+    {
+      apply BetaEntry_functional with (code := code) (step := step)
+        (idx := S k).
+      - exact hvalue.
+      - exact (proj1 (proj2 hstep)).
+    }
+    transitivity next.
+    + exact hvalue_next.
+    + transitivity (cur / 2).
+      * symmetry.
+        apply BetaDiv2Step_div_two with
+          (code := code) (step := step) (idx := k) (bit := bit).
+        exact hstep.
+      * rewrite hcur.
+        symmetry.
+        apply shiftr_succ_div2.
+Qed.
+
+Lemma HFMemTrace_mem : forall elem set code step,
+  HFMemTrace elem set code step -> hf_mem elem set.
+Proof.
+  intros elem set code step htrace.
+  destruct htrace as [hstart [hsteps hbitTrace]].
+  destruct hbitTrace as [cur [next hstep]].
+  assert (htraceFull : HFMemTrace elem set code step).
+  {
+    unfold HFMemTrace.
+    split.
+    - exact hstart.
+    - split.
+      + exact hsteps.
+      + exists cur, next.
+        exact hstep.
+  }
+  assert (hcur : cur = Nat.shiftr set elem).
+  {
+    apply (HFMemTrace_entry_shiftr elem set code step htraceFull elem cur).
+    - lia.
+    - exact (proj1 hstep).
+  }
+  pose proof (BetaDiv2Step_bit_one_testbit_zero
+    code step elem cur next hstep) as hlow.
+  rewrite hcur in hlow.
+  unfold hf_mem.
+  rewrite Nat.shiftr_spec' in hlow.
+  replace (0 + elem) with elem in hlow by lia.
+  exact hlow.
+Qed.
+
+Lemma hfMemAt_sound : forall (e : nat -> nat) elem set,
+  Sat natModel e (hfMemAt elem set) -> hf_mem (e elem) (e set).
+Proof.
+  intros e elem set h.
+  destruct (proj1 (hfMemAt_nat_trace e elem set) h) as
+    [code [step htrace]].
+  exact (HFMemTrace_mem (e elem) (e set) code step htrace).
+Qed.
+
+Lemma hfMemAt_complete : forall (e : nat -> nat) elem set,
+  hf_mem (e elem) (e set) -> Sat natModel e (hfMemAt elem set).
+Proof.
+  intros e elem set hmem.
+  destruct (HFMemTrace_exists_of_mem (e elem) (e set) hmem) as
+    [code [step htrace]].
+  apply (proj2 (hfMemAt_nat_trace e elem set)).
+  exists code, step.
+  exact htrace.
+Qed.
+
+Lemma hfMemAt_exact : forall (e : nat -> nat) elem set,
+  Sat natModel e (hfMemAt elem set) <-> hf_mem (e elem) (e set).
+Proof.
+  intros e elem set.
+  split.
+  - apply hfMemAt_sound.
+  - apply hfMemAt_complete.
+Qed.
+
+Lemma hfMemAt_free : forall i elem set,
+  Free i (hfMemAt elem set) -> i = elem \/ i = set.
+Proof.
+  intros i elem set h.
+  unfold hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtConstIdx, betaAtSuccIdx, betaAt,
+    remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt,
+    eqConstAt, betaModTerm in h.
+  simpl in h.
+  lia.
+Qed.
+
+Definition hfUpVarMap (rho : nat -> nat) : nat -> nat :=
+  fun n =>
+    match n with
+    | 0 => 0
+    | S k => S (rho k)
+    end.
+
+Fixpoint hfFormulaAt (rho : nat -> nat) (phi : form) : formula :=
+  match phi with
+  | fMem i j => hfMemAt (rho i) (rho j)
+  | fEq i j => pEq (tVar (rho i)) (tVar (rho j))
+  | fBot => pBot
+  | fImp a b => pImp (hfFormulaAt rho a) (hfFormulaAt rho b)
+  | fAnd a b => pAnd (hfFormulaAt rho a) (hfFormulaAt rho b)
+  | fOr a b => pOr (hfFormulaAt rho a) (hfFormulaAt rho b)
+  | fAll a => pAll (hfFormulaAt (hfUpVarMap rho) a)
+  | fEx a => pEx (hfFormulaAt (hfUpVarMap rho) a)
+  end.
+
+Definition translateHFFormula (phi : form) : formula :=
+  hfFormulaAt (fun n => n) phi.
+
+Lemma hfFormulaAt_exact : forall phi rho v e,
+  (forall n, e (rho n) = v n) ->
+  Sat natModel e (hfFormulaAt rho phi) <->
+    Fol.Sat nat hf_mem v phi.
+Proof.
+  induction phi; simpl; intros rho v e hrho.
+  - change (Sat natModel e (hfMemAt (rho n) (rho n0)) <->
+      hf_mem (v n) (v n0)).
+    rewrite hfMemAt_exact.
+    rewrite hrho, hrho.
+    reflexivity.
+  - split; intro h.
+    + rewrite <- (hrho n), <- (hrho n0).
+      exact h.
+    + rewrite (hrho n), (hrho n0).
+      exact h.
+  - reflexivity.
+  - specialize (IHphi1 rho v e hrho).
+    specialize (IHphi2 rho v e hrho).
+    split; intros h ha.
+    + apply (proj1 IHphi2).
+      apply h.
+      apply (proj2 IHphi1).
+      exact ha.
+    + apply (proj2 IHphi2).
+      apply h.
+      apply (proj1 IHphi1).
+      exact ha.
+  - specialize (IHphi1 rho v e hrho).
+    specialize (IHphi2 rho v e hrho).
+    split; intros h.
+    + split.
+      * apply (proj1 IHphi1). exact (proj1 h).
+      * apply (proj1 IHphi2). exact (proj2 h).
+    + split.
+      * apply (proj2 IHphi1). exact (proj1 h).
+      * apply (proj2 IHphi2). exact (proj2 h).
+  - specialize (IHphi1 rho v e hrho).
+    specialize (IHphi2 rho v e hrho).
+    split; intros h.
+    + destruct h as [h | h].
+      * left. apply (proj1 IHphi1). exact h.
+      * right. apply (proj1 IHphi2). exact h.
+    + destruct h as [h | h].
+      * left. apply (proj2 IHphi1). exact h.
+      * right. apply (proj2 IHphi2). exact h.
+  - split; intros h d.
+    + assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj1 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact (h d).
+    + assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj2 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact (h d).
+  - split; intros h.
+    + destruct h as [d hd].
+      exists d.
+      assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj1 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact hd.
+    + destruct h as [d hd].
+      exists d.
+      assert (hrho' : forall n,
+        scons nat d e (hfUpVarMap rho n) = scons nat d v n).
+      {
+        intros [|n]; simpl.
+        - reflexivity.
+        - apply hrho.
+      }
+      apply (proj2 (IHphi (hfUpVarMap rho)
+        (scons nat d v) (scons nat d e) hrho')).
+      exact hd.
+Qed.
+
+Lemma translateHFFormula_exact : forall phi v,
+  Sat natModel v (translateHFFormula phi) <->
+    Fol.Sat nat hf_mem v phi.
+Proof.
+  intros phi v.
+  unfold translateHFFormula.
+  apply hfFormulaAt_exact.
+  intro n. reflexivity.
+Qed.
+
+Lemma hfFormulaAt_free : forall phi rho i,
+  Free i (hfFormulaAt rho phi) ->
+    exists n, Fol.Free n phi /\ i = rho n.
+Proof.
+  induction phi; simpl; intros rho i h.
+  - destruct (hfMemAt_free i (rho n) (rho n0) h) as [hi | hi].
+    + exists n. split; [left; reflexivity | exact hi].
+    + exists n0. split; [right; reflexivity | exact hi].
+  - destruct h as [h | h].
+    + exists n. split; [left; reflexivity | exact h].
+    + exists n0. split; [right; reflexivity | exact h].
+  - contradiction.
+  - destruct h as [h | h].
+    + destruct (IHphi1 rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHphi2 rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHphi1 rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHphi2 rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHphi1 rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHphi2 rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct (IHphi (hfUpVarMap rho) (S i) h) as [n [hn hi]].
+    destruct n as [|n].
+    + simpl in hi. discriminate hi.
+    + exists n.
+      split.
+      * exact hn.
+      * simpl in hi.
+        injection hi as hi.
+        exact hi.
+  - destruct (IHphi (hfUpVarMap rho) (S i) h) as [n [hn hi]].
+    destruct n as [|n].
+    + simpl in hi. discriminate hi.
+    + exists n.
+      split.
+      * exact hn.
+      * simpl in hi.
+        injection hi as hi.
+        exact hi.
+Qed.
+
+Lemma hfFormulaAt_sentence_of_HF_sentence : forall phi rho,
+  Fol.Sentence phi -> Sentence (hfFormulaAt rho phi).
+Proof.
+  intros phi rho hphi i hi.
+  destruct (hfFormulaAt_free phi rho i hi) as [n [hn _]].
+  exact (hphi n hn).
+Qed.
+
+Lemma translateHFFormula_sentence_of_HF_sentence : forall phi,
+  Fol.Sentence phi -> Sentence (translateHFFormula phi).
+Proof.
+  intros phi hphi.
+  apply hfFormulaAt_sentence_of_HF_sentence.
+  exact hphi.
+Qed.
+
+Lemma translated_HF_axiom_sat_nat : forall phi,
+  HFAx_s phi -> forall v, Sat natModel v (translateHFFormula phi).
+Proof.
+  intros phi hphi v.
+  apply (proj2 (translateHFFormula_exact phi v)).
+  exact (standard_sat_HF v phi hphi).
+Qed.
+
+Lemma translated_HFFin_axiom_sat_nat : forall phi,
+  HFFinAx_s phi -> forall v, Sat natModel v (translateHFFormula phi).
+Proof.
+  intros phi hphi v.
+  apply (proj2 (translateHFFormula_exact phi v)).
+  exact (standard_sat_HFFin v phi hphi).
+Qed.
+
+Lemma translated_HF_axiom_sentence : forall g,
+  HFAx_s g -> Sentence (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply translateHFFormula_sentence_of_HF_sentence.
+  exact (Sentences_HF g hg).
+Qed.
+
+Lemma translated_HFFin_axiom_sentence : forall g,
+  HFFinAx_s g -> Sentence (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply translateHFFormula_sentence_of_HF_sentence.
+  exact (Sentences_HFFin g hg).
+Qed.
+
+Definition translatedHFAx (phi : formula) : Prop :=
+  exists g, HFAx_s g /\ phi = translateHFFormula g.
+
+Definition translatedHFFinAx (phi : formula) : Prop :=
+  exists g, HFFinAx_s g /\ phi = translateHFFormula g.
+
+Lemma translatedHFAx_intro : forall g,
+  HFAx_s g -> translatedHFAx (translateHFFormula g).
+Proof.
+  intros g hg.
+  exists g.
+  split; [exact hg | reflexivity].
+Qed.
+
+Lemma translatedHFFinAx_intro : forall g,
+  HFFinAx_s g -> translatedHFFinAx (translateHFFormula g).
+Proof.
+  intros g hg.
+  exists g.
+  split; [exact hg | reflexivity].
+Qed.
+
+Lemma translatedHFFinAx_of_translatedHFAx : forall phi,
+  translatedHFAx phi -> translatedHFFinAx phi.
+Proof.
+  intros phi [g [hg hphi]].
+  subst phi.
+  apply translatedHFFinAx_intro.
+  apply HFFinAx_s_of_HFAx_s.
+  exact hg.
+Qed.
+
+Lemma Sentences_translatedHFAx : forall phi,
+  translatedHFAx phi -> Sentence phi.
+Proof.
+  intros phi [g [hg hphi]].
+  subst phi.
+  exact (translated_HF_axiom_sentence g hg).
+Qed.
+
+Lemma Sentences_translatedHFFinAx : forall phi,
+  translatedHFFinAx phi -> Sentence phi.
+Proof.
+  intros phi [g [hg hphi]].
+  subst phi.
+  exact (translated_HFFin_axiom_sentence g hg).
+Qed.
+
+Lemma BProv_translatedHFAx_of_HFAx : forall g,
+  HFAx_s g -> BProv translatedHFAx [] (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply BProv_ax.
+  apply translatedHFAx_intro.
+  exact hg.
+Qed.
+
+Lemma BProv_translatedHFFinAx_of_HFFinAx : forall g,
+  HFFinAx_s g -> BProv translatedHFFinAx [] (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply BProv_ax.
+  apply translatedHFFinAx_intro.
+  exact hg.
+Qed.
+
+Lemma BProv_lift_translatedHFAx_to_PA :
+  (forall f, translatedHFAx f -> BProv Ax_s [] f) ->
+  forall f, BProv translatedHFAx [] f -> BProv Ax_s [] f.
+Proof.
+  intros hAx f h.
+  apply (BProv_lift translatedHFAx Ax_s [] [] f h).
+  - intros b hb. exact (hAx b hb).
+  - intros g hg. contradiction.
+Qed.
+
+Lemma BProv_lift_translatedHFFinAx_to_PA :
+  (forall f, translatedHFFinAx f -> BProv Ax_s [] f) ->
+  forall f, BProv translatedHFFinAx [] f -> BProv Ax_s [] f.
+Proof.
+  intros hAx f h.
+  apply (BProv_lift translatedHFFinAx Ax_s [] [] f h).
+  - intros b hb. exact (hAx b hb).
+  - intros g hg. contradiction.
+Qed.
+
+Lemma standard_sat_translatedHFAx : forall e,
+  forall g, translatedHFAx g -> Sat natModel e g.
+Proof.
+  intros e g [phi [hphi hg]].
+  subst g.
+  exact (translated_HF_axiom_sat_nat phi hphi e).
+Qed.
+
+Lemma standard_sat_translatedHFFinAx : forall e,
+  forall g, translatedHFFinAx g -> Sat natModel e g.
+Proof.
+  intros e g [phi [hphi hg]].
+  subst g.
+  exact (translated_HFFin_axiom_sat_nat phi hphi e).
+Qed.
+
+End Formula.
+
+End PA.
+
+Fixpoint termGraphAt (rho : nat -> nat) (out : nat) (t : PA.term) : form :=
+  match t with
+  | PA.tVar n => fEq out (rho n)
+  | PA.tZero => HF_emptyAt out
+  | PA.tSucc a =>
+      fEx (fAnd
+        (termGraphAt (fun n => rho n + 1) 0 a)
+        (HF_succAt (out + 1) 0))
+  | PA.tAdd a b =>
+      fEx (fEx (fAnd
+        (termGraphAt (fun n => rho n + 2) 1 a)
+        (fAnd
+          (termGraphAt (fun n => rho n + 2) 0 b)
+          (addGraphAt (out + 2) 1 0))))
+  | PA.tMul a b =>
+      fEx (fEx (fEx (fAnd
+        (termGraphAt (fun n => rho n + 3) 1 a)
+        (fAnd
+          (termGraphAt (fun n => rho n + 3) 2 b)
+          (fAnd (fEq 0 (out + 3)) mulGraph)))))
+  end.
+
+Lemma termGraphAt_free : forall t rho out i,
+  Free i (termGraphAt rho out t) ->
+    i = out \/ exists n, PA.Term.Free n t /\ i = rho n.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho out i h.
+  - destruct h as [h | h].
+    + left. exact h.
+    + right. exists n. split; [reflexivity | exact h].
+  - left. apply (HF_emptyAt_free i out h).
+  - destruct h as [h | h].
+    + destruct (IHa (fun n => rho n + 1) 0 (S i) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [exact hn | lia].
+    + destruct (HF_succAt_free (S i) (out + 1) 0 h) as [hi | hi]; lia.
+  - destruct h as [h | [h | h]].
+    + destruct (IHa (fun n => rho n + 2) 1 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [left; exact hn | lia].
+    + destruct (IHb (fun n => rho n + 2) 0 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [right; exact hn | lia].
+    + destruct (addGraphAt_free (S (S i)) (out + 2) 1 0 h)
+        as [hi | [hi | hi]]; lia.
+  - destruct h as [h | [h | [h | h]]].
+    + destruct (IHa (fun n => rho n + 3) 1 (S (S (S i))) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [left; exact hn | lia].
+    + destruct (IHb (fun n => rho n + 3) 2 (S (S (S i))) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * right. exists n. split; [right; exact hn | lia].
+    + destruct h as [hi | hi]; lia.
+    + destruct (mulGraph_free (S (S (S i))) h) as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma termGraphAt_map_ext : forall t rho sigma out,
+  (forall n, rho n = sigma n) ->
+  termGraphAt rho out t = termGraphAt sigma out t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho sigma out h; try reflexivity.
+  - rewrite h. reflexivity.
+  - rewrite (IHa (fun n => rho n + 1) (fun n => sigma n + 1) 0).
+    + reflexivity.
+    + intro n. now rewrite h.
+  - rewrite (IHa (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (IHb (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intro n. now rewrite h.
+    + intro n. now rewrite h.
+  - rewrite (IHa (fun n => rho n + 3) (fun n => sigma n + 3) 1).
+    + rewrite (IHb (fun n => rho n + 3) (fun n => sigma n + 3) 2).
+      * reflexivity.
+      * intro n. now rewrite h.
+    + intro n. now rewrite h.
+Qed.
+
+Lemma termGraphAt_substZeroAt_insert_model : forall V
+    (M : FirstOrderAdjunctionModel V) t p k rho out e,
+  out < k ->
+  Sat V (foam_mem V M) e
+    (termGraphAt (substZeroAfterMap p k rho) out
+      (PA.Term.subst (PA.Formula.substZeroAt p) t)) <->
+  Sat V (foam_mem V M) (insertAt (k + p) (foam_empty V M) e)
+    (termGraphAt (substZeroBeforeMap p k rho) out t).
+Proof.
+  intros V M t.
+  induction t as [n | | t IH | a IHa b IHb | a IHa b IHb];
+    intros p k rho out e hout; simpl.
+  - destruct (lt_eq_lt_dec n p) as [[hlt | heq] | hgt].
+    + rewrite (PA.Formula.substZeroAt_lt p n hlt).
+      simpl.
+      rewrite (substZeroAfterMap_lt p k n rho hlt).
+      rewrite (substZeroBeforeMap_lt p k n rho hlt).
+      split; intro h.
+      * change (e out = e (k + n)) in h.
+        change (insertAt (k + p) (foam_empty V M) e out =
+          insertAt (k + p) (foam_empty V M) e (k + n)).
+        rewrite (insertAt_lt V (k + p) out (foam_empty V M) e); [|lia].
+        rewrite (insertAt_lt V (k + p) (k + n) (foam_empty V M) e);
+          [exact h | lia].
+      * change (insertAt (k + p) (foam_empty V M) e out =
+          insertAt (k + p) (foam_empty V M) e (k + n)) in h.
+        change (e out = e (k + n)).
+        rewrite (insertAt_lt V (k + p) out (foam_empty V M) e) in h;
+          [|lia].
+        rewrite (insertAt_lt V (k + p) (k + n) (foam_empty V M) e) in h;
+          [exact h | lia].
+    + subst n.
+      rewrite PA.Formula.substZeroAt_eq.
+      simpl.
+      rewrite substZeroBeforeMap_eq.
+      split; intro h.
+      * pose proof (proj1 (foam_HF_emptyAt_empty V M e out) h)
+          as houtEmpty.
+        change (insertAt (k + p) (foam_empty V M) e out =
+          insertAt (k + p) (foam_empty V M) e (k + p)).
+        rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+          [|lia].
+        rewrite insertAt_eq.
+        exact houtEmpty.
+      * apply (proj2 (foam_HF_emptyAt_empty V M e out)).
+        change (e out = foam_empty V M).
+        change (insertAt (k + p) (foam_empty V M) e out =
+          insertAt (k + p) (foam_empty V M) e (k + p)) in h.
+        rewrite (insertAt_lt V (k + p) out (foam_empty V M) e) in h;
+          [|lia].
+        rewrite insertAt_eq in h.
+        exact h.
+    + rewrite (PA.Formula.substZeroAt_gt p n hgt).
+      simpl.
+      assert (hslot :
+        insertAt (k + p) (foam_empty V M) e
+          (substZeroBeforeMap p k rho n) =
+        e (substZeroAfterMap p k rho (n - 1))).
+      {
+        rewrite (substZeroBeforeMap_gt p k n rho hgt).
+        rewrite (substZeroAfterMap_ge p k (n - 1) rho); [|lia].
+        rewrite (insertAt_gt V (k + p)
+          (rho (n - p - 1) + k + p + 1) (foam_empty V M) e);
+          [|lia].
+        replace (rho (n - p - 1) + k + p + 1 - 1)
+          with (rho (n - 1 - p) + k + p).
+        - reflexivity.
+        - replace (n - p - 1) with (n - 1 - p) by lia.
+          lia.
+      }
+      split; intro h.
+      * change (e out = e (substZeroAfterMap p k rho (n - 1))) in h.
+        change (insertAt (k + p) (foam_empty V M) e out =
+          insertAt (k + p) (foam_empty V M) e
+            (substZeroBeforeMap p k rho n)).
+        rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+          [|lia].
+        rewrite hslot.
+        exact h.
+      * change (insertAt (k + p) (foam_empty V M) e out =
+          insertAt (k + p) (foam_empty V M) e
+            (substZeroBeforeMap p k rho n)) in h.
+        change (e out = e (substZeroAfterMap p k rho (n - 1))).
+        rewrite (insertAt_lt V (k + p) out (foam_empty V M) e) in h;
+          [|lia].
+        rewrite hslot in h.
+        exact h.
+  - split; intro h.
+    + pose proof (proj1 (foam_HF_emptyAt_empty V M e out) h)
+        as houtEmpty.
+      apply (proj2 (foam_HF_emptyAt_empty V M
+        (insertAt (k + p) (foam_empty V M) e) out)).
+      change (insertAt (k + p) (foam_empty V M) e out =
+        foam_empty V M).
+      rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+        [exact houtEmpty | lia].
+    + pose proof (proj1 (foam_HF_emptyAt_empty V M
+        (insertAt (k + p) (foam_empty V M) e) out) h)
+        as houtEmpty.
+      apply (proj2 (foam_HF_emptyAt_empty V M e out)).
+      change (e out = foam_empty V M).
+      change (insertAt (k + p) (foam_empty V M) e out =
+        foam_empty V M) in houtEmpty.
+      rewrite (insertAt_lt V (k + p) out (foam_empty V M) e) in houtEmpty;
+        [exact houtEmpty | lia].
+  - split.
+    + intros [x [ht hs]].
+      exists x.
+      split.
+      * assert (htMap : Sat V (foam_mem V M) (scons V x e)
+          (termGraphAt (substZeroAfterMap p (k + 1) rho) 0
+            (PA.Term.subst (PA.Formula.substZeroAt p) t))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substZeroAt p) t)
+            (fun n => substZeroAfterMap p k rho n + 1)
+            (substZeroAfterMap p (k + 1) rho) 0).
+          - exact ht.
+          - intro n. apply substZeroAfterMap_add.
+        }
+        pose proof (proj1 (IH p (k + 1) rho 0
+          (scons V x e) ltac:(lia)) htMap) as htIns.
+        assert (henv : forall n,
+          scons V x (insertAt (k + p) (foam_empty V M) e) n =
+            insertAt (k + 1 + p) (foam_empty V M) (scons V x e) n).
+        {
+          intro n.
+          rewrite (scons_insertAt_prefix V p k (foam_empty V M) x e n).
+          replace (S k + p) with (k + 1 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p (k + 1) rho) 0 t)
+          (scons V x (insertAt (k + p) (foam_empty V M) e))
+          (insertAt (k + 1 + p) (foam_empty V M) (scons V x e)) henv))
+          htIns as htEnv.
+        rewrite (termGraphAt_map_ext t
+          (substZeroBeforeMap p (k + 1) rho)
+          (fun n => substZeroBeforeMap p k rho n + 1) 0) in htEnv.
+        -- exact htEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * refine (proj1 (Sat_ext_free V (foam_mem V M)
+          (HF_succAt (out + 1) 0)
+          (scons V x e)
+          (scons V x (insertAt (k + p) (foam_empty V M) e)) _) hs).
+        intros i hi.
+        destruct (HF_succAt_free i (out + 1) 0 hi) as [hiout | hi0];
+          subst i.
+        -- replace (out + 1) with (S out) by lia.
+           simpl.
+           rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+             [reflexivity | lia].
+        -- reflexivity.
+    + intros [x [ht hs]].
+      exists x.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substZeroAt p) t)
+          (fun n => substZeroAfterMap p k rho n + 1)
+          (substZeroAfterMap p (k + 1) rho) 0).
+        -- apply (proj2 (IH p (k + 1) rho 0
+             (scons V x e) ltac:(lia))).
+           assert (henv : forall n,
+             scons V x (insertAt (k + p) (foam_empty V M) e) n =
+               insertAt (k + 1 + p) (foam_empty V M) (scons V x e) n).
+           {
+             intro n.
+             rewrite (scons_insertAt_prefix V p k (foam_empty V M) x e n).
+             replace (S k + p) with (k + 1 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 1) rho) 0 t)
+             (scons V x (insertAt (k + p) (foam_empty V M) e))
+             (insertAt (k + 1 + p) (foam_empty V M)
+               (scons V x e)) henv)).
+           rewrite (termGraphAt_map_ext t
+             (substZeroBeforeMap p (k + 1) rho)
+             (fun n => substZeroBeforeMap p k rho n + 1) 0).
+           ++ exact ht.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroAfterMap_add.
+      * refine (proj2 (Sat_ext_free V (foam_mem V M)
+          (HF_succAt (out + 1) 0)
+          (scons V x e)
+          (scons V x (insertAt (k + p) (foam_empty V M) e)) _) hs).
+        intros i hi.
+        destruct (HF_succAt_free i (out + 1) 0 hi) as [hiout | hi0];
+          subst i.
+        -- replace (out + 1) with (S out) by lia.
+           simpl.
+           rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+             [reflexivity | lia].
+        -- reflexivity.
+  - split.
+    + intros [x [y [ha [hb hg]]]].
+      exists x, y.
+      split.
+      * assert (haMap : Sat V (foam_mem V M)
+          (scons V y (scons V x e))
+          (termGraphAt (substZeroAfterMap p (k + 2) rho) 1
+            (PA.Term.subst (PA.Formula.substZeroAt p) a))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substZeroAt p) a)
+            (fun n => substZeroAfterMap p k rho n + 2)
+            (substZeroAfterMap p (k + 2) rho) 1).
+          - exact ha.
+          - intro n. apply substZeroAfterMap_add.
+        }
+        pose proof (proj1 (IHa p (k + 2) rho 1
+          (scons V y (scons V x e)) ltac:(lia)) haMap) as haIns.
+        assert (henv : forall n,
+          scons V y (scons V x (insertAt (k + p) (foam_empty V M) e)) n =
+            insertAt (k + 2 + p) (foam_empty V M)
+              (scons V y (scons V x e)) n).
+        {
+          intro n.
+          rewrite (scons2_insertAt_prefix V p k
+            (foam_empty V M) x y e n).
+          replace (S (S k) + p) with (k + 2 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p (k + 2) rho) 1 a)
+          (scons V y (scons V x (insertAt (k + p) (foam_empty V M) e)))
+          (insertAt (k + 2 + p) (foam_empty V M)
+            (scons V y (scons V x e))) henv)) haIns as haEnv.
+        rewrite (termGraphAt_map_ext a
+          (substZeroBeforeMap p (k + 2) rho)
+          (fun n => substZeroBeforeMap p k rho n + 2) 1) in haEnv.
+        -- exact haEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * split.
+        -- assert (hbMap : Sat V (foam_mem V M)
+            (scons V y (scons V x e))
+            (termGraphAt (substZeroAfterMap p (k + 2) rho) 0
+              (PA.Term.subst (PA.Formula.substZeroAt p) b))).
+           {
+             rewrite <- (termGraphAt_map_ext
+               (PA.Term.subst (PA.Formula.substZeroAt p) b)
+               (fun n => substZeroAfterMap p k rho n + 2)
+               (substZeroAfterMap p (k + 2) rho) 0).
+             - exact hb.
+             - intro n. apply substZeroAfterMap_add.
+           }
+           pose proof (proj1 (IHb p (k + 2) rho 0
+             (scons V y (scons V x e)) ltac:(lia)) hbMap) as hbIns.
+           assert (henv : forall n,
+             scons V y (scons V x
+               (insertAt (k + p) (foam_empty V M) e)) n =
+               insertAt (k + 2 + p) (foam_empty V M)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_insertAt_prefix V p k
+               (foam_empty V M) x y e n).
+             replace (S (S k) + p) with (k + 2 + p) by lia.
+             reflexivity.
+           }
+           pose proof (proj2 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 2) rho) 0 b)
+             (scons V y (scons V x
+               (insertAt (k + p) (foam_empty V M) e)))
+             (insertAt (k + 2 + p) (foam_empty V M)
+               (scons V y (scons V x e))) henv)) hbIns as hbEnv.
+           rewrite (termGraphAt_map_ext b
+             (substZeroBeforeMap p (k + 2) rho)
+             (fun n => substZeroBeforeMap p k rho n + 2) 0) in hbEnv.
+           ++ exact hbEnv.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- refine (proj1 (Sat_ext_free V (foam_mem V M)
+             (addGraphAt (out + 2) 1 0)
+             (scons V y (scons V x e))
+             (scons V y (scons V x
+               (insertAt (k + p) (foam_empty V M) e))) _) hg).
+           intros i hi.
+           destruct (addGraphAt_free i (out + 2) 1 0 hi)
+             as [hiout | [hi1 | hi0]]; subst i.
+           ++ replace (out + 2) with (S (S out)) by lia.
+              simpl.
+              rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+                [reflexivity | lia].
+           ++ reflexivity.
+           ++ reflexivity.
+    + intros [x [y [ha [hb hg]]]].
+      exists x, y.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substZeroAt p) a)
+          (fun n => substZeroAfterMap p k rho n + 2)
+          (substZeroAfterMap p (k + 2) rho) 1).
+        -- apply (proj2 (IHa p (k + 2) rho 1
+             (scons V y (scons V x e)) ltac:(lia))).
+           assert (henv : forall n,
+             scons V y (scons V x
+               (insertAt (k + p) (foam_empty V M) e)) n =
+               insertAt (k + 2 + p) (foam_empty V M)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_insertAt_prefix V p k
+               (foam_empty V M) x y e n).
+             replace (S (S k) + p) with (k + 2 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 2) rho) 1 a)
+             (scons V y (scons V x
+               (insertAt (k + p) (foam_empty V M) e)))
+             (insertAt (k + 2 + p) (foam_empty V M)
+               (scons V y (scons V x e))) henv)).
+           rewrite (termGraphAt_map_ext a
+             (substZeroBeforeMap p (k + 2) rho)
+             (fun n => substZeroBeforeMap p k rho n + 2) 1).
+           ++ exact ha.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroAfterMap_add.
+      * split.
+        -- rewrite (termGraphAt_map_ext
+             (PA.Term.subst (PA.Formula.substZeroAt p) b)
+             (fun n => substZeroAfterMap p k rho n + 2)
+             (substZeroAfterMap p (k + 2) rho) 0).
+           ++ apply (proj2 (IHb p (k + 2) rho 0
+                (scons V y (scons V x e)) ltac:(lia))).
+              assert (henv : forall n,
+                scons V y (scons V x
+                  (insertAt (k + p) (foam_empty V M) e)) n =
+                  insertAt (k + 2 + p) (foam_empty V M)
+                    (scons V y (scons V x e)) n).
+              {
+                intro n.
+                rewrite (scons2_insertAt_prefix V p k
+                  (foam_empty V M) x y e n).
+                replace (S (S k) + p) with (k + 2 + p) by lia.
+                reflexivity.
+              }
+              apply (proj1 (Sat_ext V (foam_mem V M)
+                (termGraphAt (substZeroBeforeMap p (k + 2) rho) 0 b)
+                (scons V y (scons V x
+                  (insertAt (k + p) (foam_empty V M) e)))
+                (insertAt (k + 2 + p) (foam_empty V M)
+                  (scons V y (scons V x e))) henv)).
+              rewrite (termGraphAt_map_ext b
+                (substZeroBeforeMap p (k + 2) rho)
+                (fun n => substZeroBeforeMap p k rho n + 2) 0).
+              ** exact hb.
+              ** intro n. symmetry. apply substZeroBeforeMap_add.
+           ++ intro n. apply substZeroAfterMap_add.
+        -- refine (proj2 (Sat_ext_free V (foam_mem V M)
+             (addGraphAt (out + 2) 1 0)
+             (scons V y (scons V x e))
+             (scons V y (scons V x
+               (insertAt (k + p) (foam_empty V M) e))) _) hg).
+           intros i hi.
+           destruct (addGraphAt_free i (out + 2) 1 0 hi)
+             as [hiout | [hi1 | hi0]]; subst i.
+           ++ replace (out + 2) with (S (S out)) by lia.
+              simpl.
+              rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+                [reflexivity | lia].
+           ++ reflexivity.
+           ++ reflexivity.
+  - split.
+    + intros [y [x [z [ha [hb [hcopy hg]]]]]].
+      exists y, x, z.
+      split.
+      * assert (haMap : Sat V (foam_mem V M)
+          (scons V z (scons V x (scons V y e)))
+          (termGraphAt (substZeroAfterMap p (k + 3) rho) 1
+            (PA.Term.subst (PA.Formula.substZeroAt p) a))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substZeroAt p) a)
+            (fun n => substZeroAfterMap p k rho n + 3)
+            (substZeroAfterMap p (k + 3) rho) 1).
+          - exact ha.
+          - intro n. apply substZeroAfterMap_add.
+        }
+        pose proof (proj1 (IHa p (k + 3) rho 1
+          (scons V z (scons V x (scons V y e))) ltac:(lia)) haMap)
+          as haIns.
+        assert (henv : forall n,
+          scons V z (scons V x (scons V y
+            (insertAt (k + p) (foam_empty V M) e))) n =
+            insertAt (k + 3 + p) (foam_empty V M)
+              (scons V z (scons V x (scons V y e))) n).
+        {
+          intro n.
+          rewrite (scons3_insertAt_prefix V p k
+            (foam_empty V M) y x z e n).
+          replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p (k + 3) rho) 1 a)
+          (scons V z (scons V x (scons V y
+            (insertAt (k + p) (foam_empty V M) e))))
+          (insertAt (k + 3 + p) (foam_empty V M)
+            (scons V z (scons V x (scons V y e)))) henv)) haIns as haEnv.
+        rewrite (termGraphAt_map_ext a
+          (substZeroBeforeMap p (k + 3) rho)
+          (fun n => substZeroBeforeMap p k rho n + 3) 1) in haEnv.
+        -- exact haEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * split.
+        -- assert (hbMap : Sat V (foam_mem V M)
+            (scons V z (scons V x (scons V y e)))
+            (termGraphAt (substZeroAfterMap p (k + 3) rho) 2
+              (PA.Term.subst (PA.Formula.substZeroAt p) b))).
+           {
+             rewrite <- (termGraphAt_map_ext
+               (PA.Term.subst (PA.Formula.substZeroAt p) b)
+               (fun n => substZeroAfterMap p k rho n + 3)
+               (substZeroAfterMap p (k + 3) rho) 2).
+             - exact hb.
+             - intro n. apply substZeroAfterMap_add.
+           }
+           pose proof (proj1 (IHb p (k + 3) rho 2
+             (scons V z (scons V x (scons V y e))) ltac:(lia)) hbMap)
+             as hbIns.
+           assert (henv : forall n,
+             scons V z (scons V x (scons V y
+               (insertAt (k + p) (foam_empty V M) e))) n =
+               insertAt (k + 3 + p) (foam_empty V M)
+                 (scons V z (scons V x (scons V y e))) n).
+           {
+             intro n.
+             rewrite (scons3_insertAt_prefix V p k
+               (foam_empty V M) y x z e n).
+             replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+             reflexivity.
+           }
+           pose proof (proj2 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 3) rho) 2 b)
+             (scons V z (scons V x (scons V y
+               (insertAt (k + p) (foam_empty V M) e))))
+             (insertAt (k + 3 + p) (foam_empty V M)
+               (scons V z (scons V x (scons V y e)))) henv)) hbIns
+             as hbEnv.
+           rewrite (termGraphAt_map_ext b
+             (substZeroBeforeMap p (k + 3) rho)
+             (fun n => substZeroBeforeMap p k rho n + 3) 2) in hbEnv.
+           ++ exact hbEnv.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- split.
+           ++ replace (out + 3) with (S (S (S out))) in hcopy by lia.
+              simpl in hcopy.
+              replace (out + 3) with (S (S (S out))) by lia.
+              simpl.
+              rewrite (insertAt_lt V (k + p) out (foam_empty V M) e);
+                [exact hcopy | lia].
+           ++ refine (proj1 (Sat_ext_free V (foam_mem V M) mulGraph
+                (scons V z (scons V x (scons V y e)))
+                (scons V z (scons V x (scons V y
+                  (insertAt (k + p) (foam_empty V M) e)))) _) hg).
+              intros i hi.
+              destruct (mulGraph_free i hi) as [hi0 | [hi1 | hi2]];
+                subst i; reflexivity.
+    + intros [y [x [z [ha [hb [hcopy hg]]]]]].
+      exists y, x, z.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substZeroAt p) a)
+          (fun n => substZeroAfterMap p k rho n + 3)
+          (substZeroAfterMap p (k + 3) rho) 1).
+        -- apply (proj2 (IHa p (k + 3) rho 1
+             (scons V z (scons V x (scons V y e))) ltac:(lia))).
+           assert (henv : forall n,
+             scons V z (scons V x (scons V y
+               (insertAt (k + p) (foam_empty V M) e))) n =
+               insertAt (k + 3 + p) (foam_empty V M)
+                 (scons V z (scons V x (scons V y e))) n).
+           {
+             intro n.
+             rewrite (scons3_insertAt_prefix V p k
+               (foam_empty V M) y x z e n).
+             replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 3) rho) 1 a)
+             (scons V z (scons V x (scons V y
+               (insertAt (k + p) (foam_empty V M) e))))
+             (insertAt (k + 3 + p) (foam_empty V M)
+               (scons V z (scons V x (scons V y e)))) henv)).
+           rewrite (termGraphAt_map_ext a
+             (substZeroBeforeMap p (k + 3) rho)
+             (fun n => substZeroBeforeMap p k rho n + 3) 1).
+           ++ exact ha.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroAfterMap_add.
+      * split.
+        -- rewrite (termGraphAt_map_ext
+             (PA.Term.subst (PA.Formula.substZeroAt p) b)
+             (fun n => substZeroAfterMap p k rho n + 3)
+             (substZeroAfterMap p (k + 3) rho) 2).
+           ++ apply (proj2 (IHb p (k + 3) rho 2
+                (scons V z (scons V x (scons V y e))) ltac:(lia))).
+              assert (henv : forall n,
+                scons V z (scons V x (scons V y
+                  (insertAt (k + p) (foam_empty V M) e))) n =
+                  insertAt (k + 3 + p) (foam_empty V M)
+                    (scons V z (scons V x (scons V y e))) n).
+              {
+                intro n.
+                rewrite (scons3_insertAt_prefix V p k
+                  (foam_empty V M) y x z e n).
+                replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+                reflexivity.
+              }
+              apply (proj1 (Sat_ext V (foam_mem V M)
+                (termGraphAt (substZeroBeforeMap p (k + 3) rho) 2 b)
+                (scons V z (scons V x (scons V y
+                  (insertAt (k + p) (foam_empty V M) e))))
+                (insertAt (k + 3 + p) (foam_empty V M)
+                  (scons V z (scons V x (scons V y e)))) henv)).
+              rewrite (termGraphAt_map_ext b
+                (substZeroBeforeMap p (k + 3) rho)
+                (fun n => substZeroBeforeMap p k rho n + 3) 2).
+              ** exact hb.
+              ** intro n. symmetry. apply substZeroBeforeMap_add.
+           ++ intro n. apply substZeroAfterMap_add.
+        -- split.
+           ++ replace (out + 3) with (S (S (S out))) in hcopy by lia.
+              simpl in hcopy.
+              replace (out + 3) with (S (S (S out))) by lia.
+              simpl.
+              change (z = insertAt (k + p) (foam_empty V M) e out) in hcopy.
+              rewrite (insertAt_lt V (k + p) out (foam_empty V M) e) in hcopy;
+                [exact hcopy | lia].
+           ++ refine (proj2 (Sat_ext_free V (foam_mem V M) mulGraph
+                (scons V z (scons V x (scons V y e)))
+                (scons V z (scons V x (scons V y
+                  (insertAt (k + p) (foam_empty V M) e)))) _) hg).
+              intros i hi.
+              destruct (mulGraph_free i hi) as [hi0 | [hi1 | hi2]];
+                subst i; reflexivity.
+Qed.
+
+Lemma termGraphAt_substSuccAt_replace_model : forall V
+    (M : FirstOrderAdjunctionModel V) t p k rho out e,
+  out < k ->
+  Sat V (foam_mem V M) e
+    (termGraphAt (substZeroBeforeMap p k rho) out
+      (PA.Term.subst (PA.Formula.substSuccAt p) t)) <->
+  Sat V (foam_mem V M) (succReplaceAt M (k + p) e)
+    (termGraphAt (substZeroBeforeMap p k rho) out t).
+Proof.
+  intros V M t.
+  induction t as [n | | t IH | a IHa b IHb | a IHa b IHb];
+    intros p k rho out e hout; simpl.
+  - destruct (Nat.eq_dec n p) as [heq | hne].
+    + subst n.
+      rewrite PA.Formula.substSuccAt_eq.
+      simpl.
+      rewrite substZeroBeforeMap_eq.
+      assert (houtSlot : out <> k + p) by lia.
+      split.
+      * intros [x [hx hs]].
+        assert (hxVal : x = e (k + p)).
+        {
+          change (x = scons V x e (k + p + 1)) in hx.
+          replace (k + p + 1) with (S (k + p)) in hx by lia.
+          simpl in hx.
+          exact hx.
+        }
+        pose proof (proj1 (foam_HF_succAt_spec V M
+          (scons V x e) (out + 1) 0) hs) as hsVal.
+        replace (out + 1) with (S out) in hsVal by lia.
+        simpl in hsVal.
+        change (e out = foam_adjoin V M x x) in hsVal.
+        change (succReplaceAt M (k + p) e out =
+          succReplaceAt M (k + p) e (k + p)).
+        rewrite (succReplaceAt_ne V M (k + p) out e houtSlot).
+        rewrite succReplaceAt_eq.
+        rewrite hsVal, hxVal.
+        reflexivity.
+      * intro h.
+        change (succReplaceAt M (k + p) e out =
+          succReplaceAt M (k + p) e (k + p)) in h.
+        rewrite (succReplaceAt_ne V M (k + p) out e houtSlot) in h.
+        rewrite succReplaceAt_eq in h.
+        exists (e (k + p)).
+        split.
+        -- change (e (k + p) = scons V (e (k + p)) e (k + p + 1)).
+           replace (k + p + 1) with (S (k + p)) by lia.
+           reflexivity.
+        -- apply (proj2 (foam_HF_succAt_spec V M
+             (scons V (e (k + p)) e) (out + 1) 0)).
+           replace (out + 1) with (S out) by lia.
+           simpl.
+           exact h.
+    + rewrite (PA.Formula.substSuccAt_ne p n hne).
+      simpl.
+      assert (houtSlot : out <> k + p) by lia.
+      assert (hnSlot : substZeroBeforeMap p k rho n <> k + p).
+      {
+        apply substZeroBeforeMap_ne_replaced_slot.
+        exact hne.
+      }
+      split; intro h.
+      * change (e out = e (substZeroBeforeMap p k rho n)) in h.
+        change (succReplaceAt M (k + p) e out =
+          succReplaceAt M (k + p) e (substZeroBeforeMap p k rho n)).
+        rewrite (succReplaceAt_ne V M (k + p) out e houtSlot).
+        rewrite (succReplaceAt_ne V M (k + p)
+          (substZeroBeforeMap p k rho n) e hnSlot).
+        exact h.
+      * change (succReplaceAt M (k + p) e out =
+          succReplaceAt M (k + p) e (substZeroBeforeMap p k rho n)) in h.
+        change (e out = e (substZeroBeforeMap p k rho n)).
+        rewrite (succReplaceAt_ne V M (k + p) out e houtSlot) in h.
+        rewrite (succReplaceAt_ne V M (k + p)
+          (substZeroBeforeMap p k rho n) e hnSlot) in h.
+        exact h.
+  - assert (houtSlot : out <> k + p) by lia.
+    split; intro h.
+    + pose proof (proj1 (foam_HF_emptyAt_empty V M e out) h)
+        as houtEmpty.
+      apply (proj2 (foam_HF_emptyAt_empty V M
+        (succReplaceAt M (k + p) e) out)).
+      change (succReplaceAt M (k + p) e out = foam_empty V M).
+      rewrite (succReplaceAt_ne V M (k + p) out e houtSlot).
+      exact houtEmpty.
+    + pose proof (proj1 (foam_HF_emptyAt_empty V M
+        (succReplaceAt M (k + p) e) out) h) as houtEmpty.
+      apply (proj2 (foam_HF_emptyAt_empty V M e out)).
+      change (e out = foam_empty V M).
+      change (succReplaceAt M (k + p) e out = foam_empty V M)
+        in houtEmpty.
+      rewrite (succReplaceAt_ne V M (k + p) out e houtSlot) in houtEmpty.
+      exact houtEmpty.
+  - split.
+    + intros [x [ht hs]].
+      exists x.
+      split.
+      * assert (htMap : Sat V (foam_mem V M) (scons V x e)
+          (termGraphAt (substZeroBeforeMap p (k + 1) rho) 0
+            (PA.Term.subst (PA.Formula.substSuccAt p) t))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substSuccAt p) t)
+            (fun n => substZeroBeforeMap p k rho n + 1)
+            (substZeroBeforeMap p (k + 1) rho) 0).
+          - exact ht.
+          - intro n. apply substZeroBeforeMap_add.
+        }
+        pose proof (proj1 (IH p (k + 1) rho 0
+          (scons V x e) ltac:(lia)) htMap) as htRep.
+        assert (henv : forall n,
+          scons V x (succReplaceAt M (k + p) e) n =
+            succReplaceAt M (k + 1 + p) (scons V x e) n).
+        {
+          intro n.
+          rewrite (scons_succReplaceAt_prefix V M p k x e n).
+          replace (S k + p) with (k + 1 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p (k + 1) rho) 0 t)
+          (scons V x (succReplaceAt M (k + p) e))
+          (succReplaceAt M (k + 1 + p) (scons V x e)) henv))
+          htRep as htEnv.
+        rewrite (termGraphAt_map_ext t
+          (substZeroBeforeMap p (k + 1) rho)
+          (fun n => substZeroBeforeMap p k rho n + 1) 0) in htEnv.
+        -- exact htEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * refine (proj1 (Sat_ext_free V (foam_mem V M)
+          (HF_succAt (out + 1) 0)
+          (scons V x e)
+          (scons V x (succReplaceAt M (k + p) e)) _) hs).
+        intros i hi.
+        destruct (HF_succAt_free i (out + 1) 0 hi) as [hiout | hi0];
+          subst i.
+        -- replace (out + 1) with (S out) by lia.
+           simpl.
+           rewrite (succReplaceAt_ne V M (k + p) out e); [reflexivity | lia].
+        -- reflexivity.
+    + intros [x [ht hs]].
+      exists x.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substSuccAt p) t)
+          (fun n => substZeroBeforeMap p k rho n + 1)
+          (substZeroBeforeMap p (k + 1) rho) 0).
+        -- apply (proj2 (IH p (k + 1) rho 0
+             (scons V x e) ltac:(lia))).
+           assert (henv : forall n,
+             scons V x (succReplaceAt M (k + p) e) n =
+               succReplaceAt M (k + 1 + p) (scons V x e) n).
+           {
+             intro n.
+             rewrite (scons_succReplaceAt_prefix V M p k x e n).
+             replace (S k + p) with (k + 1 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 1) rho) 0 t)
+             (scons V x (succReplaceAt M (k + p) e))
+             (succReplaceAt M (k + 1 + p) (scons V x e)) henv)).
+           rewrite (termGraphAt_map_ext t
+             (substZeroBeforeMap p (k + 1) rho)
+             (fun n => substZeroBeforeMap p k rho n + 1) 0).
+           ++ exact ht.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroBeforeMap_add.
+      * refine (proj2 (Sat_ext_free V (foam_mem V M)
+          (HF_succAt (out + 1) 0)
+          (scons V x e)
+          (scons V x (succReplaceAt M (k + p) e)) _) hs).
+        intros i hi.
+        destruct (HF_succAt_free i (out + 1) 0 hi) as [hiout | hi0];
+          subst i.
+        -- replace (out + 1) with (S out) by lia.
+           simpl.
+           rewrite (succReplaceAt_ne V M (k + p) out e); [reflexivity | lia].
+        -- reflexivity.
+  - split.
+    + intros [x [y [ha [hb hg]]]].
+      exists x, y.
+      split.
+      * assert (haMap : Sat V (foam_mem V M)
+          (scons V y (scons V x e))
+          (termGraphAt (substZeroBeforeMap p (k + 2) rho) 1
+            (PA.Term.subst (PA.Formula.substSuccAt p) a))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substSuccAt p) a)
+            (fun n => substZeroBeforeMap p k rho n + 2)
+            (substZeroBeforeMap p (k + 2) rho) 1).
+          - exact ha.
+          - intro n. apply substZeroBeforeMap_add.
+        }
+        pose proof (proj1 (IHa p (k + 2) rho 1
+          (scons V y (scons V x e)) ltac:(lia)) haMap) as haRep.
+        assert (henv : forall n,
+          scons V y (scons V x (succReplaceAt M (k + p) e)) n =
+            succReplaceAt M (k + 2 + p)
+              (scons V y (scons V x e)) n).
+        {
+          intro n.
+          rewrite (scons2_succReplaceAt_prefix V M p k x y e n).
+          replace (S (S k) + p) with (k + 2 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p (k + 2) rho) 1 a)
+          (scons V y (scons V x (succReplaceAt M (k + p) e)))
+          (succReplaceAt M (k + 2 + p)
+            (scons V y (scons V x e))) henv)) haRep as haEnv.
+        rewrite (termGraphAt_map_ext a
+          (substZeroBeforeMap p (k + 2) rho)
+          (fun n => substZeroBeforeMap p k rho n + 2) 1) in haEnv.
+        -- exact haEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * split.
+        -- assert (hbMap : Sat V (foam_mem V M)
+            (scons V y (scons V x e))
+            (termGraphAt (substZeroBeforeMap p (k + 2) rho) 0
+              (PA.Term.subst (PA.Formula.substSuccAt p) b))).
+           {
+             rewrite <- (termGraphAt_map_ext
+               (PA.Term.subst (PA.Formula.substSuccAt p) b)
+               (fun n => substZeroBeforeMap p k rho n + 2)
+               (substZeroBeforeMap p (k + 2) rho) 0).
+             - exact hb.
+             - intro n. apply substZeroBeforeMap_add.
+           }
+           pose proof (proj1 (IHb p (k + 2) rho 0
+             (scons V y (scons V x e)) ltac:(lia)) hbMap) as hbRep.
+           assert (henv : forall n,
+             scons V y (scons V x (succReplaceAt M (k + p) e)) n =
+               succReplaceAt M (k + 2 + p)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_succReplaceAt_prefix V M p k x y e n).
+             replace (S (S k) + p) with (k + 2 + p) by lia.
+             reflexivity.
+           }
+           pose proof (proj2 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 2) rho) 0 b)
+             (scons V y (scons V x (succReplaceAt M (k + p) e)))
+             (succReplaceAt M (k + 2 + p)
+               (scons V y (scons V x e))) henv)) hbRep as hbEnv.
+           rewrite (termGraphAt_map_ext b
+             (substZeroBeforeMap p (k + 2) rho)
+             (fun n => substZeroBeforeMap p k rho n + 2) 0) in hbEnv.
+           ++ exact hbEnv.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- refine (proj1 (Sat_ext_free V (foam_mem V M)
+             (addGraphAt (out + 2) 1 0)
+             (scons V y (scons V x e))
+             (scons V y (scons V x (succReplaceAt M (k + p) e))) _) hg).
+           intros i hi.
+           destruct (addGraphAt_free i (out + 2) 1 0 hi)
+             as [hiout | [hi1 | hi0]]; subst i.
+           ++ replace (out + 2) with (S (S out)) by lia.
+              simpl.
+              rewrite (succReplaceAt_ne V M (k + p) out e);
+                [reflexivity | lia].
+           ++ reflexivity.
+           ++ reflexivity.
+    + intros [x [y [ha [hb hg]]]].
+      exists x, y.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substSuccAt p) a)
+          (fun n => substZeroBeforeMap p k rho n + 2)
+          (substZeroBeforeMap p (k + 2) rho) 1).
+        -- apply (proj2 (IHa p (k + 2) rho 1
+             (scons V y (scons V x e)) ltac:(lia))).
+           assert (henv : forall n,
+             scons V y (scons V x (succReplaceAt M (k + p) e)) n =
+               succReplaceAt M (k + 2 + p)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_succReplaceAt_prefix V M p k x y e n).
+             replace (S (S k) + p) with (k + 2 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 2) rho) 1 a)
+             (scons V y (scons V x (succReplaceAt M (k + p) e)))
+             (succReplaceAt M (k + 2 + p)
+               (scons V y (scons V x e))) henv)).
+           rewrite (termGraphAt_map_ext a
+             (substZeroBeforeMap p (k + 2) rho)
+             (fun n => substZeroBeforeMap p k rho n + 2) 1).
+           ++ exact ha.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroBeforeMap_add.
+      * split.
+        -- rewrite (termGraphAt_map_ext
+             (PA.Term.subst (PA.Formula.substSuccAt p) b)
+             (fun n => substZeroBeforeMap p k rho n + 2)
+             (substZeroBeforeMap p (k + 2) rho) 0).
+           ++ apply (proj2 (IHb p (k + 2) rho 0
+                (scons V y (scons V x e)) ltac:(lia))).
+              assert (henv : forall n,
+                scons V y (scons V x (succReplaceAt M (k + p) e)) n =
+                  succReplaceAt M (k + 2 + p)
+                    (scons V y (scons V x e)) n).
+              {
+                intro n.
+                rewrite (scons2_succReplaceAt_prefix V M p k x y e n).
+                replace (S (S k) + p) with (k + 2 + p) by lia.
+                reflexivity.
+              }
+              apply (proj1 (Sat_ext V (foam_mem V M)
+                (termGraphAt (substZeroBeforeMap p (k + 2) rho) 0 b)
+                (scons V y (scons V x (succReplaceAt M (k + p) e)))
+                (succReplaceAt M (k + 2 + p)
+                  (scons V y (scons V x e))) henv)).
+              rewrite (termGraphAt_map_ext b
+                (substZeroBeforeMap p (k + 2) rho)
+                (fun n => substZeroBeforeMap p k rho n + 2) 0).
+              ** exact hb.
+              ** intro n. symmetry. apply substZeroBeforeMap_add.
+           ++ intro n. apply substZeroBeforeMap_add.
+        -- refine (proj2 (Sat_ext_free V (foam_mem V M)
+             (addGraphAt (out + 2) 1 0)
+             (scons V y (scons V x e))
+             (scons V y (scons V x (succReplaceAt M (k + p) e))) _) hg).
+           intros i hi.
+           destruct (addGraphAt_free i (out + 2) 1 0 hi)
+             as [hiout | [hi1 | hi0]]; subst i.
+           ++ replace (out + 2) with (S (S out)) by lia.
+              simpl.
+              rewrite (succReplaceAt_ne V M (k + p) out e);
+                [reflexivity | lia].
+           ++ reflexivity.
+           ++ reflexivity.
+  - split.
+    + intros [y [x [z [ha [hb [hcopy hg]]]]]].
+      exists y, x, z.
+      split.
+      * assert (haMap : Sat V (foam_mem V M)
+          (scons V z (scons V x (scons V y e)))
+          (termGraphAt (substZeroBeforeMap p (k + 3) rho) 1
+            (PA.Term.subst (PA.Formula.substSuccAt p) a))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substSuccAt p) a)
+            (fun n => substZeroBeforeMap p k rho n + 3)
+            (substZeroBeforeMap p (k + 3) rho) 1).
+          - exact ha.
+          - intro n. apply substZeroBeforeMap_add.
+        }
+        pose proof (proj1 (IHa p (k + 3) rho 1
+          (scons V z (scons V x (scons V y e))) ltac:(lia)) haMap)
+          as haRep.
+        assert (henv : forall n,
+          scons V z (scons V x (scons V y (succReplaceAt M (k + p) e))) n =
+            succReplaceAt M (k + 3 + p)
+              (scons V z (scons V x (scons V y e))) n).
+        {
+          intro n.
+          rewrite (scons3_succReplaceAt_prefix V M p k y x z e n).
+          replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p (k + 3) rho) 1 a)
+          (scons V z (scons V x (scons V y (succReplaceAt M (k + p) e))))
+          (succReplaceAt M (k + 3 + p)
+            (scons V z (scons V x (scons V y e)))) henv)) haRep as haEnv.
+        rewrite (termGraphAt_map_ext a
+          (substZeroBeforeMap p (k + 3) rho)
+          (fun n => substZeroBeforeMap p k rho n + 3) 1) in haEnv.
+        -- exact haEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * split.
+        -- assert (hbMap : Sat V (foam_mem V M)
+            (scons V z (scons V x (scons V y e)))
+            (termGraphAt (substZeroBeforeMap p (k + 3) rho) 2
+              (PA.Term.subst (PA.Formula.substSuccAt p) b))).
+           {
+             rewrite <- (termGraphAt_map_ext
+               (PA.Term.subst (PA.Formula.substSuccAt p) b)
+               (fun n => substZeroBeforeMap p k rho n + 3)
+               (substZeroBeforeMap p (k + 3) rho) 2).
+             - exact hb.
+             - intro n. apply substZeroBeforeMap_add.
+           }
+           pose proof (proj1 (IHb p (k + 3) rho 2
+             (scons V z (scons V x (scons V y e))) ltac:(lia)) hbMap)
+             as hbRep.
+           assert (henv : forall n,
+             scons V z (scons V x (scons V y (succReplaceAt M (k + p) e))) n =
+               succReplaceAt M (k + 3 + p)
+                 (scons V z (scons V x (scons V y e))) n).
+           {
+             intro n.
+             rewrite (scons3_succReplaceAt_prefix V M p k y x z e n).
+             replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+             reflexivity.
+           }
+           pose proof (proj2 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 3) rho) 2 b)
+             (scons V z (scons V x (scons V y
+               (succReplaceAt M (k + p) e))))
+             (succReplaceAt M (k + 3 + p)
+               (scons V z (scons V x (scons V y e)))) henv)) hbRep
+             as hbEnv.
+           rewrite (termGraphAt_map_ext b
+             (substZeroBeforeMap p (k + 3) rho)
+             (fun n => substZeroBeforeMap p k rho n + 3) 2) in hbEnv.
+           ++ exact hbEnv.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- split.
+           ++ replace (out + 3) with (S (S (S out))) in hcopy by lia.
+              simpl in hcopy.
+              replace (out + 3) with (S (S (S out))) by lia.
+              simpl.
+              rewrite (succReplaceAt_ne V M (k + p) out e);
+                [exact hcopy | lia].
+           ++ refine (proj1 (Sat_ext_free V (foam_mem V M) mulGraph
+                (scons V z (scons V x (scons V y e)))
+                (scons V z (scons V x (scons V y
+                  (succReplaceAt M (k + p) e)))) _) hg).
+              intros i hi.
+              destruct (mulGraph_free i hi) as [hi0 | [hi1 | hi2]];
+                subst i; reflexivity.
+    + intros [y [x [z [ha [hb [hcopy hg]]]]]].
+      exists y, x, z.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substSuccAt p) a)
+          (fun n => substZeroBeforeMap p k rho n + 3)
+          (substZeroBeforeMap p (k + 3) rho) 1).
+        -- apply (proj2 (IHa p (k + 3) rho 1
+             (scons V z (scons V x (scons V y e))) ltac:(lia))).
+           assert (henv : forall n,
+             scons V z (scons V x (scons V y
+               (succReplaceAt M (k + p) e))) n =
+               succReplaceAt M (k + 3 + p)
+                 (scons V z (scons V x (scons V y e))) n).
+           {
+             intro n.
+             rewrite (scons3_succReplaceAt_prefix V M p k y x z e n).
+             replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p (k + 3) rho) 1 a)
+             (scons V z (scons V x (scons V y
+               (succReplaceAt M (k + p) e))))
+             (succReplaceAt M (k + 3 + p)
+               (scons V z (scons V x (scons V y e)))) henv)).
+           rewrite (termGraphAt_map_ext a
+             (substZeroBeforeMap p (k + 3) rho)
+             (fun n => substZeroBeforeMap p k rho n + 3) 1).
+           ++ exact ha.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroBeforeMap_add.
+      * split.
+        -- rewrite (termGraphAt_map_ext
+             (PA.Term.subst (PA.Formula.substSuccAt p) b)
+             (fun n => substZeroBeforeMap p k rho n + 3)
+             (substZeroBeforeMap p (k + 3) rho) 2).
+           ++ apply (proj2 (IHb p (k + 3) rho 2
+                (scons V z (scons V x (scons V y e))) ltac:(lia))).
+              assert (henv : forall n,
+                scons V z (scons V x (scons V y
+                  (succReplaceAt M (k + p) e))) n =
+                  succReplaceAt M (k + 3 + p)
+                    (scons V z (scons V x (scons V y e))) n).
+              {
+                intro n.
+                rewrite (scons3_succReplaceAt_prefix V M p k y x z e n).
+                replace (S (S (S k)) + p) with (k + 3 + p) by lia.
+                reflexivity.
+              }
+              apply (proj1 (Sat_ext V (foam_mem V M)
+                (termGraphAt (substZeroBeforeMap p (k + 3) rho) 2 b)
+                (scons V z (scons V x (scons V y
+                  (succReplaceAt M (k + p) e))))
+                (succReplaceAt M (k + 3 + p)
+                  (scons V z (scons V x (scons V y e)))) henv)).
+              rewrite (termGraphAt_map_ext b
+                (substZeroBeforeMap p (k + 3) rho)
+                (fun n => substZeroBeforeMap p k rho n + 3) 2).
+              ** exact hb.
+              ** intro n. symmetry. apply substZeroBeforeMap_add.
+           ++ intro n. apply substZeroBeforeMap_add.
+        -- split.
+           ++ replace (out + 3) with (S (S (S out))) in hcopy by lia.
+              simpl in hcopy.
+              replace (out + 3) with (S (S (S out))) by lia.
+              simpl.
+              change (z = succReplaceAt M (k + p) e out) in hcopy.
+              rewrite (succReplaceAt_ne V M (k + p) out e) in hcopy;
+                [exact hcopy | lia].
+           ++ refine (proj2 (Sat_ext_free V (foam_mem V M) mulGraph
+                (scons V z (scons V x (scons V y e)))
+                (scons V z (scons V x (scons V y
+                  (succReplaceAt M (k + p) e)))) _) hg).
+              intros i hi.
+              destruct (mulGraph_free i hi) as [hi0 | [hi1 | hi2]];
+                subst i; reflexivity.
+Qed.
+
+Lemma termGraphAt_exact : forall t rho out v e,
+  (forall n, e (rho n) = ordinal_code (v n)) ->
+  (Sat nat hf_mem e (termGraphAt rho out t) <->
+    e out = ordinal_code (PA.Term.eval PA.natModel v t)).
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    intros rho out v e hrho; simpl.
+  - split.
+    + intro h.
+      transitivity (e (rho n)); [ exact h | exact (hrho n) ].
+    + intro h.
+      transitivity (ordinal_code (v n)); [ exact h | symmetry; exact (hrho n) ].
+  - split.
+    + intro h.
+      pose proof (proj1 (HF_emptyAt_empty ackermannHFModel e out) h) as hzero.
+      change (e out = hf_empty) in hzero.
+      exact hzero.
+    + intro h.
+      apply (proj2 (HF_emptyAt_empty ackermannHFModel e out)).
+      change (e out = hf_empty).
+      exact h.
+  - split.
+    + intro h.
+      destruct h as [x [ht hs]].
+      assert (hrho' : forall n,
+        scons nat x e (rho n + 1) = ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 1) with (S (rho n)) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (IHa (fun n => rho n + 1) 0 v
+        (scons nat x e) hrho') ht) as htval.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in htval.
+      pose proof (proj1 (HF_succAt_spec ackermannHFModel
+        (scons nat x e) (out + 1) 0) hs) as hsval.
+      replace (out + 1) with (S out) in hsval by lia.
+      simpl in hsval.
+      change (e out = hf_adjoin x x) in hsval.
+      rewrite hsval, htval.
+      reflexivity.
+    + intro h.
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      exists x.
+      split.
+      * assert (hrho' : forall n,
+          scons nat x e (rho n + 1) = ordinal_code (v n)).
+        {
+          intro n.
+          replace (rho n + 1) with (S (rho n)) by lia.
+          simpl.
+          exact (hrho n).
+        }
+        apply (proj2 (IHa (fun n => rho n + 1) 0 v
+          (scons nat x e) hrho')).
+        unfold x. reflexivity.
+      * apply (proj2 (HF_succAt_spec ackermannHFModel
+          (scons nat x e) (out + 1) 0)).
+        replace (out + 1) with (S out) by lia.
+        simpl.
+        rewrite h.
+        unfold x.
+        reflexivity.
+  - split.
+    + intro h.
+      destruct h as [x [y [ha [hb hadd]]]].
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (IHa (fun n => rho n + 2) 1 v
+        (scons nat y (scons nat x e)) hrho') ha) as hx.
+      pose proof (proj1 (IHb (fun n => rho n + 2) 0 v
+        (scons nat y (scons nat x e)) hrho') hb) as hy.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in hx.
+      change (y = ordinal_code (PA.Term.eval PA.natModel v b)) in hy.
+      pose proof (addGraphAt_value_of_ordinal_inputs (out + 2) 1 0
+        (PA.Term.eval PA.natModel v a) (PA.Term.eval PA.natModel v b)
+        (scons nat y (scons nat x e)) hx hy hadd) as hout.
+      replace (out + 2) with (S (S out)) in hout by lia.
+      simpl in hout.
+      change (e out = ordinal_code
+        (PA.Term.eval PA.natModel v a + PA.Term.eval PA.natModel v b))
+        in hout.
+      exact hout.
+    + intro h.
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      pose (y := ordinal_code (PA.Term.eval PA.natModel v b)).
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      exists x, y.
+      split.
+      * apply (proj2 (IHa (fun n => rho n + 2) 1 v
+          (scons nat y (scons nat x e)) hrho')).
+        unfold x. reflexivity.
+      * split.
+        -- apply (proj2 (IHb (fun n => rho n + 2) 0 v
+            (scons nat y (scons nat x e)) hrho')).
+           unfold y. reflexivity.
+        -- apply (addGraphAt_ordinal_code (out + 2) 1 0
+            (PA.Term.eval PA.natModel v a)
+            (PA.Term.eval PA.natModel v b)
+            (scons nat y (scons nat x e))).
+           ++ replace (out + 2) with (S (S out)) by lia.
+              simpl.
+              change (e out = ordinal_code
+                (PA.Term.eval PA.natModel v a +
+                 PA.Term.eval PA.natModel v b)).
+              exact h.
+           ++ unfold x. reflexivity.
+           ++ unfold y. reflexivity.
+  - split.
+    + intro h.
+      destruct h as [y [x [z [ha [hb [hcopy hmul]]]]]].
+      assert (hrho' : forall n,
+        scons nat z (scons nat x (scons nat y e)) (rho n + 3) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 3) with (S (S (S (rho n)))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (IHa (fun n => rho n + 3) 1 v
+        (scons nat z (scons nat x (scons nat y e))) hrho') ha) as hx.
+      pose proof (proj1 (IHb (fun n => rho n + 3) 2 v
+        (scons nat z (scons nat x (scons nat y e))) hrho') hb) as hy.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in hx.
+      change (y = ordinal_code (PA.Term.eval PA.natModel v b)) in hy.
+      pose proof (mulGraph_value_of_ordinal_inputs
+        (PA.Term.eval PA.natModel v a) (PA.Term.eval PA.natModel v b)
+        (scons nat z (scons nat x (scons nat y e))) hx hy hmul) as hz.
+      replace (out + 3) with (S (S (S out))) in hcopy by lia.
+      simpl in hcopy.
+      rewrite hcopy in hz.
+      change (e out = ordinal_code
+        (PA.Term.eval PA.natModel v a * PA.Term.eval PA.natModel v b))
+        in hz.
+      exact hz.
+    + intro h.
+      pose (y := ordinal_code (PA.Term.eval PA.natModel v b)).
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      pose (z := ordinal_code
+        (PA.Term.eval PA.natModel v a * PA.Term.eval PA.natModel v b)).
+      assert (hrho' : forall n,
+        scons nat z (scons nat x (scons nat y e)) (rho n + 3) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 3) with (S (S (S (rho n)))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      exists y, x, z.
+      split.
+      * apply (proj2 (IHa (fun n => rho n + 3) 1 v
+          (scons nat z (scons nat x (scons nat y e))) hrho')).
+        unfold x. reflexivity.
+      * split.
+        -- apply (proj2 (IHb (fun n => rho n + 3) 2 v
+            (scons nat z (scons nat x (scons nat y e))) hrho')).
+           unfold y. reflexivity.
+        -- split.
+           ++ replace (out + 3) with (S (S (S out))) by lia.
+              simpl.
+              unfold z.
+              symmetry.
+              change (e out = ordinal_code
+                (PA.Term.eval PA.natModel v a *
+                 PA.Term.eval PA.natModel v b)) in h.
+              exact h.
+           ++ unfold z, x, y.
+              apply (mulGraph_ordinal_code
+                (PA.Term.eval PA.natModel v a)
+                (PA.Term.eval PA.natModel v b) e).
+Qed.
+
+Fixpoint formulaAt (rho : nat -> nat) (phi : PA.formula) : form :=
+  match phi with
+  | PA.pEq a b =>
+      fEx (fEx (fAnd
+        (termGraphAt (fun n => rho n + 2) 1 a)
+        (fAnd
+          (termGraphAt (fun n => rho n + 2) 0 b)
+          (fEq 1 0))))
+  | PA.pBot => fBot
+  | PA.pImp a b => fImp (formulaAt rho a) (formulaAt rho b)
+  | PA.pAnd a b => fAnd (formulaAt rho a) (formulaAt rho b)
+  | PA.pOr a b => fOr (formulaAt rho a) (formulaAt rho b)
+  | PA.pAll a => fAll (fImp domainForm (formulaAt (upVarMap rho) a))
+  | PA.pEx a => fEx (fAnd domainForm (formulaAt (upVarMap rho) a))
+  end.
+
+Lemma formulaAt_map_ext : forall phi rho sigma,
+  (forall n, rho n = sigma n) ->
+  formulaAt rho phi = formulaAt sigma phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho sigma h;
+      try reflexivity.
+  - rewrite (termGraphAt_map_ext a
+      (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (termGraphAt_map_ext b
+        (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intro n. now rewrite h.
+    + intro n. now rewrite h.
+  - now rewrite (IHa rho sigma h), (IHb rho sigma h).
+  - now rewrite (IHa rho sigma h), (IHb rho sigma h).
+  - now rewrite (IHa rho sigma h), (IHb rho sigma h).
+  - assert (hup : forall n, upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n]; simpl; [reflexivity | now rewrite h].
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+  - assert (hup : forall n, upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n]; simpl; [reflexivity | now rewrite h].
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+Qed.
+
+Lemma formulaAt_substZeroAt_insert_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi p rho e,
+  Sat V (foam_mem V M) e
+    (formulaAt (substZeroAfterMap p 0 rho)
+      (PA.Formula.subst (PA.Formula.substZeroAt p) phi)) <->
+  Sat V (foam_mem V M) (insertAt p (foam_empty V M) e)
+    (formulaAt (substZeroBeforeMap p 0 rho) phi).
+Proof.
+  intros V M phi.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IH | a IH]; intros p rho e; simpl.
+  - split.
+    + intros [x [y [ha [hb heq]]]].
+      exists x, y.
+      split.
+      * assert (haMap : Sat V (foam_mem V M)
+          (scons V y (scons V x e))
+          (termGraphAt (substZeroAfterMap p 2 rho) 1
+            (PA.Term.subst (PA.Formula.substZeroAt p) a))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substZeroAt p) a)
+            (fun n => substZeroAfterMap p 0 rho n + 2)
+            (substZeroAfterMap p 2 rho) 1).
+          - exact ha.
+          - intro n. apply substZeroAfterMap_add.
+        }
+        pose proof (proj1 (termGraphAt_substZeroAt_insert_model
+          V M a p 2 rho 1 (scons V y (scons V x e)) ltac:(lia))
+          haMap) as haIns.
+        assert (henv : forall n,
+          scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+            insertAt (2 + p) (foam_empty V M)
+              (scons V y (scons V x e)) n).
+        {
+          intro n.
+          rewrite (scons2_insertAt V p
+            (foam_empty V M) x y e n).
+          replace (S (S p)) with (2 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p 2 rho) 1 a)
+          (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+          (insertAt (2 + p) (foam_empty V M)
+            (scons V y (scons V x e))) henv)) haIns as haEnv.
+        rewrite (termGraphAt_map_ext a
+          (substZeroBeforeMap p 2 rho)
+          (fun n => substZeroBeforeMap p 0 rho n + 2) 1) in haEnv.
+        -- exact haEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * split.
+        -- assert (hbMap : Sat V (foam_mem V M)
+            (scons V y (scons V x e))
+            (termGraphAt (substZeroAfterMap p 2 rho) 0
+              (PA.Term.subst (PA.Formula.substZeroAt p) b))).
+           {
+             rewrite <- (termGraphAt_map_ext
+               (PA.Term.subst (PA.Formula.substZeroAt p) b)
+               (fun n => substZeroAfterMap p 0 rho n + 2)
+               (substZeroAfterMap p 2 rho) 0).
+             - exact hb.
+             - intro n. apply substZeroAfterMap_add.
+           }
+           pose proof (proj1 (termGraphAt_substZeroAt_insert_model
+             V M b p 2 rho 0 (scons V y (scons V x e)) ltac:(lia))
+             hbMap) as hbIns.
+           assert (henv : forall n,
+             scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+               insertAt (2 + p) (foam_empty V M)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_insertAt V p
+               (foam_empty V M) x y e n).
+             replace (S (S p)) with (2 + p) by lia.
+             reflexivity.
+           }
+           pose proof (proj2 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p 2 rho) 0 b)
+             (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+             (insertAt (2 + p) (foam_empty V M)
+               (scons V y (scons V x e))) henv)) hbIns as hbEnv.
+           rewrite (termGraphAt_map_ext b
+             (substZeroBeforeMap p 2 rho)
+             (fun n => substZeroBeforeMap p 0 rho n + 2) 0) in hbEnv.
+           ++ exact hbEnv.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- exact heq.
+    + intros [x [y [ha [hb heq]]]].
+      exists x, y.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substZeroAt p) a)
+          (fun n => substZeroAfterMap p 0 rho n + 2)
+          (substZeroAfterMap p 2 rho) 1).
+        -- apply (proj2 (termGraphAt_substZeroAt_insert_model
+             V M a p 2 rho 1 (scons V y (scons V x e)) ltac:(lia))).
+           assert (henv : forall n,
+             scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+               insertAt (2 + p) (foam_empty V M)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_insertAt V p
+               (foam_empty V M) x y e n).
+             replace (S (S p)) with (2 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p 2 rho) 1 a)
+             (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+             (insertAt (2 + p) (foam_empty V M)
+               (scons V y (scons V x e))) henv)).
+           rewrite (termGraphAt_map_ext a
+             (substZeroBeforeMap p 2 rho)
+             (fun n => substZeroBeforeMap p 0 rho n + 2) 1).
+           ++ exact ha.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroAfterMap_add.
+      * split.
+        -- rewrite (termGraphAt_map_ext
+             (PA.Term.subst (PA.Formula.substZeroAt p) b)
+             (fun n => substZeroAfterMap p 0 rho n + 2)
+             (substZeroAfterMap p 2 rho) 0).
+           ++ apply (proj2 (termGraphAt_substZeroAt_insert_model
+                V M b p 2 rho 0 (scons V y (scons V x e)) ltac:(lia))).
+              assert (henv : forall n,
+                scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+                  insertAt (2 + p) (foam_empty V M)
+                    (scons V y (scons V x e)) n).
+              {
+                intro n.
+                rewrite (scons2_insertAt V p
+                  (foam_empty V M) x y e n).
+                replace (S (S p)) with (2 + p) by lia.
+                reflexivity.
+              }
+              apply (proj1 (Sat_ext V (foam_mem V M)
+                (termGraphAt (substZeroBeforeMap p 2 rho) 0 b)
+                (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+                (insertAt (2 + p) (foam_empty V M)
+                  (scons V y (scons V x e))) henv)).
+              rewrite (termGraphAt_map_ext b
+                (substZeroBeforeMap p 2 rho)
+                (fun n => substZeroBeforeMap p 0 rho n + 2) 0).
+              ** exact hb.
+              ** intro n. symmetry. apply substZeroBeforeMap_add.
+           ++ intro n. apply substZeroAfterMap_add.
+        -- exact heq.
+  - reflexivity.
+  - split; intros h ha.
+    + apply (proj1 (IHb p rho e)).
+      apply h.
+      apply (proj2 (IHa p rho e)).
+      exact ha.
+    + apply (proj2 (IHb p rho e)).
+      apply h.
+      apply (proj1 (IHa p rho e)).
+      exact ha.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHa p rho e)). exact ha.
+      * apply (proj1 (IHb p rho e)). exact hb.
+    + split.
+      * apply (proj2 (IHa p rho e)). exact ha.
+      * apply (proj2 (IHb p rho e)). exact hb.
+  - split; intros h.
+    + destruct h as [ha | hb].
+      * left. apply (proj1 (IHa p rho e)). exact ha.
+      * right. apply (proj1 (IHb p rho e)). exact hb.
+    + destruct h as [ha | hb].
+      * left. apply (proj2 (IHa p rho e)). exact ha.
+      * right. apply (proj2 (IHb p rho e)). exact hb.
+  - split; intros hall d hdDomain.
+    + assert (hdDomain' :
+        Sat V (foam_mem V M) (scons V d e) domainForm).
+      {
+        apply (proj1 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      }
+      pose proof (hall d hdDomain') as hbody.
+      rewrite PA.Formula.upSubst_substZeroAt in hbody.
+      assert (hbodyNorm : Sat V (foam_mem V M) (scons V d e)
+        (formulaAt (substZeroAfterMap (S p) 0 rho)
+          (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a))).
+      {
+        rewrite <- (formulaAt_map_ext
+          (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+          (upVarMap (substZeroAfterMap p 0 rho))
+          (substZeroAfterMap (S p) 0 rho)).
+        - exact hbody.
+        - apply upVarMap_substZeroAfterMap_zero.
+      }
+      pose proof (proj1 (IH (S p) rho (scons V d e)) hbodyNorm)
+        as hbodyIns.
+      assert (henv : forall n,
+        scons V d (insertAt p (foam_empty V M) e) n =
+          insertAt (S p) (foam_empty V M) (scons V d e) n).
+      {
+        intro n.
+        apply scons_insertAt.
+      }
+      pose proof (proj2 (Sat_ext V (foam_mem V M)
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+        (scons V d (insertAt p (foam_empty V M) e))
+        (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+        hbodyIns as hbodyEnv.
+      rewrite (formulaAt_map_ext a
+        (substZeroBeforeMap (S p) 0 rho)
+        (upVarMap (substZeroBeforeMap p 0 rho))) in hbodyEnv.
+      * exact hbodyEnv.
+      * intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+    + assert (hdDomain' :
+        Sat V (foam_mem V M)
+          (scons V d (insertAt p (foam_empty V M) e)) domainForm).
+      {
+        apply (proj2 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      }
+      pose proof (hall d hdDomain') as hbody.
+      assert (hbodyNorm : Sat V (foam_mem V M)
+        (scons V d (insertAt p (foam_empty V M) e))
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)).
+      {
+        rewrite (formulaAt_map_ext a
+          (substZeroBeforeMap (S p) 0 rho)
+          (upVarMap (substZeroBeforeMap p 0 rho))).
+        - exact hbody.
+        - intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+      }
+      assert (henv : forall n,
+        scons V d (insertAt p (foam_empty V M) e) n =
+          insertAt (S p) (foam_empty V M) (scons V d e) n).
+      {
+        intro n.
+        apply scons_insertAt.
+      }
+      pose proof (proj1 (Sat_ext V (foam_mem V M)
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+        (scons V d (insertAt p (foam_empty V M) e))
+        (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+        hbodyNorm as hbodyIns.
+      pose proof (proj2 (IH (S p) rho (scons V d e)) hbodyIns)
+        as hbodyAfter.
+      rewrite PA.Formula.upSubst_substZeroAt.
+      rewrite (formulaAt_map_ext
+        (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+        (upVarMap (substZeroAfterMap p 0 rho))
+        (substZeroAfterMap (S p) 0 rho)).
+      * exact hbodyAfter.
+      * apply upVarMap_substZeroAfterMap_zero.
+  - split.
+    + intros [d [hdDomain hbody]].
+      exists d.
+      split.
+      * apply (proj2 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      * rewrite PA.Formula.upSubst_substZeroAt in hbody.
+        assert (hbodyNorm : Sat V (foam_mem V M) (scons V d e)
+          (formulaAt (substZeroAfterMap (S p) 0 rho)
+            (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a))).
+        {
+          rewrite <- (formulaAt_map_ext
+            (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+            (upVarMap (substZeroAfterMap p 0 rho))
+            (substZeroAfterMap (S p) 0 rho)).
+          - exact hbody.
+          - apply upVarMap_substZeroAfterMap_zero.
+        }
+        pose proof (proj1 (IH (S p) rho (scons V d e)) hbodyNorm)
+          as hbodyIns.
+        assert (henv : forall n,
+          scons V d (insertAt p (foam_empty V M) e) n =
+            insertAt (S p) (foam_empty V M) (scons V d e) n).
+        {
+          intro n.
+          apply scons_insertAt.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+          (scons V d (insertAt p (foam_empty V M) e))
+          (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+          hbodyIns as hbodyEnv.
+        rewrite (formulaAt_map_ext a
+          (substZeroBeforeMap (S p) 0 rho)
+          (upVarMap (substZeroBeforeMap p 0 rho))) in hbodyEnv.
+        -- exact hbodyEnv.
+        -- intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+    + intros [d [hdDomain hbody]].
+      exists d.
+      split.
+      * apply (proj1 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      * assert (hbodyNorm : Sat V (foam_mem V M)
+          (scons V d (insertAt p (foam_empty V M) e))
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)).
+        {
+          rewrite (formulaAt_map_ext a
+            (substZeroBeforeMap (S p) 0 rho)
+            (upVarMap (substZeroBeforeMap p 0 rho))).
+          - exact hbody.
+          - intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+        }
+        assert (henv : forall n,
+          scons V d (insertAt p (foam_empty V M) e) n =
+            insertAt (S p) (foam_empty V M) (scons V d e) n).
+        {
+          intro n.
+          apply scons_insertAt.
+        }
+        pose proof (proj1 (Sat_ext V (foam_mem V M)
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+          (scons V d (insertAt p (foam_empty V M) e))
+          (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+          hbodyNorm as hbodyIns.
+        pose proof (proj2 (IH (S p) rho (scons V d e)) hbodyIns)
+          as hbodyAfter.
+        rewrite PA.Formula.upSubst_substZeroAt.
+        rewrite (formulaAt_map_ext
+          (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+          (upVarMap (substZeroAfterMap p 0 rho))
+          (substZeroAfterMap (S p) 0 rho)).
+        -- exact hbodyAfter.
+        -- apply upVarMap_substZeroAfterMap_zero.
+Qed.
+
+Lemma formulaAt_substZero_insert_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi rho e,
+  Sat V (foam_mem V M) e
+    (formulaAt rho (PA.Formula.subst PA.Formula.substZero phi)) <->
+  Sat V (foam_mem V M) (insertAt 0 (foam_empty V M) e)
+    (formulaAt (upVarMap rho) phi).
+Proof.
+  intros V M phi rho e.
+  split; intro h.
+  - assert (hNormL : Sat V (foam_mem V M) e
+      (formulaAt (substZeroAfterMap 0 0 rho)
+        (PA.Formula.subst (PA.Formula.substZeroAt 0) phi))).
+    {
+      rewrite PA.Formula.substZeroAt_zero.
+      rewrite (formulaAt_map_ext
+        (PA.Formula.subst PA.Formula.substZero phi)
+        (substZeroAfterMap 0 0 rho) rho).
+      - exact h.
+      - apply substZeroAfterMap_zero_zero.
+    }
+    pose proof (proj1 (formulaAt_substZeroAt_insert_model
+      V M phi 0 rho e) hNormL) as hNormR.
+    rewrite (formulaAt_map_ext phi
+      (substZeroBeforeMap 0 0 rho) (upVarMap rho)) in hNormR.
+    + exact hNormR.
+    + apply substZeroBeforeMap_zero_zero.
+  - assert (hNormR : Sat V (foam_mem V M)
+      (insertAt 0 (foam_empty V M) e)
+      (formulaAt (substZeroBeforeMap 0 0 rho) phi)).
+    {
+      rewrite (formulaAt_map_ext phi
+        (substZeroBeforeMap 0 0 rho) (upVarMap rho)).
+      - exact h.
+      - apply substZeroBeforeMap_zero_zero.
+    }
+    pose proof (proj2 (formulaAt_substZeroAt_insert_model
+      V M phi 0 rho e) hNormR) as hNormL.
+    rewrite PA.Formula.substZeroAt_zero in hNormL.
+    rewrite (formulaAt_map_ext
+      (PA.Formula.subst PA.Formula.substZero phi)
+      (substZeroAfterMap 0 0 rho) rho) in hNormL.
+    + exact hNormL.
+    + apply substZeroAfterMap_zero_zero.
+Qed.
+
+Lemma formulaAt_substZero_scons_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi rho e,
+  Sat V (foam_mem V M) e
+    (formulaAt rho (PA.Formula.subst PA.Formula.substZero phi)) <->
+  Sat V (foam_mem V M) (scons V (foam_empty V M) e)
+    (formulaAt (upVarMap rho) phi).
+Proof.
+  intros V M phi rho e.
+  eapply iff_trans.
+  - apply formulaAt_substZero_insert_model.
+  - apply Sat_ext.
+    intro n.
+    apply insertAt_zero.
+Qed.
+
+Lemma formulaAt_substSuccAt_replace_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi p rho e,
+  Sat V (foam_mem V M) e
+    (formulaAt (substZeroBeforeMap p 0 rho)
+      (PA.Formula.subst (PA.Formula.substSuccAt p) phi)) <->
+  Sat V (foam_mem V M) (succReplaceAt M p e)
+    (formulaAt (substZeroBeforeMap p 0 rho) phi).
+Proof.
+  intros V M phi.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IH | a IH]; intros p rho e; simpl.
+  - split.
+    + intros [x [y [ha [hb heq]]]].
+      exists x, y.
+      split.
+      * assert (haMap : Sat V (foam_mem V M)
+          (scons V y (scons V x e))
+          (termGraphAt (substZeroBeforeMap p 2 rho) 1
+            (PA.Term.subst (PA.Formula.substSuccAt p) a))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substSuccAt p) a)
+            (fun n => substZeroBeforeMap p 0 rho n + 2)
+            (substZeroBeforeMap p 2 rho) 1).
+          - exact ha.
+          - intro n. apply substZeroBeforeMap_add.
+        }
+        pose proof (proj1 (termGraphAt_substSuccAt_replace_model
+          V M a p 2 rho 1 (scons V y (scons V x e)) ltac:(lia))
+          haMap) as haRep.
+        assert (henv : forall n,
+          scons V y (scons V x (succReplaceAt M p e)) n =
+            succReplaceAt M (2 + p) (scons V y (scons V x e)) n).
+        {
+          intro n.
+          rewrite (scons2_succReplaceAt V M p x y e n).
+          replace (S (S p)) with (2 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p 2 rho) 1 a)
+          (scons V y (scons V x (succReplaceAt M p e)))
+          (succReplaceAt M (2 + p) (scons V y (scons V x e))) henv))
+          haRep as haEnv.
+        rewrite (termGraphAt_map_ext a
+          (substZeroBeforeMap p 2 rho)
+          (fun n => substZeroBeforeMap p 0 rho n + 2) 1) in haEnv.
+        -- exact haEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * split.
+        -- assert (hbMap : Sat V (foam_mem V M)
+            (scons V y (scons V x e))
+            (termGraphAt (substZeroBeforeMap p 2 rho) 0
+              (PA.Term.subst (PA.Formula.substSuccAt p) b))).
+           {
+             rewrite <- (termGraphAt_map_ext
+               (PA.Term.subst (PA.Formula.substSuccAt p) b)
+               (fun n => substZeroBeforeMap p 0 rho n + 2)
+               (substZeroBeforeMap p 2 rho) 0).
+             - exact hb.
+             - intro n. apply substZeroBeforeMap_add.
+           }
+           pose proof (proj1 (termGraphAt_substSuccAt_replace_model
+             V M b p 2 rho 0 (scons V y (scons V x e)) ltac:(lia))
+             hbMap) as hbRep.
+           assert (henv : forall n,
+             scons V y (scons V x (succReplaceAt M p e)) n =
+               succReplaceAt M (2 + p) (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_succReplaceAt V M p x y e n).
+             replace (S (S p)) with (2 + p) by lia.
+             reflexivity.
+           }
+           pose proof (proj2 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p 2 rho) 0 b)
+             (scons V y (scons V x (succReplaceAt M p e)))
+             (succReplaceAt M (2 + p) (scons V y (scons V x e))) henv))
+             hbRep as hbEnv.
+           rewrite (termGraphAt_map_ext b
+             (substZeroBeforeMap p 2 rho)
+             (fun n => substZeroBeforeMap p 0 rho n + 2) 0) in hbEnv.
+           ++ exact hbEnv.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- exact heq.
+    + intros [x [y [ha [hb heq]]]].
+      exists x, y.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substSuccAt p) a)
+          (fun n => substZeroBeforeMap p 0 rho n + 2)
+          (substZeroBeforeMap p 2 rho) 1).
+        -- apply (proj2 (termGraphAt_substSuccAt_replace_model
+             V M a p 2 rho 1 (scons V y (scons V x e)) ltac:(lia))).
+           assert (henv : forall n,
+             scons V y (scons V x (succReplaceAt M p e)) n =
+               succReplaceAt M (2 + p) (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_succReplaceAt V M p x y e n).
+             replace (S (S p)) with (2 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p 2 rho) 1 a)
+             (scons V y (scons V x (succReplaceAt M p e)))
+             (succReplaceAt M (2 + p)
+               (scons V y (scons V x e))) henv)).
+           rewrite (termGraphAt_map_ext a
+             (substZeroBeforeMap p 2 rho)
+             (fun n => substZeroBeforeMap p 0 rho n + 2) 1).
+           ++ exact ha.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroBeforeMap_add.
+      * split.
+        -- rewrite (termGraphAt_map_ext
+             (PA.Term.subst (PA.Formula.substSuccAt p) b)
+             (fun n => substZeroBeforeMap p 0 rho n + 2)
+             (substZeroBeforeMap p 2 rho) 0).
+           ++ apply (proj2 (termGraphAt_substSuccAt_replace_model
+                V M b p 2 rho 0 (scons V y (scons V x e)) ltac:(lia))).
+              assert (henv : forall n,
+                scons V y (scons V x (succReplaceAt M p e)) n =
+                  succReplaceAt M (2 + p)
+                    (scons V y (scons V x e)) n).
+              {
+                intro n.
+                rewrite (scons2_succReplaceAt V M p x y e n).
+                replace (S (S p)) with (2 + p) by lia.
+                reflexivity.
+              }
+              apply (proj1 (Sat_ext V (foam_mem V M)
+                (termGraphAt (substZeroBeforeMap p 2 rho) 0 b)
+                (scons V y (scons V x (succReplaceAt M p e)))
+                (succReplaceAt M (2 + p)
+                  (scons V y (scons V x e))) henv)).
+              rewrite (termGraphAt_map_ext b
+                (substZeroBeforeMap p 2 rho)
+                (fun n => substZeroBeforeMap p 0 rho n + 2) 0).
+              ** exact hb.
+              ** intro n. symmetry. apply substZeroBeforeMap_add.
+           ++ intro n. apply substZeroBeforeMap_add.
+        -- exact heq.
+  - reflexivity.
+  - split; intros h ha.
+    + apply (proj1 (IHb p rho e)).
+      apply h.
+      apply (proj2 (IHa p rho e)).
+      exact ha.
+    + apply (proj2 (IHb p rho e)).
+      apply h.
+      apply (proj1 (IHa p rho e)).
+      exact ha.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHa p rho e)). exact ha.
+      * apply (proj1 (IHb p rho e)). exact hb.
+    + split.
+      * apply (proj2 (IHa p rho e)). exact ha.
+      * apply (proj2 (IHb p rho e)). exact hb.
+  - split; intros h.
+    + destruct h as [ha | hb].
+      * left. apply (proj1 (IHa p rho e)). exact ha.
+      * right. apply (proj1 (IHb p rho e)). exact hb.
+    + destruct h as [ha | hb].
+      * left. apply (proj2 (IHa p rho e)). exact ha.
+      * right. apply (proj2 (IHb p rho e)). exact hb.
+  - split; intros hall d hdDomain.
+    + assert (hdDomain' :
+        Sat V (foam_mem V M) (scons V d e) domainForm).
+      {
+        apply (proj1 (domainForm_scons_succReplaceAt V M p d e)).
+        exact hdDomain.
+      }
+      pose proof (hall d hdDomain') as hbody.
+      rewrite PA.Formula.upSubst_substSuccAt in hbody.
+      assert (hbodyNorm : Sat V (foam_mem V M) (scons V d e)
+        (formulaAt (substZeroBeforeMap (S p) 0 rho)
+          (PA.Formula.subst (PA.Formula.substSuccAt (S p)) a))).
+      {
+        rewrite <- (formulaAt_map_ext
+          (PA.Formula.subst (PA.Formula.substSuccAt (S p)) a)
+          (upVarMap (substZeroBeforeMap p 0 rho))
+          (substZeroBeforeMap (S p) 0 rho)).
+        - exact hbody.
+        - apply upVarMap_substZeroBeforeMap_zero.
+      }
+      pose proof (proj1 (IH (S p) rho (scons V d e)) hbodyNorm)
+        as hbodyRep.
+      assert (henv : forall n,
+        scons V d (succReplaceAt M p e) n =
+          succReplaceAt M (S p) (scons V d e) n).
+      {
+        intro n.
+        apply scons_succReplaceAt.
+      }
+      pose proof (proj2 (Sat_ext V (foam_mem V M)
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+        (scons V d (succReplaceAt M p e))
+        (succReplaceAt M (S p) (scons V d e)) henv))
+        hbodyRep as hbodyEnv.
+      rewrite (formulaAt_map_ext a
+        (substZeroBeforeMap (S p) 0 rho)
+        (upVarMap (substZeroBeforeMap p 0 rho))) in hbodyEnv.
+      * exact hbodyEnv.
+      * intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+    + assert (hdDomain' :
+        Sat V (foam_mem V M) (scons V d (succReplaceAt M p e))
+          domainForm).
+      {
+        apply (proj2 (domainForm_scons_succReplaceAt V M p d e)).
+        exact hdDomain.
+      }
+      pose proof (hall d hdDomain') as hbody.
+      assert (hbodyNorm : Sat V (foam_mem V M)
+        (scons V d (succReplaceAt M p e))
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)).
+      {
+        rewrite (formulaAt_map_ext a
+          (substZeroBeforeMap (S p) 0 rho)
+          (upVarMap (substZeroBeforeMap p 0 rho))).
+        - exact hbody.
+        - intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+      }
+      assert (henv : forall n,
+        scons V d (succReplaceAt M p e) n =
+          succReplaceAt M (S p) (scons V d e) n).
+      {
+        intro n.
+        apply scons_succReplaceAt.
+      }
+      pose proof (proj1 (Sat_ext V (foam_mem V M)
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+        (scons V d (succReplaceAt M p e))
+        (succReplaceAt M (S p) (scons V d e)) henv))
+        hbodyNorm as hbodyRep.
+      pose proof (proj2 (IH (S p) rho (scons V d e)) hbodyRep)
+        as hbodyBefore.
+      rewrite PA.Formula.upSubst_substSuccAt.
+      rewrite (formulaAt_map_ext
+        (PA.Formula.subst (PA.Formula.substSuccAt (S p)) a)
+        (upVarMap (substZeroBeforeMap p 0 rho))
+        (substZeroBeforeMap (S p) 0 rho)).
+      * exact hbodyBefore.
+      * apply upVarMap_substZeroBeforeMap_zero.
+  - split.
+    + intros [d [hdDomain hbody]].
+      exists d.
+      split.
+      * apply (proj2 (domainForm_scons_succReplaceAt V M p d e)).
+        exact hdDomain.
+      * rewrite PA.Formula.upSubst_substSuccAt in hbody.
+        assert (hbodyNorm : Sat V (foam_mem V M) (scons V d e)
+          (formulaAt (substZeroBeforeMap (S p) 0 rho)
+            (PA.Formula.subst (PA.Formula.substSuccAt (S p)) a))).
+        {
+          rewrite <- (formulaAt_map_ext
+            (PA.Formula.subst (PA.Formula.substSuccAt (S p)) a)
+            (upVarMap (substZeroBeforeMap p 0 rho))
+            (substZeroBeforeMap (S p) 0 rho)).
+          - exact hbody.
+          - apply upVarMap_substZeroBeforeMap_zero.
+        }
+        pose proof (proj1 (IH (S p) rho (scons V d e)) hbodyNorm)
+          as hbodyRep.
+        assert (henv : forall n,
+          scons V d (succReplaceAt M p e) n =
+            succReplaceAt M (S p) (scons V d e) n).
+        {
+          intro n.
+          apply scons_succReplaceAt.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+          (scons V d (succReplaceAt M p e))
+          (succReplaceAt M (S p) (scons V d e)) henv))
+          hbodyRep as hbodyEnv.
+        rewrite (formulaAt_map_ext a
+          (substZeroBeforeMap (S p) 0 rho)
+          (upVarMap (substZeroBeforeMap p 0 rho))) in hbodyEnv.
+        -- exact hbodyEnv.
+        -- intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+    + intros [d [hdDomain hbody]].
+      exists d.
+      split.
+      * apply (proj1 (domainForm_scons_succReplaceAt V M p d e)).
+        exact hdDomain.
+      * assert (hbodyNorm : Sat V (foam_mem V M)
+          (scons V d (succReplaceAt M p e))
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)).
+        {
+          rewrite (formulaAt_map_ext a
+            (substZeroBeforeMap (S p) 0 rho)
+            (upVarMap (substZeroBeforeMap p 0 rho))).
+          - exact hbody.
+          - intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+        }
+        assert (henv : forall n,
+          scons V d (succReplaceAt M p e) n =
+            succReplaceAt M (S p) (scons V d e) n).
+        {
+          intro n.
+          apply scons_succReplaceAt.
+        }
+        pose proof (proj1 (Sat_ext V (foam_mem V M)
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+          (scons V d (succReplaceAt M p e))
+          (succReplaceAt M (S p) (scons V d e)) henv))
+          hbodyNorm as hbodyRep.
+        pose proof (proj2 (IH (S p) rho (scons V d e)) hbodyRep)
+          as hbodyBefore.
+        rewrite PA.Formula.upSubst_substSuccAt.
+        rewrite (formulaAt_map_ext
+          (PA.Formula.subst (PA.Formula.substSuccAt (S p)) a)
+          (upVarMap (substZeroBeforeMap p 0 rho))
+          (substZeroBeforeMap (S p) 0 rho)).
+        -- exact hbodyBefore.
+        -- apply upVarMap_substZeroBeforeMap_zero.
+Qed.
+
+Lemma formulaAt_substSuccVar_scons_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi rho a e,
+  Sat V (foam_mem V M) (scons V a e)
+    (formulaAt (upVarMap rho)
+      (PA.Formula.subst PA.Formula.substSuccVar phi)) <->
+  Sat V (foam_mem V M) (scons V (foam_adjoin V M a a) e)
+    (formulaAt (upVarMap rho) phi).
+Proof.
+  intros V M phi rho a e.
+  split; intro h.
+  - assert (hNormL : Sat V (foam_mem V M) (scons V a e)
+      (formulaAt (substZeroBeforeMap 0 0 rho)
+        (PA.Formula.subst (PA.Formula.substSuccAt 0) phi))).
+    {
+      rewrite PA.Formula.substSuccAt_zero.
+      rewrite (formulaAt_map_ext
+        (PA.Formula.subst PA.Formula.substSuccVar phi)
+        (substZeroBeforeMap 0 0 rho) (upVarMap rho)).
+      - exact h.
+      - apply substZeroBeforeMap_zero_zero.
+    }
+    pose proof (proj1 (formulaAt_substSuccAt_replace_model
+      V M phi 0 rho (scons V a e)) hNormL) as hNormR.
+    assert (henv : forall n,
+      succReplaceAt M 0 (scons V a e) n =
+        scons V (foam_adjoin V M a a) e n).
+    {
+      intro n.
+      unfold succReplaceAt.
+      simpl.
+      apply replaceAt_zero_scons.
+    }
+    pose proof (proj1 (Sat_ext V (foam_mem V M)
+      (formulaAt (substZeroBeforeMap 0 0 rho) phi)
+      (succReplaceAt M 0 (scons V a e))
+      (scons V (foam_adjoin V M a a) e) henv)) hNormR as hEnv.
+    rewrite (formulaAt_map_ext phi
+      (substZeroBeforeMap 0 0 rho) (upVarMap rho)) in hEnv.
+    + exact hEnv.
+    + apply substZeroBeforeMap_zero_zero.
+  - assert (hMap : forall n,
+      substZeroBeforeMap 0 0 rho n = upVarMap rho n).
+    {
+      apply substZeroBeforeMap_zero_zero.
+    }
+    assert (henv : forall n,
+      succReplaceAt M 0 (scons V a e) n =
+        scons V (foam_adjoin V M a a) e n).
+    {
+      intro n.
+      unfold succReplaceAt.
+      simpl.
+      apply replaceAt_zero_scons.
+    }
+    assert (hNormR : Sat V (foam_mem V M)
+      (succReplaceAt M 0 (scons V a e))
+      (formulaAt (substZeroBeforeMap 0 0 rho) phi)).
+    {
+      apply (proj2 (Sat_ext V (foam_mem V M)
+        (formulaAt (substZeroBeforeMap 0 0 rho) phi)
+        (succReplaceAt M 0 (scons V a e))
+        (scons V (foam_adjoin V M a a) e) henv)).
+      rewrite (formulaAt_map_ext phi
+        (substZeroBeforeMap 0 0 rho) (upVarMap rho)).
+      - exact h.
+      - exact hMap.
+    }
+    pose proof (proj2 (formulaAt_substSuccAt_replace_model
+      V M phi 0 rho (scons V a e)) hNormR) as hNormL.
+    rewrite PA.Formula.substSuccAt_zero in hNormL.
+    rewrite (formulaAt_map_ext
+      (PA.Formula.subst PA.Formula.substSuccVar phi)
+      (substZeroBeforeMap 0 0 rho) (upVarMap rho)) in hNormL.
+    + exact hNormL.
+    + exact hMap.
+Qed.
+
+Lemma formulaAt_induction_valid_finite_model : forall V
+    (M : FirstOrderFiniteAdjunctionModel V) phi rho e,
+  Sat V (foam_mem V M) e (formulaAt rho (PA.Formula.inductionForm phi)).
+Proof.
+  intros V M phi rho e.
+  simpl.
+  intro hInd.
+  pose (theta := fImp domainForm (formulaAt (upVarMap rho) phi)).
+  assert (hall : forall a, Sat V (foam_mem V M) (scons V a e) theta).
+  {
+    pose proof (foam_induction_schema V M theta e) as hind.
+    apply hind.
+    intros a ih haDomain.
+    assert (haOrd : OrdinalLike (foam_mem V M) a).
+    {
+      exact (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
+        (scons V a e) 0) haDomain).
+    }
+    destruct (fofam_OrdinalLike_empty_or_succ V M a haOrd) as
+      [hEmpty | [p [hp hSucc]]].
+    - subst a.
+      apply (proj1 (formulaAt_substZero_scons_model V M phi rho e)).
+      exact (proj1 hInd).
+    - assert (hpOrd : OrdinalLike (foam_mem V M) p).
+      {
+        exact (OrdinalLike_of_mem V (foam_mem V M) a p haOrd hp).
+      }
+      assert (hpDomain : Sat V (foam_mem V M) (scons V p e) domainForm).
+      {
+        apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M)
+          (scons V p e) 0)).
+        exact hpOrd.
+      }
+      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
+        theta e a p) (ih p hp)) as hpTheta.
+      pose proof (hpTheta hpDomain) as hpPhi.
+      pose proof (proj2 hInd p hpDomain hpPhi) as hStepSub.
+      pose proof (proj1 (formulaAt_substSuccVar_scons_model
+        V M phi rho p e) hStepSub) as hStepPhi.
+      rewrite hSucc.
+      exact hStepPhi.
+  }
+  intros a haDomain.
+  exact (hall a haDomain).
+Qed.
+
+Lemma formulaAt_free : forall phi rho i,
+  Free i (formulaAt rho phi) ->
+    exists n, PA.Formula.Free n phi /\ i = rho n.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho i h.
+  - destruct h as [h | [h | h]].
+    + destruct (termGraphAt_free a (fun n => rho n + 2) 1 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * exists n. split; [left; exact hn | lia].
+    + destruct (termGraphAt_free b (fun n => rho n + 2) 0 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * exists n. split; [right; exact hn | lia].
+    + destruct h as [hi | hi]; lia.
+  - contradiction.
+  - destruct h as [h | h].
+    + destruct (IHa rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHb rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHa rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHb rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHa rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHb rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + pose proof (domainForm_free (S i) h) as hi. lia.
+    + destruct (IHa (upVarMap rho) (S i) h) as [n [hn hi]].
+      destruct n as [|n].
+      * simpl in hi. lia.
+      * exists n. split; [exact hn | simpl in hi; lia].
+  - destruct h as [h | h].
+    + pose proof (domainForm_free (S i) h) as hi. lia.
+    + destruct (IHa (upVarMap rho) (S i) h) as [n [hn hi]].
+      destruct n as [|n].
+      * simpl in hi. lia.
+      * exists n. split; [exact hn | simpl in hi; lia].
+Qed.
+
+Lemma termGraphAt_var_spec : forall A (mem : A -> A -> Prop) rho out n e,
+  Sat A mem e (termGraphAt rho out (PA.tVar n)) <-> e out = e (rho n).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma termGraphAt_zero_spec : forall A (mem : A -> A -> Prop) rho out e,
+  Sat A mem e (termGraphAt rho out PA.tZero) <->
+    forall x, ~ mem x (e out).
+Proof.
+  intros A mem rho out e.
+  simpl.
+  apply HF_emptyAt_spec.
+Qed.
+
+Lemma termGraphAt_succ_var_spec :
+  forall A (mem : A -> A -> Prop) rho out n e,
+    Sat A mem e (termGraphAt rho out (PA.tSucc (PA.tVar n))) <->
+      forall x, mem x (e out) <-> mem x (e (rho n)) \/ x = e (rho n).
+Proof.
+  intros A mem rho out n e.
+  simpl.
+  split.
+  - intros [x [hx hs]] y.
+    assert (hx' : x = e (rho n)).
+    {
+      change (x = scons A x e (rho n + 1)) in hx.
+      replace (rho n + 1) with (S (rho n)) in hx by lia.
+      simpl in hx.
+      exact hx.
+    }
+    pose proof (proj1 (HF_adjoinAt_spec A mem
+      (scons A x e) (out + 1) 0 0) hs y) as hy.
+    change (mem y (scons A x e (out + 1)) <->
+      mem y (scons A x e 0) \/ y = scons A x e 0) in hy.
+    replace (out + 1) with (S out) in hy by lia.
+    simpl in hy.
+    rewrite hx' in hy.
+    exact hy.
+  - intro h.
+    exists (e (rho n)).
+    split.
+    + change (e (rho n) = scons A (e (rho n)) e (rho n + 1)).
+      replace (rho n + 1) with (S (rho n)) by lia.
+      reflexivity.
+    + apply (proj2 (HF_adjoinAt_spec A mem
+        (scons A (e (rho n)) e) (out + 1) 0 0)).
+      intro y.
+      change (mem y (scons A (e (rho n)) e (out + 1)) <->
+        mem y (scons A (e (rho n)) e 0) \/
+          y = scons A (e (rho n)) e 0).
+      replace (out + 1) with (S out) by lia.
+      simpl.
+      exact (h y).
+Qed.
+
+Lemma formulaAt_eq_var_spec :
+  forall A (mem : A -> A -> Prop) rho m n e,
+    Sat A mem e (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))) <->
+      e (rho m) = e (rho n).
+Proof.
+  intros A mem rho m n e.
+  simpl.
+  split.
+  - intros [x [y [hx [hy hxy]]]].
+    pose proof (proj1 (termGraphAt_var_spec A mem
+      (fun n => rho n + 2) 1 m (scons A y (scons A x e))) hx)
+      as hx'.
+    pose proof (proj1 (termGraphAt_var_spec A mem
+      (fun n => rho n + 2) 0 n (scons A y (scons A x e))) hy)
+      as hy'.
+    change (x = scons A y (scons A x e) (rho m + 2)) in hx'.
+    change (y = scons A y (scons A x e) (rho n + 2)) in hy'.
+    replace (rho m + 2) with (S (S (rho m))) in hx' by lia.
+    replace (rho n + 2) with (S (S (rho n))) in hy' by lia.
+    simpl in hx', hy'.
+    rewrite <- hx'.
+    rewrite <- hy'.
+    exact hxy.
+  - intro h.
+    exists (e (rho m)).
+    exists (e (rho n)).
+    repeat split.
+    + apply (proj2 (termGraphAt_var_spec A mem
+        (fun n => rho n + 2) 1 m
+        (scons A (e (rho n)) (scons A (e (rho m)) e)))).
+      change (e (rho m) =
+        scons A (e (rho n)) (scons A (e (rho m)) e) (rho m + 2)).
+      replace (rho m + 2) with (S (S (rho m))) by lia.
+      reflexivity.
+    + apply (proj2 (termGraphAt_var_spec A mem
+        (fun n => rho n + 2) 0 n
+        (scons A (e (rho n)) (scons A (e (rho m)) e)))).
+      change (e (rho n) =
+        scons A (e (rho n)) (scons A (e (rho m)) e) (rho n + 2)).
+      replace (rho n + 2) with (S (S (rho n))) by lia.
+      reflexivity.
+    + exact h.
+Qed.
+
+Lemma formulaAt_zeroNotSucc_valid :
+  forall A (mem : A -> A -> Prop) rho e,
+    Sat A mem e (formulaAt rho PA.Formula.zeroNotSucc).
+Proof.
+  intros A mem rho e a _ hEq.
+  destruct hEq as [sx [z [hsx [hz heq]]]].
+  pose (E := scons A z (scons A sx (scons A a e))).
+  pose proof (proj1 (termGraphAt_succ_var_spec A mem
+    (fun n => upVarMap rho n + 2) 1 0 E) hsx) as hsx'.
+  pose proof (proj1 (termGraphAt_zero_spec A mem
+    (fun n => upVarMap rho n + 2) 0 E) hz) as hz'.
+  assert (haSucc : mem a sx).
+  {
+    pose proof (hsx' a) as hspec.
+    change (mem a sx <-> mem a a \/ a = a) in hspec.
+    exact (proj2 hspec (or_intror eq_refl)).
+  }
+  rewrite heq in haSucc.
+  exact (hz' a haSucc).
+Qed.
+
+Lemma addGraphAt_zero_right_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right,
+  e out = e left ->
+  e right = foam_empty V M ->
+  Sat V (foam_mem V M) e (addGraphAt out left right).
+Proof.
+  intros V M e out left right hout hright.
+  unfold addGraphAt.
+  pose (f := foam_zero_succ_rec_graph V M (e left)).
+  exists f.
+  split.
+  - apply (proj2 (foam_HF_succRecApproxAt_spec V M
+      (scons V f e) 0 (S left) (S right))).
+    change (foam_succ_rec_approx V M (e left) f (e right)).
+    rewrite hright.
+    unfold f.
+    apply foam_zero_succ_rec_graph_succRecApprox.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    rewrite hright, hout.
+    unfold f.
+    apply foam_zero_succ_rec_graph_base.
+Qed.
+
+Lemma addGraphAt_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right f,
+  foam_succ_rec_approx V M (e left) f (e right) ->
+  foam_mem V M (foam_kpair_obj V M (e right) (e out)) f ->
+  Sat V (foam_mem V M) e (addGraphAt out left right).
+Proof.
+  intros V M e out left right f hf hout.
+  unfold addGraphAt.
+  exists f.
+  split.
+  - apply (proj2 (foam_HF_succRecApproxAt_spec V M
+      (scons V f e) 0 (S left) (S right))).
+    change (foam_succ_rec_approx V M (e left) f (e right)).
+    exact hf.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    exact hout.
+Qed.
+
+Lemma addGraphAt_succ_right_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V)
+    outSucc left rightSucc right f z,
+  OrdinalLike (foam_mem V M) (e right) ->
+  e rightSucc = foam_adjoin V M (e right) (e right) ->
+  e outSucc = foam_adjoin V M z z ->
+  foam_succ_rec_approx V M (e left) f (e right) ->
+  foam_mem V M (foam_kpair_obj V M (e right) z) f ->
+  Sat V (foam_mem V M) e (addGraphAt outSucc left rightSucc).
+Proof.
+  intros V M e outSucc left rightSucc right f z hrightOrd hrightSucc
+    houtSucc hf hout.
+  pose (g := foam_succ_rec_graph_succ V M f (e right) z).
+  apply (addGraphAt_of_succRecApprox_model V M e outSucc left rightSucc g).
+  - change (foam_succ_rec_approx V M (e left) g (e rightSucc)).
+    rewrite hrightSucc.
+    unfold g.
+    exact (foam_succ_rec_graph_succ_succRecApprox V M (e left) f
+      (e right) z hrightOrd hf hout).
+  - change (foam_mem V M (foam_kpair_obj V M (e rightSucc) (e outSucc)) g).
+    rewrite hrightSucc, houtSucc.
+    unfold g.
+    exact (foam_succ_rec_graph_succ_new V M f (e right) z).
+Qed.
+
+Lemma termGraphAt_succ_var_firstOrder_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out n e,
+  e out = foam_adjoin V M (e (rho n)) (e (rho n)) ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tSucc (PA.tVar n))).
+Proof.
+  intros V M rho out n e hout.
+  simpl.
+  exists (e (rho n)).
+  split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 1) 0 n (scons V (e (rho n)) e))).
+    change (e (rho n) = scons V (e (rho n)) e (rho n + 1)).
+    replace (rho n + 1) with (S (rho n)) by lia.
+    reflexivity.
+  - apply (proj2 (foam_HF_succAt_spec V M
+      (scons V (e (rho n)) e) (out + 1) 0)).
+    change (scons V (e (rho n)) e (out + 1) =
+      foam_adjoin V M (e (rho n)) (e (rho n))).
+    replace (out + 1) with (S out) by lia.
+    simpl.
+    exact hout.
+Qed.
+
+Lemma termGraphAt_add_var_zero_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out n e,
+  e out = e (rho n) ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tAdd (PA.tVar n) PA.tZero)).
+Proof.
+  intros V M rho out n e hout.
+  simpl.
+  exists (e (rho n)).
+  exists (foam_empty V M).
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 1 n
+      (scons V (foam_empty V M) (scons V (e (rho n)) e)))).
+    change (e (rho n) =
+      scons V (foam_empty V M) (scons V (e (rho n)) e) (rho n + 2)).
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (e (rho n)) e)) 0)).
+    reflexivity.
+  - apply (addGraphAt_zero_right_model V M
+      (scons V (foam_empty V M) (scons V (e (rho n)) e))
+      (out + 2) 1 0).
+    + replace (out + 2) with (S (S out)) by lia.
+      simpl.
+      exact hout.
+    + reflexivity.
+Qed.
+
+Lemma termGraphAt_add_var_var_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f,
+  foam_succ_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) (e out)) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tAdd (PA.tVar left) (PA.tVar right))).
+Proof.
+  intros V M rho out left right e f hf hout.
+  simpl.
+  exists (e (rho left)).
+  exists (e (rho right)).
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 1 left
+      (scons V (e (rho right)) (scons V (e (rho left)) e)))).
+    change (e (rho left) =
+      scons V (e (rho right)) (scons V (e (rho left)) e)
+        (rho left + 2)).
+    replace (rho left + 2) with (S (S (rho left))) by lia.
+    reflexivity.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 0 right
+      (scons V (e (rho right)) (scons V (e (rho left)) e)))).
+    change (e (rho right) =
+      scons V (e (rho right)) (scons V (e (rho left)) e)
+        (rho right + 2)).
+    replace (rho right + 2) with (S (S (rho right))) by lia.
+    reflexivity.
+  - apply (addGraphAt_of_succRecApprox_model V M
+      (scons V (e (rho right)) (scons V (e (rho left)) e))
+      (out + 2) 1 0 f).
+    + change (foam_succ_rec_approx V M (e (rho left)) f (e (rho right))).
+      exact hf.
+    + replace (out + 2) with (S (S out)) by lia.
+      simpl.
+      exact hout.
+Qed.
+
+Lemma termGraphAt_add_var_succ_var_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f z,
+  OrdinalLike (foam_mem V M) (e (rho right)) ->
+  e out = foam_adjoin V M z z ->
+  foam_succ_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) z) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out
+      (PA.tAdd (PA.tVar left) (PA.tSucc (PA.tVar right)))).
+Proof.
+  intros V M rho out left right e f z hrightOrd hout hf hz.
+  simpl.
+  pose (sy := foam_adjoin V M (e (rho right)) (e (rho right))).
+  exists (e (rho left)).
+  exists sy.
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 1 left
+      (scons V sy (scons V (e (rho left)) e)))).
+    change (e (rho left) =
+      scons V sy (scons V (e (rho left)) e) (rho left + 2)).
+    replace (rho left + 2) with (S (S (rho left))) by lia.
+    reflexivity.
+  - apply (termGraphAt_succ_var_firstOrder_model V M
+      (fun n => rho n + 2) 0 right
+      (scons V sy (scons V (e (rho left)) e))).
+    change (sy = foam_adjoin V M
+      (scons V sy (scons V (e (rho left)) e) (rho right + 2))
+      (scons V sy (scons V (e (rho left)) e) (rho right + 2))).
+    replace (rho right + 2) with (S (S (rho right))) by lia.
+    simpl.
+    unfold sy.
+    reflexivity.
+  - apply (addGraphAt_succ_right_of_succRecApprox_model V M
+      (scons V sy (scons V (e (rho left)) e))
+      (out + 2) 1 0 (rho right + 2) f z).
+    + change (OrdinalLike (foam_mem V M)
+        (scons V sy (scons V (e (rho left)) e) (rho right + 2))).
+      replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hrightOrd.
+    + change (sy = foam_adjoin V M
+        (scons V sy (scons V (e (rho left)) e) (rho right + 2))
+        (scons V sy (scons V (e (rho left)) e) (rho right + 2))).
+      replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      unfold sy.
+      reflexivity.
+    + replace (out + 2) with (S (S out)) by lia.
+      simpl.
+      exact hout.
+    + replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hf.
+    + replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hz.
+Qed.
+
+Lemma termGraphAt_succ_add_var_var_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f z,
+  e out = foam_adjoin V M z z ->
+  foam_succ_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) z) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out
+      (PA.tSucc (PA.tAdd (PA.tVar left) (PA.tVar right)))).
+Proof.
+  intros V M rho out left right e f z hout hf hz.
+  simpl.
+  exists z.
+  split.
+  - apply (termGraphAt_add_var_var_of_succRecApprox_model V M
+      (fun n => rho n + 1) 0 left right (scons V z e) f).
+    + change (foam_succ_rec_approx V M
+        (scons V z e (rho left + 1)) f
+        (scons V z e (rho right + 1))).
+      replace (rho left + 1) with (S (rho left)) by lia.
+      replace (rho right + 1) with (S (rho right)) by lia.
+      simpl.
+      exact hf.
+    + change (foam_mem V M
+        (foam_kpair_obj V M (scons V z e (rho right + 1))
+          (scons V z e 0)) f).
+      replace (rho right + 1) with (S (rho right)) by lia.
+      simpl.
+      exact hz.
+  - apply (proj2 (foam_HF_succAt_spec V M (scons V z e)
+      (out + 1) 0)).
+    change (scons V z e (out + 1) = foam_adjoin V M z z).
+    replace (out + 1) with (S out) by lia.
+    simpl.
+    exact hout.
+Qed.
+
+Lemma formulaAt_addSucc_valid_model_of_succRecTotal : forall V
+    (M : FirstOrderAdjunctionModel V),
+  (forall s m, OrdinalLike (foam_mem V M) m ->
+    foam_succ_rec_total V M s m) ->
+  forall rho e, Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addSucc).
+Proof.
+  intros V M hTotal rho e x _ y hyDomain.
+  pose proof (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
+    (scons V y (scons V x e)) 0) hyDomain) as hyOrd.
+  destruct (hTotal x y hyOrd) as [f [z [hf hz]]].
+  pose (sz := foam_adjoin V M z z).
+  pose (sigma := fun n => upVarMap (upVarMap rho) n + 2).
+  pose (Eeq := scons V sz (scons V sz (scons V y (scons V x e)))).
+  simpl.
+  exists sz.
+  exists sz.
+  split.
+  - change (Sat V (foam_mem V M) Eeq
+      (termGraphAt sigma 1
+        (PA.tAdd (PA.tVar 1) (PA.tSucc (PA.tVar 0))))).
+    apply (termGraphAt_add_var_succ_var_of_succRecApprox_model V M
+      sigma 1 1 0 Eeq f z).
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hyOrd.
+    + unfold Eeq, sz.
+      simpl.
+      reflexivity.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hf.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hz.
+  - split.
+    + change (Sat V (foam_mem V M) Eeq
+        (termGraphAt sigma 0
+          (PA.tSucc (PA.tAdd (PA.tVar 1) (PA.tVar 0))))).
+      apply (termGraphAt_succ_add_var_var_of_succRecApprox_model V M
+        sigma 0 1 0 Eeq f z).
+      * unfold Eeq, sz.
+        simpl.
+        reflexivity.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hf.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hz.
+    + reflexivity.
+Qed.
+
+Lemma formulaAt_addSucc_valid_model_of_mem_max_exists : forall V
+    (M : FirstOrderAdjunctionModel V),
+  (forall a, (exists x, foam_mem V M x a) ->
+    exists p, foam_mem V M p a /\
+      forall q, foam_mem V M q a -> ~ foam_mem V M p q) ->
+  forall rho e, Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addSucc).
+Proof.
+  intros V M hMax rho e.
+  apply (formulaAt_addSucc_valid_model_of_succRecTotal V M).
+  intros s m hm.
+  exact (foam_succ_rec_total_of_ordinalLike_of_mem_max_exists V M
+    hMax s m hm).
+Qed.
+
+Lemma formulaAt_addSucc_valid_finite_model : forall V
+    (M : FirstOrderFiniteAdjunctionModel V) rho e,
+  Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addSucc).
+Proof.
+  intros V M rho e.
+  apply (formulaAt_addSucc_valid_model_of_succRecTotal V M).
+  intros s m hm.
+  exact (fofam_succ_rec_total_of_ordinalLike V M s m hm).
+Qed.
+
+Lemma formulaAt_addZero_valid_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho e,
+  Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addZero).
+Proof.
+  intros V M rho e x _.
+  simpl.
+  exists x.
+  exists x.
+  repeat split.
+  - change (Sat V (foam_mem V M)
+      (scons V x (scons V x (scons V x e)))
+      (termGraphAt (fun n => upVarMap rho n + 2) 1
+        (PA.tAdd (PA.tVar 0) PA.tZero))).
+    apply termGraphAt_add_var_zero_model.
+    reflexivity.
+Qed.
+
+Lemma mulStepAt_empty_model : forall V
+    (M : FirstOrderAdjunctionModel V) e f a m,
+  e m = foam_empty V M ->
+  Sat V (foam_mem V M) e (mulStepAt f a m).
+Proof.
+  intros V M e f a m hm k t y hkm.
+  change (foam_mem V M k (e m)) in hkm.
+  rewrite hm in hkm.
+  exact (False_rect _ (foam_empty_spec V M k hkm)).
+Qed.
+
+Lemma mulGraphAt_of_mulRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right f,
+  foam_mul_rec_approx V M (e left) f (e right) ->
+  foam_mem V M (foam_kpair_obj V M (e right) (e out)) f ->
+  Sat V (foam_mem V M) e (mulGraphAt out left right).
+Proof.
+  intros V M e out left right f hf hout.
+  unfold mulGraphAt.
+  exists f.
+  split.
+  - apply (proj2 (foam_mulRecApproxAt_spec V M
+      (scons V f e) 0 (S left) (S right))).
+    change (foam_mul_rec_approx V M (e left) f (e right)).
+    exact hf.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    exact hout.
+Qed.
+
+Lemma mulGraphAt_succ_right_of_mulRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V)
+    out left rightSucc right f z g y,
+  OrdinalLike (foam_mem V M) (e right) ->
+  e rightSucc = foam_adjoin V M (e right) (e right) ->
+  e out = y ->
+  foam_mul_rec_approx V M (e left) f (e right) ->
+  foam_mem V M (foam_kpair_obj V M (e right) z) f ->
+  foam_succ_rec_approx V M z g (e left) ->
+  foam_mem V M (foam_kpair_obj V M (e left) y) g ->
+  Sat V (foam_mem V M) e (mulGraphAt out left rightSucc).
+Proof.
+  intros V M e out left rightSucc right f z g y hrightOrd hrightSucc
+    hout hf hz hg hy.
+  pose (h := foam_mul_rec_graph_succ V M f (e right) y).
+  apply (mulGraphAt_of_mulRecApprox_model V M e out left rightSucc h).
+  - change (foam_mul_rec_approx V M (e left) h (e rightSucc)).
+    rewrite hrightSucc.
+    unfold h.
+    apply (foam_mul_rec_graph_succ_mulRecApprox V M (e left) f
+      (e right) z y hrightOrd hf hz).
+    exists g.
+    split; assumption.
+  - change (foam_mem V M (foam_kpair_obj V M (e rightSucc) (e out)) h).
+    rewrite hrightSucc, hout.
+    unfold h.
+    apply foam_mul_rec_graph_succ_new.
+Qed.
+
+Lemma mulGraphAt_zero_right_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right,
+  e out = foam_empty V M ->
+  e right = foam_empty V M ->
+  Sat V (foam_mem V M) e (mulGraphAt out left right).
+Proof.
+  intros V M e out left right hout hright.
+  unfold mulGraphAt.
+  pose (f := foam_zero_succ_rec_graph V M (foam_empty V M)).
+  pose proof (foam_zero_succ_rec_graph_succRecApprox V M (foam_empty V M))
+    as hf.
+  destruct hf as [hfun [hkeys [hbase [htotal _hstep]]]].
+  exists f.
+  split.
+  - unfold mulRecApproxAt.
+    repeat split.
+    + apply (proj2 (foam_HF_pairFunctionalAt_spec V M (scons V f e) 0)).
+      exact hfun.
+    + apply (proj2 (foam_HF_pairKeysBelowSuccAt_spec V M
+        (scons V f e) 0 (S right))).
+      change (foam_pair_keys_below_succ V M f (e right)).
+      rewrite hright.
+      exact hkeys.
+    + apply (proj2 (foam_HF_pairZeroBaseAt_spec V M (scons V f e) 0)).
+      exact hbase.
+    + apply (proj2 (foam_HF_pairTotalBelowSuccAt_spec V M
+        (scons V f e) 0 (S right))).
+      change (foam_pair_total_below_succ V M f (e right)).
+      rewrite hright.
+      exact htotal.
+    + apply (mulStepAt_empty_model V M (scons V f e) 0 (S left) (S right)).
+      simpl.
+      exact hright.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    rewrite hright, hout.
+    unfold f.
+    apply foam_zero_succ_rec_graph_base.
+Qed.
+
+Lemma termGraphAt_mul_var_var_of_mulRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f,
+  foam_mul_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) (e out)) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tMul (PA.tVar left) (PA.tVar right))).
+Proof.
+  intros V M rho out left right e f hf hout.
+  simpl.
+  exists (e (rho right)).
+  exists (e (rho left)).
+  exists (e out).
+  split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 3) 1 left
+      (scons V (e out)
+        (scons V (e (rho left)) (scons V (e (rho right)) e))))).
+    change (e (rho left) =
+      scons V (e out)
+        (scons V (e (rho left)) (scons V (e (rho right)) e))
+        (rho left + 3)).
+    replace (rho left + 3) with (S (S (S (rho left)))) by lia.
+    reflexivity.
+  - split.
+    + apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+        (fun n => rho n + 3) 2 right
+        (scons V (e out)
+          (scons V (e (rho left)) (scons V (e (rho right)) e))))).
+      change (e (rho right) =
+        scons V (e out)
+          (scons V (e (rho left)) (scons V (e (rho right)) e))
+          (rho right + 3)).
+      replace (rho right + 3) with (S (S (S (rho right)))) by lia.
+      reflexivity.
+    + split.
+      * replace (out + 3) with (S (S (S out))) by lia.
+        simpl.
+        reflexivity.
+      * apply (mulGraphAt_of_mulRecApprox_model V M
+          (scons V (e out)
+            (scons V (e (rho left)) (scons V (e (rho right)) e)))
+          0 1 2 f).
+        -- change (foam_mul_rec_approx V M
+            (e (rho left)) f (e (rho right))).
+           exact hf.
+        -- change (foam_mem V M
+            (foam_kpair_obj V M (e (rho right)) (e out)) f).
+           exact hout.
+Qed.
+
+Lemma termGraphAt_mul_var_succ_var_of_mulRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f z g y,
+  OrdinalLike (foam_mem V M) (e (rho right)) ->
+  e out = y ->
+  foam_mul_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) z) f ->
+  foam_succ_rec_approx V M z g (e (rho left)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho left)) y) g ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out
+      (PA.tMul (PA.tVar left) (PA.tSucc (PA.tVar right)))).
+Proof.
+  intros V M rho out left right e f z g y hrightOrd hout hf hz hg hy.
+  simpl.
+  pose (sy := foam_adjoin V M (e (rho right)) (e (rho right))).
+  pose (E := scons V y (scons V (e (rho left)) (scons V sy e))).
+  exists sy.
+  exists (e (rho left)).
+  exists y.
+  split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 3) 1 left E)).
+    unfold E.
+    change (e (rho left) =
+      scons V y (scons V (e (rho left)) (scons V sy e))
+        (rho left + 3)).
+    replace (rho left + 3) with (S (S (S (rho left)))) by lia.
+    reflexivity.
+  - split.
+    + apply (termGraphAt_succ_var_firstOrder_model V M
+        (fun n => rho n + 3) 2 right E).
+      unfold E.
+      change (sy = foam_adjoin V M
+        (scons V y (scons V (e (rho left)) (scons V sy e))
+          (rho right + 3))
+        (scons V y (scons V (e (rho left)) (scons V sy e))
+          (rho right + 3))).
+      replace (rho right + 3) with (S (S (S (rho right)))) by lia.
+      simpl.
+      unfold sy.
+      reflexivity.
+    + split.
+      * unfold E.
+        replace (out + 3) with (S (S (S out))) by lia.
+        simpl.
+        symmetry.
+        exact hout.
+      * apply (mulGraphAt_succ_right_of_mulRecApprox_model V M E
+          0 1 2 (rho right + 3) f z g y).
+        -- unfold E.
+           replace (rho right + 3) with (S (S (S (rho right)))) by lia.
+           simpl.
+           exact hrightOrd.
+        -- unfold E.
+           replace (rho right + 3) with (S (S (S (rho right)))) by lia.
+           simpl.
+           unfold sy.
+           reflexivity.
+        -- reflexivity.
+        -- unfold E.
+           replace (rho right + 3) with (S (S (S (rho right)))) by lia.
+           simpl.
+           exact hf.
+        -- unfold E.
+           replace (rho right + 3) with (S (S (S (rho right)))) by lia.
+           simpl.
+           exact hz.
+        -- unfold E.
+           simpl.
+           exact hg.
+        -- unfold E.
+           simpl.
+           exact hy.
+Qed.
+
+Lemma termGraphAt_add_mul_var_var_var_of_traces_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f z g y,
+  e out = y ->
+  foam_mul_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) z) f ->
+  foam_succ_rec_approx V M z g (e (rho left)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho left)) y) g ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out
+      (PA.tAdd
+        (PA.tMul (PA.tVar left) (PA.tVar right))
+        (PA.tVar left))).
+Proof.
+  intros V M rho out left right e f z g y hout hf hz hg hy.
+  simpl.
+  pose (E := scons V (e (rho left)) (scons V z e)).
+  exists z.
+  exists (e (rho left)).
+  split.
+  - apply (termGraphAt_mul_var_var_of_mulRecApprox_model V M
+      (fun n => rho n + 2) 1 left right E f).
+    + unfold E.
+      replace (rho left + 2) with (S (S (rho left))) by lia.
+      replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hf.
+    + unfold E.
+      replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hz.
+  - split.
+    + apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+        (fun n => rho n + 2) 0 left E)).
+      unfold E.
+      change (e (rho left) =
+        scons V (e (rho left)) (scons V z e) (rho left + 2)).
+      replace (rho left + 2) with (S (S (rho left))) by lia.
+      reflexivity.
+    + apply (addGraphAt_of_succRecApprox_model V M E
+        (out + 2) 1 0 g).
+      * unfold E.
+        change (foam_succ_rec_approx V M z g (e (rho left))).
+        exact hg.
+      * replace (out + 2) with (S (S out)) by lia.
+        unfold E.
+        simpl.
+        rewrite hout.
+        exact hy.
+Qed.
+
+Lemma termGraphAt_mul_var_zero_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out n e,
+  e out = foam_empty V M ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tMul (PA.tVar n) PA.tZero)).
+Proof.
+  intros V M rho out n e hout.
+  simpl.
+  exists (foam_empty V M).
+  exists (e (rho n)).
+  exists (foam_empty V M).
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 3) 1 n
+      (scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e))))).
+    change (e (rho n) =
+      scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e))
+        (rho n + 3)).
+    replace (rho n + 3) with (S (S (S (rho n)))) by lia.
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e))) 2)).
+    reflexivity.
+  - replace (out + 3) with (S (S (S out))) by lia.
+    simpl.
+    symmetry.
+    exact hout.
+  - apply (mulGraphAt_zero_right_model V M
+      (scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e)))
+      0 1 2).
+    + reflexivity.
+    + reflexivity.
+Qed.
+
+Lemma formulaAt_mulZero_valid_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho e,
+  Sat V (foam_mem V M) e (formulaAt rho PA.Formula.mulZero).
+Proof.
+  intros V M rho e x _.
+  simpl.
+  exists (foam_empty V M).
+  exists (foam_empty V M).
+  repeat split.
+  - change (Sat V (foam_mem V M)
+      (scons V (foam_empty V M) (scons V (foam_empty V M) (scons V x e)))
+      (termGraphAt (fun n => upVarMap rho n + 2) 1
+        (PA.tMul (PA.tVar 0) PA.tZero))).
+    apply termGraphAt_mul_var_zero_model.
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (foam_empty V M) (scons V x e))) 0)).
+    reflexivity.
+Qed.
+
+Lemma formulaAt_mulSucc_valid_finite_model : forall V
+    (M : FirstOrderFiniteAdjunctionModel V) rho e,
+  Sat V (foam_mem V M) e (formulaAt rho PA.Formula.mulSucc).
+Proof.
+  intros V M rho e x hxDomain y hyDomain.
+  pose proof (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
+    (scons V x e) 0) hxDomain) as hxOrd.
+  pose proof (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
+    (scons V y (scons V x e)) 0) hyDomain) as hyOrd.
+  destruct (fofam_mul_rec_total_of_ordinalLike V M x y hxOrd hyOrd)
+    as [f [z [hf hz]]].
+  destruct (fofam_succ_rec_total_of_ordinalLike V M z x hxOrd)
+    as [g [w [hg hw]]].
+  pose (sigma := fun n => upVarMap (upVarMap rho) n + 2).
+  pose (Eeq := scons V w (scons V w (scons V y (scons V x e)))).
+  simpl.
+  exists w.
+  exists w.
+  split.
+  - change (Sat V (foam_mem V M) Eeq
+      (termGraphAt sigma 1
+        (PA.tMul (PA.tVar 1) (PA.tSucc (PA.tVar 0))))).
+    apply (termGraphAt_mul_var_succ_var_of_mulRecApprox_model V M
+      sigma 1 1 0 Eeq f z g w).
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hyOrd.
+    + unfold Eeq.
+      simpl.
+      reflexivity.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hf.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hz.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hg.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hw.
+  - split.
+    + change (Sat V (foam_mem V M) Eeq
+        (termGraphAt sigma 0
+          (PA.tAdd
+            (PA.tMul (PA.tVar 1) (PA.tVar 0))
+            (PA.tVar 1)))).
+      apply (termGraphAt_add_mul_var_var_var_of_traces_model V M
+        sigma 0 1 0 Eeq f z g w).
+      * unfold Eeq.
+        simpl.
+        reflexivity.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hf.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hz.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hg.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hw.
+    + reflexivity.
+Qed.
+
+Lemma formulaAt_succInj_of_irrefl :
+  forall A (mem : A -> A -> Prop),
+    (forall a, ~ mem a a) ->
+    forall rho e, Sat A mem e (formulaAt rho PA.Formula.succInj).
+Proof.
+  intros A mem hIrrefl rho e a ha b hb hEq.
+  destruct hEq as [sa [sb [hsa [hsb heq]]]].
+  pose (E := scons A sb (scons A sa (scons A b (scons A a e)))).
+  pose proof (proj1 (termGraphAt_succ_var_spec A mem
+    (fun n => upVarMap (upVarMap rho) n + 2) 1 1 E) hsa) as hsa'.
+  pose proof (proj1 (termGraphAt_succ_var_spec A mem
+    (fun n => upVarMap (upVarMap rho) n + 2) 0 0 E) hsb) as hsb'.
+  assert (hsaSpec : forall x, mem x sa <-> mem x a \/ x = a).
+  {
+    intro x.
+    pose proof (hsa' x) as hx.
+    change (mem x sa <-> mem x a \/ x = a) in hx.
+    exact hx.
+  }
+  assert (hsbSpec : forall x, mem x sb <-> mem x b \/ x = b).
+  {
+    intro x.
+    pose proof (hsb' x) as hx.
+    change (mem x sb <-> mem x b \/ x = b) in hx.
+    exact hx.
+  }
+  pose proof (proj1 (HF_ordinalLikeAt_spec A mem (scons A a e) 0) ha)
+    as haOrd.
+  pose proof (proj1 (HF_ordinalLikeAt_spec A mem
+    (scons A b (scons A a e)) 0) hb) as hbOrd.
+  assert (hab : a = b).
+  {
+    assert (haSucc : mem a sb).
+    {
+      rewrite <- heq.
+      exact (proj2 (hsaSpec a) (or_intror eq_refl)).
+    }
+    destruct (proj1 (hsbSpec a) haSucc) as [hab | hab].
+    - assert (hbSucc : mem b sa).
+      {
+        rewrite heq.
+        exact (proj2 (hsbSpec b) (or_intror eq_refl)).
+      }
+      destruct (proj1 (hsaSpec b) hbSucc) as [hba | hba].
+      + destruct hbOrd as [hbTrans _].
+        assert (hbb : mem b b).
+        {
+          eapply hbTrans; eauto.
+        }
+        exfalso.
+        exact (hIrrefl b hbb).
+      + symmetry. exact hba.
+    - exact hab.
+  }
+  apply (proj2 (formulaAt_eq_var_spec A mem
+    (upVarMap (upVarMap rho)) 1 0 (scons A b (scons A a e)))).
+  exact hab.
+Qed.
+
+Lemma formulaAt_closeN_valid :
+  forall A (mem : A -> A -> Prop) phi,
+    (forall rho e, Sat A mem e (formulaAt rho phi)) ->
+    forall k rho e, Sat A mem e (formulaAt rho (PA.Formula.closeN k phi)).
+Proof.
+  intros A mem phi h k.
+  revert phi h.
+  induction k as [|k IH]; intros phi h rho e; simpl.
+  - apply h.
+  - apply IH.
+    intros rho' e' x _.
+    apply h.
+Qed.
+
+Lemma formulaAt_sealPA_valid :
+  forall A (mem : A -> A -> Prop) phi,
+    (forall rho e, Sat A mem e (formulaAt rho phi)) ->
+    forall rho e, Sat A mem e (formulaAt rho (PA.Formula.sealPA phi)).
+Proof.
+  intros A mem phi h rho e.
+  unfold PA.Formula.sealPA.
+  apply formulaAt_closeN_valid.
+  exact h.
+Qed.
+
+Lemma formulaAt_exact : forall phi rho v e,
+  (forall n, e (rho n) = ordinal_code (v n)) ->
+  (Sat nat hf_mem e (formulaAt rho phi) <->
+    PA.Formula.Sat PA.natModel v phi).
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho v e hrho.
+  - split.
+    + intro h.
+      destruct h as [x [y [ha [hb heq]]]].
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (termGraphAt_exact a (fun n => rho n + 2) 1 v
+        (scons nat y (scons nat x e)) hrho') ha) as hx.
+      pose proof (proj1 (termGraphAt_exact b (fun n => rho n + 2) 0 v
+        (scons nat y (scons nat x e)) hrho') hb) as hy.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in hx.
+      change (y = ordinal_code (PA.Term.eval PA.natModel v b)) in hy.
+      apply ordinal_code_injective.
+      rewrite <- hx, <- hy.
+      exact heq.
+    + intro h.
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      pose (y := ordinal_code (PA.Term.eval PA.natModel v b)).
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      exists x, y.
+      split.
+      * apply (proj2 (termGraphAt_exact a (fun n => rho n + 2) 1 v
+          (scons nat y (scons nat x e)) hrho')).
+        unfold x. reflexivity.
+      * split.
+        -- apply (proj2 (termGraphAt_exact b (fun n => rho n + 2) 0 v
+            (scons nat y (scons nat x e)) hrho')).
+           unfold y. reflexivity.
+        -- unfold x, y.
+           now rewrite h.
+  - reflexivity.
+  - split.
+    + intros h ha.
+      apply (proj1 (IHb rho v e hrho)).
+      apply h.
+      apply (proj2 (IHa rho v e hrho)).
+      exact ha.
+    + intros h ha.
+      apply (proj2 (IHb rho v e hrho)).
+      apply h.
+      apply (proj1 (IHa rho v e hrho)).
+      exact ha.
+  - split.
+    + intros [ha hb].
+      split.
+      * apply (proj1 (IHa rho v e hrho)). exact ha.
+      * apply (proj1 (IHb rho v e hrho)). exact hb.
+    + intros [ha hb].
+      split.
+      * apply (proj2 (IHa rho v e hrho)). exact ha.
+      * apply (proj2 (IHb rho v e hrho)). exact hb.
+  - split.
+    + intros [ha | hb].
+      * left. apply (proj1 (IHa rho v e hrho)). exact ha.
+      * right. apply (proj1 (IHb rho v e hrho)). exact hb.
+    + intros [ha | hb].
+      * left. apply (proj2 (IHa rho v e hrho)). exact ha.
+      * right. apply (proj2 (IHb rho v e hrho)). exact hb.
+  - split.
+    + intros h n.
+      assert (hdom : Sat nat hf_mem (scons nat (ordinal_code n) e) domainForm).
+      {
+        exact (domain_ordinal_code n e).
+      }
+      assert (hrho' : forall k,
+        scons nat (ordinal_code n) e (upVarMap rho k) =
+          ordinal_code (scons nat n v k)).
+      {
+        intro k.
+        destruct k as [|k].
+        - reflexivity.
+        - simpl.
+          replace (rho k + 1) with (S (rho k)) by lia.
+          simpl.
+          exact (hrho k).
+      }
+      apply (proj1 (IHa (upVarMap rho) (scons nat n v)
+        (scons nat (ordinal_code n) e) hrho')).
+      exact (h (ordinal_code n) hdom).
+    + intros h x hxdom.
+      destruct (proj1 (domain_exact (scons nat x e)) hxdom) as [n hn].
+      assert (hx : x = ordinal_code n) by (symmetry; exact hn).
+      assert (hrho' : forall k,
+        scons nat x e (upVarMap rho k) =
+          ordinal_code (scons nat n v k)).
+      {
+        intro k.
+        destruct k as [|k].
+        - exact hx.
+        - simpl.
+          replace (rho k + 1) with (S (rho k)) by lia.
+          simpl.
+          exact (hrho k).
+      }
+      apply (proj2 (IHa (upVarMap rho) (scons nat n v)
+        (scons nat x e) hrho')).
+      exact (h n).
+  - split.
+    + intros [x [hxdom hbody]].
+      destruct (proj1 (domain_exact (scons nat x e)) hxdom) as [n hn].
+      assert (hx : x = ordinal_code n) by (symmetry; exact hn).
+      assert (hrho' : forall k,
+        scons nat x e (upVarMap rho k) =
+          ordinal_code (scons nat n v k)).
+      {
+        intro k.
+        destruct k as [|k].
+        - exact hx.
+        - simpl.
+          replace (rho k + 1) with (S (rho k)) by lia.
+          simpl.
+          exact (hrho k).
+      }
+      exists n.
+      apply (proj1 (IHa (upVarMap rho) (scons nat n v)
+        (scons nat x e) hrho')).
+      exact hbody.
+    + intros [n hn].
+      exists (ordinal_code n).
+      split.
+      * exact (domain_ordinal_code n e).
+      * assert (hrho' : forall k,
+          scons nat (ordinal_code n) e (upVarMap rho k) =
+            ordinal_code (scons nat n v k)).
+        {
+          intro k.
+          destruct k as [|k].
+          - reflexivity.
+          - simpl.
+            replace (rho k + 1) with (S (rho k)) by lia.
+            simpl.
+            exact (hrho k).
+        }
+        apply (proj2 (IHa (upVarMap rho) (scons nat n v)
+          (scons nat (ordinal_code n) e) hrho')).
+        exact hn.
+Qed.
+
+Definition translateFormula (phi : PA.formula) : form :=
+  formulaAt (fun n => n) phi.
+
+Lemma translateFormula_exact : forall phi v,
+  Sat nat hf_mem (fun n => ordinal_code (v n)) (translateFormula phi) <->
+    PA.Formula.Sat PA.natModel v phi.
+Proof.
+  intros phi v.
+  unfold translateFormula.
+  apply formulaAt_exact.
+  intro n.
+  reflexivity.
+Qed.
+
+Lemma formulaAt_sentence_of_PA_sentence : forall phi rho,
+  PA.Formula.Sentence phi -> Sentence (formulaAt rho phi).
+Proof.
+  intros phi rho hphi i hi.
+  destruct (formulaAt_free phi rho i hi) as [n [hn _]].
+  exact (hphi n hn).
+Qed.
+
+Lemma translateFormula_sentence_of_PA_sentence : forall phi,
+  PA.Formula.Sentence phi -> Sentence (translateFormula phi).
+Proof.
+  intros phi hphi.
+  unfold translateFormula.
+  apply formulaAt_sentence_of_PA_sentence.
+  exact hphi.
+Qed.
+
+Lemma translated_PA_axiom_sentence : forall phi,
+  PA.Formula.Ax_s phi -> Sentence (translateFormula phi).
+Proof.
+  intros phi hphi.
+  apply translateFormula_sentence_of_PA_sentence.
+  exact (PA.Formula.sentence_ax_s phi hphi).
+Qed.
+
+Lemma translated_PA_axiom_sat_codes : forall phi,
+  PA.Formula.Ax_s phi -> forall v,
+    Sat nat hf_mem (fun n => ordinal_code (v n)) (translateFormula phi).
+Proof.
+  intros phi hphi v.
+  apply (proj2 (translateFormula_exact phi v)).
+  exact (PA.Formula.sat_axiom_s PA.natModel v phi hphi).
+Qed.
+
+Lemma translated_zeroNotSucc_sat : forall A (mem : A -> A -> Prop) e,
+  Sat A mem e (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
+Proof.
+  intros A mem e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  apply formulaAt_zeroNotSucc_valid.
+Qed.
+
+Lemma translated_succInj_sat_of_irrefl :
+  forall A (mem : A -> A -> Prop),
+    (forall a, ~ mem a a) ->
+    forall e,
+      Sat A mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  intros A mem hIrrefl e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  exact (formulaAt_succInj_of_irrefl A mem hIrrefl rho env).
+Qed.
+
+Lemma translated_succInj_sat_of_HFAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  intros V mem v e hHF.
+  apply translated_succInj_sat_of_irrefl.
+  exact (semantic_mem_irrefl_of_HFAx_s V mem v hHF).
+Qed.
+
+Lemma translated_addZero_sat_model :
+  forall V (M : FirstOrderAdjunctionModel V) e,
+    Sat V (foam_mem V M) e
+      (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  intros V M e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  apply formulaAt_addZero_valid_model.
+Qed.
+
+Lemma translated_addZero_sat_of_HFAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  intros V mem v e hHF.
+  pose (M := firstOrderAdjunctionModel_of_HFAx_s V mem v hHF).
+  exact (translated_addZero_sat_model V M e).
+Qed.
+
+Lemma translated_mulZero_sat_model :
+  forall V (M : FirstOrderAdjunctionModel V) e,
+    Sat V (foam_mem V M) e
+      (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  intros V M e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  apply formulaAt_mulZero_valid_model.
+Qed.
+
+Lemma translated_mulZero_sat_of_HFAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  intros V mem v e hHF.
+  pose (M := firstOrderAdjunctionModel_of_HFAx_s V mem v hHF).
+  exact (translated_mulZero_sat_model V M e).
+Qed.
+
+Lemma translated_addSucc_sat_of_HFFinAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFFinAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.addSucc)).
+Proof.
+  intros V mem v e hHF.
+  pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  exact (formulaAt_addSucc_valid_finite_model V M rho env).
+Qed.
+
+Lemma translated_mulSucc_sat_of_HFFinAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFFinAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.mulSucc)).
+Proof.
+  intros V mem v e hHF.
+  pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  exact (formulaAt_mulSucc_valid_finite_model V M rho env).
+Qed.
+
+Lemma translated_induction_sat_of_HFFinAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V) phi,
+    (forall g, HFFinAx_s g -> Sat V mem v g) ->
+    Sat V mem e
+      (translateFormula
+        (PA.Formula.sealPA (PA.Formula.inductionForm phi))).
+Proof.
+  intros V mem v e phi hHF.
+  pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  exact (formulaAt_induction_valid_finite_model V M phi rho env).
+Qed.
+
+Lemma BProv_HF_translated_zeroNotSucc :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_zeroNotSucc.
+  - intros Dom mem v _hHF.
+    apply translated_zeroNotSucc_sat.
+Qed.
+
+Lemma BProv_HF_translated_succInj :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_succInj.
+  - intros Dom mem v hHF.
+    exact (translated_succInj_sat_of_HFAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_HF_translated_addZero :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_addZero.
+  - intros Dom mem v hHF.
+    exact (translated_addZero_sat_of_HFAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_HF_translated_mulZero :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_mulZero.
+  - intros Dom mem v hHF.
+    exact (translated_mulZero_sat_of_HFAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_theory_mono : forall (B C : form -> Prop) G phi,
+  (forall b, B b -> C b) -> BProv B G phi -> BProv C G phi.
+Proof.
+  intros B C G phi hBC [L [hL hp]].
+  exists L.
+  split.
+  - intros x hx.
+    apply hBC.
+    exact (hL x hx).
+  - exact hp.
+Qed.
+
+Lemma BProv_ax : forall (B : form -> Prop) G phi,
+  B phi -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  exists [phi].
+  split.
+  - intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx]; [ subst x; exact hphi | contradiction ].
+  - simpl.
+    apply P_ass.
+    left. reflexivity.
+Qed.
+
+Lemma BProv_of_Prov : forall (B : form -> Prop) G phi,
+  Prov G phi -> BProv B G phi.
+Proof.
+  intros B G phi h.
+  exists [].
+  split.
+  - intros x hx. contradiction.
+  - simpl. exact h.
+Qed.
+
+Lemma BProv_bound_list : forall (B : form -> Prop) D L,
+  (forall x, In x L -> BProv B D x) ->
+  exists Lb, (forall x, In x Lb -> B x) /\
+    forall x, In x L -> Prov (Lb ++ D) x.
+Proof.
+  intros B D L.
+  induction L as [|a L IH]; intro hL.
+  - exists [].
+    split.
+    + intros x hx. contradiction.
+    + intros x hx. contradiction.
+  - destruct (hL a (or_introl eq_refl)) as [La [hLa hpa]].
+    destruct (IH (fun x hx => hL x (or_intror hx))) as
+      [Lb [hLb hpL]].
+    exists (La ++ Lb).
+    split.
+    + intros x hx.
+      apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * exact (hLa x hx).
+      * exact (hLb x hx).
+    + intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply (Prov_weaken (La ++ D) a hpa).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. left. exact hy.
+        -- right. exact hy.
+      * apply (Prov_weaken (Lb ++ D) x (hpL x hx)).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. right. exact hy.
+        -- right. exact hy.
+Qed.
+
+Lemma BProv_lift : forall (B C : form -> Prop) G D phi,
+  BProv B G phi ->
+  (forall b, B b -> BProv C D b) ->
+  (forall g, In g G -> BProv C D g) ->
+  BProv C D phi.
+Proof.
+  intros B C G D phi [Lb [hLb hp]] hB hG.
+  assert (hctx : forall x, In x (Lb ++ G) -> BProv C D x).
+  {
+    intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    - exact (hB x (hLb x hx)).
+    - exact (hG x hx).
+  }
+  destruct (BProv_bound_list C D (Lb ++ G) hctx) as
+    [Lc [hLc hpctx]].
+  exists Lc.
+  split; [ exact hLc | ].
+  exact (Prov_cut (Lb ++ G) phi hp (Lc ++ D) hpctx).
+Qed.
+
+Lemma BProv_HFFin_translated_zeroNotSucc :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_zeroNotSucc.
+Qed.
+
+Lemma BProv_HFFin_translated_succInj :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.succInj))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_succInj.
+Qed.
+
+Lemma BProv_HFFin_translated_addZero :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.addZero))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_addZero.
+Qed.
+
+Lemma BProv_HFFin_translated_addSucc :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addSucc)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HFFin.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_addSucc.
+  - intros Dom mem v hHF.
+    exact (translated_addSucc_sat_of_HFFinAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_HFFin_translated_mulSucc :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.mulSucc)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HFFin.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_mulSucc.
+  - intros Dom mem v hHF.
+    exact (translated_mulSucc_sat_of_HFFinAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_HFFin_translated_mulZero :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.mulZero))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_mulZero.
+Qed.
+
+Lemma BProv_HFFin_translated_induction :
+  forall phi,
+    BProv HFFinAx_s []
+      (translateFormula
+        (PA.Formula.sealPA (PA.Formula.inductionForm phi))).
+Proof.
+  intro phi.
+  apply completeness_inf.
+  - exact Sentences_HFFin.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_induction.
+  - intros Dom mem v hHF.
+    exact (translated_induction_sat_of_HFFinAx_s Dom mem v v phi hHF).
+Qed.
+
+Lemma BProv_HFFin_translated_PA_axiom : forall phi,
+  PA.Formula.Ax_s phi -> BProv HFFinAx_s [] (translateFormula phi).
+Proof.
+  intros phi hphi.
+  unfold PA.Formula.Ax_s in hphi.
+  destruct hphi as
+    [hphi | [hphi | [hphi | [hphi | [hphi | [hphi | [psi hphi]]]]]]];
+    subst phi.
+  - exact BProv_HFFin_translated_succInj.
+  - exact BProv_HFFin_translated_zeroNotSucc.
+  - exact BProv_HFFin_translated_addZero.
+  - exact BProv_HFFin_translated_addSucc.
+  - exact BProv_HFFin_translated_mulZero.
+  - exact BProv_HFFin_translated_mulSucc.
+  - exact (BProv_HFFin_translated_induction psi).
+Qed.
+
+Definition translatedPAAx (g : form) : Prop :=
+  exists phi, PA.Formula.Ax_s phi /\ g = translateFormula phi.
+
+Lemma translatedPAAx_intro : forall phi,
+  PA.Formula.Ax_s phi -> translatedPAAx (translateFormula phi).
+Proof.
+  intros phi hphi.
+  exists phi. split; [ exact hphi | reflexivity ].
+Qed.
+
+Lemma Sentences_translatedPAAx : forall g,
+  translatedPAAx g -> Sentence g.
+Proof.
+  intros g [phi [hphi ->]].
+  apply translated_PA_axiom_sentence.
+  exact hphi.
+Qed.
+
+Lemma rename_eq_of_sentence : forall g,
+  Sentence g -> forall r, rename r g = g.
+Proof.
+  intros g hg r.
+  transitivity (rename (fun n => n) g).
+  - apply rename_ext_free.
+    intros n hn.
+    exfalso. exact (hg n hn).
+  - apply rename_id.
+Qed.
+
+Lemma map_rename_S_eq_of_translatedPAAx_list : forall L,
+  (forall x, In x L -> translatedPAAx x) -> map (rename S) L = L.
+Proof.
+  induction L as [|x xs IH]; intros hL; simpl.
+  - reflexivity.
+  - rewrite (rename_eq_of_sentence x).
+    + rewrite (IH (fun y hy => hL y (or_intror hy))).
+      reflexivity.
+    + apply Sentences_translatedPAAx.
+      apply hL. simpl. left. reflexivity.
+Qed.
+
+Lemma BProv_translatedPAAx_of_PAAx : forall phi,
+  PA.Formula.Ax_s phi -> BProv translatedPAAx [] (translateFormula phi).
+Proof.
+  intros phi hphi.
+  apply BProv_ax.
+  apply translatedPAAx_intro.
+  exact hphi.
+Qed.
+
+Definition translateContext (G : list PA.formula) : list form :=
+  map translateFormula G.
+
+Lemma mem_translateContext_of_mem : forall G phi,
+  In phi G -> In (translateFormula phi) (translateContext G).
+Proof.
+  intros G phi hphi.
+  unfold translateContext.
+  apply in_map.
+  exact hphi.
+Qed.
+
+Lemma BProv_translate_ass : forall G phi,
+  In phi G -> BProv translatedPAAx (translateContext G) (translateFormula phi).
+Proof.
+  intros G phi hphi.
+  apply BProv_of_Prov.
+  apply P_ass.
+  apply mem_translateContext_of_mem.
+  exact hphi.
+Qed.
+
+Lemma BProv_translate_ax : forall phi,
+  PA.Formula.Ax_s phi -> BProv translatedPAAx [] (translateFormula phi).
+Proof.
+  apply BProv_translatedPAAx_of_PAAx.
+Qed.
+
+Lemma BProv_translate_impI : forall G a b,
+  BProv translatedPAAx
+    (translateFormula a :: translateContext G) (translateFormula b) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pImp a b)).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists L.
+  split; [ exact hL | ].
+  apply P_impI.
+  apply (Prov_weaken (L ++ translateFormula a :: translateContext G)
+    (translateFormula b) hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl in hx.
+  simpl.
+  destruct hx as [hx | [hx | hx]].
+  - right. apply in_app_iff. left. exact hx.
+  - left. exact hx.
+  - right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_translate_impE : forall G a b,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pImp a b)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula a) ->
+  BProv translatedPAAx (translateContext G) (translateFormula b).
+Proof.
+  intros G a b hab ha.
+  unfold translateFormula in hab. simpl in hab. fold (translateFormula a) in hab.
+  fold (translateFormula b) in hab.
+  exact (BProv_mp translatedPAAx (translateContext G)
+    (translateFormula a) (translateFormula b) hab ha).
+Qed.
+
+Lemma BProv_translate_botE : forall G a,
+  BProv translatedPAAx (translateContext G) fBot ->
+  BProv translatedPAAx (translateContext G) (translateFormula a).
+Proof.
+  intros G a [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  apply P_botE.
+  exact hp.
+Qed.
+
+Lemma BProv_translate_lem : forall G a,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a (PA.pImp a PA.pBot))).
+Proof.
+  intros G a.
+  unfold translateFormula. simpl. fold (translateFormula a).
+  apply BProv_of_Prov.
+  apply P_lem.
+Qed.
+
+Lemma BProv_translate_andI : forall G a b,
+  BProv translatedPAAx (translateContext G) (translateFormula a) ->
+  BProv translatedPAAx (translateContext G) (translateFormula b) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAnd a b)).
+Proof.
+  intros G a b [La [hLa hpa]] [Lb [hLb hpb]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists (La ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLa x hx).
+    + exact (hLb x hx).
+  - apply P_andI.
+    + apply (Prov_weaken (La ++ translateContext G) (translateFormula a) hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (Lb ++ translateContext G) (translateFormula b) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. right. exact hx.
+      * right. exact hx.
+Qed.
+
+Lemma BProv_translate_andE1 : forall G a b,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula a).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula in hp. simpl in hp. fold (translateFormula a) in hp.
+  fold (translateFormula b) in hp.
+  exists L.
+  split; [ exact hL | ].
+  exact (P_andE1 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
+Lemma BProv_translate_andE2 : forall G a b,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula b).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula in hp. simpl in hp. fold (translateFormula a) in hp.
+  fold (translateFormula b) in hp.
+  exists L.
+  split; [ exact hL | ].
+  exact (P_andE2 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
+Lemma BProv_translate_orI1 : forall G a b,
+  BProv translatedPAAx (translateContext G) (translateFormula a) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a b)).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists L.
+  split; [ exact hL | ].
+  exact (P_orI1 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
+Lemma BProv_translate_orI2 : forall G a b,
+  BProv translatedPAAx (translateContext G) (translateFormula b) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a b)).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists L.
+  split; [ exact hL | ].
+  exact (P_orI2 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
+Lemma BProv_translate_orE : forall G a b c,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a b)) ->
+  BProv translatedPAAx
+    (translateFormula a :: translateContext G) (translateFormula c) ->
+  BProv translatedPAAx
+    (translateFormula b :: translateContext G) (translateFormula c) ->
+  BProv translatedPAAx (translateContext G) (translateFormula c).
+Proof.
+  intros G a b c [Lo [hLo hpo]] [La [hLa hpa]] [Lb [hLb hpb]].
+  unfold translateFormula in hpo. simpl in hpo. fold (translateFormula a) in hpo.
+  fold (translateFormula b) in hpo.
+  exists (Lo ++ La ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLo x hx).
+    + apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * exact (hLa x hx).
+      * exact (hLb x hx).
+  - apply (P_orE ((Lo ++ La ++ Lb) ++ translateContext G)
+      (translateFormula a) (translateFormula b) (translateFormula c)).
+    + apply (Prov_weaken (Lo ++ translateContext G)
+        (fOr (translateFormula a) (translateFormula b)) hpo).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (La ++ translateFormula a :: translateContext G)
+        (translateFormula c) hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left.
+        apply in_app_iff. right. apply in_app_iff. left. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+    + apply (Prov_weaken (Lb ++ translateFormula b :: translateContext G)
+        (translateFormula c) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left.
+        apply in_app_iff. right. apply in_app_iff. right. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_translate_allI_raw : forall G a,
+  BProv translatedPAAx (map (rename S) (translateContext G))
+    (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAll a)).
+Proof.
+  intros G a [L [hL hp]].
+  pose proof (map_rename_S_eq_of_translatedPAAx_list L hL) as hLmap.
+  change (BProv translatedPAAx (translateContext G)
+    (fAll (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))).
+  exists L.
+  split; [ exact hL | ].
+  apply P_allI.
+  apply (Prov_weaken
+    (L ++ map (rename S) (translateContext G))
+    (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)) hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  rewrite map_app.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left. rewrite hLmap. exact hx.
+  - right. exact hx.
+Qed.
+
+Lemma BProv_translate_exI_raw : forall G a k,
+  BProv translatedPAAx (translateContext G)
+    (rename (inst k)
+      (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a))) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pEx a)).
+Proof.
+  intros G a k [L [hL hp]].
+  change (BProv translatedPAAx (translateContext G)
+    (fEx (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)))).
+  exists L.
+  split; [ exact hL | ].
+  exact (P_exI (L ++ translateContext G)
+    (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)) k hp).
+Qed.
+
+Lemma BProv_translate_exE_raw : forall G a c,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pEx a)) ->
+  BProv translatedPAAx
+    (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a) ::
+      map (rename S) (translateContext G))
+    (rename S (translateFormula c)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula c).
+Proof.
+  intros G a c [Le [hLe hpe]] [Lb [hLb hpb]].
+  unfold translateFormula in hpe. simpl in hpe.
+  fold (formulaAt (upVarMap (fun n : nat => n)) a) in hpe.
+  pose proof (map_rename_S_eq_of_translatedPAAx_list Lb hLb) as hLbmap.
+  exists (Le ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ translateContext G)
+      (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a))
+      (translateFormula c)).
+    + apply (Prov_weaken (Le ++ translateContext G)
+        (fEx (fAnd domainForm
+          (formulaAt (upVarMap (fun n : nat => n)) a))) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken
+        (Lb ++
+          fAnd domainForm (formulaAt (upVarMap (fun n => n)) a) ::
+          map (rename S) (translateContext G))
+        (rename S (translateFormula c)) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. rewrite map_app. apply in_app_iff. left.
+        rewrite map_app. apply in_app_iff. right.
+        rewrite hLbmap. exact hx.
+      * left. exact hx.
+      * right. rewrite map_app. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_lift_translatedPAAx_to_HF :
+  (forall g, translatedPAAx g -> BProv HFAx_s [] g) ->
+  forall g, BProv translatedPAAx [] g -> BProv HFAx_s [] g.
+Proof.
+  intros hAx g h.
+  eapply BProv_lift.
+  - exact h.
+  - exact hAx.
+  - intros x hx. contradiction.
+Qed.
+
+Lemma BProv_lift_translatedPAAx_to_HFFin :
+  (forall g, translatedPAAx g -> BProv HFFinAx_s [] g) ->
+  forall g, BProv translatedPAAx [] g -> BProv HFFinAx_s [] g.
+Proof.
+  intros hAx g h.
+  eapply BProv_lift.
+  - exact h.
+  - exact hAx.
+  - intros x hx. contradiction.
+Qed.
+
+Lemma BProv_HFFin_of_translatedPAAx : forall g,
+  translatedPAAx g -> BProv HFFinAx_s [] g.
+Proof.
+  intros g [phi [hphi ->]].
+  exact (BProv_HFFin_translated_PA_axiom phi hphi).
+Qed.
+
+Lemma BProv_HFFin_of_BProv_translatedPAAx : forall g,
+  BProv translatedPAAx [] g -> BProv HFFinAx_s [] g.
+Proof.
+  intros g h.
+  apply (BProv_lift_translatedPAAx_to_HFFin BProv_HFFin_of_translatedPAAx).
+  exact h.
+Qed.
+
+Lemma standard_sat_translatedPAAx : forall e g,
+  translatedPAAx g -> Sat nat hf_mem e g.
+Proof.
+  intros e g [phi [hphi hg]].
+  subst g.
+  pose proof (translated_PA_axiom_sentence phi hphi) as hsent.
+  pose proof (translated_PA_axiom_sat_codes phi hphi (fun _ => 0)) as hcoded.
+  apply (proj1 (Sat_sentence_inv nat hf_mem (translateFormula phi)
+    hsent (fun _ => ordinal_code 0) e)).
+  exact hcoded.
+Qed.
+
+Definition AdjunctionIso (M N : HFModel) : Type := HFIso M N.
+
+Record ShallowBiInterpretation := {
+  shallow_pa_model : PAModel;
+  shallow_hf_model : HFModel;
+  shallow_pa_in_hf : PAModel;
+  shallow_hf_in_pa_in_hf : HFModel;
+  shallow_pa_round_trip : PAIso shallow_pa_model shallow_pa_in_hf;
+  shallow_hf_round_trip :
+    AdjunctionIso shallow_hf_model shallow_hf_in_pa_in_hf
+}.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
@@ -4879,6 +13888,250 @@ Record TheoryInterpretation
     SrcSentence phi ->
     SrcProv SrcAx [] phi -> TgtProv TgtAx [] (ti_translate phi)
 }.
+
+Definition TheoryInterpretation_comp
+  (Src Mid Tgt : Type)
+  (SrcSentence : Src -> Prop) (MidSentence : Mid -> Prop)
+  (TgtSentence : Tgt -> Prop)
+  (SrcAx : Src -> Prop) (MidAx : Mid -> Prop) (TgtAx : Tgt -> Prop)
+  (SrcProv : (Src -> Prop) -> list Src -> Src -> Prop)
+  (MidProv : (Mid -> Prop) -> list Mid -> Mid -> Prop)
+  (TgtProv : (Tgt -> Prop) -> list Tgt -> Tgt -> Prop)
+  (I : TheoryInterpretation Src Mid
+    SrcSentence MidSentence SrcAx MidAx SrcProv MidProv)
+  (J : TheoryInterpretation Mid Tgt
+    MidSentence TgtSentence MidAx TgtAx MidProv TgtProv)
+  (hSrcAxSentence : forall phi, SrcAx phi -> SrcSentence phi) :
+  TheoryInterpretation Src Tgt
+    SrcSentence TgtSentence SrcAx TgtAx SrcProv TgtProv.
+Proof.
+  refine {| ti_translate := fun phi =>
+    @ti_translate Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J
+      (@ti_translate Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I phi) |}.
+  - intros phi hphi.
+    apply (@ti_maps_sentence Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J).
+    apply (@ti_maps_sentence Src Mid SrcSentence MidSentence SrcAx MidAx
+      SrcProv MidProv I).
+    exact hphi.
+  - intros phi hphi.
+    apply (@ti_maps_theorem Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J).
+    + apply (@ti_maps_sentence Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      apply hSrcAxSentence.
+      exact hphi.
+    + apply (@ti_maps_axiom Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      exact hphi.
+  - intros phi hsent hprov.
+    apply (@ti_maps_theorem Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J).
+    + apply (@ti_maps_sentence Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      exact hsent.
+    + apply (@ti_maps_theorem Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      * exact hsent.
+      * exact hprov.
+Defined.
+
+Definition setTheoryIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : form -> Prop)
+    (hAx : forall phi, SrcAx phi -> BProv TgtAx [] phi) :
+    TheoryInterpretation form form Sentence Sentence SrcAx TgtAx BProv BProv.
+Proof.
+  refine {| ti_translate := fun phi => phi |}.
+  - intros phi hphi. exact hphi.
+  - intros phi hphi. exact (hAx phi hphi).
+  - intros phi _ h.
+    apply (BProv_lift SrcAx TgtAx [] [] phi h).
+    + intros b hb. exact (hAx b hb).
+    + intros g hg. contradiction.
+Defined.
+
+Definition translatedPATheoryInHFFinInterpretation :
+  TheoryInterpretation form form Sentence Sentence
+    translatedPAAx HFFinAx_s BProv BProv :=
+  setTheoryIdentityInterpretationOfAxiomProofs
+    translatedPAAx HFFinAx_s BProv_HFFin_of_translatedPAAx.
+
+Definition paInHFFinOfTranslatedPATheoryInterpretation
+    (I : TheoryInterpretation PA.formula form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s translatedPAAx
+      PA.Formula.BProv BProv) :
+    TheoryInterpretation PA.formula form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s HFFinAx_s
+      PA.Formula.BProv BProv :=
+  TheoryInterpretation_comp PA.formula form form
+    PA.Formula.Sentence Sentence Sentence
+    PA.Formula.Ax_s translatedPAAx HFFinAx_s
+    PA.Formula.BProv BProv BProv
+    I translatedPATheoryInHFFinInterpretation
+    (fun phi hphi => PA.Formula.sentence_ax_s phi hphi).
+
+Definition paIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : PA.formula -> Prop)
+    (hAx : forall phi, SrcAx phi -> PA.Formula.BProv TgtAx [] phi) :
+    TheoryInterpretation PA.formula PA.formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      SrcAx TgtAx PA.Formula.BProv PA.Formula.BProv.
+Proof.
+  refine {| ti_translate := fun phi => phi |}.
+  - intros phi hphi. exact hphi.
+  - intros phi hphi. exact (hAx phi hphi).
+  - intros phi _ h.
+    apply (PA.Formula.BProv_lift SrcAx TgtAx [] [] phi h).
+    + intros b hb. exact (hAx b hb).
+    + intros g hg. contradiction.
+Defined.
+
+Definition PAProvability : Type :=
+  (PA.formula -> Prop) -> list PA.formula -> PA.formula -> Prop.
+
+Record DeductiveBiInterpretationCertificate
+  (HFAxTarget : form -> Prop) (PAProv : PAProvability) := {
+  dbic_pa_in_hf : TheoryInterpretation PA.formula form
+    PA.Formula.Sentence Sentence
+    PA.Formula.Ax_s HFAxTarget
+    PAProv BProv;
+  dbic_hf_in_pa : TheoryInterpretation form PA.formula
+    Sentence PA.Formula.Sentence
+    HFAxTarget PA.Formula.Ax_s
+    BProv PAProv;
+  dbic_pa_round_trip : forall phi,
+    PA.Formula.Sentence phi ->
+    PAProv PA.Formula.Ax_s []
+      (PA.Formula.iffForm phi
+        (@ti_translate form PA.formula Sentence PA.Formula.Sentence
+          HFAxTarget PA.Formula.Ax_s BProv PAProv dbic_hf_in_pa
+          (@ti_translate PA.formula form PA.Formula.Sentence Sentence
+            PA.Formula.Ax_s HFAxTarget PAProv BProv dbic_pa_in_hf phi)));
+  dbic_hf_round_trip : forall phi,
+    Sentence phi ->
+    BProv HFAxTarget []
+      (fIff phi
+        (@ti_translate PA.formula form PA.Formula.Sentence Sentence
+          PA.Formula.Ax_s HFAxTarget PAProv BProv dbic_pa_in_hf
+          (@ti_translate form PA.formula Sentence PA.Formula.Sentence
+            HFAxTarget PA.Formula.Ax_s BProv PAProv dbic_hf_in_pa phi)))
+}.
+
+Definition PAHFDeductiveBiInterpretationCertificate : Type :=
+  DeductiveBiInterpretationCertificate HFAx_s PA.Formula.BProv.
+
+Definition PAHFFinDeductiveBiInterpretationCertificate : Type :=
+  DeductiveBiInterpretationCertificate HFFinAx_s PA.Formula.BProv.
+
+Record StandardModelInterpretationCertificateFor
+    (HFAxTarget : form -> Prop)
+    (TranslatedHFAxTarget : PA.formula -> Prop) := {
+  smic_shallow : ShallowBiInterpretation;
+  smic_paToHf : PA.formula -> form;
+  smic_hfToPa : form -> PA.formula;
+  smic_paToHf_exact : forall phi v,
+    Sat nat hf_mem (fun n => ordinal_code (v n)) (smic_paToHf phi) <->
+      PA.Formula.Sat PA.natModel v phi;
+  smic_hfToPa_exact : forall phi v,
+    PA.Formula.Sat PA.natModel v (smic_hfToPa phi) <->
+      Sat nat hf_mem v phi;
+  smic_paAxiom_sat : forall phi,
+    PA.Formula.Ax_s phi -> forall v,
+      Sat nat hf_mem (fun n => ordinal_code (v n)) (smic_paToHf phi);
+  smic_hfAxiom_sat : forall phi,
+    HFAxTarget phi -> forall v,
+      PA.Formula.Sat PA.natModel v (smic_hfToPa phi);
+  smic_translatedPA_sat : forall e g,
+    translatedPAAx g -> Sat nat hf_mem e g;
+  smic_translatedHF_sat : forall e f,
+    TranslatedHFAxTarget f -> PA.Formula.Sat PA.natModel e f
+}.
+
+Definition StandardModelHFInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor
+    HFAx_s PA.Formula.translatedHFAx.
+
+Definition StandardModelFiniteInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor
+    HFFinAx_s PA.Formula.translatedHFFinAx.
+
+Lemma ordinalHF_sat_HF : forall v,
+  forall g, HFAx_s g -> Sat ordinalHFModel (hf_rel ordinalHFModel) v g.
+Proof.
+  intros v.
+  apply (sat_HF_model ordinalHFModel v).
+Qed.
+
+Definition standardShallowBiInterpretation : ShallowBiInterpretation.
+Proof.
+  refine {| shallow_pa_model := natPAModel;
+            shallow_hf_model := ackermannHFModel;
+            shallow_pa_in_hf := ordinalPAModel;
+            shallow_hf_in_pa_in_hf := ordinalHFModel;
+            shallow_pa_round_trip := PA_ordinal_round_trip_iso;
+            shallow_hf_round_trip := HF_ordinal_round_trip_iso |}.
+Defined.
+
+Definition standardModelHFInterpretation :
+  StandardModelHFInterpretationCertificate.
+Proof.
+  refine {| smic_shallow := standardShallowBiInterpretation;
+            smic_paToHf := translateFormula;
+            smic_hfToPa := PA.Formula.translateHFFormula;
+            smic_paToHf_exact := translateFormula_exact;
+            smic_hfToPa_exact := PA.Formula.translateHFFormula_exact;
+            smic_paAxiom_sat := translated_PA_axiom_sat_codes;
+            smic_hfAxiom_sat := PA.Formula.translated_HF_axiom_sat_nat;
+            smic_translatedPA_sat := standard_sat_translatedPAAx;
+            smic_translatedHF_sat := PA.Formula.standard_sat_translatedHFAx |}.
+Defined.
+
+Definition standardModelFiniteInterpretation :
+  StandardModelFiniteInterpretationCertificate.
+Proof.
+  refine {| smic_shallow := standardShallowBiInterpretation;
+            smic_paToHf := translateFormula;
+            smic_hfToPa := PA.Formula.translateHFFormula;
+            smic_paToHf_exact := translateFormula_exact;
+            smic_hfToPa_exact := PA.Formula.translateHFFormula_exact;
+            smic_paAxiom_sat := translated_PA_axiom_sat_codes;
+            smic_hfAxiom_sat := PA.Formula.translated_HFFin_axiom_sat_nat;
+            smic_translatedPA_sat := standard_sat_translatedPAAx;
+            smic_translatedHF_sat :=
+              PA.Formula.standard_sat_translatedHFFinAx |}.
+Defined.
+
+Theorem PA_standard_model_interpretable_with_HF_semantic :
+  inhabited StandardModelHFInterpretationCertificate.
+Proof.
+  exact (inhabits standardModelHFInterpretation).
+Qed.
+
+Theorem PA_standard_model_interpretable_with_HFFin :
+  inhabited StandardModelFiniteInterpretationCertificate.
+Proof.
+  exact (inhabits standardModelFiniteInterpretation).
+Qed.
+
+Theorem PA_biinterpretable_with_HF_standard :
+  inhabited (PAIso natPAModel ordinalPAModel) /\
+    inhabited (AdjunctionIso ackermannHFModel ordinalHFModel).
+Proof.
+  split.
+  - exact (inhabits PA_ordinal_round_trip_iso).
+  - exact (inhabits HF_ordinal_round_trip_iso).
+Qed.
+
+Theorem PA_biinterpretable_with_HFFin_standard :
+  inhabited (PAIso natPAModel ordinalPAModel) /\
+    inhabited (AdjunctionIso ackermannHFModel ordinalHFModel).
+Proof.
+  exact PA_biinterpretable_with_HF_standard.
+Qed.
 
 Record DeductiveBiInterpretationTarget
   (PAForm : Type)
