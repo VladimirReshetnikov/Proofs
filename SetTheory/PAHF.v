@@ -7302,6 +7302,147 @@ Proof.
   apply BetaModuliProduct_coprime_modulus_of_le_mul_betaFact; lia.
 Qed.
 
+Lemma coprime_bezout_left : forall m n,
+  0 < m -> Coprime m n -> exists x y, x * m = 1 + y * n.
+Proof.
+  intros m n hm hcop.
+  unfold Coprime in hcop.
+  destruct (Nat.gcd_bezout_pos m n hm) as [x [y hxy]].
+  rewrite hcop in hxy.
+  exists x, y.
+  exact hxy.
+Qed.
+
+Lemma crt_two_mod : forall m n a b,
+  0 < m -> 0 < n -> Coprime m n -> a < m -> b < n ->
+  exists c, c mod m = a /\ c mod n = b.
+Proof.
+  intros m n a b hm hn hcop ha hb.
+  destruct (coprime_bezout_left m n hm hcop) as [x [y hxy]].
+  set (delta := b + n - a mod n).
+  exists (a + m * (x * delta)).
+  split.
+  - replace (m * (x * delta)) with ((x * delta) * m) by nia.
+    rewrite Nat.Div0.mod_add.
+    apply Nat.mod_small.
+    exact ha.
+  - assert (hdelta : (a + delta) mod n = b).
+    {
+      unfold delta.
+      assert (hnneq : n <> 0) by lia.
+      pose proof (Nat.mod_upper_bound a n hnneq) as hr.
+      pose proof (Nat.div_mod_eq a n) as hdiv.
+      replace (a + (b + n - a mod n)) with
+        (b + (a / n + 1) * n) by nia.
+      rewrite Nat.Div0.mod_add.
+      apply Nat.mod_small.
+      exact hb.
+    }
+    assert (hmx : m * x = 1 + y * n) by nia.
+    replace (m * (x * delta)) with (delta + (y * delta) * n) by nia.
+    replace (a + (delta + y * delta * n)) with
+      ((a + delta) + (y * delta) * n) by nia.
+    rewrite Nat.Div0.mod_add.
+    exact hdelta.
+Qed.
+
+Lemma beta_entries_exist_lt_mul_betaFact :
+    forall N n scale,
+  n <= S N ->
+  forall value : nat -> nat,
+  (forall i, i < n ->
+    value i < BetaModulus (betaFact N * scale) i) ->
+  exists code,
+    forall i, i < n ->
+      BetaEntry code (betaFact N * scale) i (value i).
+Proof.
+  intros N n.
+  induction n as [|n IH]; intros scale hn value hsmall.
+  - exists 0.
+    intros i hi.
+    lia.
+  - assert (hnOld : n <= S N) by lia.
+    destruct (IH scale hnOld value) as [old hold].
+    {
+      intros i hi.
+      apply hsmall.
+      lia.
+    }
+    set (step := betaFact N * scale).
+    set (prod := BetaModuliProduct step n).
+    set (modn := BetaModulus step n).
+    assert (hprodPos : 0 < prod).
+    {
+      unfold prod.
+      apply BetaModuliProduct_pos.
+    }
+    assert (hmodnPos : 0 < modn).
+    {
+      unfold modn.
+      apply BetaModulus_pos.
+    }
+    assert (hnN : n <= N) by lia.
+    assert (hcop : Coprime prod modn).
+    {
+      unfold prod, modn, step.
+      apply BetaModuliProduct_coprime_next_of_le_mul_betaFact.
+      exact hnN.
+    }
+    assert (ha : old mod prod < prod).
+    {
+      apply Nat.mod_upper_bound.
+      lia.
+    }
+    assert (hb : value n < modn).
+    {
+      unfold modn, step.
+      apply hsmall.
+      lia.
+    }
+    destruct (crt_two_mod prod modn (old mod prod) (value n)
+      hprodPos hmodnPos hcop ha hb) as [code [hprod hnew]].
+    exists code.
+    intros i hi.
+    destruct (Nat.eq_dec i n) as [heq | hne].
+    + subst i.
+      apply BetaEntry_of_mod_eq.
+      * unfold step.
+        apply hsmall.
+        lia.
+      * unfold modn in hnew.
+        exact hnew.
+    + assert (hin : i < n) by lia.
+      apply BetaEntry_of_mod_BetaModuliProduct_eq with (old := old) (n := n).
+      * exact hin.
+      * unfold prod in hprod.
+        exact hprod.
+      * apply hold.
+        exact hin.
+Qed.
+
+Lemma beta_entries_exist_through_mul_betaFact :
+    forall N scale (value : nat -> nat),
+  (forall i, i <= N ->
+    value i < BetaModulus (betaFact N * scale) i) ->
+  exists code,
+    forall i, i <= N ->
+      BetaEntry code (betaFact N * scale) i (value i).
+Proof.
+  intros N scale value hsmall.
+  assert (hN : S N <= S N) by lia.
+  destruct (beta_entries_exist_lt_mul_betaFact N (S N) scale
+    hN value) as [code hcode].
+  {
+    intros i hi.
+    apply hsmall.
+    lia.
+  }
+  exists code.
+  intros i hi.
+  apply hcode.
+  lia.
+Qed.
+
 End Formula.
 
 End PA.
