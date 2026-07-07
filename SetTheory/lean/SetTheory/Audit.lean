@@ -146,11 +146,15 @@ open SetTheory
 #check @PA.Formula.hfFormulaAt
 #check @PA.Formula.hfFormulaAt_free
 #check @PA.Formula.translateHFFormula
+#check @PA.Formula.hfFormulaAt_exact
+#check @PA.Formula.translateHFFormula_exact
+#check @PA.Formula.translated_HF_axiom_sat_nat
 #check @PA.Formula.hfFormulaAt_sentence_of_HF_sentence
 #check @PA.Formula.translateHFFormula_sentence_of_HF_sentence
 #check @PA.Formula.translated_HF_axiom_sentence
 #check @PA.Formula.translatedHFAx
 #check @PA.Formula.Sentences_translatedHFAx
+#check @PA.Formula.standard_sat_translatedHFAx
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
 #check @AckermannHF.eq_empty_iff_no_mem

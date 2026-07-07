@@ -3381,6 +3381,91 @@ theorem hfFormulaAt_free (phi : Form) :
 def translateHFFormula (phi : Form) : Formula :=
   hfFormulaAt (fun n : Nat => n) phi
 
+theorem hfFormulaAt_exact (phi : Form) :
+    ∀ (ρ : Nat → Nat) (v e : Nat → Nat),
+      (∀ n, e (ρ n) = v n) →
+        (Sat natModel e (hfFormulaAt ρ phi) ↔ SetTheory.Sat AckermannHF.Mem v phi) := by
+  induction phi with
+  | fMem i j =>
+      intro ρ v e hρ
+      simp only [hfFormulaAt, SetTheory.Sat]
+      rw [hfMemAt_exact]
+      rw [hρ i, hρ j]
+  | fEq i j =>
+      intro ρ v e hρ
+      simp only [hfFormulaAt, SetTheory.Sat, Sat, Term.eval]
+      constructor
+      · intro h
+        rw [← hρ i, ← hρ j]
+        exact h
+      · intro h
+        rw [hρ i, hρ j]
+        exact h
+  | fBot =>
+      intro ρ v e _hρ
+      simp [hfFormulaAt, SetTheory.Sat, Sat]
+  | fImp a b iha ihb =>
+      intro ρ v e hρ
+      simp only [hfFormulaAt, SetTheory.Sat, Sat]
+      rw [iha ρ v e hρ, ihb ρ v e hρ]
+  | fAnd a b iha ihb =>
+      intro ρ v e hρ
+      simp only [hfFormulaAt, SetTheory.Sat, Sat]
+      rw [iha ρ v e hρ, ihb ρ v e hρ]
+  | fOr a b iha ihb =>
+      intro ρ v e hρ
+      simp only [hfFormulaAt, SetTheory.Sat, Sat]
+      rw [iha ρ v e hρ, ihb ρ v e hρ]
+  | fAll a ih =>
+      intro ρ v e hρ
+      simp only [hfFormulaAt, SetTheory.Sat, Sat]
+      constructor
+      · intro h d
+        have hρ' : ∀ n, (scons d e) (hfUpVarMap ρ n) = (scons d v) n := by
+          intro n
+          cases n with
+          | zero => simp [hfUpVarMap, scons]
+          | succ n => simp [hfUpVarMap, scons, hρ n]
+        exact (ih (hfUpVarMap ρ) (scons d v) (scons d e) hρ').mp (h d)
+      · intro h d
+        have hρ' : ∀ n, (scons d e) (hfUpVarMap ρ n) = (scons d v) n := by
+          intro n
+          cases n with
+          | zero => simp [hfUpVarMap, scons]
+          | succ n => simp [hfUpVarMap, scons, hρ n]
+        exact (ih (hfUpVarMap ρ) (scons d v) (scons d e) hρ').mpr (h d)
+  | fEx a ih =>
+      intro ρ v e hρ
+      simp only [hfFormulaAt, SetTheory.Sat, Sat]
+      constructor
+      · intro h
+        rcases h with ⟨d, hd⟩
+        refine ⟨d, ?_⟩
+        have hρ' : ∀ n, (scons d e) (hfUpVarMap ρ n) = (scons d v) n := by
+          intro n
+          cases n with
+          | zero => simp [hfUpVarMap, scons]
+          | succ n => simp [hfUpVarMap, scons, hρ n]
+        exact (ih (hfUpVarMap ρ) (scons d v) (scons d e) hρ').mp hd
+      · intro h
+        rcases h with ⟨d, hd⟩
+        refine ⟨d, ?_⟩
+        have hρ' : ∀ n, (scons d e) (hfUpVarMap ρ n) = (scons d v) n := by
+          intro n
+          cases n with
+          | zero => simp [hfUpVarMap, scons]
+          | succ n => simp [hfUpVarMap, scons, hρ n]
+        exact (ih (hfUpVarMap ρ) (scons d v) (scons d e) hρ').mpr hd
+
+theorem translateHFFormula_exact (phi : Form) (v : Nat → Nat) :
+    Sat natModel v (translateHFFormula phi) ↔ SetTheory.Sat AckermannHF.Mem v phi :=
+  hfFormulaAt_exact phi (fun n : Nat => n) v v (fun _ => rfl)
+
+theorem translated_HF_axiom_sat_nat (phi : Form)
+    (hphi : AckermannHF.HFAx_s phi) (v : Nat → Nat) :
+    Sat natModel v (translateHFFormula phi) :=
+  (translateHFFormula_exact phi v).mpr (AckermannHF.standard_sat_HF v phi hphi)
+
 theorem hfFormulaAt_sentence_of_HF_sentence (phi : Form) (ρ : Nat → Nat)
     (hphi : SetTheory.Sentence phi) : Sentence (hfFormulaAt ρ phi) := by
   intro i hi
@@ -3404,6 +3489,12 @@ theorem Sentences_translatedHFAx : ∀ phi, translatedHFAx phi → Sentence phi 
   intro phi hphi
   rcases hphi with ⟨g, hg, rfl⟩
   exact translated_HF_axiom_sentence g hg
+
+theorem standard_sat_translatedHFAx (e : Nat → Nat) :
+    ∀ g, translatedHFAx g → Sat natModel e g := by
+  intro g hg
+  rcases hg with ⟨phi, hphi, rfl⟩
+  exact translated_HF_axiom_sat_nat phi hphi e
 
 end Formula
 
