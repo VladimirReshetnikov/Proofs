@@ -2495,6 +2495,25 @@ Definition foam_succ_rec_total (V : Type)
     foam_succ_rec_approx V M s f m /\
     foam_mem V M (foam_kpair_obj V M m z) f.
 
+Definition foam_mul_step (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f a m : V) : Prop :=
+  forall k t y,
+    foam_mem V M k m ->
+    foam_mem V M (foam_kpair_obj V M k t) f ->
+    foam_mem V M (foam_kpair_obj V M (foam_adjoin V M k k) y) f ->
+    exists g,
+      foam_succ_rec_approx V M t g a /\
+        foam_mem V M (foam_kpair_obj V M a y) g.
+
+Definition foam_mul_rec_approx (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a f m : V) : Prop :=
+  foam_pair_functional V M f /\
+    foam_pair_keys_below_succ V M f m /\
+      foam_mem V M
+        (foam_kpair_obj V M (foam_empty V M) (foam_empty V M)) f /\
+        foam_pair_total_below_succ V M f m /\
+          foam_mul_step V M f a m.
+
 Definition HF_succRecTotalAt (s m : nat) : form :=
   fEx (fEx (fAnd
     (HF_succRecApproxAt 1 (S (S s)) (S (S m)))
@@ -4230,6 +4249,119 @@ Definition mulGraphAt (out left right : nat) : form :=
     (HF_pairMemAt (S right) (S out) 0)).
 
 Definition mulGraph : form := mulGraphAt 0 1 2.
+
+Lemma foam_mulStepAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f a m,
+  Sat V (foam_mem V M) e (mulStepAt f a m) <->
+    foam_mul_step V M (e f) (e a) (e m).
+Proof.
+  intros V M e f a m.
+  split.
+  - intros h k t y hkm hkt hsky.
+    simpl in h.
+    pose (sk := foam_adjoin V M k k).
+    pose (Ekty := scons V y (scons V t (scons V k e))).
+    pose (Eskty := scons V sk Ekty).
+    assert (hktSat : Sat V (foam_mem V M) Ekty
+        (HF_pairMemAt 2 1 (S (S (S f))))).
+    {
+      apply (proj2 (foam_HF_pairMemAt_spec V M Ekty
+        2 1 (S (S (S f))))).
+      change (foam_mem V M (foam_kpair_obj V M k t) (e f)).
+      exact hkt.
+    }
+    assert (hskSat : Sat V (foam_mem V M) Eskty (HF_succAt 0 3)).
+    {
+      apply (proj2 (foam_HF_succAt_spec V M Eskty 0 3)).
+      change (sk = foam_adjoin V M k k).
+      unfold sk. reflexivity.
+    }
+    assert (hskySat : Sat V (foam_mem V M) Eskty
+        (HF_pairMemAt 0 1 (S (S (S (S f)))))).
+    {
+      apply (proj2 (foam_HF_pairMemAt_spec V M Eskty
+        0 1 (S (S (S (S f)))))).
+      change (foam_mem V M (foam_kpair_obj V M sk y) (e f)).
+      unfold sk.
+      exact hsky.
+    }
+    destruct (h k t y hkm hktSat sk hskSat hskySat)
+      as [g [hg hy]].
+    pose proof (proj1 (foam_HF_succRecApproxAt_spec V M
+      (scons V g Eskty) 0 3 (S (S (S (S (S a)))))) hg) as hg'.
+    pose proof (proj1 (foam_HF_pairMemAt_spec V M
+      (scons V g Eskty) (S (S (S (S (S a))))) 2 0) hy) as hy'.
+    exists g.
+    split.
+    + change (foam_succ_rec_approx V M t g (e a)) in hg'.
+      exact hg'.
+    + change (foam_mem V M (foam_kpair_obj V M (e a) y) g) in hy'.
+      exact hy'.
+  - intros h.
+    simpl.
+    intros k t y hkm hkt sk hsk hsky.
+    pose proof (proj1 (foam_HF_succAt_spec V M
+      (scons V sk (scons V y (scons V t (scons V k e)))) 0 3) hsk)
+      as hsk'.
+    assert (hkt' : foam_mem V M (foam_kpair_obj V M k t) (e f)).
+    {
+      exact (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V y (scons V t (scons V k e))) 2 1 (S (S (S f)))) hkt).
+    }
+    assert (hsky' : foam_mem V M
+        (foam_kpair_obj V M (foam_adjoin V M k k) y) (e f)).
+    {
+      pose proof (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V sk (scons V y (scons V t (scons V k e))))
+        0 1 (S (S (S (S f))))) hsky) as hp.
+      rewrite hsk' in hp.
+      exact hp.
+    }
+    destruct (h k t y hkm hkt' hsky') as [g [hg hy]].
+    exists g.
+    split.
+    + apply (proj2 (foam_HF_succRecApproxAt_spec V M
+        (scons V g (scons V sk (scons V y (scons V t (scons V k e)))))
+        0 3 (S (S (S (S (S a))))))).
+      change (foam_succ_rec_approx V M t g (e a)).
+      exact hg.
+    + apply (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V g (scons V sk (scons V y (scons V t (scons V k e)))))
+        (S (S (S (S (S a))))) 2 0)).
+      change (foam_mem V M (foam_kpair_obj V M (e a) y) g).
+      exact hy.
+Qed.
+
+Lemma foam_mulRecApproxAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f a m,
+  Sat V (foam_mem V M) e (mulRecApproxAt f a m) <->
+    foam_mul_rec_approx V M (e a) (e f) (e m).
+Proof.
+  intros V M e f a m.
+  split.
+  - intro h.
+    unfold mulRecApproxAt in h.
+    simpl in h.
+    destruct h as [hfun [hkeys [hbase [htotal hstep]]]].
+    unfold foam_mul_rec_approx.
+    repeat split.
+    + exact (proj1 (foam_HF_pairFunctionalAt_spec V M e f) hfun).
+    + exact (proj1 (foam_HF_pairKeysBelowSuccAt_spec V M e f m) hkeys).
+    + exact (proj1 (foam_HF_pairZeroBaseAt_spec V M e f) hbase).
+    + exact (proj1 (foam_HF_pairTotalBelowSuccAt_spec V M e f m) htotal).
+    + exact (proj1 (foam_mulStepAt_spec V M e f a m) hstep).
+  - intro h.
+    unfold foam_mul_rec_approx in h.
+    destruct h as [hfun [hkeys [hbase [htotal hstep]]]].
+    unfold mulRecApproxAt.
+    simpl.
+    repeat split.
+    + exact (proj2 (foam_HF_pairFunctionalAt_spec V M e f) hfun).
+    + exact (proj2 (foam_HF_pairKeysBelowSuccAt_spec V M e f m) hkeys).
+    + exact (proj2 (foam_HF_pairZeroBaseAt_spec V M e f) hbase).
+    + exact (proj2 (foam_HF_pairTotalBelowSuccAt_spec V M e f m) htotal).
+    + exact (proj2 (foam_mulStepAt_spec V M e f a m) hstep).
+Qed.
 
 Lemma domainForm_free : forall i,
   Free i domainForm -> i = 0.
@@ -9739,6 +9871,26 @@ Proof.
   exact (False_rect _ (foam_empty_spec V M k hkm)).
 Qed.
 
+Lemma mulGraphAt_of_mulRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right f,
+  foam_mul_rec_approx V M (e left) f (e right) ->
+  foam_mem V M (foam_kpair_obj V M (e right) (e out)) f ->
+  Sat V (foam_mem V M) e (mulGraphAt out left right).
+Proof.
+  intros V M e out left right f hf hout.
+  unfold mulGraphAt.
+  exists f.
+  split.
+  - apply (proj2 (foam_mulRecApproxAt_spec V M
+      (scons V f e) 0 (S left) (S right))).
+    change (foam_mul_rec_approx V M (e left) f (e right)).
+    exact hf.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    exact hout.
+Qed.
+
 Lemma mulGraphAt_zero_right_model : forall V
     (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right,
   e out = foam_empty V M ->
@@ -9778,6 +9930,56 @@ Proof.
     rewrite hright, hout.
     unfold f.
     apply foam_zero_succ_rec_graph_base.
+Qed.
+
+Lemma termGraphAt_mul_var_var_of_mulRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f,
+  foam_mul_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) (e out)) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tMul (PA.tVar left) (PA.tVar right))).
+Proof.
+  intros V M rho out left right e f hf hout.
+  simpl.
+  exists (e (rho right)).
+  exists (e (rho left)).
+  exists (e out).
+  split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 3) 1 left
+      (scons V (e out)
+        (scons V (e (rho left)) (scons V (e (rho right)) e))))).
+    change (e (rho left) =
+      scons V (e out)
+        (scons V (e (rho left)) (scons V (e (rho right)) e))
+        (rho left + 3)).
+    replace (rho left + 3) with (S (S (S (rho left)))) by lia.
+    reflexivity.
+  - split.
+    + apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+        (fun n => rho n + 3) 2 right
+        (scons V (e out)
+          (scons V (e (rho left)) (scons V (e (rho right)) e))))).
+      change (e (rho right) =
+        scons V (e out)
+          (scons V (e (rho left)) (scons V (e (rho right)) e))
+          (rho right + 3)).
+      replace (rho right + 3) with (S (S (S (rho right)))) by lia.
+      reflexivity.
+    + split.
+      * replace (out + 3) with (S (S (S out))) by lia.
+        simpl.
+        reflexivity.
+      * apply (mulGraphAt_of_mulRecApprox_model V M
+          (scons V (e out)
+            (scons V (e (rho left)) (scons V (e (rho right)) e)))
+          0 1 2 f).
+        -- change (foam_mul_rec_approx V M
+            (e (rho left)) f (e (rho right))).
+           exact hf.
+        -- change (foam_mem V M
+            (foam_kpair_obj V M (e (rho right)) (e out)) f).
+           exact hout.
 Qed.
 
 Lemma termGraphAt_mul_var_zero_model : forall V
