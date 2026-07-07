@@ -10716,6 +10716,13 @@ theorem BProv_HFFin_of_translatedPAAx {g : Form}
   rcases hg with ⟨phi, hphi, rfl⟩
   exact BProv_HFFin_translated_PA_axiom hphi
 
+/-- Any derivation over the intermediate translated-PA axiom theory can be cut
+down to a derivation over the strengthened finite-HF theory. -/
+theorem BProv_HFFin_of_BProv_translatedPAAx {g : Form}
+    (h : BProv translatedPAAx [] g) : BProv HFFinAx_s [] g :=
+  BProv_lift_translatedPAAx_to_HFFin
+    (fun _ hg => BProv_HFFin_of_translatedPAAx hg) h
+
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
     ∀ g, translatedPAAx g → Sat Mem e g := by
   intro g hg
@@ -10788,6 +10795,20 @@ def setTheoryIdentityInterpretationOfAxiomProofs
   maps_theorem := by
     intro phi _ h
     exact BProv_lift h hAx (fun g hg => nomatch hg)
+
+/-- The intermediate set-theory of translated PA axioms is deductively
+interpretable in the strengthened finite-HF theory by the identity translation.
+
+This record packages the axiom-discharge theorem
+`PAInHF.BProv_HFFin_of_translatedPAAx` at the theory level.  The still-open
+PA-in-HF proof-translation task can target `PAInHF.translatedPAAx` first and
+compose with this interpretation. -/
+def translatedPATheoryInHFFinInterpretation :
+    TheoryInterpretation Form Form Sentence Sentence
+      PAInHF.translatedPAAx HFFinAx_s BProv BProv :=
+  setTheoryIdentityInterpretationOfAxiomProofs
+    PAInHF.translatedPAAx HFFinAx_s
+    (fun _ hg => PAInHF.BProv_HFFin_of_translatedPAAx hg)
 
 /-- PA analogue of `setTheoryIdentityInterpretationOfAxiomProofs`. -/
 def paIdentityInterpretationOfAxiomProofs

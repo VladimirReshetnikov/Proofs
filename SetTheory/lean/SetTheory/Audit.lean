@@ -484,6 +484,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
 #check @AckermannHF.PAInHF.BProv_HFFin_of_translatedPAAx
+#check @AckermannHF.PAInHF.BProv_HFFin_of_BProv_translatedPAAx
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
@@ -561,6 +562,7 @@ open SetTheory
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.TheoryInterpretation
 #check @AckermannHF.setTheoryIdentityInterpretationOfAxiomProofs
+#check @AckermannHF.translatedPATheoryInHFFinInterpretation
 #check @AckermannHF.paIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
