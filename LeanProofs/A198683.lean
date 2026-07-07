@@ -38,46 +38,37 @@ the definition used for the sequence is visible in this module. -/
 def principalPow (z w : ℂ) : ℂ :=
   Complex.exp (Complex.log z * w)
 
-/-- The lexical binary parenthesizations built from copies of the token `i`. -/
-inductive IPowExpr where
-  | atom
-  | pow (a b : IPowExpr)
-deriving Repr, DecidableEq
+/-- A198683 uses the shared one-token lexical syntax directly. -/
+abbrev IPowExpr := PowTower.Expr
 
 namespace IPowExpr
 
-open IPowExpr
+open PowTower.Expr
+
+/-- Legacy spelling for the shared lexical atom, kept for compatibility. -/
+abbrev atom : IPowExpr := PowTower.Expr.atom
+
+/-- Legacy spelling for the shared lexical binary node, kept for compatibility. -/
+abbrev pow : IPowExpr -> IPowExpr -> IPowExpr := PowTower.Expr.pow
 
 /-- Interpret a lexical expression by principal complex exponentiation. -/
-noncomputable def eval : IPowExpr → ℂ
-  | atom => Complex.I
-  | pow a b => principalPow (eval a) (eval b)
+noncomputable def eval : IPowExpr -> ℂ :=
+  PowTower.Expr.eval Complex.I principalPow
 
 /-- The number of `i` tokens in a lexical expression. -/
-def size : IPowExpr → Nat
-  | atom => 1
-  | pow a b => size a + size b
+def size : IPowExpr -> Nat :=
+  PowTower.Expr.size
 
 /-- All lexical binary parenthesizations with exactly `n` copies of `i`. -/
-def parenthesizations : Nat → List IPowExpr
-  | 0 => []
-  | 1 => [atom]
-  | n + 2 =>
-      (List.finRange (n + 1)).flatMap fun k =>
-        (parenthesizations (k.1 + 1)).flatMap fun a =>
-          (parenthesizations (n + 1 - k.1)).map fun b => pow a b
-termination_by n => n
-decreasing_by
-  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-  · exact Nat.succ_lt_succ k.2
+def parenthesizations : Nat -> List IPowExpr :=
+  PowTower.Expr.parenthesizations
 
 end IPowExpr
 
 /--
-The legacy local lexical value set for A198683: evaluate every binary
+The compatibility lexical value set for A198683: evaluate every shared binary
 parenthesization of `n` copies of `i` using principal complex power.  The
-sequence definition below uses the shared `PowTower.Expr` syntax; this local
-syntax is retained as a compatibility view for older proofs.
+sequence definition below uses the same `PowTower.Expr` syntax directly.
 -/
 def a198683LexicalValueSet (n : Nat) : Set ℂ :=
   {z | ∃ e ∈ IPowExpr.parenthesizations n, IPowExpr.eval e = z}
@@ -106,56 +97,6 @@ termination_by n => n
 decreasing_by
   · exact Nat.succ_lt_succ k.2
   · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-
-/--
-The recursive value-set presentation is extensionally equal to the canonical
-lexical syntax-and-evaluation presentation.  Computation-oriented certificates
-may use `a198683ValueSet`, but only through this proved equivalence.
--/
-@[simp] theorem a198683LexicalValueSet_eq_valueSet (n : Nat) :
-    a198683LexicalValueSet n = a198683ValueSet n := by
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-    cases n with
-    | zero =>
-        ext z
-        simp [a198683LexicalValueSet, IPowExpr.parenthesizations, a198683ValueSet]
-    | succ n =>
-        cases n with
-        | zero =>
-            ext z
-            simp [a198683LexicalValueSet, IPowExpr.parenthesizations, IPowExpr.eval,
-              a198683ValueSet]
-        | succ n =>
-            ext z
-            constructor
-            · rintro ⟨e, he, rfl⟩
-              simp only [IPowExpr.parenthesizations, List.mem_flatMap, List.mem_map] at he
-              rcases he with ⟨k, _hk, a, ha, b, hb, rfl⟩
-              simp only [a198683ValueSet]
-              refine ⟨k, IPowExpr.eval a, ?_, IPowExpr.eval b, ?_, rfl⟩
-              · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
-                rw [← hleft]
-                exact ⟨a, ha, rfl⟩
-              · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
-                rw [← hright]
-                exact ⟨b, hb, rfl⟩
-            · intro hz
-              simp only [a198683ValueSet] at hz
-              rcases hz with ⟨k, x, hx, y, hy, rfl⟩
-              have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
-              have hxlex : x ∈ a198683LexicalValueSet (k.1 + 1) := by
-                rw [hleft]
-                exact hx
-              have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
-              have hylex : y ∈ a198683LexicalValueSet (n + 1 - k.1) := by
-                rw [hright]
-                exact hy
-              rcases hxlex with ⟨a, ha, rfl⟩
-              rcases hylex with ⟨b, hb, rfl⟩
-              refine ⟨IPowExpr.pow a b, ?_, rfl⟩
-              simp only [IPowExpr.parenthesizations, List.mem_flatMap, List.mem_map]
-              exact ⟨k, List.mem_finRange k, a, ha, b, hb, rfl⟩
 
 /--
 The shared lexical definition computes the same recursive set used by the
@@ -202,13 +143,19 @@ theorem a198683CanonicalValueSet_eq_valueSet (n : Nat) :
     PowTower.Expr.valueSet_eq_recursiveValueSet Complex.I principalPow n,
     a198683SharedRecursiveValueSet_eq_valueSet]
 
-/--
-The legacy local lexical syntax and the shared lexical syntax are equivalent
-for A198683.
--/
+/-- The A198683 compatibility spelling is the shared lexical syntax. -/
 theorem a198683LexicalValueSet_eq_canonicalValueSet (n : Nat) :
     a198683LexicalValueSet n = a198683CanonicalValueSet n := by
-  rw [a198683LexicalValueSet_eq_valueSet, a198683CanonicalValueSet_eq_valueSet]
+  rfl
+
+/--
+The recursive value-set presentation is extensionally equal to the canonical
+lexical syntax-and-evaluation presentation.  Computation-oriented certificates
+may use `a198683ValueSet`, but only through this proved equivalence.
+-/
+@[simp] theorem a198683LexicalValueSet_eq_valueSet (n : Nat) :
+    a198683LexicalValueSet n = a198683ValueSet n := by
+  rw [a198683LexicalValueSet_eq_canonicalValueSet, a198683CanonicalValueSet_eq_valueSet]
 
 /-- OEIS A198683, as a cardinality of the canonical lexical value set. -/
 def a198683 (n : Nat) : Nat :=
