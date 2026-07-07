@@ -2942,6 +2942,246 @@ theorem crt_two_mod {m n a b : Nat} (hm : 0 < m) (hn : 0 < n)
       exact hcmodInt
     omega
 
+theorem BetaEntry_value_lt {code step idx value : Nat}
+    (h : BetaEntry code step idx value) :
+    value < BetaModulus step idx := by
+  rcases h with ⟨_, _, hlt⟩
+  exact hlt
+
+theorem BetaEntry_mod_eq {code step idx value : Nat}
+    (h : BetaEntry code step idx value) :
+    code % BetaModulus step idx = value := by
+  rcases h with ⟨q, hcode, hlt⟩
+  rw [hcode]
+  rw [Nat.mul_comm q (BetaModulus step idx)]
+  rw [Nat.mul_add_mod_self_left]
+  exact Nat.mod_eq_of_lt hlt
+
+theorem BetaEntry_of_mod_eq {code step idx value : Nat}
+    (hlt : value < BetaModulus step idx)
+    (hmod : code % BetaModulus step idx = value) :
+    BetaEntry code step idx value := by
+  refine ⟨code / BetaModulus step idx, ?_, hlt⟩
+  have hdiv : code = (code / BetaModulus step idx) * BetaModulus step idx +
+      code % BetaModulus step idx := by
+    simpa [Nat.mul_comm] using (Nat.div_add_mod code (BetaModulus step idx)).symm
+  simpa [hmod] using hdiv
+
+theorem BetaModuliProduct_dvd_of_lt {step i n : Nat} (hi : i < n) :
+    BetaModulus step i ∣ BetaModuliProduct step n := by
+  induction n with
+  | zero => omega
+  | succ n ih =>
+      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hi) with hlt | heq
+      · have hd : BetaModulus step i ∣ BetaModuliProduct step n := ih hlt
+        rcases hd with ⟨q, hq⟩
+        refine ⟨q * BetaModulus step n, ?_⟩
+        simp [BetaModuliProduct, hq, Nat.mul_assoc]
+      · subst i
+        change BetaModulus step n ∣ BetaModuliProduct step n * BetaModulus step n
+        exact Nat.dvd_mul_left (BetaModulus step n) (BetaModuliProduct step n)
+
+theorem mod_eq_of_mod_BetaModuliProduct_eq {code old step idx n : Nat}
+    (hi : idx < n)
+    (hmod : code % BetaModuliProduct step n = old % BetaModuliProduct step n) :
+    code % BetaModulus step idx = old % BetaModulus step idx := by
+  have hd : BetaModulus step idx ∣ BetaModuliProduct step n :=
+    BetaModuliProduct_dvd_of_lt hi
+  calc
+    code % BetaModulus step idx = code % BetaModuliProduct step n % BetaModulus step idx := by
+      exact (Nat.mod_mod_of_dvd code hd).symm
+    _ = old % BetaModuliProduct step n % BetaModulus step idx := by rw [hmod]
+    _ = old % BetaModulus step idx := Nat.mod_mod_of_dvd old hd
+
+theorem BetaEntry_of_mod_BetaModuliProduct_eq {code old step idx n value : Nat}
+    (hi : idx < n)
+    (hmod : code % BetaModuliProduct step n = old % BetaModuliProduct step n)
+    (hold : BetaEntry old step idx value) :
+    BetaEntry code step idx value := by
+  apply BetaEntry_of_mod_eq (BetaEntry_value_lt hold)
+  calc
+    code % BetaModulus step idx = old % BetaModulus step idx :=
+      mod_eq_of_mod_BetaModuliProduct_eq hi hmod
+    _ = value := BetaEntry_mod_eq hold
+
+theorem BetaModulus_pair_coprime_of_lt_le_mul_betaFact {i j N scale : Nat}
+    (hij : i < j) (hj : j ≤ N) :
+    (BetaModulus (betaFact N * scale) i).Coprime
+      (BetaModulus (betaFact N * scale) j) := by
+  apply BetaModulus_pair_coprime_of_dvd_step hij
+  have hd : j - i ∣ betaFact N := by
+    apply dvd_betaFact_of_pos_le
+    · omega
+    · omega
+  exact Nat.dvd_trans hd (Nat.dvd_mul_right (betaFact N) scale)
+
+theorem BetaModuliProduct_coprime_modulus_of_le_mul_betaFact {n j N scale : Nat}
+    (hnj : n ≤ j) (hjN : j ≤ N) :
+    (BetaModuliProduct (betaFact N * scale) n).Coprime
+      (BetaModulus (betaFact N * scale) j) := by
+  induction n with
+  | zero =>
+      simp [BetaModuliProduct]
+  | succ n ih =>
+      simp [BetaModuliProduct]
+      apply Nat.Coprime.mul_left
+      · exact ih (by omega)
+      · exact BetaModulus_pair_coprime_of_lt_le_mul_betaFact (by omega) hjN
+
+theorem BetaModuliProduct_coprime_next_of_le_mul_betaFact {n N scale : Nat}
+    (hn : n ≤ N) :
+    (BetaModuliProduct (betaFact N * scale) n).Coprime
+      (BetaModulus (betaFact N * scale) n) :=
+  BetaModuliProduct_coprime_modulus_of_le_mul_betaFact (Nat.le_refl n) hn
+
+theorem beta_entries_exist_lt_mul_betaFact {N n scale : Nat} (hn : n ≤ N + 1)
+    (value : Nat → Nat)
+    (hsmall : ∀ i, i < n → value i < BetaModulus (betaFact N * scale) i) :
+    ∃ code, ∀ i, i < n → BetaEntry code (betaFact N * scale) i (value i) := by
+  induction n with
+  | zero =>
+      refine ⟨0, ?_⟩
+      intro i hi
+      omega
+  | succ n ih =>
+      have hnOld : n ≤ N + 1 := by omega
+      rcases ih hnOld (by
+        intro i hi
+        exact hsmall i (by omega)) with ⟨old, hold⟩
+      let step := betaFact N * scale
+      let prod := BetaModuliProduct step n
+      let modn := BetaModulus step n
+      have hprodPos : 0 < prod := by
+        simpa [prod, step] using BetaModuliProduct_pos step n
+      have hmodnPos : 0 < modn := by
+        simpa [modn, step] using BetaModulus_pos step n
+      have hnN : n ≤ N := by omega
+      have hcop : prod.Coprime modn := by
+        simpa [prod, modn, step] using
+          BetaModuliProduct_coprime_next_of_le_mul_betaFact
+            (n := n) (N := N) (scale := scale) hnN
+      have ha : old % prod < prod := Nat.mod_lt old hprodPos
+      have hb : value n < modn := by
+        simpa [modn, step] using hsmall n (Nat.lt_succ_self n)
+      rcases crt_two_mod hprodPos hmodnPos hcop ha hb with ⟨code, hprod, hnew⟩
+      refine ⟨code, ?_⟩
+      intro i hi
+      rcases Nat.lt_or_eq_of_le (Nat.le_of_lt_succ hi) with hlt | heq
+      · apply BetaEntry_of_mod_BetaModuliProduct_eq hlt
+        · simpa [prod, step] using hprod
+        · exact hold i hlt
+      · subst i
+        apply BetaEntry_of_mod_eq
+        · exact hsmall n (Nat.lt_succ_self n)
+        · simpa [modn, step] using hnew
+
+theorem beta_entries_exist_through_mul_betaFact {N scale : Nat} (value : Nat → Nat)
+    (hsmall : ∀ i, i ≤ N → value i < BetaModulus (betaFact N * scale) i) :
+    ∃ code, ∀ i, i ≤ N → BetaEntry code (betaFact N * scale) i (value i) := by
+  rcases beta_entries_exist_lt_mul_betaFact (N := N) (n := N + 1) (scale := scale)
+      (Nat.le_refl (N + 1)) value (by
+    intro i hi
+    exact hsmall i (by omega)) with ⟨code, hcode⟩
+  refine ⟨code, ?_⟩
+  intro i hi
+  exact hcode i (by omega)
+
+theorem shiftRight_lt_trace_modulus (elem set i : Nat) :
+    set >>> i < BetaModulus (betaFact (elem + 1) * (set + 1)) i := by
+  let step := betaFact (elem + 1) * (set + 1)
+  have hshift : set >>> i ≤ set := Nat.shiftRight_le set i
+  have hbf1 : 1 ≤ betaFact (elem + 1) := Nat.succ_le_of_lt (betaFact_pos (elem + 1))
+  have hstep_ge : set + 1 ≤ step := by
+    have hm := Nat.mul_le_mul_right (set + 1) hbf1
+    simpa [step, Nat.mul_comm, Nat.mul_assoc] using hm
+  have hset_lt_step : set < step := by omega
+  have hstep_le_mul : step ≤ (i + 1) * step := by
+    have hi1 : 1 ≤ i + 1 := by omega
+    have hm := Nat.mul_le_mul_right step hi1
+    simpa [Nat.one_mul, Nat.mul_comm] using hm
+  change set >>> i < 1 + (i + 1) * step
+  omega
+
+theorem div2_step_shiftRight (set k : Nat) :
+    let cur := set >>> k
+    let next := set >>> (k + 1)
+    let bit := cur % 2
+    (bit = 0 ∨ bit = 1) ∧ cur = next + next + bit := by
+  intro cur next bit
+  have hbit : bit = 0 ∨ bit = 1 := by
+    simpa [bit] using Nat.mod_two_eq_zero_or_one cur
+  have hnext : next = cur / 2 := by
+    simpa [cur, next] using Nat.shiftRight_succ set k
+  have hdiv := Nat.div_add_mod cur 2
+  constructor
+  · exact hbit
+  · omega
+
+theorem div2_step_shiftRight_one {set elem : Nat}
+    (hmem : AckermannHF.Mem elem set) :
+    let cur := set >>> elem
+    let next := set >>> (elem + 1)
+    cur = next + next + 1 := by
+  intro cur next
+  have hbitTrue : cur.testBit 0 = true := by
+    have hshift := Nat.testBit_shiftRight (i := elem) (j := 0) set
+    simpa [AckermannHF.Mem, cur, Nat.add_comm] using hmem.symm.trans hshift.symm
+  have hmod : cur % 2 = 1 := by
+    rw [Nat.testBit_zero] at hbitTrue
+    exact of_decide_eq_true hbitTrue
+  have hnext : next = cur / 2 := by
+    simpa [cur, next] using Nat.shiftRight_succ set elem
+  have hdiv := Nat.div_add_mod cur 2
+  omega
+
+theorem HFMemTrace_exists_of_mem {elem set : Nat}
+    (hmem : AckermannHF.Mem elem set) :
+    ∃ code step, HFMemTrace elem set code step := by
+  let N := elem + 1
+  let scale := set + 1
+  let step := betaFact N * scale
+  let value : Nat → Nat := fun k => set >>> k
+  have hsmall : ∀ i, i ≤ N → value i < BetaModulus step i := by
+    intro i _hi
+    simpa [value, step, N, scale] using shiftRight_lt_trace_modulus elem set i
+  rcases beta_entries_exist_through_mul_betaFact (N := N) (scale := scale) value hsmall with
+    ⟨code, hcode⟩
+  refine ⟨code, step, ?_⟩
+  refine ⟨?_, ?_, ?_⟩
+  · have h0 := hcode 0 (by omega)
+    simpa [value, step, Nat.shiftRight_zero] using h0
+  · intro k hk
+    let cur := set >>> k
+    let next := set >>> (k + 1)
+    let bit := cur % 2
+    have hcur : BetaEntry code step k cur := by
+      have h := hcode k (by omega)
+      simpa [value, cur] using h
+    have hnext : BetaEntry code step (k + 1) next := by
+      have h := hcode (k + 1) (by omega)
+      simpa [value, next] using h
+    have hstep := div2_step_shiftRight set k
+    refine ⟨cur, next, bit, ?_, ?_, ?_, ?_⟩
+    · exact hcur
+    · exact hnext
+    · simpa [cur, bit] using hstep.1
+    · simpa [cur, next, bit] using hstep.2
+  · let cur := set >>> elem
+    let next := set >>> (elem + 1)
+    have hcur : BetaEntry code step elem cur := by
+      have h := hcode elem (by omega)
+      simpa [value, cur] using h
+    have hnext : BetaEntry code step (elem + 1) next := by
+      have h := hcode (elem + 1) (by omega)
+      simpa [value, next] using h
+    have hcurEq : cur = next + next + 1 := by
+      simpa [cur, next] using div2_step_shiftRight_one hmem
+    refine ⟨cur, next, ?_, ?_, ?_, ?_⟩
+    · exact hcur
+    · exact hnext
+    · exact Or.inr rfl
+    · exact hcurEq
+
 theorem BetaEntry_functional {code step idx a b : Nat}
     (ha : BetaEntry code step idx a) (hb : BetaEntry code step idx b) : a = b := by
   rcases ha with ⟨qa, hca, hla⟩
@@ -3028,6 +3268,18 @@ theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
   intro h
   rcases (hfMemAt_nat_trace e elem set).mp h with ⟨code, step, htrace⟩
   exact HFMemTrace_mem htrace
+
+theorem hfMemAt_complete (e : Nat → Nat) (elem set : Nat) :
+    AckermannHF.Mem (e elem) (e set) → Sat natModel e (hfMemAt elem set) := by
+  intro hmem
+  rcases HFMemTrace_exists_of_mem hmem with ⟨code, step, htrace⟩
+  exact (hfMemAt_nat_trace e elem set).mpr ⟨code, step, htrace⟩
+
+theorem hfMemAt_exact (e : Nat → Nat) (elem set : Nat) :
+    Sat natModel e (hfMemAt elem set) ↔ AckermannHF.Mem (e elem) (e set) := by
+  constructor
+  · exact hfMemAt_sound e elem set
+  · exact hfMemAt_complete e elem set
 
 theorem hfMemAt_free {i elem set : Nat} (h : Free i (hfMemAt elem set)) :
     i = elem ∨ i = set := by
