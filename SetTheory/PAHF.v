@@ -13861,6 +13861,18 @@ Proof.
   exact hcoded.
 Qed.
 
+Definition AdjunctionIso (M N : HFModel) : Type := HFIso M N.
+
+Record ShallowBiInterpretation := {
+  shallow_pa_model : PAModel;
+  shallow_hf_model : HFModel;
+  shallow_pa_in_hf : PAModel;
+  shallow_hf_in_pa_in_hf : HFModel;
+  shallow_pa_round_trip : PAIso shallow_pa_model shallow_pa_in_hf;
+  shallow_hf_round_trip :
+    AdjunctionIso shallow_hf_model shallow_hf_in_pa_in_hf
+}.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
@@ -13876,6 +13888,250 @@ Record TheoryInterpretation
     SrcSentence phi ->
     SrcProv SrcAx [] phi -> TgtProv TgtAx [] (ti_translate phi)
 }.
+
+Definition TheoryInterpretation_comp
+  (Src Mid Tgt : Type)
+  (SrcSentence : Src -> Prop) (MidSentence : Mid -> Prop)
+  (TgtSentence : Tgt -> Prop)
+  (SrcAx : Src -> Prop) (MidAx : Mid -> Prop) (TgtAx : Tgt -> Prop)
+  (SrcProv : (Src -> Prop) -> list Src -> Src -> Prop)
+  (MidProv : (Mid -> Prop) -> list Mid -> Mid -> Prop)
+  (TgtProv : (Tgt -> Prop) -> list Tgt -> Tgt -> Prop)
+  (I : TheoryInterpretation Src Mid
+    SrcSentence MidSentence SrcAx MidAx SrcProv MidProv)
+  (J : TheoryInterpretation Mid Tgt
+    MidSentence TgtSentence MidAx TgtAx MidProv TgtProv)
+  (hSrcAxSentence : forall phi, SrcAx phi -> SrcSentence phi) :
+  TheoryInterpretation Src Tgt
+    SrcSentence TgtSentence SrcAx TgtAx SrcProv TgtProv.
+Proof.
+  refine {| ti_translate := fun phi =>
+    @ti_translate Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J
+      (@ti_translate Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I phi) |}.
+  - intros phi hphi.
+    apply (@ti_maps_sentence Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J).
+    apply (@ti_maps_sentence Src Mid SrcSentence MidSentence SrcAx MidAx
+      SrcProv MidProv I).
+    exact hphi.
+  - intros phi hphi.
+    apply (@ti_maps_theorem Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J).
+    + apply (@ti_maps_sentence Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      apply hSrcAxSentence.
+      exact hphi.
+    + apply (@ti_maps_axiom Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      exact hphi.
+  - intros phi hsent hprov.
+    apply (@ti_maps_theorem Mid Tgt MidSentence TgtSentence MidAx TgtAx
+      MidProv TgtProv J).
+    + apply (@ti_maps_sentence Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      exact hsent.
+    + apply (@ti_maps_theorem Src Mid SrcSentence MidSentence SrcAx MidAx
+        SrcProv MidProv I).
+      * exact hsent.
+      * exact hprov.
+Defined.
+
+Definition setTheoryIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : form -> Prop)
+    (hAx : forall phi, SrcAx phi -> BProv TgtAx [] phi) :
+    TheoryInterpretation form form Sentence Sentence SrcAx TgtAx BProv BProv.
+Proof.
+  refine {| ti_translate := fun phi => phi |}.
+  - intros phi hphi. exact hphi.
+  - intros phi hphi. exact (hAx phi hphi).
+  - intros phi _ h.
+    apply (BProv_lift SrcAx TgtAx [] [] phi h).
+    + intros b hb. exact (hAx b hb).
+    + intros g hg. contradiction.
+Defined.
+
+Definition translatedPATheoryInHFFinInterpretation :
+  TheoryInterpretation form form Sentence Sentence
+    translatedPAAx HFFinAx_s BProv BProv :=
+  setTheoryIdentityInterpretationOfAxiomProofs
+    translatedPAAx HFFinAx_s BProv_HFFin_of_translatedPAAx.
+
+Definition paInHFFinOfTranslatedPATheoryInterpretation
+    (I : TheoryInterpretation PA.formula form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s translatedPAAx
+      PA.Formula.BProv BProv) :
+    TheoryInterpretation PA.formula form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s HFFinAx_s
+      PA.Formula.BProv BProv :=
+  TheoryInterpretation_comp PA.formula form form
+    PA.Formula.Sentence Sentence Sentence
+    PA.Formula.Ax_s translatedPAAx HFFinAx_s
+    PA.Formula.BProv BProv BProv
+    I translatedPATheoryInHFFinInterpretation
+    (fun phi hphi => PA.Formula.sentence_ax_s phi hphi).
+
+Definition paIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : PA.formula -> Prop)
+    (hAx : forall phi, SrcAx phi -> PA.Formula.BProv TgtAx [] phi) :
+    TheoryInterpretation PA.formula PA.formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      SrcAx TgtAx PA.Formula.BProv PA.Formula.BProv.
+Proof.
+  refine {| ti_translate := fun phi => phi |}.
+  - intros phi hphi. exact hphi.
+  - intros phi hphi. exact (hAx phi hphi).
+  - intros phi _ h.
+    apply (PA.Formula.BProv_lift SrcAx TgtAx [] [] phi h).
+    + intros b hb. exact (hAx b hb).
+    + intros g hg. contradiction.
+Defined.
+
+Definition PAProvability : Type :=
+  (PA.formula -> Prop) -> list PA.formula -> PA.formula -> Prop.
+
+Record DeductiveBiInterpretationCertificate
+  (HFAxTarget : form -> Prop) (PAProv : PAProvability) := {
+  dbic_pa_in_hf : TheoryInterpretation PA.formula form
+    PA.Formula.Sentence Sentence
+    PA.Formula.Ax_s HFAxTarget
+    PAProv BProv;
+  dbic_hf_in_pa : TheoryInterpretation form PA.formula
+    Sentence PA.Formula.Sentence
+    HFAxTarget PA.Formula.Ax_s
+    BProv PAProv;
+  dbic_pa_round_trip : forall phi,
+    PA.Formula.Sentence phi ->
+    PAProv PA.Formula.Ax_s []
+      (PA.Formula.iffForm phi
+        (@ti_translate form PA.formula Sentence PA.Formula.Sentence
+          HFAxTarget PA.Formula.Ax_s BProv PAProv dbic_hf_in_pa
+          (@ti_translate PA.formula form PA.Formula.Sentence Sentence
+            PA.Formula.Ax_s HFAxTarget PAProv BProv dbic_pa_in_hf phi)));
+  dbic_hf_round_trip : forall phi,
+    Sentence phi ->
+    BProv HFAxTarget []
+      (fIff phi
+        (@ti_translate PA.formula form PA.Formula.Sentence Sentence
+          PA.Formula.Ax_s HFAxTarget PAProv BProv dbic_pa_in_hf
+          (@ti_translate form PA.formula Sentence PA.Formula.Sentence
+            HFAxTarget PA.Formula.Ax_s BProv PAProv dbic_hf_in_pa phi)))
+}.
+
+Definition PAHFDeductiveBiInterpretationCertificate : Type :=
+  DeductiveBiInterpretationCertificate HFAx_s PA.Formula.BProv.
+
+Definition PAHFFinDeductiveBiInterpretationCertificate : Type :=
+  DeductiveBiInterpretationCertificate HFFinAx_s PA.Formula.BProv.
+
+Record StandardModelInterpretationCertificateFor
+    (HFAxTarget : form -> Prop)
+    (TranslatedHFAxTarget : PA.formula -> Prop) := {
+  smic_shallow : ShallowBiInterpretation;
+  smic_paToHf : PA.formula -> form;
+  smic_hfToPa : form -> PA.formula;
+  smic_paToHf_exact : forall phi v,
+    Sat nat hf_mem (fun n => ordinal_code (v n)) (smic_paToHf phi) <->
+      PA.Formula.Sat PA.natModel v phi;
+  smic_hfToPa_exact : forall phi v,
+    PA.Formula.Sat PA.natModel v (smic_hfToPa phi) <->
+      Sat nat hf_mem v phi;
+  smic_paAxiom_sat : forall phi,
+    PA.Formula.Ax_s phi -> forall v,
+      Sat nat hf_mem (fun n => ordinal_code (v n)) (smic_paToHf phi);
+  smic_hfAxiom_sat : forall phi,
+    HFAxTarget phi -> forall v,
+      PA.Formula.Sat PA.natModel v (smic_hfToPa phi);
+  smic_translatedPA_sat : forall e g,
+    translatedPAAx g -> Sat nat hf_mem e g;
+  smic_translatedHF_sat : forall e f,
+    TranslatedHFAxTarget f -> PA.Formula.Sat PA.natModel e f
+}.
+
+Definition StandardModelHFInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor
+    HFAx_s PA.Formula.translatedHFAx.
+
+Definition StandardModelFiniteInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor
+    HFFinAx_s PA.Formula.translatedHFFinAx.
+
+Lemma ordinalHF_sat_HF : forall v,
+  forall g, HFAx_s g -> Sat ordinalHFModel (hf_rel ordinalHFModel) v g.
+Proof.
+  intros v.
+  apply (sat_HF_model ordinalHFModel v).
+Qed.
+
+Definition standardShallowBiInterpretation : ShallowBiInterpretation.
+Proof.
+  refine {| shallow_pa_model := natPAModel;
+            shallow_hf_model := ackermannHFModel;
+            shallow_pa_in_hf := ordinalPAModel;
+            shallow_hf_in_pa_in_hf := ordinalHFModel;
+            shallow_pa_round_trip := PA_ordinal_round_trip_iso;
+            shallow_hf_round_trip := HF_ordinal_round_trip_iso |}.
+Defined.
+
+Definition standardModelHFInterpretation :
+  StandardModelHFInterpretationCertificate.
+Proof.
+  refine {| smic_shallow := standardShallowBiInterpretation;
+            smic_paToHf := translateFormula;
+            smic_hfToPa := PA.Formula.translateHFFormula;
+            smic_paToHf_exact := translateFormula_exact;
+            smic_hfToPa_exact := PA.Formula.translateHFFormula_exact;
+            smic_paAxiom_sat := translated_PA_axiom_sat_codes;
+            smic_hfAxiom_sat := PA.Formula.translated_HF_axiom_sat_nat;
+            smic_translatedPA_sat := standard_sat_translatedPAAx;
+            smic_translatedHF_sat := PA.Formula.standard_sat_translatedHFAx |}.
+Defined.
+
+Definition standardModelFiniteInterpretation :
+  StandardModelFiniteInterpretationCertificate.
+Proof.
+  refine {| smic_shallow := standardShallowBiInterpretation;
+            smic_paToHf := translateFormula;
+            smic_hfToPa := PA.Formula.translateHFFormula;
+            smic_paToHf_exact := translateFormula_exact;
+            smic_hfToPa_exact := PA.Formula.translateHFFormula_exact;
+            smic_paAxiom_sat := translated_PA_axiom_sat_codes;
+            smic_hfAxiom_sat := PA.Formula.translated_HFFin_axiom_sat_nat;
+            smic_translatedPA_sat := standard_sat_translatedPAAx;
+            smic_translatedHF_sat :=
+              PA.Formula.standard_sat_translatedHFFinAx |}.
+Defined.
+
+Theorem PA_standard_model_interpretable_with_HF_semantic :
+  inhabited StandardModelHFInterpretationCertificate.
+Proof.
+  exact (inhabits standardModelHFInterpretation).
+Qed.
+
+Theorem PA_standard_model_interpretable_with_HFFin :
+  inhabited StandardModelFiniteInterpretationCertificate.
+Proof.
+  exact (inhabits standardModelFiniteInterpretation).
+Qed.
+
+Theorem PA_biinterpretable_with_HF_standard :
+  inhabited (PAIso natPAModel ordinalPAModel) /\
+    inhabited (AdjunctionIso ackermannHFModel ordinalHFModel).
+Proof.
+  split.
+  - exact (inhabits PA_ordinal_round_trip_iso).
+  - exact (inhabits HF_ordinal_round_trip_iso).
+Qed.
+
+Theorem PA_biinterpretable_with_HFFin_standard :
+  inhabited (PAIso natPAModel ordinalPAModel) /\
+    inhabited (AdjunctionIso ackermannHFModel ordinalHFModel).
+Proof.
+  exact PA_biinterpretable_with_HF_standard.
+Qed.
 
 Record DeductiveBiInterpretationTarget
   (PAForm : Type)
