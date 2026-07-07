@@ -328,6 +328,73 @@ theorem tm0ToTypedRado_reaches_normal {Label : Type*} [Inhabited Label]
     rcases IH radoMid hMidRel with ⟨radoEnd, hEndRel, hRadoRest⟩
     exact ⟨radoEnd, hEndRel, Relation.ReflTransGen.trans hRadoStep hRadoRest⟩
 
+/-- A terminal Bool `TM0` configuration is simulated by one final Rado halt step. -/
+theorem tm0ToTypedRado_halt_explicit {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {q : Label} {T : Turing.Tape Bool} {head : Int} {tape : Tape}
+    (hM : M q T.head = none)
+    (hTape : RadoMatchesTuringTape head tape T) :
+    ∃ haltCfg : TypedConfig (TM0RadoState Label),
+      haltCfg.state = none ∧
+      haltCfg.tape = tape ∧
+      TypedRadoReaches (tm0ToTypedRado M)
+        ({ state := some (TM0RadoState.normal q), head := head, tape := tape } :
+          TypedConfig (TM0RadoState Label))
+        haltCfg := by
+  have hHead : Tape.read tape head = T.head := by
+    simpa using hTape 0
+  let startCfg : TypedConfig (TM0RadoState Label) :=
+    { state := some (TM0RadoState.normal q), head := head, tape := tape }
+  refine ⟨TypedMachine.step (tm0ToTypedRado M) startCfg, ?_, ?_, ?_⟩
+  · simp [startCfg, TypedMachine.step, tm0ToTypedRado, hHead, hM]
+  · simp [startCfg, TypedMachine.step, tm0ToTypedRado, hHead, hM]
+    rw [← hHead, Tape.write_read_self]
+  · exact typedRadoReaches_step (tm0ToTypedRado M) startCfg
+
+theorem tm0ToTypedRado_halt_normal {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {tmCfg : Turing.TM0.Cfg Bool Label}
+    {radoCfg : TypedConfig (TM0RadoState Label)}
+    (hTerminal : Turing.TM0.step M tmCfg = none)
+    (hRel : TM0RadoNormalRel tmCfg radoCfg) :
+    ∃ haltCfg : TypedConfig (TM0RadoState Label),
+      haltCfg.state = none ∧
+      haltCfg.tape = radoCfg.tape ∧
+      TypedRadoReaches (tm0ToTypedRado M) radoCfg haltCfg := by
+  cases tmCfg with
+  | mk q T =>
+      cases radoCfg with
+      | mk state head tape =>
+          rcases hRel with ⟨hState, hTape⟩
+          dsimp at hState hTape
+          subst state
+          have hM : M q T.head = none := by
+            simpa [Turing.TM0.step] using hTerminal
+          exact tm0ToTypedRado_halt_explicit M hM hTape
+
+/--
+If a Bool `TM0` run reaches a terminal configuration, the typed Rado simulator
+reaches a halted configuration with the same final Rado tape.
+-/
+theorem tm0ToTypedRado_reaches_halt_normal {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {tmCfg tmCfg' : Turing.TM0.Cfg Bool Label}
+    {radoCfg : TypedConfig (TM0RadoState Label)}
+    (hReach : Turing.TM0.Reaches M tmCfg tmCfg')
+    (hTerminal : Turing.TM0.step M tmCfg' = none)
+    (hRel : TM0RadoNormalRel tmCfg radoCfg) :
+    ∃ normalCfg haltCfg : TypedConfig (TM0RadoState Label),
+      TM0RadoNormalRel tmCfg' normalCfg ∧
+      haltCfg.state = none ∧
+      haltCfg.tape = normalCfg.tape ∧
+      TypedRadoReaches (tm0ToTypedRado M) radoCfg haltCfg := by
+  rcases tm0ToTypedRado_reaches_normal M hReach hRel with
+    ⟨normalCfg, hNormalRel, hRadoReach⟩
+  rcases tm0ToTypedRado_halt_normal M hTerminal hNormalRel with
+    ⟨haltCfg, hHaltState, hHaltTape, hRadoHalt⟩
+  exact ⟨normalCfg, haltCfg, hNormalRel, hHaltState, hHaltTape,
+    Relation.ReflTransGen.trans hRadoReach hRadoHalt⟩
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
