@@ -168,6 +168,42 @@ theorem radoMatchesTuringTape_move_left {head : Int} {tape : Tape} {T : Turing.T
   rw [h (i - 1)]
   simp
 
+theorem natOffsetPosition_injective (head : Int) :
+    Function.Injective (fun n : Nat => head + (n : Int)) := by
+  intro _a _b h
+  exact Int.ofNat.inj (Int.add_left_cancel h)
+
+theorem radoMatchesTuringTape_right₀_true {head : Int} {tape : Tape}
+    {T : Turing.Tape Bool} (hMatch : RadoMatchesTuringTape head tape T)
+    {n : Nat} (hTrue : T.right₀.nth n = true) :
+    Tape.read tape (head + (n : Int)) = true := by
+  rw [hMatch (n : Int)]
+  rwa [Turing.Tape.right₀_nth] at hTrue
+
+/-- Rado positions corresponding to natural offsets on mathlib's inclusive right tape. -/
+def radoPositionsOfNatOffsets (head : Int) (offsets : List Nat) : Tape :=
+  offsets.map (fun n : Nat => head + (n : Int))
+
+theorem radoPositionsOfNatOffsets_nodup {head : Int} {offsets : List Nat}
+    (hOffsets : offsets.Nodup) :
+    (radoPositionsOfNatOffsets head offsets).Nodup := by
+  exact hOffsets.map (f := fun n : Nat => head + (n : Int))
+    (natOffsetPosition_injective head)
+
+theorem radoPositionsOfNatOffsets_length (head : Int) (offsets : List Nat) :
+    (radoPositionsOfNatOffsets head offsets).length = offsets.length := by
+  simp [radoPositionsOfNatOffsets]
+
+theorem radoPositionsOfNatOffsets_read_true {head : Int} {tape : Tape}
+    {T : Turing.Tape Bool} (hMatch : RadoMatchesTuringTape head tape T)
+    {offsets : List Nat}
+    (hTrue : ∀ n, n ∈ offsets -> T.right₀.nth n = true) :
+    ∀ pos, pos ∈ radoPositionsOfNatOffsets head offsets -> Tape.read tape pos = true := by
+  intro pos hpos
+  simp [radoPositionsOfNatOffsets] at hpos
+  rcases hpos with ⟨n, hn, rfl⟩
+  exact radoMatchesTuringTape_right₀_true hMatch (hTrue n hn)
+
 /-- Convert mathlib's tape-head directions to the Rado direction type. -/
 def radoMoveOfTuringDir : Turing.Dir -> Move
   | Turing.Dir.left => Move.left
