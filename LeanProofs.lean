@@ -4,6 +4,7 @@ import LeanProofs.RationalFloorOrbit
 import LeanProofs.TinyExponentTower
 import LeanProofs.TrigGoldenRatio
 import LeanProofs.ArctanSquareIdentity
+import LeanProofs.Sheffer
 import LeanProofs.Nicod
 import LeanProofs.WolframBoolean
 import LeanProofs.PowTower

@@ -273,9 +273,6 @@ def AllValid {α : Type u} (op : α → α → α) (eqs : List Equation) : Prop 
 
 namespace Certificate
 
-theorem bool_and_eq_true {a b : Bool} (h : a && b = true) : a = true ∧ b = true := by
-  cases a <;> cases b <;> simp at h ⊢
-
 /-- Whether an equation is known, up to instantiation and symmetry. -/
 def knownFrom? : List Equation → Equation → Bool
   | [], _ => false

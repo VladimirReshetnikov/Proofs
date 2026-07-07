@@ -1,10 +1,13 @@
+import LeanProofs.Sheffer
 import LeanProofs.WolframBooleanHuntingtonCertificates
 
 /-!
 # Wolfram's and Meredith's Sheffer-stroke axioms
 
 This module formalizes a computationally checkable core of the classical
-single-operator Boolean-logic story.
+single-operator Boolean-logic story, over the shared stroke language of
+`LeanProofs.Sheffer` and the first-order terms of
+`LeanProofs.EquationalLogic`.
 
 Lean already uses `↑` for coercions, so this file writes the stroke connective
 as `⊙`.  On truth values the two Sheffer strokes are NAND and its dual NOR.
@@ -38,15 +41,9 @@ namespace LeanProofs
 
 namespace WolframBoolean
 
-/-! ## Binary Boolean operations -/
+open Sheffer
 
-/-- NAND on truth values. -/
-def boolNand (p q : Bool) : Bool :=
-  !(p && q)
-
-/-- NOR on truth values, the order-dual Sheffer stroke. -/
-def boolNor (p q : Bool) : Bool :=
-  !(p || q)
+/-! ## Single-equation and few-equation axiom systems -/
 
 /-- Wolfram's single axiom, for an arbitrary binary operation. -/
 def WolframAxiom {α : Type u} (op : α → α → α) : Prop :=
@@ -90,6 +87,13 @@ def IsBooleanSheffer (op : Bool → Bool → Bool) : Prop :=
 
 /-! ## Equational certificates over arbitrary carriers -/
 
+/-- Environment sending equation variables `0`, `1`, `2` to `a`, `b`, `c`. -/
+def env3 {α : Type u} (a b c : α) : Nat → α
+  | 0 => a
+  | 1 => b
+  | 2 => c
+  | _ => a
+
 /--
 Wolfram's single equation derives the standard three Sheffer-stroke axioms in
 pure equational logic, for any carrier type with one binary operation.
@@ -101,53 +105,30 @@ Wolfram Language's `FindEquationalProof`.
 theorem wolfram_derives_sheffer_axioms {α : Type u} (op : α → α → α)
     (h : WolframAxiom op) : ShefferAxioms op := by
   have hW :
-      EquationalLogic.Equation.Valid op WolframBooleanCertificates.wolframEquation := by
-    intro env
-    exact h (env 0) (env 1) (env 2)
+      EquationalLogic.Equation.Valid op WolframBooleanCertificates.wolframEquation :=
+    fun env => h (env 0) (env 1) (env 2)
   rcases WolframBooleanCertificates.wolframToSheffer_valid op hW with ⟨h1, h2, h3⟩
-  constructor
-  · intro a
-    exact h1 (fun _ => a)
-  constructor
-  · intro a b
-    exact h2 (fun n =>
-      match n with
-      | 0 => a
-      | 1 => b
-      | _ => a)
-  · intro a b c
-    exact h3 (fun n =>
-      match n with
-      | 0 => a
-      | 1 => b
-      | 2 => c
-      | _ => a)
+  exact ⟨fun a => h1 (env3 a a a), fun a b => h2 (env3 a b a),
+    fun a b c => h3 (env3 a b c)⟩
 
 /-- Meredith's two axioms derive Wolfram's single axiom in pure equational logic. -/
 theorem meredith_derives_wolfram_axiom {α : Type u} (op : α → α → α)
     (h : MeredithAxioms op) : WolframAxiom op := by
   have hM1 :
-      EquationalLogic.Equation.Valid op WolframBooleanCertificates.meredithEquation1 := by
-    intro env
-    exact h.1 (env 0) (env 1) (env 2)
+      EquationalLogic.Equation.Valid op WolframBooleanCertificates.meredithEquation1 :=
+    fun env => h.1 (env 0) (env 1) (env 2)
   have hM2 :
-      EquationalLogic.Equation.Valid op WolframBooleanCertificates.meredithEquation2 := by
-    intro env
-    exact h.2 (env 0) (env 1)
+      EquationalLogic.Equation.Valid op WolframBooleanCertificates.meredithEquation2 :=
+    fun env => h.2 (env 0) (env 1)
   have hW := WolframBooleanCertificates.meredithToWolfram_valid op hM1 hM2
-  intro a b c
-  exact hW (fun n =>
-    match n with
-    | 0 => a
-    | 1 => b
-    | 2 => c
-    | _ => a)
+  exact fun a b c => hW (env3 a b c)
 
 /-- Meredith's two axioms are complete for the same Sheffer-stroke basis. -/
 theorem meredith_derives_sheffer_axioms {α : Type u} (op : α → α → α)
     (h : MeredithAxioms op) : ShefferAxioms op :=
   wolfram_derives_sheffer_axioms op (meredith_derives_wolfram_axiom op h)
 
+open WolframBooleanHuntingtonCertificates in
 /--
 The standard Sheffer axioms derive Huntington's equational basis for Boolean
 algebra under the usual definitions `¬a = a ⊙ a` and
@@ -155,65 +136,23 @@ algebra under the usual definitions `¬a = a ⊙ a` and
 -/
 theorem sheffer_derives_huntington_axioms {α : Type u} (op : α → α → α)
     (h : ShefferAxioms op) : HuntingtonAxioms (strokeJoin op) (strokeCompl op) := by
-  have hS1 :
-      EquationalLogic.Equation.Valid op
-        WolframBooleanCertificates.shefferEquation1 := by
-    intro env
-    exact h.1 (env 0)
-  have hS2 :
-      EquationalLogic.Equation.Valid op
-        WolframBooleanCertificates.shefferEquation2 := by
-    intro env
-    exact h.2.1 (env 0) (env 1)
-  have hS3 :
-      EquationalLogic.Equation.Valid op
-        WolframBooleanCertificates.shefferEquation3 := by
-    intro env
-    exact h.2.2 (env 0) (env 1) (env 2)
-  rcases WolframBooleanHuntingtonCertificates.shefferToHuntington_valid
-    op hS1 hS2 hS3 with ⟨hComm, hAssoc, hHunt⟩
-  constructor
-  · intro a b
-    simpa [strokeJoin, strokeCompl, WolframBooleanHuntingtonCertificates.hJoin,
-      WolframBooleanHuntingtonCertificates.hCompl,
-      WolframBooleanHuntingtonCertificates.huntingtonEquation1,
-      WolframBooleanHuntingtonCertificates.C.e,
-      WolframBooleanHuntingtonCertificates.C.o,
-      WolframBooleanHuntingtonCertificates.C.v,
-      EquationalLogic.Term.eval]
-      using hComm (fun n =>
-        match n with
-        | 0 => a
-        | 1 => b
-        | _ => a)
-  constructor
-  · intro a b c
-    simpa [strokeJoin, strokeCompl, WolframBooleanHuntingtonCertificates.hJoin,
-      WolframBooleanHuntingtonCertificates.hCompl,
-      WolframBooleanHuntingtonCertificates.huntingtonEquation2,
-      WolframBooleanHuntingtonCertificates.C.e,
-      WolframBooleanHuntingtonCertificates.C.o,
-      WolframBooleanHuntingtonCertificates.C.v,
-      EquationalLogic.Term.eval]
-      using hAssoc (fun n =>
-        match n with
-        | 0 => a
-        | 1 => b
-        | 2 => c
-        | _ => a)
-  · intro a b
-    simpa [strokeJoin, strokeCompl, WolframBooleanHuntingtonCertificates.hJoin,
-      WolframBooleanHuntingtonCertificates.hCompl,
-      WolframBooleanHuntingtonCertificates.huntingtonEquation3,
-      WolframBooleanHuntingtonCertificates.C.e,
-      WolframBooleanHuntingtonCertificates.C.o,
-      WolframBooleanHuntingtonCertificates.C.v,
-      EquationalLogic.Term.eval]
-      using hHunt (fun n =>
-        match n with
-        | 0 => a
-        | 1 => b
-        | _ => a)
+  have hS1 : EquationalLogic.Equation.Valid op
+      WolframBooleanCertificates.shefferEquation1 :=
+    fun env => h.1 (env 0)
+  have hS2 : EquationalLogic.Equation.Valid op
+      WolframBooleanCertificates.shefferEquation2 :=
+    fun env => h.2.1 (env 0) (env 1)
+  have hS3 : EquationalLogic.Equation.Valid op
+      WolframBooleanCertificates.shefferEquation3 :=
+    fun env => h.2.2 (env 0) (env 1) (env 2)
+  rcases shefferToHuntington_valid op hS1 hS2 hS3 with ⟨hComm, hAssoc, hHunt⟩
+  refine ⟨fun a b => ?_, fun a b c => ?_, fun a b => ?_⟩
+  · simpa [strokeJoin, strokeCompl, hJoin, hCompl, huntingtonEquation1,
+      C.e, C.o, C.v, env3, EquationalLogic.Term.eval] using hComm (env3 a b a)
+  · simpa [strokeJoin, strokeCompl, hJoin, hCompl, huntingtonEquation2,
+      C.e, C.o, C.v, env3, EquationalLogic.Term.eval] using hAssoc (env3 a b c)
+  · simpa [strokeJoin, strokeCompl, hJoin, hCompl, huntingtonEquation3,
+      C.e, C.o, C.v, env3, EquationalLogic.Term.eval] using hHunt (env3 a b a)
 
 /-- Wolfram's single axiom derives Huntington's Boolean-algebra basis. -/
 theorem wolfram_derives_huntington_axioms {α : Type u} (op : α → α → α)
@@ -287,174 +226,37 @@ theorem meredith_characterizes_sheffer_on_bool
 
 /-! ## Functional completeness for ordinary connectives -/
 
-/-- Formulas using one anonymous binary stroke operation. -/
-inductive StrokeFormula (α : Type u) : Type u where
-  | atom : α → StrokeFormula α
-  | stroke : StrokeFormula α → StrokeFormula α → StrokeFormula α
-  deriving DecidableEq, Repr
-
-namespace StrokeFormula
-
-infixr:60 " ⊙ " => StrokeFormula.stroke
-
-/-- Semantics of a stroke formula under a chosen truth-table operation. -/
-def evalWith (op : Bool → Bool → Bool) (v : α → Bool) : StrokeFormula α → Bool
-  | atom a => v a
-  | p ⊙ q => op (evalWith op v p) (evalWith op v q)
-
-end StrokeFormula
-
-/-- A standard classical propositional language. -/
-inductive ClassicalFormula (α : Type u) : Type u where
-  | atom : α → ClassicalFormula α
-  | neg : ClassicalFormula α → ClassicalFormula α
-  | and : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  | or : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  | imp : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  | iff : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  deriving DecidableEq, Repr
-
-namespace ClassicalFormula
-
-/-- Boolean semantics for ordinary classical formulas. -/
-def eval (v : α → Bool) : ClassicalFormula α → Bool
-  | atom a => v a
-  | neg p => !(eval v p)
-  | and p q => eval v p && eval v q
-  | or p q => eval v p || eval v q
-  | imp p q => !(eval v p) || eval v q
-  | iff p q => eval v p == eval v q
-
-open StrokeFormula
-
-/-- Translate ordinary classical formulas to NAND-only formulas. -/
-def toNand : ClassicalFormula α → StrokeFormula α
-  | atom a => StrokeFormula.atom a
-  | neg p =>
-      let p' := toNand p
-      p' ⊙ p'
-  | and p q =>
-      let p' := toNand p
-      let q' := toNand q
-      let pq := p' ⊙ q'
-      pq ⊙ pq
-  | or p q =>
-      let p' := toNand p
-      let q' := toNand q
-      (p' ⊙ p') ⊙ (q' ⊙ q')
-  | imp p q =>
-      let p' := toNand p
-      let q' := toNand q
-      p' ⊙ (q' ⊙ q')
-  | iff p q =>
-      let p' := toNand p
-      let q' := toNand q
-      let pq := p' ⊙ (q' ⊙ q')
-      let qp := q' ⊙ (p' ⊙ p')
-      let both := pq ⊙ qp
-      both ⊙ both
-
-/-- Translate ordinary classical formulas to NOR-only formulas. -/
-def toNor : ClassicalFormula α → StrokeFormula α
-  | atom a => StrokeFormula.atom a
-  | neg p =>
-      let p' := toNor p
-      p' ⊙ p'
-  | and p q =>
-      let p' := toNor p
-      let q' := toNor q
-      (p' ⊙ p') ⊙ (q' ⊙ q')
-  | or p q =>
-      let p' := toNor p
-      let q' := toNor q
-      let pq := p' ⊙ q'
-      pq ⊙ pq
-  | imp p q =>
-      let p' := toNor p
-      let q' := toNor q
-      let np := p' ⊙ p'
-      let npq := np ⊙ q'
-      npq ⊙ npq
-  | iff p q =>
-      let p' := toNor p
-      let q' := toNor q
-      let np := p' ⊙ p'
-      let nq := q' ⊙ q'
-      let pq := (np ⊙ q') ⊙ (np ⊙ q')
-      let qp := (nq ⊙ p') ⊙ (nq ⊙ p')
-      (pq ⊙ pq) ⊙ (qp ⊙ qp)
-
-theorem eval_toNand (v : α → Bool) :
-    ∀ p : ClassicalFormula α, (toNand p).evalWith boolNand v = eval v p
-  | atom _ => rfl
-  | neg p => by
-      cases hp : eval v p <;>
-        simp [toNand, eval, StrokeFormula.evalWith, boolNand, eval_toNand v p, hp]
-  | and p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNand, eval, StrokeFormula.evalWith, boolNand,
-          eval_toNand v p, eval_toNand v q, hp, hq]
-  | or p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNand, eval, StrokeFormula.evalWith, boolNand,
-          eval_toNand v p, eval_toNand v q, hp, hq]
-  | imp p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNand, eval, StrokeFormula.evalWith, boolNand,
-          eval_toNand v p, eval_toNand v q, hp, hq]
-  | iff p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNand, eval, StrokeFormula.evalWith, boolNand,
-          eval_toNand v p, eval_toNand v q, hp, hq]
-
-theorem eval_toNor (v : α → Bool) :
-    ∀ p : ClassicalFormula α, (toNor p).evalWith boolNor v = eval v p
-  | atom _ => rfl
-  | neg p => by
-      cases hp : eval v p <;>
-        simp [toNor, eval, StrokeFormula.evalWith, boolNor, eval_toNor v p, hp]
-  | and p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNor, eval, StrokeFormula.evalWith, boolNor,
-          eval_toNor v p, eval_toNor v q, hp, hq]
-  | or p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNor, eval, StrokeFormula.evalWith, boolNor,
-          eval_toNor v p, eval_toNor v q, hp, hq]
-  | imp p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNor, eval, StrokeFormula.evalWith, boolNor,
-          eval_toNor v p, eval_toNor v q, hp, hq]
-  | iff p q => by
-      cases hp : eval v p <;> cases hq : eval v q <;>
-        simp [toNor, eval, StrokeFormula.evalWith, boolNor,
-          eval_toNor v p, eval_toNor v q, hp, hq]
-
+open Sheffer.ClassicalFormula in
 /--
 Any Boolean binary operation satisfying Wolfram's axiom expresses every ordinary
-classical connective.
+classical connective, via the shared Sheffer-stroke translations.
 -/
 theorem wolfram_functionally_complete
     (op : Bool → Bool → Bool) (h : WolframAxiom op) (p : ClassicalFormula α) :
     ∃ q : StrokeFormula α, ∀ v : α → Bool, q.evalWith op v = eval v p := by
   rcases wolfram_characterizes_sheffer_on_bool op h with hop | hop
-  · exact ⟨toNand p, by intro v; simp [hop, eval_toNand]⟩
-  · exact ⟨toNor p, by intro v; simp [hop, eval_toNor]⟩
+  · exact ⟨toNand p, fun v => by simp [hop, eval_toNand]⟩
+  · exact ⟨toNor p, fun v => by simp [hop, eval_toNor]⟩
 
+open Sheffer.ClassicalFormula in
 /--
 Any Boolean binary operation satisfying Meredith's two axioms expresses every
-ordinary classical connective.
+ordinary classical connective, via the shared Sheffer-stroke translations.
 -/
 theorem meredith_functionally_complete
     (op : Bool → Bool → Bool) (h : MeredithAxioms op) (p : ClassicalFormula α) :
     ∃ q : StrokeFormula α, ∀ v : α → Bool, q.evalWith op v = eval v p := by
   rcases meredith_characterizes_sheffer_on_bool op h with hop | hop
-  · exact ⟨toNand p, by intro v; simp [hop, eval_toNand]⟩
-  · exact ⟨toNor p, by intro v; simp [hop, eval_toNor]⟩
+  · exact ⟨toNand p, fun v => by simp [hop, eval_toNand]⟩
+  · exact ⟨toNor p, fun v => by simp [hop, eval_toNor]⟩
 
-end ClassicalFormula
+/-! ## Certified finite search for the six-operator lower bound
 
-/-! ## Certified finite search for the six-operator lower bound -/
+The finite search reuses the first-order terms of
+`LeanProofs.EquationalLogic` rather than a private copy of the same syntax.
+-/
+
+open EquationalLogic (Term)
 
 /--
 A binary Boolean operation represented by its truth table in the order
@@ -491,30 +293,20 @@ def allBinOps : List BinOp :=
   List.flatMap (fun tf =>
   List.map (fun tt => { ff, ft, tf, tt }) bools) bools) bools) bools
 
-/-- First-order terms over one binary operation and variables numbered by `Nat`. -/
-inductive Term where
-  | var : Nat → Term
-  | app : Term → Term → Term
-  deriving DecidableEq, Repr
-
-namespace Term
-
 /-- Number of binary-operation occurrences in a term. -/
 def nodeCount : Term → Nat
-  | var _ => 0
-  | app l r => nodeCount l + nodeCount r + 1
+  | .var _ => 0
+  | .op l r => nodeCount l + nodeCount r + 1
 
 /-- One more than the largest variable index occurring in a term. -/
 def varBound : Term → Nat
-  | var i => i + 1
-  | app l r => max (varBound l) (varBound r)
+  | .var i => i + 1
+  | .op l r => max (varBound l) (varBound r)
 
 /-- Interpret a term in a tabulated two-element algebra. -/
-def eval (op : BinOp) (env : List Bool) : Term → Bool
-  | var i => env.getD i false
-  | app l r => op.apply (eval op env l) (eval op env r)
-
-end Term
+def evalTable (op : BinOp) (env : List Bool) : Term → Bool
+  | .var i => env.getD i false
+  | .op l r => op.apply (evalTable op env l) (evalTable op env r)
 
 /-- All Boolean environments of a fixed length. -/
 def allEnvs : Nat → List (List Bool)
@@ -538,7 +330,7 @@ def canonicalTermsAux : Nat → Nat → Nat → List (Term × Nat)
         let rightNodes := nodes - leftNodes
         List.flatMap (fun left =>
           (canonicalTermsAux fuel rightNodes left.2).map fun right =>
-            (Term.app left.1 right.1, right.2))
+            (Term.op left.1 right.1, right.2))
           (canonicalTermsAux fuel leftNodes next))
         (List.range (nodes + 1))
 
@@ -559,7 +351,7 @@ def equationsUpTo (maxNodes : Nat) : List (Term × Term) :=
 
 /-- Whether an equation holds in the two-element algebra represented by `op`. -/
 def equationHolds (op : BinOp) (lhs rhs : Term) : Bool :=
-  (allEnvs 7).all fun env => Term.eval op env lhs == Term.eval op env rhs
+  (allEnvs 7).all fun env => evalTable op env lhs == evalTable op env rhs
 
 /-- The list of two-element truth-table models of an equation. -/
 def equationModels (lhs rhs : Term) : List BinOp :=
@@ -579,14 +371,14 @@ def wolframLhs : Term :=
   let a := Term.var 0
   let b := Term.var 1
   let c := Term.var 2
-  Term.app
-    (Term.app (Term.app a b) c)
-    (Term.app a (Term.app (Term.app a c) a))
+  Term.op
+    (Term.op (Term.op a b) c)
+    (Term.op a (Term.op (Term.op a c) a))
 
 /-- Wolfram's right-hand side as a first-order term. -/
 def wolframRhs : Term := Term.var 2
 
-theorem wolfram_operator_count : wolframLhs.nodeCount + wolframRhs.nodeCount = 6 := by
+theorem wolfram_operator_count : nodeCount wolframLhs + nodeCount wolframRhs = 6 := by
   native_decide
 
 theorem wolfram_equation_characterizes_sheffer_tables :
@@ -618,17 +410,14 @@ def allFiniteEnvs (size : Nat) : Nat → List (List Nat)
       List.flatMap (fun env => (List.range size).map fun x => x :: env)
         (allFiniteEnvs size n)
 
-namespace Term
-
+/-- Interpret a term in a tabulated finite one-operation algebra. -/
 def evalFinite (op : FiniteOp) (env : List Nat) : Term → Nat
-  | var i => env.getD i 0
-  | app l r => op.apply (evalFinite op env l) (evalFinite op env r)
-
-end Term
+  | .var i => env.getD i 0
+  | .op l r => op.apply (evalFinite op env l) (evalFinite op env r)
 
 def finiteEquationHolds (op : FiniteOp) (lhs rhs : Term) : Bool :=
-  (allFiniteEnvs op.size (max lhs.varBound rhs.varBound)).all fun env =>
-    lhs.evalFinite op env == rhs.evalFinite op env
+  (allFiniteEnvs op.size (max (varBound lhs) (varBound rhs))).all fun env =>
+    evalFinite op env lhs == evalFinite op env rhs
 
 def finiteWolframHolds (op : FiniteOp) : Bool :=
   (allFiniteEnvs op.size 3).all fun env =>
@@ -701,7 +490,7 @@ tables on the two-element Boolean algebra, and every shorter equation that is
 even true of those Boolean Sheffer tables has a finite non-Wolfram model.
 -/
 theorem wolfram_six_operations_is_minimal_for_single_equational_axioms :
-    wolframLhs.nodeCount + wolframRhs.nodeCount = 6 ∧
+    nodeCount wolframLhs + nodeCount wolframRhs = 6 ∧
       characterizesShefferTables wolframLhs wolframRhs = true ∧
       shortEquationCountermodelCheck = true := by
   exact ⟨wolfram_operator_count, wolfram_equation_characterizes_sheffer_tables,
