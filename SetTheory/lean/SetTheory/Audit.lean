@@ -39,6 +39,13 @@ open SetTheory
 #check @PA.Formula.Prov
 #check @PA.Formula.Prov_weaken
 #check @PA.Formula.Prov_cons
+#check @PA.Formula.rename_ext
+#check @PA.Formula.rename_comp
+#check @PA.Formula.subst_rename
+#check @PA.Formula.rename_subst
+#check @PA.Formula.subst_instTerm_rename_up
+#check @PA.Formula.Prov_rename
+#check @PA.Formula.Prov_cut
 #check @PA.Formula.soundness
 #check @PA.Formula.BProv
 #check @PA.Formula.BProv_mono
@@ -53,6 +60,11 @@ open SetTheory
 #check @PA.Term.eval_numeral
 #check @PA.Term.numeralValue_natModel
 #check @PA.Term.eval_numeral_natModel
+#check @PA.Term.rename_ext
+#check @PA.Term.rename_comp
+#check @PA.Term.subst_ext
+#check @PA.Term.subst_rename
+#check @PA.Term.rename_subst
 #check @PA.Formula.Free
 #check @PA.Formula.Sentence
 #check @PA.Formula.sealPA_sentence
