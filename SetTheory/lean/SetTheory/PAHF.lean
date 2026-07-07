@@ -102,6 +102,95 @@ def standardModel : AdjunctionModel Nat where
   adjoin_spec := mem_adjoin
   set_induction := induction
 
+/-! ## The finite von Neumann ordinals inside Ackermann HF -/
+
+/-- Ackermann code of the finite von Neumann ordinal `n`.
+
+This is deliberately just the recursive set-theoretic construction:
+`0 = ∅` and `n+1 = n ∪ {n}`.  The fact that it is an embedding, and the
+description of its members, are separate theorems below. -/
+def ordinalCode : Nat → Nat
+  | 0 => empty
+  | n+1 => adjoin (ordinalCode n) (ordinalCode n)
+
+theorem ordinalCode_zero : ordinalCode 0 = empty := rfl
+
+theorem ordinalCode_succ (n : Nat) :
+    ordinalCode (n+1) = adjoin (ordinalCode n) (ordinalCode n) := rfl
+
+theorem mem_ordinalCode_succ (x n : Nat) :
+    Mem x (ordinalCode (n+1)) ↔ Mem x (ordinalCode n) ∨ x = ordinalCode n := by
+  rw [ordinalCode_succ, mem_adjoin]
+
+theorem mem_ordinalCode_iff (x n : Nat) :
+    Mem x (ordinalCode n) ↔ ∃ k, k < n ∧ x = ordinalCode k := by
+  induction n with
+  | zero =>
+      constructor
+      · intro h
+        exact False.elim (mem_empty x h)
+      · intro h
+        rcases h with ⟨k, hk, _⟩
+        omega
+  | succ n ih =>
+      rw [mem_ordinalCode_succ]
+      constructor
+      · intro h
+        rcases h with h | h
+        · rcases ih.mp h with ⟨k, hk, hx⟩
+          exact ⟨k, by omega, hx⟩
+        · exact ⟨n, by omega, h⟩
+      · intro h
+        rcases h with ⟨k, hk, hx⟩
+        have hle : k ≤ n := Nat.lt_succ_iff.mp hk
+        rcases Nat.lt_or_eq_of_le hle with hlt | heq
+        · exact Or.inl (ih.mpr ⟨k, hlt, hx⟩)
+        · exact Or.inr (by subst heq; exact hx)
+
+theorem ordinalCode_mem_of_lt {k n : Nat} (h : k < n) :
+    Mem (ordinalCode k) (ordinalCode n) :=
+  (mem_ordinalCode_iff (ordinalCode k) n).mpr ⟨k, h, rfl⟩
+
+theorem not_mem_self (a : Nat) : ¬ Mem a a := fun h =>
+  Nat.lt_irrefl a (mem_lt h)
+
+theorem ordinalCode_injective {m n : Nat}
+    (h : ordinalCode m = ordinalCode n) : m = n := by
+  rcases Nat.lt_trichotomy m n with hlt | heq | hgt
+  · have hm : Mem (ordinalCode m) (ordinalCode n) := ordinalCode_mem_of_lt hlt
+    rw [← h] at hm
+    exact False.elim (not_mem_self (ordinalCode m) hm)
+  · exact heq
+  · have hn : Mem (ordinalCode n) (ordinalCode m) := ordinalCode_mem_of_lt hgt
+    rw [h] at hn
+    exact False.elim (not_mem_self (ordinalCode n) hn)
+
+def IsOrdinalCode (a : Nat) : Prop := ∃ n, ordinalCode n = a
+
+/-- The interpreted PA domain inside Ackermann HF: the finite von Neumann
+ordinals, represented by their Ackermann codes. -/
+def OrdinalHF : Type := {a : Nat // IsOrdinalCode a}
+
+def ordinalOfNat (n : Nat) : OrdinalHF := ⟨ordinalCode n, ⟨n, rfl⟩⟩
+
+noncomputable def natOfOrdinal (a : OrdinalHF) : Nat := a.property.choose
+
+theorem ordinalOfNat_val (n : Nat) :
+    (ordinalOfNat n).val = ordinalCode n := rfl
+
+theorem natOfOrdinal_spec (a : OrdinalHF) :
+    ordinalCode (natOfOrdinal a) = a.val :=
+  a.property.choose_spec
+
+theorem natOfOrdinal_ordinalOfNat (n : Nat) :
+    natOfOrdinal (ordinalOfNat n) = n :=
+  ordinalCode_injective (natOfOrdinal_spec (ordinalOfNat n))
+
+theorem ordinalOfNat_natOfOrdinal (a : OrdinalHF) :
+    ordinalOfNat (natOfOrdinal a) = a := by
+  apply Subtype.ext
+  exact natOfOrdinal_spec a
+
 end AckermannHF
 
 end SetTheory
