@@ -378,6 +378,13 @@ def eval {α : Type u} (M : Model α) (e : Nat → α) : Term → α
   | add a b => M.add (eval M e a) (eval M e b)
   | mul a b => M.mul (eval M e a) (eval M e b)
 
+def bound : Term → Nat
+  | var n => n + 1
+  | zero => 0
+  | succ t => bound t
+  | add a b => bound a + bound b
+  | mul a b => bound a + bound b
+
 theorem eval_ext {α : Type u} (M : Model α) (t : Term)
     {e e' : Nat → α} (h : ∀ n, e n = e' n) :
     eval M e t = eval M e' t := by
@@ -440,6 +447,21 @@ def Sat {α : Type u} (M : Model α) : (Nat → α) → Formula → Prop
   | e, or a b => Sat M e a ∨ Sat M e b
   | e, all a => ∀ d, Sat M (SetTheory.scons d e) a
   | e, ex a => ∃ d, Sat M (SetTheory.scons d e) a
+
+def bound : Formula → Nat
+  | eq a b => Term.bound a + Term.bound b
+  | bot => 0
+  | imp a b => bound a + bound b
+  | and a b => bound a + bound b
+  | or a b => bound a + bound b
+  | all a => bound a
+  | ex a => bound a
+
+def closeN : Nat → Formula → Formula
+  | 0, phi => phi
+  | n+1, phi => closeN n (all phi)
+
+def sealPA (phi : Formula) : Formula := closeN (bound phi) phi
 
 theorem Sat_ext {α : Type u} (M : Model α) (phi : Formula)
     {e e' : Nat → α} (h : ∀ n, e n = e' n) :
@@ -513,6 +535,30 @@ theorem Sat_subst {α : Type u} (M : Model α) (phi : Formula)
           (Sat_ext M a (Term.eval_upSubst M σ e d)).mpr hd
         exact ⟨d, (ih (Term.upSubst σ) (SetTheory.scons d e)).mpr h1⟩
 
+theorem closeN_valid {α : Type u} (M : Model α) (k : Nat) :
+    ∀ phi : Formula, (∀ e : Nat → α, Sat M e (closeN k phi)) ↔
+      (∀ e, Sat M e phi) := by
+  induction k with
+  | zero =>
+      intro phi
+      exact Iff.rfl
+  | succ k ih =>
+      intro phi
+      show (∀ e, Sat M e (closeN k (all phi))) ↔ _
+      rw [ih (all phi)]
+      constructor
+      · intro h e'
+        have pf : ∀ n, SetTheory.scons (e' 0) (fun n => e' (n+1)) n = e' n := by
+          intro n
+          cases n <;> rfl
+        exact (Sat_ext M phi pf).mp (h (fun n => e' (n+1)) (e' 0))
+      · intro h e d
+        exact h _
+
+theorem seal_valid {α : Type u} (M : Model α) (phi : Formula) :
+    (∀ e : Nat → α, Sat M e (sealPA phi)) ↔ (∀ e, Sat M e phi) :=
+  closeN_valid M (bound phi) phi
+
 end Formula
 
 namespace Formula
@@ -561,6 +607,12 @@ def Ax (f : Formula) : Prop :=
   f = mulZero ∨ f = mulSucc ∨
   ∃ phi, f = inductionForm phi
 
+def Ax_s (f : Formula) : Prop :=
+  f = sealPA succInj ∨ f = sealPA zeroNotSucc ∨
+  f = sealPA addZero ∨ f = sealPA addSucc ∨
+  f = sealPA mulZero ∨ f = sealPA mulSucc ∨
+  ∃ phi, f = sealPA (inductionForm phi)
+
 theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
   rw [Sat_subst]
@@ -594,6 +646,27 @@ theorem sat_axiom {α : Type u} (M : Model α) (e : Nat → α) :
       ((sat_substZero M phi e).mp h.1)
       (fun n ih => (sat_substSuccVar M phi e n).mp (h.2 n ih))
       a
+
+theorem sat_axiom_s {α : Type u} (M : Model α) (e : Nat → α) :
+    ∀ f, Ax_s f → Sat M e f := by
+  intro f hf
+  rcases hf with rfl | rfl | rfl | rfl | rfl | rfl | ⟨phi, rfl⟩
+  · exact (seal_valid M succInj).mpr (fun e => sat_axiom M e succInj (Or.inl rfl)) e
+  · exact (seal_valid M zeroNotSucc).mpr
+      (fun e => sat_axiom M e zeroNotSucc (Or.inr (Or.inl rfl))) e
+  · exact (seal_valid M addZero).mpr
+      (fun e => sat_axiom M e addZero (Or.inr (Or.inr (Or.inl rfl)))) e
+  · exact (seal_valid M addSucc).mpr
+      (fun e => sat_axiom M e addSucc (Or.inr (Or.inr (Or.inr (Or.inl rfl))))) e
+  · exact (seal_valid M mulZero).mpr
+      (fun e => sat_axiom M e mulZero
+        (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))) e
+  · exact (seal_valid M mulSucc).mpr
+      (fun e => sat_axiom M e mulSucc
+        (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))))) e
+  · exact (seal_valid M (inductionForm phi)).mpr
+      (fun e => sat_axiom M e (inductionForm phi)
+        (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩))))))) e
 
 end Formula
 

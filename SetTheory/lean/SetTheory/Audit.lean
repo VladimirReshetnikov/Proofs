@@ -34,6 +34,8 @@ open SetTheory
 -- PA/HF Ackermann/von-Neumann semantic bi-interpretability checkpoint
 #check @PA.Formula.Ax
 #check @PA.Formula.sat_axiom
+#check @PA.Formula.Ax_s
+#check @PA.Formula.sat_axiom_s
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
 #check @AckermannHF.sat_HF_model
@@ -42,6 +44,7 @@ open SetTheory
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
 #print axioms PA.Formula.sat_axiom
+#print axioms PA.Formula.sat_axiom_s
 #print axioms AckermannHF.sat_HF_model
 #print axioms AckermannHF.standard_sat_HF
 #print axioms AckermannHF.PA_biinterpretable_with_HF_standard
