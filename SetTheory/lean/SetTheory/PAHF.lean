@@ -752,6 +752,27 @@ theorem HF_sepByAt_spec {α : Type u} {mem : α → α → Prop}
       exact (hs x).mpr
         ⟨hbody.1, (Sat_rename_rSepParam psi e s x).mp hbody.2⟩
 
+/-- Formula macro: slots `a` and `b` have a binary union. -/
+def HF_binUnionAt (a b : Nat) : Form :=
+  fEx (fAll
+    (fIff
+      (fMem 0 1)
+      (fOr (fMem 0 (a+2)) (fMem 0 (b+2)))))
+
+theorem HF_binUnionAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a b : Nat) :
+    Sat mem e (HF_binUnionAt a b) ↔
+      ∃ u, ∀ x, mem x u ↔ mem x (e a) ∨ mem x (e b) := by
+  constructor
+  · intro h
+    rcases h with ⟨u, hu⟩
+    refine ⟨u, fun x => ?_⟩
+    exact (Sat_fIff (mem := mem) (e := scons x (scons u e))).mp (hu x)
+  · intro h
+    rcases h with ⟨u, hu⟩
+    refine ⟨u, fun x => ?_⟩
+    exact (Sat_fIff (mem := mem) (e := scons x (scons u e))).mpr (hu x)
+
 /-- Semantic reading of transitivity for one object. -/
 def TransitiveObj {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
   ∀ y, mem y a → ∀ x, mem x y → mem x a
@@ -2133,6 +2154,49 @@ theorem sepBy_exists {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
   · intro hx
     exact (hs x).mpr
       ⟨hx.1, (Sat_rename_rSepParam psi e a x).mpr hx.2⟩
+
+theorem binUnion_exists {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (a b : α) :
+    ∃ u, ∀ x, M.mem x u ↔ M.mem x a ∨ M.mem x b := by
+  let phi : Form := HF_binUnionAt 1 0
+  let tail : Nat → α := fun _ => a
+  have hind := M.finite_induction_schema phi (scons a tail)
+  have hall : ∀ b, Sat M.mem (scons b (scons a tail)) phi := by
+    apply (HF_finite_induction_form_spec phi (scons a tail)).mp hind
+    constructor
+    · intro z hzEmpty
+      apply (HF_binUnionAt_spec (scons z (scons a tail)) 1 0).mpr
+      refine ⟨a, fun x => ?_⟩
+      constructor
+      · intro hxa
+        exact Or.inl hxa
+      · intro hx
+        rcases hx with hxa | hxz
+        · exact hxa
+        · exact False.elim (hzEmpty x hxz)
+    · intro old y c hc hOld
+      rcases (HF_binUnionAt_spec (scons old (scons a tail)) 1 0).mp hOld
+        with ⟨u, hu⟩
+      apply (HF_binUnionAt_spec (scons c (scons a tail)) 1 0).mpr
+      refine ⟨M.adjoin u y, fun x => ?_⟩
+      constructor
+      · intro hx
+        rcases (M.adjoin_spec x u y).mp hx with hxu | hxy
+        · rcases (hu x).mp hxu with hxa | hxold
+          · exact Or.inl hxa
+          · exact Or.inr ((hc x).mpr (Or.inl hxold))
+        · subst x
+          exact Or.inr ((hc y).mpr (Or.inr rfl))
+      · intro hx
+        rcases hx with hxa | hxc
+        · apply (M.adjoin_spec x u y).mpr
+          exact Or.inl ((hu x).mpr (Or.inl hxa))
+        · rcases (hc x).mp hxc with hxold | hxy
+          · apply (M.adjoin_spec x u y).mpr
+            exact Or.inl ((hu x).mpr (Or.inr hxold))
+          · exact (M.adjoin_spec x u y).mpr (Or.inr hxy)
+  simpa [phi, tail, scons] using
+    (HF_binUnionAt_spec (scons b (scons a tail)) 1 0).mp (hall b)
 
 end FirstOrderFiniteAdjunctionModel
 
