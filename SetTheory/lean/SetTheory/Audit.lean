@@ -350,8 +350,17 @@ open SetTheory
 #check @AckermannHF.PAInHF.scons_insertAt
 #check @AckermannHF.PAInHF.scons2_insertAt
 #check @AckermannHF.PAInHF.scons3_insertAt
+#check @AckermannHF.PAInHF.scons_insertAt_prefix
+#check @AckermannHF.PAInHF.scons2_insertAt_prefix
+#check @AckermannHF.PAInHF.scons3_insertAt_prefix
+#check @PA.Formula.substZeroAt
+#check @PA.Formula.upSubst_substZeroAt
+#check @AckermannHF.PAInHF.substZeroAfterMap
+#check @AckermannHF.PAInHF.substZeroBeforeMap
 #check @AckermannHF.PAInHF.termGraphAt_substZero_insert_model
+#check @AckermannHF.PAInHF.termGraphAt_substZeroAt_insert_model
 #check @AckermannHF.PAInHF.formulaAt
+#check @AckermannHF.PAInHF.formulaAt_map_ext
 #check @AckermannHF.PAInHF.formulaAt_free
 #check @AckermannHF.PAInHF.formulaAt_eq_var_spec
 #check @AckermannHF.PAInHF.formulaAt_zeroNotSucc_valid
