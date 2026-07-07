@@ -178,6 +178,37 @@ Definition pairNext (p : nat * nat) : nat * nat :=
   let b := snd p in
   (b, (2 * (a / b) + 1) * b - a).
 
+Theorem div_lt_mul_add (a b : nat) (hb : 0 < b) :
+    a < (a / b) * b + b.
+Proof.
+  pose proof (Nat.div_mod a b ltac:(lia)) as h.
+  pose proof (Nat.mod_upper_bound a b ltac:(lia)) as hm.
+  rewrite h at 1.
+  rewrite Nat.mul_comm.
+  lia.
+Qed.
+
+Theorem pairNext_left_child (a b : nat) (hb : 0 < b) :
+    pairNext (a, a + b) = (a + b, b).
+Proof.
+  unfold pairNext.
+  cbn [fst snd].
+  rewrite Nat.div_small by lia.
+  f_equal.
+  assert (hle : a <= (2 * 0 + 1) * (a + b)) by lia.
+  lia.
+Qed.
+
+Theorem pairNext_right_child_arith {a b : nat} (hb : 0 < b) :
+    b + ((2 * (a / b) + 1) * b - a) =
+      (2 * (a / b + 1) + 1) * b - (a + b).
+Proof.
+  pose proof (div_lt_mul_add a b hb) as hlt.
+  assert (hle1 : a <= (2 * (a / b) + 1) * b) by lia.
+  assert (hle2 : a + b <= (2 * (a / b + 1) + 1) * b) by lia.
+  lia.
+Qed.
+
 Theorem cwPair_first_values :
     map cwPair [0; 1; 2; 3; 4; 5; 6; 7] =
       [(1, 1); (1, 2); (2, 1); (1, 3);
