@@ -128,6 +128,18 @@ def logEval : PowExpr → Nat
   | .atom => 1
   | .pow a b => logEval a * 2 ^ logEval b
 
+/-- Exact-logarithm combine operation induced by `2^a ^ 2^b = 2^(a * 2^b)`. -/
+def logCombine (a b : Nat) : Nat :=
+  a * 2 ^ b
+
+theorem logEval_eq_sharedEval (e : PowExpr) :
+    logEval e = PowTower.Expr.eval 1 logCombine e := by
+  induction e with
+  | atom =>
+      rfl
+  | pow a b iha ihb =>
+      simp [logEval, PowTower.Expr.eval, logCombine, iha, ihb]
+
 /-- Every semantic value is `2` raised to its exact logarithm. -/
 theorem eval_eq_two_pow_logEval (e : PowExpr) :
     eval e = 2 ^ logEval e := by
@@ -181,6 +193,12 @@ theorem a002845LogCard_eq_directLogCard (n : Nat) :
     a002845LogCard n = directLogCard n := by
   rw [a002845LogCard, directLogCard, logValueSet_eq_directLogFinset]
   exact Set.ncard_coe_finset (directLogFinset n)
+
+theorem directLogFinset_eq_recursiveValueFinset (n : Nat) :
+    directLogFinset n = PowTower.Expr.recursiveValueFinset 1 logCombine n := by
+  rw [directLogFinset]
+  exact PowTower.Expr.evalFinset_eq_recursiveValueFinset_of_eval_eq
+    logEval 1 logCombine logEval_eq_sharedEval n
 
 /--
 The canonical semantic definition agrees with the direct logarithm-list
@@ -545,6 +563,14 @@ theorem sparseLogEval_eq_ofNat_logEval (e : PowExpr) :
       simp [sparseLogEval, PowExpr.logEval, certifiedCombineLog, iha, ihb,
         Sparse.eval_ofNat]
 
+theorem sparseLogEval_eq_sharedEval (e : PowExpr) :
+    sparseLogEval e = PowTower.Expr.eval (Sparse.ofNat 1) certifiedCombineLog e := by
+  induction e with
+  | atom =>
+      rfl
+  | pow a b iha ihb =>
+      simp [sparseLogEval, PowTower.Expr.eval, iha, ihb]
+
 /--
 The finite sparse set obtained by evaluating every canonical expression tree.
 The proof-facing definition is intentionally direct; `certifiedCombineLog`
@@ -552,6 +578,13 @@ supplies the efficient native implementation of each sparse logarithm combine.
 -/
 def certifiedSparseLogFinset (n : Nat) : Finset Sparse :=
   PowTower.Expr.evalFinset sparseLogEval n
+
+theorem certifiedSparseLogFinset_eq_sharedSparseLogLevel (n : Nat) :
+    certifiedSparseLogFinset n =
+      PowTower.Expr.recursiveValueFinset (Sparse.ofNat 1) certifiedCombineLog n := by
+  rw [certifiedSparseLogFinset]
+  exact PowTower.Expr.evalFinset_eq_recursiveValueFinset_of_eval_eq
+    sparseLogEval (Sparse.ofNat 1) certifiedCombineLog sparseLogEval_eq_sharedEval n
 
 /-- Cardinality of the certified sparse-logarithm set. -/
 def certifiedSparseCard (n : Nat) : Nat :=
@@ -645,6 +678,15 @@ theorem certifiedLevel_eq_sharedSparseLogLevel (n : Nat) :
       simp [certifiedLevel, PowTower.Expr.recursiveValueFinset]
   | case3 n ihLeft ihRight =>
       simp [certifiedLevel, PowTower.Expr.recursiveValueFinset, ihLeft, ihRight]
+
+theorem certifiedSparseLogFinset_eq_certifiedLevel (n : Nat) :
+    certifiedSparseLogFinset n = certifiedLevel n := by
+  rw [certifiedSparseLogFinset_eq_sharedSparseLogLevel,
+    certifiedLevel_eq_sharedSparseLogLevel]
+
+theorem certifiedSparseCard_eq_certifiedLevelCard (n : Nat) :
+    certifiedSparseCard n = certifiedLevelCard n := by
+  rw [certifiedSparseCard, certifiedLevelCard, certifiedSparseLogFinset_eq_certifiedLevel]
 
 /-- Shared memoized sparse-log count corresponding to A002845. -/
 def sharedSparseLogCountMemo (n : Nat) : Nat :=

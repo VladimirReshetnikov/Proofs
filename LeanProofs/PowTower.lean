@@ -387,6 +387,31 @@ theorem recursiveValueFinset_coe [DecidableEq α] (atomValue : α)
       · rintro ⟨i, a, ha, b, hb, hv⟩
         exact ⟨i, a, ha, b, hb, hv.symm⟩
 
+/--
+The direct finite enumeration of lexical expressions and the finite
+split-recursive computation produce the same finite set for every decidable
+interpretation.
+-/
+theorem evalFinset_eq_recursiveValueFinset [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    evalFinset (eval atomValue powValue) n =
+      recursiveValueFinset atomValue powValue n := by
+  ext v
+  change v ∈ (evalFinset (eval atomValue powValue) n : Set α) ↔
+    v ∈ (recursiveValueFinset atomValue powValue n : Set α)
+  rw [← evalSet_eq_evalFinset (eval atomValue powValue) n,
+    ← valueSet_eq_evalSet atomValue powValue n,
+    valueSet_eq_recursiveValueSet atomValue powValue n,
+    ← recursiveValueFinset_coe atomValue powValue n]
+
+theorem evalFinset_eq_recursiveValueFinset_of_eval_eq [DecidableEq α]
+    (evalFn : Expr -> α) (atomValue : α) (powValue : α -> α -> α)
+    (h : ∀ e, evalFn e = eval atomValue powValue e) (n : Nat) :
+    evalFinset evalFn n = recursiveValueFinset atomValue powValue n := by
+  rw [← evalFinset_eq_recursiveValueFinset atomValue powValue n]
+  ext v
+  simp [evalFinset, h]
+
 theorem valueCard_eq_recursiveValueFinset_card [DecidableEq α] (atomValue : α)
     (powValue : α -> α -> α) (n : Nat) :
     valueCard atomValue powValue n =

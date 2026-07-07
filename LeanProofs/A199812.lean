@@ -155,6 +155,14 @@ theorem exponentNote_nf : ∀ e : PowTower.Expr, ONote.NF (exponentNote e)
       dsimp [exponentNote, combineExponent]
       infer_instance
 
+theorem exponentNote_eq_sharedEval (e : PowTower.Expr) :
+    exponentNote e = PowTower.Expr.eval (1 : ONote) combineExponent e := by
+  induction e with
+  | atom =>
+      rfl
+  | pow a b iha ihb =>
+      simp [exponentNote, PowTower.Expr.eval, iha, ihb]
+
 @[simp]
 theorem repr_principalPower (e : ONote) [ONote.NF e] :
     ONote.repr (principalPower e) = (ω : Ordinal) ^ ONote.repr e := by
@@ -206,6 +214,13 @@ normal-form exponent evaluator.
 theorem exponentNoteValues_eq_evalFinset (n : Nat) :
     exponentNoteValues n = PowTower.Expr.evalFinset exponentNote n := by
   simp [exponentNoteValues, exponentNoteList, PowTower.Expr.evalFinset]
+
+theorem exponentNoteValues_eq_recursiveValueFinset (n : Nat) :
+    exponentNoteValues n =
+      PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n := by
+  rw [exponentNoteValues_eq_evalFinset]
+  exact PowTower.Expr.evalFinset_eq_recursiveValueFinset_of_eval_eq
+    exponentNote (1 : ONote) combineExponent exponentNote_eq_sharedEval n
 
 /-- The direct normal-form count obtained from all lexical parenthesizations. -/
 def exponentNoteCount (n : Nat) : Nat :=
@@ -261,6 +276,15 @@ theorem degreeNote_nf : ∀ e : PowTower.Expr, ONote.NF (degreeNote e)
       dsimp [degreeNote]
       infer_instance
 
+theorem degreeNote_eq_sharedEval (e : PowTower.Expr) :
+    degreeNote e = PowTower.Expr.eval (0 : ONote)
+      (fun a b : ONote => a + principalPower b) e := by
+  induction e with
+  | atom =>
+      rfl
+  | pow a b iha ihb =>
+      simp [degreeNote, PowTower.Expr.eval, iha, ihb]
+
 theorem combineExponent_principalPower (a b : ONote) [ONote.NF a] [ONote.NF b] :
     combineExponent (principalPower a) (principalPower b) =
       principalPower (a + principalPower b) := by
@@ -297,6 +321,14 @@ def degreeNoteList (n : Nat) : List ONote :=
 /-- The finite set of verified inner exponents for the same parenthesized expressions. -/
 def degreeNoteValues (n : Nat) : Finset ONote :=
   (degreeNoteList n).toFinset
+
+/--
+The inner-exponent values are the shared lexical finite value set for the
+inner-exponent evaluator.
+-/
+theorem degreeNoteValues_eq_evalFinset (n : Nat) :
+    degreeNoteValues n = PowTower.Expr.evalFinset degreeNote n := by
+  simp [degreeNoteValues, degreeNoteList, PowTower.Expr.evalFinset]
 
 /-- Count the verified inner exponents. -/
 def degreeNoteCount (n : Nat) : Nat :=
@@ -446,6 +478,21 @@ theorem listBiUnion_congr {α β : Type} [DecidableEq β] {xs : List α}
 /-- Degree-combine operation forced by `(omega^omega^a)^(omega^omega^b)`. -/
 def combineDegree (a b : ONote) : ONote :=
   a + principalPower b
+
+theorem degreeNote_eq_sharedCombineEval (e : PowTower.Expr) :
+    degreeNote e = PowTower.Expr.eval (0 : ONote) combineDegree e := by
+  induction e with
+  | atom =>
+      rfl
+  | pow a b iha ihb =>
+      simp [degreeNote, PowTower.Expr.eval, combineDegree, iha, ihb]
+
+theorem degreeNoteValues_eq_recursiveValueFinset (n : Nat) :
+    degreeNoteValues n =
+      PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n := by
+  rw [degreeNoteValues_eq_evalFinset]
+  exact PowTower.Expr.evalFinset_eq_recursiveValueFinset_of_eval_eq
+    degreeNote (0 : ONote) combineDegree degreeNote_eq_sharedCombineEval n
 
 /--
 Dynamic computation of the inner exponent value set.
