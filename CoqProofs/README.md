@@ -91,7 +91,7 @@ Current ports:
   `A199812.lean`: inner tower exponents are represented as Cantor-normal-form
   notes below epsilon_0, tower splits combine degrees by
   `a, b |-> a + omega^b`, and the recurrence is connected to the shared
-  `PowTower.v` evaluator.  It certifies the initial values through `n = 8`;
+  `PowTower.v` evaluator.  It certifies the initial values through `n = 11`;
   the Lean module's mathlib ordinal-semantics bridge and longer table through
   `n = 13` are not yet replayed in Coq.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
