@@ -29,59 +29,83 @@ Definition IPowExpr : Type := PT.Expr.
 Module A198683Support.
 
 Inductive Value : Type :=
-| VI : Value
-| VP2 : Value
-| VP3L : Value
-| VP3R : Value
-| VP4A : Value
-| VP4B : Value
-| VP4C : Value
+| VClass : nat -> Value
 | VPow : Value -> Value -> Value.
 
 Fixpoint valueEqb (x y : Value) : bool :=
   match x, y with
-  | VI, VI => true
-  | VP2, VP2 => true
-  | VP3L, VP3L => true
-  | VP3R, VP3R => true
-  | VP4A, VP4A => true
-  | VP4B, VP4B => true
-  | VP4C, VP4C => true
+  | VClass xl, VClass yl => Nat.eqb xl yl
   | VPow xl xr, VPow yl yr => valueEqb xl yl && valueEqb xr yr
   | _, _ => false
   end.
 
 Theorem valueEqb_refl (x : Value) : valueEqb x x = true.
 Proof.
-  induction x as [| | | | | | |xl ihl xr ihr]; simpl; auto.
-  now rewrite ihl, ihr.
+  induction x as [n|xl ihl xr ihr]; simpl.
+  - apply Nat.eqb_refl.
+  - now rewrite ihl, ihr.
 Qed.
 
 Theorem valueEqb_eq (x y : Value) : valueEqb x y = true <-> x = y.
 Proof.
   split.
   - revert y.
-    induction x as [| | | | | | |xl ihl xr ihr]; destruct y; simpl;
-      try discriminate; intro h; try reflexivity.
-    apply andb_true_iff in h as [hl hr].
-    apply ihl in hl.
-    apply ihr in hr.
-    now subst.
+    induction x as [xn|xl ihl xr ihr]; destruct y as [yn|yl yr]; simpl;
+      try discriminate; intro h.
+    + apply Nat.eqb_eq in h. now subst.
+    + apply andb_true_iff in h as [hl hr].
+      apply ihl in hl.
+      apply ihr in hr.
+      now subst.
   - intro h. subst. apply valueEqb_refl.
 Qed.
 
-Definition i : Value := VI.
+Definition i : Value := VClass 1.
 
 Definition principalPow (z w : Value) : Value :=
   match z, w with
-  | VI, VI => VP2
-  | VI, VP2 => VP3L
-  | VP2, VI => VP3R
-  | VI, VP3L => VP4A
-  | VI, VP3R => VP4B
-  | VP2, VP2 => VP4C
-  | VP3L, VI => VP4C
-  | VP3R, VI => VP4B
+  | VClass 1, VClass 1 => VClass 2
+  | VClass 1, VClass 2 => VClass 3
+  | VClass 2, VClass 1 => VClass 4
+  | VClass 1, VClass 3 => VClass 5
+  | VClass 1, VClass 4 => VClass 6
+  | VClass 2, VClass 2 => VClass 7
+  | VClass 3, VClass 1 => VClass 7
+  | VClass 4, VClass 1 => VClass 6
+  | VClass 1, VClass 5 => VClass 8
+  | VClass 1, VClass 6 => VClass 9
+  | VClass 1, VClass 7 => VClass 10
+  | VClass 2, VClass 3 => VClass 11
+  | VClass 2, VClass 4 => VClass 12
+  | VClass 3, VClass 2 => VClass 13
+  | VClass 4, VClass 2 => VClass 14
+  | VClass 5, VClass 1 => VClass 11
+  | VClass 6, VClass 1 => VClass 12
+  | VClass 7, VClass 1 => VClass 14
+  | VClass 1, VClass 8 => VClass 15
+  | VClass 1, VClass 9 => VClass 16
+  | VClass 1, VClass 10 => VClass 17
+  | VClass 1, VClass 11 => VClass 18
+  | VClass 1, VClass 12 => VClass 19
+  | VClass 1, VClass 13 => VClass 20
+  | VClass 1, VClass 14 => VClass 21
+  | VClass 2, VClass 5 => VClass 22
+  | VClass 2, VClass 6 => VClass 23
+  | VClass 2, VClass 7 => VClass 24
+  | VClass 3, VClass 3 => VClass 25
+  | VClass 3, VClass 4 => VClass 26
+  | VClass 4, VClass 3 => VClass 27
+  | VClass 4, VClass 4 => VClass 19
+  | VClass 5, VClass 2 => VClass 25
+  | VClass 6, VClass 2 => VClass 26
+  | VClass 7, VClass 2 => VClass 28
+  | VClass 8, VClass 1 => VClass 22
+  | VClass 9, VClass 1 => VClass 29
+  | VClass 10, VClass 1 => VClass 24
+  | VClass 11, VClass 1 => VClass 27
+  | VClass 12, VClass 1 => VClass 19
+  | VClass 13, VClass 1 => VClass 28
+  | VClass 14, VClass 1 => VClass 26
   | _, _ => VPow z w
   end.
 
