@@ -49,6 +49,10 @@ Current ports:
 - `A198683SevenUpper.v` ports the finite upper-bound surface from
   `A198683SevenUpper.lean`: the generated n = 7 symbolic quotient checks the
   34 collapsed representatives and verifies the corresponding `<= 34` bound.
+- `A198683.v` ports the final executable assembly from `A198683.lean`,
+  restating the initial values through `n = 7` and the historical lower/upper
+  bound corollaries over the Coq symbolic quotient.  The Lean file's semantic
+  complex lower-bound proof is not yet replayed in Coq.
 - `A000081.v` ports the finite executable certificate from `A000081.lean`.
   It uses a hereditarily sorted exponent normal form for positive-real tower
   functions, preserving the named small parenthesizations and equality
@@ -119,6 +123,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Tower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683FiveSix.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SevenUpper.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A000081.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
