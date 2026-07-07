@@ -239,6 +239,87 @@ theorem encoded_nondefault_has_true {Γ : Type*} [Inhabited Γ] {width : Nat}
     _ = dec (enc default) := by rw [hFalse, enc0]
     _ = default := encdec default
 
+private theorem list_getI_flatMap_const_length {α β : Type*}
+    [Inhabited α] [Inhabited β] (l : List α) (f : α -> List β)
+    (width j b : Nat)
+    (hfLen : ∀ a, (f a).length = width)
+    (hfDefault : f default = List.replicate width default)
+    (hb : b < width) :
+    (l.flatMap f).getI (j * width + b) = (f (l.getI j)).getI b := by
+  induction l generalizing j with
+  | nil =>
+      rw [List.flatMap_nil]
+      have hBlock : (f (default : α)).getI b = (default : β) := by
+        rw [hfDefault]
+        have hbLen : b < (List.replicate width (default : β)).length := by
+          simpa using hb
+        rw [List.getI_eq_getElem _ hbLen]
+        simp
+      simp [hBlock]
+  | cons a as IH =>
+      cases j with
+      | zero =>
+          rw [List.flatMap_cons, List.getI_append]
+          · simp
+          · simpa [hfLen a] using hb
+      | succ j =>
+          rw [List.flatMap_cons, List.getI_append_right]
+          · have hidx : (Nat.succ j * width + b) - (f a).length = j * width + b := by
+              rw [hfLen a, Nat.succ_mul]
+              omega
+            rw [hidx]
+            simpa using IH j
+          · rw [hfLen a, Nat.succ_mul]
+            omega
+
+private theorem listBlank_flatMap_nth_block {Γ Γ' : Type*}
+    [Inhabited Γ] [Inhabited Γ'] (L : Turing.ListBlank Γ)
+    (f : Γ -> List Γ') (hf : ∃ width, f default = List.replicate width default)
+    (width j b : Nat)
+    (hfLen : ∀ a, (f a).length = width)
+    (hfDefault : f default = List.replicate width default)
+    (hb : b < width) :
+    (L.flatMap f hf).nth (j * width + b) = (f (L.nth j)).getI b := by
+  refine L.induction_on fun l => ?_
+  rw [Turing.ListBlank.flatMap_mk, Turing.ListBlank.nth_mk, Turing.ListBlank.nth_mk]
+  exact list_getI_flatMap_const_length l f width j b hfLen hfDefault hb
+
+private theorem vector_toList_getI {width : Nat} (v : List.Vector Bool width)
+    (bit : Fin width) :
+    v.toList.getI bit.val = v.get bit := by
+  have hLen : bit.val < v.toList.length := by
+    rw [List.Vector.toList_length]
+    exact bit.isLt
+  rw [List.getI_eq_getElem _ hLen]
+  rw [List.Vector.toList_getElem]
+  rfl
+
+/--
+If a bit is true inside the fixed-width block encoding of a source `TM1`
+output cell, then the Bool simulator exposes the same true bit at the
+corresponding flattened right-tape offset.
+-/
+theorem tm1to1Output_block_true {Γ : Type*} [Inhabited Γ] {width : Nat}
+    {enc : Γ -> List.Vector Bool width}
+    {enc0 : enc default = List.Vector.replicate width false}
+    {sourceOutput : Turing.ListBlank Γ} {boolOutput : Turing.ListBlank Bool}
+    (hRel : TM1to1Output enc enc0 sourceOutput boolOutput)
+    {sourceIndex : Nat} {bit : Fin width}
+    (hBit : (enc (sourceOutput.nth sourceIndex)).get bit = true) :
+    boolOutput.nth (sourceIndex * width + bit.val) = true := by
+  rcases hRel with ⟨tape, hSource, hBool⟩
+  rw [← hBool]
+  rw [Turing.TM1to1.trTape]
+  simp only [Turing.TM1to1.trTape', Turing.Tape.mk'_right₀]
+  rw [listBlank_flatMap_nth_block]
+  · rw [hSource]
+    rw [vector_toList_getI]
+    exact hBit
+  · intro a
+    exact List.Vector.toList_length (enc a)
+  · simp only [enc0, List.Vector.replicate, Bool.default_bool, List.Vector.toList_mk]
+  · exact bit.isLt
+
 /-- Convert mathlib's tape-head directions to the Rado direction type. -/
 def radoMoveOfTuringDir : Turing.Dir -> Move
   | Turing.Dir.left => Move.left
