@@ -16,6 +16,7 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Bool.Bool Lia PeanoNat List.
+From Stdlib Require Import Logic.FunctionalExtensionality.
 From Stdlib Require Import ClassicalEpsilon ProofIrrelevance.
 From SetTheory Require Import Fol Completeness.
 Import ListNotations.
@@ -6131,12 +6132,123 @@ Definition substZero : nat -> term :=
     | S k => tVar k
     end.
 
+Definition substZeroAt (p : nat) : nat -> term :=
+  fun n =>
+    if n <? p then tVar n
+    else if n =? p then tZero
+    else tVar (n - 1).
+
+Lemma substZeroAt_lt : forall p n,
+  n < p -> substZeroAt p n = tVar n.
+Proof.
+  intros p n h.
+  unfold substZeroAt.
+  destruct (Nat.ltb_spec n p); [reflexivity | lia].
+Qed.
+
+Lemma substZeroAt_eq : forall p,
+  substZeroAt p p = tZero.
+Proof.
+  intro p.
+  unfold substZeroAt.
+  destruct (Nat.ltb_spec p p); [lia |].
+  destruct (Nat.eqb_spec p p); [reflexivity | congruence].
+Qed.
+
+Lemma substZeroAt_gt : forall p n,
+  p < n -> substZeroAt p n = tVar (n - 1).
+Proof.
+  intros p n h.
+  unfold substZeroAt.
+  destruct (Nat.ltb_spec n p); [lia |].
+  destruct (Nat.eqb_spec n p); [lia | reflexivity].
+Qed.
+
+Lemma substZeroAt_zero :
+  substZeroAt 0 = substZero.
+Proof.
+  apply functional_extensionality.
+  intros [|n].
+  - apply substZeroAt_eq.
+  - unfold substZero.
+    rewrite substZeroAt_gt; [|lia].
+    f_equal.
+    lia.
+Qed.
+
+Lemma upSubst_substZeroAt : forall p,
+  Term.upSubst (substZeroAt p) = substZeroAt (S p).
+Proof.
+  intro p.
+  apply functional_extensionality.
+  intros [|n].
+  - reflexivity.
+  - simpl.
+    destruct (lt_eq_lt_dec n p) as [[hlt | heq] | hgt].
+    + rewrite (substZeroAt_lt p n hlt).
+      rewrite (substZeroAt_lt (S p) (S n)); [reflexivity | lia].
+    + subst n.
+      rewrite substZeroAt_eq.
+      rewrite substZeroAt_eq.
+      reflexivity.
+    + rewrite (substZeroAt_gt p n hgt).
+      rewrite (substZeroAt_gt (S p) (S n)); [|lia].
+      simpl.
+      f_equal.
+      lia.
+Qed.
+
 Definition substSuccVar : nat -> term :=
   fun n =>
     match n with
     | 0 => tSucc (tVar 0)
     | S k => tVar (S k)
     end.
+
+Definition substSuccAt (p : nat) : nat -> term :=
+  fun n => if n =? p then tSucc (tVar p) else tVar n.
+
+Lemma substSuccAt_eq : forall p,
+  substSuccAt p p = tSucc (tVar p).
+Proof.
+  intro p.
+  unfold substSuccAt.
+  destruct (Nat.eqb_spec p p); [reflexivity | congruence].
+Qed.
+
+Lemma substSuccAt_ne : forall p n,
+  n <> p -> substSuccAt p n = tVar n.
+Proof.
+  intros p n h.
+  unfold substSuccAt.
+  destruct (Nat.eqb_spec n p); [congruence | reflexivity].
+Qed.
+
+Lemma substSuccAt_zero :
+  substSuccAt 0 = substSuccVar.
+Proof.
+  apply functional_extensionality.
+  intros [|n].
+  - apply substSuccAt_eq.
+  - apply substSuccAt_ne. lia.
+Qed.
+
+Lemma upSubst_substSuccAt : forall p,
+  Term.upSubst (substSuccAt p) = substSuccAt (S p).
+Proof.
+  intro p.
+  apply functional_extensionality.
+  intros [|n].
+  - reflexivity.
+  - simpl.
+    destruct (Nat.eq_dec n p) as [heq | hne].
+    + subst n.
+      rewrite substSuccAt_eq.
+      rewrite substSuccAt_eq.
+      reflexivity.
+    + rewrite (substSuccAt_ne p n hne).
+      rewrite (substSuccAt_ne (S p) (S n)); [reflexivity | lia].
+Qed.
 
 Definition succInj : formula :=
   pAll (pAll (pImp
