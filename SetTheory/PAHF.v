@@ -9497,6 +9497,16 @@ Proof.
   exact (formulaAt_succInj_of_irrefl A mem hIrrefl rho env).
 Qed.
 
+Lemma translated_succInj_sat_of_HFAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  intros V mem v e hHF.
+  apply translated_succInj_sat_of_irrefl.
+  exact (semantic_mem_irrefl_of_HFAx_s V mem v hHF).
+Qed.
+
 Lemma translated_addZero_sat_model :
   forall V (M : FirstOrderAdjunctionModel V) e,
     Sat V (foam_mem V M) e
@@ -9509,6 +9519,16 @@ Proof.
   apply formulaAt_addZero_valid_model.
 Qed.
 
+Lemma translated_addZero_sat_of_HFAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  intros V mem v e hHF.
+  pose (M := firstOrderAdjunctionModel_of_HFAx_s V mem v hHF).
+  exact (translated_addZero_sat_model V M e).
+Qed.
+
 Lemma translated_mulZero_sat_model :
   forall V (M : FirstOrderAdjunctionModel V) e,
     Sat V (foam_mem V M) e
@@ -9519,6 +9539,16 @@ Proof.
   apply formulaAt_sealPA_valid.
   intros rho env.
   apply formulaAt_mulZero_valid_model.
+Qed.
+
+Lemma translated_mulZero_sat_of_HFAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  intros V mem v e hHF.
+  pose (M := firstOrderAdjunctionModel_of_HFAx_s V mem v hHF).
+  exact (translated_mulZero_sat_model V M e).
 Qed.
 
 Record TheoryInterpretation
