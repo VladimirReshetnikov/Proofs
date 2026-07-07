@@ -5277,6 +5277,30 @@ theorem BProv_theory_mono {B C : Formula → Prop} {G : List Formula} {phi : For
     (fun b hb => BProv_ax (G := G) (hBC b hb))
     (fun g hg => BProv_of_Prov (B := C) (Prov.P_ass G g hg))
 
+/-- PA relative provability is closed under PA equality elimination.  The
+formula `a` is the one-variable PA context, instantiated first by term `s` and
+then by term `t`. -/
+theorem BProv_eqElim {B : Formula → Prop} {G : List Formula} {s t : Term}
+    {a : Formula}
+    (heq : BProv B G (eq s t))
+    (ha : BProv B G (subst (instTerm s) a)) :
+    BProv B G (subst (instTerm t) a) := by
+  have hbare : BProv B [eq s t, subst (instTerm s) a]
+      (subst (instTerm t) a) := by
+    apply BProv_of_Prov
+    apply Prov.P_eqElim [eq s t, subst (instTerm s) a] s t a
+    · exact Prov.P_ass _ _ (by simp)
+    · exact Prov.P_ass _ _ (by simp)
+  exact BProv_lift hbare
+    (fun _ hb => BProv_ax (G := G) hb)
+    (fun g hg => by
+      simp only [List.mem_cons, List.not_mem_nil] at hg
+      rcases hg with rfl | hg
+      · exact heq
+      · rcases hg with rfl | hnil
+        · exact ha
+        · cases hnil)
+
 theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
     {G : List Formula} {phi : Formula} (h : BProv B G phi) :
     ∀ e : Nat → α, (∀ b, B b → Sat M e b) →

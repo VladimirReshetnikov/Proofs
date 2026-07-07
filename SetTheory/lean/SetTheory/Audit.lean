@@ -66,6 +66,7 @@ open SetTheory
 #check @PA.Formula.BProv_lift
 #check @PA.Formula.BProv_cut
 #check @PA.Formula.BProv_theory_mono
+#check @PA.Formula.BProv_eqElim
 #check @PA.Formula.soundness_BProv
 #check @PA.Term.Free
 #check @PA.Term.free_lt_bound
