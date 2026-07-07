@@ -1151,6 +1151,32 @@ theorem semantic_finite_induction_schema_of_HFFinAx_s {α : Type u}
   extract HFFinAx_s v (HF_finite_induction_form phi) hHF
     (HFFinAx_s_finite_induction phi)
 
+theorem semantic_empty_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    ∃ e, ∀ x, ¬ mem x e :=
+  semantic_empty_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg))
+
+theorem semantic_extensionality_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b :=
+  semantic_extensionality_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg))
+
+theorem semantic_adjoin_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    ∀ a b, ∃ c, ∀ x, mem x c ↔ mem x a ∨ x = b :=
+  semantic_adjoin_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg))
+
+theorem semantic_induction_schema_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) (phi : Form) :
+    ∀ e, Sat mem e (HF_induction_form phi) :=
+  semantic_induction_schema_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg)) phi
+
 /-- First-order HF induction rules out self-membership in every semantic model
 of the sealed HF theory. -/
 theorem semantic_mem_irrefl_of_HFAx_s {α : Type u} {mem : α → α → Prop}
@@ -1189,6 +1215,12 @@ structure FirstOrderAdjunctionModel (α : Type u) where
   empty_spec : ∀ x, ¬ mem x empty
   adjoin_spec : ∀ x a b, mem x (adjoin a b) ↔ mem x a ∨ x = b
   induction_schema : ∀ phi e, Sat mem e (HF_induction_form phi)
+
+/-- Chosen first-order HF model carrying the finite-generation induction
+schema of hereditary finite sets. -/
+structure FirstOrderFiniteAdjunctionModel (α : Type u) extends
+    FirstOrderAdjunctionModel α where
+  finite_induction_schema : ∀ phi e, Sat mem e (HF_finite_induction_form phi)
 
 namespace FirstOrderAdjunctionModel
 
@@ -1943,6 +1975,21 @@ noncomputable def firstOrderAdjunctionModel_of_HFAx_s {α : Type u}
     intro x a b
     exact Classical.choose_spec (semantic_adjoin_of_HFAx_s v hHF a b) x
   induction_schema := semantic_induction_schema_of_HFAx_s v hHF
+
+noncomputable def firstOrderFiniteAdjunctionModel_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    FirstOrderFiniteAdjunctionModel α where
+  mem := mem
+  empty := Classical.choose (semantic_empty_of_HFFinAx_s v hHF)
+  adjoin := fun a b => Classical.choose (semantic_adjoin_of_HFFinAx_s v hHF a b)
+  extensional := semantic_extensionality_of_HFFinAx_s v hHF
+  empty_spec := Classical.choose_spec (semantic_empty_of_HFFinAx_s v hHF)
+  adjoin_spec := by
+    intro x a b
+    exact Classical.choose_spec (semantic_adjoin_of_HFFinAx_s v hHF a b) x
+  induction_schema := semantic_induction_schema_of_HFFinAx_s v hHF
+  finite_induction_schema := semantic_finite_induction_schema_of_HFFinAx_s v hHF
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
 

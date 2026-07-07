@@ -204,6 +204,8 @@ open SetTheory
 #check @AckermannHF.HF_finite_induction_form_spec
 #check @AckermannHF.HFFinAx_s_finite_induction
 #check @AckermannHF.semantic_finite_induction_schema_of_HFFinAx_s
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel
+#check @AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
 #check @AckermannHF.exists_max_mem_of_ne_empty
