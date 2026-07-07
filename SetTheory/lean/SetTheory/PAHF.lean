@@ -4743,6 +4743,11 @@ def numeralValue {α : Type u} (M : Model α) : Nat → α
   | 0 => M.zero
   | n+1 => M.succ (numeralValue M n)
 
+@[simp] theorem rename_numeral (r : Nat → Nat) :
+    ∀ n, rename r (numeral n) = numeral n
+  | 0 => rfl
+  | n+1 => by simp [numeral, rename, rename_numeral r n]
+
 theorem eval_numeral {α : Type u} (M : Model α) (e : Nat → α) :
     ∀ n, eval M e (numeral n) = numeralValue M n
   | 0 => rfl
@@ -6057,6 +6062,13 @@ def hfMemAt (elem set : Nat) : Formula :=
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (elem+3)))))))
 
+theorem rename_hfMemAt (r : Nat → Nat) (elem set : Nat) :
+    rename r (hfMemAt elem set) = hfMemAt (r elem) (r set) := by
+  simp [hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt,
+    eqConstAt, betaModTerm, rename, Term.rename, SetTheory.up]
+
 theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
     Sat natModel e (leAt a b) ↔ e a ≤ e b := by
   constructor
@@ -7089,6 +7101,240 @@ theorem hfFormulaAt_free (phi : Form) :
 def translateHFFormula (phi : Form) : Formula :=
   hfFormulaAt (fun n : Nat => n) phi
 
+/-- Context-level counterpart of `hfFormulaAt`. -/
+def hfContextAt (ρ : Nat → Nat) (G : List Form) : List Formula :=
+  G.map (hfFormulaAt ρ)
+
+/-- Default context translation for the HF-in-PA interpretation. -/
+def translateHFContext (G : List Form) : List Formula :=
+  G.map translateHFFormula
+
+theorem translateHFContext_eq_hfContextAt_id (G : List Form) :
+    translateHFContext G = hfContextAt (fun n : Nat => n) G := by
+  simp [translateHFContext, hfContextAt, translateHFFormula]
+
+theorem hfFormulaAt_ext (phi : Form) :
+    ∀ {ρ σ : Nat → Nat},
+      (∀ n, ρ n = σ n) → hfFormulaAt ρ phi = hfFormulaAt σ phi := by
+  induction phi with
+  | fMem i j =>
+      intro ρ σ h
+      simp [hfFormulaAt, h]
+  | fEq i j =>
+      intro ρ σ h
+      simp [hfFormulaAt, h]
+  | fBot =>
+      intro ρ σ h
+      rfl
+  | fImp a b iha ihb =>
+      intro ρ σ h
+      simp [hfFormulaAt, iha h, ihb h]
+  | fAnd a b iha ihb =>
+      intro ρ σ h
+      simp [hfFormulaAt, iha h, ihb h]
+  | fOr a b iha ihb =>
+      intro ρ σ h
+      simp [hfFormulaAt, iha h, ihb h]
+  | fAll a ih =>
+      intro ρ σ h
+      simp only [hfFormulaAt]
+      apply congrArg all
+      exact ih (fun n => by
+        cases n with
+        | zero => rfl
+        | succ n => simp [hfUpVarMap, h n])
+  | fEx a ih =>
+      intro ρ σ h
+      simp only [hfFormulaAt]
+      apply congrArg ex
+      exact ih (fun n => by
+        cases n with
+        | zero => rfl
+        | succ n => simp [hfUpVarMap, h n])
+
+/-- HF-in-PA translation only depends on the slot map at variables free in the
+source HF formula. -/
+theorem hfFormulaAt_ext_free (phi : Form) :
+    ∀ {ρ σ : Nat → Nat},
+      (∀ n, SetTheory.Free n phi → ρ n = σ n) →
+        hfFormulaAt ρ phi = hfFormulaAt σ phi := by
+  induction phi with
+  | fMem i j =>
+      intro ρ σ h
+      simp [hfFormulaAt, h i (Or.inl rfl), h j (Or.inr rfl)]
+  | fEq i j =>
+      intro ρ σ h
+      simp [hfFormulaAt, h i (Or.inl rfl), h j (Or.inr rfl)]
+  | fBot =>
+      intro ρ σ h
+      rfl
+  | fImp a b iha ihb =>
+      intro ρ σ h
+      simp [hfFormulaAt, iha (fun n hn => h n (Or.inl hn)),
+        ihb (fun n hn => h n (Or.inr hn))]
+  | fAnd a b iha ihb =>
+      intro ρ σ h
+      simp [hfFormulaAt, iha (fun n hn => h n (Or.inl hn)),
+        ihb (fun n hn => h n (Or.inr hn))]
+  | fOr a b iha ihb =>
+      intro ρ σ h
+      simp [hfFormulaAt, iha (fun n hn => h n (Or.inl hn)),
+        ihb (fun n hn => h n (Or.inr hn))]
+  | fAll a ih =>
+      intro ρ σ h
+      simp only [hfFormulaAt]
+      apply congrArg all
+      exact ih (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n => simp [hfUpVarMap, h n hn])
+  | fEx a ih =>
+      intro ρ σ h
+      simp only [hfFormulaAt]
+      apply congrArg ex
+      exact ih (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n => simp [hfUpVarMap, h n hn])
+
+theorem hfFormulaAt_source_rename (phi : Form) (ρ r : Nat → Nat) :
+    hfFormulaAt ρ (SetTheory.rename r phi) =
+      hfFormulaAt (fun n => ρ (r n)) phi := by
+  induction phi generalizing ρ r with
+  | fMem i j =>
+      rfl
+  | fEq i j =>
+      rfl
+  | fBot =>
+      rfl
+  | fImp a b iha ihb =>
+      simp [SetTheory.rename, hfFormulaAt, iha, ihb]
+  | fAnd a b iha ihb =>
+      simp [SetTheory.rename, hfFormulaAt, iha, ihb]
+  | fOr a b iha ihb =>
+      simp [SetTheory.rename, hfFormulaAt, iha, ihb]
+  | fAll a ih =>
+      simp only [SetTheory.rename, hfFormulaAt]
+      apply congrArg all
+      calc
+        hfFormulaAt (hfUpVarMap ρ) (SetTheory.rename (SetTheory.up r) a)
+            = hfFormulaAt (fun n => hfUpVarMap ρ (SetTheory.up r n)) a := by
+                exact ih (hfUpVarMap ρ) (SetTheory.up r)
+        _ = hfFormulaAt (hfUpVarMap (fun n => ρ (r n))) a := by
+                exact hfFormulaAt_ext a (fun n => by
+                  cases n with
+                  | zero => rfl
+                  | succ n => rfl)
+  | fEx a ih =>
+      simp only [SetTheory.rename, hfFormulaAt]
+      apply congrArg ex
+      calc
+        hfFormulaAt (hfUpVarMap ρ) (SetTheory.rename (SetTheory.up r) a)
+            = hfFormulaAt (fun n => hfUpVarMap ρ (SetTheory.up r n)) a := by
+                exact ih (hfUpVarMap ρ) (SetTheory.up r)
+        _ = hfFormulaAt (hfUpVarMap (fun n => ρ (r n))) a := by
+                exact hfFormulaAt_ext a (fun n => by
+                  cases n with
+                  | zero => rfl
+                  | succ n => rfl)
+
+theorem rename_hfFormulaAt (phi : Form) (ρ r : Nat → Nat) :
+    rename r (hfFormulaAt ρ phi) =
+      hfFormulaAt (fun n => r (ρ n)) phi := by
+  induction phi generalizing ρ r with
+  | fMem i j =>
+      simp [hfFormulaAt, rename_hfMemAt]
+  | fEq i j =>
+      rfl
+  | fBot =>
+      rfl
+  | fImp a b iha ihb =>
+      simp [hfFormulaAt, rename, iha, ihb]
+  | fAnd a b iha ihb =>
+      simp [hfFormulaAt, rename, iha, ihb]
+  | fOr a b iha ihb =>
+      simp [hfFormulaAt, rename, iha, ihb]
+  | fAll a ih =>
+      simp only [hfFormulaAt, rename]
+      apply congrArg all
+      calc
+        rename (SetTheory.up r) (hfFormulaAt (hfUpVarMap ρ) a)
+            = hfFormulaAt (fun n => SetTheory.up r (hfUpVarMap ρ n)) a := by
+                exact ih (hfUpVarMap ρ) (SetTheory.up r)
+        _ = hfFormulaAt (hfUpVarMap (fun n => r (ρ n))) a := by
+                exact hfFormulaAt_ext a (fun n => by
+                  cases n with
+                  | zero => rfl
+                  | succ n => rfl)
+  | fEx a ih =>
+      simp only [hfFormulaAt, rename]
+      apply congrArg ex
+      calc
+        rename (SetTheory.up r) (hfFormulaAt (hfUpVarMap ρ) a)
+            = hfFormulaAt (fun n => SetTheory.up r (hfUpVarMap ρ n)) a := by
+                exact ih (hfUpVarMap ρ) (SetTheory.up r)
+        _ = hfFormulaAt (hfUpVarMap (fun n => r (ρ n))) a := by
+                exact hfFormulaAt_ext a (fun n => by
+                  cases n with
+                  | zero => rfl
+                  | succ n => rfl)
+
+theorem hfFormulaAt_rename_succ (phi : Form) (ρ : Nat → Nat) :
+    hfFormulaAt (hfUpVarMap ρ) (SetTheory.rename Nat.succ phi) =
+      rename Nat.succ (hfFormulaAt ρ phi) := by
+  calc
+    hfFormulaAt (hfUpVarMap ρ) (SetTheory.rename Nat.succ phi)
+        = hfFormulaAt (fun n => hfUpVarMap ρ (Nat.succ n)) phi := by
+            exact hfFormulaAt_source_rename phi (hfUpVarMap ρ) Nat.succ
+    _ = hfFormulaAt (fun n => Nat.succ (ρ n)) phi := by
+            exact hfFormulaAt_ext phi (fun n => by rfl)
+    _ = rename Nat.succ (hfFormulaAt ρ phi) := by
+            exact (rename_hfFormulaAt phi ρ Nat.succ).symm
+
+theorem hfContextAt_rename_succ (ρ : Nat → Nat) (G : List Form) :
+    hfContextAt (hfUpVarMap ρ) (G.map (SetTheory.rename Nat.succ)) =
+      (hfContextAt ρ G).map (rename Nat.succ) := by
+  simp only [hfContextAt, List.map_map]
+  apply List.map_congr_left
+  intro phi _hphi
+  exact hfFormulaAt_rename_succ phi ρ
+
+theorem hfContextAt_cons_rename_succ (ρ : Nat → Nat) (a : Form)
+    (G : List Form) :
+    hfContextAt (hfUpVarMap ρ)
+        (a :: G.map (SetTheory.rename Nat.succ)) =
+      hfFormulaAt (hfUpVarMap ρ) a ::
+        (hfContextAt ρ G).map (rename Nat.succ) := by
+  simp only [hfContextAt, List.map_cons]
+  exact congrArg (fun tail => hfFormulaAt (hfUpVarMap ρ) a :: tail)
+    (hfContextAt_rename_succ ρ G)
+
+theorem subst_instTerm_var_hfFormulaAt (phi : Form) (ρ : Nat → Nat)
+    (k : Nat) :
+    subst (instTerm (Term.var (ρ k))) (hfFormulaAt (hfUpVarMap ρ) phi) =
+      hfFormulaAt ρ (SetTheory.rename (SetTheory.inst k) phi) := by
+  calc
+    subst (instTerm (Term.var (ρ k))) (hfFormulaAt (hfUpVarMap ρ) phi)
+        = rename (SetTheory.inst (ρ k)) (hfFormulaAt (hfUpVarMap ρ) phi) := by
+            exact subst_instTerm_var (hfFormulaAt (hfUpVarMap ρ) phi) (ρ k)
+    _ = hfFormulaAt
+          (fun n => SetTheory.inst (ρ k) (hfUpVarMap ρ n)) phi := by
+            exact rename_hfFormulaAt phi (hfUpVarMap ρ) (SetTheory.inst (ρ k))
+    _ = hfFormulaAt (fun n => ρ (SetTheory.inst k n)) phi := by
+            exact hfFormulaAt_ext phi (fun n => by
+              cases n with
+              | zero => rfl
+              | succ n => rfl)
+    _ = hfFormulaAt ρ (SetTheory.rename (SetTheory.inst k) phi) := by
+            exact (hfFormulaAt_source_rename phi ρ (SetTheory.inst k)).symm
+
+theorem hfFormulaAt_eq_translateHFFormula_of_HF_sentence (phi : Form)
+    (ρ : Nat → Nat) (hphi : SetTheory.Sentence phi) :
+    hfFormulaAt ρ phi = translateHFFormula phi := by
+  unfold translateHFFormula
+  exact hfFormulaAt_ext_free phi
+    (fun n hn => False.elim (hphi n hn))
+
 theorem hfFormulaAt_exact (phi : Form) :
     ∀ (ρ : Nat → Nat) (v e : Nat → Nat),
       (∀ n, e (ρ n) = v n) →
@@ -7262,6 +7508,112 @@ theorem standard_sat_translatedHFFinAx (e : Nat → Nat) :
   intro g hg
   rcases hg with ⟨phi, hphi, rfl⟩
   exact translated_HFFin_axiom_sat_nat phi hphi e
+
+/-- Pure first-order HF derivations translate structurally to PA derivations
+under the Ackermann membership translation.
+
+This theorem is intentionally only a proof-calculus translation: source axioms
+are not discharged here.  The finite axiom list introduced by `BProv` is
+handled separately by `BProv_hfFormulaAt_of_BProv_HFFin`. -/
+theorem Prov_hfFormulaAt_of_Prov {G : List Form} {phi : Form}
+    (h : SetTheory.Prov G phi) :
+    ∀ ρ : Nat → Nat, Prov (hfContextAt ρ G) (hfFormulaAt ρ phi) := by
+  induction h with
+  | P_ass G a hin =>
+      intro ρ
+      exact Prov.P_ass _ _ (List.mem_map_of_mem (f := hfFormulaAt ρ) hin)
+  | P_impI G a b _ ih =>
+      intro ρ
+      exact Prov.P_impI _ _ _ (ih ρ)
+  | P_impE G a b _ _ ihab iha =>
+      intro ρ
+      exact Prov.P_impE _ (hfFormulaAt ρ a) (hfFormulaAt ρ b)
+        (ihab ρ) (iha ρ)
+  | P_botE G a _ ih =>
+      intro ρ
+      exact Prov.P_botE _ (hfFormulaAt ρ a) (ih ρ)
+  | P_lem G a =>
+      intro ρ
+      exact Prov.P_lem _ _
+  | P_andI G a b _ _ iha ihb =>
+      intro ρ
+      exact Prov.P_andI _ _ _ (iha ρ) (ihb ρ)
+  | P_andE1 G a b _ ih =>
+      intro ρ
+      exact Prov.P_andE1 _ (hfFormulaAt ρ a) (hfFormulaAt ρ b) (ih ρ)
+  | P_andE2 G a b _ ih =>
+      intro ρ
+      exact Prov.P_andE2 _ (hfFormulaAt ρ a) (hfFormulaAt ρ b) (ih ρ)
+  | P_orI1 G a b _ ih =>
+      intro ρ
+      exact Prov.P_orI1 _ _ _ (ih ρ)
+  | P_orI2 G a b _ ih =>
+      intro ρ
+      exact Prov.P_orI2 _ _ _ (ih ρ)
+  | P_orE G a b c _ _ _ ihor iha ihb =>
+      intro ρ
+      exact Prov.P_orE _ (hfFormulaAt ρ a) (hfFormulaAt ρ b)
+        (hfFormulaAt ρ c) (ihor ρ) (iha ρ) (ihb ρ)
+  | P_allI G a _ ih =>
+      intro ρ
+      apply Prov.P_allI
+      have hbody := ih (hfUpVarMap ρ)
+      rwa [hfContextAt_rename_succ ρ G] at hbody
+  | P_allE G a k _ ih =>
+      intro ρ
+      have hinst := Prov.P_allE _ (hfFormulaAt (hfUpVarMap ρ) a)
+        (Term.var (ρ k)) (ih ρ)
+      simpa [hfFormulaAt, subst_instTerm_var_hfFormulaAt] using hinst
+  | P_exI G a k _ ih =>
+      intro ρ
+      apply Prov.P_exI _ (hfFormulaAt (hfUpVarMap ρ) a)
+        (Term.var (ρ k))
+      simpa [hfFormulaAt, subst_instTerm_var_hfFormulaAt] using ih ρ
+  | P_exE G a c _ _ ihex ihbody =>
+      intro ρ
+      apply Prov.P_exE _ (hfFormulaAt (hfUpVarMap ρ) a) (hfFormulaAt ρ c)
+      · exact ihex ρ
+      · have hbody := ihbody (hfUpVarMap ρ)
+        rw [hfContextAt_cons_rename_succ ρ a G,
+          hfFormulaAt_rename_succ c ρ] at hbody
+        exact hbody
+  | P_eqRefl G k =>
+      intro ρ
+      exact Prov.P_eqRefl _ (Term.var (ρ k))
+  | P_eqElim G i j a _ _ iheq iha =>
+      intro ρ
+      have hbody :
+          Prov (hfContextAt ρ G)
+            (subst (instTerm (Term.var (ρ i)))
+              (hfFormulaAt (hfUpVarMap ρ) a)) := by
+        simpa [subst_instTerm_var_hfFormulaAt] using iha ρ
+      have hmain := Prov.P_eqElim _ (Term.var (ρ i)) (Term.var (ρ j))
+        (hfFormulaAt (hfUpVarMap ρ) a) (iheq ρ) hbody
+      simpa [subst_instTerm_var_hfFormulaAt] using hmain
+
+theorem BProv_hfFormulaAt_of_BProv_HFFin {G : List Form} {phi : Form}
+    (h : SetTheory.BProv AckermannHF.HFFinAx_s G phi) :
+    ∀ ρ : Nat → Nat,
+      BProv translatedHFFinAx (hfContextAt ρ G) (hfFormulaAt ρ phi) := by
+  rcases h with ⟨L, hL, hprov⟩
+  intro ρ
+  refine ⟨hfContextAt ρ L, ?_, ?_⟩
+  · intro f hf
+    simp only [hfContextAt, List.mem_map] at hf
+    rcases hf with ⟨g, hg, rfl⟩
+    have hgAx : AckermannHF.HFFinAx_s g := hL g hg
+    rw [hfFormulaAt_eq_translateHFFormula_of_HF_sentence g ρ
+      (AckermannHF.Sentences_HFFin g hgAx)]
+    exact translatedHFFinAx_intro hgAx
+  · have hp := Prov_hfFormulaAt_of_Prov hprov ρ
+    simpa [hfContextAt, List.map_append] using hp
+
+theorem BProv_translateHFFormula_of_BProv_HFFin {phi : Form}
+    (h : SetTheory.BProv AckermannHF.HFFinAx_s [] phi) :
+    BProv translatedHFFinAx [] (translateHFFormula phi) := by
+  have htranslated :=
+    BProv_hfFormulaAt_of_BProv_HFFin h (fun n : Nat => n)
+  simpa [hfContextAt, translateHFFormula] using htranslated
 
 end Formula
 
@@ -16285,6 +16637,42 @@ def paInHFFinTheoryInterpretation :
     intro phi hphi hprov
     exact PAInHF.BProv_HFFin_translateFormula_of_PA_BProv hphi hprov
 
+/-- Deductive interpretation of strengthened finite HF in the PA-side theory
+whose axioms are exactly the translated finite-HF axioms.
+
+This is the reverse analogue of the translated-PA bridge: it is a structural
+proof translation and deliberately does not claim yet that PA proves every
+translated finite-HF axiom. -/
+def hfInTranslatedHFFinTheoryInterpretation :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFFinAx_s PA.Formula.translatedHFFinAx
+      BProv PA.Formula.BProv where
+  translate := PA.Formula.translateHFFormula
+  maps_sentence := by
+    intro phi hphi
+    exact PA.Formula.translateHFFormula_sentence_of_HF_sentence phi hphi
+  maps_axiom := by
+    intro phi hphi
+    exact PA.Formula.BProv_translatedHFFinAx_of_HFFinAx hphi
+  maps_theorem := by
+    intro phi _hphi hprov
+    exact PA.Formula.BProv_translateHFFormula_of_BProv_HFFin hprov
+
+/-- Compose the reverse finite-HF proof translation with a future discharge of
+the translated finite-HF axiom theory into PA proper. -/
+def hfInPAOfTranslatedHFFinTheoryInterpretation
+    (I : TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFFinAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv) :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFFinAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  TheoryInterpretation.comp hfInTranslatedHFFinTheoryInterpretation I
+    (fun {phi} hphi => Sentences_HFFin phi hphi)
+
 /-- PA analogue of `setTheoryIdentityInterpretationOfAxiomProofs`. -/
 def paIdentityInterpretationOfAxiomProofs
     (SrcAx TgtAx : PA.Formula → Prop)
@@ -16302,6 +16690,30 @@ def paIdentityInterpretationOfAxiomProofs
   maps_theorem := by
     intro phi _ h
     exact PA.Formula.BProv_lift h hAx (fun g hg => nomatch hg)
+
+/-- Identity interpretation from translated finite-HF axioms into PA, once the
+caller supplies explicit PA proofs of those translated axioms. -/
+def translatedHFFinTheoryInPAInterpretationOfAxiomProofs
+    (hAx : ∀ phi, PA.Formula.translatedHFFinAx phi →
+      PA.Formula.BProv PA.Formula.Ax_s [] phi) :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFFinAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv :=
+  paIdentityInterpretationOfAxiomProofs
+    PA.Formula.translatedHFFinAx PA.Formula.Ax_s hAx
+
+/-- Reverse interpretation of finite HF in PA from explicit PA proofs of every
+translated finite-HF axiom. -/
+def hfInPAInterpretationOfTranslatedHFFinAxiomProofs
+    (hAx : ∀ phi, PA.Formula.translatedHFFinAx phi →
+      PA.Formula.BProv PA.Formula.Ax_s [] phi) :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFFinAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAOfTranslatedHFFinTheoryInterpretation
+    (translatedHFFinTheoryInPAInterpretationOfAxiomProofs hAx)
 
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
