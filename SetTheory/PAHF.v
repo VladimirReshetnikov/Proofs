@@ -9067,6 +9067,127 @@ Proof.
       * exists n. split; [exact hn | simpl in hi; lia].
 Qed.
 
+Lemma termGraphAt_var_spec : forall A (mem : A -> A -> Prop) rho out n e,
+  Sat A mem e (termGraphAt rho out (PA.tVar n)) <-> e out = e (rho n).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma termGraphAt_zero_spec : forall A (mem : A -> A -> Prop) rho out e,
+  Sat A mem e (termGraphAt rho out PA.tZero) <->
+    forall x, ~ mem x (e out).
+Proof.
+  intros A mem rho out e.
+  simpl.
+  apply HF_emptyAt_spec.
+Qed.
+
+Lemma termGraphAt_succ_var_spec :
+  forall A (mem : A -> A -> Prop) rho out n e,
+    Sat A mem e (termGraphAt rho out (PA.tSucc (PA.tVar n))) <->
+      forall x, mem x (e out) <-> mem x (e (rho n)) \/ x = e (rho n).
+Proof.
+  intros A mem rho out n e.
+  simpl.
+  split.
+  - intros [x [hx hs]] y.
+    assert (hx' : x = e (rho n)).
+    {
+      change (x = scons A x e (rho n + 1)) in hx.
+      replace (rho n + 1) with (S (rho n)) in hx by lia.
+      simpl in hx.
+      exact hx.
+    }
+    pose proof (proj1 (HF_adjoinAt_spec A mem
+      (scons A x e) (out + 1) 0 0) hs y) as hy.
+    change (mem y (scons A x e (out + 1)) <->
+      mem y (scons A x e 0) \/ y = scons A x e 0) in hy.
+    replace (out + 1) with (S out) in hy by lia.
+    simpl in hy.
+    rewrite hx' in hy.
+    exact hy.
+  - intro h.
+    exists (e (rho n)).
+    split.
+    + change (e (rho n) = scons A (e (rho n)) e (rho n + 1)).
+      replace (rho n + 1) with (S (rho n)) by lia.
+      reflexivity.
+    + apply (proj2 (HF_adjoinAt_spec A mem
+        (scons A (e (rho n)) e) (out + 1) 0 0)).
+      intro y.
+      change (mem y (scons A (e (rho n)) e (out + 1)) <->
+        mem y (scons A (e (rho n)) e 0) \/
+          y = scons A (e (rho n)) e 0).
+      replace (out + 1) with (S out) by lia.
+      simpl.
+      exact (h y).
+Qed.
+
+Lemma formulaAt_eq_var_spec :
+  forall A (mem : A -> A -> Prop) rho m n e,
+    Sat A mem e (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))) <->
+      e (rho m) = e (rho n).
+Proof.
+  intros A mem rho m n e.
+  simpl.
+  split.
+  - intros [x [y [hx [hy hxy]]]].
+    pose proof (proj1 (termGraphAt_var_spec A mem
+      (fun n => rho n + 2) 1 m (scons A y (scons A x e))) hx)
+      as hx'.
+    pose proof (proj1 (termGraphAt_var_spec A mem
+      (fun n => rho n + 2) 0 n (scons A y (scons A x e))) hy)
+      as hy'.
+    change (x = scons A y (scons A x e) (rho m + 2)) in hx'.
+    change (y = scons A y (scons A x e) (rho n + 2)) in hy'.
+    replace (rho m + 2) with (S (S (rho m))) in hx' by lia.
+    replace (rho n + 2) with (S (S (rho n))) in hy' by lia.
+    simpl in hx', hy'.
+    rewrite <- hx'.
+    rewrite <- hy'.
+    exact hxy.
+  - intro h.
+    exists (e (rho m)).
+    exists (e (rho n)).
+    repeat split.
+    + apply (proj2 (termGraphAt_var_spec A mem
+        (fun n => rho n + 2) 1 m
+        (scons A (e (rho n)) (scons A (e (rho m)) e)))).
+      change (e (rho m) =
+        scons A (e (rho n)) (scons A (e (rho m)) e) (rho m + 2)).
+      replace (rho m + 2) with (S (S (rho m))) by lia.
+      reflexivity.
+    + apply (proj2 (termGraphAt_var_spec A mem
+        (fun n => rho n + 2) 0 n
+        (scons A (e (rho n)) (scons A (e (rho m)) e)))).
+      change (e (rho n) =
+        scons A (e (rho n)) (scons A (e (rho m)) e) (rho n + 2)).
+      replace (rho n + 2) with (S (S (rho n))) by lia.
+      reflexivity.
+    + exact h.
+Qed.
+
+Lemma formulaAt_zeroNotSucc_valid :
+  forall A (mem : A -> A -> Prop) rho e,
+    Sat A mem e (formulaAt rho PA.Formula.zeroNotSucc).
+Proof.
+  intros A mem rho e a _ hEq.
+  destruct hEq as [sx [z [hsx [hz heq]]]].
+  pose (E := scons A z (scons A sx (scons A a e))).
+  pose proof (proj1 (termGraphAt_succ_var_spec A mem
+    (fun n => upVarMap rho n + 2) 1 0 E) hsx) as hsx'.
+  pose proof (proj1 (termGraphAt_zero_spec A mem
+    (fun n => upVarMap rho n + 2) 0 E) hz) as hz'.
+  assert (haSucc : mem a sx).
+  {
+    pose proof (hsx' a) as hspec.
+    change (mem a sx <-> mem a a \/ a = a) in hspec.
+    exact (proj2 hspec (or_intror eq_refl)).
+  }
+  rewrite heq in haSucc.
+  exact (hz' a haSucc).
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
