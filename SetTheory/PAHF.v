@@ -5946,6 +5946,184 @@ Proof.
     exact ht.
 Qed.
 
+Definition BProv (B : formula -> Prop) (G : list formula)
+    (phi : formula) : Prop :=
+  exists L, (forall x, In x L -> B x) /\ Prov (L ++ G) phi.
+
+Lemma BProv_mono : forall (B : formula -> Prop) G G' phi,
+  (forall x, In x G -> In x G') ->
+  BProv B G phi -> BProv B G' phi.
+Proof.
+  intros B G G' phi hsub [L [hL hp]].
+  exists L.
+  split; [exact hL |].
+  apply (Prov_weaken (L ++ G) phi hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left. exact hx.
+  - right. exact (hsub x hx).
+Qed.
+
+Lemma BProv_ax : forall (B : formula -> Prop) G phi,
+  B phi -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  exists [phi].
+  split.
+  - intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx]; [subst x; exact hphi | contradiction].
+  - apply P_ass.
+    simpl. left. reflexivity.
+Qed.
+
+Lemma BProv_of_Prov : forall (B : formula -> Prop) G phi,
+  Prov G phi -> BProv B G phi.
+Proof.
+  intros B G phi h.
+  exists [].
+  split.
+  - intros x hx. contradiction.
+  - simpl. exact h.
+Qed.
+
+Lemma BProv_mp : forall (B : formula -> Prop) G a b,
+  BProv B G (pImp a b) -> BProv B G a -> BProv B G b.
+Proof.
+  intros B G a b [L1 [hL1 hpimp]] [L2 [hL2 hpa]].
+  exists (L1 ++ L2).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hL1 x hx).
+    + exact (hL2 x hx).
+  - apply (P_impE ((L1 ++ L2) ++ G) a b).
+    + apply (Prov_weaken (L1 ++ G) (pImp a b) hpimp).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (L2 ++ G) a hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. right. exact hx.
+      * right. exact hx.
+Qed.
+
+Lemma BProv_bound_list : forall (B : formula -> Prop) D L,
+  (forall x, In x L -> BProv B D x) ->
+  exists Lb, (forall x, In x Lb -> B x) /\
+    forall x, In x L -> Prov (Lb ++ D) x.
+Proof.
+  intros B D L.
+  induction L as [|a L IH]; intro hL.
+  - exists [].
+    split.
+    + intros x hx. contradiction.
+    + intros x hx. contradiction.
+  - destruct (hL a (or_introl eq_refl)) as [La [hLa hpa]].
+    destruct (IH (fun x hx => hL x (or_intror hx))) as
+      [Lb [hLb hpL]].
+    exists (La ++ Lb).
+    split.
+    + intros x hx.
+      apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * exact (hLa x hx).
+      * exact (hLb x hx).
+    + intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply (Prov_weaken (La ++ D) a hpa).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. left. exact hy.
+        -- right. exact hy.
+      * apply (Prov_weaken (Lb ++ D) x (hpL x hx)).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. right. exact hy.
+        -- right. exact hy.
+Qed.
+
+Lemma BProv_lift : forall (B C : formula -> Prop) G D phi,
+  BProv B G phi ->
+  (forall b, B b -> BProv C D b) ->
+  (forall g, In g G -> BProv C D g) ->
+  BProv C D phi.
+Proof.
+  intros B C G D phi [Lb [hLb hp]] hB hG.
+  assert (hctx : forall x, In x (Lb ++ G) -> BProv C D x).
+  {
+    intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    - exact (hB x (hLb x hx)).
+    - exact (hG x hx).
+  }
+  destruct (BProv_bound_list C D (Lb ++ G) hctx) as
+    [Lc [hLc hpctx]].
+  exists Lc.
+  split; [exact hLc |].
+  exact (Prov_cut (Lb ++ G) phi hp (Lc ++ D) hpctx).
+Qed.
+
+Lemma BProv_cut : forall (B : formula -> Prop) G D phi,
+  BProv B G phi ->
+  (forall g, In g G -> BProv B D g) ->
+  BProv B D phi.
+Proof.
+  intros B G D phi h hG.
+  eapply BProv_lift.
+  - exact h.
+  - intros b hb.
+    apply BProv_ax.
+    exact hb.
+  - exact hG.
+Qed.
+
+Lemma BProv_theory_mono : forall (B C : formula -> Prop) G phi,
+  (forall b, B b -> C b) -> BProv B G phi -> BProv C G phi.
+Proof.
+  intros B C G phi hBC h.
+  eapply BProv_lift.
+  - exact h.
+  - intros b hb.
+    apply BProv_ax.
+    exact (hBC b hb).
+  - intros g hg.
+    apply BProv_of_Prov.
+    exact (P_ass G g hg).
+Qed.
+
+Lemma soundness_BProv : forall (M : Model) (B : formula -> Prop) G phi,
+  BProv B G phi ->
+  forall e : nat -> M,
+  (forall b, B b -> Sat M e b) ->
+  (forall g, In g G -> Sat M e g) ->
+  Sat M e phi.
+Proof.
+  intros M B G phi [L [hL hp]] e hB hG.
+  apply (soundness M (L ++ G) phi hp e).
+  intros x hx.
+  apply in_app_iff in hx.
+  destruct hx as [hx | hx].
+  - exact (hB x (hL x hx)).
+  - exact (hG x hx).
+Qed.
+
 End Formula.
 
 End PA.
