@@ -353,8 +353,8 @@ Definition certifiedLevelCount : nat -> nat :=
 
 Definition a002845 : nat -> nat := certifiedLevelCount.
 
-Definition a002845ValuesThroughTwelve : list nat :=
-  [1; 1; 1; 2; 4; 8; 17; 36; 78; 171; 379; 851].
+Definition a002845ValuesThroughFourteen : list nat :=
+  [1; 1; 1; 2; 4; 8; 17; 36; 78; 171; 379; 851; 1928; 4396].
 
 Theorem a002845_one : a002845 1 = 1.
 Proof. vm_compute. reflexivity. Qed.
@@ -392,13 +392,20 @@ Proof. vm_compute. reflexivity. Qed.
 Theorem a002845_twelve : a002845 12 = 851.
 Proof. vm_compute. reflexivity. Qed.
 
-Theorem a002845_values_through_twelve :
-    map a002845 (seq 1 12) = a002845ValuesThroughTwelve.
+Theorem a002845_thirteen : a002845 13 = 1928.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_fourteen : a002845 14 = 4396.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_values_through_fourteen :
+    map a002845 (seq 1 14) = a002845ValuesThroughFourteen.
 Proof.
   cbn [seq map].
   now rewrite a002845_one, a002845_two, a002845_three, a002845_four,
     a002845_five, a002845_six, a002845_seven, a002845_eight, a002845_nine,
-    a002845_ten, a002845_eleven, a002845_twelve.
+    a002845_ten, a002845_eleven, a002845_twelve, a002845_thirteen,
+    a002845_fourteen.
 Qed.
 
 End PowExpr.

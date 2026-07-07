@@ -101,7 +101,7 @@ Current ports:
 - `A002845.v` ports the exact-logarithm reduction for the natural power tower
   sequence, keeps the binary-`N` executable logarithm bridge for the initial
   direct layer, and adds a hereditary sparse-binary recurrence for the finite
-  certificates.  It verifies the Lean value table through `n = 12`.
+  certificates.  It verifies the Lean value table through `n = 14`.
 - `A198683N12Magnitude.v` ports the finite TSV-metadata layer from
   `A198683N12Magnitude.lean`: the n = 12 huge-negative-exponent,
   negative-exponent-above-ten, and overflow-regime flags are represented as
