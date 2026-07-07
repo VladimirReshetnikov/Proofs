@@ -361,6 +361,15 @@ open SetTheory
 #check @AckermannHF.semantic_mem_irrefl_of_HFAx_s
 #check @AckermannHF.FirstOrderHFModel
 #check @AckermannHF.firstOrderHFModel_of_HFAx_s
+#check @AckermannHF.FirstOrderAdjunctionModel
+#check @AckermannHF.FirstOrderAdjunctionModel.mem_irrefl
+#check @AckermannHF.FirstOrderAdjunctionModel.single
+#check @AckermannHF.FirstOrderAdjunctionModel.single_spec
+#check @AckermannHF.FirstOrderAdjunctionModel.upair
+#check @AckermannHF.FirstOrderAdjunctionModel.upair_spec
+#check @AckermannHF.FirstOrderAdjunctionModel.kpair
+#check @AckermannHF.FirstOrderAdjunctionModel.kpair_mem
+#check @AckermannHF.firstOrderAdjunctionModel_of_HFAx_s
 #check @AckermannHF.ordinalHF_sat_HF
 #check @AckermannHF.ordinalPA_sat_PA
 #check @AckermannHF.standardShallowBiInterpretation

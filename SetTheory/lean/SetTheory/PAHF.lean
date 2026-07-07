@@ -1026,6 +1026,68 @@ structure FirstOrderHFModel (α : Type u) where
   adjoin_exists : ∀ a b, ∃ c, ∀ x, mem x c ↔ mem x a ∨ x = b
   induction_schema : ∀ phi e, Sat mem e (HF_induction_form phi)
 
+/-- First-order HF model with chosen empty and adjunction witnesses.
+
+This is deliberately weaker than `AdjunctionModel`: it carries the first-order
+induction schema as a semantic axiom, not a meta-level set-induction principle.
+It is the right bundle for constructing witnesses while discharging translated
+axioms by completeness. -/
+structure FirstOrderAdjunctionModel (α : Type u) where
+  mem : α → α → Prop
+  empty : α
+  adjoin : α → α → α
+  extensional : ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b
+  empty_spec : ∀ x, ¬ mem x empty
+  adjoin_spec : ∀ x a b, mem x (adjoin a b) ↔ mem x a ∨ x = b
+  induction_schema : ∀ phi e, Sat mem e (HF_induction_form phi)
+
+namespace FirstOrderAdjunctionModel
+
+/-- First-order HF induction rules out self-membership in a chosen first-order
+HF model. -/
+theorem mem_irrefl {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) :
+    ¬ M.mem a a := by
+  let phi : Form := fImp (fMem 0 0) fBot
+  have hind := M.induction_schema phi (fun _ => a)
+  have hall : ∀ a, Sat M.mem (scons a (fun _ => a)) phi := by
+    apply hind
+    intro a ih haa
+    exact ih a haa haa
+  exact hall a
+
+/-- Singleton inside a chosen first-order HF model. -/
+def single {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) : α :=
+  M.adjoin M.empty a
+
+theorem single_spec {α : Type u} (M : FirstOrderAdjunctionModel α) (a x : α) :
+    M.mem x (single M a) ↔ x = a := by
+  rw [single, M.adjoin_spec]
+  constructor
+  · intro h
+    rcases h with h | h
+    · exact False.elim (M.empty_spec x h)
+    · exact h
+  · intro h
+    exact Or.inr h
+
+/-- Unordered pair inside a chosen first-order HF model. -/
+def upair {α : Type u} (M : FirstOrderAdjunctionModel α) (a b : α) : α :=
+  M.adjoin (single M a) b
+
+theorem upair_spec {α : Type u} (M : FirstOrderAdjunctionModel α) (a b x : α) :
+    M.mem x (upair M a b) ↔ x = a ∨ x = b := by
+  rw [upair, M.adjoin_spec, single_spec]
+
+/-- Kuratowski ordered pair inside a chosen first-order HF model. -/
+def kpair {α : Type u} (M : FirstOrderAdjunctionModel α) (a b : α) : α :=
+  upair M (single M a) (upair M a b)
+
+theorem kpair_mem {α : Type u} (M : FirstOrderAdjunctionModel α) (a b q : α) :
+    M.mem q (kpair M a b) ↔ q = single M a ∨ q = upair M a b := by
+  rw [kpair, upair_spec]
+
+end FirstOrderAdjunctionModel
+
 def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
     (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
     FirstOrderHFModel α where
@@ -1033,6 +1095,22 @@ def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
   extensional := semantic_extensionality_of_HFAx_s v hHF
   empty_exists := semantic_empty_of_HFAx_s v hHF
   adjoin_exists := semantic_adjoin_of_HFAx_s v hHF
+  induction_schema := semantic_induction_schema_of_HFAx_s v hHF
+
+/-- Select concrete empty and adjunction witnesses from any semantic model of
+the sealed HF theory. -/
+noncomputable def firstOrderAdjunctionModel_of_HFAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    FirstOrderAdjunctionModel α where
+  mem := mem
+  empty := Classical.choose (semantic_empty_of_HFAx_s v hHF)
+  adjoin := fun a b => Classical.choose (semantic_adjoin_of_HFAx_s v hHF a b)
+  extensional := semantic_extensionality_of_HFAx_s v hHF
+  empty_spec := Classical.choose_spec (semantic_empty_of_HFAx_s v hHF)
+  adjoin_spec := by
+    intro x a b
+    exact Classical.choose_spec (semantic_adjoin_of_HFAx_s v hHF a b) x
   induction_schema := semantic_induction_schema_of_HFAx_s v hHF
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
