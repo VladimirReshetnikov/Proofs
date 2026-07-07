@@ -450,7 +450,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.mulRecTotal_of_ordinalLike_of_predecessor
 #check @AckermannHF.PAInHF.mulRecTotal_of_ordinalLike_finite_model
 #check @AckermannHF.PAInHF.mulRecApprox_value_ordinalLike
+#check @AckermannHF.PAInHF.mulRecApprox_value_unique
 #check @AckermannHF.PAInHF.mulGraphAt_of_mulRecApprox_model
+#check @AckermannHF.PAInHF.mulGraphAt_value_unique_finite_model
 #check @AckermannHF.PAInHF.mulGraphAt_succ_right_of_mulRecApprox_model
 #check @AckermannHF.PAInHF.mulStepAt_empty_model
 #check @AckermannHF.PAInHF.mulGraphAt_zero_right_model
