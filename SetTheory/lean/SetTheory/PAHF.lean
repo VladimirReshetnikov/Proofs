@@ -11161,9 +11161,67 @@ specialization is `translateContext`. -/
 def translateContextAt (ρ : Nat → Nat) (G : List PA.Formula) : List Form :=
   G.map (formulaAt ρ)
 
+/-- Domain assumptions for the first `n` PA variables under an explicit slot
+map.  The list is ordered from PA variable `0` upward, so extending a de Bruijn
+context exposes the newest variable as the head assumption. -/
+def domainContextAt (ρ : Nat → Nat) : Nat → List Form
+  | 0 => []
+  | n+1 => rename (inst (ρ 0)) domainForm ::
+      domainContextAt (fun k => ρ (k+1)) n
+
 theorem translateContextAt_id (G : List PA.Formula) :
     translateContextAt (fun n : Nat => n) G = translateContext G := by
   simp [translateContextAt, translateContext, translateFormula]
+
+/-- Renaming an instantiated PA-domain formula only changes the instantiated
+slot; the domain formula itself has no free variables except `0`. -/
+theorem rename_domainForm_inst (r : Nat → Nat) (k : Nat) :
+    rename r (rename (inst k) domainForm) =
+      rename (inst (r k)) domainForm := by
+  rw [rename_comp]
+  exact rename_ext_free domainForm _ _ (fun n hn => by
+    have hn0 := domainForm_free hn
+    subst n
+    rfl)
+
+/-- Instantiating the PA-domain formula at its own slot leaves it unchanged. -/
+theorem rename_domainForm_inst_zero :
+    rename (inst 0) domainForm = domainForm := by
+  calc
+    rename (inst 0) domainForm = rename (fun n => n) domainForm := by
+      exact rename_ext_free domainForm _ _ (fun n hn => by
+        have hn0 := domainForm_free hn
+        subst n
+        rfl)
+    _ = domainForm := rename_id domainForm
+
+/-- Domain contexts are stable under HF renaming by composing the slot map. -/
+theorem domainContextAt_rename (ρ r : Nat → Nat) :
+    ∀ n, (domainContextAt ρ n).map (rename r) =
+      domainContextAt (fun k => r (ρ k)) n
+  | 0 => rfl
+  | n+1 => by
+      simp [domainContextAt, rename_domainForm_inst,
+        domainContextAt_rename (fun k => ρ (k+1)) r n]
+
+/-- The `k`th PA variable-domain assumption is present whenever `k < n`. -/
+theorem mem_domainContextAt {ρ : Nat → Nat} :
+    ∀ {n k : Nat}, k < n →
+      rename (inst (ρ k)) domainForm ∈ domainContextAt ρ n
+  | 0, k, hk => by omega
+  | n+1, 0, _ => by simp [domainContextAt]
+  | n+1, k+1, hk => by
+      exact List.mem_cons.mpr
+        (Or.inr (mem_domainContextAt
+          (ρ := fun j => ρ (j+1)) (n := n) (k := k) (by omega)))
+
+/-- Under a translated PA binder, the domain context splits into the new
+variable-domain assumption followed by the shifted old domain context. -/
+theorem domainContextAt_upVarMap_succ (ρ : Nat → Nat) (n : Nat) :
+    domainContextAt (upVarMap ρ) (n+1) =
+      domainForm :: (domainContextAt ρ n).map (rename Nat.succ) := by
+  simp [domainContextAt, upVarMap, domainContextAt_rename,
+    rename_domainForm_inst_zero]
 
 /-- Translating a PA context after shifting PA variables below a binder agrees
 with shifting the already-translated HF context. -/
@@ -11199,6 +11257,17 @@ theorem BProv_formulaAt_ass {ρ : Nat → Nat} {G : List PA.Formula}
   BProv_of_Prov (B := translatedPAAx)
     (Prov.P_ass (translateContextAt ρ G) (formulaAt ρ phi)
       (mem_translateContextAt_of_mem hphi))
+
+/-- A domain assumption recorded in `domainContextAt` is available over any
+additional HF context tail. -/
+theorem BProv_domainContextAt_var {ρ : Nat → Nat} {n k : Nat}
+    {G : List Form} (hk : k < n) :
+    BProv translatedPAAx (domainContextAt ρ n ++ G)
+      (rename (inst (ρ k)) domainForm) :=
+  BProv_of_Prov (B := translatedPAAx)
+    (Prov.P_ass (domainContextAt ρ n ++ G)
+      (rename (inst (ρ k)) domainForm)
+      (List.mem_append.mpr (Or.inl (mem_domainContextAt (ρ := ρ) hk))))
 
 /-- A PA axiom, translated into HF, is an axiom of the intermediate
 `translatedPAAx` theory. -/
@@ -11263,6 +11332,41 @@ theorem BProv_andI {B : Form → Prop} {G : List Form} {a b : Form}
       rcases hx with hx | hx
       · exact Or.inl (List.mem_append.mpr (Or.inr hx))
       · exact Or.inr hx
+
+/-- Relative HF provability is closed under universal elimination. -/
+theorem BProv_allE {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
+    (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_allE _ _ k hp⟩
+
+/-- Relative HF provability is closed under existential introduction. -/
+theorem BProv_exI {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
+    (h : BProv B G (rename (inst k) a)) : BProv B G (fEx a) := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_exI _ _ k hp⟩
+
+/-- Universal introduction for relative HF proofs whose theory axioms are
+sentences.  The sentence premise keeps the finite list of used theory axioms
+stable under the binder shift. -/
+theorem BProv_allI_of_sentences {B : Form → Prop} (hB : Sentences B)
+    {G : List Form} {a : Form}
+    (h : BProv B (G.map (rename Nat.succ)) a) : BProv B G (fAll a) := by
+  rcases h with ⟨L, hL, hp⟩
+  have hLmap : L.map (rename Nat.succ) = L := by
+    calc
+      L.map (rename Nat.succ) = L.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact rename_eq_of_sentence (hB x (hL x hx)) Nat.succ
+      _ = L := by simp
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_allI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.map_append, List.mem_append] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (by simpa [hLmap] using hx)
+  · exact Or.inr hx
 
 /-- Translated implication introduction for the PA-in-HF translation. -/
 theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}
@@ -11737,6 +11841,31 @@ theorem BProv_formulaAt_allI {ρ : Nat → Nat} {G : List PA.Formula}
   exact BProv_formulaAt_allI_raw
     (BProv_impI (BProv_context_cons hshift))
 
+/-- Translated universal introduction while carrying explicit domain
+assumptions for the currently available PA variables. -/
+theorem BProv_formulaAt_allI_domainContext {ρ : Nat → Nat}
+    {n : Nat} {G : List PA.Formula} {a : PA.Formula}
+    (h : BProv translatedPAAx
+      (domainContextAt (upVarMap ρ) (n+1) ++
+        translateContextAt (upVarMap ρ) (G.map (PA.Formula.rename Nat.succ)))
+      (formulaAt (upVarMap ρ) a)) :
+    BProv translatedPAAx
+      (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.all a)) := by
+  have hshift : BProv translatedPAAx
+      (domainForm ::
+        ((domainContextAt ρ n ++ translateContextAt ρ G).map
+          (rename Nat.succ)))
+      (formulaAt (upVarMap ρ) a) := by
+    simpa [domainContextAt_upVarMap_succ,
+      translateContextAt_rename_succ_upVarMap, List.map_append,
+      List.cons_append] using h
+  change BProv translatedPAAx
+    (domainContextAt ρ n ++ translateContextAt ρ G)
+    (fAll (fImp domainForm (formulaAt (upVarMap ρ) a)))
+  exact BProv_allI_of_sentences Sentences_translatedPAAx
+    (BProv_impI hshift)
+
 /-- Raw translated universal elimination by an HF variable instance under an
 explicit slot map. -/
 theorem BProv_formulaAt_allE_raw {ρ : Nat → Nat} {G : List PA.Formula}
@@ -11779,6 +11908,47 @@ theorem BProv_formulaAt_allE_var {ρ : Nat → Nat} {G : List PA.Formula}
       (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a)) himp hdom
   rwa [formulaAt_subst_instTerm_var]
 
+/-- Translated universal elimination by a PA variable over an arbitrary HF
+context, with the variable-domain proof kept explicit. -/
+theorem BProv_formulaAt_allE_var_context {Γ : List Form} {ρ : Nat → Nat}
+    {a : PA.Formula} {k : Nat}
+    (hall : BProv translatedPAAx Γ
+      (formulaAt ρ (PA.Formula.all a)))
+    (hdom : BProv translatedPAAx Γ
+      (rename (inst (ρ k)) domainForm)) :
+    BProv translatedPAAx Γ
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) a)) := by
+  have himp : BProv translatedPAAx Γ
+      (fImp (rename (inst (ρ k)) domainForm)
+        (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a))) := by
+    simpa [formulaAt, rename] using
+      (BProv_allE (B := translatedPAAx) (G := Γ)
+        (a := fImp domainForm (formulaAt (upVarMap ρ) a))
+        (k := ρ k) hall)
+  have hbody : BProv translatedPAAx Γ
+      (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a)) :=
+    BProv_mp translatedPAAx Γ
+      (rename (inst (ρ k)) domainForm)
+      (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a)) himp hdom
+  rwa [formulaAt_subst_instTerm_var]
+
+/-- Translated universal elimination by a PA variable available in the explicit
+domain context. -/
+theorem BProv_formulaAt_allE_var_domainContext {ρ : Nat → Nat}
+    {n : Nat} {G : List PA.Formula} {a : PA.Formula} {k : Nat}
+    (hk : k < n)
+    (hall : BProv translatedPAAx
+      (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.all a))) :
+    BProv translatedPAAx
+      (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) a)) :=
+  BProv_formulaAt_allE_var_context hall
+    (BProv_domainContextAt_var (ρ := ρ) (n := n) (k := k)
+      (G := translateContextAt ρ G) hk)
+
 /-- Raw translated existential introduction by an HF variable witness under an
 explicit slot map. -/
 theorem BProv_formulaAt_exI_raw {ρ : Nat → Nat} {G : List PA.Formula}
@@ -11816,6 +11986,48 @@ theorem BProv_formulaAt_exI_var {ρ : Nat → Nat} {G : List PA.Formula}
     BProv_andI hdom hbody'
   exact BProv_formulaAt_exI_raw (ρ := ρ) (G := G) (a := a) (k := ρ k)
     (by simpa [rename] using hand)
+
+/-- Translated existential introduction by a PA variable over an arbitrary HF
+context, with the variable-domain proof kept explicit. -/
+theorem BProv_formulaAt_exI_var_context {Γ : List Form} {ρ : Nat → Nat}
+    {a : PA.Formula} {k : Nat}
+    (hdom : BProv translatedPAAx Γ
+      (rename (inst (ρ k)) domainForm))
+    (hbody : BProv translatedPAAx Γ
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) a))) :
+    BProv translatedPAAx Γ
+      (formulaAt ρ (PA.Formula.ex a)) := by
+  have hbody' : BProv translatedPAAx Γ
+      (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a)) := by
+    rwa [formulaAt_subst_instTerm_var] at hbody
+  have hand : BProv translatedPAAx Γ
+      (fAnd (rename (inst (ρ k)) domainForm)
+        (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a))) :=
+    BProv_andI hdom hbody'
+  have hex : BProv translatedPAAx Γ
+      (fEx (fAnd domainForm (formulaAt (upVarMap ρ) a))) :=
+    BProv_exI (B := translatedPAAx) (G := Γ)
+      (a := fAnd domainForm (formulaAt (upVarMap ρ) a))
+      (k := ρ k) (by simpa [rename] using hand)
+  simpa [formulaAt] using hex
+
+/-- Translated existential introduction by a PA variable available in the
+explicit domain context. -/
+theorem BProv_formulaAt_exI_var_domainContext {ρ : Nat → Nat}
+    {n : Nat} {G : List PA.Formula} {a : PA.Formula} {k : Nat}
+    (hk : k < n)
+    (hbody : BProv translatedPAAx
+      (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) a))) :
+    BProv translatedPAAx
+      (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.ex a)) :=
+  BProv_formulaAt_exI_var_context
+    (BProv_domainContextAt_var (ρ := ρ) (n := n) (k := k)
+      (G := translateContextAt ρ G) hk)
+    hbody
 
 /-- Raw translated existential elimination under an explicit slot map. -/
 theorem BProv_formulaAt_exE_raw {ρ : Nat → Nat} {G : List PA.Formula}
