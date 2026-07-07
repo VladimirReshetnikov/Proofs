@@ -96,6 +96,61 @@ theorem exists_mem_of_ne_empty {a : Nat} (ha : a ≠ empty) : ∃ x, Mem x a := 
   apply ha
   exact (eq_empty_iff_no_mem a).mpr (fun x hx => h ⟨x, hx⟩)
 
+/-- Search for the largest member of `a` below `n`.  The default value at
+`n = 0` is irrelevant; callers use the accompanying existence lemmas. -/
+def maxMemberBelow (a : Nat) : Nat → Nat
+  | 0 => 0
+  | n+1 => if a.testBit n then n else maxMemberBelow a n
+
+theorem le_maxMemberBelow_of_lt {a y n : Nat}
+    (hy : y < n) (hmem : Mem y a) : y ≤ maxMemberBelow a n := by
+  induction n with
+  | zero =>
+      omega
+  | succ n ih =>
+      by_cases hn : Mem n a
+      · have hbit : a.testBit n = true := hn
+        simp [maxMemberBelow, hbit]
+        exact Nat.lt_succ_iff.mp hy
+      · have hbit : a.testBit n = false := by
+          cases hb : a.testBit n <;> simp [Mem, hb] at hn ⊢
+        simp [maxMemberBelow, hbit]
+        have hyle : y ≤ n := Nat.lt_succ_iff.mp hy
+        rcases Nat.lt_or_eq_of_le hyle with hylt | hyeq
+        · exact ih hylt
+        · subst hyeq
+          exact False.elim (hn hmem)
+
+theorem maxMemberBelow_mem_of_exists {a n : Nat}
+    (hex : ∃ y, y < n ∧ Mem y a) : Mem (maxMemberBelow a n) a := by
+  induction n with
+  | zero =>
+      rcases hex with ⟨y, hy, _⟩
+      omega
+  | succ n ih =>
+      by_cases hn : Mem n a
+      · have hbit : a.testBit n = true := hn
+        simp [maxMemberBelow, hbit, Mem]
+      · have hbit : a.testBit n = false := by
+          cases hb : a.testBit n <;> simp [Mem, hb] at hn ⊢
+        simp [maxMemberBelow, hbit]
+        apply ih
+        rcases hex with ⟨y, hy, hmem⟩
+        have hyle : y ≤ n := Nat.lt_succ_iff.mp hy
+        rcases Nat.lt_or_eq_of_le hyle with hylt | hyeq
+        · exact ⟨y, hylt, hmem⟩
+        · subst hyeq
+          exact False.elim (hn hmem)
+
+theorem exists_max_mem_of_ne_empty {a : Nat} (ha : a ≠ empty) :
+    ∃ m, Mem m a ∧ ∀ y, Mem y a → y ≤ m := by
+  obtain ⟨y, hy⟩ := exists_mem_of_ne_empty ha
+  refine ⟨maxMemberBelow a a, ?_, ?_⟩
+  · apply maxMemberBelow_mem_of_exists
+    exact ⟨y, mem_lt hy, hy⟩
+  · intro z hz
+    exact le_maxMemberBelow_of_lt (mem_lt hz) hz
+
 /-- A compact semantic bundle for the usual adjunction presentation of HF. -/
 structure AdjunctionModel (α : Type) where
   mem : α → α → Prop
