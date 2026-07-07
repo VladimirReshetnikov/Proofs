@@ -9741,6 +9741,153 @@ Proof.
   apply BProv_translatedPAAx_of_PAAx.
 Qed.
 
+Lemma BProv_translate_impI : forall G a b,
+  BProv translatedPAAx
+    (translateFormula a :: translateContext G) (translateFormula b) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pImp a b)).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists L.
+  split; [ exact hL | ].
+  apply P_impI.
+  apply (Prov_weaken (L ++ translateFormula a :: translateContext G)
+    (translateFormula b) hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl in hx.
+  simpl.
+  destruct hx as [hx | [hx | hx]].
+  - right. apply in_app_iff. left. exact hx.
+  - left. exact hx.
+  - right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_translate_impE : forall G a b,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pImp a b)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula a) ->
+  BProv translatedPAAx (translateContext G) (translateFormula b).
+Proof.
+  intros G a b hab ha.
+  unfold translateFormula in hab. simpl in hab. fold (translateFormula a) in hab.
+  fold (translateFormula b) in hab.
+  exact (BProv_mp translatedPAAx (translateContext G)
+    (translateFormula a) (translateFormula b) hab ha).
+Qed.
+
+Lemma BProv_translate_botE : forall G a,
+  BProv translatedPAAx (translateContext G) fBot ->
+  BProv translatedPAAx (translateContext G) (translateFormula a).
+Proof.
+  intros G a [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  apply P_botE.
+  exact hp.
+Qed.
+
+Lemma BProv_translate_lem : forall G a,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a (PA.pImp a PA.pBot))).
+Proof.
+  intros G a.
+  unfold translateFormula. simpl. fold (translateFormula a).
+  apply BProv_of_Prov.
+  apply P_lem.
+Qed.
+
+Lemma BProv_translate_andI : forall G a b,
+  BProv translatedPAAx (translateContext G) (translateFormula a) ->
+  BProv translatedPAAx (translateContext G) (translateFormula b) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAnd a b)).
+Proof.
+  intros G a b [La [hLa hpa]] [Lb [hLb hpb]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists (La ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLa x hx).
+    + exact (hLb x hx).
+  - apply P_andI.
+    + apply (Prov_weaken (La ++ translateContext G) (translateFormula a) hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (Lb ++ translateContext G) (translateFormula b) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. right. exact hx.
+      * right. exact hx.
+Qed.
+
+Lemma BProv_translate_andE1 : forall G a b,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula a).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula in hp. simpl in hp. fold (translateFormula a) in hp.
+  fold (translateFormula b) in hp.
+  exists L.
+  split; [ exact hL | ].
+  exact (P_andE1 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
+Lemma BProv_translate_andE2 : forall G a b,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula b).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula in hp. simpl in hp. fold (translateFormula a) in hp.
+  fold (translateFormula b) in hp.
+  exists L.
+  split; [ exact hL | ].
+  exact (P_andE2 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
+Lemma BProv_translate_orI1 : forall G a b,
+  BProv translatedPAAx (translateContext G) (translateFormula a) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a b)).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists L.
+  split; [ exact hL | ].
+  exact (P_orI1 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
+Lemma BProv_translate_orI2 : forall G a b,
+  BProv translatedPAAx (translateContext G) (translateFormula b) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a b)).
+Proof.
+  intros G a b [L [hL hp]].
+  unfold translateFormula. simpl. fold (translateFormula a).
+  fold (translateFormula b).
+  exists L.
+  split; [ exact hL | ].
+  exact (P_orI2 (L ++ translateContext G)
+    (translateFormula a) (translateFormula b) hp).
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
