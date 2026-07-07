@@ -9644,8 +9644,178 @@ Proof.
   exact h.
 Qed.
 
+Lemma formulaAt_exact : forall phi rho v e,
+  (forall n, e (rho n) = ordinal_code (v n)) ->
+  (Sat nat hf_mem e (formulaAt rho phi) <->
+    PA.Formula.Sat PA.natModel v phi).
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho v e hrho.
+  - split.
+    + intro h.
+      destruct h as [x [y [ha [hb heq]]]].
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (termGraphAt_exact a (fun n => rho n + 2) 1 v
+        (scons nat y (scons nat x e)) hrho') ha) as hx.
+      pose proof (proj1 (termGraphAt_exact b (fun n => rho n + 2) 0 v
+        (scons nat y (scons nat x e)) hrho') hb) as hy.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in hx.
+      change (y = ordinal_code (PA.Term.eval PA.natModel v b)) in hy.
+      apply ordinal_code_injective.
+      rewrite <- hx, <- hy.
+      exact heq.
+    + intro h.
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      pose (y := ordinal_code (PA.Term.eval PA.natModel v b)).
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      exists x, y.
+      split.
+      * apply (proj2 (termGraphAt_exact a (fun n => rho n + 2) 1 v
+          (scons nat y (scons nat x e)) hrho')).
+        unfold x. reflexivity.
+      * split.
+        -- apply (proj2 (termGraphAt_exact b (fun n => rho n + 2) 0 v
+            (scons nat y (scons nat x e)) hrho')).
+           unfold y. reflexivity.
+        -- unfold x, y.
+           now rewrite h.
+  - reflexivity.
+  - split.
+    + intros h ha.
+      apply (proj1 (IHb rho v e hrho)).
+      apply h.
+      apply (proj2 (IHa rho v e hrho)).
+      exact ha.
+    + intros h ha.
+      apply (proj2 (IHb rho v e hrho)).
+      apply h.
+      apply (proj1 (IHa rho v e hrho)).
+      exact ha.
+  - split.
+    + intros [ha hb].
+      split.
+      * apply (proj1 (IHa rho v e hrho)). exact ha.
+      * apply (proj1 (IHb rho v e hrho)). exact hb.
+    + intros [ha hb].
+      split.
+      * apply (proj2 (IHa rho v e hrho)). exact ha.
+      * apply (proj2 (IHb rho v e hrho)). exact hb.
+  - split.
+    + intros [ha | hb].
+      * left. apply (proj1 (IHa rho v e hrho)). exact ha.
+      * right. apply (proj1 (IHb rho v e hrho)). exact hb.
+    + intros [ha | hb].
+      * left. apply (proj2 (IHa rho v e hrho)). exact ha.
+      * right. apply (proj2 (IHb rho v e hrho)). exact hb.
+  - split.
+    + intros h n.
+      assert (hdom : Sat nat hf_mem (scons nat (ordinal_code n) e) domainForm).
+      {
+        exact (domain_ordinal_code n e).
+      }
+      assert (hrho' : forall k,
+        scons nat (ordinal_code n) e (upVarMap rho k) =
+          ordinal_code (scons nat n v k)).
+      {
+        intro k.
+        destruct k as [|k].
+        - reflexivity.
+        - simpl.
+          replace (rho k + 1) with (S (rho k)) by lia.
+          simpl.
+          exact (hrho k).
+      }
+      apply (proj1 (IHa (upVarMap rho) (scons nat n v)
+        (scons nat (ordinal_code n) e) hrho')).
+      exact (h (ordinal_code n) hdom).
+    + intros h x hxdom.
+      destruct (proj1 (domain_exact (scons nat x e)) hxdom) as [n hn].
+      assert (hx : x = ordinal_code n) by (symmetry; exact hn).
+      assert (hrho' : forall k,
+        scons nat x e (upVarMap rho k) =
+          ordinal_code (scons nat n v k)).
+      {
+        intro k.
+        destruct k as [|k].
+        - exact hx.
+        - simpl.
+          replace (rho k + 1) with (S (rho k)) by lia.
+          simpl.
+          exact (hrho k).
+      }
+      apply (proj2 (IHa (upVarMap rho) (scons nat n v)
+        (scons nat x e) hrho')).
+      exact (h n).
+  - split.
+    + intros [x [hxdom hbody]].
+      destruct (proj1 (domain_exact (scons nat x e)) hxdom) as [n hn].
+      assert (hx : x = ordinal_code n) by (symmetry; exact hn).
+      assert (hrho' : forall k,
+        scons nat x e (upVarMap rho k) =
+          ordinal_code (scons nat n v k)).
+      {
+        intro k.
+        destruct k as [|k].
+        - exact hx.
+        - simpl.
+          replace (rho k + 1) with (S (rho k)) by lia.
+          simpl.
+          exact (hrho k).
+      }
+      exists n.
+      apply (proj1 (IHa (upVarMap rho) (scons nat n v)
+        (scons nat x e) hrho')).
+      exact hbody.
+    + intros [n hn].
+      exists (ordinal_code n).
+      split.
+      * exact (domain_ordinal_code n e).
+      * assert (hrho' : forall k,
+          scons nat (ordinal_code n) e (upVarMap rho k) =
+            ordinal_code (scons nat n v k)).
+        {
+          intro k.
+          destruct k as [|k].
+          - reflexivity.
+          - simpl.
+            replace (rho k + 1) with (S (rho k)) by lia.
+            simpl.
+            exact (hrho k).
+        }
+        apply (proj2 (IHa (upVarMap rho) (scons nat n v)
+          (scons nat (ordinal_code n) e) hrho')).
+        exact hn.
+Qed.
+
 Definition translateFormula (phi : PA.formula) : form :=
   formulaAt (fun n => n) phi.
+
+Lemma translateFormula_exact : forall phi v,
+  Sat nat hf_mem (fun n => ordinal_code (v n)) (translateFormula phi) <->
+    PA.Formula.Sat PA.natModel v phi.
+Proof.
+  intros phi v.
+  unfold translateFormula.
+  apply formulaAt_exact.
+  intro n.
+  reflexivity.
+Qed.
 
 Lemma formulaAt_sentence_of_PA_sentence : forall phi rho,
   PA.Formula.Sentence phi -> Sentence (formulaAt rho phi).
@@ -9670,6 +9840,15 @@ Proof.
   intros phi hphi.
   apply translateFormula_sentence_of_PA_sentence.
   exact (PA.Formula.sentence_ax_s phi hphi).
+Qed.
+
+Lemma translated_PA_axiom_sat_codes : forall phi,
+  PA.Formula.Ax_s phi -> forall v,
+    Sat nat hf_mem (fun n => ordinal_code (v n)) (translateFormula phi).
+Proof.
+  intros phi hphi v.
+  apply (proj2 (translateFormula_exact phi v)).
+  exact (PA.Formula.sat_axiom_s PA.natModel v phi hphi).
 Qed.
 
 Lemma translated_zeroNotSucc_sat : forall A (mem : A -> A -> Prop) e,
@@ -10319,6 +10498,18 @@ Proof.
   - exact h.
   - exact hAx.
   - intros x hx. contradiction.
+Qed.
+
+Lemma standard_sat_translatedPAAx : forall e g,
+  translatedPAAx g -> Sat nat hf_mem e g.
+Proof.
+  intros e g [phi [hphi hg]].
+  subst g.
+  pose proof (translated_PA_axiom_sentence phi hphi) as hsent.
+  pose proof (translated_PA_axiom_sat_codes phi hphi (fun _ => 0)) as hcoded.
+  apply (proj1 (Sat_sentence_inv nat hf_mem (translateFormula phi)
+    hsent (fun _ => ordinal_code 0) e)).
+  exact hcoded.
 Qed.
 
 Record TheoryInterpretation
