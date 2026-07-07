@@ -365,11 +365,15 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_HF_translated_zeroNotSucc
 #check @AckermannHF.PAInHF.BProv_HF_translated_succInj
 #check @AckermannHF.PAInHF.BProv_HF_translated_addZero
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_zeroNotSucc
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_succInj
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_addZero
 #check @AckermannHF.PAInHF.translatedPAAx
 #check @AckermannHF.PAInHF.translatedPAAx_intro
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx
 #check @AckermannHF.PAInHF.BProv_translatedPAAx_of_PAAx
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
+#check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF

@@ -6889,6 +6889,21 @@ theorem BProv_HF_translated_addZero :
   · intro Dom mem v hHF
     exact translated_addZero_sat_of_HFAx_s v hHF v
 
+theorem BProv_HFFin_translated_zeroNotSucc :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)) := by
+  exact BProv_theory_mono (fun g hg => HFFinAx_s_of_HFAx_s hg)
+    BProv_HF_translated_zeroNotSucc
+
+theorem BProv_HFFin_translated_succInj :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.succInj)) := by
+  exact BProv_theory_mono (fun g hg => HFFinAx_s_of_HFAx_s hg)
+    BProv_HF_translated_succInj
+
+theorem BProv_HFFin_translated_addZero :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)) := by
+  exact BProv_theory_mono (fun g hg => HFFinAx_s_of_HFAx_s hg)
+    BProv_HF_translated_addZero
+
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/
 def translatedPAAx (g : Form) : Prop :=
@@ -6911,6 +6926,11 @@ theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
+  BProv_lift h hAx (fun _ hf => nomatch hf)
+
+theorem BProv_lift_translatedPAAx_to_HFFin
+    (hAx : ∀ g, translatedPAAx g → BProv HFFinAx_s [] g)
+    {g : Form} (h : BProv translatedPAAx [] g) : BProv HFFinAx_s [] g :=
   BProv_lift h hAx (fun _ hf => nomatch hf)
 
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
