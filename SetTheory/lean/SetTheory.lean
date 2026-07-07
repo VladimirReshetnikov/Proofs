@@ -17,5 +17,6 @@ import SetTheory.Calculus
 import SetTheory.Completeness
 import SetTheory.Zf
 import SetTheory.Equivalence
+import SetTheory.PAHF
 import SetTheory.Forward
 import SetTheory.Reverse
