@@ -351,6 +351,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.termGraphAt_var_spec
 #check @AckermannHF.PAInHF.termGraphAt_zero_spec
 #check @AckermannHF.PAInHF.termGraphAt_succ_var_spec
+#check @AckermannHF.PAInHF.termGraphAt_map_ext_free
 #check @AckermannHF.PAInHF.termGraphAt_var_model
 #check @AckermannHF.PAInHF.termGraphAt_zero_model
 #check @AckermannHF.PAInHF.termGraphAt_succ_var_model
@@ -462,8 +463,10 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_induction_sat_of_HFFinAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
+#check @AckermannHF.PAInHF.formulaAt_map_ext_free
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
 #check @AckermannHF.PAInHF.translateFormula_sentence_of_PA_sentence
+#check @AckermannHF.PAInHF.formulaAt_eq_translateFormula_of_PA_sentence
 #check @AckermannHF.PAInHF.translated_PA_axiom_sentence
 #check @AckermannHF.PAInHF.BProv_HF_translated_zeroNotSucc
 #check @AckermannHF.PAInHF.BProv_HF_translated_succInj
@@ -482,9 +485,14 @@ open SetTheory
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx
 #check @AckermannHF.PAInHF.BProv_translatedPAAx_of_PAAx
 #check @AckermannHF.PAInHF.translateContext
+#check @AckermannHF.PAInHF.translateContextAt
+#check @AckermannHF.PAInHF.translateContextAt_id
 #check @AckermannHF.PAInHF.mem_translateContext_of_mem
+#check @AckermannHF.PAInHF.mem_translateContextAt_of_mem
 #check @AckermannHF.PAInHF.BProv_translate_ass
+#check @AckermannHF.PAInHF.BProv_formulaAt_ass
 #check @AckermannHF.PAInHF.BProv_translate_ax
+#check @AckermannHF.PAInHF.BProv_formulaAt_ax
 #check @AckermannHF.PAInHF.BProv_translate_impI
 #check @AckermannHF.PAInHF.BProv_translate_impE
 #check @AckermannHF.PAInHF.BProv_translate_botE

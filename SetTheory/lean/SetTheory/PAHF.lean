@@ -7049,6 +7049,39 @@ theorem termGraphAt_free (t : PA.Term) :
           · have hm := mulGraph_free h
             omega
 
+/-- The PA-term graph only depends on the slot map at variables free in the
+term. -/
+theorem termGraphAt_map_ext_free (t : PA.Term) :
+    ∀ {ρ σ : Nat → Nat} {out : Nat},
+      (∀ n, PA.Term.Free n t → ρ n = σ n) →
+        termGraphAt ρ out t = termGraphAt σ out t := by
+  induction t with
+  | var n =>
+      intro ρ σ out h
+      simp [termGraphAt, h n rfl]
+  | zero =>
+      intro ρ σ out h
+      rfl
+  | succ t ih =>
+      intro ρ σ out h
+      simp only [termGraphAt]
+      rw [@ih (fun n => ρ n + 1) (fun n => σ n + 1) 0
+        (fun n hn => by rw [h n hn])]
+  | add a b iha ihb =>
+      intro ρ σ out h
+      simp only [termGraphAt]
+      rw [@iha (fun n => ρ n + 2) (fun n => σ n + 2) 1
+        (fun n hn => by rw [h n (Or.inl hn)])]
+      rw [@ihb (fun n => ρ n + 2) (fun n => σ n + 2) 0
+        (fun n hn => by rw [h n (Or.inr hn)])]
+  | mul a b iha ihb =>
+      intro ρ σ out h
+      simp only [termGraphAt]
+      rw [@iha (fun n => ρ n + 3) (fun n => σ n + 3) 1
+        (fun n hn => by rw [h n (Or.inl hn)])]
+      rw [@ihb (fun n => ρ n + 3) (fun n => σ n + 3) 2
+        (fun n hn => by rw [h n (Or.inr hn)])]
+
 theorem termGraphAt_map_ext (t : PA.Term) :
     ∀ {ρ σ : Nat → Nat} {out : Nat},
       (∀ n, ρ n = σ n) → termGraphAt ρ out t = termGraphAt σ out t := by
@@ -9175,6 +9208,59 @@ def formulaAt (ρ : Nat → Nat) : PA.Formula → Form
   | PA.Formula.all a => fAll (fImp domainForm (formulaAt (upVarMap ρ) a))
   | PA.Formula.ex a => fEx (fAnd domainForm (formulaAt (upVarMap ρ) a))
 
+/-- PA-formula translation only depends on the slot map at variables free in
+the formula. -/
+theorem formulaAt_map_ext_free (phi : PA.Formula) :
+    ∀ {ρ σ : Nat → Nat},
+      (∀ n, PA.Formula.Free n phi → ρ n = σ n) →
+        formulaAt ρ phi = formulaAt σ phi := by
+  induction phi with
+  | eq a b =>
+      intro ρ σ h
+      simp only [formulaAt]
+      rw [termGraphAt_map_ext_free a
+        (ρ := fun n => ρ n + 2) (σ := fun n => σ n + 2) (out := 1)
+        (fun n hn => by rw [h n (Or.inl hn)])]
+      rw [termGraphAt_map_ext_free b
+        (ρ := fun n => ρ n + 2) (σ := fun n => σ n + 2) (out := 0)
+        (fun n hn => by rw [h n (Or.inr hn)])]
+  | bot =>
+      intro ρ σ h
+      rfl
+  | imp a b iha ihb =>
+      intro ρ σ h
+      simp only [formulaAt]
+      rw [iha (fun n hn => h n (Or.inl hn))]
+      rw [ihb (fun n hn => h n (Or.inr hn))]
+  | and a b iha ihb =>
+      intro ρ σ h
+      simp only [formulaAt]
+      rw [iha (fun n hn => h n (Or.inl hn))]
+      rw [ihb (fun n hn => h n (Or.inr hn))]
+  | or a b iha ihb =>
+      intro ρ σ h
+      simp only [formulaAt]
+      rw [iha (fun n hn => h n (Or.inl hn))]
+      rw [ihb (fun n hn => h n (Or.inr hn))]
+  | all a ih =>
+      intro ρ σ h
+      simp only [formulaAt]
+      rw [@ih (upVarMap ρ) (upVarMap σ) (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n =>
+            simp [upVarMap]
+            exact h n hn)]
+  | ex a ih =>
+      intro ρ σ h
+      simp only [formulaAt]
+      rw [@ih (upVarMap ρ) (upVarMap σ) (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n =>
+            simp [upVarMap]
+            exact h n hn)]
+
 theorem formulaAt_map_ext (phi : PA.Formula) :
     ∀ {ρ σ : Nat → Nat},
       (∀ n, ρ n = σ n) → formulaAt ρ phi = formulaAt σ phi := by
@@ -10586,6 +10672,14 @@ theorem translateFormula_sentence_of_PA_sentence (phi : PA.Formula)
     (hphi : PA.Formula.Sentence phi) : Sentence (translateFormula phi) :=
   formulaAt_sentence_of_PA_sentence phi (fun n : Nat => n) hphi
 
+/-- Closed PA formulas have the same HF translation under every slot map. -/
+theorem formulaAt_eq_translateFormula_of_PA_sentence (phi : PA.Formula)
+    (ρ : Nat → Nat) (hphi : PA.Formula.Sentence phi) :
+    formulaAt ρ phi = translateFormula phi := by
+  unfold translateFormula
+  exact formulaAt_map_ext_free phi
+    (fun n hn => False.elim (hphi n hn))
+
 theorem translated_PA_axiom_sentence (phi : PA.Formula)
     (hphi : PA.Formula.Ax_s phi) : Sentence (translateFormula phi) :=
   translateFormula_sentence_of_PA_sentence phi (PA.Formula.sentence_ax_s hphi)
@@ -10715,9 +10809,25 @@ theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
 def translateContext (G : List PA.Formula) : List Form :=
   G.map translateFormula
 
+/-- Translate a finite PA context using an explicit PA-variable-to-HF-slot
+map.  This is the context-level counterpart of `formulaAt`; the identity
+specialization is `translateContext`. -/
+def translateContextAt (ρ : Nat → Nat) (G : List PA.Formula) : List Form :=
+  G.map (formulaAt ρ)
+
+theorem translateContextAt_id (G : List PA.Formula) :
+    translateContextAt (fun n : Nat => n) G = translateContext G := by
+  simp [translateContextAt, translateContext, translateFormula]
+
 theorem mem_translateContext_of_mem {G : List PA.Formula} {phi : PA.Formula}
     (hphi : phi ∈ G) : translateFormula phi ∈ translateContext G :=
   List.mem_map_of_mem (f := translateFormula) hphi
+
+/-- Context membership is preserved by explicit-slot PA-in-HF translation. -/
+theorem mem_translateContextAt_of_mem {ρ : Nat → Nat} {G : List PA.Formula}
+    {phi : PA.Formula} (hphi : phi ∈ G) :
+    formulaAt ρ phi ∈ translateContextAt ρ G :=
+  List.mem_map_of_mem (f := formulaAt ρ) hphi
 
 /-- Translated PA assumptions are available as assumptions in the translated
 finite context. -/
@@ -10728,11 +10838,28 @@ theorem BProv_translate_ass {G : List PA.Formula} {phi : PA.Formula}
     (Prov.P_ass (translateContext G) (translateFormula phi)
       (mem_translateContext_of_mem hphi))
 
+/-- Translated PA assumptions are available under any explicit slot map. -/
+theorem BProv_formulaAt_ass {ρ : Nat → Nat} {G : List PA.Formula}
+    {phi : PA.Formula} (hphi : phi ∈ G) :
+    BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ phi) :=
+  BProv_of_Prov (B := translatedPAAx)
+    (Prov.P_ass (translateContextAt ρ G) (formulaAt ρ phi)
+      (mem_translateContextAt_of_mem hphi))
+
 /-- A PA axiom, translated into HF, is an axiom of the intermediate
 `translatedPAAx` theory. -/
 theorem BProv_translate_ax {phi : PA.Formula} (hphi : PA.Formula.Ax_s phi) :
     BProv translatedPAAx [] (translateFormula phi) :=
   BProv_translatedPAAx_of_PAAx hphi
+
+/-- A PA axiom translated under any slot map is an axiom of the intermediate
+`translatedPAAx` theory, because PA axiom instances are closed. -/
+theorem BProv_formulaAt_ax {ρ : Nat → Nat} {phi : PA.Formula}
+    (hphi : PA.Formula.Ax_s phi) :
+    BProv translatedPAAx [] (formulaAt ρ phi) := by
+  rw [formulaAt_eq_translateFormula_of_PA_sentence phi ρ
+    (PA.Formula.sentence_ax_s hphi)]
+  exact BProv_translate_ax hphi
 
 /-- Translated implication introduction for the PA-in-HF translation. -/
 theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}
