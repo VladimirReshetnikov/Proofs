@@ -436,6 +436,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.addGraphAt_zero_right_model
 #check @AckermannHF.PAInHF.addGraphAt_of_succRecApprox_model
 #check @AckermannHF.PAInHF.addGraphAt_value_unique_finite_model
+#check @AckermannHF.PAInHF.addGraphAt_outputs_eq_finite_model
 #check @AckermannHF.PAInHF.addGraphAt_succ_right_of_addGraphAt_model
 #check @AckermannHF.PAInHF.addGraphAt_succ_right_of_succRecApprox_model
 #check @AckermannHF.PAInHF.MulStep
@@ -453,6 +454,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.mulRecApprox_value_unique
 #check @AckermannHF.PAInHF.mulGraphAt_of_mulRecApprox_model
 #check @AckermannHF.PAInHF.mulGraphAt_value_unique_finite_model
+#check @AckermannHF.PAInHF.mulGraphAt_outputs_eq_finite_model
 #check @AckermannHF.PAInHF.mulGraphAt_succ_right_of_mulRecApprox_model
 #check @AckermannHF.PAInHF.mulStepAt_empty_model
 #check @AckermannHF.PAInHF.mulGraphAt_zero_right_model

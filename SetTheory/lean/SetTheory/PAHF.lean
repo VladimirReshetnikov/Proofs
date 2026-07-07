@@ -3884,6 +3884,47 @@ theorem mulGraphAt_value_unique_finite_model {α : Type u}
         (right+1) (out₂+1) 0).mp hout₂Sat
   exact mulRecApprox_value_unique M hleft hright hf hpair₁ hg hpair₂
 
+/-- Cross-environment single-valuedness for multiplication graphs whose inputs
+agree. -/
+theorem mulGraphAt_outputs_eq_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (e₁ e₂ : Nat → α)
+    (out₁ out₂ left₁ left₂ right₁ right₂ : Nat)
+    (hleft : e₁ left₁ = e₂ left₂)
+    (hright : e₁ right₁ = e₂ right₂)
+    (hleftOrd : OrdinalLike M.mem (e₁ left₁))
+    (hrightOrd : OrdinalLike M.mem (e₁ right₁))
+    (h₁ : Sat M.mem e₁ (mulGraphAt out₁ left₁ right₁))
+    (h₂ : Sat M.mem e₂ (mulGraphAt out₂ left₂ right₂)) :
+    e₁ out₁ = e₂ out₂ := by
+  let N := M.toFirstOrderAdjunctionModel
+  rcases h₁ with ⟨f, hfSat, hout₁Sat⟩
+  rcases h₂ with ⟨g, hgSat, hout₂Sat⟩
+  have hf : MulRecApprox N (e₁ left₁) f (e₁ right₁) := by
+    simpa [N, scons] using
+      (mulRecApproxAt_spec N (scons f e₁)
+        0 (left₁+1) (right₁+1)).mp hfSat
+  have hpair₁ : N.mem
+      (FirstOrderAdjunctionModel.kpair N (e₁ right₁) (e₁ out₁)) f := by
+    simpa [N, scons] using
+      (FirstOrderAdjunctionModel.HF_pairMemAt_spec N (scons f e₁)
+        (right₁+1) (out₁+1) 0).mp hout₁Sat
+  have hg : MulRecApprox N (e₁ left₁) g (e₁ right₁) := by
+    have hgRaw : MulRecApprox N (e₂ left₂) g (e₂ right₂) := by
+      simpa [N, scons] using
+        (mulRecApproxAt_spec N (scons g e₂)
+          0 (left₂+1) (right₂+1)).mp hgSat
+    simpa [hleft, hright] using hgRaw
+  have hpair₂ : N.mem
+      (FirstOrderAdjunctionModel.kpair N (e₁ right₁) (e₂ out₂)) g := by
+    have hpairRaw : N.mem
+        (FirstOrderAdjunctionModel.kpair N (e₂ right₂) (e₂ out₂)) g := by
+      simpa [N, scons] using
+        (FirstOrderAdjunctionModel.HF_pairMemAt_spec N (scons g e₂)
+          (right₂+1) (out₂+1) 0).mp hout₂Sat
+    simpa [hright] using hpairRaw
+  exact mulRecApprox_value_unique M hleftOrd hrightOrd hf hpair₁ hg hpair₂
+
 theorem mulGraphAt_succ_right_of_mulRecApprox_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (e : Nat → α)
     (out left rightSucc right : Nat) {f z g y : α}
@@ -3968,6 +4009,50 @@ theorem addGraphAt_value_unique_finite_model {α : Type u}
         (right+1) (out₂+1) 0).mp hout₂Sat
   exact FirstOrderFiniteAdjunctionModel.succRecApprox_value_unique
     M hright hf hpair₁ hg hpair₂
+
+/-- Cross-environment single-valuedness for addition graphs whose inputs
+agree. -/
+theorem addGraphAt_outputs_eq_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (e₁ e₂ : Nat → α)
+    (out₁ out₂ left₁ left₂ right₁ right₂ : Nat)
+    (hleft : e₁ left₁ = e₂ left₂)
+    (hright : e₁ right₁ = e₂ right₂)
+    (hrightOrd : OrdinalLike M.mem (e₁ right₁))
+    (h₁ : Sat M.mem e₁ (addGraphAt out₁ left₁ right₁))
+    (h₂ : Sat M.mem e₂ (addGraphAt out₂ left₂ right₂)) :
+    e₁ out₁ = e₂ out₂ := by
+  let N := M.toFirstOrderAdjunctionModel
+  rcases h₁ with ⟨f, hfSat, hout₁Sat⟩
+  rcases h₂ with ⟨g, hgSat, hout₂Sat⟩
+  have hf : FirstOrderAdjunctionModel.SuccRecApprox
+      N (e₁ left₁) f (e₁ right₁) := by
+    simpa [N, scons] using
+      (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N (scons f e₁)
+        0 (left₁+1) (right₁+1)).mp hfSat
+  have hpair₁ : N.mem
+      (FirstOrderAdjunctionModel.kpair N (e₁ right₁) (e₁ out₁)) f := by
+    simpa [N, scons] using
+      (FirstOrderAdjunctionModel.HF_pairMemAt_spec N (scons f e₁)
+        (right₁+1) (out₁+1) 0).mp hout₁Sat
+  have hg : FirstOrderAdjunctionModel.SuccRecApprox
+      N (e₁ left₁) g (e₁ right₁) := by
+    have hgRaw : FirstOrderAdjunctionModel.SuccRecApprox
+        N (e₂ left₂) g (e₂ right₂) := by
+      simpa [N, scons] using
+        (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N (scons g e₂)
+          0 (left₂+1) (right₂+1)).mp hgSat
+    simpa [hleft, hright] using hgRaw
+  have hpair₂ : N.mem
+      (FirstOrderAdjunctionModel.kpair N (e₁ right₁) (e₂ out₂)) g := by
+    have hpairRaw : N.mem
+        (FirstOrderAdjunctionModel.kpair N (e₂ right₂) (e₂ out₂)) g := by
+      simpa [N, scons] using
+        (FirstOrderAdjunctionModel.HF_pairMemAt_spec N (scons g e₂)
+          (right₂+1) (out₂+1) 0).mp hout₂Sat
+    simpa [hright] using hpairRaw
+  exact FirstOrderFiniteAdjunctionModel.succRecApprox_value_unique
+    M hrightOrd hf hpair₁ hg hpair₂
 
 theorem addGraphAt_succ_right_of_addGraphAt_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (e : Nat → α)
