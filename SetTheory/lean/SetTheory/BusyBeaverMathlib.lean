@@ -697,6 +697,140 @@ theorem tm0SupportedMachine_step {Label : Type*} [Inhabited Label]
           cases stmt <;>
             simp [Turing.TM0.step, tm0SupportedCfgToCfg, hTrans, hRestrict]
 
+/-- Restrict an original configuration whose label is known to lie in the support. -/
+def tm0CfgRestrict {Label : Type*} {S : Set Label}
+    (cfg : Turing.TM0.Cfg Bool Label) (h : cfg.q ∈ S) : Turing.TM0.Cfg Bool S where
+  q := ⟨cfg.q, h⟩
+  Tape := cfg.Tape
+
+@[simp]
+theorem tm0SupportedCfgToCfg_restrict {Label : Type*} {S : Set Label}
+    (cfg : Turing.TM0.Cfg Bool Label) (h : cfg.q ∈ S) :
+    tm0SupportedCfgToCfg (tm0CfgRestrict cfg h) = cfg := by
+  cases cfg
+  rfl
+
+theorem tm0SupportedMachine_step_of_original {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S)
+    {cfg cfg' : Turing.TM0.Cfg Bool Label}
+    (hStep : cfg' ∈ Turing.TM0.step M cfg)
+    (hCfg : cfg.q ∈ S) :
+    ∃ hCfg' : cfg'.q ∈ S,
+      @Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+          (tm0SupportedMachine M hSupp) (tm0CfgRestrict cfg hCfg) =
+        some (tm0CfgRestrict cfg' hCfg') := by
+  cases cfg with
+  | mk q T =>
+      cases hTrans : M q T.head with
+      | none =>
+          simp [Turing.TM0.step, hTrans] at hStep
+      | some p =>
+          rcases p with ⟨q', stmt⟩
+          have hp : (q', stmt) ∈ M q T.head := by
+            rw [hTrans]
+            rfl
+          have hq' : q' ∈ S := hSupp.2 hp hCfg
+          rcases tm0SupportedMachine_apply_some M hSupp (q := ⟨q, hCfg⟩) hTrans with
+            ⟨_hq'', hRestrict⟩
+          cases stmt with
+          | move dir =>
+              have hStepEq :
+                  ({ q := q', Tape := T.move dir } : Turing.TM0.Cfg Bool Label) = cfg' := by
+                simpa [Turing.TM0.step, hTrans] using hStep
+              subst cfg'
+              refine ⟨hq', ?_⟩
+              simp [Turing.TM0.step, tm0CfgRestrict, hRestrict]
+          | write out =>
+              have hStepEq :
+                  ({ q := q', Tape := T.write out } : Turing.TM0.Cfg Bool Label) = cfg' := by
+                simpa [Turing.TM0.step, hTrans] using hStep
+              subst cfg'
+              refine ⟨hq', ?_⟩
+              simp [Turing.TM0.step, tm0CfgRestrict, hRestrict]
+
+theorem tm0SupportedMachine_reaches_of_original {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S)
+    {cfg cfg' : Turing.TM0.Cfg Bool Label}
+    (hReach : Turing.TM0.Reaches M cfg cfg')
+    (hCfg : cfg.q ∈ S) :
+    ∃ hCfg' : cfg'.q ∈ S,
+      @Turing.TM0.Reaches Bool S (tm0SupportedInhabited M hSupp) inferInstance
+        (tm0SupportedMachine M hSupp)
+        (tm0CfgRestrict cfg hCfg) (tm0CfgRestrict cfg' hCfg') := by
+  change Relation.ReflTransGen (fun a b => b ∈ Turing.TM0.step M a) cfg cfg' at hReach
+  refine (Relation.ReflTransGen.head_induction_on
+    (motive := fun a _ =>
+      ∀ hA : a.q ∈ S,
+        ∃ hB : cfg'.q ∈ S,
+          @Turing.TM0.Reaches Bool S (tm0SupportedInhabited M hSupp) inferInstance
+            (tm0SupportedMachine M hSupp)
+            (tm0CfgRestrict a hA) (tm0CfgRestrict cfg' hB))
+    hReach ?_ ?_) hCfg
+  · intro hA
+    exact ⟨hA, Relation.ReflTransGen.refl⟩
+  · intro current next hStep _hRest IH hCurrent
+    rcases tm0SupportedMachine_step_of_original M hSupp hStep hCurrent with
+      ⟨hNext, hRestrictStep⟩
+    rcases IH hNext with ⟨hFinal, hRestrictRest⟩
+    have hStepMem : tm0CfgRestrict next hNext ∈
+        @Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+          (tm0SupportedMachine M hSupp) (tm0CfgRestrict current hCurrent) := by
+      rw [hRestrictStep]
+      rfl
+    exact ⟨hFinal, Relation.ReflTransGen.head hStepMem hRestrictRest⟩
+
+theorem tm0SupportedMachine_step_none_of_original {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S)
+    {cfg : Turing.TM0.Cfg Bool Label}
+    (hCfg : cfg.q ∈ S)
+    (hTerminal : Turing.TM0.step M cfg = none) :
+    @Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+        (tm0SupportedMachine M hSupp) (tm0CfgRestrict cfg hCfg) = none := by
+  have hForget := tm0SupportedMachine_step M hSupp (tm0CfgRestrict cfg hCfg)
+  rw [tm0SupportedCfgToCfg_restrict, hTerminal] at hForget
+  cases hStep : @Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+      (tm0SupportedMachine M hSupp) (tm0CfgRestrict cfg hCfg) with
+  | none => rfl
+  | some _next =>
+      simp [hStep] at hForget
+
+theorem tm0SupportedMachine_eval_of_original {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S)
+    {input : List Bool} {output : Turing.ListBlank Bool}
+    (hEval : output ∈ Turing.TM0.eval M input) :
+    output ∈ @Turing.TM0.eval Bool S (tm0SupportedInhabited M hSupp) inferInstance
+      (tm0SupportedMachine M hSupp) input := by
+  rcases tm0_eval_mem_terminal M hEval with ⟨finalCfg, hReach, hTerminal, hOutput⟩
+  rcases tm0SupportedMachine_reaches_of_original M hSupp hReach hSupp.1 with
+    ⟨hFinal, hRestrictReach⟩
+  have hRestrictTerminal := tm0SupportedMachine_step_none_of_original M hSupp hFinal hTerminal
+  have hInitEq : tm0CfgRestrict (Turing.TM0.init input) hSupp.1 =
+      (@Turing.TM0.init Bool S (tm0SupportedInhabited M hSupp) inferInstance input) := rfl
+  rw [hInitEq] at hRestrictReach
+  change StateTransition.Reaches
+      (@Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+        (tm0SupportedMachine M hSupp))
+      (@Turing.TM0.init Bool S (tm0SupportedInhabited M hSupp) inferInstance input)
+      (tm0CfgRestrict finalCfg hFinal) at hRestrictReach
+  have hEvalFinal : tm0CfgRestrict finalCfg hFinal ∈
+      StateTransition.eval
+        (@Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+          (tm0SupportedMachine M hSupp))
+        (@Turing.TM0.init Bool S (tm0SupportedInhabited M hSupp) inferInstance input) :=
+    StateTransition.mem_eval.2 ⟨hRestrictReach, hRestrictTerminal⟩
+  change output ∈ (StateTransition.eval
+      (@Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+        (tm0SupportedMachine M hSupp))
+      (@Turing.TM0.init Bool S (tm0SupportedInhabited M hSupp) inferInstance input)).map
+        (fun c => c.Tape.right₀)
+  rw [Part.mem_map_iff]
+  refine ⟨tm0CfgRestrict finalCfg hFinal, hEvalFinal, ?_⟩
+  simpa [tm0CfgRestrict] using hOutput
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
