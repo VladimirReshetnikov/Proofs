@@ -783,9 +783,20 @@ theorem computedExponentValuesMemo_eq (n : Nat) :
     computedExponentValuesMemo n = computedExponentValues n := by
   exact computedExponentTable_getD (n + 1) n (Nat.lt_succ_self n)
 
+theorem computedExponentValuesMemo_eq_recursiveValueFinsetMemo (n : Nat) :
+    computedExponentValuesMemo n =
+      PowTower.Expr.recursiveValueFinsetMemo (1 : ONote) combineExponent n := by
+  rw [computedExponentValuesMemo_eq, PowTower.Expr.recursiveValueFinsetMemo_eq,
+    computedExponentValues_eq_recursiveValueFinset]
+
 /-- Memoized dynamic count corresponding to A199812. -/
 def computedExponentCountMemo (n : Nat) : Nat :=
   (computedExponentValuesMemo n).card
+
+theorem computedExponentCountMemo_eq_recursiveValueFinsetMemo_card (n : Nat) :
+    computedExponentCountMemo n =
+      (PowTower.Expr.recursiveValueFinsetMemo (1 : ONote) combineExponent n).card := by
+  rw [computedExponentCountMemo, computedExponentValuesMemo_eq_recursiveValueFinsetMemo]
 
 /-- Memoized dynamic counts for sizes `1, ..., n`, computed from one shared table. -/
 def computedExponentCountsMemoThrough (n : Nat) : List Nat :=
@@ -817,6 +828,15 @@ theorem computedExponentCountsMemoThrough_getD {N i : Nat} (hi : i < N) :
   rw [hleft]
   unfold computedExponentCountMemo
   rw [computedExponentValuesMemo_eq]
+
+theorem computedExponentCountsMemoThrough_getD_eq_sharedCountsMemoThrough {N i : Nat}
+    (hi : i < N) :
+    (computedExponentCountsMemoThrough N).getD i 0 =
+      (PowTower.Expr.recursiveValueCountsMemoThrough (1 : ONote) combineExponent N).getD i 0 := by
+  rw [computedExponentCountsMemoThrough_getD hi]
+  rw [PowTower.Expr.recursiveValueCountsMemoThrough_getD
+    (atomValue := (1 : ONote)) (powValue := combineExponent) (N := N) (i := i) hi]
+  exact computedExponentCountMemo_eq_recursiveValueFinsetMemo_card (i + 1)
 
 theorem computedExponentCountMemo_eq_countsMemoThrough_getD {N n : Nat}
     (hpos : 0 < n) (hN : n ≤ N) :
@@ -1055,6 +1075,18 @@ theorem computedDegreeCount_eq_fastDegreeCountMemo (n : Nat) :
   rw [← fastDegreeValuesMemo_toFinset_eq n]
   exact List.toFinset_card_of_nodup (fastDegreeValuesMemo_nodup n)
 
+theorem fastDegreeValuesMemo_toFinset_eq_recursiveValueFinset (n : Nat) :
+    (fastDegreeValuesMemo n).toFinset =
+      PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n := by
+  rw [fastDegreeValuesMemo_toFinset_eq, computedDegreeValues_eq_recursiveValueFinset]
+
+theorem fastDegreeCountMemo_eq_recursiveValueFinsetMemo_card (n : Nat) :
+    fastDegreeCountMemo n =
+      (PowTower.Expr.recursiveValueFinsetMemo (0 : ONote) combineDegree n).card := by
+  rw [← computedDegreeCount_eq_fastDegreeCountMemo,
+    computedDegreeCount_eq_recursiveValueFinset_card]
+  rw [PowTower.Expr.recursiveValueFinsetMemo_eq]
+
 theorem a199812_eq_fastDegreeCountMemo (n : Nat) :
     a199812 n = fastDegreeCountMemo n := by
   rw [a199812_eq_computedDegreeCount, computedDegreeCount_eq_fastDegreeCountMemo]
@@ -1094,6 +1126,15 @@ theorem fastDegreeCountsMemoThrough_getD {N i : Nat} (hi : i < N) :
     _ = (computedDegreeValues (i + 1)).card := by rw [hrowSet]
     _ = computedDegreeCount (i + 1) := rfl
     _ = fastDegreeCountMemo (i + 1) := computedDegreeCount_eq_fastDegreeCountMemo (i + 1)
+
+theorem fastDegreeCountsMemoThrough_getD_eq_sharedCountsMemoThrough {N i : Nat}
+    (hi : i < N) :
+    (fastDegreeCountsMemoThrough N).getD i 0 =
+      (PowTower.Expr.recursiveValueCountsMemoThrough (0 : ONote) combineDegree N).getD i 0 := by
+  rw [fastDegreeCountsMemoThrough_getD hi]
+  rw [PowTower.Expr.recursiveValueCountsMemoThrough_getD
+    (atomValue := (0 : ONote)) (powValue := combineDegree) (N := N) (i := i) hi]
+  exact fastDegreeCountMemo_eq_recursiveValueFinsetMemo_card (i + 1)
 
 theorem fastDegreeCountMemo_eq_countsMemoThrough_getD {N n : Nat}
     (hpos : 0 < n) (hN : n ≤ N) :

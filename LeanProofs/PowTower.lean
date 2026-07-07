@@ -559,6 +559,28 @@ theorem recursiveValueCountsMemoThrough_getD [DecidableEq α] {atomValue : α}
   rw [hleft]
   rw [recursiveValueFinsetMemo_eq]
 
+theorem recursiveValueCountsMemoThrough_getD_eq_recursiveValueFinset_card
+    [DecidableEq α] {atomValue : α} {powValue : α -> α -> α}
+    {N i : Nat} (hi : i < N) :
+    (recursiveValueCountsMemoThrough atomValue powValue N).getD i 0 =
+      (recursiveValueFinset atomValue powValue (i + 1)).card := by
+  rw [recursiveValueCountsMemoThrough_getD hi]
+  rw [recursiveValueFinsetMemo_eq]
+
+theorem recursiveValueFinset_card_eq_countsMemoThrough_getD
+    [DecidableEq α] {atomValue : α} {powValue : α -> α -> α}
+    {N n : Nat} (hpos : 0 < n) (hN : n ≤ N) :
+    (recursiveValueFinset atomValue powValue n).card =
+      (recursiveValueCountsMemoThrough atomValue powValue N).getD (n - 1) 0 := by
+  cases n with
+  | zero =>
+      exact (Nat.not_lt_zero _ hpos).elim
+  | succ i =>
+      have hi : i < N := Nat.succ_le_iff.mp hN
+      simpa using
+        (recursiveValueCountsMemoThrough_getD_eq_recursiveValueFinset_card
+          (atomValue := atomValue) (powValue := powValue) (N := N) (i := i) hi).symm
+
 def e2 : Expr :=
   pow atom atom
 

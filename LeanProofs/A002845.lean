@@ -696,6 +696,18 @@ def sharedSparseLogCountMemo (n : Nat) : Nat :=
 def sharedSparseLogCountsMemoThrough (n : Nat) : List Nat :=
   PowTower.Expr.recursiveValueCountsMemoThrough (Sparse.ofNat 1) certifiedCombineLog n
 
+theorem sharedSparseLogCountMemo_eq_sharedSparseLogLevelCard (n : Nat) :
+    sharedSparseLogCountMemo n =
+      (PowTower.Expr.recursiveValueFinset (Sparse.ofNat 1) certifiedCombineLog n).card := by
+  rw [sharedSparseLogCountMemo, PowTower.Expr.recursiveValueFinsetMemo_eq]
+
+theorem certifiedLevelCard_eq_sharedSparseLogCountsMemoThrough_getD {N n : Nat}
+    (hpos : 0 < n) (hN : n ≤ N) :
+    certifiedLevelCard n = (sharedSparseLogCountsMemoThrough N).getD (n - 1) 0 := by
+  rw [certifiedLevelCard, certifiedLevel_eq_sharedSparseLogLevel, sharedSparseLogCountsMemoThrough]
+  exact PowTower.Expr.recursiveValueFinset_card_eq_countsMemoThrough_getD
+    (atomValue := Sparse.ofNat 1) (powValue := certifiedCombineLog) hpos hN
+
 theorem a002845_eq_sharedSparseLogCountMemo (n : Nat) :
     a002845 n = sharedSparseLogCountMemo n := by
   rw [a002845_eq_certifiedLevelCard, sharedSparseLogCountMemo, certifiedLevelCard]
