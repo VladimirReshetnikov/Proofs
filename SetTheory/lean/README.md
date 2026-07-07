@@ -29,7 +29,7 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/Forward.lean`](SetTheory/Forward.lean) | `Forward.v` | the shallow (second-order) forward trade, self-contained, dependency-audited |
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
 | [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) | new Lean-first module | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, and a separate first-order PA syntax with sealed PA axiom semantics |
-| [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | new Lean-first module | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total computable function whose computability predicate has the standard linear-overhead blank-tape compiler |
+| [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | new Lean-first module | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
 | [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | trailing `Check` / `Print Assumptions` commands | type-checks the headline results and prints their axioms |
 
 ## Building
@@ -110,15 +110,19 @@ instead it names the exact compiler property needed for the classical argument:
 ```lean
 theorem BusyBeaver.eventuallyDominates_of_hasLinearOverheadBlankCompiler
     {Sigma : Nat -> Nat} (hSigma : BusyBeaver.IsSigma Sigma)
-    {Computable : (Nat -> Nat) -> Prop}
-    (hCompiler : BusyBeaver.HasLinearOverheadBlankCompiler Computable)
-    {f : Nat -> Nat} (hf : Computable f) :
+    {TotalRecursive : (Nat -> Nat) -> Prop}
+    (hCompiler : BusyBeaver.HasLinearOverheadBlankCompiler TotalRecursive)
+    {f : Nat -> Nat} (hf : TotalRecursive f) :
     BusyBeaver.EventuallyDominates Sigma f
 ```
 
-The companion theorem `BusyBeaver.eventuallyDominates_totalComputableInRadoModel`
-packages the same result for the model-relative predicate
-`BusyBeaver.TotalComputableInRadoModel`.
+The same theorem is also exported under the request-shaped name
+`BusyBeaver.sigma_eventually_dominates_every_total_recursive`.  The companion
+theorem `BusyBeaver.eventuallyDominates_totalRecursiveInRadoModel` and its alias
+`BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel` package
+the same result for the model-relative predicate
+`BusyBeaver.TotalRecursiveInRadoModel`.  `SetTheory/Audit.lean` checks and
+prints the axioms of the request-shaped aliases.
 
 ## Translation notes (Coq → Lean)
 

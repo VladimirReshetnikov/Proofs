@@ -37,6 +37,12 @@ open SetTheory
 #check @ClosureFO_of_ZF
 #print axioms ClosureFO_of_ZF
 
+-- Busy Beaver domination interface
+#check @BusyBeaver.sigma_eventually_dominates_every_total_recursive
+#check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
+#print axioms BusyBeaver.sigma_eventually_dominates_every_total_recursive
+#print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
+
 -- PA/HF Ackermann/von-Neumann semantic bi-interpretability checkpoint
 #check @PA.Formula.Ax
 #check @PA.Formula.sat_axiom

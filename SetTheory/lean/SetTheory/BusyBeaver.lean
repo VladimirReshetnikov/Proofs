@@ -6,10 +6,10 @@
   The theorem here keeps the computability-theory interface explicit.  We define
   blank-tape two-symbol machines, their halting scores, and the maximum property
   expected of the busy-beaver score function.  Separately, we state the usual
-  compiler fact for a chosen notion of total computability: a fixed program for a
-  total function can be turned, with constant overhead, into a blank-tape
-  n-state machine that prints the value at n.  From those two ingredients,
-  domination is a short arithmetic argument.
+  compiler fact for a chosen notion of total recursiveness: a fixed program for a
+  total recursive function can be turned, with constant overhead, into a
+  blank-tape n-state machine that prints the value at n.  From those two
+  ingredients, domination is a short arithmetic argument.
 -/
 
 namespace SetTheory
@@ -137,22 +137,22 @@ def EventuallyDominates (g f : Nat -> Nat) : Prop :=
 
 /--
 The standard linear-overhead blank-tape compiler property for a chosen predicate
-`Computable` on total functions `Nat -> Nat`.
+`TotalRecursive` on total functions `Nat -> Nat`.
 
-For every computable total function `f`, there is a constant overhead `c` such
+For every total recursive function `f`, there is a constant overhead `c` such
 that the value `f (k + c)` can be printed by a blank-tape machine with exactly
 `k + c` operational states.  The `k` states encode the input size; `c` is the
 fixed program/decoding/output overhead.
 -/
-def HasLinearOverheadBlankCompiler (Computable : (Nat -> Nat) -> Prop) : Prop :=
-  ∀ {f : Nat -> Nat}, Computable f ->
+def HasLinearOverheadBlankCompiler (TotalRecursive : (Nat -> Nat) -> Prop) : Prop :=
+  ∀ {f : Nat -> Nat}, TotalRecursive f ->
     ∃ overhead, ∀ k, AttainableScore (k + overhead) (f (k + overhead))
 
 /--
-A direct, model-relative notion of total computability: the function has the
+A direct, model-relative notion of total recursiveness: the function has the
 linear-overhead blank-tape realizers needed by the domination proof.
 -/
-def TotalComputableInRadoModel (f : Nat -> Nat) : Prop :=
+def TotalRecursiveInRadoModel (f : Nat -> Nat) : Prop :=
   ∃ overhead, ∀ k, AttainableScore (k + overhead) (f (k + overhead))
 
 /-- Any attainable score is bounded by any function satisfying `IsSigma`. -/
@@ -162,15 +162,15 @@ theorem score_le_sigma {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
   hSigma.upper h
 
 /--
-The busy-beaver score function eventually dominates every total computable
-function, assuming the chosen computability predicate has the standard
+The busy-beaver score function eventually dominates every total recursive
+function, assuming the chosen total-recursiveness predicate has the standard
 linear-overhead blank-tape compiler into the Rado machine model.
 -/
 theorem eventuallyDominates_of_hasLinearOverheadBlankCompiler
     {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
-    {Computable : (Nat -> Nat) -> Prop}
-    (hCompiler : HasLinearOverheadBlankCompiler Computable)
-    {f : Nat -> Nat} (hf : Computable f) :
+    {TotalRecursive : (Nat -> Nat) -> Prop}
+    (hCompiler : HasLinearOverheadBlankCompiler TotalRecursive)
+    {f : Nat -> Nat} (hf : TotalRecursive f) :
     EventuallyDominates Sigma f := by
   rcases hCompiler hf with ⟨overhead, hRealize⟩
   refine ⟨overhead, ?_⟩
@@ -184,15 +184,38 @@ theorem eventuallyDominates_of_hasLinearOverheadBlankCompiler
   simpa [hEq] using hLe
 
 /--
-Specialization of the domination theorem to the model-relative computability
-predicate `TotalComputableInRadoModel`.
+Specialization of the domination theorem to the model-relative total-recursive
+predicate `TotalRecursiveInRadoModel`.
 -/
-theorem eventuallyDominates_totalComputableInRadoModel
+theorem eventuallyDominates_totalRecursiveInRadoModel
     {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
-    {f : Nat -> Nat} (hf : TotalComputableInRadoModel f) :
+    {f : Nat -> Nat} (hf : TotalRecursiveInRadoModel f) :
     EventuallyDominates Sigma f :=
   eventuallyDominates_of_hasLinearOverheadBlankCompiler
     hSigma (fun hf => hf) hf
+
+/--
+Alias with the more precise classical phrasing requested here: a busy-beaver
+score function eventually dominates every total recursive function, once the
+selected total-recursiveness predicate is connected to this Rado machine model
+by the standard compiler.
+-/
+theorem sigma_eventually_dominates_every_total_recursive
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {TotalRecursive : (Nat -> Nat) -> Prop}
+    (hCompiler : HasLinearOverheadBlankCompiler TotalRecursive)
+    {f : Nat -> Nat} (hf : TotalRecursive f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_of_hasLinearOverheadBlankCompiler hSigma hCompiler hf
+
+/--
+Alias for the model-relative total-recursive predicate.
+-/
+theorem sigma_eventually_dominates_every_totalRecursiveInRadoModel
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveInRadoModel f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_totalRecursiveInRadoModel hSigma hf
 
 end BusyBeaver
 end SetTheory

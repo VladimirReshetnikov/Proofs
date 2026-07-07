@@ -65,7 +65,7 @@ foundational/computability work:
 - [`lean/SetTheory/BusyBeaver.lean`](lean/SetTheory/BusyBeaver.lean) formalizes a
   Rado-style two-symbol blank-tape machine model and proves that any busy-beaver
   score function satisfying the maximum property eventually dominates every
-  total computable function whose computability predicate has the standard
+  total recursive function whose recursiveness predicate has the standard
   linear-overhead blank-tape compiler.
 
 ## Module structure — the reusable core vs. the T-specific shell
