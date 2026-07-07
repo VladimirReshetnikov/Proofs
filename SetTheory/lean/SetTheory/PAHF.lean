@@ -24,6 +24,8 @@ namespace SetTheory
 
 namespace AckermannHF
 
+open Form
+
 /-- `Mem x y` means: in Ackermann's coding, the set coded by `x` is an element
 of the set coded by `y`.  Equivalently, the `x`-th binary digit of `y` is set. -/
 def Mem (x y : Nat) : Prop := y.testBit x = true
@@ -101,6 +103,79 @@ def standardModel : AdjunctionModel Nat where
   empty_spec := mem_empty
   adjoin_spec := mem_adjoin
   set_induction := induction
+
+/-! ## First-order HF axioms over the one-relation language -/
+
+/-- A renaming used under two binders: keep the current object variable in
+slot `0`, and move every parameter past the two locally-bound variables. -/
+def rSkipParam : Nat → Nat
+  | 0 => 0
+  | n+1 => n+2
+
+theorem Sat_rename_rSkipParam (phi : Form) (e : Nat → Nat) (x y : Nat) :
+    Sat Mem (scons y (scons x e)) (rename rSkipParam phi) ↔
+      Sat Mem (scons y e) phi := by
+  rw [Sat_rename]
+  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+
+/-- The first-order empty-set axiom: some set has no elements. -/
+def HF_empty_form : Form :=
+  fEx (fAll (fImp (fMem 0 1) fBot))
+
+/-- The first-order adjunction axiom:
+for all `a b`, there is `c = a ∪ {b}`. -/
+def HF_adjoin_form : Form :=
+  fAll (fAll (fEx (fAll
+    (fIff (fMem 0 1) (fOr (fMem 0 3) (fEq 0 2))))))
+
+/-- The first-order set-induction schema instance for `phi`, where `phi`
+uses slot `0` as the element being proved and slots `1,2,...` as parameters. -/
+def HF_induction_form (phi : Form) : Form :=
+  fImp
+    (fAll
+      (fImp
+        (fAll (fImp (fMem 0 1) (rename rSkipParam phi)))
+        phi))
+    (fAll phi)
+
+/-- The unsealed HF axiom schema. -/
+def HFAx (f : Form) : Prop :=
+  f = HF_empty_form ∨ f = HF_adjoin_form ∨ ∃ phi, f = HF_induction_form phi
+
+/-- The sentence theory of HF, with every schema instance universally closed. -/
+def HFAx_s (f : Form) : Prop :=
+  f = sealF HF_empty_form ∨
+  f = sealF HF_adjoin_form ∨
+  ∃ phi, f = sealF (HF_induction_form phi)
+
+theorem Sentences_HF : Sentences HFAx_s := by
+  intro f hf
+  rcases hf with rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
+
+theorem sat_HF_empty (e : Nat → Nat) : Sat Mem e HF_empty_form :=
+  ⟨empty, fun x hx => mem_empty x hx⟩
+
+theorem sat_HF_adjoin (e : Nat → Nat) : Sat Mem e HF_adjoin_form := by
+  intro a b
+  refine ⟨adjoin a b, fun x => ?_⟩
+  exact (Sat_fIff (mem := Mem)).mpr (mem_adjoin x a b)
+
+theorem sat_HF_induction (phi : Form) (e : Nat → Nat) :
+    Sat Mem e (HF_induction_form phi) := by
+  intro hstep a
+  exact induction (fun x => Sat Mem (scons x e) phi)
+    (fun x ih => hstep x (fun y hy =>
+      (Sat_rename_rSkipParam phi e x y).mpr (ih y hy)))
+    a
+
+theorem standard_sat_HF (v : Nat → Nat) :
+    ∀ g, HFAx_s g → Sat Mem v g := by
+  intro g hg
+  rcases hg with rfl | rfl | ⟨phi, rfl⟩
+  · exact (seal_valid (mem := Mem) HF_empty_form).mpr sat_HF_empty v
+  · exact (seal_valid (mem := Mem) HF_adjoin_form).mpr sat_HF_adjoin v
+  · exact (seal_valid (mem := Mem) (HF_induction_form phi)).mpr
+      (sat_HF_induction phi) v
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
 
