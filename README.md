@@ -268,9 +268,16 @@ theorem a199812_one : a199812 1 = 1
 theorem a199812_thirteen : a199812 13 = 20287
 ```
 
-[`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes the
-Sheffer-stroke/NAND language for Nicod's one-axiom propositional calculus,
-including the exact axiom schema
+[`LeanProofs/Sheffer.lean`](LeanProofs/Sheffer.lean) is the shared core-only
+vocabulary for the single-binary-connective propositional modules: the two
+Boolean Sheffer strokes (NAND and NOR), formulas over one anonymous stroke,
+the ordinary classical propositional language, and the truth-preserving
+translations from the classical language into pure stroke formulas for both
+stroke conventions.
+
+[`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes Nicod's one-axiom
+propositional calculus over that shared NAND-only language, including the
+exact axiom schema
 
 ```text
 (p ↑ (q ↑ r)) ↑ ((u ↑ (u ↑ u)) ↑ ((w ↑ q) ↑ ((p ↑ w) ↑ (p ↑ w))))
@@ -278,9 +285,10 @@ including the exact axiom schema
 
 and the exact rule `(p ↑ (q ↑ r)), p ⊢ r`.  Lean uses `↑` for coercions, so
 the formal notation uses `⊼` for the same NAND connective.  The module proves
-that NAND expresses the usual classical connectives, that the Nicod axiom is
-classically valid, that the rule is classically sound, and therefore that every
-formula derivable in the one-axiom/one-rule calculus is a classical tautology.
+that the Nicod axiom is classically valid, that the rule is classically sound,
+and therefore that every formula derivable in the one-axiom/one-rule calculus
+is a classical tautology; expressive completeness of NAND is inherited from
+the shared translation of `Sheffer.lean` (`toNand_valid_iff`).
 It also derives the three Lukasiewicz Hilbert axiom schemas and standard modus
 ponens for NAND-defined implication, formalized as
 `Formula.implementsLukasiewicz`, so every theorem of that standard classical
@@ -293,8 +301,10 @@ formalizes Wolfram's single Sheffer-stroke equation
 ((a ↑ b) ↑ c) ↑ (a ↑ ((a ↑ c) ↑ a)) = c
 ```
 
-and Meredith's two-axiom Sheffer-stroke system.  Since Lean uses `↑` for
-coercions, the formal notation uses `⊙`.  A small equational checker in
+and Meredith's two-axiom Sheffer-stroke system, over the shared stroke
+language of `Sheffer.lean` and the first-order terms of
+`EquationalLogic.lean`.  Since Lean uses `↑` for coercions, the formal
+notation uses `⊙`.  A small equational checker in
 [`LeanProofs/EquationalLogic.lean`](LeanProofs/EquationalLogic.lean), applied
 to generated certificates in
 [`LeanProofs/WolframBooleanCertificates.lean`](LeanProofs/WolframBooleanCertificates.lean),
