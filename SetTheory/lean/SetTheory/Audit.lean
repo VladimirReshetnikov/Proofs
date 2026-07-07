@@ -565,18 +565,26 @@ open SetTheory
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
+#check @AckermannHF.StandardModelInterpretationCertificateFor
 #check @AckermannHF.StandardModelInterpretationCertificate
+#check @AckermannHF.StandardModelFiniteInterpretationCertificate
 #check @AckermannHF.standardModelInterpretation
+#check @AckermannHF.standardModelFiniteInterpretation
 #check @AckermannHF.PA_standard_model_interpretable_with_HF
+#check @AckermannHF.PA_standard_model_interpretable_with_HFFin
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
+#check @AckermannHF.PA_biinterpretable_with_HFFin_standard
 #print axioms PA.Formula.sat_axiom
 #print axioms PA.Formula.sat_axiom_s
 #print axioms PA.Formula.soundness
 #print axioms PA.Formula.soundness_BProv
 #print axioms AckermannHF.sat_HF_model
 #print axioms AckermannHF.standard_sat_HF
+#print axioms AckermannHF.standard_sat_HFFin
 #print axioms AckermannHF.PA_standard_model_interpretable_with_HF
+#print axioms AckermannHF.PA_standard_model_interpretable_with_HFFin
 #print axioms AckermannHF.PA_biinterpretable_with_HF_standard
+#print axioms AckermannHF.PA_biinterpretable_with_HFFin_standard
 
 -- the shallow self-contained pair, with their free dependency audits
 #check @Forward.Pairing

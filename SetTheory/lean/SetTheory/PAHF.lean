@@ -10846,11 +10846,16 @@ abbrev PAHFFinDeductiveBiInterpretationCertificate : Type :=
   DeductiveBiInterpretationCertificate HFFinAx_s PA.Formula.BProv
 
 /-- A standard-model interpretation certificate with the actual syntactic
-translations attached.  The exactness fields say that the translations have the
-intended semantics in the standard PA and Ackermann-HF models; the axiom fields
-say that each translated axiom theory is satisfied by the opposite standard
-model; the `shallow` field carries the two round-trip isomorphisms. -/
-structure StandardModelInterpretationCertificate where
+translations attached, parameterized by the HF-side axiom theory and its
+PA-side translated axiom theory.
+
+The exactness fields say that the translations have the intended semantics in
+the standard PA and Ackermann-HF models; the axiom fields say that each
+translated axiom theory is satisfied by the opposite standard model; the
+`shallow` field carries the two round-trip isomorphisms. -/
+structure StandardModelInterpretationCertificateFor
+    (HFAxTarget : Form → Prop)
+    (TranslatedHFAxTarget : PA.Formula → Prop) where
   shallow : ShallowBiInterpretation
   paToHf : PA.Formula → Form
   hfToPa : Form → PA.Formula
@@ -10861,12 +10866,20 @@ structure StandardModelInterpretationCertificate where
     PA.Formula.Sat PA.natModel v (hfToPa phi) ↔ Sat Mem v phi
   paAxiom_sat : ∀ (phi : PA.Formula), PA.Formula.Ax_s phi → ∀ (v : Nat → Nat),
     Sat Mem (fun n => ordinalCode (v n)) (paToHf phi)
-  hfAxiom_sat : ∀ (phi : Form), HFAx_s phi → ∀ (v : Nat → Nat),
+  hfAxiom_sat : ∀ (phi : Form), HFAxTarget phi → ∀ (v : Nat → Nat),
     PA.Formula.Sat PA.natModel v (hfToPa phi)
   translatedPA_sat : ∀ (e : Nat → Nat) (g : Form),
     PAInHF.translatedPAAx g → Sat Mem e g
   translatedHF_sat : ∀ (e : Nat → Nat) (f : PA.Formula),
-    PA.Formula.translatedHFAx f → PA.Formula.Sat PA.natModel e f
+    TranslatedHFAxTarget f → PA.Formula.Sat PA.natModel e f
+
+/-- Standard-model certificate for the foundation-style HF theory. -/
+abbrev StandardModelInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor HFAx_s PA.Formula.translatedHFAx
+
+/-- Standard-model certificate for the strengthened finite-HF theory. -/
+abbrev StandardModelFiniteInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor HFFinAx_s PA.Formula.translatedHFFinAx
 
 /-- The HF model obtained after interpreting PA inside Ackermann HF and then
 running Ackermann's HF interpretation in that interpreted PA model. -/
@@ -10963,15 +10976,38 @@ noncomputable def standardModelInterpretation : StandardModelInterpretationCerti
   translatedPA_sat := PAInHF.standard_sat_translatedPAAx
   translatedHF_sat := PA.Formula.standard_sat_translatedHFAx
 
+/-- The same standard-model certificate, but with the strengthened finite-HF
+axiom theory on the HF side. -/
+noncomputable def standardModelFiniteInterpretation :
+    StandardModelFiniteInterpretationCertificate where
+  shallow := standardShallowBiInterpretation
+  paToHf := PAInHF.translateFormula
+  hfToPa := PA.Formula.translateHFFormula
+  paToHf_exact := PAInHF.translateFormula_exact
+  hfToPa_exact := PA.Formula.translateHFFormula_exact
+  paAxiom_sat := PAInHF.translated_PA_axiom_sat_codes
+  hfAxiom_sat := PA.Formula.translated_HFFin_axiom_sat_nat
+  translatedPA_sat := PAInHF.standard_sat_translatedPAAx
+  translatedHF_sat := PA.Formula.standard_sat_translatedHFFinAx
+
 theorem PA_standard_model_interpretable_with_HF :
     Nonempty StandardModelInterpretationCertificate :=
   ⟨standardModelInterpretation⟩
+
+theorem PA_standard_model_interpretable_with_HFFin :
+    Nonempty StandardModelFiniteInterpretationCertificate :=
+  ⟨standardModelFiniteInterpretation⟩
 
 theorem PA_biinterpretable_with_HF_standard :
     Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧
       Nonempty (AdjunctionIso standardModel ordinalHFModel) :=
   ⟨⟨standardShallowBiInterpretation.paRoundTrip⟩,
    ⟨standardShallowBiInterpretation.hfRoundTrip⟩⟩
+
+theorem PA_biinterpretable_with_HFFin_standard :
+    Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧
+      Nonempty (AdjunctionIso standardModel ordinalHFModel) :=
+  PA_biinterpretable_with_HF_standard
 
 end AckermannHF
 
