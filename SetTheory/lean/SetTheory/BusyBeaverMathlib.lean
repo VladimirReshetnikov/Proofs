@@ -1325,6 +1325,61 @@ theorem tm2to1MainOutput_replicate_cons_ne_default
   rw [hDefault] at hSome
   simp [PartrecToTM1Alphabet] at hSome
 
+private theorem block_offset_div {width i b : Nat} (hb : b < width) :
+    (i * width + b) / width = i := by
+  have hWidth : 0 < width := Nat.zero_lt_of_lt hb
+  rw [Nat.mul_comm i width]
+  rw [Nat.mul_add_div hWidth]
+  rw [Nat.div_eq_of_lt hb]
+  simp
+
+/--
+A unary-zero main-stack output of length `m`, after the finite-alphabet Bool
+encoding, yields `m` distinct true Bool output offsets.
+-/
+theorem tm2to1_tm1to1_unary_true_offsets {width : Nat}
+    (enc : PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a)
+    {tm1Output : Turing.ListBlank PartrecToTM1Alphabet}
+    {boolOutput : Turing.ListBlank Bool} {m : Nat}
+    (hMain : TM2to1MainOutput tm1Output
+      (Turing.PartrecToTM2.trList (List.replicate m 0)))
+    (hBool : TM1to1Output enc enc0 tm1Output boolOutput) :
+    ∃ offsets : List Nat,
+      offsets.Nodup ∧ offsets.length = m ∧
+        ∀ n, n ∈ offsets -> boolOutput.nth n = true := by
+  classical
+  have hMainCons : TM2to1MainOutput tm1Output
+      (List.replicate m Turing.PartrecToTM2.Γ'.cons) := by
+    simpa [trList_replicate_zero] using hMain
+  let bitWitness : (i : Fin m) -> ∃ bit : Fin width,
+      (enc (tm1Output.nth i.val)).get bit = true := fun i =>
+    encoded_nondefault_has_true enc dec enc0 encdec
+      (tm2to1MainOutput_replicate_cons_ne_default hMainCons i.isLt)
+  let bitOf : Fin m -> Fin width := fun i => Classical.choose (bitWitness i)
+  let offsets : List Nat := (List.finRange m).map fun i : Fin m =>
+    i.val * width + (bitOf i).val
+  refine ⟨offsets, ?_, ?_, ?_⟩
+  · dsimp [offsets]
+    exact (List.nodup_finRange m).map (by
+      intro a b hEq
+      apply Fin.ext
+      have hDiv := congrArg (fun n : Nat => n / width) hEq
+      have hA := block_offset_div (i := a.val) (b := (bitOf a).val) (bitOf a).isLt
+      have hB := block_offset_div (i := b.val) (b := (bitOf b).val) (bitOf b).isLt
+      simpa [hA, hB] using hDiv)
+  · dsimp [offsets]
+    simp
+  · intro n hn
+    dsimp [offsets] at hn
+    rw [List.mem_map] at hn
+    rcases hn with ⟨i, _hi, rfl⟩
+    have hBit : (enc (tm1Output.nth i.val)).get (bitOf i) = true :=
+      Classical.choose_spec (bitWitness i)
+    exact tm1to1Output_block_true hBool hBit
+
 end MathlibBridge
 
 /--
