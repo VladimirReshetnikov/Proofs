@@ -9704,6 +9704,18 @@ Proof.
   - apply rename_id.
 Qed.
 
+Lemma map_rename_S_eq_of_translatedPAAx_list : forall L,
+  (forall x, In x L -> translatedPAAx x) -> map (rename S) L = L.
+Proof.
+  induction L as [|x xs IH]; intros hL; simpl.
+  - reflexivity.
+  - rewrite (rename_eq_of_sentence x).
+    + rewrite (IH (fun y hy => hL y (or_intror hy))).
+      reflexivity.
+    + apply Sentences_translatedPAAx.
+      apply hL. simpl. left. reflexivity.
+Qed.
+
 Lemma BProv_translatedPAAx_of_PAAx : forall phi,
   PA.Formula.Ax_s phi -> BProv translatedPAAx [] (translateFormula phi).
 Proof.
@@ -9942,6 +9954,96 @@ Proof.
         apply in_app_iff. right. apply in_app_iff. right. exact hx.
       * left. exact hx.
       * right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_translate_allI_raw : forall G a,
+  BProv translatedPAAx (map (rename S) (translateContext G))
+    (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAll a)).
+Proof.
+  intros G a [L [hL hp]].
+  pose proof (map_rename_S_eq_of_translatedPAAx_list L hL) as hLmap.
+  change (BProv translatedPAAx (translateContext G)
+    (fAll (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))).
+  exists L.
+  split; [ exact hL | ].
+  apply P_allI.
+  apply (Prov_weaken
+    (L ++ map (rename S) (translateContext G))
+    (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)) hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  rewrite map_app.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left. rewrite hLmap. exact hx.
+  - right. exact hx.
+Qed.
+
+Lemma BProv_translate_exI_raw : forall G a k,
+  BProv translatedPAAx (translateContext G)
+    (rename (inst k)
+      (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a))) ->
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pEx a)).
+Proof.
+  intros G a k [L [hL hp]].
+  change (BProv translatedPAAx (translateContext G)
+    (fEx (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)))).
+  exists L.
+  split; [ exact hL | ].
+  exact (P_exI (L ++ translateContext G)
+    (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)) k hp).
+Qed.
+
+Lemma BProv_translate_exE_raw : forall G a c,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pEx a)) ->
+  BProv translatedPAAx
+    (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a) ::
+      map (rename S) (translateContext G))
+    (rename S (translateFormula c)) ->
+  BProv translatedPAAx (translateContext G) (translateFormula c).
+Proof.
+  intros G a c [Le [hLe hpe]] [Lb [hLb hpb]].
+  unfold translateFormula in hpe. simpl in hpe.
+  fold (formulaAt (upVarMap (fun n : nat => n)) a) in hpe.
+  pose proof (map_rename_S_eq_of_translatedPAAx_list Lb hLb) as hLbmap.
+  exists (Le ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ translateContext G)
+      (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a))
+      (translateFormula c)).
+    + apply (Prov_weaken (Le ++ translateContext G)
+        (fEx (fAnd domainForm
+          (formulaAt (upVarMap (fun n : nat => n)) a))) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken
+        (Lb ++
+          fAnd domainForm (formulaAt (upVarMap (fun n => n)) a) ::
+          map (rename S) (translateContext G))
+        (rename S (translateFormula c)) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. rewrite map_app. apply in_app_iff. left.
+        rewrite map_app. apply in_app_iff. right.
+        rewrite hLbmap. exact hx.
+      * left. exact hx.
+      * right. rewrite map_app. apply in_app_iff. right. exact hx.
 Qed.
 
 Record TheoryInterpretation
