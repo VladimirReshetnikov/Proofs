@@ -27,6 +27,9 @@ Module FermatFour.
 Definition Fermat42 (a b c : Z) : Prop :=
   a <> 0 /\ b <> 0 /\ (a ^ 4 + b ^ 4 = c ^ 2)%Z.
 
+Definition PythagoreanTriple (x y z : Z) : Prop :=
+  (x ^ 2 + y ^ 2 = z ^ 2)%Z.
+
 Definition cMeasure (c : Z) : nat :=
   Z.to_nat (Z.abs c).
 
@@ -52,6 +55,40 @@ Proof.
     repeat split; try assumption.
     rewrite Z.add_comm.
     exact h.
+Qed.
+
+Theorem Fermat42_scale {a b c k : Z} (hk : k <> 0) :
+    Fermat42 a b c <-> Fermat42 (k * a) (k * b) (k ^ 2 * c).
+Proof.
+  unfold Fermat42.
+  split.
+  - intros (ha & hb & h).
+    repeat split.
+    + intros hka. apply Z.mul_eq_0 in hka as [hk0 | ha0]; tauto.
+    + intros hkb. apply Z.mul_eq_0 in hkb as [hk0 | hb0]; tauto.
+    + replace ((k * a) ^ 4 + (k * b) ^ 4) with
+        (k ^ 4 * (a ^ 4 + b ^ 4)) by ring.
+      replace ((k ^ 2 * c) ^ 2) with (k ^ 4 * c ^ 2) by ring.
+      now rewrite h.
+  - intros (hka & hkb & h).
+    repeat split.
+    + intros ha. subst a. rewrite Z.mul_0_r in hka. contradiction.
+    + intros hb. subst b. rewrite Z.mul_0_r in hkb. contradiction.
+    + apply (Z.mul_cancel_l _ _ (k ^ 4)).
+      { apply Z.pow_nonzero; lia. }
+      replace (k ^ 4 * (a ^ 4 + b ^ 4)) with
+        ((k * a) ^ 4 + (k * b) ^ 4) by ring.
+      replace (k ^ 4 * c ^ 2) with ((k ^ 2 * c) ^ 2) by ring.
+      exact h.
+Qed.
+
+Theorem Fermat42_pythagorean_squares {a b c : Z} (h : Fermat42 a b c) :
+    PythagoreanTriple (a ^ 2) (b ^ 2) c.
+Proof.
+  destruct h as (_ & _ & h).
+  unfold PythagoreanTriple.
+  rewrite <- h.
+  ring.
 Qed.
 
 Lemma pow4_pos (a : Z) (ha : a <> 0) : 0 < a ^ 4.
