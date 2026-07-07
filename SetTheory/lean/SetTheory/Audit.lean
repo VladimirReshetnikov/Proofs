@@ -500,6 +500,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_ass
 #check @AckermannHF.PAInHF.BProv_translate_ax
 #check @AckermannHF.PAInHF.BProv_formulaAt_ax
+#check @AckermannHF.PAInHF.BProv_context_cons
+#check @AckermannHF.PAInHF.BProv_impI
 #check @AckermannHF.PAInHF.BProv_translate_impI
 #check @AckermannHF.PAInHF.BProv_formulaAt_impI
 #check @AckermannHF.PAInHF.BProv_translate_impE
@@ -523,6 +525,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.rename_eq_of_sentence
 #check @AckermannHF.PAInHF.BProv_translate_allI_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_allI_raw
+#check @AckermannHF.PAInHF.BProv_formulaAt_allI
 #check @AckermannHF.PAInHF.BProv_translate_allE_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_allE_raw
 #check @AckermannHF.PAInHF.BProv_translate_exI_raw

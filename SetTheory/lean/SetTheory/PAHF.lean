@@ -11134,6 +11134,30 @@ theorem BProv_formulaAt_ax {ρ : Nat → Nat} {phi : PA.Formula}
     (PA.Formula.sentence_ax_s hphi)]
   exact BProv_translate_ax hphi
 
+/-- A relative HF proof may ignore one extra finite-context assumption. -/
+theorem BProv_context_cons {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G b) : BProv B (a :: G) b :=
+  BProv_mono B G (a :: G) b
+    (fun _ hx => List.mem_cons.mpr (Or.inr hx)) h
+
+/-- Relative HF provability is closed under implication introduction. -/
+theorem BProv_impI {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B (a :: G) b) : BProv B G (fImp a b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  rw [List.mem_append] at hx
+  rcases hx with hx | hx
+  · exact List.mem_cons.mpr
+      (Or.inr (List.mem_append.mpr (Or.inl hx)))
+  · rw [List.mem_cons] at hx
+    rcases hx with hx | hx
+    · exact List.mem_cons.mpr (Or.inl hx)
+    · exact List.mem_cons.mpr
+        (Or.inr (List.mem_append.mpr (Or.inr hx)))
+
 /-- Translated implication introduction for the PA-in-HF translation. -/
 theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}
     (h : BProv translatedPAAx
@@ -11586,6 +11610,26 @@ theorem BProv_formulaAt_allI_raw {ρ : Nat → Nat} {G : List PA.Formula}
   rcases hx with hx | hx
   · exact Or.inl (by simpa [hLmap] using hx)
   · exact Or.inr hx
+
+/-- Translated universal introduction in the PA proof-rule shape.
+
+The premise is the recursive translation of PA's `allI` premise over
+`G.map (PA.Formula.rename Nat.succ)`.  The theorem inserts the relativizing
+domain antecedent and uses the context-renaming bridge to reach the raw HF
+rule. -/
+theorem BProv_formulaAt_allI {ρ : Nat → Nat} {G : List PA.Formula}
+    {a : PA.Formula}
+    (h : BProv translatedPAAx
+      (translateContextAt (upVarMap ρ) (G.map (PA.Formula.rename Nat.succ)))
+      (formulaAt (upVarMap ρ) a)) :
+    BProv translatedPAAx (translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.all a)) := by
+  have hshift : BProv translatedPAAx
+      ((translateContextAt ρ G).map (rename Nat.succ))
+      (formulaAt (upVarMap ρ) a) := by
+    simpa [translateContextAt_rename_succ_upVarMap] using h
+  exact BProv_formulaAt_allI_raw
+    (BProv_impI (BProv_context_cons hshift))
 
 /-- Raw translated universal elimination by an HF variable instance under an
 explicit slot map. -/
