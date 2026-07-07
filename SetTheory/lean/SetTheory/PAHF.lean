@@ -10915,6 +10915,69 @@ theorem BProv_translate_allI_raw {G : List PA.Formula} {a : PA.Formula}
   · exact Or.inl (by simpa [hLmap] using hx)
   · exact Or.inr hx
 
+/-- Raw translated existential introduction by an HF variable witness. -/
+theorem BProv_translate_exI_raw {G : List PA.Formula} {a : PA.Formula} {k : Nat}
+    (h : BProv translatedPAAx (translateContext G)
+      (rename (inst k)
+        (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)))) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.ex a)) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ translateContext G)
+    (fEx (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)))
+  exact Prov.P_exI _ _ k hp
+
+/-- Raw translated existential elimination.
+
+The branch premise is stated in the shifted HF context and proves the shifted
+conclusion, exactly matching the generic set-theory natural-deduction rule.
+The PA-level rule still needs the separate syntactic bridge that turns a PA
+renamed context into this shifted translated context. -/
+theorem BProv_translate_exE_raw {G : List PA.Formula} {a c : PA.Formula}
+    (hex : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.ex a)))
+    (hbody : BProv translatedPAAx
+      (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a) ::
+        (translateContext G).map (rename Nat.succ))
+      (rename Nat.succ (translateFormula c))) :
+    BProv translatedPAAx (translateContext G) (translateFormula c) := by
+  rcases hex with ⟨Le, hLe, hpe⟩
+  rcases hbody with ⟨Lb, hLb, hpb⟩
+  have hLbmap : Lb.map (rename Nat.succ) = Lb := by
+    calc
+      Lb.map (rename Nat.succ) = Lb.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact rename_eq_of_sentence (Sentences_translatedPAAx x (hLb x hx)) Nat.succ
+      _ = Lb := by simp
+  refine ⟨Le ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_exE _ (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a))
+      (translateFormula c)
+    · apply Prov_weaken hpe
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx
+      rcases hx with hx | hx
+      · apply List.mem_cons.mpr
+        apply Or.inr
+        simp only [List.map_append, List.mem_append]
+        apply Or.inl
+        exact Or.inr (by simpa [hLbmap] using hx)
+      · rw [List.mem_cons] at hx
+        rcases hx with hx | hx
+        · exact List.mem_cons.mpr (Or.inl hx)
+        · apply List.mem_cons.mpr
+          apply Or.inr
+          simp only [List.map_append, List.mem_append]
+          exact Or.inr hx
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
