@@ -209,6 +209,68 @@ Proof.
   lia.
 Qed.
 
+Theorem cwPair_succ (n : nat) : cwPair (n + 1) = pairNext (cwPair n).
+Proof.
+  induction n as [n ih] using lt_wf_ind.
+  destruct n as [|m].
+  - reflexivity.
+  - destruct (Nat.even m) eqn:heven.
+    + assert (hm : m = 2 * (m / 2)).
+      { assert (hodd : Nat.odd m = false).
+        { destruct (Nat.odd m) eqn:hodd; [|reflexivity].
+          rewrite <- Nat.negb_odd in heven.
+          rewrite hodd in heven.
+          discriminate.
+        }
+        pose proof (Nat.div2_odd m) as hsplit.
+        rewrite hodd in hsplit.
+        simpl in hsplit.
+        rewrite <- Nat.div2_div.
+        lia.
+      }
+      replace (S m + 1) with (2 * (m / 2) + 2) by lia.
+      replace (S m) with (2 * (m / 2) + 1) by lia.
+      rewrite cwPair_right.
+      rewrite cwPair_left.
+      pose proof (cwPair_pos (m / 2)) as hp.
+      destruct (cwPair (m / 2)) as [a b] eqn:Hp.
+      cbn [fst snd] in hp |- *.
+      rewrite pairNext_left_child by lia.
+      reflexivity.
+    + assert (hm : m = 2 * (m / 2) + 1).
+      { assert (hodd : Nat.odd m = true).
+        { destruct (Nat.odd m) eqn:hodd; [reflexivity|].
+          rewrite <- Nat.negb_odd in heven.
+          rewrite hodd in heven.
+          discriminate.
+        }
+        pose proof (Nat.div2_odd m) as hsplit.
+        rewrite hodd in hsplit.
+        simpl in hsplit.
+        rewrite <- Nat.div2_div.
+        lia.
+      }
+      replace (S m + 1) with (2 * (m / 2 + 1) + 1) by lia.
+      replace (S m) with (2 * (m / 2) + 2) by lia.
+      rewrite cwPair_left.
+      rewrite cwPair_right.
+      rewrite (ih (m / 2)) by apply div2_lt_succ.
+      pose proof (cwPair_pos (m / 2)) as hp.
+      destruct (cwPair (m / 2)) as [a b] eqn:Hp.
+      cbn [fst snd] in hp |- *.
+      unfold pairNext.
+      cbn [fst snd].
+      destruct hp as [_ hb].
+      assert (hdiv : (a + b) / b = a / b + 1).
+      { replace (a + b) with (1 * b + a) by lia.
+        rewrite Nat.div_add_l by lia.
+        lia.
+      }
+      rewrite hdiv.
+      f_equal.
+      exact (pairNext_right_child_arith hb).
+Qed.
+
 Theorem cwPair_first_values :
     map cwPair [0; 1; 2; 3; 4; 5; 6; 7] =
       [(1, 1); (1, 2); (2, 1); (1, 3);
