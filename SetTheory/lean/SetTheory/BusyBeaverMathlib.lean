@@ -1013,6 +1013,67 @@ theorem tm0_supported_eval_to_rado_halt_of_initial_reaches {Label : Type*} [Inha
   exact ⟨finalCfg, normalCfg, haltCfg, hOutput, hNormalRel, hHaltState, hHaltTape,
     hTypedHalt, tm0ToTypedRado_attainableScore (tm0SupportedMachine M hSupp) hTypedHalt⟩
 
+/--
+Lower-bound variant of `tm0_supported_eval_to_rado_halt_of_initial_reaches`:
+if the exposed right output has true bits at all offsets in a nodup list, then
+the resulting finite Rado machine has attainable score at least the length of
+that list.
+-/
+theorem tm0_supported_eval_to_rado_lowerBound_of_initial_reaches
+    {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label} [Fintype S]
+    (hSupp : Turing.TM0.Supports M S)
+    {input : List Bool} {output : Turing.ListBlank Bool}
+    {initCfg : TypedConfig (TM0RadoState S)} {offsets : List Nat}
+    (hEval : output ∈ Turing.TM0.eval M input)
+    (hInitRel : TM0RadoNormalRel
+      (@Turing.TM0.init Bool S (tm0SupportedInhabited M hSupp) inferInstance input)
+      initCfg)
+    (hInitReach : TypedRadoReaches
+      (@tm0ToTypedRado S (tm0SupportedInhabited M hSupp) (tm0SupportedMachine M hSupp))
+      ({ state := some (TM0RadoState.normal (@default S (tm0SupportedInhabited M hSupp))),
+          head := 0, tape := [] } : TypedConfig (TM0RadoState S))
+      initCfg)
+    (hOffsets : offsets.Nodup)
+    (hOutputTrue : ∀ n, n ∈ offsets -> output.nth n = true) :
+    ∃ score, offsets.length ≤ score ∧
+      AttainableScore (Fintype.card (TM0RadoState S)) score := by
+  letI : Inhabited S := tm0SupportedInhabited M hSupp
+  have hEvalRestrict := tm0SupportedMachine_eval_of_original M hSupp hEval
+  rcases tm0_eval_mem_terminal (tm0SupportedMachine M hSupp) hEvalRestrict with
+    ⟨finalCfg, hReach, hTerminal, hOutput⟩
+  rcases tm0ToTypedRado_reaches_halt_normal (tm0SupportedMachine M hSupp)
+      hReach hTerminal hInitRel with
+    ⟨normalCfg, haltCfg, hNormalRel, hHaltState, hHaltTape, hRadoReach⟩
+  have hReachFromBlank : TypedRadoReaches
+      (tm0ToTypedRado (tm0SupportedMachine M hSupp))
+      ({ state := some (TM0RadoState.normal (default : S)), head := 0, tape := [] } :
+        TypedConfig (TM0RadoState S)) haltCfg :=
+    Relation.ReflTransGen.trans hInitReach hRadoReach
+  let positions : Tape := radoPositionsOfNatOffsets normalCfg.head offsets
+  have hPositions : positions.Nodup := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_nodup hOffsets
+  have hOutputTrueFinal : ∀ n, n ∈ offsets -> finalCfg.Tape.right₀.nth n = true := by
+    intro n hn
+    rw [hOutput]
+    exact hOutputTrue n hn
+  have hReadNormal : ∀ pos, pos ∈ positions -> Tape.read normalCfg.tape pos = true := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_read_true hNormalRel.2 hOutputTrueFinal
+  have hRead : ∀ pos, pos ∈ positions -> Tape.read haltCfg.tape pos = true := by
+    intro pos hpos
+    rw [hHaltTape]
+    exact hReadNormal pos hpos
+  rcases typedRadoReaches_attainableLowerBound hReachFromBlank hHaltState hPositions hRead with
+    ⟨score, hLower, hScore⟩
+  have hLen : positions.length = offsets.length := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_length normalCfg.head offsets
+  refine ⟨score, ?_, hScore⟩
+  rw [← hLen]
+  exact hLower
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
