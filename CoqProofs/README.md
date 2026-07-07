@@ -26,6 +26,13 @@ Current ports:
   provide the exact `cos (π / 5)` value used by Lean/mathlib, so the port
   derives it locally from the triple-angle formula and the positive quadratic
   root.
+- `TinyExponentTower.v` ports the final floor-certification layer from
+  `TinyExponentTower.lean`: Coq defines the real power tower using `Rpower`,
+  proves that the expanded tower equals the compact named tower, factors the
+  top power as `10^n * exp x`, and proves a generic `Zfloor` theorem turning
+  explicit exponential/logarithmic increment bounds into the stated
+  `10^(10^10) + 2811012357389` floor.  The Lean module's long interval proof
+  of those logarithmic and exponential bounds is not yet replayed in Coq.
 - `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
   summation identity from `FloorSqrtSum.lean`.
 - `RationalFloorOrbit.v` ports the Calkin-Wilf pair generator core from
@@ -135,6 +142,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/Sheffer.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/TrigGoldenRatio.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/TinyExponentTower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/RationalFloorOrbit.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
