@@ -13811,6 +13811,25 @@ theorem Sat_domainContextAt_ordinalLike {α : Type u}
   exact (Sat_rename_inst_domainForm_ordinalLike e (ρ k)).mp
     (hctx _ (mem_domainContextAt (ρ := ρ) hk))
 
+/-- Conversely, ordinal-likeness for every selected PA variable makes the
+explicit PA-domain context true. -/
+theorem Sat_domainContextAt_of_ordinalLike {α : Type u}
+    {mem : α → α → Prop} {ρ : Nat → Nat} {n : Nat} {e : Nat → α}
+    (hord : ∀ k, k < n → OrdinalLike mem (e (ρ k))) :
+    ∀ g, g ∈ domainContextAt ρ n → Sat mem e g := by
+  induction n generalizing ρ with
+  | zero =>
+      intro g hg
+      simp [domainContextAt] at hg
+  | succ n ih =>
+      intro g hg
+      simp only [domainContextAt, List.mem_cons] at hg
+      rcases hg with rfl | hg
+      · exact (Sat_rename_inst_domainForm_ordinalLike e (ρ 0)).mpr
+          (hord 0 (by omega))
+      · exact ih (ρ := fun k => ρ (k+1))
+          (fun k hk => hord (k+1) (by omega)) g hg
+
 /-- A PA axiom, translated into HF, is an axiom of the intermediate
 `translatedPAAx` theory. -/
 theorem BProv_translate_ax {phi : PA.Formula} (hphi : PA.Formula.Ax_s phi) :
@@ -16023,6 +16042,61 @@ theorem BProv_HFFin_formulaAt_of_PA_BProv_domainContext
             (List.mem_append.mpr
               (Or.inr (mem_translateContextAt_of_mem (ρ := ρ) hpsi)))))
 
+/-- Closed PA theorems translate to finite HF theorems.
+
+The relative translator above keeps an explicit finite PA-domain prefix.  For a
+closed PA theorem, that prefix is discharged semantically: in any model of
+`HFFinAx_s`, the chosen HF empty object is ordinal-like, so a constant-empty
+assignment satisfies every formula in the prefix; sentence invariance then
+moves the conclusion back to the arbitrary assignment required by
+completeness. -/
+theorem BProv_HFFin_translateFormula_of_PA_BProv {phi : PA.Formula}
+    (hphi : PA.Formula.Sentence phi)
+    (h : PA.Formula.BProv PA.Formula.Ax_s [] phi) :
+    BProv HFFinAx_s [] (translateFormula phi) := by
+  rcases BProv_HFFin_formulaAt_of_PA_BProv_domainContext h with
+    ⟨n, htranslated⟩
+  apply completeness_inf HFFinAx_s
+  · exact Sentences_HFFin
+  · exact translateFormula_sentence_of_PA_sentence phi hphi
+  · intro Dom mem v hHF
+    let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+    let e0 : Nat → Dom := fun _ => M.empty
+    have hEmptyOrd : OrdinalLike mem M.empty := by
+      change OrdinalLike M.mem M.empty
+      exact FirstOrderAdjunctionModel.ordinalLike_empty
+        M.toFirstOrderAdjunctionModel
+    have hdomain :
+        ∀ g, g ∈ domainContextAt (fun k : Nat => k) n →
+          Sat mem e0 g :=
+      Sat_domainContextAt_of_ordinalLike
+        (ρ := fun k : Nat => k) (n := n) (e := e0)
+        (fun _ _ => hEmptyOrd)
+    have hcontext :
+        ∀ g,
+          g ∈ domainContextAt (fun k : Nat => k) n ++
+              translateContextAt (fun k : Nat => k) [] →
+          Sat mem e0 g := by
+      intro g hg
+      rw [List.mem_append] at hg
+      rcases hg with hg | hg
+      · exact hdomain g hg
+      · simp [translateContextAt] at hg
+    have hHF_e0 : ∀ g, HFFinAx_s g → Sat mem e0 g := by
+      intro g hg
+      exact (Sat_sentence_inv g (Sentences_HFFin g hg) v e0).mp
+        (hHF g hg)
+    have hsatFormulaAt :
+        Sat mem e0 (formulaAt (fun k : Nat => k) phi) :=
+      soundness_BProv (htranslated (fun k : Nat => k)) e0 hHF_e0
+        hcontext
+    have hsatTranslate :
+        Sat mem e0 (translateFormula phi) := by
+      simpa [formulaAt_eq_translateFormula_of_PA_sentence phi
+        (fun k : Nat => k) hphi] using hsatFormulaAt
+    exact (Sat_sentence_inv (translateFormula phi)
+      (translateFormula_sentence_of_PA_sentence phi hphi) e0 v).mp hsatTranslate
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
@@ -16192,6 +16266,24 @@ def paInHFFinOfTranslatedPATheoryInterpretation
       PA.Formula.BProv BProv :=
   TheoryInterpretation.comp I translatedPATheoryInHFFinInterpretation
     (fun {phi} hphi => PA.Formula.sentence_ax_s (f := phi) hphi)
+
+/-- Direct deductive interpretation of PA in strengthened finite HF using the
+Ackermann finite-ordinal translation. -/
+def paInHFFinTheoryInterpretation :
+    TheoryInterpretation PA.Formula Form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s HFFinAx_s
+      PA.Formula.BProv BProv where
+  translate := PAInHF.translateFormula
+  maps_sentence := by
+    intro phi hphi
+    exact PAInHF.translateFormula_sentence_of_PA_sentence phi hphi
+  maps_axiom := by
+    intro phi hphi
+    exact PAInHF.BProv_HFFin_translated_PA_axiom hphi
+  maps_theorem := by
+    intro phi hphi hprov
+    exact PAInHF.BProv_HFFin_translateFormula_of_PA_BProv hphi hprov
 
 /-- PA analogue of `setTheoryIdentityInterpretationOfAxiomProofs`. -/
 def paIdentityInterpretationOfAxiomProofs
