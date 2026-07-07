@@ -4536,6 +4536,28 @@ def instTerm (t : Term) : Nat → Term
   | 0 => t
   | n+1 => Term.var n
 
+/-- PA-term substitution by variables is just PA-term renaming. -/
+theorem term_subst_var_rename (t : Term) (r : Nat → Nat) :
+    Term.subst (fun n => Term.var (r n)) t = Term.rename r t := by
+  induction t with
+  | var n =>
+      rfl
+  | zero =>
+      rfl
+  | succ t ih =>
+      simp [Term.subst, Term.rename, ih]
+  | add a b iha ihb =>
+      simp [Term.subst, Term.rename, iha, ihb]
+  | mul a b iha ihb =>
+      simp [Term.subst, Term.rename, iha, ihb]
+
+/-- Substituting PA de Bruijn 0 by a variable is just PA-term renaming by the
+corresponding variable-instantiation map. -/
+theorem term_subst_instTerm_var (t : Term) (k : Nat) :
+    Term.subst (instTerm (Term.var k)) t = Term.rename (SetTheory.inst k) t := by
+  rw [← term_subst_var_rename t (SetTheory.inst k)]
+  exact Term.subst_ext t _ _ (fun n => by cases n <;> rfl)
+
 theorem Sat_rename {α : Type u} (M : Model α) (phi : Formula)
     (r : Nat → Nat) (e : Nat → α) :
     Sat M e (rename r phi) ↔ Sat M (fun n => e (r n)) phi := by
@@ -4705,6 +4727,47 @@ theorem rename_subst (phi : Formula) (r : Nat → Nat) (σ : Nat → Term) :
             simp [Term.upSubst]
             rw [Term.rename_comp, Term.rename_comp]
             exact Term.rename_ext (σ n) _ _ (fun k => rfl)))
+
+/-- PA-formula substitution by variables is just PA-formula renaming. -/
+theorem subst_var_rename (phi : Formula) (r : Nat → Nat) :
+    subst (fun n => Term.var (r n)) phi = rename r phi := by
+  induction phi generalizing r with
+  | eq a b =>
+      simp [subst, rename, term_subst_var_rename]
+  | bot =>
+      rfl
+  | imp a b iha ihb =>
+      simp [subst, rename, iha, ihb]
+  | and a b iha ihb =>
+      simp [subst, rename, iha, ihb]
+  | or a b iha ihb =>
+      simp [subst, rename, iha, ihb]
+  | all a ih =>
+      simp only [subst, rename]
+      apply congrArg all
+      have hsubst :
+          subst (Term.upSubst (fun n => Term.var (r n))) a =
+            subst (fun n => Term.var (SetTheory.up r n)) a := by
+        exact subst_ext a _ _ (fun n => by cases n <;> rfl)
+      rw [hsubst]
+      exact ih (SetTheory.up r)
+  | ex a ih =>
+      simp only [subst, rename]
+      apply congrArg ex
+      have hsubst :
+          subst (Term.upSubst (fun n => Term.var (r n))) a =
+            subst (fun n => Term.var (SetTheory.up r n)) a := by
+        exact subst_ext a _ _ (fun n => by cases n <;> rfl)
+      rw [hsubst]
+      exact ih (SetTheory.up r)
+
+/-- Substituting PA de Bruijn 0 by a variable is just PA-formula renaming by the
+corresponding variable-instantiation map. -/
+theorem subst_instTerm_var (phi : Formula) (k : Nat) :
+    subst (instTerm (Term.var k)) phi =
+      rename (SetTheory.inst k) phi := by
+  rw [← subst_var_rename phi (SetTheory.inst k)]
+  exact subst_ext phi _ _ (fun n => by cases n <;> rfl)
 
 theorem subst_instTerm_rename_up (phi : Formula) (r : Nat → Nat) (t : Term) :
     subst (instTerm (Term.rename r t)) (rename (SetTheory.up r) phi) =
@@ -9563,6 +9626,24 @@ theorem formulaAt_rename_succ_upVarMap (phi : PA.Formula) (ρ : Nat → Nat) :
     _ = rename Nat.succ (formulaAt ρ phi) := by
             exact (formulaAt_rename phi).symm
 
+/-- Translating PA substitution of de Bruijn 0 by a PA variable agrees with
+instantiating the translated body at the corresponding HF slot. -/
+theorem formulaAt_subst_instTerm_var (phi : PA.Formula) (ρ : Nat → Nat)
+    (k : Nat) :
+    formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) phi) =
+      rename (inst (ρ k)) (formulaAt (upVarMap ρ) phi) := by
+  calc
+    formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) phi)
+        = formulaAt ρ (PA.Formula.rename (SetTheory.inst k) phi) := by
+            rw [PA.Formula.subst_instTerm_var]
+    _ = formulaAt (fun n => ρ (SetTheory.inst k n)) phi := by
+            exact formulaAt_PA_rename phi
+    _ = formulaAt (fun n => SetTheory.inst (ρ k) (upVarMap ρ n)) phi := by
+            exact formulaAt_map_ext phi
+              (fun n => by cases n <;> simp [SetTheory.inst, upVarMap])
+    _ = rename (inst (ρ k)) (formulaAt (upVarMap ρ) phi) := by
+            exact (formulaAt_rename phi).symm
+
 theorem domainForm_scons_insertAt {α : Type u} {mem : α → α → Prop}
     (p : Nat) (x d : α) (e : Nat → α) :
     Sat mem (scons d (insertAt p x e)) domainForm ↔
@@ -11158,6 +11239,31 @@ theorem BProv_impI {B : Form → Prop} {G : List Form} {a b : Form}
     · exact List.mem_cons.mpr
         (Or.inr (List.mem_append.mpr (Or.inr hx)))
 
+/-- Relative HF provability is closed under conjunction introduction. -/
+theorem BProv_andI {B : Form → Prop} {G : List Form} {a b : Form}
+    (ha : BProv B G a) (hb : BProv B G b) : BProv B G (fAnd a b) := by
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hLa x hx
+    · exact hLb x hx
+  · apply Prov.P_andI
+    · apply Prov_weaken hpa
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
+      · exact Or.inr hx
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
+      · exact Or.inr hx
+
 /-- Translated implication introduction for the PA-in-HF translation. -/
 theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}
     (h : BProv translatedPAAx
@@ -11647,6 +11753,32 @@ theorem BProv_formulaAt_allE_raw {ρ : Nat → Nat} {G : List PA.Formula}
       (fImp domainForm (formulaAt (upVarMap ρ) a)))
   exact Prov.P_allE _ _ k hp
 
+/-- Translated universal elimination when PA instantiates by a variable.
+
+The domain premise is explicit: because PA quantifiers are interpreted by the
+finite-ordinal domain in HF, using a free PA variable as a witness requires a
+proof that the corresponding HF slot is in the interpreted domain. -/
+theorem BProv_formulaAt_allE_var {ρ : Nat → Nat} {G : List PA.Formula}
+    {a : PA.Formula} {k : Nat}
+    (hall : BProv translatedPAAx (translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.all a)))
+    (hdom : BProv translatedPAAx (translateContextAt ρ G)
+      (rename (inst (ρ k)) domainForm)) :
+    BProv translatedPAAx (translateContextAt ρ G)
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) a)) := by
+  have himp : BProv translatedPAAx (translateContextAt ρ G)
+      (fImp (rename (inst (ρ k)) domainForm)
+        (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a))) := by
+    simpa [rename] using
+      (BProv_formulaAt_allE_raw (ρ := ρ) (G := G) (a := a) (k := ρ k) hall)
+  have hbody : BProv translatedPAAx (translateContextAt ρ G)
+      (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a)) :=
+    BProv_mp translatedPAAx (translateContextAt ρ G)
+      (rename (inst (ρ k)) domainForm)
+      (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a)) himp hdom
+  rwa [formulaAt_subst_instTerm_var]
+
 /-- Raw translated existential introduction by an HF variable witness under an
 explicit slot map. -/
 theorem BProv_formulaAt_exI_raw {ρ : Nat → Nat} {G : List PA.Formula}
@@ -11661,6 +11793,29 @@ theorem BProv_formulaAt_exI_raw {ρ : Nat → Nat} {G : List PA.Formula}
   change Prov (L ++ translateContextAt ρ G)
     (fEx (fAnd domainForm (formulaAt (upVarMap ρ) a)))
   exact Prov.P_exI _ _ k hp
+
+/-- Translated existential introduction when PA supplies a variable witness.
+
+As for universal elimination, the domain proof is a separate premise rather
+than being hidden in the translation of formulas or contexts. -/
+theorem BProv_formulaAt_exI_var {ρ : Nat → Nat} {G : List PA.Formula}
+    {a : PA.Formula} {k : Nat}
+    (hdom : BProv translatedPAAx (translateContextAt ρ G)
+      (rename (inst (ρ k)) domainForm))
+    (hbody : BProv translatedPAAx (translateContextAt ρ G)
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var k)) a))) :
+    BProv translatedPAAx (translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.ex a)) := by
+  have hbody' : BProv translatedPAAx (translateContextAt ρ G)
+      (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a)) := by
+    rwa [formulaAt_subst_instTerm_var] at hbody
+  have hand : BProv translatedPAAx (translateContextAt ρ G)
+      (fAnd (rename (inst (ρ k)) domainForm)
+        (rename (inst (ρ k)) (formulaAt (upVarMap ρ) a))) :=
+    BProv_andI hdom hbody'
+  exact BProv_formulaAt_exI_raw (ρ := ρ) (G := G) (a := a) (k := ρ k)
+    (by simpa [rename] using hand)
 
 /-- Raw translated existential elimination under an explicit slot map. -/
 theorem BProv_formulaAt_exE_raw {ρ : Nat → Nat} {G : List PA.Formula}

@@ -50,6 +50,10 @@ open SetTheory
 #check @PA.Formula.subst_rename
 #check @PA.Formula.rename_subst
 #check @PA.Formula.subst_instTerm_rename_up
+#check @PA.Formula.term_subst_var_rename
+#check @PA.Formula.subst_var_rename
+#check @PA.Formula.term_subst_instTerm_var
+#check @PA.Formula.subst_instTerm_var
 #check @PA.Formula.Prov_rename
 #check @PA.Formula.Prov_cut
 #check @PA.Formula.soundness
@@ -469,6 +473,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.rename_domainForm_up
 #check @AckermannHF.PAInHF.formulaAt_rename
 #check @AckermannHF.PAInHF.formulaAt_rename_succ_upVarMap
+#check @AckermannHF.PAInHF.formulaAt_subst_instTerm_var
 #check @AckermannHF.PAInHF.formulaAt_map_ext_free
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
 #check @AckermannHF.PAInHF.translateFormula_sentence_of_PA_sentence
@@ -502,6 +507,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_ax
 #check @AckermannHF.PAInHF.BProv_context_cons
 #check @AckermannHF.PAInHF.BProv_impI
+#check @AckermannHF.PAInHF.BProv_andI
 #check @AckermannHF.PAInHF.BProv_translate_impI
 #check @AckermannHF.PAInHF.BProv_formulaAt_impI
 #check @AckermannHF.PAInHF.BProv_translate_impE
@@ -528,8 +534,10 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_allI
 #check @AckermannHF.PAInHF.BProv_translate_allE_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_allE_raw
+#check @AckermannHF.PAInHF.BProv_formulaAt_allE_var
 #check @AckermannHF.PAInHF.BProv_translate_exI_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_exI_raw
+#check @AckermannHF.PAInHF.BProv_formulaAt_exI_var
 #check @AckermannHF.PAInHF.BProv_translate_exE_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_exE_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_exE
