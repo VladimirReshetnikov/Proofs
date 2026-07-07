@@ -550,6 +550,7 @@ open SetTheory
 #check @AckermannHF.paIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
+#check AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
 #check @AckermannHF.StandardModelInterpretationCertificate
 #check @AckermannHF.standardModelInterpretation
 #check @AckermannHF.PA_standard_model_interpretable_with_HF

@@ -10675,33 +10675,40 @@ def paIdentityInterpretationOfAxiomProofs
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
 
-/-- The exact target for the deductive PA/HF bi-interpretability theorem.
+/-- The exact target for a deductive PA/HF bi-interpretability theorem.
 
 Unlike `StandardModelInterpretationCertificate`, this record is not inhabited
 in this file.  It states the remaining proof obligations at the theory level:
 both syntactic translations must transfer theorems between the PA axiom theory
-and the HF axiom theory, and the two composites must be provably equivalent to
-the identity translations on sentences. -/
-structure DeductiveBiInterpretationCertificate (PAProv : PAProvability) where
+and the chosen HF-side axiom theory, and the two composites must be provably
+equivalent to the identity translations on sentences. -/
+structure DeductiveBiInterpretationCertificate
+    (HFAxTarget : Form → Prop) (PAProv : PAProvability) where
   paInHf : TheoryInterpretation PA.Formula Form
     PA.Formula.Sentence Sentence
-    PA.Formula.Ax_s HFAx_s
+    PA.Formula.Ax_s HFAxTarget
     PAProv BProv
   hfInPa : TheoryInterpretation Form PA.Formula
     Sentence PA.Formula.Sentence
-    HFAx_s PA.Formula.Ax_s
+    HFAxTarget PA.Formula.Ax_s
     BProv PAProv
   pa_roundTrip : ∀ (phi : PA.Formula), phi.Sentence →
     PAProv PA.Formula.Ax_s []
       (PA.Formula.iffForm phi (hfInPa.translate (paInHf.translate phi)))
   hf_roundTrip : ∀ (phi : Form), Sentence phi →
-    BProv HFAx_s []
+    BProv HFAxTarget []
       (fIff phi (paInHf.translate (hfInPa.translate phi)))
 
 /-- The concrete deductive target using the PA natural-deduction calculus
-defined above and the existing HF calculus from `SetTheory.Completeness`. -/
+defined above, for the foundation-style HF theory. -/
 abbrev PAHFDeductiveBiInterpretationCertificate : Type :=
-  DeductiveBiInterpretationCertificate PA.Formula.BProv
+  DeductiveBiInterpretationCertificate HFAx_s PA.Formula.BProv
+
+/-- The concrete deductive target for PA and the strengthened hereditary-finite
+set theory `HFFinAx_s`.  This is the target relevant to the PA/HF theorem:
+`HFAx_s` alone still has infinite ZF-style models. -/
+abbrev PAHFFinDeductiveBiInterpretationCertificate : Type :=
+  DeductiveBiInterpretationCertificate HFFinAx_s PA.Formula.BProv
 
 /-- A standard-model interpretation certificate with the actual syntactic
 translations attached.  The exactness fields say that the translations have the
