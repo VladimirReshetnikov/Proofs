@@ -38,6 +38,9 @@ open SetTheory
 #check @PA.Formula.sat_axiom_s
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
+#check @AckermannHF.HF_emptyAt_empty
+#check @AckermannHF.HF_adjoinAt_adjoin
+#check @AckermannHF.HF_succAt_spec
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF
