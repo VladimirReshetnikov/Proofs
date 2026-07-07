@@ -3445,6 +3445,244 @@ Proof.
     apply ordinal_code_ordinal_like.
 Qed.
 
+Fixpoint succ_iter_obj (s n : nat) : nat :=
+  match n with
+  | 0 => s
+  | S k => hf_adjoin (succ_iter_obj s k) (succ_iter_obj s k)
+  end.
+
+Lemma succ_iter_obj_ordinal_code : forall m n,
+  succ_iter_obj (ordinal_code m) n = ordinal_code (m + n).
+Proof.
+  intros m n.
+  induction n as [|n IH].
+  - simpl. rewrite Nat.add_0_r. reflexivity.
+  - simpl. rewrite IH. rewrite Nat.add_succ_r. reflexivity.
+Qed.
+
+Fixpoint succ_rec_trace (s n : nat) : nat :=
+  match n with
+  | 0 =>
+      hf_single_obj ackermannHFModel
+        (hf_kpair_obj ackermannHFModel hf_empty s)
+  | S k =>
+      hf_adjoin
+        (hf_kpair_obj ackermannHFModel
+          (ordinal_code (S k)) (succ_iter_obj s (S k)))
+        (succ_rec_trace s k)
+  end.
+
+Lemma succ_rec_trace_mem_iff : forall s p n,
+  hf_mem p (succ_rec_trace s n) <->
+    exists k, k <= n /\
+      p = hf_kpair_obj ackermannHFModel
+        (ordinal_code k) (succ_iter_obj s k).
+Proof.
+  intros s p n.
+  induction n as [|n IH].
+  - simpl.
+    split.
+    + intro hp.
+      pose proof (proj1 (hf_single_spec ackermannHFModel
+        (hf_kpair_obj ackermannHFModel hf_empty s) p) hp) as hp'.
+      exists 0.
+      split; [lia |].
+      simpl. exact hp'.
+    + intros [k [hk hp]].
+      assert (k = 0) by lia.
+      subst k.
+      apply (proj2 (hf_single_spec ackermannHFModel
+        (hf_kpair_obj ackermannHFModel hf_empty s) p)).
+      simpl in hp. exact hp.
+  - simpl.
+    rewrite hf_mem_adjoin.
+    rewrite IH.
+    split.
+    + intros [[k [hk hp]] | hp].
+      * exists k. split; [lia | exact hp].
+      * exists (S n). split; [lia | exact hp].
+    + intros [k [hk hp]].
+      destruct (Nat.eq_dec k (S n)) as [heq | hne].
+      * right. subst k. exact hp.
+      * left. exists k. split; [lia | exact hp].
+Qed.
+
+Lemma succ_rec_trace_pair_mem : forall s k n,
+  k <= n ->
+  hf_mem
+    (hf_kpair_obj ackermannHFModel
+      (ordinal_code k) (succ_iter_obj s k))
+    (succ_rec_trace s n).
+Proof.
+  intros s k n hk.
+  apply (proj2 (succ_rec_trace_mem_iff s
+    (hf_kpair_obj ackermannHFModel
+      (ordinal_code k) (succ_iter_obj s k)) n)).
+  exists k. split; [exact hk | reflexivity].
+Qed.
+
+Lemma succ_rec_trace_functional : forall s n,
+  hf_pair_functional ackermannHFModel (succ_rec_trace s n).
+Proof.
+  unfold hf_pair_functional.
+  intros s n k y y' hky hky'.
+  destruct (proj1 (succ_rec_trace_mem_iff s
+    (hf_kpair_obj ackermannHFModel k y) n) hky)
+    as [i [_hi hpair_i]].
+  destruct (proj1 (succ_rec_trace_mem_iff s
+    (hf_kpair_obj ackermannHFModel k y') n) hky')
+    as [j [_hj hpair_j]].
+  destruct (hf_kpair_injective ackermannHFModel
+    k y (ordinal_code i) (succ_iter_obj s i) hpair_i)
+    as [hk_i hy_i].
+  destruct (hf_kpair_injective ackermannHFModel
+    k y' (ordinal_code j) (succ_iter_obj s j) hpair_j)
+    as [hk_j hy_j].
+  assert (hij : i = j).
+  {
+    apply ordinal_code_injective.
+    rewrite <- hk_i.
+    rewrite <- hk_j.
+    reflexivity.
+  }
+  rewrite hy_i, hy_j, hij.
+  reflexivity.
+Qed.
+
+Lemma succ_rec_trace_keys_below_succ : forall s n,
+  hf_pair_keys_below_succ ackermannHFModel
+    (succ_rec_trace s n) (ordinal_code n).
+Proof.
+  unfold hf_pair_keys_below_succ.
+  intros s n k y hky.
+  destruct (proj1 (succ_rec_trace_mem_iff s
+    (hf_kpair_obj ackermannHFModel k y) n) hky)
+    as [i [hi hpair_i]].
+  destruct (hf_kpair_injective ackermannHFModel
+    k y (ordinal_code i) (succ_iter_obj s i) hpair_i)
+    as [hk_i _hy_i].
+  rewrite hk_i.
+  destruct (Nat.eq_dec i n) as [heq | hne].
+  - right. now subst i.
+  - left. apply ordinal_code_mem_of_lt. lia.
+Qed.
+
+Lemma succ_rec_trace_total_below_succ : forall s n,
+  hf_pair_total_below_succ ackermannHFModel
+    (succ_rec_trace s n) (ordinal_code n).
+Proof.
+  unfold hf_pair_total_below_succ.
+  intros s n k hk.
+  destruct hk as [hmem | heq].
+  - destruct (proj1 (hf_mem_ordinal_code_iff k n) hmem) as [i [hi hk_eq]].
+    subst k.
+    exists (succ_iter_obj s i).
+    apply succ_rec_trace_pair_mem.
+    lia.
+  - subst k.
+    exists (succ_iter_obj s n).
+    apply succ_rec_trace_pair_mem.
+    lia.
+Qed.
+
+Lemma succ_rec_trace_succ_step : forall s n,
+  hf_pair_succ_step ackermannHFModel
+    (succ_rec_trace s n) (ordinal_code n).
+Proof.
+  unfold hf_pair_succ_step.
+  intros s n k t y hkm hkt hsy.
+  destruct (proj1 (hf_mem_ordinal_code_iff k n) hkm) as [i [_hi hk_eq]].
+  destruct (proj1 (succ_rec_trace_mem_iff s
+    (hf_kpair_obj ackermannHFModel k t) n) hkt)
+    as [j [_hj hpair_j]].
+  destruct (hf_kpair_injective ackermannHFModel
+    k t (ordinal_code j) (succ_iter_obj s j) hpair_j)
+    as [hk_j ht_j].
+  assert (hij : i = j).
+  {
+    apply ordinal_code_injective.
+    rewrite <- hk_eq.
+    rewrite <- hk_j.
+    reflexivity.
+  }
+  assert (hsucck : hf_adjoin k k = ordinal_code (S i)).
+  {
+    rewrite hk_eq.
+    reflexivity.
+  }
+  destruct (proj1 (succ_rec_trace_mem_iff s
+    (hf_kpair_obj ackermannHFModel (hf_adjoin k k) y) n) hsy)
+    as [l [_hl hpair_l]].
+  destruct (hf_kpair_injective ackermannHFModel
+    (hf_adjoin k k) y (ordinal_code l) (succ_iter_obj s l) hpair_l)
+    as [hkey_l hy_l].
+  assert (hil : S i = l).
+  {
+    apply ordinal_code_injective.
+    rewrite <- hsucck.
+    exact hkey_l.
+  }
+  rewrite hy_l.
+  rewrite <- hil.
+  rewrite ht_j.
+  rewrite <- hij.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma succ_rec_trace_succ_rec_approx : forall s n,
+  hf_succ_rec_approx ackermannHFModel
+    s (succ_rec_trace s n) (ordinal_code n).
+Proof.
+  intros s n.
+  unfold hf_succ_rec_approx.
+  repeat split.
+  - apply succ_rec_trace_functional.
+  - apply succ_rec_trace_keys_below_succ.
+  - change (hf_mem
+      (hf_kpair_obj ackermannHFModel (ordinal_code 0) (succ_iter_obj s 0))
+      (succ_rec_trace s n)).
+    apply succ_rec_trace_pair_mem.
+    lia.
+  - apply succ_rec_trace_total_below_succ.
+  - apply succ_rec_trace_succ_step.
+Qed.
+
+Lemma succ_rec_approx_value_of_le : forall s f n N y,
+  hf_succ_rec_approx ackermannHFModel s f (ordinal_code N) ->
+  n <= N ->
+  hf_mem (hf_kpair_obj ackermannHFModel (ordinal_code n) y) f ->
+  y = succ_iter_obj s n.
+Proof.
+  intros s f n.
+  induction n as [|n IH]; intros N y hA hn hy.
+  - destruct hA as [hfun [_hkeys [hbase [_htotal _hstep]]]].
+    pose proof (hfun (ordinal_code 0) y s hy hbase) as hy_eq.
+    simpl in hy_eq.
+    exact hy_eq.
+  - pose proof hA as hA'.
+    destruct hA as [_hfun [_hkeys [_hbase [htotal hstep]]]].
+    assert (hnlt : n < N) by lia.
+    destruct (htotal (ordinal_code n)
+      (or_introl (ordinal_code_mem_of_lt n N hnlt))) as [t ht].
+    assert (hnle : n <= N) by lia.
+    pose proof (IH N t hA' hnle ht) as htval.
+    assert (hysucc :
+        hf_mem
+          (hf_kpair_obj ackermannHFModel
+            (hf_adjoin (ordinal_code n) (ordinal_code n)) y) f).
+    {
+      change (hf_mem
+        (hf_kpair_obj ackermannHFModel (ordinal_code (S n)) y) f).
+      exact hy.
+    }
+    pose proof (hstep (ordinal_code n) t y
+      (ordinal_code_mem_of_lt n N hnlt) ht hysucc) as hstepval.
+    rewrite hstepval, htval.
+    simpl.
+    reflexivity.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
