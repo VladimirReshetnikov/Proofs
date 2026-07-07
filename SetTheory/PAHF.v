@@ -6341,6 +6341,104 @@ Definition div2StepAt (value half bit : nat) : formula :=
     (pEq (tVar value)
       (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))).
 
+Definition remAt (rem value modulus : nat) : formula :=
+  pEx (pAnd
+    (ltAt (S rem) (S modulus))
+    (pEq (tVar (S value))
+      (tAdd (tMul (tVar 0) (tVar (S modulus)))
+        (tVar (S rem))))).
+
+Definition betaModTerm (step idx : nat) : term :=
+  tSucc (tMul (tSucc (tVar idx)) (tVar step)).
+
+Definition betaAt (out code step idx : nat) : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
+    (remAt (S out) (S code) 0)).
+
+Definition betaAtConstIdx (out code step idxValue : nat) : formula :=
+  pEx (pAnd (eqConstAt 0 idxValue)
+    (betaAt (S out) (S code) (S step) 0)).
+
+Definition betaAtSuccIdx (out code step idx : nat) : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (tSucc (tVar (S idx))))
+    (betaAt (S out) (S code) (S step) 0)).
+
+Definition BetaModulus (step idx : nat) : nat :=
+  1 + S idx * step.
+
+Definition BetaEntry (code step idx value : nat) : Prop :=
+  exists q, code = q * BetaModulus step idx + value /\
+    value < BetaModulus step idx.
+
+Fixpoint betaFact (n : nat) : nat :=
+  match n with
+  | 0 => 1
+  | S k => S k * betaFact k
+  end.
+
+Fixpoint BetaModuliProduct (step n : nat) : nat :=
+  match n with
+  | 0 => 1
+  | S k => BetaModuliProduct step k * BetaModulus step k
+  end.
+
+Definition BetaDiv2Step
+    (code step idx cur next bit : nat) : Prop :=
+  BetaEntry code step idx cur /\
+    BetaEntry code step (S idx) next /\
+      (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+
+Definition BetaDiv2StepsThrough (code step last : nat) : Prop :=
+  forall k, k <= last ->
+    exists cur next bit, BetaDiv2Step code step k cur next bit.
+
+Definition BetaDiv2Bit (code step idx bit : nat) : Prop :=
+  exists cur next, BetaDiv2Step code step idx cur next bit.
+
+Definition HFMemTrace (elem set code step : nat) : Prop :=
+  BetaEntry code step 0 set /\
+    BetaDiv2StepsThrough code step elem /\
+      BetaDiv2Bit code step elem 1.
+
+Definition betaDiv2StepWitnessAt (code step idx : nat) : formula :=
+  pEx (pEx (pEx
+    (pAnd
+      (betaAt 2 (S (S (S code))) (S (S (S step)))
+        (S (S (S idx))))
+      (pAnd
+        (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+          (S (S (S idx))))
+        (div2StepAt 2 1 0))))).
+
+Definition betaDiv2StepAt (code step limit : nat) : formula :=
+  pAll (pImp (ltAt 0 (S limit))
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
+Definition betaDiv2StepsThroughAt (code step last : nat) : formula :=
+  pAll (pImp (leAt 0 (S last))
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
+Definition betaDiv2BitAt (bit code step idx : nat) : formula :=
+  pEx (pEx
+    (pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit)))))).
+
+Definition hfMemAt (elem set : nat) : formula :=
+  pEx (pEx
+    (pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      (pAnd
+        (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
+
 Lemma leAt_nat : forall (e : nat -> nat) a b,
   Sat natModel e (leAt a b) <-> e a <= e b.
 Proof.
@@ -6462,6 +6560,358 @@ Proof.
   split; intros [hbit hval].
   - split; [exact hbit | lia].
   - split; [exact hbit | lia].
+Qed.
+
+Lemma betaModTerm_nat : forall (e : nat -> nat) step idx,
+  Term.eval natModel e (betaModTerm step idx) =
+    1 + S (e idx) * e step.
+Proof.
+  intros e step idx.
+  unfold betaModTerm. simpl.
+  lia.
+Qed.
+
+Lemma remAt_nat : forall (e : nat -> nat) rem value modulus,
+  Sat natModel e (remAt rem value modulus) <->
+    exists q, e value = q * e modulus + e rem /\
+      e rem < e modulus.
+Proof.
+  intros e rem value modulus.
+  unfold remAt. simpl.
+  split.
+  - intros [q [hlt hval]].
+    exists q.
+    split.
+    + exact hval.
+    + exact (proj1 (ltAt_nat (scons nat q e) (S rem) (S modulus)) hlt).
+  - intros [q [hval hlt]].
+    exists q.
+    split.
+    + exact (proj2 (ltAt_nat (scons nat q e) (S rem) (S modulus)) hlt).
+    + exact hval.
+Qed.
+
+Lemma betaAt_nat : forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAt out code step idx) <->
+    exists q,
+      e code = q * (1 + S (e idx) * e step) + e out /\
+        e out < 1 + S (e idx) * e step.
+Proof.
+  intros e out code step idx.
+  unfold betaAt. simpl.
+  split.
+  - intros [m [hmod hrem]].
+    assert (hm : m = 1 + S (e idx) * e step).
+    {
+      unfold betaModTerm in hmod. simpl in hmod. lia.
+    }
+    destruct (proj1 (remAt_nat (scons nat m e) (S out) (S code) 0) hrem)
+      as [q [hval hlt]].
+    exists q.
+    subst m.
+    split; simpl in *; assumption.
+  - intros [q [hval hlt]].
+    exists (1 + S (e idx) * e step).
+    split.
+    + unfold betaModTerm. simpl. lia.
+    + apply (proj2 (remAt_nat (scons nat (1 + S (e idx) * e step) e)
+        (S out) (S code) 0)).
+      exists q.
+      split; simpl; assumption.
+Qed.
+
+Lemma betaAtConstIdx_nat : forall (e : nat -> nat) out code step idxValue,
+  Sat natModel e (betaAtConstIdx out code step idxValue) <->
+    exists q,
+      e code = q * (1 + S idxValue * e step) + e out /\
+        e out < 1 + S idxValue * e step.
+Proof.
+  intros e out code step idxValue.
+  unfold betaAtConstIdx. simpl.
+  split.
+  - intros [i [hi hbeta]].
+    pose proof (proj1 (eqConstAt_nat (scons nat i e) 0 idxValue) hi) as hi'.
+    simpl in hi'.
+    subst i.
+    destruct (proj1 (betaAt_nat (scons nat idxValue e)
+        (S out) (S code) (S step) 0) hbeta) as [q [hval hlt]].
+    exists q.
+    split; simpl in *; assumption.
+  - intros [q [hval hlt]].
+    exists idxValue.
+    split.
+    + exact (proj2 (eqConstAt_nat (scons nat idxValue e) 0 idxValue) eq_refl).
+    + apply (proj2 (betaAt_nat (scons nat idxValue e)
+        (S out) (S code) (S step) 0)).
+      exists q.
+      split; simpl; assumption.
+Qed.
+
+Lemma betaAtSuccIdx_nat : forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAtSuccIdx out code step idx) <->
+    exists q,
+      e code = q * (1 + S (S (e idx)) * e step) + e out /\
+        e out < 1 + S (S (e idx)) * e step.
+Proof.
+  intros e out code step idx.
+  unfold betaAtSuccIdx. simpl.
+  split.
+  - intros [i [hi hbeta]].
+    assert (hi' : i = S (e idx)) by exact hi.
+    subst i.
+    destruct (proj1 (betaAt_nat (scons nat (S (e idx)) e)
+        (S out) (S code) (S step) 0) hbeta) as [q [hval hlt]].
+    exists q.
+    split; simpl in *; assumption.
+  - intros [q [hval hlt]].
+    exists (S (e idx)).
+    split.
+    + reflexivity.
+    + apply (proj2 (betaAt_nat (scons nat (S (e idx)) e)
+        (S out) (S code) (S step) 0)).
+      exists q.
+      split; simpl; assumption.
+Qed.
+
+Lemma betaAt_nat_entry : forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAt out code step idx) <->
+    BetaEntry (e code) (e step) (e idx) (e out).
+Proof.
+  intros e out code step idx.
+  unfold BetaEntry, BetaModulus.
+  apply betaAt_nat.
+Qed.
+
+Lemma betaAtConstIdx_nat_entry :
+    forall (e : nat -> nat) out code step idxValue,
+  Sat natModel e (betaAtConstIdx out code step idxValue) <->
+    BetaEntry (e code) (e step) idxValue (e out).
+Proof.
+  intros e out code step idxValue.
+  unfold BetaEntry, BetaModulus.
+  apply betaAtConstIdx_nat.
+Qed.
+
+Lemma betaAtSuccIdx_nat_entry :
+    forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaAtSuccIdx out code step idx) <->
+    BetaEntry (e code) (e step) (S (e idx)) (e out).
+Proof.
+  intros e out code step idx.
+  unfold BetaEntry, BetaModulus.
+  apply betaAtSuccIdx_nat.
+Qed.
+
+Lemma betaDiv2StepWitnessAt_nat :
+    forall (e : nat -> nat) code step idx,
+  Sat natModel e (betaDiv2StepWitnessAt code step idx) <->
+    exists cur next bit,
+      BetaEntry (e code) (e step) (e idx) cur /\
+      BetaEntry (e code) (e step) (S (e idx)) next /\
+      (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step idx.
+  unfold betaDiv2StepWitnessAt. simpl.
+  split.
+  - intros [cur [next [bit [hcur [hnext hstep]]]]].
+    pose proof (proj1 (betaAt_nat_entry
+      (scons nat bit (scons nat next (scons nat cur e)))
+      2 (S (S (S code))) (S (S (S step))) (S (S (S idx)))) hcur)
+      as hcur'.
+    pose proof (proj1 (betaAtSuccIdx_nat_entry
+      (scons nat bit (scons nat next (scons nat cur e)))
+      1 (S (S (S code))) (S (S (S step))) (S (S (S idx)))) hnext)
+      as hnext'.
+    pose proof (proj1 (div2StepAt_nat
+      (scons nat bit (scons nat next (scons nat cur e))) 2 1 0) hstep)
+      as hstep'.
+    simpl in hcur', hnext', hstep'.
+    destruct hstep' as [hbit hval].
+    exists cur, next, bit.
+    repeat split; assumption.
+  - intros [cur [next [bit [hcur [hnext [hbit hval]]]]]].
+    exists cur, next, bit.
+    split.
+    + apply (proj2 (betaAt_nat_entry
+        (scons nat bit (scons nat next (scons nat cur e)))
+        2 (S (S (S code))) (S (S (S step))) (S (S (S idx))))).
+      simpl. exact hcur.
+    + split.
+      * apply (proj2 (betaAtSuccIdx_nat_entry
+          (scons nat bit (scons nat next (scons nat cur e)))
+          1 (S (S (S code))) (S (S (S step))) (S (S (S idx))))).
+        simpl. exact hnext.
+      * apply (proj2 (div2StepAt_nat
+          (scons nat bit (scons nat next (scons nat cur e))) 2 1 0)).
+        simpl. split; assumption.
+Qed.
+
+Lemma betaDiv2StepAt_nat : forall (e : nat -> nat) code step limit,
+  Sat natModel e (betaDiv2StepAt code step limit) <->
+    forall k, k < e limit ->
+      exists cur next bit,
+        BetaEntry (e code) (e step) k cur /\
+        BetaEntry (e code) (e step) (S k) next /\
+        (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step limit.
+  unfold betaDiv2StepAt. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat : Sat natModel (scons nat k e) (ltAt 0 (S limit))).
+    {
+      apply (proj2 (ltAt_nat (scons nat k e) 0 (S limit))).
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0) (h k hkSat)) as hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k < e limit).
+    {
+      pose proof (proj1 (ltAt_nat (scons nat k e) 0 (S limit)) hkSat)
+        as hlt.
+      simpl in hlt. exact hlt.
+    }
+    apply (proj2 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0)).
+    simpl. exact (h k hk).
+Qed.
+
+Lemma betaDiv2StepsThroughAt_nat :
+    forall (e : nat -> nat) code step last,
+  Sat natModel e (betaDiv2StepsThroughAt code step last) <->
+    forall k, k <= e last ->
+      exists cur next bit,
+        BetaEntry (e code) (e step) k cur /\
+        BetaEntry (e code) (e step) (S k) next /\
+        (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step last.
+  unfold betaDiv2StepsThroughAt. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat : Sat natModel (scons nat k e) (leAt 0 (S last))).
+    {
+      apply (proj2 (leAt_nat (scons nat k e) 0 (S last))).
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0) (h k hkSat)) as hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k <= e last).
+    {
+      pose proof (proj1 (leAt_nat (scons nat k e) 0 (S last)) hkSat)
+        as hle.
+      simpl in hle. exact hle.
+    }
+    apply (proj2 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0)).
+    simpl. exact (h k hk).
+Qed.
+
+Lemma betaDiv2BitAt_nat : forall (e : nat -> nat) bit code step idx,
+  Sat natModel e (betaDiv2BitAt bit code step idx) <->
+    BetaDiv2Bit (e code) (e step) (e idx) (e bit).
+Proof.
+  intros e bit code step idx.
+  unfold betaDiv2BitAt, BetaDiv2Bit. simpl.
+  split.
+  - intros [cur [next [hcur [hnext hstep]]]].
+    pose proof (proj1 (betaAt_nat_entry
+      (scons nat next (scons nat cur e))
+      1 (S (S code)) (S (S step)) (S (S idx))) hcur) as hcur'.
+    pose proof (proj1 (betaAtSuccIdx_nat_entry
+      (scons nat next (scons nat cur e))
+      0 (S (S code)) (S (S step)) (S (S idx))) hnext) as hnext'.
+    pose proof (proj1 (div2StepAt_nat
+      (scons nat next (scons nat cur e)) 1 0 (S (S bit))) hstep)
+      as hstep'.
+    simpl in hcur', hnext', hstep'.
+    destruct hstep' as [hbit hval].
+    exists cur, next.
+    unfold BetaDiv2Step.
+    repeat split; assumption.
+  - intros [cur [next [hcur [hnext [hbit hval]]]]].
+    exists cur, next.
+    split.
+    + apply (proj2 (betaAt_nat_entry
+        (scons nat next (scons nat cur e))
+        1 (S (S code)) (S (S step)) (S (S idx)))).
+      simpl. exact hcur.
+    + split.
+      * apply (proj2 (betaAtSuccIdx_nat_entry
+          (scons nat next (scons nat cur e))
+          0 (S (S code)) (S (S step)) (S (S idx)))).
+        simpl. exact hnext.
+      * apply (proj2 (div2StepAt_nat
+          (scons nat next (scons nat cur e)) 1 0 (S (S bit)))).
+        simpl. split; assumption.
+Qed.
+
+Lemma hfMemAt_nat_trace : forall (e : nat -> nat) elem set,
+  Sat natModel e (hfMemAt elem set) <->
+    exists code step, HFMemTrace (e elem) (e set) code step.
+Proof.
+  intros e elem set.
+  unfold hfMemAt. simpl.
+  split.
+  - intros [code [step [hstart [hsteps [bit [hone hbit]]]]]].
+    pose (E := scons nat step (scons nat code e)).
+    assert (hstart' : BetaEntry code step 0 (e set)).
+    {
+      pose proof (proj1 (betaAtConstIdx_nat_entry E (S (S set)) 1 0 0)
+        hstart) as hs.
+      unfold E in hs. simpl in hs. exact hs.
+    }
+    assert (hsteps' : BetaDiv2StepsThrough code step (e elem)).
+    {
+      pose proof (proj1 (betaDiv2StepsThroughAt_nat E 1 0 (S (S elem)))
+        hsteps) as hs.
+      unfold BetaDiv2StepsThrough.
+      intros k hk.
+      assert (hkE : k <= E (S (S elem))).
+      {
+        unfold E. simpl. exact hk.
+      }
+      destruct (hs k hkE) as [cur [next [b [hcur [hnext [hb hv]]]]]].
+      exists cur, next, b.
+      unfold BetaDiv2Step.
+      unfold E in hcur, hnext. simpl in hcur, hnext.
+      repeat split; assumption.
+    }
+    assert (hbit' : BetaDiv2Bit code step (e elem) 1).
+    {
+      pose proof (proj1 (oneAt_nat (scons nat bit E) 0) hone) as hone'.
+      pose proof (proj1 (betaDiv2BitAt_nat (scons nat bit E)
+        0 2 1 (S (S (S elem)))) hbit) as hb.
+      unfold E in hb. simpl in hb.
+      subst bit. exact hb.
+    }
+    exists code, step.
+    unfold HFMemTrace.
+    repeat split; assumption.
+  - intros [code [step [hstart [hsteps hbit]]]].
+    pose (E := scons nat step (scons nat code e)).
+    exists code, step.
+    repeat split.
+    + apply (proj2 (betaAtConstIdx_nat_entry E (S (S set)) 1 0 0)).
+      unfold E. simpl. exact hstart.
+    + apply (proj2 (betaDiv2StepsThroughAt_nat E 1 0 (S (S elem)))).
+      intros k hk.
+      unfold E in hk. simpl in hk.
+      destruct (hsteps k hk) as [cur [next [bit [hcur [hnext [hbit0 hval]]]]]].
+      exists cur, next, bit.
+      unfold E. simpl.
+      repeat split; assumption.
+    + exists 1.
+      split.
+      * apply (proj2 (oneAt_nat (scons nat 1 E) 0)).
+        reflexivity.
+      * apply (proj2 (betaDiv2BitAt_nat (scons nat 1 E)
+          0 2 1 (S (S (S elem))))).
+        unfold E. simpl. exact hbit.
 Qed.
 
 End Formula.
