@@ -883,6 +883,59 @@ Proof.
   intros [|n]; reflexivity.
 Qed.
 
+Definition rSkipParam (n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S k => S (S k)
+  end.
+
+Lemma Sat_rename_rSkipParam : forall (V : Type) (mem : V -> V -> Prop)
+    (phi : form) (e : nat -> V) (x y : V),
+  Sat V mem (scons V y (scons V x e)) (rename rSkipParam phi) <->
+    Sat V mem (scons V y e) phi.
+Proof.
+  intros V mem phi e x y.
+  rewrite Sat_rename.
+  apply Sat_ext.
+  intros [|n]; reflexivity.
+Qed.
+
+Definition rAdjStepOld (n : nat) : nat :=
+  match n with
+  | 0 => 2
+  | S k => S (S (S k))
+  end.
+
+Definition rAdjStepNew (n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S k => S (S (S k))
+  end.
+
+Lemma Sat_rename_rAdjStepOld : forall (V : Type) (mem : V -> V -> Prop)
+    (phi : form) (e : nat -> V) (a b c : V),
+  Sat V mem (scons V c (scons V b (scons V a e)))
+    (rename rAdjStepOld phi) <->
+    Sat V mem (scons V a e) phi.
+Proof.
+  intros V mem phi e a b c.
+  rewrite Sat_rename.
+  apply Sat_ext.
+  intros [|n]; reflexivity.
+Qed.
+
+Lemma Sat_rename_rAdjStepNew : forall (V : Type) (mem : V -> V -> Prop)
+    (phi : form) (e : nat -> V) (a b c : V),
+  Sat V mem (scons V c (scons V b (scons V a e)))
+    (rename rAdjStepNew phi) <->
+    Sat V mem (scons V c e) phi.
+Proof.
+  intros V mem phi e a b c.
+  rewrite Sat_rename.
+  apply Sat_ext.
+  intros [|n]; reflexivity.
+Qed.
+
 Definition HF_subsetAt (a b : nat) : form :=
   fAll (fImp (fMem 0 (S a)) (fMem 0 (S b))).
 
@@ -1206,6 +1259,183 @@ Proof.
     apply h.
     + exact (proj1 (HF_subsetAt_spec V mem (scons V s e) 0 (S a)) hsSubSat).
     + exact (proj1 (HF_chainLikeAt_spec V mem (scons V s e) 0) hsChainSat).
+Qed.
+
+Definition HF_induction_form (phi : form) : form :=
+  fImp
+    (fAll
+      (fImp
+        (fAll (fImp (fMem 0 1) (rename rSkipParam phi)))
+        phi))
+    (fAll phi).
+
+Definition HF_finite_induction_form (phi : form) : form :=
+  fImp
+    (fAnd
+      (fAll (fImp (HF_emptyAt 0) phi))
+      (fAll (fAll (fAll
+        (fImp
+          (HF_adjoinAt 0 2 1)
+          (fImp (rename rAdjStepOld phi) (rename rAdjStepNew phi)))))))
+    (fAll phi).
+
+Lemma HF_finite_induction_form_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (phi : form) (e : nat -> V),
+  Sat V mem e (HF_finite_induction_form phi) <->
+    (((forall z, (forall x, ~ mem x z) -> Sat V mem (scons V z e) phi) /\
+      (forall a b c, (forall x, mem x c <-> mem x a \/ x = b) ->
+        Sat V mem (scons V a e) phi ->
+        Sat V mem (scons V c e) phi)) ->
+      forall a, Sat V mem (scons V a e) phi).
+Proof.
+  intros V mem phi e.
+  split.
+  - intros h hgen.
+    apply h.
+    split.
+    + intros z hz.
+      apply (proj1 hgen).
+      exact (proj1 (HF_emptyAt_spec V mem (scons V z e) 0) hz).
+    + intros a b c hc hOld.
+      pose proof (proj1 (HF_adjoinAt_spec V mem
+        (scons V c (scons V b (scons V a e))) 0 2 1) hc) as hc'.
+      pose proof (proj1 (Sat_rename_rAdjStepOld V mem phi e a b c) hOld)
+        as hOld'.
+      apply (proj2 (Sat_rename_rAdjStepNew V mem phi e a b c)).
+      exact (proj2 hgen a b c hc' hOld').
+  - intros h hsyn.
+    refine (h (conj _ _)).
+    + intros z hz.
+      apply (proj1 hsyn).
+      apply (proj2 (HF_emptyAt_spec V mem (scons V z e) 0)).
+      exact hz.
+    + intros a b c hc hOld.
+      pose proof (proj2 (HF_adjoinAt_spec V mem
+        (scons V c (scons V b (scons V a e))) 0 2 1) hc) as hcSat.
+      pose proof (proj2 (Sat_rename_rAdjStepOld V mem phi e a b c) hOld)
+        as hOldSat.
+      pose proof (proj2 hsyn a b c hcSat hOldSat) as hNewSat.
+      exact (proj1 (Sat_rename_rAdjStepNew V mem phi e a b c) hNewSat).
+Qed.
+
+Definition HFAx (f : form) : Prop :=
+  f = HF_empty_form \/
+  f = HF_extensionality_form \/
+  f = HF_adjoin_form \/
+  exists phi, f = HF_induction_form phi.
+
+Definition HFAx_s (f : form) : Prop :=
+  f = seal HF_empty_form \/
+  f = seal HF_extensionality_form \/
+  f = seal HF_adjoin_form \/
+  exists phi, f = seal (HF_induction_form phi).
+
+Definition HFFinAx_s (f : form) : Prop :=
+  HFAx_s f \/ exists phi, f = seal (HF_finite_induction_form phi).
+
+Lemma Sentences_HF : Sentences HFAx_s.
+Proof.
+  intros f hf.
+  destruct hf as [-> | [-> | [-> | [phi ->]]]];
+    apply Sentence_seal.
+Qed.
+
+Lemma Sentences_HFFin : Sentences HFFinAx_s.
+Proof.
+  intros f [hf | [phi ->]].
+  - exact (Sentences_HF f hf).
+  - apply Sentence_seal.
+Qed.
+
+Lemma sat_HF_empty : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) e HF_empty_form.
+Proof.
+  intros M e.
+  exists (hf_empty_obj M).
+  intros x hx.
+  exact (hf_empty_spec M x hx).
+Qed.
+
+Lemma sat_HF_extensionality : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) e HF_extensionality_form.
+Proof.
+  intros M e a b h.
+  apply hf_extensional.
+  intro x.
+  unfold fIff in h.
+  simpl in h.
+  exact (h x).
+Qed.
+
+Lemma sat_HF_adjoin : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) e HF_adjoin_form.
+Proof.
+  intros M e a b.
+  exists (hf_adjoin_obj M b a).
+  intro x.
+  unfold fIff.
+  simpl.
+  apply hf_adjoin_spec.
+Qed.
+
+Lemma sat_HF_induction : forall (M : HFModel) (phi : form) (e : nat -> M),
+  Sat M (hf_rel M) e (HF_induction_form phi).
+Proof.
+  intros M phi e hstep a.
+  apply (hf_set_ind M (fun x => Sat M (hf_rel M) (scons M x e) phi)).
+  intros x ih.
+  apply hstep.
+  intros y hy.
+  apply (proj2 (Sat_rename_rSkipParam M (hf_rel M) phi e x y)).
+  exact (ih y hy).
+Qed.
+
+Lemma sat_HF_model : forall (M : HFModel) (v : nat -> M),
+  forall g, HFAx_s g -> Sat M (hf_rel M) v g.
+Proof.
+  intros M v g hg.
+  destruct hg as [-> | [-> | [-> | [phi ->]]]].
+  - exact (proj2 (seal_valid M (hf_rel M) HF_empty_form)
+      (sat_HF_empty M) v).
+  - exact (proj2 (seal_valid M (hf_rel M) HF_extensionality_form)
+      (sat_HF_extensionality M) v).
+  - exact (proj2 (seal_valid M (hf_rel M) HF_adjoin_form)
+      (sat_HF_adjoin M) v).
+  - exact (proj2 (seal_valid M (hf_rel M) (HF_induction_form phi))
+      (sat_HF_induction M phi) v).
+Qed.
+
+Lemma standard_sat_HF : forall v,
+  forall g, HFAx_s g -> Sat nat hf_mem v g.
+Proof.
+  intros v.
+  apply (sat_HF_model ackermannHFModel v).
+Qed.
+
+Lemma HFAx_s_empty : HFAx_s (seal HF_empty_form).
+Proof. now left. Qed.
+
+Lemma HFAx_s_extensionality : HFAx_s (seal HF_extensionality_form).
+Proof. right; now left. Qed.
+
+Lemma HFAx_s_adjoin : HFAx_s (seal HF_adjoin_form).
+Proof. right; right; now left. Qed.
+
+Lemma HFAx_s_induction : forall phi, HFAx_s (seal (HF_induction_form phi)).
+Proof.
+  intro phi.
+  right; right; right.
+  now exists phi.
+Qed.
+
+Lemma HFFinAx_s_of_HFAx_s : forall f, HFAx_s f -> HFFinAx_s f.
+Proof. intros f hf. now left. Qed.
+
+Lemma HFFinAx_s_finite_induction : forall phi,
+  HFFinAx_s (seal (HF_finite_induction_form phi)).
+Proof.
+  intro phi.
+  right. now exists phi.
 Qed.
 
 Fixpoint ordinal_code (n : nat) : nat :=
