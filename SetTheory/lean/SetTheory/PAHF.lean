@@ -193,4 +193,225 @@ theorem ordinalOfNat_natOfOrdinal (a : OrdinalHF) :
 
 end AckermannHF
 
+/-! ## Shallow PA models and the PA-in-HF round trip -/
+
+namespace PA
+
+universe u v
+
+/-- A shallow model of first-order Peano arithmetic in the language
+`0, S, +, *`, with induction represented as a schema over Lean predicates. -/
+structure Model (α : Type u) where
+  zero : α
+  succ : α → α
+  add : α → α → α
+  mul : α → α → α
+  succ_injective : ∀ {a b}, succ a = succ b → a = b
+  zero_not_succ : ∀ a, succ a ≠ zero
+  induction :
+    ∀ P : α → Prop, P zero → (∀ a, P a → P (succ a)) → ∀ a, P a
+  add_zero : ∀ a, add a zero = a
+  add_succ : ∀ a b, add a (succ b) = succ (add a b)
+  mul_zero : ∀ a, mul a zero = zero
+  mul_succ : ∀ a b, mul a (succ b) = add (mul a b) a
+
+/-- Isomorphism of shallow PA models, preserving the arithmetic operations. -/
+structure Iso {α : Type u} {β : Type v} (M : Model α) (N : Model β) where
+  toFun : α → β
+  invFun : β → α
+  left_inv : ∀ a, invFun (toFun a) = a
+  right_inv : ∀ b, toFun (invFun b) = b
+  map_zero : toFun M.zero = N.zero
+  map_succ : ∀ a, toFun (M.succ a) = N.succ (toFun a)
+  map_add : ∀ a b, toFun (M.add a b) = N.add (toFun a) (toFun b)
+  map_mul : ∀ a b, toFun (M.mul a b) = N.mul (toFun a) (toFun b)
+
+/-- The standard model of PA on Lean's natural numbers. -/
+def natModel : Model Nat where
+  zero := 0
+  succ := Nat.succ
+  add := Nat.add
+  mul := Nat.mul
+  succ_injective := by
+    intro a b h
+    exact Nat.succ.inj h
+  zero_not_succ := by
+    intro a h
+    exact Nat.succ_ne_zero a h
+  induction := by
+    intro P h0 hs a
+    induction a with
+    | zero => exact h0
+    | succ n ih => exact hs n ih
+  add_zero := Nat.add_zero
+  add_succ := Nat.add_succ
+  mul_zero := Nat.mul_zero
+  mul_succ := Nat.mul_succ
+
+end PA
+
+namespace AckermannHF
+
+/-- Equality of ordinal-coded HF objects follows from equality of their decoded
+natural numbers. -/
+theorem ordinal_eq_of_natOfOrdinal_eq {a b : OrdinalHF}
+    (h : natOfOrdinal a = natOfOrdinal b) : a = b := by
+  apply Subtype.ext
+  rw [← natOfOrdinal_spec a, ← natOfOrdinal_spec b, h]
+
+/-- The PA structure interpreted inside Ackermann HF by taking the finite
+von Neumann ordinals as the number domain.  The operations are the transported
+graphs of ordinary arithmetic on the ordinal indices; the transport and its
+inverse are proved explicitly below. -/
+noncomputable def ordinalPAModel : PA.Model OrdinalHF where
+  zero := ordinalOfNat 0
+  succ a := ordinalOfNat (natOfOrdinal a + 1)
+  add a b := ordinalOfNat (natOfOrdinal a + natOfOrdinal b)
+  mul a b := ordinalOfNat (natOfOrdinal a * natOfOrdinal b)
+  succ_injective := by
+    intro a b h
+    apply ordinal_eq_of_natOfOrdinal_eq
+    have hn := congrArg natOfOrdinal h
+    simp [natOfOrdinal_ordinalOfNat] at hn
+    omega
+  zero_not_succ := by
+    intro a h
+    have hn := congrArg natOfOrdinal h
+    simp [natOfOrdinal_ordinalOfNat] at hn
+  induction := by
+    intro P h0 hs a
+    have hnat : ∀ n, P (ordinalOfNat n) := by
+      intro n
+      induction n with
+      | zero => exact h0
+      | succ n ih =>
+          have hstep := hs (ordinalOfNat n) ih
+          simpa [natOfOrdinal_ordinalOfNat] using hstep
+    simpa [ordinalOfNat_natOfOrdinal a] using hnat (natOfOrdinal a)
+  add_zero := by
+    intro a
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [natOfOrdinal_ordinalOfNat, Nat.add_zero]
+  add_succ := by
+    intro a b
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [natOfOrdinal_ordinalOfNat, Nat.add_succ]
+  mul_zero := by
+    intro a
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [natOfOrdinal_ordinalOfNat, Nat.mul_zero]
+  mul_succ := by
+    intro a b
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [natOfOrdinal_ordinalOfNat, Nat.mul_succ]
+
+/-- The first round trip of the bi-interpretability construction: starting
+from arithmetic, interpreting HF by Ackermann coding, and then interpreting
+arithmetic back as finite ordinals gives a PA model isomorphic to the original
+natural-number model. -/
+noncomputable def paRoundTripIso : PA.Iso PA.natModel ordinalPAModel where
+  toFun := ordinalOfNat
+  invFun := natOfOrdinal
+  left_inv := natOfOrdinal_ordinalOfNat
+  right_inv := ordinalOfNat_natOfOrdinal
+  map_zero := rfl
+  map_succ := by
+    intro n
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalOfNat]
+  map_add := by
+    intro a b
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalOfNat, Nat.add_eq]
+  map_mul := by
+    intro a b
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalOfNat, Nat.mul_eq]
+
+/-! ## The HF-in-PA-in-HF round trip -/
+
+/-- Isomorphism of adjunction-style HF models. -/
+structure AdjunctionIso {α : Type} {β : Type}
+    (M : AdjunctionModel α) (N : AdjunctionModel β) where
+  toFun : α → β
+  invFun : β → α
+  left_inv : ∀ a, invFun (toFun a) = a
+  right_inv : ∀ b, toFun (invFun b) = b
+  map_mem : ∀ a b, N.mem (toFun a) (toFun b) ↔ M.mem a b
+  map_empty : toFun M.empty = N.empty
+  map_adjoin : ∀ a b, toFun (M.adjoin a b) = N.adjoin (toFun a) (toFun b)
+
+/-- The HF model obtained after interpreting PA inside Ackermann HF and then
+running Ackermann's HF interpretation in that interpreted PA model. -/
+noncomputable def ordinalHFModel : AdjunctionModel OrdinalHF where
+  mem a b := Mem (natOfOrdinal a) (natOfOrdinal b)
+  empty := ordinalOfNat empty
+  adjoin a b := ordinalOfNat (adjoin (natOfOrdinal a) (natOfOrdinal b))
+  extensional := by
+    intro a b h
+    apply ordinal_eq_of_natOfOrdinal_eq
+    apply ext
+    intro x
+    have hx := h (ordinalOfNat x)
+    simpa [natOfOrdinal_ordinalOfNat] using hx
+  empty_spec := by
+    intro x
+    simpa [natOfOrdinal_ordinalOfNat] using
+      (mem_empty (natOfOrdinal x))
+  adjoin_spec := by
+    intro x a b
+    constructor
+    · intro h
+      have h' : Mem (natOfOrdinal x) (adjoin (natOfOrdinal a) (natOfOrdinal b)) := by
+        simpa [natOfOrdinal_ordinalOfNat] using h
+      have hm := (mem_adjoin (natOfOrdinal x) (natOfOrdinal a) (natOfOrdinal b)).mp h'
+      rcases hm with hm | hm
+      · exact Or.inl hm
+      · exact Or.inr (ordinal_eq_of_natOfOrdinal_eq hm)
+    · intro h
+      have h' : Mem (natOfOrdinal x) (adjoin (natOfOrdinal a) (natOfOrdinal b)) := by
+        apply (mem_adjoin (natOfOrdinal x) (natOfOrdinal a) (natOfOrdinal b)).mpr
+        rcases h with h | h
+        · exact Or.inl h
+        · subst h
+          exact Or.inr rfl
+      simpa [natOfOrdinal_ordinalOfNat] using h'
+  set_induction := by
+    intro P step a
+    have hnat : ∀ n, P (ordinalOfNat n) := by
+      intro n
+      exact Nat.strongRecOn n (fun n ih =>
+        step (ordinalOfNat n) (fun x hx =>
+          have hx' : Mem (natOfOrdinal x) n := by
+            simpa [natOfOrdinal_ordinalOfNat] using hx
+          have hxlt : natOfOrdinal x < n := mem_lt hx'
+          have hpx : P (ordinalOfNat (natOfOrdinal x)) := ih (natOfOrdinal x) hxlt
+          by simpa [ordinalOfNat_natOfOrdinal x] using hpx))
+    simpa [ordinalOfNat_natOfOrdinal a] using hnat (natOfOrdinal a)
+
+/-- The second round trip of the bi-interpretability construction: starting
+from Ackermann HF, interpreting arithmetic as finite ordinals, and then
+interpreting HF back by Ackermann coding gives an HF model isomorphic to the
+original one. -/
+noncomputable def hfRoundTripIso : AdjunctionIso standardModel ordinalHFModel where
+  toFun := ordinalOfNat
+  invFun := natOfOrdinal
+  left_inv := natOfOrdinal_ordinalOfNat
+  right_inv := ordinalOfNat_natOfOrdinal
+  map_mem := by
+    intro a b
+    simp only [ordinalHFModel, standardModel, natOfOrdinal_ordinalOfNat]
+  map_empty := rfl
+  map_adjoin := by
+    intro a b
+    apply ordinal_eq_of_natOfOrdinal_eq
+    simp only [standardModel, ordinalHFModel, natOfOrdinal_ordinalOfNat]
+
+theorem PA_biinterpretable_with_HF_standard :
+    Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧
+      Nonempty (AdjunctionIso standardModel ordinalHFModel) :=
+  ⟨⟨paRoundTripIso⟩, ⟨hfRoundTripIso⟩⟩
+
+end AckermannHF
+
 end SetTheory
