@@ -263,6 +263,187 @@ theorem HF_succAt_spec {α : Type} (M : AdjunctionModel α)
     Sat M.mem e (HF_succAt s a) ↔ e s = M.adjoin (e a) (e a) :=
   HF_adjoinAt_adjoin M e s a a
 
+/-! ### HF-internal pair coding -/
+
+/-- Singleton inside any adjunction-style HF model. -/
+def single {α : Type} (M : AdjunctionModel α) (a : α) : α :=
+  M.adjoin M.empty a
+
+theorem single_spec {α : Type} (M : AdjunctionModel α) (a x : α) :
+    M.mem x (single M a) ↔ x = a := by
+  rw [single, M.adjoin_spec]
+  constructor
+  · intro h
+    rcases h with h | h
+    · exact False.elim (M.empty_spec x h)
+    · exact h
+  · intro h
+    exact Or.inr h
+
+/-- Unordered pair inside any adjunction-style HF model. -/
+def upair {α : Type} (M : AdjunctionModel α) (a b : α) : α :=
+  M.adjoin (single M a) b
+
+theorem upair_spec {α : Type} (M : AdjunctionModel α) (a b x : α) :
+    M.mem x (upair M a b) ↔ x = a ∨ x = b := by
+  rw [upair, M.adjoin_spec, single_spec]
+
+/-- Kuratowski ordered pair inside any adjunction-style HF model. -/
+def kpair {α : Type} (M : AdjunctionModel α) (a b : α) : α :=
+  upair M (single M a) (upair M a b)
+
+theorem kpair_mem {α : Type} (M : AdjunctionModel α) (a b q : α) :
+    M.mem q (kpair M a b) ↔ q = single M a ∨ q = upair M a b := by
+  unfold kpair
+  rw [upair_spec]
+
+theorem single_injective {α : Type} (M : AdjunctionModel α) {a b : α}
+    (h : single M a = single M b) : a = b := by
+  have ha : M.mem a (single M a) := (single_spec M a a).mpr rfl
+  rw [h] at ha
+  exact (single_spec M b a).mp ha
+
+theorem upair_eq_single {α : Type} (M : AdjunctionModel α) {a b c : α}
+    (h : upair M a b = single M c) : a = c ∧ b = c := by
+  constructor
+  · have ha : M.mem a (upair M a b) := (upair_spec M a b a).mpr (Or.inl rfl)
+    rw [h] at ha
+    exact (single_spec M c a).mp ha
+  · have hb : M.mem b (upair M a b) := (upair_spec M a b b).mpr (Or.inr rfl)
+    rw [h] at hb
+    exact (single_spec M c b).mp hb
+
+theorem kpair_injective {α : Type} (M : AdjunctionModel α) {a b c d : α}
+    (h : kpair M a b = kpair M c d) : a = c ∧ b = d := by
+  have hac : a = c := by
+    have hs : M.mem (single M a) (kpair M a b) :=
+      (kpair_mem M a b (single M a)).mpr (Or.inl rfl)
+    rw [h] at hs
+    rcases (kpair_mem M c d (single M a)).mp hs with hs | hs
+    · exact single_injective M hs
+    · exact ((upair_eq_single M hs.symm).1).symm
+  subst c
+  constructor
+  · rfl
+  · have h1 : M.mem (upair M a b) (kpair M a b) :=
+      (kpair_mem M a b (upair M a b)).mpr (Or.inr rfl)
+    rw [h] at h1
+    rcases (kpair_mem M a d (upair M a b)).mp h1 with h1 | h1
+    · have hba : b = a := (upair_eq_single M h1).2
+      have h2 : M.mem (upair M a d) (kpair M a d) :=
+        (kpair_mem M a d (upair M a d)).mpr (Or.inr rfl)
+      rw [← h] at h2
+      rcases (kpair_mem M a b (upair M a d)).mp h2 with h2 | h2
+      · have hda : d = a := (upair_eq_single M h2).2
+        rw [hba, hda]
+      · have hd : M.mem d (upair M a d) := (upair_spec M a d d).mpr (Or.inr rfl)
+        rw [h2] at hd
+        rcases (upair_spec M a b d).mp hd with hd | hd
+        · rw [hba, hd]
+        · exact hd.symm
+    · have hb : M.mem b (upair M a b) := (upair_spec M a b b).mpr (Or.inr rfl)
+      rw [h1] at hb
+      rcases (upair_spec M a d b).mp hb with hb | hb
+      · have hd : M.mem d (upair M a d) := (upair_spec M a d d).mpr (Or.inr rfl)
+        rw [← h1] at hd
+        rcases (upair_spec M a b d).mp hd with hd | hd
+        · rw [hb, hd]
+        · exact hd.symm
+      · exact hb
+
+/-- Formula macro: slot `i` is the singleton of slot `j`. -/
+def HF_singleAt (i j : Nat) : Form :=
+  fAll (fIff (fMem 0 (i+1)) (fEq 0 (j+1)))
+
+theorem HF_singleAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (i j : Nat) :
+    Sat M.mem e (HF_singleAt i j) ↔ e i = single M (e j) := by
+  show (∀ x, (M.mem x (e i) → x = e j) ∧ (x = e j → M.mem x (e i))) ↔ _
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    rw [single_spec M (e j) x]
+    exact ⟨(h x).1, (h x).2⟩
+  · intro h x
+    rw [h, single_spec M (e j) x]
+    exact ⟨id, id⟩
+
+/-- Formula macro: slot `i` is the unordered pair of slots `j` and `k`. -/
+def HF_upairAt (i j k : Nat) : Form :=
+  fAll (fIff (fMem 0 (i+1)) (fOr (fEq 0 (j+1)) (fEq 0 (k+1))))
+
+theorem HF_upairAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (i j k : Nat) :
+    Sat M.mem e (HF_upairAt i j k) ↔ e i = upair M (e j) (e k) := by
+  show (∀ x, (M.mem x (e i) → (x = e j ∨ x = e k)) ∧
+             ((x = e j ∨ x = e k) → M.mem x (e i))) ↔ _
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    rw [upair_spec M (e j) (e k) x]
+    exact ⟨(h x).1, (h x).2⟩
+  · intro h x
+    rw [h, upair_spec M (e j) (e k) x]
+    exact ⟨id, id⟩
+
+/-- Formula macro: slot `p` is the Kuratowski ordered pair of slots `a` and
+`b`. -/
+def HF_kpairAt (p a b : Nat) : Form :=
+  fAll (fIff (fMem 0 (p+1))
+    (fOr (HF_singleAt 0 (a+1)) (HF_upairAt 0 (a+1) (b+1))))
+
+theorem HF_kpairAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (p a b : Nat) :
+    Sat M.mem e (HF_kpairAt p a b) ↔ e p = kpair M (e a) (e b) := by
+  have hq : ∀ q : α,
+      (Sat M.mem (scons q e) (HF_singleAt 0 (a+1)) ∨
+       Sat M.mem (scons q e) (HF_upairAt 0 (a+1) (b+1)))
+        ↔ (q = single M (e a) ∨ q = upair M (e a) (e b)) := by
+    intro q
+    rw [HF_singleAt_spec M (scons q e) 0 (a+1),
+        HF_upairAt_spec M (scons q e) 0 (a+1) (b+1)]
+    exact Iff.rfl
+  constructor
+  · intro h
+    apply M.extensional
+    intro q
+    rw [kpair_mem M (e a) (e b) q, ← hq q]
+    exact ⟨(h q).1, (h q).2⟩
+  · intro h q
+    constructor
+    · intro hq'
+      have hqmem : M.mem q (e p) := hq'
+      rw [h] at hqmem
+      exact (hq q).mpr ((kpair_mem M (e a) (e b) q).mp hqmem)
+    · intro hs
+      show M.mem q (e p)
+      rw [h]
+      exact (kpair_mem M (e a) (e b) q).mpr ((hq q).mp hs)
+
+/-- Formula macro: the ordered pair of slots `a` and `b` is a member of slot
+`r`. -/
+def HF_pairMemAt (a b r : Nat) : Form :=
+  fEx (fAnd (HF_kpairAt 0 (a+1) (b+1)) (fMem 0 (r+1)))
+
+theorem HF_pairMemAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (a b r : Nat) :
+    Sat M.mem e (HF_pairMemAt a b r) ↔
+      M.mem (kpair M (e a) (e b)) (e r) := by
+  constructor
+  · intro h
+    rcases h with ⟨p, hp, hmem⟩
+    have hp' : p = kpair M (e a) (e b) :=
+      (HF_kpairAt_spec M (scons p e) 0 (a+1) (b+1)).mp hp
+    have hmem' : M.mem p (e r) := hmem
+    rwa [hp'] at hmem'
+  · intro h
+    refine ⟨kpair M (e a) (e b), ?_, ?_⟩
+    · exact (HF_kpairAt_spec M (scons (kpair M (e a) (e b)) e)
+        0 (a+1) (b+1)).mpr rfl
+    · exact h
+
 /-- Formula macro: slot `a` is a subset of slot `b`. -/
 def HF_subsetAt (a b : Nat) : Form :=
   fAll (fImp (fMem 0 (a+1)) (fMem 0 (b+1)))

@@ -44,6 +44,14 @@ open SetTheory
 #check @AckermannHF.HF_emptyAt_empty
 #check @AckermannHF.HF_adjoinAt_adjoin
 #check @AckermannHF.HF_succAt_spec
+#check @AckermannHF.single_spec
+#check @AckermannHF.upair_spec
+#check @AckermannHF.kpair_mem
+#check @AckermannHF.kpair_injective
+#check @AckermannHF.HF_singleAt_spec
+#check @AckermannHF.HF_upairAt_spec
+#check @AckermannHF.HF_kpairAt_spec
+#check @AckermannHF.HF_pairMemAt_spec
 #check @AckermannHF.HF_subsetAt_spec
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
