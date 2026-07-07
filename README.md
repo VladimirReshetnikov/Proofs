@@ -13,6 +13,11 @@ certificates.
 The root of this directory is a Lake/mathlib workspace named `LeanProofs`.
 Additional proof-oriented subject corpora live alongside it:
 
+- [`BusyLean/`](BusyLean/README.md) — a research seed for proof-bounded
+  Busy-Beaver/Rayo-style enormous computable natural numbers: finite
+  proof-carrying total-computation candidates, decidable checking, and
+  maximization under a syntactic budget, with design parallels to the
+  SetTheory syntax/provability and PA/HF coding work.
 - [`LeanProofs/`](LeanProofs/) — the root Lean 4 proof library, pinned to
   Lean `4.31.0` and mathlib `v4.31.0`.
 - [`Oeis/A198683/`](Oeis/A198683/README.md) — the local research corpus for
