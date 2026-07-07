@@ -129,6 +129,67 @@ def HF_adjoin_form : Form :=
   fAll (fAll (fEx (fAll
     (fIff (fMem 0 1) (fOr (fMem 0 3) (fEq 0 2))))))
 
+/-- Formula macro: slot `i` is empty. -/
+def HF_emptyAt (i : Nat) : Form :=
+  fAll (fImp (fMem 0 (i+1)) fBot)
+
+theorem HF_emptyAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (i : Nat) :
+    Sat mem e (HF_emptyAt i) ↔ ∀ x, ¬ mem x (e i) :=
+  Iff.rfl
+
+theorem HF_emptyAt_empty {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (i : Nat) :
+    Sat M.mem e (HF_emptyAt i) ↔ e i = M.empty := by
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    constructor
+    · exact fun hx => False.elim (h x hx)
+    · exact fun hx => False.elim (M.empty_spec x hx)
+  · intro h x hx
+    have hx' : M.mem x (e i) := by
+      simpa [Sat, scons] using hx
+    rw [h] at hx'
+    exact M.empty_spec x hx'
+
+/-- Formula macro: slot `c` is the adjunction `a ∪ {b}`. -/
+def HF_adjoinAt (c a b : Nat) : Form :=
+  fAll (fIff (fMem 0 (c+1)) (fOr (fMem 0 (a+1)) (fEq 0 (b+1))))
+
+theorem HF_adjoinAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (c a b : Nat) :
+    Sat mem e (HF_adjoinAt c a b) ↔
+      ∀ x, mem x (e c) ↔ mem x (e a) ∨ x = e b := by
+  constructor
+  · intro h x
+    exact (Sat_fIff (mem := mem)).mp (h x)
+  · intro h x
+    exact (Sat_fIff (mem := mem)).mpr (h x)
+
+theorem HF_adjoinAt_adjoin {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (c a b : Nat) :
+    Sat M.mem e (HF_adjoinAt c a b) ↔ e c = M.adjoin (e a) (e b) := by
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    rw [(HF_adjoinAt_spec e c a b).mp h x, M.adjoin_spec x (e a) (e b)]
+  · intro h
+    apply (HF_adjoinAt_spec e c a b).mpr
+    intro x
+    rw [h, M.adjoin_spec x (e a) (e b)]
+
+/-- Formula macro: slot `s` is the finite-ordinal successor of slot `a`,
+that is, `s = a ∪ {a}`. -/
+def HF_succAt (s a : Nat) : Form := HF_adjoinAt s a a
+
+theorem HF_succAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (s a : Nat) :
+    Sat M.mem e (HF_succAt s a) ↔ e s = M.adjoin (e a) (e a) :=
+  HF_adjoinAt_adjoin M e s a a
+
 /-- The first-order set-induction schema instance for `phi`, where `phi`
 uses slot `0` as the element being proved and slots `1,2,...` as parameters. -/
 def HF_induction_form (phi : Form) : Form :=
