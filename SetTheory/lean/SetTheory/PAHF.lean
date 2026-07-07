@@ -1767,6 +1767,19 @@ theorem succRecTotal_of_ordinalLike_of_predecessor {α : Type u}
     ((HF_succRecTotalOnOrdinalAt_spec M
       (scons m (scons s tail)) 1 0).mp (hall m) hm)
 
+/-- A maximal-member principle for nonempty HF objects is enough to make
+successor-recursion total on all ordinal-like keys. -/
+theorem succRecTotal_of_ordinalLike_of_mem_max_exists {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hMax : ∀ a, (∃ x, M.mem x a) →
+      ∃ p, M.mem p a ∧ ∀ q, M.mem q a → ¬ M.mem p q)
+    (s m : α) (hm : OrdinalLike M.mem m) :
+    SuccRecTotal M s m := by
+  apply succRecTotal_of_ordinalLike_of_predecessor M
+  · intro a ha
+    exact ordinalLike_empty_or_succ_of_mem_max_exists M hMax ha
+  · exact hm
+
 end FirstOrderAdjunctionModel
 
 def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
@@ -6288,6 +6301,19 @@ theorem formulaAt_addSucc_valid_model_of_succRecTotal {α : Type u}
     · rfl
     · simpa [σ, Eeq, scons, upVarMap] using hf
     · simpa [σ, Eeq, scons, upVarMap] using hz
+
+/-- The add-successor PA axiom follows from the maximal-member principle for
+nonempty objects in a first-order HF model. -/
+theorem formulaAt_addSucc_valid_model_of_mem_max_exists {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hMax : ∀ a, (∃ x, M.mem x a) →
+      ∃ p, M.mem p a ∧ ∀ q, M.mem q a → ¬ M.mem p q)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.addSucc) := by
+  apply formulaAt_addSucc_valid_model_of_succRecTotal M
+  intro s m hm
+  exact FirstOrderAdjunctionModel.succRecTotal_of_ordinalLike_of_mem_max_exists
+    M hMax s m hm
 
 /-- Successor-injectivity for the PA-in-HF translation follows from
 irreflexivity of membership.  In semantic HF models that irreflexivity comes

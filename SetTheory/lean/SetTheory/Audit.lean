@@ -345,6 +345,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.termGraphAt_succ_add_var_var_of_succRecApprox_model
 #check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_succRecTotal
+#check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_mem_max_exists
 #check @AckermannHF.PAInHF.translated_addZero_sat_of_HFAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
@@ -427,6 +428,7 @@ open SetTheory
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecTotalAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecTotalOnOrdinalAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.succRecTotal_of_ordinalLike_of_predecessor
+#check @AckermannHF.FirstOrderAdjunctionModel.succRecTotal_of_ordinalLike_of_mem_max_exists
 #check @AckermannHF.firstOrderAdjunctionModel_of_HFAx_s
 #check @AckermannHF.ordinalHF_sat_HF
 #check @AckermannHF.ordinalPA_sat_PA
