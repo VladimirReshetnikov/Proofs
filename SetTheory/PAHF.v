@@ -10206,6 +10206,19 @@ Proof.
   exact (translated_mulZero_sat_model V M e).
 Qed.
 
+Lemma translated_addSucc_sat_of_HFFinAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V),
+    (forall g, HFFinAx_s g -> Sat V mem v g) ->
+    Sat V mem e (translateFormula (PA.Formula.sealPA PA.Formula.addSucc)).
+Proof.
+  intros V mem v e hHF.
+  pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  exact (formulaAt_addSucc_valid_finite_model V M rho env).
+Qed.
+
 Lemma BProv_HF_translated_zeroNotSucc :
   BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
 Proof.
@@ -10374,6 +10387,17 @@ Proof.
     (translateFormula (PA.Formula.sealPA PA.Formula.addZero))).
   - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
   - exact BProv_HF_translated_addZero.
+Qed.
+
+Lemma BProv_HFFin_translated_addSucc :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addSucc)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HFFin.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_addSucc.
+  - intros Dom mem v hHF.
+    exact (translated_addSucc_sat_of_HFFinAx_s Dom mem v v hHF).
 Qed.
 
 Lemma BProv_HFFin_translated_mulZero :
