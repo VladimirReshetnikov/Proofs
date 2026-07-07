@@ -54,27 +54,29 @@ abbrev x : PowExpr :=
 abbrev pow : PowExpr -> PowExpr -> PowExpr :=
   PowTower.Expr.pow
 
-/-- Evaluate a parenthesized power expression as a function on positive reals. -/
-noncomputable def eval : PowExpr -> PosReal -> PosReal
-  | .atom, t => t
-  | .pow a b, t => PosReal.rpow (eval a t) (eval b t).1
-
 /--
 Shared lexical interpretation for A000081: the atom is the identity function
 on positive reals, and the binary node exponentiates pointwise.
 -/
-noncomputable def sharedEval : PowTower.Expr -> PosReal -> PosReal :=
+noncomputable abbrev sharedEval : PowTower.Expr -> PosReal -> PosReal :=
   PowTower.Expr.eval atomFunction powFunction
+
+/-- Evaluate a parenthesized power expression as a function on positive reals. -/
+noncomputable abbrev eval : PowExpr -> PosReal -> PosReal :=
+  sharedEval
 
 /-- A000081's recursive evaluator agrees with the shared lexical evaluator. -/
 theorem eval_eq_sharedEval (e : PowExpr) :
     eval e = sharedEval e := by
-  induction e with
-  | atom =>
-      rfl
-  | pow a b iha ihb =>
-      funext t
-      simp [eval, sharedEval, powFunction, iha, ihb]
+  rfl
+
+@[simp] theorem eval_atom (t : PosReal) :
+    eval .atom t = t := by
+  rfl
+
+@[simp] theorem eval_pow (a b : PowExpr) (t : PosReal) :
+    eval (.pow a b) t = PosReal.rpow (eval a t) (eval b t).1 := by
+  rfl
 
 /--
 The shared canonical lexical value set for A000081.
@@ -90,19 +92,16 @@ def parenthesizations : Nat -> List PowExpr :=
 def valueSet (n : Nat) : Set (PosReal -> PosReal) :=
   {f | ∃ e ∈ parenthesizations n, eval e = f}
 
+/-- The A000081 compatibility value set is the shared generic evaluator set. -/
+theorem valueSet_eq_evalSet (n : Nat) :
+    valueSet n = PowTower.Expr.evalSet eval n := by
+  rfl
+
 /-- The A000081 evaluator value set is the shared canonical lexical value set. -/
 theorem valueSet_eq_canonicalValueSet (n : Nat) :
     valueSet n = canonicalValueSet n := by
-  ext f
-  constructor
-  · rintro ⟨e, he, hf⟩
-    refine ⟨e, he, ?_⟩
-    change sharedEval e = f
-    rw [← eval_eq_sharedEval, hf]
-  · rintro ⟨e, he, hf⟩
-    refine ⟨e, he, ?_⟩
-    rw [eval_eq_sharedEval]
-    exact hf
+  rw [valueSet_eq_evalSet, canonicalValueSet,
+    PowTower.Expr.valueSet_eq_evalSet atomFunction powFunction]
 
 /-- OEIS A000081, defined as the cardinality of the shared lexical exponent-function set. -/
 noncomputable def a000081 (n : Nat) : Nat :=
@@ -148,7 +147,7 @@ theorem eval_eq_rpow_exponent (e : PowExpr) (t : PosReal) :
   | atom =>
       simp [eval, exponent, Real.rpow_one]
   | pow a b iha _ =>
-      simp only [eval, exponent, PosReal.rpow]
+      simp only [eval, sharedEval, powFunction, exponent, PosReal.rpow, PowTower.Expr.eval]
       rw [iha]
       rw [Real.rpow_mul t.2.le]
 
@@ -286,7 +285,8 @@ positive-real function:
 theorem e4c_eq_e4d : eval e4c = eval e4d := by
   funext t
   apply Subtype.ext
-  simp only [eval, e4c, e4d, PosReal.rpow]
+  simp only [eval, sharedEval, atomFunction, powFunction, e4c, e4d, PosReal.rpow,
+    PowTower.Expr.eval]
   rw [← Real.rpow_mul t.2.le t.1 (t.1 ^ t.1),
       ← Real.rpow_mul t.2.le (t.1 ^ t.1) t.1]
   ring_nf
