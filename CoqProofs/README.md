@@ -20,8 +20,9 @@ Current ports:
 - `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
   summation identity from `FloorSqrtSum.lean`.
 - `RationalFloorOrbit.v` ports the Calkin-Wilf pair generator core from
-  `RationalFloorOrbit.lean`, including positivity and coprimality invariants.
-  The inverse-index and rational-orbit layers remain to be ported.
+  `RationalFloorOrbit.lean`, including fuel adequacy, left/right child
+  equations, positivity, and coprimality invariants.  The inverse-index and
+  rational-orbit layers remain to be ported.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by

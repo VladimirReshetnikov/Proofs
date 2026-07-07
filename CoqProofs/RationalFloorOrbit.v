@@ -9,6 +9,7 @@
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
+From Stdlib Require Import Arith.Wf_nat.
 From Stdlib Require Import Lia.
 From Stdlib Require Import Lists.List.
 
@@ -39,6 +40,72 @@ Definition cwPair (n : nat) : nat * nat :=
 
 Theorem cwPair_zero : cwPair 0 = (1, 1).
 Proof. reflexivity. Qed.
+
+Lemma div2_lt_succ (m : nat) : m / 2 < S m.
+Proof.
+  destruct m as [|m].
+  - simpl. lia.
+  - eapply Nat.lt_trans.
+    + apply Nat.div_lt; lia.
+    + lia.
+Qed.
+
+Theorem cwPairFuel_ge (n fuel : nat) :
+    n <= fuel -> cwPairFuel fuel n = cwPair n.
+Proof.
+  revert fuel.
+  induction n as [n ih] using lt_wf_ind.
+  intros fuel hle.
+  unfold cwPair.
+  destruct n as [|m].
+  - destruct fuel; reflexivity.
+  - destruct fuel as [|fuel']; [lia|].
+    cbn [cwPairFuel fst snd].
+    assert (hidx : m / 2 < S m) by apply div2_lt_succ.
+    rewrite (ih (m / 2) hidx fuel') by lia.
+    rewrite (ih (m / 2) hidx m) by lia.
+    reflexivity.
+Qed.
+
+Theorem cwPair_unfold_succ (m : nat) :
+    cwPair (S m) =
+      let p := cwPair (m / 2) in
+      if Nat.even m
+      then (fst p, fst p + snd p)
+      else (fst p + snd p, snd p).
+Proof.
+  unfold cwPair at 1.
+  cbn [cwPairFuel fst snd].
+  rewrite cwPairFuel_ge.
+  - reflexivity.
+  - pose proof (div2_lt_succ m). lia.
+Qed.
+
+Theorem cwPair_left (n : nat) :
+    cwPair (2 * n + 1) =
+      let p := cwPair n in (fst p, fst p + snd p).
+Proof.
+  replace (2 * n + 1) with (S (2 * n)) by lia.
+  rewrite cwPair_unfold_succ.
+  replace ((2 * n) / 2) with n by
+    (symmetry; rewrite Nat.mul_comm; apply Nat.div_mul; lia).
+  rewrite Nat.even_even.
+  reflexivity.
+Qed.
+
+Theorem cwPair_right (n : nat) :
+    cwPair (2 * n + 2) =
+      let p := cwPair n in (fst p + snd p, snd p).
+Proof.
+  replace (2 * n + 2) with (S (2 * n + 1)) by lia.
+  rewrite cwPair_unfold_succ.
+  replace ((2 * n + 1) / 2) with n.
+  - rewrite Nat.even_odd.
+    reflexivity.
+  - replace (2 * n + 1) with (Nat.b2n true + 2 * n) by (simpl; lia).
+    rewrite Nat.add_b2n_double_div2.
+    reflexivity.
+Qed.
 
 Lemma coprime_add_right {a b : nat} :
     Coprime a b -> Coprime a (a + b).
