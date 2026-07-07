@@ -10701,6 +10701,149 @@ theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
     BProv translatedPAAx [] (translateFormula phi) :=
   BProv_ax (translatedPAAx_intro hphi)
 
+/-- Translate a finite PA context pointwise into the HF language. -/
+def translateContext (G : List PA.Formula) : List Form :=
+  G.map translateFormula
+
+theorem mem_translateContext_of_mem {G : List PA.Formula} {phi : PA.Formula}
+    (hphi : phi ∈ G) : translateFormula phi ∈ translateContext G :=
+  List.mem_map_of_mem (f := translateFormula) hphi
+
+/-- Translated PA assumptions are available as assumptions in the translated
+finite context. -/
+theorem BProv_translate_ass {G : List PA.Formula} {phi : PA.Formula}
+    (hphi : phi ∈ G) :
+    BProv translatedPAAx (translateContext G) (translateFormula phi) :=
+  BProv_of_Prov (B := translatedPAAx)
+    (Prov.P_ass (translateContext G) (translateFormula phi)
+      (mem_translateContext_of_mem hphi))
+
+/-- A PA axiom, translated into HF, is an axiom of the intermediate
+`translatedPAAx` theory. -/
+theorem BProv_translate_ax {phi : PA.Formula} (hphi : PA.Formula.Ax_s phi) :
+    BProv translatedPAAx [] (translateFormula phi) :=
+  BProv_translatedPAAx_of_PAAx hphi
+
+/-- Translated implication introduction for the PA-in-HF translation. -/
+theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}
+    (h : BProv translatedPAAx
+      (translateFormula a :: translateContext G) (translateFormula b)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.imp a b)) := by
+  change BProv translatedPAAx (translateContext G)
+    (fImp (translateFormula a) (translateFormula b))
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  rw [List.mem_append] at hx
+  rcases hx with hx | hx
+  · exact List.mem_cons.mpr
+      (Or.inr (List.mem_append.mpr (Or.inl hx)))
+  · rw [List.mem_cons] at hx
+    rcases hx with hx | hx
+    · exact List.mem_cons.mpr (Or.inl hx)
+    · exact List.mem_cons.mpr
+        (Or.inr (List.mem_append.mpr (Or.inr hx)))
+
+/-- Translated implication elimination for the PA-in-HF translation. -/
+theorem BProv_translate_impE {G : List PA.Formula} {a b : PA.Formula}
+    (hab : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.imp a b)))
+    (ha : BProv translatedPAAx (translateContext G) (translateFormula a)) :
+    BProv translatedPAAx (translateContext G) (translateFormula b) := by
+  exact BProv_mp translatedPAAx (translateContext G)
+    (translateFormula a) (translateFormula b)
+    (by simpa [translateFormula, formulaAt] using hab) ha
+
+/-- Translated bottom elimination for the PA-in-HF translation. -/
+theorem BProv_translate_botE {G : List PA.Formula} {a : PA.Formula}
+    (hbot : BProv translatedPAAx (translateContext G) fBot) :
+    BProv translatedPAAx (translateContext G) (translateFormula a) := by
+  rcases hbot with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_botE _ (translateFormula a) hp⟩
+
+/-- Translated law of excluded middle for the PA-in-HF translation. -/
+theorem BProv_translate_lem (G : List PA.Formula) (a : PA.Formula) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a (PA.Formula.imp a PA.Formula.bot))) := by
+  change BProv translatedPAAx (translateContext G)
+    (fOr (translateFormula a) (fImp (translateFormula a) fBot))
+  exact BProv_of_Prov (B := translatedPAAx) (Prov.P_lem _ _)
+
+/-- Translated conjunction introduction for the PA-in-HF translation. -/
+theorem BProv_translate_andI {G : List PA.Formula} {a b : PA.Formula}
+    (ha : BProv translatedPAAx (translateContext G) (translateFormula a))
+    (hb : BProv translatedPAAx (translateContext G) (translateFormula b)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.and a b)) := by
+  change BProv translatedPAAx (translateContext G)
+    (fAnd (translateFormula a) (translateFormula b))
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hLa x hx
+    · exact hLb x hx
+  · apply Prov.P_andI
+    · apply Prov_weaken hpa
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
+      · exact Or.inr hx
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
+      · exact Or.inr hx
+
+/-- First translated conjunction projection for the PA-in-HF translation. -/
+theorem BProv_translate_andE1 {G : List PA.Formula} {a b : PA.Formula}
+    (h : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.and a b))) :
+    BProv translatedPAAx (translateContext G) (translateFormula a) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_andE1 _ (translateFormula a) (translateFormula b)
+  simpa [translateFormula, formulaAt] using hp
+
+/-- Second translated conjunction projection for the PA-in-HF translation. -/
+theorem BProv_translate_andE2 {G : List PA.Formula} {a b : PA.Formula}
+    (h : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.and a b))) :
+    BProv translatedPAAx (translateContext G) (translateFormula b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_andE2 _ (translateFormula a) (translateFormula b)
+  simpa [translateFormula, formulaAt] using hp
+
+/-- Left translated disjunction introduction for the PA-in-HF translation. -/
+theorem BProv_translate_orI1 {G : List PA.Formula} {a b : PA.Formula}
+    (ha : BProv translatedPAAx (translateContext G) (translateFormula a)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a b)) := by
+  rcases ha with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ translateContext G)
+    (fOr (translateFormula a) (translateFormula b))
+  exact Prov.P_orI1 _ _ _ hp
+
+/-- Right translated disjunction introduction for the PA-in-HF translation. -/
+theorem BProv_translate_orI2 {G : List PA.Formula} {a b : PA.Formula}
+    (hb : BProv translatedPAAx (translateContext G) (translateFormula b)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a b)) := by
+  rcases hb with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ translateContext G)
+    (fOr (translateFormula a) (translateFormula b))
+  exact Prov.P_orI2 _ _ _ hp
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
