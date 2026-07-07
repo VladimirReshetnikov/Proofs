@@ -418,6 +418,30 @@ theorem BProv_theory_mono {B C : Form → Prop} {G : List Form} {phi : Form}
     (fun b hb => BProv_ax (G := G) (hBC b hb))
     (fun g hg => BProv_of_Prov (B := C) (Prov.P_ass G g hg))
 
+/-- Relative provability is closed under the set-theory equality elimination
+rule.  The formula `a` is the one-variable context, instantiated first by
+`i` and then by `j`. -/
+theorem BProv_eqElim {B : Form → Prop} {G : List Form} {i j : Nat}
+    {a : Form}
+    (heq : BProv B G (fEq i j))
+    (ha : BProv B G (rename (inst i) a)) :
+    BProv B G (rename (inst j) a) := by
+  have hbare : BProv B [fEq i j, rename (inst i) a]
+      (rename (inst j) a) := by
+    apply BProv_of_Prov
+    apply Prov.P_eqElim [fEq i j, rename (inst i) a] i j a
+    · exact Prov.P_ass _ _ (by simp)
+    · exact Prov.P_ass _ _ (by simp)
+  exact BProv_lift hbare
+    (fun _ hb => BProv_ax (G := G) hb)
+    (fun g hg => by
+      simp only [List.mem_cons, List.not_mem_nil] at hg
+      rcases hg with rfl | hg
+      · exact heq
+      · rcases hg with rfl | hnil
+        · exact ha
+        · cases hnil)
+
 /-- Soundness for relative provability from an infinite sentence theory and a
 finite context. -/
 theorem soundness_BProv {α : Type u} {mem : α → α → Prop} {B : Form → Prop}

@@ -11675,6 +11675,31 @@ theorem BProv_eq_of_formulaAt_eq_var {G : List Form} (ρ : Nat → Nat)
     Prov_eq_trans H2 (ρ m + 2) 1 0 hmx hxy
   exact Prov_eq_trans H2 (ρ m + 2) 0 (ρ n + 2) hm0 hy
 
+/-- PA-in-HF Leibniz equality elimination for equality between PA variables.
+
+The term-totality issue is explicit in the shape of this lemma: it applies only
+to variable terms, whose translated term graphs are just equality to their HF
+slots. -/
+theorem BProv_formulaAt_eqElim_var {Γ : List Form} {ρ : Nat → Nat}
+    {m n : Nat} {a : PA.Formula}
+    (heq : BProv translatedPAAx Γ
+      (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n))))
+    (ha : BProv translatedPAAx Γ
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var m)) a))) :
+    BProv translatedPAAx Γ
+      (formulaAt ρ
+        (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var n)) a)) := by
+  have hslot : BProv translatedPAAx Γ (fEq (ρ m) (ρ n)) :=
+    BProv_eq_of_formulaAt_eq_var ρ m n heq
+  have ha' : BProv translatedPAAx Γ
+      (rename (inst (ρ m)) (formulaAt (upVarMap ρ) a)) := by
+    simpa [formulaAt_subst_instTerm_var] using ha
+  have htarget : BProv translatedPAAx Γ
+      (rename (inst (ρ n)) (formulaAt (upVarMap ρ) a)) :=
+    BProv_eqElim hslot ha'
+  simpa [formulaAt_subst_instTerm_var] using htarget
+
 /-- Translated conjunction introduction for an explicit
 PA-variable-to-HF-slot map. -/
 theorem BProv_formulaAt_andI {ρ : Nat → Nat} {G : List PA.Formula}

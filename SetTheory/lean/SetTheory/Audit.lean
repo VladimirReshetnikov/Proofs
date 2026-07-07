@@ -29,6 +29,7 @@ open SetTheory
 #check @BProv_lift
 #check @BProv_cut
 #check @BProv_theory_mono
+#check @BProv_eqElim
 #check @soundness_BProv
 #print axioms prov_iff_valid
 
@@ -529,6 +530,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_var
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_var_of_eq
 #check @AckermannHF.PAInHF.BProv_eq_of_formulaAt_eq_var
+#check @AckermannHF.PAInHF.BProv_formulaAt_eqElim_var
 #check @AckermannHF.PAInHF.BProv_translate_andI
 #check @AckermannHF.PAInHF.BProv_formulaAt_andI
 #check @AckermannHF.PAInHF.BProv_translate_andE1
