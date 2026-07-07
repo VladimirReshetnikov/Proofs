@@ -11,6 +11,9 @@ import LeanProofs.SparseBinary
 import LeanProofs.A000081
 import LeanProofs.A002845
 import LeanProofs.A199812
+import LeanProofs.A198683Tower
+import LeanProofs.A198683FiveSix
+import LeanProofs.A198683SevenUpper
 import LeanProofs.A198683
 import LeanProofs.A198683Schoenfield
 import LeanProofs.A198683N12Probe
