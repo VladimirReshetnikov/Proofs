@@ -183,7 +183,10 @@ open SetTheory
 #check @PA.Formula.translateHFFormula_sentence_of_HF_sentence
 #check @PA.Formula.translated_HF_axiom_sentence
 #check @PA.Formula.translatedHFAx
+#check @PA.Formula.translatedHFAx_intro
 #check @PA.Formula.Sentences_translatedHFAx
+#check @PA.Formula.BProv_translatedHFAx_of_HFAx
+#check @PA.Formula.BProv_lift_translatedHFAx_to_PA
 #check @PA.Formula.standard_sat_translatedHFAx
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
@@ -286,7 +289,10 @@ open SetTheory
 #check @AckermannHF.PAInHF.translateFormula_sentence_of_PA_sentence
 #check @AckermannHF.PAInHF.translated_PA_axiom_sentence
 #check @AckermannHF.PAInHF.translatedPAAx
+#check @AckermannHF.PAInHF.translatedPAAx_intro
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx
+#check @AckermannHF.PAInHF.BProv_translatedPAAx_of_PAAx
+#check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
@@ -294,6 +300,8 @@ open SetTheory
 #check @AckermannHF.ordinalPA_sat_PA
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.TheoryInterpretation
+#check @AckermannHF.setTheoryIdentityInterpretationOfAxiomProofs
+#check @AckermannHF.paIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
 #check @AckermannHF.StandardModelInterpretationCertificate

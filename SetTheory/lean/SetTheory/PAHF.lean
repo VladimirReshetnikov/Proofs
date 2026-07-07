@@ -4246,10 +4246,23 @@ axiom-scheme instances. -/
 def translatedHFAx (phi : Formula) : Prop :=
   ∃ g, AckermannHF.HFAx_s g ∧ phi = translateHFFormula g
 
+theorem translatedHFAx_intro {g : Form} (hg : AckermannHF.HFAx_s g) :
+    translatedHFAx (translateHFFormula g) :=
+  ⟨g, hg, rfl⟩
+
 theorem Sentences_translatedHFAx : ∀ phi, translatedHFAx phi → Sentence phi := by
   intro phi hphi
   rcases hphi with ⟨g, hg, rfl⟩
   exact translated_HF_axiom_sentence g hg
+
+theorem BProv_translatedHFAx_of_HFAx {g : Form} (hg : AckermannHF.HFAx_s g) :
+    BProv translatedHFAx [] (translateHFFormula g) :=
+  BProv_ax (translatedHFAx_intro hg)
+
+theorem BProv_lift_translatedHFAx_to_PA
+    (hAx : ∀ f, translatedHFAx f → BProv Ax_s [] f)
+    {f : Formula} (h : BProv translatedHFAx [] f) : BProv Ax_s [] f :=
+  BProv_lift h hAx (fun _ hg => nomatch hg)
 
 theorem standard_sat_translatedHFAx (e : Nat → Nat) :
     ∀ g, translatedHFAx g → Sat natModel e g := by
@@ -5011,10 +5024,24 @@ axiom-scheme instances. -/
 def translatedPAAx (g : Form) : Prop :=
   ∃ phi, PA.Formula.Ax_s phi ∧ g = translateFormula phi
 
+theorem translatedPAAx_intro {phi : PA.Formula} (hphi : PA.Formula.Ax_s phi) :
+    translatedPAAx (translateFormula phi) :=
+  ⟨phi, hphi, rfl⟩
+
 theorem Sentences_translatedPAAx : Sentences translatedPAAx := by
   intro g hg
   rcases hg with ⟨phi, hphi, rfl⟩
   exact translated_PA_axiom_sentence phi hphi
+
+theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
+    (hphi : PA.Formula.Ax_s phi) :
+    BProv translatedPAAx [] (translateFormula phi) :=
+  BProv_ax (translatedPAAx_intro hphi)
+
+theorem BProv_lift_translatedPAAx_to_HF
+    (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
+    {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
+  BProv_lift h hAx (fun _ hf => nomatch hf)
 
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
     ∀ g, translatedPAAx g → Sat Mem e g := by
@@ -5070,6 +5097,42 @@ structure TheoryInterpretation
   maps_axiom : ∀ {phi}, SrcAx phi → TgtProv TgtAx [] (translate phi)
   maps_theorem : ∀ {phi}, SrcSentence phi →
     SrcProv SrcAx [] phi → TgtProv TgtAx [] (translate phi)
+
+/-- Build an identity interpretation between two set-theory theories once each
+source axiom has been proved from the target theory.  This is the assembly
+lemma used after axiom-discharge work; it does not hide any axiom proof. -/
+def setTheoryIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : Form → Prop)
+    (hAx : ∀ phi, SrcAx phi → BProv TgtAx [] phi) :
+    TheoryInterpretation Form Form Sentence Sentence SrcAx TgtAx BProv BProv where
+  translate := id
+  maps_sentence := by
+    intro phi hphi
+    exact hphi
+  maps_axiom := by
+    intro phi hphi
+    exact hAx phi hphi
+  maps_theorem := by
+    intro phi _ h
+    exact BProv_lift h hAx (fun g hg => nomatch hg)
+
+/-- PA analogue of `setTheoryIdentityInterpretationOfAxiomProofs`. -/
+def paIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : PA.Formula → Prop)
+    (hAx : ∀ phi, SrcAx phi → PA.Formula.BProv TgtAx [] phi) :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      SrcAx TgtAx PA.Formula.BProv PA.Formula.BProv where
+  translate := id
+  maps_sentence := by
+    intro phi hphi
+    exact hphi
+  maps_axiom := by
+    intro phi hphi
+    exact hAx phi hphi
+  maps_theorem := by
+    intro phi _ h
+    exact PA.Formula.BProv_lift h hAx (fun g hg => nomatch hg)
 
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
