@@ -10360,6 +10360,337 @@ Proof.
     now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
 Qed.
 
+Lemma formulaAt_substZeroAt_insert_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi p rho e,
+  Sat V (foam_mem V M) e
+    (formulaAt (substZeroAfterMap p 0 rho)
+      (PA.Formula.subst (PA.Formula.substZeroAt p) phi)) <->
+  Sat V (foam_mem V M) (insertAt p (foam_empty V M) e)
+    (formulaAt (substZeroBeforeMap p 0 rho) phi).
+Proof.
+  intros V M phi.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IH | a IH]; intros p rho e; simpl.
+  - split.
+    + intros [x [y [ha [hb heq]]]].
+      exists x, y.
+      split.
+      * assert (haMap : Sat V (foam_mem V M)
+          (scons V y (scons V x e))
+          (termGraphAt (substZeroAfterMap p 2 rho) 1
+            (PA.Term.subst (PA.Formula.substZeroAt p) a))).
+        {
+          rewrite <- (termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substZeroAt p) a)
+            (fun n => substZeroAfterMap p 0 rho n + 2)
+            (substZeroAfterMap p 2 rho) 1).
+          - exact ha.
+          - intro n. apply substZeroAfterMap_add.
+        }
+        pose proof (proj1 (termGraphAt_substZeroAt_insert_model
+          V M a p 2 rho 1 (scons V y (scons V x e)) ltac:(lia))
+          haMap) as haIns.
+        assert (henv : forall n,
+          scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+            insertAt (2 + p) (foam_empty V M)
+              (scons V y (scons V x e)) n).
+        {
+          intro n.
+          rewrite (scons2_insertAt V p
+            (foam_empty V M) x y e n).
+          replace (S (S p)) with (2 + p) by lia.
+          reflexivity.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (termGraphAt (substZeroBeforeMap p 2 rho) 1 a)
+          (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+          (insertAt (2 + p) (foam_empty V M)
+            (scons V y (scons V x e))) henv)) haIns as haEnv.
+        rewrite (termGraphAt_map_ext a
+          (substZeroBeforeMap p 2 rho)
+          (fun n => substZeroBeforeMap p 0 rho n + 2) 1) in haEnv.
+        -- exact haEnv.
+        -- intro n. symmetry. apply substZeroBeforeMap_add.
+      * split.
+        -- assert (hbMap : Sat V (foam_mem V M)
+            (scons V y (scons V x e))
+            (termGraphAt (substZeroAfterMap p 2 rho) 0
+              (PA.Term.subst (PA.Formula.substZeroAt p) b))).
+           {
+             rewrite <- (termGraphAt_map_ext
+               (PA.Term.subst (PA.Formula.substZeroAt p) b)
+               (fun n => substZeroAfterMap p 0 rho n + 2)
+               (substZeroAfterMap p 2 rho) 0).
+             - exact hb.
+             - intro n. apply substZeroAfterMap_add.
+           }
+           pose proof (proj1 (termGraphAt_substZeroAt_insert_model
+             V M b p 2 rho 0 (scons V y (scons V x e)) ltac:(lia))
+             hbMap) as hbIns.
+           assert (henv : forall n,
+             scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+               insertAt (2 + p) (foam_empty V M)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_insertAt V p
+               (foam_empty V M) x y e n).
+             replace (S (S p)) with (2 + p) by lia.
+             reflexivity.
+           }
+           pose proof (proj2 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p 2 rho) 0 b)
+             (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+             (insertAt (2 + p) (foam_empty V M)
+               (scons V y (scons V x e))) henv)) hbIns as hbEnv.
+           rewrite (termGraphAt_map_ext b
+             (substZeroBeforeMap p 2 rho)
+             (fun n => substZeroBeforeMap p 0 rho n + 2) 0) in hbEnv.
+           ++ exact hbEnv.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- exact heq.
+    + intros [x [y [ha [hb heq]]]].
+      exists x, y.
+      split.
+      * rewrite (termGraphAt_map_ext
+          (PA.Term.subst (PA.Formula.substZeroAt p) a)
+          (fun n => substZeroAfterMap p 0 rho n + 2)
+          (substZeroAfterMap p 2 rho) 1).
+        -- apply (proj2 (termGraphAt_substZeroAt_insert_model
+             V M a p 2 rho 1 (scons V y (scons V x e)) ltac:(lia))).
+           assert (henv : forall n,
+             scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+               insertAt (2 + p) (foam_empty V M)
+                 (scons V y (scons V x e)) n).
+           {
+             intro n.
+             rewrite (scons2_insertAt V p
+               (foam_empty V M) x y e n).
+             replace (S (S p)) with (2 + p) by lia.
+             reflexivity.
+           }
+           apply (proj1 (Sat_ext V (foam_mem V M)
+             (termGraphAt (substZeroBeforeMap p 2 rho) 1 a)
+             (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+             (insertAt (2 + p) (foam_empty V M)
+               (scons V y (scons V x e))) henv)).
+           rewrite (termGraphAt_map_ext a
+             (substZeroBeforeMap p 2 rho)
+             (fun n => substZeroBeforeMap p 0 rho n + 2) 1).
+           ++ exact ha.
+           ++ intro n. symmetry. apply substZeroBeforeMap_add.
+        -- intro n. apply substZeroAfterMap_add.
+      * split.
+        -- rewrite (termGraphAt_map_ext
+             (PA.Term.subst (PA.Formula.substZeroAt p) b)
+             (fun n => substZeroAfterMap p 0 rho n + 2)
+             (substZeroAfterMap p 2 rho) 0).
+           ++ apply (proj2 (termGraphAt_substZeroAt_insert_model
+                V M b p 2 rho 0 (scons V y (scons V x e)) ltac:(lia))).
+              assert (henv : forall n,
+                scons V y (scons V x (insertAt p (foam_empty V M) e)) n =
+                  insertAt (2 + p) (foam_empty V M)
+                    (scons V y (scons V x e)) n).
+              {
+                intro n.
+                rewrite (scons2_insertAt V p
+                  (foam_empty V M) x y e n).
+                replace (S (S p)) with (2 + p) by lia.
+                reflexivity.
+              }
+              apply (proj1 (Sat_ext V (foam_mem V M)
+                (termGraphAt (substZeroBeforeMap p 2 rho) 0 b)
+                (scons V y (scons V x (insertAt p (foam_empty V M) e)))
+                (insertAt (2 + p) (foam_empty V M)
+                  (scons V y (scons V x e))) henv)).
+              rewrite (termGraphAt_map_ext b
+                (substZeroBeforeMap p 2 rho)
+                (fun n => substZeroBeforeMap p 0 rho n + 2) 0).
+              ** exact hb.
+              ** intro n. symmetry. apply substZeroBeforeMap_add.
+           ++ intro n. apply substZeroAfterMap_add.
+        -- exact heq.
+  - reflexivity.
+  - split; intros h ha.
+    + apply (proj1 (IHb p rho e)).
+      apply h.
+      apply (proj2 (IHa p rho e)).
+      exact ha.
+    + apply (proj2 (IHb p rho e)).
+      apply h.
+      apply (proj1 (IHa p rho e)).
+      exact ha.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHa p rho e)). exact ha.
+      * apply (proj1 (IHb p rho e)). exact hb.
+    + split.
+      * apply (proj2 (IHa p rho e)). exact ha.
+      * apply (proj2 (IHb p rho e)). exact hb.
+  - split; intros h.
+    + destruct h as [ha | hb].
+      * left. apply (proj1 (IHa p rho e)). exact ha.
+      * right. apply (proj1 (IHb p rho e)). exact hb.
+    + destruct h as [ha | hb].
+      * left. apply (proj2 (IHa p rho e)). exact ha.
+      * right. apply (proj2 (IHb p rho e)). exact hb.
+  - split; intros hall d hdDomain.
+    + assert (hdDomain' :
+        Sat V (foam_mem V M) (scons V d e) domainForm).
+      {
+        apply (proj1 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      }
+      pose proof (hall d hdDomain') as hbody.
+      rewrite PA.Formula.upSubst_substZeroAt in hbody.
+      assert (hbodyNorm : Sat V (foam_mem V M) (scons V d e)
+        (formulaAt (substZeroAfterMap (S p) 0 rho)
+          (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a))).
+      {
+        rewrite <- (formulaAt_map_ext
+          (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+          (upVarMap (substZeroAfterMap p 0 rho))
+          (substZeroAfterMap (S p) 0 rho)).
+        - exact hbody.
+        - apply upVarMap_substZeroAfterMap_zero.
+      }
+      pose proof (proj1 (IH (S p) rho (scons V d e)) hbodyNorm)
+        as hbodyIns.
+      assert (henv : forall n,
+        scons V d (insertAt p (foam_empty V M) e) n =
+          insertAt (S p) (foam_empty V M) (scons V d e) n).
+      {
+        intro n.
+        apply scons_insertAt.
+      }
+      pose proof (proj2 (Sat_ext V (foam_mem V M)
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+        (scons V d (insertAt p (foam_empty V M) e))
+        (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+        hbodyIns as hbodyEnv.
+      rewrite (formulaAt_map_ext a
+        (substZeroBeforeMap (S p) 0 rho)
+        (upVarMap (substZeroBeforeMap p 0 rho))) in hbodyEnv.
+      * exact hbodyEnv.
+      * intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+    + assert (hdDomain' :
+        Sat V (foam_mem V M)
+          (scons V d (insertAt p (foam_empty V M) e)) domainForm).
+      {
+        apply (proj2 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      }
+      pose proof (hall d hdDomain') as hbody.
+      assert (hbodyNorm : Sat V (foam_mem V M)
+        (scons V d (insertAt p (foam_empty V M) e))
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)).
+      {
+        rewrite (formulaAt_map_ext a
+          (substZeroBeforeMap (S p) 0 rho)
+          (upVarMap (substZeroBeforeMap p 0 rho))).
+        - exact hbody.
+        - intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+      }
+      assert (henv : forall n,
+        scons V d (insertAt p (foam_empty V M) e) n =
+          insertAt (S p) (foam_empty V M) (scons V d e) n).
+      {
+        intro n.
+        apply scons_insertAt.
+      }
+      pose proof (proj1 (Sat_ext V (foam_mem V M)
+        (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+        (scons V d (insertAt p (foam_empty V M) e))
+        (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+        hbodyNorm as hbodyIns.
+      pose proof (proj2 (IH (S p) rho (scons V d e)) hbodyIns)
+        as hbodyAfter.
+      rewrite PA.Formula.upSubst_substZeroAt.
+      rewrite (formulaAt_map_ext
+        (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+        (upVarMap (substZeroAfterMap p 0 rho))
+        (substZeroAfterMap (S p) 0 rho)).
+      * exact hbodyAfter.
+      * apply upVarMap_substZeroAfterMap_zero.
+  - split.
+    + intros [d [hdDomain hbody]].
+      exists d.
+      split.
+      * apply (proj2 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      * rewrite PA.Formula.upSubst_substZeroAt in hbody.
+        assert (hbodyNorm : Sat V (foam_mem V M) (scons V d e)
+          (formulaAt (substZeroAfterMap (S p) 0 rho)
+            (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a))).
+        {
+          rewrite <- (formulaAt_map_ext
+            (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+            (upVarMap (substZeroAfterMap p 0 rho))
+            (substZeroAfterMap (S p) 0 rho)).
+          - exact hbody.
+          - apply upVarMap_substZeroAfterMap_zero.
+        }
+        pose proof (proj1 (IH (S p) rho (scons V d e)) hbodyNorm)
+          as hbodyIns.
+        assert (henv : forall n,
+          scons V d (insertAt p (foam_empty V M) e) n =
+            insertAt (S p) (foam_empty V M) (scons V d e) n).
+        {
+          intro n.
+          apply scons_insertAt.
+        }
+        pose proof (proj2 (Sat_ext V (foam_mem V M)
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+          (scons V d (insertAt p (foam_empty V M) e))
+          (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+          hbodyIns as hbodyEnv.
+        rewrite (formulaAt_map_ext a
+          (substZeroBeforeMap (S p) 0 rho)
+          (upVarMap (substZeroBeforeMap p 0 rho))) in hbodyEnv.
+        -- exact hbodyEnv.
+        -- intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+    + intros [d [hdDomain hbody]].
+      exists d.
+      split.
+      * apply (proj1 (domainForm_scons_insertAt V (foam_mem V M)
+          p (foam_empty V M) d e)).
+        exact hdDomain.
+      * assert (hbodyNorm : Sat V (foam_mem V M)
+          (scons V d (insertAt p (foam_empty V M) e))
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)).
+        {
+          rewrite (formulaAt_map_ext a
+            (substZeroBeforeMap (S p) 0 rho)
+            (upVarMap (substZeroBeforeMap p 0 rho))).
+          - exact hbody.
+          - intro n. symmetry. apply upVarMap_substZeroBeforeMap_zero.
+        }
+        assert (henv : forall n,
+          scons V d (insertAt p (foam_empty V M) e) n =
+            insertAt (S p) (foam_empty V M) (scons V d e) n).
+        {
+          intro n.
+          apply scons_insertAt.
+        }
+        pose proof (proj1 (Sat_ext V (foam_mem V M)
+          (formulaAt (substZeroBeforeMap (S p) 0 rho) a)
+          (scons V d (insertAt p (foam_empty V M) e))
+          (insertAt (S p) (foam_empty V M) (scons V d e)) henv))
+          hbodyNorm as hbodyIns.
+        pose proof (proj2 (IH (S p) rho (scons V d e)) hbodyIns)
+          as hbodyAfter.
+        rewrite PA.Formula.upSubst_substZeroAt.
+        rewrite (formulaAt_map_ext
+          (PA.Formula.subst (PA.Formula.substZeroAt (S p)) a)
+          (upVarMap (substZeroAfterMap p 0 rho))
+          (substZeroAfterMap (S p) 0 rho)).
+        -- exact hbodyAfter.
+        -- apply upVarMap_substZeroAfterMap_zero.
+Qed.
+
 Lemma formulaAt_free : forall phi rho i,
   Free i (formulaAt rho phi) ->
     exists n, PA.Formula.Free n phi /\ i = rho n.
