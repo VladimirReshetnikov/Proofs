@@ -637,6 +637,13 @@ def HF_succRecApproxAt (f s m : Nat) : Form :=
         (fAnd (HF_pairTotalBelowSuccAt f m)
           (HF_pairSuccStepAt f m))))
 
+/-- Formula macro: successor-recursion from slot `s` is total through slot `m`.
+It existentially packages a recursion graph and its value at key `m`. -/
+def HF_succRecTotalAt (s m : Nat) : Form :=
+  fEx (fEx (fAnd
+    (HF_succRecApproxAt 1 (s+2) (m+2))
+    (HF_pairMemAt (m+2) 0 1)))
+
 theorem HF_succRecApproxAt_spec {α : Type} (M : AdjunctionModel α)
     (e : Nat → α) (f s m : Nat) :
     Sat M.mem e (HF_succRecApproxAt f s m) ↔
@@ -763,6 +770,11 @@ def HF_ordinalLikeAt (a : Nat) : Form :=
     (fAnd
       (fAll (fImp (fMem 0 (a+1)) (HF_transitiveAt 0)))
       (HF_memTotalOnAt a))
+
+/-- Formula macro: successor-recursion from slot `s` is total through slot `m`
+whenever slot `m` is ordinal-like. -/
+def HF_succRecTotalOnOrdinalAt (s m : Nat) : Form :=
+  fImp (HF_ordinalLikeAt m) (HF_succRecTotalAt s m)
 
 theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
     (e : Nat → α) (a : Nat) :
@@ -1636,6 +1648,48 @@ theorem HF_succRecApproxAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
     HF_pairBaseAt_spec M e f s,
     HF_pairTotalBelowSuccAt_spec M e f m,
     HF_pairSuccStepAt_spec M e f m]
+
+/-- Semantic reading of `HF_succRecTotalAt` in a chosen first-order adjunction
+model. -/
+theorem HF_succRecTotalAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (s m : Nat) :
+    Sat M.mem e (HF_succRecTotalAt s m) ↔
+      SuccRecTotal M (e s) (e m) := by
+  constructor
+  · intro h
+    rcases h with ⟨f, z, hf, hz⟩
+    have hf' := (HF_succRecApproxAt_spec M (scons z (scons f e))
+      1 (s+2) (m+2)).mp hf
+    have hz' := (HF_pairMemAt_spec M (scons z (scons f e))
+      (m+2) 0 1).mp hz
+    change SuccRecApprox M (e s) f (e m) at hf'
+    change M.mem (kpair M (e m) z) f at hz'
+    exact ⟨f, z, hf', hz'⟩
+  · intro h
+    rcases h with ⟨f, z, hf, hz⟩
+    refine ⟨f, z, ?_, ?_⟩
+    · apply (HF_succRecApproxAt_spec M (scons z (scons f e))
+        1 (s+2) (m+2)).mpr
+      change SuccRecApprox M (e s) f (e m)
+      exact hf
+    · apply (HF_pairMemAt_spec M (scons z (scons f e))
+        (m+2) 0 1).mpr
+      change M.mem (kpair M (e m) z) f
+      exact hz
+
+/-- Semantic reading of the ordinal-relativized successor-recursion totality
+formula. -/
+theorem HF_succRecTotalOnOrdinalAt_spec {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α) (s m : Nat) :
+    Sat M.mem e (HF_succRecTotalOnOrdinalAt s m) ↔
+      (OrdinalLike M.mem (e m) → SuccRecTotal M (e s) (e m)) := by
+  constructor
+  · intro h hm
+    exact (HF_succRecTotalAt_spec M e s m).mp
+      (h ((HF_ordinalLikeAt_spec e m).mpr hm))
+  · intro h hmSat
+    exact (HF_succRecTotalAt_spec M e s m).mpr
+      (h ((HF_ordinalLikeAt_spec e m).mp hmSat))
 
 end FirstOrderAdjunctionModel
 

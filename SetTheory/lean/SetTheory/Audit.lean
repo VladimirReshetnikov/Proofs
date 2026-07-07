@@ -224,6 +224,8 @@ open SetTheory
 #check @AckermannHF.HF_pairBaseAt_spec
 #check @AckermannHF.HF_pairZeroBaseAt_spec
 #check @AckermannHF.HF_succRecApproxAt_spec
+#check @AckermannHF.HF_succRecTotalAt
+#check @AckermannHF.HF_succRecTotalOnOrdinalAt
 #check @AckermannHF.HF_subsetAt_spec
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
@@ -420,6 +422,8 @@ open SetTheory
 #check @AckermannHF.FirstOrderAdjunctionModel.SuccRecApprox
 #check @AckermannHF.FirstOrderAdjunctionModel.SuccRecTotal
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecApproxAt_spec
+#check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecTotalAt_spec
+#check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecTotalOnOrdinalAt_spec
 #check @AckermannHF.firstOrderAdjunctionModel_of_HFAx_s
 #check @AckermannHF.ordinalHF_sat_HF
 #check @AckermannHF.ordinalPA_sat_PA
