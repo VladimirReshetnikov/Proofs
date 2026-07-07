@@ -38,6 +38,8 @@ open SetTheory
 #check @PA.Formula.sat_axiom_s
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
+#check @AckermannHF.eq_empty_iff_no_mem
+#check @AckermannHF.exists_mem_of_ne_empty
 #check @AckermannHF.HF_emptyAt_empty
 #check @AckermannHF.HF_adjoinAt_adjoin
 #check @AckermannHF.HF_succAt_spec

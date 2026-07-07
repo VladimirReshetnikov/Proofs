@@ -78,6 +78,24 @@ theorem induction (P : Nat → Prop)
   exact Nat.strongRecOn a (fun a ih =>
     step a (fun x hx => ih x (mem_lt hx)))
 
+theorem eq_empty_iff_no_mem (a : Nat) : a = empty ↔ ∀ x, ¬ Mem x a := by
+  constructor
+  · intro h x
+    rw [h]
+    exact mem_empty x
+  · intro h
+    apply ext
+    intro x
+    constructor
+    · exact fun hx => False.elim (h x hx)
+    · exact fun hx => False.elim (mem_empty x hx)
+
+theorem exists_mem_of_ne_empty {a : Nat} (ha : a ≠ empty) : ∃ x, Mem x a := by
+  apply Classical.byContradiction
+  intro h
+  apply ha
+  exact (eq_empty_iff_no_mem a).mpr (fun x hx => h ⟨x, hx⟩)
+
 /-- A compact semantic bundle for the usual adjunction presentation of HF. -/
 structure AdjunctionModel (α : Type) where
   mem : α → α → Prop
