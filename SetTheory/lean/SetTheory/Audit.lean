@@ -395,6 +395,10 @@ open SetTheory
 #check @AckermannHF.FirstOrderAdjunctionModel.zeroSuccRecGraph
 #check @AckermannHF.FirstOrderAdjunctionModel.zeroSuccRecGraph_base
 #check @AckermannHF.FirstOrderAdjunctionModel.zeroSuccRecGraph_succRecApprox
+#check @AckermannHF.FirstOrderAdjunctionModel.succRecGraphSucc
+#check @AckermannHF.FirstOrderAdjunctionModel.succRecGraphSucc_old
+#check @AckermannHF.FirstOrderAdjunctionModel.succRecGraphSucc_new
+#check @AckermannHF.FirstOrderAdjunctionModel.succRecGraphSucc_succRecApprox
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_pairFunctionalAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_pairKeysBelowSuccAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_pairTotalBelowSuccAt_spec

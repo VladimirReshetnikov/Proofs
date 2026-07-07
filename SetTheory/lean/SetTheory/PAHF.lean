@@ -1442,6 +1442,114 @@ theorem zeroSuccRecGraph_succRecApprox {α : Type u}
   · intro k _t _y hkm _ _
     exact False.elim (M.empty_spec k hkm)
 
+/-- Extend a successor-recursion graph by the next pair
+`⟨m+1, z+1⟩`. -/
+def succRecGraphSucc {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (f m z : α) : α :=
+  M.adjoin f (kpair M (M.adjoin m m) (M.adjoin z z))
+
+theorem succRecGraphSucc_old {α : Type u} (M : FirstOrderAdjunctionModel α)
+    {f m z p : α} (hp : M.mem p f) :
+    M.mem p (succRecGraphSucc M f m z) :=
+  (M.adjoin_spec p f (kpair M (M.adjoin m m) (M.adjoin z z))).mpr (Or.inl hp)
+
+theorem succRecGraphSucc_new {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (f m z : α) :
+    M.mem (kpair M (M.adjoin m m) (M.adjoin z z))
+      (succRecGraphSucc M f m z) :=
+  (M.adjoin_spec (kpair M (M.adjoin m m) (M.adjoin z z))
+    f (kpair M (M.adjoin m m) (M.adjoin z z))).mpr (Or.inr rfl)
+
+theorem succRecGraphSucc_succRecApprox {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {s f m z : α}
+    (hm : OrdinalLike M.mem m)
+    (hf : SuccRecApprox M s f m)
+    (hz : M.mem (kpair M m z) f) :
+    SuccRecApprox M s (succRecGraphSucc M f m z) (M.adjoin m m) := by
+  rcases hf with ⟨hfun, hkeys, hbase, htotal, hstep⟩
+  let sm := M.adjoin m m
+  let sz := M.adjoin z z
+  let newPair := kpair M sm sz
+  let g := succRecGraphSucc M f m z
+  have hsm_not_mem : ¬ M.mem sm m := by
+    simpa [sm] using adjoin_self_not_mem_of_ordinalLike M hm
+  have hsm_ne_m : sm ≠ m := by
+    simpa [sm] using adjoin_self_ne_self M m
+  have hmem_g : ∀ p, M.mem p g ↔ M.mem p f ∨ p = newPair := by
+    intro p
+    exact M.adjoin_spec p f newPair
+  have old_key_ne_succ :
+      ∀ {k y}, M.mem (kpair M k y) f → k ≠ sm := by
+    intro k y hOld hk
+    have hkBound := hkeys k y hOld
+    rw [hk] at hkBound
+    rcases hkBound with hmem | heq
+    · exact hsm_not_mem hmem
+    · exact hsm_ne_m heq
+  have pair_old_of_mem_key :
+      ∀ {k y}, M.mem k m → M.mem (kpair M k y) g →
+        M.mem (kpair M k y) f := by
+    intro k y hkm hkg
+    rcases (hmem_g (kpair M k y)).mp hkg with hOld | hNew
+    · exact hOld
+    · have hk : k = sm := (kpair_injective M hNew).1
+      rw [hk] at hkm
+      exact False.elim (hsm_not_mem hkm)
+  refine ⟨?functional, ?keys, ?base, ?total, ?step⟩
+  · intro k y y' hky hky'
+    rcases (hmem_g (kpair M k y)).mp hky with hOld | hNew
+    · rcases (hmem_g (kpair M k y')).mp hky' with hOld' | hNew'
+      · exact hfun k y y' hOld hOld'
+      · have hk : k = sm := (kpair_injective M hNew').1
+        exact False.elim (old_key_ne_succ hOld hk)
+    · rcases (hmem_g (kpair M k y')).mp hky' with hOld' | hNew'
+      · have hk : k = sm := (kpair_injective M hNew).1
+        exact False.elim (old_key_ne_succ hOld' hk)
+      · have hy : y = sz := (kpair_injective M hNew).2
+        have hy' : y' = sz := (kpair_injective M hNew').2
+        rw [hy, hy']
+  · intro k y hky
+    rcases (hmem_g (kpair M k y)).mp hky with hOld | hNew
+    · rcases hkeys k y hOld with hkm | hkm
+      · exact Or.inl ((M.adjoin_spec k m m).mpr (Or.inl hkm))
+      · exact Or.inl ((M.adjoin_spec k m m).mpr (Or.inr hkm))
+    · exact Or.inr (kpair_injective M hNew).1
+  · exact succRecGraphSucc_old M hbase
+  · intro k hk
+    rcases hk with hksm | hksm
+    · rcases (M.adjoin_spec k m m).mp hksm with hkm | hkm
+      · rcases htotal k (Or.inl hkm) with ⟨y, hy⟩
+        exact ⟨y, succRecGraphSucc_old M hy⟩
+      · rcases htotal k (Or.inr hkm) with ⟨y, hy⟩
+        exact ⟨y, succRecGraphSucc_old M hy⟩
+    · subst k
+      exact ⟨sz, succRecGraphSucc_new M f m z⟩
+  · intro k t y hksm hkt hsky
+    rcases (M.adjoin_spec k m m).mp hksm with hkm | hkm
+    · have hktOld : M.mem (kpair M k t) f :=
+        pair_old_of_mem_key hkm hkt
+      have hskyOld : M.mem (kpair M (M.adjoin k k) y) f := by
+        rcases (hmem_g (kpair M (M.adjoin k k) y)).mp hsky with hOld | hNew
+        · exact hOld
+        · have hsk : M.adjoin k k = sm := (kpair_injective M hNew).1
+          have hkOrd : OrdinalLike M.mem k := OrdinalLike.of_mem hm hkm
+          have hkm_eq : k = m :=
+            adjoin_self_injective_on_ordinalLike M hkOrd hm (by simpa [sm] using hsk)
+          rw [hkm_eq] at hkm
+          exact False.elim (mem_irrefl M m hkm)
+      exact hstep k t y hkm hktOld hskyOld
+    · subst k
+      have hktOld : M.mem (kpair M m t) f := by
+        rcases (hmem_g (kpair M m t)).mp hkt with hOld | hNew
+        · exact hOld
+        · have hm_eq_sm : m = sm := (kpair_injective M hNew).1
+          exact False.elim (hsm_ne_m hm_eq_sm.symm)
+      have ht : t = z := hfun m t z hktOld hz
+      rcases (hmem_g (kpair M sm y)).mp hsky with hOld | hNew
+      · exact False.elim (old_key_ne_succ hOld rfl)
+      · have hy : y = sz := (kpair_injective M hNew).2
+        rw [ht, hy]
+
 theorem HF_succRecApproxAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
     (e : Nat → α) (f s m : Nat) :
     Sat M.mem e (HF_succRecApproxAt f s m) ↔
