@@ -2879,6 +2879,130 @@ theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
   rcases (hfMemAt_nat_trace e elem set).mp h with ⟨code, step, htrace⟩
   exact HFMemTrace_mem htrace
 
+theorem hfMemAt_free {i elem set : Nat} (h : Free i (hfMemAt elem set)) :
+    i = elem ∨ i = set := by
+  simp [hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt, betaDiv2StepWitnessAt,
+    betaAtConstIdx, betaAtSuccIdx, betaAt, remAt, ltAt, leAt, div2StepAt,
+    boolAt, zeroAt, oneAt, eqConstAt, betaModTerm, Free, Term.Free,
+    Term.rename, Term.numeral] at h
+  omega
+
+/-- Slot-map extension across a translated HF quantifier.  The newly bound HF
+variable is represented by the newly bound PA variable `0`; older HF variables
+are shifted past it. -/
+def hfUpVarMap (ρ : Nat → Nat) : Nat → Nat
+  | 0 => 0
+  | n+1 => ρ n + 1
+
+/-- Translate set-theory formulas to PA formulas using Ackermann membership.
+The HF domain is all natural numbers, so quantifiers are not relativized. -/
+def hfFormulaAt (ρ : Nat → Nat) : Form → Formula
+  | Form.fMem i j => hfMemAt (ρ i) (ρ j)
+  | Form.fEq i j => eq (Term.var (ρ i)) (Term.var (ρ j))
+  | Form.fBot => bot
+  | Form.fImp a b => imp (hfFormulaAt ρ a) (hfFormulaAt ρ b)
+  | Form.fAnd a b => and (hfFormulaAt ρ a) (hfFormulaAt ρ b)
+  | Form.fOr a b => or (hfFormulaAt ρ a) (hfFormulaAt ρ b)
+  | Form.fAll a => all (hfFormulaAt (hfUpVarMap ρ) a)
+  | Form.fEx a => ex (hfFormulaAt (hfUpVarMap ρ) a)
+
+theorem hfFormulaAt_free (phi : Form) :
+    ∀ {ρ : Nat → Nat} {i : Nat}, Free i (hfFormulaAt ρ phi) →
+      ∃ n, SetTheory.Free n phi ∧ i = ρ n := by
+  induction phi with
+  | fMem a b =>
+      intro ρ i h
+      rcases hfMemAt_free h with hi | hi
+      · exact ⟨a, Or.inl rfl, hi⟩
+      · exact ⟨b, Or.inr rfl, hi⟩
+  | fEq a b =>
+      intro ρ i h
+      simp only [hfFormulaAt, Free, Term.Free] at h
+      rcases h with hi | hi
+      · exact ⟨a, Or.inl rfl, hi⟩
+      · exact ⟨b, Or.inr rfl, hi⟩
+  | fBot =>
+      intro ρ i h
+      cases h
+  | fImp a b iha ihb =>
+      intro ρ i h
+      simp only [hfFormulaAt, Free] at h
+      rcases h with h | h
+      · rcases iha h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inl hn, hi⟩
+      · rcases ihb h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inr hn, hi⟩
+  | fAnd a b iha ihb =>
+      intro ρ i h
+      simp only [hfFormulaAt, Free] at h
+      rcases h with h | h
+      · rcases iha h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inl hn, hi⟩
+      · rcases ihb h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inr hn, hi⟩
+  | fOr a b iha ihb =>
+      intro ρ i h
+      simp only [hfFormulaAt, Free] at h
+      rcases h with h | h
+      · rcases iha h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inl hn, hi⟩
+      · rcases ihb h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inr hn, hi⟩
+  | fAll a ih =>
+      intro ρ i h
+      simp only [hfFormulaAt, Free] at h
+      rcases ih h with ⟨n, hn, hi⟩
+      cases n with
+      | zero =>
+          simp [hfUpVarMap] at hi
+      | succ n =>
+          exists n
+          constructor
+          · exact hn
+          · simp [hfUpVarMap] at hi
+            omega
+  | fEx a ih =>
+      intro ρ i h
+      simp only [hfFormulaAt, Free] at h
+      rcases ih h with ⟨n, hn, hi⟩
+      cases n with
+      | zero =>
+          simp [hfUpVarMap] at hi
+      | succ n =>
+          exists n
+          constructor
+          · exact hn
+          · simp [hfUpVarMap] at hi
+            omega
+
+/-- The default HF-in-PA translation reads HF variable `n` from PA slot `n`. -/
+def translateHFFormula (phi : Form) : Formula :=
+  hfFormulaAt (fun n : Nat => n) phi
+
+theorem hfFormulaAt_sentence_of_HF_sentence (phi : Form) (ρ : Nat → Nat)
+    (hphi : SetTheory.Sentence phi) : Sentence (hfFormulaAt ρ phi) := by
+  intro i hi
+  rcases hfFormulaAt_free phi hi with ⟨n, hn, _⟩
+  exact hphi n hn
+
+theorem translateHFFormula_sentence_of_HF_sentence (phi : Form)
+    (hphi : SetTheory.Sentence phi) : Sentence (translateHFFormula phi) :=
+  hfFormulaAt_sentence_of_HF_sentence phi (fun n : Nat => n) hphi
+
+theorem translated_HF_axiom_sentence (g : Form)
+    (hg : AckermannHF.HFAx_s g) : Sentence (translateHFFormula g) :=
+  translateHFFormula_sentence_of_HF_sentence g (AckermannHF.Sentences_HF g hg)
+
+/-- The PA-side theory consisting of syntactic translations of the sealed HF
+axiom-scheme instances. -/
+def translatedHFAx (phi : Formula) : Prop :=
+  ∃ g, AckermannHF.HFAx_s g ∧ phi = translateHFFormula g
+
+theorem Sentences_translatedHFAx : ∀ phi, translatedHFAx phi → Sentence phi := by
+  intro phi hphi
+  rcases hphi with ⟨g, hg, rfl⟩
+  exact translated_HF_axiom_sentence g hg
+
 end Formula
 
 namespace Formula

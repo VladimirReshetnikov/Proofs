@@ -114,6 +114,16 @@ open SetTheory
 #check @PA.Formula.HFMemTrace_entry_shiftRight
 #check @PA.Formula.HFMemTrace_mem
 #check @PA.Formula.hfMemAt_sound
+#check @PA.Formula.hfMemAt_free
+#check @PA.Formula.hfUpVarMap
+#check @PA.Formula.hfFormulaAt
+#check @PA.Formula.hfFormulaAt_free
+#check @PA.Formula.translateHFFormula
+#check @PA.Formula.hfFormulaAt_sentence_of_HF_sentence
+#check @PA.Formula.translateHFFormula_sentence_of_HF_sentence
+#check @PA.Formula.translated_HF_axiom_sentence
+#check @PA.Formula.translatedHFAx
+#check @PA.Formula.Sentences_translatedHFAx
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
 #check @AckermannHF.eq_empty_iff_no_mem
