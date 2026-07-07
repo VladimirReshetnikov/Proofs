@@ -4864,6 +4864,540 @@ Proof.
     reflexivity.
 Defined.
 
+Module PA.
+
+Record Model := {
+  carrier :> Type;
+  zero : carrier;
+  succ : carrier -> carrier;
+  add : carrier -> carrier -> carrier;
+  mul : carrier -> carrier -> carrier;
+  succ_injective : forall a b, succ a = succ b -> a = b;
+  zero_not_succ : forall a, succ a <> zero;
+  induction_schema : forall P : carrier -> Prop,
+    P zero -> (forall a, P a -> P (succ a)) -> forall a, P a;
+  add_zero : forall a, add a zero = a;
+  add_succ : forall a b, add a (succ b) = succ (add a b);
+  mul_zero : forall a, mul a zero = zero;
+  mul_succ : forall a b, mul a (succ b) = add (mul a b) a
+}.
+
+Record Iso (M N : Model) := {
+  iso_to : M -> N;
+  iso_inv : N -> M;
+  iso_left_inv : forall a, iso_inv (iso_to a) = a;
+  iso_right_inv : forall b, iso_to (iso_inv b) = b;
+  iso_map_zero : iso_to (zero M) = zero N;
+  iso_map_succ : forall a, iso_to (succ M a) = succ N (iso_to a);
+  iso_map_add : forall a b, iso_to (add M a b) = add N (iso_to a) (iso_to b);
+  iso_map_mul : forall a b, iso_to (mul M a b) = mul N (iso_to a) (iso_to b)
+}.
+
+Definition natModel : Model.
+Proof.
+  refine {| carrier := nat;
+            zero := 0;
+            succ := S;
+            add := Nat.add;
+            mul := Nat.mul |}.
+  - intros a b h. now inversion h.
+  - intros a h. discriminate h.
+  - intros P h0 hs a.
+    induction a as [|a ih].
+    + exact h0.
+    + exact (hs a ih).
+  - apply Nat.add_0_r.
+  - apply Nat.add_succ_r.
+  - apply Nat.mul_0_r.
+  - apply Nat.mul_succ_r.
+Defined.
+
+Inductive term : Type :=
+| tVar : nat -> term
+| tZero : term
+| tSucc : term -> term
+| tAdd : term -> term -> term
+| tMul : term -> term -> term.
+
+Inductive formula : Type :=
+| pEq : term -> term -> formula
+| pBot : formula
+| pImp : formula -> formula -> formula
+| pAnd : formula -> formula -> formula
+| pOr : formula -> formula -> formula
+| pAll : formula -> formula
+| pEx : formula -> formula.
+
+Module Term.
+
+Fixpoint rename (r : nat -> nat) (t : term) : term :=
+  match t with
+  | tVar n => tVar (r n)
+  | tZero => tZero
+  | tSucc a => tSucc (rename r a)
+  | tAdd a b => tAdd (rename r a) (rename r b)
+  | tMul a b => tMul (rename r a) (rename r b)
+  end.
+
+Definition upSubst (sigma : nat -> term) : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => tVar 0
+    | S k => rename S (sigma k)
+    end.
+
+Fixpoint subst (sigma : nat -> term) (t : term) : term :=
+  match t with
+  | tVar n => sigma n
+  | tZero => tZero
+  | tSucc a => tSucc (subst sigma a)
+  | tAdd a b => tAdd (subst sigma a) (subst sigma b)
+  | tMul a b => tMul (subst sigma a) (subst sigma b)
+  end.
+
+Fixpoint eval (M : Model) (e : nat -> M) (t : term) : M :=
+  match t with
+  | tVar n => e n
+  | tZero => zero M
+  | tSucc a => succ M (eval M e a)
+  | tAdd a b => add M (eval M e a) (eval M e b)
+  | tMul a b => mul M (eval M e a) (eval M e b)
+  end.
+
+Fixpoint numeral (n : nat) : term :=
+  match n with
+  | 0 => tZero
+  | S k => tSucc (numeral k)
+  end.
+
+Fixpoint numeralValue (M : Model) (n : nat) : M :=
+  match n with
+  | 0 => zero M
+  | S k => succ M (numeralValue M k)
+  end.
+
+Lemma eval_numeral : forall (M : Model) (e : nat -> M) n,
+  eval M e (numeral n) = numeralValue M n.
+Proof.
+  intros M e n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
+Lemma numeralValue_natModel : forall n,
+  numeralValue natModel n = n.
+Proof.
+  intro n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
+Lemma eval_numeral_natModel : forall (e : nat -> nat) n,
+  eval natModel e (numeral n) = n.
+Proof.
+  intros e n.
+  rewrite eval_numeral.
+  apply numeralValue_natModel.
+Qed.
+
+Fixpoint bound (t : term) : nat :=
+  match t with
+  | tVar n => S n
+  | tZero => 0
+  | tSucc a => bound a
+  | tAdd a b => bound a + bound b
+  | tMul a b => bound a + bound b
+  end.
+
+Fixpoint Free (n : nat) (t : term) : Prop :=
+  match t with
+  | tVar k => n = k
+  | tZero => False
+  | tSucc a => Free n a
+  | tAdd a b => Free n a \/ Free n b
+  | tMul a b => Free n a \/ Free n b
+  end.
+
+Lemma free_lt_bound : forall t n, Free n t -> n < bound t.
+Proof.
+  induction t; simpl; intros k hk.
+  - subst k. lia.
+  - contradiction.
+  - apply IHt. exact hk.
+  - destruct hk as [hk | hk].
+    + pose proof (IHt1 k hk). lia.
+    + pose proof (IHt2 k hk). lia.
+  - destruct hk as [hk | hk].
+    + pose proof (IHt1 k hk). lia.
+    + pose proof (IHt2 k hk). lia.
+Qed.
+
+Lemma eval_ext : forall (M : Model) (t : term) (e e' : nat -> M),
+  (forall n, e n = e' n) -> eval M e t = eval M e' t.
+Proof.
+  intros M t.
+  induction t; simpl; intros e e' h; try reflexivity.
+  - apply h.
+  - now rewrite (IHt e e' h).
+  - now rewrite (IHt1 e e' h), (IHt2 e e' h).
+  - now rewrite (IHt1 e e' h), (IHt2 e e' h).
+Qed.
+
+Lemma eval_rename : forall (M : Model) (t : term)
+    (r : nat -> nat) (e : nat -> M),
+  eval M e (rename r t) = eval M (fun n => e (r n)) t.
+Proof.
+  intros M t.
+  induction t; simpl; intros r e; try reflexivity.
+  - now rewrite (IHt r e).
+  - now rewrite (IHt1 r e), (IHt2 r e).
+  - now rewrite (IHt1 r e), (IHt2 r e).
+Qed.
+
+Lemma rename_ext : forall t (r r' : nat -> nat),
+  (forall n, r n = r' n) -> rename r t = rename r' t.
+Proof.
+  induction t; simpl; intros r r' h; try reflexivity.
+  - now rewrite h.
+  - now rewrite (IHt r r' h).
+  - now rewrite (IHt1 r r' h), (IHt2 r r' h).
+  - now rewrite (IHt1 r r' h), (IHt2 r r' h).
+Qed.
+
+Lemma rename_comp : forall t (r r' : nat -> nat),
+  rename r (rename r' t) = rename (fun n => r (r' n)) t.
+Proof.
+  induction t; simpl; intros r r'; try reflexivity.
+  - now rewrite (IHt r r').
+  - now rewrite (IHt1 r r'), (IHt2 r r').
+  - now rewrite (IHt1 r r'), (IHt2 r r').
+Qed.
+
+Lemma eval_upSubst : forall (M : Model) (sigma : nat -> term)
+    (e : nat -> M) (d : M) n,
+  eval M (scons M d e) (upSubst sigma n) =
+    scons M d (fun k => eval M e (sigma k)) n.
+Proof.
+  intros M sigma e d [|n]; simpl.
+  - reflexivity.
+  - rewrite eval_rename. reflexivity.
+Qed.
+
+Lemma eval_subst : forall (M : Model) (t : term)
+    (sigma : nat -> term) (e : nat -> M),
+  eval M e (subst sigma t) =
+    eval M (fun n => eval M e (sigma n)) t.
+Proof.
+  intros M t.
+  induction t; simpl; intros sigma e; try reflexivity.
+  - now rewrite (IHt sigma e).
+  - now rewrite (IHt1 sigma e), (IHt2 sigma e).
+  - now rewrite (IHt1 sigma e), (IHt2 sigma e).
+Qed.
+
+Lemma subst_ext : forall t (sigma tau : nat -> term),
+  (forall n, sigma n = tau n) -> subst sigma t = subst tau t.
+Proof.
+  induction t; simpl; intros sigma tau h; try reflexivity.
+  - apply h.
+  - now rewrite (IHt sigma tau h).
+  - now rewrite (IHt1 sigma tau h), (IHt2 sigma tau h).
+  - now rewrite (IHt1 sigma tau h), (IHt2 sigma tau h).
+Qed.
+
+Lemma subst_rename : forall t (sigma : nat -> term) (r : nat -> nat),
+  subst sigma (rename r t) = subst (fun n => sigma (r n)) t.
+Proof.
+  induction t; simpl; intros sigma r; try reflexivity.
+  - now rewrite (IHt sigma r).
+  - now rewrite (IHt1 sigma r), (IHt2 sigma r).
+  - now rewrite (IHt1 sigma r), (IHt2 sigma r).
+Qed.
+
+Lemma rename_subst : forall t (r : nat -> nat) (sigma : nat -> term),
+  rename r (subst sigma t) =
+    subst (fun n => rename r (sigma n)) t.
+Proof.
+  induction t; simpl; intros r sigma; try reflexivity.
+  - now rewrite (IHt r sigma).
+  - now rewrite (IHt1 r sigma), (IHt2 r sigma).
+  - now rewrite (IHt1 r sigma), (IHt2 r sigma).
+Qed.
+
+End Term.
+
+Module Formula.
+
+Definition iffForm (a b : formula) : formula :=
+  pAnd (pImp a b) (pImp b a).
+
+Fixpoint rename (r : nat -> nat) (phi : formula) : formula :=
+  match phi with
+  | pEq a b => pEq (Term.rename r a) (Term.rename r b)
+  | pBot => pBot
+  | pImp a b => pImp (rename r a) (rename r b)
+  | pAnd a b => pAnd (rename r a) (rename r b)
+  | pOr a b => pOr (rename r a) (rename r b)
+  | pAll a => pAll (rename (up r) a)
+  | pEx a => pEx (rename (up r) a)
+  end.
+
+Fixpoint subst (sigma : nat -> term) (phi : formula) : formula :=
+  match phi with
+  | pEq a b => pEq (Term.subst sigma a) (Term.subst sigma b)
+  | pBot => pBot
+  | pImp a b => pImp (subst sigma a) (subst sigma b)
+  | pAnd a b => pAnd (subst sigma a) (subst sigma b)
+  | pOr a b => pOr (subst sigma a) (subst sigma b)
+  | pAll a => pAll (subst (Term.upSubst sigma) a)
+  | pEx a => pEx (subst (Term.upSubst sigma) a)
+  end.
+
+Fixpoint Sat (M : Model) (e : nat -> M) (phi : formula) : Prop :=
+  match phi with
+  | pEq a b => Term.eval M e a = Term.eval M e b
+  | pBot => False
+  | pImp a b => Sat M e a -> Sat M e b
+  | pAnd a b => Sat M e a /\ Sat M e b
+  | pOr a b => Sat M e a \/ Sat M e b
+  | pAll a => forall d, Sat M (scons M d e) a
+  | pEx a => exists d, Sat M (scons M d e) a
+  end.
+
+Lemma Sat_iffForm : forall (M : Model) (e : nat -> M) a b,
+  Sat M e (iffForm a b) <-> (Sat M e a <-> Sat M e b).
+Proof.
+  intros M e a b.
+  unfold iffForm. simpl. tauto.
+Qed.
+
+Fixpoint bound (phi : formula) : nat :=
+  match phi with
+  | pEq a b => Term.bound a + Term.bound b
+  | pBot => 0
+  | pImp a b => bound a + bound b
+  | pAnd a b => bound a + bound b
+  | pOr a b => bound a + bound b
+  | pAll a => bound a
+  | pEx a => bound a
+  end.
+
+Fixpoint Free (n : nat) (phi : formula) : Prop :=
+  match phi with
+  | pEq a b => Term.Free n a \/ Term.Free n b
+  | pBot => False
+  | pImp a b => Free n a \/ Free n b
+  | pAnd a b => Free n a \/ Free n b
+  | pOr a b => Free n a \/ Free n b
+  | pAll a => Free (S n) a
+  | pEx a => Free (S n) a
+  end.
+
+Definition Sentence (phi : formula) : Prop := forall n, ~ Free n phi.
+
+Lemma free_lt_bound : forall phi n, Free n phi -> n < bound phi.
+Proof.
+  induction phi; simpl; intros k hk.
+  - destruct hk as [hk | hk].
+    + pose proof (Term.free_lt_bound t k hk). lia.
+    + pose proof (Term.free_lt_bound t0 k hk). lia.
+  - contradiction.
+  - destruct hk as [hk | hk].
+    + pose proof (IHphi1 k hk). lia.
+    + pose proof (IHphi2 k hk). lia.
+  - destruct hk as [hk | hk].
+    + pose proof (IHphi1 k hk). lia.
+    + pose proof (IHphi2 k hk). lia.
+  - destruct hk as [hk | hk].
+    + pose proof (IHphi1 k hk). lia.
+    + pose proof (IHphi2 k hk). lia.
+  - pose proof (IHphi (S k) hk). lia.
+  - pose proof (IHphi (S k) hk). lia.
+Qed.
+
+Fixpoint closeN (k : nat) (phi : formula) : formula :=
+  match k with
+  | 0 => phi
+  | S n => closeN n (pAll phi)
+  end.
+
+Definition sealPA (phi : formula) : formula := closeN (bound phi) phi.
+
+Lemma Free_closeN : forall k phi n,
+  Free n (closeN k phi) -> Free (k + n) phi.
+Proof.
+  induction k as [|k IH]; simpl; intros phi n h.
+  - exact h.
+  - pose proof (IH (pAll phi) n h) as h'.
+    simpl in h'.
+    exact h'.
+Qed.
+
+Lemma sealPA_sentence : forall phi, Sentence (sealPA phi).
+Proof.
+  unfold Sentence, sealPA.
+  intros phi n h.
+  pose proof (Free_closeN (bound phi) phi n h) as hfree.
+  pose proof (free_lt_bound phi (bound phi + n) hfree) as hlt.
+  lia.
+Qed.
+
+Lemma Sat_ext : forall (M : Model) phi (e e' : nat -> M),
+  (forall n, e n = e' n) -> Sat M e phi <-> Sat M e' phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros e e' h.
+  - rewrite (Term.eval_ext M t e e' h).
+    rewrite (Term.eval_ext M t0 e e' h).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 e e' h)).
+      apply hp.
+      apply (proj2 (IHphi1 e e' h)).
+      exact hi.
+    + apply (proj2 (IHphi2 e e' h)).
+      apply hp.
+      apply (proj1 (IHphi1 e e' h)).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 e e' h)); exact ha.
+      * apply (proj1 (IHphi2 e e' h)); exact hb.
+    + split.
+      * apply (proj2 (IHphi1 e e' h)); exact ha.
+      * apply (proj2 (IHphi2 e e' h)); exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 e e' h)); exact ha.
+      * right. apply (proj1 (IHphi2 e e' h)); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 e e' h)); exact ha.
+      * right. apply (proj2 (IHphi2 e e' h)); exact hb.
+  - split; intros hall d.
+    + apply (proj1 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact (hall d).
+    + apply (proj2 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact (hall d).
+  - split; intros hex.
+    + destruct hex as [d hd].
+      exists d.
+      apply (proj1 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact hd.
+    + destruct hex as [d hd].
+      exists d.
+      apply (proj2 (IHphi (scons M d e) (scons M d e')
+        (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact hd.
+Qed.
+
+Lemma Sat_subst : forall (M : Model) phi (sigma : nat -> term)
+    (e : nat -> M),
+  Sat M e (subst sigma phi) <->
+    Sat M (fun n => Term.eval M e (sigma n)) phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros sigma e.
+  - rewrite (Term.eval_subst M t sigma e).
+    rewrite (Term.eval_subst M t0 sigma e).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 sigma e)).
+      apply hp.
+      apply (proj2 (IHphi1 sigma e)).
+      exact hi.
+    + apply (proj2 (IHphi2 sigma e)).
+      apply hp.
+      apply (proj1 (IHphi1 sigma e)).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 sigma e)); exact ha.
+      * apply (proj1 (IHphi2 sigma e)); exact hb.
+    + split.
+      * apply (proj2 (IHphi1 sigma e)); exact ha.
+      * apply (proj2 (IHphi2 sigma e)); exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 sigma e)); exact ha.
+      * right. apply (proj1 (IHphi2 sigma e)); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 sigma e)); exact ha.
+      * right. apply (proj2 (IHphi2 sigma e)); exact hb.
+  - split; intros hall d.
+    + pose proof (proj1 (IHphi (Term.upSubst sigma) (scons M d e))
+        (hall d)) as hbody.
+      apply (proj1 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))).
+      exact hbody.
+    + pose proof (proj2 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))
+        (hall d)) as hbody.
+      apply (proj2 (IHphi (Term.upSubst sigma) (scons M d e))).
+      exact hbody.
+  - split; intros hex.
+    + destruct hex as [d hd].
+      pose proof (proj1 (IHphi (Term.upSubst sigma) (scons M d e))
+        hd) as hbody.
+      exists d.
+      apply (proj1 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))).
+      exact hbody.
+    + destruct hex as [d hd].
+      exists d.
+      pose proof (proj2 (Sat_ext M phi
+        (fun n => Term.eval M (scons M d e) (Term.upSubst sigma n))
+        (scons M d (fun k => Term.eval M e (sigma k)))
+        (fun n => Term.eval_upSubst M sigma e d n))
+        hd) as hbody.
+      apply (proj2 (IHphi (Term.upSubst sigma) (scons M d e))).
+      exact hbody.
+Qed.
+
+Lemma closeN_valid : forall (M : Model) k phi,
+  (forall e : nat -> M, Sat M e (closeN k phi)) <->
+    (forall e, Sat M e phi).
+Proof.
+  intros M k.
+  induction k as [|k IH]; intros phi.
+  - reflexivity.
+  - simpl.
+    rewrite (IH (pAll phi)).
+    split.
+    + intros h e'.
+      assert (pf : forall n,
+          scons M (e' 0) (fun n => e' (S n)) n = e' n).
+      {
+        intros [|n]; reflexivity.
+      }
+      apply (proj1 (Sat_ext M phi
+        (scons M (e' 0) (fun n => e' (S n))) e' pf)).
+      exact (h (fun n => e' (S n)) (e' 0)).
+    + intros h e d.
+      exact (h (scons M d e)).
+Qed.
+
+Lemma seal_valid : forall (M : Model) phi,
+  (forall e : nat -> M, Sat M e (sealPA phi)) <->
+    (forall e, Sat M e phi).
+Proof.
+  intros M phi.
+  unfold sealPA.
+  apply closeN_valid.
+Qed.
+
+End Formula.
+
+End PA.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
