@@ -1,14 +1,16 @@
+import LeanProofs.Sheffer
+
 /-!
 # Nicod's single-axiom Sheffer-stroke calculus
 
-This module formalizes the one-connective language of the Sheffer stroke
-(`⊼`, semantically NAND), Nicod's single axiom schema
+This module formalizes Nicod's one-axiom/one-rule proof system over the
+shared NAND-only language of `LeanProofs.Sheffer`: the single axiom schema
 
 ```text
 (p ↑ (q ↑ r)) ↑ ((u ↑ (u ↑ u)) ↑ ((w ↑ q) ↑ ((p ↑ w) ↑ (p ↑ w))))
 ```
 
-and Nicod's single inference rule
+and the single inference rule
 
 ```text
 (p ↑ (q ↑ r)), p ⊢ r.
@@ -20,11 +22,10 @@ Lean already uses `↑` as coercion notation, so the formal notation below uses
 The file proves both the semantic core and the proof-theoretic implementation
 claim:
 
-* the Sheffer stroke alone expresses the usual truth-functional connectives;
-* the Nicod axiom schema is classically valid;
-* the Nicod rule is classically sound;
-* consequently every formula derivable in this one-axiom/one-rule calculus is
-  a classical tautology;
+* the Nicod axiom schema is classically valid and the Nicod rule is
+  classically sound, so every derivable formula is a classical tautology;
+* the shared Sheffer-stroke translation of classical formulas preserves
+  validity, so the NAND language is expressively complete;
 * Nicod's axiom and rule derive the three Lukasiewicz Hilbert axiom schemas
   for classical propositional logic, and derive standard modus ponens for
   NAND-defined implication;
@@ -36,28 +37,30 @@ namespace LeanProofs
 
 namespace Nicod
 
-/-- NAND on truth values. -/
-def boolNand (p q : Bool) : Bool :=
-  !(p && q)
+open Sheffer
 
-/-- Formulas whose only logical connective is NAND. -/
-inductive Formula (α : Type) : Type where
-  | atom : α → Formula α
-  | nand : Formula α → Formula α → Formula α
-  deriving DecidableEq, Repr
+/-- Formulas whose only logical connective is NAND: the shared stroke syntax. -/
+abbrev Formula (α : Type u) : Type u := StrokeFormula α
 
 namespace Formula
 
-infixr:60 " ⊼ " => Formula.nand
+infixr:60 " ⊼ " => StrokeFormula.stroke
 
 /-- Boolean semantics for NAND-only formulas. -/
 def eval (v : α → Bool) : Formula α → Bool
-  | atom a => v a
+  | .atom a => v a
   | p ⊼ q => boolNand (eval v p) (eval v q)
+
+/-- Nicod's NAND-fixed semantics is the shared stroke semantics at `boolNand`. -/
+theorem eval_eq_evalWith (v : α → Bool) :
+    ∀ p : Formula α, eval v p = StrokeFormula.evalWith boolNand v p
+  | .atom _ => rfl
+  | .stroke p q => by
+      simp [eval, StrokeFormula.evalWith, eval_eq_evalWith v p, eval_eq_evalWith v q]
 
 /-- Classical validity of a NAND-only formula. -/
 def Valid (p : Formula α) : Prop :=
-  ∀ v : α → Bool, p.eval v = true
+  ∀ v : α → Bool, eval v p = true
 
 /-- Nicod's single axiom schema, in NAND-only syntax. -/
 def nicodAxiom (p q r u w : Formula α) : Formula α :=
@@ -327,110 +330,14 @@ theorem LukasiewiczProvable.sound {p : Formula α}
 
 end Formula
 
-/-- A standard propositional language used only to state functional completeness. -/
-inductive ClassicalFormula (α : Type) : Type where
-  | atom : α → ClassicalFormula α
-  | neg : ClassicalFormula α → ClassicalFormula α
-  | and : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  | or : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  | imp : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  | iff : ClassicalFormula α → ClassicalFormula α → ClassicalFormula α
-  deriving DecidableEq, Repr
-
-namespace ClassicalFormula
-
-/-- Boolean semantics for the usual classical connectives. -/
-def eval (v : α → Bool) : ClassicalFormula α → Bool
-  | atom a => v a
-  | neg p => !(eval v p)
-  | and p q => eval v p && eval v q
-  | or p q => eval v p || eval v q
-  | imp p q => !(eval v p) || eval v q
-  | iff p q => eval v p == eval v q
-
-open Formula
-
-/-- Translate ordinary classical formulas to NAND-only formulas. -/
-def toNand : ClassicalFormula α → Formula α
-  | atom a => Formula.atom a
-  | neg p =>
-      let p' := toNand p
-      p' ⊼ p'
-  | and p q =>
-      let p' := toNand p
-      let q' := toNand q
-      let pq := p' ⊼ q'
-      pq ⊼ pq
-  | or p q =>
-      let p' := toNand p
-      let q' := toNand q
-      (p' ⊼ p') ⊼ (q' ⊼ q')
-  | imp p q =>
-      let p' := toNand p
-      let q' := toNand q
-      p' ⊼ (q' ⊼ q')
-  | iff p q =>
-      let p' := toNand p
-      let q' := toNand q
-      let pq := p' ⊼ (q' ⊼ q')
-      let qp := q' ⊼ (p' ⊼ p')
-      let both := pq ⊼ qp
-      both ⊼ both
-
-private theorem eval_toNand_neg {p : ClassicalFormula α} (v : α → Bool)
-    (hp : (toNand p).eval v = eval v p) :
-    (toNand (neg p)).eval v = eval v (neg p) := by
-  cases h : eval v p <;> simp [toNand, eval, Formula.eval, boolNand, hp, h]
-
-private theorem eval_toNand_and {p q : ClassicalFormula α} (v : α → Bool)
-    (hp : (toNand p).eval v = eval v p) (hq : (toNand q).eval v = eval v q) :
-    (toNand (and p q)).eval v = eval v (and p q) := by
-  cases hpv : eval v p <;> cases hqv : eval v q <;>
-    simp [toNand, eval, Formula.eval, boolNand, hp, hq, hpv, hqv]
-
-private theorem eval_toNand_or {p q : ClassicalFormula α} (v : α → Bool)
-    (hp : (toNand p).eval v = eval v p) (hq : (toNand q).eval v = eval v q) :
-    (toNand (or p q)).eval v = eval v (or p q) := by
-  cases hpv : eval v p <;> cases hqv : eval v q <;>
-    simp [toNand, eval, Formula.eval, boolNand, hp, hq, hpv, hqv]
-
-private theorem eval_toNand_imp {p q : ClassicalFormula α} (v : α → Bool)
-    (hp : (toNand p).eval v = eval v p) (hq : (toNand q).eval v = eval v q) :
-    (toNand (imp p q)).eval v = eval v (imp p q) := by
-  cases hpv : eval v p <;> cases hqv : eval v q <;>
-    simp [toNand, eval, Formula.eval, boolNand, hp, hq, hpv, hqv]
-
-private theorem eval_toNand_iff {p q : ClassicalFormula α} (v : α → Bool)
-    (hp : (toNand p).eval v = eval v p) (hq : (toNand q).eval v = eval v q) :
-    (toNand (iff p q)).eval v = eval v (iff p q) := by
-  cases hpv : eval v p <;> cases hqv : eval v q <;>
-    simp [toNand, eval, Formula.eval, boolNand, hp, hq, hpv, hqv]
-
 /--
-The Sheffer stroke is functionally complete for the usual classical
-truth-functional connectives.
+The Sheffer stroke is functionally complete: validity is preserved by the
+shared translation from ordinary classical formulas to NAND-only formulas.
 -/
-theorem eval_toNand (v : α → Bool) :
-    ∀ p : ClassicalFormula α, (toNand p).eval v = eval v p
-  | atom _ => rfl
-  | neg p => eval_toNand_neg v (eval_toNand v p)
-  | and p q => eval_toNand_and v (eval_toNand v p) (eval_toNand v q)
-  | or p q => eval_toNand_or v (eval_toNand v p) (eval_toNand v q)
-  | imp p q => eval_toNand_imp v (eval_toNand v p) (eval_toNand v q)
-  | iff p q => eval_toNand_iff v (eval_toNand v p) (eval_toNand v q)
-
-/-- Validity is preserved by translation from usual classical formulas to NAND-only formulas. -/
-theorem toNand_valid_iff {p : ClassicalFormula α} :
-    Formula.Valid (toNand p) ↔ ∀ v : α → Bool, eval v p = true := by
-  constructor
-  · intro h v
-    rw [← eval_toNand]
-    exact h v
-  · intro h v
-    rw [eval_toNand]
-    exact h v
-
-end ClassicalFormula
+theorem toNand_valid_iff {p : Sheffer.ClassicalFormula α} :
+    Formula.Valid (Sheffer.ClassicalFormula.toNand p) ↔
+      ∀ v : α → Bool, Sheffer.ClassicalFormula.eval v p = true := by
+  simp [Formula.Valid, Formula.eval_eq_evalWith, Sheffer.ClassicalFormula.eval_toNand]
 
 /-- NAND as a connective on Lean propositions. -/
 def propNand (p q : Prop) : Prop :=
@@ -440,50 +347,19 @@ infixr:60 " ⊼ₚ " => propNand
 
 /-- The object-language NAND semantics agrees with the familiar propositional reading. -/
 theorem prop_nand_not (p : Prop) : (p ⊼ₚ p) ↔ ¬ p := by
-  constructor
-  · intro h hp
-    exact h ⟨hp, hp⟩
-  · intro h hp
-    exact h hp.1
+  by_cases hp : p <;> simp [propNand, hp]
 
 /-- `p → q` expressed with NAND alone. -/
 theorem prop_nand_imp (p q : Prop) : (p ⊼ₚ (q ⊼ₚ q)) ↔ (p → q) := by
-  constructor
-  · intro h hp
-    by_cases hq : q
-    · exact hq
-    · exfalso
-      exact h ⟨hp, fun hqq => hq hqq.1⟩
-  · intro hpq h
-    exact h.2 ⟨hpq h.1, hpq h.1⟩
+  by_cases hp : p <;> by_cases hq : q <;> simp [propNand, hp, hq]
 
 /-- `p ∧ q` expressed with NAND alone. -/
 theorem prop_nand_and (p q : Prop) : ((p ⊼ₚ q) ⊼ₚ (p ⊼ₚ q)) ↔ p ∧ q := by
-  constructor
-  · intro h
-    by_cases hp : p
-    · by_cases hq : q
-      · exact ⟨hp, hq⟩
-      · exfalso
-        exact h ⟨fun hpq => hq hpq.2, fun hpq => hq hpq.2⟩
-    · exfalso
-      exact h ⟨fun hpq => hp hpq.1, fun hpq => hp hpq.1⟩
-  · intro hpq h
-    exact h.1 hpq
+  by_cases hp : p <;> by_cases hq : q <;> simp [propNand, hp, hq]
 
 /-- `p ∨ q` expressed with NAND alone. -/
 theorem prop_nand_or (p q : Prop) : ((p ⊼ₚ p) ⊼ₚ (q ⊼ₚ q)) ↔ p ∨ q := by
-  constructor
-  · intro h
-    by_cases hp : p
-    · exact Or.inl hp
-    · by_cases hq : q
-      · exact Or.inr hq
-      · exfalso
-        exact h ⟨fun hpp => hp hpp.1, fun hqq => hq hqq.1⟩
-  · rintro (hp | hq) h
-    · exact h.1 ⟨hp, hp⟩
-    · exact h.2 ⟨hq, hq⟩
+  by_cases hp : p <;> by_cases hq : q <;> simp [propNand, hp, hq]
 
 /-- Nicod's single axiom, read directly as a classical propositional tautology. -/
 theorem prop_nicod_axiom (p q r u w : Prop) :
@@ -497,11 +373,8 @@ theorem prop_nicod_axiom (p q r u w : Prop) :
 /-- Nicod's single inference rule, read directly over propositions. -/
 theorem prop_nicod_rule {p q r : Prop} :
     (p ⊼ₚ (q ⊼ₚ r)) → p → r := by
-  intro h hp
-  by_cases hr : r
-  · exact hr
-  · exfalso
-    exact h ⟨hp, fun hqr => hr hqr.2⟩
+  by_cases hp : p <;> by_cases hq : q <;> by_cases hr : r <;>
+    simp [propNand, hp, hq, hr]
 
 end Nicod
 
