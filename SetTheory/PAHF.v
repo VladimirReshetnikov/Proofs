@@ -9454,6 +9454,73 @@ Proof.
   exact h.
 Qed.
 
+Definition translateFormula (phi : PA.formula) : form :=
+  formulaAt (fun n => n) phi.
+
+Lemma formulaAt_sentence_of_PA_sentence : forall phi rho,
+  PA.Formula.Sentence phi -> Sentence (formulaAt rho phi).
+Proof.
+  intros phi rho hphi i hi.
+  destruct (formulaAt_free phi rho i hi) as [n [hn _]].
+  exact (hphi n hn).
+Qed.
+
+Lemma translateFormula_sentence_of_PA_sentence : forall phi,
+  PA.Formula.Sentence phi -> Sentence (translateFormula phi).
+Proof.
+  intros phi hphi.
+  unfold translateFormula.
+  apply formulaAt_sentence_of_PA_sentence.
+  exact hphi.
+Qed.
+
+Lemma translated_zeroNotSucc_sat : forall A (mem : A -> A -> Prop) e,
+  Sat A mem e (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
+Proof.
+  intros A mem e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  apply formulaAt_zeroNotSucc_valid.
+Qed.
+
+Lemma translated_succInj_sat_of_irrefl :
+  forall A (mem : A -> A -> Prop),
+    (forall a, ~ mem a a) ->
+    forall e,
+      Sat A mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  intros A mem hIrrefl e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  exact (formulaAt_succInj_of_irrefl A mem hIrrefl rho env).
+Qed.
+
+Lemma translated_addZero_sat_model :
+  forall V (M : FirstOrderAdjunctionModel V) e,
+    Sat V (foam_mem V M) e
+      (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  intros V M e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  apply formulaAt_addZero_valid_model.
+Qed.
+
+Lemma translated_mulZero_sat_model :
+  forall V (M : FirstOrderAdjunctionModel V) e,
+    Sat V (foam_mem V M) e
+      (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  intros V M e.
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  apply formulaAt_mulZero_valid_model.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
