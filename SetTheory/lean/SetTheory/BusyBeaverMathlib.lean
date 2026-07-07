@@ -831,6 +831,26 @@ theorem tm0SupportedMachine_eval_of_original {Label : Type*} [Inhabited Label]
   refine ⟨tm0CfgRestrict finalCfg hFinal, hEvalFinal, ?_⟩
   simpa [tm0CfgRestrict] using hOutput
 
+theorem tm0_supported_eval_nil_to_rado_halt {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label} [Fintype S]
+    (hSupp : Turing.TM0.Supports M S)
+    {output : Turing.ListBlank Bool}
+    (hEval : output ∈ Turing.TM0.eval M ([] : List Bool)) :
+    ∃ finalCfg : Turing.TM0.Cfg Bool S,
+    ∃ normalCfg haltCfg : TypedConfig (TM0RadoState S),
+      finalCfg.Tape.right₀ = output ∧
+      TM0RadoNormalRel finalCfg normalCfg ∧
+      haltCfg.state = none ∧
+      haltCfg.tape = normalCfg.tape ∧
+      (@tm0ToTypedRado S (tm0SupportedInhabited M hSupp)
+        (tm0SupportedMachine M hSupp)).HaltsWithScore
+        (TM0RadoState.normal (@default S (tm0SupportedInhabited M hSupp)))
+        haltCfg.tape.length ∧
+      AttainableScore (Fintype.card (TM0RadoState S)) haltCfg.tape.length := by
+  letI : Inhabited S := tm0SupportedInhabited M hSupp
+  exact tm0_eval_nil_to_rado_halt (tm0SupportedMachine M hSupp)
+    (tm0SupportedMachine_eval_of_original M hSupp hEval)
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
