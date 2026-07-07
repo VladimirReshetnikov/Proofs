@@ -35,6 +35,13 @@ Current ports:
   nonnegative Coq rationals.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
+- `A199812.v` ports the executable ordinal-note recurrence behind
+  `A199812.lean`: inner tower exponents are represented as Cantor-normal-form
+  notes below epsilon_0, tower splits combine degrees by
+  `a, b |-> a + omega^b`, and the recurrence is connected to the shared
+  `PowTower.v` evaluator.  It certifies the initial values through `n = 8`;
+  the Lean module's mathlib ordinal-semantics bridge and longer table through
+  `n = 13` are not yet replayed in Coq.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
   A002845.  It uses Coq's verified binary natural numbers `N` as the sparse
   carrier, preserving the evaluation/canonicality/comparison and
@@ -63,6 +70,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/RationalFloorOrbit.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
