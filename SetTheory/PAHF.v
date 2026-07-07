@@ -9639,6 +9639,69 @@ Proof.
   - simpl. exact h.
 Qed.
 
+Lemma BProv_bound_list : forall (B : form -> Prop) D L,
+  (forall x, In x L -> BProv B D x) ->
+  exists Lb, (forall x, In x Lb -> B x) /\
+    forall x, In x L -> Prov (Lb ++ D) x.
+Proof.
+  intros B D L.
+  induction L as [|a L IH]; intro hL.
+  - exists [].
+    split.
+    + intros x hx. contradiction.
+    + intros x hx. contradiction.
+  - destruct (hL a (or_introl eq_refl)) as [La [hLa hpa]].
+    destruct (IH (fun x hx => hL x (or_intror hx))) as
+      [Lb [hLb hpL]].
+    exists (La ++ Lb).
+    split.
+    + intros x hx.
+      apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * exact (hLa x hx).
+      * exact (hLb x hx).
+    + intros x hx.
+      simpl in hx.
+      destruct hx as [hx | hx].
+      * subst x.
+        apply (Prov_weaken (La ++ D) a hpa).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. left. exact hy.
+        -- right. exact hy.
+      * apply (Prov_weaken (Lb ++ D) x (hpL x hx)).
+        intros y hy.
+        apply in_app_iff in hy.
+        apply in_app_iff.
+        destruct hy as [hy | hy].
+        -- left. apply in_app_iff. right. exact hy.
+        -- right. exact hy.
+Qed.
+
+Lemma BProv_lift : forall (B C : form -> Prop) G D phi,
+  BProv B G phi ->
+  (forall b, B b -> BProv C D b) ->
+  (forall g, In g G -> BProv C D g) ->
+  BProv C D phi.
+Proof.
+  intros B C G D phi [Lb [hLb hp]] hB hG.
+  assert (hctx : forall x, In x (Lb ++ G) -> BProv C D x).
+  {
+    intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    - exact (hB x (hLb x hx)).
+    - exact (hG x hx).
+  }
+  destruct (BProv_bound_list C D (Lb ++ G) hctx) as
+    [Lc [hLc hpctx]].
+  exists Lc.
+  split; [ exact hLc | ].
+  exact (Prov_cut (Lb ++ G) phi hp (Lc ++ D) hpctx).
+Qed.
+
 Lemma BProv_HFFin_translated_zeroNotSucc :
   BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
 Proof.
@@ -10044,6 +10107,28 @@ Proof.
         rewrite hLbmap. exact hx.
       * left. exact hx.
       * right. rewrite map_app. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_lift_translatedPAAx_to_HF :
+  (forall g, translatedPAAx g -> BProv HFAx_s [] g) ->
+  forall g, BProv translatedPAAx [] g -> BProv HFAx_s [] g.
+Proof.
+  intros hAx g h.
+  eapply BProv_lift.
+  - exact h.
+  - exact hAx.
+  - intros x hx. contradiction.
+Qed.
+
+Lemma BProv_lift_translatedPAAx_to_HFFin :
+  (forall g, translatedPAAx g -> BProv HFFinAx_s [] g) ->
+  forall g, BProv translatedPAAx [] g -> BProv HFFinAx_s [] g.
+Proof.
+  intros hAx g h.
+  eapply BProv_lift.
+  - exact h.
+  - exact hAx.
+  - intros x hx. contradiction.
 Qed.
 
 Record TheoryInterpretation
