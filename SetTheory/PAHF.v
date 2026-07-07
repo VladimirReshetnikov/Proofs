@@ -8976,6 +8976,196 @@ Proof.
     + intro n. now rewrite h.
 Qed.
 
+Lemma termGraphAt_exact : forall t rho out v e,
+  (forall n, e (rho n) = ordinal_code (v n)) ->
+  (Sat nat hf_mem e (termGraphAt rho out t) <->
+    e out = ordinal_code (PA.Term.eval PA.natModel v t)).
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    intros rho out v e hrho; simpl.
+  - split.
+    + intro h.
+      transitivity (e (rho n)); [ exact h | exact (hrho n) ].
+    + intro h.
+      transitivity (ordinal_code (v n)); [ exact h | symmetry; exact (hrho n) ].
+  - split.
+    + intro h.
+      pose proof (proj1 (HF_emptyAt_empty ackermannHFModel e out) h) as hzero.
+      change (e out = hf_empty) in hzero.
+      exact hzero.
+    + intro h.
+      apply (proj2 (HF_emptyAt_empty ackermannHFModel e out)).
+      change (e out = hf_empty).
+      exact h.
+  - split.
+    + intro h.
+      destruct h as [x [ht hs]].
+      assert (hrho' : forall n,
+        scons nat x e (rho n + 1) = ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 1) with (S (rho n)) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (IHa (fun n => rho n + 1) 0 v
+        (scons nat x e) hrho') ht) as htval.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in htval.
+      pose proof (proj1 (HF_succAt_spec ackermannHFModel
+        (scons nat x e) (out + 1) 0) hs) as hsval.
+      replace (out + 1) with (S out) in hsval by lia.
+      simpl in hsval.
+      change (e out = hf_adjoin x x) in hsval.
+      rewrite hsval, htval.
+      reflexivity.
+    + intro h.
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      exists x.
+      split.
+      * assert (hrho' : forall n,
+          scons nat x e (rho n + 1) = ordinal_code (v n)).
+        {
+          intro n.
+          replace (rho n + 1) with (S (rho n)) by lia.
+          simpl.
+          exact (hrho n).
+        }
+        apply (proj2 (IHa (fun n => rho n + 1) 0 v
+          (scons nat x e) hrho')).
+        unfold x. reflexivity.
+      * apply (proj2 (HF_succAt_spec ackermannHFModel
+          (scons nat x e) (out + 1) 0)).
+        replace (out + 1) with (S out) by lia.
+        simpl.
+        rewrite h.
+        unfold x.
+        reflexivity.
+  - split.
+    + intro h.
+      destruct h as [x [y [ha [hb hadd]]]].
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (IHa (fun n => rho n + 2) 1 v
+        (scons nat y (scons nat x e)) hrho') ha) as hx.
+      pose proof (proj1 (IHb (fun n => rho n + 2) 0 v
+        (scons nat y (scons nat x e)) hrho') hb) as hy.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in hx.
+      change (y = ordinal_code (PA.Term.eval PA.natModel v b)) in hy.
+      pose proof (addGraphAt_value_of_ordinal_inputs (out + 2) 1 0
+        (PA.Term.eval PA.natModel v a) (PA.Term.eval PA.natModel v b)
+        (scons nat y (scons nat x e)) hx hy hadd) as hout.
+      replace (out + 2) with (S (S out)) in hout by lia.
+      simpl in hout.
+      change (e out = ordinal_code
+        (PA.Term.eval PA.natModel v a + PA.Term.eval PA.natModel v b))
+        in hout.
+      exact hout.
+    + intro h.
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      pose (y := ordinal_code (PA.Term.eval PA.natModel v b)).
+      assert (hrho' : forall n,
+        scons nat y (scons nat x e) (rho n + 2) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 2) with (S (S (rho n))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      exists x, y.
+      split.
+      * apply (proj2 (IHa (fun n => rho n + 2) 1 v
+          (scons nat y (scons nat x e)) hrho')).
+        unfold x. reflexivity.
+      * split.
+        -- apply (proj2 (IHb (fun n => rho n + 2) 0 v
+            (scons nat y (scons nat x e)) hrho')).
+           unfold y. reflexivity.
+        -- apply (addGraphAt_ordinal_code (out + 2) 1 0
+            (PA.Term.eval PA.natModel v a)
+            (PA.Term.eval PA.natModel v b)
+            (scons nat y (scons nat x e))).
+           ++ replace (out + 2) with (S (S out)) by lia.
+              simpl.
+              change (e out = ordinal_code
+                (PA.Term.eval PA.natModel v a +
+                 PA.Term.eval PA.natModel v b)).
+              exact h.
+           ++ unfold x. reflexivity.
+           ++ unfold y. reflexivity.
+  - split.
+    + intro h.
+      destruct h as [y [x [z [ha [hb [hcopy hmul]]]]]].
+      assert (hrho' : forall n,
+        scons nat z (scons nat x (scons nat y e)) (rho n + 3) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 3) with (S (S (S (rho n)))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      pose proof (proj1 (IHa (fun n => rho n + 3) 1 v
+        (scons nat z (scons nat x (scons nat y e))) hrho') ha) as hx.
+      pose proof (proj1 (IHb (fun n => rho n + 3) 2 v
+        (scons nat z (scons nat x (scons nat y e))) hrho') hb) as hy.
+      change (x = ordinal_code (PA.Term.eval PA.natModel v a)) in hx.
+      change (y = ordinal_code (PA.Term.eval PA.natModel v b)) in hy.
+      pose proof (mulGraph_value_of_ordinal_inputs
+        (PA.Term.eval PA.natModel v a) (PA.Term.eval PA.natModel v b)
+        (scons nat z (scons nat x (scons nat y e))) hx hy hmul) as hz.
+      replace (out + 3) with (S (S (S out))) in hcopy by lia.
+      simpl in hcopy.
+      rewrite hcopy in hz.
+      change (e out = ordinal_code
+        (PA.Term.eval PA.natModel v a * PA.Term.eval PA.natModel v b))
+        in hz.
+      exact hz.
+    + intro h.
+      pose (y := ordinal_code (PA.Term.eval PA.natModel v b)).
+      pose (x := ordinal_code (PA.Term.eval PA.natModel v a)).
+      pose (z := ordinal_code
+        (PA.Term.eval PA.natModel v a * PA.Term.eval PA.natModel v b)).
+      assert (hrho' : forall n,
+        scons nat z (scons nat x (scons nat y e)) (rho n + 3) =
+          ordinal_code (v n)).
+      {
+        intro n.
+        replace (rho n + 3) with (S (S (S (rho n)))) by lia.
+        simpl.
+        exact (hrho n).
+      }
+      exists y, x, z.
+      split.
+      * apply (proj2 (IHa (fun n => rho n + 3) 1 v
+          (scons nat z (scons nat x (scons nat y e))) hrho')).
+        unfold x. reflexivity.
+      * split.
+        -- apply (proj2 (IHb (fun n => rho n + 3) 2 v
+            (scons nat z (scons nat x (scons nat y e))) hrho')).
+           unfold y. reflexivity.
+        -- split.
+           ++ replace (out + 3) with (S (S (S out))) by lia.
+              simpl.
+              unfold z.
+              symmetry.
+              change (e out = ordinal_code
+                (PA.Term.eval PA.natModel v a *
+                 PA.Term.eval PA.natModel v b)) in h.
+              exact h.
+           ++ unfold z, x, y.
+              apply (mulGraph_ordinal_code
+                (PA.Term.eval PA.natModel v a)
+                (PA.Term.eval PA.natModel v b) e).
+Qed.
+
 Fixpoint formulaAt (rho : nat -> nat) (phi : PA.formula) : form :=
   match phi with
   | PA.pEq a b =>
