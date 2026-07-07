@@ -9300,6 +9300,93 @@ theorem Sat_termGraphAt_insertAt_shift_prefix {α : Type u}
     exact termGraphAt_map_ext t (out := (k+1)+p) (fun n => by omega)
   rwa [hEq] at hshift'
 
+/-- Atomic substituted-variable case for arbitrary PA-term substitution in
+translated term graphs. -/
+theorem termGraphAt_substTermAt_replaced_var_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) (t : PA.Term)
+    (p k : Nat) (ρ : Nat → Nat) (out : Nat) (termVal : α)
+    (e : Nat → α)
+    (hout : out < k)
+    (hfree : ∀ n, PA.Term.Free n t →
+      OrdinalLike M.mem (e (ρ n + k + p)))
+    (hterm : Sat M.mem (insertAt (k+p) termVal e)
+      (termGraphAt (fun n => ρ n + k + p + 1) (k+p) t)) :
+    Sat M.mem e
+        (termGraphAt (substZeroAfterMap p k ρ) out
+          (PA.Term.rename (fun n => n + p) t)) ↔
+      Sat M.mem (insertAt (k+p) termVal e)
+        (termGraphAt (substZeroBeforeMap p k ρ) out (PA.Term.var p)) := by
+  have houtSlot : out < k + p := by omega
+  constructor
+  · intro h
+    have hRenamed : Sat M.mem e
+        (termGraphAt (fun n => ρ n + k + p) out t) := by
+      have hPA := termGraphAt_PA_rename t
+        (ρ := substZeroAfterMap p k ρ) (out := out)
+        (r := fun n => n + p)
+      rw [hPA] at h
+      have hMap := termGraphAt_map_ext t
+        (ρ := fun n => substZeroAfterMap p k ρ (n + p))
+        (σ := fun n => ρ n + k + p) (out := out)
+        (fun n => by
+          have hge : p ≤ n + p := by omega
+          rw [substZeroAfterMap_ge (ρ := ρ) (k := k) hge]
+          congr
+          omega)
+      rwa [hMap] at h
+    have hval : e out = insertAt (k+p) termVal e (k+p) :=
+      termGraphAt_outputs_eq_finite_model M t
+        (ρ₁ := fun n => ρ n + k + p)
+        (ρ₂ := fun n => ρ n + k + p + 1)
+        (out₁ := out) (out₂ := k+p)
+        (e₁ := e) (e₂ := insertAt (k+p) termVal e)
+        (by
+          intro n hn
+          have hgt : k+p < ρ n + k + p + 1 := by omega
+          rw [insertAt_gt hgt]
+          congr)
+        hfree hRenamed hterm
+    apply (termGraphAt_var_spec (mem := M.mem)
+      (substZeroBeforeMap p k ρ) out p
+      (insertAt (k+p) termVal e)).mpr
+    change insertAt (k+p) termVal e out =
+      insertAt (k+p) termVal e (substZeroBeforeMap p k ρ p)
+    rw [insertAt_lt houtSlot, substZeroBeforeMap_eq]
+    exact hval
+  · intro h
+    have hEq := (termGraphAt_var_spec (mem := M.mem)
+      (substZeroBeforeMap p k ρ) out p
+      (insertAt (k+p) termVal e)).mp h
+    change insertAt (k+p) termVal e out =
+      insertAt (k+p) termVal e (substZeroBeforeMap p k ρ p) at hEq
+    rw [insertAt_lt houtSlot, substZeroBeforeMap_eq] at hEq
+    have hTransport : Sat M.mem e
+        (termGraphAt (fun n => ρ n + k + p) out t) := by
+      apply termGraphAt_transport_model M.toFirstOrderAdjunctionModel t
+        (ρ₁ := fun n => ρ n + k + p + 1)
+        (ρ₂ := fun n => ρ n + k + p)
+        (out₁ := k+p) (out₂ := out)
+        (e₁ := insertAt (k+p) termVal e) (e₂ := e)
+      · exact hEq.symm
+      · intro n hn
+        have hgt : k+p < ρ n + k + p + 1 := by omega
+        rw [insertAt_gt hgt]
+        congr
+      · exact hterm
+    have hPA := termGraphAt_PA_rename t
+      (ρ := substZeroAfterMap p k ρ) (out := out)
+      (r := fun n => n + p)
+    rw [hPA]
+    have hMap := termGraphAt_map_ext t
+      (ρ := fun n => substZeroAfterMap p k ρ (n + p))
+      (σ := fun n => ρ n + k + p) (out := out)
+      (fun n => by
+        have hge : p ≤ n + p := by omega
+        rw [substZeroAfterMap_ge (ρ := ρ) (k := k) hge]
+        congr
+        omega)
+    rwa [hMap]
+
 theorem scons_replaceAt {α : Type u} (k : Nat) (x d : α) (e : Nat → α) :
     ∀ n, scons d (replaceAt k x e) n = replaceAt (k+1) x (scons d e) n := by
   intro n
