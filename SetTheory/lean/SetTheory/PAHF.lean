@@ -112,9 +112,10 @@ def rSkipParam : Nat → Nat
   | 0 => 0
   | n+1 => n+2
 
-theorem Sat_rename_rSkipParam (phi : Form) (e : Nat → Nat) (x y : Nat) :
-    Sat Mem (scons y (scons x e)) (rename rSkipParam phi) ↔
-      Sat Mem (scons y e) phi := by
+theorem Sat_rename_rSkipParam {α : Type u} {mem : α → α → Prop}
+    (phi : Form) (e : Nat → α) (x y : α) :
+    Sat mem (scons y (scons x e)) (rename rSkipParam phi) ↔
+      Sat mem (scons y e) phi := by
   rw [Sat_rename]
   exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
 
@@ -152,30 +153,37 @@ theorem Sentences_HF : Sentences HFAx_s := by
   intro f hf
   rcases hf with rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
 
-theorem sat_HF_empty (e : Nat → Nat) : Sat Mem e HF_empty_form :=
-  ⟨empty, fun x hx => mem_empty x hx⟩
+theorem sat_HF_empty {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem e HF_empty_form :=
+  ⟨M.empty, fun x hx => M.empty_spec x hx⟩
 
-theorem sat_HF_adjoin (e : Nat → Nat) : Sat Mem e HF_adjoin_form := by
+theorem sat_HF_adjoin {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem e HF_adjoin_form := by
   intro a b
-  refine ⟨adjoin a b, fun x => ?_⟩
-  exact (Sat_fIff (mem := Mem)).mpr (mem_adjoin x a b)
+  refine ⟨M.adjoin a b, fun x => ?_⟩
+  exact (Sat_fIff (mem := M.mem)).mpr (M.adjoin_spec x a b)
 
-theorem sat_HF_induction (phi : Form) (e : Nat → Nat) :
-    Sat Mem e (HF_induction_form phi) := by
+theorem sat_HF_induction {α : Type} (M : AdjunctionModel α)
+    (phi : Form) (e : Nat → α) :
+    Sat M.mem e (HF_induction_form phi) := by
   intro hstep a
-  exact induction (fun x => Sat Mem (scons x e) phi)
+  exact M.set_induction (fun x => Sat M.mem (scons x e) phi)
     (fun x ih => hstep x (fun y hy =>
       (Sat_rename_rSkipParam phi e x y).mpr (ih y hy)))
     a
 
-theorem standard_sat_HF (v : Nat → Nat) :
-    ∀ g, HFAx_s g → Sat Mem v g := by
+theorem sat_HF_model {α : Type} (M : AdjunctionModel α) (v : Nat → α) :
+    ∀ g, HFAx_s g → Sat M.mem v g := by
   intro g hg
   rcases hg with rfl | rfl | ⟨phi, rfl⟩
-  · exact (seal_valid (mem := Mem) HF_empty_form).mpr sat_HF_empty v
-  · exact (seal_valid (mem := Mem) HF_adjoin_form).mpr sat_HF_adjoin v
-  · exact (seal_valid (mem := Mem) (HF_induction_form phi)).mpr
-      (sat_HF_induction phi) v
+  · exact (seal_valid (mem := M.mem) HF_empty_form).mpr (sat_HF_empty M) v
+  · exact (seal_valid (mem := M.mem) HF_adjoin_form).mpr (sat_HF_adjoin M) v
+  · exact (seal_valid (mem := M.mem) (HF_induction_form phi)).mpr
+      (sat_HF_induction M phi) v
+
+theorem standard_sat_HF (v : Nat → Nat) :
+    ∀ g, HFAx_s g → Sat Mem v g :=
+  sat_HF_model standardModel v
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
 
@@ -822,6 +830,10 @@ noncomputable def ordinalHFModel : AdjunctionModel OrdinalHF where
           have hpx : P (ordinalOfNat (natOfOrdinal x)) := ih (natOfOrdinal x) hxlt
           by simpa [ordinalOfNat_natOfOrdinal x] using hpx))
     simpa [ordinalOfNat_natOfOrdinal a] using hnat (natOfOrdinal a)
+
+theorem ordinalHF_sat_HF (v : Nat → OrdinalHF) :
+    ∀ g, HFAx_s g → Sat ordinalHFModel.mem v g :=
+  sat_HF_model ordinalHFModel v
 
 /-- The second round trip of the bi-interpretability construction: starting
 from Ackermann HF, interpreting arithmetic as finite ordinals, and then
