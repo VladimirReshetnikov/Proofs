@@ -2270,16 +2270,27 @@ def BetaEntry (code step idx value : Nat) : Prop :=
   ∃ q, code = q * (1 + (idx + 1) * step) + value ∧
     value < 1 + (idx + 1) * step
 
-/-- Every adjacent pair below `limit` in a beta-coded sequence is one
-binary-halving step: the current value is `2 * next + bit`, with `bit ∈ {0,1}`. -/
-def betaDiv2StepAt (code step limit : Nat) : Formula :=
-  all (imp (ltAt 0 (limit+1))
+/-- A single adjacent beta-coded sequence step is a binary-halving step:
+the current value is `2 * next + bit`, with `bit ∈ {0,1}`. -/
+def betaDiv2StepWitnessAt (code step idx : Nat) : Formula :=
     (ex (ex (ex
       (and
-        (betaAt 2 (code+4) (step+4) 3)
+        (betaAt 2 (code+3) (step+3) (idx+3))
         (and
-          (betaAtSuccIdx 1 (code+4) (step+4) 3)
-          (div2StepAt 2 1 0)))))))
+          (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+          (div2StepAt 2 1 0))))))
+
+/-- Every adjacent pair below `limit` in a beta-coded sequence is one
+binary-halving step. -/
+def betaDiv2StepAt (code step limit : Nat) : Formula :=
+  all (imp (ltAt 0 (limit+1))
+    (betaDiv2StepWitnessAt (code+1) (step+1) 0))
+
+/-- Every adjacent pair through `last` in a beta-coded sequence is one
+binary-halving step. -/
+def betaDiv2StepsThroughAt (code step last : Nat) : Formula :=
+  all (imp (leAt 0 (last+1))
+    (betaDiv2StepWitnessAt (code+1) (step+1) 0))
 
 theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
     Sat natModel e (leAt a b) ↔ e a ≤ e b := by
@@ -2497,6 +2508,42 @@ theorem betaAtSuccIdx_nat_entry
       BetaEntry (e code) (e step) (e idx + 1) (e out) := by
   exact betaAtSuccIdx_nat e out code step idx
 
+theorem betaDiv2StepWitnessAt_nat (e : Nat → Nat) (code step idx : Nat) :
+    Sat natModel e (betaDiv2StepWitnessAt code step idx) ↔
+      ∃ cur next bit,
+        BetaEntry (e code) (e step) (e idx) cur ∧
+        BetaEntry (e code) (e step) (e idx + 1) next ∧
+        (bit = 0 ∨ bit = 1) ∧ cur = next + next + bit := by
+  constructor
+  · intro h
+    rcases h with ⟨cur, next, bit, hcur, hnext, hstep⟩
+    let E := scons bit (scons next (scons cur e))
+    have hcur' :
+        BetaEntry (e code) (e step) (e idx) cur := by
+      have hc := (betaAt_nat_entry E 2 (code+3) (step+3) (idx+3)).mp hcur
+      simpa [E, scons] using hc
+    have hnext' :
+        BetaEntry (e code) (e step) (e idx + 1) next := by
+      have hn := (betaAtSuccIdx_nat_entry E 1 (code+3) (step+3) (idx+3)).mp hnext
+      simpa [E, scons, Nat.add_assoc] using hn
+    have hstep' :
+        (bit = 0 ∨ bit = 1) ∧ cur = next + next + bit := by
+      have hs := (div2StepAt_nat E 2 1 0).mp hstep
+      simpa [E, scons] using hs
+    exact ⟨cur, next, bit, hcur', hnext', hstep'⟩
+  · intro h
+    rcases h with ⟨cur, next, bit, hcur, hnext, hstep⟩
+    refine ⟨cur, next, bit, ?_, ?_, ?_⟩
+    · let E := scons bit (scons next (scons cur e))
+      apply (betaAt_nat_entry E 2 (code+3) (step+3) (idx+3)).mpr
+      simpa [E, scons] using hcur
+    · let E := scons bit (scons next (scons cur e))
+      apply (betaAtSuccIdx_nat_entry E 1 (code+3) (step+3) (idx+3)).mpr
+      simpa [E, scons, Nat.add_assoc] using hnext
+    · let E := scons bit (scons next (scons cur e))
+      apply (div2StepAt_nat E 2 1 0).mpr
+      simpa [E, scons] using hstep
+
 theorem betaDiv2StepAt_nat (e : Nat → Nat) (code step limit : Nat) :
     Sat natModel e (betaDiv2StepAt code step limit) ↔
       ∀ k, k < e limit →
@@ -2510,36 +2557,38 @@ theorem betaDiv2StepAt_nat (e : Nat → Nat) (code step limit : Nat) :
         Sat natModel (scons k e) (ltAt 0 (limit+1)) := by
       exact (ltAt_nat (scons k e) 0 (limit+1)).mpr (by
         simpa [scons] using hk)
-    rcases h k hkSat with ⟨cur, next, bit, hcur, hnext, hstep⟩
-    let E := scons bit (scons next (scons cur (scons k e)))
-    have hcur' :
-        BetaEntry (e code) (e step) k cur := by
-      have hc := (betaAt_nat_entry E 2 (code+4) (step+4) 3).mp hcur
-      simpa [E, scons] using hc
-    have hnext' :
-        BetaEntry (e code) (e step) (k+1) next := by
-      have hn := (betaAtSuccIdx_nat_entry E 1 (code+4) (step+4) 3).mp hnext
-      simpa [E, scons, Nat.add_assoc] using hn
-    have hstep' :
-        (bit = 0 ∨ bit = 1) ∧ cur = next + next + bit := by
-      have hs := (div2StepAt_nat E 2 1 0).mp hstep
-      simpa [E, scons] using hs
-    exact ⟨cur, next, bit, hcur', hnext', hstep'⟩
+    have hw := (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mp
+      (h k hkSat)
+    simpa [scons] using hw
   · intro h k hkSat
     have hk : k < e limit := by
       have hlt := (ltAt_nat (scons k e) 0 (limit+1)).mp hkSat
       simpa [scons] using hlt
-    rcases h k hk with ⟨cur, next, bit, hcur, hnext, hstep⟩
-    refine ⟨cur, next, bit, ?_, ?_, ?_⟩
-    · let E := scons bit (scons next (scons cur (scons k e)))
-      apply (betaAt_nat_entry E 2 (code+4) (step+4) 3).mpr
-      simpa [E, scons] using hcur
-    · let E := scons bit (scons next (scons cur (scons k e)))
-      apply (betaAtSuccIdx_nat_entry E 1 (code+4) (step+4) 3).mpr
-      simpa [E, scons, Nat.add_assoc] using hnext
-    · let E := scons bit (scons next (scons cur (scons k e)))
-      apply (div2StepAt_nat E 2 1 0).mpr
-      simpa [E, scons] using hstep
+    apply (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mpr
+    simpa [scons] using h k hk
+
+theorem betaDiv2StepsThroughAt_nat (e : Nat → Nat) (code step last : Nat) :
+    Sat natModel e (betaDiv2StepsThroughAt code step last) ↔
+      ∀ k, k ≤ e last →
+        ∃ cur next bit,
+          BetaEntry (e code) (e step) k cur ∧
+          BetaEntry (e code) (e step) (k+1) next ∧
+          (bit = 0 ∨ bit = 1) ∧ cur = next + next + bit := by
+  constructor
+  · intro h k hk
+    have hkSat :
+        Sat natModel (scons k e) (leAt 0 (last+1)) := by
+      exact (leAt_nat (scons k e) 0 (last+1)).mpr (by
+        simpa [scons] using hk)
+    have hw := (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mp
+      (h k hkSat)
+    simpa [scons] using hw
+  · intro h k hkSat
+    have hk : k ≤ e last := by
+      have hle := (leAt_nat (scons k e) 0 (last+1)).mp hkSat
+      simpa [scons] using hle
+    apply (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mpr
+    simpa [scons] using h k hk
 
 end Formula
 
