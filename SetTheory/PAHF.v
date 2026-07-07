@@ -6124,6 +6124,188 @@ Proof.
   - exact (hG x hx).
 Qed.
 
+Definition substZero : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => tZero
+    | S k => tVar k
+    end.
+
+Definition substSuccVar : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => tSucc (tVar 0)
+    | S k => tVar (S k)
+    end.
+
+Definition succInj : formula :=
+  pAll (pAll (pImp
+    (pEq (tSucc (tVar 1)) (tSucc (tVar 0)))
+    (pEq (tVar 1) (tVar 0)))).
+
+Definition zeroNotSucc : formula :=
+  pAll (pImp (pEq (tSucc (tVar 0)) tZero) pBot).
+
+Definition addZero : formula :=
+  pAll (pEq (tAdd (tVar 0) tZero) (tVar 0)).
+
+Definition addSucc : formula :=
+  pAll (pAll (pEq
+    (tAdd (tVar 1) (tSucc (tVar 0)))
+    (tSucc (tAdd (tVar 1) (tVar 0))))).
+
+Definition mulZero : formula :=
+  pAll (pEq (tMul (tVar 0) tZero) tZero).
+
+Definition mulSucc : formula :=
+  pAll (pAll (pEq
+    (tMul (tVar 1) (tSucc (tVar 0)))
+    (tAdd (tMul (tVar 1) (tVar 0)) (tVar 1)))).
+
+Definition inductionForm (phi : formula) : formula :=
+  pImp
+    (pAnd (subst substZero phi)
+      (pAll (pImp phi (subst substSuccVar phi))))
+    (pAll phi).
+
+Definition Ax (f : formula) : Prop :=
+  f = succInj \/ f = zeroNotSucc \/
+  f = addZero \/ f = addSucc \/
+  f = mulZero \/ f = mulSucc \/
+  exists phi, f = inductionForm phi.
+
+Definition Ax_s (f : formula) : Prop :=
+  f = sealPA succInj \/ f = sealPA zeroNotSucc \/
+  f = sealPA addZero \/ f = sealPA addSucc \/
+  f = sealPA mulZero \/ f = sealPA mulSucc \/
+  exists phi, f = sealPA (inductionForm phi).
+
+Lemma sentence_ax_s : forall f, Ax_s f -> Sentence f.
+Proof.
+  intros f hf.
+  unfold Ax_s in hf.
+  destruct hf as [hf | [hf | [hf | [hf | [hf | [hf | [phi hf]]]]]]];
+    subst f; apply sealPA_sentence.
+Qed.
+
+Lemma Ax_s_succInj : Ax_s (sealPA succInj).
+Proof.
+  unfold Ax_s. now left.
+Qed.
+
+Lemma Ax_s_zeroNotSucc : Ax_s (sealPA zeroNotSucc).
+Proof.
+  unfold Ax_s. right. now left.
+Qed.
+
+Lemma Ax_s_addZero : Ax_s (sealPA addZero).
+Proof.
+  unfold Ax_s. right. right. now left.
+Qed.
+
+Lemma Ax_s_addSucc : Ax_s (sealPA addSucc).
+Proof.
+  unfold Ax_s. right. right. right. now left.
+Qed.
+
+Lemma Ax_s_mulZero : Ax_s (sealPA mulZero).
+Proof.
+  unfold Ax_s. right. right. right. right. now left.
+Qed.
+
+Lemma Ax_s_mulSucc : Ax_s (sealPA mulSucc).
+Proof.
+  unfold Ax_s. right. right. right. right. right. now left.
+Qed.
+
+Lemma Ax_s_induction : forall phi, Ax_s (sealPA (inductionForm phi)).
+Proof.
+  intro phi.
+  unfold Ax_s.
+  right. right. right. right. right. right.
+  exists phi. reflexivity.
+Qed.
+
+Lemma sat_substZero : forall (M : Model) phi (e : nat -> M),
+  Sat M e (subst substZero phi) <->
+    Sat M (scons M (zero M) e) phi.
+Proof.
+  intros M phi e.
+  eapply iff_trans.
+  - apply Sat_subst.
+  - apply Sat_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma sat_substSuccVar : forall (M : Model) phi (e : nat -> M) a,
+  Sat M (scons M a e) (subst substSuccVar phi) <->
+    Sat M (scons M (succ M a) e) phi.
+Proof.
+  intros M phi e a.
+  eapply iff_trans.
+  - apply Sat_subst.
+  - apply Sat_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma sat_axiom : forall (M : Model) (e : nat -> M) f,
+  Ax f -> Sat M e f.
+Proof.
+  intros M e f hf.
+  unfold Ax in hf.
+  destruct hf as [hf | [hf | [hf | [hf | [hf | [hf | [phi hf]]]]]]];
+    subst f; simpl.
+  - intros a b h.
+    exact (succ_injective M a b h).
+  - intros a h.
+    exact (zero_not_succ M a h).
+  - intro a.
+    exact (add_zero M a).
+  - intros a b.
+    exact (add_succ M a b).
+  - intro a.
+    exact (mul_zero M a).
+  - intros a b.
+    exact (mul_succ M a b).
+  - intros [hzero hstep] a.
+    apply (induction_schema M (fun x => Sat M (scons M x e) phi)).
+    + exact (proj1 (sat_substZero M phi e) hzero).
+    + intros n ih.
+      apply (proj1 (sat_substSuccVar M phi e n)).
+      exact (hstep n ih).
+Qed.
+
+Lemma sat_axiom_s : forall (M : Model) (e : nat -> M) f,
+  Ax_s f -> Sat M e f.
+Proof.
+  intros M e f hf.
+  unfold Ax_s in hf.
+  destruct hf as [hf | [hf | [hf | [hf | [hf | [hf | [phi hf]]]]]]];
+    subst f.
+  - exact (proj2 (seal_valid M succInj)
+      (fun e0 => sat_axiom M e0 succInj (or_introl eq_refl)) e).
+  - exact (proj2 (seal_valid M zeroNotSucc)
+      (fun e0 => sat_axiom M e0 zeroNotSucc
+        (or_intror (or_introl eq_refl))) e).
+  - exact (proj2 (seal_valid M addZero)
+      (fun e0 => sat_axiom M e0 addZero
+        (or_intror (or_intror (or_introl eq_refl)))) e).
+  - exact (proj2 (seal_valid M addSucc)
+      (fun e0 => sat_axiom M e0 addSucc
+        (or_intror (or_intror (or_intror (or_introl eq_refl))))) e).
+  - exact (proj2 (seal_valid M mulZero)
+      (fun e0 => sat_axiom M e0 mulZero
+        (or_intror (or_intror (or_intror (or_intror (or_introl eq_refl)))))) e).
+  - exact (proj2 (seal_valid M mulSucc)
+      (fun e0 => sat_axiom M e0 mulSucc
+        (or_intror (or_intror (or_intror
+          (or_intror (or_intror (or_introl eq_refl))))))) e).
+  - exact (proj2 (seal_valid M (inductionForm phi))
+      (fun e0 => sat_axiom M e0 (inductionForm phi)
+        (or_intror (or_intror (or_intror
+          (or_intror (or_intror (or_intror (ex_intro _ phi eq_refl)))))))) e).
+Qed.
+
 End Formula.
 
 End PA.
