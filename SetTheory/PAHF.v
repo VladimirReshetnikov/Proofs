@@ -4276,6 +4276,283 @@ Proof.
     apply mulGraph_ordinal_code.
 Qed.
 
+Lemma mulGraph_value_of_ordinal_inputs : forall m n e,
+  e 1 = ordinal_code m ->
+  e 2 = ordinal_code n ->
+  Sat nat hf_mem e mulGraph ->
+  e 0 = ordinal_code (m * n).
+Proof.
+  intros m n e hleft hright h.
+  unfold mulGraph, mulGraphAt in h.
+  destruct h as [f [hf hout]].
+  pose (tail := fun k => e (S (S (S k)))).
+  pose (eCanon := scons nat f
+    (scons nat (e 0)
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) tail)))).
+  assert (heq : forall k, eCanon k = scons nat f e k).
+  {
+    intro k.
+    destruct k as [|[|[|[|k]]]]; simpl.
+    - reflexivity.
+    - reflexivity.
+    - symmetry. exact hleft.
+    - symmetry. exact hright.
+    - reflexivity.
+  }
+  assert (hfCanon : Sat nat hf_mem eCanon (mulRecApproxAt 0 2 3)).
+  {
+    apply (proj2 (@Sat_ext nat hf_mem (mulRecApproxAt 0 2 3)
+      eCanon (scons nat f e) heq)).
+    exact hf.
+  }
+  pose proof (proj1 (HF_pairMemAt_spec ackermannHFModel
+    (scons nat f e) 3 1 0) hout) as hout'.
+  change (hf_mem (hf_kpair_obj ackermannHFModel (e 2) (e 0)) f) in hout'.
+  rewrite hright in hout'.
+  assert (hnn : n <= n) by lia.
+  exact (mulRecApproxAt_value_of_le m n f (e 0) tail
+    n (e 0) hfCanon hnn hout').
+Qed.
+
+Lemma hf_model_mem_irrefl : forall (M : HFModel) (a : M),
+  ~ hf_rel M a a.
+Proof.
+  intros M.
+  apply (hf_set_ind M (fun a => ~ hf_rel M a a)).
+  intros a ih haa.
+  exact (ih a haa haa).
+Qed.
+
+Lemma domain_empty_model : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) (scons M (hf_empty_obj M) e) domainForm.
+Proof.
+  intros M e.
+  unfold domainForm.
+  apply (proj2 (HF_ordinalLikeAt_spec M (hf_rel M)
+    (scons M (hf_empty_obj M) e) 0)).
+  apply OrdinalLike_empty.
+Qed.
+
+Lemma zeroGraph_empty_model : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) (scons M (hf_empty_obj M) e) zeroGraph.
+Proof.
+  intros M e.
+  unfold zeroGraph.
+  apply (proj2 (HF_emptyAt_empty M
+    (scons M (hf_empty_obj M) e) 0)).
+  reflexivity.
+Qed.
+
+Lemma succGraph_adjoin_self_model : forall (M : HFModel)
+    (a : M) (e : nat -> M),
+  Sat M (hf_rel M)
+    (scons M (hf_adjoin_obj M a a) (scons M a e)) succGraph.
+Proof.
+  intros M a e.
+  unfold succGraph.
+  apply (proj2 (HF_succAt_spec M
+    (scons M (hf_adjoin_obj M a a) (scons M a e)) 0 1)).
+  reflexivity.
+Qed.
+
+Lemma domain_adjoin_self_model : forall (M : HFModel)
+    (a : M) (e : nat -> M),
+  Sat M (hf_rel M) (scons M a e) domainForm ->
+  Sat M (hf_rel M)
+    (scons M (hf_adjoin_obj M a a) e) domainForm.
+Proof.
+  intros M a e ha.
+  unfold domainForm in *.
+  apply (proj2 (HF_ordinalLikeAt_spec M (hf_rel M)
+    (scons M (hf_adjoin_obj M a a) e) 0)).
+  pose proof (proj1 (HF_ordinalLikeAt_spec M (hf_rel M)
+    (scons M a e) 0) ha) as ha'.
+  exact (OrdinalLike_adjoin_self M a (hf_adjoin_obj M a a) ha' eq_refl).
+Qed.
+
+Definition Domain (M : HFModel) : Type :=
+  { a : M | OrdinalLike (hf_rel M) a }.
+
+Definition domainZero (M : HFModel) : Domain M :=
+  exist _ (hf_empty_obj M) (OrdinalLike_empty M).
+
+Definition domainSucc (M : HFModel) (a : Domain M) : Domain M :=
+  exist _ (hf_adjoin_obj M (proj1_sig a) (proj1_sig a))
+    (OrdinalLike_adjoin_self M (proj1_sig a)
+      (hf_adjoin_obj M (proj1_sig a) (proj1_sig a))
+      (proj2_sig a) eq_refl).
+
+Lemma domainZero_val : forall (M : HFModel),
+  proj1_sig (domainZero M) = hf_empty_obj M.
+Proof.
+  reflexivity.
+Qed.
+
+Lemma domainSucc_val : forall (M : HFModel) (a : Domain M),
+  proj1_sig (domainSucc M a) =
+    hf_adjoin_obj M (proj1_sig a) (proj1_sig a).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma adjoin_self_ne_empty_model : forall (M : HFModel) (a : M),
+  hf_adjoin_obj M a a <> hf_empty_obj M.
+Proof.
+  intros M a h.
+  assert (ha : hf_rel M a (hf_adjoin_obj M a a)).
+  {
+    apply (proj2 (hf_adjoin_spec M a a a)).
+    now right.
+  }
+  rewrite h in ha.
+  exact (hf_empty_spec M a ha).
+Qed.
+
+Lemma adjoin_self_injective_on_ordinalLike_model :
+  forall (M : HFModel) (a b : M),
+  OrdinalLike (hf_rel M) a ->
+  OrdinalLike (hf_rel M) b ->
+  hf_adjoin_obj M a a = hf_adjoin_obj M b b ->
+  a = b.
+Proof.
+  intros M a b _ha hb h.
+  assert (hasucc : hf_rel M a (hf_adjoin_obj M b b)).
+  {
+    rewrite <- h.
+    apply (proj2 (hf_adjoin_spec M a a a)).
+    now right.
+  }
+  destruct (proj1 (hf_adjoin_spec M a b b) hasucc) as [hab | hab].
+  - assert (hbsucc : hf_rel M b (hf_adjoin_obj M a a)).
+    {
+      rewrite h.
+      apply (proj2 (hf_adjoin_spec M b b b)).
+      now right.
+    }
+    destruct (proj1 (hf_adjoin_spec M b a a) hbsucc) as [hba | hba].
+    + pose proof (proj1 hb a hab b hba) as hbb.
+      exfalso. exact (hf_model_mem_irrefl M b hbb).
+    + symmetry. exact hba.
+  - exact hab.
+Qed.
+
+Lemma domainSucc_injective_model : forall (M : HFModel) (a b : Domain M),
+  domainSucc M a = domainSucc M b -> a = b.
+Proof.
+  intros M [a ha] [b hb] h.
+  assert (hval : hf_adjoin_obj M a a = hf_adjoin_obj M b b).
+  {
+    exact (f_equal (@proj1_sig M
+      (fun x => OrdinalLike (hf_rel M) x)) h).
+  }
+  assert (hab : a = b).
+  {
+    exact (adjoin_self_injective_on_ordinalLike_model M a b ha hb hval).
+  }
+  subst b.
+  f_equal.
+  apply proof_irrelevance.
+Qed.
+
+Lemma domainSucc_ne_zero_model : forall (M : HFModel) (a : Domain M),
+  domainSucc M a <> domainZero M.
+Proof.
+  intros M [a ha] h.
+  pose proof (f_equal (@proj1_sig M
+    (fun x => OrdinalLike (hf_rel M) x)) h) as hval.
+  simpl in hval.
+  exact (adjoin_self_ne_empty_model M a hval).
+Qed.
+
+Lemma domainElement_domainForm_model : forall (M : HFModel)
+    (a : Domain M) (e : nat -> M),
+  Sat M (hf_rel M) (scons M (proj1_sig a) e) domainForm.
+Proof.
+  intros M [a ha] e.
+  unfold domainForm.
+  apply (proj2 (HF_ordinalLikeAt_spec M (hf_rel M)
+    (scons M a e) 0)).
+  exact ha.
+Qed.
+
+Lemma domainZero_domainForm_model : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) (scons M (proj1_sig (domainZero M)) e) domainForm.
+Proof.
+  intros M e.
+  apply domainElement_domainForm_model.
+Qed.
+
+Lemma domainZero_zeroGraph_model : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) (scons M (proj1_sig (domainZero M)) e) zeroGraph.
+Proof.
+  intros M e.
+  change (Sat M (hf_rel M) (scons M (hf_empty_obj M) e) zeroGraph).
+  apply zeroGraph_empty_model.
+Qed.
+
+Lemma domainSucc_domainForm_model : forall (M : HFModel)
+    (a : Domain M) (e : nat -> M),
+  Sat M (hf_rel M) (scons M (proj1_sig (domainSucc M a)) e) domainForm.
+Proof.
+  intros M a e.
+  apply domainElement_domainForm_model.
+Qed.
+
+Lemma domainSucc_succGraph_model : forall (M : HFModel)
+    (a : Domain M) (e : nat -> M),
+  Sat M (hf_rel M)
+    (scons M (proj1_sig (domainSucc M a)) (scons M (proj1_sig a) e))
+    succGraph.
+Proof.
+  intros M a e.
+  change (Sat M (hf_rel M)
+    (scons M (hf_adjoin_obj M (proj1_sig a) (proj1_sig a))
+      (scons M (proj1_sig a) e)) succGraph).
+  apply succGraph_adjoin_self_model.
+Qed.
+
+Lemma zeroGraph_domain_model : forall (M : HFModel) (e : nat -> M),
+  Sat M (hf_rel M) e zeroGraph ->
+  Sat M (hf_rel M) e domainForm.
+Proof.
+  intros M e hz.
+  unfold domainForm.
+  apply (proj2 (HF_ordinalLikeAt_spec M (hf_rel M) e 0)).
+  pose proof (proj1 (HF_emptyAt_empty M e 0) hz) as hz'.
+  rewrite hz'.
+  apply OrdinalLike_empty.
+Qed.
+
+Lemma zeroGraph_domain : forall e,
+  Sat nat hf_mem e zeroGraph -> Sat nat hf_mem e domainForm.
+Proof.
+  intros e hz.
+  exact (zeroGraph_domain_model ackermannHFModel e hz).
+Qed.
+
+Lemma succGraph_preserves_domain_model : forall (M : HFModel)
+    (e : nat -> M),
+  Sat M (hf_rel M) e (HF_ordinalLikeAt 1) ->
+  Sat M (hf_rel M) e succGraph ->
+  Sat M (hf_rel M) e domainForm.
+Proof.
+  intros M e hin hs.
+  unfold domainForm.
+  apply (proj2 (HF_ordinalLikeAt_spec M (hf_rel M) e 0)).
+  pose proof (proj1 (HF_ordinalLikeAt_spec M (hf_rel M) e 1) hin) as hin'.
+  pose proof (proj1 (HF_succAt_spec M e 0 1) hs) as hs'.
+  exact (OrdinalLike_adjoin_self M (e 1) (e 0) hin' hs').
+Qed.
+
+Lemma succGraph_preserves_domain : forall e,
+  Sat nat hf_mem e (HF_ordinalLikeAt 1) ->
+  Sat nat hf_mem e succGraph ->
+  Sat nat hf_mem e domainForm.
+Proof.
+  intros e hin hs.
+  exact (succGraph_preserves_domain_model ackermannHFModel e hin hs).
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
