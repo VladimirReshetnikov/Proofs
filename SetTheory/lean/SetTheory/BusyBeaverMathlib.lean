@@ -110,6 +110,55 @@ theorem radoMatchesTuringTape_move_left {head : Int} {tape : Tape} {T : Turing.T
   rw [h (i - 1)]
   simp
 
+/-- Convert mathlib's tape-head directions to the Rado direction type. -/
+def radoMoveOfTuringDir : Turing.Dir -> Move
+  | Turing.Dir.left => Move.left
+  | Turing.Dir.right => Move.right
+
+@[simp]
+theorem radoMoveOfTuringDir_apply (dir : Turing.Dir) (head : Int) :
+    (radoMoveOfTuringDir dir).apply head =
+      match dir with
+      | Turing.Dir.left => head - 1
+      | Turing.Dir.right => head + 1 := by
+  cases dir <;> rfl
+
+/--
+Typed-state Rado states used to simulate a Bool `TM0`.
+
+`normal q` corresponds to a genuine `TM0` label.  `writeReturn q` is the single
+helper state needed because `TM0.write` does not move the head while a Rado
+transition must move after writing.
+-/
+inductive TM0RadoState (Label : Type*) where
+  | normal : Label -> TM0RadoState Label
+  | writeReturn : Label -> TM0RadoState Label
+  deriving Repr
+
+/-- Typed-state Rado machine simulating a Bool `TM0` machine. -/
+def tm0ToTypedRado {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) : TypedMachine (TM0RadoState Label) where
+  transition state bit :=
+    match state with
+    | TM0RadoState.normal q =>
+        match M q bit with
+        | none =>
+            { write := bit
+              move := Move.right
+              next := none }
+        | some (q', Turing.TM0.Stmt.move dir) =>
+            { write := bit
+              move := radoMoveOfTuringDir dir
+              next := some (TM0RadoState.normal q') }
+        | some (q', Turing.TM0.Stmt.write out) =>
+            { write := out
+              move := Move.right
+              next := some (TM0RadoState.writeReturn q') }
+    | TM0RadoState.writeReturn q =>
+        { write := bit
+          move := Move.left
+          next := some (TM0RadoState.normal q) }
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
