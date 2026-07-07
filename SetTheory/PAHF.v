@@ -9888,6 +9888,62 @@ Proof.
     (translateFormula a) (translateFormula b) hp).
 Qed.
 
+Lemma BProv_translate_orE : forall G a b c,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pOr a b)) ->
+  BProv translatedPAAx
+    (translateFormula a :: translateContext G) (translateFormula c) ->
+  BProv translatedPAAx
+    (translateFormula b :: translateContext G) (translateFormula c) ->
+  BProv translatedPAAx (translateContext G) (translateFormula c).
+Proof.
+  intros G a b c [Lo [hLo hpo]] [La [hLa hpa]] [Lb [hLb hpb]].
+  unfold translateFormula in hpo. simpl in hpo. fold (translateFormula a) in hpo.
+  fold (translateFormula b) in hpo.
+  exists (Lo ++ La ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLo x hx).
+    + apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * exact (hLa x hx).
+      * exact (hLb x hx).
+  - apply (P_orE ((Lo ++ La ++ Lb) ++ translateContext G)
+      (translateFormula a) (translateFormula b) (translateFormula c)).
+    + apply (Prov_weaken (Lo ++ translateContext G)
+        (fOr (translateFormula a) (translateFormula b)) hpo).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (La ++ translateFormula a :: translateContext G)
+        (translateFormula c) hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left.
+        apply in_app_iff. right. apply in_app_iff. left. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+    + apply (Prov_weaken (Lb ++ translateFormula b :: translateContext G)
+        (translateFormula c) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left.
+        apply in_app_iff. right. apply in_app_iff. right. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
