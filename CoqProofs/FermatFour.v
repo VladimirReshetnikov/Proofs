@@ -27,6 +27,9 @@ Module FermatFour.
 Definition Fermat42 (a b c : Z) : Prop :=
   a <> 0 /\ b <> 0 /\ (a ^ 4 + b ^ 4 = c ^ 2)%Z.
 
+Definition PythagoreanTriple (x y z : Z) : Prop :=
+  (x ^ 2 + y ^ 2 = z ^ 2)%Z.
+
 Definition cMeasure (c : Z) : nat :=
   Z.to_nat (Z.abs c).
 
@@ -54,6 +57,90 @@ Proof.
     exact h.
 Qed.
 
+Theorem Fermat42_scale {a b c k : Z} (hk : k <> 0) :
+    Fermat42 a b c <-> Fermat42 (k * a) (k * b) (k ^ 2 * c).
+Proof.
+  unfold Fermat42.
+  split.
+  - intros (ha & hb & h).
+    repeat split.
+    + intros hka. apply Z.mul_eq_0 in hka as [hk0 | ha0]; tauto.
+    + intros hkb. apply Z.mul_eq_0 in hkb as [hk0 | hb0]; tauto.
+    + replace ((k * a) ^ 4 + (k * b) ^ 4) with
+        (k ^ 4 * (a ^ 4 + b ^ 4)) by ring.
+      replace ((k ^ 2 * c) ^ 2) with (k ^ 4 * c ^ 2) by ring.
+      now rewrite h.
+  - intros (hka & hkb & h).
+    repeat split.
+    + intros ha. subst a. rewrite Z.mul_0_r in hka. contradiction.
+    + intros hb. subst b. rewrite Z.mul_0_r in hkb. contradiction.
+    + apply (Z.mul_cancel_l _ _ (k ^ 4)).
+      { apply Z.pow_nonzero; lia. }
+      replace (k ^ 4 * (a ^ 4 + b ^ 4)) with
+        ((k * a) ^ 4 + (k * b) ^ 4) by ring.
+      replace (k ^ 4 * c ^ 2) with ((k ^ 2 * c) ^ 2) by ring.
+      exact h.
+Qed.
+
+Theorem Fermat42_pythagorean_squares {a b c : Z} (h : Fermat42 a b c) :
+    PythagoreanTriple (a ^ 2) (b ^ 2) c.
+Proof.
+  destruct h as (_ & _ & h).
+  unfold PythagoreanTriple.
+  rewrite <- h.
+  ring.
+Qed.
+
+Lemma odd_square_mod4 (z : Z) :
+    Z.odd z = true -> (z ^ 2) mod 4 = 1.
+Proof.
+  intro hz.
+  pose proof (Z.div2_odd z) as hdecomp.
+  rewrite hz in hdecomp.
+  change (Z.b2z true) with 1 in hdecomp.
+  rewrite hdecomp.
+  replace ((2 * Z.div2 z + 1) ^ 2) with
+    (1 + (Z.div2 z * Z.div2 z + Z.div2 z) * 4) by ring.
+  rewrite Z.mod_add by discriminate.
+  apply Z.mod_small.
+  lia.
+Qed.
+
+Lemma odd_pow4_mod4 (z : Z) :
+    Z.odd z = true -> (z ^ 4) mod 4 = 1.
+Proof.
+  intro hz.
+  replace (z ^ 4) with ((z ^ 2) * (z ^ 2)) by ring.
+  rewrite Zmult_mod.
+  rewrite odd_square_mod4 by exact hz.
+  reflexivity.
+Qed.
+
+Lemma square_mod4_ne_two (z : Z) :
+    (z ^ 2) mod 4 <> 2.
+Proof.
+  replace (z ^ 2) with (z * z) by ring.
+  rewrite Zmult_mod.
+  pose proof (Z.mod_pos_bound z 4 ltac:(lia)) as hz.
+  remember (z mod 4) as r.
+  assert (r = 0 \/ r = 1 \/ r = 2 \/ r = 3) by lia.
+  destruct H as [-> | [-> | [-> | ->]]]; compute; discriminate.
+Qed.
+
+Theorem Fermat42_not_both_odd {a b c : Z} (h : Fermat42 a b c) :
+    ~ (Z.odd a = true /\ Z.odd b = true).
+Proof.
+  intros (haodd & hbodd).
+  destruct h as (_ & _ & heq).
+  assert (hmod : (c ^ 2) mod 4 = 2).
+  { rewrite <- heq.
+    rewrite (Zplus_mod (a ^ 4) (b ^ 4) 4).
+    rewrite odd_pow4_mod4 by exact haodd.
+    rewrite odd_pow4_mod4 by exact hbodd.
+    reflexivity. }
+  exact (square_mod4_ne_two c hmod).
+Qed.
+
 Lemma pow4_pos (a : Z) (ha : a <> 0) : 0 < a ^ 4.
 Proof.
   assert (hnonneg : 0 <= a ^ 4).
@@ -72,6 +159,98 @@ Proof.
   assert (ha4 : 0 < a ^ 4) by now apply pow4_pos.
   assert (hb4 : 0 < b ^ 4) by now apply pow4_pos.
   nia.
+Qed.
+
+Lemma square_mod16_zero_mod4_zero (z : Z) :
+    (z ^ 2) mod 16 = 0 -> z mod 4 = 0.
+Proof.
+  intro h.
+  replace (z ^ 2) with (z * z) in h by ring.
+  rewrite Zmult_mod in h.
+  remember (z mod 16) as r eqn:Hr.
+  assert (hz4 : z mod 4 = r mod 4).
+  { symmetry.
+    rewrite Hr.
+    apply Z.mod_mod_divide.
+    exists 4. ring. }
+  pose proof (Z.mod_pos_bound z 16 ltac:(lia)) as hz.
+  rewrite <- Hr in hz.
+  assert (hrange : r = 0 \/ r = 1 \/ r = 2 \/ r = 3 \/
+          r = 4 \/ r = 5 \/ r = 6 \/ r = 7 \/
+          r = 8 \/ r = 9 \/ r = 10 \/ r = 11 \/
+          r = 12 \/ r = 13 \/ r = 14 \/ r = 15) by lia.
+  destruct hrange as [-> | [-> | [-> | [-> |
+    [-> | [-> | [-> | [-> |
+    [-> | [-> | [-> | [-> |
+    [-> | [-> | [-> | ->]]]]]]]]]]]]]]];
+    try (compute in h; discriminate);
+    rewrite hz4; reflexivity.
+Qed.
+
+Lemma square_mod16_zero_div4 (z : Z) :
+    (z ^ 2) mod 16 = 0 -> exists q : Z, z = 4 * q.
+Proof.
+  intro h.
+  pose proof (square_mod16_zero_mod4_zero z h) as hz4.
+  pose proof (proj1 (Z.mod_divide z 4 ltac:(lia)) hz4) as hdiv.
+  destruct hdiv as [q hq].
+  exists q.
+  rewrite hq.
+  ring.
+Qed.
+
+Lemma cMeasure_quarter_lt {c c' : Z} :
+    c = 4 * c' -> c <> 0 -> (cMeasure c' < cMeasure c)%nat.
+Proof.
+  intros hc hc0.
+  unfold cMeasure.
+  apply Z2Nat.inj_lt; try apply Z.abs_nonneg.
+  rewrite hc, Z.abs_mul.
+  change (Z.abs 4) with 4.
+  assert (hc' : c' <> 0).
+  { intro hzero. apply hc0. rewrite hc, hzero. ring. }
+  pose proof (proj2 (Z.abs_pos c') hc') as hcpos.
+  lia.
+Qed.
+
+Theorem Fermat42_both_even_descent {a b c : Z} (h : Fermat42 a b c)
+    (haeven : Z.Even a) (hbeven : Z.Even b) :
+    exists a' b' c' : Z,
+      Fermat42 a' b' c' /\ (cMeasure c' < cMeasure c)%nat.
+Proof.
+  pose proof (Fermat42_c_ne_zero h) as hcne.
+  destruct h as (ha & hb & heq).
+  destruct haeven as [a' haeq].
+  destruct hbeven as [b' hbeq].
+  assert (hcmod : (c ^ 2) mod 16 = 0).
+  { rewrite <- heq.
+    rewrite haeq, hbeq.
+    replace ((2 * a') ^ 4 + (2 * b') ^ 4) with
+      ((a' ^ 4 + b' ^ 4) * 16) by ring.
+    rewrite Z.mod_mul by discriminate.
+    reflexivity. }
+  destruct (square_mod16_zero_div4 c hcmod) as [c' hceq].
+  exists a', b', c'.
+  split.
+  - apply (proj2 (Fermat42_scale (a:=a') (b:=b') (c:=c') (k:=2) ltac:(lia))).
+    unfold Fermat42.
+    repeat split.
+    + intro hzero. apply ha. rewrite haeq, hzero. ring.
+    + intro hzero. apply hb. rewrite hbeq, hzero. ring.
+    + change (2 ^ 2) with 4.
+      rewrite <- haeq, <- hbeq, <- hceq.
+      exact heq.
+  - exact (cMeasure_quarter_lt hceq hcne).
+Qed.
+
+Theorem Fermat42_both_even_descent_bool {a b c : Z} (h : Fermat42 a b c)
+    (haeven : Z.even a = true) (hbeven : Z.even b = true) :
+    exists a' b' c' : Z,
+      Fermat42 a' b' c' /\ (cMeasure c' < cMeasure c)%nat.
+Proof.
+  exact (Fermat42_both_even_descent h
+    (proj1 (Z.even_spec a) haeven)
+    (proj1 (Z.even_spec b) hbeven)).
 Qed.
 
 Theorem no_Fermat42_of_descent (descent : Fermat42_descent_step) :
