@@ -10844,6 +10844,36 @@ theorem BProv_translate_orI2 {G : List PA.Formula} {a b : PA.Formula}
     (fOr (translateFormula a) (translateFormula b))
   exact Prov.P_orI2 _ _ _ hp
 
+/-- Translated disjunction elimination for the PA-in-HF translation. -/
+theorem BProv_translate_orE {G : List PA.Formula} {a b c : PA.Formula}
+    (hor : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a b)))
+    (ha : BProv translatedPAAx
+      (translateFormula a :: translateContext G) (translateFormula c))
+    (hb : BProv translatedPAAx
+      (translateFormula b :: translateContext G) (translateFormula c)) :
+    BProv translatedPAAx (translateContext G) (translateFormula c) := by
+  rcases hor with ⟨Lo, hLo, hpo⟩
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_orE _ (translateFormula a) (translateFormula b) (translateFormula c)
+    · apply Prov_weaken hpo
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpa
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=

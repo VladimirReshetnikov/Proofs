@@ -494,6 +494,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_translate_andE2
 #check @AckermannHF.PAInHF.BProv_translate_orI1
 #check @AckermannHF.PAInHF.BProv_translate_orI2
+#check @AckermannHF.PAInHF.BProv_translate_orE
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
 #check @AckermannHF.PAInHF.BProv_HFFin_of_translatedPAAx
