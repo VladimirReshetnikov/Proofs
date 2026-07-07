@@ -822,6 +822,74 @@ Proof.
     reflexivity.
 Defined.
 
+Definition ordinalHFModel : HFModel.
+Proof.
+  refine {| hf_carrier := OrdinalHF;
+            hf_rel := fun a b => hf_mem (nat_of_ordinal a) (nat_of_ordinal b);
+            hf_empty_obj := ordinal_of_nat hf_empty;
+            hf_adjoin_obj := fun a b =>
+              ordinal_of_nat (hf_adjoin (nat_of_ordinal a) (nat_of_ordinal b)) |}.
+  - intros a b H.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    apply hf_ext.
+    intro x.
+    pose proof (H (ordinal_of_nat x)) as Hx.
+    rewrite !nat_of_ordinal_ordinal_of_nat in Hx.
+    exact Hx.
+  - intros x H.
+    rewrite nat_of_ordinal_ordinal_of_nat in H.
+    exact (hf_mem_empty (nat_of_ordinal x) H).
+  - intros x a b.
+    rewrite nat_of_ordinal_ordinal_of_nat.
+    destruct (hf_mem_adjoin
+      (nat_of_ordinal x) (nat_of_ordinal a) (nat_of_ordinal b))
+      as [hforward hback].
+    split.
+    + intro hx.
+      destruct (hforward hx) as [hxb | hxa].
+      * left. exact hxb.
+      * right. now apply ordinal_eq_of_nat_of_ordinal_eq.
+    + intro hx.
+      apply hback.
+      destruct hx as [hxb | hxa].
+      * left. exact hxb.
+      * right. subst x. reflexivity.
+  - intros P step a.
+    assert (Hnat : forall n, P (ordinal_of_nat n)).
+    {
+      apply hf_set_induction.
+      intros n IH.
+      apply step.
+      intros x hx.
+      rewrite <- (ordinal_of_nat_nat_of_ordinal x).
+      apply IH.
+      rewrite nat_of_ordinal_ordinal_of_nat in hx.
+      exact hx.
+    }
+    rewrite <- (ordinal_of_nat_nat_of_ordinal a).
+    apply Hnat.
+Defined.
+
+Definition HF_ordinal_round_trip_iso : HFIso ackermannHFModel ordinalHFModel.
+Proof.
+  refine {| hf_iso_to := fun n : ackermannHFModel =>
+              (ordinal_of_nat n : ordinalHFModel);
+            hf_iso_inv := fun a : ordinalHFModel =>
+              (nat_of_ordinal a : ackermannHFModel) |}.
+  - apply nat_of_ordinal_ordinal_of_nat.
+  - apply ordinal_of_nat_nat_of_ordinal.
+  - intros a b.
+    simpl.
+    rewrite !nat_of_ordinal_ordinal_of_nat.
+    reflexivity.
+  - reflexivity.
+  - intros a b.
+    apply ordinal_hf_eq.
+    simpl.
+    rewrite !nat_of_ordinal_ordinal_of_nat.
+    reflexivity.
+Defined.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
@@ -885,9 +953,9 @@ Proof.
   refine {| certificate_pa := natPAModel;
             certificate_hf := ackermannHFModel;
             pa_in_hf := ordinalPAModel;
-            hf_in_pa_in_hf := ackermannHFModel;
+            hf_in_pa_in_hf := ordinalHFModel;
             pa_round_trip := PA_ordinal_round_trip_iso;
-            hf_round_trip := HF_identity_iso ackermannHFModel;
+            hf_round_trip := HF_ordinal_round_trip_iso;
             pa_object := fun x => proj1_sig x;
             hf_code := fun x => x;
             hf_decode := fun x => x |};
