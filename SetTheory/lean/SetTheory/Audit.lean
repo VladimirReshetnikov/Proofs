@@ -369,6 +369,9 @@ open SetTheory
 #check @AckermannHF.FirstOrderAdjunctionModel.upair_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.kpair
 #check @AckermannHF.FirstOrderAdjunctionModel.kpair_mem
+#check @AckermannHF.FirstOrderAdjunctionModel.single_injective
+#check @AckermannHF.FirstOrderAdjunctionModel.upair_eq_single
+#check @AckermannHF.FirstOrderAdjunctionModel.kpair_injective
 #check @AckermannHF.firstOrderAdjunctionModel_of_HFAx_s
 #check @AckermannHF.ordinalHF_sat_HF
 #check @AckermannHF.ordinalPA_sat_PA

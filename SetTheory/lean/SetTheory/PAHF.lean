@@ -1086,6 +1086,60 @@ theorem kpair_mem {α : Type u} (M : FirstOrderAdjunctionModel α) (a b q : α) 
     M.mem q (kpair M a b) ↔ q = single M a ∨ q = upair M a b := by
   rw [kpair, upair_spec]
 
+theorem single_injective {α : Type u} (M : FirstOrderAdjunctionModel α) {a b : α}
+    (h : single M a = single M b) : a = b := by
+  have ha : M.mem a (single M a) := (single_spec M a a).mpr rfl
+  rw [h] at ha
+  exact (single_spec M b a).mp ha
+
+theorem upair_eq_single {α : Type u} (M : FirstOrderAdjunctionModel α) {a b c : α}
+    (h : upair M a b = single M c) : a = c ∧ b = c := by
+  constructor
+  · have ha : M.mem a (upair M a b) := (upair_spec M a b a).mpr (Or.inl rfl)
+    rw [h] at ha
+    exact (single_spec M c a).mp ha
+  · have hb : M.mem b (upair M a b) := (upair_spec M a b b).mpr (Or.inr rfl)
+    rw [h] at hb
+    exact (single_spec M c b).mp hb
+
+theorem kpair_injective {α : Type u} (M : FirstOrderAdjunctionModel α) {a b c d : α}
+    (h : kpair M a b = kpair M c d) : a = c ∧ b = d := by
+  have hac : a = c := by
+    have hs : M.mem (single M a) (kpair M a b) :=
+      (kpair_mem M a b (single M a)).mpr (Or.inl rfl)
+    rw [h] at hs
+    rcases (kpair_mem M c d (single M a)).mp hs with hs | hs
+    · exact single_injective M hs
+    · exact ((upair_eq_single M hs.symm).1).symm
+  subst c
+  constructor
+  · rfl
+  · have h1 : M.mem (upair M a b) (kpair M a b) :=
+      (kpair_mem M a b (upair M a b)).mpr (Or.inr rfl)
+    rw [h] at h1
+    rcases (kpair_mem M a d (upair M a b)).mp h1 with h1 | h1
+    · have hba : b = a := (upair_eq_single M h1).2
+      have h2 : M.mem (upair M a d) (kpair M a d) :=
+        (kpair_mem M a d (upair M a d)).mpr (Or.inr rfl)
+      rw [← h] at h2
+      rcases (kpair_mem M a b (upair M a d)).mp h2 with h2 | h2
+      · have hda : d = a := (upair_eq_single M h2).2
+        rw [hba, hda]
+      · have hd : M.mem d (upair M a d) := (upair_spec M a d d).mpr (Or.inr rfl)
+        rw [h2] at hd
+        rcases (upair_spec M a b d).mp hd with hd | hd
+        · rw [hba, hd]
+        · exact hd.symm
+    · have hb : M.mem b (upair M a b) := (upair_spec M a b b).mpr (Or.inr rfl)
+      rw [h1] at hb
+      rcases (upair_spec M a d b).mp hb with hb | hb
+      · have hd : M.mem d (upair M a d) := (upair_spec M a d d).mpr (Or.inr rfl)
+        rw [← h1] at hd
+        rcases (upair_spec M a b d).mp hd with hd | hd
+        · rw [hb, hd]
+        · exact hd.symm
+      · exact hb
+
 end FirstOrderAdjunctionModel
 
 def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
