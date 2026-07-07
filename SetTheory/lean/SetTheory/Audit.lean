@@ -36,6 +36,10 @@ open SetTheory
 #check @PA.Formula.sat_axiom
 #check @PA.Formula.Ax_s
 #check @PA.Formula.sat_axiom_s
+#check @PA.Formula.Prov
+#check @PA.Formula.soundness
+#check @PA.Formula.BProv
+#check @PA.Formula.soundness_BProv
 #check @PA.Term.Free
 #check @PA.Term.free_lt_bound
 #check @PA.Term.numeral
@@ -265,12 +269,15 @@ open SetTheory
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.TheoryInterpretation
 #check @AckermannHF.DeductiveBiInterpretationCertificate
+#check AckermannHF.PAHFDeductiveBiInterpretationCertificate
 #check @AckermannHF.StandardModelInterpretationCertificate
 #check @AckermannHF.standardModelInterpretation
 #check @AckermannHF.PA_standard_model_interpretable_with_HF
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
 #print axioms PA.Formula.sat_axiom
 #print axioms PA.Formula.sat_axiom_s
+#print axioms PA.Formula.soundness
+#print axioms PA.Formula.soundness_BProv
 #print axioms AckermannHF.sat_HF_model
 #print axioms AckermannHF.standard_sat_HF
 #print axioms AckermannHF.PA_standard_model_interpretable_with_HF

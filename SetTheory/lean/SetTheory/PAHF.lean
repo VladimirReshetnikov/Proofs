@@ -2214,6 +2214,164 @@ theorem seal_valid {α : Type u} (M : Model α) (phi : Formula) :
     (∀ e : Nat → α, Sat M e (sealPA phi)) ↔ (∀ e, Sat M e phi) :=
   closeN_valid M (bound phi) phi
 
+/-! ### PA proof calculus -/
+
+def rename (r : Nat → Nat) (phi : Formula) : Formula :=
+  subst (fun n => Term.var (r n)) phi
+
+def instTerm (t : Term) : Nat → Term
+  | 0 => t
+  | n+1 => Term.var n
+
+theorem Sat_rename {α : Type u} (M : Model α) (phi : Formula)
+    (r : Nat → Nat) (e : Nat → α) :
+    Sat M e (rename r phi) ↔ Sat M (fun n => e (r n)) phi := by
+  rw [rename, Sat_subst]
+  exact Sat_ext M phi (fun n => by simp only [Term.eval])
+
+theorem Sat_rename_succ {α : Type u} (M : Model α) (phi : Formula)
+    (e : Nat → α) (d : α) :
+    Sat M (SetTheory.scons d e) (rename Nat.succ phi) ↔ Sat M e phi := by
+  rw [Sat_rename]
+  exact Sat_ext M phi (fun n => rfl)
+
+theorem Sat_instTerm {α : Type u} (M : Model α) (phi : Formula)
+    (t : Term) (e : Nat → α) :
+    Sat M e (subst (instTerm t) phi) ↔
+      Sat M (SetTheory.scons (Term.eval M e t) e) phi := by
+  rw [Sat_subst]
+  exact Sat_ext M phi (fun n => by cases n <;> rfl)
+
+/-- Natural deduction for PA formulas.  This is deliberately proof-theoretic:
+terms are genuine PA terms, quantifier rules use de Bruijn substitution, and
+equality elimination is the Leibniz rule for a one-variable formula context. -/
+inductive Prov : List Formula → Formula → Prop
+  | P_ass    : ∀ G a, a ∈ G → Prov G a
+  | P_impI   : ∀ G a b, Prov (a :: G) b → Prov G (imp a b)
+  | P_impE   : ∀ G a b, Prov G (imp a b) → Prov G a → Prov G b
+  | P_botE   : ∀ G a, Prov G bot → Prov G a
+  | P_lem    : ∀ G a, Prov G (or a (imp a bot))
+  | P_andI   : ∀ G a b, Prov G a → Prov G b → Prov G (and a b)
+  | P_andE1  : ∀ G a b, Prov G (and a b) → Prov G a
+  | P_andE2  : ∀ G a b, Prov G (and a b) → Prov G b
+  | P_orI1   : ∀ G a b, Prov G a → Prov G (or a b)
+  | P_orI2   : ∀ G a b, Prov G b → Prov G (or a b)
+  | P_orE    : ∀ G a b c, Prov G (or a b) → Prov (a :: G) c →
+               Prov (b :: G) c → Prov G c
+  | P_allI   : ∀ G a, Prov (G.map (rename Nat.succ)) a → Prov G (all a)
+  | P_allE   : ∀ G a t, Prov G (all a) → Prov G (subst (instTerm t) a)
+  | P_exI    : ∀ G a t, Prov G (subst (instTerm t) a) → Prov G (ex a)
+  | P_exE    : ∀ G a c, Prov G (ex a) →
+               Prov (a :: G.map (rename Nat.succ)) (rename Nat.succ c) →
+               Prov G c
+  | P_eqRefl : ∀ G t, Prov G (eq t t)
+  | P_eqElim : ∀ G s t a,
+      Prov G (eq s t) → Prov G (subst (instTerm s) a) →
+      Prov G (subst (instTerm t) a)
+
+theorem soundness {α : Type u} (M : Model α) {G : List Formula} {a : Formula}
+    (h : Prov G a) :
+    ∀ e : Nat → α, (∀ x, x ∈ G → Sat M e x) → Sat M e a := by
+  induction h with
+  | P_ass G a hin =>
+      intro e hG
+      exact hG a hin
+  | P_impI G a b _ ih =>
+      intro e hG ha
+      exact ih e (fun x hx => by
+        rcases List.mem_cons.mp hx with rfl | hx
+        · exact ha
+        · exact hG x hx)
+  | P_impE G a b _ _ ihab iha =>
+      intro e hG
+      exact ihab e hG (iha e hG)
+  | P_botE G a _ ih =>
+      intro e hG
+      exact False.elim (ih e hG)
+  | P_lem G a =>
+      intro e hG
+      exact Classical.em (Sat M e a)
+  | P_andI G a b _ _ iha ihb =>
+      intro e hG
+      exact ⟨iha e hG, ihb e hG⟩
+  | P_andE1 G a b _ ih =>
+      intro e hG
+      exact (ih e hG).1
+  | P_andE2 G a b _ ih =>
+      intro e hG
+      exact (ih e hG).2
+  | P_orI1 G a b _ ih =>
+      intro e hG
+      exact Or.inl (ih e hG)
+  | P_orI2 G a b _ ih =>
+      intro e hG
+      exact Or.inr (ih e hG)
+  | P_orE G a b c _ _ _ ihor iha ihb =>
+      intro e hG
+      rcases ihor e hG with ha | hb
+      · exact iha e (fun x hx => by
+          rcases List.mem_cons.mp hx with rfl | hx
+          · exact ha
+          · exact hG x hx)
+      · exact ihb e (fun x hx => by
+          rcases List.mem_cons.mp hx with rfl | hx
+          · exact hb
+          · exact hG x hx)
+  | P_allI G a _ ih =>
+      intro e hG d
+      exact ih (SetTheory.scons d e) (fun x hx => by
+        rw [List.mem_map] at hx
+        rcases hx with ⟨g, hg, rfl⟩
+        exact (Sat_rename_succ M g e d).mpr (hG g hg))
+  | P_allE G a t _ ih =>
+      intro e hG
+      exact (Sat_instTerm M a t e).mpr (ih e hG (Term.eval M e t))
+  | P_exI G a t _ ih =>
+      intro e hG
+      exact ⟨Term.eval M e t, (Sat_instTerm M a t e).mp (ih e hG)⟩
+  | P_exE G a c _ _ ihex ihbody =>
+      intro e hG
+      rcases ihex e hG with ⟨d, hd⟩
+      have hc_shift : Sat M (SetTheory.scons d e) (rename Nat.succ c) :=
+        ihbody (SetTheory.scons d e) (fun x hx => by
+          rcases List.mem_cons.mp hx with rfl | hx
+          · exact hd
+          · rw [List.mem_map] at hx
+            rcases hx with ⟨g, hg, rfl⟩
+            exact (Sat_rename_succ M g e d).mpr (hG g hg))
+      exact (Sat_rename_succ M c e d).mp hc_shift
+  | P_eqRefl G t =>
+      intro e hG
+      rfl
+  | P_eqElim G s t a _ _ iheq iha =>
+      intro e hG
+      have heq : Term.eval M e s = Term.eval M e t := iheq e hG
+      have ha : Sat M (SetTheory.scons (Term.eval M e s) e) a :=
+        (Sat_instTerm M a s e).mp (iha e hG)
+      have henv :
+          ∀ n, SetTheory.scons (Term.eval M e s) e n =
+            SetTheory.scons (Term.eval M e t) e n := by
+        intro n
+        cases n with
+        | zero => exact heq
+        | succ n => rfl
+      exact (Sat_instTerm M a t e).mpr ((Sat_ext M a henv).mp ha)
+
+def BProv (B : Formula → Prop) (G : List Formula) (phi : Formula) : Prop :=
+  ∃ L, (∀ x ∈ L, B x) ∧ Prov (L ++ G) phi
+
+theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
+    {G : List Formula} {phi : Formula} (h : BProv B G phi) :
+    ∀ e : Nat → α, (∀ b, B b → Sat M e b) →
+      (∀ g, g ∈ G → Sat M e g) → Sat M e phi := by
+  intro e hB hG
+  rcases h with ⟨L, hL, hprov⟩
+  exact soundness M hprov e (fun x hx => by
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hB x (hL x hx)
+    · exact hG x hx)
+
 /-! ### Arithmetic relation macros for the reverse interpretation -/
 
 def leAt (a b : Nat) : Formula :=
@@ -4345,6 +4503,11 @@ structure DeductiveBiInterpretationCertificate (PAProv : PAProvability) where
   hf_roundTrip : ∀ (phi : Form), Sentence phi →
     BProv HFAx_s []
       (fIff phi (paInHf.translate (hfInPa.translate phi)))
+
+/-- The concrete deductive target using the PA natural-deduction calculus
+defined above and the existing HF calculus from `SetTheory.Completeness`. -/
+abbrev PAHFDeductiveBiInterpretationCertificate : Type :=
+  DeductiveBiInterpretationCertificate PA.Formula.BProv
 
 /-- A standard-model interpretation certificate with the actual syntactic
 translations attached.  The exactness fields say that the translations have the
