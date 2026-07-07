@@ -1912,6 +1912,37 @@ theorem domainSucc_ne_zero_model {α : Type} (M : AdjunctionModel α)
   intro h
   exact adjoin_self_ne_empty_model M a.val (congrArg Subtype.val h)
 
+/-- Every element of the interpreted PA carrier satisfies the domain formula. -/
+theorem domainElement_domainForm_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) (e : Nat → α) :
+    Sat M.mem (scons a.val e) domainForm := by
+  apply (HF_ordinalLikeAt_spec (scons a.val e) 0).mpr
+  exact a.property
+
+/-- The interpreted zero satisfies the PA-in-HF domain formula. -/
+theorem domainZero_domainForm_model {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) :
+    Sat M.mem (scons (domainZero M).val e) domainForm :=
+  domainElement_domainForm_model M (domainZero M) e
+
+/-- The interpreted zero realizes the PA-in-HF zero graph. -/
+theorem domainZero_zeroGraph_model {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) :
+    Sat M.mem (scons (domainZero M).val e) zeroGraph := by
+  simpa [domainZero_val] using zeroGraph_empty_model M e
+
+/-- The interpreted successor satisfies the PA-in-HF domain formula. -/
+theorem domainSucc_domainForm_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) (e : Nat → α) :
+    Sat M.mem (scons (domainSucc M a).val e) domainForm :=
+  domainElement_domainForm_model M (domainSucc M a) e
+
+/-- The interpreted successor realizes the PA-in-HF successor graph. -/
+theorem domainSucc_succGraph_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) (e : Nat → α) :
+    Sat M.mem (scons (domainSucc M a).val (scons a.val e)) succGraph := by
+  simpa [domainSucc_val] using succGraph_adjoin_self_model M a.val e
+
 /-- In any adjunction model, the PA-in-HF zero graph lands in the interpreted
 PA domain. -/
 theorem zeroGraph_domain_model {α : Type} (M : AdjunctionModel α) (e : Nat → α)

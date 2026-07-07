@@ -294,6 +294,11 @@ open SetTheory
 #check @AckermannHF.PAInHF.adjoin_self_injective_on_ordinalLike_model
 #check @AckermannHF.PAInHF.domainSucc_injective_model
 #check @AckermannHF.PAInHF.domainSucc_ne_zero_model
+#check @AckermannHF.PAInHF.domainElement_domainForm_model
+#check @AckermannHF.PAInHF.domainZero_domainForm_model
+#check @AckermannHF.PAInHF.domainZero_zeroGraph_model
+#check @AckermannHF.PAInHF.domainSucc_domainForm_model
+#check @AckermannHF.PAInHF.domainSucc_succGraph_model
 #check @AckermannHF.PAInHF.zeroGraph_domain_model
 #check @AckermannHF.PAInHF.zeroGraph_domain
 #check @AckermannHF.PAInHF.succGraph_preserves_domain_model
