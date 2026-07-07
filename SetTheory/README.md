@@ -480,14 +480,21 @@ quotient term model — all consistent with the classical setting already in use
 
 ## The Lean 4 port (`lean/`)
 
-The entire development is also machine-checked a **second time, in Lean 4**
-(4.31.0, core only — no Mathlib), under [`lean/`](lean/):
-seven modules mirroring the seven Coq files one-to-one
-(`Fol.lean` … `Equivalence.lean`, `Forward.lean`, `Reverse.lean`), every
-statement with the same logical content, through the same headline theorem
-`T_iff_ZF`. `lean/SetTheory/Audit.lean` replays the `Print Assumptions`
-audit: the Lean proof depends only on `propext`, `Classical.choice`, and
-`Quot.sound` — Lean's standard classical axioms — with no `sorry` anywhere.
+The entire Closure/ZF development is also machine-checked a **second time, in
+Lean 4** (4.31.0, core only — no Mathlib), under [`lean/`](lean/): seven modules
+mirror the seven Coq files one-to-one (`Fol.lean` … `Equivalence.lean`,
+`Forward.lean`, `Reverse.lean`), every statement with the same logical content,
+through the same headline theorem `T_iff_ZF`. The Lean workspace also contains
+[`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first
+formalization toward the bi-interpretability of Peano arithmetic and hereditary
+finite sets. Its current checked surface includes Ackermann-coded HF on `Nat`,
+finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order
+HF axiom schemas in the membership language, and a separate first-order PA syntax
+with sealed PA axiom semantics; the remaining syntactic bridge is the explicit
+formula translation between PA and HF. `lean/SetTheory/Audit.lean` replays the
+`Print Assumptions` audit: the Lean proof depends only on `propext`,
+`Classical.choice`, and `Quot.sound` — Lean's standard classical axioms — with no
+`sorry` anywhere.
 Because Lean generalizes hypotheses as explicit named parameters rather than
 via Coq's `Section` mechanism, the free dependency audit is *visible in each
 theorem's signature* there (e.g. `Reverse.Closure_holds` literally takes no

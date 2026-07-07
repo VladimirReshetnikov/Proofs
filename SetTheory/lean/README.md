@@ -28,6 +28,7 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/Equivalence.lean`](SetTheory/Equivalence.lean) | `Equivalence.v` | the deep forward trade, `Closure_form` + bridges, `Tax_s`, `Tmodel_sat_ZF` / `ZFmodel_sat_T`, `ZF_implies_T`, `T_implies_ZF`, **`T_iff_ZF`** |
 | [`SetTheory/Forward.lean`](SetTheory/Forward.lean) | `Forward.v` | the shallow (second-order) forward trade, self-contained, dependency-audited |
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
+| [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) | new Lean-first module | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, and a separate first-order PA syntax with sealed PA axiom semantics |
 | [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | trailing `Check` / `Print Assumptions` commands | type-checks the headline results and prints their axioms |
 
 ## Building
@@ -75,6 +76,31 @@ parameters. So the signatures themselves certify, e.g.:
 - `ZFAxioms` (the model-side bundle behind `ClosureFO_of_ZF`) contains
   exactly {Ext, Sep, Pair, Union, Inf, Repl} — the deep reverse likewise
   needs neither Powerset nor Regularity.
+
+The PA/HF work in `PAHF.lean` is also included in the audit. Its current
+checked surface is deliberately explicit:
+
+```lean
+theorem AckermannHF.PA_biinterpretable_with_HF_standard :
+    Nonempty (PA.Iso PA.natModel AckermannHF.ordinalPAModel) ∧
+      Nonempty (AckermannHF.AdjunctionIso
+        AckermannHF.standardModel AckermannHF.ordinalHFModel)
+
+theorem AckermannHF.sat_HF_model
+    (M : AckermannHF.AdjunctionModel α) (v : Nat → α) :
+    ∀ g, AckermannHF.HFAx_s g → Sat M.mem v g
+
+theorem PA.Formula.sat_axiom_s
+    (M : PA.Model α) (e : Nat → α) :
+    ∀ f, PA.Formula.Ax_s f → PA.Formula.Sat M e f
+```
+
+This is a semantic and syntax-preparation checkpoint, not yet the final
+deductive bi-interpretability theorem. The remaining syntactic bridge is the
+interpretation layer itself: PA terms/formulas must be translated to
+membership-language formulas over the finite ordinals, and HF membership must
+be translated back to PA by a definable bit predicate rather than by treating
+`Nat.testBit` as primitive.
 
 ## Translation notes (Coq → Lean)
 
