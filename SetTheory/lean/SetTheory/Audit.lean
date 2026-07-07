@@ -348,6 +348,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.insertAt_eq
 #check @AckermannHF.PAInHF.insertAt_gt
 #check @AckermannHF.PAInHF.scons_insertAt
+#check @AckermannHF.PAInHF.scons2_insertAt
+#check @AckermannHF.PAInHF.scons3_insertAt
+#check @AckermannHF.PAInHF.termGraphAt_substZero_insert_model
 #check @AckermannHF.PAInHF.formulaAt
 #check @AckermannHF.PAInHF.formulaAt_free
 #check @AckermannHF.PAInHF.formulaAt_eq_var_spec
