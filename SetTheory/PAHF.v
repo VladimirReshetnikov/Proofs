@@ -135,6 +135,50 @@ Proof.
     discriminate.
 Qed.
 
+Lemma hf_nonempty_nonzero : forall a,
+  (exists x, hf_mem x a) -> a <> 0.
+Proof.
+  intros a [x hx] ha.
+  subst a.
+  exact (hf_mem_empty x hx).
+Qed.
+
+Lemma hf_log2_mem : forall a,
+  a <> 0 -> hf_mem (Nat.log2 a) a.
+Proof.
+  intros a ha.
+  unfold hf_mem.
+  now apply Nat.bit_log2.
+Qed.
+
+Lemma hf_mem_le_log2 : forall x a,
+  hf_mem x a -> x <= Nat.log2 a.
+Proof.
+  intros x a hx.
+  destruct (le_gt_dec x (Nat.log2 a)) as [hle | hgt].
+  - exact hle.
+  - exfalso.
+    unfold hf_mem in hx.
+    rewrite (Nat.bits_above_log2 a x hgt) in hx.
+    discriminate.
+Qed.
+
+Lemma hf_mem_max_exists : forall a,
+  (exists x, hf_mem x a) ->
+  exists p, hf_mem p a /\ forall q, hf_mem q a -> ~ hf_mem p q.
+Proof.
+  intros a hne.
+  pose (p := Nat.log2 a).
+  assert (ha : a <> 0) by now apply hf_nonempty_nonzero.
+  exists p.
+  split.
+  - unfold p. now apply hf_log2_mem.
+  - intros q hq hpq.
+    pose proof (hf_mem_le_log2 q a hq) as hqle.
+    pose proof (hf_mem_lt p q hpq) as hp_lt_q.
+    lia.
+Qed.
+
 Lemma hf_set_induction : forall P : nat -> Prop,
   (forall a, (forall x, hf_mem x a -> P x) -> P a) -> forall a, P a.
 Proof.
