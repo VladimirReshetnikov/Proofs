@@ -2264,11 +2264,21 @@ def betaAtSuccIdx (out code step idx : Nat) : Formula :=
     (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
     (betaAt (out+1) (code+1) (step+1) 0))
 
+/-- The modulus used by Gödel's beta function at sequence index `idx`. -/
+def BetaModulus (step idx : Nat) : Nat :=
+  1 + (idx + 1) * step
+
 /-- The semantic relation expressed by `betaAt`: `value` is the `idx`-th
 entry of a beta-coded sequence with ambient parameters `code` and `step`. -/
 def BetaEntry (code step idx value : Nat) : Prop :=
-  ∃ q, code = q * (1 + (idx + 1) * step) + value ∧
-    value < 1 + (idx + 1) * step
+  ∃ q, code = q * BetaModulus step idx + value ∧
+    value < BetaModulus step idx
+
+/-- A tiny local factorial, kept here to avoid adding a dependency just for
+the Gödel beta coding lemma. -/
+def betaFact : Nat → Nat
+  | 0 => 1
+  | n+1 => (n+1) * betaFact n
 
 /-- Semantic mirror of a beta-coded binary-halving step. -/
 def BetaDiv2Step (code step idx cur next bit : Nat) : Prop :=
@@ -2709,11 +2719,84 @@ theorem hfMemAt_nat_trace (e : Nat → Nat) (elem set : Nat) :
       · apply (betaDiv2BitAt_nat (scons 1 E) 0 2 1 (elem+3)).mpr
         simpa [E, scons] using hbit
 
+theorem betaFact_pos : ∀ n, 0 < betaFact n
+  | 0 => by simp [betaFact]
+  | n+1 => by
+      simp [betaFact, betaFact_pos n]
+
+theorem dvd_betaFact_of_pos_le {k n : Nat} (hk : 0 < k) (hkn : k ≤ n) :
+    k ∣ betaFact n := by
+  induction n with
+  | zero =>
+      have hk0 : k = 0 := by omega
+      omega
+  | succ n ih =>
+      rcases Nat.lt_or_eq_of_le hkn with hlt | heq
+      · have hle : k ≤ n := Nat.lt_succ_iff.mp hlt
+        exact Nat.dvd_trans (ih hle) (by
+          change betaFact n ∣ (n+1) * betaFact n
+          exact Nat.dvd_mul_left (betaFact n) (n+1))
+      · subst k
+        change n+1 ∣ (n+1) * betaFact n
+        exact Nat.dvd_mul_right (n+1) (betaFact n)
+
+theorem BetaModulus_pos (step idx : Nat) : 0 < BetaModulus step idx := by
+  simp [BetaModulus]
+  omega
+
+theorem BetaModulus_coprime_step (step idx : Nat) :
+    (BetaModulus step idx).Coprime step := by
+  apply (Nat.coprime_iff_gcd_eq_one).mpr
+  let d := Nat.gcd (BetaModulus step idx) step
+  have hdm : d ∣ BetaModulus step idx := Nat.gcd_dvd_left _ _
+  have hdstep : d ∣ step := Nat.gcd_dvd_right _ _
+  have hdprod : d ∣ (idx + 1) * step :=
+    Nat.dvd_trans hdstep (Nat.dvd_mul_left step (idx+1))
+  have hdone : d ∣ 1 := by
+    have hsub := Nat.dvd_sub hdm hdprod
+    have hdiff : BetaModulus step idx - (idx + 1) * step = 1 := by
+      simp [BetaModulus]
+    rw [hdiff] at hsub
+    exact hsub
+  exact Nat.dvd_one.mp hdone
+
+theorem BetaModulus_sub {step i j : Nat} (hij : i ≤ j) :
+    BetaModulus step j - BetaModulus step i = (j - i) * step := by
+  have hj : j + 1 = (j - i) + (i + 1) := by omega
+  simp [BetaModulus, hj, Nat.add_mul]
+  omega
+
+theorem BetaModulus_pair_coprime_of_dvd_step {step i j : Nat}
+    (hij : i < j) (hdiff : j - i ∣ step) :
+    (BetaModulus step i).Coprime (BetaModulus step j) := by
+  apply (Nat.coprime_iff_gcd_eq_one).mpr
+  let d := Nat.gcd (BetaModulus step i) (BetaModulus step j)
+  have hdi : d ∣ BetaModulus step i := Nat.gcd_dvd_left _ _
+  have hdj : d ∣ BetaModulus step j := Nat.gcd_dvd_right _ _
+  have hcopStep : d.Coprime step :=
+    Nat.Coprime.coprime_dvd_left hdi (BetaModulus_coprime_step step i)
+  have hddiffstep : d ∣ (j - i) * step := by
+    have hsub := Nat.dvd_sub hdj hdi
+    simpa [d, BetaModulus_sub (Nat.le_of_lt hij)] using hsub
+  have hddiff : d ∣ j - i := by
+    apply hcopStep.dvd_of_dvd_mul_left
+    simpa [Nat.mul_comm] using hddiffstep
+  have hdstep' : d ∣ step := Nat.dvd_trans hddiff hdiff
+  exact hcopStep.eq_one_of_dvd hdstep'
+
+theorem BetaModulus_pair_coprime_of_lt_le {i j N : Nat}
+    (hij : i < j) (hj : j ≤ N) :
+    (BetaModulus (betaFact N) i).Coprime (BetaModulus (betaFact N) j) := by
+  apply BetaModulus_pair_coprime_of_dvd_step hij
+  apply dvd_betaFact_of_pos_le
+  · omega
+  · omega
+
 theorem BetaEntry_functional {code step idx a b : Nat}
     (ha : BetaEntry code step idx a) (hb : BetaEntry code step idx b) : a = b := by
   rcases ha with ⟨qa, hca, hla⟩
   rcases hb with ⟨qb, hcb, hlb⟩
-  let m := 1 + (idx + 1) * step
+  let m := BetaModulus step idx
   have hmoda : code % m = a := by
     rw [hca]
     have htmp : (qa * m + a) % m = a := by
