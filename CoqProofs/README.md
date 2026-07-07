@@ -14,6 +14,10 @@ The SetTheory project already has its own Coq development in
 
 Current ports:
 
+- `Sheffer.v` ports the shared Sheffer-stroke vocabulary from
+  `Sheffer.lean`: NAND/NOR truth tables, one-stroke formulas, ordinary
+  classical propositional formulas, and truth-preserving translations into
+  pure NAND and pure NOR syntax.
 - `Nicod.v` ports the NAND language, Nicod axiom/rule derivations, soundness,
   and functional-completeness lemmas from `Nicod.lean`.
 - `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
@@ -127,6 +131,7 @@ Current ports:
 Build from `src/Lean/`:
 
 ```powershell
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/Sheffer.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/TrigGoldenRatio.v
