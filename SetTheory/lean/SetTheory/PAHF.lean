@@ -323,6 +323,272 @@ def natModel : Model Nat where
   mul_zero := Nat.mul_zero
   mul_succ := Nat.mul_succ
 
+/-! ### First-order PA syntax and semantics -/
+
+inductive Term : Type
+  | var : Nat → Term
+  | zero : Term
+  | succ : Term → Term
+  | add : Term → Term → Term
+  | mul : Term → Term → Term
+  deriving Repr, DecidableEq
+
+inductive Formula : Type
+  | eq : Term → Term → Formula
+  | bot : Formula
+  | imp : Formula → Formula → Formula
+  | and : Formula → Formula → Formula
+  | or : Formula → Formula → Formula
+  | all : Formula → Formula
+  | ex : Formula → Formula
+  deriving Repr, DecidableEq
+
+namespace Term
+
+def rename (r : Nat → Nat) : Term → Term
+  | var n => var (r n)
+  | zero => zero
+  | succ t => succ (rename r t)
+  | add a b => add (rename r a) (rename r b)
+  | mul a b => mul (rename r a) (rename r b)
+
+def upSubst (σ : Nat → Term) : Nat → Term
+  | 0 => var 0
+  | n+1 => rename Nat.succ (σ n)
+
+def subst (σ : Nat → Term) : Term → Term
+  | var n => σ n
+  | zero => zero
+  | succ t => succ (subst σ t)
+  | add a b => add (subst σ a) (subst σ b)
+  | mul a b => mul (subst σ a) (subst σ b)
+
+def eval {α : Type u} (M : Model α) (e : Nat → α) : Term → α
+  | var n => e n
+  | zero => M.zero
+  | succ t => M.succ (eval M e t)
+  | add a b => M.add (eval M e a) (eval M e b)
+  | mul a b => M.mul (eval M e a) (eval M e b)
+
+theorem eval_ext {α : Type u} (M : Model α) (t : Term)
+    {e e' : Nat → α} (h : ∀ n, e n = e' n) :
+    eval M e t = eval M e' t := by
+  induction t with
+  | var n => exact h n
+  | zero => rfl
+  | succ t ih => simp only [eval, ih]
+  | add a b iha ihb => simp only [eval, iha, ihb]
+  | mul a b iha ihb => simp only [eval, iha, ihb]
+
+theorem eval_rename {α : Type u} (M : Model α) (t : Term)
+    (r : Nat → Nat) (e : Nat → α) :
+    eval M e (rename r t) = eval M (fun n => e (r n)) t := by
+  induction t with
+  | var n => rfl
+  | zero => rfl
+  | succ t ih => simp only [rename, eval, ih]
+  | add a b iha ihb => simp only [rename, eval, iha, ihb]
+  | mul a b iha ihb => simp only [rename, eval, iha, ihb]
+
+theorem eval_upSubst {α : Type u} (M : Model α) (σ : Nat → Term)
+    (e : Nat → α) (d : α) (n : Nat) :
+    eval M (SetTheory.scons d e) (upSubst σ n) =
+      SetTheory.scons d (fun k => eval M e (σ k)) n := by
+  cases n with
+  | zero => rfl
+  | succ n =>
+      simp only [upSubst, SetTheory.scons]
+      rw [eval_rename]
+      rfl
+
+theorem eval_subst {α : Type u} (M : Model α) (t : Term)
+    (σ : Nat → Term) (e : Nat → α) :
+    eval M e (subst σ t) = eval M (fun n => eval M e (σ n)) t := by
+  induction t with
+  | var n => rfl
+  | zero => rfl
+  | succ t ih => simp only [subst, eval, ih]
+  | add a b iha ihb => simp only [subst, eval, iha, ihb]
+  | mul a b iha ihb => simp only [subst, eval, iha, ihb]
+
+end Term
+
+namespace Formula
+
+def subst (σ : Nat → Term) : Formula → Formula
+  | eq a b => eq (Term.subst σ a) (Term.subst σ b)
+  | bot => bot
+  | imp a b => imp (subst σ a) (subst σ b)
+  | and a b => and (subst σ a) (subst σ b)
+  | or a b => or (subst σ a) (subst σ b)
+  | all a => all (subst (Term.upSubst σ) a)
+  | ex a => ex (subst (Term.upSubst σ) a)
+
+def Sat {α : Type u} (M : Model α) : (Nat → α) → Formula → Prop
+  | e, eq a b => Term.eval M e a = Term.eval M e b
+  | _, bot => False
+  | e, imp a b => Sat M e a → Sat M e b
+  | e, and a b => Sat M e a ∧ Sat M e b
+  | e, or a b => Sat M e a ∨ Sat M e b
+  | e, all a => ∀ d, Sat M (SetTheory.scons d e) a
+  | e, ex a => ∃ d, Sat M (SetTheory.scons d e) a
+
+theorem Sat_ext {α : Type u} (M : Model α) (phi : Formula)
+    {e e' : Nat → α} (h : ∀ n, e n = e' n) :
+    Sat M e phi ↔ Sat M e' phi := by
+  induction phi generalizing e e' with
+  | eq a b =>
+      simp only [Sat]
+      rw [Term.eval_ext M a h, Term.eval_ext M b h]
+  | bot => exact Iff.rfl
+  | imp a b iha ihb =>
+      simp only [Sat]
+      exact ⟨fun hab ha => (ihb h).mp (hab ((iha h).mpr ha)),
+             fun hab ha => (ihb h).mpr (hab ((iha h).mp ha))⟩
+  | and a b iha ihb =>
+      simp only [Sat]
+      exact and_congr (iha h) (ihb h)
+  | or a b iha ihb =>
+      simp only [Sat]
+      exact or_congr (iha h) (ihb h)
+  | all a ih =>
+      simp only [Sat]
+      constructor
+      · intro hall d
+        exact (ih (fun n => by cases n <;> simp [SetTheory.scons, h])).mp (hall d)
+      · intro hall d
+        exact (ih (fun n => by cases n <;> simp [SetTheory.scons, h])).mpr (hall d)
+  | ex a ih =>
+      simp only [Sat]
+      constructor
+      · intro ⟨d, hd⟩
+        exact ⟨d, (ih (fun n => by cases n <;> simp [SetTheory.scons, h])).mp hd⟩
+      · intro ⟨d, hd⟩
+        exact ⟨d, (ih (fun n => by cases n <;> simp [SetTheory.scons, h])).mpr hd⟩
+
+theorem Sat_subst {α : Type u} (M : Model α) (phi : Formula)
+    (σ : Nat → Term) (e : Nat → α) :
+    Sat M e (subst σ phi) ↔
+      Sat M (fun n => Term.eval M e (σ n)) phi := by
+  induction phi generalizing e σ with
+  | eq a b =>
+      simp only [subst, Sat, Term.eval_subst]
+  | bot => exact Iff.rfl
+  | imp a b iha ihb =>
+      simp only [subst, Sat]
+      exact ⟨fun hab ha => (ihb σ e).mp (hab ((iha σ e).mpr ha)),
+             fun hab ha => (ihb σ e).mpr (hab ((iha σ e).mp ha))⟩
+  | and a b iha ihb =>
+      simp only [subst, Sat]
+      exact and_congr (iha σ e) (ihb σ e)
+  | or a b iha ihb =>
+      simp only [subst, Sat]
+      exact or_congr (iha σ e) (ihb σ e)
+  | all a ih =>
+      simp only [subst, Sat]
+      constructor
+      · intro hall d
+        have h1 := (ih (Term.upSubst σ) (SetTheory.scons d e)).mp (hall d)
+        exact (Sat_ext M a (Term.eval_upSubst M σ e d)).mp h1
+      · intro hall d
+        have h1 : Sat M (fun n => Term.eval M (SetTheory.scons d e) (Term.upSubst σ n)) a :=
+          (Sat_ext M a (Term.eval_upSubst M σ e d)).mpr (hall d)
+        exact (ih (Term.upSubst σ) (SetTheory.scons d e)).mpr h1
+  | ex a ih =>
+      simp only [subst, Sat]
+      constructor
+      · intro ⟨d, hd⟩
+        have h1 := (ih (Term.upSubst σ) (SetTheory.scons d e)).mp hd
+        exact ⟨d, (Sat_ext M a (Term.eval_upSubst M σ e d)).mp h1⟩
+      · intro ⟨d, hd⟩
+        have h1 : Sat M (fun n => Term.eval M (SetTheory.scons d e) (Term.upSubst σ n)) a :=
+          (Sat_ext M a (Term.eval_upSubst M σ e d)).mpr hd
+        exact ⟨d, (ih (Term.upSubst σ) (SetTheory.scons d e)).mpr h1⟩
+
+end Formula
+
+namespace Formula
+
+def substZero : Nat → Term
+  | 0 => Term.zero
+  | n+1 => Term.var n
+
+def substSuccVar : Nat → Term
+  | 0 => Term.succ (Term.var 0)
+  | n+1 => Term.var (n+1)
+
+def succInj : Formula :=
+  all (all (imp
+    (eq (Term.succ (Term.var 1)) (Term.succ (Term.var 0)))
+    (eq (Term.var 1) (Term.var 0))))
+
+def zeroNotSucc : Formula :=
+  all (imp (eq (Term.succ (Term.var 0)) Term.zero) bot)
+
+def addZero : Formula :=
+  all (eq (Term.add (Term.var 0) Term.zero) (Term.var 0))
+
+def addSucc : Formula :=
+  all (all (eq
+    (Term.add (Term.var 1) (Term.succ (Term.var 0)))
+    (Term.succ (Term.add (Term.var 1) (Term.var 0)))))
+
+def mulZero : Formula :=
+  all (eq (Term.mul (Term.var 0) Term.zero) Term.zero)
+
+def mulSucc : Formula :=
+  all (all (eq
+    (Term.mul (Term.var 1) (Term.succ (Term.var 0)))
+    (Term.add (Term.mul (Term.var 1) (Term.var 0)) (Term.var 1))))
+
+def inductionForm (phi : Formula) : Formula :=
+  imp
+    (and (subst substZero phi)
+         (all (imp phi (subst substSuccVar phi))))
+    (all phi)
+
+def Ax (f : Formula) : Prop :=
+  f = succInj ∨ f = zeroNotSucc ∨
+  f = addZero ∨ f = addSucc ∨
+  f = mulZero ∨ f = mulSucc ∨
+  ∃ phi, f = inductionForm phi
+
+theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
+    Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
+  rw [Sat_subst]
+  exact Sat_ext M phi (fun n => by cases n <;> rfl)
+
+theorem sat_substSuccVar {α : Type u} (M : Model α) (phi : Formula)
+    (e : Nat → α) (a : α) :
+    Sat M (SetTheory.scons a e) (subst substSuccVar phi) ↔
+      Sat M (SetTheory.scons (M.succ a) e) phi := by
+  rw [Sat_subst]
+  exact Sat_ext M phi (fun n => by cases n <;> rfl)
+
+theorem sat_axiom {α : Type u} (M : Model α) (e : Nat → α) :
+    ∀ f, Ax f → Sat M e f := by
+  intro f hf
+  rcases hf with rfl | rfl | rfl | rfl | rfl | rfl | ⟨phi, rfl⟩
+  · intro a b h
+    exact M.succ_injective h
+  · intro a h
+    exact M.zero_not_succ a h
+  · intro a
+    exact M.add_zero a
+  · intro a b
+    exact M.add_succ a b
+  · intro a
+    exact M.mul_zero a
+  · intro a b
+    exact M.mul_succ a b
+  · intro h a
+    exact M.induction (fun x => Sat M (SetTheory.scons x e) phi)
+      ((sat_substZero M phi e).mp h.1)
+      (fun n ih => (sat_substSuccVar M phi e n).mp (h.2 n ih))
+      a
+
+end Formula
+
 end PA
 
 namespace AckermannHF
