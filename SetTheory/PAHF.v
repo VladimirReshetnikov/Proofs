@@ -9403,6 +9403,75 @@ Proof.
     apply foam_zero_succ_rec_graph_base.
 Qed.
 
+Lemma addGraphAt_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right f,
+  foam_succ_rec_approx V M (e left) f (e right) ->
+  foam_mem V M (foam_kpair_obj V M (e right) (e out)) f ->
+  Sat V (foam_mem V M) e (addGraphAt out left right).
+Proof.
+  intros V M e out left right f hf hout.
+  unfold addGraphAt.
+  exists f.
+  split.
+  - apply (proj2 (foam_HF_succRecApproxAt_spec V M
+      (scons V f e) 0 (S left) (S right))).
+    change (foam_succ_rec_approx V M (e left) f (e right)).
+    exact hf.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    exact hout.
+Qed.
+
+Lemma addGraphAt_succ_right_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V)
+    outSucc left rightSucc right f z,
+  OrdinalLike (foam_mem V M) (e right) ->
+  e rightSucc = foam_adjoin V M (e right) (e right) ->
+  e outSucc = foam_adjoin V M z z ->
+  foam_succ_rec_approx V M (e left) f (e right) ->
+  foam_mem V M (foam_kpair_obj V M (e right) z) f ->
+  Sat V (foam_mem V M) e (addGraphAt outSucc left rightSucc).
+Proof.
+  intros V M e outSucc left rightSucc right f z hrightOrd hrightSucc
+    houtSucc hf hout.
+  pose (g := foam_succ_rec_graph_succ V M f (e right) z).
+  apply (addGraphAt_of_succRecApprox_model V M e outSucc left rightSucc g).
+  - change (foam_succ_rec_approx V M (e left) g (e rightSucc)).
+    rewrite hrightSucc.
+    unfold g.
+    exact (foam_succ_rec_graph_succ_succRecApprox V M (e left) f
+      (e right) z hrightOrd hf hout).
+  - change (foam_mem V M (foam_kpair_obj V M (e rightSucc) (e outSucc)) g).
+    rewrite hrightSucc, houtSucc.
+    unfold g.
+    exact (foam_succ_rec_graph_succ_new V M f (e right) z).
+Qed.
+
+Lemma termGraphAt_succ_var_firstOrder_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out n e,
+  e out = foam_adjoin V M (e (rho n)) (e (rho n)) ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tSucc (PA.tVar n))).
+Proof.
+  intros V M rho out n e hout.
+  simpl.
+  exists (e (rho n)).
+  split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 1) 0 n (scons V (e (rho n)) e))).
+    change (e (rho n) = scons V (e (rho n)) e (rho n + 1)).
+    replace (rho n + 1) with (S (rho n)) by lia.
+    reflexivity.
+  - apply (proj2 (foam_HF_succAt_spec V M
+      (scons V (e (rho n)) e) (out + 1) 0)).
+    change (scons V (e (rho n)) e (out + 1) =
+      foam_adjoin V M (e (rho n)) (e (rho n))).
+    replace (out + 1) with (S out) by lia.
+    simpl.
+    exact hout.
+Qed.
+
 Lemma termGraphAt_add_var_zero_model : forall V
     (M : FirstOrderAdjunctionModel V) rho out n e,
   e out = e (rho n) ->
@@ -9431,6 +9500,215 @@ Proof.
       simpl.
       exact hout.
     + reflexivity.
+Qed.
+
+Lemma termGraphAt_add_var_var_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f,
+  foam_succ_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) (e out)) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tAdd (PA.tVar left) (PA.tVar right))).
+Proof.
+  intros V M rho out left right e f hf hout.
+  simpl.
+  exists (e (rho left)).
+  exists (e (rho right)).
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 1 left
+      (scons V (e (rho right)) (scons V (e (rho left)) e)))).
+    change (e (rho left) =
+      scons V (e (rho right)) (scons V (e (rho left)) e)
+        (rho left + 2)).
+    replace (rho left + 2) with (S (S (rho left))) by lia.
+    reflexivity.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 0 right
+      (scons V (e (rho right)) (scons V (e (rho left)) e)))).
+    change (e (rho right) =
+      scons V (e (rho right)) (scons V (e (rho left)) e)
+        (rho right + 2)).
+    replace (rho right + 2) with (S (S (rho right))) by lia.
+    reflexivity.
+  - apply (addGraphAt_of_succRecApprox_model V M
+      (scons V (e (rho right)) (scons V (e (rho left)) e))
+      (out + 2) 1 0 f).
+    + change (foam_succ_rec_approx V M (e (rho left)) f (e (rho right))).
+      exact hf.
+    + replace (out + 2) with (S (S out)) by lia.
+      simpl.
+      exact hout.
+Qed.
+
+Lemma termGraphAt_add_var_succ_var_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f z,
+  OrdinalLike (foam_mem V M) (e (rho right)) ->
+  e out = foam_adjoin V M z z ->
+  foam_succ_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) z) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out
+      (PA.tAdd (PA.tVar left) (PA.tSucc (PA.tVar right)))).
+Proof.
+  intros V M rho out left right e f z hrightOrd hout hf hz.
+  simpl.
+  pose (sy := foam_adjoin V M (e (rho right)) (e (rho right))).
+  exists (e (rho left)).
+  exists sy.
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 2) 1 left
+      (scons V sy (scons V (e (rho left)) e)))).
+    change (e (rho left) =
+      scons V sy (scons V (e (rho left)) e) (rho left + 2)).
+    replace (rho left + 2) with (S (S (rho left))) by lia.
+    reflexivity.
+  - apply (termGraphAt_succ_var_firstOrder_model V M
+      (fun n => rho n + 2) 0 right
+      (scons V sy (scons V (e (rho left)) e))).
+    change (sy = foam_adjoin V M
+      (scons V sy (scons V (e (rho left)) e) (rho right + 2))
+      (scons V sy (scons V (e (rho left)) e) (rho right + 2))).
+    replace (rho right + 2) with (S (S (rho right))) by lia.
+    simpl.
+    unfold sy.
+    reflexivity.
+  - apply (addGraphAt_succ_right_of_succRecApprox_model V M
+      (scons V sy (scons V (e (rho left)) e))
+      (out + 2) 1 0 (rho right + 2) f z).
+    + change (OrdinalLike (foam_mem V M)
+        (scons V sy (scons V (e (rho left)) e) (rho right + 2))).
+      replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hrightOrd.
+    + change (sy = foam_adjoin V M
+        (scons V sy (scons V (e (rho left)) e) (rho right + 2))
+        (scons V sy (scons V (e (rho left)) e) (rho right + 2))).
+      replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      unfold sy.
+      reflexivity.
+    + replace (out + 2) with (S (S out)) by lia.
+      simpl.
+      exact hout.
+    + replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hf.
+    + replace (rho right + 2) with (S (S (rho right))) by lia.
+      simpl.
+      exact hz.
+Qed.
+
+Lemma termGraphAt_succ_add_var_var_of_succRecApprox_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out left right e f z,
+  e out = foam_adjoin V M z z ->
+  foam_succ_rec_approx V M (e (rho left)) f (e (rho right)) ->
+  foam_mem V M (foam_kpair_obj V M (e (rho right)) z) f ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out
+      (PA.tSucc (PA.tAdd (PA.tVar left) (PA.tVar right)))).
+Proof.
+  intros V M rho out left right e f z hout hf hz.
+  simpl.
+  exists z.
+  split.
+  - apply (termGraphAt_add_var_var_of_succRecApprox_model V M
+      (fun n => rho n + 1) 0 left right (scons V z e) f).
+    + change (foam_succ_rec_approx V M
+        (scons V z e (rho left + 1)) f
+        (scons V z e (rho right + 1))).
+      replace (rho left + 1) with (S (rho left)) by lia.
+      replace (rho right + 1) with (S (rho right)) by lia.
+      simpl.
+      exact hf.
+    + change (foam_mem V M
+        (foam_kpair_obj V M (scons V z e (rho right + 1))
+          (scons V z e 0)) f).
+      replace (rho right + 1) with (S (rho right)) by lia.
+      simpl.
+      exact hz.
+  - apply (proj2 (foam_HF_succAt_spec V M (scons V z e)
+      (out + 1) 0)).
+    change (scons V z e (out + 1) = foam_adjoin V M z z).
+    replace (out + 1) with (S out) by lia.
+    simpl.
+    exact hout.
+Qed.
+
+Lemma formulaAt_addSucc_valid_model_of_succRecTotal : forall V
+    (M : FirstOrderAdjunctionModel V),
+  (forall s m, OrdinalLike (foam_mem V M) m ->
+    foam_succ_rec_total V M s m) ->
+  forall rho e, Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addSucc).
+Proof.
+  intros V M hTotal rho e x _ y hyDomain.
+  pose proof (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
+    (scons V y (scons V x e)) 0) hyDomain) as hyOrd.
+  destruct (hTotal x y hyOrd) as [f [z [hf hz]]].
+  pose (sz := foam_adjoin V M z z).
+  pose (sigma := fun n => upVarMap (upVarMap rho) n + 2).
+  pose (Eeq := scons V sz (scons V sz (scons V y (scons V x e)))).
+  simpl.
+  exists sz.
+  exists sz.
+  split.
+  - change (Sat V (foam_mem V M) Eeq
+      (termGraphAt sigma 1
+        (PA.tAdd (PA.tVar 1) (PA.tSucc (PA.tVar 0))))).
+    apply (termGraphAt_add_var_succ_var_of_succRecApprox_model V M
+      sigma 1 1 0 Eeq f z).
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hyOrd.
+    + unfold Eeq, sz.
+      simpl.
+      reflexivity.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hf.
+    + unfold sigma, Eeq, upVarMap.
+      simpl.
+      exact hz.
+  - split.
+    + change (Sat V (foam_mem V M) Eeq
+        (termGraphAt sigma 0
+          (PA.tSucc (PA.tAdd (PA.tVar 1) (PA.tVar 0))))).
+      apply (termGraphAt_succ_add_var_var_of_succRecApprox_model V M
+        sigma 0 1 0 Eeq f z).
+      * unfold Eeq, sz.
+        simpl.
+        reflexivity.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hf.
+      * unfold sigma, Eeq, upVarMap.
+        simpl.
+        exact hz.
+    + reflexivity.
+Qed.
+
+Lemma formulaAt_addSucc_valid_model_of_mem_max_exists : forall V
+    (M : FirstOrderAdjunctionModel V),
+  (forall a, (exists x, foam_mem V M x a) ->
+    exists p, foam_mem V M p a /\
+      forall q, foam_mem V M q a -> ~ foam_mem V M p q) ->
+  forall rho e, Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addSucc).
+Proof.
+  intros V M hMax rho e.
+  apply (formulaAt_addSucc_valid_model_of_succRecTotal V M).
+  intros s m hm.
+  exact (foam_succ_rec_total_of_ordinalLike_of_mem_max_exists V M
+    hMax s m hm).
+Qed.
+
+Lemma formulaAt_addSucc_valid_finite_model : forall V
+    (M : FirstOrderFiniteAdjunctionModel V) rho e,
+  Sat V (foam_mem V M) e (formulaAt rho PA.Formula.addSucc).
+Proof.
+  intros V M rho e.
+  apply (formulaAt_addSucc_valid_model_of_succRecTotal V M).
+  intros s m hm.
+  exact (fofam_succ_rec_total_of_ordinalLike V M s m hm).
 Qed.
 
 Lemma formulaAt_addZero_valid_model : forall V
