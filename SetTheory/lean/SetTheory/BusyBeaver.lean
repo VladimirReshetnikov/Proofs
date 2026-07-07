@@ -68,6 +68,26 @@ def write (tape : Tape) (pos : Int) (bit : Bool) : Tape :=
   else
     tape.filter (fun q => q != pos)
 
+@[simp]
+theorem read_write_same (tape : Tape) (pos : Int) (bit : Bool) :
+    read (write tape pos bit) pos = bit := by
+  cases bit
+  · simp [read, write]
+  · simp [read, write]
+    by_cases h : pos ∈ tape <;> simp [h]
+
+theorem read_write_of_ne (tape : Tape) {pos q : Int} (h : q ≠ pos) (bit : Bool) :
+    read (write tape pos bit) q = read tape q := by
+  cases bit
+  · simp [read, write]
+    by_cases hq : q ∈ tape
+    · simp [hq, h]
+    · simp [hq]
+  · simp [read, write]
+    by_cases hp : pos ∈ tape
+    · simp [hp]
+    · simp [hp, h]
+
 end Tape
 
 /-- The start state: state `0` when at least one operational state exists. -/
