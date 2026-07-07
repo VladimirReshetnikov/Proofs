@@ -40,7 +40,8 @@ Current ports:
   scaling, non-primitive both-even descent, and parity obstruction lemmas, then
   derives the stronger integer-square theorem and the positive-natural FLT-4
   statement either from an explicit smaller-counterexample descent-step
-  parameter or from the narrower mixed-parity primitive-descent parameter.  The
+  parameter, from the narrower mixed-parity primitive-descent parameter, or
+  from the canonical odd-left/even-right primitive-descent parameter.  The
   installed Coq libraries do not include a modern FLT-4 theorem; the old
   self-contained `rocq-archive/fermat4` formalization exists but targets Coq
   8.0 and is not yet modernized here.
