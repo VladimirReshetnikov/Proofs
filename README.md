@@ -11,7 +11,10 @@ belong here when they are part of producing or auditing formal mathematical
 certificates.
 
 The root of this directory is a Lake/mathlib workspace named `LeanProofs`.
-Additional proof-oriented subject corpora live alongside it:
+It also exposes the SetTheory Lean sources as a secondary root-workspace
+library for modules that intentionally use mathlib, such as the
+Busy-Beaver/recursive-function bridge. Additional proof-oriented subject
+corpora live alongside it:
 
 - [`BusyLean/`](BusyLean/README.md) — a research seed for proof-bounded
   Busy-Beaver/Rayo-style enormous computable natural numbers: finite

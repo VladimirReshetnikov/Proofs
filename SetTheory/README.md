@@ -57,6 +57,27 @@ The system is **exactly ZF**:
 | `T ⊢ φ ⟹ ZF ⊢ φ` | the converse syntactic direction | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
 | **`T ⊢ φ ⟺ ZF ⊢ φ`** | **full deductive equivalence** (`T_iff_ZF`) | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
 
+The Lean port also contains two Lean-first side modules that support nearby
+foundational/computability work:
+
+- [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) develops Ackermann-coded
+  hereditary finite sets and first-order PA/HF interpretation infrastructure.
+- [`lean/SetTheory/BusyBeaver.lean`](lean/SetTheory/BusyBeaver.lean) formalizes a
+  Rado-style two-symbol blank-tape machine model and proves that any busy-beaver
+  score function satisfying the maximum property eventually dominates every
+  total recursive function whose recursiveness predicate has the standard
+  linear-overhead blank-tape compiler.
+- [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
+  is the mathlib-backed bridge showing that mathlib-total-recursive
+  `Nat -> Nat` functions have sequential `ToPartrec.Code`s evaluated by
+  mathlib's finite-support `PartrecToTM2` Turing machine, that this computation
+  can be expressed through mathlib's ordinary `TM2.eval` interface, that a
+  composed unary-output code produces `f n` zero entries, and that both the
+  ordinary and unary-output evaluator witnesses descend to Bool `TM0` through
+  mathlib's proved Turing-machine reductions.  It is built from the root
+  `src/Lean` Lake workspace because the standalone SetTheory Lean project
+  deliberately remains dependency-free.
+
 ## Module structure — the reusable core vs. the T-specific shell
 
 The development is organized as a small library. Three modules are **generic

@@ -9,6 +9,8 @@
   - `SetTheory.Completeness` ← Completeness.v (Gödel completeness, compactness)
   - `SetTheory.Zf`           ← Zf.v           (first-order ZF, recursion theorem)
   - `SetTheory.Equivalence`  ← Equivalence.v  (the Closure axiomatization T, T_iff_ZF)
+  - `SetTheory.PAHF`         ← PA/HF bridge   (Ackermann HF, first-order PA syntax)
+  - `SetTheory.BusyBeaver`   ← Busy Beaver domination interface
   - `SetTheory.Forward`      ← Forward.v      (shallow forward trade, self-contained)
   - `SetTheory.Reverse`      ← Reverse.v      (shallow reverse trade, self-contained)
 -/
@@ -18,5 +20,6 @@ import SetTheory.Completeness
 import SetTheory.Zf
 import SetTheory.Equivalence
 import SetTheory.PAHF
+import SetTheory.BusyBeaver
 import SetTheory.Forward
 import SetTheory.Reverse
