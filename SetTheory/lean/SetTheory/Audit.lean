@@ -187,21 +187,34 @@ open SetTheory
 #check @PA.Formula.hfFormulaAt_exact
 #check @PA.Formula.translateHFFormula_exact
 #check @PA.Formula.translated_HF_axiom_sat_nat
+#check @PA.Formula.translated_HFFin_axiom_sat_nat
 #check @PA.Formula.hfFormulaAt_sentence_of_HF_sentence
 #check @PA.Formula.translateHFFormula_sentence_of_HF_sentence
 #check @PA.Formula.translated_HF_axiom_sentence
 #check @PA.Formula.translatedHFAx
+#check @PA.Formula.translatedHFFinAx
 #check @PA.Formula.translatedHFAx_intro
+#check @PA.Formula.translatedHFFinAx_intro
+#check @PA.Formula.translatedHFFinAx_of_translatedHFAx
 #check @PA.Formula.Sentences_translatedHFAx
+#check @PA.Formula.Sentences_translatedHFFinAx
 #check @PA.Formula.BProv_translatedHFAx_of_HFAx
+#check @PA.Formula.BProv_translatedHFFinAx_of_HFFinAx
 #check @PA.Formula.BProv_lift_translatedHFAx_to_PA
+#check @PA.Formula.BProv_lift_translatedHFFinAx_to_PA
 #check @PA.Formula.standard_sat_translatedHFAx
+#check @PA.Formula.standard_sat_translatedHFFinAx
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
 #check @AckermannHF.HFFinAx_s
 #check @AckermannHF.Sentences_HFFin
 #check @AckermannHF.HF_finite_induction_form
 #check @AckermannHF.HF_finite_induction_form_spec
+#check @AckermannHF.prefixBelow
+#check @AckermannHF.mem_prefixBelow_iff
+#check @AckermannHF.prefixBelow_self_eq
+#check @AckermannHF.sat_HF_finite_induction_standard
+#check @AckermannHF.standard_sat_HFFin
 #check @AckermannHF.HFFinAx_s_finite_induction
 #check @AckermannHF.semantic_finite_induction_schema_of_HFFinAx_s
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel
@@ -383,9 +396,13 @@ open SetTheory
 #check @AckermannHF.PAInHF.formulaAt
 #check @AckermannHF.PAInHF.formulaAt_map_ext
 #check @AckermannHF.PAInHF.domainForm_scons_insertAt
+#check @AckermannHF.PAInHF.domainForm_scons_succReplaceAt
 #check @AckermannHF.PAInHF.formulaAt_substZeroAt_insert_model
 #check @AckermannHF.PAInHF.formulaAt_substZero_insert_model
 #check @AckermannHF.PAInHF.formulaAt_substZero_scons_model
+#check @AckermannHF.PAInHF.formulaAt_substSuccAt_replace_model
+#check @AckermannHF.PAInHF.formulaAt_substSuccVar_scons_model
+#check @AckermannHF.PAInHF.formulaAt_induction_valid_finite_model
 #check @AckermannHF.PAInHF.formulaAt_free
 #check @AckermannHF.PAInHF.formulaAt_eq_var_spec
 #check @AckermannHF.PAInHF.formulaAt_zeroNotSucc_valid
@@ -442,6 +459,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_mulZero_sat_of_HFAx_s
 #check @AckermannHF.PAInHF.translated_addSucc_sat_of_HFFinAx_s
 #check @AckermannHF.PAInHF.translated_mulSucc_sat_of_HFFinAx_s
+#check @AckermannHF.PAInHF.translated_induction_sat_of_HFFinAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
@@ -457,15 +475,34 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_mulZero
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_addSucc
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_mulSucc
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_induction
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_PA_axiom
 #check @AckermannHF.PAInHF.translatedPAAx
 #check @AckermannHF.PAInHF.translatedPAAx_intro
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx
 #check @AckermannHF.PAInHF.BProv_translatedPAAx_of_PAAx
+#check @AckermannHF.PAInHF.translateContext
+#check @AckermannHF.PAInHF.mem_translateContext_of_mem
+#check @AckermannHF.PAInHF.BProv_translate_ass
+#check @AckermannHF.PAInHF.BProv_translate_ax
+#check @AckermannHF.PAInHF.BProv_translate_impI
+#check @AckermannHF.PAInHF.BProv_translate_impE
+#check @AckermannHF.PAInHF.BProv_translate_botE
+#check @AckermannHF.PAInHF.BProv_translate_lem
+#check @AckermannHF.PAInHF.BProv_translate_andI
+#check @AckermannHF.PAInHF.BProv_translate_andE1
+#check @AckermannHF.PAInHF.BProv_translate_andE2
+#check @AckermannHF.PAInHF.BProv_translate_orI1
+#check @AckermannHF.PAInHF.BProv_translate_orI2
+#check @AckermannHF.PAInHF.BProv_translate_orE
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
+#check @AckermannHF.PAInHF.BProv_HFFin_of_translatedPAAx
+#check @AckermannHF.PAInHF.BProv_HFFin_of_BProv_translatedPAAx
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
+#check @AckermannHF.standard_sat_HFFin
 #check @AckermannHF.AdjunctionModel.mem_irrefl
 #check @AckermannHF.FirstOrderAdjunctionModel.mem_asymm
 #check @AckermannHF.HF_extensionality_form
@@ -538,22 +575,34 @@ open SetTheory
 #check @AckermannHF.ordinalPA_sat_PA
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.TheoryInterpretation
+#check @AckermannHF.TheoryInterpretation.comp
 #check @AckermannHF.setTheoryIdentityInterpretationOfAxiomProofs
+#check @AckermannHF.translatedPATheoryInHFFinInterpretation
+#check @AckermannHF.paInHFFinOfTranslatedPATheoryInterpretation
 #check @AckermannHF.paIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
+#check AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
+#check @AckermannHF.StandardModelInterpretationCertificateFor
 #check @AckermannHF.StandardModelInterpretationCertificate
+#check @AckermannHF.StandardModelFiniteInterpretationCertificate
 #check @AckermannHF.standardModelInterpretation
+#check @AckermannHF.standardModelFiniteInterpretation
 #check @AckermannHF.PA_standard_model_interpretable_with_HF
+#check @AckermannHF.PA_standard_model_interpretable_with_HFFin
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
+#check @AckermannHF.PA_biinterpretable_with_HFFin_standard
 #print axioms PA.Formula.sat_axiom
 #print axioms PA.Formula.sat_axiom_s
 #print axioms PA.Formula.soundness
 #print axioms PA.Formula.soundness_BProv
 #print axioms AckermannHF.sat_HF_model
 #print axioms AckermannHF.standard_sat_HF
+#print axioms AckermannHF.standard_sat_HFFin
 #print axioms AckermannHF.PA_standard_model_interpretable_with_HF
+#print axioms AckermannHF.PA_standard_model_interpretable_with_HFFin
 #print axioms AckermannHF.PA_biinterpretable_with_HF_standard
+#print axioms AckermannHF.PA_biinterpretable_with_HFFin_standard
 
 -- the shallow self-contained pair, with their free dependency audits
 #check @Forward.Pairing

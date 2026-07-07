@@ -1239,6 +1239,95 @@ theorem standard_sat_HF (v : Nat → Nat) :
     ∀ g, HFAx_s g → Sat Mem v g :=
   sat_HF_model standardModel v
 
+/-- The finite prefix of the Ackermann-coded set `a` using only candidate
+elements below `n`.  This gives an explicit adjunction construction of every
+standard HF object, independent of any formula being interpreted. -/
+def prefixBelow (a : Nat) : Nat → Nat
+  | 0 => empty
+  | n+1 => if a.testBit n then adjoin (prefixBelow a n) n else prefixBelow a n
+
+theorem prefixBelow_succ_of_mem {a n : Nat} (h : Mem n a) :
+    prefixBelow a (n+1) = adjoin (prefixBelow a n) n := by
+  have hbit : a.testBit n = true := h
+  simp [prefixBelow, hbit]
+
+theorem prefixBelow_succ_of_not_mem {a n : Nat} (h : ¬ Mem n a) :
+    prefixBelow a (n+1) = prefixBelow a n := by
+  have hbit : a.testBit n = false := by
+    cases hb : a.testBit n <;> simp [Mem, hb] at h ⊢
+  simp [prefixBelow, hbit]
+
+theorem mem_prefixBelow_iff {x a n : Nat} :
+    Mem x (prefixBelow a n) ↔ x < n ∧ Mem x a := by
+  induction n with
+  | zero =>
+      constructor
+      · intro h
+        exact False.elim (mem_empty x h)
+      · intro h
+        omega
+  | succ n ih =>
+      by_cases hn : Mem n a
+      · rw [prefixBelow_succ_of_mem hn, mem_adjoin, ih]
+        constructor
+        · intro h
+          rcases h with h | h
+          · exact ⟨Nat.lt_succ_of_lt h.1, h.2⟩
+          · subst x
+            exact ⟨Nat.lt_succ_self n, hn⟩
+        · intro h
+          have hle : x ≤ n := Nat.lt_succ_iff.mp h.1
+          rcases Nat.lt_or_eq_of_le hle with hlt | heq
+          · exact Or.inl ⟨hlt, h.2⟩
+          · exact Or.inr heq
+      · rw [prefixBelow_succ_of_not_mem hn, ih]
+        constructor
+        · intro h
+          exact ⟨Nat.lt_succ_of_lt h.1, h.2⟩
+        · intro h
+          have hle : x ≤ n := Nat.lt_succ_iff.mp h.1
+          rcases Nat.lt_or_eq_of_le hle with hlt | heq
+          · exact ⟨hlt, h.2⟩
+          · exact False.elim (hn (by simpa [heq] using h.2))
+
+theorem prefixBelow_self_eq (a : Nat) : prefixBelow a a = a := by
+  apply ext
+  intro x
+  rw [mem_prefixBelow_iff]
+  constructor
+  · intro h
+    exact h.2
+  · intro h
+    exact ⟨mem_lt h, h⟩
+
+theorem sat_HF_finite_induction_standard (phi : Form) (e : Nat → Nat) :
+    Sat Mem e (HF_finite_induction_form phi) := by
+  apply (HF_finite_induction_form_spec phi e).mpr
+  intro hgen a
+  have hpref : ∀ n, Sat Mem (scons (prefixBelow a n) e) phi := by
+    intro n
+    induction n with
+    | zero =>
+        exact hgen.1 (prefixBelow a 0) (fun x hx => mem_empty x hx)
+    | succ n ih =>
+        by_cases hn : Mem n a
+        · have hAdj :
+            ∀ x, Mem x (prefixBelow a (n+1)) ↔
+              Mem x (prefixBelow a n) ∨ x = n := by
+            intro x
+            rw [prefixBelow_succ_of_mem hn, mem_adjoin]
+          exact hgen.2 (prefixBelow a n) n (prefixBelow a (n+1)) hAdj ih
+        · simpa [prefixBelow_succ_of_not_mem hn] using ih
+  simpa [prefixBelow_self_eq a] using hpref a
+
+theorem standard_sat_HFFin (v : Nat → Nat) :
+    ∀ g, HFFinAx_s g → Sat Mem v g := by
+  intro g hg
+  rcases hg with hg | ⟨phi, rfl⟩
+  · exact standard_sat_HF v g hg
+  · exact (seal_valid (mem := Mem) (HF_finite_induction_form phi)).mpr
+      (sat_HF_finite_induction_standard phi) v
+
 /-- Named membership of the sealed empty-set axiom in the HF theory. -/
 theorem HFAx_s_empty : HFAx_s (sealF HF_empty_form) :=
   Or.inl rfl
@@ -6399,6 +6488,11 @@ theorem translated_HF_axiom_sat_nat (phi : Form)
     Sat natModel v (translateHFFormula phi) :=
   (translateHFFormula_exact phi v).mpr (AckermannHF.standard_sat_HF v phi hphi)
 
+theorem translated_HFFin_axiom_sat_nat (phi : Form)
+    (hphi : AckermannHF.HFFinAx_s phi) (v : Nat → Nat) :
+    Sat natModel v (translateHFFormula phi) :=
+  (translateHFFormula_exact phi v).mpr (AckermannHF.standard_sat_HFFin v phi hphi)
+
 theorem hfFormulaAt_sentence_of_HF_sentence (phi : Form) (ρ : Nat → Nat)
     (hphi : SetTheory.Sentence phi) : Sentence (hfFormulaAt ρ phi) := by
   intro i hi
@@ -6413,27 +6507,62 @@ theorem translated_HF_axiom_sentence (g : Form)
     (hg : AckermannHF.HFAx_s g) : Sentence (translateHFFormula g) :=
   translateHFFormula_sentence_of_HF_sentence g (AckermannHF.Sentences_HF g hg)
 
+theorem translated_HFFin_axiom_sentence (g : Form)
+    (hg : AckermannHF.HFFinAx_s g) : Sentence (translateHFFormula g) :=
+  translateHFFormula_sentence_of_HF_sentence g (AckermannHF.Sentences_HFFin g hg)
+
 /-- The PA-side theory consisting of syntactic translations of the sealed HF
 axiom-scheme instances. -/
 def translatedHFAx (phi : Formula) : Prop :=
   ∃ g, AckermannHF.HFAx_s g ∧ phi = translateHFFormula g
 
+/-- The PA-side theory consisting of syntactic translations of the strengthened
+hereditary-finite axiom-scheme instances.  This is the PA-side target for the
+HF-in-PA half of the PA/HFFin deductive bi-interpretability theorem. -/
+def translatedHFFinAx (phi : Formula) : Prop :=
+  ∃ g, AckermannHF.HFFinAx_s g ∧ phi = translateHFFormula g
+
 theorem translatedHFAx_intro {g : Form} (hg : AckermannHF.HFAx_s g) :
     translatedHFAx (translateHFFormula g) :=
   ⟨g, hg, rfl⟩
+
+theorem translatedHFFinAx_intro {g : Form} (hg : AckermannHF.HFFinAx_s g) :
+    translatedHFFinAx (translateHFFormula g) :=
+  ⟨g, hg, rfl⟩
+
+theorem translatedHFFinAx_of_translatedHFAx {phi : Formula}
+    (hphi : translatedHFAx phi) : translatedHFFinAx phi := by
+  rcases hphi with ⟨g, hg, rfl⟩
+  exact translatedHFFinAx_intro (AckermannHF.HFFinAx_s_of_HFAx_s hg)
 
 theorem Sentences_translatedHFAx : ∀ phi, translatedHFAx phi → Sentence phi := by
   intro phi hphi
   rcases hphi with ⟨g, hg, rfl⟩
   exact translated_HF_axiom_sentence g hg
 
+theorem Sentences_translatedHFFinAx :
+    ∀ phi, translatedHFFinAx phi → Sentence phi := by
+  intro phi hphi
+  rcases hphi with ⟨g, hg, rfl⟩
+  exact translated_HFFin_axiom_sentence g hg
+
 theorem BProv_translatedHFAx_of_HFAx {g : Form} (hg : AckermannHF.HFAx_s g) :
     BProv translatedHFAx [] (translateHFFormula g) :=
   BProv_ax (translatedHFAx_intro hg)
 
+theorem BProv_translatedHFFinAx_of_HFFinAx {g : Form}
+    (hg : AckermannHF.HFFinAx_s g) :
+    BProv translatedHFFinAx [] (translateHFFormula g) :=
+  BProv_ax (translatedHFFinAx_intro hg)
+
 theorem BProv_lift_translatedHFAx_to_PA
     (hAx : ∀ f, translatedHFAx f → BProv Ax_s [] f)
     {f : Formula} (h : BProv translatedHFAx [] f) : BProv Ax_s [] f :=
+  BProv_lift h hAx (fun _ hg => nomatch hg)
+
+theorem BProv_lift_translatedHFFinAx_to_PA
+    (hAx : ∀ f, translatedHFFinAx f → BProv Ax_s [] f)
+    {f : Formula} (h : BProv translatedHFFinAx [] f) : BProv Ax_s [] f :=
   BProv_lift h hAx (fun _ hg => nomatch hg)
 
 theorem standard_sat_translatedHFAx (e : Nat → Nat) :
@@ -6441,6 +6570,12 @@ theorem standard_sat_translatedHFAx (e : Nat → Nat) :
   intro g hg
   rcases hg with ⟨phi, hphi, rfl⟩
   exact translated_HF_axiom_sat_nat phi hphi e
+
+theorem standard_sat_translatedHFFinAx (e : Nat → Nat) :
+    ∀ g, translatedHFFinAx g → Sat natModel e g := by
+  intro g hg
+  rcases hg with ⟨phi, hphi, rfl⟩
+  exact translated_HFFin_axiom_sat_nat phi hphi e
 
 end Formula
 
@@ -9087,6 +9222,16 @@ theorem domainForm_scons_insertAt {α : Type u} {mem : α → α → Prop}
       subst n
       rfl)
 
+theorem domainForm_scons_succReplaceAt {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (p : Nat) (d : α) (e : Nat → α) :
+    Sat M.mem (scons d (succReplaceAt M p e)) domainForm ↔
+      Sat M.mem (scons d e) domainForm :=
+  Sat_ext_free domainForm (scons d (succReplaceAt M p e)) (scons d e)
+    (fun n hn => by
+      have hn0 := domainForm_free hn
+      subst n
+      rfl)
+
 theorem formulaAt_substZeroAt_insert_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (phi : PA.Formula) :
     ∀ (p : Nat) (ρ : Nat → Nat) (e : Nat → α),
@@ -9409,6 +9554,390 @@ theorem formulaAt_substZero_scons_model {α : Type u}
   exact h.trans
     (Sat_ext (formulaAt (upVarMap ρ) phi)
       (insertAt 0 M.empty e) (scons M.empty e) (insertAt_zero M.empty e))
+
+theorem formulaAt_substSuccAt_replace_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (phi : PA.Formula) :
+    ∀ (p : Nat) (ρ : Nat → Nat) (e : Nat → α),
+      (Sat M.mem e
+          (formulaAt (substZeroBeforeMap p 0 ρ)
+            (PA.Formula.subst (PA.Formula.substSuccAt p) phi)) ↔
+        Sat M.mem (succReplaceAt M p e)
+          (formulaAt (substZeroBeforeMap p 0 ρ) phi)) := by
+  induction phi with
+  | eq a b =>
+      intro p ρ e
+      constructor
+      · intro h
+        rcases h with ⟨x, y, ha, hb, heq⟩
+        refine ⟨x, y, ?_, ?_, heq⟩
+        · have haMap : Sat M.mem (scons y (scons x e))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 1
+                (PA.Term.subst (PA.Formula.substSuccAt p) a)) := by
+            have hEq := termGraphAt_map_ext
+              (PA.Term.subst (PA.Formula.substSuccAt p) a)
+              (ρ := fun n => substZeroBeforeMap p 0 ρ n + 2)
+              (σ := substZeroBeforeMap p 2 ρ) (out := 1)
+              (substZeroBeforeMap_add p 0 2 ρ)
+            rwa [← hEq]
+          have haRep := (termGraphAt_substSuccAt_replace_model M a
+            p 2 ρ 1 (scons y (scons x e)) (by omega)).mp haMap
+          have henv : ∀ n,
+              scons y (scons x (succReplaceAt M p e)) n =
+                succReplaceAt M (2+p) (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using
+              scons2_succReplaceAt_prefix M p 0 x y e n
+          have haEnv : Sat M.mem (scons y (scons x (succReplaceAt M p e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a)
+              (scons y (scons x (succReplaceAt M p e)))
+              (succReplaceAt M (2+p) (scons y (scons x e))) henv).mpr haRep
+          have hEq := termGraphAt_map_ext a
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 1)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          rwa [hEq] at haEnv
+        · have hbMap : Sat M.mem (scons y (scons x e))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 0
+                (PA.Term.subst (PA.Formula.substSuccAt p) b)) := by
+            have hEq := termGraphAt_map_ext
+              (PA.Term.subst (PA.Formula.substSuccAt p) b)
+              (ρ := fun n => substZeroBeforeMap p 0 ρ n + 2)
+              (σ := substZeroBeforeMap p 2 ρ) (out := 0)
+              (substZeroBeforeMap_add p 0 2 ρ)
+            rwa [← hEq]
+          have hbRep := (termGraphAt_substSuccAt_replace_model M b
+            p 2 ρ 0 (scons y (scons x e)) (by omega)).mp hbMap
+          have henv : ∀ n,
+              scons y (scons x (succReplaceAt M p e)) n =
+                succReplaceAt M (2+p) (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using
+              scons2_succReplaceAt_prefix M p 0 x y e n
+          have hbEnv : Sat M.mem (scons y (scons x (succReplaceAt M p e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b)
+              (scons y (scons x (succReplaceAt M p e)))
+              (succReplaceAt M (2+p) (scons y (scons x e))) henv).mpr hbRep
+          have hEq := termGraphAt_map_ext b
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 0)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          rwa [hEq] at hbEnv
+      · intro h
+        rcases h with ⟨x, y, ha, hb, heq⟩
+        refine ⟨x, y, ?_, ?_, heq⟩
+        · have hEq := termGraphAt_map_ext a
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 1)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          have haMap : Sat M.mem (scons y (scons x (succReplaceAt M p e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a) := by
+            rw [hEq]
+            exact ha
+          have henv : ∀ n,
+              scons y (scons x (succReplaceAt M p e)) n =
+                succReplaceAt M (2+p) (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using
+              scons2_succReplaceAt_prefix M p 0 x y e n
+          have haRep : Sat M.mem
+              (succReplaceAt M (2+p) (scons y (scons x e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 1 a)
+              (scons y (scons x (succReplaceAt M p e)))
+              (succReplaceAt M (2+p) (scons y (scons x e))) henv).mp haMap
+          have haSub := (termGraphAt_substSuccAt_replace_model M a
+            p 2 ρ 1 (scons y (scons x e)) (by omega)).mpr haRep
+          have hEqSub := termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substSuccAt p) a)
+            (ρ := fun n => substZeroBeforeMap p 0 ρ n + 2)
+            (σ := substZeroBeforeMap p 2 ρ) (out := 1)
+            (substZeroBeforeMap_add p 0 2 ρ)
+          rwa [← hEqSub] at haSub
+        · have hEq := termGraphAt_map_ext b
+            (ρ := substZeroBeforeMap p 2 ρ)
+            (σ := fun n => substZeroBeforeMap p 0 ρ n + 2) (out := 0)
+            (fun n => (substZeroBeforeMap_add p 0 2 ρ n).symm)
+          have hbMap : Sat M.mem (scons y (scons x (succReplaceAt M p e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b) := by
+            rw [hEq]
+            exact hb
+          have henv : ∀ n,
+              scons y (scons x (succReplaceAt M p e)) n =
+                succReplaceAt M (2+p) (scons y (scons x e)) n := by
+            intro n
+            simpa [Nat.zero_add] using
+              scons2_succReplaceAt_prefix M p 0 x y e n
+          have hbRep : Sat M.mem
+              (succReplaceAt M (2+p) (scons y (scons x e)))
+              (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b) :=
+            (Sat_ext (termGraphAt (substZeroBeforeMap p 2 ρ) 0 b)
+              (scons y (scons x (succReplaceAt M p e)))
+              (succReplaceAt M (2+p) (scons y (scons x e))) henv).mp hbMap
+          have hbSub := (termGraphAt_substSuccAt_replace_model M b
+            p 2 ρ 0 (scons y (scons x e)) (by omega)).mpr hbRep
+          have hEqSub := termGraphAt_map_ext
+            (PA.Term.subst (PA.Formula.substSuccAt p) b)
+            (ρ := fun n => substZeroBeforeMap p 0 ρ n + 2)
+            (σ := substZeroBeforeMap p 2 ρ) (out := 0)
+            (substZeroBeforeMap_add p 0 2 ρ)
+          rwa [← hEqSub] at hbSub
+  | bot =>
+      intro p ρ e
+      rfl
+  | imp a b iha ihb =>
+      intro p ρ e
+      constructor
+      · intro h ha
+        exact (ihb p ρ e).mp (h ((iha p ρ e).mpr ha))
+      · intro h ha
+        exact (ihb p ρ e).mpr (h ((iha p ρ e).mp ha))
+  | and a b iha ihb =>
+      intro p ρ e
+      exact and_congr (iha p ρ e) (ihb p ρ e)
+  | or a b iha ihb =>
+      intro p ρ e
+      exact or_congr (iha p ρ e) (ihb p ρ e)
+  | all a ih =>
+      intro p ρ e
+      constructor
+      · intro hall d hdDomain
+        have hdDomain' : Sat M.mem (scons d e) domainForm :=
+          (domainForm_scons_succReplaceAt M p d e).mp hdDomain
+        have hbody := hall d hdDomain'
+        have hbodyNorm : Sat M.mem (scons d e)
+            (formulaAt (substZeroBeforeMap (p+1) 0 ρ)
+              (PA.Formula.subst (PA.Formula.substSuccAt (p+1)) a)) := by
+          rw [PA.Formula.upSubst_substSuccAt p] at hbody
+          have hEq := formulaAt_map_ext
+            (PA.Formula.subst (PA.Formula.substSuccAt (p+1)) a)
+            (ρ := upVarMap (substZeroBeforeMap p 0 ρ))
+            (σ := substZeroBeforeMap (p+1) 0 ρ)
+            (upVarMap_substZeroBeforeMap_zero p ρ)
+          rwa [hEq] at hbody
+        have hbodyRep := (ih (p+1) ρ (scons d e)).mp hbodyNorm
+        have henv : ∀ n,
+            scons d (succReplaceAt M p e) n =
+              succReplaceAt M (p+1) (scons d e) n := by
+          intro n
+          simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+            using scons_succReplaceAt_prefix M p 0 d e n
+        have hbodyEnv : Sat M.mem (scons d (succReplaceAt M p e))
+            (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+          (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+            (scons d (succReplaceAt M p e))
+            (succReplaceAt M (p+1) (scons d e)) henv).mpr hbodyRep
+        have hEq := formulaAt_map_ext a
+          (ρ := substZeroBeforeMap (p+1) 0 ρ)
+          (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+          (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+        rwa [hEq] at hbodyEnv
+      · intro hall d hdDomain
+        have hdDomain' : Sat M.mem (scons d (succReplaceAt M p e)) domainForm :=
+          (domainForm_scons_succReplaceAt M p d e).mpr hdDomain
+        have hbody := hall d hdDomain'
+        have hbodyNorm : Sat M.mem (scons d (succReplaceAt M p e))
+            (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) := by
+          have hEq := formulaAt_map_ext a
+            (ρ := substZeroBeforeMap (p+1) 0 ρ)
+            (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+            (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+          rwa [hEq]
+        have henv : ∀ n,
+            scons d (succReplaceAt M p e) n =
+              succReplaceAt M (p+1) (scons d e) n := by
+          intro n
+          simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+            using scons_succReplaceAt_prefix M p 0 d e n
+        have hbodyRep : Sat M.mem
+            (succReplaceAt M (p+1) (scons d e))
+            (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+          (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+            (scons d (succReplaceAt M p e))
+            (succReplaceAt M (p+1) (scons d e)) henv).mp hbodyNorm
+        have hbodyAfter := (ih (p+1) ρ (scons d e)).mpr hbodyRep
+        have hbodyActual : Sat M.mem (scons d e)
+            (formulaAt (upVarMap (substZeroBeforeMap p 0 ρ))
+              (PA.Formula.subst (PA.Term.upSubst (PA.Formula.substSuccAt p)) a)) := by
+          rw [PA.Formula.upSubst_substSuccAt p]
+          have hEq := formulaAt_map_ext
+            (PA.Formula.subst (PA.Formula.substSuccAt (p+1)) a)
+            (ρ := upVarMap (substZeroBeforeMap p 0 ρ))
+            (σ := substZeroBeforeMap (p+1) 0 ρ)
+            (upVarMap_substZeroBeforeMap_zero p ρ)
+          rwa [hEq]
+        exact hbodyActual
+  | ex a ih =>
+      intro p ρ e
+      constructor
+      · intro h
+        rcases h with ⟨d, hdDomain, hbody⟩
+        refine ⟨d, ?_, ?_⟩
+        · exact (domainForm_scons_succReplaceAt M p d e).mpr hdDomain
+        · have hbodyNorm : Sat M.mem (scons d e)
+              (formulaAt (substZeroBeforeMap (p+1) 0 ρ)
+                (PA.Formula.subst (PA.Formula.substSuccAt (p+1)) a)) := by
+            rw [PA.Formula.upSubst_substSuccAt p] at hbody
+            have hEq := formulaAt_map_ext
+              (PA.Formula.subst (PA.Formula.substSuccAt (p+1)) a)
+              (ρ := upVarMap (substZeroBeforeMap p 0 ρ))
+              (σ := substZeroBeforeMap (p+1) 0 ρ)
+              (upVarMap_substZeroBeforeMap_zero p ρ)
+            rwa [hEq] at hbody
+          have hbodyRep := (ih (p+1) ρ (scons d e)).mp hbodyNorm
+          have henv : ∀ n,
+              scons d (succReplaceAt M p e) n =
+                succReplaceAt M (p+1) (scons d e) n := by
+            intro n
+            simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+              using scons_succReplaceAt_prefix M p 0 d e n
+          have hbodyEnv : Sat M.mem (scons d (succReplaceAt M p e))
+              (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+            (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+              (scons d (succReplaceAt M p e))
+              (succReplaceAt M (p+1) (scons d e)) henv).mpr hbodyRep
+          have hEq := formulaAt_map_ext a
+            (ρ := substZeroBeforeMap (p+1) 0 ρ)
+            (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+            (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+          rwa [hEq] at hbodyEnv
+      · intro h
+        rcases h with ⟨d, hdDomain, hbody⟩
+        refine ⟨d, ?_, ?_⟩
+        · exact (domainForm_scons_succReplaceAt M p d e).mp hdDomain
+        · have hbodyNorm : Sat M.mem (scons d (succReplaceAt M p e))
+              (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) := by
+            have hEq := formulaAt_map_ext a
+              (ρ := substZeroBeforeMap (p+1) 0 ρ)
+              (σ := upVarMap (substZeroBeforeMap p 0 ρ))
+              (fun n => (upVarMap_substZeroBeforeMap_zero p ρ n).symm)
+            rwa [hEq]
+          have henv : ∀ n,
+              scons d (succReplaceAt M p e) n =
+                succReplaceAt M (p+1) (scons d e) n := by
+            intro n
+            simpa [Nat.zero_add, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+              using scons_succReplaceAt_prefix M p 0 d e n
+          have hbodyRep : Sat M.mem
+              (succReplaceAt M (p+1) (scons d e))
+              (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a) :=
+            (Sat_ext (formulaAt (substZeroBeforeMap (p+1) 0 ρ) a)
+              (scons d (succReplaceAt M p e))
+              (succReplaceAt M (p+1) (scons d e)) henv).mp hbodyNorm
+          have hbodyAfter := (ih (p+1) ρ (scons d e)).mpr hbodyRep
+          have hbodyActual : Sat M.mem (scons d e)
+              (formulaAt (upVarMap (substZeroBeforeMap p 0 ρ))
+                (PA.Formula.subst (PA.Term.upSubst (PA.Formula.substSuccAt p)) a)) := by
+            rw [PA.Formula.upSubst_substSuccAt p]
+            have hEq := formulaAt_map_ext
+              (PA.Formula.subst (PA.Formula.substSuccAt (p+1)) a)
+              (ρ := upVarMap (substZeroBeforeMap p 0 ρ))
+              (σ := substZeroBeforeMap (p+1) 0 ρ)
+              (upVarMap_substZeroBeforeMap_zero p ρ)
+            rwa [hEq]
+          exact hbodyActual
+
+theorem formulaAt_substSuccVar_scons_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (phi : PA.Formula)
+    (ρ : Nat → Nat) (a : α) (e : Nat → α) :
+    Sat M.mem (scons a e)
+        (formulaAt (upVarMap ρ)
+          (PA.Formula.subst PA.Formula.substSuccVar phi)) ↔
+      Sat M.mem (scons (M.adjoin a a) e)
+        (formulaAt (upVarMap ρ) phi) := by
+  constructor
+  · intro h
+    have hNormL : Sat M.mem (scons a e)
+        (formulaAt (substZeroBeforeMap 0 0 ρ)
+          (PA.Formula.subst (PA.Formula.substSuccAt 0) phi)) := by
+      rw [PA.Formula.substSuccAt_zero]
+      have hEq := formulaAt_map_ext (PA.Formula.subst PA.Formula.substSuccVar phi)
+        (ρ := substZeroBeforeMap 0 0 ρ) (σ := upVarMap ρ)
+        (substZeroBeforeMap_zero_zero ρ)
+      rwa [hEq]
+    have hNormR := (formulaAt_substSuccAt_replace_model M phi 0 ρ (scons a e)).mp hNormL
+    have hEnv : ∀ n,
+        succReplaceAt M 0 (scons a e) n = scons (M.adjoin a a) e n := by
+      intro n
+      unfold succReplaceAt
+      simpa [scons] using replaceAt_zero_scons (M.adjoin a a) a e n
+    have hMap := formulaAt_map_ext phi
+      (ρ := substZeroBeforeMap 0 0 ρ) (σ := upVarMap ρ)
+      (substZeroBeforeMap_zero_zero ρ)
+    have hSat : Sat M.mem (scons (M.adjoin a a) e)
+        (formulaAt (substZeroBeforeMap 0 0 ρ) phi) :=
+      (Sat_ext (formulaAt (substZeroBeforeMap 0 0 ρ) phi)
+        (succReplaceAt M 0 (scons a e))
+        (scons (M.adjoin a a) e) hEnv).mp hNormR
+    rwa [hMap] at hSat
+  · intro h
+    have hMap := formulaAt_map_ext phi
+      (ρ := substZeroBeforeMap 0 0 ρ) (σ := upVarMap ρ)
+      (substZeroBeforeMap_zero_zero ρ)
+    have hEnv : ∀ n,
+        succReplaceAt M 0 (scons a e) n = scons (M.adjoin a a) e n := by
+      intro n
+      unfold succReplaceAt
+      simpa [scons] using replaceAt_zero_scons (M.adjoin a a) a e n
+    have hNormR : Sat M.mem (succReplaceAt M 0 (scons a e))
+        (formulaAt (substZeroBeforeMap 0 0 ρ) phi) := by
+      apply (Sat_ext (formulaAt (substZeroBeforeMap 0 0 ρ) phi)
+        (succReplaceAt M 0 (scons a e))
+        (scons (M.adjoin a a) e) hEnv).mpr
+      rwa [hMap]
+    have hNormL := (formulaAt_substSuccAt_replace_model M phi 0 ρ (scons a e)).mpr hNormR
+    rw [PA.Formula.substSuccAt_zero] at hNormL
+    have hEq := formulaAt_map_ext (PA.Formula.subst PA.Formula.substSuccVar phi)
+      (ρ := substZeroBeforeMap 0 0 ρ) (σ := upVarMap ρ)
+      (substZeroBeforeMap_zero_zero ρ)
+    rwa [hEq] at hNormL
+
+/-- The PA induction axiom is valid under the PA-in-HF translation in every
+chosen finite first-order HF adjunction model.
+
+The finite-generation axiom is used only through
+`ordinalLike_empty_or_succ`: an ordinal-like HF object is either empty or the
+adjunction successor of an ordinal-like member.  The PA base and step
+hypotheses are then transported by the explicit zero/successor substitution
+lemmas above. -/
+theorem formulaAt_induction_valid_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (phi : PA.Formula) (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ (PA.Formula.inductionForm phi)) := by
+  intro hInd
+  let theta : Form := fImp domainForm (formulaAt (upVarMap ρ) phi)
+  have hall : ∀ a, Sat M.mem (scons a e) theta := by
+    have hind := M.induction_schema theta e
+    apply hind
+    intro a ih
+    intro haDomain
+    have haOrd : OrdinalLike M.mem a :=
+      (HF_ordinalLikeAt_spec (scons a e) 0).mp haDomain
+    rcases FirstOrderFiniteAdjunctionModel.ordinalLike_empty_or_succ M haOrd with
+      hEmpty | ⟨p, hp, hSucc⟩
+    · subst a
+      exact (formulaAt_substZero_scons_model M.toFirstOrderAdjunctionModel
+        phi ρ e).mp hInd.1
+    · have hpOrd : OrdinalLike M.mem p := OrdinalLike.of_mem haOrd hp
+      have hpDomain : Sat M.mem (scons p e) domainForm :=
+        (HF_ordinalLikeAt_spec (scons p e) 0).mpr hpOrd
+      have hpTheta : Sat M.mem (scons p e) theta :=
+        (Sat_rename_rSkipParam theta e a p).mp (ih p hp)
+      have hpPhi : Sat M.mem (scons p e) (formulaAt (upVarMap ρ) phi) :=
+        hpTheta hpDomain
+      have hStepSub : Sat M.mem (scons p e)
+          (formulaAt (upVarMap ρ)
+            (PA.Formula.subst PA.Formula.substSuccVar phi)) :=
+        hInd.2 p hpDomain hpPhi
+      have hStepPhi : Sat M.mem (scons (M.adjoin p p) e)
+          (formulaAt (upVarMap ρ) phi) :=
+        (formulaAt_substSuccVar_scons_model M.toFirstOrderAdjunctionModel
+          phi ρ p e).mp hStepSub
+      rw [hSucc]
+      exact hStepPhi
+  intro a haDomain
+  exact hall a haDomain
 
 theorem formulaAt_free (phi : PA.Formula) :
     ∀ {ρ : Nat → Nat} {i : Nat}, Free i (formulaAt ρ phi) →
@@ -10006,6 +10535,20 @@ theorem translated_mulSucc_sat_of_HFFinAx_s {α : Type u} {mem : α → α → P
   exact formulaAt_sealPA_valid PA.Formula.mulSucc
     (fun ρ e => formulaAt_mulSucc_valid_finite_model M ρ e) (fun n : Nat => n) e
 
+/-- Closed PA induction axiom instances are semantically valid under the
+PA-in-HF translation in every model of the strengthened hereditary-finite
+theory. -/
+theorem translated_induction_sat_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (phi : PA.Formula) (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA (PA.Formula.inductionForm phi))) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e
+    (translateFormula (PA.Formula.sealPA (PA.Formula.inductionForm phi)))
+  exact formulaAt_sealPA_valid (PA.Formula.inductionForm phi)
+    (fun ρ e => formulaAt_induction_valid_finite_model M phi ρ e)
+    (fun n : Nat => n) e
+
 /-- Closed zero-is-not-successor axiom, semantically validated in every
 adjunction model under the PA-in-HF translation. -/
 theorem translated_zeroNotSucc_sat_model {α : Type} (M : AdjunctionModel α)
@@ -10118,6 +10661,27 @@ theorem BProv_HFFin_translated_mulSucc :
   · intro Dom mem v hHF
     exact translated_mulSucc_sat_of_HFFinAx_s v hHF v
 
+theorem BProv_HFFin_translated_induction (phi : PA.Formula) :
+    BProv HFFinAx_s []
+      (translateFormula (PA.Formula.sealPA (PA.Formula.inductionForm phi))) := by
+  apply completeness_inf HFFinAx_s
+  · exact Sentences_HFFin
+  · exact translated_PA_axiom_sentence _ (PA.Formula.Ax_s_induction phi)
+  · intro Dom mem v hHF
+    exact translated_induction_sat_of_HFFinAx_s v hHF phi v
+
+theorem BProv_HFFin_translated_PA_axiom {phi : PA.Formula}
+    (hphi : PA.Formula.Ax_s phi) :
+    BProv HFFinAx_s [] (translateFormula phi) := by
+  rcases hphi with rfl | rfl | rfl | rfl | rfl | rfl | ⟨psi, rfl⟩
+  · exact BProv_HFFin_translated_succInj
+  · exact BProv_HFFin_translated_zeroNotSucc
+  · exact BProv_HFFin_translated_addZero
+  · exact BProv_HFFin_translated_addSucc
+  · exact BProv_HFFin_translated_mulZero
+  · exact BProv_HFFin_translated_mulSucc
+  · exact BProv_HFFin_translated_induction psi
+
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/
 def translatedPAAx (g : Form) : Prop :=
@@ -10137,6 +10701,179 @@ theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
     BProv translatedPAAx [] (translateFormula phi) :=
   BProv_ax (translatedPAAx_intro hphi)
 
+/-- Translate a finite PA context pointwise into the HF language. -/
+def translateContext (G : List PA.Formula) : List Form :=
+  G.map translateFormula
+
+theorem mem_translateContext_of_mem {G : List PA.Formula} {phi : PA.Formula}
+    (hphi : phi ∈ G) : translateFormula phi ∈ translateContext G :=
+  List.mem_map_of_mem (f := translateFormula) hphi
+
+/-- Translated PA assumptions are available as assumptions in the translated
+finite context. -/
+theorem BProv_translate_ass {G : List PA.Formula} {phi : PA.Formula}
+    (hphi : phi ∈ G) :
+    BProv translatedPAAx (translateContext G) (translateFormula phi) :=
+  BProv_of_Prov (B := translatedPAAx)
+    (Prov.P_ass (translateContext G) (translateFormula phi)
+      (mem_translateContext_of_mem hphi))
+
+/-- A PA axiom, translated into HF, is an axiom of the intermediate
+`translatedPAAx` theory. -/
+theorem BProv_translate_ax {phi : PA.Formula} (hphi : PA.Formula.Ax_s phi) :
+    BProv translatedPAAx [] (translateFormula phi) :=
+  BProv_translatedPAAx_of_PAAx hphi
+
+/-- Translated implication introduction for the PA-in-HF translation. -/
+theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}
+    (h : BProv translatedPAAx
+      (translateFormula a :: translateContext G) (translateFormula b)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.imp a b)) := by
+  change BProv translatedPAAx (translateContext G)
+    (fImp (translateFormula a) (translateFormula b))
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  rw [List.mem_append] at hx
+  rcases hx with hx | hx
+  · exact List.mem_cons.mpr
+      (Or.inr (List.mem_append.mpr (Or.inl hx)))
+  · rw [List.mem_cons] at hx
+    rcases hx with hx | hx
+    · exact List.mem_cons.mpr (Or.inl hx)
+    · exact List.mem_cons.mpr
+        (Or.inr (List.mem_append.mpr (Or.inr hx)))
+
+/-- Translated implication elimination for the PA-in-HF translation. -/
+theorem BProv_translate_impE {G : List PA.Formula} {a b : PA.Formula}
+    (hab : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.imp a b)))
+    (ha : BProv translatedPAAx (translateContext G) (translateFormula a)) :
+    BProv translatedPAAx (translateContext G) (translateFormula b) := by
+  exact BProv_mp translatedPAAx (translateContext G)
+    (translateFormula a) (translateFormula b)
+    (by simpa [translateFormula, formulaAt] using hab) ha
+
+/-- Translated bottom elimination for the PA-in-HF translation. -/
+theorem BProv_translate_botE {G : List PA.Formula} {a : PA.Formula}
+    (hbot : BProv translatedPAAx (translateContext G) fBot) :
+    BProv translatedPAAx (translateContext G) (translateFormula a) := by
+  rcases hbot with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_botE _ (translateFormula a) hp⟩
+
+/-- Translated law of excluded middle for the PA-in-HF translation. -/
+theorem BProv_translate_lem (G : List PA.Formula) (a : PA.Formula) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a (PA.Formula.imp a PA.Formula.bot))) := by
+  change BProv translatedPAAx (translateContext G)
+    (fOr (translateFormula a) (fImp (translateFormula a) fBot))
+  exact BProv_of_Prov (B := translatedPAAx) (Prov.P_lem _ _)
+
+/-- Translated conjunction introduction for the PA-in-HF translation. -/
+theorem BProv_translate_andI {G : List PA.Formula} {a b : PA.Formula}
+    (ha : BProv translatedPAAx (translateContext G) (translateFormula a))
+    (hb : BProv translatedPAAx (translateContext G) (translateFormula b)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.and a b)) := by
+  change BProv translatedPAAx (translateContext G)
+    (fAnd (translateFormula a) (translateFormula b))
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hLa x hx
+    · exact hLb x hx
+  · apply Prov.P_andI
+    · apply Prov_weaken hpa
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
+      · exact Or.inr hx
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
+      · exact Or.inr hx
+
+/-- First translated conjunction projection for the PA-in-HF translation. -/
+theorem BProv_translate_andE1 {G : List PA.Formula} {a b : PA.Formula}
+    (h : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.and a b))) :
+    BProv translatedPAAx (translateContext G) (translateFormula a) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_andE1 _ (translateFormula a) (translateFormula b)
+  simpa [translateFormula, formulaAt] using hp
+
+/-- Second translated conjunction projection for the PA-in-HF translation. -/
+theorem BProv_translate_andE2 {G : List PA.Formula} {a b : PA.Formula}
+    (h : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.and a b))) :
+    BProv translatedPAAx (translateContext G) (translateFormula b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_andE2 _ (translateFormula a) (translateFormula b)
+  simpa [translateFormula, formulaAt] using hp
+
+/-- Left translated disjunction introduction for the PA-in-HF translation. -/
+theorem BProv_translate_orI1 {G : List PA.Formula} {a b : PA.Formula}
+    (ha : BProv translatedPAAx (translateContext G) (translateFormula a)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a b)) := by
+  rcases ha with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ translateContext G)
+    (fOr (translateFormula a) (translateFormula b))
+  exact Prov.P_orI1 _ _ _ hp
+
+/-- Right translated disjunction introduction for the PA-in-HF translation. -/
+theorem BProv_translate_orI2 {G : List PA.Formula} {a b : PA.Formula}
+    (hb : BProv translatedPAAx (translateContext G) (translateFormula b)) :
+    BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a b)) := by
+  rcases hb with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ translateContext G)
+    (fOr (translateFormula a) (translateFormula b))
+  exact Prov.P_orI2 _ _ _ hp
+
+/-- Translated disjunction elimination for the PA-in-HF translation. -/
+theorem BProv_translate_orE {G : List PA.Formula} {a b c : PA.Formula}
+    (hor : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.or a b)))
+    (ha : BProv translatedPAAx
+      (translateFormula a :: translateContext G) (translateFormula c))
+    (hb : BProv translatedPAAx
+      (translateFormula b :: translateContext G) (translateFormula c)) :
+    BProv translatedPAAx (translateContext G) (translateFormula c) := by
+  rcases hor with ⟨Lo, hLo, hpo⟩
+  rcases ha with ⟨La, hLa, hpa⟩
+  rcases hb with ⟨Lb, hLb, hpb⟩
+  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
+  · intro x hx
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_orE _ (translateFormula a) (translateFormula b) (translateFormula c)
+    · apply Prov_weaken hpo
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpa
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      simp only [List.mem_append, List.mem_cons] at hx ⊢
+      grind
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
@@ -10146,6 +10883,18 @@ theorem BProv_lift_translatedPAAx_to_HFFin
     (hAx : ∀ g, translatedPAAx g → BProv HFFinAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFFinAx_s [] g :=
   BProv_lift h hAx (fun _ hf => nomatch hf)
+
+theorem BProv_HFFin_of_translatedPAAx {g : Form}
+    (hg : translatedPAAx g) : BProv HFFinAx_s [] g := by
+  rcases hg with ⟨phi, hphi, rfl⟩
+  exact BProv_HFFin_translated_PA_axiom hphi
+
+/-- Any derivation over the intermediate translated-PA axiom theory can be cut
+down to a derivation over the strengthened finite-HF theory. -/
+theorem BProv_HFFin_of_BProv_translatedPAAx {g : Form}
+    (h : BProv translatedPAAx [] g) : BProv HFFinAx_s [] g :=
+  BProv_lift_translatedPAAx_to_HFFin
+    (fun _ hg => BProv_HFFin_of_translatedPAAx hg) h
 
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
     ∀ g, translatedPAAx g → Sat Mem e g := by
@@ -10202,6 +10951,40 @@ structure TheoryInterpretation
   maps_theorem : ∀ {phi}, SrcSentence phi →
     SrcProv SrcAx [] phi → TgtProv TgtAx [] (translate phi)
 
+/-- Compose two theory interpretations.
+
+The additional premise records that source axioms are source sentences, which
+is needed only for the composed `maps_axiom` field: the first interpretation
+turns a source axiom into a theorem of the middle theory, and the second
+interpretation transfers middle-theory theorems only for middle sentences. -/
+def TheoryInterpretation.comp
+    {Src Mid Tgt : Type}
+    {SrcSentence : Src → Prop} {MidSentence : Mid → Prop}
+    {TgtSentence : Tgt → Prop}
+    {SrcAx : Src → Prop} {MidAx : Mid → Prop} {TgtAx : Tgt → Prop}
+    {SrcProv : (Src → Prop) → List Src → Src → Prop}
+    {MidProv : (Mid → Prop) → List Mid → Mid → Prop}
+    {TgtProv : (Tgt → Prop) → List Tgt → Tgt → Prop}
+    (I : TheoryInterpretation Src Mid
+      SrcSentence MidSentence SrcAx MidAx SrcProv MidProv)
+    (J : TheoryInterpretation Mid Tgt
+      MidSentence TgtSentence MidAx TgtAx MidProv TgtProv)
+    (hSrcAxSentence : ∀ {phi}, SrcAx phi → SrcSentence phi) :
+    TheoryInterpretation Src Tgt
+      SrcSentence TgtSentence SrcAx TgtAx SrcProv TgtProv where
+  translate := fun phi => J.translate (I.translate phi)
+  maps_sentence := by
+    intro phi hphi
+    exact J.maps_sentence (I.maps_sentence hphi)
+  maps_axiom := by
+    intro phi hphi
+    exact J.maps_theorem (I.maps_sentence (hSrcAxSentence hphi))
+      (I.maps_axiom hphi)
+  maps_theorem := by
+    intro phi hphi hprov
+    exact J.maps_theorem (I.maps_sentence hphi)
+      (I.maps_theorem hphi hprov)
+
 /-- Build an identity interpretation between two set-theory theories once each
 source axiom has been proved from the target theory.  This is the assembly
 lemma used after axiom-discharge work; it does not hide any axiom proof. -/
@@ -10219,6 +11002,37 @@ def setTheoryIdentityInterpretationOfAxiomProofs
   maps_theorem := by
     intro phi _ h
     exact BProv_lift h hAx (fun g hg => nomatch hg)
+
+/-- The intermediate set-theory of translated PA axioms is deductively
+interpretable in the strengthened finite-HF theory by the identity translation.
+
+This record packages the axiom-discharge theorem
+`PAInHF.BProv_HFFin_of_translatedPAAx` at the theory level.  The still-open
+PA-in-HF proof-translation task can target `PAInHF.translatedPAAx` first and
+compose with this interpretation. -/
+def translatedPATheoryInHFFinInterpretation :
+    TheoryInterpretation Form Form Sentence Sentence
+      PAInHF.translatedPAAx HFFinAx_s BProv BProv :=
+  setTheoryIdentityInterpretationOfAxiomProofs
+    PAInHF.translatedPAAx HFFinAx_s
+    (fun _ hg => PAInHF.BProv_HFFin_of_translatedPAAx hg)
+
+/-- Compose a future PA-to-`translatedPAAx` interpretation with the established
+deductive bridge from `translatedPAAx` into `HFFinAx_s`.
+
+This keeps the remaining PA proof-translation theorem honest: the caller must
+still supply the interpretation into the intermediate translated-axiom theory. -/
+def paInHFFinOfTranslatedPATheoryInterpretation
+    (I : TheoryInterpretation PA.Formula Form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s PAInHF.translatedPAAx
+      PA.Formula.BProv BProv) :
+    TheoryInterpretation PA.Formula Form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s HFFinAx_s
+      PA.Formula.BProv BProv :=
+  TheoryInterpretation.comp I translatedPATheoryInHFFinInterpretation
+    (fun {phi} hphi => PA.Formula.sentence_ax_s (f := phi) hphi)
 
 /-- PA analogue of `setTheoryIdentityInterpretationOfAxiomProofs`. -/
 def paIdentityInterpretationOfAxiomProofs
@@ -10241,40 +11055,52 @@ def paIdentityInterpretationOfAxiomProofs
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
 
-/-- The exact target for the deductive PA/HF bi-interpretability theorem.
+/-- The exact target for a deductive PA/HF bi-interpretability theorem.
 
 Unlike `StandardModelInterpretationCertificate`, this record is not inhabited
 in this file.  It states the remaining proof obligations at the theory level:
 both syntactic translations must transfer theorems between the PA axiom theory
-and the HF axiom theory, and the two composites must be provably equivalent to
-the identity translations on sentences. -/
-structure DeductiveBiInterpretationCertificate (PAProv : PAProvability) where
+and the chosen HF-side axiom theory, and the two composites must be provably
+equivalent to the identity translations on sentences. -/
+structure DeductiveBiInterpretationCertificate
+    (HFAxTarget : Form → Prop) (PAProv : PAProvability) where
   paInHf : TheoryInterpretation PA.Formula Form
     PA.Formula.Sentence Sentence
-    PA.Formula.Ax_s HFAx_s
+    PA.Formula.Ax_s HFAxTarget
     PAProv BProv
   hfInPa : TheoryInterpretation Form PA.Formula
     Sentence PA.Formula.Sentence
-    HFAx_s PA.Formula.Ax_s
+    HFAxTarget PA.Formula.Ax_s
     BProv PAProv
   pa_roundTrip : ∀ (phi : PA.Formula), phi.Sentence →
     PAProv PA.Formula.Ax_s []
       (PA.Formula.iffForm phi (hfInPa.translate (paInHf.translate phi)))
   hf_roundTrip : ∀ (phi : Form), Sentence phi →
-    BProv HFAx_s []
+    BProv HFAxTarget []
       (fIff phi (paInHf.translate (hfInPa.translate phi)))
 
 /-- The concrete deductive target using the PA natural-deduction calculus
-defined above and the existing HF calculus from `SetTheory.Completeness`. -/
+defined above, for the foundation-style HF theory. -/
 abbrev PAHFDeductiveBiInterpretationCertificate : Type :=
-  DeductiveBiInterpretationCertificate PA.Formula.BProv
+  DeductiveBiInterpretationCertificate HFAx_s PA.Formula.BProv
+
+/-- The concrete deductive target for PA and the strengthened hereditary-finite
+set theory `HFFinAx_s`.  This is the target relevant to the PA/HF theorem:
+`HFAx_s` alone still has infinite ZF-style models. -/
+abbrev PAHFFinDeductiveBiInterpretationCertificate : Type :=
+  DeductiveBiInterpretationCertificate HFFinAx_s PA.Formula.BProv
 
 /-- A standard-model interpretation certificate with the actual syntactic
-translations attached.  The exactness fields say that the translations have the
-intended semantics in the standard PA and Ackermann-HF models; the axiom fields
-say that each translated axiom theory is satisfied by the opposite standard
-model; the `shallow` field carries the two round-trip isomorphisms. -/
-structure StandardModelInterpretationCertificate where
+translations attached, parameterized by the HF-side axiom theory and its
+PA-side translated axiom theory.
+
+The exactness fields say that the translations have the intended semantics in
+the standard PA and Ackermann-HF models; the axiom fields say that each
+translated axiom theory is satisfied by the opposite standard model; the
+`shallow` field carries the two round-trip isomorphisms. -/
+structure StandardModelInterpretationCertificateFor
+    (HFAxTarget : Form → Prop)
+    (TranslatedHFAxTarget : PA.Formula → Prop) where
   shallow : ShallowBiInterpretation
   paToHf : PA.Formula → Form
   hfToPa : Form → PA.Formula
@@ -10285,12 +11111,20 @@ structure StandardModelInterpretationCertificate where
     PA.Formula.Sat PA.natModel v (hfToPa phi) ↔ Sat Mem v phi
   paAxiom_sat : ∀ (phi : PA.Formula), PA.Formula.Ax_s phi → ∀ (v : Nat → Nat),
     Sat Mem (fun n => ordinalCode (v n)) (paToHf phi)
-  hfAxiom_sat : ∀ (phi : Form), HFAx_s phi → ∀ (v : Nat → Nat),
+  hfAxiom_sat : ∀ (phi : Form), HFAxTarget phi → ∀ (v : Nat → Nat),
     PA.Formula.Sat PA.natModel v (hfToPa phi)
   translatedPA_sat : ∀ (e : Nat → Nat) (g : Form),
     PAInHF.translatedPAAx g → Sat Mem e g
   translatedHF_sat : ∀ (e : Nat → Nat) (f : PA.Formula),
-    PA.Formula.translatedHFAx f → PA.Formula.Sat PA.natModel e f
+    TranslatedHFAxTarget f → PA.Formula.Sat PA.natModel e f
+
+/-- Standard-model certificate for the foundation-style HF theory. -/
+abbrev StandardModelInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor HFAx_s PA.Formula.translatedHFAx
+
+/-- Standard-model certificate for the strengthened finite-HF theory. -/
+abbrev StandardModelFiniteInterpretationCertificate : Type :=
+  StandardModelInterpretationCertificateFor HFFinAx_s PA.Formula.translatedHFFinAx
 
 /-- The HF model obtained after interpreting PA inside Ackermann HF and then
 running Ackermann's HF interpretation in that interpreted PA model. -/
@@ -10387,15 +11221,38 @@ noncomputable def standardModelInterpretation : StandardModelInterpretationCerti
   translatedPA_sat := PAInHF.standard_sat_translatedPAAx
   translatedHF_sat := PA.Formula.standard_sat_translatedHFAx
 
+/-- The same standard-model certificate, but with the strengthened finite-HF
+axiom theory on the HF side. -/
+noncomputable def standardModelFiniteInterpretation :
+    StandardModelFiniteInterpretationCertificate where
+  shallow := standardShallowBiInterpretation
+  paToHf := PAInHF.translateFormula
+  hfToPa := PA.Formula.translateHFFormula
+  paToHf_exact := PAInHF.translateFormula_exact
+  hfToPa_exact := PA.Formula.translateHFFormula_exact
+  paAxiom_sat := PAInHF.translated_PA_axiom_sat_codes
+  hfAxiom_sat := PA.Formula.translated_HFFin_axiom_sat_nat
+  translatedPA_sat := PAInHF.standard_sat_translatedPAAx
+  translatedHF_sat := PA.Formula.standard_sat_translatedHFFinAx
+
 theorem PA_standard_model_interpretable_with_HF :
     Nonempty StandardModelInterpretationCertificate :=
   ⟨standardModelInterpretation⟩
+
+theorem PA_standard_model_interpretable_with_HFFin :
+    Nonempty StandardModelFiniteInterpretationCertificate :=
+  ⟨standardModelFiniteInterpretation⟩
 
 theorem PA_biinterpretable_with_HF_standard :
     Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧
       Nonempty (AdjunctionIso standardModel ordinalHFModel) :=
   ⟨⟨standardShallowBiInterpretation.paRoundTrip⟩,
    ⟨standardShallowBiInterpretation.hfRoundTrip⟩⟩
+
+theorem PA_biinterpretable_with_HFFin_standard :
+    Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧
+      Nonempty (AdjunctionIso standardModel ordinalHFModel) :=
+  PA_biinterpretable_with_HF_standard
 
 end AckermannHF
 
