@@ -7314,6 +7314,67 @@ theorem upSubst_substZeroAt (p : Nat) :
           simp [Term.rename]
           omega
 
+/-- Substitute PA variable `p` by the term `t`, shifting the free variables of
+`t` through the `p` surrounding binders and closing the de Bruijn gap above
+`p`.  The case `p = 0` is ordinary `instTerm t`. -/
+def substTermAt (p : Nat) (t : Term) : Nat → Term :=
+  fun n =>
+    if n < p then Term.var n
+    else if n = p then Term.rename (fun m => m + p) t
+    else Term.var (n - 1)
+
+@[simp] theorem substTermAt_lt {p n : Nat} {t : Term} (h : n < p) :
+    substTermAt p t n = Term.var n := by
+  simp [substTermAt, h]
+
+@[simp] theorem substTermAt_eq {p : Nat} {t : Term} :
+    substTermAt p t p = Term.rename (fun m => m + p) t := by
+  simp [substTermAt]
+
+theorem substTermAt_gt {p n : Nat} {t : Term} (h : p < n) :
+    substTermAt p t n = Term.var (n - 1) := by
+  have hnlt : ¬ n < p := by omega
+  have hne : n ≠ p := by omega
+  simp [substTermAt, hnlt, hne]
+
+@[simp] theorem substTermAt_zero (t : Term) :
+    substTermAt 0 t = instTerm t := by
+  have hrename : Term.rename (fun m => m) t = t := by
+    induction t with
+    | var n => rfl
+    | zero => rfl
+    | succ t ih => simp [Term.rename, ih]
+    | add a b iha ihb => simp [Term.rename, iha, ihb]
+    | mul a b iha ihb => simp [Term.rename, iha, ihb]
+  funext n
+  cases n with
+  | zero =>
+      simp [substTermAt, instTerm, hrename]
+  | succ n =>
+      simp [substTermAt, instTerm]
+
+theorem upSubst_substTermAt (p : Nat) (t : Term) :
+    Term.upSubst (substTermAt p t) = substTermAt (p+1) t := by
+  funext n
+  cases n with
+  | zero =>
+      simp [Term.upSubst, substTermAt]
+  | succ n =>
+      by_cases hlt : n < p
+      · have hslt : n + 1 < p + 1 := by omega
+        rw [Term.upSubst, substTermAt_lt hlt, substTermAt_lt hslt]
+        rfl
+      · by_cases heq : n = p
+        · subst n
+          rw [Term.upSubst, substTermAt_eq, substTermAt_eq]
+          rw [Term.rename_comp]
+          exact Term.rename_ext t _ _ (fun m => by omega)
+        · have hgt : p < n := by omega
+          have hsgt : p + 1 < n + 1 := by omega
+          rw [Term.upSubst, substTermAt_gt hgt, substTermAt_gt hsgt]
+          simp [Term.rename]
+          omega
+
 def substSuccVar : Nat → Term
   | 0 => Term.succ (Term.var 0)
   | n+1 => Term.var (n+1)
@@ -8381,6 +8442,113 @@ theorem termGraphAt_outputs_eq_finite_model {α : Type u}
       change z₁ = e₁ out₁ at hcopy₁
       change z₂ = e₂ out₂ at hcopy₂
       exact hcopy₁.symm.trans (hz.trans hcopy₂)
+
+/-- Semantic transport for translated PA-term graphs across environments whose
+output slots and free-variable slots agree. -/
+theorem termGraphAt_transport_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (t : PA.Term) :
+    ∀ {ρ₁ ρ₂ : Nat → Nat} {out₁ out₂ : Nat} {e₁ e₂ : Nat → α},
+      e₁ out₁ = e₂ out₂ →
+      (∀ n, PA.Term.Free n t → e₁ (ρ₁ n) = e₂ (ρ₂ n)) →
+      Sat M.mem e₁ (termGraphAt ρ₁ out₁ t) →
+      Sat M.mem e₂ (termGraphAt ρ₂ out₂ t) := by
+  induction t with
+  | var n =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hout hvars hgraph
+      change e₂ out₂ = e₂ (ρ₂ n)
+      exact hout.symm.trans ((hgraph : e₁ out₁ = e₁ (ρ₁ n)).trans
+        (hvars n rfl))
+  | zero =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hout _hvars hgraph
+      have hEmpty : e₁ out₁ = M.empty :=
+        (FirstOrderAdjunctionModel.HF_emptyAt_empty M e₁ out₁).mp hgraph
+      apply (FirstOrderAdjunctionModel.HF_emptyAt_empty M e₂ out₂).mpr
+      exact hout.symm.trans hEmpty
+  | succ t ih =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hout hvars hgraph
+      rcases hgraph with ⟨x, ht, hs⟩
+      refine ⟨x, ?_, ?_⟩
+      · exact ih (out₁ := 0) (out₂ := 0)
+          (e₁ := scons x e₁) (e₂ := scons x e₂)
+          (ρ₁ := fun n => ρ₁ n + 1) (ρ₂ := fun n => ρ₂ n + 1)
+          rfl
+          (by
+            intro n hn
+            simpa [scons] using hvars n hn)
+          ht
+      · have hsVal := (FirstOrderAdjunctionModel.HF_succAt_spec M
+          (scons x e₁) (out₁+1) 0).mp hs
+        apply (FirstOrderAdjunctionModel.HF_succAt_spec M
+          (scons x e₂) (out₂+1) 0).mpr
+        change e₂ out₂ = M.adjoin x x
+        rw [← hout]
+        exact hsVal
+  | add a b iha ihb =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hout hvars hgraph
+      rcases hgraph with ⟨x, y, ha, hb, hadd⟩
+      let E₁ : Nat → α := scons y (scons x e₁)
+      let E₂ : Nat → α := scons y (scons x e₂)
+      refine ⟨x, y, ?_, ?_, ?_⟩
+      · exact iha (out₁ := 1) (out₂ := 1)
+          (e₁ := E₁) (e₂ := E₂)
+          (ρ₁ := fun n => ρ₁ n + 2) (ρ₂ := fun n => ρ₂ n + 2)
+          rfl
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inl hn))
+          ha
+      · exact ihb (out₁ := 0) (out₂ := 0)
+          (e₁ := E₁) (e₂ := E₂)
+          (ρ₁ := fun n => ρ₁ n + 2) (ρ₂ := fun n => ρ₂ n + 2)
+          rfl
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inr hn))
+          hb
+      · rcases hadd with ⟨f, hfSat, houtSat⟩
+        have hf : FirstOrderAdjunctionModel.SuccRecApprox M x f y := by
+          simpa [E₁, scons] using
+            (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M
+              (scons f E₁) 0 (1+1) (0+1)).mp hfSat
+        have hpair : M.mem (FirstOrderAdjunctionModel.kpair M y (e₁ out₁)) f := by
+          simpa [E₁, scons, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+            (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
+              (scons f E₁) (0+1) ((out₁+2)+1) 0).mp houtSat
+        apply addGraphAt_of_succRecApprox_model M E₂ (out₂+2) 1 0 (f := f)
+        · change FirstOrderAdjunctionModel.SuccRecApprox M x f y
+          exact hf
+        · change M.mem (FirstOrderAdjunctionModel.kpair M y (e₂ out₂)) f
+          rw [← hout]
+          exact hpair
+  | mul a b iha ihb =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hout hvars hgraph
+      rcases hgraph with ⟨y, x, z, ha, hb, hcopy, hmul⟩
+      let E₁ : Nat → α := scons z (scons x (scons y e₁))
+      let E₂ : Nat → α := scons z (scons x (scons y e₂))
+      refine ⟨y, x, z, ?_, ?_, ?_, ?_⟩
+      · exact iha (out₁ := 1) (out₂ := 1)
+          (e₁ := E₁) (e₂ := E₂)
+          (ρ₁ := fun n => ρ₁ n + 3) (ρ₂ := fun n => ρ₂ n + 3)
+          rfl
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inl hn))
+          ha
+      · exact ihb (out₁ := 2) (out₂ := 2)
+          (e₁ := E₁) (e₂ := E₂)
+          (ρ₁ := fun n => ρ₁ n + 3) (ρ₂ := fun n => ρ₂ n + 3)
+          rfl
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inr hn))
+          hb
+      · change z = e₂ out₂
+        change z = e₁ out₁ at hcopy
+        rw [← hout]
+        exact hcopy
+      · exact (Sat_ext_free mulGraph E₁ E₂ (by
+          intro n hn
+          rcases mulGraph_free hn with rfl | rfl | rfl <;> rfl)).mp hmul
 
 /-- The graph of a PA variable is just equality with the slot selected by the
 current slot map.  This version works over any membership relation. -/
