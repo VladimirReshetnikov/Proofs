@@ -4711,6 +4711,298 @@ Proof.
     apply Nat.add_1_r.
 Qed.
 
+Definition insertAt {A : Type} (k : nat) (x : A) (e : nat -> A) :
+    nat -> A :=
+  fun n => if n <? k then e n else if n =? k then x else e (n - 1).
+
+Lemma insertAt_zero : forall A (x : A) e n,
+  insertAt 0 x e n = scons A x e n.
+Proof.
+  intros A x e [|n].
+  - unfold insertAt, scons.
+    destruct (Nat.ltb_spec 0 0); [lia |].
+    destruct (Nat.eqb_spec 0 0); [reflexivity | congruence].
+  - unfold insertAt, scons.
+    destruct (Nat.ltb_spec (S n) 0); [lia |].
+    destruct (Nat.eqb_spec (S n) 0); [lia |].
+    replace (S n - 1) with n by lia.
+    reflexivity.
+Qed.
+
+Lemma insertAt_lt : forall A k n (x : A) e,
+  n < k -> insertAt k x e n = e n.
+Proof.
+  intros A k n x e h.
+  unfold insertAt.
+  destruct (Nat.ltb_spec n k); [reflexivity | lia].
+Qed.
+
+Lemma insertAt_eq : forall A k (x : A) e,
+  insertAt k x e k = x.
+Proof.
+  intros A k x e.
+  unfold insertAt.
+  destruct (Nat.ltb_spec k k); [lia |].
+  destruct (Nat.eqb_spec k k); [reflexivity | congruence].
+Qed.
+
+Lemma insertAt_gt : forall A k n (x : A) e,
+  k < n -> insertAt k x e n = e (n - 1).
+Proof.
+  intros A k n x e h.
+  unfold insertAt.
+  destruct (Nat.ltb_spec n k); [lia |].
+  destruct (Nat.eqb_spec n k); [lia | reflexivity].
+Qed.
+
+Definition replaceAt {A : Type} (k : nat) (x : A) (e : nat -> A) :
+    nat -> A :=
+  fun n => if n =? k then x else e n.
+
+Lemma replaceAt_eq : forall A k (x : A) e,
+  replaceAt k x e k = x.
+Proof.
+  intros A k x e.
+  unfold replaceAt.
+  destruct (Nat.eqb_spec k k); [reflexivity | congruence].
+Qed.
+
+Lemma replaceAt_ne : forall A k n (x : A) e,
+  n <> k -> replaceAt k x e n = e n.
+Proof.
+  intros A k n x e h.
+  unfold replaceAt.
+  destruct (Nat.eqb_spec n k); [congruence | reflexivity].
+Qed.
+
+Lemma replaceAt_zero_scons : forall A (x d : A) e n,
+  replaceAt 0 x (scons A d e) n = scons A x e n.
+Proof.
+  intros A x d e [|n].
+  - apply replaceAt_eq.
+  - rewrite replaceAt_ne; [reflexivity | lia].
+Qed.
+
+Definition succReplaceAt {A : Type} (M : FirstOrderAdjunctionModel A)
+    (k : nat) (e : nat -> A) : nat -> A :=
+  replaceAt k (foam_adjoin A M (e k) (e k)) e.
+
+Lemma succReplaceAt_eq : forall A (M : FirstOrderAdjunctionModel A) k e,
+  succReplaceAt M k e k = foam_adjoin A M (e k) (e k).
+Proof.
+  intros A M k e.
+  unfold succReplaceAt.
+  apply replaceAt_eq.
+Qed.
+
+Lemma succReplaceAt_ne : forall A (M : FirstOrderAdjunctionModel A) k n e,
+  n <> k -> succReplaceAt M k e n = e n.
+Proof.
+  intros A M k n e h.
+  unfold succReplaceAt.
+  apply replaceAt_ne.
+  exact h.
+Qed.
+
+Lemma scons_insertAt : forall A k (x d : A) e n,
+  scons A d (insertAt k x e) n =
+    insertAt (S k) x (scons A d e) n.
+Proof.
+  intros A k x d e [|n].
+  - unfold scons, insertAt.
+    destruct (Nat.ltb_spec 0 (S k)); [reflexivity | lia].
+  - unfold scons at 1.
+    simpl.
+    destruct (lt_eq_lt_dec n k) as [[hlt | heq] | hgt].
+    + rewrite (insertAt_lt A k n x e hlt).
+      rewrite (insertAt_lt A (S k) (S n) x (scons A d e)); [reflexivity | lia].
+    + subst n.
+      rewrite insertAt_eq.
+      rewrite insertAt_eq.
+      reflexivity.
+    + rewrite (insertAt_gt A k n x e hgt).
+      rewrite (insertAt_gt A (S k) (S n) x (scons A d e)); [|lia].
+      replace (S n - 1) with n by lia.
+      destruct n as [|n]; [lia |].
+      simpl.
+      replace (S n - 1) with n by lia.
+      replace (n - 0) with n by lia.
+      reflexivity.
+Qed.
+
+Lemma scons2_insertAt : forall A k (x d1 d2 : A) e n,
+  scons A d2 (scons A d1 (insertAt k x e)) n =
+    insertAt (S (S k)) x (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A k x d1 d2 e [|n].
+  - unfold scons, insertAt.
+    destruct (Nat.ltb_spec 0 (S (S k))); [reflexivity | lia].
+  - simpl.
+    rewrite (scons_insertAt A k x d1 e n).
+    exact (scons_insertAt A (S k) x d2 (scons A d1 e) (S n)).
+Qed.
+
+Lemma scons3_insertAt : forall A k (x d1 d2 d3 : A) e n,
+  scons A d3 (scons A d2 (scons A d1 (insertAt k x e))) n =
+    insertAt (S (S (S k))) x
+      (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A k x d1 d2 d3 e [|n].
+  - unfold scons, insertAt.
+    destruct (Nat.ltb_spec 0 (S (S (S k)))); [reflexivity | lia].
+  - simpl.
+    rewrite (scons2_insertAt A k x d1 d2 e n).
+    exact (scons_insertAt A (S (S k)) x d3
+      (scons A d2 (scons A d1 e)) (S n)).
+Qed.
+
+Lemma scons_insertAt_prefix : forall A p k (x d : A) e n,
+  scons A d (insertAt (k + p) x e) n =
+    insertAt (S k + p) x (scons A d e) n.
+Proof.
+  intros A p k x d e n.
+  rewrite (scons_insertAt A (k + p) x d e n).
+  replace (S (k + p)) with (S k + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons2_insertAt_prefix : forall A p k (x d1 d2 : A) e n,
+  scons A d2 (scons A d1 (insertAt (k + p) x e)) n =
+    insertAt (S (S k) + p) x (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A p k x d1 d2 e n.
+  rewrite (scons2_insertAt A (k + p) x d1 d2 e n).
+  replace (S (S (k + p))) with (S (S k) + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons3_insertAt_prefix : forall A p k (x d1 d2 d3 : A) e n,
+  scons A d3 (scons A d2 (scons A d1 (insertAt (k + p) x e))) n =
+    insertAt (S (S (S k)) + p) x
+      (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A p k x d1 d2 d3 e n.
+  rewrite (scons3_insertAt A (k + p) x d1 d2 d3 e n).
+  replace (S (S (S (k + p)))) with (S (S (S k)) + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons_replaceAt : forall A k (x d : A) e n,
+  scons A d (replaceAt k x e) n =
+    replaceAt (S k) x (scons A d e) n.
+Proof.
+  intros A k x d e [|n].
+  - unfold scons, replaceAt.
+    destruct (Nat.eqb_spec 0 (S k)); [lia | reflexivity].
+  - simpl.
+    destruct (Nat.eq_dec n k) as [heq | hne].
+    + subst n.
+      rewrite replaceAt_eq.
+      rewrite replaceAt_eq.
+      reflexivity.
+    + rewrite (replaceAt_ne A k n x e hne).
+      rewrite (replaceAt_ne A (S k) (S n) x (scons A d e)); [reflexivity | lia].
+Qed.
+
+Lemma scons_replaceAt_prefix : forall A p k (x d : A) e n,
+  scons A d (replaceAt (k + p) x e) n =
+    replaceAt (S k + p) x (scons A d e) n.
+Proof.
+  intros A p k x d e n.
+  rewrite (scons_replaceAt A (k + p) x d e n).
+  replace (S (k + p)) with (S k + p) by lia.
+  reflexivity.
+Qed.
+
+Lemma scons2_replaceAt_prefix : forall A p k (x d1 d2 : A) e n,
+  scons A d2 (scons A d1 (replaceAt (k + p) x e)) n =
+    replaceAt (S (S k) + p) x (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A p k x d1 d2 e [|n].
+  - unfold scons, replaceAt.
+    destruct (Nat.eqb_spec 0 (S (S k) + p)); [lia | reflexivity].
+  - simpl.
+    rewrite (scons_replaceAt_prefix A p k x d1 e n).
+    replace (S k + p) with (S (k + p)) by lia.
+    pose proof (scons_replaceAt A (S (k + p)) x d2
+      (scons A d1 e) (S n)) as h.
+    simpl in h.
+    rewrite h.
+    replace (S (S (k + p))) with (S (S k) + p) by lia.
+    reflexivity.
+Qed.
+
+Lemma scons3_replaceAt_prefix : forall A p k (x d1 d2 d3 : A) e n,
+  scons A d3 (scons A d2 (scons A d1 (replaceAt (k + p) x e))) n =
+    replaceAt (S (S (S k)) + p) x
+      (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A p k x d1 d2 d3 e [|n].
+  - unfold scons, replaceAt.
+    destruct (Nat.eqb_spec 0 (S (S (S k)) + p)); [lia | reflexivity].
+  - simpl.
+    rewrite (scons2_replaceAt_prefix A p k x d1 d2 e n).
+    replace (S (S k) + p) with (S (S (k + p))) by lia.
+    pose proof (scons_replaceAt A (S (S (k + p))) x d3
+      (scons A d2 (scons A d1 e)) (S n)) as h.
+    simpl in h.
+    rewrite h.
+    replace (S (S (S (k + p)))) with (S (S (S k)) + p) by lia.
+    reflexivity.
+Qed.
+
+Lemma scons_succReplaceAt_prefix :
+  forall A (M : FirstOrderAdjunctionModel A) p k d e n,
+    scons A d (succReplaceAt M (k + p) e) n =
+      succReplaceAt M (S k + p) (scons A d e) n.
+Proof.
+  intros A M p k d e n.
+  unfold succReplaceAt.
+  assert (hslot : scons A d e (S k + p) = e (k + p)).
+  {
+    replace (S k + p) with (S (k + p)) by lia.
+    reflexivity.
+  }
+  rewrite hslot.
+  apply scons_replaceAt_prefix.
+Qed.
+
+Lemma scons2_succReplaceAt_prefix :
+  forall A (M : FirstOrderAdjunctionModel A) p k d1 d2 e n,
+    scons A d2 (scons A d1 (succReplaceAt M (k + p) e)) n =
+      succReplaceAt M (S (S k) + p) (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A M p k d1 d2 e n.
+  unfold succReplaceAt.
+  assert (hslot :
+    scons A d2 (scons A d1 e) (S (S k) + p) = e (k + p)).
+  {
+    replace (S (S k) + p) with (S (S (k + p))) by lia.
+    reflexivity.
+  }
+  rewrite hslot.
+  apply scons2_replaceAt_prefix.
+Qed.
+
+Lemma scons3_succReplaceAt_prefix :
+  forall A (M : FirstOrderAdjunctionModel A) p k d1 d2 d3 e n,
+    scons A d3 (scons A d2 (scons A d1 (succReplaceAt M (k + p) e))) n =
+      succReplaceAt M (S (S (S k)) + p)
+        (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A M p k d1 d2 d3 e n.
+  unfold succReplaceAt.
+  assert (hslot :
+    scons A d3 (scons A d2 (scons A d1 e)) (S (S (S k)) + p) =
+      e (k + p)).
+  {
+    replace (S (S (S k)) + p) with (S (S (S (k + p)))) by lia.
+    reflexivity.
+  }
+  rewrite hslot.
+  apply scons3_replaceAt_prefix.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
