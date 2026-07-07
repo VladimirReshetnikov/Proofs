@@ -52,7 +52,7 @@ abbrev atom : IPowExpr := PowTower.Expr.atom
 abbrev pow : IPowExpr -> IPowExpr -> IPowExpr := PowTower.Expr.pow
 
 /-- Interpret a lexical expression by principal complex exponentiation. -/
-noncomputable def eval : IPowExpr -> ℂ :=
+noncomputable abbrev eval : IPowExpr -> ℂ :=
   PowTower.Expr.eval Complex.I principalPow
 
 /-- The number of `i` tokens in a lexical expression. -/

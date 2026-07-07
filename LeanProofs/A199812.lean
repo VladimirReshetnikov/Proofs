@@ -83,7 +83,7 @@ theorem hashSet_toList_nodup (m : Std.HashSet ONote) : m.toList.Nodup := by
     simp [BEq.rfl] at hne)
 
 /-- Shared lexical interpretation for A199812: atom is `omega`, node is ordinal power. -/
-noncomputable def sharedEvalOrdinal : PowTower.Expr -> Ordinal.{0} :=
+noncomputable abbrev sharedEvalOrdinal : PowTower.Expr -> Ordinal.{0} :=
   PowTower.Expr.eval (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b)
 
 /-- The shared canonical lexical value set for A199812. -/

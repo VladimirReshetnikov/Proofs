@@ -51,11 +51,11 @@ theorem ofSharedLex_toSharedLex (e : PowExpr) :
   rfl
 
 /-- Evaluate a parenthesized power expression using natural-number exponentiation. -/
-def eval : PowExpr -> Nat :=
+abbrev eval : PowExpr -> Nat :=
   PowTower.Expr.eval 2 (fun a b : Nat => a ^ b)
 
 /-- Shared lexical interpretation for A002845: atom is `2`, node is `Nat.pow`. -/
-def sharedEval : PowTower.Expr -> Nat :=
+abbrev sharedEval : PowTower.Expr -> Nat :=
   PowTower.Expr.eval 2 (fun a b : Nat => a ^ b)
 
 /-- The existing A002845 syntax evaluates the same way as the shared lexical syntax. -/
