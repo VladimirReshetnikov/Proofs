@@ -518,6 +518,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_translate_ass
 #check @AckermannHF.PAInHF.BProv_formulaAt_ass
 #check @AckermannHF.PAInHF.BProv_domainContextAt_var
+#check @AckermannHF.PAInHF.Sat_rename_inst_domainForm_ordinalLike
+#check @AckermannHF.PAInHF.Sat_domainContextAt_ordinalLike
 #check @AckermannHF.PAInHF.BProv_translate_ax
 #check @AckermannHF.PAInHF.BProv_formulaAt_ax
 #check @AckermannHF.PAInHF.BProv_context_cons
@@ -537,6 +539,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_var
 #check @AckermannHF.PAInHF.formulaAt_eqRefl_zero_valid_of_HFFinAx_s
 #check @AckermannHF.PAInHF.BProv_HFFin_formulaAt_eqRefl_zero
+#check @AckermannHF.PAInHF.formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext
+#check @AckermannHF.PAInHF.BProv_HFFin_formulaAt_eqRefl_domainContext
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_var_of_eq
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_of_termGraphsAt
 #check @AckermannHF.PAInHF.Sat_termGraphAt_shift_front

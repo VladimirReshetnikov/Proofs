@@ -11685,6 +11685,28 @@ theorem BProv_domainContextAt_var {ρ : Nat → Nat} {n k : Nat}
       (rename (inst (ρ k)) domainForm)
       (List.mem_append.mpr (Or.inl (mem_domainContextAt (ρ := ρ) hk))))
 
+/-- Instantiating the domain formula at an HF slot says exactly that the slot
+is ordinal-like. -/
+theorem Sat_rename_inst_domainForm_ordinalLike {α : Type u}
+    {mem : α → α → Prop} (e : Nat → α) (k : Nat) :
+    Sat mem e (rename (inst k) domainForm) ↔ OrdinalLike mem (e k) := by
+  have hrename := Sat_rename (mem := mem) domainForm (inst k) e
+  rw [hrename]
+  change Sat mem (fun n => e (inst k n)) (HF_ordinalLikeAt 0) ↔
+    OrdinalLike mem (e k)
+  simpa [inst] using
+    (HF_ordinalLikeAt_spec (mem := mem) (fun n => e (inst k n)) 0)
+
+/-- The explicit PA-domain context semantically supplies ordinal-like values
+for every PA variable below its bound. -/
+theorem Sat_domainContextAt_ordinalLike {α : Type u}
+    {mem : α → α → Prop} {ρ : Nat → Nat} {n : Nat} {e : Nat → α}
+    (hctx : ∀ g, g ∈ domainContextAt ρ n → Sat mem e g) :
+    ∀ k, k < n → OrdinalLike mem (e (ρ k)) := by
+  intro k hk
+  exact (Sat_rename_inst_domainForm_ordinalLike e (ρ k)).mp
+    (hctx _ (mem_domainContextAt (ρ := ρ) hk))
+
 /-- A PA axiom, translated into HF, is an axiom of the intermediate
 `translatedPAAx` theory. -/
 theorem BProv_translate_ax {phi : PA.Formula} (hphi : PA.Formula.Ax_s phi) :
@@ -12049,6 +12071,53 @@ theorem BProv_HFFin_formulaAt_eqRefl_zero {G : List Form} (ρ : Nat → Nat) :
   BProv_mono HFFinAx_s [] G _
     (fun _ h => by cases h)
     (BProv_HFFin_formulaAt_eqRefl_zero_nil ρ)
+
+/-- In every model of finite HF, domain assumptions for the free variables of
+`t` validate the PA-in-HF translation of `t = t`.
+
+The proof first obtains a genuine term-graph witness from
+`termGraphAt_total_of_ordinalLike`, then uses the same witness for both sides
+of the translated equality. -/
+theorem formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (t : PA.Term) (e : Nat → α)
+    (hctx : ∀ g, g ∈ domainContextAt ρ t.bound → Sat mem e g) :
+    Sat mem e (formulaAt ρ (PA.Formula.eq t t)) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e (formulaAt ρ (PA.Formula.eq t t))
+  have hfree : ∀ n, PA.Term.Free n t → OrdinalLike M.mem (e (ρ n)) := by
+    intro n hn
+    exact Sat_domainContextAt_ordinalLike (ρ := ρ) (n := t.bound)
+      (e := e) hctx n (PA.Term.free_lt_bound t n hn)
+  rcases termGraphAt_total_of_ordinalLike M t ρ e hfree with
+    ⟨x, _hxOrd, hxGraph⟩
+  let E : Nat → α := scons x (scons x e)
+  have hxLeft : Sat M.mem E
+      (termGraphAt (fun n => ρ n + 2) 1 t) := by
+    have h := Sat_termGraphAt_shift_front t (fun n => ρ n + 1) 0
+      (scons x e) x hxGraph
+    simpa [E, Nat.add_assoc] using h
+  have hxRight : Sat M.mem E
+      (termGraphAt (fun n => ρ n + 2) 0 t) := by
+    have h := Sat_termGraphAt_insert_after_output t ρ e x x hxGraph
+    simpa [E, Nat.add_assoc] using h
+  refine ⟨x, x, ?_, ?_, ?_⟩
+  · exact hxLeft
+  · exact hxRight
+  · rfl
+
+/-- Finite HF proves translated reflexivity for an arbitrary PA term from
+explicit domain assumptions for all free variables of the term. -/
+theorem BProv_HFFin_formulaAt_eqRefl_domainContext {G : List Form}
+    (ρ : Nat → Nat) (t : PA.Term) :
+    BProv HFFinAx_s (domainContextAt ρ t.bound ++ G)
+      (formulaAt ρ (PA.Formula.eq t t)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    exact formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext v hHF ρ t v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
 
 /-- An HF equality proof between the slots assigned to two PA variables yields
 the PA-in-HF translation of equality between those PA variables. -/
