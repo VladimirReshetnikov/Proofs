@@ -35,6 +35,22 @@ abbrev PartrecToTM1Alphabet :=
 abbrev PartrecToTM1Machine :=
   Turing.TM2to1.tr Turing.PartrecToTM2.tr
 
+/--
+Output relation produced by mathlib's `TM2 -> TM1` reduction when the main
+stack of the source `TM2` machine contains `mainOutput`.
+-/
+def TM2to1MainOutput
+    (tm1Output : Turing.ListBlank PartrecToTM1Alphabet)
+    (mainOutput : List Turing.PartrecToTM2.Γ') : Prop :=
+  Exists fun (stk : Turing.PartrecToTM2.K' -> List Turing.PartrecToTM2.Γ') =>
+    Exists fun (tape : Turing.ListBlank
+      (Turing.PartrecToTM2.K' -> Option Turing.PartrecToTM2.Γ')) =>
+      Turing.TM2to1.addBottom tape = tm1Output ∧
+      (∀ k : Turing.PartrecToTM2.K',
+        Turing.ListBlank.map (Turing.proj k) tape =
+          Turing.ListBlank.mk ((stk k).map some).reverse) ∧
+      stk Turing.PartrecToTM2.K'.main = mainOutput
+
 end MathlibBridge
 
 /--
@@ -156,6 +172,85 @@ theorem totalRecursiveMathlib_tm2_eval_main {f : Nat -> Nat}
     ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
   rw [Turing.TM2.eval, ← partrecToTM2_init_eq_tm2_init c [n], hc n]
   rfl
+
+/--
+Transport a `TM2.eval` result for the recursive-code evaluator through
+mathlib's `TM2 -> TM1` simulation, retaining the decoded main-stack output
+relation supplied by `Turing.TM2to1.tr_eval`.
+-/
+theorem partrecToTM2_eval_main_to_tm1_eval_main
+    (c : Turing.ToPartrec.Code) {input output : List Nat}
+    (hEval :
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      Turing.TM2.eval Turing.PartrecToTM2.tr Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList input) =
+          Part.some (Turing.PartrecToTM2.trList output)) :
+    letI : Inhabited Turing.PartrecToTM2.Λ' :=
+      ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+    ∃ tm1Output,
+      tm1Output ∈ Turing.TM1.eval MathlibBridge.PartrecToTM1Machine
+        (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+          (Turing.PartrecToTM2.trList input)) ∧
+      MathlibBridge.TM2to1MainOutput tm1Output
+        (Turing.PartrecToTM2.trList output) := by
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  have hEval' :
+      Turing.TM2.eval Turing.PartrecToTM2.tr Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList input) =
+          Part.some (Turing.PartrecToTM2.trList output) := hEval
+  have hDomTM2 :
+      (Turing.TM2.eval Turing.PartrecToTM2.tr Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList input)).Dom := by
+    rw [hEval']
+    simp
+  have hDomTM1 :
+      (Turing.TM1.eval MathlibBridge.PartrecToTM1Machine
+        (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+          (Turing.PartrecToTM2.trList input))).Dom :=
+    (Turing.TM2to1.tr_eval_dom Turing.PartrecToTM2.tr
+      Turing.PartrecToTM2.K'.main (Turing.PartrecToTM2.trList input)).2 hDomTM2
+  let tm1Output :=
+    (Turing.TM1.eval MathlibBridge.PartrecToTM1Machine
+      (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList input))).get hDomTM1
+  have hTM1Mem :
+      tm1Output ∈ Turing.TM1.eval MathlibBridge.PartrecToTM1Machine
+        (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+          (Turing.PartrecToTM2.trList input)) :=
+    Part.get_mem hDomTM1
+  have hTM2Mem :
+      Turing.PartrecToTM2.trList output ∈
+        Turing.TM2.eval Turing.PartrecToTM2.tr Turing.PartrecToTM2.K'.main
+          (Turing.PartrecToTM2.trList input) := by
+    rw [hEval']
+    simp
+  rcases Turing.TM2to1.tr_eval Turing.PartrecToTM2.tr
+      Turing.PartrecToTM2.K'.main (Turing.PartrecToTM2.trList input)
+      hTM1Mem hTM2Mem with ⟨stk, tape, hAddBottom, hStacks, hMain⟩
+  exact ⟨tm1Output, hTM1Mem, stk, tape, hAddBottom, hStacks, hMain⟩
+
+/--
+For every mathlib-total-recursive function, the lowered `TM1` evaluator has an
+output whose multiplexed main stack contains the encoded value `[f n]`.
+-/
+theorem totalRecursiveMathlib_tm1_eval_main {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ c : Turing.ToPartrec.Code,
+      ∀ n,
+        letI : Inhabited Turing.PartrecToTM2.Λ' :=
+          ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+        ∃ tm1Output,
+          tm1Output ∈ Turing.TM1.eval MathlibBridge.PartrecToTM1Machine
+            (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+              (Turing.PartrecToTM2.trList [n])) ∧
+          MathlibBridge.TM2to1MainOutput tm1Output
+            (Turing.PartrecToTM2.trList [f n]) := by
+  rcases totalRecursiveMathlib_tm2_eval_main hf with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro n
+  exact partrecToTM2_eval_main_to_tm1_eval_main c (hc n)
 
 /--
 The finite-support recursive-code evaluator also descends through mathlib's
