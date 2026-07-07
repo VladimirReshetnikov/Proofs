@@ -72,6 +72,17 @@ open SetTheory
 #check @PA.Formula.BProv_cut
 #check @PA.Formula.BProv_theory_mono
 #check @PA.Formula.BProv_eqElim
+#check @PA.Formula.BProv_eqRefl
+#check @PA.Formula.BProv_eqSym
+#check @PA.Formula.BProv_eqTrans
+#check @PA.Formula.BProv_eq_congr_term
+#check @PA.Formula.BProv_eq_congr_succ
+#check @PA.Formula.BProv_eq_congr_add_left
+#check @PA.Formula.BProv_eq_congr_add_right
+#check @PA.Formula.BProv_eq_congr_add
+#check @PA.Formula.BProv_eq_congr_mul_left
+#check @PA.Formula.BProv_eq_congr_mul_right
+#check @PA.Formula.BProv_eq_congr_mul
 #check @PA.Formula.BProv_context_cons
 #check @PA.Formula.BProv_impI
 #check @PA.Formula.BProv_impI_after_prefix

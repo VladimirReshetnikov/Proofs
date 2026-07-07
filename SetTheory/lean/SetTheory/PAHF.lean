@@ -6031,6 +6031,120 @@ theorem BProv_eqElim {B : Formula → Prop} {G : List Formula} {s t : Term}
         · exact ha
         · cases hnil)
 
+/-- PA relative provability proves reflexivity of equality for every term. -/
+theorem BProv_eqRefl {B : Formula → Prop} {G : List Formula} (t : Term) :
+    BProv B G (eq t t) :=
+  BProv_of_Prov (Prov.P_eqRefl G t)
+
+/-- PA relative provability is closed under symmetry of term equality. -/
+theorem BProv_eqSym {B : Formula → Prop} {G : List Formula} {s t : Term}
+    (heq : BProv B G (eq s t)) :
+    BProv B G (eq t s) := by
+  have hrefl : BProv B G (eq s s) := BProv_eqRefl s
+  have ha : BProv B G
+      (subst (instTerm s) (eq (Term.var 0) (Term.rename Nat.succ s))) := by
+    simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ]
+      using hrefl
+  have h := BProv_eqElim (B := B) (G := G) (s := s) (t := t)
+    (a := eq (Term.var 0) (Term.rename Nat.succ s)) heq ha
+  simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ] using h
+
+/-- PA relative provability is closed under transitivity of term equality. -/
+theorem BProv_eqTrans {B : Formula → Prop} {G : List Formula}
+    {s t u : Term}
+    (hst : BProv B G (eq s t)) (htu : BProv B G (eq t u)) :
+    BProv B G (eq s u) := by
+  have ha : BProv B G
+      (subst (instTerm t) (eq (Term.rename Nat.succ s) (Term.var 0))) := by
+    simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ]
+      using hst
+  have h := BProv_eqElim (B := B) (G := G) (s := t) (t := u)
+    (a := eq (Term.rename Nat.succ s) (Term.var 0)) htu ha
+  simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ] using h
+
+/-- PA equality is congruent through an arbitrary one-hole term context.  The
+hole is de Bruijn variable `0`; other ambient variables are represented by the
+usual shifted indices of the context term. -/
+theorem BProv_eq_congr_term {B : Formula → Prop} {G : List Formula}
+    {s t : Term} (c : Term) (heq : BProv B G (eq s t)) :
+    BProv B G (eq
+      (Term.subst (instTerm s) c)
+      (Term.subst (instTerm t) c)) := by
+  have hrefl : BProv B G
+      (eq (Term.subst (instTerm s) c)
+        (Term.subst (instTerm s) c)) :=
+    BProv_eqRefl (Term.subst (instTerm s) c)
+  have ha : BProv B G
+      (subst (instTerm s)
+        (eq (Term.rename Nat.succ (Term.subst (instTerm s) c)) c)) := by
+    simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ]
+      using hrefl
+  have h := BProv_eqElim (B := B) (G := G) (s := s) (t := t)
+    (a := eq
+      (Term.rename Nat.succ (Term.subst (instTerm s) c)) c)
+    heq ha
+  simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ] using h
+
+/-- PA equality is congruent under successor. -/
+theorem BProv_eq_congr_succ {B : Formula → Prop} {G : List Formula}
+    {s t : Term} (heq : BProv B G (eq s t)) :
+    BProv B G (eq (Term.succ s) (Term.succ t)) := by
+  simpa [Term.subst, instTerm] using
+    BProv_eq_congr_term (B := B) (G := G)
+      (s := s) (t := t) (Term.succ (Term.var 0)) heq
+
+/-- PA equality is congruent in the left argument of addition. -/
+theorem BProv_eq_congr_add_left {B : Formula → Prop} {G : List Formula}
+    {s t : Term} (u : Term) (heq : BProv B G (eq s t)) :
+    BProv B G (eq (Term.add s u) (Term.add t u)) := by
+  simpa [Term.subst, instTerm, term_subst_instTerm_rename_succ] using
+    BProv_eq_congr_term (B := B) (G := G)
+      (s := s) (t := t)
+      (Term.add (Term.var 0) (Term.rename Nat.succ u)) heq
+
+/-- PA equality is congruent in the right argument of addition. -/
+theorem BProv_eq_congr_add_right {B : Formula → Prop} {G : List Formula}
+    (u : Term) {s t : Term} (heq : BProv B G (eq s t)) :
+    BProv B G (eq (Term.add u s) (Term.add u t)) := by
+  simpa [Term.subst, instTerm, term_subst_instTerm_rename_succ] using
+    BProv_eq_congr_term (B := B) (G := G)
+      (s := s) (t := t)
+      (Term.add (Term.rename Nat.succ u) (Term.var 0)) heq
+
+/-- PA equality is congruent in both arguments of addition. -/
+theorem BProv_eq_congr_add {B : Formula → Prop} {G : List Formula}
+    {s t u v : Term}
+    (hst : BProv B G (eq s t)) (huv : BProv B G (eq u v)) :
+    BProv B G (eq (Term.add s u) (Term.add t v)) :=
+  BProv_eqTrans (BProv_eq_congr_add_left u hst)
+    (BProv_eq_congr_add_right t huv)
+
+/-- PA equality is congruent in the left argument of multiplication. -/
+theorem BProv_eq_congr_mul_left {B : Formula → Prop} {G : List Formula}
+    {s t : Term} (u : Term) (heq : BProv B G (eq s t)) :
+    BProv B G (eq (Term.mul s u) (Term.mul t u)) := by
+  simpa [Term.subst, instTerm, term_subst_instTerm_rename_succ] using
+    BProv_eq_congr_term (B := B) (G := G)
+      (s := s) (t := t)
+      (Term.mul (Term.var 0) (Term.rename Nat.succ u)) heq
+
+/-- PA equality is congruent in the right argument of multiplication. -/
+theorem BProv_eq_congr_mul_right {B : Formula → Prop} {G : List Formula}
+    (u : Term) {s t : Term} (heq : BProv B G (eq s t)) :
+    BProv B G (eq (Term.mul u s) (Term.mul u t)) := by
+  simpa [Term.subst, instTerm, term_subst_instTerm_rename_succ] using
+    BProv_eq_congr_term (B := B) (G := G)
+      (s := s) (t := t)
+      (Term.mul (Term.rename Nat.succ u) (Term.var 0)) heq
+
+/-- PA equality is congruent in both arguments of multiplication. -/
+theorem BProv_eq_congr_mul {B : Formula → Prop} {G : List Formula}
+    {s t u v : Term}
+    (hst : BProv B G (eq s t)) (huv : BProv B G (eq u v)) :
+    BProv B G (eq (Term.mul s u) (Term.mul t v)) :=
+  BProv_eqTrans (BProv_eq_congr_mul_left u hst)
+    (BProv_eq_congr_mul_right t huv)
+
 /-- A relative PA proof may ignore one extra finite-context assumption. -/
 theorem BProv_context_cons {B : Formula → Prop} {G : List Formula}
     {a b : Formula} (h : BProv B G b) : BProv B (a :: G) b :=
