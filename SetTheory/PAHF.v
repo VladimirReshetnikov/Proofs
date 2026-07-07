@@ -179,6 +179,44 @@ Proof.
     lia.
 Qed.
 
+Lemma hf_eq_empty_iff_no_mem : forall a,
+  a = hf_empty <-> forall x, ~ hf_mem x a.
+Proof.
+  intros a.
+  split.
+  - intros -> x. apply hf_mem_empty.
+  - intro h.
+    apply hf_ext.
+    intro x.
+    split.
+    + intro hx. exfalso. exact (h x hx).
+    + intro hx. exfalso. exact (hf_mem_empty x hx).
+Qed.
+
+Lemma hf_exists_mem_of_ne_empty : forall a,
+  a <> hf_empty -> exists x, hf_mem x a.
+Proof.
+  intros a ha.
+  exists (Nat.log2 a).
+  apply hf_log2_mem.
+  exact ha.
+Qed.
+
+Lemma hf_not_mem_self : forall a, ~ hf_mem a a.
+Proof.
+  intros a haa.
+  pose proof (hf_mem_lt a a haa).
+  lia.
+Qed.
+
+Lemma hf_mem_asymm : forall a b, hf_mem a b -> ~ hf_mem b a.
+Proof.
+  intros a b hab hba.
+  pose proof (hf_mem_lt a b hab).
+  pose proof (hf_mem_lt b a hba).
+  lia.
+Qed.
+
 Lemma hf_set_induction : forall P : nat -> Prop,
   (forall a, (forall x, hf_mem x a -> P x) -> P a) -> forall a, P a.
 Proof.
@@ -247,6 +285,104 @@ Proof. reflexivity. Qed.
 Lemma ordinal_code_succ : forall n,
   ordinal_code (S n) = hf_adjoin (ordinal_code n) (ordinal_code n).
 Proof. reflexivity. Qed.
+
+Lemma hf_mem_ordinal_code_succ : forall x n,
+  hf_mem x (ordinal_code (S n)) <->
+    hf_mem x (ordinal_code n) \/ x = ordinal_code n.
+Proof.
+  intros x n.
+  simpl.
+  apply hf_mem_adjoin.
+Qed.
+
+Lemma ordinal_code_mem_of_lt : forall k n,
+  k < n -> hf_mem (ordinal_code k) (ordinal_code n).
+Proof.
+  intros k n hkn.
+  revert k hkn.
+  induction n as [|n IH]; intros k hkn.
+  - lia.
+  - rewrite hf_mem_ordinal_code_succ.
+    destruct (Nat.eq_dec k n) as [-> | hne].
+    + right. reflexivity.
+    + left. apply IH. lia.
+Qed.
+
+Lemma ordinal_code_lt_of_lt : forall k n,
+  k < n -> ordinal_code k < ordinal_code n.
+Proof.
+  intros k n hkn.
+  apply hf_mem_lt.
+  now apply ordinal_code_mem_of_lt.
+Qed.
+
+Lemma hf_mem_ordinal_code_iff : forall x n,
+  hf_mem x (ordinal_code n) <->
+    exists k, k < n /\ x = ordinal_code k.
+Proof.
+  intros x n.
+  induction n as [|n IH].
+  - split.
+    + intro hx. exfalso. exact (hf_mem_empty x hx).
+    + intros [k [hk hx]]. lia.
+  - rewrite hf_mem_ordinal_code_succ.
+    split.
+    + intros [hx | hx].
+      * destruct (proj1 IH hx) as [k [hk heq]].
+        exists k. split; [lia | exact heq].
+      * exists n. split; [lia | exact hx].
+    + intros [k [hk hx]].
+      destruct (Nat.eq_dec k n) as [-> | hne].
+      * right. exact hx.
+      * left. apply (proj2 IH).
+        exists k. split; [lia | exact hx].
+Qed.
+
+Lemma ordinal_code_transitive : forall n y x,
+  hf_mem y (ordinal_code n) -> hf_mem x y ->
+  hf_mem x (ordinal_code n).
+Proof.
+  intros n y x hy hx.
+  destruct (proj1 (hf_mem_ordinal_code_iff y n) hy) as [k [hk hy_eq]].
+  subst y.
+  destruct (proj1 (hf_mem_ordinal_code_iff x k) hx) as [j [hj hx_eq]].
+  subst x.
+  apply ordinal_code_mem_of_lt.
+  lia.
+Qed.
+
+Lemma ordinal_code_members_transitive : forall n y,
+  hf_mem y (ordinal_code n) ->
+  forall x, hf_mem x y -> hf_mem x (ordinal_code n).
+Proof.
+  intros n y hy x hx.
+  eapply ordinal_code_transitive; eauto.
+Qed.
+
+Lemma ordinal_code_mem_total : forall n y z,
+  hf_mem y (ordinal_code n) -> hf_mem z (ordinal_code n) ->
+  hf_mem y z \/ y = z \/ hf_mem z y.
+Proof.
+  intros n y z hy hz.
+  destruct (proj1 (hf_mem_ordinal_code_iff y n) hy) as [i [hi hy_eq]].
+  destruct (proj1 (hf_mem_ordinal_code_iff z n) hz) as [j [hj hz_eq]].
+  subst y z.
+  destruct (Nat.lt_trichotomy i j) as [hij | [hij | hij]].
+  - left. now apply ordinal_code_mem_of_lt.
+  - right. left. now subst j.
+  - right. right. now apply ordinal_code_mem_of_lt.
+Qed.
+
+Lemma ordinal_code_injective : forall m n,
+  ordinal_code m = ordinal_code n -> m = n.
+Proof.
+  intros m n h.
+  destruct (Nat.lt_trichotomy m n) as [hmn | [hmn | hnm]]; [|exact hmn|].
+  - pose proof (ordinal_code_lt_of_lt m n hmn) as hlt.
+    lia.
+  - pose proof (ordinal_code_lt_of_lt n m hnm) as hlt.
+    lia.
+Qed.
 
 Record TheoryInterpretation
   (Src Tgt : Type)
