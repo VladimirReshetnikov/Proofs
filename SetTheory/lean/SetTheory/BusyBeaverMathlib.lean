@@ -72,6 +72,44 @@ def TM1to1Output {Γ : Type*} [Inhabited Γ] {width : Nat}
     tape.right₀ = sourceOutput ∧
     (Turing.TM1to1.trTape enc0 tape).right₀ = boolOutput
 
+/--
+Pointwise relation between a Rado tape and mathlib's Bool tape.
+
+`head` is the Rado head position corresponding to mathlib offset `0`; every
+integer offset from that head reads the same bit in both tape models.
+-/
+def RadoMatchesTuringTape (head : Int) (tape : Tape) (T : Turing.Tape Bool) : Prop :=
+  ∀ i : Int, Tape.read tape (head + i) = T.nth i
+
+theorem radoMatchesTuringTape_write {head : Int} {tape : Tape} {T : Turing.Tape Bool}
+    {bit : Bool} (h : RadoMatchesTuringTape head tape T) :
+    RadoMatchesTuringTape head (Tape.write tape head bit) (T.write bit) := by
+  intro i
+  by_cases hi : i = 0
+  · subst i
+    change Tape.read (Tape.write tape head bit) (head + 0) = bit
+    simp
+  · rw [Tape.read_write_of_ne]
+    · rw [h i]
+      simp [Turing.Tape.write_nth, hi]
+    · omega
+
+theorem radoMatchesTuringTape_move_right {head : Int} {tape : Tape} {T : Turing.Tape Bool}
+    (h : RadoMatchesTuringTape head tape T) :
+    RadoMatchesTuringTape (head + 1) tape (T.move Turing.Dir.right) := by
+  intro i
+  rw [show head + 1 + i = head + (i + 1) by omega]
+  rw [h (i + 1)]
+  simp
+
+theorem radoMatchesTuringTape_move_left {head : Int} {tape : Tape} {T : Turing.Tape Bool}
+    (h : RadoMatchesTuringTape head tape T) :
+    RadoMatchesTuringTape (head - 1) tape (T.move Turing.Dir.left) := by
+  intro i
+  rw [show head - 1 + i = head + (i - 1) by omega]
+  rw [h (i - 1)]
+  simp
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
