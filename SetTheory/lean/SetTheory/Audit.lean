@@ -208,6 +208,9 @@ open SetTheory
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.sepBy_exists
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.binUnion_exists
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.union_exists
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel.chainSubsetsMax_exists
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel.ordinalLike_empty_or_succ
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel.succRecTotal_of_ordinalLike
 #check @AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
@@ -238,6 +241,7 @@ open SetTheory
 #check @AckermannHF.HF_succRecTotalAt
 #check @AckermannHF.HF_succRecTotalOnOrdinalAt
 #check @AckermannHF.HF_memMaxAt
+#check @AckermannHF.HF_chainSubsetsMaxAt
 #check @AckermannHF.HF_subsetAt_spec
 #check @AckermannHF.HF_sepByAt
 #check @AckermannHF.HF_sepByAt_spec
@@ -245,10 +249,14 @@ open SetTheory
 #check @AckermannHF.HF_binUnionAt_spec
 #check @AckermannHF.HF_unionAt
 #check @AckermannHF.HF_unionAt_spec
+#check @AckermannHF.ChainLike
+#check @AckermannHF.HF_chainLikeAt
+#check @AckermannHF.HF_chainLikeAt_spec
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
 #check @AckermannHF.HF_ordinalLikeAt_spec
 #check @AckermannHF.HF_memMaxAt_spec
+#check @AckermannHF.HF_chainSubsetsMaxAt_spec
 #check @AckermannHF.HF_emptyAt_free
 #check @AckermannHF.HF_adjoinAt_free
 #check @AckermannHF.HF_pairMemAt_free
@@ -365,7 +373,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_succRecTotal
 #check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_mem_max_exists
+#check @AckermannHF.PAInHF.formulaAt_addSucc_valid_finite_model
 #check @AckermannHF.PAInHF.translated_addZero_sat_of_HFAx_s
+#check @AckermannHF.PAInHF.translated_addSucc_sat_of_HFFinAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
@@ -377,6 +387,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_zeroNotSucc
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_succInj
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_addZero
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_addSucc
 #check @AckermannHF.PAInHF.translatedPAAx
 #check @AckermannHF.PAInHF.translatedPAAx_intro
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx

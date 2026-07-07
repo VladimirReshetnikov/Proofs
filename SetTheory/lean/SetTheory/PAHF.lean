@@ -816,6 +816,13 @@ theorem HF_transitiveAt_spec {α : Type u} {mem : α → α → Prop}
 def MemTotalOn {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
   ∀ y, mem y a → ∀ z, mem z a → mem y z ∨ y = z ∨ mem z y
 
+/-- Semantic reading of a finite membership chain: every element is
+transitive, and membership is total on the elements.  Unlike `OrdinalLike`,
+the chain object itself need not be transitive, so final segments of finite
+ordinals are chain-like. -/
+def ChainLike {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
+  (∀ y, mem y a → TransitiveObj mem y) ∧ MemTotalOn mem a
+
 /-- Formula macro: membership linearly orders the elements of slot `a`.
 This is only the totality component; well-foundedness comes from HF induction. -/
 def HF_memTotalOnAt (a : Nat) : Form :=
@@ -831,6 +838,25 @@ theorem HF_memTotalOnAt_spec {α : Type u} {mem : α → α → Prop}
     exact h y hy z hz
   · intro h y hy z hz
     exact h y hy z hz
+
+/-- Formula macro: slot `a` is chain-like. -/
+def HF_chainLikeAt (a : Nat) : Form :=
+  fAnd
+    (fAll (fImp (fMem 0 (a+1)) (HF_transitiveAt 0)))
+    (HF_memTotalOnAt a)
+
+theorem HF_chainLikeAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_chainLikeAt a) ↔ ChainLike mem (e a) := by
+  constructor
+  · intro h
+    exact ⟨(fun y hy =>
+      (HF_transitiveAt_spec (scons y e) 0).mp (h.1 y hy)),
+      (HF_memTotalOnAt_spec e a).mp h.2⟩
+  · intro h
+    exact ⟨(fun y hy =>
+      (HF_transitiveAt_spec (scons y e) 0).mpr (h.1 y hy)),
+      (HF_memTotalOnAt_spec e a).mpr h.2⟩
 
 /-- Semantic reading of the finite-ordinal domain formula used by the
 PA-in-HF interpretation. -/
@@ -908,6 +934,14 @@ def HF_memMaxAt (a : Nat) : Form :=
             (fMem 0 (a+2))
             (fImp (fMem 1 0) fBot)))))
 
+/-- Formula macro: every nonempty chain-like subset of slot `a` has a
+membership-maximal member. -/
+def HF_chainSubsetsMaxAt (a : Nat) : Form :=
+  fAll
+    (fImp
+      (HF_subsetAt 0 (a+1))
+      (fImp (HF_chainLikeAt 0) (HF_memMaxAt 0)))
+
 theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
     (e : Nat → α) (a : Nat) :
     Sat mem e (HF_ordinalLikeAt a) ↔ OrdinalLike mem (e a) := by
@@ -935,6 +969,28 @@ theorem HF_memMaxAt_spec {α : Type u} {mem : α → α → Prop}
     rcases hneSat with ⟨x, hx⟩
     rcases h ⟨x, hx⟩ with ⟨p, hp, hmax⟩
     exact ⟨p, hp, fun q hq hpq => hmax q hq hpq⟩
+
+theorem HF_chainSubsetsMaxAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_chainSubsetsMaxAt a) ↔
+      ∀ s, (∀ x, mem x s → mem x (e a)) →
+        ChainLike mem s →
+          ((∃ x, mem x s) →
+            ∃ p, mem p s ∧ ∀ q, mem q s → ¬ mem p q) := by
+  constructor
+  · intro h s hsSub hsChain
+    have hsSat := h s
+    have hsSubSat : Sat mem (scons s e) (HF_subsetAt 0 (a+1)) :=
+      (HF_subsetAt_spec (scons s e) 0 (a+1)).mpr hsSub
+    have hChainSat : Sat mem (scons s e) (HF_chainLikeAt 0) :=
+      (HF_chainLikeAt_spec (scons s e) 0).mpr hsChain
+    exact (HF_memMaxAt_spec (scons s e) 0).mp (hsSat hsSubSat hChainSat)
+  · intro h s hsSubSat hsChainSat
+    have hsSub : ∀ x, mem x s → mem x (e a) :=
+      (HF_subsetAt_spec (scons s e) 0 (a+1)).mp hsSubSat
+    have hsChain : ChainLike mem s :=
+      (HF_chainLikeAt_spec (scons s e) 0).mp hsChainSat
+    exact (HF_memMaxAt_spec (scons s e) 0).mpr (h s hsSub hsChain)
 
 /-! ### Free-variable support of the HF macros -/
 
@@ -2257,6 +2313,132 @@ theorem union_exists {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
           exact (hw x).mpr (Or.inr hxv)
   simpa [phi, tail, scons] using
     (HF_unionAt_spec (scons a tail) 0).mp (hall a)
+
+theorem chainSubsetsMax_exists {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) :
+    ∀ a s, (∀ x, M.mem x s → M.mem x a) →
+      ChainLike M.mem s →
+        (∃ x, M.mem x s) →
+          ∃ p, M.mem p s ∧ ∀ q, M.mem q s → ¬ M.mem p q := by
+  let phi : Form := HF_chainSubsetsMaxAt 0
+  let tail : Nat → α := fun _ => M.empty
+  have hind := M.finite_induction_schema phi tail
+  have hall : ∀ a, Sat M.mem (scons a tail) phi := by
+    apply (HF_finite_induction_form_spec phi tail).mp hind
+    constructor
+    · intro z hzEmpty
+      apply (HF_chainSubsetsMaxAt_spec (scons z tail) 0).mpr
+      intro s hsSub _hsChain hsNonempty
+      rcases hsNonempty with ⟨x, hxs⟩
+      exact False.elim (hzEmpty x (hsSub x hxs))
+    · intro old y c hc hOld
+      have oldP :
+          ∀ s, (∀ x, M.mem x s → M.mem x old) →
+            ChainLike M.mem s →
+              (∃ x, M.mem x s) →
+                ∃ p, M.mem p s ∧ ∀ q, M.mem q s → ¬ M.mem p q :=
+        (HF_chainSubsetsMaxAt_spec (scons old tail) 0).mp hOld
+      apply (HF_chainSubsetsMaxAt_spec (scons c tail) 0).mpr
+      intro s hsSub hsChain hsNonempty
+      rcases sepBy_exists M (fMem 0 1) (scons s tail) old with ⟨t, ht⟩
+      have htSubOld : ∀ x, M.mem x t → M.mem x old := by
+        intro x hxt
+        exact ((ht x).mp hxt).1
+      have htSubS : ∀ x, M.mem x t → M.mem x s := by
+        intro x hxt
+        exact ((ht x).mp hxt).2
+      have htChain : ChainLike M.mem t := by
+        refine ⟨?trans, ?total⟩
+        · intro x hxt
+          exact hsChain.1 x (htSubS x hxt)
+        · intro x hxt z hzt
+          exact hsChain.2 x (htSubS x hxt) z (htSubS z hzt)
+      by_cases htne : ∃ x, M.mem x t
+      · rcases oldP t htSubOld htChain htne with ⟨p, hpt, hpMaxT⟩
+        have hps : M.mem p s := htSubS p hpt
+        by_cases hys : M.mem y s
+        · rcases hsChain.2 p hps y hys with hpy | hpy | hyp
+          · refine ⟨y, hys, ?_⟩
+            intro q hqs hyq
+            rcases (hc q).mp (hsSub q hqs) with hqold | hqy
+            · have hqt : M.mem q t := (ht q).mpr ⟨hqold, hqs⟩
+              have htransq : TransitiveObj M.mem q := hsChain.1 q hqs
+              have hpq : M.mem p q := htransq y hyq p hpy
+              exact hpMaxT q hqt hpq
+            · subst q
+              exact FirstOrderAdjunctionModel.mem_irrefl M.toFirstOrderAdjunctionModel y hyq
+          · subst p
+            refine ⟨y, hys, ?_⟩
+            intro q hqs hyq
+            rcases (hc q).mp (hsSub q hqs) with hqold | hqy
+            · have hqt : M.mem q t := (ht q).mpr ⟨hqold, hqs⟩
+              exact hpMaxT q hqt hyq
+            · subst q
+              exact FirstOrderAdjunctionModel.mem_irrefl M.toFirstOrderAdjunctionModel y hyq
+          · refine ⟨p, hps, ?_⟩
+            intro q hqs hpq
+            rcases (hc q).mp (hsSub q hqs) with hqold | hqy
+            · have hqt : M.mem q t := (ht q).mpr ⟨hqold, hqs⟩
+              exact hpMaxT q hqt hpq
+            · subst q
+              exact FirstOrderAdjunctionModel.mem_asymm
+                M.toFirstOrderAdjunctionModel hyp hpq
+        · refine ⟨p, hps, ?_⟩
+          intro q hqs hpq
+          rcases (hc q).mp (hsSub q hqs) with hqold | hqy
+          · have hqt : M.mem q t := (ht q).mpr ⟨hqold, hqs⟩
+            exact hpMaxT q hqt hpq
+          · subst q
+            exact hys hqs
+      · rcases hsNonempty with ⟨p, hps⟩
+        have hp_eq_y : p = y := by
+          rcases (hc p).mp (hsSub p hps) with hpold | hpy
+          · have hpt : M.mem p t := (ht p).mpr ⟨hpold, hps⟩
+            exact False.elim (htne ⟨p, hpt⟩)
+          · exact hpy
+        refine ⟨p, hps, ?_⟩
+        intro q hqs hpq
+        have hq_eq_y : q = y := by
+          rcases (hc q).mp (hsSub q hqs) with hqold | hqy
+          · have hqt : M.mem q t := (ht q).mpr ⟨hqold, hqs⟩
+            exact False.elim (htne ⟨q, hqt⟩)
+          · exact hqy
+        subst p
+        subst q
+        exact FirstOrderAdjunctionModel.mem_irrefl M.toFirstOrderAdjunctionModel y hpq
+  intro a s hsSub hsChain hsNonempty
+  exact (HF_chainSubsetsMaxAt_spec (scons a tail) 0).mp (hall a)
+    s hsSub hsChain hsNonempty
+
+theorem ordinalLike_empty_or_succ {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    {a : α} (ha : OrdinalLike M.mem a) :
+    a = M.empty ∨ ∃ p, M.mem p a ∧ a = M.adjoin p p := by
+  by_cases hne : ∃ x, M.mem x a
+  · have hChain : ChainLike M.mem a := ⟨ha.2.1, ha.2.2⟩
+    rcases chainSubsetsMax_exists M a a (fun _ hx => hx) hChain hne with
+      ⟨p, hp, hmax⟩
+    exact Or.inr ⟨p, hp,
+      FirstOrderAdjunctionModel.ordinalLike_eq_succ_of_mem_max
+        M.toFirstOrderAdjunctionModel ha hp hmax⟩
+  · left
+    apply M.extensional
+    intro x
+    constructor
+    · intro hx
+      exact False.elim (hne ⟨x, hx⟩)
+    · intro hx
+      exact False.elim (M.empty_spec x hx)
+
+theorem succRecTotal_of_ordinalLike {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (s m : α) (hm : OrdinalLike M.mem m) :
+    FirstOrderAdjunctionModel.SuccRecTotal M.toFirstOrderAdjunctionModel s m := by
+  apply FirstOrderAdjunctionModel.succRecTotal_of_ordinalLike_of_predecessor
+    M.toFirstOrderAdjunctionModel
+  · intro a ha
+    exact ordinalLike_empty_or_succ M ha
+  · exact hm
 
 end FirstOrderFiniteAdjunctionModel
 
@@ -6768,6 +6950,14 @@ theorem formulaAt_addSucc_valid_model_of_mem_max_exists {α : Type u}
   exact FirstOrderAdjunctionModel.succRecTotal_of_ordinalLike_of_mem_max_exists
     M hMax s m hm
 
+theorem formulaAt_addSucc_valid_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.addSucc) := by
+  apply formulaAt_addSucc_valid_model_of_succRecTotal M.toFirstOrderAdjunctionModel
+  intro s m hm
+  exact FirstOrderFiniteAdjunctionModel.succRecTotal_of_ordinalLike M s m hm
+
 /-- Successor-injectivity for the PA-in-HF translation follows from
 irreflexivity of membership.  In semantic HF models that irreflexivity comes
 from `semantic_mem_irrefl_of_HFAx_s`. -/
@@ -7090,6 +7280,16 @@ theorem translated_addZero_sat_of_HFAx_s {α : Type u} {mem : α → α → Prop
   exact formulaAt_sealPA_valid PA.Formula.addZero
     (fun ρ e => formulaAt_addZero_valid_model M ρ e) (fun n : Nat => n) e
 
+/-- Closed add-successor axiom, semantically valid in every semantic model of
+the strengthened hereditary-finite theory. -/
+theorem translated_addSucc_sat_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA PA.Formula.addSucc)) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e (translateFormula (PA.Formula.sealPA PA.Formula.addSucc))
+  exact formulaAt_sealPA_valid PA.Formula.addSucc
+    (fun ρ e => formulaAt_addSucc_valid_finite_model M ρ e) (fun n : Nat => n) e
+
 /-- Closed zero-is-not-successor axiom, semantically validated in every
 adjunction model under the PA-in-HF translation. -/
 theorem translated_zeroNotSucc_sat_model {α : Type} (M : AdjunctionModel α)
@@ -7172,6 +7372,14 @@ theorem BProv_HFFin_translated_addZero :
     BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)) := by
   exact BProv_theory_mono (fun g hg => HFFinAx_s_of_HFAx_s hg)
     BProv_HF_translated_addZero
+
+theorem BProv_HFFin_translated_addSucc :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addSucc)) := by
+  apply completeness_inf HFFinAx_s
+  · exact Sentences_HFFin
+  · exact translated_PA_axiom_sentence _ PA.Formula.Ax_s_addSucc
+  · intro Dom mem v hHF
+    exact translated_addSucc_sat_of_HFFinAx_s v hHF v
 
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/
