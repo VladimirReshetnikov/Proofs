@@ -29,6 +29,7 @@ open SetTheory
 #check @BProv_lift
 #check @BProv_cut
 #check @BProv_theory_mono
+#check @soundness_BProv
 #print axioms prov_iff_valid
 
 -- calculus soundness and the deep reverse (internal recursion theorem)

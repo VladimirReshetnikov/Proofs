@@ -418,6 +418,19 @@ theorem BProv_theory_mono {B C : Form → Prop} {G : List Form} {phi : Form}
     (fun b hb => BProv_ax (G := G) (hBC b hb))
     (fun g hg => BProv_of_Prov (B := C) (Prov.P_ass G g hg))
 
+/-- Soundness for relative provability from an infinite sentence theory and a
+finite context. -/
+theorem soundness_BProv {α : Type u} {mem : α → α → Prop} {B : Form → Prop}
+    {G : List Form} {phi : Form} (h : BProv B G phi) (e : Nat → α)
+    (hB : ∀ b, B b → Sat mem e b)
+    (hG : ∀ g, g ∈ G → Sat mem e g) : Sat mem e phi := by
+  rcases h with ⟨L, hL, hp⟩
+  exact soundness hp e (fun x hx => by
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hB x (hL x hx)
+    · exact hG x hx)
+
 theorem BCon_cons_or (B : Form → Prop) (L : List Form) (phi : Form)
     (hL : BCon B L) : BCon B (phi :: L) ∨ BCon B (fImp phi fBot :: L) := by
   rcases Classical.em (BCon B (phi :: L)) with h | h
