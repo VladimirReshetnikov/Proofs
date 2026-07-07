@@ -8103,6 +8103,22 @@ def inductionForm (phi : Formula) : Formula :=
          (all (imp phi (subst substSuccVar phi))))
     (all phi)
 
+/-- Modus ponens form of the PA induction body.
+
+This is not the PA induction axiom itself: callers still have to supply a
+proof of `inductionForm phi`, typically by instantiating the sealed PA axiom
+schema. -/
+theorem BProv_inductionForm_mp {B : Formula → Prop} {G : List Formula}
+    {phi : Formula}
+    (hind : BProv B G (inductionForm phi))
+    (hzero : BProv B G (subst substZero phi))
+    (hsucc : BProv B G (all (imp phi (subst substSuccVar phi)))) :
+    BProv B G (all phi) := by
+  exact BProv_mp B G
+    (and (subst substZero phi)
+      (all (imp phi (subst substSuccVar phi))))
+    (all phi) hind (BProv_andI hzero hsucc)
+
 def Ax (f : Formula) : Prop :=
   f = succInj ∨ f = zeroNotSucc ∨
   f = addZero ∨ f = addSucc ∨

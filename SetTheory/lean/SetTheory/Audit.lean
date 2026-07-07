@@ -111,6 +111,7 @@ open SetTheory
 #check @PA.Formula.rename_eq_of_sentence
 #check @PA.Formula.sealPA_sentence
 #check @PA.Formula.sentence_ax_s
+#check @PA.Formula.BProv_inductionForm_mp
 #check @PA.Formula.Ax_s_succInj
 #check @PA.Formula.Ax_s_zeroNotSucc
 #check @PA.Formula.Ax_s_addZero
