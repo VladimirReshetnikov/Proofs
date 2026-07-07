@@ -259,25 +259,98 @@ theorem ordinal_eq_of_natOfOrdinal_eq {a b : OrdinalHF}
   apply Subtype.ext
   rw [← natOfOrdinal_spec a, ← natOfOrdinal_spec b, h]
 
+/-- Set-theoretic successor on finite ordinals: `a ↦ a ∪ {a}`. -/
+noncomputable def ordinalSuccSet (a : OrdinalHF) : OrdinalHF :=
+  ⟨adjoin a.val a.val,
+    ⟨natOfOrdinal a + 1, by
+      rw [ordinalCode_succ, natOfOrdinal_spec a]⟩⟩
+
+theorem ordinalSuccSet_eq (a : OrdinalHF) :
+    ordinalSuccSet a = ordinalOfNat (natOfOrdinal a + 1) := by
+  apply Subtype.ext
+  simp only [ordinalSuccSet, ordinalOfNat]
+  rw [ordinalCode_succ, natOfOrdinal_spec a]
+
+theorem natOfOrdinal_ordinalSuccSet (a : OrdinalHF) :
+    natOfOrdinal (ordinalSuccSet a) = natOfOrdinal a + 1 := by
+  rw [ordinalSuccSet_eq, natOfOrdinal_ordinalOfNat]
+
+/-- Iterate finite-ordinal successor `n` times from `a`. -/
+noncomputable def ordinalAddIter (a : OrdinalHF) : Nat → OrdinalHF
+  | 0 => a
+  | n+1 => ordinalSuccSet (ordinalAddIter a n)
+
+/-- Addition of finite ordinals, defined by iterating successor along the
+second ordinal. -/
+noncomputable def ordinalAddSet (a b : OrdinalHF) : OrdinalHF :=
+  ordinalAddIter a (natOfOrdinal b)
+
+theorem natOfOrdinal_ordinalAddIter (a : OrdinalHF) (n : Nat) :
+    natOfOrdinal (ordinalAddIter a n) = natOfOrdinal a + n := by
+  induction n with
+  | zero =>
+      simp only [ordinalAddIter, Nat.add_zero]
+  | succ n ih =>
+      simp only [ordinalAddIter, natOfOrdinal_ordinalSuccSet, ih, Nat.add_succ]
+
+theorem natOfOrdinal_ordinalAddSet (a b : OrdinalHF) :
+    natOfOrdinal (ordinalAddSet a b) = natOfOrdinal a + natOfOrdinal b := by
+  unfold ordinalAddSet
+  exact natOfOrdinal_ordinalAddIter a (natOfOrdinal b)
+
+theorem ordinalAddSet_eq (a b : OrdinalHF) :
+    ordinalAddSet a b = ordinalOfNat (natOfOrdinal a + natOfOrdinal b) :=
+  ordinal_eq_of_natOfOrdinal_eq
+    (by rw [natOfOrdinal_ordinalAddSet, natOfOrdinal_ordinalOfNat])
+
+/-- Iterate finite-ordinal addition by `a`, `n` times, from zero. -/
+noncomputable def ordinalMulIter (a : OrdinalHF) : Nat → OrdinalHF
+  | 0 => ordinalOfNat 0
+  | n+1 => ordinalAddSet (ordinalMulIter a n) a
+
+/-- Multiplication of finite ordinals, defined by iterating addition along the
+second ordinal. -/
+noncomputable def ordinalMulSet (a b : OrdinalHF) : OrdinalHF :=
+  ordinalMulIter a (natOfOrdinal b)
+
+theorem natOfOrdinal_ordinalMulIter (a : OrdinalHF) (n : Nat) :
+    natOfOrdinal (ordinalMulIter a n) = natOfOrdinal a * n := by
+  induction n with
+  | zero =>
+      simp only [ordinalMulIter, natOfOrdinal_ordinalOfNat, Nat.mul_zero]
+  | succ n ih =>
+      simp only [ordinalMulIter, natOfOrdinal_ordinalAddSet, ih, Nat.mul_succ]
+
+theorem natOfOrdinal_ordinalMulSet (a b : OrdinalHF) :
+    natOfOrdinal (ordinalMulSet a b) = natOfOrdinal a * natOfOrdinal b := by
+  unfold ordinalMulSet
+  exact natOfOrdinal_ordinalMulIter a (natOfOrdinal b)
+
+theorem ordinalMulSet_eq (a b : OrdinalHF) :
+    ordinalMulSet a b = ordinalOfNat (natOfOrdinal a * natOfOrdinal b) :=
+  ordinal_eq_of_natOfOrdinal_eq
+    (by rw [natOfOrdinal_ordinalMulSet, natOfOrdinal_ordinalOfNat])
+
 /-- The PA structure interpreted inside Ackermann HF by taking the finite
-von Neumann ordinals as the number domain.  The operations are the transported
-graphs of ordinary arithmetic on the ordinal indices; the transport and its
-inverse are proved explicitly below. -/
+von Neumann ordinals as the number domain.  Successor is the set-theoretic
+operation `a ∪ {a}`; addition and multiplication are finite iterations of
+successor and addition, respectively. -/
 noncomputable def ordinalPAModel : PA.Model OrdinalHF where
   zero := ordinalOfNat 0
-  succ a := ordinalOfNat (natOfOrdinal a + 1)
-  add a b := ordinalOfNat (natOfOrdinal a + natOfOrdinal b)
-  mul a b := ordinalOfNat (natOfOrdinal a * natOfOrdinal b)
+  succ := ordinalSuccSet
+  add := ordinalAddSet
+  mul := ordinalMulSet
   succ_injective := by
     intro a b h
     apply ordinal_eq_of_natOfOrdinal_eq
     have hn := congrArg natOfOrdinal h
-    simp [natOfOrdinal_ordinalOfNat] at hn
+    simp only [natOfOrdinal_ordinalSuccSet] at hn
     omega
   zero_not_succ := by
     intro a h
     have hn := congrArg natOfOrdinal h
-    simp [natOfOrdinal_ordinalOfNat] at hn
+    simp only [natOfOrdinal_ordinalSuccSet, natOfOrdinal_ordinalOfNat] at hn
+    omega
   induction := by
     intro P h0 hs a
     have hnat : ∀ n, P (ordinalOfNat n) := by
@@ -286,24 +359,25 @@ noncomputable def ordinalPAModel : PA.Model OrdinalHF where
       | zero => exact h0
       | succ n ih =>
           have hstep := hs (ordinalOfNat n) ih
-          simpa [natOfOrdinal_ordinalOfNat] using hstep
+          simpa [ordinalSuccSet_eq, natOfOrdinal_ordinalOfNat] using hstep
     simpa [ordinalOfNat_natOfOrdinal a] using hnat (natOfOrdinal a)
   add_zero := by
     intro a
     apply ordinal_eq_of_natOfOrdinal_eq
-    simp only [natOfOrdinal_ordinalOfNat, Nat.add_zero]
+    simp only [natOfOrdinal_ordinalAddSet, natOfOrdinal_ordinalOfNat, Nat.add_zero]
   add_succ := by
     intro a b
     apply ordinal_eq_of_natOfOrdinal_eq
-    simp only [natOfOrdinal_ordinalOfNat, Nat.add_succ]
+    simp only [natOfOrdinal_ordinalAddSet, natOfOrdinal_ordinalSuccSet, Nat.add_succ]
   mul_zero := by
     intro a
     apply ordinal_eq_of_natOfOrdinal_eq
-    simp only [natOfOrdinal_ordinalOfNat, Nat.mul_zero]
+    simp only [natOfOrdinal_ordinalMulSet, natOfOrdinal_ordinalOfNat, Nat.mul_zero]
   mul_succ := by
     intro a b
     apply ordinal_eq_of_natOfOrdinal_eq
-    simp only [natOfOrdinal_ordinalOfNat, Nat.mul_succ]
+    simp only [natOfOrdinal_ordinalMulSet, natOfOrdinal_ordinalAddSet,
+      natOfOrdinal_ordinalSuccSet, Nat.mul_succ]
 
 /-- The first round trip of the bi-interpretability construction: starting
 from arithmetic, interpreting HF by Ackermann coding, and then interpreting
@@ -318,15 +392,18 @@ noncomputable def paRoundTripIso : PA.Iso PA.natModel ordinalPAModel where
   map_succ := by
     intro n
     apply ordinal_eq_of_natOfOrdinal_eq
-    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalOfNat]
+    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalSuccSet,
+      natOfOrdinal_ordinalOfNat]
   map_add := by
     intro a b
     apply ordinal_eq_of_natOfOrdinal_eq
-    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalOfNat, Nat.add_eq]
+    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalAddSet,
+      natOfOrdinal_ordinalOfNat, Nat.add_eq]
   map_mul := by
     intro a b
     apply ordinal_eq_of_natOfOrdinal_eq
-    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalOfNat, Nat.mul_eq]
+    simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalMulSet,
+      natOfOrdinal_ordinalOfNat, Nat.mul_eq]
 
 /-! ## The HF-in-PA-in-HF round trip -/
 
