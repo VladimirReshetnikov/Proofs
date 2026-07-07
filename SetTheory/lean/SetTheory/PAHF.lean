@@ -942,6 +942,63 @@ theorem ordinalCode_injective {m n : Nat}
     rw [h] at hn
     exact False.elim (not_mem_self (ordinalCode n) hn)
 
+/-! ### Standard finite traces for successor recursion -/
+
+/-- Iterate the HF successor operation `x ↦ x ∪ {x}` on an object. -/
+def succIterObj (s : Nat) : Nat → Nat
+  | 0 => s
+  | n+1 => adjoin (succIterObj s n) (succIterObj s n)
+
+theorem succIterObj_ordinalCode (m n : Nat) :
+    succIterObj (ordinalCode m) n = ordinalCode (m + n) := by
+  induction n with
+  | zero =>
+      simp [succIterObj]
+  | succ n ih =>
+      rw [succIterObj, ih, Nat.add_succ, ordinalCode_succ]
+
+/-- The finite graph `{⟨0,s⟩, ⟨1,S s⟩, ..., ⟨n,S^n s⟩}` as an HF set. -/
+def succRecTrace (s : Nat) : Nat → Nat
+  | 0 => single standardModel (kpair standardModel empty s)
+  | n+1 =>
+      adjoin (succRecTrace s n)
+        (kpair standardModel (ordinalCode (n+1)) (succIterObj s (n+1)))
+
+theorem succRecTrace_mem_iff (s p n : Nat) :
+    Mem p (succRecTrace s n) ↔
+      ∃ k, k ≤ n ∧ p = kpair standardModel (ordinalCode k) (succIterObj s k) := by
+  induction n with
+  | zero =>
+      constructor
+      · intro hp
+        have hp' := (single_spec standardModel (kpair standardModel empty s) p).mp hp
+        exact ⟨0, by omega, by simpa [ordinalCode_zero, succIterObj] using hp'⟩
+      · intro hp
+        rcases hp with ⟨k, hk, hp⟩
+        have hk0 : k = 0 := by omega
+        subst k
+        apply (single_spec standardModel (kpair standardModel empty s) p).mpr
+        simpa [ordinalCode_zero, succIterObj] using hp
+  | succ n ih =>
+      rw [succRecTrace, mem_adjoin, ih]
+      constructor
+      · intro hp
+        rcases hp with hp | hp
+        · rcases hp with ⟨k, hk, hp⟩
+          exact ⟨k, by omega, hp⟩
+        · exact ⟨n+1, by omega, hp⟩
+      · intro hp
+        rcases hp with ⟨k, hk, hp⟩
+        have hcases : k ≤ n ∨ k = n+1 := by omega
+        rcases hcases with hle | heq
+        · exact Or.inl ⟨k, hle, hp⟩
+        · subst k
+          exact Or.inr hp
+
+theorem succRecTrace_pair_mem (s : Nat) {k n : Nat} (hk : k ≤ n) :
+    Mem (kpair standardModel (ordinalCode k) (succIterObj s k)) (succRecTrace s n) :=
+  (succRecTrace_mem_iff s _ n).mpr ⟨k, hk, rfl⟩
+
 /-! ### First PA-in-HF interpretation formulas already available -/
 
 namespace PAInHF

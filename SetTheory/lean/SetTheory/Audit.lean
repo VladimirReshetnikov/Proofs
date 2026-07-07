@@ -74,6 +74,9 @@ open SetTheory
 #check @AckermannHF.HF_ordinalLikeAt_of_ordinalCode
 #check @AckermannHF.ordinalLike_is_ordinalCode
 #check @AckermannHF.HF_ordinalLikeAt_exact
+#check @AckermannHF.succIterObj_ordinalCode
+#check @AckermannHF.succRecTrace_mem_iff
+#check @AckermannHF.succRecTrace_pair_mem
 #check @AckermannHF.PAInHF.domainForm
 #check @AckermannHF.PAInHF.zeroGraph
 #check @AckermannHF.PAInHF.succGraph
