@@ -646,6 +646,10 @@ section FastLevels
 
 variable {α : Type u} [BEq α] [LawfulBEq α] [Hashable α] [LawfulHashable α] [DecidableEq α]
 
+-- Not every fast-level lemma needs every lawfulness instance; keeping one
+-- section-wide instance context is clearer than per-theorem `omit` lists.
+set_option linter.unusedSectionVars false
+
 theorem hashSet_toList_nodup (m : Std.HashSet α) : m.toList.Nodup := by
   have hpair := Std.HashSet.distinct_toList (m := m)
   exact hpair.imp (by

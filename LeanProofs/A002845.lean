@@ -1,8 +1,7 @@
 import LeanProofs.PowTower
+import LeanProofs.SparseBinary
 import Mathlib.Data.Set.Card
-import Mathlib.Data.Nat.BitIndices
 import Mathlib.Data.Finset.NAry
-import Std.Data.HashSet.Lemmas
 
 /-!
 # Initial values of OEIS A002845
@@ -13,11 +12,15 @@ copies of `2` and all binary parenthesizations allowed.
 The primary definition below is the shared lexical one from `PowTower.Expr`:
 the single atom is interpreted as the literal `2`, and the binary node is
 interpreted as natural-number exponentiation.  The sparse-binary logarithm
-representation is a computation-facing view, with Lean proofs connecting it
-back to the shared lexical definition.  Large values are computed through the
-shared proved hash-set fast table from `PowTower.Expr`, so the only
-execution-level substitution left is the native implementation of the sparse
-combine operation `certifiedCombineLog` by `combineLog`.
+representation (`LeanProofs.SparseBinary`) is a computation-facing view, with
+Lean proofs connecting it back to the shared lexical definition.  Large values
+are computed through the shared proved hash-set fast table from
+`PowTower.Expr`, and the sparse combine operation itself is the verified total
+`Sparse.shift`, Lean-proved on canonical inputs to compute the canonical
+representation of `eval a * 2 ^ eval b`.  No `implemented_by` substitution is
+involved anywhere in this module: the executable path *is* the proved path,
+and the only remaining trust in the value certificates is `native_decide`
+itself.
 -/
 
 set_option maxRecDepth 100000
@@ -245,317 +248,55 @@ theorem a002845_six : a002845 6 = 8 := by
   rw [PowExpr.a002845_eq_directLogCard]
   native_decide
 
-/-- A hereditary sparse binary nonnegative integer.
-
-`bits xs` represents `sum (x in xs), 2^x`, with the executable operations below
-maintaining `xs` in increasing numeric order and without duplicates.
--/
-inductive Sparse where
-  | bits : List Sparse → Sparse
-deriving Repr, Inhabited
-
-namespace Sparse
-
-mutual
-  def decEq : (x y : Sparse) → Decidable (x = y)
-    | .bits xs, .bits ys =>
-        match decEqList xs ys with
-        | isTrue h => isTrue (by cases h; rfl)
-        | isFalse h => isFalse (by intro hxy; cases hxy; exact h rfl)
-
-  def decEqList : (xs ys : List Sparse) → Decidable (xs = ys)
-    | [], [] => isTrue rfl
-    | [], _ :: _ => isFalse (by intro h; cases h)
-    | _ :: _, [] => isFalse (by intro h; cases h)
-    | x :: xs, y :: ys =>
-        match decEq x y, decEqList xs ys with
-        | isTrue hx, isTrue hxs => isTrue (by cases hx; cases hxs; rfl)
-        | isFalse hx, _ => isFalse (by intro h; cases h; exact hx rfl)
-        | _, isFalse hxs => isFalse (by intro h; cases h; exact hxs rfl)
-end
-
-instance : DecidableEq Sparse :=
-  decEq
-
-/-- Boolean equality for sparse-binary trees, definitionally tied to `DecidableEq`. -/
-def beq (x y : Sparse) : Bool :=
-  decide (x = y)
-
-/-- Structural hash for sparse-binary trees. -/
-partial def hash : Sparse → UInt64
-  | .bits xs => mixHash 17 (hashList xs)
-where
-  hashList : List Sparse → UInt64
-    | [] => 19
-    | x :: xs => mixHash (hash x) (hashList xs)
-
-instance : Hashable Sparse where
-  hash := hash
-
-instance : LawfulBEq Sparse where
-  rfl := by
-    intro a
-    simp [BEq.beq]
-  eq_of_beq := by
-    intro a b h
-    simpa [BEq.beq, beq] using h
-
-instance : EquivBEq Sparse where
-  symm := by
-    intro a b h
-    have hab : a = b := LawfulBEq.eq_of_beq h
-    subst hab
-    simp [BEq.beq]
-  trans := by
-    intro a b c hab hbc
-    have hab' : a = b := LawfulBEq.eq_of_beq hab
-    have hbc' : b = c := LawfulBEq.eq_of_beq hbc
-    subst hab'
-    subst hbc'
-    simp [BEq.beq]
-  rfl := by
-    intro a
-    simp [BEq.beq]
-
-instance : LawfulHashable Sparse where
-  hash_eq := by
-    intro a b h
-    have hab : a = b := LawfulBEq.eq_of_beq h
-    subst hab
-    rfl
-
-/-- Zero in hereditary sparse binary. -/
-def zero : Sparse :=
-  .bits []
-
-/-- One in hereditary sparse binary. -/
-def one : Sparse :=
-  .bits [zero]
-
-/-- Natural-number denotation of a hereditary sparse binary value. -/
-def eval : Sparse → Nat
-  | .bits xs => (xs.map fun p => 2 ^ eval p).sum
-
-/-- Canonical hereditary sparse binary representation of a natural number. -/
-def ofNat : Nat → Sparse
-  | n => .bits (n.bitIndices.attach.map fun i => ofNat i.1)
-termination_by n => n
-decreasing_by
-  exact lt_of_lt_of_le Nat.lt_two_pow_self (Nat.two_pow_le_of_mem_bitIndices i.2)
-
-theorem eval_ofNat (n : Nat) : eval (ofNat n) = n := by
-  induction n using ofNat.induct with
-  | case1 n _ ih =>
-      rw [ofNat.eq_1, eval.eq_1]
-      simp only [List.map_map]
-      rw [show
-        List.map
-            ((fun p => 2 ^ eval p) ∘ fun i : { x // x ∈ n.bitIndices } => ofNat ↑i)
-            n.bitIndices.attach =
-          List.map (fun x => 2 ^ eval (ofNat x)) n.bitIndices by
-            simp [Function.comp_def]]
-      have hmap : List.map (fun x => 2 ^ eval (ofNat x)) n.bitIndices =
-          List.map (fun x => 2 ^ x) n.bitIndices := by
-        apply List.map_congr_left
-        intro x hx
-        rw [ih ⟨x, hx⟩]
-      rw [hmap]
-      exact Nat.sum_map_two_pow_bitIndices n
-
-theorem ofNat_injective : Function.Injective ofNat := by
-  intro a b h
-  exact by simpa [eval_ofNat] using congrArg eval h
-
 /--
-Canonical sparse values have canonical bit positions and strictly increasing
-denoted exponents.
+The exact logarithm-combine operation:
+`log₂ ((2^a)^(2^b)) = a * 2^b`, implemented by the verified total sparse
+shift from `LeanProofs.SparseBinary`.
 -/
-def Canonical : Sparse → Prop
-  | .bits xs => (∀ p ∈ xs, Canonical p) ∧ (xs.map eval).SortedLT
-
-/-- The bit indices of a canonical sparse value are exactly its bit positions. -/
-theorem bitIndices_eval {x : Sparse} (hx : Canonical x) :
-    x.eval.bitIndices = match x with | .bits xs => xs.map eval := by
-  cases x with
-  | bits xs =>
-      rw [Canonical.eq_1] at hx
-      rw [eval.eq_1]
-      simpa [List.map_map, Function.comp_def]
-        using Nat.bitIndices_sum_map_two_pow hx.2
-
-mutual
-  /-- Canonical sparse binary representation is injective in its denotation. -/
-  theorem eq_of_eval_eq {x y : Sparse} (hx : Canonical x) (hy : Canonical y)
-      (h : eval x = eval y) : x = y := by
-    cases x with
-    | bits xs =>
-        cases y with
-        | bits ys =>
-            rw [Canonical.eq_1] at hx hy
-            have hxidx : (bits xs).eval.bitIndices = xs.map eval :=
-              bitIndices_eval (x := bits xs) (by rw [Canonical.eq_1]; exact hx)
-            have hyidx : (bits ys).eval.bitIndices = ys.map eval :=
-              bitIndices_eval (x := bits ys) (by rw [Canonical.eq_1]; exact hy)
-            have hmaps : xs.map eval = ys.map eval := by
-              calc
-                xs.map eval = (bits xs).eval.bitIndices := hxidx.symm
-                _ = (bits ys).eval.bitIndices := by rw [h]
-                _ = ys.map eval := hyidx
-            have hxs : xs = ys := list_eq_of_map_eval_eq xs ys hx.1 hy.1 hmaps
-            simp [hxs]
-
-  theorem list_eq_of_map_eval_eq (xs ys : List Sparse)
-      (hcx : ∀ p ∈ xs, Canonical p) (hcy : ∀ p ∈ ys, Canonical p)
-      (h : xs.map eval = ys.map eval) : xs = ys := by
-    cases xs with
-    | nil =>
-        cases ys with
-        | nil => rfl
-        | cons _ _ => simp at h
-    | cons x xs =>
-        cases ys with
-        | nil => simp at h
-        | cons y ys =>
-            simp only [List.map_cons, List.cons.injEq] at h
-            have hxy : x = y :=
-              eq_of_eval_eq (hcx x (by simp)) (hcy y (by simp)) h.1
-            have htail : xs = ys :=
-              list_eq_of_map_eval_eq xs ys
-                (by intro p hp; exact hcx p (by simp [hp]))
-                (by intro p hp; exact hcy p (by simp [hp]))
-                h.2
-            simp [hxy, htail]
-end
-
-theorem eval_zero : eval zero = 0 := by
-  simp [zero, eval.eq_1]
-
-theorem eval_one : eval one = 1 := by
-  simp [one, zero, eval.eq_1]
-
-theorem canonical_zero : Canonical zero := by
-  rw [zero, Canonical.eq_1]
-  simp [List.sortedLT_iff_pairwise]
-
-theorem canonical_one : Canonical one := by
-  rw [one, Canonical.eq_1]
-  simp [canonical_zero, eval_zero, List.sortedLT_iff_pairwise]
-
-theorem sizeOf_append_singleton (xs : List Sparse) (x : Sparse) :
-    sizeOf (xs ++ [x]) = sizeOf xs + sizeOf x + 1 := by
-  induction xs with
-  | nil => simp [Nat.add_assoc]
-  | cons _ _ ih =>
-      simp [ih, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
-
-theorem sizeOf_reverse (xs : List Sparse) : sizeOf xs.reverse = sizeOf xs := by
-  induction xs with
-  | nil => simp
-  | cons x xs ih =>
-      simp [List.reverse_cons, sizeOf_append_singleton, ih,
-        Nat.add_assoc, Nat.add_comm]
-
-mutual
-  /-- Numeric comparison of canonical sparse-binary values. -/
-  def compare : Sparse → Sparse → Ordering
-    | .bits xs, .bits ys => compareDescending xs.reverse ys.reverse
-  termination_by x y => sizeOf x + sizeOf y
-  decreasing_by
-    simp_wf
-    rw [sizeOf_reverse, sizeOf_reverse]
-    simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-      Nat.add_lt_add (Nat.lt_succ_self (sizeOf xs)) (Nat.lt_succ_self (sizeOf ys))
-
-  /-- Compare bit-position lists written from high to low. -/
-  def compareDescending : List Sparse → List Sparse → Ordering
-    | [], [] => .eq
-    | [], _ :: _ => .lt
-    | _ :: _, [] => .gt
-    | x :: xs, y :: ys =>
-        match compare x y with
-        | .eq => compareDescending xs ys
-        | order => order
-  termination_by xs ys => sizeOf xs + sizeOf ys
-  decreasing_by
-    · simp_wf
-      have hle : sizeOf x + sizeOf y ≤
-          sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) := by
-        rw [← Nat.add_assoc]
-        exact Nat.le_add_right (sizeOf x + sizeOf y) (sizeOf xs + sizeOf ys)
-      have hlt : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
-          1 + (1 + (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)))) := by
-        simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-          Nat.add_lt_add (Nat.lt_succ_self 0)
-            (Nat.lt_succ_self (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys))))
-      have hlt' : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
-          1 + sizeOf x + sizeOf xs + (1 + sizeOf y + sizeOf ys) := by
-        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hlt
-      exact Nat.lt_of_le_of_lt hle hlt'
-    · simp_wf
-      have hle : sizeOf xs + sizeOf ys ≤
-          sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) := by
-        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-          (Nat.le_add_left (sizeOf xs + sizeOf ys) (sizeOf x + sizeOf y))
-      have hlt : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
-          1 + (1 + (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)))) := by
-        simpa [Nat.succ_eq_add_one, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-          Nat.add_lt_add (Nat.lt_succ_self 0)
-            (Nat.lt_succ_self (sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys))))
-      have hlt' : sizeOf x + (sizeOf y + (sizeOf xs + sizeOf ys)) <
-          1 + sizeOf x + sizeOf xs + (1 + sizeOf y + sizeOf ys) := by
-        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hlt
-      exact Nat.lt_of_le_of_lt hle hlt'
-end
-
-/-- Add two hereditary sparse binary nonnegative integers. -/
-partial def add : Sparse → Sparse → Sparse
-  | .bits xs, .bits ys => .bits (ys.foldl (fun acc p => insertBit p acc) xs)
-where
-  /-- Insert one set bit into a canonical sparse-binary bit list, carrying on
-  collision. -/
-  insertBit (p : Sparse) : List Sparse → List Sparse
-    | [] => [p]
-    | q :: qs =>
-        match compare p q with
-        | .lt => p :: q :: qs
-        | .eq => insertBit (add p one) qs
-        | .gt => q :: insertBit p qs
-
-/-- Insert one set bit into a canonical bit list. -/
-def insertSingletonBit (p : Sparse) (xs : List Sparse) : List Sparse :=
-  match add (.bits xs) (.bits [p]) with
-  | .bits ys => ys
-
-/-- Multiply by `2^b`, i.e. shift all bit positions upward by `b`. -/
-partial def shift (x b : Sparse) : Sparse :=
-  match x with
-  | .bits xs =>
-      .bits (xs.foldl (fun acc p => insertSingletonBit (add p b) acc) [])
-
-end Sparse
-
-/-- The exact logarithm-combine operation:
-`log₂ ((2^a)^(2^b)) = a * 2^b`. -/
 def combineLog (a b : Sparse) : Sparse :=
   Sparse.shift a b
 
 /--
-Proof-facing logarithm-combine operation.  It is definitionally the semantic
-operation on sparse denotations, but native execution uses `combineLog`.
+The logarithm-combine operation used by every A002845 computation.  It *is*
+the executable `combineLog`; on canonical inputs it is Lean-proved below to
+compute the canonical sparse representation of `eval a * 2 ^ eval b`, so no
+`implemented_by` substitution is involved anywhere in this module.
 -/
 def certifiedCombineLog (a b : Sparse) : Sparse :=
-  Sparse.ofNat (Sparse.eval a * 2 ^ Sparse.eval b)
+  combineLog a b
 
-attribute [implemented_by combineLog] certifiedCombineLog
+open Sparse in
+theorem certifiedCombineLog_canonical {a b : Sparse}
+    (ha : Canonical a) (hb : Canonical b) :
+    Sparse.Canonical (certifiedCombineLog a b) :=
+  (Sparse.shift_spec ha hb).1
 
-theorem eval_certifiedCombineLog (a b : Sparse) :
-    Sparse.eval (certifiedCombineLog a b) = Sparse.eval a * 2 ^ Sparse.eval b := by
-  simp [certifiedCombineLog, Sparse.eval_ofNat]
+open Sparse in
+theorem certifiedCombineLog_eq_ofNat {a b : Sparse}
+    (ha : Canonical a) (hb : Canonical b) :
+    certifiedCombineLog a b = Sparse.ofNat (Sparse.eval a * 2 ^ Sparse.eval b) :=
+  Sparse.shift_eq_ofNat ha hb
+
+open Sparse in
+theorem eval_certifiedCombineLog {a b : Sparse}
+    (ha : Canonical a) (hb : Canonical b) :
+    Sparse.eval (certifiedCombineLog a b) = Sparse.eval a * 2 ^ Sparse.eval b :=
+  (Sparse.shift_spec ha hb).2
+
 
 /-- Exact sparse logarithm of a canonical expression tree. -/
 def sparseLogEval : PowExpr → Sparse
   | .atom => Sparse.ofNat 1
   | .pow a b => certifiedCombineLog (sparseLogEval a) (sparseLogEval b)
+
+/-- Every computed sparse logarithm is canonical. -/
+theorem canonical_sparseLogEval (e : PowExpr) :
+    Sparse.Canonical (sparseLogEval e) := by
+  induction e with
+  | atom =>
+      exact Sparse.canonical_ofNat 1
+  | pow a b iha ihb =>
+      exact certifiedCombineLog_canonical iha ihb
 
 theorem sparseLogEval_eq_ofNat_logEval (e : PowExpr) :
     sparseLogEval e = Sparse.ofNat (PowExpr.logEval e) := by
@@ -563,8 +304,12 @@ theorem sparseLogEval_eq_ofNat_logEval (e : PowExpr) :
   | atom =>
       rfl
   | pow a b iha ihb =>
-      simp [sparseLogEval, PowExpr.logEval, certifiedCombineLog, iha, ihb,
-        Sparse.eval_ofNat]
+      rw [show sparseLogEval (.pow a b) =
+            certifiedCombineLog (sparseLogEval a) (sparseLogEval b) from rfl,
+        certifiedCombineLog_eq_ofNat (canonical_sparseLogEval a)
+          (canonical_sparseLogEval b), iha, ihb,
+        Sparse.eval_ofNat, Sparse.eval_ofNat]
+      rfl
 
 theorem sparseLogEval_eq_sharedEval (e : PowExpr) :
     sparseLogEval e = PowTower.Expr.eval (Sparse.ofNat 1) certifiedCombineLog e := by
