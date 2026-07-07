@@ -125,6 +125,38 @@ theorem totalRecursiveMathlib_eval_by_supported_tm2 {f : Nat -> Nat}
   rcases totalRecursiveMathlib_eval_by_tm2 hf with ⟨c, hc⟩
   exact ⟨c, hc, partrecToTM2_supports c⟩
 
+/-- Initializing `TM2.eval` on the evaluator's main stack gives `PartrecToTM2.init`. -/
+theorem partrecToTM2_init_eq_tm2_init (c : Turing.ToPartrec.Code) (v : List Nat) :
+    letI : Inhabited Turing.PartrecToTM2.Λ' :=
+      ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+    Turing.PartrecToTM2.init c v =
+      Turing.TM2.init Turing.PartrecToTM2.K'.main (Turing.PartrecToTM2.trList v) := by
+  dsimp [Turing.PartrecToTM2.init, Turing.TM2.init]
+  congr
+  funext k
+  cases k <;> rfl
+
+/--
+The mathlib recursive-code evaluator computes `[f n]` in the ordinary `TM2.eval`
+interface on its main stack.
+-/
+theorem totalRecursiveMathlib_tm2_eval_main {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ c : Turing.ToPartrec.Code,
+      ∀ n,
+        letI : Inhabited Turing.PartrecToTM2.Λ' :=
+          ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+        Turing.TM2.eval Turing.PartrecToTM2.tr Turing.PartrecToTM2.K'.main
+          (Turing.PartrecToTM2.trList [n]) =
+            Part.some (Turing.PartrecToTM2.trList [f n]) := by
+  rcases totalRecursiveMathlib_eval_by_tm2 hf with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro n
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  rw [Turing.TM2.eval, ← partrecToTM2_init_eq_tm2_init c [n], hc n]
+  rfl
+
 /--
 The finite-support recursive-code evaluator also descends through mathlib's
 proved `TM2 -> TM1`, finite-alphabet `TM1 -> TM1 Bool`, and `TM1 -> TM0`

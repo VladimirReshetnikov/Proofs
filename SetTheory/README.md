@@ -70,11 +70,12 @@ foundational/computability work:
 - [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
   is the mathlib-backed bridge showing that mathlib-total-recursive
   `Nat -> Nat` functions have sequential `ToPartrec.Code`s evaluated by
-  mathlib's finite-support `PartrecToTM2` Turing machine, and that this
-  evaluator descends to a finite-support Bool `TM0` machine through mathlib's
-  proved Turing-machine reductions.  It is built from the root `src/Lean` Lake
-  workspace because the standalone SetTheory Lean project deliberately remains
-  dependency-free.
+  mathlib's finite-support `PartrecToTM2` Turing machine, that this computation
+  can be expressed through mathlib's ordinary `TM2.eval` interface, and that
+  the evaluator descends to a finite-support Bool `TM0` machine through
+  mathlib's proved Turing-machine reductions.  It is built from the root
+  `src/Lean` Lake workspace because the standalone SetTheory Lean project
+  deliberately remains dependency-free.
 
 ## Module structure — the reusable core vs. the T-specific shell
 
