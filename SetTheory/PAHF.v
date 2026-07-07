@@ -3683,6 +3683,133 @@ Proof.
     reflexivity.
 Qed.
 
+Fixpoint mul_rec_trace (m n : nat) : nat :=
+  match n with
+  | 0 =>
+      hf_single_obj ackermannHFModel
+        (hf_kpair_obj ackermannHFModel hf_empty hf_empty)
+  | S k =>
+      hf_adjoin
+        (hf_kpair_obj ackermannHFModel
+          (ordinal_code (S k)) (ordinal_code (m * S k)))
+        (mul_rec_trace m k)
+  end.
+
+Lemma mul_rec_trace_mem_iff : forall m p n,
+  hf_mem p (mul_rec_trace m n) <->
+    exists k, k <= n /\
+      p = hf_kpair_obj ackermannHFModel
+        (ordinal_code k) (ordinal_code (m * k)).
+Proof.
+  intros m p n.
+  induction n as [|n IH].
+  - simpl.
+    split.
+    + intro hp.
+      pose proof (proj1 (hf_single_spec ackermannHFModel
+        (hf_kpair_obj ackermannHFModel hf_empty hf_empty) p) hp) as hp'.
+      exists 0.
+      split; [lia |].
+      rewrite Nat.mul_0_r.
+      simpl. exact hp'.
+    + intros [k [hk hp]].
+      assert (k = 0) by lia.
+      subst k.
+      apply (proj2 (hf_single_spec ackermannHFModel
+        (hf_kpair_obj ackermannHFModel hf_empty hf_empty) p)).
+      rewrite Nat.mul_0_r in hp.
+      simpl in hp. exact hp.
+  - simpl.
+    rewrite hf_mem_adjoin.
+    rewrite IH.
+    split.
+    + intros [[k [hk hp]] | hp].
+      * exists k. split; [lia | exact hp].
+      * exists (S n). split; [lia | exact hp].
+    + intros [k [hk hp]].
+      destruct (Nat.eq_dec k (S n)) as [heq | hne].
+      * right. subst k. exact hp.
+      * left. exists k. split; [lia | exact hp].
+Qed.
+
+Lemma mul_rec_trace_pair_mem : forall m k n,
+  k <= n ->
+  hf_mem
+    (hf_kpair_obj ackermannHFModel
+      (ordinal_code k) (ordinal_code (m * k)))
+    (mul_rec_trace m n).
+Proof.
+  intros m k n hk.
+  apply (proj2 (mul_rec_trace_mem_iff m
+    (hf_kpair_obj ackermannHFModel
+      (ordinal_code k) (ordinal_code (m * k))) n)).
+  exists k. split; [exact hk | reflexivity].
+Qed.
+
+Lemma mul_rec_trace_functional : forall m n,
+  hf_pair_functional ackermannHFModel (mul_rec_trace m n).
+Proof.
+  unfold hf_pair_functional.
+  intros m n k y y' hky hky'.
+  destruct (proj1 (mul_rec_trace_mem_iff m
+    (hf_kpair_obj ackermannHFModel k y) n) hky)
+    as [i [_hi hpair_i]].
+  destruct (proj1 (mul_rec_trace_mem_iff m
+    (hf_kpair_obj ackermannHFModel k y') n) hky')
+    as [j [_hj hpair_j]].
+  destruct (hf_kpair_injective ackermannHFModel
+    k y (ordinal_code i) (ordinal_code (m * i)) hpair_i)
+    as [hk_i hy_i].
+  destruct (hf_kpair_injective ackermannHFModel
+    k y' (ordinal_code j) (ordinal_code (m * j)) hpair_j)
+    as [hk_j hy_j].
+  assert (hij : i = j).
+  {
+    apply ordinal_code_injective.
+    rewrite <- hk_i.
+    rewrite <- hk_j.
+    reflexivity.
+  }
+  rewrite hy_i, hy_j, hij.
+  reflexivity.
+Qed.
+
+Lemma mul_rec_trace_keys_below_succ : forall m n,
+  hf_pair_keys_below_succ ackermannHFModel
+    (mul_rec_trace m n) (ordinal_code n).
+Proof.
+  unfold hf_pair_keys_below_succ.
+  intros m n k y hky.
+  destruct (proj1 (mul_rec_trace_mem_iff m
+    (hf_kpair_obj ackermannHFModel k y) n) hky)
+    as [i [hi hpair_i]].
+  destruct (hf_kpair_injective ackermannHFModel
+    k y (ordinal_code i) (ordinal_code (m * i)) hpair_i)
+    as [hk_i _hy_i].
+  rewrite hk_i.
+  destruct (Nat.eq_dec i n) as [heq | hne].
+  - right. now subst i.
+  - left. apply ordinal_code_mem_of_lt. lia.
+Qed.
+
+Lemma mul_rec_trace_total_below_succ : forall m n,
+  hf_pair_total_below_succ ackermannHFModel
+    (mul_rec_trace m n) (ordinal_code n).
+Proof.
+  unfold hf_pair_total_below_succ.
+  intros m n k hk.
+  destruct hk as [hmem | heq].
+  - destruct (proj1 (hf_mem_ordinal_code_iff k n) hmem) as [i [hi hk_eq]].
+    subst k.
+    exists (ordinal_code (m * i)).
+    apply mul_rec_trace_pair_mem.
+    lia.
+  - subst k.
+    exists (ordinal_code (m * n)).
+    apply mul_rec_trace_pair_mem.
+    lia.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
