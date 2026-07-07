@@ -2,9 +2,9 @@
   Coq port of the Calkin-Wilf pair core from
   LeanProofs/RationalFloorOrbit.lean.
 
-  The Lean module goes on to prove the rational floor-orbit enumeration
-  theorem.  This Coq module establishes the executable pair generator, inverse
-  index map, and the rational-number bridge for the orbit successor step.
+  This Coq module establishes the executable pair generator, inverse index map,
+  rational-number bridge, and exact-once enumeration theorem for nonnegative
+  rationals.
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
@@ -771,6 +771,119 @@ Proof.
   - lia.
 Qed.
 
+Lemma pos_divide_of_nat_divide (p a : positive) :
+    Nat.divide (Pos.to_nat p) (Pos.to_nat a) -> (p | a)%positive.
+Proof.
+  intros [z hz].
+  destruct z as [|z].
+  - exfalso.
+    rewrite Nat.mul_0_l in hz.
+    pose proof (Pos2Nat.is_pos a).
+    lia.
+  - exists (Pos.of_succ_nat z).
+    apply Pos2Nat.inj.
+    rewrite Pos2Nat.inj_mul.
+    rewrite SuccNat2Pos.id_succ.
+    exact hz.
+Qed.
+
+Lemma pos_ggcd_outputs_coprime_nat (a b g aa bb : positive)
+    (h : Pos.ggcd a b = (g, (aa, bb))) :
+    Coprime (Pos.to_nat aa) (Pos.to_nat bb).
+Proof.
+  unfold Coprime.
+  apply Nat.gcd_unique.
+  - exists (Pos.to_nat aa). lia.
+  - exists (Pos.to_nat bb). lia.
+  - intros q hqa hqb.
+    destruct q as [|q].
+    + destruct hqa as [z hz].
+      rewrite Nat.mul_0_r in hz.
+      pose proof (Pos2Nat.is_pos aa).
+      lia.
+    + set (p := Pos.of_succ_nat q).
+      assert (hpaa : (p | aa)%positive).
+      { apply pos_divide_of_nat_divide.
+        unfold p.
+        rewrite SuccNat2Pos.id_succ.
+        exact hqa.
+      }
+      assert (hpbb : (p | bb)%positive).
+      { apply pos_divide_of_nat_divide.
+        unfold p.
+        rewrite SuccNat2Pos.id_succ.
+        exact hqb.
+      }
+      pose proof (Pos.ggcd_greatest a b) as hg.
+      rewrite h in hg.
+      cbn in hg.
+      specialize (hg p hpaa hpbb).
+      exists 1%nat.
+      unfold p in hg.
+      apply (f_equal Pos.to_nat) in hg.
+      rewrite SuccNat2Pos.id_succ in hg.
+      rewrite Pos2Nat.inj_1 in hg.
+      lia.
+Qed.
+
+Theorem qred_pair_coprime (q : Q) (hq : 0 <= q) :
+    Coprime (qredNumNat q) (qredDenNat q).
+Proof.
+  destruct q as [n d].
+  unfold qredNumNat, qredDenNat, Qred.
+  cbn [Qnum Qden].
+  destruct n as [|p|p].
+  - unfold Coprime. reflexivity.
+  - destruct (Pos.ggcd p d) as [g [aa bb]] eqn:hg.
+    cbn [Z.ggcd snd].
+    rewrite hg.
+    cbn [snd Qnum Qden].
+    rewrite Z2Nat.inj_pos.
+    rewrite Pos2Z.id.
+    apply pos_ggcd_outputs_coprime_nat with (a := p) (b := d) (g := g).
+    exact hg.
+  - unfold Qle in hq.
+    cbn [Qnum Qden inject_Z] in hq.
+    lia.
+Qed.
+
+Theorem pairRat_inj {a b c d : nat}
+    (hb : (0 < b)%nat) (hd : (0 < d)%nat)
+    (hab : Coprime a b) (hcd : Coprime c d)
+    (h : pairRat (a, b) == pairRat (c, d)) :
+    a = c /\ b = d.
+Proof.
+  assert (hcross : (a * d = c * b)%nat).
+  { unfold pairRat, Qeq in h.
+    cbn [fst snd Qnum Qden] in h.
+    rewrite !Zpos_positiveDenOfNat in h by lia.
+    apply Nat2Z.inj.
+    rewrite !Nat2Z.inj_mul.
+    exact h.
+  }
+  assert (hbdivd : Nat.divide b d).
+  { apply (Nat.gauss b a d).
+    - exists c.
+      rewrite hcross.
+      lia.
+    - rewrite Nat.gcd_comm.
+      exact hab.
+  }
+  assert (hddivb : Nat.divide d b).
+  { apply (Nat.gauss d c b).
+    - exists a.
+      rewrite <- hcross.
+      lia.
+    - rewrite Nat.gcd_comm.
+      exact hcd.
+  }
+  assert (hbd : b = d) by (apply Nat.divide_antisym; assumption).
+  subst d.
+  split; [|reflexivity].
+  apply (proj1 (Nat.mul_cancel_r a c b (ltac:(lia)))).
+  exact hcross.
+Qed.
+
 Theorem rationalFloorOrbit_exists_pair (a b : nat)
     (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : Coprime a b) :
     rationalFloorOrbit (cwIndex a b + 1) == pairRat (a, b).
@@ -793,6 +906,74 @@ Proof.
   - apply qredNumNat_pos_of_nonneg_nonzero; assumption.
   - apply qredDenNat_pos.
   - exact hc.
+Qed.
+
+Theorem rationalFloorOrbit_exists_of_nonneg_nonzero
+    (q : Q) (hq : 0 <= q) (hnez : ~ q == inject_Z 0%Z) :
+    rationalFloorOrbit (cwIndex (qredNumNat q) (qredDenNat q) + 1) == q.
+Proof.
+  apply rationalFloorOrbit_exists_of_nonneg_nonzero_reduced_coprime;
+    try assumption.
+  apply qred_pair_coprime.
+  exact hq.
+Qed.
+
+Theorem rationalFloorOrbit_unique_of_nonneg_nonzero
+    (q : Q) (n : nat) (hq : 0 <= q) (hnez : ~ q == inject_Z 0%Z)
+    (hn : rationalFloorOrbit n == q) :
+    n = (cwIndex (qredNumNat q) (qredDenNat q) + 1)%nat.
+Proof.
+  destruct n as [|k].
+  - exfalso.
+    apply hnez.
+    apply Qeq_sym.
+    exact hn.
+  - replace (S k) with (k + 1)%nat in hn by lia.
+    rewrite rationalFloorOrbit_succ in hn.
+    destruct (cwPair k) as [a b] eqn:hpair.
+    pose proof (cwPair_pos k) as hpos.
+    pose proof (cwPair_coprime k) as hc.
+    rewrite hpair in hpos, hc.
+    cbn [fst snd] in hpos, hc.
+    unfold cwRat in hn.
+    rewrite hpair in hn.
+    pose proof (pairRat_of_Qred_nonneg q hq) as hqpair.
+    assert (hpairs :
+        pairRat (a, b) == pairRat (qredNumNat q, qredDenNat q)).
+    { eapply Qeq_trans; [exact hn|].
+      apply Qeq_sym.
+      exact hqpair.
+    }
+    pose proof (pairRat_inj (a := a) (b := b)
+      (c := qredNumNat q) (d := qredDenNat q)
+      (ltac:(destruct hpos; lia)) (qredDenNat_pos q)
+      hc (qred_pair_coprime q hq) hpairs) as [haeq hbeq].
+    pose proof (cwIndex_cwPair k) as hidx.
+    rewrite hpair in hidx.
+    cbn [fst snd] in hidx.
+    subst a b.
+    lia.
+Qed.
+
+Theorem rationalFloorOrbit_visits_each_nonnegative_rat_exactly_once
+    (q : Q) (hq : 0 <= q) :
+    exists n : nat, rationalFloorOrbit n == q /\
+      forall m : nat, rationalFloorOrbit m == q -> m = n.
+Proof.
+  destruct (Qeq_dec q (inject_Z 0%Z)) as [hzero|hnez].
+  - exists 0%nat.
+    split.
+    + apply Qeq_sym.
+      exact hzero.
+    + intros m hm.
+      apply rationalFloorOrbit_eq_zero_iff.
+      eapply Qeq_trans; [exact hm|exact hzero].
+  - exists (cwIndex (qredNumNat q) (qredDenNat q) + 1)%nat.
+    split.
+    + apply rationalFloorOrbit_exists_of_nonneg_nonzero; assumption.
+    + intros m hm.
+      apply rationalFloorOrbit_unique_of_nonneg_nonzero with (q := q);
+        assumption.
 Qed.
 
 Local Open Scope nat_scope.

@@ -29,12 +29,10 @@ Current ports:
   `rationalNext` step lemmas, derives `rationalNext (cwRat n) = cwRat
   (n + 1)` both structurally and up to `Qeq`, defines the recursive
   `rationalFloorOrbit`, proves `rationalFloorOrbit (n + 1) = cwRat n`, and
-  characterizes zero as the orbit's initial value.  It also proves the
-  normalized-rational existence bridge: after reducing a nonnegative,
-  nonzero `Q` with `Qred`, the orbit visits it as soon as the reduced natural
-  numerator/denominator pair is known coprime.  The remaining work is the
-  reduced-pair coprimality proof and the final uniqueness theorem for all
-  nonnegative rationals.
+  characterizes zero as the orbit's initial value.  It also proves reduced
+  `Qred` numerator/denominator coprimality, the normalized-rational existence
+  and uniqueness lemmas, and the final exact-once enumeration theorem for
+  nonnegative Coq rationals.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
