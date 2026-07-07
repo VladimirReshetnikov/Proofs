@@ -117,6 +117,32 @@ theorem write_read_self (tape : Tape) (pos : Int) :
     intro a ha heq
     exact h (heq ▸ ha)
 
+theorem filter_ne_nodup (tape : Tape) (pos : Int) :
+    tape.Nodup -> (tape.filter (fun q => q != pos)).Nodup := by
+  induction tape with
+  | nil => simp
+  | cons a rest IH =>
+      intro h
+      rw [List.nodup_cons] at h
+      by_cases ha : a != pos
+      · simp [List.filter, ha, List.nodup_cons]
+        constructor
+        · intro hin
+          exact h.1 hin
+        · exact IH h.2
+      · simp [List.filter, ha]
+        exact IH h.2
+
+@[simp]
+theorem write_nodup {tape : Tape} {pos : Int} {bit : Bool}
+    (h : tape.Nodup) : (write tape pos bit).Nodup := by
+  cases bit
+  · simp [write]
+    exact filter_ne_nodup tape pos h
+  · by_cases hp : pos ∈ tape
+    · simp [write, hp, h]
+    · simp [write, hp, List.nodup_cons, h]
+
 end Tape
 
 /-- The start state: state `0` when at least one operational state exists. -/
@@ -235,6 +261,23 @@ theorem run_zero_states (M : Machine 0) :
   | t + 1 => by
       simp [run, run_zero_states M t, step, initial, startState]
 
+theorem step_tape_nodup {states : Nat} (M : Machine states) (cfg : Config states)
+    (h : cfg.tape.Nodup) : (M.step cfg).tape.Nodup := by
+  cases cfg with
+  | mk state head tape =>
+      cases state with
+      | none => exact h
+      | some _q =>
+          simp [step]
+          exact Tape.write_nodup h
+
+@[simp]
+theorem run_tape_nodup {states : Nat} (M : Machine states) :
+    ∀ t, (M.run t).tape.Nodup
+  | 0 => by simp [run, initial]
+  | t + 1 => by
+      exact M.step_tape_nodup (M.run t) (run_tape_nodup M t)
+
 /--
 The machine halts with `score` if after some finite number of steps it is halted
 and exactly `score` tape cells contain `1`.
@@ -290,6 +333,32 @@ theorem run_eq_runFrom {stateType : Type u} (M : TypedMachine stateType) (start 
   | 0 => rfl
   | t + 1 => by
       simp [run, runFrom, run_eq_runFrom M start t]
+
+theorem step_tape_nodup {stateType : Type u} (M : TypedMachine stateType)
+    (cfg : TypedConfig stateType) (h : cfg.tape.Nodup) :
+    (M.step cfg).tape.Nodup := by
+  cases cfg with
+  | mk state head tape =>
+      cases state with
+      | none => exact h
+      | some _q =>
+          simp [step]
+          exact Tape.write_nodup h
+
+theorem runFrom_tape_nodup {stateType : Type u} (M : TypedMachine stateType)
+    {cfg : TypedConfig stateType} (h : cfg.tape.Nodup) :
+    ∀ t, (M.runFrom cfg t).tape.Nodup
+  | 0 => h
+  | t + 1 => by
+      exact M.step_tape_nodup (M.runFrom cfg t) (runFrom_tape_nodup M h t)
+
+@[simp]
+theorem run_tape_nodup {stateType : Type u} (M : TypedMachine stateType)
+    (start : stateType) :
+    ∀ t, (M.run start t).tape.Nodup
+  | 0 => by simp [run]
+  | t + 1 => by
+      exact M.step_tape_nodup (M.run start t) (run_tape_nodup M start t)
 
 /-- A typed-state Rado machine halts with a given score from the blank tape. -/
 def HaltsWithScore {stateType : Type u} (M : TypedMachine stateType) (start : stateType)
