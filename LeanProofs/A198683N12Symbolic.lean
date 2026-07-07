@@ -29,9 +29,7 @@ noncomputable section
 
 open Complex
 
-private def rho : ℝ := Real.exp (-(Real.pi / 2))
-
-private def theta : ℝ := Real.pi / 2 * rho
+open A198683Support
 
 /-- The exact value of `i^i`. -/
 def q : ℂ := (rho : ℂ)
@@ -66,27 +64,6 @@ def nearProbeR : ℂ :=
 
 /-- The exact tiny positive-real subtree `(i^i)^nearProbeR`. -/
 def nearProbeS : ℂ := principalPow q nearProbeR
-
-private theorem theta_pos : 0 < theta := by
-  dsimp [theta, rho]
-  positivity
-
-private theorem theta_lt_pi_div_two : theta < Real.pi / 2 := by
-  dsimp [theta, rho]
-  have hexp_lt_one : Real.exp (-(Real.pi / 2)) < 1 := by
-    exact Real.exp_lt_one_iff.mpr (by linarith [Real.pi_pos])
-  simpa using mul_lt_mul_of_pos_left hexp_lt_one (show 0 < Real.pi / 2 by positivity)
-
-private theorem neg_pi_lt_theta : -Real.pi < theta := by
-  linarith [theta_pos, Real.pi_pos]
-
-private theorem theta_le_pi : theta ≤ Real.pi := by
-  linarith [theta_lt_pi_div_two, Real.pi_pos]
-
-private theorem log_I_real :
-    Complex.log Complex.I = ((Real.pi / 2 : ℝ) : ℂ) * Complex.I := by
-  rw [Complex.log_I]
-  norm_num
 
 private theorem I_pow_re (z : ℂ) :
     (principalPow Complex.I z).re =
@@ -175,20 +152,6 @@ private theorem theta_mul_exp_pi_div_two :
             rw [Real.exp_zero]
     _ = Real.pi / 2 := by ring
 
-private theorem exp_pi_div_two_gt_24_div_5 :
-    (24 : ℝ) / 5 < Real.exp (Real.pi / 2) := by
-  have hpi : (157 : ℝ) / 100 < Real.pi / 2 := by
-    linarith [Real.pi_gt_d2]
-  have hsum_le :
-      (∑ i ∈ Finset.range 7, ((157 : ℝ) / 100) ^ i / (i.factorial : ℝ)) ≤
-        Real.exp ((157 : ℝ) / 100) :=
-    Real.sum_le_exp_of_nonneg (by norm_num) 7
-  have hsum_gt :
-      (24 : ℝ) / 5 <
-        ∑ i ∈ Finset.range 7, ((157 : ℝ) / 100) ^ i / (i.factorial : ℝ) := by
-    norm_num [Finset.sum_range_succ]
-  exact hsum_gt.trans_le (hsum_le.trans ((Real.exp_le_exp).2 hpi.le))
-
 private theorem exp_pi_div_two_mul_rho :
     Real.exp (Real.pi / 2) * rho = 1 := by
   dsimp [rho]
@@ -203,13 +166,6 @@ private theorem neg_pi_div_two_exp_mul_rho :
         -(Real.pi / 2) * (Real.exp (Real.pi / 2) * rho) := by ring
     _ = -(Real.pi / 2) * 1 := by rw [exp_pi_div_two_mul_rho]
     _ = -(Real.pi / 2) := by ring
-
-private theorem theta_lt_one_div_three : theta < (1 : ℝ) / 3 := by
-  have hpi : Real.pi / 2 < (63 : ℝ) / 40 := by
-    linarith [Real.pi_lt_d2]
-  have hexp_pos : 0 < Real.exp (Real.pi / 2) := Real.exp_pos _
-  nlinarith [hpi, exp_pi_div_two_gt_24_div_5, theta_mul_exp_pi_div_two, theta_pos,
-    hexp_pos]
 
 private theorem exp_neg_theta_mul_exp_theta :
     Real.exp (-theta) * Real.exp theta = 1 := by
@@ -250,21 +206,6 @@ private theorem u_re_eq_cos_theta : u.re = Real.cos theta := by
 private theorem u_im_pos : 0 < u.im := by
   rw [u_im_eq_sin_theta]
   exact Real.sin_pos_of_pos_of_lt_pi theta_pos (by linarith [theta_lt_pi_div_two, Real.pi_pos])
-
-private theorem pi_div_two_mul_sin_theta_lt_log_two :
-    Real.pi / 2 * Real.sin theta < Real.log 2 := by
-  have hsin_lt_theta : Real.sin theta < theta := Real.sin_lt theta_pos
-  have harg_lt_pi_div_six : Real.pi / 2 * Real.sin theta < Real.pi / 6 := by
-    nlinarith [Real.pi_pos, u_im_pos, u_im_eq_sin_theta, hsin_lt_theta,
-      theta_lt_one_div_three]
-  have hpi_div_six_lt_log_two : Real.pi / 6 < Real.log 2 := by
-    nlinarith [Real.pi_lt_d2, Real.log_two_gt_d9]
-  exact harg_lt_pi_div_six.trans hpi_div_six_lt_log_two
-
-private theorem exp_lt_two_of_lt_log_two {x : ℝ} (hx : x < Real.log 2) :
-    Real.exp x < 2 := by
-  have h := Real.exp_lt_exp.mpr hx
-  rwa [Real.exp_log (by norm_num : (0 : ℝ) < 2)] at h
 
 /-- `(i^(i^i))^(i^(-i)) = i`. -/
 theorem u_pow_qInv_eq_I : principalPow u qInv = Complex.I := by
