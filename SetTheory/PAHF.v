@@ -5589,6 +5589,212 @@ Proof.
       intro k. reflexivity.
 Qed.
 
+Lemma subst_instTerm_rename_up : forall phi (r : nat -> nat) t,
+  subst (instTerm (Term.rename r t)) (rename (up r) phi) =
+    rename r (subst (instTerm t) phi).
+Proof.
+  intros phi r t.
+  rewrite subst_rename.
+  rewrite rename_subst.
+  apply subst_ext.
+  intros [|n]; reflexivity.
+Qed.
+
+Lemma Sat_instTerm : forall (M : Model) phi t (e : nat -> M),
+  Sat M e (subst (instTerm t) phi) <->
+    Sat M (scons M (Term.eval M e t) e) phi.
+Proof.
+  intros M phi t e.
+  eapply iff_trans.
+  - apply Sat_subst.
+  - apply Sat_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Inductive Prov : list formula -> formula -> Prop :=
+| P_ass : forall G a, In a G -> Prov G a
+| P_impI : forall G a b, Prov (a :: G) b -> Prov G (pImp a b)
+| P_impE : forall G a b, Prov G (pImp a b) -> Prov G a -> Prov G b
+| P_botE : forall G a, Prov G pBot -> Prov G a
+| P_lem : forall G a, Prov G (pOr a (pImp a pBot))
+| P_andI : forall G a b, Prov G a -> Prov G b -> Prov G (pAnd a b)
+| P_andE1 : forall G a b, Prov G (pAnd a b) -> Prov G a
+| P_andE2 : forall G a b, Prov G (pAnd a b) -> Prov G b
+| P_orI1 : forall G a b, Prov G a -> Prov G (pOr a b)
+| P_orI2 : forall G a b, Prov G b -> Prov G (pOr a b)
+| P_orE : forall G a b c,
+    Prov G (pOr a b) ->
+    Prov (a :: G) c ->
+    Prov (b :: G) c ->
+    Prov G c
+| P_allI : forall G a,
+    Prov (map (rename S) G) a ->
+    Prov G (pAll a)
+| P_allE : forall G a t,
+    Prov G (pAll a) ->
+    Prov G (subst (instTerm t) a)
+| P_exI : forall G a t,
+    Prov G (subst (instTerm t) a) ->
+    Prov G (pEx a)
+| P_exE : forall G a c,
+    Prov G (pEx a) ->
+    Prov (a :: map (rename S) G) (rename S c) ->
+    Prov G c
+| P_eqRefl : forall G t, Prov G (pEq t t)
+| P_eqElim : forall G s t a,
+    Prov G (pEq s t) ->
+    Prov G (subst (instTerm s) a) ->
+    Prov G (subst (instTerm t) a).
+
+Lemma cons_sub : forall (a : formula) (G G' : list formula),
+  (forall x, In x G -> In x G') ->
+  forall x, In x (a :: G) -> In x (a :: G').
+Proof.
+  intros a G G' hsub x hx.
+  simpl in hx |- *.
+  destruct hx as [hx | hx].
+  - left. exact hx.
+  - right. exact (hsub x hx).
+Qed.
+
+Lemma mem_map_sub : forall (f : formula -> formula) (G G' : list formula),
+  (forall x, In x G -> In x G') ->
+  forall x, In x (map f G) -> In x (map f G').
+Proof.
+  intros f G G' hsub x hx.
+  apply in_map_iff in hx.
+  destruct hx as [y [hy hx]].
+  subst x.
+  apply in_map.
+  exact (hsub y hx).
+Qed.
+
+Lemma Prov_weaken : forall G a,
+  Prov G a ->
+  forall G', (forall x, In x G -> In x G') -> Prov G' a.
+Proof.
+  intros G a h.
+  induction h; intros G' hsub.
+  - exact (P_ass G' a (hsub a H)).
+  - exact (P_impI G' a b (IHh (a :: G') (cons_sub a G G' hsub))).
+  - exact (P_impE G' a b (IHh1 G' hsub) (IHh2 G' hsub)).
+  - exact (P_botE G' a (IHh G' hsub)).
+  - exact (P_lem G' a).
+  - exact (P_andI G' a b (IHh1 G' hsub) (IHh2 G' hsub)).
+  - exact (P_andE1 G' a b (IHh G' hsub)).
+  - exact (P_andE2 G' a b (IHh G' hsub)).
+  - exact (P_orI1 G' a b (IHh G' hsub)).
+  - exact (P_orI2 G' a b (IHh G' hsub)).
+  - exact (P_orE G' a b c (IHh1 G' hsub)
+      (IHh2 (a :: G') (cons_sub a G G' hsub))
+      (IHh3 (b :: G') (cons_sub b G G' hsub))).
+  - exact (P_allI G' a (IHh (map (rename S) G')
+      (mem_map_sub (rename S) G G' hsub))).
+  - exact (P_allE G' a t (IHh G' hsub)).
+  - exact (P_exI G' a t (IHh G' hsub)).
+  - exact (P_exE G' a c (IHh1 G' hsub)
+      (IHh2 (a :: map (rename S) G')
+        (cons_sub a (map (rename S) G) (map (rename S) G')
+          (mem_map_sub (rename S) G G' hsub)))).
+  - exact (P_eqRefl G' t).
+  - exact (P_eqElim G' s t a (IHh1 G' hsub) (IHh2 G' hsub)).
+Qed.
+
+Lemma Prov_cons : forall G a b,
+  Prov G b -> Prov (a :: G) b.
+Proof.
+  intros G a b h.
+  apply (Prov_weaken G b h).
+  intros x hx.
+  simpl. right. exact hx.
+Qed.
+
+Lemma map_rename_up_succ : forall (r : nat -> nat) G,
+  map (rename (up r)) (map (rename S) G) =
+    map (rename S) (map (rename r) G).
+Proof.
+  intros r G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite rename_up_succ.
+    rewrite IH.
+    reflexivity.
+Qed.
+
+Lemma Prov_rename : forall G phi,
+  Prov G phi -> forall r,
+  Prov (map (rename r) G) (rename r phi).
+Proof.
+  intros G phi h.
+  induction h; intro r; simpl.
+  - apply P_ass.
+    apply in_map.
+    exact H.
+  - apply P_impI.
+    exact (IHh r).
+  - exact (P_impE (map (rename r) G) (rename r a) (rename r b)
+      (IHh1 r) (IHh2 r)).
+  - exact (P_botE (map (rename r) G) (rename r a) (IHh r)).
+  - exact (P_lem (map (rename r) G) (rename r a)).
+  - exact (P_andI (map (rename r) G) (rename r a) (rename r b)
+      (IHh1 r) (IHh2 r)).
+  - exact (P_andE1 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_andE2 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_orI1 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_orI2 (map (rename r) G) (rename r a) (rename r b)
+      (IHh r)).
+  - exact (P_orE (map (rename r) G) (rename r a) (rename r b)
+      (rename r c) (IHh1 r) (IHh2 r) (IHh3 r)).
+  - apply P_allI.
+    rewrite <- map_rename_up_succ.
+    exact (IHh (up r)).
+  - rewrite <- subst_instTerm_rename_up.
+    exact (P_allE (map (rename r) G) (rename (up r) a)
+      (Term.rename r t) (IHh r)).
+  - apply (P_exI (map (rename r) G) (rename (up r) a)
+      (Term.rename r t)).
+    rewrite subst_instTerm_rename_up.
+    exact (IHh r).
+  - assert (hEx : Prov (map (rename r) G) (pEx (rename (up r) a))).
+    {
+      exact (IHh1 r).
+    }
+    assert (hbody :
+        Prov (rename (up r) a :: map (rename S) (map (rename r) G))
+          (rename S (rename r c))).
+    {
+      rewrite <- map_rename_up_succ.
+      rewrite <- rename_up_succ.
+      change (Prov (map (rename (up r)) (a :: map (rename S) G))
+        (rename (up r) (rename S c))).
+      exact (IHh2 (up r)).
+    }
+    exact (P_exE (map (rename r) G) (rename (up r) a) (rename r c)
+      hEx hbody).
+  - exact (P_eqRefl (map (rename r) G) (Term.rename r t)).
+  - assert (hEq :
+        Prov (map (rename r) G)
+          (pEq (Term.rename r s) (Term.rename r t))).
+    {
+      exact (IHh1 r).
+    }
+    assert (hA :
+        Prov (map (rename r) G)
+          (subst (instTerm (Term.rename r s)) (rename (up r) a))).
+    {
+      rewrite subst_instTerm_rename_up.
+      exact (IHh2 r).
+    }
+    pose proof (P_eqElim (map (rename r) G)
+      (Term.rename r s) (Term.rename r t) (rename (up r) a)
+      hEq hA) as hElim.
+    rewrite subst_instTerm_rename_up in hElim.
+    exact hElim.
+Qed.
+
 End Formula.
 
 End PA.
