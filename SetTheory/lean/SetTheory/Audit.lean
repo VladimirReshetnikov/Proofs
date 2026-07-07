@@ -117,6 +117,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.succGraph_preserves_domain
 #check @AckermannHF.PAInHF.termGraphAt
 #check @AckermannHF.PAInHF.termGraphAt_exact
+#check @AckermannHF.PAInHF.upVarMap
+#check @AckermannHF.PAInHF.formulaAt
+#check @AckermannHF.PAInHF.formulaAt_exact
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF

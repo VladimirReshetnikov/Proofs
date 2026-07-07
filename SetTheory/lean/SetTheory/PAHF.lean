@@ -2314,6 +2314,144 @@ theorem termGraphAt_exact (t : PA.Term) :
               (PA.Term.eval PA.natModel v a)
               (PA.Term.eval PA.natModel v b) e)
 
+/-- Slot-map extension across a translated PA quantifier.  The new PA variable
+`0` is read from the newly bound HF slot `0`; older PA variables are shifted
+past that binder. -/
+def upVarMap (ρ : Nat → Nat) : Nat → Nat
+  | 0 => 0
+  | n+1 => ρ n + 1
+
+/-- Translate PA formulas to HF formulas, using `ρ` to identify the HF slots
+that hold the current PA variables.  Quantifiers are explicitly relativized to
+the finite-ordinal domain formula. -/
+def formulaAt (ρ : Nat → Nat) : PA.Formula → Form
+  | PA.Formula.eq a b =>
+      fEx (fEx (fAnd
+        (termGraphAt (fun n => ρ n + 2) 1 a)
+        (fAnd
+          (termGraphAt (fun n => ρ n + 2) 0 b)
+          (fEq 1 0))))
+  | PA.Formula.bot => fBot
+  | PA.Formula.imp a b => fImp (formulaAt ρ a) (formulaAt ρ b)
+  | PA.Formula.and a b => fAnd (formulaAt ρ a) (formulaAt ρ b)
+  | PA.Formula.or a b => fOr (formulaAt ρ a) (formulaAt ρ b)
+  | PA.Formula.all a => fAll (fImp domainForm (formulaAt (upVarMap ρ) a))
+  | PA.Formula.ex a => fEx (fAnd domainForm (formulaAt (upVarMap ρ) a))
+
+theorem formulaAt_exact (phi : PA.Formula) :
+    ∀ (ρ : Nat → Nat) (v e),
+      (∀ n, e (ρ n) = ordinalCode (v n)) →
+        (Sat Mem e (formulaAt ρ phi) ↔ PA.Formula.Sat PA.natModel v phi) := by
+  induction phi with
+  | eq a b =>
+      intro ρ v e hρ
+      constructor
+      · intro h
+        rcases h with ⟨x, y, ha, hb, heq⟩
+        have hρ' : ∀ n, scons y (scons x e) (ρ n + 2) = ordinalCode (v n) := by
+          intro n
+          simpa [scons] using hρ n
+        have hx := (termGraphAt_exact a (fun n => ρ n + 2) 1 v
+          (scons y (scons x e)) hρ').mp ha
+        have hy := (termGraphAt_exact b (fun n => ρ n + 2) 0 v
+          (scons y (scons x e)) hρ').mp hb
+        change x = ordinalCode (PA.Term.eval PA.natModel v a) at hx
+        change y = ordinalCode (PA.Term.eval PA.natModel v b) at hy
+        apply ordinalCode_injective
+        rw [← hx, ← hy]
+        exact heq
+      · intro h
+        let x := ordinalCode (PA.Term.eval PA.natModel v a)
+        let y := ordinalCode (PA.Term.eval PA.natModel v b)
+        refine ⟨x, y, ?_, ?_, ?_⟩
+        · apply (termGraphAt_exact a (fun n => ρ n + 2) 1 v
+            (scons y (scons x e)) ?_).mpr
+          · rfl
+          · intro n
+            simpa [scons] using hρ n
+        · apply (termGraphAt_exact b (fun n => ρ n + 2) 0 v
+            (scons y (scons x e)) ?_).mpr
+          · rfl
+          · intro n
+            simpa [scons] using hρ n
+        · change x = y
+          simp only [x, y]
+          rw [h]
+  | bot =>
+      intro ρ v e hρ
+      exact Iff.rfl
+  | imp a b iha ihb =>
+      intro ρ v e hρ
+      simp only [formulaAt, PA.Formula.Sat]
+      exact ⟨fun hab ha => (ihb ρ v e hρ).mp (hab ((iha ρ v e hρ).mpr ha)),
+             fun hab ha => (ihb ρ v e hρ).mpr (hab ((iha ρ v e hρ).mp ha))⟩
+  | and a b iha ihb =>
+      intro ρ v e hρ
+      simp only [formulaAt, PA.Formula.Sat]
+      exact and_congr (iha ρ v e hρ) (ihb ρ v e hρ)
+  | or a b iha ihb =>
+      intro ρ v e hρ
+      simp only [formulaAt, PA.Formula.Sat]
+      exact or_congr (iha ρ v e hρ) (ihb ρ v e hρ)
+  | all a ih =>
+      intro ρ v e hρ
+      constructor
+      · intro h n
+        have hdom : Sat Mem (scons (ordinalCode n) e) domainForm :=
+          domain_ordinalCode n e
+        have hρ' : ∀ k, scons (ordinalCode n) e (upVarMap ρ k) =
+            ordinalCode (scons n v k) := by
+          intro k
+          cases k with
+          | zero => rfl
+          | succ k =>
+              simp [upVarMap, scons]
+              exact hρ k
+        exact (ih (upVarMap ρ) (scons n v) (scons (ordinalCode n) e) hρ').mp
+          (h (ordinalCode n) hdom)
+      · intro h x hxdom
+        rcases (domain_exact (scons x e)).mp hxdom with ⟨n, hn⟩
+        have hx : x = ordinalCode n := hn.symm
+        have hρ' : ∀ k, scons x e (upVarMap ρ k) =
+            ordinalCode (scons n v k) := by
+          intro k
+          cases k with
+          | zero =>
+              exact hx
+          | succ k =>
+              simp [upVarMap, scons]
+              exact hρ k
+        exact (ih (upVarMap ρ) (scons n v) (scons x e) hρ').mpr (h n)
+  | ex a ih =>
+      intro ρ v e hρ
+      constructor
+      · intro h
+        rcases h with ⟨x, hxdom, hbody⟩
+        rcases (domain_exact (scons x e)).mp hxdom with ⟨n, hn⟩
+        have hx : x = ordinalCode n := hn.symm
+        have hρ' : ∀ k, scons x e (upVarMap ρ k) =
+            ordinalCode (scons n v k) := by
+          intro k
+          cases k with
+          | zero =>
+              exact hx
+          | succ k =>
+              simp [upVarMap, scons]
+              exact hρ k
+        exact ⟨n, (ih (upVarMap ρ) (scons n v) (scons x e) hρ').mp hbody⟩
+      · intro h
+        rcases h with ⟨n, hn⟩
+        refine ⟨ordinalCode n, domain_ordinalCode n e, ?_⟩
+        have hρ' : ∀ k, scons (ordinalCode n) e (upVarMap ρ k) =
+            ordinalCode (scons n v k) := by
+          intro k
+          cases k with
+          | zero => rfl
+          | succ k =>
+              simp [upVarMap, scons]
+              exact hρ k
+        exact (ih (upVarMap ρ) (scons n v) (scons (ordinalCode n) e) hρ').mpr hn
+
 end PAInHF
 
 /-! ## The HF-in-PA-in-HF round trip -/
