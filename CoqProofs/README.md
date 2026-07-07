@@ -21,10 +21,14 @@ Current ports:
   summation identity from `FloorSqrtSum.lean`.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
+- `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
+  A002845.  It uses Coq's verified binary natural numbers `N` as the sparse
+  carrier, preserving the evaluation/canonicality/comparison and
+  increment/add/shift correctness API from `SparseBinary.lean`.
 - `A002845.v` ports the exact-logarithm reduction for the natural power tower
   sequence and verifies the first six values through a binary-`N` executable
-  logarithm.  The later Lean hereditary sparse-binary layer for larger values
-  is not yet ported.
+  logarithm.  It is connected to `SparseBinary.v` by a certified sparse-log
+  evaluator that agrees with the exact binary logarithm evaluator.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -44,6 +48,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
