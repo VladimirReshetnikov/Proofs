@@ -2111,6 +2111,34 @@ theorem addGraphAt_zero_right_model {α : Type u}
     rw [hright, hout]
     exact FirstOrderAdjunctionModel.zeroSuccRecGraph_base M (e left)
 
+theorem addGraphAt_succ_right_of_addGraphAt_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α)
+    (outSucc out left rightSucc right : Nat)
+    (hrightOrd : OrdinalLike M.mem (e right))
+    (hrightSucc : e rightSucc = M.adjoin (e right) (e right))
+    (houtSucc : e outSucc = M.adjoin (e out) (e out))
+    (hadd : Sat M.mem e (addGraphAt out left right)) :
+    Sat M.mem e (addGraphAt outSucc left rightSucc) := by
+  rcases hadd with ⟨f, hf, hout⟩
+  have hf' := (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M (scons f e)
+    0 (left+1) (right+1)).mp hf
+  have hout' := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M (scons f e)
+    (right+1) (out+1) 0).mp hout
+  change FirstOrderAdjunctionModel.SuccRecApprox M (e left) f (e right) at hf'
+  change M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f at hout'
+  let g := FirstOrderAdjunctionModel.succRecGraphSucc M f (e right) (e out)
+  refine ⟨g, ?_, ?_⟩
+  · apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M (scons g e)
+      0 (left+1) (rightSucc+1)).mpr
+    change FirstOrderAdjunctionModel.SuccRecApprox M (e left) g (e rightSucc)
+    rw [hrightSucc]
+    exact FirstOrderAdjunctionModel.succRecGraphSucc_succRecApprox M hrightOrd hf' hout'
+  · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M (scons g e)
+      (rightSucc+1) (outSucc+1) 0).mpr
+    change M.mem (FirstOrderAdjunctionModel.kpair M (e rightSucc) (e outSucc)) g
+    rw [hrightSucc, houtSucc]
+    exact FirstOrderAdjunctionModel.succRecGraphSucc_new M f (e right) (e out)
+
 theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
   HF_ordinalLikeAt_of_ordinalCode (scons (ordinalCode n) e) 0 n rfl

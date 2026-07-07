@@ -333,6 +333,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_succInj_sat_of_irrefl
 #check @AckermannHF.PAInHF.translated_succInj_sat_of_HFAx_s
 #check @AckermannHF.PAInHF.addGraphAt_zero_right_model
+#check @AckermannHF.PAInHF.addGraphAt_succ_right_of_addGraphAt_model
 #check @AckermannHF.PAInHF.termGraphAt_add_var_zero_model
 #check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
 #check @AckermannHF.PAInHF.translated_addZero_sat_of_HFAx_s
