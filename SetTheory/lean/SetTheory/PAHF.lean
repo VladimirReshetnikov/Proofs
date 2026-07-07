@@ -14361,6 +14361,32 @@ theorem BProv_HFFin_formulaAt_eqRefl_domainContext {G : List Form}
     exact formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext v hHF ρ t v
       (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
 
+/-- The semantic reflexivity rule for arbitrary PA terms is monotone in the
+explicit domain prefix. -/
+theorem formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext_le {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (t : PA.Term) (e : Nat → α) {n : Nat}
+    (hbound : t.bound ≤ n)
+    (hctx : ∀ g, g ∈ domainContextAt ρ n → Sat mem e g) :
+    Sat mem e (formulaAt ρ (PA.Formula.eq t t)) :=
+  formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext v hHF ρ t e
+    (fun g hg => hctx g
+      (mem_domainContextAt_mono (ρ := ρ) hbound hg))
+
+/-- Finite HF proves translated reflexivity for an arbitrary PA term from any
+domain prefix large enough to cover the term's free variables. -/
+theorem BProv_HFFin_formulaAt_eqRefl_domainContext_le {G : List Form}
+    (ρ : Nat → Nat) (t : PA.Term) {n : Nat} (hbound : t.bound ≤ n) :
+    BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.eq t t)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    exact formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext_le v hHF
+      ρ t v hbound
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
+
 /-- Finite HF proves that an arbitrary PA term has an ordinal-like translated
 graph value from explicit domain assumptions for all free variables of the
 term. -/
@@ -14372,6 +14398,33 @@ theorem BProv_HFFin_termGraphAt_exists_domainContext {G : List Form}
   · exact Sentences_HFFin
   · intro Dom mem v hHF hctx
     exact termGraphAt_exists_valid_of_HFFinAx_s_domainContext v hHF ρ t v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
+
+/-- The semantic term-graph existence rule is monotone in the explicit domain
+prefix. -/
+theorem termGraphAt_exists_valid_of_HFFinAx_s_domainContext_le {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (t : PA.Term) (e : Nat → α) {n : Nat}
+    (hbound : t.bound ≤ n)
+    (hctx : ∀ g, g ∈ domainContextAt ρ n → Sat mem e g) :
+    Sat mem e
+      (fEx (fAnd domainForm (termGraphAt (fun n => ρ n + 1) 0 t))) :=
+  termGraphAt_exists_valid_of_HFFinAx_s_domainContext v hHF ρ t e
+    (fun g hg => hctx g
+      (mem_domainContextAt_mono (ρ := ρ) hbound hg))
+
+/-- Finite HF proves term-graph existence from any domain prefix large enough
+to cover the term's free variables. -/
+theorem BProv_HFFin_termGraphAt_exists_domainContext_le {G : List Form}
+    (ρ : Nat → Nat) (t : PA.Term) {n : Nat} (hbound : t.bound ≤ n) :
+    BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (fEx (fAnd domainForm (termGraphAt (fun n => ρ n + 1) 0 t))) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    exact termGraphAt_exists_valid_of_HFFinAx_s_domainContext_le v hHF
+      ρ t v hbound
       (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
 
 /-- In every model of finite HF, universal elimination by an arbitrary PA term
@@ -14400,6 +14453,22 @@ theorem formulaAt_allE_valid_of_HFFinAx_s_domainContext {α : Type u}
   exact (formulaAt_subst_instTerm_of_termGraph_model M a t ρ x e
     hfree hxGraph).mpr hbody
 
+/-- The semantic universal-elimination rule for arbitrary PA terms is monotone
+in the explicit domain prefix. -/
+theorem formulaAt_allE_valid_of_HFFinAx_s_domainContext_le {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term)
+    (e : Nat → α) {n : Nat} (hbound : t.bound ≤ n)
+    (hctx : ∀ g, g ∈ domainContextAt ρ n → Sat mem e g)
+    (hall : Sat mem e (formulaAt ρ (PA.Formula.all a))) :
+    Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) :=
+  formulaAt_allE_valid_of_HFFinAx_s_domainContext v hHF ρ a t e
+    (fun g hg => hctx g
+      (mem_domainContextAt_mono (ρ := ρ) hbound hg))
+    hall
+
 /-- In every model of finite HF, existential introduction by an arbitrary PA
 term is valid once the free variables of that term are known to lie in the PA
 domain. -/
@@ -14426,6 +14495,22 @@ theorem formulaAt_exI_valid_of_HFFinAx_s_domainContext {α : Type u}
       hfree hxGraph).mp hbody
   exact ⟨x, (HF_ordinalLikeAt_spec (scons x e) 0).mpr hxOrd, hbody'⟩
 
+/-- The semantic existential-introduction rule for arbitrary PA terms is
+monotone in the explicit domain prefix. -/
+theorem formulaAt_exI_valid_of_HFFinAx_s_domainContext_le {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term)
+    (e : Nat → α) {n : Nat} (hbound : t.bound ≤ n)
+    (hctx : ∀ g, g ∈ domainContextAt ρ n → Sat mem e g)
+    (hbody : Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a))) :
+    Sat mem e (formulaAt ρ (PA.Formula.ex a)) :=
+  formulaAt_exI_valid_of_HFFinAx_s_domainContext v hHF ρ a t e
+    (fun g hg => hctx g
+      (mem_domainContextAt_mono (ρ := ρ) hbound hg))
+    hbody
+
 /-- Finite HF proves universal elimination by an arbitrary PA term from
 explicit domain assumptions for that term's free variables. -/
 theorem BProv_HFFin_formulaAt_allE_term_domainContext {G : List Form}
@@ -14440,6 +14525,24 @@ theorem BProv_HFFin_formulaAt_allE_term_domainContext {G : List Form}
     have hallSat : Sat mem v (formulaAt ρ (PA.Formula.all a)) :=
       soundness_BProv hall v hHF hctx
     exact formulaAt_allE_valid_of_HFFinAx_s_domainContext v hHF ρ a t v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg))) hallSat
+
+/-- Finite HF proves universal elimination by an arbitrary PA term from any
+domain prefix large enough to cover the term's free variables. -/
+theorem BProv_HFFin_formulaAt_allE_term_domainContext_le {G : List Form}
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term) {n : Nat}
+    (hbound : t.bound ≤ n)
+    (hall : BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.all a))) :
+    BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    have hallSat : Sat mem v (formulaAt ρ (PA.Formula.all a)) :=
+      soundness_BProv hall v hHF hctx
+    exact formulaAt_allE_valid_of_HFFinAx_s_domainContext_le v hHF
+      ρ a t v hbound
       (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg))) hallSat
 
 /-- Finite HF proves existential introduction by an arbitrary PA term from
@@ -14457,6 +14560,25 @@ theorem BProv_HFFin_formulaAt_exI_term_domainContext {G : List Form}
         (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) :=
       soundness_BProv hbody v hHF hctx
     exact formulaAt_exI_valid_of_HFFinAx_s_domainContext v hHF ρ a t v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg))) hbodySat
+
+/-- Finite HF proves existential introduction by an arbitrary PA term from any
+domain prefix large enough to cover the term's free variables. -/
+theorem BProv_HFFin_formulaAt_exI_term_domainContext_le {G : List Form}
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term) {n : Nat}
+    (hbound : t.bound ≤ n)
+    (hbody : BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a))) :
+    BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.ex a)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    have hbodySat : Sat mem v
+        (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) :=
+      soundness_BProv hbody v hHF hctx
+    exact formulaAt_exI_valid_of_HFFinAx_s_domainContext_le v hHF
+      ρ a t v hbound
       (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg))) hbodySat
 
 /-- In every model of finite HF, equality elimination by arbitrary PA terms is
@@ -14513,6 +14635,27 @@ theorem formulaAt_eqElim_valid_of_HFFinAx_s_domainContext {α : Type u}
   exact (formulaAt_subst_instTerm_of_termGraph_model M a t ρ y e
     htfree htGraph).mpr hbodyY
 
+/-- The semantic equality-elimination rule for arbitrary PA terms is monotone
+in a shared explicit domain prefix large enough for both terms. -/
+theorem formulaAt_eqElim_valid_of_HFFinAx_s_domainContext_le {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (s t : PA.Term) (a : PA.Formula)
+    (e : Nat → α) {n : Nat}
+    (hsbound : s.bound ≤ n) (htbound : t.bound ≤ n)
+    (hctx : ∀ g, g ∈ domainContextAt ρ n → Sat mem e g)
+    (heq : Sat mem e (formulaAt ρ (PA.Formula.eq s t)))
+    (hbody : Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm s) a))) :
+    Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) :=
+  formulaAt_eqElim_valid_of_HFFinAx_s_domainContext v hHF ρ s t a e
+    (fun g hg => hctx g
+      (mem_domainContextAt_mono (ρ := ρ) hsbound hg))
+    (fun g hg => hctx g
+      (mem_domainContextAt_mono (ρ := ρ) htbound hg))
+    heq hbody
+
 /-- Finite HF proves equality elimination for arbitrary PA terms from explicit
 domain assumptions for the free variables of both terms. -/
 theorem BProv_HFFin_formulaAt_eqElim_term_domainContext {G : List Form}
@@ -14539,6 +14682,30 @@ theorem BProv_HFFin_formulaAt_eqElim_term_domainContext {G : List Form}
       (fun g hg => hctx g
         (List.mem_append.mpr
           (Or.inr (List.mem_append.mpr (Or.inl hg)))))
+      heqSat hbodySat
+
+/-- Finite HF proves equality elimination for arbitrary PA terms from any
+shared domain prefix large enough to cover the free variables of both terms. -/
+theorem BProv_HFFin_formulaAt_eqElim_term_domainContext_le {G : List Form}
+    (ρ : Nat → Nat) (s t : PA.Term) (a : PA.Formula) {n : Nat}
+    (hsbound : s.bound ≤ n) (htbound : t.bound ≤ n)
+    (heq : BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.eq s t)))
+    (hbody : BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm s) a))) :
+    BProv HFFinAx_s (domainContextAt ρ n ++ G)
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    have heqSat : Sat mem v (formulaAt ρ (PA.Formula.eq s t)) :=
+      soundness_BProv heq v hHF hctx
+    have hbodySat : Sat mem v
+        (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm s) a)) :=
+      soundness_BProv hbody v hHF hctx
+    exact formulaAt_eqElim_valid_of_HFFinAx_s_domainContext_le v hHF
+      ρ s t a v hsbound htbound
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
       heqSat hbodySat
 
 /-- An HF equality proof between the slots assigned to two PA variables yields
