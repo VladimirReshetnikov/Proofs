@@ -2241,6 +2241,21 @@ def div2StepAt (value half bit : Nat) : Formula :=
     (eq (Term.var value)
       (Term.add (Term.add (Term.var half) (Term.var half)) (Term.var bit)))
 
+def remAt (rem value modulus : Nat) : Formula :=
+  ex (and
+    (ltAt (rem+1) (modulus+1))
+    (eq (Term.var (value+1))
+      (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+        (Term.var (rem+1)))))
+
+def betaModTerm (step idx : Nat) : Term :=
+  Term.succ (Term.mul (Term.succ (Term.var idx)) (Term.var step))
+
+def betaAt (out code step idx : Nat) : Formula :=
+  ex (and
+    (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+    (remAt (out+1) (code+1) 0))
+
 theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
     Sat natModel e (leAt a b) ↔ e a ≤ e b := by
   constructor
@@ -2345,6 +2360,58 @@ theorem div2StepAt_nat (e : Nat → Nat) (value half bit : Nat) :
       simp only [Term.eval, natModel]
       change e value = e half + e half + e bit
       omega⟩
+
+theorem betaModTerm_nat (e : Nat → Nat) (step idx : Nat) :
+    Term.eval natModel e (betaModTerm step idx) = 1 + (e idx + 1) * e step := by
+  simp only [betaModTerm, Term.eval, natModel]
+  change Nat.succ ((e idx + 1) * e step) = 1 + (e idx + 1) * e step
+  omega
+
+theorem remAt_nat (e : Nat → Nat) (rem value modulus : Nat) :
+    Sat natModel e (remAt rem value modulus) ↔
+      ∃ q, e value = q * e modulus + e rem ∧ e rem < e modulus := by
+  constructor
+  · intro h
+    rcases h with ⟨q, hlt, hval⟩
+    refine ⟨q, ?_, ?_⟩
+    · simp only [Sat, Term.eval, natModel, scons] at hval
+      change e value = q * e modulus + e rem at hval
+      exact hval
+    · exact (ltAt_nat (scons q e) (rem+1) (modulus+1)).mp hlt
+  · intro h
+    rcases h with ⟨q, hval, hlt⟩
+    refine ⟨q, ?_, ?_⟩
+    · exact (ltAt_nat (scons q e) (rem+1) (modulus+1)).mpr hlt
+    · simp only [Sat, Term.eval, natModel, scons]
+      change e value = q * e modulus + e rem
+      exact hval
+
+theorem betaAt_nat (e : Nat → Nat) (out code step idx : Nat) :
+    Sat natModel e (betaAt out code step idx) ↔
+      ∃ q,
+        e code = q * (1 + (e idx + 1) * e step) + e out ∧
+          e out < 1 + (e idx + 1) * e step := by
+  constructor
+  · intro h
+    rcases h with ⟨m, hmod, hrem⟩
+    have hm : m = 1 + (e idx + 1) * e step := by
+      simp only [Sat, Term.eval_rename, betaModTerm_nat, scons] at hmod
+      exact hmod
+    rcases (remAt_nat (scons m e) (out+1) (code+1) 0).mp hrem with
+      ⟨q, hval, hlt⟩
+    refine ⟨q, ?_, ?_⟩
+    · simpa [scons, hm] using hval
+    · simpa [scons, hm] using hlt
+  · intro h
+    rcases h with ⟨q, hval, hlt⟩
+    let m := 1 + (e idx + 1) * e step
+    refine ⟨m, ?_, ?_⟩
+    · simp only [Sat, Term.eval_rename, betaModTerm_nat, scons]
+      rfl
+    · apply (remAt_nat (scons m e) (out+1) (code+1) 0).mpr
+      refine ⟨q, ?_, ?_⟩
+      · simpa [scons, m] using hval
+      · simpa [scons, m] using hlt
 
 end Formula
 
