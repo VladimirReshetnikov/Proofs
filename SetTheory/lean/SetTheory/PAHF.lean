@@ -2270,6 +2270,26 @@ def BetaEntry (code step idx value : Nat) : Prop :=
   ∃ q, code = q * (1 + (idx + 1) * step) + value ∧
     value < 1 + (idx + 1) * step
 
+/-- Semantic mirror of a beta-coded binary-halving step. -/
+def BetaDiv2Step (code step idx cur next bit : Nat) : Prop :=
+  BetaEntry code step idx cur ∧
+    BetaEntry code step (idx + 1) next ∧
+      (bit = 0 ∨ bit = 1) ∧ cur = next + next + bit
+
+/-- Semantic mirror of a beta-coded halving trace through `last`. -/
+def BetaDiv2StepsThrough (code step last : Nat) : Prop :=
+  ∀ k, k ≤ last → ∃ cur next bit, BetaDiv2Step code step k cur next bit
+
+/-- Semantic mirror of the bit read from a beta-coded halving trace. -/
+def BetaDiv2Bit (code step idx bit : Nat) : Prop :=
+  ∃ cur next, BetaDiv2Step code step idx cur next bit
+
+/-- Semantic trace predicate used by the PA interpretation of HF membership. -/
+def HFMemTrace (elem set code step : Nat) : Prop :=
+  BetaEntry code step 0 set ∧
+    BetaDiv2StepsThrough code step elem ∧
+      BetaDiv2Bit code step elem 1
+
 /-- A single adjacent beta-coded sequence step is a binary-halving step:
 the current value is `2 * next + bit`, with `bit ∈ {0,1}`. -/
 def betaDiv2StepWitnessAt (code step idx : Nat) : Formula :=
@@ -2291,6 +2311,28 @@ binary-halving step. -/
 def betaDiv2StepsThroughAt (code step last : Nat) : Formula :=
   all (imp (leAt 0 (last+1))
     (betaDiv2StepWitnessAt (code+1) (step+1) 0))
+
+/-- Read a specified bit from a beta-coded halving trace at `idx`. -/
+def betaDiv2BitAt (bit code step idx : Nat) : Formula :=
+  ex (ex
+    (and
+      (betaAt 1 (code+2) (step+2) (idx+2))
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2)))))
+
+/-- PA formula for Ackermann-coded HF membership, mediated by a beta-coded
+binary-halving trace. -/
+def hfMemAt (elem set : Nat) : Formula :=
+  ex (ex
+    (and
+      (betaAtConstIdx (set+2) 1 0 0)
+      (and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (elem+3)))))))
 
 theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
     Sat natModel e (leAt a b) ↔ e a ≤ e b := by
@@ -2589,6 +2631,83 @@ theorem betaDiv2StepsThroughAt_nat (e : Nat → Nat) (code step last : Nat) :
       simpa [scons] using hle
     apply (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mpr
     simpa [scons] using h k hk
+
+theorem betaDiv2BitAt_nat (e : Nat → Nat) (bit code step idx : Nat) :
+    Sat natModel e (betaDiv2BitAt bit code step idx) ↔
+      BetaDiv2Bit (e code) (e step) (e idx) (e bit) := by
+  constructor
+  · intro h
+    rcases h with ⟨cur, next, hcur, hnext, hstep⟩
+    let E := scons next (scons cur e)
+    have hcur' :
+        BetaEntry (e code) (e step) (e idx) cur := by
+      have hc := (betaAt_nat_entry E 1 (code+2) (step+2) (idx+2)).mp hcur
+      simpa [E, scons] using hc
+    have hnext' :
+        BetaEntry (e code) (e step) (e idx + 1) next := by
+      have hn := (betaAtSuccIdx_nat_entry E 0 (code+2) (step+2) (idx+2)).mp hnext
+      simpa [E, scons, Nat.add_assoc] using hn
+    have hstep' :
+        (e bit = 0 ∨ e bit = 1) ∧ cur = next + next + e bit := by
+      have hs := (div2StepAt_nat E 1 0 (bit+2)).mp hstep
+      simpa [E, scons] using hs
+    exact ⟨cur, next, hcur', hnext', hstep'⟩
+  · intro h
+    rcases h with ⟨cur, next, hcur, hnext, hstep⟩
+    refine ⟨cur, next, ?_, ?_, ?_⟩
+    · let E := scons next (scons cur e)
+      apply (betaAt_nat_entry E 1 (code+2) (step+2) (idx+2)).mpr
+      simpa [E, scons] using hcur
+    · let E := scons next (scons cur e)
+      apply (betaAtSuccIdx_nat_entry E 0 (code+2) (step+2) (idx+2)).mpr
+      simpa [E, scons, Nat.add_assoc] using hnext
+    · let E := scons next (scons cur e)
+      apply (div2StepAt_nat E 1 0 (bit+2)).mpr
+      simpa [E, scons] using hstep
+
+theorem hfMemAt_nat_trace (e : Nat → Nat) (elem set : Nat) :
+    Sat natModel e (hfMemAt elem set) ↔
+      ∃ code step, HFMemTrace (e elem) (e set) code step := by
+  constructor
+  · intro h
+    rcases h with ⟨code, step, hstart, hsteps, hbitOne⟩
+    let E := scons step (scons code e)
+    have hstart' :
+        BetaEntry code step 0 (e set) := by
+      have hs := (betaAtConstIdx_nat_entry E (set+2) 1 0 0).mp hstart
+      simpa [E, scons] using hs
+    have hsteps' :
+        BetaDiv2StepsThrough code step (e elem) := by
+      have hs := (betaDiv2StepsThroughAt_nat E 1 0 (elem+2)).mp hsteps
+      intro k hk
+      have hkE : k ≤ E (elem+2) := by
+        simpa [E, scons] using hk
+      have hraw := hs k hkE
+      simpa [BetaDiv2Step, E, scons] using hraw
+    have hbit' :
+        BetaDiv2Bit code step (e elem) 1 := by
+      rcases hbitOne with ⟨bit, hone, hbit⟩
+      have hone' : bit = 1 := (oneAt_nat (scons bit E) 0).mp hone
+      have hb := (betaDiv2BitAt_nat (scons bit E) 0 2 1 (elem+3)).mp hbit
+      subst bit
+      simpa [E, scons] using hb
+    exact ⟨code, step, hstart', hsteps', hbit'⟩
+  · intro h
+    rcases h with ⟨code, step, hstart, hsteps, hbit⟩
+    let E := scons step (scons code e)
+    refine ⟨code, step, ?_, ?_, ?_⟩
+    · apply (betaAtConstIdx_nat_entry E (set+2) 1 0 0).mpr
+      simpa [E, scons] using hstart
+    · apply (betaDiv2StepsThroughAt_nat E 1 0 (elem+2)).mpr
+      intro k hk
+      have hk' : k ≤ e elem := by
+        simpa [E, scons] using hk
+      have hraw := hsteps k hk'
+      simpa [BetaDiv2Step, E, scons] using hraw
+    · refine ⟨1, ?_, ?_⟩
+      · exact (oneAt_nat (scons 1 E) 0).mpr rfl
+      · apply (betaDiv2BitAt_nat (scons 1 E) 0 2 1 (elem+3)).mpr
+        simpa [E, scons] using hbit
 
 end Formula
 
