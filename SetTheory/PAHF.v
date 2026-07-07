@@ -2735,6 +2735,117 @@ Proof.
   - exact hm.
 Qed.
 
+Lemma fofam_binUnion_exists : forall (V : Type)
+    (M : FirstOrderFiniteAdjunctionModel V) (a b : V),
+  exists u, forall x,
+    foam_mem V M x u <-> foam_mem V M x a \/ foam_mem V M x b.
+Proof.
+  intros V M a b.
+  pose (phi := HF_binUnionAt 1 0).
+  pose (tail := fun _ : nat => a).
+  pose proof (fofam_finite_induction_schema V M phi (scons V a tail))
+    as hind.
+  assert (hall : forall b,
+      Sat V (foam_mem V M) (scons V b (scons V a tail)) phi).
+  {
+    apply (proj1 (HF_finite_induction_form_spec V (foam_mem V M)
+      phi (scons V a tail)) hind).
+    split.
+    - intros z hzEmpty.
+      apply (proj2 (HF_binUnionAt_spec V (foam_mem V M)
+        (scons V z (scons V a tail)) 1 0)).
+      exists a.
+      intro x.
+      split.
+      + intro hxa. now left.
+      + intros [hxa | hxz].
+        * exact hxa.
+        * exfalso. exact (hzEmpty x hxz).
+    - intros old y c hc hOld.
+      destruct (proj1 (HF_binUnionAt_spec V (foam_mem V M)
+        (scons V old (scons V a tail)) 1 0) hOld) as [u hu].
+      apply (proj2 (HF_binUnionAt_spec V (foam_mem V M)
+        (scons V c (scons V a tail)) 1 0)).
+      exists (foam_adjoin V M u y).
+      intro x.
+      split.
+      + intro hx.
+        destruct (proj1 (foam_adjoin_spec V M x u y) hx) as [hxu | hxy].
+        * destruct (proj1 (hu x) hxu) as [hxa | hxold].
+          -- now left.
+          -- right. exact (proj2 (hc x) (or_introl hxold)).
+        * subst x.
+          right. exact (proj2 (hc y) (or_intror eq_refl)).
+      + intros [hxa | hxc].
+        * apply (proj2 (foam_adjoin_spec V M x u y)).
+          left. exact (proj2 (hu x) (or_introl hxa)).
+        * destruct (proj1 (hc x) hxc) as [hxold | hxy].
+          -- apply (proj2 (foam_adjoin_spec V M x u y)).
+             left. exact (proj2 (hu x) (or_intror hxold)).
+          -- apply (proj2 (foam_adjoin_spec V M x u y)).
+             now right.
+  }
+  exact (proj1 (HF_binUnionAt_spec V (foam_mem V M)
+    (scons V b (scons V a tail)) 1 0) (hall b)).
+Qed.
+
+Lemma fofam_union_exists : forall (V : Type)
+    (M : FirstOrderFiniteAdjunctionModel V) (a : V),
+  exists u, forall x,
+    foam_mem V M x u <->
+      exists v, foam_mem V M v a /\ foam_mem V M x v.
+Proof.
+  intros V M a.
+  pose (phi := HF_unionAt 0).
+  pose (tail := fun _ : nat => foam_empty V M).
+  pose proof (fofam_finite_induction_schema V M phi tail) as hind.
+  assert (hall : forall a,
+      Sat V (foam_mem V M) (scons V a tail) phi).
+  {
+    apply (proj1 (HF_finite_induction_form_spec V (foam_mem V M)
+      phi tail) hind).
+    split.
+    - intros z hzEmpty.
+      apply (proj2 (HF_unionAt_spec V (foam_mem V M)
+        (scons V z tail) 0)).
+      exists (foam_empty V M).
+      intro x.
+      split.
+      + intro hx. exfalso. exact (foam_empty_spec V M x hx).
+      + intros [v [hvz _]].
+        exfalso. exact (hzEmpty v hvz).
+    - intros old y c hc hOld.
+      destruct (proj1 (HF_unionAt_spec V (foam_mem V M)
+        (scons V old tail) 0) hOld) as [u hu].
+      destruct (fofam_binUnion_exists V M u y) as [w hw].
+      apply (proj2 (HF_unionAt_spec V (foam_mem V M)
+        (scons V c tail) 0)).
+      exists w.
+      intro x.
+      split.
+      + intro hxw.
+        destruct (proj1 (hw x) hxw) as [hxu | hxy].
+        * destruct (proj1 (hu x) hxu) as [v [hvold hxv]].
+          exists v.
+          split.
+          -- exact (proj2 (hc v) (or_introl hvold)).
+          -- exact hxv.
+        * exists y.
+          split.
+          -- exact (proj2 (hc y) (or_intror eq_refl)).
+          -- exact hxy.
+      + intros [v [hvc hxv]].
+        destruct (proj1 (hc v) hvc) as [hvold | hvy].
+        * apply (proj2 (hw x)).
+          left. exact (proj2 (hu x) (ex_intro _ v (conj hvold hxv))).
+        * subst v.
+          apply (proj2 (hw x)).
+          now right.
+  }
+  exact (proj1 (HF_unionAt_spec V (foam_mem V M)
+    (scons V a tail) 0) (hall a)).
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
