@@ -233,6 +233,7 @@ open SetTheory
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.chainSubsetsMax_exists
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.ordinalLike_empty_or_succ
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.succRecTotal_of_ordinalLike
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel.succRecApprox_value_ordinalLike
 #check @AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
