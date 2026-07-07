@@ -74,6 +74,10 @@ Current ports:
   Coq verifies their sizes and membership in the corresponding
   parenthesization lists.  The Lean file's semantic complex-valued membership,
   norm formula, and separation criteria are not yet replayed in Coq.
+- `A198683Schoenfield.v` ports the finite Schoenfield class-count certificate
+  from `A198683Schoenfield.lean`: normalized labels are generated from the
+  retained source table, and Coq verifies the Catalan row counts, no-gap
+  normalization condition, and published class counts through `n = 11`.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -101,6 +105,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Magnitude.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Probe.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12OverflowWitness.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Schoenfield.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
