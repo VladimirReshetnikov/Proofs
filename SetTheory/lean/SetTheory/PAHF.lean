@@ -2709,6 +2709,93 @@ theorem hfMemAt_nat_trace (e : Nat → Nat) (elem set : Nat) :
       · apply (betaDiv2BitAt_nat (scons 1 E) 0 2 1 (elem+3)).mpr
         simpa [E, scons] using hbit
 
+theorem BetaEntry_functional {code step idx a b : Nat}
+    (ha : BetaEntry code step idx a) (hb : BetaEntry code step idx b) : a = b := by
+  rcases ha with ⟨qa, hca, hla⟩
+  rcases hb with ⟨qb, hcb, hlb⟩
+  let m := 1 + (idx + 1) * step
+  have hmoda : code % m = a := by
+    rw [hca]
+    have htmp : (qa * m + a) % m = a := by
+      rw [Nat.mul_comm qa m]
+      rw [Nat.mul_add_mod_self_left]
+      exact Nat.mod_eq_of_lt (by simpa [m] using hla)
+    simpa [m] using htmp
+  have hmodb : code % m = b := by
+    rw [hcb]
+    have htmp : (qb * m + b) % m = b := by
+      rw [Nat.mul_comm qb m]
+      rw [Nat.mul_add_mod_self_left]
+      exact Nat.mod_eq_of_lt (by simpa [m] using hlb)
+    simpa [m] using htmp
+  exact hmoda.symm.trans hmodb
+
+theorem BetaDiv2Step_div_two {code step idx cur next bit : Nat}
+    (h : BetaDiv2Step code step idx cur next bit) : cur / 2 = next := by
+  rcases h with ⟨_, _, hbit, hcur⟩
+  rcases hbit with rfl | rfl
+  · rw [hcur, ← Nat.two_mul next]
+    rw [Nat.mul_add_div]
+    · simp
+    · decide
+  · rw [hcur, ← Nat.two_mul next]
+    rw [Nat.mul_add_div]
+    · simp
+    · decide
+
+theorem BetaDiv2Step_bit_one_testBit_zero {code step idx cur next : Nat}
+    (h : BetaDiv2Step code step idx cur next 1) : cur.testBit 0 = true := by
+  rcases h with ⟨_, _, _, hcur⟩
+  rw [hcur, Nat.testBit_zero]
+  have hshape : next + next + 1 = 1 + 2 * next := by omega
+  rw [hshape]
+  rw [Nat.add_mul_mod_self_left]
+  simp
+
+theorem HFMemTrace_entry_shiftRight {elem set code step : Nat}
+    (h : HFMemTrace elem set code step) :
+    ∀ k value, k ≤ elem + 1 →
+      BetaEntry code step k value → value = set >>> k := by
+  intro k
+  induction k with
+  | zero =>
+      intro value _ hvalue
+      have hstart : BetaEntry code step 0 set := h.1
+      have hv : value = set := BetaEntry_functional hvalue hstart
+      simpa [Nat.shiftRight_zero] using hv
+  | succ k ih =>
+      intro value hle hvalue
+      have hk : k ≤ elem := by omega
+      rcases h.2.1 k hk with ⟨cur, next, bit, hstep⟩
+      have hcur : cur = set >>> k := ih cur (by omega) hstep.1
+      have hvalue_next : value = next :=
+        BetaEntry_functional hvalue hstep.2.1
+      have hnext : next = cur / 2 :=
+        (BetaDiv2Step_div_two hstep).symm
+      calc
+        value = next := hvalue_next
+        _ = cur / 2 := hnext
+        _ = (set >>> k) / 2 := by rw [hcur]
+        _ = set >>> (k+1) := (Nat.shiftRight_succ set k).symm
+
+theorem HFMemTrace_mem {elem set code step : Nat}
+    (h : HFMemTrace elem set code step) : AckermannHF.Mem elem set := by
+  rcases h.2.2 with ⟨cur, next, hstep⟩
+  have hcur : cur = set >>> elem :=
+    HFMemTrace_entry_shiftRight h elem cur (by omega) hstep.1
+  have hlow : (set >>> elem).testBit 0 = true := by
+    have hbit := BetaDiv2Step_bit_one_testBit_zero hstep
+    simpa [hcur] using hbit
+  have hshift := Nat.testBit_shiftRight (i := elem) (j := 0) set
+  rw [hshift] at hlow
+  simpa [AckermannHF.Mem] using hlow
+
+theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
+    Sat natModel e (hfMemAt elem set) → AckermannHF.Mem (e elem) (e set) := by
+  intro h
+  rcases (hfMemAt_nat_trace e elem set).mp h with ⟨code, step, htrace⟩
+  exact HFMemTrace_mem htrace
+
 end Formula
 
 namespace Formula

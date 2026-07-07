@@ -99,6 +99,12 @@ open SetTheory
 #check @PA.Formula.betaDiv2StepsThroughAt_nat
 #check @PA.Formula.betaDiv2BitAt_nat
 #check @PA.Formula.hfMemAt_nat_trace
+#check @PA.Formula.BetaEntry_functional
+#check @PA.Formula.BetaDiv2Step_div_two
+#check @PA.Formula.BetaDiv2Step_bit_one_testBit_zero
+#check @PA.Formula.HFMemTrace_entry_shiftRight
+#check @PA.Formula.HFMemTrace_mem
+#check @PA.Formula.hfMemAt_sound
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
 #check @AckermannHF.eq_empty_iff_no_mem
