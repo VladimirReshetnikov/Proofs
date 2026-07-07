@@ -75,13 +75,6 @@ instance : LawfulHashable ONote where
     subst hab
     rfl
 
-theorem hashSet_toList_nodup (m : Std.HashSet ONote) : m.toList.Nodup := by
-  have hpair := Std.HashSet.distinct_toList (m := m)
-  exact hpair.imp (by
-    intro a b hne heq
-    subst heq
-    simp [BEq.rfl] at hne)
-
 /-- Shared lexical interpretation for A199812: atom is `omega`, node is ordinal power. -/
 noncomputable abbrev sharedEvalOrdinal : PowTower.Expr -> Ordinal.{0} :=
   PowTower.Expr.eval (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b)
@@ -362,118 +355,25 @@ theorem a199812_eq_degreeNoteCount (n : Nat) : a199812 n = degreeNoteCount n := 
     exponentNoteValues_eq_degreeNoteValues_image]
   exact Finset.card_image_of_injOn (principalPower_injOn_degreeNoteValues n)
 
-/-- Finite union over a list, used to keep the executable recurrence structurally simple. -/
-def listBiUnion {α β : Type} [DecidableEq β] (xs : List α) (f : α -> Finset β) : Finset β :=
-  xs.foldr (fun x acc => f x ∪ acc) ∅
-
-@[simp]
-theorem mem_listBiUnion {α β : Type} [DecidableEq β] {xs : List α}
-    {f : α -> Finset β} {b : β} :
-    b ∈ listBiUnion xs f ↔ ∃ x ∈ xs, b ∈ f x := by
-  induction xs with
-  | nil =>
-      simp [listBiUnion]
-  | cons x xs ih =>
-      constructor
-      · intro hb
-        simp only [listBiUnion, List.foldr_cons, Finset.mem_union] at hb
-        rcases hb with hb | hb
-        · exact ⟨x, by simp, hb⟩
-        · rcases ih.mp hb with ⟨y, hy, hfy⟩
-          exact ⟨y, by simp [hy], hfy⟩
-      · intro h
-        rcases h with ⟨y, hy, hfy⟩
-        simp only [listBiUnion, List.foldr_cons, Finset.mem_union]
-        rw [List.mem_cons] at hy
-        rcases hy with rfl | hy
-        · exact Or.inl hfy
-        · exact Or.inr (ih.mpr ⟨y, hy, hfy⟩)
-
 /--
-Dynamic normal-form computation of the exponent value set.
-
-This is the finite-set version of the OEIS program: the values of size `n` are
-the union over binary splits of the pairwise exponent-combine operation applied
-to the already distinct smaller value sets.
+Dynamic normal-form computation of the exponent value set: the shared finite
+split recurrence for the same canonical lexical syntax, with atom interpreted
+as the exponent note `1` and power interpreted as `combineExponent`.
 -/
-def computedExponentValues : Nat -> Finset ONote
-  | 0 => ∅
-  | 1 => {1}
-  | n + 2 =>
-      listBiUnion (List.finRange (n + 1)) fun k =>
-        Finset.image₂ combineExponent
-          (computedExponentValues (k.1 + 1))
-          (computedExponentValues (n + 1 - k.1))
-termination_by n => n
-decreasing_by
-  · exact Nat.succ_lt_succ k.2
-  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+def computedExponentValues (n : Nat) : Finset ONote :=
+  PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n
 
 /-- The dynamic normal-form count corresponding to A199812. -/
 def computedExponentCount (n : Nat) : Nat :=
   (computedExponentValues n).card
 
-/--
-The proof-facing exponent recurrence is the shared finite recursive value set
-for the same canonical lexical syntax, with atom interpreted as the exponent
-note `1` and power interpreted as `combineExponent`.
--/
 theorem computedExponentValues_eq_recursiveValueFinset (n : Nat) :
     computedExponentValues n =
-      PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n := by
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-      cases n with
-      | zero =>
-          ext o
-          simp [computedExponentValues, PowTower.Expr.recursiveValueFinset]
-      | succ n =>
-          cases n with
-          | zero =>
-              ext o
-              simp [computedExponentValues, PowTower.Expr.recursiveValueFinset]
-          | succ n =>
-              ext o
-              simp only [computedExponentValues, PowTower.Expr.recursiveValueFinset,
-                mem_listBiUnion, Finset.mem_image₂, Finset.mem_biUnion, Finset.mem_univ,
-                true_and]
-              constructor
-              · rintro ⟨k, _hk, a, ha, b, hb, hcombine⟩
-                refine ⟨k, a, ?_, b, ?_, hcombine⟩
-                · rw [← ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
-                  exact ha
-                · rw [← ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
-                  exact hb
-              · rintro ⟨k, a, ha, b, hb, hcombine⟩
-                refine ⟨k, by simp, a, ?_, b, ?_, hcombine⟩
-                · rw [ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
-                  exact ha
-                · rw [ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
-                  exact hb
+      PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n := rfl
 
 theorem computedExponentCount_eq_recursiveValueFinset_card (n : Nat) :
     computedExponentCount n =
-      (PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n).card := by
-  rw [computedExponentCount, computedExponentValues_eq_recursiveValueFinset]
-
-/-- Pointwise congruence for finite unions over a list. -/
-theorem listBiUnion_congr {α β : Type} [DecidableEq β] {xs : List α}
-    {f g : α -> Finset β} (h : ∀ x ∈ xs, f x = g x) :
-    listBiUnion xs f = listBiUnion xs g := by
-  induction xs with
-  | nil =>
-      simp [listBiUnion]
-  | cons x xs ih =>
-      simp only [listBiUnion, List.foldr_cons]
-      rw [h x (by simp)]
-      have htail :
-          List.foldr (fun x acc => f x ∪ acc) ∅ xs =
-            List.foldr (fun x acc => g x ∪ acc) ∅ xs := by
-        simpa [listBiUnion] using
-          ih (by
-            intro y hy
-            exact h y (by simp [hy]))
-      rw [htail]
+      (PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n).card := rfl
 
 /-- Degree-combine operation forced by `(omega^omega^a)^(omega^omega^b)`. -/
 def combineDegree (a b : ONote) : ONote :=
@@ -495,127 +395,35 @@ theorem degreeNoteValues_eq_recursiveValueFinset (n : Nat) :
     degreeNote (0 : ONote) combineDegree degreeNote_eq_sharedCombineEval n
 
 /--
-Dynamic computation of the inner exponent value set.
+Dynamic computation of the inner exponent value set: the shared finite split
+recurrence for the same canonical lexical syntax, with atom interpreted as the
+degree note `0` and power interpreted as `combineDegree`.
 
 All `exponentNote` values are principal powers, so counting the inner exponents
 uses the simpler recurrence `a, b ↦ a + omega^b`.
 -/
-def computedDegreeValues : Nat -> Finset ONote
-  | 0 => ∅
-  | 1 => {0}
-  | n + 2 =>
-      listBiUnion (List.finRange (n + 1)) fun k =>
-        Finset.image₂ combineDegree
-          (computedDegreeValues (k.1 + 1))
-          (computedDegreeValues (n + 1 - k.1))
-termination_by n => n
-decreasing_by
-  · exact Nat.succ_lt_succ k.2
-  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+def computedDegreeValues (n : Nat) : Finset ONote :=
+  PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n
 
 /-- The dynamic inner-exponent count corresponding to A199812. -/
 def computedDegreeCount (n : Nat) : Nat :=
   (computedDegreeValues n).card
 
-/--
-The proof-facing inner-exponent recurrence is the shared finite recursive
-value set for the same canonical lexical syntax, with atom interpreted as the
-degree note `0` and power interpreted as `combineDegree`.
--/
 theorem computedDegreeValues_eq_recursiveValueFinset (n : Nat) :
     computedDegreeValues n =
-      PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n := by
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-      cases n with
-      | zero =>
-          ext o
-          simp [computedDegreeValues, PowTower.Expr.recursiveValueFinset]
-      | succ n =>
-          cases n with
-          | zero =>
-              ext o
-              simp [computedDegreeValues, PowTower.Expr.recursiveValueFinset]
-          | succ n =>
-              ext o
-              simp only [computedDegreeValues, PowTower.Expr.recursiveValueFinset,
-                mem_listBiUnion, Finset.mem_image₂, Finset.mem_biUnion, Finset.mem_univ,
-                true_and]
-              constructor
-              · rintro ⟨k, _hk, a, ha, b, hb, hcombine⟩
-                refine ⟨k, a, ?_, b, ?_, hcombine⟩
-                · rw [← ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
-                  exact ha
-                · rw [← ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
-                  exact hb
-              · rintro ⟨k, a, ha, b, hb, hcombine⟩
-                refine ⟨k, by simp, a, ?_, b, ?_, hcombine⟩
-                · rw [ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
-                  exact ha
-                · rw [ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
-                  exact hb
+      PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n := rfl
 
 theorem computedDegreeCount_eq_recursiveValueFinset_card (n : Nat) :
     computedDegreeCount n =
-      (PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n).card := by
-  rw [computedDegreeCount, computedDegreeValues_eq_recursiveValueFinset]
+      (PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n).card := rfl
 
 /--
 The degree recurrence computes exactly the inner exponents obtained from the
 canonical lexical parenthesizations.
 -/
 theorem degreeNoteValues_eq_computedDegreeValues (n : Nat) :
-    degreeNoteValues n = computedDegreeValues n := by
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-      cases n with
-      | zero =>
-          ext o
-          simp [degreeNoteValues, degreeNoteList, PowTower.Expr.parenthesizations,
-            computedDegreeValues]
-      | succ n =>
-          cases n with
-          | zero =>
-              ext o
-              simp [degreeNoteValues, degreeNoteList, PowTower.Expr.parenthesizations,
-                computedDegreeValues, degreeNote]
-          | succ n =>
-              ext o
-              constructor
-              · intro ho
-                simp only [degreeNoteValues, degreeNoteList, PowTower.Expr.parenthesizations,
-                  List.mem_toFinset, List.mem_map, List.mem_flatMap] at ho
-                rcases ho with ⟨e, he, rfl⟩
-                rcases he with ⟨k, hk, a, ha, b, hb, rfl⟩
-                simp only [computedDegreeValues, mem_listBiUnion, Finset.mem_image₂]
-                refine ⟨k, hk, degreeNote a, ?_, degreeNote b, ?_, rfl⟩
-                · have hklt : k.1 + 1 < n + 1 + 1 := by
-                    exact Nat.succ_lt_succ k.2
-                  rw [← ih (k.1 + 1) hklt]
-                  simp only [degreeNoteValues, degreeNoteList, List.mem_toFinset, List.mem_map]
-                  exact ⟨a, ha, rfl⟩
-                · have hklt : n + 1 - k.1 < n + 1 + 1 := by
-                    exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-                  rw [← ih (n + 1 - k.1) hklt]
-                  simp only [degreeNoteValues, degreeNoteList, List.mem_toFinset, List.mem_map]
-                  exact ⟨b, hb, rfl⟩
-              · intro ho
-                simp only [computedDegreeValues, mem_listBiUnion, Finset.mem_image₂] at ho
-                rcases ho with ⟨k, hk, aNote, haNote, bNote, hbNote, hcombine⟩
-                simp only [degreeNoteValues, degreeNoteList, PowTower.Expr.parenthesizations,
-                  List.mem_toFinset, List.mem_map, List.mem_flatMap]
-                have hklt₁ : k.1 + 1 < n + 1 + 1 := by
-                  exact Nat.succ_lt_succ k.2
-                have hklt₂ : n + 1 - k.1 < n + 1 + 1 := by
-                  exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-                rw [← ih (k.1 + 1) hklt₁] at haNote
-                rw [← ih (n + 1 - k.1) hklt₂] at hbNote
-                simp only [degreeNoteValues, degreeNoteList, List.mem_toFinset, List.mem_map]
-                  at haNote hbNote
-                rcases haNote with ⟨a, ha, rfl⟩
-                rcases hbNote with ⟨b, hb, rfl⟩
-                exact ⟨PowTower.Expr.pow a b, ⟨k, hk, a, ha, b, hb, rfl⟩,
-                  by simpa [degreeNote, combineDegree] using hcombine⟩
+    degreeNoteValues n = computedDegreeValues n :=
+  degreeNoteValues_eq_recursiveValueFinset n
 
 /-- The dynamic inner-exponent count is equivalent to the canonical ordinal count. -/
 theorem a199812_eq_computedDegreeCount (n : Nat) : a199812 n = computedDegreeCount n := by
@@ -632,59 +440,8 @@ The dynamic distinct-value recurrence computes exactly the normal-form
 exponents obtained from the lexical parenthesizations.
 -/
 theorem exponentNoteValues_eq_computedExponentValues (n : Nat) :
-    exponentNoteValues n = computedExponentValues n := by
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-      cases n with
-      | zero =>
-          ext o
-          simp [exponentNoteValues, exponentNoteList, PowTower.Expr.parenthesizations,
-            computedExponentValues]
-      | succ n =>
-          cases n with
-          | zero =>
-              ext o
-              simp [exponentNoteValues, exponentNoteList, PowTower.Expr.parenthesizations,
-                computedExponentValues, exponentNote]
-          | succ n =>
-              ext o
-              constructor
-              · intro ho
-                simp only [exponentNoteValues, exponentNoteList, PowTower.Expr.parenthesizations,
-                  List.mem_toFinset, List.mem_map, List.mem_flatMap] at ho
-                rcases ho with ⟨e, he, rfl⟩
-                rcases he with ⟨k, hk, a, ha, b, hb, rfl⟩
-                simp only [computedExponentValues, mem_listBiUnion, Finset.mem_image₂]
-                refine ⟨k, hk, exponentNote a, ?_, exponentNote b, ?_, rfl⟩
-                · have hklt : k.1 + 1 < n + 1 + 1 := by
-                    exact Nat.succ_lt_succ k.2
-                  rw [← ih (k.1 + 1) hklt]
-                  simp only [exponentNoteValues, exponentNoteList, List.mem_toFinset,
-                    List.mem_map]
-                  exact ⟨a, ha, rfl⟩
-                · have hklt : n + 1 - k.1 < n + 1 + 1 := by
-                    exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-                  rw [← ih (n + 1 - k.1) hklt]
-                  simp only [exponentNoteValues, exponentNoteList, List.mem_toFinset,
-                    List.mem_map]
-                  exact ⟨b, hb, rfl⟩
-              · intro ho
-                simp only [computedExponentValues, mem_listBiUnion, Finset.mem_image₂] at ho
-                rcases ho with ⟨k, hk, aNote, haNote, bNote, hbNote, hcombine⟩
-                simp only [exponentNoteValues, exponentNoteList, PowTower.Expr.parenthesizations,
-                  List.mem_toFinset, List.mem_map, List.mem_flatMap]
-                have hklt₁ : k.1 + 1 < n + 1 + 1 := by
-                  exact Nat.succ_lt_succ k.2
-                have hklt₂ : n + 1 - k.1 < n + 1 + 1 := by
-                  exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-                rw [← ih (k.1 + 1) hklt₁] at haNote
-                rw [← ih (n + 1 - k.1) hklt₂] at hbNote
-                simp only [exponentNoteValues, exponentNoteList, List.mem_toFinset,
-                  List.mem_map] at haNote hbNote
-                rcases haNote with ⟨a, ha, rfl⟩
-                rcases hbNote with ⟨b, hb, rfl⟩
-                exact ⟨PowTower.Expr.pow a b, ⟨k, hk, a, ha, b, hb, rfl⟩,
-                  by simpa [exponentNote] using hcombine⟩
+    exponentNoteValues n = computedExponentValues n :=
+  exponentNoteValues_eq_recursiveValueFinset n
 
 /-- The dynamic normal-form count is equivalent to the canonical ordinal count. -/
 theorem a199812_eq_computedCount (n : Nat) : a199812 n = computedExponentCount n := by
@@ -696,465 +453,46 @@ theorem a199812_eq_exponentRecursiveValueFinset_card (n : Nat) :
       (PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n).card := by
   rw [a199812_eq_computedCount, computedExponentCount_eq_recursiveValueFinset_card]
 
-/--
-Compute one recurrence row from an already-built table of smaller rows.
-
-The table is only an executable optimization: the theorem
-`computedExponentValuesFromTable_eq` below proves that it computes the same
-finite set as `computedExponentValues` when the table entries are correct.
--/
-def computedExponentValuesFromTable (levels : List (Finset ONote)) : Nat -> Finset ONote
-  | 0 => ∅
-  | 1 => {1}
-  | n + 2 =>
-      listBiUnion (List.finRange (n + 1)) fun k =>
-        Finset.image₂ combineExponent
-          (levels.getD (k.1 + 1) ∅)
-          (levels.getD (n + 1 - k.1) ∅)
-
-theorem computedExponentValuesFromTable_eq {levels : List (Finset ONote)} {n : Nat}
-    (hlevels : ∀ i < n, levels.getD i ∅ = computedExponentValues i) :
-    computedExponentValuesFromTable levels n = computedExponentValues n := by
-  cases n with
-  | zero =>
-      simp [computedExponentValuesFromTable, computedExponentValues]
-  | succ n =>
-      cases n with
-      | zero =>
-          simp [computedExponentValuesFromTable, computedExponentValues]
-      | succ n =>
-          simp only [computedExponentValuesFromTable, computedExponentValues]
-          apply listBiUnion_congr
-          intro k hk
-          rw [hlevels (k.1 + 1) (Nat.succ_lt_succ k.2)]
-          rw [hlevels (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
-
-/-- Table of recurrence rows `0, ..., n - 1`, built once from left to right. -/
-def computedExponentTable : Nat -> List (Finset ONote)
-  | 0 => []
-  | n + 1 =>
-      let levels := computedExponentTable n
-      levels ++ [computedExponentValuesFromTable levels n]
-
-theorem computedExponentTable_length (n : Nat) :
-    (computedExponentTable n).length = n := by
-  induction n with
-  | zero =>
-      rfl
-  | succ n ih =>
-      simp [computedExponentTable, ih]
-
-theorem list_getD_eq_getElem {α : Type} (xs : List α) {i : Nat} (fallback : α)
-    (hi : i < xs.length) :
-    xs.getD i fallback = xs[i] := by
-  simp [List.getD, List.getElem?_eq_getElem hi]
-
-/-- The memo table agrees with the proved recurrence at every stored index. -/
-theorem computedExponentTable_getD (n i : Nat) (hi : i < n) :
-    (computedExponentTable n).getD i ∅ = computedExponentValues i := by
-  induction n generalizing i with
-  | zero =>
-      exact (Nat.not_lt_zero i hi).elim
-  | succ n ih =>
-      have hle : i ≤ n := Nat.lt_succ_iff.mp hi
-      rcases Nat.lt_or_eq_of_le hle with hlt | heq
-      · have hiTable : i < (computedExponentTable n).length := by
-          simpa [computedExponentTable_length] using hlt
-        rw [computedExponentTable]
-        rw [list_getD_eq_getElem
-          (computedExponentTable n ++ [computedExponentValuesFromTable (computedExponentTable n) n])
-          ∅ (by simpa [computedExponentTable_length] using hi)]
-        rw [List.getElem_append_left hiTable]
-        rw [← list_getD_eq_getElem (computedExponentTable n) ∅ hiTable]
-        exact ih i hlt
-      · subst i
-        rw [computedExponentTable]
-        rw [list_getD_eq_getElem
-          (computedExponentTable n ++ [computedExponentValuesFromTable (computedExponentTable n) n])
-          ∅ (by simp [computedExponentTable_length])]
-        rw [List.getElem_append_right (by simp [computedExponentTable_length])]
-        simp [computedExponentTable_length, computedExponentValuesFromTable_eq ih]
-
-/-- Memoized recurrence value set, proved equal to `computedExponentValues`. -/
-def computedExponentValuesMemo (n : Nat) : Finset ONote :=
-  (computedExponentTable (n + 1)).getD n ∅
-
-theorem computedExponentValuesMemo_eq (n : Nat) :
-    computedExponentValuesMemo n = computedExponentValues n := by
-  exact computedExponentTable_getD (n + 1) n (Nat.lt_succ_self n)
-
-theorem computedExponentValuesMemo_eq_recursiveValueFinsetMemo (n : Nat) :
-    computedExponentValuesMemo n =
-      PowTower.Expr.recursiveValueFinsetMemo (1 : ONote) combineExponent n := by
-  rw [computedExponentValuesMemo_eq, PowTower.Expr.recursiveValueFinsetMemo_eq,
-    computedExponentValues_eq_recursiveValueFinset]
-
-/-- Memoized dynamic count corresponding to A199812. -/
+/-- Memoized dynamic count corresponding to A199812, from the shared memo table. -/
 def computedExponentCountMemo (n : Nat) : Nat :=
-  (computedExponentValuesMemo n).card
+  (PowTower.Expr.recursiveValueFinsetMemo (1 : ONote) combineExponent n).card
 
-theorem computedExponentCountMemo_eq_recursiveValueFinsetMemo_card (n : Nat) :
-    computedExponentCountMemo n =
-      (PowTower.Expr.recursiveValueFinsetMemo (1 : ONote) combineExponent n).card := by
-  rw [computedExponentCountMemo, computedExponentValuesMemo_eq_recursiveValueFinsetMemo]
-
-/-- Memoized dynamic counts for sizes `1, ..., n`, computed from one shared table. -/
-def computedExponentCountsMemoThrough (n : Nat) : List Nat :=
-  ((computedExponentTable (n + 1)).drop 1).map Finset.card
-
-/-- Indexing the shared count table gives the corresponding memoized count. -/
-theorem computedExponentCountsMemoThrough_getD {N i : Nat} (hi : i < N) :
-    (computedExponentCountsMemoThrough N).getD i 0 = computedExponentCountMemo (i + 1) := by
-  unfold computedExponentCountsMemoThrough
-  have hiDrop :
-      i < (List.drop 1 (computedExponentTable (N + 1))).length := by
-    simp [computedExponentTable_length, hi]
-  have hiCounts :
-      i < (List.map Finset.card (List.drop 1 (computedExponentTable (N + 1)))).length := by
-    simpa using hiDrop
-  have hiTable : i + 1 < (computedExponentTable (N + 1)).length := by
-    simpa [computedExponentTable_length, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
-      using Nat.succ_lt_succ hi
-  rw [list_getD_eq_getElem _ _ hiCounts]
-  rw [List.getElem_map]
-  rw [List.getElem_drop]
-  have hiTable' : 1 + i < (computedExponentTable (N + 1)).length := by
-    simpa [Nat.add_comm] using hiTable
-  have hleft :
-      (computedExponentTable (N + 1))[1 + i] = computedExponentValues (i + 1) := by
-    rw [← list_getD_eq_getElem (computedExponentTable (N + 1)) ∅ hiTable']
-    simpa [Nat.add_comm] using
-      computedExponentTable_getD (N + 1) (i + 1) (Nat.succ_lt_succ hi)
-  rw [hleft]
-  unfold computedExponentCountMemo
-  rw [computedExponentValuesMemo_eq]
-
-theorem computedExponentCountsMemoThrough_getD_eq_sharedCountsMemoThrough {N i : Nat}
-    (hi : i < N) :
-    (computedExponentCountsMemoThrough N).getD i 0 =
-      (PowTower.Expr.recursiveValueCountsMemoThrough (1 : ONote) combineExponent N).getD i 0 := by
-  rw [computedExponentCountsMemoThrough_getD hi]
-  rw [PowTower.Expr.recursiveValueCountsMemoThrough_getD
-    (atomValue := (1 : ONote)) (powValue := combineExponent) (N := N) (i := i) hi]
-  exact computedExponentCountMemo_eq_recursiveValueFinsetMemo_card (i + 1)
-
-theorem computedExponentCountMemo_eq_countsMemoThrough_getD {N n : Nat}
-    (hpos : 0 < n) (hN : n ≤ N) :
-    computedExponentCountMemo n = (computedExponentCountsMemoThrough N).getD (n - 1) 0 := by
-  cases n with
-  | zero =>
-      exact (Nat.not_lt_zero _ hpos).elim
-  | succ i =>
-      have hi : i < N := Nat.succ_le_iff.mp hN
-      simpa using (computedExponentCountsMemoThrough_getD (N := N) (i := i) hi).symm
+theorem computedExponentCountMemo_eq (n : Nat) :
+    computedExponentCountMemo n = computedExponentCount n := by
+  rw [computedExponentCountMemo, PowTower.Expr.recursiveValueFinsetMemo_eq]
+  rfl
 
 /-- The memoized recurrence count is equivalent to the canonical ordinal count. -/
 theorem a199812_eq_memoCount (n : Nat) : a199812 n = computedExponentCountMemo n := by
-  rw [a199812_eq_computedCount, computedExponentCountMemo, computedExponentValuesMemo_eq,
-    computedExponentCount]
+  rw [a199812_eq_computedCount, computedExponentCountMemo_eq]
+
+/-- Memoized dynamic counts for sizes `1, ..., n`, computed from one shared table. -/
+def computedExponentCountsMemoThrough (n : Nat) : List Nat :=
+  PowTower.Expr.recursiveValueCountsMemoThrough (1 : ONote) combineExponent n
 
 theorem a199812_eq_of_countsMemoThrough {N n value : Nat}
     (hpos : 0 < n) (hN : n ≤ N)
     (hcount : (computedExponentCountsMemoThrough N).getD (n - 1) 0 = value) :
     a199812 n = value := by
-  calc
-    a199812 n = computedExponentCountMemo n := a199812_eq_memoCount n
-    _ = (computedExponentCountsMemoThrough N).getD (n - 1) 0 :=
-      computedExponentCountMemo_eq_countsMemoThrough_getD hpos hN
-    _ = value := hcount
-
-/-- Insert all degree values produced by one fixed left value into an accumulator. -/
-def insertRightDegreeValues (a : ONote) (right : List ONote)
-    (seen : Std.HashSet ONote) : Std.HashSet ONote :=
-  right.foldl (fun seen b => seen.insert (combineDegree a b)) seen
-
-theorem mem_insertRightDegreeValues {a : ONote} {right : List ONote}
-    {seen : Std.HashSet ONote} {x : ONote} :
-    x ∈ insertRightDegreeValues a right seen ↔
-      x ∈ seen ∨ ∃ b ∈ right, combineDegree a b = x := by
-  induction right generalizing seen with
-  | nil =>
-      simp [insertRightDegreeValues]
-  | cons b bs ih =>
-      rw [insertRightDegreeValues, List.foldl_cons]
-      change x ∈ insertRightDegreeValues a bs (seen.insert (combineDegree a b)) ↔
-        x ∈ seen ∨ ∃ b_1 ∈ b :: bs, combineDegree a b_1 = x
-      rw [ih]
-      rw [Std.HashSet.mem_insert]
-      simp [beq_iff_eq]
-      aesop
-
-/-- Insert all degree values produced by one binary split into an accumulator. -/
-def insertDegreeProducts (left right : List ONote)
-    (seen : Std.HashSet ONote) : Std.HashSet ONote :=
-  left.foldl (fun seen a => insertRightDegreeValues a right seen) seen
-
-theorem mem_insertDegreeProducts {left right : List ONote}
-    {seen : Std.HashSet ONote} {x : ONote} :
-    x ∈ insertDegreeProducts left right seen ↔
-      x ∈ seen ∨ ∃ a ∈ left, ∃ b ∈ right, combineDegree a b = x := by
-  induction left generalizing seen with
-  | nil =>
-      simp [insertDegreeProducts]
-  | cons a as ih =>
-      rw [insertDegreeProducts, List.foldl_cons]
-      change x ∈ insertDegreeProducts as right (insertRightDegreeValues a right seen) ↔
-        x ∈ seen ∨ ∃ a_1 ∈ a :: as, ∃ b ∈ right, combineDegree a_1 b = x
-      rw [ih]
-      rw [mem_insertRightDegreeValues]
-      simp
-      aesop
-
-theorem mem_foldDegreeProducts {ι : Type} {splits : List ι}
-    {left right : ι -> List ONote} {seen : Std.HashSet ONote} {x : ONote} :
-    x ∈ splits.foldl
-        (fun seen k => insertDegreeProducts (left k) (right k) seen) seen ↔
-      x ∈ seen ∨
-        ∃ k ∈ splits, ∃ a ∈ left k, ∃ b ∈ right k, combineDegree a b = x := by
-  induction splits generalizing seen with
-  | nil =>
-      simp
-  | cons k ks ih =>
-      rw [List.foldl_cons]
-      rw [ih]
-      rw [mem_insertDegreeProducts]
-      simp
-      aesop
+  rw [a199812_eq_exponentRecursiveValueFinset_card,
+    PowTower.Expr.recursiveValueFinset_card_eq_countsMemoThrough_getD hpos hN]
+  exact hcount
 
 /--
-Fast row builder for the inner-exponent recurrence.
-
-It returns a duplicate-free list, but `fastDegreeValuesFromTable_toFinset_eq`
-below proves that its `toFinset` is exactly the proof-facing finite set.
+Fast duplicate-free inner-exponent counts for sizes `1, ..., n`, computed from
+one shared hash-set fast table.
 -/
-def fastDegreeValuesFromTable (levels : List (List ONote)) : Nat -> List ONote
-  | 0 => []
-  | 1 => [0]
-  | n + 2 =>
-      ((List.finRange (n + 1)).foldl
-        (fun seen k =>
-          insertDegreeProducts
-            (levels.getD (k.1 + 1) [])
-            (levels.getD (n + 1 - k.1) [])
-            seen)
-        (∅ : Std.HashSet ONote)).toList
-
-theorem fastDegreeValuesFromTable_nodup (levels : List (List ONote)) (n : Nat) :
-    (fastDegreeValuesFromTable levels n).Nodup := by
-  cases n with
-  | zero =>
-      simp [fastDegreeValuesFromTable]
-  | succ n =>
-      cases n with
-      | zero =>
-          simp [fastDegreeValuesFromTable]
-      | succ _ =>
-          exact hashSet_toList_nodup _
-
-theorem fastDegreeValuesFromTable_toFinset_eq {levels : List (List ONote)} {n : Nat}
-    (hlevels : ∀ i < n, (levels.getD i []).toFinset = computedDegreeValues i) :
-    (fastDegreeValuesFromTable levels n).toFinset = computedDegreeValues n := by
-  cases n with
-  | zero =>
-      simp [fastDegreeValuesFromTable, computedDegreeValues]
-  | succ n =>
-      cases n with
-      | zero =>
-          simp [fastDegreeValuesFromTable, computedDegreeValues]
-      | succ n =>
-          ext x
-          simp only [fastDegreeValuesFromTable, List.mem_toFinset]
-          rw [Std.HashSet.mem_toList]
-          rw [mem_foldDegreeProducts]
-          simp only [Std.HashSet.not_mem_empty, false_or]
-          simp only [computedDegreeValues, mem_listBiUnion, Finset.mem_image₂]
-          constructor
-          · rintro ⟨k, hk, a, ha, b, hb, hx⟩
-            refine ⟨k, hk, a, ?_, b, ?_, hx⟩
-            · have hklt : k.1 + 1 < n + 1 + 1 := Nat.succ_lt_succ k.2
-              rw [← hlevels (k.1 + 1) hklt]
-              exact List.mem_toFinset.mpr ha
-            · have hklt : n + 1 - k.1 < n + 1 + 1 :=
-                Nat.lt_succ_of_le (Nat.sub_le _ _)
-              rw [← hlevels (n + 1 - k.1) hklt]
-              exact List.mem_toFinset.mpr hb
-          · rintro ⟨k, hk, a, ha, b, hb, hx⟩
-            refine ⟨k, hk, a, ?_, b, ?_, hx⟩
-            · have hklt : k.1 + 1 < n + 1 + 1 := Nat.succ_lt_succ k.2
-              rw [← hlevels (k.1 + 1) hklt] at ha
-              exact List.mem_toFinset.mp ha
-            · have hklt : n + 1 - k.1 < n + 1 + 1 :=
-                Nat.lt_succ_of_le (Nat.sub_le _ _)
-              rw [← hlevels (n + 1 - k.1) hklt] at hb
-              exact List.mem_toFinset.mp hb
-
-/-- Fast duplicate-free table of inner-exponent rows `0, ..., n - 1`. -/
-def fastDegreeTable : Nat -> List (List ONote)
-  | 0 => []
-  | n + 1 =>
-      let levels := fastDegreeTable n
-      levels ++ [fastDegreeValuesFromTable levels n]
-
-theorem fastDegreeTable_length (n : Nat) :
-    (fastDegreeTable n).length = n := by
-  induction n with
-  | zero =>
-      rfl
-  | succ n ih =>
-      simp [fastDegreeTable, ih]
-
-theorem fastDegreeTable_getD_toFinset (n i : Nat) (hi : i < n) :
-    ((fastDegreeTable n).getD i []).toFinset = computedDegreeValues i := by
-  induction n generalizing i with
-  | zero =>
-      exact (Nat.not_lt_zero i hi).elim
-  | succ n ih =>
-      have hle : i ≤ n := Nat.lt_succ_iff.mp hi
-      rcases Nat.lt_or_eq_of_le hle with hlt | heq
-      · have hiTable : i < (fastDegreeTable n).length := by
-          simpa [fastDegreeTable_length] using hlt
-        rw [fastDegreeTable]
-        rw [list_getD_eq_getElem
-          (fastDegreeTable n ++ [fastDegreeValuesFromTable (fastDegreeTable n) n])
-          [] (by simpa [fastDegreeTable_length] using hi)]
-        rw [List.getElem_append_left hiTable]
-        rw [← list_getD_eq_getElem (fastDegreeTable n) [] hiTable]
-        exact ih i hlt
-      · subst i
-        rw [fastDegreeTable]
-        rw [list_getD_eq_getElem
-          (fastDegreeTable n ++ [fastDegreeValuesFromTable (fastDegreeTable n) n])
-          [] (by simp [fastDegreeTable_length])]
-        rw [List.getElem_append_right (by simp [fastDegreeTable_length])]
-        simp [fastDegreeTable_length, fastDegreeValuesFromTable_toFinset_eq ih]
-
-theorem fastDegreeTable_getD_nodup (n i : Nat) (hi : i < n) :
-    ((fastDegreeTable n).getD i []).Nodup := by
-  induction n generalizing i with
-  | zero =>
-      exact (Nat.not_lt_zero i hi).elim
-  | succ n ih =>
-      have hle : i ≤ n := Nat.lt_succ_iff.mp hi
-      rcases Nat.lt_or_eq_of_le hle with hlt | heq
-      · have hiTable : i < (fastDegreeTable n).length := by
-          simpa [fastDegreeTable_length] using hlt
-        rw [fastDegreeTable]
-        rw [list_getD_eq_getElem
-          (fastDegreeTable n ++ [fastDegreeValuesFromTable (fastDegreeTable n) n])
-          [] (by simpa [fastDegreeTable_length] using hi)]
-        rw [List.getElem_append_left hiTable]
-        rw [← list_getD_eq_getElem (fastDegreeTable n) [] hiTable]
-        exact ih i hlt
-      · subst i
-        rw [fastDegreeTable]
-        rw [list_getD_eq_getElem
-          (fastDegreeTable n ++ [fastDegreeValuesFromTable (fastDegreeTable n) n])
-          [] (by simp [fastDegreeTable_length])]
-        rw [List.getElem_append_right (by simp [fastDegreeTable_length])]
-        simp [fastDegreeTable_length, fastDegreeValuesFromTable_nodup]
-
-/-- Fast memoized inner-exponent row. -/
-def fastDegreeValuesMemo (n : Nat) : List ONote :=
-  (fastDegreeTable (n + 1)).getD n []
-
-theorem fastDegreeValuesMemo_toFinset_eq (n : Nat) :
-    (fastDegreeValuesMemo n).toFinset = computedDegreeValues n := by
-  exact fastDegreeTable_getD_toFinset (n + 1) n (Nat.lt_succ_self n)
-
-theorem fastDegreeValuesMemo_nodup (n : Nat) :
-    (fastDegreeValuesMemo n).Nodup := by
-  exact fastDegreeTable_getD_nodup (n + 1) n (Nat.lt_succ_self n)
-
-/-- Fast memoized count corresponding to the proof-facing degree recurrence. -/
-def fastDegreeCountMemo (n : Nat) : Nat :=
-  (fastDegreeValuesMemo n).length
-
-theorem computedDegreeCount_eq_fastDegreeCountMemo (n : Nat) :
-    computedDegreeCount n = fastDegreeCountMemo n := by
-  rw [computedDegreeCount, fastDegreeCountMemo]
-  rw [← fastDegreeValuesMemo_toFinset_eq n]
-  exact List.toFinset_card_of_nodup (fastDegreeValuesMemo_nodup n)
-
-theorem fastDegreeValuesMemo_toFinset_eq_recursiveValueFinset (n : Nat) :
-    (fastDegreeValuesMemo n).toFinset =
-      PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n := by
-  rw [fastDegreeValuesMemo_toFinset_eq, computedDegreeValues_eq_recursiveValueFinset]
-
-theorem fastDegreeCountMemo_eq_recursiveValueFinsetMemo_card (n : Nat) :
-    fastDegreeCountMemo n =
-      (PowTower.Expr.recursiveValueFinsetMemo (0 : ONote) combineDegree n).card := by
-  rw [← computedDegreeCount_eq_fastDegreeCountMemo,
-    computedDegreeCount_eq_recursiveValueFinset_card]
-  rw [PowTower.Expr.recursiveValueFinsetMemo_eq]
-
-theorem a199812_eq_fastDegreeCountMemo (n : Nat) :
-    a199812 n = fastDegreeCountMemo n := by
-  rw [a199812_eq_computedDegreeCount, computedDegreeCount_eq_fastDegreeCountMemo]
-
-/-- Fast memoized counts for sizes `1, ..., n`, computed from one shared table. -/
 def fastDegreeCountsMemoThrough (n : Nat) : List Nat :=
-  ((fastDegreeTable (n + 1)).drop 1).map List.length
+  PowTower.Expr.fastCountsThrough (0 : ONote) combineDegree n
 
-theorem fastDegreeCountsMemoThrough_getD {N i : Nat} (hi : i < N) :
-    (fastDegreeCountsMemoThrough N).getD i 0 = fastDegreeCountMemo (i + 1) := by
-  unfold fastDegreeCountsMemoThrough
-  have hiDrop : i < (List.drop 1 (fastDegreeTable (N + 1))).length := by
-    simp [fastDegreeTable_length, hi]
-  have hiCounts : i < (List.map List.length (List.drop 1 (fastDegreeTable (N + 1)))).length := by
-    simpa using hiDrop
-  have hiTable : i + 1 < (fastDegreeTable (N + 1)).length := by
-    simpa [fastDegreeTable_length, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
-      using Nat.succ_lt_succ hi
-  rw [list_getD_eq_getElem _ _ hiCounts]
-  rw [List.getElem_map]
-  rw [List.getElem_drop]
-  have hiTable' : 1 + i < (fastDegreeTable (N + 1)).length := by
-    simpa [Nat.add_comm] using hiTable
-  have hrowSet :
-      ((fastDegreeTable (N + 1))[1 + i]).toFinset = computedDegreeValues (i + 1) := by
-    rw [← list_getD_eq_getElem (fastDegreeTable (N + 1)) [] hiTable']
-    simpa [Nat.add_comm] using
-      fastDegreeTable_getD_toFinset (N + 1) (i + 1) (Nat.succ_lt_succ hi)
-  have hrowNodup : ((fastDegreeTable (N + 1))[1 + i]).Nodup := by
-    rw [← list_getD_eq_getElem (fastDegreeTable (N + 1)) [] hiTable']
-    simpa [Nat.add_comm] using
-      fastDegreeTable_getD_nodup (N + 1) (i + 1) (Nat.succ_lt_succ hi)
-  calc
-    ((fastDegreeTable (N + 1))[1 + i]).length =
-        ((fastDegreeTable (N + 1))[1 + i]).toFinset.card := by
-          exact (List.toFinset_card_of_nodup hrowNodup).symm
-    _ = (computedDegreeValues (i + 1)).card := by rw [hrowSet]
-    _ = computedDegreeCount (i + 1) := rfl
-    _ = fastDegreeCountMemo (i + 1) := computedDegreeCount_eq_fastDegreeCountMemo (i + 1)
-
-theorem fastDegreeCountsMemoThrough_getD_eq_sharedCountsMemoThrough {N i : Nat}
-    (hi : i < N) :
-    (fastDegreeCountsMemoThrough N).getD i 0 =
-      (PowTower.Expr.recursiveValueCountsMemoThrough (0 : ONote) combineDegree N).getD i 0 := by
-  rw [fastDegreeCountsMemoThrough_getD hi]
-  rw [PowTower.Expr.recursiveValueCountsMemoThrough_getD
-    (atomValue := (0 : ONote)) (powValue := combineDegree) (N := N) (i := i) hi]
-  exact fastDegreeCountMemo_eq_recursiveValueFinsetMemo_card (i + 1)
-
-theorem fastDegreeCountMemo_eq_countsMemoThrough_getD {N n : Nat}
-    (hpos : 0 < n) (hN : n ≤ N) :
-    fastDegreeCountMemo n = (fastDegreeCountsMemoThrough N).getD (n - 1) 0 := by
-  cases n with
-  | zero =>
-      exact (Nat.not_lt_zero _ hpos).elim
-  | succ i =>
-      have hi : i < N := Nat.succ_le_iff.mp hN
-      simpa using (fastDegreeCountsMemoThrough_getD (N := N) (i := i) hi).symm
-
+/-- One verified fast-table row certifies a canonical A199812 value. -/
 theorem a199812_eq_of_fastDegreeCountsMemoThrough {N n value : Nat}
     (hpos : 0 < n) (hN : n ≤ N)
     (hcount : (fastDegreeCountsMemoThrough N).getD (n - 1) 0 = value) :
     a199812 n = value := by
-  calc
-    a199812 n = fastDegreeCountMemo n := a199812_eq_fastDegreeCountMemo n
-    _ = (fastDegreeCountsMemoThrough N).getD (n - 1) 0 :=
-      fastDegreeCountMemo_eq_countsMemoThrough_getD hpos hN
-    _ = value := hcount
+  rw [a199812_eq_degreeRecursiveValueFinset_card,
+    PowTower.Expr.recursiveValueFinset_card_eq_fastCountsThrough_getD hpos hN]
+  exact hcount
 
 /-- Shared fast executable certificate for `A199812(1)` through `A199812(13)`. -/
 theorem fastDegreeCountsMemoThrough_thirteen :
