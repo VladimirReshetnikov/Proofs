@@ -442,6 +442,37 @@ theorem BProv_eqElim {B : Form → Prop} {G : List Form} {i j : Nat}
         · exact ha
         · cases hnil)
 
+/-- Relative provability is closed under symmetry of equality. -/
+theorem BProv_eqSym {B : Form → Prop} {G : List Form} {i j : Nat}
+    (heq : BProv B G (fEq i j)) : BProv B G (fEq j i) := by
+  rcases heq with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov_eq_sym _ i j hp⟩
+
+/-- Relative provability is closed under transitivity of equality. -/
+theorem BProv_eqTrans {B : Form → Prop} {G : List Form} {i j k : Nat}
+    (hij : BProv B G (fEq i j)) (hjk : BProv B G (fEq j k)) :
+    BProv B G (fEq i k) := by
+  rcases hij with ⟨Li, hLi, hpi⟩
+  rcases hjk with ⟨Lj, hLj, hpj⟩
+  refine ⟨Li ++ Lj, ?_, ?_⟩
+  · intro x hx
+    rcases List.mem_append.mp hx with hx | hx
+    · exact hLi x hx
+    · exact hLj x hx
+  · apply Prov_eq_trans _ i j k
+    · apply Prov_weaken hpi
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
+      · exact Or.inr hx
+    · apply Prov_weaken hpj
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
+      · exact Or.inr hx
+
 /-- Soundness for relative provability from an infinite sentence theory and a
 finite context. -/
 theorem soundness_BProv {α : Type u} {mem : α → α → Prop} {B : Form → Prop}

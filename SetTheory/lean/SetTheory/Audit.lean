@@ -30,6 +30,8 @@ open SetTheory
 #check @BProv_cut
 #check @BProv_theory_mono
 #check @BProv_eqElim
+#check @BProv_eqSym
+#check @BProv_eqTrans
 #check @soundness_BProv
 #print axioms prov_iff_valid
 
@@ -458,6 +460,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.termGraphAt_succ_add_var_var_of_succRecApprox_model
 #check @AckermannHF.PAInHF.termGraphAt_PA_rename
 #check @AckermannHF.PAInHF.termGraphAt_rename
+#check @AckermannHF.PAInHF.termGraphAt_inst_out
 #check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_mulZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_succRecTotal
@@ -531,6 +534,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_var
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_var_of_eq
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_of_termGraphsAt
+#check @AckermannHF.PAInHF.BProv_termGraphAt_eqElim_out
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_of_termGraphAt
 #check @AckermannHF.PAInHF.BProv_eq_of_formulaAt_eq_var
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqElim_var

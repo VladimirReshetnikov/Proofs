@@ -7355,6 +7355,15 @@ theorem termGraphAt_rename (t : PA.Term) :
       intro ρ out r
       simp [termGraphAt, rename, up, iha, ihb, mulGraph, rename_mulGraphAt]
 
+/-- Instantiating the distinguished output variable of a term graph gives the
+same graph at the chosen concrete output slot. -/
+theorem termGraphAt_inst_out (t : PA.Term) (ρ : Nat → Nat) (k : Nat) :
+    rename (inst k) (termGraphAt (fun n => ρ n + 1) 0 t) =
+      termGraphAt ρ k t := by
+  rw [termGraphAt_rename]
+  exact termGraphAt_map_ext t (out := k)
+    (fun n => by simp [inst])
+
 /-- The graph of a PA variable is just equality with the slot selected by the
 current slot map.  This version works over any membership relation. -/
 theorem termGraphAt_var_spec {α : Type u} {mem : α → α → Prop}
@@ -11664,6 +11673,24 @@ theorem BProv_formulaAt_eq_of_termGraphsAt {G : List Form}
   apply Prov.P_exI _ _ i
   apply Prov.P_exI _ _ j
   simpa [rename, termGraphAt_rename, SetTheory.up, inst] using hp
+
+/-- Term-graph witnesses can be transported across equality of their output
+slots.
+
+This is the graph-level equality-elimination rule needed by later arbitrary
+PA-term substitution proofs. -/
+theorem BProv_termGraphAt_eqElim_out {G : List Form}
+    (ρ : Nat → Nat) (t : PA.Term) {i j : Nat}
+    (heq : BProv translatedPAAx G (fEq i j))
+    (hgraph : BProv translatedPAAx G (termGraphAt ρ i t)) :
+    BProv translatedPAAx G (termGraphAt ρ j t) := by
+  have hinst : BProv translatedPAAx G
+      (rename (inst i) (termGraphAt (fun n => ρ n + 1) 0 t)) := by
+    simpa [termGraphAt_inst_out] using hgraph
+  have htarget : BProv translatedPAAx G
+      (rename (inst j) (termGraphAt (fun n => ρ n + 1) 0 t)) :=
+    BProv_eqElim heq hinst
+  simpa [termGraphAt_inst_out] using htarget
 
 /-- A concrete HF slot realizing a PA term graph yields the PA-in-HF
 translation of reflexivity for that PA term.
