@@ -90,6 +90,11 @@ noncomputable abbrev sharedEvalOrdinal : PowTower.Expr -> Ordinal.{0} :=
 noncomputable def canonicalOrdinalValueSet (n : Nat) : Set Ordinal.{0} :=
   PowTower.Expr.valueSet (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n
 
+theorem canonicalOrdinalValueSet_eq_evalSet (n : Nat) :
+    canonicalOrdinalValueSet n = PowTower.Expr.evalSet sharedEvalOrdinal n := by
+  exact PowTower.Expr.valueSet_eq_evalSet
+    (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n
+
 /--
 The canonical finite set of ordinal values for `n` copies of `omega`.
 
@@ -114,9 +119,8 @@ theorem a199812_eq_recursiveValueSet_ncard (n : Nat) :
 theorem canonicalOrdinalValueSet_eq_ordinalValues (n : Nat) :
     canonicalOrdinalValueSet n = (ordinalValues n : Set Ordinal.{0}) := by
   classical
-  simpa [canonicalOrdinalValueSet, ordinalValues, sharedEvalOrdinal] using
-    (PowTower.Expr.valueSet_eq_evalFinset
-      (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n)
+  rw [canonicalOrdinalValueSet_eq_evalSet]
+  exact PowTower.Expr.evalSet_eq_evalFinset sharedEvalOrdinal n
 
 theorem a199812_eq_ordinalValues_card (n : Nat) :
     a199812 n = (ordinalValues n).card := by

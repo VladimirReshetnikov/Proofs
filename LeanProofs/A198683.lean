@@ -73,6 +73,11 @@ sequence definition below uses the same `PowTower.Expr` syntax directly.
 def a198683LexicalValueSet (n : Nat) : Set ℂ :=
   {z | ∃ e ∈ IPowExpr.parenthesizations n, IPowExpr.eval e = z}
 
+/-- The A198683 compatibility lexical value set is the shared generic evaluator set. -/
+theorem a198683LexicalValueSet_eq_evalSet (n : Nat) :
+    a198683LexicalValueSet n = PowTower.Expr.evalSet IPowExpr.eval n := by
+  rfl
+
 /--
 The shared canonical lexical value set for A198683.
 -/
@@ -146,7 +151,8 @@ theorem a198683CanonicalValueSet_eq_valueSet (n : Nat) :
 /-- The A198683 compatibility spelling is the shared lexical syntax. -/
 theorem a198683LexicalValueSet_eq_canonicalValueSet (n : Nat) :
     a198683LexicalValueSet n = a198683CanonicalValueSet n := by
-  rfl
+  rw [a198683LexicalValueSet_eq_evalSet, a198683CanonicalValueSet,
+    PowTower.Expr.valueSet_eq_evalSet Complex.I principalPow]
 
 /--
 The recursive value-set presentation is extensionally equal to the canonical

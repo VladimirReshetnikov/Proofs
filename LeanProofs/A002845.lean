@@ -91,10 +91,16 @@ theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
 def valueSet (n : Nat) : Set Nat :=
   {v | ∃ e ∈ parenthesizations n, eval e = v}
 
+/-- The A002845 compatibility value set is the shared generic evaluator set. -/
+theorem valueSet_eq_evalSet (n : Nat) :
+    valueSet n = PowTower.Expr.evalSet eval n := by
+  rfl
+
 /-- The A002845 compatibility value set is the shared canonical lexical value set. -/
 theorem valueSet_eq_canonicalValueSet (n : Nat) :
     valueSet n = canonicalValueSet n := by
-  rfl
+  rw [valueSet_eq_evalSet, canonicalValueSet,
+    PowTower.Expr.valueSet_eq_evalSet 2 (fun a b : Nat => a ^ b)]
 
 /--
 OEIS A002845, defined canonically as the cardinality of the shared lexical
