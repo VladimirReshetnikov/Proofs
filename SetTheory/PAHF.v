@@ -8976,6 +8976,97 @@ Proof.
     + intro n. now rewrite h.
 Qed.
 
+Fixpoint formulaAt (rho : nat -> nat) (phi : PA.formula) : form :=
+  match phi with
+  | PA.pEq a b =>
+      fEx (fEx (fAnd
+        (termGraphAt (fun n => rho n + 2) 1 a)
+        (fAnd
+          (termGraphAt (fun n => rho n + 2) 0 b)
+          (fEq 1 0))))
+  | PA.pBot => fBot
+  | PA.pImp a b => fImp (formulaAt rho a) (formulaAt rho b)
+  | PA.pAnd a b => fAnd (formulaAt rho a) (formulaAt rho b)
+  | PA.pOr a b => fOr (formulaAt rho a) (formulaAt rho b)
+  | PA.pAll a => fAll (fImp domainForm (formulaAt (upVarMap rho) a))
+  | PA.pEx a => fEx (fAnd domainForm (formulaAt (upVarMap rho) a))
+  end.
+
+Lemma formulaAt_map_ext : forall phi rho sigma,
+  (forall n, rho n = sigma n) ->
+  formulaAt rho phi = formulaAt sigma phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho sigma h;
+      try reflexivity.
+  - rewrite (termGraphAt_map_ext a
+      (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (termGraphAt_map_ext b
+        (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intro n. now rewrite h.
+    + intro n. now rewrite h.
+  - now rewrite (IHa rho sigma h), (IHb rho sigma h).
+  - now rewrite (IHa rho sigma h), (IHb rho sigma h).
+  - now rewrite (IHa rho sigma h), (IHb rho sigma h).
+  - assert (hup : forall n, upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n]; simpl; [reflexivity | now rewrite h].
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+  - assert (hup : forall n, upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n]; simpl; [reflexivity | now rewrite h].
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+Qed.
+
+Lemma formulaAt_free : forall phi rho i,
+  Free i (formulaAt rho phi) ->
+    exists n, PA.Formula.Free n phi /\ i = rho n.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho i h.
+  - destruct h as [h | [h | h]].
+    + destruct (termGraphAt_free a (fun n => rho n + 2) 1 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * exists n. split; [left; exact hn | lia].
+    + destruct (termGraphAt_free b (fun n => rho n + 2) 0 (S (S i)) h)
+        as [hi | [n [hn hi]]].
+      * lia.
+      * exists n. split; [right; exact hn | lia].
+    + destruct h as [hi | hi]; lia.
+  - contradiction.
+  - destruct h as [h | h].
+    + destruct (IHa rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHb rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHa rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHb rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHa rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHb rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + pose proof (domainForm_free (S i) h) as hi. lia.
+    + destruct (IHa (upVarMap rho) (S i) h) as [n [hn hi]].
+      destruct n as [|n].
+      * simpl in hi. lia.
+      * exists n. split; [exact hn | simpl in hi; lia].
+  - destruct h as [h | h].
+    + pose proof (domainForm_free (S i) h) as hi. lia.
+    + destruct (IHa (upVarMap rho) (S i) h) as [n [hn hi]].
+      destruct n as [|n].
+      * simpl in hi. lia.
+      * exists n. split; [exact hn | simpl in hi; lia].
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
