@@ -2335,6 +2335,9 @@ Definition HF_succRecTotalAt (s m : nat) : form :=
     (HF_succRecApproxAt 1 (S (S s)) (S (S m)))
     (HF_pairMemAt (S (S m)) 0 1))).
 
+Definition HF_succRecTotalOnOrdinalAt (s m : nat) : form :=
+  fImp (HF_ordinalLikeAt m) (HF_succRecTotalAt s m).
+
 Lemma foam_HF_succRecApproxAt_spec : forall (V : Type)
     (M : FirstOrderAdjunctionModel V) (e : nat -> V) f s m,
   Sat V (foam_mem V M) e (HF_succRecApproxAt f s m) <->
@@ -2386,6 +2389,27 @@ Proof.
         (scons V z (scons V f e)) 1 (S (S s)) (S (S m))) hf).
     + exact (proj2 (foam_HF_pairMemAt_spec V M
         (scons V z (scons V f e)) (S (S m)) 0 1) hz).
+Qed.
+
+Lemma foam_HF_succRecTotalOnOrdinalAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) s m,
+  Sat V (foam_mem V M) e (HF_succRecTotalOnOrdinalAt s m) <->
+    (OrdinalLike (foam_mem V M) (e m) ->
+      foam_succ_rec_total V M (e s) (e m)).
+Proof.
+  intros V M e s m.
+  unfold HF_succRecTotalOnOrdinalAt.
+  split.
+  - intros h hm.
+    apply (proj1 (foam_HF_succRecTotalAt_spec V M e s m)).
+    apply h.
+    apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M) e m)).
+    exact hm.
+  - intros h hmSat.
+    apply (proj2 (foam_HF_succRecTotalAt_spec V M e s m)).
+    apply h.
+    apply (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M) e m)).
+    exact hmSat.
 Qed.
 
 Definition foam_zero_succ_rec_graph (V : Type)
@@ -2651,6 +2675,64 @@ Proof.
   split.
   - exact (foam_succ_rec_graph_succ_succRecApprox V M s f m z hm hf hz).
   - apply foam_succ_rec_graph_succ_new.
+Qed.
+
+Lemma foam_succ_rec_total_of_ordinalLike_of_predecessor : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V),
+  (forall a, OrdinalLike (foam_mem V M) a ->
+    a = foam_empty V M \/
+    exists p, foam_mem V M p a /\ a = foam_adjoin V M p p) ->
+  forall s m,
+    OrdinalLike (foam_mem V M) m ->
+    foam_succ_rec_total V M s m.
+Proof.
+  intros V M hPred s m hm.
+  pose (phi := HF_succRecTotalOnOrdinalAt 1 0).
+  pose (tail := fun _ : nat => s).
+  pose proof (foam_induction_schema V M phi (scons V s tail)) as hind.
+  assert (hall : forall a,
+      Sat V (foam_mem V M) (scons V a (scons V s tail)) phi).
+  {
+    apply hind.
+    intros a ih.
+    apply (proj2 (foam_HF_succRecTotalOnOrdinalAt_spec V M
+      (scons V a (scons V s tail)) 1 0)).
+    intro ha.
+    destruct (hPred a ha) as [haEmpty | [p [hpa haSucc]]].
+    - rewrite haEmpty.
+      apply foam_succ_rec_total_empty.
+    - assert (hpOrd : OrdinalLike (foam_mem V M) p).
+      {
+        exact (OrdinalLike_of_mem V (foam_mem V M) a p ha hpa).
+      }
+      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
+        phi (scons V s tail) a p) (ih p hpa)) as hpSat.
+      assert (hpTotal : foam_succ_rec_total V M s p).
+      {
+        exact (proj1 (foam_HF_succRecTotalOnOrdinalAt_spec V M
+          (scons V p (scons V s tail)) 1 0) hpSat hpOrd).
+      }
+      rewrite haSucc.
+      exact (foam_succ_rec_total_succ V M s p hpOrd hpTotal).
+  }
+  exact (proj1 (foam_HF_succRecTotalOnOrdinalAt_spec V M
+    (scons V m (scons V s tail)) 1 0) (hall m) hm).
+Qed.
+
+Lemma foam_succ_rec_total_of_ordinalLike_of_mem_max_exists : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V),
+  (forall a, (exists x, foam_mem V M x a) ->
+    exists p, foam_mem V M p a /\
+      forall q, foam_mem V M q a -> ~ foam_mem V M p q) ->
+  forall s m,
+    OrdinalLike (foam_mem V M) m ->
+    foam_succ_rec_total V M s m.
+Proof.
+  intros V M hMax s m hm.
+  apply (foam_succ_rec_total_of_ordinalLike_of_predecessor V M).
+  - intros a ha.
+    exact (foam_OrdinalLike_empty_or_succ_of_mem_max_exists V M hMax a ha).
+  - exact hm.
 Qed.
 
 Fixpoint ordinal_code (n : nat) : nat :=
