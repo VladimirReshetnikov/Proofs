@@ -30,17 +30,27 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
 | [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) | new Lean-first module | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, and a separate first-order PA syntax with sealed PA axiom semantics |
 | [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | new Lean-first module | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
+| [`SetTheory/BusyBeaverMathlib.lean`](SetTheory/BusyBeaverMathlib.lean) | mathlib-backed bridge module | mathlib's `Computable` predicate as the total-recursive predicate for `Nat -> Nat`, sequential `ToPartrec.Code` extraction, and the proved finite-support `PartrecToTM2` evaluator bridge |
 | [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | trailing `Check` / `Print Assumptions` commands | type-checks the headline results and prints their axioms |
 
 ## Building
 
 Lean 4.31.0 via elan/lake; **no external dependencies** (no Mathlib, no
-Batteries — Lean core only):
+Batteries — Lean core only) for the standalone SetTheory workspace:
 
 ```sh
 cd src/Lean/SetTheory/lean
 lake build                            # builds all seven modules
 lake env lean SetTheory/Audit.lean    # re-runs the assumption audit
+```
+
+The mathlib-backed bridge `SetTheory/BusyBeaverMathlib.lean` is built from the
+root `src/Lean` workspace, which is pinned to mathlib `v4.31.0`:
+
+```sh
+cd src/Lean
+lake exe cache get Mathlib.Computability.TuringMachine.ToPartrec
+lake build +SetTheory.BusyBeaverMathlib
 ```
 
 ## The assumption audit
@@ -123,6 +133,26 @@ theorem `BusyBeaver.eventuallyDominates_totalRecursiveInRadoModel` and its alias
 the same result for the model-relative predicate
 `BusyBeaver.TotalRecursiveInRadoModel`.  `SetTheory/Audit.lean` checks and
 prints the axioms of the request-shaped aliases.
+
+`BusyBeaverMathlib.lean` connects that interface to mathlib's recursion theory
+without introducing an unproved recursive-function/Turing-machine bridge:
+
+```lean
+theorem BusyBeaver.totalRecursiveMathlib_eval_by_supported_tm2
+    {f : Nat -> Nat} :
+    BusyBeaver.TotalRecursiveMathlib f ->
+      ∃ c : Turing.ToPartrec.Code,
+        (∀ n,
+          StateTransition.eval (Turing.TM2.step Turing.PartrecToTM2.tr)
+            (Turing.PartrecToTM2.init c [n]) =
+              Part.some (Turing.PartrecToTM2.halt [f n])) ∧
+        Turing.TM2.Supports Turing.PartrecToTM2.tr
+          (Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt)
+```
+
+The remaining bridge for the full busy-beaver theorem is the exact compiler
+from a supported mathlib Turing machine with input to the blank-tape
+two-symbol Rado model, including the state-count accounting needed by `Σ(n)`.
 
 ## Translation notes (Coq → Lean)
 

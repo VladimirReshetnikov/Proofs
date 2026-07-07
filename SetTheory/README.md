@@ -67,6 +67,12 @@ foundational/computability work:
   score function satisfying the maximum property eventually dominates every
   total recursive function whose recursiveness predicate has the standard
   linear-overhead blank-tape compiler.
+- [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
+  is the mathlib-backed bridge showing that mathlib-total-recursive
+  `Nat -> Nat` functions have sequential `ToPartrec.Code`s evaluated by
+  mathlib's finite-support `PartrecToTM2` Turing machine.  It is built from the
+  root `src/Lean` Lake workspace because the standalone SetTheory Lean project
+  deliberately remains dependency-free.
 
 ## Module structure — the reusable core vs. the T-specific shell
 
