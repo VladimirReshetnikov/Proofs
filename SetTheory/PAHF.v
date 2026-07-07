@@ -384,6 +384,135 @@ Proof.
     lia.
 Qed.
 
+Definition hf_transitive_obj (a : nat) : Prop :=
+  forall y, hf_mem y a -> forall x, hf_mem x y -> hf_mem x a.
+
+Definition hf_mem_total_on (a : nat) : Prop :=
+  forall y, hf_mem y a -> forall z, hf_mem z a ->
+    hf_mem y z \/ y = z \/ hf_mem z y.
+
+Definition hf_chain_like (a : nat) : Prop :=
+  (forall y, hf_mem y a -> hf_transitive_obj y) /\ hf_mem_total_on a.
+
+Definition hf_ordinal_like (a : nat) : Prop :=
+  hf_transitive_obj a /\
+  (forall y, hf_mem y a -> hf_transitive_obj y) /\
+  hf_mem_total_on a.
+
+Lemma hf_ordinal_like_of_mem : forall a y,
+  hf_ordinal_like a -> hf_mem y a -> hf_ordinal_like y.
+Proof.
+  unfold hf_ordinal_like, hf_transitive_obj, hf_mem_total_on.
+  intros a y [htrans [hmtrans htotal]] hy.
+  split.
+  - exact (hmtrans y hy).
+  - split.
+    + intros z hz.
+      apply hmtrans.
+      eapply htrans; eauto.
+    + intros u hu z hz.
+      apply htotal.
+      * eapply htrans; eauto.
+      * eapply htrans; eauto.
+Qed.
+
+Lemma hf_ordinal_like_empty : hf_ordinal_like hf_empty.
+Proof.
+  unfold hf_ordinal_like, hf_transitive_obj, hf_mem_total_on.
+  split.
+  - intros y hy. exfalso. exact (hf_mem_empty y hy).
+  - split.
+    + intros y hy. exfalso. exact (hf_mem_empty y hy).
+    + intros y hy. exfalso. exact (hf_mem_empty y hy).
+Qed.
+
+Lemma hf_ordinal_like_adjoin_self : forall a s,
+  hf_ordinal_like a -> s = hf_adjoin a a -> hf_ordinal_like s.
+Proof.
+  unfold hf_ordinal_like, hf_transitive_obj, hf_mem_total_on.
+  intros a s [htrans [hmtrans htotal]] hs.
+  subst s.
+  split.
+  - intros y hy x hx.
+    rewrite hf_mem_adjoin in hy.
+    rewrite hf_mem_adjoin.
+    destruct hy as [hyin | hyeq].
+    + left. eapply htrans; eauto.
+    + subst y. left. exact hx.
+  - split.
+    + intros y hy.
+      rewrite hf_mem_adjoin in hy.
+      destruct hy as [hyin | hyeq].
+      * exact (hmtrans y hyin).
+      * subst y. exact htrans.
+    + intros y hy z hz.
+      rewrite hf_mem_adjoin in hy.
+      rewrite hf_mem_adjoin in hz.
+      destruct hy as [hyin | hyeq];
+      destruct hz as [hzin | hzeq].
+      * exact (htotal y hyin z hzin).
+      * left. subst z. exact hyin.
+      * right. right. subst y. exact hzin.
+      * right. left. congruence.
+Qed.
+
+Lemma ordinal_code_transitive_obj : forall n,
+  hf_transitive_obj (ordinal_code n).
+Proof.
+  unfold hf_transitive_obj.
+  intros n y hy x hx.
+  eapply ordinal_code_transitive; eauto.
+Qed.
+
+Lemma ordinal_code_members_transitive_obj : forall n,
+  forall y, hf_mem y (ordinal_code n) -> hf_transitive_obj y.
+Proof.
+  unfold hf_transitive_obj.
+  intros n y hy z hz x hx.
+  destruct (proj1 (hf_mem_ordinal_code_iff y n) hy) as [k [hk hy_eq]].
+  subst y.
+  eapply ordinal_code_transitive; eauto.
+Qed.
+
+Lemma ordinal_code_mem_total_on : forall n,
+  hf_mem_total_on (ordinal_code n).
+Proof.
+  unfold hf_mem_total_on.
+  intros n y hy z hz.
+  eapply ordinal_code_mem_total; eauto.
+Qed.
+
+Lemma ordinal_code_chain_like : forall n,
+  hf_chain_like (ordinal_code n).
+Proof.
+  intros n.
+  split.
+  - apply ordinal_code_members_transitive_obj.
+  - apply ordinal_code_mem_total_on.
+Qed.
+
+Lemma ordinal_code_ordinal_like : forall n,
+  hf_ordinal_like (ordinal_code n).
+Proof.
+  intros n.
+  split.
+  - apply ordinal_code_transitive_obj.
+  - split.
+    + apply ordinal_code_members_transitive_obj.
+    + apply ordinal_code_mem_total_on.
+Qed.
+
+Definition is_ordinal_code (a : nat) : Prop :=
+  exists n, ordinal_code n = a.
+
+Lemma ordinal_code_is_ordinal_code : forall n,
+  is_ordinal_code (ordinal_code n).
+Proof.
+  intro n.
+  exists n.
+  reflexivity.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
