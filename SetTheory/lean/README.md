@@ -160,9 +160,14 @@ theorem BusyBeaver.totalRecursiveMathlib_eval_by_supported_tm2
           (Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt)
 ```
 
-The remaining bridge for the full busy-beaver theorem is the exact compiler
-from a supported mathlib Turing machine with input to the blank-tape
-two-symbol Rado model, including the state-count accounting needed by `Σ(n)`.
+It also proves the support-only lowering
+`BusyBeaver.partrecToTM2_descends_to_supported_bool_tm0`: the finite-support
+`PartrecToTM2` evaluator descends through mathlib's proved `TM2 -> TM1`,
+finite-alphabet `TM1 -> TM1 Bool`, and `TM1 -> TM0` reductions to a
+finite-support Bool `TM0` machine.  The remaining bridge for the full
+busy-beaver theorem is the exact output/tape normalization and compiler from
+that supported Bool `TM0` machine to the blank-tape two-symbol Rado model,
+including the state-count accounting needed by `Σ(n)`.
 
 ## Translation notes (Coq → Lean)
 

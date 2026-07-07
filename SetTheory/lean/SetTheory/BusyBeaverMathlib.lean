@@ -18,6 +18,25 @@ import Mathlib.Computability.TuringMachine.ToPartrec
 namespace SetTheory
 namespace BusyBeaver
 
+namespace MathlibBridge
+
+/-- `PartrecToTM2.K'` has exactly the four stack indices used by the evaluator. -/
+instance instFintypePartrecToTM2K : Fintype Turing.PartrecToTM2.K' where
+  elems := { Turing.PartrecToTM2.K'.main, Turing.PartrecToTM2.K'.rev,
+    Turing.PartrecToTM2.K'.aux, Turing.PartrecToTM2.K'.stack }
+  complete k := by
+    cases k <;> simp
+
+/-- The finite alphabet used after the `TM2 -> TM1` reduction of `PartrecToTM2.tr`. -/
+abbrev PartrecToTM1Alphabet :=
+  Turing.TM2to1.Γ' Turing.PartrecToTM2.K' (fun _ => Turing.PartrecToTM2.Γ')
+
+/-- The `TM1` machine obtained by lowering mathlib's recursive-code evaluator. -/
+abbrev PartrecToTM1Machine :=
+  Turing.TM2to1.tr Turing.PartrecToTM2.tr
+
+end MathlibBridge
+
 /--
 Mathlib's predicate for total recursive functions `Nat -> Nat`.
 
@@ -105,6 +124,44 @@ theorem totalRecursiveMathlib_eval_by_supported_tm2 {f : Nat -> Nat}
         (Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt) := by
   rcases totalRecursiveMathlib_eval_by_tm2 hf with ⟨c, hc⟩
   exact ⟨c, hc, partrecToTM2_supports c⟩
+
+/--
+The finite-support recursive-code evaluator also descends through mathlib's
+proved `TM2 -> TM1`, finite-alphabet `TM1 -> TM1 Bool`, and `TM1 -> TM0`
+reductions to a finite-support Bool `TM0` machine.
+
+This theorem is intentionally support-only: it records the finite-machine
+lowering needed for the later Rado compiler, while the exact output/tape
+normalization bridge remains separate.
+-/
+theorem partrecToTM2_descends_to_supported_bool_tm0 (c : Turing.ToPartrec.Code) :
+    ∃ (width : Nat)
+      (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+      (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet),
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+      let tm0Bool := Turing.TM1to0.tr tm1Bool
+      let suppTM2 :=
+        Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt
+      let suppTM1 :=
+        Turing.TM2to1.trSupp Turing.PartrecToTM2.tr suppTM2
+      let suppTM1Bool :=
+        Turing.TM1to1.trSupp MathlibBridge.PartrecToTM1Machine suppTM1
+      Turing.TM0.Supports tm0Bool
+        (Turing.TM1to0.trStmts tm1Bool suppTM1Bool : Set _) := by
+  classical
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  rcases Turing.TM1to1.exists_enc_dec
+      (Γ := MathlibBridge.PartrecToTM1Alphabet) with
+    ⟨width, enc, dec, _henc0, _hdec⟩
+  refine ⟨width, enc, dec, ?_⟩
+  dsimp
+  exact Turing.TM1to0.tr_supports
+    (Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine)
+    (Turing.TM1to1.tr_supports enc dec MathlibBridge.PartrecToTM1Machine
+      (Turing.TM2to1.tr_supports Turing.PartrecToTM2.tr (partrecToTM2_supports c)))
 
 end BusyBeaver
 end SetTheory
