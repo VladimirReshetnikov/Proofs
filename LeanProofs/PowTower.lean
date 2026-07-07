@@ -162,9 +162,53 @@ def eval (atomValue : α) (powValue : α -> α -> α) : Expr -> α
 def valueSet (atomValue : α) (powValue : α -> α -> α) (n : Nat) : Set α :=
   {v | ∃ e ∈ parenthesizations n, eval atomValue powValue e = v}
 
+/--
+The set obtained by applying an arbitrary evaluator to every shared lexical
+parenthesization of size `n`.  This is a general computation-facing view; the
+canonical semantic value set is `valueSet` below, obtained by taking
+`evalFn = eval atomValue powValue`.
+-/
+def evalSet (evalFn : Expr -> α) (n : Nat) : Set α :=
+  {v | ∃ e ∈ parenthesizations n, evalFn e = v}
+
+/--
+Finite executable view of `evalSet`, for evaluators whose values have
+decidable equality.
+-/
+def evalFinset [DecidableEq α] (evalFn : Expr -> α) (n : Nat) : Finset α :=
+  ((parenthesizations n).map evalFn).toFinset
+
+theorem evalSet_eq_evalFinset [DecidableEq α] (evalFn : Expr -> α) (n : Nat) :
+    evalSet evalFn n = (evalFinset evalFn n : Set α) := by
+  ext v
+  simp [evalSet, evalFinset]
+
+theorem evalSet_ncard_eq_evalFinset_card [DecidableEq α] (evalFn : Expr -> α)
+    (n : Nat) :
+    (evalSet evalFn n).ncard = (evalFinset evalFn n).card := by
+  rw [evalSet_eq_evalFinset]
+  exact Set.ncard_coe_finset (evalFinset evalFn n)
+
+theorem valueSet_eq_evalSet (atomValue : α) (powValue : α -> α -> α) (n : Nat) :
+    valueSet atomValue powValue n = evalSet (eval atomValue powValue) n := by
+  rfl
+
 /-- The cardinality of the lexical semantic value set. -/
 noncomputable def valueCard (atomValue : α) (powValue : α -> α -> α) (n : Nat) : Nat :=
   (valueSet atomValue powValue n).ncard
+
+theorem valueSet_eq_evalFinset [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    valueSet atomValue powValue n =
+      (evalFinset (eval atomValue powValue) n : Set α) := by
+  rw [valueSet_eq_evalSet, evalSet_eq_evalFinset]
+
+theorem valueCard_eq_evalFinset_card [DecidableEq α] (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    valueCard atomValue powValue n =
+      (evalFinset (eval atomValue powValue) n).card := by
+  rw [valueCard, valueSet_eq_evalFinset]
+  exact Set.ncard_coe_finset (evalFinset (eval atomValue powValue) n)
 
 /--
 The split-recursive presentation of the same values.  This is not the

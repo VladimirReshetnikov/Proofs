@@ -134,7 +134,7 @@ theorem eval_eq_two_pow_logEval (e : PowExpr) :
 
 /-- The canonical exact-logarithm value set corresponding to `valueSet`. -/
 def logValueSet (n : Nat) : Set Nat :=
-  {m | ∃ e ∈ parenthesizations n, logEval e = m}
+  PowTower.Expr.evalSet logEval n
 
 /-- Cardinality of the exact-logarithm value set. -/
 noncomputable def a002845LogCard (n : Nat) : Nat :=
@@ -166,7 +166,7 @@ theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n := by
 
 /-- Direct finite computation of the canonical logarithm set. -/
 def directLogFinset (n : Nat) : Finset Nat :=
-  ((parenthesizations n).map logEval).toFinset
+  PowTower.Expr.evalFinset logEval n
 
 /-- Direct finite computation of the canonical logarithm count. -/
 def directLogCard (n : Nat) : Nat :=
@@ -174,8 +174,7 @@ def directLogCard (n : Nat) : Nat :=
 
 theorem logValueSet_eq_directLogFinset (n : Nat) :
     logValueSet n = (directLogFinset n : Set Nat) := by
-  ext m
-  simp [logValueSet, directLogFinset]
+  exact PowTower.Expr.evalSet_eq_evalFinset logEval n
 
 theorem a002845LogCard_eq_directLogCard (n : Nat) :
     a002845LogCard n = directLogCard n := by
@@ -551,7 +550,7 @@ The proof-facing definition is intentionally direct; `certifiedCombineLog`
 supplies the efficient native implementation of each sparse logarithm combine.
 -/
 def certifiedSparseLogFinset (n : Nat) : Finset Sparse :=
-  ((PowExpr.parenthesizations n).map sparseLogEval).toFinset
+  PowTower.Expr.evalFinset sparseLogEval n
 
 /-- Cardinality of the certified sparse-logarithm set. -/
 def certifiedSparseCard (n : Nat) : Nat :=
@@ -561,7 +560,8 @@ theorem coe_certifiedSparseLogFinset (n : Nat) :
     (certifiedSparseLogFinset n : Set Sparse) =
       Sparse.ofNat '' PowExpr.logValueSet n := by
   ext s
-  simp [certifiedSparseLogFinset, PowExpr.logValueSet, sparseLogEval_eq_ofNat_logEval]
+  simp [certifiedSparseLogFinset, PowExpr.logValueSet, PowTower.Expr.evalSet,
+    PowTower.Expr.evalFinset, sparseLogEval_eq_ofNat_logEval]
 
 /--
 Certified sparse expression evaluation computes exactly the canonical semantic
@@ -602,16 +602,16 @@ theorem coe_certifiedLevel (n : Nat) :
   induction n using certifiedLevel.induct with
   | case1 =>
       ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations,
-        PowTower.Expr.parenthesizations]
+      simp [certifiedLevel, PowExpr.logValueSet, PowTower.Expr.parenthesizations,
+        PowTower.Expr.evalSet]
   | case2 =>
       ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations,
-        PowTower.Expr.parenthesizations, PowExpr.logEval]
+      simp [certifiedLevel, PowExpr.logValueSet, PowTower.Expr.parenthesizations,
+        PowTower.Expr.evalSet, PowExpr.logEval]
   | case3 n ihLeft ihRight =>
       ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations,
-        PowTower.Expr.parenthesizations, PowExpr.logEval, ihLeft, ihRight,
+      simp [certifiedLevel, PowExpr.logValueSet, PowTower.Expr.parenthesizations,
+        PowTower.Expr.evalSet, PowExpr.logEval, ihLeft, ihRight,
         certifiedCombineLog, Sparse.eval_ofNat]
       constructor
       · rintro ⟨i, a, ha, b, hb, hs⟩

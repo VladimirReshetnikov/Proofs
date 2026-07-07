@@ -98,7 +98,7 @@ to connect the canonical definition to executable finite computations.
 -/
 noncomputable def ordinalValues (n : Nat) : Finset Ordinal.{0} := by
   classical
-  exact (PowTower.Expr.parenthesizations n).toFinset.image sharedEvalOrdinal
+  exact PowTower.Expr.evalFinset sharedEvalOrdinal n
 
 /-- OEIS A199812, from the shared lexical ordinal interpretation. -/
 noncomputable def a199812 (n : Nat) : Nat :=
@@ -114,15 +114,15 @@ theorem a199812_eq_recursiveValueSet_ncard (n : Nat) :
 theorem canonicalOrdinalValueSet_eq_ordinalValues (n : Nat) :
     canonicalOrdinalValueSet n = (ordinalValues n : Set Ordinal.{0}) := by
   classical
-  ext o
-  simp [canonicalOrdinalValueSet, ordinalValues, PowTower.Expr.valueSet, sharedEvalOrdinal]
+  simpa [canonicalOrdinalValueSet, ordinalValues, sharedEvalOrdinal] using
+    (PowTower.Expr.valueSet_eq_evalFinset
+      (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n)
 
 theorem a199812_eq_ordinalValues_card (n : Nat) :
     a199812 n = (ordinalValues n).card := by
-  rw [a199812, PowTower.Expr.valueCard]
-  change (canonicalOrdinalValueSet n).ncard = (ordinalValues n).card
-  rw [canonicalOrdinalValueSet_eq_ordinalValues]
-  exact Set.ncard_coe_finset (ordinalValues n)
+  simpa [a199812, ordinalValues, sharedEvalOrdinal] using
+    (PowTower.Expr.valueCard_eq_evalFinset_card
+      (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n)
 
 /-- The principal ordinal power `omega^e`, represented as an `ONote`. -/
 def principalPower (e : ONote) : ONote :=
@@ -208,7 +208,7 @@ theorem ordinalValues_eq_exponentNoteValues_image (n : Nat) :
   classical
   ext o
   simp [ordinalValues, exponentNoteValues, exponentNoteList, ordinalOfNote,
-    sharedEvalOrdinal_eq_omega_opow_exponentNote]
+    PowTower.Expr.evalFinset, sharedEvalOrdinal_eq_omega_opow_exponentNote]
 
 theorem exponentNoteValues_nf {n : Nat} {o : ONote} (ho : o ∈ exponentNoteValues n) :
     ONote.NF o := by
