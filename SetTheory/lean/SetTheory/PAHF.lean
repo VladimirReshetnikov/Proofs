@@ -4760,6 +4760,15 @@ def numeralValue {α : Type u} (M : Model α) : Nat → α
   | 0 => rfl
   | n+1 => by simp [numeral, rename, rename_numeral r n]
 
+theorem addRightNumeral_numeral (m n : Nat) :
+    addRightNumeral (numeral m) n = numeral (m + n) := by
+  induction n with
+  | zero =>
+      simp [addRightNumeral]
+  | succ n ih =>
+      rw [Nat.add_succ]
+      simp [addRightNumeral, numeral, ih]
+
 theorem eval_numeral {α : Type u} (M : Model α) (e : Nat → α) :
     ∀ n, eval M e (numeral n) = numeralValue M n
   | 0 => rfl
@@ -8549,6 +8558,46 @@ theorem BProv_Ax_s_mulRightNumeral (t : Term) :
         BProv_eq_congr_add_left t ih
       have h := BProv_eqTrans hstep hadd
       simpa [Term.numeral, Term.mulRightNumeral] using h
+
+/-- PA proves closed addition of standard numerals. -/
+theorem BProv_Ax_s_addNumerals (m n : Nat) :
+    BProv Ax_s [] (eq
+      (Term.add (Term.numeral m) (Term.numeral n))
+      (Term.numeral (m + n))) := by
+  simpa [Term.addRightNumeral_numeral] using
+    BProv_Ax_s_addRightNumeral (Term.numeral m) n
+
+/-- The recursive right-numeral multiplication normal form for standard
+numerals is PA-provably equal to the corresponding standard numeral. -/
+theorem BProv_Ax_s_mulRightNumeral_numeral (m n : Nat) :
+    BProv Ax_s [] (eq
+      (Term.mulRightNumeral (Term.numeral m) n)
+      (Term.numeral (m * n))) := by
+  induction n with
+  | zero =>
+      simpa [Term.mulRightNumeral, Term.numeral] using
+        (BProv_eqRefl (B := Ax_s) (G := []) Term.zero)
+  | succ n ih =>
+      have hcongr : BProv Ax_s [] (eq
+          (Term.add (Term.mulRightNumeral (Term.numeral m) n)
+            (Term.numeral m))
+          (Term.add (Term.numeral (m * n)) (Term.numeral m))) :=
+        BProv_eq_congr_add ih
+          (BProv_eqRefl (B := Ax_s) (G := []) (Term.numeral m))
+      have hadd : BProv Ax_s [] (eq
+          (Term.add (Term.numeral (m * n)) (Term.numeral m))
+          (Term.numeral (m * n + m))) :=
+        BProv_Ax_s_addNumerals (m * n) m
+      have h := BProv_eqTrans hcongr hadd
+      simpa [Term.mulRightNumeral, Nat.mul_succ] using h
+
+/-- PA proves closed multiplication of standard numerals. -/
+theorem BProv_Ax_s_mulNumerals (m n : Nat) :
+    BProv Ax_s [] (eq
+      (Term.mul (Term.numeral m) (Term.numeral n))
+      (Term.numeral (m * n))) :=
+  BProv_eqTrans (BProv_Ax_s_mulRightNumeral (Term.numeral m) n)
+    (BProv_Ax_s_mulRightNumeral_numeral m n)
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
