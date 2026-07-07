@@ -123,38 +123,12 @@ existing A198683 proof scripts.
 -/
 theorem a198683SharedRecursiveValueSet_eq_valueSet (n : Nat) :
     PowTower.Expr.recursiveValueSet Complex.I principalPow n = a198683ValueSet n := by
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
-      cases n with
-      | zero =>
-          ext z
-          simp [PowTower.Expr.recursiveValueSet, a198683ValueSet]
-      | succ n =>
-          cases n with
-          | zero =>
-              ext z
-              simp [PowTower.Expr.recursiveValueSet, a198683ValueSet]
-          | succ n =>
-              ext z
-              constructor
-              · intro hz
-                simp [PowTower.Expr.recursiveValueSet] at hz
-                rcases hz with ⟨k, x, hx, y, hy, rfl⟩
-                simp [a198683ValueSet]
-                refine ⟨k, x, ?_, y, ?_, rfl⟩
-                · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
-                  rwa [← hleft]
-                · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
-                  rwa [← hright]
-              · intro hz
-                simp [a198683ValueSet] at hz
-                rcases hz with ⟨k, x, hx, y, hy, rfl⟩
-                simp [PowTower.Expr.recursiveValueSet]
-                refine ⟨k, x, ?_, y, ?_, rfl⟩
-                · have hleft := ih (k.1 + 1) (Nat.succ_lt_succ k.2)
-                  rwa [hleft]
-                · have hright := ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))
-                  rwa [hright]
+  refine (PowTower.Expr.eq_recursiveValueSet_of_recurrence Complex.I principalPow
+    a198683ValueSet ?_ ?_ ?_ n).symm
+  · simp only [a198683ValueSet]
+  · simp only [a198683ValueSet]
+  · intro m
+    simp only [a198683ValueSet]
 
 /--
 Finite split-recursive view of the A198683 values, using the shared

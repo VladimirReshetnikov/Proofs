@@ -233,26 +233,32 @@ def e5m : PowExpr :=
 def e5n : PowExpr :=
   pow e4e x
 
+/-!
+The `n = 1, ..., 5` enumerations are inherited from the shared lexical layer:
+the local exemplars above are definitionally the shared `PowTower.Expr`
+exemplars, so the shared enumeration certificates apply verbatim.
+-/
+
 theorem parenthesizations_one :
-    parenthesizations 1 = [x] := by
-  native_decide
+    parenthesizations 1 = [x] :=
+  PowTower.Expr.parenthesizations_one
 
 theorem parenthesizations_two :
-    parenthesizations 2 = [e2] := by
-  native_decide
+    parenthesizations 2 = [e2] :=
+  PowTower.Expr.parenthesizations_two
 
 theorem parenthesizations_three :
-    parenthesizations 3 = [e3a, e3b] := by
-  native_decide
+    parenthesizations 3 = [e3a, e3b] :=
+  PowTower.Expr.parenthesizations_three
 
 theorem parenthesizations_four :
-    parenthesizations 4 = [e4a, e4b, e4c, e4d, e4e] := by
-  native_decide
+    parenthesizations 4 = [e4a, e4b, e4c, e4d, e4e] :=
+  PowTower.Expr.parenthesizations_four
 
 theorem parenthesizations_five :
     parenthesizations 5 =
-      [e5a, e5b, e5c, e5d, e5e, e5f, e5g, e5h, e5i, e5j, e5k, e5l, e5m, e5n] := by
-  native_decide
+      [e5a, e5b, e5c, e5d, e5e, e5f, e5g, e5h, e5i, e5j, e5k, e5l, e5m, e5n] :=
+  PowTower.Expr.parenthesizations_five
 
 theorem valueSet_one :
     valueSet 1 = ({eval x} : Set (PosReal -> PosReal)) := by
