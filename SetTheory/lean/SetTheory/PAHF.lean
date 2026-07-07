@@ -1814,6 +1814,38 @@ theorem mulGraph_value_of_ordinalInputs (m n : Nat) (e : Nat → Nat)
   exact mulRecApproxAt_value_of_le m n f (e 0) tail n (e 0)
     hfCanon (Nat.le_refl n) hout'
 
+/-- In any adjunction model, the HF empty set is in the interpreted PA
+domain. -/
+theorem domain_empty_model {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem (scons M.empty e) domainForm := by
+  apply (HF_ordinalLikeAt_spec (scons M.empty e) 0).mpr
+  exact OrdinalLike.empty M
+
+/-- In any adjunction model, the HF empty set realizes the PA-in-HF zero
+graph. -/
+theorem zeroGraph_empty_model {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem (scons M.empty e) zeroGraph := by
+  apply (HF_emptyAt_empty M (scons M.empty e) 0).mpr
+  rfl
+
+/-- In any adjunction model, self-adjunction realizes the PA-in-HF successor
+graph. -/
+theorem succGraph_adjoin_self_model {α : Type} (M : AdjunctionModel α)
+    (a : α) (e : Nat → α) :
+    Sat M.mem (scons (M.adjoin a a) (scons a e)) succGraph := by
+  apply (HF_succAt_spec M (scons (M.adjoin a a) (scons a e)) 0 1).mpr
+  rfl
+
+/-- In any adjunction model, self-adjunction preserves the interpreted PA
+domain. -/
+theorem domain_adjoin_self_model {α : Type} (M : AdjunctionModel α)
+    (a : α) (e : Nat → α)
+    (ha : Sat M.mem (scons a e) domainForm) :
+    Sat M.mem (scons (M.adjoin a a) e) domainForm := by
+  apply (HF_ordinalLikeAt_spec (scons (M.adjoin a a) e) 0).mpr
+  have ha' := (HF_ordinalLikeAt_spec (scons a e) 0).mp ha
+  exact OrdinalLike.adjoin_self M ha' rfl
+
 /-- In any adjunction model, the PA-in-HF zero graph lands in the interpreted
 PA domain. -/
 theorem zeroGraph_domain_model {α : Type} (M : AdjunctionModel α) (e : Nat → α)
