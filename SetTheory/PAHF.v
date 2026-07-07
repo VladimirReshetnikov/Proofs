@@ -2388,6 +2388,71 @@ Proof.
         (scons V z (scons V f e)) (S (S m)) 0 1) hz).
 Qed.
 
+Definition foam_zero_succ_rec_graph (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s : V) : V :=
+  foam_single_obj V M (foam_kpair_obj V M (foam_empty V M) s).
+
+Lemma foam_zero_succ_rec_graph_base : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s : V),
+  foam_mem V M
+    (foam_kpair_obj V M (foam_empty V M) s)
+    (foam_zero_succ_rec_graph V M s).
+Proof.
+  intros V M s.
+  apply (proj2 (foam_single_spec V M
+    (foam_kpair_obj V M (foam_empty V M) s)
+    (foam_kpair_obj V M (foam_empty V M) s))).
+  reflexivity.
+Qed.
+
+Lemma foam_zero_succ_rec_graph_succRecApprox : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s : V),
+  foam_succ_rec_approx V M s
+    (foam_zero_succ_rec_graph V M s)
+    (foam_empty V M).
+Proof.
+  intros V M s.
+  unfold foam_succ_rec_approx.
+  repeat split.
+  - intros k y y' hky hky'.
+    pose proof (proj1 (foam_single_spec V M
+      (foam_kpair_obj V M (foam_empty V M) s)
+      (foam_kpair_obj V M k y)) hky) as hky_eq.
+    pose proof (proj1 (foam_single_spec V M
+      (foam_kpair_obj V M (foam_empty V M) s)
+      (foam_kpair_obj V M k y')) hky') as hky'_eq.
+    pose proof (proj2 (foam_kpair_injective V M k y (foam_empty V M) s hky_eq))
+      as hy.
+    pose proof (proj2 (foam_kpair_injective V M k y' (foam_empty V M) s hky'_eq))
+      as hy'.
+    rewrite hy, hy'. reflexivity.
+  - intros k y hky.
+    pose proof (proj1 (foam_single_spec V M
+      (foam_kpair_obj V M (foam_empty V M) s)
+      (foam_kpair_obj V M k y)) hky) as hk_eq.
+    right.
+    exact (proj1 (foam_kpair_injective V M k y (foam_empty V M) s hk_eq)).
+  - apply foam_zero_succ_rec_graph_base.
+  - intros k [hk | hk].
+    + exfalso. exact (foam_empty_spec V M k hk).
+    + subst k.
+      exists s.
+      apply foam_zero_succ_rec_graph_base.
+  - intros k t y hkm _ _.
+    exfalso. exact (foam_empty_spec V M k hkm).
+Qed.
+
+Lemma foam_succ_rec_total_empty : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s : V),
+  foam_succ_rec_total V M s (foam_empty V M).
+Proof.
+  intros V M s.
+  exists (foam_zero_succ_rec_graph V M s), s.
+  split.
+  - apply foam_zero_succ_rec_graph_succRecApprox.
+  - apply foam_zero_succ_rec_graph_base.
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
