@@ -13050,6 +13050,21 @@ Proof.
   exact (formulaAt_mulSucc_valid_finite_model V M rho env).
 Qed.
 
+Lemma translated_induction_sat_of_HFFinAx_s :
+  forall V (mem : V -> V -> Prop) (v e : nat -> V) phi,
+    (forall g, HFFinAx_s g -> Sat V mem v g) ->
+    Sat V mem e
+      (translateFormula
+        (PA.Formula.sealPA (PA.Formula.inductionForm phi))).
+Proof.
+  intros V mem v e phi hHF.
+  pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+  unfold translateFormula.
+  apply formulaAt_sealPA_valid.
+  intros rho env.
+  exact (formulaAt_induction_valid_finite_model V M phi rho env).
+Qed.
+
 Lemma BProv_HF_translated_zeroNotSucc :
   BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
 Proof.
@@ -13249,6 +13264,38 @@ Proof.
     (translateFormula (PA.Formula.sealPA PA.Formula.mulZero))).
   - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
   - exact BProv_HF_translated_mulZero.
+Qed.
+
+Lemma BProv_HFFin_translated_induction :
+  forall phi,
+    BProv HFFinAx_s []
+      (translateFormula
+        (PA.Formula.sealPA (PA.Formula.inductionForm phi))).
+Proof.
+  intro phi.
+  apply completeness_inf.
+  - exact Sentences_HFFin.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_induction.
+  - intros Dom mem v hHF.
+    exact (translated_induction_sat_of_HFFinAx_s Dom mem v v phi hHF).
+Qed.
+
+Lemma BProv_HFFin_translated_PA_axiom : forall phi,
+  PA.Formula.Ax_s phi -> BProv HFFinAx_s [] (translateFormula phi).
+Proof.
+  intros phi hphi.
+  unfold PA.Formula.Ax_s in hphi.
+  destruct hphi as
+    [hphi | [hphi | [hphi | [hphi | [hphi | [hphi | [psi hphi]]]]]]];
+    subst phi.
+  - exact BProv_HFFin_translated_succInj.
+  - exact BProv_HFFin_translated_zeroNotSucc.
+  - exact BProv_HFFin_translated_addZero.
+  - exact BProv_HFFin_translated_addSucc.
+  - exact BProv_HFFin_translated_mulZero.
+  - exact BProv_HFFin_translated_mulSucc.
+  - exact (BProv_HFFin_translated_induction psi).
 Qed.
 
 Definition translatedPAAx (g : form) : Prop :=
@@ -13642,6 +13689,21 @@ Proof.
   - exact h.
   - exact hAx.
   - intros x hx. contradiction.
+Qed.
+
+Lemma BProv_HFFin_of_translatedPAAx : forall g,
+  translatedPAAx g -> BProv HFFinAx_s [] g.
+Proof.
+  intros g [phi [hphi ->]].
+  exact (BProv_HFFin_translated_PA_axiom phi hphi).
+Qed.
+
+Lemma BProv_HFFin_of_BProv_translatedPAAx : forall g,
+  BProv translatedPAAx [] g -> BProv HFFinAx_s [] g.
+Proof.
+  intros g h.
+  apply (BProv_lift_translatedPAAx_to_HFFin BProv_HFFin_of_translatedPAAx).
+  exact h.
 Qed.
 
 Lemma standard_sat_translatedPAAx : forall e g,
