@@ -2453,6 +2453,46 @@ Proof.
   - apply foam_zero_succ_rec_graph_base.
 Qed.
 
+Definition foam_succ_rec_graph_succ (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m z : V) : V :=
+  foam_adjoin V M f
+    (foam_kpair_obj V M
+      (foam_adjoin V M m m)
+      (foam_adjoin V M z z)).
+
+Lemma foam_succ_rec_graph_succ_old : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m z p : V),
+  foam_mem V M p f ->
+  foam_mem V M p (foam_succ_rec_graph_succ V M f m z).
+Proof.
+  intros V M f m z p hp.
+  apply (proj2 (foam_adjoin_spec V M p f
+    (foam_kpair_obj V M
+      (foam_adjoin V M m m)
+      (foam_adjoin V M z z)))).
+  now left.
+Qed.
+
+Lemma foam_succ_rec_graph_succ_new : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m z : V),
+  foam_mem V M
+    (foam_kpair_obj V M
+      (foam_adjoin V M m m)
+      (foam_adjoin V M z z))
+    (foam_succ_rec_graph_succ V M f m z).
+Proof.
+  intros V M f m z.
+  apply (proj2 (foam_adjoin_spec V M
+    (foam_kpair_obj V M
+      (foam_adjoin V M m m)
+      (foam_adjoin V M z z))
+    f
+    (foam_kpair_obj V M
+      (foam_adjoin V M m m)
+      (foam_adjoin V M z z)))).
+  now right.
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
