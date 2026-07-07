@@ -1373,6 +1373,39 @@ def SuccRecApprox {α : Type u} (M : FirstOrderAdjunctionModel α) (s f m : α) 
   PairTotalBelowSucc M f m ∧
   PairSuccStep M f m
 
+/-- The one-pair graph `{⟨0,s⟩}` used for successor recursion through zero. -/
+def zeroSuccRecGraph {α : Type u} (M : FirstOrderAdjunctionModel α) (s : α) : α :=
+  single M (kpair M M.empty s)
+
+theorem zeroSuccRecGraph_base {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (s : α) :
+    M.mem (kpair M M.empty s) (zeroSuccRecGraph M s) :=
+  (single_spec M (kpair M M.empty s) (kpair M M.empty s)).mpr rfl
+
+theorem zeroSuccRecGraph_succRecApprox {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (s : α) :
+    SuccRecApprox M s (zeroSuccRecGraph M s) M.empty := by
+  refine ⟨?functional, ?keys, zeroSuccRecGraph_base M s, ?total, ?step⟩
+  · intro k y y' hky hky'
+    have hky_eq : kpair M k y = kpair M M.empty s :=
+      (single_spec M (kpair M M.empty s) (kpair M k y)).mp hky
+    have hky'_eq : kpair M k y' = kpair M M.empty s :=
+      (single_spec M (kpair M M.empty s) (kpair M k y')).mp hky'
+    have hy : y = s := (kpair_injective M hky_eq).2
+    have hy' : y' = s := (kpair_injective M hky'_eq).2
+    rw [hy, hy']
+  · intro k y hky
+    have hk_eq : kpair M k y = kpair M M.empty s :=
+      (single_spec M (kpair M M.empty s) (kpair M k y)).mp hky
+    exact Or.inr (kpair_injective M hk_eq).1
+  · intro k hk
+    rcases hk with hk | hk
+    · exact False.elim (M.empty_spec k hk)
+    · subst k
+      exact ⟨s, zeroSuccRecGraph_base M s⟩
+  · intro k _t _y hkm _ _
+    exact False.elim (M.empty_spec k hkm)
+
 theorem HF_succRecApproxAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
     (e : Nat → α) (f s m : Nat) :
     Sat M.mem e (HF_succRecApproxAt f s m) ↔
@@ -1916,6 +1949,23 @@ theorem mulGraphAt_free {i out left right : Nat}
 
 theorem mulGraph_free {i : Nat} (h : Free i mulGraph) : i = 0 ∨ i = 1 ∨ i = 2 := by
   exact mulGraphAt_free h
+
+theorem addGraphAt_zero_right_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α)
+    (out left right : Nat) (hout : e out = e left) (hright : e right = M.empty) :
+    Sat M.mem e (addGraphAt out left right) := by
+  let f := FirstOrderAdjunctionModel.zeroSuccRecGraph M (e left)
+  refine ⟨f, ?_, ?_⟩
+  · apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M (scons f e)
+      0 (left+1) (right+1)).mpr
+    change FirstOrderAdjunctionModel.SuccRecApprox M (e left) f (e right)
+    rw [hright]
+    exact FirstOrderAdjunctionModel.zeroSuccRecGraph_succRecApprox M (e left)
+  · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M (scons f e)
+      (right+1) (out+1) 0).mpr
+    change M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f
+    rw [hright, hout]
+    exact FirstOrderAdjunctionModel.zeroSuccRecGraph_base M (e left)
 
 theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
@@ -5380,6 +5430,22 @@ theorem termGraphAt_succ_var_model {α : Type} (M : AdjunctionModel α)
       change e out = M.adjoin (e (ρ n)) (e (ρ n))
       exact h
 
+theorem termGraphAt_add_var_zero_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out n : Nat) (e : Nat → α) (h : e out = e (ρ n)) :
+    Sat M.mem e (termGraphAt ρ out (PA.Term.add (PA.Term.var n) PA.Term.zero)) := by
+  refine ⟨e (ρ n), M.empty, ?_, ?_, ?_⟩
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 2) 1 n
+      (scons M.empty (scons (e (ρ n)) e))).mpr
+    simp [scons]
+  · apply (FirstOrderAdjunctionModel.HF_emptyAt_empty M
+      (scons M.empty (scons (e (ρ n)) e)) 0).mpr
+    rfl
+  · apply addGraphAt_zero_right_model M
+      (scons M.empty (scons (e (ρ n)) e)) (out+2) 1 0
+    · simpa [scons] using h
+    · rfl
+
 theorem termGraphAt_exact (t : PA.Term) :
     ∀ (ρ : Nat → Nat) (out : Nat) (v e),
       (∀ n, e (ρ n) = ordinalCode (v n)) →
@@ -5664,6 +5730,21 @@ theorem formulaAt_zeroNotSucc_valid {α : Type u} {mem : α → α → Prop}
     exact this.mpr (Or.inr rfl)
   rw [heq] at haSucc
   exact hz' a haSucc
+
+/-- The add-zero PA axiom is valid under the PA-in-HF translation in any
+chosen first-order HF model.  The witness for `x+0` is the one-pair
+successor-recursion graph `{⟨0,x⟩}`. -/
+theorem formulaAt_addZero_valid_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.addZero) := by
+  intro x _hxDomain
+  refine ⟨x, x, ?_, ?_, rfl⟩
+  · apply termGraphAt_add_var_zero_model M (fun n => upVarMap ρ n + 2) 1 0
+      (scons x (scons x (scons x e)))
+    rfl
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => upVarMap ρ n + 2) 0 0
+      (scons x (scons x (scons x e)))).mpr
+    rfl
 
 /-- Successor-injectivity for the PA-in-HF translation follows from
 irreflexivity of membership.  In semantic HF models that irreflexivity comes
@@ -5977,6 +6058,16 @@ theorem translated_succInj_sat_of_HFAx_s {α : Type u} {mem : α → α → Prop
     Sat mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)) :=
   translated_succInj_sat_of_irrefl (semantic_mem_irrefl_of_HFAx_s v hHF) e
 
+/-- Closed add-zero axiom, semantically valid in every semantic model of the
+sealed HF theory. -/
+theorem translated_addZero_sat_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA PA.Formula.addZero)) := by
+  let M := firstOrderAdjunctionModel_of_HFAx_s v hHF
+  change Sat M.mem e (translateFormula (PA.Formula.sealPA PA.Formula.addZero))
+  exact formulaAt_sealPA_valid PA.Formula.addZero
+    (fun ρ e => formulaAt_addZero_valid_model M ρ e) (fun n : Nat => n) e
+
 /-- Closed zero-is-not-successor axiom, semantically validated in every
 adjunction model under the PA-in-HF translation. -/
 theorem translated_zeroNotSucc_sat_model {α : Type} (M : AdjunctionModel α)
@@ -6035,6 +6126,15 @@ theorem BProv_HF_translated_succInj :
   · exact translated_PA_axiom_sentence _ PA.Formula.Ax_s_succInj
   · intro Dom mem v hHF
     exact translated_succInj_sat_of_HFAx_s v hHF v
+
+/-- HF proves the PA-in-HF translation of PA's add-zero axiom. -/
+theorem BProv_HF_translated_addZero :
+    BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)) := by
+  apply completeness_inf HFAx_s
+  · exact Sentences_HF
+  · exact translated_PA_axiom_sentence _ PA.Formula.Ax_s_addZero
+  · intro Dom mem v hHF
+    exact translated_addZero_sat_of_HFAx_s v hHF v
 
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/

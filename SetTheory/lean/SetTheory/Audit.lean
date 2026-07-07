@@ -332,6 +332,10 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_zeroNotSucc_sat
 #check @AckermannHF.PAInHF.translated_succInj_sat_of_irrefl
 #check @AckermannHF.PAInHF.translated_succInj_sat_of_HFAx_s
+#check @AckermannHF.PAInHF.addGraphAt_zero_right_model
+#check @AckermannHF.PAInHF.termGraphAt_add_var_zero_model
+#check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
+#check @AckermannHF.PAInHF.translated_addZero_sat_of_HFAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
@@ -339,6 +343,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_PA_axiom_sentence
 #check @AckermannHF.PAInHF.BProv_HF_translated_zeroNotSucc
 #check @AckermannHF.PAInHF.BProv_HF_translated_succInj
+#check @AckermannHF.PAInHF.BProv_HF_translated_addZero
 #check @AckermannHF.PAInHF.translatedPAAx
 #check @AckermannHF.PAInHF.translatedPAAx_intro
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx
@@ -383,6 +388,9 @@ open SetTheory
 #check @AckermannHF.FirstOrderAdjunctionModel.PairKeysBelowSucc
 #check @AckermannHF.FirstOrderAdjunctionModel.PairTotalBelowSucc
 #check @AckermannHF.FirstOrderAdjunctionModel.PairSuccStep
+#check @AckermannHF.FirstOrderAdjunctionModel.zeroSuccRecGraph
+#check @AckermannHF.FirstOrderAdjunctionModel.zeroSuccRecGraph_base
+#check @AckermannHF.FirstOrderAdjunctionModel.zeroSuccRecGraph_succRecApprox
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_pairFunctionalAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_pairKeysBelowSuccAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_pairTotalBelowSuccAt_spec
