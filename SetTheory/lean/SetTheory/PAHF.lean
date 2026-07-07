@@ -11593,6 +11593,28 @@ theorem BProv_formulaAt_eqRefl_var {G : List Form} (ρ : Nat → Nat) (k : Nat) 
     · exact Prov.P_eqRefl _ (ρ k)
     · exact Prov.P_eqRefl _ (ρ k)
 
+/-- An HF equality proof between the slots assigned to two PA variables yields
+the PA-in-HF translation of equality between those PA variables. -/
+theorem BProv_formulaAt_eq_var_of_eq {G : List Form} (ρ : Nat → Nat)
+    (m n : Nat)
+    (h : BProv translatedPAAx G (fEq (ρ m) (ρ n))) :
+    BProv translatedPAAx G
+      (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n))) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ G)
+    (fEx (fEx (fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0)))))
+  apply Prov.P_exI _ _ (ρ m)
+  apply Prov.P_exI _ _ (ρ n)
+  change Prov (L ++ G) (fAnd (fEq (ρ m) (ρ m))
+    (fAnd (fEq (ρ n) (ρ n)) (fEq (ρ m) (ρ n))))
+  apply Prov.P_andI
+  · exact Prov.P_eqRefl _ (ρ m)
+  · apply Prov.P_andI
+    · exact Prov.P_eqRefl _ (ρ n)
+    · exact hp
+
 /-- Translated conjunction introduction for an explicit
 PA-variable-to-HF-slot map. -/
 theorem BProv_formulaAt_andI {ρ : Nat → Nat} {G : List PA.Formula}

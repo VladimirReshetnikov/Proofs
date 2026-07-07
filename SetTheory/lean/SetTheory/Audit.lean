@@ -527,6 +527,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_translate_lem
 #check @AckermannHF.PAInHF.BProv_formulaAt_lem
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_var
+#check @AckermannHF.PAInHF.BProv_formulaAt_eq_var_of_eq
 #check @AckermannHF.PAInHF.BProv_translate_andI
 #check @AckermannHF.PAInHF.BProv_formulaAt_andI
 #check @AckermannHF.PAInHF.BProv_translate_andE1
