@@ -2117,6 +2117,277 @@ Proof.
     + exact h.
 Qed.
 
+Definition foam_pair_functional (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f : V) : Prop :=
+  forall k y y',
+    foam_mem V M (foam_kpair_obj V M k y) f ->
+    foam_mem V M (foam_kpair_obj V M k y') f ->
+    y = y'.
+
+Definition foam_pair_keys_below_succ (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m : V) : Prop :=
+  forall k y,
+    foam_mem V M (foam_kpair_obj V M k y) f ->
+    foam_mem V M k m \/ k = m.
+
+Definition foam_pair_total_below_succ (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m : V) : Prop :=
+  forall k,
+    foam_mem V M k m \/ k = m ->
+    exists y, foam_mem V M (foam_kpair_obj V M k y) f.
+
+Definition foam_pair_succ_step (V : Type)
+    (M : FirstOrderAdjunctionModel V) (f m : V) : Prop :=
+  forall k t y,
+    foam_mem V M k m ->
+    foam_mem V M (foam_kpair_obj V M k t) f ->
+    foam_mem V M (foam_kpair_obj V M (foam_adjoin V M k k) y) f ->
+    y = foam_adjoin V M t t.
+
+Lemma foam_HF_pairFunctionalAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f,
+  Sat V (foam_mem V M) e (HF_pairFunctionalAt f) <->
+    foam_pair_functional V M (e f).
+Proof.
+  intros V M e f.
+  split.
+  - intros h k y y' hky hky'.
+    apply (h k y y').
+    split.
+    + apply (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V y' (scons V y (scons V k e))) 2 1 (S (S (S f))))).
+      exact hky.
+    + apply (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V y' (scons V y (scons V k e))) 2 0 (S (S (S f))))).
+      exact hky'.
+  - intros h k y y' hpairs.
+    unfold foam_pair_functional in h.
+    change (y = y').
+    exact (h k y y'
+      (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V y' (scons V y (scons V k e))) 2 1 (S (S (S f))))
+        (proj1 hpairs))
+      (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V y' (scons V y (scons V k e))) 2 0 (S (S (S f))))
+        (proj2 hpairs))).
+Qed.
+
+Lemma foam_HF_pairKeysBelowSuccAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f m,
+  Sat V (foam_mem V M) e (HF_pairKeysBelowSuccAt f m) <->
+    foam_pair_keys_below_succ V M (e f) (e m).
+Proof.
+  intros V M e f m.
+  split.
+  - intros h k y hky.
+    apply (h k y).
+    apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V y (scons V k e)) 1 0 (S (S f)))).
+    exact hky.
+  - intros h k y hpair.
+    unfold foam_pair_keys_below_succ in h.
+    change (foam_mem V M k (e m) \/ k = e m).
+    exact (h k y
+      (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V y (scons V k e)) 1 0 (S (S f))) hpair)).
+Qed.
+
+Lemma foam_HF_pairTotalBelowSuccAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f m,
+  Sat V (foam_mem V M) e (HF_pairTotalBelowSuccAt f m) <->
+    foam_pair_total_below_succ V M (e f) (e m).
+Proof.
+  intros V M e f m.
+  split.
+  - intros h k hk.
+    destruct (h k hk) as [y hy].
+    exists y.
+    apply (proj1 (foam_HF_pairMemAt_spec V M
+      (scons V y (scons V k e)) 1 0 (S (S f)))).
+    exact hy.
+  - intros h k hk.
+    unfold foam_pair_total_below_succ in h.
+    destruct (h k hk) as [y hy].
+    exists y.
+    apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V y (scons V k e)) 1 0 (S (S f)))).
+    exact hy.
+Qed.
+
+Lemma foam_HF_pairSuccStepAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f m,
+  Sat V (foam_mem V M) e (HF_pairSuccStepAt f m) <->
+    foam_pair_succ_step V M (e f) (e m).
+Proof.
+  intros V M e f m.
+  split.
+  - intros h k t y hkm hkt hsy.
+    pose (sk := foam_adjoin V M k k).
+    pose proof (h k t y hkm) as h1.
+    pose proof (h1
+      (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V y (scons V t (scons V k e))) 2 1 (S (S (S f)))) hkt))
+      as h2.
+    pose proof (h2 sk
+      (proj2 (foam_HF_succAt_spec V M
+        (scons V sk (scons V y (scons V t (scons V k e)))) 0 3) eq_refl))
+      as h3.
+    pose proof (h3
+      (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V sk (scons V y (scons V t (scons V k e)))) 0 1
+        (S (S (S (S f))))) hsy)) as h4.
+    exact (proj1 (foam_HF_succAt_spec V M
+      (scons V sk (scons V y (scons V t (scons V k e)))) 1 2) h4).
+  - intros h k t y hkm hkt sk hsk hsky.
+    pose proof (proj1 (foam_HF_succAt_spec V M
+      (scons V sk (scons V y (scons V t (scons V k e)))) 0 3) hsk)
+      as hsk'.
+    simpl in hsk'.
+    assert (hsky' : foam_mem V M
+        (foam_kpair_obj V M (foam_adjoin V M k k) y) (e f)).
+    {
+      pose proof (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V sk (scons V y (scons V t (scons V k e)))) 0 1
+        (S (S (S (S f))))) hsky) as hpair.
+      simpl in hpair.
+      rewrite hsk' in hpair.
+      exact hpair.
+    }
+    apply (proj2 (foam_HF_succAt_spec V M
+      (scons V sk (scons V y (scons V t (scons V k e)))) 1 2)).
+    change (y = foam_adjoin V M t t).
+    unfold foam_pair_succ_step in h.
+    change (foam_mem V M k (e m)) in hkm.
+    exact (h k t y hkm
+      (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V y (scons V t (scons V k e))) 2 1 (S (S (S f)))) hkt)
+      hsky').
+Qed.
+
+Lemma foam_HF_pairBaseAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f s,
+  Sat V (foam_mem V M) e (HF_pairBaseAt f s) <->
+    foam_mem V M (foam_kpair_obj V M (foam_empty V M) (e s)) (e f).
+Proof.
+  intros V M e f s.
+  split.
+  - intros [z [hz hpair]].
+    pose proof (proj1 (foam_HF_emptyAt_empty V M (scons V z e) 0) hz) as hz'.
+    simpl in hz'.
+    pose proof (proj1 (foam_HF_pairMemAt_spec V M
+      (scons V z e) 0 (S s) (S f)) hpair) as hpair'.
+    simpl in hpair'.
+    rewrite hz' in hpair'.
+    exact hpair'.
+  - intro h.
+    exists (foam_empty V M).
+    split.
+    + apply (proj2 (foam_HF_emptyAt_empty V M (scons V (foam_empty V M) e) 0)).
+      reflexivity.
+    + apply (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V (foam_empty V M) e) 0 (S s) (S f))).
+      simpl.
+      exact h.
+Qed.
+
+Lemma foam_HF_pairZeroBaseAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f,
+  Sat V (foam_mem V M) e (HF_pairZeroBaseAt f) <->
+    foam_mem V M (foam_kpair_obj V M (foam_empty V M) (foam_empty V M)) (e f).
+Proof.
+  intros V M e f.
+  split.
+  - intros [z [hz hpair]].
+    pose proof (proj1 (foam_HF_emptyAt_empty V M (scons V z e) 0) hz) as hz'.
+    simpl in hz'.
+    pose proof (proj1 (foam_HF_pairMemAt_spec V M
+      (scons V z e) 0 0 (S f)) hpair) as hpair'.
+    simpl in hpair'.
+    rewrite hz' in hpair'.
+    exact hpair'.
+  - intro h.
+    exists (foam_empty V M).
+    split.
+    + apply (proj2 (foam_HF_emptyAt_empty V M (scons V (foam_empty V M) e) 0)).
+      reflexivity.
+    + apply (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V (foam_empty V M) e) 0 0 (S f))).
+      simpl.
+      exact h.
+Qed.
+
+Definition foam_succ_rec_approx (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s f m : V) : Prop :=
+  foam_pair_functional V M f /\
+  foam_pair_keys_below_succ V M f m /\
+  foam_mem V M (foam_kpair_obj V M (foam_empty V M) s) f /\
+  foam_pair_total_below_succ V M f m /\
+  foam_pair_succ_step V M f m.
+
+Definition foam_succ_rec_total (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s m : V) : Prop :=
+  exists f z,
+    foam_succ_rec_approx V M s f m /\
+    foam_mem V M (foam_kpair_obj V M m z) f.
+
+Definition HF_succRecTotalAt (s m : nat) : form :=
+  fEx (fEx (fAnd
+    (HF_succRecApproxAt 1 (S (S s)) (S (S m)))
+    (HF_pairMemAt (S (S m)) 0 1))).
+
+Lemma foam_HF_succRecApproxAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) f s m,
+  Sat V (foam_mem V M) e (HF_succRecApproxAt f s m) <->
+    foam_succ_rec_approx V M (e s) (e f) (e m).
+Proof.
+  intros V M e f s m.
+  unfold HF_succRecApproxAt, foam_succ_rec_approx.
+  split.
+  - intros [hfun [hkeys [hbase [htotal hstep]]]].
+    exact (conj
+      (proj1 (foam_HF_pairFunctionalAt_spec V M e f) hfun)
+      (conj
+        (proj1 (foam_HF_pairKeysBelowSuccAt_spec V M e f m) hkeys)
+        (conj
+          (proj1 (foam_HF_pairBaseAt_spec V M e f s) hbase)
+          (conj
+            (proj1 (foam_HF_pairTotalBelowSuccAt_spec V M e f m) htotal)
+            (proj1 (foam_HF_pairSuccStepAt_spec V M e f m) hstep))))).
+  - intros [hfun [hkeys [hbase [htotal hstep]]]].
+    exact (conj
+      (proj2 (foam_HF_pairFunctionalAt_spec V M e f) hfun)
+      (conj
+        (proj2 (foam_HF_pairKeysBelowSuccAt_spec V M e f m) hkeys)
+        (conj
+          (proj2 (foam_HF_pairBaseAt_spec V M e f s) hbase)
+          (conj
+            (proj2 (foam_HF_pairTotalBelowSuccAt_spec V M e f m) htotal)
+            (proj2 (foam_HF_pairSuccStepAt_spec V M e f m) hstep))))).
+Qed.
+
+Lemma foam_HF_succRecTotalAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) s m,
+  Sat V (foam_mem V M) e (HF_succRecTotalAt s m) <->
+    foam_succ_rec_total V M (e s) (e m).
+Proof.
+  intros V M e s m.
+  split.
+  - intros [f [z [hf hz]]].
+    exists f, z.
+    split.
+    + exact (proj1 (foam_HF_succRecApproxAt_spec V M
+        (scons V z (scons V f e)) 1 (S (S s)) (S (S m))) hf).
+    + exact (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V z (scons V f e)) (S (S m)) 0 1) hz).
+  - intros [f [z [hf hz]]].
+    exists f, z.
+    split.
+    + exact (proj2 (foam_HF_succRecApproxAt_spec V M
+        (scons V z (scons V f e)) 1 (S (S s)) (S (S m))) hf).
+    + exact (proj2 (foam_HF_pairMemAt_spec V M
+        (scons V z (scons V f e)) (S (S m)) 0 1) hz).
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
