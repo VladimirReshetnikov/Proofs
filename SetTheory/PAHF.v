@@ -1831,6 +1831,292 @@ Proof.
     exact (proj2_sig (adj_sig a b) x).
 Defined.
 
+Definition foam_single_obj (V : Type) (M : FirstOrderAdjunctionModel V)
+    (a : V) : V :=
+  foam_adjoin V M (foam_empty V M) a.
+
+Lemma foam_single_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a x : V),
+  foam_mem V M x (foam_single_obj V M a) <-> x = a.
+Proof.
+  intros V M a x.
+  unfold foam_single_obj.
+  rewrite foam_adjoin_spec.
+  split.
+  - intros [hx | hx].
+    + exfalso. exact (foam_empty_spec V M x hx).
+    + exact hx.
+  - intro hx. now right.
+Qed.
+
+Definition foam_upair_obj (V : Type) (M : FirstOrderAdjunctionModel V)
+    (a b : V) : V :=
+  foam_adjoin V M (foam_single_obj V M a) b.
+
+Lemma foam_upair_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a b x : V),
+  foam_mem V M x (foam_upair_obj V M a b) <-> x = a \/ x = b.
+Proof.
+  intros V M a b x.
+  unfold foam_upair_obj.
+  rewrite foam_adjoin_spec.
+  rewrite foam_single_spec.
+  tauto.
+Qed.
+
+Definition foam_kpair_obj (V : Type) (M : FirstOrderAdjunctionModel V)
+    (a b : V) : V :=
+  foam_upair_obj V M (foam_single_obj V M a) (foam_upair_obj V M a b).
+
+Lemma foam_kpair_mem : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a b q : V),
+  foam_mem V M q (foam_kpair_obj V M a b) <->
+    q = foam_single_obj V M a \/ q = foam_upair_obj V M a b.
+Proof.
+  intros V M a b q.
+  unfold foam_kpair_obj.
+  apply foam_upair_spec.
+Qed.
+
+Lemma foam_single_injective : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a b : V),
+  foam_single_obj V M a = foam_single_obj V M b -> a = b.
+Proof.
+  intros V M a b h.
+  assert (ha : foam_mem V M a (foam_single_obj V M a)).
+  { apply (proj2 (foam_single_spec V M a a)). reflexivity. }
+  rewrite h in ha.
+  exact (proj1 (foam_single_spec V M b a) ha).
+Qed.
+
+Lemma foam_upair_eq_single : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a b c : V),
+  foam_upair_obj V M a b = foam_single_obj V M c -> a = c /\ b = c.
+Proof.
+  intros V M a b c h.
+  split.
+  - assert (ha : foam_mem V M a (foam_upair_obj V M a b)).
+    { apply (proj2 (foam_upair_spec V M a b a)). now left. }
+    rewrite h in ha.
+    exact (proj1 (foam_single_spec V M c a) ha).
+  - assert (hb : foam_mem V M b (foam_upair_obj V M a b)).
+    { apply (proj2 (foam_upair_spec V M a b b)). now right. }
+    rewrite h in hb.
+    exact (proj1 (foam_single_spec V M c b) hb).
+Qed.
+
+Lemma foam_kpair_injective : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a b c d : V),
+  foam_kpair_obj V M a b = foam_kpair_obj V M c d -> a = c /\ b = d.
+Proof.
+  intros V M a b c d h.
+  assert (hac : a = c).
+  {
+    assert (hs : foam_mem V M (foam_single_obj V M a)
+        (foam_kpair_obj V M a b)).
+    { apply (proj2 (foam_kpair_mem V M a b (foam_single_obj V M a))). now left. }
+    rewrite h in hs.
+    destruct (proj1 (foam_kpair_mem V M c d (foam_single_obj V M a)) hs)
+      as [hsc | hsu].
+    - exact (foam_single_injective V M a c hsc).
+    - symmetry. exact (proj1 (foam_upair_eq_single V M c d a (eq_sym hsu))).
+  }
+  subst c.
+  split.
+  - reflexivity.
+  - assert (h1 : foam_mem V M (foam_upair_obj V M a b)
+        (foam_kpair_obj V M a b)).
+    { apply (proj2 (foam_kpair_mem V M a b (foam_upair_obj V M a b))). now right. }
+    rewrite h in h1.
+    destruct (proj1 (foam_kpair_mem V M a d (foam_upair_obj V M a b)) h1)
+      as [h1_single | h1_upair].
+    + pose proof (proj2 (foam_upair_eq_single V M a b a h1_single)) as hba.
+      assert (h2 : foam_mem V M (foam_upair_obj V M a d)
+          (foam_kpair_obj V M a d)).
+      { apply (proj2 (foam_kpair_mem V M a d (foam_upair_obj V M a d))). now right. }
+      rewrite <- h in h2.
+      destruct (proj1 (foam_kpair_mem V M a b (foam_upair_obj V M a d)) h2)
+        as [h2_single | h2_upair].
+      * pose proof (proj2 (foam_upair_eq_single V M a d a h2_single)) as hda.
+        rewrite hba, hda. reflexivity.
+      * assert (hd : foam_mem V M d (foam_upair_obj V M a d)).
+        { apply (proj2 (foam_upair_spec V M a d d)). now right. }
+        rewrite h2_upair in hd.
+        destruct (proj1 (foam_upair_spec V M a b d) hd) as [hd_eq_a | hd_eq_b].
+        -- rewrite hba, hd_eq_a. reflexivity.
+        -- symmetry. exact hd_eq_b.
+    + assert (hb : foam_mem V M b (foam_upair_obj V M a b)).
+      { apply (proj2 (foam_upair_spec V M a b b)). now right. }
+      rewrite h1_upair in hb.
+      destruct (proj1 (foam_upair_spec V M a d b) hb) as [hb_eq_a | hb_eq_d].
+      * assert (hd : foam_mem V M d (foam_upair_obj V M a d)).
+        { apply (proj2 (foam_upair_spec V M a d d)). now right. }
+        rewrite <- h1_upair in hd.
+        destruct (proj1 (foam_upair_spec V M a b d) hd) as [hd_eq_a | hd_eq_b].
+        -- rewrite hb_eq_a, hd_eq_a. reflexivity.
+        -- symmetry. exact hd_eq_b.
+      * exact hb_eq_d.
+Qed.
+
+Lemma foam_HF_emptyAt_empty : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) i,
+  Sat V (foam_mem V M) e (HF_emptyAt i) <-> e i = foam_empty V M.
+Proof.
+  intros V M e i.
+  split.
+  - intro h.
+    apply (foam_extensional V M).
+    intro x.
+    split.
+    + intro hx. exfalso. exact (h x hx).
+    + intro hx. exfalso. exact (foam_empty_spec V M x hx).
+  - intros h x hx.
+    change (foam_mem V M x (e i)) in hx.
+    rewrite h in hx.
+    exact (foam_empty_spec V M x hx).
+Qed.
+
+Lemma foam_HF_adjoinAt_adjoin : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) c a b,
+  Sat V (foam_mem V M) e (HF_adjoinAt c a b) <->
+    e c = foam_adjoin V M (e a) (e b).
+Proof.
+  intros V M e c a b.
+  split.
+  - intro h.
+    apply (foam_extensional V M).
+    intro x.
+    rewrite (proj1 (HF_adjoinAt_spec V (foam_mem V M) e c a b) h x).
+    symmetry.
+    apply foam_adjoin_spec.
+  - intro h.
+    apply (proj2 (HF_adjoinAt_spec V (foam_mem V M) e c a b)).
+    intro x.
+    rewrite h.
+    apply foam_adjoin_spec.
+Qed.
+
+Lemma foam_HF_succAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) s a,
+  Sat V (foam_mem V M) e (HF_succAt s a) <->
+    e s = foam_adjoin V M (e a) (e a).
+Proof.
+  intros V M e s a.
+  apply foam_HF_adjoinAt_adjoin.
+Qed.
+
+Lemma foam_HF_singleAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) i j,
+  Sat V (foam_mem V M) e (HF_singleAt i j) <->
+    e i = foam_single_obj V M (e j).
+Proof.
+  intros V M e i j.
+  split.
+  - intro h.
+    apply (foam_extensional V M).
+    intro x.
+    rewrite foam_single_spec.
+    unfold HF_singleAt, fIff in h.
+    simpl in h.
+    exact (conj (fun hx => proj1 (h x) hx) (fun hx => proj2 (h x) hx)).
+  - intros h x.
+    unfold HF_singleAt, fIff.
+    simpl.
+    rewrite h.
+    apply foam_single_spec.
+Qed.
+
+Lemma foam_HF_upairAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) i j k,
+  Sat V (foam_mem V M) e (HF_upairAt i j k) <->
+    e i = foam_upair_obj V M (e j) (e k).
+Proof.
+  intros V M e i j k.
+  split.
+  - intro h.
+    apply (foam_extensional V M).
+    intro x.
+    rewrite foam_upair_spec.
+    unfold HF_upairAt, fIff in h.
+    simpl in h.
+    exact (conj (fun hx => proj1 (h x) hx) (fun hx => proj2 (h x) hx)).
+  - intros h x.
+    unfold HF_upairAt, fIff.
+    simpl.
+    rewrite h.
+    apply foam_upair_spec.
+Qed.
+
+Lemma foam_HF_kpairAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) p a b,
+  Sat V (foam_mem V M) e (HF_kpairAt p a b) <->
+    e p = foam_kpair_obj V M (e a) (e b).
+Proof.
+  intros V M e p a b.
+  split.
+  - intro h.
+    apply (foam_extensional V M).
+    intro q.
+    unfold HF_kpairAt, fIff in h.
+    simpl in h.
+    rewrite foam_kpair_mem.
+    split.
+    + intro hq.
+      destruct (proj1 (h q) hq) as [hs | hu].
+      * left.
+        exact (proj1 (foam_HF_singleAt_spec V M (scons V q e) 0 (S a)) hs).
+      * right.
+        exact (proj1 (foam_HF_upairAt_spec V M (scons V q e) 0 (S a) (S b)) hu).
+    + intros [hs | hu].
+      * apply (proj2 (h q)).
+        left.
+        exact (proj2 (foam_HF_singleAt_spec V M (scons V q e) 0 (S a)) hs).
+      * apply (proj2 (h q)).
+        right.
+        exact (proj2 (foam_HF_upairAt_spec V M (scons V q e) 0 (S a) (S b)) hu).
+  - intros h q.
+    unfold HF_kpairAt, fIff.
+    simpl.
+    rewrite h.
+    split.
+    + intro hq.
+      destruct (proj1 (foam_kpair_mem V M (e a) (e b) q) hq) as [hs | hu].
+      * left.
+        exact (proj2 (foam_HF_singleAt_spec V M (scons V q e) 0 (S a)) hs).
+      * right.
+        exact (proj2 (foam_HF_upairAt_spec V M (scons V q e) 0 (S a) (S b)) hu).
+    + intros [hs | hu].
+      * apply (proj2 (foam_kpair_mem V M (e a) (e b) q)).
+        left.
+        exact (proj1 (foam_HF_singleAt_spec V M (scons V q e) 0 (S a)) hs).
+      * apply (proj2 (foam_kpair_mem V M (e a) (e b) q)).
+        right.
+        exact (proj1 (foam_HF_upairAt_spec V M (scons V q e) 0 (S a) (S b)) hu).
+Qed.
+
+Lemma foam_HF_pairMemAt_spec : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) a b r,
+  Sat V (foam_mem V M) e (HF_pairMemAt a b r) <->
+    foam_mem V M (foam_kpair_obj V M (e a) (e b)) (e r).
+Proof.
+  intros V M e a b r.
+  split.
+  - intros [p [hp hmem]].
+    pose proof (proj1 (foam_HF_kpairAt_spec V M (scons V p e) 0 (S a) (S b)) hp)
+      as hp'.
+    simpl in hp'.
+    change (foam_mem V M p (e r)) in hmem.
+    rewrite hp' in hmem.
+    exact hmem.
+  - intro h.
+    exists (foam_kpair_obj V M (e a) (e b)).
+    split.
+    + apply (proj2 (foam_HF_kpairAt_spec V M
+        (scons V (foam_kpair_obj V M (e a) (e b)) e) 0 (S a) (S b))).
+      reflexivity.
+    + exact h.
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
