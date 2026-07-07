@@ -486,6 +486,10 @@ theorem ordinalCode_mem_of_lt {k n : Nat} (h : k < n) :
     Mem (ordinalCode k) (ordinalCode n) :=
   (mem_ordinalCode_iff (ordinalCode k) n).mpr ⟨k, h, rfl⟩
 
+theorem ordinalCode_lt_of_lt {k n : Nat} (h : k < n) :
+    ordinalCode k < ordinalCode n :=
+  mem_lt (ordinalCode_mem_of_lt h)
+
 theorem ordinalCode_transitive (n : Nat) : TransitiveObj Mem (ordinalCode n) := by
   intro y hy x hx
   rcases (mem_ordinalCode_iff y n).mp hy with ⟨k, hk, rfl⟩
@@ -513,6 +517,53 @@ theorem ordinalCode_ordinalLike (n : Nat) : OrdinalLike Mem (ordinalCode n) :=
 theorem HF_ordinalLikeAt_of_ordinalCode (e : Nat → Nat) (i n : Nat)
     (h : e i = ordinalCode n) : Sat Mem e (HF_ordinalLikeAt i) :=
   (HF_ordinalLikeAt_spec e i).mpr (by rw [h]; exact ordinalCode_ordinalLike n)
+
+def IsOrdinalCode (a : Nat) : Prop := ∃ n, ordinalCode n = a
+
+theorem ordinalLike_is_ordinalCode (a : Nat)
+    (ha : OrdinalLike Mem a) : IsOrdinalCode a := by
+  exact Nat.strongRecOn a (fun a ih ha => by
+    by_cases hzero : a = empty
+    · exact ⟨0, by rw [ordinalCode_zero, ← hzero]⟩
+    · obtain ⟨m, hm, hmax⟩ := exists_max_mem_of_ne_empty hzero
+      rcases ih m (mem_lt hm) (OrdinalLike.of_mem ha hm) with ⟨k, hk⟩
+      refine ⟨k+1, ?_⟩
+      apply ext
+      intro x
+      constructor
+      · intro hx
+        rcases (mem_ordinalCode_succ x k).mp hx with hxk | hxk
+        · have hxm : Mem x m := by
+            rwa [hk] at hxk
+          exact ha.1 m hm x hxm
+        · rw [hxk, hk]
+          exact hm
+      · intro hx
+        rcases ih x (mem_lt hx) (OrdinalLike.of_mem ha hx) with ⟨j, hj⟩
+        have hjle : j ≤ k := by
+          have hnot : ¬ k < j := by
+            intro hkj
+            have hlt : m < x := by
+              have hlt0 := ordinalCode_lt_of_lt hkj
+              rwa [hk, hj] at hlt0
+            exact Nat.not_lt_of_ge (hmax x hx) hlt
+          omega
+        rcases Nat.lt_or_eq_of_le hjle with hjlt | hjeq
+        · apply (mem_ordinalCode_succ x k).mpr
+          left
+          rw [← hj]
+          exact ordinalCode_mem_of_lt hjlt
+        · apply (mem_ordinalCode_succ x k).mpr
+          right
+          rw [← hj, hjeq])
+    ha
+
+theorem HF_ordinalLikeAt_exact (e : Nat → Nat) (i : Nat) :
+    Sat Mem e (HF_ordinalLikeAt i) ↔ IsOrdinalCode (e i) :=
+  ⟨fun h => ordinalLike_is_ordinalCode (e i) ((HF_ordinalLikeAt_spec e i).mp h),
+   fun h => by
+    rcases h with ⟨n, hn⟩
+    exact HF_ordinalLikeAt_of_ordinalCode e i n hn.symm⟩
 
 /-! ### First PA-in-HF interpretation formulas already available -/
 
@@ -574,8 +625,6 @@ theorem ordinalCode_injective {m n : Nat}
   · have hn : Mem (ordinalCode n) (ordinalCode m) := ordinalCode_mem_of_lt hgt
     rw [h] at hn
     exact False.elim (not_mem_self (ordinalCode n) hn)
-
-def IsOrdinalCode (a : Nat) : Prop := ∃ n, ordinalCode n = a
 
 /-- The interpreted PA domain inside Ackermann HF: the finite von Neumann
 ordinals, represented by their Ackermann codes. -/

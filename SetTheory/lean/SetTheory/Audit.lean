@@ -53,6 +53,8 @@ open SetTheory
 #check @AckermannHF.OrdinalLike.adjoin_self
 #check @AckermannHF.ordinalCode_ordinalLike
 #check @AckermannHF.HF_ordinalLikeAt_of_ordinalCode
+#check @AckermannHF.ordinalLike_is_ordinalCode
+#check @AckermannHF.HF_ordinalLikeAt_exact
 #check @AckermannHF.PAInHF.domainForm
 #check @AckermannHF.PAInHF.zeroGraph
 #check @AckermannHF.PAInHF.succGraph
