@@ -11609,10 +11609,11 @@ theorem BProv_formulaAt_lem (ρ : Nat → Nat) (G : List PA.Formula)
 /-- Reflexivity of equality for a PA variable term under an arbitrary HF
 context.  This is the base equality bridge that needs no term-totality proof:
 the graph of a PA variable is just HF equality to its assigned slot. -/
-theorem BProv_formulaAt_eqRefl_var {G : List Form} (ρ : Nat → Nat) (k : Nat) :
-    BProv translatedPAAx G
+theorem BProv_formulaAt_eqRefl_var {B : Form → Prop} {G : List Form}
+    (ρ : Nat → Nat) (k : Nat) :
+    BProv B G
       (formulaAt ρ (PA.Formula.eq (PA.Term.var k) (PA.Term.var k))) := by
-  refine BProv_of_Prov (B := translatedPAAx) ?_
+  refine BProv_of_Prov (B := B) ?_
   change Prov G
     (fEx (fEx (fAnd (fEq 1 (ρ k + 2))
       (fAnd (fEq 0 (ρ k + 2)) (fEq 1 0)))))
@@ -11668,10 +11669,10 @@ theorem BProv_HFFin_formulaAt_eqRefl_zero {G : List Form} (ρ : Nat → Nat) :
 
 /-- An HF equality proof between the slots assigned to two PA variables yields
 the PA-in-HF translation of equality between those PA variables. -/
-theorem BProv_formulaAt_eq_var_of_eq {G : List Form} (ρ : Nat → Nat)
+theorem BProv_formulaAt_eq_var_of_eq {B : Form → Prop} {G : List Form} (ρ : Nat → Nat)
     (m n : Nat)
-    (h : BProv translatedPAAx G (fEq (ρ m) (ρ n))) :
-    BProv translatedPAAx G
+    (h : BProv B G (fEq (ρ m) (ρ n))) :
+    BProv B G
       (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n))) := by
   rcases h with ⟨L, hL, hp⟩
   refine ⟨L, hL, ?_⟩
@@ -11695,13 +11696,13 @@ terms.
 All computational content stays in the premises: the theorem only packages
 already-supplied graph and equality proofs into the translated PA equality
 formula. -/
-theorem BProv_formulaAt_eq_of_termGraphsAt {G : List Form}
+theorem BProv_formulaAt_eq_of_termGraphsAt {B : Form → Prop} {G : List Form}
     (ρ : Nat → Nat) (s t : PA.Term) (i j : Nat)
-    (hs : BProv translatedPAAx G (termGraphAt ρ i s))
-    (ht : BProv translatedPAAx G (termGraphAt ρ j t))
-    (heq : BProv translatedPAAx G (fEq i j)) :
-    BProv translatedPAAx G (formulaAt ρ (PA.Formula.eq s t)) := by
-  have hconj : BProv translatedPAAx G
+    (hs : BProv B G (termGraphAt ρ i s))
+    (ht : BProv B G (termGraphAt ρ j t))
+    (heq : BProv B G (fEq i j)) :
+    BProv B G (formulaAt ρ (PA.Formula.eq s t)) := by
+  have hconj : BProv B G
       (fAnd (termGraphAt ρ i s)
         (fAnd (termGraphAt ρ j t) (fEq i j))) :=
     BProv_andI hs (BProv_andI ht heq)
@@ -11719,15 +11720,15 @@ slots.
 
 This is the graph-level equality-elimination rule needed by later arbitrary
 PA-term substitution proofs. -/
-theorem BProv_termGraphAt_eqElim_out {G : List Form}
+theorem BProv_termGraphAt_eqElim_out {B : Form → Prop} {G : List Form}
     (ρ : Nat → Nat) (t : PA.Term) {i j : Nat}
-    (heq : BProv translatedPAAx G (fEq i j))
-    (hgraph : BProv translatedPAAx G (termGraphAt ρ i t)) :
-    BProv translatedPAAx G (termGraphAt ρ j t) := by
-  have hinst : BProv translatedPAAx G
+    (heq : BProv B G (fEq i j))
+    (hgraph : BProv B G (termGraphAt ρ i t)) :
+    BProv B G (termGraphAt ρ j t) := by
+  have hinst : BProv B G
       (rename (inst i) (termGraphAt (fun n => ρ n + 1) 0 t)) := by
     simpa [termGraphAt_inst_out] using hgraph
-  have htarget : BProv translatedPAAx G
+  have htarget : BProv B G
       (rename (inst j) (termGraphAt (fun n => ρ n + 1) 0 t)) :=
     BProv_eqElim heq hinst
   simpa [termGraphAt_inst_out] using htarget
@@ -11737,10 +11738,10 @@ translation of reflexivity for that PA term.
 
 The term graph witness is an explicit premise: this lemma does not assert that
 arbitrary PA terms are total in the interpreted HF domain. -/
-theorem BProv_formulaAt_eqRefl_of_termGraphAt {G : List Form}
+theorem BProv_formulaAt_eqRefl_of_termGraphAt {B : Form → Prop} {G : List Form}
     (ρ : Nat → Nat) (t : PA.Term) (k : Nat)
-    (h : BProv translatedPAAx G (termGraphAt ρ k t)) :
-    BProv translatedPAAx G (formulaAt ρ (PA.Formula.eq t t)) := by
+    (h : BProv B G (termGraphAt ρ k t)) :
+    BProv B G (formulaAt ρ (PA.Formula.eq t t)) := by
   rcases h with ⟨L, hL, hp⟩
   refine ⟨L, hL, ?_⟩
   change Prov (L ++ G)
@@ -11760,11 +11761,11 @@ theorem BProv_formulaAt_eqRefl_of_termGraphAt {G : List Form}
 
 /-- The PA-in-HF translation of equality between two PA variables entails the
 underlying HF equality between their assigned slots. -/
-theorem BProv_eq_of_formulaAt_eq_var {G : List Form} (ρ : Nat → Nat)
+theorem BProv_eq_of_formulaAt_eq_var {B : Form → Prop} {G : List Form} (ρ : Nat → Nat)
     (m n : Nat)
-    (h : BProv translatedPAAx G
+    (h : BProv B G
       (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n)))) :
-    BProv translatedPAAx G (fEq (ρ m) (ρ n)) := by
+    BProv B G (fEq (ρ m) (ρ n)) := by
   rcases h with ⟨L, hL, hp⟩
   refine ⟨L, hL, ?_⟩
   let H : List Form := L ++ G
@@ -11823,22 +11824,22 @@ theorem BProv_eq_of_formulaAt_eq_var {G : List Form} (ρ : Nat → Nat)
 The term-totality issue is explicit in the shape of this lemma: it applies only
 to variable terms, whose translated term graphs are just equality to their HF
 slots. -/
-theorem BProv_formulaAt_eqElim_var {Γ : List Form} {ρ : Nat → Nat}
+theorem BProv_formulaAt_eqElim_var {B : Form → Prop} {Γ : List Form} {ρ : Nat → Nat}
     {m n : Nat} {a : PA.Formula}
-    (heq : BProv translatedPAAx Γ
+    (heq : BProv B Γ
       (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n))))
-    (ha : BProv translatedPAAx Γ
+    (ha : BProv B Γ
       (formulaAt ρ
         (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var m)) a))) :
-    BProv translatedPAAx Γ
+    BProv B Γ
       (formulaAt ρ
         (PA.Formula.subst (PA.Formula.instTerm (PA.Term.var n)) a)) := by
-  have hslot : BProv translatedPAAx Γ (fEq (ρ m) (ρ n)) :=
+  have hslot : BProv B Γ (fEq (ρ m) (ρ n)) :=
     BProv_eq_of_formulaAt_eq_var ρ m n heq
-  have ha' : BProv translatedPAAx Γ
+  have ha' : BProv B Γ
       (rename (inst (ρ m)) (formulaAt (upVarMap ρ) a)) := by
     simpa [formulaAt_subst_instTerm_var] using ha
-  have htarget : BProv translatedPAAx Γ
+  have htarget : BProv B Γ
       (rename (inst (ρ n)) (formulaAt (upVarMap ρ) a)) :=
     BProv_eqElim hslot ha'
   simpa [formulaAt_subst_instTerm_var] using htarget
