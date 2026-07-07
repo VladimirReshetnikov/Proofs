@@ -168,6 +168,24 @@ def TM0RadoNormalRel {Label : Type*} (tmCfg : Turing.TM0.Cfg Bool Label)
   radoCfg.state = some (TM0RadoState.normal tmCfg.q) ∧
     RadoMatchesTuringTape radoCfg.head radoCfg.tape tmCfg.Tape
 
+/--
+Finite-step reachability for the typed Rado simulator generated from a Bool
+`TM0` machine.
+-/
+def TypedRadoReaches {Label : Type*} (M : TypedMachine (TM0RadoState Label)) :
+    TypedConfig (TM0RadoState Label) -> TypedConfig (TM0RadoState Label) -> Prop :=
+  Relation.ReflTransGen fun a b => b = TypedMachine.step M a
+
+theorem typedRadoReaches_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedRadoReaches M cfg (TypedMachine.step M cfg) := by
+  exact Relation.ReflTransGen.single rfl
+
+theorem typedRadoReaches_step_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedRadoReaches M cfg (TypedMachine.step M (TypedMachine.step M cfg)) := by
+  exact Relation.ReflTransGen.tail (Relation.ReflTransGen.single rfl) rfl
+
 theorem tm0ToTypedRado_step_move {Label : Type*} [Inhabited Label]
     (M : Turing.TM0.Machine Bool Label)
     {q q' : Label} {T : Turing.Tape Bool} {dir : Turing.Dir}
@@ -217,6 +235,98 @@ theorem tm0ToTypedRado_step_write {Label : Type*} [Inhabited Label]
   · simp [TypedMachine.step, tm0ToTypedRado, hHead, hM]
     change RadoMatchesTuringTape (head + 1 - 1) (Tape.write tape head out) (T.write out)
     simpa using hLeft
+
+theorem tm0ToTypedRado_step_normal_explicit {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {q : Label} {T : Turing.Tape Bool} {c' : Turing.TM0.Cfg Bool Label}
+    {head : Int} {tape : Tape}
+    (hStep : c' ∈ Turing.TM0.step M ({ q := q, Tape := T } : Turing.TM0.Cfg Bool Label))
+    (hTape : RadoMatchesTuringTape head tape T) :
+    ∃ radoCfg',
+      TM0RadoNormalRel c' radoCfg' ∧
+      TypedRadoReaches (tm0ToTypedRado M)
+        ({ state := some (TM0RadoState.normal q), head := head, tape := tape } :
+          TypedConfig (TM0RadoState Label))
+        radoCfg' := by
+  cases hTrans : M q T.head with
+  | none =>
+      simp [Turing.TM0.step, hTrans] at hStep
+  | some p =>
+      rcases p with ⟨q', stmt⟩
+      cases stmt with
+      | move dir =>
+          have hStepEq :
+              ({ q := q', Tape := T.move dir } : Turing.TM0.Cfg Bool Label) = c' := by
+            simpa [Turing.TM0.step, hTrans] using hStep
+          subst c'
+          refine ⟨TypedMachine.step (tm0ToTypedRado M)
+              ({ state := some (TM0RadoState.normal q), head := head, tape := tape } :
+                TypedConfig (TM0RadoState Label)), ?_, ?_⟩
+          · exact tm0ToTypedRado_step_move M hTrans hTape
+          · exact typedRadoReaches_step (tm0ToTypedRado M) _
+      | write out =>
+          have hStepEq :
+              ({ q := q', Tape := T.write out } : Turing.TM0.Cfg Bool Label) = c' := by
+            simpa [Turing.TM0.step, hTrans] using hStep
+          subst c'
+          refine ⟨TypedMachine.step (tm0ToTypedRado M)
+              (TypedMachine.step (tm0ToTypedRado M)
+                ({ state := some (TM0RadoState.normal q), head := head, tape := tape } :
+                  TypedConfig (TM0RadoState Label))), ?_, ?_⟩
+          · exact tm0ToTypedRado_step_write M hTrans hTape
+          · exact typedRadoReaches_step_step (tm0ToTypedRado M) _
+
+/--
+One Bool `TM0` step is simulated by one or two typed Rado steps, preserving the
+normal-state simulation relation.
+-/
+theorem tm0ToTypedRado_step_normal {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {tmCfg tmCfg' : Turing.TM0.Cfg Bool Label}
+    {radoCfg : TypedConfig (TM0RadoState Label)}
+    (hStep : tmCfg' ∈ Turing.TM0.step M tmCfg)
+    (hRel : TM0RadoNormalRel tmCfg radoCfg) :
+    ∃ radoCfg',
+      TM0RadoNormalRel tmCfg' radoCfg' ∧
+      TypedRadoReaches (tm0ToTypedRado M) radoCfg radoCfg' := by
+  cases tmCfg with
+  | mk q T =>
+      cases radoCfg with
+      | mk state head tape =>
+          rcases hRel with ⟨hState, hTape⟩
+          dsimp at hState hTape
+          subst state
+          exact tm0ToTypedRado_step_normal_explicit M hStep hTape
+
+/--
+A finite Bool `TM0` computation is simulated by a finite typed-Rado computation,
+again preserving the normal-state relation at the endpoint.
+-/
+theorem tm0ToTypedRado_reaches_normal {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {tmCfg tmCfg' : Turing.TM0.Cfg Bool Label}
+    {radoCfg : TypedConfig (TM0RadoState Label)}
+    (hReach : Turing.TM0.Reaches M tmCfg tmCfg')
+    (hRel : TM0RadoNormalRel tmCfg radoCfg) :
+    ∃ radoCfg',
+      TM0RadoNormalRel tmCfg' radoCfg' ∧
+      TypedRadoReaches (tm0ToTypedRado M) radoCfg radoCfg' := by
+  change Relation.ReflTransGen (fun a b => b ∈ Turing.TM0.step M a) tmCfg tmCfg' at hReach
+  refine (Relation.ReflTransGen.head_induction_on
+    (motive := fun a _ =>
+      ∀ radoCfg : TypedConfig (TM0RadoState Label),
+        TM0RadoNormalRel a radoCfg ->
+          ∃ radoCfg',
+            TM0RadoNormalRel tmCfg' radoCfg' ∧
+            TypedRadoReaches (tm0ToTypedRado M) radoCfg radoCfg')
+    hReach ?_ ?_) radoCfg hRel
+  · intro radoCfg hRel
+    exact ⟨radoCfg, hRel, Relation.ReflTransGen.refl⟩
+  · intro _current _next hStep _hRest IH radoCfg hRel
+    rcases tm0ToTypedRado_step_normal M hStep hRel with
+      ⟨radoMid, hMidRel, hRadoStep⟩
+    rcases IH radoMid hMidRel with ⟨radoEnd, hEndRel, hRadoRest⟩
+    exact ⟨radoEnd, hEndRel, Relation.ReflTransGen.trans hRadoStep hRadoRest⟩
 
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
