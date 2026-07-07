@@ -2280,6 +2280,11 @@ def betaFact : Nat → Nat
   | 0 => 1
   | n+1 => (n+1) * betaFact n
 
+/-- Product of the first `n` Gödel-beta moduli for a fixed step. -/
+def BetaModuliProduct (step : Nat) : Nat → Nat
+  | 0 => 1
+  | n+1 => BetaModuliProduct step n * BetaModulus step n
+
 /-- Semantic mirror of a beta-coded binary-halving step. -/
 def BetaDiv2Step (code step idx cur next bit : Nat) : Prop :=
   BetaEntry code step idx cur ∧
@@ -2744,6 +2749,15 @@ theorem BetaModulus_pos (step idx : Nat) : 0 < BetaModulus step idx := by
   simp [BetaModulus]
   omega
 
+theorem BetaModuliProduct_pos (step : Nat) :
+    ∀ n, 0 < BetaModuliProduct step n
+  | 0 => by simp [BetaModuliProduct]
+  | n+1 => by
+      have hp := BetaModuliProduct_pos step n
+      have hm := BetaModulus_pos step n
+      simp [BetaModuliProduct]
+      exact Nat.mul_pos hp hm
+
 theorem BetaModulus_coprime_step (step idx : Nat) :
     (BetaModulus step idx).Coprime step := by
   apply (Nat.coprime_iff_gcd_eq_one).mpr
@@ -2791,6 +2805,24 @@ theorem BetaModulus_pair_coprime_of_lt_le {i j N : Nat}
   apply dvd_betaFact_of_pos_le
   · omega
   · omega
+
+theorem BetaModuliProduct_coprime_modulus_of_le {n j N : Nat}
+    (hnj : n ≤ j) (hjN : j ≤ N) :
+    (BetaModuliProduct (betaFact N) n).Coprime
+      (BetaModulus (betaFact N) j) := by
+  induction n with
+  | zero =>
+      simp [BetaModuliProduct]
+  | succ n ih =>
+      simp [BetaModuliProduct]
+      apply Nat.Coprime.mul_left
+      · exact ih (by omega)
+      · exact BetaModulus_pair_coprime_of_lt_le (by omega) hjN
+
+theorem BetaModuliProduct_coprime_next_of_le {n N : Nat} (hn : n ≤ N) :
+    (BetaModuliProduct (betaFact N) n).Coprime
+      (BetaModulus (betaFact N) n) :=
+  BetaModuliProduct_coprime_modulus_of_le (Nat.le_refl n) hn
 
 theorem BetaEntry_functional {code step idx a b : Nat}
     (ha : BetaEntry code step idx a) (hb : BetaEntry code step idx b) : a = b := by

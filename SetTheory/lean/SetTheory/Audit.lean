@@ -67,6 +67,7 @@ open SetTheory
 #check @PA.Formula.BetaModulus
 #check @PA.Formula.BetaEntry
 #check @PA.Formula.betaFact
+#check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step
 #check @PA.Formula.BetaDiv2StepsThrough
 #check @PA.Formula.BetaDiv2Bit
@@ -102,12 +103,15 @@ open SetTheory
 #check @PA.Formula.betaDiv2BitAt_nat
 #check @PA.Formula.hfMemAt_nat_trace
 #check @PA.Formula.betaFact_pos
+#check @PA.Formula.BetaModuliProduct_pos
 #check @PA.Formula.dvd_betaFact_of_pos_le
 #check @PA.Formula.BetaModulus_pos
 #check @PA.Formula.BetaModulus_coprime_step
 #check @PA.Formula.BetaModulus_sub
 #check @PA.Formula.BetaModulus_pair_coprime_of_dvd_step
 #check @PA.Formula.BetaModulus_pair_coprime_of_lt_le
+#check @PA.Formula.BetaModuliProduct_coprime_modulus_of_le
+#check @PA.Formula.BetaModuliProduct_coprime_next_of_le
 #check @PA.Formula.BetaEntry_functional
 #check @PA.Formula.BetaDiv2Step_div_two
 #check @PA.Formula.BetaDiv2Step_bit_one_testBit_zero
