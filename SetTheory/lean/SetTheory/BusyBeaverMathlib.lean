@@ -20,6 +20,64 @@ namespace BusyBeaver
 
 namespace MathlibBridge
 
+/-- If `a` occurs in `l` and `a ≠ b`, then `a` still occurs after erasing `b`. -/
+theorem list_mem_erase_of_ne_of_mem {α : Type*} [BEq α] [LawfulBEq α]
+    {a b : α} {l : List α} (hne : a ≠ b) (hmem : a ∈ l) :
+    a ∈ l.erase b := by
+  induction l with
+  | nil => cases hmem
+  | cons c cs IH =>
+      by_cases hcb : c = b
+      · subst c
+        simp [List.erase_cons_head, hne] at hmem ⊢
+        exact hmem
+      · rw [List.erase_cons_tail]
+        · simp at hmem ⊢
+          rcases hmem with h | h
+          · exact Or.inl h
+          · exact Or.inr (IH h)
+        · simpa [Bool.not_eq_true] using hcb
+
+/--
+A nodup list cannot inject into a shorter nodup list by membership.  This is
+the finite-list counting lemma used to turn many distinct known-true tape
+positions into a lower bound on the Rado score.
+-/
+theorem list_length_le_of_nodup_subset {α : Type*} [BEq α] [LawfulBEq α]
+    {xs ys : List α} (hxs : xs.Nodup) (hys : ys.Nodup)
+    (hsub : ∀ x, x ∈ xs -> x ∈ ys) :
+    xs.length ≤ ys.length := by
+  induction xs generalizing ys with
+  | nil => simp
+  | cons a rest IH =>
+      rw [List.nodup_cons] at hxs
+      have ha : a ∈ ys := hsub a (by simp)
+      have hrestSub : ∀ x, x ∈ rest -> x ∈ ys.erase a := by
+        intro x hx
+        exact list_mem_erase_of_ne_of_mem
+          (fun hxa => hxs.1 (hxa ▸ hx)) (hsub x (by simp [hx]))
+      have hle := IH hxs.2 (List.Nodup.erase a hys) hrestSub
+      have hlen := List.length_erase_add_one ha
+      change rest.length + 1 ≤ ys.length
+      rw [← hlen]
+      exact Nat.succ_le_succ hle
+
+theorem tape_mem_of_read_true {tape : Tape} {pos : Int}
+    (h : Tape.read tape pos = true) : pos ∈ tape := by
+  by_contra hp
+  simp [Tape.read, hp] at h
+
+/--
+If a nodup list of positions all read as `1` on a nodup Rado tape, then the tape
+score is at least the number of witnessed positions.
+-/
+theorem positions_length_le_tape_length_of_read_true {positions tape : Tape}
+    (hPositions : positions.Nodup) (hTape : tape.Nodup)
+    (hRead : ∀ pos, pos ∈ positions -> Tape.read tape pos = true) :
+    positions.length ≤ tape.length := by
+  exact list_length_le_of_nodup_subset hPositions hTape
+    (fun pos hpos => tape_mem_of_read_true (hRead pos hpos))
+
 /-- `PartrecToTM2.K'` has exactly the four stack indices used by the evaluator. -/
 instance instFintypePartrecToTM2K : Fintype Turing.PartrecToTM2.K' where
   elems := { Turing.PartrecToTM2.K'.main, Turing.PartrecToTM2.K'.rev,
