@@ -368,6 +368,10 @@ open SetTheory
 #check @AckermannHF.firstOrderHFModel_of_HFAx_s
 #check @AckermannHF.FirstOrderAdjunctionModel
 #check @AckermannHF.FirstOrderAdjunctionModel.mem_irrefl
+#check @AckermannHF.FirstOrderAdjunctionModel.adjoin_self_mem
+#check @AckermannHF.FirstOrderAdjunctionModel.adjoin_self_ne_self
+#check @AckermannHF.FirstOrderAdjunctionModel.adjoin_self_not_mem_of_ordinalLike
+#check @AckermannHF.FirstOrderAdjunctionModel.adjoin_self_injective_on_ordinalLike
 #check @AckermannHF.FirstOrderAdjunctionModel.single
 #check @AckermannHF.FirstOrderAdjunctionModel.single_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.upair

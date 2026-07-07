@@ -1055,6 +1055,42 @@ theorem mem_irrefl {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) :
     exact ih a haa haa
   exact hall a
 
+theorem adjoin_self_mem {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) :
+    M.mem a (M.adjoin a a) :=
+  (M.adjoin_spec a a a).mpr (Or.inr rfl)
+
+theorem adjoin_self_ne_self {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (a : α) : M.adjoin a a ≠ a := by
+  intro h
+  have ha : M.mem a (M.adjoin a a) := adjoin_self_mem M a
+  rw [h] at ha
+  exact mem_irrefl M a ha
+
+theorem adjoin_self_not_mem_of_ordinalLike {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {a : α}
+    (ha : OrdinalLike M.mem a) : ¬ M.mem (M.adjoin a a) a := by
+  intro hsucc
+  have ha_in_succ : M.mem a (M.adjoin a a) := adjoin_self_mem M a
+  have haa : M.mem a a := ha.1 (M.adjoin a a) hsucc a ha_in_succ
+  exact mem_irrefl M a haa
+
+theorem adjoin_self_injective_on_ordinalLike {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {a b : α}
+    (_ha : OrdinalLike M.mem a) (hb : OrdinalLike M.mem b)
+    (h : M.adjoin a a = M.adjoin b b) : a = b := by
+  have hasucc : M.mem a (M.adjoin b b) := by
+    have : M.mem a (M.adjoin a a) := adjoin_self_mem M a
+    simpa [h] using this
+  rcases (M.adjoin_spec a b b).mp hasucc with hab | hab
+  · have hbsucc : M.mem b (M.adjoin a a) := by
+      have : M.mem b (M.adjoin b b) := adjoin_self_mem M b
+      simpa [← h] using this
+    rcases (M.adjoin_spec b a a).mp hbsucc with hba | hba
+    · have hbb : M.mem b b := hb.1 a hab b hba
+      exact False.elim (mem_irrefl M b hbb)
+    · exact hba.symm
+  · exact hab
+
 /-- Singleton inside a chosen first-order HF model. -/
 def single {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) : α :=
   M.adjoin M.empty a
