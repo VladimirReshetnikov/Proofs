@@ -810,37 +810,89 @@ def a002845SparseLogValues (n : Nat) : List Sparse :=
 def a002845Sparse (n : Nat) : Nat :=
   (a002845SparseLogValues n).length
 
+/-- Executable sparse-binary backend counts for sizes `1, ..., n`. -/
+def a002845SparseCountsThrough (n : Nat) : List Nat :=
+  (buildLevels n #[]).toList.map List.length
+
 attribute [implemented_by a002845Sparse] certifiedLevelCard
+
+/--
+Proof-facing counts for sizes `1, ..., n`, defined from the certified
+canonical-cardinality bridge.  Native execution uses the sparse backend table,
+so a single prefix certificate computes all needed levels once.
+-/
+def certifiedLevelCountsThrough (n : Nat) : List Nat :=
+  (List.range n).map fun i => certifiedLevelCard (i + 1)
+
+attribute [implemented_by a002845SparseCountsThrough] certifiedLevelCountsThrough
+
+theorem certifiedLevelCard_eq_countsThrough_getD {N n : Nat}
+    (hpos : 0 < n) (hN : n ≤ N) :
+    certifiedLevelCard n = (certifiedLevelCountsThrough N).getD (n - 1) 0 := by
+  cases n with
+  | zero =>
+      exact (Nat.not_lt_zero _ hpos).elim
+  | succ i =>
+      have hi : i < N := Nat.succ_le_iff.mp hN
+      unfold certifiedLevelCountsThrough
+      have hiCounts :
+          i < (List.map (fun i => certifiedLevelCard (i + 1)) (List.range N)).length := by
+        simpa using hi
+      rw [Nat.succ_sub_one]
+      rw [PowTower.Expr.list_getD_eq_getElem _ _ hiCounts]
+      rw [List.getElem_map]
+      rw [List.getElem_range]
+
+theorem a002845_eq_of_certifiedLevelCountsThrough {N n value : Nat}
+    (hpos : 0 < n) (hN : n ≤ N)
+    (hcount : (certifiedLevelCountsThrough N).getD (n - 1) 0 = value) :
+    a002845 n = value := by
+  calc
+    a002845 n = certifiedLevelCard n := a002845_eq_certifiedLevelCard n
+    _ = (certifiedLevelCountsThrough N).getD (n - 1) 0 :=
+      certifiedLevelCard_eq_countsThrough_getD hpos hN
+    _ = value := hcount
+
+def a002845ValuesThroughEighteen : List Nat :=
+  [1, 1, 1, 2, 4, 8, 17, 36, 78, 171, 379, 851, 1928, 4396, 10087, 23273,
+    53948, 125608]
+
+/-- Certified A002845 counts through `n = 18`, computed once as a prefix table. -/
+theorem certifiedLevelCountsThrough_eighteen :
+    certifiedLevelCountsThrough 18 = a002845ValuesThroughEighteen := by
+  native_decide
+
+theorem a002845_eq_of_eighteen_table {n value : Nat}
+    (hpos : 0 < n) (hN : n ≤ 18)
+    (hcount : a002845ValuesThroughEighteen.getD (n - 1) 0 = value) :
+    a002845 n = value := by
+  apply a002845_eq_of_certifiedLevelCountsThrough (N := 18) hpos hN
+  rw [certifiedLevelCountsThrough_eighteen]
+  exact hcount
 
 /-- OEIS A002845 has value `1928` at `n = 13`. -/
 theorem a002845_thirteen : a002845 13 = 1928 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_eighteen_table <;> native_decide
 
 /-- OEIS A002845 has value `4396` at `n = 14`. -/
 theorem a002845_fourteen : a002845 14 = 4396 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_eighteen_table <;> native_decide
 
 /-- OEIS A002845 has value `10087` at `n = 15`. -/
 theorem a002845_fifteen : a002845 15 = 10087 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_eighteen_table <;> native_decide
 
 /-- OEIS A002845 has value `23273` at `n = 16`. -/
 theorem a002845_sixteen : a002845 16 = 23273 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_eighteen_table <;> native_decide
 
 /-- OEIS A002845 has value `53948` at `n = 17`. -/
 theorem a002845_seventeen : a002845 17 = 53948 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_eighteen_table <;> native_decide
 
 /-- OEIS A002845 has value `125608` at `n = 18`. -/
 theorem a002845_eighteen : a002845 18 = 125608 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_eighteen_table <;> native_decide
 
 /-- OEIS A002845 has value `293543` at `n = 19`. -/
 theorem a002845_nineteen : a002845 19 = 293543 := by
@@ -865,94 +917,6 @@ theorem a002845_twenty_two : a002845 22 = 3818818 := by
 /-- OEIS A002845 has value `9029719` at `n = 23`. -/
 theorem a002845_twenty_three : a002845 23 = 9029719 := by
   rw [a002845_eq_certifiedLevelCard]
-  native_decide
-
-/-- The sparse backend computes `1` at `n = 1`. -/
-theorem a002845Sparse_one : a002845Sparse 1 = 1 := by
-  native_decide
-
-/-- The sparse backend computes `1` at `n = 2`. -/
-theorem a002845Sparse_two : a002845Sparse 2 = 1 := by
-  native_decide
-
-/-- The sparse backend computes `1` at `n = 3`. -/
-theorem a002845Sparse_three : a002845Sparse 3 = 1 := by
-  native_decide
-
-/-- The sparse backend computes `2` at `n = 4`. -/
-theorem a002845Sparse_four : a002845Sparse 4 = 2 := by
-  native_decide
-
-/-- The sparse backend computes `4` at `n = 5`. -/
-theorem a002845Sparse_five : a002845Sparse 5 = 4 := by
-  native_decide
-
-/-- The sparse backend computes `8` at `n = 6`. -/
-theorem a002845Sparse_six : a002845Sparse 6 = 8 := by
-  native_decide
-
-/-- The sparse backend computes `17` at `n = 7`. -/
-theorem a002845Sparse_seven : a002845Sparse 7 = 17 := by
-  native_decide
-
-/-- The sparse backend computes `36` at `n = 8`. -/
-theorem a002845Sparse_eight : a002845Sparse 8 = 36 := by
-  native_decide
-
-/-- The sparse backend computes `78` at `n = 9`. -/
-theorem a002845Sparse_nine : a002845Sparse 9 = 78 := by
-  native_decide
-
-/-- The sparse backend computes `171` at `n = 10`. -/
-theorem a002845Sparse_ten : a002845Sparse 10 = 171 := by
-  native_decide
-
-/-- The sparse backend computes `379` at `n = 11`. -/
-theorem a002845Sparse_eleven : a002845Sparse 11 = 379 := by
-  native_decide
-
-/-- The sparse backend computes `851` at `n = 12`. -/
-theorem a002845Sparse_twelve : a002845Sparse 12 = 851 := by
-  native_decide
-
-/-- The sparse backend computes `1928` at `n = 13`. -/
-theorem a002845Sparse_thirteen : a002845Sparse 13 = 1928 := by
-  native_decide
-
-/-- The sparse backend computes `4396` at `n = 14`. -/
-theorem a002845Sparse_fourteen : a002845Sparse 14 = 4396 := by
-  native_decide
-
-/-- The sparse backend computes `10087` at `n = 15`. -/
-theorem a002845Sparse_fifteen : a002845Sparse 15 = 10087 := by
-  native_decide
-
-/-- The sparse backend computes `23273` at `n = 16`. -/
-theorem a002845Sparse_sixteen : a002845Sparse 16 = 23273 := by
-  native_decide
-
-/-- The sparse backend computes `53948` at `n = 17`. -/
-theorem a002845Sparse_seventeen : a002845Sparse 17 = 53948 := by
-  native_decide
-
-/-- The sparse backend computes `125608` at `n = 18`. -/
-theorem a002845Sparse_eighteen : a002845Sparse 18 = 125608 := by
-  native_decide
-
-/-- The sparse backend computes `293543` at `n = 19`. -/
-theorem a002845Sparse_nineteen : a002845Sparse 19 = 293543 := by
-  native_decide
-
-/-- The sparse backend computes `688366` at `n = 20`. -/
-theorem a002845Sparse_twenty : a002845Sparse 20 = 688366 := by
-  native_decide
-
-/-- The sparse backend computes `1619087` at `n = 21`. -/
-theorem a002845Sparse_twenty_one : a002845Sparse 21 = 1619087 := by
-  native_decide
-
-/-- The sparse backend computes `3818818` at `n = 22`. -/
-theorem a002845Sparse_twenty_two : a002845Sparse 22 = 3818818 := by
   native_decide
 
 end A002845
