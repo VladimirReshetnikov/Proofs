@@ -701,6 +701,100 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma positiveDenOfNat_pos_to_nat (p : positive) :
+    positiveDenOfNat (Pos.to_nat p) = p.
+Proof.
+  apply Pos2Z.inj.
+  rewrite Zpos_positiveDenOfNat by apply Pos2Nat.is_pos.
+  apply positive_nat_Z.
+Qed.
+
+Definition qredNumNat (q : Q) : nat :=
+  Z.to_nat (Qnum (Qred q)).
+
+Definition qredDenNat (q : Q) : nat :=
+  Pos.to_nat (Qden (Qred q)).
+
+Lemma Qred_num_nonneg (q : Q) (hq : 0 <= q) :
+    (0 <= Qnum (Qred q))%Z.
+Proof.
+  pose proof (proj2 (Qred_le (inject_Z 0%Z) q) hq) as hred.
+  change (0 <= Qred q) in hred.
+  unfold Qle in hred.
+  cbn in hred.
+  rewrite Z.mul_1_r in hred.
+  exact hred.
+Qed.
+
+Lemma qredDenNat_pos (q : Q) : (0 < qredDenNat q)%nat.
+Proof.
+  unfold qredDenNat.
+  apply Pos2Nat.is_pos.
+Qed.
+
+Theorem pairRat_of_Qred_nonneg (q : Q) (hq : 0 <= q) :
+    pairRat (qredNumNat q, qredDenNat q) == q.
+Proof.
+  pose proof (Qred_num_nonneg q hq) as hnum.
+  eapply Qeq_trans with (y := Qred q).
+  - unfold qredNumNat, qredDenNat, pairRat, Qeq.
+    cbn [fst snd Qnum Qden].
+    rewrite Z2Nat.id by exact hnum.
+    rewrite positiveDenOfNat_pos_to_nat.
+    reflexivity.
+  - apply Qred_correct.
+Qed.
+
+Lemma qredNumNat_pos_of_nonneg_nonzero (q : Q)
+    (hq : 0 <= q) (hnez : ~ q == inject_Z 0%Z) :
+    (0 < qredNumNat q)%nat.
+Proof.
+  unfold qredNumNat.
+  pose proof (Qred_num_nonneg q hq) as hnonneg.
+  assert (hnum_ne : Qnum (Qred q) <> 0%Z).
+  { intro hnum.
+    apply hnez.
+    eapply Qeq_trans.
+    - apply Qeq_sym. apply Qred_correct.
+    - unfold Qeq.
+      rewrite hnum.
+      cbn [Qnum Qden inject_Z].
+      lia.
+  }
+  assert (hpos : (0 < Qnum (Qred q))%Z) by lia.
+  destruct (Z.to_nat (Qnum (Qred q))) as [|n] eqn:hnat.
+  - exfalso.
+    pose proof (Z2Nat.id (Qnum (Qred q)) hnonneg) as hid.
+    rewrite hnat in hid.
+    simpl in hid.
+    lia.
+  - lia.
+Qed.
+
+Theorem rationalFloorOrbit_exists_pair (a b : nat)
+    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : Coprime a b) :
+    rationalFloorOrbit (cwIndex a b + 1) == pairRat (a, b).
+Proof.
+  rewrite rationalFloorOrbit_succ.
+  unfold cwRat.
+  rewrite cwPair_cwIndex by assumption.
+  reflexivity.
+Qed.
+
+Theorem rationalFloorOrbit_exists_of_nonneg_nonzero_reduced_coprime
+    (q : Q) (hq : 0 <= q) (hnez : ~ q == inject_Z 0%Z)
+    (hc : Coprime (qredNumNat q) (qredDenNat q)) :
+    rationalFloorOrbit (cwIndex (qredNumNat q) (qredDenNat q) + 1) == q.
+Proof.
+  rewrite rationalFloorOrbit_succ.
+  unfold cwRat.
+  rewrite cwPair_cwIndex.
+  - apply pairRat_of_Qred_nonneg; exact hq.
+  - apply qredNumNat_pos_of_nonneg_nonzero; assumption.
+  - apply qredDenNat_pos.
+  - exact hc.
+Qed.
+
 Local Open Scope nat_scope.
 
 Theorem pairRat_first_values :
