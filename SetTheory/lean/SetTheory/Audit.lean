@@ -532,6 +532,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_exI_raw
 #check @AckermannHF.PAInHF.BProv_translate_exE_raw
 #check @AckermannHF.PAInHF.BProv_formulaAt_exE_raw
+#check @AckermannHF.PAInHF.BProv_formulaAt_exE
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
 #check @AckermannHF.PAInHF.BProv_HFFin_of_translatedPAAx

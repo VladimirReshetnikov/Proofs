@@ -11708,6 +11708,48 @@ theorem BProv_formulaAt_exE_raw {ρ : Nat → Nat} {G : List PA.Formula}
           simp only [List.map_append, List.mem_append]
           exact Or.inr hx
 
+/-- Translated existential elimination in the PA proof-rule shape.
+
+The branch premise is the recursive translation of PA's `exE` branch over
+`a :: G.map (PA.Formula.rename Nat.succ)`.  The raw HF rule expects the branch
+assumption to include the relativizing domain conjunct, so the proof cuts the
+plain translated assumption out of that conjunction before applying the raw
+rule. -/
+theorem BProv_formulaAt_exE {ρ : Nat → Nat} {G : List PA.Formula}
+    {a c : PA.Formula}
+    (hex : BProv translatedPAAx (translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.ex a)))
+    (hbody : BProv translatedPAAx
+      (formulaAt (upVarMap ρ) a ::
+        translateContextAt (upVarMap ρ)
+          (G.map (PA.Formula.rename Nat.succ)))
+      (formulaAt (upVarMap ρ) (PA.Formula.rename Nat.succ c))) :
+    BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ c) := by
+  let body : Form := formulaAt (upVarMap ρ) a
+  let shiftedContext : List Form :=
+    (translateContextAt ρ G).map (rename Nat.succ)
+  let rawAssumption : Form := fAnd domainForm body
+  let rawContext : List Form := rawAssumption :: shiftedContext
+  have hbodyShift : BProv translatedPAAx (body :: shiftedContext)
+      (rename Nat.succ (formulaAt ρ c)) := by
+    simpa [body, shiftedContext, translateContextAt_rename_succ_upVarMap,
+      formulaAt_rename_succ_upVarMap] using hbody
+  have hraw : BProv translatedPAAx rawContext
+      (rename Nat.succ (formulaAt ρ c)) := by
+    apply BProv_lift hbodyShift
+    · intro b hb
+      exact BProv_ax (G := rawContext) hb
+    · intro g hg
+      rw [List.mem_cons] at hg
+      rcases hg with hg | hg
+      · subst g
+        exact BProv_of_Prov (B := translatedPAAx)
+          (Prov.P_andE2 rawContext domainForm body
+            (Prov.P_ass rawContext rawAssumption (by simp [rawContext])))
+      · exact BProv_of_Prov (B := translatedPAAx)
+          (Prov.P_ass rawContext g (by simp [rawContext, shiftedContext, hg]))
+  exact BProv_formulaAt_exE_raw hex hraw
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
