@@ -1,7 +1,7 @@
 # Coq Ports of LeanProofs
 
 - Created (UTC): 2026-07-07T03:24:49Z
-- Repository HEAD: f3be2772be5658f305f509b584b0cb99d97cbe7a
+- Initial source HEAD: f3be2772be5658f305f509b584b0cb99d97cbe7a
 
 This directory contains Rocq/Coq ports of proof modules from the root
 `src/Lean/LeanProofs/` Lean workspace.  The ports are intentionally
@@ -17,6 +17,8 @@ Current ports:
 - `Nicod.v` ports the NAND language, Nicod axiom/rule derivations, soundness,
   and functional-completeness lemmas from `Nicod.lean`.
 - `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
+- `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
+  summation identity from `FloorSqrtSum.lean`.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
 - `EquationalLogic.v` ports the executable first-order equational proof
@@ -36,6 +38,7 @@ Build from `src/Lean/`:
 ```powershell
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
