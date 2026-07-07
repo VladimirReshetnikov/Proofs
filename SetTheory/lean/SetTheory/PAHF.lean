@@ -1287,6 +1287,21 @@ theorem mem_irrefl {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) :
     exact ih a haa haa
   exact hall a
 
+/-- First-order HF induction rules out two-cycles of membership. -/
+theorem mem_asymm {α : Type u} (M : FirstOrderAdjunctionModel α) {a b : α}
+    (hab : M.mem a b) : ¬ M.mem b a := by
+  let phi : Form :=
+    fAll (fImp (fMem 0 1) (fImp (fMem 1 0) fBot))
+  let tail : Nat → α := fun _ => a
+  have hind := M.induction_schema phi tail
+  have hall : ∀ x, Sat M.mem (scons x tail) phi := by
+    apply hind
+    intro x ih y hyx hxy
+    have hySat : Sat M.mem (scons y tail) phi :=
+      (Sat_rename_rSkipParam phi tail x y).mp (ih y hyx)
+    exact hySat x hxy hyx
+  exact hall b a hab
+
 theorem adjoin_self_mem {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) :
     M.mem a (M.adjoin a a) :=
   (M.adjoin_spec a a a).mpr (Or.inr rfl)

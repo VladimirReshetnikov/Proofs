@@ -381,6 +381,7 @@ open SetTheory
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.AdjunctionModel.mem_irrefl
+#check @AckermannHF.FirstOrderAdjunctionModel.mem_asymm
 #check @AckermannHF.HF_extensionality_form
 #check @AckermannHF.sat_HF_extensionality
 #check @AckermannHF.HFAx_s_empty
