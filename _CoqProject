@@ -1,0 +1,6 @@
+-Q CoqProofs LeanProofsCoq
+CoqProofs/Nicod.v
+CoqProofs/ArctanSquareIdentity.v
+CoqProofs/EquationalLogic.v
+CoqProofs/WolframBooleanCertificates.v
+CoqProofs/WolframBooleanHuntingtonCertificates.v
