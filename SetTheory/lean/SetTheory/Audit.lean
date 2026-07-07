@@ -362,11 +362,14 @@ open SetTheory
 #check @AckermannHF.PAInHF.substZeroBeforeMap
 #check @AckermannHF.PAInHF.substZeroAfterMap_zero_zero
 #check @AckermannHF.PAInHF.substZeroBeforeMap_zero_zero
+#check @AckermannHF.PAInHF.substZeroBeforeMap_ne_replaced_slot
 #check @AckermannHF.PAInHF.replaceAt
 #check @AckermannHF.PAInHF.replaceAt_eq
 #check @AckermannHF.PAInHF.replaceAt_ne
 #check @AckermannHF.PAInHF.replaceAt_zero_scons
 #check @AckermannHF.PAInHF.succReplaceAt
+#check @AckermannHF.PAInHF.succReplaceAt_eq
+#check @AckermannHF.PAInHF.succReplaceAt_ne
 #check @AckermannHF.PAInHF.scons_replaceAt
 #check @AckermannHF.PAInHF.scons_replaceAt_prefix
 #check @AckermannHF.PAInHF.scons2_replaceAt_prefix
@@ -376,6 +379,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.scons3_succReplaceAt_prefix
 #check @AckermannHF.PAInHF.termGraphAt_substZero_insert_model
 #check @AckermannHF.PAInHF.termGraphAt_substZeroAt_insert_model
+#check @AckermannHF.PAInHF.termGraphAt_substSuccAt_replace_model
 #check @AckermannHF.PAInHF.formulaAt
 #check @AckermannHF.PAInHF.formulaAt_map_ext
 #check @AckermannHF.PAInHF.domainForm_scons_insertAt
