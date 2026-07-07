@@ -1691,6 +1691,40 @@ theorem HF_succRecTotalOnOrdinalAt_spec {α : Type u}
     exact (HF_succRecTotalAt_spec M e s m).mpr
       (h ((HF_ordinalLikeAt_spec e m).mp hmSat))
 
+/-- If every ordinal-like object is either empty or a successor of one of its
+members, first-order HF induction proves successor-recursion totality through
+all ordinal-like keys. -/
+theorem succRecTotal_of_ordinalLike_of_predecessor {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hPred : ∀ a, OrdinalLike M.mem a →
+      a = M.empty ∨ ∃ p, M.mem p a ∧ a = M.adjoin p p)
+    (s m : α) (hm : OrdinalLike M.mem m) :
+    SuccRecTotal M s m := by
+  let phi : Form := HF_succRecTotalOnOrdinalAt 1 0
+  let tail : Nat → α := fun _ => s
+  have hind := M.induction_schema phi (scons s tail)
+  have hall : ∀ a, Sat M.mem (scons a (scons s tail)) phi := by
+    apply hind
+    intro a ih
+    apply (HF_succRecTotalOnOrdinalAt_spec M
+      (scons a (scons s tail)) 1 0).mpr
+    intro ha
+    rcases hPred a ha with haEmpty | ⟨p, hpa, haSucc⟩
+    · rw [haEmpty]
+      exact succRecTotal_empty M s
+    · have hpOrd : OrdinalLike M.mem p := OrdinalLike.of_mem ha hpa
+      have hpSat : Sat M.mem (scons p (scons s tail)) phi :=
+        (Sat_rename_rSkipParam phi (scons s tail) a p).mp (ih p hpa)
+      have hpTotal : SuccRecTotal M s p := by
+        simpa [phi, tail, scons] using
+          ((HF_succRecTotalOnOrdinalAt_spec M
+            (scons p (scons s tail)) 1 0).mp hpSat hpOrd)
+      rw [haSucc]
+      exact succRecTotal_succ M hpOrd hpTotal
+  simpa [phi, tail, scons] using
+    ((HF_succRecTotalOnOrdinalAt_spec M
+      (scons m (scons s tail)) 1 0).mp (hall m) hm)
+
 end FirstOrderAdjunctionModel
 
 def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}

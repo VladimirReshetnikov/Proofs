@@ -424,6 +424,7 @@ open SetTheory
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecApproxAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecTotalAt_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.HF_succRecTotalOnOrdinalAt_spec
+#check @AckermannHF.FirstOrderAdjunctionModel.succRecTotal_of_ordinalLike_of_predecessor
 #check @AckermannHF.firstOrderAdjunctionModel_of_HFAx_s
 #check @AckermannHF.ordinalHF_sat_HF
 #check @AckermannHF.ordinalPA_sat_PA
