@@ -16,7 +16,7 @@
   only need bit arithmetic.  Later sections use these lemmas as the semantic
   core of the interpretation data.
 -/
-import SetTheory.Fol
+import SetTheory.Completeness
 
 namespace SetTheory
 
@@ -1990,6 +1990,8 @@ end Term
 
 namespace Formula
 
+def iffForm (a b : Formula) : Formula := and (imp a b) (imp b a)
+
 def subst (σ : Nat → Term) : Formula → Formula
   | eq a b => eq (Term.subst σ a) (Term.subst σ b)
   | bot => bot
@@ -2007,6 +2009,14 @@ def Sat {α : Type u} (M : Model α) : (Nat → α) → Formula → Prop
   | e, or a b => Sat M e a ∨ Sat M e b
   | e, all a => ∀ d, Sat M (SetTheory.scons d e) a
   | e, ex a => ∃ d, Sat M (SetTheory.scons d e) a
+
+theorem Sat_iffForm {α : Type u} (M : Model α) (e : Nat → α) (a b : Formula) :
+    Sat M e (iffForm a b) ↔ (Sat M e a ↔ Sat M e b) := by
+  constructor
+  · intro h
+    exact ⟨h.1, h.2⟩
+  · intro h
+    exact ⟨h.1, h.2⟩
 
 def bound : Formula → Nat
   | eq a b => Term.bound a + Term.bound b
@@ -4295,12 +4305,53 @@ structure ShallowBiInterpretation where
   paRoundTrip : PA.Iso paModel paInHf
   hfRoundTrip : AdjunctionIso hfModel hfInPaInHf
 
-/-- A standard-model bi-interpretation certificate with the actual syntactic
+/-- A syntax-level interpretation of one first-order theory in another.
+It records sentence preservation, theorem transfer, and the concrete fact that
+every source axiom translates to a theorem of the target theory. -/
+structure TheoryInterpretation
+    (Src Tgt : Type)
+    (SrcSentence : Src → Prop) (TgtSentence : Tgt → Prop)
+    (SrcAx : Src → Prop) (TgtAx : Tgt → Prop)
+    (SrcProv : (Src → Prop) → List Src → Src → Prop)
+    (TgtProv : (Tgt → Prop) → List Tgt → Tgt → Prop) where
+  translate : Src → Tgt
+  maps_sentence : ∀ {phi}, SrcSentence phi → TgtSentence (translate phi)
+  maps_axiom : ∀ {phi}, SrcAx phi → TgtProv TgtAx [] (translate phi)
+  maps_theorem : ∀ {phi}, SrcSentence phi →
+    SrcProv SrcAx [] phi → TgtProv TgtAx [] (translate phi)
+
+abbrev PAProvability :=
+  (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
+
+/-- The exact target for the deductive PA/HF bi-interpretability theorem.
+
+Unlike `StandardModelInterpretationCertificate`, this record is not inhabited
+in this file.  It states the remaining proof obligations at the theory level:
+both syntactic translations must transfer theorems between the PA axiom theory
+and the HF axiom theory, and the two composites must be provably equivalent to
+the identity translations on sentences. -/
+structure DeductiveBiInterpretationCertificate (PAProv : PAProvability) where
+  paInHf : TheoryInterpretation PA.Formula Form
+    PA.Formula.Sentence Sentence
+    PA.Formula.Ax_s HFAx_s
+    PAProv BProv
+  hfInPa : TheoryInterpretation Form PA.Formula
+    Sentence PA.Formula.Sentence
+    HFAx_s PA.Formula.Ax_s
+    BProv PAProv
+  pa_roundTrip : ∀ (phi : PA.Formula), phi.Sentence →
+    PAProv PA.Formula.Ax_s []
+      (PA.Formula.iffForm phi (hfInPa.translate (paInHf.translate phi)))
+  hf_roundTrip : ∀ (phi : Form), Sentence phi →
+    BProv HFAx_s []
+      (fIff phi (paInHf.translate (hfInPa.translate phi)))
+
+/-- A standard-model interpretation certificate with the actual syntactic
 translations attached.  The exactness fields say that the translations have the
 intended semantics in the standard PA and Ackermann-HF models; the axiom fields
 say that each translated axiom theory is satisfied by the opposite standard
 model; the `shallow` field carries the two round-trip isomorphisms. -/
-structure BiInterpretationCertificate where
+structure StandardModelInterpretationCertificate where
   shallow : ShallowBiInterpretation
   paToHf : PA.Formula → Form
   hfToPa : Form → PA.Formula
@@ -4398,9 +4449,11 @@ noncomputable def standardShallowBiInterpretation : ShallowBiInterpretation wher
   paRoundTrip := paRoundTripIso
   hfRoundTrip := hfRoundTripIso
 
-/-- The standard syntactic and semantic certificate that Peano Arithmetic and
-Ackermann hereditary finite set theory are bi-interpretable. -/
-noncomputable def standardBiInterpretation : BiInterpretationCertificate where
+/-- The standard-model syntactic/semantic certificate for the PA/HF
+interpretations.  This is not yet a deductive bi-interpretability theorem for
+the two axiom theories; it records the exact standard-model semantics and the
+semantic round-trip isomorphisms that the theory-level proof must internalize. -/
+noncomputable def standardModelInterpretation : StandardModelInterpretationCertificate where
   shallow := standardShallowBiInterpretation
   paToHf := PAInHF.translateFormula
   hfToPa := PA.Formula.translateHFFormula
@@ -4411,8 +4464,9 @@ noncomputable def standardBiInterpretation : BiInterpretationCertificate where
   translatedPA_sat := PAInHF.standard_sat_translatedPAAx
   translatedHF_sat := PA.Formula.standard_sat_translatedHFAx
 
-theorem PA_biinterpretable_with_HF : Nonempty BiInterpretationCertificate :=
-  ⟨standardBiInterpretation⟩
+theorem PA_standard_model_interpretable_with_HF :
+    Nonempty StandardModelInterpretationCertificate :=
+  ⟨standardModelInterpretation⟩
 
 theorem PA_biinterpretable_with_HF_standard :
     Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧

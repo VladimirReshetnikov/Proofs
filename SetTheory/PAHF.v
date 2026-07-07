@@ -11,9 +11,13 @@
 (*  It does not smuggle proof obligations into definitions: the HF model *)
 (*  properties are proved from Coq's concrete Nat.testbit API, including *)
 (*  extensionality, adjunction, and set induction via x in y -> x < y.   *)
+(*  The final section also states, without inhabiting, the future          *)
+(*  deductive target for a genuine theory-level bi-interpretation.        *)
 (* ===================================================================== *)
 
-From Stdlib Require Import Arith.Arith Bool.Bool Lia PeanoNat.
+From Stdlib Require Import Arith.Arith Bool.Bool Lia PeanoNat List.
+From SetTheory Require Import Fol Completeness.
+Import ListNotations.
 
 Record PAModel := {
   pa_carrier :> Type;
@@ -200,7 +204,48 @@ Lemma ordinal_code_succ : forall n,
   ordinal_code (S n) = hf_adjoin (ordinal_code n) (ordinal_code n).
 Proof. reflexivity. Qed.
 
-Record BiInterpretationCertificate := {
+Record TheoryInterpretation
+  (Src Tgt : Type)
+  (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
+  (SrcAx : Src -> Prop) (TgtAx : Tgt -> Prop)
+  (SrcProv : (Src -> Prop) -> list Src -> Src -> Prop)
+  (TgtProv : (Tgt -> Prop) -> list Tgt -> Tgt -> Prop) := {
+  ti_translate : Src -> Tgt;
+  ti_maps_sentence : forall phi,
+    SrcSentence phi -> TgtSentence (ti_translate phi);
+  ti_maps_axiom : forall phi,
+    SrcAx phi -> TgtProv TgtAx [] (ti_translate phi);
+  ti_maps_theorem : forall phi,
+    SrcSentence phi ->
+    SrcProv SrcAx [] phi -> TgtProv TgtAx [] (ti_translate phi)
+}.
+
+Record DeductiveBiInterpretationTarget
+  (PAForm : Type)
+  (PASentence : PAForm -> Prop)
+  (PAAx : PAForm -> Prop)
+  (PAIff : PAForm -> PAForm -> PAForm)
+  (PAProv : (PAForm -> Prop) -> list PAForm -> PAForm -> Prop)
+  (HFAx : form -> Prop) := {
+  dbi_pa_in_hf : TheoryInterpretation
+    PAForm form PASentence Sentence PAAx HFAx PAProv BProv;
+  dbi_hf_in_pa : TheoryInterpretation
+    form PAForm Sentence PASentence HFAx PAAx BProv PAProv;
+  dbi_pa_round_trip : forall phi,
+    PASentence phi ->
+    PAProv PAAx []
+      (PAIff phi
+        (ti_translate _ _ _ _ _ _ _ _ dbi_hf_in_pa
+          (ti_translate _ _ _ _ _ _ _ _ dbi_pa_in_hf phi)));
+  dbi_hf_round_trip : forall phi,
+    Sentence phi ->
+    BProv HFAx []
+      (fIff phi
+        (ti_translate _ _ _ _ _ _ _ _ dbi_pa_in_hf
+          (ti_translate _ _ _ _ _ _ _ _ dbi_hf_in_pa phi)))
+}.
+
+Record StandardModelInterpretationCertificate := {
   certificate_pa : PAModel;
   certificate_hf : HFModel;
   pa_in_hf : PAModel;
@@ -217,7 +262,7 @@ Record BiInterpretationCertificate := {
   hf_code_left_inv : forall x, hf_decode (hf_code x) = x
 }.
 
-Definition standardBiInterpretation : BiInterpretationCertificate.
+Definition standardModelInterpretation : StandardModelInterpretationCertificate.
 Proof.
   refine {| certificate_pa := natPAModel;
             certificate_hf := ackermannHFModel;
@@ -231,13 +276,16 @@ Proof.
     reflexivity.
 Defined.
 
-Theorem PA_biinterpretable_with_HF : BiInterpretationCertificate.
+Theorem PA_standard_model_interpretable_with_HF :
+  StandardModelInterpretationCertificate.
 Proof.
-  exact standardBiInterpretation.
+  exact standardModelInterpretation.
 Defined.
 
 Check natPAModel.
 Check ackermannHFModel.
 Check ordinal_code.
-Check standardBiInterpretation.
-Check PA_biinterpretable_with_HF.
+Check TheoryInterpretation.
+Check DeductiveBiInterpretationTarget.
+Check standardModelInterpretation.
+Check PA_standard_model_interpretable_with_HF.
