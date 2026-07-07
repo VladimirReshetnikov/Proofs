@@ -17,6 +17,8 @@ Current ports:
 - `Nicod.v` ports the NAND language, Nicod axiom/rule derivations, soundness,
   and functional-completeness lemmas from `Nicod.lean`.
 - `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
+- `PowTower.v` ports the shared lexical syntax, executable
+  parenthesization/evaluation layer, and small recursive-value sanity checks.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -34,6 +36,7 @@ Build from `src/Lean/`:
 ```powershell
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
