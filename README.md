@@ -167,17 +167,21 @@ theorem a002845_eq_certifiedSparseCard (n : Nat) :
   a002845 n = certifiedSparseCard n
 theorem a002845_one : a002845 1 = 1
 -- ...
-theorem a002845_twenty_three : a002845 23 = 9029719
+theorem a002845_eighteen : a002845 18 = 125608
 ```
 
-All twenty-three value theorems read off a single native prefix-table
-certificate: `certifiedLevelCountsThrough_twenty_three` computes the counts
-for sizes `1, ..., 23` once through the shared proved hash-set fast table of
+All value theorems read off a single native prefix-table certificate:
+`certifiedLevelCountsThrough_eighteen` computes the counts for sizes
+`1, ..., 18` once through the shared proved hash-set fast table of
 `PowTower.Expr` (atom `Sparse.ofNat 1`, combine `certifiedCombineLog` over
 the verified hereditary sparse binary numbers of
 [`LeanProofs/SparseBinary.lean`](LeanProofs/SparseBinary.lean)), and each
 `a002845_<n>` is then a kernel-checked table lookup — the module contains
-exactly one `native_decide`.  The alternative computation views (the direct
+exactly one `native_decide` and verifies in a few minutes.  The five heavy
+certificates `a002845 19` through `a002845 23` (about nine million distinct
+sparse logarithms in one native run) are kept in the module as a
+commented-out block using the identical table pattern; uncomment it to
+re-verify them with the same machinery.  The alternative computation views (the direct
 logarithm enumeration and the sparse-log evaluator over all parenthesization
 trees) remain as Lean-proved equivalences (`a002845_eq_directLogCard`,
 `a002845_eq_certifiedSparseCard`).  The combine operation itself is the total
