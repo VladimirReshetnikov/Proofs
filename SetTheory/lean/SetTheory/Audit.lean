@@ -561,6 +561,10 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_HFFin_formulaAt_eqRefl_domainContext
 #check @AckermannHF.PAInHF.termGraphAt_exists_valid_of_HFFinAx_s_domainContext
 #check @AckermannHF.PAInHF.BProv_HFFin_termGraphAt_exists_domainContext
+#check @AckermannHF.PAInHF.formulaAt_allE_valid_of_HFFinAx_s_domainContext
+#check @AckermannHF.PAInHF.formulaAt_exI_valid_of_HFFinAx_s_domainContext
+#check @AckermannHF.PAInHF.BProv_HFFin_formulaAt_allE_term_domainContext
+#check @AckermannHF.PAInHF.BProv_HFFin_formulaAt_exI_term_domainContext
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_var_of_eq
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_of_termGraphsAt
 #check @AckermannHF.PAInHF.Sat_termGraphAt_shift_front

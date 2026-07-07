@@ -14176,6 +14176,91 @@ theorem BProv_HFFin_termGraphAt_exists_domainContext {G : List Form}
     exact termGraphAt_exists_valid_of_HFFinAx_s_domainContext v hHF ρ t v
       (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
 
+/-- In every model of finite HF, universal elimination by an arbitrary PA term
+is valid once the free variables of that term are known to lie in the PA
+domain. -/
+theorem formulaAt_allE_valid_of_HFFinAx_s_domainContext {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term) (e : Nat → α)
+    (hctx : ∀ g, g ∈ domainContextAt ρ t.bound → Sat mem e g)
+    (hall : Sat mem e (formulaAt ρ (PA.Formula.all a))) :
+    Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e
+    (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a))
+  change Sat M.mem e (formulaAt ρ (PA.Formula.all a)) at hall
+  have hfree : ∀ n, PA.Term.Free n t → OrdinalLike M.mem (e (ρ n)) := by
+    intro n hn
+    exact Sat_domainContextAt_ordinalLike (ρ := ρ) (n := t.bound)
+      (e := e) hctx n (PA.Term.free_lt_bound t n hn)
+  rcases termGraphAt_total_of_ordinalLike M t ρ e hfree with
+    ⟨x, hxOrd, hxGraph⟩
+  have hbody : Sat M.mem (scons x e) (formulaAt (upVarMap ρ) a) :=
+    hall x ((HF_ordinalLikeAt_spec (scons x e) 0).mpr hxOrd)
+  exact (formulaAt_subst_instTerm_of_termGraph_model M a t ρ x e
+    hfree hxGraph).mpr hbody
+
+/-- In every model of finite HF, existential introduction by an arbitrary PA
+term is valid once the free variables of that term are known to lie in the PA
+domain. -/
+theorem formulaAt_exI_valid_of_HFFinAx_s_domainContext {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term) (e : Nat → α)
+    (hctx : ∀ g, g ∈ domainContextAt ρ t.bound → Sat mem e g)
+    (hbody : Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a))) :
+    Sat mem e (formulaAt ρ (PA.Formula.ex a)) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e (formulaAt ρ (PA.Formula.ex a))
+  change Sat M.mem e
+    (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) at hbody
+  have hfree : ∀ n, PA.Term.Free n t → OrdinalLike M.mem (e (ρ n)) := by
+    intro n hn
+    exact Sat_domainContextAt_ordinalLike (ρ := ρ) (n := t.bound)
+      (e := e) hctx n (PA.Term.free_lt_bound t n hn)
+  rcases termGraphAt_total_of_ordinalLike M t ρ e hfree with
+    ⟨x, hxOrd, hxGraph⟩
+  have hbody' : Sat M.mem (scons x e) (formulaAt (upVarMap ρ) a) :=
+    (formulaAt_subst_instTerm_of_termGraph_model M a t ρ x e
+      hfree hxGraph).mp hbody
+  exact ⟨x, (HF_ordinalLikeAt_spec (scons x e) 0).mpr hxOrd, hbody'⟩
+
+/-- Finite HF proves universal elimination by an arbitrary PA term from
+explicit domain assumptions for that term's free variables. -/
+theorem BProv_HFFin_formulaAt_allE_term_domainContext {G : List Form}
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term)
+    (hall : BProv HFFinAx_s (domainContextAt ρ t.bound ++ G)
+      (formulaAt ρ (PA.Formula.all a))) :
+    BProv HFFinAx_s (domainContextAt ρ t.bound ++ G)
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    have hallSat : Sat mem v (formulaAt ρ (PA.Formula.all a)) :=
+      soundness_BProv hall v hHF hctx
+    exact formulaAt_allE_valid_of_HFFinAx_s_domainContext v hHF ρ a t v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg))) hallSat
+
+/-- Finite HF proves existential introduction by an arbitrary PA term from
+explicit domain assumptions for that term's free variables. -/
+theorem BProv_HFFin_formulaAt_exI_term_domainContext {G : List Form}
+    (ρ : Nat → Nat) (a : PA.Formula) (t : PA.Term)
+    (hbody : BProv HFFinAx_s (domainContextAt ρ t.bound ++ G)
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a))) :
+    BProv HFFinAx_s (domainContextAt ρ t.bound ++ G)
+      (formulaAt ρ (PA.Formula.ex a)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    have hbodySat : Sat mem v
+        (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) :=
+      soundness_BProv hbody v hHF hctx
+    exact formulaAt_exI_valid_of_HFFinAx_s_domainContext v hHF ρ a t v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg))) hbodySat
+
 /-- An HF equality proof between the slots assigned to two PA variables yields
 the PA-in-HF translation of equality between those PA variables. -/
 theorem BProv_formulaAt_eq_var_of_eq {B : Form → Prop} {G : List Form} (ρ : Nat → Nat)
