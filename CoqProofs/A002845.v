@@ -2,21 +2,21 @@
   Coq port of the initial exact-logarithm layer of
   LeanProofs/A002845.lean.
 
-  The Lean module continues with a hereditary sparse-binary representation for
-  much larger computations.  This Coq port keeps the proved exact-logarithm
-  reduction and uses Coq's binary natural numbers as the executable logarithm
-  representation, which is enough to replay the first six OEIS values without
-  constructing enormous unary naturals.
+  This Coq port keeps the proved exact-logarithm reduction, connects it to the
+  Coq SparseBinary port, and uses Coq's binary natural numbers as the
+  executable logarithm representation.  That is enough to replay the first six
+  OEIS values without constructing enormous unary naturals.
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
 From Stdlib Require Import Lists.List.
 From Stdlib Require Import NArith.BinNat.
 From Stdlib Require Import NArith.Nnat.
-From LeanProofsCoq Require Import PowTower.
+From LeanProofsCoq Require Import PowTower SparseBinary.
 
 Import ListNotations.
 Set Implicit Arguments.
+Open Scope nat_scope.
 
 Module LeanProofs.
 Module A002845.
@@ -24,8 +24,12 @@ Module A002845.
 Module PowExpr.
 
 Module PT := LeanProofsCoq.PowTower.LeanProofs.PowTower.
+Module SB := LeanProofsCoq.SparseBinary.LeanProofs.A002845.Sparse.
 
 Definition PowExpr := PT.Expr.
+
+Definition Sparse : Type :=
+  LeanProofsCoq.SparseBinary.LeanProofs.A002845.Sparse.
 
 Definition two : PowExpr := PT.atom.
 
@@ -155,6 +159,58 @@ Theorem a002845_eq_directLogCardNat (n : nat) :
     a002845 n = directLogCardNat n.
 Proof.
   exact (directLogCardN_eq_directLogCardNat n).
+Qed.
+
+Definition certifiedCombineLog (a b : Sparse) : Sparse :=
+  SB.shift a b.
+
+Fixpoint sparseLogEval (e : PowExpr) : Sparse :=
+  match e with
+  | PT.atom => SB.ofN 1
+  | PT.pow a b => certifiedCombineLog (sparseLogEval a) (sparseLogEval b)
+  end.
+
+Theorem canonical_sparseLogEval (e : PowExpr) :
+    SB.Canonical (sparseLogEval e).
+Proof.
+  induction e as [|a iha b ihb].
+  - apply SB.canonical_ofN.
+  - unfold sparseLogEval; fold (sparseLogEval a); fold (sparseLogEval b).
+    unfold certifiedCombineLog.
+    exact (proj1 (SB.shift_spec iha ihb)).
+Qed.
+
+Theorem sparseLogEval_eq_logEvalN (e : PowExpr) :
+    sparseLogEval e = logEvalN e.
+Proof.
+  induction e as [|a iha b ihb].
+  - reflexivity.
+  - simpl.
+    unfold certifiedCombineLog, SB.shift, logCombineN.
+    now rewrite iha, ihb.
+Qed.
+
+Theorem eval_sparseLogEval (e : PowExpr) :
+    SB.eval (sparseLogEval e) = logEvalN e.
+Proof.
+  now rewrite sparseLogEval_eq_logEvalN.
+Qed.
+
+Definition certifiedSparseCard (n : nat) : nat :=
+  PT.valueCount SB.beq sparseLogEval n.
+
+Theorem certifiedSparseCard_eq_directLogCardN (n : nat) :
+    certifiedSparseCard n = directLogCardN n.
+Proof.
+  reflexivity.
+Qed.
+
+Theorem a002845_eq_certifiedSparseCard (n : nat) :
+    a002845 n = certifiedSparseCard n.
+Proof.
+  unfold a002845.
+  symmetry.
+  apply certifiedSparseCard_eq_directLogCardN.
 Qed.
 
 Theorem a002845_one : a002845 1 = 1.
