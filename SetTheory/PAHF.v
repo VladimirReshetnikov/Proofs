@@ -1204,6 +1204,170 @@ Proof.
       * exact (proj2 (HF_memTotalOnAt_spec V mem e a) htotal).
 Qed.
 
+Ltac solve_free_vars :=
+  simpl in *;
+  repeat match goal with
+  | H : _ \/ _ |- _ => destruct H as [H | H]
+  | H : False |- _ => contradiction
+  end;
+  lia.
+
+Lemma HF_emptyAt_free : forall i a,
+  Free i (HF_emptyAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_emptyAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_adjoinAt_free : forall i c a b,
+  Free i (HF_adjoinAt c a b) -> i = c \/ i = a \/ i = b.
+Proof.
+  intros i c a b h.
+  unfold HF_adjoinAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_succAt_free : forall i s a,
+  Free i (HF_succAt s a) -> i = s \/ i = a.
+Proof.
+  intros i s a h.
+  unfold HF_succAt, HF_adjoinAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_singleAt_free : forall i a b,
+  Free i (HF_singleAt a b) -> i = a \/ i = b.
+Proof.
+  intros i a b h.
+  unfold HF_singleAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_upairAt_free : forall i a b c,
+  Free i (HF_upairAt a b c) -> i = a \/ i = b \/ i = c.
+Proof.
+  intros i a b c h.
+  unfold HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_kpairAt_free : forall i p a b,
+  Free i (HF_kpairAt p a b) -> i = p \/ i = a \/ i = b.
+Proof.
+  intros i p a b h.
+  unfold HF_kpairAt, HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairMemAt_free : forall i a b r,
+  Free i (HF_pairMemAt a b r) -> i = a \/ i = b \/ i = r.
+Proof.
+  intros i a b r h.
+  unfold HF_pairMemAt, HF_kpairAt, HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairFunctionalAt_free : forall i f,
+  Free i (HF_pairFunctionalAt f) -> i = f.
+Proof.
+  intros i f h.
+  unfold HF_pairFunctionalAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairKeysBelowSuccAt_free : forall i f m,
+  Free i (HF_pairKeysBelowSuccAt f m) -> i = f \/ i = m.
+Proof.
+  intros i f m h.
+  unfold HF_pairKeysBelowSuccAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairTotalBelowSuccAt_free : forall i f m,
+  Free i (HF_pairTotalBelowSuccAt f m) -> i = f \/ i = m.
+Proof.
+  intros i f m h.
+  unfold HF_pairTotalBelowSuccAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairSuccStepAt_free : forall i f m,
+  Free i (HF_pairSuccStepAt f m) -> i = f \/ i = m.
+Proof.
+  intros i f m h.
+  unfold HF_pairSuccStepAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, HF_succAt, HF_adjoinAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairBaseAt_free : forall i f s,
+  Free i (HF_pairBaseAt f s) -> i = f \/ i = s.
+Proof.
+  intros i f s h.
+  unfold HF_pairBaseAt, HF_emptyAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_pairZeroBaseAt_free : forall i f,
+  Free i (HF_pairZeroBaseAt f) -> i = f.
+Proof.
+  intros i f h.
+  unfold HF_pairZeroBaseAt, HF_emptyAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_succRecApproxAt_free : forall i f s m,
+  Free i (HF_succRecApproxAt f s m) -> i = f \/ i = s \/ i = m.
+Proof.
+  intros i f s m h.
+  unfold HF_succRecApproxAt in h.
+  simpl in h.
+  destruct h as [h | [h | [h | [h | h]]]].
+  - pose proof (HF_pairFunctionalAt_free i f h). lia.
+  - destruct (HF_pairKeysBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - destruct (HF_pairBaseAt_free i f s h) as [hi | hi]; lia.
+  - destruct (HF_pairTotalBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - destruct (HF_pairSuccStepAt_free i f m h) as [hi | hi]; lia.
+Qed.
+
+Lemma HF_subsetAt_free : forall i a b,
+  Free i (HF_subsetAt a b) -> i = a \/ i = b.
+Proof.
+  intros i a b h.
+  unfold HF_subsetAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_transitiveAt_free : forall i a,
+  Free i (HF_transitiveAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_transitiveAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_memTotalOnAt_free : forall i a,
+  Free i (HF_memTotalOnAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_memTotalOnAt in h.
+  solve_free_vars.
+Qed.
+
+Lemma HF_ordinalLikeAt_free : forall i a,
+  Free i (HF_ordinalLikeAt a) -> i = a.
+Proof.
+  intros i a h.
+  unfold HF_ordinalLikeAt, HF_transitiveAt, HF_memTotalOnAt in h.
+  solve_free_vars.
+Qed.
+
 Definition HF_memMaxAt (a : nat) : form :=
   fImp
     (fEx (fMem 0 (S a)))
@@ -4066,6 +4230,100 @@ Definition mulGraphAt (out left right : nat) : form :=
     (HF_pairMemAt (S right) (S out) 0)).
 
 Definition mulGraph : form := mulGraphAt 0 1 2.
+
+Lemma domainForm_free : forall i,
+  Free i domainForm -> i = 0.
+Proof.
+  intros i h.
+  unfold domainForm in h.
+  apply (HF_ordinalLikeAt_free i 0 h).
+Qed.
+
+Lemma zeroGraph_free : forall i,
+  Free i zeroGraph -> i = 0.
+Proof.
+  intros i h.
+  unfold zeroGraph in h.
+  apply (HF_emptyAt_free i 0 h).
+Qed.
+
+Lemma succGraph_free : forall i,
+  Free i succGraph -> i = 0 \/ i = 1.
+Proof.
+  intros i h.
+  unfold succGraph in h.
+  destruct (HF_succAt_free i 0 1 h) as [hi | hi]; lia.
+Qed.
+
+Lemma addGraphAt_free : forall i out left right,
+  Free i (addGraphAt out left right) ->
+    i = out \/ i = left \/ i = right.
+Proof.
+  intros i out left right h.
+  unfold addGraphAt in h.
+  simpl in h.
+  destruct h as [h | h].
+  - destruct (HF_succRecApproxAt_free (S i) 0 (S left) (S right) h)
+      as [hi | [hi | hi]]; lia.
+  - destruct (HF_pairMemAt_free (S i) (S right) (S out) 0 h)
+      as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma addGraph_free : forall i,
+  Free i addGraph -> i = 0 \/ i = 1 \/ i = 2.
+Proof.
+  intros i h.
+  unfold addGraph in h.
+  exact (addGraphAt_free i 0 1 2 h).
+Qed.
+
+Lemma mulStepAt_free : forall i f a m,
+  Free i (mulStepAt f a m) -> i = f \/ i = a \/ i = m.
+Proof.
+  intros i f a m h.
+  unfold mulStepAt, addGraphAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, HF_succAt, HF_adjoinAt,
+    HF_succRecApproxAt, HF_pairFunctionalAt, HF_pairKeysBelowSuccAt,
+    HF_pairBaseAt, HF_pairZeroBaseAt, HF_pairTotalBelowSuccAt,
+    HF_pairSuccStepAt, HF_emptyAt, fIff in h.
+  solve_free_vars.
+Qed.
+
+Lemma mulRecApproxAt_free : forall i f a m,
+  Free i (mulRecApproxAt f a m) -> i = f \/ i = a \/ i = m.
+Proof.
+  intros i f a m h.
+  unfold mulRecApproxAt in h.
+  simpl in h.
+  destruct h as [h | [h | [h | [h | h]]]].
+  - pose proof (HF_pairFunctionalAt_free i f h). lia.
+  - destruct (HF_pairKeysBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - pose proof (HF_pairZeroBaseAt_free i f h). lia.
+  - destruct (HF_pairTotalBelowSuccAt_free i f m h) as [hi | hi]; lia.
+  - destruct (mulStepAt_free i f a m h) as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma mulGraphAt_free : forall i out left right,
+  Free i (mulGraphAt out left right) ->
+    i = out \/ i = left \/ i = right.
+Proof.
+  intros i out left right h.
+  unfold mulGraphAt in h.
+  simpl in h.
+  destruct h as [h | h].
+  - destruct (mulRecApproxAt_free (S i) 0 (S left) (S right) h)
+      as [hi | [hi | hi]]; lia.
+  - destruct (HF_pairMemAt_free (S i) (S right) (S out) 0 h)
+      as [hi | [hi | hi]]; lia.
+Qed.
+
+Lemma mulGraph_free : forall i,
+  Free i mulGraph -> i = 0 \/ i = 1 \/ i = 2.
+Proof.
+  intros i h.
+  unfold mulGraph in h.
+  exact (mulGraphAt_free i 0 1 2 h).
+Qed.
 
 Lemma mulRecApproxAt_value_of_le : forall m N f outDummy e n y,
   Sat nat hf_mem
