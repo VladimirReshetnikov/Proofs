@@ -444,6 +444,188 @@ theorem HF_pairMemAt_spec {α : Type} (M : AdjunctionModel α)
         0 (a+1) (b+1)).mpr rfl
     · exact h
 
+/-- A set of ordered pairs is single-valued in its second component. -/
+def PairFunctional {α : Type} (M : AdjunctionModel α) (f : α) : Prop :=
+  ∀ k y y', M.mem (kpair M k y) f → M.mem (kpair M k y') f → y = y'
+
+/-- Every first component of a pair in `f` is a member of `m ∪ {m}`. -/
+def PairKeysBelowSucc {α : Type} (M : AdjunctionModel α) (f m : α) : Prop :=
+  ∀ k y, M.mem (kpair M k y) f → M.mem k m ∨ k = m
+
+/-- Every element of `m ∪ {m}` appears as the first component of some pair in
+`f`. -/
+def PairTotalBelowSucc {α : Type} (M : AdjunctionModel α) (f m : α) : Prop :=
+  ∀ k, M.mem k m ∨ k = m → ∃ y, M.mem (kpair M k y) f
+
+/-- Successor-recursion step for a pair set `f` on the proper members of
+`m`: if `f(k)=t`, then `f(k+1)=t+1`. -/
+def PairSuccStep {α : Type} (M : AdjunctionModel α) (f m : α) : Prop :=
+  ∀ k t y,
+    M.mem k m →
+    M.mem (kpair M k t) f →
+    M.mem (kpair M (M.adjoin k k) y) f →
+    y = M.adjoin t t
+
+/-- Formula macro: slot `f` is a single-valued relation represented by
+Kuratowski pairs. -/
+def HF_pairFunctionalAt (f : Nat) : Form :=
+  fAll (fAll (fAll
+    (fImp
+      (fAnd (HF_pairMemAt 2 1 (f+3)) (HF_pairMemAt 2 0 (f+3)))
+      (fEq 1 0))))
+
+theorem HF_pairFunctionalAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (f : Nat) :
+    Sat M.mem e (HF_pairFunctionalAt f) ↔ PairFunctional M (e f) := by
+  constructor
+  · intro h k y y' hky hky'
+    exact h k y y'
+      ⟨(HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 1 (f+3)).mpr hky,
+       (HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 0 (f+3)).mpr hky'⟩
+  · intro h k y y' hpairs
+    exact h k y y'
+      ((HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 1 (f+3)).mp hpairs.1)
+      ((HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 0 (f+3)).mp hpairs.2)
+
+/-- Formula macro: every key in relation slot `f` is in `m ∪ {m}`. -/
+def HF_pairKeysBelowSuccAt (f m : Nat) : Form :=
+  fAll (fAll
+    (fImp
+      (HF_pairMemAt 1 0 (f+2))
+      (fOr (fMem 1 (m+2)) (fEq 1 (m+2)))))
+
+theorem HF_pairKeysBelowSuccAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (f m : Nat) :
+    Sat M.mem e (HF_pairKeysBelowSuccAt f m) ↔
+      PairKeysBelowSucc M (e f) (e m) := by
+  constructor
+  · intro h k y hky
+    exact h k y
+      ((HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mpr hky)
+  · intro h k y hky
+    exact h k y
+      ((HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mp hky)
+
+/-- Formula macro: every key in `m ∪ {m}` occurs in relation slot `f`. -/
+def HF_pairTotalBelowSuccAt (f m : Nat) : Form :=
+  fAll
+    (fImp
+      (fOr (fMem 0 (m+1)) (fEq 0 (m+1)))
+      (fEx (HF_pairMemAt 1 0 (f+2))))
+
+theorem HF_pairTotalBelowSuccAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (f m : Nat) :
+    Sat M.mem e (HF_pairTotalBelowSuccAt f m) ↔
+      PairTotalBelowSucc M (e f) (e m) := by
+  constructor
+  · intro h k hk
+    rcases h k hk with ⟨y, hy⟩
+    exact ⟨y, (HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mp hy⟩
+  · intro h k hk
+    rcases h k hk with ⟨y, hy⟩
+    exact ⟨y, (HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mpr hy⟩
+
+/-- Formula macro: the represented relation advances by ordinal successor at
+successive keys below `m`. -/
+def HF_pairSuccStepAt (f m : Nat) : Form :=
+  fAll (fAll (fAll
+    (fImp
+      (fMem 2 (m+3))
+      (fImp
+        (HF_pairMemAt 2 1 (f+3))
+        (fAll
+          (fImp
+            (HF_succAt 0 3)
+            (fImp
+              (HF_pairMemAt 0 1 (f+4))
+              (HF_succAt 1 2))))))))
+
+theorem HF_pairSuccStepAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (f m : Nat) :
+    Sat M.mem e (HF_pairSuccStepAt f m) ↔ PairSuccStep M (e f) (e m) := by
+  constructor
+  · intro h k t y hkm hkt hsy
+    have hs := h k t y hkm
+      ((HF_pairMemAt_spec M (scons y (scons t (scons k e))) 2 1 (f+3)).mpr hkt)
+      (M.adjoin k k)
+      ((HF_succAt_spec M
+        (scons (M.adjoin k k) (scons y (scons t (scons k e)))) 0 3).mpr rfl)
+      ((HF_pairMemAt_spec M
+        (scons (M.adjoin k k) (scons y (scons t (scons k e)))) 0 1 (f+4)).mpr hsy)
+    exact (HF_succAt_spec M
+      (scons (M.adjoin k k) (scons y (scons t (scons k e)))) 1 2).mp hs
+  · intro h k t y hkm hkt sk hsk hsky
+    have hsk' : sk = M.adjoin k k :=
+      (HF_succAt_spec M (scons sk (scons y (scons t (scons k e)))) 0 3).mp hsk
+    have hsky' : M.mem (kpair M (M.adjoin k k) y) (e f) := by
+      have hpair := (HF_pairMemAt_spec M
+        (scons sk (scons y (scons t (scons k e)))) 0 1 (f+4)).mp hsky
+      rwa [hsk'] at hpair
+    apply (HF_succAt_spec M
+      (scons sk (scons y (scons t (scons k e)))) 1 2).mpr
+    exact h k t y hkm
+      ((HF_pairMemAt_spec M (scons y (scons t (scons k e))) 2 1 (f+3)).mp hkt)
+      hsky'
+
+/-- The base clause for successor recursion: `f(0)=s`. -/
+def HF_pairBaseAt (f s : Nat) : Form :=
+  fEx (fAnd (HF_emptyAt 0) (HF_pairMemAt 0 (s+1) (f+1)))
+
+theorem HF_pairBaseAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (f s : Nat) :
+    Sat M.mem e (HF_pairBaseAt f s) ↔
+      M.mem (kpair M M.empty (e s)) (e f) := by
+  constructor
+  · intro h
+    rcases h with ⟨z, hz, hpair⟩
+    have hz' : z = M.empty := (HF_emptyAt_empty M (scons z e) 0).mp hz
+    have hpair' := (HF_pairMemAt_spec M (scons z e) 0 (s+1) (f+1)).mp hpair
+    rwa [hz'] at hpair'
+  · intro h
+    refine ⟨M.empty, ?_, ?_⟩
+    · exact (HF_emptyAt_empty M (scons M.empty e) 0).mpr rfl
+    · exact (HF_pairMemAt_spec M (scons M.empty e) 0 (s+1) (f+1)).mpr h
+
+/-- Semantic package for a finite successor-recursion trace from `s` through
+the segment `m ∪ {m}`. -/
+def SuccRecApprox {α : Type} (M : AdjunctionModel α) (s f m : α) : Prop :=
+  PairFunctional M f ∧
+  PairKeysBelowSucc M f m ∧
+  M.mem (kpair M M.empty s) f ∧
+  PairTotalBelowSucc M f m ∧
+  PairSuccStep M f m
+
+/-- Formula macro for `SuccRecApprox`: slot `f` is the graph of successor
+iteration starting at slot `s`, defined on keys up to slot `m`. -/
+def HF_succRecApproxAt (f s m : Nat) : Form :=
+  fAnd (HF_pairFunctionalAt f)
+    (fAnd (HF_pairKeysBelowSuccAt f m)
+      (fAnd (HF_pairBaseAt f s)
+        (fAnd (HF_pairTotalBelowSuccAt f m)
+          (HF_pairSuccStepAt f m))))
+
+theorem HF_succRecApproxAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (f s m : Nat) :
+    Sat M.mem e (HF_succRecApproxAt f s m) ↔
+      SuccRecApprox M (e s) (e f) (e m) := by
+  change
+    (Sat M.mem e (HF_pairFunctionalAt f) ∧
+      (Sat M.mem e (HF_pairKeysBelowSuccAt f m) ∧
+        (Sat M.mem e (HF_pairBaseAt f s) ∧
+          (Sat M.mem e (HF_pairTotalBelowSuccAt f m) ∧
+            Sat M.mem e (HF_pairSuccStepAt f m))))) ↔
+      PairFunctional M (e f) ∧
+        PairKeysBelowSucc M (e f) (e m) ∧
+          M.mem (kpair M M.empty (e s)) (e f) ∧
+            PairTotalBelowSucc M (e f) (e m) ∧
+              PairSuccStep M (e f) (e m)
+  rw [
+    HF_pairFunctionalAt_spec M e f,
+    HF_pairKeysBelowSuccAt_spec M e f m,
+    HF_pairBaseAt_spec M e f s,
+    HF_pairTotalBelowSuccAt_spec M e f m,
+    HF_pairSuccStepAt_spec M e f m]
+
 /-- Formula macro: slot `a` is a subset of slot `b`. -/
 def HF_subsetAt (a b : Nat) : Form :=
   fAll (fImp (fMem 0 (a+1)) (fMem 0 (b+1)))

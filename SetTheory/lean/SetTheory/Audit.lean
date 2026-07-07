@@ -52,6 +52,17 @@ open SetTheory
 #check @AckermannHF.HF_upairAt_spec
 #check @AckermannHF.HF_kpairAt_spec
 #check @AckermannHF.HF_pairMemAt_spec
+#check @AckermannHF.PairFunctional
+#check @AckermannHF.PairKeysBelowSucc
+#check @AckermannHF.PairTotalBelowSucc
+#check @AckermannHF.PairSuccStep
+#check @AckermannHF.SuccRecApprox
+#check @AckermannHF.HF_pairFunctionalAt_spec
+#check @AckermannHF.HF_pairKeysBelowSuccAt_spec
+#check @AckermannHF.HF_pairTotalBelowSuccAt_spec
+#check @AckermannHF.HF_pairSuccStepAt_spec
+#check @AckermannHF.HF_pairBaseAt_spec
+#check @AckermannHF.HF_succRecApproxAt_spec
 #check @AckermannHF.HF_subsetAt_spec
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
