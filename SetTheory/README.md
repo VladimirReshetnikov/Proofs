@@ -57,6 +57,17 @@ The system is **exactly ZF**:
 | `T ⊢ φ ⟹ ZF ⊢ φ` | the converse syntactic direction | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
 | **`T ⊢ φ ⟺ ZF ⊢ φ`** | **full deductive equivalence** (`T_iff_ZF`) | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
 
+The Lean port also contains two Lean-first side modules that support nearby
+foundational/computability work:
+
+- [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) develops Ackermann-coded
+  hereditary finite sets and first-order PA/HF interpretation infrastructure.
+- [`lean/SetTheory/BusyBeaver.lean`](lean/SetTheory/BusyBeaver.lean) formalizes a
+  Rado-style two-symbol blank-tape machine model and proves that any busy-beaver
+  score function satisfying the maximum property eventually dominates every
+  total computable function whose computability predicate has the standard
+  linear-overhead blank-tape compiler.
+
 ## Module structure — the reusable core vs. the T-specific shell
 
 The development is organized as a small library. Three modules are **generic
