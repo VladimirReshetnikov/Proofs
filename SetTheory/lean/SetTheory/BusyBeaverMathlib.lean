@@ -233,6 +233,88 @@ theorem typedRadoReaches_haltsWithScore {Label : Type*}
   rcases typedRadoReaches_run hReach with ⟨t, ht⟩
   exact ⟨t, by rw [ht]; exact hState, by rw [ht]; exact hScore⟩
 
+/-- Reindex a typed configuration through an explicit finite-state equivalence. -/
+def typedConfigToConfig {State : Type*} {n : Nat} (e : State ≃ Fin n)
+    (cfg : TypedConfig State) : Config n where
+  state := cfg.state.map e
+  head := cfg.head
+  tape := cfg.tape
+
+/-- Reindex a typed Rado machine through an explicit finite-state equivalence. -/
+def typedMachineToMachine {State : Type*} {n : Nat} (e : State ≃ Fin n)
+    (M : TypedMachine State) : Machine n where
+  transition q bit :=
+    let action := M.transition (e.symm q) bit
+    { write := action.write
+      move := action.move
+      next := action.next.map e }
+
+@[simp]
+theorem typedMachineToMachine_step {State : Type*} {n : Nat} (e : State ≃ Fin n)
+    (M : TypedMachine State) (cfg : TypedConfig State) :
+    (typedMachineToMachine e M).step (typedConfigToConfig e cfg) =
+      typedConfigToConfig e (TypedMachine.step M cfg) := by
+  cases cfg with
+  | mk state head tape =>
+      cases state with
+      | none => rfl
+      | some q =>
+          simp [typedConfigToConfig, typedMachineToMachine, Machine.step, TypedMachine.step]
+
+theorem startState_eq_some_zero {n : Nat} (hpos : 0 < n) :
+    startState n = some (⟨0, hpos⟩ : Fin n) := by
+  cases n with
+  | zero => cases hpos
+  | succ n => rfl
+
+@[simp]
+theorem typedMachineToMachine_run {State : Type*} {n : Nat} (e : State ≃ Fin n)
+    (M : TypedMachine State) (start : State)
+    (hStart : some (e start) = startState n) :
+    ∀ t,
+      (typedMachineToMachine e M).run t =
+        typedConfigToConfig e (M.run start t)
+  | 0 => by
+      simp [Machine.run, TypedMachine.run, initial, typedConfigToConfig, hStart]
+  | t + 1 => by
+      simp [Machine.run, TypedMachine.run, typedMachineToMachine_run e M start hStart t]
+
+theorem typedMachineToMachine_haltsWithScore {State : Type*} {n score : Nat}
+    (e : State ≃ Fin n) (M : TypedMachine State) (start : State)
+    (hStart : some (e start) = startState n)
+    (hHalt : M.HaltsWithScore start score) :
+    (typedMachineToMachine e M).HaltsWithScore score := by
+  rcases hHalt with ⟨t, hState, hScore⟩
+  refine ⟨t, ?_, ?_⟩
+  · rw [typedMachineToMachine_run e M start hStart t]
+    simp [typedConfigToConfig, hState]
+  · rw [typedMachineToMachine_run e M start hStart t]
+    simpa [typedConfigToConfig] using hScore
+
+/-- A finite-state equivalence sending the chosen typed start state to `0`. -/
+noncomputable def startEquivFin {State : Type*} [Fintype State] (start : State) :
+    State ≃ Fin (Fintype.card State) :=
+  (Fintype.equivFin State).trans
+    (Equiv.swap ((Fintype.equivFin State) start)
+      (⟨0, Fintype.card_pos_iff.2 ⟨start⟩⟩ : Fin (Fintype.card State)))
+
+@[simp]
+theorem startEquivFin_start {State : Type*} [Fintype State] (start : State) :
+    startEquivFin start start =
+      (⟨0, Fintype.card_pos_iff.2 ⟨start⟩⟩ : Fin (Fintype.card State)) := by
+  simp [startEquivFin, Equiv.swap_apply_left]
+
+theorem typedMachineToMachine_attainableScore {State : Type*} [Fintype State]
+    (M : TypedMachine State) (start : State) {score : Nat}
+    (hHalt : M.HaltsWithScore start score) :
+    AttainableScore (Fintype.card State) score := by
+  let e := startEquivFin start
+  refine ⟨typedMachineToMachine e M, ?_⟩
+  refine typedMachineToMachine_haltsWithScore e M start ?_ hHalt
+  have hpos : 0 < Fintype.card State := Fintype.card_pos_iff.2 ⟨start⟩
+  rw [startState_eq_some_zero hpos]
+  simp [e]
+
 theorem tm0ToTypedRado_step_move {Label : Type*} [Inhabited Label]
     (M : Turing.TM0.Machine Bool Label)
     {q q' : Label} {T : Turing.Tape Bool} {dir : Turing.Dir}
