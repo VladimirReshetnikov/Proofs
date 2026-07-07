@@ -10691,6 +10691,66 @@ Proof.
         -- apply upVarMap_substZeroAfterMap_zero.
 Qed.
 
+Lemma formulaAt_substZero_insert_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi rho e,
+  Sat V (foam_mem V M) e
+    (formulaAt rho (PA.Formula.subst PA.Formula.substZero phi)) <->
+  Sat V (foam_mem V M) (insertAt 0 (foam_empty V M) e)
+    (formulaAt (upVarMap rho) phi).
+Proof.
+  intros V M phi rho e.
+  split; intro h.
+  - assert (hNormL : Sat V (foam_mem V M) e
+      (formulaAt (substZeroAfterMap 0 0 rho)
+        (PA.Formula.subst (PA.Formula.substZeroAt 0) phi))).
+    {
+      rewrite PA.Formula.substZeroAt_zero.
+      rewrite (formulaAt_map_ext
+        (PA.Formula.subst PA.Formula.substZero phi)
+        (substZeroAfterMap 0 0 rho) rho).
+      - exact h.
+      - apply substZeroAfterMap_zero_zero.
+    }
+    pose proof (proj1 (formulaAt_substZeroAt_insert_model
+      V M phi 0 rho e) hNormL) as hNormR.
+    rewrite (formulaAt_map_ext phi
+      (substZeroBeforeMap 0 0 rho) (upVarMap rho)) in hNormR.
+    + exact hNormR.
+    + apply substZeroBeforeMap_zero_zero.
+  - assert (hNormR : Sat V (foam_mem V M)
+      (insertAt 0 (foam_empty V M) e)
+      (formulaAt (substZeroBeforeMap 0 0 rho) phi)).
+    {
+      rewrite (formulaAt_map_ext phi
+        (substZeroBeforeMap 0 0 rho) (upVarMap rho)).
+      - exact h.
+      - apply substZeroBeforeMap_zero_zero.
+    }
+    pose proof (proj2 (formulaAt_substZeroAt_insert_model
+      V M phi 0 rho e) hNormR) as hNormL.
+    rewrite PA.Formula.substZeroAt_zero in hNormL.
+    rewrite (formulaAt_map_ext
+      (PA.Formula.subst PA.Formula.substZero phi)
+      (substZeroAfterMap 0 0 rho) rho) in hNormL.
+    + exact hNormL.
+    + apply substZeroAfterMap_zero_zero.
+Qed.
+
+Lemma formulaAt_substZero_scons_model : forall V
+    (M : FirstOrderAdjunctionModel V) phi rho e,
+  Sat V (foam_mem V M) e
+    (formulaAt rho (PA.Formula.subst PA.Formula.substZero phi)) <->
+  Sat V (foam_mem V M) (scons V (foam_empty V M) e)
+    (formulaAt (upVarMap rho) phi).
+Proof.
+  intros V M phi rho e.
+  eapply iff_trans.
+  - apply formulaAt_substZero_insert_model.
+  - apply Sat_ext.
+    intro n.
+    apply insertAt_zero.
+Qed.
+
 Lemma formulaAt_free : forall phi rho i,
   Free i (formulaAt rho phi) ->
     exists n, PA.Formula.Free n phi /\ i = rho n.
