@@ -470,6 +470,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.termGraphAt_PA_rename
 #check @AckermannHF.PAInHF.termGraphAt_rename
 #check @AckermannHF.PAInHF.termGraphAt_inst_out
+#check @AckermannHF.PAInHF.termGraphAt_value_ordinalLike_finite_model
+#check @AckermannHF.PAInHF.termGraphAt_outputs_eq_finite_model
 #check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_mulZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_succRecTotal

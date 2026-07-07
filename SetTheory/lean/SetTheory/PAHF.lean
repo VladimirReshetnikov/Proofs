@@ -8149,6 +8149,239 @@ theorem termGraphAt_total_of_ordinalLike {α : Type u}
             M.toFirstOrderAdjunctionModel y z) f
           exact hz
 
+/-- In a finite first-order HF model, every satisfied translated PA-term graph
+with ordinal-like free inputs has an ordinal-like output. -/
+theorem termGraphAt_value_ordinalLike_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) (t : PA.Term) :
+    ∀ (ρ : Nat → Nat) (out : Nat) (e : Nat → α),
+      (∀ n, PA.Term.Free n t → OrdinalLike M.mem (e (ρ n))) →
+        Sat M.mem e (termGraphAt ρ out t) →
+          OrdinalLike M.mem (e out) := by
+  induction t with
+  | var n =>
+      intro ρ out e hfree hgraph
+      have hout : e out = e (ρ n) := hgraph
+      rw [hout]
+      exact hfree n rfl
+  | zero =>
+      intro ρ out e _hfree hgraph
+      have hout := (FirstOrderAdjunctionModel.HF_emptyAt_empty
+        M.toFirstOrderAdjunctionModel e out).mp hgraph
+      rw [hout]
+      exact FirstOrderAdjunctionModel.ordinalLike_empty
+        M.toFirstOrderAdjunctionModel
+  | succ t ih =>
+      intro ρ out e hfree hgraph
+      rcases hgraph with ⟨x, hxGraph, hsGraph⟩
+      have hxOrd : OrdinalLike M.mem x := by
+        have hfree' : ∀ n, PA.Term.Free n t →
+            OrdinalLike M.mem (scons x e ((fun n => ρ n + 1) n)) := by
+          intro n hn
+          simpa [scons] using hfree n hn
+        exact ih (fun n => ρ n + 1) 0 (scons x e) hfree' hxGraph
+      have hout := (FirstOrderAdjunctionModel.HF_succAt_spec
+        M.toFirstOrderAdjunctionModel (scons x e) (out+1) 0).mp hsGraph
+      change e out = M.adjoin x x at hout
+      exact FirstOrderAdjunctionModel.ordinalLike_adjoin_self
+        M.toFirstOrderAdjunctionModel hxOrd hout
+  | add a b iha ihb =>
+      intro ρ out e hfree hgraph
+      rcases hgraph with ⟨x, y, haGraph, hbGraph, haddGraph⟩
+      let E : Nat → α := scons y (scons x e)
+      have hxOrd : OrdinalLike M.mem x := by
+        have hfreeA : ∀ n, PA.Term.Free n a →
+            OrdinalLike M.mem (E ((fun n => ρ n + 2) n)) := by
+          intro n hn
+          simpa [E, scons] using hfree n (Or.inl hn)
+        exact iha (fun n => ρ n + 2) 1 E hfreeA haGraph
+      have hyOrd : OrdinalLike M.mem y := by
+        have hfreeB : ∀ n, PA.Term.Free n b →
+            OrdinalLike M.mem (E ((fun n => ρ n + 2) n)) := by
+          intro n hn
+          simpa [E, scons] using hfree n (Or.inr hn)
+        exact ihb (fun n => ρ n + 2) 0 E hfreeB hbGraph
+      rcases haddGraph with ⟨f, hfSat, houtSat⟩
+      have hf : FirstOrderAdjunctionModel.SuccRecApprox
+          M.toFirstOrderAdjunctionModel x f y := by
+        simpa [E, scons] using
+          (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec
+            M.toFirstOrderAdjunctionModel (scons f E)
+            0 (1+1) (0+1)).mp hfSat
+      have hout : M.mem (FirstOrderAdjunctionModel.kpair
+          M.toFirstOrderAdjunctionModel y (e out)) f := by
+        simpa [E, scons, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
+          (FirstOrderAdjunctionModel.HF_pairMemAt_spec
+            M.toFirstOrderAdjunctionModel (scons f E)
+            (0+1) ((out+2)+1) 0).mp houtSat
+      exact FirstOrderFiniteAdjunctionModel.succRecApprox_value_ordinalLike
+        M hxOrd hyOrd hf hout
+  | mul a b iha ihb =>
+      intro ρ out e hfree hgraph
+      rcases hgraph with ⟨y, x, z, haGraph, hbGraph, hcopy, hmulGraph⟩
+      let E : Nat → α := scons z (scons x (scons y e))
+      have hxOrd : OrdinalLike M.mem x := by
+        have hfreeA : ∀ n, PA.Term.Free n a →
+            OrdinalLike M.mem (E ((fun n => ρ n + 3) n)) := by
+          intro n hn
+          simpa [E, scons] using hfree n (Or.inl hn)
+        exact iha (fun n => ρ n + 3) 1 E hfreeA haGraph
+      have hyOrd : OrdinalLike M.mem y := by
+        have hfreeB : ∀ n, PA.Term.Free n b →
+            OrdinalLike M.mem (E ((fun n => ρ n + 3) n)) := by
+          intro n hn
+          simpa [E, scons] using hfree n (Or.inr hn)
+        exact ihb (fun n => ρ n + 3) 2 E hfreeB hbGraph
+      rcases hmulGraph with ⟨f, hfSat, houtSat⟩
+      have hf : MulRecApprox M.toFirstOrderAdjunctionModel x f y := by
+        simpa [E, scons] using
+          (mulRecApproxAt_spec M.toFirstOrderAdjunctionModel
+            (scons f E) 0 (1+1) (2+1)).mp hfSat
+      have hzPair : M.mem (FirstOrderAdjunctionModel.kpair
+          M.toFirstOrderAdjunctionModel y z) f := by
+        simpa [E, scons] using
+          (FirstOrderAdjunctionModel.HF_pairMemAt_spec
+            M.toFirstOrderAdjunctionModel (scons f E)
+            (2+1) (0+1) 0).mp houtSat
+      have hzOrd : OrdinalLike M.mem z :=
+        mulRecApprox_value_ordinalLike M hxOrd hyOrd hf hzPair
+      change z = e out at hcopy
+      rwa [← hcopy]
+
+/-- In a finite first-order HF model, translated PA-term graphs are
+single-valued: two graph witnesses for the same term and agreeing variable
+slots have equal outputs. -/
+theorem termGraphAt_outputs_eq_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) (t : PA.Term) :
+    ∀ {ρ₁ ρ₂ : Nat → Nat} {out₁ out₂ : Nat}
+      {e₁ e₂ : Nat → α},
+      (∀ n, PA.Term.Free n t → e₁ (ρ₁ n) = e₂ (ρ₂ n)) →
+      (∀ n, PA.Term.Free n t → OrdinalLike M.mem (e₁ (ρ₁ n))) →
+      Sat M.mem e₁ (termGraphAt ρ₁ out₁ t) →
+      Sat M.mem e₂ (termGraphAt ρ₂ out₂ t) →
+      e₁ out₁ = e₂ out₂ := by
+  induction t with
+  | var n =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hvars _hord h₁ h₂
+      have hleft : e₁ out₁ = e₁ (ρ₁ n) := h₁
+      have hright : e₂ out₂ = e₂ (ρ₂ n) := h₂
+      exact hleft.trans ((hvars n rfl).trans hright.symm)
+  | zero =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ _hvars _hord h₁ h₂
+      have hleft := (FirstOrderAdjunctionModel.HF_emptyAt_empty
+        M.toFirstOrderAdjunctionModel e₁ out₁).mp h₁
+      have hright := (FirstOrderAdjunctionModel.HF_emptyAt_empty
+        M.toFirstOrderAdjunctionModel e₂ out₂).mp h₂
+      exact hleft.trans hright.symm
+  | succ t ih =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hvars hord h₁ h₂
+      rcases h₁ with ⟨x₁, hx₁Graph, hs₁Graph⟩
+      rcases h₂ with ⟨x₂, hx₂Graph, hs₂Graph⟩
+      have hx : x₁ = x₂ := by
+        exact ih
+          (ρ₁ := fun n => ρ₁ n + 1) (ρ₂ := fun n => ρ₂ n + 1)
+          (out₁ := 0) (out₂ := 0)
+          (e₁ := scons x₁ e₁) (e₂ := scons x₂ e₂)
+          (by
+            intro n hn
+            simpa [scons] using hvars n hn)
+          (by
+            intro n hn
+            simpa [scons] using hord n hn)
+          hx₁Graph hx₂Graph
+      have hout₁ := (FirstOrderAdjunctionModel.HF_succAt_spec
+        M.toFirstOrderAdjunctionModel (scons x₁ e₁) (out₁+1) 0).mp hs₁Graph
+      have hout₂ := (FirstOrderAdjunctionModel.HF_succAt_spec
+        M.toFirstOrderAdjunctionModel (scons x₂ e₂) (out₂+1) 0).mp hs₂Graph
+      change e₁ out₁ = M.adjoin x₁ x₁ at hout₁
+      change e₂ out₂ = M.adjoin x₂ x₂ at hout₂
+      rw [hout₁, hout₂, hx]
+  | add a b iha ihb =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hvars hord h₁ h₂
+      rcases h₁ with ⟨x₁, y₁, ha₁, hb₁, hadd₁⟩
+      rcases h₂ with ⟨x₂, y₂, ha₂, hb₂, hadd₂⟩
+      let E₁ : Nat → α := scons y₁ (scons x₁ e₁)
+      let E₂ : Nat → α := scons y₂ (scons x₂ e₂)
+      have hx : x₁ = x₂ := by
+        exact iha
+          (ρ₁ := fun n => ρ₁ n + 2) (ρ₂ := fun n => ρ₂ n + 2)
+          (out₁ := 1) (out₂ := 1) (e₁ := E₁) (e₂ := E₂)
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inl hn))
+          (by
+            intro n hn
+            simpa [E₁, scons] using hord n (Or.inl hn))
+          ha₁ ha₂
+      have hy : y₁ = y₂ := by
+        exact ihb
+          (ρ₁ := fun n => ρ₁ n + 2) (ρ₂ := fun n => ρ₂ n + 2)
+          (out₁ := 0) (out₂ := 0) (e₁ := E₁) (e₂ := E₂)
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inr hn))
+          (by
+            intro n hn
+            simpa [E₁, scons] using hord n (Or.inr hn))
+          hb₁ hb₂
+      have hyOrd : OrdinalLike M.mem y₁ := by
+        have hfreeB : ∀ n, PA.Term.Free n b →
+            OrdinalLike M.mem (E₁ ((fun n => ρ₁ n + 2) n)) := by
+          intro n hn
+          simpa [E₁, scons] using hord n (Or.inr hn)
+        exact termGraphAt_value_ordinalLike_finite_model M b
+          (fun n => ρ₁ n + 2) 0 E₁ hfreeB hb₁
+      have hout := addGraphAt_outputs_eq_finite_model M E₁ E₂
+        (out₁+2) (out₂+2) 1 1 0 0 hx hy hyOrd hadd₁ hadd₂
+      simpa [E₁, E₂, scons] using hout
+  | mul a b iha ihb =>
+      intro ρ₁ ρ₂ out₁ out₂ e₁ e₂ hvars hord h₁ h₂
+      rcases h₁ with ⟨y₁, x₁, z₁, ha₁, hb₁, hcopy₁, hmul₁⟩
+      rcases h₂ with ⟨y₂, x₂, z₂, ha₂, hb₂, hcopy₂, hmul₂⟩
+      let E₁ : Nat → α := scons z₁ (scons x₁ (scons y₁ e₁))
+      let E₂ : Nat → α := scons z₂ (scons x₂ (scons y₂ e₂))
+      have hx : x₁ = x₂ := by
+        exact iha
+          (ρ₁ := fun n => ρ₁ n + 3) (ρ₂ := fun n => ρ₂ n + 3)
+          (out₁ := 1) (out₂ := 1) (e₁ := E₁) (e₂ := E₂)
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inl hn))
+          (by
+            intro n hn
+            simpa [E₁, scons] using hord n (Or.inl hn))
+          ha₁ ha₂
+      have hy : y₁ = y₂ := by
+        exact ihb
+          (ρ₁ := fun n => ρ₁ n + 3) (ρ₂ := fun n => ρ₂ n + 3)
+          (out₁ := 2) (out₂ := 2) (e₁ := E₁) (e₂ := E₂)
+          (by
+            intro n hn
+            simpa [E₁, E₂, scons] using hvars n (Or.inr hn))
+          (by
+            intro n hn
+            simpa [E₁, scons] using hord n (Or.inr hn))
+          hb₁ hb₂
+      have hxOrd : OrdinalLike M.mem x₁ := by
+        have hfreeA : ∀ n, PA.Term.Free n a →
+            OrdinalLike M.mem (E₁ ((fun n => ρ₁ n + 3) n)) := by
+          intro n hn
+          simpa [E₁, scons] using hord n (Or.inl hn)
+        exact termGraphAt_value_ordinalLike_finite_model M a
+          (fun n => ρ₁ n + 3) 1 E₁ hfreeA ha₁
+      have hyOrd : OrdinalLike M.mem y₁ := by
+        have hfreeB : ∀ n, PA.Term.Free n b →
+            OrdinalLike M.mem (E₁ ((fun n => ρ₁ n + 3) n)) := by
+          intro n hn
+          simpa [E₁, scons] using hord n (Or.inr hn)
+        exact termGraphAt_value_ordinalLike_finite_model M b
+          (fun n => ρ₁ n + 3) 2 E₁ hfreeB hb₁
+      have hz : z₁ = z₂ := by
+        exact mulGraphAt_outputs_eq_finite_model M E₁ E₂
+          0 0 1 1 2 2 hx hy hxOrd hyOrd hmul₁ hmul₂
+      change z₁ = e₁ out₁ at hcopy₁
+      change z₂ = e₂ out₂ at hcopy₂
+      exact hcopy₁.symm.trans (hz.trans hcopy₂)
+
 /-- The graph of a PA variable is just equality with the slot selected by the
 current slot map.  This version works over any membership relation. -/
 theorem termGraphAt_var_spec {α : Type u} {mem : α → α → Prop}
