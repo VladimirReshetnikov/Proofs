@@ -49,6 +49,23 @@ state is represented separately as `none` in configurations and transitions.
 structure Machine (states : Nat) where
   transition : Fin states -> Bool -> Action states
 
+/-! ### Typed-state variant for compiler proofs -/
+
+/--
+A Rado action whose next operational state lives in an arbitrary type.  This is
+used as an intermediate compiler target before reindexing a finite state type
+to `Fin states`.
+-/
+structure TypedAction (stateType : Type) where
+  write : Bool
+  move : Move
+  next : Option stateType
+  deriving Repr
+
+/-- A Rado-style machine with an arbitrary operational state type. -/
+structure TypedMachine (stateType : Type) where
+  transition : stateType -> Bool -> TypedAction stateType
+
 /--
 The tape is represented by the finite list of positions currently containing
 `1`.  The all-zero tape is `[]`.
@@ -98,6 +115,13 @@ def startState : (states : Nat) -> Option (Fin states)
 /-- A machine configuration. -/
 structure Config (states : Nat) where
   state : Option (Fin states)
+  head : Int
+  tape : Tape
+  deriving Repr
+
+/-- A typed-state Rado configuration. -/
+structure TypedConfig (stateType : Type) where
+  state : Option stateType
   head : Int
   tape : Tape
   deriving Repr
@@ -220,6 +244,33 @@ theorem zero_states_haltsWithScore_eq_zero {score : Nat} {M : Machine 0} :
   simpa [run_zero_states M t, initial] using hScore.symm
 
 end Machine
+
+namespace TypedMachine
+
+/-- Execute one transition of a typed-state Rado machine.  Halted
+configurations stay fixed. -/
+def step {stateType : Type} (M : TypedMachine stateType) (cfg : TypedConfig stateType) :
+    TypedConfig stateType :=
+  match cfg.state with
+  | none => cfg
+  | some q =>
+      let action := M.transition q (Tape.read cfg.tape cfg.head)
+      { state := action.next
+        head := action.move.apply cfg.head
+        tape := Tape.write cfg.tape cfg.head action.write }
+
+/-- Run a typed-state Rado machine from a chosen start state on the blank tape. -/
+def run {stateType : Type} (M : TypedMachine stateType) (start : stateType) :
+    Nat -> TypedConfig stateType
+  | 0 => { state := some start, head := 0, tape := [] }
+  | t + 1 => M.step (M.run start t)
+
+/-- A typed-state Rado machine halts with a given score from the blank tape. -/
+def HaltsWithScore {stateType : Type} (M : TypedMachine stateType) (start : stateType)
+    (score : Nat) : Prop :=
+  ∃ t, (M.run start t).state = none ∧ (M.run start t).tape.length = score
+
+end TypedMachine
 
 /-- A score is attainable by some `states`-state machine. -/
 def AttainableScore (states score : Nat) : Prop :=
