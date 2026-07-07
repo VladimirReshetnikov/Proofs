@@ -16,6 +16,7 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Bool.Bool Lia PeanoNat List.
+From Stdlib Require Import ClassicalEpsilon ProofIrrelevance.
 From SetTheory Require Import Fol Completeness.
 Import ListNotations.
 
@@ -568,6 +569,259 @@ Proof.
         now apply ordinal_code_mem_of_lt.
 Qed.
 
+Lemma hf_ordinal_like_iff_is_ordinal_code : forall a,
+  hf_ordinal_like a <-> is_ordinal_code a.
+Proof.
+  intro a.
+  split.
+  - apply hf_ordinal_like_is_ordinal_code.
+  - intros [n <-].
+    apply ordinal_code_ordinal_like.
+Qed.
+
+Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
+
+Definition ordinal_of_nat (n : nat) : OrdinalHF :=
+  exist _ (ordinal_code n) (ordinal_code_is_ordinal_code n).
+
+Definition nat_of_ordinal (a : OrdinalHF) : nat :=
+  @epsilon nat (inhabits 0) (fun n => ordinal_code n = proj1_sig a).
+
+Lemma nat_of_ordinal_spec : forall a : OrdinalHF,
+  ordinal_code (nat_of_ordinal a) = proj1_sig a.
+Proof.
+  intros [a ha].
+  unfold nat_of_ordinal.
+  simpl.
+  apply epsilon_spec.
+  exact ha.
+Qed.
+
+Lemma nat_of_ordinal_ordinal_of_nat : forall n,
+  nat_of_ordinal (ordinal_of_nat n) = n.
+Proof.
+  intro n.
+  apply ordinal_code_injective.
+  apply nat_of_ordinal_spec.
+Qed.
+
+Lemma ordinal_hf_eq : forall a b : OrdinalHF,
+  proj1_sig a = proj1_sig b -> a = b.
+Proof.
+  intros [a ha] [b hb] h.
+  simpl in h.
+  subst b.
+  f_equal.
+  apply proof_irrelevance.
+Qed.
+
+Lemma ordinal_eq_of_nat_of_ordinal_eq : forall a b : OrdinalHF,
+  nat_of_ordinal a = nat_of_ordinal b -> a = b.
+Proof.
+  intros a b h.
+  apply ordinal_hf_eq.
+  rewrite <- (nat_of_ordinal_spec a).
+  rewrite <- (nat_of_ordinal_spec b).
+  now rewrite h.
+Qed.
+
+Lemma ordinal_of_nat_nat_of_ordinal : forall a : OrdinalHF,
+  ordinal_of_nat (nat_of_ordinal a) = a.
+Proof.
+  intro a.
+  apply ordinal_hf_eq.
+  simpl.
+  apply nat_of_ordinal_spec.
+Qed.
+
+Definition ordinal_succ_set (a : OrdinalHF) : OrdinalHF.
+Proof.
+  refine (exist _ (hf_adjoin (proj1_sig a) (proj1_sig a)) _).
+  exists (S (nat_of_ordinal a)).
+  rewrite ordinal_code_succ.
+  rewrite nat_of_ordinal_spec.
+  reflexivity.
+Defined.
+
+Lemma ordinal_succ_set_eq : forall a : OrdinalHF,
+  ordinal_succ_set a = ordinal_of_nat (S (nat_of_ordinal a)).
+Proof.
+  intro a.
+  apply ordinal_hf_eq.
+  simpl.
+  unfold ordinal_succ_set.
+  simpl.
+  rewrite nat_of_ordinal_spec.
+  reflexivity.
+Qed.
+
+Lemma nat_of_ordinal_succ_set : forall a : OrdinalHF,
+  nat_of_ordinal (ordinal_succ_set a) = S (nat_of_ordinal a).
+Proof.
+  intro a.
+  rewrite ordinal_succ_set_eq.
+  apply nat_of_ordinal_ordinal_of_nat.
+Qed.
+
+Fixpoint ordinal_add_iter (a : OrdinalHF) (n : nat) : OrdinalHF :=
+  match n with
+  | 0 => a
+  | S k => ordinal_succ_set (ordinal_add_iter a k)
+  end.
+
+Definition ordinal_add_set (a b : OrdinalHF) : OrdinalHF :=
+  ordinal_add_iter a (nat_of_ordinal b).
+
+Lemma nat_of_ordinal_add_iter : forall (a : OrdinalHF) n,
+  nat_of_ordinal (ordinal_add_iter a n) = nat_of_ordinal a + n.
+Proof.
+  intros a n.
+  induction n as [|n IH].
+  - simpl. lia.
+  - simpl. rewrite nat_of_ordinal_succ_set, IH. lia.
+Qed.
+
+Lemma nat_of_ordinal_add_set : forall a b : OrdinalHF,
+  nat_of_ordinal (ordinal_add_set a b) =
+    nat_of_ordinal a + nat_of_ordinal b.
+Proof.
+  intros a b.
+  unfold ordinal_add_set.
+  apply nat_of_ordinal_add_iter.
+Qed.
+
+Lemma ordinal_add_set_eq : forall a b : OrdinalHF,
+  ordinal_add_set a b =
+    ordinal_of_nat (nat_of_ordinal a + nat_of_ordinal b).
+Proof.
+  intros a b.
+  apply ordinal_eq_of_nat_of_ordinal_eq.
+  rewrite nat_of_ordinal_add_set.
+  rewrite nat_of_ordinal_ordinal_of_nat.
+  reflexivity.
+Qed.
+
+Fixpoint ordinal_mul_iter (a : OrdinalHF) (n : nat) : OrdinalHF :=
+  match n with
+  | 0 => ordinal_of_nat 0
+  | S k => ordinal_add_set (ordinal_mul_iter a k) a
+  end.
+
+Definition ordinal_mul_set (a b : OrdinalHF) : OrdinalHF :=
+  ordinal_mul_iter a (nat_of_ordinal b).
+
+Lemma nat_of_ordinal_mul_iter : forall (a : OrdinalHF) n,
+  nat_of_ordinal (ordinal_mul_iter a n) = nat_of_ordinal a * n.
+Proof.
+  intros a n.
+  induction n as [|n IH].
+  - simpl. rewrite nat_of_ordinal_ordinal_of_nat. lia.
+  - simpl. rewrite nat_of_ordinal_add_set, IH. lia.
+Qed.
+
+Lemma nat_of_ordinal_mul_set : forall a b : OrdinalHF,
+  nat_of_ordinal (ordinal_mul_set a b) =
+    nat_of_ordinal a * nat_of_ordinal b.
+Proof.
+  intros a b.
+  unfold ordinal_mul_set.
+  apply nat_of_ordinal_mul_iter.
+Qed.
+
+Lemma ordinal_mul_set_eq : forall a b : OrdinalHF,
+  ordinal_mul_set a b =
+    ordinal_of_nat (nat_of_ordinal a * nat_of_ordinal b).
+Proof.
+  intros a b.
+  apply ordinal_eq_of_nat_of_ordinal_eq.
+  rewrite nat_of_ordinal_mul_set.
+  rewrite nat_of_ordinal_ordinal_of_nat.
+  reflexivity.
+Qed.
+
+Definition ordinalPAModel : PAModel.
+Proof.
+  refine {| pa_carrier := OrdinalHF;
+            pa_zero := ordinal_of_nat 0;
+            pa_succ := ordinal_succ_set;
+            pa_add := ordinal_add_set;
+            pa_mul := ordinal_mul_set |}.
+  - intros a b h.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    pose proof (f_equal nat_of_ordinal h) as hn.
+    rewrite !nat_of_ordinal_succ_set in hn.
+    lia.
+  - intros a h.
+    pose proof (f_equal nat_of_ordinal h) as hn.
+    rewrite nat_of_ordinal_succ_set in hn.
+    rewrite nat_of_ordinal_ordinal_of_nat in hn.
+    lia.
+  - intro a.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    rewrite nat_of_ordinal_add_set.
+    rewrite nat_of_ordinal_ordinal_of_nat.
+    lia.
+  - intros a b.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    rewrite nat_of_ordinal_add_set.
+    rewrite nat_of_ordinal_succ_set.
+    rewrite nat_of_ordinal_succ_set.
+    rewrite nat_of_ordinal_add_set.
+    lia.
+  - intro a.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    rewrite nat_of_ordinal_mul_set.
+    rewrite nat_of_ordinal_ordinal_of_nat.
+    lia.
+  - intros a b.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    rewrite nat_of_ordinal_mul_set.
+    rewrite nat_of_ordinal_succ_set.
+    rewrite nat_of_ordinal_add_set.
+    rewrite nat_of_ordinal_mul_set.
+    lia.
+  - intros P H0 HS a.
+    assert (Hnat : forall n, P (ordinal_of_nat n)).
+    {
+      intro n.
+      induction n as [|n IH].
+      - exact H0.
+      - pose proof (HS (ordinal_of_nat n) IH) as Hstep.
+        rewrite ordinal_succ_set_eq in Hstep.
+        rewrite nat_of_ordinal_ordinal_of_nat in Hstep.
+        exact Hstep.
+    }
+    rewrite <- (ordinal_of_nat_nat_of_ordinal a).
+    apply Hnat.
+Defined.
+
+Definition PA_ordinal_round_trip_iso : PAIso natPAModel ordinalPAModel.
+Proof.
+  refine {| pa_iso_to := fun n : natPAModel => (ordinal_of_nat n : ordinalPAModel);
+            pa_iso_inv := fun a : ordinalPAModel => (nat_of_ordinal a : natPAModel) |}.
+  - apply nat_of_ordinal_ordinal_of_nat.
+  - apply ordinal_of_nat_nat_of_ordinal.
+  - reflexivity.
+  - intro a.
+    apply ordinal_hf_eq.
+    simpl.
+    unfold ordinal_succ_set.
+    simpl.
+    reflexivity.
+  - intros a b.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    rewrite nat_of_ordinal_ordinal_of_nat.
+    rewrite nat_of_ordinal_add_set.
+    rewrite !nat_of_ordinal_ordinal_of_nat.
+    reflexivity.
+  - intros a b.
+    apply ordinal_eq_of_nat_of_ordinal_eq.
+    rewrite nat_of_ordinal_ordinal_of_nat.
+    rewrite nat_of_ordinal_mul_set.
+    rewrite !nat_of_ordinal_ordinal_of_nat.
+    reflexivity.
+Defined.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
@@ -630,11 +884,11 @@ Definition standardModelInterpretation : StandardModelInterpretationCertificate.
 Proof.
   refine {| certificate_pa := natPAModel;
             certificate_hf := ackermannHFModel;
-            pa_in_hf := natPAModel;
+            pa_in_hf := ordinalPAModel;
             hf_in_pa_in_hf := ackermannHFModel;
-            pa_round_trip := PA_identity_iso natPAModel;
+            pa_round_trip := PA_ordinal_round_trip_iso;
             hf_round_trip := HF_identity_iso ackermannHFModel;
-            pa_object := ordinal_code;
+            pa_object := fun x => proj1_sig x;
             hf_code := fun x => x;
             hf_decode := fun x => x |};
     reflexivity.
