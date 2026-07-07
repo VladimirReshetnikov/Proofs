@@ -277,6 +277,20 @@ def run {stateType : Type u} (M : TypedMachine stateType) (start : stateType) :
   | 0 => { state := some start, head := 0, tape := [] }
   | t + 1 => M.step (M.run start t)
 
+/-- Run a typed-state Rado machine from an arbitrary configuration. -/
+def runFrom {stateType : Type u} (M : TypedMachine stateType) (cfg : TypedConfig stateType) :
+    Nat -> TypedConfig stateType
+  | 0 => cfg
+  | t + 1 => M.step (M.runFrom cfg t)
+
+theorem run_eq_runFrom {stateType : Type u} (M : TypedMachine stateType) (start : stateType) :
+    ∀ t,
+      M.run start t =
+        M.runFrom ({ state := some start, head := 0, tape := [] } : TypedConfig stateType) t
+  | 0 => rfl
+  | t + 1 => by
+      simp [run, runFrom, run_eq_runFrom M start t]
+
 /-- A typed-state Rado machine halts with a given score from the blank tape. -/
 def HaltsWithScore {stateType : Type u} (M : TypedMachine stateType) (start : stateType)
     (score : Nat) : Prop :=

@@ -186,6 +186,53 @@ theorem typedRadoReaches_step_step {Label : Type*} (M : TypedMachine (TM0RadoSta
     TypedRadoReaches M cfg (TypedMachine.step M (TypedMachine.step M cfg)) := by
   exact Relation.ReflTransGen.tail (Relation.ReflTransGen.single rfl) rfl
 
+theorem typedRadoRunFrom_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    ∀ t,
+      TypedMachine.runFrom M (TypedMachine.step M cfg) t =
+        TypedMachine.runFrom M cfg (t + 1)
+  | 0 => rfl
+  | t + 1 => by
+      simp [TypedMachine.runFrom, typedRadoRunFrom_step M cfg t]
+
+theorem typedRadoReaches_runFrom {Label : Type*} {M : TypedMachine (TM0RadoState Label)}
+    {cfg cfg' : TypedConfig (TM0RadoState Label)}
+    (h : TypedRadoReaches M cfg cfg') :
+    ∃ t, TypedMachine.runFrom M cfg t = cfg' := by
+  unfold TypedRadoReaches at h
+  refine Relation.ReflTransGen.head_induction_on h ?_ ?_
+  · exact ⟨0, rfl⟩
+  · intro a c hStep _hRest IH
+    rcases IH with ⟨t, ht⟩
+    refine ⟨t + 1, ?_⟩
+    rw [← typedRadoRunFrom_step M a t]
+    rw [← hStep]
+    exact ht
+
+theorem typedRadoReaches_run {Label : Type*} {M : TypedMachine (TM0RadoState Label)}
+    {start : TM0RadoState Label} {cfg : TypedConfig (TM0RadoState Label)}
+    (h : TypedRadoReaches M
+      ({ state := some start, head := 0, tape := [] } : TypedConfig (TM0RadoState Label))
+      cfg) :
+    ∃ t, M.run start t = cfg := by
+  rcases typedRadoReaches_runFrom h with ⟨t, ht⟩
+  refine ⟨t, ?_⟩
+  rw [TypedMachine.run_eq_runFrom M start t]
+  exact ht
+
+theorem typedRadoReaches_haltsWithScore {Label : Type*}
+    {M : TypedMachine (TM0RadoState Label)}
+    {start : TM0RadoState Label} {haltCfg : TypedConfig (TM0RadoState Label)}
+    {score : Nat}
+    (hReach : TypedRadoReaches M
+      ({ state := some start, head := 0, tape := [] } : TypedConfig (TM0RadoState Label))
+      haltCfg)
+    (hState : haltCfg.state = none)
+    (hScore : haltCfg.tape.length = score) :
+    M.HaltsWithScore start score := by
+  rcases typedRadoReaches_run hReach with ⟨t, ht⟩
+  exact ⟨t, by rw [ht]; exact hState, by rw [ht]; exact hScore⟩
+
 theorem tm0ToTypedRado_step_move {Label : Type*} [Inhabited Label]
     (M : Turing.TM0.Machine Bool Label)
     {q q' : Label} {T : Turing.Tape Bool} {dir : Turing.Dir}
