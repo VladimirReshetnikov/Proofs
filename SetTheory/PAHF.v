@@ -274,6 +274,95 @@ Proof.
     reflexivity.
 Defined.
 
+Definition HF_empty_form : form :=
+  fEx (fAll (fImp (fMem 0 1) fBot)).
+
+Definition HF_extensionality_form : form :=
+  fAll (fAll
+    (fImp
+      (fAll (fIff (fMem 0 2) (fMem 0 1)))
+      (fEq 1 0))).
+
+Definition HF_adjoin_form : form :=
+  fAll (fAll (fEx (fAll
+    (fIff (fMem 0 1) (fOr (fMem 0 3) (fEq 0 2)))))).
+
+Definition HF_emptyAt (i : nat) : form :=
+  fAll (fImp (fMem 0 (S i)) fBot).
+
+Lemma HF_emptyAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (i : nat),
+  Sat V mem e (HF_emptyAt i) <-> forall x, ~ mem x (e i).
+Proof.
+  reflexivity.
+Qed.
+
+Lemma HF_emptyAt_empty : forall (M : HFModel) (e : nat -> M) i,
+  Sat M (hf_rel M) e (HF_emptyAt i) <-> e i = hf_empty_obj M.
+Proof.
+  intros M e i.
+  split.
+  - intro h.
+    apply hf_extensional.
+    intro x.
+    split.
+    + intro hx. exfalso. exact (h x hx).
+    + intro hx. exfalso. exact (hf_empty_spec M x hx).
+  - intros h x hx.
+    change (hf_rel M x (e i)) in hx.
+    rewrite h in hx.
+    exact (hf_empty_spec M x hx).
+Qed.
+
+Definition HF_adjoinAt (c a b : nat) : form :=
+  fAll (fIff (fMem 0 (S c)) (fOr (fMem 0 (S a)) (fEq 0 (S b)))).
+
+Lemma HF_adjoinAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (c a b : nat),
+  Sat V mem e (HF_adjoinAt c a b) <->
+    forall x, mem x (e c) <-> mem x (e a) \/ x = e b.
+Proof.
+  intros V mem e c a b.
+  split.
+  - intros h x.
+    unfold HF_adjoinAt, fIff in h.
+    simpl in h.
+    exact (conj (fun hx => proj1 (h x) hx) (fun hx => proj2 (h x) hx)).
+  - intros h x.
+    unfold fIff.
+    simpl.
+    exact (h x).
+Qed.
+
+Lemma HF_adjoinAt_adjoin : forall (M : HFModel) (e : nat -> M) c a b,
+  Sat M (hf_rel M) e (HF_adjoinAt c a b) <->
+    e c = hf_adjoin_obj M (e b) (e a).
+Proof.
+  intros M e c a b.
+  split.
+  - intro h.
+    apply hf_extensional.
+    intro x.
+    rewrite (proj1 (HF_adjoinAt_spec M (hf_rel M) e c a b) h x).
+    symmetry.
+    apply hf_adjoin_spec.
+  - intro h.
+    apply (proj2 (HF_adjoinAt_spec M (hf_rel M) e c a b)).
+    intro x.
+    rewrite h.
+    apply hf_adjoin_spec.
+Qed.
+
+Definition HF_succAt (s a : nat) : form := HF_adjoinAt s a a.
+
+Lemma HF_succAt_spec : forall (M : HFModel) (e : nat -> M) s a,
+  Sat M (hf_rel M) e (HF_succAt s a) <->
+    e s = hf_adjoin_obj M (e a) (e a).
+Proof.
+  intros M e s a.
+  apply HF_adjoinAt_adjoin.
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
