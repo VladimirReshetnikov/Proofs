@@ -495,6 +495,10 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_translate_orI1
 #check @AckermannHF.PAInHF.BProv_translate_orI2
 #check @AckermannHF.PAInHF.BProv_translate_orE
+#check @AckermannHF.PAInHF.rename_eq_of_sentence
+#check @AckermannHF.PAInHF.BProv_translate_allI_raw
+#check @AckermannHF.PAInHF.BProv_translate_exI_raw
+#check @AckermannHF.PAInHF.BProv_translate_exE_raw
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
 #check @AckermannHF.PAInHF.BProv_HFFin_of_translatedPAAx
