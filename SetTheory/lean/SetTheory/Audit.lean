@@ -285,6 +285,15 @@ open SetTheory
 #check @AckermannHF.PAInHF.zeroGraph_empty_model
 #check @AckermannHF.PAInHF.succGraph_adjoin_self_model
 #check @AckermannHF.PAInHF.domain_adjoin_self_model
+#check @AckermannHF.PAInHF.Domain
+#check @AckermannHF.PAInHF.domainZero
+#check @AckermannHF.PAInHF.domainSucc
+#check @AckermannHF.PAInHF.domainZero_val
+#check @AckermannHF.PAInHF.domainSucc_val
+#check @AckermannHF.PAInHF.adjoin_self_ne_empty_model
+#check @AckermannHF.PAInHF.adjoin_self_injective_on_ordinalLike_model
+#check @AckermannHF.PAInHF.domainSucc_injective_model
+#check @AckermannHF.PAInHF.domainSucc_ne_zero_model
 #check @AckermannHF.PAInHF.zeroGraph_domain_model
 #check @AckermannHF.PAInHF.zeroGraph_domain
 #check @AckermannHF.PAInHF.succGraph_preserves_domain_model
@@ -310,6 +319,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
+#check @AckermannHF.AdjunctionModel.mem_irrefl
 #check @AckermannHF.HF_extensionality_form
 #check @AckermannHF.sat_HF_extensionality
 #check @AckermannHF.HFAx_s_empty

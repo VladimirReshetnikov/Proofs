@@ -177,6 +177,13 @@ def standardModel : AdjunctionModel Nat where
   adjoin_spec := mem_adjoin
   set_induction := induction
 
+/-- Membership in any adjunction model is irreflexive. -/
+theorem AdjunctionModel.mem_irrefl {α : Type} (M : AdjunctionModel α) (a : α) :
+    ¬ M.mem a a := by
+  refine M.set_induction (fun x => ¬ M.mem x x) ?_ a
+  intro x ih hxx
+  exact ih x hxx hxx
+
 /-! ## First-order HF axioms over the one-relation language -/
 
 /-- A renaming used under two binders: keep the current object variable in
@@ -1845,6 +1852,65 @@ theorem domain_adjoin_self_model {α : Type} (M : AdjunctionModel α)
   apply (HF_ordinalLikeAt_spec (scons (M.adjoin a a) e) 0).mpr
   have ha' := (HF_ordinalLikeAt_spec (scons a e) 0).mp ha
   exact OrdinalLike.adjoin_self M ha' rfl
+
+/-- The carrier of the PA interpretation inside an adjunction model. -/
+def Domain {α : Type} (M : AdjunctionModel α) : Type :=
+  {a : α // OrdinalLike M.mem a}
+
+/-- Zero of the interpreted PA domain. -/
+def domainZero {α : Type} (M : AdjunctionModel α) : Domain M :=
+  ⟨M.empty, OrdinalLike.empty M⟩
+
+/-- Successor of the interpreted PA domain. -/
+def domainSucc {α : Type} (M : AdjunctionModel α) (a : Domain M) : Domain M :=
+  ⟨M.adjoin a.val a.val, OrdinalLike.adjoin_self M a.property rfl⟩
+
+theorem domainZero_val {α : Type} (M : AdjunctionModel α) :
+    (domainZero M).val = M.empty :=
+  rfl
+
+theorem domainSucc_val {α : Type} (M : AdjunctionModel α) (a : Domain M) :
+    (domainSucc M a).val = M.adjoin a.val a.val :=
+  rfl
+
+/-- Self-adjunction is never empty. -/
+theorem adjoin_self_ne_empty_model {α : Type} (M : AdjunctionModel α) (a : α) :
+    M.adjoin a a ≠ M.empty := by
+  intro h
+  have ha : M.mem a (M.adjoin a a) := (M.adjoin_spec a a a).mpr (Or.inr rfl)
+  rw [h] at ha
+  exact M.empty_spec a ha
+
+/-- Self-adjunction is injective on ordinal-like objects. -/
+theorem adjoin_self_injective_on_ordinalLike_model {α : Type}
+    (M : AdjunctionModel α) {a b : α}
+    (_ha : OrdinalLike M.mem a) (hb : OrdinalLike M.mem b)
+    (h : M.adjoin a a = M.adjoin b b) : a = b := by
+  have hasucc : M.mem a (M.adjoin b b) := by
+    have : M.mem a (M.adjoin a a) := (M.adjoin_spec a a a).mpr (Or.inr rfl)
+    simpa [h] using this
+  rcases (M.adjoin_spec a b b).mp hasucc with hab | hab
+  · have hbsucc : M.mem b (M.adjoin a a) := by
+      have : M.mem b (M.adjoin b b) := (M.adjoin_spec b b b).mpr (Or.inr rfl)
+      simpa [← h] using this
+    rcases (M.adjoin_spec b a a).mp hbsucc with hba | hba
+    · have hbb : M.mem b b := hb.1 a hab b hba
+      exact False.elim (M.mem_irrefl b hbb)
+    · exact hba.symm
+  · exact hab
+
+/-- Successor is injective on the interpreted PA domain. -/
+theorem domainSucc_injective_model {α : Type} (M : AdjunctionModel α)
+    {a b : Domain M} (h : domainSucc M a = domainSucc M b) : a = b := by
+  apply Subtype.ext
+  apply adjoin_self_injective_on_ordinalLike_model M a.property b.property
+  exact congrArg Subtype.val h
+
+/-- No successor in the interpreted PA domain is zero. -/
+theorem domainSucc_ne_zero_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) : domainSucc M a ≠ domainZero M := by
+  intro h
+  exact adjoin_self_ne_empty_model M a.val (congrArg Subtype.val h)
 
 /-- In any adjunction model, the PA-in-HF zero graph lands in the interpreted
 PA domain. -/
