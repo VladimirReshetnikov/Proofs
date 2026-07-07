@@ -5741,6 +5741,34 @@ Proof.
   apply scons3_replaceAt_prefix.
 Qed.
 
+Lemma domainForm_scons_insertAt :
+  forall A (mem : A -> A -> Prop) p x d e,
+    Sat A mem (scons A d (insertAt p x e)) domainForm <->
+      Sat A mem (scons A d e) domainForm.
+Proof.
+  intros A mem p x d e.
+  apply (Sat_ext_free A mem domainForm
+    (scons A d (insertAt p x e)) (scons A d e)).
+  intros n hn.
+  pose proof (domainForm_free n hn) as hn0.
+  subst n.
+  reflexivity.
+Qed.
+
+Lemma domainForm_scons_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) p d e,
+    Sat A (foam_mem A M) (scons A d (succReplaceAt M p e)) domainForm <->
+      Sat A (foam_mem A M) (scons A d e) domainForm.
+Proof.
+  intros A M p d e.
+  apply (Sat_ext_free A (foam_mem A M) domainForm
+    (scons A d (succReplaceAt M p e)) (scons A d e)).
+  intros n hn.
+  pose proof (domainForm_free n hn) as hn0.
+  subst n.
+  reflexivity.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
@@ -6229,6 +6257,21 @@ Proof.
   - now rewrite (IHt1 e e' h), (IHt2 e e' h).
 Qed.
 
+Lemma eval_ext_free : forall (M : Model) (t : term) (e e' : nat -> M),
+  (forall n, Free n t -> e n = e' n) -> eval M e t = eval M e' t.
+Proof.
+  intros M t.
+  induction t; simpl; intros e e' h; try reflexivity.
+  - apply h. reflexivity.
+  - now rewrite (IHt e e' h).
+  - rewrite (IHt1 e e' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 e e' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHt1 e e' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 e e' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+Qed.
+
 Lemma eval_rename : forall (M : Model) (t : term)
     (r : nat -> nat) (e : nat -> M),
   eval M e (rename r t) = eval M (fun n => e (r n)) t.
@@ -6477,6 +6520,92 @@ Proof.
       exists d.
       apply (proj2 (IHphi (scons M d e) (scons M d e')
         (fun n => match n with 0 => eq_refl | S k => h k end))).
+      exact hd.
+Qed.
+
+Lemma Sat_ext_free : forall (M : Model) phi (e e' : nat -> M),
+  (forall n, Free n phi -> e n = e' n) -> Sat M e phi <-> Sat M e' phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros e e' h.
+  - rewrite (Term.eval_ext_free M t e e'
+      (fun n hn => h n (or_introl hn))).
+    rewrite (Term.eval_ext_free M t0 e e'
+      (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+      apply hp.
+      apply (proj2 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+      exact hi.
+    + apply (proj2 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+      apply hp.
+      apply (proj1 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+        exact ha.
+      * apply (proj1 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+        exact hb.
+    + split.
+      * apply (proj2 (IHphi1 e e' (fun n hn => h n (or_introl hn)))).
+        exact ha.
+      * apply (proj2 (IHphi2 e e' (fun n hn => h n (or_intror hn)))).
+        exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 e e'
+          (fun n hn => h n (or_introl hn)))); exact ha.
+      * right. apply (proj1 (IHphi2 e e'
+          (fun n hn => h n (or_intror hn)))); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 e e'
+          (fun n hn => h n (or_introl hn)))); exact ha.
+      * right. apply (proj2 (IHphi2 e e'
+          (fun n hn => h n (or_intror hn)))); exact hb.
+  - split; intros hall d.
+    + assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj1 (IHphi (scons M d e) (scons M d e') henv)).
+      exact (hall d).
+    + assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj2 (IHphi (scons M d e) (scons M d e') henv)).
+      exact (hall d).
+  - split; intros hex.
+    + destruct hex as [d hd].
+      exists d.
+      assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj1 (IHphi (scons M d e) (scons M d e') henv)).
+      exact hd.
+    + destruct hex as [d hd].
+      exists d.
+      assert (henv : forall n, Free n phi ->
+        scons M d e n = scons M d e' n).
+      {
+        intros [|k] hk; simpl.
+        - reflexivity.
+        - apply h. exact hk.
+      }
+      apply (proj2 (IHphi (scons M d e) (scons M d e') henv)).
       exact hd.
 Qed.
 
