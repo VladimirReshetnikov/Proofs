@@ -450,6 +450,21 @@ theorem e5b_exponent_lt_e5a :
   exact Real.rpow_lt_rpow_of_exponent_lt (by norm_num : (1 : ℝ) < 3)
     (by norm_num : (19683 : ℝ) < 7625597484987)
 
+/-- The exponents of the `n = 5` representatives at `x = 3` are strictly increasing. -/
+theorem repFive_exponent_strictMono :
+    StrictMono fun i : Fin 9 => exponent (repFive i) three := by
+  rw [Fin.strictMono_iff_lt_succ]
+  intro i
+  fin_cases i
+  · exact e5n_exponent_lt_e5m
+  · exact e5m_exponent_lt_e5h
+  · exact e5h_exponent_lt_e5k
+  · exact e5k_exponent_lt_e5e
+  · exact e5e_exponent_lt_e5j
+  · exact e5j_exponent_lt_e5d
+  · exact e5d_exponent_lt_e5b
+  · exact e5b_exponent_lt_e5a
+
 theorem repFiveEval_injective : Function.Injective repFiveEval := by
   intro i j h
   have hexp : exponent (repFive i) three = exponent (repFive j) three := by
@@ -458,16 +473,7 @@ theorem repFiveEval_injective : Function.Injective repFiveEval := by
     rw [eval_eq_rpow_exponent (repFive i) three,
       eval_eq_rpow_exponent (repFive j) three] at hval
     exact three_rpow_inj hval
-  have h01 := e5n_exponent_lt_e5m
-  have h12 := e5m_exponent_lt_e5h
-  have h23 := e5h_exponent_lt_e5k
-  have h34 := e5k_exponent_lt_e5e
-  have h45 := e5e_exponent_lt_e5j
-  have h56 := e5j_exponent_lt_e5d
-  have h67 := e5d_exponent_lt_e5b
-  have h78 := e5b_exponent_lt_e5a
-  fin_cases i <;> fin_cases j <;> simp [repFive] at hexp ⊢
-  all_goals first | rfl | nlinarith [h01, h12, h23, h34, h45, h56, h67, h78]
+  exact repFive_exponent_strictMono.injective hexp
 
 theorem repFiveEval_range :
     Set.range repFiveEval =

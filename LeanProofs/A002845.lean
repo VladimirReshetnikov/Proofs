@@ -42,32 +42,9 @@ abbrev two : PowExpr := PowTower.Expr.atom
 /-- Legacy spelling for the shared lexical binary node, kept for computation-facing code. -/
 abbrev pow : PowExpr -> PowExpr -> PowExpr := PowTower.Expr.pow
 
-/-- Compatibility name: A002845 syntax is now the shared one-token lexical syntax. -/
-abbrev toSharedLex (e : PowExpr) : PowTower.Expr := e
-
-/-- Compatibility name: A002845 syntax is now the shared one-token lexical syntax. -/
-abbrev ofSharedLex (e : PowTower.Expr) : PowExpr := e
-
-theorem toSharedLex_ofSharedLex (e : PowTower.Expr) :
-    toSharedLex (ofSharedLex e) = e := by
-  rfl
-
-theorem ofSharedLex_toSharedLex (e : PowExpr) :
-    ofSharedLex (toSharedLex e) = e := by
-  rfl
-
 /-- Evaluate a parenthesized power expression using natural-number exponentiation. -/
 abbrev eval : PowExpr -> Nat :=
   PowTower.Expr.eval 2 (fun a b : Nat => a ^ b)
-
-/-- Shared lexical interpretation for A002845: atom is `2`, node is `Nat.pow`. -/
-abbrev sharedEval : PowTower.Expr -> Nat :=
-  PowTower.Expr.eval 2 (fun a b : Nat => a ^ b)
-
-/-- The existing A002845 syntax evaluates the same way as the shared lexical syntax. -/
-theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
-    eval e = sharedEval (toSharedLex e) := by
-  rfl
 
 /--
 The shared canonical lexical value set for A002845.
@@ -82,16 +59,6 @@ def size : PowExpr -> Nat :=
 /-- All legal binary parenthesizations with exactly `n` copies of `2`. -/
 def parenthesizations : Nat -> List PowExpr :=
   PowTower.Expr.parenthesizations
-
-/-- Compatibility theorem: the A002845 spelling is the shared lexical parenthesization. -/
-theorem toSharedLex_mem_parenthesizations {n : Nat} {e : PowExpr}
-    (he : e ∈ parenthesizations n) : toSharedLex e ∈ PowTower.Expr.parenthesizations n := by
-  exact he
-
-/-- Compatibility theorem: the shared lexical parenthesization is the A002845 spelling. -/
-theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
-    (he : e ∈ PowTower.Expr.parenthesizations n) : ofSharedLex e ∈ parenthesizations n := by
-  exact he
 
 /-- Compatibility value set computed through the A002845 literal-`2` spelling. -/
 def valueSet (n : Nat) : Set Nat :=
@@ -218,36 +185,6 @@ end PowExpr
 
 export PowExpr (a002845 a002845_eq_recursiveValueSet_ncard)
 
-/-- OEIS A002845 has value `1` at `n = 1`. -/
-theorem a002845_one : a002845 1 = 1 := by
-  rw [PowExpr.a002845_eq_directLogCard]
-  native_decide
-
-/-- OEIS A002845 has value `1` at `n = 2`. -/
-theorem a002845_two : a002845 2 = 1 := by
-  rw [PowExpr.a002845_eq_directLogCard]
-  native_decide
-
-/-- OEIS A002845 has value `1` at `n = 3`. -/
-theorem a002845_three : a002845 3 = 1 := by
-  rw [PowExpr.a002845_eq_directLogCard]
-  native_decide
-
-/-- OEIS A002845 has value `2` at `n = 4`. -/
-theorem a002845_four : a002845 4 = 2 := by
-  rw [PowExpr.a002845_eq_directLogCard]
-  native_decide
-
-/-- OEIS A002845 has value `4` at `n = 5`. -/
-theorem a002845_five : a002845 5 = 4 := by
-  rw [PowExpr.a002845_eq_directLogCard]
-  native_decide
-
-/-- OEIS A002845 has value `8` at `n = 6`. -/
-theorem a002845_six : a002845 6 = 8 := by
-  rw [PowExpr.a002845_eq_directLogCard]
-  native_decide
-
 /--
 The exact logarithm-combine operation:
 `log₂ ((2^a)^(2^b)) = a * 2^b`, implemented by the verified total sparse
@@ -282,7 +219,6 @@ theorem eval_certifiedCombineLog {a b : Sparse}
     (ha : Canonical a) (hb : Canonical b) :
     Sparse.eval (certifiedCombineLog a b) = Sparse.eval a * 2 ^ Sparse.eval b :=
   (Sparse.shift_spec ha hb).2
-
 
 /-- Exact sparse logarithm of a canonical expression tree. -/
 def sparseLogEval : PowExpr → Sparse
@@ -455,36 +391,6 @@ theorem a002845_eq_of_sharedSparseLogCountsMemoThrough {N n value : Nat}
       sharedSparseLogCountMemo_eq_countsMemoThrough_getD hpos hN
     _ = value := hcount
 
-/-- OEIS A002845 has value `17` at `n = 7`. -/
-theorem a002845_seven : a002845 7 = 17 := by
-  rw [a002845_eq_certifiedSparseCard]
-  native_decide
-
-/-- OEIS A002845 has value `36` at `n = 8`. -/
-theorem a002845_eight : a002845 8 = 36 := by
-  rw [a002845_eq_certifiedSparseCard]
-  native_decide
-
-/-- OEIS A002845 has value `78` at `n = 9`. -/
-theorem a002845_nine : a002845 9 = 78 := by
-  rw [a002845_eq_certifiedSparseCard]
-  native_decide
-
-/-- OEIS A002845 has value `171` at `n = 10`. -/
-theorem a002845_ten : a002845 10 = 171 := by
-  rw [a002845_eq_certifiedSparseCard]
-  native_decide
-
-/-- OEIS A002845 has value `379` at `n = 11`. -/
-theorem a002845_eleven : a002845 11 = 379 := by
-  rw [a002845_eq_certifiedSparseCard]
-  native_decide
-
-/-- OEIS A002845 has value `851` at `n = 12`. -/
-theorem a002845_twelve : a002845 12 = 851 := by
-  rw [a002845_eq_certifiedSparseCard]
-  native_decide
-
 /--
 Certified counts for sizes `1, ..., n`, computed from one shared hash-set fast
 table.  Every fast row is proved to enumerate exactly the shared finite
@@ -539,49 +445,97 @@ theorem a002845_eq_of_twenty_three_table {n value : Nat}
   rw [certifiedLevelCountsThrough_twenty_three]
   exact hcount
 
+/-- OEIS A002845 has value `1` at `n = 1`. -/
+theorem a002845_one : a002845 1 = 1 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `1` at `n = 2`. -/
+theorem a002845_two : a002845 2 = 1 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `1` at `n = 3`. -/
+theorem a002845_three : a002845 3 = 1 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `2` at `n = 4`. -/
+theorem a002845_four : a002845 4 = 2 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `4` at `n = 5`. -/
+theorem a002845_five : a002845 5 = 4 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `8` at `n = 6`. -/
+theorem a002845_six : a002845 6 = 8 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `17` at `n = 7`. -/
+theorem a002845_seven : a002845 7 = 17 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `36` at `n = 8`. -/
+theorem a002845_eight : a002845 8 = 36 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `78` at `n = 9`. -/
+theorem a002845_nine : a002845 9 = 78 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `171` at `n = 10`. -/
+theorem a002845_ten : a002845 10 = 171 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `379` at `n = 11`. -/
+theorem a002845_eleven : a002845 11 = 379 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `851` at `n = 12`. -/
+theorem a002845_twelve : a002845 12 = 851 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
 /-- OEIS A002845 has value `1928` at `n = 13`. -/
-theorem a002845_thirteen : a002845 13 = 1928 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_thirteen : a002845 13 = 1928 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `4396` at `n = 14`. -/
-theorem a002845_fourteen : a002845 14 = 4396 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_fourteen : a002845 14 = 4396 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `10087` at `n = 15`. -/
-theorem a002845_fifteen : a002845 15 = 10087 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_fifteen : a002845 15 = 10087 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `23273` at `n = 16`. -/
-theorem a002845_sixteen : a002845 16 = 23273 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_sixteen : a002845 16 = 23273 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `53948` at `n = 17`. -/
-theorem a002845_seventeen : a002845 17 = 53948 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_seventeen : a002845 17 = 53948 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `125608` at `n = 18`. -/
-theorem a002845_eighteen : a002845 18 = 125608 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_eighteen : a002845 18 = 125608 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `293543` at `n = 19`. -/
-theorem a002845_nineteen : a002845 19 = 293543 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_nineteen : a002845 19 = 293543 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `688366` at `n = 20`. -/
-theorem a002845_twenty : a002845 20 = 688366 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_twenty : a002845 20 = 688366 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `1619087` at `n = 21`. -/
-theorem a002845_twenty_one : a002845 21 = 1619087 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_twenty_one : a002845 21 = 1619087 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `3818818` at `n = 22`. -/
-theorem a002845_twenty_two : a002845 22 = 3818818 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_twenty_two : a002845 22 = 3818818 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `9029719` at `n = 23`. -/
-theorem a002845_twenty_three : a002845 23 = 9029719 := by
-  apply a002845_eq_of_twenty_three_table <;> native_decide
+theorem a002845_twenty_three : a002845 23 = 9029719 :=
+  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 end A002845
 
