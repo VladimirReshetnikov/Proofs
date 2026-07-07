@@ -8,6 +8,7 @@
 *)
 
 From Stdlib Require Import Bool.Bool.
+From Stdlib Require Import Arith.PeanoNat.
 From Stdlib Require Import Lists.List.
 From LeanProofsCoq Require Import
   EquationalLogic
@@ -489,6 +490,242 @@ Proof.
     rewrite (strokeEvalWith_same hop v (toNor p)).
     apply eval_toNor.
 Qed.
+
+Record BinOp : Type := {
+  ff : bool;
+  ft : bool;
+  tf : bool;
+  tt : bool
+}.
+
+Definition binOpApply (op : BinOp) : bool -> bool -> bool :=
+  fun p q =>
+    match p, q with
+    | false, false => ff op
+    | false, true => ft op
+    | true, false => tf op
+    | true, true => tt op
+    end.
+
+Definition binOpEqb (x y : BinOp) : bool :=
+  Bool.eqb (ff x) (ff y) &&
+  Bool.eqb (ft x) (ft y) &&
+  Bool.eqb (tf x) (tf y) &&
+  Bool.eqb (tt x) (tt y).
+
+Definition nandTable : BinOp :=
+  {| ff := true; ft := true; tf := true; tt := false |}.
+
+Definition norTable : BinOp :=
+  {| ff := true; ft := false; tf := false; tt := false |}.
+
+Definition bools : list bool := [false; true].
+
+Definition allBinOps : list BinOp :=
+  flat_map (fun ff =>
+  flat_map (fun ft =>
+  flat_map (fun tf =>
+  map (fun tt => {| ff := ff; ft := ft; tf := tf; tt := tt |}) bools)
+    bools) bools) bools.
+
+Inductive SearchTerm : Type :=
+| TVar : nat -> SearchTerm
+| TApp : SearchTerm -> SearchTerm -> SearchTerm.
+
+Fixpoint searchTermEqb (x y : SearchTerm) : bool :=
+  match x, y with
+  | TVar i, TVar j => Nat.eqb i j
+  | TApp xl xr, TApp yl yr => searchTermEqb xl yl && searchTermEqb xr yr
+  | _, _ => false
+  end.
+
+Definition pairTermEqb (x y : SearchTerm * SearchTerm) : bool :=
+  searchTermEqb (fst x) (fst y) && searchTermEqb (snd x) (snd y).
+
+Fixpoint listEqb {A : Type} (eqb : A -> A -> bool)
+    (xs ys : list A) : bool :=
+  match xs, ys with
+  | [], [] => true
+  | x :: xs', y :: ys' => eqb x y && listEqb eqb xs' ys'
+  | _, _ => false
+  end.
+
+Fixpoint nodeCount (t : SearchTerm) : nat :=
+  match t with
+  | TVar _ => 0
+  | TApp l r => nodeCount l + nodeCount r + 1
+  end.
+
+Fixpoint varBound (t : SearchTerm) : nat :=
+  match t with
+  | TVar i => S i
+  | TApp l r => Nat.max (varBound l) (varBound r)
+  end.
+
+Fixpoint evalSearchTerm (op : BinOp) (env : list bool)
+    (t : SearchTerm) : bool :=
+  match t with
+  | TVar i => nth i env false
+  | TApp l r => binOpApply op (evalSearchTerm op env l) (evalSearchTerm op env r)
+  end.
+
+Fixpoint allEnvs (n : nat) : list (list bool) :=
+  match n with
+  | 0 => [[]]
+  | S n' => flat_map (fun env => [false :: env; true :: env]) (allEnvs n')
+  end.
+
+Fixpoint canonicalTermsAux (fuel nodes next : nat)
+    {struct fuel} : list (SearchTerm * nat) :=
+  match nodes with
+  | 0 =>
+      map (fun i => (TVar i, if Nat.eqb i next then S next else next))
+        (seq 0 (S next))
+  | S nodes' =>
+      match fuel with
+      | 0 => []
+      | S fuel' =>
+          flat_map (fun leftNodes =>
+            let rightNodes := nodes' - leftNodes in
+            flat_map (fun left =>
+              map (fun right => (TApp (fst left) (fst right), snd right))
+                (canonicalTermsAux fuel' rightNodes (snd left)))
+              (canonicalTermsAux fuel' leftNodes next))
+            (seq 0 (S nodes'))
+      end
+  end.
+
+Definition equationsUpTo (maxNodes : nat) : list (SearchTerm * SearchTerm) :=
+  flat_map (fun leftNodes =>
+    flat_map (fun rightNodes =>
+      flat_map (fun lhs =>
+        map (fun rhs => (fst lhs, fst rhs))
+          (canonicalTermsAux rightNodes rightNodes (snd lhs)))
+        (canonicalTermsAux leftNodes leftNodes 0))
+      (seq 0 (S (maxNodes - leftNodes))))
+    (seq 0 (S maxNodes)).
+
+Definition equationHolds (op : BinOp) (lhs rhs : SearchTerm) : bool :=
+  forallb (fun env =>
+    Bool.eqb (evalSearchTerm op env lhs) (evalSearchTerm op env rhs))
+    (allEnvs 7).
+
+Definition equationModels (lhs rhs : SearchTerm) : list BinOp :=
+  filter (fun op => equationHolds op lhs rhs) allBinOps.
+
+Definition validInBooleanShefferTables (lhs rhs : SearchTerm) : bool :=
+  equationHolds nandTable lhs rhs && equationHolds norTable lhs rhs.
+
+Definition hasExactlyModels (models : list BinOp) (lhs rhs : SearchTerm) : bool :=
+  listEqb binOpEqb (equationModels lhs rhs) models.
+
+Definition characterizesShefferTables (lhs rhs : SearchTerm) : bool :=
+  hasExactlyModels [norTable; nandTable] lhs rhs.
+
+Definition wolframLhs : SearchTerm :=
+  let a := TVar 0 in
+  let b := TVar 1 in
+  let c := TVar 2 in
+  TApp
+    (TApp (TApp a b) c)
+    (TApp a (TApp (TApp a c) a)).
+
+Definition wolframRhs : SearchTerm := TVar 2.
+
+Theorem wolfram_operator_count :
+    nodeCount wolframLhs + nodeCount wolframRhs = 6.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem wolfram_equation_characterizes_sheffer_tables :
+    characterizesShefferTables wolframLhs wolframRhs = true.
+Proof. vm_compute. reflexivity. Qed.
+
+Record FiniteOp : Type := {
+  fsize : nat;
+  ftable : list nat
+}.
+
+Definition finiteApply (op : FiniteOp) (x y : nat) : nat :=
+  match fsize op with
+  | 0 => 0
+  | size => (nth (x * size + y) (ftable op) 0) mod size
+  end.
+
+Fixpoint allFiniteEnvs (size n : nat) : list (list nat) :=
+  match n with
+  | 0 => [[]]
+  | S n' =>
+      flat_map (fun env => map (fun x => x :: env) (seq 0 size))
+        (allFiniteEnvs size n')
+  end.
+
+Fixpoint evalFiniteSearchTerm (op : FiniteOp) (env : list nat)
+    (t : SearchTerm) : nat :=
+  match t with
+  | TVar i => nth i env 0
+  | TApp l r => finiteApply op (evalFiniteSearchTerm op env l)
+    (evalFiniteSearchTerm op env r)
+  end.
+
+Definition finiteEquationHolds (op : FiniteOp)
+    (lhs rhs : SearchTerm) : bool :=
+  forallb (fun env =>
+    Nat.eqb (evalFiniteSearchTerm op env lhs) (evalFiniteSearchTerm op env rhs))
+    (allFiniteEnvs (fsize op) (Nat.max (varBound lhs) (varBound rhs))).
+
+Definition finiteWolframHolds (op : FiniteOp) : bool :=
+  forallb (fun env =>
+    let a := nth 0 env 0 in
+    let b := nth 1 env 0 in
+    let c := nth 2 env 0 in
+    let lhs := finiteApply op (finiteApply op (finiteApply op a b) c)
+      (finiteApply op a (finiteApply op (finiteApply op a c) a)) in
+    Nat.eqb lhs c)
+    (allFiniteEnvs (fsize op) 3).
+
+Definition shortCountermodelPool : list FiniteOp := [
+  {| fsize := 2; ftable := [0; 0; 0; 0] |};
+  {| fsize := 2; ftable := [0; 0; 0; 1] |};
+  {| fsize := 2; ftable := [0; 0; 1; 1] |};
+  {| fsize := 2; ftable := [0; 1; 0; 1] |};
+  {| fsize := 2; ftable := [0; 1; 1; 0] |};
+  {| fsize := 3; ftable := [0; 2; 1; 2; 2; 0; 1; 0; 1] |};
+  {| fsize := 4; ftable := [0; 3; 3; 0; 2; 1; 1; 2; 0; 3; 3; 0; 2; 1; 1; 2] |};
+  {| fsize := 4; ftable := [0; 2; 0; 2; 0; 2; 0; 2; 1; 3; 1; 3; 1; 3; 1; 3] |};
+  {| fsize := 2; ftable := [0; 0; 1; 0] |};
+  {| fsize := 4; ftable := [0; 3; 3; 0; 0; 3; 3; 0; 1; 2; 2; 1; 1; 2; 2; 1] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 2; 1; 0; 0; 1] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 0; 2; 0; 0; 2] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 0; 2; 2; 0; 2] |};
+  {| fsize := 4; ftable := [1; 2; 2; 1; 3; 0; 0; 3; 1; 2; 2; 1; 3; 0; 0; 3] |};
+  {| fsize := 3; ftable := [0; 1; 2; 2; 0; 1; 1; 2; 0] |};
+  {| fsize := 3; ftable := [0; 0; 1; 0; 2; 1; 1; 1; 1] |};
+  {| fsize := 4; ftable := [0; 2; 0; 2; 3; 1; 3; 1; 3; 1; 3; 1; 0; 2; 0; 2] |};
+  {| fsize := 4; ftable := [1; 3; 1; 3; 2; 0; 2; 0; 2; 0; 2; 0; 1; 3; 1; 3] |};
+  {| fsize := 3; ftable := [0; 2; 1; 1; 0; 2; 2; 1; 0] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 2; 2; 0; 0; 1] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 2; 0; 1; 0; 1] |};
+  {| fsize := 4; ftable := [0; 0; 1; 1; 3; 3; 2; 2; 3; 3; 2; 2; 0; 0; 1; 1] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 1; 1; 2; 0; 2] |};
+  {| fsize := 4; ftable := [3; 1; 3; 1; 3; 1; 3; 1; 2; 0; 2; 0; 2; 0; 2; 0] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 1; 1; 0; 0; 0] |};
+  {| fsize := 3; ftable := [0; 0; 1; 2; 2; 2; 0; 0; 2] |};
+  {| fsize := 4; ftable := [2; 1; 1; 2; 2; 1; 1; 2; 3; 0; 0; 3; 3; 0; 0; 3] |};
+  {| fsize := 4; ftable := [3; 3; 2; 2; 1; 1; 0; 0; 3; 3; 2; 2; 1; 1; 0; 0] |};
+  {| fsize := 4; ftable := [0; 0; 1; 1; 2; 2; 3; 3; 0; 0; 1; 1; 2; 2; 3; 3] |};
+  {| fsize := 4; ftable := [2; 2; 3; 3; 1; 1; 0; 0; 1; 1; 0; 0; 2; 2; 3; 3] |}
+].
+
+Definition hasFiniteNonWolframCountermodel (lhs rhs : SearchTerm) : bool :=
+  existsb (fun op =>
+    finiteEquationHolds op lhs rhs && negb (finiteWolframHolds op))
+    shortCountermodelPool.
+
+Definition shortEquationCountermodelCheck : bool :=
+  forallb (fun e =>
+    negb (validInBooleanShefferTables (fst e) (snd e)) ||
+      hasFiniteNonWolframCountermodel (fst e) (snd e))
+    (equationsUpTo 5).
 
 End WolframBoolean.
 End LeanProofs.

@@ -24,8 +24,10 @@ Current ports:
 - `WolframBooleanHuntingtonCertificates.v` ports the generated
   Sheffer-to-Huntington certificate.
 - `WolframBoolean.v` exposes the certificate-derived algebraic consequences,
-  Boolean truth-table characterization, and NAND/NOR functional-completeness
-  theorem layer.
+  Boolean truth-table characterization, NAND/NOR functional-completeness
+  theorem layer, and executable finite-search machinery.  The final Lean
+  `native_decide` lower-bound theorem is not yet replayed in Coq; the direct
+  monolithic `vm_compute`/`native_compute` check was too slow.
 
 Build from `src/Lean/`:
 
