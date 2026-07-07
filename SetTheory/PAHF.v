@@ -2955,6 +2955,191 @@ Proof.
     (scons V a tail) 0) (hall a)).
 Qed.
 
+Lemma fofam_chainSubsetsMax_exists : forall (V : Type)
+    (M : FirstOrderFiniteAdjunctionModel V),
+  forall a s,
+    (forall x, foam_mem V M x s -> foam_mem V M x a) ->
+    ChainLike (foam_mem V M) s ->
+    (exists x, foam_mem V M x s) ->
+    exists p, foam_mem V M p s /\
+      forall q, foam_mem V M q s -> ~ foam_mem V M p q.
+Proof.
+  intros V M.
+  pose (phi := HF_chainSubsetsMaxAt 0).
+  pose (tail := fun _ : nat => foam_empty V M).
+  pose proof (fofam_finite_induction_schema V M phi tail) as hind.
+  assert (hall : forall a,
+      Sat V (foam_mem V M) (scons V a tail) phi).
+  {
+    apply (proj1 (HF_finite_induction_form_spec V (foam_mem V M)
+      phi tail) hind).
+    split.
+    - intros z hzEmpty.
+      apply (proj2 (HF_chainSubsetsMaxAt_spec V (foam_mem V M)
+        (scons V z tail) 0)).
+      intros s hsSub _hsChain [x hxs].
+      exfalso. exact (hzEmpty x (hsSub x hxs)).
+    - intros old y c hc hOld.
+      pose proof (proj1 (HF_chainSubsetsMaxAt_spec V (foam_mem V M)
+        (scons V old tail) 0) hOld) as oldP.
+      apply (proj2 (HF_chainSubsetsMaxAt_spec V (foam_mem V M)
+        (scons V c tail) 0)).
+      intros s hsSub hsChain hsNonempty.
+      destruct (fofam_sepBy_exists V M (fMem 0 1) (scons V s tail) old)
+        as [t ht].
+      assert (htSubOld : forall x,
+          foam_mem V M x t -> foam_mem V M x old).
+      {
+        intros x hxt.
+        exact (proj1 (proj1 (ht x) hxt)).
+      }
+      assert (htSubS : forall x,
+          foam_mem V M x t -> foam_mem V M x s).
+      {
+        intros x hxt.
+        exact (proj2 (proj1 (ht x) hxt)).
+      }
+      assert (htChain : ChainLike (foam_mem V M) t).
+      {
+        split.
+        - intros x hxt.
+          exact (proj1 hsChain x (htSubS x hxt)).
+        - intros x hxt z hzt.
+          exact (proj2 hsChain x (htSubS x hxt) z (htSubS z hzt)).
+      }
+      destruct (classic (exists x, foam_mem V M x t)) as [htne | htne].
+      + destruct (oldP t htSubOld htChain htne) as [p [hpt hpMaxT]].
+        assert (hps : foam_mem V M p s) by exact (htSubS p hpt).
+        destruct (classic (foam_mem V M y s)) as [hys | hys].
+        * destruct (proj2 hsChain p hps y hys) as [hpy | [hpy | hyp]].
+          -- exists y.
+             split; [exact hys |].
+             intros q hqs hyq.
+             destruct (proj1 (hc q) (hsSub q hqs)) as [hqold | hqy].
+             ++ assert (hqt : foam_mem V M q t).
+                {
+                  apply (proj2 (ht q)).
+                  split; [exact hqold | exact hqs].
+                }
+                assert (htransq : TransitiveObj (foam_mem V M) q)
+                  by exact (proj1 hsChain q hqs).
+                assert (hpq : foam_mem V M p q)
+                  by exact (htransq y hyq p hpy).
+                exact (hpMaxT q hqt hpq).
+             ++ subst q.
+                exact (foam_mem_irrefl V M y hyq).
+          -- subst p.
+             exists y.
+             split; [exact hys |].
+             intros q hqs hyq.
+             destruct (proj1 (hc q) (hsSub q hqs)) as [hqold | hqy].
+             ++ assert (hqt : foam_mem V M q t).
+                {
+                  apply (proj2 (ht q)).
+                  split; [exact hqold | exact hqs].
+                }
+                exact (hpMaxT q hqt hyq).
+             ++ subst q.
+                exact (foam_mem_irrefl V M y hyq).
+          -- exists p.
+             split; [exact hps |].
+             intros q hqs hpq.
+             destruct (proj1 (hc q) (hsSub q hqs)) as [hqold | hqy].
+             ++ assert (hqt : foam_mem V M q t).
+                {
+                  apply (proj2 (ht q)).
+                  split; [exact hqold | exact hqs].
+                }
+                exact (hpMaxT q hqt hpq).
+             ++ subst q.
+                exact (foam_mem_asymm V M y p hyp hpq).
+        * exists p.
+          split; [exact hps |].
+          intros q hqs hpq.
+          destruct (proj1 (hc q) (hsSub q hqs)) as [hqold | hqy].
+          -- assert (hqt : foam_mem V M q t).
+             {
+               apply (proj2 (ht q)).
+               split; [exact hqold | exact hqs].
+             }
+             exact (hpMaxT q hqt hpq).
+          -- subst q.
+             exact (hys hqs).
+      + destruct hsNonempty as [p hps].
+        assert (hp_eq_y : p = y).
+        {
+          destruct (proj1 (hc p) (hsSub p hps)) as [hpold | hpy].
+          - assert (hpt : foam_mem V M p t).
+            {
+              apply (proj2 (ht p)).
+              split; [exact hpold | exact hps].
+            }
+            exfalso. exact (htne (ex_intro _ p hpt)).
+          - exact hpy.
+        }
+        exists p.
+        split; [exact hps |].
+        intros q hqs hpq.
+        assert (hq_eq_y : q = y).
+        {
+          destruct (proj1 (hc q) (hsSub q hqs)) as [hqold | hqy].
+          - assert (hqt : foam_mem V M q t).
+            {
+              apply (proj2 (ht q)).
+              split; [exact hqold | exact hqs].
+            }
+            exfalso. exact (htne (ex_intro _ q hqt)).
+          - exact hqy.
+        }
+        subst p.
+        subst q.
+        exact (foam_mem_irrefl V M y hpq).
+  }
+  intros a s hsSub hsChain hsNonempty.
+  exact (proj1 (HF_chainSubsetsMaxAt_spec V (foam_mem V M)
+    (scons V a tail) 0) (hall a) s hsSub hsChain hsNonempty).
+Qed.
+
+Lemma fofam_OrdinalLike_empty_or_succ : forall (V : Type)
+    (M : FirstOrderFiniteAdjunctionModel V) (a : V),
+  OrdinalLike (foam_mem V M) a ->
+  a = foam_empty V M \/
+  exists p, foam_mem V M p a /\ a = foam_adjoin V M p p.
+Proof.
+  intros V M a ha.
+  destruct (classic (exists x, foam_mem V M x a)) as [hne | hne].
+  - assert (hChain : ChainLike (foam_mem V M) a).
+    {
+      split.
+      - exact (proj1 (proj2 ha)).
+      - exact (proj2 (proj2 ha)).
+    }
+    destruct (fofam_chainSubsetsMax_exists V M a a
+      (fun _ hx => hx) hChain hne) as [p [hp hmax]].
+    right.
+    exists p.
+    split; [exact hp |].
+    exact (foam_OrdinalLike_eq_succ_of_mem_max V M a p ha hp hmax).
+  - left.
+    apply (foam_extensional V M).
+    intro x.
+    split.
+    + intro hx. exfalso. exact (hne (ex_intro _ x hx)).
+    + intro hx. exfalso. exact (foam_empty_spec V M x hx).
+Qed.
+
+Lemma fofam_succ_rec_total_of_ordinalLike : forall (V : Type)
+    (M : FirstOrderFiniteAdjunctionModel V) (s m : V),
+  OrdinalLike (foam_mem V M) m ->
+  foam_succ_rec_total V M s m.
+Proof.
+  intros V M s m hm.
+  apply (foam_succ_rec_total_of_ordinalLike_of_predecessor V M).
+  - intros a ha.
+    exact (fofam_OrdinalLike_empty_or_succ V M a ha).
+  - exact hm.
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
