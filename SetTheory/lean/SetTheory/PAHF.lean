@@ -8232,18 +8232,104 @@ theorem Ax_s_mulSucc : Ax_s (sealPA mulSucc) :=
 theorem Ax_s_induction (phi : Formula) : Ax_s (sealPA (inductionForm phi)) :=
   Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩)))))
 
+/-- PA proves every variable-renamed body whose sealed form is one of its
+axioms. -/
+theorem BProv_Ax_s_of_sealPA_rename {phi : Formula}
+    (hphi : Ax_s (sealPA phi)) (r : Nat → Nat) :
+    BProv Ax_s [] (rename r phi) :=
+  BProv_sealPA_allE_rename phi r (BProv_ax hphi)
+
+/-- PA proves every variable-renamed body of successor injectivity. -/
+theorem BProv_Ax_s_succInj_rename (r : Nat → Nat) :
+    BProv Ax_s [] (rename r succInj) :=
+  BProv_Ax_s_of_sealPA_rename Ax_s_succInj r
+
+/-- PA proves successor injectivity. -/
+theorem BProv_Ax_s_succInj :
+    BProv Ax_s [] succInj := by
+  simpa [rename_id] using
+    BProv_Ax_s_succInj_rename (fun n : Nat => n)
+
+/-- PA proves every variable-renamed body of zero-is-not-successor. -/
+theorem BProv_Ax_s_zeroNotSucc_rename (r : Nat → Nat) :
+    BProv Ax_s [] (rename r zeroNotSucc) :=
+  BProv_Ax_s_of_sealPA_rename Ax_s_zeroNotSucc r
+
+/-- PA proves zero-is-not-successor. -/
+theorem BProv_Ax_s_zeroNotSucc :
+    BProv Ax_s [] zeroNotSucc := by
+  simpa [rename_id] using
+    BProv_Ax_s_zeroNotSucc_rename (fun n : Nat => n)
+
+/-- PA proves every variable-renamed body of addition by zero. -/
+theorem BProv_Ax_s_addZero_rename (r : Nat → Nat) :
+    BProv Ax_s [] (rename r addZero) :=
+  BProv_Ax_s_of_sealPA_rename Ax_s_addZero r
+
+/-- PA proves addition by zero. -/
+theorem BProv_Ax_s_addZero :
+    BProv Ax_s [] addZero := by
+  simpa [rename_id] using
+    BProv_Ax_s_addZero_rename (fun n : Nat => n)
+
+/-- PA proves every variable-renamed body of the addition-successor axiom. -/
+theorem BProv_Ax_s_addSucc_rename (r : Nat → Nat) :
+    BProv Ax_s [] (rename r addSucc) :=
+  BProv_Ax_s_of_sealPA_rename Ax_s_addSucc r
+
+/-- PA proves the addition-successor axiom. -/
+theorem BProv_Ax_s_addSucc :
+    BProv Ax_s [] addSucc := by
+  simpa [rename_id] using
+    BProv_Ax_s_addSucc_rename (fun n : Nat => n)
+
+/-- PA proves every variable-renamed body of multiplication by zero. -/
+theorem BProv_Ax_s_mulZero_rename (r : Nat → Nat) :
+    BProv Ax_s [] (rename r mulZero) :=
+  BProv_Ax_s_of_sealPA_rename Ax_s_mulZero r
+
+/-- PA proves multiplication by zero. -/
+theorem BProv_Ax_s_mulZero :
+    BProv Ax_s [] mulZero := by
+  simpa [rename_id] using
+    BProv_Ax_s_mulZero_rename (fun n : Nat => n)
+
+/-- PA proves every variable-renamed body of the multiplication-successor
+axiom. -/
+theorem BProv_Ax_s_mulSucc_rename (r : Nat → Nat) :
+    BProv Ax_s [] (rename r mulSucc) :=
+  BProv_Ax_s_of_sealPA_rename Ax_s_mulSucc r
+
+/-- PA proves the multiplication-successor axiom. -/
+theorem BProv_Ax_s_mulSucc :
+    BProv Ax_s [] mulSucc := by
+  simpa [rename_id] using
+    BProv_Ax_s_mulSucc_rename (fun n : Nat => n)
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
     BProv Ax_s [] (rename r (inductionForm phi)) :=
-  BProv_sealPA_allE_rename (inductionForm phi) r
-    (BProv_ax (Ax_s_induction phi))
+  BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) r
 
 /-- PA proves the unrenamed body of every induction schema instance. -/
 theorem BProv_Ax_s_inductionForm (phi : Formula) :
     BProv Ax_s [] (inductionForm phi) := by
   simpa [rename_id] using
     BProv_Ax_s_inductionForm_rename phi (fun n : Nat => n)
+
+/-- PA induction as a derived relative-proof rule in an arbitrary finite
+context. -/
+theorem BProv_Ax_s_induction_rule {G : List Formula} {phi : Formula}
+    (hzero : BProv Ax_s G (subst substZero phi))
+    (hsucc : BProv Ax_s G (all (imp phi (subst substSuccVar phi)))) :
+    BProv Ax_s G (all phi) := by
+  have hind_empty : BProv Ax_s [] (inductionForm phi) :=
+    BProv_Ax_s_inductionForm phi
+  have hind : BProv Ax_s G (inductionForm phi) :=
+    BProv_mono Ax_s [] G (inductionForm phi)
+      (fun x hx => by cases hx) hind_empty
+  exact BProv_inductionForm_mp hind hzero hsucc
 
 theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
