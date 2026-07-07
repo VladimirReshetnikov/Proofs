@@ -199,6 +199,45 @@ theorem Sat_rename_rSkipParam {α : Type u} {mem : α → α → Prop}
   rw [Sat_rename]
   exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
 
+/-- In the finite-generation induction step, read `phi` at the old set slot
+under the local binders for `a`, `b`, and `c = a ∪ {b}`. -/
+def rAdjStepOld : Nat → Nat
+  | 0 => 2
+  | n+1 => n+3
+
+/-- In the finite-generation induction step, read `phi` at the new adjunction
+slot under the local binders for `a`, `b`, and `c = a ∪ {b}`. -/
+def rAdjStepNew : Nat → Nat
+  | 0 => 0
+  | n+1 => n+3
+
+theorem Sat_rename_rAdjStepOld {α : Type u} {mem : α → α → Prop}
+    (phi : Form) (e : Nat → α) (a b c : α) :
+    Sat mem (scons c (scons b (scons a e))) (rename rAdjStepOld phi) ↔
+      Sat mem (scons a e) phi := by
+  rw [Sat_rename]
+  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+
+theorem Sat_rename_rAdjStepNew {α : Type u} {mem : α → α → Prop}
+    (phi : Form) (e : Nat → α) (a b c : α) :
+    Sat mem (scons c (scons b (scons a e))) (rename rAdjStepNew phi) ↔
+      Sat mem (scons c e) phi := by
+  rw [Sat_rename]
+  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+
+/-- Under the local binders for a subset witness and its candidate element,
+read a predicate at the candidate element while preserving the old parameters. -/
+def rSepParam : Nat → Nat
+  | 0 => 0
+  | n+1 => n+2
+
+theorem Sat_rename_rSepParam {α : Type u} {mem : α → α → Prop}
+    (psi : Form) (e : Nat → α) (s x : α) :
+    Sat mem (scons x (scons s e)) (rename rSepParam psi) ↔
+      Sat mem (scons x e) psi := by
+  rw [Sat_rename]
+  exact Sat_ext psi _ _ (fun n => by cases n <;> rfl)
+
 /-- The first-order empty-set axiom: some set has no elements. -/
 def HF_empty_form : Form :=
   fEx (fAll (fImp (fMem 0 1) fBot))
@@ -675,6 +714,44 @@ theorem HF_subsetAt_spec {α : Type u} {mem : α → α → Prop}
     Sat mem e (HF_subsetAt a b) ↔ ∀ x, mem x (e a) → mem x (e b) :=
   Iff.rfl
 
+/-- Formula macro: there is a subset of slot `a` containing exactly the
+members satisfying `psi`.  The predicate `psi` reads its candidate element in
+slot `0` and its old parameters from slots `1,2,...`; the subset witness is a
+local implementation detail, skipped by `rSepParam`. -/
+def HF_sepByAt (psi : Form) (a : Nat) : Form :=
+  fEx (fAll
+    (fIff
+      (fMem 0 1)
+      (fAnd (fMem 0 (a+2)) (rename rSepParam psi))))
+
+theorem HF_sepByAt_spec {α : Type u} {mem : α → α → Prop}
+    (psi : Form) (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_sepByAt psi a) ↔
+      ∃ s, ∀ x, mem x s ↔ mem x (e a) ∧ Sat mem (scons x e) psi := by
+  constructor
+  · intro h
+    rcases h with ⟨s, hs⟩
+    refine ⟨s, fun x => ?_⟩
+    have hx := (Sat_fIff (mem := mem)
+      (e := scons x (scons s e))).mp (hs x)
+    constructor
+    · intro hxs
+      have hbody := hx.mp hxs
+      exact ⟨hbody.1, (Sat_rename_rSepParam psi e s x).mp hbody.2⟩
+    · intro hxbody
+      exact hx.mpr ⟨hxbody.1, (Sat_rename_rSepParam psi e s x).mpr hxbody.2⟩
+  · intro h
+    rcases h with ⟨s, hs⟩
+    refine ⟨s, fun x => ?_⟩
+    apply (Sat_fIff (mem := mem) (e := scons x (scons s e))).mpr
+    constructor
+    · intro hxs
+      exact ⟨(hs x).mp hxs |>.1,
+        (Sat_rename_rSepParam psi e s x).mpr ((hs x).mp hxs |>.2)⟩
+    · intro hbody
+      exact (hs x).mpr
+        ⟨hbody.1, (Sat_rename_rSepParam psi e s x).mp hbody.2⟩
+
 /-- Semantic reading of transitivity for one object. -/
 def TransitiveObj {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
   ∀ y, mem y a → ∀ x, mem x y → mem x a
@@ -776,6 +853,19 @@ whenever slot `m` is ordinal-like. -/
 def HF_succRecTotalOnOrdinalAt (s m : Nat) : Form :=
   fImp (HF_ordinalLikeAt m) (HF_succRecTotalAt s m)
 
+/-- Formula macro: every nonempty object in slot `a` has a membership-maximal
+member.  Maximal means no other member of `a` contains it. -/
+def HF_memMaxAt (a : Nat) : Form :=
+  fImp
+    (fEx (fMem 0 (a+1)))
+    (fEx
+      (fAnd
+        (fMem 0 (a+1))
+        (fAll
+          (fImp
+            (fMem 0 (a+2))
+            (fImp (fMem 1 0) fBot)))))
+
 theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
     (e : Nat → α) (a : Nat) :
     Sat mem e (HF_ordinalLikeAt a) ↔ OrdinalLike mem (e a) := by
@@ -788,6 +878,21 @@ theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
     exact ⟨(HF_transitiveAt_spec e a).mpr h.1,
       (fun y hy => (HF_transitiveAt_spec (scons y e) 0).mpr (h.2.1 y hy)),
       (HF_memTotalOnAt_spec e a).mpr h.2.2⟩
+
+theorem HF_memMaxAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_memMaxAt a) ↔
+      ((∃ x, mem x (e a)) →
+        ∃ p, mem p (e a) ∧ ∀ q, mem q (e a) → ¬ mem p q) := by
+  constructor
+  · intro h hne
+    rcases hne with ⟨x, hx⟩
+    rcases h ⟨x, hx⟩ with ⟨p, hp, hmax⟩
+    exact ⟨p, hp, fun q hq hpq => hmax q hq hpq⟩
+  · intro h hneSat
+    rcases hneSat with ⟨x, hx⟩
+    rcases h ⟨x, hx⟩ with ⟨p, hp, hmax⟩
+    exact ⟨p, hp, fun q hq hpq => hmax q hq hpq⟩
 
 /-! ### Free-variable support of the HF macros -/
 
@@ -909,6 +1014,58 @@ def HF_induction_form (phi : Form) : Form :=
         phi))
     (fAll phi)
 
+/-- The finite-generation induction schema for hereditary finite sets.
+
+If `phi` holds for every empty object and is preserved by one-point
+adjunction, then `phi` holds for every object.  This is the finiteness content
+missing from pure foundation-style set induction: ZF models satisfy
+`HF_induction_form`, but not this schema. -/
+def HF_finite_induction_form (phi : Form) : Form :=
+  fImp
+    (fAnd
+      (fAll (fImp (HF_emptyAt 0) phi))
+      (fAll (fAll (fAll
+        (fImp
+          (HF_adjoinAt 0 2 1)
+          (fImp (rename rAdjStepOld phi) (rename rAdjStepNew phi)))))))
+    (fAll phi)
+
+theorem HF_finite_induction_form_spec {α : Type u} {mem : α → α → Prop}
+    (phi : Form) (e : Nat → α) :
+    Sat mem e (HF_finite_induction_form phi) ↔
+      (((∀ z, (∀ x, ¬ mem x z) → Sat mem (scons z e) phi) ∧
+        (∀ a b c, (∀ x, mem x c ↔ mem x a ∨ x = b) →
+          Sat mem (scons a e) phi → Sat mem (scons c e) phi)) →
+        ∀ a, Sat mem (scons a e) phi) := by
+  constructor
+  · intro h hgen
+    apply h
+    constructor
+    · intro z hz
+      exact hgen.1 z ((HF_emptyAt_spec (scons z e) 0).mp hz)
+    · intro a b c hc hOld
+      have hc' :
+          ∀ x, mem x c ↔ mem x a ∨ x = b :=
+        (HF_adjoinAt_spec (scons c (scons b (scons a e))) 0 2 1).mp hc
+      have hOld' : Sat mem (scons a e) phi :=
+        (Sat_rename_rAdjStepOld phi e a b c).mp hOld
+      exact (Sat_rename_rAdjStepNew phi e a b c).mpr
+        (hgen.2 a b c hc' hOld')
+  · intro h hsyn
+    apply h
+    constructor
+    · intro z hz
+      exact hsyn.1 z ((HF_emptyAt_spec (scons z e) 0).mpr hz)
+    · intro a b c hc hOld
+      have hcSat :
+          Sat mem (scons c (scons b (scons a e))) (HF_adjoinAt 0 2 1) :=
+        (HF_adjoinAt_spec (scons c (scons b (scons a e))) 0 2 1).mpr hc
+      have hOldSat :
+          Sat mem (scons c (scons b (scons a e))) (rename rAdjStepOld phi) :=
+        (Sat_rename_rAdjStepOld phi e a b c).mpr hOld
+      have hNewSat := hsyn.2 a b c hcSat hOldSat
+      exact (Sat_rename_rAdjStepNew phi e a b c).mp hNewSat
+
 /-- The unsealed HF axiom schema. -/
 def HFAx (f : Form) : Prop :=
   f = HF_empty_form ∨
@@ -923,9 +1080,24 @@ def HFAx_s (f : Form) : Prop :=
   f = sealF HF_adjoin_form ∨
   ∃ phi, f = sealF (HF_induction_form phi)
 
+/-- The sentence theory of hereditary finite sets.
+
+`HFAx_s` contains the extensionality/empty/adjunction axioms and
+foundation-style set induction.  The additional finite-generation schema below
+excludes infinite sets and is the axiom needed for the PA interpretation over
+finite von Neumann ordinals. -/
+def HFFinAx_s (f : Form) : Prop :=
+  HFAx_s f ∨ ∃ phi, f = sealF (HF_finite_induction_form phi)
+
 theorem Sentences_HF : Sentences HFAx_s := by
   intro f hf
   rcases hf with rfl | rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
+
+theorem Sentences_HFFin : Sentences HFFinAx_s := by
+  intro f hf
+  rcases hf with hf | ⟨phi, rfl⟩
+  · exact Sentences_HF f hf
+  · exact Sentence_seal _
 
 theorem sat_HF_empty {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
     Sat M.mem e HF_empty_form :=
@@ -985,6 +1157,15 @@ theorem HFAx_s_adjoin : HFAx_s (sealF HF_adjoin_form) :=
 theorem HFAx_s_induction (phi : Form) : HFAx_s (sealF (HF_induction_form phi)) :=
   Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩))
 
+theorem HFFinAx_s_of_HFAx_s {f : Form} (hf : HFAx_s f) : HFFinAx_s f :=
+  Or.inl hf
+
+/-- Named membership of a sealed finite-generation induction instance in the
+hereditary-finite theory. -/
+theorem HFFinAx_s_finite_induction (phi : Form) :
+    HFFinAx_s (sealF (HF_finite_induction_form phi)) :=
+  Or.inr ⟨phi, rfl⟩
+
 theorem semantic_empty_of_HFAx_s {α : Type u} {mem : α → α → Prop}
     (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
     ∃ e, ∀ x, ¬ mem x e :=
@@ -1013,6 +1194,39 @@ theorem semantic_induction_schema_of_HFAx_s {α : Type u} {mem : α → α → P
     (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) (phi : Form) :
     ∀ e, Sat mem e (HF_induction_form phi) :=
   extract HFAx_s v (HF_induction_form phi) hHF (HFAx_s_induction phi)
+
+theorem semantic_finite_induction_schema_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) (phi : Form) :
+    ∀ e, Sat mem e (HF_finite_induction_form phi) :=
+  extract HFFinAx_s v (HF_finite_induction_form phi) hHF
+    (HFFinAx_s_finite_induction phi)
+
+theorem semantic_empty_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    ∃ e, ∀ x, ¬ mem x e :=
+  semantic_empty_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg))
+
+theorem semantic_extensionality_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b :=
+  semantic_extensionality_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg))
+
+theorem semantic_adjoin_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    ∀ a b, ∃ c, ∀ x, mem x c ↔ mem x a ∨ x = b :=
+  semantic_adjoin_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg))
+
+theorem semantic_induction_schema_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) (phi : Form) :
+    ∀ e, Sat mem e (HF_induction_form phi) :=
+  semantic_induction_schema_of_HFAx_s v
+    (fun g hg => hHF g (HFFinAx_s_of_HFAx_s hg)) phi
 
 /-- First-order HF induction rules out self-membership in every semantic model
 of the sealed HF theory. -/
@@ -1052,6 +1266,12 @@ structure FirstOrderAdjunctionModel (α : Type u) where
   empty_spec : ∀ x, ¬ mem x empty
   adjoin_spec : ∀ x a b, mem x (adjoin a b) ↔ mem x a ∨ x = b
   induction_schema : ∀ phi e, Sat mem e (HF_induction_form phi)
+
+/-- Chosen first-order HF model carrying the finite-generation induction
+schema of hereditary finite sets. -/
+structure FirstOrderFiniteAdjunctionModel (α : Type u) extends
+    FirstOrderAdjunctionModel α where
+  finite_induction_schema : ∀ phi e, Sat mem e (HF_finite_induction_form phi)
 
 namespace FirstOrderAdjunctionModel
 
@@ -1142,6 +1362,48 @@ theorem ordinalLike_adjoin_self {α : Type u}
     · rcases (M.adjoin_spec z a a).mp hz with hzin | hzeq
       · exact Or.inr (Or.inr (by rw [hyeq]; exact hzin))
       · exact Or.inr (Or.inl (by rw [hyeq, hzeq]))
+
+/-- A membership-maximal element of an ordinal-like object is its predecessor. -/
+theorem ordinalLike_eq_succ_of_mem_max {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {a p : α}
+    (ha : OrdinalLike M.mem a)
+    (hp : M.mem p a)
+    (hmax : ∀ q, M.mem q a → ¬ M.mem p q) :
+    a = M.adjoin p p := by
+  apply M.extensional
+  intro x
+  constructor
+  · intro hx
+    apply (M.adjoin_spec x p p).mpr
+    rcases ha.2.2 x hx p hp with hxp | hxp | hpx
+    · exact Or.inl hxp
+    · exact Or.inr hxp
+    · exact False.elim (hmax x hx hpx)
+  · intro hx
+    rcases (M.adjoin_spec x p p).mp hx with hxp | hxp
+    · exact ha.1 p hp x hxp
+    · rw [hxp]
+      exact hp
+
+/-- If every nonempty object has a membership-maximal element, then every
+ordinal-like object is either empty or a successor of one of its members. -/
+theorem ordinalLike_empty_or_succ_of_mem_max_exists {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hMax : ∀ a, (∃ x, M.mem x a) →
+      ∃ p, M.mem p a ∧ ∀ q, M.mem q a → ¬ M.mem p q)
+    {a : α} (ha : OrdinalLike M.mem a) :
+    a = M.empty ∨ ∃ p, M.mem p a ∧ a = M.adjoin p p := by
+  by_cases hne : ∃ x, M.mem x a
+  · rcases hMax a hne with ⟨p, hp, hmax⟩
+    exact Or.inr ⟨p, hp, ordinalLike_eq_succ_of_mem_max M ha hp hmax⟩
+  · left
+    apply M.extensional
+    intro x
+    constructor
+    · intro hx
+      exact False.elim (hne ⟨x, hx⟩)
+    · intro hx
+      exact False.elim (M.empty_spec x hx)
 
 /-- Singleton inside a chosen first-order HF model. -/
 def single {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) : α :=
@@ -1725,6 +1987,19 @@ theorem succRecTotal_of_ordinalLike_of_predecessor {α : Type u}
     ((HF_succRecTotalOnOrdinalAt_spec M
       (scons m (scons s tail)) 1 0).mp (hall m) hm)
 
+/-- A maximal-member principle for nonempty HF objects is enough to make
+successor-recursion total on all ordinal-like keys. -/
+theorem succRecTotal_of_ordinalLike_of_mem_max_exists {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hMax : ∀ a, (∃ x, M.mem x a) →
+      ∃ p, M.mem p a ∧ ∀ q, M.mem q a → ¬ M.mem p q)
+    (s m : α) (hm : OrdinalLike M.mem m) :
+    SuccRecTotal M s m := by
+  apply succRecTotal_of_ordinalLike_of_predecessor M
+  · intro a ha
+    exact ordinalLike_empty_or_succ_of_mem_max_exists M hMax ha
+  · exact hm
+
 end FirstOrderAdjunctionModel
 
 def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
@@ -1751,6 +2026,100 @@ noncomputable def firstOrderAdjunctionModel_of_HFAx_s {α : Type u}
     intro x a b
     exact Classical.choose_spec (semantic_adjoin_of_HFAx_s v hHF a b) x
   induction_schema := semantic_induction_schema_of_HFAx_s v hHF
+
+noncomputable def firstOrderFiniteAdjunctionModel_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) :
+    FirstOrderFiniteAdjunctionModel α where
+  mem := mem
+  empty := Classical.choose (semantic_empty_of_HFFinAx_s v hHF)
+  adjoin := fun a b => Classical.choose (semantic_adjoin_of_HFFinAx_s v hHF a b)
+  extensional := semantic_extensionality_of_HFFinAx_s v hHF
+  empty_spec := Classical.choose_spec (semantic_empty_of_HFFinAx_s v hHF)
+  adjoin_spec := by
+    intro x a b
+    exact Classical.choose_spec (semantic_adjoin_of_HFFinAx_s v hHF a b) x
+  induction_schema := semantic_induction_schema_of_HFFinAx_s v hHF
+  finite_induction_schema := semantic_finite_induction_schema_of_HFFinAx_s v hHF
+
+namespace FirstOrderFiniteAdjunctionModel
+
+theorem sepBy_exists {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (psi : Form) (e : Nat → α) :
+    ∀ a, ∃ s, ∀ x,
+      M.mem x s ↔ M.mem x a ∧ Sat M.mem (scons x e) psi := by
+  let theta : Form := rename rSepParam psi
+  let phi : Form := HF_sepByAt theta 0
+  have hind := M.finite_induction_schema phi e
+  have hall : ∀ a, Sat M.mem (scons a e) phi := by
+    apply (HF_finite_induction_form_spec phi e).mp hind
+    constructor
+    · intro z hzEmpty
+      apply (HF_sepByAt_spec theta (scons z e) 0).mpr
+      refine ⟨M.empty, fun x => ?_⟩
+      constructor
+      · intro hx
+        exact False.elim (M.empty_spec x hx)
+      · intro hx
+        exact False.elim (hzEmpty x hx.1)
+    · intro a b c hc hOld
+      rcases (HF_sepByAt_spec theta (scons a e) 0).mp hOld with ⟨s, hs⟩
+      by_cases hb : Sat M.mem (scons b e) psi
+      · apply (HF_sepByAt_spec theta (scons c e) 0).mpr
+        refine ⟨M.adjoin s b, fun x => ?_⟩
+        constructor
+        · intro hx
+          rcases (M.adjoin_spec x s b).mp hx with hxs | hxb
+          · have hxOld := (hs x).mp hxs
+            have hxPsi : Sat M.mem (scons x e) psi :=
+              (Sat_rename_rSepParam psi e a x).mp hxOld.2
+            exact ⟨(hc x).mpr (Or.inl hxOld.1),
+              (Sat_rename_rSepParam psi e c x).mpr hxPsi⟩
+          · subst x
+            exact ⟨(hc b).mpr (Or.inr rfl),
+              (Sat_rename_rSepParam psi e c b).mpr hb⟩
+        · intro hx
+          rcases (hc x).mp hx.1 with hxa | hxb
+          · apply (M.adjoin_spec x s b).mpr
+            left
+            have hxPsi : Sat M.mem (scons x e) psi :=
+              (Sat_rename_rSepParam psi e c x).mp hx.2
+            exact (hs x).mpr
+              ⟨hxa, (Sat_rename_rSepParam psi e a x).mpr hxPsi⟩
+          · exact (M.adjoin_spec x s b).mpr (Or.inr hxb)
+      · apply (HF_sepByAt_spec theta (scons c e) 0).mpr
+        refine ⟨s, fun x => ?_⟩
+        constructor
+        · intro hxs
+          have hxOld := (hs x).mp hxs
+          have hxPsi : Sat M.mem (scons x e) psi :=
+            (Sat_rename_rSepParam psi e a x).mp hxOld.2
+          exact ⟨(hc x).mpr (Or.inl hxOld.1),
+            (Sat_rename_rSepParam psi e c x).mpr hxPsi⟩
+        · intro hx
+          rcases (hc x).mp hx.1 with hxa | hxb
+          · have hxPsi : Sat M.mem (scons x e) psi :=
+              (Sat_rename_rSepParam psi e c x).mp hx.2
+            exact (hs x).mpr
+              ⟨hxa, (Sat_rename_rSepParam psi e a x).mpr hxPsi⟩
+          · subst x
+            have hb' : Sat M.mem (scons b e) psi :=
+              (Sat_rename_rSepParam psi e c b).mp hx.2
+            exact False.elim (hb hb')
+  intro a
+  rcases (HF_sepByAt_spec theta (scons a e) 0).mp (hall a) with ⟨s, hs⟩
+  refine ⟨s, fun x => ?_⟩
+  constructor
+  · intro hxs
+    have hx := (hs x).mp hxs
+    have hxPsi : Sat M.mem (scons x e) psi :=
+      (Sat_rename_rSepParam psi e a x).mp hx.2
+    exact ⟨hx.1, hxPsi⟩
+  · intro hx
+    exact (hs x).mpr
+      ⟨hx.1, (Sat_rename_rSepParam psi e a x).mpr hx.2⟩
+
+end FirstOrderFiniteAdjunctionModel
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
 
@@ -6247,6 +6616,19 @@ theorem formulaAt_addSucc_valid_model_of_succRecTotal {α : Type u}
     · simpa [σ, Eeq, scons, upVarMap] using hf
     · simpa [σ, Eeq, scons, upVarMap] using hz
 
+/-- The add-successor PA axiom follows from the maximal-member principle for
+nonempty objects in a first-order HF model. -/
+theorem formulaAt_addSucc_valid_model_of_mem_max_exists {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hMax : ∀ a, (∃ x, M.mem x a) →
+      ∃ p, M.mem p a ∧ ∀ q, M.mem q a → ¬ M.mem p q)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.addSucc) := by
+  apply formulaAt_addSucc_valid_model_of_succRecTotal M
+  intro s m hm
+  exact FirstOrderAdjunctionModel.succRecTotal_of_ordinalLike_of_mem_max_exists
+    M hMax s m hm
+
 /-- Successor-injectivity for the PA-in-HF translation follows from
 irreflexivity of membership.  In semantic HF models that irreflexivity comes
 from `semantic_mem_irrefl_of_HFAx_s`. -/
@@ -6637,6 +7019,21 @@ theorem BProv_HF_translated_addZero :
   · intro Dom mem v hHF
     exact translated_addZero_sat_of_HFAx_s v hHF v
 
+theorem BProv_HFFin_translated_zeroNotSucc :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)) := by
+  exact BProv_theory_mono (fun g hg => HFFinAx_s_of_HFAx_s hg)
+    BProv_HF_translated_zeroNotSucc
+
+theorem BProv_HFFin_translated_succInj :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.succInj)) := by
+  exact BProv_theory_mono (fun g hg => HFFinAx_s_of_HFAx_s hg)
+    BProv_HF_translated_succInj
+
+theorem BProv_HFFin_translated_addZero :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)) := by
+  exact BProv_theory_mono (fun g hg => HFFinAx_s_of_HFAx_s hg)
+    BProv_HF_translated_addZero
+
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/
 def translatedPAAx (g : Form) : Prop :=
@@ -6659,6 +7056,11 @@ theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
+  BProv_lift h hAx (fun _ hf => nomatch hf)
+
+theorem BProv_lift_translatedPAAx_to_HFFin
+    (hAx : ∀ g, translatedPAAx g → BProv HFFinAx_s [] g)
+    {g : Form} (h : BProv translatedPAAx [] g) : BProv HFFinAx_s [] g :=
   BProv_lift h hAx (fun _ hf => nomatch hf)
 
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
