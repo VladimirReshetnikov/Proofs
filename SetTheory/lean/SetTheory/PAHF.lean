@@ -8045,6 +8045,29 @@ theorem Sat_termGraphAt_shift_front {α : Type u} {mem : α → α → Prop}
   exact (Sat_ext (mem := mem) (termGraphAt ρ out t)
     (fun n => scons d e (Nat.succ n)) e henv).mpr h
 
+/-- Inverse form of `Sat_termGraphAt_shift_front`: if a shifted graph is
+satisfied after adding a fresh head slot, the original graph is satisfied in
+the tail environment. -/
+theorem Sat_termGraphAt_shift_front_inv {α : Type u} {mem : α → α → Prop}
+    (t : PA.Term) (ρ : Nat → Nat) (out : Nat)
+    (e : Nat → α) (d : α)
+    (h : Sat mem (scons d e)
+      (termGraphAt (fun n => ρ n + 1) (out + 1) t)) :
+    Sat mem e (termGraphAt ρ out t) := by
+  have hrename :
+      rename Nat.succ (termGraphAt ρ out t) =
+        termGraphAt (fun n => ρ n + 1) (out + 1) t := by
+    simpa [Nat.succ_eq_add_one] using
+      (termGraphAt_rename t (ρ := ρ) (out := out) (r := Nat.succ))
+  rw [← hrename] at h
+  have hshift := (Sat_rename (mem := mem) (termGraphAt ρ out t)
+    Nat.succ (scons d e)).mp h
+  have henv : ∀ n, scons d e (Nat.succ n) = e n := by
+    intro n
+    rfl
+  exact (Sat_ext (mem := mem) (termGraphAt ρ out t)
+    (fun n => scons d e (Nat.succ n)) e henv).mp hshift
+
 /-- A satisfied term graph with output in the head slot remains satisfied after
 inserting one fresh HF slot immediately behind that output. -/
 theorem Sat_termGraphAt_insert_after_output {α : Type u}
@@ -8072,6 +8095,36 @@ theorem Sat_termGraphAt_insert_after_output {α : Type u}
   exact (Sat_ext (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
     (fun n => scons outSlot (scons d e) (r n)) (scons outSlot e)
     henv).mpr h
+
+/-- Inverse form of `Sat_termGraphAt_insert_after_output`: a graph whose
+output is in the head slot does not depend on an extra slot inserted just after
+that output. -/
+theorem Sat_termGraphAt_insert_after_output_inv {α : Type u}
+    {mem : α → α → Prop}
+    (t : PA.Term) (ρ : Nat → Nat) (e : Nat → α) (outSlot d : α)
+    (h : Sat mem (scons outSlot (scons d e))
+      (termGraphAt (fun n => ρ n + 2) 0 t)) :
+    Sat mem (scons outSlot e)
+      (termGraphAt (fun n => ρ n + 1) 0 t) := by
+  let r : Nat → Nat := SetTheory.up Nat.succ
+  have hrename :
+      rename r (termGraphAt (fun n => ρ n + 1) 0 t) =
+        termGraphAt (fun n => ρ n + 2) 0 t := by
+    rw [termGraphAt_rename]
+    simp [r, SetTheory.up]
+  rw [← hrename] at h
+  have hshift := (Sat_rename (mem := mem)
+    (termGraphAt (fun n => ρ n + 1) 0 t)
+    r (scons outSlot (scons d e))).mp h
+  have henv : ∀ n,
+      scons outSlot (scons d e) (r n) = scons outSlot e n := by
+    intro n
+    cases n with
+    | zero => rfl
+    | succ n => rfl
+  exact (Sat_ext (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
+    (fun n => scons outSlot (scons d e) (r n)) (scons outSlot e)
+    henv).mp hshift
 
 /-- Every PA term whose free variables denote ordinal-like HF objects has a
 finite-HF graph witness, and that witness is again ordinal-like.
@@ -14260,6 +14313,88 @@ theorem BProv_HFFin_formulaAt_exI_term_domainContext {G : List Form}
       soundness_BProv hbody v hHF hctx
     exact formulaAt_exI_valid_of_HFFinAx_s_domainContext v hHF ρ a t v
       (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg))) hbodySat
+
+/-- In every model of finite HF, equality elimination by arbitrary PA terms is
+valid when the free variables of both terms are known to lie in the PA domain.
+
+The translated equality supplies graph witnesses for the two term values; the
+formula-substitution bridge turns substitution by the left term into the body
+at the left witness slot, transports that body across the witnessed equality,
+and turns the result back into substitution by the right term. -/
+theorem formulaAt_eqElim_valid_of_HFFinAx_s_domainContext {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (s t : PA.Term) (a : PA.Formula) (e : Nat → α)
+    (hsctx : ∀ g, g ∈ domainContextAt ρ s.bound → Sat mem e g)
+    (htctx : ∀ g, g ∈ domainContextAt ρ t.bound → Sat mem e g)
+    (heq : Sat mem e (formulaAt ρ (PA.Formula.eq s t)))
+    (hbody : Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm s) a))) :
+    Sat mem e
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e
+    (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a))
+  change Sat M.mem e (formulaAt ρ (PA.Formula.eq s t)) at heq
+  change Sat M.mem e
+    (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm s) a)) at hbody
+  have hsfree : ∀ n, PA.Term.Free n s → OrdinalLike M.mem (e (ρ n)) := by
+    intro n hn
+    exact Sat_domainContextAt_ordinalLike (ρ := ρ) (n := s.bound)
+      (e := e) hsctx n (PA.Term.free_lt_bound s n hn)
+  have htfree : ∀ n, PA.Term.Free n t → OrdinalLike M.mem (e (ρ n)) := by
+    intro n hn
+    exact Sat_domainContextAt_ordinalLike (ρ := ρ) (n := t.bound)
+      (e := e) htctx n (PA.Term.free_lt_bound t n hn)
+  rcases heq with ⟨x, y, hsGraphShift, htGraphShift, hxy⟩
+  have hsGraph : Sat M.mem (scons x e)
+      (termGraphAt (fun n => ρ n + 1) 0 s) :=
+    Sat_termGraphAt_shift_front_inv s (fun n => ρ n + 1) 0
+      (scons x e) y hsGraphShift
+  have htGraph : Sat M.mem (scons y e)
+      (termGraphAt (fun n => ρ n + 1) 0 t) :=
+    Sat_termGraphAt_insert_after_output_inv t ρ e y x htGraphShift
+  have hbodyX : Sat M.mem (scons x e) (formulaAt (upVarMap ρ) a) :=
+    (formulaAt_subst_instTerm_of_termGraph_model M a s ρ x e
+      hsfree hsGraph).mp hbody
+  have henv : ∀ n, scons x e n = scons y e n := by
+    intro n
+    cases n with
+    | zero => exact hxy
+    | succ n => rfl
+  have hbodyY : Sat M.mem (scons y e) (formulaAt (upVarMap ρ) a) :=
+    (Sat_ext (formulaAt (upVarMap ρ) a)
+      (scons x e) (scons y e) henv).mp hbodyX
+  exact (formulaAt_subst_instTerm_of_termGraph_model M a t ρ y e
+    htfree htGraph).mpr hbodyY
+
+/-- Finite HF proves equality elimination for arbitrary PA terms from explicit
+domain assumptions for the free variables of both terms. -/
+theorem BProv_HFFin_formulaAt_eqElim_term_domainContext {G : List Form}
+    (ρ : Nat → Nat) (s t : PA.Term) (a : PA.Formula)
+    (heq : BProv HFFinAx_s
+      (domainContextAt ρ s.bound ++ (domainContextAt ρ t.bound ++ G))
+      (formulaAt ρ (PA.Formula.eq s t)))
+    (hbody : BProv HFFinAx_s
+      (domainContextAt ρ s.bound ++ (domainContextAt ρ t.bound ++ G))
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm s) a))) :
+    BProv HFFinAx_s
+      (domainContextAt ρ s.bound ++ (domainContextAt ρ t.bound ++ G))
+      (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm t) a)) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    have heqSat : Sat mem v (formulaAt ρ (PA.Formula.eq s t)) :=
+      soundness_BProv heq v hHF hctx
+    have hbodySat : Sat mem v
+        (formulaAt ρ (PA.Formula.subst (PA.Formula.instTerm s) a)) :=
+      soundness_BProv hbody v hHF hctx
+    exact formulaAt_eqElim_valid_of_HFFinAx_s_domainContext v hHF ρ s t a v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
+      (fun g hg => hctx g
+        (List.mem_append.mpr
+          (Or.inr (List.mem_append.mpr (Or.inl hg)))))
+      heqSat hbodySat
 
 /-- An HF equality proof between the slots assigned to two PA variables yields
 the PA-in-HF translation of equality between those PA variables. -/
