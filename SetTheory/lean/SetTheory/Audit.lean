@@ -334,6 +334,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.succGraph_preserves_domain
 #check @AckermannHF.PAInHF.termGraphAt
 #check @AckermannHF.PAInHF.termGraphAt_free
+#check @AckermannHF.PAInHF.termGraphAt_map_ext
 #check @AckermannHF.PAInHF.termGraphAt_var_spec
 #check @AckermannHF.PAInHF.termGraphAt_zero_spec
 #check @AckermannHF.PAInHF.termGraphAt_succ_var_spec
@@ -342,6 +343,11 @@ open SetTheory
 #check @AckermannHF.PAInHF.termGraphAt_succ_var_model
 #check @AckermannHF.PAInHF.termGraphAt_exact
 #check @AckermannHF.PAInHF.upVarMap
+#check @AckermannHF.PAInHF.insertAt
+#check @AckermannHF.PAInHF.insertAt_lt
+#check @AckermannHF.PAInHF.insertAt_eq
+#check @AckermannHF.PAInHF.insertAt_gt
+#check @AckermannHF.PAInHF.scons_insertAt
 #check @AckermannHF.PAInHF.formulaAt
 #check @AckermannHF.PAInHF.formulaAt_free
 #check @AckermannHF.PAInHF.formulaAt_eq_var_spec

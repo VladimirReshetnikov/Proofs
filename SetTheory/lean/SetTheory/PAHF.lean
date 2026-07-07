@@ -6840,6 +6840,36 @@ theorem termGraphAt_free (t : PA.Term) :
           · have hm := mulGraph_free h
             omega
 
+theorem termGraphAt_map_ext (t : PA.Term) :
+    ∀ {ρ σ : Nat → Nat} {out : Nat},
+      (∀ n, ρ n = σ n) → termGraphAt ρ out t = termGraphAt σ out t := by
+  induction t with
+  | var n =>
+      intro ρ σ out h
+      simp [termGraphAt, h n]
+  | zero =>
+      intro ρ σ out h
+      rfl
+  | succ t ih =>
+      intro ρ σ out h
+      simp only [termGraphAt]
+      rw [@ih (fun n => ρ n + 1) (fun n => σ n + 1) 0
+        (fun n => by rw [h n])]
+  | add a b iha ihb =>
+      intro ρ σ out h
+      simp only [termGraphAt]
+      rw [@iha (fun n => ρ n + 2) (fun n => σ n + 2) 1
+        (fun n => by rw [h n])]
+      rw [@ihb (fun n => ρ n + 2) (fun n => σ n + 2) 0
+        (fun n => by rw [h n])]
+  | mul a b iha ihb =>
+      intro ρ σ out h
+      simp only [termGraphAt]
+      rw [@iha (fun n => ρ n + 3) (fun n => σ n + 3) 1
+        (fun n => by rw [h n])]
+      rw [@ihb (fun n => ρ n + 3) (fun n => σ n + 3) 2
+        (fun n => by rw [h n])]
+
 /-- The graph of a PA variable is just equality with the slot selected by the
 current slot map.  This version works over any membership relation. -/
 theorem termGraphAt_var_spec {α : Type u} {mem : α → α → Prop}
@@ -7293,6 +7323,49 @@ past that binder. -/
 def upVarMap (ρ : Nat → Nat) : Nat → Nat
   | 0 => 0
   | n+1 => ρ n + 1
+
+/-- Insert a value at de Bruijn slot `k`, leaving slots below `k` fixed and
+shifting slots at and above `k` upward.  In substitution lemmas, `k` is the
+number of local witnesses already sitting in front of the PA-variable
+environment. -/
+def insertAt {α : Type u} (k : Nat) (x : α) (e : Nat → α) : Nat → α :=
+  fun n => if n < k then e n else if n = k then x else e (n - 1)
+
+@[simp] theorem insertAt_lt {α : Type u} {k n : Nat} {x : α} {e : Nat → α}
+    (h : n < k) : insertAt k x e n = e n := by
+  simp [insertAt, h]
+
+@[simp] theorem insertAt_eq {α : Type u} {k : Nat} {x : α} {e : Nat → α} :
+    insertAt k x e k = x := by
+  simp [insertAt]
+
+theorem insertAt_gt {α : Type u} {k n : Nat} {x : α} {e : Nat → α}
+    (h : k < n) : insertAt k x e n = e (n - 1) := by
+  have hnot : ¬ n < k := by omega
+  have hne : n ≠ k := by omega
+  simp [insertAt, hnot, hne]
+
+theorem scons_insertAt {α : Type u} (k : Nat) (x d : α) (e : Nat → α) :
+    ∀ n, scons d (insertAt k x e) n = insertAt (k+1) x (scons d e) n := by
+  intro n
+  cases n with
+  | zero =>
+      simp [insertAt, scons]
+  | succ n =>
+      simp only [scons]
+      by_cases hlt : n < k
+      · have hslt : n + 1 < k + 1 := by omega
+        rw [insertAt_lt hlt, insertAt_lt hslt]
+        rfl
+      · by_cases heq : n = k
+        · subst n
+          rw [insertAt_eq, insertAt_eq]
+        · have hgt : k < n := by omega
+          have hsgt : k + 1 < n + 1 := by omega
+          rw [insertAt_gt hgt, insertAt_gt hsgt]
+          cases n with
+          | zero => omega
+          | succ n => rfl
 
 /-- Translate PA formulas to HF formulas, using `ρ` to identify the HF slots
 that hold the current PA variables.  Quantifiers are explicitly relativized to
