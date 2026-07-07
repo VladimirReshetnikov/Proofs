@@ -335,6 +335,12 @@ instance tm0RadoStateFintype (Label : Type*) [Fintype Label] :
     Fintype (TM0RadoState Label) :=
   Fintype.ofEquiv (Bool × Label) (tm0RadoStateEquivProd Label)
 
+theorem tm0RadoState_card (Label : Type*) [Fintype Label] :
+    Fintype.card (TM0RadoState Label) = 2 * Fintype.card Label := by
+  have h := Fintype.card_congr (tm0RadoStateEquivProd Label)
+  rw [← h]
+  simp [Fintype.card_prod]
+
 theorem tm0ToTypedRado_attainableScore {Label : Type*} [Inhabited Label] [Fintype Label]
     (M : Turing.TM0.Machine Bool Label) {score : Nat}
     (hHalt : (tm0ToTypedRado M).HaltsWithScore
@@ -608,6 +614,88 @@ theorem tm0_eval_nil_to_rado_halt {Label : Type*} [Inhabited Label] [Fintype Lab
     typedRadoReaches_haltsWithScore hRadoReach hHaltState rfl
   exact ⟨finalCfg, normalCfg, haltCfg, hOutput, hNormalRel, hHaltState, hHaltTape,
     hTypedHalt, tm0ToTypedRado_attainableScore M hTypedHalt⟩
+
+/-- The supported subtype is inhabited because `TM0.Supports` contains the start label. -/
+@[reducible]
+noncomputable def tm0SupportedInhabited {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S) : Inhabited S :=
+  ⟨⟨default, hSupp.1⟩⟩
+
+/-- Restrict a Bool `TM0` machine to a supporting set of labels. -/
+noncomputable def tm0SupportedMachine {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S) :
+    @Turing.TM0.Machine Bool S (tm0SupportedInhabited M hSupp) :=
+  fun q bit => by
+    classical
+    exact (M q.1 bit).map fun p =>
+      let q' : S :=
+        if hp : p ∈ M q.1 bit then
+          ⟨p.1, hSupp.2 hp q.2⟩
+        else
+          ⟨default, hSupp.1⟩
+      (q', p.2)
+
+theorem tm0SupportedMachine_apply_none {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S)
+    {q : S} {bit : Bool}
+    (h : M q.1 bit = none) :
+    tm0SupportedMachine M hSupp q bit = none := by
+  classical
+  simp [tm0SupportedMachine, h]
+
+theorem tm0SupportedMachine_apply_some {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S)
+    {q : S} {bit : Bool} {q' : Label} {stmt : Turing.TM0.Stmt Bool}
+    (h : M q.1 bit = some (q', stmt)) :
+    ∃ hq' : q' ∈ S,
+      tm0SupportedMachine M hSupp q bit = some (⟨q', hq'⟩, stmt) := by
+  classical
+  have hp : (q', stmt) ∈ M q.1 bit := by
+    rw [h]
+    rfl
+  refine ⟨hSupp.2 hp q.2, ?_⟩
+  simp [tm0SupportedMachine, h]
+
+/-- Forget the supported-subtype label of a restricted configuration. -/
+def tm0SupportedCfgToCfg {Label : Type*} {S : Set Label}
+    (cfg : Turing.TM0.Cfg Bool S) : Turing.TM0.Cfg Bool Label where
+  q := cfg.q.1
+  Tape := cfg.Tape
+
+@[simp]
+theorem tm0SupportedCfgToCfg_init {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S) (input : List Bool) :
+    tm0SupportedCfgToCfg
+        (@Turing.TM0.init Bool S (tm0SupportedInhabited M hSupp) inferInstance input) =
+      Turing.TM0.init input := by
+  rfl
+
+@[simp]
+theorem tm0SupportedMachine_step {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label}
+    (hSupp : Turing.TM0.Supports M S)
+    (cfg : Turing.TM0.Cfg Bool S) :
+    Option.map tm0SupportedCfgToCfg
+        (@Turing.TM0.step Bool S (tm0SupportedInhabited M hSupp) inferInstance
+          (tm0SupportedMachine M hSupp) cfg) =
+      Turing.TM0.step M (tm0SupportedCfgToCfg cfg) := by
+  classical
+  cases cfg with
+  | mk q T =>
+      cases hTrans : M q.1 T.head with
+      | none =>
+          simp [Turing.TM0.step, tm0SupportedCfgToCfg,
+            tm0SupportedMachine_apply_none M hSupp hTrans, hTrans]
+      | some p =>
+          rcases p with ⟨q', stmt⟩
+          rcases tm0SupportedMachine_apply_some M hSupp hTrans with ⟨_hq', hRestrict⟩
+          cases stmt <;>
+            simp [Turing.TM0.step, tm0SupportedCfgToCfg, hTrans, hRestrict]
 
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
