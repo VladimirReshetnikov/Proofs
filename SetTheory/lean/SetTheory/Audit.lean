@@ -384,6 +384,8 @@ open SetTheory
 #check @AckermannHF.FirstOrderAdjunctionModel.adjoin_self_injective_on_ordinalLike
 #check @AckermannHF.FirstOrderAdjunctionModel.ordinalLike_empty
 #check @AckermannHF.FirstOrderAdjunctionModel.ordinalLike_adjoin_self
+#check @AckermannHF.FirstOrderAdjunctionModel.ordinalLike_eq_succ_of_mem_max
+#check @AckermannHF.FirstOrderAdjunctionModel.ordinalLike_empty_or_succ_of_mem_max_exists
 #check @AckermannHF.FirstOrderAdjunctionModel.single
 #check @AckermannHF.FirstOrderAdjunctionModel.single_spec
 #check @AckermannHF.FirstOrderAdjunctionModel.upair

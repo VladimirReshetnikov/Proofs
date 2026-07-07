@@ -1143,6 +1143,48 @@ theorem ordinalLike_adjoin_self {α : Type u}
       · exact Or.inr (Or.inr (by rw [hyeq]; exact hzin))
       · exact Or.inr (Or.inl (by rw [hyeq, hzeq]))
 
+/-- A membership-maximal element of an ordinal-like object is its predecessor. -/
+theorem ordinalLike_eq_succ_of_mem_max {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {a p : α}
+    (ha : OrdinalLike M.mem a)
+    (hp : M.mem p a)
+    (hmax : ∀ q, M.mem q a → ¬ M.mem p q) :
+    a = M.adjoin p p := by
+  apply M.extensional
+  intro x
+  constructor
+  · intro hx
+    apply (M.adjoin_spec x p p).mpr
+    rcases ha.2.2 x hx p hp with hxp | hxp | hpx
+    · exact Or.inl hxp
+    · exact Or.inr hxp
+    · exact False.elim (hmax x hx hpx)
+  · intro hx
+    rcases (M.adjoin_spec x p p).mp hx with hxp | hxp
+    · exact ha.1 p hp x hxp
+    · rw [hxp]
+      exact hp
+
+/-- If every nonempty object has a membership-maximal element, then every
+ordinal-like object is either empty or a successor of one of its members. -/
+theorem ordinalLike_empty_or_succ_of_mem_max_exists {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hMax : ∀ a, (∃ x, M.mem x a) →
+      ∃ p, M.mem p a ∧ ∀ q, M.mem q a → ¬ M.mem p q)
+    {a : α} (ha : OrdinalLike M.mem a) :
+    a = M.empty ∨ ∃ p, M.mem p a ∧ a = M.adjoin p p := by
+  by_cases hne : ∃ x, M.mem x a
+  · rcases hMax a hne with ⟨p, hp, hmax⟩
+    exact Or.inr ⟨p, hp, ordinalLike_eq_succ_of_mem_max M ha hp hmax⟩
+  · left
+    apply M.extensional
+    intro x
+    constructor
+    · intro hx
+      exact False.elim (hne ⟨x, hx⟩)
+    · intro hx
+      exact False.elim (M.empty_spec x hx)
+
 /-- Singleton inside a chosen first-order HF model. -/
 def single {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) : α :=
   M.adjoin M.empty a
