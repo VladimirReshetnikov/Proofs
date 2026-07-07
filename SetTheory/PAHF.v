@@ -11691,6 +11691,52 @@ Proof.
     + exact hMap.
 Qed.
 
+Lemma formulaAt_induction_valid_finite_model : forall V
+    (M : FirstOrderFiniteAdjunctionModel V) phi rho e,
+  Sat V (foam_mem V M) e (formulaAt rho (PA.Formula.inductionForm phi)).
+Proof.
+  intros V M phi rho e.
+  simpl.
+  intro hInd.
+  pose (theta := fImp domainForm (formulaAt (upVarMap rho) phi)).
+  assert (hall : forall a, Sat V (foam_mem V M) (scons V a e) theta).
+  {
+    pose proof (foam_induction_schema V M theta e) as hind.
+    apply hind.
+    intros a ih haDomain.
+    assert (haOrd : OrdinalLike (foam_mem V M) a).
+    {
+      exact (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
+        (scons V a e) 0) haDomain).
+    }
+    destruct (fofam_OrdinalLike_empty_or_succ V M a haOrd) as
+      [hEmpty | [p [hp hSucc]]].
+    - subst a.
+      apply (proj1 (formulaAt_substZero_scons_model V M phi rho e)).
+      exact (proj1 hInd).
+    - assert (hpOrd : OrdinalLike (foam_mem V M) p).
+      {
+        exact (OrdinalLike_of_mem V (foam_mem V M) a p haOrd hp).
+      }
+      assert (hpDomain : Sat V (foam_mem V M) (scons V p e) domainForm).
+      {
+        apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M)
+          (scons V p e) 0)).
+        exact hpOrd.
+      }
+      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
+        theta e a p) (ih p hp)) as hpTheta.
+      pose proof (hpTheta hpDomain) as hpPhi.
+      pose proof (proj2 hInd p hpDomain hpPhi) as hStepSub.
+      pose proof (proj1 (formulaAt_substSuccVar_scons_model
+        V M phi rho p e) hStepSub) as hStepPhi.
+      rewrite hSucc.
+      exact hStepPhi.
+  }
+  intros a haDomain.
+  exact (hall a haDomain).
+Qed.
+
 Lemma formulaAt_free : forall phi rho i,
   Free i (formulaAt rho phi) ->
     exists n, PA.Formula.Free n phi /\ i = rho n.
