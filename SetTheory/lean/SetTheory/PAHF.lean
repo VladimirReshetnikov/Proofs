@@ -225,6 +225,19 @@ theorem Sat_rename_rAdjStepNew {α : Type u} {mem : α → α → Prop}
   rw [Sat_rename]
   exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
 
+/-- Under the local binders for a subset witness and its candidate element,
+read a predicate at the candidate element while preserving the old parameters. -/
+def rSepParam : Nat → Nat
+  | 0 => 0
+  | n+1 => n+2
+
+theorem Sat_rename_rSepParam {α : Type u} {mem : α → α → Prop}
+    (psi : Form) (e : Nat → α) (s x : α) :
+    Sat mem (scons x (scons s e)) (rename rSepParam psi) ↔
+      Sat mem (scons x e) psi := by
+  rw [Sat_rename]
+  exact Sat_ext psi _ _ (fun n => by cases n <;> rfl)
+
 /-- The first-order empty-set axiom: some set has no elements. -/
 def HF_empty_form : Form :=
   fEx (fAll (fImp (fMem 0 1) fBot))
@@ -700,6 +713,44 @@ theorem HF_subsetAt_spec {α : Type u} {mem : α → α → Prop}
     (e : Nat → α) (a b : Nat) :
     Sat mem e (HF_subsetAt a b) ↔ ∀ x, mem x (e a) → mem x (e b) :=
   Iff.rfl
+
+/-- Formula macro: there is a subset of slot `a` containing exactly the
+members satisfying `psi`.  The predicate `psi` reads its candidate element in
+slot `0` and its old parameters from slots `1,2,...`; the subset witness is a
+local implementation detail, skipped by `rSepParam`. -/
+def HF_sepByAt (psi : Form) (a : Nat) : Form :=
+  fEx (fAll
+    (fIff
+      (fMem 0 1)
+      (fAnd (fMem 0 (a+2)) (rename rSepParam psi))))
+
+theorem HF_sepByAt_spec {α : Type u} {mem : α → α → Prop}
+    (psi : Form) (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_sepByAt psi a) ↔
+      ∃ s, ∀ x, mem x s ↔ mem x (e a) ∧ Sat mem (scons x e) psi := by
+  constructor
+  · intro h
+    rcases h with ⟨s, hs⟩
+    refine ⟨s, fun x => ?_⟩
+    have hx := (Sat_fIff (mem := mem)
+      (e := scons x (scons s e))).mp (hs x)
+    constructor
+    · intro hxs
+      have hbody := hx.mp hxs
+      exact ⟨hbody.1, (Sat_rename_rSepParam psi e s x).mp hbody.2⟩
+    · intro hxbody
+      exact hx.mpr ⟨hxbody.1, (Sat_rename_rSepParam psi e s x).mpr hxbody.2⟩
+  · intro h
+    rcases h with ⟨s, hs⟩
+    refine ⟨s, fun x => ?_⟩
+    apply (Sat_fIff (mem := mem) (e := scons x (scons s e))).mpr
+    constructor
+    · intro hxs
+      exact ⟨(hs x).mp hxs |>.1,
+        (Sat_rename_rSepParam psi e s x).mpr ((hs x).mp hxs |>.2)⟩
+    · intro hbody
+      exact (hs x).mpr
+        ⟨hbody.1, (Sat_rename_rSepParam psi e s x).mp hbody.2⟩
 
 /-- Semantic reading of transitivity for one object. -/
 def TransitiveObj {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
@@ -1990,6 +2041,85 @@ noncomputable def firstOrderFiniteAdjunctionModel_of_HFFinAx_s {α : Type u}
     exact Classical.choose_spec (semantic_adjoin_of_HFFinAx_s v hHF a b) x
   induction_schema := semantic_induction_schema_of_HFFinAx_s v hHF
   finite_induction_schema := semantic_finite_induction_schema_of_HFFinAx_s v hHF
+
+namespace FirstOrderFiniteAdjunctionModel
+
+theorem sepBy_exists {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (psi : Form) (e : Nat → α) :
+    ∀ a, ∃ s, ∀ x,
+      M.mem x s ↔ M.mem x a ∧ Sat M.mem (scons x e) psi := by
+  let theta : Form := rename rSepParam psi
+  let phi : Form := HF_sepByAt theta 0
+  have hind := M.finite_induction_schema phi e
+  have hall : ∀ a, Sat M.mem (scons a e) phi := by
+    apply (HF_finite_induction_form_spec phi e).mp hind
+    constructor
+    · intro z hzEmpty
+      apply (HF_sepByAt_spec theta (scons z e) 0).mpr
+      refine ⟨M.empty, fun x => ?_⟩
+      constructor
+      · intro hx
+        exact False.elim (M.empty_spec x hx)
+      · intro hx
+        exact False.elim (hzEmpty x hx.1)
+    · intro a b c hc hOld
+      rcases (HF_sepByAt_spec theta (scons a e) 0).mp hOld with ⟨s, hs⟩
+      by_cases hb : Sat M.mem (scons b e) psi
+      · apply (HF_sepByAt_spec theta (scons c e) 0).mpr
+        refine ⟨M.adjoin s b, fun x => ?_⟩
+        constructor
+        · intro hx
+          rcases (M.adjoin_spec x s b).mp hx with hxs | hxb
+          · have hxOld := (hs x).mp hxs
+            have hxPsi : Sat M.mem (scons x e) psi :=
+              (Sat_rename_rSepParam psi e a x).mp hxOld.2
+            exact ⟨(hc x).mpr (Or.inl hxOld.1),
+              (Sat_rename_rSepParam psi e c x).mpr hxPsi⟩
+          · subst x
+            exact ⟨(hc b).mpr (Or.inr rfl),
+              (Sat_rename_rSepParam psi e c b).mpr hb⟩
+        · intro hx
+          rcases (hc x).mp hx.1 with hxa | hxb
+          · apply (M.adjoin_spec x s b).mpr
+            left
+            have hxPsi : Sat M.mem (scons x e) psi :=
+              (Sat_rename_rSepParam psi e c x).mp hx.2
+            exact (hs x).mpr
+              ⟨hxa, (Sat_rename_rSepParam psi e a x).mpr hxPsi⟩
+          · exact (M.adjoin_spec x s b).mpr (Or.inr hxb)
+      · apply (HF_sepByAt_spec theta (scons c e) 0).mpr
+        refine ⟨s, fun x => ?_⟩
+        constructor
+        · intro hxs
+          have hxOld := (hs x).mp hxs
+          have hxPsi : Sat M.mem (scons x e) psi :=
+            (Sat_rename_rSepParam psi e a x).mp hxOld.2
+          exact ⟨(hc x).mpr (Or.inl hxOld.1),
+            (Sat_rename_rSepParam psi e c x).mpr hxPsi⟩
+        · intro hx
+          rcases (hc x).mp hx.1 with hxa | hxb
+          · have hxPsi : Sat M.mem (scons x e) psi :=
+              (Sat_rename_rSepParam psi e c x).mp hx.2
+            exact (hs x).mpr
+              ⟨hxa, (Sat_rename_rSepParam psi e a x).mpr hxPsi⟩
+          · subst x
+            have hb' : Sat M.mem (scons b e) psi :=
+              (Sat_rename_rSepParam psi e c b).mp hx.2
+            exact False.elim (hb hb')
+  intro a
+  rcases (HF_sepByAt_spec theta (scons a e) 0).mp (hall a) with ⟨s, hs⟩
+  refine ⟨s, fun x => ?_⟩
+  constructor
+  · intro hxs
+    have hx := (hs x).mp hxs
+    have hxPsi : Sat M.mem (scons x e) psi :=
+      (Sat_rename_rSepParam psi e a x).mp hx.2
+    exact ⟨hx.1, hxPsi⟩
+  · intro hx
+    exact (hs x).mpr
+      ⟨hx.1, (Sat_rename_rSepParam psi e a x).mpr hx.2⟩
+
+end FirstOrderFiniteAdjunctionModel
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
 

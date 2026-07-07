@@ -205,6 +205,7 @@ open SetTheory
 #check @AckermannHF.HFFinAx_s_finite_induction
 #check @AckermannHF.semantic_finite_induction_schema_of_HFFinAx_s
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel.sepBy_exists
 #check @AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
@@ -236,6 +237,8 @@ open SetTheory
 #check @AckermannHF.HF_succRecTotalOnOrdinalAt
 #check @AckermannHF.HF_memMaxAt
 #check @AckermannHF.HF_subsetAt_spec
+#check @AckermannHF.HF_sepByAt
+#check @AckermannHF.HF_sepByAt_spec
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
 #check @AckermannHF.HF_ordinalLikeAt_spec
