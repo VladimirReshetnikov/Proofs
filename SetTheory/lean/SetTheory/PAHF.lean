@@ -637,6 +637,13 @@ def HF_succRecApproxAt (f s m : Nat) : Form :=
         (fAnd (HF_pairTotalBelowSuccAt f m)
           (HF_pairSuccStepAt f m))))
 
+/-- Formula macro: successor-recursion from slot `s` is total through slot `m`.
+It existentially packages a recursion graph and its value at key `m`. -/
+def HF_succRecTotalAt (s m : Nat) : Form :=
+  fEx (fEx (fAnd
+    (HF_succRecApproxAt 1 (s+2) (m+2))
+    (HF_pairMemAt (m+2) 0 1)))
+
 theorem HF_succRecApproxAt_spec {α : Type} (M : AdjunctionModel α)
     (e : Nat → α) (f s m : Nat) :
     Sat M.mem e (HF_succRecApproxAt f s m) ↔
@@ -763,6 +770,11 @@ def HF_ordinalLikeAt (a : Nat) : Form :=
     (fAnd
       (fAll (fImp (fMem 0 (a+1)) (HF_transitiveAt 0)))
       (HF_memTotalOnAt a))
+
+/-- Formula macro: successor-recursion from slot `s` is total through slot `m`
+whenever slot `m` is ordinal-like. -/
+def HF_succRecTotalOnOrdinalAt (s m : Nat) : Form :=
+  fImp (HF_ordinalLikeAt m) (HF_succRecTotalAt s m)
 
 theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
     (e : Nat → α) (a : Nat) :
@@ -1091,6 +1103,46 @@ theorem adjoin_self_injective_on_ordinalLike {α : Type u}
     · exact hba.symm
   · exact hab
 
+/-- The chosen empty object is ordinal-like in every first-order adjunction
+model. -/
+theorem ordinalLike_empty {α : Type u} (M : FirstOrderAdjunctionModel α) :
+    OrdinalLike M.mem M.empty := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro y hy
+    exact False.elim (M.empty_spec y hy)
+  · intro y hy
+    exact False.elim (M.empty_spec y hy)
+  · intro y hy
+    exact False.elim (M.empty_spec y hy)
+
+/-- Self-adjunction preserves ordinal-likeness in every first-order adjunction
+model. -/
+theorem ordinalLike_adjoin_self {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {a s : α}
+    (ha : OrdinalLike M.mem a) (hs : s = M.adjoin a a) :
+    OrdinalLike M.mem s := by
+  subst s
+  refine ⟨?_, ?_, ?_⟩
+  · intro y hy x hx
+    apply (M.adjoin_spec x a a).mpr
+    rcases (M.adjoin_spec y a a).mp hy with hyin | hyeq
+    · exact Or.inl (ha.1 y hyin x hx)
+    · rw [hyeq] at hx
+      exact Or.inl hx
+  · intro y hy
+    rcases (M.adjoin_spec y a a).mp hy with hyin | hyeq
+    · exact ha.2.1 y hyin
+    · rw [hyeq]
+      exact ha.1
+  · intro y hy z hz
+    rcases (M.adjoin_spec y a a).mp hy with hyin | hyeq
+    · rcases (M.adjoin_spec z a a).mp hz with hzin | hzeq
+      · exact ha.2.2 y hyin z hzin
+      · exact Or.inl (by rw [hzeq]; exact hyin)
+    · rcases (M.adjoin_spec z a a).mp hz with hzin | hzeq
+      · exact Or.inr (Or.inr (by rw [hyeq]; exact hzin))
+      · exact Or.inr (Or.inl (by rw [hyeq, hzeq]))
+
 /-- Singleton inside a chosen first-order HF model. -/
 def single {α : Type u} (M : FirstOrderAdjunctionModel α) (a : α) : α :=
   M.adjoin M.empty a
@@ -1409,6 +1461,11 @@ def SuccRecApprox {α : Type u} (M : FirstOrderAdjunctionModel α) (s f m : α) 
   PairTotalBelowSucc M f m ∧
   PairSuccStep M f m
 
+/-- Total successor-recursion data through a key `m`: a trace plus its value at
+`m`. -/
+def SuccRecTotal {α : Type u} (M : FirstOrderAdjunctionModel α) (s m : α) : Prop :=
+  ∃ f z, SuccRecApprox M s f m ∧ M.mem (kpair M m z) f
+
 /-- The one-pair graph `{⟨0,s⟩}` used for successor recursion through zero. -/
 def zeroSuccRecGraph {α : Type u} (M : FirstOrderAdjunctionModel α) (s : α) : α :=
   single M (kpair M M.empty s)
@@ -1441,6 +1498,14 @@ theorem zeroSuccRecGraph_succRecApprox {α : Type u}
       exact ⟨s, zeroSuccRecGraph_base M s⟩
   · intro k _t _y hkm _ _
     exact False.elim (M.empty_spec k hkm)
+
+/-- Successor-recursion is total through zero. -/
+theorem succRecTotal_empty {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (s : α) :
+    SuccRecTotal M s M.empty := by
+  exact ⟨zeroSuccRecGraph M s, s,
+    zeroSuccRecGraph_succRecApprox M s,
+    zeroSuccRecGraph_base M s⟩
 
 /-- Extend a successor-recursion graph by the next pair
 `⟨m+1, z+1⟩`. -/
@@ -1550,6 +1615,18 @@ theorem succRecGraphSucc_succRecApprox {α : Type u}
       · have hy : y = sz := (kpair_injective M hNew).2
         rw [ht, hy]
 
+/-- If successor-recursion is total through an ordinal-like key `m`, it is total
+through its successor. -/
+theorem succRecTotal_succ {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {s m : α}
+    (hm : OrdinalLike M.mem m)
+    (ht : SuccRecTotal M s m) :
+    SuccRecTotal M s (M.adjoin m m) := by
+  rcases ht with ⟨f, z, hf, hz⟩
+  exact ⟨succRecGraphSucc M f m z, M.adjoin z z,
+    succRecGraphSucc_succRecApprox M hm hf hz,
+    succRecGraphSucc_new M f m z⟩
+
 theorem HF_succRecApproxAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
     (e : Nat → α) (f s m : Nat) :
     Sat M.mem e (HF_succRecApproxAt f s m) ↔
@@ -1571,6 +1648,82 @@ theorem HF_succRecApproxAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
     HF_pairBaseAt_spec M e f s,
     HF_pairTotalBelowSuccAt_spec M e f m,
     HF_pairSuccStepAt_spec M e f m]
+
+/-- Semantic reading of `HF_succRecTotalAt` in a chosen first-order adjunction
+model. -/
+theorem HF_succRecTotalAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (s m : Nat) :
+    Sat M.mem e (HF_succRecTotalAt s m) ↔
+      SuccRecTotal M (e s) (e m) := by
+  constructor
+  · intro h
+    rcases h with ⟨f, z, hf, hz⟩
+    have hf' := (HF_succRecApproxAt_spec M (scons z (scons f e))
+      1 (s+2) (m+2)).mp hf
+    have hz' := (HF_pairMemAt_spec M (scons z (scons f e))
+      (m+2) 0 1).mp hz
+    change SuccRecApprox M (e s) f (e m) at hf'
+    change M.mem (kpair M (e m) z) f at hz'
+    exact ⟨f, z, hf', hz'⟩
+  · intro h
+    rcases h with ⟨f, z, hf, hz⟩
+    refine ⟨f, z, ?_, ?_⟩
+    · apply (HF_succRecApproxAt_spec M (scons z (scons f e))
+        1 (s+2) (m+2)).mpr
+      change SuccRecApprox M (e s) f (e m)
+      exact hf
+    · apply (HF_pairMemAt_spec M (scons z (scons f e))
+        (m+2) 0 1).mpr
+      change M.mem (kpair M (e m) z) f
+      exact hz
+
+/-- Semantic reading of the ordinal-relativized successor-recursion totality
+formula. -/
+theorem HF_succRecTotalOnOrdinalAt_spec {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α) (s m : Nat) :
+    Sat M.mem e (HF_succRecTotalOnOrdinalAt s m) ↔
+      (OrdinalLike M.mem (e m) → SuccRecTotal M (e s) (e m)) := by
+  constructor
+  · intro h hm
+    exact (HF_succRecTotalAt_spec M e s m).mp
+      (h ((HF_ordinalLikeAt_spec e m).mpr hm))
+  · intro h hmSat
+    exact (HF_succRecTotalAt_spec M e s m).mpr
+      (h ((HF_ordinalLikeAt_spec e m).mp hmSat))
+
+/-- If every ordinal-like object is either empty or a successor of one of its
+members, first-order HF induction proves successor-recursion totality through
+all ordinal-like keys. -/
+theorem succRecTotal_of_ordinalLike_of_predecessor {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hPred : ∀ a, OrdinalLike M.mem a →
+      a = M.empty ∨ ∃ p, M.mem p a ∧ a = M.adjoin p p)
+    (s m : α) (hm : OrdinalLike M.mem m) :
+    SuccRecTotal M s m := by
+  let phi : Form := HF_succRecTotalOnOrdinalAt 1 0
+  let tail : Nat → α := fun _ => s
+  have hind := M.induction_schema phi (scons s tail)
+  have hall : ∀ a, Sat M.mem (scons a (scons s tail)) phi := by
+    apply hind
+    intro a ih
+    apply (HF_succRecTotalOnOrdinalAt_spec M
+      (scons a (scons s tail)) 1 0).mpr
+    intro ha
+    rcases hPred a ha with haEmpty | ⟨p, hpa, haSucc⟩
+    · rw [haEmpty]
+      exact succRecTotal_empty M s
+    · have hpOrd : OrdinalLike M.mem p := OrdinalLike.of_mem ha hpa
+      have hpSat : Sat M.mem (scons p (scons s tail)) phi :=
+        (Sat_rename_rSkipParam phi (scons s tail) a p).mp (ih p hpa)
+      have hpTotal : SuccRecTotal M s p := by
+        simpa [phi, tail, scons] using
+          ((HF_succRecTotalOnOrdinalAt_spec M
+            (scons p (scons s tail)) 1 0).mp hpSat hpOrd)
+      rw [haSucc]
+      exact succRecTotal_succ M hpOrd hpTotal
+  simpa [phi, tail, scons] using
+    ((HF_succRecTotalOnOrdinalAt_spec M
+      (scons m (scons s tail)) 1 0).mp (hall m) hm)
 
 end FirstOrderAdjunctionModel
 
@@ -2110,6 +2263,73 @@ theorem addGraphAt_zero_right_model {α : Type u}
     change M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f
     rw [hright, hout]
     exact FirstOrderAdjunctionModel.zeroSuccRecGraph_base M (e left)
+
+/-- Build an addition graph from explicit successor-recursion trace data. -/
+theorem addGraphAt_of_succRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α)
+    (out left right : Nat) {f : α}
+    (hf : FirstOrderAdjunctionModel.SuccRecApprox M (e left) f (e right))
+    (hout : M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f) :
+    Sat M.mem e (addGraphAt out left right) := by
+  refine ⟨f, ?_, ?_⟩
+  · apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M (scons f e)
+      0 (left+1) (right+1)).mpr
+    change FirstOrderAdjunctionModel.SuccRecApprox M (e left) f (e right)
+    exact hf
+  · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M (scons f e)
+      (right+1) (out+1) 0).mpr
+    change M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f
+    exact hout
+
+theorem addGraphAt_succ_right_of_addGraphAt_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α)
+    (outSucc out left rightSucc right : Nat)
+    (hrightOrd : OrdinalLike M.mem (e right))
+    (hrightSucc : e rightSucc = M.adjoin (e right) (e right))
+    (houtSucc : e outSucc = M.adjoin (e out) (e out))
+    (hadd : Sat M.mem e (addGraphAt out left right)) :
+    Sat M.mem e (addGraphAt outSucc left rightSucc) := by
+  rcases hadd with ⟨f, hf, hout⟩
+  have hf' := (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M (scons f e)
+    0 (left+1) (right+1)).mp hf
+  have hout' := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M (scons f e)
+    (right+1) (out+1) 0).mp hout
+  change FirstOrderAdjunctionModel.SuccRecApprox M (e left) f (e right) at hf'
+  change M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f at hout'
+  let g := FirstOrderAdjunctionModel.succRecGraphSucc M f (e right) (e out)
+  refine ⟨g, ?_, ?_⟩
+  · apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M (scons g e)
+      0 (left+1) (rightSucc+1)).mpr
+    change FirstOrderAdjunctionModel.SuccRecApprox M (e left) g (e rightSucc)
+    rw [hrightSucc]
+    exact FirstOrderAdjunctionModel.succRecGraphSucc_succRecApprox M hrightOrd hf' hout'
+  · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M (scons g e)
+      (rightSucc+1) (outSucc+1) 0).mpr
+    change M.mem (FirstOrderAdjunctionModel.kpair M (e rightSucc) (e outSucc)) g
+    rw [hrightSucc, houtSucc]
+    exact FirstOrderAdjunctionModel.succRecGraphSucc_new M f (e right) (e out)
+
+/-- Extend an addition graph through the successor of the right input from
+explicit predecessor trace data, without requiring the predecessor output to
+occupy a slot in the current environment. -/
+theorem addGraphAt_succ_right_of_succRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α)
+    (outSucc left rightSucc right : Nat) {f z : α}
+    (hrightOrd : OrdinalLike M.mem (e right))
+    (hrightSucc : e rightSucc = M.adjoin (e right) (e right))
+    (houtSucc : e outSucc = M.adjoin z z)
+    (hf : FirstOrderAdjunctionModel.SuccRecApprox M (e left) f (e right))
+    (hout : M.mem (FirstOrderAdjunctionModel.kpair M (e right) z) f) :
+    Sat M.mem e (addGraphAt outSucc left rightSucc) := by
+  let g := FirstOrderAdjunctionModel.succRecGraphSucc M f (e right) z
+  apply addGraphAt_of_succRecApprox_model M e outSucc left rightSucc
+      (f := g)
+  · change FirstOrderAdjunctionModel.SuccRecApprox M (e left) g (e rightSucc)
+    rw [hrightSucc]
+    exact FirstOrderAdjunctionModel.succRecGraphSucc_succRecApprox M hrightOrd hf hout
+  · change M.mem (FirstOrderAdjunctionModel.kpair M (e rightSucc) (e outSucc)) g
+    rw [hrightSucc, houtSucc]
+    exact FirstOrderAdjunctionModel.succRecGraphSucc_new M f (e right) z
 
 theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
@@ -5574,6 +5794,33 @@ theorem termGraphAt_succ_var_model {α : Type} (M : AdjunctionModel α)
       change e out = M.adjoin (e (ρ n)) (e (ρ n))
       exact h
 
+/-- In any chosen first-order adjunction model, the graph of the successor of a
+variable is self-adjunction of the value of that variable. -/
+theorem termGraphAt_succ_var_firstOrder_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out n : Nat) (e : Nat → α) :
+    Sat M.mem e (termGraphAt ρ out (PA.Term.succ (PA.Term.var n))) ↔
+      e out = M.adjoin (e (ρ n)) (e (ρ n)) := by
+  constructor
+  · intro h
+    rcases h with ⟨x, hx, hs⟩
+    have hx' : x = e (ρ n) := by
+      change x = scons x e (ρ n + 1) at hx
+      rwa [← Nat.succ_eq_add_one (ρ n)] at hx
+    have hs' := (FirstOrderAdjunctionModel.HF_succAt_spec M
+      (scons x e) (out+1) 0).mp hs
+    change e out = M.adjoin x x at hs'
+    simpa [hx'] using hs'
+  · intro h
+    refine ⟨e (ρ n), ?_, ?_⟩
+    · change scons (e (ρ n)) e 0 = scons (e (ρ n)) e (ρ n + 1)
+      rw [← Nat.succ_eq_add_one (ρ n)]
+      rfl
+    · apply (FirstOrderAdjunctionModel.HF_succAt_spec M
+        (scons (e (ρ n)) e) (out+1) 0).mpr
+      change e out = M.adjoin (e (ρ n)) (e (ρ n))
+      exact h
+
 theorem termGraphAt_add_var_zero_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
     (out n : Nat) (e : Nat → α) (h : e out = e (ρ n)) :
@@ -5589,6 +5836,84 @@ theorem termGraphAt_add_var_zero_model {α : Type u}
       (scons M.empty (scons (e (ρ n)) e)) (out+2) 1 0
     · simpa [scons] using h
     · rfl
+
+/-- A binary addition term graph from explicit successor-recursion trace data. -/
+theorem termGraphAt_add_var_var_of_succRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out left right : Nat) (e : Nat → α) {f : α}
+    (hf : FirstOrderAdjunctionModel.SuccRecApprox M (e (ρ left)) f (e (ρ right)))
+    (hout : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) (e out)) f) :
+    Sat M.mem e
+      (termGraphAt ρ out (PA.Term.add (PA.Term.var left) (PA.Term.var right))) := by
+  refine ⟨e (ρ left), e (ρ right), ?_, ?_, ?_⟩
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 2) 1 left
+      (scons (e (ρ right)) (scons (e (ρ left)) e))).mpr
+    simp [scons]
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 2) 0 right
+      (scons (e (ρ right)) (scons (e (ρ left)) e))).mpr
+    simp [scons]
+  · apply addGraphAt_of_succRecApprox_model M
+      (scons (e (ρ right)) (scons (e (ρ left)) e)) (out+2) 1 0
+      (f := f)
+    · change FirstOrderAdjunctionModel.SuccRecApprox M (e (ρ left)) f (e (ρ right))
+      exact hf
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) (e out)) f
+      exact hout
+
+/-- A graph for `x + S(y)` from a successor-recursion trace for `x + y`. -/
+theorem termGraphAt_add_var_succ_var_of_succRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out left right : Nat) (e : Nat → α) {f z : α}
+    (hrightOrd : OrdinalLike M.mem (e (ρ right)))
+    (hout : e out = M.adjoin z z)
+    (hf : FirstOrderAdjunctionModel.SuccRecApprox M (e (ρ left)) f (e (ρ right)))
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f) :
+    Sat M.mem e
+      (termGraphAt ρ out
+        (PA.Term.add (PA.Term.var left) (PA.Term.succ (PA.Term.var right)))) := by
+  let sy := M.adjoin (e (ρ right)) (e (ρ right))
+  refine ⟨e (ρ left), sy, ?_, ?_, ?_⟩
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 2) 1 left
+      (scons sy (scons (e (ρ left)) e))).mpr
+    simp [scons]
+  · apply (termGraphAt_succ_var_firstOrder_model M (fun n => ρ n + 2) 0 right
+      (scons sy (scons (e (ρ left)) e))).mpr
+    change sy = M.adjoin (e (ρ right)) (e (ρ right))
+    rfl
+  · apply addGraphAt_succ_right_of_succRecApprox_model M
+      (scons sy (scons (e (ρ left)) e)) (out+2) 1 0 (ρ right + 2)
+      (f := f) (z := z)
+    · simpa [sy, scons] using hrightOrd
+    · change sy = M.adjoin (e (ρ right)) (e (ρ right))
+      rfl
+    · change e out = M.adjoin z z
+      exact hout
+    · change FirstOrderAdjunctionModel.SuccRecApprox M (e (ρ left)) f (e (ρ right))
+      exact hf
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f
+      exact hz
+
+/-- A graph for `S(x + y)` from a successor-recursion trace for `x + y`. -/
+theorem termGraphAt_succ_add_var_var_of_succRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out left right : Nat) (e : Nat → α) {f z : α}
+    (hout : e out = M.adjoin z z)
+    (hf : FirstOrderAdjunctionModel.SuccRecApprox M (e (ρ left)) f (e (ρ right)))
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f) :
+    Sat M.mem e
+      (termGraphAt ρ out
+        (PA.Term.succ (PA.Term.add (PA.Term.var left) (PA.Term.var right)))) := by
+  refine ⟨z, ?_, ?_⟩
+  · apply termGraphAt_add_var_var_of_succRecApprox_model M (fun n => ρ n + 1)
+      0 left right (scons z e) (f := f)
+    · change FirstOrderAdjunctionModel.SuccRecApprox M (e (ρ left)) f (e (ρ right))
+      exact hf
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f
+      exact hz
+  · apply (FirstOrderAdjunctionModel.HF_succAt_spec M (scons z e)
+      (out+1) 0).mpr
+    change e out = M.adjoin z z
+    exact hout
 
 theorem termGraphAt_exact (t : PA.Term) :
     ∀ (ρ : Nat → Nat) (out : Nat) (v e),
@@ -5889,6 +6214,38 @@ theorem formulaAt_addZero_valid_model {α : Type u}
   · apply (termGraphAt_var_spec (mem := M.mem) (fun n => upVarMap ρ n + 2) 0 0
       (scons x (scons x (scons x e)))).mpr
     rfl
+
+/-- The add-successor PA axiom is valid under the PA-in-HF translation once
+successor-recursion traces are known to be total on ordinal-like right inputs.
+
+The remaining work for `addSucc` is therefore the object-language HF-induction
+proof of the `hTotal` hypothesis. -/
+theorem formulaAt_addSucc_valid_model_of_succRecTotal {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hTotal : ∀ s m, OrdinalLike M.mem m →
+      FirstOrderAdjunctionModel.SuccRecTotal M s m)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.addSucc) := by
+  intro x _hxDomain
+  intro y hyDomain
+  have hyOrd : OrdinalLike M.mem y :=
+    (HF_ordinalLikeAt_spec (scons y (scons x e)) 0).mp hyDomain
+  rcases hTotal x y hyOrd with ⟨f, z, hf, hz⟩
+  let sz := M.adjoin z z
+  let σ : Nat → Nat := fun n => upVarMap (upVarMap ρ) n + 2
+  let Eeq : Nat → α := scons sz (scons sz (scons y (scons x e)))
+  refine ⟨sz, sz, ?_, ?_, rfl⟩
+  · apply termGraphAt_add_var_succ_var_of_succRecApprox_model M σ 1 1 0 Eeq
+      (f := f) (z := z)
+    · simpa [σ, Eeq, scons, upVarMap] using hyOrd
+    · rfl
+    · simpa [σ, Eeq, scons, upVarMap] using hf
+    · simpa [σ, Eeq, scons, upVarMap] using hz
+  · apply termGraphAt_succ_add_var_var_of_succRecApprox_model M σ 0 1 0 Eeq
+      (f := f) (z := z)
+    · rfl
+    · simpa [σ, Eeq, scons, upVarMap] using hf
+    · simpa [σ, Eeq, scons, upVarMap] using hz
 
 /-- Successor-injectivity for the PA-in-HF translation follows from
 irreflexivity of membership.  In semantic HF models that irreflexivity comes
