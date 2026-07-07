@@ -1239,6 +1239,95 @@ theorem standard_sat_HF (v : Nat → Nat) :
     ∀ g, HFAx_s g → Sat Mem v g :=
   sat_HF_model standardModel v
 
+/-- The finite prefix of the Ackermann-coded set `a` using only candidate
+elements below `n`.  This gives an explicit adjunction construction of every
+standard HF object, independent of any formula being interpreted. -/
+def prefixBelow (a : Nat) : Nat → Nat
+  | 0 => empty
+  | n+1 => if a.testBit n then adjoin (prefixBelow a n) n else prefixBelow a n
+
+theorem prefixBelow_succ_of_mem {a n : Nat} (h : Mem n a) :
+    prefixBelow a (n+1) = adjoin (prefixBelow a n) n := by
+  have hbit : a.testBit n = true := h
+  simp [prefixBelow, hbit]
+
+theorem prefixBelow_succ_of_not_mem {a n : Nat} (h : ¬ Mem n a) :
+    prefixBelow a (n+1) = prefixBelow a n := by
+  have hbit : a.testBit n = false := by
+    cases hb : a.testBit n <;> simp [Mem, hb] at h ⊢
+  simp [prefixBelow, hbit]
+
+theorem mem_prefixBelow_iff {x a n : Nat} :
+    Mem x (prefixBelow a n) ↔ x < n ∧ Mem x a := by
+  induction n with
+  | zero =>
+      constructor
+      · intro h
+        exact False.elim (mem_empty x h)
+      · intro h
+        omega
+  | succ n ih =>
+      by_cases hn : Mem n a
+      · rw [prefixBelow_succ_of_mem hn, mem_adjoin, ih]
+        constructor
+        · intro h
+          rcases h with h | h
+          · exact ⟨Nat.lt_succ_of_lt h.1, h.2⟩
+          · subst x
+            exact ⟨Nat.lt_succ_self n, hn⟩
+        · intro h
+          have hle : x ≤ n := Nat.lt_succ_iff.mp h.1
+          rcases Nat.lt_or_eq_of_le hle with hlt | heq
+          · exact Or.inl ⟨hlt, h.2⟩
+          · exact Or.inr heq
+      · rw [prefixBelow_succ_of_not_mem hn, ih]
+        constructor
+        · intro h
+          exact ⟨Nat.lt_succ_of_lt h.1, h.2⟩
+        · intro h
+          have hle : x ≤ n := Nat.lt_succ_iff.mp h.1
+          rcases Nat.lt_or_eq_of_le hle with hlt | heq
+          · exact ⟨hlt, h.2⟩
+          · exact False.elim (hn (by simpa [heq] using h.2))
+
+theorem prefixBelow_self_eq (a : Nat) : prefixBelow a a = a := by
+  apply ext
+  intro x
+  rw [mem_prefixBelow_iff]
+  constructor
+  · intro h
+    exact h.2
+  · intro h
+    exact ⟨mem_lt h, h⟩
+
+theorem sat_HF_finite_induction_standard (phi : Form) (e : Nat → Nat) :
+    Sat Mem e (HF_finite_induction_form phi) := by
+  apply (HF_finite_induction_form_spec phi e).mpr
+  intro hgen a
+  have hpref : ∀ n, Sat Mem (scons (prefixBelow a n) e) phi := by
+    intro n
+    induction n with
+    | zero =>
+        exact hgen.1 (prefixBelow a 0) (fun x hx => mem_empty x hx)
+    | succ n ih =>
+        by_cases hn : Mem n a
+        · have hAdj :
+            ∀ x, Mem x (prefixBelow a (n+1)) ↔
+              Mem x (prefixBelow a n) ∨ x = n := by
+            intro x
+            rw [prefixBelow_succ_of_mem hn, mem_adjoin]
+          exact hgen.2 (prefixBelow a n) n (prefixBelow a (n+1)) hAdj ih
+        · simpa [prefixBelow_succ_of_not_mem hn] using ih
+  simpa [prefixBelow_self_eq a] using hpref a
+
+theorem standard_sat_HFFin (v : Nat → Nat) :
+    ∀ g, HFFinAx_s g → Sat Mem v g := by
+  intro g hg
+  rcases hg with hg | ⟨phi, rfl⟩
+  · exact standard_sat_HF v g hg
+  · exact (seal_valid (mem := Mem) (HF_finite_induction_form phi)).mpr
+      (sat_HF_finite_induction_standard phi) v
+
 /-- Named membership of the sealed empty-set axiom in the HF theory. -/
 theorem HFAx_s_empty : HFAx_s (sealF HF_empty_form) :=
   Or.inl rfl
@@ -6399,6 +6488,11 @@ theorem translated_HF_axiom_sat_nat (phi : Form)
     Sat natModel v (translateHFFormula phi) :=
   (translateHFFormula_exact phi v).mpr (AckermannHF.standard_sat_HF v phi hphi)
 
+theorem translated_HFFin_axiom_sat_nat (phi : Form)
+    (hphi : AckermannHF.HFFinAx_s phi) (v : Nat → Nat) :
+    Sat natModel v (translateHFFormula phi) :=
+  (translateHFFormula_exact phi v).mpr (AckermannHF.standard_sat_HFFin v phi hphi)
+
 theorem hfFormulaAt_sentence_of_HF_sentence (phi : Form) (ρ : Nat → Nat)
     (hphi : SetTheory.Sentence phi) : Sentence (hfFormulaAt ρ phi) := by
   intro i hi
@@ -6476,6 +6570,12 @@ theorem standard_sat_translatedHFAx (e : Nat → Nat) :
   intro g hg
   rcases hg with ⟨phi, hphi, rfl⟩
   exact translated_HF_axiom_sat_nat phi hphi e
+
+theorem standard_sat_translatedHFFinAx (e : Nat → Nat) :
+    ∀ g, translatedHFFinAx g → Sat natModel e g := by
+  intro g hg
+  rcases hg with ⟨phi, hphi, rfl⟩
+  exact translated_HFFin_axiom_sat_nat phi hphi e
 
 end Formula
 

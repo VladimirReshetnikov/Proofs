@@ -187,6 +187,7 @@ open SetTheory
 #check @PA.Formula.hfFormulaAt_exact
 #check @PA.Formula.translateHFFormula_exact
 #check @PA.Formula.translated_HF_axiom_sat_nat
+#check @PA.Formula.translated_HFFin_axiom_sat_nat
 #check @PA.Formula.hfFormulaAt_sentence_of_HF_sentence
 #check @PA.Formula.translateHFFormula_sentence_of_HF_sentence
 #check @PA.Formula.translated_HF_axiom_sentence
@@ -202,12 +203,18 @@ open SetTheory
 #check @PA.Formula.BProv_lift_translatedHFAx_to_PA
 #check @PA.Formula.BProv_lift_translatedHFFinAx_to_PA
 #check @PA.Formula.standard_sat_translatedHFAx
+#check @PA.Formula.standard_sat_translatedHFFinAx
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
 #check @AckermannHF.HFFinAx_s
 #check @AckermannHF.Sentences_HFFin
 #check @AckermannHF.HF_finite_induction_form
 #check @AckermannHF.HF_finite_induction_form_spec
+#check @AckermannHF.prefixBelow
+#check @AckermannHF.mem_prefixBelow_iff
+#check @AckermannHF.prefixBelow_self_eq
+#check @AckermannHF.sat_HF_finite_induction_standard
+#check @AckermannHF.standard_sat_HFFin
 #check @AckermannHF.HFFinAx_s_finite_induction
 #check @AckermannHF.semantic_finite_induction_schema_of_HFFinAx_s
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel
@@ -480,6 +487,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
+#check @AckermannHF.standard_sat_HFFin
 #check @AckermannHF.AdjunctionModel.mem_irrefl
 #check @AckermannHF.FirstOrderAdjunctionModel.mem_asymm
 #check @AckermannHF.HF_extensionality_form
