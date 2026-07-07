@@ -3,6 +3,7 @@ CoqProofs/Nicod.v
 CoqProofs/ArctanSquareIdentity.v
 CoqProofs/FloorSqrtSum.v
 CoqProofs/PowTower.v
+CoqProofs/A002845.v
 CoqProofs/EquationalLogic.v
 CoqProofs/WolframBooleanCertificates.v
 CoqProofs/WolframBooleanHuntingtonCertificates.v

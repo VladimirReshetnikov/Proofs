@@ -21,6 +21,10 @@ Current ports:
   summation identity from `FloorSqrtSum.lean`.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
+- `A002845.v` ports the exact-logarithm reduction for the natural power tower
+  sequence and verifies the first six values through a binary-`N` executable
+  logarithm.  The later Lean hereditary sparse-binary layer for larger values
+  is not yet ported.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -40,6 +44,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
