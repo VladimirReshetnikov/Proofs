@@ -999,6 +999,102 @@ theorem succRecTrace_pair_mem (s : Nat) {k n : Nat} (hk : k ≤ n) :
     Mem (kpair standardModel (ordinalCode k) (succIterObj s k)) (succRecTrace s n) :=
   (succRecTrace_mem_iff s _ n).mpr ⟨k, hk, rfl⟩
 
+theorem succRecTrace_functional (s n : Nat) :
+    PairFunctional standardModel (succRecTrace s n) := by
+  intro k y y' hky hky'
+  rcases (succRecTrace_mem_iff s _ n).mp hky with ⟨i, _hi, hpair_i⟩
+  rcases (succRecTrace_mem_iff s _ n).mp hky' with ⟨j, _hj, hpair_j⟩
+  have hcomp_i := kpair_injective standardModel hpair_i
+  have hcomp_j := kpair_injective standardModel hpair_j
+  have hij : i = j := by
+    apply ordinalCode_injective
+    exact hcomp_i.1.symm.trans hcomp_j.1
+  rw [hcomp_i.2, hcomp_j.2, hij]
+
+theorem succRecTrace_keysBelowSucc (s n : Nat) :
+    PairKeysBelowSucc standardModel (succRecTrace s n) (ordinalCode n) := by
+  intro k y hky
+  rcases (succRecTrace_mem_iff s _ n).mp hky with ⟨i, hi, hpair_i⟩
+  have hcomp_i := kpair_injective standardModel hpair_i
+  rw [hcomp_i.1]
+  rcases Nat.lt_or_eq_of_le hi with hlt | heq
+  · exact Or.inl (ordinalCode_mem_of_lt hlt)
+  · exact Or.inr (by rw [heq])
+
+theorem succRecTrace_totalBelowSucc (s n : Nat) :
+    PairTotalBelowSucc standardModel (succRecTrace s n) (ordinalCode n) := by
+  intro k hk
+  rcases hk with hmem | heq
+  · rcases (mem_ordinalCode_iff k n).mp hmem with ⟨i, hi, rfl⟩
+    exact ⟨succIterObj s i, succRecTrace_pair_mem s (Nat.le_of_lt hi)⟩
+  · rw [heq]
+    exact ⟨succIterObj s n, succRecTrace_pair_mem s (Nat.le_refl n)⟩
+
+theorem succRecTrace_succStep (s n : Nat) :
+    PairSuccStep standardModel (succRecTrace s n) (ordinalCode n) := by
+  intro k t y hkm hkt hsy
+  rcases (mem_ordinalCode_iff k n).mp hkm with ⟨i, _hi, hk⟩
+  rcases (succRecTrace_mem_iff s _ n).mp hkt with ⟨j, _hj, hpair_j⟩
+  have hcomp_j := kpair_injective standardModel hpair_j
+  have hij : i = j := by
+    apply ordinalCode_injective
+    exact hk.symm.trans hcomp_j.1
+  have ht : t = succIterObj s i := by
+    rw [hcomp_j.2, ← hij]
+  have hsucck : adjoin k k = ordinalCode (i+1) := by
+    rw [hk, ordinalCode_succ]
+  rcases (succRecTrace_mem_iff s _ n).mp hsy with ⟨l, _hl, hpair_l⟩
+  have hcomp_l := kpair_injective standardModel hpair_l
+  have hil : i+1 = l := by
+    apply ordinalCode_injective
+    exact hsucck.symm.trans hcomp_l.1
+  have hy : y = succIterObj s (i+1) := by
+    rw [hcomp_l.2, ← hil]
+  rw [hy, ht, succIterObj]
+  rfl
+
+theorem succRecTrace_succRecApprox (s n : Nat) :
+    SuccRecApprox standardModel s (succRecTrace s n) (ordinalCode n) := by
+  refine ⟨succRecTrace_functional s n,
+    succRecTrace_keysBelowSucc s n,
+    ?_,
+    succRecTrace_totalBelowSucc s n,
+    succRecTrace_succStep s n⟩
+  change Mem (kpair standardModel empty s) (succRecTrace s n)
+  simpa [ordinalCode_zero, succIterObj] using
+    (succRecTrace_pair_mem s (k := 0) (n := n) (Nat.zero_le n))
+
+theorem succRecApprox_value_of_le (s f : Nat) :
+    ∀ n N y,
+      SuccRecApprox standardModel s f (ordinalCode N) →
+      n ≤ N →
+      Mem (kpair standardModel (ordinalCode n) y) f →
+      y = succIterObj s n := by
+  intro n
+  induction n with
+  | zero =>
+      intro N y hA _hn hy
+      rcases hA with ⟨hfun, _hkeys, hbase, _htotal, _hstep⟩
+      have hbase' : Mem (kpair standardModel (ordinalCode 0) s) f := by
+        simpa [standardModel, ordinalCode_zero] using hbase
+      have hy_eq := hfun (ordinalCode 0) y s hy hbase'
+      simpa [succIterObj] using hy_eq
+  | succ n ih =>
+      intro N y hA hn hy
+      have hA' := hA
+      rcases hA with ⟨_hfun, _hkeys, _hbase, htotal, hstep⟩
+      have hnlt : n < N := by omega
+      rcases htotal (ordinalCode n) (Or.inl (ordinalCode_mem_of_lt hnlt)) with ⟨t, ht⟩
+      have htval := ih N t hA' (Nat.le_of_lt hnlt) ht
+      have hysucc :
+          Mem (kpair standardModel (adjoin (ordinalCode n) (ordinalCode n)) y) f := by
+        rw [← ordinalCode_succ]
+        exact hy
+      have hstepval := hstep (ordinalCode n) t y
+        (ordinalCode_mem_of_lt hnlt) ht hysucc
+      rw [hstepval, htval, succIterObj]
+      rfl
+
 /-! ### First PA-in-HF interpretation formulas already available -/
 
 namespace PAInHF
@@ -1012,6 +1108,12 @@ def zeroGraph : Form := HF_emptyAt 0
 /-- Graph formula for PA successor in HF.  Slot `0` is the output and slot `1`
 is the input. -/
 def succGraph : Form := HF_succAt 0 1
+
+/-- Graph formula for PA addition in HF.  Slot `0` is the output, slot `1`
+is the left input, and slot `2` is the right input.  The witness is a finite
+successor-recursion graph from the left input through the right input. -/
+def addGraph : Form :=
+  fEx (fAnd (HF_succRecApproxAt 0 2 3) (HF_pairMemAt 3 1 0))
 
 theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
@@ -1057,6 +1159,44 @@ theorem succGraph_exact_on_ordinalCodes (m n : Nat) (e : Nat → Nat) :
   · intro h
     subst h
     exact succGraph_ordinalCode n e
+
+theorem addGraph_ordinalCode (m n : Nat) (e : Nat → Nat) :
+    Sat Mem
+      (scons (ordinalCode (m+n)) (scons (ordinalCode m) (scons (ordinalCode n) e)))
+      addGraph := by
+  let f := succRecTrace (ordinalCode m) n
+  refine ⟨f, ?_, ?_⟩
+  · exact (HF_succRecApproxAt_spec standardModel
+      (scons f (scons (ordinalCode (m+n))
+        (scons (ordinalCode m) (scons (ordinalCode n) e)))) 0 2 3).mpr
+      (succRecTrace_succRecApprox (ordinalCode m) n)
+  · apply (HF_pairMemAt_spec standardModel
+      (scons f (scons (ordinalCode (m+n))
+        (scons (ordinalCode m) (scons (ordinalCode n) e)))) 3 1 0).mpr
+    have hp := succRecTrace_pair_mem (ordinalCode m) (k := n) (n := n) (Nat.le_refl n)
+    change Mem (kpair standardModel (ordinalCode n) (ordinalCode (m+n))) f
+    simpa [f, succIterObj_ordinalCode] using hp
+
+theorem addGraph_exact_on_ordinalCodes (r m n : Nat) (e : Nat → Nat) :
+    Sat Mem
+      (scons (ordinalCode r) (scons (ordinalCode m) (scons (ordinalCode n) e)))
+      addGraph ↔ r = m + n := by
+  constructor
+  · intro h
+    rcases h with ⟨f, hf, hout⟩
+    have hf' := (HF_succRecApproxAt_spec standardModel
+      (scons f (scons (ordinalCode r)
+        (scons (ordinalCode m) (scons (ordinalCode n) e)))) 0 2 3).mp hf
+    have hout' := (HF_pairMemAt_spec standardModel
+      (scons f (scons (ordinalCode r)
+        (scons (ordinalCode m) (scons (ordinalCode n) e)))) 3 1 0).mp hout
+    have hval := succRecApprox_value_of_le (ordinalCode m) f n n (ordinalCode r)
+      hf' (Nat.le_refl n) hout'
+    apply ordinalCode_injective
+    rw [hval, succIterObj_ordinalCode]
+  · intro h
+    subst h
+    exact addGraph_ordinalCode m n e
 
 theorem zeroGraph_domain (e : Nat → Nat)
     (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by
