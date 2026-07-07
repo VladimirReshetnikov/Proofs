@@ -8202,6 +8202,54 @@ theorem sat_axiom_s {α : Type u} (M : Model α) (e : Nat → α) :
       (fun e => sat_axiom M e (inductionForm phi)
         (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩))))))) e
 
+/-- Granular PA proof obligations for the translated HF axioms.
+
+This record intentionally contains proofs, not definitions: the Ackermann
+membership translation remains fixed, and each field is one concrete PA theorem
+that still has to be supplied by arithmetic reasoning. -/
+structure TranslatedHFAxiomProofs where
+  empty :
+    BProv Ax_s [] (translateHFFormula (SetTheory.sealF AckermannHF.HF_empty_form))
+  extensionality :
+    BProv Ax_s [] (translateHFFormula
+      (SetTheory.sealF AckermannHF.HF_extensionality_form))
+  adjoin :
+    BProv Ax_s [] (translateHFFormula (SetTheory.sealF AckermannHF.HF_adjoin_form))
+  induction :
+    ∀ phi : Form,
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF (AckermannHF.HF_induction_form phi)))
+
+/-- Granular PA proof obligations for the strengthened finite-HF theory. -/
+structure TranslatedHFFinAxiomProofs extends TranslatedHFAxiomProofs where
+  finite_induction :
+    ∀ phi : Form,
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF (AckermannHF.HF_finite_induction_form phi)))
+
+/-- Assemble the translated-HF axiom predicate from its named PA proof
+obligations. -/
+theorem BProv_Ax_s_of_translatedHFAx_of_proofs
+    (P : TranslatedHFAxiomProofs) {phi : Formula}
+    (hphi : translatedHFAx phi) : BProv Ax_s [] phi := by
+  rcases hphi with ⟨g, hg, rfl⟩
+  rcases hg with rfl | rfl | rfl | ⟨psi, rfl⟩
+  · exact P.empty
+  · exact P.extensionality
+  · exact P.adjoin
+  · exact P.induction psi
+
+/-- Assemble the translated finite-HF axiom predicate from its named PA proof
+obligations. -/
+theorem BProv_Ax_s_of_translatedHFFinAx_of_proofs
+    (P : TranslatedHFFinAxiomProofs) {phi : Formula}
+    (hphi : translatedHFFinAx phi) : BProv Ax_s [] phi := by
+  rcases hphi with ⟨g, hg, rfl⟩
+  rcases hg with hgHF | ⟨psi, rfl⟩
+  · exact BProv_Ax_s_of_translatedHFAx_of_proofs
+      P.toTranslatedHFAxiomProofs (translatedHFAx_intro hgHF)
+  · exact P.finite_induction psi
+
 end Formula
 
 end PA
@@ -17014,6 +17062,18 @@ def translatedHFFinTheoryInPAInterpretationOfAxiomProofs
   paIdentityInterpretationOfAxiomProofs
     PA.Formula.translatedHFFinAx PA.Formula.Ax_s hAx
 
+/-- Identity interpretation from translated finite-HF axioms into PA, assembled
+from the named per-axiom proof obligations. -/
+def translatedHFFinTheoryInPAInterpretationOfProofs
+    (P : PA.Formula.TranslatedHFFinAxiomProofs) :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFFinAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv :=
+  translatedHFFinTheoryInPAInterpretationOfAxiomProofs
+    (fun _ hphi =>
+      PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs P hphi)
+
 /-- Reverse interpretation of finite HF in PA from explicit PA proofs of every
 translated finite-HF axiom. -/
 def hfInPAInterpretationOfTranslatedHFFinAxiomProofs
@@ -17025,6 +17085,17 @@ def hfInPAInterpretationOfTranslatedHFFinAxiomProofs
       BProv PA.Formula.BProv :=
   hfInPAOfTranslatedHFFinTheoryInterpretation
     (translatedHFFinTheoryInPAInterpretationOfAxiomProofs hAx)
+
+/-- Reverse interpretation of finite HF in PA from the structured translated
+finite-HF axiom proof obligations. -/
+def hfInPAInterpretationOfTranslatedHFFinProofs
+    (P : PA.Formula.TranslatedHFFinAxiomProofs) :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFFinAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAOfTranslatedHFFinTheoryInterpretation
+    (translatedHFFinTheoryInPAInterpretationOfProofs P)
 
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop

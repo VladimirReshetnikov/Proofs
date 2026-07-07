@@ -249,6 +249,10 @@ open SetTheory
 #check @PA.Formula.BProv_lift_translatedHFFinAx_to_PA
 #check @PA.Formula.standard_sat_translatedHFAx
 #check @PA.Formula.standard_sat_translatedHFFinAx
+#check @PA.Formula.TranslatedHFAxiomProofs
+#check @PA.Formula.TranslatedHFFinAxiomProofs
+#check @PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs
+#check @PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs
 #check @PA.Formula.Prov_hfFormulaAt_of_Prov
 #check @PA.Formula.BProv_hfFormulaAt_of_BProv_HFFin
 #check @PA.Formula.BProv_translateHFFormula_of_BProv_HFFin
@@ -768,7 +772,9 @@ open SetTheory
 #check @AckermannHF.hfInPAOfTranslatedHFFinTheoryInterpretation
 #check @AckermannHF.paIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.translatedHFFinTheoryInPAInterpretationOfAxiomProofs
+#check @AckermannHF.translatedHFFinTheoryInPAInterpretationOfProofs
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFFinAxiomProofs
+#check @AckermannHF.hfInPAInterpretationOfTranslatedHFFinProofs
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
