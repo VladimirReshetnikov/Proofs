@@ -6216,6 +6216,75 @@ theorem BProv_exE_of_sentences {B : Formula → Prop} (hB : Sentences B)
           simp only [List.map_append, List.mem_append]
           exact Or.inr hx
 
+/-- Instantiate every quantifier in a finite universal closure by a PA-variable
+renaming.
+
+The side condition says that `k` really closes all free variables of `phi`.
+This is the syntactic counterpart of the semantic `seal_valid` lemma and is
+the workhorse for using sealed PA axiom-schema instances without hiding the
+de Bruijn bookkeeping. -/
+theorem BProv_closeN_allE_rename {B : Formula → Prop} {G : List Formula} :
+    ∀ (k : Nat) (phi : Formula) (r : Nat → Nat),
+      (∀ n, Free n phi → n < k) →
+      BProv B G (closeN k phi) →
+      BProv B G (rename r phi) := by
+  intro k
+  induction k with
+  | zero =>
+      intro phi r hfree h
+      have hsent : Sentence phi := by
+        intro n hn
+        have hlt := hfree n hn
+        omega
+      simpa [closeN, rename_eq_of_sentence hsent r] using h
+  | succ k ih =>
+      intro phi r hfree h
+      let tail : Nat → Nat := fun n => r (n+1)
+      have hclosed : BProv B G (rename tail (all phi)) := by
+        apply ih (all phi) tail
+        · intro n hn
+          have hlt := hfree (n+1) hn
+          omega
+        · simpa [closeN] using h
+      have hAll : BProv B G (all (rename (SetTheory.up tail) phi)) := by
+        simpa [rename, tail] using hclosed
+      have hInst : BProv B G
+          (subst (instTerm (Term.var (r 0)))
+            (rename (SetTheory.up tail) phi)) :=
+        BProv_allE (B := B) (G := G)
+          (a := rename (SetTheory.up tail) phi)
+          (t := Term.var (r 0)) hAll
+      have htarget :
+          subst (instTerm (Term.var (r 0)))
+              (rename (SetTheory.up tail) phi) =
+            rename r phi := by
+        calc
+          subst (instTerm (Term.var (r 0)))
+              (rename (SetTheory.up tail) phi) =
+              rename (SetTheory.inst (r 0))
+                (rename (SetTheory.up tail) phi) := by
+                exact subst_instTerm_var
+                  (rename (SetTheory.up tail) phi) (r 0)
+          _ = rename
+              (fun n => SetTheory.inst (r 0) (SetTheory.up tail n)) phi := by
+                exact rename_comp phi (SetTheory.inst (r 0))
+                  (SetTheory.up tail)
+          _ = rename r phi := by
+                apply rename_ext
+                intro n
+                cases n with
+                | zero => rfl
+                | succ n => rfl
+      simpa [htarget] using hInst
+
+/-- Use a sealed PA formula at any variable-renamed instance of its body. -/
+theorem BProv_sealPA_allE_rename {B : Formula → Prop} {G : List Formula}
+    (phi : Formula) (r : Nat → Nat)
+    (h : BProv B G (sealPA phi)) :
+    BProv B G (rename r phi) :=
+  BProv_closeN_allE_rename (bound phi) phi r
+    (fun n hn => free_lt_bound phi n hn) h
+
 theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
     {G : List Formula} {phi : Formula} (h : BProv B G phi) :
     ∀ e : Nat → α, (∀ b, B b → Sat M e b) →
@@ -8162,6 +8231,19 @@ theorem Ax_s_mulSucc : Ax_s (sealPA mulSucc) :=
 /-- Named membership of a sealed induction instance in PA. -/
 theorem Ax_s_induction (phi : Formula) : Ax_s (sealPA (inductionForm phi)) :=
   Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩)))))
+
+/-- PA proves every variable-renamed body of one of its sealed induction
+schema instances. -/
+theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
+    BProv Ax_s [] (rename r (inductionForm phi)) :=
+  BProv_sealPA_allE_rename (inductionForm phi) r
+    (BProv_ax (Ax_s_induction phi))
+
+/-- PA proves the unrenamed body of every induction schema instance. -/
+theorem BProv_Ax_s_inductionForm (phi : Formula) :
+    BProv Ax_s [] (inductionForm phi) := by
+  simpa [rename_id] using
+    BProv_Ax_s_inductionForm_rename phi (fun n : Nat => n)
 
 theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by

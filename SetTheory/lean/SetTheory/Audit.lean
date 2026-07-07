@@ -84,6 +84,8 @@ open SetTheory
 #check @PA.Formula.BProv_exI
 #check @PA.Formula.BProv_allI_of_sentences
 #check @PA.Formula.BProv_exE_of_sentences
+#check @PA.Formula.BProv_closeN_allE_rename
+#check @PA.Formula.BProv_sealPA_allE_rename
 #check @PA.Formula.soundness_BProv
 #check @PA.Term.Free
 #check @PA.Term.free_lt_bound
@@ -119,6 +121,8 @@ open SetTheory
 #check @PA.Formula.Ax_s_mulZero
 #check @PA.Formula.Ax_s_mulSucc
 #check @PA.Formula.Ax_s_induction
+#check @PA.Formula.BProv_Ax_s_inductionForm_rename
+#check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.leAt
 #check @PA.Formula.ltAt
 #check @PA.Formula.dvdAt
