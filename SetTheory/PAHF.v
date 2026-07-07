@@ -5394,6 +5394,201 @@ Proof.
   apply closeN_valid.
 Qed.
 
+Definition instTerm (t : term) : nat -> term :=
+  fun n =>
+    match n with
+    | 0 => t
+    | S k => tVar k
+    end.
+
+Lemma Sat_rename : forall (M : Model) phi
+    (r : nat -> nat) (e : nat -> M),
+  Sat M e (rename r phi) <-> Sat M (fun n => e (r n)) phi.
+Proof.
+  intros M phi.
+  induction phi; simpl; intros r e.
+  - rewrite (Term.eval_rename M t r e).
+    rewrite (Term.eval_rename M t0 r e).
+    reflexivity.
+  - reflexivity.
+  - split; intros hp hi.
+    + apply (proj1 (IHphi2 r e)).
+      apply hp.
+      apply (proj2 (IHphi1 r e)).
+      exact hi.
+    + apply (proj2 (IHphi2 r e)).
+      apply hp.
+      apply (proj1 (IHphi1 r e)).
+      exact hi.
+  - split; intros [ha hb].
+    + split.
+      * apply (proj1 (IHphi1 r e)); exact ha.
+      * apply (proj1 (IHphi2 r e)); exact hb.
+    + split.
+      * apply (proj2 (IHphi1 r e)); exact ha.
+      * apply (proj2 (IHphi2 r e)); exact hb.
+  - split; intros hp.
+    + destruct hp as [ha | hb].
+      * left. apply (proj1 (IHphi1 r e)); exact ha.
+      * right. apply (proj1 (IHphi2 r e)); exact hb.
+    + destruct hp as [ha | hb].
+      * left. apply (proj2 (IHphi1 r e)); exact ha.
+      * right. apply (proj2 (IHphi2 r e)); exact hb.
+  - split; intros hall d.
+    + pose proof (proj1 (IHphi (up r) (scons M d e))
+        (hall d)) as hbody.
+      apply (proj1 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))).
+      exact hbody.
+    + pose proof (proj2 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))
+        (hall d)) as hbody.
+      apply (proj2 (IHphi (up r) (scons M d e))).
+      exact hbody.
+  - split; intros hex.
+    + destruct hex as [d hd].
+      pose proof (proj1 (IHphi (up r) (scons M d e))
+        hd) as hbody.
+      exists d.
+      apply (proj1 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))).
+      exact hbody.
+    + destruct hex as [d hd].
+      exists d.
+      pose proof (proj2 (Sat_ext M phi
+        (fun n => scons M d e (up r n))
+        (scons M d (fun n => e (r n)))
+        (fun n => match n with 0 => eq_refl | S _ => eq_refl end))
+        hd) as hbody.
+      apply (proj2 (IHphi (up r) (scons M d e))).
+      exact hbody.
+Qed.
+
+Lemma Sat_rename_succ : forall (M : Model) phi
+    (e : nat -> M) (d : M),
+  Sat M (scons M d e) (rename S phi) <-> Sat M e phi.
+Proof.
+  intros M phi e d.
+  eapply iff_trans.
+  - apply Sat_rename.
+  - apply Sat_ext.
+    intro n. reflexivity.
+Qed.
+
+Lemma rename_ext : forall phi (r r' : nat -> nat),
+  (forall n, r n = r' n) -> rename r phi = rename r' phi.
+Proof.
+  induction phi; simpl; intros r r' h; try reflexivity.
+  - rewrite (Term.rename_ext t r r' h).
+    rewrite (Term.rename_ext t0 r r' h).
+    reflexivity.
+  - now rewrite (IHphi1 r r' h), (IHphi2 r r' h).
+  - now rewrite (IHphi1 r r' h), (IHphi2 r r' h).
+  - now rewrite (IHphi1 r r' h), (IHphi2 r r' h).
+  - rewrite (IHphi (up r) (up r')).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+  - rewrite (IHphi (up r) (up r')).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+Qed.
+
+Lemma rename_comp : forall phi (r r' : nat -> nat),
+  rename r (rename r' phi) = rename (fun n => r (r' n)) phi.
+Proof.
+  induction phi; simpl; intros r r'; try reflexivity.
+  - now rewrite !Term.rename_comp.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (up r) (up r')).
+    apply f_equal.
+    apply rename_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (up r) (up r')).
+    apply f_equal.
+    apply rename_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma rename_up_succ : forall phi (r : nat -> nat),
+  rename (up r) (rename S phi) = rename S (rename r phi).
+Proof.
+  intros phi r.
+  rewrite !rename_comp.
+  apply rename_ext.
+  intro n. reflexivity.
+Qed.
+
+Lemma subst_ext : forall phi (sigma tau : nat -> term),
+  (forall n, sigma n = tau n) -> subst sigma phi = subst tau phi.
+Proof.
+  induction phi; simpl; intros sigma tau h; try reflexivity.
+  - rewrite (Term.subst_ext t sigma tau h).
+    rewrite (Term.subst_ext t0 sigma tau h).
+    reflexivity.
+  - now rewrite (IHphi1 sigma tau h), (IHphi2 sigma tau h).
+  - now rewrite (IHphi1 sigma tau h), (IHphi2 sigma tau h).
+  - now rewrite (IHphi1 sigma tau h), (IHphi2 sigma tau h).
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    + reflexivity.
+    + intros [|n]; simpl; [reflexivity | now rewrite h].
+Qed.
+
+Lemma subst_rename : forall phi (sigma : nat -> term) (r : nat -> nat),
+  subst sigma (rename r phi) = subst (fun n => sigma (r n)) phi.
+Proof.
+  induction phi; simpl; intros sigma r; try reflexivity.
+  - now rewrite !Term.subst_rename.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (Term.upSubst sigma) (up r)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (Term.upSubst sigma) (up r)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma rename_subst : forall phi (r : nat -> nat) (sigma : nat -> term),
+  rename r (subst sigma phi) =
+    subst (fun n => Term.rename r (sigma n)) phi.
+Proof.
+  induction phi; simpl; intros r sigma; try reflexivity.
+  - now rewrite !Term.rename_subst.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (up r) (Term.upSubst sigma)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite !Term.rename_comp.
+      apply Term.rename_ext.
+      intro k. reflexivity.
+  - rewrite (IHphi (up r) (Term.upSubst sigma)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite !Term.rename_comp.
+      apply Term.rename_ext.
+      intro k. reflexivity.
+Qed.
+
 End Formula.
 
 End PA.
