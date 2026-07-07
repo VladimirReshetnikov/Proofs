@@ -1,5 +1,6 @@
 import Mathlib.Data.Finset.NAry
 import Mathlib.Data.Set.Card
+import Std.Data.HashSet.Lemmas
 
 /-!
 # Shared lexical syntax for binary power towers
@@ -348,6 +349,53 @@ theorem valueCard_eq_recursiveValueSet_ncard (atomValue : α)
   rw [valueCard, valueSet_eq_recursiveValueSet]
 
 /--
+Any level-indexed family of sets satisfying the standard split recurrence is
+the split-recursive value set.  A local computation-facing recursion of the
+same shape uses this to inherit its equivalence with the canonical lexical
+definition without repeating the strong induction.
+-/
+theorem eq_recursiveValueSet_of_recurrence (atomValue : α) (powValue : α -> α -> α)
+    (f : Nat -> Set α)
+    (hZero : f 0 = ∅)
+    (hOne : f 1 = {atomValue})
+    (hStep : ∀ n, f (n + 2) =
+      {v | ∃ k : Fin (n + 1),
+        ∃ x ∈ f (k.1 + 1),
+        ∃ y ∈ f (n + 1 - k.1),
+          v = powValue x y}) (n : Nat) :
+    f n = recursiveValueSet atomValue powValue n := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      cases n with
+      | zero =>
+          rw [hZero]
+          ext v
+          simp [recursiveValueSet]
+      | succ n =>
+          cases n with
+          | zero =>
+              rw [hOne]
+              ext v
+              simp [recursiveValueSet]
+          | succ n =>
+              rw [hStep n]
+              ext v
+              simp only [recursiveValueSet, Set.mem_setOf_eq]
+              constructor
+              · rintro ⟨k, x, hx, y, hy, rfl⟩
+                refine ⟨k, x, ?_, y, ?_, rfl⟩
+                · rw [← ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
+                  exact hx
+                · rw [← ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+                  exact hy
+              · rintro ⟨k, x, hx, y, hy, rfl⟩
+                refine ⟨k, x, ?_, y, ?_, rfl⟩
+                · rw [ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
+                  exact hx
+                · rw [ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+                  exact hy
+
+/--
 Finite-set version of `recursiveValueSet`, for interpretations whose values
 have decidable equality.  This is a computation-oriented presentation, not the
 canonical lexical definition; `recursiveValueFinset_coe` proves equivalence to
@@ -580,6 +628,323 @@ theorem recursiveValueFinset_card_eq_countsMemoThrough_getD
       simpa using
         (recursiveValueCountsMemoThrough_getD_eq_recursiveValueFinset_card
           (atomValue := atomValue) (powValue := powValue) (N := N) (i := i) hi).symm
+
+/-!
+### Shared hash-set fast levels
+
+`recursiveValueFinset` and its memo table are the proof-facing computation
+path, but `Finset` unions deduplicate by scanning lists, which is too slow for
+the larger certificate rows.  The definitions below are the shared executable
+fast path: recurrence rows are duplicate-free `List`s accumulated through a
+`Std.HashSet`, and every row is proved to enumerate exactly
+`recursiveValueFinset`.  A sequence instantiates this with its interpretation
+of the atom and of the binary exponentiation operator, exactly as for the
+slower shared views.
+-/
+
+section FastLevels
+
+variable {α : Type u} [BEq α] [LawfulBEq α] [Hashable α] [LawfulHashable α] [DecidableEq α]
+
+theorem hashSet_toList_nodup (m : Std.HashSet α) : m.toList.Nodup := by
+  have hpair := Std.HashSet.distinct_toList (m := m)
+  exact hpair.imp (by
+    intro a b hne heq
+    subst heq
+    simp [BEq.rfl] at hne)
+
+/-- Insert all values produced by one fixed left value into an accumulator. -/
+def insertRightValues (powValue : α -> α -> α) (a : α) (right : List α)
+    (seen : Std.HashSet α) : Std.HashSet α :=
+  right.foldl (fun seen b => seen.insert (powValue a b)) seen
+
+theorem mem_insertRightValues {powValue : α -> α -> α} {a : α} {right : List α}
+    {seen : Std.HashSet α} {x : α} :
+    x ∈ insertRightValues powValue a right seen ↔
+      x ∈ seen ∨ ∃ b ∈ right, powValue a b = x := by
+  induction right generalizing seen with
+  | nil =>
+      simp [insertRightValues]
+  | cons b bs ih =>
+      rw [insertRightValues, List.foldl_cons]
+      change x ∈ insertRightValues powValue a bs (seen.insert (powValue a b)) ↔
+        x ∈ seen ∨ ∃ b' ∈ b :: bs, powValue a b' = x
+      rw [ih]
+      rw [Std.HashSet.mem_insert]
+      simp [beq_iff_eq]
+      aesop
+
+/-- Insert all values produced by one binary split into an accumulator. -/
+def insertSplitProducts (powValue : α -> α -> α) (left right : List α)
+    (seen : Std.HashSet α) : Std.HashSet α :=
+  left.foldl (fun seen a => insertRightValues powValue a right seen) seen
+
+theorem mem_insertSplitProducts {powValue : α -> α -> α} {left right : List α}
+    {seen : Std.HashSet α} {x : α} :
+    x ∈ insertSplitProducts powValue left right seen ↔
+      x ∈ seen ∨ ∃ a ∈ left, ∃ b ∈ right, powValue a b = x := by
+  induction left generalizing seen with
+  | nil =>
+      simp [insertSplitProducts]
+  | cons a as ih =>
+      rw [insertSplitProducts, List.foldl_cons]
+      change x ∈ insertSplitProducts powValue as right
+          (insertRightValues powValue a right seen) ↔
+        x ∈ seen ∨ ∃ a' ∈ a :: as, ∃ b ∈ right, powValue a' b = x
+      rw [ih]
+      rw [mem_insertRightValues]
+      simp
+      aesop
+
+theorem mem_foldSplitProducts {ι : Type v} {powValue : α -> α -> α} {splits : List ι}
+    {left right : ι -> List α} {seen : Std.HashSet α} {x : α} :
+    x ∈ splits.foldl
+        (fun seen k => insertSplitProducts powValue (left k) (right k) seen) seen ↔
+      x ∈ seen ∨
+        ∃ k ∈ splits, ∃ a ∈ left k, ∃ b ∈ right k, powValue a b = x := by
+  induction splits generalizing seen with
+  | nil =>
+      simp
+  | cons k ks ih =>
+      rw [List.foldl_cons]
+      rw [ih]
+      rw [mem_insertSplitProducts]
+      simp
+      aesop
+
+/--
+Fast row builder for the shared finite split recurrence.  It returns a
+duplicate-free list; `fastLevelFromTable_toFinset_eq` proves that its
+`toFinset` is exactly the proof-facing `recursiveValueFinset` row.
+-/
+def fastLevelFromTable (atomValue : α) (powValue : α -> α -> α)
+    (levels : List (List α)) : Nat -> List α
+  | 0 => []
+  | 1 => [atomValue]
+  | n + 2 =>
+      ((List.finRange (n + 1)).foldl
+        (fun seen k =>
+          insertSplitProducts powValue
+            (levels.getD (k.1 + 1) [])
+            (levels.getD (n + 1 - k.1) [])
+            seen)
+        (∅ : Std.HashSet α)).toList
+
+theorem fastLevelFromTable_nodup (atomValue : α) (powValue : α -> α -> α)
+    (levels : List (List α)) (n : Nat) :
+    (fastLevelFromTable atomValue powValue levels n).Nodup := by
+  cases n with
+  | zero =>
+      simp [fastLevelFromTable]
+  | succ n =>
+      cases n with
+      | zero =>
+          simp [fastLevelFromTable]
+      | succ _ =>
+          exact hashSet_toList_nodup _
+
+theorem fastLevelFromTable_toFinset_eq {atomValue : α} {powValue : α -> α -> α}
+    {levels : List (List α)} {n : Nat}
+    (hlevels : ∀ i < n,
+      (levels.getD i []).toFinset = recursiveValueFinset atomValue powValue i) :
+    (fastLevelFromTable atomValue powValue levels n).toFinset =
+      recursiveValueFinset atomValue powValue n := by
+  cases n with
+  | zero =>
+      simp [fastLevelFromTable, recursiveValueFinset]
+  | succ n =>
+      cases n with
+      | zero =>
+          simp [fastLevelFromTable, recursiveValueFinset]
+      | succ n =>
+          ext x
+          simp only [fastLevelFromTable, List.mem_toFinset]
+          rw [Std.HashSet.mem_toList]
+          rw [mem_foldSplitProducts]
+          simp only [Std.HashSet.not_mem_empty, false_or]
+          simp only [recursiveValueFinset, Finset.mem_biUnion, Finset.mem_univ, true_and,
+            Finset.mem_image₂]
+          constructor
+          · rintro ⟨k, _hk, a, ha, b, hb, hx⟩
+            refine ⟨k, a, ?_, b, ?_, hx⟩
+            · rw [← hlevels (k.1 + 1) (Nat.succ_lt_succ k.2)]
+              exact List.mem_toFinset.mpr ha
+            · rw [← hlevels (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+              exact List.mem_toFinset.mpr hb
+          · rintro ⟨k, a, ha, b, hb, hx⟩
+            refine ⟨k, List.mem_finRange k, a, ?_, b, ?_, hx⟩
+            · rw [← hlevels (k.1 + 1) (Nat.succ_lt_succ k.2)] at ha
+              exact List.mem_toFinset.mp ha
+            · rw [← hlevels (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))] at hb
+              exact List.mem_toFinset.mp hb
+
+/-- Fast duplicate-free table of recurrence rows `0, ..., n - 1`. -/
+def fastLevelTable (atomValue : α) (powValue : α -> α -> α) : Nat -> List (List α)
+  | 0 => []
+  | n + 1 =>
+      let levels := fastLevelTable atomValue powValue n
+      levels ++ [fastLevelFromTable atomValue powValue levels n]
+
+theorem fastLevelTable_length (atomValue : α) (powValue : α -> α -> α) (n : Nat) :
+    (fastLevelTable atomValue powValue n).length = n := by
+  induction n with
+  | zero =>
+      rfl
+  | succ n ih =>
+      simp [fastLevelTable, ih]
+
+/-- The fast table agrees with `recursiveValueFinset` at every stored index. -/
+theorem fastLevelTable_getD_toFinset (atomValue : α) (powValue : α -> α -> α)
+    (n i : Nat) (hi : i < n) :
+    ((fastLevelTable atomValue powValue n).getD i []).toFinset =
+      recursiveValueFinset atomValue powValue i := by
+  induction n generalizing i with
+  | zero =>
+      exact (Nat.not_lt_zero i hi).elim
+  | succ n ih =>
+      have hle : i ≤ n := Nat.lt_succ_iff.mp hi
+      rcases Nat.lt_or_eq_of_le hle with hlt | heq
+      · have hiTable : i < (fastLevelTable atomValue powValue n).length := by
+          simpa [fastLevelTable_length] using hlt
+        rw [fastLevelTable]
+        rw [list_getD_eq_getElem
+          (fastLevelTable atomValue powValue n ++
+            [fastLevelFromTable atomValue powValue (fastLevelTable atomValue powValue n) n])
+          [] (by simpa [fastLevelTable_length] using hi)]
+        rw [List.getElem_append_left hiTable]
+        rw [← list_getD_eq_getElem (fastLevelTable atomValue powValue n) [] hiTable]
+        exact ih i hlt
+      · subst i
+        rw [fastLevelTable]
+        rw [list_getD_eq_getElem
+          (fastLevelTable atomValue powValue n ++
+            [fastLevelFromTable atomValue powValue (fastLevelTable atomValue powValue n) n])
+          [] (by simp [fastLevelTable_length])]
+        rw [List.getElem_append_right (by simp [fastLevelTable_length])]
+        simp [fastLevelTable_length, fastLevelFromTable_toFinset_eq ih]
+
+theorem fastLevelTable_getD_nodup (atomValue : α) (powValue : α -> α -> α)
+    (n i : Nat) (hi : i < n) :
+    ((fastLevelTable atomValue powValue n).getD i []).Nodup := by
+  induction n generalizing i with
+  | zero =>
+      exact (Nat.not_lt_zero i hi).elim
+  | succ n ih =>
+      have hle : i ≤ n := Nat.lt_succ_iff.mp hi
+      rcases Nat.lt_or_eq_of_le hle with hlt | heq
+      · have hiTable : i < (fastLevelTable atomValue powValue n).length := by
+          simpa [fastLevelTable_length] using hlt
+        rw [fastLevelTable]
+        rw [list_getD_eq_getElem
+          (fastLevelTable atomValue powValue n ++
+            [fastLevelFromTable atomValue powValue (fastLevelTable atomValue powValue n) n])
+          [] (by simpa [fastLevelTable_length] using hi)]
+        rw [List.getElem_append_left hiTable]
+        rw [← list_getD_eq_getElem (fastLevelTable atomValue powValue n) [] hiTable]
+        exact ih i hlt
+      · subst i
+        rw [fastLevelTable]
+        rw [list_getD_eq_getElem
+          (fastLevelTable atomValue powValue n ++
+            [fastLevelFromTable atomValue powValue (fastLevelTable atomValue powValue n) n])
+          [] (by simp [fastLevelTable_length])]
+        rw [List.getElem_append_right (by simp [fastLevelTable_length])]
+        simp [fastLevelTable_length, fastLevelFromTable_nodup]
+
+/-- Fast memoized recurrence row. -/
+def fastLevelMemo (atomValue : α) (powValue : α -> α -> α) (n : Nat) : List α :=
+  (fastLevelTable atomValue powValue (n + 1)).getD n []
+
+theorem fastLevelMemo_toFinset_eq (atomValue : α) (powValue : α -> α -> α) (n : Nat) :
+    (fastLevelMemo atomValue powValue n).toFinset =
+      recursiveValueFinset atomValue powValue n :=
+  fastLevelTable_getD_toFinset atomValue powValue (n + 1) n (Nat.lt_succ_self n)
+
+theorem fastLevelMemo_nodup (atomValue : α) (powValue : α -> α -> α) (n : Nat) :
+    (fastLevelMemo atomValue powValue n).Nodup :=
+  fastLevelTable_getD_nodup atomValue powValue (n + 1) n (Nat.lt_succ_self n)
+
+/-- Fast memoized row count, proved equal to the shared finite recurrence count. -/
+def fastCountMemo (atomValue : α) (powValue : α -> α -> α) (n : Nat) : Nat :=
+  (fastLevelMemo atomValue powValue n).length
+
+theorem fastCountMemo_eq_recursiveValueFinset_card (atomValue : α)
+    (powValue : α -> α -> α) (n : Nat) :
+    fastCountMemo atomValue powValue n =
+      (recursiveValueFinset atomValue powValue n).card := by
+  rw [fastCountMemo, ← fastLevelMemo_toFinset_eq atomValue powValue n]
+  exact (List.toFinset_card_of_nodup (fastLevelMemo_nodup atomValue powValue n)).symm
+
+/-- Fast counts for sizes `1, ..., n`, computed from one shared fast table. -/
+def fastCountsThrough (atomValue : α) (powValue : α -> α -> α) (n : Nat) : List Nat :=
+  ((fastLevelTable atomValue powValue (n + 1)).drop 1).map List.length
+
+theorem fastCountsThrough_getD {atomValue : α} {powValue : α -> α -> α}
+    {N i : Nat} (hi : i < N) :
+    (fastCountsThrough atomValue powValue N).getD i 0 =
+      (recursiveValueFinset atomValue powValue (i + 1)).card := by
+  unfold fastCountsThrough
+  have hiDrop :
+      i < (List.drop 1 (fastLevelTable atomValue powValue (N + 1))).length := by
+    simp [fastLevelTable_length, hi]
+  have hiCounts :
+      i <
+        (List.map List.length
+          (List.drop 1 (fastLevelTable atomValue powValue (N + 1)))).length := by
+    simpa using hiDrop
+  have hiTable : i + 1 < (fastLevelTable atomValue powValue (N + 1)).length := by
+    simpa [fastLevelTable_length, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+      using Nat.succ_lt_succ hi
+  rw [list_getD_eq_getElem _ _ hiCounts]
+  rw [List.getElem_map]
+  rw [List.getElem_drop]
+  have hiTable' : 1 + i < (fastLevelTable atomValue powValue (N + 1)).length := by
+    simpa [Nat.add_comm] using hiTable
+  have hrowSet :
+      ((fastLevelTable atomValue powValue (N + 1))[1 + i]).toFinset =
+        recursiveValueFinset atomValue powValue (i + 1) := by
+    rw [← list_getD_eq_getElem (fastLevelTable atomValue powValue (N + 1)) [] hiTable']
+    simpa [Nat.add_comm] using
+      fastLevelTable_getD_toFinset atomValue powValue (N + 1) (i + 1)
+        (Nat.succ_lt_succ hi)
+  have hrowNodup : ((fastLevelTable atomValue powValue (N + 1))[1 + i]).Nodup := by
+    rw [← list_getD_eq_getElem (fastLevelTable atomValue powValue (N + 1)) [] hiTable']
+    simpa [Nat.add_comm] using
+      fastLevelTable_getD_nodup atomValue powValue (N + 1) (i + 1)
+        (Nat.succ_lt_succ hi)
+  calc
+    ((fastLevelTable atomValue powValue (N + 1))[1 + i]).length =
+        ((fastLevelTable atomValue powValue (N + 1))[1 + i]).toFinset.card :=
+      (List.toFinset_card_of_nodup hrowNodup).symm
+    _ = (recursiveValueFinset atomValue powValue (i + 1)).card := by rw [hrowSet]
+
+theorem recursiveValueFinset_card_eq_fastCountsThrough_getD {atomValue : α}
+    {powValue : α -> α -> α} {N n : Nat} (hpos : 0 < n) (hN : n ≤ N) :
+    (recursiveValueFinset atomValue powValue n).card =
+      (fastCountsThrough atomValue powValue N).getD (n - 1) 0 := by
+  cases n with
+  | zero =>
+      exact (Nat.not_lt_zero _ hpos).elim
+  | succ i =>
+      have hi : i < N := Nat.succ_le_iff.mp hN
+      simpa using
+        (fastCountsThrough_getD (atomValue := atomValue) (powValue := powValue)
+          (N := N) (i := i) hi).symm
+
+/--
+Prefix-certificate helper: one verified `fastCountsThrough` table row yields
+the canonical lexical count, for interpretations whose canonical value type is
+the computation type itself.
+-/
+theorem valueCard_eq_of_fastCountsThrough {atomValue : α} {powValue : α -> α -> α}
+    {N n value : Nat} (hpos : 0 < n) (hN : n ≤ N)
+    (hcount : (fastCountsThrough atomValue powValue N).getD (n - 1) 0 = value) :
+    valueCard atomValue powValue n = value := by
+  rw [valueCard_eq_recursiveValueFinset_card,
+    recursiveValueFinset_card_eq_fastCountsThrough_getD hpos hN]
+  exact hcount
+
+end FastLevels
 
 def e2 : Expr :=
   pow atom atom
