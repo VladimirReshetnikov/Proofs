@@ -864,6 +864,31 @@ theorem completeness_inf (B : Form → Prop) (psi : Form)
   have hnpv : Sat m v (fImp psi fBot) := hsatL _ (by simp)
   exact hnpv hp
 
+/-- Relative completeness with a finite context: semantic validity over every
+model of the sentence theory `B` satisfying the finite list `G` yields
+relative provability from `B` and `G`. -/
+theorem completeness_inf_context (B : Form → Prop) (G : List Form) (psi : Form)
+    (hB : Sentences B)
+    (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+      (∀ g, B g → Sat m v g) →
+      (∀ g, g ∈ G → Sat m v g) →
+      Sat m v psi) :
+    BProv B G psi := by
+  apply Classical.byContradiction
+  intro hnp
+  have hBcon : BCon B (fImp psi fBot :: G) := by
+    intro ⟨Gb, hGb, hbad⟩
+    apply hnp
+    refine ⟨Gb, hGb, ?_⟩
+    apply Prov_byContra
+    exact Prov_exch (G := Gb ++ (fImp psi fBot :: G)) (by mem_tac) hbad
+  obtain ⟨Dom, m, v, hsatB, hsatL⟩ :=
+    model_of_BCon B (fImp psi fBot :: G) hB hBcon
+  have hp : Sat m v psi :=
+    hval Dom m v hsatB (fun g hg => hsatL g (by simp [hg]))
+  have hnpv : Sat m v (fImp psi fBot) := hsatL _ (by simp)
+  exact hnpv hp
+
 /-- DEDUCTIVE EQUIVALENCE: two sentence theories with the same models prove
 the same sentences. -/
 theorem theory_equiv (B1 B2 : Form → Prop)

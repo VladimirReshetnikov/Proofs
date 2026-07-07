@@ -23,6 +23,7 @@ open SetTheory
 #check @completeness
 #check @prov_iff_valid
 #check @completeness_inf
+#check @completeness_inf_context
 #check @theory_equiv
 #check @BProv_ax
 #check @BProv_of_Prov
