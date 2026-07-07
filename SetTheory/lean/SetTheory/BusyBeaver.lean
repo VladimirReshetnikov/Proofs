@@ -107,6 +107,16 @@ theorem read_write_of_ne (tape : Tape) {pos q : Int} (h : q ≠ pos) (bit : Bool
     · simp [hp]
     · simp [hp, h]
 
+@[simp]
+theorem write_read_self (tape : Tape) (pos : Int) :
+    write tape pos (read tape pos) = tape := by
+  simp [read, write]
+  by_cases h : pos ∈ tape
+  · simp [h]
+  · simp [h]
+    intro a ha heq
+    exact h (heq ▸ ha)
+
 end Tape
 
 /-- The start state: state `0` when at least one operational state exists. -/

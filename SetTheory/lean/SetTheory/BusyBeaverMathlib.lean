@@ -159,6 +159,65 @@ def tm0ToTypedRado {Label : Type*} [Inhabited Label]
           move := Move.left
           next := some (TM0RadoState.normal q) }
 
+/--
+Relation between a Bool `TM0` configuration and the typed Rado simulator when
+the simulator is at a genuine `TM0` label.
+-/
+def TM0RadoNormalRel {Label : Type*} (tmCfg : Turing.TM0.Cfg Bool Label)
+    (radoCfg : TypedConfig (TM0RadoState Label)) : Prop :=
+  radoCfg.state = some (TM0RadoState.normal tmCfg.q) ∧
+    RadoMatchesTuringTape radoCfg.head radoCfg.tape tmCfg.Tape
+
+theorem tm0ToTypedRado_step_move {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {q q' : Label} {T : Turing.Tape Bool} {dir : Turing.Dir}
+    {head : Int} {tape : Tape}
+    (hM : M q T.head = some (q', Turing.TM0.Stmt.move dir))
+    (hTape : RadoMatchesTuringTape head tape T) :
+    TM0RadoNormalRel
+      ({ q := q', Tape := T.move dir } : Turing.TM0.Cfg Bool Label)
+      (TypedMachine.step (tm0ToTypedRado M)
+        ({ state := some (TM0RadoState.normal q), head := head, tape := tape } :
+          TypedConfig (TM0RadoState Label))) := by
+  have hHead : Tape.read tape head = T.head := by
+    simpa using hTape 0
+  have hTapeNoop : RadoMatchesTuringTape head (Tape.write tape head T.head) T := by
+    rw [← hHead, Tape.write_read_self]
+    exact hTape
+  constructor
+  · cases dir <;>
+      simp [TypedMachine.step, tm0ToTypedRado, hHead, hM, radoMoveOfTuringDir]
+  · cases dir <;>
+      simp [TypedMachine.step, tm0ToTypedRado, hHead, hM, radoMoveOfTuringDir]
+    · exact radoMatchesTuringTape_move_left hTapeNoop
+    · exact radoMatchesTuringTape_move_right hTapeNoop
+
+theorem tm0ToTypedRado_step_write {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {q q' : Label} {T : Turing.Tape Bool} {out : Bool}
+    {head : Int} {tape : Tape}
+    (hM : M q T.head = some (q', Turing.TM0.Stmt.write out))
+    (hTape : RadoMatchesTuringTape head tape T) :
+    TM0RadoNormalRel
+      ({ q := q', Tape := T.write out } : Turing.TM0.Cfg Bool Label)
+      (TypedMachine.step (tm0ToTypedRado M)
+        (TypedMachine.step (tm0ToTypedRado M)
+          ({ state := some (TM0RadoState.normal q), head := head, tape := tape } :
+            TypedConfig (TM0RadoState Label)))) := by
+  have hHead : Tape.read tape head = T.head := by
+    simpa using hTape 0
+  have hWrite : RadoMatchesTuringTape head (Tape.write tape head out) (T.write out) :=
+    radoMatchesTuringTape_write hTape
+  have hRight : RadoMatchesTuringTape (head + 1) (Tape.write tape head out)
+      ((T.write out).move Turing.Dir.right) :=
+    radoMatchesTuringTape_move_right hWrite
+  have hLeft := radoMatchesTuringTape_move_left hRight
+  constructor
+  · simp [TypedMachine.step, tm0ToTypedRado, hHead, hM]
+  · simp [TypedMachine.step, tm0ToTypedRado, hHead, hM]
+    change RadoMatchesTuringTape (head + 1 - 1) (Tape.write tape head out) (T.write out)
+    simpa using hLeft
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
