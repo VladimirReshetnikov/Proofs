@@ -161,6 +161,98 @@ Proof.
   nia.
 Qed.
 
+Lemma square_mod16_zero_mod4_zero (z : Z) :
+    (z ^ 2) mod 16 = 0 -> z mod 4 = 0.
+Proof.
+  intro h.
+  replace (z ^ 2) with (z * z) in h by ring.
+  rewrite Zmult_mod in h.
+  remember (z mod 16) as r eqn:Hr.
+  assert (hz4 : z mod 4 = r mod 4).
+  { symmetry.
+    rewrite Hr.
+    apply Z.mod_mod_divide.
+    exists 4. ring. }
+  pose proof (Z.mod_pos_bound z 16 ltac:(lia)) as hz.
+  rewrite <- Hr in hz.
+  assert (hrange : r = 0 \/ r = 1 \/ r = 2 \/ r = 3 \/
+          r = 4 \/ r = 5 \/ r = 6 \/ r = 7 \/
+          r = 8 \/ r = 9 \/ r = 10 \/ r = 11 \/
+          r = 12 \/ r = 13 \/ r = 14 \/ r = 15) by lia.
+  destruct hrange as [-> | [-> | [-> | [-> |
+    [-> | [-> | [-> | [-> |
+    [-> | [-> | [-> | [-> |
+    [-> | [-> | [-> | ->]]]]]]]]]]]]]]];
+    try (compute in h; discriminate);
+    rewrite hz4; reflexivity.
+Qed.
+
+Lemma square_mod16_zero_div4 (z : Z) :
+    (z ^ 2) mod 16 = 0 -> exists q : Z, z = 4 * q.
+Proof.
+  intro h.
+  pose proof (square_mod16_zero_mod4_zero z h) as hz4.
+  pose proof (proj1 (Z.mod_divide z 4 ltac:(lia)) hz4) as hdiv.
+  destruct hdiv as [q hq].
+  exists q.
+  rewrite hq.
+  ring.
+Qed.
+
+Lemma cMeasure_quarter_lt {c c' : Z} :
+    c = 4 * c' -> c <> 0 -> (cMeasure c' < cMeasure c)%nat.
+Proof.
+  intros hc hc0.
+  unfold cMeasure.
+  apply Z2Nat.inj_lt; try apply Z.abs_nonneg.
+  rewrite hc, Z.abs_mul.
+  change (Z.abs 4) with 4.
+  assert (hc' : c' <> 0).
+  { intro hzero. apply hc0. rewrite hc, hzero. ring. }
+  pose proof (proj2 (Z.abs_pos c') hc') as hcpos.
+  lia.
+Qed.
+
+Theorem Fermat42_both_even_descent {a b c : Z} (h : Fermat42 a b c)
+    (haeven : Z.Even a) (hbeven : Z.Even b) :
+    exists a' b' c' : Z,
+      Fermat42 a' b' c' /\ (cMeasure c' < cMeasure c)%nat.
+Proof.
+  pose proof (Fermat42_c_ne_zero h) as hcne.
+  destruct h as (ha & hb & heq).
+  destruct haeven as [a' haeq].
+  destruct hbeven as [b' hbeq].
+  assert (hcmod : (c ^ 2) mod 16 = 0).
+  { rewrite <- heq.
+    rewrite haeq, hbeq.
+    replace ((2 * a') ^ 4 + (2 * b') ^ 4) with
+      ((a' ^ 4 + b' ^ 4) * 16) by ring.
+    rewrite Z.mod_mul by discriminate.
+    reflexivity. }
+  destruct (square_mod16_zero_div4 c hcmod) as [c' hceq].
+  exists a', b', c'.
+  split.
+  - apply (proj2 (Fermat42_scale (a:=a') (b:=b') (c:=c') (k:=2) ltac:(lia))).
+    unfold Fermat42.
+    repeat split.
+    + intro hzero. apply ha. rewrite haeq, hzero. ring.
+    + intro hzero. apply hb. rewrite hbeq, hzero. ring.
+    + change (2 ^ 2) with 4.
+      rewrite <- haeq, <- hbeq, <- hceq.
+      exact heq.
+  - exact (cMeasure_quarter_lt hceq hcne).
+Qed.
+
+Theorem Fermat42_both_even_descent_bool {a b c : Z} (h : Fermat42 a b c)
+    (haeven : Z.even a = true) (hbeven : Z.even b = true) :
+    exists a' b' c' : Z,
+      Fermat42 a' b' c' /\ (cMeasure c' < cMeasure c)%nat.
+Proof.
+  exact (Fermat42_both_even_descent h
+    (proj1 (Z.even_spec a) haeven)
+    (proj1 (Z.even_spec b) hbeven)).
+Qed.
+
 Theorem no_Fermat42_of_descent (descent : Fermat42_descent_step) :
     forall a b c : Z, ~ Fermat42 a b c.
 Proof.
