@@ -595,6 +595,277 @@ Proof.
     + exact h.
 Qed.
 
+Definition hf_pair_functional (M : HFModel) (f : M) : Prop :=
+  forall k y y',
+    hf_rel M (hf_kpair_obj M k y) f ->
+    hf_rel M (hf_kpair_obj M k y') f ->
+    y = y'.
+
+Definition hf_pair_keys_below_succ (M : HFModel) (f m : M) : Prop :=
+  forall k y,
+    hf_rel M (hf_kpair_obj M k y) f ->
+    hf_rel M k m \/ k = m.
+
+Definition hf_pair_total_below_succ (M : HFModel) (f m : M) : Prop :=
+  forall k,
+    hf_rel M k m \/ k = m ->
+    exists y, hf_rel M (hf_kpair_obj M k y) f.
+
+Definition hf_pair_succ_step (M : HFModel) (f m : M) : Prop :=
+  forall k t y,
+    hf_rel M k m ->
+    hf_rel M (hf_kpair_obj M k t) f ->
+    hf_rel M (hf_kpair_obj M (hf_adjoin_obj M k k) y) f ->
+    y = hf_adjoin_obj M t t.
+
+Definition HF_pairFunctionalAt (f : nat) : form :=
+  fAll (fAll (fAll
+    (fImp
+      (fAnd
+        (HF_pairMemAt 2 1 (S (S (S f))))
+        (HF_pairMemAt 2 0 (S (S (S f)))))
+      (fEq 1 0)))).
+
+Lemma HF_pairFunctionalAt_spec : forall (M : HFModel) (e : nat -> M) f,
+  Sat M (hf_rel M) e (HF_pairFunctionalAt f) <->
+    hf_pair_functional M (e f).
+Proof.
+  intros M e f.
+  split.
+  - intros h k y y' hky hky'.
+    apply (h k y y').
+    split.
+    + apply (proj2 (HF_pairMemAt_spec M
+        (scons M y' (scons M y (scons M k e))) 2 1 (S (S (S f))))).
+      exact hky.
+    + apply (proj2 (HF_pairMemAt_spec M
+        (scons M y' (scons M y (scons M k e))) 2 0 (S (S (S f))))).
+      exact hky'.
+  - intros h k y y' hpairs.
+    unfold hf_pair_functional in h.
+    change (y = y').
+    exact (h k y y'
+      (proj1 (HF_pairMemAt_spec M
+        (scons M y' (scons M y (scons M k e))) 2 1 (S (S (S f))))
+        (proj1 hpairs))
+      (proj1 (HF_pairMemAt_spec M
+        (scons M y' (scons M y (scons M k e))) 2 0 (S (S (S f))))
+        (proj2 hpairs))).
+Qed.
+
+Definition HF_pairKeysBelowSuccAt (f m : nat) : form :=
+  fAll (fAll
+    (fImp
+      (HF_pairMemAt 1 0 (S (S f)))
+      (fOr (fMem 1 (S (S m))) (fEq 1 (S (S m)))))).
+
+Lemma HF_pairKeysBelowSuccAt_spec : forall (M : HFModel) (e : nat -> M) f m,
+  Sat M (hf_rel M) e (HF_pairKeysBelowSuccAt f m) <->
+    hf_pair_keys_below_succ M (e f) (e m).
+Proof.
+  intros M e f m.
+  split.
+  - intros h k y hky.
+    apply (h k y).
+    apply (proj2 (HF_pairMemAt_spec M
+      (scons M y (scons M k e)) 1 0 (S (S f)))).
+    exact hky.
+  - intros h k y hpair.
+    unfold hf_pair_keys_below_succ in h.
+    change (hf_rel M k (e m) \/ k = e m).
+    exact (h k y
+      (proj1 (HF_pairMemAt_spec M
+        (scons M y (scons M k e)) 1 0 (S (S f))) hpair)).
+Qed.
+
+Definition HF_pairTotalBelowSuccAt (f m : nat) : form :=
+  fAll
+    (fImp
+      (fOr (fMem 0 (S m)) (fEq 0 (S m)))
+      (fEx (HF_pairMemAt 1 0 (S (S f))))).
+
+Lemma HF_pairTotalBelowSuccAt_spec : forall (M : HFModel) (e : nat -> M) f m,
+  Sat M (hf_rel M) e (HF_pairTotalBelowSuccAt f m) <->
+    hf_pair_total_below_succ M (e f) (e m).
+Proof.
+  intros M e f m.
+  split.
+  - intros h k hk.
+    destruct (h k hk) as [y hy].
+    exists y.
+    apply (proj1 (HF_pairMemAt_spec M
+      (scons M y (scons M k e)) 1 0 (S (S f)))).
+    exact hy.
+  - intros h k hk.
+    unfold hf_pair_total_below_succ in h.
+    destruct (h k hk) as [y hy].
+    exists y.
+    apply (proj2 (HF_pairMemAt_spec M
+      (scons M y (scons M k e)) 1 0 (S (S f)))).
+    exact hy.
+Qed.
+
+Definition HF_pairSuccStepAt (f m : nat) : form :=
+  fAll (fAll (fAll
+    (fImp
+      (fMem 2 (S (S (S m))))
+      (fImp
+        (HF_pairMemAt 2 1 (S (S (S f))))
+        (fAll
+          (fImp
+            (HF_succAt 0 3)
+            (fImp
+              (HF_pairMemAt 0 1 (S (S (S (S f)))))
+              (HF_succAt 1 2)))))))).
+
+Lemma HF_pairSuccStepAt_spec : forall (M : HFModel) (e : nat -> M) f m,
+  Sat M (hf_rel M) e (HF_pairSuccStepAt f m) <->
+    hf_pair_succ_step M (e f) (e m).
+Proof.
+  intros M e f m.
+  split.
+  - intros h k t y hkm hkt hsy.
+    pose (sk := hf_adjoin_obj M k k).
+    pose proof (h k t y hkm) as h1.
+    pose proof (h1
+      (proj2 (HF_pairMemAt_spec M
+        (scons M y (scons M t (scons M k e))) 2 1 (S (S (S f)))) hkt))
+      as h2.
+    pose proof (h2 sk
+      (proj2 (HF_succAt_spec M
+        (scons M sk (scons M y (scons M t (scons M k e)))) 0 3) eq_refl))
+      as h3.
+    pose proof (h3
+      (proj2 (HF_pairMemAt_spec M
+        (scons M sk (scons M y (scons M t (scons M k e)))) 0 1
+        (S (S (S (S f))))) hsy)) as h4.
+    exact (proj1 (HF_succAt_spec M
+      (scons M sk (scons M y (scons M t (scons M k e)))) 1 2) h4).
+  - intros h k t y hkm hkt sk hsk hsky.
+    pose proof (proj1 (HF_succAt_spec M
+      (scons M sk (scons M y (scons M t (scons M k e)))) 0 3) hsk)
+      as hsk'.
+    simpl in hsk'.
+    assert (hsky' : hf_rel M
+        (hf_kpair_obj M (hf_adjoin_obj M k k) y) (e f)).
+    {
+      pose proof (proj1 (HF_pairMemAt_spec M
+        (scons M sk (scons M y (scons M t (scons M k e)))) 0 1
+        (S (S (S (S f))))) hsky) as hpair.
+      simpl in hpair.
+      rewrite hsk' in hpair.
+      exact hpair.
+    }
+    apply (proj2 (HF_succAt_spec M
+      (scons M sk (scons M y (scons M t (scons M k e)))) 1 2)).
+    change (y = hf_adjoin_obj M t t).
+    unfold hf_pair_succ_step in h.
+    change (hf_rel M k (e m)) in hkm.
+    exact (h k t y hkm
+      (proj1 (HF_pairMemAt_spec M
+        (scons M y (scons M t (scons M k e))) 2 1 (S (S (S f)))) hkt)
+      hsky').
+Qed.
+
+Definition HF_pairBaseAt (f s : nat) : form :=
+  fEx (fAnd (HF_emptyAt 0) (HF_pairMemAt 0 (S s) (S f))).
+
+Lemma HF_pairBaseAt_spec : forall (M : HFModel) (e : nat -> M) f s,
+  Sat M (hf_rel M) e (HF_pairBaseAt f s) <->
+    hf_rel M (hf_kpair_obj M (hf_empty_obj M) (e s)) (e f).
+Proof.
+  intros M e f s.
+  split.
+  - intros [z [hz hpair]].
+    pose proof (proj1 (HF_emptyAt_empty M (scons M z e) 0) hz) as hz'.
+    simpl in hz'.
+    pose proof (proj1 (HF_pairMemAt_spec M (scons M z e) 0 (S s) (S f)) hpair)
+      as hpair'.
+    simpl in hpair'.
+    rewrite hz' in hpair'.
+    exact hpair'.
+  - intro h.
+    exists (hf_empty_obj M).
+    split.
+    + apply (proj2 (HF_emptyAt_empty M (scons M (hf_empty_obj M) e) 0)).
+      reflexivity.
+    + apply (proj2 (HF_pairMemAt_spec M
+        (scons M (hf_empty_obj M) e) 0 (S s) (S f))).
+      simpl.
+      exact h.
+Qed.
+
+Definition HF_pairZeroBaseAt (f : nat) : form :=
+  fEx (fAnd (HF_emptyAt 0) (HF_pairMemAt 0 0 (S f))).
+
+Lemma HF_pairZeroBaseAt_spec : forall (M : HFModel) (e : nat -> M) f,
+  Sat M (hf_rel M) e (HF_pairZeroBaseAt f) <->
+    hf_rel M (hf_kpair_obj M (hf_empty_obj M) (hf_empty_obj M)) (e f).
+Proof.
+  intros M e f.
+  split.
+  - intros [z [hz hpair]].
+    pose proof (proj1 (HF_emptyAt_empty M (scons M z e) 0) hz) as hz'.
+    simpl in hz'.
+    pose proof (proj1 (HF_pairMemAt_spec M (scons M z e) 0 0 (S f)) hpair)
+      as hpair'.
+    simpl in hpair'.
+    rewrite hz' in hpair'.
+    exact hpair'.
+  - intro h.
+    exists (hf_empty_obj M).
+    split.
+    + apply (proj2 (HF_emptyAt_empty M (scons M (hf_empty_obj M) e) 0)).
+      reflexivity.
+    + apply (proj2 (HF_pairMemAt_spec M
+        (scons M (hf_empty_obj M) e) 0 0 (S f))).
+      simpl.
+      exact h.
+Qed.
+
+Definition hf_succ_rec_approx (M : HFModel) (s f m : M) : Prop :=
+  hf_pair_functional M f /\
+  hf_pair_keys_below_succ M f m /\
+  hf_rel M (hf_kpair_obj M (hf_empty_obj M) s) f /\
+  hf_pair_total_below_succ M f m /\
+  hf_pair_succ_step M f m.
+
+Definition HF_succRecApproxAt (f s m : nat) : form :=
+  fAnd (HF_pairFunctionalAt f)
+    (fAnd (HF_pairKeysBelowSuccAt f m)
+      (fAnd (HF_pairBaseAt f s)
+        (fAnd (HF_pairTotalBelowSuccAt f m)
+          (HF_pairSuccStepAt f m)))).
+
+Lemma HF_succRecApproxAt_spec : forall (M : HFModel) (e : nat -> M) f s m,
+  Sat M (hf_rel M) e (HF_succRecApproxAt f s m) <->
+    hf_succ_rec_approx M (e s) (e f) (e m).
+Proof.
+  intros M e f s m.
+  unfold HF_succRecApproxAt, hf_succ_rec_approx.
+  split.
+  - intros [hfun [hkeys [hbase [htotal hstep]]]].
+    exact (conj
+      (proj1 (HF_pairFunctionalAt_spec M e f) hfun)
+      (conj
+        (proj1 (HF_pairKeysBelowSuccAt_spec M e f m) hkeys)
+        (conj
+          (proj1 (HF_pairBaseAt_spec M e f s) hbase)
+          (conj
+            (proj1 (HF_pairTotalBelowSuccAt_spec M e f m) htotal)
+            (proj1 (HF_pairSuccStepAt_spec M e f m) hstep))))).
+  - intros [hfun [hkeys [hbase [htotal hstep]]]].
+    exact (conj
+      (proj2 (HF_pairFunctionalAt_spec M e f) hfun)
+      (conj
+        (proj2 (HF_pairKeysBelowSuccAt_spec M e f m) hkeys)
+        (conj
+          (proj2 (HF_pairBaseAt_spec M e f s) hbase)
+          (conj
+            (proj2 (HF_pairTotalBelowSuccAt_spec M e f m) htotal)
+            (proj2 (HF_pairSuccStepAt_spec M e f m) hstep))))).
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
