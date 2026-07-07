@@ -866,6 +866,348 @@ Proof.
             (proj2 (HF_pairSuccStepAt_spec M e f m) hstep))))).
 Qed.
 
+Definition rSepParam (n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S k => S (S k)
+  end.
+
+Lemma Sat_rename_rSepParam : forall (V : Type) (mem : V -> V -> Prop)
+    (psi : form) (e : nat -> V) (s x : V),
+  Sat V mem (scons V x (scons V s e)) (rename rSepParam psi) <->
+    Sat V mem (scons V x e) psi.
+Proof.
+  intros V mem psi e s x.
+  rewrite Sat_rename.
+  apply Sat_ext.
+  intros [|n]; reflexivity.
+Qed.
+
+Definition HF_subsetAt (a b : nat) : form :=
+  fAll (fImp (fMem 0 (S a)) (fMem 0 (S b))).
+
+Lemma HF_subsetAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a b : nat),
+  Sat V mem e (HF_subsetAt a b) <->
+    forall x, mem x (e a) -> mem x (e b).
+Proof.
+  reflexivity.
+Qed.
+
+Definition HF_sepByAt (psi : form) (a : nat) : form :=
+  fEx (fAll
+    (fIff
+      (fMem 0 1)
+      (fAnd (fMem 0 (S (S a))) (rename rSepParam psi)))).
+
+Lemma HF_sepByAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (psi : form) (e : nat -> V) (a : nat),
+  Sat V mem e (HF_sepByAt psi a) <->
+    exists s, forall x,
+      mem x s <-> mem x (e a) /\ Sat V mem (scons V x e) psi.
+Proof.
+  intros V mem psi e a.
+  split.
+  - intros [s hs].
+    exists s.
+    intro x.
+    pose proof (hs x) as hx.
+    unfold fIff in hx.
+    simpl in hx.
+    split.
+    + intro hxs.
+      destruct (proj1 hx hxs) as [hxa hpsi].
+      split.
+      * exact hxa.
+      * exact (proj1 (Sat_rename_rSepParam V mem psi e s x) hpsi).
+    + intros [hxa hpsi].
+      apply (proj2 hx).
+      split.
+      * exact hxa.
+      * exact (proj2 (Sat_rename_rSepParam V mem psi e s x) hpsi).
+  - intros [s hs].
+    exists s.
+    intro x.
+    unfold fIff.
+    simpl.
+    split.
+    + intro hxs.
+      destruct (proj1 (hs x) hxs) as [hxa hpsi].
+      split.
+      * exact hxa.
+      * exact (proj2 (Sat_rename_rSepParam V mem psi e s x) hpsi).
+    + intros [hxa hpsi].
+      apply (proj2 (hs x)).
+      split.
+      * exact hxa.
+      * exact (proj1 (Sat_rename_rSepParam V mem psi e s x) hpsi).
+Qed.
+
+Definition HF_binUnionAt (a b : nat) : form :=
+  fEx (fAll
+    (fIff
+      (fMem 0 1)
+      (fOr (fMem 0 (S (S a))) (fMem 0 (S (S b)))))).
+
+Lemma HF_binUnionAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a b : nat),
+  Sat V mem e (HF_binUnionAt a b) <->
+    exists u, forall x, mem x u <-> mem x (e a) \/ mem x (e b).
+Proof.
+  intros V mem e a b.
+  split.
+  - intros [u hu].
+    exists u.
+    intro x.
+    unfold fIff in hu.
+    simpl in hu.
+    exact (hu x).
+  - intros [u hu].
+    exists u.
+    intro x.
+    unfold fIff.
+    simpl.
+    exact (hu x).
+Qed.
+
+Definition HF_unionAt (a : nat) : form :=
+  fEx (fAll
+    (fIff
+      (fMem 0 1)
+      (fEx (fAnd (fMem 0 (S (S (S a)))) (fMem 1 0))))).
+
+Lemma HF_unionAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a : nat),
+  Sat V mem e (HF_unionAt a) <->
+    exists u, forall x, mem x u <-> exists v, mem v (e a) /\ mem x v.
+Proof.
+  intros V mem e a.
+  split.
+  - intros [u hu].
+    exists u.
+    intro x.
+    unfold fIff in hu.
+    simpl in hu.
+    exact (hu x).
+  - intros [u hu].
+    exists u.
+    intro x.
+    unfold fIff.
+    simpl.
+    exact (hu x).
+Qed.
+
+Definition TransitiveObj {V : Type} (mem : V -> V -> Prop) (a : V) : Prop :=
+  forall y, mem y a -> forall x, mem x y -> mem x a.
+
+Definition HF_transitiveAt (a : nat) : form :=
+  fAll (fImp (fMem 0 (S a))
+    (fAll (fImp (fMem 0 1) (fMem 0 (S (S a)))))).
+
+Lemma HF_transitiveAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a : nat),
+  Sat V mem e (HF_transitiveAt a) <-> TransitiveObj mem (e a).
+Proof.
+  intros V mem e a.
+  split.
+  - intros h y hy x hx. exact (h y hy x hx).
+  - intros h y hy x hx. exact (h y hy x hx).
+Qed.
+
+Definition MemTotalOn {V : Type} (mem : V -> V -> Prop) (a : V) : Prop :=
+  forall y, mem y a -> forall z, mem z a -> mem y z \/ y = z \/ mem z y.
+
+Definition ChainLike {V : Type} (mem : V -> V -> Prop) (a : V) : Prop :=
+  (forall y, mem y a -> TransitiveObj mem y) /\ MemTotalOn mem a.
+
+Definition HF_memTotalOnAt (a : nat) : form :=
+  fAll (fImp (fMem 0 (S a))
+    (fAll (fImp (fMem 0 (S (S a)))
+      (fOr (fMem 1 0) (fOr (fEq 1 0) (fMem 0 1)))))).
+
+Lemma HF_memTotalOnAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a : nat),
+  Sat V mem e (HF_memTotalOnAt a) <-> MemTotalOn mem (e a).
+Proof.
+  intros V mem e a.
+  split.
+  - intros h y hy z hz. exact (h y hy z hz).
+  - intros h y hy z hz. exact (h y hy z hz).
+Qed.
+
+Definition HF_chainLikeAt (a : nat) : form :=
+  fAnd
+    (fAll (fImp (fMem 0 (S a)) (HF_transitiveAt 0)))
+    (HF_memTotalOnAt a).
+
+Lemma HF_chainLikeAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a : nat),
+  Sat V mem e (HF_chainLikeAt a) <-> ChainLike mem (e a).
+Proof.
+  intros V mem e a.
+  split.
+  - intros [htrans htotal].
+    split.
+    + intros y hy.
+      exact (proj1 (HF_transitiveAt_spec V mem (scons V y e) 0) (htrans y hy)).
+    + exact (proj1 (HF_memTotalOnAt_spec V mem e a) htotal).
+  - intros [htrans htotal].
+    split.
+    + intros y hy.
+      exact (proj2 (HF_transitiveAt_spec V mem (scons V y e) 0) (htrans y hy)).
+    + exact (proj2 (HF_memTotalOnAt_spec V mem e a) htotal).
+Qed.
+
+Definition OrdinalLike {V : Type} (mem : V -> V -> Prop) (a : V) : Prop :=
+  TransitiveObj mem a /\
+  (forall y, mem y a -> TransitiveObj mem y) /\
+  MemTotalOn mem a.
+
+Lemma OrdinalLike_of_mem : forall (V : Type) (mem : V -> V -> Prop)
+    (a y : V),
+  OrdinalLike mem a -> mem y a -> OrdinalLike mem y.
+Proof.
+  intros V mem a y [htrans [hmtrans htotal]] hy.
+  split.
+  - exact (hmtrans y hy).
+  - split.
+    + intros z hz.
+      apply hmtrans.
+      eapply htrans; eauto.
+    + intros u hu z hz.
+      apply htotal.
+      * eapply htrans; eauto.
+      * eapply htrans; eauto.
+Qed.
+
+Lemma OrdinalLike_empty : forall (M : HFModel),
+  OrdinalLike (hf_rel M) (hf_empty_obj M).
+Proof.
+  intros M.
+  unfold OrdinalLike, TransitiveObj, MemTotalOn.
+  split.
+  - intros y hy. exfalso. exact (hf_empty_spec M y hy).
+  - split.
+    + intros y hy. exfalso. exact (hf_empty_spec M y hy).
+    + intros y hy. exfalso. exact (hf_empty_spec M y hy).
+Qed.
+
+Lemma OrdinalLike_adjoin_self : forall (M : HFModel) (a s : M),
+  OrdinalLike (hf_rel M) a ->
+  s = hf_adjoin_obj M a a ->
+  OrdinalLike (hf_rel M) s.
+Proof.
+  intros M a s [htrans [hmtrans htotal]] hs.
+  subst s.
+  unfold OrdinalLike, TransitiveObj, MemTotalOn in *.
+  split.
+  - intros y hy x hx.
+    apply (proj2 (hf_adjoin_spec M x a a)).
+    destruct (proj1 (hf_adjoin_spec M y a a) hy) as [hyin | hyeq].
+    + left. eapply htrans; eauto.
+    + subst y. left. exact hx.
+  - split.
+    + intros y hy.
+      destruct (proj1 (hf_adjoin_spec M y a a) hy) as [hyin | hyeq].
+      * exact (hmtrans y hyin).
+      * subst y. exact htrans.
+    + intros y hy z hz.
+      destruct (proj1 (hf_adjoin_spec M y a a) hy) as [hyin | hyeq].
+      * destruct (proj1 (hf_adjoin_spec M z a a) hz) as [hzin | hzeq].
+        -- exact (htotal y hyin z hzin).
+        -- subst z. left. exact hyin.
+      * subst y.
+        destruct (proj1 (hf_adjoin_spec M z a a) hz) as [hzin | hzeq].
+        -- right. right. exact hzin.
+        -- subst z. right. left. reflexivity.
+Qed.
+
+Definition HF_ordinalLikeAt (a : nat) : form :=
+  fAnd (HF_transitiveAt a)
+    (fAnd
+      (fAll (fImp (fMem 0 (S a)) (HF_transitiveAt 0)))
+      (HF_memTotalOnAt a)).
+
+Lemma HF_ordinalLikeAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a : nat),
+  Sat V mem e (HF_ordinalLikeAt a) <-> OrdinalLike mem (e a).
+Proof.
+  intros V mem e a.
+  split.
+  - intros [htrans [hmtrans htotal]].
+    split.
+    + exact (proj1 (HF_transitiveAt_spec V mem e a) htrans).
+    + split.
+      * intros y hy.
+        exact (proj1 (HF_transitiveAt_spec V mem (scons V y e) 0) (hmtrans y hy)).
+      * exact (proj1 (HF_memTotalOnAt_spec V mem e a) htotal).
+  - intros [htrans [hmtrans htotal]].
+    split.
+    + exact (proj2 (HF_transitiveAt_spec V mem e a) htrans).
+    + split.
+      * intros y hy.
+        exact (proj2 (HF_transitiveAt_spec V mem (scons V y e) 0) (hmtrans y hy)).
+      * exact (proj2 (HF_memTotalOnAt_spec V mem e a) htotal).
+Qed.
+
+Definition HF_memMaxAt (a : nat) : form :=
+  fImp
+    (fEx (fMem 0 (S a)))
+    (fEx
+      (fAnd
+        (fMem 0 (S a))
+        (fAll
+          (fImp
+            (fMem 0 (S (S a)))
+            (fImp (fMem 1 0) fBot))))).
+
+Lemma HF_memMaxAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a : nat),
+  Sat V mem e (HF_memMaxAt a) <->
+    ((exists x, mem x (e a)) ->
+      exists p, mem p (e a) /\ forall q, mem q (e a) -> ~ mem p q).
+Proof.
+  intros V mem e a.
+  split.
+  - intros h hne.
+    destruct (h hne) as [p [hp hmax]].
+    exists p. split; [exact hp | intros q hq hpq; exact (hmax q hq hpq)].
+  - intros h hne.
+    destruct (h hne) as [p [hp hmax]].
+    exists p. split; [exact hp | intros q hq hpq; exact (hmax q hq hpq)].
+Qed.
+
+Definition HF_chainSubsetsMaxAt (a : nat) : form :=
+  fAll
+    (fImp
+      (HF_subsetAt 0 (S a))
+      (fImp (HF_chainLikeAt 0) (HF_memMaxAt 0))).
+
+Lemma HF_chainSubsetsMaxAt_spec : forall (V : Type) (mem : V -> V -> Prop)
+    (e : nat -> V) (a : nat),
+  Sat V mem e (HF_chainSubsetsMaxAt a) <->
+    forall s,
+      (forall x, mem x s -> mem x (e a)) ->
+      ChainLike mem s ->
+      ((exists x, mem x s) ->
+        exists p, mem p s /\ forall q, mem q s -> ~ mem p q).
+Proof.
+  intros V mem e a.
+  split.
+  - intros h s hsSub hsChain.
+    apply (proj1 (HF_memMaxAt_spec V mem (scons V s e) 0)).
+    apply h.
+    + apply (proj2 (HF_subsetAt_spec V mem (scons V s e) 0 (S a))).
+      exact hsSub.
+    + apply (proj2 (HF_chainLikeAt_spec V mem (scons V s e) 0)).
+      exact hsChain.
+  - intros h s hsSubSat hsChainSat.
+    apply (proj2 (HF_memMaxAt_spec V mem (scons V s e) 0)).
+    apply h.
+    + exact (proj1 (HF_subsetAt_spec V mem (scons V s e) 0 (S a)) hsSubSat).
+    + exact (proj1 (HF_chainLikeAt_spec V mem (scons V s e) 0) hsChainSat).
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
