@@ -7554,6 +7554,10 @@ theorem replaceAt_zero_scons {α : Type u} (x d : α) (e : Nat → α) :
   intro n
   cases n <;> simp [replaceAt, scons]
 
+def succReplaceAt {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (k : Nat) (e : Nat → α) : Nat → α :=
+  replaceAt k (M.adjoin (e k) (e k)) e
+
 theorem scons_insertAt {α : Type u} (k : Nat) (x d : α) (e : Nat → α) :
     ∀ n, scons d (insertAt k x e) n = insertAt (k+1) x (scons d e) n := by
   intro n
@@ -7698,6 +7702,56 @@ theorem scons3_replaceAt_prefix {α : Type u}
         scons_replaceAt (((k+2)+p)) x d₃ (scons d₂ (scons d₁ e)) n
     _ = replaceAt ((k+3)+p) x (scons d₃ (scons d₂ (scons d₁ e))) n := by
       rw [show (((k+2)+p)+1) = (k+3)+p by omega]
+
+theorem scons_succReplaceAt_prefix {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (p k : Nat) (d : α) (e : Nat → α) :
+    ∀ n, scons d (succReplaceAt M (k+p) e) n =
+      succReplaceAt M ((k+1)+p) (scons d e) n := by
+  intro n
+  unfold succReplaceAt
+  have hval :
+      M.adjoin (scons d e ((k+1)+p)) (scons d e ((k+1)+p)) =
+        M.adjoin (e (k+p)) (e (k+p)) := by
+    have hslot : scons d e ((k+1)+p) = e (k+p) := by
+      rw [show (k+1)+p = (k+p)+1 by omega]
+      rfl
+    rw [hslot]
+  rw [hval]
+  exact scons_replaceAt_prefix p k (M.adjoin (e (k+p)) (e (k+p))) d e n
+
+theorem scons2_succReplaceAt_prefix {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (p k : Nat) (d₁ d₂ : α) (e : Nat → α) :
+    ∀ n, scons d₂ (scons d₁ (succReplaceAt M (k+p) e)) n =
+      succReplaceAt M ((k+2)+p) (scons d₂ (scons d₁ e)) n := by
+  intro n
+  unfold succReplaceAt
+  have hval :
+      M.adjoin (scons d₂ (scons d₁ e) ((k+2)+p))
+          (scons d₂ (scons d₁ e) ((k+2)+p)) =
+        M.adjoin (e (k+p)) (e (k+p)) := by
+    have hslot : scons d₂ (scons d₁ e) ((k+2)+p) = e (k+p) := by
+      rw [show (k+2)+p = (k+p)+2 by omega]
+      rfl
+    rw [hslot]
+  rw [hval]
+  exact scons2_replaceAt_prefix p k (M.adjoin (e (k+p)) (e (k+p))) d₁ d₂ e n
+
+theorem scons3_succReplaceAt_prefix {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (p k : Nat) (d₁ d₂ d₃ : α) (e : Nat → α) :
+    ∀ n, scons d₃ (scons d₂ (scons d₁ (succReplaceAt M (k+p) e))) n =
+      succReplaceAt M ((k+3)+p) (scons d₃ (scons d₂ (scons d₁ e))) n := by
+  intro n
+  unfold succReplaceAt
+  have hval :
+      M.adjoin (scons d₃ (scons d₂ (scons d₁ e)) ((k+3)+p))
+          (scons d₃ (scons d₂ (scons d₁ e)) ((k+3)+p)) =
+        M.adjoin (e (k+p)) (e (k+p)) := by
+    have hslot : scons d₃ (scons d₂ (scons d₁ e)) ((k+3)+p) = e (k+p) := by
+      rw [show (k+3)+p = (k+p)+3 by omega]
+      rfl
+    rw [hslot]
+  rw [hval]
+  exact scons3_replaceAt_prefix p k (M.adjoin (e (k+p)) (e (k+p))) d₁ d₂ d₃ e n
 
 theorem termGraphAt_substZero_insert_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (t : PA.Term) :
