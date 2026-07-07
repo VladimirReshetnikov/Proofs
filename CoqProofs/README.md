@@ -68,6 +68,12 @@ Current ports:
   certificate for 5139 rows and 2925 strict classes, verifies the documented
   strict class-25 cluster and tentative overflow singleton, and checks the
   probe-refined split to 2926 classes.
+- `A198683N12OverflowWitness.v` ports the syntactic witness expression from
+  `A198683N12OverflowWitness.lean`: the traced n = 11 base and its n = 12
+  overflow candidate are represented over the shared `PowTower.v` syntax, and
+  Coq verifies their sizes and membership in the corresponding
+  parenthesization lists.  The Lean file's semantic complex-valued membership,
+  norm formula, and separation criteria are not yet replayed in Coq.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -94,6 +100,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Magnitude.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Probe.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12OverflowWitness.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
