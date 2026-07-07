@@ -851,6 +851,54 @@ theorem tm0_supported_eval_nil_to_rado_halt {Label : Type*} [Inhabited Label]
   exact tm0_eval_nil_to_rado_halt (tm0SupportedMachine M hSupp)
     (tm0SupportedMachine_eval_of_original M hSupp hEval)
 
+/--
+General input-initializer handoff: once a typed Rado prefix reaches a
+configuration matching `TM0.init input`, any supported Bool `TM0` evaluation on
+that input yields a halted finite Rado machine.
+-/
+theorem tm0_supported_eval_to_rado_halt_of_initial_reaches {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {S : Set Label} [Fintype S]
+    (hSupp : Turing.TM0.Supports M S)
+    {input : List Bool} {output : Turing.ListBlank Bool}
+    {initCfg : TypedConfig (TM0RadoState S)}
+    (hEval : output ∈ Turing.TM0.eval M input)
+    (hInitRel : TM0RadoNormalRel
+      (@Turing.TM0.init Bool S (tm0SupportedInhabited M hSupp) inferInstance input)
+      initCfg)
+    (hInitReach : TypedRadoReaches
+      (@tm0ToTypedRado S (tm0SupportedInhabited M hSupp) (tm0SupportedMachine M hSupp))
+      ({ state := some (TM0RadoState.normal (@default S (tm0SupportedInhabited M hSupp))),
+          head := 0, tape := [] } : TypedConfig (TM0RadoState S))
+      initCfg) :
+    ∃ finalCfg : Turing.TM0.Cfg Bool S,
+    ∃ normalCfg haltCfg : TypedConfig (TM0RadoState S),
+      finalCfg.Tape.right₀ = output ∧
+      TM0RadoNormalRel finalCfg normalCfg ∧
+      haltCfg.state = none ∧
+      haltCfg.tape = normalCfg.tape ∧
+      (@tm0ToTypedRado S (tm0SupportedInhabited M hSupp)
+        (tm0SupportedMachine M hSupp)).HaltsWithScore
+        (TM0RadoState.normal (@default S (tm0SupportedInhabited M hSupp)))
+        haltCfg.tape.length ∧
+      AttainableScore (Fintype.card (TM0RadoState S)) haltCfg.tape.length := by
+  letI : Inhabited S := tm0SupportedInhabited M hSupp
+  have hEvalRestrict := tm0SupportedMachine_eval_of_original M hSupp hEval
+  rcases tm0_eval_mem_terminal (tm0SupportedMachine M hSupp) hEvalRestrict with
+    ⟨finalCfg, hReach, hTerminal, hOutput⟩
+  rcases tm0ToTypedRado_reaches_halt_normal (tm0SupportedMachine M hSupp)
+      hReach hTerminal hInitRel with
+    ⟨normalCfg, haltCfg, hNormalRel, hHaltState, hHaltTape, hRadoReach⟩
+  have hReachFromBlank : TypedRadoReaches
+      (tm0ToTypedRado (tm0SupportedMachine M hSupp))
+      ({ state := some (TM0RadoState.normal (default : S)), head := 0, tape := [] } :
+        TypedConfig (TM0RadoState S)) haltCfg :=
+    Relation.ReflTransGen.trans hInitReach hRadoReach
+  have hTypedHalt : (tm0ToTypedRado (tm0SupportedMachine M hSupp)).HaltsWithScore
+      (TM0RadoState.normal (default : S)) haltCfg.tape.length :=
+    typedRadoReaches_haltsWithScore hReachFromBlank hHaltState rfl
+  exact ⟨finalCfg, normalCfg, haltCfg, hOutput, hNormalRel, hHaltState, hHaltTape,
+    hTypedHalt, tm0ToTypedRado_attainableScore (tm0SupportedMachine M hSupp) hTypedHalt⟩
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
