@@ -1326,6 +1326,39 @@ theorem addGraphAt_ordinalCode (out left right m n : Nat) (e : Nat → Nat)
     have hp := succRecTrace_pair_mem (ordinalCode m) (k := n) (n := n) (Nat.le_refl n)
     simpa [f, succIterObj_ordinalCode] using hp
 
+theorem addGraphAt_value_of_ordinalInputs (out left right m n : Nat) (e : Nat → Nat)
+    (hleft : e left = ordinalCode m)
+    (hright : e right = ordinalCode n)
+    (h : Sat Mem e (addGraphAt out left right)) :
+    e out = ordinalCode (m+n) := by
+  rcases h with ⟨f, hf, hpair⟩
+  have hf' := (HF_succRecApproxAt_spec standardModel (scons f e)
+    0 (left+1) (right+1)).mp hf
+  have hpair' := (HF_pairMemAt_spec standardModel (scons f e)
+    (right+1) (out+1) 0).mp hpair
+  change SuccRecApprox standardModel (e left) f (e right) at hf'
+  change Mem (kpair standardModel (e right) (e out)) f at hpair'
+  rw [hleft, hright] at hf'
+  rw [hright] at hpair'
+  have hval := succRecApprox_value_of_le (ordinalCode m) f n n (e out)
+    hf' (Nat.le_refl n) hpair'
+  rw [hval, succIterObj_ordinalCode]
+
+theorem addGraphAt_exact_on_ordinalCodes (out left right r m n : Nat) (e : Nat → Nat)
+    (hout : e out = ordinalCode r)
+    (hleft : e left = ordinalCode m)
+    (hright : e right = ordinalCode n) :
+    Sat Mem e (addGraphAt out left right) ↔ r = m + n := by
+  constructor
+  · intro h
+    have hval := addGraphAt_value_of_ordinalInputs out left right m n e hleft hright h
+    apply ordinalCode_injective
+    rw [← hout, hval]
+  · intro h
+    subst h
+    exact addGraphAt_ordinalCode out left right m n e
+      (by rw [hout]) hleft hright
+
 theorem addGraph_exact_on_ordinalCodes (r m n : Nat) (e : Nat → Nat) :
     Sat Mem
       (scons (ordinalCode r) (scons (ordinalCode m) (scons (ordinalCode n) e)))
@@ -1346,6 +1379,65 @@ theorem addGraph_exact_on_ordinalCodes (r m n : Nat) (e : Nat → Nat) :
   · intro h
     subst h
     exact addGraph_ordinalCode m n e
+
+theorem mulRecApproxAt_value_of_le (m N f outDummy : Nat) (e : Nat → Nat) :
+    ∀ n y,
+      Sat Mem
+        (scons f (scons outDummy (scons (ordinalCode m) (scons (ordinalCode N) e))))
+        (mulRecApproxAt 0 2 3) →
+      n ≤ N →
+      Mem (kpair standardModel (ordinalCode n) y) f →
+      y = ordinalCode (m*n) := by
+  intro n
+  induction n with
+  | zero =>
+      intro y hA _hn hy
+      let E := scons f (scons outDummy (scons (ordinalCode m) (scons (ordinalCode N) e)))
+      change Sat Mem E (mulRecApproxAt 0 2 3) at hA
+      rcases hA with ⟨hfunSat, _hkeysSat, hzeroSat, _htotalSat, _hstepSat⟩
+      have hfun := (HF_pairFunctionalAt_spec standardModel E 0).mp hfunSat
+      change PairFunctional standardModel f at hfun
+      have hbase := (HF_pairZeroBaseAt_spec standardModel E 0).mp hzeroSat
+      change Mem (kpair standardModel empty empty) f at hbase
+      have hbase' : Mem (kpair standardModel (ordinalCode 0) (ordinalCode 0)) f := by
+        simpa [ordinalCode_zero] using hbase
+      have hy_eq := hfun (ordinalCode 0) y (ordinalCode 0) hy hbase'
+      simpa [ordinalCode_zero] using hy_eq
+  | succ n ih =>
+      intro y hA hn hy
+      let E := scons f (scons outDummy (scons (ordinalCode m) (scons (ordinalCode N) e)))
+      change Sat Mem E (mulRecApproxAt 0 2 3) at hA
+      have hA' := hA
+      rcases hA with ⟨_hfunSat, _hkeysSat, _hzeroSat, htotalSat, hstepSat⟩
+      have htotal := (HF_pairTotalBelowSuccAt_spec standardModel E 0 3).mp htotalSat
+      change PairTotalBelowSucc standardModel f (ordinalCode N) at htotal
+      have hnlt : n < N := by omega
+      rcases htotal (ordinalCode n) (Or.inl (ordinalCode_mem_of_lt hnlt)) with ⟨t, ht⟩
+      have htval := ih t hA' (Nat.le_of_lt hnlt) ht
+      let Ekty := scons y (scons t (scons (ordinalCode n) E))
+      let Eskty := scons (ordinalCode (n+1)) Ekty
+      have hktSat : Sat Mem Ekty (HF_pairMemAt 2 1 3) := by
+        apply (HF_pairMemAt_spec standardModel Ekty 2 1 3).mpr
+        change Mem (kpair standardModel (ordinalCode n) t) f
+        exact ht
+      have hskSat : Sat Mem Eskty (HF_succAt 0 3) := by
+        apply (HF_succAt_spec standardModel Eskty 0 3).mpr
+        change ordinalCode (n+1) = adjoin (ordinalCode n) (ordinalCode n)
+        exact ordinalCode_succ n
+      have hskySat : Sat Mem Eskty (HF_pairMemAt 0 1 4) := by
+        apply (HF_pairMemAt_spec standardModel Eskty 0 1 4).mpr
+        change Mem (kpair standardModel (ordinalCode (n+1)) y) f
+        exact hy
+      have haddSat := hstepSat (ordinalCode n) t y
+        (ordinalCode_mem_of_lt hnlt) hktSat (ordinalCode (n+1)) hskSat hskySat
+      have hyval := addGraphAt_value_of_ordinalInputs 1 2 6 (m*n) m Eskty
+        (by
+          show t = ordinalCode (m*n)
+          exact htval)
+        (by rfl)
+        haddSat
+      change y = ordinalCode (m*n + m) at hyval
+      rw [hyval, Nat.mul_succ]
 
 theorem mulGraph_ordinalCode (m n : Nat) (e : Nat → Nat) :
     Sat Mem
@@ -1412,6 +1504,24 @@ theorem mulGraph_ordinalCode (m n : Nat) (e : Nat → Nat) :
   · apply (HF_pairMemAt_spec standardModel E 3 1 0).mpr
     change Mem (kpair standardModel (ordinalCode n) (ordinalCode (m*n))) f
     exact mulRecTrace_pair_mem m (Nat.le_refl n)
+
+theorem mulGraph_exact_on_ordinalCodes (r m n : Nat) (e : Nat → Nat) :
+    Sat Mem
+      (scons (ordinalCode r) (scons (ordinalCode m) (scons (ordinalCode n) e)))
+      mulGraph ↔ r = m * n := by
+  constructor
+  · intro h
+    rcases h with ⟨f, hf, hout⟩
+    have hout' := (HF_pairMemAt_spec standardModel
+      (scons f (scons (ordinalCode r) (scons (ordinalCode m) (scons (ordinalCode n) e))))
+      3 1 0).mp hout
+    change Mem (kpair standardModel (ordinalCode n) (ordinalCode r)) f at hout'
+    have hval := mulRecApproxAt_value_of_le m n f (ordinalCode r) e n (ordinalCode r)
+      hf (Nat.le_refl n) hout'
+    exact ordinalCode_injective hval
+  · intro h
+    subst h
+    exact mulGraph_ordinalCode m n e
 
 theorem zeroGraph_domain (e : Nat → Nat)
     (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by

@@ -106,8 +106,12 @@ open SetTheory
 #check @AckermannHF.PAInHF.succGraph_exact_on_ordinalCodes
 #check @AckermannHF.PAInHF.addGraph_ordinalCode
 #check @AckermannHF.PAInHF.addGraphAt_ordinalCode
+#check @AckermannHF.PAInHF.addGraphAt_value_of_ordinalInputs
+#check @AckermannHF.PAInHF.addGraphAt_exact_on_ordinalCodes
 #check @AckermannHF.PAInHF.addGraph_exact_on_ordinalCodes
 #check @AckermannHF.PAInHF.mulGraph_ordinalCode
+#check @AckermannHF.PAInHF.mulRecApproxAt_value_of_le
+#check @AckermannHF.PAInHF.mulGraph_exact_on_ordinalCodes
 #check @AckermannHF.PAInHF.zeroGraph_domain
 #check @AckermannHF.PAInHF.succGraph_preserves_domain
 #check @AckermannHF.sat_HF_model
