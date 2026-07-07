@@ -407,6 +407,26 @@ theorem tm0ToTypedRado_attainableScore {Label : Type*} [Inhabited Label] [Fintyp
   typedMachineToMachine_attainableScore (tm0ToTypedRado M)
     (TM0RadoState.normal (default : Label)) hHalt
 
+theorem typedRadoReaches_attainableLowerBound {Label : Type*} [Fintype Label]
+    {M : TypedMachine (TM0RadoState Label)} {start : TM0RadoState Label}
+    {haltCfg : TypedConfig (TM0RadoState Label)} {positions : Tape}
+    (hReach : TypedRadoReaches M
+      ({ state := some start, head := 0, tape := [] } : TypedConfig (TM0RadoState Label))
+      haltCfg)
+    (hState : haltCfg.state = none)
+    (hPositions : positions.Nodup)
+    (hRead : ∀ pos, pos ∈ positions -> Tape.read haltCfg.tape pos = true) :
+    ∃ score, positions.length ≤ score ∧
+      AttainableScore (Fintype.card (TM0RadoState Label)) score := by
+  rcases typedRadoReaches_run hReach with ⟨t, ht⟩
+  have hTapeNodup : haltCfg.tape.Nodup := by
+    rw [← ht]
+    exact TypedMachine.run_tape_nodup M start t
+  have hLower := positions_length_le_tape_length_of_read_true hPositions hTapeNodup hRead
+  have hHalt : M.HaltsWithScore start haltCfg.tape.length :=
+    typedRadoReaches_haltsWithScore hReach hState rfl
+  exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩
+
 theorem tm0ToTypedRado_step_move {Label : Type*} [Inhabited Label]
     (M : Turing.TM0.Machine Bool Label)
     {q q' : Label} {T : Turing.Tape Bool} {dir : Turing.Dir}
