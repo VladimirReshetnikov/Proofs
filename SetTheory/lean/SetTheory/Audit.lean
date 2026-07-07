@@ -38,9 +38,26 @@ open SetTheory
 #check @PA.Formula.sat_axiom_s
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
+#check @AckermannHF.HF_emptyAt_empty
+#check @AckermannHF.HF_adjoinAt_adjoin
+#check @AckermannHF.HF_succAt_spec
+#check @AckermannHF.HF_subsetAt_spec
+#check @AckermannHF.HF_transitiveAt_spec
+#check @AckermannHF.HF_memTotalOnAt_spec
+#check @AckermannHF.HF_ordinalLikeAt_spec
+#check @AckermannHF.OrdinalLike.of_mem
+#check @AckermannHF.ordinalCode_ordinalLike
+#check @AckermannHF.HF_ordinalLikeAt_of_ordinalCode
+#check @AckermannHF.PAInHF.domainForm
+#check @AckermannHF.PAInHF.zeroGraph
+#check @AckermannHF.PAInHF.succGraph
+#check @AckermannHF.PAInHF.domain_ordinalCode
+#check @AckermannHF.PAInHF.zeroGraph_ordinalCode
+#check @AckermannHF.PAInHF.succGraph_ordinalCode
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF
+#check @AckermannHF.ordinalPA_sat_PA
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
 #print axioms PA.Formula.sat_axiom

@@ -10,6 +10,7 @@
 
 From Stdlib Require Import Arith.PeanoNat.
 From Stdlib Require Import Arith.Wf_nat.
+From Stdlib Require Import Bool.Bool.
 From Stdlib Require Import Lia.
 From Stdlib Require Import Lists.List.
 
@@ -171,6 +172,198 @@ Theorem cwPair_coprime (n : nat) :
     Coprime (fst (cwPair n)) (snd (cwPair n)).
 Proof.
   apply cwPairFuel_coprime.
+Qed.
+
+Fixpoint cwIndexFuel (fuel a b : nat) : nat :=
+  match fuel with
+  | 0 => 0
+  | S fuel' =>
+      if ((a =? 0) || (b =? 0))%bool then 0
+      else if a =? b then 0
+      else if a <? b
+           then 2 * cwIndexFuel fuel' a (b - a) + 1
+           else 2 * cwIndexFuel fuel' (a - b) b + 2
+  end.
+
+Definition cwIndex (a b : nat) : nat :=
+  cwIndexFuel (a + b + 1) a b.
+
+Theorem cwIndexFuel_ge (a b fuel : nat) :
+    a + b + 1 <= fuel -> cwIndexFuel fuel a b = cwIndex a b.
+Proof.
+  revert a b.
+  induction fuel as [fuel ih] using lt_wf_ind.
+  intros a b hle.
+  destruct fuel as [|fuel']; [lia|].
+  unfold cwIndex.
+  replace (a + b + 1) with (S (a + b)) by lia.
+  cbn [cwIndexFuel].
+  destruct (((a =? 0) || (b =? 0))%bool) eqn:hz.
+  - reflexivity.
+  - apply Bool.orb_false_iff in hz as [ha0 hb0].
+    apply Nat.eqb_neq in ha0.
+    apply Nat.eqb_neq in hb0.
+    destruct (a =? b) eqn:heq.
+    + reflexivity.
+    + apply Nat.eqb_neq in heq.
+      destruct (a <? b) eqn:hlt.
+      * apply Nat.ltb_lt in hlt.
+        rewrite (ih fuel') by lia.
+        rewrite (ih (a + b)) by lia.
+        reflexivity.
+      * apply Nat.ltb_ge in hlt.
+        rewrite (ih fuel') by lia.
+        rewrite (ih (a + b)) by lia.
+        reflexivity.
+Qed.
+
+Theorem cwIndex_eq_of_eq {a b : nat} (ha : 0 < a) (hb : 0 < b) (h : a = b) :
+    cwIndex a b = 0.
+Proof.
+  subst a.
+  unfold cwIndex.
+  replace (b + b + 1) with (S (b + b)) by lia.
+  cbn [cwIndexFuel].
+  replace (b =? 0) with false by (symmetry; apply Nat.eqb_neq; lia).
+  replace (b =? b) with true by (symmetry; apply Nat.eqb_refl).
+  reflexivity.
+Qed.
+
+Theorem cwIndex_left {a b : nat} (ha : 0 < a) (h : a < b) :
+    cwIndex a b = 2 * cwIndex a (b - a) + 1.
+Proof.
+  unfold cwIndex at 1.
+  replace (a + b + 1) with (S (a + b)) by lia.
+  cbn [cwIndexFuel].
+  replace (a =? 0) with false by (symmetry; apply Nat.eqb_neq; lia).
+  replace (b =? 0) with false by (symmetry; apply Nat.eqb_neq; lia).
+  replace (a =? b) with false by (symmetry; apply Nat.eqb_neq; lia).
+  replace (a <? b) with true by (symmetry; apply Nat.ltb_lt; lia).
+  cbn.
+  rewrite cwIndexFuel_ge by lia.
+  reflexivity.
+Qed.
+
+Theorem cwIndex_right {a b : nat} (hb : 0 < b) (h : b < a) :
+    cwIndex a b = 2 * cwIndex (a - b) b + 2.
+Proof.
+  unfold cwIndex at 1.
+  replace (a + b + 1) with (S (a + b)) by lia.
+  cbn [cwIndexFuel].
+  replace (a =? 0) with false by (symmetry; apply Nat.eqb_neq; lia).
+  replace (b =? 0) with false by (symmetry; apply Nat.eqb_neq; lia).
+  replace (a =? b) with false by (symmetry; apply Nat.eqb_neq; lia).
+  replace (a <? b) with false by (symmetry; apply Nat.ltb_ge; lia).
+  cbn.
+  rewrite cwIndexFuel_ge by lia.
+  reflexivity.
+Qed.
+
+Theorem coprime_sub_right {a b : nat} (h : a < b) (hc : Coprime a b) :
+    Coprime a (b - a).
+Proof.
+  unfold Coprime in *.
+  now rewrite Nat.gcd_sub_diag_r by lia.
+Qed.
+
+Theorem coprime_sub_left {a b : nat} (h : b < a) (hc : Coprime a b) :
+    Coprime (a - b) b.
+Proof.
+  unfold Coprime in *.
+  rewrite Nat.gcd_comm.
+  rewrite Nat.gcd_sub_diag_r by lia.
+  now rewrite Nat.gcd_comm.
+Qed.
+
+Theorem cwPair_cwIndex (a b : nat) (ha : 0 < a) (hb : 0 < b)
+    (hc : Coprime a b) :
+    cwPair (cwIndex a b) = (a, b).
+Proof.
+  remember (a + b) as s eqn:hs.
+  revert a b hs ha hb hc.
+  induction s as [s ih] using lt_wf_ind.
+  intros a b hs ha hb hc.
+  destruct (Nat.lt_trichotomy a b) as [hlt | [heq | hgt]].
+  - assert (hbsub : 0 < b - a) by lia.
+    pose proof (ih (a + (b - a)) ltac:(lia)
+      a (b - a) eq_refl ha hbsub (coprime_sub_right hlt hc)) as hp.
+    rewrite (cwIndex_left ha hlt).
+    rewrite cwPair_left.
+    rewrite hp.
+    cbn [fst snd].
+    f_equal; lia.
+  - subst a.
+    unfold Coprime in hc.
+    rewrite Nat.gcd_diag in hc.
+    assert (hb1 : b = 1) by lia.
+    subst b.
+    rewrite cwIndex_eq_of_eq by lia.
+    reflexivity.
+  - assert (hasub : 0 < a - b) by lia.
+    pose proof (ih ((a - b) + b) ltac:(lia)
+      (a - b) b eq_refl hasub hb (coprime_sub_left hgt hc)) as hp.
+    rewrite (cwIndex_right hb hgt).
+    rewrite cwPair_right.
+    rewrite hp.
+    cbn [fst snd].
+    f_equal; lia.
+Qed.
+
+Theorem cwIndex_cwPair (n : nat) :
+    cwIndex (fst (cwPair n)) (snd (cwPair n)) = n.
+Proof.
+  induction n as [n ih] using lt_wf_ind.
+  destruct n as [|m].
+  - rewrite cwPair_zero.
+    cbn [fst snd].
+    now rewrite cwIndex_eq_of_eq by lia.
+  - rewrite cwPair_unfold_succ.
+    pose proof (cwPair_pos (m / 2)) as hp.
+    pose proof (ih (m / 2) (div2_lt_succ m)) as ihp.
+    destruct (cwPair (m / 2)) as [a b] eqn:Hp.
+    cbn [fst snd] in hp, ihp |- *.
+    destruct hp as [ha hb].
+    destruct (Nat.even m) eqn:heven.
+    + assert (hm : m = 2 * (m / 2)).
+      { assert (hodd : Nat.odd m = false).
+        { destruct (Nat.odd m) eqn:hodd; [|reflexivity].
+          rewrite <- Nat.negb_odd in heven.
+          rewrite hodd in heven.
+          discriminate.
+        }
+        pose proof (Nat.div2_odd m) as hsplit.
+        rewrite hodd in hsplit.
+        simpl in hsplit.
+        rewrite <- Nat.div2_div.
+        lia.
+      }
+      cbn [fst snd].
+      assert (hidx : cwIndex a (a + b) = 2 * cwIndex a (a + b - a) + 1).
+      { apply cwIndex_left; lia. }
+      rewrite hidx.
+      replace (a + b - a) with b by lia.
+      rewrite ihp.
+      lia.
+    + assert (hm : m = 2 * (m / 2) + 1).
+      { assert (hodd : Nat.odd m = true).
+        { destruct (Nat.odd m) eqn:hodd; [reflexivity|].
+          rewrite <- Nat.negb_odd in heven.
+          rewrite hodd in heven.
+          discriminate.
+        }
+        pose proof (Nat.div2_odd m) as hsplit.
+        rewrite hodd in hsplit.
+        simpl in hsplit.
+        rewrite <- Nat.div2_div.
+        lia.
+      }
+      cbn [fst snd].
+      assert (hidx : cwIndex (a + b) b = 2 * cwIndex (a + b - b) b + 2).
+      { apply cwIndex_right; lia. }
+      rewrite hidx.
+      replace (a + b - b) with a by lia.
+      rewrite ihp.
+      lia.
 Qed.
 
 Definition pairNext (p : nat * nat) : nat * nat :=

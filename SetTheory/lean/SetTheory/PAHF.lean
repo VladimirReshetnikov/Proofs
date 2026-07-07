@@ -129,6 +129,150 @@ def HF_adjoin_form : Form :=
   fAll (fAll (fEx (fAll
     (fIff (fMem 0 1) (fOr (fMem 0 3) (fEq 0 2))))))
 
+/-- Formula macro: slot `i` is empty. -/
+def HF_emptyAt (i : Nat) : Form :=
+  fAll (fImp (fMem 0 (i+1)) fBot)
+
+theorem HF_emptyAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (i : Nat) :
+    Sat mem e (HF_emptyAt i) ↔ ∀ x, ¬ mem x (e i) :=
+  Iff.rfl
+
+theorem HF_emptyAt_empty {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (i : Nat) :
+    Sat M.mem e (HF_emptyAt i) ↔ e i = M.empty := by
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    constructor
+    · exact fun hx => False.elim (h x hx)
+    · exact fun hx => False.elim (M.empty_spec x hx)
+  · intro h x hx
+    have hx' : M.mem x (e i) := by
+      simpa [Sat, scons] using hx
+    rw [h] at hx'
+    exact M.empty_spec x hx'
+
+/-- Formula macro: slot `c` is the adjunction `a ∪ {b}`. -/
+def HF_adjoinAt (c a b : Nat) : Form :=
+  fAll (fIff (fMem 0 (c+1)) (fOr (fMem 0 (a+1)) (fEq 0 (b+1))))
+
+theorem HF_adjoinAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (c a b : Nat) :
+    Sat mem e (HF_adjoinAt c a b) ↔
+      ∀ x, mem x (e c) ↔ mem x (e a) ∨ x = e b := by
+  constructor
+  · intro h x
+    exact (Sat_fIff (mem := mem)).mp (h x)
+  · intro h x
+    exact (Sat_fIff (mem := mem)).mpr (h x)
+
+theorem HF_adjoinAt_adjoin {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (c a b : Nat) :
+    Sat M.mem e (HF_adjoinAt c a b) ↔ e c = M.adjoin (e a) (e b) := by
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    rw [(HF_adjoinAt_spec e c a b).mp h x, M.adjoin_spec x (e a) (e b)]
+  · intro h
+    apply (HF_adjoinAt_spec e c a b).mpr
+    intro x
+    rw [h, M.adjoin_spec x (e a) (e b)]
+
+/-- Formula macro: slot `s` is the finite-ordinal successor of slot `a`,
+that is, `s = a ∪ {a}`. -/
+def HF_succAt (s a : Nat) : Form := HF_adjoinAt s a a
+
+theorem HF_succAt_spec {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) (s a : Nat) :
+    Sat M.mem e (HF_succAt s a) ↔ e s = M.adjoin (e a) (e a) :=
+  HF_adjoinAt_adjoin M e s a a
+
+/-- Formula macro: slot `a` is a subset of slot `b`. -/
+def HF_subsetAt (a b : Nat) : Form :=
+  fAll (fImp (fMem 0 (a+1)) (fMem 0 (b+1)))
+
+theorem HF_subsetAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a b : Nat) :
+    Sat mem e (HF_subsetAt a b) ↔ ∀ x, mem x (e a) → mem x (e b) :=
+  Iff.rfl
+
+/-- Semantic reading of transitivity for one object. -/
+def TransitiveObj {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
+  ∀ y, mem y a → ∀ x, mem x y → mem x a
+
+/-- Formula macro: slot `a` is transitive. -/
+def HF_transitiveAt (a : Nat) : Form :=
+  fAll (fImp (fMem 0 (a+1))
+    (fAll (fImp (fMem 0 1) (fMem 0 (a+2)))))
+
+theorem HF_transitiveAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_transitiveAt a) ↔ TransitiveObj mem (e a) := by
+  constructor
+  · intro h y hy x hx
+    exact h y hy x hx
+  · intro h y hy x hx
+    exact h y hy x hx
+
+/-- Semantic reading of membership-totality on the elements of one object. -/
+def MemTotalOn {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
+  ∀ y, mem y a → ∀ z, mem z a → mem y z ∨ y = z ∨ mem z y
+
+/-- Formula macro: membership linearly orders the elements of slot `a`.
+This is only the totality component; well-foundedness comes from HF induction. -/
+def HF_memTotalOnAt (a : Nat) : Form :=
+  fAll (fImp (fMem 0 (a+1))
+    (fAll (fImp (fMem 0 (a+2))
+      (fOr (fMem 1 0) (fOr (fEq 1 0) (fMem 0 1))))))
+
+theorem HF_memTotalOnAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_memTotalOnAt a) ↔ MemTotalOn mem (e a) := by
+  constructor
+  · intro h y hy z hz
+    exact h y hy z hz
+  · intro h y hy z hz
+    exact h y hy z hz
+
+/-- Semantic reading of the finite-ordinal domain formula used by the
+PA-in-HF interpretation. -/
+def OrdinalLike {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
+  TransitiveObj mem a ∧ (∀ y, mem y a → TransitiveObj mem y) ∧ MemTotalOn mem a
+
+theorem OrdinalLike.of_mem {α : Type u} {mem : α → α → Prop}
+    {a y : α} (ha : OrdinalLike mem a) (hy : mem y a) :
+    OrdinalLike mem y := by
+  refine ⟨ha.2.1 y hy, ?_, ?_⟩
+  · intro z hz
+    exact ha.2.1 z (ha.1 y hy z hz)
+  · intro u hu z hz
+    exact ha.2.2 u (ha.1 y hy u hu) z (ha.1 y hy z hz)
+
+/-- Formula macro: slot `a` is ordinal-like.  Over HF, where membership is
+well-founded by set induction, this is intended to define the finite von
+Neumann ordinals. -/
+def HF_ordinalLikeAt (a : Nat) : Form :=
+  fAnd (HF_transitiveAt a)
+    (fAnd
+      (fAll (fImp (fMem 0 (a+1)) (HF_transitiveAt 0)))
+      (HF_memTotalOnAt a))
+
+theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_ordinalLikeAt a) ↔ OrdinalLike mem (e a) := by
+  constructor
+  · intro h
+    exact ⟨(HF_transitiveAt_spec e a).mp h.1,
+      (fun y hy => (HF_transitiveAt_spec (scons y e) 0).mp (h.2.1 y hy)),
+      (HF_memTotalOnAt_spec e a).mp h.2.2⟩
+  · intro h
+    exact ⟨(HF_transitiveAt_spec e a).mpr h.1,
+      (fun y hy => (HF_transitiveAt_spec (scons y e) 0).mpr (h.2.1 y hy)),
+      (HF_memTotalOnAt_spec e a).mpr h.2.2⟩
+
 /-- The first-order set-induction schema instance for `phi`, where `phi`
 uses slot `0` as the element being proved and slots `1,2,...` as parameters. -/
 def HF_induction_form (phi : Form) : Form :=
@@ -233,6 +377,65 @@ theorem mem_ordinalCode_iff (x n : Nat) :
 theorem ordinalCode_mem_of_lt {k n : Nat} (h : k < n) :
     Mem (ordinalCode k) (ordinalCode n) :=
   (mem_ordinalCode_iff (ordinalCode k) n).mpr ⟨k, h, rfl⟩
+
+theorem ordinalCode_transitive (n : Nat) : TransitiveObj Mem (ordinalCode n) := by
+  intro y hy x hx
+  rcases (mem_ordinalCode_iff y n).mp hy with ⟨k, hk, rfl⟩
+  rcases (mem_ordinalCode_iff x k).mp hx with ⟨j, hj, rfl⟩
+  exact ordinalCode_mem_of_lt (Nat.lt_trans hj hk)
+
+theorem ordinalCode_members_transitive (n : Nat) :
+    ∀ y, Mem y (ordinalCode n) → TransitiveObj Mem y := by
+  intro y hy
+  rcases (mem_ordinalCode_iff y n).mp hy with ⟨k, _hk, rfl⟩
+  exact ordinalCode_transitive k
+
+theorem ordinalCode_memTotalOn (n : Nat) : MemTotalOn Mem (ordinalCode n) := by
+  intro y hy z hz
+  rcases (mem_ordinalCode_iff y n).mp hy with ⟨j, _hj, rfl⟩
+  rcases (mem_ordinalCode_iff z n).mp hz with ⟨k, _hk, rfl⟩
+  rcases Nat.lt_trichotomy j k with hlt | heq | hgt
+  · exact Or.inl (ordinalCode_mem_of_lt hlt)
+  · exact Or.inr (Or.inl (by rw [heq]))
+  · exact Or.inr (Or.inr (ordinalCode_mem_of_lt hgt))
+
+theorem ordinalCode_ordinalLike (n : Nat) : OrdinalLike Mem (ordinalCode n) :=
+  ⟨ordinalCode_transitive n, ordinalCode_members_transitive n, ordinalCode_memTotalOn n⟩
+
+theorem HF_ordinalLikeAt_of_ordinalCode (e : Nat → Nat) (i n : Nat)
+    (h : e i = ordinalCode n) : Sat Mem e (HF_ordinalLikeAt i) :=
+  (HF_ordinalLikeAt_spec e i).mpr (by rw [h]; exact ordinalCode_ordinalLike n)
+
+/-! ### First PA-in-HF interpretation formulas already available -/
+
+namespace PAInHF
+
+/-- Domain formula for the PA interpretation in HF: finite ordinals. -/
+def domainForm : Form := HF_ordinalLikeAt 0
+
+/-- Graph formula for PA zero in HF.  Slot `0` is the candidate output. -/
+def zeroGraph : Form := HF_emptyAt 0
+
+/-- Graph formula for PA successor in HF.  Slot `0` is the output and slot `1`
+is the input. -/
+def succGraph : Form := HF_succAt 0 1
+
+theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode n) e) domainForm :=
+  HF_ordinalLikeAt_of_ordinalCode (scons (ordinalCode n) e) 0 n rfl
+
+theorem zeroGraph_ordinalCode (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode 0) e) zeroGraph := by
+  apply (HF_emptyAt_empty standardModel (scons (ordinalCode 0) e) 0).mpr
+  rfl
+
+theorem succGraph_ordinalCode (n : Nat) (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode (n+1)) (scons (ordinalCode n) e)) succGraph := by
+  apply (HF_succAt_spec standardModel
+    (scons (ordinalCode (n+1)) (scons (ordinalCode n) e)) 0 1).mpr
+  exact ordinalCode_succ n
+
+end PAInHF
 
 theorem not_mem_self (a : Nat) : ¬ Mem a a := fun h =>
   Nat.lt_irrefl a (mem_lt h)
@@ -826,6 +1029,10 @@ noncomputable def paRoundTripIso : PA.Iso PA.natModel ordinalPAModel where
     apply ordinal_eq_of_natOfOrdinal_eq
     simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalMulSet,
       natOfOrdinal_ordinalOfNat, Nat.mul_eq]
+
+theorem ordinalPA_sat_PA (e : Nat → OrdinalHF) :
+    ∀ f, PA.Formula.Ax_s f → PA.Formula.Sat ordinalPAModel e f :=
+  PA.Formula.sat_axiom_s ordinalPAModel e
 
 /-! ## The HF-in-PA-in-HF round trip -/
 

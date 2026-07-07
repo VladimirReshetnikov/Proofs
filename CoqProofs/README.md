@@ -22,8 +22,10 @@ Current ports:
 - `RationalFloorOrbit.v` ports the Calkin-Wilf pair generator core from
   `RationalFloorOrbit.lean`, including fuel adequacy, left/right child
   equations, positivity, coprimality invariants, `pairNext` arithmetic bridge
-  lemmas, and the successor equation `cwPair (n + 1) = pairNext (cwPair n)`.
-  The inverse-index and rational-orbit layers remain to be ported.
+  lemmas, the successor equation `cwPair (n + 1) = pairNext (cwPair n)`, and
+  the inverse-index round trips `cwPair (cwIndex a b) = (a, b)` for positive
+  coprime pairs and `cwIndex (cwPair n).1 (cwPair n).2 = n`.  The rational
+  orbit layer remains to be ported.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
