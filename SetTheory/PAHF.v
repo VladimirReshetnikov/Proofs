@@ -2735,6 +2735,115 @@ Proof.
   - exact hm.
 Qed.
 
+Lemma fofam_sepBy_exists : forall (V : Type)
+    (M : FirstOrderFiniteAdjunctionModel V) (psi : form) (e : nat -> V)
+    (a : V),
+  exists s, forall x,
+    foam_mem V M x s <->
+      foam_mem V M x a /\ Sat V (foam_mem V M) (scons V x e) psi.
+Proof.
+  intros V M psi e a.
+  pose (theta := rename rSepParam psi).
+  pose (phi := HF_sepByAt theta 0).
+  pose proof (fofam_finite_induction_schema V M phi e) as hind.
+  assert (hall : forall a,
+      Sat V (foam_mem V M) (scons V a e) phi).
+  {
+    apply (proj1 (HF_finite_induction_form_spec V (foam_mem V M)
+      phi e) hind).
+    split.
+    - intros z hzEmpty.
+      apply (proj2 (HF_sepByAt_spec V (foam_mem V M) theta
+        (scons V z e) 0)).
+      exists (foam_empty V M).
+      intro x.
+      split.
+      + intro hx. exfalso. exact (foam_empty_spec V M x hx).
+      + intros [hxz _].
+        exfalso. exact (hzEmpty x hxz).
+    - intros old y c hc hOld.
+      destruct (proj1 (HF_sepByAt_spec V (foam_mem V M) theta
+        (scons V old e) 0) hOld) as [s hs].
+      destruct (classic (Sat V (foam_mem V M) (scons V y e) psi))
+        as [hyPsi | hyNotPsi].
+      + apply (proj2 (HF_sepByAt_spec V (foam_mem V M) theta
+          (scons V c e) 0)).
+        exists (foam_adjoin V M s y).
+        intro x.
+        split.
+        * intro hx.
+          destruct (proj1 (foam_adjoin_spec V M x s y) hx) as [hxs | hxy].
+          -- destruct (proj1 (hs x) hxs) as [hxold hxThetaOld].
+             pose proof (proj1 (Sat_rename_rSepParam V (foam_mem V M)
+               psi e old x) hxThetaOld) as hxPsi.
+             split.
+             ++ exact (proj2 (hc x) (or_introl hxold)).
+             ++ exact (proj2 (Sat_rename_rSepParam V (foam_mem V M)
+                  psi e c x) hxPsi).
+          -- subst x.
+             split.
+             ++ exact (proj2 (hc y) (or_intror eq_refl)).
+             ++ exact (proj2 (Sat_rename_rSepParam V (foam_mem V M)
+                  psi e c y) hyPsi).
+        * intros [hxc hxThetaC].
+          destruct (proj1 (hc x) hxc) as [hxold | hxy].
+          -- apply (proj2 (foam_adjoin_spec V M x s y)).
+             left.
+             pose proof (proj1 (Sat_rename_rSepParam V (foam_mem V M)
+               psi e c x) hxThetaC) as hxPsi.
+             apply (proj2 (hs x)).
+             split.
+             ++ exact hxold.
+             ++ exact (proj2 (Sat_rename_rSepParam V (foam_mem V M)
+                  psi e old x) hxPsi).
+          -- apply (proj2 (foam_adjoin_spec V M x s y)).
+             now right.
+      + apply (proj2 (HF_sepByAt_spec V (foam_mem V M) theta
+          (scons V c e) 0)).
+        exists s.
+        intro x.
+        split.
+        * intro hxs.
+          destruct (proj1 (hs x) hxs) as [hxold hxThetaOld].
+          pose proof (proj1 (Sat_rename_rSepParam V (foam_mem V M)
+            psi e old x) hxThetaOld) as hxPsi.
+          split.
+          -- exact (proj2 (hc x) (or_introl hxold)).
+          -- exact (proj2 (Sat_rename_rSepParam V (foam_mem V M)
+               psi e c x) hxPsi).
+        * intros [hxc hxThetaC].
+          destruct (proj1 (hc x) hxc) as [hxold | hxy].
+          -- pose proof (proj1 (Sat_rename_rSepParam V (foam_mem V M)
+               psi e c x) hxThetaC) as hxPsi.
+             apply (proj2 (hs x)).
+             split.
+             ++ exact hxold.
+             ++ exact (proj2 (Sat_rename_rSepParam V (foam_mem V M)
+                  psi e old x) hxPsi).
+          -- subst x.
+             pose proof (proj1 (Sat_rename_rSepParam V (foam_mem V M)
+               psi e c y) hxThetaC) as hyPsi.
+             exfalso. exact (hyNotPsi hyPsi).
+  }
+  destruct (proj1 (HF_sepByAt_spec V (foam_mem V M) theta
+    (scons V a e) 0) (hall a)) as [s hs].
+  exists s.
+  intro x.
+  split.
+  - intro hxs.
+    destruct (proj1 (hs x) hxs) as [hxa hxTheta].
+    split.
+    + exact hxa.
+    + exact (proj1 (Sat_rename_rSepParam V (foam_mem V M)
+        psi e a x) hxTheta).
+  - intros [hxa hxPsi].
+    apply (proj2 (hs x)).
+    split.
+    + exact hxa.
+    + exact (proj2 (Sat_rename_rSepParam V (foam_mem V M)
+        psi e a x) hxPsi).
+Qed.
+
 Lemma fofam_binUnion_exists : forall (V : Type)
     (M : FirstOrderFiniteAdjunctionModel V) (a b : V),
   exists u, forall x,
