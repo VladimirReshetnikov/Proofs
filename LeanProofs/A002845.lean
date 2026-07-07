@@ -12,9 +12,12 @@ copies of `2` and all binary parenthesizations allowed.
 
 The primary definition below is the shared lexical one from `PowTower.Expr`:
 the single atom is interpreted as the literal `2`, and the binary node is
-interpreted as natural-number exponentiation.  The sparse-binary logarithm code
-is retained as a computation-facing view, with Lean proofs connecting it back
-to the shared lexical definition.
+interpreted as natural-number exponentiation.  The sparse-binary logarithm
+representation is a computation-facing view, with Lean proofs connecting it
+back to the shared lexical definition.  Large values are computed through the
+shared proved hash-set fast table from `PowTower.Expr`, so the only
+execution-level substitution left is the native implementation of the sparse
+combine operation `certifiedCombineLog` by `combineLog`.
 -/
 
 set_option maxRecDepth 100000
@@ -608,23 +611,15 @@ theorem a002845_eq_certifiedSparseCard (n : Nat) : a002845 n = certifiedSparseCa
   exact (Set.InjOn.ncard_image Sparse.ofNat_injective.injOn).symm
 
 /--
-Certified dynamic-programming level of exact sparse logarithms.  Unlike
-`certifiedSparseLogFinset`, this constructs the semantic set by expression
-size, reusing smaller certified levels instead of enumerating all Catalan many
-expression trees.
+Certified dynamic-programming level of exact sparse logarithms: the shared
+finite split recurrence for the same canonical lexical syntax, with atom
+interpreted as the sparse logarithm `ofNat 1` and power interpreted as
+`certifiedCombineLog`.  Unlike `certifiedSparseLogFinset`, this constructs the
+semantic set by expression size, reusing smaller certified levels instead of
+enumerating all Catalan many expression trees.
 -/
-def certifiedLevel : Nat → Finset Sparse
-  | 0 => ∅
-  | 1 => {Sparse.ofNat 1}
-  | n + 2 =>
-      (Finset.univ : Finset (Fin (n + 1))).biUnion fun k =>
-        Finset.image₂ certifiedCombineLog
-          (certifiedLevel (k.1 + 1))
-          (certifiedLevel (n + 1 - k.1))
-termination_by n => n
-decreasing_by
-  · exact Nat.succ_lt_succ k.2
-  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
+def certifiedLevel (n : Nat) : Finset Sparse :=
+  PowTower.Expr.recursiveValueFinset (Sparse.ofNat 1) certifiedCombineLog n
 
 /-- Cardinality of the certified dynamic-programming sparse-logarithm level. -/
 def certifiedLevelCard (n : Nat) : Nat :=
@@ -633,25 +628,8 @@ def certifiedLevelCard (n : Nat) : Nat :=
 theorem coe_certifiedLevel (n : Nat) :
     (certifiedLevel n : Set Sparse) =
       Sparse.ofNat '' PowExpr.logValueSet n := by
-  induction n using certifiedLevel.induct with
-  | case1 =>
-      ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowTower.Expr.parenthesizations,
-        PowTower.Expr.evalSet]
-  | case2 =>
-      ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowTower.Expr.parenthesizations,
-        PowTower.Expr.evalSet, PowExpr.logEval]
-  | case3 n ihLeft ihRight =>
-      ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowTower.Expr.parenthesizations,
-        PowTower.Expr.evalSet, PowExpr.logEval, ihLeft, ihRight,
-        certifiedCombineLog, Sparse.eval_ofNat]
-      constructor
-      · rintro ⟨i, a, ha, b, hb, hs⟩
-        exact ⟨i, a, b, ⟨ha, hb⟩, hs⟩
-      · rintro ⟨i, a, b, ⟨ha, hb⟩, hs⟩
-        exact ⟨i, a, ha, b, hb, hs⟩
+  rw [certifiedLevel, ← certifiedSparseLogFinset_eq_sharedSparseLogLevel]
+  exact coe_certifiedSparseLogFinset n
 
 /--
 The certified dynamic-programming sparse-logarithm levels compute exactly the
@@ -670,14 +648,7 @@ The A002845 sparse-log recurrence is an instance of the shared
 -/
 theorem certifiedLevel_eq_sharedSparseLogLevel (n : Nat) :
     certifiedLevel n =
-      PowTower.Expr.recursiveValueFinset (Sparse.ofNat 1) certifiedCombineLog n := by
-  induction n using certifiedLevel.induct with
-  | case1 =>
-      simp [certifiedLevel, PowTower.Expr.recursiveValueFinset]
-  | case2 =>
-      simp [certifiedLevel, PowTower.Expr.recursiveValueFinset]
-  | case3 n ihLeft ihRight =>
-      simp [certifiedLevel, PowTower.Expr.recursiveValueFinset, ihLeft, ihRight]
+      PowTower.Expr.recursiveValueFinset (Sparse.ofNat 1) certifiedCombineLog n := rfl
 
 theorem certifiedSparseLogFinset_eq_certifiedLevel (n : Nat) :
     certifiedSparseLogFinset n = certifiedLevel n := by
@@ -769,79 +740,21 @@ theorem a002845_twelve : a002845 12 = 851 := by
   rw [a002845_eq_certifiedSparseCard]
   native_decide
 
-/-- Insert all values produced by one binary split of an expression of size
-`n` into an accumulator. -/
-partial def insertSplitValues (levels : Array (List Sparse)) (leftSize rightSize : Nat)
-    (seen : Std.HashSet Sparse) : Std.HashSet Sparse :=
-  let left := levels[leftSize - 1]!
-  let right := levels[rightSize - 1]!
-  left.foldl
-    (fun seen a =>
-      right.foldl (fun seen b => seen.insert (certifiedCombineLog a b)) seen)
-    seen
-
-/-- Compute all distinct logarithms for expressions of a given positive size,
-assuming all smaller levels have already been computed. -/
-partial def nextLevel (levels : Array (List Sparse)) : List Sparse :=
-  let size := levels.size + 1
-  if size = 1 then
-    [Sparse.one]
-  else
-    let seen :=
-      (List.range (size - 1)).foldl
-        (fun seen k => insertSplitValues levels (k + 1) (size - 1 - k) seen)
-        (∅ : Std.HashSet Sparse)
-    seen.toList
-
-/-- Build the table of distinct logarithm lists through size `fuel`. -/
-partial def buildLevels : Nat → Array (List Sparse) → Array (List Sparse)
-  | 0, levels => levels
-  | fuel + 1, levels =>
-      buildLevels fuel (levels.push (nextLevel levels))
-
-/-- The sparse-binary logarithms computed by the executable backend. -/
-def a002845SparseLogValues (n : Nat) : List Sparse :=
-  if n = 0 then
-    []
-  else
-    (buildLevels n #[])[n - 1]!
-
-/-- Executable sparse-binary backend count for A002845 logarithms. -/
-def a002845Sparse (n : Nat) : Nat :=
-  (a002845SparseLogValues n).length
-
-/-- Executable sparse-binary backend counts for sizes `1, ..., n`. -/
-def a002845SparseCountsThrough (n : Nat) : List Nat :=
-  (buildLevels n #[]).toList.map List.length
-
-attribute [implemented_by a002845Sparse] certifiedLevelCard
-
 /--
-Proof-facing counts for sizes `1, ..., n`, defined from the certified
-canonical-cardinality bridge.  Native execution uses the sparse backend table,
-so a single prefix certificate computes all needed levels once.
+Certified counts for sizes `1, ..., n`, computed from one shared hash-set fast
+table.  Every fast row is proved to enumerate exactly the shared finite
+recurrence, so no unproved executable backend is involved: the only
+execution-level substitution left is `certifiedCombineLog`'s native
+implementation by `combineLog`.
 -/
 def certifiedLevelCountsThrough (n : Nat) : List Nat :=
-  (List.range n).map fun i => certifiedLevelCard (i + 1)
-
-attribute [implemented_by a002845SparseCountsThrough] certifiedLevelCountsThrough
+  PowTower.Expr.fastCountsThrough (Sparse.ofNat 1) certifiedCombineLog n
 
 theorem certifiedLevelCard_eq_countsThrough_getD {N n : Nat}
     (hpos : 0 < n) (hN : n ≤ N) :
     certifiedLevelCard n = (certifiedLevelCountsThrough N).getD (n - 1) 0 := by
-  cases n with
-  | zero =>
-      exact (Nat.not_lt_zero _ hpos).elim
-  | succ i =>
-      have hi : i < N := Nat.succ_le_iff.mp hN
-      unfold certifiedLevelCountsThrough
-      have hiCounts :
-          i < (List.map (fun i => certifiedLevelCard (i + 1)) (List.range N)).length := by
-        simpa using hi
-      rw [Nat.succ_sub_one]
-      rw [PowTower.Expr.list_getD_eq_getElem _ _ hiCounts]
-      rw [List.getElem_map]
-      rw [List.getElem_range]
+  rw [certifiedLevelCard, certifiedLevel, certifiedLevelCountsThrough]
+  exact PowTower.Expr.recursiveValueFinset_card_eq_fastCountsThrough_getD hpos hN
 
 theorem certifiedLevelCountsThrough_getD_eq_sharedSparseLogCountsMemoThrough_getD
     {N i : Nat} (hi : i < N) :
@@ -864,71 +777,66 @@ theorem a002845_eq_of_certifiedLevelCountsThrough {N n value : Nat}
       certifiedLevelCard_eq_countsThrough_getD hpos hN
     _ = value := hcount
 
-def a002845ValuesThroughEighteen : List Nat :=
+def a002845ValuesThroughTwentyThree : List Nat :=
   [1, 1, 1, 2, 4, 8, 17, 36, 78, 171, 379, 851, 1928, 4396, 10087, 23273,
-    53948, 125608]
+    53948, 125608, 293543, 688366, 1619087, 3818818, 9029719]
 
-/-- Certified A002845 counts through `n = 18`, computed once as a prefix table. -/
-theorem certifiedLevelCountsThrough_eighteen :
-    certifiedLevelCountsThrough 18 = a002845ValuesThroughEighteen := by
+/-- Certified A002845 counts through `n = 23`, computed once as a prefix table. -/
+theorem certifiedLevelCountsThrough_twenty_three :
+    certifiedLevelCountsThrough 23 = a002845ValuesThroughTwentyThree := by
   native_decide
 
-theorem a002845_eq_of_eighteen_table {n value : Nat}
-    (hpos : 0 < n) (hN : n ≤ 18)
-    (hcount : a002845ValuesThroughEighteen.getD (n - 1) 0 = value) :
+theorem a002845_eq_of_twenty_three_table {n value : Nat}
+    (hpos : 0 < n) (hN : n ≤ 23)
+    (hcount : a002845ValuesThroughTwentyThree.getD (n - 1) 0 = value) :
     a002845 n = value := by
-  apply a002845_eq_of_certifiedLevelCountsThrough (N := 18) hpos hN
-  rw [certifiedLevelCountsThrough_eighteen]
+  apply a002845_eq_of_certifiedLevelCountsThrough (N := 23) hpos hN
+  rw [certifiedLevelCountsThrough_twenty_three]
   exact hcount
 
 /-- OEIS A002845 has value `1928` at `n = 13`. -/
 theorem a002845_thirteen : a002845 13 = 1928 := by
-  apply a002845_eq_of_eighteen_table <;> native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `4396` at `n = 14`. -/
 theorem a002845_fourteen : a002845 14 = 4396 := by
-  apply a002845_eq_of_eighteen_table <;> native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `10087` at `n = 15`. -/
 theorem a002845_fifteen : a002845 15 = 10087 := by
-  apply a002845_eq_of_eighteen_table <;> native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `23273` at `n = 16`. -/
 theorem a002845_sixteen : a002845 16 = 23273 := by
-  apply a002845_eq_of_eighteen_table <;> native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `53948` at `n = 17`. -/
 theorem a002845_seventeen : a002845 17 = 53948 := by
-  apply a002845_eq_of_eighteen_table <;> native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `125608` at `n = 18`. -/
 theorem a002845_eighteen : a002845 18 = 125608 := by
-  apply a002845_eq_of_eighteen_table <;> native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `293543` at `n = 19`. -/
 theorem a002845_nineteen : a002845 19 = 293543 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `688366` at `n = 20`. -/
 theorem a002845_twenty : a002845 20 = 688366 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `1619087` at `n = 21`. -/
 theorem a002845_twenty_one : a002845 21 = 1619087 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `3818818` at `n = 22`. -/
 theorem a002845_twenty_two : a002845 22 = 3818818 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 /-- OEIS A002845 has value `9029719` at `n = 23`. -/
 theorem a002845_twenty_three : a002845 23 = 9029719 := by
-  rw [a002845_eq_certifiedLevelCard]
-  native_decide
+  apply a002845_eq_of_twenty_three_table <;> native_decide
 
 end A002845
 
