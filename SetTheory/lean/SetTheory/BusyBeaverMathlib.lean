@@ -315,6 +315,34 @@ theorem typedMachineToMachine_attainableScore {State : Type*} [Fintype State]
   rw [startState_eq_some_zero hpos]
   simp [e]
 
+/-- `TM0RadoState Label` is two tagged copies of `Label`. -/
+def tm0RadoStateEquivProd (Label : Type*) : Bool × Label ≃ TM0RadoState Label where
+  toFun
+    | (false, q) => TM0RadoState.normal q
+    | (true, q) => TM0RadoState.writeReturn q
+  invFun
+    | TM0RadoState.normal q => (false, q)
+    | TM0RadoState.writeReturn q => (true, q)
+  left_inv := by
+    intro x
+    cases x with
+    | mk tag q => cases tag <;> rfl
+  right_inv := by
+    intro x
+    cases x <;> rfl
+
+instance tm0RadoStateFintype (Label : Type*) [Fintype Label] :
+    Fintype (TM0RadoState Label) :=
+  Fintype.ofEquiv (Bool × Label) (tm0RadoStateEquivProd Label)
+
+theorem tm0ToTypedRado_attainableScore {Label : Type*} [Inhabited Label] [Fintype Label]
+    (M : Turing.TM0.Machine Bool Label) {score : Nat}
+    (hHalt : (tm0ToTypedRado M).HaltsWithScore
+      (TM0RadoState.normal (default : Label)) score) :
+    AttainableScore (Fintype.card (TM0RadoState Label)) score :=
+  typedMachineToMachine_attainableScore (tm0ToTypedRado M)
+    (TM0RadoState.normal (default : Label)) hHalt
+
 theorem tm0ToTypedRado_step_move {Label : Type*} [Inhabited Label]
     (M : Turing.TM0.Machine Bool Label)
     {q q' : Label} {T : Turing.Tape Bool} {dir : Turing.Dir}
