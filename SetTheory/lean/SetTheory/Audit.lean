@@ -191,10 +191,16 @@ open SetTheory
 #check @PA.Formula.translateHFFormula_sentence_of_HF_sentence
 #check @PA.Formula.translated_HF_axiom_sentence
 #check @PA.Formula.translatedHFAx
+#check @PA.Formula.translatedHFFinAx
 #check @PA.Formula.translatedHFAx_intro
+#check @PA.Formula.translatedHFFinAx_intro
+#check @PA.Formula.translatedHFFinAx_of_translatedHFAx
 #check @PA.Formula.Sentences_translatedHFAx
+#check @PA.Formula.Sentences_translatedHFFinAx
 #check @PA.Formula.BProv_translatedHFAx_of_HFAx
+#check @PA.Formula.BProv_translatedHFFinAx_of_HFFinAx
 #check @PA.Formula.BProv_lift_translatedHFAx_to_PA
+#check @PA.Formula.BProv_lift_translatedHFFinAx_to_PA
 #check @PA.Formula.standard_sat_translatedHFAx
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF

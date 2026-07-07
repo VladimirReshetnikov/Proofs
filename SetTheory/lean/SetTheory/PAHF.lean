@@ -6413,27 +6413,62 @@ theorem translated_HF_axiom_sentence (g : Form)
     (hg : AckermannHF.HFAx_s g) : Sentence (translateHFFormula g) :=
   translateHFFormula_sentence_of_HF_sentence g (AckermannHF.Sentences_HF g hg)
 
+theorem translated_HFFin_axiom_sentence (g : Form)
+    (hg : AckermannHF.HFFinAx_s g) : Sentence (translateHFFormula g) :=
+  translateHFFormula_sentence_of_HF_sentence g (AckermannHF.Sentences_HFFin g hg)
+
 /-- The PA-side theory consisting of syntactic translations of the sealed HF
 axiom-scheme instances. -/
 def translatedHFAx (phi : Formula) : Prop :=
   ∃ g, AckermannHF.HFAx_s g ∧ phi = translateHFFormula g
 
+/-- The PA-side theory consisting of syntactic translations of the strengthened
+hereditary-finite axiom-scheme instances.  This is the PA-side target for the
+HF-in-PA half of the PA/HFFin deductive bi-interpretability theorem. -/
+def translatedHFFinAx (phi : Formula) : Prop :=
+  ∃ g, AckermannHF.HFFinAx_s g ∧ phi = translateHFFormula g
+
 theorem translatedHFAx_intro {g : Form} (hg : AckermannHF.HFAx_s g) :
     translatedHFAx (translateHFFormula g) :=
   ⟨g, hg, rfl⟩
+
+theorem translatedHFFinAx_intro {g : Form} (hg : AckermannHF.HFFinAx_s g) :
+    translatedHFFinAx (translateHFFormula g) :=
+  ⟨g, hg, rfl⟩
+
+theorem translatedHFFinAx_of_translatedHFAx {phi : Formula}
+    (hphi : translatedHFAx phi) : translatedHFFinAx phi := by
+  rcases hphi with ⟨g, hg, rfl⟩
+  exact translatedHFFinAx_intro (AckermannHF.HFFinAx_s_of_HFAx_s hg)
 
 theorem Sentences_translatedHFAx : ∀ phi, translatedHFAx phi → Sentence phi := by
   intro phi hphi
   rcases hphi with ⟨g, hg, rfl⟩
   exact translated_HF_axiom_sentence g hg
 
+theorem Sentences_translatedHFFinAx :
+    ∀ phi, translatedHFFinAx phi → Sentence phi := by
+  intro phi hphi
+  rcases hphi with ⟨g, hg, rfl⟩
+  exact translated_HFFin_axiom_sentence g hg
+
 theorem BProv_translatedHFAx_of_HFAx {g : Form} (hg : AckermannHF.HFAx_s g) :
     BProv translatedHFAx [] (translateHFFormula g) :=
   BProv_ax (translatedHFAx_intro hg)
 
+theorem BProv_translatedHFFinAx_of_HFFinAx {g : Form}
+    (hg : AckermannHF.HFFinAx_s g) :
+    BProv translatedHFFinAx [] (translateHFFormula g) :=
+  BProv_ax (translatedHFFinAx_intro hg)
+
 theorem BProv_lift_translatedHFAx_to_PA
     (hAx : ∀ f, translatedHFAx f → BProv Ax_s [] f)
     {f : Formula} (h : BProv translatedHFAx [] f) : BProv Ax_s [] f :=
+  BProv_lift h hAx (fun _ hg => nomatch hg)
+
+theorem BProv_lift_translatedHFFinAx_to_PA
+    (hAx : ∀ f, translatedHFFinAx f → BProv Ax_s [] f)
+    {f : Formula} (h : BProv translatedHFFinAx [] f) : BProv Ax_s [] f :=
   BProv_lift h hAx (fun _ hg => nomatch hg)
 
 theorem standard_sat_translatedHFAx (e : Nat → Nat) :
