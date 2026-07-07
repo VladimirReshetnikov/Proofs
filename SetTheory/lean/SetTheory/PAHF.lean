@@ -1095,6 +1095,81 @@ theorem succRecApprox_value_of_le (s f : Nat) :
       rw [hstepval, htval, succIterObj]
       rfl
 
+/-! ### Standard finite traces for multiplication recursion -/
+
+/-- The finite graph `{⟨0,0⟩, ⟨1,m⟩, ..., ⟨n,m*n⟩}` as an HF set. -/
+def mulRecTrace (m : Nat) : Nat → Nat
+  | 0 => single standardModel (kpair standardModel empty empty)
+  | n+1 =>
+      adjoin (mulRecTrace m n)
+        (kpair standardModel (ordinalCode (n+1)) (ordinalCode (m * (n+1))))
+
+theorem mulRecTrace_mem_iff (m p n : Nat) :
+    Mem p (mulRecTrace m n) ↔
+      ∃ k, k ≤ n ∧ p = kpair standardModel (ordinalCode k) (ordinalCode (m * k)) := by
+  induction n with
+  | zero =>
+      constructor
+      · intro hp
+        have hp' := (single_spec standardModel (kpair standardModel empty empty) p).mp hp
+        exact ⟨0, by omega, by simpa [ordinalCode_zero] using hp'⟩
+      · intro hp
+        rcases hp with ⟨k, hk, hp⟩
+        have hk0 : k = 0 := by omega
+        subst k
+        apply (single_spec standardModel (kpair standardModel empty empty) p).mpr
+        simpa [ordinalCode_zero] using hp
+  | succ n ih =>
+      rw [mulRecTrace, mem_adjoin, ih]
+      constructor
+      · intro hp
+        rcases hp with hp | hp
+        · rcases hp with ⟨k, hk, hp⟩
+          exact ⟨k, by omega, hp⟩
+        · exact ⟨n+1, by omega, hp⟩
+      · intro hp
+        rcases hp with ⟨k, hk, hp⟩
+        have hcases : k ≤ n ∨ k = n+1 := by omega
+        rcases hcases with hle | heq
+        · exact Or.inl ⟨k, hle, hp⟩
+        · subst k
+          exact Or.inr hp
+
+theorem mulRecTrace_pair_mem (m : Nat) {k n : Nat} (hk : k ≤ n) :
+    Mem (kpair standardModel (ordinalCode k) (ordinalCode (m * k))) (mulRecTrace m n) :=
+  (mulRecTrace_mem_iff m _ n).mpr ⟨k, hk, rfl⟩
+
+theorem mulRecTrace_functional (m n : Nat) :
+    PairFunctional standardModel (mulRecTrace m n) := by
+  intro k y y' hky hky'
+  rcases (mulRecTrace_mem_iff m _ n).mp hky with ⟨i, _hi, hpair_i⟩
+  rcases (mulRecTrace_mem_iff m _ n).mp hky' with ⟨j, _hj, hpair_j⟩
+  have hcomp_i := kpair_injective standardModel hpair_i
+  have hcomp_j := kpair_injective standardModel hpair_j
+  have hij : i = j := by
+    apply ordinalCode_injective
+    exact hcomp_i.1.symm.trans hcomp_j.1
+  rw [hcomp_i.2, hcomp_j.2, hij]
+
+theorem mulRecTrace_keysBelowSucc (m n : Nat) :
+    PairKeysBelowSucc standardModel (mulRecTrace m n) (ordinalCode n) := by
+  intro k y hky
+  rcases (mulRecTrace_mem_iff m _ n).mp hky with ⟨i, hi, hpair_i⟩
+  have hcomp_i := kpair_injective standardModel hpair_i
+  rw [hcomp_i.1]
+  rcases Nat.lt_or_eq_of_le hi with hlt | heq
+  · exact Or.inl (ordinalCode_mem_of_lt hlt)
+  · exact Or.inr (by rw [heq])
+
+theorem mulRecTrace_totalBelowSucc (m n : Nat) :
+    PairTotalBelowSucc standardModel (mulRecTrace m n) (ordinalCode n) := by
+  intro k hk
+  rcases hk with hmem | heq
+  · rcases (mem_ordinalCode_iff k n).mp hmem with ⟨i, hi, rfl⟩
+    exact ⟨ordinalCode (m * i), mulRecTrace_pair_mem m (Nat.le_of_lt hi)⟩
+  · rw [heq]
+    exact ⟨ordinalCode (m * n), mulRecTrace_pair_mem m (Nat.le_refl n)⟩
+
 /-! ### First PA-in-HF interpretation formulas already available -/
 
 namespace PAInHF

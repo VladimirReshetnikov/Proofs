@@ -83,6 +83,11 @@ open SetTheory
 #check @AckermannHF.succRecTrace_succStep
 #check @AckermannHF.succRecTrace_succRecApprox
 #check @AckermannHF.succRecApprox_value_of_le
+#check @AckermannHF.mulRecTrace_mem_iff
+#check @AckermannHF.mulRecTrace_pair_mem
+#check @AckermannHF.mulRecTrace_functional
+#check @AckermannHF.mulRecTrace_keysBelowSucc
+#check @AckermannHF.mulRecTrace_totalBelowSucc
 #check @AckermannHF.PAInHF.domainForm
 #check @AckermannHF.PAInHF.zeroGraph
 #check @AckermannHF.PAInHF.succGraph
