@@ -9370,6 +9370,65 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma formulaAt_succInj_of_irrefl :
+  forall A (mem : A -> A -> Prop),
+    (forall a, ~ mem a a) ->
+    forall rho e, Sat A mem e (formulaAt rho PA.Formula.succInj).
+Proof.
+  intros A mem hIrrefl rho e a ha b hb hEq.
+  destruct hEq as [sa [sb [hsa [hsb heq]]]].
+  pose (E := scons A sb (scons A sa (scons A b (scons A a e)))).
+  pose proof (proj1 (termGraphAt_succ_var_spec A mem
+    (fun n => upVarMap (upVarMap rho) n + 2) 1 1 E) hsa) as hsa'.
+  pose proof (proj1 (termGraphAt_succ_var_spec A mem
+    (fun n => upVarMap (upVarMap rho) n + 2) 0 0 E) hsb) as hsb'.
+  assert (hsaSpec : forall x, mem x sa <-> mem x a \/ x = a).
+  {
+    intro x.
+    pose proof (hsa' x) as hx.
+    change (mem x sa <-> mem x a \/ x = a) in hx.
+    exact hx.
+  }
+  assert (hsbSpec : forall x, mem x sb <-> mem x b \/ x = b).
+  {
+    intro x.
+    pose proof (hsb' x) as hx.
+    change (mem x sb <-> mem x b \/ x = b) in hx.
+    exact hx.
+  }
+  pose proof (proj1 (HF_ordinalLikeAt_spec A mem (scons A a e) 0) ha)
+    as haOrd.
+  pose proof (proj1 (HF_ordinalLikeAt_spec A mem
+    (scons A b (scons A a e)) 0) hb) as hbOrd.
+  assert (hab : a = b).
+  {
+    assert (haSucc : mem a sb).
+    {
+      rewrite <- heq.
+      exact (proj2 (hsaSpec a) (or_intror eq_refl)).
+    }
+    destruct (proj1 (hsbSpec a) haSucc) as [hab | hab].
+    - assert (hbSucc : mem b sa).
+      {
+        rewrite heq.
+        exact (proj2 (hsbSpec b) (or_intror eq_refl)).
+      }
+      destruct (proj1 (hsaSpec b) hbSucc) as [hba | hba].
+      + destruct hbOrd as [hbTrans _].
+        assert (hbb : mem b b).
+        {
+          eapply hbTrans; eauto.
+        }
+        exfalso.
+        exact (hIrrefl b hbb).
+      + symmetry. exact hba.
+    - exact hab.
+  }
+  apply (proj2 (formulaAt_eq_var_spec A mem
+    (upVarMap (upVarMap rho)) 1 0 (scons A b (scons A a e)))).
+  exact hab.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
