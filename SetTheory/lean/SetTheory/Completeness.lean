@@ -328,6 +328,109 @@ theorem BProv_mono (B : Form → Prop) (G G' : List Form) (phi : Form)
   · exact List.mem_append.mpr (Or.inl hx)
   · exact List.mem_append.mpr (Or.inr (hsub x hx))
 
+/-- A theory axiom is relatively provable from that theory. -/
+theorem BProv_ax {B : Form → Prop} {G : List Form} {phi : Form}
+    (hphi : B phi) : BProv B G phi := by
+  refine ⟨[phi], ?_, ?_⟩
+  · intro x hx
+    rw [List.mem_singleton] at hx
+    subst x
+    exact hphi
+  · exact Prov.P_ass _ _ (by simp)
+
+/-- A bare finite-context proof is also a proof relative to any theory. -/
+theorem BProv_of_Prov {B : Form → Prop} {G : List Form} {phi : Form}
+    (h : Prov G phi) : BProv B G phi := by
+  refine ⟨[], ?_, ?_⟩
+  · intro x hx
+    cases hx
+  · simpa using h
+
+/-- A finite list of relative proofs can be put over one shared finite list of
+theory axioms. -/
+theorem BProv_bound_list (B : Form → Prop) (D : List Form) :
+    ∀ L : List Form, (∀ x, x ∈ L → BProv B D x) →
+      ∃ Lb, (∀ x, x ∈ Lb → B x) ∧
+        ∀ x, x ∈ L → Prov (Lb ++ D) x := by
+  intro L
+  induction L with
+  | nil =>
+      intro _hL
+      refine ⟨[], ?_, ?_⟩
+      · intro x hx
+        cases hx
+      · intro x hx
+        cases hx
+  | cons a L ih =>
+      intro hL
+      rcases hL a (by simp) with ⟨La, hLa, hpa⟩
+      rcases ih (fun x hx => hL x (by simp [hx])) with ⟨Lb, hLb, hpL⟩
+      refine ⟨La ++ Lb, ?_, ?_⟩
+      · intro x hx
+        rw [List.mem_append] at hx
+        rcases hx with hx | hx
+        · exact hLa x hx
+        · exact hLb x hx
+      · intro x hx
+        rw [List.mem_cons] at hx
+        rcases hx with rfl | hx
+        · apply Prov_weaken hpa
+          intro y hy
+          rw [List.mem_append] at hy ⊢
+          rcases hy with hy | hy
+          · exact Or.inl (List.mem_append.mpr (Or.inl hy))
+          · exact Or.inr hy
+        · apply Prov_weaken (hpL x hx)
+          intro y hy
+          rw [List.mem_append] at hy ⊢
+          rcases hy with hy | hy
+          · exact Or.inl (List.mem_append.mpr (Or.inr hy))
+          · exact Or.inr hy
+
+/-- Transport a relative proof to another theory/context once every used source
+axiom and every finite-context assumption has been proved in the target. -/
+theorem BProv_lift {B C : Form → Prop} {G D : List Form} {phi : Form}
+    (h : BProv B G phi)
+    (hB : ∀ b, B b → BProv C D b)
+    (hG : ∀ g, g ∈ G → BProv C D g) : BProv C D phi := by
+  rcases h with ⟨Lb, hLb, hp⟩
+  have hctx : ∀ x, x ∈ Lb ++ G → BProv C D x := by
+    intro x hx
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hB x (hLb x hx)
+    · exact hG x hx
+  rcases BProv_bound_list C D (Lb ++ G) hctx with ⟨Lc, hLc, hpctx⟩
+  refine ⟨Lc, hLc, ?_⟩
+  exact Prov_cut hp (Lc ++ D) hpctx
+
+/-- Relative provability is closed under cutting in proofs of the finite
+context. -/
+theorem BProv_cut {B : Form → Prop} {G D : List Form} {phi : Form}
+    (h : BProv B G phi)
+    (hG : ∀ g, g ∈ G → BProv B D g) : BProv B D phi :=
+  BProv_lift h (fun _ hb => BProv_ax (G := D) hb) hG
+
+/-- Enlarging the background theory preserves relative provability. -/
+theorem BProv_theory_mono {B C : Form → Prop} {G : List Form} {phi : Form}
+    (hBC : ∀ b, B b → C b) (h : BProv B G phi) : BProv C G phi :=
+  BProv_lift h
+    (fun b hb => BProv_ax (G := G) (hBC b hb))
+    (fun g hg => BProv_of_Prov (B := C) (Prov.P_ass G g hg))
+
+/-- Soundness for relative provability from an infinite sentence theory and a
+finite context. -/
+theorem soundness_BProv {α : Type u} {mem : α → α → Prop} {B : Form → Prop}
+    {G : List Form} {phi : Form} (h : BProv B G phi) (e : Nat → α)
+    (hB : ∀ b, B b → Sat mem e b)
+    (hG : ∀ g, g ∈ G → Sat mem e g) : Sat mem e phi := by
+  rcases h with ⟨L, hL, hp⟩
+  exact soundness hp e (fun x hx => by
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hB x (hL x hx)
+    · exact hG x hx)
+
 theorem BCon_cons_or (B : Form → Prop) (L : List Form) (phi : Form)
     (hL : BCon B L) : BCon B (phi :: L) ∨ BCon B (fImp phi fBot :: L) := by
   rcases Classical.em (BCon B (phi :: L)) with h | h

@@ -177,6 +177,13 @@ def standardModel : AdjunctionModel Nat where
   adjoin_spec := mem_adjoin
   set_induction := induction
 
+/-- Membership in any adjunction model is irreflexive. -/
+theorem AdjunctionModel.mem_irrefl {α : Type} (M : AdjunctionModel α) (a : α) :
+    ¬ M.mem a a := by
+  refine M.set_induction (fun x => ¬ M.mem x x) ?_ a
+  intro x ih hxx
+  exact ih x hxx hxx
+
 /-! ## First-order HF axioms over the one-relation language -/
 
 /-- A renaming used under two binders: keep the current object variable in
@@ -195,6 +202,13 @@ theorem Sat_rename_rSkipParam {α : Type u} {mem : α → α → Prop}
 /-- The first-order empty-set axiom: some set has no elements. -/
 def HF_empty_form : Form :=
   fEx (fAll (fImp (fMem 0 1) fBot))
+
+/-- The first-order extensionality axiom. -/
+def HF_extensionality_form : Form :=
+  fAll (fAll
+    (fImp
+      (fAll (fIff (fMem 0 2) (fMem 0 1)))
+      (fEq 1 0)))
 
 /-- The first-order adjunction axiom:
 for all `a b`, there is `c = a ∪ {b}`. -/
@@ -885,21 +899,33 @@ def HF_induction_form (phi : Form) : Form :=
 
 /-- The unsealed HF axiom schema. -/
 def HFAx (f : Form) : Prop :=
-  f = HF_empty_form ∨ f = HF_adjoin_form ∨ ∃ phi, f = HF_induction_form phi
+  f = HF_empty_form ∨
+  f = HF_extensionality_form ∨
+  f = HF_adjoin_form ∨
+  ∃ phi, f = HF_induction_form phi
 
 /-- The sentence theory of HF, with every schema instance universally closed. -/
 def HFAx_s (f : Form) : Prop :=
   f = sealF HF_empty_form ∨
+  f = sealF HF_extensionality_form ∨
   f = sealF HF_adjoin_form ∨
   ∃ phi, f = sealF (HF_induction_form phi)
 
 theorem Sentences_HF : Sentences HFAx_s := by
   intro f hf
-  rcases hf with rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
+  rcases hf with rfl | rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
 
 theorem sat_HF_empty {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
     Sat M.mem e HF_empty_form :=
   ⟨M.empty, fun x hx => M.empty_spec x hx⟩
+
+theorem sat_HF_extensionality {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem e HF_extensionality_form := by
+  intro a b h
+  apply M.extensional
+  intro x
+  exact (Sat_fIff (mem := M.mem)
+    (e := scons x (scons b (scons a e)))).mp (h x)
 
 theorem sat_HF_adjoin {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
     Sat M.mem e HF_adjoin_form := by
@@ -919,8 +945,10 @@ theorem sat_HF_induction {α : Type} (M : AdjunctionModel α)
 theorem sat_HF_model {α : Type} (M : AdjunctionModel α) (v : Nat → α) :
     ∀ g, HFAx_s g → Sat M.mem v g := by
   intro g hg
-  rcases hg with rfl | rfl | ⟨phi, rfl⟩
+  rcases hg with rfl | rfl | rfl | ⟨phi, rfl⟩
   · exact (seal_valid (mem := M.mem) HF_empty_form).mpr (sat_HF_empty M) v
+  · exact (seal_valid (mem := M.mem) HF_extensionality_form).mpr
+      (sat_HF_extensionality M) v
   · exact (seal_valid (mem := M.mem) HF_adjoin_form).mpr (sat_HF_adjoin M) v
   · exact (seal_valid (mem := M.mem) (HF_induction_form phi)).mpr
       (sat_HF_induction M phi) v
@@ -928,6 +956,70 @@ theorem sat_HF_model {α : Type} (M : AdjunctionModel α) (v : Nat → α) :
 theorem standard_sat_HF (v : Nat → Nat) :
     ∀ g, HFAx_s g → Sat Mem v g :=
   sat_HF_model standardModel v
+
+/-- Named membership of the sealed empty-set axiom in the HF theory. -/
+theorem HFAx_s_empty : HFAx_s (sealF HF_empty_form) :=
+  Or.inl rfl
+
+/-- Named membership of the sealed extensionality axiom in the HF theory. -/
+theorem HFAx_s_extensionality : HFAx_s (sealF HF_extensionality_form) :=
+  Or.inr (Or.inl rfl)
+
+/-- Named membership of the sealed adjunction axiom in the HF theory. -/
+theorem HFAx_s_adjoin : HFAx_s (sealF HF_adjoin_form) :=
+  Or.inr (Or.inr (Or.inl rfl))
+
+/-- Named membership of a sealed set-induction instance in the HF theory. -/
+theorem HFAx_s_induction (phi : Form) : HFAx_s (sealF (HF_induction_form phi)) :=
+  Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩))
+
+theorem semantic_empty_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    ∃ e, ∀ x, ¬ mem x e :=
+  extract HFAx_s v HF_empty_form hHF HFAx_s_empty v
+
+theorem semantic_extensionality_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b := by
+  have hExt : ∀ e, Sat mem e HF_extensionality_form :=
+    extract HFAx_s v HF_extensionality_form hHF HFAx_s_extensionality
+  intro a b hab
+  exact hExt v a b (fun x =>
+    (Sat_fIff (mem := mem) (e := scons x (scons b (scons a v)))).mpr (hab x))
+
+theorem semantic_adjoin_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    ∀ a b, ∃ c, ∀ x, mem x c ↔ mem x a ∨ x = b := by
+  have hAdj : ∀ e, Sat mem e HF_adjoin_form :=
+    extract HFAx_s v HF_adjoin_form hHF HFAx_s_adjoin
+  intro a b
+  rcases hAdj v a b with ⟨c, hc⟩
+  exact ⟨c, fun x =>
+    (Sat_fIff (mem := mem) (e := scons x (scons c (scons b (scons a v))))).mp (hc x)⟩
+
+theorem semantic_induction_schema_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) (phi : Form) :
+    ∀ e, Sat mem e (HF_induction_form phi) :=
+  extract HFAx_s v (HF_induction_form phi) hHF (HFAx_s_induction phi)
+
+/-- First-order semantic content of the sealed HF theory, without pretending
+that first-order induction gives the second-order `AdjunctionModel.set_induction`
+field. -/
+structure FirstOrderHFModel (α : Type u) where
+  mem : α → α → Prop
+  extensional : ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b
+  empty_exists : ∃ e, ∀ x, ¬ mem x e
+  adjoin_exists : ∀ a b, ∃ c, ∀ x, mem x c ↔ mem x a ∨ x = b
+  induction_schema : ∀ phi e, Sat mem e (HF_induction_form phi)
+
+def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    FirstOrderHFModel α where
+  mem := mem
+  extensional := semantic_extensionality_of_HFAx_s v hHF
+  empty_exists := semantic_empty_of_HFAx_s v hHF
+  adjoin_exists := semantic_adjoin_of_HFAx_s v hHF
+  induction_schema := semantic_induction_schema_of_HFAx_s v hHF
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
 
@@ -1729,21 +1821,160 @@ theorem mulGraph_value_of_ordinalInputs (m n : Nat) (e : Nat → Nat)
   exact mulRecApproxAt_value_of_le m n f (e 0) tail n (e 0)
     hfCanon (Nat.le_refl n) hout'
 
-theorem zeroGraph_domain (e : Nat → Nat)
-    (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by
-  apply (HF_ordinalLikeAt_spec e 0).mpr
-  have hz' := (HF_emptyAt_empty standardModel e 0).mp hz
-  rw [hz']
-  exact OrdinalLike.empty standardModel
+/-- In any adjunction model, the HF empty set is in the interpreted PA
+domain. -/
+theorem domain_empty_model {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem (scons M.empty e) domainForm := by
+  apply (HF_ordinalLikeAt_spec (scons M.empty e) 0).mpr
+  exact OrdinalLike.empty M
 
+/-- In any adjunction model, the HF empty set realizes the PA-in-HF zero
+graph. -/
+theorem zeroGraph_empty_model {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem (scons M.empty e) zeroGraph := by
+  apply (HF_emptyAt_empty M (scons M.empty e) 0).mpr
+  rfl
+
+/-- In any adjunction model, self-adjunction realizes the PA-in-HF successor
+graph. -/
+theorem succGraph_adjoin_self_model {α : Type} (M : AdjunctionModel α)
+    (a : α) (e : Nat → α) :
+    Sat M.mem (scons (M.adjoin a a) (scons a e)) succGraph := by
+  apply (HF_succAt_spec M (scons (M.adjoin a a) (scons a e)) 0 1).mpr
+  rfl
+
+/-- In any adjunction model, self-adjunction preserves the interpreted PA
+domain. -/
+theorem domain_adjoin_self_model {α : Type} (M : AdjunctionModel α)
+    (a : α) (e : Nat → α)
+    (ha : Sat M.mem (scons a e) domainForm) :
+    Sat M.mem (scons (M.adjoin a a) e) domainForm := by
+  apply (HF_ordinalLikeAt_spec (scons (M.adjoin a a) e) 0).mpr
+  have ha' := (HF_ordinalLikeAt_spec (scons a e) 0).mp ha
+  exact OrdinalLike.adjoin_self M ha' rfl
+
+/-- The carrier of the PA interpretation inside an adjunction model. -/
+def Domain {α : Type} (M : AdjunctionModel α) : Type :=
+  {a : α // OrdinalLike M.mem a}
+
+/-- Zero of the interpreted PA domain. -/
+def domainZero {α : Type} (M : AdjunctionModel α) : Domain M :=
+  ⟨M.empty, OrdinalLike.empty M⟩
+
+/-- Successor of the interpreted PA domain. -/
+def domainSucc {α : Type} (M : AdjunctionModel α) (a : Domain M) : Domain M :=
+  ⟨M.adjoin a.val a.val, OrdinalLike.adjoin_self M a.property rfl⟩
+
+theorem domainZero_val {α : Type} (M : AdjunctionModel α) :
+    (domainZero M).val = M.empty :=
+  rfl
+
+theorem domainSucc_val {α : Type} (M : AdjunctionModel α) (a : Domain M) :
+    (domainSucc M a).val = M.adjoin a.val a.val :=
+  rfl
+
+/-- Self-adjunction is never empty. -/
+theorem adjoin_self_ne_empty_model {α : Type} (M : AdjunctionModel α) (a : α) :
+    M.adjoin a a ≠ M.empty := by
+  intro h
+  have ha : M.mem a (M.adjoin a a) := (M.adjoin_spec a a a).mpr (Or.inr rfl)
+  rw [h] at ha
+  exact M.empty_spec a ha
+
+/-- Self-adjunction is injective on ordinal-like objects. -/
+theorem adjoin_self_injective_on_ordinalLike_model {α : Type}
+    (M : AdjunctionModel α) {a b : α}
+    (_ha : OrdinalLike M.mem a) (hb : OrdinalLike M.mem b)
+    (h : M.adjoin a a = M.adjoin b b) : a = b := by
+  have hasucc : M.mem a (M.adjoin b b) := by
+    have : M.mem a (M.adjoin a a) := (M.adjoin_spec a a a).mpr (Or.inr rfl)
+    simpa [h] using this
+  rcases (M.adjoin_spec a b b).mp hasucc with hab | hab
+  · have hbsucc : M.mem b (M.adjoin a a) := by
+      have : M.mem b (M.adjoin b b) := (M.adjoin_spec b b b).mpr (Or.inr rfl)
+      simpa [← h] using this
+    rcases (M.adjoin_spec b a a).mp hbsucc with hba | hba
+    · have hbb : M.mem b b := hb.1 a hab b hba
+      exact False.elim (M.mem_irrefl b hbb)
+    · exact hba.symm
+  · exact hab
+
+/-- Successor is injective on the interpreted PA domain. -/
+theorem domainSucc_injective_model {α : Type} (M : AdjunctionModel α)
+    {a b : Domain M} (h : domainSucc M a = domainSucc M b) : a = b := by
+  apply Subtype.ext
+  apply adjoin_self_injective_on_ordinalLike_model M a.property b.property
+  exact congrArg Subtype.val h
+
+/-- No successor in the interpreted PA domain is zero. -/
+theorem domainSucc_ne_zero_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) : domainSucc M a ≠ domainZero M := by
+  intro h
+  exact adjoin_self_ne_empty_model M a.val (congrArg Subtype.val h)
+
+/-- Every element of the interpreted PA carrier satisfies the domain formula. -/
+theorem domainElement_domainForm_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) (e : Nat → α) :
+    Sat M.mem (scons a.val e) domainForm := by
+  apply (HF_ordinalLikeAt_spec (scons a.val e) 0).mpr
+  exact a.property
+
+/-- The interpreted zero satisfies the PA-in-HF domain formula. -/
+theorem domainZero_domainForm_model {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) :
+    Sat M.mem (scons (domainZero M).val e) domainForm :=
+  domainElement_domainForm_model M (domainZero M) e
+
+/-- The interpreted zero realizes the PA-in-HF zero graph. -/
+theorem domainZero_zeroGraph_model {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) :
+    Sat M.mem (scons (domainZero M).val e) zeroGraph := by
+  simpa [domainZero_val] using zeroGraph_empty_model M e
+
+/-- The interpreted successor satisfies the PA-in-HF domain formula. -/
+theorem domainSucc_domainForm_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) (e : Nat → α) :
+    Sat M.mem (scons (domainSucc M a).val e) domainForm :=
+  domainElement_domainForm_model M (domainSucc M a) e
+
+/-- The interpreted successor realizes the PA-in-HF successor graph. -/
+theorem domainSucc_succGraph_model {α : Type} (M : AdjunctionModel α)
+    (a : Domain M) (e : Nat → α) :
+    Sat M.mem (scons (domainSucc M a).val (scons a.val e)) succGraph := by
+  simpa [domainSucc_val] using succGraph_adjoin_self_model M a.val e
+
+/-- In any adjunction model, the PA-in-HF zero graph lands in the interpreted
+PA domain. -/
+theorem zeroGraph_domain_model {α : Type} (M : AdjunctionModel α) (e : Nat → α)
+    (hz : Sat M.mem e zeroGraph) : Sat M.mem e domainForm := by
+  apply (HF_ordinalLikeAt_spec e 0).mpr
+  have hz' := (HF_emptyAt_empty M e 0).mp hz
+  rw [hz']
+  exact OrdinalLike.empty M
+
+/-- Standard Ackermann-HF specialization of `zeroGraph_domain_model`. -/
+theorem zeroGraph_domain (e : Nat → Nat)
+    (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm :=
+  zeroGraph_domain_model standardModel e hz
+
+/-- In any adjunction model, the PA-in-HF successor graph preserves the
+interpreted PA domain. -/
+theorem succGraph_preserves_domain_model {α : Type} (M : AdjunctionModel α) (e : Nat → α)
+    (hin : Sat M.mem e (HF_ordinalLikeAt 1))
+    (hs : Sat M.mem e succGraph) :
+    Sat M.mem e domainForm := by
+  apply (HF_ordinalLikeAt_spec e 0).mpr
+  have hin' := (HF_ordinalLikeAt_spec e 1).mp hin
+  have hs' := (HF_succAt_spec M e 0 1).mp hs
+  exact OrdinalLike.adjoin_self M hin' hs'
+
+/-- Standard Ackermann-HF specialization of
+`succGraph_preserves_domain_model`. -/
 theorem succGraph_preserves_domain (e : Nat → Nat)
     (hin : Sat Mem e (HF_ordinalLikeAt 1))
     (hs : Sat Mem e succGraph) :
-    Sat Mem e domainForm := by
-  apply (HF_ordinalLikeAt_spec e 0).mpr
-  have hin' := (HF_ordinalLikeAt_spec e 1).mp hin
-  have hs' := (HF_succAt_spec standardModel e 0 1).mp hs
-  exact OrdinalLike.adjoin_self standardModel hin' hs'
+    Sat Mem e domainForm :=
+  succGraph_preserves_domain_model standardModel e hin hs
 
 end PAInHF
 
@@ -2880,6 +3111,78 @@ theorem BProv_mp (B : Formula → Prop) (G : List Formula) (a b : Formula)
     · exact Prov_weaken hpa _ (fun x hx => by
         rw [List.mem_append] at hx ⊢
         grind)
+
+/-- A finite list of PA relative proofs can be put over one shared finite list
+of theory axioms. -/
+theorem BProv_bound_list (B : Formula → Prop) (D : List Formula) :
+    ∀ L : List Formula, (∀ x, x ∈ L → BProv B D x) →
+      ∃ Lb, (∀ x, x ∈ Lb → B x) ∧
+        ∀ x, x ∈ L → Prov (Lb ++ D) x := by
+  intro L
+  induction L with
+  | nil =>
+      intro _hL
+      refine ⟨[], ?_, ?_⟩
+      · intro x hx
+        cases hx
+      · intro x hx
+        cases hx
+  | cons a L ih =>
+      intro hL
+      rcases hL a (by simp) with ⟨La, hLa, hpa⟩
+      rcases ih (fun x hx => hL x (by simp [hx])) with ⟨Lb, hLb, hpL⟩
+      refine ⟨La ++ Lb, ?_, ?_⟩
+      · intro x hx
+        rw [List.mem_append] at hx
+        rcases hx with hx | hx
+        · exact hLa x hx
+        · exact hLb x hx
+      · intro x hx
+        rw [List.mem_cons] at hx
+        rcases hx with rfl | hx
+        · apply Prov_weaken hpa
+          intro y hy
+          rw [List.mem_append] at hy ⊢
+          rcases hy with hy | hy
+          · exact Or.inl (List.mem_append.mpr (Or.inl hy))
+          · exact Or.inr hy
+        · apply Prov_weaken (hpL x hx)
+          intro y hy
+          rw [List.mem_append] at hy ⊢
+          rcases hy with hy | hy
+          · exact Or.inl (List.mem_append.mpr (Or.inr hy))
+          · exact Or.inr hy
+
+/-- Transport a PA relative proof to another PA theory/context once every used
+source axiom and every finite-context assumption has been proved in the target. -/
+theorem BProv_lift {B C : Formula → Prop} {G D : List Formula} {phi : Formula}
+    (h : BProv B G phi)
+    (hB : ∀ b, B b → BProv C D b)
+    (hG : ∀ g, g ∈ G → BProv C D g) : BProv C D phi := by
+  rcases h with ⟨Lb, hLb, hp⟩
+  have hctx : ∀ x, x ∈ Lb ++ G → BProv C D x := by
+    intro x hx
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hB x (hLb x hx)
+    · exact hG x hx
+  rcases BProv_bound_list C D (Lb ++ G) hctx with ⟨Lc, hLc, hpctx⟩
+  refine ⟨Lc, hLc, ?_⟩
+  exact Prov_cut hp (Lc ++ D) hpctx
+
+/-- PA relative provability is closed under cutting in proofs of the finite
+context. -/
+theorem BProv_cut {B : Formula → Prop} {G D : List Formula} {phi : Formula}
+    (h : BProv B G phi)
+    (hG : ∀ g, g ∈ G → BProv B D g) : BProv B D phi :=
+  BProv_lift h (fun _ hb => BProv_ax (G := D) hb) hG
+
+/-- Enlarging the PA background theory preserves relative provability. -/
+theorem BProv_theory_mono {B C : Formula → Prop} {G : List Formula} {phi : Formula}
+    (hBC : ∀ b, B b → C b) (h : BProv B G phi) : BProv C G phi :=
+  BProv_lift h
+    (fun b hb => BProv_ax (G := G) (hBC b hb))
+    (fun g hg => BProv_of_Prov (B := C) (Prov.P_ass G g hg))
 
 theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
     {G : List Formula} {phi : Formula} (h : BProv B G phi) :
@@ -4174,10 +4477,23 @@ axiom-scheme instances. -/
 def translatedHFAx (phi : Formula) : Prop :=
   ∃ g, AckermannHF.HFAx_s g ∧ phi = translateHFFormula g
 
+theorem translatedHFAx_intro {g : Form} (hg : AckermannHF.HFAx_s g) :
+    translatedHFAx (translateHFFormula g) :=
+  ⟨g, hg, rfl⟩
+
 theorem Sentences_translatedHFAx : ∀ phi, translatedHFAx phi → Sentence phi := by
   intro phi hphi
   rcases hphi with ⟨g, hg, rfl⟩
   exact translated_HF_axiom_sentence g hg
+
+theorem BProv_translatedHFAx_of_HFAx {g : Form} (hg : AckermannHF.HFAx_s g) :
+    BProv translatedHFAx [] (translateHFFormula g) :=
+  BProv_ax (translatedHFAx_intro hg)
+
+theorem BProv_lift_translatedHFAx_to_PA
+    (hAx : ∀ f, translatedHFAx f → BProv Ax_s [] f)
+    {f : Formula} (h : BProv translatedHFAx [] f) : BProv Ax_s [] f :=
+  BProv_lift h hAx (fun _ hg => nomatch hg)
 
 theorem standard_sat_translatedHFAx (e : Nat → Nat) :
     ∀ g, translatedHFAx g → Sat natModel e g := by
@@ -4242,6 +4558,34 @@ def Ax_s (f : Formula) : Prop :=
 theorem sentence_ax_s {f : Formula} (hf : Ax_s f) : Sentence f := by
   rcases hf with rfl | rfl | rfl | rfl | rfl | rfl | ⟨phi, rfl⟩ <;>
     exact sealPA_sentence _
+
+/-- Named membership of the sealed successor-injectivity axiom in PA. -/
+theorem Ax_s_succInj : Ax_s (sealPA succInj) :=
+  Or.inl rfl
+
+/-- Named membership of the sealed zero-is-not-successor axiom in PA. -/
+theorem Ax_s_zeroNotSucc : Ax_s (sealPA zeroNotSucc) :=
+  Or.inr (Or.inl rfl)
+
+/-- Named membership of the sealed addition-by-zero axiom in PA. -/
+theorem Ax_s_addZero : Ax_s (sealPA addZero) :=
+  Or.inr (Or.inr (Or.inl rfl))
+
+/-- Named membership of the sealed addition-successor axiom in PA. -/
+theorem Ax_s_addSucc : Ax_s (sealPA addSucc) :=
+  Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+
+/-- Named membership of the sealed multiplication-by-zero axiom in PA. -/
+theorem Ax_s_mulZero : Ax_s (sealPA mulZero) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+
+/-- Named membership of the sealed multiplication-successor axiom in PA. -/
+theorem Ax_s_mulSucc : Ax_s (sealPA mulSucc) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+
+/-- Named membership of a sealed induction instance in PA. -/
+theorem Ax_s_induction (phi : Formula) : Ax_s (sealPA (inductionForm phi)) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩)))))
 
 theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
@@ -4939,10 +5283,24 @@ axiom-scheme instances. -/
 def translatedPAAx (g : Form) : Prop :=
   ∃ phi, PA.Formula.Ax_s phi ∧ g = translateFormula phi
 
+theorem translatedPAAx_intro {phi : PA.Formula} (hphi : PA.Formula.Ax_s phi) :
+    translatedPAAx (translateFormula phi) :=
+  ⟨phi, hphi, rfl⟩
+
 theorem Sentences_translatedPAAx : Sentences translatedPAAx := by
   intro g hg
   rcases hg with ⟨phi, hphi, rfl⟩
   exact translated_PA_axiom_sentence phi hphi
+
+theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
+    (hphi : PA.Formula.Ax_s phi) :
+    BProv translatedPAAx [] (translateFormula phi) :=
+  BProv_ax (translatedPAAx_intro hphi)
+
+theorem BProv_lift_translatedPAAx_to_HF
+    (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
+    {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
+  BProv_lift h hAx (fun _ hf => nomatch hf)
 
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
     ∀ g, translatedPAAx g → Sat Mem e g := by
@@ -4998,6 +5356,42 @@ structure TheoryInterpretation
   maps_axiom : ∀ {phi}, SrcAx phi → TgtProv TgtAx [] (translate phi)
   maps_theorem : ∀ {phi}, SrcSentence phi →
     SrcProv SrcAx [] phi → TgtProv TgtAx [] (translate phi)
+
+/-- Build an identity interpretation between two set-theory theories once each
+source axiom has been proved from the target theory.  This is the assembly
+lemma used after axiom-discharge work; it does not hide any axiom proof. -/
+def setTheoryIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : Form → Prop)
+    (hAx : ∀ phi, SrcAx phi → BProv TgtAx [] phi) :
+    TheoryInterpretation Form Form Sentence Sentence SrcAx TgtAx BProv BProv where
+  translate := id
+  maps_sentence := by
+    intro phi hphi
+    exact hphi
+  maps_axiom := by
+    intro phi hphi
+    exact hAx phi hphi
+  maps_theorem := by
+    intro phi _ h
+    exact BProv_lift h hAx (fun g hg => nomatch hg)
+
+/-- PA analogue of `setTheoryIdentityInterpretationOfAxiomProofs`. -/
+def paIdentityInterpretationOfAxiomProofs
+    (SrcAx TgtAx : PA.Formula → Prop)
+    (hAx : ∀ phi, SrcAx phi → PA.Formula.BProv TgtAx [] phi) :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      SrcAx TgtAx PA.Formula.BProv PA.Formula.BProv where
+  translate := id
+  maps_sentence := by
+    intro phi hphi
+    exact hphi
+  maps_axiom := by
+    intro phi hphi
+    exact hAx phi hphi
+  maps_theorem := by
+    intro phi _ h
+    exact PA.Formula.BProv_lift h hAx (fun g hg => nomatch hg)
 
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
