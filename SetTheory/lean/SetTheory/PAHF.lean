@@ -1814,21 +1814,38 @@ theorem mulGraph_value_of_ordinalInputs (m n : Nat) (e : Nat → Nat)
   exact mulRecApproxAt_value_of_le m n f (e 0) tail n (e 0)
     hfCanon (Nat.le_refl n) hout'
 
-theorem zeroGraph_domain (e : Nat → Nat)
-    (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by
+/-- In any adjunction model, the PA-in-HF zero graph lands in the interpreted
+PA domain. -/
+theorem zeroGraph_domain_model {α : Type} (M : AdjunctionModel α) (e : Nat → α)
+    (hz : Sat M.mem e zeroGraph) : Sat M.mem e domainForm := by
   apply (HF_ordinalLikeAt_spec e 0).mpr
-  have hz' := (HF_emptyAt_empty standardModel e 0).mp hz
+  have hz' := (HF_emptyAt_empty M e 0).mp hz
   rw [hz']
-  exact OrdinalLike.empty standardModel
+  exact OrdinalLike.empty M
 
+/-- Standard Ackermann-HF specialization of `zeroGraph_domain_model`. -/
+theorem zeroGraph_domain (e : Nat → Nat)
+    (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm :=
+  zeroGraph_domain_model standardModel e hz
+
+/-- In any adjunction model, the PA-in-HF successor graph preserves the
+interpreted PA domain. -/
+theorem succGraph_preserves_domain_model {α : Type} (M : AdjunctionModel α) (e : Nat → α)
+    (hin : Sat M.mem e (HF_ordinalLikeAt 1))
+    (hs : Sat M.mem e succGraph) :
+    Sat M.mem e domainForm := by
+  apply (HF_ordinalLikeAt_spec e 0).mpr
+  have hin' := (HF_ordinalLikeAt_spec e 1).mp hin
+  have hs' := (HF_succAt_spec M e 0 1).mp hs
+  exact OrdinalLike.adjoin_self M hin' hs'
+
+/-- Standard Ackermann-HF specialization of
+`succGraph_preserves_domain_model`. -/
 theorem succGraph_preserves_domain (e : Nat → Nat)
     (hin : Sat Mem e (HF_ordinalLikeAt 1))
     (hs : Sat Mem e succGraph) :
-    Sat Mem e domainForm := by
-  apply (HF_ordinalLikeAt_spec e 0).mpr
-  have hin' := (HF_ordinalLikeAt_spec e 1).mp hin
-  have hs' := (HF_succAt_spec standardModel e 0 1).mp hs
-  exact OrdinalLike.adjoin_self standardModel hin' hs'
+    Sat Mem e domainForm :=
+  succGraph_preserves_domain_model standardModel e hin hs
 
 end PAInHF
 

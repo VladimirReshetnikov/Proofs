@@ -281,7 +281,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.domainForm_free
 #check @AckermannHF.PAInHF.addGraphAt_free
 #check @AckermannHF.PAInHF.mulGraphAt_free
+#check @AckermannHF.PAInHF.zeroGraph_domain_model
 #check @AckermannHF.PAInHF.zeroGraph_domain
+#check @AckermannHF.PAInHF.succGraph_preserves_domain_model
 #check @AckermannHF.PAInHF.succGraph_preserves_domain
 #check @AckermannHF.PAInHF.termGraphAt
 #check @AckermannHF.PAInHF.termGraphAt_free
