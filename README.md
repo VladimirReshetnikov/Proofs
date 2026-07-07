@@ -177,11 +177,13 @@ All value theorems read off a single native prefix-table certificate:
 the verified hereditary sparse binary numbers of
 [`LeanProofs/SparseBinary.lean`](LeanProofs/SparseBinary.lean)), and each
 `a002845_<n>` is then a kernel-checked table lookup — the module contains
-exactly one `native_decide` and verifies in a few minutes.  The five heavy
-certificates `a002845 19` through `a002845 23` (about nine million distinct
-sparse logarithms in one native run) are kept in the module as a
-commented-out block using the identical table pattern; uncomment it to
-re-verify them with the same machinery.  The alternative computation views (the direct
+exactly one `native_decide`.  Measured on the local Windows machine
+(2026-07-07), the module builds in about 134 s in this default form.  The
+five heavy certificates `a002845 19` through `a002845 23` (about nine
+million distinct sparse logarithms in one native run) are kept in the module
+as a commented-out block using the identical table pattern; uncommenting it
+re-verifies them with the same machinery and raises the module build to
+roughly 1300-2450 s (about 22-40 min, varying with concurrent build load).  The alternative computation views (the direct
 logarithm enumeration and the sparse-log evaluator over all parenthesization
 trees) remain as Lean-proved equivalences (`a002845_eq_directLogCard`,
 `a002845_eq_certifiedSparseCard`).  The combine operation itself is the total

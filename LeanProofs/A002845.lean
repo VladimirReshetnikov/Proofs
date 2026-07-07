@@ -519,11 +519,14 @@ theorem a002845_eighteen : a002845 18 = 125608 :=
 
 /-
 The five heaviest certificates, `a002845 19` through `a002845 23`, are
-excluded from the default build so this module verifies in minutes rather
-than tens of minutes: their prefix-table certificate through `n = 23`
-computes about nine million distinct sparse logarithms in one native run.
-The proof machinery is unchanged; to re-verify the heavy values, uncomment
-this block (it extends the same table pattern used above).
+excluded from the default build: their prefix-table certificate through
+`n = 23` computes about nine million distinct sparse logarithms in one
+native run.  Measured on Vladimir's Windows machine (2026-07-07), the module
+builds in about 134 s with the live `n = 18` table below, versus roughly
+1300-2450 s (about 22-40 min, varying with concurrent build load) when this
+`n = 23` block is enabled instead.  The proof machinery is unchanged; to
+re-verify the heavy values, uncomment this block (it extends the same table
+pattern used above).
 
 def a002845ValuesThroughTwentyThree : List Nat :=
   [1, 1, 1, 2, 4, 8, 17, 36, 78, 171, 379, 851, 1928, 4396, 10087, 23273,
