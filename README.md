@@ -116,7 +116,15 @@ binary parenthesization syntax `PowTower.Expr`, its canonical semantic
 `valueSet`/`valueCard`, and proved computation-oriented bridges such as
 `valueSet_eq_recursiveValueSet`, `valueCard_eq_recursiveValueSet_ncard`, and
 the finite/memoized recursive finite-set variants used by decidable
-interpretations.
+interpretations.  Two shared devices keep the per-sequence modules thin:
+`eq_recursiveValueSet_of_recurrence` lets any local recursion of the standard
+split shape inherit the equivalence with the canonical lexical definition
+without repeating the strong induction, and the hash-set fast-level machinery
+(`fastLevelFromTable`/`fastLevelTable`/`fastCountsThrough`) is a proved
+executable fast path whose duplicate-free rows are shown to enumerate exactly
+`recursiveValueFinset`, so large certificate rows never rely on an unproved
+backend.  The module also carries the shared size-`1..5` parenthesization
+enumeration certificates reused by the sequence modules.
 
 [`LeanProofs/A000081.lean`](LeanProofs/A000081.lean) defines OEIS A000081
 from the exponent-function description itself: it enumerates all legal binary
@@ -140,6 +148,8 @@ functions by exact exponent comparisons at `x = 3`.  The `n = 5` proof
 enumerates the 14 legal binary parenthesizations, collapses them to 9
 positive-real functions with proved exponent identities, and proves those 9
 representatives distinct by a finite strict-exponent certificate at `x = 3`.
+The size-`1..5` parenthesization enumerations are inherited from the shared
+`PowTower.Expr` certificates rather than re-checked locally.
 No Pólya recurrence or rooted-tree counter is used as a counting shortcut
 without a semantic bridge.
 
@@ -157,7 +167,7 @@ theorem a002845_eq_certifiedSparseCard (n : Nat) :
   a002845 n = certifiedSparseCard n
 theorem a002845_one : a002845 1 = 1
 -- ...
-theorem a002845_twelve : a002845 12 = 851
+theorem a002845_twenty_three : a002845 23 = 9029719
 ```
 
 The value theorems `a002845_one` through `a002845_six` use a direct finite
@@ -165,12 +175,15 @@ computation of the canonical logarithm set, proved equivalent to the semantic
 value set by injectivity of `m ↦ 2^m`. The value theorems
 `a002845_seven` through `a002845_twelve` use a certified sparse-log evaluator:
 its proof-facing definition is semantic (`Sparse.ofNat` of the exact
-logarithm), while native evaluation of the logarithm-combine step is implemented
-by the fast hereditary sparse operation. The module separately retains the
-older level-streaming sparse backend, currently with checked backend
-certificates `a002845Sparse_one` through `a002845Sparse_twenty_two`; those are
-not treated as primary OEIS value theorems until that backend is also proved
-equivalent to the canonical logarithm value set.
+logarithm), while native evaluation of the logarithm-combine step is
+implemented by the fast hereditary sparse operation.  The value theorems
+`a002845_thirteen` through `a002845_twenty_three` come from one prefix-table
+certificate over the shared proved hash-set fast table of
+`PowTower.Expr` instantiated at atom `Sparse.ofNat 1` and combine
+`certifiedCombineLog`; every fast row is Lean-proved to enumerate exactly the
+shared finite recurrence, so the only execution-level substitution in the
+whole module is the native implementation of the sparse combine
+`certifiedCombineLog` by `combineLog`.
 
 [`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683 from
 the canonical lexical syntax of all binary parenthesizations of
@@ -250,14 +263,16 @@ The current formalization checkpoint and next directions are summarized in
 [`LeanProofs/A199812.lean`](LeanProofs/A199812.lean) defines OEIS A199812
 from the same shared `PowTower.Expr` lexical syntax used by the other
 power-tower OEIS modules, interpreting the atom as ordinal `omega` and each
-node as ordinal exponentiation. It uses Cantor normal forms and a dynamic
-normal-form count through a proved-equivalent finite-set presentation, and
-proves the listed values through `n = 11`:
+node as ordinal exponentiation. It uses Cantor normal forms and dynamic
+normal-form counts that are direct instances of the shared
+`PowTower.Expr` finite recurrence, and certifies the listed values through
+`n = 13` from one prefix-table certificate over the shared proved hash-set
+fast table (atom `0 : ONote`, combine `a + omega^b` on inner exponents):
 
 ```lean
 theorem a199812_one : a199812 1 = 1
 -- ...
-theorem a199812_eleven : a199812 11 = 3037
+theorem a199812_thirteen : a199812 13 = 20287
 ```
 
 [`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes the
