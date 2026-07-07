@@ -596,6 +596,82 @@ theorem typedMachineReaches_attainableLowerBound {State : Type*} [Fintype State]
     typedMachineReaches_haltsWithScore hReach hState rfl
   exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩
 
+/--
+State space for a typed Rado machine that first writes a nonempty Bool input
+and returns to the origin, then hands control to the usual `TM0` simulator.
+
+The two `Fin input.length` summands are the write-right and return-left phases;
+the final summand is the already-proved simulator state space.
+-/
+abbrev InitThenTM0State (Label : Type*) (input : List Bool) :=
+  (Fin input.length ⊕ Fin input.length) ⊕ TM0RadoState Label
+
+/--
+Typed Rado wrapper that initializes the tape with `input` before running the
+standard typed-Rado simulation of a Bool `TM0` machine.
+-/
+def initThenTM0ToTypedRado {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool) :
+    TypedMachine (InitThenTM0State Label input) where
+  transition state bit :=
+    match state with
+    | Sum.inl (Sum.inl i) =>
+        let out := input.get ⟨i.val, i.isLt⟩
+        if hNext : i.val + 1 < input.length then
+          { write := out, move := Move.right,
+            next := some (Sum.inl (Sum.inl ⟨i.val + 1, hNext⟩)) }
+        else
+          { write := out, move := Move.right,
+            next := some (Sum.inl (Sum.inr i)) }
+    | Sum.inl (Sum.inr r) =>
+        if r.val = 0 then
+          { write := bit, move := Move.left,
+            next := some (Sum.inr (TM0RadoState.normal (default : Label))) }
+        else
+          { write := bit, move := Move.left,
+            next := some (Sum.inl (Sum.inr
+              ⟨r.val - 1, Nat.lt_of_le_of_lt (Nat.sub_le _ _) r.isLt⟩)) }
+    | Sum.inr simState =>
+        let action := (tm0ToTypedRado M).transition simState bit
+        { write := action.write, move := action.move, next := action.next.map Sum.inr }
+
+/-- Embed a plain `TM0`-simulator Rado configuration into the wrapper machine. -/
+def liftSimCfg {Label : Type*} {input : List Bool}
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedConfig (InitThenTM0State Label input) where
+  state := cfg.state.map Sum.inr
+  head := cfg.head
+  tape := cfg.tape
+
+@[simp]
+theorem liftSimCfg_step {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool)
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedMachine.step (initThenTM0ToTypedRado M input) (liftSimCfg cfg) =
+      liftSimCfg (TypedMachine.step (tm0ToTypedRado M) cfg) := by
+  cases cfg with
+  | mk state head tape =>
+      cases state with
+      | none => rfl
+      | some simState =>
+          cases simState <;> rfl
+
+theorem liftSimCfg_reaches {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool)
+    {cfg cfg' : TypedConfig (TM0RadoState Label)}
+    (h : TypedRadoReaches (tm0ToTypedRado M) cfg cfg') :
+    TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (liftSimCfg cfg) (liftSimCfg cfg') := by
+  unfold TypedRadoReaches at h
+  refine Relation.ReflTransGen.head_induction_on h ?_ ?_
+  · exact Relation.ReflTransGen.refl
+  · intro a c hStep _hRest IH
+    have hStepLift : liftSimCfg c =
+        TypedMachine.step (initThenTM0ToTypedRado M input) (liftSimCfg a) := by
+      rw [hStep]
+      rw [liftSimCfg_step]
+    exact Relation.ReflTransGen.head hStepLift IH
+
 /-- `TM0RadoState Label` is two tagged copies of `Label`. -/
 def tm0RadoStateEquivProd (Label : Type*) : Bool × Label ≃ TM0RadoState Label where
   toFun
