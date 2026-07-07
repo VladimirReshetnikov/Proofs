@@ -189,15 +189,27 @@ canonical representation of the expected number (`shift_eq_ofNat`) — so no
 the proved path, and the only remaining trust in the value certificates is
 `native_decide` itself.
 
-[`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) defines OEIS A198683 from
-the canonical lexical syntax of all binary parenthesizations of
-`i^i^...^i`, interpreting every binary node as the principal complex power
-`exp (log z * w)`, and taking the number of distinct evaluated values.  Its
-recursive value-set helper is Lean-proved equivalent to that lexical definition
-before being used by the computational proofs. It proves the accepted values
-through `n = 7` directly over `ℂ`, with public theorems
-`a198683_one` through `a198683_seven`; the final `n = 7` lower bound is
-`thirty_four_le_a198683_seven`, matched against `a198683_seven_le_thirty_four`.
+OEIS A198683 is defined from the canonical lexical syntax of all binary
+parenthesizations of `i^i^...^i`, interpreting every binary node as the
+principal complex power `exp (log z * w)`, and taking the number of distinct
+evaluated values.  Its recursive value-set helper is Lean-proved equivalent to
+that lexical definition before being used by the computational proofs.  The
+formalization proves the accepted values through `n = 7` directly over `ℂ`,
+with public theorems `a198683_one` through `a198683_seven`, split across four
+modules:
+[`LeanProofs/A198683Tower.lean`](LeanProofs/A198683Tower.lean) holds the
+canonical definition layer, the tower constants `p2, ..., p6O` with their
+analytic facts (in the shared internal namespace `A198683Support`), and the
+values through `n = 4`;
+[`LeanProofs/A198683FiveSix.lean`](LeanProofs/A198683FiveSix.lean) proves
+`a198683 5 = 7` and `a198683 6 = 15`;
+[`LeanProofs/A198683SevenUpper.lean`](LeanProofs/A198683SevenUpper.lean)
+carries the representative-list refinement pipeline ending in
+`a198683_seven_le_thirty_four`; and
+[`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) proves the matching
+lower bound `thirty_four_le_a198683_seven`, assembles
+`a198683_seven : a198683 7 = 34`, and restates the historical intermediate
+bounds as corollaries of the final pair.
 Two companion certificate modules record finite checked data from the local
 [`Oeis/A198683/`](Oeis/A198683/README.md) corpus:
 [`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
