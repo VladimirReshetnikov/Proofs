@@ -561,8 +561,10 @@ open SetTheory
 #check @AckermannHF.ordinalPA_sat_PA
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.TheoryInterpretation
+#check @AckermannHF.TheoryInterpretation.comp
 #check @AckermannHF.setTheoryIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.translatedPATheoryInHFFinInterpretation
+#check @AckermannHF.paInHFFinOfTranslatedPATheoryInterpretation
 #check @AckermannHF.paIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate

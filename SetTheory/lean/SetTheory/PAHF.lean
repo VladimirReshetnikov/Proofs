@@ -10778,6 +10778,40 @@ structure TheoryInterpretation
   maps_theorem : ∀ {phi}, SrcSentence phi →
     SrcProv SrcAx [] phi → TgtProv TgtAx [] (translate phi)
 
+/-- Compose two theory interpretations.
+
+The additional premise records that source axioms are source sentences, which
+is needed only for the composed `maps_axiom` field: the first interpretation
+turns a source axiom into a theorem of the middle theory, and the second
+interpretation transfers middle-theory theorems only for middle sentences. -/
+def TheoryInterpretation.comp
+    {Src Mid Tgt : Type}
+    {SrcSentence : Src → Prop} {MidSentence : Mid → Prop}
+    {TgtSentence : Tgt → Prop}
+    {SrcAx : Src → Prop} {MidAx : Mid → Prop} {TgtAx : Tgt → Prop}
+    {SrcProv : (Src → Prop) → List Src → Src → Prop}
+    {MidProv : (Mid → Prop) → List Mid → Mid → Prop}
+    {TgtProv : (Tgt → Prop) → List Tgt → Tgt → Prop}
+    (I : TheoryInterpretation Src Mid
+      SrcSentence MidSentence SrcAx MidAx SrcProv MidProv)
+    (J : TheoryInterpretation Mid Tgt
+      MidSentence TgtSentence MidAx TgtAx MidProv TgtProv)
+    (hSrcAxSentence : ∀ {phi}, SrcAx phi → SrcSentence phi) :
+    TheoryInterpretation Src Tgt
+      SrcSentence TgtSentence SrcAx TgtAx SrcProv TgtProv where
+  translate := fun phi => J.translate (I.translate phi)
+  maps_sentence := by
+    intro phi hphi
+    exact J.maps_sentence (I.maps_sentence hphi)
+  maps_axiom := by
+    intro phi hphi
+    exact J.maps_theorem (I.maps_sentence (hSrcAxSentence hphi))
+      (I.maps_axiom hphi)
+  maps_theorem := by
+    intro phi hphi hprov
+    exact J.maps_theorem (I.maps_sentence hphi)
+      (I.maps_theorem hphi hprov)
+
 /-- Build an identity interpretation between two set-theory theories once each
 source axiom has been proved from the target theory.  This is the assembly
 lemma used after axiom-discharge work; it does not hide any axiom proof. -/
@@ -10809,6 +10843,23 @@ def translatedPATheoryInHFFinInterpretation :
   setTheoryIdentityInterpretationOfAxiomProofs
     PAInHF.translatedPAAx HFFinAx_s
     (fun _ hg => PAInHF.BProv_HFFin_of_translatedPAAx hg)
+
+/-- Compose a future PA-to-`translatedPAAx` interpretation with the established
+deductive bridge from `translatedPAAx` into `HFFinAx_s`.
+
+This keeps the remaining PA proof-translation theorem honest: the caller must
+still supply the interpretation into the intermediate translated-axiom theory. -/
+def paInHFFinOfTranslatedPATheoryInterpretation
+    (I : TheoryInterpretation PA.Formula Form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s PAInHF.translatedPAAx
+      PA.Formula.BProv BProv) :
+    TheoryInterpretation PA.Formula Form
+      PA.Formula.Sentence Sentence
+      PA.Formula.Ax_s HFFinAx_s
+      PA.Formula.BProv BProv :=
+  TheoryInterpretation.comp I translatedPATheoryInHFFinInterpretation
+    (fun {phi} hphi => PA.Formula.sentence_ax_s (f := phi) hphi)
 
 /-- PA analogue of `setTheoryIdentityInterpretationOfAxiomProofs`. -/
 def paIdentityInterpretationOfAxiomProofs
