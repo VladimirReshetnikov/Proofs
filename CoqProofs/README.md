@@ -78,6 +78,10 @@ Current ports:
   from `A198683Schoenfield.lean`: normalized labels are generated from the
   retained source table, and Coq verifies the Catalan row counts, no-gap
   normalization condition, and published class counts through `n = 11`.
+- `A198683SchoenfieldRows.v` ports the row-level Count/Match certificate from
+  `A198683SchoenfieldRows.lean`: Coq reconstructs the normalized labels from
+  the retained Schoenfield table rows for `n = 7` through `n = 11` and then
+  reuses the class-count certificate.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -106,6 +110,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Magnitude.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Probe.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12OverflowWitness.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Schoenfield.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SchoenfieldRows.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
