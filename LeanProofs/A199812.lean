@@ -494,115 +494,73 @@ theorem a199812_eq_of_fastDegreeCountsMemoThrough {N n value : Nat}
     PowTower.Expr.recursiveValueFinset_card_eq_fastCountsThrough_getD hpos hN]
   exact hcount
 
+def a199812ValuesThroughThirteen : List Nat :=
+  [1, 1, 2, 5, 13, 32, 79, 193, 478, 1196, 3037, 7802, 20287]
+
 /-- Shared fast executable certificate for `A199812(1)` through `A199812(13)`. -/
 theorem fastDegreeCountsMemoThrough_thirteen :
-    fastDegreeCountsMemoThrough 13 =
-      [1, 1, 2, 5, 13, 32, 79, 193, 478, 1196, 3037, 7802, 20287] := by
+    fastDegreeCountsMemoThrough 13 = a199812ValuesThroughThirteen := by
   native_decide
 
+theorem a199812_eq_of_thirteen_table {n value : Nat}
+    (hpos : 0 < n) (hN : n ≤ 13)
+    (hcount : a199812ValuesThroughThirteen.getD (n - 1) 0 = value) :
+    a199812 n = value := by
+  apply a199812_eq_of_fastDegreeCountsMemoThrough hpos hN
+  rw [fastDegreeCountsMemoThrough_thirteen]
+  exact hcount
+
 /-- `A199812(1) = 1`. -/
-theorem a199812_one : a199812 1 = 1 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 1) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_one : a199812 1 = 1 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(2) = 1`. -/
-theorem a199812_two : a199812 2 = 1 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 2) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_two : a199812 2 = 1 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(3) = 2`. -/
-theorem a199812_three : a199812 3 = 2 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 3) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_three : a199812 3 = 2 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(4) = 5`. -/
-theorem a199812_four : a199812 4 = 5 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 4) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_four : a199812 4 = 5 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(5) = 13`. -/
-theorem a199812_five : a199812 5 = 13 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 5) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_five : a199812 5 = 13 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(6) = 32`. -/
-theorem a199812_six : a199812 6 = 32 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 6) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_six : a199812 6 = 32 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(7) = 79`. -/
-theorem a199812_seven : a199812 7 = 79 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 7) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_seven : a199812 7 = 79 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(8) = 193`. -/
-theorem a199812_eight : a199812 8 = 193 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 8) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_eight : a199812 8 = 193 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(9) = 478`. -/
-theorem a199812_nine : a199812 9 = 478 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 9) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_nine : a199812 9 = 478 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(10) = 1196`. -/
-theorem a199812_ten : a199812 10 = 1196 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 10) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_ten : a199812 10 = 1196 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(11) = 3037`. -/
-theorem a199812_eleven : a199812 11 = 3037 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 11) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_eleven : a199812 11 = 3037 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(12) = 7802`. -/
-theorem a199812_twelve : a199812 12 = 7802 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 12) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_twelve : a199812 12 = 7802 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 /-- `A199812(13) = 20287`. -/
-theorem a199812_thirteen : a199812 13 = 20287 := by
-  refine a199812_eq_of_fastDegreeCountsMemoThrough (N := 13) (n := 13) ?_ ?_ ?_
-  · decide
-  · decide
-  · rw [fastDegreeCountsMemoThrough_thirteen]
-    rfl
+theorem a199812_thirteen : a199812 13 = 20287 :=
+  a199812_eq_of_thirteen_table (by decide) (by decide) rfl
 
 end TowerExpr
 

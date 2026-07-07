@@ -170,24 +170,24 @@ theorem a002845_one : a002845 1 = 1
 theorem a002845_twenty_three : a002845 23 = 9029719
 ```
 
-The value theorems `a002845_one` through `a002845_six` use a direct finite
-computation of the canonical logarithm set, proved equivalent to the semantic
-value set by injectivity of `m ↦ 2^m`. The value theorems
-`a002845_seven` through `a002845_twelve` use the sparse-log evaluator over the
-verified hereditary sparse binary numbers of
-[`LeanProofs/SparseBinary.lean`](LeanProofs/SparseBinary.lean).  The value
-theorems `a002845_thirteen` through `a002845_twenty_three` come from one
-prefix-table certificate over the shared proved hash-set fast table of
-`PowTower.Expr` instantiated at atom `Sparse.ofNat 1` and combine
-`certifiedCombineLog`; every fast row is Lean-proved to enumerate exactly the
-shared finite recurrence.  The combine operation itself is the total verified
-`Sparse.shift` — `SparseBinary.lean` proves the comparator numerically correct
-on canonical values (`compare_iff`) and proves that the structural
-carry-insertion arithmetic (`incr`/`insBit`/`add`/`shift`) returns the
-canonical representation of the expected number (`shift_eq_ofNat`) — so no
-`implemented_by` substitution is involved anywhere: the executable path *is*
-the proved path, and the only remaining trust in the value certificates is
-`native_decide` itself.
+All twenty-three value theorems read off a single native prefix-table
+certificate: `certifiedLevelCountsThrough_twenty_three` computes the counts
+for sizes `1, ..., 23` once through the shared proved hash-set fast table of
+`PowTower.Expr` (atom `Sparse.ofNat 1`, combine `certifiedCombineLog` over
+the verified hereditary sparse binary numbers of
+[`LeanProofs/SparseBinary.lean`](LeanProofs/SparseBinary.lean)), and each
+`a002845_<n>` is then a kernel-checked table lookup — the module contains
+exactly one `native_decide`.  The alternative computation views (the direct
+logarithm enumeration and the sparse-log evaluator over all parenthesization
+trees) remain as Lean-proved equivalences (`a002845_eq_directLogCard`,
+`a002845_eq_certifiedSparseCard`).  The combine operation itself is the total
+verified `Sparse.shift` — `SparseBinary.lean` proves the comparator
+numerically correct on canonical values (`compare_iff`) and proves that the
+structural carry-insertion arithmetic (`incr`/`insBit`/`add`/`shift`) returns
+the canonical representation of the expected number (`shift_eq_ofNat`) — so
+no `implemented_by` substitution is involved anywhere: the executable path
+*is* the proved path, and the only remaining trust in the value certificates
+is `native_decide` itself.
 
 OEIS A198683 is defined from the canonical lexical syntax of all binary
 parenthesizations of `i^i^...^i`, interpreting every binary node as the
