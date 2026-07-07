@@ -513,6 +513,61 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma hf_ordinal_like_is_ordinal_code : forall a,
+  hf_ordinal_like a -> is_ordinal_code a.
+Proof.
+  intros a.
+  induction a as [a IH] using lt_wf_ind.
+  intro ha.
+  destruct (Nat.eq_dec a hf_empty) as [hzero | hnonempty].
+  - subst a.
+    exists 0.
+    reflexivity.
+  - destruct (hf_mem_max_exists a (hf_exists_mem_of_ne_empty a hnonempty))
+      as [m [hm hmax]].
+    destruct (IH m (hf_mem_lt m a hm)
+      (hf_ordinal_like_of_mem a m ha hm)) as [k hk].
+    exists (S k).
+    apply hf_ext.
+    intro x.
+    split.
+    + intro hx.
+      pose proof ha as ha_parts.
+      destruct ha_parts as [htrans [_hmtrans _htotal]].
+      rewrite hf_mem_ordinal_code_succ in hx.
+      destruct hx as [hxk | hxk].
+      * apply (htrans m hm x).
+        rewrite <- hk.
+        exact hxk.
+      * subst x.
+        rewrite hk.
+        exact hm.
+    + intro hx.
+      destruct (IH x (hf_mem_lt x a hx)
+        (hf_ordinal_like_of_mem a x ha hx)) as [j hj].
+      assert (hjle : j <= k).
+      {
+        destruct (le_gt_dec j k) as [hle | hgt].
+        - exact hle.
+        - exfalso.
+          assert (hkj : k < j) by lia.
+          pose proof (ordinal_code_mem_of_lt k j hkj) as hlt.
+          rewrite hk in hlt.
+          rewrite hj in hlt.
+          exact (hmax x hx hlt).
+      }
+      rewrite hf_mem_ordinal_code_succ.
+      destruct (Nat.eq_dec j k) as [heq | hne].
+      * right.
+        subst j.
+        symmetry.
+        exact hj.
+      * left.
+        assert (hjlt : j < k) by lia.
+        rewrite <- hj.
+        now apply ordinal_code_mem_of_lt.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
