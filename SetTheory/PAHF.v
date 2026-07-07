@@ -5741,6 +5741,43 @@ Proof.
   apply scons3_replaceAt_prefix.
 Qed.
 
+Lemma scons_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) k d e n,
+    scons A d (succReplaceAt M k e) n =
+      succReplaceAt M (S k) (scons A d e) n.
+Proof.
+  intros A M k d e n.
+  pose proof (scons_succReplaceAt_prefix A M 0 k d e n) as h.
+  rewrite Nat.add_0_r in h.
+  rewrite Nat.add_0_r in h.
+  exact h.
+Qed.
+
+Lemma scons2_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) k d1 d2 e n,
+    scons A d2 (scons A d1 (succReplaceAt M k e)) n =
+      succReplaceAt M (S (S k)) (scons A d2 (scons A d1 e)) n.
+Proof.
+  intros A M k d1 d2 e n.
+  pose proof (scons2_succReplaceAt_prefix A M 0 k d1 d2 e n) as h.
+  rewrite Nat.add_0_r in h.
+  rewrite Nat.add_0_r in h.
+  exact h.
+Qed.
+
+Lemma scons3_succReplaceAt :
+  forall A (M : FirstOrderAdjunctionModel A) k d1 d2 d3 e n,
+    scons A d3 (scons A d2 (scons A d1 (succReplaceAt M k e))) n =
+      succReplaceAt M (S (S (S k)))
+        (scons A d3 (scons A d2 (scons A d1 e))) n.
+Proof.
+  intros A M k d1 d2 d3 e n.
+  pose proof (scons3_succReplaceAt_prefix A M 0 k d1 d2 d3 e n) as h.
+  rewrite Nat.add_0_r in h.
+  rewrite Nat.add_0_r in h.
+  exact h.
+Qed.
+
 Lemma domainForm_scons_insertAt :
   forall A (mem : A -> A -> Prop) p x d e,
     Sat A mem (scons A d (insertAt p x e)) domainForm <->
