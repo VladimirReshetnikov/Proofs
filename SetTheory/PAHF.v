@@ -9260,6 +9260,116 @@ Proof.
     reflexivity.
 Qed.
 
+Lemma mulStepAt_empty_model : forall V
+    (M : FirstOrderAdjunctionModel V) e f a m,
+  e m = foam_empty V M ->
+  Sat V (foam_mem V M) e (mulStepAt f a m).
+Proof.
+  intros V M e f a m hm k t y hkm.
+  change (foam_mem V M k (e m)) in hkm.
+  rewrite hm in hkm.
+  exact (False_rect _ (foam_empty_spec V M k hkm)).
+Qed.
+
+Lemma mulGraphAt_zero_right_model : forall V
+    (M : FirstOrderAdjunctionModel V) (e : nat -> V) out left right,
+  e out = foam_empty V M ->
+  e right = foam_empty V M ->
+  Sat V (foam_mem V M) e (mulGraphAt out left right).
+Proof.
+  intros V M e out left right hout hright.
+  unfold mulGraphAt.
+  pose (f := foam_zero_succ_rec_graph V M (foam_empty V M)).
+  pose proof (foam_zero_succ_rec_graph_succRecApprox V M (foam_empty V M))
+    as hf.
+  destruct hf as [hfun [hkeys [hbase [htotal _hstep]]]].
+  exists f.
+  split.
+  - unfold mulRecApproxAt.
+    repeat split.
+    + apply (proj2 (foam_HF_pairFunctionalAt_spec V M (scons V f e) 0)).
+      exact hfun.
+    + apply (proj2 (foam_HF_pairKeysBelowSuccAt_spec V M
+        (scons V f e) 0 (S right))).
+      change (foam_pair_keys_below_succ V M f (e right)).
+      rewrite hright.
+      exact hkeys.
+    + apply (proj2 (foam_HF_pairZeroBaseAt_spec V M (scons V f e) 0)).
+      exact hbase.
+    + apply (proj2 (foam_HF_pairTotalBelowSuccAt_spec V M
+        (scons V f e) 0 (S right))).
+      change (foam_pair_total_below_succ V M f (e right)).
+      rewrite hright.
+      exact htotal.
+    + apply (mulStepAt_empty_model V M (scons V f e) 0 (S left) (S right)).
+      simpl.
+      exact hright.
+  - apply (proj2 (foam_HF_pairMemAt_spec V M
+      (scons V f e) (S right) (S out) 0)).
+    change (foam_mem V M (foam_kpair_obj V M (e right) (e out)) f).
+    rewrite hright, hout.
+    unfold f.
+    apply foam_zero_succ_rec_graph_base.
+Qed.
+
+Lemma termGraphAt_mul_var_zero_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho out n e,
+  e out = foam_empty V M ->
+  Sat V (foam_mem V M) e
+    (termGraphAt rho out (PA.tMul (PA.tVar n) PA.tZero)).
+Proof.
+  intros V M rho out n e hout.
+  simpl.
+  exists (foam_empty V M).
+  exists (e (rho n)).
+  exists (foam_empty V M).
+  repeat split.
+  - apply (proj2 (termGraphAt_var_spec V (foam_mem V M)
+      (fun n => rho n + 3) 1 n
+      (scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e))))).
+    change (e (rho n) =
+      scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e))
+        (rho n + 3)).
+    replace (rho n + 3) with (S (S (S (rho n)))) by lia.
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e))) 2)).
+    reflexivity.
+  - replace (out + 3) with (S (S (S out))) by lia.
+    simpl.
+    symmetry.
+    exact hout.
+  - apply (mulGraphAt_zero_right_model V M
+      (scons V (foam_empty V M)
+        (scons V (e (rho n)) (scons V (foam_empty V M) e)))
+      0 1 2).
+    + reflexivity.
+    + reflexivity.
+Qed.
+
+Lemma formulaAt_mulZero_valid_model : forall V
+    (M : FirstOrderAdjunctionModel V) rho e,
+  Sat V (foam_mem V M) e (formulaAt rho PA.Formula.mulZero).
+Proof.
+  intros V M rho e x _.
+  simpl.
+  exists (foam_empty V M).
+  exists (foam_empty V M).
+  repeat split.
+  - change (Sat V (foam_mem V M)
+      (scons V (foam_empty V M) (scons V (foam_empty V M) (scons V x e)))
+      (termGraphAt (fun n => upVarMap rho n + 2) 1
+        (PA.tMul (PA.tVar 0) PA.tZero))).
+    apply termGraphAt_mul_var_zero_model.
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (foam_empty V M) (scons V x e))) 0)).
+    reflexivity.
+Qed.
+
 Record TheoryInterpretation
   (Src Tgt : Type)
   (SrcSentence : Src -> Prop) (TgtSentence : Tgt -> Prop)
