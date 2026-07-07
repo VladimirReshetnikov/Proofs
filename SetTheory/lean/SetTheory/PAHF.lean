@@ -11626,6 +11626,46 @@ theorem BProv_formulaAt_eqRefl_var {G : List Form} (ρ : Nat → Nat) (k : Nat) 
     · exact Prov.P_eqRefl _ (ρ k)
     · exact Prov.P_eqRefl _ (ρ k)
 
+/-- In every model of finite HF, the PA-in-HF translation of `0 = 0` is
+semantically valid.  The witness is the chosen HF empty object supplied by the
+target theory; no existence claim is hidden in the syntax of `zero`. -/
+theorem formulaAt_eqRefl_zero_valid_of_HFFinAx_s {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat mem e (formulaAt ρ (PA.Formula.eq PA.Term.zero PA.Term.zero)) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e (formulaAt ρ (PA.Formula.eq PA.Term.zero PA.Term.zero))
+  refine ⟨M.empty, M.empty, ?_, ?_, rfl⟩
+  · exact (FirstOrderAdjunctionModel.HF_emptyAt_empty
+      M.toFirstOrderAdjunctionModel
+      (scons M.empty (scons M.empty e)) 1).mpr rfl
+  · exact (FirstOrderAdjunctionModel.HF_emptyAt_empty
+      M.toFirstOrderAdjunctionModel
+      (scons M.empty (scons M.empty e)) 0).mpr rfl
+
+/-- Finite HF proves the PA-in-HF translation of zero reflexivity. -/
+theorem BProv_HFFin_formulaAt_eqRefl_zero_nil (ρ : Nat → Nat) :
+    BProv HFFinAx_s []
+      (formulaAt ρ (PA.Formula.eq PA.Term.zero PA.Term.zero)) := by
+  apply completeness_inf HFFinAx_s
+  · exact Sentences_HFFin
+  · exact formulaAt_sentence_of_PA_sentence
+      (PA.Formula.eq PA.Term.zero PA.Term.zero) ρ
+      (by
+        intro n hn
+        rcases hn with h | h <;> cases h)
+  · intro Dom mem v hHF
+    exact formulaAt_eqRefl_zero_valid_of_HFFinAx_s v hHF ρ v
+
+/-- Finite HF proves zero reflexivity over any additional finite context. -/
+theorem BProv_HFFin_formulaAt_eqRefl_zero {G : List Form} (ρ : Nat → Nat) :
+    BProv HFFinAx_s G
+      (formulaAt ρ (PA.Formula.eq PA.Term.zero PA.Term.zero)) :=
+  BProv_mono HFFinAx_s [] G _
+    (fun _ h => by cases h)
+    (BProv_HFFin_formulaAt_eqRefl_zero_nil ρ)
+
 /-- An HF equality proof between the slots assigned to two PA variables yields
 the PA-in-HF translation of equality between those PA variables. -/
 theorem BProv_formulaAt_eq_var_of_eq {G : List Form} (ρ : Nat → Nat)
@@ -12576,12 +12616,22 @@ theorem BProv_HFFin_of_translatedPAAx {g : Form}
   rcases hg with ⟨phi, hphi, rfl⟩
   exact BProv_HFFin_translated_PA_axiom hphi
 
+/-- Lift a relative proof over translated PA axioms into finite HF without
+discarding its explicit finite context. -/
+theorem BProv_HFFin_of_BProv_translatedPAAx_context {G : List Form} {g : Form}
+    (h : BProv translatedPAAx G g) : BProv HFFinAx_s G g :=
+  BProv_lift h
+    (fun _ hg => BProv_mono HFFinAx_s [] G _
+      (fun _ hnil => by cases hnil)
+      (BProv_HFFin_of_translatedPAAx hg))
+    (fun a ha => BProv_of_Prov (B := HFFinAx_s)
+      (Prov.P_ass G a ha))
+
 /-- Any derivation over the intermediate translated-PA axiom theory can be cut
 down to a derivation over the strengthened finite-HF theory. -/
 theorem BProv_HFFin_of_BProv_translatedPAAx {g : Form}
     (h : BProv translatedPAAx [] g) : BProv HFFinAx_s [] g :=
-  BProv_lift_translatedPAAx_to_HFFin
-    (fun _ hg => BProv_HFFin_of_translatedPAAx hg) h
+  BProv_HFFin_of_BProv_translatedPAAx_context h
 
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
     ∀ g, translatedPAAx g → Sat Mem e g := by

@@ -532,6 +532,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_translate_lem
 #check @AckermannHF.PAInHF.BProv_formulaAt_lem
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_var
+#check @AckermannHF.PAInHF.formulaAt_eqRefl_zero_valid_of_HFFinAx_s
+#check @AckermannHF.PAInHF.BProv_HFFin_formulaAt_eqRefl_zero
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_var_of_eq
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_of_termGraphsAt
 #check @AckermannHF.PAInHF.BProv_termGraphAt_eqElim_out
@@ -578,6 +580,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
 #check @AckermannHF.PAInHF.BProv_HFFin_of_translatedPAAx
+#check @AckermannHF.PAInHF.BProv_HFFin_of_BProv_translatedPAAx_context
 #check @AckermannHF.PAInHF.BProv_HFFin_of_BProv_translatedPAAx
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
