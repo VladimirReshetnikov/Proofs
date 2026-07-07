@@ -12,9 +12,9 @@ copies of `2` and all binary parenthesizations allowed.
 
 The primary definition below is the shared lexical one from `PowTower.Expr`:
 the single atom is interpreted as the literal `2`, and the binary node is
-interpreted as natural-number exponentiation.  The older local syntax and the
-later sparse-binary logarithm code are retained as computation-facing views,
-with Lean proofs connecting them back to the shared lexical definition.
+interpreted as natural-number exponentiation.  The sparse-binary logarithm code
+is retained as a computation-facing view, with Lean proofs connecting it back
+to the shared lexical definition.
 -/
 
 set_option maxRecDepth 100000
@@ -23,44 +23,36 @@ namespace LeanProofs
 
 namespace A002845
 
-/-- Binary parenthesized expressions built from copies of the literal `2`. -/
-inductive PowExpr where
-  | two
-  | pow (a b : PowExpr)
-deriving Repr, DecidableEq
+/-- A002845 uses the shared one-token lexical syntax directly. -/
+abbrev PowExpr := PowTower.Expr
 
 namespace PowExpr
 
-open PowExpr
+open PowTower.Expr
 
-/-- Translate the existing A002845 syntax into the shared one-token lexical syntax. -/
-def toSharedLex : PowExpr -> PowTower.Expr
-  | two => PowTower.Expr.atom
-  | pow a b => PowTower.Expr.pow (toSharedLex a) (toSharedLex b)
+/-- Legacy spelling for the shared lexical atom, kept for computation-facing code. -/
+abbrev two : PowExpr := PowTower.Expr.atom
 
-/-- Translate the shared one-token lexical syntax back to the existing A002845 syntax. -/
-def ofSharedLex : PowTower.Expr -> PowExpr
-  | .atom => two
-  | .pow a b => pow (ofSharedLex a) (ofSharedLex b)
+/-- Legacy spelling for the shared lexical binary node, kept for computation-facing code. -/
+abbrev pow : PowExpr -> PowExpr -> PowExpr := PowTower.Expr.pow
+
+/-- Compatibility name: A002845 syntax is now the shared one-token lexical syntax. -/
+abbrev toSharedLex (e : PowExpr) : PowTower.Expr := e
+
+/-- Compatibility name: A002845 syntax is now the shared one-token lexical syntax. -/
+abbrev ofSharedLex (e : PowTower.Expr) : PowExpr := e
 
 theorem toSharedLex_ofSharedLex (e : PowTower.Expr) :
     toSharedLex (ofSharedLex e) = e := by
-  induction e with
-  | atom => rfl
-  | pow a b iha ihb =>
-      simp [toSharedLex, ofSharedLex, iha, ihb]
+  rfl
 
 theorem ofSharedLex_toSharedLex (e : PowExpr) :
     ofSharedLex (toSharedLex e) = e := by
-  induction e with
-  | two => rfl
-  | pow a b iha ihb =>
-      simp [toSharedLex, ofSharedLex, iha, ihb]
+  rfl
 
 /-- Evaluate a parenthesized power expression using natural-number exponentiation. -/
-def eval : PowExpr → Nat
-  | two => 2
-  | pow a b => eval a ^ eval b
+def eval : PowExpr -> Nat :=
+  PowTower.Expr.eval 2 (fun a b : Nat => a ^ b)
 
 /-- Shared lexical interpretation for A002845: atom is `2`, node is `Nat.pow`. -/
 def sharedEval : PowTower.Expr -> Nat :=
@@ -69,11 +61,7 @@ def sharedEval : PowTower.Expr -> Nat :=
 /-- The existing A002845 syntax evaluates the same way as the shared lexical syntax. -/
 theorem eval_eq_sharedEval_toSharedLex (e : PowExpr) :
     eval e = sharedEval (toSharedLex e) := by
-  induction e with
-  | two =>
-      rfl
-  | pow a b iha ihb =>
-      simp [eval, sharedEval, toSharedLex, iha, ihb]
+  rfl
 
 /--
 The shared canonical lexical value set for A002845.
@@ -82,53 +70,31 @@ def canonicalValueSet (n : Nat) : Set Nat :=
   PowTower.Expr.valueSet 2 (fun a b : Nat => a ^ b) n
 
 /-- The number of literal `2` leaves in a power expression. -/
-def size : PowExpr → Nat
-  | two => 1
-  | pow a b => size a + size b
+def size : PowExpr -> Nat :=
+  PowTower.Expr.size
 
 /-- All legal binary parenthesizations with exactly `n` copies of `2`. -/
-def parenthesizations : Nat → List PowExpr
-  | 0 => []
-  | 1 => [two]
-  | n + 2 =>
-      (List.finRange (n + 1)).flatMap fun k =>
-        (parenthesizations (k.1 + 1)).flatMap fun a =>
-          (parenthesizations (n + 1 - k.1)).map fun b => pow a b
-termination_by n => n
-decreasing_by
-  · exact Nat.lt_succ_of_le (Nat.sub_le _ _)
-  · exact Nat.succ_lt_succ k.2
+def parenthesizations : Nat -> List PowExpr :=
+  PowTower.Expr.parenthesizations
 
-/-- Translating a local parenthesization gives a shared lexical parenthesization. -/
+/-- Compatibility theorem: the A002845 spelling is the shared lexical parenthesization. -/
 theorem toSharedLex_mem_parenthesizations {n : Nat} {e : PowExpr}
     (he : e ∈ parenthesizations n) : toSharedLex e ∈ PowTower.Expr.parenthesizations n := by
-  exact PowTower.Expr.toExpr_mem_parenthesizations
-    parenthesizations two pow toSharedLex rfl rfl (fun _ => rfl) rfl (fun _ _ => rfl) he
+  exact he
 
-/-- Translating a shared lexical parenthesization back gives a local parenthesization. -/
+/-- Compatibility theorem: the shared lexical parenthesization is the A002845 spelling. -/
 theorem ofSharedLex_mem_parenthesizations {n : Nat} {e : PowTower.Expr}
     (he : e ∈ PowTower.Expr.parenthesizations n) : ofSharedLex e ∈ parenthesizations n := by
-  exact PowTower.Expr.ofExpr_mem_parenthesizations
-    parenthesizations two pow ofSharedLex rfl rfl (fun _ => rfl) rfl (fun _ _ => rfl) he
+  exact he
 
-/-- Compatibility value set computed through the old local literal-`2` syntax. -/
+/-- Compatibility value set computed through the A002845 literal-`2` spelling. -/
 def valueSet (n : Nat) : Set Nat :=
   {v | ∃ e ∈ parenthesizations n, eval e = v}
 
-/-- The existing A002845 value set is the shared canonical lexical value set. -/
+/-- The A002845 compatibility value set is the shared canonical lexical value set. -/
 theorem valueSet_eq_canonicalValueSet (n : Nat) :
     valueSet n = canonicalValueSet n := by
-  ext v
-  constructor
-  · rintro ⟨e, he, hv⟩
-    refine ⟨toSharedLex e, ?_, ?_⟩
-    · exact toSharedLex_mem_parenthesizations he
-    · change sharedEval (toSharedLex e) = v
-      rw [← eval_eq_sharedEval_toSharedLex, hv]
-  · rintro ⟨e, he, hv⟩
-    refine ⟨ofSharedLex e, ofSharedLex_mem_parenthesizations he, ?_⟩
-    rw [eval_eq_sharedEval_toSharedLex, toSharedLex_ofSharedLex]
-    exact hv
+  rfl
 
 /--
 OEIS A002845, defined canonically as the cardinality of the shared lexical
@@ -142,19 +108,28 @@ theorem a002845_eq_canonicalValueSet_ncard (n : Nat) :
     a002845 n = (canonicalValueSet n).ncard := by
   rfl
 
+/--
+The shared recursive value-set cardinality computes the same number as the
+canonical lexical definition.
+-/
+theorem a002845_eq_recursiveValueSet_ncard (n : Nat) :
+    a002845 n =
+      (PowTower.Expr.recursiveValueSet 2 (fun a b : Nat => a ^ b) n).ncard := by
+  exact PowTower.Expr.valueCard_eq_recursiveValueSet_ncard 2 (fun a b : Nat => a ^ b) n
+
 /-- The exact base-two logarithm of a semantic power expression. -/
 def logEval : PowExpr → Nat
-  | two => 1
-  | pow a b => logEval a * 2 ^ logEval b
+  | .atom => 1
+  | .pow a b => logEval a * 2 ^ logEval b
 
 /-- Every semantic value is `2` raised to its exact logarithm. -/
 theorem eval_eq_two_pow_logEval (e : PowExpr) :
     eval e = 2 ^ logEval e := by
   induction e with
-  | two =>
+  | atom =>
       rfl
   | pow a b iha ihb =>
-      simp only [eval, logEval]
+      change eval a ^ eval b = 2 ^ (logEval a * 2 ^ logEval b)
       rw [iha, ihb, pow_mul]
 
 /-- The canonical exact-logarithm value set corresponding to `valueSet`. -/
@@ -217,7 +192,7 @@ theorem a002845_eq_directLogCard (n : Nat) : a002845 n = directLogCard n := by
 
 end PowExpr
 
-export PowExpr (a002845)
+export PowExpr (a002845 a002845_eq_recursiveValueSet_ncard)
 
 /-- OEIS A002845 has value `1` at `n = 1`. -/
 theorem a002845_one : a002845 1 = 1 := by
@@ -558,13 +533,13 @@ theorem eval_certifiedCombineLog (a b : Sparse) :
 
 /-- Exact sparse logarithm of a canonical expression tree. -/
 def sparseLogEval : PowExpr → Sparse
-  | .two => Sparse.ofNat 1
+  | .atom => Sparse.ofNat 1
   | .pow a b => certifiedCombineLog (sparseLogEval a) (sparseLogEval b)
 
 theorem sparseLogEval_eq_ofNat_logEval (e : PowExpr) :
     sparseLogEval e = Sparse.ofNat (PowExpr.logEval e) := by
   induction e with
-  | two =>
+  | atom =>
       rfl
   | pow a b iha ihb =>
       simp [sparseLogEval, PowExpr.logEval, certifiedCombineLog, iha, ihb,
@@ -627,14 +602,17 @@ theorem coe_certifiedLevel (n : Nat) :
   induction n using certifiedLevel.induct with
   | case1 =>
       ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations]
+      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations,
+        PowTower.Expr.parenthesizations]
   | case2 =>
       ext s
-      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations, PowExpr.logEval]
+      simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations,
+        PowTower.Expr.parenthesizations, PowExpr.logEval]
   | case3 n ihLeft ihRight =>
       ext s
       simp [certifiedLevel, PowExpr.logValueSet, PowExpr.parenthesizations,
-        PowExpr.logEval, ihLeft, ihRight, certifiedCombineLog, Sparse.eval_ofNat]
+        PowTower.Expr.parenthesizations, PowExpr.logEval, ihLeft, ihRight,
+        certifiedCombineLog, Sparse.eval_ofNat]
       constructor
       · rintro ⟨i, a, ha, b, hb, hs⟩
         exact ⟨i, a, b, ⟨ha, hb⟩, hs⟩

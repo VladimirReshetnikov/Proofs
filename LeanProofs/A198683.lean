@@ -220,12 +220,22 @@ theorem a198683_eq_canonicalValueSet_ncard (n : Nat) :
   rfl
 
 /--
+The shared recursive value-set cardinality computes the same number as the
+canonical lexical definition.
+-/
+theorem a198683_eq_sharedRecursiveValueSet_ncard (n : Nat) :
+    a198683 n =
+      (PowTower.Expr.recursiveValueSet Complex.I principalPow n).ncard := by
+  exact PowTower.Expr.valueCard_eq_recursiveValueSet_ncard Complex.I principalPow n
+
+/--
 The recursive value-set cardinality used by the small-value proofs computes
 the same number as the canonical lexical definition.
 -/
 @[simp] theorem a198683_eq_valueSet_ncard (n : Nat) :
     a198683 n = (a198683ValueSet n).ncard := by
-  rw [a198683_eq_canonicalValueSet_ncard, a198683CanonicalValueSet_eq_valueSet]
+  rw [a198683_eq_sharedRecursiveValueSet_ncard,
+    a198683SharedRecursiveValueSet_eq_valueSet]
 
 private noncomputable def p2 : ℂ :=
   principalPow Complex.I Complex.I

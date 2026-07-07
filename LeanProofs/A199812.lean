@@ -104,6 +104,13 @@ noncomputable def ordinalValues (n : Nat) : Finset Ordinal.{0} := by
 noncomputable def a199812 (n : Nat) : Nat :=
   PowTower.Expr.valueCard (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n
 
+theorem a199812_eq_recursiveValueSet_ncard (n : Nat) :
+    a199812 n =
+      (PowTower.Expr.recursiveValueSet (ω : Ordinal.{0})
+        (fun a b : Ordinal.{0} => a ^ b) n).ncard := by
+  exact PowTower.Expr.valueCard_eq_recursiveValueSet_ncard
+    (ω : Ordinal.{0}) (fun a b : Ordinal.{0} => a ^ b) n
+
 theorem canonicalOrdinalValueSet_eq_ordinalValues (n : Nat) :
     canonicalOrdinalValueSet n = (ordinalValues n : Set Ordinal.{0}) := by
   classical
