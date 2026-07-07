@@ -38,13 +38,17 @@ Current ports:
 - `A198683Tower.v` ports the executable initial-value substrate from
   `A198683Tower.lean`: the shared tower syntax is evaluated into a finite
   symbolic quotient of the named small A198683 value classes through the
-  `p6*` layer, preserving the `n <= 4` value counts and the named finite
-  collapses used by the following small-value certificate.  The Lean file's
+  `p6*` layer and the generated n = 7 Schoenfield label collapses, preserving
+  the `n <= 4` value counts and the named finite collapses used by the
+  following small-value certificates.  The Lean file's
   principal-complex-power analytic interpretation is not yet replayed in Coq.
 - `A198683FiveSix.v` ports the finite-count surface from
   `A198683FiveSix.lean`: using the symbolic quotient from `A198683Tower.v`,
   Coq checks the named `p5*`/`p6*` candidate lists and verifies
   `A198683(5) = 7` and `A198683(6) = 15`.
+- `A198683SevenUpper.v` ports the finite upper-bound surface from
+  `A198683SevenUpper.lean`: the generated n = 7 symbolic quotient checks the
+  34 collapsed representatives and verifies the corresponding `<= 34` bound.
 - `A000081.v` ports the finite executable certificate from `A000081.lean`.
   It uses a hereditarily sorted exponent normal form for positive-real tower
   functions, preserving the named small parenthesizations and equality
@@ -114,6 +118,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/RationalFloorOrbit.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Tower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683FiveSix.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SevenUpper.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A000081.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
