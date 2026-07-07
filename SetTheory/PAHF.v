@@ -4040,6 +4040,242 @@ Proof.
     reflexivity.
 Qed.
 
+Definition mulStepAt (f a m : nat) : form :=
+  fAll (fAll (fAll
+    (fImp
+      (fMem 2 (S (S (S m))))
+      (fImp
+        (HF_pairMemAt 2 1 (S (S (S f))))
+        (fAll
+          (fImp
+            (HF_succAt 0 3)
+            (fImp
+              (HF_pairMemAt 0 1 (S (S (S (S f)))))
+              (addGraphAt 1 2 (S (S (S (S a)))))))))))).
+
+Definition mulRecApproxAt (f a m : nat) : form :=
+  fAnd (HF_pairFunctionalAt f)
+    (fAnd (HF_pairKeysBelowSuccAt f m)
+      (fAnd (HF_pairZeroBaseAt f)
+        (fAnd (HF_pairTotalBelowSuccAt f m)
+          (mulStepAt f a m)))).
+
+Definition mulGraphAt (out left right : nat) : form :=
+  fEx (fAnd (mulRecApproxAt 0 (S left) (S right))
+    (HF_pairMemAt (S right) (S out) 0)).
+
+Definition mulGraph : form := mulGraphAt 0 1 2.
+
+Lemma mulRecApproxAt_value_of_le : forall m N f outDummy e n y,
+  Sat nat hf_mem
+    (scons nat f
+      (scons nat outDummy
+        (scons nat (ordinal_code m) (scons nat (ordinal_code N) e))))
+    (mulRecApproxAt 0 2 3) ->
+  n <= N ->
+  hf_mem (hf_kpair_obj ackermannHFModel (ordinal_code n) y) f ->
+  y = ordinal_code (m * n).
+Proof.
+  intros m N f outDummy e n.
+  induction n as [|n IH]; intros y hA hn hy.
+  - destruct hA as [hfunSat [_hkeysSat [hzeroSat [_htotalSat _hstepSat]]]].
+    pose (E := scons nat f
+      (scons nat outDummy
+        (scons nat (ordinal_code m) (scons nat (ordinal_code N) e)))).
+    pose proof (proj1 (HF_pairFunctionalAt_spec ackermannHFModel E 0)
+      hfunSat) as hfun.
+    pose proof (proj1 (HF_pairZeroBaseAt_spec ackermannHFModel E 0)
+      hzeroSat) as hbase.
+    change (hf_pair_functional ackermannHFModel f) in hfun.
+    change (hf_mem (hf_kpair_obj ackermannHFModel hf_empty hf_empty) f)
+      in hbase.
+    change (hf_mem
+      (hf_kpair_obj ackermannHFModel (ordinal_code 0) (ordinal_code 0)) f)
+      in hbase.
+    pose proof (hfun (ordinal_code 0) y (ordinal_code 0) hy hbase) as hy_eq.
+    rewrite Nat.mul_0_r.
+    simpl.
+    exact hy_eq.
+  - pose proof hA as hA'.
+    destruct hA as [_hfunSat [_hkeysSat [_hzeroSat [htotalSat hstepSat]]]].
+    pose (E := scons nat f
+      (scons nat outDummy
+        (scons nat (ordinal_code m) (scons nat (ordinal_code N) e)))).
+    pose proof (proj1 (HF_pairTotalBelowSuccAt_spec ackermannHFModel E 0 3)
+      htotalSat) as htotal.
+    change (hf_pair_total_below_succ ackermannHFModel f (ordinal_code N))
+      in htotal.
+    assert (hnlt : n < N) by lia.
+    destruct (htotal (ordinal_code n)
+      (or_introl (ordinal_code_mem_of_lt n N hnlt))) as [t ht].
+    assert (hnle : n <= N) by lia.
+    pose proof (IH t hA' hnle ht) as htval.
+    pose (Ekty := scons nat y (scons nat t (scons nat (ordinal_code n) E))).
+    pose (Eskty := scons nat (ordinal_code (S n)) Ekty).
+    assert (hktSat : Sat nat hf_mem Ekty (HF_pairMemAt 2 1 3)).
+    {
+      apply (proj2 (HF_pairMemAt_spec ackermannHFModel Ekty 2 1 3)).
+      change (hf_mem (hf_kpair_obj ackermannHFModel (ordinal_code n) t) f).
+      exact ht.
+    }
+    assert (hskSat : Sat nat hf_mem Eskty (HF_succAt 0 3)).
+    {
+      apply (proj2 (HF_succAt_spec ackermannHFModel Eskty 0 3)).
+      reflexivity.
+    }
+    assert (hskySat : Sat nat hf_mem Eskty (HF_pairMemAt 0 1 4)).
+    {
+      apply (proj2 (HF_pairMemAt_spec ackermannHFModel Eskty 0 1 4)).
+      change (hf_mem
+        (hf_kpair_obj ackermannHFModel (ordinal_code (S n)) y) f).
+      exact hy.
+    }
+    pose proof (hstepSat (ordinal_code n) t y
+      (ordinal_code_mem_of_lt n N hnlt)
+      hktSat (ordinal_code (S n)) hskSat hskySat) as haddSat.
+    pose proof (addGraphAt_value_of_ordinal_inputs 1 2 6 (m * n) m
+      Eskty htval eq_refl haddSat) as hyval.
+    change (y = ordinal_code (m * n + m)) in hyval.
+    change (y = ordinal_code (m * S n)).
+    rewrite hyval.
+    rewrite Nat.mul_succ_r.
+    reflexivity.
+Qed.
+
+Lemma mulGraph_ordinal_code : forall m n e,
+  Sat nat hf_mem
+    (scons nat (ordinal_code (m * n))
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e)))
+    mulGraph.
+Proof.
+  intros m n e.
+  unfold mulGraph, mulGraphAt.
+  pose (f := mul_rec_trace m n).
+  pose (E := scons nat f
+    (scons nat (ordinal_code (m * n))
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e)))).
+  exists f.
+  split.
+  - change (Sat nat hf_mem E (mulRecApproxAt 0 2 3)).
+    unfold mulRecApproxAt.
+    repeat split.
+    + apply (proj2 (HF_pairFunctionalAt_spec ackermannHFModel E 0)).
+      change (hf_pair_functional ackermannHFModel f).
+      exact (mul_rec_trace_functional m n).
+    + apply (proj2 (HF_pairKeysBelowSuccAt_spec ackermannHFModel E 0 3)).
+      change (hf_pair_keys_below_succ ackermannHFModel f (ordinal_code n)).
+      exact (mul_rec_trace_keys_below_succ m n).
+    + apply (proj2 (HF_pairZeroBaseAt_spec ackermannHFModel E 0)).
+      change (hf_mem (hf_kpair_obj ackermannHFModel hf_empty hf_empty) f).
+      unfold f.
+      pose proof (mul_rec_trace_pair_mem m 0 n) as hp.
+      assert (h0n : 0 <= n) by lia.
+      specialize (hp h0n).
+      rewrite Nat.mul_0_r in hp.
+      simpl in hp.
+      exact hp.
+    + apply (proj2 (HF_pairTotalBelowSuccAt_spec ackermannHFModel E 0 3)).
+      change (hf_pair_total_below_succ ackermannHFModel f (ordinal_code n)).
+      exact (mul_rec_trace_total_below_succ m n).
+    + unfold mulStepAt.
+      intros k t y hkm hkt sk hsk hsky.
+      pose (Ekty := scons nat y (scons nat t (scons nat k E))).
+      pose (Eskty := scons nat sk Ekty).
+      pose proof (proj1 (HF_pairMemAt_spec ackermannHFModel Ekty 2 1 3)
+        hkt) as hkt'.
+      change (hf_mem (hf_kpair_obj ackermannHFModel k t) f) in hkt'.
+      pose proof (proj1 (HF_pairMemAt_spec ackermannHFModel Eskty 0 1 4)
+        hsky) as hsky'.
+      change (hf_mem (hf_kpair_obj ackermannHFModel sk y) f) in hsky'.
+      pose proof (proj1 (HF_succAt_spec ackermannHFModel Eskty 0 3)
+        hsk) as hsk'.
+      change (sk = hf_adjoin k k) in hsk'.
+      destruct (proj1 (hf_mem_ordinal_code_iff k n) hkm) as [i [hi hk]].
+      destruct (proj1 (mul_rec_trace_mem_iff m
+        (hf_kpair_obj ackermannHFModel k t) n) hkt')
+        as [j [_hj hpair_j]].
+      destruct (hf_kpair_injective ackermannHFModel
+        k t (ordinal_code j) (ordinal_code (m * j)) hpair_j)
+        as [hk_j ht_j].
+      assert (hij : i = j).
+      {
+        apply ordinal_code_injective.
+        rewrite <- hk.
+        exact hk_j.
+      }
+      assert (ht : t = ordinal_code (m * i)).
+      {
+        rewrite ht_j.
+        now rewrite <- hij.
+      }
+      assert (hskcode : sk = ordinal_code (S i)).
+      {
+        rewrite hsk', hk.
+        reflexivity.
+      }
+      destruct (proj1 (mul_rec_trace_mem_iff m
+        (hf_kpair_obj ackermannHFModel sk y) n) hsky')
+        as [l [_hl hpair_l]].
+      destruct (hf_kpair_injective ackermannHFModel
+        sk y (ordinal_code l) (ordinal_code (m * l)) hpair_l)
+        as [hsk_l hy_l].
+      assert (hil : S i = l).
+      {
+        apply ordinal_code_injective.
+        rewrite <- hskcode.
+        exact hsk_l.
+      }
+      assert (hy : y = ordinal_code (m * S i)).
+      {
+        rewrite hy_l.
+        now rewrite <- hil.
+      }
+      apply (addGraphAt_ordinal_code 1 2 6 (m * i) m Eskty).
+      * change (y = ordinal_code (m * i + m)).
+        rewrite hy.
+        rewrite Nat.mul_succ_r.
+        reflexivity.
+      * change (t = ordinal_code (m * i)).
+        exact ht.
+      * reflexivity.
+  - apply (proj2 (HF_pairMemAt_spec ackermannHFModel E 3 1 0)).
+    change (hf_mem
+      (hf_kpair_obj ackermannHFModel (ordinal_code n) (ordinal_code (m * n)))
+      f).
+    unfold f.
+    apply mul_rec_trace_pair_mem.
+    lia.
+Qed.
+
+Lemma mulGraph_exact_on_ordinal_codes : forall r m n e,
+  Sat nat hf_mem
+    (scons nat (ordinal_code r)
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e)))
+    mulGraph <-> r = m * n.
+Proof.
+  intros r m n e.
+  split.
+  - intro h.
+    unfold mulGraph, mulGraphAt in h.
+    destruct h as [f [hf hout]].
+    pose proof (proj1 (HF_pairMemAt_spec ackermannHFModel
+      (scons nat f
+        (scons nat (ordinal_code r)
+          (scons nat (ordinal_code m) (scons nat (ordinal_code n) e))))
+      3 1 0) hout) as hout'.
+    change (hf_mem
+      (hf_kpair_obj ackermannHFModel (ordinal_code n) (ordinal_code r)) f)
+      in hout'.
+    assert (hnn : n <= n) by lia.
+    pose proof (mulRecApproxAt_value_of_le m n f (ordinal_code r) e
+      n (ordinal_code r) hf hnn hout') as hval.
+    apply ordinal_code_injective.
+    exact hval.
+  - intro h.
+    subst r.
+    apply mulGraph_ordinal_code.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
