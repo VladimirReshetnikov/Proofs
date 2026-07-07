@@ -120,6 +120,9 @@ open SetTheory
 #check @AckermannHF.PAInHF.upVarMap
 #check @AckermannHF.PAInHF.formulaAt
 #check @AckermannHF.PAInHF.formulaAt_exact
+#check @AckermannHF.PAInHF.translateFormula
+#check @AckermannHF.PAInHF.translateFormula_exact
+#check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF

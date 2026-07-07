@@ -2452,6 +2452,21 @@ theorem formulaAt_exact (phi : PA.Formula) :
               exact hρ k
         exact (ih (upVarMap ρ) (scons n v) (scons (ordinalCode n) e) hρ').mpr hn
 
+/-- The default PA-in-HF translation reads PA variable `n` from HF slot `n`. -/
+def translateFormula (phi : PA.Formula) : Form :=
+  formulaAt (fun n : Nat => n) phi
+
+theorem translateFormula_exact (phi : PA.Formula) (v : Nat → Nat) :
+    Sat Mem (fun n => ordinalCode (v n)) (translateFormula phi) ↔
+      PA.Formula.Sat PA.natModel v phi :=
+  formulaAt_exact phi (fun n : Nat => n) v (fun n => ordinalCode (v n)) (fun _ => rfl)
+
+theorem translated_PA_axiom_sat_codes (phi : PA.Formula)
+    (hphi : PA.Formula.Ax_s phi) (v : Nat → Nat) :
+    Sat Mem (fun n => ordinalCode (v n)) (translateFormula phi) :=
+  (translateFormula_exact phi v).mpr
+    (PA.Formula.sat_axiom_s PA.natModel v phi hphi)
+
 end PAInHF
 
 /-! ## The HF-in-PA-in-HF round trip -/
