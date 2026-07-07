@@ -24,8 +24,11 @@ Current ports:
   equations, positivity, coprimality invariants, `pairNext` arithmetic bridge
   lemmas, the successor equation `cwPair (n + 1) = pairNext (cwPair n)`, and
   the inverse-index round trips `cwPair (cwIndex a b) = (a, b)` for positive
-  coprime pairs and `cwIndex (cwPair n).1 (cwPair n).2 = n`.  The rational
-  orbit layer remains to be ported.
+  coprime pairs and `cwIndex (cwPair n).1 (cwPair n).2 = n`.  It also embeds
+  generated pairs into Coq `Q`, proves the corresponding floor and
+  `rationalNext` step lemmas, and derives `rationalNext (cwRat n) = cwRat
+  (n + 1)` up to `Qeq`.  The recursive rational-orbit uniqueness theorem
+  remains to be ported.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by

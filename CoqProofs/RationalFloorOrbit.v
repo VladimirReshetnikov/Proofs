@@ -2,10 +2,9 @@
   Coq port of the Calkin-Wilf pair core from
   LeanProofs/RationalFloorOrbit.lean.
 
-  The Lean module goes on to prove the inverse index map and the rational
-  floor-orbit enumeration theorem.  This Coq module establishes the executable
-  pair generator and its two structural invariants: every generated pair is
-  positive and coprime.
+  The Lean module goes on to prove the rational floor-orbit enumeration
+  theorem.  This Coq module establishes the executable pair generator, inverse
+  index map, and the rational-number bridge for the orbit successor step.
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
@@ -13,8 +12,13 @@ From Stdlib Require Import Arith.Wf_nat.
 From Stdlib Require Import Bool.Bool.
 From Stdlib Require Import Lia.
 From Stdlib Require Import Lists.List.
+From Stdlib Require Import QArith.QArith.
+From Stdlib Require Import QArith.Qfield.
+From Stdlib Require Import ZArith.ZArith.
 
 Import ListNotations.
+
+Local Open Scope nat_scope.
 
 Module LeanProofs.
 Module RationalFloorOrbit.
@@ -462,6 +466,142 @@ Proof.
       rewrite hdiv.
       f_equal.
       exact (pairNext_right_child_arith hb).
+Qed.
+
+Definition positiveDenOfNat (b : nat) : positive :=
+  Pos.of_succ_nat (Nat.pred b).
+
+Lemma Zpos_positiveDenOfNat (b : nat) (hb : 0 < b) :
+    Z.pos (positiveDenOfNat b) = Z.of_nat b.
+Proof.
+  unfold positiveDenOfNat.
+  rewrite Zpos_P_of_succ_nat.
+  destruct b as [|b]; [lia|].
+  simpl.
+  lia.
+Qed.
+
+Definition pairRat (p : nat * nat) : Q :=
+  Qmake (Z.of_nat (fst p)) (positiveDenOfNat (snd p)).
+
+Definition qOfNat (n : nat) : Q :=
+  inject_Z (Z.of_nat n).
+
+Definition qfloorNat (q : Q) : nat :=
+  Z.to_nat ((Qnum q / Z.pos (Qden q))%Z).
+
+Theorem qfloorNat_pairRat (a b : nat) (hb : 0 < b) :
+    qfloorNat (pairRat (a, b)) = a / b.
+Proof.
+  unfold qfloorNat, pairRat.
+  cbn [fst snd Qnum Qden].
+  rewrite Zpos_positiveDenOfNat by lia.
+  rewrite Z2Nat.inj_div by lia.
+  rewrite Nat2Z.id.
+  rewrite Nat2Z.id.
+  reflexivity.
+Qed.
+
+Theorem pairRat_eq_div (a b : nat) (hb : 0 < b) :
+    Qeq (pairRat (a, b)) (Qdiv (qOfNat a) (qOfNat b)).
+Proof.
+  unfold pairRat, qOfNat.
+  cbn [fst snd].
+  rewrite <- (Zpos_positiveDenOfNat b hb).
+  apply Qmake_Qdiv.
+Qed.
+
+Theorem qOfNat_nonzero (n : nat) (hn : 0 < n) :
+    ~ Qeq (qOfNat n) (inject_Z 0%Z).
+Proof.
+  unfold qOfNat, inject_Z, Qeq.
+  cbn.
+  lia.
+Qed.
+
+Definition rationalNext (q : Q) : Q :=
+  Qinv (Qplus (Qminus (inject_Z 1%Z) q)
+    (Qmult (inject_Z 2%Z) (qOfNat (qfloorNat q)))).
+
+Theorem pairNext_den_pos (a b : nat) (hb : 0 < b) :
+    0 < snd (pairNext (a, b)).
+Proof.
+  unfold pairNext.
+  cbn [fst snd].
+  pose proof (div_lt_mul_add a b hb).
+  lia.
+Qed.
+
+Local Open Scope Q_scope.
+
+Theorem qOfNat_den_expr (a b k : nat)
+    (hle : (a <= (2 * k + 1) * b)%nat) :
+    qOfNat ((2 * k + 1) * b - a) ==
+      (2 * qOfNat k + 1) * qOfNat b - qOfNat a.
+Proof.
+  unfold qOfNat, Qeq, Qplus, Qminus, Qopp, Qmult, inject_Z.
+  cbn.
+  rewrite Nat2Z.inj_sub by lia.
+  rewrite Nat2Z.inj_mul.
+  repeat rewrite Nat2Z.inj_add.
+  replace
+    (match Z.of_nat k with
+     | 0%Z => 0%Z
+     | Z.pos y' => Z.pos y'~0
+     | Z.neg y' => Z.neg y'~0
+     end) with (2 * Z.of_nat k)%Z.
+  - ring.
+  - destruct k; reflexivity.
+Qed.
+
+Theorem rationalNext_pairRat (a b : nat) (hb : (0 < b)%nat) :
+    rationalNext (pairRat (a, b)) == pairRat (pairNext (a, b)).
+Proof.
+  unfold rationalNext.
+  rewrite qfloorNat_pairRat by lia.
+  setoid_rewrite (pairRat_eq_div a b hb).
+  unfold pairNext.
+  cbn [fst snd].
+  rewrite (pairRat_eq_div b ((2 * (a / b) + 1) * b - a))
+    by (apply pairNext_den_pos; lia).
+  change (/ (1 - qOfNat a / qOfNat b + 2 * qOfNat (a / b)) ==
+    qOfNat b / qOfNat ((2 * (a / b) + 1) * b - a)).
+  pose proof (div_lt_mul_add a b hb) as hlt.
+  assert (hle : (a <= (2 * (a / b) + 1) * b)%nat) by lia.
+  assert (hdpos : (0 < (2 * (a / b) + 1) * b - a)%nat) by lia.
+  pose proof (qOfNat_den_expr a b (a / b) hle) as hden.
+  rewrite hden.
+  field.
+  split.
+  - intro hzero.
+    apply (qOfNat_nonzero ((2 * (a / b) + 1) * b - a) hdpos).
+    eapply Qeq_trans; [exact hden | exact hzero].
+  - apply qOfNat_nonzero; lia.
+Qed.
+
+Definition cwRat (n : nat) : Q :=
+  pairRat (cwPair n).
+
+Theorem rationalNext_cwRat (n : nat) :
+    rationalNext (cwRat n) == cwRat (n + 1).
+Proof.
+  unfold cwRat.
+  rewrite cwPair_succ.
+  destruct (cwPair n) as [a b] eqn:Hp.
+  pose proof (cwPair_pos n) as hpos.
+  rewrite Hp in hpos.
+  apply rationalNext_pairRat.
+  cbn [snd] in hpos.
+  lia.
+Qed.
+
+Local Open Scope nat_scope.
+
+Theorem pairRat_first_values :
+    map pairRat [(1, 1); (1, 2); (2, 1); (1, 3)] =
+      [Qmake 1 1; Qmake 1 2; Qmake 2 1; Qmake 1 3].
+Proof.
+  reflexivity.
 Qed.
 
 Theorem cwPair_first_values :
