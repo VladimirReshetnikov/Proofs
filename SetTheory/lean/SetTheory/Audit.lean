@@ -78,6 +78,13 @@ open SetTheory
 #check @PA.Formula.Sentence
 #check @PA.Formula.sealPA_sentence
 #check @PA.Formula.sentence_ax_s
+#check @PA.Formula.Ax_s_succInj
+#check @PA.Formula.Ax_s_zeroNotSucc
+#check @PA.Formula.Ax_s_addZero
+#check @PA.Formula.Ax_s_addSucc
+#check @PA.Formula.Ax_s_mulZero
+#check @PA.Formula.Ax_s_mulSucc
+#check @PA.Formula.Ax_s_induction
 #check @PA.Formula.leAt
 #check @PA.Formula.ltAt
 #check @PA.Formula.dvdAt

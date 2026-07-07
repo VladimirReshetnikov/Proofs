@@ -4413,6 +4413,34 @@ theorem sentence_ax_s {f : Formula} (hf : Ax_s f) : Sentence f := by
   rcases hf with rfl | rfl | rfl | rfl | rfl | rfl | ⟨phi, rfl⟩ <;>
     exact sealPA_sentence _
 
+/-- Named membership of the sealed successor-injectivity axiom in PA. -/
+theorem Ax_s_succInj : Ax_s (sealPA succInj) :=
+  Or.inl rfl
+
+/-- Named membership of the sealed zero-is-not-successor axiom in PA. -/
+theorem Ax_s_zeroNotSucc : Ax_s (sealPA zeroNotSucc) :=
+  Or.inr (Or.inl rfl)
+
+/-- Named membership of the sealed addition-by-zero axiom in PA. -/
+theorem Ax_s_addZero : Ax_s (sealPA addZero) :=
+  Or.inr (Or.inr (Or.inl rfl))
+
+/-- Named membership of the sealed addition-successor axiom in PA. -/
+theorem Ax_s_addSucc : Ax_s (sealPA addSucc) :=
+  Or.inr (Or.inr (Or.inr (Or.inl rfl)))
+
+/-- Named membership of the sealed multiplication-by-zero axiom in PA. -/
+theorem Ax_s_mulZero : Ax_s (sealPA mulZero) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+
+/-- Named membership of the sealed multiplication-successor axiom in PA. -/
+theorem Ax_s_mulSucc : Ax_s (sealPA mulSucc) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl rfl)))))
+
+/-- Named membership of a sealed induction instance in PA. -/
+theorem Ax_s_induction (phi : Formula) : Ax_s (sealPA (inductionForm phi)) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩)))))
+
 theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
   rw [Sat_subst]
