@@ -428,11 +428,110 @@ theorem a002845_eq_of_certifiedLevelCountsThrough {N n value : Nat}
       certifiedLevelCard_eq_countsThrough_getD hpos hN
     _ = value := hcount
 
+def a002845ValuesThroughEighteen : List Nat :=
+  [1, 1, 1, 2, 4, 8, 17, 36, 78, 171, 379, 851, 1928, 4396, 10087, 23273,
+    53948, 125608]
+
+/-- Certified A002845 counts through `n = 18`, computed once as a prefix table. -/
+theorem certifiedLevelCountsThrough_eighteen :
+    certifiedLevelCountsThrough 18 = a002845ValuesThroughEighteen := by
+  native_decide
+
+theorem a002845_eq_of_eighteen_table {n value : Nat}
+    (hpos : 0 < n) (hN : n ≤ 18)
+    (hcount : a002845ValuesThroughEighteen.getD (n - 1) 0 = value) :
+    a002845 n = value := by
+  apply a002845_eq_of_certifiedLevelCountsThrough (N := 18) hpos hN
+  rw [certifiedLevelCountsThrough_eighteen]
+  exact hcount
+
+/-- OEIS A002845 has value `1` at `n = 1`. -/
+theorem a002845_one : a002845 1 = 1 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `1` at `n = 2`. -/
+theorem a002845_two : a002845 2 = 1 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `1` at `n = 3`. -/
+theorem a002845_three : a002845 3 = 1 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `2` at `n = 4`. -/
+theorem a002845_four : a002845 4 = 2 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `4` at `n = 5`. -/
+theorem a002845_five : a002845 5 = 4 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `8` at `n = 6`. -/
+theorem a002845_six : a002845 6 = 8 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `17` at `n = 7`. -/
+theorem a002845_seven : a002845 7 = 17 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `36` at `n = 8`. -/
+theorem a002845_eight : a002845 8 = 36 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `78` at `n = 9`. -/
+theorem a002845_nine : a002845 9 = 78 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `171` at `n = 10`. -/
+theorem a002845_ten : a002845 10 = 171 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `379` at `n = 11`. -/
+theorem a002845_eleven : a002845 11 = 379 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `851` at `n = 12`. -/
+theorem a002845_twelve : a002845 12 = 851 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `1928` at `n = 13`. -/
+theorem a002845_thirteen : a002845 13 = 1928 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `4396` at `n = 14`. -/
+theorem a002845_fourteen : a002845 14 = 4396 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `10087` at `n = 15`. -/
+theorem a002845_fifteen : a002845 15 = 10087 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `23273` at `n = 16`. -/
+theorem a002845_sixteen : a002845 16 = 23273 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `53948` at `n = 17`. -/
+theorem a002845_seventeen : a002845 17 = 53948 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-- OEIS A002845 has value `125608` at `n = 18`. -/
+theorem a002845_eighteen : a002845 18 = 125608 :=
+  a002845_eq_of_eighteen_table (by decide) (by decide) rfl
+
+/-
+The five heaviest certificates, `a002845 19` through `a002845 23`, are
+excluded from the default build: their prefix-table certificate through
+`n = 23` computes about nine million distinct sparse logarithms in one
+native run.  Measured on Vladimir's Windows machine (2026-07-07), the module
+builds in about 134 s with the live `n = 18` table below, versus roughly
+1300-2450 s (about 22-40 min, varying with concurrent build load) when this
+`n = 23` block is enabled instead.  The proof machinery is unchanged; to
+re-verify the heavy values, uncomment this block (it extends the same table
+pattern used above).
+
 def a002845ValuesThroughTwentyThree : List Nat :=
   [1, 1, 1, 2, 4, 8, 17, 36, 78, 171, 379, 851, 1928, 4396, 10087, 23273,
     53948, 125608, 293543, 688366, 1619087, 3818818, 9029719]
 
-/-- Certified A002845 counts through `n = 23`, computed once as a prefix table. -/
 theorem certifiedLevelCountsThrough_twenty_three :
     certifiedLevelCountsThrough 23 = a002845ValuesThroughTwentyThree := by
   native_decide
@@ -444,78 +543,6 @@ theorem a002845_eq_of_twenty_three_table {n value : Nat}
   apply a002845_eq_of_certifiedLevelCountsThrough (N := 23) hpos hN
   rw [certifiedLevelCountsThrough_twenty_three]
   exact hcount
-
-/-- OEIS A002845 has value `1` at `n = 1`. -/
-theorem a002845_one : a002845 1 = 1 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `1` at `n = 2`. -/
-theorem a002845_two : a002845 2 = 1 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `1` at `n = 3`. -/
-theorem a002845_three : a002845 3 = 1 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `2` at `n = 4`. -/
-theorem a002845_four : a002845 4 = 2 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `4` at `n = 5`. -/
-theorem a002845_five : a002845 5 = 4 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `8` at `n = 6`. -/
-theorem a002845_six : a002845 6 = 8 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `17` at `n = 7`. -/
-theorem a002845_seven : a002845 7 = 17 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `36` at `n = 8`. -/
-theorem a002845_eight : a002845 8 = 36 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `78` at `n = 9`. -/
-theorem a002845_nine : a002845 9 = 78 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `171` at `n = 10`. -/
-theorem a002845_ten : a002845 10 = 171 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `379` at `n = 11`. -/
-theorem a002845_eleven : a002845 11 = 379 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `851` at `n = 12`. -/
-theorem a002845_twelve : a002845 12 = 851 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `1928` at `n = 13`. -/
-theorem a002845_thirteen : a002845 13 = 1928 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `4396` at `n = 14`. -/
-theorem a002845_fourteen : a002845 14 = 4396 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `10087` at `n = 15`. -/
-theorem a002845_fifteen : a002845 15 = 10087 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `23273` at `n = 16`. -/
-theorem a002845_sixteen : a002845 16 = 23273 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `53948` at `n = 17`. -/
-theorem a002845_seventeen : a002845 17 = 53948 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
-
-/-- OEIS A002845 has value `125608` at `n = 18`. -/
-theorem a002845_eighteen : a002845 18 = 125608 :=
-  a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
 
 /-- OEIS A002845 has value `293543` at `n = 19`. -/
 theorem a002845_nineteen : a002845 19 = 293543 :=
@@ -536,6 +563,8 @@ theorem a002845_twenty_two : a002845 22 = 3818818 :=
 /-- OEIS A002845 has value `9029719` at `n = 23`. -/
 theorem a002845_twenty_three : a002845 23 = 9029719 :=
   a002845_eq_of_twenty_three_table (by decide) (by decide) rfl
+
+-/
 
 end A002845
 
