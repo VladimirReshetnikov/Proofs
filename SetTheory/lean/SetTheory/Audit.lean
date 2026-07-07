@@ -59,8 +59,11 @@ open SetTheory
 #check @AckermannHF.PAInHF.zeroGraph
 #check @AckermannHF.PAInHF.succGraph
 #check @AckermannHF.PAInHF.domain_ordinalCode
+#check @AckermannHF.PAInHF.domain_exact
 #check @AckermannHF.PAInHF.zeroGraph_ordinalCode
+#check @AckermannHF.PAInHF.zeroGraph_exact_on_ordinalCode
 #check @AckermannHF.PAInHF.succGraph_ordinalCode
+#check @AckermannHF.PAInHF.succGraph_exact_on_ordinalCodes
 #check @AckermannHF.PAInHF.zeroGraph_domain
 #check @AckermannHF.PAInHF.succGraph_preserves_domain
 #check @AckermannHF.sat_HF_model

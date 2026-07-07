@@ -565,6 +565,20 @@ theorem HF_ordinalLikeAt_exact (e : Nat → Nat) (i : Nat) :
     rcases h with ⟨n, hn⟩
     exact HF_ordinalLikeAt_of_ordinalCode e i n hn.symm⟩
 
+theorem not_mem_self (a : Nat) : ¬ Mem a a := fun h =>
+  Nat.lt_irrefl a (mem_lt h)
+
+theorem ordinalCode_injective {m n : Nat}
+    (h : ordinalCode m = ordinalCode n) : m = n := by
+  rcases Nat.lt_trichotomy m n with hlt | heq | hgt
+  · have hm : Mem (ordinalCode m) (ordinalCode n) := ordinalCode_mem_of_lt hlt
+    rw [← h] at hm
+    exact False.elim (not_mem_self (ordinalCode m) hm)
+  · exact heq
+  · have hn : Mem (ordinalCode n) (ordinalCode m) := ordinalCode_mem_of_lt hgt
+    rw [h] at hn
+    exact False.elim (not_mem_self (ordinalCode n) hn)
+
 /-! ### First PA-in-HF interpretation formulas already available -/
 
 namespace PAInHF
@@ -583,16 +597,46 @@ theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
   HF_ordinalLikeAt_of_ordinalCode (scons (ordinalCode n) e) 0 n rfl
 
+theorem domain_exact (e : Nat → Nat) :
+    Sat Mem e domainForm ↔ IsOrdinalCode (e 0) :=
+  HF_ordinalLikeAt_exact e 0
+
 theorem zeroGraph_ordinalCode (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode 0) e) zeroGraph := by
   apply (HF_emptyAt_empty standardModel (scons (ordinalCode 0) e) 0).mpr
   rfl
+
+theorem zeroGraph_exact_on_ordinalCode (n : Nat) (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode n) e) zeroGraph ↔ n = 0 := by
+  constructor
+  · intro h
+    have hz := (HF_emptyAt_empty standardModel (scons (ordinalCode n) e) 0).mp h
+    apply ordinalCode_injective
+    rw [ordinalCode_zero]
+    exact hz
+  · intro h
+    subst h
+    exact zeroGraph_ordinalCode e
 
 theorem succGraph_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode (n+1)) (scons (ordinalCode n) e)) succGraph := by
   apply (HF_succAt_spec standardModel
     (scons (ordinalCode (n+1)) (scons (ordinalCode n) e)) 0 1).mpr
   exact ordinalCode_succ n
+
+theorem succGraph_exact_on_ordinalCodes (m n : Nat) (e : Nat → Nat) :
+    Sat Mem (scons (ordinalCode m) (scons (ordinalCode n) e)) succGraph ↔
+      m = n + 1 := by
+  constructor
+  · intro h
+    have hs := (HF_succAt_spec standardModel
+      (scons (ordinalCode m) (scons (ordinalCode n) e)) 0 1).mp h
+    apply ordinalCode_injective
+    rw [ordinalCode_succ]
+    exact hs
+  · intro h
+    subst h
+    exact succGraph_ordinalCode n e
 
 theorem zeroGraph_domain (e : Nat → Nat)
     (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by
@@ -611,20 +655,6 @@ theorem succGraph_preserves_domain (e : Nat → Nat)
   exact OrdinalLike.adjoin_self standardModel hin' hs'
 
 end PAInHF
-
-theorem not_mem_self (a : Nat) : ¬ Mem a a := fun h =>
-  Nat.lt_irrefl a (mem_lt h)
-
-theorem ordinalCode_injective {m n : Nat}
-    (h : ordinalCode m = ordinalCode n) : m = n := by
-  rcases Nat.lt_trichotomy m n with hlt | heq | hgt
-  · have hm : Mem (ordinalCode m) (ordinalCode n) := ordinalCode_mem_of_lt hlt
-    rw [← h] at hm
-    exact False.elim (not_mem_self (ordinalCode m) hm)
-  · exact heq
-  · have hn : Mem (ordinalCode n) (ordinalCode m) := ordinalCode_mem_of_lt hgt
-    rw [h] at hn
-    exact False.elim (not_mem_self (ordinalCode n) hn)
 
 /-- The interpreted PA domain inside Ackermann HF: the finite von Neumann
 ordinals, represented by their Ackermann codes. -/
