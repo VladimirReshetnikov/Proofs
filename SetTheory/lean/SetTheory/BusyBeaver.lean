@@ -355,6 +355,21 @@ def HasEventuallyAtMostBlankCompiler (TotalRecursive : (Nat -> Nat) -> Prop) : P
     ∃ threshold, ∀ n, threshold ≤ n -> AttainableScoreAtMost n (f n)
 
 /--
+Even weaker compiler target sufficient for domination: for every sufficiently
+large input `n`, a blank-tape machine using at most `n` states halts with some
+score at least `f n`.
+
+This is often the natural proof obligation for simulations that leave harmless
+scratch `1`s on the tape: exact output cleanup is unnecessary for busy-beaver
+domination.
+-/
+def HasEventuallyAtMostLowerBoundCompiler
+    (TotalRecursive : (Nat -> Nat) -> Prop) : Prop :=
+  ∀ {f : Nat -> Nat}, TotalRecursive f ->
+    ∃ threshold, ∀ n, threshold ≤ n ->
+      ∃ score, f n ≤ score ∧ AttainableScoreAtMost n score
+
+/--
 A direct, model-relative notion of total recursiveness: the function has the
 linear-overhead blank-tape realizers needed by the domination proof.
 -/
@@ -367,6 +382,14 @@ states.
 -/
 def TotalRecursiveEventuallyInRadoModel (f : Nat -> Nat) : Prop :=
   ∃ threshold, ∀ n, threshold ≤ n -> AttainableScoreAtMost n (f n)
+
+/--
+Model-relative eventual lower-bound realizability using at most the available
+number of states.
+-/
+def TotalRecursiveEventuallyLowerBoundInRadoModel (f : Nat -> Nat) : Prop :=
+  ∃ threshold, ∀ n, threshold ≤ n ->
+    ∃ score, f n ≤ score ∧ AttainableScoreAtMost n score
 
 /-- Any attainable score is bounded by any function satisfying `IsSigma`. -/
 theorem score_le_sigma {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
@@ -433,6 +456,33 @@ theorem eventuallyDominates_of_hasEventuallyAtMostBlankCompiler
   intro n hn
   exact score_le_sigma_of_atMost hSigma (hRealize n hn)
 
+/-- Exact eventually-at-most compilers are lower-bound compilers. -/
+theorem hasEventuallyAtMostLowerBoundCompiler_of_exact
+    {TotalRecursive : (Nat -> Nat) -> Prop}
+    (hCompiler : HasEventuallyAtMostBlankCompiler TotalRecursive) :
+    HasEventuallyAtMostLowerBoundCompiler TotalRecursive := by
+  intro f hf
+  rcases hCompiler hf with ⟨threshold, hRealize⟩
+  refine ⟨threshold, ?_⟩
+  intro n hn
+  exact ⟨f n, Nat.le_refl _, hRealize n hn⟩
+
+/--
+The same domination conclusion from the lower-bound, eventually-at-most-`n`
+compiler interface.
+-/
+theorem eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {TotalRecursive : (Nat -> Nat) -> Prop}
+    (hCompiler : HasEventuallyAtMostLowerBoundCompiler TotalRecursive)
+    {f : Nat -> Nat} (hf : TotalRecursive f) :
+    EventuallyDominates Sigma f := by
+  rcases hCompiler hf with ⟨threshold, hRealize⟩
+  refine ⟨threshold, ?_⟩
+  intro n hn
+  rcases hRealize n hn with ⟨score, hLower, hScore⟩
+  exact Nat.le_trans hLower (score_le_sigma_of_atMost hSigma hScore)
+
 /--
 Specialization of the domination theorem to the model-relative total-recursive
 predicate `TotalRecursiveInRadoModel`.
@@ -452,6 +502,16 @@ theorem eventuallyDominates_totalRecursiveEventuallyInRadoModel
     {f : Nat -> Nat} (hf : TotalRecursiveEventuallyInRadoModel f) :
     EventuallyDominates Sigma f :=
   eventuallyDominates_of_hasEventuallyAtMostBlankCompiler
+    hSigma (fun hf => hf) hf
+
+/--
+Specialization to the model-relative eventual lower-bound predicate.
+-/
+theorem eventuallyDominates_totalRecursiveEventuallyLowerBoundInRadoModel
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveEventuallyLowerBoundInRadoModel f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
     hSigma (fun hf => hf) hf
 
 /--
@@ -485,6 +545,15 @@ theorem sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
     {f : Nat -> Nat} (hf : TotalRecursiveEventuallyInRadoModel f) :
     EventuallyDominates Sigma f :=
   eventuallyDominates_totalRecursiveEventuallyInRadoModel hSigma hf
+
+/--
+Alias for the model-relative eventual lower-bound predicate.
+-/
+theorem sigma_eventually_dominates_every_totalRecursiveEventuallyLowerBoundInRadoModel
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveEventuallyLowerBoundInRadoModel f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_totalRecursiveEventuallyLowerBoundInRadoModel hSigma hf
 
 end BusyBeaver
 end SetTheory
