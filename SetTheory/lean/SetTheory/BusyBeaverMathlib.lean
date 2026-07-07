@@ -51,6 +51,27 @@ def TM2to1MainOutput
           Turing.ListBlank.mk ((stk k).map some).reverse) ∧
       stk Turing.PartrecToTM2.K'.main = mainOutput
 
+/-- Encode a finite `TM1` input list by replacing every source symbol by its Bool block. -/
+abbrev TM1to1EncodedInput {Γ : Type*} {width : Nat}
+    (enc : Γ -> List.Vector Bool width) (input : List Γ) : List Bool :=
+  input.flatMap fun a => (enc a).toList
+
+/--
+Output relation for mathlib's finite-alphabet `TM1 -> TM1 Bool` simulation.
+
+`TM1.eval` exposes only the inclusive right half-tape of the final source
+configuration.  The Bool simulator encodes the whole final tape, so this
+relation keeps the hidden source tape as a witness and relates the two exposed
+right half-tapes.
+-/
+def TM1to1Output {Γ : Type*} [Inhabited Γ] {width : Nat}
+    (enc : Γ -> List.Vector Bool width)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (sourceOutput : Turing.ListBlank Γ) (boolOutput : Turing.ListBlank Bool) : Prop :=
+  ∃ tape : Turing.Tape Γ,
+    tape.right₀ = sourceOutput ∧
+    (Turing.TM1to1.trTape enc0 tape).right₀ = boolOutput
+
 end MathlibBridge
 
 /--
@@ -251,6 +272,140 @@ theorem totalRecursiveMathlib_tm1_eval_main {f : Nat -> Nat}
   refine ⟨c, ?_⟩
   intro n
   exact partrecToTM2_eval_main_to_tm1_eval_main c (hc n)
+
+/-- The Bool-block encoding of a finite `TM1` input is the translated initial configuration. -/
+theorem tm1to1_trCfg_init
+    {Γ Λ σ : Type*} [Inhabited Γ] [Inhabited Λ] [Inhabited σ]
+    {width : Nat} (enc : Γ -> List.Vector Bool width)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (input : List Γ) :
+    Turing.TM1to1.trCfg enc enc0
+        (Turing.TM1.init (Γ := Γ) (Λ := Λ) (σ := σ) input) =
+      Turing.TM1.init (Γ := Bool) (Λ := Turing.TM1to1.Λ' Γ Λ σ) (σ := σ)
+        (MathlibBridge.TM1to1EncodedInput enc input) := by
+  simp [Turing.TM1to1.trCfg, Turing.TM1.init, MathlibBridge.TM1to1EncodedInput,
+    Turing.TM1to1.trTape, Turing.TM1to1.trTape', Turing.Tape.mk₁, Turing.Tape.mk₂, default]
+
+/--
+Transport a `TM1.eval` result through mathlib's finite-alphabet
+`TM1 -> TM1 Bool` simulation, keeping the relation between the decoded source
+output and the encoded Bool output.
+-/
+theorem tm1_eval_to_bool_tm1_eval
+    {Γ Λ σ : Type*} [Inhabited Γ] [Inhabited Λ] [Inhabited σ]
+    {width : Nat} (enc : Γ -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> Γ)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a)
+    (M : Λ -> Turing.TM1.Stmt Γ Λ σ)
+    {input : List Γ} {sourceOutput : Turing.ListBlank Γ}
+    (h : sourceOutput ∈ Turing.TM1.eval M input) :
+    ∃ boolOutput,
+      boolOutput ∈ Turing.TM1.eval (Turing.TM1to1.tr enc dec M)
+        (MathlibBridge.TM1to1EncodedInput enc input) ∧
+      MathlibBridge.TM1to1Output enc enc0 sourceOutput boolOutput := by
+  rw [Turing.TM1.eval] at h
+  rcases (Part.mem_map_iff
+      (fun c : Turing.TM1.Cfg Γ Λ σ => c.Tape.right₀)).1 h with
+    ⟨sourceCfg, hSourceCfg, hSourceOutput⟩
+  have hInit :
+      Turing.TM1to1.trCfg enc enc0
+          (Turing.TM1.init (Γ := Γ) (Λ := Λ) (σ := σ) input) =
+        Turing.TM1.init (Γ := Bool) (Λ := Turing.TM1to1.Λ' Γ Λ σ) (σ := σ)
+          (MathlibBridge.TM1to1EncodedInput enc input) :=
+    tm1to1_trCfg_init enc enc0 input
+  rcases StateTransition.tr_eval
+      (Turing.TM1to1.tr_respects (enc := enc) dec M encdec)
+      hInit hSourceCfg with ⟨boolCfg, hRel, hBoolCfg⟩
+  refine ⟨boolCfg.Tape.right₀, ?_, ?_⟩
+  · rw [Turing.TM1.eval]
+    exact (Part.mem_map_iff
+      (fun c : Turing.TM1.Cfg Bool (Turing.TM1to1.Λ' Γ Λ σ) σ =>
+        c.Tape.right₀)).2 ⟨boolCfg, hBoolCfg, rfl⟩
+  · subst boolCfg
+    exact ⟨sourceCfg.Tape, hSourceOutput, rfl⟩
+
+/--
+For every mathlib-total-recursive function, the recursive-code evaluator
+descends through the finite-alphabet `TM1 -> TM1 Bool` simulation while
+retaining the encoded `[f n]` main-stack output witness.
+-/
+theorem totalRecursiveMathlib_bool_tm1_eval_main {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ (c : Turing.ToPartrec.Code)
+      (width : Nat)
+      (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+      (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet),
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      ∃ (enc0 : enc default = List.Vector.replicate width false),
+        (∀ a, dec (enc a) = a) ∧
+        ∀ n,
+          ∃ boolOutput,
+            boolOutput ∈ Turing.TM1.eval
+              (Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine)
+              (MathlibBridge.TM1to1EncodedInput enc
+                (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+                  (Turing.PartrecToTM2.trList [n]))) ∧
+            ∃ tm1Output,
+              MathlibBridge.TM2to1MainOutput tm1Output
+                (Turing.PartrecToTM2.trList [f n]) ∧
+              MathlibBridge.TM1to1Output enc enc0 tm1Output boolOutput := by
+  classical
+  rcases totalRecursiveMathlib_tm1_eval_main hf with ⟨c, hc⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  rcases Turing.TM1to1.exists_enc_dec
+      (Γ := MathlibBridge.PartrecToTM1Alphabet) with
+    ⟨width, enc, dec, enc0, encdec⟩
+  refine ⟨c, width, enc, dec, enc0, encdec, ?_⟩
+  intro n
+  rcases hc n with ⟨tm1Output, hTM1Output, hMain⟩
+  rcases tm1_eval_to_bool_tm1_eval enc dec enc0 encdec
+      MathlibBridge.PartrecToTM1Machine hTM1Output with
+    ⟨boolOutput, hBoolOutput, hBoolRel⟩
+  exact ⟨boolOutput, hBoolOutput, tm1Output, hMain, hBoolRel⟩
+
+/--
+The same lowered evaluator, viewed as a Bool `TM0` by mathlib's `TM1 -> TM0`
+simulation.  At this stage the final tape is still the Bool-block encoding of
+the recursive evaluator's data, not yet the unary score tape needed for Rado's
+busy-beaver game.
+-/
+theorem totalRecursiveMathlib_bool_tm0_eval_main {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ (c : Turing.ToPartrec.Code)
+      (width : Nat)
+      (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+      (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet),
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+      ∃ (enc0 : enc default = List.Vector.replicate width false),
+        (∀ a, dec (enc a) = a) ∧
+        ∀ n,
+          ∃ boolOutput,
+            boolOutput ∈ Turing.TM0.eval (Turing.TM1to0.tr tm1Bool)
+              (MathlibBridge.TM1to1EncodedInput enc
+                (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+                  (Turing.PartrecToTM2.trList [n]))) ∧
+            ∃ tm1Output,
+              MathlibBridge.TM2to1MainOutput tm1Output
+                (Turing.PartrecToTM2.trList [f n]) ∧
+              MathlibBridge.TM1to1Output enc enc0 tm1Output boolOutput := by
+  rcases totalRecursiveMathlib_bool_tm1_eval_main hf with
+    ⟨c, width, enc, dec, hEnc⟩
+  refine ⟨c, width, enc, dec, ?_⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  dsimp at hEnc ⊢
+  rcases hEnc with ⟨enc0, encdec, hEval⟩
+  refine ⟨enc0, encdec, ?_⟩
+  intro n
+  rcases hEval n with ⟨boolOutput, hBoolTM1, hOutput⟩
+  refine ⟨boolOutput, ?_, hOutput⟩
+  rw [Turing.TM1to0.tr_eval]
+  exact hBoolTM1
 
 /--
 The finite-support recursive-code evaluator also descends through mathlib's
