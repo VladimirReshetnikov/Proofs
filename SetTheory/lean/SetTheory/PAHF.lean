@@ -2269,6 +2269,87 @@ inductive Prov : List Formula → Formula → Prop
       Prov G (eq s t) → Prov G (subst (instTerm s) a) →
       Prov G (subst (instTerm t) a)
 
+/-- Context inclusion is preserved by consing the same PA formula. -/
+theorem cons_sub {a : Formula} {G G' : List Formula}
+    (hsub : ∀ x, x ∈ G → x ∈ G') :
+    ∀ x, x ∈ a :: G → x ∈ a :: G' := by
+  intro x hx
+  rcases List.mem_cons.mp hx with rfl | hx
+  · exact List.mem_cons.mpr (Or.inl rfl)
+  · exact List.mem_cons.mpr (Or.inr (hsub x hx))
+
+/-- Context inclusion is preserved by mapping a PA formula transformer. -/
+theorem mem_map_sub {f : Formula → Formula} {G G' : List Formula}
+    (hsub : ∀ x, x ∈ G → x ∈ G') :
+    ∀ x, x ∈ G.map f → x ∈ G'.map f := by
+  intro x hx
+  rw [List.mem_map] at hx ⊢
+  rcases hx with ⟨y, hy, rfl⟩
+  exact ⟨y, hsub y hy, rfl⟩
+
+/-- Weakening for the PA calculus: enlarging the context preserves proofs. -/
+theorem Prov_weaken {G : List Formula} {a : Formula} (h : Prov G a) :
+    ∀ G', (∀ x, x ∈ G → x ∈ G') → Prov G' a := by
+  induction h with
+  | P_ass G a hin =>
+      intro G' hsub
+      exact .P_ass _ _ (hsub a hin)
+  | P_impI G a b _ ih =>
+      intro G' hsub
+      exact .P_impI _ _ _ (ih _ (cons_sub hsub))
+  | P_impE G a b _ _ ihab iha =>
+      intro G' hsub
+      exact .P_impE _ a b (ihab _ hsub) (iha _ hsub)
+  | P_botE G a _ ih =>
+      intro G' hsub
+      exact .P_botE _ a (ih _ hsub)
+  | P_lem G a =>
+      intro G' hsub
+      exact .P_lem _ _
+  | P_andI G a b _ _ iha ihb =>
+      intro G' hsub
+      exact .P_andI _ _ _ (iha _ hsub) (ihb _ hsub)
+  | P_andE1 G a b _ ih =>
+      intro G' hsub
+      exact .P_andE1 _ a b (ih _ hsub)
+  | P_andE2 G a b _ ih =>
+      intro G' hsub
+      exact .P_andE2 _ a b (ih _ hsub)
+  | P_orI1 G a b _ ih =>
+      intro G' hsub
+      exact .P_orI1 _ _ _ (ih _ hsub)
+  | P_orI2 G a b _ ih =>
+      intro G' hsub
+      exact .P_orI2 _ _ _ (ih _ hsub)
+  | P_orE G a b c _ _ _ ihor iha ihb =>
+      intro G' hsub
+      exact .P_orE _ a b c (ihor _ hsub)
+        (iha _ (cons_sub hsub)) (ihb _ (cons_sub hsub))
+  | P_allI G a _ ih =>
+      intro G' hsub
+      exact .P_allI _ _ (ih _ (mem_map_sub hsub))
+  | P_allE G a t _ ih =>
+      intro G' hsub
+      exact .P_allE _ a t (ih _ hsub)
+  | P_exI G a t _ ih =>
+      intro G' hsub
+      exact .P_exI _ a t (ih _ hsub)
+  | P_exE G a c _ _ ihex ihbody =>
+      intro G' hsub
+      exact .P_exE _ a c (ihex _ hsub)
+        (ihbody _ (cons_sub (mem_map_sub hsub)))
+  | P_eqRefl G t =>
+      intro G' hsub
+      exact .P_eqRefl _ t
+  | P_eqElim G s t a _ _ iheq iha =>
+      intro G' hsub
+      exact .P_eqElim _ s t a (iheq _ hsub) (iha _ hsub)
+
+/-- A handy corollary: prepend an additional PA hypothesis. -/
+theorem Prov_cons {G : List Formula} {a b : Formula} (h : Prov G b) :
+    Prov (a :: G) b :=
+  Prov_weaken h _ (fun _ hx => List.mem_cons.mpr (Or.inr hx))
+
 theorem soundness {α : Type u} (M : Model α) {G : List Formula} {a : Formula}
     (h : Prov G a) :
     ∀ e : Nat → α, (∀ x, x ∈ G → Sat M e x) → Sat M e a := by
@@ -2359,6 +2440,55 @@ theorem soundness {α : Type u} (M : Model α) {G : List Formula} {a : Formula}
 
 def BProv (B : Formula → Prop) (G : List Formula) (phi : Formula) : Prop :=
   ∃ L, (∀ x ∈ L, B x) ∧ Prov (L ++ G) phi
+
+/-- Enlarging the finite PA context preserves relative provability. -/
+theorem BProv_mono (B : Formula → Prop) (G G' : List Formula) (phi : Formula)
+    (hsub : ∀ x, x ∈ G → x ∈ G') (h : BProv B G phi) :
+    BProv B G' phi := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  exact Prov_weaken hp _ (fun x hx => by
+    rw [List.mem_append] at hx ⊢
+    rcases hx with hx | hx
+    · exact Or.inl hx
+    · exact Or.inr (hsub x hx))
+
+/-- A PA theory axiom is relatively provable from that theory. -/
+theorem BProv_ax {B : Formula → Prop} {G : List Formula} {phi : Formula}
+    (hphi : B phi) : BProv B G phi := by
+  refine ⟨[phi], ?_, ?_⟩
+  · intro x hx
+    rw [List.mem_singleton] at hx
+    subst x
+    exact hphi
+  · exact Prov.P_ass _ _ (by simp)
+
+/-- A bare PA proof is also a proof relative to any PA theory. -/
+theorem BProv_of_Prov {B : Formula → Prop} {G : List Formula} {phi : Formula}
+    (h : Prov G phi) : BProv B G phi := by
+  refine ⟨[], ?_, ?_⟩
+  · intro x hx
+    cases hx
+  · simpa using h
+
+/-- Relative PA provability is closed under modus ponens. -/
+theorem BProv_mp (B : Formula → Prop) (G : List Formula) (a b : Formula)
+    (himp : BProv B G (imp a b)) (ha : BProv B G a) : BProv B G b := by
+  rcases himp with ⟨L₁, hL₁, hpimp⟩
+  rcases ha with ⟨L₂, hL₂, hpa⟩
+  refine ⟨L₁ ++ L₂, ?_, ?_⟩
+  · intro x hx
+    rw [List.mem_append] at hx
+    rcases hx with hx | hx
+    · exact hL₁ x hx
+    · exact hL₂ x hx
+  · apply Prov.P_impE _ a b
+    · exact Prov_weaken hpimp _ (fun x hx => by
+        rw [List.mem_append] at hx ⊢
+        grind)
+    · exact Prov_weaken hpa _ (fun x hx => by
+        rw [List.mem_append] at hx ⊢
+        grind)
 
 theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
     {G : List Formula} {phi : Formula} (h : BProv B G phi) :

@@ -37,8 +37,14 @@ open SetTheory
 #check @PA.Formula.Ax_s
 #check @PA.Formula.sat_axiom_s
 #check @PA.Formula.Prov
+#check @PA.Formula.Prov_weaken
+#check @PA.Formula.Prov_cons
 #check @PA.Formula.soundness
 #check @PA.Formula.BProv
+#check @PA.Formula.BProv_mono
+#check @PA.Formula.BProv_ax
+#check @PA.Formula.BProv_of_Prov
+#check @PA.Formula.BProv_mp
 #check @PA.Formula.soundness_BProv
 #check @PA.Term.Free
 #check @PA.Term.free_lt_bound
