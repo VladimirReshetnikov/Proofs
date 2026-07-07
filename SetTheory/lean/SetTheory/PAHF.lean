@@ -11615,6 +11615,66 @@ theorem BProv_formulaAt_eq_var_of_eq {G : List Form} (ρ : Nat → Nat)
     · exact Prov.P_eqRefl _ (ρ n)
     · exact hp
 
+/-- The PA-in-HF translation of equality between two PA variables entails the
+underlying HF equality between their assigned slots. -/
+theorem BProv_eq_of_formulaAt_eq_var {G : List Form} (ρ : Nat → Nat)
+    (m n : Nat)
+    (h : BProv translatedPAAx G
+      (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n)))) :
+    BProv translatedPAAx G (fEq (ρ m) (ρ n)) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  let H : List Form := L ++ G
+  change Prov H (fEq (ρ m) (ρ n))
+  change Prov H
+    (fEx (fEx (fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0))))) at hp
+  apply Prov.P_exE H
+    (fEx (fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0))))
+    (fEq (ρ m) (ρ n)) hp
+  change Prov
+    (fEx (fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0))) :: H.map (rename Nat.succ))
+    (fEq (ρ m + 1) (ρ n + 1))
+  let H1 : List Form :=
+    fEx (fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0))) :: H.map (rename Nat.succ)
+  have hinner : Prov H1
+      (fEx (fAnd (fEq 1 (ρ m + 2))
+        (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0)))) :=
+    Prov.P_ass H1 _ (by simp [H1])
+  apply Prov.P_exE H1
+    (fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0)))
+    (fEq (ρ m + 1) (ρ n + 1)) hinner
+  change Prov
+    (fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0)) ::
+        H1.map (rename Nat.succ))
+    (fEq (ρ m + 2) (ρ n + 2))
+  let H2 : List Form :=
+    fAnd (fEq 1 (ρ m + 2))
+      (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0)) ::
+        H1.map (rename Nat.succ)
+  have hconj : Prov H2
+      (fAnd (fEq 1 (ρ m + 2))
+        (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0))) :=
+    Prov.P_ass H2 _ (by simp [H2])
+  have hx : Prov H2 (fEq 1 (ρ m + 2)) :=
+    Prov.P_andE1 H2 _ _ hconj
+  have hyx : Prov H2 (fAnd (fEq 0 (ρ n + 2)) (fEq 1 0)) :=
+    Prov.P_andE2 H2 _ _ hconj
+  have hy : Prov H2 (fEq 0 (ρ n + 2)) :=
+    Prov.P_andE1 H2 _ _ hyx
+  have hxy : Prov H2 (fEq 1 0) :=
+    Prov.P_andE2 H2 _ _ hyx
+  have hmx : Prov H2 (fEq (ρ m + 2) 1) :=
+    Prov_eq_sym H2 1 (ρ m + 2) hx
+  have hm0 : Prov H2 (fEq (ρ m + 2) 0) :=
+    Prov_eq_trans H2 (ρ m + 2) 1 0 hmx hxy
+  exact Prov_eq_trans H2 (ρ m + 2) 0 (ρ n + 2) hm0 hy
+
 /-- Translated conjunction introduction for an explicit
 PA-variable-to-HF-slot map. -/
 theorem BProv_formulaAt_andI {ρ : Nat → Nat} {G : List PA.Formula}
