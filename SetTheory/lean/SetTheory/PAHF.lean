@@ -7112,6 +7112,162 @@ theorem termGraphAt_map_ext (t : PA.Term) :
       rw [@ihb (fun n => ρ n + 3) (fun n => σ n + 3) 2
         (fun n => by rw [h n])]
 
+/-- Translating a renamed PA term composes the slot map with the PA renaming. -/
+theorem termGraphAt_PA_rename (t : PA.Term) :
+    ∀ {ρ : Nat → Nat} {out : Nat} {r : Nat → Nat},
+      termGraphAt ρ out (PA.Term.rename r t) =
+        termGraphAt (fun n => ρ (r n)) out t := by
+  induction t with
+  | var n =>
+      intro ρ out r
+      rfl
+  | zero =>
+      intro ρ out r
+      rfl
+  | succ t ih =>
+      intro ρ out r
+      simp only [PA.Term.rename, termGraphAt]
+      rw [@ih (fun n => ρ n + 1) 0 r]
+  | add a b iha ihb =>
+      intro ρ out r
+      simp only [PA.Term.rename, termGraphAt]
+      rw [@iha (fun n => ρ n + 2) 1 r]
+      rw [@ihb (fun n => ρ n + 2) 0 r]
+  | mul a b iha ihb =>
+      intro ρ out r
+      simp only [PA.Term.rename, termGraphAt]
+      rw [@iha (fun n => ρ n + 3) 1 r]
+      rw [@ihb (fun n => ρ n + 3) 2 r]
+
+/-- HF-renaming commutes with the empty-set macro. -/
+theorem rename_HF_emptyAt (r : Nat → Nat) (i : Nat) :
+    rename r (HF_emptyAt i) = HF_emptyAt (r i) := by
+  simp [HF_emptyAt, rename, up]
+
+/-- HF-renaming commutes with the adjunction macro. -/
+theorem rename_HF_adjoinAt (r : Nat → Nat) (c a b : Nat) :
+    rename r (HF_adjoinAt c a b) = HF_adjoinAt (r c) (r a) (r b) := by
+  simp [HF_adjoinAt, fIff, rename, up]
+
+/-- HF-renaming commutes with the ordinal-successor macro. -/
+theorem rename_HF_succAt (r : Nat → Nat) (s a : Nat) :
+    rename r (HF_succAt s a) = HF_succAt (r s) (r a) := by
+  simp [HF_succAt, rename_HF_adjoinAt]
+
+/-- HF-renaming commutes with the singleton macro. -/
+theorem rename_HF_singleAt (r : Nat → Nat) (i j : Nat) :
+    rename r (HF_singleAt i j) = HF_singleAt (r i) (r j) := by
+  simp [HF_singleAt, fIff, rename, up]
+
+/-- HF-renaming commutes with the unordered-pair macro. -/
+theorem rename_HF_upairAt (r : Nat → Nat) (i j k : Nat) :
+    rename r (HF_upairAt i j k) = HF_upairAt (r i) (r j) (r k) := by
+  simp [HF_upairAt, fIff, rename, up]
+
+/-- HF-renaming commutes with the Kuratowski-pair macro. -/
+theorem rename_HF_kpairAt (r : Nat → Nat) (p a b : Nat) :
+    rename r (HF_kpairAt p a b) = HF_kpairAt (r p) (r a) (r b) := by
+  simp [HF_kpairAt, fIff, rename, up, rename_HF_singleAt,
+    rename_HF_upairAt]
+
+/-- HF-renaming commutes with the pair-membership macro. -/
+theorem rename_HF_pairMemAt (r : Nat → Nat) (a b rel : Nat) :
+    rename r (HF_pairMemAt a b rel) =
+      HF_pairMemAt (r a) (r b) (r rel) := by
+  simp [HF_pairMemAt, rename, up, rename_HF_kpairAt]
+
+/-- HF-renaming commutes with the functionality macro for finite graphs. -/
+theorem rename_HF_pairFunctionalAt (r : Nat → Nat) (f : Nat) :
+    rename r (HF_pairFunctionalAt f) = HF_pairFunctionalAt (r f) := by
+  simp [HF_pairFunctionalAt, rename, up, rename_HF_pairMemAt]
+
+/-- HF-renaming commutes with the key-boundedness macro for finite graphs. -/
+theorem rename_HF_pairKeysBelowSuccAt (r : Nat → Nat) (f m : Nat) :
+    rename r (HF_pairKeysBelowSuccAt f m) =
+      HF_pairKeysBelowSuccAt (r f) (r m) := by
+  simp [HF_pairKeysBelowSuccAt, rename, up, rename_HF_pairMemAt]
+
+/-- HF-renaming commutes with the totality-below-successor macro for finite
+graphs. -/
+theorem rename_HF_pairTotalBelowSuccAt (r : Nat → Nat) (f m : Nat) :
+    rename r (HF_pairTotalBelowSuccAt f m) =
+      HF_pairTotalBelowSuccAt (r f) (r m) := by
+  simp [HF_pairTotalBelowSuccAt, rename, up, rename_HF_pairMemAt]
+
+/-- HF-renaming commutes with the successor-step macro for finite graphs. -/
+theorem rename_HF_pairSuccStepAt (r : Nat → Nat) (f m : Nat) :
+    rename r (HF_pairSuccStepAt f m) = HF_pairSuccStepAt (r f) (r m) := by
+  simp [HF_pairSuccStepAt, rename, up, rename_HF_pairMemAt, rename_HF_succAt]
+
+/-- HF-renaming commutes with the successor-recursion base macro. -/
+theorem rename_HF_pairBaseAt (r : Nat → Nat) (f s : Nat) :
+    rename r (HF_pairBaseAt f s) = HF_pairBaseAt (r f) (r s) := by
+  simp [HF_pairBaseAt, rename, up, rename_HF_emptyAt, rename_HF_pairMemAt]
+
+/-- HF-renaming commutes with the zero-start recursion base macro. -/
+theorem rename_HF_pairZeroBaseAt (r : Nat → Nat) (f : Nat) :
+    rename r (HF_pairZeroBaseAt f) = HF_pairZeroBaseAt (r f) := by
+  simp [HF_pairZeroBaseAt, rename, up, rename_HF_emptyAt, rename_HF_pairMemAt]
+
+/-- HF-renaming commutes with the successor-recursion approximation macro. -/
+theorem rename_HF_succRecApproxAt (r : Nat → Nat) (f s m : Nat) :
+    rename r (HF_succRecApproxAt f s m) =
+      HF_succRecApproxAt (r f) (r s) (r m) := by
+  simp [HF_succRecApproxAt, rename, rename_HF_pairFunctionalAt,
+    rename_HF_pairKeysBelowSuccAt, rename_HF_pairBaseAt,
+    rename_HF_pairTotalBelowSuccAt, rename_HF_pairSuccStepAt]
+
+/-- HF-renaming commutes with the addition-graph macro. -/
+theorem rename_addGraphAt (r : Nat → Nat) (out left right : Nat) :
+    rename r (addGraphAt out left right) =
+      addGraphAt (r out) (r left) (r right) := by
+  simp [addGraphAt, rename, up, rename_HF_succRecApproxAt,
+    rename_HF_pairMemAt]
+
+/-- HF-renaming commutes with the multiplication-step macro. -/
+theorem rename_mulStepAt (r : Nat → Nat) (f a m : Nat) :
+    rename r (mulStepAt f a m) = mulStepAt (r f) (r a) (r m) := by
+  simp [mulStepAt, rename, up, rename_HF_pairMemAt, rename_HF_succAt,
+    rename_addGraphAt]
+
+/-- HF-renaming commutes with the multiplication-recursion approximation
+macro. -/
+theorem rename_mulRecApproxAt (r : Nat → Nat) (f a m : Nat) :
+    rename r (mulRecApproxAt f a m) =
+      mulRecApproxAt (r f) (r a) (r m) := by
+  simp [mulRecApproxAt, rename, rename_HF_pairFunctionalAt,
+    rename_HF_pairKeysBelowSuccAt, rename_HF_pairZeroBaseAt,
+    rename_HF_pairTotalBelowSuccAt, rename_mulStepAt]
+
+/-- HF-renaming commutes with the multiplication-graph macro. -/
+theorem rename_mulGraphAt (r : Nat → Nat) (out left right : Nat) :
+    rename r (mulGraphAt out left right) =
+      mulGraphAt (r out) (r left) (r right) := by
+  simp [mulGraphAt, rename, up, rename_mulRecApproxAt, rename_HF_pairMemAt]
+
+/-- HF-renaming a translated PA-term graph composes the graph slots with the
+renaming. -/
+theorem termGraphAt_rename (t : PA.Term) :
+    ∀ {ρ : Nat → Nat} {out : Nat} {r : Nat → Nat},
+      rename r (termGraphAt ρ out t) =
+        termGraphAt (fun n => r (ρ n)) (r out) t := by
+  induction t with
+  | var n =>
+      intro ρ out r
+      rfl
+  | zero =>
+      intro ρ out r
+      simp [termGraphAt, rename_HF_emptyAt]
+  | succ t ih =>
+      intro ρ out r
+      simp [termGraphAt, rename, up, ih, rename_HF_succAt]
+  | add a b iha ihb =>
+      intro ρ out r
+      simp [termGraphAt, rename, up, iha, ihb, rename_addGraphAt]
+  | mul a b iha ihb =>
+      intro ρ out r
+      simp [termGraphAt, rename, up, iha, ihb, mulGraph, rename_mulGraphAt]
+
 /-- The graph of a PA variable is just equality with the slot selected by the
 current slot map.  This version works over any membership relation. -/
 theorem termGraphAt_var_spec {α : Type u} {mem : α → α → Prop}
@@ -9298,6 +9454,115 @@ theorem formulaAt_map_ext (phi : PA.Formula) :
       rw [@ih (upVarMap ρ) (upVarMap σ)
         (fun n => by cases n <;> simp [upVarMap, h])]
 
+/-- Translating a renamed PA formula composes the slot map with the PA
+renaming. -/
+theorem formulaAt_PA_rename (phi : PA.Formula) :
+    ∀ {ρ r : Nat → Nat},
+      formulaAt ρ (PA.Formula.rename r phi) =
+        formulaAt (fun n => ρ (r n)) phi := by
+  induction phi with
+  | eq a b =>
+      intro ρ r
+      simp only [PA.Formula.rename, formulaAt]
+      rw [termGraphAt_PA_rename a]
+      rw [termGraphAt_PA_rename b]
+  | bot =>
+      intro ρ r
+      rfl
+  | imp a b iha ihb =>
+      intro ρ r
+      simp only [PA.Formula.rename, formulaAt]
+      rw [iha, ihb]
+  | and a b iha ihb =>
+      intro ρ r
+      simp only [PA.Formula.rename, formulaAt]
+      rw [iha, ihb]
+  | or a b iha ihb =>
+      intro ρ r
+      simp only [PA.Formula.rename, formulaAt]
+      rw [iha, ihb]
+  | all a ih =>
+      intro ρ r
+      simp only [PA.Formula.rename, formulaAt]
+      rw [@ih (upVarMap ρ) (SetTheory.up r)]
+      rw [formulaAt_map_ext a
+        (ρ := fun n => upVarMap ρ (SetTheory.up r n))
+        (σ := upVarMap (fun n => ρ (r n)))
+        (fun n => by cases n <;> simp [upVarMap, SetTheory.up])]
+  | ex a ih =>
+      intro ρ r
+      simp only [PA.Formula.rename, formulaAt]
+      rw [@ih (upVarMap ρ) (SetTheory.up r)]
+      rw [formulaAt_map_ext a
+        (ρ := fun n => upVarMap ρ (SetTheory.up r n))
+        (σ := upVarMap (fun n => ρ (r n)))
+        (fun n => by cases n <;> simp [upVarMap, SetTheory.up])]
+
+/-- Renaming one level under a binder leaves the PA-in-HF domain formula
+unchanged. -/
+theorem rename_domainForm_up (r : Nat → Nat) :
+    rename (SetTheory.up r) domainForm = domainForm := by
+  exact rename_ext_free domainForm (SetTheory.up r) (fun n => n)
+    (fun n hn => by
+      have hn0 := domainForm_free hn
+      subst n
+      rfl)
+
+/-- HF-renaming a translated PA formula composes the PA-variable slot map with
+the HF renaming. -/
+theorem formulaAt_rename (phi : PA.Formula) :
+    ∀ {ρ r : Nat → Nat},
+      rename r (formulaAt ρ phi) =
+        formulaAt (fun n => r (ρ n)) phi := by
+  induction phi with
+  | eq a b =>
+      intro ρ r
+      simp [formulaAt, rename, SetTheory.up, termGraphAt_rename]
+  | bot =>
+      intro ρ r
+      rfl
+  | imp a b iha ihb =>
+      intro ρ r
+      simp [formulaAt, rename, iha, ihb]
+  | and a b iha ihb =>
+      intro ρ r
+      simp [formulaAt, rename, iha, ihb]
+  | or a b iha ihb =>
+      intro ρ r
+      simp [formulaAt, rename, iha, ihb]
+  | all a ih =>
+      intro ρ r
+      simp only [formulaAt, rename]
+      rw [rename_domainForm_up r]
+      rw [@ih (upVarMap ρ) (SetTheory.up r)]
+      rw [formulaAt_map_ext a
+        (ρ := fun n => SetTheory.up r (upVarMap ρ n))
+        (σ := upVarMap (fun n => r (ρ n)))
+        (fun n => by cases n <;> simp [upVarMap, SetTheory.up])]
+  | ex a ih =>
+      intro ρ r
+      simp only [formulaAt, rename]
+      rw [rename_domainForm_up r]
+      rw [@ih (upVarMap ρ) (SetTheory.up r)]
+      rw [formulaAt_map_ext a
+        (ρ := fun n => SetTheory.up r (upVarMap ρ n))
+        (σ := upVarMap (fun n => r (ρ n)))
+        (fun n => by cases n <;> simp [upVarMap, SetTheory.up])]
+
+/-- Shifting PA variables below a translated binder is the same as shifting the
+already-translated HF formula. -/
+theorem formulaAt_rename_succ_upVarMap (phi : PA.Formula) (ρ : Nat → Nat) :
+    formulaAt (upVarMap ρ) (PA.Formula.rename Nat.succ phi) =
+      rename Nat.succ (formulaAt ρ phi) := by
+  calc
+    formulaAt (upVarMap ρ) (PA.Formula.rename Nat.succ phi)
+        = formulaAt (fun n => upVarMap ρ (Nat.succ n)) phi := by
+            exact formulaAt_PA_rename phi
+    _ = formulaAt (fun n => Nat.succ (ρ n)) phi := by
+            exact formulaAt_map_ext phi (fun n => by simp [upVarMap])
+    _ = rename Nat.succ (formulaAt ρ phi) := by
+            exact (formulaAt_rename phi).symm
+
 theorem domainForm_scons_insertAt {α : Type u} {mem : α → α → Prop}
     (p : Nat) (x d : α) (e : Nat → α) :
     Sat mem (scons d (insertAt p x e)) domainForm ↔
@@ -10818,6 +11083,14 @@ def translateContextAt (ρ : Nat → Nat) (G : List PA.Formula) : List Form :=
 theorem translateContextAt_id (G : List PA.Formula) :
     translateContextAt (fun n : Nat => n) G = translateContext G := by
   simp [translateContextAt, translateContext, translateFormula]
+
+/-- Translating a PA context after shifting PA variables below a binder agrees
+with shifting the already-translated HF context. -/
+theorem translateContextAt_rename_succ_upVarMap (ρ : Nat → Nat)
+    (G : List PA.Formula) :
+    translateContextAt (upVarMap ρ) (G.map (PA.Formula.rename Nat.succ)) =
+      (translateContextAt ρ G).map (rename Nat.succ) := by
+  simp [translateContextAt, formulaAt_rename_succ_upVarMap]
 
 theorem mem_translateContext_of_mem {G : List PA.Formula} {phi : PA.Formula}
     (hphi : phi ∈ G) : translateFormula phi ∈ translateContext G :=

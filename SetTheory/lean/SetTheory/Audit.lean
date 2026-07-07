@@ -450,6 +450,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.termGraphAt_add_var_var_of_succRecApprox_model
 #check @AckermannHF.PAInHF.termGraphAt_add_var_succ_var_of_succRecApprox_model
 #check @AckermannHF.PAInHF.termGraphAt_succ_add_var_var_of_succRecApprox_model
+#check @AckermannHF.PAInHF.termGraphAt_PA_rename
+#check @AckermannHF.PAInHF.termGraphAt_rename
 #check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_mulZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_succRecTotal
@@ -463,6 +465,10 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_induction_sat_of_HFFinAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
+#check @AckermannHF.PAInHF.formulaAt_PA_rename
+#check @AckermannHF.PAInHF.rename_domainForm_up
+#check @AckermannHF.PAInHF.formulaAt_rename
+#check @AckermannHF.PAInHF.formulaAt_rename_succ_upVarMap
 #check @AckermannHF.PAInHF.formulaAt_map_ext_free
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
 #check @AckermannHF.PAInHF.translateFormula_sentence_of_PA_sentence
@@ -487,6 +493,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.translateContext
 #check @AckermannHF.PAInHF.translateContextAt
 #check @AckermannHF.PAInHF.translateContextAt_id
+#check @AckermannHF.PAInHF.translateContextAt_rename_succ_upVarMap
 #check @AckermannHF.PAInHF.mem_translateContext_of_mem
 #check @AckermannHF.PAInHF.mem_translateContextAt_of_mem
 #check @AckermannHF.PAInHF.BProv_translate_ass
