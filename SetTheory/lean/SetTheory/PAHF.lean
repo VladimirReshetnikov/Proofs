@@ -2626,6 +2626,134 @@ theorem succRecApprox_value_ordinalLike {α : Type u}
     hmain m (Or.inr rfl) hmSat hfSat z hzSat
   exact (HF_ordinalLikeAt_spec Ez 0).mp hzDomain
 
+/-- In finite HF, successor-recursion traces with the same base have a unique
+value at every ordinal-like key covered by both traces. -/
+theorem succRecApprox_value_unique {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) {s f g m z w : α}
+    (hm : OrdinalLike M.mem m)
+    (hf : FirstOrderAdjunctionModel.SuccRecApprox
+      M.toFirstOrderAdjunctionModel s f m)
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair
+      M.toFirstOrderAdjunctionModel m z) f)
+    (hg : FirstOrderAdjunctionModel.SuccRecApprox
+      M.toFirstOrderAdjunctionModel s g m)
+    (hw : M.mem (FirstOrderAdjunctionModel.kpair
+      M.toFirstOrderAdjunctionModel m w) g) :
+    z = w := by
+  let N := M.toFirstOrderAdjunctionModel
+  let phi : Form :=
+    fAll
+      (fImp (fOr (fMem 1 0) (fEq 1 0))
+        (fImp (HF_ordinalLikeAt 0)
+          (fImp (HF_succRecApproxAt 3 2 0)
+            (fImp (HF_succRecApproxAt 4 2 0)
+              (fAll
+                (fImp (HF_pairMemAt 2 0 4)
+                  (fAll (fImp (HF_pairMemAt 3 0 6) (fEq 1 0)))))))))
+  let tail : Nat → α := fun _ => M.empty
+  have hind := M.induction_schema phi (scons s (scons f (scons g tail)))
+  have hall : ∀ k, Sat M.mem (scons k (scons s (scons f (scons g tail)))) phi := by
+    apply hind
+    intro k ih
+    intro m hkey hmSat hfSat hgSat z hzSat w hwSat
+    let Em : Nat → α := scons m (scons k (scons s (scons f (scons g tail))))
+    let Ez : Nat → α := scons z Em
+    let Ewz : Nat → α := scons w Ez
+    have hmOrd : OrdinalLike M.mem m :=
+      (HF_ordinalLikeAt_spec Em 0).mp hmSat
+    have hfApprox : FirstOrderAdjunctionModel.SuccRecApprox N s f m := by
+      simpa [N, Em, tail, scons] using
+        (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N Em 3 2 0).mp hfSat
+    have hgApprox : FirstOrderAdjunctionModel.SuccRecApprox N s g m := by
+      simpa [N, Em, tail, scons] using
+        (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N Em 4 2 0).mp hgSat
+    have hpairF : N.mem (FirstOrderAdjunctionModel.kpair N k z) f := by
+      simpa [N, Em, Ez, tail, scons] using
+        (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Ez 2 0 4).mp hzSat
+    have hpairG : N.mem (FirstOrderAdjunctionModel.kpair N k w) g := by
+      simpa [N, Em, Ez, Ewz, tail, scons] using
+        (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Ewz 3 0 6).mp hwSat
+    have hkOrd : OrdinalLike M.mem k := by
+      rcases hkey with hkm | hkm
+      · change M.mem k m at hkm
+        exact OrdinalLike.of_mem hmOrd hkm
+      · change k = m at hkm
+        subst k
+        exact hmOrd
+    rcases ordinalLike_empty_or_succ M hkOrd with hkEmpty | ⟨p, hpk, hkSucc⟩
+    · rcases hfApprox with ⟨hfunF, _hkeysF, hbaseF, _htotalF, _hstepF⟩
+      rcases hgApprox with ⟨hfunG, _hkeysG, hbaseG, _htotalG, _hstepG⟩
+      have hpairEmptyF : N.mem (FirstOrderAdjunctionModel.kpair N N.empty z) f := by
+        simpa [N, hkEmpty] using hpairF
+      have hpairEmptyG : N.mem (FirstOrderAdjunctionModel.kpair N N.empty w) g := by
+        simpa [N, hkEmpty] using hpairG
+      have hz_eq_s : z = s := hfunF N.empty z s hpairEmptyF hbaseF
+      have hw_eq_s : w = s := hfunG N.empty w s hpairEmptyG hbaseG
+      exact hz_eq_s.trans hw_eq_s.symm
+    · rcases hfApprox with ⟨_hfunF, _hkeysF, _hbaseF, htotalF, hstepF⟩
+      rcases hgApprox with ⟨_hfunG, _hkeysG, _hbaseG, htotalG, hstepG⟩
+      have hpm : M.mem p m := by
+        rcases hkey with hkm | hkm
+        · change M.mem k m at hkm
+          exact hmOrd.1 k hkm p hpk
+        · change k = m at hkm
+          simpa [hkm] using hpk
+      rcases htotalF p (Or.inl hpm) with ⟨t, hpt⟩
+      rcases htotalG p (Or.inl hpm) with ⟨u, hpu⟩
+      have hpSat : Sat M.mem (scons p (scons s (scons f (scons g tail)))) phi :=
+        (Sat_rename_rSkipParam phi (scons s (scons f (scons g tail))) k p).mp
+          (ih p hpk)
+      let Emp : Nat → α := scons m (scons p (scons s (scons f (scons g tail))))
+      let Etp : Nat → α := scons t Emp
+      let Eutp : Nat → α := scons u Etp
+      have hmSatP : Sat M.mem Emp (HF_ordinalLikeAt 0) :=
+        (HF_ordinalLikeAt_spec Emp 0).mpr hmOrd
+      have hfSatP : Sat M.mem Emp (HF_succRecApproxAt 3 2 0) := by
+        apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N Emp 3 2 0).mpr
+        exact ⟨_hfunF, _hkeysF, _hbaseF, htotalF, hstepF⟩
+      have hgSatP : Sat M.mem Emp (HF_succRecApproxAt 4 2 0) := by
+        apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N Emp 4 2 0).mpr
+        exact ⟨_hfunG, _hkeysG, _hbaseG, htotalG, hstepG⟩
+      have hptSat : Sat M.mem Etp (HF_pairMemAt 2 0 4) := by
+        apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Etp 2 0 4).mpr
+        simpa [N, Emp, Etp, tail, scons] using hpt
+      have hpuSat : Sat M.mem Eutp (HF_pairMemAt 3 0 6) := by
+        apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Eutp 3 0 6).mpr
+        simpa [N, Emp, Etp, Eutp, tail, scons] using hpu
+      have htu : t = u :=
+        hpSat m (Or.inl hpm) hmSatP hfSatP hgSatP t hptSat u hpuSat
+      have hpairSuccF : N.mem
+          (FirstOrderAdjunctionModel.kpair N (N.adjoin p p) z) f := by
+        simpa [N, hkSucc] using hpairF
+      have hpairSuccG : N.mem
+          (FirstOrderAdjunctionModel.kpair N (N.adjoin p p) w) g := by
+        simpa [N, hkSucc] using hpairG
+      have hz_eq_succ : z = N.adjoin t t :=
+        hstepF p t z hpm hpt hpairSuccF
+      have hw_eq_succ : w = N.adjoin u u :=
+        hstepG p u w hpm hpu hpairSuccG
+      rw [hz_eq_succ, hw_eq_succ, htu]
+      rfl
+  let Em : Nat → α := scons m (scons m (scons s (scons f (scons g tail))))
+  let Ez : Nat → α := scons z Em
+  let Ewz : Nat → α := scons w Ez
+  have hmain : Sat M.mem (scons m (scons s (scons f (scons g tail)))) phi := hall m
+  have hmSat : Sat M.mem Em (HF_ordinalLikeAt 0) :=
+    (HF_ordinalLikeAt_spec Em 0).mpr hm
+  have hfSat : Sat M.mem Em (HF_succRecApproxAt 3 2 0) := by
+    apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N Em 3 2 0).mpr
+    simpa [N, Em, tail, scons] using hf
+  have hgSat : Sat M.mem Em (HF_succRecApproxAt 4 2 0) := by
+    apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N Em 4 2 0).mpr
+    simpa [N, Em, tail, scons] using hg
+  have hzSat : Sat M.mem Ez (HF_pairMemAt 2 0 4) := by
+    apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Ez 2 0 4).mpr
+    simpa [N, Em, Ez, tail, scons] using hz
+  have hwSat : Sat M.mem Ewz (HF_pairMemAt 3 0 6) := by
+    apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec N Ewz 3 0 6).mpr
+    simpa [N, Em, Ez, Ewz, tail, scons] using hw
+  exact hmain m (Or.inr rfl) hmSat hfSat hgSat z hzSat w hwSat
+
 end FirstOrderFiniteAdjunctionModel
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
@@ -3651,6 +3779,37 @@ theorem addGraphAt_of_succRecApprox_model {α : Type u}
       (right+1) (out+1) 0).mpr
     change M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f
     exact hout
+
+/-- In a finite first-order HF model, the addition graph is single-valued on
+ordinal-like right inputs. -/
+theorem addGraphAt_value_unique_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α) (e : Nat → α)
+    (out₁ out₂ left right : Nat)
+    (hright : OrdinalLike M.mem (e right))
+    (h₁ : Sat M.mem e (addGraphAt out₁ left right))
+    (h₂ : Sat M.mem e (addGraphAt out₂ left right)) :
+    e out₁ = e out₂ := by
+  let N := M.toFirstOrderAdjunctionModel
+  rcases h₁ with ⟨f, hfSat, hout₁Sat⟩
+  rcases h₂ with ⟨g, hgSat, hout₂Sat⟩
+  have hf : FirstOrderAdjunctionModel.SuccRecApprox N (e left) f (e right) := by
+    simpa [N, scons] using
+      (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N (scons f e)
+        0 (left+1) (right+1)).mp hfSat
+  have hpair₁ : N.mem (FirstOrderAdjunctionModel.kpair N (e right) (e out₁)) f := by
+    simpa [N, scons] using
+      (FirstOrderAdjunctionModel.HF_pairMemAt_spec N (scons f e)
+        (right+1) (out₁+1) 0).mp hout₁Sat
+  have hg : FirstOrderAdjunctionModel.SuccRecApprox N (e left) g (e right) := by
+    simpa [N, scons] using
+      (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec N (scons g e)
+        0 (left+1) (right+1)).mp hgSat
+  have hpair₂ : N.mem (FirstOrderAdjunctionModel.kpair N (e right) (e out₂)) g := by
+    simpa [N, scons] using
+      (FirstOrderAdjunctionModel.HF_pairMemAt_spec N (scons g e)
+        (right+1) (out₂+1) 0).mp hout₂Sat
+  exact FirstOrderFiniteAdjunctionModel.succRecApprox_value_unique
+    M hright hf hpair₁ hg hpair₂
 
 theorem addGraphAt_succ_right_of_addGraphAt_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (e : Nat → α)

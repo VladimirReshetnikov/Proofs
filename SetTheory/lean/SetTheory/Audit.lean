@@ -234,6 +234,7 @@ open SetTheory
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.ordinalLike_empty_or_succ
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.succRecTotal_of_ordinalLike
 #check @AckermannHF.FirstOrderFiniteAdjunctionModel.succRecApprox_value_ordinalLike
+#check @AckermannHF.FirstOrderFiniteAdjunctionModel.succRecApprox_value_unique
 #check @AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
@@ -434,6 +435,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_succInj_sat_of_HFAx_s
 #check @AckermannHF.PAInHF.addGraphAt_zero_right_model
 #check @AckermannHF.PAInHF.addGraphAt_of_succRecApprox_model
+#check @AckermannHF.PAInHF.addGraphAt_value_unique_finite_model
 #check @AckermannHF.PAInHF.addGraphAt_succ_right_of_addGraphAt_model
 #check @AckermannHF.PAInHF.addGraphAt_succ_right_of_succRecApprox_model
 #check @AckermannHF.PAInHF.MulStep
