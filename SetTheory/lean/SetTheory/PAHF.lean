@@ -5492,6 +5492,22 @@ theorem subst_instTerm_rename_up (phi : Formula) (r : Nat → Nat) (t : Term) :
     | zero => rfl
     | succ n => rfl)
 
+/-- Instantiating the newest variable after shifting a term through one binder
+leaves that term unchanged. -/
+theorem term_subst_instTerm_rename_succ (t u : Term) :
+    Term.subst (instTerm u) (Term.rename Nat.succ t) = t := by
+  rw [Term.subst_rename]
+  simpa [instTerm, Term.rename_id] using
+    (term_subst_var_rename t (fun n : Nat => n))
+
+/-- Instantiating the newest variable after shifting a formula through one
+binder leaves that formula unchanged. -/
+theorem subst_instTerm_rename_succ (phi : Formula) (t : Term) :
+    subst (instTerm t) (rename Nat.succ phi) = phi := by
+  rw [subst_rename]
+  simpa [instTerm, rename_id] using
+    (subst_var_rename phi (fun n : Nat => n))
+
 theorem Sat_instTerm {α : Type u} (M : Model α) (phi : Formula)
     (t : Term) (e : Nat → α) :
     Sat M e (subst (instTerm t) phi) ↔
@@ -8250,6 +8266,17 @@ theorem BProv_Ax_s_succInj :
   simpa [rename_id] using
     BProv_Ax_s_succInj_rename (fun n : Nat => n)
 
+/-- Arbitrary-term instance of PA successor injectivity. -/
+theorem BProv_Ax_s_succInj_terms (s t : Term) :
+    BProv Ax_s [] (imp
+      (eq (Term.succ s) (Term.succ t))
+      (eq s t)) := by
+  have h1 := BProv_allE (B := Ax_s) (G := []) (t := s)
+    BProv_Ax_s_succInj
+  have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
+  simpa [succInj, subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using h2
+
 /-- PA proves every variable-renamed body of zero-is-not-successor. -/
 theorem BProv_Ax_s_zeroNotSucc_rename (r : Nat → Nat) :
     BProv Ax_s [] (rename r zeroNotSucc) :=
@@ -8260,6 +8287,13 @@ theorem BProv_Ax_s_zeroNotSucc :
     BProv Ax_s [] zeroNotSucc := by
   simpa [rename_id] using
     BProv_Ax_s_zeroNotSucc_rename (fun n : Nat => n)
+
+/-- Arbitrary-term instance of PA zero-is-not-successor. -/
+theorem BProv_Ax_s_zeroNotSucc_term (t : Term) :
+    BProv Ax_s [] (imp (eq (Term.succ t) Term.zero) bot) := by
+  have h := BProv_allE (B := Ax_s) (G := []) (t := t)
+    BProv_Ax_s_zeroNotSucc
+  simpa [zeroNotSucc, subst, instTerm, Term.subst] using h
 
 /-- PA proves every variable-renamed body of addition by zero. -/
 theorem BProv_Ax_s_addZero_rename (r : Nat → Nat) :
@@ -8272,6 +8306,13 @@ theorem BProv_Ax_s_addZero :
   simpa [rename_id] using
     BProv_Ax_s_addZero_rename (fun n : Nat => n)
 
+/-- Arbitrary-term instance of PA addition by zero. -/
+theorem BProv_Ax_s_addZero_term (t : Term) :
+    BProv Ax_s [] (eq (Term.add t Term.zero) t) := by
+  have h := BProv_allE (B := Ax_s) (G := []) (t := t)
+    BProv_Ax_s_addZero
+  simpa [addZero, subst, instTerm, Term.subst] using h
+
 /-- PA proves every variable-renamed body of the addition-successor axiom. -/
 theorem BProv_Ax_s_addSucc_rename (r : Nat → Nat) :
     BProv Ax_s [] (rename r addSucc) :=
@@ -8282,6 +8323,17 @@ theorem BProv_Ax_s_addSucc :
     BProv Ax_s [] addSucc := by
   simpa [rename_id] using
     BProv_Ax_s_addSucc_rename (fun n : Nat => n)
+
+/-- Arbitrary-term instance of the PA addition-successor axiom. -/
+theorem BProv_Ax_s_addSucc_terms (s t : Term) :
+    BProv Ax_s [] (eq
+      (Term.add s (Term.succ t))
+      (Term.succ (Term.add s t))) := by
+  have h1 := BProv_allE (B := Ax_s) (G := []) (t := s)
+    BProv_Ax_s_addSucc
+  have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
+  simpa [addSucc, subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using h2
 
 /-- PA proves every variable-renamed body of multiplication by zero. -/
 theorem BProv_Ax_s_mulZero_rename (r : Nat → Nat) :
@@ -8294,6 +8346,13 @@ theorem BProv_Ax_s_mulZero :
   simpa [rename_id] using
     BProv_Ax_s_mulZero_rename (fun n : Nat => n)
 
+/-- Arbitrary-term instance of PA multiplication by zero. -/
+theorem BProv_Ax_s_mulZero_term (t : Term) :
+    BProv Ax_s [] (eq (Term.mul t Term.zero) Term.zero) := by
+  have h := BProv_allE (B := Ax_s) (G := []) (t := t)
+    BProv_Ax_s_mulZero
+  simpa [mulZero, subst, instTerm, Term.subst] using h
+
 /-- PA proves every variable-renamed body of the multiplication-successor
 axiom. -/
 theorem BProv_Ax_s_mulSucc_rename (r : Nat → Nat) :
@@ -8305,6 +8364,17 @@ theorem BProv_Ax_s_mulSucc :
     BProv Ax_s [] mulSucc := by
   simpa [rename_id] using
     BProv_Ax_s_mulSucc_rename (fun n : Nat => n)
+
+/-- Arbitrary-term instance of the PA multiplication-successor axiom. -/
+theorem BProv_Ax_s_mulSucc_terms (s t : Term) :
+    BProv Ax_s [] (eq
+      (Term.mul s (Term.succ t))
+      (Term.add (Term.mul s t) s)) := by
+  have h1 := BProv_allE (B := Ax_s) (G := []) (t := s)
+    BProv_Ax_s_mulSucc
+  have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
+  simpa [mulSucc, subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using h2
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
