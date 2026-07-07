@@ -2,6 +2,7 @@
 CoqProofs/Nicod.v
 CoqProofs/ArctanSquareIdentity.v
 CoqProofs/FloorSqrtSum.v
+CoqProofs/RationalFloorOrbit.v
 CoqProofs/PowTower.v
 CoqProofs/SparseBinary.v
 CoqProofs/A002845.v

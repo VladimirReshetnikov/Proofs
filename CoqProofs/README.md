@@ -19,6 +19,11 @@ Current ports:
 - `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
 - `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
   summation identity from `FloorSqrtSum.lean`.
+- `RationalFloorOrbit.v` ports the Calkin-Wilf pair generator core from
+  `RationalFloorOrbit.lean`, including fuel adequacy, left/right child
+  equations, positivity, coprimality invariants, `pairNext` arithmetic bridge
+  lemmas, and the successor equation `cwPair (n + 1) = pairNext (cwPair n)`.
+  The inverse-index and rational-orbit layers remain to be ported.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
@@ -47,6 +52,7 @@ Build from `src/Lean/`:
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/RationalFloorOrbit.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
