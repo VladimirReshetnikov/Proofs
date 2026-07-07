@@ -1875,6 +1875,20 @@ def eval {α : Type u} (M : Model α) (e : Nat → α) : Term → α
   | add a b => M.add (eval M e a) (eval M e b)
   | mul a b => M.mul (eval M e a) (eval M e b)
 
+def numeral : Nat → Term
+  | 0 => zero
+  | n+1 => succ (numeral n)
+
+def numeralValue {α : Type u} (M : Model α) : Nat → α
+  | 0 => M.zero
+  | n+1 => M.succ (numeralValue M n)
+
+theorem eval_numeral {α : Type u} (M : Model α) (e : Nat → α) :
+    ∀ n, eval M e (numeral n) = numeralValue M n
+  | 0 => rfl
+  | n+1 => by
+      simp only [numeral, numeralValue, eval, eval_numeral M e n]
+
 def bound : Term → Nat
   | var n => n + 1
   | zero => 0
@@ -2179,6 +2193,60 @@ theorem closeN_valid {α : Type u} (M : Model α) (k : Nat) :
 theorem seal_valid {α : Type u} (M : Model α) (phi : Formula) :
     (∀ e : Nat → α, Sat M e (sealPA phi)) ↔ (∀ e, Sat M e phi) :=
   closeN_valid M (bound phi) phi
+
+/-! ### Arithmetic relation macros for the reverse interpretation -/
+
+def leAt (a b : Nat) : Formula :=
+  ex (eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
+
+def ltAt (a b : Nat) : Formula :=
+  ex (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0))) (Term.var (b+1)))
+
+def dvdAt (a b : Nat) : Formula :=
+  ex (eq (Term.mul (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
+
+theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
+    Sat natModel e (leAt a b) ↔ e a ≤ e b := by
+  constructor
+  · intro h
+    rcases h with ⟨d, hd⟩
+    simp only [Sat, Term.eval, natModel, scons] at hd
+    change e a + d = e b at hd
+    omega
+  · intro h
+    refine ⟨e b - e a, ?_⟩
+    simp only [Sat, Term.eval, natModel, scons]
+    change e a + (e b - e a) = e b
+    omega
+
+theorem ltAt_nat (e : Nat → Nat) (a b : Nat) :
+    Sat natModel e (ltAt a b) ↔ e a < e b := by
+  constructor
+  · intro h
+    rcases h with ⟨d, hd⟩
+    simp only [Sat, Term.eval, natModel, scons] at hd
+    change e a + (d + 1) = e b at hd
+    omega
+  · intro h
+    refine ⟨e b - e a - 1, ?_⟩
+    simp only [Sat, Term.eval, natModel, scons]
+    change e a + ((e b - e a - 1) + 1) = e b
+    omega
+
+theorem dvdAt_nat (e : Nat → Nat) (a b : Nat) :
+    Sat natModel e (dvdAt a b) ↔ e a ∣ e b := by
+  constructor
+  · intro h
+    rcases h with ⟨q, hq⟩
+    simp only [Sat, Term.eval, natModel, scons] at hq
+    change e a * q = e b at hq
+    exact ⟨q, hq.symm⟩
+  · intro h
+    rcases h with ⟨q, hq⟩
+    refine ⟨q, ?_⟩
+    simp only [Sat, Term.eval, natModel, scons]
+    change e a * q = e b
+    exact hq.symm
 
 end Formula
 
