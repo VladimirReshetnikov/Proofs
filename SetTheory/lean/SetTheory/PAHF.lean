@@ -9270,6 +9270,36 @@ theorem scons3_insertAt_prefix {α : Type u}
     _ = insertAt ((k+3)+p) x (scons d₃ (scons d₂ (scons d₁ e))) n := by
       rw [show (k+p)+3 = (k+3)+p by omega]
 
+/-- Shift a replacement-term graph through one fresh local witness slot while
+keeping the inserted replacement value immediately after the local prefix. -/
+theorem Sat_termGraphAt_insertAt_shift_prefix {α : Type u}
+    {mem : α → α → Prop} (t : PA.Term) (p k : Nat)
+    (ρ : Nat → Nat) (termVal d : α) (e : Nat → α)
+    (h : Sat mem (insertAt (k+p) termVal e)
+      (termGraphAt (fun n => ρ n + k + p + 1) (k+p) t)) :
+    Sat mem (insertAt ((k+1)+p) termVal (scons d e))
+      (termGraphAt (fun n => ρ n + (k+1) + p + 1) ((k+1)+p) t) := by
+  have hshift : Sat mem (scons d (insertAt (k+p) termVal e))
+      (termGraphAt (fun n => (ρ n + k + p + 1) + 1) ((k+p)+1) t) :=
+    Sat_termGraphAt_shift_front t (fun n => ρ n + k + p + 1)
+      (k+p) (insertAt (k+p) termVal e) d h
+  have henv : ∀ n,
+      scons d (insertAt (k+p) termVal e) n =
+        insertAt ((k+1)+p) termVal (scons d e) n :=
+    scons_insertAt_prefix p k termVal d e
+  have hshift' : Sat mem (insertAt ((k+1)+p) termVal (scons d e))
+      (termGraphAt (fun n => (ρ n + k + p + 1) + 1) ((k+p)+1) t) :=
+    (Sat_ext (termGraphAt (fun n => (ρ n + k + p + 1) + 1)
+      ((k+p)+1) t)
+      (scons d (insertAt (k+p) termVal e))
+      (insertAt ((k+1)+p) termVal (scons d e)) henv).mp hshift
+  have hEq : termGraphAt (fun n => (ρ n + k + p + 1) + 1)
+      ((k+p)+1) t =
+      termGraphAt (fun n => ρ n + (k+1) + p + 1) ((k+1)+p) t := by
+    rw [show (k+p)+1 = (k+1)+p by omega]
+    exact termGraphAt_map_ext t (out := (k+1)+p) (fun n => by omega)
+  rwa [hEq] at hshift'
+
 theorem scons_replaceAt {α : Type u} (k : Nat) (x d : α) (e : Nat → α) :
     ∀ n, scons d (replaceAt k x e) n = replaceAt (k+1) x (scons d e) n := by
   intro n
