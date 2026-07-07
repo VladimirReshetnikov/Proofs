@@ -204,6 +204,41 @@ theorem radoPositionsOfNatOffsets_read_true {head : Int} {tape : Tape}
   rcases hpos with ⟨n, hn, rfl⟩
   exact radoMatchesTuringTape_right₀_true hMatch (hTrue n hn)
 
+theorem boolVector_exists_true_of_ne_false {width : Nat}
+    {v : List.Vector Bool width}
+    (hNe : v ≠ List.Vector.replicate width false) :
+    ∃ i : Fin width, v.get i = true := by
+  by_contra hNo
+  apply hNe
+  apply List.Vector.ext
+  intro i
+  have hfalse : v.get i ≠ true := by
+    intro htrue
+    exact hNo ⟨i, htrue⟩
+  cases hv : v.get i
+  · simp [List.Vector.get_replicate]
+  · exact False.elim (hfalse hv)
+
+/--
+For any correct finite-alphabet Bool-block encoding with blank encoded as the
+all-false block, every nonblank source symbol has at least one true bit in its
+encoded block.
+-/
+theorem encoded_nondefault_has_true {Γ : Type*} [Inhabited Γ] {width : Nat}
+    (enc : Γ -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> Γ)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a)
+    {sym : Γ} (hSym : sym ≠ default) :
+    ∃ i : Fin width, (enc sym).get i = true := by
+  apply boolVector_exists_true_of_ne_false
+  intro hFalse
+  apply hSym
+  calc
+    sym = dec (enc sym) := (encdec sym).symm
+    _ = dec (enc default) := by rw [hFalse, enc0]
+    _ = default := encdec default
+
 /-- Convert mathlib's tape-head directions to the Rado direction type. -/
 def radoMoveOfTuringDir : Turing.Dir -> Move
   | Turing.Dir.left => Move.left
