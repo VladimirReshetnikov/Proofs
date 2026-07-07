@@ -242,6 +242,15 @@ PA-in-HF interpretation. -/
 def OrdinalLike {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
   TransitiveObj mem a ∧ (∀ y, mem y a → TransitiveObj mem y) ∧ MemTotalOn mem a
 
+theorem OrdinalLike.of_mem {α : Type u} {mem : α → α → Prop}
+    {a y : α} (ha : OrdinalLike mem a) (hy : mem y a) :
+    OrdinalLike mem y := by
+  refine ⟨ha.2.1 y hy, ?_, ?_⟩
+  · intro z hz
+    exact ha.2.1 z (ha.1 y hy z hz)
+  · intro u hu z hz
+    exact ha.2.2 u (ha.1 y hy u hu) z (ha.1 y hy z hz)
+
 /-- Formula macro: slot `a` is ordinal-like.  Over HF, where membership is
 well-founded by set induction, this is intended to define the finite von
 Neumann ordinals. -/

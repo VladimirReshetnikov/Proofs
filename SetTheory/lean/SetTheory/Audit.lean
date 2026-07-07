@@ -45,6 +45,7 @@ open SetTheory
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
 #check @AckermannHF.HF_ordinalLikeAt_spec
+#check @AckermannHF.OrdinalLike.of_mem
 #check @AckermannHF.ordinalCode_ordinalLike
 #check @AckermannHF.HF_ordinalLikeAt_of_ordinalCode
 #check @AckermannHF.sat_HF_model
