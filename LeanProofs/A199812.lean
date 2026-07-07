@@ -199,6 +199,14 @@ def exponentNoteList (n : Nat) : List ONote :=
 def exponentNoteValues (n : Nat) : Finset ONote :=
   (exponentNoteList n).toFinset
 
+/--
+The normal-form exponent values are the shared lexical finite value set for the
+normal-form exponent evaluator.
+-/
+theorem exponentNoteValues_eq_evalFinset (n : Nat) :
+    exponentNoteValues n = PowTower.Expr.evalFinset exponentNote n := by
+  simp [exponentNoteValues, exponentNoteList, PowTower.Expr.evalFinset]
+
 /-- The direct normal-form count obtained from all lexical parenthesizations. -/
 def exponentNoteCount (n : Nat) : Nat :=
   (exponentNoteValues n).card
@@ -210,8 +218,8 @@ noncomputable def ordinalOfNote (o : ONote) : Ordinal.{0} :=
 theorem ordinalValues_eq_exponentNoteValues_image (n : Nat) :
     ordinalValues n = (exponentNoteValues n).image ordinalOfNote := by
   classical
-  simpa [ordinalValues, exponentNoteValues, exponentNoteList, ordinalOfNote,
-    PowTower.Expr.evalFinset] using
+  rw [exponentNoteValues_eq_evalFinset]
+  simpa [ordinalValues, ordinalOfNote] using
     (PowTower.Expr.evalFinset_eq_image_evalFinset_of_eval_eq
       sharedEvalOrdinal exponentNote ordinalOfNote
       sharedEvalOrdinal_eq_omega_opow_exponentNote n)
@@ -373,6 +381,49 @@ decreasing_by
 def computedExponentCount (n : Nat) : Nat :=
   (computedExponentValues n).card
 
+/--
+The proof-facing exponent recurrence is the shared finite recursive value set
+for the same canonical lexical syntax, with atom interpreted as the exponent
+note `1` and power interpreted as `combineExponent`.
+-/
+theorem computedExponentValues_eq_recursiveValueFinset (n : Nat) :
+    computedExponentValues n =
+      PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      cases n with
+      | zero =>
+          ext o
+          simp [computedExponentValues, PowTower.Expr.recursiveValueFinset]
+      | succ n =>
+          cases n with
+          | zero =>
+              ext o
+              simp [computedExponentValues, PowTower.Expr.recursiveValueFinset]
+          | succ n =>
+              ext o
+              simp only [computedExponentValues, PowTower.Expr.recursiveValueFinset,
+                mem_listBiUnion, Finset.mem_image₂, Finset.mem_biUnion, Finset.mem_univ,
+                true_and]
+              constructor
+              · rintro ⟨k, _hk, a, ha, b, hb, hcombine⟩
+                refine ⟨k, a, ?_, b, ?_, hcombine⟩
+                · rw [← ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
+                  exact ha
+                · rw [← ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+                  exact hb
+              · rintro ⟨k, a, ha, b, hb, hcombine⟩
+                refine ⟨k, by simp, a, ?_, b, ?_, hcombine⟩
+                · rw [ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
+                  exact ha
+                · rw [ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+                  exact hb
+
+theorem computedExponentCount_eq_recursiveValueFinset_card (n : Nat) :
+    computedExponentCount n =
+      (PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n).card := by
+  rw [computedExponentCount, computedExponentValues_eq_recursiveValueFinset]
+
 /-- Pointwise congruence for finite unions over a list. -/
 theorem listBiUnion_congr {α β : Type} [DecidableEq β] {xs : List α}
     {f g : α -> Finset β} (h : ∀ x ∈ xs, f x = g x) :
@@ -418,6 +469,49 @@ decreasing_by
 /-- The dynamic inner-exponent count corresponding to A199812. -/
 def computedDegreeCount (n : Nat) : Nat :=
   (computedDegreeValues n).card
+
+/--
+The proof-facing inner-exponent recurrence is the shared finite recursive
+value set for the same canonical lexical syntax, with atom interpreted as the
+degree note `0` and power interpreted as `combineDegree`.
+-/
+theorem computedDegreeValues_eq_recursiveValueFinset (n : Nat) :
+    computedDegreeValues n =
+      PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n := by
+  induction n using Nat.strong_induction_on with
+  | h n ih =>
+      cases n with
+      | zero =>
+          ext o
+          simp [computedDegreeValues, PowTower.Expr.recursiveValueFinset]
+      | succ n =>
+          cases n with
+          | zero =>
+              ext o
+              simp [computedDegreeValues, PowTower.Expr.recursiveValueFinset]
+          | succ n =>
+              ext o
+              simp only [computedDegreeValues, PowTower.Expr.recursiveValueFinset,
+                mem_listBiUnion, Finset.mem_image₂, Finset.mem_biUnion, Finset.mem_univ,
+                true_and]
+              constructor
+              · rintro ⟨k, _hk, a, ha, b, hb, hcombine⟩
+                refine ⟨k, a, ?_, b, ?_, hcombine⟩
+                · rw [← ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
+                  exact ha
+                · rw [← ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+                  exact hb
+              · rintro ⟨k, a, ha, b, hb, hcombine⟩
+                refine ⟨k, by simp, a, ?_, b, ?_, hcombine⟩
+                · rw [ih (k.1 + 1) (Nat.succ_lt_succ k.2)]
+                  exact ha
+                · rw [ih (n + 1 - k.1) (Nat.lt_succ_of_le (Nat.sub_le _ _))]
+                  exact hb
+
+theorem computedDegreeCount_eq_recursiveValueFinset_card (n : Nat) :
+    computedDegreeCount n =
+      (PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n).card := by
+  rw [computedDegreeCount, computedDegreeValues_eq_recursiveValueFinset]
 
 /--
 The degree recurrence computes exactly the inner exponents obtained from the
@@ -480,6 +574,11 @@ theorem degreeNoteValues_eq_computedDegreeValues (n : Nat) :
 theorem a199812_eq_computedDegreeCount (n : Nat) : a199812 n = computedDegreeCount n := by
   rw [a199812_eq_degreeNoteCount, degreeNoteCount, computedDegreeCount,
     degreeNoteValues_eq_computedDegreeValues]
+
+theorem a199812_eq_degreeRecursiveValueFinset_card (n : Nat) :
+    a199812 n =
+      (PowTower.Expr.recursiveValueFinset (0 : ONote) combineDegree n).card := by
+  rw [a199812_eq_computedDegreeCount, computedDegreeCount_eq_recursiveValueFinset_card]
 
 /--
 The dynamic distinct-value recurrence computes exactly the normal-form
@@ -544,6 +643,11 @@ theorem exponentNoteValues_eq_computedExponentValues (n : Nat) :
 theorem a199812_eq_computedCount (n : Nat) : a199812 n = computedExponentCount n := by
   rw [a199812_eq_noteCount, exponentNoteCount, computedExponentCount,
     exponentNoteValues_eq_computedExponentValues]
+
+theorem a199812_eq_exponentRecursiveValueFinset_card (n : Nat) :
+    a199812 n =
+      (PowTower.Expr.recursiveValueFinset (1 : ONote) combineExponent n).card := by
+  rw [a199812_eq_computedCount, computedExponentCount_eq_recursiveValueFinset_card]
 
 /--
 Compute one recurrence row from an already-built table of smaller rows.
