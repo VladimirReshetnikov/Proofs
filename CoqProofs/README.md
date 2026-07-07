@@ -34,12 +34,13 @@ Current ports:
   `10^(10^10) + 2811012357389` floor.  The Lean module's long interval proof
   of those logarithmic and exponential bounds is not yet replayed in Coq.
 - `FermatFour.v` ports the project-local wrapper surface from
-  `FermatFour.lean`: assuming the classical descent theorem
-  `∀ a b c : Z, a ≠ 0 → b ≠ 0 → a^4 + b^4 ≠ c^2`, Coq proves the stronger
-  integer-square theorem under that explicit parameter and derives the usual
-  positive-natural FLT-4 statement.  The installed Coq libraries do not include
-  a modern FLT-4 theorem; the old self-contained `rocq-archive/fermat4`
-  formalization exists but targets Coq 8.0 and is not yet modernized here.
+  `FermatFour.lean`: Coq defines the `a^4 + b^4 = c^2` counterexample
+  predicate, proves elementary structural facts and the well-founded infinite
+  descent eliminator, then derives the stronger integer-square theorem and the
+  positive-natural FLT-4 statement from an explicit smaller-counterexample
+  descent-step parameter.  The installed Coq libraries do not include a modern
+  FLT-4 theorem; the old self-contained `rocq-archive/fermat4` formalization
+  exists but targets Coq 8.0 and is not yet modernized here.
 - `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
   summation identity from `FloorSqrtSum.lean`.
 - `RationalFloorOrbit.v` ports the Calkin-Wilf pair generator core from
