@@ -71,8 +71,9 @@ foundational/computability work:
   is the mathlib-backed bridge showing that mathlib-total-recursive
   `Nat -> Nat` functions have sequential `ToPartrec.Code`s evaluated by
   mathlib's finite-support `PartrecToTM2` Turing machine, that this computation
-  can be expressed through mathlib's ordinary `TM2.eval` interface, and that
-  the evaluator descends to a finite-support Bool `TM0` machine through
+  can be expressed through mathlib's ordinary `TM2.eval` interface, that a
+  composed unary-output code produces `f n` zero entries, and that both the
+  ordinary and unary-output evaluator witnesses descend to Bool `TM0` through
   mathlib's proved Turing-machine reductions.  It is built from the root
   `src/Lean` Lake workspace because the standalone SetTheory Lean project
   deliberately remains dependency-free.

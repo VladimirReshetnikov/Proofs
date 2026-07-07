@@ -72,6 +72,71 @@ def TM1to1Output {Γ : Type*} [Inhabited Γ] {width : Nat}
     tape.right₀ = sourceOutput ∧
     (Turing.TM1to1.trTape enc0 tape).right₀ = boolOutput
 
+/-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
+def UnaryZerosOneCode : Turing.ToPartrec.Code :=
+  Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
+
+/--
+One body step for `UnaryZerosCode`.
+
+The state is `m :: acc`.  If `m = 0`, it returns `0 :: acc`, so `fix` exits
+with `acc`; if `m = k + 1`, it returns `1 :: k :: 0 :: acc`, so `fix`
+continues with `k :: 0 :: acc`.
+-/
+def UnaryZerosStepCode : Turing.ToPartrec.Code :=
+  Turing.ToPartrec.Code.zero'.case
+    (Turing.ToPartrec.Code.cons UnaryZerosOneCode
+      (Turing.ToPartrec.Code.cons Turing.ToPartrec.Code.head
+        (Turing.ToPartrec.Code.comp Turing.ToPartrec.Code.zero' Turing.ToPartrec.Code.tail)))
+
+/-- A list-valued recursive code sending `[m]` to a unary list of `m` zeros. -/
+def UnaryZerosCode : Turing.ToPartrec.Code :=
+  Turing.ToPartrec.Code.fix UnaryZerosStepCode
+
+theorem replicate_zero_append_cons (m : Nat) (acc : List Nat) :
+    List.replicate m 0 ++ 0 :: acc = 0 :: (List.replicate m 0 ++ acc) := by
+  rw [← List.singleton_append, ← List.append_assoc]
+  rw [← List.replicate_succ']
+  rw [List.replicate_succ]
+  rfl
+
+theorem unaryZerosCode_mem (m : Nat) (acc : List Nat) :
+    (List.replicate m 0 ++ acc) ∈ UnaryZerosCode.eval (m :: acc) := by
+  induction m generalizing acc with
+  | zero =>
+      rw [UnaryZerosCode, Turing.ToPartrec.Code.fix_eval]
+      refine PFun.mem_fix_iff.2 (Or.inl ?_)
+      simp [UnaryZerosStepCode]
+  | succ m IH =>
+      rw [UnaryZerosCode, Turing.ToPartrec.Code.fix_eval]
+      refine PFun.mem_fix_iff.2 (Or.inr ?_)
+      refine ⟨m :: 0 :: acc, ?_, ?_⟩
+      · simp [UnaryZerosStepCode, UnaryZerosOneCode]
+      · have hIH := IH (0 :: acc)
+        rw [UnaryZerosCode, Turing.ToPartrec.Code.fix_eval] at hIH
+        convert hIH using 1
+        rw [List.replicate_succ]
+        rw [replicate_zero_append_cons m acc]
+        simp
+
+/-- `UnaryZerosCode` maps `m :: acc` to `replicate m 0 ++ acc`. -/
+theorem unaryZerosCode_eval_cons (m : Nat) (acc : List Nat) :
+    UnaryZerosCode.eval (m :: acc) = Part.some (List.replicate m 0 ++ acc) := by
+  have hmem := unaryZerosCode_mem m acc
+  refine Part.ext fun out => ?_
+  constructor
+  · intro hout
+    exact Part.mem_some_iff.2 (Part.mem_unique hout hmem)
+  · intro hout
+    have hout' := Part.mem_some_iff.1 hout
+    subst out
+    exact hmem
+
+/-- `UnaryZerosCode` maps `[m]` to exactly `m` zero entries. -/
+theorem unaryZerosCode_eval_single (m : Nat) :
+    UnaryZerosCode.eval [m] = Part.some (List.replicate m 0) := by
+  simpa using unaryZerosCode_eval_cons m []
+
 end MathlibBridge
 
 /--
@@ -119,6 +184,22 @@ theorem totalRecursiveMathlib_has_toPartrec_code {f : Nat -> Nat}
   exact hc'
 
 /--
+A mathlib-total-recursive function has a sequential `Turing.ToPartrec.Code`
+whose output is unary data: on input `[n]` it returns a list of exactly `f n`
+zeros.
+-/
+theorem totalRecursiveMathlib_has_unary_toPartrec_code {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ c : Turing.ToPartrec.Code,
+      ∀ n, Turing.ToPartrec.Code.eval c [n] =
+        Part.some (List.replicate (f n) 0) := by
+  rcases totalRecursiveMathlib_has_toPartrec_code hf with ⟨c, hc⟩
+  refine ⟨Turing.ToPartrec.Code.comp MathlibBridge.UnaryZerosCode c, ?_⟩
+  intro n
+  simp [Turing.ToPartrec.Code.comp_eval, hc n,
+    MathlibBridge.unaryZerosCode_eval_single]
+
+/--
 Mathlib proves that the `PartrecToTM2` Turing machine evaluates the
 `ToPartrec.Code` for a total recursive function.
 -/
@@ -130,6 +211,23 @@ theorem totalRecursiveMathlib_eval_by_tm2 {f : Nat -> Nat}
           (Turing.PartrecToTM2.init c [n]) =
             Part.some (Turing.PartrecToTM2.halt [f n]) := by
   rcases totalRecursiveMathlib_has_toPartrec_code hf with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro n
+  rw [Turing.PartrecToTM2.tr_eval c [n], hc n]
+  rfl
+
+/--
+Unary-output variant of `totalRecursiveMathlib_eval_by_tm2`: the evaluator
+halts with a list of exactly `f n` zeros.
+-/
+theorem totalRecursiveMathlib_eval_unary_by_tm2 {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ c : Turing.ToPartrec.Code,
+      ∀ n,
+        StateTransition.eval (Turing.TM2.step Turing.PartrecToTM2.tr)
+          (Turing.PartrecToTM2.init c [n]) =
+            Part.some (Turing.PartrecToTM2.halt (List.replicate (f n) 0)) := by
+  rcases totalRecursiveMathlib_has_unary_toPartrec_code hf with ⟨c, hc⟩
   refine ⟨c, ?_⟩
   intro n
   rw [Turing.PartrecToTM2.tr_eval c [n], hc n]
@@ -187,6 +285,27 @@ theorem totalRecursiveMathlib_tm2_eval_main {f : Nat -> Nat}
           (Turing.PartrecToTM2.trList [n]) =
             Part.some (Turing.PartrecToTM2.trList [f n]) := by
   rcases totalRecursiveMathlib_eval_by_tm2 hf with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro n
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  rw [Turing.TM2.eval, ← partrecToTM2_init_eq_tm2_init c [n], hc n]
+  rfl
+
+/--
+Unary-output version of `totalRecursiveMathlib_tm2_eval_main`: the recursive
+evaluator's main stack contains `trList (replicate (f n) 0)`.
+-/
+theorem totalRecursiveMathlib_tm2_eval_unary {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ c : Turing.ToPartrec.Code,
+      ∀ n,
+        letI : Inhabited Turing.PartrecToTM2.Λ' :=
+          ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+        Turing.TM2.eval Turing.PartrecToTM2.tr Turing.PartrecToTM2.K'.main
+          (Turing.PartrecToTM2.trList [n]) =
+            Part.some (Turing.PartrecToTM2.trList (List.replicate (f n) 0)) := by
+  rcases totalRecursiveMathlib_eval_unary_by_tm2 hf with ⟨c, hc⟩
   refine ⟨c, ?_⟩
   intro n
   letI : Inhabited Turing.PartrecToTM2.Λ' :=
@@ -269,6 +388,27 @@ theorem totalRecursiveMathlib_tm1_eval_main {f : Nat -> Nat}
           MathlibBridge.TM2to1MainOutput tm1Output
             (Turing.PartrecToTM2.trList [f n]) := by
   rcases totalRecursiveMathlib_tm2_eval_main hf with ⟨c, hc⟩
+  refine ⟨c, ?_⟩
+  intro n
+  exact partrecToTM2_eval_main_to_tm1_eval_main c (hc n)
+
+/--
+Unary-output version of `totalRecursiveMathlib_tm1_eval_main`: after the
+`TM2 -> TM1` simulation, the decoded main stack contains `f n` zero entries.
+-/
+theorem totalRecursiveMathlib_tm1_eval_unary {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ c : Turing.ToPartrec.Code,
+      ∀ n,
+        letI : Inhabited Turing.PartrecToTM2.Λ' :=
+          ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+        ∃ tm1Output,
+          tm1Output ∈ Turing.TM1.eval MathlibBridge.PartrecToTM1Machine
+            (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+              (Turing.PartrecToTM2.trList [n])) ∧
+          MathlibBridge.TM2to1MainOutput tm1Output
+            (Turing.PartrecToTM2.trList (List.replicate (f n) 0)) := by
+  rcases totalRecursiveMathlib_tm2_eval_unary hf with ⟨c, hc⟩
   refine ⟨c, ?_⟩
   intro n
   exact partrecToTM2_eval_main_to_tm1_eval_main c (hc n)
@@ -394,6 +534,83 @@ theorem totalRecursiveMathlib_bool_tm0_eval_main {f : Nat -> Nat}
                 (Turing.PartrecToTM2.trList [f n]) ∧
               MathlibBridge.TM1to1Output enc enc0 tm1Output boolOutput := by
   rcases totalRecursiveMathlib_bool_tm1_eval_main hf with
+    ⟨c, width, enc, dec, hEnc⟩
+  refine ⟨c, width, enc, dec, ?_⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  dsimp at hEnc ⊢
+  rcases hEnc with ⟨enc0, encdec, hEval⟩
+  refine ⟨enc0, encdec, ?_⟩
+  intro n
+  rcases hEval n with ⟨boolOutput, hBoolTM1, hOutput⟩
+  refine ⟨boolOutput, ?_, hOutput⟩
+  rw [Turing.TM1to0.tr_eval]
+  exact hBoolTM1
+
+/--
+Unary-output version of `totalRecursiveMathlib_bool_tm1_eval_main`.
+-/
+theorem totalRecursiveMathlib_bool_tm1_eval_unary {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ (c : Turing.ToPartrec.Code)
+      (width : Nat)
+      (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+      (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet),
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      ∃ (enc0 : enc default = List.Vector.replicate width false),
+        (∀ a, dec (enc a) = a) ∧
+        ∀ n,
+          ∃ boolOutput,
+            boolOutput ∈ Turing.TM1.eval
+              (Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine)
+              (MathlibBridge.TM1to1EncodedInput enc
+                (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+                  (Turing.PartrecToTM2.trList [n]))) ∧
+            ∃ tm1Output,
+              MathlibBridge.TM2to1MainOutput tm1Output
+                (Turing.PartrecToTM2.trList (List.replicate (f n) 0)) ∧
+              MathlibBridge.TM1to1Output enc enc0 tm1Output boolOutput := by
+  classical
+  rcases totalRecursiveMathlib_tm1_eval_unary hf with ⟨c, hc⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  rcases Turing.TM1to1.exists_enc_dec
+      (Γ := MathlibBridge.PartrecToTM1Alphabet) with
+    ⟨width, enc, dec, enc0, encdec⟩
+  refine ⟨c, width, enc, dec, enc0, encdec, ?_⟩
+  intro n
+  rcases hc n with ⟨tm1Output, hTM1Output, hMain⟩
+  rcases tm1_eval_to_bool_tm1_eval enc dec enc0 encdec
+      MathlibBridge.PartrecToTM1Machine hTM1Output with
+    ⟨boolOutput, hBoolOutput, hBoolRel⟩
+  exact ⟨boolOutput, hBoolOutput, tm1Output, hMain, hBoolRel⟩
+
+/--
+Unary-output version of `totalRecursiveMathlib_bool_tm0_eval_main`.
+-/
+theorem totalRecursiveMathlib_bool_tm0_eval_unary {f : Nat -> Nat}
+    (hf : TotalRecursiveMathlib f) :
+    ∃ (c : Turing.ToPartrec.Code)
+      (width : Nat)
+      (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+      (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet),
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+      ∃ (enc0 : enc default = List.Vector.replicate width false),
+        (∀ a, dec (enc a) = a) ∧
+        ∀ n,
+          ∃ boolOutput,
+            boolOutput ∈ Turing.TM0.eval (Turing.TM1to0.tr tm1Bool)
+              (MathlibBridge.TM1to1EncodedInput enc
+                (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+                  (Turing.PartrecToTM2.trList [n]))) ∧
+            ∃ tm1Output,
+              MathlibBridge.TM2to1MainOutput tm1Output
+                (Turing.PartrecToTM2.trList (List.replicate (f n) 0)) ∧
+              MathlibBridge.TM1to1Output enc enc0 tm1Output boolOutput := by
+  rcases totalRecursiveMathlib_bool_tm1_eval_unary hf with
     ⟨c, width, enc, dec, hEnc⟩
   refine ⟨c, width, enc, dec, ?_⟩
   letI : Inhabited Turing.PartrecToTM2.Λ' :=

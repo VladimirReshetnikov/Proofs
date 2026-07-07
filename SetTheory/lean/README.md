@@ -163,15 +163,18 @@ theorem BusyBeaver.totalRecursiveMathlib_eval_by_supported_tm2
 The companion theorem `BusyBeaver.totalRecursiveMathlib_tm2_eval_main`
 packages the same computation in mathlib's ordinary `TM2.eval` interface:
 the evaluator started with `trList [n]` on the main stack halts with
-`trList [f n]` there.  It also proves the support-only lowering
+`trList [f n]` there.  For the score-counting direction, the bridge also proves
+a unary-output variant: `BusyBeaver.totalRecursiveMathlib_bool_tm0_eval_unary`
+threads a composed `ToPartrec.Code` through `TM2 -> TM1`, `TM1 -> TM1 Bool`,
+and `TM1 -> TM0` so that the decoded main stack contains
+`trList (List.replicate (f n) 0)`, a list with exactly `f n` zero entries.
+It also proves the support-only lowering
 `BusyBeaver.partrecToTM2_descends_to_supported_bool_tm0`: the finite-support
-`PartrecToTM2` evaluator descends through mathlib's proved `TM2 -> TM1`,
-finite-alphabet `TM1 -> TM1 Bool`, and `TM1 -> TM0` reductions to a
+`PartrecToTM2` evaluator descends through mathlib's proved reductions to a
 finite-support Bool `TM0` machine.  The remaining bridge for the full
-busy-beaver theorem is the exact output/tape normalization through those lower
-machine translations and then the compiler from supported Bool `TM0` machines
-to the blank-tape two-symbol Rado model, including the state-count accounting
-needed by `Σ(n)`.
+busy-beaver theorem is the exact output/tape normalization from that Bool
+`TM0` computation into a blank-tape two-symbol Rado machine, including the
+state-count accounting needed by `Σ(n)`.
 
 ## Translation notes (Coq → Lean)
 
