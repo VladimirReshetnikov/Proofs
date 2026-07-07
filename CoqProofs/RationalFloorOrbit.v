@@ -579,20 +579,126 @@ Proof.
   - apply qOfNat_nonzero; lia.
 Qed.
 
+Theorem rationalNext_pairRat_eq (a b : nat) (hb : (0 < b)%nat) :
+    rationalNext (pairRat (a, b)) = pairRat (pairNext (a, b)).
+Proof.
+  unfold rationalNext.
+  rewrite qfloorNat_pairRat by lia.
+  unfold pairRat, pairNext, qOfNat.
+  cbn [fst snd].
+  unfold Qminus, Qplus, Qopp, Qmult, Qinv, inject_Z.
+  cbn [Qnum Qden].
+  rewrite !Zpos_positiveDenOfNat by
+    (pose proof (div_lt_mul_add a b hb); lia).
+  set (d := ((2 * (a / b) + 1) * b - a)%nat).
+  assert (hdpos : (0 < d)%nat).
+  { subst d. pose proof (div_lt_mul_add a b hb). lia. }
+  assert (hnum :
+    ((1 * Z.of_nat b + - Z.of_nat a * 1) * Z.pos (1 * 1) +
+      2 * Z.of_nat (a / b) * Z.pos (1 * positiveDenOfNat b))%Z =
+      Z.pos (positiveDenOfNat d)).
+  { rewrite Zpos_positiveDenOfNat by exact hdpos.
+    subst d.
+    rewrite Nat2Z.inj_sub by
+      (pose proof (div_lt_mul_add a b hb); lia).
+    rewrite Nat2Z.inj_mul.
+    repeat rewrite Nat2Z.inj_add.
+    repeat rewrite Pos.mul_1_l.
+    rewrite Zpos_positiveDenOfNat by exact hb.
+    rewrite Nat2Z.inj_mul.
+    ring.
+  }
+  rewrite hnum.
+  cbn.
+  repeat rewrite Pos.mul_1_l.
+  repeat rewrite Pos.mul_1_r.
+  rewrite Zpos_positiveDenOfNat by exact hb.
+  reflexivity.
+Qed.
+
 Definition cwRat (n : nat) : Q :=
   pairRat (cwPair n).
 
-Theorem rationalNext_cwRat (n : nat) :
-    rationalNext (cwRat n) == cwRat (n + 1).
+Theorem rationalNext_cwRat_eq (n : nat) :
+    rationalNext (cwRat n) = cwRat (n + 1).
 Proof.
   unfold cwRat.
   rewrite cwPair_succ.
   destruct (cwPair n) as [a b] eqn:Hp.
   pose proof (cwPair_pos n) as hpos.
   rewrite Hp in hpos.
-  apply rationalNext_pairRat.
+  apply rationalNext_pairRat_eq.
   cbn [snd] in hpos.
   lia.
+Qed.
+
+Theorem rationalNext_cwRat (n : nat) :
+    rationalNext (cwRat n) == cwRat (n + 1).
+Proof.
+  rewrite rationalNext_cwRat_eq.
+  reflexivity.
+Qed.
+
+Fixpoint rationalFloorOrbit (n : nat) : Q :=
+  match n with
+  | O => inject_Z 0%Z
+  | S n' => rationalNext (rationalFloorOrbit n')
+  end.
+
+Theorem rationalFloorOrbit_zero : rationalFloorOrbit 0 = inject_Z 0%Z.
+Proof. reflexivity. Qed.
+
+Theorem rationalNext_zero : rationalNext (inject_Z 0%Z) =
+    pairRat (1%nat, 1%nat).
+Proof. reflexivity. Qed.
+
+Theorem rationalFloorOrbit_succ (n : nat) :
+    rationalFloorOrbit (n + 1) = cwRat n.
+Proof.
+  induction n as [|n ih].
+  - change (rationalNext (inject_Z 0%Z) = cwRat 0).
+    rewrite rationalNext_zero.
+    unfold cwRat.
+    now rewrite cwPair_zero.
+  - change (rationalNext (rationalFloorOrbit (n + 1)) = cwRat (S n)).
+    rewrite ih.
+    rewrite <- Nat.add_1_r.
+    exact (rationalNext_cwRat_eq n).
+Qed.
+
+Theorem pairRat_ne_zero {a b : nat} (ha : (0 < a)%nat) :
+    ~ pairRat (a, b) == inject_Z 0%Z.
+Proof.
+  unfold pairRat, inject_Z, Qeq.
+  cbn [fst snd Qnum Qden].
+  lia.
+Qed.
+
+Theorem cwRat_ne_zero (n : nat) :
+    ~ cwRat n == inject_Z 0%Z.
+Proof.
+  unfold cwRat.
+  pose proof (cwPair_pos n) as hpos.
+  destruct (cwPair n) as [a b] eqn:Hp.
+  cbn [fst] in hpos.
+  apply pairRat_ne_zero.
+  lia.
+Qed.
+
+Theorem rationalFloorOrbit_eq_zero_iff (n : nat) :
+    rationalFloorOrbit n == inject_Z 0%Z <-> n = 0%nat.
+Proof.
+  split.
+  - intro h.
+    destruct n as [|n].
+    + reflexivity.
+    + replace (S n) with (n + 1)%nat in h by lia.
+      rewrite rationalFloorOrbit_succ in h.
+      exfalso.
+      exact (cwRat_ne_zero n h).
+  - intro h.
+    subst n.
+    reflexivity.
 Qed.
 
 Local Open Scope nat_scope.
