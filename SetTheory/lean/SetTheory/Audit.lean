@@ -115,6 +115,8 @@ open SetTheory
 #check @PA.Term.Free
 #check @PA.Term.free_lt_bound
 #check @PA.Term.numeral
+#check @PA.Term.addRightNumeral
+#check @PA.Term.mulRightNumeral
 #check @PA.Term.numeralValue
 #check @PA.Term.eval_numeral
 #check @PA.Term.numeralValue_natModel
@@ -165,6 +167,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_mulSucc_rename
 #check @PA.Formula.BProv_Ax_s_mulSucc
 #check @PA.Formula.BProv_Ax_s_mulSucc_terms
+#check @PA.Formula.BProv_Ax_s_addRightNumeral
+#check @PA.Formula.BProv_Ax_s_mulRightNumeral
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule

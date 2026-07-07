@@ -4739,6 +4739,18 @@ def numeral : Nat → Term
   | 0 => zero
   | n+1 => succ (numeral n)
 
+/-- The PA term obtained by adding a fixed left term to a standard numeral on
+the right, unfolded using the PA recursion equation for addition. -/
+def addRightNumeral (t : Term) : Nat → Term
+  | 0 => t
+  | n+1 => succ (addRightNumeral t n)
+
+/-- The PA term obtained by multiplying a fixed left term by a standard numeral
+on the right, unfolded using the PA recursion equation for multiplication. -/
+def mulRightNumeral (t : Term) : Nat → Term
+  | 0 => zero
+  | n+1 => add (mulRightNumeral t n) t
+
 def numeralValue {α : Type u} (M : Model α) : Nat → α
   | 0 => M.zero
   | n+1 => M.succ (numeralValue M n)
@@ -8489,6 +8501,54 @@ theorem BProv_Ax_s_mulSucc_terms (s t : Term) :
   have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
   simpa [mulSucc, subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using h2
+
+/-- PA proves the recursive normal form of right addition by a standard
+numeral. -/
+theorem BProv_Ax_s_addRightNumeral (t : Term) :
+    ∀ n : Nat,
+      BProv Ax_s [] (eq
+        (Term.add t (Term.numeral n))
+        (Term.addRightNumeral t n)) := by
+  intro n
+  induction n with
+  | zero =>
+      simpa [Term.numeral, Term.addRightNumeral] using
+        BProv_Ax_s_addZero_term t
+  | succ n ih =>
+      have hstep : BProv Ax_s [] (eq
+          (Term.add t (Term.succ (Term.numeral n)))
+          (Term.succ (Term.add t (Term.numeral n)))) :=
+        BProv_Ax_s_addSucc_terms t (Term.numeral n)
+      have hsucc : BProv Ax_s [] (eq
+          (Term.succ (Term.add t (Term.numeral n)))
+          (Term.succ (Term.addRightNumeral t n))) :=
+        BProv_eq_congr_succ ih
+      have h := BProv_eqTrans hstep hsucc
+      simpa [Term.numeral, Term.addRightNumeral] using h
+
+/-- PA proves the recursive normal form of right multiplication by a standard
+numeral. -/
+theorem BProv_Ax_s_mulRightNumeral (t : Term) :
+    ∀ n : Nat,
+      BProv Ax_s [] (eq
+        (Term.mul t (Term.numeral n))
+        (Term.mulRightNumeral t n)) := by
+  intro n
+  induction n with
+  | zero =>
+      simpa [Term.numeral, Term.mulRightNumeral] using
+        BProv_Ax_s_mulZero_term t
+  | succ n ih =>
+      have hstep : BProv Ax_s [] (eq
+          (Term.mul t (Term.succ (Term.numeral n)))
+          (Term.add (Term.mul t (Term.numeral n)) t)) :=
+        BProv_Ax_s_mulSucc_terms t (Term.numeral n)
+      have hadd : BProv Ax_s [] (eq
+          (Term.add (Term.mul t (Term.numeral n)) t)
+          (Term.add (Term.mulRightNumeral t n) t)) :=
+        BProv_eq_congr_add_left t ih
+      have h := BProv_eqTrans hstep hadd
+      simpa [Term.numeral, Term.mulRightNumeral] using h
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
