@@ -478,6 +478,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.termGraphAt_transport_model
 #check @AckermannHF.PAInHF.Sat_termGraphAt_insertAt_shift_prefix
 #check @AckermannHF.PAInHF.termGraphAt_substTermAt_replaced_var_model
+#check @AckermannHF.PAInHF.termGraphAt_substTermAt_insert_model
 #check @AckermannHF.PAInHF.formulaAt_addZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_mulZero_valid_model
 #check @AckermannHF.PAInHF.formulaAt_addSucc_valid_model_of_succRecTotal
