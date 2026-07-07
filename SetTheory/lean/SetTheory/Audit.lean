@@ -226,10 +226,12 @@ open SetTheory
 #check @AckermannHF.HF_succRecApproxAt_spec
 #check @AckermannHF.HF_succRecTotalAt
 #check @AckermannHF.HF_succRecTotalOnOrdinalAt
+#check @AckermannHF.HF_memMaxAt
 #check @AckermannHF.HF_subsetAt_spec
 #check @AckermannHF.HF_transitiveAt_spec
 #check @AckermannHF.HF_memTotalOnAt_spec
 #check @AckermannHF.HF_ordinalLikeAt_spec
+#check @AckermannHF.HF_memMaxAt_spec
 #check @AckermannHF.HF_emptyAt_free
 #check @AckermannHF.HF_adjoinAt_free
 #check @AckermannHF.HF_pairMemAt_free

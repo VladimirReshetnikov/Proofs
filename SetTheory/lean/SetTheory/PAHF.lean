@@ -776,6 +776,19 @@ whenever slot `m` is ordinal-like. -/
 def HF_succRecTotalOnOrdinalAt (s m : Nat) : Form :=
   fImp (HF_ordinalLikeAt m) (HF_succRecTotalAt s m)
 
+/-- Formula macro: every nonempty object in slot `a` has a membership-maximal
+member.  Maximal means no other member of `a` contains it. -/
+def HF_memMaxAt (a : Nat) : Form :=
+  fImp
+    (fEx (fMem 0 (a+1)))
+    (fEx
+      (fAnd
+        (fMem 0 (a+1))
+        (fAll
+          (fImp
+            (fMem 0 (a+2))
+            (fImp (fMem 1 0) fBot)))))
+
 theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
     (e : Nat → α) (a : Nat) :
     Sat mem e (HF_ordinalLikeAt a) ↔ OrdinalLike mem (e a) := by
@@ -788,6 +801,21 @@ theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
     exact ⟨(HF_transitiveAt_spec e a).mpr h.1,
       (fun y hy => (HF_transitiveAt_spec (scons y e) 0).mpr (h.2.1 y hy)),
       (HF_memTotalOnAt_spec e a).mpr h.2.2⟩
+
+theorem HF_memMaxAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_memMaxAt a) ↔
+      ((∃ x, mem x (e a)) →
+        ∃ p, mem p (e a) ∧ ∀ q, mem q (e a) → ¬ mem p q) := by
+  constructor
+  · intro h hne
+    rcases hne with ⟨x, hx⟩
+    rcases h ⟨x, hx⟩ with ⟨p, hp, hmax⟩
+    exact ⟨p, hp, fun q hq hpq => hmax q hq hpq⟩
+  · intro h hneSat
+    rcases hneSat with ⟨x, hx⟩
+    rcases h ⟨x, hx⟩ with ⟨p, hp, hmax⟩
+    exact ⟨p, hp, fun q hq hpq => hmax q hq hpq⟩
 
 /-! ### Free-variable support of the HF macros -/
 
