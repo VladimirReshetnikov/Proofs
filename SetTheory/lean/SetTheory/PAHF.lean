@@ -9758,6 +9758,52 @@ theorem formulaAt_substSuccVar_scons_model {α : Type u}
       (substZeroBeforeMap_zero_zero ρ)
     rwa [hEq] at hNormL
 
+/-- The PA induction axiom is valid under the PA-in-HF translation in every
+chosen finite first-order HF adjunction model.
+
+The finite-generation axiom is used only through
+`ordinalLike_empty_or_succ`: an ordinal-like HF object is either empty or the
+adjunction successor of an ordinal-like member.  The PA base and step
+hypotheses are then transported by the explicit zero/successor substitution
+lemmas above. -/
+theorem formulaAt_induction_valid_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (phi : PA.Formula) (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ (PA.Formula.inductionForm phi)) := by
+  intro hInd
+  let theta : Form := fImp domainForm (formulaAt (upVarMap ρ) phi)
+  have hall : ∀ a, Sat M.mem (scons a e) theta := by
+    have hind := M.induction_schema theta e
+    apply hind
+    intro a ih
+    intro haDomain
+    have haOrd : OrdinalLike M.mem a :=
+      (HF_ordinalLikeAt_spec (scons a e) 0).mp haDomain
+    rcases FirstOrderFiniteAdjunctionModel.ordinalLike_empty_or_succ M haOrd with
+      hEmpty | ⟨p, hp, hSucc⟩
+    · subst a
+      exact (formulaAt_substZero_scons_model M.toFirstOrderAdjunctionModel
+        phi ρ e).mp hInd.1
+    · have hpOrd : OrdinalLike M.mem p := OrdinalLike.of_mem haOrd hp
+      have hpDomain : Sat M.mem (scons p e) domainForm :=
+        (HF_ordinalLikeAt_spec (scons p e) 0).mpr hpOrd
+      have hpTheta : Sat M.mem (scons p e) theta :=
+        (Sat_rename_rSkipParam theta e a p).mp (ih p hp)
+      have hpPhi : Sat M.mem (scons p e) (formulaAt (upVarMap ρ) phi) :=
+        hpTheta hpDomain
+      have hStepSub : Sat M.mem (scons p e)
+          (formulaAt (upVarMap ρ)
+            (PA.Formula.subst PA.Formula.substSuccVar phi)) :=
+        hInd.2 p hpDomain hpPhi
+      have hStepPhi : Sat M.mem (scons (M.adjoin p p) e)
+          (formulaAt (upVarMap ρ) phi) :=
+        (formulaAt_substSuccVar_scons_model M.toFirstOrderAdjunctionModel
+          phi ρ p e).mp hStepSub
+      rw [hSucc]
+      exact hStepPhi
+  intro a haDomain
+  exact hall a haDomain
+
 theorem formulaAt_free (phi : PA.Formula) :
     ∀ {ρ : Nat → Nat} {i : Nat}, Free i (formulaAt ρ phi) →
       ∃ n, PA.Formula.Free n phi ∧ i = ρ n := by
@@ -10354,6 +10400,20 @@ theorem translated_mulSucc_sat_of_HFFinAx_s {α : Type u} {mem : α → α → P
   exact formulaAt_sealPA_valid PA.Formula.mulSucc
     (fun ρ e => formulaAt_mulSucc_valid_finite_model M ρ e) (fun n : Nat => n) e
 
+/-- Closed PA induction axiom instances are semantically valid under the
+PA-in-HF translation in every model of the strengthened hereditary-finite
+theory. -/
+theorem translated_induction_sat_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (phi : PA.Formula) (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA (PA.Formula.inductionForm phi))) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e
+    (translateFormula (PA.Formula.sealPA (PA.Formula.inductionForm phi)))
+  exact formulaAt_sealPA_valid (PA.Formula.inductionForm phi)
+    (fun ρ e => formulaAt_induction_valid_finite_model M phi ρ e)
+    (fun n : Nat => n) e
+
 /-- Closed zero-is-not-successor axiom, semantically validated in every
 adjunction model under the PA-in-HF translation. -/
 theorem translated_zeroNotSucc_sat_model {α : Type} (M : AdjunctionModel α)
@@ -10466,6 +10526,27 @@ theorem BProv_HFFin_translated_mulSucc :
   · intro Dom mem v hHF
     exact translated_mulSucc_sat_of_HFFinAx_s v hHF v
 
+theorem BProv_HFFin_translated_induction (phi : PA.Formula) :
+    BProv HFFinAx_s []
+      (translateFormula (PA.Formula.sealPA (PA.Formula.inductionForm phi))) := by
+  apply completeness_inf HFFinAx_s
+  · exact Sentences_HFFin
+  · exact translated_PA_axiom_sentence _ (PA.Formula.Ax_s_induction phi)
+  · intro Dom mem v hHF
+    exact translated_induction_sat_of_HFFinAx_s v hHF phi v
+
+theorem BProv_HFFin_translated_PA_axiom {phi : PA.Formula}
+    (hphi : PA.Formula.Ax_s phi) :
+    BProv HFFinAx_s [] (translateFormula phi) := by
+  rcases hphi with rfl | rfl | rfl | rfl | rfl | rfl | ⟨psi, rfl⟩
+  · exact BProv_HFFin_translated_succInj
+  · exact BProv_HFFin_translated_zeroNotSucc
+  · exact BProv_HFFin_translated_addZero
+  · exact BProv_HFFin_translated_addSucc
+  · exact BProv_HFFin_translated_mulZero
+  · exact BProv_HFFin_translated_mulSucc
+  · exact BProv_HFFin_translated_induction psi
+
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/
 def translatedPAAx (g : Form) : Prop :=
@@ -10494,6 +10575,11 @@ theorem BProv_lift_translatedPAAx_to_HFFin
     (hAx : ∀ g, translatedPAAx g → BProv HFFinAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFFinAx_s [] g :=
   BProv_lift h hAx (fun _ hf => nomatch hf)
+
+theorem BProv_HFFin_of_translatedPAAx {g : Form}
+    (hg : translatedPAAx g) : BProv HFFinAx_s [] g := by
+  rcases hg with ⟨phi, hphi, rfl⟩
+  exact BProv_HFFin_translated_PA_axiom hphi
 
 theorem standard_sat_translatedPAAx (e : Nat → Nat) :
     ∀ g, translatedPAAx g → Sat Mem e g := by

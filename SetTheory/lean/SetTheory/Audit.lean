@@ -389,6 +389,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.formulaAt_substZero_scons_model
 #check @AckermannHF.PAInHF.formulaAt_substSuccAt_replace_model
 #check @AckermannHF.PAInHF.formulaAt_substSuccVar_scons_model
+#check @AckermannHF.PAInHF.formulaAt_induction_valid_finite_model
 #check @AckermannHF.PAInHF.formulaAt_free
 #check @AckermannHF.PAInHF.formulaAt_eq_var_spec
 #check @AckermannHF.PAInHF.formulaAt_zeroNotSucc_valid
@@ -445,6 +446,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.translated_mulZero_sat_of_HFAx_s
 #check @AckermannHF.PAInHF.translated_addSucc_sat_of_HFFinAx_s
 #check @AckermannHF.PAInHF.translated_mulSucc_sat_of_HFFinAx_s
+#check @AckermannHF.PAInHF.translated_induction_sat_of_HFFinAx_s
 #check @AckermannHF.PAInHF.translateFormula_exact
 #check @AckermannHF.PAInHF.translated_PA_axiom_sat_codes
 #check @AckermannHF.PAInHF.formulaAt_sentence_of_PA_sentence
@@ -460,12 +462,15 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_mulZero
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_addSucc
 #check @AckermannHF.PAInHF.BProv_HFFin_translated_mulSucc
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_induction
+#check @AckermannHF.PAInHF.BProv_HFFin_translated_PA_axiom
 #check @AckermannHF.PAInHF.translatedPAAx
 #check @AckermannHF.PAInHF.translatedPAAx_intro
 #check @AckermannHF.PAInHF.Sentences_translatedPAAx
 #check @AckermannHF.PAInHF.BProv_translatedPAAx_of_PAAx
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HF
 #check @AckermannHF.PAInHF.BProv_lift_translatedPAAx_to_HFFin
+#check @AckermannHF.PAInHF.BProv_HFFin_of_translatedPAAx
 #check @AckermannHF.PAInHF.standard_sat_translatedPAAx
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
