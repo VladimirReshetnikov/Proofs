@@ -4554,6 +4554,163 @@ Proof.
   exact (succGraph_preserves_domain_model ackermannHFModel e hin hs).
 Qed.
 
+Definition upVarMap (rho : nat -> nat) : nat -> nat :=
+  fun n =>
+    match n with
+    | 0 => 0
+    | S k => S (rho k)
+    end.
+
+Definition substZeroAfterMap (p k : nat) (rho : nat -> nat) : nat -> nat :=
+  fun n => if n <? p then k + n else rho (n - p) + k + p.
+
+Definition substZeroBeforeMap (p k : nat) (rho : nat -> nat) : nat -> nat :=
+  fun n =>
+    if n <? p then k + n
+    else if n =? p then k + p
+    else rho (n - p - 1) + k + p + 1.
+
+Lemma substZeroAfterMap_lt : forall p k n rho,
+  n < p -> substZeroAfterMap p k rho n = k + n.
+Proof.
+  intros p k n rho h.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n p); [reflexivity | lia].
+Qed.
+
+Lemma substZeroAfterMap_ge : forall p k n rho,
+  p <= n -> substZeroAfterMap p k rho n = rho (n - p) + k + p.
+Proof.
+  intros p k n rho h.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n p); [lia | reflexivity].
+Qed.
+
+Lemma substZeroBeforeMap_lt : forall p k n rho,
+  n < p -> substZeroBeforeMap p k rho n = k + n.
+Proof.
+  intros p k n rho h.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec n p); [reflexivity | lia].
+Qed.
+
+Lemma substZeroBeforeMap_eq : forall p k rho,
+  substZeroBeforeMap p k rho p = k + p.
+Proof.
+  intros p k rho.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec p p); [lia |].
+  destruct (Nat.eqb_spec p p); [reflexivity | congruence].
+Qed.
+
+Lemma substZeroBeforeMap_gt : forall p k n rho,
+  p < n -> substZeroBeforeMap p k rho n =
+    rho (n - p - 1) + k + p + 1.
+Proof.
+  intros p k n rho h.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec n p); [lia |].
+  destruct (Nat.eqb_spec n p); [lia | reflexivity].
+Qed.
+
+Lemma substZeroBeforeMap_ne_replaced_slot : forall p k n rho,
+  n <> p -> substZeroBeforeMap p k rho n <> k + p.
+Proof.
+  intros p k n rho hne hslot.
+  unfold substZeroBeforeMap in hslot.
+  destruct (Nat.ltb_spec n p) as [hlt | hnlt].
+  - lia.
+  - destruct (Nat.eqb_spec n p) as [heq | hneq].
+    + contradiction.
+    + lia.
+Qed.
+
+Lemma substZeroAfterMap_add : forall p k d rho n,
+  substZeroAfterMap p k rho n + d =
+    substZeroAfterMap p (k + d) rho n.
+Proof.
+  intros p k d rho n.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n p); lia.
+Qed.
+
+Lemma substZeroBeforeMap_add : forall p k d rho n,
+  substZeroBeforeMap p k rho n + d =
+    substZeroBeforeMap p (k + d) rho n.
+Proof.
+  intros p k d rho n.
+  unfold substZeroBeforeMap.
+  destruct (Nat.ltb_spec n p); [lia |].
+  destruct (Nat.eqb_spec n p); lia.
+Qed.
+
+Lemma upVarMap_substZeroAfterMap_zero : forall p rho n,
+  upVarMap (substZeroAfterMap p 0 rho) n =
+    substZeroAfterMap (S p) 0 rho n.
+Proof.
+  intros p rho [|n].
+  - unfold upVarMap, substZeroAfterMap.
+    destruct (Nat.ltb_spec 0 (S p)); [reflexivity | lia].
+  - unfold upVarMap.
+    simpl.
+    destruct (Nat.ltb_spec n p) as [hlt | hnlt].
+    + rewrite (substZeroAfterMap_lt p 0 n rho hlt).
+      rewrite (substZeroAfterMap_lt (S p) 0 (S n) rho); [lia | lia].
+    + assert (hge : p <= n) by lia.
+      rewrite (substZeroAfterMap_ge p 0 n rho hge).
+      rewrite (substZeroAfterMap_ge (S p) 0 (S n) rho); [|lia].
+      replace (S n - S p) with (n - p) by lia.
+      lia.
+Qed.
+
+Lemma upVarMap_substZeroBeforeMap_zero : forall p rho n,
+  upVarMap (substZeroBeforeMap p 0 rho) n =
+    substZeroBeforeMap (S p) 0 rho n.
+Proof.
+  intros p rho [|n].
+  - unfold upVarMap, substZeroBeforeMap.
+    destruct (Nat.ltb_spec 0 (S p)); [reflexivity | lia].
+  - unfold upVarMap.
+    simpl.
+    destruct (Nat.ltb_spec n p) as [hlt | hnlt].
+    + rewrite (substZeroBeforeMap_lt p 0 n rho hlt).
+      rewrite (substZeroBeforeMap_lt (S p) 0 (S n) rho); [lia | lia].
+    + destruct (Nat.eq_dec n p) as [heq | hne].
+      * subst n.
+        rewrite substZeroBeforeMap_eq.
+        rewrite substZeroBeforeMap_eq.
+        lia.
+      * assert (hgt : p < n) by lia.
+        rewrite (substZeroBeforeMap_gt p 0 n rho hgt).
+        rewrite (substZeroBeforeMap_gt (S p) 0 (S n) rho); [|lia].
+        replace (S n - S p - 1) with (n - p - 1) by lia.
+        lia.
+Qed.
+
+Lemma substZeroAfterMap_zero_zero : forall rho n,
+  substZeroAfterMap 0 0 rho n = rho n.
+Proof.
+  intros rho n.
+  unfold substZeroAfterMap.
+  destruct (Nat.ltb_spec n 0); [lia |].
+  replace (n - 0) with n by lia.
+  lia.
+Qed.
+
+Lemma substZeroBeforeMap_zero_zero : forall rho n,
+  substZeroBeforeMap 0 0 rho n = upVarMap rho n.
+Proof.
+  intros rho [|n].
+  - apply substZeroBeforeMap_eq.
+  - rewrite (substZeroBeforeMap_gt 0 0 (S n) rho); [|lia].
+    unfold upVarMap.
+    simpl.
+    replace (S n - 0 - 1) with n by lia.
+    replace (n - 0) with n by lia.
+    repeat rewrite Nat.add_0_r.
+    apply Nat.add_1_r.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
