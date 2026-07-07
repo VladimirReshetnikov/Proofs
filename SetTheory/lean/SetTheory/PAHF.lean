@@ -827,6 +827,10 @@ noncomputable def paRoundTripIso : PA.Iso PA.natModel ordinalPAModel where
     simp only [PA.natModel, ordinalPAModel, natOfOrdinal_ordinalMulSet,
       natOfOrdinal_ordinalOfNat, Nat.mul_eq]
 
+theorem ordinalPA_sat_PA (e : Nat → OrdinalHF) :
+    ∀ f, PA.Formula.Ax_s f → PA.Formula.Sat ordinalPAModel e f :=
+  PA.Formula.sat_axiom_s ordinalPAModel e
+
 /-! ## The HF-in-PA-in-HF round trip -/
 
 /-- Isomorphism of adjunction-style HF models. -/

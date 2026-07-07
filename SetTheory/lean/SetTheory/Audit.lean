@@ -41,6 +41,7 @@ open SetTheory
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF
+#check @AckermannHF.ordinalPA_sat_PA
 #check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
 #print axioms PA.Formula.sat_axiom
