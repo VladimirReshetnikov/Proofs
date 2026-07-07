@@ -190,6 +190,80 @@ theorem HF_succAt_spec {α : Type} (M : AdjunctionModel α)
     Sat M.mem e (HF_succAt s a) ↔ e s = M.adjoin (e a) (e a) :=
   HF_adjoinAt_adjoin M e s a a
 
+/-- Formula macro: slot `a` is a subset of slot `b`. -/
+def HF_subsetAt (a b : Nat) : Form :=
+  fAll (fImp (fMem 0 (a+1)) (fMem 0 (b+1)))
+
+theorem HF_subsetAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a b : Nat) :
+    Sat mem e (HF_subsetAt a b) ↔ ∀ x, mem x (e a) → mem x (e b) :=
+  Iff.rfl
+
+/-- Semantic reading of transitivity for one object. -/
+def TransitiveObj {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
+  ∀ y, mem y a → ∀ x, mem x y → mem x a
+
+/-- Formula macro: slot `a` is transitive. -/
+def HF_transitiveAt (a : Nat) : Form :=
+  fAll (fImp (fMem 0 (a+1))
+    (fAll (fImp (fMem 0 1) (fMem 0 (a+2)))))
+
+theorem HF_transitiveAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_transitiveAt a) ↔ TransitiveObj mem (e a) := by
+  constructor
+  · intro h y hy x hx
+    exact h y hy x hx
+  · intro h y hy x hx
+    exact h y hy x hx
+
+/-- Semantic reading of membership-totality on the elements of one object. -/
+def MemTotalOn {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
+  ∀ y, mem y a → ∀ z, mem z a → mem y z ∨ y = z ∨ mem z y
+
+/-- Formula macro: membership linearly orders the elements of slot `a`.
+This is only the totality component; well-foundedness comes from HF induction. -/
+def HF_memTotalOnAt (a : Nat) : Form :=
+  fAll (fImp (fMem 0 (a+1))
+    (fAll (fImp (fMem 0 (a+2))
+      (fOr (fMem 1 0) (fOr (fEq 1 0) (fMem 0 1))))))
+
+theorem HF_memTotalOnAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_memTotalOnAt a) ↔ MemTotalOn mem (e a) := by
+  constructor
+  · intro h y hy z hz
+    exact h y hy z hz
+  · intro h y hy z hz
+    exact h y hy z hz
+
+/-- Semantic reading of the finite-ordinal domain formula used by the
+PA-in-HF interpretation. -/
+def OrdinalLike {α : Type u} (mem : α → α → Prop) (a : α) : Prop :=
+  TransitiveObj mem a ∧ (∀ y, mem y a → TransitiveObj mem y) ∧ MemTotalOn mem a
+
+/-- Formula macro: slot `a` is ordinal-like.  Over HF, where membership is
+well-founded by set induction, this is intended to define the finite von
+Neumann ordinals. -/
+def HF_ordinalLikeAt (a : Nat) : Form :=
+  fAnd (HF_transitiveAt a)
+    (fAnd
+      (fAll (fImp (fMem 0 (a+1)) (HF_transitiveAt 0)))
+      (HF_memTotalOnAt a))
+
+theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
+    (e : Nat → α) (a : Nat) :
+    Sat mem e (HF_ordinalLikeAt a) ↔ OrdinalLike mem (e a) := by
+  constructor
+  · intro h
+    exact ⟨(HF_transitiveAt_spec e a).mp h.1,
+      (fun y hy => (HF_transitiveAt_spec (scons y e) 0).mp (h.2.1 y hy)),
+      (HF_memTotalOnAt_spec e a).mp h.2.2⟩
+  · intro h
+    exact ⟨(HF_transitiveAt_spec e a).mpr h.1,
+      (fun y hy => (HF_transitiveAt_spec (scons y e) 0).mpr (h.2.1 y hy)),
+      (HF_memTotalOnAt_spec e a).mpr h.2.2⟩
+
 /-- The first-order set-induction schema instance for `phi`, where `phi`
 uses slot `0` as the element being proved and slots `1,2,...` as parameters. -/
 def HF_induction_form (phi : Form) : Form :=
