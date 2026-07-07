@@ -12107,6 +12107,28 @@ theorem formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext {α : Type u}
   · exact hxRight
   · rfl
 
+/-- In every model of finite HF, the explicit domain assumptions for a PA term
+yield an ordinal-like value satisfying that term's translated graph. -/
+theorem termGraphAt_exists_valid_of_HFFinAx_s_domainContext {α : Type u}
+    {mem : α → α → Prop} (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g)
+    (ρ : Nat → Nat) (t : PA.Term) (e : Nat → α)
+    (hctx : ∀ g, g ∈ domainContextAt ρ t.bound → Sat mem e g) :
+    Sat mem e
+      (fEx (fAnd domainForm (termGraphAt (fun n => ρ n + 1) 0 t))) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e
+    (fEx (fAnd domainForm (termGraphAt (fun n => ρ n + 1) 0 t)))
+  have hfree : ∀ n, PA.Term.Free n t → OrdinalLike M.mem (e (ρ n)) := by
+    intro n hn
+    exact Sat_domainContextAt_ordinalLike (ρ := ρ) (n := t.bound)
+      (e := e) hctx n (PA.Term.free_lt_bound t n hn)
+  rcases termGraphAt_total_of_ordinalLike M t ρ e hfree with
+    ⟨x, hxOrd, hxGraph⟩
+  refine ⟨x, ?_, ?_⟩
+  · exact (HF_ordinalLikeAt_spec (scons x e) 0).mpr hxOrd
+  · exact hxGraph
+
 /-- Finite HF proves translated reflexivity for an arbitrary PA term from
 explicit domain assumptions for all free variables of the term. -/
 theorem BProv_HFFin_formulaAt_eqRefl_domainContext {G : List Form}
@@ -12117,6 +12139,19 @@ theorem BProv_HFFin_formulaAt_eqRefl_domainContext {G : List Form}
   · exact Sentences_HFFin
   · intro Dom mem v hHF hctx
     exact formulaAt_eqRefl_valid_of_HFFinAx_s_domainContext v hHF ρ t v
+      (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
+
+/-- Finite HF proves that an arbitrary PA term has an ordinal-like translated
+graph value from explicit domain assumptions for all free variables of the
+term. -/
+theorem BProv_HFFin_termGraphAt_exists_domainContext {G : List Form}
+    (ρ : Nat → Nat) (t : PA.Term) :
+    BProv HFFinAx_s (domainContextAt ρ t.bound ++ G)
+      (fEx (fAnd domainForm (termGraphAt (fun n => ρ n + 1) 0 t))) := by
+  apply completeness_inf_context HFFinAx_s
+  · exact Sentences_HFFin
+  · intro Dom mem v hHF hctx
+    exact termGraphAt_exists_valid_of_HFFinAx_s_domainContext v hHF ρ t v
       (fun g hg => hctx g (List.mem_append.mpr (Or.inl hg)))
 
 /-- An HF equality proof between the slots assigned to two PA variables yields
