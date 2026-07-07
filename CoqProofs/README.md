@@ -35,6 +35,12 @@ Current ports:
   nonnegative Coq rationals.
 - `PowTower.v` ports the shared lexical syntax, executable
   parenthesization/evaluation layer, and small recursive-value sanity checks.
+- `A000081.v` ports the finite executable certificate from `A000081.lean`.
+  It uses a hereditarily sorted exponent normal form for positive-real tower
+  functions, preserving the named small parenthesizations and equality
+  certificates such as `e4c = e4d` and `e5f = e5j`.  It certifies the Lean
+  values through `n = 5` and extends the same executable normal-form count
+  through `n = 8`.
 - `A199812.v` ports the executable ordinal-note recurrence behind
   `A199812.lean`: inner tower exponents are represented as Cantor-normal-form
   notes below epsilon_0, tower splits combine degrees by
@@ -70,6 +76,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/RationalFloorOrbit.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A000081.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
