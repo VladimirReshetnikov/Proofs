@@ -11573,6 +11573,26 @@ theorem BProv_formulaAt_lem (ρ : Nat → Nat) (G : List PA.Formula)
     (fOr (formulaAt ρ a) (fImp (formulaAt ρ a) fBot))
   exact BProv_of_Prov (B := translatedPAAx) (Prov.P_lem _ _)
 
+/-- Reflexivity of equality for a PA variable term under an arbitrary HF
+context.  This is the base equality bridge that needs no term-totality proof:
+the graph of a PA variable is just HF equality to its assigned slot. -/
+theorem BProv_formulaAt_eqRefl_var {G : List Form} (ρ : Nat → Nat) (k : Nat) :
+    BProv translatedPAAx G
+      (formulaAt ρ (PA.Formula.eq (PA.Term.var k) (PA.Term.var k))) := by
+  refine BProv_of_Prov (B := translatedPAAx) ?_
+  change Prov G
+    (fEx (fEx (fAnd (fEq 1 (ρ k + 2))
+      (fAnd (fEq 0 (ρ k + 2)) (fEq 1 0)))))
+  apply Prov.P_exI _ _ (ρ k)
+  apply Prov.P_exI _ _ (ρ k)
+  change Prov G (fAnd (fEq (ρ k) (ρ k))
+    (fAnd (fEq (ρ k) (ρ k)) (fEq (ρ k) (ρ k))))
+  apply Prov.P_andI
+  · exact Prov.P_eqRefl _ (ρ k)
+  · apply Prov.P_andI
+    · exact Prov.P_eqRefl _ (ρ k)
+    · exact Prov.P_eqRefl _ (ρ k)
+
 /-- Translated conjunction introduction for an explicit
 PA-variable-to-HF-slot map. -/
 theorem BProv_formulaAt_andI {ρ : Nat → Nat} {G : List PA.Formula}
