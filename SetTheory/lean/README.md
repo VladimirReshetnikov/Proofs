@@ -134,6 +134,11 @@ the same result for the model-relative predicate
 `BusyBeaver.TotalRecursiveInRadoModel`.  `SetTheory/Audit.lean` checks and
 prints the axioms of the request-shaped aliases.
 
+The same module also proves the state-padding facts needed for later compiler
+accounting: `BusyBeaver.sigma_mono_of_pos` pads positive-state machines with
+unreachable states, and `BusyBeaver.score_le_sigma_of_atMost` lets any score
+attainable with at most `n` states be compared directly with `Σ(n)`.
+
 `BusyBeaverMathlib.lean` connects that interface to mathlib's recursion theory
 without introducing an unproved recursive-function/Turing-machine bridge:
 

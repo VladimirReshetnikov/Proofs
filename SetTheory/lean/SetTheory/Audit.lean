@@ -38,8 +38,12 @@ open SetTheory
 #print axioms ClosureFO_of_ZF
 
 -- Busy Beaver domination interface
+#check @BusyBeaver.sigma_mono_of_pos
+#check @BusyBeaver.score_le_sigma_of_atMost
 #check @BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
+#print axioms BusyBeaver.sigma_mono_of_pos
+#print axioms BusyBeaver.score_le_sigma_of_atMost
 #print axioms BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
 

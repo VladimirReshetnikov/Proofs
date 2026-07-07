@@ -82,6 +82,17 @@ structure Config (states : Nat) where
   tape : Tape
   deriving Repr
 
+namespace Config
+
+/-- Embed a configuration into a machine with more operational states. -/
+def castLE {states larger : Nat} (h : states ≤ larger) (cfg : Config states) :
+    Config larger where
+  state := cfg.state.map (Fin.castLE h)
+  head := cfg.head
+  tape := cfg.tape
+
+end Config
+
 /-- The blank initial configuration. -/
 def initial (states : Nat) : Config states where
   state := startState states
@@ -89,6 +100,24 @@ def initial (states : Nat) : Config states where
   tape := []
 
 namespace Machine
+
+/--
+Pad a machine to a larger state set.  Original states keep their transitions;
+extra states are unreachable from the embedded start state and halt after
+writing `0` and moving right.
+-/
+def castLE {states larger : Nat} (h : states ≤ larger) (M : Machine states) :
+    Machine larger where
+  transition q bit :=
+    if hq : q.val < states then
+      let action := M.transition ⟨q.val, hq⟩ bit
+      { write := action.write
+        move := action.move
+        next := action.next.map (Fin.castLE h) }
+    else
+      { write := false
+        move := Move.right
+        next := none }
 
 /-- Execute one transition.  Halted configurations stay fixed. -/
 def step {states : Nat} (M : Machine states) (cfg : Config states) : Config states :=
@@ -105,6 +134,51 @@ def run {states : Nat} (M : Machine states) : Nat -> Config states
   | 0 => initial states
   | t + 1 => M.step (M.run t)
 
+@[simp]
+theorem castLE_step {states larger : Nat} (h : states ≤ larger)
+    (M : Machine states) (cfg : Config states) :
+    (M.castLE h).step (cfg.castLE h) = (M.step cfg).castLE h := by
+  cases cfg with
+  | mk state head tape =>
+      cases state with
+      | none => rfl
+      | some q =>
+          simp [step, Config.castLE, Machine.castLE]
+
+@[simp]
+theorem startState_castLE {states larger : Nat} (hpos : 0 < states)
+    (h : states ≤ larger) :
+    (startState states).map (Fin.castLE h) = startState larger := by
+  cases states with
+  | zero => cases hpos
+  | succ states' =>
+      cases larger with
+      | zero =>
+          cases Nat.not_succ_le_zero states' h
+      | succ larger' =>
+          rfl
+
+@[simp]
+theorem initial_castLE {states larger : Nat} (hpos : 0 < states)
+    (h : states ≤ larger) :
+    (initial states).castLE h = initial larger := by
+  simp [initial, Config.castLE, startState_castLE hpos h]
+
+@[simp]
+theorem castLE_run {states larger : Nat} (hpos : 0 < states)
+    (h : states ≤ larger) (M : Machine states) :
+    ∀ t, (M.castLE h).run t = (M.run t).castLE h
+  | 0 => by simp [run, initial_castLE hpos h]
+  | t + 1 => by
+      simp [run, castLE_run hpos h M t]
+
+@[simp]
+theorem run_zero_states (M : Machine 0) :
+    ∀ t, M.run t = initial 0
+  | 0 => rfl
+  | t + 1 => by
+      simp [run, run_zero_states M t, step, initial, startState]
+
 /--
 The machine halts with `score` if after some finite number of steps it is halted
 and exactly `score` tape cells contain `1`.
@@ -112,11 +186,34 @@ and exactly `score` tape cells contain `1`.
 def HaltsWithScore {states : Nat} (M : Machine states) (score : Nat) : Prop :=
   ∃ t, (M.run t).state = none ∧ (M.run t).tape.length = score
 
+theorem castLE_haltsWithScore {states larger score : Nat} (hpos : 0 < states)
+    (h : states ≤ larger) {M : Machine states} :
+    M.HaltsWithScore score -> (M.castLE h).HaltsWithScore score := by
+  rintro ⟨t, hState, hScore⟩
+  refine ⟨t, ?_, ?_⟩
+  · simp [castLE_run hpos h M t, Config.castLE, hState]
+  · simpa [castLE_run hpos h M t, Config.castLE] using hScore
+
+theorem zero_states_haltsWithScore_eq_zero {score : Nat} {M : Machine 0} :
+    M.HaltsWithScore score -> score = 0 := by
+  rintro ⟨t, _hState, hScore⟩
+  simpa [run_zero_states M t, initial] using hScore.symm
+
 end Machine
 
 /-- A score is attainable by some `states`-state machine. -/
 def AttainableScore (states score : Nat) : Prop :=
   ∃ M : Machine states, M.HaltsWithScore score
+
+/-- A score is attainable by a machine using at most `states` operational states. -/
+def AttainableScoreAtMost (states score : Nat) : Prop :=
+  ∃ used, used ≤ states ∧ AttainableScore used score
+
+theorem attainableScore_castLE {states larger score : Nat}
+    (hpos : 0 < states) (h : states ≤ larger) :
+    AttainableScore states score -> AttainableScore larger score := by
+  rintro ⟨M, hM⟩
+  exact ⟨M.castLE h, M.castLE_haltsWithScore hpos h hM⟩
 
 /-! ## The busy-beaver score function and domination -/
 
@@ -160,6 +257,28 @@ theorem score_le_sigma {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
     {states score : Nat} (h : AttainableScore states score) :
     score ≤ Sigma states :=
   hSigma.upper h
+
+/--
+`Σ` is monotone on positive state counts: a smaller positive-state machine can
+be padded with unreachable states.
+-/
+theorem sigma_mono_of_pos {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {states larger : Nat} (hpos : 0 < states) (h : states ≤ larger) :
+    Sigma states ≤ Sigma larger := by
+  exact hSigma.upper (attainableScore_castLE hpos h (hSigma.attained hpos))
+
+/-- Any score attainable with at most `states` states is bounded by `Σ states`. -/
+theorem score_le_sigma_of_atMost {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {states score : Nat} (h : AttainableScoreAtMost states score) :
+    score ≤ Sigma states := by
+  rcases h with ⟨used, hUsed, hScore⟩
+  by_cases hzero : used = 0
+  · subst used
+    rcases hScore with ⟨M, hM⟩
+    have hScoreZero := Machine.zero_states_haltsWithScore_eq_zero (M := M) hM
+    simp [hScoreZero]
+  · have hpos : 0 < used := Nat.pos_of_ne_zero hzero
+    exact Nat.le_trans (hSigma.upper hScore) (sigma_mono_of_pos hSigma hpos hUsed)
 
 /--
 The busy-beaver score function eventually dominates every total recursive
