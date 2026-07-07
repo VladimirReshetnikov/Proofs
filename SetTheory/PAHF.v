@@ -7750,6 +7750,18 @@ Proof.
   - apply hfMemAt_complete.
 Qed.
 
+Lemma hfMemAt_free : forall i elem set,
+  Free i (hfMemAt elem set) -> i = elem \/ i = set.
+Proof.
+  intros i elem set h.
+  unfold hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtConstIdx, betaAtSuccIdx, betaAt,
+    remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt,
+    eqConstAt, betaModTerm in h.
+  simpl in h.
+  lia.
+Qed.
+
 Definition hfUpVarMap (rho : nat -> nat) : nat -> nat :=
   fun n =>
     match n with
@@ -7874,6 +7886,177 @@ Proof.
   unfold translateHFFormula.
   apply hfFormulaAt_exact.
   intro n. reflexivity.
+Qed.
+
+Lemma hfFormulaAt_free : forall phi rho i,
+  Free i (hfFormulaAt rho phi) ->
+    exists n, Fol.Free n phi /\ i = rho n.
+Proof.
+  induction phi; simpl; intros rho i h.
+  - destruct (hfMemAt_free i (rho n) (rho n0) h) as [hi | hi].
+    + exists n. split; [left; reflexivity | exact hi].
+    + exists n0. split; [right; reflexivity | exact hi].
+  - destruct h as [h | h].
+    + exists n. split; [left; reflexivity | exact h].
+    + exists n0. split; [right; reflexivity | exact h].
+  - contradiction.
+  - destruct h as [h | h].
+    + destruct (IHphi1 rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHphi2 rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHphi1 rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHphi2 rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct h as [h | h].
+    + destruct (IHphi1 rho i h) as [n [hn hi]].
+      exists n. split; [left; exact hn | exact hi].
+    + destruct (IHphi2 rho i h) as [n [hn hi]].
+      exists n. split; [right; exact hn | exact hi].
+  - destruct (IHphi (hfUpVarMap rho) (S i) h) as [n [hn hi]].
+    destruct n as [|n].
+    + simpl in hi. discriminate hi.
+    + exists n.
+      split.
+      * exact hn.
+      * simpl in hi.
+        injection hi as hi.
+        exact hi.
+  - destruct (IHphi (hfUpVarMap rho) (S i) h) as [n [hn hi]].
+    destruct n as [|n].
+    + simpl in hi. discriminate hi.
+    + exists n.
+      split.
+      * exact hn.
+      * simpl in hi.
+        injection hi as hi.
+        exact hi.
+Qed.
+
+Lemma hfFormulaAt_sentence_of_HF_sentence : forall phi rho,
+  Fol.Sentence phi -> Sentence (hfFormulaAt rho phi).
+Proof.
+  intros phi rho hphi i hi.
+  destruct (hfFormulaAt_free phi rho i hi) as [n [hn _]].
+  exact (hphi n hn).
+Qed.
+
+Lemma translateHFFormula_sentence_of_HF_sentence : forall phi,
+  Fol.Sentence phi -> Sentence (translateHFFormula phi).
+Proof.
+  intros phi hphi.
+  apply hfFormulaAt_sentence_of_HF_sentence.
+  exact hphi.
+Qed.
+
+Lemma translated_HF_axiom_sat_nat : forall phi,
+  HFAx_s phi -> forall v, Sat natModel v (translateHFFormula phi).
+Proof.
+  intros phi hphi v.
+  apply (proj2 (translateHFFormula_exact phi v)).
+  exact (standard_sat_HF v phi hphi).
+Qed.
+
+Lemma translated_HF_axiom_sentence : forall g,
+  HFAx_s g -> Sentence (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply translateHFFormula_sentence_of_HF_sentence.
+  exact (Sentences_HF g hg).
+Qed.
+
+Lemma translated_HFFin_axiom_sentence : forall g,
+  HFFinAx_s g -> Sentence (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply translateHFFormula_sentence_of_HF_sentence.
+  exact (Sentences_HFFin g hg).
+Qed.
+
+Definition translatedHFAx (phi : formula) : Prop :=
+  exists g, HFAx_s g /\ phi = translateHFFormula g.
+
+Definition translatedHFFinAx (phi : formula) : Prop :=
+  exists g, HFFinAx_s g /\ phi = translateHFFormula g.
+
+Lemma translatedHFAx_intro : forall g,
+  HFAx_s g -> translatedHFAx (translateHFFormula g).
+Proof.
+  intros g hg.
+  exists g.
+  split; [exact hg | reflexivity].
+Qed.
+
+Lemma translatedHFFinAx_intro : forall g,
+  HFFinAx_s g -> translatedHFFinAx (translateHFFormula g).
+Proof.
+  intros g hg.
+  exists g.
+  split; [exact hg | reflexivity].
+Qed.
+
+Lemma translatedHFFinAx_of_translatedHFAx : forall phi,
+  translatedHFAx phi -> translatedHFFinAx phi.
+Proof.
+  intros phi [g [hg hphi]].
+  subst phi.
+  apply translatedHFFinAx_intro.
+  apply HFFinAx_s_of_HFAx_s.
+  exact hg.
+Qed.
+
+Lemma Sentences_translatedHFAx : forall phi,
+  translatedHFAx phi -> Sentence phi.
+Proof.
+  intros phi [g [hg hphi]].
+  subst phi.
+  exact (translated_HF_axiom_sentence g hg).
+Qed.
+
+Lemma Sentences_translatedHFFinAx : forall phi,
+  translatedHFFinAx phi -> Sentence phi.
+Proof.
+  intros phi [g [hg hphi]].
+  subst phi.
+  exact (translated_HFFin_axiom_sentence g hg).
+Qed.
+
+Lemma BProv_translatedHFAx_of_HFAx : forall g,
+  HFAx_s g -> BProv translatedHFAx [] (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply BProv_ax.
+  apply translatedHFAx_intro.
+  exact hg.
+Qed.
+
+Lemma BProv_translatedHFFinAx_of_HFFinAx : forall g,
+  HFFinAx_s g -> BProv translatedHFFinAx [] (translateHFFormula g).
+Proof.
+  intros g hg.
+  apply BProv_ax.
+  apply translatedHFFinAx_intro.
+  exact hg.
+Qed.
+
+Lemma BProv_lift_translatedHFAx_to_PA :
+  (forall f, translatedHFAx f -> BProv Ax_s [] f) ->
+  forall f, BProv translatedHFAx [] f -> BProv Ax_s [] f.
+Proof.
+  intros hAx f h.
+  apply (BProv_lift translatedHFAx Ax_s [] [] f h).
+  - intros b hb. exact (hAx b hb).
+  - intros g hg. contradiction.
+Qed.
+
+Lemma standard_sat_translatedHFAx : forall e,
+  forall g, translatedHFAx g -> Sat natModel e g.
+Proof.
+  intros e g [phi [hphi hg]].
+  subst g.
+  exact (translated_HF_axiom_sat_nat phi hphi e).
 Qed.
 
 End Formula.
