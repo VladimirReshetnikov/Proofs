@@ -3810,6 +3810,236 @@ Proof.
     lia.
 Qed.
 
+Definition domainForm : form := HF_ordinalLikeAt 0.
+
+Definition zeroGraph : form := HF_emptyAt 0.
+
+Definition succGraph : form := HF_succAt 0 1.
+
+Definition addGraphAt (out left right : nat) : form :=
+  fEx (fAnd (HF_succRecApproxAt 0 (S left) (S right))
+    (HF_pairMemAt (S right) (S out) 0)).
+
+Definition addGraph : form := addGraphAt 0 1 2.
+
+Lemma OrdinalLike_of_hf_ordinal_like : forall a,
+  hf_ordinal_like a -> OrdinalLike hf_mem a.
+Proof.
+  unfold hf_ordinal_like, OrdinalLike,
+    hf_transitive_obj, TransitiveObj,
+    hf_mem_total_on, MemTotalOn.
+  tauto.
+Qed.
+
+Lemma hf_ordinal_like_of_OrdinalLike : forall a,
+  OrdinalLike hf_mem a -> hf_ordinal_like a.
+Proof.
+  unfold hf_ordinal_like, OrdinalLike,
+    hf_transitive_obj, TransitiveObj,
+    hf_mem_total_on, MemTotalOn.
+  tauto.
+Qed.
+
+Lemma HF_ordinalLikeAt_of_ordinal_code : forall (e : nat -> nat) i n,
+  e i = ordinal_code n ->
+  Sat nat hf_mem e (HF_ordinalLikeAt i).
+Proof.
+  intros e i n h.
+  apply (proj2 (HF_ordinalLikeAt_spec nat hf_mem e i)).
+  rewrite h.
+  apply OrdinalLike_of_hf_ordinal_like.
+  apply ordinal_code_ordinal_like.
+Qed.
+
+Lemma HF_ordinalLikeAt_exact : forall (e : nat -> nat) i,
+  Sat nat hf_mem e (HF_ordinalLikeAt i) <-> is_ordinal_code (e i).
+Proof.
+  intros e i.
+  split.
+  - intro h.
+    apply hf_ordinal_like_is_ordinal_code.
+    apply hf_ordinal_like_of_OrdinalLike.
+    exact (proj1 (HF_ordinalLikeAt_spec nat hf_mem e i) h).
+  - intros [n hn].
+    apply (HF_ordinalLikeAt_of_ordinal_code e i n).
+    symmetry. exact hn.
+Qed.
+
+Lemma domain_ordinal_code : forall n e,
+  Sat nat hf_mem (scons nat (ordinal_code n) e) domainForm.
+Proof.
+  intros n e.
+  unfold domainForm.
+  apply (HF_ordinalLikeAt_of_ordinal_code
+    (scons nat (ordinal_code n) e) 0 n).
+  reflexivity.
+Qed.
+
+Lemma domain_exact : forall e,
+  Sat nat hf_mem e domainForm <-> is_ordinal_code (e 0).
+Proof.
+  intro e.
+  unfold domainForm.
+  apply HF_ordinalLikeAt_exact.
+Qed.
+
+Lemma zeroGraph_ordinal_code : forall e,
+  Sat nat hf_mem (scons nat (ordinal_code 0) e) zeroGraph.
+Proof.
+  intro e.
+  unfold zeroGraph.
+  apply (proj2 (HF_emptyAt_empty ackermannHFModel
+    (scons nat (ordinal_code 0) e) 0)).
+  reflexivity.
+Qed.
+
+Lemma zeroGraph_exact_on_ordinal_code : forall n e,
+  Sat nat hf_mem (scons nat (ordinal_code n) e) zeroGraph <-> n = 0.
+Proof.
+  intros n e.
+  split.
+  - intro h.
+    pose proof (proj1 (HF_emptyAt_empty ackermannHFModel
+      (scons nat (ordinal_code n) e) 0) h) as hz.
+    apply ordinal_code_injective.
+    rewrite ordinal_code_zero.
+    exact hz.
+  - intro h.
+    subst n.
+    apply zeroGraph_ordinal_code.
+Qed.
+
+Lemma succGraph_ordinal_code : forall n e,
+  Sat nat hf_mem
+    (scons nat (ordinal_code (S n)) (scons nat (ordinal_code n) e))
+    succGraph.
+Proof.
+  intros n e.
+  unfold succGraph.
+  apply (proj2 (HF_succAt_spec ackermannHFModel
+    (scons nat (ordinal_code (S n)) (scons nat (ordinal_code n) e)) 0 1)).
+  reflexivity.
+Qed.
+
+Lemma succGraph_exact_on_ordinal_codes : forall m n e,
+  Sat nat hf_mem
+    (scons nat (ordinal_code m) (scons nat (ordinal_code n) e))
+    succGraph <-> m = S n.
+Proof.
+  intros m n e.
+  split.
+  - intro h.
+    pose proof (proj1 (HF_succAt_spec ackermannHFModel
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e)) 0 1) h)
+      as hs.
+    apply ordinal_code_injective.
+    rewrite ordinal_code_succ.
+    exact hs.
+  - intro h.
+    subst m.
+    apply succGraph_ordinal_code.
+Qed.
+
+Lemma addGraphAt_ordinal_code : forall out left right m n e,
+  e out = ordinal_code (m + n) ->
+  e left = ordinal_code m ->
+  e right = ordinal_code n ->
+  Sat nat hf_mem e (addGraphAt out left right).
+Proof.
+  intros out left right m n e hout hleft hright.
+  unfold addGraphAt.
+  pose (f := succ_rec_trace (ordinal_code m) n).
+  exists f.
+  split.
+  - apply (proj2 (HF_succRecApproxAt_spec ackermannHFModel
+      (scons nat f e) 0 (S left) (S right))).
+    change (hf_succ_rec_approx ackermannHFModel (e left) f (e right)).
+    rewrite hleft, hright.
+    exact (succ_rec_trace_succ_rec_approx (ordinal_code m) n).
+  - apply (proj2 (HF_pairMemAt_spec ackermannHFModel
+      (scons nat f e) (S right) (S out) 0)).
+    change (hf_mem (hf_kpair_obj ackermannHFModel (e right) (e out)) f).
+    rewrite hout, hright.
+    unfold f.
+    pose proof (succ_rec_trace_pair_mem (ordinal_code m) n n) as hp.
+    assert (hnn : n <= n) by lia.
+    specialize (hp hnn).
+    rewrite succ_iter_obj_ordinal_code in hp.
+    exact hp.
+Qed.
+
+Lemma addGraph_ordinal_code : forall m n e,
+  Sat nat hf_mem
+    (scons nat (ordinal_code (m + n))
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e)))
+    addGraph.
+Proof.
+  intros m n e.
+  unfold addGraph.
+  apply (addGraphAt_ordinal_code 0 1 2 m n
+    (scons nat (ordinal_code (m + n))
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e))));
+    reflexivity.
+Qed.
+
+Lemma addGraphAt_value_of_ordinal_inputs : forall out left right m n e,
+  e left = ordinal_code m ->
+  e right = ordinal_code n ->
+  Sat nat hf_mem e (addGraphAt out left right) ->
+  e out = ordinal_code (m + n).
+Proof.
+  intros out left right m n e hleft hright h.
+  unfold addGraphAt in h.
+  destruct h as [f [hf hpair]].
+  pose proof (proj1 (HF_succRecApproxAt_spec ackermannHFModel
+    (scons nat f e) 0 (S left) (S right)) hf) as hf'.
+  pose proof (proj1 (HF_pairMemAt_spec ackermannHFModel
+    (scons nat f e) (S right) (S out) 0) hpair) as hpair'.
+  change (hf_succ_rec_approx ackermannHFModel (e left) f (e right)) in hf'.
+  change (hf_mem (hf_kpair_obj ackermannHFModel (e right) (e out)) f)
+    in hpair'.
+  rewrite hleft, hright in hf'.
+  rewrite hright in hpair'.
+  assert (hnn : n <= n) by lia.
+  pose proof (succ_rec_approx_value_of_le
+    (ordinal_code m) f n n (e out) hf' hnn hpair') as hval.
+  rewrite hval.
+  apply succ_iter_obj_ordinal_code.
+Qed.
+
+Lemma addGraphAt_exact_on_ordinal_codes : forall out left right r m n e,
+  e out = ordinal_code r ->
+  e left = ordinal_code m ->
+  e right = ordinal_code n ->
+  (Sat nat hf_mem e (addGraphAt out left right) <-> r = m + n).
+Proof.
+  intros out left right r m n e hout hleft hright.
+  split.
+  - intro h.
+    pose proof (addGraphAt_value_of_ordinal_inputs
+      out left right m n e hleft hright h) as hval.
+    apply ordinal_code_injective.
+    rewrite <- hout.
+    exact hval.
+  - intro h.
+    subst r.
+    apply (addGraphAt_ordinal_code out left right m n e); assumption.
+Qed.
+
+Lemma addGraph_exact_on_ordinal_codes : forall r m n e,
+  Sat nat hf_mem
+    (scons nat (ordinal_code r)
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e)))
+    addGraph <-> r = m + n.
+Proof.
+  intros r m n e.
+  unfold addGraph.
+  apply (addGraphAt_exact_on_ordinal_codes 0 1 2 r m n
+    (scons nat (ordinal_code r)
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) e))));
+    reflexivity.
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
