@@ -1,11 +1,11 @@
 (*
-  Coq port of the initial exact-logarithm layer of
-  LeanProofs/A002845.lean.
+  Coq port of the exact-logarithm layer of LeanProofs/A002845.lean.
 
-  This Coq port keeps the proved exact-logarithm reduction, connects it to the
-  Coq SparseBinary port, and uses Coq's binary natural numbers as the
-  executable logarithm representation.  That is enough to replay the first six
-  OEIS values without constructing enormous unary naturals.
+  This Coq port keeps the proved exact-logarithm reduction and the earlier
+  binary-N sparse bridge, then uses a small hereditary sparse-binary executable
+  recurrence for the published value certificates.  Materializing the exact
+  logarithms as binary naturals is already too large beyond the first few rows;
+  the hereditary representation keeps the exponent structure sparse.
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
@@ -153,10 +153,10 @@ Proof.
   now rewrite length_map.
 Qed.
 
-Definition a002845 : nat -> nat := directLogCardN.
+Definition directA002845 : nat -> nat := directLogCardN.
 
-Theorem a002845_eq_directLogCardNat (n : nat) :
-    a002845 n = directLogCardNat n.
+Theorem directA002845_eq_directLogCardNat (n : nat) :
+    directA002845 n = directLogCardNat n.
 Proof.
   exact (directLogCardN_eq_directLogCardNat n).
 Qed.
@@ -205,13 +205,156 @@ Proof.
   reflexivity.
 Qed.
 
-Theorem a002845_eq_certifiedSparseCard (n : nat) :
-    a002845 n = certifiedSparseCard n.
+Theorem directA002845_eq_certifiedSparseCard (n : nat) :
+    directA002845 n = certifiedSparseCard n.
 Proof.
-  unfold a002845.
+  unfold directA002845.
   symmetry.
   apply certifiedSparseCard_eq_directLogCardN.
 Qed.
+
+Module HereditarySparse.
+
+Inductive t : Type :=
+| snil : t
+| scons : t -> t -> t.
+
+Fixpoint size (x : t) : nat :=
+  match x with
+  | snil => 1
+  | scons h rest => S (size h + size rest)
+  end.
+
+Fixpoint beq (x y : t) : bool :=
+  match x, y with
+  | snil, snil => true
+  | scons xh xt, scons yh yt => beq xh yh && beq xt yt
+  | _, _ => false
+  end.
+
+Theorem beq_refl (x : t) : beq x x = true.
+Proof.
+  induction x as [|h ihh rest ihr].
+  - reflexivity.
+  - simpl. now rewrite ihh, ihr.
+Qed.
+
+Fixpoint revAux (xs acc : t) : t :=
+  match xs with
+  | snil => acc
+  | scons h rest => revAux rest (scons h acc)
+  end.
+
+Definition rev (xs : t) : t := revAux xs snil.
+
+Fixpoint compareFuel (fuel : nat) (x y : t) : comparison :=
+  match fuel with
+  | 0 => Eq
+  | S fuel' => compareListFuel fuel' (rev x) (rev y)
+  end
+with compareListFuel (fuel : nat) (xs ys : t) : comparison :=
+  match fuel with
+  | 0 => Eq
+  | S fuel' =>
+      match xs, ys with
+      | snil, snil => Eq
+      | snil, scons _ _ => Lt
+      | scons _ _, snil => Gt
+      | scons x xs', scons y ys' =>
+          match compareFuel fuel' x y with
+          | Eq => compareListFuel fuel' xs' ys'
+          | c => c
+          end
+      end
+  end.
+
+Definition compare (x y : t) : comparison :=
+  compareFuel (size x + size y + 1) x y.
+
+Definition zero : t := snil.
+
+Fixpoint incrFuel (fuel : nat) (x : t) : t :=
+  match fuel with
+  | 0 => x
+  | S fuel' => insBitFuel fuel' zero x
+  end
+with insBitFuel (fuel : nat) (p bits : t) : t :=
+  match fuel with
+  | 0 => scons p bits
+  | S fuel' =>
+      match bits with
+      | snil => scons p snil
+      | scons q qs =>
+          match compare p q with
+          | Lt => scons p (scons q qs)
+          | Eq => insBitFuel fuel' (incrFuel fuel' q) qs
+          | Gt => scons q (insBitFuel fuel' p qs)
+          end
+      end
+  end.
+
+Definition incr (x : t) : t :=
+  incrFuel (size x + 1) x.
+
+Definition insBit (p bits : t) : t :=
+  insBitFuel (size p + size bits + 1) p bits.
+
+Definition one : t := scons zero zero.
+
+Definition add (x y : t) : t :=
+  let fix foldBits ys acc :=
+    match ys with
+    | snil => acc
+    | scons p ps => foldBits ps (insBit p acc)
+    end in
+  foldBits y x.
+
+Definition shift (x b : t) : t :=
+  let fix foldBits xs acc :=
+    match xs with
+    | snil => acc
+    | scons p ps => foldBits ps (insBit (add p b) acc)
+    end in
+  foldBits x snil.
+
+Definition combineLevel (left right : list t) : list t :=
+  flat_map (fun a => map (fun b => shift a b) right) left.
+
+Definition levelFromTable (levels : list (list t)) (n : nat) : list t :=
+  match n with
+  | 0 => []
+  | 1 => [one]
+  | S (S n') =>
+      PT.dedupBy beq
+        (flat_map
+          (fun k =>
+             combineLevel (nth (S k) levels []) (nth (S n' - k) levels []))
+          (seq 0 (S n')))
+  end.
+
+Fixpoint levelTable (fuel : nat) : list (list t) :=
+  match fuel with
+  | 0 => []
+  | S fuel' =>
+      let levels := levelTable fuel' in
+      levels ++ [levelFromTable levels fuel']
+  end.
+
+Definition level (n : nat) : list t :=
+  nth n (levelTable (S n)) [].
+
+Definition count (n : nat) : nat :=
+  length (level n).
+
+End HereditarySparse.
+
+Definition certifiedLevelCount : nat -> nat :=
+  HereditarySparse.count.
+
+Definition a002845 : nat -> nat := certifiedLevelCount.
+
+Definition a002845ValuesThroughTwelve : list nat :=
+  [1; 1; 1; 2; 4; 8; 17; 36; 78; 171; 379; 851].
 
 Theorem a002845_one : a002845 1 = 1.
 Proof. vm_compute. reflexivity. Qed.
@@ -230,6 +373,33 @@ Proof. vm_compute. reflexivity. Qed.
 
 Theorem a002845_six : a002845 6 = 8.
 Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_seven : a002845 7 = 17.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_eight : a002845 8 = 36.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_nine : a002845 9 = 78.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_ten : a002845 10 = 171.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_eleven : a002845 11 = 379.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_twelve : a002845 12 = 851.
+Proof. vm_compute. reflexivity. Qed.
+
+Theorem a002845_values_through_twelve :
+    map a002845 (seq 1 12) = a002845ValuesThroughTwelve.
+Proof.
+  cbn [seq map].
+  now rewrite a002845_one, a002845_two, a002845_three, a002845_four,
+    a002845_five, a002845_six, a002845_seven, a002845_eight, a002845_nine,
+    a002845_ten, a002845_eleven, a002845_twelve.
+Qed.
 
 End PowExpr.
 
