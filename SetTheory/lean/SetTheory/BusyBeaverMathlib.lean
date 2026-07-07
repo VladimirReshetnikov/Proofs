@@ -1196,6 +1196,54 @@ theorem trList_replicate_zero_length (m : Nat) :
   rw [trList_replicate_zero]
   simp
 
+private theorem listBlank_nth_mk_replicate {α : Type*} [Inhabited α]
+    (x : α) {m i : Nat} (hi : i < m) :
+    (Turing.ListBlank.mk (List.replicate m x)).nth i = x := by
+  rw [Turing.ListBlank.nth_mk]
+  have hiLen : i < (List.replicate m x).length := by
+    simpa using hi
+  rw [List.getI_eq_getElem _ hiLen]
+  simp
+
+/--
+If the lowered `TM2 -> TM1` output exposes `m` unary-zero separators on the
+source main stack, then each of the first `m` lowered source cells carries a
+nonempty main-stack entry.
+-/
+theorem tm2to1MainOutput_replicate_cons_main_some
+    {tm1Output : Turing.ListBlank PartrecToTM1Alphabet} {m i : Nat}
+    (h : TM2to1MainOutput tm1Output
+      (List.replicate m Turing.PartrecToTM2.Γ'.cons))
+    (hi : i < m) :
+    (tm1Output.nth i).2 Turing.PartrecToTM2.K'.main =
+      some Turing.PartrecToTM2.Γ'.cons := by
+  rcases h with ⟨stk, tape, hAdd, hMaps, hMain⟩
+  rw [← hAdd]
+  rw [Turing.TM2to1.addBottom_nth_snd]
+  have hMap := congrArg
+    (fun L : Turing.ListBlank (Option Turing.PartrecToTM2.Γ') => L.nth i)
+    (hMaps Turing.PartrecToTM2.K'.main)
+  rw [Turing.proj_map_nth] at hMap
+  refine hMap.trans ?_
+  rw [hMain]
+  simpa [List.reverse_replicate] using
+    (listBlank_nth_mk_replicate (some Turing.PartrecToTM2.Γ'.cons) hi)
+
+/--
+The first `m` source cells in the lowered unary-zero output cannot be blank
+source symbols.
+-/
+theorem tm2to1MainOutput_replicate_cons_ne_default
+    {tm1Output : Turing.ListBlank PartrecToTM1Alphabet} {m i : Nat}
+    (h : TM2to1MainOutput tm1Output
+      (List.replicate m Turing.PartrecToTM2.Γ'.cons))
+    (hi : i < m) :
+    tm1Output.nth i ≠ (default : PartrecToTM1Alphabet) := by
+  intro hDefault
+  have hSome := tm2to1MainOutput_replicate_cons_main_some h hi
+  rw [hDefault] at hSome
+  simp [PartrecToTM1Alphabet] at hSome
+
 end MathlibBridge
 
 /--
