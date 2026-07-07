@@ -383,9 +383,12 @@ open SetTheory
 #check @AckermannHF.PAInHF.formulaAt
 #check @AckermannHF.PAInHF.formulaAt_map_ext
 #check @AckermannHF.PAInHF.domainForm_scons_insertAt
+#check @AckermannHF.PAInHF.domainForm_scons_succReplaceAt
 #check @AckermannHF.PAInHF.formulaAt_substZeroAt_insert_model
 #check @AckermannHF.PAInHF.formulaAt_substZero_insert_model
 #check @AckermannHF.PAInHF.formulaAt_substZero_scons_model
+#check @AckermannHF.PAInHF.formulaAt_substSuccAt_replace_model
+#check @AckermannHF.PAInHF.formulaAt_substSuccVar_scons_model
 #check @AckermannHF.PAInHF.formulaAt_free
 #check @AckermannHF.PAInHF.formulaAt_eq_var_spec
 #check @AckermannHF.PAInHF.formulaAt_zeroNotSucc_valid
