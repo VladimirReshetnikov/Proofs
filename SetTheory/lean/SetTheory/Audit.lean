@@ -112,8 +112,11 @@ open SetTheory
 #check @AckermannHF.PAInHF.mulGraph_ordinalCode
 #check @AckermannHF.PAInHF.mulRecApproxAt_value_of_le
 #check @AckermannHF.PAInHF.mulGraph_exact_on_ordinalCodes
+#check @AckermannHF.PAInHF.mulGraph_value_of_ordinalInputs
 #check @AckermannHF.PAInHF.zeroGraph_domain
 #check @AckermannHF.PAInHF.succGraph_preserves_domain
+#check @AckermannHF.PAInHF.termGraphAt
+#check @AckermannHF.PAInHF.termGraphAt_exact
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF

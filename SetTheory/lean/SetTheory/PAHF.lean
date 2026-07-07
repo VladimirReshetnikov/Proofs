@@ -1523,6 +1523,34 @@ theorem mulGraph_exact_on_ordinalCodes (r m n : Nat) (e : Nat → Nat) :
     subst h
     exact mulGraph_ordinalCode m n e
 
+theorem mulGraph_value_of_ordinalInputs (m n : Nat) (e : Nat → Nat)
+    (hleft : e 1 = ordinalCode m)
+    (hright : e 2 = ordinalCode n)
+    (h : Sat Mem e mulGraph) :
+    e 0 = ordinalCode (m*n) := by
+  rcases h with ⟨f, hf, hout⟩
+  let tail : Nat → Nat := fun k => e (k+3)
+  let eCanon : Nat → Nat :=
+    scons f (scons (e 0) (scons (ordinalCode m) (scons (ordinalCode n) tail)))
+  have heq : ∀ k, eCanon k = scons f e k := by
+    intro k
+    rcases k with _ | k
+    · rfl
+    rcases k with _ | k
+    · rfl
+    rcases k with _ | k
+    · exact hleft.symm
+    rcases k with _ | k
+    · exact hright.symm
+    · simp [eCanon, tail, scons]
+  have hfCanon : Sat Mem eCanon (mulRecApproxAt 0 2 3) :=
+    (Sat_ext (mulRecApproxAt 0 2 3) eCanon (scons f e) heq).mpr hf
+  have hout' := (HF_pairMemAt_spec standardModel (scons f e) 3 1 0).mp hout
+  change Mem (kpair standardModel (e 2) (e 0)) f at hout'
+  rw [hright] at hout'
+  exact mulRecApproxAt_value_of_le m n f (e 0) tail n (e 0)
+    hfCanon (Nat.le_refl n) hout'
+
 theorem zeroGraph_domain (e : Nat → Nat)
     (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by
   apply (HF_ordinalLikeAt_spec e 0).mpr
@@ -2121,6 +2149,172 @@ noncomputable def paRoundTripIso : PA.Iso PA.natModel ordinalPAModel where
 theorem ordinalPA_sat_PA (e : Nat → OrdinalHF) :
     ∀ f, PA.Formula.Ax_s f → PA.Formula.Sat ordinalPAModel e f :=
   PA.Formula.sat_axiom_s ordinalPAModel e
+
+/-! ## Syntactic PA-in-HF term interpretation -/
+
+namespace PAInHF
+
+open Form
+
+/-- Interpret a PA term as an HF formula graph.
+
+`termGraphAt ρ out t` says that slot `out` contains the value of the PA term
+`t`, where PA variable `n` is read from HF slot `ρ n`.  The slot map is part
+of the definition, rather than hidden in a convention, because recursive
+subterm witnesses introduce local binders and shift all older slots. -/
+def termGraphAt (ρ : Nat → Nat) (out : Nat) : PA.Term → Form
+  | PA.Term.var n => fEq out (ρ n)
+  | PA.Term.zero => HF_emptyAt out
+  | PA.Term.succ t =>
+      fEx (fAnd
+        (termGraphAt (fun n => ρ n + 1) 0 t)
+        (HF_succAt (out+1) 0))
+  | PA.Term.add a b =>
+      fEx (fEx (fAnd
+        (termGraphAt (fun n => ρ n + 2) 1 a)
+        (fAnd
+          (termGraphAt (fun n => ρ n + 2) 0 b)
+          (addGraphAt (out+2) 1 0))))
+  | PA.Term.mul a b =>
+      fEx (fEx (fEx (fAnd
+        (termGraphAt (fun n => ρ n + 3) 1 a)
+        (fAnd
+          (termGraphAt (fun n => ρ n + 3) 2 b)
+          (fAnd (fEq 0 (out+3)) mulGraph)))))
+
+theorem termGraphAt_exact (t : PA.Term) :
+    ∀ (ρ : Nat → Nat) (out : Nat) (v e),
+      (∀ n, e (ρ n) = ordinalCode (v n)) →
+        (Sat Mem e (termGraphAt ρ out t) ↔
+          e out = ordinalCode (PA.Term.eval PA.natModel v t)) := by
+  induction t with
+  | var n =>
+      intro ρ out v e hρ
+      constructor
+      · intro h
+        exact h.trans (hρ n)
+      · intro h
+        exact h.trans (hρ n).symm
+  | zero =>
+      intro ρ out v e hρ
+      constructor
+      · intro h
+        have hzero := (HF_emptyAt_empty standardModel e out).mp h
+        change e out = empty at hzero
+        simpa [PA.Term.eval, PA.natModel, ordinalCode_zero] using hzero
+      · intro h
+        apply (HF_emptyAt_empty standardModel e out).mpr
+        change e out = empty
+        simpa [PA.Term.eval, PA.natModel, ordinalCode_zero] using h
+  | succ t ih =>
+      intro ρ out v e hρ
+      constructor
+      · intro h
+        rcases h with ⟨x, ht, hs⟩
+        have hρ' : ∀ n, scons x e (ρ n + 1) = ordinalCode (v n) := by
+          intro n
+          simpa [scons] using hρ n
+        have htval := (ih (fun n => ρ n + 1) 0 v (scons x e) hρ').mp ht
+        change x = ordinalCode (PA.Term.eval PA.natModel v t) at htval
+        have hsval := (HF_succAt_spec standardModel (scons x e) (out+1) 0).mp hs
+        change e out = adjoin x x at hsval
+        rw [hsval, htval]
+        simp only [PA.Term.eval, PA.natModel]
+        rw [ordinalCode_succ]
+      · intro h
+        let x := ordinalCode (PA.Term.eval PA.natModel v t)
+        refine ⟨x, ?_, ?_⟩
+        · apply (ih (fun n => ρ n + 1) 0 v (scons x e) ?_).mpr
+          · rfl
+          · intro n
+            simpa [scons] using hρ n
+        · apply (HF_succAt_spec standardModel (scons x e) (out+1) 0).mpr
+          change e out = adjoin x x
+          rw [h]
+          simp only [PA.Term.eval, PA.natModel, x]
+          rw [ordinalCode_succ]
+  | add a b iha ihb =>
+      intro ρ out v e hρ
+      constructor
+      · intro h
+        rcases h with ⟨x, y, ha, hb, hAdd⟩
+        have hρ' : ∀ n, scons y (scons x e) (ρ n + 2) = ordinalCode (v n) := by
+          intro n
+          simpa [scons] using hρ n
+        have hx := (iha (fun n => ρ n + 2) 1 v (scons y (scons x e)) hρ').mp ha
+        have hy := (ihb (fun n => ρ n + 2) 0 v (scons y (scons x e)) hρ').mp hb
+        have hout := addGraphAt_value_of_ordinalInputs (out+2) 1 0
+          (PA.Term.eval PA.natModel v a) (PA.Term.eval PA.natModel v b)
+          (scons y (scons x e)) hx hy hAdd
+        change e out =
+          ordinalCode (PA.Term.eval PA.natModel v a + PA.Term.eval PA.natModel v b) at hout
+        simpa [PA.Term.eval, PA.natModel] using hout
+      · intro h
+        let x := ordinalCode (PA.Term.eval PA.natModel v a)
+        let y := ordinalCode (PA.Term.eval PA.natModel v b)
+        refine ⟨x, y, ?_, ?_, ?_⟩
+        · apply (iha (fun n => ρ n + 2) 1 v (scons y (scons x e)) ?_).mpr
+          · rfl
+          · intro n
+            simpa [scons] using hρ n
+        · apply (ihb (fun n => ρ n + 2) 0 v (scons y (scons x e)) ?_).mpr
+          · rfl
+          · intro n
+            simpa [scons] using hρ n
+        · apply addGraphAt_ordinalCode (out+2) 1 0
+            (PA.Term.eval PA.natModel v a) (PA.Term.eval PA.natModel v b)
+            (scons y (scons x e))
+          · change e out =
+              ordinalCode (PA.Term.eval PA.natModel v a + PA.Term.eval PA.natModel v b)
+            simpa [PA.Term.eval, PA.natModel] using h
+          · rfl
+          · rfl
+  | mul a b iha ihb =>
+      intro ρ out v e hρ
+      constructor
+      · intro h
+        rcases h with ⟨y, x, z, ha, hb, hcopy, hMul⟩
+        have hρ' : ∀ n, scons z (scons x (scons y e)) (ρ n + 3) =
+            ordinalCode (v n) := by
+          intro n
+          simpa [scons] using hρ n
+        have hx := (iha (fun n => ρ n + 3) 1 v
+          (scons z (scons x (scons y e))) hρ').mp ha
+        have hy := (ihb (fun n => ρ n + 3) 2 v
+          (scons z (scons x (scons y e))) hρ').mp hb
+        have hz := mulGraph_value_of_ordinalInputs
+          (PA.Term.eval PA.natModel v a) (PA.Term.eval PA.natModel v b)
+          (scons z (scons x (scons y e))) hx hy hMul
+        have hcopy' : z = e out := hcopy
+        rw [hcopy'] at hz
+        change e out = ordinalCode
+          (PA.Term.eval PA.natModel v a * PA.Term.eval PA.natModel v b) at hz
+        simpa [PA.Term.eval, PA.natModel] using hz
+      · intro h
+        let y := ordinalCode (PA.Term.eval PA.natModel v b)
+        let x := ordinalCode (PA.Term.eval PA.natModel v a)
+        let z := ordinalCode
+          (PA.Term.eval PA.natModel v a * PA.Term.eval PA.natModel v b)
+        refine ⟨y, x, z, ?_, ?_, ?_, ?_⟩
+        · apply (iha (fun n => ρ n + 3) 1 v
+            (scons z (scons x (scons y e))) ?_).mpr
+          · rfl
+          · intro n
+            simpa [scons] using hρ n
+        · apply (ihb (fun n => ρ n + 3) 2 v
+            (scons z (scons x (scons y e))) ?_).mpr
+          · rfl
+          · intro n
+            simpa [scons] using hρ n
+        · change z = e out
+          simpa [PA.Term.eval, PA.natModel, z] using h.symm
+        · change Sat Mem (scons z (scons x (scons y e))) mulGraph
+          simpa [z, x, y] using
+            (mulGraph_ordinalCode
+              (PA.Term.eval PA.natModel v a)
+              (PA.Term.eval PA.natModel v b) e)
+
+end PAInHF
 
 /-! ## The HF-in-PA-in-HF round trip -/
 
