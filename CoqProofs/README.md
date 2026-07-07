@@ -99,9 +99,9 @@ Current ports:
   carrier, preserving the evaluation/canonicality/comparison and
   increment/add/shift correctness API from `SparseBinary.lean`.
 - `A002845.v` ports the exact-logarithm reduction for the natural power tower
-  sequence and verifies the first six values through a binary-`N` executable
-  logarithm.  It is connected to `SparseBinary.v` by a certified sparse-log
-  evaluator that agrees with the exact binary logarithm evaluator.
+  sequence, keeps the binary-`N` executable logarithm bridge for the initial
+  direct layer, and adds a hereditary sparse-binary recurrence for the finite
+  certificates.  It verifies the Lean value table through `n = 14`.
 - `A198683N12Magnitude.v` ports the finite TSV-metadata layer from
   `A198683N12Magnitude.lean`: the n = 12 huge-negative-exponent,
   negative-exponent-above-ten, and overflow-regime flags are represented as
