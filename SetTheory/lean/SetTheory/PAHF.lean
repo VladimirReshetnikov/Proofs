@@ -4899,6 +4899,44 @@ theorem termGraphAt_free (t : PA.Term) :
           · have hm := mulGraph_free h
             omega
 
+/-- In any adjunction model, the graph of a PA variable is just equality with
+the slot selected by the current slot map. -/
+theorem termGraphAt_var_model {α : Type} (M : AdjunctionModel α)
+    (ρ : Nat → Nat) (out n : Nat) (e : Nat → α) :
+    Sat M.mem e (termGraphAt ρ out (PA.Term.var n)) ↔ e out = e (ρ n) := by
+  rfl
+
+/-- In any adjunction model, the graph of the PA zero term is the HF empty
+object. -/
+theorem termGraphAt_zero_model {α : Type} (M : AdjunctionModel α)
+    (ρ : Nat → Nat) (out : Nat) (e : Nat → α) :
+    Sat M.mem e (termGraphAt ρ out PA.Term.zero) ↔ e out = M.empty := by
+  exact HF_emptyAt_empty M e out
+
+/-- In any adjunction model, the graph of the successor of a variable is
+self-adjunction of the value of that variable. -/
+theorem termGraphAt_succ_var_model {α : Type} (M : AdjunctionModel α)
+    (ρ : Nat → Nat) (out n : Nat) (e : Nat → α) :
+    Sat M.mem e (termGraphAt ρ out (PA.Term.succ (PA.Term.var n))) ↔
+      e out = M.adjoin (e (ρ n)) (e (ρ n)) := by
+  constructor
+  · intro h
+    rcases h with ⟨x, hx, hs⟩
+    have hx' : x = e (ρ n) := by
+      change x = scons x e (ρ n + 1) at hx
+      rwa [← Nat.succ_eq_add_one (ρ n)] at hx
+    have hs' := (HF_succAt_spec M (scons x e) (out+1) 0).mp hs
+    change e out = M.adjoin x x at hs'
+    simpa [hx'] using hs'
+  · intro h
+    refine ⟨e (ρ n), ?_, ?_⟩
+    · change scons (e (ρ n)) e 0 = scons (e (ρ n)) e (ρ n + 1)
+      rw [← Nat.succ_eq_add_one (ρ n)]
+      rfl
+    · apply (HF_succAt_spec M (scons (e (ρ n)) e) (out+1) 0).mpr
+      change e out = M.adjoin (e (ρ n)) (e (ρ n))
+      exact h
+
 theorem termGraphAt_exact (t : PA.Term) :
     ∀ (ρ : Nat → Nat) (out : Nat) (v e),
       (∀ n, e (ρ n) = ordinalCode (v n)) →
@@ -5135,6 +5173,110 @@ theorem formulaAt_free (phi : PA.Formula) :
             · simp [upVarMap] at hi
               omega
 
+/-- In any adjunction model, translated equality between PA variables is
+ordinary equality between the selected HF slots. -/
+theorem formulaAt_eq_var_model {α : Type} (M : AdjunctionModel α)
+    (ρ : Nat → Nat) (m n : Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ (PA.Formula.eq (PA.Term.var m) (PA.Term.var n))) ↔
+      e (ρ m) = e (ρ n) := by
+  constructor
+  · intro h
+    rcases h with ⟨x, y, hx, hy, hxy⟩
+    change x = y at hxy
+    have hx' := (termGraphAt_var_model M (fun n => ρ n + 2) 1 m
+      (scons y (scons x e))).mp hx
+    have hy' := (termGraphAt_var_model M (fun n => ρ n + 2) 0 n
+      (scons y (scons x e))).mp hy
+    have hxv : x = e (ρ m) := by simpa [scons] using hx'
+    have hyv : y = e (ρ n) := by simpa [scons] using hy'
+    rw [← hxv, ← hyv]
+    exact hxy
+  · intro h
+    refine ⟨e (ρ m), e (ρ n), ?_, ?_, ?_⟩
+    · apply (termGraphAt_var_model M (fun n => ρ n + 2) 1 m
+        (scons (e (ρ n)) (scons (e (ρ m)) e))).mpr
+      simp [scons]
+    · apply (termGraphAt_var_model M (fun n => ρ n + 2) 0 n
+        (scons (e (ρ n)) (scons (e (ρ m)) e))).mpr
+      simp [scons]
+    · exact h
+
+/-- The zero-is-not-successor PA axiom is valid under the PA-in-HF
+translation in every adjunction model.  This is the unsealed body; use
+`translated_zeroNotSucc_sat_model` for the closed PA axiom. -/
+theorem formulaAt_zeroNotSucc_model {α : Type} (M : AdjunctionModel α)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.zeroNotSucc) := by
+  intro a _ hEq
+  rcases hEq with ⟨sx, z, hsx, hz, heq⟩
+  change sx = z at heq
+  have hsx' := (termGraphAt_succ_var_model M (fun n => upVarMap ρ n + 2) 1 0
+    (scons z (scons sx (scons a e)))).mp hsx
+  have hz' := (termGraphAt_zero_model M (fun n => upVarMap ρ n + 2) 0
+    (scons z (scons sx (scons a e)))).mp hz
+  have hsxv : sx = M.adjoin a a := by
+    simpa [upVarMap, scons] using hsx'
+  have hzv : z = M.empty := by
+    simpa [scons] using hz'
+  rw [hsxv, hzv] at heq
+  exact adjoin_self_ne_empty_model M a heq
+
+/-- The successor-injectivity PA axiom is valid under the PA-in-HF translation
+in every adjunction model.  This is the unsealed body; use
+`translated_succInj_sat_model` for the closed PA axiom. -/
+theorem formulaAt_succInj_model {α : Type} (M : AdjunctionModel α)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.succInj) := by
+  intro a ha b hb hEq
+  rcases hEq with ⟨sa, sb, hsa, hsb, heq⟩
+  change sa = sb at heq
+  have hsa' := (termGraphAt_succ_var_model M
+    (fun n => upVarMap (upVarMap ρ) n + 2) 1 1
+    (scons sb (scons sa (scons b (scons a e))))).mp hsa
+  have hsb' := (termGraphAt_succ_var_model M
+    (fun n => upVarMap (upVarMap ρ) n + 2) 0 0
+    (scons sb (scons sa (scons b (scons a e))))).mp hsb
+  have hsav : sa = M.adjoin a a := by
+    simpa [upVarMap, scons] using hsa'
+  have hsbv : sb = M.adjoin b b := by
+    simpa [upVarMap, scons] using hsb'
+  have haOrd : OrdinalLike M.mem a := by
+    exact (HF_ordinalLikeAt_spec (scons a e) 0).mp ha
+  have hbOrd : OrdinalLike M.mem b := by
+    exact (HF_ordinalLikeAt_spec (scons b (scons a e)) 0).mp hb
+  have hab : a = b := by
+    apply adjoin_self_injective_on_ordinalLike_model M haOrd hbOrd
+    rw [← hsav, ← hsbv]
+    exact heq
+  apply (formulaAt_eq_var_model M (upVarMap (upVarMap ρ)) 1 0
+    (scons b (scons a e))).mpr
+  simpa [upVarMap, scons] using hab
+
+/-- Harmless PA universal closures preserve model-validity of a translated PA
+formula, provided the unclosed translation is valid for every slot map and
+environment. -/
+theorem formulaAt_closeN_valid_model {α : Type} (M : AdjunctionModel α)
+    (phi : PA.Formula) (h : ∀ ρ (e : Nat → α), Sat M.mem e (formulaAt ρ phi)) :
+    ∀ k ρ (e : Nat → α), Sat M.mem e (formulaAt ρ (PA.Formula.closeN k phi)) := by
+  intro k
+  induction k generalizing phi with
+  | zero =>
+      intro ρ e
+      exact h ρ e
+  | succ k ih =>
+      intro ρ e
+      exact ih (PA.Formula.all phi)
+        (fun ρ e x _ => h (upVarMap ρ) (scons x e)) ρ e
+
+/-- Version of `formulaAt_closeN_valid_model` for PA's syntactic sealing
+operation. -/
+theorem formulaAt_sealPA_valid_model {α : Type} (M : AdjunctionModel α)
+    (phi : PA.Formula) (h : ∀ ρ (e : Nat → α), Sat M.mem e (formulaAt ρ phi))
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ (PA.Formula.sealPA phi)) := by
+  unfold PA.Formula.sealPA
+  exact formulaAt_closeN_valid_model M phi h (PA.Formula.bound phi) ρ e
+
 theorem formulaAt_exact (phi : PA.Formula) :
     ∀ (ρ : Nat → Nat) (v e),
       (∀ n, e (ρ n) = ordinalCode (v n)) →
@@ -5252,6 +5394,22 @@ theorem formulaAt_exact (phi : PA.Formula) :
 /-- The default PA-in-HF translation reads PA variable `n` from HF slot `n`. -/
 def translateFormula (phi : PA.Formula) : Form :=
   formulaAt (fun n : Nat => n) phi
+
+/-- Closed zero-is-not-successor axiom, semantically validated in every
+adjunction model under the PA-in-HF translation. -/
+theorem translated_zeroNotSucc_sat_model {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) :
+    Sat M.mem e (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)) :=
+  formulaAt_sealPA_valid_model M PA.Formula.zeroNotSucc
+    (fun ρ e => formulaAt_zeroNotSucc_model M ρ e) (fun n : Nat => n) e
+
+/-- Closed successor-injectivity axiom, semantically validated in every
+adjunction model under the PA-in-HF translation. -/
+theorem translated_succInj_sat_model {α : Type} (M : AdjunctionModel α)
+    (e : Nat → α) :
+    Sat M.mem e (translateFormula (PA.Formula.sealPA PA.Formula.succInj)) :=
+  formulaAt_sealPA_valid_model M PA.Formula.succInj
+    (fun ρ e => formulaAt_succInj_model M ρ e) (fun n : Nat => n) e
 
 theorem translateFormula_exact (phi : PA.Formula) (v : Nat → Nat) :
     Sat Mem (fun n => ordinalCode (v n)) (translateFormula phi) ↔
