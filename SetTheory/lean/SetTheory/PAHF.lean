@@ -10915,6 +10915,20 @@ theorem BProv_translate_allI_raw {G : List PA.Formula} {a : PA.Formula}
   · exact Or.inl (by simpa [hLmap] using hx)
   · exact Or.inr hx
 
+/-- Raw translated universal elimination by an HF variable instance. -/
+theorem BProv_translate_allE_raw {G : List PA.Formula} {a : PA.Formula} {k : Nat}
+    (h : BProv translatedPAAx (translateContext G)
+      (translateFormula (PA.Formula.all a))) :
+    BProv translatedPAAx (translateContext G)
+      (rename (inst k)
+        (fImp domainForm (formulaAt (upVarMap (fun n => n)) a))) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ translateContext G)
+    (rename (inst k)
+      (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))
+  exact Prov.P_allE _ _ k hp
+
 /-- Raw translated existential introduction by an HF variable witness. -/
 theorem BProv_translate_exI_raw {G : List PA.Formula} {a : PA.Formula} {k : Nat}
     (h : BProv translatedPAAx (translateContext G)
