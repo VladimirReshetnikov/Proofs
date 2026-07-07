@@ -6914,6 +6914,254 @@ Proof.
         unfold E. simpl. exact hbit.
 Qed.
 
+Definition Coprime (m n : nat) : Prop := Nat.gcd m n = 1.
+
+Lemma Coprime_1_l : forall n, Coprime 1 n.
+Proof.
+  intro n.
+  unfold Coprime.
+  apply Nat.gcd_unique.
+  - exists 1. lia.
+  - exists n. lia.
+  - intros q hq _.
+    exact hq.
+Qed.
+
+Lemma Coprime_sym : forall m n, Coprime m n -> Coprime n m.
+Proof.
+  unfold Coprime.
+  intros m n h.
+  rewrite Nat.gcd_comm.
+  exact h.
+Qed.
+
+Lemma Coprime_of_dvd_left : forall d m n,
+  Nat.divide d m -> Coprime m n -> Coprime d n.
+Proof.
+  unfold Coprime.
+  intros d m n hdm hcop.
+  apply Nat.gcd_unique.
+  - exists d. lia.
+  - exists n. lia.
+  - intros q hqd hqn.
+    assert (hqm : Nat.divide q m).
+    {
+      exact (Nat.divide_trans q d m hqd hdm).
+    }
+    pose proof (Nat.gcd_greatest m n q hqm hqn) as hqg.
+    rewrite hcop in hqg.
+    exact hqg.
+Qed.
+
+Lemma Coprime_eq_one_of_dvd : forall d n,
+  Coprime d n -> Nat.divide d n -> d = 1.
+Proof.
+  unfold Coprime.
+  intros d n hcop hdn.
+  assert (hdg : Nat.divide d (Nat.gcd d n)).
+  {
+    apply Nat.gcd_greatest.
+    - exists 1. lia.
+    - exact hdn.
+  }
+  rewrite hcop in hdg.
+  apply Nat.divide_1_r.
+  exact hdg.
+Qed.
+
+Lemma Coprime_dvd_of_dvd_mul_left : forall d n k,
+  Coprime d n -> Nat.divide d (k * n) -> Nat.divide d k.
+Proof.
+  unfold Coprime.
+  intros d n k hcop hdkn.
+  rewrite Nat.mul_comm in hdkn.
+  exact (Nat.gauss d n k hdkn hcop).
+Qed.
+
+Lemma Coprime_mul_left : forall a b c,
+  Coprime a c -> Coprime b c -> Coprime (a * b) c.
+Proof.
+  intros a b c hac hbc.
+  unfold Coprime in *.
+  apply Nat.gcd_unique.
+  - exists (a * b). lia.
+  - exists c. lia.
+  - intros q hqprod hqc.
+    assert (hq_b : Coprime q b).
+    {
+      apply Coprime_of_dvd_left with (m := c).
+      - exact hqc.
+      - apply Coprime_sym. exact hbc.
+    }
+    unfold Coprime in hq_b.
+    assert (hqa : Nat.divide q a).
+    {
+      rewrite Nat.mul_comm in hqprod.
+      exact (Nat.gauss q b a hqprod hq_b).
+    }
+    pose proof (Nat.gcd_greatest a c q hqa hqc) as hqg.
+    rewrite hac in hqg.
+    exact hqg.
+Qed.
+
+Lemma betaFact_pos : forall n, 0 < betaFact n.
+Proof.
+  induction n as [|n IH]; simpl; lia.
+Qed.
+
+Lemma dvd_betaFact_of_pos_le : forall k n,
+  0 < k -> k <= n -> Nat.divide k (betaFact n).
+Proof.
+  intros k n hk hkn.
+  induction n as [|n IH].
+  - lia.
+  - simpl.
+    destruct (Nat.eq_dec k (S n)) as [heq | hne].
+    + subst k.
+      exists (betaFact n). nia.
+    + assert (hkle : k <= n) by lia.
+      destruct (IH hkle) as [q hq].
+      exists (S n * q). nia.
+Qed.
+
+Lemma BetaModulus_pos : forall step idx, 0 < BetaModulus step idx.
+Proof.
+  intros step idx.
+  unfold BetaModulus.
+  lia.
+Qed.
+
+Lemma BetaModuliProduct_pos : forall step n,
+  0 < BetaModuliProduct step n.
+Proof.
+  intros step n.
+  induction n as [|n IH]; simpl.
+  - lia.
+  - pose proof (BetaModulus_pos step n).
+    nia.
+Qed.
+
+Lemma BetaModulus_coprime_step : forall step idx,
+  Coprime (BetaModulus step idx) step.
+Proof.
+  intros step idx.
+  unfold Coprime.
+  set (d := Nat.gcd (BetaModulus step idx) step).
+  change (d = 1).
+  assert (hdm : Nat.divide d (BetaModulus step idx)).
+  {
+    unfold d. apply Nat.gcd_divide_l.
+  }
+  assert (hdstep : Nat.divide d step).
+  {
+    unfold d. apply Nat.gcd_divide_r.
+  }
+  assert (hdprod : Nat.divide d (S idx * step)).
+  {
+    apply Nat.divide_mul_r.
+    exact hdstep.
+  }
+  assert (hdone : Nat.divide d 1).
+  {
+    pose proof (Nat.divide_sub_r d (BetaModulus step idx)
+      (S idx * step) hdm hdprod) as hsub.
+    replace (BetaModulus step idx - S idx * step) with 1 in hsub
+      by (unfold BetaModulus; nia).
+    exact hsub.
+  }
+  apply Nat.divide_1_r.
+  exact hdone.
+Qed.
+
+Lemma BetaModulus_sub : forall step i j,
+  i <= j ->
+  BetaModulus step j - BetaModulus step i = (j - i) * step.
+Proof.
+  intros step i j hij.
+  unfold BetaModulus.
+  nia.
+Qed.
+
+Lemma BetaModulus_pair_coprime_of_dvd_step : forall step i j,
+  i < j ->
+  Nat.divide (j - i) step ->
+  Coprime (BetaModulus step i) (BetaModulus step j).
+Proof.
+  intros step i j hij hdiff.
+  unfold Coprime.
+  set (d := Nat.gcd (BetaModulus step i) (BetaModulus step j)).
+  change (d = 1).
+  assert (hdi : Nat.divide d (BetaModulus step i)).
+  {
+    unfold d. apply Nat.gcd_divide_l.
+  }
+  assert (hdj : Nat.divide d (BetaModulus step j)).
+  {
+    unfold d. apply Nat.gcd_divide_r.
+  }
+  assert (hcopStep : Coprime d step).
+  {
+    apply Coprime_of_dvd_left with (m := BetaModulus step i).
+    - exact hdi.
+    - apply BetaModulus_coprime_step.
+  }
+  assert (hddiffstep : Nat.divide d ((j - i) * step)).
+  {
+    pose proof (Nat.divide_sub_r d (BetaModulus step j)
+      (BetaModulus step i) hdj hdi) as hsub.
+    rewrite BetaModulus_sub in hsub by lia.
+    exact hsub.
+  }
+  assert (hddiff : Nat.divide d (j - i)).
+  {
+    apply (Coprime_dvd_of_dvd_mul_left d step (j - i)).
+    - exact hcopStep.
+    - exact hddiffstep.
+  }
+  assert (hdstep' : Nat.divide d step).
+  {
+    exact (Nat.divide_trans d (j - i) step hddiff hdiff).
+  }
+  apply Coprime_eq_one_of_dvd with (n := step).
+  - exact hcopStep.
+  - exact hdstep'.
+Qed.
+
+Lemma BetaModulus_pair_coprime_of_lt_le : forall i j N,
+  i < j -> j <= N ->
+  Coprime (BetaModulus (betaFact N) i)
+    (BetaModulus (betaFact N) j).
+Proof.
+  intros i j N hij hjN.
+  apply BetaModulus_pair_coprime_of_dvd_step.
+  - exact hij.
+  - apply dvd_betaFact_of_pos_le; lia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_modulus_of_le : forall n j N,
+  n <= j -> j <= N ->
+  Coprime (BetaModuliProduct (betaFact N) n)
+    (BetaModulus (betaFact N) j).
+Proof.
+  intros n.
+  induction n as [|n IH]; intros j N hnj hjN.
+  - simpl.
+    apply Coprime_1_l.
+  - simpl.
+    apply Coprime_mul_left.
+    + apply IH; lia.
+    + apply BetaModulus_pair_coprime_of_lt_le; lia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_next_of_le : forall n N,
+  n <= N ->
+  Coprime (BetaModuliProduct (betaFact N) n)
+    (BetaModulus (betaFact N) n).
+Proof.
+  intros n N hn.
+  apply BetaModuliProduct_coprime_modulus_of_le; lia.
+Qed.
+
 End Formula.
 
 End PA.
