@@ -418,6 +418,22 @@ structure AdjunctionIso {α : Type} {β : Type}
   map_empty : toFun M.empty = N.empty
   map_adjoin : ∀ a b, toFun (M.adjoin a b) = N.adjoin (toFun a) (toFun b)
 
+/-- A shallow semantic bi-interpretation checkpoint: a PA model, an HF model,
+the PA model obtained by interpreting PA in HF, the HF model obtained by going
+back through that PA interpretation, and explicit round-trip isomorphisms.
+
+This is intentionally a semantic record.  It does not claim, by definition, that
+the operations or relations are first-order definable; later syntactic
+interpretation records should refine this shape with formulas and translation
+theorems. -/
+structure ShallowBiInterpretation where
+  paModel : PA.Model Nat
+  hfModel : AdjunctionModel Nat
+  paInHf : PA.Model OrdinalHF
+  hfInPaInHf : AdjunctionModel OrdinalHF
+  paRoundTrip : PA.Iso paModel paInHf
+  hfRoundTrip : AdjunctionIso hfModel hfInPaInHf
+
 /-- The HF model obtained after interpreting PA inside Ackermann HF and then
 running Ackermann's HF interpretation in that interpreted PA model. -/
 noncomputable def ordinalHFModel : AdjunctionModel OrdinalHF where
@@ -484,10 +500,21 @@ noncomputable def hfRoundTripIso : AdjunctionIso standardModel ordinalHFModel wh
     apply ordinal_eq_of_natOfOrdinal_eq
     simp only [standardModel, ordinalHFModel, natOfOrdinal_ordinalOfNat]
 
+/-- The standard semantic PA/HF bi-interpretability datum: PA on `Nat` and HF
+under Ackermann coding, with the two round trips witnessed by `ordinalCode`. -/
+noncomputable def standardShallowBiInterpretation : ShallowBiInterpretation where
+  paModel := PA.natModel
+  hfModel := standardModel
+  paInHf := ordinalPAModel
+  hfInPaInHf := ordinalHFModel
+  paRoundTrip := paRoundTripIso
+  hfRoundTrip := hfRoundTripIso
+
 theorem PA_biinterpretable_with_HF_standard :
     Nonempty (PA.Iso PA.natModel ordinalPAModel) ∧
       Nonempty (AdjunctionIso standardModel ordinalHFModel) :=
-  ⟨⟨paRoundTripIso⟩, ⟨hfRoundTripIso⟩⟩
+  ⟨⟨standardShallowBiInterpretation.paRoundTrip⟩,
+   ⟨standardShallowBiInterpretation.hfRoundTrip⟩⟩
 
 end AckermannHF
 

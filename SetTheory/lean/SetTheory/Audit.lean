@@ -32,6 +32,7 @@ open SetTheory
 #print axioms ClosureFO_of_ZF
 
 -- PA/HF Ackermann/von-Neumann semantic bi-interpretability checkpoint
+#check @AckermannHF.standardShallowBiInterpretation
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
 #print axioms AckermannHF.PA_biinterpretable_with_HF_standard
 
