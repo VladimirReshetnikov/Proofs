@@ -216,49 +216,26 @@ the `n = 11` and `n = 12` value sets, with a log-modulus separation criterion
 for comparing that overflow witness against candidates whose exponent real
 part is certified larger.
 [`LeanProofs/A198683N12Symbolic.lean`](LeanProofs/A198683N12Symbolic.lean)
-starts replacing the n = 12 heuristic cluster analysis with exact symbolic
-Lean reductions: it proves that all fourteen representatives from the
-near-`i^i` probe class are exactly `i^i = exp(-pi/2)`.
-It also proves the exact merge of the n = 12 near-zero probe doubleton
-`{2207, 3777}` and the retained near-one pair `{1404, 4239}`.
-For the remaining near-one split, it defines representative `25` and proves
-that `25` is separated from `{1404, 4239}` once the single analytic sign
-obligation `nearOne25Base.im < 0` is discharged; this sign is further reduced
-to the one-dimensional interval bound `-766 < nearOne25Level3.re < -765`,
-and then to scalar interval bounds for the exponential and cosine factors in
-the exact formula for `nearOne25Level3.re`, and then to a small rational box
-around `nearOne25Level2` plus four endpoint `exp`/`cos` estimates; that
-`nearOne25Level2` box is itself reduced to a tighter rational box around
-`nearOne25Level1` plus endpoint product estimates; the `nearOne25Level1` box
-and then the seed box are now composed into direct sufficient conditions for
-the split; and the level-1 box is reduced to a rational box around the seed
-using a shifted third-quadrant trigonometric monotonicity argument.  The seed
-box is reduced one level further to a narrow rational box around
-`v = i^(i^(i^i))`, and the `v` box is now also composed into direct sufficient
-conditions for the split.  The scalar rational bounds for the exact
-exponential, cosine, and sine factors defining `v` are now also composed into
-direct sufficient conditions for the split, and are reduced
-to rational boxes for `sin theta` and `cos theta` plus endpoint estimates,
-which are now likewise composed into direct sufficient conditions for the
-split; those trigonometric boxes are reduced to a narrow rational box for
-`theta` itself, and that `theta` box is now also composed into direct
-sufficient conditions for the split; the `theta` box is reduced to rational
-boxes for `pi/2` and `rho = exp(-pi/2)`, and those boxes are now also composed
-into direct sufficient conditions for the split; the `rho` box is further
-reduced to the same `pi/2` box plus endpoint exponential estimates, which are
-now likewise composed into direct sufficient conditions for the split; the
-`pi/2` box itself is discharged from mathlib's 20-decimal `pi` certificate,
-the `rho` endpoint exponential estimates are discharged using mathlib's
-20-decimal `exp 1` certificate and a Taylor bound for the residual
-`exp(0.57079632679...)`, and the resulting `rho`, `theta`, and
-`sin theta`/`cos theta` boxes are now composed from the remaining trigonometric
-endpoint estimates.  The
-module also exposes exact
+replaces the n = 12 heuristic cluster analysis with exact symbolic Lean
+reductions.  It proves that all fourteen representatives from the
+near-`i^i` probe class are exactly `i^i = exp(-pi/2)`, and proves the exact
+merges of the n = 12 near-zero probe doubleton `{2207, 3777}` and of the
+retained near-one pair `{1404, 4239}`.  For the remaining near-one split it
+defines representative `25` and reduces the separation of `25` from
+`{1404, 4239}` to one conditional pair,
+`nearOne25_ne_nearOne1404_of_endpoint_bounds` /
+`nearOne25_ne_nearOne4239_of_endpoint_bounds`, whose every hypothesis is a
+scalar endpoint estimate for `exp`, `sin`, or `cos` at an explicit rational
+point.  The supporting layers are already unconditional: the module certifies
+rational boxes for `rho = exp(-pi/2)` (from mathlib's 20-decimal `exp 1`
+certificate and a Taylor bound for the residual), for `pi/2` (from mathlib's
+20-decimal `pi` certificate), and hence for `theta = (pi/2) * rho`
+(`rho_bounds`, `theta_box`), and it exposes the level-by-level reduction
+lemmas that propagate an interval certificate from those boxes through
+`v = i^(i^(i^i))`, the representative-`25` seed, and the higher tower levels
+down to the final sign obligation `nearOne25Base.im < 0`, together with exact
 real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
-layers of representative `25`, including the
-expansion of
-`v = i^(i^(i^i))` and the seed itself through the scalar `theta`, so the
-remaining interval certificate can be pushed down level by level.
+layers of representative `25`.
 These n = 12 companion modules are progress toward, but still not, a semantic
 proof of `a198683 12 = 2926`.
 The current formalization checkpoint and next directions are summarized in
