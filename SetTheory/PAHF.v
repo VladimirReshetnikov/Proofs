@@ -2493,6 +2493,166 @@ Proof.
   now right.
 Qed.
 
+Lemma foam_succ_rec_graph_succ_succRecApprox : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s f m z : V),
+  OrdinalLike (foam_mem V M) m ->
+  foam_succ_rec_approx V M s f m ->
+  foam_mem V M (foam_kpair_obj V M m z) f ->
+  foam_succ_rec_approx V M s
+    (foam_succ_rec_graph_succ V M f m z)
+    (foam_adjoin V M m m).
+Proof.
+  intros V M s f m z hm hf hz.
+  destruct hf as [hfun [hkeys [hbase [htotal hstep]]]].
+  set (sm := foam_adjoin V M m m).
+  set (sz := foam_adjoin V M z z).
+  set (newPair := foam_kpair_obj V M sm sz).
+  set (g := foam_succ_rec_graph_succ V M f m z).
+  assert (hsm_not_mem : ~ foam_mem V M sm m).
+  {
+    unfold sm.
+    exact (foam_adjoin_self_not_mem_of_OrdinalLike V M m hm).
+  }
+  assert (hsm_ne_m : sm <> m).
+  {
+    unfold sm.
+    exact (foam_adjoin_self_ne_self V M m).
+  }
+  assert (hmem_g : forall p,
+      foam_mem V M p g <-> foam_mem V M p f \/ p = newPair).
+  {
+    intro p.
+    unfold g, newPair, sm, sz, foam_succ_rec_graph_succ.
+    apply foam_adjoin_spec.
+  }
+  assert (old_key_ne_succ : forall k y,
+      foam_mem V M (foam_kpair_obj V M k y) f -> k <> sm).
+  {
+    intros k y hOld hk.
+    pose proof (hkeys k y hOld) as hkBound.
+    rewrite hk in hkBound.
+    destruct hkBound as [hmem | heq].
+    - exact (hsm_not_mem hmem).
+    - exact (hsm_ne_m heq).
+  }
+  assert (pair_old_of_mem_key : forall k y,
+      foam_mem V M k m ->
+      foam_mem V M (foam_kpair_obj V M k y) g ->
+      foam_mem V M (foam_kpair_obj V M k y) f).
+  {
+    intros k y hkm hkg.
+    destruct (proj1 (hmem_g (foam_kpair_obj V M k y)) hkg)
+      as [hOld | hNew].
+    - exact hOld.
+    - pose proof (proj1 (foam_kpair_injective V M k y sm sz hNew)) as hk.
+      rewrite hk in hkm.
+      exfalso. exact (hsm_not_mem hkm).
+  }
+  unfold foam_succ_rec_approx.
+  repeat split.
+  - intros k y y' hky hky'.
+    destruct (proj1 (hmem_g (foam_kpair_obj V M k y)) hky)
+      as [hOld | hNew].
+    + destruct (proj1 (hmem_g (foam_kpair_obj V M k y')) hky')
+        as [hOld' | hNew'].
+      * exact (hfun k y y' hOld hOld').
+      * pose proof (proj1 (foam_kpair_injective V M k y' sm sz hNew')) as hk.
+        exfalso. exact (old_key_ne_succ k y hOld hk).
+    + destruct (proj1 (hmem_g (foam_kpair_obj V M k y')) hky')
+        as [hOld' | hNew'].
+      * pose proof (proj1 (foam_kpair_injective V M k y sm sz hNew)) as hk.
+        exfalso. exact (old_key_ne_succ k y' hOld' hk).
+      * pose proof (proj2 (foam_kpair_injective V M k y sm sz hNew)) as hy.
+        pose proof (proj2 (foam_kpair_injective V M k y' sm sz hNew')) as hy'.
+        rewrite hy, hy'. reflexivity.
+  - intros k y hky.
+    destruct (proj1 (hmem_g (foam_kpair_obj V M k y)) hky)
+      as [hOld | hNew].
+    + destruct (hkeys k y hOld) as [hkm | hkm].
+      * left. apply (proj2 (foam_adjoin_spec V M k m m)). now left.
+      * left. apply (proj2 (foam_adjoin_spec V M k m m)). now right.
+    + right. exact (proj1 (foam_kpair_injective V M k y sm sz hNew)).
+  - exact (foam_succ_rec_graph_succ_old V M f m z
+      (foam_kpair_obj V M (foam_empty V M) s) hbase).
+  - intros k hk.
+    destruct hk as [hksm | hksm].
+    + destruct (proj1 (foam_adjoin_spec V M k m m) hksm)
+        as [hkm | hkm].
+      * destruct (htotal k (or_introl hkm)) as [y hy].
+        exists y.
+        exact (foam_succ_rec_graph_succ_old V M f m z
+          (foam_kpair_obj V M k y) hy).
+      * destruct (htotal k (or_intror hkm)) as [y hy].
+        exists y.
+        exact (foam_succ_rec_graph_succ_old V M f m z
+          (foam_kpair_obj V M k y) hy).
+    + subst k.
+      exists sz.
+      unfold sz, sm.
+      apply foam_succ_rec_graph_succ_new.
+  - intros k t y hksm hkt hsky.
+    destruct (proj1 (foam_adjoin_spec V M k m m) hksm)
+      as [hkm | hkm].
+    + assert (hktOld : foam_mem V M (foam_kpair_obj V M k t) f).
+      {
+        exact (pair_old_of_mem_key k t hkm hkt).
+      }
+      assert (hskyOld :
+          foam_mem V M (foam_kpair_obj V M (foam_adjoin V M k k) y) f).
+      {
+        destruct (proj1 (hmem_g
+          (foam_kpair_obj V M (foam_adjoin V M k k) y)) hsky)
+          as [hOld | hNew].
+        - exact hOld.
+        - pose proof (proj1 (foam_kpair_injective V M
+            (foam_adjoin V M k k) y sm sz hNew)) as hsk.
+          assert (hkOrd : OrdinalLike (foam_mem V M) k).
+          {
+            exact (OrdinalLike_of_mem V (foam_mem V M) m k hm hkm).
+          }
+          assert (hkm_eq : k = m).
+          {
+            apply (foam_adjoin_self_injective_on_OrdinalLike V M k m hkOrd hm).
+            unfold sm in hsk.
+            exact hsk.
+          }
+          rewrite hkm_eq in hkm.
+          exfalso. exact (foam_mem_irrefl V M m hkm).
+      }
+      exact (hstep k t y hkm hktOld hskyOld).
+    + subst k.
+      assert (hktOld : foam_mem V M (foam_kpair_obj V M m t) f).
+      {
+        destruct (proj1 (hmem_g (foam_kpair_obj V M m t)) hkt)
+          as [hOld | hNew].
+        - exact hOld.
+        - pose proof (proj1 (foam_kpair_injective V M m t sm sz hNew))
+            as hm_eq_sm.
+          exfalso. exact (hsm_ne_m (eq_sym hm_eq_sm)).
+      }
+      pose proof (hfun m t z hktOld hz) as ht.
+      destruct (proj1 (hmem_g (foam_kpair_obj V M sm y)) hsky)
+        as [hOld | hNew].
+      * exfalso. exact (old_key_ne_succ sm y hOld eq_refl).
+      * pose proof (proj2 (foam_kpair_injective V M sm y sm sz hNew)) as hy.
+        rewrite hy, ht.
+        unfold sz.
+        reflexivity.
+Qed.
+
+Lemma foam_succ_rec_total_succ : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (s m : V),
+  OrdinalLike (foam_mem V M) m ->
+  foam_succ_rec_total V M s m ->
+  foam_succ_rec_total V M s (foam_adjoin V M m m).
+Proof.
+  intros V M s m hm [f [z [hf hz]]].
+  exists (foam_succ_rec_graph_succ V M f m z), (foam_adjoin V M z z).
+  split.
+  - exact (foam_succ_rec_graph_succ_succRecApprox V M s f m z hm hf hz).
+  - apply foam_succ_rec_graph_succ_new.
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
