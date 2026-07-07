@@ -1140,6 +1140,261 @@ theorem kpair_injective {α : Type u} (M : FirstOrderAdjunctionModel α) {a b c 
         · exact hd.symm
       · exact hb
 
+theorem HF_emptyAt_empty {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (i : Nat) :
+    Sat M.mem e (HF_emptyAt i) ↔ e i = M.empty := by
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    constructor
+    · exact fun hx => False.elim (h x hx)
+    · exact fun hx => False.elim (M.empty_spec x hx)
+  · intro h x hx
+    have hx' : M.mem x (e i) := by
+      simpa [Sat, scons] using hx
+    rw [h] at hx'
+    exact M.empty_spec x hx'
+
+theorem HF_adjoinAt_adjoin {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (c a b : Nat) :
+    Sat M.mem e (HF_adjoinAt c a b) ↔ e c = M.adjoin (e a) (e b) := by
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    rw [(HF_adjoinAt_spec e c a b).mp h x, M.adjoin_spec x (e a) (e b)]
+  · intro h
+    apply (HF_adjoinAt_spec e c a b).mpr
+    intro x
+    rw [h, M.adjoin_spec x (e a) (e b)]
+
+theorem HF_succAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (s a : Nat) :
+    Sat M.mem e (HF_succAt s a) ↔ e s = M.adjoin (e a) (e a) :=
+  HF_adjoinAt_adjoin M e s a a
+
+theorem HF_singleAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (i j : Nat) :
+    Sat M.mem e (HF_singleAt i j) ↔ e i = single M (e j) := by
+  show (∀ x, (M.mem x (e i) → x = e j) ∧ (x = e j → M.mem x (e i))) ↔ _
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    rw [single_spec M (e j) x]
+    exact ⟨(h x).1, (h x).2⟩
+  · intro h x
+    rw [h, single_spec M (e j) x]
+    exact ⟨id, id⟩
+
+theorem HF_upairAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (i j k : Nat) :
+    Sat M.mem e (HF_upairAt i j k) ↔ e i = upair M (e j) (e k) := by
+  show (∀ x, (M.mem x (e i) → (x = e j ∨ x = e k)) ∧
+             ((x = e j ∨ x = e k) → M.mem x (e i))) ↔ _
+  constructor
+  · intro h
+    apply M.extensional
+    intro x
+    rw [upair_spec M (e j) (e k) x]
+    exact ⟨(h x).1, (h x).2⟩
+  · intro h x
+    rw [h, upair_spec M (e j) (e k) x]
+    exact ⟨id, id⟩
+
+theorem HF_kpairAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (p a b : Nat) :
+    Sat M.mem e (HF_kpairAt p a b) ↔ e p = kpair M (e a) (e b) := by
+  have hq : ∀ q : α,
+      (Sat M.mem (scons q e) (HF_singleAt 0 (a+1)) ∨
+       Sat M.mem (scons q e) (HF_upairAt 0 (a+1) (b+1)))
+        ↔ (q = single M (e a) ∨ q = upair M (e a) (e b)) := by
+    intro q
+    rw [HF_singleAt_spec M (scons q e) 0 (a+1),
+        HF_upairAt_spec M (scons q e) 0 (a+1) (b+1)]
+    exact Iff.rfl
+  constructor
+  · intro h
+    apply M.extensional
+    intro q
+    rw [kpair_mem M (e a) (e b) q, ← hq q]
+    exact ⟨(h q).1, (h q).2⟩
+  · intro h q
+    constructor
+    · intro hq'
+      have hqmem : M.mem q (e p) := hq'
+      rw [h] at hqmem
+      exact (hq q).mpr ((kpair_mem M (e a) (e b) q).mp hqmem)
+    · intro hs
+      show M.mem q (e p)
+      rw [h]
+      exact (kpair_mem M (e a) (e b) q).mpr ((hq q).mp hs)
+
+theorem HF_pairMemAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (a b r : Nat) :
+    Sat M.mem e (HF_pairMemAt a b r) ↔
+      M.mem (kpair M (e a) (e b)) (e r) := by
+  constructor
+  · intro h
+    rcases h with ⟨p, hp, hmem⟩
+    have hp' : p = kpair M (e a) (e b) :=
+      (HF_kpairAt_spec M (scons p e) 0 (a+1) (b+1)).mp hp
+    have hmem' : M.mem p (e r) := hmem
+    rwa [hp'] at hmem'
+  · intro h
+    refine ⟨kpair M (e a) (e b), ?_, ?_⟩
+    · exact (HF_kpairAt_spec M (scons (kpair M (e a) (e b)) e)
+        0 (a+1) (b+1)).mpr rfl
+    · exact h
+
+/-- A set of first-order-model ordered pairs is single-valued in its second
+component. -/
+def PairFunctional {α : Type u} (M : FirstOrderAdjunctionModel α) (f : α) : Prop :=
+  ∀ k y y', M.mem (kpair M k y) f → M.mem (kpair M k y') f → y = y'
+
+/-- Every first component of a pair in `f` is a member of `m ∪ {m}`. -/
+def PairKeysBelowSucc {α : Type u} (M : FirstOrderAdjunctionModel α) (f m : α) : Prop :=
+  ∀ k y, M.mem (kpair M k y) f → M.mem k m ∨ k = m
+
+/-- Every element of `m ∪ {m}` appears as the first component of some pair in
+`f`. -/
+def PairTotalBelowSucc {α : Type u} (M : FirstOrderAdjunctionModel α) (f m : α) : Prop :=
+  ∀ k, M.mem k m ∨ k = m → ∃ y, M.mem (kpair M k y) f
+
+/-- Successor-recursion step for a first-order-model pair set `f`. -/
+def PairSuccStep {α : Type u} (M : FirstOrderAdjunctionModel α) (f m : α) : Prop :=
+  ∀ k t y,
+    M.mem k m →
+    M.mem (kpair M k t) f →
+    M.mem (kpair M (M.adjoin k k) y) f →
+    y = M.adjoin t t
+
+theorem HF_pairFunctionalAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f : Nat) :
+    Sat M.mem e (HF_pairFunctionalAt f) ↔ PairFunctional M (e f) := by
+  constructor
+  · intro h k y y' hky hky'
+    exact h k y y'
+      ⟨(HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 1 (f+3)).mpr hky,
+       (HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 0 (f+3)).mpr hky'⟩
+  · intro h k y y' hpairs
+    exact h k y y'
+      ((HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 1 (f+3)).mp hpairs.1)
+      ((HF_pairMemAt_spec M (scons y' (scons y (scons k e))) 2 0 (f+3)).mp hpairs.2)
+
+theorem HF_pairKeysBelowSuccAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f m : Nat) :
+    Sat M.mem e (HF_pairKeysBelowSuccAt f m) ↔
+      PairKeysBelowSucc M (e f) (e m) := by
+  constructor
+  · intro h k y hky
+    exact h k y
+      ((HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mpr hky)
+  · intro h k y hky
+    exact h k y
+      ((HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mp hky)
+
+theorem HF_pairTotalBelowSuccAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f m : Nat) :
+    Sat M.mem e (HF_pairTotalBelowSuccAt f m) ↔
+      PairTotalBelowSucc M (e f) (e m) := by
+  constructor
+  · intro h k hk
+    rcases h k hk with ⟨y, hy⟩
+    exact ⟨y, (HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mp hy⟩
+  · intro h k hk
+    rcases h k hk with ⟨y, hy⟩
+    exact ⟨y, (HF_pairMemAt_spec M (scons y (scons k e)) 1 0 (f+2)).mpr hy⟩
+
+theorem HF_pairSuccStepAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f m : Nat) :
+    Sat M.mem e (HF_pairSuccStepAt f m) ↔ PairSuccStep M (e f) (e m) := by
+  constructor
+  · intro h k t y hkm hkt hsy
+    have hs := h k t y hkm
+      ((HF_pairMemAt_spec M (scons y (scons t (scons k e))) 2 1 (f+3)).mpr hkt)
+      (M.adjoin k k)
+      ((HF_succAt_spec M
+        (scons (M.adjoin k k) (scons y (scons t (scons k e)))) 0 3).mpr rfl)
+      ((HF_pairMemAt_spec M
+        (scons (M.adjoin k k) (scons y (scons t (scons k e)))) 0 1 (f+4)).mpr hsy)
+    exact (HF_succAt_spec M
+      (scons (M.adjoin k k) (scons y (scons t (scons k e)))) 1 2).mp hs
+  · intro h k t y hkm hkt sk hsk hsky
+    have hsk' : sk = M.adjoin k k :=
+      (HF_succAt_spec M (scons sk (scons y (scons t (scons k e)))) 0 3).mp hsk
+    have hsky' : M.mem (kpair M (M.adjoin k k) y) (e f) := by
+      have hpair := (HF_pairMemAt_spec M
+        (scons sk (scons y (scons t (scons k e)))) 0 1 (f+4)).mp hsky
+      rwa [hsk'] at hpair
+    apply (HF_succAt_spec M
+      (scons sk (scons y (scons t (scons k e)))) 1 2).mpr
+    exact h k t y hkm
+      ((HF_pairMemAt_spec M (scons y (scons t (scons k e))) 2 1 (f+3)).mp hkt)
+      hsky'
+
+theorem HF_pairBaseAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f s : Nat) :
+    Sat M.mem e (HF_pairBaseAt f s) ↔
+      M.mem (kpair M M.empty (e s)) (e f) := by
+  constructor
+  · intro h
+    rcases h with ⟨z, hz, hpair⟩
+    have hz' : z = M.empty := (HF_emptyAt_empty M (scons z e) 0).mp hz
+    have hpair' := (HF_pairMemAt_spec M (scons z e) 0 (s+1) (f+1)).mp hpair
+    rwa [hz'] at hpair'
+  · intro h
+    refine ⟨M.empty, ?_, ?_⟩
+    · exact (HF_emptyAt_empty M (scons M.empty e) 0).mpr rfl
+    · exact (HF_pairMemAt_spec M (scons M.empty e) 0 (s+1) (f+1)).mpr h
+
+theorem HF_pairZeroBaseAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f : Nat) :
+    Sat M.mem e (HF_pairZeroBaseAt f) ↔
+      M.mem (kpair M M.empty M.empty) (e f) := by
+  constructor
+  · intro h
+    rcases h with ⟨z, hz, hpair⟩
+    have hz' : z = M.empty := (HF_emptyAt_empty M (scons z e) 0).mp hz
+    have hpair' := (HF_pairMemAt_spec M (scons z e) 0 0 (f+1)).mp hpair
+    rwa [hz'] at hpair'
+  · intro h
+    refine ⟨M.empty, ?_, ?_⟩
+    · exact (HF_emptyAt_empty M (scons M.empty e) 0).mpr rfl
+    · exact (HF_pairMemAt_spec M (scons M.empty e) 0 0 (f+1)).mpr h
+
+/-- Semantic package for a finite successor-recursion trace in a chosen
+first-order HF model. -/
+def SuccRecApprox {α : Type u} (M : FirstOrderAdjunctionModel α) (s f m : α) : Prop :=
+  PairFunctional M f ∧
+  PairKeysBelowSucc M f m ∧
+  M.mem (kpair M M.empty s) f ∧
+  PairTotalBelowSucc M f m ∧
+  PairSuccStep M f m
+
+theorem HF_succRecApproxAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f s m : Nat) :
+    Sat M.mem e (HF_succRecApproxAt f s m) ↔
+      SuccRecApprox M (e s) (e f) (e m) := by
+  change
+    (Sat M.mem e (HF_pairFunctionalAt f) ∧
+      (Sat M.mem e (HF_pairKeysBelowSuccAt f m) ∧
+        (Sat M.mem e (HF_pairBaseAt f s) ∧
+          (Sat M.mem e (HF_pairTotalBelowSuccAt f m) ∧
+            Sat M.mem e (HF_pairSuccStepAt f m))))) ↔
+      PairFunctional M (e f) ∧
+        PairKeysBelowSucc M (e f) (e m) ∧
+          M.mem (kpair M M.empty (e s)) (e f) ∧
+            PairTotalBelowSucc M (e f) (e m) ∧
+              PairSuccStep M (e f) (e m)
+  rw [
+    HF_pairFunctionalAt_spec M e f,
+    HF_pairKeysBelowSuccAt_spec M e f m,
+    HF_pairBaseAt_spec M e f s,
+    HF_pairTotalBelowSuccAt_spec M e f m,
+    HF_pairSuccStepAt_spec M e f m]
+
 end FirstOrderAdjunctionModel
 
 def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
