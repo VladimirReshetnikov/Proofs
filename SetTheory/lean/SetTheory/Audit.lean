@@ -86,6 +86,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.domainForm
 #check @AckermannHF.PAInHF.zeroGraph
 #check @AckermannHF.PAInHF.succGraph
+#check @AckermannHF.PAInHF.addGraphAt
 #check @AckermannHF.PAInHF.addGraph
 #check @AckermannHF.PAInHF.domain_ordinalCode
 #check @AckermannHF.PAInHF.domain_exact
@@ -94,6 +95,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.succGraph_ordinalCode
 #check @AckermannHF.PAInHF.succGraph_exact_on_ordinalCodes
 #check @AckermannHF.PAInHF.addGraph_ordinalCode
+#check @AckermannHF.PAInHF.addGraphAt_ordinalCode
 #check @AckermannHF.PAInHF.addGraph_exact_on_ordinalCodes
 #check @AckermannHF.PAInHF.zeroGraph_domain
 #check @AckermannHF.PAInHF.succGraph_preserves_domain

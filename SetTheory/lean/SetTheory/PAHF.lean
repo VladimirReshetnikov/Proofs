@@ -1109,11 +1109,15 @@ def zeroGraph : Form := HF_emptyAt 0
 is the input. -/
 def succGraph : Form := HF_succAt 0 1
 
+/-- Addition graph formula at arbitrary slots: `out = left + right`.  The
+witness is a finite successor-recursion graph from `left` through `right`. -/
+def addGraphAt (out left right : Nat) : Form :=
+  fEx (fAnd (HF_succRecApproxAt 0 (left+1) (right+1))
+    (HF_pairMemAt (right+1) (out+1) 0))
+
 /-- Graph formula for PA addition in HF.  Slot `0` is the output, slot `1`
-is the left input, and slot `2` is the right input.  The witness is a finite
-successor-recursion graph from the left input through the right input. -/
-def addGraph : Form :=
-  fEx (fAnd (HF_succRecApproxAt 0 2 3) (HF_pairMemAt 3 1 0))
+is the left input, and slot `2` is the right input. -/
+def addGraph : Form := addGraphAt 0 1 2
 
 theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
@@ -1175,6 +1179,24 @@ theorem addGraph_ordinalCode (m n : Nat) (e : Nat → Nat) :
         (scons (ordinalCode m) (scons (ordinalCode n) e)))) 3 1 0).mpr
     have hp := succRecTrace_pair_mem (ordinalCode m) (k := n) (n := n) (Nat.le_refl n)
     change Mem (kpair standardModel (ordinalCode n) (ordinalCode (m+n))) f
+    simpa [f, succIterObj_ordinalCode] using hp
+
+theorem addGraphAt_ordinalCode (out left right m n : Nat) (e : Nat → Nat)
+    (hout : e out = ordinalCode (m+n))
+    (hleft : e left = ordinalCode m)
+    (hright : e right = ordinalCode n) :
+    Sat Mem e (addGraphAt out left right) := by
+  let f := succRecTrace (ordinalCode m) n
+  refine ⟨f, ?_, ?_⟩
+  · apply (HF_succRecApproxAt_spec standardModel (scons f e)
+      0 (left+1) (right+1)).mpr
+    change SuccRecApprox standardModel (e left) f (e right)
+    rw [hleft, hright]
+    exact succRecTrace_succRecApprox (ordinalCode m) n
+  · apply (HF_pairMemAt_spec standardModel (scons f e) (right+1) (out+1) 0).mpr
+    change Mem (kpair standardModel (e right) (e out)) f
+    rw [hout, hright]
+    have hp := succRecTrace_pair_mem (ordinalCode m) (k := n) (n := n) (Nat.le_refl n)
     simpa [f, succIterObj_ordinalCode] using hp
 
 theorem addGraph_exact_on_ordinalCodes (r m n : Nat) (e : Nat → Nat) :
