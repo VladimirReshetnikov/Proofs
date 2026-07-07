@@ -530,6 +530,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_lem
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_var
 #check @AckermannHF.PAInHF.BProv_formulaAt_eq_var_of_eq
+#check @AckermannHF.PAInHF.BProv_formulaAt_eq_of_termGraphsAt
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqRefl_of_termGraphAt
 #check @AckermannHF.PAInHF.BProv_eq_of_formulaAt_eq_var
 #check @AckermannHF.PAInHF.BProv_formulaAt_eqElim_var

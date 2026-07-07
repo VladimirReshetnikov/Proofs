@@ -11639,6 +11639,32 @@ theorem BProv_formulaAt_eq_var_of_eq {G : List Form} (ρ : Nat → Nat)
     · exact Prov.P_eqRefl _ (ρ n)
     · exact hp
 
+/-- Explicit term-graph witnesses for two PA terms, together with equality of
+their value slots, yield the PA-in-HF translation of equality between those
+terms.
+
+All computational content stays in the premises: the theorem only packages
+already-supplied graph and equality proofs into the translated PA equality
+formula. -/
+theorem BProv_formulaAt_eq_of_termGraphsAt {G : List Form}
+    (ρ : Nat → Nat) (s t : PA.Term) (i j : Nat)
+    (hs : BProv translatedPAAx G (termGraphAt ρ i s))
+    (ht : BProv translatedPAAx G (termGraphAt ρ j t))
+    (heq : BProv translatedPAAx G (fEq i j)) :
+    BProv translatedPAAx G (formulaAt ρ (PA.Formula.eq s t)) := by
+  have hconj : BProv translatedPAAx G
+      (fAnd (termGraphAt ρ i s)
+        (fAnd (termGraphAt ρ j t) (fEq i j))) :=
+    BProv_andI hs (BProv_andI ht heq)
+  rcases hconj with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  change Prov (L ++ G)
+    (fEx (fEx (fAnd (termGraphAt (fun n => ρ n + 2) 1 s)
+      (fAnd (termGraphAt (fun n => ρ n + 2) 0 t) (fEq 1 0)))))
+  apply Prov.P_exI _ _ i
+  apply Prov.P_exI _ _ j
+  simpa [rename, termGraphAt_rename, SetTheory.up, inst] using hp
+
 /-- A concrete HF slot realizing a PA term graph yields the PA-in-HF
 translation of reflexivity for that PA term.
 
