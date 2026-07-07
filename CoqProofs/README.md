@@ -23,6 +23,9 @@ Current ports:
   equational certificates against that checker.
 - `WolframBooleanHuntingtonCertificates.v` ports the generated
   Sheffer-to-Huntington certificate.
+- `WolframBoolean.v` exposes the certificate-derived algebraic consequences,
+  Boolean truth-table characterization, and NAND/NOR functional-completeness
+  theorem layer.
 
 Build from `src/Lean/`:
 
@@ -32,4 +35,5 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBoolean.v
 ```
