@@ -763,6 +763,116 @@ theorem HF_ordinalLikeAt_spec {α : Type u} {mem : α → α → Prop}
       (fun y hy => (HF_transitiveAt_spec (scons y e) 0).mpr (h.2.1 y hy)),
       (HF_memTotalOnAt_spec e a).mpr h.2.2⟩
 
+/-! ### Free-variable support of the HF macros -/
+
+theorem HF_emptyAt_free {i a : Nat} (h : Free i (HF_emptyAt a)) : i = a := by
+  simp only [HF_emptyAt, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_adjoinAt_free {i c a b : Nat} (h : Free i (HF_adjoinAt c a b)) :
+    i = c ∨ i = a ∨ i = b := by
+  simp only [HF_adjoinAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_succAt_free {i s a : Nat} (h : Free i (HF_succAt s a)) :
+    i = s ∨ i = a := by
+  simp only [HF_succAt, HF_adjoinAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_singleAt_free {i a b : Nat} (h : Free i (HF_singleAt a b)) :
+    i = a ∨ i = b := by
+  simp only [HF_singleAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_upairAt_free {i a b c : Nat} (h : Free i (HF_upairAt a b c)) :
+    i = a ∨ i = b ∨ i = c := by
+  simp only [HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_kpairAt_free {i p a b : Nat} (h : Free i (HF_kpairAt p a b)) :
+    i = p ∨ i = a ∨ i = b := by
+  simp only [HF_kpairAt, HF_singleAt, HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_pairMemAt_free {i a b r : Nat} (h : Free i (HF_pairMemAt a b r)) :
+    i = a ∨ i = b ∨ i = r := by
+  simp only [HF_pairMemAt, HF_kpairAt, HF_singleAt, HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_pairFunctionalAt_free {i f : Nat} (h : Free i (HF_pairFunctionalAt f)) :
+    i = f := by
+  simp only [HF_pairFunctionalAt, HF_pairMemAt, HF_kpairAt, HF_singleAt,
+    HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_pairKeysBelowSuccAt_free {i f m : Nat}
+    (h : Free i (HF_pairKeysBelowSuccAt f m)) : i = f ∨ i = m := by
+  simp only [HF_pairKeysBelowSuccAt, HF_pairMemAt, HF_kpairAt, HF_singleAt,
+    HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_pairTotalBelowSuccAt_free {i f m : Nat}
+    (h : Free i (HF_pairTotalBelowSuccAt f m)) : i = f ∨ i = m := by
+  simp only [HF_pairTotalBelowSuccAt, HF_pairMemAt, HF_kpairAt, HF_singleAt,
+    HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_pairSuccStepAt_free {i f m : Nat}
+    (h : Free i (HF_pairSuccStepAt f m)) : i = f ∨ i = m := by
+  simp only [HF_pairSuccStepAt, HF_pairMemAt, HF_kpairAt, HF_singleAt,
+    HF_upairAt, HF_succAt, HF_adjoinAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_pairBaseAt_free {i f s : Nat} (h : Free i (HF_pairBaseAt f s)) :
+    i = f ∨ i = s := by
+  simp only [HF_pairBaseAt, HF_emptyAt, HF_pairMemAt, HF_kpairAt, HF_singleAt,
+    HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_pairZeroBaseAt_free {i f : Nat} (h : Free i (HF_pairZeroBaseAt f)) :
+    i = f := by
+  simp only [HF_pairZeroBaseAt, HF_emptyAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, fIff, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_succRecApproxAt_free {i f s m : Nat}
+    (h : Free i (HF_succRecApproxAt f s m)) : i = f ∨ i = s ∨ i = m := by
+  simp only [HF_succRecApproxAt, Free] at h
+  rcases h with h | h
+  · have hf := HF_pairFunctionalAt_free h
+    omega
+  · rcases h with h | h
+    · have hfm := HF_pairKeysBelowSuccAt_free h
+      omega
+    · rcases h with h | h
+      · have hfs := HF_pairBaseAt_free h
+        omega
+      · rcases h with h | h
+        · have hfm := HF_pairTotalBelowSuccAt_free h
+          omega
+        · have hfm := HF_pairSuccStepAt_free h
+          omega
+
+theorem HF_subsetAt_free {i a b : Nat} (h : Free i (HF_subsetAt a b)) :
+    i = a ∨ i = b := by
+  simp only [HF_subsetAt, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_transitiveAt_free {i a : Nat} (h : Free i (HF_transitiveAt a)) :
+    i = a := by
+  simp only [HF_transitiveAt, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_memTotalOnAt_free {i a : Nat} (h : Free i (HF_memTotalOnAt a)) :
+    i = a := by
+  simp only [HF_memTotalOnAt, Free] at h
+  repeat first | omega | rcases h with h | h
+
+theorem HF_ordinalLikeAt_free {i a : Nat} (h : Free i (HF_ordinalLikeAt a)) :
+    i = a := by
+  simp only [HF_ordinalLikeAt, HF_transitiveAt, HF_memTotalOnAt, Free] at h
+  repeat first | omega | rcases h with h | h
+
 /-- The first-order set-induction schema instance for `phi`, where `phi`
 uses slot `0` as the element being proved and slots `1,2,...` as parameters. -/
 def HF_induction_form (phi : Form) : Form :=
@@ -1246,6 +1356,74 @@ def mulGraphAt (out left right : Nat) : Form :=
 `1` is the left input, and slot `2` is the right input. -/
 def mulGraph : Form := mulGraphAt 0 1 2
 
+theorem domainForm_free {i : Nat} (h : Free i domainForm) : i = 0 := by
+  exact HF_ordinalLikeAt_free h
+
+theorem zeroGraph_free {i : Nat} (h : Free i zeroGraph) : i = 0 := by
+  exact HF_emptyAt_free h
+
+theorem succGraph_free {i : Nat} (h : Free i succGraph) : i = 0 ∨ i = 1 := by
+  exact HF_succAt_free h
+
+theorem addGraphAt_free {i out left right : Nat}
+    (h : Free i (addGraphAt out left right)) : i = out ∨ i = left ∨ i = right := by
+  simp only [addGraphAt, Free] at h
+  rcases h with h | h
+  · have hs := HF_succRecApproxAt_free h
+    omega
+  · have hp := HF_pairMemAt_free h
+    omega
+
+theorem addGraph_free {i : Nat} (h : Free i addGraph) : i = 0 ∨ i = 1 ∨ i = 2 := by
+  exact addGraphAt_free h
+
+theorem mulStepAt_free {i f a m : Nat} (h : Free i (mulStepAt f a m)) :
+    i = f ∨ i = a ∨ i = m := by
+  simp only [mulStepAt, Free] at h
+  rcases h with h | h
+  · omega
+  · rcases h with h | h
+    · have hp := HF_pairMemAt_free h
+      omega
+    · rcases h with h | h
+      · have hs := HF_succAt_free h
+        omega
+      · rcases h with h | h
+        · have hp := HF_pairMemAt_free h
+          omega
+        · have ha := addGraphAt_free h
+          omega
+
+theorem mulRecApproxAt_free {i f a m : Nat} (h : Free i (mulRecApproxAt f a m)) :
+    i = f ∨ i = a ∨ i = m := by
+  simp only [mulRecApproxAt, Free] at h
+  rcases h with h | h
+  · have hf := HF_pairFunctionalAt_free h
+    omega
+  · rcases h with h | h
+    · have hfm := HF_pairKeysBelowSuccAt_free h
+      omega
+    · rcases h with h | h
+      · have hf := HF_pairZeroBaseAt_free h
+        omega
+      · rcases h with h | h
+        · have hfm := HF_pairTotalBelowSuccAt_free h
+          omega
+        · have hstep := mulStepAt_free h
+          omega
+
+theorem mulGraphAt_free {i out left right : Nat}
+    (h : Free i (mulGraphAt out left right)) : i = out ∨ i = left ∨ i = right := by
+  simp only [mulGraphAt, Free] at h
+  rcases h with h | h
+  · have hm := mulRecApproxAt_free h
+    omega
+  · have hp := HF_pairMemAt_free h
+    omega
+
+theorem mulGraph_free {i : Nat} (h : Free i mulGraph) : i = 0 ∨ i = 1 ∨ i = 2 := by
+  exact mulGraphAt_free h
+
 theorem domain_ordinalCode (n : Nat) (e : Nat → Nat) :
     Sat Mem (scons (ordinalCode n) e) domainForm :=
   HF_ordinalLikeAt_of_ordinalCode (scons (ordinalCode n) e) 0 n rfl
@@ -1704,6 +1882,45 @@ def bound : Term → Nat
   | add a b => bound a + bound b
   | mul a b => bound a + bound b
 
+def Free : Nat → Term → Prop
+  | n, var k => n = k
+  | _, zero => False
+  | n, succ t => Free n t
+  | n, add a b => Free n a ∨ Free n b
+  | n, mul a b => Free n a ∨ Free n b
+
+theorem free_lt_bound (t : Term) : ∀ n, Free n t → n < bound t := by
+  induction t with
+  | var k =>
+      intro n hn
+      simp only [Free] at hn
+      subst hn
+      simp [bound]
+  | zero =>
+      intro n hn
+      cases hn
+  | succ t ih =>
+      intro n hn
+      exact ih n hn
+  | add a b iha ihb =>
+      intro n hn
+      rcases hn with hn | hn
+      · have := iha n hn
+        simp [bound]
+        omega
+      · have := ihb n hn
+        simp [bound]
+        omega
+  | mul a b iha ihb =>
+      intro n hn
+      rcases hn with hn | hn
+      · have := iha n hn
+        simp [bound]
+        omega
+      · have := ihb n hn
+        simp [bound]
+        omega
+
 theorem eval_ext {α : Type u} (M : Model α) (t : Term)
     {e e' : Nat → α} (h : ∀ n, e n = e' n) :
     eval M e t = eval M e' t := by
@@ -1776,11 +1993,96 @@ def bound : Formula → Nat
   | all a => bound a
   | ex a => bound a
 
+def Free : Nat → Formula → Prop
+  | n, eq a b => Term.Free n a ∨ Term.Free n b
+  | _, bot => False
+  | n, imp a b => Free n a ∨ Free n b
+  | n, and a b => Free n a ∨ Free n b
+  | n, or a b => Free n a ∨ Free n b
+  | n, all a => Free (n+1) a
+  | n, ex a => Free (n+1) a
+
+def Sentence (phi : Formula) : Prop := ∀ n, ¬ Free n phi
+
+theorem free_lt_bound (phi : Formula) : ∀ n, Free n phi → n < bound phi := by
+  induction phi with
+  | eq a b =>
+      intro n hn
+      rcases hn with hn | hn
+      · have := Term.free_lt_bound a n hn
+        simp [bound]
+        omega
+      · have := Term.free_lt_bound b n hn
+        simp [bound]
+        omega
+  | bot =>
+      intro n hn
+      cases hn
+  | imp a b iha ihb =>
+      intro n hn
+      rcases hn with hn | hn
+      · have := iha n hn
+        simp [bound]
+        omega
+      · have := ihb n hn
+        simp [bound]
+        omega
+  | and a b iha ihb =>
+      intro n hn
+      rcases hn with hn | hn
+      · have := iha n hn
+        simp [bound]
+        omega
+      · have := ihb n hn
+        simp [bound]
+        omega
+  | or a b iha ihb =>
+      intro n hn
+      rcases hn with hn | hn
+      · have := iha n hn
+        simp [bound]
+        omega
+      · have := ihb n hn
+        simp [bound]
+        omega
+  | all a ih =>
+      intro n hn
+      have := ih (n+1) hn
+      simp [bound]
+      omega
+  | ex a ih =>
+      intro n hn
+      have := ih (n+1) hn
+      simp [bound]
+      omega
+
 def closeN : Nat → Formula → Formula
   | 0, phi => phi
   | n+1, phi => closeN n (all phi)
 
 def sealPA (phi : Formula) : Formula := closeN (bound phi) phi
+
+theorem Free_closeN : ∀ (k : Nat) (phi : Formula) (n : Nat),
+    Free n (closeN k phi) → Free (k + n) phi := by
+  intro k
+  induction k with
+  | zero =>
+      intro phi n h
+      rw [Nat.zero_add]
+      exact h
+  | succ k ih =>
+      intro phi n h
+      have h1 : Free (k + n) (all phi) := ih (all phi) n h
+      have h2 : Free (k + n + 1) phi := h1
+      have harg : k + 1 + n = k + n + 1 := by omega
+      rw [harg]
+      exact h2
+
+theorem sealPA_sentence (phi : Formula) : Sentence (sealPA phi) := by
+  intro n h
+  have h1 := Free_closeN (bound phi) phi n h
+  have h2 := free_lt_bound phi _ h1
+  omega
 
 theorem Sat_ext {α : Type u} (M : Model α) (phi : Formula)
     {e e' : Nat → α} (h : ∀ n, e n = e' n) :
@@ -1931,6 +2233,10 @@ def Ax_s (f : Formula) : Prop :=
   f = sealPA addZero ∨ f = sealPA addSucc ∨
   f = sealPA mulZero ∨ f = sealPA mulSucc ∨
   ∃ phi, f = sealPA (inductionForm phi)
+
+theorem sentence_ax_s {f : Formula} (hf : Ax_s f) : Sentence f := by
+  rcases hf with rfl | rfl | rfl | rfl | rfl | rfl | ⟨phi, rfl⟩ <;>
+    exact sealPA_sentence _
 
 theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
@@ -2182,6 +2488,68 @@ def termGraphAt (ρ : Nat → Nat) (out : Nat) : PA.Term → Form
           (termGraphAt (fun n => ρ n + 3) 2 b)
           (fAnd (fEq 0 (out+3)) mulGraph)))))
 
+theorem termGraphAt_free (t : PA.Term) :
+    ∀ {ρ : Nat → Nat} {out i : Nat}, Free i (termGraphAt ρ out t) →
+      i = out ∨ ∃ n, PA.Term.Free n t ∧ i = ρ n := by
+  induction t with
+  | var n =>
+      intro ρ out i h
+      simp only [termGraphAt, Free] at h
+      rcases h with h | h
+      · exact Or.inl h
+      · exact Or.inr ⟨n, rfl, h⟩
+  | zero =>
+      intro ρ out i h
+      have hi := HF_emptyAt_free h
+      exact Or.inl hi
+  | succ t ih =>
+      intro ρ out i h
+      simp only [termGraphAt, Free] at h
+      rcases h with h | h
+      · have ht := ih h
+        rcases ht with ht | ht
+        · omega
+        · rcases ht with ⟨n, hn, hi⟩
+          exact Or.inr ⟨n, hn, by omega⟩
+      · have hs := HF_succAt_free h
+        omega
+  | add a b iha ihb =>
+      intro ρ out i h
+      simp only [termGraphAt, Free] at h
+      rcases h with h | h
+      · have ha := iha h
+        rcases ha with ha | ha
+        · omega
+        · rcases ha with ⟨n, hn, hi⟩
+          exact Or.inr ⟨n, Or.inl hn, by omega⟩
+      · rcases h with h | h
+        · have hb := ihb h
+          rcases hb with hb | hb
+          · omega
+          · rcases hb with ⟨n, hn, hi⟩
+            exact Or.inr ⟨n, Or.inr hn, by omega⟩
+        · have hg := addGraphAt_free h
+          omega
+  | mul a b iha ihb =>
+      intro ρ out i h
+      simp only [termGraphAt, Free] at h
+      rcases h with h | h
+      · have ha := iha h
+        rcases ha with ha | ha
+        · omega
+        · rcases ha with ⟨n, hn, hi⟩
+          exact Or.inr ⟨n, Or.inl hn, by omega⟩
+      · rcases h with h | h
+        · have hb := ihb h
+          rcases hb with hb | hb
+          · omega
+          · rcases hb with ⟨n, hn, hi⟩
+            exact Or.inr ⟨n, Or.inr hn, by omega⟩
+        · rcases h with h | h
+          · omega
+          · have hm := mulGraph_free h
+            omega
+
 theorem termGraphAt_exact (t : PA.Term) :
     ∀ (ρ : Nat → Nat) (out : Nat) (v e),
       (∀ n, e (ρ n) = ordinalCode (v n)) →
@@ -2338,6 +2706,86 @@ def formulaAt (ρ : Nat → Nat) : PA.Formula → Form
   | PA.Formula.all a => fAll (fImp domainForm (formulaAt (upVarMap ρ) a))
   | PA.Formula.ex a => fEx (fAnd domainForm (formulaAt (upVarMap ρ) a))
 
+theorem formulaAt_free (phi : PA.Formula) :
+    ∀ {ρ : Nat → Nat} {i : Nat}, Free i (formulaAt ρ phi) →
+      ∃ n, PA.Formula.Free n phi ∧ i = ρ n := by
+  induction phi with
+  | eq a b =>
+      intro ρ i h
+      simp only [formulaAt, Free] at h
+      rcases h with h | h
+      · have ha := termGraphAt_free a h
+        rcases ha with ha | ha
+        · omega
+        · rcases ha with ⟨n, hn, hi⟩
+          exact ⟨n, Or.inl hn, by omega⟩
+      · rcases h with h | h
+        · have hb := termGraphAt_free b h
+          rcases hb with hb | hb
+          · omega
+          · rcases hb with ⟨n, hn, hi⟩
+            exact ⟨n, Or.inr hn, by omega⟩
+        · omega
+  | bot =>
+      intro ρ i h
+      cases h
+  | imp a b iha ihb =>
+      intro ρ i h
+      simp only [formulaAt, Free] at h
+      rcases h with h | h
+      · rcases iha h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inl hn, hi⟩
+      · rcases ihb h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inr hn, hi⟩
+  | and a b iha ihb =>
+      intro ρ i h
+      simp only [formulaAt, Free] at h
+      rcases h with h | h
+      · rcases iha h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inl hn, hi⟩
+      · rcases ihb h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inr hn, hi⟩
+  | or a b iha ihb =>
+      intro ρ i h
+      simp only [formulaAt, Free] at h
+      rcases h with h | h
+      · rcases iha h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inl hn, hi⟩
+      · rcases ihb h with ⟨n, hn, hi⟩
+        exact ⟨n, Or.inr hn, hi⟩
+  | all a ih =>
+      intro ρ i h
+      simp only [formulaAt, Free] at h
+      rcases h with h | h
+      · have hd := domainForm_free h
+        omega
+      · rcases ih h with ⟨n, hn, hi⟩
+        cases n with
+        | zero =>
+            simp [upVarMap] at hi
+        | succ n =>
+            exists n
+            constructor
+            · exact hn
+            · simp [upVarMap] at hi
+              omega
+  | ex a ih =>
+      intro ρ i h
+      simp only [formulaAt, Free] at h
+      rcases h with h | h
+      · have hd := domainForm_free h
+        omega
+      · rcases ih h with ⟨n, hn, hi⟩
+        cases n with
+        | zero =>
+            simp [upVarMap] at hi
+        | succ n =>
+            exists n
+            constructor
+            · exact hn
+            · simp [upVarMap] at hi
+              omega
+
 theorem formulaAt_exact (phi : PA.Formula) :
     ∀ (ρ : Nat → Nat) (v e),
       (∀ n, e (ρ n) = ordinalCode (v n)) →
@@ -2466,6 +2914,39 @@ theorem translated_PA_axiom_sat_codes (phi : PA.Formula)
     Sat Mem (fun n => ordinalCode (v n)) (translateFormula phi) :=
   (translateFormula_exact phi v).mpr
     (PA.Formula.sat_axiom_s PA.natModel v phi hphi)
+
+theorem formulaAt_sentence_of_PA_sentence (phi : PA.Formula) (ρ : Nat → Nat)
+    (hphi : PA.Formula.Sentence phi) : Sentence (formulaAt ρ phi) := by
+  intro i hi
+  rcases formulaAt_free phi hi with ⟨n, hn, _⟩
+  exact hphi n hn
+
+theorem translateFormula_sentence_of_PA_sentence (phi : PA.Formula)
+    (hphi : PA.Formula.Sentence phi) : Sentence (translateFormula phi) :=
+  formulaAt_sentence_of_PA_sentence phi (fun n : Nat => n) hphi
+
+theorem translated_PA_axiom_sentence (phi : PA.Formula)
+    (hphi : PA.Formula.Ax_s phi) : Sentence (translateFormula phi) :=
+  translateFormula_sentence_of_PA_sentence phi (PA.Formula.sentence_ax_s hphi)
+
+/-- The HF-side theory consisting of syntactic translations of the sealed PA
+axiom-scheme instances. -/
+def translatedPAAx (g : Form) : Prop :=
+  ∃ phi, PA.Formula.Ax_s phi ∧ g = translateFormula phi
+
+theorem Sentences_translatedPAAx : Sentences translatedPAAx := by
+  intro g hg
+  rcases hg with ⟨phi, hphi, rfl⟩
+  exact translated_PA_axiom_sentence phi hphi
+
+theorem standard_sat_translatedPAAx (e : Nat → Nat) :
+    ∀ g, translatedPAAx g → Sat Mem e g := by
+  intro g hg
+  rcases hg with ⟨phi, hphi, rfl⟩
+  have hsent := translated_PA_axiom_sentence phi hphi
+  have hcoded := translated_PA_axiom_sat_codes phi hphi (fun _ => 0)
+  exact (Sat_sentence_inv (translateFormula phi) hsent
+    (fun _ => ordinalCode 0) e).mp hcoded
 
 end PAInHF
 
