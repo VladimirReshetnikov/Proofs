@@ -62,6 +62,8 @@ open SetTheory
 #check @PA.Formula.remAt
 #check @PA.Formula.betaModTerm
 #check @PA.Formula.betaAt
+#check @PA.Formula.betaAtConstIdx
+#check @PA.Formula.betaAtSuccIdx
 #check @PA.Formula.leAt_nat
 #check @PA.Formula.ltAt_nat
 #check @PA.Formula.dvdAt_nat
@@ -77,6 +79,8 @@ open SetTheory
 #check @PA.Formula.betaModTerm_nat
 #check @PA.Formula.remAt_nat
 #check @PA.Formula.betaAt_nat
+#check @PA.Formula.betaAtConstIdx_nat
+#check @PA.Formula.betaAtSuccIdx_nat
 #check @AckermannHF.HFAx_s
 #check @AckermannHF.Sentences_HF
 #check @AckermannHF.eq_empty_iff_no_mem

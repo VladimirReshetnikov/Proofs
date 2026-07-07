@@ -2256,6 +2256,14 @@ def betaAt (out code step idx : Nat) : Formula :=
     (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
     (remAt (out+1) (code+1) 0))
 
+def betaAtConstIdx (out code step idxValue : Nat) : Formula :=
+  ex (and (eqConstAt 0 idxValue) (betaAt (out+1) (code+1) (step+1) 0))
+
+def betaAtSuccIdx (out code step idx : Nat) : Formula :=
+  ex (and
+    (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
+    (betaAt (out+1) (code+1) (step+1) 0))
+
 theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
     Sat natModel e (leAt a b) ↔ e a ≤ e b := by
   constructor
@@ -2412,6 +2420,48 @@ theorem betaAt_nat (e : Nat → Nat) (out code step idx : Nat) :
       refine ⟨q, ?_, ?_⟩
       · simpa [scons, m] using hval
       · simpa [scons, m] using hlt
+
+theorem betaAtConstIdx_nat (e : Nat → Nat) (out code step idxValue : Nat) :
+    Sat natModel e (betaAtConstIdx out code step idxValue) ↔
+      ∃ q,
+        e code = q * (1 + (idxValue + 1) * e step) + e out ∧
+          e out < 1 + (idxValue + 1) * e step := by
+  constructor
+  · intro h
+    rcases h with ⟨i, hi, hbeta⟩
+    have hi' : i = idxValue := (eqConstAt_nat (scons i e) 0 idxValue).mp hi
+    rcases (betaAt_nat (scons i e) (out+1) (code+1) (step+1) 0).mp hbeta with
+      ⟨q, hval, hlt⟩
+    subst hi'
+    exact ⟨q, by simpa [scons] using hval, by simpa [scons] using hlt⟩
+  · intro h
+    rcases h with ⟨q, hval, hlt⟩
+    refine ⟨idxValue, ?_, ?_⟩
+    · exact (eqConstAt_nat (scons idxValue e) 0 idxValue).mpr rfl
+    · apply (betaAt_nat (scons idxValue e) (out+1) (code+1) (step+1) 0).mpr
+      exact ⟨q, by simpa [scons] using hval, by simpa [scons] using hlt⟩
+
+theorem betaAtSuccIdx_nat (e : Nat → Nat) (out code step idx : Nat) :
+    Sat natModel e (betaAtSuccIdx out code step idx) ↔
+      ∃ q,
+        e code = q * (1 + (e idx + 1 + 1) * e step) + e out ∧
+          e out < 1 + (e idx + 1 + 1) * e step := by
+  constructor
+  · intro h
+    rcases h with ⟨i, hi, hbeta⟩
+    have hi' : i = e idx + 1 := by
+      simp only [Sat, Term.eval, natModel, scons] at hi
+      exact hi
+    rcases (betaAt_nat (scons i e) (out+1) (code+1) (step+1) 0).mp hbeta with
+      ⟨q, hval, hlt⟩
+    subst hi'
+    exact ⟨q, by simpa [scons] using hval, by simpa [scons] using hlt⟩
+  · intro h
+    rcases h with ⟨q, hval, hlt⟩
+    refine ⟨e idx + 1, ?_, ?_⟩
+    · simp only [Sat, Term.eval, natModel, scons]
+    · apply (betaAt_nat (scons (e idx + 1) e) (out+1) (code+1) (step+1) 0).mpr
+      exact ⟨q, by simpa [scons] using hval, by simpa [scons] using hlt⟩
 
 end Formula
 
