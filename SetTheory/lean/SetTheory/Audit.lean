@@ -46,6 +46,8 @@ open SetTheory
 #check @AckermannHF.HF_memTotalOnAt_spec
 #check @AckermannHF.HF_ordinalLikeAt_spec
 #check @AckermannHF.OrdinalLike.of_mem
+#check @AckermannHF.OrdinalLike.empty
+#check @AckermannHF.OrdinalLike.adjoin_self
 #check @AckermannHF.ordinalCode_ordinalLike
 #check @AckermannHF.HF_ordinalLikeAt_of_ordinalCode
 #check @AckermannHF.PAInHF.domainForm
@@ -54,6 +56,8 @@ open SetTheory
 #check @AckermannHF.PAInHF.domain_ordinalCode
 #check @AckermannHF.PAInHF.zeroGraph_ordinalCode
 #check @AckermannHF.PAInHF.succGraph_ordinalCode
+#check @AckermannHF.PAInHF.zeroGraph_domain
+#check @AckermannHF.PAInHF.succGraph_preserves_domain
 #check @AckermannHF.sat_HF_model
 #check @AckermannHF.standard_sat_HF
 #check @AckermannHF.ordinalHF_sat_HF

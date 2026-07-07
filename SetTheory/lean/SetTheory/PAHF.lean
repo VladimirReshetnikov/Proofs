@@ -251,6 +251,41 @@ theorem OrdinalLike.of_mem {α : Type u} {mem : α → α → Prop}
   · intro u hu z hz
     exact ha.2.2 u (ha.1 y hy u hu) z (ha.1 y hy z hz)
 
+theorem OrdinalLike.empty {α : Type} (M : AdjunctionModel α) :
+    OrdinalLike M.mem M.empty := by
+  refine ⟨?_, ?_, ?_⟩
+  · intro y hy
+    exact False.elim (M.empty_spec y hy)
+  · intro y hy
+    exact False.elim (M.empty_spec y hy)
+  · intro y hy
+    exact False.elim (M.empty_spec y hy)
+
+theorem OrdinalLike.adjoin_self {α : Type} (M : AdjunctionModel α)
+    {a s : α} (ha : OrdinalLike M.mem a) (hs : s = M.adjoin a a) :
+    OrdinalLike M.mem s := by
+  subst s
+  refine ⟨?_, ?_, ?_⟩
+  · intro y hy x hx
+    apply (M.adjoin_spec x a a).mpr
+    rcases (M.adjoin_spec y a a).mp hy with hyin | hyeq
+    · exact Or.inl (ha.1 y hyin x hx)
+    · rw [hyeq] at hx
+      exact Or.inl hx
+  · intro y hy
+    rcases (M.adjoin_spec y a a).mp hy with hyin | hyeq
+    · exact ha.2.1 y hyin
+    · rw [hyeq]
+      exact ha.1
+  · intro y hy z hz
+    rcases (M.adjoin_spec y a a).mp hy with hyin | hyeq
+    · rcases (M.adjoin_spec z a a).mp hz with hzin | hzeq
+      · exact ha.2.2 y hyin z hzin
+      · exact Or.inl (by rw [hzeq]; exact hyin)
+    · rcases (M.adjoin_spec z a a).mp hz with hzin | hzeq
+      · exact Or.inr (Or.inr (by rw [hyeq]; exact hzin))
+      · exact Or.inr (Or.inl (by rw [hyeq, hzeq]))
+
 /-- Formula macro: slot `a` is ordinal-like.  Over HF, where membership is
 well-founded by set induction, this is intended to define the finite von
 Neumann ordinals. -/
@@ -434,6 +469,22 @@ theorem succGraph_ordinalCode (n : Nat) (e : Nat → Nat) :
   apply (HF_succAt_spec standardModel
     (scons (ordinalCode (n+1)) (scons (ordinalCode n) e)) 0 1).mpr
   exact ordinalCode_succ n
+
+theorem zeroGraph_domain (e : Nat → Nat)
+    (hz : Sat Mem e zeroGraph) : Sat Mem e domainForm := by
+  apply (HF_ordinalLikeAt_spec e 0).mpr
+  have hz' := (HF_emptyAt_empty standardModel e 0).mp hz
+  rw [hz']
+  exact OrdinalLike.empty standardModel
+
+theorem succGraph_preserves_domain (e : Nat → Nat)
+    (hin : Sat Mem e (HF_ordinalLikeAt 1))
+    (hs : Sat Mem e succGraph) :
+    Sat Mem e domainForm := by
+  apply (HF_ordinalLikeAt_spec e 0).mpr
+  have hin' := (HF_ordinalLikeAt_spec e 1).mp hin
+  have hs' := (HF_succAt_spec standardModel e 0 1).mp hs
+  exact OrdinalLike.adjoin_self standardModel hin' hs'
 
 end PAInHF
 
