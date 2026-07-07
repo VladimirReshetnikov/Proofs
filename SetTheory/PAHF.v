@@ -6302,8 +6302,166 @@ Proof.
           (or_intror (or_intror (or_introl eq_refl))))))) e).
   - exact (proj2 (seal_valid M (inductionForm phi))
       (fun e0 => sat_axiom M e0 (inductionForm phi)
-        (or_intror (or_intror (or_intror
+          (or_intror (or_intror (or_intror
           (or_intror (or_intror (or_intror (ex_intro _ phi eq_refl)))))))) e).
+Qed.
+
+Definition leAt (a b : nat) : formula :=
+  pEx (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))).
+
+Definition ltAt (a b : nat) : formula :=
+  pEx (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b))).
+
+Definition dvdAt (a b : nat) : formula :=
+  pEx (pEq (tMul (tVar (S a)) (tVar 0)) (tVar (S b))).
+
+Definition eqConstAt (a n : nat) : formula :=
+  pEq (tVar a) (Term.numeral n).
+
+Definition zeroAt (a : nat) : formula := eqConstAt a 0.
+
+Definition oneAt (a : nat) : formula := eqConstAt a 1.
+
+Definition twoAt (a : nat) : formula := eqConstAt a 2.
+
+Definition nonzeroAt (a : nat) : formula :=
+  pEx (pEq (tSucc (tVar 0)) (tVar (S a))).
+
+Definition boolAt (a : nat) : formula :=
+  pOr (zeroAt a) (oneAt a).
+
+Definition doubleEqAt (value half : nat) : formula :=
+  pEq (tVar value) (tAdd (tVar half) (tVar half)).
+
+Definition oddDoubleEqAt (value half : nat) : formula :=
+  pEq (tVar value) (tSucc (tAdd (tVar half) (tVar half))).
+
+Definition div2StepAt (value half bit : nat) : formula :=
+  pAnd (boolAt bit)
+    (pEq (tVar value)
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))).
+
+Lemma leAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (leAt a b) <-> e a <= e b.
+Proof.
+  intros e a b.
+  unfold leAt. simpl.
+  split.
+  - intros [d hd].
+    lia.
+  - intro h.
+    exists (e b - e a).
+    lia.
+Qed.
+
+Lemma ltAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (ltAt a b) <-> e a < e b.
+Proof.
+  intros e a b.
+  unfold ltAt. simpl.
+  split.
+  - intros [d hd].
+    lia.
+  - intro h.
+    exists (e b - e a - 1).
+    lia.
+Qed.
+
+Lemma dvdAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (dvdAt a b) <-> Nat.divide (e a) (e b).
+Proof.
+  intros e a b.
+  unfold dvdAt. simpl.
+  split.
+  - intros [q hq].
+    exists q.
+    rewrite Nat.mul_comm.
+    symmetry. exact hq.
+  - intros [q hq].
+    exists q.
+    rewrite Nat.mul_comm.
+    symmetry. exact hq.
+Qed.
+
+Lemma eqConstAt_nat : forall (e : nat -> nat) a n,
+  Sat natModel e (eqConstAt a n) <-> e a = n.
+Proof.
+  intros e a n.
+  unfold eqConstAt. simpl.
+  rewrite Term.eval_numeral_natModel.
+  reflexivity.
+Qed.
+
+Lemma zeroAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (zeroAt a) <-> e a = 0.
+Proof.
+  intros e a.
+  apply eqConstAt_nat.
+Qed.
+
+Lemma oneAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (oneAt a) <-> e a = 1.
+Proof.
+  intros e a.
+  apply eqConstAt_nat.
+Qed.
+
+Lemma twoAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (twoAt a) <-> e a = 2.
+Proof.
+  intros e a.
+  apply eqConstAt_nat.
+Qed.
+
+Lemma nonzeroAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (nonzeroAt a) <-> e a <> 0.
+Proof.
+  intros e a.
+  unfold nonzeroAt. simpl.
+  split.
+  - intros [d hd] hzero.
+    lia.
+  - intro h.
+    exists (e a - 1).
+    lia.
+Qed.
+
+Lemma boolAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (boolAt a) <-> e a = 0 \/ e a = 1.
+Proof.
+  intros e a.
+  unfold boolAt, zeroAt, oneAt, eqConstAt. simpl.
+  reflexivity.
+Qed.
+
+Lemma doubleEqAt_nat : forall (e : nat -> nat) value half,
+  Sat natModel e (doubleEqAt value half) <->
+    e value = e half + e half.
+Proof.
+  intros e value half.
+  unfold doubleEqAt. simpl.
+  reflexivity.
+Qed.
+
+Lemma oddDoubleEqAt_nat : forall (e : nat -> nat) value half,
+  Sat natModel e (oddDoubleEqAt value half) <->
+    e value = e half + e half + 1.
+Proof.
+  intros e value half.
+  unfold oddDoubleEqAt. simpl.
+  split; intro h; lia.
+Qed.
+
+Lemma div2StepAt_nat : forall (e : nat -> nat) value half bit,
+  Sat natModel e (div2StepAt value half bit) <->
+    (e bit = 0 \/ e bit = 1) /\
+      e value = e half + e half + e bit.
+Proof.
+  intros e value half bit.
+  unfold div2StepAt, boolAt, zeroAt, oneAt, eqConstAt. simpl.
+  split; intros [hbit hval].
+  - split; [exact hbit | lia].
+  - split; [exact hbit | lia].
 Qed.
 
 End Formula.
