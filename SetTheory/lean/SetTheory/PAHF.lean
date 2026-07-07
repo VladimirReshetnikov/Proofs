@@ -12417,6 +12417,58 @@ theorem BProv_formulaAt_of_Prov_with_term_rules
       intro ρ
       exact hEqElim (iheq ρ) (iha ρ)
 
+/-- Relative PA proofs translate once the term-sensitive PA rules have been
+supplied explicitly.
+
+This is the `BProv`-level companion to
+`BProv_formulaAt_of_Prov_with_term_rules`: finite PA axiom lists are translated
+and then cut away using `BProv_formulaAt_ax`, while the four arbitrary-term
+rules remain visible premises. -/
+theorem BProv_formulaAt_of_PA_BProv_with_term_rules
+    (hAllE : ∀ {ρ : Nat → Nat} {G : List PA.Formula}
+      {a : PA.Formula} {t : PA.Term},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.all a)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm t) a)))
+    (hExI : ∀ {ρ : Nat → Nat} {G : List PA.Formula}
+      {a : PA.Formula} {t : PA.Term},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm t) a)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.ex a)))
+    (hEqRefl : ∀ {ρ : Nat → Nat} {G : List PA.Formula} {t : PA.Term},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.eq t t)))
+    (hEqElim : ∀ {ρ : Nat → Nat} {G : List PA.Formula}
+      {s t : PA.Term} {a : PA.Formula},
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ (PA.Formula.eq s t)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm s) a)) →
+      BProv translatedPAAx (translateContextAt ρ G)
+        (formulaAt ρ
+          (PA.Formula.subst (PA.Formula.instTerm t) a)))
+    {phi : PA.Formula}
+    (h : PA.Formula.BProv PA.Formula.Ax_s [] phi) :
+    ∀ ρ : Nat → Nat,
+      BProv translatedPAAx [] (formulaAt ρ phi) := by
+  rcases h with ⟨L, hL, hp⟩
+  intro ρ
+  have htranslated : BProv translatedPAAx
+      (translateContextAt ρ L) (formulaAt ρ phi) := by
+    simpa using BProv_formulaAt_of_Prov_with_term_rules
+      (hAllE := @hAllE) (hExI := @hExI)
+      (hEqRefl := @hEqRefl) (hEqElim := @hEqElim)
+      hp ρ
+  exact BProv_cut htranslated (fun g hg => by
+    simp only [translateContextAt, List.mem_map] at hg
+    rcases hg with ⟨psi, hpsi, rfl⟩
+    exact BProv_formulaAt_ax (ρ := ρ) (hL psi hpsi))
+
 theorem BProv_lift_translatedPAAx_to_HF
     (hAx : ∀ g, translatedPAAx g → BProv HFAx_s [] g)
     {g : Form} (h : BProv translatedPAAx [] g) : BProv HFAx_s [] g :=
