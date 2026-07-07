@@ -17,6 +17,11 @@ Current ports:
 - `Nicod.v` ports the NAND language, Nicod axiom/rule derivations, soundness,
   and functional-completeness lemmas from `Nicod.lean`.
 - `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
+- `TrigGoldenRatio.v` ports the elementary identity
+  `sin 9° + sin 21° + sin 39° = φ / √2`.  Coq's standard library does not
+  provide the exact `cos (π / 5)` value used by Lean/mathlib, so the port
+  derives it locally from the triple-angle formula and the positive quadratic
+  root.
 - `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
   summation identity from `FloorSqrtSum.lean`.
 - `RationalFloorOrbit.v` ports the Calkin-Wilf pair generator core from
@@ -117,6 +122,7 @@ Build from `src/Lean/`:
 ```powershell
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/TrigGoldenRatio.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/RationalFloorOrbit.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
