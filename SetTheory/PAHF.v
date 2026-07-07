@@ -18,7 +18,7 @@
 From Stdlib Require Import Arith.Arith Bool.Bool Lia PeanoNat List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 From Stdlib Require Import ClassicalEpsilon ProofIrrelevance.
-From SetTheory Require Import Fol Completeness.
+From SetTheory Require Import Fol Calculus Completeness.
 Import ListNotations.
 
 Record PAModel := {
@@ -9474,6 +9474,14 @@ Proof.
   exact hphi.
 Qed.
 
+Lemma translated_PA_axiom_sentence : forall phi,
+  PA.Formula.Ax_s phi -> Sentence (translateFormula phi).
+Proof.
+  intros phi hphi.
+  apply translateFormula_sentence_of_PA_sentence.
+  exact (PA.Formula.sentence_ax_s phi hphi).
+Qed.
+
 Lemma translated_zeroNotSucc_sat : forall A (mem : A -> A -> Prop) e,
   Sat A mem e (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
 Proof.
@@ -9549,6 +9557,188 @@ Proof.
   intros V mem v e hHF.
   pose (M := firstOrderAdjunctionModel_of_HFAx_s V mem v hHF).
   exact (translated_mulZero_sat_model V M e).
+Qed.
+
+Lemma BProv_HF_translated_zeroNotSucc :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_zeroNotSucc.
+  - intros Dom mem v _hHF.
+    apply translated_zeroNotSucc_sat.
+Qed.
+
+Lemma BProv_HF_translated_succInj :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_succInj.
+  - intros Dom mem v hHF.
+    exact (translated_succInj_sat_of_HFAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_HF_translated_addZero :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_addZero.
+  - intros Dom mem v hHF.
+    exact (translated_addZero_sat_of_HFAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_HF_translated_mulZero :
+  BProv HFAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  apply completeness_inf.
+  - exact Sentences_HF.
+  - apply translated_PA_axiom_sentence.
+    apply PA.Formula.Ax_s_mulZero.
+  - intros Dom mem v hHF.
+    exact (translated_mulZero_sat_of_HFAx_s Dom mem v v hHF).
+Qed.
+
+Lemma BProv_theory_mono : forall (B C : form -> Prop) G phi,
+  (forall b, B b -> C b) -> BProv B G phi -> BProv C G phi.
+Proof.
+  intros B C G phi hBC [L [hL hp]].
+  exists L.
+  split.
+  - intros x hx.
+    apply hBC.
+    exact (hL x hx).
+  - exact hp.
+Qed.
+
+Lemma BProv_ax : forall (B : form -> Prop) G phi,
+  B phi -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  exists [phi].
+  split.
+  - intros x hx.
+    simpl in hx.
+    destruct hx as [hx | hx]; [ subst x; exact hphi | contradiction ].
+  - simpl.
+    apply P_ass.
+    left. reflexivity.
+Qed.
+
+Lemma BProv_of_Prov : forall (B : form -> Prop) G phi,
+  Prov G phi -> BProv B G phi.
+Proof.
+  intros B G phi h.
+  exists [].
+  split.
+  - intros x hx. contradiction.
+  - simpl. exact h.
+Qed.
+
+Lemma BProv_HFFin_translated_zeroNotSucc :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.zeroNotSucc))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_zeroNotSucc.
+Qed.
+
+Lemma BProv_HFFin_translated_succInj :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.succInj)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.succInj))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_succInj.
+Qed.
+
+Lemma BProv_HFFin_translated_addZero :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.addZero)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.addZero))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_addZero.
+Qed.
+
+Lemma BProv_HFFin_translated_mulZero :
+  BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.mulZero)).
+Proof.
+  apply (BProv_theory_mono HFAx_s HFFinAx_s []
+    (translateFormula (PA.Formula.sealPA PA.Formula.mulZero))).
+  - intros g hg. apply HFFinAx_s_of_HFAx_s. exact hg.
+  - exact BProv_HF_translated_mulZero.
+Qed.
+
+Definition translatedPAAx (g : form) : Prop :=
+  exists phi, PA.Formula.Ax_s phi /\ g = translateFormula phi.
+
+Lemma translatedPAAx_intro : forall phi,
+  PA.Formula.Ax_s phi -> translatedPAAx (translateFormula phi).
+Proof.
+  intros phi hphi.
+  exists phi. split; [ exact hphi | reflexivity ].
+Qed.
+
+Lemma Sentences_translatedPAAx : forall g,
+  translatedPAAx g -> Sentence g.
+Proof.
+  intros g [phi [hphi ->]].
+  apply translated_PA_axiom_sentence.
+  exact hphi.
+Qed.
+
+Lemma rename_eq_of_sentence : forall g,
+  Sentence g -> forall r, rename r g = g.
+Proof.
+  intros g hg r.
+  transitivity (rename (fun n => n) g).
+  - apply rename_ext_free.
+    intros n hn.
+    exfalso. exact (hg n hn).
+  - apply rename_id.
+Qed.
+
+Lemma BProv_translatedPAAx_of_PAAx : forall phi,
+  PA.Formula.Ax_s phi -> BProv translatedPAAx [] (translateFormula phi).
+Proof.
+  intros phi hphi.
+  apply BProv_ax.
+  apply translatedPAAx_intro.
+  exact hphi.
+Qed.
+
+Definition translateContext (G : list PA.formula) : list form :=
+  map translateFormula G.
+
+Lemma mem_translateContext_of_mem : forall G phi,
+  In phi G -> In (translateFormula phi) (translateContext G).
+Proof.
+  intros G phi hphi.
+  unfold translateContext.
+  apply in_map.
+  exact hphi.
+Qed.
+
+Lemma BProv_translate_ass : forall G phi,
+  In phi G -> BProv translatedPAAx (translateContext G) (translateFormula phi).
+Proof.
+  intros G phi hphi.
+  apply BProv_of_Prov.
+  apply P_ass.
+  apply mem_translateContext_of_mem.
+  exact hphi.
+Qed.
+
+Lemma BProv_translate_ax : forall phi,
+  PA.Formula.Ax_s phi -> BProv translatedPAAx [] (translateFormula phi).
+Proof.
+  apply BProv_translatedPAAx_of_PAAx.
 Qed.
 
 Record TheoryInterpretation
