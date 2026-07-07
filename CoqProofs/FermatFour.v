@@ -91,6 +91,56 @@ Proof.
   ring.
 Qed.
 
+Lemma odd_square_mod4 (z : Z) :
+    Z.odd z = true -> (z ^ 2) mod 4 = 1.
+Proof.
+  intro hz.
+  pose proof (Z.div2_odd z) as hdecomp.
+  rewrite hz in hdecomp.
+  change (Z.b2z true) with 1 in hdecomp.
+  rewrite hdecomp.
+  replace ((2 * Z.div2 z + 1) ^ 2) with
+    (1 + (Z.div2 z * Z.div2 z + Z.div2 z) * 4) by ring.
+  rewrite Z.mod_add by discriminate.
+  apply Z.mod_small.
+  lia.
+Qed.
+
+Lemma odd_pow4_mod4 (z : Z) :
+    Z.odd z = true -> (z ^ 4) mod 4 = 1.
+Proof.
+  intro hz.
+  replace (z ^ 4) with ((z ^ 2) * (z ^ 2)) by ring.
+  rewrite Zmult_mod.
+  rewrite odd_square_mod4 by exact hz.
+  reflexivity.
+Qed.
+
+Lemma square_mod4_ne_two (z : Z) :
+    (z ^ 2) mod 4 <> 2.
+Proof.
+  replace (z ^ 2) with (z * z) by ring.
+  rewrite Zmult_mod.
+  pose proof (Z.mod_pos_bound z 4 ltac:(lia)) as hz.
+  remember (z mod 4) as r.
+  assert (r = 0 \/ r = 1 \/ r = 2 \/ r = 3) by lia.
+  destruct H as [-> | [-> | [-> | ->]]]; compute; discriminate.
+Qed.
+
+Theorem Fermat42_not_both_odd {a b c : Z} (h : Fermat42 a b c) :
+    ~ (Z.odd a = true /\ Z.odd b = true).
+Proof.
+  intros (haodd & hbodd).
+  destruct h as (_ & _ & heq).
+  assert (hmod : (c ^ 2) mod 4 = 2).
+  { rewrite <- heq.
+    rewrite (Zplus_mod (a ^ 4) (b ^ 4) 4).
+    rewrite odd_pow4_mod4 by exact haodd.
+    rewrite odd_pow4_mod4 by exact hbodd.
+    reflexivity. }
+  exact (square_mod4_ne_two c hmod).
+Qed.
+
 Lemma pow4_pos (a : Z) (ha : a <> 0) : 0 < a ^ 4.
 Proof.
   assert (hnonneg : 0 <= a ^ 4).

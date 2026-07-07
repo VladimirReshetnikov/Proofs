@@ -36,11 +36,13 @@ Current ports:
 - `FermatFour.v` ports the project-local wrapper surface from
   `FermatFour.lean`: Coq defines the `a^4 + b^4 = c^2` counterexample
   predicate, proves elementary structural facts and the well-founded infinite
-  descent eliminator, then derives the stronger integer-square theorem and the
-  positive-natural FLT-4 statement from an explicit smaller-counterexample
-  descent-step parameter.  The installed Coq libraries do not include a modern
-  FLT-4 theorem; the old self-contained `rocq-archive/fermat4` formalization
-  exists but targets Coq 8.0 and is not yet modernized here.
+  descent eliminator, records the Pythagorean-triple-of-squares bridge, proves
+  scaling and parity obstruction lemmas, then derives the stronger
+  integer-square theorem and the positive-natural FLT-4 statement from an
+  explicit smaller-counterexample descent-step parameter.  The installed Coq
+  libraries do not include a modern FLT-4 theorem; the old self-contained
+  `rocq-archive/fermat4` formalization exists but targets Coq 8.0 and is not
+  yet modernized here.
 - `FloorSqrtSum.v` ports the rational induction core of the floor-square-root
   summation identity from `FloorSqrtSum.lean`.
 - `RationalFloorOrbit.v` ports the Calkin-Wilf pair generator core from
