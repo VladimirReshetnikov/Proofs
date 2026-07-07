@@ -1564,6 +1564,273 @@ Proof.
   exact (hall a haa).
 Qed.
 
+Record FirstOrderHFModel (V : Type) := {
+  fohf_mem : V -> V -> Prop;
+  fohf_extensional : forall a b,
+    (forall x, fohf_mem x a <-> fohf_mem x b) -> a = b;
+  fohf_empty_exists : exists e, forall x, ~ fohf_mem x e;
+  fohf_adjoin_exists : forall a b,
+    exists c, forall x, fohf_mem x c <-> fohf_mem x a \/ x = b;
+  fohf_induction_schema : forall phi e,
+    Sat V fohf_mem e (HF_induction_form phi)
+}.
+
+Record FirstOrderAdjunctionModel (V : Type) := {
+  foam_mem : V -> V -> Prop;
+  foam_empty : V;
+  foam_adjoin : V -> V -> V;
+  foam_extensional : forall a b,
+    (forall x, foam_mem x a <-> foam_mem x b) -> a = b;
+  foam_empty_spec : forall x, ~ foam_mem x foam_empty;
+  foam_adjoin_spec : forall x a b,
+    foam_mem x (foam_adjoin a b) <-> foam_mem x a \/ x = b;
+  foam_induction_schema : forall phi e,
+    Sat V foam_mem e (HF_induction_form phi)
+}.
+
+Record FirstOrderFiniteAdjunctionModel (V : Type) := {
+  fofam_base :> FirstOrderAdjunctionModel V;
+  fofam_finite_induction_schema : forall phi e,
+    Sat V (foam_mem V fofam_base) e (HF_finite_induction_form phi)
+}.
+
+Lemma foam_mem_irrefl : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a : V),
+  ~ foam_mem V M a a.
+Proof.
+  intros V M a.
+  pose (phi := fImp (fMem 0 0) fBot).
+  pose proof (foam_induction_schema V M phi (fun _ => a)) as hind.
+  assert (hall : forall x, Sat V (foam_mem V M) (scons V x (fun _ => a)) phi).
+  {
+    apply hind.
+    intros x ih hxx.
+    exact (ih x hxx hxx).
+  }
+  exact (hall a).
+Qed.
+
+Lemma foam_mem_asymm : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a b : V),
+  foam_mem V M a b -> ~ foam_mem V M b a.
+Proof.
+  intros V M a b hab.
+  pose (phi := fAll (fImp (fMem 0 1) (fImp (fMem 1 0) fBot))).
+  pose (tail := fun _ : nat => a).
+  pose proof (foam_induction_schema V M phi tail) as hind.
+  assert (hall : forall x, Sat V (foam_mem V M) (scons V x tail) phi).
+  {
+    apply hind.
+    intros x ih y hyx hxy.
+    pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M) phi tail x y)
+      (ih y hyx)) as hySat.
+    exact (hySat x hxy hyx).
+  }
+  exact (hall b a hab).
+Qed.
+
+Lemma foam_adjoin_self_mem : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a : V),
+  foam_mem V M a (foam_adjoin V M a a).
+Proof.
+  intros V M a.
+  apply (proj2 (foam_adjoin_spec V M a a a)).
+  now right.
+Qed.
+
+Lemma foam_adjoin_self_ne_self : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a : V),
+  foam_adjoin V M a a <> a.
+Proof.
+  intros V M a h.
+  pose proof (foam_adjoin_self_mem V M a) as ha.
+  rewrite h in ha.
+  exact (foam_mem_irrefl V M a ha).
+Qed.
+
+Lemma foam_adjoin_self_not_mem_of_OrdinalLike : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a : V),
+  OrdinalLike (foam_mem V M) a ->
+  ~ foam_mem V M (foam_adjoin V M a a) a.
+Proof.
+  intros V M a ha hsucc.
+  pose proof (foam_adjoin_self_mem V M a) as ha_in_succ.
+  pose proof (proj1 ha (foam_adjoin V M a a) hsucc a ha_in_succ) as haa.
+  exact (foam_mem_irrefl V M a haa).
+Qed.
+
+Lemma foam_adjoin_self_injective_on_OrdinalLike : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a b : V),
+  OrdinalLike (foam_mem V M) a ->
+  OrdinalLike (foam_mem V M) b ->
+  foam_adjoin V M a a = foam_adjoin V M b b ->
+  a = b.
+Proof.
+  intros V M a b _ha hb h.
+  assert (hasucc : foam_mem V M a (foam_adjoin V M b b)).
+  {
+    rewrite <- h.
+    apply foam_adjoin_self_mem.
+  }
+  destruct (proj1 (foam_adjoin_spec V M a b b) hasucc) as [hab | hab].
+  - assert (hbsucc : foam_mem V M b (foam_adjoin V M a a)).
+    {
+      rewrite h.
+      apply foam_adjoin_self_mem.
+    }
+    destruct (proj1 (foam_adjoin_spec V M b a a) hbsucc) as [hba | hba].
+    + pose proof (proj1 hb a hab b hba) as hbb.
+      exfalso. exact (foam_mem_irrefl V M b hbb).
+    + symmetry. exact hba.
+  - exact hab.
+Qed.
+
+Lemma foam_OrdinalLike_empty : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V),
+  OrdinalLike (foam_mem V M) (foam_empty V M).
+Proof.
+  intros V M.
+  unfold OrdinalLike, TransitiveObj, MemTotalOn.
+  split.
+  - intros y hy. exfalso. exact (foam_empty_spec V M y hy).
+  - split.
+    + intros y hy. exfalso. exact (foam_empty_spec V M y hy).
+    + intros y hy. exfalso. exact (foam_empty_spec V M y hy).
+Qed.
+
+Lemma foam_OrdinalLike_adjoin_self : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a s : V),
+  OrdinalLike (foam_mem V M) a ->
+  s = foam_adjoin V M a a ->
+  OrdinalLike (foam_mem V M) s.
+Proof.
+  intros V M a s [htrans [hmtrans htotal]] hs.
+  subst s.
+  unfold OrdinalLike, TransitiveObj, MemTotalOn in *.
+  split.
+  - intros y hy x hx.
+    apply (proj2 (foam_adjoin_spec V M x a a)).
+    destruct (proj1 (foam_adjoin_spec V M y a a) hy) as [hyin | hyeq].
+    + left. eapply htrans; eauto.
+    + subst y. left. exact hx.
+  - split.
+    + intros y hy.
+      destruct (proj1 (foam_adjoin_spec V M y a a) hy) as [hyin | hyeq].
+      * exact (hmtrans y hyin).
+      * subst y. exact htrans.
+    + intros y hy z hz.
+      destruct (proj1 (foam_adjoin_spec V M y a a) hy) as [hyin | hyeq].
+      * destruct (proj1 (foam_adjoin_spec V M z a a) hz) as [hzin | hzeq].
+        -- exact (htotal y hyin z hzin).
+        -- subst z. left. exact hyin.
+      * subst y.
+        destruct (proj1 (foam_adjoin_spec V M z a a) hz) as [hzin | hzeq].
+        -- right. right. exact hzin.
+        -- subst z. right. left. reflexivity.
+Qed.
+
+Lemma foam_OrdinalLike_eq_succ_of_mem_max : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V) (a p : V),
+  OrdinalLike (foam_mem V M) a ->
+  foam_mem V M p a ->
+  (forall q, foam_mem V M q a -> ~ foam_mem V M p q) ->
+  a = foam_adjoin V M p p.
+Proof.
+  intros V M a p ha hp hmax.
+  apply (foam_extensional V M).
+  intro x.
+  split.
+  - intro hx.
+    apply (proj2 (foam_adjoin_spec V M x p p)).
+    destruct (proj2 (proj2 ha) x hx p hp) as [hxp | [hxp | hpx]].
+    + now left.
+    + now right.
+    + exfalso. exact (hmax x hx hpx).
+  - intro hx.
+    destruct (proj1 (foam_adjoin_spec V M x p p) hx) as [hxp | hxp].
+    + exact (proj1 ha p hp x hxp).
+    + subst x. exact hp.
+Qed.
+
+Lemma foam_OrdinalLike_empty_or_succ_of_mem_max_exists : forall (V : Type)
+    (M : FirstOrderAdjunctionModel V),
+  (forall a, (exists x, foam_mem V M x a) ->
+    exists p, foam_mem V M p a /\
+      forall q, foam_mem V M q a -> ~ foam_mem V M p q) ->
+  forall a, OrdinalLike (foam_mem V M) a ->
+    a = foam_empty V M \/
+    exists p, foam_mem V M p a /\ a = foam_adjoin V M p p.
+Proof.
+  intros V M hMax a ha.
+  destruct (classic (exists x, foam_mem V M x a)) as [hne | hne].
+  - destruct (hMax a hne) as [p [hp hmax]].
+    right.
+    exists p.
+    split; [exact hp |].
+    exact (foam_OrdinalLike_eq_succ_of_mem_max V M a p ha hp hmax).
+  - left.
+    apply (foam_extensional V M).
+    intro x.
+    split.
+    + intro hx. exfalso. exact (hne (ex_intro _ x hx)).
+    + intro hx. exfalso. exact (foam_empty_spec V M x hx).
+Qed.
+
+Definition firstOrderHFModel_of_HFAx_s (V : Type) (mem : V -> V -> Prop)
+    (v : nat -> V)
+    (hHF : forall g, HFAx_s g -> Sat V mem v g) :
+    FirstOrderHFModel V :=
+  {| fohf_mem := mem;
+     fohf_extensional := semantic_extensionality_of_HFAx_s V mem v hHF;
+     fohf_empty_exists := semantic_empty_of_HFAx_s V mem v hHF;
+     fohf_adjoin_exists := semantic_adjoin_of_HFAx_s V mem v hHF;
+     fohf_induction_schema := semantic_induction_schema_of_HFAx_s V mem v hHF |}.
+
+Definition firstOrderAdjunctionModel_of_HFAx_s (V : Type)
+    (mem : V -> V -> Prop) (v : nat -> V)
+    (hHF : forall g, HFAx_s g -> Sat V mem v g) :
+    FirstOrderAdjunctionModel V.
+Proof.
+  pose (empty_sig :=
+    constructive_indefinite_description _
+      (semantic_empty_of_HFAx_s V mem v hHF)).
+  pose (adj_sig := fun a b =>
+    constructive_indefinite_description _
+      (semantic_adjoin_of_HFAx_s V mem v hHF a b)).
+  refine {| foam_mem := mem;
+            foam_empty := proj1_sig empty_sig;
+            foam_adjoin := fun a b => proj1_sig (adj_sig a b);
+            foam_extensional := semantic_extensionality_of_HFAx_s V mem v hHF;
+            foam_induction_schema := semantic_induction_schema_of_HFAx_s V mem v hHF |}.
+  - exact (proj2_sig empty_sig).
+  - intros x a b.
+    exact (proj2_sig (adj_sig a b) x).
+Defined.
+
+Definition firstOrderFiniteAdjunctionModel_of_HFFinAx_s (V : Type)
+    (mem : V -> V -> Prop) (v : nat -> V)
+    (hHF : forall g, HFFinAx_s g -> Sat V mem v g) :
+    FirstOrderFiniteAdjunctionModel V.
+Proof.
+  pose (empty_sig :=
+    constructive_indefinite_description _
+      (semantic_empty_of_HFFinAx_s V mem v hHF)).
+  pose (adj_sig := fun a b =>
+    constructive_indefinite_description _
+      (semantic_adjoin_of_HFFinAx_s V mem v hHF a b)).
+  refine {| fofam_base :=
+      {| foam_mem := mem;
+         foam_empty := proj1_sig empty_sig;
+         foam_adjoin := fun a b => proj1_sig (adj_sig a b);
+         foam_extensional := semantic_extensionality_of_HFFinAx_s V mem v hHF;
+         foam_induction_schema := semantic_induction_schema_of_HFFinAx_s V mem v hHF |};
+      fofam_finite_induction_schema :=
+        semantic_finite_induction_schema_of_HFFinAx_s V mem v hHF |}.
+  - exact (proj2_sig empty_sig).
+  - intros x a b.
+    exact (proj2_sig (adj_sig a b) x).
+Defined.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
