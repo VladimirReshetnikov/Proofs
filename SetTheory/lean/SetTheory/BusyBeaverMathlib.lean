@@ -552,6 +552,63 @@ theorem tm0ToTypedRado_reaches_halt_normal {Label : Type*} [Inhabited Label]
   exact ⟨normalCfg, haltCfg, hNormalRel, hHaltState, hHaltTape,
     Relation.ReflTransGen.trans hRadoReach hRadoHalt⟩
 
+theorem tm0_eval_mem_terminal {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {input : List Bool} {output : Turing.ListBlank Bool}
+    (hEval : output ∈ Turing.TM0.eval M input) :
+    ∃ finalCfg : Turing.TM0.Cfg Bool Label,
+      Turing.TM0.Reaches M (Turing.TM0.init input) finalCfg ∧
+      Turing.TM0.step M finalCfg = none ∧
+      finalCfg.Tape.right₀ = output := by
+  rw [Turing.TM0.eval, Part.mem_map_iff] at hEval
+  rcases hEval with ⟨finalCfg, hFinal, hOutput⟩
+  rcases StateTransition.mem_eval.1 hFinal with ⟨hReach, hTerminal⟩
+  exact ⟨finalCfg, hReach, hTerminal, hOutput⟩
+
+theorem tm0RadoNormalRel_init_nil {Label : Type*} [Inhabited Label] :
+    TM0RadoNormalRel (Turing.TM0.init ([] : List Bool))
+      ({ state := some (TM0RadoState.normal (default : Label)), head := 0, tape := [] } :
+        TypedConfig (TM0RadoState Label)) := by
+  constructor
+  · rfl
+  · intro i
+    simp [Tape.read, Turing.TM0.init]
+    cases i with
+    | ofNat n =>
+        cases n <;> simp [Turing.Tape.mk₁, Turing.Tape.mk₂, Turing.Tape.mk',
+          Turing.Tape.nth]
+    | negSucc n =>
+        simp [Turing.Tape.mk₁, Turing.Tape.mk₂, Turing.Tape.mk', Turing.Tape.nth]
+
+/--
+Extract the terminal configuration behind a blank-input Bool `TM0.eval` result
+and transport it to a halted finite Rado machine.  The theorem keeps the final
+tape relation explicit; later output-normalization lemmas can identify the
+actual busy-beaver score with the intended output value.
+-/
+theorem tm0_eval_nil_to_rado_halt {Label : Type*} [Inhabited Label] [Fintype Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {output : Turing.ListBlank Bool}
+    (hEval : output ∈ Turing.TM0.eval M ([] : List Bool)) :
+    ∃ finalCfg : Turing.TM0.Cfg Bool Label,
+    ∃ normalCfg haltCfg : TypedConfig (TM0RadoState Label),
+      finalCfg.Tape.right₀ = output ∧
+      TM0RadoNormalRel finalCfg normalCfg ∧
+      haltCfg.state = none ∧
+      haltCfg.tape = normalCfg.tape ∧
+      (tm0ToTypedRado M).HaltsWithScore
+        (TM0RadoState.normal (default : Label)) haltCfg.tape.length ∧
+      AttainableScore (Fintype.card (TM0RadoState Label)) haltCfg.tape.length := by
+  rcases tm0_eval_mem_terminal M hEval with ⟨finalCfg, hReach, hTerminal, hOutput⟩
+  rcases tm0ToTypedRado_reaches_halt_normal M hReach hTerminal
+      (tm0RadoNormalRel_init_nil (Label := Label)) with
+    ⟨normalCfg, haltCfg, hNormalRel, hHaltState, hHaltTape, hRadoReach⟩
+  have hTypedHalt : (tm0ToTypedRado M).HaltsWithScore
+      (TM0RadoState.normal (default : Label)) haltCfg.tape.length :=
+    typedRadoReaches_haltsWithScore hRadoReach hHaltState rfl
+  exact ⟨finalCfg, normalCfg, haltCfg, hOutput, hNormalRel, hHaltState, hHaltTape,
+    hTypedHalt, tm0ToTypedRado_attainableScore M hTypedHalt⟩
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
