@@ -363,6 +363,238 @@ Proof.
   apply HF_adjoinAt_adjoin.
 Qed.
 
+Definition hf_single_obj (M : HFModel) (a : M) : M :=
+  hf_adjoin_obj M a (hf_empty_obj M).
+
+Lemma hf_single_spec : forall (M : HFModel) (a x : M),
+  hf_rel M x (hf_single_obj M a) <-> x = a.
+Proof.
+  intros M a x.
+  unfold hf_single_obj.
+  rewrite hf_adjoin_spec.
+  split.
+  - intros [hx | hx].
+    + exfalso. exact (hf_empty_spec M x hx).
+    + exact hx.
+  - intro hx. now right.
+Qed.
+
+Definition hf_upair_obj (M : HFModel) (a b : M) : M :=
+  hf_adjoin_obj M b (hf_single_obj M a).
+
+Lemma hf_upair_spec : forall (M : HFModel) (a b x : M),
+  hf_rel M x (hf_upair_obj M a b) <-> x = a \/ x = b.
+Proof.
+  intros M a b x.
+  unfold hf_upair_obj.
+  rewrite hf_adjoin_spec.
+  rewrite hf_single_spec.
+  tauto.
+Qed.
+
+Definition hf_kpair_obj (M : HFModel) (a b : M) : M :=
+  hf_upair_obj M (hf_single_obj M a) (hf_upair_obj M a b).
+
+Lemma hf_kpair_mem : forall (M : HFModel) (a b q : M),
+  hf_rel M q (hf_kpair_obj M a b) <->
+    q = hf_single_obj M a \/ q = hf_upair_obj M a b.
+Proof.
+  intros M a b q.
+  unfold hf_kpair_obj.
+  apply hf_upair_spec.
+Qed.
+
+Lemma hf_single_injective : forall (M : HFModel) (a b : M),
+  hf_single_obj M a = hf_single_obj M b -> a = b.
+Proof.
+  intros M a b h.
+  assert (ha : hf_rel M a (hf_single_obj M a)).
+  { apply (proj2 (hf_single_spec M a a)). reflexivity. }
+  rewrite h in ha.
+  exact (proj1 (hf_single_spec M b a) ha).
+Qed.
+
+Lemma hf_upair_eq_single : forall (M : HFModel) (a b c : M),
+  hf_upair_obj M a b = hf_single_obj M c -> a = c /\ b = c.
+Proof.
+  intros M a b c h.
+  split.
+  - assert (ha : hf_rel M a (hf_upair_obj M a b)).
+    { apply (proj2 (hf_upair_spec M a b a)). now left. }
+    rewrite h in ha.
+    exact (proj1 (hf_single_spec M c a) ha).
+  - assert (hb : hf_rel M b (hf_upair_obj M a b)).
+    { apply (proj2 (hf_upair_spec M a b b)). now right. }
+    rewrite h in hb.
+    exact (proj1 (hf_single_spec M c b) hb).
+Qed.
+
+Lemma hf_kpair_injective : forall (M : HFModel) (a b c d : M),
+  hf_kpair_obj M a b = hf_kpair_obj M c d -> a = c /\ b = d.
+Proof.
+  intros M a b c d h.
+  assert (hac : a = c).
+  {
+    assert (hs : hf_rel M (hf_single_obj M a) (hf_kpair_obj M a b)).
+    { apply (proj2 (hf_kpair_mem M a b (hf_single_obj M a))). now left. }
+    rewrite h in hs.
+    destruct (proj1 (hf_kpair_mem M c d (hf_single_obj M a)) hs) as [hsc | hsu].
+    - exact (hf_single_injective M a c hsc).
+    - symmetry. exact (proj1 (hf_upair_eq_single M c d a (eq_sym hsu))).
+  }
+  subst c.
+  split.
+  - reflexivity.
+  - assert (h1 : hf_rel M (hf_upair_obj M a b) (hf_kpair_obj M a b)).
+    { apply (proj2 (hf_kpair_mem M a b (hf_upair_obj M a b))). now right. }
+    rewrite h in h1.
+    destruct (proj1 (hf_kpair_mem M a d (hf_upair_obj M a b)) h1) as [h1_single | h1_upair].
+    + pose proof (proj2 (hf_upair_eq_single M a b a h1_single)) as hba.
+      assert (h2 : hf_rel M (hf_upair_obj M a d) (hf_kpair_obj M a d)).
+      { apply (proj2 (hf_kpair_mem M a d (hf_upair_obj M a d))). now right. }
+      rewrite <- h in h2.
+      destruct (proj1 (hf_kpair_mem M a b (hf_upair_obj M a d)) h2) as [h2_single | h2_upair].
+      * pose proof (proj2 (hf_upair_eq_single M a d a h2_single)) as hda.
+        rewrite hba, hda. reflexivity.
+      * assert (hd : hf_rel M d (hf_upair_obj M a d)).
+        { apply (proj2 (hf_upair_spec M a d d)). now right. }
+        rewrite h2_upair in hd.
+        destruct (proj1 (hf_upair_spec M a b d) hd) as [hd_eq_a | hd_eq_b].
+        -- rewrite hba, hd_eq_a. reflexivity.
+        -- symmetry. exact hd_eq_b.
+    + assert (hb : hf_rel M b (hf_upair_obj M a b)).
+      { apply (proj2 (hf_upair_spec M a b b)). now right. }
+      rewrite h1_upair in hb.
+      destruct (proj1 (hf_upair_spec M a d b) hb) as [hb_eq_a | hb_eq_d].
+      * assert (hd : hf_rel M d (hf_upair_obj M a d)).
+        { apply (proj2 (hf_upair_spec M a d d)). now right. }
+        rewrite <- h1_upair in hd.
+        destruct (proj1 (hf_upair_spec M a b d) hd) as [hd_eq_a | hd_eq_b].
+        -- rewrite hb_eq_a, hd_eq_a. reflexivity.
+        -- symmetry. exact hd_eq_b.
+      * exact hb_eq_d.
+Qed.
+
+Definition HF_singleAt (i j : nat) : form :=
+  fAll (fIff (fMem 0 (S i)) (fEq 0 (S j))).
+
+Lemma HF_singleAt_spec : forall (M : HFModel) (e : nat -> M) i j,
+  Sat M (hf_rel M) e (HF_singleAt i j) <->
+    e i = hf_single_obj M (e j).
+Proof.
+  intros M e i j.
+  split.
+  - intro h.
+    apply hf_extensional.
+    intro x.
+    rewrite hf_single_spec.
+    unfold HF_singleAt, fIff in h.
+    simpl in h.
+    exact (conj (fun hx => proj1 (h x) hx) (fun hx => proj2 (h x) hx)).
+  - intros h x.
+    unfold HF_singleAt, fIff.
+    simpl.
+    rewrite h.
+    apply hf_single_spec.
+Qed.
+
+Definition HF_upairAt (i j k : nat) : form :=
+  fAll (fIff (fMem 0 (S i)) (fOr (fEq 0 (S j)) (fEq 0 (S k)))).
+
+Lemma HF_upairAt_spec : forall (M : HFModel) (e : nat -> M) i j k,
+  Sat M (hf_rel M) e (HF_upairAt i j k) <->
+    e i = hf_upair_obj M (e j) (e k).
+Proof.
+  intros M e i j k.
+  split.
+  - intro h.
+    apply hf_extensional.
+    intro x.
+    rewrite hf_upair_spec.
+    unfold HF_upairAt, fIff in h.
+    simpl in h.
+    exact (conj (fun hx => proj1 (h x) hx) (fun hx => proj2 (h x) hx)).
+  - intros h x.
+    unfold HF_upairAt, fIff.
+    simpl.
+    rewrite h.
+    apply hf_upair_spec.
+Qed.
+
+Definition HF_kpairAt (p a b : nat) : form :=
+  fAll (fIff (fMem 0 (S p))
+    (fOr (HF_singleAt 0 (S a)) (HF_upairAt 0 (S a) (S b)))).
+
+Lemma HF_kpairAt_spec : forall (M : HFModel) (e : nat -> M) p a b,
+  Sat M (hf_rel M) e (HF_kpairAt p a b) <->
+    e p = hf_kpair_obj M (e a) (e b).
+Proof.
+  intros M e p a b.
+  split.
+  - intro h.
+    apply hf_extensional.
+    intro q.
+    unfold HF_kpairAt, fIff in h.
+    simpl in h.
+    rewrite hf_kpair_mem.
+    split.
+    + intro hq.
+      destruct (proj1 (h q) hq) as [hs | hu].
+      * left.
+        exact (proj1 (HF_singleAt_spec M (scons M q e) 0 (S a)) hs).
+      * right.
+        exact (proj1 (HF_upairAt_spec M (scons M q e) 0 (S a) (S b)) hu).
+    + intros [hs | hu].
+      * apply (proj2 (h q)).
+        left.
+        exact (proj2 (HF_singleAt_spec M (scons M q e) 0 (S a)) hs).
+      * apply (proj2 (h q)).
+        right.
+        exact (proj2 (HF_upairAt_spec M (scons M q e) 0 (S a) (S b)) hu).
+  - intros h q.
+    unfold HF_kpairAt, fIff.
+    simpl.
+    rewrite h.
+    split.
+    + intro hq.
+      destruct (proj1 (hf_kpair_mem M (e a) (e b) q) hq) as [hs | hu].
+      * left.
+        exact (proj2 (HF_singleAt_spec M (scons M q e) 0 (S a)) hs).
+      * right.
+        exact (proj2 (HF_upairAt_spec M (scons M q e) 0 (S a) (S b)) hu).
+    + intros [hs | hu].
+      * apply (proj2 (hf_kpair_mem M (e a) (e b) q)).
+        left.
+        exact (proj1 (HF_singleAt_spec M (scons M q e) 0 (S a)) hs).
+      * apply (proj2 (hf_kpair_mem M (e a) (e b) q)).
+        right.
+        exact (proj1 (HF_upairAt_spec M (scons M q e) 0 (S a) (S b)) hu).
+Qed.
+
+Definition HF_pairMemAt (a b r : nat) : form :=
+  fEx (fAnd (HF_kpairAt 0 (S a) (S b)) (fMem 0 (S r))).
+
+Lemma HF_pairMemAt_spec : forall (M : HFModel) (e : nat -> M) a b r,
+  Sat M (hf_rel M) e (HF_pairMemAt a b r) <->
+    hf_rel M (hf_kpair_obj M (e a) (e b)) (e r).
+Proof.
+  intros M e a b r.
+  split.
+  - intros [p [hp hmem]].
+    pose proof (proj1 (HF_kpairAt_spec M (scons M p e) 0 (S a) (S b)) hp) as hp'.
+    simpl in hp'.
+    change (hf_rel M p (e r)) in hmem.
+    rewrite hp' in hmem.
+    exact hmem.
+  - intro h.
+    exists (hf_kpair_obj M (e a) (e b)).
+    split.
+    + apply (proj2 (HF_kpairAt_spec M
+        (scons M (hf_kpair_obj M (e a) (e b)) e) 0 (S a) (S b))).
+      reflexivity.
+    + exact h.
+Qed.
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
