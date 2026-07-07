@@ -7162,6 +7162,146 @@ Proof.
   apply BetaModuliProduct_coprime_modulus_of_le; lia.
 Qed.
 
+Lemma BetaEntry_value_lt : forall code step idx value,
+  BetaEntry code step idx value ->
+  value < BetaModulus step idx.
+Proof.
+  intros code step idx value [_ [_ hlt]].
+  exact hlt.
+Qed.
+
+Lemma BetaEntry_mod_eq : forall code step idx value,
+  BetaEntry code step idx value ->
+  code mod BetaModulus step idx = value.
+Proof.
+  intros code step idx value [q [hcode hlt]].
+  rewrite hcode.
+  rewrite Nat.add_comm.
+  rewrite Nat.Div0.mod_add.
+  apply Nat.mod_small.
+  exact hlt.
+Qed.
+
+Lemma BetaEntry_of_mod_eq : forall code step idx value,
+  value < BetaModulus step idx ->
+  code mod BetaModulus step idx = value ->
+  BetaEntry code step idx value.
+Proof.
+  intros code step idx value hlt hmod.
+  exists (code / BetaModulus step idx).
+  split.
+  - rewrite <- hmod.
+    rewrite Nat.mul_comm.
+    apply Nat.div_mod_eq.
+  - exact hlt.
+Qed.
+
+Lemma BetaModuliProduct_dvd_of_lt : forall step i n,
+  i < n -> Nat.divide (BetaModulus step i) (BetaModuliProduct step n).
+Proof.
+  intros step i n hi.
+  induction n as [|n IH].
+  - lia.
+  - simpl.
+    destruct (Nat.eq_dec i n) as [heq | hne].
+    + subst i.
+      exists (BetaModuliProduct step n).
+      reflexivity.
+    + assert (hin : i < n) by lia.
+      destruct (IH hin) as [q hq].
+      exists (q * BetaModulus step n).
+      rewrite hq.
+      nia.
+Qed.
+
+Lemma mod_mod_of_dvd : forall a m d,
+  0 < d -> Nat.divide d m -> (a mod m) mod d = a mod d.
+Proof.
+  intros a m d hdpos [q hq].
+  subst m.
+  replace (q * d) with (d * q) by nia.
+  rewrite Nat.Div0.mod_mul_r.
+  replace (d * ((a / d) mod q)) with (((a / d) mod q) * d) by nia.
+  rewrite Nat.Div0.mod_add.
+  apply Nat.mod_small.
+  apply Nat.mod_upper_bound.
+  lia.
+Qed.
+
+Lemma mod_eq_of_mod_BetaModuliProduct_eq :
+    forall code old step idx n,
+  idx < n ->
+  code mod BetaModuliProduct step n =
+    old mod BetaModuliProduct step n ->
+  code mod BetaModulus step idx = old mod BetaModulus step idx.
+Proof.
+  intros code old step idx n hi hmod.
+  pose proof (BetaModuliProduct_dvd_of_lt step idx n hi) as hd.
+  pose proof (BetaModulus_pos step idx) as hpos.
+  rewrite <- (mod_mod_of_dvd code (BetaModuliProduct step n)
+    (BetaModulus step idx) hpos hd).
+  rewrite hmod.
+  apply mod_mod_of_dvd.
+  - exact hpos.
+  - exact hd.
+Qed.
+
+Lemma BetaEntry_of_mod_BetaModuliProduct_eq :
+    forall code old step idx n value,
+  idx < n ->
+  code mod BetaModuliProduct step n =
+    old mod BetaModuliProduct step n ->
+  BetaEntry old step idx value ->
+  BetaEntry code step idx value.
+Proof.
+  intros code old step idx n value hi hmod hold.
+  apply BetaEntry_of_mod_eq.
+  - exact (BetaEntry_value_lt old step idx value hold).
+  - rewrite (mod_eq_of_mod_BetaModuliProduct_eq code old step idx n hi hmod).
+    exact (BetaEntry_mod_eq old step idx value hold).
+Qed.
+
+Lemma BetaModulus_pair_coprime_of_lt_le_mul_betaFact :
+    forall i j N scale,
+  i < j -> j <= N ->
+  Coprime (BetaModulus (betaFact N * scale) i)
+    (BetaModulus (betaFact N * scale) j).
+Proof.
+  intros i j N scale hij hjN.
+  apply BetaModulus_pair_coprime_of_dvd_step.
+  - exact hij.
+  - destruct (dvd_betaFact_of_pos_le (j - i) N) as [q hq]; try lia.
+    exists (q * scale).
+    rewrite hq.
+    nia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_modulus_of_le_mul_betaFact :
+    forall n j N scale,
+  n <= j -> j <= N ->
+  Coprime (BetaModuliProduct (betaFact N * scale) n)
+    (BetaModulus (betaFact N * scale) j).
+Proof.
+  intros n.
+  induction n as [|n IH]; intros j N scale hnj hjN.
+  - simpl.
+    apply Coprime_1_l.
+  - simpl.
+    apply Coprime_mul_left.
+    + apply IH; lia.
+    + apply BetaModulus_pair_coprime_of_lt_le_mul_betaFact; lia.
+Qed.
+
+Lemma BetaModuliProduct_coprime_next_of_le_mul_betaFact :
+    forall n N scale,
+  n <= N ->
+  Coprime (BetaModuliProduct (betaFact N * scale) n)
+    (BetaModulus (betaFact N * scale) n).
+Proof.
+  intros n N scale hn.
+  apply BetaModuliProduct_coprime_modulus_of_le_mul_betaFact; lia.
+Qed.
+
 End Formula.
 
 End PA.
