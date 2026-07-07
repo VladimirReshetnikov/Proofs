@@ -7443,6 +7443,313 @@ Proof.
   lia.
 Qed.
 
+Lemma shiftr_succ_div2 : forall set k,
+  Nat.shiftr set (S k) = Nat.shiftr set k / 2.
+Proof.
+  intros set k.
+  replace (S k) with (k + 1) by lia.
+  rewrite <- (Nat.shiftr_shiftr set k 1).
+  rewrite Nat.shiftr_div_pow2.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma shiftRight_lt_trace_modulus : forall elem set i,
+  Nat.shiftr set i <
+    BetaModulus (betaFact (S elem) * S set) i.
+Proof.
+  intros elem set i.
+  pose proof (Nat.shiftr_upper_bound set i) as hshift.
+  pose proof (betaFact_pos (S elem)) as hbf.
+  unfold BetaModulus.
+  nia.
+Qed.
+
+Lemma mod_two_eq_zero_or_one : forall n, n mod 2 = 0 \/ n mod 2 = 1.
+Proof.
+  intro n.
+  assert (h2 : 2 <> 0) by lia.
+  pose proof (Nat.mod_upper_bound n 2 h2) as h.
+  lia.
+Qed.
+
+Lemma div2_step_shiftr : forall set k,
+  let cur := Nat.shiftr set k in
+  let next := Nat.shiftr set (S k) in
+  let bit := cur mod 2 in
+  (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros set k cur next bit.
+  assert (hbit : bit = 0 \/ bit = 1).
+  {
+    unfold bit.
+    apply mod_two_eq_zero_or_one.
+  }
+  assert (hnext : next = cur / 2).
+  {
+    unfold next, cur.
+    apply shiftr_succ_div2.
+  }
+  pose proof (Nat.div_mod_eq cur 2) as hdiv.
+  split.
+  - exact hbit.
+  - unfold bit.
+    nia.
+Qed.
+
+Lemma div2_step_shiftr_one : forall set elem,
+  hf_mem elem set ->
+  let cur := Nat.shiftr set elem in
+  let next := Nat.shiftr set (S elem) in
+  cur = next + next + 1.
+Proof.
+  intros set elem hmem cur next.
+  assert (hbitTrue : Nat.testbit cur 0 = true).
+  {
+    unfold cur.
+    rewrite Nat.shiftr_spec'.
+    replace (0 + elem) with elem by lia.
+    unfold hf_mem in hmem.
+    exact hmem.
+  }
+  pose proof (Nat.bit0_mod cur) as hbitmod.
+  rewrite hbitTrue in hbitmod.
+  simpl in hbitmod.
+  assert (hmod : cur mod 2 = 1).
+  {
+    symmetry.
+    exact hbitmod.
+  }
+  assert (hnext : next = cur / 2).
+  {
+    unfold next, cur.
+    apply shiftr_succ_div2.
+  }
+  pose proof (Nat.div_mod_eq cur 2) as hdiv.
+  nia.
+Qed.
+
+Lemma HFMemTrace_exists_of_mem : forall elem set,
+  hf_mem elem set -> exists code step, HFMemTrace elem set code step.
+Proof.
+  intros elem set hmem.
+  set (N := S elem).
+  set (scale := S set).
+  set (step := betaFact N * scale).
+  set (value := fun k => Nat.shiftr set k).
+  assert (hsmall : forall i, i <= N -> value i < BetaModulus step i).
+  {
+    intros i _.
+    unfold value, step, N, scale.
+    apply shiftRight_lt_trace_modulus.
+  }
+  destruct (beta_entries_exist_through_mul_betaFact N scale value hsmall)
+    as [code hcode].
+  exists code, step.
+  unfold HFMemTrace.
+  split.
+  - assert (h0le : 0 <= N) by lia.
+    pose proof (hcode 0 h0le) as h0.
+    unfold value in h0.
+    rewrite Nat.shiftr_0_r in h0.
+    exact h0.
+  - split.
+    + unfold BetaDiv2StepsThrough.
+      intros k hk.
+      set (cur := Nat.shiftr set k).
+      set (next := Nat.shiftr set (S k)).
+      set (bit := cur mod 2).
+      assert (hcur : BetaEntry code step k cur).
+      {
+        assert (hkle : k <= N) by lia.
+        pose proof (hcode k hkle) as h.
+        unfold value in h.
+        exact h.
+      }
+      assert (hnext : BetaEntry code step (S k) next).
+      {
+        assert (hskle : S k <= N) by lia.
+        pose proof (hcode (S k) hskle) as h.
+        unfold value in h.
+        exact h.
+      }
+      pose proof (div2_step_shiftr set k) as hstep.
+      exists cur, next, bit.
+      unfold BetaDiv2Step.
+      repeat split.
+      * exact hcur.
+      * exact hnext.
+      * unfold cur, bit in hstep.
+        exact (proj1 hstep).
+      * unfold cur, next, bit in hstep.
+        exact (proj2 hstep).
+    + unfold BetaDiv2Bit.
+      set (cur := Nat.shiftr set elem).
+      set (next := Nat.shiftr set (S elem)).
+      assert (hcur : BetaEntry code step elem cur).
+      {
+        assert (hemle : elem <= N) by lia.
+        pose proof (hcode elem hemle) as h.
+        unfold value in h.
+        exact h.
+      }
+      assert (hnext : BetaEntry code step (S elem) next).
+      {
+        assert (hsemle : S elem <= N) by lia.
+        pose proof (hcode (S elem) hsemle) as h.
+        unfold value in h.
+        exact h.
+      }
+      assert (hcurEq : cur = next + next + 1).
+      {
+        unfold cur, next.
+        apply div2_step_shiftr_one.
+        exact hmem.
+      }
+      exists cur, next.
+      unfold BetaDiv2Step.
+      repeat split.
+      * exact hcur.
+      * exact hnext.
+      * right. reflexivity.
+      * exact hcurEq.
+Qed.
+
+Lemma BetaEntry_functional : forall code step idx a b,
+  BetaEntry code step idx a -> BetaEntry code step idx b -> a = b.
+Proof.
+  intros code step idx a b ha hb.
+  transitivity (code mod BetaModulus step idx).
+  - symmetry. apply BetaEntry_mod_eq. exact ha.
+  - apply BetaEntry_mod_eq. exact hb.
+Qed.
+
+Lemma BetaDiv2Step_div_two : forall code step idx cur next bit,
+  BetaDiv2Step code step idx cur next bit -> cur / 2 = next.
+Proof.
+  intros code step idx cur next bit [_ [_ [hbit hcur]]].
+  destruct hbit as [hbit | hbit]; subst bit; rewrite hcur.
+  - replace (next + next + 0) with (2 * next + 0) by lia.
+    symmetry.
+    apply Nat.div_unique with (r := 0); lia.
+  - replace (next + next + 1) with (2 * next + 1) by lia.
+    symmetry.
+    apply Nat.div_unique with (r := 1); lia.
+Qed.
+
+Lemma BetaDiv2Step_bit_one_testbit_zero :
+    forall code step idx cur next,
+  BetaDiv2Step code step idx cur next 1 ->
+  Nat.testbit cur 0 = true.
+Proof.
+  intros code step idx cur next [_ [_ [_ hcur]]].
+  rewrite hcur.
+  replace (next + next + 1) with (2 * next + 1) by lia.
+  apply Nat.testbit_odd_0.
+Qed.
+
+Lemma HFMemTrace_entry_shiftr : forall elem set code step,
+  HFMemTrace elem set code step ->
+  forall k value,
+    k <= S elem ->
+    BetaEntry code step k value ->
+    value = Nat.shiftr set k.
+Proof.
+  intros elem set code step htrace k.
+  induction k as [|k IH]; intros value hle hvalue.
+  - destruct htrace as [hstart _].
+    pose proof (BetaEntry_functional code step 0 value set
+      hvalue hstart) as hv.
+    rewrite Nat.shiftr_0_r.
+    exact hv.
+  - destruct htrace as [hstart [hsteps hbit]].
+    assert (hk : k <= elem) by lia.
+    destruct (hsteps k hk) as [cur [next [bit hstep]]].
+    assert (hcur : cur = Nat.shiftr set k).
+    {
+      apply IH.
+      - lia.
+      - exact (proj1 hstep).
+    }
+    assert (hvalue_next : value = next).
+    {
+      apply BetaEntry_functional with (code := code) (step := step)
+        (idx := S k).
+      - exact hvalue.
+      - exact (proj1 (proj2 hstep)).
+    }
+    transitivity next.
+    + exact hvalue_next.
+    + transitivity (cur / 2).
+      * symmetry.
+        apply BetaDiv2Step_div_two with
+          (code := code) (step := step) (idx := k) (bit := bit).
+        exact hstep.
+      * rewrite hcur.
+        symmetry.
+        apply shiftr_succ_div2.
+Qed.
+
+Lemma HFMemTrace_mem : forall elem set code step,
+  HFMemTrace elem set code step -> hf_mem elem set.
+Proof.
+  intros elem set code step htrace.
+  destruct htrace as [hstart [hsteps hbitTrace]].
+  destruct hbitTrace as [cur [next hstep]].
+  assert (htraceFull : HFMemTrace elem set code step).
+  {
+    unfold HFMemTrace.
+    split.
+    - exact hstart.
+    - split.
+      + exact hsteps.
+      + exists cur, next.
+        exact hstep.
+  }
+  assert (hcur : cur = Nat.shiftr set elem).
+  {
+    apply (HFMemTrace_entry_shiftr elem set code step htraceFull elem cur).
+    - lia.
+    - exact (proj1 hstep).
+  }
+  pose proof (BetaDiv2Step_bit_one_testbit_zero
+    code step elem cur next hstep) as hlow.
+  rewrite hcur in hlow.
+  unfold hf_mem.
+  rewrite Nat.shiftr_spec' in hlow.
+  replace (0 + elem) with elem in hlow by lia.
+  exact hlow.
+Qed.
+
+Lemma hfMemAt_sound : forall (e : nat -> nat) elem set,
+  Sat natModel e (hfMemAt elem set) -> hf_mem (e elem) (e set).
+Proof.
+  intros e elem set h.
+  destruct (proj1 (hfMemAt_nat_trace e elem set) h) as
+    [code [step htrace]].
+  exact (HFMemTrace_mem (e elem) (e set) code step htrace).
+Qed.
+
+Lemma hfMemAt_complete : forall (e : nat -> nat) elem set,
+  hf_mem (e elem) (e set) -> Sat natModel e (hfMemAt elem set).
+Proof.
+  intros e elem set hmem.
+  destruct (HFMemTrace_exists_of_mem (e elem) (e set) hmem) as
+    [code [step htrace]].
+  apply (proj2 (hfMemAt_nat_trace e elem set)).
+  exists code, step.
+  exact htrace.
+Qed.
+
+Lemma hfMemAt_exact : forall (e : nat -> nat) elem set,
+  Sat natModel e (hfMemAt elem set) <-> hf_mem (e elem) (e set).
+Proof.
+  intros e elem set.
+  split.
+  - apply hfMemAt_sound.
+  - apply hfMemAt_complete.
+Qed.
+
 End Formula.
 
 End PA.
