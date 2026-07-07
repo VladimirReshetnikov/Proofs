@@ -2869,6 +2869,48 @@ def mulGraphAt (out left right : Nat) : Form :=
 `1` is the left input, and slot `2` is the right input. -/
 def mulGraph : Form := mulGraphAt 0 1 2
 
+/-- Totality formula for a multiplication-recursion trace.  Slot `a` is the
+fixed left multiplicand and slot `m` is the right multiplicand/key. -/
+def mulRecTotalAt (a m : Nat) : Form :=
+  fEx (fEx (fAnd
+    (mulRecApproxAt 1 (a+2) (m+2))
+    (HF_pairMemAt (m+2) 0 1)))
+
+/-- Multiplication-recursion totality, relativized to ordinal-like right
+inputs.  The left multiplicand remains an explicit parameter. -/
+def mulRecTotalOnOrdinalAt (a m : Nat) : Form :=
+  fImp (HF_ordinalLikeAt m) (mulRecTotalAt a m)
+
+/-- Semantic step clause for multiplication recursion in a chosen first-order
+HF model: when `f(k)=t` and `f(k+1)=y`, the value `y` is obtained from an
+addition trace for `t+a`. -/
+def MulStep {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (f a m : α) : Prop :=
+  ∀ k t y,
+    M.mem k m →
+    M.mem (FirstOrderAdjunctionModel.kpair M k t) f →
+    M.mem (FirstOrderAdjunctionModel.kpair M (M.adjoin k k) y) f →
+    ∃ g,
+      FirstOrderAdjunctionModel.SuccRecApprox M t g a ∧
+        M.mem (FirstOrderAdjunctionModel.kpair M a y) g
+
+/-- Semantic package for a finite multiplication-recursion trace in a chosen
+first-order HF model. -/
+def MulRecApprox {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (a f m : α) : Prop :=
+  FirstOrderAdjunctionModel.PairFunctional M f ∧
+  FirstOrderAdjunctionModel.PairKeysBelowSucc M f m ∧
+  M.mem (FirstOrderAdjunctionModel.kpair M M.empty M.empty) f ∧
+  FirstOrderAdjunctionModel.PairTotalBelowSucc M f m ∧
+  MulStep M f a m
+
+/-- Total multiplication-recursion data through a key `m`: a trace plus its
+value at `m`. -/
+def MulRecTotal {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (a m : α) : Prop :=
+  ∃ f z, MulRecApprox M a f m ∧
+    M.mem (FirstOrderAdjunctionModel.kpair M m z) f
+
 theorem domainForm_free {i : Nat} (h : Free i domainForm) : i = 0 := by
   exact HF_ordinalLikeAt_free h
 
@@ -2936,6 +2978,359 @@ theorem mulGraphAt_free {i out left right : Nat}
 
 theorem mulGraph_free {i : Nat} (h : Free i mulGraph) : i = 0 ∨ i = 1 ∨ i = 2 := by
   exact mulGraphAt_free h
+
+theorem mulStepAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f a m : Nat) :
+    Sat M.mem e (mulStepAt f a m) ↔ MulStep M (e f) (e a) (e m) := by
+  constructor
+  · intro h k t y hkm hkt hsky
+    let sk := M.adjoin k k
+    let Ekty := scons y (scons t (scons k e))
+    let Eskty := scons sk Ekty
+    have hktSat : Sat M.mem Ekty (HF_pairMemAt 2 1 (f+3)) := by
+      apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M Ekty 2 1 (f+3)).mpr
+      change M.mem (FirstOrderAdjunctionModel.kpair M k t) (e f)
+      exact hkt
+    have hskSat : Sat M.mem Eskty (HF_succAt 0 3) := by
+      apply (FirstOrderAdjunctionModel.HF_succAt_spec M Eskty 0 3).mpr
+      change sk = M.adjoin k k
+      rfl
+    have hskySat : Sat M.mem Eskty (HF_pairMemAt 0 1 (f+4)) := by
+      apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M Eskty 0 1 (f+4)).mpr
+      change M.mem (FirstOrderAdjunctionModel.kpair M sk y) (e f)
+      exact hsky
+    rcases h k t y hkm hktSat sk hskSat hskySat with ⟨g, hg, hy⟩
+    have hg' := (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M
+      (scons g Eskty) 0 3 (a+5)).mp hg
+    have hy' := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
+      (scons g Eskty) (a+5) 2 0).mp hy
+    refine ⟨g, ?_, ?_⟩
+    · change FirstOrderAdjunctionModel.SuccRecApprox M t g (e a) at hg'
+      exact hg'
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e a) y) g at hy'
+      exact hy'
+  · intro h k t y hkm hkt sk hsk hsky
+    have hsk' : sk = M.adjoin k k :=
+      (FirstOrderAdjunctionModel.HF_succAt_spec M
+        (scons sk (scons y (scons t (scons k e)))) 0 3).mp hsk
+    have hkt' : M.mem (FirstOrderAdjunctionModel.kpair M k t) (e f) := by
+      exact (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
+        (scons y (scons t (scons k e))) 2 1 (f+3)).mp hkt
+    have hsky' : M.mem
+        (FirstOrderAdjunctionModel.kpair M (M.adjoin k k) y) (e f) := by
+      have hp := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
+        (scons sk (scons y (scons t (scons k e)))) 0 1 (f+4)).mp hsky
+      rwa [hsk'] at hp
+    rcases h k t y hkm hkt' hsky' with ⟨g, hg, hy⟩
+    refine ⟨g, ?_, ?_⟩
+    · apply (FirstOrderAdjunctionModel.HF_succRecApproxAt_spec M
+        (scons g (scons sk (scons y (scons t (scons k e))))) 0 3 (a+5)).mpr
+      change FirstOrderAdjunctionModel.SuccRecApprox M t g (e a)
+      exact hg
+    · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
+        (scons g (scons sk (scons y (scons t (scons k e))))) (a+5) 2 0).mpr
+      change M.mem (FirstOrderAdjunctionModel.kpair M (e a) y) g
+      exact hy
+
+theorem mulRecApproxAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (f a m : Nat) :
+    Sat M.mem e (mulRecApproxAt f a m) ↔
+      MulRecApprox M (e a) (e f) (e m) := by
+  change
+    (Sat M.mem e (HF_pairFunctionalAt f) ∧
+      (Sat M.mem e (HF_pairKeysBelowSuccAt f m) ∧
+        (Sat M.mem e (HF_pairZeroBaseAt f) ∧
+          (Sat M.mem e (HF_pairTotalBelowSuccAt f m) ∧
+            Sat M.mem e (mulStepAt f a m))))) ↔
+      FirstOrderAdjunctionModel.PairFunctional M (e f) ∧
+        FirstOrderAdjunctionModel.PairKeysBelowSucc M (e f) (e m) ∧
+          M.mem (FirstOrderAdjunctionModel.kpair M M.empty M.empty) (e f) ∧
+            FirstOrderAdjunctionModel.PairTotalBelowSucc M (e f) (e m) ∧
+              MulStep M (e f) (e a) (e m)
+  rw [
+    FirstOrderAdjunctionModel.HF_pairFunctionalAt_spec M e f,
+    FirstOrderAdjunctionModel.HF_pairKeysBelowSuccAt_spec M e f m,
+    FirstOrderAdjunctionModel.HF_pairZeroBaseAt_spec M e f,
+    FirstOrderAdjunctionModel.HF_pairTotalBelowSuccAt_spec M e f m,
+    mulStepAt_spec M e f a m]
+
+theorem mulRecTotalAt_spec {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (e : Nat → α) (a m : Nat) :
+    Sat M.mem e (mulRecTotalAt a m) ↔
+      MulRecTotal M (e a) (e m) := by
+  constructor
+  · intro h
+    rcases h with ⟨f, z, hf, hz⟩
+    have hf' := (mulRecApproxAt_spec M (scons z (scons f e))
+      1 (a+2) (m+2)).mp hf
+    have hz' := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
+      (scons z (scons f e)) (m+2) 0 1).mp hz
+    change MulRecApprox M (e a) f (e m) at hf'
+    change M.mem (FirstOrderAdjunctionModel.kpair M (e m) z) f at hz'
+    exact ⟨f, z, hf', hz'⟩
+  · intro h
+    rcases h with ⟨f, z, hf, hz⟩
+    refine ⟨f, z, ?_, ?_⟩
+    · apply (mulRecApproxAt_spec M (scons z (scons f e))
+        1 (a+2) (m+2)).mpr
+      change MulRecApprox M (e a) f (e m)
+      exact hf
+    · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
+        (scons z (scons f e)) (m+2) 0 1).mpr
+      change M.mem (FirstOrderAdjunctionModel.kpair M (e m) z) f
+      exact hz
+
+theorem mulRecTotalOnOrdinalAt_spec {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α) (a m : Nat) :
+    Sat M.mem e (mulRecTotalOnOrdinalAt a m) ↔
+      (OrdinalLike M.mem (e m) → MulRecTotal M (e a) (e m)) := by
+  constructor
+  · intro h hm
+    exact (mulRecTotalAt_spec M e a m).mp
+      (h ((HF_ordinalLikeAt_spec e m).mpr hm))
+  · intro h hmSat
+    exact (mulRecTotalAt_spec M e a m).mpr
+      (h ((HF_ordinalLikeAt_spec e m).mp hmSat))
+
+theorem zeroMulRecGraph_mulRecApprox {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (a : α) :
+    MulRecApprox M a (FirstOrderAdjunctionModel.zeroSuccRecGraph M M.empty) M.empty := by
+  have hf : FirstOrderAdjunctionModel.SuccRecApprox M M.empty
+      (FirstOrderAdjunctionModel.zeroSuccRecGraph M M.empty) M.empty :=
+    FirstOrderAdjunctionModel.zeroSuccRecGraph_succRecApprox M M.empty
+  rcases hf with ⟨hfun, hkeys, hbase, htotal, _hstep⟩
+  refine ⟨hfun, hkeys, hbase, htotal, ?_⟩
+  intro k _t _y hkm _ _
+  exact False.elim (M.empty_spec k hkm)
+
+theorem mulRecTotal_empty {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (a : α) :
+    MulRecTotal M a M.empty := by
+  exact ⟨FirstOrderAdjunctionModel.zeroSuccRecGraph M M.empty, M.empty,
+    zeroMulRecGraph_mulRecApprox M a,
+    FirstOrderAdjunctionModel.zeroSuccRecGraph_base M M.empty⟩
+
+/-- Extend a multiplication-recursion graph by an arbitrary next value. -/
+def mulRecGraphSucc {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (f m y : α) : α :=
+  M.adjoin f (FirstOrderAdjunctionModel.kpair M (M.adjoin m m) y)
+
+theorem mulRecGraphSucc_old {α : Type u} (M : FirstOrderAdjunctionModel α)
+    {f m y p : α} (hp : M.mem p f) :
+    M.mem p (mulRecGraphSucc M f m y) :=
+  (M.adjoin_spec p f
+    (FirstOrderAdjunctionModel.kpair M (M.adjoin m m) y)).mpr (Or.inl hp)
+
+theorem mulRecGraphSucc_new {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (f m y : α) :
+    M.mem (FirstOrderAdjunctionModel.kpair M (M.adjoin m m) y)
+      (mulRecGraphSucc M f m y) :=
+  (M.adjoin_spec (FirstOrderAdjunctionModel.kpair M (M.adjoin m m) y)
+    f (FirstOrderAdjunctionModel.kpair M (M.adjoin m m) y)).mpr (Or.inr rfl)
+
+theorem mulRecGraphSucc_mulRecApprox {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {a f m z y : α}
+    (hm : OrdinalLike M.mem m)
+    (hf : MulRecApprox M a f m)
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair M m z) f)
+    (hadd : ∃ g,
+      FirstOrderAdjunctionModel.SuccRecApprox M z g a ∧
+        M.mem (FirstOrderAdjunctionModel.kpair M a y) g) :
+    MulRecApprox M a (mulRecGraphSucc M f m y) (M.adjoin m m) := by
+  rcases hf with ⟨hfun, hkeys, hbase, htotal, hstep⟩
+  let sm := M.adjoin m m
+  let newPair := FirstOrderAdjunctionModel.kpair M sm y
+  let g := mulRecGraphSucc M f m y
+  have hsm_not_mem : ¬ M.mem sm m := by
+    simpa [sm] using
+      FirstOrderAdjunctionModel.adjoin_self_not_mem_of_ordinalLike M hm
+  have hsm_ne_m : sm ≠ m := by
+    simpa [sm] using FirstOrderAdjunctionModel.adjoin_self_ne_self M m
+  have hmem_g : ∀ p, M.mem p g ↔ M.mem p f ∨ p = newPair := by
+    intro p
+    exact M.adjoin_spec p f newPair
+  have old_key_ne_succ :
+      ∀ {k y'}, M.mem (FirstOrderAdjunctionModel.kpair M k y') f → k ≠ sm := by
+    intro k y' hOld hk
+    have hkBound := hkeys k y' hOld
+    rw [hk] at hkBound
+    rcases hkBound with hmem | heq
+    · exact hsm_not_mem hmem
+    · exact hsm_ne_m heq
+  have pair_old_of_mem_key :
+      ∀ {k y'}, M.mem k m →
+        M.mem (FirstOrderAdjunctionModel.kpair M k y') g →
+          M.mem (FirstOrderAdjunctionModel.kpair M k y') f := by
+    intro k y' hkm hkg
+    rcases (hmem_g (FirstOrderAdjunctionModel.kpair M k y')).mp hkg with
+      hOld | hNew
+    · exact hOld
+    · have hk : k = sm := (FirstOrderAdjunctionModel.kpair_injective M hNew).1
+      rw [hk] at hkm
+      exact False.elim (hsm_not_mem hkm)
+  refine ⟨?functional, ?keys, ?base, ?total, ?step⟩
+  · intro k u v hku hkv
+    rcases (hmem_g (FirstOrderAdjunctionModel.kpair M k u)).mp hku with
+      hOld | hNew
+    · rcases (hmem_g (FirstOrderAdjunctionModel.kpair M k v)).mp hkv with
+        hOld' | hNew'
+      · exact hfun k u v hOld hOld'
+      · have hk : k = sm := (FirstOrderAdjunctionModel.kpair_injective M hNew').1
+        exact False.elim (old_key_ne_succ hOld hk)
+    · rcases (hmem_g (FirstOrderAdjunctionModel.kpair M k v)).mp hkv with
+        hOld' | hNew'
+      · have hk : k = sm := (FirstOrderAdjunctionModel.kpair_injective M hNew).1
+        exact False.elim (old_key_ne_succ hOld' hk)
+      · have hu : u = y := (FirstOrderAdjunctionModel.kpair_injective M hNew).2
+        have hv : v = y := (FirstOrderAdjunctionModel.kpair_injective M hNew').2
+        rw [hu, hv]
+  · intro k u hku
+    rcases (hmem_g (FirstOrderAdjunctionModel.kpair M k u)).mp hku with
+      hOld | hNew
+    · rcases hkeys k u hOld with hkm | hkm
+      · exact Or.inl ((M.adjoin_spec k m m).mpr (Or.inl hkm))
+      · exact Or.inl ((M.adjoin_spec k m m).mpr (Or.inr hkm))
+    · exact Or.inr (FirstOrderAdjunctionModel.kpair_injective M hNew).1
+  · exact mulRecGraphSucc_old M hbase
+  · intro k hk
+    rcases hk with hksm | hksm
+    · rcases (M.adjoin_spec k m m).mp hksm with hkm | hkm
+      · rcases htotal k (Or.inl hkm) with ⟨u, hu⟩
+        exact ⟨u, mulRecGraphSucc_old M hu⟩
+      · rcases htotal k (Or.inr hkm) with ⟨u, hu⟩
+        exact ⟨u, mulRecGraphSucc_old M hu⟩
+    · subst k
+      exact ⟨y, mulRecGraphSucc_new M f m y⟩
+  · intro k t out hksm hkt hsky
+    rcases (M.adjoin_spec k m m).mp hksm with hkm | hkm
+    · have hktOld : M.mem (FirstOrderAdjunctionModel.kpair M k t) f :=
+        pair_old_of_mem_key hkm hkt
+      have hskyOld :
+          M.mem (FirstOrderAdjunctionModel.kpair M (M.adjoin k k) out) f := by
+        rcases (hmem_g
+            (FirstOrderAdjunctionModel.kpair M (M.adjoin k k) out)).mp hsky with
+          hOld | hNew
+        · exact hOld
+        · have hsk : M.adjoin k k = sm :=
+            (FirstOrderAdjunctionModel.kpair_injective M hNew).1
+          have hkOrd : OrdinalLike M.mem k := OrdinalLike.of_mem hm hkm
+          have hkm_eq : k = m :=
+            FirstOrderAdjunctionModel.adjoin_self_injective_on_ordinalLike
+              M hkOrd hm (by simpa [sm] using hsk)
+          rw [hkm_eq] at hkm
+          exact False.elim (FirstOrderAdjunctionModel.mem_irrefl M m hkm)
+      exact hstep k t out hkm hktOld hskyOld
+    · subst k
+      have hktOld :
+          M.mem (FirstOrderAdjunctionModel.kpair M m t) f := by
+        rcases (hmem_g (FirstOrderAdjunctionModel.kpair M m t)).mp hkt with
+          hOld | hNew
+        · exact hOld
+        · have hm_eq_sm : m = sm :=
+            (FirstOrderAdjunctionModel.kpair_injective M hNew).1
+          exact False.elim (hsm_ne_m hm_eq_sm.symm)
+      have ht : t = z := hfun m t z hktOld hz
+      rcases (hmem_g (FirstOrderAdjunctionModel.kpair M sm out)).mp hsky with
+        hOld | hNew
+      · exact False.elim (old_key_ne_succ hOld rfl)
+      · have hout : out = y :=
+          (FirstOrderAdjunctionModel.kpair_injective M hNew).2
+        rw [ht, hout]
+        exact hadd
+
+theorem mulRecTotal_succ_of_addTotal {α : Type u}
+    (M : FirstOrderAdjunctionModel α) {a m : α}
+    (hm : OrdinalLike M.mem m)
+    (hAddTotal : ∀ s, FirstOrderAdjunctionModel.SuccRecTotal M s a)
+    (ht : MulRecTotal M a m) :
+    MulRecTotal M a (M.adjoin m m) := by
+  rcases ht with ⟨f, z, hf, hz⟩
+  rcases hAddTotal z with ⟨g, y, hg, hy⟩
+  exact ⟨mulRecGraphSucc M f m y, y,
+    mulRecGraphSucc_mulRecApprox M hm hf hz ⟨g, hg, hy⟩,
+    mulRecGraphSucc_new M f m y⟩
+
+theorem mulRecTotal_of_ordinalLike_of_predecessor {α : Type u}
+    (M : FirstOrderAdjunctionModel α)
+    (hPred : ∀ a, OrdinalLike M.mem a →
+      a = M.empty ∨ ∃ p, M.mem p a ∧ a = M.adjoin p p)
+    (hAddTotal : ∀ s m, OrdinalLike M.mem m →
+      FirstOrderAdjunctionModel.SuccRecTotal M s m)
+    (a m : α) (ha : OrdinalLike M.mem a) (hm : OrdinalLike M.mem m) :
+    MulRecTotal M a m := by
+  let phi : Form := mulRecTotalOnOrdinalAt 1 0
+  let tail : Nat → α := fun _ => a
+  have hind := M.induction_schema phi (scons a tail)
+  have hall : ∀ b, Sat M.mem (scons b (scons a tail)) phi := by
+    apply hind
+    intro b ih
+    apply (mulRecTotalOnOrdinalAt_spec M
+      (scons b (scons a tail)) 1 0).mpr
+    intro hb
+    rcases hPred b hb with hbEmpty | ⟨p, hpb, hbSucc⟩
+    · rw [hbEmpty]
+      exact mulRecTotal_empty M a
+    · have hpOrd : OrdinalLike M.mem p := OrdinalLike.of_mem hb hpb
+      have hpSat : Sat M.mem (scons p (scons a tail)) phi :=
+        (Sat_rename_rSkipParam phi (scons a tail) b p).mp (ih p hpb)
+      have hpTotal : MulRecTotal M a p := by
+        simpa [phi, tail, scons] using
+          ((mulRecTotalOnOrdinalAt_spec M
+            (scons p (scons a tail)) 1 0).mp hpSat hpOrd)
+      rw [hbSucc]
+      exact mulRecTotal_succ_of_addTotal M hpOrd
+        (fun s => hAddTotal s a ha) hpTotal
+  simpa [phi, tail, scons] using
+    ((mulRecTotalOnOrdinalAt_spec M
+      (scons m (scons a tail)) 1 0).mp (hall m) hm)
+
+theorem mulRecTotal_of_ordinalLike_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (a m : α) (ha : OrdinalLike M.mem a) (hm : OrdinalLike M.mem m) :
+    MulRecTotal M.toFirstOrderAdjunctionModel a m := by
+  apply mulRecTotal_of_ordinalLike_of_predecessor M.toFirstOrderAdjunctionModel
+  · intro b hb
+    exact FirstOrderFiniteAdjunctionModel.ordinalLike_empty_or_succ M hb
+  · intro s r hr
+    exact FirstOrderFiniteAdjunctionModel.succRecTotal_of_ordinalLike M s r hr
+  · exact ha
+  · exact hm
+
+theorem mulGraphAt_of_mulRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α)
+    (out left right : Nat) {f : α}
+    (hf : MulRecApprox M (e left) f (e right))
+    (hout : M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f) :
+    Sat M.mem e (mulGraphAt out left right) := by
+  refine ⟨f, ?_, ?_⟩
+  · apply (mulRecApproxAt_spec M (scons f e)
+      0 (left+1) (right+1)).mpr
+    change MulRecApprox M (e left) f (e right)
+    exact hf
+  · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M (scons f e)
+      (right+1) (out+1) 0).mpr
+    change M.mem (FirstOrderAdjunctionModel.kpair M (e right) (e out)) f
+    exact hout
+
+theorem mulGraphAt_succ_right_of_mulRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (e : Nat → α)
+    (out left rightSucc right : Nat) {f z g y : α}
+    (hrightOrd : OrdinalLike M.mem (e right))
+    (hrightSucc : e rightSucc = M.adjoin (e right) (e right))
+    (hout : e out = y)
+    (hf : MulRecApprox M (e left) f (e right))
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair M (e right) z) f)
+    (hg : FirstOrderAdjunctionModel.SuccRecApprox M z g (e left))
+    (hy : M.mem (FirstOrderAdjunctionModel.kpair M (e left) y) g) :
+    Sat M.mem e (mulGraphAt out left rightSucc) := by
+  let h := mulRecGraphSucc M f (e right) y
+  apply mulGraphAt_of_mulRecApprox_model M e out left rightSucc (f := h)
+  · change MulRecApprox M (e left) h (e rightSucc)
+    rw [hrightSucc]
+    exact mulRecGraphSucc_mulRecApprox M hrightOrd hf hz ⟨g, hg, hy⟩
+  · change M.mem (FirstOrderAdjunctionModel.kpair M (e rightSucc) (e out)) h
+    rw [hrightSucc, hout]
+    exact mulRecGraphSucc_new M f (e right) y
 
 theorem addGraphAt_zero_right_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (e : Nat → α)
@@ -6587,6 +6982,101 @@ theorem termGraphAt_mul_var_zero_model {α : Type u}
       · rfl
       · rfl
 
+/-- A multiplication term graph from explicit multiplication-recursion trace
+data. -/
+theorem termGraphAt_mul_var_var_of_mulRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out left right : Nat) (e : Nat → α) {f : α}
+    (hf : MulRecApprox M (e (ρ left)) f (e (ρ right)))
+    (hout : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) (e out)) f) :
+    Sat M.mem e
+      (termGraphAt ρ out (PA.Term.mul (PA.Term.var left) (PA.Term.var right))) := by
+  refine ⟨e (ρ right), e (ρ left), e out, ?_, ?_, rfl, ?_⟩
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 3) 1 left
+      (scons (e out) (scons (e (ρ left)) (scons (e (ρ right)) e)))).mpr
+    simp [scons]
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 3) 2 right
+      (scons (e out) (scons (e (ρ left)) (scons (e (ρ right)) e)))).mpr
+    simp [scons]
+  · apply mulGraphAt_of_mulRecApprox_model M
+      (scons (e out) (scons (e (ρ left)) (scons (e (ρ right)) e)))
+      0 1 2 (f := f)
+    · change MulRecApprox M (e (ρ left)) f (e (ρ right))
+      exact hf
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) (e out)) f
+      exact hout
+
+/-- A graph for `x * S(y)` from a multiplication-recursion trace for `x*y`
+and an addition trace for `(x*y)+x`. -/
+theorem termGraphAt_mul_var_succ_var_of_mulRecApprox_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out left right : Nat) (e : Nat → α) {f z g y : α}
+    (hrightOrd : OrdinalLike M.mem (e (ρ right)))
+    (hout : e out = y)
+    (hf : MulRecApprox M (e (ρ left)) f (e (ρ right)))
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f)
+    (hg : FirstOrderAdjunctionModel.SuccRecApprox M z g (e (ρ left)))
+    (hy : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ left)) y) g) :
+    Sat M.mem e
+      (termGraphAt ρ out
+        (PA.Term.mul (PA.Term.var left) (PA.Term.succ (PA.Term.var right)))) := by
+  let sy := M.adjoin (e (ρ right)) (e (ρ right))
+  let E := scons y (scons (e (ρ left)) (scons sy e))
+  refine ⟨sy, e (ρ left), y, ?_, ?_, ?_, ?_⟩
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 3) 1 left E).mpr
+    simp [E, scons]
+  · apply (termGraphAt_succ_var_firstOrder_model M (fun n => ρ n + 3)
+      2 right E).mpr
+    change sy = M.adjoin (e (ρ right)) (e (ρ right))
+    rfl
+  · change y = e out
+    exact hout.symm
+  · apply mulGraphAt_succ_right_of_mulRecApprox_model M E 0 1 2 (ρ right + 3)
+      (f := f) (z := z) (g := g) (y := y)
+    · simpa [E, sy, scons] using hrightOrd
+    · change sy = M.adjoin (e (ρ right)) (e (ρ right))
+      rfl
+    · rfl
+    · change MulRecApprox M (e (ρ left)) f (e (ρ right))
+      exact hf
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f
+      exact hz
+    · change FirstOrderAdjunctionModel.SuccRecApprox M z g (e (ρ left))
+      exact hg
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ left)) y) g
+      exact hy
+
+/-- A graph for `(x*y)+x` from explicit multiplication and addition traces. -/
+theorem termGraphAt_add_mul_var_var_var_of_traces_model {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
+    (out left right : Nat) (e : Nat → α) {f z g y : α}
+    (hout : e out = y)
+    (hf : MulRecApprox M (e (ρ left)) f (e (ρ right)))
+    (hz : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f)
+    (hg : FirstOrderAdjunctionModel.SuccRecApprox M z g (e (ρ left)))
+    (hy : M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ left)) y) g) :
+    Sat M.mem e
+      (termGraphAt ρ out
+        (PA.Term.add
+          (PA.Term.mul (PA.Term.var left) (PA.Term.var right))
+          (PA.Term.var left))) := by
+  let E := scons (e (ρ left)) (scons z e)
+  refine ⟨z, e (ρ left), ?_, ?_, ?_⟩
+  · apply termGraphAt_mul_var_var_of_mulRecApprox_model M (fun n => ρ n + 2)
+      1 left right E (f := f)
+    · change MulRecApprox M (e (ρ left)) f (e (ρ right))
+      exact hf
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ right)) z) f
+      exact hz
+  · apply (termGraphAt_var_spec (mem := M.mem) (fun n => ρ n + 2) 0 left E).mpr
+    simp [E, scons]
+  · apply addGraphAt_of_succRecApprox_model M E (out+2) 1 0 (f := g)
+    · change FirstOrderAdjunctionModel.SuccRecApprox M z g (e (ρ left))
+      exact hg
+    · change M.mem (FirstOrderAdjunctionModel.kpair M (e (ρ left)) (e out)) g
+      rw [hout]
+      exact hy
+
 /-- A binary addition term graph from explicit successor-recursion trace data. -/
 theorem termGraphAt_add_var_var_of_succRecApprox_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (ρ : Nat → Nat)
@@ -7030,6 +7520,41 @@ theorem formulaAt_addSucc_valid_finite_model {α : Type u}
   intro s m hm
   exact FirstOrderFiniteAdjunctionModel.succRecTotal_of_ordinalLike M s m hm
 
+theorem formulaAt_mulSucc_valid_finite_model {α : Type u}
+    (M : FirstOrderFiniteAdjunctionModel α)
+    (ρ : Nat → Nat) (e : Nat → α) :
+    Sat M.mem e (formulaAt ρ PA.Formula.mulSucc) := by
+  intro x hxDomain
+  intro y hyDomain
+  have hxOrd : OrdinalLike M.mem x :=
+    (HF_ordinalLikeAt_spec (scons x e) 0).mp hxDomain
+  have hyOrd : OrdinalLike M.mem y :=
+    (HF_ordinalLikeAt_spec (scons y (scons x e)) 0).mp hyDomain
+  rcases mulRecTotal_of_ordinalLike_finite_model M x y hxOrd hyOrd with
+    ⟨f, z, hf, hz⟩
+  rcases FirstOrderFiniteAdjunctionModel.succRecTotal_of_ordinalLike M z x hxOrd with
+    ⟨g, w, hg, hw⟩
+  let σ : Nat → Nat := fun n => upVarMap (upVarMap ρ) n + 2
+  let Eeq : Nat → α := scons w (scons w (scons y (scons x e)))
+  refine ⟨w, w, ?_, ?_, rfl⟩
+  · apply termGraphAt_mul_var_succ_var_of_mulRecApprox_model
+      M.toFirstOrderAdjunctionModel σ 1 1 0 Eeq
+      (f := f) (z := z) (g := g) (y := w)
+    · simpa [σ, Eeq, scons, upVarMap] using hyOrd
+    · rfl
+    · simpa [σ, Eeq, scons, upVarMap] using hf
+    · simpa [σ, Eeq, scons, upVarMap] using hz
+    · simpa [σ, Eeq, scons, upVarMap] using hg
+    · simpa [σ, Eeq, scons, upVarMap] using hw
+  · apply termGraphAt_add_mul_var_var_var_of_traces_model
+      M.toFirstOrderAdjunctionModel σ 0 1 0 Eeq
+      (f := f) (z := z) (g := g) (y := w)
+    · rfl
+    · simpa [σ, Eeq, scons, upVarMap] using hf
+    · simpa [σ, Eeq, scons, upVarMap] using hz
+    · simpa [σ, Eeq, scons, upVarMap] using hg
+    · simpa [σ, Eeq, scons, upVarMap] using hw
+
 /-- Successor-injectivity for the PA-in-HF translation follows from
 irreflexivity of membership.  In semantic HF models that irreflexivity comes
 from `semantic_mem_irrefl_of_HFAx_s`. -/
@@ -7372,6 +7897,16 @@ theorem translated_addSucc_sat_of_HFFinAx_s {α : Type u} {mem : α → α → P
   exact formulaAt_sealPA_valid PA.Formula.addSucc
     (fun ρ e => formulaAt_addSucc_valid_finite_model M ρ e) (fun n : Nat => n) e
 
+/-- Closed multiplication-successor axiom, semantically valid in every
+semantic model of the strengthened hereditary-finite theory. -/
+theorem translated_mulSucc_sat_of_HFFinAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFFinAx_s g → Sat mem v g) (e : Nat → α) :
+    Sat mem e (translateFormula (PA.Formula.sealPA PA.Formula.mulSucc)) := by
+  let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  change Sat M.mem e (translateFormula (PA.Formula.sealPA PA.Formula.mulSucc))
+  exact formulaAt_sealPA_valid PA.Formula.mulSucc
+    (fun ρ e => formulaAt_mulSucc_valid_finite_model M ρ e) (fun n : Nat => n) e
+
 /-- Closed zero-is-not-successor axiom, semantically validated in every
 adjunction model under the PA-in-HF translation. -/
 theorem translated_zeroNotSucc_sat_model {α : Type} (M : AdjunctionModel α)
@@ -7475,6 +8010,14 @@ theorem BProv_HFFin_translated_addSucc :
   · exact translated_PA_axiom_sentence _ PA.Formula.Ax_s_addSucc
   · intro Dom mem v hHF
     exact translated_addSucc_sat_of_HFFinAx_s v hHF v
+
+theorem BProv_HFFin_translated_mulSucc :
+    BProv HFFinAx_s [] (translateFormula (PA.Formula.sealPA PA.Formula.mulSucc)) := by
+  apply completeness_inf HFFinAx_s
+  · exact Sentences_HFFin
+  · exact translated_PA_axiom_sentence _ PA.Formula.Ax_s_mulSucc
+  · intro Dom mem v hHF
+    exact translated_mulSucc_sat_of_HFFinAx_s v hHF v
 
 /-- The HF-side theory consisting of syntactic translations of the sealed PA
 axiom-scheme instances. -/
