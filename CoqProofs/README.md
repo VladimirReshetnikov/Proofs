@@ -56,6 +56,12 @@ Current ports:
   sequence and verifies the first six values through a binary-`N` executable
   logarithm.  It is connected to `SparseBinary.v` by a certified sparse-log
   evaluator that agrees with the exact binary logarithm evaluator.
+- `A198683N12Magnitude.v` ports the finite TSV-metadata layer from
+  `A198683N12Magnitude.lean`: the n = 12 huge-negative-exponent,
+  negative-exponent-above-ten, and overflow-regime flags are represented as
+  generated one-hot lists over the 5139 retained candidates, and Coq proves
+  that candidate 57 is the unique flagged row.  The Lean file's
+  complex-analytic exponential separation lemmas are not yet replayed in Coq.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -80,6 +86,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A000081.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Magnitude.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
