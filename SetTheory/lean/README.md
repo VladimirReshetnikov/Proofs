@@ -138,6 +138,11 @@ The same module also proves the state-padding facts needed for later compiler
 accounting: `BusyBeaver.sigma_mono_of_pos` pads positive-state machines with
 unreachable states, and `BusyBeaver.score_le_sigma_of_atMost` lets any score
 attainable with at most `n` states be compared directly with `Σ(n)`.
+Using those lemmas, it also exposes
+`BusyBeaver.eventuallyDominates_of_hasEventuallyAtMostBlankCompiler`, a version
+of the domination theorem whose compiler target is simply: for all sufficiently
+large `n`, produce a blank-tape machine using at most `n` states and scoring
+`f n`.
 
 `BusyBeaverMathlib.lean` connects that interface to mathlib's recursion theory
 without introducing an unproved recursive-function/Turing-machine bridge:

@@ -246,11 +246,30 @@ def HasLinearOverheadBlankCompiler (TotalRecursive : (Nat -> Nat) -> Prop) : Pro
     ∃ overhead, ∀ k, AttainableScore (k + overhead) (f (k + overhead))
 
 /--
+A more flexible blank-tape compiler property: for every total recursive
+function, all sufficiently large inputs `n` can be handled by a blank-tape
+machine using at most `n` operational states.
+
+This is the convenient target for a binary-input compiler, because the input
+initializer need only fit below the available state budget eventually.
+-/
+def HasEventuallyAtMostBlankCompiler (TotalRecursive : (Nat -> Nat) -> Prop) : Prop :=
+  ∀ {f : Nat -> Nat}, TotalRecursive f ->
+    ∃ threshold, ∀ n, threshold ≤ n -> AttainableScoreAtMost n (f n)
+
+/--
 A direct, model-relative notion of total recursiveness: the function has the
 linear-overhead blank-tape realizers needed by the domination proof.
 -/
 def TotalRecursiveInRadoModel (f : Nat -> Nat) : Prop :=
   ∃ overhead, ∀ k, AttainableScore (k + overhead) (f (k + overhead))
+
+/--
+Model-relative eventual realizability using at most the available number of
+states.
+-/
+def TotalRecursiveEventuallyInRadoModel (f : Nat -> Nat) : Prop :=
+  ∃ threshold, ∀ n, threshold ≤ n -> AttainableScoreAtMost n (f n)
 
 /-- Any attainable score is bounded by any function satisfying `IsSigma`. -/
 theorem score_le_sigma {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
@@ -303,6 +322,21 @@ theorem eventuallyDominates_of_hasLinearOverheadBlankCompiler
   simpa [hEq] using hLe
 
 /--
+The same domination conclusion from the weaker, eventually-at-most-`n` compiler
+interface.
+-/
+theorem eventuallyDominates_of_hasEventuallyAtMostBlankCompiler
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {TotalRecursive : (Nat -> Nat) -> Prop}
+    (hCompiler : HasEventuallyAtMostBlankCompiler TotalRecursive)
+    {f : Nat -> Nat} (hf : TotalRecursive f) :
+    EventuallyDominates Sigma f := by
+  rcases hCompiler hf with ⟨threshold, hRealize⟩
+  refine ⟨threshold, ?_⟩
+  intro n hn
+  exact score_le_sigma_of_atMost hSigma (hRealize n hn)
+
+/--
 Specialization of the domination theorem to the model-relative total-recursive
 predicate `TotalRecursiveInRadoModel`.
 -/
@@ -311,6 +345,16 @@ theorem eventuallyDominates_totalRecursiveInRadoModel
     {f : Nat -> Nat} (hf : TotalRecursiveInRadoModel f) :
     EventuallyDominates Sigma f :=
   eventuallyDominates_of_hasLinearOverheadBlankCompiler
+    hSigma (fun hf => hf) hf
+
+/--
+Specialization to the model-relative eventual-at-most-state predicate.
+-/
+theorem eventuallyDominates_totalRecursiveEventuallyInRadoModel
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveEventuallyInRadoModel f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_of_hasEventuallyAtMostBlankCompiler
     hSigma (fun hf => hf) hf
 
 /--
@@ -335,6 +379,15 @@ theorem sigma_eventually_dominates_every_totalRecursiveInRadoModel
     {f : Nat -> Nat} (hf : TotalRecursiveInRadoModel f) :
     EventuallyDominates Sigma f :=
   eventuallyDominates_totalRecursiveInRadoModel hSigma hf
+
+/--
+Alias for the model-relative eventual-at-most-state predicate.
+-/
+theorem sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveEventuallyInRadoModel f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_totalRecursiveEventuallyInRadoModel hSigma hf
 
 end BusyBeaver
 end SetTheory
