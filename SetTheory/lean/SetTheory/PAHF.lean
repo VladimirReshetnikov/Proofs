@@ -13821,6 +13821,22 @@ theorem BProv_impI {B : Form → Prop} {G : List Form} {a b : Form}
     · exact List.mem_cons.mpr
         (Or.inr (List.mem_append.mpr (Or.inr hx)))
 
+/-- Implication introduction with a fixed prefix of assumptions.
+
+This is the context-shaping form needed when an object-language assumption is
+discharged behind explicit domain hypotheses. -/
+theorem BProv_impI_after_prefix {B : Form → Prop} {Γ Δ : List Form}
+    {a b : Form}
+    (h : BProv B (Γ ++ a :: Δ) b) :
+    BProv B (Γ ++ Δ) (fImp a b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.mem_append, List.mem_cons] at hx ⊢
+  grind
+
 /-- Relative HF provability is closed under conjunction introduction. -/
 theorem BProv_andI {B : Form → Prop} {G : List Form} {a b : Form}
     (ha : BProv B G a) (hb : BProv B G b) : BProv B G (fAnd a b) := by

@@ -542,6 +542,7 @@ open SetTheory
 #check @AckermannHF.PAInHF.BProv_formulaAt_ax
 #check @AckermannHF.PAInHF.BProv_context_cons
 #check @AckermannHF.PAInHF.BProv_impI
+#check @AckermannHF.PAInHF.BProv_impI_after_prefix
 #check @AckermannHF.PAInHF.BProv_andI
 #check @AckermannHF.PAInHF.BProv_allE
 #check @AckermannHF.PAInHF.BProv_exI
