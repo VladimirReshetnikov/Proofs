@@ -4276,6 +4276,44 @@ Proof.
     apply mulGraph_ordinal_code.
 Qed.
 
+Lemma mulGraph_value_of_ordinal_inputs : forall m n e,
+  e 1 = ordinal_code m ->
+  e 2 = ordinal_code n ->
+  Sat nat hf_mem e mulGraph ->
+  e 0 = ordinal_code (m * n).
+Proof.
+  intros m n e hleft hright h.
+  unfold mulGraph, mulGraphAt in h.
+  destruct h as [f [hf hout]].
+  pose (tail := fun k => e (S (S (S k)))).
+  pose (eCanon := scons nat f
+    (scons nat (e 0)
+      (scons nat (ordinal_code m) (scons nat (ordinal_code n) tail)))).
+  assert (heq : forall k, eCanon k = scons nat f e k).
+  {
+    intro k.
+    destruct k as [|[|[|[|k]]]]; simpl.
+    - reflexivity.
+    - reflexivity.
+    - symmetry. exact hleft.
+    - symmetry. exact hright.
+    - reflexivity.
+  }
+  assert (hfCanon : Sat nat hf_mem eCanon (mulRecApproxAt 0 2 3)).
+  {
+    apply (proj2 (@Sat_ext nat hf_mem (mulRecApproxAt 0 2 3)
+      eCanon (scons nat f e) heq)).
+    exact hf.
+  }
+  pose proof (proj1 (HF_pairMemAt_spec ackermannHFModel
+    (scons nat f e) 3 1 0) hout) as hout'.
+  change (hf_mem (hf_kpair_obj ackermannHFModel (e 2) (e 0)) f) in hout'.
+  rewrite hright in hout'.
+  assert (hnn : n <= n) by lia.
+  exact (mulRecApproxAt_value_of_le m n f (e 0) tail
+    n (e 0) hfCanon hnn hout').
+Qed.
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
