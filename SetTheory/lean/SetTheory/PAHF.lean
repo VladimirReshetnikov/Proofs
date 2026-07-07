@@ -6497,6 +6497,37 @@ def substSuccVar : Nat → Term
   | 0 => Term.succ (Term.var 0)
   | n+1 => Term.var (n+1)
 
+def substSuccAt (p : Nat) : Nat → Term :=
+  fun n => if n = p then Term.succ (Term.var p) else Term.var n
+
+@[simp] theorem substSuccAt_eq {p : Nat} :
+    substSuccAt p p = Term.succ (Term.var p) := by
+  simp [substSuccAt]
+
+theorem substSuccAt_ne {p n : Nat} (h : n ≠ p) :
+    substSuccAt p n = Term.var n := by
+  simp [substSuccAt, h]
+
+@[simp] theorem substSuccAt_zero :
+    substSuccAt 0 = substSuccVar := by
+  funext n
+  cases n <;> simp [substSuccAt, substSuccVar]
+
+theorem upSubst_substSuccAt (p : Nat) :
+    Term.upSubst (substSuccAt p) = substSuccAt (p+1) := by
+  funext n
+  cases n with
+  | zero =>
+      simp [Term.upSubst, substSuccAt]
+  | succ n =>
+      by_cases heq : n = p
+      · subst n
+        rw [Term.upSubst, substSuccAt_eq, substSuccAt_eq]
+        rfl
+      · have hsne : n + 1 ≠ p + 1 := by omega
+        rw [Term.upSubst, substSuccAt_ne heq, substSuccAt_ne hsne]
+        rfl
+
 def succInj : Formula :=
   all (all (imp
     (eq (Term.succ (Term.var 1)) (Term.succ (Term.var 0)))
@@ -7506,6 +7537,23 @@ theorem insertAt_gt {α : Type u} {k n : Nat} {x : α} {e : Nat → α}
   have hne : n ≠ k := by omega
   simp [insertAt, hnot, hne]
 
+/-- Replace the value at de Bruijn slot `k`, leaving all other slots fixed. -/
+def replaceAt {α : Type u} (k : Nat) (x : α) (e : Nat → α) : Nat → α :=
+  fun n => if n = k then x else e n
+
+@[simp] theorem replaceAt_eq {α : Type u} {k : Nat} {x : α} {e : Nat → α} :
+    replaceAt k x e k = x := by
+  simp [replaceAt]
+
+theorem replaceAt_ne {α : Type u} {k n : Nat} {x : α} {e : Nat → α}
+    (h : n ≠ k) : replaceAt k x e n = e n := by
+  simp [replaceAt, h]
+
+theorem replaceAt_zero_scons {α : Type u} (x d : α) (e : Nat → α) :
+    ∀ n, replaceAt 0 x (scons d e) n = scons x e n := by
+  intro n
+  cases n <;> simp [replaceAt, scons]
+
 theorem scons_insertAt {α : Type u} (k : Nat) (x d : α) (e : Nat → α) :
     ∀ n, scons d (insertAt k x e) n = insertAt (k+1) x (scons d e) n := by
   intro n
@@ -7592,6 +7640,64 @@ theorem scons3_insertAt_prefix {α : Type u}
       scons3_insertAt (k+p) x d₁ d₂ d₃ e n
     _ = insertAt ((k+3)+p) x (scons d₃ (scons d₂ (scons d₁ e))) n := by
       rw [show (k+p)+3 = (k+3)+p by omega]
+
+theorem scons_replaceAt {α : Type u} (k : Nat) (x d : α) (e : Nat → α) :
+    ∀ n, scons d (replaceAt k x e) n = replaceAt (k+1) x (scons d e) n := by
+  intro n
+  cases n with
+  | zero =>
+      simp [replaceAt, scons]
+  | succ n =>
+      simp only [scons]
+      by_cases h : n = k
+      · subst n
+        rw [replaceAt_eq, replaceAt_eq]
+      · have hs : n + 1 ≠ k + 1 := by omega
+        rw [replaceAt_ne h, replaceAt_ne hs]
+        rfl
+
+theorem scons_replaceAt_prefix {α : Type u} (p k : Nat) (x d : α) (e : Nat → α) :
+    ∀ n, scons d (replaceAt (k+p) x e) n =
+      replaceAt ((k+1)+p) x (scons d e) n := by
+  intro n
+  calc
+    scons d (replaceAt (k+p) x e) n =
+        replaceAt ((k+p)+1) x (scons d e) n :=
+      scons_replaceAt (k+p) x d e n
+    _ = replaceAt ((k+1)+p) x (scons d e) n := by
+      rw [show (k+p)+1 = (k+1)+p by omega]
+
+theorem scons2_replaceAt_prefix {α : Type u}
+    (p k : Nat) (x d₁ d₂ : α) (e : Nat → α) :
+    ∀ n, scons d₂ (scons d₁ (replaceAt (k+p) x e)) n =
+      replaceAt ((k+2)+p) x (scons d₂ (scons d₁ e)) n := by
+  intro n
+  calc
+    scons d₂ (scons d₁ (replaceAt (k+p) x e)) n =
+        scons d₂ (replaceAt ((k+1)+p) x (scons d₁ e)) n := by
+          cases n with
+          | zero => rfl
+          | succ n => exact scons_replaceAt_prefix p k x d₁ e n
+    _ = replaceAt ((((k+1)+p)+1)) x (scons d₂ (scons d₁ e)) n :=
+        scons_replaceAt (((k+1)+p)) x d₂ (scons d₁ e) n
+    _ = replaceAt ((k+2)+p) x (scons d₂ (scons d₁ e)) n := by
+      rw [show (((k+1)+p)+1) = (k+2)+p by omega]
+
+theorem scons3_replaceAt_prefix {α : Type u}
+    (p k : Nat) (x d₁ d₂ d₃ : α) (e : Nat → α) :
+    ∀ n, scons d₃ (scons d₂ (scons d₁ (replaceAt (k+p) x e))) n =
+      replaceAt ((k+3)+p) x (scons d₃ (scons d₂ (scons d₁ e))) n := by
+  intro n
+  calc
+    scons d₃ (scons d₂ (scons d₁ (replaceAt (k+p) x e))) n =
+        scons d₃ (replaceAt ((k+2)+p) x (scons d₂ (scons d₁ e))) n := by
+          cases n with
+          | zero => rfl
+          | succ n => exact scons2_replaceAt_prefix p k x d₁ d₂ e n
+    _ = replaceAt ((((k+2)+p)+1)) x (scons d₃ (scons d₂ (scons d₁ e))) n :=
+        scons_replaceAt (((k+2)+p)) x d₃ (scons d₂ (scons d₁ e)) n
+    _ = replaceAt ((k+3)+p) x (scons d₃ (scons d₂ (scons d₁ e))) n := by
+      rw [show (((k+2)+p)+1) = (k+3)+p by omega]
 
 theorem termGraphAt_substZero_insert_model {α : Type u}
     (M : FirstOrderAdjunctionModel α) (t : PA.Term) :
