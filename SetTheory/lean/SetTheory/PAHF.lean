@@ -196,6 +196,13 @@ theorem Sat_rename_rSkipParam {α : Type u} {mem : α → α → Prop}
 def HF_empty_form : Form :=
   fEx (fAll (fImp (fMem 0 1) fBot))
 
+/-- The first-order extensionality axiom. -/
+def HF_extensionality_form : Form :=
+  fAll (fAll
+    (fImp
+      (fAll (fIff (fMem 0 2) (fMem 0 1)))
+      (fEq 1 0)))
+
 /-- The first-order adjunction axiom:
 for all `a b`, there is `c = a ∪ {b}`. -/
 def HF_adjoin_form : Form :=
@@ -885,21 +892,33 @@ def HF_induction_form (phi : Form) : Form :=
 
 /-- The unsealed HF axiom schema. -/
 def HFAx (f : Form) : Prop :=
-  f = HF_empty_form ∨ f = HF_adjoin_form ∨ ∃ phi, f = HF_induction_form phi
+  f = HF_empty_form ∨
+  f = HF_extensionality_form ∨
+  f = HF_adjoin_form ∨
+  ∃ phi, f = HF_induction_form phi
 
 /-- The sentence theory of HF, with every schema instance universally closed. -/
 def HFAx_s (f : Form) : Prop :=
   f = sealF HF_empty_form ∨
+  f = sealF HF_extensionality_form ∨
   f = sealF HF_adjoin_form ∨
   ∃ phi, f = sealF (HF_induction_form phi)
 
 theorem Sentences_HF : Sentences HFAx_s := by
   intro f hf
-  rcases hf with rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
+  rcases hf with rfl | rfl | rfl | ⟨phi, rfl⟩ <;> exact Sentence_seal _
 
 theorem sat_HF_empty {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
     Sat M.mem e HF_empty_form :=
   ⟨M.empty, fun x hx => M.empty_spec x hx⟩
+
+theorem sat_HF_extensionality {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
+    Sat M.mem e HF_extensionality_form := by
+  intro a b h
+  apply M.extensional
+  intro x
+  exact (Sat_fIff (mem := M.mem)
+    (e := scons x (scons b (scons a e)))).mp (h x)
 
 theorem sat_HF_adjoin {α : Type} (M : AdjunctionModel α) (e : Nat → α) :
     Sat M.mem e HF_adjoin_form := by
@@ -919,8 +938,10 @@ theorem sat_HF_induction {α : Type} (M : AdjunctionModel α)
 theorem sat_HF_model {α : Type} (M : AdjunctionModel α) (v : Nat → α) :
     ∀ g, HFAx_s g → Sat M.mem v g := by
   intro g hg
-  rcases hg with rfl | rfl | ⟨phi, rfl⟩
+  rcases hg with rfl | rfl | rfl | ⟨phi, rfl⟩
   · exact (seal_valid (mem := M.mem) HF_empty_form).mpr (sat_HF_empty M) v
+  · exact (seal_valid (mem := M.mem) HF_extensionality_form).mpr
+      (sat_HF_extensionality M) v
   · exact (seal_valid (mem := M.mem) HF_adjoin_form).mpr (sat_HF_adjoin M) v
   · exact (seal_valid (mem := M.mem) (HF_induction_form phi)).mpr
       (sat_HF_induction M phi) v
@@ -928,6 +949,70 @@ theorem sat_HF_model {α : Type} (M : AdjunctionModel α) (v : Nat → α) :
 theorem standard_sat_HF (v : Nat → Nat) :
     ∀ g, HFAx_s g → Sat Mem v g :=
   sat_HF_model standardModel v
+
+/-- Named membership of the sealed empty-set axiom in the HF theory. -/
+theorem HFAx_s_empty : HFAx_s (sealF HF_empty_form) :=
+  Or.inl rfl
+
+/-- Named membership of the sealed extensionality axiom in the HF theory. -/
+theorem HFAx_s_extensionality : HFAx_s (sealF HF_extensionality_form) :=
+  Or.inr (Or.inl rfl)
+
+/-- Named membership of the sealed adjunction axiom in the HF theory. -/
+theorem HFAx_s_adjoin : HFAx_s (sealF HF_adjoin_form) :=
+  Or.inr (Or.inr (Or.inl rfl))
+
+/-- Named membership of a sealed set-induction instance in the HF theory. -/
+theorem HFAx_s_induction (phi : Form) : HFAx_s (sealF (HF_induction_form phi)) :=
+  Or.inr (Or.inr (Or.inr ⟨phi, rfl⟩))
+
+theorem semantic_empty_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    ∃ e, ∀ x, ¬ mem x e :=
+  extract HFAx_s v HF_empty_form hHF HFAx_s_empty v
+
+theorem semantic_extensionality_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b := by
+  have hExt : ∀ e, Sat mem e HF_extensionality_form :=
+    extract HFAx_s v HF_extensionality_form hHF HFAx_s_extensionality
+  intro a b hab
+  exact hExt v a b (fun x =>
+    (Sat_fIff (mem := mem) (e := scons x (scons b (scons a v)))).mpr (hab x))
+
+theorem semantic_adjoin_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    ∀ a b, ∃ c, ∀ x, mem x c ↔ mem x a ∨ x = b := by
+  have hAdj : ∀ e, Sat mem e HF_adjoin_form :=
+    extract HFAx_s v HF_adjoin_form hHF HFAx_s_adjoin
+  intro a b
+  rcases hAdj v a b with ⟨c, hc⟩
+  exact ⟨c, fun x =>
+    (Sat_fIff (mem := mem) (e := scons x (scons c (scons b (scons a v))))).mp (hc x)⟩
+
+theorem semantic_induction_schema_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) (phi : Form) :
+    ∀ e, Sat mem e (HF_induction_form phi) :=
+  extract HFAx_s v (HF_induction_form phi) hHF (HFAx_s_induction phi)
+
+/-- First-order semantic content of the sealed HF theory, without pretending
+that first-order induction gives the second-order `AdjunctionModel.set_induction`
+field. -/
+structure FirstOrderHFModel (α : Type u) where
+  mem : α → α → Prop
+  extensional : ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b
+  empty_exists : ∃ e, ∀ x, ¬ mem x e
+  adjoin_exists : ∀ a b, ∃ c, ∀ x, mem x c ↔ mem x a ∨ x = b
+  induction_schema : ∀ phi e, Sat mem e (HF_induction_form phi)
+
+def firstOrderHFModel_of_HFAx_s {α : Type u} {mem : α → α → Prop}
+    (v : Nat → α) (hHF : ∀ g, HFAx_s g → Sat mem v g) :
+    FirstOrderHFModel α where
+  mem := mem
+  extensional := semantic_extensionality_of_HFAx_s v hHF
+  empty_exists := semantic_empty_of_HFAx_s v hHF
+  adjoin_exists := semantic_adjoin_of_HFAx_s v hHF
+  induction_schema := semantic_induction_schema_of_HFAx_s v hHF
 
 /-! ## The finite von Neumann ordinals inside Ackermann HF -/
 
