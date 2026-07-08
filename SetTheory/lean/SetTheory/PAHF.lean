@@ -14091,6 +14091,125 @@ theorem BProv_Ax_s_hfMemAt_opened_body_bitEx
     BProv_andE2 hbody
   exact BProv_andE2 htail
 
+/-- In the successor branch of the opened `hfMemAt` code/step witnesses, the
+initial beta-entry component of the membership body remains available. -/
+theorem BProv_Ax_s_hfMemAt_succ_opened_body_entry
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx) (betaAtConstIdx (set+2) 1 0 0) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hentry : BProv Ax_s bodyCtx (betaAtConstIdx (set+2) 1 0 0) := by
+    simpa [bitBody, tail, body, bodyCtx] using
+      (BProv_Ax_s_hfMemAt_opened_body_entry
+        (G := G) (elem := elem) (set := set))
+  exact BProv_context_cons (B := Ax_s) hentry
+
+/-- In the successor branch of the opened `hfMemAt` code/step witnesses, the
+bounded halving-trace component of the membership body remains available. -/
+theorem BProv_Ax_s_hfMemAt_succ_opened_body_steps
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx) (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hsteps : BProv Ax_s bodyCtx (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
+    simpa [bitBody, tail, body, bodyCtx] using
+      (BProv_Ax_s_hfMemAt_opened_body_steps
+        (G := G) (elem := elem) (set := set))
+  exact BProv_context_cons (B := Ax_s) hsteps
+
+/-- In the successor branch of the opened `hfMemAt` code/step witnesses, the
+final-bit existential component of the membership body remains available. -/
+theorem BProv_Ax_s_hfMemAt_succ_opened_body_bitEx
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx)
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3)))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbitEx : BProv Ax_s bodyCtx
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3)))) := by
+    simpa [bitBody, tail, body, bodyCtx] using
+      (BProv_Ax_s_hfMemAt_opened_body_bitEx
+        (G := G) (elem := elem) (set := set))
+  exact BProv_context_cons (B := Ax_s) hbitEx
+
 /-- Eliminate an `hfMemAt` proof to contradiction once the final opened
 halving-current witness has been proved to be zero.
 
