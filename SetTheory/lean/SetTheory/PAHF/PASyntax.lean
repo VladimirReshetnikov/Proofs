@@ -23334,6 +23334,47 @@ theorem BProv_hfSomeDistinguishesTermAt_intro_var
         (Term.rename Nat.succ highCode) (low+1))
       (t := Term.var elem) hinst)
 
+/-- Eliminate a slot-level distinguishing existential by opening its witness.
+
+This is the proof-neutral counterpart to
+`BProv_hfSomeDistinguishesAt_intro_var`: callers receive exactly the body of
+`hfSomeDistinguishesAt`, shifted through the fresh witness binder. -/
+theorem BProv_hfSomeDistinguishesAt_elim
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {target : Formula} {high low : Nat}
+    (hsome : BProv B G (hfSomeDistinguishesAt high low))
+    (hbody : BProv B
+      (hfDistinguishesAt 0 (high+1) (low+1) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv B G target := by
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  have hex : BProv B G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesAt] using hsome
+  exact BProv_exE_of_sentences (B := B) hB (a := witness)
+    (c := target) hex (by simpa [witness] using hbody)
+
+/-- Eliminate a term-parametric distinguishing existential by opening its
+witness.
+
+The opened high-code term is the expected shifted high-code term under the
+fresh witness binder; no arithmetic facts are inferred here. -/
+theorem BProv_hfSomeDistinguishesTermAt_elim
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {target : Formula} {highCode : Term} {low : Nat}
+    (hsome : BProv B G (hfSomeDistinguishesTermAt highCode low))
+    (hbody : BProv B
+      (hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (low+1) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv B G target := by
+  let witness : Formula :=
+    hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (low+1)
+  have hex : BProv B G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesTermAt] using hsome
+  exact BProv_exE_of_sentences (B := B) hB (a := witness)
+    (c := target) hex (by simpa [witness] using hbody)
+
 /-- Logical packaging for a distinguishing member: if the same element is
 proved to belong to `high` and to not belong to `low`, then it distinguishes
 the two Ackermann-coded sets. -/

@@ -642,6 +642,8 @@ open SetTheory
 #check @PA.Formula.subst_instTerm_var_hfDistinguishesTermAt_zero_succ
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_intro_var
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_intro_var
+#check @PA.Formula.BProv_hfSomeDistinguishesAt_elim
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_elim
 #check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_low_mem_bot
