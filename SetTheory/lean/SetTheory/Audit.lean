@@ -297,6 +297,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_modulus_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_modulus_succPredAt
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_zero_lt_modulus
+#check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_modulus_zero_bot
+#check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_modulus_succPredAt
+#check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_zero_lt_modulus
 #check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_rem
