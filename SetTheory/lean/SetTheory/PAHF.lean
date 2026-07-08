@@ -12680,6 +12680,45 @@ theorem BProv_Ax_s_eq_of_same_quotient_remainder_terms
     BProv_eqTrans (BProv_eqSym h₁) h₂
   exact BProv_Ax_s_add_cancel_left_terms hsame
 
+/-- Algebraic core for the quotient-comparison branch of remainder
+functionality.  If the divisibility quotient `d` is `q + w`, and the same value
+is also written as `q * m + r`, then the remainder is `m * w`.
+
+This lemma deliberately stops before the order argument: later proofs must
+separately show that either `w = 0` or the strict remainder bound is
+contradicted. -/
+theorem BProv_Ax_s_remainder_eq_mul_of_le_quotient_terms
+    {G : List Formula} {modulus divQuot remQuot diff rem : Term}
+    (hleQuot : BProv Ax_s G (eq (Term.add remQuot diff) divQuot))
+    (hdecomp : BProv Ax_s G
+      (eq (Term.mul modulus divQuot)
+        (Term.add (Term.mul remQuot modulus) rem))) :
+    BProv Ax_s G (eq rem (Term.mul modulus diff)) := by
+  have hdivCong : BProv Ax_s G
+      (eq (Term.mul modulus divQuot)
+        (Term.mul modulus (Term.add remQuot diff))) :=
+    BProv_eq_congr_mul_right modulus (BProv_eqSym hleQuot)
+  have hmulAdd : BProv Ax_s G
+      (eq (Term.mul modulus (Term.add remQuot diff))
+        (Term.add (Term.mul modulus remQuot) (Term.mul modulus diff))) :=
+    BProv_Ax_s_mul_add_terms modulus remQuot diff
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus remQuot) (Term.mul modulus diff))
+        (Term.add (Term.mul remQuot modulus) rem)) :=
+    BProv_eqTrans (BProv_eqSym (BProv_eqTrans hdivCong hmulAdd)) hdecomp
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul remQuot modulus) (Term.mul modulus remQuot)) :=
+    BProv_Ax_s_mul_comm_terms remQuot modulus
+  have hright : BProv Ax_s G
+      (eq (Term.add (Term.mul remQuot modulus) rem)
+        (Term.add (Term.mul modulus remQuot) rem)) :=
+    BProv_eq_congr_add_left rem hcomm
+  have hsameLeft : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus remQuot) (Term.mul modulus diff))
+        (Term.add (Term.mul modulus remQuot) rem)) :=
+    BProv_eqTrans hleft hright
+  exact BProv_eqSym (BProv_Ax_s_add_cancel_left_terms hsameLeft)
+
 /-- A term-parametric remainder proof whose remainder term is literally `0`
 exhibits a divisibility witness for the dividend by the modulus.  This is the
 divisibility half of the later beta-entry functionality proof: no quotient

@@ -289,6 +289,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remTermEqAt_of_remTermAt
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eq_of_same_quotient_remainder_terms
+#check @PA.Formula.BProv_Ax_s_remainder_eq_mul_of_le_quotient_terms
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remTermAt_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_output_zero_of_output_dvd
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
