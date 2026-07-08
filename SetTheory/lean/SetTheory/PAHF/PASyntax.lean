@@ -21567,6 +21567,78 @@ theorem BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step
   simpa [phi] using
     BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero hsuccAll
 
+/-- Reduce the open successor step for lower-code distinguishers to the two
+predecessor cases produced by `low < S high`: either `low < high`, or
+`low = high`.
+
+This theorem is deliberately only a proof shell.  The branch arguments are the
+remaining Ackermann-coding content; the theorem merely performs the universal
+introduction, implication introduction, and PA order case split. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (heqCase : BProv Ax_s
+      [eq (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) := by
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let lowLtSucc : Formula :=
+    ltTermAt (Term.var 0) (Term.succ (Term.var 1))
+  let lowLtHigh : Formula :=
+    ltTermAt (Term.var 0) (Term.var 1)
+  let lowEqHigh : Formula :=
+    eq (Term.var 0) (Term.var 1)
+  let target : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0
+  have hbody : BProv Ax_s [ih] (imp lowLtSucc target) := by
+    have htarget : BProv Ax_s (lowLtSucc :: [ih]) target := by
+      let C : List Formula := lowLtSucc :: [ih]
+      have hltSucc : BProv Ax_s C lowLtSucc :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have hcases : BProv Ax_s C (or lowLtHigh lowEqHigh) := by
+        simpa [C, lowLtSucc, lowLtHigh, lowEqHigh] using
+          BProv_Ax_s_ltTermAt_succ_right_cases hltSucc
+      have hltBranch : BProv Ax_s (lowLtHigh :: C) target := by
+        have hbase : BProv Ax_s [lowLtHigh, ih] target := by
+          simpa [lowLtHigh, ih, target] using hltCase
+        exact BProv_mono Ax_s [lowLtHigh, ih] (lowLtHigh :: C)
+          target
+          (by
+            intro x hx
+            simp [C] at hx ⊢
+            rcases hx with hx | hx
+            · exact Or.inl hx
+            · exact Or.inr (Or.inr hx))
+          hbase
+      have heqBranch : BProv Ax_s (lowEqHigh :: C) target := by
+        have hbase : BProv Ax_s [lowEqHigh, ih] target := by
+          simpa [lowEqHigh, ih, target] using heqCase
+        exact BProv_mono Ax_s [lowEqHigh, ih] (lowEqHigh :: C)
+          target
+          (by
+            intro x hx
+            simp [C] at hx ⊢
+            rcases hx with hx | hx
+            · exact Or.inl hx
+            · exact Or.inr (Or.inr hx))
+          hbase
+      exact BProv_orE hcases hltBranch heqBranch
+    exact BProv_impI htarget
+  have hall : BProv Ax_s [hfLtDistinguishesAt 0]
+      (all (imp lowLtSucc target)) := by
+    have hbodyMapped : BProv Ax_s
+        ([hfLtDistinguishesAt 0].map (rename Nat.succ))
+        (imp lowLtSucc target) := by
+      simpa [ih] using hbody
+    simpa [ih] using
+      BProv_allI_of_sentences (B := Ax_s)
+        (fun f hf => sentence_ax_s (f := f) hf) hbodyMapped
+  simpa [hfLtDistinguishesTermAt, lowLtSucc, target, Term.rename] using hall
+
 /-- Translated HF extensionality follows from the single open PA successor
 step for lower-code distinguishers. -/
 theorem BProv_Ax_s_translated_HF_extensionality_of_successor_step
@@ -21577,6 +21649,24 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_successor_step
         (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
   BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt
     (BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step hsucc)
+
+/-- Translated HF extensionality from the two open successor branches for the
+lower-code distinguishing induction. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_successor_cases
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (heqCase : BProv Ax_s
+      [eq (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
+      hltCase heqCase)
 
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
