@@ -6350,6 +6350,53 @@ Fixpoint numeral (n : nat) : term :=
   | S k => tSucc (numeral k)
   end.
 
+Fixpoint addRightNumeral (t : term) (n : nat) : term :=
+  match n with
+  | 0 => t
+  | S k => tSucc (addRightNumeral t k)
+  end.
+
+Fixpoint mulRightNumeral (t : term) (n : nat) : term :=
+  match n with
+  | 0 => tZero
+  | S k => tAdd (mulRightNumeral t k) t
+  end.
+
+Lemma rename_numeral : forall r n,
+  rename r (numeral n) = numeral n.
+Proof.
+  intros r n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
+Lemma subst_numeral : forall sigma n,
+  subst sigma (numeral n) = numeral n.
+Proof.
+  intros sigma n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
+Lemma subst_subst_numeral : forall sigma tau n,
+  subst sigma (subst tau (numeral n)) = numeral n.
+Proof.
+  intros sigma tau n.
+  rewrite subst_numeral.
+  apply subst_numeral.
+Qed.
+
+Lemma addRightNumeral_numeral : forall m n,
+  addRightNumeral (numeral m) n = numeral (m + n).
+Proof.
+  intros m n.
+  induction n as [|n IH].
+  - rewrite Nat.add_0_r.
+    reflexivity.
+  - simpl.
+    rewrite IH.
+    rewrite Nat.add_succ_r.
+    reflexivity.
+Qed.
+
 Fixpoint numeralValue (M : Model) (n : nat) : M :=
   match n with
   | 0 => zero M
@@ -6537,6 +6584,51 @@ Proof.
   - now rewrite (IHt r sigma).
   - now rewrite (IHt1 r sigma), (IHt2 r sigma).
   - now rewrite (IHt1 r sigma), (IHt2 r sigma).
+Qed.
+
+Lemma subst_comp : forall t (sigma tau : nat -> term),
+  subst tau (subst sigma t) =
+    subst (fun n => subst tau (sigma n)) t.
+Proof.
+  induction t; simpl; intros sigma tau; try reflexivity.
+  - now rewrite (IHt sigma tau).
+  - now rewrite (IHt1 sigma tau), (IHt2 sigma tau).
+  - now rewrite (IHt1 sigma tau), (IHt2 sigma tau).
+Qed.
+
+Lemma subst_rename_succ_up : forall t (sigma : nat -> term),
+  subst (upSubst sigma) (rename S t) =
+    rename S (subst sigma t).
+Proof.
+  intros t sigma.
+  rewrite subst_rename.
+  rewrite rename_subst.
+  apply subst_ext.
+  intros n. reflexivity.
+Qed.
+
+Lemma subst_ext_free : forall t (sigma tau : nat -> term),
+  (forall n, Free n t -> sigma n = tau n) ->
+  subst sigma t = subst tau t.
+Proof.
+  induction t; simpl; intros sigma tau h; try reflexivity.
+  - apply h. reflexivity.
+  - now rewrite (IHt sigma tau h).
+  - rewrite (IHt1 sigma tau (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 sigma tau (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHt1 sigma tau (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 sigma tau (fun n hn => h n (or_intror hn))).
+    reflexivity.
+Qed.
+
+Lemma subst_id : forall t,
+  subst (fun n => tVar n) t = t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
 Qed.
 
 End Term.
@@ -7164,6 +7256,70 @@ Proof.
       intro k. reflexivity.
 Qed.
 
+Lemma subst_comp : forall phi (sigma tau : nat -> term),
+  subst tau (subst sigma phi) =
+    subst (fun n => Term.subst tau (sigma n)) phi.
+Proof.
+  induction phi; simpl; intros sigma tau; try reflexivity.
+  - now rewrite !Term.subst_comp.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite Term.subst_rename_succ_up.
+      reflexivity.
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite Term.subst_rename_succ_up.
+      reflexivity.
+Qed.
+
+Lemma subst_rename_succ_up : forall phi (sigma : nat -> term),
+  subst (Term.upSubst sigma) (rename S phi) =
+    rename S (subst sigma phi).
+Proof.
+  intros phi sigma.
+  rewrite subst_rename.
+  rewrite rename_subst.
+  apply subst_ext.
+  intros n. reflexivity.
+Qed.
+
+Lemma subst_ext_free : forall phi (sigma tau : nat -> term),
+  (forall n, Free n phi -> sigma n = tau n) ->
+  subst sigma phi = subst tau phi.
+Proof.
+  induction phi; simpl; intros sigma tau h; try reflexivity.
+  - rewrite (Term.subst_ext_free t sigma tau
+      (fun n hn => h n (or_introl hn))).
+    rewrite (Term.subst_ext_free t0 sigma tau
+      (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - now rewrite (IHphi1 sigma tau (fun n hn => h n (or_introl hn))),
+      (IHphi2 sigma tau (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 sigma tau (fun n hn => h n (or_introl hn))),
+      (IHphi2 sigma tau (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 sigma tau (fun n hn => h n (or_introl hn))),
+      (IHphi2 sigma tau (fun n hn => h n (or_intror hn))).
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    rewrite (h n hn).
+    reflexivity.
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    rewrite (h n hn).
+    reflexivity.
+Qed.
+
 Lemma subst_var_rename : forall phi (r : nat -> nat),
   subst (fun n => tVar (r n)) phi = rename r phi.
 Proof.
@@ -7191,6 +7347,25 @@ Proof.
   rewrite <- (subst_var_rename phi (inst k)).
   apply subst_ext.
   intros [|n]; reflexivity.
+Qed.
+
+Lemma subst_id : forall phi,
+  subst (fun n => tVar n) phi = phi.
+Proof.
+  intro phi.
+  rewrite subst_var_rename.
+  apply rename_id.
+Qed.
+
+Lemma subst_eq_of_sentence : forall phi,
+  Sentence phi -> forall sigma, subst sigma phi = phi.
+Proof.
+  intros phi hphi sigma.
+  transitivity (subst (fun n => tVar n) phi).
+  - apply subst_ext_free.
+    intros n hn.
+    exfalso. exact (hphi n hn).
+  - apply subst_id.
 Qed.
 
 Lemma subst_instTerm_rename_up : forall phi (r : nat -> nat) t,
@@ -7222,6 +7397,34 @@ Proof.
   change (subst (fun n => tVar n) phi = phi).
   rewrite subst_var_rename.
   apply rename_id.
+Qed.
+
+Lemma subst_instTerm_subst_up : forall phi (sigma : nat -> term) t,
+  subst (instTerm (Term.subst sigma t)) (subst (Term.upSubst sigma) phi) =
+    subst sigma (subst (instTerm t) phi).
+Proof.
+  intros phi sigma t.
+  rewrite subst_comp.
+  rewrite subst_comp.
+  apply subst_ext.
+  intros [|n]; simpl.
+  - reflexivity.
+  - change (Term.subst (instTerm (Term.subst sigma t))
+      (Term.rename S (sigma n)) = sigma n).
+    rewrite term_subst_instTerm_rename_succ.
+    reflexivity.
+Qed.
+
+Lemma map_subst_rename_succ_up : forall (sigma : nat -> term) G,
+  map (subst (Term.upSubst sigma)) (map (rename S) G) =
+    map (rename S) (map (subst sigma) G).
+Proof.
+  intros sigma G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite subst_rename_succ_up.
+    rewrite IH.
+    reflexivity.
 Qed.
 
 Lemma Sat_instTerm : forall (M : Model) phi t (e : nat -> M),
@@ -7419,6 +7622,85 @@ Proof.
     exact hElim.
 Qed.
 
+Lemma Prov_subst : forall G phi,
+  Prov G phi -> forall sigma,
+  Prov (map (subst sigma) G) (subst sigma phi).
+Proof.
+  intros G phi h.
+  induction h; intro sigma; simpl.
+  - apply P_ass.
+    apply in_map.
+    exact H.
+  - apply P_impI.
+    exact (IHh sigma).
+  - exact (P_impE (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh1 sigma) (IHh2 sigma)).
+  - exact (P_botE (map (subst sigma) G) (subst sigma a) (IHh sigma)).
+  - exact (P_lem (map (subst sigma) G) (subst sigma a)).
+  - exact (P_andI (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh1 sigma) (IHh2 sigma)).
+  - exact (P_andE1 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_andE2 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_orI1 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_orI2 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_orE (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (subst sigma c)
+      (IHh1 sigma) (IHh2 sigma) (IHh3 sigma)).
+  - apply P_allI.
+    rewrite <- map_subst_rename_succ_up.
+    exact (IHh (Term.upSubst sigma)).
+  - rewrite <- subst_instTerm_subst_up.
+    exact (P_allE (map (subst sigma) G) (subst (Term.upSubst sigma) a)
+      (Term.subst sigma t) (IHh sigma)).
+  - apply (P_exI (map (subst sigma) G) (subst (Term.upSubst sigma) a)
+      (Term.subst sigma t)).
+    rewrite subst_instTerm_subst_up.
+    exact (IHh sigma).
+  - assert (hEx : Prov (map (subst sigma) G)
+        (pEx (subst (Term.upSubst sigma) a))).
+    {
+      exact (IHh1 sigma).
+    }
+    assert (hbody :
+        Prov (subst (Term.upSubst sigma) a ::
+            map (rename S) (map (subst sigma) G))
+          (rename S (subst sigma c))).
+    {
+      rewrite <- map_subst_rename_succ_up.
+      rewrite <- subst_rename_succ_up.
+      change (Prov (map (subst (Term.upSubst sigma))
+          (a :: map (rename S) G))
+        (subst (Term.upSubst sigma) (rename S c))).
+      exact (IHh2 (Term.upSubst sigma)).
+    }
+    exact (P_exE (map (subst sigma) G) (subst (Term.upSubst sigma) a)
+      (subst sigma c) hEx hbody).
+  - exact (P_eqRefl (map (subst sigma) G) (Term.subst sigma t)).
+  - assert (hEq :
+        Prov (map (subst sigma) G)
+          (pEq (Term.subst sigma s) (Term.subst sigma t))).
+    {
+      exact (IHh1 sigma).
+    }
+    assert (hA :
+        Prov (map (subst sigma) G)
+          (subst (instTerm (Term.subst sigma s))
+            (subst (Term.upSubst sigma) a))).
+    {
+      rewrite subst_instTerm_subst_up.
+      exact (IHh2 sigma).
+    }
+    pose proof (P_eqElim (map (subst sigma) G)
+      (Term.subst sigma s) (Term.subst sigma t)
+      (subst (Term.upSubst sigma) a) hEq hA) as hElim.
+    rewrite subst_instTerm_subst_up in hElim.
+    exact hElim.
+Qed.
+
 Lemma Prov_cut : forall G phi,
   Prov G phi ->
   forall De, (forall x, In x G -> Prov De x) -> Prov De phi.
@@ -7613,6 +7895,71 @@ Proof.
   - simpl. exact h.
 Qed.
 
+Lemma BProv_weaken_nil : forall (B : formula -> Prop) G phi,
+  BProv B [] phi -> BProv B G phi.
+Proof.
+  intros B G phi h.
+  apply (BProv_mono B [] G phi).
+  - intros x hx. contradiction.
+  - exact h.
+Qed.
+
+Lemma BProv_ass : forall (B : formula -> Prop) G phi,
+  In phi G -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  apply BProv_of_Prov.
+  exact (P_ass G phi hphi).
+Qed.
+
+Lemma BProv_rename_of_sentences : forall (B : formula -> Prop),
+  Sentences B -> forall G phi,
+  BProv B G phi -> forall r,
+  BProv B (map (rename r) G) (rename r phi).
+Proof.
+  intros B hB G phi [L [hL hp]] r.
+  exists L.
+  split; [exact hL |].
+  pose proof (Prov_rename (L ++ G) phi hp r) as hpRen.
+  apply (Prov_weaken (map (rename r) (L ++ G)) (rename r phi) hpRen).
+  intros x hx.
+  rewrite map_app in hx.
+  apply in_app_iff in hx.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left.
+    apply in_map_iff in hx.
+    destruct hx as [y [hy hyL]].
+    subst x.
+    rewrite (rename_eq_of_sentence y (hB y (hL y hyL)) r).
+    exact hyL.
+  - right. exact hx.
+Qed.
+
+Lemma BProv_subst_of_sentences : forall (B : formula -> Prop),
+  Sentences B -> forall G phi,
+  BProv B G phi -> forall sigma,
+  BProv B (map (subst sigma) G) (subst sigma phi).
+Proof.
+  intros B hB G phi [L [hL hp]] sigma.
+  exists L.
+  split; [exact hL |].
+  pose proof (Prov_subst (L ++ G) phi hp sigma) as hpSub.
+  apply (Prov_weaken (map (subst sigma) (L ++ G)) (subst sigma phi) hpSub).
+  intros x hx.
+  rewrite map_app in hx.
+  apply in_app_iff in hx.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left.
+    apply in_map_iff in hx.
+    destruct hx as [y [hy hyL]].
+    subst x.
+    rewrite (subst_eq_of_sentence y (hB y (hL y hyL)) sigma).
+    exact hyL.
+  - right. exact hx.
+Qed.
+
 Lemma BProv_mp : forall (B : formula -> Prop) G a b,
   BProv B G (pImp a b) -> BProv B G a -> BProv B G b.
 Proof.
@@ -7750,6 +8097,159 @@ Proof.
       intros x hx; bprov_mem.
     + apply (Prov_weaken (La ++ G) (subst (instTerm s) a) hpa).
       intros x hx; bprov_mem.
+Qed.
+
+Lemma BProv_eqRefl : forall (B : formula -> Prop) G t,
+  BProv B G (pEq t t).
+Proof.
+  intros B G t.
+  apply BProv_of_Prov.
+  apply P_eqRefl.
+Qed.
+
+Lemma BProv_eqSym : forall (B : formula -> Prop) G s t,
+  BProv B G (pEq s t) -> BProv B G (pEq t s).
+Proof.
+  intros B G s t heq.
+  pose proof (BProv_eqRefl B G s) as hrefl.
+  assert (ha : BProv B G
+      (subst (instTerm s) (pEq (tVar 0) (Term.rename S s)))).
+  {
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hrefl.
+  }
+  pose proof (BProv_eqElim B G s t
+    (pEq (tVar 0) (Term.rename S s)) heq ha) as h.
+  simpl in h.
+  rewrite term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eqTrans : forall (B : formula -> Prop) G s t u,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq t u) ->
+  BProv B G (pEq s u).
+Proof.
+  intros B G s t u hst htu.
+  assert (ha : BProv B G
+      (subst (instTerm t) (pEq (Term.rename S s) (tVar 0)))).
+  {
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hst.
+  }
+  pose proof (BProv_eqElim B G t u
+    (pEq (Term.rename S s) (tVar 0)) htu ha) as h.
+  simpl in h.
+  rewrite term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_term : forall (B : formula -> Prop) G s t c,
+  BProv B G (pEq s t) ->
+  BProv B G
+    (pEq (Term.subst (instTerm s) c) (Term.subst (instTerm t) c)).
+Proof.
+  intros B G s t c heq.
+  pose proof (BProv_eqRefl B G (Term.subst (instTerm s) c)) as hrefl.
+  assert (ha : BProv B G
+      (subst (instTerm s)
+        (pEq (Term.rename S (Term.subst (instTerm s) c)) c))).
+  {
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hrefl.
+  }
+  pose proof (BProv_eqElim B G s t
+    (pEq (Term.rename S (Term.subst (instTerm s) c)) c) heq ha) as h.
+  simpl in h.
+  rewrite term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_succ : forall (B : formula -> Prop) G s t,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tSucc s) (tSucc t)).
+Proof.
+  intros B G s t heq.
+  pose proof (BProv_eq_congr_term B G s t (tSucc (tVar 0)) heq) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_add_left : forall (B : formula -> Prop) G s t u,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tAdd s u) (tAdd t u)).
+Proof.
+  intros B G s t u heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tAdd (tVar 0) (Term.rename S u)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_add_right : forall (B : formula -> Prop) G u s t,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tAdd u s) (tAdd u t)).
+Proof.
+  intros B G u s t heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tAdd (Term.rename S u) (tVar 0)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_add : forall (B : formula -> Prop) G s t u v,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq u v) ->
+  BProv B G (pEq (tAdd s u) (tAdd t v)).
+Proof.
+  intros B G s t u v hst huv.
+  eapply BProv_eqTrans.
+  - apply BProv_eq_congr_add_left.
+    exact hst.
+  - apply BProv_eq_congr_add_right.
+    exact huv.
+Qed.
+
+Lemma BProv_eq_congr_mul_left : forall (B : formula -> Prop) G s t u,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tMul s u) (tMul t u)).
+Proof.
+  intros B G s t u heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tMul (tVar 0) (Term.rename S u)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_mul_right : forall (B : formula -> Prop) G u s t,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tMul u s) (tMul u t)).
+Proof.
+  intros B G u s t heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tMul (Term.rename S u) (tVar 0)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_mul : forall (B : formula -> Prop) G s t u v,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq u v) ->
+  BProv B G (pEq (tMul s u) (tMul t v)).
+Proof.
+  intros B G s t u v hst huv.
+  eapply BProv_eqTrans.
+  - apply BProv_eq_congr_mul_left.
+    exact hst.
+  - apply BProv_eq_congr_mul_right.
+    exact huv.
 Qed.
 
 Lemma BProv_context_cons : forall (B : formula -> Prop) G a b,
@@ -8135,6 +8635,24 @@ Definition substSuccVar : nat -> term :=
     | S k => tVar (S k)
     end.
 
+Lemma term_substZero_rename_succ : forall t,
+  Term.subst substZero (Term.rename S t) = t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
+Lemma term_substSuccVar_rename_succ : forall t,
+  Term.subst substSuccVar (Term.rename S t) = Term.rename S t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
 Definition substSuccAt (p : nat) : nat -> term :=
   fun n => if n =? p then tSucc (tVar p) else tVar n.
 
@@ -8445,6 +8963,125 @@ Proof.
   exact h2.
 Qed.
 
+Lemma BProv_Ax_s_addRightNumeral : forall t n,
+  BProv Ax_s [] (pEq
+    (tAdd t (Term.numeral n))
+    (Term.addRightNumeral t n)).
+Proof.
+  intros t n.
+  induction n as [|n IH].
+  - simpl.
+    apply BProv_Ax_s_addZero_term.
+  - simpl.
+    assert (hstep : BProv Ax_s [] (pEq
+        (tAdd t (tSucc (Term.numeral n)))
+        (tSucc (tAdd t (Term.numeral n))))).
+    {
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hsucc : BProv Ax_s [] (pEq
+        (tSucc (tAdd t (Term.numeral n)))
+        (tSucc (Term.addRightNumeral t n)))).
+    {
+      apply BProv_eq_congr_succ.
+      exact IH.
+    }
+    exact (BProv_eqTrans Ax_s []
+      (tAdd t (tSucc (Term.numeral n)))
+      (tSucc (tAdd t (Term.numeral n)))
+      (tSucc (Term.addRightNumeral t n)) hstep hsucc).
+Qed.
+
+Lemma BProv_Ax_s_mulRightNumeral : forall t n,
+  BProv Ax_s [] (pEq
+    (tMul t (Term.numeral n))
+    (Term.mulRightNumeral t n)).
+Proof.
+  intros t n.
+  induction n as [|n IH].
+  - simpl.
+    apply BProv_Ax_s_mulZero_term.
+  - simpl.
+    assert (hstep : BProv Ax_s [] (pEq
+        (tMul t (tSucc (Term.numeral n)))
+        (tAdd (tMul t (Term.numeral n)) t))).
+    {
+      apply BProv_Ax_s_mulSucc_terms.
+    }
+    assert (hadd : BProv Ax_s [] (pEq
+        (tAdd (tMul t (Term.numeral n)) t)
+        (tAdd (Term.mulRightNumeral t n) t))).
+    {
+      exact (BProv_eq_congr_add_left Ax_s []
+        (tMul t (Term.numeral n)) (Term.mulRightNumeral t n) t IH).
+    }
+    exact (BProv_eqTrans Ax_s []
+      (tMul t (tSucc (Term.numeral n)))
+      (tAdd (tMul t (Term.numeral n)) t)
+      (tAdd (Term.mulRightNumeral t n) t) hstep hadd).
+Qed.
+
+Lemma BProv_Ax_s_addNumerals : forall m n,
+  BProv Ax_s [] (pEq
+    (tAdd (Term.numeral m) (Term.numeral n))
+    (Term.numeral (m + n))).
+Proof.
+  intros m n.
+  pose proof (BProv_Ax_s_addRightNumeral (Term.numeral m) n) as h.
+  rewrite Term.addRightNumeral_numeral in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulRightNumeral_numeral : forall m n,
+  BProv Ax_s [] (pEq
+    (Term.mulRightNumeral (Term.numeral m) n)
+    (Term.numeral (m * n))).
+Proof.
+  intros m n.
+  induction n as [|n IH].
+  - replace (m * 0) with 0 by lia.
+    simpl.
+    apply BProv_eqRefl.
+  - simpl.
+    assert (hcongr : BProv Ax_s [] (pEq
+        (tAdd (Term.mulRightNumeral (Term.numeral m) n)
+          (Term.numeral m))
+        (tAdd (Term.numeral (m * n)) (Term.numeral m)))).
+    {
+      exact (BProv_eq_congr_add Ax_s []
+        (Term.mulRightNumeral (Term.numeral m) n)
+        (Term.numeral (m * n))
+        (Term.numeral m) (Term.numeral m) IH
+        (BProv_eqRefl Ax_s [] (Term.numeral m))).
+    }
+    assert (hadd : BProv Ax_s [] (pEq
+        (tAdd (Term.numeral (m * n)) (Term.numeral m))
+        (Term.numeral (m * n + m)))).
+    {
+      apply BProv_Ax_s_addNumerals.
+    }
+    replace (m * S n) with (m * n + m) by lia.
+    exact (BProv_eqTrans Ax_s []
+      (tAdd (Term.mulRightNumeral (Term.numeral m) n)
+        (Term.numeral m))
+      (tAdd (Term.numeral (m * n)) (Term.numeral m))
+      (Term.numeral (m * n + m)) hcongr hadd).
+Qed.
+
+Lemma BProv_Ax_s_mulNumerals : forall m n,
+  BProv Ax_s [] (pEq
+    (tMul (Term.numeral m) (Term.numeral n))
+    (Term.numeral (m * n))).
+Proof.
+  intros m n.
+  exact (BProv_eqTrans Ax_s []
+    (tMul (Term.numeral m) (Term.numeral n))
+    (Term.mulRightNumeral (Term.numeral m) n)
+    (Term.numeral (m * n))
+    (BProv_Ax_s_mulRightNumeral (Term.numeral m) n)
+    (BProv_Ax_s_mulRightNumeral_numeral m n)).
+Qed.
+
 Lemma BProv_Ax_s_inductionForm_rename : forall phi r,
   BProv Ax_s [] (rename r (inductionForm phi)).
 Proof.
@@ -8557,6 +9194,9 @@ Qed.
 Definition leAt (a b : nat) : formula :=
   pEx (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))).
 
+Definition leConstAt (a n : nat) : formula :=
+  pEx (pEq (tAdd (tVar (S a)) (tVar 0)) (Term.numeral n)).
+
 Definition ltAt (a b : nat) : formula :=
   pEx (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b))).
 
@@ -8575,6 +9215,815 @@ Definition twoAt (a : nat) : formula := eqConstAt a 2.
 Definition nonzeroAt (a : nat) : formula :=
   pEx (pEq (tSucc (tVar 0)) (tVar (S a))).
 
+Definition succPredAt (a : nat) : formula :=
+  pEx (pEq (tVar (S a)) (tSucc (tVar 0))).
+
+Definition zeroOrSuccPredAt (a : nat) : formula :=
+  pOr (zeroAt a) (succPredAt a).
+
+Lemma BProv_Ax_s_zeroOrSuccPredAt_all :
+  BProv Ax_s [] (pAll (zeroOrSuccPredAt 0)).
+Proof.
+  set (phi := zeroOrSuccPredAt 0).
+  assert (hzeroLeft : BProv Ax_s [] (subst substZero (zeroAt 0))).
+  {
+    unfold zeroAt, eqConstAt.
+    simpl.
+    apply BProv_eqRefl.
+  }
+  assert (hzero : BProv Ax_s [] (subst substZero phi)).
+  {
+    unfold phi, zeroOrSuccPredAt.
+    simpl.
+    apply BProv_orI1.
+    exact hzeroLeft.
+  }
+  assert (hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi)).
+  {
+    assert (hrefl : BProv Ax_s [phi]
+        (pEq (tSucc (tVar 0)) (tSucc (tVar 0)))).
+    {
+      apply BProv_eqRefl.
+    }
+    assert (hinst : BProv Ax_s [phi]
+        (subst (instTerm (tVar 0))
+          (pEq (tSucc (tVar 1)) (tSucc (tVar 0))))).
+    {
+      simpl.
+      exact hrefl.
+    }
+    assert (hright : BProv Ax_s [phi] (subst substSuccVar (succPredAt 0))).
+    {
+      unfold succPredAt.
+      simpl.
+      pose proof (BProv_exI Ax_s [phi]
+        (pEq (tSucc (tVar 1)) (tSucc (tVar 0))) (tVar 0) hinst)
+        as hex.
+      simpl in hex.
+      exact hex.
+    }
+    unfold phi, zeroOrSuccPredAt.
+    simpl.
+    apply BProv_orI2.
+    exact hright.
+  }
+  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi) hsuccBody)
+    as hsuccImp.
+  pose proof (BProv_allI_of_sentences Ax_s [] (pImp phi (subst substSuccVar phi))
+    sentence_ax_s hsuccImp) as hsucc.
+  change (BProv Ax_s [] (pAll phi)).
+  exact (BProv_inductionForm_mp Ax_s [] phi
+    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+Qed.
+
+Lemma BProv_Ax_s_zeroOrSuccPred_term : forall G t,
+  BProv Ax_s G
+    (pOr (pEq t tZero)
+      (pEx (pEq (Term.rename S t) (tSucc (tVar 0))))).
+Proof.
+  intros G t.
+  pose proof (BProv_weaken_nil Ax_s G (pAll (zeroOrSuccPredAt 0))
+    BProv_Ax_s_zeroOrSuccPredAt_all) as hall.
+  pose proof (BProv_allE Ax_s G (zeroOrSuccPredAt 0) t hall) as hinst.
+  unfold zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt in hinst.
+  simpl in hinst.
+  repeat rewrite term_subst_instTerm_rename_succ in hinst.
+  exact hinst.
+Qed.
+
+Lemma BProv_Ax_s_zeroOrSuccPredAt : forall G a,
+  BProv Ax_s G (zeroOrSuccPredAt a).
+Proof.
+  intros G a.
+  pose proof (BProv_Ax_s_zeroOrSuccPred_term G (tVar a)) as h.
+  unfold zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt in h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_add_eq_zero_left_all : forall x,
+  BProv Ax_s []
+    (pAll
+      (pImp
+        (pEq (tAdd (Term.rename S x) (tVar 0)) tZero)
+        (pEq (Term.rename S x) tZero))).
+Proof.
+  intro x.
+  set (phi :=
+    pImp
+      (pEq (tAdd (Term.rename S x) (tVar 0)) tZero)
+      (pEq (Term.rename S x) tZero)).
+  assert (hzeroBody : BProv Ax_s
+      [pEq (tAdd x tZero) tZero]
+      (pEq x tZero)).
+  {
+    assert (hzeroAss : BProv Ax_s [pEq (tAdd x tZero) tZero]
+        (pEq (tAdd x tZero) tZero)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (haddZero : BProv Ax_s [pEq (tAdd x tZero) tZero]
+        (pEq (tAdd x tZero) x)).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addZero_term.
+    }
+    exact (BProv_eqTrans Ax_s [pEq (tAdd x tZero) tZero]
+      x (tAdd x tZero) tZero
+      (BProv_eqSym Ax_s [pEq (tAdd x tZero) tZero]
+        (tAdd x tZero) x haddZero)
+      hzeroAss).
+  }
+  assert (hzero : BProv Ax_s [] (subst substZero phi)).
+  {
+    unfold phi.
+    simpl.
+    repeat rewrite term_substZero_rename_succ.
+    exact (BProv_impI Ax_s [] (pEq (tAdd x tZero) tZero)
+      (pEq x tZero) hzeroBody).
+  }
+  assert (hsuccBody : BProv Ax_s
+      [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+      (pEq (Term.rename S x) tZero)).
+  {
+    assert (hbad : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (haddSucc : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
+          (tSucc (tAdd (Term.rename S x) (tVar 0))))).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hsuccZero : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pEq (tSucc (tAdd (Term.rename S x) (tVar 0))) tZero)).
+    {
+      exact (BProv_eqTrans Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (tSucc (tAdd (Term.rename S x) (tVar 0)))
+        (tAdd (Term.rename S x) (tSucc (tVar 0)))
+        tZero
+        (BProv_eqSym Ax_s
+          [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+          (tAdd (Term.rename S x) (tSucc (tVar 0)))
+          (tSucc (tAdd (Term.rename S x) (tVar 0))) haddSucc)
+        hbad).
+    }
+    assert (hnot : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pImp
+          (pEq (tSucc (tAdd (Term.rename S x) (tVar 0))) tZero)
+          pBot)).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_zeroNotSucc_term.
+    }
+    pose proof (BProv_mp Ax_s
+      [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+      (pEq (tSucc (tAdd (Term.rename S x) (tVar 0))) tZero)
+      pBot hnot hsuccZero) as hbot.
+    exact (BProv_botE Ax_s
+      [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+      (pEq (Term.rename S x) tZero) hbot).
+  }
+  assert (hsuccInner : BProv Ax_s [phi] (subst substSuccVar phi)).
+  {
+    unfold phi.
+    simpl.
+    repeat rewrite term_substSuccVar_rename_succ.
+    exact (BProv_impI Ax_s [phi]
+      (pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero)
+      (pEq (Term.rename S x) tZero) hsuccBody).
+  }
+  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
+    hsuccInner) as hsuccImp.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
+  change (BProv Ax_s [] (pAll phi)).
+  exact (BProv_inductionForm_mp Ax_s [] phi
+    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+Qed.
+
+Lemma BProv_Ax_s_add_eq_zero_left_terms : forall G x y,
+  BProv Ax_s G (pEq (tAdd x y) tZero) ->
+  BProv Ax_s G (pEq x tZero).
+Proof.
+  intros G x y h.
+  pose proof (BProv_weaken_nil Ax_s G
+    (pAll
+      (pImp
+        (pEq (tAdd (Term.rename S x) (tVar 0)) tZero)
+        (pEq (Term.rename S x) tZero)))
+    (BProv_Ax_s_add_eq_zero_left_all x)) as hall.
+  pose proof (BProv_allE Ax_s G _ y hall) as himp.
+  simpl in himp.
+  repeat rewrite term_subst_instTerm_rename_succ in himp.
+  exact (BProv_mp Ax_s G (pEq (tAdd x y) tZero) (pEq x tZero)
+    himp h).
+Qed.
+
+Lemma BProv_Ax_s_leConstAt_of_leAt_eqConst : forall G a b n,
+  BProv Ax_s G (leAt a b) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  BProv Ax_s G (leConstAt a n).
+Proof.
+  intros G a b n hle hb.
+  set (leBody := pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))).
+  change (BProv Ax_s G (pEx leBody)) in hle.
+  assert (hbody : BProv Ax_s (leBody :: map (rename S) G)
+      (rename S (leConstAt a n))).
+  {
+    assert (hleBody : BProv Ax_s (leBody :: map (rename S) G)
+        leBody).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (hbRen : BProv Ax_s (map (rename S) G)
+        (rename S (eqConstAt b n))).
+    {
+      exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+        (eqConstAt b n) hb S).
+    }
+    assert (hbBody : BProv Ax_s (leBody :: map (rename S) G)
+        (pEq (tVar (S b)) (Term.numeral n))).
+    {
+      pose proof (BProv_context_cons Ax_s (map (rename S) G) leBody
+        (rename S (eqConstAt b n)) hbRen) as h.
+      unfold eqConstAt in h.
+      simpl in h.
+      rewrite Term.rename_numeral in h.
+      exact h.
+    }
+    assert (htarget : BProv Ax_s (leBody :: map (rename S) G)
+        (pEq (tAdd (tVar (S a)) (tVar 0)) (Term.numeral n))).
+    {
+      exact (BProv_eqTrans Ax_s (leBody :: map (rename S) G)
+        (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))
+        (Term.numeral n) hleBody hbBody).
+    }
+    assert (hinst : BProv Ax_s (leBody :: map (rename S) G)
+        (subst (instTerm (tVar 0))
+          (pEq (tAdd (tVar (S (S a))) (tVar 0))
+            (Term.numeral n)))).
+    {
+      simpl.
+      rewrite Term.subst_numeral.
+      exact htarget.
+    }
+    pose proof (BProv_exI Ax_s (leBody :: map (rename S) G)
+      (pEq (tAdd (tVar (S (S a))) (tVar 0)) (Term.numeral n))
+      (tVar 0) hinst) as hex.
+    unfold leConstAt.
+    simpl.
+    rewrite Term.rename_numeral.
+    exact hex.
+  }
+  exact (BProv_exE_of_sentences Ax_s G leBody (leConstAt a n)
+    sentence_ax_s hle hbody).
+Qed.
+
+Lemma BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero : forall G a,
+  BProv Ax_s G (leConstAt a 0) ->
+  BProv Ax_s G (eqConstAt a 0).
+Proof.
+  intros G a hle.
+  set (leBody := pEq (tAdd (tVar (S a)) (tVar 0)) tZero).
+  change (BProv Ax_s G (pEx leBody)) in hle.
+  assert (hbody : BProv Ax_s (leBody :: map (rename S) G)
+      (rename S (eqConstAt a 0))).
+  {
+    assert (hleBody : BProv Ax_s (leBody :: map (rename S) G)
+        leBody).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    pose proof (BProv_Ax_s_add_eq_zero_left_terms
+      (leBody :: map (rename S) G) (tVar (S a)) (tVar 0)
+      hleBody) as haZero.
+    unfold eqConstAt.
+    simpl.
+    exact haZero.
+  }
+  exact (BProv_exE_of_sentences Ax_s G leBody (eqConstAt a 0)
+    sentence_ax_s hle hbody).
+Qed.
+
+Lemma BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero : forall G a b,
+  BProv Ax_s G (leAt a b) ->
+  BProv Ax_s G (eqConstAt b 0) ->
+  BProv Ax_s G (eqConstAt a 0).
+Proof.
+  intros G a b hle hb.
+  apply BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero.
+  exact (BProv_Ax_s_leConstAt_of_leAt_eqConst G a b 0 hle hb).
+Qed.
+
+Lemma BProv_Ax_s_leConstAt_succ_cases : forall G a n,
+  BProv Ax_s G (leConstAt a (S n)) ->
+  BProv Ax_s G (pOr (leConstAt a n) (eqConstAt a (S n))).
+Proof.
+  intros G a n hle.
+  set (target := pOr (leConstAt a n) (eqConstAt a (S n))).
+  set (leBody :=
+    pEq (tAdd (tVar (S a)) (tVar 0)) (Term.numeral (S n))).
+  change (BProv Ax_s G (pEx leBody)) in hle.
+  assert (hbody : BProv Ax_s (leBody :: map (rename S) G)
+      (rename S target)).
+  {
+    set (C := leBody :: map (rename S) G).
+    assert (hcases : BProv Ax_s C (zeroOrSuccPredAt 0)).
+    {
+      apply BProv_Ax_s_zeroOrSuccPredAt.
+    }
+    assert (hzeroBranch : BProv Ax_s (zeroAt 0 :: C)
+        (rename S target)).
+    {
+      assert (hzero : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tVar 0) tZero)).
+      {
+        pose proof (BProv_ass Ax_s (zeroAt 0 :: C) (zeroAt 0)) as h.
+        assert (hin : In (zeroAt 0) (zeroAt 0 :: C)).
+        {
+          simpl. left. reflexivity.
+        }
+        specialize (h hin).
+        unfold zeroAt, eqConstAt in h.
+        simpl in h.
+        exact h.
+      }
+      assert (hleBody : BProv Ax_s (zeroAt 0 :: C) leBody).
+      {
+        apply BProv_ass.
+        simpl. right. unfold C. simpl. left. reflexivity.
+      }
+      assert (hzeroAdd : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tAdd (tVar (S a)) (tVar 0))
+            (tAdd (tVar (S a)) tZero))).
+      {
+        exact (BProv_eq_congr_add_right Ax_s (zeroAt 0 :: C)
+          (tVar (S a)) (tVar 0) tZero hzero).
+      }
+      assert (haddZero : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tAdd (tVar (S a)) tZero) (tVar (S a)))).
+      {
+        apply BProv_weaken_nil.
+        apply BProv_Ax_s_addZero_term.
+      }
+      assert (hleft : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S a)))).
+      {
+        exact (BProv_eqTrans Ax_s (zeroAt 0 :: C)
+          (tAdd (tVar (S a)) (tVar 0))
+          (tAdd (tVar (S a)) tZero) (tVar (S a))
+          hzeroAdd haddZero).
+      }
+      assert (heq : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tVar (S a)) (Term.numeral (S n)))).
+      {
+        exact (BProv_eqTrans Ax_s (zeroAt 0 :: C)
+          (tVar (S a)) (tAdd (tVar (S a)) (tVar 0))
+          (Term.numeral (S n))
+          (BProv_eqSym Ax_s (zeroAt 0 :: C)
+            (tAdd (tVar (S a)) (tVar 0)) (tVar (S a)) hleft)
+          hleBody).
+      }
+      assert (hright : BProv Ax_s (zeroAt 0 :: C)
+          (rename S (eqConstAt a (S n)))).
+      {
+        unfold eqConstAt.
+        simpl.
+        rewrite Term.rename_numeral.
+        exact heq.
+      }
+      unfold target.
+      exact (BProv_orI2 Ax_s (zeroAt 0 :: C)
+        (rename S (leConstAt a n)) (rename S (eqConstAt a (S n)))
+        hright).
+    }
+    assert (hsuccBranch : BProv Ax_s (succPredAt 0 :: C)
+        (rename S target)).
+    {
+      set (succBody := pEq (tVar 1) (tSucc (tVar 0))).
+      assert (hsuccAss : BProv Ax_s (succPredAt 0 :: C)
+          (succPredAt 0)).
+      {
+        apply BProv_ass.
+        simpl. left. reflexivity.
+      }
+      change (BProv Ax_s (succPredAt 0 :: C) (pEx succBody))
+        in hsuccAss.
+      assert (hsuccBody : BProv Ax_s
+          (succBody :: map (rename S) (succPredAt 0 :: C))
+          (rename S (rename S target))).
+      {
+        set (D := succBody :: map (rename S) (succPredAt 0 :: C)).
+        assert (hpred : BProv Ax_s D succBody).
+        {
+          apply BProv_ass.
+          simpl. left. reflexivity.
+        }
+        assert (hleShiftRaw : BProv Ax_s D (rename S leBody)).
+        {
+          apply BProv_ass.
+          unfold D, C. simpl. right. right. left. reflexivity.
+        }
+        assert (hleShift : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (Term.numeral (S n)))).
+        {
+          unfold leBody in hleShiftRaw.
+          simpl in hleShiftRaw.
+          rewrite Term.rename_numeral in hleShiftRaw.
+          exact hleShiftRaw.
+        }
+        assert (haddPred : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (tAdd (tVar (S (S a))) (tSucc (tVar 0))))).
+        {
+          unfold succBody in hpred.
+          exact (BProv_eq_congr_add_right Ax_s D
+            (tVar (S (S a))) (tVar 1) (tSucc (tVar 0)) hpred).
+        }
+        assert (haddSucc : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tSucc (tVar 0)))
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0))))).
+        {
+          apply BProv_weaken_nil.
+          apply BProv_Ax_s_addSucc_terms.
+        }
+        assert (hleft : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0))))).
+        {
+          exact (BProv_eqTrans Ax_s D
+            (tAdd (tVar (S (S a))) (tVar 1))
+            (tAdd (tVar (S (S a))) (tSucc (tVar 0)))
+            (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+            haddPred haddSucc).
+        }
+        assert (hsuccEqRaw : BProv Ax_s D
+            (pEq
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+              (Term.numeral (S n)))).
+        {
+          exact (BProv_eqTrans Ax_s D
+            (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+            (tAdd (tVar (S (S a))) (tVar 1))
+            (Term.numeral (S n))
+            (BProv_eqSym Ax_s D
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0))) hleft)
+            hleShift).
+        }
+        assert (hsuccEq : BProv Ax_s D
+            (pEq
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+              (tSucc (Term.numeral n)))).
+        {
+          simpl in hsuccEqRaw.
+          exact hsuccEqRaw.
+        }
+        assert (hinj : BProv Ax_s D
+            (pImp
+              (pEq
+                (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+                (tSucc (Term.numeral n)))
+              (pEq (tAdd (tVar (S (S a))) (tVar 0))
+                (Term.numeral n)))).
+        {
+          apply BProv_weaken_nil.
+          apply BProv_Ax_s_succInj_terms.
+        }
+        pose proof (BProv_mp Ax_s D
+          (pEq
+            (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+            (tSucc (Term.numeral n)))
+          (pEq (tAdd (tVar (S (S a))) (tVar 0))
+            (Term.numeral n)) hinj hsuccEq) as hsum.
+        assert (hleInst : BProv Ax_s D
+            (subst (instTerm (tVar 0))
+              (pEq (tAdd (tVar (S (S (S a)))) (tVar 0))
+                (Term.numeral n)))).
+        {
+          simpl.
+          rewrite Term.subst_numeral.
+          exact hsum.
+        }
+        assert (hleClosed : BProv Ax_s D
+            (rename S (rename S (leConstAt a n)))).
+        {
+          pose proof (BProv_exI Ax_s D
+            (pEq (tAdd (tVar (S (S (S a)))) (tVar 0))
+              (Term.numeral n))
+            (tVar 0) hleInst) as hex.
+          unfold leConstAt.
+          simpl.
+          repeat rewrite Term.rename_numeral.
+          exact hex.
+        }
+        unfold target.
+        exact (BProv_orI1 Ax_s D
+          (rename S (rename S (leConstAt a n)))
+          (rename S (rename S (eqConstAt a (S n))))
+          hleClosed).
+      }
+      exact (BProv_exE_of_sentences Ax_s (succPredAt 0 :: C)
+        succBody (rename S target) sentence_ax_s hsuccAss hsuccBody).
+    }
+    change (BProv Ax_s C (pOr (zeroAt 0) (succPredAt 0))) in hcases.
+    exact (BProv_orE Ax_s C (zeroAt 0) (succPredAt 0)
+      (rename S target) hcases hzeroBranch hsuccBranch).
+  }
+  exact (BProv_exE_of_sentences Ax_s G leBody target
+    sentence_ax_s hle hbody).
+Qed.
+
+Lemma BProv_Ax_s_leAt_of_eqConst : forall G a b m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  m <= n ->
+  BProv Ax_s G (leAt a b).
+Proof.
+  intros G a b m n ha hb hmn.
+  set (w := n - m).
+  assert (hleft : BProv Ax_s G
+      (pEq (tAdd (tVar a) (Term.numeral w))
+        (tAdd (Term.numeral m) (Term.numeral w)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tVar a) (Term.numeral m) (Term.numeral w) ha).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral w))
+        (Term.numeral (m + w)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral w))
+        (Term.numeral n))).
+  {
+    replace n with (m + w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tAdd (tVar a) (Term.numeral w)) (tVar b))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar a) (Term.numeral w)) (Term.numeral n) (tVar b)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tVar a) (Term.numeral w))
+        (tAdd (Term.numeral m) (Term.numeral w))
+        (Term.numeral n) hleft hadd)
+      (BProv_eqSym Ax_s G (tVar b) (Term.numeral n) hb)).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))))).
+  {
+    simpl.
+    exact htarget.
+  }
+  unfold leAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b)))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_ltAt_of_eqConst : forall G a b m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  m < n ->
+  BProv Ax_s G (ltAt a b).
+Proof.
+  intros G a b m n ha hb hmn.
+  set (w := n - m - 1).
+  assert (hleft : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (tAdd (Term.numeral m) (tSucc (Term.numeral w))))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tVar a) (Term.numeral m) (tSucc (Term.numeral w)) ha).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral (m + S w)))).
+  {
+    pose proof (BProv_weaken_nil Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
+        (Term.numeral (m + S w)))
+      (BProv_Ax_s_addNumerals m (S w))) as h.
+    simpl in h.
+    exact h.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    replace n with (m + S w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w))) (tVar b))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar a) (tSucc (Term.numeral w))) (Term.numeral n)
+      (tVar b)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n) hleft hadd)
+      (BProv_eqSym Ax_s G (tVar b) (Term.numeral n) hb)).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b))))).
+  {
+    simpl.
+    exact htarget.
+  }
+  unfold ltAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b)))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_ltConst_of_eqConst : forall G a m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  m < n ->
+  BProv Ax_s G
+    (pEx (pEq (tAdd (tVar (S a)) (tSucc (tVar 0)))
+      (Term.numeral n))).
+Proof.
+  intros G a m n ha hmn.
+  set (w := n - m - 1).
+  assert (hleft : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (tAdd (Term.numeral m) (tSucc (Term.numeral w))))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tVar a) (Term.numeral m) (tSucc (Term.numeral w)) ha).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral (m + S w)))).
+  {
+    pose proof (BProv_weaken_nil Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
+        (Term.numeral (m + S w)))
+      (BProv_Ax_s_addNumerals m (S w))) as h.
+    simpl in h.
+    exact h.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    replace n with (m + S w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar a) (tSucc (Term.numeral w)))
+      (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+      (Term.numeral n) hleft hadd).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (tVar (S a)) (tSucc (tVar 0)))
+          (Term.numeral n)))).
+  {
+    simpl.
+    rewrite Term.subst_numeral.
+    exact htarget.
+  }
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (Term.numeral n))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_ltConst_closed : forall G m n,
+  m < n ->
+  BProv Ax_s G
+    (pEx (pEq (tAdd (Term.numeral m) (tSucc (tVar 0)))
+      (Term.numeral n))).
+Proof.
+  intros G m n hmn.
+  set (w := n - m - 1).
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral (m + S w)))).
+  {
+    pose proof (BProv_weaken_nil Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
+        (Term.numeral (m + S w)))
+      (BProv_Ax_s_addNumerals m (S w))) as h.
+    simpl in h.
+    exact h.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    replace n with (m + S w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (Term.numeral m) (tSucc (tVar 0)))
+          (Term.numeral n)))).
+  {
+    simpl.
+    repeat rewrite Term.subst_numeral.
+    exact hadd.
+  }
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (Term.numeral m) (tSucc (tVar 0))) (Term.numeral n))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_dvdAt_of_eqConst_mul : forall G a b m n q,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  m * q = n ->
+  BProv Ax_s G (dvdAt a b).
+Proof.
+  intros G a b m n q ha hb hmul.
+  assert (hleft : BProv Ax_s G
+      (pEq (tMul (tVar a) (Term.numeral q))
+        (tMul (Term.numeral m) (Term.numeral q)))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G
+      (tVar a) (Term.numeral m) (Term.numeral q) ha).
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq (tMul (Term.numeral m) (Term.numeral q))
+        (Term.numeral (m * q)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmul' : BProv Ax_s G
+      (pEq (tMul (Term.numeral m) (Term.numeral q))
+        (Term.numeral n))).
+  {
+    rewrite <- hmul.
+    exact hmulRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tMul (tVar a) (Term.numeral q)) (tVar b))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (tVar a) (Term.numeral q)) (Term.numeral n) (tVar b)
+      (BProv_eqTrans Ax_s G
+        (tMul (tVar a) (Term.numeral q))
+        (tMul (Term.numeral m) (Term.numeral q))
+        (Term.numeral n) hleft hmul')
+      (BProv_eqSym Ax_s G (tVar b) (Term.numeral n) hb)).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (pEq (tMul (tVar (S a)) (tVar 0)) (tVar (S b))))).
+  {
+    simpl.
+    exact htarget.
+  }
+  unfold dvdAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tMul (tVar (S a)) (tVar 0)) (tVar (S b)))
+    (Term.numeral q) hbody).
+Qed.
+
+Lemma BProv_Ax_s_dvdAt_of_eqConst : forall G a b m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  Nat.divide m n ->
+  BProv Ax_s G (dvdAt a b).
+Proof.
+  intros G a b m n ha hb hmn.
+  destruct hmn as [q hq].
+  apply (BProv_Ax_s_dvdAt_of_eqConst_mul G a b m n q ha hb).
+  nia.
+Qed.
+
 Definition boolAt (a : nat) : formula :=
   pOr (zeroAt a) (oneAt a).
 
@@ -8589,12 +10038,872 @@ Definition div2StepAt (value half bit : nat) : formula :=
     (pEq (tVar value)
       (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))).
 
+Lemma BProv_Ax_s_boolAt_of_eqConst : forall G a b,
+  BProv Ax_s G (eqConstAt a b) ->
+  (b = 0 \/ b = 1) ->
+  BProv Ax_s G (boolAt a).
+Proof.
+  intros G a b ha hb.
+  destruct hb as [hb | hb].
+  - subst b.
+    unfold boolAt.
+    apply BProv_orI1.
+    unfold zeroAt.
+    exact ha.
+  - subst b.
+    unfold boolAt.
+    apply BProv_orI2.
+    unfold oneAt.
+    exact ha.
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_of_eqConst : forall G value half bit v h b,
+  BProv Ax_s G (eqConstAt value v) ->
+  BProv Ax_s G (eqConstAt half h) ->
+  BProv Ax_s G (eqConstAt bit b) ->
+  (b = 0 \/ b = 1) ->
+  h + h + b = v ->
+  BProv Ax_s G (div2StepAt value half bit).
+Proof.
+  intros G value half bit v h b hvalue hhalf hbit hb hval.
+  pose proof (BProv_Ax_s_boolAt_of_eqConst G bit b hbit hb) as hbool.
+  assert (hdoubleLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tVar half) (tVar half))
+        (tAdd (Term.numeral h) (Term.numeral h)))).
+  {
+    exact (BProv_eq_congr_add Ax_s G
+      (tVar half) (Term.numeral h)
+      (tVar half) (Term.numeral h) hhalf hhalf).
+  }
+  assert (hdoubleRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral h) (Term.numeral h))
+        (Term.numeral (h + h)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hdouble : BProv Ax_s G
+      (pEq
+        (tAdd (tVar half) (tVar half))
+        (Term.numeral (h + h)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar half) (tVar half))
+      (tAdd (Term.numeral h) (Term.numeral h))
+      (Term.numeral (h + h)) hdoubleLeft hdoubleRaw).
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tAdd (tVar half) (tVar half)) (Term.numeral (h + h))
+      (tVar bit) hdouble).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (h + h)) (tVar bit) (Term.numeral b) hbit).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral (h + h + b)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+      (tAdd (Term.numeral (h + h)) (Term.numeral b))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tVar value)
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tVar value) (Term.numeral v)
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+      hvalue
+      (BProv_eqSym Ax_s G
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (Term.numeral v) hcomputed)).
+  }
+  unfold div2StepAt.
+  exact (BProv_andI Ax_s G (boolAt bit)
+    (pEq (tVar value)
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit)))
+    hbool htarget).
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_zero_one_bot : forall G value half bit,
+  BProv Ax_s G (eqConstAt value 0) ->
+  BProv Ax_s G (eqConstAt bit 1) ->
+  BProv Ax_s G (div2StepAt value half bit) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G value half bit hvalue hbit hstep.
+  set (t := tAdd (tVar half) (tVar half)).
+  assert (hstepEq : BProv Ax_s G
+      (pEq (tVar value) (tAdd t (tVar bit)))).
+  {
+    unfold t.
+    unfold div2StepAt in hstep.
+    exact (BProv_andE2 Ax_s G (boolAt bit)
+      (pEq (tVar value)
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))) hstep).
+  }
+  assert (hvalueZero : BProv Ax_s G (pEq (tVar value) tZero)).
+  {
+    unfold eqConstAt in hvalue.
+    simpl in hvalue.
+    exact hvalue.
+  }
+  assert (hrightZero : BProv Ax_s G
+      (pEq (tAdd t (tVar bit)) tZero)).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd t (tVar bit)) (tVar value) tZero
+      (BProv_eqSym Ax_s G (tVar value) (tAdd t (tVar bit)) hstepEq)
+      hvalueZero).
+  }
+  assert (hbitOne : BProv Ax_s G (pEq (tVar bit) (tSucc tZero))).
+  {
+    unfold eqConstAt in hbit.
+    simpl in hbit.
+    exact hbit.
+  }
+  assert (hbitRight : BProv Ax_s G
+      (pEq (tAdd t (tVar bit)) (tAdd t (tSucc tZero)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      t (tVar bit) (tSucc tZero) hbitOne).
+  }
+  assert (haddSucc : BProv Ax_s G
+      (pEq (tAdd t (tSucc tZero))
+        (tSucc (tAdd t tZero)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addSucc_terms.
+  }
+  assert (hrightSucc : BProv Ax_s G
+      (pEq (tAdd t (tVar bit))
+        (tSucc (tAdd t tZero)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd t (tVar bit)) (tAdd t (tSucc tZero))
+      (tSucc (tAdd t tZero)) hbitRight haddSucc).
+  }
+  assert (hsuccZero : BProv Ax_s G
+      (pEq (tSucc (tAdd t tZero)) tZero)).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tSucc (tAdd t tZero)) (tAdd t (tVar bit)) tZero
+      (BProv_eqSym Ax_s G
+        (tAdd t (tVar bit)) (tSucc (tAdd t tZero)) hrightSucc)
+      hrightZero).
+  }
+  assert (hnot : BProv Ax_s G
+      (pImp (pEq (tSucc (tAdd t tZero)) tZero) pBot)).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_zeroNotSucc_term.
+  }
+  exact (BProv_mp Ax_s G
+    (pEq (tSucc (tAdd t tZero)) tZero) pBot hnot hsuccZero).
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_zero_half_zero : forall G value half bit,
+  BProv Ax_s G (eqConstAt value 0) ->
+  BProv Ax_s G (div2StepAt value half bit) ->
+  BProv Ax_s G (eqConstAt half 0).
+Proof.
+  intros G value half bit hvalue hstep.
+  set (double := tAdd (tVar half) (tVar half)).
+  assert (hstepEq : BProv Ax_s G
+      (pEq (tVar value) (tAdd double (tVar bit)))).
+  {
+    unfold double.
+    unfold div2StepAt in hstep.
+    exact (BProv_andE2 Ax_s G (boolAt bit)
+      (pEq (tVar value)
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))) hstep).
+  }
+  assert (hvalueZero : BProv Ax_s G (pEq (tVar value) tZero)).
+  {
+    unfold eqConstAt in hvalue.
+    simpl in hvalue.
+    exact hvalue.
+  }
+  assert (hrightZero : BProv Ax_s G
+      (pEq (tAdd double (tVar bit)) tZero)).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd double (tVar bit)) (tVar value) tZero
+      (BProv_eqSym Ax_s G (tVar value) (tAdd double (tVar bit)) hstepEq)
+      hvalueZero).
+  }
+  pose proof (BProv_Ax_s_add_eq_zero_left_terms G double
+    (tVar bit) hrightZero) as hdoubleZero.
+  pose proof (BProv_Ax_s_add_eq_zero_left_terms G
+    (tVar half) (tVar half) hdoubleZero) as hhalfZero.
+  unfold eqConstAt.
+  simpl.
+  exact hhalfZero.
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_closedSubst : forall G value half bit,
+  (bit = 0 \/ bit = 1) ->
+  half + half + bit = value ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral bit))
+      (subst (Term.upSubst (instTerm (Term.numeral half)))
+        (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+          (div2StepAt 2 1 0)))).
+Proof.
+  intros G value half bit hbit hval.
+  assert (hbool : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit)) (boolAt 0))).
+  {
+    destruct hbit as [hbit | hbit]; subst bit; simpl.
+    - apply BProv_orI1.
+      apply BProv_eqRefl.
+    - apply BProv_orI2.
+      apply BProv_eqRefl.
+  }
+  assert (hboolBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+            (boolAt 0))))).
+  {
+    unfold boolAt, zeroAt, oneAt, eqConstAt in *.
+    simpl in *.
+    repeat rewrite Term.subst_numeral.
+    repeat rewrite Term.rename_numeral.
+    exact hbool.
+  }
+  assert (hdoubleRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral half) (Term.numeral half))
+        (Term.numeral (half + half)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd
+          (tAdd (Term.numeral half) (Term.numeral half))
+          (Term.numeral bit))
+        (tAdd (Term.numeral (half + half)) (Term.numeral bit)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tAdd (Term.numeral half) (Term.numeral half))
+      (Term.numeral (half + half)) (Term.numeral bit) hdoubleRaw).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (half + half)) (Term.numeral bit))
+        (Term.numeral (half + half + bit)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (half + half)) (Term.numeral bit))
+        (Term.numeral value))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd
+          (tAdd (Term.numeral half) (Term.numeral half))
+          (Term.numeral bit))
+        (Term.numeral value))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tAdd (Term.numeral half) (Term.numeral half))
+        (Term.numeral bit))
+      (tAdd (Term.numeral (half + half)) (Term.numeral bit))
+      (Term.numeral value) haddLeft hadd).
+  }
+  assert (heqBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+            (pEq (tVar 2)
+              (tAdd (tAdd (tVar 1) (tVar 1)) (tVar 0))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    change (BProv Ax_s G
+      (pEq (Term.numeral value)
+        (tAdd (tAdd (Term.numeral half) (Term.numeral half))
+          (Term.numeral bit)))).
+    exact (BProv_eqSym Ax_s G
+      (tAdd (tAdd (Term.numeral half) (Term.numeral half))
+        (Term.numeral bit))
+      (Term.numeral value) hcomputed).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+            (pAnd (boolAt 0)
+              (pEq (tVar 2)
+                (tAdd (tAdd (tVar 1) (tVar 1)) (tVar 0)))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst
+            (Term.upSubst (instTerm (Term.numeral value)))) (boolAt 0))))
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst
+            (Term.upSubst (instTerm (Term.numeral value))))
+            (pEq (tVar 2)
+              (tAdd (tAdd (tVar 1) (tVar 1)) (tVar 0))))))
+      hboolBody heqBody).
+  }
+  unfold div2StepAt.
+  exact hbody.
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst :
+  forall G bit b v h,
+  BProv Ax_s G (eqConstAt bit b) ->
+  (b = 0 \/ b = 1) ->
+  h + h + b = v ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral h))
+      (subst (Term.upSubst (instTerm (Term.numeral v)))
+        (div2StepAt 1 0 (S (S bit))))).
+Proof.
+  intros G bit b v h hbit hb hval.
+  pose proof (BProv_Ax_s_boolAt_of_eqConst G bit b hbit hb) as hbool.
+  assert (hboolBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (boolAt (S (S bit)))))).
+  {
+    unfold boolAt, zeroAt, oneAt, eqConstAt in *.
+    simpl in *.
+    repeat rewrite Term.subst_numeral.
+    repeat rewrite Term.rename_numeral.
+    exact hbool.
+  }
+  assert (hdoubleRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral h) (Term.numeral h))
+        (Term.numeral (h + h)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tAdd (Term.numeral h) (Term.numeral h))
+      (Term.numeral (h + h)) (tVar bit) hdoubleRaw).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (h + h)) (tVar bit) (Term.numeral b) hbit).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral (h + h + b)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+      (tAdd (Term.numeral (h + h)) (Term.numeral b))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (heqBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (pEq (tVar 1)
+            (tAdd (tAdd (tVar 0) (tVar 0)) (tVar (S (S bit)))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    change (BProv Ax_s G
+      (pEq (Term.numeral v)
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit)))).
+    exact (BProv_eqSym Ax_s G
+      (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+      (Term.numeral v) hcomputed).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (pAnd (boolAt (S (S bit)))
+            (pEq (tVar 1)
+              (tAdd (tAdd (tVar 0) (tVar 0))
+                (tVar (S (S bit))))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (boolAt (S (S bit)))))
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (pEq (tVar 1)
+            (tAdd (tAdd (tVar 0) (tVar 0)) (tVar (S (S bit)))))))
+      hboolBody heqBody).
+  }
+  unfold div2StepAt.
+  exact hbody.
+Qed.
+
 Definition remAt (rem value modulus : nat) : formula :=
   pEx (pAnd
     (ltAt (S rem) (S modulus))
     (pEq (tVar (S value))
       (tAdd (tMul (tVar 0) (tVar (S modulus)))
         (tVar (S rem))))).
+
+Lemma BProv_Ax_s_remAt_of_eqConst : forall G rem value modulus r v m q,
+  BProv Ax_s G (eqConstAt rem r) ->
+  BProv Ax_s G (eqConstAt value v) ->
+  BProv Ax_s G (eqConstAt modulus m) ->
+  r < m ->
+  q * m + r = v ->
+  BProv Ax_s G (remAt rem value modulus).
+Proof.
+  intros G rem value modulus r v m q hrem hvalue hmod hlt hval.
+  pose proof (BProv_Ax_s_ltAt_of_eqConst G rem modulus r m
+    hrem hmod hlt) as hltAt.
+  assert (hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q)) (ltAt (S rem) (S modulus)))).
+  {
+    unfold ltAt in *.
+    simpl.
+    exact hltAt.
+  }
+  assert (hmulLeft : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (tVar modulus))
+        (tMul (Term.numeral q) (Term.numeral m)))).
+  {
+    exact (BProv_eq_congr_mul_right Ax_s G
+      (Term.numeral q) (tVar modulus) (Term.numeral m) hmod).
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmul : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (tVar modulus))
+        (Term.numeral (q * m)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (Term.numeral q) (tVar modulus))
+      (tMul (Term.numeral q) (Term.numeral m))
+      (Term.numeral (q * m)) hmulLeft hmulRaw).
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tMul (Term.numeral q) (tVar modulus))
+      (Term.numeral (q * m)) (tVar rem) hmul).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (q * m)) (tVar rem) (Term.numeral r) hrem).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+      (tAdd (Term.numeral (q * m)) (Term.numeral r))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tVar value)
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tVar value) (Term.numeral v)
+      (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+      hvalue
+      (BProv_eqSym Ax_s G
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (Term.numeral v) hcomputed)).
+  }
+  assert (hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (pEq (tVar (S value))
+          (tAdd (tMul (tVar 0) (tVar (S modulus)))
+            (tVar (S rem)))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact htarget.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (pAnd (ltAt (S rem) (S modulus))
+          (pEq (tVar (S value))
+            (tAdd (tMul (tVar 0) (tVar (S modulus)))
+              (tVar (S rem))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G
+      (subst (instTerm (Term.numeral q)) (ltAt (S rem) (S modulus)))
+      (subst (instTerm (Term.numeral q))
+        (pEq (tVar (S value))
+          (tAdd (tMul (tVar 0) (tVar (S modulus)))
+            (tVar (S rem)))))
+      hltBody hvalueBody).
+  }
+  unfold remAt.
+  exact (BProv_exI Ax_s G
+    (pAnd (ltAt (S rem) (S modulus))
+      (pEq (tVar (S value))
+        (tAdd (tMul (tVar 0) (tVar (S modulus)))
+          (tVar (S rem)))))
+    (Term.numeral q) hbody).
+Qed.
+
+Lemma BProv_Ax_s_remAt_constMod_of_eqConst :
+  forall G rem value r v m q,
+  BProv Ax_s G (eqConstAt rem r) ->
+  BProv Ax_s G (eqConstAt value v) ->
+  r < m ->
+  q * m + r = v ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral m)) (remAt (S rem) (S value) 0)).
+Proof.
+  intros G rem value r v m q hrem hvalue hlt hval.
+  pose proof (BProv_Ax_s_ltConst_of_eqConst G rem r m hrem hlt)
+    as hltConst.
+  assert (hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (ltAt (S (S rem)) 1)))).
+  {
+    unfold ltAt in *.
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact hltConst.
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tMul (Term.numeral q) (Term.numeral m))
+      (Term.numeral (q * m)) (tVar rem) hmulRaw).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (q * m)) (tVar rem) (Term.numeral r) hrem).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+      (tAdd (Term.numeral (q * m)) (Term.numeral r))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tVar value)
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tVar value) (Term.numeral v)
+      (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+      hvalue
+      (BProv_eqSym Ax_s G
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (Term.numeral v) hcomputed)).
+  }
+  assert (hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (pEq (tVar (S (S value)))
+            (tAdd (tMul (tVar 0) (tVar 1)) (tVar (S (S rem)))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact htarget.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (pAnd (ltAt (S (S rem)) 1)
+            (pEq (tVar (S (S value)))
+              (tAdd (tMul (tVar 0) (tVar 1)) (tVar (S (S rem))))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hltBody hvalueBody).
+  }
+  unfold remAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral m)))
+      (pAnd (ltAt (S (S rem)) 1)
+        (pEq (tVar (S (S value)))
+          (tAdd (tMul (tVar 0) (tVar 1)) (tVar (S (S rem)))))))
+    (Term.numeral q) hbody).
+Qed.
+
+Lemma BProv_Ax_s_remAt_constRemMod_of_eqConst :
+  forall G value r v m q,
+  BProv Ax_s G (eqConstAt value v) ->
+  r < m ->
+  q * m + r = v ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral m))
+      (subst (Term.upSubst (instTerm (Term.numeral r)))
+        (remAt 1 (S (S value)) 0))).
+Proof.
+  intros G value r v m q hvalue hlt hval.
+  pose proof (BProv_Ax_s_ltConst_closed G r m hlt) as hltClosed.
+  assert (hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral r)))) (ltAt 2 1))))).
+  {
+    unfold ltAt in *.
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact hltClosed.
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (Term.numeral m))
+          (Term.numeral r))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tMul (Term.numeral q) (Term.numeral m))
+      (Term.numeral (q * m)) (Term.numeral r) hmulRaw).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (Term.numeral m))
+          (Term.numeral r))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tMul (Term.numeral q) (Term.numeral m)) (Term.numeral r))
+      (tAdd (Term.numeral (q * m)) (Term.numeral r))
+      (Term.numeral v)
+      haddLeft hadd).
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tVar value)
+        (tAdd (tMul (Term.numeral q) (Term.numeral m))
+          (Term.numeral r)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tVar value) (Term.numeral v)
+      (tAdd (tMul (Term.numeral q) (Term.numeral m)) (Term.numeral r))
+      hvalue
+      (BProv_eqSym Ax_s G
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (Term.numeral r))
+        (Term.numeral v) hcomputed)).
+  }
+  assert (hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral r))))
+            (pEq (tVar (S (S (S value))))
+              (tAdd (tMul (tVar 0) (tVar 1)) (tVar 2))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact htarget.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral r))))
+            (pAnd (ltAt 2 1)
+              (pEq (tVar (S (S (S value))))
+                (tAdd (tMul (tVar 0) (tVar 1)) (tVar 2)))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hltBody hvalueBody).
+  }
+  unfold remAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral m)))
+      (subst (Term.upSubst (Term.upSubst
+        (instTerm (Term.numeral r))))
+        (pAnd (ltAt 2 1)
+          (pEq (tVar (S (S (S value))))
+            (tAdd (tMul (tVar 0) (tVar 1)) (tVar 2))))))
+    (Term.numeral q) hbody).
+Qed.
 
 Definition betaModTerm (step idx : nat) : term :=
   tSucc (tMul (tSucc (tVar idx)) (tVar step)).
@@ -8615,6 +10924,526 @@ Definition betaAtSuccIdx (out code step idx : nat) : formula :=
 
 Definition BetaModulus (step idx : nat) : nat :=
   1 + S idx * step.
+
+Lemma BProv_Ax_s_betaModTerm_of_eqConst :
+  forall G step idx s i,
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BProv Ax_s G
+    (pEq (betaModTerm step idx) (Term.numeral (BetaModulus s i))).
+Proof.
+  intros G step idx s i hstep hidx.
+  assert (hidxSuccRaw : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (tSucc (Term.numeral i)))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G (tVar idx)
+      (Term.numeral i) hidx).
+  }
+  assert (hidxSucc : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (Term.numeral (i + 1)))).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hidxSuccRaw.
+  }
+  assert (hmul : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (tVar idx)) (tVar step))
+        (tMul (Term.numeral (i + 1)) (Term.numeral s)))).
+  {
+    exact (BProv_eq_congr_mul Ax_s G
+      (tSucc (tVar idx)) (Term.numeral (i + 1))
+      (tVar step) (Term.numeral s)
+      hidxSucc hstep).
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq
+        (tMul (Term.numeral (i + 1)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmulComputed : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (tVar idx)) (tVar step))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (tSucc (tVar idx)) (tVar step))
+      (tMul (Term.numeral (i + 1)) (Term.numeral s))
+      (Term.numeral ((i + 1) * s))
+      hmul hmulRaw).
+  }
+  assert (hsucc : BProv Ax_s G
+      (pEq
+        (tSucc (tMul (tSucc (tVar idx)) (tVar step)))
+        (tSucc (Term.numeral ((i + 1) * s))))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G
+      (tMul (tSucc (tVar idx)) (tVar step))
+      (Term.numeral ((i + 1) * s)) hmulComputed).
+  }
+  unfold betaModTerm.
+  replace (BetaModulus s i) with (S ((i + 1) * s))
+    by (unfold BetaModulus; lia).
+  simpl.
+  exact hsucc.
+Qed.
+
+Lemma BProv_Ax_s_betaModTerm_constIdx_of_eqConst :
+  forall G step s i,
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G
+    (pEq
+      (tSucc (tMul (tSucc (Term.numeral i)) (tVar step)))
+      (Term.numeral (BetaModulus s i))).
+Proof.
+  intros G step s i hstep.
+  assert (hmulLeftRaw : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (Term.numeral i)) (tVar step))
+        (tMul (tSucc (Term.numeral i)) (Term.numeral s)))).
+  {
+    exact (BProv_eq_congr_mul_right Ax_s G
+      (tSucc (Term.numeral i)) (tVar step) (Term.numeral s) hstep).
+  }
+  assert (hmulLeft : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (Term.numeral i)) (tVar step))
+        (tMul (Term.numeral (i + 1)) (Term.numeral s)))).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hmulLeftRaw.
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq
+        (tMul (Term.numeral (i + 1)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmulComputed : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (Term.numeral i)) (tVar step))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (tSucc (Term.numeral i)) (tVar step))
+      (tMul (Term.numeral (i + 1)) (Term.numeral s))
+      (Term.numeral ((i + 1) * s))
+      hmulLeft hmulRaw).
+  }
+  assert (hsucc : BProv Ax_s G
+      (pEq
+        (tSucc (tMul (tSucc (Term.numeral i)) (tVar step)))
+        (tSucc (Term.numeral ((i + 1) * s))))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G
+      (tMul (tSucc (Term.numeral i)) (tVar step))
+      (Term.numeral ((i + 1) * s)) hmulComputed).
+  }
+  replace (BetaModulus s i) with (S ((i + 1) * s))
+    by (unfold BetaModulus; lia).
+  simpl.
+  exact hsucc.
+Qed.
+
+Lemma BProv_Ax_s_betaAt_of_eqConst :
+  forall G out code step idx o c s i q,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  o < BetaModulus s i ->
+  q * BetaModulus s i + o = c ->
+  BProv Ax_s G (betaAt out code step idx).
+Proof.
+  intros G out code step idx o c s i q hout hcode hstep hidx hlt hval.
+  pose proof (BProv_Ax_s_betaModTerm_of_eqConst
+    G step idx s i hstep hidx) as hmodTerm.
+  assert (hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (pEq (tVar 0) (Term.rename S (betaModTerm step idx))))).
+  {
+    simpl.
+    exact (BProv_eqSym Ax_s G
+      (betaModTerm step idx) (Term.numeral (BetaModulus s i))
+      hmodTerm).
+  }
+  assert (hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (remAt (S out) (S code) 0))).
+  {
+    exact (BProv_Ax_s_remAt_constMod_of_eqConst
+      G out code o c (BetaModulus s i) q hout hcode hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (pAnd
+          (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
+          (remAt (S out) (S code) 0)))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hmodBody hremBody).
+  }
+  unfold betaAt.
+  exact (BProv_exI Ax_s G
+    (pAnd
+      (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
+      (remAt (S out) (S code) 0))
+    (Term.numeral (BetaModulus s i)) hbody).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_constOutSubst_of_eqConst :
+  forall G code step idx o c s i q,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  o < BetaModulus s i ->
+  q * BetaModulus s i + o = c ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral o))
+      (betaAt 0 (S code) (S step) (S idx))).
+Proof.
+  intros G code step idx o c s i q hcode hstep hidx hlt hval.
+  pose proof (BProv_Ax_s_betaModTerm_of_eqConst
+    G step idx s i hstep hidx) as hmodTerm.
+  assert (hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (pEq (tVar 0)
+            (Term.rename S (betaModTerm (S step) (S idx))))))).
+  {
+    simpl.
+    exact (BProv_eqSym Ax_s G
+      (betaModTerm step idx) (Term.numeral (BetaModulus s i))
+      hmodTerm).
+  }
+  assert (hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (remAt 1 (S (S code)) 0)))).
+  {
+    exact (BProv_Ax_s_remAt_constRemMod_of_eqConst
+      G code o c (BetaModulus s i) q hcode hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (pAnd
+            (pEq (tVar 0)
+              (Term.rename S (betaModTerm (S step) (S idx))))
+            (remAt 1 (S (S code)) 0))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hmodBody hremBody).
+  }
+  unfold betaAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral o)))
+      (pAnd
+        (pEq (tVar 0)
+          (Term.rename S (betaModTerm (S step) (S idx))))
+        (remAt 1 (S (S code)) 0)))
+    (Term.numeral (BetaModulus s i)) hbody).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst :
+  forall G code step o c s i q,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  o < BetaModulus s i ->
+  q * BetaModulus s i + o = c ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral i))
+      (subst (Term.upSubst (instTerm (Term.numeral o)))
+        (betaAt 1 (S (S code)) (S (S step)) 0))).
+Proof.
+  intros G code step o c s i q hcode hstep hlt hval.
+  pose proof (BProv_Ax_s_betaModTerm_constIdx_of_eqConst
+    G step s i hstep) as hmodTerm.
+  assert (hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral o))))
+            (pEq (tVar 0)
+              (Term.rename S (betaModTerm (S (S step)) 0))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact (BProv_eqSym Ax_s G
+      (tSucc (tMul (tSucc (Term.numeral i)) (tVar step)))
+      (Term.numeral (BetaModulus s i)) hmodTerm).
+  }
+  pose proof (BProv_Ax_s_remAt_constRemMod_of_eqConst
+    G code o c (BetaModulus s i) q hcode hlt hval) as hremRaw.
+  assert (hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral o))))
+            (remAt 2 (S (S (S code))) 0))))).
+  {
+    unfold remAt, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hremRaw.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral o))))
+            (pAnd
+              (pEq (tVar 0)
+                (Term.rename S (betaModTerm (S (S step)) 0)))
+              (remAt 2 (S (S (S code))) 0)))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hmodBody hremBody).
+  }
+  unfold betaAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral i)))
+      (subst (Term.upSubst (Term.upSubst
+        (instTerm (Term.numeral o))))
+        (pAnd
+          (pEq (tVar 0)
+            (Term.rename S (betaModTerm (S (S step)) 0)))
+          (remAt 2 (S (S (S code))) 0))))
+    (Term.numeral (BetaModulus s i)) hbody).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_constIdxSubst_of_eqConst :
+  forall G out code step o c s i q,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  o < BetaModulus s i ->
+  q * BetaModulus s i + o = c ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral i))
+      (betaAt (S out) (S code) (S step) 0)).
+Proof.
+  intros G out code step o c s i q hout hcode hstep hlt hval.
+  pose proof (BProv_Ax_s_betaModTerm_constIdx_of_eqConst
+    G step s i hstep) as hmodTerm.
+  assert (hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (pEq (tVar 0)
+            (Term.rename S (betaModTerm (S step) 0)))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact (BProv_eqSym Ax_s G
+      (tSucc (tMul (tSucc (Term.numeral i)) (tVar step)))
+      (Term.numeral (BetaModulus s i)) hmodTerm).
+  }
+  pose proof (BProv_Ax_s_remAt_constMod_of_eqConst
+    G out code o c (BetaModulus s i) q hout hcode hlt hval) as hremRaw.
+  assert (hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (remAt (S (S out)) (S (S code)) 0)))).
+  {
+    unfold remAt, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hremRaw.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (pAnd
+            (pEq (tVar 0)
+              (Term.rename S (betaModTerm (S step) 0)))
+            (remAt (S (S out)) (S (S code)) 0))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hmodBody hremBody).
+  }
+  unfold betaAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral i)))
+      (pAnd
+        (pEq (tVar 0)
+          (Term.rename S (betaModTerm (S step) 0)))
+        (remAt (S (S out)) (S (S code)) 0)))
+    (Term.numeral (BetaModulus s i)) hbody).
+Qed.
+
+Lemma BProv_Ax_s_betaAtConstIdx_of_eqConst :
+  forall G out code step o c s idxValue q,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  o < BetaModulus s idxValue ->
+  q * BetaModulus s idxValue + o = c ->
+  BProv Ax_s G (betaAtConstIdx out code step idxValue).
+Proof.
+  intros G out code step o c s idxValue q hout hcode hstep hlt hval.
+  assert (hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (eqConstAt 0 idxValue))).
+  {
+    unfold eqConstAt.
+    simpl.
+    rewrite Term.subst_numeral.
+    apply BProv_eqRefl.
+  }
+  assert (hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (betaAt (S out) (S code) (S step) 0))).
+  {
+    exact (BProv_Ax_s_betaAt_constIdxSubst_of_eqConst
+      G out code step o c s idxValue q hout hcode hstep hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (pAnd (eqConstAt 0 idxValue)
+          (betaAt (S out) (S code) (S step) 0)))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hidxBody hbetaBody).
+  }
+  unfold betaAtConstIdx.
+  exact (BProv_exI Ax_s G
+    (pAnd (eqConstAt 0 idxValue)
+      (betaAt (S out) (S code) (S step) 0))
+    (Term.numeral idxValue) hbody).
+Qed.
+
+Lemma BProv_Ax_s_betaAtSuccIdx_of_eqConst :
+  forall G out code step idx o c s i q,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  o < BetaModulus s (i + 1) ->
+  q * BetaModulus s (i + 1) + o = c ->
+  BProv Ax_s G (betaAtSuccIdx out code step idx).
+Proof.
+  intros G out code step idx o c s i q hout hcode hstep hidx hlt hval.
+  assert (hidxSuccRaw : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (tSucc (Term.numeral i)))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G (tVar idx)
+      (Term.numeral i) hidx).
+  }
+  assert (hidxSuccForward : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (Term.numeral (i + 1)))).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hidxSuccRaw.
+  }
+  assert (hidxSucc : BProv Ax_s G
+      (pEq (Term.numeral (i + 1)) (tSucc (tVar idx)))).
+  {
+    exact (BProv_eqSym Ax_s G
+      (tSucc (tVar idx)) (Term.numeral (i + 1)) hidxSuccForward).
+  }
+  assert (hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (pEq (tVar 0) (tSucc (tVar (S idx)))))).
+  {
+    simpl.
+    exact hidxSucc.
+  }
+  assert (hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (betaAt (S out) (S code) (S step) 0))).
+  {
+    exact (BProv_Ax_s_betaAt_constIdxSubst_of_eqConst
+      G out code step o c s (i + 1) q hout hcode hstep hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (pAnd
+          (pEq (tVar 0) (tSucc (tVar (S idx))))
+          (betaAt (S out) (S code) (S step) 0)))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hidxBody hbetaBody).
+  }
+  unfold betaAtSuccIdx.
+  exact (BProv_exI Ax_s G
+    (pAnd
+      (pEq (tVar 0) (tSucc (tVar (S idx))))
+      (betaAt (S out) (S code) (S step) 0))
+    (Term.numeral (i + 1)) hbody).
+Qed.
+
+Lemma BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst :
+  forall G code step idx o c s i q,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  o < BetaModulus s (i + 1) ->
+  q * BetaModulus s (i + 1) + o = c ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral o))
+      (betaAtSuccIdx 0 (S code) (S step) (S idx))).
+Proof.
+  intros G code step idx o c s i q hcode hstep hidx hlt hval.
+  assert (hidxSuccRaw : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (tSucc (Term.numeral i)))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G (tVar idx)
+      (Term.numeral i) hidx).
+  }
+  assert (hidxSuccForward : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (Term.numeral (i + 1)))).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hidxSuccRaw.
+  }
+  assert (hidxSucc : BProv Ax_s G
+      (pEq (Term.numeral (i + 1)) (tSucc (tVar idx)))).
+  {
+    exact (BProv_eqSym Ax_s G
+      (tSucc (tVar idx)) (Term.numeral (i + 1)) hidxSuccForward).
+  }
+  assert (hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (pEq (tVar 0) (tSucc (tVar (S (S idx)))))))).
+  {
+    simpl.
+    exact hidxSucc.
+  }
+  assert (hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (betaAt 1 (S (S code)) (S (S step)) 0)))).
+  {
+    exact (BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst
+      G code step o c s (i + 1) q hcode hstep hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (pAnd
+            (pEq (tVar 0) (tSucc (tVar (S (S idx)))))
+            (betaAt 1 (S (S code)) (S (S step)) 0))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hidxBody hbetaBody).
+  }
+  unfold betaAtSuccIdx.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral o)))
+      (pAnd
+        (pEq (tVar 0) (tSucc (tVar (S (S idx)))))
+        (betaAt 1 (S (S code)) (S (S step)) 0)))
+    (Term.numeral (i + 1)) hbody).
+Qed.
 
 Definition BetaEntry (code step idx value : nat) : Prop :=
   exists q, code = q * BetaModulus step idx + value /\
@@ -8668,6 +11497,11 @@ Definition betaDiv2StepsThroughAt (code step last : nat) : formula :=
   pAll (pImp (leAt 0 (S last))
     (betaDiv2StepWitnessAt (S code) (S step) 0)).
 
+Definition betaDiv2StepsThroughConstAt
+    (code step last : nat) : formula :=
+  pAll (pImp (leConstAt 0 last)
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
 Definition betaDiv2BitAt (bit code step idx : nat) : formula :=
   pEx (pEx
     (pAnd
@@ -8675,6 +11509,912 @@ Definition betaDiv2BitAt (bit code step idx : nat) : formula :=
       (pAnd
         (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
         (div2StepAt 1 0 (S (S bit)))))).
+
+Lemma BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst :
+  forall G code step idx c s i cur next bit qcur qnext,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  cur < BetaModulus s i ->
+  qcur * BetaModulus s i + cur = c ->
+  next < BetaModulus s (i + 1) ->
+  qnext * BetaModulus s (i + 1) + next = c ->
+  bit = 0 \/ bit = 1 ->
+  next + next + bit = cur ->
+  BProv Ax_s G (betaDiv2StepWitnessAt code step idx).
+Proof.
+  intros G code step idx c s i cur next bit qcur qnext
+    hcode hstep hidx hcurLt hcurVal hnextLt hnextVal hbit hdiv.
+  set (body :=
+    pAnd
+      (betaAt 2 (S (S (S code))) (S (S (S step)))
+        (S (S (S idx))))
+      (pAnd
+        (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+          (S (S (S idx))))
+        (div2StepAt 2 1 0))).
+  pose proof (BProv_Ax_s_betaAt_constOutSubst_of_eqConst
+    G code step idx cur c s i qcur
+    hcode hstep hidx hcurLt hcurVal) as hcurRaw.
+  assert (hcurBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral next)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral cur))))
+            (betaAt 2 (S (S (S code))) (S (S (S step)))
+              (S (S (S idx)))))))).
+  {
+    unfold betaAt, remAt, betaModTerm, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hcurRaw.
+  }
+  pose proof (BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
+    G code step idx next c s i qnext
+    hcode hstep hidx hnextLt hnextVal) as hnextRaw.
+  assert (hnextBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral next)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral cur))))
+            (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+              (S (S (S idx)))))))).
+  {
+    unfold betaAtSuccIdx, betaAt, remAt, betaModTerm, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hnextRaw.
+  }
+  assert (hdivBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral next)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral cur))))
+            (div2StepAt 2 1 0))))).
+  {
+    exact (BProv_Ax_s_div2StepAt_closedSubst
+      G cur next bit hbit hdiv).
+  }
+  assert (htail : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral next)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral cur))))
+            (pAnd
+              (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+                (S (S (S idx))))
+              (div2StepAt 2 1 0)))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hnextBeta hdivBody).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral next)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral cur)))) body)))).
+  {
+    unfold body.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hcurBeta htail).
+  }
+  assert (hbitEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (pEx body)))).
+  {
+    simpl.
+    exact (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm (Term.numeral next)))
+        (subst (Term.upSubst (Term.upSubst
+          (instTerm (Term.numeral cur)))) body))
+      (Term.numeral bit) hbody).
+  }
+  assert (hnextEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral cur))
+        (pEx (pEx body)))).
+  {
+    simpl.
+    exact (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm (Term.numeral cur)))
+        (pEx body))
+      (Term.numeral next) hbitEx).
+  }
+  unfold betaDiv2StepWitnessAt.
+  fold body.
+  exact (BProv_exI Ax_s G
+    (pEx (pEx body)) (Term.numeral cur) hnextEx).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2BitAt_of_eqConst :
+  forall G bit code step idx b c s i cur next qcur qnext,
+  BProv Ax_s G (eqConstAt bit b) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  cur < BetaModulus s i ->
+  qcur * BetaModulus s i + cur = c ->
+  next < BetaModulus s (i + 1) ->
+  qnext * BetaModulus s (i + 1) + next = c ->
+  b = 0 \/ b = 1 ->
+  next + next + b = cur ->
+  BProv Ax_s G (betaDiv2BitAt bit code step idx).
+Proof.
+  intros G bit code step idx b c s i cur next qcur qnext
+    hbit hcode hstep hidx hcurLt hcurVal hnextLt hnextVal hb hdiv.
+  set (body :=
+    pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit))))).
+  pose proof (BProv_Ax_s_betaAt_constOutSubst_of_eqConst
+    G code step idx cur c s i qcur
+    hcode hstep hidx hcurLt hcurVal) as hcurRaw.
+  assert (hcurBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))))).
+  {
+    unfold betaAt, remAt, betaModTerm, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hcurRaw.
+  }
+  pose proof (BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
+    G code step idx next c s i qnext
+    hcode hstep hidx hnextLt hnextVal) as hnextRaw.
+  assert (hnextBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))))).
+  {
+    unfold betaAtSuccIdx, betaAt, remAt, betaModTerm, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hnextRaw.
+  }
+  assert (hdivBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (div2StepAt 1 0 (S (S bit)))))).
+  {
+    exact (BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
+      G bit b cur next hbit hb hdiv).
+  }
+  assert (htail : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (pAnd
+            (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+            (div2StepAt 1 0 (S (S bit))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hnextBeta hdivBody).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur))) body))).
+  {
+    unfold body.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hcurBeta htail).
+  }
+  assert (hnextEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral cur)) (pEx body))).
+  {
+    simpl.
+    exact (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm (Term.numeral cur))) body)
+      (Term.numeral next) hbody).
+  }
+  unfold betaDiv2BitAt.
+  fold body.
+  exact (BProv_exI Ax_s G (pEx body) (Term.numeral cur) hnextEx).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_of_eqConst_entry :
+  forall G out code step idx o c s i,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s i o ->
+  BProv Ax_s G (betaAt out code step idx).
+Proof.
+  intros G out code step idx o c s i hout hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAt_of_eqConst
+    G out code step idx o c s i q
+    hout hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_constOutSubst_of_eqConst_entry :
+  forall G code step idx o c s i,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s i o ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral o))
+      (betaAt 0 (S code) (S step) (S idx))).
+Proof.
+  intros G code step idx o c s i hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAt_constOutSubst_of_eqConst
+    G code step idx o c s i q
+    hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst_entry :
+  forall G code step o c s i,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaEntry c s i o ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral i))
+      (subst (Term.upSubst (instTerm (Term.numeral o)))
+        (betaAt 1 (S (S code)) (S (S step)) 0))).
+Proof.
+  intros G code step o c s i hcode hstep hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst
+    G code step o c s i q hcode hstep hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAtConstIdx_of_eqConst_entry :
+  forall G out code step o c s idxValue,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaEntry c s idxValue o ->
+  BProv Ax_s G (betaAtConstIdx out code step idxValue).
+Proof.
+  intros G out code step o c s idxValue hout hcode hstep hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAtConstIdx_of_eqConst
+    G out code step o c s idxValue q
+    hout hcode hstep hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAtSuccIdx_of_eqConst_entry :
+  forall G out code step idx o c s i,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s (i + 1) o ->
+  BProv Ax_s G (betaAtSuccIdx out code step idx).
+Proof.
+  intros G out code step idx o c s i hout hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAtSuccIdx_of_eqConst
+    G out code step idx o c s i q
+    hout hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst_entry :
+  forall G code step idx o c s i,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s (i + 1) o ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral o))
+      (betaAtSuccIdx 0 (S code) (S step) (S idx))).
+Proof.
+  intros G code step idx o c s i hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
+    G code step idx o c s i q
+    hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step :
+  forall G code step idx c s i cur next bit,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaDiv2Step c s i cur next bit ->
+  BProv Ax_s G (betaDiv2StepWitnessAt code step idx).
+Proof.
+  intros G code step idx c s i cur next bit
+    hcode hstep hidx hdivStep.
+  destruct hdivStep as [hcur [hnext [hbit hdiv]]].
+  destruct hcur as [qcur [hcurVal hcurLt]].
+  destruct hnext as [qnext [hnextVal hnextLt]].
+  assert (hnextLt' : next < BetaModulus s (i + 1)).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hnextLt.
+  }
+  assert (hnextVal' : qnext * BetaModulus s (i + 1) + next = c).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact (eq_sym hnextVal).
+  }
+  exact (BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst
+    G code step idx c s i cur next bit qcur qnext
+    hcode hstep hidx hcurLt (eq_sym hcurVal)
+    hnextLt' hnextVal' hbit (eq_sym hdiv)).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2BitAt_of_eqConst_step :
+  forall G bit code step idx b c s i cur next,
+  BProv Ax_s G (eqConstAt bit b) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaDiv2Step c s i cur next b ->
+  BProv Ax_s G (betaDiv2BitAt bit code step idx).
+Proof.
+  intros G bit code step idx b c s i cur next
+    hbit hcode hstep hidx hdivStep.
+  destruct hdivStep as [hcur [hnext [hb hdiv]]].
+  destruct hcur as [qcur [hcurVal hcurLt]].
+  destruct hnext as [qnext [hnextVal hnextLt]].
+  assert (hnextLt' : next < BetaModulus s (i + 1)).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hnextLt.
+  }
+  assert (hnextVal' : qnext * BetaModulus s (i + 1) + next = c).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact (eq_sym hnextVal).
+  }
+  exact (BProv_Ax_s_betaDiv2BitAt_of_eqConst
+    G bit code step idx b c s i cur next qcur qnext
+    hbit hcode hstep hidx hcurLt (eq_sym hcurVal)
+    hnextLt' hnextVal' hb (eq_sym hdiv)).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero :
+  forall G code step idx,
+  BProv Ax_s G (eqConstAt 2 0) ->
+  BProv Ax_s G
+    (pAnd
+      (betaAt 2 (S (S (S code))) (S (S (S step)))
+        (S (S (S idx))))
+      (pAnd
+        (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+          (S (S (S idx))))
+        (div2StepAt 2 1 0))) ->
+  BProv Ax_s G (eqConstAt 1 0).
+Proof.
+  intros G code step idx hcurZero hbody.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAt 2 (S (S (S code))) (S (S (S step)))
+      (S (S (S idx))))
+    (pAnd
+      (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+        (S (S (S idx))))
+      (div2StepAt 2 1 0)) hbody) as htail.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+      (S (S (S idx))))
+    (div2StepAt 2 1 0) htail) as hstep.
+  exact (BProv_Ax_s_div2StepAt_zero_half_zero
+    G 2 1 0 hcurZero hstep).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot :
+  forall G bit code step idx,
+  BProv Ax_s G (eqConstAt 1 0) ->
+  BProv Ax_s G (eqConstAt (S (S bit)) 1) ->
+  BProv Ax_s G
+    (pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit))))) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G bit code step idx hcurZero hbitOne hbody.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+    (pAnd
+      (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+      (div2StepAt 1 0 (S (S bit)))) hbody) as htail.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+    (div2StepAt 1 0 (S (S bit))) htail) as hstep.
+  exact (BProv_Ax_s_div2StepAt_zero_one_bot
+    G 1 0 (S (S bit)) hcurZero hbitOne hstep).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2BitAt_current_zero_bot :
+  forall G bit code step idx,
+  BProv Ax_s G (eqConstAt bit 1) ->
+  (let body :=
+    pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit)))) in
+    BProv Ax_s
+      (body :: map (rename S) (pEx body :: map (rename S) G))
+      (eqConstAt 1 0)) ->
+  BProv Ax_s G (betaDiv2BitAt bit code step idx) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G bit code step idx hbitOne hcurZero hbitAt.
+  set (body :=
+    pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit))))).
+  change (BProv Ax_s
+    (body :: map (rename S) (pEx body :: map (rename S) G))
+    (eqConstAt 1 0)) in hcurZero.
+  assert (hbitRen1 : BProv Ax_s (map (rename S) G)
+      (eqConstAt (S bit) 1)).
+  {
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt bit 1) hbitOne S) as h.
+    unfold eqConstAt.
+    simpl.
+    exact h.
+  }
+  assert (hbitRen2 : BProv Ax_s (map (rename S) (map (rename S) G))
+      (eqConstAt (S (S bit)) 1)).
+  {
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+      (map (rename S) G) (eqConstAt (S bit) 1) hbitRen1 S) as h.
+    unfold eqConstAt.
+    simpl.
+    exact h.
+  }
+  assert (houter : BProv Ax_s (pEx body :: map (rename S) G) pBot).
+  {
+    assert (hex : BProv Ax_s (pEx body :: map (rename S) G)
+        (pEx body)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (hinner : BProv Ax_s
+        (body :: map (rename S) (pEx body :: map (rename S) G))
+        pBot).
+    {
+      assert (hbody : BProv Ax_s
+          (body :: map (rename S) (pEx body :: map (rename S) G))
+          body).
+      {
+        apply BProv_ass.
+        simpl. left. reflexivity.
+      }
+      assert (hbitCtx : BProv Ax_s
+          (body :: map (rename S) (pEx body :: map (rename S) G))
+          (eqConstAt (S (S bit)) 1)).
+      {
+        pose proof (BProv_context_cons Ax_s
+          (map (rename S) (map (rename S) G))
+          (rename S (pEx body))
+          (eqConstAt (S (S bit)) 1) hbitRen2) as h1.
+        pose proof (BProv_context_cons Ax_s
+          (rename S (pEx body) :: map (rename S) (map (rename S) G))
+          body (eqConstAt (S (S bit)) 1) h1) as h2.
+        simpl in h2.
+        exact h2.
+      }
+      exact (BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
+        (body :: map (rename S) (pEx body :: map (rename S) G))
+        bit code step idx hcurZero hbitCtx hbody).
+    }
+    exact (BProv_exE_of_sentences Ax_s
+      (pEx body :: map (rename S) G) body pBot
+      sentence_ax_s hex hinner).
+  }
+  assert (hbitAt' : BProv Ax_s G (pEx (pEx body))).
+  {
+    unfold betaDiv2BitAt in hbitAt.
+    fold body in hbitAt.
+    exact hbitAt.
+  }
+  exact (BProv_exE_of_sentences Ax_s G (pEx body) pBot
+    sentence_ax_s hbitAt' houter).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step :
+  forall G code step last c s cur next bit,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt last 0) ->
+  BetaDiv2Step c s 0 cur next bit ->
+  BProv Ax_s G (betaDiv2StepsThroughAt code step last).
+Proof.
+  intros G code step last c s cur next bit
+    hcode hstep hlast hdivStep.
+  set (leHyp := leAt 0 (S last)).
+  assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
+  {
+    apply BProv_ass.
+    simpl. left. reflexivity.
+  }
+  assert (hcodeRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt code c))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt code c) hcode S).
+  }
+  assert (hstepRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt step s))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt step s) hstep S).
+  }
+  assert (hlastRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt last 0))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt last 0) hlast S).
+  }
+  assert (hcodeBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S code) c)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt code c)) hcodeRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  assert (hstepBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S step) s)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt step s)) hstepRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  assert (hlastBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S last) 0)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt last 0)) hlastRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    exact h.
+  }
+  pose proof (BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero
+    (leHyp :: map (rename S) G) 0 (S last)
+    hle hlastBody) as hidxZero.
+  pose proof (BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+    (leHyp :: map (rename S) G)
+    (S code) (S step) 0 c s 0 cur next bit
+    hcodeBody hstepBody hidxZero hdivStep) as hwitness.
+  pose proof (BProv_impI Ax_s (map (rename S) G) leHyp
+    (betaDiv2StepWitnessAt (S code) (S step) 0) hwitness) as himp.
+  unfold betaDiv2StepsThroughAt.
+  fold leHyp.
+  exact (BProv_allI_of_sentences Ax_s G
+    (pImp leHyp (betaDiv2StepWitnessAt (S code) (S step) 0))
+    sentence_ax_s himp).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step :
+  forall G code step c s cur next bit,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaDiv2Step c s 0 cur next bit ->
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step 0).
+Proof.
+  intros G code step c s cur next bit hcode hstep hdivStep.
+  set (leHyp := leConstAt 0 0).
+  assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
+  {
+    apply BProv_ass.
+    simpl. left. reflexivity.
+  }
+  assert (hcodeRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt code c))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt code c) hcode S).
+  }
+  assert (hstepRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt step s))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt step s) hstep S).
+  }
+  assert (hcodeBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S code) c)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt code c)) hcodeRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  assert (hstepBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S step) s)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt step s)) hstepRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  pose proof (BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero
+    (leHyp :: map (rename S) G) 0 hle) as hidxZero.
+  pose proof (BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+    (leHyp :: map (rename S) G)
+    (S code) (S step) 0 c s 0 cur next bit
+    hcodeBody hstepBody hidxZero hdivStep) as hwitness.
+  pose proof (BProv_impI Ax_s (map (rename S) G) leHyp
+    (betaDiv2StepWitnessAt (S code) (S step) 0) hwitness) as himp.
+  unfold betaDiv2StepsThroughConstAt.
+  fold leHyp.
+  exact (BProv_allI_of_sentences Ax_s G
+    (pImp leHyp (betaDiv2StepWitnessAt (S code) (S step) 0))
+    sentence_ax_s himp).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step :
+  forall G code step c s n cur next bit,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step n) ->
+  BetaDiv2Step c s (S n) cur next bit ->
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step (S n)).
+Proof.
+  intros G code step c s n cur next bit
+    hcode hstep hprev hdivStep.
+  set (leHyp := leConstAt 0 (S n)).
+  set (witness := betaDiv2StepWitnessAt (S code) (S step) 0).
+  assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
+  {
+    apply BProv_ass.
+    simpl. left. reflexivity.
+  }
+  pose proof (BProv_Ax_s_leConstAt_succ_cases
+    (leHyp :: map (rename S) G) 0 n hle) as hcases.
+  assert (hcodeRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt code c))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt code c) hcode S).
+  }
+  assert (hstepRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt step s))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt step s) hstep S).
+  }
+  assert (hprevRen : BProv Ax_s (map (rename S) G)
+      (rename S (betaDiv2StepsThroughConstAt code step n))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (betaDiv2StepsThroughConstAt code step n) hprev S).
+  }
+  assert (hleft : BProv Ax_s
+      (leConstAt 0 n :: leHyp :: map (rename S) G) witness).
+  {
+    set (C := leConstAt 0 n :: leHyp :: map (rename S) G).
+    assert (hprevCtx : BProv Ax_s C
+        (rename S (betaDiv2StepsThroughConstAt code step n))).
+    {
+      unfold C.
+      exact (BProv_context_cons Ax_s
+        (leHyp :: map (rename S) G) (leConstAt 0 n)
+        (rename S (betaDiv2StepsThroughConstAt code step n))
+        (BProv_context_cons Ax_s (map (rename S) G) leHyp
+          (rename S (betaDiv2StepsThroughConstAt code step n))
+          hprevRen)).
+    }
+    assert (hprevAll : BProv Ax_s C
+        (betaDiv2StepsThroughConstAt (S code) (S step) n)).
+    {
+      unfold C in *.
+      unfold betaDiv2StepsThroughConstAt, betaDiv2StepWitnessAt,
+        betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+        zeroAt, oneAt, eqConstAt, leConstAt, betaModTerm in *.
+      simpl in *.
+      repeat rewrite Term.rename_numeral in *.
+      exact hprevCtx.
+    }
+    pose proof (BProv_allE Ax_s C _ (tVar 0) hprevAll) as himpRaw.
+    assert (himp : BProv Ax_s C (pImp (leConstAt 0 n) witness)).
+    {
+      unfold C, witness in *.
+      unfold betaDiv2StepsThroughConstAt, leConstAt,
+        betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+        div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm in *.
+      simpl in *.
+      repeat rewrite Term.rename_numeral in *.
+      repeat rewrite Term.subst_numeral in *.
+      repeat rewrite term_subst_instTerm_rename_succ in *.
+      exact himpRaw.
+    }
+    assert (hleN : BProv Ax_s C (leConstAt 0 n)).
+    {
+      unfold C.
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    exact (BProv_mp Ax_s C (leConstAt 0 n) witness himp hleN).
+  }
+  assert (hright : BProv Ax_s
+      (eqConstAt 0 (S n) :: leHyp :: map (rename S) G) witness).
+  {
+    set (C := eqConstAt 0 (S n) :: leHyp :: map (rename S) G).
+    assert (hidx : BProv Ax_s C (eqConstAt 0 (S n))).
+    {
+      unfold C.
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (hcodeBody : BProv Ax_s C (eqConstAt (S code) c)).
+    {
+      unfold C.
+      pose proof (BProv_context_cons Ax_s
+        (leHyp :: map (rename S) G) (eqConstAt 0 (S n))
+        (rename S (eqConstAt code c))
+        (BProv_context_cons Ax_s (map (rename S) G) leHyp
+          (rename S (eqConstAt code c)) hcodeRen)) as h.
+      unfold eqConstAt in *.
+      simpl in *.
+      rewrite Term.rename_numeral in h.
+      exact h.
+    }
+    assert (hstepBody : BProv Ax_s C (eqConstAt (S step) s)).
+    {
+      unfold C.
+      pose proof (BProv_context_cons Ax_s
+        (leHyp :: map (rename S) G) (eqConstAt 0 (S n))
+        (rename S (eqConstAt step s))
+        (BProv_context_cons Ax_s (map (rename S) G) leHyp
+          (rename S (eqConstAt step s)) hstepRen)) as h.
+      unfold eqConstAt in *.
+      simpl in *.
+      rewrite Term.rename_numeral in h.
+      exact h.
+    }
+    unfold witness.
+    exact (BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+      C (S code) (S step) 0 c s (S n) cur next bit
+      hcodeBody hstepBody hidx hdivStep).
+  }
+  pose proof (BProv_orE Ax_s (leHyp :: map (rename S) G)
+    (leConstAt 0 n) (eqConstAt 0 (S n)) witness
+    hcases hleft hright) as hbody.
+  pose proof (BProv_impI Ax_s (map (rename S) G) leHyp
+    witness hbody) as himp.
+  unfold betaDiv2StepsThroughConstAt.
+  fold leHyp.
+  fold witness.
+  exact (BProv_allI_of_sentences Ax_s G (pImp leHyp witness)
+    sentence_ax_s himp).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst :
+  forall G code step last n,
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step n) ->
+  BProv Ax_s G (eqConstAt last n) ->
+  BProv Ax_s G (betaDiv2StepsThroughAt code step last).
+Proof.
+  intros G code step last n hconst hlast.
+  set (leHyp := leAt 0 (S last)).
+  set (witness := betaDiv2StepWitnessAt (S code) (S step) 0).
+  assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
+  {
+    apply BProv_ass.
+    simpl. left. reflexivity.
+  }
+  assert (hlastRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt last n))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt last n) hlast S).
+  }
+  assert (hconstRen : BProv Ax_s (map (rename S) G)
+      (rename S (betaDiv2StepsThroughConstAt code step n))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (betaDiv2StepsThroughConstAt code step n) hconst S).
+  }
+  assert (hlastBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S last) n)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt last n)) hlastRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  pose proof (BProv_Ax_s_leConstAt_of_leAt_eqConst
+    (leHyp :: map (rename S) G) 0 (S last) n
+    hle hlastBody) as hleConst.
+  assert (hconstAll : BProv Ax_s (leHyp :: map (rename S) G)
+      (betaDiv2StepsThroughConstAt (S code) (S step) n)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (betaDiv2StepsThroughConstAt code step n))
+      hconstRen) as hctx.
+    unfold betaDiv2StepsThroughConstAt, betaDiv2StepWitnessAt,
+      betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, leConstAt, betaModTerm in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    exact hctx.
+  }
+  pose proof (BProv_allE Ax_s (leHyp :: map (rename S) G)
+    _ (tVar 0) hconstAll) as himpRaw.
+  assert (himp : BProv Ax_s (leHyp :: map (rename S) G)
+      (pImp (leConstAt 0 n) witness)).
+  {
+    unfold witness in *.
+    unfold betaDiv2StepsThroughConstAt, leConstAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+      div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    repeat rewrite term_subst_instTerm_rename_succ in *.
+    exact himpRaw.
+  }
+  pose proof (BProv_mp Ax_s (leHyp :: map (rename S) G)
+    (leConstAt 0 n) witness himp hleConst) as hwitness.
+  pose proof (BProv_impI Ax_s (map (rename S) G)
+    leHyp witness hwitness) as hfinal.
+  unfold betaDiv2StepsThroughAt.
+  fold leHyp.
+  fold witness.
+  exact (BProv_allI_of_sentences Ax_s G (pImp leHyp witness)
+    sentence_ax_s hfinal).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace :
+  forall G code step c s n,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaDiv2StepsThrough c s n ->
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step n).
+Proof.
+  intros G code step c s n.
+  revert G code step c s.
+  induction n as [|n ih]; intros G code step c s hcode hstep htrace.
+  - destruct (htrace 0 ltac:(lia)) as [cur [next [bit hdivStep]]].
+    exact (BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
+      G code step c s cur next bit hcode hstep hdivStep).
+  - assert (hprevTrace : BetaDiv2StepsThrough c s n).
+    {
+      intros k hk.
+      exact (htrace k ltac:(lia)).
+    }
+    pose proof (ih G code step c s hcode hstep hprevTrace) as hprev.
+    destruct (htrace (S n) ltac:(lia)) as [cur [next [bit hdivStep]]].
+    exact (BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step
+      G code step c s n cur next bit hcode hstep hprev hdivStep).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace :
+  forall G code step last c s n,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt last n) ->
+  BetaDiv2StepsThrough c s n ->
+  BProv Ax_s G (betaDiv2StepsThroughAt code step last).
+Proof.
+  intros G code step last c s n hcode hstep hlast htrace.
+  exact (BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst
+    G code step last n
+    (BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace
+      G code step c s n hcode hstep htrace)
+    hlast).
+Qed.
 
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
@@ -8686,6 +12426,496 @@ Definition hfMemAt (elem set : nat) : formula :=
           (pAnd
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
+
+Lemma BProv_Ax_s_hfMemAt_bitOneEx_of_bit :
+  forall G elem code step,
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral 1))
+      (subst (Term.upSubst (instTerm (Term.numeral step)))
+        (subst (Term.upSubst (Term.upSubst
+          (instTerm (Term.numeral code))))
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem)))))))).
+Proof.
+  intros G elem code step hbit.
+  set (bitBody :=
+    pAnd
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (S (S (S elem))))).
+  assert (hone : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral code))))
+            (oneAt 0))))).
+  {
+    unfold oneAt, eqConstAt.
+    simpl.
+    repeat rewrite Term.subst_numeral.
+    apply BProv_eqRefl.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral code)))) bitBody)))).
+  {
+    unfold bitBody.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hone hbit).
+  }
+  unfold bitBody.
+  simpl.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral step)))
+      (subst (Term.upSubst (Term.upSubst
+        (instTerm (Term.numeral code))))
+        (pAnd
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (S (S (S elem)))))))
+    (Term.numeral 1) hbody).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_closed_components :
+  forall G elem set code step,
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaAtConstIdx (S (S set)) 1 0 0))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem)))))))) ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set code step hentry hsteps hbitEx.
+  set (bitEx :=
+    pEx
+      (pAnd
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (S (S (S elem)))))).
+  set (tail :=
+    pAnd
+      (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+      bitEx).
+  set (body :=
+    pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      tail).
+  assert (htail : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code))) tail))).
+  {
+    unfold tail, bitEx.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hsteps hbitEx).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code))) body))).
+  {
+    unfold body, tail, bitEx.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hentry htail).
+  }
+  assert (hstepEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral code)) (pEx body))).
+  {
+    simpl.
+    exact (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm (Term.numeral code))) body)
+      (Term.numeral step) hbody).
+  }
+  unfold hfMemAt.
+  fold bitEx.
+  fold tail.
+  fold body.
+  exact (BProv_exI Ax_s G (pEx body) (Term.numeral code) hstepEx).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_closed_bit_components :
+  forall G elem set code step,
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaAtConstIdx (S (S set)) 1 0 0))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral 1))
+      (subst (Term.upSubst (instTerm (Term.numeral step)))
+        (subst (Term.upSubst (Term.upSubst
+          (instTerm (Term.numeral code))))
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))))) ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set code step hentry hsteps hbit.
+  exact (BProv_Ax_s_hfMemAt_of_closed_components
+    G elem set code step hentry hsteps
+    (BProv_Ax_s_hfMemAt_bitOneEx_of_bit
+      G elem code step hbit)).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry :
+  forall G set setValue code step,
+  BProv Ax_s G (eqConstAt set setValue) ->
+  BetaEntry code step 0 setValue ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaAtConstIdx (S (S set)) 1 0 0))).
+Proof.
+  intros G set setValue code step hset hentry.
+  set (H := [
+    eqConstAt (S (S set)) setValue;
+    eqConstAt 1 code;
+    eqConstAt 0 step]).
+  set (sigmaCode := Term.upSubst (instTerm (Term.numeral code))).
+  set (sigmaStep := instTerm (Term.numeral step)).
+  assert (hsetH : BProv Ax_s H (eqConstAt (S (S set)) setValue)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. left. reflexivity.
+  }
+  assert (hcodeH : BProv Ax_s H (eqConstAt 1 code)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. left. reflexivity.
+  }
+  assert (hstepH : BProv Ax_s H (eqConstAt 0 step)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. left. reflexivity.
+  }
+  pose proof (BProv_Ax_s_betaAtConstIdx_of_eqConst_entry
+    H (S (S set)) 1 0 setValue code step 0
+    hsetH hcodeH hstepH hentry) as hopen.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s H
+    (betaAtConstIdx (S (S set)) 1 0 0) hopen sigmaCode)
+    as hsubstCode.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaCode) H)
+    (subst sigmaCode (betaAtConstIdx (S (S set)) 1 0 0))
+    hsubstCode sigmaStep) as hsubst.
+  eapply BProv_cut.
+  - exact hsubst.
+  - intros g hg.
+    unfold H in hg.
+    simpl in hg.
+    destruct hg as [hg | [hg | [hg | []]]]; subst g;
+      unfold sigmaCode, sigmaStep, eqConstAt in *;
+      simpl in *;
+      repeat rewrite Term.rename_numeral in *;
+      repeat rewrite Term.subst_numeral in *.
+    + exact hset.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit :
+  forall G elem elemValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BetaDiv2Bit code step elemValue 1 ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral 1))
+      (subst (Term.upSubst (instTerm (Term.numeral step)))
+        (subst (Term.upSubst (Term.upSubst
+          (instTerm (Term.numeral code))))
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))))).
+Proof.
+  intros G elem elemValue code step helem hbit.
+  destruct hbit as [cur [next hstepBit]].
+  set (H := [
+    eqConstAt (S (S (S elem))) elemValue;
+    eqConstAt 2 code;
+    eqConstAt 1 step;
+    eqConstAt 0 1]).
+  set (sigmaCode :=
+    Term.upSubst (Term.upSubst (instTerm (Term.numeral code)))).
+  set (sigmaStep := Term.upSubst (instTerm (Term.numeral step))).
+  set (sigmaBit := instTerm (Term.numeral 1)).
+  assert (helemH : BProv Ax_s H
+      (eqConstAt (S (S (S elem))) elemValue)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. left. reflexivity.
+  }
+  assert (hcodeH : BProv Ax_s H (eqConstAt 2 code)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. left. reflexivity.
+  }
+  assert (hstepH : BProv Ax_s H (eqConstAt 1 step)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. left. reflexivity.
+  }
+  assert (hbitH : BProv Ax_s H (eqConstAt 0 1)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. right. left. reflexivity.
+  }
+  pose proof (BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
+    H 0 2 1 (S (S (S elem))) 1 code step elemValue cur next
+    hbitH hcodeH hstepH helemH hstepBit) as hopen.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s H
+    (betaDiv2BitAt 0 2 1 (S (S (S elem)))) hopen sigmaCode)
+    as hsubstCode.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaCode) H)
+    (subst sigmaCode (betaDiv2BitAt 0 2 1 (S (S (S elem)))))
+    hsubstCode sigmaStep) as hsubstStep.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaStep) (map (subst sigmaCode) H))
+    (subst sigmaStep
+      (subst sigmaCode (betaDiv2BitAt 0 2 1 (S (S (S elem))))))
+    hsubstStep sigmaBit) as hsubst.
+  eapply BProv_cut.
+  - exact hsubst.
+  - intros g hg.
+    unfold H in hg.
+    simpl in hg.
+    destruct hg as [hg | [hg | [hg | [hg | []]]]]; subst g;
+      unfold sigmaCode, sigmaStep, sigmaBit, eqConstAt in *;
+      simpl in *;
+      repeat rewrite Term.rename_numeral in *;
+      repeat rewrite Term.subst_numeral in *.
+    + exact helem.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace :
+  forall G elem elemValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BetaDiv2StepsThrough code step elemValue ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))).
+Proof.
+  intros G elem elemValue code step helem hthrough.
+  set (H := [
+    eqConstAt (S (S elem)) elemValue;
+    eqConstAt 1 code;
+    eqConstAt 0 step]).
+  set (sigmaCode := Term.upSubst (instTerm (Term.numeral code))).
+  set (sigmaStep := instTerm (Term.numeral step)).
+  assert (helemH : BProv Ax_s H (eqConstAt (S (S elem)) elemValue)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. left. reflexivity.
+  }
+  assert (hcodeH : BProv Ax_s H (eqConstAt 1 code)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. left. reflexivity.
+  }
+  assert (hstepH : BProv Ax_s H (eqConstAt 0 step)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. left. reflexivity.
+  }
+  pose proof (BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace
+    H 1 0 (S (S elem)) code step elemValue
+    hcodeH hstepH helemH hthrough) as hopen.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s H
+    (betaDiv2StepsThroughAt 1 0 (S (S elem))) hopen sigmaCode)
+    as hsubstCode.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaCode) H)
+    (subst sigmaCode (betaDiv2StepsThroughAt 1 0 (S (S elem))))
+    hsubstCode sigmaStep) as hsubst.
+  eapply BProv_cut.
+  - exact hsubst.
+  - intros g hg.
+    unfold H in hg.
+    simpl in hg.
+    destruct hg as [hg | [hg | [hg | []]]]; subst g;
+      unfold sigmaCode, sigmaStep, eqConstAt in *;
+      simpl in *;
+      repeat rewrite Term.rename_numeral in *;
+      repeat rewrite Term.subst_numeral in *.
+    + exact helem.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps :
+  forall G elem set elemValue setValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BProv Ax_s G (eqConstAt set setValue) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))) ->
+  HFMemTrace elemValue setValue code step ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set elemValue setValue code step
+    helem hset hsteps htrace.
+  destruct htrace as [hentry [_hthrough hbit]].
+  exact (BProv_Ax_s_hfMemAt_of_closed_bit_components
+    G elem set code step
+    (BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry
+      G set setValue code step hset hentry)
+    hsteps
+    (BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit
+      G elem elemValue code step helem hbit)).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_eqConst_trace :
+  forall G elem set elemValue setValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BProv Ax_s G (eqConstAt set setValue) ->
+  HFMemTrace elemValue setValue code step ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set elemValue setValue code step helem hset htrace.
+  exact (BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
+    G elem set elemValue setValue code step helem hset
+    (BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace
+      G elem elemValue code step helem (proj1 (proj2 htrace)))
+    htrace).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_bot_of_opened_final_current_zero :
+  forall G elem set,
+  (let bitBody :=
+    pAnd
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (S (S (S elem)))) in
+  let tail :=
+    pAnd
+      (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+      (pEx bitBody) in
+  let body :=
+    pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      tail in
+  let bitCtx :=
+    bitBody :: map (rename S)
+      (body :: map (rename S) (pEx body :: map (rename S) G)) in
+  let finalBody :=
+    pAnd
+      (betaAt 1 4 3 (S (S (S (S (S elem))))))
+      (pAnd
+        (betaAtSuccIdx 0 4 3 (S (S (S (S (S elem))))))
+        (div2StepAt 1 0 2)) in
+  BProv Ax_s
+    (finalBody :: map (rename S) (pEx finalBody :: map (rename S) bitCtx))
+    (eqConstAt 1 0)) ->
+  BProv Ax_s G (hfMemAt elem set) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G elem set hcurZero hmem.
+  set (bitBody :=
+    pAnd
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (S (S (S elem))))).
+  set (tail :=
+    pAnd
+      (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+      (pEx bitBody)).
+  set (body :=
+    pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      tail).
+  set (bodyCtx := body :: map (rename S) (pEx body :: map (rename S) G)).
+  set (bitCtx := bitBody :: map (rename S) bodyCtx).
+  set (finalBody :=
+    pAnd
+      (betaAt 1 4 3 (S (S (S (S (S elem))))))
+      (pAnd
+        (betaAtSuccIdx 0 4 3 (S (S (S (S (S elem))))))
+        (div2StepAt 1 0 2))).
+  assert (hcodeStep : BProv Ax_s (pEx body :: map (rename S) G) pBot).
+  {
+    assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
+        (pEx body)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (hopened : BProv Ax_s bodyCtx pBot).
+    {
+      assert (hbody : BProv Ax_s bodyCtx body).
+      {
+        unfold bodyCtx.
+        apply BProv_ass.
+        simpl. left. reflexivity.
+      }
+      pose proof (BProv_andE2 Ax_s bodyCtx
+        (betaAtConstIdx (S (S set)) 1 0 0) tail hbody) as htail.
+      pose proof (BProv_andE2 Ax_s bodyCtx
+        (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+        (pEx bitBody) htail) as hbitEx.
+      assert (hbitOpened : BProv Ax_s bitCtx pBot).
+      {
+        assert (hbitBody : BProv Ax_s bitCtx bitBody).
+        {
+          unfold bitCtx.
+          apply BProv_ass.
+          simpl. left. reflexivity.
+        }
+        pose proof (BProv_andE1 Ax_s bitCtx
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))
+          hbitBody) as honeRaw.
+        assert (hone : BProv Ax_s bitCtx (eqConstAt 0 1)).
+        {
+          unfold oneAt in honeRaw.
+          exact honeRaw.
+        }
+        pose proof (BProv_andE2 Ax_s bitCtx
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))
+          hbitBody) as hbitAt.
+        assert (hcz : BProv Ax_s
+            (finalBody :: map (rename S)
+              (pEx finalBody :: map (rename S) bitCtx))
+            (eqConstAt 1 0)).
+        {
+          unfold bitCtx, bodyCtx, finalBody, body, tail, bitBody in *.
+          exact hcurZero.
+        }
+        exact (BProv_Ax_s_betaDiv2BitAt_current_zero_bot
+          bitCtx 0 2 1 (S (S (S elem))) hone hcz hbitAt).
+      }
+      exact (BProv_exE_of_sentences Ax_s bodyCtx bitBody pBot
+        sentence_ax_s hbitEx hbitOpened).
+    }
+    exact (BProv_exE_of_sentences Ax_s
+      (pEx body :: map (rename S) G) body pBot
+      sentence_ax_s hstepEx hopened).
+  }
+  assert (hmem' : BProv Ax_s G (pEx (pEx body))).
+  {
+    unfold hfMemAt.
+    fold bitBody.
+    fold tail.
+    fold body.
+    exact hmem.
+  }
+  exact (BProv_exE_of_sentences Ax_s G (pEx body) pBot
+    sentence_ax_s hmem' hcodeStep).
+Qed.
 
 Lemma rename_hfMemAt : forall (r : nat -> nat) elem set,
   rename r (hfMemAt elem set) = hfMemAt (r elem) (r set).
@@ -8709,6 +12939,21 @@ Proof.
     lia.
   - intro h.
     exists (e b - e a).
+    lia.
+Qed.
+
+Lemma leConstAt_nat : forall (e : nat -> nat) a n,
+  Sat natModel e (leConstAt a n) <-> e a <= n.
+Proof.
+  intros e a n.
+  unfold leConstAt. simpl.
+  split.
+  - intros [d hd].
+    rewrite Term.eval_numeral_natModel in hd.
+    lia.
+  - intro h.
+    exists (n - e a).
+    rewrite Term.eval_numeral_natModel.
     lia.
 Qed.
 
@@ -8782,6 +13027,33 @@ Proof.
   - intro h.
     exists (e a - 1).
     lia.
+Qed.
+
+Lemma succPredAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (succPredAt a) <-> exists p, e a = p + 1.
+Proof.
+  intros e a.
+  unfold succPredAt. simpl.
+  split.
+  - intros [p hp].
+    exists p. lia.
+  - intros [p hp].
+    exists p. lia.
+Qed.
+
+Lemma zeroOrSuccPredAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (zeroOrSuccPredAt a) <->
+    e a = 0 \/ exists p, e a = p + 1.
+Proof.
+  intros e a.
+  unfold zeroOrSuccPredAt. simpl.
+  split.
+  - intros [hz | hs].
+    + left. exact (proj1 (zeroAt_nat e a) hz).
+    + right. exact (proj1 (succPredAt_nat e a) hs).
+  - intros [hz | hs].
+    + left. exact (proj2 (zeroAt_nat e a) hz).
+    + right. exact (proj2 (succPredAt_nat e a) hs).
 Qed.
 
 Lemma boolAt_nat : forall (e : nat -> nat) a,
@@ -9063,6 +13335,39 @@ Proof.
     assert (hk : k <= e last).
     {
       pose proof (proj1 (leAt_nat (scons nat k e) 0 (S last)) hkSat)
+        as hle.
+      simpl in hle. exact hle.
+    }
+    apply (proj2 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0)).
+    simpl. exact (h k hk).
+Qed.
+
+Lemma betaDiv2StepsThroughConstAt_nat :
+    forall (e : nat -> nat) code step last,
+  Sat natModel e (betaDiv2StepsThroughConstAt code step last) <->
+    forall k, k <= last ->
+      exists cur next bit,
+        BetaEntry (e code) (e step) k cur /\
+        BetaEntry (e code) (e step) (S k) next /\
+        (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step last.
+  unfold betaDiv2StepsThroughConstAt. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat : Sat natModel (scons nat k e) (leConstAt 0 last)).
+    {
+      apply (proj2 (leConstAt_nat (scons nat k e) 0 last)).
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0) (h k hkSat)) as hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k <= last).
+    {
+      pose proof (proj1 (leConstAt_nat (scons nat k e) 0 last) hkSat)
         as hle.
       simpl in hle. exact hle.
     }
@@ -9875,6 +14180,20 @@ Proof.
       * exact hcurEq.
 Qed.
 
+Lemma BProv_Ax_s_hfMemAt_of_eqConst_mem :
+  forall G elem set elemValue setValue,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BProv Ax_s G (eqConstAt set setValue) ->
+  hf_mem elemValue setValue ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set elemValue setValue helem hset hmem.
+  destruct (HFMemTrace_exists_of_mem elemValue setValue hmem) as
+    [code [step htrace]].
+  exact (BProv_Ax_s_hfMemAt_of_eqConst_trace
+    G elem set elemValue setValue code step helem hset htrace).
+Qed.
+
 Lemma BetaEntry_functional : forall code step idx a b,
   BetaEntry code step idx a -> BetaEntry code step idx b -> a = b.
 Proof.
@@ -10049,6 +14368,62 @@ Definition hfContextAt (rho : nat -> nat) (G : list form) : list formula :=
 
 Definition translateHFContext (G : list form) : list formula :=
   map translateHFFormula G.
+
+Lemma BProv_Ax_s_HF_empty_zero_body_of_member_bot :
+  BProv Ax_s [subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1)] pBot ->
+  BProv Ax_s []
+    (subst (instTerm tZero)
+      (pAll (pImp (hfMemAt 0 1) pBot))).
+Proof.
+  intro hmem.
+  set (memZero := subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1)).
+  assert (hmem' : BProv Ax_s [memZero] pBot).
+  {
+    unfold memZero.
+    exact hmem.
+  }
+  pose proof (BProv_impI Ax_s [] memZero pBot hmem') as himp.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pImp memZero pBot) sentence_ax_s himp) as hall.
+  unfold memZero in hall.
+  simpl in *.
+  exact hall.
+Qed.
+
+Lemma BProv_Ax_s_translated_HF_empty_of_zero_body :
+  BProv Ax_s []
+    (subst (instTerm tZero)
+      (pAll (pImp (hfMemAt 0 1) pBot))) ->
+  BProv Ax_s []
+    (translateHFFormula (seal HF_empty_form)).
+Proof.
+  intro hbody.
+  set (body := pAll (pImp (hfMemAt 0 1) pBot)).
+  assert (hex : BProv Ax_s [] (pEx body)).
+  {
+    exact (BProv_exI Ax_s [] body tZero hbody).
+  }
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pEx body) sentence_ax_s hex) as h1.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pAll (pEx body)) sentence_ax_s h1) as h2.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pAll (pAll (pEx body))) sentence_ax_s h2) as h3.
+  unfold translateHFFormula, HF_empty_form, seal, Fol.closeN, Fol.bound.
+  simpl.
+  fold body.
+  exact h3.
+Qed.
+
+Lemma BProv_Ax_s_translated_HF_empty_of_zero_member_bot :
+  BProv Ax_s [subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1)] pBot ->
+  BProv Ax_s []
+    (translateHFFormula (seal HF_empty_form)).
+Proof.
+  intro hmem.
+  exact (BProv_Ax_s_translated_HF_empty_of_zero_body
+    (BProv_Ax_s_HF_empty_zero_body_of_member_bot hmem)).
+Qed.
 
 Lemma translateHFContext_eq_hfContextAt_id : forall G,
   translateHFContext G = hfContextAt (fun n => n) G.
@@ -10484,6 +14859,65 @@ Proof.
   apply (BProv_lift translatedHFFinAx Ax_s [] [] f h).
   - intros b hb. exact (hAx b hb).
   - intros g hg. contradiction.
+Qed.
+
+Record TranslatedHFAxiomProofs := {
+  thf_empty :
+    BProv Ax_s [] (translateHFFormula (seal HF_empty_form));
+  thf_extensionality :
+    BProv Ax_s [] (translateHFFormula (seal HF_extensionality_form));
+  thf_adjoin :
+    BProv Ax_s [] (translateHFFormula (seal HF_adjoin_form));
+  thf_induction : forall phi,
+    BProv Ax_s [] (translateHFFormula (seal (HF_induction_form phi)))
+}.
+
+Record TranslatedHFFinAxiomProofs := {
+  thffin_empty :
+    BProv Ax_s [] (translateHFFormula (seal HF_empty_form));
+  thffin_extensionality :
+    BProv Ax_s [] (translateHFFormula (seal HF_extensionality_form));
+  thffin_adjoin :
+    BProv Ax_s [] (translateHFFormula (seal HF_adjoin_form));
+  thffin_induction : forall phi,
+    BProv Ax_s [] (translateHFFormula (seal (HF_induction_form phi)));
+  thffin_finite_induction : forall phi,
+    BProv Ax_s [] (translateHFFormula (seal (HF_finite_induction_form phi)))
+}.
+
+Definition TranslatedHFAxiomProofs_of_TranslatedHFFinAxiomProofs
+    (P : TranslatedHFFinAxiomProofs) : TranslatedHFAxiomProofs :=
+  {| thf_empty := thffin_empty P;
+     thf_extensionality := thffin_extensionality P;
+     thf_adjoin := thffin_adjoin P;
+     thf_induction := thffin_induction P |}.
+
+Lemma BProv_Ax_s_of_translatedHFAx_of_proofs :
+  forall (P : TranslatedHFAxiomProofs) phi,
+  translatedHFAx phi -> BProv Ax_s [] phi.
+Proof.
+  intros P phi [g [hg ->]].
+  unfold HFAx_s in hg.
+  destruct hg as [hg | [hg | [hg | [psi hg]]]]; subst g.
+  - exact (thf_empty P).
+  - exact (thf_extensionality P).
+  - exact (thf_adjoin P).
+  - exact (thf_induction P psi).
+Qed.
+
+Lemma BProv_Ax_s_of_translatedHFFinAx_of_proofs :
+  forall (P : TranslatedHFFinAxiomProofs) phi,
+  translatedHFFinAx phi -> BProv Ax_s [] phi.
+Proof.
+  intros P phi [g [hg ->]].
+  unfold HFFinAx_s in hg.
+  destruct hg as [hgHF | [psi hgFin]].
+  - apply (BProv_Ax_s_of_translatedHFAx_of_proofs
+      (TranslatedHFAxiomProofs_of_TranslatedHFFinAxiomProofs P)).
+    apply translatedHFAx_intro.
+    exact hgHF.
+  - subst g.
+    exact (thffin_finite_induction P psi).
 Qed.
 
 Lemma standard_sat_translatedHFAx : forall e,

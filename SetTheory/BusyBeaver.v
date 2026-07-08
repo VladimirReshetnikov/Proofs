@@ -28,7 +28,9 @@ Record action := {
 }.
 
 Record machine (states : nat) := {
-  transition : nat -> bool -> action
+  transition : nat -> bool -> action;
+  transition_next_lt : forall q bit next,
+    action_next (transition q bit) = Some next -> next < states
 }.
 
 Definition typed_action (stateType : Type) := (bool * move * option stateType)%type.
@@ -116,6 +118,36 @@ Proof.
     exact h.
 Qed.
 
+Lemma filter_absent_eq : forall t pos,
+  ~ In pos t -> filter (fun q => negb (Z.eqb q pos)) t = t.
+Proof.
+  induction t as [|x xs IH]; intros pos hnot.
+  - reflexivity.
+  - simpl.
+    destruct (Z.eqb x pos) eqn:heq.
+    + apply Z.eqb_eq in heq.
+      exfalso. apply hnot. left. exact heq.
+    + simpl.
+      f_equal.
+      apply IH.
+      intro hx. apply hnot. right. exact hx.
+Qed.
+
+Lemma write_read_self : forall t pos,
+  write t pos (read t pos) = t.
+Proof.
+  intros t pos.
+  unfold read.
+  destruct (in_dec Z.eq_dec pos t) as [hin | hnot].
+  - unfold write.
+    destruct (in_dec Z.eq_dec pos t) as [_ | hbad].
+    + reflexivity.
+    + contradiction.
+  - unfold write.
+    apply filter_absent_eq.
+    exact hnot.
+Qed.
+
 End Tape.
 
 Definition start_state (states : nat) : option nat :=
@@ -148,8 +180,11 @@ Definition initial (states : nat) : config states :=
 Module Machine.
 
 Definition castLE {states larger : nat}
-    (_ : states <= larger) (M : machine states) : machine larger :=
-  {| transition := transition states M |}.
+    (h : states <= larger) (M : machine states) : machine larger :=
+  {| transition := transition states M;
+     transition_next_lt := fun q bit next hnext =>
+       Nat.lt_le_trans _ _ _
+         (transition_next_lt states M q bit next hnext) h |}.
 
 Definition step {states : nat} (M : machine states)
     (cfg : config states) : config states :=
@@ -162,6 +197,14 @@ Definition step {states : nat} (M : machine states)
          cfg_tape := Tape.write (cfg_tape _ cfg) (cfg_head _ cfg)
            (action_write a) |}
   end.
+
+Lemma step_of_halted : forall states (M : machine states) cfg,
+  cfg_state _ cfg = None -> step M cfg = cfg.
+Proof.
+  intros states M [st head tp] h.
+  simpl in h. subst st.
+  reflexivity.
+Qed.
 
 Fixpoint run {states : nat} (M : machine states) (t : nat) : config states :=
   match t with
