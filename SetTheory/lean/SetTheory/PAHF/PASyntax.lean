@@ -23485,6 +23485,49 @@ theorem BProv_hfLtDistinguishesTermAt_of_high_eq_term
   simpa [hfLtDistinguishesTermAt, newRen, lowLtNew, targetNew]
     using hallNew
 
+/-- Odd-high carry transport for a single distinguishing existential.
+
+If PA proves `high = 2*half + 1`, then the successor high-code term is equal
+to `S half + S half`.  This theorem only transports the high-code term; the
+positive-bit membership work for the doubled successor-half code remains a
+separate proof obligation. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
+    {G : List Formula} {high highHalf low : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt high highHalf))
+    (hsome : BProv Ax_s G
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) low)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) :=
+  BProv_hfSomeDistinguishesTermAt_of_high_eq_term
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hsome
+    (BProv_eqSym
+      (BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ hodd))
+
+/-- Odd-high carry transport for the full lower-code predicate.
+
+This is the universal version of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ`: it records
+that proving lower-code distinguishers for `S half + S half` is sufficient for
+the successor of an odd high code. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_of_high_odd_double_succ
+    {G : List Formula} {high highHalf : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt high highHalf))
+    (hall : BProv Ax_s G
+      (hfLtDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))))) :
+    BProv Ax_s G
+      (hfLtDistinguishesTermAt (Term.succ (Term.var high))) :=
+  BProv_hfLtDistinguishesTermAt_of_high_eq_term
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hall
+    (BProv_eqSym
+      (BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ hodd))
+
 /-- Transport a slot-level distinguishing-member proof across a PA equality for
 the high set code. -/
 theorem BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term

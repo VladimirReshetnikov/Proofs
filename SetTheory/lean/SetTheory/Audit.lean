@@ -651,6 +651,8 @@ open SetTheory
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_high_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_high_eq_term
 #check @PA.Formula.BProv_hfLtDistinguishesTermAt_of_high_eq_term
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
+#check @PA.Formula.BProv_Ax_s_hfLtDistinguishesTermAt_of_high_odd_double_succ
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfDistinguishesAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfSomeDistinguishesAt_eq_term
