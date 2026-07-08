@@ -10837,6 +10837,82 @@ theorem BProv_Ax_s_leAt_of_ltAt {G : List Formula} {a b : Nat}
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltAt, ltBody] using hbody)
 
+/-- PA proves reflexivity of the syntactic non-strict order macro. -/
+theorem BProv_Ax_s_leAt_refl {G : List Formula} {a : Nat} :
+    BProv Ax_s G (leAt a a) :=
+  BProv_Ax_s_leAt_of_eq (BProv_eqRefl (B := Ax_s) (G := G) (Term.var a))
+
+/-- PA proves transitivity of the syntactic non-strict order macro. -/
+theorem BProv_Ax_s_leAt_trans {G : List Formula} {a b c : Nat}
+    (hab : BProv Ax_s G (leAt a b))
+    (hbc : BProv Ax_s G (leAt b c)) :
+    BProv Ax_s G (leAt a c) := by
+  let abBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.var (b+1))
+  have habBody : BProv Ax_s (abBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (leAt a c)) := by
+    let C : List Formula := abBody :: G.map (rename Nat.succ)
+    let bcBody : Formula :=
+      eq (Term.add (Term.var (b+1+1)) (Term.var 0))
+        (Term.var (c+1+1))
+    have hbcRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (leAt b c)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbc Nat.succ
+    have hbcC : BProv Ax_s C (rename Nat.succ (leAt b c)) :=
+      BProv_context_cons hbcRen
+    have hbcBody : BProv Ax_s (bcBody :: C.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (leAt a c))) := by
+      let D : List Formula := bcBody :: C.map (rename Nat.succ)
+      let x : Term := Term.var (a+1+1)
+      let y : Term := Term.var 1
+      let z : Term := Term.var 0
+      let bvar : Term := Term.var (b+1+1)
+      let cvar : Term := Term.var (c+1+1)
+      have habRaw : BProv Ax_s D (rename Nat.succ abBody) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+      have habEq : BProv Ax_s D (eq (Term.add x y) bvar) := by
+        simpa [abBody, x, y, bvar, rename, Term.rename] using habRaw
+      have hbcRaw : BProv Ax_s D bcBody :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hbcEq : BProv Ax_s D (eq (Term.add bvar z) cvar) := by
+        simpa [bcBody, bvar, z, cvar] using hbcRaw
+      have habAdd : BProv Ax_s D
+          (eq (Term.add (Term.add x y) z) (Term.add bvar z)) :=
+        BProv_eq_congr_add_left z habEq
+      have hleft : BProv Ax_s D (eq (Term.add (Term.add x y) z) cvar) :=
+        BProv_eqTrans habAdd hbcEq
+      have hassoc : BProv Ax_s D
+          (eq (Term.add (Term.add x y) z)
+            (Term.add x (Term.add y z))) :=
+        BProv_Ax_s_add_assoc_terms x y z
+      have htarget : BProv Ax_s D
+          (eq (Term.add x (Term.add y z)) cvar) :=
+        BProv_eqTrans (BProv_eqSym hassoc) hleft
+      have hinst : BProv Ax_s D
+          (subst (instTerm (Term.add y z))
+            (eq (Term.add (Term.var (a+1+1+1)) (Term.var 0))
+              (Term.var (c+1+1+1)))) := by
+        simpa [subst, instTerm, Term.subst, Term.upSubst, x, y, z, cvar]
+          using htarget
+      have hex : BProv Ax_s D
+          (ex (eq (Term.add (Term.var (a+1+1+1)) (Term.var 0))
+            (Term.var (c+1+1+1)))) :=
+        BProv_exI (B := Ax_s) (G := D)
+          (a := eq (Term.add (Term.var (a+1+1+1)) (Term.var 0))
+            (Term.var (c+1+1+1)))
+          (t := Term.add y z) hinst
+      simpa [D, leAt, rename, Term.rename, SetTheory.up] using hex
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      hbcC (by
+        simpa [C, leAt, bcBody, rename, Term.rename, SetTheory.up,
+          List.map_map, Function.comp_def] using hbcBody)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hab (by
+      simpa [leAt, abBody] using habBody)
+
 /-- PA refutes an irreflexive strict order witness. -/
 theorem BProv_Ax_s_ltAt_irrefl_bot {G : List Formula} {a : Nat}
     (hlt : BProv Ax_s G (ltAt a a)) :
