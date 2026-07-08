@@ -2464,6 +2464,68 @@ theorem partrecToTM2_descends_to_supported_bool_tm0_with_encoding
       (Turing.TM2to1.tr_supports Turing.PartrecToTM2.tr (partrecToTM2_supports c)))
 
 /--
+For a mathlib-total-recursive function and a caller-supplied correct Bool
+encoding, the fully lowered evaluator plus the blank-tape initializer wrapper
+attains, for every input `n`, some Rado score at least `f n`.
+-/
+theorem totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding
+    {f : Nat -> Nat} (hf : TotalRecursiveMathlib f)
+    {width : Nat}
+    (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) :
+    ∃ c : Turing.ToPartrec.Code,
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+      let suppTM2 := Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt
+      let suppTM1 := Turing.TM2to1.trSupp Turing.PartrecToTM2.tr suppTM2
+      let suppTM1Bool := Turing.TM1to1.trSupp MathlibBridge.PartrecToTM1Machine suppTM1
+      let S : Set (Turing.TM1to0.Λ' tm1Bool) :=
+        Turing.TM1to0.trStmts tm1Bool suppTM1Bool
+      ∀ n,
+        let input := MathlibBridge.TM1to1EncodedInput enc
+          (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+            (Turing.PartrecToTM2.trList [n]))
+        ∃ score, f n ≤ score ∧
+          AttainableScore (Fintype.card (MathlibBridge.InitThenTM0State S input)) score := by
+  rcases totalRecursiveMathlib_bool_tm0_eval_unary_true_offsets
+      hf enc dec enc0 encdec with ⟨c, hEval⟩
+  refine ⟨c, ?_⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  dsimp at hEval ⊢
+  intro n
+  let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+  let tm0Bool := Turing.TM1to0.tr tm1Bool
+  let suppTM2 := Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt
+  let suppTM1 := Turing.TM2to1.trSupp Turing.PartrecToTM2.tr suppTM2
+  let suppTM1Bool := Turing.TM1to1.trSupp MathlibBridge.PartrecToTM1Machine suppTM1
+  let S : Set (Turing.TM1to0.Λ' tm1Bool) := Turing.TM1to0.trStmts tm1Bool suppTM1Bool
+  let input := MathlibBridge.TM1to1EncodedInput enc
+    (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+      (Turing.PartrecToTM2.trList [n]))
+  have hSupp : Turing.TM0.Supports tm0Bool S := by
+    dsimp [tm0Bool, tm1Bool, S, suppTM1Bool, suppTM1, suppTM2]
+    exact partrecToTM2_descends_to_supported_bool_tm0_with_encoding c enc dec
+  letI : Inhabited S := MathlibBridge.tm0SupportedInhabited tm0Bool hSupp
+  rcases hEval n with ⟨boolOutput, offsets, hBoolEval, hOffsets, hLen, hTrue⟩
+  have hEvalSupported : boolOutput ∈
+      @Turing.TM0.eval Bool S (MathlibBridge.tm0SupportedInhabited tm0Bool hSupp) inferInstance
+        (MathlibBridge.tm0SupportedMachine tm0Bool hSupp) input := by
+    exact MathlibBridge.tm0SupportedMachine_eval_of_original tm0Bool hSupp hBoolEval
+  have hInput : 0 < input.length := by
+    dsimp [input]
+    exact MathlibBridge.encoded_partrec_input_length_pos enc dec enc0 encdec n
+  rcases MathlibBridge.tm0_eval_to_init_wrapper_lowerBound
+      (MathlibBridge.tm0SupportedMachine tm0Bool hSupp) hInput hEvalSupported hOffsets hTrue with
+    ⟨score, hLower, hScore⟩
+  refine ⟨score, ?_, hScore⟩
+  rw [← hLen]
+  exact hLower
+
+/--
 The finite-support recursive-code evaluator also descends through mathlib's
 proved `TM2 -> TM1`, finite-alphabet `TM1 -> TM1 Bool`, and `TM1 -> TM0`
 reductions to a finite-support Bool `TM0` machine.
