@@ -6880,6 +6880,15 @@ def betaTermAt (out : Term) (code step idx : Nat) : Formula :=
     (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
     (remTermAt (Term.rename Nat.succ out) (code+1) 0))
 
+/-- Term-output beta entry whose sequence index is itself specified by a PA
+term.  This generalizes the constant/successor-index wrappers without changing
+the raw beta relation: the index term is represented by an explicit witness
+slot and an equality proof. -/
+def betaTermAtTermIdx (out : Term) (code step : Nat) (idx : Term) : Formula :=
+  ex (and
+    (eq (Term.var 0) (Term.rename Nat.succ idx))
+    (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0))
+
 def betaAtConstIdx (out code step idxValue : Nat) : Formula :=
   ex (and (eqConstAt 0 idxValue) (betaAt (out+1) (code+1) (step+1) 0))
 
@@ -15209,6 +15218,143 @@ theorem BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
   have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
     BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
   exact BProv_andE2 hbody
+
+/-- Projection from the opened body of a term-indexed beta wrapper to its
+index equation. -/
+theorem BProv_Ax_s_betaTermAtTermIdx_opened_body_idx
+    {G : List Formula} {out idx : Term} {code step : Nat} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ idx))
+        (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (eq (Term.var 0) (Term.rename Nat.succ idx)) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idx))
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE1 hbody
+
+/-- Projection from the opened body of a term-indexed beta wrapper to the raw
+term-output beta-entry component. -/
+theorem BProv_Ax_s_betaTermAtTermIdx_opened_body_beta
+    {G : List Formula} {out idx : Term} {code step : Nat} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ idx))
+        (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idx))
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE2 hbody
+
+/-- Build a term-indexed beta wrapper from a raw beta entry and an equality
+identifying its index slot with the desired PA index term. -/
+theorem BProv_Ax_s_betaTermAtTermIdx_of_eq_beta
+    {G : List Formula} {out idxTerm : Term} {code step idxSlot : Nat}
+    (hidx : BProv Ax_s G (eq (Term.var idxSlot) idxTerm))
+    (hbeta : BProv Ax_s G (betaTermAt out code step idxSlot)) :
+    BProv Ax_s G (betaTermAtTermIdx out code step idxTerm) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idxTerm))
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+  have hidxInst : BProv Ax_s G
+      (subst (instTerm (Term.var idxSlot))
+        (eq (Term.var 0) (Term.rename Nat.succ idxTerm))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hidx
+  have hbetaInst : BProv Ax_s G
+      (subst (instTerm (Term.var idxSlot))
+        (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)) := by
+    have hnorm :
+        subst (instTerm (Term.var idxSlot))
+          (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0) =
+            betaTermAt out code step idxSlot := by
+      simp [betaTermAt, remTermAt, ltTermAt, betaModTerm, subst, instTerm,
+        Term.subst, Term.upSubst, Term.rename,
+        term_subst_instTerm_rename_succ, Term.subst_rename_succ_up]
+    simpa [hnorm] using hbeta
+  have hbody : BProv Ax_s G (subst (instTerm (Term.var idxSlot)) body) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hidxInst hbetaInst
+  simpa [betaTermAtTermIdx, body] using
+    BProv_exI (B := Ax_s) (G := G) (a := body)
+      (t := Term.var idxSlot) hbody
+
+/-- A constant-index term-output beta wrapper is the term-indexed wrapper at
+the corresponding PA numeral. -/
+theorem BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
+    {G : List Formula} {out : Term} {code step idxValue : Nat}
+    (hbeta : BProv Ax_s G (betaTermAtConstIdx out code step idxValue)) :
+    BProv Ax_s G
+      (betaTermAtTermIdx out code step (Term.numeral idxValue)) := by
+  simpa [betaTermAtTermIdx, betaTermAtConstIdx, eqConstAt, Term.rename] using
+    hbeta
+
+/-- A zero term-indexed beta entry forces a numeric beta entry at a provably
+equal index slot to output `0`. -/
+theorem BProv_Ax_s_betaAt_output_zero_of_betaTermAtTermIdx_eq_index
+    {G : List Formula} {out code step idx : Nat} {idxTerm : Term}
+    (hzero : BProv Ax_s G (betaTermAtTermIdx Term.zero code step idxTerm))
+    (hidxEq : BProv Ax_s G (eq idxTerm (Term.var idx)))
+    (hbeta : BProv Ax_s G (betaAt out code step idx)) :
+    BProv Ax_s G (eqConstAt out 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idxTerm))
+      (betaTermAt (Term.rename Nat.succ Term.zero) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt out 0)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hsourceIdx : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ idxTerm)) :=
+      BProv_andE1 hbodyAss
+    have hzeroRaw : BProv Ax_s C
+        (betaTermAt Term.zero (code+1) (step+1) 0) := by
+      simpa [Term.rename] using BProv_andE2 hbodyAss
+    have hidxRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq idxTerm (Term.var idx))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hidxEq Nat.succ
+    have hidxC : BProv Ax_s C
+        (eq (Term.rename Nat.succ idxTerm) (Term.var (idx+1))) := by
+      simpa [C, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hidxRen
+    have hidxSame : BProv Ax_s C
+        (eq (Term.var 0) (Term.var (idx+1))) :=
+      BProv_eqTrans hsourceIdx hidxC
+    have hbetaRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (betaAt out code step idx)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbeta Nat.succ
+    have hbetaC : BProv Ax_s C
+        (betaAt (out+1) (code+1) (step+1) (idx+1)) := by
+      simpa [C, betaAt, remAt, ltAt, eqConstAt, betaModTerm,
+        rename, Term.rename, SetTheory.up] using
+        BProv_context_cons (B := Ax_s) hbetaRen
+    have hout : BProv Ax_s C (eqConstAt (out+1) 0) :=
+      BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_eq_index
+        (G := C) (out := out+1) (code := code+1) (step := step+1)
+        (zeroIdx := 0) (idx := idx+1)
+        hzeroRaw hidxSame hbetaC
+    simpa [C, eqConstAt, rename, Term.rename] using hout
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hzero (by
+      simpa [betaTermAtTermIdx, body, eqConstAt, rename, Term.rename] using
+        hbody)
 
 /-- After opening the raw beta witness inside a zero-output constant-index
 `betaTermAtConstIdx`, the dividend is divisible by the opened beta modulus.

@@ -296,6 +296,7 @@ open SetTheory
 #check @PA.Formula.remTermAt
 #check @PA.Formula.remTermEqAt
 #check @PA.Formula.betaTermAt
+#check @PA.Formula.betaTermAtTermIdx
 #check @PA.Formula.betaTermAtConstIdx
 #check @PA.Formula.hfMemZeroSetAt
 #check @PA.Formula.subst_up_zero_hfMemAt_zero_set
@@ -353,6 +354,11 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
+#check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_idx
+#check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_beta
+#check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_of_eq_beta
+#check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
+#check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAtTermIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
