@@ -11463,6 +11463,28 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
           List.map_map, Function.comp_def] using hopened)
   exact BProv_orE hcmp hleBranch hgtBranch
 
+/-- Transport an even-doubling witness across an equality of its value slot.
+
+This is intentionally just equality transitivity for the formula macro
+`doubleEqAt`; it keeps later parity transport explicit at the proof site. -/
+theorem BProv_doubleEqAt_of_eq_value
+    {B : Formula → Prop} {G : List Formula} {value value' half : Nat}
+    (hvalue : BProv B G (eq (Term.var value') (Term.var value)))
+    (hdouble : BProv B G (doubleEqAt value half)) :
+    BProv B G (doubleEqAt value' half) := by
+  simpa [doubleEqAt] using BProv_eqTrans hvalue hdouble
+
+/-- Transport an odd-doubling witness across an equality of its value slot.
+
+Like `BProv_doubleEqAt_of_eq_value`, this is only the equality-transitivity
+form of the `oddDoubleEqAt` macro. -/
+theorem BProv_oddDoubleEqAt_of_eq_value
+    {B : Formula → Prop} {G : List Formula} {value value' half : Nat}
+    (hvalue : BProv B G (eq (Term.var value') (Term.var value)))
+    (hodd : BProv B G (oddDoubleEqAt value half)) :
+    BProv B G (oddDoubleEqAt value' half) := by
+  simpa [oddDoubleEqAt] using BProv_eqTrans hvalue hodd
+
 /-- A boolean-valued slot is strictly below the closed numeral `2`.
 
 This is the small boundedness fact needed when a `div2StepAt` equation is
