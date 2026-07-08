@@ -104,6 +104,9 @@ open SetTheory
 #check @PA.Formula.term_subst_up_up_instTerm_rename_four_succ
 #check @PA.Formula.term_subst_up_up_up_instTerm_rename_four_succ
 #check @PA.Formula.term_subst_up_up_up_instTerm_rename_five_succ
+#check @PA.Formula.term_subst_up_up_up_up_instTerm_rename_five_succ
+#check @PA.Formula.term_subst_up_up_up_up_up_instTerm_rename_six_succ
+#check @PA.Formula.term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ
 #check PA.Formula.iterUpSubst
 #check @PA.Formula.term_subst_iterUpSubst_instTerm_var_rename_add_succ
 #check @PA.Formula.term_rename_up_succ_rename_succ
@@ -430,6 +433,13 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_of_betaAtConstIdx_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_eq_index
+#check @PA.Formula.betaTermTermAtSuccIdx
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_index
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_term
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_index
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_succ_of_betaTermTermAtConstIdx_eq_index
+#check @PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_succ
+#check @PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_betaTermTermAtConstIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_of_eq_beta
@@ -705,6 +715,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_index_one_value
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_entryComponent_one
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_div2Step_one
+#check @PA.Formula.BProv_Ax_s_evenSuccBeta_bitComponent_zero
 #check @PA.Formula.betaFact
 #check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step
