@@ -271,6 +271,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltTermAt_zero_succ
 #check @PA.Formula.BProv_Ax_s_leTermAt_succ_succ
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_succ
+#check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt_all
+#check @PA.Formula.BProv_Ax_s_leAt_or_gtAt
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one
 #check @PA.Formula.BProv_Ax_s_ltConst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltConst_closed

@@ -11801,6 +11801,214 @@ theorem BProv_Ax_s_ltTermAt_succ_succ {G : List Formula} {s t : Term}
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltTermAt, ltBody] using hbody)
 
+/-- PA proves total comparison for the term-parametric order macros:
+`∀ y, ∀ x, x ≤ y ∨ y < x`.  This is the syntactic comparison splitter used by
+the quotient/remainder functionality proofs; no semantic total-order fact is
+assumed. -/
+theorem BProv_Ax_s_leTermAt_or_gtTermAt_all :
+    BProv Ax_s []
+      (all (all
+        (or (leTermAt (Term.var 0) (Term.var 1))
+          (ltTermAt (Term.var 1) (Term.var 0))))) := by
+  let body : Formula :=
+    or (leTermAt (Term.var 0) (Term.var 1))
+      (ltTermAt (Term.var 1) (Term.var 0))
+  let phi : Formula := all body
+  have hzeroBody : BProv Ax_s []
+      (or (leTermAt (Term.var 0) Term.zero)
+        (ltTermAt Term.zero (Term.var 0))) := by
+    let target : Formula :=
+      or (leTermAt (Term.var 0) Term.zero)
+        (ltTermAt Term.zero (Term.var 0))
+    have hcases : BProv Ax_s []
+        (or (eq (Term.var 0) Term.zero)
+          (ex (eq (Term.rename Nat.succ (Term.var 0))
+            (Term.succ (Term.var 0))))) :=
+      BProv_Ax_s_zeroOrSuccPred_term (G := []) (Term.var 0)
+    have hzeroBranch : BProv Ax_s [eq (Term.var 0) Term.zero] target := by
+      let C : List Formula := [eq (Term.var 0) Term.zero]
+      have hxZero : BProv Ax_s C (eq (Term.var 0) Term.zero) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have hleZero : BProv Ax_s C (leTermAt Term.zero Term.zero) :=
+        BProv_Ax_s_leTermAt_refl Term.zero
+      have hle : BProv Ax_s C (leTermAt (Term.var 0) Term.zero) :=
+        BProv_leTermAt_of_eq_left (BProv_eqSym hxZero) hleZero
+      exact BProv_orI1 (B := Ax_s) (G := C)
+        (b := ltTermAt Term.zero (Term.var 0)) hle
+    let succBody : Formula :=
+      eq (Term.rename Nat.succ (Term.var 0)) (Term.succ (Term.var 0))
+    have hsuccBranch : BProv Ax_s [ex succBody] target := by
+      have hopened : BProv Ax_s
+          (succBody :: (ex succBody :: ([] : List Formula)).map
+            (rename Nat.succ))
+          (rename Nat.succ target) := by
+        let D : List Formula :=
+          succBody :: (ex succBody :: ([] : List Formula)).map
+            (rename Nat.succ)
+        have hsucc : BProv Ax_s D
+            (eq (Term.var 1) (Term.succ (Term.var 0))) := by
+          have hraw : BProv Ax_s D succBody :=
+            BProv_ass (B := Ax_s) (G := D) (by simp [D])
+          simpa [succBody, Term.rename] using hraw
+        have hltZeroSucc : BProv Ax_s D
+            (ltTermAt Term.zero (Term.succ (Term.var 0))) :=
+          BProv_Ax_s_ltTermAt_zero_succ (Term.var 0)
+        have hlt : BProv Ax_s D (ltTermAt Term.zero (Term.var 1)) :=
+          BProv_ltTermAt_of_eq_right (BProv_eqSym hsucc) hltZeroSucc
+        simpa [D, target, leTermAt, ltTermAt, rename, Term.rename,
+          SetTheory.up] using
+          (BProv_orI2 (B := Ax_s) (G := D)
+            (a := leTermAt (Term.var 1) Term.zero) hlt)
+      exact BProv_exE_of_sentences (B := Ax_s)
+        (fun f hf => sentence_ax_s (f := f) hf)
+        (BProv_ass (B := Ax_s) (G := [ex succBody])
+          (phi := ex succBody) (by simp))
+        (by simpa [succBody, rename] using hopened)
+    exact BProv_orE hcases hzeroBranch (by
+      simpa [succPredAt, succBody, Term.rename] using hsuccBranch)
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    have hall : BProv Ax_s []
+        (all
+          (or (leTermAt (Term.var 0) Term.zero)
+            (ltTermAt Term.zero (Term.var 0)))) :=
+      BProv_allI_of_sentences (B := Ax_s)
+        (fun f hf => sentence_ax_s (f := f) hf) hzeroBody
+    simpa [phi, body, leTermAt, ltTermAt, substZero, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, SetTheory.up,
+      term_substZero_rename_succ] using hall
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let stepTarget : Formula :=
+      or (leTermAt (Term.var 0) (Term.succ (Term.var 1)))
+        (ltTermAt (Term.succ (Term.var 1)) (Term.var 0))
+    have hforX : BProv Ax_s ([phi].map (rename Nat.succ)) stepTarget := by
+      let Γ : List Formula := [rename Nat.succ phi]
+      have hcases : BProv Ax_s Γ (zeroOrSuccPredAt 0) :=
+        BProv_Ax_s_zeroOrSuccPredAt (G := Γ) 0
+      have hzeroBranch : BProv Ax_s (zeroAt 0 :: Γ) stepTarget := by
+        let C : List Formula := zeroAt 0 :: Γ
+        have hxZero : BProv Ax_s C (eq (Term.var 0) Term.zero) := by
+          have hraw : BProv Ax_s C (zeroAt 0) :=
+            BProv_ass (B := Ax_s) (G := C) (by simp [C])
+          simpa [zeroAt, eqConstAt, Term.numeral] using hraw
+        have hleZero : BProv Ax_s C
+            (leTermAt Term.zero (Term.succ (Term.var 1))) :=
+          BProv_Ax_s_leTermAt_zero_left (Term.succ (Term.var 1))
+        have hle : BProv Ax_s C
+            (leTermAt (Term.var 0) (Term.succ (Term.var 1))) :=
+          BProv_leTermAt_of_eq_left (BProv_eqSym hxZero) hleZero
+        exact BProv_orI1 (B := Ax_s) (G := C)
+          (b := ltTermAt (Term.succ (Term.var 1)) (Term.var 0)) hle
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      have hsuccBranch : BProv Ax_s (succPredAt 0 :: Γ) stepTarget := by
+        have hopened : BProv Ax_s
+            (succBody :: (succPredAt 0 :: Γ).map (rename Nat.succ))
+            (rename Nat.succ stepTarget) := by
+          let D : List Formula :=
+            succBody :: (succPredAt 0 :: Γ).map (rename Nat.succ)
+          have hsucc : BProv Ax_s D
+              (eq (Term.var 1) (Term.succ (Term.var 0))) :=
+            BProv_ass (B := Ax_s) (G := D) (by simp [D, succBody])
+          have hihAll : BProv Ax_s D
+              (rename Nat.succ (rename Nat.succ phi)) :=
+            BProv_ass (B := Ax_s) (G := D) (by simp [D, Γ])
+          have hihInstRaw := BProv_allE (B := Ax_s) (G := D)
+            (t := Term.var 0) hihAll
+          have hihNorm :
+              subst (instTerm (Term.var 0))
+                (rename (SetTheory.up Nat.succ)
+                  (rename (SetTheory.up Nat.succ) body)) =
+                or (leTermAt (Term.var 0) (Term.var 2))
+                  (ltTermAt (Term.var 2) (Term.var 0)) := by
+            simp [body, leTermAt, ltTermAt, subst, instTerm, Term.subst,
+              Term.upSubst, rename, Term.rename, SetTheory.up]
+          have hih : BProv Ax_s D
+              (or (leTermAt (Term.var 0) (Term.var 2))
+                (ltTermAt (Term.var 2) (Term.var 0))) := by
+            simpa [phi, hihNorm] using hihInstRaw
+          have hleBranch : BProv Ax_s
+              (leTermAt (Term.var 0) (Term.var 2) :: D)
+              (rename Nat.succ stepTarget) := by
+            let E : List Formula := leTermAt (Term.var 0) (Term.var 2) :: D
+            have hlePred : BProv Ax_s E
+                (leTermAt (Term.var 0) (Term.var 2)) :=
+              BProv_ass (B := Ax_s) (G := E) (by simp [E])
+            have hleSucc : BProv Ax_s E
+                (leTermAt (Term.succ (Term.var 0))
+                  (Term.succ (Term.var 2))) :=
+              BProv_Ax_s_leTermAt_succ_succ hlePred
+            have hsuccE : BProv Ax_s E
+                (eq (Term.var 1) (Term.succ (Term.var 0))) :=
+              BProv_context_cons (B := Ax_s) hsucc
+            have hleX : BProv Ax_s E
+                (leTermAt (Term.var 1) (Term.succ (Term.var 2))) :=
+              BProv_leTermAt_of_eq_left (BProv_eqSym hsuccE) hleSucc
+            simpa [E, stepTarget, leTermAt, ltTermAt, rename, Term.rename,
+              SetTheory.up] using
+              (BProv_orI1 (B := Ax_s) (G := E)
+                (b := ltTermAt (Term.succ (Term.var 2)) (Term.var 1))
+                hleX)
+          have hltBranch : BProv Ax_s
+              (ltTermAt (Term.var 2) (Term.var 0) :: D)
+              (rename Nat.succ stepTarget) := by
+            let E : List Formula := ltTermAt (Term.var 2) (Term.var 0) :: D
+            have hltPred : BProv Ax_s E
+                (ltTermAt (Term.var 2) (Term.var 0)) :=
+              BProv_ass (B := Ax_s) (G := E) (by simp [E])
+            have hltSucc : BProv Ax_s E
+                (ltTermAt (Term.succ (Term.var 2))
+                  (Term.succ (Term.var 0))) :=
+              BProv_Ax_s_ltTermAt_succ_succ hltPred
+            have hsuccE : BProv Ax_s E
+                (eq (Term.var 1) (Term.succ (Term.var 0))) :=
+              BProv_context_cons (B := Ax_s) hsucc
+            have hltX : BProv Ax_s E
+                (ltTermAt (Term.succ (Term.var 2)) (Term.var 1)) :=
+              BProv_ltTermAt_of_eq_right (BProv_eqSym hsuccE) hltSucc
+            simpa [E, stepTarget, leTermAt, ltTermAt, rename, Term.rename,
+              SetTheory.up] using
+              (BProv_orI2 (B := Ax_s) (G := E)
+                (a := leTermAt (Term.var 1) (Term.succ (Term.var 2)))
+                hltX)
+          exact BProv_orE hih hleBranch hltBranch
+        exact BProv_exE_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf)
+          (BProv_ass (B := Ax_s) (G := succPredAt 0 :: Γ)
+            (phi := succPredAt 0) (by simp))
+          (by simpa [succPredAt, succBody, rename] using hopened)
+      exact BProv_orE hcases hzeroBranch hsuccBranch
+    have hall : BProv Ax_s [phi] (all stepTarget) := by
+      simpa using
+        (BProv_allI_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf) hforX)
+    simpa [phi, body, stepTarget, leTermAt, ltTermAt, substSuccVar, subst,
+      instTerm, Term.subst, Term.upSubst, Term.rename, SetTheory.up,
+      term_substSuccVar_rename_succ] using hall
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi, body] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Slot-level total comparison: for any two PA slots, PA proves either
+`a ≤ b` or `b < a`. -/
+theorem BProv_Ax_s_leAt_or_gtAt {G : List Formula} {a b : Nat} :
+    BProv Ax_s G (or (leAt a b) (ltAt b a)) := by
+  have hall : BProv Ax_s G
+      (all (all
+        (or (leTermAt (Term.var 0) (Term.var 1))
+          (ltTermAt (Term.var 1) (Term.var 0))))) :=
+    BProv_weaken_nil BProv_Ax_s_leTermAt_or_gtTermAt_all
+  have hb := BProv_allE (B := Ax_s) (G := G) (t := Term.var b) hall
+  have ha := BProv_allE (B := Ax_s) (G := G) (t := Term.var a) hb
+  simpa [leAt, leTermAt, ltAt, ltTermAt, subst, instTerm, Term.subst,
+    Term.upSubst, Term.rename, SetTheory.up, term_subst_instTerm_rename_succ]
+    using ha
+
 /-- PA proves the strict closed-one bound case: from `x < y` and `y = 1`,
 derive `x = 0`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one {G : List Formula}
