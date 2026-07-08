@@ -13126,6 +13126,39 @@ theorem BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAt, body, eqConstAt, rename, Term.rename] using hbody)
 
+/-- If the beta code is `0`, every term-output beta entry denotes `0`. -/
+theorem BProv_Ax_s_eq_zero_of_betaTermAt_eqConst_code_zero
+    {G : List Formula} {out : Term} {code step idx : Nat}
+    (hbeta : BProv Ax_s G (betaTermAt out code step idx))
+    (hcode : BProv Ax_s G (eqConstAt code 0)) :
+    BProv Ax_s G (eq out Term.zero) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remTermAt (Term.rename Nat.succ out) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq out Term.zero)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hrem : BProv Ax_s C
+        (remTermAt (Term.rename Nat.succ out) (code+1) 0) :=
+      BProv_andE2 hbodyAss
+    have hcodeRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (code+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hcode Nat.succ
+    have hcodeC : BProv Ax_s C (eqConstAt (code+1) 0) :=
+      BProv_context_cons hcodeRen
+    exact BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
+      (rem := Term.rename Nat.succ out) (value := code+1)
+      (modulus := 0) hrem hcodeC
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaTermAt, body, eqConstAt, rename, Term.rename] using hbody)
+
 /-- If the beta step parameter is `0`, every raw beta entry has output `0`:
 all beta moduli are then `1`, so the embedded remainder is modulo `1`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
@@ -13198,6 +13231,39 @@ theorem BProv_Ax_s_eqConstAt_zero_of_betaAtConstIdx_eqConst_code_zero
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAtConstIdx, body, eqConstAt, rename, Term.rename] using hbody)
+
+/-- If the beta code is `0`, every term-output constant-index beta wrapper
+also denotes `0`. -/
+theorem BProv_Ax_s_eq_zero_of_betaTermAtConstIdx_eqConst_code_zero
+    {G : List Formula} {out : Term} {code step idxValue : Nat}
+    (hbeta : BProv Ax_s G (betaTermAtConstIdx out code step idxValue))
+    (hcode : BProv Ax_s G (eqConstAt code 0)) :
+    BProv Ax_s G (eq out Term.zero) := by
+  let body : Formula :=
+    and (eqConstAt 0 idxValue)
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq out Term.zero)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hbetaRaw : BProv Ax_s C
+        (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0) :=
+      BProv_andE2 hbodyAss
+    have hcodeRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (code+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hcode Nat.succ
+    have hcodeC : BProv Ax_s C (eqConstAt (code+1) 0) :=
+      BProv_context_cons hcodeRen
+    exact BProv_Ax_s_eq_zero_of_betaTermAt_eqConst_code_zero
+      hbetaRaw hcodeC
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaTermAtConstIdx, body, eqConstAt, rename, Term.rename] using
+        hbody)
 
 /-- If the beta code is `0`, every successor-index beta wrapper also has
 output `0`. -/
