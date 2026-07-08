@@ -8732,6 +8732,90 @@ theorem BProv_Ax_s_dvdAt_of_eqConst {G : List Formula}
   exact BProv_Ax_s_dvdAt_of_eqConst_mul
     (a := a) (b := b) (m := m) (n := n) (q := q) ha hb hq.symm
 
+/-- From PA proofs that the three slots contain fixed numerals, and from an
+explicit Euclidean-division witness in the metatheory, derive the corresponding
+`remAt` relation. -/
+theorem BProv_Ax_s_remAt_of_eqConst {G : List Formula}
+    {rem value modulus r v m q : Nat}
+    (hrem : BProv Ax_s G (eqConstAt rem r))
+    (hvalue : BProv Ax_s G (eqConstAt value v))
+    (hmod : BProv Ax_s G (eqConstAt modulus m))
+    (hlt : r < m)
+    (hval : q * m + r = v) :
+    BProv Ax_s G (remAt rem value modulus) := by
+  have hltAt : BProv Ax_s G (ltAt rem modulus) :=
+    BProv_Ax_s_ltAt_of_eqConst hrem hmod hlt
+  have hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q)) (ltAt (rem+1) (modulus+1))) := by
+    simpa [ltAt, subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+      using hltAt
+  have hmulLeft : BProv Ax_s G
+      (eq (Term.mul (Term.numeral q) (Term.var modulus))
+        (Term.mul (Term.numeral q) (Term.numeral m))) :=
+    BProv_eq_congr_mul_right (Term.numeral q) hmod
+  have hmulRaw : BProv Ax_s G
+      (eq (Term.mul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+  have hmul : BProv Ax_s G
+      (eq (Term.mul (Term.numeral q) (Term.var modulus))
+        (Term.numeral (q * m))) :=
+    BProv_eqTrans hmulLeft hmulRaw
+  have haddLeft : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.var modulus))
+          (Term.var rem))
+        (Term.add (Term.numeral (q * m)) (Term.var rem))) :=
+    BProv_eq_congr_add_left (Term.var rem) hmul
+  have haddRight : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.var rem))
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))) :=
+    BProv_eq_congr_add_right (Term.numeral (q * m)) hrem
+  have haddRaw : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+  have hadd : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v)) := by
+    simpa [hval] using haddRaw
+  have hcomputed : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.var modulus))
+          (Term.var rem))
+        (Term.numeral v)) :=
+    BProv_eqTrans (BProv_eqTrans haddLeft haddRight) hadd
+  have htarget : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.mul (Term.numeral q) (Term.var modulus))
+          (Term.var rem))) :=
+    BProv_eqTrans hvalue (BProv_eqSym hcomputed)
+  have hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+      using htarget
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (and (ltAt (rem+1) (modulus+1))
+          (eq (Term.var (value+1))
+            (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+              (Term.var (rem+1)))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hltBody hvalueBody)
+  simpa [remAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and (ltAt (rem+1) (modulus+1))
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))))
+      (t := Term.numeral q) hbody)
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :

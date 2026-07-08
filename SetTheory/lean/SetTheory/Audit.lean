@@ -179,6 +179,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_remAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule
