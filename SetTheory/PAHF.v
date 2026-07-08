@@ -11873,6 +11873,60 @@ Proof.
     hnextLt' hnextVal' hb (eq_sym hdiv)).
 Qed.
 
+Lemma BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero :
+  forall G code step idx,
+  BProv Ax_s G (eqConstAt 2 0) ->
+  BProv Ax_s G
+    (pAnd
+      (betaAt 2 (S (S (S code))) (S (S (S step)))
+        (S (S (S idx))))
+      (pAnd
+        (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+          (S (S (S idx))))
+        (div2StepAt 2 1 0))) ->
+  BProv Ax_s G (eqConstAt 1 0).
+Proof.
+  intros G code step idx hcurZero hbody.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAt 2 (S (S (S code))) (S (S (S step)))
+      (S (S (S idx))))
+    (pAnd
+      (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+        (S (S (S idx))))
+      (div2StepAt 2 1 0)) hbody) as htail.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
+      (S (S (S idx))))
+    (div2StepAt 2 1 0) htail) as hstep.
+  exact (BProv_Ax_s_div2StepAt_zero_half_zero
+    G 2 1 0 hcurZero hstep).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot :
+  forall G bit code step idx,
+  BProv Ax_s G (eqConstAt 1 0) ->
+  BProv Ax_s G (eqConstAt (S (S bit)) 1) ->
+  BProv Ax_s G
+    (pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit))))) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G bit code step idx hcurZero hbitOne hbody.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+    (pAnd
+      (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+      (div2StepAt 1 0 (S (S bit)))) hbody) as htail.
+  pose proof (BProv_andE2 Ax_s G
+    (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+    (div2StepAt 1 0 (S (S bit))) htail) as hstep.
+  exact (BProv_Ax_s_div2StepAt_zero_one_bot
+    G 1 0 (S (S bit)) hcurZero hbitOne hstep).
+Qed.
+
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
     (pAnd
