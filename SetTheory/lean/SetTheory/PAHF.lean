@@ -8975,6 +8975,47 @@ theorem BProv_Ax_s_betaModTerm_of_eqConst {G : List Formula}
     omega
   simpa [betaModTerm, hbeta, Term.numeral_succ] using hsucc
 
+/-- From fixed numeral proofs for the output, code, step, and index slots, and
+an explicit beta-entry quotient in the metatheory, derive the corresponding
+`betaAt` relation. -/
+theorem BProv_Ax_s_betaAt_of_eqConst {G : List Formula}
+    {out code step idx o c s i q : Nat}
+    (hout : BProv Ax_s G (eqConstAt out o))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hlt : o < BetaModulus s i)
+    (hval : q * BetaModulus s i + o = c) :
+    BProv Ax_s G (betaAt out code step idx) := by
+  let m := BetaModulus s i
+  have hmodTerm : BProv Ax_s G
+      (eq (betaModTerm step idx) (Term.numeral m)) := by
+    simpa [m] using BProv_Ax_s_betaModTerm_of_eqConst hstep hidx
+  have hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_subst_instTerm_rename_succ] using
+      BProv_eqSym hmodTerm
+  have hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m)) (remAt (out+1) (code+1) 0)) := by
+    exact BProv_Ax_s_remAt_constMod_of_eqConst
+      (rem := out) (value := code) (r := o) (v := c) (m := m) (q := q)
+      hout hcode (by simpa [m] using hlt) (by simpa [m] using hval)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hmodBody hremBody)
+  simpa [betaAt, m] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+        (remAt (out+1) (code+1) 0))
+      (t := Term.numeral m) hbody)
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
