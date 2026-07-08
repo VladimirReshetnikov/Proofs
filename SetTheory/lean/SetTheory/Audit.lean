@@ -300,8 +300,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_rem
+#check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_modEq
+#check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_rem
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
+#check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_idx
+#check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
