@@ -8247,6 +8247,35 @@ theorem BProv_Ax_s_leTermAt_or_gtTermAt {G : List Formula} (a b : Term) :
     Term.rename, SetTheory.up, Term.subst_rename_succ_up,
     term_subst_instTerm_rename_succ] using ha
 
+/-- PA splits a strict successor upper bound into the two predecessor cases:
+from `s < S t`, either `s < t` or `s = t`. -/
+theorem BProv_Ax_s_ltTermAt_succ_right_cases
+    {G : List Formula} {s t : Term}
+    (hlt : BProv Ax_s G (ltTermAt s (Term.succ t))) :
+    BProv Ax_s G (or (ltTermAt s t) (eq s t)) := by
+  let target : Formula := or (ltTermAt s t) (eq s t)
+  have hleST : BProv Ax_s G (leTermAt s t) :=
+    BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
+  have hcmp : BProv Ax_s G (or (leTermAt t s) (ltTermAt s t)) :=
+    BProv_Ax_s_leTermAt_or_gtTermAt t s
+  have hleBranch : BProv Ax_s (leTermAt t s :: G) target := by
+    let C : List Formula := leTermAt t s :: G
+    have hleTSC : BProv Ax_s C (leTermAt t s) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hleSTC : BProv Ax_s C (leTermAt s t) :=
+      BProv_context_cons (B := Ax_s) hleST
+    have heq : BProv Ax_s C (eq s t) :=
+      BProv_Ax_s_eq_of_leTermAt_leTermAt hleSTC hleTSC
+    exact BProv_orI2 (B := Ax_s) (G := C)
+      (a := ltTermAt s t) heq
+  have hltBranch : BProv Ax_s (ltTermAt s t :: G) target := by
+    let C : List Formula := ltTermAt s t :: G
+    have hltSTC : BProv Ax_s C (ltTermAt s t) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    exact BProv_orI1 (B := Ax_s) (G := C)
+      (b := eq s t) hltSTC
+  simpa [target] using BProv_orE hcmp hleBranch hltBranch
+
 /-- PA proves the strict closed-one bound case: from `x < y` and `y = 1`,
 derive `x = 0`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one {G : List Formula}
