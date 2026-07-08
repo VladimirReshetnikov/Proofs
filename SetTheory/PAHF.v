@@ -9744,6 +9744,278 @@ Proof.
     sentence_ax_s hle hbody).
 Qed.
 
+Lemma BProv_Ax_s_leAt_of_eqConst : forall G a b m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  m <= n ->
+  BProv Ax_s G (leAt a b).
+Proof.
+  intros G a b m n ha hb hmn.
+  set (w := n - m).
+  assert (hleft : BProv Ax_s G
+      (pEq (tAdd (tVar a) (Term.numeral w))
+        (tAdd (Term.numeral m) (Term.numeral w)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tVar a) (Term.numeral m) (Term.numeral w) ha).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral w))
+        (Term.numeral (m + w)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral w))
+        (Term.numeral n))).
+  {
+    replace n with (m + w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tAdd (tVar a) (Term.numeral w)) (tVar b))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar a) (Term.numeral w)) (Term.numeral n) (tVar b)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tVar a) (Term.numeral w))
+        (tAdd (Term.numeral m) (Term.numeral w))
+        (Term.numeral n) hleft hadd)
+      (BProv_eqSym Ax_s G (tVar b) (Term.numeral n) hb)).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))))).
+  {
+    simpl.
+    exact htarget.
+  }
+  unfold leAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b)))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_ltAt_of_eqConst : forall G a b m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  m < n ->
+  BProv Ax_s G (ltAt a b).
+Proof.
+  intros G a b m n ha hb hmn.
+  set (w := n - m - 1).
+  assert (hleft : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (tAdd (Term.numeral m) (tSucc (Term.numeral w))))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tVar a) (Term.numeral m) (tSucc (Term.numeral w)) ha).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral (m + S w)))).
+  {
+    pose proof (BProv_weaken_nil Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
+        (Term.numeral (m + S w)))
+      (BProv_Ax_s_addNumerals m (S w))) as h.
+    simpl in h.
+    exact h.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    replace n with (m + S w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w))) (tVar b))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar a) (tSucc (Term.numeral w))) (Term.numeral n)
+      (tVar b)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n) hleft hadd)
+      (BProv_eqSym Ax_s G (tVar b) (Term.numeral n) hb)).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b))))).
+  {
+    simpl.
+    exact htarget.
+  }
+  unfold ltAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b)))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_ltConst_of_eqConst : forall G a m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  m < n ->
+  BProv Ax_s G
+    (pEx (pEq (tAdd (tVar (S a)) (tSucc (tVar 0)))
+      (Term.numeral n))).
+Proof.
+  intros G a m n ha hmn.
+  set (w := n - m - 1).
+  assert (hleft : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (tAdd (Term.numeral m) (tSucc (Term.numeral w))))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tVar a) (Term.numeral m) (tSucc (Term.numeral w)) ha).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral (m + S w)))).
+  {
+    pose proof (BProv_weaken_nil Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
+        (Term.numeral (m + S w)))
+      (BProv_Ax_s_addNumerals m (S w))) as h.
+    simpl in h.
+    exact h.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    replace n with (m + S w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tAdd (tVar a) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar a) (tSucc (Term.numeral w)))
+      (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+      (Term.numeral n) hleft hadd).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (tVar (S a)) (tSucc (tVar 0)))
+          (Term.numeral n)))).
+  {
+    simpl.
+    rewrite Term.subst_numeral.
+    exact htarget.
+  }
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (Term.numeral n))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_ltConst_closed : forall G m n,
+  m < n ->
+  BProv Ax_s G
+    (pEx (pEq (tAdd (Term.numeral m) (tSucc (tVar 0)))
+      (Term.numeral n))).
+Proof.
+  intros G m n hmn.
+  set (w := n - m - 1).
+  assert (haddRaw : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral (m + S w)))).
+  {
+    pose proof (BProv_weaken_nil Ax_s G
+      (pEq (tAdd (Term.numeral m) (Term.numeral (S w)))
+        (Term.numeral (m + S w)))
+      (BProv_Ax_s_addNumerals m (S w))) as h.
+    simpl in h.
+    exact h.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq (tAdd (Term.numeral m) (tSucc (Term.numeral w)))
+        (Term.numeral n))).
+  {
+    replace n with (m + S w) by (subst w; lia).
+    exact haddRaw.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (pEq (tAdd (Term.numeral m) (tSucc (tVar 0)))
+          (Term.numeral n)))).
+  {
+    simpl.
+    repeat rewrite Term.subst_numeral.
+    exact hadd.
+  }
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (Term.numeral m) (tSucc (tVar 0))) (Term.numeral n))
+    (Term.numeral w) hbody).
+Qed.
+
+Lemma BProv_Ax_s_dvdAt_of_eqConst_mul : forall G a b m n q,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  m * q = n ->
+  BProv Ax_s G (dvdAt a b).
+Proof.
+  intros G a b m n q ha hb hmul.
+  assert (hleft : BProv Ax_s G
+      (pEq (tMul (tVar a) (Term.numeral q))
+        (tMul (Term.numeral m) (Term.numeral q)))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G
+      (tVar a) (Term.numeral m) (Term.numeral q) ha).
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq (tMul (Term.numeral m) (Term.numeral q))
+        (Term.numeral (m * q)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmul' : BProv Ax_s G
+      (pEq (tMul (Term.numeral m) (Term.numeral q))
+        (Term.numeral n))).
+  {
+    rewrite <- hmul.
+    exact hmulRaw.
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tMul (tVar a) (Term.numeral q)) (tVar b))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (tVar a) (Term.numeral q)) (Term.numeral n) (tVar b)
+      (BProv_eqTrans Ax_s G
+        (tMul (tVar a) (Term.numeral q))
+        (tMul (Term.numeral m) (Term.numeral q))
+        (Term.numeral n) hleft hmul')
+      (BProv_eqSym Ax_s G (tVar b) (Term.numeral n) hb)).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (pEq (tMul (tVar (S a)) (tVar 0)) (tVar (S b))))).
+  {
+    simpl.
+    exact htarget.
+  }
+  unfold dvdAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tMul (tVar (S a)) (tVar 0)) (tVar (S b)))
+    (Term.numeral q) hbody).
+Qed.
+
+Lemma BProv_Ax_s_dvdAt_of_eqConst : forall G a b m n,
+  BProv Ax_s G (eqConstAt a m) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  Nat.divide m n ->
+  BProv Ax_s G (dvdAt a b).
+Proof.
+  intros G a b m n ha hb hmn.
+  destruct hmn as [q hq].
+  apply (BProv_Ax_s_dvdAt_of_eqConst_mul G a b m n q ha hb).
+  nia.
+Qed.
+
 Definition boolAt (a : nat) : formula :=
   pOr (zeroAt a) (oneAt a).
 

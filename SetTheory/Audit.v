@@ -108,6 +108,12 @@ Check PA.Formula.BProv_Ax_s_mulRightNumeral.
 Check PA.Formula.BProv_Ax_s_addNumerals.
 Check PA.Formula.BProv_Ax_s_mulRightNumeral_numeral.
 Check PA.Formula.BProv_Ax_s_mulNumerals.
+Check PA.Formula.BProv_Ax_s_leAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_ltAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_ltConst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_ltConst_closed.
+Check PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul.
+Check PA.Formula.BProv_Ax_s_dvdAt_of_eqConst.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
