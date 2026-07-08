@@ -301,6 +301,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_doubleEqAt_of_eqConst_double
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_div2StepAt_eqConst_even
 #check @PA.Formula.BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
+#check @PA.Formula.BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one
 #check @PA.Formula.BProv_Ax_s_remAt_of_div2StepAt_two
 #check @PA.Formula.BProv_Ax_s_div2StepAt_closedSubst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst

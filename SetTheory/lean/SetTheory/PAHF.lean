@@ -13477,6 +13477,41 @@ theorem BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero {G : List Formula}
     BProv_eqTrans hstepEq hright
   simpa [doubleEqAt, d] using hdouble
 
+/-- If a binary-halving step has output bit `1`, then its current value is
+exactly twice its next value plus one. -/
+theorem BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one {G : List Formula}
+    {value half bit : Nat}
+    (hbit : BProv Ax_s G (eqConstAt bit 1))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (oddDoubleEqAt value half) := by
+  let d : Term := Term.add (Term.var half) (Term.var half)
+  have hstepEq : BProv Ax_s G
+      (eq (Term.var value) (Term.add d (Term.var bit))) := by
+    simpa [div2StepAt, d] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hbitOne : BProv Ax_s G
+      (eq (Term.add d (Term.var bit))
+        (Term.add d (Term.succ Term.zero))) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eq_congr_add_right d hbit
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add d (Term.succ Term.zero))
+        (Term.succ (Term.add d Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
+    BProv_eq_congr_succ
+      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+  have hright : BProv Ax_s G
+      (eq (Term.add d (Term.var bit)) (Term.succ d)) :=
+    BProv_eqTrans hbitOne (BProv_eqTrans haddSucc haddZero)
+  have hodd : BProv Ax_s G (eq (Term.var value) (Term.succ d)) :=
+    BProv_eqTrans hstepEq hright
+  simpa [oddDoubleEqAt, d] using hodd
+
 /-- A binary-halving step is a remainder equation modulo any slot proved to be
 `2`: the output bit is the remainder and the half slot is the quotient. -/
 theorem BProv_Ax_s_remAt_of_div2StepAt_two {G : List Formula}
