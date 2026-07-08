@@ -12527,6 +12527,18 @@ theorem BProv_Ax_s_remEqAt_of_remAt {G : List Formula}
     (fun f hf => sentence_ax_s (f := f) hf) hrem (by
       simpa [remAt, body] using hbody)
 
+/-- If the remainder slot is itself divisible by the modulus used in a
+`remAt` proof, then that remainder is zero.  The divisibility of the remainder
+is a separate premise: the lemma only combines it with the strict bound carried
+by `remAt`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_remAt {G : List Formula}
+    {rem value modulus : Nat}
+    (hdvdRem : BProv Ax_s G (dvdAt modulus rem))
+    (hrem : BProv Ax_s G (remAt rem value modulus)) :
+    BProv Ax_s G (eqConstAt rem 0) :=
+  BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt hdvdRem
+    (BProv_Ax_s_ltAt_of_remAt hrem)
+
 /-- Eliminate a term-parametric remainder proof to its strict boundedness
 component. -/
 theorem BProv_Ax_s_ltTermAt_of_remTermAt {G : List Formula}
@@ -13123,10 +13135,39 @@ theorem BProv_Ax_s_betaTermAt_zero_opened_body_dvd
         (remTermAt (Term.rename Nat.succ Term.zero) (code+1) 0) := by
       simpa [body] using
         (BProv_Ax_s_betaTermAt_opened_body_rem
-          (G := G) (out := Term.zero) (code := code) (step := step)
-          (idx := idx))
+      (G := G) (out := Term.zero) (code := code) (step := step)
+      (idx := idx))
     simpa [Term.rename] using hraw
   exact BProv_Ax_s_dvdAt_of_remTermAt_zero hrem
+
+/-- In an opened raw beta witness, the output is zero as soon as a separate
+argument proves that output divisible by the opened beta modulus.  This keeps
+the hard beta-functionality work explicit: this lemma only consumes the
+output-divisibility fact and the bounded remainder already present in `betaAt`.
+-/
+theorem BProv_Ax_s_betaAt_opened_body_output_zero_of_output_dvd
+    {G : List Formula} {out code step idx : Nat}
+    (hdvdOut :
+      let body : Formula :=
+        and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)
+      BProv Ax_s (body :: G.map (rename Nat.succ)) (dvdAt 0 (out+1))) :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+        (remAt (out+1) (code+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ)) (eqConstAt (out+1) 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hrem : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (remAt (out+1) (code+1) 0) :=
+    BProv_Ax_s_betaAt_opened_body_rem
+      (G := G) (out := out) (code := code) (step := step) (idx := idx)
+  exact BProv_Ax_s_eqConstAt_zero_of_dvdAt_remAt
+    (by simpa [body] using hdvdOut) hrem
 
 /-- Opened term-output raw-beta specialization of
 `BProv_Ax_s_betaModTerm_modEq_zero_bot`. -/
