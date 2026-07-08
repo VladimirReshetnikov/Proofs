@@ -21724,6 +21724,61 @@ theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
         (fun f hf => sentence_ax_s (f := f) hf) hbodyMapped
   simpa [hfLtDistinguishesTermAt, lowLtSucc, target, Term.rename] using hall
 
+/-- The equality branch of the successor-step split follows from the standalone
+open theorem that every numeric successor code has a distinguishing member over
+its predecessor code.
+
+The branch context has both the fresh low variable and the predecessor-high
+variable.  The standalone theorem is first renamed through the fresh low slot,
+then the low side is transported from `high` to `low` using the equality
+assumption. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_self
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s
+      [eq (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowEqHigh : Formula := eq (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowEqHigh, ih]
+  let self : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0
+  have hselfRenRaw : BProv Ax_s [] (rename Nat.succ self) := by
+    simpa [self] using
+      BProv_rename_of_sentences
+        (B := Ax_s) (G := []) (phi := self)
+        (fun f hf => sentence_ax_s (f := f) hf)
+        (by simpa [self] using hself) Nat.succ
+  have hselfRen : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 1) := by
+    simpa [self, rename_hfSomeDistinguishesTermAt_succ, Term.rename]
+      using hselfRenRaw
+  have hselfC : BProv Ax_s C
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 1) :=
+    BProv_weaken_nil (B := Ax_s) (G := C) hselfRen
+  have heq : BProv Ax_s C (eq (Term.var 0) (Term.var 1)) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, lowEqHigh])
+  exact BProv_hfSomeDistinguishesTermAt_of_low_eq
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := C) (oldLow := 1) (newLow := 0)
+    (highCode := Term.succ (Term.var 1)) hselfC heq
+
+/-- Reduce the successor step to its strict predecessor branch plus the
+standalone successor-vs-predecessor distinguisher theorem. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
+    hltCase
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_self hself)
+
 /-- Translated HF extensionality follows from the single open PA successor
 step for lower-code distinguishers. -/
 theorem BProv_Ax_s_translated_HF_extensionality_of_successor_step
@@ -21752,6 +21807,22 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_successor_cases
   BProv_Ax_s_translated_HF_extensionality_of_successor_step
     (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
       hltCase heqCase)
+
+/-- Translated HF extensionality from the strict successor branch and the
+standalone successor-vs-predecessor distinguisher theorem. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_strict_and_self
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+      hltCase hself)
 
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
