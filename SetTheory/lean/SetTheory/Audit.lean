@@ -330,6 +330,7 @@ open SetTheory
 #check @PA.Formula.hfMemTermAt
 #check @PA.Formula.hfMemTermAt_var
 #check @PA.Formula.hfMemTermAt_zero
+#check @PA.Formula.rename_hfMemTermAt_succ
 #check @PA.Formula.subst_instTerm_hfMemAt_succ_zero
 #check @PA.Formula.subst_up_zero_hfMemAt_zero_set
 #check @PA.Formula.BProv_Ax_s_ltTermAt_of_remTermAt
@@ -594,6 +595,9 @@ open SetTheory
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_low_eq
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
+#check @PA.Formula.BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_dvd
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_dvd
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low

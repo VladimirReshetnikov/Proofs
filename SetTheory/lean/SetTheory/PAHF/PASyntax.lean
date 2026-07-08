@@ -2655,6 +2655,17 @@ theorem hfMemTermAt_zero (elem : Nat) :
     hfMemTermAt elem Term.zero = hfMemZeroSetAt elem := by
   simp [hfMemTermAt, hfMemZeroSetAt, Term.rename]
 
+/-- Renaming through one fresh binder shifts both the element slot and the
+set-code term in a term-parametric membership atom. -/
+theorem rename_hfMemTermAt_succ (elem : Nat) (setCode : Term) :
+    rename Nat.succ (hfMemTermAt elem setCode) =
+      hfMemTermAt (elem+1) (Term.rename Nat.succ setCode) := by
+  simp [hfMemTermAt, betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaAt, remAt, ltAt, leAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaDiv2BitAt, betaAtSuccIdx, div2StepAt,
+    boolAt, zeroAt, oneAt, eqConstAt, betaModTerm, rename, Term.rename,
+    SetTheory.up, Term.rename_comp]
+
 /-- Instantiating the set-code slot of `hfMemAt` by an arbitrary PA term yields
 the term-parametric membership macro. -/
 theorem subst_instTerm_hfMemAt_succ_zero (elem : Nat) (setCode : Term) :
@@ -21186,6 +21197,104 @@ theorem BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
     (B := B) (G := G) (elem := elem) (low := low)
     (highCode := highCode)
     (BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot hhigh hlowBot)
+
+/-- If the distinguishing element is proved to be `0`, it belongs to the
+term-parametric high code, and the low code is divisible by a slot proved to be
+`2`, then the element distinguishes the high term from the low slot. -/
+theorem BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_dvd
+    {G : List Formula} {elem low modulus : Nat} {highCode : Term}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hhigh : BProv Ax_s G (hfMemTermAt elem highCode))
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdvdLow : BProv Ax_s G (dvdAt modulus low)) :
+    BProv Ax_s G (hfDistinguishesTermAt elem highCode low) := by
+  let lowMem : Formula := hfMemAt elem low
+  have hbot : BProv Ax_s (lowMem :: G) bot := by
+    have helemCtx : BProv Ax_s (lowMem :: G) (eqConstAt elem 0) :=
+      BProv_context_cons (B := Ax_s) helem
+    have hmodCtx : BProv Ax_s (lowMem :: G) (eqConstAt modulus 2) :=
+      BProv_context_cons (B := Ax_s) hmod
+    have hdvdCtx : BProv Ax_s (lowMem :: G) (dvdAt modulus low) :=
+      BProv_context_cons (B := Ax_s) hdvdLow
+    have hlow : BProv Ax_s (lowMem :: G) (hfMemAt elem low) :=
+      BProv_ass (B := Ax_s) (G := lowMem :: G) (by simp [lowMem])
+    exact BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_dvd_set
+      helemCtx hmodCtx hdvdCtx hlow
+  exact BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot hhigh
+    (by simpa [lowMem] using hbot)
+
+/-- Existential form of
+`BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_dvd`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_dvd
+    {G : List Formula} {elem low modulus : Nat} {highCode : Term}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hhigh : BProv Ax_s G (hfMemTermAt elem highCode))
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdvdLow : BProv Ax_s G (dvdAt modulus low)) :
+    BProv Ax_s G (hfSomeDistinguishesTermAt highCode low) :=
+  BProv_hfSomeDistinguishesTermAt_intro_var
+    (B := Ax_s) (G := G) (elem := elem) (low := low)
+    (highCode := highCode)
+    (BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_dvd
+      helem hhigh hmod hdvdLow)
+
+/-- If zero belongs to the term-parametric high code and the low code is
+explicitly even, then zero distinguishes the high term from the low slot.
+
+The auxiliary modulus slot for divisibility by `2` is introduced locally, so
+callers only provide the natural `doubleEqAt` proof for the low code. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
+    {G : List Formula} {elem low lowHalf : Nat} {highCode : Term}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hhigh : BProv Ax_s G (hfMemTermAt elem highCode))
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G (hfSomeDistinguishesTermAt highCode low) := by
+  let modEq : Formula := eqConstAt 0 2
+  have hex : BProv Ax_s G (ex modEq) := by
+    simpa [modEq] using BProv_exists_eqConstAt (B := Ax_s) (G := G) 2
+  have hbody : BProv Ax_s (modEq :: G.map (rename Nat.succ))
+      (rename Nat.succ (hfSomeDistinguishesTermAt highCode low)) := by
+    let C : List Formula := modEq :: G.map (rename Nat.succ)
+    have hmod : BProv Ax_s C (eqConstAt 0 2) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, modEq])
+    have helemRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt elem 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        helem Nat.succ
+    have helemC : BProv Ax_s C (eqConstAt (elem+1) 0) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := modEq) helemRen
+    have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (hfMemTermAt elem highCode)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhigh Nat.succ
+    have hhighC : BProv Ax_s C
+        (hfMemTermAt (elem+1) (Term.rename Nat.succ highCode)) := by
+      simpa [C, rename_hfMemTermAt_succ] using
+        BProv_context_cons (B := Ax_s) (a := modEq) hhighRen
+    have hdoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt low lowHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hlowDouble Nat.succ
+    have hdoubleC : BProv Ax_s C (doubleEqAt (low+1) (lowHalf+1)) := by
+      simpa [C, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := modEq) hdoubleRen
+    have hdvdLow : BProv Ax_s C (dvdAt 0 (low+1)) :=
+      BProv_Ax_s_dvdAt_of_doubleEqAt_two hmod hdoubleC
+    have hsome : BProv Ax_s C
+        (hfSomeDistinguishesTermAt
+          (Term.rename Nat.succ highCode) (low+1)) :=
+      BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_dvd
+        (G := C) (elem := elem+1) (low := low+1)
+        (modulus := 0) (highCode := Term.rename Nat.succ highCode)
+        helemC hhighC hmod hdvdLow
+    simpa [rename_hfSomeDistinguishesTermAt_succ] using hsome
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [modEq] using hbody)
 
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
