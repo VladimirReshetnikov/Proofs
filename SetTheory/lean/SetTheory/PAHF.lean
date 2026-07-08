@@ -12720,6 +12720,57 @@ theorem BProv_Ax_s_eq_of_same_quotient_remainder_terms
     BProv_eqTrans (BProv_eqSym h₁) h₂
   exact BProv_Ax_s_add_cancel_left_terms hsame
 
+/-- If `m` is a successor, then `m * S d` is itself a successor.  The theorem
+keeps the predecessor explicit because the quotient-comparison branch only
+needs the successor shape, not a hidden positivity definition. -/
+theorem BProv_Ax_s_mul_succ_right_eq_succ_terms
+    {G : List Formula} {modulus pred diff : Term}
+    (hmodSucc : BProv Ax_s G (eq modulus (Term.succ pred))) :
+    BProv Ax_s G
+      (eq (Term.mul modulus (Term.succ diff))
+        (Term.succ (Term.add (Term.mul modulus diff) pred))) := by
+  have hmulSucc : BProv Ax_s G
+      (eq (Term.mul modulus (Term.succ diff))
+        (Term.add (Term.mul modulus diff) modulus)) :=
+    BProv_weaken_nil (BProv_Ax_s_mulSucc_terms modulus diff)
+  have hmodCong : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus diff) modulus)
+        (Term.add (Term.mul modulus diff) (Term.succ pred))) :=
+    BProv_eq_congr_add_right (Term.mul modulus diff) hmodSucc
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus diff) (Term.succ pred))
+        (Term.succ (Term.add (Term.mul modulus diff) pred))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms (Term.mul modulus diff) pred)
+  exact BProv_eqTrans (BProv_eqTrans hmulSucc hmodCong) haddSucc
+
+/-- A successor-sized summand cannot be inserted after a base term and then
+cancel back to that base. -/
+theorem BProv_Ax_s_add_successor_summand_ne_self_terms
+    {G : List Formula} {base extra rem pred : Term}
+    (hextraSucc : BProv Ax_s G (eq extra (Term.succ pred)))
+    (hloop : BProv Ax_s G
+      (eq (Term.add base (Term.add extra rem)) base)) :
+    BProv Ax_s G bot := by
+  have hinnerCong : BProv Ax_s G
+      (eq (Term.add extra rem) (Term.add (Term.succ pred) rem)) :=
+    BProv_eq_congr_add_left rem hextraSucc
+  have hsuccAdd : BProv Ax_s G
+      (eq (Term.add (Term.succ pred) rem)
+        (Term.succ (Term.add pred rem))) :=
+    BProv_Ax_s_succ_add_terms pred rem
+  have hinnerSucc : BProv Ax_s G
+      (eq (Term.add extra rem) (Term.succ (Term.add pred rem))) :=
+    BProv_eqTrans hinnerCong hsuccAdd
+  have hbaseCong : BProv Ax_s G
+      (eq (Term.add base (Term.add extra rem))
+        (Term.add base (Term.succ (Term.add pred rem)))) :=
+    BProv_eq_congr_add_right base hinnerSucc
+  have hbad : BProv Ax_s G
+      (eq (Term.add base (Term.succ (Term.add pred rem))) base) :=
+    BProv_eqTrans (BProv_eqSym hbaseCong) hloop
+  exact BProv_Ax_s_add_succ_ne_self_terms hbad
+
 /-- Algebraic core for the quotient-comparison branch of remainder
 functionality.  If the divisibility quotient `d` is `q + w`, and the same value
 is also written as `q * m + r`, then the remainder is `m * w`.
@@ -12758,6 +12809,66 @@ theorem BProv_Ax_s_remainder_eq_mul_of_le_quotient_terms
         (Term.add (Term.mul modulus remQuot) rem)) :=
     BProv_eqTrans hleft hright
   exact BProv_eqSym (BProv_Ax_s_add_cancel_left_terms hsameLeft)
+
+/-- Algebraic contradiction for the quotient-comparison branch where the
+remainder quotient is strictly larger than the divisibility quotient.  With a
+positive modulus, the decomposition would make a product equal to itself plus
+a successor-sized summand. -/
+theorem BProv_Ax_s_remainder_gt_quotient_bot_terms
+    {G : List Formula} {modulus modPred divQuot remQuot diff rem : Term}
+    (hmodSucc : BProv Ax_s G (eq modulus (Term.succ modPred)))
+    (hgtQuot : BProv Ax_s G
+      (eq (Term.add divQuot (Term.succ diff)) remQuot))
+    (hdecomp : BProv Ax_s G
+      (eq (Term.mul modulus divQuot)
+        (Term.add (Term.mul remQuot modulus) rem))) :
+    BProv Ax_s G bot := by
+  let base : Term := Term.mul modulus divQuot
+  let extra : Term := Term.mul modulus (Term.succ diff)
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul remQuot modulus) (Term.mul modulus remQuot)) :=
+    BProv_Ax_s_mul_comm_terms remQuot modulus
+  have hdecompComm : BProv Ax_s G
+      (eq base (Term.add (Term.mul modulus remQuot) rem)) := by
+    have hrhs : BProv Ax_s G
+        (eq (Term.add (Term.mul remQuot modulus) rem)
+          (Term.add (Term.mul modulus remQuot) rem)) :=
+      BProv_eq_congr_add_left rem hcomm
+    simpa [base] using BProv_eqTrans hdecomp hrhs
+  have hquotCong : BProv Ax_s G
+      (eq (Term.mul modulus remQuot)
+        (Term.mul modulus (Term.add divQuot (Term.succ diff)))) :=
+    BProv_eq_congr_mul_right modulus (BProv_eqSym hgtQuot)
+  have hmulAdd : BProv Ax_s G
+      (eq (Term.mul modulus (Term.add divQuot (Term.succ diff)))
+        (Term.add base extra)) := by
+    simpa [base, extra] using
+      BProv_Ax_s_mul_add_terms modulus divQuot (Term.succ diff)
+  have hprodExpand : BProv Ax_s G
+      (eq (Term.mul modulus remQuot) (Term.add base extra)) :=
+    BProv_eqTrans hquotCong hmulAdd
+  have hrhsExpand : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus remQuot) rem)
+        (Term.add (Term.add base extra) rem)) :=
+    BProv_eq_congr_add_left rem hprodExpand
+  have hassoc : BProv Ax_s G
+      (eq (Term.add (Term.add base extra) rem)
+        (Term.add base (Term.add extra rem))) :=
+    BProv_Ax_s_add_assoc_terms base extra rem
+  have hloopForward : BProv Ax_s G
+      (eq base (Term.add base (Term.add extra rem))) :=
+    BProv_eqTrans (BProv_eqTrans hdecompComm hrhsExpand) hassoc
+  have hextraSucc : BProv Ax_s G
+      (eq extra
+        (Term.succ (Term.add (Term.mul modulus diff) modPred))) := by
+    simpa [extra] using
+      BProv_Ax_s_mul_succ_right_eq_succ_terms
+        (G := G) (modulus := modulus) (pred := modPred)
+        (diff := diff) hmodSucc
+  exact BProv_Ax_s_add_successor_summand_ne_self_terms
+    (base := base) (extra := extra) (rem := rem)
+    (pred := Term.add (Term.mul modulus diff) modPred)
+    hextraSucc (BProv_eqSym hloopForward)
 
 /-- A term-parametric remainder proof whose remainder term is literally `0`
 exhibits a divisibility witness for the dividend by the modulus.  This is the
