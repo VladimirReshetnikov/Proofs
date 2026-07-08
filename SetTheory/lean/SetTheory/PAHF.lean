@@ -8959,6 +8959,80 @@ theorem BProv_Ax_s_div2StepAt_closedSubst {G : List Formula}
       (BProv_andI hboolBody heqBody)
   simpa [div2StepAt] using hbody
 
+/-- Constructor for the formula obtained after the value and half variables of
+`div2StepAt` have been instantiated, while the bit slot is a free variable
+with an explicit closed-numeral proof. -/
+theorem BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
+    {G : List Formula}
+    {bit b v h : Nat}
+    (hbit : BProv Ax_s G (eqConstAt bit b))
+    (hb : b = 0 ∨ b = 1)
+    (hval : h + h + b = v) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (div2StepAt 1 0 (bit+2)))) := by
+  have hbool : BProv Ax_s G (boolAt bit) :=
+    BProv_Ax_s_boolAt_of_eqConst hbit hb
+  have hboolBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (boolAt (bit+2)))) := by
+    simpa [boolAt, zeroAt, oneAt, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename] using hbool
+  have hdoubleRaw : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral h) (Term.numeral h))
+        (Term.numeral (h + h))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals h h)
+  have haddLeft : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.numeral h) (Term.numeral h))
+          (Term.var bit))
+        (Term.add (Term.numeral (h + h)) (Term.var bit))) :=
+    BProv_eq_congr_add_left (Term.var bit) hdoubleRaw
+  have haddRight : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (h + h)) (Term.var bit))
+        (Term.add (Term.numeral (h + h)) (Term.numeral b))) :=
+    BProv_eq_congr_add_right (Term.numeral (h + h)) hbit
+  have haddRaw : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral (h + h + b))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals (h + h) b)
+  have hadd : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral v)) := by
+    simpa [hval] using haddRaw
+  have hcomputed : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.numeral h) (Term.numeral h))
+          (Term.var bit))
+        (Term.numeral v)) :=
+    BProv_eqTrans (BProv_eqTrans haddLeft haddRight) hadd
+  have heqBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (eq (Term.var 1)
+            (Term.add (Term.add (Term.var 0) (Term.var 0))
+              (Term.var (bit+2)))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename] using
+      BProv_eqSym hcomputed
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (and (boolAt (bit+2))
+            (eq (Term.var 1)
+              (Term.add (Term.add (Term.var 0) (Term.var 0))
+                (Term.var (bit+2))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hboolBody heqBody)
+  simpa [div2StepAt] using hbody
+
 /-- From PA proofs that the three slots contain fixed numerals, and from an
 explicit Euclidean-division witness in the metatheory, derive the corresponding
 `remAt` relation. -/
@@ -9695,6 +9769,80 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst {G : List Formula}
     Term.upSubst] using
     (BProv_exI (B := Ax_s) (G := G)
       (a := ex (ex body))
+      (t := Term.numeral cur) hnextEx)
+
+/-- Constructor for `betaDiv2BitAt` from explicit beta-entry quotients and a
+closed proof of the bit slot. -/
+theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst {G : List Formula}
+    {bit code step idx b c s i cur next qcur qnext : Nat}
+    (hbit : BProv Ax_s G (eqConstAt bit b))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hcurLt : cur < BetaModulus s i)
+    (hcurVal : qcur * BetaModulus s i + cur = c)
+    (hnextLt : next < BetaModulus s (i + 1))
+    (hnextVal : qnext * BetaModulus s (i + 1) + next = c)
+    (hb : b = 0 ∨ b = 1)
+    (hdiv : next + next + b = cur) :
+    BProv Ax_s G (betaDiv2BitAt bit code step idx) := by
+  let body : Formula :=
+    and
+      (betaAt 1 (code+2) (step+2) (idx+2))
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2)))
+  have hcurBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (betaAt 1 (code+2) (step+2) (idx+2)))) := by
+    simpa [betaAt, remAt, betaModTerm, ltAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_subst_instTerm_rename_succ] using
+      (BProv_Ax_s_betaAt_constOutSubst_of_eqConst
+        (code := code) (step := step) (idx := idx)
+        (o := cur) (c := c) (s := s) (i := i) (q := qcur)
+        hcode hstep hidx hcurLt hcurVal)
+  have hnextBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (betaAtSuccIdx 0 (code+2) (step+2) (idx+2)))) := by
+    simpa [betaAtSuccIdx, betaAt, remAt, betaModTerm, ltAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      term_subst_instTerm_rename_succ] using
+      (BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
+        (code := code) (step := step) (idx := idx)
+        (o := next) (c := c) (s := s) (i := i) (q := qnext)
+        hcode hstep hidx hnextLt hnextVal)
+  have hdivBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (div2StepAt 1 0 (bit+2)))) :=
+    BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
+      (bit := bit) (b := b) (v := cur) (h := next)
+      hbit hb hdiv
+  have htail : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (and
+            (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+            (div2StepAt 1 0 (bit+2))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hnextBeta hdivBody)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hcurBeta htail)
+  have hnextEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral cur)) (ex body)) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm (Term.numeral cur))) body)
+        (t := Term.numeral next) hbody)
+  simpa [betaDiv2BitAt, body, subst, instTerm, Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := ex body)
       (t := Term.numeral cur) hnextEx)
 
 /-- PA proves every variable-renamed body of one of its sealed induction

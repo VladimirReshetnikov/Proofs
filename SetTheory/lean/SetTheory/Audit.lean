@@ -185,6 +185,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_boolAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_closedSubst
+#check @PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_remAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_remAt_constMod_of_eqConst
 #check @PA.Formula.BProv_Ax_s_remAt_constRemMod_of_eqConst
@@ -198,6 +199,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule
