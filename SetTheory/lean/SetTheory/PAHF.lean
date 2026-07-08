@@ -7076,6 +7076,14 @@ def betaDiv2StepWitnessAt (code step idx : Nat) : Formula :=
           (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
           (div2StepAt 2 1 0))))))
 
+/-- Term-indexed wrapper for a binary-halving beta step.  The raw step witness
+remains the slot-indexed relation; the outer witness slot records the PA term
+used as the sequence index. -/
+def betaDiv2StepWitnessAtTermIdx (code step : Nat) (idx : Term) : Formula :=
+  ex (and
+    (eq (Term.var 0) (Term.rename Nat.succ idx))
+    (betaDiv2StepWitnessAt (code+1) (step+1) 0))
+
 /-- Every adjacent pair below `limit` in a beta-coded sequence is one
 binary-halving step. -/
 def betaDiv2StepAt (code step limit : Nat) : Formula :=
@@ -19814,6 +19822,164 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_eqConst_div_two
     BProv_exE_of_sentences
       (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
       hwit (by simpa [rename, body] using houter)
+
+/-- Eliminate a term-indexed step wrapper to its index equation in the opened
+body. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_opened_body_idx
+    {G : List Formula} {code step : Nat} {idx : Term} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ idx))
+        (betaDiv2StepWitnessAt (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (eq (Term.var 0) (Term.rename Nat.succ idx)) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idx))
+      (betaDiv2StepWitnessAt (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ))
+      (by simp)
+  exact BProv_andE1 hbody
+
+/-- Eliminate a term-indexed step wrapper to its raw slot-indexed step witness
+in the opened body. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_opened_body_witness
+    {G : List Formula} {code step : Nat} {idx : Term} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ idx))
+        (betaDiv2StepWitnessAt (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (betaDiv2StepWitnessAt (code+1) (step+1) 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idx))
+      (betaDiv2StepWitnessAt (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ))
+      (by simp)
+  exact BProv_andE2 hbody
+
+/-- A term-indexed step witness propagates a closed current value to the
+successor term index.  This is only a wrapper around the slot-indexed witness
+consumer; the wrapper supplies the equality between the fresh index slot and
+the PA index term. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_eqConst_div_two
+    {G : List Formula} {code step cur : Nat} {idxTerm : Term}
+    (hcurTerm : BProv Ax_s G
+      (betaTermAtTermIdx (Term.numeral cur) code step idxTerm))
+    (hwitness : BProv Ax_s G
+      (betaDiv2StepWitnessAtTermIdx code step idxTerm)) :
+    BProv Ax_s G
+      (betaTermAtTermIdx (Term.numeral (cur / 2)) code step
+        (Term.succ idxTerm)) := by
+  let target : Formula :=
+    betaTermAtTermIdx (Term.numeral (cur / 2)) code step
+      (Term.succ idxTerm)
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idxTerm))
+      (betaDiv2StepWitnessAt (code+1) (step+1) 0)
+  have hopened : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hidx : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ idxTerm)) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_opened_body_idx
+          (G := G) (code := code) (step := step) (idx := idxTerm))
+    have hwitRaw : BProv Ax_s C
+        (betaDiv2StepWitnessAt (code+1) (step+1) 0) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_opened_body_witness
+          (G := G) (code := code) (step := step) (idx := idxTerm))
+    have hcurRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (betaTermAtTermIdx (Term.numeral cur) code step idxTerm)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hcurTerm Nat.succ
+    have hcurC : BProv Ax_s C
+        (betaTermAtTermIdx (Term.numeral cur) (code+1) (step+1)
+          (Term.rename Nat.succ idxTerm)) := by
+      simpa [C, body, betaTermAtTermIdx, betaTermAt, remTermAt, ltTermAt,
+        betaModTerm, rename, Term.rename, SetTheory.up, Term.numeral,
+        term_rename_up_succ_rename_succ, Term.rename_comp] using
+        BProv_context_cons (B := Ax_s) hcurRen
+    have hidxEq : BProv Ax_s C
+        (eq (Term.rename Nat.succ idxTerm) (Term.var 0)) :=
+      BProv_eqSym hidx
+    have hnext : BProv Ax_s C
+        (betaTermAtTermIdx (Term.numeral (cur / 2)) (code+1) (step+1)
+          (Term.succ (Term.rename Nat.succ idxTerm))) :=
+      BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_eqConst_div_two
+        (G := C) (code := code+1) (step := step+1) (idx := 0)
+        (cur := cur) (idxTerm := Term.rename Nat.succ idxTerm)
+        hcurC hidxEq hwitRaw
+    simpa [target, body, betaTermAtTermIdx, betaTermAt, remTermAt,
+      ltTermAt, betaModTerm, rename, Term.rename, SetTheory.up,
+      Term.numeral, term_rename_up_succ_rename_succ, Term.rename_comp]
+      using hnext
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hwitness (by
+      simpa [betaDiv2StepWitnessAtTermIdx, body] using hopened)
+
+/-- Eliminate a bounded beta-halving trace at an arbitrary PA index term. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_termIdx_of_leTerm
+    {G : List Formula} {code step last : Nat} {idxTerm : Term}
+    (hsteps : BProv Ax_s G (betaDiv2StepsThroughAt code step last))
+    (hle : BProv Ax_s G (leTermAt idxTerm (Term.var last))) :
+    BProv Ax_s G (betaDiv2StepWitnessAtTermIdx code step idxTerm) := by
+  let rawWitness : Formula :=
+    betaDiv2StepWitnessAt (code+1) (step+1) 0
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idxTerm))
+      rawWitness
+  have himpRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := idxTerm) hsteps
+  have himp : BProv Ax_s G
+      (imp (leTermAt idxTerm (Term.var last))
+        (subst (instTerm idxTerm) rawWitness)) := by
+    simpa [rawWitness, betaDiv2StepsThroughAt, leAt, leTermAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+      div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ] using himpRaw
+  have hwitSubst : BProv Ax_s G
+      (subst (instTerm idxTerm) rawWitness) :=
+    BProv_mp Ax_s G _ _ himp hle
+  have hidxInst : BProv Ax_s G
+      (subst (instTerm idxTerm)
+        (eq (Term.var 0) (Term.rename Nat.succ idxTerm))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using
+      (BProv_eqRefl (B := Ax_s) (G := G) idxTerm)
+  have hbody : BProv Ax_s G (subst (instTerm idxTerm) body) := by
+    simpa [body, rawWitness, subst, instTerm, Term.subst, Term.upSubst]
+      using BProv_andI hidxInst hwitSubst
+  simpa [betaDiv2StepWitnessAtTermIdx, body, rawWitness] using
+    BProv_exI (B := Ax_s) (G := G) (a := body)
+      (t := idxTerm) hbody
+
+/-- One-step closed-value propagation from a bounded trace at a PA index term. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_next_termIdx_eqConst_div_two_of_leTerm
+    {G : List Formula} {code step last cur : Nat} {idxTerm : Term}
+    (hcurTerm : BProv Ax_s G
+      (betaTermAtTermIdx (Term.numeral cur) code step idxTerm))
+    (hsteps : BProv Ax_s G (betaDiv2StepsThroughAt code step last))
+    (hle : BProv Ax_s G (leTermAt idxTerm (Term.var last))) :
+    BProv Ax_s G
+      (betaTermAtTermIdx (Term.numeral (cur / 2)) code step
+        (Term.succ idxTerm)) :=
+  BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_eqConst_div_two
+    hcurTerm
+    (BProv_Ax_s_betaDiv2StepsThroughAt_step_termIdx_of_leTerm hsteps hle)
 
 /-- Eliminate a bounded beta-halving trace at a particular index. -/
 theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le {G : List Formula}
