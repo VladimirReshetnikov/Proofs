@@ -10023,6 +10023,143 @@ theorem BProv_Ax_s_zero_mul_term {G : List Formula} (t : Term) :
   have hinst := BProv_allE (B := Ax_s) (G := G) (t := t) hall
   simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
 
+/-- PA proves the left-successor normal form for multiplication. -/
+theorem BProv_Ax_s_succ_mul_all (x : Term) :
+    BProv Ax_s []
+      (all
+        (eq
+          (Term.mul (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
+          (Term.add
+            (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+            (Term.var 0)))) := by
+  let phi : Formula :=
+    eq
+      (Term.mul (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
+      (Term.add
+        (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+        (Term.var 0))
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    have hleft : BProv Ax_s []
+        (eq (Term.mul (Term.succ x) Term.zero) Term.zero) :=
+      BProv_Ax_s_mulZero_term (Term.succ x)
+    have hxZero : BProv Ax_s []
+        (eq (Term.mul x Term.zero) Term.zero) :=
+      BProv_Ax_s_mulZero_term x
+    have haddZero : BProv Ax_s []
+        (eq (Term.add (Term.mul x Term.zero) Term.zero)
+          (Term.mul x Term.zero)) :=
+      BProv_Ax_s_addZero_term (Term.mul x Term.zero)
+    have hright : BProv Ax_s []
+        (eq (Term.add (Term.mul x Term.zero) Term.zero) Term.zero) :=
+      BProv_eqTrans haddZero hxZero
+    have htarget : BProv Ax_s []
+        (eq (Term.mul (Term.succ x) Term.zero)
+          (Term.add (Term.mul x Term.zero) Term.zero)) :=
+      BProv_eqTrans hleft (BProv_eqSym hright)
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using htarget
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let xs : Term := Term.rename Nat.succ x
+    let y : Term := Term.var 0
+    let A : Term := Term.mul xs y
+    have hphi : BProv Ax_s [phi]
+        (eq (Term.mul (Term.succ xs) y) (Term.add A y)) :=
+      BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi, xs, y, A])
+    have hleftStep : BProv Ax_s [phi]
+        (eq (Term.mul (Term.succ xs) (Term.succ y))
+          (Term.add (Term.mul (Term.succ xs) y) (Term.succ xs))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_mulSucc_terms (Term.succ xs) y)
+    have hleftCong : BProv Ax_s [phi]
+        (eq
+          (Term.add (Term.mul (Term.succ xs) y) (Term.succ xs))
+          (Term.add (Term.add A y) (Term.succ xs))) :=
+      BProv_eq_congr_add_left (Term.succ xs) hphi
+    have hleftNorm : BProv Ax_s [phi]
+        (eq (Term.mul (Term.succ xs) (Term.succ y))
+          (Term.add (Term.add A y) (Term.succ xs))) :=
+      BProv_eqTrans hleftStep hleftCong
+    have hrightMul : BProv Ax_s [phi]
+        (eq (Term.mul xs (Term.succ y)) (Term.add A xs)) :=
+      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms xs y)
+    have hrightCong : BProv Ax_s [phi]
+        (eq
+          (Term.add (Term.mul xs (Term.succ y)) (Term.succ y))
+          (Term.add (Term.add A xs) (Term.succ y))) :=
+      BProv_eq_congr_add_left (Term.succ y) hrightMul
+    have hleftSucc : BProv Ax_s [phi]
+        (eq (Term.add (Term.add A y) (Term.succ xs))
+          (Term.succ (Term.add (Term.add A y) xs))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms (Term.add A y) xs)
+    have hassocLeft : BProv Ax_s [phi]
+        (eq (Term.add (Term.add A y) xs)
+          (Term.add A (Term.add y xs))) :=
+      BProv_Ax_s_add_assoc_terms A y xs
+    have hcommYX : BProv Ax_s [phi]
+        (eq (Term.add y xs) (Term.add xs y)) :=
+      BProv_Ax_s_add_comm_terms y xs
+    have hcongYX : BProv Ax_s [phi]
+        (eq (Term.add A (Term.add y xs))
+          (Term.add A (Term.add xs y))) :=
+      BProv_eq_congr_add_right A hcommYX
+    have hassocRight : BProv Ax_s [phi]
+        (eq (Term.add (Term.add A xs) y)
+          (Term.add A (Term.add xs y))) :=
+      BProv_Ax_s_add_assoc_terms A xs y
+    have hswap : BProv Ax_s [phi]
+        (eq (Term.add (Term.add A y) xs)
+          (Term.add (Term.add A xs) y)) :=
+      BProv_eqTrans (BProv_eqTrans hassocLeft hcongYX)
+        (BProv_eqSym hassocRight)
+    have hswapSucc : BProv Ax_s [phi]
+        (eq
+          (Term.succ (Term.add (Term.add A y) xs))
+          (Term.succ (Term.add (Term.add A xs) y))) :=
+      BProv_eq_congr_succ hswap
+    have hrightSucc : BProv Ax_s [phi]
+        (eq (Term.add (Term.add A xs) (Term.succ y))
+          (Term.succ (Term.add (Term.add A xs) y))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms (Term.add A xs) y)
+    have hnorm : BProv Ax_s [phi]
+        (eq (Term.add (Term.add A y) (Term.succ xs))
+          (Term.add (Term.add A xs) (Term.succ y))) :=
+      BProv_eqTrans (BProv_eqTrans hleftSucc hswapSucc)
+        (BProv_eqSym hrightSucc)
+    have htarget : BProv Ax_s [phi]
+        (eq (Term.mul (Term.succ xs) (Term.succ y))
+          (Term.add (Term.mul xs (Term.succ y)) (Term.succ y))) :=
+      BProv_eqTrans (BProv_eqTrans hleftNorm hnorm)
+        (BProv_eqSym hrightCong)
+    simpa [phi, xs, y, A, substSuccVar, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_substSuccVar_rename_succ] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of `S x * y = x * y + y`. -/
+theorem BProv_Ax_s_succ_mul_terms {G : List Formula} (x y : Term) :
+    BProv Ax_s G
+      (eq (Term.mul (Term.succ x) y)
+        (Term.add (Term.mul x y) y)) := by
+  have hall : BProv Ax_s G
+      (all
+        (eq
+          (Term.mul (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
+          (Term.add
+            (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+            (Term.var 0)))) :=
+    BProv_weaken_nil (BProv_Ax_s_succ_mul_all x)
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using hinst
+
 /-- PA proves the recursive normal form of right addition by a standard
 numeral. -/
 theorem BProv_Ax_s_addRightNumeral (t : Term) :
