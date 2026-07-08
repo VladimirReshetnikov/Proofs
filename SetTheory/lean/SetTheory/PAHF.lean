@@ -13975,6 +13975,122 @@ theorem BProv_Ax_s_hfMemAt_of_eqConst_mem
     (setValue := setValue) (code := code) (step := step)
     helem hset htrace
 
+/-- Projection from the opened code/step body of `hfMemAt` to its initial
+beta-entry component. -/
+theorem BProv_Ax_s_hfMemAt_opened_body_entry
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s bodyCtx (betaAtConstIdx (set+2) 1 0 0) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbody : BProv Ax_s bodyCtx body :=
+    BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+  exact BProv_andE1 hbody
+
+/-- Projection from the opened code/step body of `hfMemAt` to its bounded
+halving-trace component. -/
+theorem BProv_Ax_s_hfMemAt_opened_body_steps
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s bodyCtx (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbody : BProv Ax_s bodyCtx body :=
+    BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+  have htail : BProv Ax_s bodyCtx tail :=
+    BProv_andE2 hbody
+  exact BProv_andE1 htail
+
+/-- Projection from the opened code/step body of `hfMemAt` to its final-bit
+existential component. -/
+theorem BProv_Ax_s_hfMemAt_opened_body_bitEx
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s bodyCtx
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3)))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbody : BProv Ax_s bodyCtx body :=
+    BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+  have htail : BProv Ax_s bodyCtx tail :=
+    BProv_andE2 hbody
+  exact BProv_andE2 htail
+
 /-- Eliminate an `hfMemAt` proof to contradiction once the final opened
 halving-current witness has been proved to be zero.
 

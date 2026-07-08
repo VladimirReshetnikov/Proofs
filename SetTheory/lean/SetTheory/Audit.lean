@@ -325,6 +325,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_mem
+#check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_entry
+#check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_steps
+#check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_bitEx
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_current_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_step_zero_bot
