@@ -15750,6 +15750,188 @@ Proof.
   - exact hbody.
 Qed.
 
+Lemma BProv_formulaAt_exE_raw : forall rho G a c,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)) ->
+  BProv translatedPAAx
+    (fAnd domainForm (formulaAt (upVarMap rho) a) ::
+      map (rename S) (translateContextAt rho G))
+    (rename S (formulaAt rho c)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho c).
+Proof.
+  intros rho G a c [Le [hLe hpe]] [Lb [hLb hpb]].
+  change (Prov (Le ++ translateContextAt rho G)
+    (fEx (fAnd domainForm (formulaAt (upVarMap rho) a)))) in hpe.
+  pose proof (map_rename_S_eq_of_translatedPAAx_list Lb hLb) as hLbmap.
+  exists (Le ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ translateContextAt rho G)
+      (fAnd domainForm (formulaAt (upVarMap rho) a))
+      (formulaAt rho c)).
+    + apply (Prov_weaken (Le ++ translateContextAt rho G)
+        (fEx (fAnd domainForm (formulaAt (upVarMap rho) a))) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken
+        (Lb ++
+          fAnd domainForm (formulaAt (upVarMap rho) a) ::
+          map (rename S) (translateContextAt rho G))
+        (rename S (formulaAt rho c)) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. rewrite map_app. apply in_app_iff. left.
+        rewrite map_app. apply in_app_iff. right.
+        rewrite hLbmap. exact hx.
+      * left. exact hx.
+      * right. rewrite map_app. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_formulaAt_exE : forall rho G a c,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)) ->
+  BProv translatedPAAx
+    (formulaAt (upVarMap rho) a ::
+      translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) (PA.Formula.rename S c)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho c).
+Proof.
+  intros rho G a c hex hbody.
+  rewrite translateContextAt_rename_succ_upVarMap in hbody.
+  rewrite formulaAt_rename_succ_upVarMap in hbody.
+  set (body := formulaAt (upVarMap rho) a).
+  set (shiftedContext := map (rename S) (translateContextAt rho G)).
+  set (rawAssumption := fAnd domainForm body).
+  set (rawContext := rawAssumption :: shiftedContext).
+  assert (hrawAssumption : BProv translatedPAAx rawContext rawAssumption).
+  {
+    apply BProv_of_Prov.
+    apply P_ass.
+    unfold rawContext.
+    simpl.
+    left. reflexivity.
+  }
+  assert (hraw : BProv translatedPAAx rawContext
+      (rename S (formulaAt rho c))).
+  {
+    eapply BProv_lift.
+    - exact hbody.
+    - intros b hb.
+      exact (BProv_ax translatedPAAx rawContext b hb).
+    - intros g hg.
+      simpl in hg.
+      destruct hg as [hg | hg].
+      + subst g.
+        unfold rawAssumption in hrawAssumption.
+        exact (BProv_andE2 translatedPAAx rawContext domainForm body
+          hrawAssumption).
+      + apply BProv_of_Prov.
+        apply P_ass.
+        unfold rawContext.
+        simpl.
+        right. exact hg.
+  }
+  subst rawContext rawAssumption shiftedContext body.
+  exact (BProv_formulaAt_exE_raw rho G a c hex hraw).
+Qed.
+
+Lemma BProv_formulaAt_exE_domainContext_of_sentences :
+  forall (B : form -> Prop) rho n G a c,
+  Sentences B ->
+  BProv B (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)) ->
+  BProv B
+    (domainContextAt (upVarMap rho) (S n) ++
+      translateContextAt (upVarMap rho)
+        (a :: map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) (PA.Formula.rename S c)) ->
+  BProv B (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho c).
+Proof.
+  intros B rho n G a c hB hex hbody.
+  set (body := formulaAt (upVarMap rho) a).
+  set (baseContext := domainContextAt rho n ++ translateContextAt rho G).
+  set (shiftedDomain := map (rename S) (domainContextAt rho n)).
+  set (shiftedContext := map (rename S) (translateContextAt rho G)).
+  set (rawAssumption := fAnd domainForm body).
+  set (rawContext := rawAssumption :: map (rename S) baseContext).
+  assert (hbodyShift : BProv B
+      (domainForm :: shiftedDomain ++ body :: shiftedContext)
+      (rename S (formulaAt rho c))).
+  {
+    subst body shiftedDomain shiftedContext.
+    rewrite domainContextAt_upVarMap_succ in hbody.
+    change (translateContextAt (upVarMap rho)
+      (a :: map (PA.Formula.rename S) G)) with
+      (formulaAt (upVarMap rho) a ::
+        translateContextAt (upVarMap rho)
+          (map (PA.Formula.rename S) G)) in hbody.
+    rewrite translateContextAt_rename_succ_upVarMap in hbody.
+    rewrite formulaAt_rename_succ_upVarMap in hbody.
+    cbn in hbody.
+    exact hbody.
+  }
+  assert (hrawAssumption : BProv B rawContext rawAssumption).
+  {
+    apply BProv_of_Prov.
+    apply P_ass.
+    unfold rawContext.
+    simpl.
+    left. reflexivity.
+  }
+  assert (hraw : BProv B rawContext (rename S (formulaAt rho c))).
+  {
+    eapply BProv_lift.
+    - exact hbodyShift.
+    - intros b hb.
+      exact (BProv_ax B rawContext b hb).
+    - intros g hg.
+      simpl in hg.
+      destruct hg as [hg | hg].
+      + subst g.
+        unfold rawAssumption in hrawAssumption.
+        exact (BProv_andE1 B rawContext domainForm body hrawAssumption).
+      + apply in_app_iff in hg.
+        destruct hg as [hgDomain | hg].
+        * apply BProv_of_Prov.
+          apply P_ass.
+          unfold rawContext, baseContext, shiftedDomain in *.
+          simpl.
+          right.
+          rewrite map_app.
+          apply in_app_iff.
+          left. exact hgDomain.
+        * simpl in hg.
+          destruct hg as [hg | hgContext].
+          -- subst g.
+             unfold rawAssumption in hrawAssumption.
+             exact (BProv_andE2 B rawContext domainForm body hrawAssumption).
+          -- apply BProv_of_Prov.
+             apply P_ass.
+             unfold rawContext, baseContext, shiftedContext in *.
+             simpl.
+             right.
+             rewrite map_app.
+             apply in_app_iff.
+             right. exact hgContext.
+  }
+  change (BProv B baseContext (fEx rawAssumption)) in hex.
+  change (BProv B baseContext (formulaAt rho c)).
+  exact (BProv_exE_of_sentences B baseContext rawAssumption
+    (formulaAt rho c) hB hex hraw).
+Qed.
+
 Lemma BProv_translate_impI : forall G a b,
   BProv translatedPAAx
     (translateFormula a :: translateContext G) (translateFormula b) ->
