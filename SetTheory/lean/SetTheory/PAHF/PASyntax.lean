@@ -16855,6 +16855,70 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_of_next_eq
     hnextWrapper (by
       simpa [betaAtSuccIdx, nextBody] using hopened)
 
+/-- Opened beta-step propagation when the current output is known to be even.
+
+The parity premise is stated in the opened step body itself: the separate
+quotient-functionality lemma identifies the fresh next slot with `knownHalf`,
+and the generic `..._of_next_eq` theorem repackages the successor beta entry.
+-/
+theorem BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_of_doubleEqAt
+    {G : List Formula} {code step idx knownHalf : Nat} {idxTerm : Term}
+    (hdouble : BProv Ax_s G (doubleEqAt 2 knownHalf))
+    (hidxEq : BProv Ax_s G (eq idxTerm (Term.var (idx+3))))
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 2 (code+3) (step+3) (idx+3))
+        (and
+          (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+          (div2StepAt 2 1 0)))) :
+    BProv Ax_s G
+      (betaTermAtTermIdx (Term.var knownHalf) (code+3) (step+3)
+        (Term.succ idxTerm)) := by
+  have htail : BProv Ax_s G
+      (and
+        (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+        (div2StepAt 2 1 0)) :=
+    BProv_andE2 hbody
+  have hstep : BProv Ax_s G (div2StepAt 2 1 0) :=
+    BProv_andE2 htail
+  have hnext : BProv Ax_s G (eq (Term.var 1) (Term.var knownHalf)) :=
+    BProv_Ax_s_eq_of_doubleEqAt_div2StepAt hdouble hstep
+  exact BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_of_next_eq
+    (G := G) (code := code) (step := step) (idx := idx)
+    (idxTerm := idxTerm) (nextTerm := Term.var knownHalf)
+    hnext hidxEq hbody
+
+/-- Opened beta-step propagation when the current output is known to be odd.
+
+This is the odd-remainder analogue of
+`BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_of_doubleEqAt`. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_of_oddDoubleEqAt
+    {G : List Formula} {code step idx knownHalf : Nat} {idxTerm : Term}
+    (hodd : BProv Ax_s G (oddDoubleEqAt 2 knownHalf))
+    (hidxEq : BProv Ax_s G (eq idxTerm (Term.var (idx+3))))
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 2 (code+3) (step+3) (idx+3))
+        (and
+          (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+          (div2StepAt 2 1 0)))) :
+    BProv Ax_s G
+      (betaTermAtTermIdx (Term.var knownHalf) (code+3) (step+3)
+        (Term.succ idxTerm)) := by
+  have htail : BProv Ax_s G
+      (and
+        (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+        (div2StepAt 2 1 0)) :=
+    BProv_andE2 hbody
+  have hstep : BProv Ax_s G (div2StepAt 2 1 0) :=
+    BProv_andE2 htail
+  have hnext : BProv Ax_s G (eq (Term.var 1) (Term.var knownHalf)) :=
+    BProv_Ax_s_eq_of_oddDoubleEqAt_div2StepAt hodd hstep
+  exact BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_of_next_eq
+    (G := G) (code := code) (step := step) (idx := idx)
+    (idxTerm := idxTerm) (nextTerm := Term.var knownHalf)
+    hnext hidxEq hbody
+
 /-- Opened beta-step closed-value propagation for term-indexed sources: if the
 current beta entry is known to be the closed numeral `cur` at a term index
 equal to the current step slot, then the successor entry is known to be
