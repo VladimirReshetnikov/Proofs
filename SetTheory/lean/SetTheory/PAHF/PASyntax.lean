@@ -4016,6 +4016,40 @@ theorem HFMemTrace_succ_of_double_mem_succ
     (AckermannHF.mem_succ_of_double_mem_succ hset
       (HFMemTrace_mem htrace))
 
+/-- Semantic trace transport for the inverse even-code membership step:
+if `S x` is witnessed as a member of an explicitly even code `2*half`, then
+`x` has a membership trace in `half`.
+
+The object-language proof cannot simply invoke this semantic lemma, but this
+records the exact trace invariant that the later PA beta-tail construction
+must realize. -/
+theorem HFMemTrace_pred_of_succ_double
+    {x set half code step : Nat}
+    (hset : set = half + half)
+    (htrace : HFMemTrace (x+1) set code step) :
+    ∃ code' step', HFMemTrace x half code' step' := by
+  have hmemSet : AckermannHF.Mem (x+1) set :=
+    HFMemTrace_mem htrace
+  have hmemDouble : AckermannHF.Mem (x+1) (half + half) := by
+    simpa [hset] using hmemSet
+  exact HFMemTrace_exists_of_mem
+    ((AckermannHF.mem_succ_double_iff x half).mp hmemDouble)
+
+/-- Semantic trace transport for the inverse odd-code membership step:
+if `S x` is witnessed as a member of `2*half+1`, then `x` has a membership
+trace in `half`. -/
+theorem HFMemTrace_pred_of_succ_odd_double
+    {x set half code step : Nat}
+    (hset : set = half + half + 1)
+    (htrace : HFMemTrace (x+1) set code step) :
+    ∃ code' step', HFMemTrace x half code' step' := by
+  have hmemSet : AckermannHF.Mem (x+1) set :=
+    HFMemTrace_mem htrace
+  have hmemOdd : AckermannHF.Mem (x+1) (half + half + 1) := by
+    simpa [hset] using hmemSet
+  exact HFMemTrace_exists_of_mem
+    ((AckermannHF.mem_succ_odd_double_iff x half).mp hmemOdd)
+
 theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
     Sat natModel e (hfMemAt elem set) → AckermannHF.Mem (e elem) (e set) := by
   intro h
@@ -18087,6 +18121,87 @@ theorem BProv_Ax_s_hfMemTermAt_of_components {G : List Formula}
       (a := ex body)
       (t := codeTerm) hstepEx)
 
+/-- Substitution-stable variant of `BProv_Ax_s_hfMemTermAt_of_components`.
+
+This is useful when the membership formula is later instantiated in its
+element slot, as in the odd-high carry branch where the new witness is the
+successor of the opened IH witness.  The three beta-trace components are still
+ordinary explicit premises; the theorem only repackages them through the same
+existential structure as `hfMemTermAt`. -/
+theorem BProv_Ax_s_subst_hfMemTermAt_of_components
+    {G : List Formula} {elem : Nat}
+    {setCode codeTerm stepTerm : Term} {σ : Nat → Term}
+    (hentry : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaTermAtConstIdx
+              (Term.rename (fun n => n+2) setCode) 1 0 0)))))
+    (hsteps : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaDiv2StepsThroughAt 1 0 (elem+2))))))
+    (hbitEx : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (ex
+              (and
+                (oneAt 0)
+                (betaDiv2BitAt 0 2 1 (elem+3)))))))) :
+    BProv Ax_s G (subst σ (hfMemTermAt elem setCode)) := by
+  let bitEx : Formula :=
+    ex
+      (and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3)))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      bitEx
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx (Term.rename (fun n => n+2) setCode) 1 0 0)
+      tail
+  have htail : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            tail))) := by
+    simpa [tail, bitEx, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hsteps hbitEx)
+  have hbody : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            body))) := by
+    simpa [body, tail, bitEx, subst, instTerm, Term.subst,
+      Term.upSubst] using
+      (BProv_andI hentry htail)
+  have hstepEx : BProv Ax_s G
+      (subst σ (subst (instTerm codeTerm) (ex body))) := by
+    have hbodyInst : BProv Ax_s G
+        (subst (instTerm (Term.subst σ stepTerm))
+          (subst (Term.upSubst σ)
+            (subst (Term.upSubst (instTerm codeTerm)) body))) := by
+      simpa [subst_instTerm_subst_up] using hbody
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst,
+      subst_instTerm_subst_up] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst σ)
+          (subst (Term.upSubst (instTerm codeTerm)) body))
+        (t := Term.subst σ stepTerm) hbodyInst)
+  have hstepExInst : BProv Ax_s G
+      (subst (instTerm (Term.subst σ codeTerm))
+        (subst (Term.upSubst σ) (ex body))) := by
+    simpa [subst_instTerm_subst_up] using hstepEx
+  simpa [hfMemTermAt, body, tail, bitEx, subst, instTerm, Term.subst,
+    Term.upSubst, subst_instTerm_subst_up] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst σ) (ex body))
+      (t := Term.subst σ codeTerm) hstepExInst)
+
 /-- Term-parametric membership introduction variant that takes the final bit
 component before the inner witness bit has been existentially packaged. -/
 theorem BProv_Ax_s_hfMemTermAt_of_bit_components {G : List Formula}
@@ -25672,20 +25787,91 @@ IH witness: if `x` distinguished the predecessor half, use `S x`. -/
 def strictHighOddSuccWitnessTerm : Term :=
   Term.succ (Term.var 0)
 
+/-- Shifted high-code term seen by the positive membership half after opening
+the old IH witness and then opening the new `S x` witness. -/
+def strictHighOddOpenedWitnessSuccHighCode (highHalf : Nat) : Term :=
+  Term.rename Nat.succ
+    (Term.rename Nat.succ (strictHighOddSuccHalfCode highHalf))
+
 /-- Positive membership half of the odd-high carry body when the new witness
 is `S x`. -/
 def strictHighOddOpenedWitnessSuccMemFormula (highHalf : Nat) :
     Formula :=
   subst (instTerm strictHighOddSuccWitnessTerm)
-    (hfMemTermAt 0
-      (Term.rename Nat.succ
-        (Term.rename Nat.succ
-          (strictHighOddSuccHalfCode highHalf))))
+    (hfMemTermAt 0 (strictHighOddOpenedWitnessSuccHighCode highHalf))
+
+/-- Initial beta-entry component sufficient for the `S x` membership half of
+the odd-high carry branch. -/
+def strictHighOddOpenedWitnessSuccMemEntryFormula
+    (highHalf : Nat) (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaTermAtConstIdx
+          (Term.rename (fun n => n+2)
+            (strictHighOddOpenedWitnessSuccHighCode highHalf))
+          1 0 0)))
+
+/-- Bounded-trace component sufficient for the `S x` membership half of the
+odd-high carry branch. -/
+def strictHighOddOpenedWitnessSuccMemStepsFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaDiv2StepsThroughAt 1 0 (0+2))))
+
+/-- Final-bit component sufficient for the `S x` membership half of the
+odd-high carry branch. -/
+def strictHighOddOpenedWitnessSuccMemBitExFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (0+3))))))
 
 /-- Low-membership atom that must be refuted when the odd-high carry uses the
 successor of the opened IH witness. -/
 def strictHighOddOpenedWitnessSuccLowMemFormula : Formula :=
   subst (instTerm strictHighOddSuccWitnessTerm) (hfMemAt 0 2)
+
+/-- Old low-half membership formula that closes the odd-high carry branch
+against the negative half of the opened IH witness. -/
+def strictHighOddOpenedWitnessLowHalfMemFormula (lowHalf : Nat) :
+    Formula :=
+  hfMemAt 0 (lowHalf+1)
+
+/-- Initial beta-entry component sufficient for the old low-half membership
+extracted from the shifted low-membership assumption. -/
+def strictHighOddOpenedWitnessLowHalfMemEntryFormula
+    (lowHalf : Nat) (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (betaTermAtConstIdx
+        (Term.rename (fun n => n+2) (Term.var (lowHalf+1)))
+        1 0 0))
+
+/-- Bounded-trace component sufficient for the old low-half membership
+extracted from the shifted low-membership assumption. -/
+def strictHighOddOpenedWitnessLowHalfMemStepsFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (betaDiv2StepsThroughAt 1 0 (0+2)))
+
+/-- Final-bit component sufficient for the old low-half membership extracted
+from the shifted low-membership assumption. -/
+def strictHighOddOpenedWitnessLowHalfMemBitExFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (ex
+        (and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (0+3)))))
 
 /-- Exact distinguishing body obtained by using `S x` as the witness for the
 shifted odd-high carry target. -/
@@ -26778,6 +26964,294 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccBody_of_mem_and_low_bot
   simpa [strictHighOddOpenedWitnessSuccBodyFormula] using
     BProv_andI hmem hnotLow
 
+/-- Package the `S x` positive-membership half of an odd-high carry branch from
+explicit beta-entry, bounded-trace, and final-bit components. -/
+theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+    {G : List Formula} {highHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm)) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  exact
+    BProv_Ax_s_subst_hfMemTermAt_of_components
+      (G := G) (elem := 0)
+      (setCode := strictHighOddOpenedWitnessSuccHighCode highHalf)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (σ := instTerm strictHighOddSuccWitnessTerm)
+      (by
+        simpa [strictHighOddOpenedWitnessSuccMemEntryFormula] using hentry)
+      (by
+        simpa [strictHighOddOpenedWitnessSuccMemStepsFormula] using hsteps)
+      (by
+        simpa [strictHighOddOpenedWitnessSuccMemBitExFormula] using hbitEx)
+
+/-- Open the substituted low-membership assumption `S x ∈ low` down to its
+code and step witnesses.
+
+This is only existential-elimination plumbing for
+`strictHighOddOpenedWitnessSuccLowMemFormula`; the premise receives the
+membership body after the two witnesses have been opened, and proves the target
+renamed through those two binders. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_elim_opened_code_step
+    {G : List Formula} {target : Formula}
+    (hopened :
+      let σ : Nat → Term := instTerm strictHighOddSuccWitnessTerm
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (0+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (0+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (2+2) 1 0 0)
+          tail
+      let stepEx : Formula := subst (Term.upSubst σ) (ex body)
+      let stepBody : Formula := subst (Term.upSubst (Term.upSubst σ)) body
+      BProv Ax_s (stepBody :: (stepEx :: G.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)))
+    (hmem : BProv Ax_s G strictHighOddOpenedWitnessSuccLowMemFormula) :
+    BProv Ax_s G target := by
+  let σ : Nat → Term := instTerm strictHighOddSuccWitnessTerm
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (0+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (0+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (2+2) 1 0 0)
+      tail
+  let stepEx : Formula := subst (Term.upSubst σ) (ex body)
+  let stepBody : Formula := subst (Term.upSubst (Term.upSubst σ)) body
+  have houter : BProv Ax_s (stepEx :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    have hex : BProv Ax_s (stepEx :: G.map (rename Nat.succ)) stepEx :=
+      BProv_ass (B := Ax_s)
+        (G := stepEx :: G.map (rename Nat.succ)) (by simp)
+    have hinner : BProv Ax_s
+        (stepBody :: (stepEx :: G.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)) := by
+      simpa [σ, bitBody, tail, body, stepEx, stepBody] using hopened
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hex (by
+        simpa [stepEx, stepBody, subst, rename] using hinner)
+  have hmemEx : BProv Ax_s G (ex stepEx) := by
+    simpa [strictHighOddOpenedWitnessSuccLowMemFormula, σ, hfMemAt,
+      bitBody, tail, body, stepEx, subst] using hmem
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hmemEx (by simpa [stepEx] using houter)
+
+/-- Low-side closer for the odd-high carry branch.
+
+After the assumed `S x`-membership in the shifted low code has been converted
+to the old low-half membership `x ∈ lowHalf`, the negative half of the opened
+IH distinguishing witness immediately closes the branch.  This theorem does
+only that logical projection; the trace transport from `S x ∈ low` to
+`x ∈ lowHalf` remains an explicit premise. -/
+theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+    {G : List Formula} {lowHalf : Nat}
+    (hhalfMem : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      (hfMemAt 0 (lowHalf+1))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      bot := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemFormula ::
+      hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G
+  have hdist : BProv Ax_s C (hfDistinguishesAt 0 (1+1) (lowHalf+1)) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hnotLow : BProv Ax_s C (imp (hfMemAt 0 (lowHalf+1)) bot) := by
+    simpa [hfDistinguishesAt] using BProv_andE2 hdist
+  have hmem : BProv Ax_s C (hfMemAt 0 (lowHalf+1)) := by
+    simpa [C] using hhalfMem
+  exact BProv_mp Ax_s C (hfMemAt 0 (lowHalf+1)) bot hnotLow hmem
+
+/-- Package the derived old low-half membership from explicit beta-entry,
+bounded-trace, and final-bit components.
+
+This is the low-side analogue of
+`BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components`: it does not
+derive the components from the shifted `S x ∈ low` assumption, it only packages
+caller-supplied components into the membership formula needed by the opened IH
+negative half. -/
+theorem BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_of_components
+    {G : List Formula} {lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemFormula lowHalf) := by
+  have hmemTerm : BProv Ax_s G
+      (hfMemTermAt 0 (Term.var (lowHalf+1))) :=
+    BProv_Ax_s_hfMemTermAt_of_components
+      (G := G) (elem := 0)
+      (setCode := Term.var (lowHalf+1))
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by
+        simpa [strictHighOddOpenedWitnessLowHalfMemEntryFormula] using hentry)
+      (by
+        simpa [strictHighOddOpenedWitnessLowHalfMemStepsFormula] using hsteps)
+      (by
+        simpa [strictHighOddOpenedWitnessLowHalfMemBitExFormula] using hbitEx)
+  simpa [strictHighOddOpenedWitnessLowHalfMemFormula, hfMemTermAt_var]
+    using hmemTerm
+
+/-- Low-side closer whose remaining obligation is expressed as explicit
+beta-trace components for the old low-half membership. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_components
+    {G : List Formula} {lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      bot :=
+  BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+    (lowHalf := lowHalf)
+    (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_of_components
+      hentry hsteps hbitEx)
+
+/-- Even-low named-context specialization of
+`BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem`. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_low_half_mem
+    {highHalf lowHalf : Nat}
+    (hhalfMem : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (hfMemAt 0 (lowHalf+1))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot := by
+  simpa [strictHighOddLowDoubleOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+      (G := (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf)
+      (by simpa [strictHighOddLowDoubleOpenedIHContext] using hhalfMem))
+
+/-- Odd-low named-context specialization of
+`BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem`. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+    {highHalf lowHalf : Nat}
+    (hhalfMem : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (hfMemAt 0 (lowHalf+1))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot := by
+  simpa [strictHighOddLowOddOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+      (G := (strictHighOddLowOddSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf)
+      (by simpa [strictHighOddLowOddOpenedIHContext] using hhalfMem))
+
+/-- Even-low named-context low-side closer from explicit old low-half
+membership components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_low_half_components
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula codeTerm stepTerm)) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot := by
+  simpa [strictHighOddLowDoubleOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_components
+      (G := (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf) (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [strictHighOddLowDoubleOpenedIHContext] using hentry)
+      (by simpa [strictHighOddLowDoubleOpenedIHContext] using hsteps)
+      (by simpa [strictHighOddLowDoubleOpenedIHContext] using hbitEx))
+
+/-- Odd-low named-context low-side closer from explicit old low-half
+membership components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_low_half_components
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula codeTerm stepTerm)) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot := by
+  simpa [strictHighOddLowOddOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_components
+      (G := (strictHighOddLowOddSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf) (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [strictHighOddLowOddOpenedIHContext] using hentry)
+      (by simpa [strictHighOddLowOddOpenedIHContext] using hsteps)
+      (by simpa [strictHighOddLowOddOpenedIHContext] using hbitEx))
+
 /-- Introduce the shifted odd-high carry existential using `S x`, where `x` is
 the already-opened IH witness. -/
 theorem BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_body
@@ -26793,6 +27267,7 @@ theorem BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_body
       (subst (instTerm strictHighOddSuccWitnessTerm) body) := by
     simpa [body, highCode, strictHighOddOpenedWitnessSuccBodyFormula,
       strictHighOddOpenedWitnessSuccMemFormula,
+      strictHighOddOpenedWitnessSuccHighCode,
       strictHighOddOpenedWitnessSuccLowMemFormula,
       hfDistinguishesTermAt, subst] using hbody
   have hex : BProv Ax_s G (ex body) :=
@@ -26862,6 +27337,214 @@ theorem
     (BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
       hmem hlowBot)
 
+/-- Odd-high/even-low carry branch with the `S x` positive membership premise
+reduced to explicit beta components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_components_and_low_bot
+    {highHalf lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_mem_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    hlowStep
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+      hentry hsteps hbitEx)
+    hlowBot
+
+/-- Odd-high/odd-low carry branch with the `S x` positive membership premise
+reduced to explicit beta components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_components_and_low_bot
+    {highHalf lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_mem_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    hlowStep
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+      hentry hsteps hbitEx)
+    hlowBot
+
+/-- Odd-high/even-low carry branch with the `S x` positive membership premise
+reduced to explicit beta components, and the low-refutation premise reduced
+to extracting old low-half membership from the shifted low-membership
+assumption. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_components_and_low_half_mem
+    {highHalf lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hhalfMem : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (hfMemAt 0 (lowHalf+1))) :
+    BProv Ax_s (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_components_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hlowStep hentry hsteps hbitEx
+    (BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_low_half_mem
+      hhalfMem)
+
+/-- Odd-high/odd-low carry branch with the `S x` positive membership premise
+reduced to explicit beta components, and the low-refutation premise reduced
+to extracting old low-half membership from the shifted low-membership
+assumption. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_components_and_low_half_mem
+    {highHalf lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hhalfMem : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (hfMemAt 0 (lowHalf+1))) :
+    BProv Ax_s (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_components_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hlowStep hentry hsteps hbitEx
+    (BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+      hhalfMem)
+
+/-- Odd-high/even-low carry branch with both the `S x` high-membership half
+and the derived old low-half membership stated as explicit beta components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_components_and_low_half_components
+    {highHalf lowHalf lowBit : Nat}
+    {codeTerm stepTerm lowCodeTerm lowStepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hlowEntry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf lowCodeTerm lowStepTerm))
+    (hlowSteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        lowCodeTerm lowStepTerm))
+    (hlowBitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        lowCodeTerm lowStepTerm)) :
+    BProv Ax_s (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_components_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hlowStep hentry hsteps hbitEx
+    (BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_low_half_components
+      hlowEntry hlowSteps hlowBitEx)
+
+/-- Odd-high/odd-low carry branch with both the `S x` high-membership half
+and the derived old low-half membership stated as explicit beta components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_components_and_low_half_components
+    {highHalf lowHalf lowBit : Nat}
+    {codeTerm stepTerm lowCodeTerm lowStepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hlowEntry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf lowCodeTerm lowStepTerm))
+    (hlowSteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        lowCodeTerm lowStepTerm))
+    (hlowBitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        lowCodeTerm lowStepTerm)) :
+    BProv Ax_s (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_components_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hlowStep hentry hsteps hbitEx
+    (BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_low_half_components
+      hlowEntry hlowSteps hlowBitEx)
+
 /-- Strict successor branch with the odd-high carry premises stated at the
 opened-IH body level.
 
@@ -26903,6 +27586,312 @@ theorem
     (BProv_Ax_s_strictHighOddLowOddSuccCarry_of_opened_ih
       (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
       hlowStep hhighOdd_lowOdd_body)
+
+/-- Strict successor branch with the odd-high carry premises reduced to the
+successor-of-opened-witness membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_mem : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowDouble_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot)
+    (hhighOdd_lowOdd_mem : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowOdd_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_carry_cases
+    (highHalf := highHalf) (highBit := highBit)
+    (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hhighStep hlowStep hentry hsteps hbitEx
+    (BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_mem_and_low_bot
+      (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+      hlowStep hhighOdd_lowDouble_mem hhighOdd_lowDouble_lowBot)
+    (BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_mem_and_low_bot
+      (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+      hlowStep hhighOdd_lowOdd_mem hhighOdd_lowOdd_lowBot)
+
+/-- Strict successor branch with the odd-high carry premises reduced to
+successor-of-opened-witness membership components and low-refutation
+obligations.  The two odd-high branches receive independent beta witnesses. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_components_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat}
+    {codeTerm stepTerm
+      highOddLowDoubleCodeTerm highOddLowDoubleStepTerm
+      highOddLowOddCodeTerm highOddLowOddStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_entry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_steps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_bitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot)
+    (hhighOdd_lowOdd_entry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_steps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_bitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_carry_cases
+    (highHalf := highHalf) (highBit := highBit)
+    (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hhighStep hlowStep hentry hsteps hbitEx
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+      hhighOdd_lowDouble_entry
+      hhighOdd_lowDouble_steps
+      hhighOdd_lowDouble_bitEx)
+    hhighOdd_lowDouble_lowBot
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+      hhighOdd_lowOdd_entry
+      hhighOdd_lowOdd_steps
+      hhighOdd_lowOdd_bitEx)
+    hhighOdd_lowOdd_lowBot
+
+/-- Strict successor branch with odd-high carry premises reduced to
+successor-of-opened-witness membership components, plus explicit low-half
+membership extraction obligations.
+
+The low-side premises say exactly what remains to prove after opening the
+assumed `S x ∈ low`: derive the predecessor membership `x ∈ lowHalf`; the
+negative half of the opened IH witness is applied by the branch wrappers. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_components_carry_cases_low_half_mem
+    {highHalf highBit lowHalf lowBit : Nat}
+    {codeTerm stepTerm
+      highOddLowDoubleCodeTerm highOddLowDoubleStepTerm
+      highOddLowOddCodeTerm highOddLowOddStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_entry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_steps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_bitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_halfMem : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (hfMemAt 0 (lowHalf+1)))
+    (hhighOdd_lowOdd_entry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_steps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_bitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_halfMem : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (hfMemAt 0 (lowHalf+1))) :
+    BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_components_carry_cases
+    (highHalf := highHalf) (highBit := highBit)
+    (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    (highOddLowDoubleCodeTerm := highOddLowDoubleCodeTerm)
+    (highOddLowDoubleStepTerm := highOddLowDoubleStepTerm)
+    (highOddLowOddCodeTerm := highOddLowOddCodeTerm)
+    (highOddLowOddStepTerm := highOddLowOddStepTerm)
+    hhighStep hlowStep hentry hsteps hbitEx
+    hhighOdd_lowDouble_entry
+    hhighOdd_lowDouble_steps
+    hhighOdd_lowDouble_bitEx
+    (BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_low_half_mem
+      hhighOdd_lowDouble_halfMem)
+    hhighOdd_lowOdd_entry
+    hhighOdd_lowOdd_steps
+    hhighOdd_lowOdd_bitEx
+    (BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+      hhighOdd_lowOdd_halfMem)
+
+/-- Strict successor branch with odd-high carry premises reduced completely to
+successor-of-opened-witness membership components and old low-half membership
+components.
+
+This is a packaging theorem: the branch-specific beta components for
+`S x ∈ high` and `x ∈ lowHalf` are left as explicit premises, and the theorem
+only routes them through the reusable odd-carry wrappers. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_components_carry_cases_low_half_components
+    {highHalf highBit lowHalf lowBit : Nat}
+    {codeTerm stepTerm
+      highOddLowDoubleCodeTerm highOddLowDoubleStepTerm
+      highOddLowOddCodeTerm highOddLowOddStepTerm
+      highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+      highOddLowOddLowCodeTerm highOddLowOddLowStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_entry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_steps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_bitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_lowEntry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm))
+    (hhighOdd_lowDouble_lowSteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm))
+    (hhighOdd_lowDouble_lowBitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm))
+    (hhighOdd_lowOdd_entry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_steps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_bitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_lowEntry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf highOddLowOddLowCodeTerm highOddLowOddLowStepTerm))
+    (hhighOdd_lowOdd_lowSteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        highOddLowOddLowCodeTerm highOddLowOddLowStepTerm))
+    (hhighOdd_lowOdd_lowBitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        highOddLowOddLowCodeTerm highOddLowOddLowStepTerm)) :
+    BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_components_carry_cases_low_half_mem
+    (highHalf := highHalf) (highBit := highBit)
+    (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    (highOddLowDoubleCodeTerm := highOddLowDoubleCodeTerm)
+    (highOddLowDoubleStepTerm := highOddLowDoubleStepTerm)
+    (highOddLowOddCodeTerm := highOddLowOddCodeTerm)
+    (highOddLowOddStepTerm := highOddLowOddStepTerm)
+    hhighStep hlowStep hentry hsteps hbitEx
+    hhighOdd_lowDouble_entry
+    hhighOdd_lowDouble_steps
+    hhighOdd_lowDouble_bitEx
+    (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_of_components
+      hhighOdd_lowDouble_lowEntry
+      hhighOdd_lowDouble_lowSteps
+      hhighOdd_lowDouble_lowBitEx)
+    hhighOdd_lowOdd_entry
+    hhighOdd_lowOdd_steps
+    hhighOdd_lowOdd_bitEx
+    (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_of_components
+      hhighOdd_lowOdd_lowEntry
+      hhighOdd_lowOdd_lowSteps
+      hhighOdd_lowOdd_lowBitEx)
 
 /-- Reduce the open successor step for lower-code distinguishers to the two
 predecessor cases produced by `low < S high`: either `low < high`, or
@@ -27371,6 +28360,236 @@ theorem
       (codeTerm := codeTerm) (stepTerm := stepTerm)
       hhighStep hlowStep hentry hsteps hbitEx
       hhighOdd_lowDouble_body hhighOdd_lowOdd_body)
+    hself
+
+/-- Successor-step wrapper with the odd-high carry premises stated as the
+successor-of-opened-witness membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_div2_named_succ_witness_carry_cases_and_self
+    {highHalf highBit lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_mem : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowDouble_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot)
+    (hhighOdd_lowOdd_mem : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowOdd_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot)
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      hhighStep hlowStep hentry hsteps hbitEx
+      hhighOdd_lowDouble_mem hhighOdd_lowDouble_lowBot
+      hhighOdd_lowOdd_mem hhighOdd_lowOdd_lowBot)
+    hself
+
+/-- Successor-step wrapper with odd-high carry premises reduced to
+successor-of-opened-witness membership components, plus the explicit
+low-refutation and self-distinguisher obligations. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_div2_named_succ_witness_components_carry_cases_and_self
+    {highHalf highBit lowHalf lowBit : Nat}
+    {codeTerm stepTerm
+      highOddLowDoubleCodeTerm highOddLowDoubleStepTerm
+      highOddLowOddCodeTerm highOddLowOddStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_entry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_steps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_bitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot)
+    (hhighOdd_lowOdd_entry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_steps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_bitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_lowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot)
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_components_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      hhighStep hlowStep hentry hsteps hbitEx
+      hhighOdd_lowDouble_entry
+      hhighOdd_lowDouble_steps
+      hhighOdd_lowDouble_bitEx
+      hhighOdd_lowDouble_lowBot
+      hhighOdd_lowOdd_entry
+      hhighOdd_lowOdd_steps
+      hhighOdd_lowOdd_bitEx
+      hhighOdd_lowOdd_lowBot)
+    hself
+
+/-- Extensionality-facing successor wrapper with odd-high carry premises
+reduced to positive successor-membership components and old low-half membership
+components.
+
+The self distinguisher and all beta traces remain explicit premises; this
+theorem merely lifts the component-level strict successor theorem through the
+standard strict/self split. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_div2_named_succ_witness_components_carry_cases_low_half_components_and_self
+    {highHalf highBit lowHalf lowBit : Nat}
+    {codeTerm stepTerm
+      highOddLowDoubleCodeTerm highOddLowDoubleStepTerm
+      highOddLowOddCodeTerm highOddLowOddStepTerm
+      highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+      highOddLowOddLowCodeTerm highOddLowOddLowStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_entry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_steps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_bitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_lowEntry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm))
+    (hhighOdd_lowDouble_lowSteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm))
+    (hhighOdd_lowDouble_lowBitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm))
+    (hhighOdd_lowOdd_entry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_steps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_bitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_lowEntry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemEntryFormula
+        lowHalf highOddLowOddLowCodeTerm highOddLowOddLowStepTerm))
+    (hhighOdd_lowOdd_lowSteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemStepsFormula
+        highOddLowOddLowCodeTerm highOddLowOddLowStepTerm))
+    (hhighOdd_lowOdd_lowBitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessLowHalfMemBitExFormula
+        highOddLowOddLowCodeTerm highOddLowOddLowStepTerm))
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_components_carry_cases_low_half_components
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (highOddLowDoubleCodeTerm := highOddLowDoubleCodeTerm)
+      (highOddLowDoubleStepTerm := highOddLowDoubleStepTerm)
+      (highOddLowOddCodeTerm := highOddLowOddCodeTerm)
+      (highOddLowOddStepTerm := highOddLowOddStepTerm)
+      hhighStep hlowStep hentry hsteps hbitEx
+      hhighOdd_lowDouble_entry
+      hhighOdd_lowDouble_steps
+      hhighOdd_lowDouble_bitEx
+      hhighOdd_lowDouble_lowEntry
+      hhighOdd_lowDouble_lowSteps
+      hhighOdd_lowDouble_lowBitEx
+      hhighOdd_lowOdd_entry
+      hhighOdd_lowOdd_steps
+      hhighOdd_lowOdd_bitEx
+      hhighOdd_lowOdd_lowEntry
+      hhighOdd_lowOdd_lowSteps
+      hhighOdd_lowOdd_lowBitEx)
     hself
 
 /-- Closed-numeral membership data for the high set, together with a proof that
