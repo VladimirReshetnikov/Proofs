@@ -25472,6 +25472,34 @@ theorem BProv_Ax_s_hfLtDistinguishesAt_of_eqConst_high
     BProv_allI_of_sentences (B := Ax_s)
       (fun f hf => sentence_ax_s (f := f) hf) hbody
 
+/-- Base case for the PA induction target behind translated HF
+extensionality.  Once the high code has been replaced by `0`, the remaining
+low-code premise is `low < 0`, which PA refutes from the always-available
+`0 <= low`. -/
+theorem BProv_Ax_s_hfLtDistinguishesAt_zero_base :
+    BProv Ax_s [] (subst substZero (hfLtDistinguishesAt 0)) := by
+  let lowLtZero : Formula := ltTermAt (Term.var 0) Term.zero
+  let target : Formula :=
+    subst (Term.upSubst substZero) (hfSomeDistinguishesAt 1 0)
+  have hbody : BProv Ax_s []
+      (imp lowLtZero target) := by
+    have htarget : BProv Ax_s [lowLtZero] target := by
+      have hlt : BProv Ax_s [lowLtZero] lowLtZero :=
+        BProv_ass (B := Ax_s) (G := [lowLtZero]) (by simp [lowLtZero])
+      have hle : BProv Ax_s [lowLtZero]
+          (leTermAt Term.zero (Term.var 0)) :=
+        BProv_Ax_s_leTermAt_zero_left (G := [lowLtZero]) (Term.var 0)
+      have hbot : BProv Ax_s [lowLtZero] bot :=
+        BProv_Ax_s_ltTermAt_leTermAt_bot hlt hle
+      exact BProv_botE (B := Ax_s) (G := [lowLtZero])
+        (a := target) hbot
+    simpa using BProv_impI htarget
+  have hall : BProv Ax_s [] (all (imp lowLtZero target)) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [hfLtDistinguishesAt, lowLtZero, target, ltAt, ltTermAt, substZero,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename] using hall
+
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
