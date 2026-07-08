@@ -602,6 +602,8 @@ open SetTheory
 #check @PA.Formula.standard_sat_translatedHFFinAx
 #check @PA.Formula.TranslatedHFAxiomProofs
 #check @PA.Formula.TranslatedHFFinAxiomProofs
+#check @PA.Formula.translatedHFAxiomProofs_of_remaining
+#check @PA.Formula.translatedHFFinAxiomProofs_of_remaining
 #check @PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs
 #check @PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs
 #check @PA.Formula.Prov_hfFormulaAt_of_Prov

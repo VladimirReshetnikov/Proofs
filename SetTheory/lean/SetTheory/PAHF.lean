@@ -19885,6 +19885,51 @@ structure TranslatedHFFinAxiomProofs extends TranslatedHFAxiomProofs where
       BProv Ax_s [] (translateHFFormula
         (SetTheory.sealF (AckermannHF.HF_finite_induction_form phi)))
 
+/-- Build the translated-HF proof-obligation record once the remaining
+non-empty axioms have been proved.  The empty-set component is the theorem
+`BProv_Ax_s_translated_HF_empty`; the other fields stay as explicit proof
+arguments. -/
+def translatedHFAxiomProofs_of_remaining
+    (hextensionality :
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)))
+    (hadjoin :
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)))
+    (hinduction :
+      ∀ phi : Form,
+        BProv Ax_s [] (translateHFFormula
+          (SetTheory.sealF (AckermannHF.HF_induction_form phi)))) :
+    TranslatedHFAxiomProofs where
+  empty := BProv_Ax_s_translated_HF_empty
+  extensionality := hextensionality
+  adjoin := hadjoin
+  induction := hinduction
+
+/-- Build the translated finite-HF proof-obligation record with the completed
+empty-set component and explicit premises for the remaining axioms. -/
+def translatedHFFinAxiomProofs_of_remaining
+    (hextensionality :
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)))
+    (hadjoin :
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)))
+    (hinduction :
+      ∀ phi : Form,
+        BProv Ax_s [] (translateHFFormula
+          (SetTheory.sealF (AckermannHF.HF_induction_form phi))))
+    (hfinite_induction :
+      ∀ phi : Form,
+        BProv Ax_s [] (translateHFFormula
+          (SetTheory.sealF (AckermannHF.HF_finite_induction_form phi)))) :
+    TranslatedHFFinAxiomProofs where
+  empty := BProv_Ax_s_translated_HF_empty
+  extensionality := hextensionality
+  adjoin := hadjoin
+  induction := hinduction
+  finite_induction := hfinite_induction
+
 /-- Assemble the translated-HF axiom predicate from its named PA proof
 obligations. -/
 theorem BProv_Ax_s_of_translatedHFAx_of_proofs
