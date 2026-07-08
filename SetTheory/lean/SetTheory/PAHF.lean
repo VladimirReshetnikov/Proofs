@@ -19504,6 +19504,120 @@ theorem BProv_Ax_s_induction_rule {G : List Formula} {phi : Formula}
       (fun x hx => by cases hx) hind_empty
   exact BProv_inductionForm_mp hind hzero hsucc
 
+/-- If a bounded halving trace starts with a zero beta entry, every index below
+the trace bound has zero beta output.  The proof is PA induction over the
+index, keeping the invariant formula explicit:
+`n <= last -> beta(code, step, n) = 0`. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_termIdx_zero_of_le
+    {G : List Formula} {code step last idx : Nat}
+    (hentry : BProv Ax_s G (betaTermAtConstIdx Term.zero code step 0))
+    (hsteps : BProv Ax_s G (betaDiv2StepsThroughAt code step last))
+    (hle : BProv Ax_s G (leAt idx last)) :
+    BProv Ax_s G
+      (betaTermAtTermIdx Term.zero code step (Term.var idx)) := by
+  let phi : Formula :=
+    imp
+      (leTermAt (Term.var 0) (Term.var (last+1)))
+      (betaTermAtTermIdx Term.zero (code+1) (step+1) (Term.var 0))
+  have hentryIdx : BProv Ax_s G
+      (betaTermAtTermIdx Term.zero code step Term.zero) := by
+    simpa [Term.numeral] using
+      (BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
+        (G := G) (out := Term.zero) (code := code) (step := step)
+        (idxValue := 0) hentry)
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    have hbody : BProv Ax_s
+        (leTermAt Term.zero (Term.var last) :: G)
+        (betaTermAtTermIdx Term.zero code step Term.zero) :=
+      BProv_context_cons (B := Ax_s) hentryIdx
+    have himp : BProv Ax_s G
+        (imp
+          (leTermAt Term.zero (Term.var last))
+          (betaTermAtTermIdx Term.zero code step Term.zero)) :=
+      BProv_impI hbody
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.numeral, leTermAt, betaTermAtTermIdx, betaTermAt,
+      remTermAt, ltTermAt, eqConstAt, betaModTerm] using himp
+  have hsuccBody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) := by
+    let S : List Formula := phi :: G.map (rename Nat.succ)
+    have hsuccTarget : BProv Ax_s S (subst substSuccVar phi) := by
+      let leSucc : Formula :=
+        leTermAt (Term.succ (Term.var 0)) (Term.var (last+1))
+      let betaSucc : Formula :=
+        betaTermAtTermIdx Term.zero (code+1) (step+1)
+          (Term.succ (Term.var 0))
+      let D : List Formula := leSucc :: S
+      have hleSucc : BProv Ax_s D leSucc :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hlePred : BProv Ax_s D
+          (leTermAt (Term.var 0) (Term.var (last+1))) := by
+        simpa [leSucc] using
+          BProv_Ax_s_leTermAt_pred_of_succ_le hleSucc
+      have hihImp : BProv Ax_s D phi := by
+        have hihS : BProv Ax_s S phi :=
+          BProv_ass (B := Ax_s) (G := S) (by simp [S])
+        exact BProv_context_cons (B := Ax_s) hihS
+      have hzeroPred : BProv Ax_s D
+          (betaTermAtTermIdx Term.zero (code+1) (step+1)
+            (Term.var 0)) :=
+        BProv_mp Ax_s D _ _ hihImp hlePred
+      have hstepsRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (betaDiv2StepsThroughAt code step last)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hsteps Nat.succ
+      have hstepsS : BProv Ax_s S
+          (betaDiv2StepsThroughAt (code+1) (step+1) (last+1)) := by
+        simpa [S, betaDiv2StepsThroughAt, leAt, betaDiv2StepWitnessAt,
+          betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+          zeroAt, oneAt, eqConstAt, betaModTerm, rename, Term.rename,
+          SetTheory.up] using
+          BProv_context_cons (B := Ax_s) hstepsRen
+      have hstepsD : BProv Ax_s D
+          (betaDiv2StepsThroughAt (code+1) (step+1) (last+1)) :=
+        BProv_context_cons (B := Ax_s) hstepsS
+      have hleAtPred : BProv Ax_s D (leAt 0 (last+1)) := by
+        simpa [leAt, leTermAt, Term.rename] using hlePred
+      have hwitness : BProv Ax_s D
+          (betaDiv2StepWitnessAt (code+1) (step+1) 0) :=
+        BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le
+          (G := D) (code := code+1) (step := step+1)
+          (last := last+1) (idx := 0) hstepsD hleAtPred
+      have hidxRefl : BProv Ax_s D (eq (Term.var 0) (Term.var 0)) :=
+        BProv_eqRefl (B := Ax_s) (G := D) (Term.var 0)
+      have hbetaSucc : BProv Ax_s D betaSucc := by
+        simpa [betaSucc] using
+          (BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_zero
+            (G := D) (code := code+1) (step := step+1) (idx := 0)
+            (idxTerm := Term.var 0) hzeroPred hidxRefl hwitness)
+      have himpSucc : BProv Ax_s S (imp leSucc betaSucc) :=
+        BProv_impI hbetaSucc
+      simpa [phi, leSucc, betaSucc, substSuccVar, subst, instTerm,
+        Term.subst, Term.upSubst, Term.rename, leTermAt,
+        betaTermAtTermIdx, betaTermAt, remTermAt, ltTermAt, eqConstAt,
+        betaModTerm, term_subst_instTerm_rename_succ] using himpSucc
+    exact BProv_impI hsuccTarget
+  have hsucc : BProv Ax_s G (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccBody
+  have hall : BProv Ax_s G (all phi) :=
+    BProv_Ax_s_induction_rule hzero hsucc
+  have hinstRaw : BProv Ax_s G (subst (instTerm (Term.var idx)) phi) :=
+    BProv_allE (B := Ax_s) (G := G) (t := Term.var idx) hall
+  have himp : BProv Ax_s G
+      (imp
+        (leTermAt (Term.var idx) (Term.var last))
+        (betaTermAtTermIdx Term.zero code step (Term.var idx))) := by
+    simpa [phi, subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      term_subst_instTerm_rename_succ, leTermAt, betaTermAtTermIdx,
+      betaTermAt, betaAt, remTermAt, remAt, ltTermAt, ltAt, eqConstAt,
+      betaModTerm] using hinstRaw
+  have hleTerm : BProv Ax_s G
+      (leTermAt (Term.var idx) (Term.var last)) := by
+    simpa [leAt, leTermAt, Term.rename] using hle
+  exact BProv_mp Ax_s G _ _ himp hleTerm
+
 theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
   rw [Sat_subst]
