@@ -81,6 +81,8 @@ Check PA.Formula.term_subst_instTerm_rename_succ.
 Check PA.Formula.subst_instTerm_rename_succ.
 Check PA.Formula.subst_instTerm_subst_up.
 Check PA.Formula.map_subst_rename_succ_up.
+Check PA.Formula.term_substZero_rename_succ.
+Check PA.Formula.term_substSuccVar_rename_succ.
 Check PA.Formula.rename_hfMemAt.
 Check PA.Formula.leConstAt.
 Check PA.Formula.succPredAt.
@@ -90,6 +92,9 @@ Check PA.Formula.leConstAt_nat.
 Check PA.Formula.succPredAt_nat.
 Check PA.Formula.zeroOrSuccPredAt_nat.
 Check PA.Formula.betaDiv2StepsThroughConstAt_nat.
+Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all.
+Check PA.Formula.BProv_Ax_s_zeroOrSuccPred_term.
+Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.

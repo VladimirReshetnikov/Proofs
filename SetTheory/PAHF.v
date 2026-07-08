@@ -8613,6 +8613,24 @@ Definition substSuccVar : nat -> term :=
     | S k => tVar (S k)
     end.
 
+Lemma term_substZero_rename_succ : forall t,
+  Term.subst substZero (Term.rename S t) = t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
+Lemma term_substSuccVar_rename_succ : forall t,
+  Term.subst substSuccVar (Term.rename S t) = Term.rename S t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
 Definition substSuccAt (p : nat) : nat -> term :=
   fun n => if n =? p then tSucc (tVar p) else tVar n.
 
@@ -9061,6 +9079,86 @@ Definition succPredAt (a : nat) : formula :=
 
 Definition zeroOrSuccPredAt (a : nat) : formula :=
   pOr (zeroAt a) (succPredAt a).
+
+Lemma BProv_Ax_s_zeroOrSuccPredAt_all :
+  BProv Ax_s [] (pAll (zeroOrSuccPredAt 0)).
+Proof.
+  set (phi := zeroOrSuccPredAt 0).
+  assert (hzeroLeft : BProv Ax_s [] (subst substZero (zeroAt 0))).
+  {
+    unfold zeroAt, eqConstAt.
+    simpl.
+    apply BProv_eqRefl.
+  }
+  assert (hzero : BProv Ax_s [] (subst substZero phi)).
+  {
+    unfold phi, zeroOrSuccPredAt.
+    simpl.
+    apply BProv_orI1.
+    exact hzeroLeft.
+  }
+  assert (hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi)).
+  {
+    assert (hrefl : BProv Ax_s [phi]
+        (pEq (tSucc (tVar 0)) (tSucc (tVar 0)))).
+    {
+      apply BProv_eqRefl.
+    }
+    assert (hinst : BProv Ax_s [phi]
+        (subst (instTerm (tVar 0))
+          (pEq (tSucc (tVar 1)) (tSucc (tVar 0))))).
+    {
+      simpl.
+      exact hrefl.
+    }
+    assert (hright : BProv Ax_s [phi] (subst substSuccVar (succPredAt 0))).
+    {
+      unfold succPredAt.
+      simpl.
+      pose proof (BProv_exI Ax_s [phi]
+        (pEq (tSucc (tVar 1)) (tSucc (tVar 0))) (tVar 0) hinst)
+        as hex.
+      simpl in hex.
+      exact hex.
+    }
+    unfold phi, zeroOrSuccPredAt.
+    simpl.
+    apply BProv_orI2.
+    exact hright.
+  }
+  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi) hsuccBody)
+    as hsuccImp.
+  pose proof (BProv_allI_of_sentences Ax_s [] (pImp phi (subst substSuccVar phi))
+    sentence_ax_s hsuccImp) as hsucc.
+  change (BProv Ax_s [] (pAll phi)).
+  exact (BProv_inductionForm_mp Ax_s [] phi
+    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+Qed.
+
+Lemma BProv_Ax_s_zeroOrSuccPred_term : forall G t,
+  BProv Ax_s G
+    (pOr (pEq t tZero)
+      (pEx (pEq (Term.rename S t) (tSucc (tVar 0))))).
+Proof.
+  intros G t.
+  pose proof (BProv_weaken_nil Ax_s G (pAll (zeroOrSuccPredAt 0))
+    BProv_Ax_s_zeroOrSuccPredAt_all) as hall.
+  pose proof (BProv_allE Ax_s G (zeroOrSuccPredAt 0) t hall) as hinst.
+  unfold zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt in hinst.
+  simpl in hinst.
+  repeat rewrite term_subst_instTerm_rename_succ in hinst.
+  exact hinst.
+Qed.
+
+Lemma BProv_Ax_s_zeroOrSuccPredAt : forall G a,
+  BProv Ax_s G (zeroOrSuccPredAt a).
+Proof.
+  intros G a.
+  pose proof (BProv_Ax_s_zeroOrSuccPred_term G (tVar a)) as h.
+  unfold zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt in h.
+  simpl in h.
+  exact h.
+Qed.
 
 Definition boolAt (a : nat) : formula :=
   pOr (zeroAt a) (oneAt a).
