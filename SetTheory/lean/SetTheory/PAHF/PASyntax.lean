@@ -25176,6 +25176,106 @@ theorem
       hhighStepC hlowStepC
       hhighDouble_lowOdd hhighOdd_lowDoubleC hhighOdd_lowOddC
 
+/-- Odd-high strict branch reduced to the doubled successor-half high code.
+
+The head context formula is left abstract so the same theorem handles both
+low-even and low-odd branches of the parity split.  Only the odd-high
+arithmetic transport is performed here. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+    {extra : Formula} {highHalf : Nat}
+    (hbody : BProv Ax_s
+      (extra :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0)) :
+    BProv Ax_s
+      (extra :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := extra :: oddDoubleEqAt 1 highHalf :: [lowLtHigh, ih]
+  have hodd : BProv Ax_s C (oddDoubleEqAt 1 highHalf) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
+      (G := C) (high := 1) (highHalf := highHalf) (low := 0)
+      hodd (by simpa [C, lowLtHigh, ih] using hbody)
+
+/-- Strict successor parity split with every odd-high branch reduced to the
+doubled successor-half high-code obligation.
+
+The high-even/low-odd branch is still reduced to its explicit positive
+membership-persistence obligation; the two odd-high branches now ask for
+distinguishers of `S half + S half` instead of `S high`. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_double_succ_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+            (oddDoubleEqAt 0 lowHalf ::
+              doubleEqAt 1 highHalf ::
+              [ltTermAt (Term.var 0) (Term.var 1),
+                rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3))))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  have hhighOdd_lowDoubleTarget : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [lowLtHigh, ih])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+        (extra := doubleEqAt 0 lowHalf) (highHalf := highHalf)
+        hhighOdd_lowDouble
+  have hhighOdd_lowOddTarget : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [lowLtHigh, ih])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+        (extra := oddDoubleEqAt 0 lowHalf) (highHalf := highHalf)
+        hhighOdd_lowOdd
+  simpa [lowLtHigh, ih] using
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_remaining_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      hhighStep hlowStep hhighDouble_lowOdd_mem
+      hhighOdd_lowDoubleTarget hhighOdd_lowOddTarget
+
 /-- If the induction hypothesis distinguishes `high` from every lower code,
 and a binary-halving step extracts `lowHalf` from a strict lower code `low`,
 then the induction hypothesis may be opened at `lowHalf`.
