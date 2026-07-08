@@ -5069,6 +5069,26 @@ theorem BProv_Ax_s_zeroOrSuccPredAt {G : List Formula} (a : Nat) :
     Term.numeral]
     using (BProv_Ax_s_zeroOrSuccPred_term (G := G) (Term.var a))
 
+/-- Eliminate a positive-witness formula by opening its predecessor witness.
+
+The opened body uses the orientation built into `nonzeroAt`:
+`S pred = a`.  This keeps later predecessor-sensitive proofs from having to
+open the existential by hand. -/
+theorem BProv_nonzeroAt_elim
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {target : Formula} {a : Nat}
+    (hnonzero : BProv B G (nonzeroAt a))
+    (hbody : BProv B
+      (eq (Term.succ (Term.var 0)) (Term.var (a+1)) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv B G target := by
+  let body : Formula := eq (Term.succ (Term.var 0)) (Term.var (a+1))
+  have hex : BProv B G (ex body) := by
+    simpa [nonzeroAt, body] using hnonzero
+  exact BProv_exE_of_sentences (B := B) hB (a := body)
+    (c := target) hex (by simpa [body] using hbody)
+
 /-- A successor-predecessor witness is the same positive-witness fact as
 `nonzeroAt`, with the equality reversed.  This lemma keeps the orientation
 change as proof plumbing rather than baking it into either macro. -/
@@ -23567,6 +23587,40 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [C, witness] using hopened)
+
+/-- Open a distinguishing-member existential for an explicitly even high code,
+then open the predecessor of the positive witness derived from that high-code
+membership.
+
+This is a slightly stronger eliminator for carry branches: it leaves the
+definition of `hfSomeDistinguishesAt` alone, but gives callers the predecessor
+equation `S pred = witness` in the local context. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double_pred
+    {G : List Formula} {target : Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hbody : BProv Ax_s
+      (eq (Term.succ (Term.var 0)) (Term.var 1) ::
+        (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+          G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s G target := by
+  exact
+    BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double
+      (G := G) (target := target) (high := high) (low := low)
+      (half := half) hsome hhighDouble
+      (by
+        let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+        let C : List Formula := nonzeroAt 0 :: witness :: G.map (rename Nat.succ)
+        have hnonzero : BProv Ax_s C (nonzeroAt 0) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        exact BProv_nonzeroAt_elim
+          (B := Ax_s) (G := C) (target := rename Nat.succ target)
+          (a := 0)
+          (fun f hf => sentence_ax_s (f := f) hf)
+          hnonzero
+          (by
+            simpa [C, witness] using hbody))
 
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/
