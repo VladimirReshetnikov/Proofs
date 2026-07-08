@@ -10119,6 +10119,22 @@ Proof.
     + intros n hn. now rewrite (h n (or_introl hn)).
 Qed.
 
+Lemma termGraphAt_PA_rename : forall t rho out r,
+  termGraphAt rho out (PA.Term.rename r t) =
+    termGraphAt (fun n => rho (r n)) out t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho out r; try reflexivity.
+  - rewrite (IHa (fun n => rho n + 1) 0 r).
+    reflexivity.
+  - rewrite (IHa (fun n => rho n + 2) 1 r).
+    rewrite (IHb (fun n => rho n + 2) 0 r).
+    reflexivity.
+  - rewrite (IHa (fun n => rho n + 3) 1 r).
+    rewrite (IHb (fun n => rho n + 3) 2 r).
+    reflexivity.
+Qed.
+
 Lemma termGraphAt_substZeroAt_insert_model : forall V
     (M : FirstOrderAdjunctionModel V) t p k rho out e,
   out < k ->
@@ -11398,6 +11414,30 @@ Proof.
       intros [|n]; simpl; [reflexivity | now rewrite h].
     }
     now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+Qed.
+
+Lemma formulaAt_PA_rename : forall phi rho r,
+  formulaAt rho (PA.Formula.rename r phi) =
+    formulaAt (fun n => rho (r n)) phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho r; try reflexivity.
+  - rewrite (termGraphAt_PA_rename a (fun n => rho n + 2) 1 r).
+    rewrite (termGraphAt_PA_rename b (fun n => rho n + 2) 0 r).
+    reflexivity.
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
 Qed.
 
 Lemma formulaAt_map_ext_free : forall phi rho sigma,

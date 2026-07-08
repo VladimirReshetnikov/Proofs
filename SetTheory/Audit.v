@@ -96,6 +96,8 @@ Check sat_HF_finite_induction_standard.
 Check standard_sat_HF.
 Check standard_sat_HFFin.
 Check termGraphAt_map_ext_free.
+Check termGraphAt_PA_rename.
+Check formulaAt_PA_rename.
 Check formulaAt_map_ext_free.
 Check formulaAt_eq_translateFormula_of_PA_sentence.
 Check translateContextAt.
