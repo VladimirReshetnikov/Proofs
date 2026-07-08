@@ -386,6 +386,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
 #check @PA.Formula.BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
 #check @PA.Formula.BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
+#check @PA.Formula.BProv_Ax_s_ltTermAt_two_of_boolAt
+#check @PA.Formula.BProv_Ax_s_eq_of_doubleEqAt_div2StepAt
+#check @PA.Formula.BProv_Ax_s_eq_of_oddDoubleEqAt_div2StepAt
 #check @PA.Formula.BProv_Ax_s_eqConstAt_mod_two_of_div2StepAt_eqConst
 #check @PA.Formula.BProv_Ax_s_eqConstAt_div_two_of_div2StepAt_eqConst
 #check @PA.Formula.BProv_Ax_s_eqConstAt_of_remAt_eqConst

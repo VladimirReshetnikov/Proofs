@@ -11463,6 +11463,197 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
           List.map_map, Function.comp_def] using hopened)
   exact BProv_orE hcmp hleBranch hgtBranch
 
+/-- A boolean-valued slot is strictly below the closed numeral `2`.
+
+This is the small boundedness fact needed when a `div2StepAt` equation is
+viewed as a bounded remainder decomposition modulo two. -/
+theorem BProv_Ax_s_ltTermAt_two_of_boolAt
+    {G : List Formula} {bit : Nat}
+    (hbool : BProv Ax_s G (boolAt bit)) :
+    BProv Ax_s G (ltTermAt (Term.var bit) (Term.numeral 2)) := by
+  have hzero : BProv Ax_s (zeroAt bit :: G)
+      (ltTermAt (Term.var bit) (Term.numeral 2)) := by
+    let C : List Formula := zeroAt bit :: G
+    have hbitZero : BProv Ax_s C (eqConstAt bit 0) := by
+      have hraw : BProv Ax_s C (zeroAt bit) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [zeroAt] using hraw
+    simpa [C, ltTermAt, Term.rename] using
+      (BProv_Ax_s_ltConst_of_eqConst (G := C) (a := bit)
+        (m := 0) (n := 2) hbitZero (by decide))
+  have hone : BProv Ax_s (oneAt bit :: G)
+      (ltTermAt (Term.var bit) (Term.numeral 2)) := by
+    let C : List Formula := oneAt bit :: G
+    have hbitOne : BProv Ax_s C (eqConstAt bit 1) := by
+      have hraw : BProv Ax_s C (oneAt bit) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [oneAt] using hraw
+    simpa [C, ltTermAt, Term.rename] using
+      (BProv_Ax_s_ltConst_of_eqConst (G := C) (a := bit)
+        (m := 1) (n := 2) hbitOne (by decide))
+  exact BProv_orE hbool hzero hone
+
+/-- If a binary-halving step has current value already known to be twice a
+given half, then the step's quotient/next slot is that half.
+
+The proof is deliberately phrased through bounded-remainder quotient
+functionality modulo two rather than by hiding a new arithmetic operation in a
+definition. -/
+theorem BProv_Ax_s_eq_of_doubleEqAt_div2StepAt
+    {G : List Formula} {value stepHalf bit knownHalf : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value knownHalf))
+    (hstep : BProv Ax_s G (div2StepAt value stepHalf bit)) :
+    BProv Ax_s G (eq (Term.var stepHalf) (Term.var knownHalf)) := by
+  let val : Term := Term.var value
+  let modulus : Term := Term.numeral 2
+  let lowQuot : Term := Term.var knownHalf
+  let highQuot : Term := Term.var stepHalf
+  let lowRem : Term := Term.numeral 0
+  let highRem : Term := Term.var bit
+  let lowDouble : Term := Term.add lowQuot lowQuot
+  let highDouble : Term := Term.add highQuot highQuot
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt, highQuot, highDouble, highRem, val] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var stepHalf) (Term.var stepHalf))
+            (Term.var bit))) hstep)
+  have hhighLt : BProv Ax_s G (ltTermAt highRem modulus) := by
+    simpa [highRem, modulus] using
+      BProv_Ax_s_ltTermAt_two_of_boolAt hbool
+  have hlowLt : BProv Ax_s G (ltTermAt lowRem modulus) := by
+    simpa [lowRem, modulus, ltTermAt, Term.rename, Term.numeral] using
+      (BProv_Ax_s_ltConst_closed (G := G) (m := 0) (n := 2)
+        (by decide))
+  have hlowEq : BProv Ax_s G (eq val lowDouble) := by
+    simpa [doubleEqAt, val, lowQuot, lowDouble] using hdouble
+  have hlowMul : BProv Ax_s G
+      (eq (Term.mul lowQuot modulus) lowDouble) := by
+    simpa [lowQuot, modulus, lowDouble] using
+      BProv_Ax_s_mul_two_right_terms lowQuot
+  have hlowZero : BProv Ax_s G
+      (eq (Term.add (Term.mul lowQuot modulus) lowRem)
+        (Term.mul lowQuot modulus)) := by
+    simpa [lowRem, Term.numeral] using
+      BProv_weaken_nil (BProv_Ax_s_addZero_term
+        (Term.mul lowQuot modulus))
+  have hlowShape : BProv Ax_s G
+      (eq (Term.add (Term.mul lowQuot modulus) lowRem) lowDouble) :=
+    BProv_eqTrans hlowZero hlowMul
+  have hlow : BProv Ax_s G
+      (eq val (Term.add (Term.mul lowQuot modulus) lowRem)) :=
+    BProv_eqTrans hlowEq (BProv_eqSym hlowShape)
+  have hstepEq : BProv Ax_s G (eq val (Term.add highDouble highRem)) := by
+    simpa [div2StepAt, val, highQuot, highDouble, highRem] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var stepHalf) (Term.var stepHalf))
+            (Term.var bit))) hstep)
+  have hhighMul : BProv Ax_s G
+      (eq (Term.mul highQuot modulus) highDouble) := by
+    simpa [highQuot, modulus, highDouble] using
+      BProv_Ax_s_mul_two_right_terms highQuot
+  have hhighShape : BProv Ax_s G
+      (eq (Term.add (Term.mul highQuot modulus) highRem)
+        (Term.add highDouble highRem)) :=
+    BProv_eq_congr_add_left highRem hhighMul
+  have hhigh : BProv Ax_s G
+      (eq val (Term.add (Term.mul highQuot modulus) highRem)) :=
+    BProv_eqTrans hstepEq (BProv_eqSym hhighShape)
+  have hquot : BProv Ax_s G (eq highQuot lowQuot) :=
+    BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
+      (value := val) (modulus := modulus)
+      (lowQuot := lowQuot) (highQuot := highQuot)
+      (lowRem := lowRem) (highRem := highRem)
+      hlowLt hhighLt hlow hhigh
+  simpa [highQuot, lowQuot] using hquot
+
+/-- If a binary-halving step has current value already known to be
+`2 * knownHalf + 1`, then the step's quotient/next slot is `knownHalf`.
+
+Again the proof uses the explicit bounded-remainder decomposition modulo two:
+the known odd decomposition has remainder `1`, and the `div2StepAt` boolean bit
+is a bounded remainder. -/
+theorem BProv_Ax_s_eq_of_oddDoubleEqAt_div2StepAt
+    {G : List Formula} {value stepHalf bit knownHalf : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value knownHalf))
+    (hstep : BProv Ax_s G (div2StepAt value stepHalf bit)) :
+    BProv Ax_s G (eq (Term.var stepHalf) (Term.var knownHalf)) := by
+  let val : Term := Term.var value
+  let modulus : Term := Term.numeral 2
+  let lowQuot : Term := Term.var knownHalf
+  let highQuot : Term := Term.var stepHalf
+  let lowRem : Term := Term.numeral 1
+  let highRem : Term := Term.var bit
+  let lowDouble : Term := Term.add lowQuot lowQuot
+  let highDouble : Term := Term.add highQuot highQuot
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt, highQuot, highDouble, highRem, val] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var stepHalf) (Term.var stepHalf))
+            (Term.var bit))) hstep)
+  have hhighLt : BProv Ax_s G (ltTermAt highRem modulus) := by
+    simpa [highRem, modulus] using
+      BProv_Ax_s_ltTermAt_two_of_boolAt hbool
+  have hlowLt : BProv Ax_s G (ltTermAt lowRem modulus) := by
+    simpa [lowRem, modulus, ltTermAt, Term.rename] using
+      (BProv_Ax_s_ltConst_closed (G := G) (m := 1) (n := 2)
+        (by decide))
+  have hlowEq : BProv Ax_s G (eq val (Term.succ lowDouble)) := by
+    simpa [oddDoubleEqAt, val, lowQuot, lowDouble] using hodd
+  have hlowMul : BProv Ax_s G
+      (eq (Term.mul lowQuot modulus) lowDouble) := by
+    simpa [lowQuot, modulus, lowDouble] using
+      BProv_Ax_s_mul_two_right_terms lowQuot
+  have hlowSucc : BProv Ax_s G
+      (eq (Term.add (Term.mul lowQuot modulus) lowRem)
+        (Term.succ (Term.add (Term.mul lowQuot modulus) Term.zero))) := by
+    simpa [lowRem, Term.numeral] using
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms
+        (Term.mul lowQuot modulus) Term.zero)
+  have hlowZero : BProv Ax_s G
+      (eq (Term.succ (Term.add (Term.mul lowQuot modulus) Term.zero))
+        (Term.succ (Term.mul lowQuot modulus))) :=
+    BProv_eq_congr_succ
+      (BProv_weaken_nil (BProv_Ax_s_addZero_term
+        (Term.mul lowQuot modulus)))
+  have hlowMulSucc : BProv Ax_s G
+      (eq (Term.succ (Term.mul lowQuot modulus))
+        (Term.succ lowDouble)) :=
+    BProv_eq_congr_succ hlowMul
+  have hlowShape : BProv Ax_s G
+      (eq (Term.add (Term.mul lowQuot modulus) lowRem)
+        (Term.succ lowDouble)) :=
+    BProv_eqTrans hlowSucc (BProv_eqTrans hlowZero hlowMulSucc)
+  have hlow : BProv Ax_s G
+      (eq val (Term.add (Term.mul lowQuot modulus) lowRem)) :=
+    BProv_eqTrans hlowEq (BProv_eqSym hlowShape)
+  have hstepEq : BProv Ax_s G (eq val (Term.add highDouble highRem)) := by
+    simpa [div2StepAt, val, highQuot, highDouble, highRem] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var stepHalf) (Term.var stepHalf))
+            (Term.var bit))) hstep)
+  have hhighMul : BProv Ax_s G
+      (eq (Term.mul highQuot modulus) highDouble) := by
+    simpa [highQuot, modulus, highDouble] using
+      BProv_Ax_s_mul_two_right_terms highQuot
+  have hhighShape : BProv Ax_s G
+      (eq (Term.add (Term.mul highQuot modulus) highRem)
+        (Term.add highDouble highRem)) :=
+    BProv_eq_congr_add_left highRem hhighMul
+  have hhigh : BProv Ax_s G
+      (eq val (Term.add (Term.mul highQuot modulus) highRem)) :=
+    BProv_eqTrans hstepEq (BProv_eqSym hhighShape)
+  have hquot : BProv Ax_s G (eq highQuot lowQuot) :=
+    BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
+      (value := val) (modulus := modulus)
+      (lowQuot := lowQuot) (highQuot := highQuot)
+      (lowRem := lowRem) (highRem := highRem)
+      hlowLt hhighLt hlow hhigh
+  simpa [highQuot, lowQuot] using hquot
+
 /-- A closed current value determines the output bit of any binary-halving
 step: the bit is the value modulo two.  This keeps the modulus as the literal
 term `2`, avoiding any dependence on an arbitrary modulus slot. -/
