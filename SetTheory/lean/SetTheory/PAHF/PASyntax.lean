@@ -23691,6 +23691,78 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_leConst_low
           hlowCtx
       exact BProv_orE hcases hleft hright
 
+/-- Closed-high strict branch for the successor-code distinguisher.  If the
+high slot is known to be a standard numeral and PA proves `low < high`, then
+the finite closed-high search can distinguish the term `S high` from `low`.
+
+The temporary closed slot for `S high` is introduced by an existential and then
+transported to the term-parametric high code; the definition of
+`hfSomeDistinguishesTermAt` remains proof-neutral. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_high_ltAt
+    {G : List Formula} {high low highValue : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hltAt : BProv Ax_s G (ltAt low high)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  let target : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low
+  let highEq : Formula := eqConstAt 0 (highValue+1)
+  have hex : BProv Ax_s G (ex highEq) := by
+    simpa [highEq] using
+      BProv_exists_eqConstAt (B := Ax_s) (G := G) (highValue+1)
+  have hbody : BProv Ax_s (highEq :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := highEq :: G.map (rename Nat.succ)
+    have hslot : BProv Ax_s C (eqConstAt 0 (highValue+1)) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, highEq])
+    have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt high highValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhigh Nat.succ
+    have hhighC : BProv Ax_s C (eqConstAt (high+1) highValue) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := highEq) hhighRen
+    have hltRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (ltAt low high)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hltAt Nat.succ
+    have hltC : BProv Ax_s C (ltAt (low+1) (high+1)) := by
+      simpa [C, ltAt, rename, Term.rename, SetTheory.up] using
+        BProv_context_cons (B := Ax_s) (a := highEq) hltRen
+    have hleAt : BProv Ax_s C (leAt (low+1) (high+1)) :=
+      BProv_Ax_s_leAt_of_ltAt hltC
+    have hleConst : BProv Ax_s C (leConstAt (low+1) highValue) :=
+      BProv_Ax_s_leConstAt_of_leAt_eqConst hleAt hhighC
+    have hslotSome : BProv Ax_s C
+        (hfSomeDistinguishesAt 0 (low+1)) :=
+      BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_leConst_low
+        (G := C) (high := 0) (low := low+1)
+        (highValue := highValue+1) (n := highValue)
+        hslot hleConst (by omega)
+    have hhighSucc : BProv Ax_s C
+        (eq (Term.succ (Term.var (high+1)))
+          (Term.numeral (highValue+1))) := by
+      simpa [Term.numeral_succ] using BProv_eq_congr_succ hhighC
+    have hslotTerm : BProv Ax_s C
+        (eq (Term.var 0) (Term.succ (Term.var (high+1)))) :=
+      BProv_eqTrans (by simpa [eqConstAt] using hslot)
+        (BProv_eqSym hhighSucc)
+    have hterm : BProv Ax_s C
+        (hfSomeDistinguishesTermAt
+          (Term.succ (Term.var (high+1))) (low+1)) :=
+      BProv_hfSomeDistinguishesTermAt_of_hfSomeDistinguishesAt_eq_term
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := C) (high := 0) (low := low+1)
+        (highCode := Term.succ (Term.var (high+1)))
+        hslotSome hslotTerm
+    simpa [C, target, rename_hfSomeDistinguishesTermAt_succ,
+      Term.rename] using hterm
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [highEq, target] using hbody)
+
 /-- Base case for the PA induction target behind translated HF
 extensionality.  Once the high code has been replaced by `0`, the remaining
 low-code premise is `low < 0`, which PA refutes from the always-available

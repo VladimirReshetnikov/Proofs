@@ -726,6 +726,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_leConst_low
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_high_ltAt
 #check @PA.Formula.betaFact
 #check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step
