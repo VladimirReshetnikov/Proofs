@@ -587,7 +587,7 @@ printBinaryRangeLemma[name_String, len1_Integer, len2_Integer, body_String, code
   Print[""]
 ];
 
-highValueRefThreshold[] := If[target >= 15, 5, 13];
+highValueRefThreshold[] := If[target >= 15, 10, 13];
 
 highValueRefs[{"one"}] := {};
 highValueRefs[{"sqrt", n_Integer, i_Integer}] :=
@@ -624,10 +624,7 @@ rangeCaseProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewri
         "exact Exists.intro (" <> ToString[idx] <> " : Fin " <> ToString[Length[values[targetN]]] <> ") (by",
         "  change " <> rep <> " = " <> body,
         Sequence @@ (("  " <> highValueRewrite[#]) & /@ rewrites),
-        If[targetN >= 15,
-          "  norm_num [sqrt_four] <;> ring_nf",
-          "  a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num"
-        ],
+        "  a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num",
         ")"
       }
     ]
