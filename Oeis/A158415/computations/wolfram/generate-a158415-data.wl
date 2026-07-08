@@ -689,47 +689,14 @@ printLeanRange[n_Integer] := Module[{},
       "1 + values13 i",
       Function[i, {"add", 1, 0, 13, i}]
     ];
-    printUnaryRangeLemmaFor[
-      15,
-      "one_add_values12_mem_range_values15",
-      154,
-      "1 + values12 i",
-      Function[i, {"add", 1, 0, 12, i}]
-    ];
-    printUnaryRangeLemmaFor[
-      15,
-      "one_add_values11_mem_range_values15",
-      91,
-      "1 + values11 i",
-      Function[i, {"add", 1, 0, 11, i}]
-    ];
-    printUnaryRangeLemmaFor[
-      15,
-      "two_add_values11_mem_range_values15",
-      91,
-      "2 + values11 i",
-      Function[i, {"add", 3, 1, 11, i}]
-    ];
-    printUnaryRangeLemmaFor[
-      15,
-      "one_add_values10_mem_range_values15",
-      54,
-      "1 + values10 i",
-      Function[i, {"add", 1, 0, 10, i}]
-    ];
+    (* Lower one-add and two-add cases are proved in Lean from padding
+       monotonicity instead of emitted as generated range tables. *)
     printUnaryRangeLemmaFor[
       15,
       "sqrt_two_add_values10_mem_range_values15",
       54,
       "Real.sqrt 2 + values10 i",
       Function[i, {"add", 4, 1, 10, i}]
-    ];
-    printUnaryRangeLemmaFor[
-      15,
-      "two_add_values10_mem_range_values15",
-      54,
-      "2 + values10 i",
-      Function[i, {"add", 3, 1, 10, i}]
     ];
     printBinaryRangeLemmaFor[
       15,

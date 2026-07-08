@@ -93,13 +93,14 @@ integration step).
   propagation. Both interval files carry the standard coq-interval
   PrimInt63/PrimFloat evaluator axioms (plus classical reals) — the accepted
   footprint for machine-arithmetic certificates, not admits.
-- `CoqProofs/FermatFour.v`: **Fermat's Last Theorem for exponent 4 is proved
-  unconditionally** — the classical descent (Pythagorean-triple
-  parametrization → double descent → well-founded induction on `|c|`) is
-  constructed from scratch over Stdlib `Znumtheory`, discharging the descent
-  step the file previously took as a section hypothesis
-  (`fermat_four_no_positive_nat_solutions_unconditional` and the square-RHS
-  form; axiom-free).
+- `CoqProofs/FermatFour.v`: an attempt to prove FLT-4 **unconditionally** —
+  the classical descent (Pythagorean-triple parametrization → double descent
+  → well-founded induction on `|c|`) constructed from scratch over Stdlib
+  `Znumtheory` — is **parked as a clearly-marked WIP comment block** in the
+  file (which still builds its verified conditional development, 7 s). The
+  banner records the verified-through point, the three repairs applied (two
+  `clear`-scoped divergent `nia` calls, one disjunctive `destruct` pattern),
+  and that the descent tail's compile was never confirmed.
 
 ## Build-speed fixes
 
@@ -125,6 +126,45 @@ integration step).
   the sequential call-site pattern is the working form and stays).
 - `CoqProofs/RationalFloorOrbit.v`: five section banners mirroring the Lean
   chapter structure.
+
+## The `A198683(12)` endgame (same session, follow-up request)
+
+On Vladimir's request the session then reorganized the Lean side of the
+disputed `A198683(12)` and narrowed its unproved hypotheses:
+
+- **`LeanProofs/A198683N12Certificate.lean`** (new): the decision-tree
+  module. One wide hypothesis (`N12PartitionWitness` — the 2926-class
+  representative certificate the wave-3 interval pipeline is designed to
+  produce, with separation deliberately *not* claimed for the two
+  structurally uncertain comparisons) and two narrow ones (`NearOneSplit`,
+  and `OverflowIsolated` — the isolated **no-miracles** hypothesis for the
+  overflow candidate 57). Proved: `a198683 12 ∈ {2924, 2925, 2926}` from
+  the witness alone (excluded middle absorbs both dichotomies), each narrow
+  hypothesis removes one branch, and all four combinations pin exact values
+  — `witness + split + no-miracles ⊢ a198683 12 = 2926`.
+- **`LeanProofs/A198683N12Endpoints.lean`** (new): **the near-`1` split is
+  now a theorem** (`nearOneSplit`, axioms `propext`/`Classical.choice`/
+  `Quot.sound`): every scalar endpoint estimate of the Symbolic module's
+  ten-layer interval ladder is proved by alternating-series Taylor bounds,
+  rational `exp` certificates, and π/2 monotone transport. En route the
+  work **exposed two endpoint-vs-midpoint transcription errors** in the
+  ladder's original constants (`3724 < exp(π/2·5.2346)` is false — true
+  value 3723.76; `cos(π/2·1.1317) < −0.2055` is false — true value
+  −0.20540); both refutations are kept as documented Lean lemmas, and the
+  ladder was repaired by widening the level-3 window to `(−766, −764)`
+  (mod-4 sine-negativity still applies) with corrected constants.
+- Consequently `a198683 12 ∈ {2925, 2926}` holds **given any partition
+  witness alone**, and the single remaining narrow hypothesis — overflow
+  no-miracles — decides `2926` vs `2925`. This settles question Q3 of the
+  wave-3 synthesis in the split direction and matches the wave-3 §7 target
+  shape (`a(12) ∈ S`, `|S| ≤ 3`, explicit cluster hypotheses).
+- `A198683N12Symbolic.lean` tidy: the `sigma`/`tau` pair shadowing
+  `A198683Support.tau` renamed to `probeSigma`/`probeTau`; two stale
+  docstrings fixed.
+- FLT-4 unconditional-descent work was **parked on request** as a
+  clearly-marked WIP comment block in `CoqProofs/FermatFour.v` (builds
+  green; banner records verified-through point, the three applied repairs,
+  and how to resume).
 
 ## Verification record
 

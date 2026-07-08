@@ -59,11 +59,19 @@ packages the entire residual uncertainty as one machine-checked **decision
 tree**: given a partition witness (the wide, interval-checkable certificate the
 wave-3 pipeline is designed to produce), Lean proves
 `a198683 12 ∈ {2924, 2925, 2926}` outright, and each of the two isolated
-narrow hypotheses — the near-`1` split `nearOne25 ≠ nearOne1404` (reduced to
-twenty-eight scalar endpoint estimates) and the overflow **no-miracles**
-hypothesis for candidate `57` — removes one branch; both together pin
-`a198683 12 = 2926`.  That module's docstring is now the recommended summary
-of exactly which facts the expected value `2926` rests on.
+narrow hypotheses — the near-`1` split `nearOne25 ≠ nearOne1404` and the
+overflow **no-miracles** hypothesis for candidate `57` — removes one branch;
+both together pin `a198683 12 = 2926`.  The near-`1` split is now **proved**:
+[`../../LeanProofs/A198683N12Endpoints.lean`](../../LeanProofs/A198683N12Endpoints.lean)
+discharges every scalar endpoint estimate of the Symbolic module's interval
+ladder by Taylor partial sums — settling question Q3 of the wave-3 synthesis
+in the split direction, and en route exposing (and repairing) two
+endpoint-vs-midpoint transcription errors in the ladder's original
+constants, each refuted in Lean before correction.  Consequently
+`a198683 12 ∈ {2925, 2926}` holds given any partition witness alone, and the
+overflow no-miracles hypothesis is the single remaining narrow question,
+deciding `2926` versus `2925`.  That module's docstring is the recommended
+summary of exactly which facts the expected value `2926` rests on.
 
 ## What is settled and what is not
 
