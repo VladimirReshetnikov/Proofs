@@ -178,6 +178,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_addSucc_rename
 #check @PA.Formula.BProv_Ax_s_addSucc
 #check @PA.Formula.BProv_Ax_s_addSucc_terms
+#check @PA.Formula.term_substZero_rename_succ
+#check @PA.Formula.term_substSuccVar_rename_succ
+#check @PA.Formula.BProv_Ax_s_add_eq_zero_left_all
+#check @PA.Formula.BProv_Ax_s_add_eq_zero_left_terms
 #check @PA.Formula.BProv_Ax_s_mulZero_rename
 #check @PA.Formula.BProv_Ax_s_mulZero
 #check @PA.Formula.BProv_Ax_s_mulZero_term

@@ -8784,6 +8784,137 @@ theorem BProv_Ax_s_addSucc_terms (s t : Term) :
   simpa [addSucc, subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using h2
 
+/-- Zero-substitution removes one surrounding binder from a shifted term. -/
+theorem term_substZero_rename_succ (t : Term) :
+    Term.subst substZero (Term.rename Nat.succ t) = t := by
+  induction t with
+  | var n => rfl
+  | zero => rfl
+  | succ t ih => simp [Term.rename, Term.subst, ih]
+  | add a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
+  | mul a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
+
+/-- Successor-substitution leaves a term shifted through the induction binder. -/
+theorem term_substSuccVar_rename_succ (t : Term) :
+    Term.subst substSuccVar (Term.rename Nat.succ t) =
+      Term.rename Nat.succ t := by
+  induction t with
+  | var n => rfl
+  | zero => rfl
+  | succ t ih => simp [Term.rename, Term.subst, ih]
+  | add a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
+  | mul a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
+
+/-- PA proves uniformly in the right summand that if `x + y = 0`, then
+`x = 0`.  The free term `x` is shifted under the displayed universal binder. -/
+theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
+    BProv Ax_s []
+      (all
+        (imp
+          (eq (Term.add (Term.rename Nat.succ x) (Term.var 0)) Term.zero)
+          (eq (Term.rename Nat.succ x) Term.zero))) := by
+  let phi : Formula :=
+    imp
+      (eq (Term.add (Term.rename Nat.succ x) (Term.var 0)) Term.zero)
+      (eq (Term.rename Nat.succ x) Term.zero)
+  have hzeroBody : BProv Ax_s
+      [eq (Term.add x Term.zero) Term.zero]
+      (eq x Term.zero) := by
+    have hzeroAss : BProv Ax_s [eq (Term.add x Term.zero) Term.zero]
+        (eq (Term.add x Term.zero) Term.zero) :=
+      BProv_ass (B := Ax_s) (G := [eq (Term.add x Term.zero) Term.zero])
+        (by simp)
+    have haddZero : BProv Ax_s [eq (Term.add x Term.zero) Term.zero]
+        (eq (Term.add x Term.zero) x) :=
+      BProv_weaken_nil (BProv_Ax_s_addZero_term x)
+    exact BProv_eqTrans (BProv_eqSym haddZero) hzeroAss
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using BProv_impI hzeroBody
+  have hsuccBody : BProv Ax_s
+      [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+          Term.zero,
+        phi]
+      (eq (Term.rename Nat.succ x) Term.zero) := by
+    have hbad : BProv Ax_s
+        [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+            Term.zero,
+          phi]
+        (eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+          Term.zero) :=
+      BProv_ass (B := Ax_s)
+        (G := [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+            Term.zero,
+          phi])
+        (by simp)
+    have haddSucc : BProv Ax_s
+        [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+            Term.zero,
+          phi]
+        (eq
+          (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+          (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0)))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addSucc_terms (Term.rename Nat.succ x) (Term.var 0))
+    have hsuccZero : BProv Ax_s
+        [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+            Term.zero,
+          phi]
+        (eq (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0)))
+          Term.zero) :=
+      BProv_eqTrans (BProv_eqSym haddSucc) hbad
+    have hnot : BProv Ax_s
+        [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+            Term.zero,
+          phi]
+        (imp
+          (eq (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0)))
+            Term.zero)
+          bot) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_zeroNotSucc_term
+          (Term.add (Term.rename Nat.succ x) (Term.var 0)))
+    have hbot : BProv Ax_s
+        [eq (Term.add (Term.rename Nat.succ x) (Term.succ (Term.var 0)))
+            Term.zero,
+          phi]
+        bot :=
+      BProv_mp Ax_s _ _ _ hnot hsuccZero
+    exact BProv_botE hbot
+  have hsuccInner : BProv Ax_s [phi]
+      (subst substSuccVar phi) := by
+    simpa [phi, substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substSuccVar_rename_succ] using BProv_impI hsuccBody
+  have hsuccImp : BProv Ax_s []
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccInner
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) := by
+    exact BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Modus-ponens form of `BProv_Ax_s_add_eq_zero_left_all`. -/
+theorem BProv_Ax_s_add_eq_zero_left_terms {G : List Formula}
+    {x y : Term}
+    (h : BProv Ax_s G (eq (Term.add x y) Term.zero)) :
+    BProv Ax_s G (eq x Term.zero) := by
+  have hall : BProv Ax_s G
+      (all
+        (imp
+          (eq (Term.add (Term.rename Nat.succ x) (Term.var 0)) Term.zero)
+          (eq (Term.rename Nat.succ x) Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_add_eq_zero_left_all x)
+  have himp : BProv Ax_s G
+      (imp (eq (Term.add x y) Term.zero) (eq x Term.zero)) := by
+    have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
+    simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ]
+      using hinst
+  exact BProv_mp Ax_s G _ _ himp h
+
 /-- PA proves every variable-renamed body of multiplication by zero. -/
 theorem BProv_Ax_s_mulZero_rename (r : Nat → Nat) :
     BProv Ax_s [] (rename r mulZero) :=
