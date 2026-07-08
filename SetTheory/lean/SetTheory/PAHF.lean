@@ -6820,6 +6820,11 @@ def remAt (rem value modulus : Nat) : Formula :=
       (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
         (Term.var (rem+1)))))
 
+def remEqAt (rem value modulus : Nat) : Formula :=
+  ex (eq (Term.var (value+1))
+    (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+      (Term.var (rem+1))))
+
 def betaModTerm (step idx : Nat) : Term :=
   Term.succ (Term.mul (Term.succ (Term.var idx)) (Term.var step))
 
@@ -11599,6 +11604,71 @@ theorem BProv_Ax_s_remAt_constRemMod_of_eqConst {G : List Formula}
               (Term.add (Term.mul (Term.var 0) (Term.var (0+1)))
                 (Term.var ((1)+1)))))))
       (t := Term.numeral q) hbody)
+
+/-- Eliminate a remainder proof to its strict boundedness component. -/
+theorem BProv_Ax_s_ltAt_of_remAt {G : List Formula}
+    {rem value modulus : Nat}
+    (hrem : BProv Ax_s G (remAt rem value modulus)) :
+    BProv Ax_s G (ltAt rem modulus) := by
+  let body : Formula :=
+    and
+      (ltAt (rem+1) (modulus+1))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.var (rem+1))))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (ltAt rem modulus)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlt : BProv Ax_s C (ltAt (rem+1) (modulus+1)) :=
+      BProv_andE1 hbodyAss
+    simpa [C, ltAt, rename, Term.rename, SetTheory.up] using hlt
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remAt, body] using hbody)
+
+/-- Eliminate a remainder proof to the existential quotient equation it
+contains, forgetting only the strict bound. -/
+theorem BProv_Ax_s_remEqAt_of_remAt {G : List Formula}
+    {rem value modulus : Nat}
+    (hrem : BProv Ax_s G (remAt rem value modulus)) :
+    BProv Ax_s G (remEqAt rem value modulus) := by
+  let body : Formula :=
+    and
+      (ltAt (rem+1) (modulus+1))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.var (rem+1))))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (remEqAt rem value modulus)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have heq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))) :=
+      BProv_andE2 hbodyAss
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (eq (Term.var (value+1+1))
+            (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1+1)))
+              (Term.var (rem+1+1))))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using heq
+    have hex : BProv Ax_s C
+        (ex (eq (Term.var (value+1+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1+1)))
+            (Term.var (rem+1+1))))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq (Term.var (value+1+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1+1)))
+            (Term.var (rem+1+1))))
+        (t := Term.var 0) hinst
+    simpa [C, remEqAt, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remAt, body] using hbody)
 
 /-- If the `step` and `idx` slots are fixed numerals, PA proves that the
 Gödel-beta modulus term computes the corresponding closed numeral. -/
