@@ -1820,6 +1820,27 @@ theorem TM1to1EncodedInput_length {Γ : Type*} {width : Nat}
   | cons _a rest IH =>
       simp [TM1to1EncodedInput, IH, List.Vector.toList_length, Nat.succ_mul, Nat.add_comm]
 
+theorem trPosNum_length (p : PosNum) :
+    (Turing.PartrecToTM2.trPosNum p).length = PosNum.natSize p := by
+  induction p with
+  | one => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize]
+  | bit0 p ih => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize, ih]
+  | bit1 p ih => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize, ih]
+
+theorem trNum_length (m : Num) :
+    (Turing.PartrecToTM2.trNum m).length = Num.natSize m := by
+  cases m with
+  | zero => simp [Turing.PartrecToTM2.trNum, Num.natSize]
+  | pos p => simp [Turing.PartrecToTM2.trNum, Num.natSize, trPosNum_length]
+
+theorem trNat_length (n : Nat) :
+    (Turing.PartrecToTM2.trNat n).length = Nat.size n := by
+  simp [Turing.PartrecToTM2.trNat, trNum_length, Num.natSize_to_nat]
+
+theorem trList_singleton_length (n : Nat) :
+    (Turing.PartrecToTM2.trList [n]).length = Nat.size n + 1 := by
+  simp [Turing.PartrecToTM2.trList, trNat_length]
+
 theorem tm2to1_trInit_length_pos
     (k : Turing.PartrecToTM2.K') (input : List Turing.PartrecToTM2.Γ') :
     0 < (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
@@ -1838,6 +1859,112 @@ theorem encoded_partrec_input_length_pos {width : Nat}
   rw [TM1to1EncodedInput_length]
   exact Nat.mul_pos (tm2to1_trInit_length_pos _ _)
     (partrecToTM1Encoding_width_pos enc dec enc0 encdec)
+
+theorem tm2to1_trInit_length_le_succ
+    (k : Turing.PartrecToTM2.K') (input : List Turing.PartrecToTM2.Γ') :
+    (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+      (fun _ => Turing.PartrecToTM2.Γ') inferInstance k input).length ≤
+        input.length + 1 := by
+  simp [Turing.TM2to1.trInit]
+
+/-- The Bool encoding of the recursive evaluator's input has fixed-width binary size. -/
+theorem encoded_partrec_input_length_le {width : Nat}
+    (enc : PartrecToTM1Alphabet -> List.Vector Bool width) (n : Nat) :
+    (TM1to1EncodedInput enc
+      (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n]))).length ≤
+      width * (Nat.size n + 2) := by
+  rw [TM1to1EncodedInput_length]
+  have hInit := tm2to1_trInit_length_le_succ Turing.PartrecToTM2.K'.main
+    (Turing.PartrecToTM2.trList [n])
+  have hList := trList_singleton_length n
+  have hInit' :
+      (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+        (fun _ => Turing.PartrecToTM2.Γ') inferInstance Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n])).length ≤ Nat.size n + 2 := by
+    omega
+  calc
+    (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+        (fun _ => Turing.PartrecToTM2.Γ') inferInstance Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n])).length * width
+        ≤ (Nat.size n + 2) * width := Nat.mul_le_mul_right width hInit'
+    _ = width * (Nat.size n + 2) := Nat.mul_comm _ _
+
+theorem linear_mul_le_two_pow_pred_of_large (D m : Nat) (hD : 0 < D)
+    (hm : 2 * (D + 1) + 1 ≤ m) : D * m ≤ 2 ^ (m - 1) := by
+  let M := 2 * (D + 1) + 1
+  have hbaseLinear : D * M ≤ 2 * (D + 1) ^ 2 + 1 := by
+    dsimp [M]
+    grind
+  have hbasePow : 2 * (D + 1) ^ 2 + 1 ≤ 2 ^ (M - 1) := by
+    have h := Nat.two_mul_sq_add_one_le_two_pow_two_mul (D + 1)
+    dsimp [M]
+    simpa [Nat.add_assoc, Nat.mul_add, Nat.add_comm, Nat.add_left_comm] using h
+  have hbase : D * M ≤ 2 ^ (M - 1) := Nat.le_trans hbaseLinear hbasePow
+  induction m, hm using Nat.le_induction with
+  | base => exact hbase
+  | succ n hn ih =>
+      have hnpos : 0 < n := by omega
+      have hDleDn : D ≤ D * n := by
+        exact Nat.le_mul_of_pos_right D hnpos
+      have hDlePow : D ≤ 2 ^ (n - 1) := Nat.le_trans hDleDn ih
+      calc
+        D * (n + 1) = D * n + D := by rw [Nat.mul_add, Nat.mul_one]
+        _ ≤ 2 ^ (n - 1) + 2 ^ (n - 1) := Nat.add_le_add ih hDlePow
+        _ = 2 ^ (n + 1 - 1) := by
+          have hpred : n - 1 + 1 = n :=
+            Nat.sub_add_cancel (Nat.succ_le_iff.mp hnpos)
+          rw [Nat.add_sub_cancel]
+          rw [← hpred]
+          simp [Nat.pow_succ, Nat.mul_comm, Nat.two_mul]
+
+theorem nat_size_linear_le_self_of_large (D n : Nat) (hD : 0 < D)
+    (hn : 2 ^ (2 * (D + 1) + 1) ≤ n) : D * Nat.size n ≤ n := by
+  let M := 2 * (D + 1) + 1
+  have hMltSize : M < Nat.size n := (Nat.lt_size (m := M) (n := n)).2 hn
+  have hDsizePow : D * Nat.size n ≤ 2 ^ (Nat.size n - 1) :=
+    linear_mul_le_two_pow_pred_of_large D (Nat.size n) hD hMltSize.le
+  have hSizePos : 0 < Nat.size n := lt_of_le_of_lt (Nat.zero_le M) hMltSize
+  have hPredLt : Nat.size n - 1 < Nat.size n := Nat.pred_lt hSizePos.ne'
+  have hPowLe : 2 ^ (Nat.size n - 1) ≤ n :=
+    (Nat.lt_size (m := Nat.size n - 1) (n := n)).1 hPredLt
+  exact Nat.le_trans hDsizePow hPowLe
+
+theorem nat_size_linear_le_self_eventually (D : Nat) (hD : 0 < D) :
+    ∃ threshold, ∀ n, threshold ≤ n -> D * Nat.size n ≤ n := by
+  exact ⟨2 ^ (2 * (D + 1) + 1),
+    fun n hn => nat_size_linear_le_self_of_large D n hD hn⟩
+
+theorem init_wrapper_state_count_le_linear (width C inputLen s : Nat)
+    (hInput : inputLen ≤ width * (s + 2)) (hs : 0 < s) :
+    2 * inputLen + C ≤ (2 * width + (4 * width + C) + 1) * s := by
+  have hInput2 : 2 * inputLen + C ≤ 2 * (width * (s + 2)) + C := by
+    exact Nat.add_le_add_right (Nat.mul_le_mul_left 2 hInput) C
+  have hConst : 4 * width + C ≤ (4 * width + C) * s := by
+    exact Nat.le_mul_of_pos_right (4 * width + C) hs
+  have hConst' : 4 * width + C ≤ ((4 * width + C) + 1) * s := by
+    exact Nat.le_trans hConst (Nat.mul_le_mul_right s (Nat.le_succ (4 * width + C)))
+  have hCore : 2 * (width * (s + 2)) + C ≤
+      (2 * width + (4 * width + C) + 1) * s := by
+    calc
+      2 * (width * (s + 2)) + C = 2 * width * s + (4 * width + C) := by
+        grind
+      _ ≤ 2 * width * s + ((4 * width + C) + 1) * s :=
+        Nat.add_le_add_left hConst' _
+      _ = (2 * width + (4 * width + C) + 1) * s := by
+        simp [Nat.add_mul, Nat.mul_assoc, Nat.add_comm, Nat.add_left_comm]
+  exact Nat.le_trans hInput2 hCore
+
+theorem init_wrapper_state_count_le_linear_size {Label : Type*} [Fintype Label]
+    {width : Nat} {input : List Bool} {n : Nat}
+    (hInput : input.length ≤ width * (Nat.size n + 2))
+    (hSize : 0 < Nat.size n) :
+    Fintype.card (InitThenTM0State Label input) ≤
+      (2 * width + (4 * width + Fintype.card (TM0RadoState Label)) + 1) *
+        Nat.size n := by
+  rw [initThenTM0State_card]
+  exact init_wrapper_state_count_le_linear width
+    (Fintype.card (TM0RadoState Label)) input.length (Nat.size n) hInput hSize
 
 end MathlibBridge
 
