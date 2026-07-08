@@ -13802,6 +13802,297 @@ Proof.
   - apply rename_id.
 Qed.
 
+Lemma BProv_context_cons : forall (B : form -> Prop) G a b,
+  BProv B G b -> BProv B (a :: G) b.
+Proof.
+  intros B G a b h.
+  apply (BProv_mono B G (a :: G) b).
+  - intros x hx. right. exact hx.
+  - exact h.
+Qed.
+
+Lemma BProv_impI : forall (B : form -> Prop) G a b,
+  BProv B (a :: G) b -> BProv B G (fImp a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  apply P_impI.
+  apply (Prov_weaken (L ++ a :: G) b hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl in hx.
+  simpl.
+  destruct hx as [hx | [hx | hx]].
+  - right. apply in_app_iff. left. exact hx.
+  - left. exact hx.
+  - right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_impI_after_prefix : forall (B : form -> Prop) Gamma Delta a b,
+  BProv B (Gamma ++ a :: Delta) b ->
+  BProv B (Gamma ++ Delta) (fImp a b).
+Proof.
+  intros B Gamma Delta a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  apply P_impI.
+  apply (Prov_weaken (L ++ Gamma ++ a :: Delta) b hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl.
+  destruct hx as [hx | hx].
+  - right. apply in_app_iff. left. exact hx.
+  - apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + right. apply in_app_iff. right. apply in_app_iff. left. exact hx.
+    + simpl in hx.
+      destruct hx as [hx | hx].
+      * left. exact hx.
+      * right. apply in_app_iff. right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_andI : forall (B : form -> Prop) G a b,
+  BProv B G a -> BProv B G b -> BProv B G (fAnd a b).
+Proof.
+  intros B G a b [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (La ++ Lb). split.
+  - intros x hx. apply in_app_iff in hx.
+    destruct hx as [hx | hx]; [apply hLa | apply hLb]; exact hx.
+  - apply P_andI.
+    + apply (Prov_weaken (La ++ G) a hpa).
+      intros x hx; mem.
+    + apply (Prov_weaken (Lb ++ G) b hpb).
+      intros x hx; mem.
+Qed.
+
+Lemma BProv_botE : forall (B : form -> Prop) G a,
+  BProv B G fBot -> BProv B G a.
+Proof.
+  intros B G a [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_botE (L ++ G) a hp).
+Qed.
+
+Lemma BProv_andE1 : forall (B : form -> Prop) G a b,
+  BProv B G (fAnd a b) -> BProv B G a.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_andE1 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_andE2 : forall (B : form -> Prop) G a b,
+  BProv B G (fAnd a b) -> BProv B G b.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_andE2 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orI1 : forall (B : form -> Prop) G a b,
+  BProv B G a -> BProv B G (fOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_orI1 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orI2 : forall (B : form -> Prop) G a b,
+  BProv B G b -> BProv B G (fOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_orI2 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orE : forall (B : form -> Prop) G a b c,
+  BProv B G (fOr a b) ->
+  BProv B (a :: G) c ->
+  BProv B (b :: G) c ->
+  BProv B G c.
+Proof.
+  intros B G a b c [Lo [hLo hpo]] [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (Lo ++ La ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + apply hLo. exact hx.
+    + apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * apply hLa. exact hx.
+      * apply hLb. exact hx.
+  - apply (P_orE ((Lo ++ La ++ Lb) ++ G) a b c).
+    + apply (Prov_weaken (Lo ++ G) (fOr a b) hpo).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (La ++ a :: G) c hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. left. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+    + apply (Prov_weaken (Lb ++ b :: G) c hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. right. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_orE_after_prefix : forall (B : form -> Prop) Gamma Delta a b c,
+  BProv B (Gamma ++ Delta) (fOr a b) ->
+  BProv B (Gamma ++ a :: Delta) c ->
+  BProv B (Gamma ++ b :: Delta) c ->
+  BProv B (Gamma ++ Delta) c.
+Proof.
+  intros B Gamma Delta a b c
+    [Lo [hLo hpo]] [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (Lo ++ La ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + apply hLo. exact hx.
+    + apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * apply hLa. exact hx.
+      * apply hLb. exact hx.
+  - apply (P_orE ((Lo ++ La ++ Lb) ++ (Gamma ++ Delta)) a b c).
+    + apply (Prov_weaken (Lo ++ Gamma ++ Delta) (fOr a b) hpo).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (La ++ Gamma ++ a :: Delta) c hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl.
+      destruct hx as [hx | hx].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. left. exact hx.
+      * apply in_app_iff in hx.
+        destruct hx as [hx | hx].
+        -- right. apply in_app_iff. right. apply in_app_iff. left. exact hx.
+        -- simpl in hx.
+           destruct hx as [hx | hx].
+           ++ left. exact hx.
+           ++ right. apply in_app_iff. right. apply in_app_iff. right. exact hx.
+    + apply (Prov_weaken (Lb ++ Gamma ++ b :: Delta) c hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl.
+      destruct hx as [hx | hx].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. right. exact hx.
+      * apply in_app_iff in hx.
+        destruct hx as [hx | hx].
+        -- right. apply in_app_iff. right. apply in_app_iff. left. exact hx.
+        -- simpl in hx.
+           destruct hx as [hx | hx].
+           ++ left. exact hx.
+           ++ right. apply in_app_iff. right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_allE : forall (B : form -> Prop) G a k,
+  BProv B G (fAll a) -> BProv B G (rename (inst k) a).
+Proof.
+  intros B G a k [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_allE (L ++ G) a k hp).
+Qed.
+
+Lemma BProv_exI : forall (B : form -> Prop) G a k,
+  BProv B G (rename (inst k) a) -> BProv B G (fEx a).
+Proof.
+  intros B G a k [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_exI (L ++ G) a k hp).
+Qed.
+
+Lemma map_rename_S_eq_of_sentences : forall (B : form -> Prop) L,
+  Sentences B ->
+  (forall x, In x L -> B x) ->
+  map (rename S) L = L.
+Proof.
+  induction L as [|x xs IH]; intros hB hL; simpl.
+  - reflexivity.
+  - rewrite (rename_eq_of_sentence x).
+    + rewrite (IH hB (fun y hy => hL y (or_intror hy))).
+      reflexivity.
+    + apply hB.
+      apply hL. simpl. left. reflexivity.
+Qed.
+
+Lemma BProv_allI_of_sentences : forall (B : form -> Prop) G a,
+  Sentences B ->
+  BProv B (map (rename S) G) a ->
+  BProv B G (fAll a).
+Proof.
+  intros B G a hB [L [hL hp]].
+  pose proof (map_rename_S_eq_of_sentences B L hB hL) as hLmap.
+  exists L. split; [exact hL |].
+  apply P_allI.
+  apply (Prov_weaken (L ++ map (rename S) G) a hp).
+  intros x hx.
+  rewrite map_app.
+  rewrite hLmap.
+  exact hx.
+Qed.
+
+Lemma BProv_exE_of_sentences : forall (B : form -> Prop) G a c,
+  Sentences B ->
+  BProv B G (fEx a) ->
+  BProv B (a :: map (rename S) G) (rename S c) ->
+  BProv B G c.
+Proof.
+  intros B G a c hB [Le [hLe hpe]] [Lb [hLb hpb]].
+  pose proof (map_rename_S_eq_of_sentences B Lb hB hLb) as hLbmap.
+  exists (Le ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ G) a c).
+    + apply (Prov_weaken (Le ++ G) (fEx a) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (Lb ++ a :: map (rename S) G) (rename S c) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right.
+        rewrite map_app.
+        apply in_app_iff. left.
+        rewrite map_app.
+        apply in_app_iff. right.
+        rewrite hLbmap.
+        exact hx.
+      * left. exact hx.
+      * right.
+        rewrite map_app.
+        apply in_app_iff. right.
+        exact hx.
+Qed.
+
 Lemma map_rename_S_eq_of_translatedPAAx_list : forall L,
   (forall x, In x L -> translatedPAAx x) -> map (rename S) L = L.
 Proof.

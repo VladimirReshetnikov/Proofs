@@ -34,6 +34,21 @@ Check BProv_eqElim.
 Check BProv_eqSym.
 Check BProv_eqTrans.
 Check BProv_theory_mono.
+Check BProv_context_cons.
+Check BProv_impI.
+Check BProv_impI_after_prefix.
+Check BProv_andI.
+Check BProv_botE.
+Check BProv_andE1.
+Check BProv_andE2.
+Check BProv_orI1.
+Check BProv_orI2.
+Check BProv_orE.
+Check BProv_orE_after_prefix.
+Check BProv_allE.
+Check BProv_exI.
+Check BProv_allI_of_sentences.
+Check BProv_exE_of_sentences.
 Check completeness_inf_context.
 Print Assumptions prov_iff_valid.
 
