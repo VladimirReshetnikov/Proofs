@@ -13407,6 +13407,305 @@ theorem BProv_Ax_s_remainder_zero_of_gt_quotient_terms
       (divQuot := divQuot) (remQuot := remQuot) (diff := diff)
       (rem := Term.var rem) hmodSucc hgtQuot hdecomp)
 
+/-- Slot-level wrapper for the non-strict quotient-comparison branch.  It
+opens the `leAt remQuot divQuot` witness and delegates the actual arithmetic
+to `BProv_Ax_s_remainder_zero_of_le_quotient_terms`. -/
+theorem BProv_Ax_s_remainder_zero_of_le_quotient_at
+    {G : List Formula} {modulus value rem divQuot remQuot : Nat}
+    (hleQuot : BProv Ax_s G (leAt remQuot divQuot))
+    (hdivEq : BProv Ax_s G
+      (eq (Term.mul (Term.var modulus) (Term.var divQuot))
+        (Term.var value)))
+    (hremEq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.mul (Term.var remQuot) (Term.var modulus))
+          (Term.var rem))))
+    (hrem : BProv Ax_s G (remAt rem value modulus)) :
+    BProv Ax_s G (eqConstAt rem 0) := by
+  let leBody : Formula :=
+    eq (Term.add (Term.var (remQuot+1)) (Term.var 0))
+      (Term.var (divQuot+1))
+  have hbody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt rem 0)) := by
+    let C : List Formula := leBody :: G.map (rename Nat.succ)
+    have hleEq : BProv Ax_s C
+        (eq (Term.add (Term.var (remQuot+1)) (Term.var 0))
+          (Term.var (divQuot+1))) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, leBody])
+    have hdivEqC : BProv Ax_s C
+        (eq (Term.mul (Term.var (modulus+1)) (Term.var (divQuot+1)))
+          (Term.var (value+1))) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq (Term.mul (Term.var modulus) (Term.var divQuot))
+              (Term.var value))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hdivEq Nat.succ
+      simpa [C, rename, Term.rename] using
+        (BProv_context_cons (B := Ax_s) (a := leBody) hren)
+    have hremEqC : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var (remQuot+1))
+              (Term.var (modulus+1)))
+            (Term.var (rem+1)))) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq (Term.var value)
+              (Term.add (Term.mul (Term.var remQuot) (Term.var modulus))
+                (Term.var rem)))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hremEq Nat.succ
+      simpa [C, rename, Term.rename] using
+        (BProv_context_cons (B := Ax_s) (a := leBody) hren)
+    have hremC : BProv Ax_s C (remAt (rem+1) (value+1) (modulus+1)) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (remAt rem value modulus)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hrem Nat.succ
+      simpa [C, remAt, ltAt, rename, Term.rename, SetTheory.up] using
+        (BProv_context_cons (B := Ax_s) (a := leBody) hren)
+    have hzeroC : BProv Ax_s C (eqConstAt (rem+1) 0) :=
+      BProv_Ax_s_remainder_zero_of_le_quotient_terms
+        (G := C) (modulus := modulus+1) (value := value+1)
+        (rem := rem+1) (divQuot := Term.var (divQuot+1))
+        (remQuot := Term.var (remQuot+1)) (diff := Term.var 0)
+        hleEq hdivEqC hremEqC hremC
+    simpa [C, eqConstAt, rename, Term.rename, Term.numeral] using hzeroC
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hleQuot (by
+      simpa [leAt, leBody] using hbody)
+
+/-- Slot-level wrapper for the strict quotient-comparison branch.  The
+positivity of the modulus is supplied separately as `succPredAt modulus`, then
+both existential witnesses are opened and the arithmetic contradiction is
+delegated to `BProv_Ax_s_remainder_zero_of_gt_quotient_terms`. -/
+theorem BProv_Ax_s_remainder_zero_of_gt_quotient_at
+    {G : List Formula} {modulus value rem divQuot remQuot : Nat}
+    (hmodSucc : BProv Ax_s G (succPredAt modulus))
+    (hgtQuot : BProv Ax_s G (ltAt divQuot remQuot))
+    (hdivEq : BProv Ax_s G
+      (eq (Term.mul (Term.var modulus) (Term.var divQuot))
+        (Term.var value)))
+    (hremEq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.mul (Term.var remQuot) (Term.var modulus))
+          (Term.var rem)))) :
+    BProv Ax_s G (eqConstAt rem 0) := by
+  let modBody : Formula :=
+    eq (Term.var (modulus+1)) (Term.succ (Term.var 0))
+  have hmodBody : BProv Ax_s (modBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt rem 0)) := by
+    let M : List Formula := modBody :: G.map (rename Nat.succ)
+    have hmodEqM : BProv Ax_s M
+        (eq (Term.var (modulus+1)) (Term.succ (Term.var 0))) :=
+      BProv_ass (B := Ax_s) (G := M) (by simp [M, modBody])
+    have hgtM : BProv Ax_s M (ltAt (divQuot+1) (remQuot+1)) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (ltAt divQuot remQuot)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hgtQuot Nat.succ
+      simpa [M, ltAt, rename, Term.rename, SetTheory.up] using
+        (BProv_context_cons (B := Ax_s) (a := modBody) hren)
+    let gtBody : Formula :=
+      eq (Term.add (Term.var (divQuot+1+1)) (Term.succ (Term.var 0)))
+        (Term.var (remQuot+1+1))
+    have hgtBody : BProv Ax_s (gtBody :: M.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt (rem+1) 0)) := by
+      let C : List Formula := gtBody :: M.map (rename Nat.succ)
+      have hgtEq : BProv Ax_s C
+          (eq (Term.add (Term.var (divQuot+1+1))
+              (Term.succ (Term.var 0)))
+            (Term.var (remQuot+1+1))) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C, gtBody])
+      have hmodEqC : BProv Ax_s C
+          (eq (Term.var (modulus+1+1)) (Term.succ (Term.var 1))) := by
+        have hren : BProv Ax_s (M.map (rename Nat.succ))
+            (rename Nat.succ
+              (eq (Term.var (modulus+1)) (Term.succ (Term.var 0)))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hmodEqM Nat.succ
+        simpa [C, rename, Term.rename] using
+          (BProv_context_cons (B := Ax_s) (a := gtBody) hren)
+      have hdivEqC : BProv Ax_s C
+          (eq (Term.mul (Term.var (modulus+1+1))
+              (Term.var (divQuot+1+1)))
+            (Term.var (value+1+1))) := by
+        have hren : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+            (rename Nat.succ
+              (rename Nat.succ
+                (eq (Term.mul (Term.var modulus) (Term.var divQuot))
+                  (Term.var value)))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            (BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+              hdivEq Nat.succ)
+            Nat.succ
+        have hctx : BProv Ax_s C
+            (rename Nat.succ
+              (rename Nat.succ
+                (eq (Term.mul (Term.var modulus) (Term.var divQuot))
+                  (Term.var value)))) := by
+          simpa [C, M, List.map_map, Function.comp_def] using
+            BProv_context_cons
+              (BProv_context_cons (B := Ax_s) hren)
+        simpa [rename, Term.rename] using hctx
+      have hremEqC : BProv Ax_s C
+          (eq (Term.var (value+1+1))
+            (Term.add (Term.mul (Term.var (remQuot+1+1))
+                (Term.var (modulus+1+1)))
+              (Term.var (rem+1+1)))) := by
+        have hren : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+            (rename Nat.succ
+              (rename Nat.succ
+                (eq (Term.var value)
+                  (Term.add
+                    (Term.mul (Term.var remQuot) (Term.var modulus))
+                    (Term.var rem))))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            (BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+              hremEq Nat.succ)
+            Nat.succ
+        have hctx : BProv Ax_s C
+            (rename Nat.succ
+              (rename Nat.succ
+                (eq (Term.var value)
+                  (Term.add
+                    (Term.mul (Term.var remQuot) (Term.var modulus))
+                    (Term.var rem))))) := by
+          simpa [C, M, List.map_map, Function.comp_def] using
+            BProv_context_cons
+              (BProv_context_cons (B := Ax_s) hren)
+        simpa [rename, Term.rename] using hctx
+      have hzeroC : BProv Ax_s C (eqConstAt (rem+1+1) 0) :=
+        BProv_Ax_s_remainder_zero_of_gt_quotient_terms
+          (G := C) (modulus := modulus+1+1) (value := value+1+1)
+          (rem := rem+1+1) (modPred := Term.var 1)
+          (divQuot := Term.var (divQuot+1+1))
+          (remQuot := Term.var (remQuot+1+1)) (diff := Term.var 0)
+          hmodEqC hgtEq hdivEqC hremEqC
+      simpa [C, eqConstAt, rename, Term.rename, Term.numeral] using hzeroC
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hgtM (by
+        simpa [M, ltAt, gtBody, eqConstAt, rename, Term.rename,
+          Term.numeral, List.map_map, Function.comp_def] using hgtBody)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hmodSucc (by
+      simpa [succPredAt, modBody] using hmodBody)
+
+/-- If a value is divisible by the same modulus used by a remainder proof for
+that value, then the remainder is zero.  This is the quotient-functionality
+bridge: it opens the two quotient witnesses, splits on their PA comparison,
+and delegates the two branches to the reusable remainder algebra above. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt {G : List Formula}
+    {modulus value rem : Nat}
+    (hdvdValue : BProv Ax_s G (dvdAt modulus value))
+    (hrem : BProv Ax_s G (remAt rem value modulus)) :
+    BProv Ax_s G (eqConstAt rem 0) := by
+  let dvdBody : Formula :=
+    eq (Term.mul (Term.var (modulus+1)) (Term.var 0))
+      (Term.var (value+1))
+  have hdvdBody : BProv Ax_s (dvdBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt rem 0)) := by
+    let C : List Formula := dvdBody :: G.map (rename Nat.succ)
+    have hdivEqC : BProv Ax_s C
+        (eq (Term.mul (Term.var (modulus+1)) (Term.var 0))
+          (Term.var (value+1))) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, dvdBody])
+    have hremC : BProv Ax_s C (remAt (rem+1) (value+1) (modulus+1)) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (remAt rem value modulus)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hrem Nat.succ
+      simpa [C, remAt, ltAt, rename, Term.rename, SetTheory.up] using
+        (BProv_context_cons (B := Ax_s) (a := dvdBody) hren)
+    let remBody : Formula :=
+      and
+        (ltAt (rem+1+1) (modulus+1+1))
+        (eq (Term.var (value+1+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1+1)))
+            (Term.var (rem+1+1))))
+    have hremBody : BProv Ax_s (remBody :: C.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt (rem+1) 0)) := by
+      let D : List Formula := remBody :: C.map (rename Nat.succ)
+      have hremBodyAss : BProv Ax_s D remBody :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hdivEqD : BProv Ax_s D
+          (eq (Term.mul (Term.var (modulus+1+1)) (Term.var 1))
+            (Term.var (value+1+1))) := by
+        have hren : BProv Ax_s (C.map (rename Nat.succ))
+            (rename Nat.succ
+              (eq (Term.mul (Term.var (modulus+1)) (Term.var 0))
+                (Term.var (value+1)))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hdivEqC Nat.succ
+        simpa [D, rename, Term.rename] using
+          (BProv_context_cons (B := Ax_s) (a := remBody) hren)
+      have hremEqD : BProv Ax_s D
+          (eq (Term.var (value+1+1))
+            (Term.add (Term.mul (Term.var 0)
+                (Term.var (modulus+1+1)))
+              (Term.var (rem+1+1)))) :=
+        BProv_andE2 hremBodyAss
+      have hremD : BProv Ax_s D
+          (remAt (rem+1+1) (value+1+1) (modulus+1+1)) := by
+        have hren : BProv Ax_s (C.map (rename Nat.succ))
+            (rename Nat.succ (remAt (rem+1) (value+1) (modulus+1))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hremC Nat.succ
+        simpa [D, remAt, ltAt, rename, Term.rename, SetTheory.up] using
+          (BProv_context_cons (B := Ax_s) (a := remBody) hren)
+      have hcmp : BProv Ax_s D (or (leAt 0 1) (ltAt 1 0)) :=
+        BProv_Ax_s_leAt_or_gtAt (G := D) (a := 0) (b := 1)
+      have hleBranch : BProv Ax_s (leAt 0 1 :: D)
+          (eqConstAt (rem+1+1) 0) := by
+        let L : List Formula := leAt 0 1 :: D
+        have hle : BProv Ax_s L (leAt 0 1) :=
+          BProv_ass (B := Ax_s) (G := L) (by simp [L])
+        exact BProv_Ax_s_remainder_zero_of_le_quotient_at
+          (G := L) (modulus := modulus+1+1) (value := value+1+1)
+          (rem := rem+1+1) (divQuot := 1) (remQuot := 0)
+          hle
+          (BProv_context_cons (B := Ax_s) (a := leAt 0 1) hdivEqD)
+          (BProv_context_cons (B := Ax_s) (a := leAt 0 1) hremEqD)
+          (BProv_context_cons (B := Ax_s) (a := leAt 0 1) hremD)
+      have hgtBranch : BProv Ax_s (ltAt 1 0 :: D)
+          (eqConstAt (rem+1+1) 0) := by
+        let R : List Formula := ltAt 1 0 :: D
+        have hgt : BProv Ax_s R (ltAt 1 0) :=
+          BProv_ass (B := Ax_s) (G := R) (by simp [R])
+        have hmodSuccD : BProv Ax_s D
+            (succPredAt (modulus+1+1)) :=
+          BProv_Ax_s_succPredAt_of_ltAt
+            (BProv_Ax_s_ltAt_of_remAt hremD)
+        exact BProv_Ax_s_remainder_zero_of_gt_quotient_at
+          (G := R) (modulus := modulus+1+1) (value := value+1+1)
+          (rem := rem+1+1) (divQuot := 1) (remQuot := 0)
+          (BProv_context_cons (B := Ax_s) (a := ltAt 1 0) hmodSuccD)
+          hgt
+          (BProv_context_cons (B := Ax_s) (a := ltAt 1 0) hdivEqD)
+          (BProv_context_cons (B := Ax_s) (a := ltAt 1 0) hremEqD)
+      have hzeroD : BProv Ax_s D (eqConstAt (rem+1+1) 0) :=
+        BProv_orE hcmp hleBranch hgtBranch
+      simpa [D, eqConstAt, rename, Term.rename, Term.numeral] using hzeroD
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hremC (by
+        simpa [C, remAt, remBody, eqConstAt, rename, Term.rename,
+          Term.numeral, List.map_map, Function.comp_def] using hremBody)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hdvdValue (by
+      simpa [dvdAt, dvdBody] using hdvdBody)
+
 /-- A term-parametric remainder proof whose remainder term is literally `0`
 exhibits a divisibility witness for the dividend by the modulus.  This is the
 divisibility half of the later beta-entry functionality proof: no quotient
