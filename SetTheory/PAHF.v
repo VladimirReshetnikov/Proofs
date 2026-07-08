@@ -8077,6 +8077,159 @@ Proof.
       intros x hx; bprov_mem.
 Qed.
 
+Lemma BProv_eqRefl : forall (B : formula -> Prop) G t,
+  BProv B G (pEq t t).
+Proof.
+  intros B G t.
+  apply BProv_of_Prov.
+  apply P_eqRefl.
+Qed.
+
+Lemma BProv_eqSym : forall (B : formula -> Prop) G s t,
+  BProv B G (pEq s t) -> BProv B G (pEq t s).
+Proof.
+  intros B G s t heq.
+  pose proof (BProv_eqRefl B G s) as hrefl.
+  assert (ha : BProv B G
+      (subst (instTerm s) (pEq (tVar 0) (Term.rename S s)))).
+  {
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hrefl.
+  }
+  pose proof (BProv_eqElim B G s t
+    (pEq (tVar 0) (Term.rename S s)) heq ha) as h.
+  simpl in h.
+  rewrite term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eqTrans : forall (B : formula -> Prop) G s t u,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq t u) ->
+  BProv B G (pEq s u).
+Proof.
+  intros B G s t u hst htu.
+  assert (ha : BProv B G
+      (subst (instTerm t) (pEq (Term.rename S s) (tVar 0)))).
+  {
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hst.
+  }
+  pose proof (BProv_eqElim B G t u
+    (pEq (Term.rename S s) (tVar 0)) htu ha) as h.
+  simpl in h.
+  rewrite term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_term : forall (B : formula -> Prop) G s t c,
+  BProv B G (pEq s t) ->
+  BProv B G
+    (pEq (Term.subst (instTerm s) c) (Term.subst (instTerm t) c)).
+Proof.
+  intros B G s t c heq.
+  pose proof (BProv_eqRefl B G (Term.subst (instTerm s) c)) as hrefl.
+  assert (ha : BProv B G
+      (subst (instTerm s)
+        (pEq (Term.rename S (Term.subst (instTerm s) c)) c))).
+  {
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hrefl.
+  }
+  pose proof (BProv_eqElim B G s t
+    (pEq (Term.rename S (Term.subst (instTerm s) c)) c) heq ha) as h.
+  simpl in h.
+  rewrite term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_succ : forall (B : formula -> Prop) G s t,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tSucc s) (tSucc t)).
+Proof.
+  intros B G s t heq.
+  pose proof (BProv_eq_congr_term B G s t (tSucc (tVar 0)) heq) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_add_left : forall (B : formula -> Prop) G s t u,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tAdd s u) (tAdd t u)).
+Proof.
+  intros B G s t u heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tAdd (tVar 0) (Term.rename S u)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_add_right : forall (B : formula -> Prop) G u s t,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tAdd u s) (tAdd u t)).
+Proof.
+  intros B G u s t heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tAdd (Term.rename S u) (tVar 0)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_add : forall (B : formula -> Prop) G s t u v,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq u v) ->
+  BProv B G (pEq (tAdd s u) (tAdd t v)).
+Proof.
+  intros B G s t u v hst huv.
+  eapply BProv_eqTrans.
+  - apply BProv_eq_congr_add_left.
+    exact hst.
+  - apply BProv_eq_congr_add_right.
+    exact huv.
+Qed.
+
+Lemma BProv_eq_congr_mul_left : forall (B : formula -> Prop) G s t u,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tMul s u) (tMul t u)).
+Proof.
+  intros B G s t u heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tMul (tVar 0) (Term.rename S u)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_mul_right : forall (B : formula -> Prop) G u s t,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq (tMul u s) (tMul u t)).
+Proof.
+  intros B G u s t heq.
+  pose proof (BProv_eq_congr_term B G s t
+    (tMul (Term.rename S u) (tVar 0)) heq) as h.
+  simpl in h.
+  rewrite !term_subst_instTerm_rename_succ in h.
+  exact h.
+Qed.
+
+Lemma BProv_eq_congr_mul : forall (B : formula -> Prop) G s t u v,
+  BProv B G (pEq s t) ->
+  BProv B G (pEq u v) ->
+  BProv B G (pEq (tMul s u) (tMul t v)).
+Proof.
+  intros B G s t u v hst huv.
+  eapply BProv_eqTrans.
+  - apply BProv_eq_congr_mul_left.
+    exact hst.
+  - apply BProv_eq_congr_mul_right.
+    exact huv.
+Qed.
+
 Lemma BProv_context_cons : forall (B : formula -> Prop) G a b,
   BProv B G b -> BProv B (a :: G) b.
 Proof.

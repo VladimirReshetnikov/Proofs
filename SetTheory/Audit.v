@@ -100,6 +100,17 @@ Check PA.Formula.BProv_hfFormulaAt_of_BProv_HFFin.
 Check PA.Formula.BProv_translateHFFormula_of_BProv_HFFin.
 Check PA.Formula.BProv_lift.
 Check PA.Formula.BProv_eqElim.
+Check PA.Formula.BProv_eqRefl.
+Check PA.Formula.BProv_eqSym.
+Check PA.Formula.BProv_eqTrans.
+Check PA.Formula.BProv_eq_congr_term.
+Check PA.Formula.BProv_eq_congr_succ.
+Check PA.Formula.BProv_eq_congr_add_left.
+Check PA.Formula.BProv_eq_congr_add_right.
+Check PA.Formula.BProv_eq_congr_add.
+Check PA.Formula.BProv_eq_congr_mul_left.
+Check PA.Formula.BProv_eq_congr_mul_right.
+Check PA.Formula.BProv_eq_congr_mul.
 Check PA.Formula.BProv_context_cons.
 Check PA.Formula.BProv_impI.
 Check PA.Formula.BProv_impI_after_prefix.
