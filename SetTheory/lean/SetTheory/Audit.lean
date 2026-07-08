@@ -724,6 +724,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_stepsComponent_zero
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_evenSucc_of_zero_and_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
 #check @PA.Formula.betaFact
 #check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step
