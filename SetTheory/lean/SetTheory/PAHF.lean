@@ -18721,6 +18721,113 @@ theorem BProv_Ax_s_hfMemAt_bot_of_opened_final_current_double
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hmem' (by simpa [rename] using hcodeStep)
 
+/-- Eliminate an `hfMemAt` proof to contradiction once the final opened
+halving-bit witness has itself been proved to be `0`.
+
+This is the bit-level counterpart of
+`BProv_Ax_s_hfMemAt_bot_of_opened_final_current_double`: callers that can prove
+the actual Ackermann bit is absent do not need to first repackage that fact as
+an even-current statement. -/
+theorem BProv_Ax_s_hfMemAt_bot_of_opened_final_bit_zero
+    {G : List Formula} {elem set : Nat}
+    (hbitZero :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bitCtx : List Formula :=
+        bitBody :: (body :: (ex body :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)).map (rename Nat.succ)
+      let finalBody : Formula :=
+        and
+          (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+          (and
+            (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+            (div2StepAt 1 0 (0+2)))
+      BProv Ax_s
+        (finalBody :: (ex finalBody :: bitCtx.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (eqConstAt (0+2) 0))
+    (hmem : BProv Ax_s G (hfMemAt elem set)) :
+    BProv Ax_s G bot := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bitCtx : List Formula :=
+    bitBody :: (body :: (ex body :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)).map (rename Nat.succ)
+  let finalBody : Formula :=
+    and
+      (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+      (and
+        (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+        (div2StepAt 1 0 (0+2)))
+  have hcodeStep : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
+    have hstepEx : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hopened : BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        bot := by
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      have hbody : BProv Ax_s bodyCtx body :=
+        BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+      have htail : BProv Ax_s bodyCtx tail :=
+        BProv_andE2 hbody
+      have hbitEx : BProv Ax_s bodyCtx (ex bitBody) :=
+        BProv_andE2 htail
+      have hbitOpened : BProv Ax_s (bitBody :: bodyCtx.map (rename Nat.succ))
+          bot := by
+        have hbitBody : BProv Ax_s (bitBody :: bodyCtx.map (rename Nat.succ))
+            bitBody :=
+          BProv_ass (B := Ax_s)
+            (G := bitBody :: bodyCtx.map (rename Nat.succ)) (by simp)
+        have hone : BProv Ax_s (bitBody :: bodyCtx.map (rename Nat.succ))
+            (eqConstAt 0 1) := by
+          simpa [oneAt] using BProv_andE1 hbitBody
+        have hbitAt : BProv Ax_s (bitBody :: bodyCtx.map (rename Nat.succ))
+            (betaDiv2BitAt 0 2 1 (elem+3)) :=
+          BProv_andE2 hbitBody
+        exact BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot
+          (G := bitBody :: bodyCtx.map (rename Nat.succ))
+          (bit := 0) (code := 2) (step := 1) (idx := elem+3)
+          hone
+          (by
+            simpa [bitCtx, bodyCtx, finalBody, bitBody, body, tail] using
+              hbitZero)
+          hbitAt
+      exact BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbitEx (by
+          simpa [rename, bodyCtx, List.map_map, Function.comp_def] using
+            hbitOpened)
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstepEx (by simpa [rename] using hopened)
+  have hmem' : BProv Ax_s G (ex (ex body)) := by
+    simpa [hfMemAt, body, tail, bitBody] using hmem
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hmem' (by simpa [rename] using hcodeStep)
+
 /-- Eliminate an `hfMemAt` proof to contradiction once the opened halving-step
 witness is proved to be `0`.
 

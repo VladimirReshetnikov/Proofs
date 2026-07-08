@@ -442,6 +442,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_bitEx
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_current_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_current_double
+#check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_bit_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_successor
