@@ -12888,6 +12888,63 @@ theorem BProv_Ax_s_remainder_gt_quotient_bot_terms
     (pred := Term.add (Term.mul modulus diff) modPred)
     hextraSucc (BProv_eqSym hloopForward)
 
+/-- Remainder-zero branch when the divisibility quotient is at least the
+remainder quotient.  The quotient-difference algebra produces
+`rem = modulus * diff`, and the existing bounded-divisor lemma discharges the
+strict remainder bound. -/
+theorem BProv_Ax_s_remainder_zero_of_le_quotient_terms
+    {G : List Formula} {modulus value rem : Nat}
+    {divQuot remQuot diff : Term}
+    (hleQuot : BProv Ax_s G (eq (Term.add remQuot diff) divQuot))
+    (hdivEq : BProv Ax_s G
+      (eq (Term.mul (Term.var modulus) divQuot) (Term.var value)))
+    (hremEq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.mul remQuot (Term.var modulus)) (Term.var rem))))
+    (hrem : BProv Ax_s G (remAt rem value modulus)) :
+    BProv Ax_s G (eqConstAt rem 0) := by
+  have hdecomp : BProv Ax_s G
+      (eq (Term.mul (Term.var modulus) divQuot)
+        (Term.add (Term.mul remQuot (Term.var modulus)) (Term.var rem))) :=
+    BProv_eqTrans hdivEq hremEq
+  have hremMul : BProv Ax_s G
+      (eq (Term.var rem) (Term.mul (Term.var modulus) diff)) :=
+    BProv_Ax_s_remainder_eq_mul_of_le_quotient_terms
+      (modulus := Term.var modulus) (divQuot := divQuot)
+      (remQuot := remQuot) (diff := diff) (rem := Term.var rem)
+      hleQuot hdecomp
+  have hdvdRem : BProv Ax_s G (dvdAt modulus rem) :=
+    BProv_Ax_s_dvdAt_of_eq_mul_term
+      (modulus := modulus) (value := rem) (quot := diff) hremMul
+  exact BProv_Ax_s_eqConstAt_zero_of_dvdAt_remAt hdvdRem hrem
+
+/-- Remainder-zero branch when the remainder quotient is strictly larger than
+the divisibility quotient.  This branch is impossible for a positive modulus;
+the conclusion is exposed as zero so callers can combine it with disjunction
+elimination uniformly. -/
+theorem BProv_Ax_s_remainder_zero_of_gt_quotient_terms
+    {G : List Formula} {modulus value rem : Nat}
+    {modPred divQuot remQuot diff : Term}
+    (hmodSucc : BProv Ax_s G (eq (Term.var modulus) (Term.succ modPred)))
+    (hgtQuot : BProv Ax_s G
+      (eq (Term.add divQuot (Term.succ diff)) remQuot))
+    (hdivEq : BProv Ax_s G
+      (eq (Term.mul (Term.var modulus) divQuot) (Term.var value)))
+    (hremEq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.mul remQuot (Term.var modulus)) (Term.var rem)))) :
+    BProv Ax_s G (eqConstAt rem 0) := by
+  have hdecomp : BProv Ax_s G
+      (eq (Term.mul (Term.var modulus) divQuot)
+        (Term.add (Term.mul remQuot (Term.var modulus)) (Term.var rem))) :=
+    BProv_eqTrans hdivEq hremEq
+  exact BProv_botE
+    (a := eqConstAt rem 0)
+    (BProv_Ax_s_remainder_gt_quotient_bot_terms
+      (modulus := Term.var modulus) (modPred := modPred)
+      (divQuot := divQuot) (remQuot := remQuot) (diff := diff)
+      (rem := Term.var rem) hmodSucc hgtQuot hdecomp)
+
 /-- A term-parametric remainder proof whose remainder term is literally `0`
 exhibits a divisibility witness for the dividend by the modulus.  This is the
 divisibility half of the later beta-entry functionality proof: no quotient
