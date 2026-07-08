@@ -12919,6 +12919,38 @@ theorem BProv_Ax_s_div2StepAt_zero_half_zero {G : List Formula}
       (x := Term.var half) (y := Term.var half) hdoubleZero
   simpa [eqConstAt, Term.numeral] using hhalfZero
 
+/-- A binary-halving step cannot simultaneously say that the current value is
+exactly twice the next value and that the output bit is `1`. -/
+theorem BProv_Ax_s_div2StepAt_double_one_bot {G : List Formula}
+    {value half bit : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half))
+    (hbit : BProv Ax_s G (eqConstAt bit 1))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G bot := by
+  let d : Term := Term.add (Term.var half) (Term.var half)
+  have hstepEq : BProv Ax_s G
+      (eq (Term.var value) (Term.add d (Term.var bit))) := by
+    simpa [div2StepAt, d] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hdoubleEq : BProv Ax_s G (eq (Term.var value) d) := by
+    simpa [doubleEqAt, d] using hdouble
+  have hrightEq : BProv Ax_s G
+      (eq (Term.add d (Term.var bit)) d) :=
+    BProv_eqTrans (BProv_eqSym hstepEq) hdoubleEq
+  have hbitSucc : BProv Ax_s G
+      (eq (Term.add d (Term.var bit))
+        (Term.add d (Term.succ Term.zero))) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eq_congr_add_right d hbit
+  have hbad : BProv Ax_s G
+      (eq (Term.add d (Term.succ Term.zero)) d) :=
+    BProv_eqTrans (BProv_eqSym hbitSucc) hrightEq
+  exact BProv_Ax_s_add_succ_ne_self_terms
+    (G := G) (x := d) (y := Term.zero) hbad
+
 /-- A binary-halving step is a remainder equation modulo any slot proved to be
 `2`: the output bit is the remainder and the half slot is the quotient. -/
 theorem BProv_Ax_s_remAt_of_div2StepAt_two {G : List Formula}
@@ -17159,6 +17191,30 @@ theorem BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot {G : List Formula}
     (value := 1) (half := 0) (bit := bit+2)
     hcurZero hbitOne hstep
 
+/-- Once a `betaDiv2BitAt` body has been opened, a current value explicitly
+equal to twice the next value contradicts an output bit proved to be `1`. -/
+theorem BProv_Ax_s_betaDiv2BitAt_body_double_one_bot {G : List Formula}
+    {bit code step idx : Nat}
+    (hcurDouble : BProv Ax_s G (doubleEqAt 1 0))
+    (hbitOne : BProv Ax_s G (eqConstAt (bit+2) 1))
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 1 (code+2) (step+2) (idx+2))
+        (and
+          (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+          (div2StepAt 1 0 (bit+2))))) :
+    BProv Ax_s G bot := by
+  have htail : BProv Ax_s G
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2))) :=
+    BProv_andE2 hbody
+  have hstep : BProv Ax_s G (div2StepAt 1 0 (bit+2)) :=
+    BProv_andE2 htail
+  exact BProv_Ax_s_div2StepAt_double_one_bot
+    (value := 1) (half := 0) (bit := bit+2)
+    hcurDouble hbitOne hstep
+
 /-- In an opened `betaDiv2BitAt` body, the current beta output is zero when a
 term-output zero beta source is available at a provably equal index. -/
 theorem BProv_Ax_s_betaDiv2BitAt_body_current_zero_of_betaTermAt_zero_eq_index
@@ -17239,6 +17295,72 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_zero_bot {G : List Formula}
       exact BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
         (bit := bit) (code := code) (step := step) (idx := idx)
         (by simpa [body] using hcurZero) hbitCtx (by simpa [body] using hbody)
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hex (by simpa [rename] using hinner)
+  have hbitAt' : BProv Ax_s G (ex (ex body)) := by
+    simpa [betaDiv2BitAt, body] using hbitAt
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hbitAt' (by simpa [rename] using houter)
+
+/-- Eliminate a final-bit formula to contradiction once the opened current
+value is proved to be twice the opened next value. -/
+theorem BProv_Ax_s_betaDiv2BitAt_current_double_bot {G : List Formula}
+    {bit code step idx : Nat}
+    (hbitOne : BProv Ax_s G (eqConstAt bit 1))
+    (hcurDouble :
+      let body : Formula :=
+        and
+          (betaAt 1 (code+2) (step+2) (idx+2))
+          (and
+            (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+            (div2StepAt 1 0 (bit+2)))
+      BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        (doubleEqAt 1 0))
+    (hbitAt : BProv Ax_s G (betaDiv2BitAt bit code step idx)) :
+    BProv Ax_s G bot := by
+  let body : Formula :=
+    and
+      (betaAt 1 (code+2) (step+2) (idx+2))
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2)))
+  have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
+      (eqConstAt (bit+1) 1) := by
+    simpa [eqConstAt, rename, Term.rename] using
+      (BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbitOne Nat.succ)
+  have hbitRen2 : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (eqConstAt (bit+2) 1) := by
+    simpa [eqConstAt, rename, Term.rename] using
+      (BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbitRen1 Nat.succ)
+  have houter : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
+    have hex : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hinner : BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        bot := by
+      have hbody : BProv Ax_s
+          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+          body :=
+        BProv_ass (B := Ax_s)
+          (G := body ::
+            (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+          (by simp)
+      have hbitCtx : BProv Ax_s
+          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+          (eqConstAt (bit+2) 1) := by
+        simpa using BProv_context_cons
+          (BProv_context_cons (B := Ax_s) hbitRen2)
+      exact BProv_Ax_s_betaDiv2BitAt_body_double_one_bot
+        (bit := bit) (code := code) (step := step) (idx := idx)
+        (by simpa [body] using hcurDouble) hbitCtx (by simpa [body] using hbody)
     exact BProv_exE_of_sentences
       (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
       hex (by simpa [rename] using hinner)
