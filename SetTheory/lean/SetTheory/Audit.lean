@@ -552,6 +552,8 @@ open SetTheory
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_intro_var
 #check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_not_mem
+#check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_low_mem_bot
+#check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low
