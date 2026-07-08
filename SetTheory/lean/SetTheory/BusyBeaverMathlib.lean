@@ -1824,14 +1824,11 @@ theorem trPosNum_length (p : PosNum) :
     (Turing.PartrecToTM2.trPosNum p).length = PosNum.natSize p := by
   induction p with
   | one => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize]
-  | bit0 p ih => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize, ih]
-  | bit1 p ih => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize, ih]
+  | bit0 p ih | bit1 p ih => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize, ih]
 
 theorem trNum_length (m : Num) :
     (Turing.PartrecToTM2.trNum m).length = Num.natSize m := by
-  cases m with
-  | zero => simp [Turing.PartrecToTM2.trNum, Num.natSize]
-  | pos p => simp [Turing.PartrecToTM2.trNum, Num.natSize, trPosNum_length]
+  cases m <;> simp [Turing.PartrecToTM2.trNum, Num.natSize, trPosNum_length]
 
 theorem trNat_length (n : Nat) :
     (Turing.PartrecToTM2.trNat n).length = Nat.size n := by
@@ -1875,14 +1872,13 @@ theorem encoded_partrec_input_length_le {width : Nat}
         (Turing.PartrecToTM2.trList [n]))).length ≤
       width * (Nat.size n + 2) := by
   rw [TM1to1EncodedInput_length]
-  have hInit := tm2to1_trInit_length_le_succ Turing.PartrecToTM2.K'.main
-    (Turing.PartrecToTM2.trList [n])
-  have hList := trList_singleton_length n
   have hInit' :
       (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
         (fun _ => Turing.PartrecToTM2.Γ') inferInstance Turing.PartrecToTM2.K'.main
         (Turing.PartrecToTM2.trList [n])).length ≤ Nat.size n + 2 := by
-    omega
+    simpa [trList_singleton_length, trNat_length, Nat.add_assoc] using
+      tm2to1_trInit_length_le_succ Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n])
   calc
     (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
         (fun _ => Turing.PartrecToTM2.Γ') inferInstance Turing.PartrecToTM2.K'.main
@@ -1890,7 +1886,7 @@ theorem encoded_partrec_input_length_le {width : Nat}
         ≤ (Nat.size n + 2) * width := Nat.mul_le_mul_right width hInit'
     _ = width * (Nat.size n + 2) := Nat.mul_comm _ _
 
-theorem linear_mul_le_two_pow_pred_of_large (D m : Nat) (hD : 0 < D)
+theorem linear_mul_le_two_pow_pred_of_large (D m : Nat)
     (hm : 2 * (D + 1) + 1 ≤ m) : D * m ≤ 2 ^ (m - 1) := by
   let M := 2 * (D + 1) + 1
   have hbaseLinear : D * M ≤ 2 * (D + 1) ^ 2 + 1 := by
@@ -1918,22 +1914,17 @@ theorem linear_mul_le_two_pow_pred_of_large (D m : Nat) (hD : 0 < D)
           rw [← hpred]
           simp [Nat.pow_succ, Nat.mul_comm, Nat.two_mul]
 
-theorem nat_size_linear_le_self_of_large (D n : Nat) (hD : 0 < D)
+theorem nat_size_linear_le_self_of_large (D n : Nat)
     (hn : 2 ^ (2 * (D + 1) + 1) ≤ n) : D * Nat.size n ≤ n := by
   let M := 2 * (D + 1) + 1
   have hMltSize : M < Nat.size n := (Nat.lt_size (m := M) (n := n)).2 hn
   have hDsizePow : D * Nat.size n ≤ 2 ^ (Nat.size n - 1) :=
-    linear_mul_le_two_pow_pred_of_large D (Nat.size n) hD hMltSize.le
+    linear_mul_le_two_pow_pred_of_large D (Nat.size n) hMltSize.le
   have hSizePos : 0 < Nat.size n := lt_of_le_of_lt (Nat.zero_le M) hMltSize
   have hPredLt : Nat.size n - 1 < Nat.size n := Nat.pred_lt hSizePos.ne'
   have hPowLe : 2 ^ (Nat.size n - 1) ≤ n :=
     (Nat.lt_size (m := Nat.size n - 1) (n := n)).1 hPredLt
   exact Nat.le_trans hDsizePow hPowLe
-
-theorem nat_size_linear_le_self_eventually (D : Nat) (hD : 0 < D) :
-    ∃ threshold, ∀ n, threshold ≤ n -> D * Nat.size n ≤ n := by
-  exact ⟨2 ^ (2 * (D + 1) + 1),
-    fun n hn => nat_size_linear_le_self_of_large D n hD hn⟩
 
 theorem init_wrapper_state_count_le_linear (width C inputLen s : Nat)
     (hInput : inputLen ≤ width * (s + 2)) (hs : 0 < s) :
@@ -2705,12 +2696,9 @@ theorem totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler :
     exact MathlibBridge.init_wrapper_state_count_le_linear_size
       (Label := S) (width := width) (input := input) (n := n)
       hInputLen hSizePos
-  have hDpos : 0 < D := by
-    dsimp [D]
-    omega
   have hDSizeLeN : D * Nat.size n ≤ n := by
     dsimp [threshold] at hn
-    exact MathlibBridge.nat_size_linear_le_self_of_large D n hDpos hn
+    exact MathlibBridge.nat_size_linear_le_self_of_large D n hn
   exact Nat.le_trans hStateLeD hDSizeLeN
 
 /--
