@@ -24150,6 +24150,78 @@ theorem
     · exact BProv_ass (B := Ax_s) (G := oldCtx)
         (by simp [oldCtx, hf]))
 
+/-- In the high-even opened branch, the remaining successor-membership work can
+be pushed under the opened `hfMemAt` code/step witnesses.
+
+The premise is the successor-step branch produced by opening the high-membership
+trace.  It receives the old beta body, a predecessor for the nonzero step, and
+the original branch context shifted through the three opened binders. -/
+theorem
+    BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_step_pred
+    {G : List Formula} {high low half : Nat}
+    (hpred :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target)))) :
+    BProv Ax_s
+      (doubleEqAt (high+2) (half+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+            G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+  let elem : Nat := 1
+  let set : Nat := high+2
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let branchTail : List Formula :=
+    (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let branchCtx : List Formula :=
+    doubleEqAt set (half+2) ::
+      eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+  let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+  have hdistRaw : BProv Ax_s branchCtx (rename Nat.succ witness) :=
+    BProv_ass (B := Ax_s) (G := branchCtx)
+      (by simp [branchCtx, branchTail, witness])
+  have hdist : BProv Ax_s branchCtx (hfDistinguishesAt elem set (low+2)) := by
+    simpa [elem, set, witness, rename_hfDistinguishesAt, Nat.add_assoc]
+      using hdistRaw
+  have hmem : BProv Ax_s branchCtx (hfMemAt elem set) := by
+    simpa [hfDistinguishesAt] using BProv_andE1 hdist
+  have htarget : BProv Ax_s branchCtx target :=
+    BProv_Ax_s_hfMemAt_elim_opened_step_pred
+      (G := branchCtx) (target := target) (elem := elem) (set := set)
+      hmem
+      (by
+        simpa [elem, set, witness, branchTail, branchCtx, target,
+          Nat.add_assoc] using hpred)
+  simpa [elem, set, witness, branchTail, branchCtx, target] using htarget
+
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
