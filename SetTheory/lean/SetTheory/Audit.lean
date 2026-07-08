@@ -400,6 +400,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAtTermIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_eq_of_betaAt_betaTermAtTermIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_eqConstAt_of_betaAt_betaTermAtTermIdx_eq_index
+#check @PA.Formula.BProv_Ax_s_eq_of_betaTermAtTermIdx_betaTermAtTermIdx_eq_index
+#check @PA.Formula.BProv_Ax_s_eq_of_betaTermAtTermIdx_betaTermAtTermIdx_same_index
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
