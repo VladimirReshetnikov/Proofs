@@ -12220,6 +12220,82 @@ theorem BProv_Ax_s_remTermAt_of_remAt_eq_term
     (fun f hf => sentence_ax_s (f := f) hf) hrem (by
       simpa [remAt, remBody] using hbody)
 
+/-- Convert a term-output remainder proof back to a slot-output remainder
+proof when PA proves that the term is that slot. -/
+theorem BProv_Ax_s_remAt_of_remTermAt_eq_term
+    {G : List Formula} {rem value modulus : Nat} {remTerm : Term}
+    (hrem : BProv Ax_s G (remTermAt remTerm value modulus))
+    (heq : BProv Ax_s G (eq remTerm (Term.var rem))) :
+    BProv Ax_s G (remAt rem value modulus) := by
+  let termBody : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ remTerm) (Term.var (modulus+1)))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.rename Nat.succ remTerm)))
+  have hbody : BProv Ax_s (termBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (remAt rem value modulus)) := by
+    let C : List Formula := termBody :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C termBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hltTerm : BProv Ax_s C
+        (ltTermAt (Term.rename Nat.succ remTerm)
+          (Term.var (modulus+1))) :=
+      BProv_andE1 hbodyAss
+    have heqRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq remTerm (Term.var rem))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        heq Nat.succ
+    have heqC : BProv Ax_s C
+        (eq (Term.rename Nat.succ remTerm) (Term.var (rem+1))) := by
+      simpa [C, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) heqRen
+    have hltVar : BProv Ax_s C
+        (ltTermAt (Term.var (rem+1)) (Term.var (modulus+1))) :=
+      BProv_ltTermAt_of_eq_left heqC hltTerm
+    have hltAt : BProv Ax_s C (ltAt (rem+1) (modulus+1)) := by
+      simpa [ltAt, ltTermAt, Term.rename] using hltVar
+    have htermEq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ remTerm))) :=
+      BProv_andE2 hbodyAss
+    have hsumEq : BProv Ax_s C
+        (eq
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ remTerm))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))) :=
+      BProv_eq_congr_add_right
+        (Term.mul (Term.var 0) (Term.var (modulus+1))) heqC
+    have hslotEq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))) :=
+      BProv_eqTrans htermEq hsumEq
+    let remBody : Formula :=
+      and
+        (ltAt (rem+1) (modulus+1))
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1))))
+    have hpair : BProv Ax_s C remBody := by
+      simpa [remBody] using BProv_andI hltAt hslotEq
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (rename (SetTheory.up Nat.succ) remBody)) := by
+      simpa [remBody, subst, instTerm, Term.subst, Term.upSubst,
+        Term.rename, ltAt, rename, SetTheory.up] using hpair
+    have hex : BProv Ax_s C (ex (rename (SetTheory.up Nat.succ) remBody)) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := rename (SetTheory.up Nat.succ) remBody)
+        (t := Term.var 0) hinst
+    simpa [C, remAt, remBody, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remTermAt, termBody] using hbody)
+
 /-- Convert a slot-output remainder proof to the term-output-zero form when
 the remainder slot is proved to contain `0`. -/
 theorem BProv_Ax_s_remTermAt_zero_of_remAt_eqConst_zero

@@ -380,6 +380,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eq_right
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remTermAt_zero
 #check @PA.Formula.BProv_Ax_s_remTermAt_of_remAt_eq_term
+#check @PA.Formula.BProv_Ax_s_remAt_of_remTermAt_eq_term
 #check @PA.Formula.BProv_Ax_s_remTermAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_output_zero_of_output_dvd
