@@ -96,6 +96,7 @@ open SetTheory
 #check @PA.Formula.Prov_subst
 #check @PA.Formula.Prov_cut
 #check @PA.Formula.term_subst_instTerm_rename_succ
+#check @PA.Formula.term_subst_instTerm_rename_two_succ
 #check @PA.Formula.subst_instTerm_rename_succ
 #check @PA.Formula.soundness
 #check @PA.Formula.BProv
@@ -261,6 +262,15 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltAt_eq_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst_zero_succPredAt
 #check @PA.Formula.BProv_Ax_s_succPredAt_of_ltAt
+#check @PA.Formula.BProv_leTermAt_of_eq_left
+#check @PA.Formula.BProv_leTermAt_of_eq_right
+#check @PA.Formula.BProv_ltTermAt_of_eq_left
+#check @PA.Formula.BProv_ltTermAt_of_eq_right
+#check @PA.Formula.BProv_Ax_s_leTermAt_refl
+#check @PA.Formula.BProv_Ax_s_leTermAt_zero_left
+#check @PA.Formula.BProv_Ax_s_ltTermAt_zero_succ
+#check @PA.Formula.BProv_Ax_s_leTermAt_succ_succ
+#check @PA.Formula.BProv_Ax_s_ltTermAt_succ_succ
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one
 #check @PA.Formula.BProv_Ax_s_ltConst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltConst_closed
@@ -416,6 +426,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule
 #check @PA.Formula.leAt
+#check @PA.Formula.leTermAt
 #check @PA.Formula.leConstAt
 #check @PA.Formula.ltAt
 #check @PA.Formula.dvdAt

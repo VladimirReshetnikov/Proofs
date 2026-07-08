@@ -5668,6 +5668,18 @@ theorem term_subst_instTerm_rename_succ (t u : Term) :
   simpa [instTerm, Term.rename_id] using
     (term_subst_var_rename t (fun n : Nat => n))
 
+/-- Instantiating the newest variable after shifting a term through two binders
+removes the outer shift and leaves the term shifted through one binder. -/
+theorem term_subst_instTerm_rename_two_succ (t u : Term) :
+    Term.subst (instTerm u) (Term.rename (fun n : Nat => n + 1 + 1) t) =
+      Term.rename Nat.succ t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1) t =
+        Term.rename Nat.succ (Term.rename Nat.succ t) := by
+    simpa using (Term.rename_comp t Nat.succ Nat.succ).symm
+  rw [hrename]
+  exact term_subst_instTerm_rename_succ (Term.rename Nat.succ t) u
+
 /-- Instantiating the newest variable after shifting a formula through one
 binder leaves that formula unchanged. -/
 theorem subst_instTerm_rename_succ (phi : Formula) (t : Term) :
@@ -6766,6 +6778,12 @@ theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
 
 def leAt (a b : Nat) : Formula :=
   ex (eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
+
+/-- Term-parametric non-strict order.  This is the same relation as `leAt`,
+but the compared values may be arbitrary PA terms in the ambient context. -/
+def leTermAt (a b : Term) : Formula :=
+  ex (eq (Term.add (Term.rename Nat.succ a) (Term.var 0))
+    (Term.rename Nat.succ b))
 
 /-- Bounded order against a closed standard numeral.  This is intentionally only
 the formula macro; PA proofs that relate it to `leAt` are kept as separate
@@ -11546,6 +11564,242 @@ theorem BProv_Ax_s_succPredAt_of_ltAt {G : List Formula} {a b : Nat}
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltAt, ltBody] using hbody)
+
+/-- Transport the left term of a term-parametric non-strict order proof across
+PA equality. -/
+theorem BProv_leTermAt_of_eq_left {B : Formula → Prop} {G : List Formula}
+    {s t u : Term}
+    (heq : BProv B G (eq s t))
+    (hle : BProv B G (leTermAt s u)) :
+    BProv B G (leTermAt t u) := by
+  have hle' : BProv B G
+      (subst (instTerm s) (leTermAt (Term.var 0) (Term.rename Nat.succ u))) := by
+    simpa [leTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using hle
+  have h := BProv_eqElim (B := B) (G := G) (s := s) (t := t)
+    (a := leTermAt (Term.var 0) (Term.rename Nat.succ u)) heq hle'
+  simpa [leTermAt, subst, instTerm, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using h
+
+/-- Transport the right term of a term-parametric non-strict order proof across
+PA equality. -/
+theorem BProv_leTermAt_of_eq_right {B : Formula → Prop} {G : List Formula}
+    {s t u : Term}
+    (heq : BProv B G (eq t u))
+    (hle : BProv B G (leTermAt s t)) :
+    BProv B G (leTermAt s u) := by
+  have hle' : BProv B G
+      (subst (instTerm t) (leTermAt (Term.rename Nat.succ s) (Term.var 0))) := by
+    simpa [leTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using hle
+  have h := BProv_eqElim (B := B) (G := G) (s := t) (t := u)
+    (a := leTermAt (Term.rename Nat.succ s) (Term.var 0)) heq hle'
+  simpa [leTermAt, subst, instTerm, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using h
+
+/-- Transport the left term of a term-parametric strict order proof across PA
+equality. -/
+theorem BProv_ltTermAt_of_eq_left {B : Formula → Prop} {G : List Formula}
+    {s t u : Term}
+    (heq : BProv B G (eq s t))
+    (hlt : BProv B G (ltTermAt s u)) :
+    BProv B G (ltTermAt t u) := by
+  have hlt' : BProv B G
+      (subst (instTerm s) (ltTermAt (Term.var 0) (Term.rename Nat.succ u))) := by
+    simpa [ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using hlt
+  have h := BProv_eqElim (B := B) (G := G) (s := s) (t := t)
+    (a := ltTermAt (Term.var 0) (Term.rename Nat.succ u)) heq hlt'
+  simpa [ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using h
+
+/-- Transport the right term of a term-parametric strict order proof across PA
+equality. -/
+theorem BProv_ltTermAt_of_eq_right {B : Formula → Prop} {G : List Formula}
+    {s t u : Term}
+    (heq : BProv B G (eq t u))
+    (hlt : BProv B G (ltTermAt s t)) :
+    BProv B G (ltTermAt s u) := by
+  have hlt' : BProv B G
+      (subst (instTerm t) (ltTermAt (Term.rename Nat.succ s) (Term.var 0))) := by
+    simpa [ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using hlt
+  have h := BProv_eqElim (B := B) (G := G) (s := t) (t := u)
+    (a := ltTermAt (Term.rename Nat.succ s) (Term.var 0)) heq hlt'
+  simpa [ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using h
+
+/-- PA proves reflexivity of the term-parametric non-strict order. -/
+theorem BProv_Ax_s_leTermAt_refl {G : List Formula} (t : Term) :
+    BProv Ax_s G (leTermAt t t) := by
+  have hadd : BProv Ax_s G (eq (Term.add t Term.zero) t) :=
+    BProv_weaken_nil (BProv_Ax_s_addZero_term t)
+  have hbody : BProv Ax_s G
+      (subst (instTerm Term.zero)
+        (eq (Term.add (Term.rename Nat.succ t) (Term.var 0))
+          (Term.rename Nat.succ t))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hadd
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq (Term.add (Term.rename Nat.succ t) (Term.var 0))
+      (Term.rename Nat.succ t))
+    (t := Term.zero) hbody
+
+/-- PA proves that zero is below every term. -/
+theorem BProv_Ax_s_leTermAt_zero_left {G : List Formula} (t : Term) :
+    BProv Ax_s G (leTermAt Term.zero t) := by
+  have hadd : BProv Ax_s G (eq (Term.add Term.zero t) t) :=
+    BProv_Ax_s_zero_add_term t
+  have hbody : BProv Ax_s G
+      (subst (instTerm t)
+        (eq (Term.add (Term.rename Nat.succ Term.zero) (Term.var 0))
+          (Term.rename Nat.succ t))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hadd
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq (Term.add (Term.rename Nat.succ Term.zero) (Term.var 0))
+      (Term.rename Nat.succ t))
+    (t := t) hbody
+
+/-- PA proves that zero is strictly below any successor term. -/
+theorem BProv_Ax_s_ltTermAt_zero_succ {G : List Formula} (t : Term) :
+    BProv Ax_s G (ltTermAt Term.zero (Term.succ t)) := by
+  have hadd : BProv Ax_s G
+      (eq (Term.add Term.zero (Term.succ t)) (Term.succ t)) :=
+    BProv_Ax_s_zero_add_term (Term.succ t)
+  have hbody : BProv Ax_s G
+      (subst (instTerm t)
+        (eq
+          (Term.add (Term.rename Nat.succ Term.zero)
+            (Term.succ (Term.var 0)))
+          (Term.rename Nat.succ (Term.succ t)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hadd
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq
+      (Term.add (Term.rename Nat.succ Term.zero) (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ (Term.succ t)))
+    (t := t) hbody
+
+/-- PA preserves term-parametric non-strict order under successor on both
+sides. -/
+theorem BProv_Ax_s_leTermAt_succ_succ {G : List Formula} {s t : Term}
+    (hle : BProv Ax_s G (leTermAt s t)) :
+    BProv Ax_s G (leTermAt (Term.succ s) (Term.succ t)) := by
+  let leBody : Formula :=
+    eq (Term.add (Term.rename Nat.succ s) (Term.var 0))
+      (Term.rename Nat.succ t)
+  have hbody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (leTermAt (Term.succ s) (Term.succ t))) := by
+    let C : List Formula := leBody :: G.map (rename Nat.succ)
+    let ss : Term := Term.rename Nat.succ s
+    let tt : Term := Term.rename Nat.succ t
+    let d : Term := Term.var 0
+    have hleEq : BProv Ax_s C (eq (Term.add ss d) tt) := by
+      have hraw : BProv Ax_s C leBody :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [leBody, ss, tt, d] using hraw
+    have hsuccAdd : BProv Ax_s C
+        (eq (Term.add (Term.succ ss) d)
+          (Term.succ (Term.add ss d))) :=
+      BProv_Ax_s_succ_add_terms ss d
+    have hsuccCong : BProv Ax_s C
+        (eq (Term.succ (Term.add ss d)) (Term.succ tt)) :=
+      BProv_eq_congr_succ hleEq
+    have htarget : BProv Ax_s C
+        (eq (Term.add (Term.succ ss) d) (Term.succ tt)) :=
+      BProv_eqTrans hsuccAdd hsuccCong
+    have hinst : BProv Ax_s C
+        (subst (instTerm d)
+          (eq
+            (Term.add
+              (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ s)))
+              (Term.var 0))
+            (Term.rename Nat.succ
+              (Term.rename Nat.succ (Term.succ t))))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename, ss, tt, d,
+        Term.rename_comp, term_subst_instTerm_rename_succ,
+        term_subst_instTerm_rename_two_succ] using htarget
+    have hex : BProv Ax_s C
+        (ex
+          (eq
+            (Term.add
+              (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ s)))
+              (Term.var 0))
+            (Term.rename Nat.succ
+              (Term.rename Nat.succ (Term.succ t))))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq
+          (Term.add
+            (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ s)))
+            (Term.var 0))
+          (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ t))))
+        (t := d) hinst
+    simpa [C, leTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hle (by
+      simpa [leTermAt, leBody] using hbody)
+
+/-- PA preserves term-parametric strict order under successor on both sides. -/
+theorem BProv_Ax_s_ltTermAt_succ_succ {G : List Formula} {s t : Term}
+    (hlt : BProv Ax_s G (ltTermAt s t)) :
+    BProv Ax_s G (ltTermAt (Term.succ s) (Term.succ t)) := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.rename Nat.succ s) (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ t)
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (ltTermAt (Term.succ s) (Term.succ t))) := by
+    let C : List Formula := ltBody :: G.map (rename Nat.succ)
+    let ss : Term := Term.rename Nat.succ s
+    let tt : Term := Term.rename Nat.succ t
+    let d : Term := Term.var 0
+    have hltEq : BProv Ax_s C
+        (eq (Term.add ss (Term.succ d)) tt) := by
+      have hraw : BProv Ax_s C ltBody :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [ltBody, ss, tt, d] using hraw
+    have hsuccAdd : BProv Ax_s C
+        (eq (Term.add (Term.succ ss) (Term.succ d))
+          (Term.succ (Term.add ss (Term.succ d)))) :=
+      BProv_Ax_s_succ_add_terms ss (Term.succ d)
+    have hsuccCong : BProv Ax_s C
+        (eq (Term.succ (Term.add ss (Term.succ d))) (Term.succ tt)) :=
+      BProv_eq_congr_succ hltEq
+    have htarget : BProv Ax_s C
+        (eq (Term.add (Term.succ ss) (Term.succ d)) (Term.succ tt)) :=
+      BProv_eqTrans hsuccAdd hsuccCong
+    have hinst : BProv Ax_s C
+        (subst (instTerm d)
+          (eq
+            (Term.add
+              (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ s)))
+              (Term.succ (Term.var 0)))
+            (Term.rename Nat.succ
+              (Term.rename Nat.succ (Term.succ t))))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename, ss, tt, d,
+        Term.rename_comp, term_subst_instTerm_rename_succ,
+        term_subst_instTerm_rename_two_succ] using htarget
+    have hex : BProv Ax_s C
+        (ex
+          (eq
+            (Term.add
+              (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ s)))
+              (Term.succ (Term.var 0)))
+            (Term.rename Nat.succ
+              (Term.rename Nat.succ (Term.succ t))))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq
+          (Term.add
+            (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ s)))
+            (Term.succ (Term.var 0)))
+          (Term.rename Nat.succ (Term.rename Nat.succ (Term.succ t))))
+        (t := d) hinst
+    simpa [C, ltTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hlt (by
+      simpa [ltTermAt, ltBody] using hbody)
 
 /-- PA proves the strict closed-one bound case: from `x < y` and `y = 1`,
 derive `x = 0`. -/
