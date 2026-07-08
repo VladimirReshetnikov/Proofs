@@ -21193,6 +21193,125 @@ theorem BProv_Ax_s_hfMemAt_pred_opened_body_bitEx
     instTerm, Term.subst, Term.upSubst, rename, Term.rename, SetTheory.up,
     succBody, succCtx, bodyCtx, body, tail, bitBody] using hbitCtx
 
+/-- In the predecessor-opened successor branch of `hfMemAt`, the exposed
+code/step witnesses can be repackaged as a term-parametric membership proof.
+
+This theorem performs no trace transformation: it merely records that the
+already-open beta-entry, bounded-trace, and final-bit components are exactly
+the components expected by `hfMemTermAt` when the opened code and step
+witnesses are used as the two existential witnesses. -/
+theorem BProv_Ax_s_hfMemAt_pred_opened_as_hfMemTermAt
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    let succCtx : List Formula := succPredAt 0 :: bodyCtx
+    let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+    BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (hfMemTermAt (elem+3) (Term.var (set+3))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+  have hentry : BProv Ax_s C
+      (subst (instTerm (Term.var 1))
+        (subst (Term.upSubst (instTerm (Term.var 2)))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) (Term.var (set+3))) 1 0 0))) := by
+    have hentryRaw : BProv Ax_s C
+        (betaAtConstIdx (set+3) 2 1 0) := by
+      simpa [C, bitBody, tail, body, bodyCtx, succCtx, succBody] using
+        (BProv_Ax_s_hfMemAt_pred_opened_body_entry
+          (G := G) (elem := elem) (set := set))
+    simpa [C, betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+      betaAtConstIdx, betaAt, remAt, ltAt, eqConstAt, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp, SetTheory.up,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hentryRaw
+  have hsteps : BProv Ax_s C
+      (subst (instTerm (Term.var 1))
+        (subst (Term.upSubst (instTerm (Term.var 2)))
+          (betaDiv2StepsThroughAt 1 0 ((elem+3)+2)))) := by
+    have hstepsRaw : BProv Ax_s C
+        (betaDiv2StepsThroughAt 2 1 (elem+3)) := by
+      simpa [C, bitBody, tail, body, bodyCtx, succCtx, succBody] using
+        (BProv_Ax_s_hfMemAt_pred_opened_body_steps
+          (G := G) (elem := elem) (set := set))
+    simpa [C, betaDiv2StepsThroughAt, leAt, betaDiv2StepWitnessAt,
+      betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, betaModTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      SetTheory.up, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hstepsRaw
+  have hbitEx : BProv Ax_s C
+      (subst (instTerm (Term.var 1))
+        (subst (Term.upSubst (instTerm (Term.var 2)))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 ((elem+3)+3)))))) := by
+    have hbitRaw : BProv Ax_s C
+        (ex (and (oneAt 0) (betaDiv2BitAt 0 3 2 (elem+4)))) := by
+      simpa [C, bitBody, tail, body, bodyCtx, succCtx, succBody] using
+        (BProv_Ax_s_hfMemAt_pred_opened_body_bitEx
+          (G := G) (elem := elem) (set := set))
+    simpa [C, betaDiv2BitAt, betaDiv2StepsThroughAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+      remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt,
+      eqConstAt, betaModTerm, subst, instTerm, Term.subst,
+      Term.upSubst, rename, Term.rename, Term.rename_comp, SetTheory.up,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hbitRaw
+  exact BProv_Ax_s_hfMemTermAt_of_components
+    (G := C) (elem := elem+3) (setCode := Term.var (set+3))
+    (codeTerm := Term.var 2) (stepTerm := Term.var 1)
+    hentry hsteps hbitEx
+
 /-- In the successor branch of the opened `hfMemZeroSetAt` code/step
 witnesses, the initial term-output beta-entry component remains available. -/
 theorem BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_entry
