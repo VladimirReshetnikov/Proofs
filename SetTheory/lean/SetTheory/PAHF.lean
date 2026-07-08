@@ -24312,6 +24312,12 @@ by one. -/
 def hfSomeDistinguishesAt (high low : Nat) : Formula :=
   ex (hfDistinguishesAt 0 (high+1) (low+1))
 
+/-- Formula macro: every code strictly below `high` has an Ackermann member
+distinguishing `high` from it.  This is the object-language predicate intended
+for the PA induction proof of translated HF extensionality. -/
+def hfLtDistinguishesAt (high : Nat) : Formula :=
+  all (imp (ltAt 0 (high+1)) (hfSomeDistinguishesAt (high+1) 0))
+
 /-- Renaming commutes with the open distinguishing-member macro. -/
 theorem rename_hfDistinguishesAt (r : Nat → Nat) (elem high low : Nat) :
     rename r (hfDistinguishesAt elem high low) =
@@ -24325,6 +24331,66 @@ theorem rename_hfSomeDistinguishesAt_succ (high low : Nat) :
       hfSomeDistinguishesAt (high+1) (low+1) := by
   simp [hfSomeDistinguishesAt, hfDistinguishesAt, rename_hfMemAt,
     rename, SetTheory.up]
+
+/-- Instantiating the low-code binder of `hfLtDistinguishesAt` by an existing
+PA variable recovers the expected open implication. -/
+theorem subst_instTerm_var_hfLtDistinguishesAt_body
+    (low high : Nat) :
+    subst (instTerm (Term.var low))
+      (imp (ltAt 0 (high+1)) (hfSomeDistinguishesAt (high+1) 0)) =
+      imp (ltAt low high) (hfSomeDistinguishesAt high low) := by
+  simp [hfSomeDistinguishesAt, hfDistinguishesAt, hfMemAt,
+    betaDiv2BitAt, betaDiv2StepsThroughAt, betaDiv2StepWitnessAt,
+    betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+
+/-- Instantiating the high-code binder of the universal extensionality target
+by an existing PA variable recovers `hfLtDistinguishesAt` for that slot. -/
+theorem subst_instTerm_var_hfLtDistinguishesAt_zero (high : Nat) :
+    subst (instTerm (Term.var high)) (hfLtDistinguishesAt 0) =
+      hfLtDistinguishesAt high := by
+  simp [hfLtDistinguishesAt, hfSomeDistinguishesAt, hfDistinguishesAt,
+    hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt, remAt,
+    ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+
+/-- Use an object-language proof of `hfLtDistinguishesAt high` at a particular
+strictly lower code. -/
+theorem BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
+    {B : Formula → Prop} {G : List Formula} {low high : Nat}
+    (hallLow : BProv B G (hfLtDistinguishesAt high))
+    (hlt : BProv B G (ltAt low high)) :
+    BProv B G (hfSomeDistinguishesAt high low) := by
+  have himpRaw : BProv B G
+      (subst (instTerm (Term.var low))
+        (imp (ltAt 0 (high+1)) (hfSomeDistinguishesAt (high+1) 0))) := by
+    simpa [hfLtDistinguishesAt] using
+      (BProv_allE (B := B) (G := G)
+        (a := imp (ltAt 0 (high+1))
+          (hfSomeDistinguishesAt (high+1) 0))
+        (t := Term.var low) hallLow)
+  have himp : BProv B G
+      (imp (ltAt low high) (hfSomeDistinguishesAt high low)) := by
+    simpa [subst_instTerm_var_hfLtDistinguishesAt_body] using himpRaw
+  exact BProv_mp B G (ltAt low high) (hfSomeDistinguishesAt high low)
+    himp hlt
+
+/-- Use the universal extensionality-induction target at arbitrary high/low
+slots. -/
+theorem BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
+    {B : Formula → Prop} {G : List Formula} {low high : Nat}
+    (hall : BProv B G (all (hfLtDistinguishesAt 0)))
+    (hlt : BProv B G (ltAt low high)) :
+    BProv B G (hfSomeDistinguishesAt high low) := by
+  have hhighRaw : BProv B G
+      (subst (instTerm (Term.var high)) (hfLtDistinguishesAt 0)) :=
+    BProv_allE (B := B) (G := G) (a := hfLtDistinguishesAt 0)
+      (t := Term.var high) hall
+  have hhigh : BProv B G (hfLtDistinguishesAt high) := by
+    simpa [subst_instTerm_var_hfLtDistinguishesAt_zero] using hhighRaw
+  exact BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt hhigh hlt
 
 /-- Semantic specification of `hfDistinguishesAt` in the standard PA model. -/
 theorem hfDistinguishesAt_nat (e : Nat → Nat) (elem high low : Nat) :
@@ -24621,6 +24687,21 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_lt_distinguishes
     (by simpa [sameMembers] using
       (hdistinguish (G := [ltAt 0 1, sameMembers])
         (low := 0) (high := 1) hlt01))
+
+/-- Translated HF extensionality follows from the single PA theorem saying
+that every high code has a distinguishing member against every strictly lower
+code.  This is the induction-facing form of the remaining extensionality
+obligation. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt
+    (hall : BProv Ax_s [] (all (hfLtDistinguishesAt 0))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_lt_distinguishes
+    (fun {G} {low} {high} hlt =>
+      BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
+        (B := Ax_s) (G := G) (low := low) (high := high)
+        (BProv_weaken_nil hall) hlt)
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/

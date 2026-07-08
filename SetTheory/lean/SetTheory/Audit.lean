@@ -537,8 +537,13 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_fresh_member_reverse
 #check PA.Formula.hfDistinguishesAt
 #check PA.Formula.hfSomeDistinguishesAt
+#check PA.Formula.hfLtDistinguishesAt
 #check @PA.Formula.rename_hfDistinguishesAt
 #check @PA.Formula.rename_hfSomeDistinguishesAt_succ
+#check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_body
+#check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_zero
+#check @PA.Formula.BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
+#check @PA.Formula.BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
 #check @PA.Formula.hfDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat_of_lt
@@ -569,6 +574,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_lt_bots
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_distinguishing
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_lt_distinguishes
+#check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd
