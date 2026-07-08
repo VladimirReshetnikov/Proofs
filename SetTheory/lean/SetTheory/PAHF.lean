@@ -8777,6 +8777,80 @@ theorem BProv_Ax_s_dvdAt_of_eqConst {G : List Formula}
   exact BProv_Ax_s_dvdAt_of_eqConst_mul
     (a := a) (b := b) (m := m) (n := n) (q := q) ha hb hq.symm
 
+/-- A fixed `0` or `1` numeral proof yields the corresponding boolean-slot
+predicate. -/
+theorem BProv_Ax_s_boolAt_of_eqConst {G : List Formula}
+    {a b : Nat}
+    (ha : BProv Ax_s G (eqConstAt a b))
+    (hb : b = 0 ∨ b = 1) :
+    BProv Ax_s G (boolAt a) := by
+  rcases hb with rfl | rfl
+  · exact BProv_orI1 (B := Ax_s) (G := G) (b := oneAt a)
+      (by simpa [zeroAt] using ha)
+  · exact BProv_orI2 (B := Ax_s) (G := G) (a := zeroAt a)
+      (by simpa [oneAt] using ha)
+
+/-- From fixed numeral proofs of the value, half, and bit slots, derive the
+`div2StepAt` relation with the arithmetic equation left explicit. -/
+theorem BProv_Ax_s_div2StepAt_of_eqConst {G : List Formula}
+    {value half bit v h b : Nat}
+    (hvalue : BProv Ax_s G (eqConstAt value v))
+    (hhalf : BProv Ax_s G (eqConstAt half h))
+    (hbit : BProv Ax_s G (eqConstAt bit b))
+    (hb : b = 0 ∨ b = 1)
+    (hval : h + h + b = v) :
+    BProv Ax_s G (div2StepAt value half bit) := by
+  have hbool : BProv Ax_s G (boolAt bit) :=
+    BProv_Ax_s_boolAt_of_eqConst hbit hb
+  have hdoubleLeft : BProv Ax_s G
+      (eq
+        (Term.add (Term.var half) (Term.var half))
+        (Term.add (Term.numeral h) (Term.numeral h))) :=
+    BProv_eq_congr_add hhalf hhalf
+  have hdoubleRaw : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral h) (Term.numeral h))
+        (Term.numeral (h + h))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals h h)
+  have hdouble : BProv Ax_s G
+      (eq
+        (Term.add (Term.var half) (Term.var half))
+        (Term.numeral (h + h))) :=
+    BProv_eqTrans hdoubleLeft hdoubleRaw
+  have haddLeft : BProv Ax_s G
+      (eq
+        (Term.add (Term.add (Term.var half) (Term.var half))
+          (Term.var bit))
+        (Term.add (Term.numeral (h + h)) (Term.var bit))) :=
+    BProv_eq_congr_add_left (Term.var bit) hdouble
+  have haddRight : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (h + h)) (Term.var bit))
+        (Term.add (Term.numeral (h + h)) (Term.numeral b))) :=
+    BProv_eq_congr_add_right (Term.numeral (h + h)) hbit
+  have haddRaw : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral (h + h + b))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals (h + h) b)
+  have hadd : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral v)) := by
+    simpa [hval] using haddRaw
+  have hcomputed : BProv Ax_s G
+      (eq
+        (Term.add (Term.add (Term.var half) (Term.var half))
+          (Term.var bit))
+        (Term.numeral v)) :=
+    BProv_eqTrans (BProv_eqTrans haddLeft haddRight) hadd
+  have htarget : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.add (Term.var half) (Term.var half))
+          (Term.var bit))) :=
+    BProv_eqTrans hvalue (BProv_eqSym hcomputed)
+  simpa [div2StepAt] using BProv_andI hbool htarget
+
 /-- From PA proofs that the three slots contain fixed numerals, and from an
 explicit Euclidean-division witness in the metatheory, derive the corresponding
 `remAt` relation. -/

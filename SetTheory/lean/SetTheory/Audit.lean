@@ -181,6 +181,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltConst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_boolAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_remAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_remAt_constMod_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaModTerm_of_eqConst
