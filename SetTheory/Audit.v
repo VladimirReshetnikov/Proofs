@@ -8,6 +8,7 @@
 (* ===================================================================== *)
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
+From SetTheory Require Import BusyBeaver BusyBeaverMathlib.
 From SetTheory Require Import Forward Reverse.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -29,7 +30,11 @@ Check theory_equiv.
 Check BProv_ax.
 Check BProv_of_Prov.
 Check BProv_lift.
+Check BProv_eqElim.
+Check BProv_eqSym.
+Check BProv_eqTrans.
 Check BProv_theory_mono.
+Check completeness_inf_context.
 Print Assumptions prov_iff_valid.
 
 Check soundness.
@@ -87,6 +92,29 @@ Check PA_standard_model_interpretable_with_HF_semantic.
 Check PA_standard_model_interpretable_with_HFFin.
 Check PA_biinterpretable_with_HF_standard.
 Check PA_biinterpretable_with_HFFin_standard.
+
+(* Rado-style busy-beaver interface and domination theorem. *)
+Check BusyBeaver.IsSigma.
+Check BusyBeaver.AttainableScore.
+Check BusyBeaver.AttainableScoreAtMost.
+Check BusyBeaver.sigma_mono_of_pos.
+Check BusyBeaver.score_le_sigma_of_atMost.
+Check BusyBeaver.sigma_eventually_dominates_every_total_recursive.
+Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel.
+Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel.
+Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyLowerBoundInRadoModel.
+Print Assumptions BusyBeaver.sigma_mono_of_pos.
+Print Assumptions BusyBeaver.score_le_sigma_of_atMost.
+Print Assumptions BusyBeaver.sigma_eventually_dominates_every_total_recursive.
+
+(* Coq-side explicit counterpart of the Lean mathlib Turing-machine bridge. *)
+Check BusyBeaverMathlib.positions_length_le_tape_length_of_read_true.
+Check BusyBeaverMathlib.rado_positions_of_nat_offsets_nodup.
+Check BusyBeaverMathlib.SupportedCompilerBridge.
+Check BusyBeaverMathlib.supportedCompilerBridge_has_lowerBoundCompiler.
+Check BusyBeaverMathlib.sigma_eventually_dominates_every_supported_total_recursive.
+Print Assumptions
+  BusyBeaverMathlib.sigma_eventually_dominates_every_supported_total_recursive.
 
 Print Assumptions PA.Formula.sat_axiom_s.
 Print Assumptions PA.Formula.soundness_BProv.
