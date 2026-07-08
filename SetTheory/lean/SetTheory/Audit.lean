@@ -609,6 +609,7 @@ open SetTheory
 #check PA.Formula.substSuccVar_hfLtDistinguishesAt_zero
 #check @PA.Formula.subst_instTerm_var_hfMemTermAt_zero_rename_succ
 #check @PA.Formula.BProv_hfMemTermAt_of_hfMemAt_eq_term
+#check @PA.Formula.BProv_hfMemTermAt_of_hfMemTermAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
@@ -626,6 +627,8 @@ open SetTheory
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_mem_and_not_mem
+#check @PA.Formula.BProv_hfDistinguishesTermAt_of_high_eq_term
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_high_eq_term
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfDistinguishesAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfSomeDistinguishesAt_eq_term
@@ -727,6 +730,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_leConst_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_high_ltAt
+#check @PA.Formula.BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_eqConst_high
 #check @PA.Formula.betaFact
 #check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step

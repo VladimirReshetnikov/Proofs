@@ -2911,6 +2911,26 @@ theorem BProv_hfMemTermAt_of_hfMemAt_eq_term
       (a := hfMemAt (elem+1) 0) hset hmemSubst
   simpa [subst_instTerm_hfMemAt_succ_zero] using htermSubst
 
+/-- Transport term-parametric Ackermann membership across a PA equality between
+set-code terms.  This is the term-code analogue of
+`BProv_hfMemTermAt_of_hfMemAt_eq_term`; it keeps equality transport as a proof
+operation rather than baking it into the membership macro. -/
+theorem BProv_hfMemTermAt_of_hfMemTermAt_eq_term
+    {B : Formula → Prop} {G : List Formula} {elem : Nat}
+    {oldCode newCode : Term}
+    (hmem : BProv B G (hfMemTermAt elem oldCode))
+    (hset : BProv B G (eq oldCode newCode)) :
+    BProv B G (hfMemTermAt elem newCode) := by
+  have hmemSubst : BProv B G
+      (subst (instTerm oldCode) (hfMemAt (elem+1) 0)) := by
+    simpa [subst_instTerm_hfMemAt_succ_zero] using hmem
+  have htermSubst : BProv B G
+      (subst (instTerm newCode) (hfMemAt (elem+1) 0)) :=
+    BProv_eqElim (B := B) (G := G)
+      (s := oldCode) (t := newCode)
+      (a := hfMemAt (elem+1) 0) hset hmemSubst
+  simpa [subst_instTerm_hfMemAt_succ_zero] using htermSubst
+
 theorem rename_hfMemAt (r : Nat → Nat) (elem set : Nat) :
     rename r (hfMemAt elem set) = hfMemAt (r elem) (r set) := by
   simp [hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
@@ -22850,6 +22870,65 @@ theorem BProv_hfSomeDistinguishesTermAt_of_mem_and_not_mem
     (highCode := highCode)
     (BProv_hfDistinguishesTermAt_of_mem_and_not_mem hhigh hnotLow)
 
+/-- Transport a term-parametric distinguishing-member proof across a PA
+equality between high-code terms. -/
+theorem BProv_hfDistinguishesTermAt_of_high_eq_term
+    {B : Formula → Prop} {G : List Formula} {elem low : Nat}
+    {oldCode newCode : Term}
+    (hdist : BProv B G (hfDistinguishesTermAt elem oldCode low))
+    (hhigh : BProv B G (eq oldCode newCode)) :
+    BProv B G (hfDistinguishesTermAt elem newCode low) := by
+  have hhighMem : BProv B G (hfMemTermAt elem oldCode) := by
+    simpa [hfDistinguishesTermAt] using BProv_andE1 hdist
+  have hnotLow : BProv B G (imp (hfMemAt elem low) bot) := by
+    simpa [hfDistinguishesTermAt] using BProv_andE2 hdist
+  exact BProv_hfDistinguishesTermAt_of_mem_and_not_mem
+    (BProv_hfMemTermAt_of_hfMemTermAt_eq_term hhighMem hhigh)
+    hnotLow
+
+/-- Transport an existential term-parametric distinguishing proof across a PA
+equality between high-code terms.  This is the witness-opening wrapper around
+`BProv_hfDistinguishesTermAt_of_high_eq_term`. -/
+theorem BProv_hfSomeDistinguishesTermAt_of_high_eq_term
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {oldCode newCode : Term} {low : Nat}
+    (hsome : BProv B G (hfSomeDistinguishesTermAt oldCode low))
+    (hhigh : BProv B G (eq oldCode newCode)) :
+    BProv B G (hfSomeDistinguishesTermAt newCode low) := by
+  let witness : Formula :=
+    hfDistinguishesTermAt 0 (Term.rename Nat.succ oldCode) (low+1)
+  let target : Formula := hfSomeDistinguishesTermAt newCode low
+  have hbody : BProv B (witness :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := witness :: G.map (rename Nat.succ)
+    have hdist : BProv B C
+        (hfDistinguishesTermAt 0
+          (Term.rename Nat.succ oldCode) (low+1)) :=
+      BProv_ass (B := B) (G := C) (by simp [C, witness])
+    have hhighC : BProv B C
+        (eq (Term.rename Nat.succ oldCode)
+          (Term.rename Nat.succ newCode)) := by
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := B) hB (a := witness) hhigh
+      simpa [C, witness, rename, Term.rename] using hren
+    have hdistNew : BProv B C
+        (hfDistinguishesTermAt 0
+          (Term.rename Nat.succ newCode) (low+1)) :=
+      BProv_hfDistinguishesTermAt_of_high_eq_term hdist hhighC
+    have hsomeNew : BProv B C
+        (hfSomeDistinguishesTermAt
+          (Term.rename Nat.succ newCode) (low+1)) :=
+      BProv_hfSomeDistinguishesTermAt_intro_var
+        (B := B) (G := C) (elem := 0)
+        (low := low+1)
+        (highCode := Term.rename Nat.succ newCode)
+        hdistNew
+    simpa [target, rename_hfSomeDistinguishesTermAt_succ] using hsomeNew
+  have hex : BProv B G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesTermAt] using hsome
+  exact BProv_exE_of_sentences (B := B) hB (a := witness)
+    (c := target) hex hbody
+
 /-- Transport a slot-level distinguishing-member proof across a PA equality for
 the high set code. -/
 theorem BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term
@@ -23762,6 +23841,91 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_high_ltAt
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [highEq, target] using hbody)
+
+/-- Closed-high version of the full lower-code predicate for a successor code.
+This mirrors the open PA-induction successor step but keeps the high code
+closed: split `low < S high` into `low < high` and `low = high`; the strict
+branch uses the closed-high bridge above, while the equality branch reduces to
+the closed-low successor/predecessor theorem. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_eqConst_high
+    {G : List Formula} {high highValue : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue)) :
+    BProv Ax_s G
+      (hfLtDistinguishesTermAt (Term.succ (Term.var high))) := by
+  let highCode : Term := Term.succ (Term.var high)
+  let highCodeRen : Term := Term.succ (Term.var (high+1))
+  let lowLtSucc : Formula := ltTermAt (Term.var 0) highCodeRen
+  let target : Formula := hfSomeDistinguishesTermAt highCodeRen 0
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp lowLtSucc target) := by
+    let C : List Formula := lowLtSucc :: G.map (rename Nat.succ)
+    let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var (high+1))
+    let lowEqHigh : Formula := eq (Term.var 0) (Term.var (high+1))
+    have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt high highValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhigh Nat.succ
+    have hhighC0 : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (high+1) highValue) := by
+      simpa [eqConstAt, rename, Term.rename] using hhighRen
+    have hhighC : BProv Ax_s C (eqConstAt (high+1) highValue) :=
+      BProv_context_cons (B := Ax_s) (a := lowLtSucc) hhighC0
+    have hltSucc : BProv Ax_s C lowLtSucc :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, lowLtSucc])
+    have hcases : BProv Ax_s C (or lowLtHigh lowEqHigh) := by
+      simpa [lowLtSucc, lowLtHigh, lowEqHigh, highCodeRen] using
+        BProv_Ax_s_ltTermAt_succ_right_cases hltSucc
+    have hstrict : BProv Ax_s (lowLtHigh :: C) target := by
+      have hhighStrict : BProv Ax_s (lowLtHigh :: C)
+          (eqConstAt (high+1) highValue) :=
+        BProv_context_cons (B := Ax_s) (a := lowLtHigh) hhighC
+      have hltTerm : BProv Ax_s (lowLtHigh :: C)
+          (ltTermAt (Term.var 0) (Term.var (high+1))) :=
+        BProv_ass (B := Ax_s) (G := lowLtHigh :: C)
+          (by simp [lowLtHigh])
+      have hltAt : BProv Ax_s (lowLtHigh :: C)
+          (ltAt 0 (high+1)) := by
+        simpa [ltTermAt_var] using hltTerm
+      exact
+        BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_high_ltAt
+          (G := lowLtHigh :: C) (high := high+1) (low := 0)
+          (highValue := highValue) hhighStrict hltAt
+    have hequal : BProv Ax_s (lowEqHigh :: C) target := by
+      let E : List Formula := lowEqHigh :: C
+      have heq : BProv Ax_s E (eq (Term.var 0) (Term.var (high+1))) :=
+        BProv_ass (B := Ax_s) (G := E) (by simp [E, lowEqHigh])
+      have hhighE : BProv Ax_s E (eqConstAt (high+1) highValue) :=
+        BProv_context_cons (B := Ax_s) (a := lowEqHigh) hhighC
+      have hlowConst : BProv Ax_s E (eqConstAt 0 highValue) := by
+        have hhighTerm : BProv Ax_s E
+            (eq (Term.var (high+1)) (Term.numeral highValue)) := by
+          simpa [eqConstAt] using hhighE
+        simpa [eqConstAt] using BProv_eqTrans heq hhighTerm
+      have hself : BProv Ax_s E
+          (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0) :=
+        BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
+          hlowConst
+      have hhighEq : BProv Ax_s E
+          (eq (Term.succ (Term.var 0))
+            (Term.succ (Term.var (high+1)))) :=
+        BProv_eq_congr_succ heq
+      exact BProv_hfSomeDistinguishesTermAt_of_high_eq_term
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := E) (oldCode := Term.succ (Term.var 0))
+        (newCode := highCodeRen) (low := 0) hself
+        (by simpa [highCodeRen] using hhighEq)
+    have htargetC : BProv Ax_s C target :=
+      BProv_orE (B := Ax_s) (G := C)
+        (a := lowLtHigh) (b := lowEqHigh) (c := target)
+        hcases hstrict hequal
+    simpa [C, lowLtSucc, target] using BProv_impI htargetC
+  have hall : BProv Ax_s G (all (imp lowLtSucc target)) := by
+    simpa [lowLtSucc, target, highCodeRen] using
+      BProv_allI_of_sentences (B := Ax_s)
+        (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [hfLtDistinguishesTermAt, highCode, highCodeRen, lowLtSucc,
+    target, Term.rename] using hall
 
 /-- Base case for the PA induction target behind translated HF
 extensionality.  Once the high code has been replaced by `0`, the remaining
