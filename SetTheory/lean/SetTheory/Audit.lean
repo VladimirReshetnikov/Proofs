@@ -290,6 +290,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot
 #check @PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero
 #check @PA.Formula.BProv_Ax_s_div2StepAt_double_one_bot
+#check @PA.Formula.BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
 #check @PA.Formula.BProv_Ax_s_remAt_of_div2StepAt_two
 #check @PA.Formula.BProv_Ax_s_div2StepAt_closedSubst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
@@ -410,6 +411,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_current_zero_of_betaTermAt_zero_eq_index
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_double_bot
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
