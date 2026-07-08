@@ -76,9 +76,79 @@ noncomputable def eval : Expr -> ℝ
   | sqrt e => Real.sqrt e.eval
   | add a b => a.eval + b.eval
 
+/--
+Pad an expression by one symbol without changing its value, by replacing the
+leftmost `1` leaf with `sqrt(1)`.
+-/
+def padOne : Expr -> Expr
+  | one => sqrt one
+  | sqrt e => sqrt (padOne e)
+  | add a b => add (padOne a) b
+
+theorem size_padOne (e : Expr) : (padOne e).size = e.size + 1 := by
+  induction e with
+  | one =>
+      rfl
+  | sqrt e ih =>
+      simp [padOne, size, ih]
+  | add a b iha _ihb =>
+      simp [padOne, size, iha]
+      omega
+
+theorem eval_padOne (e : Expr) : eval (padOne e) = eval e := by
+  induction e with
+  | one =>
+      simp [padOne, eval]
+  | sqrt e ih =>
+      simp [padOne, eval, ih]
+  | add a b iha _ihb =>
+      simp [padOne, eval, iha]
+
 /-- The lexical set of real values represented by all expressions of size `n`. -/
 def valueSet (n : Nat) : Set ℝ :=
   {v | ∃ e ∈ expressions n, eval e = v}
+
+theorem padOne_mem_expressions_succ {n : Nat} {e : Expr}
+    (he : e ∈ expressions n) : padOne e ∈ expressions (n + 1) := by
+  induction n using Nat.strong_induction_on generalizing e with
+  | h n ih =>
+      cases n with
+      | zero =>
+          simp [expressions_zero] at he
+      | succ n =>
+          cases n with
+          | zero =>
+              rw [expressions_one] at he
+              rcases List.mem_singleton.mp he with rfl
+              simp [expressions_succ_succ, expressions_one, padOne]
+          | succ n =>
+              rw [expressions_succ_succ] at he
+              simp only [List.mem_append, List.mem_map, List.mem_flatMap] at he
+              rw [show Nat.succ (Nat.succ n) + 1 = (n + 1) + 2 by omega]
+              rw [expressions_succ_succ (n + 1)]
+              simp only [List.mem_append, List.mem_map, List.mem_flatMap]
+              rcases he with ⟨a, ha, rfl⟩ | ⟨k, _hk, a, ha, b, hb, rfl⟩
+              · left
+                refine ⟨padOne a, ?_, rfl⟩
+                exact ih (n + 1) (by omega) ha
+              · right
+                let k' : Fin (n + 1) := ⟨k.1 + 1, Nat.succ_lt_succ k.2⟩
+                refine ⟨k', List.mem_finRange k', padOne a, ?_, b, ?_, rfl⟩
+                · simpa [k'] using ih (k.1 + 1) (by omega) ha
+                · have hright : (n + 1) - (k.1 + 1) = n - k.1 := by omega
+                  simpa [k', hright] using hb
+
+theorem valueSet_subset_succ (n : Nat) : valueSet n ⊆ valueSet (n + 1) := by
+  rintro x ⟨e, he, rfl⟩
+  exact ⟨padOne e, padOne_mem_expressions_succ he, eval_padOne e⟩
+
+theorem valueSet_subset_of_le {m n : Nat} (h : m ≤ n) : valueSet m ⊆ valueSet n := by
+  intro x hx
+  induction h with
+  | refl =>
+      exact hx
+  | step _ ih =>
+      exact valueSet_subset_succ _ ih
 
 /-- The split-recursive presentation of the same value set. -/
 def recursiveValueSet : Nat -> Set ℝ
@@ -150,6 +220,24 @@ theorem valueSet_eq_recursiveValueSet (n : Nat) :
                   rw [expressions_succ_succ]
                   simp only [List.mem_append, List.mem_map, List.mem_flatMap]
                   exact Or.inr ⟨k, List.mem_finRange k, a, ha, b, hb, rfl⟩
+
+theorem recursiveValueSet_subset_of_le {m n : Nat} (h : m ≤ n) :
+    recursiveValueSet m ⊆ recursiveValueSet n := by
+  intro x hx
+  rw [← valueSet_eq_recursiveValueSet m] at hx
+  rw [← valueSet_eq_recursiveValueSet n]
+  exact valueSet_subset_of_le h hx
+
+theorem one_add_mem_recursiveValueSet_add_two {n : Nat} (hn : 0 < n) {x : ℝ}
+    (hx : x ∈ recursiveValueSet n) : 1 + x ∈ recursiveValueSet (n + 2) := by
+  rw [recursiveValueSet]
+  right
+  let k : Fin n := ⟨0, hn⟩
+  refine ⟨k, 1, ?_, x, ?_, rfl⟩
+  · change (1 : ℝ) ∈ recursiveValueSet 1
+    simp [recursiveValueSet]
+  · change x ∈ recursiveValueSet n
+    exact hx
 
 /-- OEIS A158415, as a cardinality of the lexical real-value set. -/
 noncomputable def a158415 (n : Nat) : Nat :=
