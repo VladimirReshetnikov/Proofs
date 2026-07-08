@@ -323,6 +323,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_same_index
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_eq_index
 #check @PA.Formula.BProv_Ax_s_betaTermAt_zero_of_betaAt_eqConst_zero
+#check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAtConstIdx_zero_eqConst_index
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
 #check @PA.Formula.BProv_Ax_s_remAt_eqConst_modulus_zero_bot
@@ -440,6 +441,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_body
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_member_bot
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd
+#check @PA.Formula.BProv_Ax_s_leTermAt_self_succ
+#check @PA.Formula.BProv_Ax_s_leAt_pred_of_succ_eq_le
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule

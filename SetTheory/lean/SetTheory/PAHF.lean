@@ -11661,6 +11661,49 @@ theorem BProv_Ax_s_leTermAt_zero_left {G : List Formula} (t : Term) :
       (Term.rename Nat.succ t))
     (t := t) hbody
 
+/-- PA proves that every term is below its successor. -/
+theorem BProv_Ax_s_leTermAt_self_succ {G : List Formula} (t : Term) :
+    BProv Ax_s G (leTermAt t (Term.succ t)) := by
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add t (Term.succ Term.zero))
+        (Term.succ (Term.add t Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms t Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.add t Term.zero) t) :=
+    BProv_weaken_nil (BProv_Ax_s_addZero_term t)
+  have hsucc : BProv Ax_s G
+      (eq (Term.succ (Term.add t Term.zero)) (Term.succ t)) :=
+    BProv_eq_congr_succ haddZero
+  have htarget : BProv Ax_s G
+      (eq (Term.add t (Term.succ Term.zero)) (Term.succ t)) :=
+    BProv_eqTrans haddSucc hsucc
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.succ Term.zero))
+        (eq (Term.add (Term.rename Nat.succ t) (Term.var 0))
+          (Term.rename Nat.succ (Term.succ t)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using htarget
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq (Term.add (Term.rename Nat.succ t) (Term.var 0))
+      (Term.rename Nat.succ (Term.succ t)))
+    (t := Term.succ Term.zero) hbody
+
+/-- If `succSlot` is the successor of `predSlot`, then any upper bound for
+`succSlot` is also an upper bound for `predSlot`. -/
+theorem BProv_Ax_s_leAt_pred_of_succ_eq_le {G : List Formula}
+    {predSlot succSlot upper : Nat}
+    (hsucc : BProv Ax_s G
+      (eq (Term.var succSlot) (Term.succ (Term.var predSlot))))
+    (hleSucc : BProv Ax_s G (leAt succSlot upper)) :
+    BProv Ax_s G (leAt predSlot upper) := by
+  have hpredSuccTerm : BProv Ax_s G
+      (leTermAt (Term.var predSlot) (Term.succ (Term.var predSlot))) :=
+    BProv_Ax_s_leTermAt_self_succ (Term.var predSlot)
+  have hpredSucc : BProv Ax_s G (leAt predSlot succSlot) := by
+    simpa [leAt, leTermAt, Term.rename] using
+      BProv_leTermAt_of_eq_right (BProv_eqSym hsucc) hpredSuccTerm
+  exact BProv_Ax_s_leAt_trans hpredSucc hleSucc
+
 /-- PA proves that zero is strictly below any successor term. -/
 theorem BProv_Ax_s_ltTermAt_zero_succ {G : List Formula} (t : Term) :
     BProv Ax_s G (ltTermAt Term.zero (Term.succ t)) := by
@@ -15199,6 +15242,61 @@ theorem BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd
     (BProv_Ax_s_betaTermAt_zero_opened_body_dvd
       (G := body :: G.map (rename Nat.succ))
       (code := code+1) (step := step+1) (idx := 0))
+
+/-- A zero term-output constant-index beta entry forces any numeric beta entry
+at a slot proved to contain that same index value to output `0`. -/
+theorem BProv_Ax_s_betaAt_output_zero_of_betaTermAtConstIdx_zero_eqConst_index
+    {G : List Formula} {out code step idx idxValue : Nat}
+    (hzeroConst : BProv Ax_s G
+      (betaTermAtConstIdx Term.zero code step idxValue))
+    (hidx : BProv Ax_s G (eqConstAt idx idxValue))
+    (hbeta : BProv Ax_s G (betaAt out code step idx)) :
+    BProv Ax_s G (eqConstAt out 0) := by
+  let body : Formula :=
+    and (eqConstAt 0 idxValue)
+      (betaTermAt (Term.rename Nat.succ Term.zero) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt out 0)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hsourceIdx : BProv Ax_s C (eqConstAt 0 idxValue) :=
+      BProv_andE1 hbodyAss
+    have hzeroRaw : BProv Ax_s C
+        (betaTermAt Term.zero (code+1) (step+1) 0) := by
+      simpa [Term.rename] using BProv_andE2 hbodyAss
+    have hidxRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt idx idxValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hidx Nat.succ
+    have hidxC : BProv Ax_s C (eqConstAt (idx+1) idxValue) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hidxRen
+    have hidxEq : BProv Ax_s C
+        (eq (Term.var 0) (Term.var (idx+1))) :=
+      BProv_eqTrans hsourceIdx (BProv_eqSym hidxC)
+    have hbetaRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (betaAt out code step idx)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbeta Nat.succ
+    have hbetaC : BProv Ax_s C
+        (betaAt (out+1) (code+1) (step+1) (idx+1)) := by
+      simpa [C, betaAt, remAt, ltAt, eqConstAt, betaModTerm,
+        rename, Term.rename, SetTheory.up] using
+        BProv_context_cons (B := Ax_s) hbetaRen
+    have hout : BProv Ax_s C (eqConstAt (out+1) 0) :=
+      BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_eq_index
+        (G := C) (out := out+1) (code := code+1) (step := step+1)
+        (zeroIdx := 0) (idx := idx+1)
+        hzeroRaw hidxEq hbetaC
+    simpa [C, eqConstAt, rename, Term.rename] using hout
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hzeroConst (by
+      simpa [betaTermAtConstIdx, body, eqConstAt, rename, Term.rename] using
+        hbody)
 
 /-- Projection from the opened body of a `betaAtSuccIdx` wrapper to the
 successor-index equation. -/
