@@ -12198,6 +12198,30 @@ theorem BProv_Ax_s_betaModTerm_of_eqConst {G : List Formula}
     omega
   simpa [betaModTerm, hbeta, Term.numeral_succ] using hsucc
 
+/-- If the beta step parameter is `0`, the beta modulus term is `1`, uniformly
+in the index slot. -/
+theorem BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero
+    {G : List Formula} {step idx : Nat}
+    (hstep : BProv Ax_s G (eqConstAt step 0)) :
+    BProv Ax_s G (eq (betaModTerm step idx) (Term.numeral 1)) := by
+  let idxSucc : Term := Term.succ (Term.var idx)
+  have hmulLeft : BProv Ax_s G
+      (eq (Term.mul idxSucc (Term.var step))
+        (Term.mul idxSucc Term.zero)) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eq_congr_mul_right idxSucc hstep
+  have hmulZero : BProv Ax_s G
+      (eq (Term.mul idxSucc Term.zero) Term.zero) :=
+    BProv_weaken_nil (BProv_Ax_s_mulZero_term idxSucc)
+  have hmul : BProv Ax_s G
+      (eq (Term.mul idxSucc (Term.var step)) Term.zero) :=
+    BProv_eqTrans hmulLeft hmulZero
+  have hsucc : BProv Ax_s G
+      (eq (Term.succ (Term.mul idxSucc (Term.var step)))
+        (Term.succ Term.zero)) :=
+    BProv_eq_congr_succ hmul
+  simpa [betaModTerm, idxSucc, Term.numeral, Term.numeral_succ] using hsucc
+
 /-- From fixed numeral proofs for the output, code, step, and index slots, and
 an explicit beta-entry quotient in the metatheory, derive the corresponding
 `betaAt` relation. -/
@@ -12266,6 +12290,49 @@ theorem BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
       BProv_context_cons hcodeRen
     exact BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
       (rem := out+1) (value := code+1) (modulus := 0) hrem hcodeC
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaAt, body, eqConstAt, rename, Term.rename] using hbody)
+
+/-- If the beta step parameter is `0`, every raw beta entry has output `0`:
+all beta moduli are then `1`, so the embedded remainder is modulo `1`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
+    {G : List Formula} {out code step idx : Nat}
+    (hbeta : BProv Ax_s G (betaAt out code step idx))
+    (hstep : BProv Ax_s G (eqConstAt step 0)) :
+    BProv Ax_s G (eqConstAt out 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt out 0)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hmodEqRaw : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) :=
+      BProv_andE1 hbodyAss
+    have hmodEq : BProv Ax_s C
+        (eq (Term.var 0) (betaModTerm (step+1) (idx+1))) := by
+      simpa [betaModTerm, rename, Term.rename] using hmodEqRaw
+    have hrem : BProv Ax_s C (remAt (out+1) (code+1) 0) :=
+      BProv_andE2 hbodyAss
+    have hstepRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (step+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hstep Nat.succ
+    have hstepC : BProv Ax_s C (eqConstAt (step+1) 0) :=
+      BProv_context_cons hstepRen
+    have hmodTermOne : BProv Ax_s C
+        (eq (betaModTerm (step+1) (idx+1)) (Term.numeral 1)) :=
+      BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero hstepC
+    have hmodOne : BProv Ax_s C (eqConstAt 0 1) := by
+      simpa [eqConstAt] using BProv_eqTrans hmodEq hmodTermOne
+    exact BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
+      hrem hmodOne
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAt, body, eqConstAt, rename, Term.rename] using hbody)
