@@ -8068,6 +8068,47 @@ theorem BProv_Ax_s_betaTermTermAt_of_rem
           (Term.rename Nat.succ code) (Term.var 0)))
       (t := modulus) hbody)
 
+/-- At beta index zero, the fully term-parametric modulus is `S step`. -/
+theorem BProv_Ax_s_betaModTermTerm_zero {G : List Formula} (step : Term) :
+    BProv Ax_s G
+      (eq (betaModTermTerm step Term.zero) (Term.succ step)) := by
+  have hone : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 1) step) step) :=
+    BProv_Ax_s_one_mul_term step
+  simpa [betaModTermTerm, Term.numeral] using BProv_eq_congr_succ hone
+
+/-- At beta index one, the fully term-parametric modulus is `S (2 * step)`. -/
+theorem BProv_Ax_s_betaModTermTerm_one_mul_two {G : List Formula}
+    (step : Term) :
+    BProv Ax_s G
+      (eq (betaModTermTerm step (Term.succ Term.zero))
+        (Term.succ (Term.mul (Term.numeral 2) step))) := by
+  simpa [betaModTermTerm, Term.numeral] using
+    (BProv_eqRefl (B := Ax_s) (G := G)
+      (Term.succ (Term.mul (Term.numeral 2) step)))
+
+/-- At beta index one, the fully term-parametric modulus is `S (step + step)`. -/
+theorem BProv_Ax_s_betaModTermTerm_one_add_self {G : List Formula}
+    (step : Term) :
+    BProv Ax_s G
+      (eq (betaModTermTerm step (Term.succ Term.zero))
+        (Term.succ (Term.add step step))) := by
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) step)
+        (Term.mul step (Term.numeral 2))) :=
+    BProv_Ax_s_mul_comm_terms (Term.numeral 2) step
+  have htwo : BProv Ax_s G
+      (eq (Term.mul step (Term.numeral 2)) (Term.add step step)) :=
+    BProv_Ax_s_mul_two_right_terms step
+  have hmul : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) step) (Term.add step step)) :=
+    BProv_eqTrans hcomm htwo
+  have hsucc : BProv Ax_s G
+      (eq (Term.succ (Term.mul (Term.numeral 2) step))
+        (Term.succ (Term.add step step))) :=
+    BProv_eq_congr_succ hmul
+  simpa [betaModTermTerm, Term.numeral] using hsucc
+
 /-- Wrap a fully term-parametric beta entry with a closed index witness. -/
 theorem BProv_Ax_s_betaTermTermAtConstIdx_of_beta
     {G : List Formula} {out code step : Term} {idxValue : Nat}

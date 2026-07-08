@@ -338,6 +338,9 @@ open SetTheory
 #check @PA.Formula.betaTermAtConstIdx
 #check @PA.Formula.betaTermTermAtConstIdx
 #check @PA.Formula.betaTermAtConstIdx_var
+#check @PA.Formula.BProv_Ax_s_betaModTermTerm_zero
+#check @PA.Formula.BProv_Ax_s_betaModTermTerm_one_mul_two
+#check @PA.Formula.BProv_Ax_s_betaModTermTerm_one_add_self
 #check @PA.Formula.hfMemZeroSetAt
 #check @PA.Formula.hfMemTermAt
 #check @PA.Formula.hfMemTermAt_var
