@@ -11628,6 +11628,95 @@ Proof.
     (pEx (pEx body)) (Term.numeral cur) hnextEx).
 Qed.
 
+Lemma BProv_Ax_s_betaDiv2BitAt_of_eqConst :
+  forall G bit code step idx b c s i cur next qcur qnext,
+  BProv Ax_s G (eqConstAt bit b) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  cur < BetaModulus s i ->
+  qcur * BetaModulus s i + cur = c ->
+  next < BetaModulus s (i + 1) ->
+  qnext * BetaModulus s (i + 1) + next = c ->
+  b = 0 \/ b = 1 ->
+  next + next + b = cur ->
+  BProv Ax_s G (betaDiv2BitAt bit code step idx).
+Proof.
+  intros G bit code step idx b c s i cur next qcur qnext
+    hbit hcode hstep hidx hcurLt hcurVal hnextLt hnextVal hb hdiv.
+  set (body :=
+    pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit))))).
+  pose proof (BProv_Ax_s_betaAt_constOutSubst_of_eqConst
+    G code step idx cur c s i qcur
+    hcode hstep hidx hcurLt hcurVal) as hcurRaw.
+  assert (hcurBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))))).
+  {
+    unfold betaAt, remAt, betaModTerm, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hcurRaw.
+  }
+  pose proof (BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
+    G code step idx next c s i qnext
+    hcode hstep hidx hnextLt hnextVal) as hnextRaw.
+  assert (hnextBeta : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))))).
+  {
+    unfold betaAtSuccIdx, betaAt, remAt, betaModTerm, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hnextRaw.
+  }
+  assert (hdivBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (div2StepAt 1 0 (S (S bit)))))).
+  {
+    exact (BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
+      G bit b cur next hbit hb hdiv).
+  }
+  assert (htail : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur)))
+          (pAnd
+            (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+            (div2StepAt 1 0 (S (S bit))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hnextBeta hdivBody).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral next))
+        (subst (Term.upSubst (instTerm (Term.numeral cur))) body))).
+  {
+    unfold body.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hcurBeta htail).
+  }
+  assert (hnextEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral cur)) (pEx body))).
+  {
+    simpl.
+    exact (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm (Term.numeral cur))) body)
+      (Term.numeral next) hbody).
+  }
+  unfold betaDiv2BitAt.
+  fold body.
+  exact (BProv_exI Ax_s G (pEx body) (Term.numeral cur) hnextEx).
+Qed.
+
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
     (pAnd
