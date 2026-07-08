@@ -13904,6 +13904,521 @@ theorem BProv_Ax_s_eq_of_same_quotient_remainder_terms
     BProv_eqTrans (BProv_eqSym h₁) h₂
   exact BProv_Ax_s_add_cancel_left_terms hsame
 
+/-- If `upper = lower + diff`, PA proves `lower ≤ upper` in the term order. -/
+theorem BProv_Ax_s_leTermAt_of_eq_add_right_terms
+    {G : List Formula} {lower upper diff : Term}
+    (h : BProv Ax_s G (eq upper (Term.add lower diff))) :
+    BProv Ax_s G (leTermAt lower upper) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm diff)
+        (eq (Term.add (Term.rename Nat.succ lower) (Term.var 0))
+          (Term.rename Nat.succ upper))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using BProv_eqSym h
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq (Term.add (Term.rename Nat.succ lower) (Term.var 0))
+      (Term.rename Nat.succ upper))
+    (t := diff) hbody
+
+/-- If a value is explicitly `m * S d + r`, then PA proves `m ≤ value`.
+The witness is `m*d + r`, exposed rather than hidden in a definition. -/
+theorem BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
+    {G : List Formula} {modulus value diff rem : Term}
+    (h : BProv Ax_s G
+      (eq value (Term.add (Term.mul modulus (Term.succ diff)) rem))) :
+    BProv Ax_s G (leTermAt modulus value) := by
+  let witness : Term := Term.add (Term.mul modulus diff) rem
+  have hmulSucc : BProv Ax_s G
+      (eq (Term.mul modulus (Term.succ diff))
+        (Term.add (Term.mul modulus diff) modulus)) :=
+    BProv_weaken_nil (BProv_Ax_s_mulSucc_terms modulus diff)
+  have hmulCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul modulus (Term.succ diff)) rem)
+        (Term.add (Term.add (Term.mul modulus diff) modulus) rem)) :=
+    BProv_eq_congr_add_left rem hmulSucc
+  have hcomm : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus diff) modulus)
+        (Term.add modulus (Term.mul modulus diff))) :=
+    BProv_Ax_s_add_comm_terms (Term.mul modulus diff) modulus
+  have hcommCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.add (Term.mul modulus diff) modulus) rem)
+        (Term.add (Term.add modulus (Term.mul modulus diff)) rem)) :=
+    BProv_eq_congr_add_left rem hcomm
+  have hassoc : BProv Ax_s G
+      (eq
+        (Term.add (Term.add modulus (Term.mul modulus diff)) rem)
+        (Term.add modulus witness)) := by
+    simpa [witness] using
+      BProv_Ax_s_add_assoc_terms modulus (Term.mul modulus diff) rem
+  have hshape : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul modulus (Term.succ diff)) rem)
+        (Term.add modulus witness)) :=
+    BProv_eqTrans (BProv_eqTrans hmulCong hcommCong) hassoc
+  exact BProv_Ax_s_leTermAt_of_eq_add_right_terms
+    (lower := modulus) (upper := value) (diff := witness)
+    (BProv_eqTrans h hshape)
+
+/-- Difference algebra for two quotient/remainder decompositions of the same
+value.  If `highQuot = lowQuot + diff`, then the low-quotient remainder is
+`m*diff +` the high-quotient remainder. -/
+theorem BProv_Ax_s_remainder_difference_of_le_quotient_terms
+    {G : List Formula}
+    {value modulus lowQuot highQuot diff lowRem highRem : Term}
+    (hleQuot : BProv Ax_s G (eq (Term.add lowQuot diff) highQuot))
+    (hlow : BProv Ax_s G
+      (eq value (Term.add (Term.mul lowQuot modulus) lowRem)))
+    (hhigh : BProv Ax_s G
+      (eq value (Term.add (Term.mul highQuot modulus) highRem))) :
+    BProv Ax_s G
+      (eq lowRem (Term.add (Term.mul modulus diff) highRem)) := by
+  let base : Term := Term.mul lowQuot modulus
+  have hsame : BProv Ax_s G
+      (eq (Term.add base lowRem)
+        (Term.add (Term.mul highQuot modulus) highRem)) := by
+    simpa [base] using BProv_eqTrans (BProv_eqSym hlow) hhigh
+  have hquotCong : BProv Ax_s G
+      (eq (Term.mul highQuot modulus)
+        (Term.mul (Term.add lowQuot diff) modulus)) :=
+    BProv_eq_congr_mul_left modulus (BProv_eqSym hleQuot)
+  have hdist : BProv Ax_s G
+      (eq (Term.mul (Term.add lowQuot diff) modulus)
+        (Term.add base (Term.mul diff modulus))) := by
+    simpa [base] using BProv_Ax_s_add_mul_terms lowQuot diff modulus
+  have hhighProd : BProv Ax_s G
+      (eq (Term.mul highQuot modulus)
+        (Term.add base (Term.mul diff modulus))) :=
+    BProv_eqTrans hquotCong hdist
+  have hhighExpand : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul highQuot modulus) highRem)
+        (Term.add (Term.add base (Term.mul diff modulus)) highRem)) :=
+    BProv_eq_congr_add_left highRem hhighProd
+  have hassoc : BProv Ax_s G
+      (eq
+        (Term.add (Term.add base (Term.mul diff modulus)) highRem)
+        (Term.add base (Term.add (Term.mul diff modulus) highRem))) :=
+    BProv_Ax_s_add_assoc_terms base (Term.mul diff modulus) highRem
+  have hsameLeft : BProv Ax_s G
+      (eq (Term.add base lowRem)
+        (Term.add base (Term.add (Term.mul diff modulus) highRem))) :=
+    BProv_eqTrans (BProv_eqTrans hsame hhighExpand) hassoc
+  have hdiffMul : BProv Ax_s G
+      (eq lowRem (Term.add (Term.mul diff modulus) highRem)) :=
+    BProv_Ax_s_add_cancel_left_terms hsameLeft
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul diff modulus) (Term.mul modulus diff)) :=
+    BProv_Ax_s_mul_comm_terms diff modulus
+  have hcommCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul diff modulus) highRem)
+        (Term.add (Term.mul modulus diff) highRem)) :=
+    BProv_eq_congr_add_left highRem hcomm
+  exact BProv_eqTrans hdiffMul hcommCong
+
+/-- A bounded remainder cannot differ from another remainder by a positive
+multiple of the modulus.  From `lowRem = m*d + highRem` and `lowRem < m`, PA
+proves `highRem = lowRem`, by explicitly splitting `d` into zero/successor. -/
+theorem BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
+    {G : List Formula} {modulus lowRem highRem diff : Term}
+    (hlowLt : BProv Ax_s G (ltTermAt lowRem modulus))
+    (hdiff : BProv Ax_s G
+      (eq lowRem (Term.add (Term.mul modulus diff) highRem))) :
+    BProv Ax_s G (eq highRem lowRem) := by
+  have hcases : BProv Ax_s G
+      (or (eq diff Term.zero)
+        (ex (eq (Term.rename Nat.succ diff) (Term.succ (Term.var 0))))) :=
+    BProv_Ax_s_zeroOrSuccPred_term diff
+  have hzeroBranch : BProv Ax_s (eq diff Term.zero :: G)
+      (eq highRem lowRem) := by
+    let C : List Formula := eq diff Term.zero :: G
+    have hzero : BProv Ax_s C (eq diff Term.zero) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hdiffC : BProv Ax_s C
+        (eq lowRem (Term.add (Term.mul modulus diff) highRem)) :=
+      BProv_context_cons hdiff
+    have hmulArg : BProv Ax_s C
+        (eq (Term.mul modulus diff) (Term.mul modulus Term.zero)) :=
+      BProv_eq_congr_mul_right modulus hzero
+    have hmulZero : BProv Ax_s C
+        (eq (Term.mul modulus Term.zero) Term.zero) :=
+      BProv_weaken_nil (BProv_Ax_s_mulZero_term modulus)
+    have hmul : BProv Ax_s C (eq (Term.mul modulus diff) Term.zero) :=
+      BProv_eqTrans hmulArg hmulZero
+    have haddCong : BProv Ax_s C
+        (eq
+          (Term.add (Term.mul modulus diff) highRem)
+          (Term.add Term.zero highRem)) :=
+      BProv_eq_congr_add_left highRem hmul
+    have hzeroAdd : BProv Ax_s C
+        (eq (Term.add Term.zero highRem) highRem) :=
+      BProv_Ax_s_zero_add_term highRem
+    have hrhs : BProv Ax_s C
+        (eq (Term.add (Term.mul modulus diff) highRem) highRem) :=
+      BProv_eqTrans haddCong hzeroAdd
+    exact BProv_eqSym (BProv_eqTrans hdiffC hrhs)
+  have hsuccBranch : BProv Ax_s
+      (ex (eq (Term.rename Nat.succ diff) (Term.succ (Term.var 0))) :: G)
+      (eq highRem lowRem) := by
+    let succBody : Formula :=
+      eq (Term.rename Nat.succ diff) (Term.succ (Term.var 0))
+    let C : List Formula := ex succBody :: G
+    have hsuccEx : BProv Ax_s C (ex succBody) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, succBody])
+    have hopened : BProv Ax_s (succBody :: C.map (rename Nat.succ))
+        (rename Nat.succ (eq highRem lowRem)) := by
+      let D : List Formula := succBody :: C.map (rename Nat.succ)
+      let modulus' : Term := Term.rename Nat.succ modulus
+      let lowRem' : Term := Term.rename Nat.succ lowRem
+      let highRem' : Term := Term.rename Nat.succ highRem
+      let diff' : Term := Term.rename Nat.succ diff
+      have hsucc : BProv Ax_s D (eq diff' (Term.succ (Term.var 0))) := by
+        have hraw : BProv Ax_s D succBody :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C, succBody])
+        simpa [succBody, diff'] using hraw
+      have hdiffRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq lowRem (Term.add (Term.mul modulus diff) highRem))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hdiff Nat.succ
+      have hdiffD : BProv Ax_s D
+          (eq lowRem'
+            (Term.add (Term.mul modulus' diff') highRem')) := by
+        simpa [D, C, modulus', lowRem', highRem', diff', rename,
+          Term.rename, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hdiffRen)
+      have hmulArg : BProv Ax_s D
+          (eq (Term.mul modulus' diff')
+            (Term.mul modulus' (Term.succ (Term.var 0)))) :=
+        BProv_eq_congr_mul_right modulus' hsucc
+      have hrhs : BProv Ax_s D
+          (eq
+            (Term.add (Term.mul modulus' diff') highRem')
+            (Term.add (Term.mul modulus' (Term.succ (Term.var 0)))
+              highRem')) :=
+        BProv_eq_congr_add_left highRem' hmulArg
+      have hdiffSucc : BProv Ax_s D
+          (eq lowRem'
+            (Term.add (Term.mul modulus' (Term.succ (Term.var 0)))
+              highRem')) :=
+        BProv_eqTrans hdiffD hrhs
+      have hle : BProv Ax_s D (leTermAt modulus' lowRem') :=
+        BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
+          (modulus := modulus') (value := lowRem')
+          (diff := Term.var 0) (rem := highRem') hdiffSucc
+      have hltRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (ltTermAt lowRem modulus)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hlowLt Nat.succ
+      have hltD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
+        simpa [D, C, modulus', lowRem', ltTermAt, rename, Term.rename,
+          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hltRen)
+      exact BProv_botE
+        (a := rename Nat.succ (eq highRem lowRem))
+        (BProv_Ax_s_ltTermAt_leTermAt_bot hltD hle)
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hsuccEx (by
+        simpa [C, succBody, rename, Term.rename, List.map_map,
+          Function.comp_def] using hopened)
+  exact BProv_orE hcases hzeroBranch hsuccBranch
+
+/-- Functionality of bounded remainder decompositions, stated purely at the
+term level.  The proof compares quotient witnesses, reduces either branch to
+an explicit difference equation, and then uses the boundedness of the smaller
+quotient's remainder. -/
+theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
+    {G : List Formula}
+    {value modulus lowQuot highQuot lowRem highRem : Term}
+    (hlowLt : BProv Ax_s G (ltTermAt lowRem modulus))
+    (hhighLt : BProv Ax_s G (ltTermAt highRem modulus))
+    (hlow : BProv Ax_s G
+      (eq value (Term.add (Term.mul lowQuot modulus) lowRem)))
+    (hhigh : BProv Ax_s G
+      (eq value (Term.add (Term.mul highQuot modulus) highRem))) :
+    BProv Ax_s G (eq highRem lowRem) := by
+  have hcmp : BProv Ax_s G
+      (or (leTermAt lowQuot highQuot)
+        (ltTermAt highQuot lowQuot)) :=
+    BProv_Ax_s_leTermAt_or_gtTermAt lowQuot highQuot
+  have hleBranch : BProv Ax_s (leTermAt lowQuot highQuot :: G)
+      (eq highRem lowRem) := by
+    let L : List Formula := leTermAt lowQuot highQuot :: G
+    let leBody : Formula :=
+      eq (Term.add (Term.rename Nat.succ lowQuot) (Term.var 0))
+        (Term.rename Nat.succ highQuot)
+    have hleAss : BProv Ax_s L (leTermAt lowQuot highQuot) :=
+      BProv_ass (B := Ax_s) (G := L) (by simp [L])
+    have hopened : BProv Ax_s (leBody :: L.map (rename Nat.succ))
+        (rename Nat.succ (eq highRem lowRem)) := by
+      let D : List Formula := leBody :: L.map (rename Nat.succ)
+      let value' : Term := Term.rename Nat.succ value
+      let modulus' : Term := Term.rename Nat.succ modulus
+      let lowQuot' : Term := Term.rename Nat.succ lowQuot
+      let highQuot' : Term := Term.rename Nat.succ highQuot
+      let lowRem' : Term := Term.rename Nat.succ lowRem
+      let highRem' : Term := Term.rename Nat.succ highRem
+      have hleEq : BProv Ax_s D
+          (eq (Term.add lowQuot' (Term.var 0)) highQuot') := by
+        have hraw : BProv Ax_s D leBody :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, L, leBody])
+        simpa [leBody, lowQuot', highQuot'] using hraw
+      have hlowLtRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (ltTermAt lowRem modulus)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hlowLt Nat.succ
+      have hlowLtD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
+        simpa [D, L, lowRem', modulus', ltTermAt, rename, Term.rename,
+          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hlowLtRen)
+      have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hlow Nat.succ
+      have hlowD : BProv Ax_s D
+          (eq value'
+            (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
+        simpa [D, L, value', modulus', lowQuot', lowRem', rename,
+          Term.rename, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hlowRen)
+      have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hhigh Nat.succ
+      have hhighD : BProv Ax_s D
+          (eq value'
+            (Term.add (Term.mul highQuot' modulus') highRem')) := by
+        simpa [D, L, value', modulus', highQuot', highRem', rename,
+          Term.rename, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hhighRen)
+      have hdiff : BProv Ax_s D
+          (eq lowRem'
+            (Term.add (Term.mul modulus' (Term.var 0)) highRem')) :=
+        BProv_Ax_s_remainder_difference_of_le_quotient_terms
+          (value := value') (modulus := modulus')
+          (lowQuot := lowQuot') (highQuot := highQuot')
+          (diff := Term.var 0) (lowRem := lowRem')
+          (highRem := highRem') hleEq hlowD hhighD
+      exact
+        BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
+          (modulus := modulus') (lowRem := lowRem')
+          (highRem := highRem') (diff := Term.var 0)
+          hlowLtD hdiff
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hleAss (by
+        simpa [L, leTermAt, leBody, rename, Term.rename, SetTheory.up,
+          List.map_map, Function.comp_def] using hopened)
+  have hgtBranch : BProv Ax_s (ltTermAt highQuot lowQuot :: G)
+      (eq highRem lowRem) := by
+    let L : List Formula := ltTermAt highQuot lowQuot :: G
+    let ltBody : Formula :=
+      eq (Term.add (Term.rename Nat.succ highQuot)
+          (Term.succ (Term.var 0)))
+        (Term.rename Nat.succ lowQuot)
+    have hltAss : BProv Ax_s L (ltTermAt highQuot lowQuot) :=
+      BProv_ass (B := Ax_s) (G := L) (by simp [L])
+    have hopened : BProv Ax_s (ltBody :: L.map (rename Nat.succ))
+        (rename Nat.succ (eq highRem lowRem)) := by
+      let D : List Formula := ltBody :: L.map (rename Nat.succ)
+      let value' : Term := Term.rename Nat.succ value
+      let modulus' : Term := Term.rename Nat.succ modulus
+      let lowQuot' : Term := Term.rename Nat.succ lowQuot
+      let highQuot' : Term := Term.rename Nat.succ highQuot
+      let lowRem' : Term := Term.rename Nat.succ lowRem
+      let highRem' : Term := Term.rename Nat.succ highRem
+      have hltEq : BProv Ax_s D
+          (eq (Term.add highQuot' (Term.succ (Term.var 0))) lowQuot') := by
+        have hraw : BProv Ax_s D ltBody :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, L, ltBody])
+        simpa [ltBody, lowQuot', highQuot'] using hraw
+      have hhighLtRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (ltTermAt highRem modulus)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hhighLt Nat.succ
+      have hhighLtD : BProv Ax_s D (ltTermAt highRem' modulus') := by
+        simpa [D, L, highRem', modulus', ltTermAt, rename, Term.rename,
+          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hhighLtRen)
+      have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hlow Nat.succ
+      have hlowD : BProv Ax_s D
+          (eq value'
+            (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
+        simpa [D, L, value', modulus', lowQuot', lowRem', rename,
+          Term.rename, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hlowRen)
+      have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hhigh Nat.succ
+      have hhighD : BProv Ax_s D
+          (eq value'
+            (Term.add (Term.mul highQuot' modulus') highRem')) := by
+        simpa [D, L, value', modulus', highQuot', highRem', rename,
+          Term.rename, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hhighRen)
+      have hdiff : BProv Ax_s D
+          (eq highRem'
+            (Term.add
+              (Term.mul modulus' (Term.succ (Term.var 0))) lowRem')) :=
+        BProv_Ax_s_remainder_difference_of_le_quotient_terms
+          (value := value') (modulus := modulus')
+          (lowQuot := highQuot') (highQuot := lowQuot')
+          (diff := Term.succ (Term.var 0)) (lowRem := highRem')
+          (highRem := lowRem') hltEq hhighD hlowD
+      have hlowHigh : BProv Ax_s D (eq lowRem' highRem') :=
+        BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
+          (modulus := modulus') (lowRem := highRem')
+          (highRem := lowRem') (diff := Term.succ (Term.var 0))
+          hhighLtD hdiff
+      exact BProv_eqSym hlowHigh
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hltAss (by
+        simpa [L, ltTermAt, ltBody, rename, Term.rename, SetTheory.up,
+          List.map_map, Function.comp_def] using hopened)
+  exact BProv_orE hcmp hleBranch hgtBranch
+
+/-- Remainder exactness for closed dividends and moduli.  The Euclidean
+division witness lives in the metatheory, while the PA proof uses the
+explicit bounded-remainder functionality lemmas above. -/
+theorem BProv_Ax_s_eqConstAt_of_remAt_eqConst {G : List Formula}
+    {rem value modulus r v m q : Nat}
+    (hremAt : BProv Ax_s G (remAt rem value modulus))
+    (hvalue : BProv Ax_s G (eqConstAt value v))
+    (hmod : BProv Ax_s G (eqConstAt modulus m))
+    (hlt : r < m)
+    (hval : q * m + r = v) :
+    BProv Ax_s G (eqConstAt rem r) := by
+  let body : Formula :=
+    and
+      (ltAt (rem+1) (modulus+1))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.var (rem+1))))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt rem r)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, body])
+    have hremLtAt : BProv Ax_s C (ltAt (rem+1) (modulus+1)) :=
+      BProv_andE1 hbodyAss
+    have hremLt : BProv Ax_s C
+        (ltTermAt (Term.var (rem+1)) (Term.var (modulus+1))) := by
+      simpa [ltAt, ltTermAt, Term.rename] using hremLtAt
+    have hremEq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))) :=
+      BProv_andE2 hbodyAss
+    have hvalueRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (value+1) v) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hvalue Nat.succ
+    have hvalueC : BProv Ax_s C
+        (eq (Term.var (value+1)) (Term.numeral v)) := by
+      simpa [C, eqConstAt] using
+        BProv_context_cons (B := Ax_s) hvalueRen
+    have hmodRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (modulus+1) m) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hmod Nat.succ
+    have hmodC : BProv Ax_s C
+        (eq (Term.var (modulus+1)) (Term.numeral m)) := by
+      simpa [C, eqConstAt] using
+        BProv_context_cons (B := Ax_s) hmodRen
+    have hknownLtNum : BProv Ax_s C
+        (ltTermAt (Term.numeral r) (Term.numeral m)) := by
+      simpa [ltTermAt, Term.rename] using
+        (BProv_Ax_s_ltConst_closed (G := C) (m := r) (n := m) hlt)
+    have hknownLt : BProv Ax_s C
+        (ltTermAt (Term.numeral r) (Term.var (modulus+1))) :=
+      BProv_ltTermAt_of_eq_right (BProv_eqSym hmodC) hknownLtNum
+    have hmulLeft : BProv Ax_s C
+        (eq (Term.mul (Term.numeral q) (Term.var (modulus+1)))
+          (Term.mul (Term.numeral q) (Term.numeral m))) :=
+      BProv_eq_congr_mul_right (Term.numeral q) hmodC
+    have hmulRaw : BProv Ax_s C
+        (eq (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.numeral (q * m))) :=
+      BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+    have hmul : BProv Ax_s C
+        (eq (Term.mul (Term.numeral q) (Term.var (modulus+1)))
+          (Term.numeral (q * m))) :=
+      BProv_eqTrans hmulLeft hmulRaw
+    have haddLeft : BProv Ax_s C
+        (eq
+          (Term.add
+            (Term.mul (Term.numeral q) (Term.var (modulus+1)))
+            (Term.numeral r))
+          (Term.add (Term.numeral (q * m)) (Term.numeral r))) :=
+      BProv_eq_congr_add_left (Term.numeral r) hmul
+    have haddRaw : BProv Ax_s C
+        (eq
+          (Term.add (Term.numeral (q * m)) (Term.numeral r))
+          (Term.numeral (q * m + r))) :=
+      BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+    have hadd : BProv Ax_s C
+        (eq
+          (Term.add (Term.numeral (q * m)) (Term.numeral r))
+          (Term.numeral v)) := by
+      simpa [hval] using haddRaw
+    have hcomputed : BProv Ax_s C
+        (eq
+          (Term.add
+            (Term.mul (Term.numeral q) (Term.var (modulus+1)))
+            (Term.numeral r))
+          (Term.numeral v)) :=
+      BProv_eqTrans haddLeft hadd
+    have hknownEq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add
+            (Term.mul (Term.numeral q) (Term.var (modulus+1)))
+            (Term.numeral r))) :=
+      BProv_eqTrans hvalueC (BProv_eqSym hcomputed)
+    have hexact : BProv Ax_s C
+        (eq (Term.var (rem+1)) (Term.numeral r)) :=
+      BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
+        (value := Term.var (value+1))
+        (modulus := Term.var (modulus+1))
+        (lowQuot := Term.numeral q) (highQuot := Term.var 0)
+        (lowRem := Term.numeral r) (highRem := Term.var (rem+1))
+        hknownLt hremLt hknownEq hremEq
+    simpa [C, eqConstAt, rename, Term.rename] using hexact
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hremAt (by
+      simpa [remAt, body] using hbody)
+
 /-- If `m` is a successor, then `m * S d` is itself a successor.  The theorem
 keeps the predecessor explicit because the quotient-comparison branch only
 needs the successor shape, not a hidden positivity definition. -/
@@ -15009,6 +15524,82 @@ theorem BProv_Ax_s_betaAt_opened_body_rem
   have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
     BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
   exact BProv_andE2 hbody
+
+/-- Backward beta-entry exactness for closed code, step, and index slots.  A
+semantic `BetaEntry` supplies the intended quotient/remainder data; the PA
+proof opens the beta witness and delegates remainder functionality to
+`BProv_Ax_s_eqConstAt_of_remAt_eqConst`. -/
+theorem BProv_Ax_s_eqConstAt_of_betaAt_eqConst_entry {G : List Formula}
+    {out code step idx o c s i : Nat}
+    (hbeta : BProv Ax_s G (betaAt out code step idx))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hentry : BetaEntry c s i o) :
+    BProv Ax_s G (eqConstAt out o) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  let m := BetaModulus s i
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt out o)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hmodEq : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaAt_opened_body_modEq
+          (G := G) (out := out) (code := code) (step := step) (idx := idx))
+    have hrem : BProv Ax_s C (remAt (out+1) (code+1) 0) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaAt_opened_body_rem
+          (G := G) (out := out) (code := code) (step := step) (idx := idx))
+    have hcodeRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (code+1) c) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hcode Nat.succ
+    have hcodeC : BProv Ax_s C (eqConstAt (code+1) c) :=
+      BProv_context_cons hcodeRen
+    have hstepRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (step+1) s) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hstep Nat.succ
+    have hstepC : BProv Ax_s C (eqConstAt (step+1) s) :=
+      BProv_context_cons hstepRen
+    have hidxRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (idx+1) i) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hidx Nat.succ
+    have hidxC : BProv Ax_s C (eqConstAt (idx+1) i) :=
+      BProv_context_cons hidxRen
+    have hmodTerm : BProv Ax_s C
+        (eq (Term.rename Nat.succ (betaModTerm step idx)) (Term.numeral m)) := by
+      have hraw : BProv Ax_s C
+          (eq (betaModTerm (step+1) (idx+1)) (Term.numeral m)) := by
+        simpa [m] using
+          BProv_Ax_s_betaModTerm_of_eqConst
+            (G := C) (step := step+1) (idx := idx+1)
+            (s := s) (i := i) hstepC hidxC
+      simpa [betaModTerm, Term.rename, m] using hraw
+    have hmodC : BProv Ax_s C (eqConstAt 0 m) := by
+      simpa [eqConstAt] using BProv_eqTrans hmodEq hmodTerm
+    have hexact : BProv Ax_s C (eqConstAt (out+1) o) :=
+      BProv_Ax_s_eqConstAt_of_remAt_eqConst
+        (rem := out+1) (value := code+1) (modulus := 0)
+        (r := o) (v := c) (m := m) (q := q)
+        hrem hcodeC hmodC (by simpa [m] using hlt)
+        (by simpa [m] using hval.symm)
+    simpa [C, eqConstAt, rename, Term.rename] using hexact
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaAt, body] using hbody)
 
 /-- Projection from the opened body of a term-output raw `betaTermAt` witness
 to the modulus equation. -/

@@ -317,6 +317,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remTermEqAt_of_remTermAt
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eq_of_same_quotient_remainder_terms
+#check @PA.Formula.BProv_Ax_s_leTermAt_of_eq_add_right_terms
+#check @PA.Formula.BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
+#check @PA.Formula.BProv_Ax_s_remainder_difference_of_le_quotient_terms
+#check @PA.Formula.BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
+#check @PA.Formula.BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
+#check @PA.Formula.BProv_Ax_s_eqConstAt_of_remAt_eqConst
 #check @PA.Formula.BProv_Ax_s_mul_succ_right_eq_succ_terms
 #check @PA.Formula.BProv_Ax_s_add_successor_summand_ne_self_terms
 #check @PA.Formula.BProv_Ax_s_remainder_eq_mul_of_le_quotient_terms
@@ -362,6 +368,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_rem
+#check @PA.Formula.BProv_Ax_s_eqConstAt_of_betaAt_eqConst_entry
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_rem
 #check @PA.Formula.BProv_Ax_s_betaTermAt_zero_opened_body_dvd
