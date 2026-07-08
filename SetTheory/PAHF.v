@@ -15452,6 +15452,120 @@ Proof.
   exact htarget.
 Qed.
 
+Lemma BProv_formulaAt_allE_raw : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst k) (fImp domainForm (formulaAt (upVarMap rho) a))).
+Proof.
+  intros rho G a k [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ translateContextAt rho G)
+    (rename (inst k) (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  exact (P_allE (L ++ translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a)) k hp).
+Qed.
+
+Lemma BProv_formulaAt_allE_var : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)).
+Proof.
+  intros rho G a k hall hdom.
+  pose proof (BProv_formulaAt_allE_raw rho G a (rho k) hall) as himp.
+  change (BProv translatedPAAx (translateContextAt rho G)
+    (fImp (rename (inst (rho k)) domainForm)
+      (rename (inst (rho k)) (formulaAt (upVarMap rho) a)))) in himp.
+  pose proof (BProv_mp translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm)
+    (rename (inst (rho k)) (formulaAt (upVarMap rho) a))
+    himp hdom) as hbody.
+  rewrite <- formulaAt_subst_instTerm_var in hbody.
+  exact hbody.
+Qed.
+
+Lemma BProv_formulaAt_allE_slot_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx Gamma (rename (inst k) domainForm) ->
+  BProv translatedPAAx Gamma
+    (rename (inst k) (formulaAt (upVarMap rho) a)).
+Proof.
+  intros Gamma rho a k hall hdom.
+  change (BProv translatedPAAx Gamma
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))) in hall.
+  pose proof (BProv_allE translatedPAAx Gamma
+    (fImp domainForm (formulaAt (upVarMap rho) a)) k hall) as himp.
+  change (BProv translatedPAAx Gamma
+    (fImp (rename (inst k) domainForm)
+      (rename (inst k) (formulaAt (upVarMap rho) a)))) in himp.
+  exact (BProv_mp translatedPAAx Gamma
+    (rename (inst k) domainForm)
+    (rename (inst k) (formulaAt (upVarMap rho) a)) himp hdom).
+Qed.
+
+Lemma BProv_formulaAt_slot_eqElim_context :
+  forall Gamma rho a i j,
+  BProv translatedPAAx Gamma (fEq i j) ->
+  BProv translatedPAAx Gamma
+    (rename (inst i) (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx Gamma
+    (rename (inst j) (formulaAt (upVarMap rho) a)).
+Proof.
+  intros Gamma rho a i j heq hbody.
+  exact (BProv_eqElim translatedPAAx Gamma i j
+    (formulaAt (upVarMap rho) a) heq hbody).
+Qed.
+
+Lemma BProv_formulaAt_allE_equal_slot_context :
+  forall Gamma rho a i j,
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx Gamma (rename (inst i) domainForm) ->
+  BProv translatedPAAx Gamma (fEq i j) ->
+  BProv translatedPAAx Gamma
+    (rename (inst j) (formulaAt (upVarMap rho) a)).
+Proof.
+  intros Gamma rho a i j hall hdom heq.
+  apply (BProv_formulaAt_slot_eqElim_context Gamma rho a i j heq).
+  exact (BProv_formulaAt_allE_slot_context Gamma rho a i hall hdom).
+Qed.
+
+Lemma BProv_formulaAt_allE_var_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx Gamma (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)).
+Proof.
+  intros Gamma rho a k hall hdom.
+  pose proof (BProv_formulaAt_allE_slot_context Gamma rho a (rho k)
+    hall hdom) as hbody.
+  rewrite <- formulaAt_subst_instTerm_var in hbody.
+  exact hbody.
+Qed.
+
+Lemma BProv_formulaAt_allE_var_domainContext :
+  forall rho n G a k,
+  k < n ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)).
+Proof.
+  intros rho n G a k hk hall.
+  apply BProv_formulaAt_allE_var_context.
+  - exact hall.
+  - apply BProv_domainContextAt_var.
+    exact hk.
+Qed.
+
 Lemma BProv_translate_impI : forall G a b,
   BProv translatedPAAx
     (translateFormula a :: translateContext G) (translateFormula b) ->
