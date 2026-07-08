@@ -106,12 +106,20 @@ Two items, in decreasing order of size:
    log-modulus criteria
    (`overflowCandidate12_ne_principalPow_of_im_gt_of_re_gt`) reduce every
    instance to a real-part bound, provided a lower bound on
-   `overflowBase11.im` (true magnitude `≈ 10^41232`) is certified; work on a
-   coarse tower-box proof of `10^100 < overflowBase11.im` — which would
-   convert the hypothesis into a per-class magnitude check with
-   ~41000 orders of magnitude of slack — was in progress when this report
-   was written.  No mod-`2π` reduction of the astronomical imaginary part is
-   needed on this route.
+   `overflowBase11.im` is certified.  An independent 60-digit `mpmath`
+   cross-check (this wave) pins the structure: `Im(overflowBase11) > 0` with
+   magnitude `≈ 10^(4.12×10^34)` (the corpus's elided `10^41232…` notation
+   denotes an exponent that itself has 35 digits), coming from
+   `exp(−(π/2)·Im w10)·sin((π/2)·Re w10)` with `Im w10 ≈ −6.04×10^34` and
+   the sine factor `≈ 0.5004` (`Re w10 mod 4 ≈ 1.666`, comfortably inside
+   the positive-sine window `(0, 2)`).  No mod-`2π` reduction of the final
+   astronomical imaginary part is needed — but certifying the *sine factor's
+   sign* requires `Re w10 mod 4`, i.e. absolute precision `< 1` on a
+   quantity of size `≈ 7×10^34`: a ~36-significant-digit certified chain
+   through `w9`, including `π` beyond mathlib's 20-digit certificates
+   (derivable by the same alternating-series machinery via a Machin
+   formula).  This is the concrete, well-posed remaining formalization
+   problem; work on it was in progress when this report was written.
 
 ## Companion Coq development
 
