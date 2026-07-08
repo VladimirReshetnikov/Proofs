@@ -11361,6 +11361,37 @@ theorem BProv_Ax_s_ltAt_eq_bot {G : List Formula} {a b : Nat}
     BProv Ax_s G bot :=
   BProv_Ax_s_ltAt_leAt_bot hlt (BProv_Ax_s_leAt_of_eq heq)
 
+/-- PA proves the strict closed-one bound case: from `x < y` and `y = 1`,
+derive `x = 0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one {G : List Formula}
+    {a b : Nat}
+    (hlt : BProv Ax_s G (ltAt a b))
+    (hb : BProv Ax_s G (eqConstAt b 1)) :
+    BProv Ax_s G (eqConstAt a 0) := by
+  have hleConst : BProv Ax_s G (leConstAt a 1) :=
+    BProv_Ax_s_leConstAt_of_leAt_eqConst
+      (BProv_Ax_s_leAt_of_ltAt hlt) hb
+  have hcases : BProv Ax_s G (or (leConstAt a 0) (eqConstAt a 1)) :=
+    BProv_Ax_s_leConstAt_succ_cases (n := 0) hleConst
+  have hleft : BProv Ax_s (leConstAt a 0 :: G) (eqConstAt a 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero
+      (BProv_ass (B := Ax_s) (G := leConstAt a 0 :: G) (by simp))
+  have hright : BProv Ax_s (eqConstAt a 1 :: G) (eqConstAt a 0) := by
+    let C : List Formula := eqConstAt a 1 :: G
+    have haOne : BProv Ax_s C (eqConstAt a 1) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hltC : BProv Ax_s C (ltAt a b) :=
+      BProv_context_cons hlt
+    have hbC : BProv Ax_s C (eqConstAt b 1) :=
+      BProv_context_cons hb
+    have heq : BProv Ax_s C (eq (Term.var b) (Term.var a)) := by
+      simpa [eqConstAt, Term.numeral] using
+        BProv_eqTrans hbC (BProv_eqSym haOne)
+    exact BProv_botE
+      (a := eqConstAt a 0)
+      (BProv_Ax_s_ltAt_eq_bot hltC heq)
+  exact BProv_orE hcases hleft hright
+
 /-- From a PA proof that a slot contains a fixed numeral, derive the
 less-than-a-closed-numeral relation by exhibiting the positive difference
 predecessor. -/
@@ -12125,6 +12156,15 @@ theorem BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) heqEx (by
       simpa [remEqAt, eqBody] using hbody)
+
+/-- A remainder modulo `1` is `0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
+    {G : List Formula} {rem value modulus : Nat}
+    (hrem : BProv Ax_s G (remAt rem value modulus))
+    (hmodulus : BProv Ax_s G (eqConstAt modulus 1)) :
+    BProv Ax_s G (eqConstAt rem 0) :=
+  BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one
+    (BProv_Ax_s_ltAt_of_remAt hrem) hmodulus
 
 /-- If the `step` and `idx` slots are fixed numerals, PA proves that the
 Gödel-beta modulus term computes the corresponding closed numeral. -/
