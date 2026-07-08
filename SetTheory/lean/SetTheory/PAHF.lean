@@ -12317,6 +12317,55 @@ theorem BProv_Ax_s_dvdAt_of_eq_mul_term {G : List Formula}
       (Term.var (value+1)))
     (t := quot) hbody
 
+/-- Transport a divisibility witness across equality of the modulus slot. -/
+theorem BProv_Ax_s_dvdAt_of_eq_left {G : List Formula}
+    {a b c : Nat}
+    (heq : BProv Ax_s G (eq (Term.var a) (Term.var b)))
+    (hdvd : BProv Ax_s G (dvdAt a c)) :
+    BProv Ax_s G (dvdAt b c) := by
+  let dvdBody : Formula :=
+    eq (Term.mul (Term.var (a+1)) (Term.var 0)) (Term.var (c+1))
+  have hbody : BProv Ax_s (dvdBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (dvdAt b c)) := by
+    let C : List Formula := dvdBody :: G.map (rename Nat.succ)
+    have hdvdEq : BProv Ax_s C
+        (eq (Term.mul (Term.var (a+1)) (Term.var 0))
+          (Term.var (c+1))) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, dvdBody])
+    have heqRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq (Term.var a) (Term.var b))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        heq Nat.succ
+    have heqC : BProv Ax_s C (eq (Term.var (a+1)) (Term.var (b+1))) := by
+      simpa [C, rename, Term.rename] using
+        (BProv_context_cons (B := Ax_s) (a := dvdBody) heqRen)
+    have hmul : BProv Ax_s C
+        (eq (Term.mul (Term.var (a+1)) (Term.var 0))
+          (Term.mul (Term.var (b+1)) (Term.var 0))) :=
+      BProv_eq_congr_mul_left (Term.var 0) heqC
+    have htarget : BProv Ax_s C
+        (eq (Term.mul (Term.var (b+1)) (Term.var 0))
+          (Term.var (c+1))) :=
+      BProv_eqTrans (BProv_eqSym hmul) hdvdEq
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (eq (Term.mul (Term.var (b+1+1)) (Term.var 0))
+            (Term.var (c+1+1)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+    have hex : BProv Ax_s C
+        (ex
+          (eq (Term.mul (Term.var (b+1+1)) (Term.var 0))
+            (Term.var (c+1+1)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq (Term.mul (Term.var (b+1+1)) (Term.var 0))
+          (Term.var (c+1+1)))
+        (t := Term.var 0) hinst
+    simpa [C, dvdAt, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hdvd (by
+      simpa [dvdAt, dvdBody] using hbody)
+
 /-- A value strictly below its modulus cannot be a nonzero multiple of that
 modulus.  This is the quotient-free divisibility/boundedness kernel used later
 when beta functionality has reduced a candidate remainder to a divisor of the
@@ -14315,6 +14364,106 @@ theorem BProv_Ax_s_betaAt_opened_body_code_dvd_of_output_zero
   exact BProv_Ax_s_dvdAt_of_remAt_eqConst_zero
     (rem := out+1) (value := code+1) (modulus := 0)
     hrem (by simpa [body] using houtZero)
+
+/-- Same-index beta functionality, specialized to a zero-valued first witness:
+if one beta entry at a fixed `code, step, idx` is proved to output `0`, then
+any other beta entry at the same triple also outputs `0`. -/
+theorem BProv_Ax_s_betaAt_output_zero_of_betaAt_output_zero_same_index
+    {G : List Formula} {zeroOut out code step idx : Nat}
+    (hzeroBeta : BProv Ax_s G (betaAt zeroOut code step idx))
+    (hzeroOut : BProv Ax_s G (eqConstAt zeroOut 0))
+    (hbeta : BProv Ax_s G (betaAt out code step idx)) :
+    BProv Ax_s G (eqConstAt out 0) := by
+  let targetBody : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have htargetBody : BProv Ax_s (targetBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt out 0)) := by
+    let T : List Formula := targetBody :: G.map (rename Nat.succ)
+    have htargetMod : BProv Ax_s T
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) :=
+      BProv_Ax_s_betaAt_opened_body_modEq
+        (G := G) (out := out) (code := code) (step := step) (idx := idx)
+    have hzeroBetaT : BProv Ax_s T
+        (betaAt (zeroOut+1) (code+1) (step+1) (idx+1)) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (betaAt zeroOut code step idx)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hzeroBeta Nat.succ
+      simpa [T, betaAt, remAt, ltAt, betaModTerm, rename, Term.rename,
+        SetTheory.up] using
+        (BProv_context_cons (B := Ax_s) (a := targetBody) hren)
+    have hzeroOutT : BProv Ax_s T (eqConstAt (zeroOut+1) 0) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (eqConstAt zeroOut 0)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hzeroOut Nat.succ
+      simpa [T, eqConstAt, rename, Term.rename, Term.numeral] using
+        (BProv_context_cons (B := Ax_s) (a := targetBody) hren)
+    have hdvdTarget : BProv Ax_s T (dvdAt 0 (code+1)) := by
+      let zeroBody : Formula :=
+        and
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (betaModTerm (step+1) (idx+1))))
+          (remAt (zeroOut+1+1) (code+1+1) 0)
+      have hzeroOpened : BProv Ax_s (zeroBody :: T.map (rename Nat.succ))
+          (rename Nat.succ (dvdAt 0 (code+1))) := by
+        let Z : List Formula := zeroBody :: T.map (rename Nat.succ)
+        have hzeroBodyAss : BProv Ax_s Z zeroBody :=
+          BProv_ass (B := Ax_s) (G := Z) (by simp [Z])
+        have hzeroMod : BProv Ax_s Z
+            (eq (Term.var 0)
+              (Term.rename Nat.succ (betaModTerm (step+1) (idx+1)))) :=
+          BProv_andE1 hzeroBodyAss
+        have htargetModRen : BProv Ax_s (T.map (rename Nat.succ))
+            (rename Nat.succ
+              (eq (Term.var 0)
+                (Term.rename Nat.succ (betaModTerm step idx)))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            htargetMod Nat.succ
+        have htargetModZ : BProv Ax_s Z
+            (eq (Term.var 1)
+              (Term.rename Nat.succ (betaModTerm (step+1) (idx+1)))) := by
+          simpa [Z, zeroBody, betaModTerm, rename, Term.rename,
+            Term.rename_comp] using
+            (BProv_context_cons (B := Ax_s) (a := zeroBody) htargetModRen)
+        have hmodEq : BProv Ax_s Z (eq (Term.var 1) (Term.var 0)) :=
+          BProv_eqTrans htargetModZ (BProv_eqSym hzeroMod)
+        have hzeroOutRen : BProv Ax_s (T.map (rename Nat.succ))
+            (rename Nat.succ (eqConstAt (zeroOut+1) 0)) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hzeroOutT Nat.succ
+        have hzeroOutZ : BProv Ax_s Z (eqConstAt (zeroOut+1+1) 0) := by
+          simpa [Z, zeroBody, eqConstAt, rename, Term.rename, Term.numeral]
+            using
+              (BProv_context_cons (B := Ax_s) (a := zeroBody) hzeroOutRen)
+        have hdvdZero : BProv Ax_s Z (dvdAt 0 (code+1+1)) :=
+          BProv_Ax_s_betaAt_opened_body_code_dvd_of_output_zero
+            (G := T) (out := zeroOut+1) (code := code+1)
+            (step := step+1) (idx := idx+1) (by
+              simpa [zeroBody] using hzeroOutZ)
+        have hdvdTargetZ : BProv Ax_s Z (dvdAt 1 (code+1+1)) :=
+          BProv_Ax_s_dvdAt_of_eq_left
+            (G := Z) (a := 0) (b := 1) (c := code+1+1)
+            (BProv_eqSym hmodEq) hdvdZero
+        simpa [Z, dvdAt, rename, Term.rename, SetTheory.up] using hdvdTargetZ
+      exact BProv_exE_of_sentences (B := Ax_s)
+        (fun f hf => sentence_ax_s (f := f) hf) hzeroBetaT (by
+          simpa [betaAt, zeroBody] using hzeroOpened)
+    have htargetZero : BProv Ax_s T (eqConstAt (out+1) 0) :=
+      BProv_Ax_s_betaAt_opened_body_output_zero_of_code_dvd
+        (G := G) (out := out) (code := code) (step := step) (idx := idx)
+        (by simpa [targetBody] using hdvdTarget)
+    simpa [T, targetBody, eqConstAt, rename, Term.rename, Term.numeral]
+      using htargetZero
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaAt, targetBody] using htargetBody)
 
 /-- Opened term-output raw-beta specialization of
 `BProv_Ax_s_betaModTerm_modEq_zero_bot`. -/
