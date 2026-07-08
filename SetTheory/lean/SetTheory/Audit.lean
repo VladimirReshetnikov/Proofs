@@ -187,6 +187,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaModTerm_constIdx_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAt_constIdxSubst_of_eqConst
+#check @PA.Formula.BProv_Ax_s_betaAtConstIdx_of_eqConst
+#check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_eqConst
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule

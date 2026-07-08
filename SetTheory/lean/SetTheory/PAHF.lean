@@ -9104,6 +9104,82 @@ theorem BProv_Ax_s_betaAt_constIdxSubst_of_eqConst {G : List Formula}
           (remAt ((out+1)+1) ((code+1)+1) 0)))
       (t := Term.numeral m) hbody)
 
+/-- Constructor for `betaAtConstIdx` from fixed numeral proofs and an explicit
+beta-entry quotient. -/
+theorem BProv_Ax_s_betaAtConstIdx_of_eqConst {G : List Formula}
+    {out code step o c s idxValue q : Nat}
+    (hout : BProv Ax_s G (eqConstAt out o))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hlt : o < BetaModulus s idxValue)
+    (hval : q * BetaModulus s idxValue + o = c) :
+    BProv Ax_s G (betaAtConstIdx out code step idxValue) := by
+  have hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue)) (eqConstAt 0 idxValue)) := by
+    simpa [eqConstAt, subst, instTerm, Term.subst] using
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral idxValue))
+  have hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (betaAt (out+1) (code+1) (step+1) 0)) :=
+    BProv_Ax_s_betaAt_constIdxSubst_of_eqConst
+      (out := out) (code := code) (step := step)
+      (o := o) (c := c) (s := s) (i := idxValue) (q := q)
+      hout hcode hstep hlt hval
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (and (eqConstAt 0 idxValue)
+          (betaAt (out+1) (code+1) (step+1) 0))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hidxBody hbetaBody)
+  simpa [betaAtConstIdx] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and (eqConstAt 0 idxValue)
+        (betaAt (out+1) (code+1) (step+1) 0))
+      (t := Term.numeral idxValue) hbody)
+
+/-- Constructor for `betaAtSuccIdx` from fixed numeral proofs and an explicit
+beta-entry quotient at the successor index. -/
+theorem BProv_Ax_s_betaAtSuccIdx_of_eqConst {G : List Formula}
+    {out code step idx o c s i q : Nat}
+    (hout : BProv Ax_s G (eqConstAt out o))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hlt : o < BetaModulus s (i + 1))
+    (hval : q * BetaModulus s (i + 1) + o = c) :
+    BProv Ax_s G (betaAtSuccIdx out code step idx) := by
+  have hidxSucc : BProv Ax_s G
+      (eq (Term.numeral (i + 1)) (Term.succ (Term.var idx))) := by
+    have hs : BProv Ax_s G
+        (eq (Term.succ (Term.var idx)) (Term.numeral (i + 1))) := by
+      simpa [Term.numeral_succ] using BProv_eq_congr_succ hidx
+    exact BProv_eqSym hs
+  have hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (eq (Term.var 0) (Term.succ (Term.var (idx+1))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename] using
+      hidxSucc
+  have hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (betaAt (out+1) (code+1) (step+1) 0)) :=
+    BProv_Ax_s_betaAt_constIdxSubst_of_eqConst
+      (out := out) (code := code) (step := step)
+      (o := o) (c := c) (s := s) (i := i + 1) (q := q)
+      hout hcode hstep hlt hval
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (and
+          (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
+          (betaAt (out+1) (code+1) (step+1) 0))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hidxBody hbetaBody)
+  simpa [betaAtSuccIdx] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and
+        (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
+        (betaAt (out+1) (code+1) (step+1) 0))
+      (t := Term.numeral (i + 1)) hbody)
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
