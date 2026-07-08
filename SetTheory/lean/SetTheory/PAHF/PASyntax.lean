@@ -25541,6 +25541,84 @@ theorem
         (by
           simpa [C, lowLtHigh, ih, Nat.add_assoc] using hpred))
 
+/-- The opened context for the strict successor carry branch where the
+predecessor-high code is even and the low code is odd.
+
+The branch variables are fixed to the strict successor-step convention:
+`high = 1`, `low = 0`, the shifted positive witness has predecessor slot `0`,
+and the successor membership target is for element slot `1`. -/
+def strictHighDoubleLowOddSuccComponentContext
+    (highHalf lowHalf : Nat) : List Formula :=
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let G : List Formula :=
+    oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+  let elem : Nat := 1
+  let set : Nat := 1+2
+  let witness : Formula := hfDistinguishesAt 0 (1+1) (0+1)
+  let branchTail : List Formula :=
+    (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let branchCtx : List Formula :=
+    doubleEqAt set (highHalf+2) ::
+      eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let traceTail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      traceTail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  succBody :: succCtx.map (rename Nat.succ)
+
+/-- The term code whose membership is packaged in the high-even/low-odd
+successor carry branch. -/
+def strictHighDoubleLowOddSuccTargetCode : Term :=
+  let set : Nat := 1+2
+  Term.rename Nat.succ
+    (Term.rename Nat.succ
+      (Term.rename Nat.succ (Term.succ (Term.var set))))
+
+/-- Entry component for the named high-even/low-odd successor carry context. -/
+def strictHighDoubleLowOddSuccEntryFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (betaTermAtConstIdx
+        (Term.rename (fun n => n+2)
+          strictHighDoubleLowOddSuccTargetCode) 1 0 0))
+
+/-- Bounded-trace component for the named high-even/low-odd successor carry
+context. -/
+def strictHighDoubleLowOddSuccStepsFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  let elem : Nat := 1
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (betaDiv2StepsThroughAt 1 0 ((elem+3)+2)))
+
+/-- Final-bit component for the named high-even/low-odd successor carry
+context. -/
+def strictHighDoubleLowOddSuccBitExFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  let elem : Nat := 1
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (ex
+        (and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 ((elem+3)+3)))))
+
 /-- High-even/low-odd strict branch with the positive-membership carry reduced
 to explicit beta components for caller-supplied successor-trace witnesses.
 
@@ -25689,6 +25767,45 @@ theorem
           simpa [G, lowLtHigh, ih, Nat.add_assoc] using hsteps)
         (by
           simpa [G, lowLtHigh, ih, Nat.add_assoc] using hbitEx))
+
+/-- Named-component variant of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_components`.
+
+The definitions used here abbreviate exactly the opened context and the three
+beta component formulas; they do not choose witnesses or discharge any part of
+the carry proof. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_named_components
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm)) :
+    BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf ::
+        doubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_components
+      (highHalf := highHalf) (lowHalf := lowHalf)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by
+        simpa [strictHighDoubleLowOddSuccComponentContext,
+          strictHighDoubleLowOddSuccEntryFormula,
+          strictHighDoubleLowOddSuccTargetCode, Nat.add_assoc] using hentry)
+      (by
+        simpa [strictHighDoubleLowOddSuccComponentContext,
+          strictHighDoubleLowOddSuccStepsFormula, Nat.add_assoc] using hsteps)
+      (by
+        simpa [strictHighDoubleLowOddSuccComponentContext,
+          strictHighDoubleLowOddSuccBitExFormula, Nat.add_assoc] using hbitEx)
 
 /-- Strict successor parity split with the high-even/low-odd branch already
 reduced to its opened membership-persistence obligation.
