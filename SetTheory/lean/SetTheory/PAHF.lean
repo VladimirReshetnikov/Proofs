@@ -19103,6 +19103,33 @@ theorem BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_eqConst_even
       (value := 1) (half := 0) (bit := bit+2) hcur hstep
   simpa [hcurEven] using hbit
 
+/-- In an opened final-bit beta witness, a term-indexed beta fact identifying
+the current value with a closed even numeral forces the opened output-bit slot
+to be `0`. -/
+theorem BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_termIdx_even
+    {G : List Formula} {bit code step idx cur : Nat} {idxTerm : Term}
+    (hterm : BProv Ax_s G
+      (betaTermAtTermIdx (Term.numeral cur) (code+2) (step+2) idxTerm))
+    (hidxEq : BProv Ax_s G (eq idxTerm (Term.var (idx+2))))
+    (hcurEven : cur % 2 = 0)
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 1 (code+2) (step+2) (idx+2))
+        (and
+          (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+          (div2StepAt 1 0 (bit+2))))) :
+    BProv Ax_s G (eqConstAt (bit+2) 0) := by
+  have hcurBeta : BProv Ax_s G (betaAt 1 (code+2) (step+2) (idx+2)) :=
+    BProv_andE1 hbody
+  have hcur : BProv Ax_s G (eqConstAt 1 cur) :=
+    BProv_Ax_s_eqConstAt_of_betaAt_betaTermAtTermIdx_eq_index
+      (G := G) (out := 1) (code := code+2) (step := step+2)
+      (idx := idx+2) (value := cur) (idxTerm := idxTerm)
+      hterm hidxEq hcurBeta
+  exact BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_eqConst_even
+    (G := G) (bit := bit) (code := code) (step := step) (idx := idx)
+    (cur := cur) hcur hcurEven hbody
+
 /-- Eliminate a final-bit formula to contradiction once the opened current
 value is a closed even numeral. -/
 theorem BProv_Ax_s_betaDiv2BitAt_current_eqConst_even_bot

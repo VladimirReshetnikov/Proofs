@@ -438,6 +438,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_double_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_eqConst_even
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_termIdx_even
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_eqConst_even_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
