@@ -9832,6 +9832,45 @@ theorem BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one {G : List Formula}
     BProv_eqTrans hstepEq hright
   simpa [oddDoubleEqAt, d] using hodd
 
+/-- PA arithmetic for the odd binary-carry case:
+`value = 2*half + 1` implies `S value = S half + S half`.
+
+This is kept as a standalone equality theorem so later successor-code carry
+proofs can transport term-parametric high-code formulas without rebuilding the
+addition algebra. -/
+theorem BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G
+      (eq (Term.succ (Term.var value))
+        (Term.add (Term.succ (Term.var half))
+          (Term.succ (Term.var half)))) := by
+  let h : Term := Term.var half
+  let double : Term := Term.add h h
+  have hvalue : BProv Ax_s G (eq (Term.var value) (Term.succ double)) := by
+    simpa [oddDoubleEqAt, h, double] using hodd
+  have hsuccValue : BProv Ax_s G
+      (eq (Term.succ (Term.var value))
+        (Term.succ (Term.succ double))) :=
+    BProv_eq_congr_succ hvalue
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.succ h) (Term.succ h))
+        (Term.succ (Term.add h (Term.succ h)))) :=
+    BProv_Ax_s_succ_add_terms h (Term.succ h)
+  have hrightStep : BProv Ax_s G
+      (eq (Term.add h (Term.succ h)) (Term.succ double)) := by
+    simpa [h, double] using
+      (BProv_weaken_nil (BProv_Ax_s_addSucc_terms h h))
+  have hright : BProv Ax_s G
+      (eq (Term.succ (Term.add h (Term.succ h)))
+        (Term.succ (Term.succ double))) :=
+    BProv_eq_congr_succ hrightStep
+  have hdoubleSucc : BProv Ax_s G
+      (eq (Term.add (Term.succ h) (Term.succ h))
+        (Term.succ (Term.succ double))) :=
+    BProv_eqTrans hleft hright
+  exact BProv_eqTrans hsuccValue (BProv_eqSym hdoubleSucc)
+
 /-- A binary-halving step exposes a concrete parity case for the current
 value: either it is twice its next value, or it is twice its next value plus
 one. -/

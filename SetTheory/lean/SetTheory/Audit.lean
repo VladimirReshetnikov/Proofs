@@ -329,6 +329,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_div2StepAt_eqConst_even
 #check @PA.Formula.BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
 #check @PA.Formula.BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one
+#check @PA.Formula.BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ
 #check @PA.Formula.BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt
 #check @PA.Formula.BProv_Ax_s_of_div2StepAt_double_odd_cases
 #check @PA.Formula.BProv_Ax_s_of_two_div2StepAt_double_odd_cases
