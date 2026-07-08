@@ -11279,6 +11279,47 @@ Proof.
     (Term.numeral (BetaModulus s i)) hbody).
 Qed.
 
+Lemma BProv_Ax_s_betaAtConstIdx_of_eqConst :
+  forall G out code step o c s idxValue q,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  o < BetaModulus s idxValue ->
+  q * BetaModulus s idxValue + o = c ->
+  BProv Ax_s G (betaAtConstIdx out code step idxValue).
+Proof.
+  intros G out code step o c s idxValue q hout hcode hstep hlt hval.
+  assert (hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (eqConstAt 0 idxValue))).
+  {
+    unfold eqConstAt.
+    simpl.
+    rewrite Term.subst_numeral.
+    apply BProv_eqRefl.
+  }
+  assert (hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (betaAt (S out) (S code) (S step) 0))).
+  {
+    exact (BProv_Ax_s_betaAt_constIdxSubst_of_eqConst
+      G out code step o c s idxValue q hout hcode hstep hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (pAnd (eqConstAt 0 idxValue)
+          (betaAt (S out) (S code) (S step) 0)))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hidxBody hbetaBody).
+  }
+  unfold betaAtConstIdx.
+  exact (BProv_exI Ax_s G
+    (pAnd (eqConstAt 0 idxValue)
+      (betaAt (S out) (S code) (S step) 0))
+    (Term.numeral idxValue) hbody).
+Qed.
+
 Definition BetaEntry (code step idx value : nat) : Prop :=
   exists q, code = q * BetaModulus step idx + value /\
     value < BetaModulus step idx.
