@@ -20516,6 +20516,79 @@ theorem BProv_Ax_s_hfMemAt_bot_of_opened_final_bit_zero
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hmem' (by simpa [rename] using hcodeStep)
 
+/-- Eliminate an `hfMemAt` proof to contradiction once the final opened
+halving-current witness is a closed even numeral. -/
+theorem BProv_Ax_s_hfMemAt_bot_of_opened_final_current_eqConst_even
+    {G : List Formula} {elem set cur : Nat}
+    (hcur :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bitCtx : List Formula :=
+        bitBody :: (body :: (ex body :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)).map (rename Nat.succ)
+      let finalBody : Formula :=
+        and
+          (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+          (and
+            (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+            (div2StepAt 1 0 (0+2)))
+      BProv Ax_s
+        (finalBody :: (ex finalBody :: bitCtx.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (eqConstAt 1 cur))
+    (hcurEven : cur % 2 = 0)
+    (hmem : BProv Ax_s G (hfMemAt elem set)) :
+    BProv Ax_s G bot :=
+  BProv_Ax_s_hfMemAt_bot_of_opened_final_bit_zero
+    (G := G) (elem := elem) (set := set)
+    (by
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bitCtx : List Formula :=
+        bitBody :: (body :: (ex body :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)).map (rename Nat.succ)
+      let finalBody : Formula :=
+        and
+          (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+          (and
+            (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+            (div2StepAt 1 0 (0+2)))
+      let C : List Formula :=
+        finalBody :: (ex finalBody :: bitCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      have hbody : BProv Ax_s C finalBody :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      exact BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_eqConst_even
+        (G := C) (bit := 0) (code := 2) (step := 1) (idx := elem+3)
+        (cur := cur)
+        (by
+          simpa [C, bitCtx, finalBody, bitBody, body, tail, List.map_map,
+            Function.comp_def] using hcur)
+        hcurEven
+        (by
+          simpa [C, finalBody] using hbody))
+    hmem
+
 /-- Eliminate an `hfMemAt` proof to contradiction once the opened halving-step
 witness is proved to be `0`.
 
