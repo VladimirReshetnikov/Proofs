@@ -9101,6 +9101,98 @@ theorem BProv_Ax_s_succ_add_cancel_terms {G : List Formula}
       (BProv_Ax_s_succInj_terms (Term.add x y) (Term.add x z))
   exact BProv_mp Ax_s G _ _ hinj hsuccEq
 
+/-- PA proves left-cancellation for addition, uniformly in the left addend. -/
+theorem BProv_Ax_s_add_cancel_left_all (y z : Term) :
+    BProv Ax_s []
+      (all
+        (imp
+          (eq
+            (Term.add (Term.var 0) (Term.rename Nat.succ y))
+            (Term.add (Term.var 0) (Term.rename Nat.succ z)))
+          (eq (Term.rename Nat.succ y) (Term.rename Nat.succ z)))) := by
+  let phi : Formula :=
+    imp
+      (eq
+        (Term.add (Term.var 0) (Term.rename Nat.succ y))
+        (Term.add (Term.var 0) (Term.rename Nat.succ z)))
+      (eq (Term.rename Nat.succ y) (Term.rename Nat.succ z))
+  have hzeroBody : BProv Ax_s
+      [eq (Term.add Term.zero y) (Term.add Term.zero z)]
+      (eq y z) := by
+    have heq : BProv Ax_s
+        [eq (Term.add Term.zero y) (Term.add Term.zero z)]
+        (eq (Term.add Term.zero y) (Term.add Term.zero z)) :=
+      BProv_ass (B := Ax_s)
+        (G := [eq (Term.add Term.zero y) (Term.add Term.zero z)])
+        (by simp)
+    have hy : BProv Ax_s
+        [eq (Term.add Term.zero y) (Term.add Term.zero z)]
+        (eq (Term.add Term.zero y) y) :=
+      BProv_Ax_s_zero_add_term y
+    have hz : BProv Ax_s
+        [eq (Term.add Term.zero y) (Term.add Term.zero z)]
+        (eq (Term.add Term.zero z) z) :=
+      BProv_Ax_s_zero_add_term z
+    exact BProv_eqTrans (BProv_eqTrans (BProv_eqSym hy) heq) hz
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using
+      BProv_impI hzeroBody
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let ys : Term := Term.rename Nat.succ y
+    let zs : Term := Term.rename Nat.succ z
+    let succEq : Formula :=
+      eq (Term.add (Term.succ (Term.var 0)) ys)
+        (Term.add (Term.succ (Term.var 0)) zs)
+    have hinner : BProv Ax_s [succEq, phi] (eq ys zs) := by
+      have heqSucc : BProv Ax_s [succEq, phi] succEq :=
+        BProv_ass (B := Ax_s) (G := [succEq, phi]) (by simp)
+      have hcancel : BProv Ax_s [succEq, phi]
+          (eq (Term.add (Term.var 0) ys) (Term.add (Term.var 0) zs)) :=
+        BProv_Ax_s_succ_add_cancel_terms heqSucc
+      have hih : BProv Ax_s [succEq, phi]
+          (imp
+            (eq (Term.add (Term.var 0) ys) (Term.add (Term.var 0) zs))
+            (eq ys zs)) := by
+        have hphi : BProv Ax_s [succEq, phi] phi :=
+          BProv_ass (B := Ax_s) (G := [succEq, phi]) (by simp [phi])
+        simpa [phi, ys, zs] using hphi
+      exact BProv_mp Ax_s [succEq, phi] _ _ hih hcancel
+    have himp : BProv Ax_s [phi] (imp succEq (eq ys zs)) :=
+      BProv_impI hinner
+    simpa [phi, ys, zs, succEq, substSuccVar, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_substSuccVar_rename_succ] using himp
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Modus-ponens form of left-cancellation for addition. -/
+theorem BProv_Ax_s_add_cancel_left_terms {G : List Formula}
+    {x y z : Term}
+    (h : BProv Ax_s G (eq (Term.add x y) (Term.add x z))) :
+    BProv Ax_s G (eq y z) := by
+  have hall : BProv Ax_s G
+      (all
+        (imp
+          (eq
+            (Term.add (Term.var 0) (Term.rename Nat.succ y))
+            (Term.add (Term.var 0) (Term.rename Nat.succ z)))
+          (eq (Term.rename Nat.succ y) (Term.rename Nat.succ z)))) :=
+    BProv_weaken_nil (BProv_Ax_s_add_cancel_left_all y z)
+  have himp : BProv Ax_s G
+      (imp (eq (Term.add x y) (Term.add x z)) (eq y z)) := by
+    have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hinst
+  exact BProv_mp Ax_s G _ _ himp h
+
 /-- PA proves uniformly in the right summand that if `x + y = 0`, then
 `x = 0`.  The free term `x` is shifted under the displayed universal binder. -/
 theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
