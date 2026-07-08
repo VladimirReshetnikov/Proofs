@@ -100,6 +100,8 @@ open SetTheory
 #check @PA.Formula.term_subst_upSubst_instTerm_rename_three_succ
 #check @PA.Formula.term_subst_up_up_instTerm_rename_four_succ
 #check @PA.Formula.term_subst_up_up_up_instTerm_rename_five_succ
+#check PA.Formula.iterUpSubst
+#check @PA.Formula.term_subst_iterUpSubst_instTerm_var_rename_add_succ
 #check @PA.Formula.term_rename_up_succ_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_up_up_succ
 #check @PA.Formula.subst_instTerm_rename_succ
@@ -558,6 +560,7 @@ open SetTheory
 #check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_zero
 #check @PA.Formula.subst_instTerm_hfLtDistinguishesAt_zero_term
 #check PA.Formula.substSuccVar_hfLtDistinguishesAt_zero
+#check @PA.Formula.subst_instTerm_var_hfMemTermAt_zero_rename_succ
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
 #check @PA.Formula.hfDistinguishesAt_nat
@@ -565,11 +568,17 @@ open SetTheory
 #check @PA.Formula.hfSomeDistinguishesAt_nat_of_lt
 #check @PA.Formula.hfSomeDistinguishesAt_nat_or_of_ne
 #check @PA.Formula.subst_instTerm_var_hfDistinguishesAt_zero_succ
+#check @PA.Formula.subst_instTerm_var_hfDistinguishesTermAt_zero_succ
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_intro_var
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_intro_var
 #check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_low_mem_bot
+#check @PA.Formula.BProv_hfDistinguishesTermAt_of_mem_and_not_mem
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_mem_and_not_mem
+#check @PA.Formula.BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low

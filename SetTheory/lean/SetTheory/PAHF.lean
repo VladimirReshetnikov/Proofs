@@ -5836,6 +5836,56 @@ theorem term_subst_up_up_up_instTerm_rename_five_succ (t u : Term) :
   simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
     (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1 + 1))
 
+/-- Iterate lifting of a term substitution through `k` binders. -/
+def iterUpSubst (k : Nat) (σ : Nat → Term) : Nat → Term :=
+  Nat.rec σ (fun _ τ => Term.upSubst τ) k
+
+/-- General de Bruijn bookkeeping lemma: substituting a variable under `k`
+lifted binders through a term renamed by `k+1` successors removes exactly the
+newest shift. -/
+theorem term_subst_iterUpSubst_instTerm_var_rename_add_succ
+    (k elem : Nat) (t : Term) :
+    Term.subst (iterUpSubst k (instTerm (Term.var elem)))
+        (Term.rename (fun n : Nat => n + k + 1) t) =
+      Term.rename (fun n : Nat => n + k) t := by
+  induction k with
+  | zero =>
+      change Term.subst (instTerm (Term.var elem))
+          (Term.rename (fun n : Nat => n + 0 + 1) t) =
+        Term.rename (fun n : Nat => n + 0) t
+      have hleft :
+          Term.rename (fun n : Nat => n + 0 + 1) t =
+            Term.rename Nat.succ t :=
+        Term.rename_ext t _ _ (fun n => by omega)
+      have hright :
+          Term.rename (fun n : Nat => n + 0) t = t := by
+        exact Eq.trans
+          (Term.rename_ext t (fun n : Nat => n + 0) (fun n => n)
+            (fun n => by omega))
+          (Term.rename_id t)
+      rw [hleft, hright]
+      exact term_subst_instTerm_rename_succ t (Term.var elem)
+  | succ k ih =>
+      have hrename :
+          Term.rename (fun n : Nat => n + (k+1) + 1) t =
+            Term.rename Nat.succ
+              (Term.rename (fun n : Nat => n + k + 1) t) := by
+        simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] using
+          (Term.rename_comp t Nat.succ
+            (fun n : Nat => n + k + 1)).symm
+      rw [iterUpSubst, hrename, Term.subst_rename_succ_up]
+      change Term.rename Nat.succ
+          (Term.subst (iterUpSubst k (instTerm (Term.var elem)))
+            (Term.rename (fun n : Nat => n + k + 1) t)) =
+        Term.rename (fun n : Nat => n + (k+1)) t
+      rw [ih]
+      change Term.rename Nat.succ (Term.rename (fun n : Nat => n + k) t) =
+        Term.rename (fun n : Nat => n + (k+1)) t
+      rw [Term.rename_comp]
+      exact Term.rename_ext t (fun n : Nat => Nat.succ (n + k))
+        (fun n : Nat => n + (k+1)) (fun n => by omega)
+
 /-- Renaming a term already shifted through one binder by the lifted successor
 renaming is the same as shifting it through one more ordinary binder. -/
 theorem term_rename_up_succ_rename_succ (t : Term) :
@@ -24279,6 +24329,39 @@ theorem subst_instTerm_var_hfMemAt_zero_succ (elem set : Nat) :
     subst, instTerm, Term.subst, Term.upSubst, Term.rename,
     Term.numeral]
 
+/-- Instantiating the bound element variable in a term-parametric
+Ackermann-membership atom.  The set-code term is renamed by `Nat.succ` because
+it sits one binder outside the member variable. -/
+theorem subst_instTerm_var_hfMemTermAt_zero_rename_succ
+    (elem : Nat) (setCode : Term) :
+    subst (instTerm (Term.var elem))
+        (hfMemTermAt 0 (Term.rename Nat.succ setCode)) =
+      hfMemTermAt elem setCode := by
+  simp [hfMemTermAt, betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaAt, remAt, ltAt, leAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaDiv2BitAt, betaAtSuccIdx, div2StepAt,
+    boolAt, zeroAt, oneAt, eqConstAt, betaModTerm, subst, instTerm,
+    Term.subst, Term.upSubst, Term.rename, Term.rename_comp]
+  constructor
+  · change Term.subst (iterUpSubst 6 (instTerm (Term.var elem)))
+        (Term.rename (fun n : Nat => n + 6 + 1) setCode) =
+        Term.rename (fun n : Nat => n + 5 + 1) setCode
+    have htarget :
+        Term.rename (fun n : Nat => n + 6) setCode =
+          Term.rename (fun n : Nat => n + 5 + 1) setCode :=
+      Term.rename_ext setCode _ _ (fun n => by omega)
+    simpa [htarget] using
+      (term_subst_iterUpSubst_instTerm_var_rename_add_succ 6 elem setCode)
+  · change Term.subst (iterUpSubst 5 (instTerm (Term.var elem)))
+        (Term.rename (fun n : Nat => n + 5 + 1) setCode) =
+        Term.rename (fun n : Nat => n + 4 + 1) setCode
+    have htarget :
+        Term.rename (fun n : Nat => n + 5) setCode =
+          Term.rename (fun n : Nat => n + 4 + 1) setCode :=
+      Term.rename_ext setCode _ _ (fun n => by omega)
+    simpa [htarget] using
+      (term_subst_iterUpSubst_instTerm_var_rename_add_succ 5 elem setCode)
+
 /-- Instantiating the bound element variable in a translated membership
 equivalence. -/
 theorem subst_instTerm_var_hfMemAt_iff (elem left right : Nat) :
@@ -25163,6 +25246,18 @@ theorem subst_instTerm_var_hfDistinguishesAt_zero_succ
       hfDistinguishesAt elem high low := by
   simp [hfDistinguishesAt, subst, subst_instTerm_var_hfMemAt_zero_succ]
 
+/-- Instantiating the bound witness in a term-parametric distinguishing-member
+body by an existing PA variable recovers the corresponding open distinguishing
+formula. -/
+theorem subst_instTerm_var_hfDistinguishesTermAt_zero_succ
+    (elem low : Nat) (highCode : Term) :
+    subst (instTerm (Term.var elem))
+        (hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (low+1)) =
+      hfDistinguishesTermAt elem highCode low := by
+  simp [hfDistinguishesTermAt, subst,
+    subst_instTerm_var_hfMemTermAt_zero_rename_succ,
+    subst_instTerm_var_hfMemAt_zero_succ]
+
 /-- Existential introduction for the distinguishing-member macro, using an
 existing PA variable as the witness. -/
 theorem BProv_hfSomeDistinguishesAt_intro_var
@@ -25176,6 +25271,23 @@ theorem BProv_hfSomeDistinguishesAt_intro_var
   simpa [hfSomeDistinguishesAt] using
     (BProv_exI (B := B) (G := G)
       (a := hfDistinguishesAt 0 (high+1) (low+1))
+      (t := Term.var elem) hinst)
+
+/-- Existential introduction for the term-parametric distinguishing-member
+macro, using an existing PA variable as the witness. -/
+theorem BProv_hfSomeDistinguishesTermAt_intro_var
+    {B : Formula → Prop} {G : List Formula} {elem low : Nat}
+    {highCode : Term}
+    (hdist : BProv B G (hfDistinguishesTermAt elem highCode low)) :
+    BProv B G (hfSomeDistinguishesTermAt highCode low) := by
+  have hinst : BProv B G
+      (subst (instTerm (Term.var elem))
+        (hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (low+1))) := by
+    simpa [subst_instTerm_var_hfDistinguishesTermAt_zero_succ] using hdist
+  simpa [hfSomeDistinguishesTermAt] using
+    (BProv_exI (B := B) (G := G)
+      (a := hfDistinguishesTermAt 0
+        (Term.rename Nat.succ highCode) (low+1))
       (t := Term.var elem) hinst)
 
 /-- Logical packaging for a distinguishing member: if the same element is
@@ -25198,6 +25310,29 @@ theorem BProv_hfSomeDistinguishesAt_of_mem_and_not_mem
     (B := B) (G := G) (elem := elem) (high := high) (low := low)
     (BProv_hfDistinguishesAt_of_mem_and_not_mem hhigh hnotLow)
 
+/-- Term-parametric logical packaging for a distinguishing member.  The high
+membership may name an arbitrary PA term, while the low side remains a slot. -/
+theorem BProv_hfDistinguishesTermAt_of_mem_and_not_mem
+    {B : Formula → Prop} {G : List Formula} {elem low : Nat}
+    {highCode : Term}
+    (hhigh : BProv B G (hfMemTermAt elem highCode))
+    (hnotLow : BProv B G (imp (hfMemAt elem low) bot)) :
+    BProv B G (hfDistinguishesTermAt elem highCode low) := by
+  simpa [hfDistinguishesTermAt] using BProv_andI hhigh hnotLow
+
+/-- Existential version of
+`BProv_hfDistinguishesTermAt_of_mem_and_not_mem`. -/
+theorem BProv_hfSomeDistinguishesTermAt_of_mem_and_not_mem
+    {B : Formula → Prop} {G : List Formula} {elem low : Nat}
+    {highCode : Term}
+    (hhigh : BProv B G (hfMemTermAt elem highCode))
+    (hnotLow : BProv B G (imp (hfMemAt elem low) bot)) :
+    BProv B G (hfSomeDistinguishesTermAt highCode low) :=
+  BProv_hfSomeDistinguishesTermAt_intro_var
+    (B := B) (G := G) (elem := elem) (low := low)
+    (highCode := highCode)
+    (BProv_hfDistinguishesTermAt_of_mem_and_not_mem hhigh hnotLow)
+
 /-- Logical packaging for the proof shape produced by low-side membership
 refutations: if high membership is known, and assuming low membership gives
 contradiction, the element distinguishes high from low. -/
@@ -25218,6 +25353,29 @@ theorem BProv_hfSomeDistinguishesAt_of_mem_and_low_mem_bot
   BProv_hfSomeDistinguishesAt_intro_var
     (B := B) (G := G) (elem := elem) (high := high) (low := low)
     (BProv_hfDistinguishesAt_of_mem_and_low_mem_bot hhigh hlowBot)
+
+/-- Term-parametric version of
+`BProv_hfDistinguishesAt_of_mem_and_low_mem_bot`. -/
+theorem BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot
+    {B : Formula → Prop} {G : List Formula} {elem low : Nat}
+    {highCode : Term}
+    (hhigh : BProv B G (hfMemTermAt elem highCode))
+    (hlowBot : BProv B (hfMemAt elem low :: G) bot) :
+    BProv B G (hfDistinguishesTermAt elem highCode low) :=
+  BProv_hfDistinguishesTermAt_of_mem_and_not_mem hhigh (BProv_impI hlowBot)
+
+/-- Existential term-parametric version of
+`BProv_hfSomeDistinguishesAt_of_mem_and_low_mem_bot`. -/
+theorem BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
+    {B : Formula → Prop} {G : List Formula} {elem low : Nat}
+    {highCode : Term}
+    (hhigh : BProv B G (hfMemTermAt elem highCode))
+    (hlowBot : BProv B (hfMemAt elem low :: G) bot) :
+    BProv B G (hfSomeDistinguishesTermAt highCode low) :=
+  BProv_hfSomeDistinguishesTermAt_intro_var
+    (B := B) (G := G) (elem := elem) (low := low)
+    (highCode := highCode)
+    (BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot hhigh hlowBot)
 
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
