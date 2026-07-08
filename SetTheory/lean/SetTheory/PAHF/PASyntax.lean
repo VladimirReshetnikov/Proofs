@@ -27586,6 +27586,47 @@ theorem
         (Term.succ (Term.var 2)))
   exact BProv_mp Ax_s C _ _ himp hle
 
+/-- Term-indexed packaging of the opened `S x ∈ low` old index-`0` step.
+
+The preceding projection gives the raw witness with index `0` already
+substituted.  This wrapper adds the explicit index-equality witness expected by
+the term-indexed beta-step consumers. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_zero_termIdx
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      (betaDiv2StepWitnessAtTermIdx 1 0 Term.zero) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ Term.zero))
+      (betaDiv2StepWitnessAt (1+1) (0+1) 0)
+  have hidx : BProv Ax_s C
+      (subst (instTerm Term.zero)
+        (eq (Term.var 0) (Term.rename Nat.succ Term.zero))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename] using
+      (BProv_eqRefl (B := Ax_s) (G := C) Term.zero)
+  have hraw : BProv Ax_s C
+      (subst (instTerm Term.zero)
+        (betaDiv2StepWitnessAt (1+1) (0+1) 0)) := by
+    have hzero : BProv Ax_s C
+        strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroFormula := by
+      simpa [C] using
+        (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_zero
+          (G := G))
+    simpa [strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroFormula,
+      strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+      div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename] using hzero
+  have hbody : BProv Ax_s C (subst (instTerm Term.zero) body) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hidx hraw
+  simpa [C, body, betaDiv2StepWitnessAtTermIdx] using
+    BProv_exI (B := Ax_s) (G := C) (a := body)
+      (t := Term.zero) hbody
+
 /-- Open the substituted low-membership assumption `S x ∈ low` down to its
 code and step witnesses.
 
