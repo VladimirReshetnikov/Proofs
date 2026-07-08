@@ -1,13 +1,13 @@
 # A198683 Reports
 
-- Status: Informational index over the wave-1 / wave-2 / wave-3 / wave-4 report cycle
+- Status: Informational index over the wave-1 … wave-5 report cycle
 - Audience: Maintainers, OEIS contributors, future agents
 - Scope: Historical, root-cause, synthesis, and exploratory reports about OEIS A198683
 - Created (UTC): 2026-05-21T00:59:34Z
 - Last updated (UTC): 2026-07-06
 - Repository HEAD: not pinned; see git history for the exact checkpoint commit
 
-This directory groups A198683 reports into four temporal waves plus an
+This directory groups A198683 reports into five temporal waves plus an
 exploratory background-reading directory. The wave structure reflects the
 chronological order in which the work was done; each wave layer is preserved
 intact.
@@ -18,6 +18,7 @@ intact.
 | 2 | [`wave-2/`](wave-2/) | Three independent root-cause analyses of the `2919` vs `2926` conflict | [`wave-2/README.md`](wave-2/README.md) |
 | 3 | [`wave-3/`](wave-3/) | Post-wave-2 synthesis and the feasibility study for a certified pipeline | [`wave-3/README.md`](wave-3/README.md) |
 | 4 | [`wave-4/`](wave-4/) | Lean proof-state checkpoint after the shared lexical-definition refactor | [`wave-4/README.md`](wave-4/README.md) |
+| 5 | [`wave-5/`](wave-5/) | The Lean decision-tree certificate and the proved near-`1` split | [`wave-5/README.md`](wave-5/README.md) |
 | — | [`exploratory/`](exploratory/README.md) | Background-reading writeups about the sequence and possible certification strategies | [`exploratory/README.md`](exploratory/README.md) |
 
 ## Recommended reading order
