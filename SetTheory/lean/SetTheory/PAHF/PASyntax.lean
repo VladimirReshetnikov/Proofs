@@ -13239,6 +13239,26 @@ theorem BProv_Ax_s_betaTermAt_of_betaAt_eq_term
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAt, body] using hbody)
 
+/-- Repackage a term-output beta entry as a numeric beta entry when PA proves
+that the term output is the target numeric slot. -/
+theorem BProv_Ax_s_betaAt_of_betaTermAt_eq_term
+    {G : List Formula} {out code step idx : Nat} {outTerm : Term}
+    (hbeta : BProv Ax_s G (betaTermAt outTerm code step idx))
+    (hout : BProv Ax_s G (eq outTerm (Term.var out))) :
+    BProv Ax_s G (betaAt out code step idx) := by
+  let a : Formula := betaTermAt (Term.var 0) (code+1) (step+1) (idx+1)
+  have htermSubst : BProv Ax_s G (subst (instTerm outTerm) a) := by
+    simpa [a, betaTermAt, remTermAt, ltTermAt, betaModTerm, subst,
+      instTerm, Term.subst, Term.upSubst, Term.rename,
+      term_subst_instTerm_rename_succ] using hbeta
+  have hslotSubst : BProv Ax_s G (subst (instTerm (Term.var out)) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := outTerm) (t := Term.var out) (a := a) hout htermSubst
+  simpa [a, betaTermAt_var, betaTermAt, betaAt, remTermAt, remAt,
+    ltTermAt, ltAt, betaModTerm, subst, instTerm, Term.subst,
+    Term.upSubst, Term.rename, term_subst_instTerm_rename_succ]
+    using hslotSubst
+
 /-- In an opened zero-output `betaTermAt` witness, the dividend is divisible by
 the opened beta modulus.  This is just the zero-remainder projection packaged
 at the beta layer; beta-entry uniqueness remains a separate proof obligation. -/

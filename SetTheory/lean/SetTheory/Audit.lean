@@ -422,6 +422,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eq_of_betaAt_betaTermAt_same_index
 #check @PA.Formula.BProv_Ax_s_eq_of_betaTermAt_betaTermAt_same_index
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_betaAt_eq_term
+#check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAt_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermAt_zero_opened_body_dvd
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
