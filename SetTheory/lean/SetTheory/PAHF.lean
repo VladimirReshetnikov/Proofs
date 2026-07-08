@@ -9671,6 +9671,47 @@ theorem BProv_Ax_s_div2StepAt_of_eqConst {G : List Formula}
     BProv_eqTrans hvalue (BProv_eqSym hcomputed)
   simpa [div2StepAt] using BProv_andI hbool htarget
 
+/-- A binary-halving step cannot have current value `0` and output bit `1`.
+This is the local contradiction kernel needed for refuting membership in the
+Ackermann-coded empty set. -/
+theorem BProv_Ax_s_div2StepAt_zero_one_bot {G : List Formula}
+    {value half bit : Nat}
+    (hvalue : BProv Ax_s G (eqConstAt value 0))
+    (hbit : BProv Ax_s G (eqConstAt bit 1))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G bot := by
+  let t : Term := Term.add (Term.var half) (Term.var half)
+  have hstepEq : BProv Ax_s G
+      (eq (Term.var value) (Term.add t (Term.var bit))) := by
+    simpa [div2StepAt, t] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hrightZero : BProv Ax_s G
+      (eq (Term.add t (Term.var bit)) Term.zero) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eqTrans (BProv_eqSym hstepEq) hvalue
+  have hbitRight : BProv Ax_s G
+      (eq (Term.add t (Term.var bit)) (Term.add t (Term.succ Term.zero))) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eq_congr_add_right t hbit
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add t (Term.succ Term.zero))
+        (Term.succ (Term.add t Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms t Term.zero)
+  have hrightSucc : BProv Ax_s G
+      (eq (Term.add t (Term.var bit))
+        (Term.succ (Term.add t Term.zero))) :=
+    BProv_eqTrans hbitRight haddSucc
+  have hsuccZero : BProv Ax_s G
+      (eq (Term.succ (Term.add t Term.zero)) Term.zero) :=
+    BProv_eqTrans (BProv_eqSym hrightSucc) hrightZero
+  have hnot : BProv Ax_s G
+      (imp (eq (Term.succ (Term.add t Term.zero)) Term.zero) bot) :=
+    BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term (Term.add t Term.zero))
+  exact BProv_mp Ax_s G _ _ hnot hsuccZero
+
 /-- Constructor for the formula obtained after all three variables of
 `div2StepAt` have been instantiated by closed numerals. -/
 theorem BProv_Ax_s_div2StepAt_closedSubst {G : List Formula}
