@@ -596,6 +596,29 @@ theorem typedMachineReaches_attainableLowerBound {State : Type*} [Fintype State]
     typedMachineReaches_haltsWithScore hReach hState rfl
   exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩
 
+noncomputable instance instFintypeSum {α β : Type*} [Fintype α] [Fintype β] :
+    Fintype (α ⊕ β) := by
+  classical
+  refine ⟨(Finset.univ.map Function.Embedding.inl) ∪
+    (Finset.univ.map Function.Embedding.inr), ?_⟩
+  intro x
+  cases x <;> simp
+
+theorem fintype_card_sum {α β : Type*} [Fintype α] [Fintype β] :
+    Fintype.card (α ⊕ β) = Fintype.card α + Fintype.card β := by
+  classical
+  change (((Finset.univ : Finset α).map Function.Embedding.inl) ∪
+      ((Finset.univ : Finset β).map Function.Embedding.inr)).card =
+    Fintype.card α + Fintype.card β
+  rw [Finset.card_union_of_disjoint]
+  · rw [Finset.card_map, Finset.card_map, Finset.card_univ, Finset.card_univ]
+  · rw [Finset.disjoint_left]
+    intro x hx hx2
+    rw [Finset.mem_map] at hx hx2
+    rcases hx with ⟨a, _ha, rfl⟩
+    rcases hx2 with ⟨b, _hb, h⟩
+    cases h
+
 /--
 The finite Rado tape obtained by writing the first `k` bits of `input` at
 positions `0, ..., k - 1`, in the order produced by the initializer.
@@ -872,6 +895,12 @@ theorem tm0RadoState_card (Label : Type*) [Fintype Label] :
   have h := Fintype.card_congr (tm0RadoStateEquivProd Label)
   rw [← h]
   simp [Fintype.card_prod]
+
+theorem initThenTM0State_card (Label : Type*) [Fintype Label] (input : List Bool) :
+    Fintype.card (InitThenTM0State Label input) =
+      2 * input.length + Fintype.card (TM0RadoState Label) := by
+  rw [fintype_card_sum, fintype_card_sum]
+  simp [Nat.two_mul, Nat.add_assoc]
 
 theorem tm0ToTypedRado_attainableScore {Label : Type*} [Inhabited Label] [Fintype Label]
     (M : Turing.TM0.Machine Bool Label) {score : Nat}
