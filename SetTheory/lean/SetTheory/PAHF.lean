@@ -7982,6 +7982,12 @@ theorem beta_entries_exist_through_mul_betaFact {N scale : Nat} (value : Nat →
   intro i hi
   exact hcode i (by omega)
 
+/-- Iterated closed binary halving, used for meta-level trace propagation
+statements. -/
+def div2Iter (value : Nat) : Nat → Nat
+  | 0 => value
+  | n + 1 => div2Iter value n / 2
+
 theorem shiftRight_lt_trace_modulus (elem set i : Nat) :
     set >>> i < BetaModulus (betaFact (elem + 1) * (set + 1)) i := by
   let step := betaFact (elem + 1) * (set + 1)
@@ -11100,6 +11106,43 @@ theorem BProv_Ax_s_leAt_of_eqConst {G : List Formula}
     (BProv_exI (B := Ax_s) (G := G)
       (a := eq (Term.add (Term.var (a+1)) (Term.var 0))
         (Term.var (b+1)))
+      (t := Term.numeral w) hbody)
+
+/-- From a proof that a bound slot contains a fixed numeral, derive the
+term-parametric fact that any smaller closed numeral is below that slot. -/
+theorem BProv_Ax_s_leTermAt_numeral_of_eqConst {G : List Formula}
+    {bound k n : Nat}
+    (hbound : BProv Ax_s G (eqConstAt bound n))
+    (hkn : k ≤ n) :
+    BProv Ax_s G (leTermAt (Term.numeral k) (Term.var bound)) := by
+  let w := n - k
+  have haddRaw : BProv Ax_s G
+      (eq (Term.add (Term.numeral k) (Term.numeral w))
+        (Term.numeral (k + w))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals k w)
+  have hkw : k + w = n := by
+    simp [w]
+    omega
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.numeral k) (Term.numeral w))
+        (Term.numeral n)) := by
+    simpa [hkw] using haddRaw
+  have htarget : BProv Ax_s G
+      (eq (Term.add (Term.numeral k) (Term.numeral w))
+        (Term.var bound)) :=
+    BProv_eqTrans hadd (BProv_eqSym hbound)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (eq
+          (Term.add (Term.rename Nat.succ (Term.numeral k)) (Term.var 0))
+          (Term.rename Nat.succ (Term.var bound)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_numeral] using htarget
+  simpa [leTermAt, Term.rename_numeral] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := eq
+        (Term.add (Term.rename Nat.succ (Term.numeral k)) (Term.var 0))
+        (Term.rename Nat.succ (Term.var bound)))
       (t := Term.numeral w) hbody)
 
 /-- From PA proofs that two slots contain fixed numerals, derive the corresponding
@@ -19980,6 +20023,40 @@ theorem BProv_Ax_s_betaDiv2StepsThroughAt_next_termIdx_eqConst_div_two_of_leTerm
   BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_eqConst_div_two
     hcurTerm
     (BProv_Ax_s_betaDiv2StepsThroughAt_step_termIdx_of_leTerm hsteps hle)
+
+/-- Meta-level closed-value iterator for bounded halving traces.  If the trace
+bound slot contains `lastValue`, then the closed beta entry at index `k` is the
+result of iterating integer division by two `k` times, for every
+`k ≤ lastValue + 1`. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_termIdx_eqConst_div2Iter_of_le
+    {G : List Formula} {code step last cur lastValue k : Nat}
+    (hentry : BProv Ax_s G
+      (betaTermAtTermIdx (Term.numeral cur) code step Term.zero))
+    (hsteps : BProv Ax_s G (betaDiv2StepsThroughAt code step last))
+    (hlast : BProv Ax_s G (eqConstAt last lastValue))
+    (hk : k ≤ lastValue + 1) :
+    BProv Ax_s G
+      (betaTermAtTermIdx (Term.numeral (div2Iter cur k)) code step
+        (Term.numeral k)) := by
+  induction k with
+  | zero =>
+      simpa [div2Iter, Term.numeral] using hentry
+  | succ k ih =>
+      have hkPrev : k ≤ lastValue + 1 := by omega
+      have hkStep : k ≤ lastValue := by omega
+      have hcurK : BProv Ax_s G
+          (betaTermAtTermIdx (Term.numeral (div2Iter cur k)) code step
+            (Term.numeral k)) :=
+        ih hkPrev
+      have hleK : BProv Ax_s G
+          (leTermAt (Term.numeral k) (Term.var last)) :=
+        BProv_Ax_s_leTermAt_numeral_of_eqConst hlast hkStep
+      have hnext : BProv Ax_s G
+          (betaTermAtTermIdx (Term.numeral (div2Iter cur k / 2)) code step
+            (Term.succ (Term.numeral k))) :=
+        BProv_Ax_s_betaDiv2StepsThroughAt_next_termIdx_eqConst_div_two_of_leTerm
+          hcurK hsteps hleK
+      simpa [div2Iter, Term.numeral_succ] using hnext
 
 /-- Eliminate a bounded beta-halving trace at a particular index. -/
 theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le {G : List Formula}

@@ -255,6 +255,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leAt_of_eq
 #check @PA.Formula.BProv_Ax_s_leAt_of_eqConst_zero_left
 #check @PA.Formula.BProv_Ax_s_leAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_leTermAt_numeral_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_leAt_of_ltAt
 #check @PA.Formula.BProv_Ax_s_leAt_refl
@@ -443,6 +444,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_eqConst_div_two
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_step_termIdx_of_leTerm
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_next_termIdx_eqConst_div_two_of_leTerm
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_termIdx_eqConst_div2Iter_of_le
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_step_of_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_termIdx_zero_of_le
@@ -640,6 +642,7 @@ open SetTheory
 #check @PA.Formula.BetaModuliProduct_coprime_next_of_le_mul_betaFact
 #check @PA.Formula.beta_entries_exist_lt_mul_betaFact
 #check @PA.Formula.beta_entries_exist_through_mul_betaFact
+#check @PA.Formula.div2Iter
 #check @PA.Formula.shiftRight_lt_trace_modulus
 #check @PA.Formula.div2_step_shiftRight
 #check @PA.Formula.div2_step_shiftRight_one
