@@ -13024,6 +13024,43 @@ theorem BProv_Ax_s_eqConstAt_zero_of_div2StepAt_double {G : List Formula}
     exact BProv_botE hbot
   exact BProv_orE hbool hzeroBranch honeBranch
 
+/-- Closed exact values for a current/next pair package into the object-level
+statement that the current value is twice the next value. -/
+theorem BProv_Ax_s_doubleEqAt_of_eqConst_double {G : List Formula}
+    {value half v h : Nat}
+    (hvalue : BProv Ax_s G (eqConstAt value v))
+    (hhalf : BProv Ax_s G (eqConstAt half h))
+    (hv : v = h + h) :
+    BProv Ax_s G (doubleEqAt value half) := by
+  have hhalfAdd : BProv Ax_s G
+      (eq (Term.add (Term.var half) (Term.var half))
+        (Term.add (Term.numeral h) (Term.numeral h))) :=
+    BProv_eq_congr_add hhalf hhalf
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.numeral h) (Term.numeral h))
+        (Term.numeral (h + h))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals h h)
+  have hdoubleValue : BProv Ax_s G
+      (eq (Term.add (Term.var half) (Term.var half))
+        (Term.numeral v)) := by
+    simpa [hv] using BProv_eqTrans hhalfAdd hadd
+  have htarget : BProv Ax_s G
+      (eq (Term.var value) (Term.add (Term.var half) (Term.var half))) :=
+    BProv_eqTrans hvalue (BProv_eqSym hdoubleValue)
+  simpa [doubleEqAt] using htarget
+
+/-- If a closed exact halving step has an even current value, PA proves that
+the step's output bit is `0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_div2StepAt_eqConst_even
+    {G : List Formula} {value half bit cur next : Nat}
+    (hvalue : BProv Ax_s G (eqConstAt value cur))
+    (hhalf : BProv Ax_s G (eqConstAt half next))
+    (hcur : cur = next + next)
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (eqConstAt bit 0) :=
+  BProv_Ax_s_eqConstAt_zero_of_div2StepAt_double
+    (BProv_Ax_s_doubleEqAt_of_eqConst_double hvalue hhalf hcur) hstep
+
 /-- If a binary-halving step has output bit `0`, then its current value is
 exactly twice its next value. -/
 theorem BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero {G : List Formula}
