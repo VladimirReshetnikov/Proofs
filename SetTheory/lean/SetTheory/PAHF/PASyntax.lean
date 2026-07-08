@@ -23457,6 +23457,26 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_bit_zero
   BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
     (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hlowBit hlowStep)
 
+/-- Split the standalone successor/predecessor distinguisher by the parity
+exposed by a binary-halving step.  The even branch is discharged by the
+zero-witness proof above; the odd branch is left as an explicit carry
+obligation. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_step_and_odd_case
+    {G : List Formula} {low lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit))
+    (hodd : BProv Ax_s (oddDoubleEqAt low lowHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
+  have heven : BProv Ax_s (doubleEqAt low lowHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
+    have hlowDouble : BProv Ax_s (doubleEqAt low lowHalf :: G)
+        (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := doubleEqAt low lowHalf :: G) (by simp)
+    exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
+      hlowDouble
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases hlowStep heven hodd
+
 /-- Even/even branch of the successor strict case: if the predecessor-high code
 is even and the low code is even, then zero belongs to `S high` and not to
 `low`, so it distinguishes them.  This is the distinct-slot generalization of
@@ -23527,6 +23547,43 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_bits_zero_zero
   BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
     (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hhighBit hhighStep)
     (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hlowBit hlowStep)
+
+/-- Split the strict successor case by the parities exposed by two
+binary-halving steps.  The even/even branch is discharged by the zero-witness
+proof; the three carry branches remain explicit premises.  In the branch
+premises, the low-code parity assumption is the head of the context and the
+high-code parity assumption follows it. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_steps_and_carry_cases
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s G (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit))
+    (hhighDouble_lowOdd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  have hhighDouble_lowDouble : BProv Ax_s
+      (doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+    let C : List Formula :=
+      doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G
+    have hlowDouble : BProv Ax_s C (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhighDouble : BProv Ax_s C (doubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+      hhighDouble hlowDouble
+  exact BProv_Ax_s_of_two_div2StepAt_double_odd_cases
+    hhighStep hlowStep
+    hhighDouble_lowDouble hhighDouble_lowOdd
+    hhighOdd_lowDouble hhighOdd_lowOdd
 
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
