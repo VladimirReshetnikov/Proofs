@@ -290,6 +290,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot
 #check @PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero
 #check @PA.Formula.BProv_Ax_s_div2StepAt_double_one_bot
+#check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_div2StepAt_double
 #check @PA.Formula.BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
 #check @PA.Formula.BProv_Ax_s_remAt_of_div2StepAt_two
 #check @PA.Formula.BProv_Ax_s_div2StepAt_closedSubst

@@ -12951,6 +12951,37 @@ theorem BProv_Ax_s_div2StepAt_double_one_bot {G : List Formula}
   exact BProv_Ax_s_add_succ_ne_self_terms
     (G := G) (x := d) (y := Term.zero) hbad
 
+/-- If a binary-halving step has a current value already known to be twice its
+next value, then PA proves that the output bit is `0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_div2StepAt_double {G : List Formula}
+    {value half bit : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (eqConstAt bit 0) := by
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hzeroBranch : BProv Ax_s (zeroAt bit :: G) (eqConstAt bit 0) := by
+    have hraw : BProv Ax_s (zeroAt bit :: G) (zeroAt bit) :=
+      BProv_ass (B := Ax_s) (G := zeroAt bit :: G) (by simp)
+    simpa [zeroAt] using hraw
+  have honeBranch : BProv Ax_s (oneAt bit :: G) (eqConstAt bit 0) := by
+    have hbitOne : BProv Ax_s (oneAt bit :: G) (eqConstAt bit 1) := by
+      have hraw : BProv Ax_s (oneAt bit :: G) (oneAt bit) :=
+        BProv_ass (B := Ax_s) (G := oneAt bit :: G) (by simp)
+      simpa [oneAt] using hraw
+    have hbot : BProv Ax_s (oneAt bit :: G) bot :=
+      BProv_Ax_s_div2StepAt_double_one_bot
+        (value := value) (half := half) (bit := bit)
+        (BProv_context_cons (B := Ax_s) hdouble)
+        hbitOne
+        (BProv_context_cons (B := Ax_s) hstep)
+    exact BProv_botE hbot
+  exact BProv_orE hbool hzeroBranch honeBranch
+
 /-- If a binary-halving step has output bit `0`, then its current value is
 exactly twice its next value. -/
 theorem BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero {G : List Formula}
