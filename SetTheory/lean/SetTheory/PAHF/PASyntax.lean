@@ -23893,6 +23893,71 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem
         simpa [C, witness, target, rename_hfSomeDistinguishesTermAt_succ,
           Term.rename, Nat.add_assoc] using hsomeTerm)
 
+/-- High-even strict successor branch with the evenness premise made available
+inside the opened membership-persistence obligation.
+
+The lower-level persistence proof really needs the shifted proof that the
+predecessor high code is even.  This wrapper keeps
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem` as the
+minimal branch closer while providing the more ergonomic obligation shape for
+the carry proof. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem_with_double
+    {G : List Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hmemSucc : BProv Ax_s
+      (doubleEqAt (high+2) (half+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+            G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2))))) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let C : List Formula :=
+    eq (Term.succ (Term.var 0)) (Term.var 1) ::
+      (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+        (rename Nat.succ)
+  have hdoubleRen1 : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (doubleEqAt high half)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hhighDouble Nat.succ
+  have hdoubleRen2 : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ (doubleEqAt high half))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hdoubleRen1 Nat.succ
+  have hdoubleTail : BProv Ax_s
+      ((nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+        (rename Nat.succ))
+      (doubleEqAt (high+2) (half+2)) := by
+    simpa [witness, doubleEqAt, rename, Term.rename, List.map_map,
+      Function.comp_def] using
+      BProv_context_cons (B := Ax_s)
+        (a := rename Nat.succ (nonzeroAt 0))
+        (BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ witness)
+          hdoubleRen2)
+  have hdoubleC : BProv Ax_s C (doubleEqAt (high+2) (half+2)) :=
+    BProv_context_cons (B := Ax_s)
+      (a := eq (Term.succ (Term.var 0)) (Term.var 1))
+      hdoubleTail
+  have hmemC : BProv Ax_s C
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+    exact BProv_cut hmemSucc (D := C) (fun f hf => by
+      simp only [List.mem_cons] at hf
+      rcases hf with hf | hf
+      · subst f
+        exact hdoubleC
+      · exact BProv_ass (B := Ax_s) (G := C) (by simpa [C] using hf))
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem
+      (G := G) (high := high) (low := low) (half := half)
+      hsome hhighDouble (by simpa [C, witness] using hmemC)
+
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
