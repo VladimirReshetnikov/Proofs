@@ -27096,6 +27096,24 @@ theorem
     (by simpa [C] using hopened)
     hmem
 
+/-- Close the two existential eliminations around the `S x ∈ low` assumption
+for the specific old low-half membership target.
+
+The premise is deliberately stated in the fully opened code/step context.  This
+is where the eventual beta-tail construction can use the opened trace
+witnesses to build the new membership existential for `x ∈ lowHalf`. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_low_half_mem_of_opened_code_step
+    {G : List Formula} {lowHalf : Nat}
+    (hopened : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula :: G))
+      (rename Nat.succ (rename Nat.succ (hfMemAt 0 (lowHalf+1))))) :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemFormula :: G)
+      (hfMemAt 0 (lowHalf+1)) :=
+  BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_assumption_elim_opened_code_step
+    hopened
+
 /-- Low-side closer for the odd-high carry branch.
 
 After the assumed `S x`-membership in the shifted low code has been converted
@@ -27123,6 +27141,30 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
   have hmem : BProv Ax_s C (hfMemAt 0 (lowHalf+1)) := by
     simpa [C] using hhalfMem
   exact BProv_mp Ax_s C (hfMemAt 0 (lowHalf+1)) bot hnotLow hmem
+
+/-- Low-side closer where the remaining old low-half membership proof is
+allowed to work in the fully opened `S x ∈ low` code/step context.
+
+This is the natural interface for the forthcoming beta-tail construction: it
+does not smuggle any trace work into a definition, but it does ensure that the
+trace work is performed under the witnesses opened from the low-membership
+assumption. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_mem
+    {G : List Formula} {lowHalf : Nat}
+    (hopened : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (rename Nat.succ (rename Nat.succ (hfMemAt 0 (lowHalf+1))))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      bot :=
+  BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+    (lowHalf := lowHalf)
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_low_half_mem_of_opened_code_step
+      hopened)
 
 /-- Package the derived old low-half membership from explicit beta-entry,
 bounded-trace, and final-bit components.
@@ -27228,6 +27270,48 @@ theorem
         (rename Nat.succ))
       (lowHalf := lowHalf)
       (by simpa [strictHighOddLowOddOpenedIHContext] using hhalfMem))
+
+/-- Even-low named-context specialization of the fully opened low-half
+membership closer. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_opened_low_half_mem
+    {highHalf lowHalf : Nat}
+    (hopened : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (rename Nat.succ (rename Nat.succ (hfMemAt 0 (lowHalf+1))))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot := by
+  simpa [strictHighOddLowDoubleOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_mem
+      (G := (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf)
+      (by simpa [strictHighOddLowDoubleOpenedIHContext] using hopened))
+
+/-- Odd-low named-context specialization of the fully opened low-half
+membership closer. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_mem
+    {highHalf lowHalf : Nat}
+    (hopened : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (rename Nat.succ (rename Nat.succ (hfMemAt 0 (lowHalf+1))))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot := by
+  simpa [strictHighOddLowOddOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_mem
+      (G := (strictHighOddLowOddSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf)
+      (by simpa [strictHighOddLowOddOpenedIHContext] using hopened))
 
 /-- Even-low named-context low-side closer from explicit old low-half
 membership components. -/
