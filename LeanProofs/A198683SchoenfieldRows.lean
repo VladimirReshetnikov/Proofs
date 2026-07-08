@@ -20,6 +20,10 @@ namespace LeanProofs
 
 namespace A198683SchoenfieldRows
 
+/-! ## Label reconstruction core
+
+Shared checker turning Count/Match row data into normalized labels and validating the resulting certificate. -/
+
 /-- Reconstruct normalized labels from Count/Match-style rows. -/
 def labelsFromRowsFrom : Nat -> List Nat -> List (Option Nat) -> Option (List Nat)
   | _, acc, [] => some acc
@@ -42,6 +46,10 @@ def rowCertificateOk (rows : List (Option Nat)) (rowCount classes : Nat) : Bool 
   match labelsFromRows rows with
   | some labels => A198683Schoenfield.certificateOk labels rowCount classes
   | none => false
+
+/-! ## n = 7 certificate (A198683(7) = 34)
+
+Row data, label reconstruction, and finite table certificate for n = 7. -/
 
 /-- Count/Match rows from the n = 7 Schoenfield table. -/
 def rowsSeven : List (Option Nat) :=
@@ -67,6 +75,10 @@ theorem rows_seven_reconstruct_labels :
 theorem schoenfield_rows_a198683_seven :
     rowCertificateOk rowsSeven 132 34 = true := by
   native_decide
+
+/-! ## n = 8 certificate (A198683(8) = 77)
+
+Row data, label reconstruction, and finite table certificate for n = 8. -/
 
 /-- Count/Match rows from the n = 8 Schoenfield table. -/
 def rowsEight : List (Option Nat) :=
@@ -110,6 +122,10 @@ theorem rows_eight_reconstruct_labels :
 theorem schoenfield_rows_a198683_eight :
     rowCertificateOk rowsEight 429 77 = true := by
   native_decide
+
+/-! ## n = 9 certificate (A198683(9) = 187)
+
+Row data, label reconstruction, and finite table certificate for n = 9. -/
 
 /-- Count/Match rows from the n = 9 Schoenfield table. -/
 def rowsNine : List (Option Nat) :=
@@ -216,6 +232,10 @@ theorem rows_nine_reconstruct_labels :
 theorem schoenfield_rows_a198683_nine :
     rowCertificateOk rowsNine 1430 187 = true := by
   native_decide
+
+/-! ## n = 10 certificate (A198683(10) = 462)
+
+Row data, label reconstruction, and finite table certificate for n = 10. -/
 
 /-- Count/Match rows from the n = 10 Schoenfield table. -/
 def rowsTen : List (Option Nat) :=
@@ -536,6 +556,10 @@ theorem rows_ten_reconstruct_labels :
 theorem schoenfield_rows_a198683_ten :
     rowCertificateOk rowsTen 4862 462 = true := by
   native_decide
+
+/-! ## n = 11 certificate (A198683(11) = 1152)
+
+Row data (the ~1050-line rowsEleven literal), label reconstruction, and finite table certificate for n = 11. -/
 
 /-- Count/Match rows from the n = 11 Schoenfield table. -/
 def rowsEleven : List (Option Nat) :=

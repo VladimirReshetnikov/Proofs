@@ -1,7 +1,7 @@
 # `src/Lean/` proof-simplification review
 
 - Created (UTC): 2026-07-08T06:54:00Z
-- Repository HEAD: 847e91a0a (branch `claude/lean-coq-proofs-review-71f4e2`)
+- Repository HEAD: 088cceb8f (branch `claude/lean-coq-proofs-review-71f4e2`)
 
 A review of every Lean and Rocq/Coq proof under `src/Lean/` with the goal of
 making them **simpler, shorter, faster to build, and easier to navigate**,
@@ -102,34 +102,39 @@ Net: ~1050 Coq lines deleted / ~170 added; full clean `CoqProofs` rebuild
 - **`SetTheory/lean/Fol.lean` + `Calculus.lean`**: mirrored the Coq
   `rename_inst_push` dedup to keep the two ports in sync.
 
+### Lean, phase 2 (navigability — committed)
+
+- **Split `SetTheory/lean/PAHF.lean` (25,665 lines) into three modules** at its
+  verified namespace boundaries: `PAHF/AckermannHFCore.lean` (Block A, semantic
+  core), `PAHF/PASyntax.lean` (Block B, PA syntax + `BProv`), and
+  `PAHF/Interpretation.lean` (Block C, interpretation + certificates), with
+  `PAHF.lean` a thin re-export so `SetTheory.PAHF` and every qualified name are
+  unchanged. Pure relocation. Three perspective-diverse adversarial audits
+  (reference-direction, scoping/attributes, declaration-integrity) confirmed no
+  backward references, no scope/attribute/universe state crossing a boundary,
+  and clean cut points; verified with `lake build` (16 jobs). Editing one block
+  now re-elaborates ~9–17 s instead of the whole file.
+- **Section dividers added to the five marker-free giant files**:
+  `A198683.lean` (11), `A198683Tower.lean` (11), `A198683N12Symbolic.lean` (8),
+  `A198683SchoenfieldRows.lean` (6), and Coq `SetTheory/PAHF.v` (12), carving
+  each into named phases without touching a proof. (`RationalFloorOrbit.lean`
+  got its four dividers in phase 1.)
+
 ## Recommended, not yet done (prioritized)
 
-1. **Split `SetTheory/lean/PAHF.lean` (25k lines) at its verified linear
-   boundaries** — Block A `namespace AckermannHF` core (lines ~21–4634),
-   Block B `namespace PA` syntax/`BProv` (~4638–16616), Block C interpretation
-   (~16618–end), with 0 forward references between them. Keep `PAHF.lean` as a
-   thin re-export. Buys incremental-rebuild locality and editor responsiveness;
-   low risk, pure relocation. (A clean split of the Coq `PAHF.v` is only
-   partially possible — the `BProv_Ax_s_*` lemmas live inside `Module PA.Formula`
-   and `Audit.v` pins their qualified names — but the ~6400-line top-level
-   deductive encoding after `Module Formula` can move to a sibling file.)
-2. **Add `/-! ## -/` / banner section headers to the other marker-free giant
-   files**: `A198683.lean`, `A198683Tower.lean`, `A198683N12Symbolic.lean`,
-   `A198683SchoenfieldRows.lean` (all 3000+ lines, ≤1 divider) and Coq `PAHF.v`
-   (21k lines, 0 sections). Comments only, zero risk, high navigation ROI.
-3. **`PAHF` deductive scaffolding is 74% of the file and builds toward an
+1. **`PAHF` deductive scaffolding is 74% of the file and builds toward an
    *uninhabited* target** (`DeductiveBiInterpretationCertificate`). It is not
    dead — `Audit.{v,lean}` type-checks most of it — but it is a scope decision
    for Vladimir: finish it (inhabit the certificate), keep growing it, or, if the
    semantic certificate is the real deliverable, treat it as optional weight. ~78
    genuinely-dead (unreferenced *and* un-audited) decls in Coq `PAHF.v` (~1062
    lines) could be dropped after an intent check.
-4. **Lean Schoenfield/Rows data dedup was deliberately NOT applied.** Unlike
+2. **Lean Schoenfield/Rows data dedup was deliberately NOT applied.** Unlike
    Coq's lazy `firstn`, a Lean `native_decide` over `labelsEleven.take k`
    compiles the full 16796-element `labelsEleven` into every small check, which
    would likely make the build *slower* — a poor trade against "faster to build."
    Revisit only if measurement shows no regression.
-5. Smaller Coq/Lean items surfaced by the survey but left alone as low-value or
+3. Smaller Coq/Lean items surfaced by the survey but left alone as low-value or
    surface-touching: `A198683N12Magnitude` triplicated one-hot flag families
    (evidentiary "independent columns agree"), `RationalFloorOrbit.v` unused
    `Qeq`-level mirror theorems, the `WolframBoolean*Certificates` encoding

@@ -31,6 +31,10 @@ open Complex
 
 open A198683Support
 
+/-! ## Base values and principal-power helpers
+
+Defines the island constants `q, qInv, u, v, w` and the private `principalPow` real/imaginary arithmetic lemmas the later reductions run through. -/
+
 /-- The exact value of `i^i`. -/
 def q : ℂ := (rho : ℂ)
 
@@ -112,6 +116,10 @@ private theorem neg_I_pow_im (z : ℂ) :
   dsimp [principalPow]
   rw [log_neg_I_real, Complex.exp_im]
   simp [Complex.mul_re, Complex.mul_im, Real.sin_neg]
+
+/-! ## Near-`i^i` island reduction identities
+
+Principal-power reductions collapsing towers built from `i`, `i^i`, and `i^(i^i)` back to `i`, `-i`, or `i^i`. -/
 
 /-- `i^i = exp(-pi/2)`. -/
 theorem I_pow_I_eq_q : principalPow Complex.I Complex.I = q := by
@@ -513,6 +521,10 @@ private theorem log_nearProbeS :
   dsimp [tau]
   rw [← Complex.ofReal_log (Real.exp_pos _).le, Real.log_exp]
 
+/-! ## Near-zero doubleton `{2207, 3777}`
+
+The two near-zero representatives and their exact equality via positive-real principal-power associativity. -/
+
 /--
 Representative `idx = 2207` from the n = 12 near-zero probe class:
 
@@ -572,6 +584,10 @@ private theorem log_I_pow_nearProbeS :
     simp [Complex.mul_im]
     nlinarith [Real.pi_pos, tau_lt_one]
 
+/-! ## Near-one pair `{1404, 4239}`
+
+The retained near-one representatives and their exact equality. -/
+
 /--
 Representative `idx = 1404` from the n = 12 near-one probe class:
 
@@ -595,6 +611,10 @@ theorem nearOne1404_eq_nearOne4239 : nearOne1404 = nearOne4239 := by
   rw [nearProbeS_eq_tau]
   congr 1
   apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+/-! ## Representative 25: definitions and exact parts
+
+Layer-by-layer definitions of the `idx = 25` tower and closed forms for the real and imaginary part of each layer. -/
 
 /--
 The `n = 11` exponent subtree used by representative `idx = 25`:
@@ -800,6 +820,10 @@ private theorem mul_mem_pos_neg_interval {e s elo ehi slo shi lo hi : ℝ}
   · have h1 : e * s < e * shi := mul_lt_mul_of_pos_left hs1 he_pos
     have h2 : e * shi < elo * shi := mul_lt_mul_of_neg_right he0 hshi
     exact (h1.trans h2).trans hhi
+
+/-! ## Certified rational-box propagation
+
+Interval-arithmetic lemmas propagating rational bounds from `rho` and `theta` up through each tower layer. -/
 
 /--
 It is enough to bound the two real scalar factors in the exact formula for
@@ -1788,6 +1812,10 @@ theorem nearOne25Seed_box_of_v_box_and_endpoint_bounds
     constructor <;> nlinarith [hprod_bounds.1, hprod_bounds.2]
   exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
 
+/-! ## Separating representative 25 from the near-one pair
+
+The chain deriving `nearOne25Base.im < 0`, hence `‖nearOne25‖ > 1`, so representative 25 differs from both `1404` and `4239`. -/
+
 /--
 The hard sign condition for `idx = 25` follows from a certified interval for
 the previous level's real part. Numerically this level is about `-765.4119`.
@@ -2384,6 +2412,10 @@ theorem nearOne25_ne_nearOne4239_of_endpoint_bounds
     htsin0 htsin1 htcos0 htcos1 hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
     hsrelo hsrehi hsimlo hsimhi h1relo h1rehi h1imlo h1imhi
     h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/-! ## The near-`i^i` candidate table
+
+The fourteen `nearIPowerI…` representatives, each proved exactly equal to `q = i^i`. -/
 
 /--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written
