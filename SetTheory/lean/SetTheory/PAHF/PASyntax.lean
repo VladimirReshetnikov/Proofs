@@ -5069,6 +5069,36 @@ theorem BProv_Ax_s_zeroOrSuccPredAt {G : List Formula} (a : Nat) :
     Term.numeral]
     using (BProv_Ax_s_zeroOrSuccPred_term (G := G) (Term.var a))
 
+/-- A successor-predecessor witness is the same positive-witness fact as
+`nonzeroAt`, with the equality reversed.  This lemma keeps the orientation
+change as proof plumbing rather than baking it into either macro. -/
+theorem BProv_nonzeroAt_of_succPredAt
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula} {a : Nat}
+    (hsucc : BProv B G (succPredAt a)) :
+    BProv B G (nonzeroAt a) := by
+  let succBody : Formula := eq (Term.var (a+1)) (Term.succ (Term.var 0))
+  let nzBody : Formula := eq (Term.succ (Term.var 0)) (Term.var (a+2))
+  have hbody : BProv B (succBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (nonzeroAt a)) := by
+    let C : List Formula := succBody :: G.map (rename Nat.succ)
+    have hsuccBody : BProv B C succBody :=
+      BProv_ass (B := B) (G := C) (by simp [C, succBody])
+    have hsym : BProv B C
+        (eq (Term.succ (Term.var 0)) (Term.var (a+1))) :=
+      BProv_eqSym hsuccBody
+    have hinst : BProv B C (subst (instTerm (Term.var 0)) nzBody) := by
+      simpa [nzBody, subst, instTerm, Term.subst, Term.upSubst]
+        using hsym
+    have hnonzero : BProv B C (ex nzBody) :=
+      BProv_exI (B := B) (G := C) (a := nzBody)
+        (t := Term.var 0) hinst
+    simpa [C, nonzeroAt, nzBody, rename, Term.rename, SetTheory.up]
+      using hnonzero
+  exact BProv_exE_of_sentences (B := B) hB (a := succBody)
+    (c := nonzeroAt a)
+    (by simpa [succPredAt, succBody] using hsucc)
+    (by simpa [succBody] using hbody)
+
 /-- Zero-substitution removes one surrounding binder from a shifted term. -/
 theorem term_substZero_rename_succ (t : Term) :
     Term.subst substZero (Term.rename Nat.succ t) = t := by
@@ -23455,6 +23485,40 @@ theorem BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [modEq, rename] using hbody)
+
+/-- Any member of an explicitly doubled Ackermann code is nonzero.  The zero
+case is discharged by the existing "zero is not a member of an even code"
+lemma; the successor case is only the orientation bridge from `succPredAt` to
+`nonzeroAt`. -/
+theorem BProv_Ax_s_nonzeroAt_of_hfMemAt_double
+    {G : List Formula} {elem set half : Nat}
+    (hmem : BProv Ax_s G (hfMemAt elem set))
+    (hdouble : BProv Ax_s G (doubleEqAt set half)) :
+    BProv Ax_s G (nonzeroAt elem) := by
+  have hcases : BProv Ax_s G (zeroOrSuccPredAt elem) :=
+    BProv_Ax_s_zeroOrSuccPredAt (G := G) elem
+  have hzeroBranch : BProv Ax_s (zeroAt elem :: G) (nonzeroAt elem) := by
+    have helemZero : BProv Ax_s (zeroAt elem :: G) (eqConstAt elem 0) := by
+      have hzero : BProv Ax_s (zeroAt elem :: G) (zeroAt elem) :=
+        BProv_ass (B := Ax_s) (G := zeroAt elem :: G) (by simp)
+      simpa [zeroAt] using
+        hzero
+    have hmemCtx : BProv Ax_s (zeroAt elem :: G) (hfMemAt elem set) :=
+      BProv_context_cons (B := Ax_s) hmem
+    have hdoubleCtx : BProv Ax_s (zeroAt elem :: G)
+        (doubleEqAt set half) :=
+      BProv_context_cons (B := Ax_s) hdouble
+    exact BProv_botE (B := Ax_s) (G := zeroAt elem :: G)
+      (a := nonzeroAt elem)
+      (BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
+        helemZero hdoubleCtx hmemCtx)
+  have hsuccBranch : BProv Ax_s (succPredAt elem :: G) (nonzeroAt elem) := by
+    have hsucc : BProv Ax_s (succPredAt elem :: G) (succPredAt elem) :=
+      BProv_ass (B := Ax_s) (G := succPredAt elem :: G) (by simp)
+    exact BProv_nonzeroAt_of_succPredAt
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf) hsucc
+  exact BProv_orE (by simpa [zeroOrSuccPredAt] using hcases)
+    hzeroBranch hsuccBranch
 
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/

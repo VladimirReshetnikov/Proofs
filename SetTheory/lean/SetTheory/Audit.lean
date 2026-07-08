@@ -232,6 +232,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPred_term
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPredAt
+#check @PA.Formula.BProv_nonzeroAt_of_succPredAt
 #check @PA.Formula.term_substZero_rename_succ
 #check @PA.Formula.term_substSuccVar_rename_succ
 #check @PA.Formula.BProv_Ax_s_add_eq_zero_left_all
@@ -746,6 +747,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_stepsComponent_zero
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_evenSucc_of_zero_and_low_double
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
+#check @PA.Formula.BProv_Ax_s_nonzeroAt_of_hfMemAt_double
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_bit_zero
