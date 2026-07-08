@@ -8816,6 +8816,38 @@ theorem BProv_Ax_s_remAt_of_eqConst {G : List Formula}
             (Term.var (rem+1)))))
       (t := Term.numeral q) hbody)
 
+/-- If the `step` and `idx` slots are fixed numerals, PA proves that the
+Gödel-beta modulus term computes the corresponding closed numeral. -/
+theorem BProv_Ax_s_betaModTerm_of_eqConst {G : List Formula}
+    {step idx s i : Nat}
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i)) :
+    BProv Ax_s G
+      (eq (betaModTerm step idx) (Term.numeral (BetaModulus s i))) := by
+  have hidxSucc : BProv Ax_s G
+      (eq (Term.succ (Term.var idx)) (Term.numeral (i + 1))) := by
+    simpa [Term.numeral_succ] using BProv_eq_congr_succ hidx
+  have hmul : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ (Term.var idx)) (Term.var step))
+        (Term.mul (Term.numeral (i + 1)) (Term.numeral s))) :=
+    BProv_eq_congr_mul hidxSucc hstep
+  have hmulRaw : BProv Ax_s G
+      (eq
+        (Term.mul (Term.numeral (i + 1)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals (i + 1) s)
+  have hsucc : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.mul (Term.succ (Term.var idx)) (Term.var step)))
+        (Term.succ (Term.numeral ((i + 1) * s)))) :=
+    BProv_eq_congr_succ (BProv_eqTrans hmul hmulRaw)
+  have hbeta : BetaModulus s i = (i + 1) * s + 1 := by
+    unfold BetaModulus
+    omega
+  simpa [betaModTerm, hbeta, Term.numeral_succ] using hsucc
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
