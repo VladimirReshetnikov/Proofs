@@ -9000,6 +9000,84 @@ theorem term_substSuccVar_rename_succ (t : Term) :
   | add a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
   | mul a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
 
+/-- PA proves that successor distributes over addition on the left. -/
+theorem BProv_Ax_s_succ_add_all (x : Term) :
+    BProv Ax_s []
+      (all
+        (eq
+          (Term.add (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
+          (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0))))) := by
+  let phi : Formula :=
+    eq
+      (Term.add (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
+      (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0)))
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    have hleft : BProv Ax_s []
+        (eq (Term.add (Term.succ x) Term.zero) (Term.succ x)) :=
+      BProv_Ax_s_addZero_term (Term.succ x)
+    have hright : BProv Ax_s []
+        (eq (Term.succ (Term.add x Term.zero)) (Term.succ x)) :=
+      BProv_eq_congr_succ (BProv_Ax_s_addZero_term x)
+    have htarget : BProv Ax_s []
+        (eq (Term.add (Term.succ x) Term.zero)
+          (Term.succ (Term.add x Term.zero))) :=
+      BProv_eqTrans hleft (BProv_eqSym hright)
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using htarget
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let xs : Term := Term.rename Nat.succ x
+    have hphi : BProv Ax_s [phi]
+        (eq (Term.add (Term.succ xs) (Term.var 0))
+          (Term.succ (Term.add xs (Term.var 0)))) :=
+      BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi, xs])
+    have hleft : BProv Ax_s [phi]
+        (eq (Term.add (Term.succ xs) (Term.succ (Term.var 0)))
+          (Term.succ (Term.add (Term.succ xs) (Term.var 0)))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addSucc_terms (Term.succ xs) (Term.var 0))
+    have hmid : BProv Ax_s [phi]
+        (eq (Term.succ (Term.add (Term.succ xs) (Term.var 0)))
+          (Term.succ (Term.succ (Term.add xs (Term.var 0))))) :=
+      BProv_eq_congr_succ hphi
+    have hrightStep : BProv Ax_s [phi]
+        (eq (Term.add xs (Term.succ (Term.var 0)))
+          (Term.succ (Term.add xs (Term.var 0)))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms xs (Term.var 0))
+    have hright : BProv Ax_s [phi]
+        (eq (Term.succ (Term.succ (Term.add xs (Term.var 0))))
+          (Term.succ (Term.add xs (Term.succ (Term.var 0))))) :=
+      BProv_eq_congr_succ (BProv_eqSym hrightStep)
+    have htarget : BProv Ax_s [phi]
+        (eq (Term.add (Term.succ xs) (Term.succ (Term.var 0)))
+          (Term.succ (Term.add xs (Term.succ (Term.var 0))))) :=
+      BProv_eqTrans (BProv_eqTrans hleft hmid) hright
+    simpa [phi, xs, substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substSuccVar_rename_succ] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of `S x + y = S (x + y)`. -/
+theorem BProv_Ax_s_succ_add_terms {G : List Formula} (x y : Term) :
+    BProv Ax_s G
+      (eq (Term.add (Term.succ x) y) (Term.succ (Term.add x y))) := by
+  have hall : BProv Ax_s G
+      (all
+        (eq
+          (Term.add (Term.succ (Term.rename Nat.succ x)) (Term.var 0))
+          (Term.succ (Term.add (Term.rename Nat.succ x) (Term.var 0))))) :=
+    BProv_weaken_nil (BProv_Ax_s_succ_add_all x)
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using hinst
+
 /-- PA proves uniformly in the right summand that if `x + y = 0`, then
 `x = 0`.  The free term `x` is shifted under the displayed universal binder. -/
 theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
