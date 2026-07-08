@@ -25877,6 +25877,48 @@ def strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
     (strictHighOddOpenedWitnessSuccLowMemStepEx ::
       G.map (rename Nat.succ)).map (rename Nat.succ)
 
+/-- Substitution left after the code and step witnesses in the opened
+`S x ∈ low` trace have been exposed.  It is just the original `S x` element
+substitution lifted through the two opened beta witnesses. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedSubst : Nat → Term :=
+  Term.upSubst (Term.upSubst (instTerm strictHighOddSuccWitnessTerm))
+
+/-- Initial beta-entry component in the fully opened `S x ∈ low` trace. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedEntryFormula : Formula :=
+  subst strictHighOddOpenedWitnessSuccLowMemOpenedSubst
+    (betaAtConstIdx (2+2) 1 0 0)
+
+/-- Trace tail component in the fully opened `S x ∈ low` trace. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedTraceTailFormula : Formula :=
+  subst strictHighOddOpenedWitnessSuccLowMemOpenedSubst
+    strictHighOddOpenedWitnessSuccLowMemTraceTail
+
+/-- Bounded old halving trace component in the fully opened `S x ∈ low` trace. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula : Formula :=
+  subst strictHighOddOpenedWitnessSuccLowMemOpenedSubst
+    (betaDiv2StepsThroughAt 1 0 (0+2))
+
+/-- Final-bit existential component in the fully opened `S x ∈ low` trace. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedBitExFormula : Formula :=
+  subst strictHighOddOpenedWitnessSuccLowMemOpenedSubst
+    (ex strictHighOddOpenedWitnessSuccLowMemBitBody)
+
+/-- The exact `0 <= S x` antecedent obtained by instantiating the opened
+bounded trace in `S x ∈ low` at old index `0`. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroLeFormula : Formula :=
+  subst (instTerm Term.zero)
+    (subst (Term.upSubst
+      strictHighOddOpenedWitnessSuccLowMemOpenedSubst)
+      (leAt 0 ((0+2)+1)))
+
+/-- The old-index-`0` step witness obtained by instantiating the opened bounded
+trace in `S x ∈ low`. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroFormula : Formula :=
+  subst (instTerm Term.zero)
+    (subst (Term.upSubst
+      strictHighOddOpenedWitnessSuccLowMemOpenedSubst)
+      (betaDiv2StepWitnessAt (1+1) (0+1) 0))
+
 /-- Old low-half membership formula that closes the odd-high carry branch
 against the negative half of the opened IH witness. -/
 def strictHighOddOpenedWitnessLowHalfMemFormula (lowHalf : Nat) :
@@ -27028,6 +27070,140 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
         simpa [strictHighOddOpenedWitnessSuccMemStepsFormula] using hsteps)
       (by
         simpa [strictHighOddOpenedWitnessSuccMemBitExFormula] using hbitEx)
+
+/-- The fully opened `S x ∈ low` code/step body is the head assumption of the
+opened low-membership context. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_body
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemStepBody := by
+  exact BProv_ass (B := Ax_s)
+    (G := strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+    (by simp [strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext])
+
+/-- Projection of the initial beta-entry component from the fully opened
+`S x ∈ low` trace. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_entry
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemOpenedEntryFormula := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hbody : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemStepBody := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_body
+        (G := G))
+  have hentry := BProv_andE1 hbody
+  simpa [C, strictHighOddOpenedWitnessSuccLowMemOpenedEntryFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+    strictHighOddOpenedWitnessSuccLowMemStepBody,
+    strictHighOddOpenedWitnessSuccLowMemBody, subst, Term.subst,
+    Term.upSubst] using hentry
+
+/-- Projection of the trace tail from the fully opened `S x ∈ low` trace. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_trace_tail
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemOpenedTraceTailFormula := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hbody : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemStepBody := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_body
+        (G := G))
+  have htail := BProv_andE2 hbody
+  simpa [C, strictHighOddOpenedWitnessSuccLowMemOpenedTraceTailFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+    strictHighOddOpenedWitnessSuccLowMemStepBody,
+    strictHighOddOpenedWitnessSuccLowMemBody, subst, Term.subst,
+    Term.upSubst] using htail
+
+/-- Projection of the bounded old trace component from the fully opened
+`S x ∈ low` trace. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have htail : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedTraceTailFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_trace_tail
+        (G := G))
+  have hsteps := BProv_andE1 htail
+  simpa [C, strictHighOddOpenedWitnessSuccLowMemOpenedTraceTailFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedBitExFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+    strictHighOddOpenedWitnessSuccLowMemTraceTail, subst, Term.subst,
+    Term.upSubst] using hsteps
+
+/-- Projection of the final-bit existential from the fully opened `S x ∈ low`
+trace. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitEx
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemOpenedBitExFormula := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have htail : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedTraceTailFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_trace_tail
+        (G := G))
+  have hbit := BProv_andE2 htail
+  simpa [C, strictHighOddOpenedWitnessSuccLowMemOpenedTraceTailFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedBitExFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+    strictHighOddOpenedWitnessSuccLowMemTraceTail, subst, Term.subst,
+    Term.upSubst] using hbit
+
+/-- The opened `S x ∈ low` trace supplies its old index-`0` binary-halving step.
+
+This does not yet build the beta-tail code for `x ∈ lowHalf`; it only performs
+the honest universal instantiation of the old trace at index `0`, discharging
+the antecedent by `0 <= S x`. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_zero
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroFormula := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hsteps : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps
+        (G := G))
+  have himpRaw :=
+    BProv_allE (B := Ax_s) (G := C) (t := Term.zero) hsteps
+  have himp : BProv Ax_s C
+      (imp strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroLeFormula
+        strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroFormula) := by
+    simpa [strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula,
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroLeFormula,
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroFormula,
+      strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+      betaDiv2StepsThroughAt, subst, instTerm, Term.subst, Term.upSubst]
+      using himpRaw
+  have hle : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroLeFormula := by
+    simpa [strictHighOddOpenedWitnessSuccLowMemOpenedStepZeroLeFormula,
+      strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+      strictHighOddSuccWitnessTerm, leAt, leTermAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename] using
+      (BProv_Ax_s_leTermAt_zero_left (G := C)
+        (Term.succ (Term.var 2)))
+  exact BProv_mp Ax_s C _ _ himp hle
 
 /-- Open the substituted low-membership assumption `S x ∈ low` down to its
 code and step witnesses.
