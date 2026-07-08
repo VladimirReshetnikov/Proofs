@@ -10528,6 +10528,143 @@ Definition remAt (rem value modulus : nat) : formula :=
       (tAdd (tMul (tVar 0) (tVar (S modulus)))
         (tVar (S rem))))).
 
+Lemma BProv_Ax_s_remAt_of_eqConst : forall G rem value modulus r v m q,
+  BProv Ax_s G (eqConstAt rem r) ->
+  BProv Ax_s G (eqConstAt value v) ->
+  BProv Ax_s G (eqConstAt modulus m) ->
+  r < m ->
+  q * m + r = v ->
+  BProv Ax_s G (remAt rem value modulus).
+Proof.
+  intros G rem value modulus r v m q hrem hvalue hmod hlt hval.
+  pose proof (BProv_Ax_s_ltAt_of_eqConst G rem modulus r m
+    hrem hmod hlt) as hltAt.
+  assert (hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q)) (ltAt (S rem) (S modulus)))).
+  {
+    unfold ltAt in *.
+    simpl.
+    exact hltAt.
+  }
+  assert (hmulLeft : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (tVar modulus))
+        (tMul (Term.numeral q) (Term.numeral m)))).
+  {
+    exact (BProv_eq_congr_mul_right Ax_s G
+      (Term.numeral q) (tVar modulus) (Term.numeral m) hmod).
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmul : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (tVar modulus))
+        (Term.numeral (q * m)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (Term.numeral q) (tVar modulus))
+      (tMul (Term.numeral q) (Term.numeral m))
+      (Term.numeral (q * m)) hmulLeft hmulRaw).
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tMul (Term.numeral q) (tVar modulus))
+      (Term.numeral (q * m)) (tVar rem) hmul).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (q * m)) (tVar rem) (Term.numeral r) hrem).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+      (tAdd (Term.numeral (q * m)) (Term.numeral r))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tVar value)
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tVar value) (Term.numeral v)
+      (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+      hvalue
+      (BProv_eqSym Ax_s G
+        (tAdd (tMul (Term.numeral q) (tVar modulus)) (tVar rem))
+        (Term.numeral v) hcomputed)).
+  }
+  assert (hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (pEq (tVar (S value))
+          (tAdd (tMul (tVar 0) (tVar (S modulus)))
+            (tVar (S rem)))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    exact htarget.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (pAnd (ltAt (S rem) (S modulus))
+          (pEq (tVar (S value))
+            (tAdd (tMul (tVar 0) (tVar (S modulus)))
+              (tVar (S rem))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G
+      (subst (instTerm (Term.numeral q)) (ltAt (S rem) (S modulus)))
+      (subst (instTerm (Term.numeral q))
+        (pEq (tVar (S value))
+          (tAdd (tMul (tVar 0) (tVar (S modulus)))
+            (tVar (S rem)))))
+      hltBody hvalueBody).
+  }
+  unfold remAt.
+  exact (BProv_exI Ax_s G
+    (pAnd (ltAt (S rem) (S modulus))
+      (pEq (tVar (S value))
+        (tAdd (tMul (tVar 0) (tVar (S modulus)))
+          (tVar (S rem)))))
+    (Term.numeral q) hbody).
+Qed.
+
 Definition betaModTerm (step idx : nat) : term :=
   tSucc (tMul (tSucc (tVar idx)) (tVar step)).
 

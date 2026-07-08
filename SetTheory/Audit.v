@@ -121,6 +121,7 @@ Check PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot.
 Check PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero.
 Check PA.Formula.BProv_Ax_s_div2StepAt_closedSubst.
 Check PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_remAt_of_eqConst.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
