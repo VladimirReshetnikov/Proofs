@@ -16392,6 +16392,248 @@ theorem BProv_Ax_s_hfMemZeroSetAt_pred_opened_body_bitEx
     instTerm, Term.subst, Term.upSubst, rename, Term.rename, SetTheory.up,
     succBody, succCtx, bodyCtx, body, tail, bitBody] using hbitCtx
 
+/-- In the opened code/step body of `hfMemZeroSetAt`, the zero branch of the
+step case split is contradictory.
+
+This is the closed-zero-set analogue of
+`BProv_Ax_s_hfMemAt_opened_body_step_zero_bot`; it performs only existential
+unpacking and the final-bit refutation, leaving the membership definition
+unchanged. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_opened_body_step_zero_bot
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (zeroAt 0 :: bodyCtx) bot := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let zeroCtx : List Formula := zeroAt 0 :: bodyCtx
+  have hzero : BProv Ax_s zeroCtx (eqConstAt 0 0) := by
+    have hz : BProv Ax_s zeroCtx (zeroAt 0) :=
+      BProv_ass (B := Ax_s) (G := zeroCtx) (by simp [zeroCtx])
+    simpa [zeroAt] using hz
+  have hbody : BProv Ax_s zeroCtx body := by
+    have hbodyBase : BProv Ax_s bodyCtx body :=
+      BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+    exact BProv_context_cons (B := Ax_s) hbodyBase
+  have htail : BProv Ax_s zeroCtx tail :=
+    BProv_andE2 hbody
+  have hbitEx : BProv Ax_s zeroCtx (ex bitBody) :=
+    BProv_andE2 htail
+  have hbitOpened : BProv Ax_s (bitBody :: zeroCtx.map (rename Nat.succ))
+      bot := by
+    have hbitBody : BProv Ax_s (bitBody :: zeroCtx.map (rename Nat.succ))
+        bitBody :=
+      BProv_ass (B := Ax_s)
+        (G := bitBody :: zeroCtx.map (rename Nat.succ)) (by simp)
+    have hone : BProv Ax_s (bitBody :: zeroCtx.map (rename Nat.succ))
+        (eqConstAt 0 1) := by
+      simpa [oneAt] using BProv_andE1 hbitBody
+    have hbitAt : BProv Ax_s (bitBody :: zeroCtx.map (rename Nat.succ))
+        (betaDiv2BitAt 0 2 1 (elem+3)) :=
+      BProv_andE2 hbitBody
+    have hstepRenRaw : BProv Ax_s (zeroCtx.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt 0 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hzero Nat.succ
+    have hstepRen : BProv Ax_s (zeroCtx.map (rename Nat.succ))
+        (eqConstAt 1 0) := by
+      simpa [eqConstAt, rename, Term.rename] using hstepRenRaw
+    have hstepBitCtx : BProv Ax_s
+        (bitBody :: zeroCtx.map (rename Nat.succ)) (eqConstAt 1 0) :=
+      BProv_context_cons (B := Ax_s) hstepRen
+    exact BProv_Ax_s_betaDiv2BitAt_step_zero_bot
+      (G := bitBody :: zeroCtx.map (rename Nat.succ))
+      (bit := 0) (code := 2) (step := 1) (idx := elem+3)
+      hone hstepBitCtx hbitAt
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hbitEx (by
+      simpa [rename, zeroCtx, bodyCtx, body, tail, bitBody, List.map_map,
+        Function.comp_def] using hbitOpened)
+
+/-- Reduce an `hfMemZeroSetAt` contradiction to the successor branch of the
+opened halving-step witness. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_bot_of_opened_step_successor
+    {G : List Formula} {elem : Nat}
+    (hsucc :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaTermAtConstIdx Term.zero 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      BProv Ax_s (succPredAt 0 :: bodyCtx) bot)
+    (hmem : BProv Ax_s G (hfMemZeroSetAt elem)) :
+    BProv Ax_s G bot := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  have hcodeStep : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
+    have hstepEx : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hopened : BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        bot := by
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      have hcases : BProv Ax_s bodyCtx (zeroOrSuccPredAt 0) :=
+        BProv_Ax_s_zeroOrSuccPredAt (G := bodyCtx) 0
+      have hzeroBranch : BProv Ax_s (zeroAt 0 :: bodyCtx) bot := by
+        simpa [bitBody, tail, body, bodyCtx] using
+          (BProv_Ax_s_hfMemZeroSetAt_opened_body_step_zero_bot
+            (G := G) (elem := elem))
+      have hsuccBranch : BProv Ax_s (succPredAt 0 :: bodyCtx) bot := by
+        simpa [bitBody, tail, body, bodyCtx] using hsucc
+      exact BProv_orE (B := Ax_s) (G := bodyCtx)
+        (a := zeroAt 0) (b := succPredAt 0) (c := bot)
+        (by simpa [zeroOrSuccPredAt] using hcases)
+        hzeroBranch hsuccBranch
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstepEx (by simpa [rename] using hopened)
+  have hmem' : BProv Ax_s G (ex (ex body)) := by
+    simpa [hfMemZeroSetAt, body, tail, bitBody] using hmem
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hmem' (by simpa [rename] using hcodeStep)
+
+/-- Open the successor branch of the `hfMemZeroSetAt` code/step witness. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_succ_opened_pred_bot
+    {G : List Formula} {elem : Nat}
+    (hpred :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaTermAtConstIdx Term.zero 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ)) bot) :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx) bot := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  have hsucc : BProv Ax_s succCtx (succPredAt 0) :=
+    BProv_ass (B := Ax_s) (G := succCtx) (by simp [succCtx])
+  have hbody : BProv Ax_s (succBody :: succCtx.map (rename Nat.succ)) bot := by
+    simpa [bitBody, tail, body, bodyCtx, succCtx, succBody] using hpred
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hsucc (by
+      simpa [succCtx, bodyCtx, body, tail, bitBody, succPredAt, succBody,
+        rename] using hbody)
+
+/-- Reduce an `hfMemZeroSetAt` contradiction to the predecessor-opened
+successor branch of the code/step witness. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_bot_of_opened_step_pred
+    {G : List Formula} {elem : Nat}
+    (hpred :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaTermAtConstIdx Term.zero 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ)) bot)
+    (hmem : BProv Ax_s G (hfMemZeroSetAt elem)) :
+    BProv Ax_s G bot := by
+  exact BProv_Ax_s_hfMemZeroSetAt_bot_of_opened_step_successor
+    (G := G) (elem := elem)
+    (by
+      simpa using
+        (BProv_Ax_s_hfMemZeroSetAt_succ_opened_pred_bot
+          (G := G) (elem := elem) hpred))
+    hmem
+
 /-- Reduce an `hfMemAt` contradiction to the predecessor-opened successor
 branch of the code/step witness. -/
 theorem BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
