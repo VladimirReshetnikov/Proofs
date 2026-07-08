@@ -451,6 +451,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_opened_final_current_zero
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_bot
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
+#check @PA.Formula.subst_instTerm_var_hfMemAt_succ_zero
+#check @PA.Formula.subst_instTerm_zero_hfMemAt_succ_zero
+#check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_body_of_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_body
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_member_bot
@@ -467,6 +470,10 @@ open SetTheory
 #check @PA.Formula.hfSomeDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat_of_lt
 #check @PA.Formula.hfSomeDistinguishesAt_nat_or_of_ne
+#check @PA.Formula.subst_instTerm_var_hfDistinguishesAt_zero_succ
+#check @PA.Formula.BProv_hfSomeDistinguishesAt_intro_var
+#check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt01_bot_of_distinguishing
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_member_ext_of_lt_bots

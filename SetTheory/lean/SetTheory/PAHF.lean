@@ -7084,6 +7084,30 @@ theorem subst_up_zero_hfMemAt_zero_set :
     betaModTerm, subst, instTerm, Term.subst, Term.upSubst,
     Term.rename]
 
+/-- Instantiating the set slot in the one-variable context
+`hfMemAt (elem+1) 0` by an existing PA variable recovers ordinary
+Ackermann-membership at that set slot. -/
+theorem subst_instTerm_var_hfMemAt_succ_zero (elem set : Nat) :
+    subst (instTerm (Term.var set)) (hfMemAt (elem+1) 0) =
+      hfMemAt elem set := by
+  simp [hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.numeral]
+
+/-- Instantiating the set slot in `hfMemAt (elem+1) 0` by the closed PA
+numeral `0` yields the closed-zero-set membership formula. -/
+theorem subst_instTerm_zero_hfMemAt_succ_zero (elem : Nat) :
+    subst (instTerm Term.zero) (hfMemAt (elem+1) 0) =
+      hfMemZeroSetAt elem := by
+  simp [hfMemZeroSetAt, hfMemAt, betaTermAtConstIdx, betaTermAt,
+    remTermAt, ltTermAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.numeral]
+
 theorem rename_hfMemAt (r : Nat → Nat) (elem set : Nat) :
     rename r (hfMemAt elem set) = hfMemAt (r elem) (r set) := by
   simp [hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
@@ -20226,6 +20250,82 @@ theorem BProv_Ax_s_hfMemZeroSetAt_bot
         (BProv_Ax_s_hfMemZeroSetAt_opened_final_current_zero
           (G := G) (elem := elem)))
     hmem
+
+/-- If PA proves that a set slot is the Ackermann code `0`, then membership in
+that slot is contradictory.  This is a reusable equality-transport form of
+`BProv_Ax_s_hfMemZeroSetAt_bot`, not a special case built into `hfMemAt`. -/
+theorem BProv_Ax_s_hfMemAt_bot_of_eqConst_zero
+    {G : List Formula} {elem set : Nat}
+    (hset : BProv Ax_s G (eqConstAt set 0))
+    (hmem : BProv Ax_s G (hfMemAt elem set)) :
+    BProv Ax_s G bot := by
+  have hsetEq : BProv Ax_s G (eq (Term.var set) Term.zero) := by
+    simpa [eqConstAt, Term.numeral] using hset
+  have hmemCtx : BProv Ax_s G
+      (subst (instTerm (Term.var set)) (hfMemAt (elem+1) 0)) := by
+    simpa [subst_instTerm_var_hfMemAt_succ_zero] using hmem
+  have hzeroMemRaw : BProv Ax_s G
+      (subst (instTerm Term.zero) (hfMemAt (elem+1) 0)) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := Term.var set) (t := Term.zero)
+      (a := hfMemAt (elem+1) 0) hsetEq hmemCtx
+  have hzeroMem : BProv Ax_s G (hfMemZeroSetAt elem) := by
+    simpa [subst_instTerm_zero_hfMemAt_succ_zero] using hzeroMemRaw
+  exact BProv_Ax_s_hfMemZeroSetAt_bot hzeroMem
+
+/-- Instantiating the bound witness in a distinguishing-member body by an
+existing PA variable recovers the corresponding open distinguishing formula. -/
+theorem subst_instTerm_var_hfDistinguishesAt_zero_succ
+    (elem high low : Nat) :
+    subst (instTerm (Term.var elem))
+        (hfDistinguishesAt 0 (high+1) (low+1)) =
+      hfDistinguishesAt elem high low := by
+  simp [hfDistinguishesAt, subst, subst_instTerm_var_hfMemAt_zero_succ]
+
+/-- Existential introduction for the distinguishing-member macro, using an
+existing PA variable as the witness. -/
+theorem BProv_hfSomeDistinguishesAt_intro_var
+    {B : Formula → Prop} {G : List Formula} {elem high low : Nat}
+    (hdist : BProv B G (hfDistinguishesAt elem high low)) :
+    BProv B G (hfSomeDistinguishesAt high low) := by
+  have hinst : BProv B G
+      (subst (instTerm (Term.var elem))
+        (hfDistinguishesAt 0 (high+1) (low+1))) := by
+    simpa [subst_instTerm_var_hfDistinguishesAt_zero_succ] using hdist
+  simpa [hfSomeDistinguishesAt] using
+    (BProv_exI (B := B) (G := G)
+      (a := hfDistinguishesAt 0 (high+1) (low+1))
+      (t := Term.var elem) hinst)
+
+/-- If an element belongs to the high set and PA proves the low set is the
+empty Ackermann code, then the element distinguishes high from low. -/
+theorem BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
+    {G : List Formula} {elem high low : Nat}
+    (hhigh : BProv Ax_s G (hfMemAt elem high))
+    (hlowZero : BProv Ax_s G (eqConstAt low 0)) :
+    BProv Ax_s G (hfDistinguishesAt elem high low) := by
+  let lowMem : Formula := hfMemAt elem low
+  have hbot : BProv Ax_s (lowMem :: G) bot := by
+    have hlowZeroCtx : BProv Ax_s (lowMem :: G) (eqConstAt low 0) :=
+      BProv_context_cons (B := Ax_s) hlowZero
+    have hlowMem : BProv Ax_s (lowMem :: G) (hfMemAt elem low) :=
+      BProv_ass (B := Ax_s) (G := lowMem :: G) (by simp [lowMem])
+    exact BProv_Ax_s_hfMemAt_bot_of_eqConst_zero hlowZeroCtx hlowMem
+  have hnotLow : BProv Ax_s G (imp (hfMemAt elem low) bot) := by
+    simpa [lowMem] using BProv_impI hbot
+  exact BProv_andI hhigh hnotLow
+
+/-- Existential form of
+`BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
+    {G : List Formula} {elem high low : Nat}
+    (hhigh : BProv Ax_s G (hfMemAt elem high))
+    (hlowZero : BProv Ax_s G (eqConstAt low 0)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) :=
+  BProv_hfSomeDistinguishesAt_intro_var
+    (B := Ax_s) (G := G) (elem := elem) (high := high) (low := low)
+    (BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
+      hhigh hlowZero)
 
 /-- The closed-zero-set membership assumption required by the translated
 HF empty-set axiom is contradictory. -/
