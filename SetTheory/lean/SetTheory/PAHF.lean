@@ -14357,6 +14357,106 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
           List.map_map, Function.comp_def] using hopened)
   exact BProv_orE hcmp hleBranch hgtBranch
 
+/-- A closed current value determines the output bit of any binary-halving
+step: the bit is the value modulo two.  This keeps the modulus as the literal
+term `2`, avoiding any dependence on an arbitrary modulus slot. -/
+theorem BProv_Ax_s_eqConstAt_mod_two_of_div2StepAt_eqConst
+    {G : List Formula} {value half bit v : Nat}
+    (hvalue : BProv Ax_s G (eqConstAt value v))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (eqConstAt bit (v % 2)) := by
+  let val : Term := Term.var value
+  let modulus : Term := Term.numeral 2
+  let lowQuot : Term := Term.numeral (v / 2)
+  let lowRem : Term := Term.numeral (v % 2)
+  let highQuot : Term := Term.var half
+  let highRem : Term := Term.var bit
+  let double : Term := Term.add highQuot highQuot
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt, double, highQuot, highRem, val] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hhighLt : BProv Ax_s G (ltTermAt highRem modulus) := by
+    have hzeroBranch :
+        BProv Ax_s (zeroAt bit :: G) (ltTermAt highRem modulus) := by
+      let C : List Formula := zeroAt bit :: G
+      have hbitZero : BProv Ax_s C (eqConstAt bit 0) := by
+        have hraw : BProv Ax_s C (zeroAt bit) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        simpa [zeroAt] using hraw
+      simpa [highRem, modulus, ltTermAt, Term.rename] using
+        (BProv_Ax_s_ltConst_of_eqConst (G := C) (a := bit)
+          (m := 0) (n := 2) hbitZero (by decide))
+    have honeBranch :
+        BProv Ax_s (oneAt bit :: G) (ltTermAt highRem modulus) := by
+      let C : List Formula := oneAt bit :: G
+      have hbitOne : BProv Ax_s C (eqConstAt bit 1) := by
+        have hraw : BProv Ax_s C (oneAt bit) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        simpa [oneAt] using hraw
+      simpa [highRem, modulus, ltTermAt, Term.rename] using
+        (BProv_Ax_s_ltConst_of_eqConst (G := C) (a := bit)
+          (m := 1) (n := 2) hbitOne (by decide))
+    exact BProv_orE hbool hzeroBranch honeBranch
+  have hlowLt : BProv Ax_s G (ltTermAt lowRem modulus) := by
+    have hlt : v % 2 < 2 := Nat.mod_lt v (by decide)
+    simpa [lowRem, modulus, ltTermAt, Term.rename] using
+      (BProv_Ax_s_ltConst_closed (G := G) (m := v % 2) (n := 2) hlt)
+  have hstepEq : BProv Ax_s G (eq val (Term.add double highRem)) := by
+    simpa [div2StepAt, val, double, highQuot, highRem] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hhighMul : BProv Ax_s G
+      (eq (Term.mul highQuot modulus) double) := by
+    simpa [highQuot, modulus, double] using
+      BProv_Ax_s_mul_two_right_terms highQuot
+  have hhighSum : BProv Ax_s G
+      (eq (Term.add (Term.mul highQuot modulus) highRem)
+        (Term.add double highRem)) :=
+    BProv_eq_congr_add_left highRem hhighMul
+  have hhigh : BProv Ax_s G
+      (eq val (Term.add (Term.mul highQuot modulus) highRem)) :=
+    BProv_eqTrans hstepEq (BProv_eqSym hhighSum)
+  have hmulRaw : BProv Ax_s G
+      (eq (Term.mul lowQuot modulus) (Term.numeral ((v / 2) * 2))) := by
+    simpa [lowQuot, modulus] using
+      BProv_weaken_nil (BProv_Ax_s_mulNumerals (v / 2) 2)
+  have hmulAdd : BProv Ax_s G
+      (eq (Term.add (Term.mul lowQuot modulus) lowRem)
+        (Term.add (Term.numeral ((v / 2) * 2)) lowRem)) :=
+    BProv_eq_congr_add_left lowRem hmulRaw
+  have haddRaw : BProv Ax_s G
+      (eq (Term.add (Term.numeral ((v / 2) * 2)) lowRem)
+        (Term.numeral (((v / 2) * 2) + v % 2))) := by
+    simpa [lowRem] using
+      BProv_weaken_nil (BProv_Ax_s_addNumerals ((v / 2) * 2) (v % 2))
+  have hdecomp : ((v / 2) * 2) + v % 2 = v := by
+    have hdiv := Nat.div_add_mod v 2
+    omega
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.numeral ((v / 2) * 2)) lowRem)
+        (Term.numeral v)) := by
+    simpa [hdecomp] using haddRaw
+  have hcomputed : BProv Ax_s G
+      (eq (Term.add (Term.mul lowQuot modulus) lowRem)
+        (Term.numeral v)) :=
+    BProv_eqTrans hmulAdd hadd
+  have hlow : BProv Ax_s G
+      (eq val (Term.add (Term.mul lowQuot modulus) lowRem)) := by
+    simpa [val, eqConstAt] using
+      BProv_eqTrans hvalue (BProv_eqSym hcomputed)
+  have hexact : BProv Ax_s G (eq highRem lowRem) :=
+    BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
+      (value := val) (modulus := modulus)
+      (lowQuot := lowQuot) (highQuot := highQuot)
+      (lowRem := lowRem) (highRem := highRem)
+      hlowLt hhighLt hlow hhigh
+  simpa [eqConstAt, highRem, lowRem] using hexact
+
 /-- Remainder exactness for closed dividends and moduli.  The Euclidean
 division witness lives in the metatheory, while the PA proof uses the
 explicit bounded-remainder functionality lemmas above. -/
