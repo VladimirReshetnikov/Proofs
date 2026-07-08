@@ -15127,6 +15127,31 @@ Proof.
   - apply P_andI; apply P_eqRefl.
 Qed.
 
+Lemma BProv_formulaAt_eq_var_of_eq :
+  forall (B : form -> Prop) G rho m n,
+  BProv B G (fEq (rho m) (rho n)) ->
+  BProv B G (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))).
+Proof.
+  intros B G rho m n [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ G)
+    (fEx (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))))).
+  apply (P_exI (L ++ G) _ (rho m)).
+  apply (P_exI (L ++ G) _ (rho n)).
+  replace (rho m + 2) with (S (S (rho m))) by lia.
+  replace (rho n + 2) with (S (S (rho n))) by lia.
+  cbn.
+  change (Prov (L ++ G) (fAnd (fEq (rho m) (rho m))
+    (fAnd (fEq (rho n) (rho n)) (fEq (rho m) (rho n))))).
+  apply P_andI.
+  - apply P_eqRefl.
+  - apply P_andI.
+    + apply P_eqRefl.
+    + exact hp.
+Qed.
+
 Lemma BProv_formulaAt_andI : forall rho G a b,
   BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
   BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b) ->
@@ -15197,6 +15222,53 @@ Proof.
     (formulaAt rho a) (formulaAt rho b) (formulaAt rho c) hor ha hb).
 Qed.
 
+Lemma BProv_formulaAt_eq_of_termGraphsAt :
+  forall (B : form -> Prop) G rho s t i j,
+  BProv B G (termGraphAt rho i s) ->
+  BProv B G (termGraphAt rho j t) ->
+  BProv B G (fEq i j) ->
+  BProv B G (formulaAt rho (PA.pEq s t)).
+Proof.
+  intros B G rho s t i j hs ht heq.
+  pose proof (BProv_andI B G (termGraphAt rho i s)
+    (fAnd (termGraphAt rho j t) (fEq i j))
+    hs (BProv_andI B G (termGraphAt rho j t) (fEq i j) ht heq))
+    as hconj.
+  destruct hconj as [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ G)
+    (fEx (fEx (fAnd (termGraphAt (fun n => rho n + 2) 1 s)
+      (fAnd (termGraphAt (fun n => rho n + 2) 0 t) (fEq 1 0)))))).
+  apply (P_exI (L ++ G) _ i).
+  apply (P_exI (L ++ G) _ j).
+  simpl.
+  rewrite !rename_inst_up.
+  rewrite !termGraphAt_rename.
+  cbn.
+  replace (termGraphAt
+      (fun n : nat => scons_nat j (inst i) (rho n + 2)) i s)
+    with (termGraphAt rho i s).
+  2:{
+    apply termGraphAt_map_ext.
+    intro n.
+    unfold scons_nat, inst.
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
+  }
+  replace (termGraphAt
+      (fun n : nat => scons_nat j (inst i) (rho n + 2)) j t)
+    with (termGraphAt rho j t).
+  2:{
+    apply termGraphAt_map_ext.
+    intro n.
+    unfold scons_nat, inst.
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
+  }
+  exact hp.
+Qed.
+
 Lemma BProv_termGraphAt_eqElim_out :
   forall (B : form -> Prop) G rho t i j,
   BProv B G (fEq i j) ->
@@ -15247,6 +15319,92 @@ Proof.
     unfold scons_nat, inst.
     replace (rho n + 2) with (S (S (rho n))) by lia.
     reflexivity.
+Qed.
+
+Lemma BProv_eq_of_formulaAt_eq_var :
+  forall (B : form -> Prop) G rho m n,
+  BProv B G (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))) ->
+  BProv B G (fEq (rho m) (rho n)).
+Proof.
+  intros B G rho m n [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  set (H := L ++ G).
+  change (Prov H (fEq (rho m) (rho n))).
+  change (Prov H
+    (fEx (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))))) in hp.
+  apply (P_exE H
+    (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))))
+    (fEq (rho m) (rho n)) hp).
+  change (Prov
+    (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))) :: map (rename S) H)
+    (fEq (S (rho m)) (S (rho n)))).
+  set (H1 :=
+    fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))) :: map (rename S) H).
+  assert (hinner : Prov H1
+      (fEx (fAnd (fEq 1 (rho m + 2))
+        (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))))).
+  {
+    apply P_ass.
+    unfold H1.
+    simpl.
+    left. reflexivity.
+  }
+  apply (P_exE H1
+    (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))
+    (fEq (S (rho m)) (S (rho n))) hinner).
+  change (Prov
+    (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) :: map (rename S) H1)
+    (fEq (S (S (rho m))) (S (S (rho n))))).
+  set (H2 :=
+    fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) :: map (rename S) H1).
+  assert (hconj : Prov H2
+      (fAnd (fEq 1 (rho m + 2))
+        (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))).
+  {
+    apply P_ass.
+    unfold H2.
+    simpl.
+    left. reflexivity.
+  }
+  pose proof (P_andE1 H2 (fEq 1 (rho m + 2))
+    (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) hconj) as hx.
+  pose proof (P_andE2 H2 (fEq 1 (rho m + 2))
+    (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) hconj) as hyx.
+  pose proof (P_andE1 H2 (fEq 0 (rho n + 2)) (fEq 1 0) hyx) as hy.
+  pose proof (P_andE2 H2 (fEq 0 (rho n + 2)) (fEq 1 0) hyx) as hxy.
+  pose proof (Prov_eq_sym H2 1 (rho m + 2) hx) as hmx.
+  pose proof (Prov_eq_trans H2 (rho m + 2) 1 0 hmx hxy) as hm0.
+  pose proof (Prov_eq_trans H2 (rho m + 2) 0 (rho n + 2) hm0 hy) as hmn.
+  replace (S (S (rho m))) with (rho m + 2) by lia.
+  replace (S (S (rho n))) with (rho n + 2) by lia.
+  exact hmn.
+Qed.
+
+Lemma BProv_formulaAt_eqElim_var :
+  forall (B : form -> Prop) Gamma rho m n a,
+  BProv B Gamma (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))) ->
+  BProv B Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar m)) a)) ->
+  BProv B Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar n)) a)).
+Proof.
+  intros B Gamma rho m n a heq ha.
+  pose proof (BProv_eq_of_formulaAt_eq_var B Gamma rho m n heq) as hslot.
+  rewrite formulaAt_subst_instTerm_var in ha.
+  pose proof (BProv_eqElim B Gamma (rho m) (rho n)
+    (formulaAt (upVarMap rho) a) hslot ha) as htarget.
+  rewrite <- formulaAt_subst_instTerm_var in htarget.
+  exact htarget.
 Qed.
 
 Lemma BProv_translate_impI : forall G a b,

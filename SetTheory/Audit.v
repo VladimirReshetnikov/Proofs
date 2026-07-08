@@ -166,14 +166,18 @@ Check BProv_formulaAt_impE.
 Check BProv_formulaAt_botE.
 Check BProv_formulaAt_lem.
 Check BProv_formulaAt_eqRefl_var.
+Check BProv_formulaAt_eq_var_of_eq.
 Check BProv_formulaAt_andI.
 Check BProv_formulaAt_andE1.
 Check BProv_formulaAt_andE2.
 Check BProv_formulaAt_orI1.
 Check BProv_formulaAt_orI2.
 Check BProv_formulaAt_orE.
+Check BProv_formulaAt_eq_of_termGraphsAt.
 Check BProv_termGraphAt_eqElim_out.
 Check BProv_formulaAt_eqRefl_of_termGraphAt.
+Check BProv_eq_of_formulaAt_eq_var.
+Check BProv_formulaAt_eqElim_var.
 
 Check firstOrderFiniteAdjunctionModel_of_HFFinAx_s.
 Check formulaAt_induction_valid_finite_model.
