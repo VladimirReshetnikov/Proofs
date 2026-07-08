@@ -9806,6 +9806,52 @@ theorem BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt
       (BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one hbitOne hstepCtx)
   exact BProv_orE hbool hzero hone
 
+/-- Eliminate the parity case exposed by a binary-halving step.  The branch
+premises remain explicit: callers must prove the target from the even and odd
+forms of the current value. -/
+theorem BProv_Ax_s_of_div2StepAt_double_odd_cases
+    {G : List Formula} {value half bit : Nat} {target : Formula}
+    (hstep : BProv Ax_s G (div2StepAt value half bit))
+    (heven : BProv Ax_s (doubleEqAt value half :: G) target)
+    (hodd : BProv Ax_s (oddDoubleEqAt value half :: G) target) :
+    BProv Ax_s G target :=
+  BProv_orE
+    (BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt hstep)
+    heven hodd
+
+/-- Nested parity elimination for two binary-halving steps.  The generated
+contexts put the low-code parity assumption in front of the high-code parity
+assumption, matching the order produced by the inner case split. -/
+theorem BProv_Ax_s_of_two_div2StepAt_double_odd_cases
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    {target : Formula}
+    (hhighStep : BProv Ax_s G (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit))
+    (hdouble_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G) target)
+    (hdouble_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G) target)
+    (hodd_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G) target)
+    (hodd_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G) target) :
+    BProv Ax_s G target := by
+  have hhighEven : BProv Ax_s (doubleEqAt high highHalf :: G) target := by
+    have hlowStepCtx : BProv Ax_s (doubleEqAt high highHalf :: G)
+        (div2StepAt low lowHalf lowBit) :=
+      BProv_context_cons (B := Ax_s) hlowStep
+    exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+      hlowStepCtx hdouble_double hdouble_odd
+  have hhighOdd : BProv Ax_s (oddDoubleEqAt high highHalf :: G) target := by
+    have hlowStepCtx : BProv Ax_s (oddDoubleEqAt high highHalf :: G)
+        (div2StepAt low lowHalf lowBit) :=
+      BProv_context_cons (B := Ax_s) hlowStep
+    exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+      hlowStepCtx hodd_double hodd_odd
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+    hhighStep hhighEven hhighOdd
+
 /-- A binary-halving step is a remainder equation modulo any slot proved to be
 `2`: the output bit is the remainder and the half slot is the quotient. -/
 theorem BProv_Ax_s_remAt_of_div2StepAt_two {G : List Formula}
@@ -23398,6 +23444,18 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [zeroEq] using hbody)
+
+/-- Step-based even branch of the standalone successor/predecessor
+distinguisher: if a binary-halving witness shows that `low` has output bit
+`0`, the doubled-code branch above applies directly. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_bit_zero
+    {G : List Formula} {low lowHalf lowBit : Nat}
+    (hlowBit : BProv Ax_s G (eqConstAt lowBit 0))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
+    (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hlowBit hlowStep)
 
 /-- Even/even branch of the successor strict case: if the predecessor-high code
 is even and the low code is even, then zero belongs to `S high` and not to
