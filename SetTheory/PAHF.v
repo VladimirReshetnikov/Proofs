@@ -12376,6 +12376,46 @@ Proof.
     sentence_ax_s hfinal).
 Qed.
 
+Lemma BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace :
+  forall G code step c s n,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaDiv2StepsThrough c s n ->
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step n).
+Proof.
+  intros G code step c s n.
+  revert G code step c s.
+  induction n as [|n ih]; intros G code step c s hcode hstep htrace.
+  - destruct (htrace 0 ltac:(lia)) as [cur [next [bit hdivStep]]].
+    exact (BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
+      G code step c s cur next bit hcode hstep hdivStep).
+  - assert (hprevTrace : BetaDiv2StepsThrough c s n).
+    {
+      intros k hk.
+      exact (htrace k ltac:(lia)).
+    }
+    pose proof (ih G code step c s hcode hstep hprevTrace) as hprev.
+    destruct (htrace (S n) ltac:(lia)) as [cur [next [bit hdivStep]]].
+    exact (BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step
+      G code step c s n cur next bit hcode hstep hprev hdivStep).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace :
+  forall G code step last c s n,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt last n) ->
+  BetaDiv2StepsThrough c s n ->
+  BProv Ax_s G (betaDiv2StepsThroughAt code step last).
+Proof.
+  intros G code step last c s n hcode hstep hlast htrace.
+  exact (BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst
+    G code step last n
+    (BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace
+      G code step c s n hcode hstep htrace)
+    hlast).
+Qed.
+
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
     (pAnd
