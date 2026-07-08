@@ -12166,6 +12166,22 @@ theorem BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
   BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one
     (BProv_Ax_s_ltAt_of_remAt hrem) hmodulus
 
+/-- No remainder can be strictly below modulus `0`. -/
+theorem BProv_Ax_s_remAt_eqConst_modulus_zero_bot
+    {G : List Formula} {rem value modulus : Nat}
+    (hrem : BProv Ax_s G (remAt rem value modulus))
+    (hmodulus : BProv Ax_s G (eqConstAt modulus 0)) :
+    BProv Ax_s G bot := by
+  have hlt : BProv Ax_s G (ltAt rem modulus) :=
+    BProv_Ax_s_ltAt_of_remAt hrem
+  have hremZero : BProv Ax_s G (eqConstAt rem 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero
+      (BProv_Ax_s_leAt_of_ltAt hlt) hmodulus
+  have heq : BProv Ax_s G (eq (Term.var modulus) (Term.var rem)) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eqTrans hmodulus (BProv_eqSym hremZero)
+  exact BProv_Ax_s_ltAt_eq_bot hlt heq
+
 /-- If the `step` and `idx` slots are fixed numerals, PA proves that the
 Gödel-beta modulus term computes the corresponding closed numeral. -/
 theorem BProv_Ax_s_betaModTerm_of_eqConst {G : List Formula}
