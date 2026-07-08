@@ -17643,6 +17643,81 @@ theorem BProv_Ax_s_evenSuccBeta_entryComponent_one
     term_subst_up_up_up_instTerm_rename_four_succ,
     term_subst_up_up_up_instTerm_rename_five_succ] using hconst
 
+/-- Under the even branch assumption `low = h + h`, the object-level halving
+step with current value `S low`, next value `h`, and output bit `1` is valid.
+This is only the arithmetic component of the later beta-step witness. -/
+theorem BProv_Ax_s_evenSuccBeta_div2Step_one
+    {G : List Formula} {low lowHalf : Nat}
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var lowHalf)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (evenSuccBetaStepTerm low))))
+            (div2StepAt 2 1 0)))) := by
+  let half : Term := Term.var lowHalf
+  let double : Term := Term.add half half
+  let cur : Term := evenSuccBetaStepTerm low
+  have hbool : BProv Ax_s G (subst (instTerm (Term.numeral 1)) (boolAt 0)) := by
+    exact BProv_orI2 (B := Ax_s) (G := G)
+      (a := subst (instTerm (Term.numeral 1)) (zeroAt 0))
+      (by
+        simpa [oneAt, eqConstAt, subst, instTerm, Term.subst,
+          Term.numeral] using
+          (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral 1)))
+  have hboolBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var lowHalf)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (evenSuccBetaStepTerm low))))
+            (boolAt 0)))) := by
+    simpa [boolAt, zeroAt, oneAt, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.numeral] using hbool
+  have hlow : BProv Ax_s G (eq (Term.var low) double) := by
+    simpa [double, half, doubleEqAt] using hlowDouble
+  have hsuccLow : BProv Ax_s G
+      (eq (Term.succ (Term.var low)) (Term.succ double)) :=
+    BProv_eq_congr_succ hlow
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add double (Term.succ Term.zero))
+        (Term.succ (Term.add double Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms double Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.succ (Term.add double Term.zero)) (Term.succ double)) :=
+    BProv_eq_congr_succ
+      (BProv_weaken_nil (BProv_Ax_s_addZero_term double))
+  have haddOne : BProv Ax_s G
+      (eq (Term.add double (Term.succ Term.zero)) (Term.succ double)) :=
+    BProv_eqTrans haddSucc haddZero
+  have hstepEq : BProv Ax_s G
+      (eq cur (Term.add double (Term.succ Term.zero))) := by
+    simpa [cur, evenSuccBetaStepTerm] using
+      BProv_eqTrans hsuccLow (BProv_eqSym haddOne)
+  have heqBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var lowHalf)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (evenSuccBetaStepTerm low))))
+            (eq (Term.var 2)
+              (Term.add (Term.add (Term.var 1) (Term.var 1))
+                (Term.var 0)))))) := by
+    simpa [half, double, cur, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.rename_comp, Term.numeral,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hstepEq
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var lowHalf)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (evenSuccBetaStepTerm low))))
+            (and (boolAt 0)
+              (eq (Term.var 2)
+                (Term.add (Term.add (Term.var 1) (Term.var 1))
+                  (Term.var 0))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hboolBody heqBody)
+  simpa [div2StepAt] using hbody
+
 /-- Term-parametric membership introduction from the same closed trace
 components as `BProv_Ax_s_hfMemAt_of_closed_components`, but with the initial
 zero-index beta entry outputting an arbitrary set-code term. -/

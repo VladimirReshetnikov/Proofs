@@ -698,6 +698,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_oddCurrent_beta_code_decomp
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_index_one_value
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_entryComponent_one
+#check @PA.Formula.BProv_Ax_s_evenSuccBeta_div2Step_one
 #check @PA.Formula.betaFact
 #check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step
