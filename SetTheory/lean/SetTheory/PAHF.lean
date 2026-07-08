@@ -96,6 +96,23 @@ theorem exists_mem_of_ne_empty {a : Nat} (ha : a ≠ empty) : ∃ x, Mem x a := 
   apply ha
   exact (eq_empty_iff_no_mem a).mpr (fun x hx => h ⟨x, hx⟩)
 
+/-- If one Ackermann code is strictly below another, some bit is present in the
+larger code and absent from the smaller one. -/
+theorem exists_mem_not_mem_of_lt {low high : Nat} (hlt : low < high) :
+    ∃ x, Mem x high ∧ ¬ Mem x low := by
+  apply Classical.byContradiction
+  intro h
+  have hsubset : ∀ x, Mem x high → Mem x low := by
+    intro x hx
+    apply Classical.byContradiction
+    intro hlow
+    exact h ⟨x, hx, hlow⟩
+  have hle : high ≤ low := by
+    apply Nat.le_of_testBit
+    intro x hx
+    exact hsubset x hx
+  omega
+
 /-- Search for the largest member of `a` below `n`.  The default value at
 `n = 0` is irrelevant; callers use the accompanying existence lemmas. -/
 def maxMemberBelow (a : Nat) : Nat → Nat
@@ -19598,6 +19615,52 @@ def hfDistinguishesAt (elem high low : Nat) : Formula :=
 by one. -/
 def hfSomeDistinguishesAt (high low : Nat) : Formula :=
   ex (hfDistinguishesAt 0 (high+1) (low+1))
+
+/-- Semantic specification of `hfDistinguishesAt` in the standard PA model. -/
+theorem hfDistinguishesAt_nat (e : Nat → Nat) (elem high low : Nat) :
+    Sat natModel e (hfDistinguishesAt elem high low) ↔
+      AckermannHF.Mem (e elem) (e high) ∧
+        ¬ AckermannHF.Mem (e elem) (e low) := by
+  constructor
+  · intro h
+    constructor
+    · exact (hfMemAt_exact e elem high).mp h.1
+    · intro hlow
+      exact h.2 ((hfMemAt_exact e elem low).mpr hlow)
+  · intro h
+    constructor
+    · exact (hfMemAt_exact e elem high).mpr h.1
+    · intro hlow
+      exact h.2 ((hfMemAt_exact e elem low).mp hlow)
+
+/-- Semantic specification of `hfSomeDistinguishesAt` in the standard PA
+model. -/
+theorem hfSomeDistinguishesAt_nat (e : Nat → Nat) (high low : Nat) :
+    Sat natModel e (hfSomeDistinguishesAt high low) ↔
+      ∃ elem, AckermannHF.Mem elem (e high) ∧ ¬ AckermannHF.Mem elem (e low) := by
+  constructor
+  · intro h
+    rcases h with ⟨elem, helem⟩
+    have hspec :=
+      (hfDistinguishesAt_nat (SetTheory.scons elem e) 0 (high+1) (low+1)).mp helem
+    exact ⟨elem, by simpa [SetTheory.scons] using hspec⟩
+  · intro h
+    rcases h with ⟨elem, helem⟩
+    refine ⟨elem, ?_⟩
+    have hspec :
+        Sat natModel (SetTheory.scons elem e)
+          (hfDistinguishesAt 0 (high+1) (low+1)) :=
+      (hfDistinguishesAt_nat (SetTheory.scons elem e) 0 (high+1) (low+1)).mpr
+        (by simpa [SetTheory.scons] using helem)
+    simpa [hfSomeDistinguishesAt] using hspec
+
+/-- The standard model satisfies the distinguishing-member formula whenever
+the lower code is strictly smaller than the higher code. -/
+theorem hfSomeDistinguishesAt_nat_of_lt (e : Nat → Nat) {low high : Nat}
+    (hlt : e low < e high) :
+    Sat natModel e (hfSomeDistinguishesAt high low) :=
+  (hfSomeDistinguishesAt_nat e high low).mpr
+    (AckermannHF.exists_mem_not_mem_of_lt hlt)
 
 /-- If `var 1 < var 0` yields a member of `var 0` not in `var 1`, then the
 translated extensionality hypothesis contradicts that strict inequality. -/
