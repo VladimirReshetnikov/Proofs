@@ -205,6 +205,13 @@ theorem rename_inst_up (a : Form) (k : Nat) (s : Nat → Nat) :
     rename (inst k) (rename (up s) a) = rename (scons_nat k s) a := by
   rw [rename_comp]; exact rename_ext a _ _ (inst_up k s)
 
+/-- Pushing a renaming `r` past an instantiation `inst k`: normalizes the
+quantifier and equality-elimination cases of `Prov_rename`. -/
+theorem rename_inst_push (a : Form) (r : Nat → Nat) (k : Nat) :
+    rename r (rename (inst k) a) = rename (inst (r k)) (rename (up r) a) := by
+  rw [rename_comp, rename_comp]
+  exact rename_ext a _ _ (fun n => by cases n <;> rfl)
+
 theorem rename_id (a : Form) : rename (fun n => n) a = a := by
   induction a with
   | fMem i j => rfl

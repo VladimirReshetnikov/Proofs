@@ -106,10 +106,6 @@ Definition a199812ValuesThroughEleven : list nat :=
 Definition a199812ValuesThroughTwelve : list nat :=
   [1; 1; 2; 5; 13; 32; 79; 193; 478; 1196; 3037; 7802].
 
-Theorem a199812_values_through_eleven :
-    map a199812 (seq 1 11) = a199812ValuesThroughEleven.
-Proof. vm_compute. reflexivity. Qed.
-
 Theorem a199812_one : a199812 1 = 1.
 Proof. vm_compute. reflexivity. Qed.
 
@@ -145,6 +141,18 @@ Proof. vm_compute. reflexivity. Qed.
 
 Theorem a199812_twelve : a199812 12 = 7802.
 Proof. vm_compute. reflexivity. Qed.
+
+(* Derived from the individual value lemmas by rewriting, so the expensive
+   n = 1..11 enumeration is computed once (in those lemmas) rather than a
+   second time here. *)
+Theorem a199812_values_through_eleven :
+    map a199812 (seq 1 11) = a199812ValuesThroughEleven.
+Proof.
+  cbn [seq map].
+  now rewrite a199812_one, a199812_two, a199812_three, a199812_four,
+    a199812_five, a199812_six, a199812_seven, a199812_eight,
+    a199812_nine, a199812_ten, a199812_eleven.
+Qed.
 
 Theorem a199812_values_through_twelve :
     map a199812 (seq 1 12) = a199812ValuesThroughTwelve.

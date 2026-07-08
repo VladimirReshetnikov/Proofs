@@ -180,19 +180,13 @@ theorem Prov_rename {G : List Form} {phi : Form} (h : Prov G phi) :
     exact ih (up r)
   | P_allE G a k _ ih =>
     intro r
-    have heq : rename r (rename (inst k) a)
-        = rename (inst (r k)) (rename (up r) a) := by
-      rw [rename_comp, rename_comp]
-      exact rename_ext a _ _ (fun n => by cases n <;> rfl)
+    have heq := rename_inst_push a r k
     rw [heq]
     exact .P_allE _ (rename (up r) a) (r k) (ih r)
   | P_exI G a k _ ih =>
     intro r
     apply Prov.P_exI _ (rename (up r) a) (r k)
-    have heq : rename r (rename (inst k) a)
-        = rename (inst (r k)) (rename (up r) a) := by
-      rw [rename_comp, rename_comp]
-      exact rename_ext a _ _ (fun n => by cases n <;> rfl)
+    have heq := rename_inst_push a r k
     rw [← heq]
     exact ih r
   | P_exE G a c _ _ ihex ihbody =>
@@ -210,14 +204,8 @@ theorem Prov_rename {G : List Form} {phi : Form} (h : Prov G phi) :
   | P_eqRefl G k => intro r; exact .P_eqRefl _ (r k)
   | P_eqElim G i j a _ _ iheq iha =>
     intro r
-    have heqj : rename r (rename (inst j) a)
-        = rename (inst (r j)) (rename (up r) a) := by
-      rw [rename_comp, rename_comp]
-      exact rename_ext a _ _ (fun n => by cases n <;> rfl)
-    have heqi : rename r (rename (inst i) a)
-        = rename (inst (r i)) (rename (up r) a) := by
-      rw [rename_comp, rename_comp]
-      exact rename_ext a _ _ (fun n => by cases n <;> rfl)
+    have heqj := rename_inst_push a r j
+    have heqi := rename_inst_push a r i
     rw [heqj]
     apply Prov.P_eqElim _ (r i) (r j) (rename (up r) a) (iheq r)
     rw [← heqi]

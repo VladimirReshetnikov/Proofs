@@ -73,6 +73,12 @@ Proof.
     reflexivity.
 Defined.
 
+(* ===================================================================== *)
+(*  Concrete HF model over nat (Ackermann coding via Nat.testbit)          *)
+(*  The hereditarily finite sets realized on nat, with extensionality,     *)
+(*  adjunction, and set induction proved from the concrete bit API.        *)
+(* ===================================================================== *)
+
 Definition hf_mem (x y : nat) : Prop := Nat.testbit y x = true.
 Definition hf_empty : nat := 0.
 Definition hf_adjoin (a b : nat) : nat := Nat.lor b (2 ^ a).
@@ -274,6 +280,12 @@ Proof.
   refine {| hf_iso_to := fun x => x; hf_iso_inv := fun x => x |};
     reflexivity.
 Defined.
+
+(* ===================================================================== *)
+(*  At-formula builders: HF set operations as first-order formulas         *)
+(*  Parameterized `form` builders (empty/adjoin/succ/pair/union/ordinal)   *)
+(*  with their satisfaction specifications and free-variable lemmas.       *)
+(* ===================================================================== *)
 
 Definition HF_empty_form : form :=
   fEx (fAll (fImp (fMem 0 1) fBot)).
@@ -1855,6 +1867,12 @@ Proof.
   intros a haa.
   exact (hall a haa).
 Qed.
+
+(* ===================================================================== *)
+(*  Abstract first-order adjunction models (foam)                          *)
+(*  Arbitrary first-order models of the HF/adjunction axioms, and the      *)
+(*  recursion-graph existence results proved abstractly over them.         *)
+(* ===================================================================== *)
 
 Record FirstOrderHFModel (V : Type) := {
   fohf_mem : V -> V -> Prop;
@@ -3683,6 +3701,12 @@ Proof.
   - exact hm.
 Qed.
 
+(* ===================================================================== *)
+(*  Ordinal coding of naturals as HF sets                                  *)
+(*  The finite von Neumann ordinals as HF codes, with transitivity,        *)
+(*  membership, injectivity, and the is_ordinal_code characterization.     *)
+(* ===================================================================== *)
+
 Fixpoint ordinal_code (n : nat) : nat :=
   match n with
   | 0 => hf_empty
@@ -4352,6 +4376,12 @@ Proof.
     apply mul_rec_trace_pair_mem.
     lia.
 Qed.
+
+(* ===================================================================== *)
+(*  Arithmetic-as-graph formulas (domain / zero / succ / add / mul)        *)
+(*  Recursion traces and the graph formulas encoding PA arithmetic,        *)
+(*  proved exact on ordinal codes, plus the substitution plumbing.         *)
+(* ===================================================================== *)
 
 Definition domainForm : form := HF_ordinalLikeAt 0.
 
@@ -5933,6 +5963,12 @@ Proof.
   reflexivity.
 Qed.
 
+(* ===================================================================== *)
+(*  Packaged ordinal-HF arithmetic and round-trip PA/HF models             *)
+(*  The sigma-type of ordinal codes with its arithmetic, and the           *)
+(*  ordinalPAModel / ordinalHFModel round-trip isomorphisms.               *)
+(* ===================================================================== *)
+
 Definition OrdinalHF : Type := { a : nat | is_ordinal_code a }.
 
 Definition ordinal_of_nat (n : nat) : OrdinalHF :=
@@ -6243,6 +6279,12 @@ Proof.
     rewrite !nat_of_ordinal_ordinal_of_nat.
     reflexivity.
 Defined.
+
+(* ===================================================================== *)
+(*  PA object syntax and the provability calculus                          *)
+(*  The PA term/formula language, natural-deduction Prov and soundness,    *)
+(*  and the bounded-theory BProv derived-rule toolkit.                     *)
+(* ===================================================================== *)
 
 Module PA.
 
@@ -9190,6 +9232,12 @@ Proof.
           (or_intror (or_intror (or_intror
           (or_intror (or_intror (or_intror (ex_intro _ phi eq_refl)))))))) e).
 Qed.
+
+(* ===================================================================== *)
+(*  Arithmetic provability: encoded predicates and the Gödel beta function *)
+(*  Provable-in-PA encodings of order, divisibility, div2, remainder,      *)
+(*  the beta function, and HF membership via bit traces.                   *)
+(* ===================================================================== *)
 
 Definition leAt (a b : nat) : formula :=
   pEx (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))).
@@ -13479,6 +13527,12 @@ Proof.
         unfold E. simpl. exact hbit.
 Qed.
 
+(* ===================================================================== *)
+(*  Number-theoretic soundness of the beta / HF-membership coding          *)
+(*  Coprimality, CRT, and the modulus lemmas proving the beta and          *)
+(*  membership encodings meta-correct (hfMemAt sound and complete).        *)
+(* ===================================================================== *)
+
 Definition Coprime (m n : nat) : Prop := Nat.gcd m n = 1.
 
 Lemma Coprime_1_l : forall n, Coprime 1 n.
@@ -14340,6 +14394,12 @@ Proof.
   simpl in h.
   lia.
 Qed.
+
+(* ===================================================================== *)
+(*  HF-to-PA formula translation and provability lifting                   *)
+(*  hfFormulaAt translating HF formulas into PA, with exactness and the     *)
+(*  lifting of HF-provability into PA-provability.                          *)
+(* ===================================================================== *)
 
 Definition hfUpVarMap (rho : nat -> nat) : nat -> nat :=
   fun n =>
@@ -15218,6 +15278,12 @@ Proof.
   replace (r n + 3) with (S (S (S (r n)))) by lia.
   reflexivity.
 Qed.
+
+(* ===================================================================== *)
+(*  PA-to-HF encoding via term graphs (termGraphAt / formulaAt)            *)
+(*  Translating PA terms and formulas into HF graph formulas, their        *)
+(*  exact semantics, and the lifting of PA proofs into HF.                 *)
+(* ===================================================================== *)
 
 Fixpoint termGraphAt (rho : nat -> nat) (out : nat) (t : PA.term) : form :=
   match t with
@@ -21101,6 +21167,12 @@ Proof.
     hsent (fun _ => ordinal_code 0) e)).
   exact hcoded.
 Qed.
+
+(* ===================================================================== *)
+(*  Bi-interpretation certificates and final theorems                      *)
+(*  The interpretation/certificate records and the top-level PA <-> HF     *)
+(*  bi-interpretability and standard-model interpretation theorems.        *)
+(* ===================================================================== *)
 
 Definition AdjunctionIso (M N : HFModel) : Type := HFIso M N.
 

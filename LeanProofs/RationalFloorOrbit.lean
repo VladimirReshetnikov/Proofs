@@ -3,6 +3,11 @@ import Init.Tactics
 
 namespace LeanProofs
 
+/-! ## Stern–Brocot pair generator
+
+`cwPair n` is the `n`-th coprime pair in Calkin–Wilf order, with its positivity,
+coprimality, and left/right child equations. -/
+
 def cwPair : Nat -> Nat × Nat
   | 0 => (1, 1)
   | n + 1 =>
@@ -54,6 +59,11 @@ theorem cwPair_right (n : Nat) :
   rw [cwPair.eq_2]
   have hdiv : (2 * n + 1) / 2 = n := by omega
   simp [hdiv]
+
+/-! ## Inverse index and the pair ↔ position round-trips
+
+`cwIndex a b` recovers the position of a coprime pair; `cwPair_cwIndex`,
+`cwIndex_cwPair`, and `cwPair_succ` establish the bijection with `Nat`. -/
 
 def cwIndex (a b : Nat) : Nat :=
   if a = 0 ∨ b = 0 then 0
@@ -204,6 +214,11 @@ theorem cwPair_succ (n : Nat) : cwPair (n + 1) = pairNext (cwPair n) := by
         rw [hdiv]
         exact pairNext_right_child_arith hp.right
 
+/-! ## Bridge to `Rat` and the orbit map
+
+`pairRat` sends a coprime pair to a rational; `rationalNext`/`rationalFloorOrbit`
+transport the successor map to `Rat`, with `rationalNext_cwRat` the key step. -/
+
 def pairRat (p : Nat × Nat) : Rat :=
   match p with
   | (a, b) => Rat.divInt (a : Int) (b : Int)
@@ -338,6 +353,12 @@ theorem rationalFloorOrbit_eq_zero_iff (n : Nat) : rationalFloorOrbit n = 0 ↔ 
   · intro h
     subst h
     rfl
+
+/-! ## Injectivity and the exactly-once enumeration
+
+`pairRat_inj` gives injectivity of the pair-to-rational map; combined with the
+round-trips it yields the headline `rationalFloorOrbit_visits_each_nonnegative_
+rat_exactly_once`. -/
 
 theorem pairRat_inj {a b c d : Nat}
     (hb : b ≠ 0) (hd : d ≠ 0)

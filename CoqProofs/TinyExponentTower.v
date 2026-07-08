@@ -70,12 +70,6 @@ Proof.
   exact (Rgt_not_eq towerBase 0 towerBase_pos).
 Qed.
 
-Lemma towerBaseInt_cast (hk : (0 <= k)%Z) :
-    IZR towerBaseInt = towerBase.
-Proof.
-  exact (IZR_pow10_Rpower hk).
-Qed.
-
 Lemma bottom_eq_t : bottom = t.
 Proof.
   unfold bottom, t, towerBase.
@@ -113,7 +107,7 @@ Proof.
   apply Zfloor_eq.
   rewrite tinyExponentTowerAt_eq_base_mul_exp.
   split.
-  - rewrite plus_IZR, towerBaseInt_cast by exact hk.
+  - rewrite plus_IZR, IZR_pow10_Rpower by exact hk.
     replace (towerBase + IZR m) with (towerBase * (1 + IZR m * t)).
     + apply Rmult_le_compat_l.
       * left. exact towerBase_pos.
@@ -122,7 +116,7 @@ Proof.
       replace (towerBase * (IZR m * t)) with (IZR m * (towerBase * t)) by ring.
       rewrite towerBase_mul_t.
       ring.
-  - rewrite plus_IZR, towerBaseInt_cast by exact hk.
+  - rewrite plus_IZR, IZR_pow10_Rpower by exact hk.
     replace (towerBase + IZR m + 1) with
       (towerBase * (1 + (IZR m + 1) * t)).
     + apply Rmult_lt_compat_l.

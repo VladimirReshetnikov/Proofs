@@ -313,6 +313,28 @@ Proof.
     f_equal; lia.
 Qed.
 
+(* The even/odd splits of [m] via [Nat.div2] recur four times in the two
+   proofs below; factor them into named lemmas. *)
+Lemma even_double {m : nat} (h : Nat.even m = true) : m = 2 * (m / 2).
+Proof.
+  assert (hodd : Nat.odd m = false).
+  { destruct (Nat.odd m) eqn:hodd; [|reflexivity].
+    rewrite <- Nat.negb_odd in h. rewrite hodd in h. discriminate. }
+  pose proof (Nat.div2_odd m) as hsplit.
+  rewrite hodd in hsplit. simpl in hsplit.
+  rewrite <- Nat.div2_div. lia.
+Qed.
+
+Lemma odd_double {m : nat} (h : Nat.even m = false) : m = 2 * (m / 2) + 1.
+Proof.
+  assert (hodd : Nat.odd m = true).
+  { destruct (Nat.odd m) eqn:hodd; [reflexivity|].
+    rewrite <- Nat.negb_odd in h. rewrite hodd in h. discriminate. }
+  pose proof (Nat.div2_odd m) as hsplit.
+  rewrite hodd in hsplit. simpl in hsplit.
+  rewrite <- Nat.div2_div. lia.
+Qed.
+
 Theorem cwIndex_cwPair (n : nat) :
     cwIndex (fst (cwPair n)) (snd (cwPair n)) = n.
 Proof.
@@ -328,19 +350,7 @@ Proof.
     cbn [fst snd] in hp, ihp |- *.
     destruct hp as [ha hb].
     destruct (Nat.even m) eqn:heven.
-    + assert (hm : m = 2 * (m / 2)).
-      { assert (hodd : Nat.odd m = false).
-        { destruct (Nat.odd m) eqn:hodd; [|reflexivity].
-          rewrite <- Nat.negb_odd in heven.
-          rewrite hodd in heven.
-          discriminate.
-        }
-        pose proof (Nat.div2_odd m) as hsplit.
-        rewrite hodd in hsplit.
-        simpl in hsplit.
-        rewrite <- Nat.div2_div.
-        lia.
-      }
+    + pose proof (even_double heven) as hm.
       cbn [fst snd].
       assert (hidx : cwIndex a (a + b) = 2 * cwIndex a (a + b - a) + 1).
       { apply cwIndex_left; lia. }
@@ -348,19 +358,7 @@ Proof.
       replace (a + b - a) with b by lia.
       rewrite ihp.
       lia.
-    + assert (hm : m = 2 * (m / 2) + 1).
-      { assert (hodd : Nat.odd m = true).
-        { destruct (Nat.odd m) eqn:hodd; [reflexivity|].
-          rewrite <- Nat.negb_odd in heven.
-          rewrite hodd in heven.
-          discriminate.
-        }
-        pose proof (Nat.div2_odd m) as hsplit.
-        rewrite hodd in hsplit.
-        simpl in hsplit.
-        rewrite <- Nat.div2_div.
-        lia.
-      }
+    + pose proof (odd_double heven) as hm.
       cbn [fst snd].
       assert (hidx : cwIndex (a + b) b = 2 * cwIndex (a + b - b) b + 2).
       { apply cwIndex_right; lia. }
@@ -412,19 +410,7 @@ Proof.
   destruct n as [|m].
   - reflexivity.
   - destruct (Nat.even m) eqn:heven.
-    + assert (hm : m = 2 * (m / 2)).
-      { assert (hodd : Nat.odd m = false).
-        { destruct (Nat.odd m) eqn:hodd; [|reflexivity].
-          rewrite <- Nat.negb_odd in heven.
-          rewrite hodd in heven.
-          discriminate.
-        }
-        pose proof (Nat.div2_odd m) as hsplit.
-        rewrite hodd in hsplit.
-        simpl in hsplit.
-        rewrite <- Nat.div2_div.
-        lia.
-      }
+    + pose proof (even_double heven) as hm.
       replace (S m + 1) with (2 * (m / 2) + 2) by lia.
       replace (S m) with (2 * (m / 2) + 1) by lia.
       rewrite cwPair_right.
@@ -434,19 +420,7 @@ Proof.
       cbn [fst snd] in hp |- *.
       rewrite pairNext_left_child by lia.
       reflexivity.
-    + assert (hm : m = 2 * (m / 2) + 1).
-      { assert (hodd : Nat.odd m = true).
-        { destruct (Nat.odd m) eqn:hodd; [reflexivity|].
-          rewrite <- Nat.negb_odd in heven.
-          rewrite hodd in heven.
-          discriminate.
-        }
-        pose proof (Nat.div2_odd m) as hsplit.
-        rewrite hodd in hsplit.
-        simpl in hsplit.
-        rewrite <- Nat.div2_div.
-        lia.
-      }
+    + pose proof (odd_double heven) as hm.
       replace (S m + 1) with (2 * (m / 2 + 1) + 1) by lia.
       replace (S m) with (2 * (m / 2) + 2) by lia.
       rewrite cwPair_left.

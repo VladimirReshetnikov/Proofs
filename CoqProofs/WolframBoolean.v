@@ -205,37 +205,6 @@ Proof.
   reflexivity.
 Qed.
 
-Ltac finish_bool_table_contradiction H :=
-  cbn in H;
-  repeat match type of H with
-  | context[?op false false] =>
-      match goal with Hff : ?op false false = _ |- _ => rewrite Hff in H end
-  | context[?op false true] =>
-      match goal with Hft : ?op false true = _ |- _ => rewrite Hft in H end
-  | context[?op true false] =>
-      match goal with Htf : ?op true false = _ |- _ => rewrite Htf in H end
-  | context[?op true true] =>
-      match goal with Htt : ?op true true = _ |- _ => rewrite Htt in H end
-  end;
-  discriminate.
-
-Ltac use_wolfram_row h a b c :=
-  let H := fresh "Hw" in
-  pose proof (h a b c) as H;
-  finish_bool_table_contradiction H.
-
-Ltac contradict_wolfram_table h :=
-  first [
-    use_wolfram_row h false false false
-  | use_wolfram_row h false false true
-  | use_wolfram_row h false true false
-  | use_wolfram_row h false true true
-  | use_wolfram_row h true false false
-  | use_wolfram_row h true false true
-  | use_wolfram_row h true true false
-  | use_wolfram_row h true true true
-  ].
-
 Theorem wolfram_characterizes_sheffer_on_bool
     (op : bool -> bool -> bool) (h : WolframAxiom op) : IsBooleanSheffer op.
 Proof.
@@ -286,33 +255,6 @@ Proof.
   repeat rewrite Bool.eqb_reflx.
   reflexivity.
 Qed.
-
-Ltac use_meredith3 h a b c :=
-  let H := fresh "Hm" in
-  pose proof (h a b c) as H;
-  finish_bool_table_contradiction H.
-
-Ltac use_meredith2 h a b :=
-  let H := fresh "Hm" in
-  pose proof (h a b) as H;
-  finish_bool_table_contradiction H.
-
-Ltac contradict_meredith_table h :=
-  destruct h as [h1 h2];
-  first [
-    use_meredith3 h1 false false false
-  | use_meredith3 h1 false false true
-  | use_meredith3 h1 false true false
-  | use_meredith3 h1 false true true
-  | use_meredith3 h1 true false false
-  | use_meredith3 h1 true false true
-  | use_meredith3 h1 true true false
-  | use_meredith3 h1 true true true
-  | use_meredith2 h2 false false
-  | use_meredith2 h2 false true
-  | use_meredith2 h2 true false
-  | use_meredith2 h2 true true
-  ].
 
 Theorem meredith_characterizes_sheffer_on_bool
     (op : bool -> bool -> bool) (h : MeredithAxioms op) : IsBooleanSheffer op.
