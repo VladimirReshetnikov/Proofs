@@ -319,6 +319,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_output_zero_of_code_dvd
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_code_dvd_of_output_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaAt_output_zero_same_index
+#check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_same_index
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
 #check @PA.Formula.BProv_Ax_s_remAt_eqConst_modulus_zero_bot
