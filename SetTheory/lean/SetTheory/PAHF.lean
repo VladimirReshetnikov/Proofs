@@ -9306,6 +9306,113 @@ theorem BProv_Ax_s_add_cancel_right_terms {G : List Formula}
       term_subst_instTerm_rename_succ] using hinst
   exact BProv_mp Ax_s G _ _ himp h
 
+/-- PA proves associativity of addition, uniformly in the third addend. -/
+theorem BProv_Ax_s_add_assoc_all (x y : Term) :
+    BProv Ax_s []
+      (all
+        (eq
+          (Term.add
+            (Term.add (Term.rename Nat.succ x) (Term.rename Nat.succ y))
+            (Term.var 0))
+          (Term.add (Term.rename Nat.succ x)
+            (Term.add (Term.rename Nat.succ y) (Term.var 0))))) := by
+  let phi : Formula :=
+    eq
+      (Term.add
+        (Term.add (Term.rename Nat.succ x) (Term.rename Nat.succ y))
+        (Term.var 0))
+      (Term.add (Term.rename Nat.succ x)
+        (Term.add (Term.rename Nat.succ y) (Term.var 0)))
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    have hleftZero : BProv Ax_s []
+        (eq (Term.add (Term.add x y) Term.zero) (Term.add x y)) :=
+      BProv_Ax_s_addZero_term (Term.add x y)
+    have hyZero : BProv Ax_s []
+        (eq (Term.add y Term.zero) y) :=
+      BProv_Ax_s_addZero_term y
+    have hrightZero : BProv Ax_s []
+        (eq (Term.add x (Term.add y Term.zero)) (Term.add x y)) :=
+      BProv_eq_congr_add_right x hyZero
+    have htarget : BProv Ax_s []
+        (eq (Term.add (Term.add x y) Term.zero)
+          (Term.add x (Term.add y Term.zero))) :=
+      BProv_eqTrans hleftZero (BProv_eqSym hrightZero)
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using htarget
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let xs : Term := Term.rename Nat.succ x
+    let ys : Term := Term.rename Nat.succ y
+    have hphi : BProv Ax_s [phi]
+        (eq (Term.add (Term.add xs ys) (Term.var 0))
+          (Term.add xs (Term.add ys (Term.var 0)))) :=
+      BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi, xs, ys])
+    have hleftSucc : BProv Ax_s [phi]
+        (eq (Term.add (Term.add xs ys) (Term.succ (Term.var 0)))
+          (Term.succ (Term.add (Term.add xs ys) (Term.var 0)))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addSucc_terms (Term.add xs ys) (Term.var 0))
+    have hihSucc : BProv Ax_s [phi]
+        (eq (Term.succ (Term.add (Term.add xs ys) (Term.var 0)))
+          (Term.succ (Term.add xs (Term.add ys (Term.var 0))))) :=
+      BProv_eq_congr_succ hphi
+    have hySucc : BProv Ax_s [phi]
+        (eq (Term.add ys (Term.succ (Term.var 0)))
+          (Term.succ (Term.add ys (Term.var 0)))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addSucc_terms ys (Term.var 0))
+    have hrightCong : BProv Ax_s [phi]
+        (eq
+          (Term.add xs (Term.add ys (Term.succ (Term.var 0))))
+          (Term.add xs (Term.succ (Term.add ys (Term.var 0))))) :=
+      BProv_eq_congr_add_right xs hySucc
+    have hxSucc : BProv Ax_s [phi]
+        (eq
+          (Term.add xs (Term.succ (Term.add ys (Term.var 0))))
+          (Term.succ (Term.add xs (Term.add ys (Term.var 0))))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addSucc_terms xs (Term.add ys (Term.var 0)))
+    have hrightSucc : BProv Ax_s [phi]
+        (eq
+          (Term.add xs (Term.add ys (Term.succ (Term.var 0))))
+          (Term.succ (Term.add xs (Term.add ys (Term.var 0))))) :=
+      BProv_eqTrans hrightCong hxSucc
+    have htarget : BProv Ax_s [phi]
+        (eq
+          (Term.add (Term.add xs ys) (Term.succ (Term.var 0)))
+          (Term.add xs (Term.add ys (Term.succ (Term.var 0))))) :=
+      BProv_eqTrans (BProv_eqTrans hleftSucc hihSucc)
+        (BProv_eqSym hrightSucc)
+    simpa [phi, xs, ys, substSuccVar, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_substSuccVar_rename_succ] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of PA addition associativity. -/
+theorem BProv_Ax_s_add_assoc_terms {G : List Formula} (x y z : Term) :
+    BProv Ax_s G
+      (eq (Term.add (Term.add x y) z)
+        (Term.add x (Term.add y z))) := by
+  have hall : BProv Ax_s G
+      (all
+        (eq
+          (Term.add
+            (Term.add (Term.rename Nat.succ x) (Term.rename Nat.succ y))
+            (Term.var 0))
+          (Term.add (Term.rename Nat.succ x)
+            (Term.add (Term.rename Nat.succ y) (Term.var 0))))) :=
+    BProv_weaken_nil (BProv_Ax_s_add_assoc_all x y)
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := z) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using hinst
+
 /-- PA proves, uniformly in the left addend, that adding a successor on the
 right never gives back the original left addend. -/
 theorem BProv_Ax_s_add_succ_ne_self_all (y : Term) :
