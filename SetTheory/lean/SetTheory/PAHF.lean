@@ -24494,6 +24494,27 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
       (highValue := highValue) (lowValue := lowValue)
       (elemValue := elemValue) hhigh hlow hspec.1 hspec.2
 
+/-- Closed high/low numerals plus an object-level `low < high` proof yield the
+distinguishing-member existential.  If the meta-level numerals are not strictly
+ordered, the closed equalities give the reverse `leAt`, and PA refutes the
+supplied `ltAt` premise. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_ltAt
+    {G : List Formula} {high low highValue lowValue : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hlow : BProv Ax_s G (eqConstAt low lowValue))
+    (hltAt : BProv Ax_s G (ltAt low high)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) := by
+  by_cases hlt : lowValue < highValue
+  · exact BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
+      (G := G) (high := high) (low := low)
+      (highValue := highValue) (lowValue := lowValue)
+      hhigh hlow hlt
+  · have hleMeta : highValue ≤ lowValue := by omega
+    have hle : BProv Ax_s G (leAt high low) :=
+      BProv_Ax_s_leAt_of_eqConst hhigh hlow hleMeta
+    exact BProv_botE (a := hfSomeDistinguishesAt high low)
+      (BProv_Ax_s_ltAt_leAt_bot hltAt hle)
+
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
