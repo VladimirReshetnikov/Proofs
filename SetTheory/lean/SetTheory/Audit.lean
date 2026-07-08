@@ -235,6 +235,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_add_mul_terms
 #check @PA.Formula.BProv_Ax_s_mul_assoc_all
 #check @PA.Formula.BProv_Ax_s_mul_assoc_terms
+#check @PA.Formula.BProv_Ax_s_mul_one_all
+#check @PA.Formula.BProv_Ax_s_mul_one_term
+#check @PA.Formula.BProv_Ax_s_one_mul_all
+#check @PA.Formula.BProv_Ax_s_one_mul_term
 #check @PA.Formula.BProv_Ax_s_addRightNumeral
 #check @PA.Formula.BProv_Ax_s_mulRightNumeral
 #check @PA.Formula.BProv_Ax_s_addNumerals

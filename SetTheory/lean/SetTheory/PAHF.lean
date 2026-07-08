@@ -10551,6 +10551,71 @@ theorem BProv_Ax_s_mul_assoc_terms {G : List Formula} (x y z : Term) :
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
+/-- PA proves the right-one law for multiplication. -/
+theorem BProv_Ax_s_mul_one_all :
+    BProv Ax_s []
+      (all (eq (Term.mul (Term.var 0) (Term.numeral 1)) (Term.var 0))) := by
+  have hbody : BProv Ax_s []
+      (eq (Term.mul (Term.var 0) (Term.numeral 1)) (Term.var 0)) := by
+    let x : Term := Term.var 0
+    have hstep : BProv Ax_s []
+        (eq (Term.mul x (Term.succ Term.zero))
+          (Term.add (Term.mul x Term.zero) x)) :=
+      BProv_Ax_s_mulSucc_terms x Term.zero
+    have hzero : BProv Ax_s []
+        (eq (Term.mul x Term.zero) Term.zero) :=
+      BProv_Ax_s_mulZero_term x
+    have hzeroCong : BProv Ax_s []
+        (eq
+          (Term.add (Term.mul x Term.zero) x)
+          (Term.add Term.zero x)) :=
+      BProv_eq_congr_add_left x hzero
+    have hzeroAdd : BProv Ax_s []
+        (eq (Term.add Term.zero x) x) :=
+      BProv_Ax_s_zero_add_term x
+    have htarget : BProv Ax_s []
+        (eq (Term.mul x (Term.succ Term.zero)) x) :=
+      BProv_eqTrans (BProv_eqTrans hstep hzeroCong) hzeroAdd
+    simpa [x, Term.numeral] using htarget
+  exact BProv_allI_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- Arbitrary-term instance of `x * 1 = x`. -/
+theorem BProv_Ax_s_mul_one_term {G : List Formula} (x : Term) :
+    BProv Ax_s G (eq (Term.mul x (Term.numeral 1)) x) := by
+  have hall : BProv Ax_s G
+      (all (eq (Term.mul (Term.var 0) (Term.numeral 1)) (Term.var 0))) :=
+    BProv_weaken_nil BProv_Ax_s_mul_one_all
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
+
+/-- PA proves the left-one law for multiplication. -/
+theorem BProv_Ax_s_one_mul_all :
+    BProv Ax_s []
+      (all (eq (Term.mul (Term.numeral 1) (Term.var 0)) (Term.var 0))) := by
+  have hbody : BProv Ax_s []
+      (eq (Term.mul (Term.numeral 1) (Term.var 0)) (Term.var 0)) := by
+    have hcomm : BProv Ax_s []
+        (eq
+          (Term.mul (Term.numeral 1) (Term.var 0))
+          (Term.mul (Term.var 0) (Term.numeral 1))) :=
+      BProv_Ax_s_mul_comm_terms (Term.numeral 1) (Term.var 0)
+    have hone : BProv Ax_s []
+        (eq (Term.mul (Term.var 0) (Term.numeral 1)) (Term.var 0)) :=
+      BProv_Ax_s_mul_one_term (Term.var 0)
+    exact BProv_eqTrans hcomm hone
+  exact BProv_allI_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- Arbitrary-term instance of `1 * x = x`. -/
+theorem BProv_Ax_s_one_mul_term {G : List Formula} (x : Term) :
+    BProv Ax_s G (eq (Term.mul (Term.numeral 1) x) x) := by
+  have hall : BProv Ax_s G
+      (all (eq (Term.mul (Term.numeral 1) (Term.var 0)) (Term.var 0))) :=
+    BProv_weaken_nil BProv_Ax_s_one_mul_all
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
+
 /-- PA proves the recursive normal form of right addition by a standard
 numeral. -/
 theorem BProv_Ax_s_addRightNumeral (t : Term) :
