@@ -9413,6 +9413,76 @@ theorem BProv_Ax_s_add_assoc_terms {G : List Formula} (x y z : Term) :
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
+/-- PA proves commutativity of addition, uniformly in the right addend. -/
+theorem BProv_Ax_s_add_comm_all (x : Term) :
+    BProv Ax_s []
+      (all
+        (eq
+          (Term.add (Term.rename Nat.succ x) (Term.var 0))
+          (Term.add (Term.var 0) (Term.rename Nat.succ x)))) := by
+  let phi : Formula :=
+    eq
+      (Term.add (Term.rename Nat.succ x) (Term.var 0))
+      (Term.add (Term.var 0) (Term.rename Nat.succ x))
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    have hxZero : BProv Ax_s []
+        (eq (Term.add x Term.zero) x) :=
+      BProv_Ax_s_addZero_term x
+    have hzeroX : BProv Ax_s []
+        (eq (Term.add Term.zero x) x) :=
+      BProv_Ax_s_zero_add_term x
+    have htarget : BProv Ax_s []
+        (eq (Term.add x Term.zero) (Term.add Term.zero x)) :=
+      BProv_eqTrans hxZero (BProv_eqSym hzeroX)
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using htarget
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let xs : Term := Term.rename Nat.succ x
+    have hphi : BProv Ax_s [phi]
+        (eq (Term.add xs (Term.var 0)) (Term.add (Term.var 0) xs)) :=
+      BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi, xs])
+    have hleft : BProv Ax_s [phi]
+        (eq (Term.add xs (Term.succ (Term.var 0)))
+          (Term.succ (Term.add xs (Term.var 0)))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms xs (Term.var 0))
+    have hihSucc : BProv Ax_s [phi]
+        (eq (Term.succ (Term.add xs (Term.var 0)))
+          (Term.succ (Term.add (Term.var 0) xs))) :=
+      BProv_eq_congr_succ hphi
+    have hright : BProv Ax_s [phi]
+        (eq (Term.add (Term.succ (Term.var 0)) xs)
+          (Term.succ (Term.add (Term.var 0) xs))) :=
+      BProv_Ax_s_succ_add_terms (Term.var 0) xs
+    have htarget : BProv Ax_s [phi]
+        (eq (Term.add xs (Term.succ (Term.var 0)))
+          (Term.add (Term.succ (Term.var 0)) xs)) :=
+      BProv_eqTrans (BProv_eqTrans hleft hihSucc) (BProv_eqSym hright)
+    simpa [phi, xs, substSuccVar, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_substSuccVar_rename_succ] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of PA addition commutativity. -/
+theorem BProv_Ax_s_add_comm_terms {G : List Formula} (x y : Term) :
+    BProv Ax_s G (eq (Term.add x y) (Term.add y x)) := by
+  have hall : BProv Ax_s G
+      (all
+        (eq
+          (Term.add (Term.rename Nat.succ x) (Term.var 0))
+          (Term.add (Term.var 0) (Term.rename Nat.succ x)))) :=
+    BProv_weaken_nil (BProv_Ax_s_add_comm_all x)
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using hinst
+
 /-- PA proves, uniformly in the left addend, that adding a successor on the
 right never gives back the original left addend. -/
 theorem BProv_Ax_s_add_succ_ne_self_all (y : Term) :

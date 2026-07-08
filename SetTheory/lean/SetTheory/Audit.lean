@@ -201,6 +201,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_add_cancel_right_terms
 #check @PA.Formula.BProv_Ax_s_add_assoc_all
 #check @PA.Formula.BProv_Ax_s_add_assoc_terms
+#check @PA.Formula.BProv_Ax_s_add_comm_all
+#check @PA.Formula.BProv_Ax_s_add_comm_terms
 #check @PA.Formula.BProv_Ax_s_add_succ_ne_self_all
 #check @PA.Formula.BProv_Ax_s_add_succ_ne_self_terms
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all
