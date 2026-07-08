@@ -11742,6 +11742,79 @@ Proof.
     intros [|n]; simpl; reflexivity.
 Qed.
 
+Lemma rename_domainForm_up : forall (r : nat -> nat),
+  rename (up r) domainForm = domainForm.
+Proof.
+  intro r.
+  transitivity (rename (fun n => n) domainForm).
+  - apply rename_ext_free.
+    intros n hn.
+    pose proof (domainForm_free n hn) as hn0.
+    subst n.
+    reflexivity.
+  - apply rename_id.
+Qed.
+
+Lemma formulaAt_rename : forall phi rho r,
+  rename r (formulaAt rho phi) =
+    formulaAt (fun n => r (rho n)) phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho r; try reflexivity.
+  - rewrite (termGraphAt_rename a (fun n => rho n + 2) 1 (up (up r))).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+      (up (up r) 1)).
+    + rewrite (termGraphAt_rename b (fun n => rho n + 2) 0 (up (up r))).
+      rewrite (termGraphAt_map_ext b
+        (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+        (up (up r) 0)).
+      * reflexivity.
+      * intro n. apply up_add2.
+    + intro n. apply up_add2.
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+Qed.
+
+Lemma formulaAt_rename_succ_upVarMap : forall phi rho,
+  formulaAt (upVarMap rho) (PA.Formula.rename S phi) =
+    rename S (formulaAt rho phi).
+Proof.
+  intros phi rho.
+  rewrite (formulaAt_PA_rename phi (upVarMap rho) S).
+  rewrite (formulaAt_map_ext phi
+    (fun n => upVarMap rho (S n)) (fun n => S (rho n))).
+  - symmetry.
+    apply formulaAt_rename.
+  - intros n. reflexivity.
+Qed.
+
+Lemma formulaAt_subst_instTerm_var : forall phi rho k,
+  formulaAt rho (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) phi) =
+    rename (inst (rho k)) (formulaAt (upVarMap rho) phi).
+Proof.
+  intros phi rho k.
+  rewrite PA.Formula.subst_instTerm_var.
+  rewrite (formulaAt_PA_rename phi rho (inst k)).
+  transitivity (formulaAt
+    (fun n => inst (rho k) (upVarMap rho n)) phi).
+  - apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+  - symmetry.
+    apply formulaAt_rename.
+Qed.
+
 Lemma formulaAt_map_ext_free : forall phi rho sigma,
   (forall n, PA.Formula.Free n phi -> rho n = sigma n) ->
   formulaAt rho phi = formulaAt sigma phi.
@@ -14548,6 +14621,17 @@ Proof.
   intro G.
   unfold translateContextAt, translateContext, translateFormula.
   reflexivity.
+Qed.
+
+Lemma translateContextAt_rename_succ_upVarMap : forall rho G,
+  translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G) =
+    map (rename S) (translateContextAt rho G).
+Proof.
+  intros rho G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite formulaAt_rename_succ_upVarMap.
+    now rewrite IH.
 Qed.
 
 Lemma rename_domainForm_inst : forall r k,

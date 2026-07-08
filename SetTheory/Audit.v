@@ -123,10 +123,15 @@ Check termGraphAt_map_ext_free.
 Check termGraphAt_PA_rename.
 Check termGraphAt_rename.
 Check formulaAt_PA_rename.
+Check rename_domainForm_up.
+Check formulaAt_rename.
+Check formulaAt_rename_succ_upVarMap.
+Check formulaAt_subst_instTerm_var.
 Check formulaAt_map_ext_free.
 Check formulaAt_eq_translateFormula_of_PA_sentence.
 Check translateContextAt.
 Check translateContextAt_id.
+Check translateContextAt_rename_succ_upVarMap.
 Check mem_translateContextAt_of_mem.
 Check BProv_formulaAt_ass.
 Check BProv_formulaAt_ax.
