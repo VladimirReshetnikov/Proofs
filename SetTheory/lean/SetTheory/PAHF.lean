@@ -20442,6 +20442,46 @@ theorem BProv_Ax_s_betaDiv2BitAt_body_current_zero_of_betaTermAt_zero_eq_index
     (zeroIdx := zeroIdx) (idx := idx+2)
     hzeroBeta hidxEq hcur
 
+/-- Eliminate a final-bit formula to contradiction from a contradiction in the
+fully opened final halving-step body.  This is the small syntactic eliminator
+under the more specialized current/bit refuters below. -/
+theorem BProv_Ax_s_betaDiv2BitAt_bot_of_opened_final_bot
+    {G : List Formula} {bit code step idx : Nat}
+    (hbot :
+      let body : Formula :=
+        and
+          (betaAt 1 (code+2) (step+2) (idx+2))
+          (and
+            (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+            (div2StepAt 1 0 (bit+2)))
+      BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        bot)
+    (hbitAt : BProv Ax_s G (betaDiv2BitAt bit code step idx)) :
+    BProv Ax_s G bot := by
+  let body : Formula :=
+    and
+      (betaAt 1 (code+2) (step+2) (idx+2))
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2)))
+  have houter : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
+    have hex : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hinner : BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        bot := by
+      simpa [body] using hbot
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hex (by simpa [rename] using hinner)
+  have hbitAt' : BProv Ax_s G (ex (ex body)) := by
+    simpa [betaDiv2BitAt, body] using hbitAt
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hbitAt' (by simpa [rename] using houter)
+
 /-- Eliminate a final-bit formula to contradiction once the opened current
 witness can be proved to be zero.  The `hcurZero` premise is deliberately a
 proof obligation over the opened existential context: later trace-invariant
@@ -21797,6 +21837,99 @@ theorem BProv_Ax_s_hfMemAt_succ_opened_body_bitEx
         (G := G) (elem := elem) (set := set))
   exact BProv_context_cons (B := Ax_s) hbitEx
 
+/-- Eliminate an `hfMemAt` proof to contradiction from a contradiction in the
+fully opened final-bit context.  This theorem performs only the syntactic
+unpacking of the membership formula: it opens the code/step witnesses, extracts
+the final `bit = 1` witness, then opens the final halving-step body. -/
+theorem BProv_Ax_s_hfMemAt_bot_of_opened_final_bot
+    {G : List Formula} {elem set : Nat}
+    (hfinalBot :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bitCtx : List Formula :=
+        bitBody :: (body :: (ex body :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)).map (rename Nat.succ)
+      let finalBody : Formula :=
+        and
+          (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+          (and
+            (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+            (div2StepAt 1 0 (0+2)))
+      BProv Ax_s
+        (finalBody :: (ex finalBody :: bitCtx.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        bot)
+    (hmem : BProv Ax_s G (hfMemAt elem set)) :
+    BProv Ax_s G bot := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let bitCtx : List Formula := bitBody :: bodyCtx.map (rename Nat.succ)
+  let finalBody : Formula :=
+    and
+      (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+      (and
+        (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+        (div2StepAt 1 0 (0+2)))
+  have hcodeStep : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
+    have hstepEx : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hopened : BProv Ax_s bodyCtx bot := by
+      have hbody : BProv Ax_s bodyCtx body :=
+        BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+      have htail : BProv Ax_s bodyCtx tail :=
+        BProv_andE2 hbody
+      have hbitEx : BProv Ax_s bodyCtx (ex bitBody) :=
+        BProv_andE2 htail
+      have hbitOpened : BProv Ax_s bitCtx bot := by
+        have hbitBody : BProv Ax_s bitCtx bitBody :=
+          BProv_ass (B := Ax_s) (G := bitCtx) (by simp [bitCtx])
+        have hbitAt : BProv Ax_s bitCtx
+            (betaDiv2BitAt 0 2 1 (elem+3)) :=
+          BProv_andE2 hbitBody
+        exact BProv_Ax_s_betaDiv2BitAt_bot_of_opened_final_bot
+          (G := bitCtx) (bit := 0) (code := 2) (step := 1)
+          (idx := elem+3)
+          (by
+            simpa [bitCtx, bodyCtx, finalBody, bitBody, body, tail] using
+              hfinalBot)
+          hbitAt
+      exact BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbitEx (by
+          simpa [rename, bodyCtx, bitCtx, List.map_map, Function.comp_def] using
+            hbitOpened)
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstepEx (by simpa [rename, bodyCtx] using hopened)
+  have hmem' : BProv Ax_s G (ex (ex body)) := by
+    simpa [hfMemAt, body, tail, bitBody] using hmem
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hmem' (by simpa [rename] using hcodeStep)
+
 /-- Eliminate an `hfMemAt` proof to contradiction once the final opened
 halving-current witness has been proved to be zero.
 
@@ -22429,6 +22562,321 @@ theorem BProv_Ax_s_hfMemAt_opened_final_current_eqConst_div2Iter
     (idx := (elem+3)+2) (value := div2Iter setValue elemValue)
     (idxTerm := Term.numeral elemValue)
     hclosedAtElem hidxEq hcur
+
+/-- In the final opened bit witness of `hfMemAt`, if the queried element is
+proved to be `0`, the current halving value is the original set slot.  This is
+the open-set analogue of the zero case of
+`BProv_Ax_s_hfMemAt_opened_final_current_eqConst_div2Iter`: no closed value for
+the set is needed, because the initial beta entry already records the set slot
+itself at index `0`. -/
+theorem BProv_Ax_s_hfMemAt_opened_final_current_eq_set_of_elem_zero
+    {G : List Formula} {elem set : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0)) :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bitCtx : List Formula :=
+      bitBody :: (body :: (ex body :: G.map (rename Nat.succ)).map
+        (rename Nat.succ)).map (rename Nat.succ)
+    let finalBody : Formula :=
+      and
+        (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+        (and
+          (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+          (div2StepAt 1 0 (0+2)))
+    BProv Ax_s
+      (finalBody :: (ex finalBody :: bitCtx.map (rename Nat.succ)).map
+        (rename Nat.succ))
+      (eq (Term.var 1) (Term.var ((set+3)+2))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let bitCtx : List Formula := bitBody :: bodyCtx.map (rename Nat.succ)
+  let finalBody : Formula :=
+    and
+      (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+      (and
+        (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+        (div2StepAt 1 0 (0+2)))
+  let C : List Formula :=
+    finalBody :: (ex finalBody :: bitCtx.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  have hbodyEntry : BProv Ax_s bodyCtx
+      (betaAtConstIdx (set+2) 1 0 0) := by
+    simpa [bitBody, tail, body, bodyCtx] using
+      (BProv_Ax_s_hfMemAt_opened_body_entry
+        (G := G) (elem := elem) (set := set))
+  have hentryBitCtx : BProv Ax_s bitCtx
+      (betaAtConstIdx (set+3) (1+1) (0+1) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := bodyCtx) (a := bitBody)
+      (b := betaAtConstIdx (set+2) 1 0 0)
+      (fun f hf => sentence_ax_s (f := f) hf) hbodyEntry
+    simpa [bitCtx, betaAtConstIdx, betaAt, remAt, ltAt, eqConstAt,
+      betaModTerm, rename, Term.rename, SetTheory.up] using h
+  have hentryPreFinal : BProv Ax_s
+      (ex finalBody :: bitCtx.map (rename Nat.succ))
+      (betaAtConstIdx ((set+3)+1) ((1+1)+1) ((0+1)+1) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := bitCtx) (a := ex finalBody)
+      (b := betaAtConstIdx (set+3) (1+1) (0+1) 0)
+      (fun f hf => sentence_ax_s (f := f) hf) hentryBitCtx
+    simpa [betaAtConstIdx, betaAt, remAt, ltAt, eqConstAt, betaModTerm,
+      rename, Term.rename, SetTheory.up] using h
+  have hentryC : BProv Ax_s C
+      (betaAtConstIdx ((set+3)+2) (2+2) (1+2) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := ex finalBody :: bitCtx.map (rename Nat.succ))
+      (a := finalBody)
+      (b := betaAtConstIdx ((set+3)+1) ((1+1)+1) ((0+1)+1) 0)
+      (fun f hf => sentence_ax_s (f := f) hf) hentryPreFinal
+    simpa [C, betaAtConstIdx, betaAt, remAt, ltAt, eqConstAt,
+      betaModTerm, rename, Term.rename, SetTheory.up, Nat.add_assoc,
+      Nat.add_comm, Nat.add_left_comm] using h
+  have helemOpened1 : BProv Ax_s (ex body :: G.map (rename Nat.succ))
+      (eqConstAt (elem+1) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := G) (a := ex body)
+      (b := eqConstAt elem 0)
+      (fun f hf => sentence_ax_s (f := f) hf) helem
+    simpa [eqConstAt, rename, Term.rename] using h
+  have helemBodyCtx : BProv Ax_s bodyCtx
+      (eqConstAt (elem+2) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := ex body :: G.map (rename Nat.succ))
+      (a := body) (b := eqConstAt (elem+1) 0)
+      (fun f hf => sentence_ax_s (f := f) hf) helemOpened1
+    simpa [bodyCtx, eqConstAt, rename, Term.rename] using h
+  have helemBitCtx : BProv Ax_s bitCtx
+      (eqConstAt (elem+3) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := bodyCtx) (a := bitBody)
+      (b := eqConstAt (elem+2) 0)
+      (fun f hf => sentence_ax_s (f := f) hf) helemBodyCtx
+    simpa [bitCtx, eqConstAt, rename, Term.rename] using h
+  have helemPreFinal : BProv Ax_s
+      (ex finalBody :: bitCtx.map (rename Nat.succ))
+      (eqConstAt ((elem+3)+1) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := bitCtx) (a := ex finalBody)
+      (b := eqConstAt (elem+3) 0)
+      (fun f hf => sentence_ax_s (f := f) hf) helemBitCtx
+    simpa [eqConstAt, rename, Term.rename] using h
+  have helemC : BProv Ax_s C
+      (eqConstAt ((elem+3)+2) 0) := by
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) (G := ex finalBody :: bitCtx.map (rename Nat.succ))
+      (a := finalBody)
+      (b := eqConstAt ((elem+3)+1) 0)
+      (fun f hf => sentence_ax_s (f := f) hf) helemPreFinal
+    simpa [C, eqConstAt, rename, Term.rename, Nat.add_assoc,
+      Nat.add_comm, Nat.add_left_comm] using h
+  have hentryTermConst : BProv Ax_s C
+      (betaTermAtConstIdx (Term.var ((set+3)+2)) (2+2) (1+2) 0) :=
+    BProv_Ax_s_betaTermAtConstIdx_of_betaAtConstIdx_eq_term
+      (G := C) (out := (set+3)+2) (code := 2+2) (step := 1+2)
+      (idxValue := 0) (outTerm := Term.var ((set+3)+2))
+      hentryC
+      (BProv_eqRefl (B := Ax_s) (G := C) (Term.var ((set+3)+2)))
+  have hentryTermIdx : BProv Ax_s C
+      (betaTermAtTermIdx (Term.var ((set+3)+2)) (2+2) (1+2)
+        Term.zero) := by
+    simpa [Term.numeral] using
+      (BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
+        (G := C) (out := Term.var ((set+3)+2))
+        (code := 2+2) (step := 1+2) (idxValue := 0)
+        hentryTermConst)
+  have hbodyFinal : BProv Ax_s C finalBody :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hcur : BProv Ax_s C
+      (betaAt 1 (2+2) (1+2) ((elem+3)+2)) := by
+    simpa [finalBody] using BProv_andE1 hbodyFinal
+  have hidxEq : BProv Ax_s C
+      (eq Term.zero (Term.var ((elem+3)+2))) := by
+    simpa [eqConstAt, Term.numeral] using BProv_eqSym helemC
+  exact BProv_Ax_s_eq_of_betaAt_betaTermAtTermIdx_eq_index
+    (G := C) (out := 1) (code := 2+2) (step := 1+2)
+    (idx := (elem+3)+2) (outTerm := Term.var ((set+3)+2))
+    (idxTerm := Term.zero)
+    hentryTermIdx hidxEq hcur
+
+/-- If the queried element is `0` and the open set code is divisible by `2`,
+then an `hfMemAt` witness is impossible.  The proof opens the membership trace,
+identifies the final current with the original set slot, transports the
+divisibility witness to that final current, and uses the final halving step's
+`bit = 1` component to contradict divisibility by `2`. -/
+theorem BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_dvd_set
+    {G : List Formula} {elem set modulus : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdvdSet : BProv Ax_s G (dvdAt modulus set))
+    (hmem : BProv Ax_s G (hfMemAt elem set)) :
+    BProv Ax_s G bot :=
+  BProv_Ax_s_hfMemAt_bot_of_opened_final_bot
+    (G := G) (elem := elem) (set := set)
+    (by
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      let bitCtx : List Formula := bitBody :: bodyCtx.map (rename Nat.succ)
+      let finalBody : Formula :=
+        and
+          (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+          (and
+            (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+            (div2StepAt 1 0 (0+2)))
+      let C : List Formula :=
+        finalBody :: (ex finalBody :: bitCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      have hcurEq : BProv Ax_s C
+          (eq (Term.var 1) (Term.var ((set+3)+2))) := by
+        simpa [C, bitCtx, bodyCtx, finalBody, bitBody, body, tail] using
+          (BProv_Ax_s_hfMemAt_opened_final_current_eq_set_of_elem_zero
+            (G := G) (elem := elem) (set := set) helem)
+      have hmodOpened1 : BProv Ax_s
+          (ex body :: G.map (rename Nat.succ))
+          (eqConstAt (modulus+1) 2) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := G) (a := ex body)
+          (b := eqConstAt modulus 2)
+          (fun f hf => sentence_ax_s (f := f) hf) hmod
+        simpa [eqConstAt, rename, Term.rename] using h
+      have hmodBodyCtx : BProv Ax_s bodyCtx
+          (eqConstAt (modulus+2) 2) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := ex body :: G.map (rename Nat.succ))
+          (a := body) (b := eqConstAt (modulus+1) 2)
+          (fun f hf => sentence_ax_s (f := f) hf) hmodOpened1
+        simpa [bodyCtx, eqConstAt, rename, Term.rename] using h
+      have hmodBitCtx : BProv Ax_s bitCtx
+          (eqConstAt (modulus+3) 2) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := bodyCtx) (a := bitBody)
+          (b := eqConstAt (modulus+2) 2)
+          (fun f hf => sentence_ax_s (f := f) hf) hmodBodyCtx
+        simpa [bitCtx, eqConstAt, rename, Term.rename] using h
+      have hmodPreFinal : BProv Ax_s
+          (ex finalBody :: bitCtx.map (rename Nat.succ))
+          (eqConstAt ((modulus+3)+1) 2) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := bitCtx) (a := ex finalBody)
+          (b := eqConstAt (modulus+3) 2)
+          (fun f hf => sentence_ax_s (f := f) hf) hmodBitCtx
+        simpa [eqConstAt, rename, Term.rename] using h
+      have hmodC : BProv Ax_s C
+          (eqConstAt ((modulus+3)+2) 2) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := ex finalBody :: bitCtx.map (rename Nat.succ))
+          (a := finalBody)
+          (b := eqConstAt ((modulus+3)+1) 2)
+          (fun f hf => sentence_ax_s (f := f) hf) hmodPreFinal
+        simpa [C, eqConstAt, rename, Term.rename, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] using h
+      have hdvdOpened1 : BProv Ax_s
+          (ex body :: G.map (rename Nat.succ))
+          (dvdAt (modulus+1) (set+1)) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := G) (a := ex body)
+          (b := dvdAt modulus set)
+          (fun f hf => sentence_ax_s (f := f) hf) hdvdSet
+        simpa [dvdAt, rename, Term.rename, SetTheory.up] using h
+      have hdvdBodyCtx : BProv Ax_s bodyCtx
+          (dvdAt (modulus+2) (set+2)) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := ex body :: G.map (rename Nat.succ))
+          (a := body) (b := dvdAt (modulus+1) (set+1))
+          (fun f hf => sentence_ax_s (f := f) hf) hdvdOpened1
+        simpa [bodyCtx, dvdAt, rename, Term.rename, SetTheory.up] using h
+      have hdvdBitCtx : BProv Ax_s bitCtx
+          (dvdAt (modulus+3) (set+3)) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := bodyCtx) (a := bitBody)
+          (b := dvdAt (modulus+2) (set+2))
+          (fun f hf => sentence_ax_s (f := f) hf) hdvdBodyCtx
+        simpa [bitCtx, dvdAt, rename, Term.rename, SetTheory.up] using h
+      have hdvdPreFinal : BProv Ax_s
+          (ex finalBody :: bitCtx.map (rename Nat.succ))
+          (dvdAt ((modulus+3)+1) ((set+3)+1)) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := bitCtx) (a := ex finalBody)
+          (b := dvdAt (modulus+3) (set+3))
+          (fun f hf => sentence_ax_s (f := f) hf) hdvdBitCtx
+        simpa [dvdAt, rename, Term.rename, SetTheory.up] using h
+      have hdvdC : BProv Ax_s C
+          (dvdAt ((modulus+3)+2) ((set+3)+2)) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := ex finalBody :: bitCtx.map (rename Nat.succ))
+          (a := finalBody)
+          (b := dvdAt ((modulus+3)+1) ((set+3)+1))
+          (fun f hf => sentence_ax_s (f := f) hf) hdvdPreFinal
+        simpa [C, dvdAt, rename, Term.rename, SetTheory.up, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] using h
+      have hsetCurEq : BProv Ax_s C
+          (eq (Term.var ((set+3)+2)) (Term.var 1)) :=
+        BProv_eqSym hcurEq
+      have hdvdCur : BProv Ax_s C (dvdAt ((modulus+3)+2) 1) :=
+        BProv_Ax_s_dvdAt_of_eq_right
+          (G := C) (a := (modulus+3)+2) (b := (set+3)+2) (c := 1)
+          hsetCurEq hdvdC
+      have hbitBody : BProv Ax_s bitCtx bitBody :=
+        BProv_ass (B := Ax_s) (G := bitCtx) (by simp [bitCtx])
+      have honeBitCtx : BProv Ax_s bitCtx (oneAt 0) :=
+        BProv_andE1 hbitBody
+      have honePreFinal : BProv Ax_s
+          (ex finalBody :: bitCtx.map (rename Nat.succ))
+          (oneAt 1) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := bitCtx) (a := ex finalBody)
+          (b := oneAt 0)
+          (fun f hf => sentence_ax_s (f := f) hf) honeBitCtx
+        simpa [oneAt, eqConstAt, rename, Term.rename] using h
+      have honeC : BProv Ax_s C (oneAt (0+2)) := by
+        have h := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (G := ex finalBody :: bitCtx.map (rename Nat.succ))
+          (a := finalBody)
+          (b := oneAt 1)
+          (fun f hf => sentence_ax_s (f := f) hf) honePreFinal
+        simpa [C, oneAt, eqConstAt, rename, Term.rename] using h
+      have hbodyFinal : BProv Ax_s C finalBody :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have hstep : BProv Ax_s C (div2StepAt 1 0 (0+2)) := by
+        simpa [finalBody] using BProv_andE2 (BProv_andE2 hbodyFinal)
+      exact BProv_Ax_s_div2StepAt_dvd_two_one_bot
+        (G := C) (modulus := (modulus+3)+2) (value := 1)
+        (half := 0) (bit := 0+2)
+        hmodC hdvdCur honeC hstep)
+    hmem
 
 /-- Closed-numeral nonmembership contradicts an `hfMemAt` proof.  The proof
 keeps the two halves separate: first the opened final current is identified by

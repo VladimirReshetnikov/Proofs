@@ -456,6 +456,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_double_one_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_current_zero_of_betaTermAt_zero_eq_index
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_bot_of_opened_final_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_double_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot
@@ -464,6 +465,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_eqConst_even_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_final_current_eqConst_div2Iter
+#check @PA.Formula.BProv_Ax_s_hfMemAt_opened_final_current_eq_set_of_elem_zero
+#check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_dvd_set
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_not_mem
 #check @PA.Formula.BProv_exists_eqConstAt
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
@@ -494,6 +497,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_entry
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_steps
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_bitEx
+#check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_bot
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_current_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_current_double
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_bit_zero
