@@ -194,6 +194,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_zero_add_term
 #check @PA.Formula.BProv_Ax_s_succ_add_all
 #check @PA.Formula.BProv_Ax_s_succ_add_terms
+#check @PA.Formula.BProv_Ax_s_succ_add_cancel_terms
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPred_term
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPredAt

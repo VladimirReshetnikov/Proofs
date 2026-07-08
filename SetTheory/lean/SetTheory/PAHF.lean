@@ -9078,6 +9078,29 @@ theorem BProv_Ax_s_succ_add_terms {G : List Formula} (x y : Term) :
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
+/-- Cancel one successor from an equality between left-successor additions. -/
+theorem BProv_Ax_s_succ_add_cancel_terms {G : List Formula}
+    {x y z : Term}
+    (h : BProv Ax_s G
+      (eq (Term.add (Term.succ x) y) (Term.add (Term.succ x) z))) :
+    BProv Ax_s G (eq (Term.add x y) (Term.add x z)) := by
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.succ x) y) (Term.succ (Term.add x y))) :=
+    BProv_Ax_s_succ_add_terms x y
+  have hright : BProv Ax_s G
+      (eq (Term.add (Term.succ x) z) (Term.succ (Term.add x z))) :=
+    BProv_Ax_s_succ_add_terms x z
+  have hsuccEq : BProv Ax_s G
+      (eq (Term.succ (Term.add x y)) (Term.succ (Term.add x z))) :=
+    BProv_eqTrans (BProv_eqTrans (BProv_eqSym hleft) h) hright
+  have hinj : BProv Ax_s G
+      (imp
+        (eq (Term.succ (Term.add x y)) (Term.succ (Term.add x z)))
+        (eq (Term.add x y) (Term.add x z))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_succInj_terms (Term.add x y) (Term.add x z))
+  exact BProv_mp Ax_s G _ _ hinj hsuccEq
+
 /-- PA proves uniformly in the right summand that if `x + y = 0`, then
 `x = 0`.  The free term `x` is shifted under the displayed universal binder. -/
 theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
