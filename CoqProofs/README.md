@@ -104,9 +104,10 @@ Current ports:
   certificates.  It verifies the Lean value table through `n = 14`.
 - `A198683N12Magnitude.v` ports the finite TSV-metadata layer from
   `A198683N12Magnitude.lean`: the n = 12 huge-negative-exponent,
-  negative-exponent-above-ten, and overflow-regime flags are represented as
-  generated one-hot lists over the 5139 retained candidates, and Coq proves
-  that candidate 57 is the unique flagged row.  The Lean file's
+  negative-exponent-above-ten, and overflow-regime flags are embedded as
+  literal transcriptions of the Lean lists over the 5139 retained candidates;
+  Coq proves each literal equal to the generated one-hot list by `vm_compute`
+  and that candidate 57 is the unique flagged row.  The Lean file's
   complex-analytic exponential separation lemmas are not yet replayed in Coq.
 - `A198683N12Probe.v` ports the finite retained-data certificate from
   `A198683N12Probe.lean`: the `strict_class` labels are generated from
