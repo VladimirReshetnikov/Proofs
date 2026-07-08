@@ -24419,6 +24419,62 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih :
     BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt hih hlt
   simpa [C, lowLtHigh, ih, hfSomeDistinguishesTermAt_var] using hsome
 
+/-- If the induction hypothesis distinguishes `high` from every lower code,
+and a binary-halving step extracts `lowHalf` from a strict lower code `low`,
+then the induction hypothesis may be opened at `lowHalf`.
+
+This is only the half-order/IH extraction used by later carry branches; it
+does not shift a predecessor witness through the successor code. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
+    {G : List Formula} {low high lowHalf lowBit : Nat}
+    (hih : BProv Ax_s G (hfLtDistinguishesTermAt (Term.var high)))
+    (hlt : BProv Ax_s G (ltTermAt (Term.var low) (Term.var high)))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high lowHalf) := by
+  have hltAt : BProv Ax_s G (ltAt low high) := by
+    simpa [ltTermAt_var] using hlt
+  have hhalfLtAt : BProv Ax_s G (ltAt lowHalf high) :=
+    BProv_Ax_s_ltAt_half_of_div2StepAt_ltAt hlowStep hltAt
+  have hhalfLt : BProv Ax_s G
+      (ltTermAt (Term.var lowHalf) (Term.var high)) := by
+    simpa [ltTermAt_var] using hhalfLtAt
+  have hsome : BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.var high) lowHalf) :=
+    BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt
+      hih hhalfLt
+  simpa [hfSomeDistinguishesTermAt_var] using hsome
+
+/-- Strict-successor specialization of the half-order/IH extraction: a div2
+witness for the current low code lets the renamed predecessor induction
+hypothesis distinguish the predecessor-high code from the low half. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
+    {lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesAt 1 lowHalf) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowLtHigh, ih]
+  have hlt : BProv Ax_s C (ltTermAt (Term.var 0) (Term.var 1)) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, lowLtHigh])
+  have hihRaw : BProv Ax_s C ih :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, ih])
+  have hih : BProv Ax_s C (hfLtDistinguishesTermAt (Term.var 1)) := by
+    simpa [ih, hfLtDistinguishesTermAt_var, rename_hfLtDistinguishesAt_succ]
+      using hihRaw
+  have hstep : BProv Ax_s C (div2StepAt 0 lowHalf lowBit) := by
+    simpa [C, lowLtHigh, ih] using hlowStep
+  have hsome : BProv Ax_s C (hfSomeDistinguishesAt 1 lowHalf) :=
+    BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
+      hih hlt hstep
+  simpa [C, lowLtHigh, ih] using hsome
+
 /-- Reduce the open successor step for lower-code distinguishers to the two
 predecessor cases produced by `low < S high`: either `low < high`, or
 `low = high`.

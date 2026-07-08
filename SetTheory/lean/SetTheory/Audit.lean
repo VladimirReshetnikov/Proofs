@@ -685,6 +685,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt
 #check @PA.Formula.BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_self
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
