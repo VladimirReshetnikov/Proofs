@@ -74,6 +74,8 @@ open SetTheory
 #check @AckermannHF.mem_succ_double_iff
 #check @AckermannHF.mem_succ_odd_double_iff
 #check @AckermannHF.mem_succ_of_double_mem_succ
+#check @PA.Formula.HFMemTrace_pred_of_succ_double
+#check @PA.Formula.HFMemTrace_pred_of_succ_odd_double
 #check @AckermannHF.mem_succ_double_not_mem_succ_odd_double_of_mem_not_mem
 #check @AckermannHF.mem_succ_double_not_mem_succ_double_of_mem_not_mem
 #check @AckermannHF.mem_succ_odd_double_not_mem_succ_double_of_mem_not_mem

@@ -4016,6 +4016,40 @@ theorem HFMemTrace_succ_of_double_mem_succ
     (AckermannHF.mem_succ_of_double_mem_succ hset
       (HFMemTrace_mem htrace))
 
+/-- Semantic trace transport for the inverse even-code membership step:
+if `S x` is witnessed as a member of an explicitly even code `2*half`, then
+`x` has a membership trace in `half`.
+
+The object-language proof cannot simply invoke this semantic lemma, but this
+records the exact trace invariant that the later PA beta-tail construction
+must realize. -/
+theorem HFMemTrace_pred_of_succ_double
+    {x set half code step : Nat}
+    (hset : set = half + half)
+    (htrace : HFMemTrace (x+1) set code step) :
+    ∃ code' step', HFMemTrace x half code' step' := by
+  have hmemSet : AckermannHF.Mem (x+1) set :=
+    HFMemTrace_mem htrace
+  have hmemDouble : AckermannHF.Mem (x+1) (half + half) := by
+    simpa [hset] using hmemSet
+  exact HFMemTrace_exists_of_mem
+    ((AckermannHF.mem_succ_double_iff x half).mp hmemDouble)
+
+/-- Semantic trace transport for the inverse odd-code membership step:
+if `S x` is witnessed as a member of `2*half+1`, then `x` has a membership
+trace in `half`. -/
+theorem HFMemTrace_pred_of_succ_odd_double
+    {x set half code step : Nat}
+    (hset : set = half + half + 1)
+    (htrace : HFMemTrace (x+1) set code step) :
+    ∃ code' step', HFMemTrace x half code' step' := by
+  have hmemSet : AckermannHF.Mem (x+1) set :=
+    HFMemTrace_mem htrace
+  have hmemOdd : AckermannHF.Mem (x+1) (half + half + 1) := by
+    simpa [hset] using hmemSet
+  exact HFMemTrace_exists_of_mem
+    ((AckermannHF.mem_succ_odd_double_iff x half).mp hmemOdd)
+
 theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
     Sat natModel e (hfMemAt elem set) → AckermannHF.Mem (e elem) (e set) := by
   intro h
