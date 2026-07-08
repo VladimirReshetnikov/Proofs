@@ -597,6 +597,80 @@ theorem typedMachineReaches_attainableLowerBound {State : Type*} [Fintype State]
   exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩
 
 /--
+The finite Rado tape obtained by writing the first `k` bits of `input` at
+positions `0, ..., k - 1`, in the order produced by the initializer.
+-/
+def initInputTape (input : List Bool) : Nat -> Tape
+  | 0 => []
+  | k + 1 => Tape.write (initInputTape input k) (k : Int) (input.getI k)
+
+@[simp]
+theorem initInputTape_zero (input : List Bool) :
+    initInputTape input 0 = [] := rfl
+
+@[simp]
+theorem initInputTape_succ (input : List Bool) (k : Nat) :
+    initInputTape input (k + 1) =
+      Tape.write (initInputTape input k) (k : Int) (input.getI k) := rfl
+
+theorem initInputTape_read_nat (input : List Bool) :
+    ∀ k j : Nat,
+      Tape.read (initInputTape input k) (j : Int) =
+        if j < k then input.getI j else false
+  | 0, _j => by simp [initInputTape, Tape.read]
+  | k + 1, j => by
+      rw [initInputTape_succ]
+      by_cases hEq : j = k
+      · subst j
+        simp
+      · rw [Tape.read_write_of_ne]
+        · rw [initInputTape_read_nat input k j]
+          have hjIff : j < k + 1 ↔ j < k := by omega
+          by_cases hjk : j < k
+          · have hjsk : j < k + 1 := hjIff.2 hjk
+            simp [hjk, hjsk]
+          · have hjsk : ¬ j < k + 1 := fun h => hjk (hjIff.1 h)
+            simp [hjk, hjsk]
+        · exact_mod_cast hEq
+
+theorem initInputTape_read_neg (input : List Bool) :
+    ∀ k n : Nat,
+      Tape.read (initInputTape input k) (Int.negSucc n) = false
+  | 0, _n => by simp [initInputTape, Tape.read]
+  | k + 1, n => by
+      rw [initInputTape_succ]
+      rw [Tape.read_write_of_ne]
+      · exact initInputTape_read_neg input k n
+      · omega
+
+/-- After all input bits are written, the Rado tape matches mathlib's `TM0.init` tape. -/
+theorem initInputTape_matches_tm0_init {Label : Type*} [Inhabited Label]
+    (input : List Bool) :
+    RadoMatchesTuringTape 0 (initInputTape input input.length)
+      (Turing.TM0.init (Λ := Label) input).Tape := by
+  intro i
+  cases i with
+  | ofNat j =>
+      rw [zero_add]
+      change Tape.read (initInputTape input input.length) (j : Int) =
+        (Turing.TM0.init (Λ := Label) input).Tape.nth (j : Int)
+      rw [initInputTape_read_nat]
+      by_cases hj : j < input.length
+      · rw [if_pos hj]
+        simp [Turing.TM0.init, Turing.Tape.mk₁, Turing.Tape.mk₂]
+      · rw [if_neg hj]
+        have hle : input.length ≤ j := Nat.le_of_not_gt hj
+        have hgetDefault : input.getI j = (default : Bool) := by
+          rw [List.getI_eq_default _ hle]
+        have hget : input.getI j = false := by
+          simpa using hgetDefault
+        simp [Turing.TM0.init, Turing.Tape.mk₁, Turing.Tape.mk₂, hget]
+  | negSucc j =>
+      rw [zero_add]
+      rw [initInputTape_read_neg]
+      simp [Turing.TM0.init, Turing.Tape.mk₁, Turing.Tape.mk₂, Turing.Tape.nth]
+
+/--
 State space for a typed Rado machine that first writes a nonempty Bool input
 and returns to the origin, then hands control to the usual `TM0` simulator.
 
