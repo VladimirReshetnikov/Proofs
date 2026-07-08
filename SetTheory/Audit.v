@@ -125,6 +125,7 @@ Check PA.Formula.BProv_Ax_s_remAt_of_eqConst.
 Check PA.Formula.BProv_Ax_s_remAt_constMod_of_eqConst.
 Check PA.Formula.BProv_Ax_s_remAt_constRemMod_of_eqConst.
 Check PA.Formula.BProv_Ax_s_betaModTerm_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaModTerm_constIdx_of_eqConst.
 Check PA.Formula.BProv_Ax_s_betaAt_of_eqConst.
 Check PA.Formula.BProv_Ax_s_betaAt_constOutSubst_of_eqConst.
 Check PA.Formula.hfContextAt.

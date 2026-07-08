@@ -10990,6 +10990,65 @@ Proof.
   exact hsucc.
 Qed.
 
+Lemma BProv_Ax_s_betaModTerm_constIdx_of_eqConst :
+  forall G step s i,
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G
+    (pEq
+      (tSucc (tMul (tSucc (Term.numeral i)) (tVar step)))
+      (Term.numeral (BetaModulus s i))).
+Proof.
+  intros G step s i hstep.
+  assert (hmulLeftRaw : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (Term.numeral i)) (tVar step))
+        (tMul (tSucc (Term.numeral i)) (Term.numeral s)))).
+  {
+    exact (BProv_eq_congr_mul_right Ax_s G
+      (tSucc (Term.numeral i)) (tVar step) (Term.numeral s) hstep).
+  }
+  assert (hmulLeft : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (Term.numeral i)) (tVar step))
+        (tMul (Term.numeral (i + 1)) (Term.numeral s)))).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hmulLeftRaw.
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq
+        (tMul (Term.numeral (i + 1)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmulComputed : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (Term.numeral i)) (tVar step))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (tSucc (Term.numeral i)) (tVar step))
+      (tMul (Term.numeral (i + 1)) (Term.numeral s))
+      (Term.numeral ((i + 1) * s))
+      hmulLeft hmulRaw).
+  }
+  assert (hsucc : BProv Ax_s G
+      (pEq
+        (tSucc (tMul (tSucc (Term.numeral i)) (tVar step)))
+        (tSucc (Term.numeral ((i + 1) * s))))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G
+      (tMul (tSucc (Term.numeral i)) (tVar step))
+      (Term.numeral ((i + 1) * s)) hmulComputed).
+  }
+  replace (BetaModulus s i) with (S ((i + 1) * s))
+    by (unfold BetaModulus; lia).
+  simpl.
+  exact hsucc.
+Qed.
+
 Lemma BProv_Ax_s_betaAt_of_eqConst :
   forall G out code step idx o c s i q,
   BProv Ax_s G (eqConstAt out o) ->
