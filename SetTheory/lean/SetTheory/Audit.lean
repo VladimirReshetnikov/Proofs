@@ -506,6 +506,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bitOneEx_of_bit
+#check @PA.Formula.BProv_Ax_s_hfMemTermAt_bitOneEx_of_bit
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_components

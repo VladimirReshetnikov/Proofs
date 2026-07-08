@@ -17133,6 +17133,50 @@ theorem BProv_Ax_s_hfMemAt_bitOneEx_of_bit {G : List Formula}
             bitBody))
       (t := Term.numeral 1) hbody)
 
+/-- Package the innermost membership bit witness for open code and step terms.
+The premise is the same final-bit component used by `hfMemTermAt`, before the
+explicit bit witness has been existentially introduced. -/
+theorem BProv_Ax_s_hfMemTermAt_bitOneEx_of_bit {G : List Formula}
+    {elem : Nat} {codeTerm stepTerm : Term}
+    (hbit : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm stepTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm codeTerm)))
+            (betaDiv2BitAt 0 2 1 (elem+3)))))) :
+    BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 (elem+3)))))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  have hone : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm stepTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm codeTerm)))
+            (oneAt 0)))) := by
+    simpa [oneAt, eqConstAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename] using
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral 1))
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm stepTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm codeTerm)))
+            bitBody))) := by
+    simpa [bitBody, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hone hbit)
+  simpa [bitBody, subst, instTerm, Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a :=
+        subst (Term.upSubst (instTerm stepTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm codeTerm)))
+            bitBody))
+      (t := Term.numeral 1) hbody)
+
 /-- Introduce the PA formula for HF membership from its three closed trace
 components: the zero-index beta entry for the set code, the still-explicit
 bounded halving trace, and the final bit witness existential. -/
