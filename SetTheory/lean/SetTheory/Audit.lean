@@ -615,6 +615,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_distinguishing
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_lt_distinguishes
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt
+#check @PA.Formula.BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step
+#check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_successor_step
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd

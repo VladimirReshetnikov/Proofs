@@ -21363,6 +21363,39 @@ theorem BProv_Ax_s_hfLtDistinguishesAt_zero_base :
   simpa [hfLtDistinguishesAt, lowLtZero, target, ltAt, ltTermAt, substZero,
     subst, instTerm, Term.subst, Term.upSubst, Term.rename] using hall
 
+/-- PA induction reduces the universal lower-code distinguishing theorem to
+its successor step.  The base case is already
+`BProv_Ax_s_hfLtDistinguishesAt_zero_base`; this lemma keeps the remaining
+obligation as the honest object-language successor proof. -/
+theorem BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step
+    (hsucc : BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0)))) :
+    BProv Ax_s [] (all (hfLtDistinguishesAt 0)) := by
+  let phi : Formula := hfLtDistinguishesAt 0
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi] using BProv_Ax_s_hfLtDistinguishesAt_zero_base
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    simpa [phi, substSuccVar_hfLtDistinguishesAt_zero] using hsucc
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  simpa [phi] using
+    BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero hsuccAll
+
+/-- Translated HF extensionality follows from the single open PA successor
+step for lower-code distinguishers. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (hsucc : BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0)))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt
+    (BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step hsucc)
+
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
