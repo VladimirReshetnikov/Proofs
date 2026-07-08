@@ -2653,6 +2653,78 @@ theorem totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding
   exact hLower
 
 /--
+Mathlib-total-recursive functions satisfy the eventual lower-bound compiler
+interface for the two-symbol blank-tape Rado model.
+
+The proof keeps every bridge explicit: mathlib's recursive code is evaluated by
+`PartrecToTM2`, lowered through mathlib's proved TM simulations to a supported
+Bool `TM0`, wrapped by the local blank-tape initializer, and finally budgeted by
+the binary input-size bound above.
+-/
+theorem totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler :
+    HasEventuallyAtMostLowerBoundCompiler TotalRecursiveMathlib := by
+  intro f hf
+  classical
+  rcases Turing.TM1to1.exists_enc_dec
+      (Γ := MathlibBridge.PartrecToTM1Alphabet) with
+    ⟨width, enc, dec, enc0, encdec⟩
+  rcases totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding
+      hf enc dec enc0 encdec with
+    ⟨c, hLower⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  dsimp at hLower
+  let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+  let suppTM2 := Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt
+  let suppTM1 := Turing.TM2to1.trSupp Turing.PartrecToTM2.tr suppTM2
+  let suppTM1Bool := Turing.TM1to1.trSupp MathlibBridge.PartrecToTM1Machine suppTM1
+  let S : Set (Turing.TM1to0.Λ' tm1Bool) :=
+    Turing.TM1to0.trStmts tm1Bool suppTM1Bool
+  let C := Fintype.card (MathlibBridge.TM0RadoState S)
+  let D := 2 * width + (4 * width + C) + 1
+  let threshold := 2 ^ (2 * (D + 1) + 1)
+  refine ⟨threshold, ?_⟩
+  intro n hn
+  let input := MathlibBridge.TM1to1EncodedInput enc
+    (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+      (Turing.PartrecToTM2.trList [n]))
+  rcases hLower n with ⟨score, hScoreLower, hAttain⟩
+  refine ⟨score, hScoreLower, ?_⟩
+  refine ⟨Fintype.card (MathlibBridge.InitThenTM0State S input), ?_, hAttain⟩
+  have hInputLen : input.length ≤ width * (Nat.size n + 2) := by
+    dsimp [input]
+    exact MathlibBridge.encoded_partrec_input_length_le enc n
+  have hThresholdPos : 0 < threshold := by
+    dsimp [threshold]
+    exact Nat.pow_pos (by decide : 0 < 2)
+  have hnPos : 0 < n := Nat.lt_of_lt_of_le hThresholdPos hn
+  have hSizePos : 0 < Nat.size n := (Nat.size_pos).2 hnPos
+  have hStateLeD : Fintype.card (MathlibBridge.InitThenTM0State S input) ≤
+      D * Nat.size n := by
+    dsimp [D, C]
+    exact MathlibBridge.init_wrapper_state_count_le_linear_size
+      (Label := S) (width := width) (input := input) (n := n)
+      hInputLen hSizePos
+  have hDpos : 0 < D := by
+    dsimp [D]
+    omega
+  have hDSizeLeN : D * Nat.size n ≤ n := by
+    dsimp [threshold] at hn
+    exact MathlibBridge.nat_size_linear_le_self_of_large D n hDpos hn
+  exact Nat.le_trans hStateLeD hDSizeLeN
+
+/--
+Concrete final theorem for mathlib's total-recursive predicate: any busy-beaver
+score function eventually dominates every total recursive function `Nat -> Nat`.
+-/
+theorem sigma_eventually_dominates_every_totalRecursiveMathlib
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveMathlib f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
+    hSigma totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler hf
+
+/--
 The finite-support recursive-code evaluator also descends through mathlib's
 proved `TM2 -> TM1`, finite-alphabet `TM1 -> TM1 Bool`, and `TM1 -> TM0`
 reductions to a finite-support Bool `TM0` machine.
