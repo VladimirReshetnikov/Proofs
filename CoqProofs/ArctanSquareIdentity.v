@@ -51,9 +51,6 @@ Proof.
   now apply atan_sub_correct_pos.
 Qed.
 
-Ltac atan_add_rational :=
-  eapply atan_add_pos; try lra; unfold atan_sub; field; lra.
-
 Lemma arctan_two : atan 2 = 2 * u - a.
 Proof.
   pose proof (atan_inv 2) as h.
