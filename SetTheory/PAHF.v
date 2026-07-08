@@ -10691,6 +10691,18 @@ Proof.
     + intro n. apply up_add3.
 Qed.
 
+Lemma termGraphAt_inst_out : forall t rho k,
+  rename (inst k) (termGraphAt (fun n => rho n + 1) 0 t) =
+    termGraphAt rho k t.
+Proof.
+  intros t rho k.
+  rewrite termGraphAt_rename.
+  apply termGraphAt_map_ext.
+  intro n.
+  rewrite Nat.add_1_r.
+  reflexivity.
+Qed.
+
 Lemma termGraphAt_substZeroAt_insert_model : forall V
     (M : FirstOrderAdjunctionModel V) t p k rho out e,
   out < k ->
@@ -15098,6 +15110,23 @@ Proof.
   apply P_lem.
 Qed.
 
+Lemma BProv_formulaAt_eqRefl_var : forall (B : form -> Prop) G rho k,
+  BProv B G (formulaAt rho (PA.pEq (PA.tVar k) (PA.tVar k))).
+Proof.
+  intros B G rho k.
+  apply BProv_of_Prov.
+  simpl.
+  apply (P_exI G _ (rho k)).
+  apply (P_exI G _ (rho k)).
+  replace (rho k + 2) with (S (S (rho k))) by lia.
+  cbn.
+  change (Prov G (fAnd (fEq (rho k) (rho k))
+    (fAnd (fEq (rho k) (rho k)) (fEq (rho k) (rho k))))).
+  apply P_andI.
+  - apply P_eqRefl.
+  - apply P_andI; apply P_eqRefl.
+Qed.
+
 Lemma BProv_formulaAt_andI : forall rho G a b,
   BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
   BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b) ->
@@ -15166,6 +15195,58 @@ Proof.
   simpl in hor.
   exact (BProv_orE translatedPAAx (translateContextAt rho G)
     (formulaAt rho a) (formulaAt rho b) (formulaAt rho c) hor ha hb).
+Qed.
+
+Lemma BProv_termGraphAt_eqElim_out :
+  forall (B : form -> Prop) G rho t i j,
+  BProv B G (fEq i j) ->
+  BProv B G (termGraphAt rho i t) ->
+  BProv B G (termGraphAt rho j t).
+Proof.
+  intros B G rho t i j heq hgraph.
+  rewrite <- (termGraphAt_inst_out t rho i) in hgraph.
+  pose proof (BProv_eqElim B G i j
+    (termGraphAt (fun n => rho n + 1) 0 t) heq hgraph) as htarget.
+  rewrite (termGraphAt_inst_out t rho j) in htarget.
+  exact htarget.
+Qed.
+
+Lemma BProv_formulaAt_eqRefl_of_termGraphAt :
+  forall (B : form -> Prop) G rho t k,
+  BProv B G (termGraphAt rho k t) ->
+  BProv B G (formulaAt rho (PA.pEq t t)).
+Proof.
+  intros B G rho t k [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ G)
+    (fEx (fEx (fAnd (termGraphAt (fun n => rho n + 2) 1 t)
+      (fAnd (termGraphAt (fun n => rho n + 2) 0 t) (fEq 1 0)))))).
+  apply (P_exI (L ++ G) _ k).
+  apply (P_exI (L ++ G) _ k).
+  assert (hconj : Prov (L ++ G)
+      (fAnd (termGraphAt rho k t)
+        (fAnd (termGraphAt rho k t) (fEq k k)))).
+  {
+    apply P_andI.
+    - exact hp.
+    - apply P_andI.
+      + exact hp.
+      + apply P_eqRefl.
+  }
+  simpl.
+  rewrite !rename_inst_up.
+  rewrite !termGraphAt_rename.
+  cbn.
+  replace (termGraphAt
+      (fun n : nat => scons_nat k (inst k) (rho n + 2)) k t)
+    with (termGraphAt rho k t).
+  - exact hconj.
+  - apply termGraphAt_map_ext.
+    intro n.
+    unfold scons_nat, inst.
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
 Qed.
 
 Lemma BProv_translate_impI : forall G a b,

@@ -138,6 +138,7 @@ Check rename_mulGraphAt.
 Check termGraphAt_map_ext_free.
 Check termGraphAt_PA_rename.
 Check termGraphAt_rename.
+Check termGraphAt_inst_out.
 Check formulaAt_PA_rename.
 Check rename_domainForm_up.
 Check formulaAt_rename.
@@ -164,12 +165,15 @@ Check BProv_formulaAt_impI.
 Check BProv_formulaAt_impE.
 Check BProv_formulaAt_botE.
 Check BProv_formulaAt_lem.
+Check BProv_formulaAt_eqRefl_var.
 Check BProv_formulaAt_andI.
 Check BProv_formulaAt_andE1.
 Check BProv_formulaAt_andE2.
 Check BProv_formulaAt_orI1.
 Check BProv_formulaAt_orI2.
 Check BProv_formulaAt_orE.
+Check BProv_termGraphAt_eqElim_out.
+Check BProv_formulaAt_eqRefl_of_termGraphAt.
 
 Check firstOrderFiniteAdjunctionModel_of_HFFinAx_s.
 Check formulaAt_induction_valid_finite_model.
