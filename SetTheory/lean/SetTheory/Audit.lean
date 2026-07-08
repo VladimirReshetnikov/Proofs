@@ -281,6 +281,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leTermAt_refl
 #check @PA.Formula.BProv_Ax_s_leTermAt_zero_left
 #check @PA.Formula.BProv_Ax_s_ltTermAt_zero_succ
+#check @PA.Formula.BProv_Ax_s_ltTermAt_self_succ
 #check @PA.Formula.BProv_Ax_s_leTermAt_succ_succ
 #check @PA.Formula.BProv_Ax_s_eq_of_leTermAt_leTermAt
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_succ
@@ -673,6 +674,8 @@ open SetTheory
 #check @PA.Formula.BetaDiv2Step_twoEntry
 #check @PA.Formula.BetaDiv2StepsThrough_zero_twoEntry
 #check @PA.Formula.HFMemTrace_zero_exists_of_one_step
+#check @PA.Formula.evenSuccBetaStepTerm
+#check @PA.Formula.evenSuccBetaCodeTerm
 #check @PA.Formula.betaFact
 #check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step

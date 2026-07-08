@@ -2554,6 +2554,22 @@ theorem HFMemTrace_zero_exists_of_one_step {set half : Nat}
     BetaDiv2StepsThrough_zero_twoEntry (Or.inr rfl) hset,
     ⟨set, half, BetaDiv2Step_twoEntry (Or.inr rfl) hset⟩⟩
 
+/-- Open beta step witness for the even branch of `0 ∈ S low`: when
+`low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
+use `S low` itself as the beta step. -/
+def evenSuccBetaStepTerm (low : Nat) : Term :=
+  Term.succ (Term.var low)
+
+/-- Open beta code witness for the even branch of `0 ∈ S low`.
+
+For `cur = S low`, this is `(S cur) * cur + cur`.  Under the branch equation
+`low = 2*h`, it has remainder `cur` modulo `S cur` at index `0` and remainder
+`h` modulo `S (2*cur)` at index `1`; those facts are proved by separate PA
+lemmas rather than hidden in this definition. -/
+def evenSuccBetaCodeTerm (low : Nat) : Term :=
+  let cur := evenSuccBetaStepTerm low
+  Term.add (Term.mul (Term.succ cur) cur) cur
+
 /-- A single adjacent beta-coded sequence step is a binary-halving step:
 the current value is `2 * next + bit`, with `bit ∈ {0,1}`. -/
 def betaDiv2StepWitnessAt (code step idx : Nat) : Formula :=
@@ -7845,6 +7861,35 @@ theorem BProv_Ax_s_ltTermAt_zero_succ {G : List Formula} (t : Term) :
       (Term.add (Term.rename Nat.succ Term.zero) (Term.succ (Term.var 0)))
       (Term.rename Nat.succ (Term.succ t)))
     (t := t) hbody
+
+/-- PA proves that every term is strictly below its successor. -/
+theorem BProv_Ax_s_ltTermAt_self_succ {G : List Formula} (t : Term) :
+    BProv Ax_s G (ltTermAt t (Term.succ t)) := by
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add t (Term.succ Term.zero))
+        (Term.succ (Term.add t Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms t Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.add t Term.zero) t) :=
+    BProv_weaken_nil (BProv_Ax_s_addZero_term t)
+  have hsucc : BProv Ax_s G
+      (eq (Term.succ (Term.add t Term.zero)) (Term.succ t)) :=
+    BProv_eq_congr_succ haddZero
+  have htarget : BProv Ax_s G
+      (eq (Term.add t (Term.succ Term.zero)) (Term.succ t)) :=
+    BProv_eqTrans haddSucc hsucc
+  have hbody : BProv Ax_s G
+      (subst (instTerm Term.zero)
+        (eq
+          (Term.add (Term.rename Nat.succ t) (Term.succ (Term.var 0)))
+          (Term.rename Nat.succ (Term.succ t)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using htarget
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq
+      (Term.add (Term.rename Nat.succ t) (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ (Term.succ t)))
+    (t := Term.zero) hbody
 
 /-- PA preserves term-parametric non-strict order under successor on both
 sides. -/
