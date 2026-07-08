@@ -80,6 +80,7 @@ open SetTheory
 #check @PA.Formula.BProv_weaken_nil
 #check @PA.Formula.BProv_ax
 #check @PA.Formula.BProv_of_Prov
+#check @PA.Formula.BProv_rename_of_sentences
 #check @PA.Formula.BProv_mp
 #check @PA.Formula.BProv_lift
 #check @PA.Formula.BProv_cut

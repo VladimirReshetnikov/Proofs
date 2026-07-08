@@ -5952,6 +5952,31 @@ theorem BProv_of_Prov {B : Formula → Prop} {G : List Formula} {phi : Formula}
     cases hx
   · simpa using h
 
+/-- Rename every finite-context assumption in a relative PA proof.  The
+background theory is preserved when its axioms are sentences, since renaming a
+sentence is syntactically equal to itself. -/
+theorem BProv_rename_of_sentences {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {phi : Formula}
+    (h : BProv B G phi) (r : Nat → Nat) :
+    BProv B (G.map (rename r)) (rename r phi) := by
+  rcases h with ⟨L, hL, hp⟩
+  have hLmap : L.map (rename r) = L := by
+    calc
+      L.map (rename r) = L.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact rename_eq_of_sentence (hB x (hL x hx)) r
+      _ = L := by simp
+  refine ⟨L, hL, ?_⟩
+  have hpRen : Prov ((L ++ G).map (rename r)) (rename r phi) :=
+    Prov_rename hp r
+  apply Prov_weaken hpRen
+  intro x hx
+  simp only [List.map_append, List.mem_append] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (by simpa [hLmap] using hx)
+  · exact Or.inr hx
+
 /-- Relative PA provability is closed under modus ponens. -/
 theorem BProv_mp (B : Formula → Prop) (G : List Formula) (a b : Formula)
     (himp : BProv B G (imp a b)) (ha : BProv B G a) : BProv B G b := by
