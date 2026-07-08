@@ -314,6 +314,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eq_left
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remTermAt_zero
+#check @PA.Formula.BProv_Ax_s_remTermAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_output_zero_of_output_dvd
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_output_zero_of_code_dvd
@@ -321,6 +322,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaAt_output_zero_same_index
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_same_index
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_eq_index
+#check @PA.Formula.BProv_Ax_s_betaTermAt_zero_of_betaAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
 #check @PA.Formula.BProv_Ax_s_remAt_eqConst_modulus_zero_bot
@@ -385,6 +387,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_step_of_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_current_zero_of_betaTermAt_zero_eq_index
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
