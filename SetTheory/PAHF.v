@@ -10925,6 +10925,71 @@ Definition betaAtSuccIdx (out code step idx : nat) : formula :=
 Definition BetaModulus (step idx : nat) : nat :=
   1 + S idx * step.
 
+Lemma BProv_Ax_s_betaModTerm_of_eqConst :
+  forall G step idx s i,
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BProv Ax_s G
+    (pEq (betaModTerm step idx) (Term.numeral (BetaModulus s i))).
+Proof.
+  intros G step idx s i hstep hidx.
+  assert (hidxSuccRaw : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (tSucc (Term.numeral i)))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G (tVar idx)
+      (Term.numeral i) hidx).
+  }
+  assert (hidxSucc : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (Term.numeral (i + 1)))).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hidxSuccRaw.
+  }
+  assert (hmul : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (tVar idx)) (tVar step))
+        (tMul (Term.numeral (i + 1)) (Term.numeral s)))).
+  {
+    exact (BProv_eq_congr_mul Ax_s G
+      (tSucc (tVar idx)) (Term.numeral (i + 1))
+      (tVar step) (Term.numeral s)
+      hidxSucc hstep).
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq
+        (tMul (Term.numeral (i + 1)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (hmulComputed : BProv Ax_s G
+      (pEq
+        (tMul (tSucc (tVar idx)) (tVar step))
+        (Term.numeral ((i + 1) * s)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tMul (tSucc (tVar idx)) (tVar step))
+      (tMul (Term.numeral (i + 1)) (Term.numeral s))
+      (Term.numeral ((i + 1) * s))
+      hmul hmulRaw).
+  }
+  assert (hsucc : BProv Ax_s G
+      (pEq
+        (tSucc (tMul (tSucc (tVar idx)) (tVar step)))
+        (tSucc (Term.numeral ((i + 1) * s))))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G
+      (tMul (tSucc (tVar idx)) (tVar step))
+      (Term.numeral ((i + 1) * s)) hmulComputed).
+  }
+  unfold betaModTerm.
+  replace (BetaModulus s i) with (S ((i + 1) * s))
+    by (unfold BetaModulus; lia).
+  simpl.
+  exact hsucc.
+Qed.
+
 Definition BetaEntry (code step idx value : nat) : Prop :=
   exists q, code = q * BetaModulus step idx + value /\
     value < BetaModulus step idx.
