@@ -10451,6 +10451,62 @@ theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst_step {G : List Formula}
     hbit hcode hstep hidx hcurLt hcurVal.symm hnextLt hnextVal.symm
     hb hdiv.symm
 
+/-- Base bounded-trace constructor: if the trace bound is `0`, the quantified
+index in `betaDiv2StepsThroughAt` is forced to be `0`, so one pointwise
+`BetaDiv2Step` supplies the whole bounded trace. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
+    {G : List Formula}
+    {code step last c s cur next bit : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hlast : BProv Ax_s G (eqConstAt last 0))
+    (hdivStep : BetaDiv2Step c s 0 cur next bit) :
+    BProv Ax_s G (betaDiv2StepsThroughAt code step last) := by
+  let leHyp : Formula := leAt 0 (last+1)
+  have hle : BProv Ax_s (leHyp :: G.map (rename Nat.succ)) leHyp :=
+    BProv_ass (B := Ax_s) (G := leHyp :: G.map (rename Nat.succ))
+      (by simp)
+  have hcodeRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt code c)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcode Nat.succ
+  have hstepRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt step s)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstep Nat.succ
+  have hlastRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt last 0)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlast Nat.succ
+  have hcodeBody : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt (code+1) c) := by
+    simpa [eqConstAt, rename, Term.rename] using BProv_context_cons hcodeRen
+  have hstepBody : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt (step+1) s) := by
+    simpa [eqConstAt, rename, Term.rename] using BProv_context_cons hstepRen
+  have hlastBody : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt (last+1) 0) := by
+    simpa [eqConstAt, rename, Term.rename] using BProv_context_cons hlastRen
+  have hidxZero : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt 0 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero hle hlastBody
+  have hwitness : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (betaDiv2StepWitnessAt (code+1) (step+1) 0) :=
+    BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+      (code := code+1) (step := step+1) (idx := 0)
+      (c := c) (s := s) (i := 0)
+      (cur := cur) (next := next) (bit := bit)
+      hcodeBody hstepBody hidxZero hdivStep
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp (betaDiv2StepWitnessAt (code+1) (step+1) 0)) :=
+    BProv_impI hwitness
+  simpa [betaDiv2StepsThroughAt, leHyp] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+
 /-- Package the innermost membership bit witness.  The premise is only the
 closed, code/step-instantiated `betaDiv2BitAt` component; the constructor adds
 the explicit proof that the witness bit is the numeral `1`. -/
