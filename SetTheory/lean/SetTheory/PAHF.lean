@@ -9976,6 +9976,53 @@ theorem BProv_Ax_s_mulSucc_terms (s t : Term) :
   simpa [mulSucc, subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using h2
 
+/-- PA proves the left-zero law for multiplication. -/
+theorem BProv_Ax_s_zero_mul_all :
+    BProv Ax_s []
+      (all (eq (Term.mul Term.zero (Term.var 0)) Term.zero)) := by
+  let phi : Formula := eq (Term.mul Term.zero (Term.var 0)) Term.zero
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.numeral] using BProv_Ax_s_mulZero_term Term.zero
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    have hphi : BProv Ax_s [phi]
+        (eq (Term.mul Term.zero (Term.var 0)) Term.zero) :=
+      BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi])
+    have hstep : BProv Ax_s [phi]
+        (eq (Term.mul Term.zero (Term.succ (Term.var 0)))
+          (Term.add (Term.mul Term.zero (Term.var 0)) Term.zero)) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_mulSucc_terms Term.zero (Term.var 0))
+    have haddZero : BProv Ax_s [phi]
+        (eq (Term.add (Term.mul Term.zero (Term.var 0)) Term.zero)
+          (Term.mul Term.zero (Term.var 0))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addZero_term (Term.mul Term.zero (Term.var 0)))
+    have htarget : BProv Ax_s [phi]
+        (eq (Term.mul Term.zero (Term.succ (Term.var 0))) Term.zero) :=
+      BProv_eqTrans (BProv_eqTrans hstep haddZero) hphi
+    simpa [phi, substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of `0 * x = 0`. -/
+theorem BProv_Ax_s_zero_mul_term {G : List Formula} (t : Term) :
+    BProv Ax_s G (eq (Term.mul Term.zero t) Term.zero) := by
+  have hall : BProv Ax_s G
+      (all (eq (Term.mul Term.zero (Term.var 0)) Term.zero)) :=
+    BProv_weaken_nil BProv_Ax_s_zero_mul_all
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := t) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
+
 /-- PA proves the recursive normal form of right addition by a standard
 numeral. -/
 theorem BProv_Ax_s_addRightNumeral (t : Term) :
