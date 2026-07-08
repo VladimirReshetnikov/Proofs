@@ -16841,6 +16841,65 @@ theorem BProv_Ax_s_hfMemAt_of_closed_bit_components {G : List Formula}
     (BProv_Ax_s_hfMemAt_bitOneEx_of_bit
       (elem := elem) (code := code) (step := step) hbit)
 
+/-- Term-parametric membership introduction from explicit code and step
+witness terms.  This is the open-term analogue of the closed trace
+constructors below: callers still provide the initial beta entry, bounded
+halving trace, and final-bit existential as separate proof obligations. -/
+theorem BProv_Ax_s_hfMemTermAt_of_components {G : List Formula}
+    {elem : Nat} {setCode codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaTermAtConstIdx (Term.rename (fun n => n+2) setCode) 1 0 0))))
+    (hsteps : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))))
+    (hbitEx : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 (elem+3))))))) :
+    BProv Ax_s G (hfMemTermAt elem setCode) := by
+  let bitEx : Formula :=
+    ex
+      (and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3)))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      bitEx
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx (Term.rename (fun n => n+2) setCode) 1 0 0)
+      tail
+  have htail : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          tail)) := by
+    simpa [tail, bitEx, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hsteps hbitEx)
+  have hbody : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          body)) := by
+    simpa [body, tail, bitEx, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hentry htail)
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm codeTerm) (ex body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm codeTerm)) body)
+        (t := stepTerm) hbody)
+  simpa [hfMemTermAt, body, tail, bitEx, subst, instTerm, Term.subst,
+    Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := ex body)
+      (t := codeTerm) hstepEx)
+
 /-- Term-parametric membership introduction from the same closed trace
 components as `BProv_Ax_s_hfMemAt_of_closed_components`, but with the initial
 zero-index beta entry outputting an arbitrary set-code term. -/
