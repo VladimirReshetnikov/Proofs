@@ -12264,6 +12264,59 @@ theorem BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero
     BProv_eq_congr_succ hmul
   simpa [betaModTerm, idxSucc, Term.numeral, Term.numeral_succ] using hsucc
 
+/-- If the beta index is `0` and the beta step is a successor, the beta
+modulus is that successor plus one. -/
+theorem BProv_Ax_s_betaModTerm_idx_zero_of_step_succ
+    {G : List Formula} {step idx pred : Nat}
+    (hidx : BProv Ax_s G (eqConstAt idx 0))
+    (hstep : BProv Ax_s G (eq (Term.var step) (Term.succ (Term.var pred)))) :
+    BProv Ax_s G
+      (eq (betaModTerm step idx) (Term.succ (Term.succ (Term.var pred)))) := by
+  have hidxSucc : BProv Ax_s G
+      (eq (Term.succ (Term.var idx)) (Term.numeral 1)) := by
+    simpa [eqConstAt, Term.numeral, Term.numeral_succ] using
+      BProv_eq_congr_succ hidx
+  have hmul : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ (Term.var idx)) (Term.var step))
+        (Term.mul (Term.numeral 1) (Term.succ (Term.var pred)))) :=
+    BProv_eq_congr_mul hidxSucc hstep
+  have hone : BProv Ax_s G
+      (eq
+        (Term.mul (Term.numeral 1) (Term.succ (Term.var pred)))
+        (Term.succ (Term.var pred))) :=
+    BProv_Ax_s_one_mul_term (Term.succ (Term.var pred))
+  have hsucc : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.mul (Term.succ (Term.var idx)) (Term.var step)))
+        (Term.succ (Term.succ (Term.var pred)))) :=
+    BProv_eq_congr_succ (BProv_eqTrans hmul hone)
+  simpa [betaModTerm] using hsucc
+
+/-- A PA proof of `s = succ(t)` and `s = 0` closes the branch. -/
+theorem BProv_Ax_s_eq_succ_eq_zero_bot
+    {G : List Formula} {s t : Term}
+    (hsucc : BProv Ax_s G (eq s (Term.succ t)))
+    (hzero : BProv Ax_s G (eq s Term.zero)) :
+    BProv Ax_s G bot := by
+  have hbad : BProv Ax_s G (eq (Term.succ t) Term.zero) :=
+    BProv_eqTrans (BProv_eqSym hsucc) hzero
+  have hnot : BProv Ax_s G (imp (eq (Term.succ t) Term.zero) bot) :=
+    BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term t)
+  exact BProv_mp Ax_s G _ _ hnot hbad
+
+/-- In a successor beta step, the zero-index beta modulus cannot be zero. -/
+theorem BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
+    {G : List Formula} {step idx pred : Nat}
+    (hidx : BProv Ax_s G (eqConstAt idx 0))
+    (hstep : BProv Ax_s G (eq (Term.var step) (Term.succ (Term.var pred))))
+    (hzero : BProv Ax_s G (eq (betaModTerm step idx) Term.zero)) :
+    BProv Ax_s G bot :=
+  BProv_Ax_s_eq_succ_eq_zero_bot
+    (BProv_Ax_s_betaModTerm_idx_zero_of_step_succ hidx hstep)
+    hzero
+
 /-- From fixed numeral proofs for the output, code, step, and index slots, and
 an explicit beta-entry quotient in the metatheory, derive the corresponding
 `betaAt` relation. -/

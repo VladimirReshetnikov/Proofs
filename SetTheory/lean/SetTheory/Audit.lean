@@ -280,6 +280,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remAt_eqConst_modulus_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaModTerm_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero
+#check @PA.Formula.BProv_Ax_s_betaModTerm_idx_zero_of_step_succ
+#check @PA.Formula.BProv_Ax_s_eq_succ_eq_zero_bot
+#check @PA.Formula.BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_rem
