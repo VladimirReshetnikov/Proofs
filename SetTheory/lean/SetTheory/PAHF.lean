@@ -12305,6 +12305,105 @@ theorem BProv_Ax_s_betaAt_of_eqConst {G : List Formula}
         (remAt (out+1) (code+1) 0))
       (t := Term.numeral m) hbody)
 
+/-- Projection from the opened body of a raw `betaAt` witness to the modulus
+equation. -/
+theorem BProv_Ax_s_betaAt_opened_body_modEq
+    {G : List Formula} {out code step idx : Nat} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+        (remAt (out+1) (code+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE1 hbody
+
+/-- Projection from the opened body of a raw `betaAt` witness to its remainder
+component. -/
+theorem BProv_Ax_s_betaAt_opened_body_rem
+    {G : List Formula} {out code step idx : Nat} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+        (remAt (out+1) (code+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (remAt (out+1) (code+1) 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE2 hbody
+
+/-- Projection from the opened body of a `betaAtConstIdx` wrapper to its closed
+index equation. -/
+theorem BProv_Ax_s_betaAtConstIdx_opened_body_idx
+    {G : List Formula} {out code step idxValue : Nat} :
+    let body : Formula :=
+      and (eqConstAt 0 idxValue) (betaAt (out+1) (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ)) (eqConstAt 0 idxValue) := by
+  let body : Formula :=
+    and (eqConstAt 0 idxValue) (betaAt (out+1) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE1 hbody
+
+/-- Projection from the opened body of a `betaAtConstIdx` wrapper to the raw
+beta-entry component. -/
+theorem BProv_Ax_s_betaAtConstIdx_opened_body_beta
+    {G : List Formula} {out code step idxValue : Nat} :
+    let body : Formula :=
+      and (eqConstAt 0 idxValue) (betaAt (out+1) (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (betaAt (out+1) (code+1) (step+1) 0) := by
+  let body : Formula :=
+    and (eqConstAt 0 idxValue) (betaAt (out+1) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE2 hbody
+
+/-- Projection from the opened body of a `betaAtSuccIdx` wrapper to the
+successor-index equation. -/
+theorem BProv_Ax_s_betaAtSuccIdx_opened_body_idx
+    {G : List Formula} {out code step idx : Nat} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
+        (betaAt (out+1) (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (eq (Term.var 0) (Term.succ (Term.var (idx+1)))) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
+      (betaAt (out+1) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE1 hbody
+
+/-- Projection from the opened body of a `betaAtSuccIdx` wrapper to the raw
+beta-entry component. -/
+theorem BProv_Ax_s_betaAtSuccIdx_opened_body_beta
+    {G : List Formula} {out code step idx : Nat} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
+        (betaAt (out+1) (code+1) (step+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (betaAt (out+1) (code+1) (step+1) 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.succ (Term.var (idx+1))))
+      (betaAt (out+1) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE2 hbody
+
 /-- If the beta code is `0`, every beta entry extracted from it is `0`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
     {G : List Formula} {out code step idx : Nat}

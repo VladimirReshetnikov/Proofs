@@ -281,6 +281,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaModTerm_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_betaAt_opened_body_modEq
+#check @PA.Formula.BProv_Ax_s_betaAt_opened_body_rem
+#check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_idx
+#check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
+#check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_idx
+#check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAtConstIdx_eqConst_code_zero
