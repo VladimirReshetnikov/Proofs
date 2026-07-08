@@ -245,6 +245,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_one_mul_term
 #check @PA.Formula.BProv_Ax_s_addRightNumeral
 #check @PA.Formula.BProv_Ax_s_mulRightNumeral
+#check @PA.Formula.BProv_Ax_s_mul_two_right_terms
 #check @PA.Formula.BProv_Ax_s_addNumerals
 #check @PA.Formula.BProv_Ax_s_mulRightNumeral_numeral
 #check @PA.Formula.BProv_Ax_s_mulNumerals
@@ -283,10 +284,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eq_mul_term
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt
+#check @PA.Formula.BProv_Ax_s_dvdAt_of_doubleEqAt_two
 #check @PA.Formula.BProv_Ax_s_boolAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot
 #check @PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero
+#check @PA.Formula.BProv_Ax_s_remAt_of_div2StepAt_two
 #check @PA.Formula.BProv_Ax_s_div2StepAt_closedSubst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_remAt_of_eqConst
@@ -336,6 +339,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_betaModTerm_idx_zero_of_step_succ
 #check @PA.Formula.BProv_Ax_s_eq_succ_eq_zero_bot
+#check @PA.Formula.BProv_Ax_s_eqConstAt_zero_one_bot
+#check @PA.Formula.BProv_Ax_s_div2StepAt_even_one_bot
 #check @PA.Formula.BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaModTerm_modEq_zero_bot
 #check @PA.Formula.BProv_Ax_s_succPredAt_of_eq_succ_term

@@ -10843,6 +10843,24 @@ theorem BProv_Ax_s_mulRightNumeral (t : Term) :
       have h := BProv_eqTrans hstep hadd
       simpa [Term.numeral, Term.mulRightNumeral] using h
 
+/-- Arbitrary-term instance of `x * 2 = x + x`.  This packages the recursive
+right-numeral multiplication normal form into the additive shape used by the
+binary-halving proofs. -/
+theorem BProv_Ax_s_mul_two_right_terms {G : List Formula} (x : Term) :
+    BProv Ax_s G
+      (eq (Term.mul x (Term.numeral 2)) (Term.add x x)) := by
+  have hnorm : BProv Ax_s G
+      (eq (Term.mul x (Term.numeral 2))
+        (Term.add (Term.add Term.zero x) x)) := by
+    simpa [Term.numeral, Term.mulRightNumeral] using
+      (BProv_weaken_nil (G := G) (BProv_Ax_s_mulRightNumeral x 2))
+  have hzero : BProv Ax_s G (eq (Term.add Term.zero x) x) :=
+    BProv_Ax_s_zero_add_term x
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.add Term.zero x) x) (Term.add x x)) :=
+    BProv_eq_congr_add_left x hzero
+  exact BProv_eqTrans hnorm hadd
+
 /-- PA proves closed addition of standard numerals. -/
 theorem BProv_Ax_s_addNumerals (m n : Nat) :
     BProv Ax_s [] (eq
@@ -12726,6 +12744,39 @@ theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt {G : List Formula}
     (fun f hf => sentence_ax_s (f := f) hf) hdvd (by
       simpa [dvdAt, dvdBody] using hbody)
 
+/-- If a slot is explicitly `2`, and a value slot is twice its half slot, then
+PA proves that the value is divisible by that slot.  This is the open-term
+modulo-two bridge used by binary-halving traces. -/
+theorem BProv_Ax_s_dvdAt_of_doubleEqAt_two {G : List Formula}
+    {modulus value half : Nat}
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdouble : BProv Ax_s G (doubleEqAt value half)) :
+    BProv Ax_s G (dvdAt modulus value) := by
+  let m : Term := Term.var modulus
+  let q : Term := Term.var half
+  have hmodEq : BProv Ax_s G (eq m (Term.numeral 2)) := by
+    simpa [m, eqConstAt] using hmod
+  have hmodMul : BProv Ax_s G
+      (eq (Term.mul m q) (Term.mul (Term.numeral 2) q)) :=
+    BProv_eq_congr_mul_left q hmodEq
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) q)
+        (Term.mul q (Term.numeral 2))) :=
+    BProv_Ax_s_mul_comm_terms (Term.numeral 2) q
+  have htwoRight : BProv Ax_s G
+      (eq (Term.mul q (Term.numeral 2)) (Term.add q q)) :=
+    BProv_Ax_s_mul_two_right_terms q
+  have hprod : BProv Ax_s G (eq (Term.mul m q) (Term.add q q)) :=
+    BProv_eqTrans hmodMul (BProv_eqTrans hcomm htwoRight)
+  have hvalueDouble : BProv Ax_s G
+      (eq (Term.var value) (Term.add q q)) := by
+    simpa [doubleEqAt, q] using hdouble
+  have hvalueProd : BProv Ax_s G (eq (Term.var value) (Term.mul m q)) :=
+    BProv_eqTrans hvalueDouble (BProv_eqSym hprod)
+  exact BProv_Ax_s_dvdAt_of_eq_mul_term
+    (modulus := modulus) (value := value) (quot := q) (by
+      simpa [m] using hvalueProd)
+
 /-- A fixed `0` or `1` numeral proof yields the corresponding boolean-slot
 predicate. -/
 theorem BProv_Ax_s_boolAt_of_eqConst {G : List Formula}
@@ -12867,6 +12918,94 @@ theorem BProv_Ax_s_div2StepAt_zero_half_zero {G : List Formula}
     BProv_Ax_s_add_eq_zero_left_terms
       (x := Term.var half) (y := Term.var half) hdoubleZero
   simpa [eqConstAt, Term.numeral] using hhalfZero
+
+/-- A binary-halving step is a remainder equation modulo any slot proved to be
+`2`: the output bit is the remainder and the half slot is the quotient. -/
+theorem BProv_Ax_s_remAt_of_div2StepAt_two {G : List Formula}
+    {modulus value half bit : Nat}
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (remAt bit value modulus) := by
+  let m : Term := Term.var modulus
+  let v : Term := Term.var value
+  let q : Term := Term.var half
+  let r : Term := Term.var bit
+  let double : Term := Term.add q q
+  have hmodEq : BProv Ax_s G (eq m (Term.numeral 2)) := by
+    simpa [m, eqConstAt] using hmod
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt, double, q, r, v] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hstepEq : BProv Ax_s G
+      (eq v (Term.add double r)) := by
+    simpa [div2StepAt, double, q, r, v] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hlt : BProv Ax_s G (ltAt bit modulus) := by
+    have hzeroBranch : BProv Ax_s (zeroAt bit :: G) (ltAt bit modulus) := by
+      let C : List Formula := zeroAt bit :: G
+      have hbitZero : BProv Ax_s C (eqConstAt bit 0) := by
+        have hraw : BProv Ax_s C (zeroAt bit) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        simpa [zeroAt] using hraw
+      have hmodC : BProv Ax_s C (eqConstAt modulus 2) :=
+        BProv_context_cons (B := Ax_s) (a := zeroAt bit) hmod
+      exact BProv_Ax_s_ltAt_of_eqConst hbitZero hmodC (by decide)
+    have honeBranch : BProv Ax_s (oneAt bit :: G) (ltAt bit modulus) := by
+      let C : List Formula := oneAt bit :: G
+      have hbitOne : BProv Ax_s C (eqConstAt bit 1) := by
+        have hraw : BProv Ax_s C (oneAt bit) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        simpa [oneAt] using hraw
+      have hmodC : BProv Ax_s C (eqConstAt modulus 2) :=
+        BProv_context_cons (B := Ax_s) (a := oneAt bit) hmod
+      exact BProv_Ax_s_ltAt_of_eqConst hbitOne hmodC (by decide)
+    exact BProv_orE hbool hzeroBranch honeBranch
+  have hprodMod : BProv Ax_s G
+      (eq (Term.mul q m) (Term.mul q (Term.numeral 2))) :=
+    BProv_eq_congr_mul_right q hmodEq
+  have htwoRight : BProv Ax_s G
+      (eq (Term.mul q (Term.numeral 2)) double) := by
+    simpa [double] using BProv_Ax_s_mul_two_right_terms q
+  have hprod : BProv Ax_s G (eq (Term.mul q m) double) :=
+    BProv_eqTrans hprodMod htwoRight
+  have hsum : BProv Ax_s G
+      (eq (Term.add (Term.mul q m) r) (Term.add double r)) :=
+    BProv_eq_congr_add_left r hprod
+  have hvalueRem : BProv Ax_s G
+      (eq v (Term.add (Term.mul q m) r)) :=
+    BProv_eqTrans hstepEq (BProv_eqSym hsum)
+  have hltBody : BProv Ax_s G
+      (subst (instTerm q) (ltAt (bit+1) (modulus+1))) := by
+    simpa [ltAt, subst, instTerm, Term.subst, Term.upSubst, Term.rename, q]
+      using hlt
+  have heqBody : BProv Ax_s G
+      (subst (instTerm q)
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (bit+1))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, m, v, q, r]
+      using hvalueRem
+  have hbody : BProv Ax_s G
+      (subst (instTerm q)
+        (and (ltAt (bit+1) (modulus+1))
+          (eq (Term.var (value+1))
+            (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+              (Term.var (bit+1)))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hltBody heqBody)
+  simpa [remAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and (ltAt (bit+1) (modulus+1))
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (bit+1)))))
+      (t := q) hbody)
 
 /-- Constructor for the formula obtained after all three variables of
 `div2StepAt` have been instantiated by closed numerals. -/
@@ -14410,6 +14549,37 @@ theorem BProv_Ax_s_eq_succ_eq_zero_bot
   have hnot : BProv Ax_s G (imp (eq (Term.succ t) Term.zero) bot) :=
     BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term t)
   exact BProv_mp Ax_s G _ _ hnot hbad
+
+/-- A slot cannot be both `0` and `1`. -/
+theorem BProv_Ax_s_eqConstAt_zero_one_bot
+    {G : List Formula} {a : Nat}
+    (hzero : BProv Ax_s G (eqConstAt a 0))
+    (hone : BProv Ax_s G (eqConstAt a 1)) :
+    BProv Ax_s G bot := by
+  have hsucc : BProv Ax_s G (eq (Term.var a) (Term.succ Term.zero)) := by
+    simpa [eqConstAt, Term.numeral] using hone
+  have hzero' : BProv Ax_s G (eq (Term.var a) Term.zero) := by
+    simpa [eqConstAt, Term.numeral] using hzero
+  exact BProv_Ax_s_eq_succ_eq_zero_bot hsucc hzero'
+
+/-- If the current halving value is explicitly even, a compatible halving step
+cannot output bit `1`.  The proof factors through the general divisibility and
+remainder-functionality kernels instead of inspecting the halving equation
+directly. -/
+theorem BProv_Ax_s_div2StepAt_even_one_bot
+    {G : List Formula} {modulus value half bit : Nat}
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdouble : BProv Ax_s G (doubleEqAt value half))
+    (hbit : BProv Ax_s G (eqConstAt bit 1))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G bot := by
+  have hdvd : BProv Ax_s G (dvdAt modulus value) :=
+    BProv_Ax_s_dvdAt_of_doubleEqAt_two hmod hdouble
+  have hrem : BProv Ax_s G (remAt bit value modulus) :=
+    BProv_Ax_s_remAt_of_div2StepAt_two hmod hstep
+  have hzero : BProv Ax_s G (eqConstAt bit 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt hdvd hrem
+  exact BProv_Ax_s_eqConstAt_zero_one_bot hzero hbit
 
 /-- In a successor beta step, the zero-index beta modulus cannot be zero. -/
 theorem BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
