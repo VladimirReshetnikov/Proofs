@@ -9016,6 +9016,94 @@ theorem BProv_Ax_s_betaAt_of_eqConst {G : List Formula}
         (remAt (out+1) (code+1) 0))
       (t := Term.numeral m) hbody)
 
+/-- Constant-index variant of `BProv_Ax_s_betaModTerm_of_eqConst`, used after
+the index variable in `betaAtConstIdx` or `betaAtSuccIdx` has been instantiated
+by a closed numeral. -/
+theorem BProv_Ax_s_betaModTerm_constIdx_of_eqConst {G : List Formula}
+    {step s i : Nat}
+    (hstep : BProv Ax_s G (eqConstAt step s)) :
+    BProv Ax_s G
+      (eq
+        (Term.succ (Term.mul (Term.succ (Term.numeral i)) (Term.var step)))
+        (Term.numeral (BetaModulus s i))) := by
+  have hmulLeft : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ (Term.numeral i)) (Term.var step))
+        (Term.mul (Term.numeral (i + 1)) (Term.numeral s))) := by
+    simpa [Term.numeral_succ] using
+      (BProv_eq_congr_mul_right (Term.succ (Term.numeral i)) hstep)
+  have hmulRaw : BProv Ax_s G
+      (eq
+        (Term.mul (Term.numeral (i + 1)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals (i + 1) s)
+  have hsucc : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.mul (Term.succ (Term.numeral i)) (Term.var step)))
+        (Term.succ (Term.numeral ((i + 1) * s)))) :=
+    BProv_eq_congr_succ (BProv_eqTrans hmulLeft hmulRaw)
+  have hbeta : BetaModulus s i = (i + 1) * s + 1 := by
+    unfold BetaModulus
+    omega
+  simpa [hbeta, Term.numeral_succ] using hsucc
+
+/-- Constructor for the formula obtained by instantiating the index variable of
+`betaAt` with a closed numeral. -/
+theorem BProv_Ax_s_betaAt_constIdxSubst_of_eqConst {G : List Formula}
+    {out code step o c s i q : Nat}
+    (hout : BProv Ax_s G (eqConstAt out o))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hlt : o < BetaModulus s i)
+    (hval : q * BetaModulus s i + o = c) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral i)) (betaAt (out+1) (code+1) (step+1) 0)) := by
+  let m := BetaModulus s i
+  have hmodTerm : BProv Ax_s G
+      (eq
+        (Term.succ (Term.mul (Term.succ (Term.numeral i)) (Term.var step)))
+        (Term.numeral m)) := by
+    simpa [m] using BProv_Ax_s_betaModTerm_constIdx_of_eqConst
+      (step := step) (s := s) (i := i) hstep
+  have hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (betaModTerm (step+1) 0))))) := by
+    simpa [betaModTerm, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_subst_instTerm_rename_succ] using
+      BProv_eqSym hmodTerm
+  have hremRaw : BProv Ax_s G
+      (subst (instTerm (Term.numeral m)) (remAt (out+1) (code+1) 0)) := by
+    exact BProv_Ax_s_remAt_constMod_of_eqConst
+      (rem := out) (value := code) (r := o) (v := c) (m := m) (q := q)
+      hout hcode (by simpa [m] using hlt) (by simpa [m] using hval)
+  have hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (remAt ((out+1)+1) ((code+1)+1) 0))) := by
+    simpa [remAt, ltAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename]
+      using hremRaw
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (and
+            (eq (Term.var 0)
+              (Term.rename Nat.succ (betaModTerm (step+1) 0)))
+            (remAt ((out+1)+1) ((code+1)+1) 0)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hmodBody hremBody)
+  simpa [betaAt, subst, instTerm, Term.subst, Term.upSubst, m] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm (Term.numeral i)))
+        (and
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (betaModTerm (step+1) 0)))
+          (remAt ((out+1)+1) ((code+1)+1) 0)))
+      (t := Term.numeral m) hbody)
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
