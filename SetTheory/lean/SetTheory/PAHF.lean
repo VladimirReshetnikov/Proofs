@@ -25054,6 +25054,26 @@ theorem BProv_hfSomeDistinguishesAt_intro_var
       (a := hfDistinguishesAt 0 (high+1) (low+1))
       (t := Term.var elem) hinst)
 
+/-- Logical packaging for a distinguishing member: if the same element is
+proved to belong to `high` and to not belong to `low`, then it distinguishes
+the two Ackermann-coded sets. -/
+theorem BProv_hfDistinguishesAt_of_mem_and_not_mem
+    {B : Formula → Prop} {G : List Formula} {elem high low : Nat}
+    (hhigh : BProv B G (hfMemAt elem high))
+    (hnotLow : BProv B G (imp (hfMemAt elem low) bot)) :
+    BProv B G (hfDistinguishesAt elem high low) := by
+  simpa [hfDistinguishesAt] using BProv_andI hhigh hnotLow
+
+/-- Existential version of `BProv_hfDistinguishesAt_of_mem_and_not_mem`. -/
+theorem BProv_hfSomeDistinguishesAt_of_mem_and_not_mem
+    {B : Formula → Prop} {G : List Formula} {elem high low : Nat}
+    (hhigh : BProv B G (hfMemAt elem high))
+    (hnotLow : BProv B G (imp (hfMemAt elem low) bot)) :
+    BProv B G (hfSomeDistinguishesAt high low) :=
+  BProv_hfSomeDistinguishesAt_intro_var
+    (B := B) (G := G) (elem := elem) (high := high) (low := low)
+    (BProv_hfDistinguishesAt_of_mem_and_not_mem hhigh hnotLow)
+
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
@@ -25070,7 +25090,7 @@ theorem BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
     exact BProv_Ax_s_hfMemAt_bot_of_eqConst_zero hlowZeroCtx hlowMem
   have hnotLow : BProv Ax_s G (imp (hfMemAt elem low) bot) := by
     simpa [lowMem] using BProv_impI hbot
-  exact BProv_andI hhigh hnotLow
+  exact BProv_hfDistinguishesAt_of_mem_and_not_mem hhigh hnotLow
 
 /-- Existential form of
 `BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low`. -/
@@ -25113,7 +25133,7 @@ theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low
       helemCtx hmodCtx hdvdCtx hlowMem
   have hnotLow : BProv Ax_s G (imp (hfMemAt elem low) bot) := by
     simpa [lowMem] using BProv_impI hbot
-  exact BProv_andI hhighMem hnotLow
+  exact BProv_hfDistinguishesAt_of_mem_and_not_mem hhighMem hnotLow
 
 /-- Existential form of
 `BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low`. -/
@@ -25224,7 +25244,7 @@ theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem
       helemCtx hlowCtx hnot hlowMem
   have hnotLow : BProv Ax_s G (imp (hfMemAt elem low) bot) := by
     simpa [lowMem] using BProv_impI hbot
-  exact BProv_andI hhighMem hnotLow
+  exact BProv_hfDistinguishesAt_of_mem_and_not_mem hhighMem hnotLow
 
 /-- Existential form of
 `BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem`. -/
