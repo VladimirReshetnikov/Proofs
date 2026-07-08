@@ -97,6 +97,8 @@ open SetTheory
 #check @PA.Formula.Prov_cut
 #check @PA.Formula.term_subst_instTerm_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_two_succ
+#check @PA.Formula.term_rename_up_succ_rename_succ
+#check @PA.Formula.term_subst_instTerm_rename_up_up_succ
 #check @PA.Formula.subst_instTerm_rename_succ
 #check @PA.Formula.soundness
 #check @PA.Formula.BProv
@@ -447,7 +449,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_body
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_member_bot
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd
+#check @PA.Formula.BProv_Ax_s_leTermAt_trans
 #check @PA.Formula.BProv_Ax_s_leTermAt_self_succ
+#check @PA.Formula.BProv_Ax_s_leTermAt_pred_of_succ_le
 #check @PA.Formula.BProv_Ax_s_leAt_pred_of_succ_eq_le
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
