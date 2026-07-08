@@ -6457,6 +6457,28 @@ Proof.
   - now rewrite (IHt1 r r' h), (IHt2 r r' h).
 Qed.
 
+Lemma rename_ext_free : forall t (r r' : nat -> nat),
+  (forall n, Free n t -> r n = r' n) -> rename r t = rename r' t.
+Proof.
+  induction t; simpl; intros r r' h; try reflexivity.
+  - now rewrite (h n eq_refl).
+  - now rewrite (IHt r r' h).
+  - rewrite (IHt1 r r' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 r r' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHt1 r r' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 r r' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+Qed.
+
+Lemma rename_id : forall t, rename (fun n => n) t = t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
 Lemma rename_comp : forall t (r r' : nat -> nat),
   rename r (rename r' t) = rename (fun n => r (r' n)) t.
 Proof.
@@ -6587,6 +6609,9 @@ Fixpoint Free (n : nat) (phi : formula) : Prop :=
   end.
 
 Definition Sentence (phi : formula) : Prop := forall n, ~ Free n phi.
+
+Definition Sentences (B : formula -> Prop) : Prop :=
+  forall phi, B phi -> Sentence phi.
 
 Lemma free_lt_bound : forall phi n, Free n phi -> n < bound phi.
 Proof.
@@ -6882,6 +6907,24 @@ Definition instTerm (t : term) : nat -> term :=
     | S k => tVar k
     end.
 
+Lemma term_subst_var_rename : forall t (r : nat -> nat),
+  Term.subst (fun n => tVar (r n)) t = Term.rename r t.
+Proof.
+  induction t; simpl; intros r; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
+Lemma term_subst_instTerm_var : forall t k,
+  Term.subst (instTerm (tVar k)) t = Term.rename (inst k) t.
+Proof.
+  intros t k.
+  rewrite <- (term_subst_var_rename t (inst k)).
+  apply Term.subst_ext.
+  intros [|n]; reflexivity.
+Qed.
+
 Lemma Sat_rename : forall (M : Model) phi
     (r : nat -> nat) (e : nat -> M),
   Sat M e (rename r phi) <-> Sat M (fun n => e (r n)) phi.
@@ -6980,6 +7023,57 @@ Proof.
     + intros [|n]; simpl; [reflexivity | now rewrite h].
 Qed.
 
+Lemma rename_ext_free : forall phi (r r' : nat -> nat),
+  (forall n, Free n phi -> r n = r' n) -> rename r phi = rename r' phi.
+Proof.
+  induction phi; simpl; intros r r' h; try reflexivity.
+  - rewrite (Term.rename_ext_free t r r' (fun n hn => h n (or_introl hn))).
+    rewrite (Term.rename_ext_free t0 r r' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - now rewrite (IHphi1 r r' (fun n hn => h n (or_introl hn))),
+      (IHphi2 r r' (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 r r' (fun n hn => h n (or_introl hn))),
+      (IHphi2 r r' (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 r r' (fun n hn => h n (or_introl hn))),
+      (IHphi2 r r' (fun n hn => h n (or_intror hn))).
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    f_equal. apply h. exact hn.
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    f_equal. apply h. exact hn.
+Qed.
+
+Lemma rename_id : forall phi, rename (fun n => n) phi = phi.
+Proof.
+  induction phi; simpl; try reflexivity.
+  - now rewrite !Term.rename_id.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - f_equal.
+    transitivity (rename (fun n => n) phi).
+    + apply rename_ext. intros [|n]; reflexivity.
+    + exact IHphi.
+  - f_equal.
+    transitivity (rename (fun n => n) phi).
+    + apply rename_ext. intros [|n]; reflexivity.
+    + exact IHphi.
+Qed.
+
+Lemma rename_eq_of_sentence : forall phi,
+  Sentence phi -> forall r, rename r phi = phi.
+Proof.
+  intros phi hphi r.
+  transitivity (rename (fun n => n) phi).
+  - apply rename_ext_free.
+    intros n hn.
+    exfalso. exact (hphi n hn).
+  - apply rename_id.
+Qed.
+
 Lemma rename_comp : forall phi (r r' : nat -> nat),
   rename r (rename r' phi) = rename (fun n => r (r' n)) phi.
 Proof.
@@ -7070,6 +7164,35 @@ Proof.
       intro k. reflexivity.
 Qed.
 
+Lemma subst_var_rename : forall phi (r : nat -> nat),
+  subst (fun n => tVar (r n)) phi = rename r phi.
+Proof.
+  induction phi; simpl; intros r; try reflexivity.
+  - now rewrite !term_subst_var_rename.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - f_equal.
+    transitivity (subst (fun n => tVar (up r n)) phi).
+    + apply subst_ext.
+      intros [|n]; reflexivity.
+    + apply IHphi.
+  - f_equal.
+    transitivity (subst (fun n => tVar (up r n)) phi).
+    + apply subst_ext.
+      intros [|n]; reflexivity.
+    + apply IHphi.
+Qed.
+
+Lemma subst_instTerm_var : forall phi k,
+  subst (instTerm (tVar k)) phi = rename (inst k) phi.
+Proof.
+  intros phi k.
+  rewrite <- (subst_var_rename phi (inst k)).
+  apply subst_ext.
+  intros [|n]; reflexivity.
+Qed.
+
 Lemma subst_instTerm_rename_up : forall phi (r : nat -> nat) t,
   subst (instTerm (Term.rename r t)) (rename (up r) phi) =
     rename r (subst (instTerm t) phi).
@@ -7079,6 +7202,26 @@ Proof.
   rewrite rename_subst.
   apply subst_ext.
   intros [|n]; reflexivity.
+Qed.
+
+Lemma term_subst_instTerm_rename_succ : forall t u,
+  Term.subst (instTerm u) (Term.rename S t) = t.
+Proof.
+  intros t u.
+  rewrite Term.subst_rename.
+  change (Term.subst (fun n => tVar n) t = t).
+  rewrite term_subst_var_rename.
+  apply Term.rename_id.
+Qed.
+
+Lemma subst_instTerm_rename_succ : forall phi t,
+  subst (instTerm t) (rename S phi) = phi.
+Proof.
+  intros phi t.
+  rewrite subst_rename.
+  change (subst (fun n => tVar n) phi = phi).
+  rewrite subst_var_rename.
+  apply rename_id.
 Qed.
 
 Lemma Sat_instTerm : forall (M : Model) phi t (e : nat -> M),
@@ -7589,6 +7732,313 @@ Proof.
     exact (P_ass G g hg).
 Qed.
 
+Ltac bprov_mem :=
+  repeat rewrite in_app_iff in *; simpl in *; firstorder subst; auto.
+
+Lemma BProv_eqElim : forall (B : formula -> Prop) G s t a,
+  BProv B G (pEq s t) ->
+  BProv B G (subst (instTerm s) a) ->
+  BProv B G (subst (instTerm t) a).
+Proof.
+  intros B G s t a [Leq [hLeq hpeq]] [La [hLa hpa]].
+  exists (Leq ++ La).
+  split.
+  - intros x hx. apply in_app_iff in hx.
+    destruct hx as [hx | hx]; [apply hLeq | apply hLa]; exact hx.
+  - apply (P_eqElim ((Leq ++ La) ++ G) s t a).
+    + apply (Prov_weaken (Leq ++ G) (pEq s t) hpeq).
+      intros x hx; bprov_mem.
+    + apply (Prov_weaken (La ++ G) (subst (instTerm s) a) hpa).
+      intros x hx; bprov_mem.
+Qed.
+
+Lemma BProv_context_cons : forall (B : formula -> Prop) G a b,
+  BProv B G b -> BProv B (a :: G) b.
+Proof.
+  intros B G a b h.
+  apply (BProv_mono B G (a :: G) b).
+  - intros x hx. right. exact hx.
+  - exact h.
+Qed.
+
+Lemma BProv_impI : forall (B : formula -> Prop) G a b,
+  BProv B (a :: G) b -> BProv B G (pImp a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  apply P_impI.
+  apply (Prov_weaken (L ++ a :: G) b hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl in hx.
+  simpl.
+  destruct hx as [hx | [hx | hx]].
+  - right. apply in_app_iff. left. exact hx.
+  - left. exact hx.
+  - right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_impI_after_prefix : forall (B : formula -> Prop) Gamma Delta a b,
+  BProv B (Gamma ++ a :: Delta) b ->
+  BProv B (Gamma ++ Delta) (pImp a b).
+Proof.
+  intros B Gamma Delta a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  apply P_impI.
+  apply (Prov_weaken (L ++ Gamma ++ a :: Delta) b hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl.
+  destruct hx as [hx | hx].
+  - right. apply in_app_iff. left. exact hx.
+  - apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + right. apply in_app_iff. right. apply in_app_iff. left. exact hx.
+    + simpl in hx.
+      destruct hx as [hx | hx].
+      * left. exact hx.
+      * right. apply in_app_iff. right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_andI : forall (B : formula -> Prop) G a b,
+  BProv B G a -> BProv B G b -> BProv B G (pAnd a b).
+Proof.
+  intros B G a b [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (La ++ Lb). split.
+  - intros x hx. apply in_app_iff in hx.
+    destruct hx as [hx | hx]; [apply hLa | apply hLb]; exact hx.
+  - apply P_andI.
+    + apply (Prov_weaken (La ++ G) a hpa).
+      intros x hx; bprov_mem.
+    + apply (Prov_weaken (Lb ++ G) b hpb).
+      intros x hx; bprov_mem.
+Qed.
+
+Lemma BProv_botE : forall (B : formula -> Prop) G a,
+  BProv B G pBot -> BProv B G a.
+Proof.
+  intros B G a [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_botE (L ++ G) a hp).
+Qed.
+
+Lemma BProv_andE1 : forall (B : formula -> Prop) G a b,
+  BProv B G (pAnd a b) -> BProv B G a.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_andE1 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_andE2 : forall (B : formula -> Prop) G a b,
+  BProv B G (pAnd a b) -> BProv B G b.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_andE2 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orI1 : forall (B : formula -> Prop) G a b,
+  BProv B G a -> BProv B G (pOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_orI1 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orI2 : forall (B : formula -> Prop) G a b,
+  BProv B G b -> BProv B G (pOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_orI2 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orE : forall (B : formula -> Prop) G a b c,
+  BProv B G (pOr a b) ->
+  BProv B (a :: G) c ->
+  BProv B (b :: G) c ->
+  BProv B G c.
+Proof.
+  intros B G a b c [Lo [hLo hpo]] [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (Lo ++ La ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + apply hLo. exact hx.
+    + apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * apply hLa. exact hx.
+      * apply hLb. exact hx.
+  - apply (P_orE ((Lo ++ La ++ Lb) ++ G) a b c).
+    + apply (Prov_weaken (Lo ++ G) (pOr a b) hpo).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (La ++ a :: G) c hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. left. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+    + apply (Prov_weaken (Lb ++ b :: G) c hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. right. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_allE : forall (B : formula -> Prop) G a t,
+  BProv B G (pAll a) -> BProv B G (subst (instTerm t) a).
+Proof.
+  intros B G a t [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_allE (L ++ G) a t hp).
+Qed.
+
+Lemma BProv_exI : forall (B : formula -> Prop) G a t,
+  BProv B G (subst (instTerm t) a) -> BProv B G (pEx a).
+Proof.
+  intros B G a t [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_exI (L ++ G) a t hp).
+Qed.
+
+Lemma map_rename_S_eq_of_sentences : forall (B : formula -> Prop) L,
+  Sentences B ->
+  (forall x, In x L -> B x) ->
+  map (rename S) L = L.
+Proof.
+  induction L as [|x xs IH]; intros hB hL; simpl.
+  - reflexivity.
+  - rewrite (rename_eq_of_sentence x).
+    + rewrite (IH hB (fun y hy => hL y (or_intror hy))).
+      reflexivity.
+    + apply hB.
+      apply hL. simpl. left. reflexivity.
+Qed.
+
+Lemma BProv_allI_of_sentences : forall (B : formula -> Prop) G a,
+  Sentences B ->
+  BProv B (map (rename S) G) a ->
+  BProv B G (pAll a).
+Proof.
+  intros B G a hB [L [hL hp]].
+  pose proof (map_rename_S_eq_of_sentences B L hB hL) as hLmap.
+  exists L. split; [exact hL |].
+  apply P_allI.
+  apply (Prov_weaken (L ++ map (rename S) G) a hp).
+  intros x hx.
+  rewrite map_app.
+  rewrite hLmap.
+  exact hx.
+Qed.
+
+Lemma BProv_exE_of_sentences : forall (B : formula -> Prop) G a c,
+  Sentences B ->
+  BProv B G (pEx a) ->
+  BProv B (a :: map (rename S) G) (rename S c) ->
+  BProv B G c.
+Proof.
+  intros B G a c hB [Le [hLe hpe]] [Lb [hLb hpb]].
+  pose proof (map_rename_S_eq_of_sentences B Lb hB hLb) as hLbmap.
+  exists (Le ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ G) a c).
+    + apply (Prov_weaken (Le ++ G) (pEx a) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (Lb ++ a :: map (rename S) G) (rename S c) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right.
+        rewrite map_app.
+        apply in_app_iff. left.
+        rewrite map_app.
+        apply in_app_iff. right.
+        rewrite hLbmap.
+        exact hx.
+      * left. exact hx.
+      * right.
+        rewrite map_app.
+        apply in_app_iff. right.
+        exact hx.
+Qed.
+
+Lemma BProv_closeN_allE_rename : forall (B : formula -> Prop) G k phi r,
+  (forall n, Free n phi -> n < k) ->
+  BProv B G (closeN k phi) ->
+  BProv B G (rename r phi).
+Proof.
+  intros B G k.
+  induction k as [|k IH]; intros phi r hfree h.
+  - assert (hsent : Sentence phi).
+    {
+      intros n hn.
+      pose proof (hfree n hn) as hlt.
+      lia.
+    }
+    rewrite (rename_eq_of_sentence phi hsent r).
+    exact h.
+  - set (tail := fun n => r (S n)).
+    assert (hclosed : BProv B G (rename tail (pAll phi))).
+    {
+      apply (IH (pAll phi) tail).
+      - intros n hn.
+        simpl in hn.
+        pose proof (hfree (S n) hn) as hlt.
+        lia.
+      - simpl in h.
+        exact h.
+    }
+    change (BProv B G (pAll (rename (up tail) phi))) in hclosed.
+    pose proof (BProv_allE B G (rename (up tail) phi)
+      (tVar (r 0)) hclosed) as hinst.
+    rewrite subst_instTerm_var in hinst.
+    rewrite rename_comp in hinst.
+    replace (rename (fun n : nat => inst (r 0) (up tail n)) phi)
+      with (rename r phi) in hinst.
+    + exact hinst.
+    + apply rename_ext.
+      intros [|n]; unfold tail; reflexivity.
+Qed.
+
+Lemma BProv_sealPA_allE_rename : forall (B : formula -> Prop) G phi r,
+  BProv B G (sealPA phi) ->
+  BProv B G (rename r phi).
+Proof.
+  intros B G phi r h.
+  unfold sealPA in h.
+  apply (BProv_closeN_allE_rename B G (bound phi) phi r).
+  - intros n hn.
+    apply free_lt_bound.
+    exact hn.
+  - exact h.
+Qed.
+
 Lemma soundness_BProv : forall (M : Model) (B : formula -> Prop) G phi,
   BProv B G phi ->
   forall e : nat -> M,
@@ -7760,6 +8210,22 @@ Definition inductionForm (phi : formula) : formula :=
       (pAll (pImp phi (subst substSuccVar phi))))
     (pAll phi).
 
+Lemma BProv_inductionForm_mp : forall (B : formula -> Prop) G phi,
+  BProv B G (inductionForm phi) ->
+  BProv B G (subst substZero phi) ->
+  BProv B G (pAll (pImp phi (subst substSuccVar phi))) ->
+  BProv B G (pAll phi).
+Proof.
+  intros B G phi hind hzero hsucc.
+  unfold inductionForm in hind.
+  exact (BProv_mp B G
+    (pAnd (subst substZero phi)
+      (pAll (pImp phi (subst substSuccVar phi))))
+    (pAll phi) hind
+    (BProv_andI B G (subst substZero phi)
+      (pAll (pImp phi (subst substSuccVar phi))) hzero hsucc)).
+Qed.
+
 Definition Ax (f : formula) : Prop :=
   f = succInj \/ f = zeroNotSucc \/
   f = addZero \/ f = addSucc \/
@@ -7816,6 +8282,196 @@ Proof.
   unfold Ax_s.
   right. right. right. right. right. right.
   exists phi. reflexivity.
+Qed.
+
+Lemma BProv_Ax_s_of_sealPA_rename : forall phi,
+  Ax_s (sealPA phi) ->
+  forall r, BProv Ax_s [] (rename r phi).
+Proof.
+  intros phi hphi r.
+  apply (BProv_sealPA_allE_rename Ax_s [] phi r).
+  apply BProv_ax.
+  exact hphi.
+Qed.
+
+Lemma BProv_Ax_s_succInj_rename : forall r,
+  BProv Ax_s [] (rename r succInj).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename succInj Ax_s_succInj r).
+Qed.
+
+Lemma BProv_Ax_s_succInj : BProv Ax_s [] succInj.
+Proof.
+  pose proof (BProv_Ax_s_succInj_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_succInj_terms : forall s t,
+  BProv Ax_s [] (pImp
+    (pEq (tSucc s) (tSucc t))
+    (pEq s t)).
+Proof.
+  intros s t.
+  pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_succInj) as h1.
+  pose proof (BProv_allE Ax_s [] _ t h1) as h2.
+  simpl in h2.
+  repeat rewrite term_subst_instTerm_rename_succ in h2.
+  exact h2.
+Qed.
+
+Lemma BProv_Ax_s_zeroNotSucc_rename : forall r,
+  BProv Ax_s [] (rename r zeroNotSucc).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename
+    zeroNotSucc Ax_s_zeroNotSucc r).
+Qed.
+
+Lemma BProv_Ax_s_zeroNotSucc : BProv Ax_s [] zeroNotSucc.
+Proof.
+  pose proof (BProv_Ax_s_zeroNotSucc_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_zeroNotSucc_term : forall t,
+  BProv Ax_s [] (pImp (pEq (tSucc t) tZero) pBot).
+Proof.
+  intro t.
+  pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_zeroNotSucc) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addZero_rename : forall r,
+  BProv Ax_s [] (rename r addZero).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename addZero Ax_s_addZero r).
+Qed.
+
+Lemma BProv_Ax_s_addZero : BProv Ax_s [] addZero.
+Proof.
+  pose proof (BProv_Ax_s_addZero_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addZero_term : forall t,
+  BProv Ax_s [] (pEq (tAdd t tZero) t).
+Proof.
+  intro t.
+  pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_addZero) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addSucc_rename : forall r,
+  BProv Ax_s [] (rename r addSucc).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename addSucc Ax_s_addSucc r).
+Qed.
+
+Lemma BProv_Ax_s_addSucc : BProv Ax_s [] addSucc.
+Proof.
+  pose proof (BProv_Ax_s_addSucc_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addSucc_terms : forall s t,
+  BProv Ax_s [] (pEq
+    (tAdd s (tSucc t))
+    (tSucc (tAdd s t))).
+Proof.
+  intros s t.
+  pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_addSucc) as h1.
+  pose proof (BProv_allE Ax_s [] _ t h1) as h2.
+  simpl in h2.
+  repeat rewrite term_subst_instTerm_rename_succ in h2.
+  exact h2.
+Qed.
+
+Lemma BProv_Ax_s_mulZero_rename : forall r,
+  BProv Ax_s [] (rename r mulZero).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename mulZero Ax_s_mulZero r).
+Qed.
+
+Lemma BProv_Ax_s_mulZero : BProv Ax_s [] mulZero.
+Proof.
+  pose proof (BProv_Ax_s_mulZero_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulZero_term : forall t,
+  BProv Ax_s [] (pEq (tMul t tZero) tZero).
+Proof.
+  intro t.
+  pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_mulZero) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulSucc_rename : forall r,
+  BProv Ax_s [] (rename r mulSucc).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename mulSucc Ax_s_mulSucc r).
+Qed.
+
+Lemma BProv_Ax_s_mulSucc : BProv Ax_s [] mulSucc.
+Proof.
+  pose proof (BProv_Ax_s_mulSucc_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulSucc_terms : forall s t,
+  BProv Ax_s [] (pEq
+    (tMul s (tSucc t))
+    (tAdd (tMul s t) s)).
+Proof.
+  intros s t.
+  pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_mulSucc) as h1.
+  pose proof (BProv_allE Ax_s [] _ t h1) as h2.
+  simpl in h2.
+  repeat rewrite term_subst_instTerm_rename_succ in h2.
+  exact h2.
+Qed.
+
+Lemma BProv_Ax_s_inductionForm_rename : forall phi r,
+  BProv Ax_s [] (rename r (inductionForm phi)).
+Proof.
+  intros phi r.
+  exact (BProv_Ax_s_of_sealPA_rename
+    (inductionForm phi) (Ax_s_induction phi) r).
+Qed.
+
+Lemma BProv_Ax_s_inductionForm : forall phi,
+  BProv Ax_s [] (inductionForm phi).
+Proof.
+  intro phi.
+  pose proof (BProv_Ax_s_inductionForm_rename phi (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_induction_rule : forall G phi,
+  BProv Ax_s G (subst substZero phi) ->
+  BProv Ax_s G (pAll (pImp phi (subst substSuccVar phi))) ->
+  BProv Ax_s G (pAll phi).
+Proof.
+  intros G phi hzero hsucc.
+  pose proof (BProv_Ax_s_inductionForm phi) as hind_empty.
+  pose proof (BProv_mono Ax_s [] G (inductionForm phi)
+    (fun x hx => match hx with end) hind_empty) as hind.
+  exact (BProv_inductionForm_mp Ax_s G phi hind hzero hsucc).
 Qed.
 
 Lemma sat_substZero : forall (M : Model) phi (e : nat -> M),
@@ -8030,6 +8686,18 @@ Definition hfMemAt (elem set : nat) : formula :=
           (pAnd
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
+
+Lemma rename_hfMemAt : forall (r : nat -> nat) elem set,
+  rename r (hfMemAt elem set) = hfMemAt (r elem) (r set).
+Proof.
+  intros r elem set.
+  unfold hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt,
+    eqConstAt, betaModTerm.
+  simpl.
+  reflexivity.
+Qed.
 
 Lemma leAt_nat : forall (e : nat -> nat) a b,
   Sat natModel e (leAt a b) <-> e a <= e b.
@@ -9376,6 +10044,20 @@ Fixpoint hfFormulaAt (rho : nat -> nat) (phi : form) : formula :=
 Definition translateHFFormula (phi : form) : formula :=
   hfFormulaAt (fun n => n) phi.
 
+Definition hfContextAt (rho : nat -> nat) (G : list form) : list formula :=
+  map (hfFormulaAt rho) G.
+
+Definition translateHFContext (G : list form) : list formula :=
+  map translateHFFormula G.
+
+Lemma translateHFContext_eq_hfContextAt_id : forall G,
+  translateHFContext G = hfContextAt (fun n => n) G.
+Proof.
+  intro G.
+  unfold translateHFContext, hfContextAt, translateHFFormula.
+  reflexivity.
+Qed.
+
 Lemma hfFormulaAt_exact : forall phi rho v e,
   (forall n, e (rho n) = v n) ->
   Sat natModel e (hfFormulaAt rho phi) <->
@@ -9525,6 +10207,149 @@ Proof.
       * simpl in hi.
         injection hi as hi.
         exact hi.
+Qed.
+
+Lemma hfFormulaAt_ext : forall phi rho sigma,
+  (forall n, rho n = sigma n) ->
+    hfFormulaAt rho phi = hfFormulaAt sigma phi.
+Proof.
+  induction phi; simpl; intros rho sigma h; try reflexivity.
+  - now rewrite (h n), (h n0).
+  - now rewrite (h n), (h n0).
+  - now rewrite (IHphi1 rho sigma h), (IHphi2 rho sigma h).
+  - now rewrite (IHphi1 rho sigma h), (IHphi2 rho sigma h).
+  - now rewrite (IHphi1 rho sigma h), (IHphi2 rho sigma h).
+  - f_equal.
+    apply IHphi.
+    intros [|n]; simpl; [reflexivity | now rewrite h].
+  - f_equal.
+    apply IHphi.
+    intros [|n]; simpl; [reflexivity | now rewrite h].
+Qed.
+
+Lemma hfFormulaAt_ext_free : forall phi rho sigma,
+  (forall n, Fol.Free n phi -> rho n = sigma n) ->
+    hfFormulaAt rho phi = hfFormulaAt sigma phi.
+Proof.
+  induction phi; simpl; intros rho sigma h; try reflexivity.
+  - rewrite (h n (or_introl eq_refl)).
+    rewrite (h n0 (or_intror eq_refl)).
+    reflexivity.
+  - rewrite (h n (or_introl eq_refl)).
+    rewrite (h n0 (or_intror eq_refl)).
+    reflexivity.
+  - rewrite (IHphi1 rho sigma (fun n hn => h n (or_introl hn))).
+    rewrite (IHphi2 rho sigma (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHphi1 rho sigma (fun n hn => h n (or_introl hn))).
+    rewrite (IHphi2 rho sigma (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHphi1 rho sigma (fun n hn => h n (or_introl hn))).
+    rewrite (IHphi2 rho sigma (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    now rewrite (h n hn).
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    now rewrite (h n hn).
+Qed.
+
+Lemma hfFormulaAt_source_rename : forall phi rho r,
+  hfFormulaAt rho (Fol.rename r phi) =
+    hfFormulaAt (fun n => rho (r n)) phi.
+Proof.
+  induction phi; simpl; intros rho r; try reflexivity.
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - rewrite (IHphi (hfUpVarMap rho) (Fol.up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (hfUpVarMap rho) (Fol.up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma rename_hfFormulaAt : forall phi rho r,
+  rename r (hfFormulaAt rho phi) =
+    hfFormulaAt (fun n => r (rho n)) phi.
+Proof.
+  induction phi; simpl; intros rho r; try reflexivity.
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - rewrite (IHphi (hfUpVarMap rho) (up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (hfUpVarMap rho) (up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma hfFormulaAt_rename_succ : forall phi rho,
+  hfFormulaAt (hfUpVarMap rho) (Fol.rename S phi) =
+    rename S (hfFormulaAt rho phi).
+Proof.
+  intros phi rho.
+  rewrite (hfFormulaAt_source_rename phi (hfUpVarMap rho) S).
+  rewrite (hfFormulaAt_ext phi
+    (fun n => hfUpVarMap rho (S n)) (fun n => S (rho n))).
+  - symmetry.
+    apply rename_hfFormulaAt.
+  - intro n. reflexivity.
+Qed.
+
+Lemma hfContextAt_rename_succ : forall rho G,
+  hfContextAt (hfUpVarMap rho) (map (Fol.rename S) G) =
+    map (rename S) (hfContextAt rho G).
+Proof.
+  intros rho G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite hfFormulaAt_rename_succ.
+    now rewrite IH.
+Qed.
+
+Lemma hfContextAt_cons_rename_succ : forall rho a G,
+  hfContextAt (hfUpVarMap rho) (a :: map (Fol.rename S) G) =
+    hfFormulaAt (hfUpVarMap rho) a :: map (rename S) (hfContextAt rho G).
+Proof.
+  intros rho a G.
+  simpl.
+  rewrite hfContextAt_rename_succ.
+  reflexivity.
+Qed.
+
+Lemma subst_instTerm_var_hfFormulaAt : forall phi rho k,
+  subst (instTerm (tVar (rho k))) (hfFormulaAt (hfUpVarMap rho) phi) =
+    hfFormulaAt rho (Fol.rename (Fol.inst k) phi).
+Proof.
+  intros phi rho k.
+  rewrite subst_instTerm_var.
+  rewrite (rename_hfFormulaAt phi (hfUpVarMap rho) (inst (rho k))).
+  transitivity (hfFormulaAt (fun n => rho (Fol.inst k n)) phi).
+  - apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+  - symmetry.
+    apply hfFormulaAt_source_rename.
+Qed.
+
+Lemma hfFormulaAt_eq_translateHFFormula_of_HF_sentence : forall phi rho,
+  Fol.Sentence phi -> hfFormulaAt rho phi = translateHFFormula phi.
+Proof.
+  intros phi rho hphi.
+  unfold translateHFFormula.
+  apply hfFormulaAt_ext_free.
+  intros n hn.
+  exfalso.
+  exact (hphi n hn).
 Qed.
 
 Lemma hfFormulaAt_sentence_of_HF_sentence : forall phi rho,
@@ -9677,9 +10502,288 @@ Proof.
   exact (translated_HFFin_axiom_sat_nat phi hphi e).
 Qed.
 
+Lemma Prov_hfFormulaAt_of_Prov : forall G phi,
+  Calculus.Prov G phi ->
+  forall rho, Prov (hfContextAt rho G) (hfFormulaAt rho phi).
+Proof.
+  intros G phi h.
+  induction h; intro rho; simpl.
+  - apply P_ass.
+    unfold hfContextAt.
+    apply in_map.
+    exact H.
+  - apply P_impI.
+    exact (IHh rho).
+  - exact (P_impE _ _ _ (IHh1 rho) (IHh2 rho)).
+  - exact (P_botE _ _ (IHh rho)).
+  - apply P_lem.
+  - exact (P_andI _ _ _ (IHh1 rho) (IHh2 rho)).
+  - exact (P_andE1 _ _ _ (IHh rho)).
+  - exact (P_andE2 _ _ _ (IHh rho)).
+  - exact (P_orI1 _ _ _ (IHh rho)).
+  - exact (P_orI2 _ _ _ (IHh rho)).
+  - exact (P_orE _ _ _ _ (IHh1 rho) (IHh2 rho) (IHh3 rho)).
+  - apply P_allI.
+    rewrite <- hfContextAt_rename_succ.
+    exact (IHh (hfUpVarMap rho)).
+  - pose proof (P_allE _ (hfFormulaAt (hfUpVarMap rho) a)
+      (tVar (rho k)) (IHh rho)) as hinst.
+    rewrite subst_instTerm_var_hfFormulaAt in hinst.
+    exact hinst.
+  - apply (P_exI _ (hfFormulaAt (hfUpVarMap rho) a) (tVar (rho k))).
+    rewrite subst_instTerm_var_hfFormulaAt.
+    exact (IHh rho).
+  - apply (P_exE _ (hfFormulaAt (hfUpVarMap rho) a) (hfFormulaAt rho c)).
+    + exact (IHh1 rho).
+    + rewrite <- hfFormulaAt_rename_succ.
+      rewrite <- hfContextAt_cons_rename_succ.
+      exact (IHh2 (hfUpVarMap rho)).
+  - apply P_eqRefl.
+  - assert (hbody : Prov (hfContextAt rho G)
+        (subst (instTerm (tVar (rho i))) (hfFormulaAt (hfUpVarMap rho) a))).
+    {
+      rewrite subst_instTerm_var_hfFormulaAt.
+      exact (IHh2 rho).
+    }
+    pose proof (P_eqElim _ (tVar (rho i)) (tVar (rho j))
+      (hfFormulaAt (hfUpVarMap rho) a) (IHh1 rho) hbody) as hmain.
+    rewrite subst_instTerm_var_hfFormulaAt in hmain.
+    exact hmain.
+Qed.
+
+Lemma BProv_hfFormulaAt_of_BProv_HFFin : forall G phi,
+  Completeness.BProv HFFinAx_s G phi ->
+  forall rho,
+    BProv translatedHFFinAx (hfContextAt rho G) (hfFormulaAt rho phi).
+Proof.
+  intros G phi [L [hL hprov]] rho.
+  exists (hfContextAt rho L).
+  split.
+  - intros f hf.
+    unfold hfContextAt in hf.
+    apply in_map_iff in hf.
+    destruct hf as [g [hf hg]].
+    subst f.
+    pose proof (hL g hg) as hgAx.
+    rewrite (hfFormulaAt_eq_translateHFFormula_of_HF_sentence
+      g rho (Sentences_HFFin g hgAx)).
+    apply translatedHFFinAx_intro.
+    exact hgAx.
+  - pose proof (Prov_hfFormulaAt_of_Prov (L ++ G) phi hprov rho) as hp.
+    unfold hfContextAt in *.
+    rewrite map_app in hp.
+    exact hp.
+Qed.
+
+Lemma BProv_translateHFFormula_of_BProv_HFFin : forall phi,
+  Completeness.BProv HFFinAx_s [] phi ->
+  BProv translatedHFFinAx [] (translateHFFormula phi).
+Proof.
+  intros phi h.
+  pose proof (BProv_hfFormulaAt_of_BProv_HFFin [] phi h
+    (fun n => n)) as htranslated.
+  unfold hfContextAt, translateHFFormula in htranslated.
+  simpl in htranslated.
+  exact htranslated.
+Qed.
+
 End Formula.
 
 End PA.
+
+Lemma rename_HF_emptyAt : forall (r : nat -> nat) i,
+  rename r (HF_emptyAt i) = HF_emptyAt (r i).
+Proof.
+  intros r i.
+  unfold HF_emptyAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_adjoinAt : forall (r : nat -> nat) c a b,
+  rename r (HF_adjoinAt c a b) = HF_adjoinAt (r c) (r a) (r b).
+Proof.
+  intros r c a b.
+  unfold HF_adjoinAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_succAt : forall (r : nat -> nat) s a,
+  rename r (HF_succAt s a) = HF_succAt (r s) (r a).
+Proof.
+  intros r s a.
+  unfold HF_succAt.
+  apply rename_HF_adjoinAt.
+Qed.
+
+Lemma rename_HF_singleAt : forall (r : nat -> nat) i j,
+  rename r (HF_singleAt i j) = HF_singleAt (r i) (r j).
+Proof.
+  intros r i j.
+  unfold HF_singleAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_upairAt : forall (r : nat -> nat) i j k,
+  rename r (HF_upairAt i j k) = HF_upairAt (r i) (r j) (r k).
+Proof.
+  intros r i j k.
+  unfold HF_upairAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_kpairAt : forall (r : nat -> nat) p a b,
+  rename r (HF_kpairAt p a b) = HF_kpairAt (r p) (r a) (r b).
+Proof.
+  intros r p a b.
+  unfold HF_kpairAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairMemAt : forall (r : nat -> nat) a b rel,
+  rename r (HF_pairMemAt a b rel) = HF_pairMemAt (r a) (r b) (r rel).
+Proof.
+  intros r a b rel.
+  unfold HF_pairMemAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairFunctionalAt : forall (r : nat -> nat) f,
+  rename r (HF_pairFunctionalAt f) = HF_pairFunctionalAt (r f).
+Proof.
+  intros r f.
+  unfold HF_pairFunctionalAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairKeysBelowSuccAt : forall (r : nat -> nat) f m,
+  rename r (HF_pairKeysBelowSuccAt f m) =
+    HF_pairKeysBelowSuccAt (r f) (r m).
+Proof.
+  intros r f m.
+  unfold HF_pairKeysBelowSuccAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairTotalBelowSuccAt : forall (r : nat -> nat) f m,
+  rename r (HF_pairTotalBelowSuccAt f m) =
+    HF_pairTotalBelowSuccAt (r f) (r m).
+Proof.
+  intros r f m.
+  unfold HF_pairTotalBelowSuccAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairSuccStepAt : forall (r : nat -> nat) f m,
+  rename r (HF_pairSuccStepAt f m) = HF_pairSuccStepAt (r f) (r m).
+Proof.
+  intros r f m.
+  unfold HF_pairSuccStepAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairBaseAt : forall (r : nat -> nat) f s,
+  rename r (HF_pairBaseAt f s) = HF_pairBaseAt (r f) (r s).
+Proof.
+  intros r f s.
+  unfold HF_pairBaseAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairZeroBaseAt : forall (r : nat -> nat) f,
+  rename r (HF_pairZeroBaseAt f) = HF_pairZeroBaseAt (r f).
+Proof.
+  intros r f.
+  unfold HF_pairZeroBaseAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_succRecApproxAt : forall (r : nat -> nat) f s m,
+  rename r (HF_succRecApproxAt f s m) =
+    HF_succRecApproxAt (r f) (r s) (r m).
+Proof.
+  intros r f s m.
+  unfold HF_succRecApproxAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_addGraphAt : forall (r : nat -> nat) out left right,
+  rename r (addGraphAt out left right) =
+    addGraphAt (r out) (r left) (r right).
+Proof.
+  intros r out left right.
+  unfold addGraphAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_mulStepAt : forall (r : nat -> nat) f a m,
+  rename r (mulStepAt f a m) = mulStepAt (r f) (r a) (r m).
+Proof.
+  intros r f a m.
+  unfold mulStepAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_mulRecApproxAt : forall (r : nat -> nat) f a m,
+  rename r (mulRecApproxAt f a m) =
+    mulRecApproxAt (r f) (r a) (r m).
+Proof.
+  intros r f a m.
+  unfold mulRecApproxAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_mulGraphAt : forall (r : nat -> nat) out left right,
+  rename r (mulGraphAt out left right) =
+    mulGraphAt (r out) (r left) (r right).
+Proof.
+  intros r out left right.
+  unfold mulGraphAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma up_add1 : forall (r : nat -> nat) n,
+  up r (n + 1) = r n + 1.
+Proof.
+  intros r n.
+  replace (n + 1) with (S n) by lia.
+  replace (r n + 1) with (S (r n)) by lia.
+  reflexivity.
+Qed.
+
+Lemma up_add2 : forall (r : nat -> nat) n,
+  up (up r) (n + 2) = r n + 2.
+Proof.
+  intros r n.
+  replace (n + 2) with (S (S n)) by lia.
+  replace (r n + 2) with (S (S (r n))) by lia.
+  reflexivity.
+Qed.
+
+Lemma up_add3 : forall (r : nat -> nat) n,
+  up (up (up r)) (n + 3) = r n + 3.
+Proof.
+  intros r n.
+  replace (n + 3) with (S (S (S n))) by lia.
+  replace (r n + 3) with (S (S (S (r n)))) by lia.
+  reflexivity.
+Qed.
 
 Fixpoint termGraphAt (rho : nat -> nat) (out : nat) (t : PA.term) : form :=
   match t with
@@ -9763,6 +10867,97 @@ Proof.
       * reflexivity.
       * intro n. now rewrite h.
     + intro n. now rewrite h.
+Qed.
+
+Lemma termGraphAt_map_ext_free : forall t rho sigma out,
+  (forall n, PA.Term.Free n t -> rho n = sigma n) ->
+  termGraphAt rho out t = termGraphAt sigma out t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho sigma out h; try reflexivity.
+  - now rewrite (h n eq_refl).
+  - rewrite (IHa (fun n => rho n + 1) (fun n => sigma n + 1) 0).
+    + reflexivity.
+    + intros n hn. now rewrite (h n hn).
+  - rewrite (IHa (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (IHb (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intros n hn. now rewrite (h n (or_intror hn)).
+    + intros n hn. now rewrite (h n (or_introl hn)).
+  - rewrite (IHa (fun n => rho n + 3) (fun n => sigma n + 3) 1).
+    + rewrite (IHb (fun n => rho n + 3) (fun n => sigma n + 3) 2).
+      * reflexivity.
+      * intros n hn. now rewrite (h n (or_intror hn)).
+    + intros n hn. now rewrite (h n (or_introl hn)).
+Qed.
+
+Lemma termGraphAt_PA_rename : forall t rho out r,
+  termGraphAt rho out (PA.Term.rename r t) =
+    termGraphAt (fun n => rho (r n)) out t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho out r; try reflexivity.
+  - rewrite (IHa (fun n => rho n + 1) 0 r).
+    reflexivity.
+  - rewrite (IHa (fun n => rho n + 2) 1 r).
+    rewrite (IHb (fun n => rho n + 2) 0 r).
+    reflexivity.
+  - rewrite (IHa (fun n => rho n + 3) 1 r).
+    rewrite (IHb (fun n => rho n + 3) 2 r).
+    reflexivity.
+Qed.
+
+Lemma termGraphAt_rename : forall t rho out r,
+  rename r (termGraphAt rho out t) =
+    termGraphAt (fun n => r (rho n)) (r out) t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho out r.
+  - reflexivity.
+  - apply rename_HF_emptyAt.
+  - rewrite (IHa (fun n => rho n + 1) 0 (up r)).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up r (rho n + 1)) (fun n => r (rho n) + 1)
+      (up r 0)).
+    + rewrite up_add1.
+      reflexivity.
+    + intro n. apply up_add1.
+  - rewrite (IHa (fun n => rho n + 2) 1 (up (up r))).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+      (up (up r) 1)).
+    + rewrite (IHb (fun n => rho n + 2) 0 (up (up r))).
+      rewrite (termGraphAt_map_ext b
+        (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+        (up (up r) 0)).
+      * rewrite up_add2.
+        reflexivity.
+      * intro n. apply up_add2.
+    + intro n. apply up_add2.
+  - rewrite (IHa (fun n => rho n + 3) 1 (up (up (up r)))).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up (up (up r)) (rho n + 3))
+      (fun n => r (rho n) + 3) (up (up (up r)) 1)).
+    + rewrite (IHb (fun n => rho n + 3) 2 (up (up (up r)))).
+      rewrite (termGraphAt_map_ext b
+        (fun n => up (up (up r)) (rho n + 3))
+        (fun n => r (rho n) + 3) (up (up (up r)) 2)).
+      * rewrite up_add3.
+        reflexivity.
+      * intro n. apply up_add3.
+    + intro n. apply up_add3.
+Qed.
+
+Lemma termGraphAt_inst_out : forall t rho k,
+  rename (inst k) (termGraphAt (fun n => rho n + 1) 0 t) =
+    termGraphAt rho k t.
+Proof.
+  intros t rho k.
+  rewrite termGraphAt_rename.
+  apply termGraphAt_map_ext.
+  intro n.
+  rewrite Nat.add_1_r.
+  reflexivity.
 Qed.
 
 Lemma termGraphAt_substZeroAt_insert_model : forall V
@@ -11042,6 +12237,141 @@ Proof.
   - assert (hup : forall n, upVarMap rho n = upVarMap sigma n).
     {
       intros [|n]; simpl; [reflexivity | now rewrite h].
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+Qed.
+
+Lemma formulaAt_PA_rename : forall phi rho r,
+  formulaAt rho (PA.Formula.rename r phi) =
+    formulaAt (fun n => rho (r n)) phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho r; try reflexivity.
+  - rewrite (termGraphAt_PA_rename a (fun n => rho n + 2) 1 r).
+    rewrite (termGraphAt_PA_rename b (fun n => rho n + 2) 0 r).
+    reflexivity.
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+Qed.
+
+Lemma rename_domainForm_up : forall (r : nat -> nat),
+  rename (up r) domainForm = domainForm.
+Proof.
+  intro r.
+  transitivity (rename (fun n => n) domainForm).
+  - apply rename_ext_free.
+    intros n hn.
+    pose proof (domainForm_free n hn) as hn0.
+    subst n.
+    reflexivity.
+  - apply rename_id.
+Qed.
+
+Lemma formulaAt_rename : forall phi rho r,
+  rename r (formulaAt rho phi) =
+    formulaAt (fun n => r (rho n)) phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho r; try reflexivity.
+  - rewrite (termGraphAt_rename a (fun n => rho n + 2) 1 (up (up r))).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+      (up (up r) 1)).
+    + rewrite (termGraphAt_rename b (fun n => rho n + 2) 0 (up (up r))).
+      rewrite (termGraphAt_map_ext b
+        (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+        (up (up r) 0)).
+      * reflexivity.
+      * intro n. apply up_add2.
+    + intro n. apply up_add2.
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - now rewrite (IHa rho r), (IHb rho r).
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+  - rewrite (IHa (upVarMap rho) (up r)).
+    f_equal.
+    f_equal.
+    apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+Qed.
+
+Lemma formulaAt_rename_succ_upVarMap : forall phi rho,
+  formulaAt (upVarMap rho) (PA.Formula.rename S phi) =
+    rename S (formulaAt rho phi).
+Proof.
+  intros phi rho.
+  rewrite (formulaAt_PA_rename phi (upVarMap rho) S).
+  rewrite (formulaAt_map_ext phi
+    (fun n => upVarMap rho (S n)) (fun n => S (rho n))).
+  - symmetry.
+    apply formulaAt_rename.
+  - intros n. reflexivity.
+Qed.
+
+Lemma formulaAt_subst_instTerm_var : forall phi rho k,
+  formulaAt rho (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) phi) =
+    rename (inst (rho k)) (formulaAt (upVarMap rho) phi).
+Proof.
+  intros phi rho k.
+  rewrite PA.Formula.subst_instTerm_var.
+  rewrite (formulaAt_PA_rename phi rho (inst k)).
+  transitivity (formulaAt
+    (fun n => inst (rho k) (upVarMap rho n)) phi).
+  - apply formulaAt_map_ext.
+    intros [|n]; simpl; reflexivity.
+  - symmetry.
+    apply formulaAt_rename.
+Qed.
+
+Lemma formulaAt_map_ext_free : forall phi rho sigma,
+  (forall n, PA.Formula.Free n phi -> rho n = sigma n) ->
+  formulaAt rho phi = formulaAt sigma phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho sigma h;
+      try reflexivity.
+  - rewrite (termGraphAt_map_ext_free a
+      (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (termGraphAt_map_ext_free b
+        (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intros n hn. now rewrite (h n (or_intror hn)).
+    + intros n hn. now rewrite (h n (or_introl hn)).
+  - now rewrite (IHa rho sigma (fun n hn => h n (or_introl hn))),
+      (IHb rho sigma (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHa rho sigma (fun n hn => h n (or_introl hn))),
+      (IHb rho sigma (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHa rho sigma (fun n hn => h n (or_introl hn))),
+      (IHb rho sigma (fun n hn => h n (or_intror hn))).
+  - assert (hup : forall n, PA.Formula.Free n a ->
+        upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n] hn; simpl.
+      - reflexivity.
+      - now rewrite (h n hn).
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+  - assert (hup : forall n, PA.Formula.Free n a ->
+        upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n] hn; simpl.
+      - reflexivity.
+      - now rewrite (h n hn).
     }
     now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
 Qed.
@@ -13073,6 +14403,17 @@ Proof.
   exact hphi.
 Qed.
 
+Lemma formulaAt_eq_translateFormula_of_PA_sentence : forall phi rho,
+  PA.Formula.Sentence phi ->
+  formulaAt rho phi = translateFormula phi.
+Proof.
+  intros phi rho hphi.
+  unfold translateFormula.
+  apply formulaAt_map_ext_free.
+  intros n hn.
+  exfalso. exact (hphi n hn).
+Qed.
+
 Lemma translated_PA_axiom_sentence : forall phi,
   PA.Formula.Ax_s phi -> Sentence (translateFormula phi).
 Proof.
@@ -13470,6 +14811,297 @@ Proof.
   - apply rename_id.
 Qed.
 
+Lemma BProv_context_cons : forall (B : form -> Prop) G a b,
+  BProv B G b -> BProv B (a :: G) b.
+Proof.
+  intros B G a b h.
+  apply (BProv_mono B G (a :: G) b).
+  - intros x hx. right. exact hx.
+  - exact h.
+Qed.
+
+Lemma BProv_impI : forall (B : form -> Prop) G a b,
+  BProv B (a :: G) b -> BProv B G (fImp a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  apply P_impI.
+  apply (Prov_weaken (L ++ a :: G) b hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl in hx.
+  simpl.
+  destruct hx as [hx | [hx | hx]].
+  - right. apply in_app_iff. left. exact hx.
+  - left. exact hx.
+  - right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_impI_after_prefix : forall (B : form -> Prop) Gamma Delta a b,
+  BProv B (Gamma ++ a :: Delta) b ->
+  BProv B (Gamma ++ Delta) (fImp a b).
+Proof.
+  intros B Gamma Delta a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  apply P_impI.
+  apply (Prov_weaken (L ++ Gamma ++ a :: Delta) b hp).
+  intros x hx.
+  apply in_app_iff in hx.
+  simpl.
+  destruct hx as [hx | hx].
+  - right. apply in_app_iff. left. exact hx.
+  - apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + right. apply in_app_iff. right. apply in_app_iff. left. exact hx.
+    + simpl in hx.
+      destruct hx as [hx | hx].
+      * left. exact hx.
+      * right. apply in_app_iff. right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_andI : forall (B : form -> Prop) G a b,
+  BProv B G a -> BProv B G b -> BProv B G (fAnd a b).
+Proof.
+  intros B G a b [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (La ++ Lb). split.
+  - intros x hx. apply in_app_iff in hx.
+    destruct hx as [hx | hx]; [apply hLa | apply hLb]; exact hx.
+  - apply P_andI.
+    + apply (Prov_weaken (La ++ G) a hpa).
+      intros x hx; mem.
+    + apply (Prov_weaken (Lb ++ G) b hpb).
+      intros x hx; mem.
+Qed.
+
+Lemma BProv_botE : forall (B : form -> Prop) G a,
+  BProv B G fBot -> BProv B G a.
+Proof.
+  intros B G a [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_botE (L ++ G) a hp).
+Qed.
+
+Lemma BProv_andE1 : forall (B : form -> Prop) G a b,
+  BProv B G (fAnd a b) -> BProv B G a.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_andE1 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_andE2 : forall (B : form -> Prop) G a b,
+  BProv B G (fAnd a b) -> BProv B G b.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_andE2 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orI1 : forall (B : form -> Prop) G a b,
+  BProv B G a -> BProv B G (fOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_orI1 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orI2 : forall (B : form -> Prop) G a b,
+  BProv B G b -> BProv B G (fOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_orI2 (L ++ G) a b hp).
+Qed.
+
+Lemma BProv_orE : forall (B : form -> Prop) G a b c,
+  BProv B G (fOr a b) ->
+  BProv B (a :: G) c ->
+  BProv B (b :: G) c ->
+  BProv B G c.
+Proof.
+  intros B G a b c [Lo [hLo hpo]] [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (Lo ++ La ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + apply hLo. exact hx.
+    + apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * apply hLa. exact hx.
+      * apply hLb. exact hx.
+  - apply (P_orE ((Lo ++ La ++ Lb) ++ G) a b c).
+    + apply (Prov_weaken (Lo ++ G) (fOr a b) hpo).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (La ++ a :: G) c hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. left. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+    + apply (Prov_weaken (Lb ++ b :: G) c hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. right. exact hx.
+      * left. exact hx.
+      * right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_orE_after_prefix : forall (B : form -> Prop) Gamma Delta a b c,
+  BProv B (Gamma ++ Delta) (fOr a b) ->
+  BProv B (Gamma ++ a :: Delta) c ->
+  BProv B (Gamma ++ b :: Delta) c ->
+  BProv B (Gamma ++ Delta) c.
+Proof.
+  intros B Gamma Delta a b c
+    [Lo [hLo hpo]] [La [hLa hpa]] [Lb [hLb hpb]].
+  exists (Lo ++ La ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + apply hLo. exact hx.
+    + apply in_app_iff in hx.
+      destruct hx as [hx | hx].
+      * apply hLa. exact hx.
+      * apply hLb. exact hx.
+  - apply (P_orE ((Lo ++ La ++ Lb) ++ (Gamma ++ Delta)) a b c).
+    + apply (Prov_weaken (Lo ++ Gamma ++ Delta) (fOr a b) hpo).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (La ++ Gamma ++ a :: Delta) c hpa).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl.
+      destruct hx as [hx | hx].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. left. exact hx.
+      * apply in_app_iff in hx.
+        destruct hx as [hx | hx].
+        -- right. apply in_app_iff. right. apply in_app_iff. left. exact hx.
+        -- simpl in hx.
+           destruct hx as [hx | hx].
+           ++ left. exact hx.
+           ++ right. apply in_app_iff. right. apply in_app_iff. right. exact hx.
+    + apply (Prov_weaken (Lb ++ Gamma ++ b :: Delta) c hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl.
+      destruct hx as [hx | hx].
+      * right. apply in_app_iff. left. apply in_app_iff. right.
+        apply in_app_iff. right. exact hx.
+      * apply in_app_iff in hx.
+        destruct hx as [hx | hx].
+        -- right. apply in_app_iff. right. apply in_app_iff. left. exact hx.
+        -- simpl in hx.
+           destruct hx as [hx | hx].
+           ++ left. exact hx.
+           ++ right. apply in_app_iff. right. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_allE : forall (B : form -> Prop) G a k,
+  BProv B G (fAll a) -> BProv B G (rename (inst k) a).
+Proof.
+  intros B G a k [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_allE (L ++ G) a k hp).
+Qed.
+
+Lemma BProv_exI : forall (B : form -> Prop) G a k,
+  BProv B G (rename (inst k) a) -> BProv B G (fEx a).
+Proof.
+  intros B G a k [L [hL hp]].
+  exists L. split; [exact hL |].
+  exact (P_exI (L ++ G) a k hp).
+Qed.
+
+Lemma map_rename_S_eq_of_sentences : forall (B : form -> Prop) L,
+  Sentences B ->
+  (forall x, In x L -> B x) ->
+  map (rename S) L = L.
+Proof.
+  induction L as [|x xs IH]; intros hB hL; simpl.
+  - reflexivity.
+  - rewrite (rename_eq_of_sentence x).
+    + rewrite (IH hB (fun y hy => hL y (or_intror hy))).
+      reflexivity.
+    + apply hB.
+      apply hL. simpl. left. reflexivity.
+Qed.
+
+Lemma BProv_allI_of_sentences : forall (B : form -> Prop) G a,
+  Sentences B ->
+  BProv B (map (rename S) G) a ->
+  BProv B G (fAll a).
+Proof.
+  intros B G a hB [L [hL hp]].
+  pose proof (map_rename_S_eq_of_sentences B L hB hL) as hLmap.
+  exists L. split; [exact hL |].
+  apply P_allI.
+  apply (Prov_weaken (L ++ map (rename S) G) a hp).
+  intros x hx.
+  rewrite map_app.
+  rewrite hLmap.
+  exact hx.
+Qed.
+
+Lemma BProv_exE_of_sentences : forall (B : form -> Prop) G a c,
+  Sentences B ->
+  BProv B G (fEx a) ->
+  BProv B (a :: map (rename S) G) (rename S c) ->
+  BProv B G c.
+Proof.
+  intros B G a c hB [Le [hLe hpe]] [Lb [hLb hpb]].
+  pose proof (map_rename_S_eq_of_sentences B Lb hB hLb) as hLbmap.
+  exists (Le ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ G) a c).
+    + apply (Prov_weaken (Le ++ G) (fEx a) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (Lb ++ a :: map (rename S) G) (rename S c) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right.
+        rewrite map_app.
+        apply in_app_iff. left.
+        rewrite map_app.
+        apply in_app_iff. right.
+        rewrite hLbmap.
+        exact hx.
+      * left. exact hx.
+      * right.
+        rewrite map_app.
+        apply in_app_iff. right.
+        exact hx.
+Qed.
+
 Lemma map_rename_S_eq_of_translatedPAAx_list : forall L,
   (forall x, In x L -> translatedPAAx x) -> map (rename S) L = L.
 Proof.
@@ -13494,11 +15126,149 @@ Qed.
 Definition translateContext (G : list PA.formula) : list form :=
   map translateFormula G.
 
+Definition translateContextAt (rho : nat -> nat)
+    (G : list PA.formula) : list form :=
+  map (formulaAt rho) G.
+
+Fixpoint domainContextAt (rho : nat -> nat) (n : nat) : list form :=
+  match n with
+  | 0 => []
+  | S m =>
+      rename (inst (rho 0)) domainForm ::
+        domainContextAt (fun k => rho (S k)) m
+  end.
+
+Lemma translateContextAt_id : forall G,
+  translateContextAt (fun n => n) G = translateContext G.
+Proof.
+  intro G.
+  unfold translateContextAt, translateContext, translateFormula.
+  reflexivity.
+Qed.
+
+Lemma translateContextAt_rename_succ_upVarMap : forall rho G,
+  translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G) =
+    map (rename S) (translateContextAt rho G).
+Proof.
+  intros rho G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite formulaAt_rename_succ_upVarMap.
+    now rewrite IH.
+Qed.
+
+Lemma rename_domainForm_inst : forall r k,
+  rename r (rename (inst k) domainForm) =
+    rename (inst (r k)) domainForm.
+Proof.
+  intros r k.
+  rewrite rename_comp.
+  apply rename_ext_free.
+  intros n hn.
+  pose proof (domainForm_free n hn) as hn0.
+  subst n.
+  reflexivity.
+Qed.
+
+Lemma rename_domainForm_inst_zero :
+  rename (inst 0) domainForm = domainForm.
+Proof.
+  transitivity (rename (fun n => n) domainForm).
+  - apply rename_ext_free.
+    intros n hn.
+    pose proof (domainForm_free n hn) as hn0.
+    subst n.
+    reflexivity.
+  - apply rename_id.
+Qed.
+
+Lemma domainContextAt_rename : forall rho r n,
+  map (rename r) (domainContextAt rho n) =
+    domainContextAt (fun k => r (rho k)) n.
+Proof.
+  intros rho r n.
+  revert rho r.
+  induction n as [|n IH]; intros rho r; cbn [domainContextAt map].
+  - reflexivity.
+  - rewrite rename_domainForm_inst.
+    rewrite (IH (fun k => rho (S k)) r).
+    reflexivity.
+Qed.
+
+Lemma mem_domainContextAt : forall rho n k,
+  k < n ->
+  In (rename (inst (rho k)) domainForm) (domainContextAt rho n).
+Proof.
+  intros rho n k hk.
+  revert rho k hk.
+  induction n as [|n IH]; intros rho k hk.
+  - lia.
+  - destruct k as [|k]; cbn [domainContextAt In].
+    + left. reflexivity.
+    + right. apply (IH (fun j => rho (S j)) k). lia.
+Qed.
+
+Lemma mem_domainContextAt_mono : forall rho n m g,
+  n <= m ->
+  In g (domainContextAt rho n) ->
+  In g (domainContextAt rho m).
+Proof.
+  intros rho n m g hle hg.
+  revert rho m g hle hg.
+  induction n as [|n IH]; intros rho m g hle hg.
+  - cbn [domainContextAt In] in hg. contradiction.
+  - destruct m as [|m]; [lia |].
+    cbn [domainContextAt In] in hg.
+    cbn [domainContextAt In].
+    destruct hg as [hg | hg].
+    + left. exact hg.
+    + right. apply (IH (fun k => rho (S k)) m g).
+      * lia.
+      * exact hg.
+Qed.
+
+Lemma BProv_mono_domainContextAt : forall (B : form -> Prop) rho n m G phi,
+  n <= m ->
+  BProv B (domainContextAt rho n ++ G) phi ->
+  BProv B (domainContextAt rho m ++ G) phi.
+Proof.
+  intros B rho n m G phi hnm h.
+  apply (BProv_mono B (domainContextAt rho n ++ G)
+    (domainContextAt rho m ++ G) phi).
+  - intros x hx.
+    apply in_app_iff in hx.
+    apply in_app_iff.
+    destruct hx as [hx | hx].
+    + left. exact (mem_domainContextAt_mono rho n m x hnm hx).
+    + right. exact hx.
+  - exact h.
+Qed.
+
+Lemma domainContextAt_upVarMap_succ : forall rho n,
+  domainContextAt (upVarMap rho) (S n) =
+    domainForm :: map (rename S) (domainContextAt rho n).
+Proof.
+  intros rho n.
+  cbn [domainContextAt upVarMap].
+  rewrite rename_domainForm_inst_zero.
+  rewrite (domainContextAt_rename rho S n).
+  reflexivity.
+Qed.
+
 Lemma mem_translateContext_of_mem : forall G phi,
   In phi G -> In (translateFormula phi) (translateContext G).
 Proof.
   intros G phi hphi.
   unfold translateContext.
+  apply in_map.
+  exact hphi.
+Qed.
+
+Lemma mem_translateContextAt_of_mem : forall rho G phi,
+  In phi G -> In (formulaAt rho phi) (translateContextAt rho G).
+Proof.
+  intros rho G phi hphi.
+  unfold translateContextAt.
   apply in_map.
   exact hphi.
 Qed.
@@ -13517,6 +15287,1023 @@ Lemma BProv_translate_ax : forall phi,
   PA.Formula.Ax_s phi -> BProv translatedPAAx [] (translateFormula phi).
 Proof.
   apply BProv_translatedPAAx_of_PAAx.
+Qed.
+
+Lemma BProv_formulaAt_ass : forall rho G phi,
+  In phi G -> BProv translatedPAAx (translateContextAt rho G) (formulaAt rho phi).
+Proof.
+  intros rho G phi hphi.
+  apply BProv_of_Prov.
+  apply P_ass.
+  apply mem_translateContextAt_of_mem.
+  exact hphi.
+Qed.
+
+Lemma BProv_domainContextAt_var : forall rho n k G,
+  k < n ->
+  BProv translatedPAAx (domainContextAt rho n ++ G)
+    (rename (inst (rho k)) domainForm).
+Proof.
+  intros rho n k G hk.
+  apply BProv_of_Prov.
+  apply P_ass.
+  apply in_app_iff.
+  left.
+  apply mem_domainContextAt.
+  exact hk.
+Qed.
+
+Lemma BProv_formulaAt_ax : forall rho phi,
+  PA.Formula.Ax_s phi -> BProv translatedPAAx [] (formulaAt rho phi).
+Proof.
+  intros rho phi hphi.
+  rewrite (formulaAt_eq_translateFormula_of_PA_sentence phi rho
+    (PA.Formula.sentence_ax_s phi hphi)).
+  apply BProv_translate_ax.
+  exact hphi.
+Qed.
+
+Lemma BProv_formulaAt_impI : forall rho G a b,
+  BProv translatedPAAx (formulaAt rho a :: translateContextAt rho G)
+    (formulaAt rho b) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pImp a b)).
+Proof.
+  intros rho G a b h.
+  simpl.
+  apply BProv_impI.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_impE : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pImp a b)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b).
+Proof.
+  intros rho G a b hab ha.
+  simpl in hab.
+  exact (BProv_mp translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) hab ha).
+Qed.
+
+Lemma BProv_formulaAt_botE : forall rho G a,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho PA.pBot) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a).
+Proof.
+  intros rho G a hbot.
+  simpl in hbot.
+  apply BProv_botE.
+  exact hbot.
+Qed.
+
+Lemma BProv_formulaAt_lem : forall rho G a,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a (PA.pImp a PA.pBot))).
+Proof.
+  intros rho G a.
+  simpl.
+  apply BProv_of_Prov.
+  apply P_lem.
+Qed.
+
+Lemma BProv_formulaAt_eqRefl_var : forall (B : form -> Prop) G rho k,
+  BProv B G (formulaAt rho (PA.pEq (PA.tVar k) (PA.tVar k))).
+Proof.
+  intros B G rho k.
+  apply BProv_of_Prov.
+  simpl.
+  apply (P_exI G _ (rho k)).
+  apply (P_exI G _ (rho k)).
+  replace (rho k + 2) with (S (S (rho k))) by lia.
+  cbn.
+  change (Prov G (fAnd (fEq (rho k) (rho k))
+    (fAnd (fEq (rho k) (rho k)) (fEq (rho k) (rho k))))).
+  apply P_andI.
+  - apply P_eqRefl.
+  - apply P_andI; apply P_eqRefl.
+Qed.
+
+Lemma formulaAt_eqRefl_zero_valid_of_HFFinAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFFinAx_s g -> Sat V mem v g) ->
+  forall rho e, Sat V mem e (formulaAt rho (PA.pEq PA.tZero PA.tZero)).
+Proof.
+  intros V mem v hHF rho e.
+  pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+  change (Sat V (foam_mem V M) e
+    (formulaAt rho (PA.pEq PA.tZero PA.tZero))).
+  simpl.
+  exists (foam_empty V M).
+  exists (foam_empty V M).
+  repeat split.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (foam_empty V M) e)) 1)).
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (foam_empty V M) e)) 0)).
+    reflexivity.
+Qed.
+
+Lemma BProv_HFFin_formulaAt_eqRefl_zero_nil : forall rho,
+  BProv HFFinAx_s [] (formulaAt rho (PA.pEq PA.tZero PA.tZero)).
+Proof.
+  intro rho.
+  apply completeness_inf.
+  - exact Sentences_HFFin.
+  - apply formulaAt_sentence_of_PA_sentence.
+    intros n hn.
+    simpl in hn.
+    destruct hn as [hn | hn]; contradiction.
+  - intros Dom mem v hHF.
+    exact (formulaAt_eqRefl_zero_valid_of_HFFinAx_s Dom mem v hHF rho v).
+Qed.
+
+Lemma BProv_HFFin_formulaAt_eqRefl_zero : forall G rho,
+  BProv HFFinAx_s G (formulaAt rho (PA.pEq PA.tZero PA.tZero)).
+Proof.
+  intros G rho.
+  apply (BProv_mono HFFinAx_s [] G
+    (formulaAt rho (PA.pEq PA.tZero PA.tZero))).
+  - intros x hx. contradiction.
+  - apply BProv_HFFin_formulaAt_eqRefl_zero_nil.
+Qed.
+
+Lemma BProv_formulaAt_eq_var_of_eq :
+  forall (B : form -> Prop) G rho m n,
+  BProv B G (fEq (rho m) (rho n)) ->
+  BProv B G (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))).
+Proof.
+  intros B G rho m n [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ G)
+    (fEx (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))))).
+  apply (P_exI (L ++ G) _ (rho m)).
+  apply (P_exI (L ++ G) _ (rho n)).
+  replace (rho m + 2) with (S (S (rho m))) by lia.
+  replace (rho n + 2) with (S (S (rho n))) by lia.
+  cbn.
+  change (Prov (L ++ G) (fAnd (fEq (rho m) (rho m))
+    (fAnd (fEq (rho n) (rho n)) (fEq (rho m) (rho n))))).
+  apply P_andI.
+  - apply P_eqRefl.
+  - apply P_andI.
+    + apply P_eqRefl.
+    + exact hp.
+Qed.
+
+Lemma BProv_formulaAt_andI : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAnd a b)).
+Proof.
+  intros rho G a b ha hb.
+  simpl.
+  apply BProv_andI; assumption.
+Qed.
+
+Lemma BProv_formulaAt_andE1 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a).
+Proof.
+  intros rho G a b h.
+  simpl in h.
+  exact (BProv_andE1 translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) h).
+Qed.
+
+Lemma BProv_formulaAt_andE2 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b).
+Proof.
+  intros rho G a b h.
+  simpl in h.
+  exact (BProv_andE2 translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) h).
+Qed.
+
+Lemma BProv_formulaAt_orI1 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a b)).
+Proof.
+  intros rho G a b h.
+  simpl.
+  apply BProv_orI1.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_orI2 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a b)).
+Proof.
+  intros rho G a b h.
+  simpl.
+  apply BProv_orI2.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_orE : forall rho G a b c,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a b)) ->
+  BProv translatedPAAx (formulaAt rho a :: translateContextAt rho G)
+    (formulaAt rho c) ->
+  BProv translatedPAAx (formulaAt rho b :: translateContextAt rho G)
+    (formulaAt rho c) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho c).
+Proof.
+  intros rho G a b c hor ha hb.
+  simpl in hor.
+  exact (BProv_orE translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) (formulaAt rho c) hor ha hb).
+Qed.
+
+Lemma BProv_formulaAt_eq_of_termGraphsAt :
+  forall (B : form -> Prop) G rho s t i j,
+  BProv B G (termGraphAt rho i s) ->
+  BProv B G (termGraphAt rho j t) ->
+  BProv B G (fEq i j) ->
+  BProv B G (formulaAt rho (PA.pEq s t)).
+Proof.
+  intros B G rho s t i j hs ht heq.
+  pose proof (BProv_andI B G (termGraphAt rho i s)
+    (fAnd (termGraphAt rho j t) (fEq i j))
+    hs (BProv_andI B G (termGraphAt rho j t) (fEq i j) ht heq))
+    as hconj.
+  destruct hconj as [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ G)
+    (fEx (fEx (fAnd (termGraphAt (fun n => rho n + 2) 1 s)
+      (fAnd (termGraphAt (fun n => rho n + 2) 0 t) (fEq 1 0)))))).
+  apply (P_exI (L ++ G) _ i).
+  apply (P_exI (L ++ G) _ j).
+  simpl.
+  rewrite !rename_inst_up.
+  rewrite !termGraphAt_rename.
+  cbn.
+  replace (termGraphAt
+      (fun n : nat => scons_nat j (inst i) (rho n + 2)) i s)
+    with (termGraphAt rho i s).
+  2:{
+    apply termGraphAt_map_ext.
+    intro n.
+    unfold scons_nat, inst.
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
+  }
+  replace (termGraphAt
+      (fun n : nat => scons_nat j (inst i) (rho n + 2)) j t)
+    with (termGraphAt rho j t).
+  2:{
+    apply termGraphAt_map_ext.
+    intro n.
+    unfold scons_nat, inst.
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
+  }
+  exact hp.
+Qed.
+
+Lemma BProv_termGraphAt_eqElim_out :
+  forall (B : form -> Prop) G rho t i j,
+  BProv B G (fEq i j) ->
+  BProv B G (termGraphAt rho i t) ->
+  BProv B G (termGraphAt rho j t).
+Proof.
+  intros B G rho t i j heq hgraph.
+  rewrite <- (termGraphAt_inst_out t rho i) in hgraph.
+  pose proof (BProv_eqElim B G i j
+    (termGraphAt (fun n => rho n + 1) 0 t) heq hgraph) as htarget.
+  rewrite (termGraphAt_inst_out t rho j) in htarget.
+  exact htarget.
+Qed.
+
+Lemma BProv_formulaAt_eqRefl_of_termGraphAt :
+  forall (B : form -> Prop) G rho t k,
+  BProv B G (termGraphAt rho k t) ->
+  BProv B G (formulaAt rho (PA.pEq t t)).
+Proof.
+  intros B G rho t k [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ G)
+    (fEx (fEx (fAnd (termGraphAt (fun n => rho n + 2) 1 t)
+      (fAnd (termGraphAt (fun n => rho n + 2) 0 t) (fEq 1 0)))))).
+  apply (P_exI (L ++ G) _ k).
+  apply (P_exI (L ++ G) _ k).
+  assert (hconj : Prov (L ++ G)
+      (fAnd (termGraphAt rho k t)
+        (fAnd (termGraphAt rho k t) (fEq k k)))).
+  {
+    apply P_andI.
+    - exact hp.
+    - apply P_andI.
+      + exact hp.
+      + apply P_eqRefl.
+  }
+  simpl.
+  rewrite !rename_inst_up.
+  rewrite !termGraphAt_rename.
+  cbn.
+  replace (termGraphAt
+      (fun n : nat => scons_nat k (inst k) (rho n + 2)) k t)
+    with (termGraphAt rho k t).
+  - exact hconj.
+  - apply termGraphAt_map_ext.
+    intro n.
+    unfold scons_nat, inst.
+    replace (rho n + 2) with (S (S (rho n))) by lia.
+    reflexivity.
+Qed.
+
+Lemma BProv_eq_of_formulaAt_eq_var :
+  forall (B : form -> Prop) G rho m n,
+  BProv B G (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))) ->
+  BProv B G (fEq (rho m) (rho n)).
+Proof.
+  intros B G rho m n [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  set (H := L ++ G).
+  change (Prov H (fEq (rho m) (rho n))).
+  change (Prov H
+    (fEx (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))))) in hp.
+  apply (P_exE H
+    (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))))
+    (fEq (rho m) (rho n)) hp).
+  change (Prov
+    (fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))) :: map (rename S) H)
+    (fEq (S (rho m)) (S (rho n)))).
+  set (H1 :=
+    fEx (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))) :: map (rename S) H).
+  assert (hinner : Prov H1
+      (fEx (fAnd (fEq 1 (rho m + 2))
+        (fAnd (fEq 0 (rho n + 2)) (fEq 1 0))))).
+  {
+    apply P_ass.
+    unfold H1.
+    simpl.
+    left. reflexivity.
+  }
+  apply (P_exE H1
+    (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))
+    (fEq (S (rho m)) (S (rho n))) hinner).
+  change (Prov
+    (fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) :: map (rename S) H1)
+    (fEq (S (S (rho m))) (S (S (rho n))))).
+  set (H2 :=
+    fAnd (fEq 1 (rho m + 2))
+      (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) :: map (rename S) H1).
+  assert (hconj : Prov H2
+      (fAnd (fEq 1 (rho m + 2))
+        (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)))).
+  {
+    apply P_ass.
+    unfold H2.
+    simpl.
+    left. reflexivity.
+  }
+  pose proof (P_andE1 H2 (fEq 1 (rho m + 2))
+    (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) hconj) as hx.
+  pose proof (P_andE2 H2 (fEq 1 (rho m + 2))
+    (fAnd (fEq 0 (rho n + 2)) (fEq 1 0)) hconj) as hyx.
+  pose proof (P_andE1 H2 (fEq 0 (rho n + 2)) (fEq 1 0) hyx) as hy.
+  pose proof (P_andE2 H2 (fEq 0 (rho n + 2)) (fEq 1 0) hyx) as hxy.
+  pose proof (Prov_eq_sym H2 1 (rho m + 2) hx) as hmx.
+  pose proof (Prov_eq_trans H2 (rho m + 2) 1 0 hmx hxy) as hm0.
+  pose proof (Prov_eq_trans H2 (rho m + 2) 0 (rho n + 2) hm0 hy) as hmn.
+  replace (S (S (rho m))) with (rho m + 2) by lia.
+  replace (S (S (rho n))) with (rho n + 2) by lia.
+  exact hmn.
+Qed.
+
+Lemma BProv_formulaAt_eqElim_var :
+  forall (B : form -> Prop) Gamma rho m n a,
+  BProv B Gamma (formulaAt rho (PA.pEq (PA.tVar m) (PA.tVar n))) ->
+  BProv B Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar m)) a)) ->
+  BProv B Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar n)) a)).
+Proof.
+  intros B Gamma rho m n a heq ha.
+  pose proof (BProv_eq_of_formulaAt_eq_var B Gamma rho m n heq) as hslot.
+  rewrite formulaAt_subst_instTerm_var in ha.
+  pose proof (BProv_eqElim B Gamma (rho m) (rho n)
+    (formulaAt (upVarMap rho) a) hslot ha) as htarget.
+  rewrite <- formulaAt_subst_instTerm_var in htarget.
+  exact htarget.
+Qed.
+
+Lemma BProv_formulaAt_allI_raw : forall rho G a,
+  BProv translatedPAAx (map (rename S) (translateContextAt rho G))
+    (fImp domainForm (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros rho G a h.
+  change (BProv translatedPAAx (translateContextAt rho G)
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  apply (BProv_allI_of_sentences translatedPAAx
+    (translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a))).
+  - exact Sentences_translatedPAAx.
+  - exact h.
+Qed.
+
+Lemma BProv_formulaAt_allI : forall rho G a,
+  BProv translatedPAAx
+    (translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) a) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros rho G a h.
+  rewrite translateContextAt_rename_succ_upVarMap in h.
+  apply BProv_formulaAt_allI_raw.
+  apply BProv_impI.
+  apply BProv_context_cons.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_allI_domainContext : forall rho n G a,
+  BProv translatedPAAx
+    (domainContextAt (upVarMap rho) (S n) ++
+      translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) a) ->
+  BProv translatedPAAx
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros rho n G a h.
+  rewrite domainContextAt_upVarMap_succ in h.
+  rewrite translateContextAt_rename_succ_upVarMap in h.
+  cbn in h.
+  rewrite <- map_app in h.
+  change (BProv translatedPAAx
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  apply (BProv_allI_of_sentences translatedPAAx
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a))).
+  - exact Sentences_translatedPAAx.
+  - apply BProv_impI.
+    exact h.
+Qed.
+
+Lemma BProv_formulaAt_allI_domainContext_of_sentences :
+  forall (B : form -> Prop) rho n G a,
+  Sentences B ->
+  BProv B
+    (domainContextAt (upVarMap rho) (S n) ++
+      translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) a) ->
+  BProv B
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros B rho n G a hB h.
+  rewrite domainContextAt_upVarMap_succ in h.
+  rewrite translateContextAt_rename_succ_upVarMap in h.
+  cbn in h.
+  rewrite <- map_app in h.
+  change (BProv B
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  apply (BProv_allI_of_sentences B
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a))).
+  - exact hB.
+  - apply BProv_impI.
+    exact h.
+Qed.
+
+Lemma BProv_formulaAt_allE_raw : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst k) (fImp domainForm (formulaAt (upVarMap rho) a))).
+Proof.
+  intros rho G a k [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ translateContextAt rho G)
+    (rename (inst k) (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  exact (P_allE (L ++ translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a)) k hp).
+Qed.
+
+Lemma BProv_formulaAt_allE_var : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)).
+Proof.
+  intros rho G a k hall hdom.
+  pose proof (BProv_formulaAt_allE_raw rho G a (rho k) hall) as himp.
+  change (BProv translatedPAAx (translateContextAt rho G)
+    (fImp (rename (inst (rho k)) domainForm)
+      (rename (inst (rho k)) (formulaAt (upVarMap rho) a)))) in himp.
+  pose proof (BProv_mp translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm)
+    (rename (inst (rho k)) (formulaAt (upVarMap rho) a))
+    himp hdom) as hbody.
+  rewrite <- formulaAt_subst_instTerm_var in hbody.
+  exact hbody.
+Qed.
+
+Lemma BProv_formulaAt_allE_slot_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx Gamma (rename (inst k) domainForm) ->
+  BProv translatedPAAx Gamma
+    (rename (inst k) (formulaAt (upVarMap rho) a)).
+Proof.
+  intros Gamma rho a k hall hdom.
+  change (BProv translatedPAAx Gamma
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))) in hall.
+  pose proof (BProv_allE translatedPAAx Gamma
+    (fImp domainForm (formulaAt (upVarMap rho) a)) k hall) as himp.
+  change (BProv translatedPAAx Gamma
+    (fImp (rename (inst k) domainForm)
+      (rename (inst k) (formulaAt (upVarMap rho) a)))) in himp.
+  exact (BProv_mp translatedPAAx Gamma
+    (rename (inst k) domainForm)
+    (rename (inst k) (formulaAt (upVarMap rho) a)) himp hdom).
+Qed.
+
+Lemma BProv_formulaAt_slot_eqElim_context :
+  forall Gamma rho a i j,
+  BProv translatedPAAx Gamma (fEq i j) ->
+  BProv translatedPAAx Gamma
+    (rename (inst i) (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx Gamma
+    (rename (inst j) (formulaAt (upVarMap rho) a)).
+Proof.
+  intros Gamma rho a i j heq hbody.
+  exact (BProv_eqElim translatedPAAx Gamma i j
+    (formulaAt (upVarMap rho) a) heq hbody).
+Qed.
+
+Lemma BProv_formulaAt_allE_equal_slot_context :
+  forall Gamma rho a i j,
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx Gamma (rename (inst i) domainForm) ->
+  BProv translatedPAAx Gamma (fEq i j) ->
+  BProv translatedPAAx Gamma
+    (rename (inst j) (formulaAt (upVarMap rho) a)).
+Proof.
+  intros Gamma rho a i j hall hdom heq.
+  apply (BProv_formulaAt_slot_eqElim_context Gamma rho a i j heq).
+  exact (BProv_formulaAt_allE_slot_context Gamma rho a i hall hdom).
+Qed.
+
+Lemma BProv_formulaAt_allE_var_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx Gamma (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)).
+Proof.
+  intros Gamma rho a k hall hdom.
+  pose proof (BProv_formulaAt_allE_slot_context Gamma rho a (rho k)
+    hall hdom) as hbody.
+  rewrite <- formulaAt_subst_instTerm_var in hbody.
+  exact hbody.
+Qed.
+
+Lemma BProv_formulaAt_allE_var_domainContext :
+  forall rho n G a k,
+  k < n ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)) ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)).
+Proof.
+  intros rho n G a k hk hall.
+  apply BProv_formulaAt_allE_var_context.
+  - exact hall.
+  - apply BProv_domainContextAt_var.
+    exact hk.
+Qed.
+
+Lemma BProv_formulaAt_exI_raw : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst k)
+      (fAnd domainForm (formulaAt (upVarMap rho) a))) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)).
+Proof.
+  intros rho G a k [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ translateContextAt rho G)
+    (fEx (fAnd domainForm (formulaAt (upVarMap rho) a)))).
+  exact (P_exI (L ++ translateContextAt rho G)
+    (fAnd domainForm (formulaAt (upVarMap rho) a)) k hp).
+Qed.
+
+Lemma BProv_formulaAt_exI_var : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)).
+Proof.
+  intros rho G a k hdom hbody.
+  rewrite formulaAt_subst_instTerm_var in hbody.
+  pose proof (BProv_andI translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm)
+    (rename (inst (rho k)) (formulaAt (upVarMap rho) a))
+    hdom hbody) as hand.
+  change (BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k))
+      (fAnd domainForm (formulaAt (upVarMap rho) a)))) in hand.
+  exact (BProv_formulaAt_exI_raw rho G a (rho k) hand).
+Qed.
+
+Lemma BProv_formulaAt_exI_slot_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (rename (inst k) domainForm) ->
+  BProv translatedPAAx Gamma
+    (rename (inst k) (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a)).
+Proof.
+  intros Gamma rho a k hdom hbody.
+  pose proof (BProv_andI translatedPAAx Gamma
+    (rename (inst k) domainForm)
+    (rename (inst k) (formulaAt (upVarMap rho) a))
+    hdom hbody) as hand.
+  change (BProv translatedPAAx Gamma
+    (rename (inst k)
+      (fAnd domainForm (formulaAt (upVarMap rho) a)))) in hand.
+  pose proof (BProv_exI translatedPAAx Gamma
+    (fAnd domainForm (formulaAt (upVarMap rho) a)) k hand) as hex.
+  change (BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a))) in hex.
+  exact hex.
+Qed.
+
+Lemma BProv_formulaAt_exI_equal_slot_context :
+  forall Gamma rho a i j,
+  BProv translatedPAAx Gamma (rename (inst j) domainForm) ->
+  BProv translatedPAAx Gamma (fEq i j) ->
+  BProv translatedPAAx Gamma
+    (rename (inst i) (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a)).
+Proof.
+  intros Gamma rho a i j hdom heq hbody.
+  apply (BProv_formulaAt_exI_slot_context Gamma rho a j hdom).
+  exact (BProv_formulaAt_slot_eqElim_context Gamma rho a i j heq hbody).
+Qed.
+
+Lemma BProv_formulaAt_exI_var_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)) ->
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a)).
+Proof.
+  intros Gamma rho a k hdom hbody.
+  rewrite formulaAt_subst_instTerm_var in hbody.
+  exact (BProv_formulaAt_exI_slot_context Gamma rho a (rho k) hdom hbody).
+Qed.
+
+Lemma BProv_formulaAt_exI_var_domainContext :
+  forall rho n G a k,
+  k < n ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)) ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)).
+Proof.
+  intros rho n G a k hk hbody.
+  apply (BProv_formulaAt_exI_var_context
+    (domainContextAt rho n ++ translateContextAt rho G) rho a k).
+  - apply BProv_domainContextAt_var.
+    exact hk.
+  - exact hbody.
+Qed.
+
+Lemma BProv_formulaAt_exE_raw : forall rho G a c,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)) ->
+  BProv translatedPAAx
+    (fAnd domainForm (formulaAt (upVarMap rho) a) ::
+      map (rename S) (translateContextAt rho G))
+    (rename S (formulaAt rho c)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho c).
+Proof.
+  intros rho G a c [Le [hLe hpe]] [Lb [hLb hpb]].
+  change (Prov (Le ++ translateContextAt rho G)
+    (fEx (fAnd domainForm (formulaAt (upVarMap rho) a)))) in hpe.
+  pose proof (map_rename_S_eq_of_translatedPAAx_list Lb hLb) as hLbmap.
+  exists (Le ++ Lb).
+  split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ translateContextAt rho G)
+      (fAnd domainForm (formulaAt (upVarMap rho) a))
+      (formulaAt rho c)).
+    + apply (Prov_weaken (Le ++ translateContextAt rho G)
+        (fEx (fAnd domainForm (formulaAt (upVarMap rho) a))) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken
+        (Lb ++
+          fAnd domainForm (formulaAt (upVarMap rho) a) ::
+          map (rename S) (translateContextAt rho G))
+        (rename S (formulaAt rho c)) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right. rewrite map_app. apply in_app_iff. left.
+        rewrite map_app. apply in_app_iff. right.
+        rewrite hLbmap. exact hx.
+      * left. exact hx.
+      * right. rewrite map_app. apply in_app_iff. right. exact hx.
+Qed.
+
+Lemma BProv_formulaAt_exE : forall rho G a c,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)) ->
+  BProv translatedPAAx
+    (formulaAt (upVarMap rho) a ::
+      translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) (PA.Formula.rename S c)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho c).
+Proof.
+  intros rho G a c hex hbody.
+  rewrite translateContextAt_rename_succ_upVarMap in hbody.
+  rewrite formulaAt_rename_succ_upVarMap in hbody.
+  set (body := formulaAt (upVarMap rho) a).
+  set (shiftedContext := map (rename S) (translateContextAt rho G)).
+  set (rawAssumption := fAnd domainForm body).
+  set (rawContext := rawAssumption :: shiftedContext).
+  assert (hrawAssumption : BProv translatedPAAx rawContext rawAssumption).
+  {
+    apply BProv_of_Prov.
+    apply P_ass.
+    unfold rawContext.
+    simpl.
+    left. reflexivity.
+  }
+  assert (hraw : BProv translatedPAAx rawContext
+      (rename S (formulaAt rho c))).
+  {
+    eapply BProv_lift.
+    - exact hbody.
+    - intros b hb.
+      exact (BProv_ax translatedPAAx rawContext b hb).
+    - intros g hg.
+      simpl in hg.
+      destruct hg as [hg | hg].
+      + subst g.
+        unfold rawAssumption in hrawAssumption.
+        exact (BProv_andE2 translatedPAAx rawContext domainForm body
+          hrawAssumption).
+      + apply BProv_of_Prov.
+        apply P_ass.
+        unfold rawContext.
+        simpl.
+        right. exact hg.
+  }
+  subst rawContext rawAssumption shiftedContext body.
+  exact (BProv_formulaAt_exE_raw rho G a c hex hraw).
+Qed.
+
+Lemma BProv_formulaAt_exE_domainContext_of_sentences :
+  forall (B : form -> Prop) rho n G a c,
+  Sentences B ->
+  BProv B (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)) ->
+  BProv B
+    (domainContextAt (upVarMap rho) (S n) ++
+      translateContextAt (upVarMap rho)
+        (a :: map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) (PA.Formula.rename S c)) ->
+  BProv B (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho c).
+Proof.
+  intros B rho n G a c hB hex hbody.
+  set (body := formulaAt (upVarMap rho) a).
+  set (baseContext := domainContextAt rho n ++ translateContextAt rho G).
+  set (shiftedDomain := map (rename S) (domainContextAt rho n)).
+  set (shiftedContext := map (rename S) (translateContextAt rho G)).
+  set (rawAssumption := fAnd domainForm body).
+  set (rawContext := rawAssumption :: map (rename S) baseContext).
+  assert (hbodyShift : BProv B
+      (domainForm :: shiftedDomain ++ body :: shiftedContext)
+      (rename S (formulaAt rho c))).
+  {
+    subst body shiftedDomain shiftedContext.
+    rewrite domainContextAt_upVarMap_succ in hbody.
+    change (translateContextAt (upVarMap rho)
+      (a :: map (PA.Formula.rename S) G)) with
+      (formulaAt (upVarMap rho) a ::
+        translateContextAt (upVarMap rho)
+          (map (PA.Formula.rename S) G)) in hbody.
+    rewrite translateContextAt_rename_succ_upVarMap in hbody.
+    rewrite formulaAt_rename_succ_upVarMap in hbody.
+    cbn in hbody.
+    exact hbody.
+  }
+  assert (hrawAssumption : BProv B rawContext rawAssumption).
+  {
+    apply BProv_of_Prov.
+    apply P_ass.
+    unfold rawContext.
+    simpl.
+    left. reflexivity.
+  }
+  assert (hraw : BProv B rawContext (rename S (formulaAt rho c))).
+  {
+    eapply BProv_lift.
+    - exact hbodyShift.
+    - intros b hb.
+      exact (BProv_ax B rawContext b hb).
+    - intros g hg.
+      simpl in hg.
+      destruct hg as [hg | hg].
+      + subst g.
+        unfold rawAssumption in hrawAssumption.
+        exact (BProv_andE1 B rawContext domainForm body hrawAssumption).
+      + apply in_app_iff in hg.
+        destruct hg as [hgDomain | hg].
+        * apply BProv_of_Prov.
+          apply P_ass.
+          unfold rawContext, baseContext, shiftedDomain in *.
+          simpl.
+          right.
+          rewrite map_app.
+          apply in_app_iff.
+          left. exact hgDomain.
+        * simpl in hg.
+          destruct hg as [hg | hgContext].
+          -- subst g.
+             unfold rawAssumption in hrawAssumption.
+             exact (BProv_andE2 B rawContext domainForm body hrawAssumption).
+          -- apply BProv_of_Prov.
+             apply P_ass.
+             unfold rawContext, baseContext, shiftedContext in *.
+             simpl.
+             right.
+             rewrite map_app.
+             apply in_app_iff.
+             right. exact hgContext.
+  }
+  change (BProv B baseContext (fEx rawAssumption)) in hex.
+  change (BProv B baseContext (formulaAt rho c)).
+  exact (BProv_exE_of_sentences B baseContext rawAssumption
+    (formulaAt rho c) hB hex hraw).
+Qed.
+
+Lemma BProv_formulaAt_of_Prov_with_term_rules :
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pAll a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEx a))) ->
+  (forall rho G t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq t t))) ->
+  (forall rho G s t a,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq s t)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm s) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  forall G phi,
+  PA.Formula.Prov G phi ->
+  forall rho,
+    BProv translatedPAAx (translateContextAt rho G) (formulaAt rho phi).
+Proof.
+  intros hAllE hExI hEqRefl hEqElim G phi h.
+  induction h; intro rho; simpl.
+  - apply BProv_formulaAt_ass. exact H.
+  - apply BProv_formulaAt_impI. exact (IHh rho).
+  - eapply BProv_formulaAt_impE.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+  - eapply BProv_formulaAt_botE.
+    exact (IHh rho).
+  - apply BProv_formulaAt_lem.
+  - apply BProv_formulaAt_andI.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+  - eapply BProv_formulaAt_andE1.
+    exact (IHh rho).
+  - eapply BProv_formulaAt_andE2.
+    exact (IHh rho).
+  - apply BProv_formulaAt_orI1.
+    exact (IHh rho).
+  - apply BProv_formulaAt_orI2.
+    exact (IHh rho).
+  - eapply BProv_formulaAt_orE.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+    + exact (IHh3 rho).
+  - apply BProv_formulaAt_allI.
+    exact (IHh (upVarMap rho)).
+  - apply hAllE.
+    exact (IHh rho).
+  - eapply hExI.
+    exact (IHh rho).
+  - eapply BProv_formulaAt_exE.
+    + exact (IHh1 rho).
+    + exact (IHh2 (upVarMap rho)).
+  - apply hEqRefl.
+  - eapply hEqElim.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+Qed.
+
+Lemma BProv_formulaAt_of_PA_BProv_with_term_rules :
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pAll a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEx a))) ->
+  (forall rho G t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq t t))) ->
+  (forall rho G s t a,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq s t)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm s) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  forall phi,
+  PA.Formula.BProv PA.Formula.Ax_s [] phi ->
+  forall rho,
+    BProv translatedPAAx [] (formulaAt rho phi).
+Proof.
+  intros hAllE hExI hEqRefl hEqElim phi [L [hL hp]] rho.
+  rewrite app_nil_r in hp.
+  pose proof (BProv_formulaAt_of_Prov_with_term_rules
+    hAllE hExI hEqRefl hEqElim L phi hp rho) as htranslated.
+  eapply BProv_lift.
+  - exact htranslated.
+  - intros b hb.
+    apply BProv_ax.
+    exact hb.
+  - intros g hg.
+    unfold translateContextAt in hg.
+    apply in_map_iff in hg.
+    destruct hg as [psi [hg hpsi]].
+    subst g.
+    exact (BProv_formulaAt_ax rho psi (hL psi hpsi)).
 Qed.
 
 Lemma BProv_translate_impI : forall G a b,
@@ -13745,6 +16532,26 @@ Proof.
   destruct hx as [hx | hx].
   - left. rewrite hLmap. exact hx.
   - right. exact hx.
+Qed.
+
+Lemma BProv_translate_allE_raw : forall G a k,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAll a)) ->
+  BProv translatedPAAx (translateContext G)
+    (rename (inst k)
+      (fImp domainForm (formulaAt (upVarMap (fun n => n)) a))).
+Proof.
+  intros G a k [L [hL hp]].
+  change (Prov (L ++ translateContext G)
+    (fAll (fImp domainForm
+      (formulaAt (upVarMap (fun n : nat => n)) a)))) in hp.
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ translateContext G)
+    (rename (inst k)
+      (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))).
+  exact (P_allE (L ++ translateContext G)
+    (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)) k hp).
 Qed.
 
 Lemma BProv_translate_exI_raw : forall G a k,

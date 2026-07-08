@@ -47,11 +47,23 @@ open SetTheory
 #check @BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
 #check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
+#check @BusyBeaver.KnownValues.sigma1Champion_haltsWithScore
+#check @BusyBeaver.KnownValues.sigma2Champion_haltsWithScore
+#check @BusyBeaver.KnownValues.sigma3Champion_haltsWithScore
+#check @BusyBeaver.KnownValues.sigma4Champion_haltsWithScore
+#check @BusyBeaver.KnownValues.upperBound_one
+#check @BusyBeaver.KnownValues.sigma_one_eq_one
+#check @BusyBeaver.KnownValues.a028444_values_through_four_from_upperBounds
+#check @BusyBeaver.KnownValues.a028444_values_through_four_from_remainingUpperBounds
 #print axioms BusyBeaver.sigma_mono_of_pos
 #print axioms BusyBeaver.score_le_sigma_of_atMost
 #print axioms BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
 #print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
+#print axioms BusyBeaver.KnownValues.sigma4Champion_haltsWithScore
+#print axioms BusyBeaver.KnownValues.sigma_one_eq_one
+#print axioms BusyBeaver.KnownValues.a028444_values_through_four_from_upperBounds
+#print axioms BusyBeaver.KnownValues.a028444_values_through_four_from_remainingUpperBounds
 
 -- PA/HF Ackermann/von-Neumann semantic bi-interpretability checkpoint
 #check @PA.Formula.Ax
