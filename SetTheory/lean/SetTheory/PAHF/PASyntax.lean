@@ -25838,6 +25838,45 @@ successor of the opened IH witness. -/
 def strictHighOddOpenedWitnessSuccLowMemFormula : Formula :=
   subst (instTerm strictHighOddSuccWitnessTerm) (hfMemAt 0 2)
 
+/-- Final-bit body inside the substituted low-membership assumption
+`S x ∈ low`. -/
+def strictHighOddOpenedWitnessSuccLowMemBitBody : Formula :=
+  and
+    (oneAt 0)
+    (betaDiv2BitAt 0 2 1 (0+3))
+
+/-- Trace tail inside the substituted low-membership assumption `S x ∈ low`. -/
+def strictHighOddOpenedWitnessSuccLowMemTraceTail : Formula :=
+  and
+    (betaDiv2StepsThroughAt 1 0 (0+2))
+    (ex strictHighOddOpenedWitnessSuccLowMemBitBody)
+
+/-- Unsubstituted membership body whose two existential witnesses are opened
+from `strictHighOddOpenedWitnessSuccLowMemFormula`. -/
+def strictHighOddOpenedWitnessSuccLowMemBody : Formula :=
+  and
+    (betaAtConstIdx (2+2) 1 0 0)
+    strictHighOddOpenedWitnessSuccLowMemTraceTail
+
+/-- First opened witness formula in the substituted `S x ∈ low` assumption. -/
+def strictHighOddOpenedWitnessSuccLowMemStepEx : Formula :=
+  subst (Term.upSubst (instTerm strictHighOddSuccWitnessTerm))
+    (ex strictHighOddOpenedWitnessSuccLowMemBody)
+
+/-- Fully opened code/step body of the substituted `S x ∈ low` assumption. -/
+def strictHighOddOpenedWitnessSuccLowMemStepBody : Formula :=
+  subst (Term.upSubst (Term.upSubst
+      (instTerm strictHighOddSuccWitnessTerm)))
+    strictHighOddOpenedWitnessSuccLowMemBody
+
+/-- Context after opening the code and step witnesses in
+`strictHighOddOpenedWitnessSuccLowMemFormula`. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+    (G : List Formula) : List Formula :=
+  strictHighOddOpenedWitnessSuccLowMemStepBody ::
+    (strictHighOddOpenedWitnessSuccLowMemStepEx ::
+      G.map (rename Nat.succ)).map (rename Nat.succ)
+
 /-- Old low-half membership formula that closes the odd-high carry branch
 against the negative half of the opened IH witness. -/
 def strictHighOddOpenedWitnessLowHalfMemFormula (lowHalf : Nat) :
@@ -27000,42 +27039,13 @@ renamed through those two binders. -/
 theorem
     BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_elim_opened_code_step
     {G : List Formula} {target : Formula}
-    (hopened :
-      let σ : Nat → Term := instTerm strictHighOddSuccWitnessTerm
-      let bitBody : Formula :=
-        and
-          (oneAt 0)
-          (betaDiv2BitAt 0 2 1 (0+3))
-      let tail : Formula :=
-        and
-          (betaDiv2StepsThroughAt 1 0 (0+2))
-          (ex bitBody)
-      let body : Formula :=
-        and
-          (betaAtConstIdx (2+2) 1 0 0)
-          tail
-      let stepEx : Formula := subst (Term.upSubst σ) (ex body)
-      let stepBody : Formula := subst (Term.upSubst (Term.upSubst σ)) body
-      BProv Ax_s (stepBody :: (stepEx :: G.map (rename Nat.succ)).map
-          (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target)))
+    (hopened : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      (rename Nat.succ (rename Nat.succ target)))
     (hmem : BProv Ax_s G strictHighOddOpenedWitnessSuccLowMemFormula) :
     BProv Ax_s G target := by
-  let σ : Nat → Term := instTerm strictHighOddSuccWitnessTerm
-  let bitBody : Formula :=
-    and
-      (oneAt 0)
-      (betaDiv2BitAt 0 2 1 (0+3))
-  let tail : Formula :=
-    and
-      (betaDiv2StepsThroughAt 1 0 (0+2))
-      (ex bitBody)
-  let body : Formula :=
-    and
-      (betaAtConstIdx (2+2) 1 0 0)
-      tail
-  let stepEx : Formula := subst (Term.upSubst σ) (ex body)
-  let stepBody : Formula := subst (Term.upSubst (Term.upSubst σ)) body
+  let stepEx : Formula := strictHighOddOpenedWitnessSuccLowMemStepEx
+  let stepBody : Formula := strictHighOddOpenedWitnessSuccLowMemStepBody
   have houter : BProv Ax_s (stepEx :: G.map (rename Nat.succ))
       (rename Nat.succ target) := by
     have hex : BProv Ax_s (stepEx :: G.map (rename Nat.succ)) stepEx :=
@@ -27045,17 +27055,46 @@ theorem
         (stepBody :: (stepEx :: G.map (rename Nat.succ)).map
           (rename Nat.succ))
         (rename Nat.succ (rename Nat.succ target)) := by
-      simpa [σ, bitBody, tail, body, stepEx, stepBody] using hopened
+      simpa [stepEx, stepBody,
+        strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext] using hopened
     exact BProv_exE_of_sentences
       (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
       hex (by
-        simpa [stepEx, stepBody, subst, rename] using hinner)
+        simpa [stepEx, stepBody,
+          strictHighOddOpenedWitnessSuccLowMemStepEx,
+          strictHighOddOpenedWitnessSuccLowMemStepBody,
+          subst, rename] using hinner)
   have hmemEx : BProv Ax_s G (ex stepEx) := by
-    simpa [strictHighOddOpenedWitnessSuccLowMemFormula, σ, hfMemAt,
-      bitBody, tail, body, stepEx, subst] using hmem
+    simpa [strictHighOddOpenedWitnessSuccLowMemFormula,
+      strictHighOddOpenedWitnessSuccLowMemStepEx,
+      strictHighOddOpenedWitnessSuccLowMemBody,
+      strictHighOddOpenedWitnessSuccLowMemTraceTail,
+      strictHighOddOpenedWitnessSuccLowMemBitBody,
+      hfMemAt, stepEx, subst] using hmem
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hmemEx (by simpa [stepEx] using houter)
+
+/-- Open the head assumption `S x ∈ low` in a context.  This is the common
+form used by the low-half component obligations: callers work in the fully
+opened code/step context and the theorem closes the two existential
+eliminations. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_assumption_elim_opened_code_step
+    {G : List Formula} {target : Formula}
+    (hopened : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula :: G))
+      (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemFormula :: G)
+      target := by
+  let C : List Formula := strictHighOddOpenedWitnessSuccLowMemFormula :: G
+  have hmem : BProv Ax_s C strictHighOddOpenedWitnessSuccLowMemFormula :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  exact BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_elim_opened_code_step
+    (G := C) (target := target)
+    (by simpa [C] using hopened)
+    hmem
 
 /-- Low-side closer for the odd-high carry branch.
 
