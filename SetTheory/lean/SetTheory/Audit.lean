@@ -245,6 +245,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_mulRightNumeral_numeral
 #check @PA.Formula.BProv_Ax_s_mulNumerals
 #check @PA.Formula.BProv_Ax_s_leAt_of_eq
+#check @PA.Formula.BProv_Ax_s_leAt_of_eqConst_zero_left
 #check @PA.Formula.BProv_Ax_s_leAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_leAt_of_ltAt

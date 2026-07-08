@@ -10730,6 +10730,32 @@ theorem BProv_Ax_s_leAt_of_eq {G : List Formula} {a b : Nat}
         (Term.var (b+1)))
       (t := Term.zero) hbody)
 
+/-- If the left slot is `0`, PA proves it is below any right slot. -/
+theorem BProv_Ax_s_leAt_of_eqConst_zero_left {G : List Formula} {a b : Nat}
+    (ha : BProv Ax_s G (eqConstAt a 0)) :
+    BProv Ax_s G (leAt a b) := by
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.var b))
+        (Term.add Term.zero (Term.var b))) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eq_congr_add_left (Term.var b) ha
+  have hzeroAdd : BProv Ax_s G
+      (eq (Term.add Term.zero (Term.var b)) (Term.var b)) :=
+    BProv_Ax_s_zero_add_term (Term.var b)
+  have htarget : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.var b)) (Term.var b)) :=
+    BProv_eqTrans hleft hzeroAdd
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.var b))
+        (eq (Term.add (Term.var (a+1)) (Term.var 0))
+          (Term.var (b+1)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+  simpa [leAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := eq (Term.add (Term.var (a+1)) (Term.var 0))
+        (Term.var (b+1)))
+      (t := Term.var b) hbody)
+
 /-- From PA proofs that two slots contain fixed numerals, derive the corresponding
 `leAt` relation by exhibiting the difference as witness. -/
 theorem BProv_Ax_s_leAt_of_eqConst {G : List Formula}
