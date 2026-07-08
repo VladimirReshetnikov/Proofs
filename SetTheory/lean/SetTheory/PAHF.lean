@@ -15623,6 +15623,346 @@ theorem BProv_Ax_s_hfMemAt_pred_opened_body_bitEx
     instTerm, Term.subst, Term.upSubst, rename, Term.rename, SetTheory.up,
     succBody, succCtx, bodyCtx, body, tail, bitBody] using hbitCtx
 
+/-- In the successor branch of the opened `hfMemZeroSetAt` code/step
+witnesses, the initial term-output beta-entry component remains available. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_entry
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx)
+      (betaTermAtConstIdx Term.zero 1 0 0) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hentry : BProv Ax_s bodyCtx
+      (betaTermAtConstIdx Term.zero 1 0 0) := by
+    simpa [bitBody, tail, body, bodyCtx] using
+      (BProv_Ax_s_hfMemZeroSetAt_opened_body_entry
+        (G := G) (elem := elem))
+  exact BProv_context_cons (B := Ax_s) hentry
+
+/-- In the successor branch of the opened `hfMemZeroSetAt` code/step
+witnesses, the bounded halving-trace component remains available. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_steps
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx)
+      (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hsteps : BProv Ax_s bodyCtx
+      (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
+    simpa [bitBody, tail, body, bodyCtx] using
+      (BProv_Ax_s_hfMemZeroSetAt_opened_body_steps
+        (G := G) (elem := elem))
+  exact BProv_context_cons (B := Ax_s) hsteps
+
+/-- In the successor branch of the opened `hfMemZeroSetAt` code/step
+witnesses, the final-bit existential component remains available. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_bitEx
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx)
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3)))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbitEx : BProv Ax_s bodyCtx
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3)))) := by
+    simpa [bitBody, tail, body, bodyCtx] using
+      (BProv_Ax_s_hfMemZeroSetAt_opened_body_bitEx
+        (G := G) (elem := elem))
+  exact BProv_context_cons (B := Ax_s) hbitEx
+
+/-- In the predecessor-opened successor branch of `hfMemZeroSetAt`, the
+explicit successor equation is available as the head assumption. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_pred_opened_step_succ
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    let succCtx : List Formula := succPredAt 0 :: bodyCtx
+    let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+    BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (eq (Term.var 1) (Term.succ (Term.var 0))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  exact BProv_ass (B := Ax_s)
+    (G := succBody :: succCtx.map (rename Nat.succ))
+    (by simp [succBody])
+
+/-- In the predecessor-opened successor branch of `hfMemZeroSetAt`, the
+initial term-output beta-entry component is still available, shifted through
+the predecessor binder. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_pred_opened_body_entry
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    let succCtx : List Formula := succPredAt 0 :: bodyCtx
+    let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+    BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (betaTermAtConstIdx Term.zero 2 1 0) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  have hentrySucc : BProv Ax_s succCtx
+      (betaTermAtConstIdx Term.zero 1 0 0) := by
+    simpa [bitBody, tail, body, bodyCtx, succCtx] using
+      (BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_entry
+        (G := G) (elem := elem))
+  have hentryRen : BProv Ax_s (succCtx.map (rename Nat.succ))
+      (rename Nat.succ (betaTermAtConstIdx Term.zero 1 0 0)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hentrySucc Nat.succ
+  have hentryCtx : BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (rename Nat.succ (betaTermAtConstIdx Term.zero 1 0 0)) :=
+    BProv_context_cons (B := Ax_s) hentryRen
+  simpa [betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaAtConstIdx, betaAt, remAt, ltAt, eqConstAt, betaModTerm,
+    rename, Term.rename, SetTheory.up, succBody, succCtx, bodyCtx, body,
+    tail, bitBody] using hentryCtx
+
+/-- In the predecessor-opened successor branch of `hfMemZeroSetAt`, the
+bounded halving trace component is still available, shifted through the
+predecessor binder. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_pred_opened_body_steps
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    let succCtx : List Formula := succPredAt 0 :: bodyCtx
+    let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+    BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (betaDiv2StepsThroughAt 2 1 (elem+3)) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  have hstepsSucc : BProv Ax_s succCtx
+      (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
+    simpa [bitBody, tail, body, bodyCtx, succCtx] using
+      (BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_steps
+        (G := G) (elem := elem))
+  have hstepsRen : BProv Ax_s (succCtx.map (rename Nat.succ))
+      (rename Nat.succ (betaDiv2StepsThroughAt 1 0 (elem+2))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstepsSucc Nat.succ
+  have hstepsCtx : BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (rename Nat.succ (betaDiv2StepsThroughAt 1 0 (elem+2))) :=
+    BProv_context_cons (B := Ax_s) hstepsRen
+  simpa [betaDiv2StepsThroughAt, leAt, betaDiv2StepWitnessAt,
+    betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt, zeroAt,
+    oneAt, eqConstAt, betaModTerm, rename, Term.rename, SetTheory.up,
+    succBody, succCtx, bodyCtx, body, tail, bitBody] using hstepsCtx
+
+/-- In the predecessor-opened successor branch of `hfMemZeroSetAt`, the
+final-bit existential component is still available, shifted through the
+predecessor binder. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_pred_opened_body_bitEx
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    let succCtx : List Formula := succPredAt 0 :: bodyCtx
+    let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+    BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 3 2 (elem+4)))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  have hbitSucc : BProv Ax_s succCtx
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3)))) := by
+    simpa [bitBody, tail, body, bodyCtx, succCtx] using
+      (BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_bitEx
+        (G := G) (elem := elem))
+  have hbitRen : BProv Ax_s (succCtx.map (rename Nat.succ))
+      (rename Nat.succ
+        (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3))))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hbitSucc Nat.succ
+  have hbitCtx : BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (rename Nat.succ
+        (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3))))) :=
+    BProv_context_cons (B := Ax_s) hbitRen
+  simpa [betaDiv2BitAt, betaDiv2StepsThroughAt, betaDiv2StepWitnessAt,
+    betaAtSuccIdx, betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm, subst,
+    instTerm, Term.subst, Term.upSubst, rename, Term.rename, SetTheory.up,
+    succBody, succCtx, bodyCtx, body, tail, bitBody] using hbitCtx
+
 /-- Reduce an `hfMemAt` contradiction to the predecessor-opened successor
 branch of the code/step witness. -/
 theorem BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
