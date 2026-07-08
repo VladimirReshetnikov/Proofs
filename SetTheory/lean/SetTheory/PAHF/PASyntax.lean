@@ -25646,6 +25646,27 @@ def strictHighOddSuccHalfCode (highHalf : Nat) : Term :=
 def strictHighOddSuccCarryTargetFormula (highHalf : Nat) : Formula :=
   hfSomeDistinguishesTermAt (strictHighOddSuccHalfCode highHalf) 0
 
+/-- Context obtained by opening the predecessor-high IH witness in the
+odd-high/even-low strict successor carry branch. -/
+def strictHighOddLowDoubleOpenedIHContext
+    (highHalf lowHalf : Nat) : List Formula :=
+  hfDistinguishesAt 0 (1+1) (lowHalf+1) ::
+    (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf).map
+      (rename Nat.succ)
+
+/-- Context obtained by opening the predecessor-high IH witness in the
+odd-high/odd-low strict successor carry branch. -/
+def strictHighOddLowOddOpenedIHContext
+    (highHalf lowHalf : Nat) : List Formula :=
+  hfDistinguishesAt 0 (1+1) (lowHalf+1) ::
+    (strictHighOddLowOddSuccCarryContext highHalf lowHalf).map
+      (rename Nat.succ)
+
+/-- Shifted target formula used after opening an odd-high strict carry IH
+witness. -/
+def strictHighOddOpenedIHTargetFormula (highHalf : Nat) : Formula :=
+  rename Nat.succ (strictHighOddSuccCarryTargetFormula highHalf)
+
 /-- High-even/low-odd strict branch with the positive-membership carry reduced
 to explicit beta components for caller-supplied successor-trace witnesses.
 
@@ -26647,6 +26668,69 @@ theorem
         at hf ⊢
       exact Or.inr (Or.inr hf))
     hbase
+
+/-- Odd-high/even-low carry branch with the predecessor-high IH witness opened.
+
+The body premise is the genuine remaining carry transport obligation, in the
+fresh-witness context named by `strictHighOddLowDoubleOpenedIHContext`.  This
+wrapper only performs the existential elimination after extracting the IH
+witness from the strict successor assumptions. -/
+theorem BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_opened_ih
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hbody : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedIHTargetFormula highHalf)) :
+    BProv Ax_s (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) := by
+  have hsome :
+      BProv Ax_s
+        (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+        (hfSomeDistinguishesAt 1 lowHalf) :=
+    BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half_in_high_odd_low_double_context
+      (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+      hlowStep
+  exact BProv_hfSomeDistinguishesAt_elim
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+    (target := strictHighOddSuccCarryTargetFormula highHalf)
+    (high := 1) (low := lowHalf)
+    hsome
+    (by
+      simpa [strictHighOddLowDoubleOpenedIHContext,
+        strictHighOddOpenedIHTargetFormula] using hbody)
+
+/-- Odd-high/odd-low carry branch with the predecessor-high IH witness opened.
+
+As in the even-low branch, the shifted body premise is intentionally explicit:
+the theorem contributes only the reusable proof plumbing around the strict
+successor IH. -/
+theorem BProv_Ax_s_strictHighOddLowOddSuccCarry_of_opened_ih
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hbody : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedIHTargetFormula highHalf)) :
+    BProv Ax_s (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) := by
+  have hsome :
+      BProv Ax_s
+        (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+        (hfSomeDistinguishesAt 1 lowHalf) :=
+    BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half_in_high_odd_low_odd_context
+      (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+      hlowStep
+  exact BProv_hfSomeDistinguishesAt_elim
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+    (target := strictHighOddSuccCarryTargetFormula highHalf)
+    (high := 1) (low := lowHalf)
+    hsome
+    (by
+      simpa [strictHighOddLowOddOpenedIHContext,
+        strictHighOddOpenedIHTargetFormula] using hbody)
 
 /-- Reduce the open successor step for lower-code distinguishers to the two
 predecessor cases produced by `low < S high`: either `low < high`, or
