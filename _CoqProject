@@ -30,3 +30,4 @@ CoqProofs/EquationalLogic.v
 CoqProofs/WolframBooleanCertificates.v
 CoqProofs/WolframBooleanHuntingtonCertificates.v
 CoqProofs/WolframBoolean.v
+CoqProofs/A198683N12Bounds.v
