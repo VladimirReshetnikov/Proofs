@@ -58,6 +58,33 @@ theorem mem_succ_double_not_mem_succ_odd_double_of_mem_not_mem
   exact ⟨(mem_succ_double_iff x high).mpr hhigh,
     fun h => hlow ((mem_succ_odd_double_iff x low).mp h)⟩
 
+/-- A high-only bit remains high-only after the even/even positive-bit shift
+`high ↦ 2*high`, `low ↦ 2*low`. -/
+theorem mem_succ_double_not_mem_succ_double_of_mem_not_mem
+    {x high low : Nat} (hhigh : Mem x high) (hlow : ¬ Mem x low) :
+    Mem (x+1) (high + high) ∧
+      ¬ Mem (x+1) (low + low) := by
+  exact ⟨(mem_succ_double_iff x high).mpr hhigh,
+    fun h => hlow ((mem_succ_double_iff x low).mp h)⟩
+
+/-- A high-only bit remains high-only after the odd/even positive-bit shift
+`high ↦ 2*high+1`, `low ↦ 2*low`. -/
+theorem mem_succ_odd_double_not_mem_succ_double_of_mem_not_mem
+    {x high low : Nat} (hhigh : Mem x high) (hlow : ¬ Mem x low) :
+    Mem (x+1) (high + high + 1) ∧
+      ¬ Mem (x+1) (low + low) := by
+  exact ⟨(mem_succ_odd_double_iff x high).mpr hhigh,
+    fun h => hlow ((mem_succ_double_iff x low).mp h)⟩
+
+/-- A high-only bit remains high-only after the odd/odd positive-bit shift
+`high ↦ 2*high+1`, `low ↦ 2*low+1`. -/
+theorem mem_succ_odd_double_not_mem_succ_odd_double_of_mem_not_mem
+    {x high low : Nat} (hhigh : Mem x high) (hlow : ¬ Mem x low) :
+    Mem (x+1) (high + high + 1) ∧
+      ¬ Mem (x+1) (low + low + 1) := by
+  exact ⟨(mem_succ_odd_double_iff x high).mpr hhigh,
+    fun h => hlow ((mem_succ_odd_double_iff x low).mp h)⟩
+
 /-- Nonmembership is the closed Boolean value `false` of the corresponding
 Ackermann bit. -/
 theorem testBit_false_of_not_mem {x y : Nat} (h : ¬ Mem x y) :
