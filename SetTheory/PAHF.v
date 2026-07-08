@@ -7988,6 +7988,57 @@ Proof.
         exact hx.
 Qed.
 
+Lemma BProv_closeN_allE_rename : forall (B : formula -> Prop) G k phi r,
+  (forall n, Free n phi -> n < k) ->
+  BProv B G (closeN k phi) ->
+  BProv B G (rename r phi).
+Proof.
+  intros B G k.
+  induction k as [|k IH]; intros phi r hfree h.
+  - assert (hsent : Sentence phi).
+    {
+      intros n hn.
+      pose proof (hfree n hn) as hlt.
+      lia.
+    }
+    rewrite (rename_eq_of_sentence phi hsent r).
+    exact h.
+  - set (tail := fun n => r (S n)).
+    assert (hclosed : BProv B G (rename tail (pAll phi))).
+    {
+      apply (IH (pAll phi) tail).
+      - intros n hn.
+        simpl in hn.
+        pose proof (hfree (S n) hn) as hlt.
+        lia.
+      - simpl in h.
+        exact h.
+    }
+    change (BProv B G (pAll (rename (up tail) phi))) in hclosed.
+    pose proof (BProv_allE B G (rename (up tail) phi)
+      (tVar (r 0)) hclosed) as hinst.
+    rewrite subst_instTerm_var in hinst.
+    rewrite rename_comp in hinst.
+    replace (rename (fun n : nat => inst (r 0) (up tail n)) phi)
+      with (rename r phi) in hinst.
+    + exact hinst.
+    + apply rename_ext.
+      intros [|n]; unfold tail; reflexivity.
+Qed.
+
+Lemma BProv_sealPA_allE_rename : forall (B : formula -> Prop) G phi r,
+  BProv B G (sealPA phi) ->
+  BProv B G (rename r phi).
+Proof.
+  intros B G phi r h.
+  unfold sealPA in h.
+  apply (BProv_closeN_allE_rename B G (bound phi) phi r).
+  - intros n hn.
+    apply free_lt_bound.
+    exact hn.
+  - exact h.
+Qed.
+
 Lemma soundness_BProv : forall (M : Model) (B : formula -> Prop) G phi,
   BProv B G phi ->
   forall e : nat -> M,
@@ -8159,6 +8210,22 @@ Definition inductionForm (phi : formula) : formula :=
       (pAll (pImp phi (subst substSuccVar phi))))
     (pAll phi).
 
+Lemma BProv_inductionForm_mp : forall (B : formula -> Prop) G phi,
+  BProv B G (inductionForm phi) ->
+  BProv B G (subst substZero phi) ->
+  BProv B G (pAll (pImp phi (subst substSuccVar phi))) ->
+  BProv B G (pAll phi).
+Proof.
+  intros B G phi hind hzero hsucc.
+  unfold inductionForm in hind.
+  exact (BProv_mp B G
+    (pAnd (subst substZero phi)
+      (pAll (pImp phi (subst substSuccVar phi))))
+    (pAll phi) hind
+    (BProv_andI B G (subst substZero phi)
+      (pAll (pImp phi (subst substSuccVar phi))) hzero hsucc)).
+Qed.
+
 Definition Ax (f : formula) : Prop :=
   f = succInj \/ f = zeroNotSucc \/
   f = addZero \/ f = addSucc \/
@@ -8215,6 +8282,196 @@ Proof.
   unfold Ax_s.
   right. right. right. right. right. right.
   exists phi. reflexivity.
+Qed.
+
+Lemma BProv_Ax_s_of_sealPA_rename : forall phi,
+  Ax_s (sealPA phi) ->
+  forall r, BProv Ax_s [] (rename r phi).
+Proof.
+  intros phi hphi r.
+  apply (BProv_sealPA_allE_rename Ax_s [] phi r).
+  apply BProv_ax.
+  exact hphi.
+Qed.
+
+Lemma BProv_Ax_s_succInj_rename : forall r,
+  BProv Ax_s [] (rename r succInj).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename succInj Ax_s_succInj r).
+Qed.
+
+Lemma BProv_Ax_s_succInj : BProv Ax_s [] succInj.
+Proof.
+  pose proof (BProv_Ax_s_succInj_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_succInj_terms : forall s t,
+  BProv Ax_s [] (pImp
+    (pEq (tSucc s) (tSucc t))
+    (pEq s t)).
+Proof.
+  intros s t.
+  pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_succInj) as h1.
+  pose proof (BProv_allE Ax_s [] _ t h1) as h2.
+  simpl in h2.
+  repeat rewrite term_subst_instTerm_rename_succ in h2.
+  exact h2.
+Qed.
+
+Lemma BProv_Ax_s_zeroNotSucc_rename : forall r,
+  BProv Ax_s [] (rename r zeroNotSucc).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename
+    zeroNotSucc Ax_s_zeroNotSucc r).
+Qed.
+
+Lemma BProv_Ax_s_zeroNotSucc : BProv Ax_s [] zeroNotSucc.
+Proof.
+  pose proof (BProv_Ax_s_zeroNotSucc_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_zeroNotSucc_term : forall t,
+  BProv Ax_s [] (pImp (pEq (tSucc t) tZero) pBot).
+Proof.
+  intro t.
+  pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_zeroNotSucc) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addZero_rename : forall r,
+  BProv Ax_s [] (rename r addZero).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename addZero Ax_s_addZero r).
+Qed.
+
+Lemma BProv_Ax_s_addZero : BProv Ax_s [] addZero.
+Proof.
+  pose proof (BProv_Ax_s_addZero_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addZero_term : forall t,
+  BProv Ax_s [] (pEq (tAdd t tZero) t).
+Proof.
+  intro t.
+  pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_addZero) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addSucc_rename : forall r,
+  BProv Ax_s [] (rename r addSucc).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename addSucc Ax_s_addSucc r).
+Qed.
+
+Lemma BProv_Ax_s_addSucc : BProv Ax_s [] addSucc.
+Proof.
+  pose proof (BProv_Ax_s_addSucc_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_addSucc_terms : forall s t,
+  BProv Ax_s [] (pEq
+    (tAdd s (tSucc t))
+    (tSucc (tAdd s t))).
+Proof.
+  intros s t.
+  pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_addSucc) as h1.
+  pose proof (BProv_allE Ax_s [] _ t h1) as h2.
+  simpl in h2.
+  repeat rewrite term_subst_instTerm_rename_succ in h2.
+  exact h2.
+Qed.
+
+Lemma BProv_Ax_s_mulZero_rename : forall r,
+  BProv Ax_s [] (rename r mulZero).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename mulZero Ax_s_mulZero r).
+Qed.
+
+Lemma BProv_Ax_s_mulZero : BProv Ax_s [] mulZero.
+Proof.
+  pose proof (BProv_Ax_s_mulZero_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulZero_term : forall t,
+  BProv Ax_s [] (pEq (tMul t tZero) tZero).
+Proof.
+  intro t.
+  pose proof (BProv_allE Ax_s [] _ t BProv_Ax_s_mulZero) as h.
+  simpl in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulSucc_rename : forall r,
+  BProv Ax_s [] (rename r mulSucc).
+Proof.
+  intro r.
+  exact (BProv_Ax_s_of_sealPA_rename mulSucc Ax_s_mulSucc r).
+Qed.
+
+Lemma BProv_Ax_s_mulSucc : BProv Ax_s [] mulSucc.
+Proof.
+  pose proof (BProv_Ax_s_mulSucc_rename (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulSucc_terms : forall s t,
+  BProv Ax_s [] (pEq
+    (tMul s (tSucc t))
+    (tAdd (tMul s t) s)).
+Proof.
+  intros s t.
+  pose proof (BProv_allE Ax_s [] _ s BProv_Ax_s_mulSucc) as h1.
+  pose proof (BProv_allE Ax_s [] _ t h1) as h2.
+  simpl in h2.
+  repeat rewrite term_subst_instTerm_rename_succ in h2.
+  exact h2.
+Qed.
+
+Lemma BProv_Ax_s_inductionForm_rename : forall phi r,
+  BProv Ax_s [] (rename r (inductionForm phi)).
+Proof.
+  intros phi r.
+  exact (BProv_Ax_s_of_sealPA_rename
+    (inductionForm phi) (Ax_s_induction phi) r).
+Qed.
+
+Lemma BProv_Ax_s_inductionForm : forall phi,
+  BProv Ax_s [] (inductionForm phi).
+Proof.
+  intro phi.
+  pose proof (BProv_Ax_s_inductionForm_rename phi (fun n => n)) as h.
+  rewrite rename_id in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_induction_rule : forall G phi,
+  BProv Ax_s G (subst substZero phi) ->
+  BProv Ax_s G (pAll (pImp phi (subst substSuccVar phi))) ->
+  BProv Ax_s G (pAll phi).
+Proof.
+  intros G phi hzero hsucc.
+  pose proof (BProv_Ax_s_inductionForm phi) as hind_empty.
+  pose proof (BProv_mono Ax_s [] G (inductionForm phi)
+    (fun x hx => match hx with end) hind_empty) as hind.
+  exact (BProv_inductionForm_mp Ax_s G phi hind hzero hsucc).
 Qed.
 
 Lemma sat_substZero : forall (M : Model) phi (e : nat -> M),
