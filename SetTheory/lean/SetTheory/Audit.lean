@@ -368,6 +368,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaModTerm_idx_zero_of_step_succ
 #check @PA.Formula.BProv_Ax_s_eq_succ_eq_zero_bot
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_one_bot
+#check @PA.Formula.BProv_Ax_s_div2StepAt_dvd_two_one_bot
 #check @PA.Formula.BProv_Ax_s_div2StepAt_even_one_bot
 #check @PA.Formula.BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaModTerm_modEq_zero_bot

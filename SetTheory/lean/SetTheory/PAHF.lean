@@ -16567,6 +16567,22 @@ theorem BProv_Ax_s_eqConstAt_zero_one_bot
     simpa [eqConstAt, Term.numeral] using hzero
   exact BProv_Ax_s_eq_succ_eq_zero_bot hsucc hzero'
 
+/-- If the current halving value is divisible by `2`, a compatible halving
+step cannot output bit `1`.  This is the quotient-independent core behind the
+even-current contradiction. -/
+theorem BProv_Ax_s_div2StepAt_dvd_two_one_bot
+    {G : List Formula} {modulus value half bit : Nat}
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdvd : BProv Ax_s G (dvdAt modulus value))
+    (hbit : BProv Ax_s G (eqConstAt bit 1))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G bot := by
+  have hrem : BProv Ax_s G (remAt bit value modulus) :=
+    BProv_Ax_s_remAt_of_div2StepAt_two hmod hstep
+  have hzero : BProv Ax_s G (eqConstAt bit 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt hdvd hrem
+  exact BProv_Ax_s_eqConstAt_zero_one_bot hzero hbit
+
 /-- If the current halving value is explicitly even, a compatible halving step
 cannot output bit `1`.  The proof factors through the general divisibility and
 remainder-functionality kernels instead of inspecting the halving equation
@@ -16580,11 +16596,7 @@ theorem BProv_Ax_s_div2StepAt_even_one_bot
     BProv Ax_s G bot := by
   have hdvd : BProv Ax_s G (dvdAt modulus value) :=
     BProv_Ax_s_dvdAt_of_doubleEqAt_two hmod hdouble
-  have hrem : BProv Ax_s G (remAt bit value modulus) :=
-    BProv_Ax_s_remAt_of_div2StepAt_two hmod hstep
-  have hzero : BProv Ax_s G (eqConstAt bit 0) :=
-    BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt hdvd hrem
-  exact BProv_Ax_s_eqConstAt_zero_one_bot hzero hbit
+  exact BProv_Ax_s_div2StepAt_dvd_two_one_bot hmod hdvd hbit hstep
 
 /-- In a successor beta step, the zero-index beta modulus cannot be zero. -/
 theorem BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
