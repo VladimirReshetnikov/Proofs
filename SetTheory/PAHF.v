@@ -225,6 +225,209 @@ Proof.
   lia.
 Qed.
 
+
+(* Bridge between the lowest Ackermann bit and parity.  (Lean reads bits
+   through mathlib's Nat.testBit_zero / Nat.mod_two_eq_zero_or_one API.) *)
+Lemma hf_testbit0_true_iff : forall a,
+  Nat.testbit a 0 = true <-> a mod 2 = 1.
+Proof.
+  intro a.
+  pose proof (Nat.bit0_mod a) as h.
+  destruct (Nat.testbit a 0) eqn:hb;
+    [change (Nat.b2n true) with 1 in h | change (Nat.b2n false) with 0 in h].
+  - split; intro; [lia | reflexivity].
+  - split; intro hc; [discriminate hc | exfalso; lia].
+Qed.
+
+Lemma hf_testbit0_false_iff : forall a,
+  Nat.testbit a 0 = false <-> a mod 2 = 0.
+Proof.
+  intro a.
+  pose proof (Nat.bit0_mod a) as h.
+  destruct (Nat.testbit a 0) eqn:hb;
+    [change (Nat.b2n true) with 1 in h | change (Nat.b2n false) with 0 in h].
+  - split; intro hc; [discriminate hc | exfalso; lia].
+  - split; intro; [lia | reflexivity].
+Qed.
+
+(* Lean: AckermannHF.mem_zero_of_odd_double *)
+Lemma hf_mem_zero_of_odd_double : forall set half,
+  set = half + half + 1 -> hf_mem 0 set.
+Proof.
+  intros set half hset.
+  unfold hf_mem.
+  apply hf_testbit0_true_iff.
+  subst set.
+  replace (half + half + 1) with (1 + half * 2) by lia.
+  rewrite Nat.Div0.mod_add.
+  reflexivity.
+Qed.
+
+(* Lean: AckermannHF.testBit_false_of_not_mem *)
+Lemma hf_testbit_false_of_not_mem : forall x y,
+  ~ hf_mem x y -> Nat.testbit y x = false.
+Proof.
+  intros x y h.
+  destruct (Nat.testbit y x) eqn:hb.
+  - exfalso. apply h. exact hb.
+  - reflexivity.
+Qed.
+
+(* Helper: reading a bit of the half is reading the next bit of the whole.
+   (Lean uses mathlib's Nat.testBit_shiftRight machinery here.) *)
+Lemma hf_testbit_div2 : forall a x,
+  Nat.testbit (a / 2) x = Nat.testbit a (S x).
+Proof.
+  intros a x.
+  replace (a / 2) with (Nat.shiftr a 1)
+    by (rewrite Nat.shiftr_div_pow2; f_equal; lia).
+  rewrite Nat.shiftr_spec'.
+  f_equal. lia.
+Qed.
+
+(* Helper: bitwise domination implies order.
+   (Lean uses mathlib's Nat.le_of_testBit.) *)
+Lemma hf_le_of_testbit : forall a b,
+  (forall x, Nat.testbit a x = true -> Nat.testbit b x = true) ->
+  a <= b.
+Proof.
+  intro a.
+  induction a as [a IH] using (well_founded_induction Nat.lt_wf_0).
+  intros b hsub.
+  destruct a as [|a'].
+  - lia.
+  - assert (hlt : S a' / 2 < S a') by (apply Nat.div_lt; lia).
+    assert (hsub2 : forall x,
+        Nat.testbit (S a' / 2) x = true -> Nat.testbit (b / 2) x = true).
+    {
+      intros x hx.
+      rewrite hf_testbit_div2 in hx.
+      rewrite hf_testbit_div2.
+      apply hsub. exact hx.
+    }
+    pose proof (IH (S a' / 2) hlt (b / 2) hsub2) as hdiv.
+    pose proof (Nat.div_mod_eq (S a') 2) as ha.
+    pose proof (Nat.div_mod_eq b 2) as hb.
+    assert (hamod : S a' mod 2 < 2) by (apply Nat.mod_upper_bound; lia).
+    assert (hcase : S a' mod 2 = 0 \/ S a' mod 2 = 1) by lia.
+    destruct hcase as [hae | hao].
+    + lia.
+    + assert (hbit : Nat.testbit (S a') 0 = true)
+        by (apply hf_testbit0_true_iff; exact hao).
+      pose proof (hsub 0 hbit) as hbbit.
+      assert (hbmod : b mod 2 = 1)
+        by (apply hf_testbit0_true_iff; exact hbbit).
+      lia.
+Qed.
+
+(* Lean: AckermannHF.exists_mem_not_mem_of_lt *)
+Lemma hf_exists_mem_not_mem_of_lt : forall low high,
+  low < high ->
+  exists x, hf_mem x high /\ ~ hf_mem x low.
+Proof.
+  intros low high hlt.
+  destruct (classic (exists x, hf_mem x high /\ ~ hf_mem x low)) as [h | h];
+    [exact h |].
+  exfalso.
+  assert (hsub : forall x,
+      Nat.testbit high x = true -> Nat.testbit low x = true).
+  {
+    intros x hx.
+    destruct (classic (hf_mem x low)) as [hl | hl]; [exact hl |].
+    exfalso. apply h. exists x. split; [exact hx | exact hl].
+  }
+  pose proof (hf_le_of_testbit high low hsub).
+  lia.
+Qed.
+
+(* Lean: AckermannHF.maxHighNotLowBelow (computable here: hf_mem is a bit test) *)
+Fixpoint hf_maxHighNotLowBelow (low high n : nat) : nat :=
+  match n with
+  | 0 => 0
+  | S k =>
+      if Nat.testbit high k && negb (Nat.testbit low k)
+      then k
+      else hf_maxHighNotLowBelow low high k
+  end.
+
+(* Lean: AckermannHF.le_maxHighNotLowBelow_of_lt *)
+Lemma hf_le_maxHighNotLowBelow_of_lt : forall low high n x,
+  x < n -> hf_mem x high -> ~ hf_mem x low ->
+  x <= hf_maxHighNotLowBelow low high n.
+Proof.
+  intros low high n.
+  induction n as [|k IH]; intros x hx hhigh hlow.
+  - lia.
+  - simpl.
+    destruct (Nat.testbit high k) eqn:hk1.
+    + destruct (Nat.testbit low k) eqn:hk2; simpl.
+      * destruct (Nat.eq_dec x k) as [-> | hne].
+        { exfalso. apply hlow. exact hk2. }
+        apply IH; [lia | exact hhigh | exact hlow].
+      * lia.
+    + simpl.
+      destruct (Nat.eq_dec x k) as [-> | hne].
+      { exfalso. unfold hf_mem in hhigh. rewrite hk1 in hhigh. discriminate. }
+      apply IH; [lia | exact hhigh | exact hlow].
+Qed.
+
+(* Lean: AckermannHF.maxHighNotLowBelow_spec_of_exists *)
+Lemma hf_maxHighNotLowBelow_spec_of_exists : forall low high n,
+  (exists x, x < n /\ hf_mem x high /\ ~ hf_mem x low) ->
+  hf_mem (hf_maxHighNotLowBelow low high n) high /\
+    ~ hf_mem (hf_maxHighNotLowBelow low high n) low.
+Proof.
+  intros low high n.
+  induction n as [|k IH]; intros hex.
+  - destruct hex as [x [hx _]]. lia.
+  - simpl.
+    destruct (Nat.testbit high k) eqn:hk1.
+    + destruct (Nat.testbit low k) eqn:hk2; simpl.
+      * apply IH.
+        destruct hex as [x [hx [hhigh hlow]]].
+        destruct (Nat.eq_dec x k) as [-> | hne].
+        { exfalso. apply hlow. exact hk2. }
+        exists x. split; [lia | split; assumption].
+      * split.
+        { exact hk1. }
+        { unfold hf_mem. rewrite hk2. discriminate. }
+    + simpl.
+      apply IH.
+      destruct hex as [x [hx [hhigh hlow]]].
+      destruct (Nat.eq_dec x k) as [-> | hne].
+      { exfalso. unfold hf_mem in hhigh. rewrite hk1 in hhigh. discriminate. }
+      exists x. split; [lia | split; assumption].
+Qed.
+
+(* Lean: AckermannHF.highNotLowWitness *)
+Definition hf_highNotLowWitness (low high : nat) : nat :=
+  hf_maxHighNotLowBelow low high high.
+
+(* Lean: AckermannHF.highNotLowWitness_spec_of_lt *)
+Lemma hf_highNotLowWitness_spec_of_lt : forall low high,
+  low < high ->
+  hf_mem (hf_highNotLowWitness low high) high /\
+    ~ hf_mem (hf_highNotLowWitness low high) low.
+Proof.
+  intros low high hlt.
+  destruct (hf_exists_mem_not_mem_of_lt low high hlt) as [x [hhigh hlow]].
+  apply hf_maxHighNotLowBelow_spec_of_exists.
+  exists x.
+  split; [apply hf_mem_lt; exact hhigh | split; assumption].
+Qed.
+
+(* Lean: AckermannHF.exists_mem_diff_of_ne *)
+Lemma hf_exists_mem_diff_of_ne : forall a b,
+  a <> b ->
+  (exists x, hf_mem x a /\ ~ hf_mem x b) \/
+    (exists x, hf_mem x b /\ ~ hf_mem x a).
+Proof.
+  intros a b hne.
+  destruct (le_gt_dec a b) as [hle | hgt].
+  - right. apply hf_exists_mem_not_mem_of_lt. lia.
+  - left. apply hf_exists_mem_not_mem_of_lt. lia.
+Qed.
+
 Lemma hf_set_induction : forall P : nat -> Prop,
   (forall a, (forall x, hf_mem x a -> P x) -> P a) -> forall a, P a.
 Proof.
@@ -7457,6 +7660,125 @@ Proof.
     reflexivity.
 Qed.
 
+
+(* Lean: term_subst_instTerm_rename_two_succ *)
+Lemma term_subst_instTerm_rename_two_succ : forall t u,
+  Term.subst (instTerm u) (Term.rename (fun n => S (S n)) t) =
+    Term.rename S t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S n)) t)
+    with (Term.rename S (Term.rename S t))
+    by (rewrite Term.rename_comp; reflexivity).
+  apply term_subst_instTerm_rename_succ.
+Qed.
+
+(* Lean: term_subst_upSubst_instTerm_rename_three_succ *)
+Lemma term_subst_upSubst_instTerm_rename_three_succ : forall t u,
+  Term.subst (Term.upSubst (instTerm u))
+      (Term.rename (fun n => S (S (S n))) t) =
+    Term.rename (fun n => S (S n)) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S n))) t)
+    with (Term.rename S (Term.rename (fun n => S (S n)) t))
+    by (rewrite Term.rename_comp; reflexivity).
+  rewrite Term.subst_rename_succ_up.
+  rewrite term_subst_instTerm_rename_two_succ.
+  rewrite Term.rename_comp.
+  reflexivity.
+Qed.
+
+(* Lean: term_subst_up_up_instTerm_rename_four_succ *)
+Lemma term_subst_up_up_instTerm_rename_four_succ : forall t u,
+  Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+      (Term.rename (fun n => S (S (S (S n)))) t) =
+    Term.rename (fun n => S (S (S n))) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S (S n)))) t)
+    with (Term.rename S (Term.rename (fun n => S (S (S n))) t))
+    by (rewrite Term.rename_comp; reflexivity).
+  rewrite Term.subst_rename_succ_up.
+  rewrite term_subst_upSubst_instTerm_rename_three_succ.
+  rewrite Term.rename_comp.
+  reflexivity.
+Qed.
+
+(* Lean: term_subst_up_up_up_instTerm_rename_five_succ *)
+Lemma term_subst_up_up_up_instTerm_rename_five_succ : forall t u,
+  Term.subst (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
+      (Term.rename (fun n => S (S (S (S (S n))))) t) =
+    Term.rename (fun n => S (S (S (S n)))) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
+    with (Term.rename S (Term.rename (fun n => S (S (S (S n)))) t))
+    by (rewrite Term.rename_comp; reflexivity).
+  rewrite Term.subst_rename_succ_up.
+  rewrite term_subst_up_up_instTerm_rename_four_succ.
+  rewrite Term.rename_comp.
+  reflexivity.
+Qed.
+
+(* Lean: iterUpSubst *)
+Fixpoint iterUpSubst (k : nat) (sigma : nat -> term) : nat -> term :=
+  match k with
+  | 0 => sigma
+  | S k' => Term.upSubst (iterUpSubst k' sigma)
+  end.
+
+(* Lean: term_subst_iterUpSubst_instTerm_var_rename_add_succ *)
+Lemma term_subst_iterUpSubst_instTerm_var_rename_add_succ :
+  forall k elem t,
+  Term.subst (iterUpSubst k (instTerm (tVar elem)))
+      (Term.rename (fun n => S (n + k)) t) =
+    Term.rename (fun n => n + k) t.
+Proof.
+  induction k as [|k IH]; intros elem t.
+  - simpl.
+    replace (Term.rename (fun n => S (n + 0)) t)
+      with (Term.rename S t)
+      by (apply Term.rename_ext; intro n; lia).
+    replace (Term.rename (fun n => n + 0) t)
+      with (Term.rename (fun n => n) t)
+      by (apply Term.rename_ext; intro n; lia).
+    rewrite Term.rename_id.
+    apply term_subst_instTerm_rename_succ.
+  - simpl.
+    replace (Term.rename (fun n => S (n + S k)) t)
+      with (Term.rename S (Term.rename (fun n => S (n + k)) t))
+      by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
+    rewrite Term.subst_rename_succ_up.
+    rewrite IH.
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n. lia.
+Qed.
+
+(* Lean: term_rename_up_succ_rename_succ *)
+Lemma term_rename_up_succ_rename_succ : forall t,
+  Term.rename (up S) (Term.rename S t) =
+    Term.rename S (Term.rename S t).
+Proof.
+  intro t.
+  rewrite Term.rename_comp, Term.rename_comp.
+  apply Term.rename_ext.
+  intro n. reflexivity.
+Qed.
+
+(* Lean: term_subst_instTerm_rename_up_up_succ *)
+Lemma term_subst_instTerm_rename_up_up_succ : forall t u,
+  Term.subst (instTerm u)
+    (Term.rename (up S) (Term.rename (up S) (Term.rename S t))) =
+  Term.rename S (Term.rename S t).
+Proof.
+  intros t u.
+  rewrite (term_rename_up_succ_rename_succ t).
+  rewrite (term_rename_up_succ_rename_succ (Term.rename S t)).
+  apply term_subst_instTerm_rename_succ.
+Qed.
+
 Lemma map_subst_rename_succ_up : forall (sigma : nat -> term) G,
   map (subst (Term.upSubst sigma)) (map (rename S) G) =
     map (rename S) (map (subst sigma) G).
@@ -8530,6 +8852,37 @@ Proof.
         exact hx.
 Qed.
 
+
+(* Lean: BProv_rename_succ_context_cons_of_sentences *)
+Lemma BProv_rename_succ_context_cons_of_sentences :
+  forall (B : formula -> Prop),
+  Sentences B ->
+  forall G a b,
+  BProv B G b ->
+  BProv B (a :: map (rename S) G) (rename S b).
+Proof.
+  intros B hB G a b h.
+  apply BProv_context_cons.
+  apply (BProv_rename_of_sentences B hB G b h S).
+Qed.
+
+(* Lean: BProv_closeN_nil_of_sentences *)
+Lemma BProv_closeN_nil_of_sentences :
+  forall (B : formula -> Prop),
+  Sentences B ->
+  forall n phi,
+  BProv B nil phi ->
+  BProv B nil (closeN n phi).
+Proof.
+  intros B hB n.
+  induction n as [|n IH]; intros phi h.
+  - exact h.
+  - simpl.
+    apply IH.
+    apply (BProv_allI_of_sentences B nil phi hB).
+    exact h.
+Qed.
+
 Lemma BProv_closeN_allE_rename : forall (B : formula -> Prop) G k phi r,
   (forall n, Free n phi -> n < k) ->
   BProv B G (closeN k phi) ->
@@ -9268,6 +9621,33 @@ Definition succPredAt (a : nat) : formula :=
 
 Definition zeroOrSuccPredAt (a : nat) : formula :=
   pOr (zeroAt a) (succPredAt a).
+
+
+(* Lean: leTermAt *)
+Definition leTermAt (a b : term) : formula :=
+  pEx (pEq (tAdd (Term.rename S a) (tVar 0)) (Term.rename S b)).
+
+(* Lean: ltTermAt *)
+Definition ltTermAt (a b : term) : formula :=
+  pEx (pEq (tAdd (Term.rename S a) (tSucc (tVar 0))) (Term.rename S b)).
+
+(* Lean: ltTermAt_var *)
+Lemma ltTermAt_var : forall a b,
+  ltTermAt (tVar a) (tVar b) = ltAt a b.
+Proof. reflexivity. Qed.
+
+(* Lean: BProv_exists_eqConstAt *)
+Lemma BProv_exists_eqConstAt :
+  forall (B : formula -> Prop) G n,
+  BProv B G (pEx (eqConstAt 0 n)).
+Proof.
+  intros B G n.
+  apply (BProv_exI B G (eqConstAt 0 n) (Term.numeral n)).
+  unfold eqConstAt.
+  simpl.
+  rewrite Term.subst_numeral.
+  apply BProv_eqRefl.
+Qed.
 
 Lemma BProv_Ax_s_zeroOrSuccPredAt_all :
   BProv Ax_s [] (pAll (zeroOrSuccPredAt 0)).
@@ -10576,6 +10956,32 @@ Definition remAt (rem value modulus : nat) : formula :=
       (tAdd (tMul (tVar 0) (tVar (S modulus)))
         (tVar (S rem))))).
 
+
+(* Lean: remTermAt *)
+Definition remTermAt (rem : term) (value modulus : nat) : formula :=
+  pEx (pAnd
+    (ltTermAt (Term.rename S rem) (tVar (S modulus)))
+    (pEq (tVar (S value))
+      (tAdd (tMul (tVar 0) (tVar (S modulus)))
+        (Term.rename S rem)))).
+
+(* Lean: remTermAt_var *)
+Lemma remTermAt_var : forall rem value modulus,
+  remTermAt (tVar rem) value modulus = remAt rem value modulus.
+Proof. reflexivity. Qed.
+
+(* Lean: remEqAt *)
+Definition remEqAt (rem value modulus : nat) : formula :=
+  pEx (pEq (tVar (S value))
+    (tAdd (tMul (tVar 0) (tVar (S modulus)))
+      (tVar (S rem)))).
+
+(* Lean: remTermEqAt *)
+Definition remTermEqAt (rem : term) (value modulus : nat) : formula :=
+  pEx (pEq (tVar (S value))
+    (tAdd (tMul (tVar 0) (tVar (S modulus)))
+      (Term.rename S rem))).
+
 Lemma BProv_Ax_s_remAt_of_eqConst : forall G rem value modulus r v m q,
   BProv Ax_s G (eqConstAt rem r) ->
   BProv Ax_s G (eqConstAt value v) ->
@@ -10969,6 +11375,37 @@ Definition betaAtSuccIdx (out code step idx : nat) : formula :=
   pEx (pAnd
     (pEq (tVar 0) (tSucc (tVar (S idx))))
     (betaAt (S out) (S code) (S step) 0)).
+
+
+(* Lean: betaTermAt *)
+Definition betaTermAt (out : term) (code step idx : nat) : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
+    (remTermAt (Term.rename S out) (S code) 0)).
+
+(* Lean: betaTermAt_var *)
+Lemma betaTermAt_var : forall out code step idx,
+  betaTermAt (tVar out) code step idx = betaAt out code step idx.
+Proof. reflexivity. Qed.
+
+(* Lean: betaTermAtTermIdx *)
+Definition betaTermAtTermIdx (out : term) (code step : nat) (idx : term)
+    : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (Term.rename S idx))
+    (betaTermAt (Term.rename S out) (S code) (S step) 0)).
+
+(* Lean: betaTermAtConstIdx *)
+Definition betaTermAtConstIdx (out : term) (code step idxValue : nat)
+    : formula :=
+  pEx (pAnd (eqConstAt 0 idxValue)
+    (betaTermAt (Term.rename S out) (S code) (S step) 0)).
+
+(* Lean: betaTermAtConstIdx_var *)
+Lemma betaTermAtConstIdx_var : forall out code step idxValue,
+  betaTermAtConstIdx (tVar out) code step idxValue =
+    betaAtConstIdx out code step idxValue.
+Proof. reflexivity. Qed.
 
 Definition BetaModulus (step idx : nat) : nat :=
   1 + S idx * step.
@@ -11527,6 +11964,77 @@ Definition HFMemTrace (elem set code step : nat) : Prop :=
     BetaDiv2StepsThrough code step elem /\
       BetaDiv2Bit code step elem 1.
 
+
+(* Lean: twoEntryBetaStep *)
+Definition twoEntryBetaStep (cur next : nat) : nat := cur + next + 1.
+
+(* Lean: twoEntryBetaCode *)
+Definition twoEntryBetaCode (cur next : nat) : nat :=
+  cur + (twoEntryBetaStep cur next + 1)
+    * (2 * next + 4 * twoEntryBetaStep cur next * cur).
+
+(* Lean: BetaEntry_twoEntry_zero *)
+Lemma BetaEntry_twoEntry_zero : forall cur next,
+  BetaEntry (twoEntryBetaCode cur next) (twoEntryBetaStep cur next) 0 cur.
+Proof.
+  intros cur next.
+  exists (2 * next + 4 * twoEntryBetaStep cur next * cur).
+  unfold twoEntryBetaCode, twoEntryBetaStep, BetaModulus.
+  split; [ring | lia].
+Qed.
+
+(* Lean: BetaEntry_twoEntry_one *)
+Lemma BetaEntry_twoEntry_one : forall cur next,
+  BetaEntry (twoEntryBetaCode cur next) (twoEntryBetaStep cur next) 1 next.
+Proof.
+  intros cur next.
+  exists (next + (2 * twoEntryBetaStep cur next + 1) * cur).
+  unfold twoEntryBetaCode, twoEntryBetaStep, BetaModulus.
+  split; [ring | lia].
+Qed.
+
+(* Lean: BetaDiv2Step_twoEntry *)
+Lemma BetaDiv2Step_twoEntry : forall cur next bit,
+  bit = 0 \/ bit = 1 ->
+  cur = next + next + bit ->
+  BetaDiv2Step (twoEntryBetaCode cur next) (twoEntryBetaStep cur next)
+    0 cur next bit.
+Proof.
+  intros cur next bit hbit hcur.
+  split; [apply BetaEntry_twoEntry_zero |].
+  split; [apply BetaEntry_twoEntry_one |].
+  split; [exact hbit | exact hcur].
+Qed.
+
+(* Lean: BetaDiv2StepsThrough_zero_twoEntry *)
+Lemma BetaDiv2StepsThrough_zero_twoEntry : forall cur next bit,
+  bit = 0 \/ bit = 1 ->
+  cur = next + next + bit ->
+  BetaDiv2StepsThrough (twoEntryBetaCode cur next)
+    (twoEntryBetaStep cur next) 0.
+Proof.
+  intros cur next bit hbit hcur k hk.
+  assert (hk0 : k = 0) by lia.
+  subst k.
+  exists cur, next, bit.
+  apply BetaDiv2Step_twoEntry; assumption.
+Qed.
+
+(* Lean: HFMemTrace_zero_exists_of_one_step *)
+Lemma HFMemTrace_zero_exists_of_one_step : forall set half,
+  set = half + half + 1 ->
+  exists code step, HFMemTrace 0 set code step.
+Proof.
+  intros set half hset.
+  exists (twoEntryBetaCode set half), (twoEntryBetaStep set half).
+  split; [apply BetaEntry_twoEntry_zero |].
+  split.
+  - apply (BetaDiv2StepsThrough_zero_twoEntry set half 1);
+      [right; reflexivity | exact hset].
+  - exists set, half.
+    apply BetaDiv2Step_twoEntry; [right; reflexivity | exact hset].
+Qed.
+
 Definition betaDiv2StepWitnessAt (code step idx : nat) : formula :=
   pEx (pEx (pEx
     (pAnd
@@ -11536,6 +12044,14 @@ Definition betaDiv2StepWitnessAt (code step idx : nat) : formula :=
         (betaAtSuccIdx 1 (S (S (S code))) (S (S (S step)))
           (S (S (S idx))))
         (div2StepAt 2 1 0))))).
+
+
+(* Lean: betaDiv2StepWitnessAtTermIdx *)
+Definition betaDiv2StepWitnessAtTermIdx (code step : nat) (idx : term)
+    : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (Term.rename S idx))
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
 
 Definition betaDiv2StepAt (code step limit : nat) : formula :=
   pAll (pImp (ltAt 0 (S limit))
@@ -12474,6 +12990,79 @@ Definition hfMemAt (elem set : nat) : formula :=
           (pAnd
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
+
+
+(* Lean: hfMemTermAt *)
+Definition hfMemTermAt (elem : nat) (setCode : term) : formula :=
+  pEx (pEx
+    (pAnd
+      (betaTermAtConstIdx (Term.rename S (Term.rename S setCode)) 1 0 0)
+      (pAnd
+        (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
+
+(* Lean: hfMemZeroSetAt *)
+Definition hfMemZeroSetAt (elem : nat) : formula :=
+  pEx (pEx
+    (pAnd
+      (betaTermAtConstIdx tZero 1 0 0)
+      (pAnd
+        (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
+
+(* Lean: hfMemTermAt_var *)
+Lemma hfMemTermAt_var : forall elem set,
+  hfMemTermAt elem (tVar set) = hfMemAt elem set.
+Proof. reflexivity. Qed.
+
+(* Lean: hfMemTermAt_zero *)
+Lemma hfMemTermAt_zero : forall elem,
+  hfMemTermAt elem tZero = hfMemZeroSetAt elem.
+Proof. reflexivity. Qed.
+
+(* Lean: subst_instTerm_hfMemAt_succ_zero *)
+Lemma subst_instTerm_hfMemAt_succ_zero : forall elem setCode,
+  subst (instTerm setCode) (hfMemAt (S elem) 0) =
+    hfMemTermAt elem setCode.
+Proof. reflexivity. Qed.
+
+(* Lean: subst_up_zero_hfMemAt_zero_set *)
+Lemma subst_up_zero_hfMemAt_zero_set :
+  subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1) =
+    hfMemZeroSetAt 0.
+Proof. reflexivity. Qed.
+
+(* Lean: subst_instTerm_var_hfMemAt_succ_zero *)
+Lemma subst_instTerm_var_hfMemAt_succ_zero : forall elem set,
+  subst (instTerm (tVar set)) (hfMemAt (S elem) 0) =
+    hfMemAt elem set.
+Proof. reflexivity. Qed.
+
+(* Lean: subst_instTerm_zero_hfMemAt_succ_zero *)
+Lemma subst_instTerm_zero_hfMemAt_succ_zero : forall elem,
+  subst (instTerm tZero) (hfMemAt (S elem) 0) =
+    hfMemZeroSetAt elem.
+Proof. reflexivity. Qed.
+
+(* Lean: BProv_hfMemTermAt_of_hfMemAt_eq_term *)
+Lemma BProv_hfMemTermAt_of_hfMemAt_eq_term :
+  forall (B : formula -> Prop) G elem set setCode,
+  BProv B G (hfMemAt elem set) ->
+  BProv B G (pEq (tVar set) setCode) ->
+  BProv B G (hfMemTermAt elem setCode).
+Proof.
+  intros B G elem set setCode hmem hset.
+  rewrite <- (subst_instTerm_hfMemAt_succ_zero elem setCode).
+  apply (BProv_eqElim B G (tVar set) setCode (hfMemAt (S elem) 0) hset).
+  rewrite (subst_instTerm_var_hfMemAt_succ_zero elem set).
+  exact hmem.
+Qed.
 
 Lemma BProv_Ax_s_hfMemAt_bitOneEx_of_bit :
   forall G elem code step,
@@ -14281,22 +14870,61 @@ Proof.
   apply Nat.testbit_odd_0.
 Qed.
 
-Lemma HFMemTrace_entry_shiftr : forall elem set code step,
-  HFMemTrace elem set code step ->
+
+(* Lean: div2Iter *)
+Fixpoint div2Iter (value k : nat) : nat :=
+  match k with
+  | 0 => value
+  | S n => div2Iter value n / 2
+  end.
+
+(* Lean: div2Iter_eq_shiftRight *)
+Lemma div2Iter_eq_shiftr : forall value k,
+  div2Iter value k = Nat.shiftr value k.
+Proof.
+  intros value k.
+  induction k as [|k IH].
+  - reflexivity.
+  - change (div2Iter value (S k)) with (div2Iter value k / 2).
+    rewrite IH.
+    rewrite (shiftr_succ_div2 value k).
+    reflexivity.
+Qed.
+
+(* Lean: div2Iter_mod_two_eq_zero_of_not_mem *)
+Lemma div2Iter_mod_two_eq_zero_of_not_mem : forall elem set,
+  ~ hf_mem elem set ->
+  div2Iter set elem mod 2 = 0.
+Proof.
+  intros elem set hnot.
+  rewrite div2Iter_eq_shiftr.
+  pose proof (hf_testbit_false_of_not_mem elem set hnot) as hbit.
+  assert (hshift : Nat.testbit (Nat.shiftr set elem) 0 = false).
+  {
+    rewrite Nat.shiftr_spec'.
+    replace (0 + elem) with elem by lia.
+    exact hbit.
+  }
+  apply hf_testbit0_false_iff.
+  exact hshift.
+Qed.
+
+(* Lean: BetaDiv2StepsThrough_entry_shiftRight *)
+Lemma BetaDiv2StepsThrough_entry_shiftr : forall elem set code step,
+  BetaEntry code step 0 set ->
+  BetaDiv2StepsThrough code step elem ->
   forall k value,
     k <= S elem ->
     BetaEntry code step k value ->
     value = Nat.shiftr set k.
 Proof.
-  intros elem set code step htrace k.
+  intros elem set code step hentry hsteps k.
   induction k as [|k IH]; intros value hle hvalue.
-  - destruct htrace as [hstart _].
-    pose proof (BetaEntry_functional code step 0 value set
-      hvalue hstart) as hv.
+  - pose proof (BetaEntry_functional code step 0 value set
+      hvalue hentry) as hv.
     rewrite Nat.shiftr_0_r.
     exact hv.
-  - destruct htrace as [hstart [hsteps hbit]].
-    assert (hk : k <= elem) by lia.
+  - assert (hk : k <= elem) by lia.
     destruct (hsteps k hk) as [cur [next [bit hstep]]].
     assert (hcur : cur = Nat.shiftr set k).
     {
@@ -14311,16 +14939,75 @@ Proof.
       - exact hvalue.
       - exact (proj1 (proj2 hstep)).
     }
-    transitivity next.
-    + exact hvalue_next.
-    + transitivity (cur / 2).
-      * symmetry.
-        apply BetaDiv2Step_div_two with
-          (code := code) (step := step) (idx := k) (bit := bit).
-        exact hstep.
-      * rewrite hcur.
-        symmetry.
-        apply shiftr_succ_div2.
+    rewrite hvalue_next.
+    transitivity (cur / 2).
+    + symmetry.
+      apply BetaDiv2Step_div_two with
+        (code := code) (step := step) (idx := k) (bit := bit).
+      exact hstep.
+    + rewrite hcur.
+      symmetry.
+      apply shiftr_succ_div2.
+Qed.
+
+(* Lean: BetaDiv2Step_bit_zero_of_not_mem *)
+Lemma BetaDiv2Step_bit_zero_of_not_mem :
+  forall elem set code step cur next bit,
+  BetaEntry code step 0 set ->
+  BetaDiv2StepsThrough code step elem ->
+  BetaDiv2Step code step elem cur next bit ->
+  ~ hf_mem elem set ->
+  bit = 0.
+Proof.
+  intros elem set code step cur next bit hentry hsteps hstep hnot.
+  assert (hcur : cur = Nat.shiftr set elem).
+  {
+    apply (BetaDiv2StepsThrough_entry_shiftr elem set code step
+      hentry hsteps elem cur).
+    - lia.
+    - exact (proj1 hstep).
+  }
+  destruct hstep as [hc [hn [hbit hshape]]].
+  destruct hbit as [hbit0 | hbit1]; [exact hbit0 |].
+  exfalso.
+  subst bit.
+  pose proof (div2Iter_mod_two_eq_zero_of_not_mem elem set hnot) as hmod.
+  rewrite div2Iter_eq_shiftr in hmod.
+  rewrite <- hcur in hmod.
+  rewrite hshape in hmod.
+  replace (next + next + 1) with (1 + next * 2) in hmod by lia.
+  rewrite Nat.Div0.mod_add in hmod.
+  simpl in hmod.
+  discriminate.
+Qed.
+
+(* Lean: BetaDiv2Step_current_double_of_not_mem *)
+Lemma BetaDiv2Step_current_double_of_not_mem :
+  forall elem set code step cur next bit,
+  BetaEntry code step 0 set ->
+  BetaDiv2StepsThrough code step elem ->
+  BetaDiv2Step code step elem cur next bit ->
+  ~ hf_mem elem set ->
+  cur = next + next.
+Proof.
+  intros elem set code step cur next bit hentry hsteps hstep hnot.
+  pose proof (BetaDiv2Step_bit_zero_of_not_mem elem set code step
+    cur next bit hentry hsteps hstep hnot) as hbit.
+  destruct hstep as [_ [_ [_ hshape]]].
+  lia.
+Qed.
+
+Lemma HFMemTrace_entry_shiftr : forall elem set code step,
+  HFMemTrace elem set code step ->
+  forall k value,
+    k <= S elem ->
+    BetaEntry code step k value ->
+    value = Nat.shiftr set k.
+Proof.
+  intros elem set code step htrace.
+  destruct htrace as [hentry [hsteps _]].
+  exact (BetaDiv2StepsThrough_entry_shiftr elem set code step
+    hentry hsteps).
 Qed.
 
 Lemma HFMemTrace_mem : forall elem set code step,
