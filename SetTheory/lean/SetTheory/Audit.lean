@@ -224,6 +224,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bitOneEx_of_bit
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components
+#check @PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit
+#check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule

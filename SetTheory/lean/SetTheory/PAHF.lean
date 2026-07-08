@@ -6196,6 +6196,11 @@ theorem BProv_of_Prov {B : Formula → Prop} {G : List Formula} {phi : Formula}
     cases hx
   · simpa using h
 
+/-- A finite-context assumption is relatively provable. -/
+theorem BProv_ass {B : Formula → Prop} {G : List Formula} {phi : Formula}
+    (hphi : phi ∈ G) : BProv B G phi :=
+  BProv_of_Prov (Prov.P_ass G phi hphi)
+
 /-- Rename every finite-context assumption in a relative PA proof.  The
 background theory is preserved when its axioms are sentences, since renaming a
 sentence is syntactically equal to itself. -/
@@ -10404,6 +10409,141 @@ theorem BProv_Ax_s_hfMemAt_of_closed_bit_components {G : List Formula}
     hentry hsteps
     (BProv_Ax_s_hfMemAt_bitOneEx_of_bit
       (elem := elem) (code := code) (step := step) hbit)
+
+/-- Produce the closed zero-index beta-entry component of `hfMemAt` from an
+ordinary proof that the set slot contains the intended numeral and the semantic
+`BetaEntry` record for index `0`. -/
+theorem BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry
+    {G : List Formula}
+    {set setValue code step : Nat}
+    (hset : BProv Ax_s G (eqConstAt set setValue))
+    (hentry : BetaEntry code step 0 setValue) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (betaAtConstIdx (set+2) 1 0 0))) := by
+  let H : List Formula :=
+    [eqConstAt (set+2) setValue, eqConstAt 1 code, eqConstAt 0 step]
+  let σcode : Nat → Term := Term.upSubst (instTerm (Term.numeral code))
+  let σstep : Nat → Term := instTerm (Term.numeral step)
+  have hsetH : BProv Ax_s H (eqConstAt (set+2) setValue) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hcodeH : BProv Ax_s H (eqConstAt 1 code) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hstepH : BProv Ax_s H (eqConstAt 0 step) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hopen : BProv Ax_s H (betaAtConstIdx (set+2) 1 0 0) :=
+    BProv_Ax_s_betaAtConstIdx_of_eqConst_entry
+      (out := set+2) (code := 1) (step := 0)
+      (o := setValue) (c := code) (s := step) (idxValue := 0)
+      hsetH hcodeH hstepH hentry
+  have hsubstCode : BProv Ax_s (H.map (subst σcode))
+      (subst σcode (betaAtConstIdx (set+2) 1 0 0)) :=
+    BProv_subst_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hopen σcode
+  have hsubst : BProv Ax_s ((H.map (subst σcode)).map (subst σstep))
+      (subst σstep
+        (subst σcode (betaAtConstIdx (set+2) 1 0 0))) :=
+    BProv_subst_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsubstCode σstep
+  have hclosed := BProv_cut hsubst (D := G) (fun g hg => by
+    simp [H, σcode, σstep, eqConstAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename] at hg
+    rcases hg with rfl | rfl | rfl
+    · simpa [eqConstAt] using hset
+    · simpa [eqConstAt] using
+        (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral code))
+    · simpa [eqConstAt] using
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral step)))
+  simpa [σcode, σstep] using hclosed
+
+/-- Produce the closed final-bit beta component of `hfMemAt` from an ordinary
+proof that the element slot contains the intended numeral and the semantic
+halving-step record whose bit is `1`. -/
+theorem BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit
+    {G : List Formula}
+    {elem elemValue code step : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hbit : BetaDiv2Bit code step elemValue 1) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral code))))
+            (betaDiv2BitAt 0 2 1 (elem+3))))) := by
+  rcases hbit with ⟨cur, next, hstepBit⟩
+  let H : List Formula :=
+    [eqConstAt (elem+3) elemValue, eqConstAt 2 code,
+      eqConstAt 1 step, eqConstAt 0 1]
+  let σcode : Nat → Term :=
+    Term.upSubst (Term.upSubst (instTerm (Term.numeral code)))
+  let σstep : Nat → Term := Term.upSubst (instTerm (Term.numeral step))
+  let σbit : Nat → Term := instTerm (Term.numeral 1)
+  have helemH : BProv Ax_s H (eqConstAt (elem+3) elemValue) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hcodeH : BProv Ax_s H (eqConstAt 2 code) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hstepH : BProv Ax_s H (eqConstAt 1 step) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hbitH : BProv Ax_s H (eqConstAt 0 1) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hopen : BProv Ax_s H (betaDiv2BitAt 0 2 1 (elem+3)) :=
+    BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
+      (bit := 0) (code := 2) (step := 1) (idx := elem+3)
+      (b := 1) (c := code) (s := step) (i := elemValue)
+      (cur := cur) (next := next)
+      hbitH hcodeH hstepH helemH hstepBit
+  have hsubstCode : BProv Ax_s (H.map (subst σcode))
+      (subst σcode (betaDiv2BitAt 0 2 1 (elem+3))) :=
+    BProv_subst_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hopen σcode
+  have hsubstStep : BProv Ax_s ((H.map (subst σcode)).map (subst σstep))
+      (subst σstep
+        (subst σcode (betaDiv2BitAt 0 2 1 (elem+3)))) :=
+    BProv_subst_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsubstCode σstep
+  have hsubst : BProv Ax_s
+      (((H.map (subst σcode)).map (subst σstep)).map (subst σbit))
+      (subst σbit
+        (subst σstep
+          (subst σcode (betaDiv2BitAt 0 2 1 (elem+3))))) :=
+    BProv_subst_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsubstStep σbit
+  have hclosed := BProv_cut hsubst (D := G) (fun g hg => by
+    simp [H, σcode, σstep, σbit, eqConstAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename] at hg
+    rcases hg with rfl | rfl | rfl | rfl
+    · simpa [eqConstAt] using helem
+    · simpa [eqConstAt] using
+        (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral code))
+    · simpa [eqConstAt] using
+        (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral step))
+    · simpa [eqConstAt] using
+        (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral 1)))
+  simpa [σcode, σstep, σbit] using hclosed
+
+/-- HF-membership introduction from a semantic trace, with the bounded trace
+component still supplied as an explicit PA proof obligation. -/
+theorem BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
+    {G : List Formula}
+    {elem set elemValue setValue code step : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hset : BProv Ax_s G (eqConstAt set setValue))
+    (hsteps : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))))
+    (htrace : HFMemTrace elemValue setValue code step) :
+    BProv Ax_s G (hfMemAt elem set) := by
+  rcases htrace with ⟨hentry, _hthrough, hbit⟩
+  exact BProv_Ax_s_hfMemAt_of_closed_bit_components
+    (elem := elem) (set := set) (code := code) (step := step)
+    (BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry
+      (set := set) (setValue := setValue) (code := code) (step := step)
+      hset hentry)
+    hsteps
+    (BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit
+      (elem := elem) (elemValue := elemValue) (code := code) (step := step)
+      helem hbit)
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
