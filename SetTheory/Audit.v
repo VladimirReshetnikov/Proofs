@@ -44,6 +44,8 @@ Print Assumptions ClosureFO_of_ZF.
 (* PA/HF translation and finite-HF bridge. *)
 Check PA.Formula.Ax_s.
 Check PA.Formula.sat_axiom_s.
+Check PA.Formula.Sentences.
+Check PA.Formula.rename_eq_of_sentence.
 Check PA.Formula.BProv_lift.
 Check PA.Formula.BProv_eqElim.
 Check PA.Formula.BProv_context_cons.
@@ -58,6 +60,8 @@ Check PA.Formula.BProv_orI2.
 Check PA.Formula.BProv_orE.
 Check PA.Formula.BProv_allE.
 Check PA.Formula.BProv_exI.
+Check PA.Formula.BProv_allI_of_sentences.
+Check PA.Formula.BProv_exE_of_sentences.
 Check PA.Formula.soundness_BProv.
 Check PA.Formula.translated_HF_axiom_sat_nat.
 Check PA.Formula.translated_HFFin_axiom_sat_nat.

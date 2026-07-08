@@ -6457,6 +6457,28 @@ Proof.
   - now rewrite (IHt1 r r' h), (IHt2 r r' h).
 Qed.
 
+Lemma rename_ext_free : forall t (r r' : nat -> nat),
+  (forall n, Free n t -> r n = r' n) -> rename r t = rename r' t.
+Proof.
+  induction t; simpl; intros r r' h; try reflexivity.
+  - now rewrite (h n eq_refl).
+  - now rewrite (IHt r r' h).
+  - rewrite (IHt1 r r' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 r r' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHt1 r r' (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 r r' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+Qed.
+
+Lemma rename_id : forall t, rename (fun n => n) t = t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
 Lemma rename_comp : forall t (r r' : nat -> nat),
   rename r (rename r' t) = rename (fun n => r (r' n)) t.
 Proof.
@@ -6587,6 +6609,9 @@ Fixpoint Free (n : nat) (phi : formula) : Prop :=
   end.
 
 Definition Sentence (phi : formula) : Prop := forall n, ~ Free n phi.
+
+Definition Sentences (B : formula -> Prop) : Prop :=
+  forall phi, B phi -> Sentence phi.
 
 Lemma free_lt_bound : forall phi n, Free n phi -> n < bound phi.
 Proof.
@@ -6978,6 +7003,57 @@ Proof.
   - rewrite (IHphi (up r) (up r')).
     + reflexivity.
     + intros [|n]; simpl; [reflexivity | now rewrite h].
+Qed.
+
+Lemma rename_ext_free : forall phi (r r' : nat -> nat),
+  (forall n, Free n phi -> r n = r' n) -> rename r phi = rename r' phi.
+Proof.
+  induction phi; simpl; intros r r' h; try reflexivity.
+  - rewrite (Term.rename_ext_free t r r' (fun n hn => h n (or_introl hn))).
+    rewrite (Term.rename_ext_free t0 r r' (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - now rewrite (IHphi1 r r' (fun n hn => h n (or_introl hn))),
+      (IHphi2 r r' (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 r r' (fun n hn => h n (or_introl hn))),
+      (IHphi2 r r' (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 r r' (fun n hn => h n (or_introl hn))),
+      (IHphi2 r r' (fun n hn => h n (or_intror hn))).
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    f_equal. apply h. exact hn.
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    f_equal. apply h. exact hn.
+Qed.
+
+Lemma rename_id : forall phi, rename (fun n => n) phi = phi.
+Proof.
+  induction phi; simpl; try reflexivity.
+  - now rewrite !Term.rename_id.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - f_equal.
+    transitivity (rename (fun n => n) phi).
+    + apply rename_ext. intros [|n]; reflexivity.
+    + exact IHphi.
+  - f_equal.
+    transitivity (rename (fun n => n) phi).
+    + apply rename_ext. intros [|n]; reflexivity.
+    + exact IHphi.
+Qed.
+
+Lemma rename_eq_of_sentence : forall phi,
+  Sentence phi -> forall r, rename r phi = phi.
+Proof.
+  intros phi hphi r.
+  transitivity (rename (fun n => n) phi).
+  - apply rename_ext_free.
+    intros n hn.
+    exfalso. exact (hphi n hn).
+  - apply rename_id.
 Qed.
 
 Lemma rename_comp : forall phi (r r' : nat -> nat),
@@ -7771,6 +7847,78 @@ Proof.
   intros B G a t [L [hL hp]].
   exists L. split; [exact hL |].
   exact (P_exI (L ++ G) a t hp).
+Qed.
+
+Lemma map_rename_S_eq_of_sentences : forall (B : formula -> Prop) L,
+  Sentences B ->
+  (forall x, In x L -> B x) ->
+  map (rename S) L = L.
+Proof.
+  induction L as [|x xs IH]; intros hB hL; simpl.
+  - reflexivity.
+  - rewrite (rename_eq_of_sentence x).
+    + rewrite (IH hB (fun y hy => hL y (or_intror hy))).
+      reflexivity.
+    + apply hB.
+      apply hL. simpl. left. reflexivity.
+Qed.
+
+Lemma BProv_allI_of_sentences : forall (B : formula -> Prop) G a,
+  Sentences B ->
+  BProv B (map (rename S) G) a ->
+  BProv B G (pAll a).
+Proof.
+  intros B G a hB [L [hL hp]].
+  pose proof (map_rename_S_eq_of_sentences B L hB hL) as hLmap.
+  exists L. split; [exact hL |].
+  apply P_allI.
+  apply (Prov_weaken (L ++ map (rename S) G) a hp).
+  intros x hx.
+  rewrite map_app.
+  rewrite hLmap.
+  exact hx.
+Qed.
+
+Lemma BProv_exE_of_sentences : forall (B : formula -> Prop) G a c,
+  Sentences B ->
+  BProv B G (pEx a) ->
+  BProv B (a :: map (rename S) G) (rename S c) ->
+  BProv B G c.
+Proof.
+  intros B G a c hB [Le [hLe hpe]] [Lb [hLb hpb]].
+  pose proof (map_rename_S_eq_of_sentences B Lb hB hLb) as hLbmap.
+  exists (Le ++ Lb). split.
+  - intros x hx.
+    apply in_app_iff in hx.
+    destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ G) a c).
+    + apply (Prov_weaken (Le ++ G) (pEx a) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (Lb ++ a :: map (rename S) G) (rename S c) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right.
+        rewrite map_app.
+        apply in_app_iff. left.
+        rewrite map_app.
+        apply in_app_iff. right.
+        rewrite hLbmap.
+        exact hx.
+      * left. exact hx.
+      * right.
+        rewrite map_app.
+        apply in_app_iff. right.
+        exact hx.
 Qed.
 
 Lemma soundness_BProv : forall (M : Model) (B : formula -> Prop) G phi,
