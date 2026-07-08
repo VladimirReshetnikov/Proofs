@@ -608,6 +608,7 @@ open SetTheory
 #check @PA.Formula.BetaDiv2StepsThrough_entry_shiftRight
 #check @PA.Formula.HFMemTrace_entry_shiftRight
 #check @PA.Formula.BetaDiv2Step_bit_zero_of_not_mem
+#check @PA.Formula.BetaDiv2Step_current_double_of_not_mem
 #check @PA.Formula.HFMemTrace_mem
 #check @PA.Formula.hfMemAt_sound
 #check @PA.Formula.hfMemAt_complete

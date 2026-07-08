@@ -8123,6 +8123,20 @@ theorem BetaDiv2Step_bit_zero_of_not_mem
       simpa [hcur] using hshiftFalse
     exact False.elim (by simp [hcurFalse] at hone)
 
+/-- In the same situation, the semantic current value is exactly twice the
+next value. -/
+theorem BetaDiv2Step_current_double_of_not_mem
+    {elem set code step cur next bit : Nat}
+    (hentry : BetaEntry code step 0 set)
+    (hsteps : BetaDiv2StepsThrough code step elem)
+    (hstep : BetaDiv2Step code step elem cur next bit)
+    (hnot : ¬ AckermannHF.Mem elem set) :
+    cur = next + next := by
+  have hbit : bit = 0 :=
+    BetaDiv2Step_bit_zero_of_not_mem hentry hsteps hstep hnot
+  rcases hstep with ⟨_, _, _, hcur⟩
+  omega
+
 theorem HFMemTrace_mem {elem set code step : Nat}
     (h : HFMemTrace elem set code step) : AckermannHF.Mem elem set := by
   rcases h.2.2 with ⟨cur, next, hstep⟩
