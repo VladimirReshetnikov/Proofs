@@ -16046,6 +16046,49 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero
   exact BProv_Ax_s_div2StepAt_zero_half_zero
     (value := 2) (half := 1) (bit := 0) hcurZero hstep
 
+/-- In an opened `betaDiv2StepWitnessAt` body, the current beta output is zero
+when a term-output zero beta source is available at a provably equal index. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAt_body_current_zero_of_betaTermAt_zero_eq_index
+    {G : List Formula} {code step idx zeroIdx : Nat}
+    (hzeroBeta : BProv Ax_s G
+      (betaTermAt Term.zero (code+3) (step+3) zeroIdx))
+    (hidxEq : BProv Ax_s G (eq (Term.var zeroIdx) (Term.var (idx+3))))
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 2 (code+3) (step+3) (idx+3))
+        (and
+          (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+          (div2StepAt 2 1 0)))) :
+    BProv Ax_s G (eqConstAt 2 0) := by
+  have hcur : BProv Ax_s G (betaAt 2 (code+3) (step+3) (idx+3)) :=
+    BProv_andE1 hbody
+  exact BProv_Ax_s_betaAt_output_zero_of_betaTermAt_zero_eq_index
+    (G := G) (out := 2) (code := code+3) (step := step+3)
+    (zeroIdx := zeroIdx) (idx := idx+3)
+    hzeroBeta hidxEq hcur
+
+/-- Opened beta-step zero propagation from a term-output zero source: in a
+`betaDiv2StepWitnessAt` body, if the current index is provably the source
+index, then the next beta-entry witness is forced to output `0`. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAt_body_next_zero_of_betaTermAt_zero_eq_index
+    {G : List Formula} {code step idx zeroIdx : Nat}
+    (hzeroBeta : BProv Ax_s G
+      (betaTermAt Term.zero (code+3) (step+3) zeroIdx))
+    (hidxEq : BProv Ax_s G (eq (Term.var zeroIdx) (Term.var (idx+3))))
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 2 (code+3) (step+3) (idx+3))
+        (and
+          (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+          (div2StepAt 2 1 0)))) :
+    BProv Ax_s G (eqConstAt 1 0) :=
+  BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero
+    (G := G) (code := code) (step := step) (idx := idx)
+    (BProv_Ax_s_betaDiv2StepWitnessAt_body_current_zero_of_betaTermAt_zero_eq_index
+      (G := G) (code := code) (step := step) (idx := idx)
+      (zeroIdx := zeroIdx) hzeroBeta hidxEq hbody)
+    hbody
+
 /-- Eliminate a bounded beta-halving trace at a particular index. -/
 theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le {G : List Formula}
     {code step last idx : Nat}
