@@ -12795,6 +12795,128 @@ Proof.
     htrace).
 Qed.
 
+Lemma BProv_Ax_s_hfMemAt_bot_of_opened_final_current_zero :
+  forall G elem set,
+  (let bitBody :=
+    pAnd
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (S (S (S elem)))) in
+  let tail :=
+    pAnd
+      (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+      (pEx bitBody) in
+  let body :=
+    pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      tail in
+  let bitCtx :=
+    bitBody :: map (rename S)
+      (body :: map (rename S) (pEx body :: map (rename S) G)) in
+  let finalBody :=
+    pAnd
+      (betaAt 1 4 3 (S (S (S (S (S elem))))))
+      (pAnd
+        (betaAtSuccIdx 0 4 3 (S (S (S (S (S elem))))))
+        (div2StepAt 1 0 2)) in
+  BProv Ax_s
+    (finalBody :: map (rename S) (pEx finalBody :: map (rename S) bitCtx))
+    (eqConstAt 1 0)) ->
+  BProv Ax_s G (hfMemAt elem set) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G elem set hcurZero hmem.
+  set (bitBody :=
+    pAnd
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (S (S (S elem))))).
+  set (tail :=
+    pAnd
+      (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+      (pEx bitBody)).
+  set (body :=
+    pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      tail).
+  set (bodyCtx := body :: map (rename S) (pEx body :: map (rename S) G)).
+  set (bitCtx := bitBody :: map (rename S) bodyCtx).
+  set (finalBody :=
+    pAnd
+      (betaAt 1 4 3 (S (S (S (S (S elem))))))
+      (pAnd
+        (betaAtSuccIdx 0 4 3 (S (S (S (S (S elem))))))
+        (div2StepAt 1 0 2))).
+  assert (hcodeStep : BProv Ax_s (pEx body :: map (rename S) G) pBot).
+  {
+    assert (hstepEx : BProv Ax_s (pEx body :: map (rename S) G)
+        (pEx body)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (hopened : BProv Ax_s bodyCtx pBot).
+    {
+      assert (hbody : BProv Ax_s bodyCtx body).
+      {
+        unfold bodyCtx.
+        apply BProv_ass.
+        simpl. left. reflexivity.
+      }
+      pose proof (BProv_andE2 Ax_s bodyCtx
+        (betaAtConstIdx (S (S set)) 1 0 0) tail hbody) as htail.
+      pose proof (BProv_andE2 Ax_s bodyCtx
+        (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+        (pEx bitBody) htail) as hbitEx.
+      assert (hbitOpened : BProv Ax_s bitCtx pBot).
+      {
+        assert (hbitBody : BProv Ax_s bitCtx bitBody).
+        {
+          unfold bitCtx.
+          apply BProv_ass.
+          simpl. left. reflexivity.
+        }
+        pose proof (BProv_andE1 Ax_s bitCtx
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))
+          hbitBody) as honeRaw.
+        assert (hone : BProv Ax_s bitCtx (eqConstAt 0 1)).
+        {
+          unfold oneAt in honeRaw.
+          exact honeRaw.
+        }
+        pose proof (BProv_andE2 Ax_s bitCtx
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))
+          hbitBody) as hbitAt.
+        assert (hcz : BProv Ax_s
+            (finalBody :: map (rename S)
+              (pEx finalBody :: map (rename S) bitCtx))
+            (eqConstAt 1 0)).
+        {
+          unfold bitCtx, bodyCtx, finalBody, body, tail, bitBody in *.
+          exact hcurZero.
+        }
+        exact (BProv_Ax_s_betaDiv2BitAt_current_zero_bot
+          bitCtx 0 2 1 (S (S (S elem))) hone hcz hbitAt).
+      }
+      exact (BProv_exE_of_sentences Ax_s bodyCtx bitBody pBot
+        sentence_ax_s hbitEx hbitOpened).
+    }
+    exact (BProv_exE_of_sentences Ax_s
+      (pEx body :: map (rename S) G) body pBot
+      sentence_ax_s hstepEx hopened).
+  }
+  assert (hmem' : BProv Ax_s G (pEx (pEx body))).
+  {
+    unfold hfMemAt.
+    fold bitBody.
+    fold tail.
+    fold body.
+    exact hmem.
+  }
+  exact (BProv_exE_of_sentences Ax_s G (pEx body) pBot
+    sentence_ax_s hmem' hcodeStep).
+Qed.
+
 Lemma rename_hfMemAt : forall (r : nat -> nat) elem set,
   rename r (hfMemAt elem set) = hfMemAt (r elem) (r set).
 Proof.
@@ -14246,6 +14368,62 @@ Definition hfContextAt (rho : nat -> nat) (G : list form) : list formula :=
 
 Definition translateHFContext (G : list form) : list formula :=
   map translateHFFormula G.
+
+Lemma BProv_Ax_s_HF_empty_zero_body_of_member_bot :
+  BProv Ax_s [subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1)] pBot ->
+  BProv Ax_s []
+    (subst (instTerm tZero)
+      (pAll (pImp (hfMemAt 0 1) pBot))).
+Proof.
+  intro hmem.
+  set (memZero := subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1)).
+  assert (hmem' : BProv Ax_s [memZero] pBot).
+  {
+    unfold memZero.
+    exact hmem.
+  }
+  pose proof (BProv_impI Ax_s [] memZero pBot hmem') as himp.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pImp memZero pBot) sentence_ax_s himp) as hall.
+  unfold memZero in hall.
+  simpl in *.
+  exact hall.
+Qed.
+
+Lemma BProv_Ax_s_translated_HF_empty_of_zero_body :
+  BProv Ax_s []
+    (subst (instTerm tZero)
+      (pAll (pImp (hfMemAt 0 1) pBot))) ->
+  BProv Ax_s []
+    (translateHFFormula (seal HF_empty_form)).
+Proof.
+  intro hbody.
+  set (body := pAll (pImp (hfMemAt 0 1) pBot)).
+  assert (hex : BProv Ax_s [] (pEx body)).
+  {
+    exact (BProv_exI Ax_s [] body tZero hbody).
+  }
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pEx body) sentence_ax_s hex) as h1.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pAll (pEx body)) sentence_ax_s h1) as h2.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pAll (pAll (pEx body))) sentence_ax_s h2) as h3.
+  unfold translateHFFormula, HF_empty_form, seal, Fol.closeN, Fol.bound.
+  simpl.
+  fold body.
+  exact h3.
+Qed.
+
+Lemma BProv_Ax_s_translated_HF_empty_of_zero_member_bot :
+  BProv Ax_s [subst (Term.upSubst (instTerm tZero)) (hfMemAt 0 1)] pBot ->
+  BProv Ax_s []
+    (translateHFFormula (seal HF_empty_form)).
+Proof.
+  intro hmem.
+  exact (BProv_Ax_s_translated_HF_empty_of_zero_body
+    (BProv_Ax_s_HF_empty_zero_body_of_member_bot hmem)).
+Qed.
 
 Lemma translateHFContext_eq_hfContextAt_id : forall G,
   translateHFContext G = hfContextAt (fun n => n) G.
