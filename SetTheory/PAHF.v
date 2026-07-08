@@ -8955,6 +8955,125 @@ Proof.
   exact h2.
 Qed.
 
+Lemma BProv_Ax_s_addRightNumeral : forall t n,
+  BProv Ax_s [] (pEq
+    (tAdd t (Term.numeral n))
+    (Term.addRightNumeral t n)).
+Proof.
+  intros t n.
+  induction n as [|n IH].
+  - simpl.
+    apply BProv_Ax_s_addZero_term.
+  - simpl.
+    assert (hstep : BProv Ax_s [] (pEq
+        (tAdd t (tSucc (Term.numeral n)))
+        (tSucc (tAdd t (Term.numeral n))))).
+    {
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hsucc : BProv Ax_s [] (pEq
+        (tSucc (tAdd t (Term.numeral n)))
+        (tSucc (Term.addRightNumeral t n)))).
+    {
+      apply BProv_eq_congr_succ.
+      exact IH.
+    }
+    exact (BProv_eqTrans Ax_s []
+      (tAdd t (tSucc (Term.numeral n)))
+      (tSucc (tAdd t (Term.numeral n)))
+      (tSucc (Term.addRightNumeral t n)) hstep hsucc).
+Qed.
+
+Lemma BProv_Ax_s_mulRightNumeral : forall t n,
+  BProv Ax_s [] (pEq
+    (tMul t (Term.numeral n))
+    (Term.mulRightNumeral t n)).
+Proof.
+  intros t n.
+  induction n as [|n IH].
+  - simpl.
+    apply BProv_Ax_s_mulZero_term.
+  - simpl.
+    assert (hstep : BProv Ax_s [] (pEq
+        (tMul t (tSucc (Term.numeral n)))
+        (tAdd (tMul t (Term.numeral n)) t))).
+    {
+      apply BProv_Ax_s_mulSucc_terms.
+    }
+    assert (hadd : BProv Ax_s [] (pEq
+        (tAdd (tMul t (Term.numeral n)) t)
+        (tAdd (Term.mulRightNumeral t n) t))).
+    {
+      exact (BProv_eq_congr_add_left Ax_s []
+        (tMul t (Term.numeral n)) (Term.mulRightNumeral t n) t IH).
+    }
+    exact (BProv_eqTrans Ax_s []
+      (tMul t (tSucc (Term.numeral n)))
+      (tAdd (tMul t (Term.numeral n)) t)
+      (tAdd (Term.mulRightNumeral t n) t) hstep hadd).
+Qed.
+
+Lemma BProv_Ax_s_addNumerals : forall m n,
+  BProv Ax_s [] (pEq
+    (tAdd (Term.numeral m) (Term.numeral n))
+    (Term.numeral (m + n))).
+Proof.
+  intros m n.
+  pose proof (BProv_Ax_s_addRightNumeral (Term.numeral m) n) as h.
+  rewrite Term.addRightNumeral_numeral in h.
+  exact h.
+Qed.
+
+Lemma BProv_Ax_s_mulRightNumeral_numeral : forall m n,
+  BProv Ax_s [] (pEq
+    (Term.mulRightNumeral (Term.numeral m) n)
+    (Term.numeral (m * n))).
+Proof.
+  intros m n.
+  induction n as [|n IH].
+  - replace (m * 0) with 0 by lia.
+    simpl.
+    apply BProv_eqRefl.
+  - simpl.
+    assert (hcongr : BProv Ax_s [] (pEq
+        (tAdd (Term.mulRightNumeral (Term.numeral m) n)
+          (Term.numeral m))
+        (tAdd (Term.numeral (m * n)) (Term.numeral m)))).
+    {
+      exact (BProv_eq_congr_add Ax_s []
+        (Term.mulRightNumeral (Term.numeral m) n)
+        (Term.numeral (m * n))
+        (Term.numeral m) (Term.numeral m) IH
+        (BProv_eqRefl Ax_s [] (Term.numeral m))).
+    }
+    assert (hadd : BProv Ax_s [] (pEq
+        (tAdd (Term.numeral (m * n)) (Term.numeral m))
+        (Term.numeral (m * n + m)))).
+    {
+      apply BProv_Ax_s_addNumerals.
+    }
+    replace (m * S n) with (m * n + m) by lia.
+    exact (BProv_eqTrans Ax_s []
+      (tAdd (Term.mulRightNumeral (Term.numeral m) n)
+        (Term.numeral m))
+      (tAdd (Term.numeral (m * n)) (Term.numeral m))
+      (Term.numeral (m * n + m)) hcongr hadd).
+Qed.
+
+Lemma BProv_Ax_s_mulNumerals : forall m n,
+  BProv Ax_s [] (pEq
+    (tMul (Term.numeral m) (Term.numeral n))
+    (Term.numeral (m * n))).
+Proof.
+  intros m n.
+  exact (BProv_eqTrans Ax_s []
+    (tMul (Term.numeral m) (Term.numeral n))
+    (Term.mulRightNumeral (Term.numeral m) n)
+    (Term.numeral (m * n))
+    (BProv_Ax_s_mulRightNumeral (Term.numeral m) n)
+    (BProv_Ax_s_mulRightNumeral_numeral m n)).
+Qed.
+
 Lemma BProv_Ax_s_inductionForm_rename : forall phi r,
   BProv Ax_s [] (rename r (inductionForm phi)).
 Proof.

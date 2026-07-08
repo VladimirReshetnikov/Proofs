@@ -103,6 +103,11 @@ Check PA.Formula.BProv_Ax_s_leConstAt_of_leAt_eqConst.
 Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero.
 Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero.
 Check PA.Formula.BProv_Ax_s_leConstAt_succ_cases.
+Check PA.Formula.BProv_Ax_s_addRightNumeral.
+Check PA.Formula.BProv_Ax_s_mulRightNumeral.
+Check PA.Formula.BProv_Ax_s_addNumerals.
+Check PA.Formula.BProv_Ax_s_mulRightNumeral_numeral.
+Check PA.Formula.BProv_Ax_s_mulNumerals.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
