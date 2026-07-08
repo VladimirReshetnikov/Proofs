@@ -19078,6 +19078,71 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot {G : List Formula}
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hbitAt' (by simpa [rename] using houter)
 
+/-- In an opened final-bit beta witness, a closed even current value forces the
+opened output-bit slot to be `0`. -/
+theorem BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_eqConst_even
+    {G : List Formula} {bit code step idx cur : Nat}
+    (hcur : BProv Ax_s G (eqConstAt 1 cur))
+    (hcurEven : cur % 2 = 0)
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 1 (code+2) (step+2) (idx+2))
+        (and
+          (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+          (div2StepAt 1 0 (bit+2))))) :
+    BProv Ax_s G (eqConstAt (bit+2) 0) := by
+  have htail : BProv Ax_s G
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2))) :=
+    BProv_andE2 hbody
+  have hstep : BProv Ax_s G (div2StepAt 1 0 (bit+2)) :=
+    BProv_andE2 htail
+  have hbit : BProv Ax_s G (eqConstAt (bit+2) (cur % 2)) :=
+    BProv_Ax_s_eqConstAt_mod_two_of_div2StepAt_eqConst
+      (value := 1) (half := 0) (bit := bit+2) hcur hstep
+  simpa [hcurEven] using hbit
+
+/-- Eliminate a final-bit formula to contradiction once the opened current
+value is a closed even numeral. -/
+theorem BProv_Ax_s_betaDiv2BitAt_current_eqConst_even_bot
+    {G : List Formula} {bit code step idx cur : Nat}
+    (hbitOne : BProv Ax_s G (eqConstAt bit 1))
+    (hcur :
+      let body : Formula :=
+        and
+          (betaAt 1 (code+2) (step+2) (idx+2))
+          (and
+            (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+            (div2StepAt 1 0 (bit+2)))
+      BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        (eqConstAt 1 cur))
+    (hcurEven : cur % 2 = 0)
+    (hbitAt : BProv Ax_s G (betaDiv2BitAt bit code step idx)) :
+    BProv Ax_s G bot :=
+  BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot
+    (G := G) (bit := bit) (code := code) (step := step) (idx := idx)
+    hbitOne
+    (by
+      let body : Formula :=
+        and
+          (betaAt 1 (code+2) (step+2) (idx+2))
+          (and
+            (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+            (div2StepAt 1 0 (bit+2)))
+      let C : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      have hbody : BProv Ax_s C body :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      exact BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_eqConst_even
+        (G := C) (bit := bit) (code := code) (step := step) (idx := idx)
+        (cur := cur)
+        (by simpa [C, body, List.map_map, Function.comp_def] using hcur)
+        hcurEven
+        (by simpa [C, body, List.map_map, Function.comp_def] using hbody))
+    hbitAt
+
 /-- A final beta-bit witness with bit `1` is impossible when the beta step
 parameter is `0`: in that case every beta entry is forced to be `0`, so the
 opened current value contradicts the embedded binary-halving step. -/
