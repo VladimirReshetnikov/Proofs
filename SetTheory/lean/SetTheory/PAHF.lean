@@ -30,6 +30,12 @@ open Form
 of the set coded by `y`.  Equivalently, the `x`-th binary digit of `y` is set. -/
 def Mem (x y : Nat) : Prop := y.testBit x = true
 
+/-- Nonmembership is the closed Boolean value `false` of the corresponding
+Ackermann bit. -/
+theorem testBit_false_of_not_mem {x y : Nat} (h : ¬ Mem x y) :
+    y.testBit x = false := by
+  cases hb : y.testBit x <;> simp [Mem, hb] at h ⊢
+
 /-- The empty set is coded by `0`. -/
 def empty : Nat := 0
 
@@ -8055,21 +8061,24 @@ theorem BetaDiv2Step_bit_one_testBit_zero {code step idx cur next : Nat}
   rw [Nat.add_mul_mod_self_left]
   simp
 
-theorem HFMemTrace_entry_shiftRight {elem set code step : Nat}
-    (h : HFMemTrace elem set code step) :
+/-- A beta-coded halving trace whose zeroth entry is `set` computes the
+successive binary right shifts of `set`.  This is the semantic invariant that
+the PA-side nonmembership proof has to mirror syntactically. -/
+theorem BetaDiv2StepsThrough_entry_shiftRight {elem set code step : Nat}
+    (hentry : BetaEntry code step 0 set)
+    (hsteps : BetaDiv2StepsThrough code step elem) :
     ∀ k value, k ≤ elem + 1 →
       BetaEntry code step k value → value = set >>> k := by
   intro k
   induction k with
   | zero =>
       intro value _ hvalue
-      have hstart : BetaEntry code step 0 set := h.1
-      have hv : value = set := BetaEntry_functional hvalue hstart
+      have hv : value = set := BetaEntry_functional hvalue hentry
       simpa [Nat.shiftRight_zero] using hv
   | succ k ih =>
       intro value hle hvalue
       have hk : k ≤ elem := by omega
-      rcases h.2.1 k hk with ⟨cur, next, bit, hstep⟩
+      rcases hsteps k hk with ⟨cur, next, bit, hstep⟩
       have hcur : cur = set >>> k := ih cur (by omega) hstep.1
       have hvalue_next : value = next :=
         BetaEntry_functional hvalue hstep.2.1
@@ -8080,6 +8089,39 @@ theorem HFMemTrace_entry_shiftRight {elem set code step : Nat}
         _ = cur / 2 := hnext
         _ = (set >>> k) / 2 := by rw [hcur]
         _ = set >>> (k+1) := (Nat.shiftRight_succ set k).symm
+
+/-- `HFMemTrace`-packaged form of
+`BetaDiv2StepsThrough_entry_shiftRight`. -/
+theorem HFMemTrace_entry_shiftRight {elem set code step : Nat}
+    (h : HFMemTrace elem set code step) :
+    ∀ k value, k ≤ elem + 1 →
+      BetaEntry code step k value → value = set >>> k :=
+  BetaDiv2StepsThrough_entry_shiftRight h.1 h.2.1
+
+/-- In any semantic halving trace starting from `set`, if `elem` is absent
+from `set`, then the halving step at `elem` has output bit `0`. -/
+theorem BetaDiv2Step_bit_zero_of_not_mem
+    {elem set code step cur next bit : Nat}
+    (hentry : BetaEntry code step 0 set)
+    (hsteps : BetaDiv2StepsThrough code step elem)
+    (hstep : BetaDiv2Step code step elem cur next bit)
+    (hnot : ¬ AckermannHF.Mem elem set) :
+    bit = 0 := by
+  have hcur : cur = set >>> elem :=
+    BetaDiv2StepsThrough_entry_shiftRight hentry hsteps elem cur
+      (by omega) hstep.1
+  have hshiftFalse : (set >>> elem).testBit 0 = false := by
+    have hshift := Nat.testBit_shiftRight (i := elem) (j := 0) set
+    have hbit := AckermannHF.testBit_false_of_not_mem hnot
+    simp [hbit] at hshift ⊢
+  rcases hstep.2.2.1 with hbitZero | hbitOne
+  · exact hbitZero
+  · subst bit
+    have hone : cur.testBit 0 = true :=
+      BetaDiv2Step_bit_one_testBit_zero hstep
+    have hcurFalse : cur.testBit 0 = false := by
+      simpa [hcur] using hshiftFalse
+    exact False.elim (by simp [hcurFalse] at hone)
 
 theorem HFMemTrace_mem {elem set code step : Nat}
     (h : HFMemTrace elem set code step) : AckermannHF.Mem elem set := by
