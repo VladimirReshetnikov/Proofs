@@ -7871,6 +7871,75 @@ theorem BProv_Ax_s_ltTermAt_succ_succ {G : List Formula} {s t : Term}
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltTermAt, ltBody] using hbody)
 
+/-- PA lowers a strict successor upper bound to a non-strict predecessor
+bound: from `s < S t` it proves `s <= t`. -/
+theorem BProv_Ax_s_leTermAt_of_ltTermAt_succ_right
+    {G : List Formula} {s t : Term}
+    (hlt : BProv Ax_s G (ltTermAt s (Term.succ t))) :
+    BProv Ax_s G (leTermAt s t) := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.rename Nat.succ s) (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ (Term.succ t))
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (leTermAt s t)) := by
+    let C : List Formula := ltBody :: G.map (rename Nat.succ)
+    let ss : Term := Term.rename Nat.succ s
+    let tt : Term := Term.rename Nat.succ t
+    let d : Term := Term.var 0
+    have hltRaw : BProv Ax_s C ltBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hltEq : BProv Ax_s C
+        (eq (Term.add ss (Term.succ d)) (Term.succ tt)) := by
+      simpa [ltBody, ss, tt, d, Term.rename] using hltRaw
+    have haddSucc : BProv Ax_s C
+        (eq (Term.add ss (Term.succ d))
+          (Term.succ (Term.add ss d))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms ss d)
+    have hsuccEq : BProv Ax_s C
+        (eq (Term.succ (Term.add ss d)) (Term.succ tt)) :=
+      BProv_eqTrans (BProv_eqSym haddSucc) hltEq
+    have hinj : BProv Ax_s C
+        (imp (eq (Term.succ (Term.add ss d)) (Term.succ tt))
+          (eq (Term.add ss d) tt)) :=
+      BProv_weaken_nil (BProv_Ax_s_succInj_terms (Term.add ss d) tt)
+    have hleEq : BProv Ax_s C (eq (Term.add ss d) tt) :=
+      BProv_mp Ax_s C _ _ hinj hsuccEq
+    have hsNorm :
+        Term.subst (instTerm d)
+          (Term.rename (fun n : Nat => n + 1 + 1) s) = ss := by
+      simpa [ss] using
+        (term_subst_instTerm_rename_two_succ s d)
+    have htNorm :
+        Term.subst (instTerm d)
+          (Term.rename (fun n : Nat => n + 1 + 1) t) = tt := by
+      simpa [tt] using
+        (term_subst_instTerm_rename_two_succ t d)
+    have hinst : BProv Ax_s C
+        (subst (instTerm d)
+          (eq
+            (Term.add (Term.rename Nat.succ (Term.rename Nat.succ s))
+              (Term.var 0))
+            (Term.rename Nat.succ (Term.rename Nat.succ t)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename, ss, tt, d,
+        Term.rename_comp, hsNorm, htNorm] using hleEq
+    have hex : BProv Ax_s C
+        (ex
+          (eq
+            (Term.add (Term.rename Nat.succ (Term.rename Nat.succ s))
+              (Term.var 0))
+            (Term.rename Nat.succ (Term.rename Nat.succ t)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq
+          (Term.add (Term.rename Nat.succ (Term.rename Nat.succ s))
+            (Term.var 0))
+          (Term.rename Nat.succ (Term.rename Nat.succ t)))
+        (t := d) hinst
+    simpa [C, leTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hlt (by
+      simpa [ltTermAt, ltBody] using hbody)
+
 /-- PA proves total comparison for the term-parametric order macros:
 `∀ y, ∀ x, x ≤ y ∨ y < x`.  This is the syntactic comparison splitter used by
 the quotient/remainder functionality proofs; no semantic total-order fact is
