@@ -6899,6 +6899,14 @@ def betaDiv2StepsThroughAt (code step last : Nat) : Formula :=
   all (imp (leAt 0 (last+1))
     (betaDiv2StepWitnessAt (code+1) (step+1) 0))
 
+/-- Closed-bound variant of `betaDiv2StepsThroughAt`: every adjacent pair up to
+the standard numeral `last` in a beta-coded sequence is one binary-halving step.
+This is only a formula macro; the PA constructors connecting it to the variable
+bound form are separate lemmas. -/
+def betaDiv2StepsThroughConstAt (code step last : Nat) : Formula :=
+  all (imp (leConstAt 0 last)
+    (betaDiv2StepWitnessAt (code+1) (step+1) 0))
+
 /-- Read a specified bit from a beta-coded halving trace at `idx`. -/
 def betaDiv2BitAt (bit code step idx : Nat) : Formula :=
   ex (ex
@@ -7262,6 +7270,33 @@ theorem betaDiv2StepsThroughAt_nat (e : Nat → Nat) (code step last : Nat) :
       simpa [scons] using hle
     apply (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mpr
     simpa [scons] using h k hk
+
+theorem betaDiv2StepsThroughConstAt_nat
+    (e : Nat → Nat) (code step last : Nat) :
+    Sat natModel e (betaDiv2StepsThroughConstAt code step last) ↔
+      BetaDiv2StepsThrough (e code) (e step) last := by
+  constructor
+  · intro h k hk
+    have hkSat :
+        Sat natModel (scons k e) (leConstAt 0 last) := by
+      exact (leConstAt_nat (scons k e) 0 last).mpr (by
+        simpa [scons] using hk)
+    have hw := (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mp
+      (h k hkSat)
+    rcases hw with ⟨cur, next, bit, hcur, hnext, hbit, hvalue⟩
+    exact ⟨cur, next, bit, by
+      simpa [BetaDiv2Step, scons] using
+        And.intro hcur (And.intro hnext (And.intro hbit hvalue))⟩
+  · intro h k hkSat
+    have hk : k ≤ last := by
+      have hle := (leConstAt_nat (scons k e) 0 last).mp hkSat
+      simpa [scons] using hle
+    rcases h k hk with ⟨cur, next, bit, hdiv⟩
+    rcases hdiv with ⟨hcur, hnext, hbit, hvalue⟩
+    apply (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mpr
+    exact ⟨cur, next, bit, by simpa [scons] using hcur,
+      by simpa [scons] using hnext, by
+        simpa using And.intro hbit hvalue⟩
 
 theorem betaDiv2BitAt_nat (e : Nat → Nat) (bit code step idx : Nat) :
     Sat natModel e (betaDiv2BitAt bit code step idx) ↔
@@ -10797,6 +10832,216 @@ theorem BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
   simpa [betaDiv2StepsThroughAt, leHyp] using
     BProv_allI_of_sentences (B := Ax_s)
       (fun f hf => sentence_ax_s (f := f) hf) himp
+
+/-- Closed-bound base trace constructor.  With standard bound `0`, the
+quantified index is forced to be `0`, so one pointwise `BetaDiv2Step` supplies
+the whole closed bounded trace. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
+    {G : List Formula}
+    {code step c s cur next bit : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hdivStep : BetaDiv2Step c s 0 cur next bit) :
+    BProv Ax_s G (betaDiv2StepsThroughConstAt code step 0) := by
+  let leHyp : Formula := leConstAt 0 0
+  have hle : BProv Ax_s (leHyp :: G.map (rename Nat.succ)) leHyp :=
+    BProv_ass (B := Ax_s) (G := leHyp :: G.map (rename Nat.succ))
+      (by simp)
+  have hcodeRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt code c)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcode Nat.succ
+  have hstepRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt step s)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstep Nat.succ
+  have hcodeBody : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt (code+1) c) := by
+    simpa [eqConstAt, rename, Term.rename] using BProv_context_cons hcodeRen
+  have hstepBody : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt (step+1) s) := by
+    simpa [eqConstAt, rename, Term.rename] using BProv_context_cons hstepRen
+  have hidxZero : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt 0 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero hle
+  have hwitness : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (betaDiv2StepWitnessAt (code+1) (step+1) 0) :=
+    BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+      (code := code+1) (step := step+1) (idx := 0)
+      (c := c) (s := s) (i := 0)
+      (cur := cur) (next := next) (bit := bit)
+      hcodeBody hstepBody hidxZero hdivStep
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp (betaDiv2StepWitnessAt (code+1) (step+1) 0)) :=
+    BProv_impI hwitness
+  simpa [betaDiv2StepsThroughConstAt, leHyp] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+
+/-- Closed-bound successor trace constructor.  The proof splits a closed
+standard bound `i ≤ n+1` into `i ≤ n` or `i = n+1`; the first branch reuses the
+previous closed trace, and the second branch uses the supplied pointwise
+halving step at the new endpoint. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step
+    {G : List Formula}
+    {code step c s n cur next bit : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hprev : BProv Ax_s G (betaDiv2StepsThroughConstAt code step n))
+    (hdivStep : BetaDiv2Step c s (n+1) cur next bit) :
+    BProv Ax_s G (betaDiv2StepsThroughConstAt code step (n+1)) := by
+  let leHyp : Formula := leConstAt 0 (n+1)
+  let witness : Formula := betaDiv2StepWitnessAt (code+1) (step+1) 0
+  have hle : BProv Ax_s (leHyp :: G.map (rename Nat.succ)) leHyp :=
+    BProv_ass (B := Ax_s) (G := leHyp :: G.map (rename Nat.succ))
+      (by simp)
+  have hcases : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (or (leConstAt 0 n) (eqConstAt 0 (n+1))) :=
+    BProv_Ax_s_leConstAt_succ_cases hle
+  have hcodeRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt code c)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcode Nat.succ
+  have hstepRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt step s)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstep Nat.succ
+  have hprevRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (betaDiv2StepsThroughConstAt code step n)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hprev Nat.succ
+  have hleft : BProv Ax_s
+      (leConstAt 0 n :: leHyp :: G.map (rename Nat.succ)) witness := by
+    have hprevAll : BProv Ax_s
+        (leConstAt 0 n :: leHyp :: G.map (rename Nat.succ))
+        (betaDiv2StepsThroughConstAt (code+1) (step+1) n) := by
+      have hprevCtx : BProv Ax_s
+          (leConstAt 0 n :: leHyp :: G.map (rename Nat.succ))
+          (rename Nat.succ (betaDiv2StepsThroughConstAt code step n)) :=
+        BProv_context_cons (BProv_context_cons hprevRen)
+      simpa [betaDiv2StepsThroughConstAt, betaDiv2StepWitnessAt,
+        betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+        zeroAt, oneAt, eqConstAt, leConstAt, betaModTerm,
+        rename, Term.rename, SetTheory.up] using
+        hprevCtx
+    have himpRaw := BProv_allE (B := Ax_s)
+      (G := leConstAt 0 n :: leHyp :: G.map (rename Nat.succ))
+      (t := Term.var 0) hprevAll
+    have himp : BProv Ax_s
+        (leConstAt 0 n :: leHyp :: G.map (rename Nat.succ))
+        (imp (leConstAt 0 n) witness) := by
+      simpa [witness, betaDiv2StepsThroughConstAt, leConstAt,
+        betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+        div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+        subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+        term_subst_instTerm_rename_succ] using himpRaw
+    have hleN : BProv Ax_s
+        (leConstAt 0 n :: leHyp :: G.map (rename Nat.succ))
+        (leConstAt 0 n) :=
+      BProv_ass (B := Ax_s)
+        (G := leConstAt 0 n :: leHyp :: G.map (rename Nat.succ))
+        (by simp)
+    exact BProv_mp Ax_s
+      (leConstAt 0 n :: leHyp :: G.map (rename Nat.succ))
+      (leConstAt 0 n) witness himp hleN
+  have hright : BProv Ax_s
+      (eqConstAt 0 (n+1) :: leHyp :: G.map (rename Nat.succ)) witness := by
+    have hidx : BProv Ax_s
+        (eqConstAt 0 (n+1) :: leHyp :: G.map (rename Nat.succ))
+        (eqConstAt 0 (n+1)) :=
+      BProv_ass (B := Ax_s)
+        (G := eqConstAt 0 (n+1) :: leHyp :: G.map (rename Nat.succ))
+        (by simp)
+    have hcodeBody : BProv Ax_s
+        (eqConstAt 0 (n+1) :: leHyp :: G.map (rename Nat.succ))
+        (eqConstAt (code+1) c) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_context_cons (BProv_context_cons hcodeRen)
+    have hstepBody : BProv Ax_s
+        (eqConstAt 0 (n+1) :: leHyp :: G.map (rename Nat.succ))
+        (eqConstAt (step+1) s) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_context_cons (BProv_context_cons hstepRen)
+    simpa [witness] using
+      BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+        (code := code+1) (step := step+1) (idx := 0)
+        (c := c) (s := s) (i := n+1)
+        (cur := cur) (next := next) (bit := bit)
+        hcodeBody hstepBody hidx hdivStep
+  have hbody : BProv Ax_s (leHyp :: G.map (rename Nat.succ)) witness :=
+    BProv_orE (B := Ax_s) (G := leHyp :: G.map (rename Nat.succ))
+      (a := leConstAt 0 n) (b := eqConstAt 0 (n+1))
+      (c := witness) hcases hleft hright
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) :=
+    BProv_impI hbody
+  simpa [betaDiv2StepsThroughConstAt, leHyp, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+
+/-- Convert a closed-standard bounded trace into the ordinary variable-bound
+trace once the variable bound is proved to contain that standard numeral. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst
+    {G : List Formula}
+    {code step last n : Nat}
+    (hconst : BProv Ax_s G (betaDiv2StepsThroughConstAt code step n))
+    (hlast : BProv Ax_s G (eqConstAt last n)) :
+    BProv Ax_s G (betaDiv2StepsThroughAt code step last) := by
+  let leHyp : Formula := leAt 0 (last+1)
+  let witness : Formula := betaDiv2StepWitnessAt (code+1) (step+1) 0
+  have hle : BProv Ax_s (leHyp :: G.map (rename Nat.succ)) leHyp :=
+    BProv_ass (B := Ax_s) (G := leHyp :: G.map (rename Nat.succ))
+      (by simp)
+  have hlastRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt last n)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlast Nat.succ
+  have hconstRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (betaDiv2StepsThroughConstAt code step n)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hconst Nat.succ
+  have hlastBody : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (eqConstAt (last+1) n) := by
+    simpa [eqConstAt, rename, Term.rename] using
+      BProv_context_cons hlastRen
+  have hleConst : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (leConstAt 0 n) :=
+    BProv_Ax_s_leConstAt_of_leAt_eqConst hle hlastBody
+  have hconstAll : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (betaDiv2StepsThroughConstAt (code+1) (step+1) n) := by
+    have hctx : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+        (rename Nat.succ (betaDiv2StepsThroughConstAt code step n)) :=
+      BProv_context_cons hconstRen
+    simpa [betaDiv2StepsThroughConstAt, betaDiv2StepWitnessAt,
+      betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, leConstAt, betaModTerm,
+      rename, Term.rename, SetTheory.up] using hctx
+  have himpRaw := BProv_allE (B := Ax_s)
+    (G := leHyp :: G.map (rename Nat.succ))
+    (t := Term.var 0) hconstAll
+  have himp : BProv Ax_s (leHyp :: G.map (rename Nat.succ))
+      (imp (leConstAt 0 n) witness) := by
+    simpa [witness, betaDiv2StepsThroughConstAt, leConstAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+      div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      term_subst_instTerm_rename_succ] using himpRaw
+  have hwitness : BProv Ax_s (leHyp :: G.map (rename Nat.succ)) witness :=
+    BProv_mp Ax_s (leHyp :: G.map (rename Nat.succ))
+      (leConstAt 0 n) witness himp hleConst
+  have hfinal : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) :=
+    BProv_impI hwitness
+  simpa [betaDiv2StepsThroughAt, leHyp, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hfinal
 
 /-- Package the innermost membership bit witness.  The premise is only the
 closed, code/step-instantiated `betaDiv2BitAt` component; the constructor adds

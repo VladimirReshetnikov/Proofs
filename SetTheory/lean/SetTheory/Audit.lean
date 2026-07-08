@@ -233,6 +233,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bitOneEx_of_bit
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components
@@ -273,6 +276,7 @@ open SetTheory
 #check @PA.Formula.betaDiv2StepWitnessAt
 #check @PA.Formula.betaDiv2StepAt
 #check @PA.Formula.betaDiv2StepsThroughAt
+#check @PA.Formula.betaDiv2StepsThroughConstAt
 #check @PA.Formula.betaDiv2BitAt
 #check @PA.Formula.hfMemAt
 #check @PA.Formula.leAt_nat
@@ -298,6 +302,7 @@ open SetTheory
 #check @PA.Formula.betaDiv2StepWitnessAt_nat
 #check @PA.Formula.betaDiv2StepAt_nat
 #check @PA.Formula.betaDiv2StepsThroughAt_nat
+#check @PA.Formula.betaDiv2StepsThroughConstAt_nat
 #check @PA.Formula.betaDiv2BitAt_nat
 #check @PA.Formula.hfMemAt_nat_trace
 #check @PA.Formula.betaFact_pos
