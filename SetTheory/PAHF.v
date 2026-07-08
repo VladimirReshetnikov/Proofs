@@ -10080,6 +10080,200 @@ End Formula.
 
 End PA.
 
+Lemma rename_HF_emptyAt : forall (r : nat -> nat) i,
+  rename r (HF_emptyAt i) = HF_emptyAt (r i).
+Proof.
+  intros r i.
+  unfold HF_emptyAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_adjoinAt : forall (r : nat -> nat) c a b,
+  rename r (HF_adjoinAt c a b) = HF_adjoinAt (r c) (r a) (r b).
+Proof.
+  intros r c a b.
+  unfold HF_adjoinAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_succAt : forall (r : nat -> nat) s a,
+  rename r (HF_succAt s a) = HF_succAt (r s) (r a).
+Proof.
+  intros r s a.
+  unfold HF_succAt.
+  apply rename_HF_adjoinAt.
+Qed.
+
+Lemma rename_HF_singleAt : forall (r : nat -> nat) i j,
+  rename r (HF_singleAt i j) = HF_singleAt (r i) (r j).
+Proof.
+  intros r i j.
+  unfold HF_singleAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_upairAt : forall (r : nat -> nat) i j k,
+  rename r (HF_upairAt i j k) = HF_upairAt (r i) (r j) (r k).
+Proof.
+  intros r i j k.
+  unfold HF_upairAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_kpairAt : forall (r : nat -> nat) p a b,
+  rename r (HF_kpairAt p a b) = HF_kpairAt (r p) (r a) (r b).
+Proof.
+  intros r p a b.
+  unfold HF_kpairAt, fIff.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairMemAt : forall (r : nat -> nat) a b rel,
+  rename r (HF_pairMemAt a b rel) = HF_pairMemAt (r a) (r b) (r rel).
+Proof.
+  intros r a b rel.
+  unfold HF_pairMemAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairFunctionalAt : forall (r : nat -> nat) f,
+  rename r (HF_pairFunctionalAt f) = HF_pairFunctionalAt (r f).
+Proof.
+  intros r f.
+  unfold HF_pairFunctionalAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairKeysBelowSuccAt : forall (r : nat -> nat) f m,
+  rename r (HF_pairKeysBelowSuccAt f m) =
+    HF_pairKeysBelowSuccAt (r f) (r m).
+Proof.
+  intros r f m.
+  unfold HF_pairKeysBelowSuccAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairTotalBelowSuccAt : forall (r : nat -> nat) f m,
+  rename r (HF_pairTotalBelowSuccAt f m) =
+    HF_pairTotalBelowSuccAt (r f) (r m).
+Proof.
+  intros r f m.
+  unfold HF_pairTotalBelowSuccAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairSuccStepAt : forall (r : nat -> nat) f m,
+  rename r (HF_pairSuccStepAt f m) = HF_pairSuccStepAt (r f) (r m).
+Proof.
+  intros r f m.
+  unfold HF_pairSuccStepAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairBaseAt : forall (r : nat -> nat) f s,
+  rename r (HF_pairBaseAt f s) = HF_pairBaseAt (r f) (r s).
+Proof.
+  intros r f s.
+  unfold HF_pairBaseAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_pairZeroBaseAt : forall (r : nat -> nat) f,
+  rename r (HF_pairZeroBaseAt f) = HF_pairZeroBaseAt (r f).
+Proof.
+  intros r f.
+  unfold HF_pairZeroBaseAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_HF_succRecApproxAt : forall (r : nat -> nat) f s m,
+  rename r (HF_succRecApproxAt f s m) =
+    HF_succRecApproxAt (r f) (r s) (r m).
+Proof.
+  intros r f s m.
+  unfold HF_succRecApproxAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_addGraphAt : forall (r : nat -> nat) out left right,
+  rename r (addGraphAt out left right) =
+    addGraphAt (r out) (r left) (r right).
+Proof.
+  intros r out left right.
+  unfold addGraphAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_mulStepAt : forall (r : nat -> nat) f a m,
+  rename r (mulStepAt f a m) = mulStepAt (r f) (r a) (r m).
+Proof.
+  intros r f a m.
+  unfold mulStepAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_mulRecApproxAt : forall (r : nat -> nat) f a m,
+  rename r (mulRecApproxAt f a m) =
+    mulRecApproxAt (r f) (r a) (r m).
+Proof.
+  intros r f a m.
+  unfold mulRecApproxAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_mulGraphAt : forall (r : nat -> nat) out left right,
+  rename r (mulGraphAt out left right) =
+    mulGraphAt (r out) (r left) (r right).
+Proof.
+  intros r out left right.
+  unfold mulGraphAt.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma up_add1 : forall (r : nat -> nat) n,
+  up r (n + 1) = r n + 1.
+Proof.
+  intros r n.
+  replace (n + 1) with (S n) by lia.
+  replace (r n + 1) with (S (r n)) by lia.
+  reflexivity.
+Qed.
+
+Lemma up_add2 : forall (r : nat -> nat) n,
+  up (up r) (n + 2) = r n + 2.
+Proof.
+  intros r n.
+  replace (n + 2) with (S (S n)) by lia.
+  replace (r n + 2) with (S (S (r n))) by lia.
+  reflexivity.
+Qed.
+
+Lemma up_add3 : forall (r : nat -> nat) n,
+  up (up (up r)) (n + 3) = r n + 3.
+Proof.
+  intros r n.
+  replace (n + 3) with (S (S (S n))) by lia.
+  replace (r n + 3) with (S (S (S (r n)))) by lia.
+  reflexivity.
+Qed.
+
 Fixpoint termGraphAt (rho : nat -> nat) (out : nat) (t : PA.term) : form :=
   match t with
   | PA.tVar n => fEq out (rho n)
@@ -10200,6 +10394,47 @@ Proof.
   - rewrite (IHa (fun n => rho n + 3) 1 r).
     rewrite (IHb (fun n => rho n + 3) 2 r).
     reflexivity.
+Qed.
+
+Lemma termGraphAt_rename : forall t rho out r,
+  rename r (termGraphAt rho out t) =
+    termGraphAt (fun n => r (rho n)) (r out) t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho out r.
+  - reflexivity.
+  - apply rename_HF_emptyAt.
+  - rewrite (IHa (fun n => rho n + 1) 0 (up r)).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up r (rho n + 1)) (fun n => r (rho n) + 1)
+      (up r 0)).
+    + rewrite up_add1.
+      reflexivity.
+    + intro n. apply up_add1.
+  - rewrite (IHa (fun n => rho n + 2) 1 (up (up r))).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+      (up (up r) 1)).
+    + rewrite (IHb (fun n => rho n + 2) 0 (up (up r))).
+      rewrite (termGraphAt_map_ext b
+        (fun n => up (up r) (rho n + 2)) (fun n => r (rho n) + 2)
+        (up (up r) 0)).
+      * rewrite up_add2.
+        reflexivity.
+      * intro n. apply up_add2.
+    + intro n. apply up_add2.
+  - rewrite (IHa (fun n => rho n + 3) 1 (up (up (up r)))).
+    rewrite (termGraphAt_map_ext a
+      (fun n => up (up (up r)) (rho n + 3))
+      (fun n => r (rho n) + 3) (up (up (up r)) 1)).
+    + rewrite (IHb (fun n => rho n + 3) 2 (up (up (up r)))).
+      rewrite (termGraphAt_map_ext b
+        (fun n => up (up (up r)) (rho n + 3))
+        (fun n => r (rho n) + 3) (up (up (up r)) 2)).
+      * rewrite up_add3.
+        reflexivity.
+      * intro n. apply up_add3.
+    + intro n. apply up_add3.
 Qed.
 
 Lemma termGraphAt_substZeroAt_insert_model : forall V
