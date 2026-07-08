@@ -132,6 +132,7 @@ Check PA.Formula.BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst.
 Check PA.Formula.BProv_Ax_s_betaAt_constIdxSubst_of_eqConst.
 Check PA.Formula.BProv_Ax_s_betaAtConstIdx_of_eqConst.
 Check PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
