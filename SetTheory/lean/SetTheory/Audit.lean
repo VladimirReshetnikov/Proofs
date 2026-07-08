@@ -287,6 +287,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remTermEqAt_of_remTermAt
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eq_of_same_quotient_remainder_terms
+#check @PA.Formula.BProv_Ax_s_dvdAt_of_remTermAt_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
 #check @PA.Formula.BProv_Ax_s_remAt_eqConst_modulus_zero_bot
@@ -310,6 +311,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_rem
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_rem
+#check @PA.Formula.BProv_Ax_s_betaTermAt_zero_opened_body_dvd
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_idx

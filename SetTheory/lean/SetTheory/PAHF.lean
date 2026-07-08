@@ -12547,6 +12547,79 @@ theorem BProv_Ax_s_eq_of_same_quotient_remainder_terms
     BProv_eqTrans (BProv_eqSym h₁) h₂
   exact BProv_Ax_s_add_cancel_left_terms hsame
 
+/-- A term-parametric remainder proof whose remainder term is literally `0`
+exhibits a divisibility witness for the dividend by the modulus.  This is the
+divisibility half of the later beta-entry functionality proof: no quotient
+comparison or remainder uniqueness is hidden here. -/
+theorem BProv_Ax_s_dvdAt_of_remTermAt_zero
+    {G : List Formula} {value modulus : Nat}
+    (hrem : BProv Ax_s G (remTermAt Term.zero value modulus)) :
+    BProv Ax_s G (dvdAt modulus value) := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ Term.zero) (Term.var (modulus+1)))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.rename Nat.succ Term.zero)))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (dvdAt modulus value)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have heqRaw : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ Term.zero))) :=
+      BProv_andE2 hbodyAss
+    have heq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            Term.zero)) := by
+      simpa [Term.rename] using heqRaw
+    have haddZero : BProv Ax_s C
+        (eq
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            Term.zero)
+          (Term.mul (Term.var 0) (Term.var (modulus+1)))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addZero_term
+          (Term.mul (Term.var 0) (Term.var (modulus+1))))
+    have hvalueMul : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.mul (Term.var 0) (Term.var (modulus+1)))) :=
+      BProv_eqTrans heq haddZero
+    have hmulComm : BProv Ax_s C
+        (eq
+          (Term.mul (Term.var (modulus+1)) (Term.var 0))
+          (Term.mul (Term.var 0) (Term.var (modulus+1)))) :=
+      BProv_Ax_s_mul_comm_terms
+        (Term.var (modulus+1)) (Term.var 0)
+    have hdvdEq : BProv Ax_s C
+        (eq
+          (Term.mul (Term.var (modulus+1)) (Term.var 0))
+          (Term.var (value+1))) :=
+      BProv_eqTrans hmulComm (BProv_eqSym hvalueMul)
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (eq
+            (Term.mul (Term.var (modulus+1+1)) (Term.var 0))
+            (Term.var (value+1+1)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using hdvdEq
+    have hex : BProv Ax_s C
+        (ex
+          (eq
+            (Term.mul (Term.var (modulus+1+1)) (Term.var 0))
+            (Term.var (value+1+1)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq
+          (Term.mul (Term.var (modulus+1+1)) (Term.var 0))
+          (Term.var (value+1+1)))
+        (t := Term.var 0) hinst
+    simpa [C, dvdAt, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remTermAt, ltTermAt, body, Term.rename] using hbody)
+
 /-- A remainder of zero-valued division is zero.  The modulus is deliberately
 left unconstrained: the conclusion follows from the quotient equation alone. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
@@ -12908,6 +12981,31 @@ theorem BProv_Ax_s_betaTermAt_opened_body_rem
   have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
     BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
   exact BProv_andE2 hbody
+
+/-- In an opened zero-output `betaTermAt` witness, the dividend is divisible by
+the opened beta modulus.  This is just the zero-remainder projection packaged
+at the beta layer; beta-entry uniqueness remains a separate proof obligation. -/
+theorem BProv_Ax_s_betaTermAt_zero_opened_body_dvd
+    {G : List Formula} {code step idx : Nat} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+        (remTermAt (Term.rename Nat.succ Term.zero) (code+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ)) (dvdAt 0 (code+1)) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remTermAt (Term.rename Nat.succ Term.zero) (code+1) 0)
+  have hrem : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (remTermAt Term.zero (code+1) 0) := by
+    have hraw : BProv Ax_s (body :: G.map (rename Nat.succ))
+        (remTermAt (Term.rename Nat.succ Term.zero) (code+1) 0) := by
+      simpa [body] using
+        (BProv_Ax_s_betaTermAt_opened_body_rem
+          (G := G) (out := Term.zero) (code := code) (step := step)
+          (idx := idx))
+    simpa [Term.rename] using hraw
+  exact BProv_Ax_s_dvdAt_of_remTermAt_zero hrem
 
 /-- Opened term-output raw-beta specialization of
 `BProv_Ax_s_betaModTerm_modEq_zero_bot`. -/
