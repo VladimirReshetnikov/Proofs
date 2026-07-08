@@ -8,7 +8,7 @@
 (* ===================================================================== *)
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
-From SetTheory Require Import BusyBeaver BusyBeaverMathlib.
+From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
 From SetTheory Require Import Forward Reverse.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -398,6 +398,34 @@ Check BusyBeaverMathlib.supportedCompilerBridge_has_lowerBoundCompiler.
 Check BusyBeaverMathlib.sigma_eventually_dominates_every_supported_total_recursive.
 Print Assumptions
   BusyBeaverMathlib.sigma_eventually_dominates_every_supported_total_recursive.
+
+(* Concrete small-state busy-beaver witnesses and certificate wrappers. *)
+Check BusyBeaverKnownValues.sigma1Champion.
+Check BusyBeaverKnownValues.sigma2Champion.
+Check BusyBeaverKnownValues.sigma3Champion.
+Check BusyBeaverKnownValues.sigma4Champion.
+Check BusyBeaverKnownValues.sigma1Champion_haltsWithScore.
+Check BusyBeaverKnownValues.sigma2Champion_haltsWithScore.
+Check BusyBeaverKnownValues.sigma3Champion_haltsWithScore.
+Check BusyBeaverKnownValues.sigma4Champion_haltsWithScore.
+Check BusyBeaverKnownValues.attainableScore_one_one.
+Check BusyBeaverKnownValues.attainableScore_two_four.
+Check BusyBeaverKnownValues.attainableScore_three_six.
+Check BusyBeaverKnownValues.attainableScore_four_thirteen.
+Check BusyBeaverKnownValues.a028444_prefix_lower_bounds_through_four.
+Check BusyBeaverKnownValues.upperBound_one.
+Check BusyBeaverKnownValues.ExactScore.
+Check BusyBeaverKnownValues.ExactScore.sigma_eq.
+Check BusyBeaverKnownValues.exactScore_one.
+Check BusyBeaverKnownValues.sigma_one_eq_one.
+Check BusyBeaverKnownValues.A028444UpperBoundsThroughFour.
+Check BusyBeaverKnownValues.A028444UpperBoundsTwoThroughFour.
+Check BusyBeaverKnownValues.A028444UpperBoundsThroughFour.of_twoThroughFour.
+Check BusyBeaverKnownValues.a028444_values_through_four_from_upperBounds.
+Check BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
+Print Assumptions BusyBeaverKnownValues.upperBound_one.
+Print Assumptions
+  BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 
 Print Assumptions PA.Formula.sat_axiom_s.
 Print Assumptions PA.Formula.soundness_BProv.
