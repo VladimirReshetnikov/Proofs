@@ -10802,6 +10802,36 @@ theorem BProv_Ax_s_ltAt_of_eqConst {G : List Formula}
         (Term.var (b+1)))
       (t := Term.numeral w) hbody)
 
+/-- PA derives non-strict order from strict order by reusing the positive
+successor witness as the additive difference. -/
+theorem BProv_Ax_s_leAt_of_ltAt {G : List Formula} {a b : Nat}
+    (hlt : BProv Ax_s G (ltAt a b)) :
+    BProv Ax_s G (leAt a b) := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+      (Term.var (b+1))
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (leAt a b)) := by
+    let C : List Formula := ltBody :: G.map (rename Nat.succ)
+    have hltBody : BProv Ax_s C ltBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.succ (Term.var 0)))
+          (eq (Term.add (Term.var (a+1+1)) (Term.var 0))
+            (Term.var (b+1+1)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst, ltBody] using hltBody
+    have hex : BProv Ax_s C
+        (ex (eq (Term.add (Term.var (a+1+1)) (Term.var 0))
+          (Term.var (b+1+1)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq (Term.add (Term.var (a+1+1)) (Term.var 0))
+          (Term.var (b+1+1)))
+        (t := Term.succ (Term.var 0)) hinst
+    simpa [C, leAt, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hlt (by
+      simpa [ltAt, ltBody] using hbody)
+
 /-- PA refutes an irreflexive strict order witness. -/
 theorem BProv_Ax_s_ltAt_irrefl_bot {G : List Formula} {a : Nat}
     (hlt : BProv Ax_s G (ltAt a a)) :
@@ -10897,6 +10927,13 @@ theorem BProv_Ax_s_ltAt_leAt_bot {G : List Formula} {a b : Nat}
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltAt, ltBody] using hbody)
+
+/-- PA refutes simultaneous opposite strict-order witnesses. -/
+theorem BProv_Ax_s_ltAt_asymm_bot {G : List Formula} {a b : Nat}
+    (hab : BProv Ax_s G (ltAt a b))
+    (hba : BProv Ax_s G (ltAt b a)) :
+    BProv Ax_s G bot :=
+  BProv_Ax_s_ltAt_leAt_bot hab (BProv_Ax_s_leAt_of_ltAt hba)
 
 /-- PA refutes `a < b` once the same context proves `b = a`. -/
 theorem BProv_Ax_s_ltAt_eq_bot {G : List Formula} {a b : Nat}

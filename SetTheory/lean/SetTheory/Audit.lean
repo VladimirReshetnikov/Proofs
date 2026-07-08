@@ -247,8 +247,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leAt_of_eq
 #check @PA.Formula.BProv_Ax_s_leAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_leAt_of_ltAt
 #check @PA.Formula.BProv_Ax_s_ltAt_irrefl_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_leAt_bot
+#check @PA.Formula.BProv_Ax_s_ltAt_asymm_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_eq_bot
 #check @PA.Formula.BProv_Ax_s_ltConst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltConst_closed
