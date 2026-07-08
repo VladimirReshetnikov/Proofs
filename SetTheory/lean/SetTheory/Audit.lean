@@ -77,6 +77,7 @@ open SetTheory
 #check @PA.Formula.soundness
 #check @PA.Formula.BProv
 #check @PA.Formula.BProv_mono
+#check @PA.Formula.BProv_weaken_nil
 #check @PA.Formula.BProv_ax
 #check @PA.Formula.BProv_of_Prov
 #check @PA.Formula.BProv_mp
@@ -122,6 +123,7 @@ open SetTheory
 #check @PA.Term.numeralValue_natModel
 #check @PA.Term.eval_numeral_natModel
 #check @PA.Term.rename_numeral
+#check @PA.Term.numeral_succ
 #check @PA.Term.addRightNumeral_numeral
 #check @PA.Term.rename_ext
 #check @PA.Term.rename_ext_free
@@ -173,6 +175,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_addNumerals
 #check @PA.Formula.BProv_Ax_s_mulRightNumeral_numeral
 #check @PA.Formula.BProv_Ax_s_mulNumerals
+#check @PA.Formula.BProv_Ax_s_leAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul
+#check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule

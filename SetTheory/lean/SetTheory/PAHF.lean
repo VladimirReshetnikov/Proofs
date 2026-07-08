@@ -4760,6 +4760,10 @@ def numeralValue {α : Type u} (M : Model α) : Nat → α
   | 0 => rfl
   | n+1 => by simp [numeral, rename, rename_numeral r n]
 
+@[simp] theorem numeral_succ (n : Nat) :
+    numeral (n + 1) = succ (numeral n) := by
+  rfl
+
 theorem addRightNumeral_numeral (m n : Nat) :
     addRightNumeral (numeral m) n = numeral (m + n) := by
   induction n with
@@ -5918,6 +5922,12 @@ theorem BProv_mono (B : Formula → Prop) (G G' : List Formula) (phi : Formula)
     rcases hx with hx | hx
     · exact Or.inl hx
     · exact Or.inr (hsub x hx))
+
+/-- A closed relative PA proof may be used under any finite PA context. -/
+theorem BProv_weaken_nil {B : Formula → Prop} {G : List Formula}
+    {phi : Formula} (h : BProv B [] phi) :
+    BProv B G phi :=
+  BProv_mono B [] G phi (fun _ hx => by cases hx) h
 
 /-- A PA theory axiom is relatively provable from that theory. -/
 theorem BProv_ax {B : Formula → Prop} {G : List Formula} {phi : Formula}
@@ -8598,6 +8608,129 @@ theorem BProv_Ax_s_mulNumerals (m n : Nat) :
       (Term.numeral (m * n))) :=
   BProv_eqTrans (BProv_Ax_s_mulRightNumeral (Term.numeral m) n)
     (BProv_Ax_s_mulRightNumeral_numeral m n)
+
+/-- From PA proofs that two slots contain fixed numerals, derive the corresponding
+`leAt` relation by exhibiting the difference as witness. -/
+theorem BProv_Ax_s_leAt_of_eqConst {G : List Formula}
+    {a b m n : Nat}
+    (ha : BProv Ax_s G (eqConstAt a m))
+    (hb : BProv Ax_s G (eqConstAt b n))
+    (hmn : m ≤ n) :
+    BProv Ax_s G (leAt a b) := by
+  let w := n - m
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.numeral w))
+        (Term.add (Term.numeral m) (Term.numeral w))) :=
+    BProv_eq_congr_add_left (Term.numeral w) ha
+  have haddRaw : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.numeral w))
+        (Term.numeral (m + w))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals m w)
+  have hmw : m + w = n := by
+    simp [w]
+    omega
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.numeral w))
+        (Term.numeral n)) := by
+    simpa [hmw] using haddRaw
+  have htarget : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.numeral w)) (Term.var b)) :=
+    BProv_eqTrans (BProv_eqTrans hleft hadd) (BProv_eqSym hb)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (eq (Term.add (Term.var (a+1)) (Term.var 0))
+          (Term.var (b+1)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+  simpa [leAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := eq (Term.add (Term.var (a+1)) (Term.var 0))
+        (Term.var (b+1)))
+      (t := Term.numeral w) hbody)
+
+/-- From PA proofs that two slots contain fixed numerals, derive the corresponding
+`ltAt` relation by exhibiting the positive difference predecessor. -/
+theorem BProv_Ax_s_ltAt_of_eqConst {G : List Formula}
+    {a b m n : Nat}
+    (ha : BProv Ax_s G (eqConstAt a m))
+    (hb : BProv Ax_s G (eqConstAt b n))
+    (hmn : m < n) :
+    BProv Ax_s G (ltAt a b) := by
+  let w := n - m - 1
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.succ (Term.numeral w)))
+        (Term.add (Term.numeral m) (Term.succ (Term.numeral w)))) :=
+    BProv_eq_congr_add_left (Term.succ (Term.numeral w)) ha
+  have haddRaw : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.numeral (w + 1)))
+        (Term.numeral (m + (w + 1)))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals m (w + 1))
+  have hmw : m + (w + 1) = n := by
+    simp [w]
+    omega
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.succ (Term.numeral w)))
+        (Term.numeral n)) := by
+    simpa [hmw] using haddRaw
+  have htarget : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.succ (Term.numeral w)))
+        (Term.var b)) :=
+    BProv_eqTrans (BProv_eqTrans hleft hadd) (BProv_eqSym hb)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.var (b+1)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+  simpa [ltAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+        (Term.var (b+1)))
+      (t := Term.numeral w) hbody)
+
+/-- From PA proofs that two slots contain fixed numerals and a divisibility
+witness, derive the corresponding `dvdAt` relation. -/
+theorem BProv_Ax_s_dvdAt_of_eqConst_mul {G : List Formula}
+    {a b m n q : Nat}
+    (ha : BProv Ax_s G (eqConstAt a m))
+    (hb : BProv Ax_s G (eqConstAt b n))
+    (hmul : m * q = n) :
+    BProv Ax_s G (dvdAt a b) := by
+  have hleft : BProv Ax_s G
+      (eq (Term.mul (Term.var a) (Term.numeral q))
+        (Term.mul (Term.numeral m) (Term.numeral q))) :=
+    BProv_eq_congr_mul_left (Term.numeral q) ha
+  have hmulRaw : BProv Ax_s G
+      (eq (Term.mul (Term.numeral m) (Term.numeral q))
+        (Term.numeral (m * q))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals m q)
+  have hmul' : BProv Ax_s G
+      (eq (Term.mul (Term.numeral m) (Term.numeral q))
+        (Term.numeral n)) := by
+    simpa [hmul] using hmulRaw
+  have htarget : BProv Ax_s G
+      (eq (Term.mul (Term.var a) (Term.numeral q)) (Term.var b)) :=
+    BProv_eqTrans (BProv_eqTrans hleft hmul') (BProv_eqSym hb)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (eq (Term.mul (Term.var (a+1)) (Term.var 0))
+          (Term.var (b+1)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+  simpa [dvdAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := eq (Term.mul (Term.var (a+1)) (Term.var 0))
+        (Term.var (b+1)))
+      (t := Term.numeral q) hbody)
+
+/-- Divisibility version of `BProv_Ax_s_dvdAt_of_eqConst_mul`, with the
+quotient extracted from the divisibility proof. -/
+theorem BProv_Ax_s_dvdAt_of_eqConst {G : List Formula}
+    {a b m n : Nat}
+    (ha : BProv Ax_s G (eqConstAt a m))
+    (hb : BProv Ax_s G (eqConstAt b n))
+    (hmn : m ∣ n) :
+    BProv Ax_s G (dvdAt a b) := by
+  rcases hmn with ⟨q, hq⟩
+  exact BProv_Ax_s_dvdAt_of_eqConst_mul
+    (a := a) (b := b) (m := m) (n := n) (q := q) ha hb hq.symm
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
