@@ -18,8 +18,9 @@ Current ports:
   `Sheffer.lean`: NAND/NOR truth tables, one-stroke formulas, ordinary
   classical propositional formulas, and truth-preserving translations into
   pure NAND and pure NOR syntax.
-- `Nicod.v` ports the NAND language, Nicod axiom/rule derivations, soundness,
-  and functional-completeness lemmas from `Nicod.lean`.
+- `Nicod.v` ports the Nicod axiom/rule derivations, soundness, and
+  functional-completeness lemmas from `Nicod.lean`, over the shared NAND-only
+  stroke language of `Sheffer.v` (as in the Lean original).
 - `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
 - `TrigGoldenRatio.v` ports the elementary identity
   `sin 9° + sin 21° + sin 39° = φ / √2`.  Coq's standard library does not
@@ -143,10 +144,22 @@ Current ports:
 - `WolframBooleanHuntingtonCertificates.v` ports the generated
   Sheffer-to-Huntington certificate.
 - `WolframBoolean.v` exposes the certificate-derived algebraic consequences,
-  Boolean truth-table characterization, NAND/NOR functional-completeness
-  theorem layer, and executable finite-search machinery.  The final Lean
-  `native_decide` lower-bound theorem is not yet replayed in Coq; the direct
-  monolithic `vm_compute`/`native_compute` check was too slow.
+  Boolean truth-table characterization, the NAND/NOR functional-completeness
+  layer (over the shared stroke language of `Sheffer.v`), and the executable
+  finite-search machinery (over the first-order terms of `EquationalLogic.v`).
+  The Lean pair's `native_decide` lower-bound certificate is fully replayed:
+  `shortEquationCountermodelCheck = true` is proved by `vm_compute` through a
+  proved bridge to lazy `match`-based `forallb`/`existsb` combinators.
+  `vm_compute` is call-by-value, so the eager `andb`/`orb` in the original
+  definitions would run the full 128-environment sweep and the entire
+  countermodel search on every candidate equation; the short-circuiting
+  combinators plus hoisting the constant non-Wolfram pool out of the
+  per-equation loop bring the whole check to a few seconds, and bridge
+  equalities transport the result back to the original eager definitions.
+  This yields Coq counterparts of
+  `every_short_boolean_sheffer_equation_has_finite_nonwolfram_countermodel`
+  and `wolfram_six_operations_is_minimal_for_single_equational_axioms` with
+  statements matching the Lean originals.
 
 Build from `src/Lean/`:
 

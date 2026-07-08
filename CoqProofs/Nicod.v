@@ -1,58 +1,81 @@
 (*
   Coq port of LeanProofs/Nicod.lean.
 
-  The formalization keeps the proof-theoretic part first: Nicod's one axiom
-  and one rule derive the three Lukasiewicz Hilbert axiom schemata and modus
-  ponens.  The semantic part then proves classical soundness and NAND
-  functional completeness.
+  As in the Lean original (which builds on LeanProofs.Sheffer), the NAND-only
+  language is the shared stroke syntax of Sheffer.v.  The formalization keeps
+  the proof-theoretic part first: Nicod's one axiom and one rule derive the
+  three Lukasiewicz Hilbert axiom schemata and modus ponens.  The semantic
+  part then proves classical soundness and NAND functional completeness via
+  the shared Sheffer translations.
 *)
 
 From Stdlib Require Import Bool.Bool.
+(* Load-bearing: `tauto` needs the classical `classic` axiom this module
+   provides to prove `prop_nand_imp` below (its right-to-left direction is
+   not intuitionistically valid). *)
 From Stdlib Require Import Logic.Classical_Prop.
+From LeanProofsCoq Require Import Sheffer.
 
 Set Implicit Arguments.
 
 Module LeanProofs.
 Module Nicod.
 
-Definition boolNand (p q : bool) : bool := negb (p && q).
+Module Sheffer := LeanProofsCoq.Sheffer.LeanProofs.Sheffer.
+Import Sheffer.
 
-Inductive Formula (A : Type) : Type :=
-| atom : A -> Formula A
-| nand : Formula A -> Formula A -> Formula A.
-
-Arguments atom {A} _.
-Arguments nand {A} _ _.
+(* Formulas whose only logical connective is NAND: the shared stroke syntax
+   of Sheffer.v, exactly as Lean's `Nicod.Formula` abbreviates
+   `Sheffer.StrokeFormula`. *)
+Notation Formula := StrokeFormula.
+Notation atom := strokeAtom.
+Notation nand := stroke.
 
 Module Formula.
 
+(* Boolean semantics for NAND-only formulas. *)
 Fixpoint eval {A : Type} (v : A -> bool) (p : Formula A) : bool :=
   match p with
   | atom a => v a
   | nand p q => boolNand (eval v p) (eval v q)
   end.
 
+(* Nicod's NAND-fixed semantics is the shared stroke semantics at `boolNand`. *)
+Lemma eval_eq_evalWith {A : Type} (v : A -> bool) :
+    forall p : Formula A, eval v p = evalWith boolNand v p.
+Proof.
+  induction p; simpl.
+  - reflexivity.
+  - rewrite IHp1, IHp2. reflexivity.
+Qed.
+
+(* Classical validity of a NAND-only formula. *)
 Definition Valid {A : Type} (p : Formula A) : Prop :=
   forall v : A -> bool, eval v p = true.
 
+(* Nicod's single axiom schema, in NAND-only syntax. *)
 Definition nicodAxiom {A : Type}
     (p q r u w : Formula A) : Formula A :=
   nand (nand p (nand q r))
     (nand (nand u (nand u u))
       (nand (nand w q) (nand (nand p w) (nand p w)))).
 
+(* The exact one-axiom/one-rule Nicod proof system. *)
 Inductive Provable {A : Type} : Formula A -> Prop :=
 | singleAxiom (p q r u w : Formula A) :
     Provable (nicodAxiom p q r u w)
 | rule (p q r : Formula A) :
     Provable (nand p (nand q r)) -> Provable p -> Provable r.
 
+(* Implication expressed in the NAND-only language. *)
 Definition imp {A : Type} (p q : Formula A) : Formula A :=
   nand p (nand q q).
 
+(* Negation expressed in the NAND-only language. *)
 Definition neg {A : Type} (p : Formula A) : Formula A :=
   nand p p.
 
+(* Nicod's axiom used as an inference schema.  This is Metamath's `nic-imp`. *)
 Theorem nicImp {A : Type} {p q r : Formula A} (u w : Formula A)
     (h : Provable (nand p (nand q r))) :
     Provable (nand (nand w q) (nand (nand p w) (nand p w))).
@@ -60,6 +83,7 @@ Proof.
   exact (rule (singleAxiom p q r u w) h).
 Qed.
 
+(* Lemma for the NAND identity theorem.  This is Metamath's `nic-idlem1`. *)
 Theorem nicIdlem1 {A : Type} (p q r u w : Formula A) :
     Provable (nand (nand w (nand u (nand u u)))
       (nand (nand (nand p (nand q r)) w)
@@ -68,6 +92,7 @@ Proof.
   exact (nicImp u w (singleAxiom p q r u p)).
 Qed.
 
+(* Lemma for the NAND identity theorem.  This is Metamath's `nic-idlem2`. *)
 Theorem nicIdlem2 {A : Type}
     (eta p q r theta u : Formula A)
     (h : Provable (nand eta (nand (nand p (nand q r)) theta))) :
@@ -78,6 +103,7 @@ Proof.
   exact (rule hmajor h).
 Qed.
 
+(* `p -> p`, expressed as a NAND formula.  This is Metamath's `nic-id`. *)
 Theorem nicId {A : Type} (p : Formula A) :
     Provable (nand p (nand p p)).
 Proof.
@@ -100,18 +126,21 @@ Proof.
   exact (rule h4 h2).
 Qed.
 
+(* Symmetry of NAND in theorem form.  This is Metamath's `nic-swap`. *)
 Theorem nicSwap {A : Type} (p q : Formula A) :
     Provable (nand (nand q p) (nand (nand p q) (nand p q))).
 Proof.
   exact (rule (singleAxiom p p p p q) (nicId p)).
 Qed.
 
+(* Inference version of `nicSwap`.  This is Metamath's `nic-isw1`. *)
 Theorem nicIsw1 {A : Type} {p q : Formula A}
     (h : Provable (nand q p)) : Provable (nand p q).
 Proof.
   exact (rule (nicSwap p q) h).
 Qed.
 
+(* Inference for swapping nested terms.  This is Metamath's `nic-isw2`. *)
 Theorem nicIsw2 {A : Type} {p q r : Formula A}
     (h : Provable (nand p (nand q r))) : Provable (nand p (nand r q)).
 Proof.
@@ -120,6 +149,7 @@ Proof.
   exact (nicIsw1 htmp).
 Qed.
 
+(* Inference version of `nicImp` using a right-handed term. *)
 Theorem nicIimp1 {A : Type} {p q r u : Formula A}
     (hmain : Provable (nand p (nand q r)))
     (harg : Provable (nand u q)) :
@@ -130,6 +160,7 @@ Proof.
   exact (nicIsw1 htmp).
 Qed.
 
+(* Inference version of `nicImp` using a left-handed term. *)
 Theorem nicIimp2 {A : Type} {p q r u : Formula A}
     (hmain : Provable (nand (nand p q) (nand r r)))
     (harg : Provable (nand u p)) :
@@ -138,6 +169,7 @@ Proof.
   exact (nicIimp1 (nicIsw1 hmain) harg).
 Qed.
 
+(* Remove the trailing term.  This is Metamath's `nic-idel`. *)
 Theorem nicIdel {A : Type} {p q r : Formula A}
     (h : Provable (nand p (nand q r))) :
     Provable (nand p (nand q q)).
@@ -147,6 +179,7 @@ Proof.
   exact (rule hmajor hqqq).
 Qed.
 
+(* Chained inference for NAND-encoded implication.  This is Metamath's `nic-ich`. *)
 Theorem nicIch {A : Type} {p q r : Formula A}
     (hpq : Provable (nand p (nand q q)))
     (hqr : Provable (nand q (nand r r))) :
@@ -157,6 +190,8 @@ Proof.
   exact (rule hmajor hrq).
 Qed.
 
+(* Double the terms, a contraposition-like inference.  This is Metamath's
+   `nic-idbl`. *)
 Theorem nicIdbl {A : Type} {p q : Formula A}
     (hpq : Provable (nand p (nand q q))) :
     Provable (nand (nand q q) (nand (nand p p) (nand p p))).
@@ -166,6 +201,7 @@ Proof.
   exact (nicIch h1 h2).
 Qed.
 
+(* Extract one side of a NAND biconditional-definition shape. *)
 Theorem nicBi1 {A : Type} {p q : Formula A}
     (h : Provable (nand (nand p q) (nand (nand p p) (nand q q)))) :
     Provable (nand p (nand q q)).
@@ -176,6 +212,7 @@ Proof.
   exact (nicIdel h2).
 Qed.
 
+(* Extract the other side of a NAND biconditional-definition shape. *)
 Theorem nicBi2 {A : Type} {p q : Formula A}
     (h : Provable (nand (nand p q) (nand (nand p p) (nand q q)))) :
     Provable (nand q (nand p p)).
@@ -186,12 +223,14 @@ Proof.
   exact (nicIdel h2).
 Qed.
 
+(* The biconditional-definition justification shape. *)
 Theorem nicBijust {A : Type} (p : Formula A) :
     Provable (nand (nand p p) (nand (nand p p) (nand p p))).
 Proof.
   exact (nicSwap p p).
 Qed.
 
+(* The NAND definition of implication, stated in Metamath's definition shape. *)
 Theorem nicDfim {A : Type} (p q : Formula A) :
     Provable (nand (nand (imp p q) (imp p q))
       (nand (nand (imp p q) (imp p q)) (nand (imp p q) (imp p q)))).
@@ -199,6 +238,7 @@ Proof.
   exact (nicBijust (imp p q)).
 Qed.
 
+(* The NAND definition of negation, stated in Metamath's definition shape. *)
 Theorem nicDfneg {A : Type} (p : Formula A) :
     Provable (nand (nand (neg p) (neg p))
       (nand (nand (neg p) (neg p)) (nand (neg p) (neg p)))).
@@ -206,6 +246,7 @@ Proof.
   exact (nicBijust (neg p)).
 Qed.
 
+(* Standard modus ponens for NAND-defined implication. *)
 Theorem nicStdmp {A : Type} {p q : Formula A}
     (hp : Provable p) (hpq : Provable (imp p q)) :
     Provable q.
@@ -213,6 +254,7 @@ Proof.
   exact (rule hpq hp).
 Qed.
 
+(* The first Lukasiewicz axiom schema, derived from Nicod's axiom and rule. *)
 Theorem nicLuk1 {A : Type} (p q r : Formula A) :
     Provable (imp (imp p q) (imp (imp q r) (imp p r))).
 Proof.
@@ -236,12 +278,14 @@ Proof.
   exact h16.
 Qed.
 
+(* The second Lukasiewicz axiom schema, derived from Nicod's axiom and rule. *)
 Theorem nicLuk2 {A : Type} (p : Formula A) :
     Provable (imp (imp (neg p) p) p).
 Proof.
   exact (nicIsw1 (nicId (neg p))).
 Qed.
 
+(* The third Lukasiewicz axiom schema, derived from Nicod's axiom and rule. *)
 Theorem nicLuk3 {A : Type} (p q : Formula A) :
     Provable (imp p (imp (neg p) q)).
 Proof.
@@ -251,6 +295,8 @@ Proof.
   exact (nicIimp2 hmain hpnot).
 Qed.
 
+(* The standard three-axiom Lukasiewicz Hilbert calculus for classical
+   propositional logic, expressed using the NAND-defined connectives. *)
 Inductive LukasiewiczProvable {A : Type} : Formula A -> Prop :=
 | luk1 (p q r : Formula A) :
     LukasiewiczProvable (imp (imp p q) (imp (imp q r) (imp p r)))
@@ -263,6 +309,8 @@ Inductive LukasiewiczProvable {A : Type} : Formula A -> Prop :=
     LukasiewiczProvable (imp p q) ->
     LukasiewiczProvable q.
 
+(* Every theorem of the standard Lukasiewicz Hilbert calculus is derivable in
+   Nicod's one-axiom/one-rule NAND calculus. *)
 Theorem LukasiewiczProvable_toNicod {A : Type} {p : Formula A}
     (h : LukasiewiczProvable p) : Provable p.
 Proof.
@@ -273,12 +321,16 @@ Proof.
   - exact (nicStdmp IHh1 IHh2).
 Qed.
 
+(* Nicod's system implements classical propositional calculus in the concrete
+   sense that it derives every formula provable in the standard Lukasiewicz
+   Hilbert calculus. *)
 Theorem implementsLukasiewicz {A : Type} {p : Formula A}
     (h : LukasiewiczProvable p) : Provable p.
 Proof.
   exact (LukasiewiczProvable_toNicod h).
 Qed.
 
+(* Nicod's axiom schema is a tautology under NAND semantics. *)
 Theorem nicodAxiom_valid {A : Type} (p q r u w : Formula A) :
     Valid (nicodAxiom p q r u w).
 Proof.
@@ -288,6 +340,7 @@ Proof.
     reflexivity.
 Qed.
 
+(* Nicod's inference rule is sound for classical NAND semantics. *)
 Theorem nicodRule_sound {A : Type} {p q r : Formula A}
     (hmain : Valid (nand p (nand q r))) (hp : Valid p) : Valid r.
 Proof.
@@ -299,6 +352,7 @@ Proof.
     reflexivity.
 Qed.
 
+(* Soundness of the one-axiom/one-rule Nicod calculus. *)
 Theorem Provable_sound {A : Type} {p : Formula A} (h : Provable p) :
     Valid p.
 Proof.
@@ -307,6 +361,8 @@ Proof.
   - exact (nicodRule_sound IHh1 IHh2).
 Qed.
 
+(* The implemented Lukasiewicz calculus is sound because its proofs translate
+   to Nicod proofs. *)
 Theorem LukasiewiczProvable_sound {A : Type} {p : Formula A}
     (h : LukasiewiczProvable p) : Valid p.
 Proof.
@@ -315,59 +371,28 @@ Qed.
 
 End Formula.
 
-Inductive ClassicalFormula (A : Type) : Type :=
-| c_atom : A -> ClassicalFormula A
-| c_neg : ClassicalFormula A -> ClassicalFormula A
-| c_and : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A
-| c_or : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A
-| c_imp : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A
-| c_iff : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A.
-
+(*
+  The shared classical propositional language and its NAND translation come
+  from Sheffer.v (`ClassicalFormula`, `eval`, `toNand`); only the
+  Nicod-specific validity bridges live here.
+*)
 Module ClassicalFormula.
 
-Fixpoint eval {A : Type} (v : A -> bool) (p : ClassicalFormula A) : bool :=
-  match p with
-  | c_atom a => v a
-  | c_neg p => negb (eval v p)
-  | c_and p q => eval v p && eval v q
-  | c_or p q => eval v p || eval v q
-  | c_imp p q => negb (eval v p) || eval v q
-  | c_iff p q => Bool.eqb (eval v p) (eval v q)
-  end.
+Notation eval := Sheffer.eval.
+Notation toNand := Sheffer.toNand.
 
-Fixpoint toNand {A : Type} (p : ClassicalFormula A) : Formula A :=
-  match p with
-  | c_atom a => atom a
-  | c_neg p =>
-      let p' := toNand p in nand p' p'
-  | c_and p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      let pq := nand p' q' in nand pq pq
-  | c_or p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      nand (nand p' p') (nand q' q')
-  | c_imp p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      nand p' (nand q' q')
-  | c_iff p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      let pq := nand p' (nand q' q') in
-      let qp := nand q' (nand p' p') in
-      let both := nand pq qp in nand both both
-  end.
-
+(* Nicod's NAND semantics agrees with the shared classical semantics across
+   the shared `toNand` translation. *)
 Theorem eval_toNand {A : Type} (v : A -> bool) :
     forall p : ClassicalFormula A, Formula.eval v (toNand p) = eval v p.
 Proof.
-  induction p; simpl; try rewrite IHp; try rewrite IHp1; try rewrite IHp2;
-    repeat match goal with |- context[eval v ?p] => destruct (eval v p) end;
-    reflexivity.
+  intro p.
+  rewrite Formula.eval_eq_evalWith.
+  apply Sheffer.eval_toNand.
 Qed.
 
+(* The Sheffer stroke is functionally complete: validity is preserved by the
+   shared translation from ordinary classical formulas to NAND-only formulas. *)
 Theorem toNand_valid_iff {A : Type} {p : ClassicalFormula A} :
     Formula.Valid (toNand p) <-> forall v : A -> bool, eval v p = true.
 Proof.
@@ -382,31 +407,41 @@ Qed.
 
 End ClassicalFormula.
 
+(* NAND as a connective on Coq propositions. *)
 Definition propNand (p q : Prop) : Prop := ~ (p /\ q).
 
+(* The object-language NAND semantics agrees with the familiar propositional
+   reading. *)
 Theorem prop_nand_not (p : Prop) : propNand p p <-> ~ p.
 Proof.
   unfold propNand; tauto.
 Qed.
 
+(* `p -> q` expressed with NAND alone.  This is where the `Classical_Prop`
+   import is load-bearing: without `classic` in the environment, `tauto`
+   cannot prove the right-to-left double-negation step. *)
 Theorem prop_nand_imp (p q : Prop) :
     propNand p (propNand q q) <-> (p -> q).
 Proof.
   unfold propNand; tauto.
 Qed.
 
+(* `p /\ q` expressed with NAND alone. *)
 Theorem prop_nand_and (p q : Prop) :
     propNand (propNand p q) (propNand p q) <-> p /\ q.
 Proof.
   unfold propNand; tauto.
 Qed.
 
+(* `p \/ q` expressed with NAND alone. *)
 Theorem prop_nand_or (p q : Prop) :
     propNand (propNand p p) (propNand q q) <-> p \/ q.
 Proof.
   unfold propNand; tauto.
 Qed.
 
+(* Nicod's single axiom, read directly as a classical propositional
+   tautology. *)
 Theorem prop_nicod_axiom (p q r u w : Prop) :
     propNand (propNand p (propNand q r))
       (propNand (propNand u (propNand u u))
@@ -415,6 +450,7 @@ Proof.
   unfold propNand; tauto.
 Qed.
 
+(* Nicod's single inference rule, read directly over propositions. *)
 Theorem prop_nicod_rule {p q r : Prop} :
     propNand p (propNand q r) -> p -> r.
 Proof.
