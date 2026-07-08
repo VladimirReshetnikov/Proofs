@@ -4956,6 +4956,52 @@ theorem rename_subst (t : Term) (r : Nat → Nat) (σ : Nat → Term) :
   | add a b iha ihb => simp [rename, subst, iha, ihb]
   | mul a b iha ihb => simp [rename, subst, iha, ihb]
 
+theorem subst_comp (t : Term) (σ τ : Nat → Term) :
+    subst τ (subst σ t) =
+      subst (fun n => subst τ (σ n)) t := by
+  induction t with
+  | var n => rfl
+  | zero => rfl
+  | succ t ih => simp [subst, ih]
+  | add a b iha ihb => simp [subst, iha, ihb]
+  | mul a b iha ihb => simp [subst, iha, ihb]
+
+theorem subst_rename_succ_up (t : Term) (σ : Nat → Term) :
+    subst (upSubst σ) (rename Nat.succ t) =
+      rename Nat.succ (subst σ t) := by
+  rw [subst_rename, rename_subst]
+  exact subst_ext t _ _ (fun n => by rfl)
+
+theorem subst_ext_free (t : Term) :
+    ∀ σ τ, (∀ n, Free n t → σ n = τ n) → subst σ t = subst τ t := by
+  induction t with
+  | var n =>
+      intro σ τ h
+      exact h n rfl
+  | zero =>
+      intro σ τ h
+      rfl
+  | succ t ih =>
+      intro σ τ h
+      simp [subst, ih σ τ h]
+  | add a b iha ihb =>
+      intro σ τ h
+      simp [subst, iha σ τ (fun n hn => h n (Or.inl hn)),
+        ihb σ τ (fun n hn => h n (Or.inr hn))]
+  | mul a b iha ihb =>
+      intro σ τ h
+      simp [subst, iha σ τ (fun n hn => h n (Or.inl hn)),
+        ihb σ τ (fun n hn => h n (Or.inr hn))]
+
+theorem subst_id (t : Term) :
+    subst (fun n => var n) t = t := by
+  induction t with
+  | var n => rfl
+  | zero => rfl
+  | succ t ih => simp [subst, ih]
+  | add a b iha ihb => simp [subst, iha, ihb]
+  | mul a b iha ihb => simp [subst, iha, ihb]
+
 end Term
 
 namespace Formula
@@ -5472,6 +5518,85 @@ theorem rename_subst (phi : Formula) (r : Nat → Nat) (σ : Nat → Term) :
             rw [Term.rename_comp, Term.rename_comp]
             exact Term.rename_ext (σ n) _ _ (fun k => rfl)))
 
+theorem subst_comp (phi : Formula) (σ τ : Nat → Term) :
+    subst τ (subst σ phi) =
+      subst (fun n => Term.subst τ (σ n)) phi := by
+  induction phi generalizing σ τ with
+  | eq a b =>
+      simp [subst, Term.subst_comp]
+  | bot =>
+      rfl
+  | imp a b iha ihb =>
+      simp [subst, iha, ihb]
+  | and a b iha ihb =>
+      simp [subst, iha, ihb]
+  | or a b iha ihb =>
+      simp [subst, iha, ihb]
+  | all a ih =>
+      simp only [subst]
+      rw [ih]
+      exact congrArg all (subst_ext a _ _ (fun n => by
+        cases n with
+        | zero => rfl
+        | succ n =>
+            simp [Term.upSubst, Term.subst_rename_succ_up]))
+  | ex a ih =>
+      simp only [subst]
+      rw [ih]
+      exact congrArg ex (subst_ext a _ _ (fun n => by
+        cases n with
+        | zero => rfl
+        | succ n =>
+            simp [Term.upSubst, Term.subst_rename_succ_up]))
+
+theorem subst_rename_succ_up (phi : Formula) (σ : Nat → Term) :
+    subst (Term.upSubst σ) (rename Nat.succ phi) =
+      rename Nat.succ (subst σ phi) := by
+  rw [subst_rename, rename_subst]
+  exact subst_ext phi _ _ (fun n => by rfl)
+
+theorem subst_ext_free (phi : Formula) :
+    ∀ σ τ, (∀ n, Free n phi → σ n = τ n) → subst σ phi = subst τ phi := by
+  induction phi with
+  | eq a b =>
+      intro σ τ h
+      simp [subst,
+        Term.subst_ext_free a σ τ (fun n hn => h n (Or.inl hn)),
+        Term.subst_ext_free b σ τ (fun n hn => h n (Or.inr hn))]
+  | bot =>
+      intro σ τ h
+      rfl
+  | imp a b iha ihb =>
+      intro σ τ h
+      simp [subst, iha σ τ (fun n hn => h n (Or.inl hn)),
+        ihb σ τ (fun n hn => h n (Or.inr hn))]
+  | and a b iha ihb =>
+      intro σ τ h
+      simp [subst, iha σ τ (fun n hn => h n (Or.inl hn)),
+        ihb σ τ (fun n hn => h n (Or.inr hn))]
+  | or a b iha ihb =>
+      intro σ τ h
+      simp [subst, iha σ τ (fun n hn => h n (Or.inl hn)),
+        ihb σ τ (fun n hn => h n (Or.inr hn))]
+  | all a ih =>
+      intro σ τ h
+      simp only [subst]
+      apply congrArg all
+      exact ih (Term.upSubst σ) (Term.upSubst τ) (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n =>
+            simp [Term.upSubst, h n hn])
+  | ex a ih =>
+      intro σ τ h
+      simp only [subst]
+      apply congrArg ex
+      exact ih (Term.upSubst σ) (Term.upSubst τ) (fun n hn => by
+        cases n with
+        | zero => rfl
+        | succ n =>
+            simp [Term.upSubst, h n hn])
+
 /-- PA-formula substitution by variables is just PA-formula renaming. -/
 theorem subst_var_rename (phi : Formula) (r : Nat → Nat) :
     subst (fun n => Term.var (r n)) phi = rename r phi := by
@@ -5513,6 +5638,19 @@ theorem subst_instTerm_var (phi : Formula) (k : Nat) :
   rw [← subst_var_rename phi (SetTheory.inst k)]
   exact subst_ext phi _ _ (fun n => by cases n <;> rfl)
 
+theorem subst_id (phi : Formula) :
+    subst (fun n => Term.var n) phi = phi := by
+  rw [subst_var_rename, rename_id]
+
+theorem subst_eq_of_sentence {phi : Formula} (hphi : Sentence phi)
+    (σ : Nat → Term) : subst σ phi = phi := by
+  calc
+    subst σ phi = subst (fun n => Term.var n) phi := by
+      apply subst_ext_free
+      intro n hn
+      exact False.elim (hphi n hn)
+    _ = phi := subst_id phi
+
 theorem subst_instTerm_rename_up (phi : Formula) (r : Nat → Nat) (t : Term) :
     subst (instTerm (Term.rename r t)) (rename (SetTheory.up r) phi) =
       rename r (subst (instTerm t) phi) := by
@@ -5537,6 +5675,17 @@ theorem subst_instTerm_rename_succ (phi : Formula) (t : Term) :
   rw [subst_rename]
   simpa [instTerm, rename_id] using
     (subst_var_rename phi (fun n : Nat => n))
+
+theorem subst_instTerm_subst_up (phi : Formula) (σ : Nat → Term) (t : Term) :
+    subst (instTerm (Term.subst σ t)) (subst (Term.upSubst σ) phi) =
+      subst σ (subst (instTerm t) phi) := by
+  rw [subst_comp, subst_comp]
+  exact subst_ext phi _ _ (fun n => by
+    cases n with
+    | zero => rfl
+    | succ n =>
+        simp [instTerm, Term.subst, Term.upSubst,
+          term_subst_instTerm_rename_succ])
 
 theorem Sat_instTerm {α : Type u} (M : Model α) (phi : Formula)
     (t : Term) (e : Nat → α) :
@@ -5661,6 +5810,14 @@ theorem map_rename_up_succ (r : Nat → Nat) (G : List Formula) :
   intro phi _
   exact rename_up_succ phi r
 
+theorem map_subst_rename_succ_up (σ : Nat → Term) (G : List Formula) :
+    (G.map (rename Nat.succ)).map (subst (Term.upSubst σ)) =
+      (G.map (subst σ)).map (rename Nat.succ) := by
+  simp only [List.map_map]
+  apply List.map_congr_left
+  intro phi _
+  exact subst_rename_succ_up phi σ
+
 theorem Prov_rename {G : List Formula} {phi : Formula} (h : Prov G phi) :
     ∀ r, Prov (G.map (rename r)) (rename r phi) := by
   induction h with
@@ -5742,6 +5899,93 @@ theorem Prov_rename {G : List Formula} {phi : Formula} (h : Prov G phi) :
       have hElim := Prov.P_eqElim _ (Term.rename r s) (Term.rename r t)
         (rename (SetTheory.up r) a) hEq hA
       simpa [subst_instTerm_rename_up] using hElim
+
+/-- Simultaneous substitution of PA terms through a derivation. -/
+theorem Prov_subst {G : List Formula} {phi : Formula} (h : Prov G phi) :
+    ∀ σ, Prov (G.map (subst σ)) (subst σ phi) := by
+  induction h with
+  | P_ass G a hin =>
+      intro σ
+      exact .P_ass _ _ (List.mem_map_of_mem (f := subst σ) hin)
+  | P_impI G a b _ ih =>
+      intro σ
+      exact .P_impI _ _ _ (ih σ)
+  | P_impE G a b _ _ ihab iha =>
+      intro σ
+      exact .P_impE _ (subst σ a) (subst σ b) (ihab σ) (iha σ)
+  | P_botE G a _ ih =>
+      intro σ
+      exact .P_botE _ (subst σ a) (ih σ)
+  | P_lem G a =>
+      intro σ
+      exact .P_lem _ _
+  | P_andI G a b _ _ iha ihb =>
+      intro σ
+      exact .P_andI _ _ _ (iha σ) (ihb σ)
+  | P_andE1 G a b _ ih =>
+      intro σ
+      exact .P_andE1 _ (subst σ a) (subst σ b) (ih σ)
+  | P_andE2 G a b _ ih =>
+      intro σ
+      exact .P_andE2 _ (subst σ a) (subst σ b) (ih σ)
+  | P_orI1 G a b _ ih =>
+      intro σ
+      exact .P_orI1 _ _ _ (ih σ)
+  | P_orI2 G a b _ ih =>
+      intro σ
+      exact .P_orI2 _ _ _ (ih σ)
+  | P_orE G a b c _ _ _ ihor iha ihb =>
+      intro σ
+      exact .P_orE _ (subst σ a) (subst σ b) (subst σ c)
+        (ihor σ) (iha σ) (ihb σ)
+  | P_allI G a _ ih =>
+      intro σ
+      apply Prov.P_allI
+      rw [← map_subst_rename_succ_up σ G]
+      exact ih (Term.upSubst σ)
+  | P_allE G a t _ ih =>
+      intro σ
+      have hAll : Prov (G.map (subst σ)) (all (subst (Term.upSubst σ) a)) := by
+        simpa [subst] using ih σ
+      have hInst := Prov.P_allE _ (subst (Term.upSubst σ) a)
+        (Term.subst σ t) hAll
+      simpa [subst, subst_instTerm_subst_up] using hInst
+  | P_exI G a t _ ih =>
+      intro σ
+      apply Prov.P_exI _ (subst (Term.upSubst σ) a) (Term.subst σ t)
+      simpa [subst_instTerm_subst_up] using ih σ
+  | P_exE G a c _ _ ihex ihbody =>
+      intro σ
+      have hEx : Prov (G.map (subst σ)) (ex (subst (Term.upSubst σ) a)) := by
+        simpa [subst] using ihex σ
+      have hctx :
+          (a :: G.map (rename Nat.succ)).map (subst (Term.upSubst σ)) =
+            subst (Term.upSubst σ) a :: (G.map (subst σ)).map (rename Nat.succ) := by
+        simp only [List.map_cons]
+        rw [map_subst_rename_succ_up σ G]
+      have hbody' :
+          Prov (subst (Term.upSubst σ) a ::
+              (G.map (subst σ)).map (rename Nat.succ))
+            (rename Nat.succ (subst σ c)) := by
+        rw [← hctx, ← subst_rename_succ_up c σ]
+        exact ihbody (Term.upSubst σ)
+      exact .P_exE _ (subst (Term.upSubst σ) a) (subst σ c) hEx hbody'
+  | P_eqRefl G t =>
+      intro σ
+      exact .P_eqRefl _ (Term.subst σ t)
+  | P_eqElim G s t a _ _ iheq iha =>
+      intro σ
+      have hEq : Prov (G.map (subst σ))
+          (eq (Term.subst σ s) (Term.subst σ t)) := by
+        simpa [subst] using iheq σ
+      have hA :
+          Prov (G.map (subst σ))
+            (subst (instTerm (Term.subst σ s))
+              (subst (Term.upSubst σ) a)) := by
+        simpa [subst_instTerm_subst_up] using iha σ
+      have hElim := Prov.P_eqElim _ (Term.subst σ s) (Term.subst σ t)
+        (subst (Term.upSubst σ) a) hEq hA
+      simpa [subst_instTerm_subst_up] using hElim
 
 theorem Prov_cut {G : List Formula} {phi : Formula} (h : Prov G phi) :
     ∀ De, (∀ x, x ∈ G → Prov De x) → Prov De phi := by
@@ -5971,6 +6215,31 @@ theorem BProv_rename_of_sentences {B : Formula → Prop} (hB : Sentences B)
   have hpRen : Prov ((L ++ G).map (rename r)) (rename r phi) :=
     Prov_rename hp r
   apply Prov_weaken hpRen
+  intro x hx
+  simp only [List.map_append, List.mem_append] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (by simpa [hLmap] using hx)
+  · exact Or.inr hx
+
+/-- Substitute PA terms through every finite-context assumption of a relative
+PA proof.  Sentence axioms of the background theory are unchanged by the
+substitution. -/
+theorem BProv_subst_of_sentences {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {phi : Formula}
+    (h : BProv B G phi) (σ : Nat → Term) :
+    BProv B (G.map (subst σ)) (subst σ phi) := by
+  rcases h with ⟨L, hL, hp⟩
+  have hLmap : L.map (subst σ) = L := by
+    calc
+      L.map (subst σ) = L.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact subst_eq_of_sentence (hB x (hL x hx)) σ
+      _ = L := by simp
+  refine ⟨L, hL, ?_⟩
+  have hpSub : Prov ((L ++ G).map (subst σ)) (subst σ phi) :=
+    Prov_subst hp σ
+  apply Prov_weaken hpSub
   intro x hx
   simp only [List.map_append, List.mem_append] at hx ⊢
   rcases hx with hx | hx
