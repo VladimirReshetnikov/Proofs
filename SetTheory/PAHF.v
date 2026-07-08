@@ -11717,6 +11717,162 @@ Proof.
   exact (BProv_exI Ax_s G (pEx body) (Term.numeral cur) hnextEx).
 Qed.
 
+Lemma BProv_Ax_s_betaAt_of_eqConst_entry :
+  forall G out code step idx o c s i,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s i o ->
+  BProv Ax_s G (betaAt out code step idx).
+Proof.
+  intros G out code step idx o c s i hout hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAt_of_eqConst
+    G out code step idx o c s i q
+    hout hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_constOutSubst_of_eqConst_entry :
+  forall G code step idx o c s i,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s i o ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral o))
+      (betaAt 0 (S code) (S step) (S idx))).
+Proof.
+  intros G code step idx o c s i hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAt_constOutSubst_of_eqConst
+    G code step idx o c s i q
+    hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst_entry :
+  forall G code step o c s i,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaEntry c s i o ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral i))
+      (subst (Term.upSubst (instTerm (Term.numeral o)))
+        (betaAt 1 (S (S code)) (S (S step)) 0))).
+Proof.
+  intros G code step o c s i hcode hstep hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst
+    G code step o c s i q hcode hstep hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAtConstIdx_of_eqConst_entry :
+  forall G out code step o c s idxValue,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaEntry c s idxValue o ->
+  BProv Ax_s G (betaAtConstIdx out code step idxValue).
+Proof.
+  intros G out code step o c s idxValue hout hcode hstep hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAtConstIdx_of_eqConst
+    G out code step o c s idxValue q
+    hout hcode hstep hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAtSuccIdx_of_eqConst_entry :
+  forall G out code step idx o c s i,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s (i + 1) o ->
+  BProv Ax_s G (betaAtSuccIdx out code step idx).
+Proof.
+  intros G out code step idx o c s i hout hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAtSuccIdx_of_eqConst
+    G out code step idx o c s i q
+    hout hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst_entry :
+  forall G code step idx o c s i,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaEntry c s (i + 1) o ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral o))
+      (betaAtSuccIdx 0 (S code) (S step) (S idx))).
+Proof.
+  intros G code step idx o c s i hcode hstep hidx hentry.
+  destruct hentry as [q [hval hlt]].
+  exact (BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
+    G code step idx o c s i q
+    hcode hstep hidx hlt (eq_sym hval)).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step :
+  forall G code step idx c s i cur next bit,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaDiv2Step c s i cur next bit ->
+  BProv Ax_s G (betaDiv2StepWitnessAt code step idx).
+Proof.
+  intros G code step idx c s i cur next bit
+    hcode hstep hidx hdivStep.
+  destruct hdivStep as [hcur [hnext [hbit hdiv]]].
+  destruct hcur as [qcur [hcurVal hcurLt]].
+  destruct hnext as [qnext [hnextVal hnextLt]].
+  assert (hnextLt' : next < BetaModulus s (i + 1)).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hnextLt.
+  }
+  assert (hnextVal' : qnext * BetaModulus s (i + 1) + next = c).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact (eq_sym hnextVal).
+  }
+  exact (BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst
+    G code step idx c s i cur next bit qcur qnext
+    hcode hstep hidx hcurLt (eq_sym hcurVal)
+    hnextLt' hnextVal' hbit (eq_sym hdiv)).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2BitAt_of_eqConst_step :
+  forall G bit code step idx b c s i cur next,
+  BProv Ax_s G (eqConstAt bit b) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  BetaDiv2Step c s i cur next b ->
+  BProv Ax_s G (betaDiv2BitAt bit code step idx).
+Proof.
+  intros G bit code step idx b c s i cur next
+    hbit hcode hstep hidx hdivStep.
+  destruct hdivStep as [hcur [hnext [hb hdiv]]].
+  destruct hcur as [qcur [hcurVal hcurLt]].
+  destruct hnext as [qnext [hnextVal hnextLt]].
+  assert (hnextLt' : next < BetaModulus s (i + 1)).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hnextLt.
+  }
+  assert (hnextVal' : qnext * BetaModulus s (i + 1) + next = c).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact (eq_sym hnextVal).
+  }
+  exact (BProv_Ax_s_betaDiv2BitAt_of_eqConst
+    G bit code step idx b c s i cur next qcur qnext
+    hbit hcode hstep hidx hcurLt (eq_sym hcurVal)
+    hnextLt' hnextVal' hb (eq_sym hdiv)).
+Qed.
+
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
     (pAnd
