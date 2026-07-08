@@ -4004,6 +4004,18 @@ theorem HFMemTrace_mem {elem set code step : Nat}
   rw [hshift] at hlow
   simpa [AckermannHF.Mem] using hlow
 
+/-- Semantic trace existence for the carry fact used by the high-even
+successor branch: a positive-bit membership trace in an even code can be
+replaced by a membership trace for the incremented code. -/
+theorem HFMemTrace_succ_of_double_mem_succ
+    {x set half code step : Nat}
+    (hset : set = half + half)
+    (htrace : HFMemTrace (x+1) set code step) :
+    ∃ code' step', HFMemTrace (x+1) (set+1) code' step' := by
+  exact HFMemTrace_exists_of_mem
+    (AckermannHF.mem_succ_of_double_mem_succ hset
+      (HFMemTrace_mem htrace))
+
 theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
     Sat natModel e (hfMemAt elem set) → AckermannHF.Mem (e elem) (e set) := by
   intro h

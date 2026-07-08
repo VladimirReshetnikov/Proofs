@@ -49,6 +49,17 @@ theorem mem_succ_odd_double_iff (x half : Nat) :
   have hdiv : (half + half + 1) / 2 = half := by omega
   simp [hdiv]
 
+/-- Positive Ackermann membership in an even code survives incrementing the
+set code.  The increment only changes bit zero; every bit `x+1` still reads
+the corresponding bit of the half code. -/
+theorem mem_succ_of_double_mem_succ
+    {x set half : Nat} (hset : set = half + half)
+    (hmem : Mem (x+1) set) :
+    Mem (x+1) (set+1) := by
+  subst set
+  exact (mem_succ_odd_double_iff x half).mpr
+    ((mem_succ_double_iff x half).mp hmem)
+
 /-- A high-only bit remains high-only after the even/odd carry shift
 `high ↦ 2*high`, `low ↦ 2*low+1`. -/
 theorem mem_succ_double_not_mem_succ_odd_double_of_mem_not_mem

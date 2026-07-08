@@ -73,6 +73,7 @@ open SetTheory
 #check @AckermannHF.not_mem_zero_of_double
 #check @AckermannHF.mem_succ_double_iff
 #check @AckermannHF.mem_succ_odd_double_iff
+#check @AckermannHF.mem_succ_of_double_mem_succ
 #check @AckermannHF.mem_succ_double_not_mem_succ_odd_double_of_mem_not_mem
 #check @AckermannHF.mem_succ_double_not_mem_succ_double_of_mem_not_mem
 #check @AckermannHF.mem_succ_odd_double_not_mem_succ_double_of_mem_not_mem
@@ -737,6 +738,7 @@ open SetTheory
 #check @PA.Formula.BetaDiv2Step_twoEntry
 #check @PA.Formula.BetaDiv2StepsThrough_zero_twoEntry
 #check @PA.Formula.HFMemTrace_zero_exists_of_one_step
+#check @PA.Formula.HFMemTrace_succ_of_double_mem_succ
 #check @PA.Formula.evenSuccBetaStepTerm
 #check @PA.Formula.evenSuccBetaCodeTerm
 #check @PA.Formula.BProv_Ax_s_evenSuccBeta_entryComponent_zero
