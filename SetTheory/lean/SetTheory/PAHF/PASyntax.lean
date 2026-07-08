@@ -17450,6 +17450,130 @@ theorem BProv_Ax_s_oddCurrent_beta_code_decomp
   simpa [q, base] using
     BProv_eqTrans hleftShape (BProv_eqSym hrightShape)
 
+/-- Under the even branch assumption `low = h + h`, the explicit
+even-successor beta code has index-one division form with remainder `h` and
+quotient `S h`. -/
+theorem BProv_Ax_s_evenSuccBeta_index_one_value
+    {G : List Formula} {low lowHalf : Nat}
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G
+      (eq (evenSuccBetaCodeTerm low)
+        (Term.add
+          (Term.mul (Term.succ (Term.var lowHalf))
+            (betaModTermTerm (evenSuccBetaStepTerm low) (Term.succ Term.zero)))
+          (Term.var lowHalf))) := by
+  let half : Term := Term.var lowHalf
+  let lowTerm : Term := Term.var low
+  let cur : Term := evenSuccBetaStepTerm low
+  let code : Term := evenSuccBetaCodeTerm low
+  have hlowEq : BProv Ax_s G
+      (eq lowTerm (Term.add half half)) := by
+    simpa [doubleEqAt, lowTerm, half] using hlowDouble
+  have hcurSuccDouble : BProv Ax_s G
+      (eq cur (Term.succ (Term.add half half))) := by
+    simpa [cur, evenSuccBetaStepTerm, lowTerm] using
+      BProv_eq_congr_succ hlowEq
+  have hoddShape : BProv Ax_s G
+      (eq (Term.add (Term.succ half) half)
+        (Term.succ (Term.add half half))) :=
+    BProv_Ax_s_succ_add_terms half half
+  have hcurOdd : BProv Ax_s G
+      (eq cur (Term.add (Term.succ half) half)) :=
+    BProv_eqTrans hcurSuccDouble (BProv_eqSym hoddShape)
+  have hcodeCore : BProv Ax_s G
+      (eq code (Term.add (Term.mul cur (Term.succ cur)) cur)) := by
+    simpa [code, cur, evenSuccBetaCodeTerm] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.add (Term.mul cur (Term.succ cur)) cur))
+  have hcodeDecomp : BProv Ax_s G
+      (eq code
+        (Term.add
+          (Term.mul (Term.succ half) (Term.succ (Term.add cur cur)))
+          half)) :=
+    BProv_eqTrans hcodeCore
+      (BProv_Ax_s_oddCurrent_beta_code_decomp hcurOdd)
+  have hmod : BProv Ax_s G
+      (eq (Term.succ (Term.add cur cur))
+        (betaModTermTerm cur (Term.succ Term.zero))) :=
+    BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self cur)
+  have hmulMod : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ half) (Term.succ (Term.add cur cur)))
+        (Term.mul (Term.succ half)
+          (betaModTermTerm cur (Term.succ Term.zero)))) :=
+    BProv_eq_congr_mul_right (Term.succ half) hmod
+  have hrhsMod : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul (Term.succ half) (Term.succ (Term.add cur cur)))
+          half)
+        (Term.add
+          (Term.mul (Term.succ half)
+            (betaModTermTerm cur (Term.succ Term.zero)))
+          half)) :=
+    BProv_eq_congr_add_left half hmulMod
+  simpa [half, cur, code, evenSuccBetaStepTerm] using
+    BProv_eqTrans hcodeDecomp hrhsMod
+
+/-- Under the even branch assumption `low = h + h`, the explicit
+even-successor beta trace has index-one entry `h`.  This packages the separate
+strict-bound and value-equation lemmas into the constant-index beta component. -/
+theorem BProv_Ax_s_evenSuccBeta_entryComponent_one
+    {G : List Formula} {low lowHalf : Nat}
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G
+      (subst (instTerm (evenSuccBetaStepTerm low))
+        (subst (Term.upSubst (instTerm (evenSuccBetaCodeTerm low)))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) (Term.var lowHalf))
+            1 0 1))) := by
+  let half : Term := Term.var lowHalf
+  let cur : Term := evenSuccBetaStepTerm low
+  let code : Term := evenSuccBetaCodeTerm low
+  let modulus : Term := betaModTermTerm cur (Term.succ Term.zero)
+  have hlt : BProv Ax_s G (ltTermAt half modulus) := by
+    simpa [half, cur, modulus] using
+      BProv_Ax_s_evenSuccBeta_index_one_bound hlowDouble
+  have hvalue : BProv Ax_s G
+      (eq code (Term.add (Term.mul (Term.succ half) modulus) half)) := by
+    simpa [half, cur, code, modulus] using
+      BProv_Ax_s_evenSuccBeta_index_one_value hlowDouble
+  have hrem : BProv Ax_s G (remTermTermAt half code modulus) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      (rem := half) (value := code) (modulus := modulus)
+      (quotient := Term.succ half) hlt hvalue
+  have hmod : BProv Ax_s G
+      (eq modulus (betaModTermTerm cur (Term.succ Term.zero))) := by
+    simpa [modulus] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (betaModTermTerm cur (Term.succ Term.zero)))
+  have hbeta : BProv Ax_s G
+      (betaTermTermAt half code cur (Term.succ Term.zero)) :=
+    BProv_Ax_s_betaTermTermAt_of_rem
+      (out := half) (code := code) (step := cur)
+      (idx := Term.succ Term.zero) (modulus := modulus) hmod hrem
+  have hconst : BProv Ax_s G
+      (betaTermTermAtConstIdx half code cur 1) := by
+    simpa [Term.numeral] using
+      (BProv_Ax_s_betaTermTermAtConstIdx_of_beta
+        (out := half) (code := code) (step := cur)
+        (idxValue := 1) hbeta)
+  simpa [half, cur, code, evenSuccBetaStepTerm, evenSuccBetaCodeTerm,
+    betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
+    betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+    Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+    Term.numeral, term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ] using hconst
+
 /-- Term-parametric membership introduction from the same closed trace
 components as `BProv_Ax_s_hfMemAt_of_closed_components`, but with the initial
 zero-index beta entry outputting an arbitrary set-code term. -/
