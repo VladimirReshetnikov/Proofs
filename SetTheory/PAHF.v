@@ -12427,6 +12427,150 @@ Definition hfMemAt (elem set : nat) : formula :=
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
 
+Lemma BProv_Ax_s_hfMemAt_bitOneEx_of_bit :
+  forall G elem code step,
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral 1))
+      (subst (Term.upSubst (instTerm (Term.numeral step)))
+        (subst (Term.upSubst (Term.upSubst
+          (instTerm (Term.numeral code))))
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem)))))))).
+Proof.
+  intros G elem code step hbit.
+  set (bitBody :=
+    pAnd
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (S (S (S elem))))).
+  assert (hone : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral code))))
+            (oneAt 0))))).
+  {
+    unfold oneAt, eqConstAt.
+    simpl.
+    repeat rewrite Term.subst_numeral.
+    apply BProv_eqRefl.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral code)))) bitBody)))).
+  {
+    unfold bitBody.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hone hbit).
+  }
+  unfold bitBody.
+  simpl.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral step)))
+      (subst (Term.upSubst (Term.upSubst
+        (instTerm (Term.numeral code))))
+        (pAnd
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (S (S (S elem)))))))
+    (Term.numeral 1) hbody).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_closed_components :
+  forall G elem set code step,
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaAtConstIdx (S (S set)) 1 0 0))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (S (S (S elem)))))))) ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set code step hentry hsteps hbitEx.
+  set (bitEx :=
+    pEx
+      (pAnd
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (S (S (S elem)))))).
+  set (tail :=
+    pAnd
+      (betaDiv2StepsThroughAt 1 0 (S (S elem)))
+      bitEx).
+  set (body :=
+    pAnd
+      (betaAtConstIdx (S (S set)) 1 0 0)
+      tail).
+  assert (htail : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code))) tail))).
+  {
+    unfold tail, bitEx.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hsteps hbitEx).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code))) body))).
+  {
+    unfold body, tail, bitEx.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hentry htail).
+  }
+  assert (hstepEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral code)) (pEx body))).
+  {
+    simpl.
+    exact (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm (Term.numeral code))) body)
+      (Term.numeral step) hbody).
+  }
+  unfold hfMemAt.
+  fold bitEx.
+  fold tail.
+  fold body.
+  exact (BProv_exI Ax_s G (pEx body) (Term.numeral code) hstepEx).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_closed_bit_components :
+  forall G elem set code step,
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaAtConstIdx (S (S set)) 1 0 0))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral 1))
+      (subst (Term.upSubst (instTerm (Term.numeral step)))
+        (subst (Term.upSubst (Term.upSubst
+          (instTerm (Term.numeral code))))
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))))) ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set code step hentry hsteps hbit.
+  exact (BProv_Ax_s_hfMemAt_of_closed_components
+    G elem set code step hentry hsteps
+    (BProv_Ax_s_hfMemAt_bitOneEx_of_bit
+      G elem code step hbit)).
+Qed.
+
 Lemma rename_hfMemAt : forall (r : nat -> nat) elem set,
   rename r (hfMemAt elem set) = hfMemAt (r elem) (r set).
 Proof.
