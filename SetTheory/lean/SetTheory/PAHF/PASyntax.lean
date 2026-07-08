@@ -18375,6 +18375,316 @@ theorem BProv_Ax_s_evenSuccBeta_bitComponent_zero
             (ex body))))
       (t := cur) hnextEx)
 
+/-- Pointwise beta-step witness for the even branch of `0 ∈ S low`.  The
+sequence index is kept as an explicit slot and transported from `idx = 0`;
+the code, step, current value, next value, and output bit remain explicit PA
+terms. -/
+theorem BProv_Ax_s_evenSuccBeta_stepWitness_zero
+    {G : List Formula} {idx low lowHalf : Nat}
+    (hidx : BProv Ax_s G (eqConstAt idx 0))
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G
+      (subst (instTerm (evenSuccBetaStepTerm low))
+        (subst (Term.upSubst (instTerm (evenSuccBetaCodeTerm low)))
+          (betaDiv2StepWitnessAt 1 0 (idx+2)))) := by
+  let cur : Term := evenSuccBetaStepTerm low
+  let code : Term := evenSuccBetaCodeTerm low
+  let half : Term := Term.var lowHalf
+  let bit : Term := Term.numeral 1
+  let body : Formula :=
+    and
+      (betaAt 2 (1+3) (0+3) ((idx+2)+3))
+      (and
+        (betaAtSuccIdx 1 (1+3) (0+3) ((idx+2)+3))
+        (div2StepAt 2 1 0))
+  have hzeroTT : BProv Ax_s G
+      (betaTermTermAtConstIdx cur code cur 0) := by
+    simpa [cur, code, evenSuccBetaStepTerm, evenSuccBetaCodeTerm,
+      betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
+      betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+      betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using
+      (BProv_Ax_s_evenSuccBeta_entryComponent_zero
+        (G := G) (low := low))
+  have honeTT : BProv Ax_s G
+      (betaTermTermAtConstIdx half code cur 1) := by
+    simpa [half, cur, code, evenSuccBetaStepTerm, evenSuccBetaCodeTerm,
+      betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
+      betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+      betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      Term.numeral, term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using
+      (BProv_Ax_s_evenSuccBeta_entryComponent_one
+        (G := G) (low := low) (lowHalf := lowHalf) hlowDouble)
+  have hidxZero : BProv Ax_s G (eq (Term.numeral 0) (Term.var idx)) := by
+    simpa [eqConstAt] using BProv_eqSym hidx
+  have hcurRaw : BProv Ax_s G
+      (betaTermTermAt cur code cur (Term.var idx)) :=
+    BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_term
+      hzeroTT hidxZero
+  have hnextRaw : BProv Ax_s G
+      (betaTermTermAt half code cur (Term.succ (Term.var idx))) :=
+    BProv_Ax_s_betaTermTermAt_succ_of_betaTermTermAtConstIdx_eq_index
+      honeTT hidx
+  have hnextSucc : BProv Ax_s G
+      (betaTermTermAtSuccIdx half code cur idx) :=
+    BProv_Ax_s_betaTermTermAtSuccIdx_of_succ hnextRaw
+  have hcurBeta : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm half))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm cur))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (betaAt 2 (1+3) (0+3) ((idx+2)+3))))))) := by
+    simpa [body, cur, code, half, bit, betaTermTermAt, betaAt,
+      remTermTermAt, remAt, ltTermAt, ltAt, betaModTermTerm, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ] using hcurRaw
+  have hnextBeta : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm half))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm cur))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (betaAtSuccIdx 1 (1+3) (0+3) ((idx+2)+3))))))) := by
+    simpa [body, cur, code, half, bit, betaTermTermAtSuccIdx,
+      betaTermTermAt, betaAtSuccIdx, betaAt, remTermTermAt, remAt,
+      ltTermAt, ltAt, betaModTermTerm, betaModTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ]
+      using hnextSucc
+  have hdivBody : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm half))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm cur))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (div2StepAt 2 1 0)))))) := by
+    simpa [cur, code, half, bit, div2StepAt, boolAt, zeroAt, oneAt,
+      eqConstAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.rename_comp, Term.numeral,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ] using
+      (BProv_Ax_s_evenSuccBeta_div2Step_one
+        (G := G) (low := low) (lowHalf := lowHalf) hlowDouble)
+  have htail : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm half))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm cur))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (and
+                  (betaAtSuccIdx 1 (1+3) (0+3) ((idx+2)+3))
+                  (div2StepAt 2 1 0))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hnextBeta hdivBody
+  have hbody : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm half))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm cur))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hcurBeta htail
+  have hbitEx : BProv Ax_s G
+      (subst (instTerm half)
+        (subst (Term.upSubst (instTerm cur))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm code))))
+              (ex body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm half))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm cur))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                body))))
+        (t := bit) hbody)
+  have hnextEx : BProv Ax_s G
+      (subst (instTerm cur)
+        (subst (Term.upSubst (instTerm cur))
+          (subst (Term.upSubst (Term.upSubst (instTerm code)))
+            (ex (ex body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm cur))
+          (subst (Term.upSubst (Term.upSubst (instTerm cur)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm code))))
+              (ex body))))
+        (t := half) hbitEx)
+  simpa [betaDiv2StepWitnessAt, body, cur, code, bit, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm cur))
+        (subst (Term.upSubst (Term.upSubst (instTerm code)))
+          (ex (ex body))))
+      (t := cur) hnextEx)
+
+/-- Under the even branch assumption `low = 2*h`, the explicit one-step
+halving trace for `S low` supplies every adjacent beta step through element
+index `0`.  The universal trace bound is reduced to the single pointwise
+witness by the explicit proof `elem = 0`. -/
+theorem BProv_Ax_s_evenSuccBeta_stepsComponent_zero
+    {G : List Formula} {elem low lowHalf : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G
+      (subst (instTerm (evenSuccBetaStepTerm low))
+        (subst (Term.upSubst (instTerm (evenSuccBetaCodeTerm low)))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))) := by
+  let cur : Term := evenSuccBetaStepTerm low
+  let code : Term := evenSuccBetaCodeTerm low
+  let leHyp : Formula := leAt 0 (elem+1)
+  let witness : Formula :=
+    subst (Term.upSubst (instTerm cur))
+      (subst (Term.upSubst (Term.upSubst (instTerm code)))
+        (betaDiv2StepWitnessAt (1+1) (0+1) 0))
+  let body : Formula := imp leHyp witness
+  have hbody : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hle : BProv Ax_s C leHyp :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, leHyp])
+    have helemRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt elem 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        helem Nat.succ
+    have helemC : BProv Ax_s C (eqConstAt (elem+1) 0) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := leHyp) helemRen
+    have hidxZero : BProv Ax_s C (eqConstAt 0 0) :=
+      BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero hle helemC
+    have hdoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt low lowHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hlowDouble Nat.succ
+    have hdoubleC : BProv Ax_s C (doubleEqAt (low+1) (lowHalf+1)) := by
+      simpa [C, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := leHyp) hdoubleRen
+    have hwitnessRaw : BProv Ax_s C
+        (subst (instTerm (evenSuccBetaStepTerm (low+1)))
+          (subst (Term.upSubst
+            (instTerm (evenSuccBetaCodeTerm (low+1))))
+            (betaDiv2StepWitnessAt 1 0 (0+2)))) :=
+      BProv_Ax_s_evenSuccBeta_stepWitness_zero
+        (G := C) (idx := 0) (low := low+1) (lowHalf := lowHalf+1)
+        hidxZero hdoubleC
+    have hwitness : BProv Ax_s C witness := by
+      simpa [C, witness, cur, code, evenSuccBetaStepTerm,
+        evenSuccBetaCodeTerm, betaDiv2StepWitnessAt, betaAtSuccIdx,
+        betaAt, remAt, ltAt, div2StepAt, boolAt, zeroAt, oneAt,
+        eqConstAt, betaModTerm, subst, instTerm, Term.subst,
+        Term.upSubst, Term.rename, Term.rename_comp,
+        term_rename_up_succ_rename_succ,
+        term_subst_instTerm_rename_succ,
+        term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_two_var_zero,
+        term_subst_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+        term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ] using
+        hwitnessRaw
+    exact BProv_impI hwitness
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [body, leHyp, witness, cur, code, betaDiv2StepsThroughAt,
+    leAt, betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.rename_comp, SetTheory.up,
+    term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ,
+    term_subst_up_up_up_up_instTerm_rename_five_succ,
+    term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+    term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ] using hall
+
+/-- If `low` is explicitly even, then `0` is a member of the open successor
+code `S low`.  The proof uses the reusable explicit beta trace rather than a
+semantic shortcut. -/
+theorem BProv_Ax_s_hfMemTermAt_evenSucc_of_zero_and_low_double
+    {G : List Formula} {elem low lowHalf : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G (hfMemTermAt elem (Term.succ (Term.var low))) :=
+  BProv_Ax_s_hfMemTermAt_of_bit_components
+    (elem := elem) (setCode := Term.succ (Term.var low))
+    (codeTerm := evenSuccBetaCodeTerm low)
+    (stepTerm := evenSuccBetaStepTerm low)
+    (BProv_Ax_s_evenSuccBeta_entryComponent_zero
+      (G := G) (low := low))
+    (BProv_Ax_s_evenSuccBeta_stepsComponent_zero
+      (G := G) (elem := elem) (low := low) (lowHalf := lowHalf)
+      helem hlowDouble)
+    (BProv_Ax_s_evenSuccBeta_bitComponent_zero
+      (G := G) (elem := elem) (low := low) (lowHalf := lowHalf)
+      helem hlowDouble)
+
 /-- Term-parametric membership introduction from the same closed trace
 components as `BProv_Ax_s_hfMemAt_of_closed_components`, but with the initial
 zero-index beta entry outputting an arbitrary set-code term. -/
@@ -22829,6 +23139,48 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [modEq] using hbody)
+
+/-- Even-low branch of the successor/predecessor distinguisher: if `low` is
+`2*h`, then the fresh zero element belongs to `S low` but not to `low`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
+    {G : List Formula} {low lowHalf : Nat}
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
+  let zeroEq : Formula := eqConstAt 0 0
+  have hex : BProv Ax_s G (ex zeroEq) := by
+    simpa [zeroEq] using BProv_exists_eqConstAt (B := Ax_s) (G := G) 0
+  have hbody : BProv Ax_s (zeroEq :: G.map (rename Nat.succ))
+      (rename Nat.succ
+        (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low)) := by
+    let C : List Formula := zeroEq :: G.map (rename Nat.succ)
+    have hzero : BProv Ax_s C (eqConstAt 0 0) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, zeroEq])
+    have hdoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt low lowHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hlowDouble Nat.succ
+    have hdoubleC : BProv Ax_s C (doubleEqAt (low+1) (lowHalf+1)) := by
+      simpa [C, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := zeroEq) hdoubleRen
+    have hmem : BProv Ax_s C
+        (hfMemTermAt 0 (Term.succ (Term.var (low+1)))) :=
+      BProv_Ax_s_hfMemTermAt_evenSucc_of_zero_and_low_double
+        (G := C) (elem := 0) (low := low+1) (lowHalf := lowHalf+1)
+        hzero hdoubleC
+    have hsome : BProv Ax_s C
+        (hfSomeDistinguishesTermAt
+          (Term.succ (Term.var (low+1))) (low+1)) :=
+      BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
+        (G := C) (elem := 0) (low := low+1) (lowHalf := lowHalf+1)
+        (highCode := Term.succ (Term.var (low+1)))
+        hzero hmem hdoubleC
+    simpa [C, rename_hfSomeDistinguishesTermAt_succ, Term.rename] using
+      hsome
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [zeroEq] using hbody)
 
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
