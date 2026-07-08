@@ -14192,11 +14192,117 @@ Definition translateContextAt (rho : nat -> nat)
     (G : list PA.formula) : list form :=
   map (formulaAt rho) G.
 
+Fixpoint domainContextAt (rho : nat -> nat) (n : nat) : list form :=
+  match n with
+  | 0 => []
+  | S m =>
+      rename (inst (rho 0)) domainForm ::
+        domainContextAt (fun k => rho (S k)) m
+  end.
+
 Lemma translateContextAt_id : forall G,
   translateContextAt (fun n => n) G = translateContext G.
 Proof.
   intro G.
   unfold translateContextAt, translateContext, translateFormula.
+  reflexivity.
+Qed.
+
+Lemma rename_domainForm_inst : forall r k,
+  rename r (rename (inst k) domainForm) =
+    rename (inst (r k)) domainForm.
+Proof.
+  intros r k.
+  rewrite rename_comp.
+  apply rename_ext_free.
+  intros n hn.
+  pose proof (domainForm_free n hn) as hn0.
+  subst n.
+  reflexivity.
+Qed.
+
+Lemma rename_domainForm_inst_zero :
+  rename (inst 0) domainForm = domainForm.
+Proof.
+  transitivity (rename (fun n => n) domainForm).
+  - apply rename_ext_free.
+    intros n hn.
+    pose proof (domainForm_free n hn) as hn0.
+    subst n.
+    reflexivity.
+  - apply rename_id.
+Qed.
+
+Lemma domainContextAt_rename : forall rho r n,
+  map (rename r) (domainContextAt rho n) =
+    domainContextAt (fun k => r (rho k)) n.
+Proof.
+  intros rho r n.
+  revert rho r.
+  induction n as [|n IH]; intros rho r; cbn [domainContextAt map].
+  - reflexivity.
+  - rewrite rename_domainForm_inst.
+    rewrite (IH (fun k => rho (S k)) r).
+    reflexivity.
+Qed.
+
+Lemma mem_domainContextAt : forall rho n k,
+  k < n ->
+  In (rename (inst (rho k)) domainForm) (domainContextAt rho n).
+Proof.
+  intros rho n k hk.
+  revert rho k hk.
+  induction n as [|n IH]; intros rho k hk.
+  - lia.
+  - destruct k as [|k]; cbn [domainContextAt In].
+    + left. reflexivity.
+    + right. apply (IH (fun j => rho (S j)) k). lia.
+Qed.
+
+Lemma mem_domainContextAt_mono : forall rho n m g,
+  n <= m ->
+  In g (domainContextAt rho n) ->
+  In g (domainContextAt rho m).
+Proof.
+  intros rho n m g hle hg.
+  revert rho m g hle hg.
+  induction n as [|n IH]; intros rho m g hle hg.
+  - cbn [domainContextAt In] in hg. contradiction.
+  - destruct m as [|m]; [lia |].
+    cbn [domainContextAt In] in hg.
+    cbn [domainContextAt In].
+    destruct hg as [hg | hg].
+    + left. exact hg.
+    + right. apply (IH (fun k => rho (S k)) m g).
+      * lia.
+      * exact hg.
+Qed.
+
+Lemma BProv_mono_domainContextAt : forall (B : form -> Prop) rho n m G phi,
+  n <= m ->
+  BProv B (domainContextAt rho n ++ G) phi ->
+  BProv B (domainContextAt rho m ++ G) phi.
+Proof.
+  intros B rho n m G phi hnm h.
+  apply (BProv_mono B (domainContextAt rho n ++ G)
+    (domainContextAt rho m ++ G) phi).
+  - intros x hx.
+    apply in_app_iff in hx.
+    apply in_app_iff.
+    destruct hx as [hx | hx].
+    + left. exact (mem_domainContextAt_mono rho n m x hnm hx).
+    + right. exact hx.
+  - exact h.
+Qed.
+
+Lemma domainContextAt_upVarMap_succ : forall rho n,
+  domainContextAt (upVarMap rho) (S n) =
+    domainForm :: map (rename S) (domainContextAt rho n).
+Proof.
+  intros rho n.
+  cbn [domainContextAt upVarMap].
+  rewrite rename_domainForm_inst_zero.
+  rewrite (domainContextAt_rename rho S n).
   reflexivity.
 Qed.
 
@@ -14242,6 +14348,20 @@ Proof.
   apply P_ass.
   apply mem_translateContextAt_of_mem.
   exact hphi.
+Qed.
+
+Lemma BProv_domainContextAt_var : forall rho n k G,
+  k < n ->
+  BProv translatedPAAx (domainContextAt rho n ++ G)
+    (rename (inst (rho k)) domainForm).
+Proof.
+  intros rho n k G hk.
+  apply BProv_of_Prov.
+  apply P_ass.
+  apply in_app_iff.
+  left.
+  apply mem_domainContextAt.
+  exact hk.
 Qed.
 
 Lemma BProv_formulaAt_ax : forall rho phi,

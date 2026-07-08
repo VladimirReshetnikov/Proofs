@@ -103,6 +103,15 @@ Check translateContextAt_id.
 Check mem_translateContextAt_of_mem.
 Check BProv_formulaAt_ass.
 Check BProv_formulaAt_ax.
+Check domainContextAt.
+Check rename_domainForm_inst.
+Check rename_domainForm_inst_zero.
+Check domainContextAt_rename.
+Check mem_domainContextAt.
+Check mem_domainContextAt_mono.
+Check BProv_mono_domainContextAt.
+Check domainContextAt_upVarMap_succ.
+Check BProv_domainContextAt_var.
 
 Check firstOrderFiniteAdjunctionModel_of_HFFinAx_s.
 Check formulaAt_induction_valid_finite_model.
