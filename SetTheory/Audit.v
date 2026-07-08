@@ -114,6 +114,10 @@ Check PA.Formula.BProv_Ax_s_ltConst_of_eqConst.
 Check PA.Formula.BProv_Ax_s_ltConst_closed.
 Check PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul.
 Check PA.Formula.BProv_Ax_s_dvdAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_boolAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot.
+Check PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.

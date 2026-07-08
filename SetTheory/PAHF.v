@@ -10030,6 +10030,246 @@ Definition div2StepAt (value half bit : nat) : formula :=
     (pEq (tVar value)
       (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))).
 
+Lemma BProv_Ax_s_boolAt_of_eqConst : forall G a b,
+  BProv Ax_s G (eqConstAt a b) ->
+  (b = 0 \/ b = 1) ->
+  BProv Ax_s G (boolAt a).
+Proof.
+  intros G a b ha hb.
+  destruct hb as [hb | hb].
+  - subst b.
+    unfold boolAt.
+    apply BProv_orI1.
+    unfold zeroAt.
+    exact ha.
+  - subst b.
+    unfold boolAt.
+    apply BProv_orI2.
+    unfold oneAt.
+    exact ha.
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_of_eqConst : forall G value half bit v h b,
+  BProv Ax_s G (eqConstAt value v) ->
+  BProv Ax_s G (eqConstAt half h) ->
+  BProv Ax_s G (eqConstAt bit b) ->
+  (b = 0 \/ b = 1) ->
+  h + h + b = v ->
+  BProv Ax_s G (div2StepAt value half bit).
+Proof.
+  intros G value half bit v h b hvalue hhalf hbit hb hval.
+  pose proof (BProv_Ax_s_boolAt_of_eqConst G bit b hbit hb) as hbool.
+  assert (hdoubleLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tVar half) (tVar half))
+        (tAdd (Term.numeral h) (Term.numeral h)))).
+  {
+    exact (BProv_eq_congr_add Ax_s G
+      (tVar half) (Term.numeral h)
+      (tVar half) (Term.numeral h) hhalf hhalf).
+  }
+  assert (hdoubleRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral h) (Term.numeral h))
+        (Term.numeral (h + h)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hdouble : BProv Ax_s G
+      (pEq
+        (tAdd (tVar half) (tVar half))
+        (Term.numeral (h + h)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tVar half) (tVar half))
+      (tAdd (Term.numeral h) (Term.numeral h))
+      (Term.numeral (h + h)) hdoubleLeft hdoubleRaw).
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tAdd (tVar half) (tVar half)) (Term.numeral (h + h))
+      (tVar bit) hdouble).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (h + h)) (tVar bit) (Term.numeral b) hbit).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral (h + h + b)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+      (tAdd (Term.numeral (h + h)) (Term.numeral b))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tVar value)
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tVar value) (Term.numeral v)
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+      hvalue
+      (BProv_eqSym Ax_s G
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))
+        (Term.numeral v) hcomputed)).
+  }
+  unfold div2StepAt.
+  exact (BProv_andI Ax_s G (boolAt bit)
+    (pEq (tVar value)
+      (tAdd (tAdd (tVar half) (tVar half)) (tVar bit)))
+    hbool htarget).
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_zero_one_bot : forall G value half bit,
+  BProv Ax_s G (eqConstAt value 0) ->
+  BProv Ax_s G (eqConstAt bit 1) ->
+  BProv Ax_s G (div2StepAt value half bit) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G value half bit hvalue hbit hstep.
+  set (t := tAdd (tVar half) (tVar half)).
+  assert (hstepEq : BProv Ax_s G
+      (pEq (tVar value) (tAdd t (tVar bit)))).
+  {
+    unfold t.
+    unfold div2StepAt in hstep.
+    exact (BProv_andE2 Ax_s G (boolAt bit)
+      (pEq (tVar value)
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))) hstep).
+  }
+  assert (hvalueZero : BProv Ax_s G (pEq (tVar value) tZero)).
+  {
+    unfold eqConstAt in hvalue.
+    simpl in hvalue.
+    exact hvalue.
+  }
+  assert (hrightZero : BProv Ax_s G
+      (pEq (tAdd t (tVar bit)) tZero)).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd t (tVar bit)) (tVar value) tZero
+      (BProv_eqSym Ax_s G (tVar value) (tAdd t (tVar bit)) hstepEq)
+      hvalueZero).
+  }
+  assert (hbitOne : BProv Ax_s G (pEq (tVar bit) (tSucc tZero))).
+  {
+    unfold eqConstAt in hbit.
+    simpl in hbit.
+    exact hbit.
+  }
+  assert (hbitRight : BProv Ax_s G
+      (pEq (tAdd t (tVar bit)) (tAdd t (tSucc tZero)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      t (tVar bit) (tSucc tZero) hbitOne).
+  }
+  assert (haddSucc : BProv Ax_s G
+      (pEq (tAdd t (tSucc tZero))
+        (tSucc (tAdd t tZero)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addSucc_terms.
+  }
+  assert (hrightSucc : BProv Ax_s G
+      (pEq (tAdd t (tVar bit))
+        (tSucc (tAdd t tZero)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd t (tVar bit)) (tAdd t (tSucc tZero))
+      (tSucc (tAdd t tZero)) hbitRight haddSucc).
+  }
+  assert (hsuccZero : BProv Ax_s G
+      (pEq (tSucc (tAdd t tZero)) tZero)).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tSucc (tAdd t tZero)) (tAdd t (tVar bit)) tZero
+      (BProv_eqSym Ax_s G
+        (tAdd t (tVar bit)) (tSucc (tAdd t tZero)) hrightSucc)
+      hrightZero).
+  }
+  assert (hnot : BProv Ax_s G
+      (pImp (pEq (tSucc (tAdd t tZero)) tZero) pBot)).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_zeroNotSucc_term.
+  }
+  exact (BProv_mp Ax_s G
+    (pEq (tSucc (tAdd t tZero)) tZero) pBot hnot hsuccZero).
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_zero_half_zero : forall G value half bit,
+  BProv Ax_s G (eqConstAt value 0) ->
+  BProv Ax_s G (div2StepAt value half bit) ->
+  BProv Ax_s G (eqConstAt half 0).
+Proof.
+  intros G value half bit hvalue hstep.
+  set (double := tAdd (tVar half) (tVar half)).
+  assert (hstepEq : BProv Ax_s G
+      (pEq (tVar value) (tAdd double (tVar bit)))).
+  {
+    unfold double.
+    unfold div2StepAt in hstep.
+    exact (BProv_andE2 Ax_s G (boolAt bit)
+      (pEq (tVar value)
+        (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))) hstep).
+  }
+  assert (hvalueZero : BProv Ax_s G (pEq (tVar value) tZero)).
+  {
+    unfold eqConstAt in hvalue.
+    simpl in hvalue.
+    exact hvalue.
+  }
+  assert (hrightZero : BProv Ax_s G
+      (pEq (tAdd double (tVar bit)) tZero)).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd double (tVar bit)) (tVar value) tZero
+      (BProv_eqSym Ax_s G (tVar value) (tAdd double (tVar bit)) hstepEq)
+      hvalueZero).
+  }
+  pose proof (BProv_Ax_s_add_eq_zero_left_terms G double
+    (tVar bit) hrightZero) as hdoubleZero.
+  pose proof (BProv_Ax_s_add_eq_zero_left_terms G
+    (tVar half) (tVar half) hdoubleZero) as hhalfZero.
+  unfold eqConstAt.
+  simpl.
+  exact hhalfZero.
+Qed.
+
 Definition remAt (rem value modulus : nat) : formula :=
   pEx (pAnd
     (ltAt (S rem) (S modulus))
