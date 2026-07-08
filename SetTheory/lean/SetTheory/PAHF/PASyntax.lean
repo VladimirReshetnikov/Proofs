@@ -14364,6 +14364,78 @@ theorem BProv_Ax_s_betaAt_of_betaTermAtConstIdx_eq_output_index
   exact BProv_Ax_s_betaAt_of_betaTermAtTermIdx_eq_output_index
     htermIdx hidxEq hout
 
+/-- Recover a raw successor-index beta wrapper from a term-output
+constant-index wrapper at the successor numeral, provided PA identifies the
+predecessor index and output with the requested slots. -/
+theorem BProv_Ax_s_betaAtSuccIdx_of_betaTermAtConstIdx_eq_output_index
+    {G : List Formula} {out code step idx idxValue : Nat} {outTerm : Term}
+    (hbeta : BProv Ax_s G (betaTermAtConstIdx outTerm code step (idxValue+1)))
+    (hidx : BProv Ax_s G (eqConstAt idx idxValue))
+    (hout : BProv Ax_s G (eq outTerm (Term.var out))) :
+    BProv Ax_s G (betaAtSuccIdx out code step idx) := by
+  let body : Formula :=
+    and (eqConstAt 0 (idxValue+1))
+      (betaTermAt (Term.rename Nat.succ outTerm) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (betaAtSuccIdx out code step idx)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hidxWitness : BProv Ax_s C (eqConstAt 0 (idxValue+1)) :=
+      BProv_andE1 hbodyAss
+    have hterm : BProv Ax_s C
+        (betaTermAt (Term.rename Nat.succ outTerm)
+          (code+1) (step+1) 0) :=
+      BProv_andE2 hbodyAss
+    have hidxRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt idx idxValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hidx Nat.succ
+    have hidxC : BProv Ax_s C
+        (eq (Term.var (idx+1)) (Term.numeral idxValue)) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hidxRen
+    have hidxSuccC : BProv Ax_s C
+        (eq (Term.succ (Term.var (idx+1)))
+          (Term.numeral (idxValue+1))) := by
+      simpa [Term.numeral_succ] using BProv_eq_congr_succ hidxC
+    have hidxTarget : BProv Ax_s C
+        (eq (Term.var 0) (Term.succ (Term.var (idx+1)))) := by
+      simpa [eqConstAt] using
+        BProv_eqTrans hidxWitness (BProv_eqSym hidxSuccC)
+    have houtRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq outTerm (Term.var out))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hout Nat.succ
+    have houtC : BProv Ax_s C
+        (eq (Term.rename Nat.succ outTerm) (Term.var (out+1))) := by
+      simpa [C, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) houtRen
+    have hraw : BProv Ax_s C
+        (betaAt (out+1) (code+1) (step+1) 0) :=
+      BProv_Ax_s_betaAt_of_betaTermAt_eq_term hterm houtC
+    let succBody : Formula :=
+      and
+        (eq (Term.var 0) (Term.succ (Term.var ((idx+1)+1))))
+        (rename (SetTheory.up Nat.succ)
+          (betaAt (out+1) (code+1) (step+1) 0))
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0)) succBody) := by
+      simpa [succBody, subst, instTerm, Term.subst, Term.upSubst,
+        Term.rename, rename, SetTheory.up, betaAt, remAt, ltAt, betaModTerm,
+        term_subst_instTerm_rename_succ] using
+        BProv_andI hidxTarget hraw
+    have hex : BProv Ax_s C (ex succBody) :=
+      BProv_exI (B := Ax_s) (G := C) (a := succBody)
+        (t := Term.var 0) hinst
+    simpa [C, betaAtSuccIdx, succBody, rename, Term.rename, SetTheory.up]
+      using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaTermAtConstIdx, body] using hbody)
+
 /-- A zero term-indexed beta entry forces a numeric beta entry at a provably
 equal index slot to output `0`. -/
 theorem BProv_Ax_s_betaAt_output_zero_of_betaTermAtTermIdx_eq_index

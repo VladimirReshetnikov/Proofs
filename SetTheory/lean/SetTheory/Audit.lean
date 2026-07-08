@@ -437,6 +437,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAtTermIdx_eq_output_index
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
 #check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAtConstIdx_eq_output_index
+#check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_betaTermAtConstIdx_eq_output_index
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAtTermIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_eq_of_betaAt_betaTermAtTermIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_eqConstAt_of_betaAt_betaTermAtTermIdx_eq_index
