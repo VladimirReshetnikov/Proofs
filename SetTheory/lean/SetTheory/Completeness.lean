@@ -418,6 +418,61 @@ theorem BProv_theory_mono {B C : Form → Prop} {G : List Form} {phi : Form}
     (fun b hb => BProv_ax (G := G) (hBC b hb))
     (fun g hg => BProv_of_Prov (B := C) (Prov.P_ass G g hg))
 
+/-- Relative provability is closed under the set-theory equality elimination
+rule.  The formula `a` is the one-variable context, instantiated first by
+`i` and then by `j`. -/
+theorem BProv_eqElim {B : Form → Prop} {G : List Form} {i j : Nat}
+    {a : Form}
+    (heq : BProv B G (fEq i j))
+    (ha : BProv B G (rename (inst i) a)) :
+    BProv B G (rename (inst j) a) := by
+  have hbare : BProv B [fEq i j, rename (inst i) a]
+      (rename (inst j) a) := by
+    apply BProv_of_Prov
+    apply Prov.P_eqElim [fEq i j, rename (inst i) a] i j a
+    · exact Prov.P_ass _ _ (by simp)
+    · exact Prov.P_ass _ _ (by simp)
+  exact BProv_lift hbare
+    (fun _ hb => BProv_ax (G := G) hb)
+    (fun g hg => by
+      simp only [List.mem_cons, List.not_mem_nil] at hg
+      rcases hg with rfl | hg
+      · exact heq
+      · rcases hg with rfl | hnil
+        · exact ha
+        · cases hnil)
+
+/-- Relative provability is closed under symmetry of equality. -/
+theorem BProv_eqSym {B : Form → Prop} {G : List Form} {i j : Nat}
+    (heq : BProv B G (fEq i j)) : BProv B G (fEq j i) := by
+  rcases heq with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov_eq_sym _ i j hp⟩
+
+/-- Relative provability is closed under transitivity of equality. -/
+theorem BProv_eqTrans {B : Form → Prop} {G : List Form} {i j k : Nat}
+    (hij : BProv B G (fEq i j)) (hjk : BProv B G (fEq j k)) :
+    BProv B G (fEq i k) := by
+  rcases hij with ⟨Li, hLi, hpi⟩
+  rcases hjk with ⟨Lj, hLj, hpj⟩
+  refine ⟨Li ++ Lj, ?_, ?_⟩
+  · intro x hx
+    rcases List.mem_append.mp hx with hx | hx
+    · exact hLi x hx
+    · exact hLj x hx
+  · apply Prov_eq_trans _ i j k
+    · apply Prov_weaken hpi
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
+      · exact Or.inr hx
+    · apply Prov_weaken hpj
+      intro x hx
+      rw [List.mem_append] at hx ⊢
+      rcases hx with hx | hx
+      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
+      · exact Or.inr hx
+
 /-- Soundness for relative provability from an infinite sentence theory and a
 finite context. -/
 theorem soundness_BProv {α : Type u} {mem : α → α → Prop} {B : Form → Prop}
@@ -806,6 +861,31 @@ theorem completeness_inf (B : Form → Prop) (psi : Form)
     exact Prov_exch (G := Gb ++ [fImp psi fBot]) (by mem_tac) hbad
   obtain ⟨Dom, m, v, hsatB, hsatL⟩ := model_of_BCon B [fImp psi fBot] hB hBcon
   have hp : Sat m v psi := hval Dom m v hsatB
+  have hnpv : Sat m v (fImp psi fBot) := hsatL _ (by simp)
+  exact hnpv hp
+
+/-- Relative completeness with a finite context: semantic validity over every
+model of the sentence theory `B` satisfying the finite list `G` yields
+relative provability from `B` and `G`. -/
+theorem completeness_inf_context (B : Form → Prop) (G : List Form) (psi : Form)
+    (hB : Sentences B)
+    (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+      (∀ g, B g → Sat m v g) →
+      (∀ g, g ∈ G → Sat m v g) →
+      Sat m v psi) :
+    BProv B G psi := by
+  apply Classical.byContradiction
+  intro hnp
+  have hBcon : BCon B (fImp psi fBot :: G) := by
+    intro ⟨Gb, hGb, hbad⟩
+    apply hnp
+    refine ⟨Gb, hGb, ?_⟩
+    apply Prov_byContra
+    exact Prov_exch (G := Gb ++ (fImp psi fBot :: G)) (by mem_tac) hbad
+  obtain ⟨Dom, m, v, hsatB, hsatL⟩ :=
+    model_of_BCon B (fImp psi fBot :: G) hB hBcon
+  have hp : Sat m v psi :=
+    hval Dom m v hsatB (fun g hg => hsatL g (by simp [hg]))
   have hnpv : Sat m v (fImp psi fBot) := hsatL _ (by simp)
   exact hnpv hp
 
