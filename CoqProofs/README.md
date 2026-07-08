@@ -92,9 +92,11 @@ Current ports:
   `A199812.lean`: inner tower exponents are represented as Cantor-normal-form
   notes below epsilon_0, tower splits combine degrees by
   `a, b |-> a + omega^b`, and the recurrence is connected to the shared
-  `PowTower.v` evaluator.  It certifies the initial values through `n = 12`;
-  the Lean module's mathlib ordinal-semantics bridge and longer table through
-  `n = 13` are not yet replayed in Coq.
+  `PowTower.v` evaluator.  The counts are produced by a memoized level table
+  deduplicated with a fueled mergesort over `onoteCompare` and computed once
+  into a single vm_computed table, matching the Lean value table through
+  `n = 13`; the Lean module's mathlib ordinal-semantics bridge is not yet
+  replayed in Coq.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
   A002845.  It uses Coq's verified binary natural numbers `N` as the sparse
   carrier, preserving the evaluation/canonicality/comparison and
@@ -102,7 +104,12 @@ Current ports:
 - `A002845.v` ports the exact-logarithm reduction for the natural power tower
   sequence, keeps the binary-`N` executable logarithm bridge for the initial
   direct layer, and adds a hereditary sparse-binary recurrence for the finite
-  certificates.  It verifies the Lean value table through `n = 14`.
+  certificates.  The executable-only `HereditarySparse` level recurrence is
+  deduplicated with a tail-recursive fueled mergesort over its fueled
+  `compare` and computed once into a single vm-checked binary-`N` count
+  table, cross-checked against the quadratic structural-equality dedup on a
+  cheap prefix.  It verifies the value table through `n = 17` (the Lean
+  module's live table reaches `n = 18`).
 - `A198683N12Magnitude.v` ports the finite TSV-metadata layer from
   `A198683N12Magnitude.lean`: the n = 12 huge-negative-exponent,
   negative-exponent-above-ten, and overflow-regime flags are embedded as
