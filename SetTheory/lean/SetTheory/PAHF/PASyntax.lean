@@ -23654,6 +23654,43 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [highEq] using hbody)
 
+/-- Bounded finite-search form of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low`: if PA proves that
+the predecessor slot is at most a standard bound `n`, split over the finitely
+many possible numerals and use the closed-low bridge in each branch. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_leConst_low
+    {G : List Formula} {low n : Nat}
+    (hle : BProv Ax_s G (leConstAt low n)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
+  induction n generalizing G with
+  | zero =>
+      have hlow : BProv Ax_s G (eqConstAt low 0) :=
+        BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero hle
+      exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
+        hlow
+  | succ n ih =>
+      have hcases : BProv Ax_s G
+          (or (leConstAt low n) (eqConstAt low (n+1))) :=
+        BProv_Ax_s_leConstAt_succ_cases hle
+      have hleft : BProv Ax_s (leConstAt low n :: G)
+          (hfSomeDistinguishesTermAt
+            (Term.succ (Term.var low)) low) := by
+        have hleCtx : BProv Ax_s (leConstAt low n :: G)
+            (leConstAt low n) :=
+          BProv_ass (B := Ax_s) (G := leConstAt low n :: G) (by simp)
+        exact ih hleCtx
+      have hright : BProv Ax_s (eqConstAt low (n+1) :: G)
+          (hfSomeDistinguishesTermAt
+            (Term.succ (Term.var low)) low) := by
+        have hlowCtx : BProv Ax_s (eqConstAt low (n+1) :: G)
+            (eqConstAt low (n+1)) :=
+          BProv_ass (B := Ax_s) (G := eqConstAt low (n+1) :: G)
+            (by simp)
+        exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
+          hlowCtx
+      exact BProv_orE hcases hleft hright
+
 /-- Base case for the PA induction target behind translated HF
 extensionality.  Once the high code has been replaced by `0`, the remaining
 low-code premise is `low < 0`, which PA refutes from the always-available
