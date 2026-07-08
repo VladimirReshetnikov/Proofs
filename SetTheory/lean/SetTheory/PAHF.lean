@@ -11670,6 +11670,48 @@ theorem BProv_Ax_s_remEqAt_of_remAt {G : List Formula}
     (fun f hf => sentence_ax_s (f := f) hf) hrem (by
       simpa [remAt, body] using hbody)
 
+/-- A remainder of zero-valued division is zero.  The modulus is deliberately
+left unconstrained: the conclusion follows from the quotient equation alone. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
+    {G : List Formula} {rem value modulus : Nat}
+    (hrem : BProv Ax_s G (remAt rem value modulus))
+    (hvalue : BProv Ax_s G (eqConstAt value 0)) :
+    BProv Ax_s G (eqConstAt rem 0) := by
+  let eqBody : Formula :=
+    eq (Term.var (value+1))
+      (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+        (Term.var (rem+1)))
+  have heqEx : BProv Ax_s G (remEqAt rem value modulus) :=
+    BProv_Ax_s_remEqAt_of_remAt hrem
+  have hbody : BProv Ax_s (eqBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt rem 0)) := by
+    let C : List Formula := eqBody :: G.map (rename Nat.succ)
+    have heqBody : BProv Ax_s C eqBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hvalueRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (value+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hvalue Nat.succ
+    have hvalueC : BProv Ax_s C (eqConstAt (value+1) 0) :=
+      BProv_context_cons hvalueRen
+    have hsumZero : BProv Ax_s C
+        (eq
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))
+          Term.zero) := by
+      simpa [eqConstAt, Term.numeral, eqBody] using
+        BProv_eqTrans (BProv_eqSym heqBody) hvalueC
+    have hremZero : BProv Ax_s C (eq (Term.var (rem+1)) Term.zero) :=
+      BProv_Ax_s_add_eq_zero_right_terms
+        (x := Term.mul (Term.var 0) (Term.var (modulus+1)))
+        (y := Term.var (rem+1)) hsumZero
+    simpa [C, eqConstAt, rename, Term.rename, Term.numeral] using hremZero
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) heqEx (by
+      simpa [remEqAt, eqBody] using hbody)
+
 /-- If the `step` and `idx` slots are fixed numerals, PA proves that the
 Gödel-beta modulus term computes the corresponding closed numeral. -/
 theorem BProv_Ax_s_betaModTerm_of_eqConst {G : List Formula}
