@@ -262,6 +262,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leAt_ltAt_trans
 #check @PA.Formula.BProv_Ax_s_ltAt_irrefl_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_leAt_bot
+#check @PA.Formula.BProv_Ax_s_ltTermAt_leTermAt_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_asymm_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_eq_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst_zero_succPredAt
@@ -276,6 +277,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leTermAt_succ_succ
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_succ
 #check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt_all
+#check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt
 #check @PA.Formula.BProv_Ax_s_leAt_or_gtAt
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one
 #check @PA.Formula.BProv_Ax_s_ltConst_of_eqConst

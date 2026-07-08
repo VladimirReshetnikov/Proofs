@@ -11621,6 +11621,85 @@ theorem BProv_Ax_s_ltAt_leAt_bot {G : List Formula} {a b : Nat}
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltAt, ltBody] using hbody)
 
+/-- PA refutes simultaneous term-parametric witnesses for `a < b` and
+`b ≤ a`. -/
+theorem BProv_Ax_s_ltTermAt_leTermAt_bot {G : List Formula} {a b : Term}
+    (hlt : BProv Ax_s G (ltTermAt a b))
+    (hle : BProv Ax_s G (leTermAt b a)) :
+    BProv Ax_s G bot := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.rename Nat.succ a) (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ b)
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ bot) := by
+    let C : List Formula := ltBody :: G.map (rename Nat.succ)
+    let leBody : Formula :=
+      eq
+        (Term.add (Term.rename Nat.succ (Term.rename Nat.succ b))
+          (Term.var 0))
+        (Term.rename Nat.succ (Term.rename Nat.succ a))
+    have hleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (leTermAt b a)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hle Nat.succ
+    have hleC : BProv Ax_s C (rename Nat.succ (leTermAt b a)) :=
+      BProv_context_cons hleRen
+    have hleBody : BProv Ax_s (leBody :: C.map (rename Nat.succ))
+        (rename Nat.succ bot) := by
+      let D : List Formula := leBody :: C.map (rename Nat.succ)
+      let aa : Term := Term.rename Nat.succ (Term.rename Nat.succ a)
+      let bb : Term := Term.rename Nat.succ (Term.rename Nat.succ b)
+      let y : Term := Term.var 1
+      let d : Term := Term.var 0
+      have hltRaw : BProv Ax_s D (rename Nat.succ ltBody) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+      have hltEq : BProv Ax_s D
+          (eq (Term.add aa (Term.succ y)) bb) := by
+        simpa [ltBody, aa, bb, y, rename, Term.rename, Term.rename_comp]
+          using hltRaw
+      have hleRaw : BProv Ax_s D leBody :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hleEq : BProv Ax_s D (eq (Term.add bb d) aa) := by
+        simpa [leBody, aa, bb, d] using hleRaw
+      have hltAdd : BProv Ax_s D
+          (eq (Term.add (Term.add aa (Term.succ y)) d)
+            (Term.add bb d)) :=
+        BProv_eq_congr_add_left d hltEq
+      have hloop : BProv Ax_s D
+          (eq (Term.add (Term.add aa (Term.succ y)) d) aa) :=
+        BProv_eqTrans hltAdd hleEq
+      have hassoc : BProv Ax_s D
+          (eq
+            (Term.add (Term.add aa (Term.succ y)) d)
+            (Term.add aa (Term.add (Term.succ y) d))) :=
+        BProv_Ax_s_add_assoc_terms aa (Term.succ y) d
+      have hsuccLeft : BProv Ax_s D
+          (eq (Term.add (Term.succ y) d)
+            (Term.succ (Term.add y d))) :=
+        BProv_Ax_s_succ_add_terms y d
+      have hsuccCong : BProv Ax_s D
+          (eq
+            (Term.add aa (Term.add (Term.succ y) d))
+            (Term.add aa (Term.succ (Term.add y d)))) :=
+        BProv_eq_congr_add_right aa hsuccLeft
+      have hbad : BProv Ax_s D
+          (eq (Term.add aa (Term.succ (Term.add y d))) aa) :=
+        BProv_eqTrans (BProv_eqTrans (BProv_eqSym hsuccCong)
+          (BProv_eqSym hassoc)) hloop
+      have hbot : BProv Ax_s D bot :=
+        BProv_Ax_s_add_succ_ne_self_terms hbad
+      simpa [rename] using hbot
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      hleC (by
+        simpa [C, leTermAt, leBody, rename, Term.rename, SetTheory.up,
+          Term.rename_comp, List.map_map, Function.comp_def] using hleBody)
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hlt (by
+      simpa [ltTermAt, ltBody] using hbody)
+
 /-- PA refutes simultaneous opposite strict-order witnesses. -/
 theorem BProv_Ax_s_ltAt_asymm_bot {G : List Formula} {a b : Nat}
     (hab : BProv Ax_s G (ltAt a b))
@@ -12321,6 +12400,21 @@ theorem BProv_Ax_s_leAt_or_gtAt {G : List Formula} {a b : Nat} :
   simpa [leAt, leTermAt, ltAt, ltTermAt, subst, instTerm, Term.subst,
     Term.upSubst, Term.rename, SetTheory.up, term_subst_instTerm_rename_succ]
     using ha
+
+/-- Term-level total comparison instance: PA proves either `a ≤ b` or `b < a`
+for arbitrary PA terms. -/
+theorem BProv_Ax_s_leTermAt_or_gtTermAt {G : List Formula} (a b : Term) :
+    BProv Ax_s G (or (leTermAt a b) (ltTermAt b a)) := by
+  have hall : BProv Ax_s G
+      (all (all
+        (or (leTermAt (Term.var 0) (Term.var 1))
+          (ltTermAt (Term.var 1) (Term.var 0))))) :=
+    BProv_weaken_nil BProv_Ax_s_leTermAt_or_gtTermAt_all
+  have hb := BProv_allE (B := Ax_s) (G := G) (t := b) hall
+  have ha := BProv_allE (B := Ax_s) (G := G) (t := a) hb
+  simpa [leTermAt, ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+    Term.rename, SetTheory.up, Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ] using ha
 
 /-- PA proves the strict closed-one bound case: from `x < y` and `y = 1`,
 derive `x = 0`. -/
