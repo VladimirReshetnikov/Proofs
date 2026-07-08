@@ -15932,6 +15932,123 @@ Proof.
     (formulaAt rho c) hB hex hraw).
 Qed.
 
+Lemma BProv_formulaAt_of_Prov_with_term_rules :
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pAll a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEx a))) ->
+  (forall rho G t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq t t))) ->
+  (forall rho G s t a,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq s t)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm s) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  forall G phi,
+  PA.Formula.Prov G phi ->
+  forall rho,
+    BProv translatedPAAx (translateContextAt rho G) (formulaAt rho phi).
+Proof.
+  intros hAllE hExI hEqRefl hEqElim G phi h.
+  induction h; intro rho; simpl.
+  - apply BProv_formulaAt_ass. exact H.
+  - apply BProv_formulaAt_impI. exact (IHh rho).
+  - eapply BProv_formulaAt_impE.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+  - eapply BProv_formulaAt_botE.
+    exact (IHh rho).
+  - apply BProv_formulaAt_lem.
+  - apply BProv_formulaAt_andI.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+  - eapply BProv_formulaAt_andE1.
+    exact (IHh rho).
+  - eapply BProv_formulaAt_andE2.
+    exact (IHh rho).
+  - apply BProv_formulaAt_orI1.
+    exact (IHh rho).
+  - apply BProv_formulaAt_orI2.
+    exact (IHh rho).
+  - eapply BProv_formulaAt_orE.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+    + exact (IHh3 rho).
+  - apply BProv_formulaAt_allI.
+    exact (IHh (upVarMap rho)).
+  - apply hAllE.
+    exact (IHh rho).
+  - eapply hExI.
+    exact (IHh rho).
+  - eapply BProv_formulaAt_exE.
+    + exact (IHh1 rho).
+    + exact (IHh2 (upVarMap rho)).
+  - apply hEqRefl.
+  - eapply hEqElim.
+    + exact (IHh1 rho).
+    + exact (IHh2 rho).
+Qed.
+
+Lemma BProv_formulaAt_of_PA_BProv_with_term_rules :
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pAll a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  (forall rho G a t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEx a))) ->
+  (forall rho G t,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq t t))) ->
+  (forall rho G s t a,
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho (PA.pEq s t)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm s) a)) ->
+    BProv translatedPAAx (translateContextAt rho G)
+      (formulaAt rho
+        (PA.Formula.subst (PA.Formula.instTerm t) a))) ->
+  forall phi,
+  PA.Formula.BProv PA.Formula.Ax_s [] phi ->
+  forall rho,
+    BProv translatedPAAx [] (formulaAt rho phi).
+Proof.
+  intros hAllE hExI hEqRefl hEqElim phi [L [hL hp]] rho.
+  rewrite app_nil_r in hp.
+  pose proof (BProv_formulaAt_of_Prov_with_term_rules
+    hAllE hExI hEqRefl hEqElim L phi hp rho) as htranslated.
+  eapply BProv_lift.
+  - exact htranslated.
+  - intros b hb.
+    apply BProv_ax.
+    exact hb.
+  - intros g hg.
+    unfold translateContextAt in hg.
+    apply in_map_iff in hg.
+    destruct hg as [psi [hg hpsi]].
+    subst g.
+    exact (BProv_formulaAt_ax rho psi (hL psi hpsi)).
+Qed.
+
 Lemma BProv_translate_impI : forall G a b,
   BProv translatedPAAx
     (translateFormula a :: translateContext G) (translateFormula b) ->

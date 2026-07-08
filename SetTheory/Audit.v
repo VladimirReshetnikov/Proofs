@@ -202,6 +202,8 @@ Check BProv_formulaAt_exI_var_domainContext.
 Check BProv_formulaAt_exE_raw.
 Check BProv_formulaAt_exE.
 Check BProv_formulaAt_exE_domainContext_of_sentences.
+Check BProv_formulaAt_of_Prov_with_term_rules.
+Check BProv_formulaAt_of_PA_BProv_with_term_rules.
 
 Check firstOrderFiniteAdjunctionModel_of_HFFinAx_s.
 Check formulaAt_induction_valid_finite_model.
