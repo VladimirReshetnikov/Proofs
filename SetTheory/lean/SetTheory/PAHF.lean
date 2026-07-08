@@ -10825,6 +10825,29 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
     hcode hstep hidx hcurLt hcurVal.symm hnextLt hnextVal.symm
     hbit hdiv.symm
 
+/-- Opened beta-step zero propagation: inside the body of a
+`betaDiv2StepWitnessAt`, current value `0` forces the next beta-entry witness
+to be `0`. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero
+    {G : List Formula} {code step idx : Nat}
+    (hcurZero : BProv Ax_s G (eqConstAt 2 0))
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 2 (code+3) (step+3) (idx+3))
+        (and
+          (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+          (div2StepAt 2 1 0)))) :
+    BProv Ax_s G (eqConstAt 1 0) := by
+  have htail : BProv Ax_s G
+      (and
+        (betaAtSuccIdx 1 (code+3) (step+3) (idx+3))
+        (div2StepAt 2 1 0)) :=
+    BProv_andE2 hbody
+  have hstep : BProv Ax_s G (div2StepAt 2 1 0) :=
+    BProv_andE2 htail
+  exact BProv_Ax_s_div2StepAt_zero_half_zero
+    (value := 2) (half := 1) (bit := 0) hcurZero hstep
+
 /-- `BetaDiv2Step`-packaged version of
 `BProv_Ax_s_betaDiv2BitAt_of_eqConst`. -/
 theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst_step {G : List Formula}
