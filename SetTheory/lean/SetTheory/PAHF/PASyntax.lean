@@ -24222,6 +24222,212 @@ theorem
           Nat.add_assoc] using hpred)
   simpa [elem, set, witness, branchTail, branchCtx, target] using htarget
 
+/-- Component-level builder for the successor-membership target left by
+`BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_step_pred`.
+
+This theorem still does not transform the old membership trace.  It merely
+records the exact component obligations that are sufficient, in the opened
+successor-step branch, to package chosen beta code and step terms into the
+renamed target `1 in S high`. -/
+theorem
+    BProv_Ax_s_hfMemTermAt_succ_opened_step_pred_of_components
+    {G : List Formula} {high low half : Nat} {codeTerm stepTerm : Term}
+    (hentry :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+      let targetCode : Term :=
+        Term.rename Nat.succ
+          (Term.rename Nat.succ
+            (Term.rename Nat.succ (Term.succ (Term.var set))))
+      BProv Ax_s C
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaTermAtConstIdx
+              (Term.rename (fun n => n+2) targetCode) 1 0 0))))
+    (hsteps :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+      BProv Ax_s C
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaDiv2StepsThroughAt 1 0 ((elem+3)+2)))))
+    (hbitEx :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+      BProv Ax_s C
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (ex
+              (and
+                (oneAt 0)
+                (betaDiv2BitAt 0 2 1 ((elem+3)+3))))))) :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target))) := by
+  let elem : Nat := 1
+  let set : Nat := high+2
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let branchTail : List Formula :=
+    (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let branchCtx : List Formula :=
+    doubleEqAt set (half+2) ::
+      eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+  let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let traceTail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      traceTail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+  let targetCode : Term :=
+    Term.rename Nat.succ
+      (Term.rename Nat.succ
+        (Term.rename Nat.succ (Term.succ (Term.var set))))
+  have hentry' : BProv Ax_s C
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) targetCode) 1 0 0))) := by
+    simpa [elem, set, witness, branchTail, branchCtx, bitBody, traceTail,
+      body, bodyCtx, succCtx, succBody, C, targetCode] using hentry
+  have hsteps' : BProv Ax_s C
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaDiv2StepsThroughAt 1 0 ((elem+3)+2)))) := by
+    simpa [elem, set, witness, branchTail, branchCtx, bitBody, traceTail,
+      body, bodyCtx, succCtx, succBody, C] using hsteps
+  have hbitEx' : BProv Ax_s C
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 ((elem+3)+3)))))) := by
+    simpa [elem, set, witness, branchTail, branchCtx, bitBody, traceTail,
+      body, bodyCtx, succCtx, succBody, C] using hbitEx
+  have htarget : BProv Ax_s C (hfMemTermAt (elem+3) targetCode) :=
+    BProv_Ax_s_hfMemTermAt_of_components
+      (G := C) (elem := elem+3) (setCode := targetCode)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      hentry' hsteps' hbitEx'
+  simpa [elem, set, witness, branchTail, branchCtx, target, bitBody,
+    traceTail, body, bodyCtx, succCtx, succBody, C, targetCode,
+    rename_hfMemTermAt_succ, Nat.add_assoc] using htarget
+
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
