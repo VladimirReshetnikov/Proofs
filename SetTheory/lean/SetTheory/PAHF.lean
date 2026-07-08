@@ -19816,6 +19816,29 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_distinguishing
     (BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing hdist10)
     (BProv_Ax_s_HF_extensionality_lt01_bot_of_distinguishing hdist01)
 
+/-- A uniform PA proof that strict order gives an Ackermann distinguishing
+member is enough to prove the translated HF extensionality axiom. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_lt_distinguishes
+    (hdistinguish :
+      ∀ {G : List Formula} {low high : Nat},
+        BProv Ax_s G (ltAt low high) →
+          BProv Ax_s G (hfSomeDistinguishesAt high low)) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) := by
+  let sameMembers : Formula := all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))
+  have hlt10 : BProv Ax_s [ltAt 1 0, sameMembers] (ltAt 1 0) :=
+    BProv_ass (B := Ax_s) (G := [ltAt 1 0, sameMembers]) (by simp)
+  have hlt01 : BProv Ax_s [ltAt 0 1, sameMembers] (ltAt 0 1) :=
+    BProv_ass (B := Ax_s) (G := [ltAt 0 1, sameMembers]) (by simp)
+  exact BProv_Ax_s_translated_HF_extensionality_of_distinguishing
+    (by simpa [sameMembers] using
+      (hdistinguish (G := [ltAt 1 0, sameMembers])
+        (low := 1) (high := 0) hlt10))
+    (by simpa [sameMembers] using
+      (hdistinguish (G := [ltAt 0 1, sameMembers])
+        (low := 0) (high := 1) hlt01))
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
