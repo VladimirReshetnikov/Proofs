@@ -748,6 +748,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_evenSucc_of_zero_and_low_double
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
 #check @PA.Formula.BProv_Ax_s_nonzeroAt_of_hfMemAt_double
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_bit_zero

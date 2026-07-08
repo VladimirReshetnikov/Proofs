@@ -23520,6 +23520,54 @@ theorem BProv_Ax_s_nonzeroAt_of_hfMemAt_double
   exact BProv_orE (by simpa [zeroOrSuccPredAt] using hcases)
     hzeroBranch hsuccBranch
 
+/-- Eliminate a distinguishing-member existential for an explicitly even high
+code, while exposing that the opened witness is nonzero.
+
+This is proof plumbing for carry branches: the formula
+`hfSomeDistinguishesAt` remains unchanged, and the positivity fact is derived
+from the high-membership half of the opened witness plus the doubled-code
+premise. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double
+    {G : List Formula} {target : Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hbody : BProv Ax_s
+      (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv Ax_s G target := by
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let C : List Formula := witness :: G.map (rename Nat.succ)
+  have hopened : BProv Ax_s C (rename Nat.succ target) := by
+    have hdist : BProv Ax_s C witness :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, witness])
+    have hmemHigh : BProv Ax_s C (hfMemAt 0 (high+1)) := by
+      simpa [witness, hfDistinguishesAt] using BProv_andE1 hdist
+    have hdoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt high half)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhighDouble Nat.succ
+    have hdoubleC : BProv Ax_s C (doubleEqAt (high+1) (half+1)) := by
+      simpa [C, witness, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := witness) hdoubleRen
+    have hnonzero : BProv Ax_s C (nonzeroAt 0) :=
+      BProv_Ax_s_nonzeroAt_of_hfMemAt_double hmemHigh hdoubleC
+    have hbodyC : BProv Ax_s (nonzeroAt 0 :: C)
+        (rename Nat.succ target) := by
+      simpa [C, witness] using hbody
+    exact BProv_cut hbodyC (D := C) (fun g hg => by
+      simp only [List.mem_cons] at hg
+      rcases hg with hg | hg
+      · subst g
+        exact hnonzero
+      · exact BProv_ass (B := Ax_s) (G := C) hg)
+  have hex : BProv Ax_s G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesAt] using hsome
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [C, witness] using hopened)
+
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
