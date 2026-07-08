@@ -234,6 +234,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst_entry
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_zero_bot
