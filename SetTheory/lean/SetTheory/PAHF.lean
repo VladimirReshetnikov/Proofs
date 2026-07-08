@@ -11565,6 +11565,33 @@ theorem BProv_Ax_s_hfMemAt_of_eqConst_mem
     (setValue := setValue) (code := code) (step := step)
     helem hset htrace
 
+/-- Outer shell for the translated HF empty-set axiom.
+
+The remaining arithmetic obligation is exactly the body obtained by using the
+closed PA numeral `0` as the empty-set witness.  Keeping that obligation as a
+premise avoids hiding the membership-refutation work in the theorem statement. -/
+theorem BProv_Ax_s_translated_HF_empty_of_zero_body
+    (hbody : BProv Ax_s []
+      (subst (instTerm Term.zero)
+        (all (imp (hfMemAt 0 1) bot)))) :
+    BProv Ax_s []
+      (translateHFFormula (SetTheory.sealF AckermannHF.HF_empty_form)) := by
+  let body : Formula := all (imp (hfMemAt 0 1) bot)
+  have hex : BProv Ax_s [] (ex body) := by
+    simpa [body] using
+      (BProv_exI (B := Ax_s) (G := []) (a := body) (t := Term.zero) hbody)
+  have h1 : BProv Ax_s [] (all (ex body)) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hex
+  have h2 : BProv Ax_s [] (all (all (ex body))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) h1
+  have h3 : BProv Ax_s [] (all (all (all (ex body)))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) h2
+  simpa [body, translateHFFormula, hfFormulaAt, AckermannHF.HF_empty_form,
+    SetTheory.sealF, SetTheory.closeN, SetTheory.bound, hfUpVarMap] using h3
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
