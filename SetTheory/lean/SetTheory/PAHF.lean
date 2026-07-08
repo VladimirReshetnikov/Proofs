@@ -11837,6 +11837,24 @@ theorem BProv_Ax_s_dvdAt_of_eqConst {G : List Formula}
   exact BProv_Ax_s_dvdAt_of_eqConst_mul
     (a := a) (b := b) (m := m) (n := n) (q := q) ha hb hq.symm
 
+/-- A term quotient equation gives the corresponding `dvdAt` witness.  This is
+the open-term version of `BProv_Ax_s_dvdAt_of_eqConst_mul`, used after
+remainder algebra has produced a quotient term inside an existential context. -/
+theorem BProv_Ax_s_dvdAt_of_eq_mul_term {G : List Formula}
+    {modulus value : Nat} {quot : Term}
+    (hmul : BProv Ax_s G
+      (eq (Term.var value) (Term.mul (Term.var modulus) quot))) :
+    BProv Ax_s G (dvdAt modulus value) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm quot)
+        (eq (Term.mul (Term.var (modulus+1)) (Term.var 0))
+          (Term.var (value+1)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using BProv_eqSym hmul
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq (Term.mul (Term.var (modulus+1)) (Term.var 0))
+      (Term.var (value+1)))
+    (t := quot) hbody
+
 /-- A value strictly below its modulus cannot be a nonzero multiple of that
 modulus.  This is the quotient-free divisibility/boundedness kernel used later
 when beta functionality has reduced a candidate remainder to a divisor of the

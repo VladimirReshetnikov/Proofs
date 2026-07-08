@@ -266,6 +266,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltConst_closed
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_dvdAt_of_eq_mul_term
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt
 #check @PA.Formula.BProv_Ax_s_boolAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst
