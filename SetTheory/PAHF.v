@@ -12021,6 +12021,146 @@ Proof.
     sentence_ax_s hbitAt' houter).
 Qed.
 
+Lemma BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step :
+  forall G code step last c s cur next bit,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt last 0) ->
+  BetaDiv2Step c s 0 cur next bit ->
+  BProv Ax_s G (betaDiv2StepsThroughAt code step last).
+Proof.
+  intros G code step last c s cur next bit
+    hcode hstep hlast hdivStep.
+  set (leHyp := leAt 0 (S last)).
+  assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
+  {
+    apply BProv_ass.
+    simpl. left. reflexivity.
+  }
+  assert (hcodeRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt code c))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt code c) hcode S).
+  }
+  assert (hstepRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt step s))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt step s) hstep S).
+  }
+  assert (hlastRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt last 0))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt last 0) hlast S).
+  }
+  assert (hcodeBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S code) c)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt code c)) hcodeRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  assert (hstepBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S step) s)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt step s)) hstepRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  assert (hlastBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S last) 0)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt last 0)) hlastRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    exact h.
+  }
+  pose proof (BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero
+    (leHyp :: map (rename S) G) 0 (S last)
+    hle hlastBody) as hidxZero.
+  pose proof (BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+    (leHyp :: map (rename S) G)
+    (S code) (S step) 0 c s 0 cur next bit
+    hcodeBody hstepBody hidxZero hdivStep) as hwitness.
+  pose proof (BProv_impI Ax_s (map (rename S) G) leHyp
+    (betaDiv2StepWitnessAt (S code) (S step) 0) hwitness) as himp.
+  unfold betaDiv2StepsThroughAt.
+  fold leHyp.
+  exact (BProv_allI_of_sentences Ax_s G
+    (pImp leHyp (betaDiv2StepWitnessAt (S code) (S step) 0))
+    sentence_ax_s himp).
+Qed.
+
+Lemma BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step :
+  forall G code step c s cur next bit,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BetaDiv2Step c s 0 cur next bit ->
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step 0).
+Proof.
+  intros G code step c s cur next bit hcode hstep hdivStep.
+  set (leHyp := leConstAt 0 0).
+  assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
+  {
+    apply BProv_ass.
+    simpl. left. reflexivity.
+  }
+  assert (hcodeRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt code c))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt code c) hcode S).
+  }
+  assert (hstepRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt step s))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt step s) hstep S).
+  }
+  assert (hcodeBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S code) c)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt code c)) hcodeRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  assert (hstepBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S step) s)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt step s)) hstepRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  pose proof (BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero
+    (leHyp :: map (rename S) G) 0 hle) as hidxZero.
+  pose proof (BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+    (leHyp :: map (rename S) G)
+    (S code) (S step) 0 c s 0 cur next bit
+    hcodeBody hstepBody hidxZero hdivStep) as hwitness.
+  pose proof (BProv_impI Ax_s (map (rename S) G) leHyp
+    (betaDiv2StepWitnessAt (S code) (S step) 0) hwitness) as himp.
+  unfold betaDiv2StepsThroughConstAt.
+  fold leHyp.
+  exact (BProv_allI_of_sentences Ax_s G
+    (pImp leHyp (betaDiv2StepWitnessAt (S code) (S step) 0))
+    sentence_ax_s himp).
+Qed.
+
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
     (pAnd

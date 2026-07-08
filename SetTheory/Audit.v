@@ -146,6 +146,8 @@ Check PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero.
 Check PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot.
 Check PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_zero_bot.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
