@@ -24290,6 +24290,47 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
     (BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
       hhigh hlowZero)
 
+/-- If an element belongs to the high set and the same closed element is not a
+member of the closed low set, then the element distinguishes high from low. -/
+theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem
+    {G : List Formula} {elem high low elemValue highValue lowValue : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hlow : BProv Ax_s G (eqConstAt low lowValue))
+    (hmem : AckermannHF.Mem elemValue highValue)
+    (hnot : ¬ AckermannHF.Mem elemValue lowValue) :
+    BProv Ax_s G (hfDistinguishesAt elem high low) := by
+  have hhighMem : BProv Ax_s G (hfMemAt elem high) :=
+    BProv_Ax_s_hfMemAt_of_eqConst_mem helem hhigh hmem
+  let lowMem : Formula := hfMemAt elem low
+  have hbot : BProv Ax_s (lowMem :: G) bot := by
+    have helemCtx : BProv Ax_s (lowMem :: G) (eqConstAt elem elemValue) :=
+      BProv_context_cons (B := Ax_s) helem
+    have hlowCtx : BProv Ax_s (lowMem :: G) (eqConstAt low lowValue) :=
+      BProv_context_cons (B := Ax_s) hlow
+    have hlowMem : BProv Ax_s (lowMem :: G) (hfMemAt elem low) :=
+      BProv_ass (B := Ax_s) (G := lowMem :: G) (by simp [lowMem])
+    exact BProv_Ax_s_hfMemAt_bot_of_eqConst_not_mem
+      helemCtx hlowCtx hnot hlowMem
+  have hnotLow : BProv Ax_s G (imp (hfMemAt elem low) bot) := by
+    simpa [lowMem] using BProv_impI hbot
+  exact BProv_andI hhighMem hnotLow
+
+/-- Existential form of
+`BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem
+    {G : List Formula} {elem high low elemValue highValue lowValue : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hlow : BProv Ax_s G (eqConstAt low lowValue))
+    (hmem : AckermannHF.Mem elemValue highValue)
+    (hnot : ¬ AckermannHF.Mem elemValue lowValue) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) :=
+  BProv_hfSomeDistinguishesAt_intro_var
+    (B := Ax_s) (G := G) (elem := elem) (high := high) (low := low)
+    (BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem
+      helem hhigh hlow hmem hnot)
+
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
