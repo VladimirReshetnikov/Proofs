@@ -11507,6 +11507,46 @@ theorem BProv_Ax_s_ltAt_of_eqConst_zero_succPredAt {G : List Formula}
     (fun f hf => sentence_ax_s (f := f) hf) hb (by
       simpa [succPredAt, succBody] using hbody)
 
+/-- A strict-order proof exposes the right-hand side as a successor.  This is
+the positivity projection used by later remainder-functionality proofs: the
+strict bound `r < m` supplies a predecessor for the modulus `m` without
+building that fact into the remainder macro. -/
+theorem BProv_Ax_s_succPredAt_of_ltAt {G : List Formula} {a b : Nat}
+    (hlt : BProv Ax_s G (ltAt a b)) :
+    BProv Ax_s G (succPredAt b) := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+      (Term.var (b+1))
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (succPredAt b)) := by
+    let C : List Formula := ltBody :: G.map (rename Nat.succ)
+    have hltEq : BProv Ax_s C
+        (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.var (b+1))) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, ltBody])
+    have haddSucc : BProv Ax_s C
+        (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.succ (Term.add (Term.var (a+1)) (Term.var 0)))) :=
+      BProv_weaken_nil
+        (BProv_Ax_s_addSucc_terms (Term.var (a+1)) (Term.var 0))
+    have htarget : BProv Ax_s C
+        (eq (Term.var (b+1))
+          (Term.succ (Term.add (Term.var (a+1)) (Term.var 0)))) :=
+      BProv_eqTrans (BProv_eqSym hltEq) haddSucc
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.add (Term.var (a+1)) (Term.var 0)))
+          (eq (Term.var (b+1+1)) (Term.succ (Term.var 0)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+    have hex : BProv Ax_s C
+        (ex (eq (Term.var (b+1+1)) (Term.succ (Term.var 0)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq (Term.var (b+1+1)) (Term.succ (Term.var 0)))
+        (t := Term.add (Term.var (a+1)) (Term.var 0)) hinst
+    simpa [C, succPredAt, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hlt (by
+      simpa [ltAt, ltBody] using hbody)
+
 /-- PA proves the strict closed-one bound case: from `x < y` and `y = 1`,
 derive `x = 0`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one {G : List Formula}
