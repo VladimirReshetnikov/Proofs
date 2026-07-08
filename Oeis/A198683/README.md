@@ -53,6 +53,18 @@ ambiguity, and the explicit inventory of unsettled questions.
 For the current Lean formalization checkpoint, read
 [`reports/wave-4/a198683-n12-lean-status-and-next-directions.md`](reports/wave-4/a198683-n12-lean-status-and-next-directions.md).
 
+Since wave-4, the Lean module
+[`../../LeanProofs/A198683N12Certificate.lean`](../../LeanProofs/A198683N12Certificate.lean)
+packages the entire residual uncertainty as one machine-checked **decision
+tree**: given a partition witness (the wide, interval-checkable certificate the
+wave-3 pipeline is designed to produce), Lean proves
+`a198683 12 ∈ {2924, 2925, 2926}` outright, and each of the two isolated
+narrow hypotheses — the near-`1` split `nearOne25 ≠ nearOne1404` (reduced to
+twenty-eight scalar endpoint estimates) and the overflow **no-miracles**
+hypothesis for candidate `57` — removes one branch; both together pin
+`a198683 12 = 2926`.  That module's docstring is now the recommended summary
+of exactly which facts the expected value `2926` rests on.
+
 ## What is settled and what is not
 
 After wave-2:
