@@ -14276,6 +14276,67 @@ theorem BProv_Ax_s_betaTermAtTermIdx_of_eq_beta
     BProv_exI (B := Ax_s) (G := G) (a := body)
       (t := Term.var idxSlot) hbody
 
+/-- Recover a raw term-output beta entry from a term-indexed wrapper when the
+index term is PA-provably the target index slot. -/
+theorem BProv_Ax_s_betaTermAt_of_betaTermAtTermIdx_eq_index
+    {G : List Formula} {out idxTerm : Term} {code step idx : Nat}
+    (hbeta : BProv Ax_s G (betaTermAtTermIdx out code step idxTerm))
+    (hidx : BProv Ax_s G (eq idxTerm (Term.var idx))) :
+    BProv Ax_s G (betaTermAt out code step idx) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idxTerm))
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (betaTermAt out code step idx)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hidxSlot : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ idxTerm)) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaTermAtTermIdx_opened_body_idx
+          (G := G) (out := out) (idx := idxTerm)
+          (code := code) (step := step))
+    have hraw : BProv Ax_s C
+        (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaTermAtTermIdx_opened_body_beta
+          (G := G) (out := out) (idx := idxTerm)
+          (code := code) (step := step))
+    have hidxRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq idxTerm (Term.var idx))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hidx Nat.succ
+    have hidxC : BProv Ax_s C
+        (eq (Term.rename Nat.succ idxTerm) (Term.var (idx+1))) := by
+      simpa [C, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hidxRen
+    have hidxSlotTarget : BProv Ax_s C
+        (eq (Term.var 0) (Term.var (idx+1))) :=
+      BProv_eqTrans hidxSlot hidxC
+    have htarget : BProv Ax_s C
+        (betaTermAt (Term.rename Nat.succ out)
+          (code+1) (step+1) (idx+1)) :=
+      BProv_Ax_s_betaTermAt_of_eq_index hidxSlotTarget hraw
+    simpa [betaTermAt, remTermAt, ltTermAt, betaModTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      term_rename_up_succ_rename_succ] using htarget
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaTermAtTermIdx, body] using hbody)
+
+/-- Recover a raw numeric beta entry from a term-indexed, term-output beta
+wrapper when PA identifies both the index term and output term with slots. -/
+theorem BProv_Ax_s_betaAt_of_betaTermAtTermIdx_eq_output_index
+    {G : List Formula} {out code step idx : Nat} {outTerm idxTerm : Term}
+    (hbeta : BProv Ax_s G (betaTermAtTermIdx outTerm code step idxTerm))
+    (hidx : BProv Ax_s G (eq idxTerm (Term.var idx)))
+    (hout : BProv Ax_s G (eq outTerm (Term.var out))) :
+    BProv Ax_s G (betaAt out code step idx) :=
+  BProv_Ax_s_betaAt_of_betaTermAt_eq_term
+    (BProv_Ax_s_betaTermAt_of_betaTermAtTermIdx_eq_index hbeta hidx)
+    hout
+
 /-- A constant-index term-output beta wrapper is the term-indexed wrapper at
 the corresponding PA numeral. -/
 theorem BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
@@ -14285,6 +14346,23 @@ theorem BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
       (betaTermAtTermIdx out code step (Term.numeral idxValue)) := by
   simpa [betaTermAtTermIdx, betaTermAtConstIdx, eqConstAt, Term.rename] using
     hbeta
+
+/-- Recover a raw numeric beta entry from a term-output constant-index wrapper
+when PA identifies the requested index slot with that constant and the output
+term with the output slot. -/
+theorem BProv_Ax_s_betaAt_of_betaTermAtConstIdx_eq_output_index
+    {G : List Formula} {out code step idx idxValue : Nat} {outTerm : Term}
+    (hbeta : BProv Ax_s G (betaTermAtConstIdx outTerm code step idxValue))
+    (hidx : BProv Ax_s G (eqConstAt idx idxValue))
+    (hout : BProv Ax_s G (eq outTerm (Term.var out))) :
+    BProv Ax_s G (betaAt out code step idx) := by
+  have htermIdx : BProv Ax_s G
+      (betaTermAtTermIdx outTerm code step (Term.numeral idxValue)) :=
+    BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx hbeta
+  have hidxEq : BProv Ax_s G (eq (Term.numeral idxValue) (Term.var idx)) := by
+    simpa [eqConstAt] using BProv_eqSym hidx
+  exact BProv_Ax_s_betaAt_of_betaTermAtTermIdx_eq_output_index
+    htermIdx hidxEq hout
 
 /-- A zero term-indexed beta entry forces a numeric beta entry at a provably
 equal index slot to output `0`. -/
