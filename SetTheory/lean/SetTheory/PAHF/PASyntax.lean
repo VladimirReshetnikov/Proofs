@@ -21058,6 +21058,91 @@ theorem BProv_hfSomeDistinguishesTermAt_of_hfSomeDistinguishesAt_eq_term
   exact BProv_exE_of_sentences (B := B) hB (a := witness)
     (c := target) hex hbody
 
+/-- Transport the negated low-membership half of a distinguishing proof across
+a PA equality between low-code slots.  The equality is oriented from the new
+slot to the old one, exactly as needed by equality-branch case splits. -/
+theorem BProv_hfMemAt_bot_imp_of_low_eq
+    {B : Formula → Prop} {G : List Formula} {elem oldLow newLow : Nat}
+    (hnotOld : BProv B G (imp (hfMemAt elem oldLow) bot))
+    (hlow : BProv B G (eq (Term.var newLow) (Term.var oldLow))) :
+    BProv B G (imp (hfMemAt elem newLow) bot) := by
+  let newMem : Formula := hfMemAt elem newLow
+  have hbot : BProv B (newMem :: G) bot := by
+    have hnew : BProv B (newMem :: G) (hfMemAt elem newLow) :=
+      BProv_ass (B := B) (G := newMem :: G) (by simp [newMem])
+    have hlowCtx : BProv B (newMem :: G)
+        (eq (Term.var newLow) (Term.var oldLow)) :=
+      BProv_context_cons (B := B) hlow
+    have holdTerm : BProv B (newMem :: G)
+        (hfMemTermAt elem (Term.var oldLow)) :=
+      BProv_hfMemTermAt_of_hfMemAt_eq_term hnew hlowCtx
+    have hold : BProv B (newMem :: G) (hfMemAt elem oldLow) := by
+      simpa [hfMemTermAt_var] using holdTerm
+    have hnotCtx : BProv B (newMem :: G)
+        (imp (hfMemAt elem oldLow) bot) :=
+      BProv_context_cons (B := B) hnotOld
+    exact BProv_mp B (newMem :: G) (hfMemAt elem oldLow) bot
+      hnotCtx hold
+  exact BProv_impI hbot
+
+/-- Transport a term-parametric distinguishing-member proof across a PA
+equality between low-code slots.  The high-code term and witness slot are left
+unchanged; only the low-side refutation is transported. -/
+theorem BProv_hfDistinguishesTermAt_of_low_eq
+    {B : Formula → Prop} {G : List Formula} {elem oldLow newLow : Nat}
+    {highCode : Term}
+    (hdist : BProv B G (hfDistinguishesTermAt elem highCode oldLow))
+    (hlow : BProv B G (eq (Term.var newLow) (Term.var oldLow))) :
+    BProv B G (hfDistinguishesTermAt elem highCode newLow) := by
+  have hhigh : BProv B G (hfMemTermAt elem highCode) := by
+    simpa [hfDistinguishesTermAt] using BProv_andE1 hdist
+  have hnotOld : BProv B G (imp (hfMemAt elem oldLow) bot) := by
+    simpa [hfDistinguishesTermAt] using BProv_andE2 hdist
+  exact BProv_hfDistinguishesTermAt_of_mem_and_not_mem hhigh
+    (BProv_hfMemAt_bot_imp_of_low_eq hnotOld hlow)
+
+/-- Transport an existential term-parametric distinguishing proof across a PA
+equality between low-code slots.  This is the witness-opening wrapper around
+`BProv_hfDistinguishesTermAt_of_low_eq`. -/
+theorem BProv_hfSomeDistinguishesTermAt_of_low_eq
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {oldLow newLow : Nat} {highCode : Term}
+    (hsome : BProv B G (hfSomeDistinguishesTermAt highCode oldLow))
+    (hlow : BProv B G (eq (Term.var newLow) (Term.var oldLow))) :
+    BProv B G (hfSomeDistinguishesTermAt highCode newLow) := by
+  let witness : Formula :=
+    hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (oldLow+1)
+  let target : Formula := hfSomeDistinguishesTermAt highCode newLow
+  have hbody : BProv B (witness :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := witness :: G.map (rename Nat.succ)
+    have hdist : BProv B C
+        (hfDistinguishesTermAt 0
+          (Term.rename Nat.succ highCode) (oldLow+1)) :=
+      BProv_ass (B := B) (G := C) (by simp [C, witness])
+    have hlowC : BProv B C
+        (eq (Term.var (newLow+1)) (Term.var (oldLow+1))) := by
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := B) hB (a := witness) hlow
+      simpa [C, witness, rename, Term.rename] using hren
+    have hdistNew : BProv B C
+        (hfDistinguishesTermAt 0
+          (Term.rename Nat.succ highCode) (newLow+1)) :=
+      BProv_hfDistinguishesTermAt_of_low_eq hdist hlowC
+    have hsomeNew : BProv B C
+        (hfSomeDistinguishesTermAt
+          (Term.rename Nat.succ highCode) (newLow+1)) :=
+      BProv_hfSomeDistinguishesTermAt_intro_var
+        (B := B) (G := C) (elem := 0)
+        (low := newLow+1)
+        (highCode := Term.rename Nat.succ highCode)
+        hdistNew
+    simpa [target, rename_hfSomeDistinguishesTermAt_succ] using hsomeNew
+  have hex : BProv B G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesTermAt] using hsome
+  exact BProv_exE_of_sentences (B := B) hB (a := witness)
+    (c := target) hex hbody
+
 /-- Logical packaging for the proof shape produced by low-side membership
 refutations: if high membership is known, and assuming low membership gives
 contradiction, the element distinguishes high from low. -/

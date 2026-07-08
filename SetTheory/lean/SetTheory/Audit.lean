@@ -589,6 +589,9 @@ open SetTheory
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfDistinguishesAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfSomeDistinguishesAt_eq_term
+#check @PA.Formula.BProv_hfMemAt_bot_imp_of_low_eq
+#check @PA.Formula.BProv_hfDistinguishesTermAt_of_low_eq
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_low_eq
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
