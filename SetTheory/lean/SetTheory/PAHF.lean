@@ -14567,6 +14567,104 @@ theorem BProv_Ax_s_hfMemAt_bot_of_opened_step_successor
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hmem' (by simpa [rename] using hcodeStep)
 
+/-- Open the successor branch of the `hfMemAt` code/step witness.
+
+This is a pure proof-plumbing lemma: it turns the abstract `succPredAt 0`
+assumption into the explicit predecessor equation `step = succ pred` under one
+more existential binder. -/
+theorem BProv_Ax_s_hfMemAt_succ_opened_pred_bot
+    {G : List Formula} {elem set : Nat}
+    (hpred :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ)) bot) :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s (succPredAt 0 :: bodyCtx) bot := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  have hsucc : BProv Ax_s succCtx (succPredAt 0) :=
+    BProv_ass (B := Ax_s) (G := succCtx) (by simp [succCtx])
+  have hbody : BProv Ax_s (succBody :: succCtx.map (rename Nat.succ)) bot := by
+    simpa [bitBody, tail, body, bodyCtx, succCtx, succBody] using hpred
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hsucc (by
+      simpa [succCtx, bodyCtx, body, tail, bitBody, succPredAt, succBody,
+        rename] using hbody)
+
+/-- Reduce an `hfMemAt` contradiction to the predecessor-opened successor
+branch of the code/step witness. -/
+theorem BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
+    {G : List Formula} {elem set : Nat}
+    (hpred :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ)) bot)
+    (hmem : BProv Ax_s G (hfMemAt elem set)) :
+    BProv Ax_s G bot := by
+  exact BProv_Ax_s_hfMemAt_bot_of_opened_step_successor
+    (G := G) (elem := elem) (set := set)
+    (by
+      simpa using
+        (BProv_Ax_s_hfMemAt_succ_opened_pred_bot
+          (G := G) (elem := elem) (set := set) hpred))
+    hmem
+
 /-- Inner shell for the translated HF empty-set axiom.
 
 After the empty witness is instantiated with the closed PA numeral `0`, the

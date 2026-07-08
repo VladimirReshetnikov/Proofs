@@ -335,6 +335,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_successor
+#check @PA.Formula.BProv_Ax_s_hfMemAt_succ_opened_pred_bot
+#check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_body_of_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_body
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_member_bot
