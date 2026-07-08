@@ -12530,6 +12530,23 @@ theorem BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
     (fun f hf => sentence_ax_s (f := f) hf) heqEx (by
       simpa [remTermEqAt, eqBody] using hbody)
 
+/-- If two decompositions of the same value use the same quotient and modulus,
+their remainder terms are equal.  This is the cancellation core used by later
+remainder-functionality lemmas; it intentionally does not assert any quotient
+comparison or boundedness fact. -/
+theorem BProv_Ax_s_eq_of_same_quotient_remainder_terms
+    {G : List Formula} {value quotient modulus rem₁ rem₂ : Term}
+    (h₁ : BProv Ax_s G
+      (eq value (Term.add (Term.mul quotient modulus) rem₁)))
+    (h₂ : BProv Ax_s G
+      (eq value (Term.add (Term.mul quotient modulus) rem₂))) :
+    BProv Ax_s G (eq rem₁ rem₂) := by
+  have hsame : BProv Ax_s G
+      (eq (Term.add (Term.mul quotient modulus) rem₁)
+        (Term.add (Term.mul quotient modulus) rem₂)) :=
+    BProv_eqTrans (BProv_eqSym h₁) h₂
+  exact BProv_Ax_s_add_cancel_left_terms hsame
+
 /-- A remainder of zero-valued division is zero.  The modulus is deliberately
 left unconstrained: the conclusion follows from the quotient equation alone. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
