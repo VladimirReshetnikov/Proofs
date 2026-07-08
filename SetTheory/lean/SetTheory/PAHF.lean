@@ -30,6 +30,14 @@ open Form
 of the set coded by `y`.  Equivalently, the `x`-th binary digit of `y` is set. -/
 def Mem (x y : Nat) : Prop := y.testBit x = true
 
+/-- The zero-th Ackermann member is present exactly when the code is odd; this
+one-way form is the shape produced by a first binary-halving step. -/
+theorem mem_zero_of_odd_double {set half : Nat}
+    (hset : set = half + half + 1) : Mem 0 set := by
+  rw [Mem, hset, Nat.testBit_zero]
+  have hmod : (half + half + 1) % 2 = 1 := by omega
+  simp [hmod]
+
 /-- Nonmembership is the closed Boolean value `false` of the corresponding
 Ackermann bit. -/
 theorem testBit_false_of_not_mem {x y : Nat} (h : ¬ Mem x y) :
@@ -21311,6 +21319,25 @@ theorem BProv_Ax_s_hfMemAt_of_eqConst_trace
       (elem := elem) (elemValue := elemValue)
       (code := code) (step := step) helem htrace.2.1)
     htrace
+
+/-- Zero-index HF membership from the first binary-halving bit, in the closed
+standard-numeral setting.  The proof deliberately goes through the explicit
+two-entry beta certificate rather than the generic Ackermann membership
+constructor, so later open-term work can mirror this shape. -/
+theorem BProv_Ax_s_hfMemAt_of_eqConst_zero_odd_double
+    {G : List Formula}
+    {elem set setValue half : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hset : BProv Ax_s G (eqConstAt set setValue))
+    (hodd : setValue = half + half + 1) :
+    BProv Ax_s G (hfMemAt elem set) := by
+  rcases HFMemTrace_zero_exists_of_one_step
+      (set := setValue) (half := half) hodd with
+    ⟨code, step, htrace⟩
+  exact BProv_Ax_s_hfMemAt_of_eqConst_trace
+    (elem := elem) (set := set) (elemValue := 0)
+    (setValue := setValue) (code := code) (step := step)
+    helem hset htrace
 
 /-- HF-membership introduction from the Ackermann membership relation on the
 proved numerals. -/

@@ -477,6 +477,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace
+#check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_zero_odd_double
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_mem
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_entry
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_steps
@@ -734,6 +735,7 @@ open SetTheory
 #check @AckermannHF.HF_finite_induction_form_spec
 #check @AckermannHF.prefixBelow
 #check @AckermannHF.mem_prefixBelow_iff
+#check @AckermannHF.mem_zero_of_odd_double
 #check @AckermannHF.prefixBelow_self_eq
 #check @AckermannHF.sat_HF_finite_induction_standard
 #check @AckermannHF.standard_sat_HFFin
