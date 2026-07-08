@@ -190,6 +190,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_addSucc_rename
 #check @PA.Formula.BProv_Ax_s_addSucc
 #check @PA.Formula.BProv_Ax_s_addSucc_terms
+#check @PA.Formula.BProv_Ax_s_zero_add_all
+#check @PA.Formula.BProv_Ax_s_zero_add_term
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPred_term
 #check @PA.Formula.BProv_Ax_s_zeroOrSuccPredAt
@@ -197,6 +199,7 @@ open SetTheory
 #check @PA.Formula.term_substSuccVar_rename_succ
 #check @PA.Formula.BProv_Ax_s_add_eq_zero_left_all
 #check @PA.Formula.BProv_Ax_s_add_eq_zero_left_terms
+#check @PA.Formula.BProv_Ax_s_add_eq_zero_right_terms
 #check @PA.Formula.BProv_Ax_s_leConstAt_of_leAt_eqConst
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero

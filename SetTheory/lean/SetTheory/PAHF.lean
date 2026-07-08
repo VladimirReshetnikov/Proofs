@@ -8870,6 +8870,52 @@ theorem BProv_Ax_s_addSucc_terms (s t : Term) :
   simpa [addSucc, subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using h2
 
+/-- PA proves the left-zero law for addition. -/
+theorem BProv_Ax_s_zero_add_all :
+    BProv Ax_s []
+      (all (eq (Term.add Term.zero (Term.var 0)) (Term.var 0))) := by
+  let phi : Formula := eq (Term.add Term.zero (Term.var 0)) (Term.var 0)
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.numeral] using BProv_Ax_s_addZero_term Term.zero
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    have hphi : BProv Ax_s [phi]
+        (eq (Term.add Term.zero (Term.var 0)) (Term.var 0)) :=
+      BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi])
+    have hstep : BProv Ax_s [phi]
+        (eq (Term.add Term.zero (Term.succ (Term.var 0)))
+          (Term.succ (Term.add Term.zero (Term.var 0)))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms Term.zero (Term.var 0))
+    have hsucc : BProv Ax_s [phi]
+        (eq (Term.succ (Term.add Term.zero (Term.var 0)))
+          (Term.succ (Term.var 0))) :=
+      BProv_eq_congr_succ hphi
+    have htarget : BProv Ax_s [phi]
+        (eq (Term.add Term.zero (Term.succ (Term.var 0)))
+          (Term.succ (Term.var 0))) :=
+      BProv_eqTrans hstep hsucc
+    simpa [phi, substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of the PA left-zero law for addition. -/
+theorem BProv_Ax_s_zero_add_term {G : List Formula} (t : Term) :
+    BProv Ax_s G (eq (Term.add Term.zero t) t) := by
+  have hall : BProv Ax_s G
+      (all (eq (Term.add Term.zero (Term.var 0)) (Term.var 0))) :=
+    BProv_weaken_nil BProv_Ax_s_zero_add_all
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := t) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst] using hinst
+
 /-- PA proves that every number is either zero or the successor of a
 predecessor. -/
 theorem BProv_Ax_s_zeroOrSuccPredAt_all :
@@ -9063,6 +9109,23 @@ theorem BProv_Ax_s_add_eq_zero_left_terms {G : List Formula}
     simpa [subst, instTerm, Term.subst, term_subst_instTerm_rename_succ]
       using hinst
   exact BProv_mp Ax_s G _ _ himp h
+
+/-- Modus-ponens form for the right summand: if `x + y = 0`, then `y = 0`. -/
+theorem BProv_Ax_s_add_eq_zero_right_terms {G : List Formula}
+    {x y : Term}
+    (h : BProv Ax_s G (eq (Term.add x y) Term.zero)) :
+    BProv Ax_s G (eq y Term.zero) := by
+  have hxZero : BProv Ax_s G (eq x Term.zero) :=
+    BProv_Ax_s_add_eq_zero_left_terms h
+  have hxAddZero : BProv Ax_s G
+      (eq (Term.add x y) (Term.add Term.zero y)) :=
+    BProv_eq_congr_add_left y hxZero
+  have hzeroAddZero : BProv Ax_s G
+      (eq (Term.add Term.zero y) Term.zero) :=
+    BProv_eqTrans (BProv_eqSym hxAddZero) h
+  have hzeroAdd : BProv Ax_s G (eq (Term.add Term.zero y) y) :=
+    BProv_Ax_s_zero_add_term y
+  exact BProv_eqTrans (BProv_eqSym hzeroAdd) hzeroAddZero
 
 /-- PA turns a variable-bounded order proof into a closed-numeral bounded order
 proof once the bound variable is known to contain that numeral. -/
