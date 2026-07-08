@@ -1798,6 +1798,47 @@ theorem tm2to1_tm1to1_unary_true_offsets {width : Nat}
       Classical.choose_spec (bitWitness i)
     exact tm1to1Output_block_true hBool hBit
 
+theorem partrecToTM1Encoding_width_pos {width : Nat}
+    (enc : PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) :
+    0 < width := by
+  let sym : PartrecToTM1Alphabet := (true, fun _ => none)
+  have hSym : sym ≠ default := by
+    intro h
+    have hfst := congrArg Prod.fst h
+    simp [sym, PartrecToTM1Alphabet] at hfst
+  rcases encoded_nondefault_has_true enc dec enc0 encdec hSym with ⟨bit, _hbit⟩
+  exact Nat.zero_lt_of_lt bit.isLt
+
+theorem TM1to1EncodedInput_length {Γ : Type*} {width : Nat}
+    (enc : Γ -> List.Vector Bool width) (input : List Γ) :
+    (TM1to1EncodedInput enc input).length = input.length * width := by
+  induction input with
+  | nil => simp [TM1to1EncodedInput]
+  | cons _a rest IH =>
+      simp [TM1to1EncodedInput, IH, List.Vector.toList_length, Nat.succ_mul, Nat.add_comm]
+
+theorem tm2to1_trInit_length_pos
+    (k : Turing.PartrecToTM2.K') (input : List Turing.PartrecToTM2.Γ') :
+    0 < (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+      (fun _ => Turing.PartrecToTM2.Γ') inferInstance k input).length := by
+  simp [Turing.TM2to1.trInit]
+
+/-- The Bool input used by the lowered recursive-code evaluator is nonempty. -/
+theorem encoded_partrec_input_length_pos {width : Nat}
+    (enc : PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) (n : Nat) :
+    0 < (TM1to1EncodedInput enc
+      (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n]))).length := by
+  rw [TM1to1EncodedInput_length]
+  exact Nat.mul_pos (tm2to1_trInit_length_pos _ _)
+    (partrecToTM1Encoding_width_pos enc dec enc0 encdec)
+
 end MathlibBridge
 
 /--
