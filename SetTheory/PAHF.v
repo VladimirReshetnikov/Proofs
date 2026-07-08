@@ -6362,6 +6362,20 @@ Fixpoint mulRightNumeral (t : term) (n : nat) : term :=
   | S k => tAdd (mulRightNumeral t k) t
   end.
 
+Lemma rename_numeral : forall r n,
+  rename r (numeral n) = numeral n.
+Proof.
+  intros r n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
+Lemma subst_numeral : forall sigma n,
+  subst sigma (numeral n) = numeral n.
+Proof.
+  intros sigma n.
+  induction n as [|n IH]; simpl; congruence.
+Qed.
+
 Lemma addRightNumeral_numeral : forall m n,
   addRightNumeral (numeral m) n = numeral (m + n).
 Proof.
@@ -9158,6 +9172,233 @@ Proof.
   unfold zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt in h.
   simpl in h.
   exact h.
+Qed.
+
+Lemma BProv_Ax_s_add_eq_zero_left_all : forall x,
+  BProv Ax_s []
+    (pAll
+      (pImp
+        (pEq (tAdd (Term.rename S x) (tVar 0)) tZero)
+        (pEq (Term.rename S x) tZero))).
+Proof.
+  intro x.
+  set (phi :=
+    pImp
+      (pEq (tAdd (Term.rename S x) (tVar 0)) tZero)
+      (pEq (Term.rename S x) tZero)).
+  assert (hzeroBody : BProv Ax_s
+      [pEq (tAdd x tZero) tZero]
+      (pEq x tZero)).
+  {
+    assert (hzeroAss : BProv Ax_s [pEq (tAdd x tZero) tZero]
+        (pEq (tAdd x tZero) tZero)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (haddZero : BProv Ax_s [pEq (tAdd x tZero) tZero]
+        (pEq (tAdd x tZero) x)).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addZero_term.
+    }
+    exact (BProv_eqTrans Ax_s [pEq (tAdd x tZero) tZero]
+      x (tAdd x tZero) tZero
+      (BProv_eqSym Ax_s [pEq (tAdd x tZero) tZero]
+        (tAdd x tZero) x haddZero)
+      hzeroAss).
+  }
+  assert (hzero : BProv Ax_s [] (subst substZero phi)).
+  {
+    unfold phi.
+    simpl.
+    repeat rewrite term_substZero_rename_succ.
+    exact (BProv_impI Ax_s [] (pEq (tAdd x tZero) tZero)
+      (pEq x tZero) hzeroBody).
+  }
+  assert (hsuccBody : BProv Ax_s
+      [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+      (pEq (Term.rename S x) tZero)).
+  {
+    assert (hbad : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (haddSucc : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pEq (tAdd (Term.rename S x) (tSucc (tVar 0)))
+          (tSucc (tAdd (Term.rename S x) (tVar 0))))).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hsuccZero : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pEq (tSucc (tAdd (Term.rename S x) (tVar 0))) tZero)).
+    {
+      exact (BProv_eqTrans Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (tSucc (tAdd (Term.rename S x) (tVar 0)))
+        (tAdd (Term.rename S x) (tSucc (tVar 0)))
+        tZero
+        (BProv_eqSym Ax_s
+          [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+          (tAdd (Term.rename S x) (tSucc (tVar 0)))
+          (tSucc (tAdd (Term.rename S x) (tVar 0))) haddSucc)
+        hbad).
+    }
+    assert (hnot : BProv Ax_s
+        [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+        (pImp
+          (pEq (tSucc (tAdd (Term.rename S x) (tVar 0))) tZero)
+          pBot)).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_zeroNotSucc_term.
+    }
+    pose proof (BProv_mp Ax_s
+      [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+      (pEq (tSucc (tAdd (Term.rename S x) (tVar 0))) tZero)
+      pBot hnot hsuccZero) as hbot.
+    exact (BProv_botE Ax_s
+      [pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero; phi]
+      (pEq (Term.rename S x) tZero) hbot).
+  }
+  assert (hsuccInner : BProv Ax_s [phi] (subst substSuccVar phi)).
+  {
+    unfold phi.
+    simpl.
+    repeat rewrite term_substSuccVar_rename_succ.
+    exact (BProv_impI Ax_s [phi]
+      (pEq (tAdd (Term.rename S x) (tSucc (tVar 0))) tZero)
+      (pEq (Term.rename S x) tZero) hsuccBody).
+  }
+  pose proof (BProv_impI Ax_s [] phi (subst substSuccVar phi)
+    hsuccInner) as hsuccImp.
+  pose proof (BProv_allI_of_sentences Ax_s []
+    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp) as hsucc.
+  change (BProv Ax_s [] (pAll phi)).
+  exact (BProv_inductionForm_mp Ax_s [] phi
+    (BProv_Ax_s_inductionForm phi) hzero hsucc).
+Qed.
+
+Lemma BProv_Ax_s_add_eq_zero_left_terms : forall G x y,
+  BProv Ax_s G (pEq (tAdd x y) tZero) ->
+  BProv Ax_s G (pEq x tZero).
+Proof.
+  intros G x y h.
+  pose proof (BProv_weaken_nil Ax_s G
+    (pAll
+      (pImp
+        (pEq (tAdd (Term.rename S x) (tVar 0)) tZero)
+        (pEq (Term.rename S x) tZero)))
+    (BProv_Ax_s_add_eq_zero_left_all x)) as hall.
+  pose proof (BProv_allE Ax_s G _ y hall) as himp.
+  simpl in himp.
+  repeat rewrite term_subst_instTerm_rename_succ in himp.
+  exact (BProv_mp Ax_s G (pEq (tAdd x y) tZero) (pEq x tZero)
+    himp h).
+Qed.
+
+Lemma BProv_Ax_s_leConstAt_of_leAt_eqConst : forall G a b n,
+  BProv Ax_s G (leAt a b) ->
+  BProv Ax_s G (eqConstAt b n) ->
+  BProv Ax_s G (leConstAt a n).
+Proof.
+  intros G a b n hle hb.
+  set (leBody := pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))).
+  change (BProv Ax_s G (pEx leBody)) in hle.
+  assert (hbody : BProv Ax_s (leBody :: map (rename S) G)
+      (rename S (leConstAt a n))).
+  {
+    assert (hleBody : BProv Ax_s (leBody :: map (rename S) G)
+        leBody).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (hbRen : BProv Ax_s (map (rename S) G)
+        (rename S (eqConstAt b n))).
+    {
+      exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+        (eqConstAt b n) hb S).
+    }
+    assert (hbBody : BProv Ax_s (leBody :: map (rename S) G)
+        (pEq (tVar (S b)) (Term.numeral n))).
+    {
+      pose proof (BProv_context_cons Ax_s (map (rename S) G) leBody
+        (rename S (eqConstAt b n)) hbRen) as h.
+      unfold eqConstAt in h.
+      simpl in h.
+      rewrite Term.rename_numeral in h.
+      exact h.
+    }
+    assert (htarget : BProv Ax_s (leBody :: map (rename S) G)
+        (pEq (tAdd (tVar (S a)) (tVar 0)) (Term.numeral n))).
+    {
+      exact (BProv_eqTrans Ax_s (leBody :: map (rename S) G)
+        (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))
+        (Term.numeral n) hleBody hbBody).
+    }
+    assert (hinst : BProv Ax_s (leBody :: map (rename S) G)
+        (subst (instTerm (tVar 0))
+          (pEq (tAdd (tVar (S (S a))) (tVar 0))
+            (Term.numeral n)))).
+    {
+      simpl.
+      rewrite Term.subst_numeral.
+      exact htarget.
+    }
+    pose proof (BProv_exI Ax_s (leBody :: map (rename S) G)
+      (pEq (tAdd (tVar (S (S a))) (tVar 0)) (Term.numeral n))
+      (tVar 0) hinst) as hex.
+    unfold leConstAt.
+    simpl.
+    rewrite Term.rename_numeral.
+    exact hex.
+  }
+  exact (BProv_exE_of_sentences Ax_s G leBody (leConstAt a n)
+    sentence_ax_s hle hbody).
+Qed.
+
+Lemma BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero : forall G a,
+  BProv Ax_s G (leConstAt a 0) ->
+  BProv Ax_s G (eqConstAt a 0).
+Proof.
+  intros G a hle.
+  set (leBody := pEq (tAdd (tVar (S a)) (tVar 0)) tZero).
+  change (BProv Ax_s G (pEx leBody)) in hle.
+  assert (hbody : BProv Ax_s (leBody :: map (rename S) G)
+      (rename S (eqConstAt a 0))).
+  {
+    assert (hleBody : BProv Ax_s (leBody :: map (rename S) G)
+        leBody).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    pose proof (BProv_Ax_s_add_eq_zero_left_terms
+      (leBody :: map (rename S) G) (tVar (S a)) (tVar 0)
+      hleBody) as haZero.
+    unfold eqConstAt.
+    simpl.
+    exact haZero.
+  }
+  exact (BProv_exE_of_sentences Ax_s G leBody (eqConstAt a 0)
+    sentence_ax_s hle hbody).
+Qed.
+
+Lemma BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero : forall G a b,
+  BProv Ax_s G (leAt a b) ->
+  BProv Ax_s G (eqConstAt b 0) ->
+  BProv Ax_s G (eqConstAt a 0).
+Proof.
+  intros G a b hle hb.
+  apply BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero.
+  exact (BProv_Ax_s_leConstAt_of_leAt_eqConst G a b 0 hle hb).
 Qed.
 
 Definition boolAt (a : nat) : formula :=

@@ -59,6 +59,8 @@ Print Assumptions ClosureFO_of_ZF.
 (* PA/HF translation and finite-HF bridge. *)
 Check PA.Term.addRightNumeral.
 Check PA.Term.mulRightNumeral.
+Check PA.Term.rename_numeral.
+Check PA.Term.subst_numeral.
 Check PA.Term.addRightNumeral_numeral.
 Check PA.Term.subst_comp.
 Check PA.Term.subst_rename_succ_up.
@@ -95,6 +97,11 @@ Check PA.Formula.betaDiv2StepsThroughConstAt_nat.
 Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all.
 Check PA.Formula.BProv_Ax_s_zeroOrSuccPred_term.
 Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt.
+Check PA.Formula.BProv_Ax_s_add_eq_zero_left_all.
+Check PA.Formula.BProv_Ax_s_add_eq_zero_left_terms.
+Check PA.Formula.BProv_Ax_s_leConstAt_of_leAt_eqConst.
+Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero.
+Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
