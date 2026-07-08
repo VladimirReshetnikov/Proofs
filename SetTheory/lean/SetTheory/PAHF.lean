@@ -13153,6 +13153,15 @@ theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le {G : List Formula}
       Term.rename, term_subst_instTerm_rename_succ] using himpRaw
   exact BProv_mp Ax_s G _ _ himp hle
 
+/-- Eliminate a bounded beta-halving trace at an index known to be `0`. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_of_eqConst_zero
+    {G : List Formula} {code step last idx : Nat}
+    (hsteps : BProv Ax_s G (betaDiv2StepsThroughAt code step last))
+    (hidxZero : BProv Ax_s G (eqConstAt idx 0)) :
+    BProv Ax_s G (betaDiv2StepWitnessAt code step idx) :=
+  BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le hsteps
+    (BProv_Ax_s_leAt_of_eqConst_zero_left hidxZero)
+
 /-- `BetaDiv2Step`-packaged version of
 `BProv_Ax_s_betaDiv2BitAt_of_eqConst`. -/
 theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst_step {G : List Formula}
