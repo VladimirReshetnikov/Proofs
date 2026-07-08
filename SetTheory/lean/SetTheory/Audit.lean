@@ -544,6 +544,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem_closed_witness
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_ltAt
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_leConst_low
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_ltAt
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing

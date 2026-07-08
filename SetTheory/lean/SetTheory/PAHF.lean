@@ -24515,6 +24515,108 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_ltAt
     exact BProv_botE (a := hfSomeDistinguishesAt high low)
       (BProv_Ax_s_ltAt_leAt_bot hltAt hle)
 
+/-- Finite closed-low search below a closed high value.  From `low <= n` and
+`n < highValue`, PA can split the low slot over the standard numerals
+`0, ..., n` and reuse the closed-numeral distinguishing bridge in each case. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_leConst_low
+    {G : List Formula} {high low highValue n : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hle : BProv Ax_s G (leConstAt low n))
+    (hn : n < highValue) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) := by
+  induction n generalizing G with
+  | zero =>
+      have hlow : BProv Ax_s G (eqConstAt low 0) :=
+        BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero hle
+      exact BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
+        (G := G) (high := high) (low := low)
+        (highValue := highValue) (lowValue := 0)
+        hhigh hlow hn
+  | succ n ih =>
+      have hcases : BProv Ax_s G
+          (or (leConstAt low n) (eqConstAt low (n+1))) :=
+        BProv_Ax_s_leConstAt_succ_cases hle
+      have hleft : BProv Ax_s (leConstAt low n :: G)
+          (hfSomeDistinguishesAt high low) := by
+        have hhighCtx : BProv Ax_s (leConstAt low n :: G)
+            (eqConstAt high highValue) :=
+          BProv_context_cons (B := Ax_s) hhigh
+        have hleCtx : BProv Ax_s (leConstAt low n :: G)
+            (leConstAt low n) :=
+          BProv_ass (B := Ax_s) (G := leConstAt low n :: G) (by simp)
+        have hn' : n < highValue := by omega
+        exact ih hhighCtx hleCtx hn'
+      have hright : BProv Ax_s (eqConstAt low (n+1) :: G)
+          (hfSomeDistinguishesAt high low) := by
+        have hhighCtx : BProv Ax_s (eqConstAt low (n+1) :: G)
+            (eqConstAt high highValue) :=
+          BProv_context_cons (B := Ax_s) hhigh
+        have hlowCtx : BProv Ax_s (eqConstAt low (n+1) :: G)
+            (eqConstAt low (n+1)) :=
+          BProv_ass (B := Ax_s) (G := eqConstAt low (n+1) :: G) (by simp)
+        exact BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
+          (G := eqConstAt low (n+1) :: G)
+          (high := high) (low := low)
+          (highValue := highValue) (lowValue := n+1)
+          hhighCtx hlowCtx hn
+      exact BProv_orE hcases hleft hright
+
+/-- If the high slot is a closed standard numeral, any object-level proof of
+`low < high` yields a distinguishing member.  The strict premise first bounds
+`low` by the closed high value; the final endpoint case is inconsistent with
+strictness and is discharged by
+`BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_ltAt`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_ltAt
+    {G : List Formula} {high low highValue : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hltAt : BProv Ax_s G (ltAt low high)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) := by
+  cases highValue with
+  | zero =>
+      have hle : BProv Ax_s G (leAt high low) :=
+        BProv_Ax_s_leAt_of_eqConst_zero_left hhigh
+      exact BProv_botE (a := hfSomeDistinguishesAt high low)
+        (BProv_Ax_s_ltAt_leAt_bot hltAt hle)
+  | succ n =>
+      have hleAt : BProv Ax_s G (leAt low high) :=
+        BProv_Ax_s_leAt_of_ltAt hltAt
+      have hleConst : BProv Ax_s G (leConstAt low (n+1)) :=
+        BProv_Ax_s_leConstAt_of_leAt_eqConst hleAt hhigh
+      have hcases : BProv Ax_s G
+          (or (leConstAt low n) (eqConstAt low (n+1))) :=
+        BProv_Ax_s_leConstAt_succ_cases hleConst
+      have hleft : BProv Ax_s (leConstAt low n :: G)
+          (hfSomeDistinguishesAt high low) := by
+        have hhighCtx : BProv Ax_s (leConstAt low n :: G)
+            (eqConstAt high (n+1)) :=
+          BProv_context_cons (B := Ax_s) hhigh
+        have hleCtx : BProv Ax_s (leConstAt low n :: G)
+            (leConstAt low n) :=
+          BProv_ass (B := Ax_s) (G := leConstAt low n :: G) (by simp)
+        exact
+          BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_leConst_low
+            (G := leConstAt low n :: G)
+            (high := high) (low := low)
+            (highValue := n+1) (n := n)
+            hhighCtx hleCtx (by omega)
+      have hright : BProv Ax_s (eqConstAt low (n+1) :: G)
+          (hfSomeDistinguishesAt high low) := by
+        have hhighCtx : BProv Ax_s (eqConstAt low (n+1) :: G)
+            (eqConstAt high (n+1)) :=
+          BProv_context_cons (B := Ax_s) hhigh
+        have hlowCtx : BProv Ax_s (eqConstAt low (n+1) :: G)
+            (eqConstAt low (n+1)) :=
+          BProv_ass (B := Ax_s) (G := eqConstAt low (n+1) :: G) (by simp)
+        have hltCtx : BProv Ax_s (eqConstAt low (n+1) :: G)
+            (ltAt low high) :=
+          BProv_context_cons (B := Ax_s) hltAt
+        exact BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_ltAt
+          (G := eqConstAt low (n+1) :: G)
+          (high := high) (low := low)
+          (highValue := n+1) (lowValue := n+1)
+          hhighCtx hlowCtx hltCtx
+      exact BProv_orE hcases hleft hright
+
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
