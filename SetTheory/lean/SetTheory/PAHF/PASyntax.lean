@@ -25391,6 +25391,13 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih :
     BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt hih hlt
   simpa [C, lowLtHigh, ih, hfSomeDistinguishesTermAt_var] using hsome
 
+/-- The two-assumption context for the strict branch of the successor step:
+the current low code is strictly below the predecessor high code, and the
+renamed induction hypothesis applies to that predecessor high code. -/
+def strictSuccContext : List Formula :=
+  [ltTermAt (Term.var 0) (Term.var 1),
+    rename Nat.succ (hfLtDistinguishesAt 0)]
+
 /-- High-even/low-odd strict branch, reduced to the genuine membership
 persistence obligation.
 
@@ -25618,6 +25625,26 @@ def strictHighDoubleLowOddSuccBitExFormula
         (and
           (oneAt 0)
           (betaDiv2BitAt 0 2 1 ((elem+3)+3)))))
+
+/-- Odd-high/even-low branch context for the strict successor carry case. -/
+def strictHighOddLowDoubleSuccCarryContext
+    (highHalf lowHalf : Nat) : List Formula :=
+  doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf :: strictSuccContext
+
+/-- Odd-high/odd-low branch context for the strict successor carry case. -/
+def strictHighOddLowOddSuccCarryContext
+    (highHalf lowHalf : Nat) : List Formula :=
+  oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf :: strictSuccContext
+
+/-- The doubled successor-half high-code term left by an odd-high carry
+transport in the strict successor branch. -/
+def strictHighOddSuccHalfCode (highHalf : Nat) : Term :=
+  Term.add (Term.succ (Term.var highHalf))
+    (Term.succ (Term.var highHalf))
+
+/-- Target formula for the two odd-high strict successor carry branches. -/
+def strictHighOddSuccCarryTargetFormula (highHalf : Nat) : Formula :=
+  hfSomeDistinguishesTermAt (strictHighOddSuccHalfCode highHalf) 0
 
 /-- High-even/low-odd strict branch with the positive-membership carry reduced
 to explicit beta components for caller-supplied successor-trace witnesses.
@@ -26461,6 +26488,53 @@ theorem
           strictHighDoubleLowOddSuccBitExFormula, Nat.add_assoc] using hbitEx)
       hhighOdd_lowDouble hhighOdd_lowOdd
 
+/-- Fully named carry-frontier variant of the strict successor parity split.
+
+Both the high-even/low-odd beta component obligations and the two odd-high
+carry branch premises use named contexts/target formulas.  This is still only
+proof plumbing: it neither chooses beta witnesses nor proves the odd-high
+carry branches. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf)) :
+    BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_components_double_succ_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [strictSuccContext] using hhighStep)
+      (by simpa [strictSuccContext] using hlowStep)
+      hentry hsteps hbitEx
+      (by
+        simpa [strictHighOddLowDoubleSuccCarryContext,
+          strictHighOddSuccCarryTargetFormula, strictHighOddSuccHalfCode,
+          strictSuccContext] using hhighOdd_lowDouble)
+      (by
+        simpa [strictHighOddLowOddSuccCarryContext,
+          strictHighOddSuccCarryTargetFormula, strictHighOddSuccHalfCode,
+          strictSuccContext] using hhighOdd_lowOdd)
+
 /-- If the induction hypothesis distinguishes `high` from every lower code,
 and a binary-halving step extracts `lowHalf` from a strict lower code `low`,
 then the induction hypothesis may be opened at `lowHalf`.
@@ -26516,6 +26590,63 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
     BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
       hih hlt hstep
   simpa [C, lowLtHigh, ih] using hsome
+
+/-- Odd-high/even-low carry branch: the strict-branch induction hypothesis can
+already be opened against the low half extracted by the low-code div2 step.
+
+This only lifts the existing half-order/IH extraction into the named branch
+context.  It does not transform the resulting predecessor-high witness through
+the doubled successor-half high code. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half_in_high_odd_low_double_context
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit)) :
+    BProv Ax_s (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (hfSomeDistinguishesAt 1 lowHalf) := by
+  have hbase : BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesAt 1 lowHalf) := by
+    simpa [strictSuccContext] using
+      (BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
+        (lowHalf := lowHalf) (lowBit := lowBit)
+        (by simpa [strictSuccContext] using hlowStep))
+  exact BProv_mono Ax_s strictSuccContext
+    (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+    (hfSomeDistinguishesAt 1 lowHalf)
+    (by
+      intro f hf
+      simp [strictHighOddLowDoubleSuccCarryContext, strictSuccContext]
+        at hf ⊢
+      exact Or.inr (Or.inr hf))
+    hbase
+
+/-- Odd-high/odd-low carry branch: the strict-branch induction hypothesis can
+already be opened against the low half extracted by the low-code div2 step.
+
+As in the even-low branch, this is only context plumbing for the IH witness;
+the doubled successor-half carry remains an explicit later obligation. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half_in_high_odd_low_odd_context
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit)) :
+    BProv Ax_s (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (hfSomeDistinguishesAt 1 lowHalf) := by
+  have hbase : BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesAt 1 lowHalf) := by
+    simpa [strictSuccContext] using
+      (BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
+        (lowHalf := lowHalf) (lowBit := lowBit)
+        (by simpa [strictSuccContext] using hlowStep))
+  exact BProv_mono Ax_s strictSuccContext
+    (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+    (hfSomeDistinguishesAt 1 lowHalf)
+    (by
+      intro f hf
+      simp [strictHighOddLowOddSuccCarryContext, strictSuccContext]
+        at hf ⊢
+      exact Or.inr (Or.inr hf))
+    hbase
 
 /-- Reduce the open successor step for lower-code distinguishers to the two
 predecessor cases produced by `low < S high`: either `low < high`, or
@@ -26897,6 +27028,47 @@ theorem
       (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
   BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
     (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_components_double_succ_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      hhighStep hlowStep hentry hsteps hbitEx
+      hhighOdd_lowDouble hhighOdd_lowOdd)
+    hself
+
+/-- Successor-step wrapper for the fully named carry frontier.
+
+This exposes the strict successor step in the vocabulary of
+`strictSuccContext`, named high-even/low-odd beta components, and named
+odd-high carry contexts/targets.  The arithmetic content is still supplied by
+the arguments. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_div2_named_carry_cases_and_self
+    {highHalf highBit lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf))
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_carry_cases
       (highHalf := highHalf) (highBit := highBit)
       (lowHalf := lowHalf) (lowBit := lowBit)
       (codeTerm := codeTerm) (stepTerm := stepTerm)
