@@ -23622,6 +23622,68 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double_pred
           (by
             simpa [C, witness] using hbody))
 
+/-- High-even strict successor branch, reduced to the remaining membership
+persistence step for the opened witness.
+
+After opening a distinguishing witness for `high` over `low`, the doubled-code
+assumption on `high` proves that the witness is nonzero and exposes a
+predecessor equation.  If, in that opened context, the same witness is proved
+to be a member of the term code `S high`, then the negative low-membership half
+of the original distinguishing proof closes the branch. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem
+    {G : List Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hmemSucc : BProv Ax_s
+      (eq (Term.succ (Term.var 0)) (Term.var 1) ::
+        (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+          G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2))))) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  let target : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low
+  exact
+    BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double_pred
+      (G := G) (target := target) (high := high) (low := low)
+      (half := half) hsome hhighDouble
+      (by
+        let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+        let C : List Formula :=
+          eq (Term.succ (Term.var 0)) (Term.var 1) ::
+            (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+              (rename Nat.succ)
+        have hmem : BProv Ax_s C
+            (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+          simpa [C, witness] using hmemSucc
+        have hdistRaw : BProv Ax_s C (rename Nat.succ witness) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C, witness])
+        have hdist : BProv Ax_s C
+            (hfDistinguishesAt 1 (high+2) (low+2)) := by
+          simpa [witness, rename_hfDistinguishesAt, Nat.add_assoc]
+            using hdistRaw
+        let lowMem : Formula := hfMemAt 1 (low+2)
+        have hlowBot : BProv Ax_s (lowMem :: C) bot := by
+          have hdistCtx : BProv Ax_s (lowMem :: C)
+              (hfDistinguishesAt 1 (high+2) (low+2)) :=
+            BProv_context_cons (B := Ax_s) hdist
+          have hnotLow : BProv Ax_s (lowMem :: C)
+              (imp (hfMemAt 1 (low+2)) bot) := by
+            simpa [hfDistinguishesAt] using BProv_andE2 hdistCtx
+          have hlow : BProv Ax_s (lowMem :: C) (hfMemAt 1 (low+2)) := by
+            simpa [lowMem] using
+              (BProv_ass (B := Ax_s) (G := lowMem :: C) (by simp [lowMem]))
+          exact BProv_mp Ax_s (lowMem :: C) _ _ hnotLow hlow
+        have hsomeTerm : BProv Ax_s C
+            (hfSomeDistinguishesTermAt
+              (Term.succ (Term.var (high+2))) (low+2)) :=
+          BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
+            (G := C) (elem := 1) (low := low+2)
+            (highCode := Term.succ (Term.var (high+2)))
+            hmem (by simpa [lowMem] using hlowBot)
+        simpa [C, witness, target, rename_hfSomeDistinguishesTermAt_succ,
+          Term.rename, Nat.add_assoc] using hsomeTerm)
+
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
