@@ -22032,6 +22032,96 @@ theorem BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
           (G := G) (elem := elem) (set := set) hpred))
     hmem
 
+/-- Target-general eliminator for `hfMemAt` opened down to the predecessor of
+the nonzero code/step witness.
+
+The zero-step branch is contradictory by
+`BProv_Ax_s_hfMemAt_opened_body_step_zero_bot`.  The successor branch is
+opened one binder further, exposing the equation `step = S pred`; callers prove
+the target renamed through the three opened binders. -/
+theorem BProv_Ax_s_hfMemAt_elim_opened_step_pred
+    {G : List Formula} {target : Formula} {elem set : Nat}
+    (hmem : BProv Ax_s G (hfMemAt elem set))
+    (hpred :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target)))) :
+    BProv Ax_s G target := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  have hcodeStep : BProv Ax_s (ex body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    have hstepEx : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hopened : BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)) := by
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      have hcases : BProv Ax_s bodyCtx (zeroOrSuccPredAt 0) :=
+        BProv_Ax_s_zeroOrSuccPredAt (G := bodyCtx) 0
+      have hzeroBranch : BProv Ax_s (zeroAt 0 :: bodyCtx)
+          (rename Nat.succ (rename Nat.succ target)) := by
+        have hbot : BProv Ax_s (zeroAt 0 :: bodyCtx) bot := by
+          simpa [bitBody, tail, body, bodyCtx] using
+            (BProv_Ax_s_hfMemAt_opened_body_step_zero_bot
+              (G := G) (elem := elem) (set := set))
+        exact BProv_botE (B := Ax_s) (G := zeroAt 0 :: bodyCtx)
+          (a := rename Nat.succ (rename Nat.succ target)) hbot
+      have hsuccBranch : BProv Ax_s (succPredAt 0 :: bodyCtx)
+          (rename Nat.succ (rename Nat.succ target)) := by
+        let succCtx : List Formula := succPredAt 0 :: bodyCtx
+        let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+        have hsucc : BProv Ax_s succCtx (succPredAt 0) :=
+          BProv_ass (B := Ax_s) (G := succCtx) (by simp [succCtx])
+        have hbody : BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ (rename Nat.succ target))) := by
+          simpa [bitBody, tail, body, bodyCtx, succCtx, succBody] using hpred
+        exact BProv_exE_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hsucc (by
+            simpa [succCtx, bodyCtx, body, tail, bitBody, succPredAt,
+              succBody, rename] using hbody)
+      exact BProv_orE (B := Ax_s) (G := bodyCtx)
+        (a := zeroAt 0) (b := succPredAt 0)
+        (c := rename Nat.succ (rename Nat.succ target))
+        (by simpa [zeroOrSuccPredAt] using hcases)
+        hzeroBranch hsuccBranch
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstepEx (by simpa [rename] using hopened)
+  have hmem' : BProv Ax_s G (ex (ex body)) := by
+    simpa [hfMemAt, body, tail, bitBody] using hmem
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hmem' (by simpa [rename] using hcodeStep)
+
 /-- Inner shell for the translated HF empty-set axiom.
 
 After the empty witness is instantiated with the closed PA numeral `0`, the

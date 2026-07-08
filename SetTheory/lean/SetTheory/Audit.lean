@@ -593,6 +593,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_opened_final_current_zero
 #check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_bot
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
+#check @PA.Formula.BProv_Ax_s_hfMemAt_elim_opened_step_pred
 #check @PA.Formula.subst_instTerm_var_hfMemAt_succ_zero
 #check @PA.Formula.subst_instTerm_zero_hfMemAt_succ_zero
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_zero
