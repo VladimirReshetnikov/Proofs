@@ -9712,6 +9712,33 @@ theorem BProv_Ax_s_div2StepAt_zero_one_bot {G : List Formula}
     BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term (Term.add t Term.zero))
   exact BProv_mp Ax_s G _ _ hnot hsuccZero
 
+/-- In a binary-halving step, current value `0` forces the half/next slot to
+be `0`.  This is the local zero-propagation kernel for beta-coded halving
+traces starting from the empty-set code. -/
+theorem BProv_Ax_s_div2StepAt_zero_half_zero {G : List Formula}
+    {value half bit : Nat}
+    (hvalue : BProv Ax_s G (eqConstAt value 0))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (eqConstAt half 0) := by
+  let double : Term := Term.add (Term.var half) (Term.var half)
+  have hstepEq : BProv Ax_s G
+      (eq (Term.var value) (Term.add double (Term.var bit))) := by
+    simpa [div2StepAt, double] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hrightZero : BProv Ax_s G
+      (eq (Term.add double (Term.var bit)) Term.zero) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eqTrans (BProv_eqSym hstepEq) hvalue
+  have hdoubleZero : BProv Ax_s G (eq double Term.zero) :=
+    BProv_Ax_s_add_eq_zero_left_terms hrightZero
+  have hhalfZero : BProv Ax_s G (eq (Term.var half) Term.zero) :=
+    BProv_Ax_s_add_eq_zero_left_terms
+      (x := Term.var half) (y := Term.var half) hdoubleZero
+  simpa [eqConstAt, Term.numeral] using hhalfZero
+
 /-- Constructor for the formula obtained after all three variables of
 `div2StepAt` have been instantiated by closed numerals. -/
 theorem BProv_Ax_s_div2StepAt_closedSubst {G : List Formula}

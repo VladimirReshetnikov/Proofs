@@ -209,6 +209,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_boolAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot
+#check @PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero
 #check @PA.Formula.BProv_Ax_s_div2StepAt_closedSubst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_remAt_of_eqConst
