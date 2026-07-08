@@ -28,6 +28,30 @@ theorem recursiveValueSet_fifteen_unary_subset_range :
   rcases hy with ⟨i, rfl⟩
   exact sqrt_values14_mem_range_values15 i
 
+theorem one_add_mem_range_values15_of_mem_recursiveValueSet_thirteen {x : Real}
+    (hx : x ∈ recursiveValueSet 13) : (Set.range values15) (1 + x) := by
+  rw [recursiveValueSet_thirteen] at hx
+  rcases hx with ⟨i, rfl⟩
+  exact one_add_values13_mem_range_values15 i
+
+theorem one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen {n : Nat}
+    (hn : n ≤ 13) {x : Real} (hx : x ∈ recursiveValueSet n) :
+    (Set.range values15) (1 + x) :=
+  one_add_mem_range_values15_of_mem_recursiveValueSet_thirteen
+    (recursiveValueSet_subset_of_le hn hx)
+
+theorem two_add_mem_range_values15_of_mem_recursiveValueSet_le_eleven {n : Nat}
+    (hnpos : 0 < n) (hn : n + 2 ≤ 13) {x : Real} (hx : x ∈ recursiveValueSet n) :
+    (Set.range values15) (2 + x) := by
+  have hx1 : 1 + x ∈ recursiveValueSet (n + 2) :=
+    one_add_mem_recursiveValueSet_add_two hnpos hx
+  have hrange :=
+    one_add_mem_range_values15_of_mem_recursiveValueSet_thirteen
+      (recursiveValueSet_subset_of_le hn hx1)
+  have heq : (2 : Real) + x = 1 + (1 + x) := by
+    linarith
+  rwa [heq]
+
 set_option maxHeartbeats 3000000 in
 theorem recursiveValueSet_fifteen_subset_range :
     recursiveValueSet 15 ⊆ Set.range values15 := by
@@ -45,28 +69,27 @@ theorem recursiveValueSet_fifteen_subset_range :
       exact one_add_values13_mem_range_values15 i
     · rw [recursiveValueSet_two] at ha
       have hb' : b ∈ recursiveValueSet 12 := by simpa using hb
-      rw [recursiveValueSet_twelve] at hb'
       simp only [Set.mem_singleton_iff] at ha
       rcases ha with rfl
-      rcases hb' with ⟨i, rfl⟩
-      exact one_add_values12_mem_range_values15 i
+      exact one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen (by norm_num) hb'
     · rw [recursiveValueSet_three] at ha
       have hb' : b ∈ recursiveValueSet 11 := by simpa using hb
-      rw [recursiveValueSet_eleven] at hb'
       simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at ha
-      rcases hb' with ⟨i, rfl⟩
       rcases ha with rfl | rfl
-      · exact one_add_values11_mem_range_values15 i
-      · exact two_add_values11_mem_range_values15 i
+      · exact one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen (by norm_num) hb'
+      · exact two_add_mem_range_values15_of_mem_recursiveValueSet_le_eleven
+          (by norm_num) (by norm_num) hb'
     · rw [recursiveValueSet_four] at ha
       have hb' : b ∈ recursiveValueSet 10 := by simpa using hb
       rw [recursiveValueSet_ten] at hb'
       simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at ha
       rcases hb' with ⟨i, rfl⟩
       rcases ha with rfl | rfl | rfl
-      · exact one_add_values10_mem_range_values15 i
+      · exact one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen
+          (by norm_num) (values10_mem_recursiveValueSet i)
       · exact sqrt_two_add_values10_mem_range_values15 i
-      · exact two_add_values10_mem_range_values15 i
+      · exact two_add_mem_range_values15_of_mem_recursiveValueSet_le_eleven
+          (by norm_num) (by norm_num) (values10_mem_recursiveValueSet i)
     · rw [recursiveValueSet_five_eq_range_values5] at ha
       have hb' : b ∈ recursiveValueSet 9 := by simpa using hb
       rw [recursiveValueSet_nine] at hb'
@@ -106,11 +129,15 @@ theorem recursiveValueSet_fifteen_subset_range :
       rcases ha with ⟨i, rfl⟩
       rcases hb' with rfl | rfl | rfl
       · change (Set.range values15) (values10 i + 1)
-        simpa [add_comm] using one_add_values10_mem_range_values15 i
+        simpa [add_comm] using
+          one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen
+            (by norm_num) (values10_mem_recursiveValueSet i)
       · change (Set.range values15) (values10 i + Real.sqrt 2)
         simpa [add_comm] using sqrt_two_add_values10_mem_range_values15 i
       · change (Set.range values15) (values10 i + 2)
-        simpa [add_comm] using two_add_values10_mem_range_values15 i
+        simpa [add_comm] using
+          two_add_mem_range_values15_of_mem_recursiveValueSet_le_eleven
+            (by norm_num) (by norm_num) (values10_mem_recursiveValueSet i)
     · rw [recursiveValueSet_eleven] at ha
       have hb' : b ∈ recursiveValueSet 3 := by simpa using hb
       rw [recursiveValueSet_three] at hb'
@@ -118,9 +145,13 @@ theorem recursiveValueSet_fifteen_subset_range :
       rcases ha with ⟨i, rfl⟩
       rcases hb' with rfl | rfl
       · change (Set.range values15) (values11 i + 1)
-        simpa [add_comm] using one_add_values11_mem_range_values15 i
+        simpa [add_comm] using
+          one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen
+            (by norm_num) (values11_mem_recursiveValueSet i)
       · change (Set.range values15) (values11 i + 2)
-        simpa [add_comm] using two_add_values11_mem_range_values15 i
+        simpa [add_comm] using
+          two_add_mem_range_values15_of_mem_recursiveValueSet_le_eleven
+            (by norm_num) (by norm_num) (values11_mem_recursiveValueSet i)
     · rw [recursiveValueSet_twelve] at ha
       have hb' : b ∈ recursiveValueSet 2 := by simpa using hb
       rw [recursiveValueSet_two] at hb'
@@ -128,7 +159,9 @@ theorem recursiveValueSet_fifteen_subset_range :
       rcases ha with ⟨i, rfl⟩
       rcases hb' with rfl
       change (Set.range values15) (values12 i + 1)
-      simpa [add_comm] using one_add_values12_mem_range_values15 i
+      simpa [add_comm] using
+        one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen
+          (by norm_num) (values12_mem_recursiveValueSet i)
     · rw [recursiveValueSet_thirteen] at ha
       simp [recursiveValueSet] at hb
       rcases ha with ⟨i, rfl⟩
