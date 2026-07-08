@@ -52,13 +52,15 @@ obligations of a future `N12PartitionWitness`.
 * `NearOneSplit : nearOne25 ≠ nearOne1404`.  An inequality between two
   explicit twelve-atom principal-power towers whose values agree to about
   `10^-1305`.  It is **not** an article of faith: the Symbolic module reduces
-  it (through a fully proved ten-layer interval ladder) to the twenty-eight
+  it (through a fully proved ten-layer interval ladder) to the twenty-six
   scalar endpoint estimates bundled here as `NearOneEndpointBounds` — each a
   rational bound on `Real.sin`/`Real.cos`/`Real.exp` at one explicit rational
   argument, each dischargeable by Taylor partial sums.  The companion
   Rocq/Coq development (`CoqProofs/A198683N12Bounds.v`) certifies the same
-  boxes by interval arithmetic, so the numbers are known to be right; what
-  remains here is Lean-side endpoint plumbing, not mathematical doubt.
+  boxes by interval arithmetic, and all twenty-six endpoint estimates are now
+  **proved in Lean** (`LeanProofs.A198683N12Endpoints.nearOneEndpointBounds`),
+  so `NearOneSplit` itself is a theorem
+  (`LeanProofs.A198683N12Endpoints.nearOneSplit`).
 
 * `OverflowIsolated w`: the value of the overflow candidate `57` — the
   explicit tower `overflowCandidate12`, whose membership in the `n = 12`
@@ -96,6 +98,14 @@ With `w : N12PartitionWitness` (writing `S` for `NearOneSplit` and `O` for
 The community-expected value is `2926` (the Wolfram computation and the
 probe-refined partition agree); the table shows exactly which two facts that
 expectation rests on.
+
+`NearOneSplit` is **proved** (`A198683N12Endpoints.nearOneSplit`), so the
+live rows are the `S = yes` ones: `LeanProofs.A198683N12Endpoints` derives
+`a198683_twelve_mem_of_witness : a198683 12 ∈ {2925, 2926}` from any witness
+alone, and the single remaining narrow hypothesis — the overflow
+no-miracles question — decides between `2926`
+(`a198683_twelve_eq_2926_of_overflowIsolated`) and `2925`
+(`a198683_twelve_eq_2925_of_overflowCollision`).
 -/
 
 namespace LeanProofs
@@ -165,9 +175,10 @@ structure N12PartitionWitness where
 **Narrow hypothesis 1 (the near-`1` split).**  Representative `25` differs
 from representatives `{1404, 4239}`.  Reduced by
 `A198683N12Symbolic.nearOne25_ne_nearOne1404_of_endpoint_bounds` to the
-twenty-eight scalar endpoint estimates in `NearOneEndpointBounds`
-(see `nearOneSplit_of_endpointBounds` below).  Its *negation* would mean the
-two towers agree exactly despite differing only at the `10^-1305` scale.
+twenty-six scalar endpoint estimates in `NearOneEndpointBounds`
+(see `nearOneSplit_of_endpointBounds` below), all of which are proved in
+`LeanProofs.A198683N12Endpoints` — so this `Prop` is inhabited:
+`A198683N12Endpoints.nearOneSplit`.
 -/
 def NearOneSplit : Prop := nearOne25 ≠ nearOne1404
 
@@ -490,14 +501,14 @@ end N12PartitionWitness
 ## The endpoint bundle for the near-`1` split
 
 `A198683N12Symbolic.nearOne25_ne_nearOne1404_of_endpoint_bounds` reduces
-`NearOneSplit` to twenty-eight scalar endpoint estimates.  We bundle them as
+`NearOneSplit` to twenty-six scalar endpoint estimates.  We bundle them as
 one `Prop`-valued structure so that discharging the split is exactly the task
 of proving `NearOneEndpointBounds` — endpoint by endpoint, by Taylor partial
 sums (mathlib's alternating-series lemmas for `sin`/`cos`, `Real.exp_bound'`
 plus the 20-digit `exp 1` and `π` certificates for `exp`).
 -/
 
-/-- The twenty-eight scalar endpoint estimates that imply the near-`1`
+/-- The twenty-six scalar endpoint estimates that imply the near-`1`
 split, verbatim from
 `A198683N12Symbolic.nearOne25_ne_nearOne1404_of_endpoint_bounds`.  Field
 groups: `t*` box `sin θ`/`cos θ` at the certified `θ`-box ends; `v*` box the
@@ -561,12 +572,12 @@ structure NearOneEndpointBounds : Prop where
   h2imhi : Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
       Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
     (-(52346 : ℝ) / 10000)
-  hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000))
+  hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000))
   hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725
   hcos0 : (-(257 : ℝ) / 1250) <
     Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000))
   hcos1 : Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-    (-(411 : ℝ) / 2000)
+    (-(1027 : ℝ) / 5000)
 
 /-- The endpoint bundle implies the near-`1` split, via the proved
 interval ladder of `A198683N12Symbolic`. -/
