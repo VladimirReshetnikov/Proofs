@@ -6767,6 +6767,12 @@ theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
 def leAt (a b : Nat) : Formula :=
   ex (eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
 
+/-- Bounded order against a closed standard numeral.  This is intentionally only
+the formula macro; PA proofs that relate it to `leAt` are kept as separate
+lemmas. -/
+def leConstAt (a n : Nat) : Formula :=
+  ex (eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.numeral n))
+
 def ltAt (a b : Nat) : Formula :=
   ex (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0))) (Term.var (b+1)))
 
@@ -6926,6 +6932,24 @@ theorem leAt_nat (e : Nat → Nat) (a b : Nat) :
     refine ⟨e b - e a, ?_⟩
     simp only [Sat, Term.eval, natModel, scons]
     change e a + (e b - e a) = e b
+    omega
+
+theorem leConstAt_nat (e : Nat → Nat) (a n : Nat) :
+    Sat natModel e (leConstAt a n) ↔ e a ≤ n := by
+  constructor
+  · intro h
+    rcases h with ⟨d, hd⟩
+    simp only [Sat] at hd
+    rw [Term.eval_numeral_natModel] at hd
+    simp only [Term.eval, natModel, scons] at hd
+    change e a + d = n at hd
+    omega
+  · intro h
+    refine ⟨n - e a, ?_⟩
+    simp only [Sat]
+    rw [Term.eval_numeral_natModel]
+    simp only [Term.eval, natModel, scons]
+    change e a + (n - e a) = n
     omega
 
 theorem ltAt_nat (e : Nat → Nat) (a b : Nat) :
@@ -8915,41 +8939,84 @@ theorem BProv_Ax_s_add_eq_zero_left_terms {G : List Formula}
       using hinst
   exact BProv_mp Ax_s G _ _ himp h
 
-/-- PA proves the base bounded-order case: from `x ≤ y` and `y = 0`, derive
-`x = 0`. -/
-theorem BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero {G : List Formula}
-    {a b : Nat}
+/-- PA turns a variable-bounded order proof into a closed-numeral bounded order
+proof once the bound variable is known to contain that numeral. -/
+theorem BProv_Ax_s_leConstAt_of_leAt_eqConst {G : List Formula}
+    {a b n : Nat}
     (hle : BProv Ax_s G (leAt a b))
-    (hb : BProv Ax_s G (eqConstAt b 0)) :
-    BProv Ax_s G (eqConstAt a 0) := by
+    (hb : BProv Ax_s G (eqConstAt b n)) :
+    BProv Ax_s G (leConstAt a n) := by
   let leBody : Formula :=
     eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.var (b+1))
+  have hbody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (leConstAt a n)) := by
+    have hleBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        leBody :=
+      BProv_ass (B := Ax_s) (G := leBody :: G.map (rename Nat.succ))
+        (by simp)
+    have hbRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt b n)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hb Nat.succ
+    have hbBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (eq (Term.var (b+1)) (Term.numeral n)) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_context_cons hbRen
+    have htarget : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (eq (Term.add (Term.var (a+1)) (Term.var 0))
+          (Term.numeral n)) :=
+      BProv_eqTrans hleBody hbBody
+    have hinst : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (subst (instTerm (Term.var 0))
+          (eq (Term.add (Term.var (a+2)) (Term.var 0))
+            (Term.numeral n))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+    have hex : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (ex
+          (eq (Term.add (Term.var (a+2)) (Term.var 0))
+            (Term.numeral n))) :=
+      BProv_exI (B := Ax_s) (G := leBody :: G.map (rename Nat.succ))
+        (a := eq (Term.add (Term.var (a+2)) (Term.var 0))
+          (Term.numeral n))
+        (t := Term.var 0) hinst
+    simpa [leConstAt, rename, Term.rename, SetTheory.up] using hex
+  simpa [leAt, leBody] using
+    (BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      hle hbody)
+
+/-- PA proves the closed zero bound case: from `x ≤ 0`, derive `x = 0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero {G : List Formula}
+    {a : Nat}
+    (hle : BProv Ax_s G (leConstAt a 0)) :
+    BProv Ax_s G (eqConstAt a 0) := by
+  let leBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.var 0)) Term.zero
   have hbody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
       (rename Nat.succ (eqConstAt a 0)) := by
     have hleBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
         leBody :=
       BProv_ass (B := Ax_s) (G := leBody :: G.map (rename Nat.succ))
         (by simp)
-    have hbRen : BProv Ax_s (G.map (rename Nat.succ))
-        (rename Nat.succ (eqConstAt b 0)) :=
-      BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-        hb Nat.succ
-    have hbBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
-        (eq (Term.var (b+1)) Term.zero) := by
-      simpa [eqConstAt, rename, Term.rename, Term.numeral] using
-        BProv_context_cons hbRen
-    have haddZero : BProv Ax_s (leBody :: G.map (rename Nat.succ))
-        (eq (Term.add (Term.var (a+1)) (Term.var 0)) Term.zero) :=
-      BProv_eqTrans hleBody hbBody
     have haZero : BProv Ax_s (leBody :: G.map (rename Nat.succ))
         (eq (Term.var (a+1)) Term.zero) :=
-      BProv_Ax_s_add_eq_zero_left_terms haddZero
+      BProv_Ax_s_add_eq_zero_left_terms hleBody
     simpa [eqConstAt, rename, Term.rename, Term.numeral] using haZero
-  simpa [leAt, leBody] using
+  simpa [leConstAt, leBody, Term.numeral] using
     (BProv_exE_of_sentences (B := Ax_s)
       (fun f hf => sentence_ax_s (f := f) hf)
       hle hbody)
+
+/-- PA proves the base bounded-order case: from `x ≤ y` and `y = 0`, derive
+`x = 0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero {G : List Formula}
+    {a b : Nat}
+    (hle : BProv Ax_s G (leAt a b))
+    (hb : BProv Ax_s G (eqConstAt b 0)) :
+    BProv Ax_s G (eqConstAt a 0) :=
+  BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero
+    (BProv_Ax_s_leConstAt_of_leAt_eqConst hle hb)
 
 /-- PA proves every variable-renamed body of multiplication by zero. -/
 theorem BProv_Ax_s_mulZero_rename (r : Nat → Nat) :
