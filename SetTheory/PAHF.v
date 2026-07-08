@@ -11927,6 +11927,100 @@ Proof.
     G 1 0 (S (S bit)) hcurZero hbitOne hstep).
 Qed.
 
+Lemma BProv_Ax_s_betaDiv2BitAt_current_zero_bot :
+  forall G bit code step idx,
+  BProv Ax_s G (eqConstAt bit 1) ->
+  (let body :=
+    pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit)))) in
+    BProv Ax_s
+      (body :: map (rename S) (pEx body :: map (rename S) G))
+      (eqConstAt 1 0)) ->
+  BProv Ax_s G (betaDiv2BitAt bit code step idx) ->
+  BProv Ax_s G pBot.
+Proof.
+  intros G bit code step idx hbitOne hcurZero hbitAt.
+  set (body :=
+    pAnd
+      (betaAt 1 (S (S code)) (S (S step)) (S (S idx)))
+      (pAnd
+        (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
+        (div2StepAt 1 0 (S (S bit))))).
+  change (BProv Ax_s
+    (body :: map (rename S) (pEx body :: map (rename S) G))
+    (eqConstAt 1 0)) in hcurZero.
+  assert (hbitRen1 : BProv Ax_s (map (rename S) G)
+      (eqConstAt (S bit) 1)).
+  {
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt bit 1) hbitOne S) as h.
+    unfold eqConstAt.
+    simpl.
+    exact h.
+  }
+  assert (hbitRen2 : BProv Ax_s (map (rename S) (map (rename S) G))
+      (eqConstAt (S (S bit)) 1)).
+  {
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+      (map (rename S) G) (eqConstAt (S bit) 1) hbitRen1 S) as h.
+    unfold eqConstAt.
+    simpl.
+    exact h.
+  }
+  assert (houter : BProv Ax_s (pEx body :: map (rename S) G) pBot).
+  {
+    assert (hex : BProv Ax_s (pEx body :: map (rename S) G)
+        (pEx body)).
+    {
+      apply BProv_ass.
+      simpl. left. reflexivity.
+    }
+    assert (hinner : BProv Ax_s
+        (body :: map (rename S) (pEx body :: map (rename S) G))
+        pBot).
+    {
+      assert (hbody : BProv Ax_s
+          (body :: map (rename S) (pEx body :: map (rename S) G))
+          body).
+      {
+        apply BProv_ass.
+        simpl. left. reflexivity.
+      }
+      assert (hbitCtx : BProv Ax_s
+          (body :: map (rename S) (pEx body :: map (rename S) G))
+          (eqConstAt (S (S bit)) 1)).
+      {
+        pose proof (BProv_context_cons Ax_s
+          (map (rename S) (map (rename S) G))
+          (rename S (pEx body))
+          (eqConstAt (S (S bit)) 1) hbitRen2) as h1.
+        pose proof (BProv_context_cons Ax_s
+          (rename S (pEx body) :: map (rename S) (map (rename S) G))
+          body (eqConstAt (S (S bit)) 1) h1) as h2.
+        simpl in h2.
+        exact h2.
+      }
+      exact (BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
+        (body :: map (rename S) (pEx body :: map (rename S) G))
+        bit code step idx hcurZero hbitCtx hbody).
+    }
+    exact (BProv_exE_of_sentences Ax_s
+      (pEx body :: map (rename S) G) body pBot
+      sentence_ax_s hex hinner).
+  }
+  assert (hbitAt' : BProv Ax_s G (pEx (pEx body))).
+  {
+    unfold betaDiv2BitAt in hbitAt.
+    fold body in hbitAt.
+    exact hbitAt.
+  }
+  exact (BProv_exE_of_sentences Ax_s G (pEx body) pBot
+    sentence_ax_s hbitAt' houter).
+Qed.
+
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
     (pAnd
