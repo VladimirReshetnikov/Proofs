@@ -25003,6 +25003,122 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
     (BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
       hhigh hlowZero)
 
+/-- If PA proves that the element slot is `0`, the high set is a closed odd
+Ackermann code, and the low set is divisible by a slot proved to be `2`, then
+that zero element distinguishes high from low. -/
+theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low
+    {G : List Formula} {elem high low modulus highValue highHalf : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hodd : highValue = highHalf + highHalf + 1)
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdvdLow : BProv Ax_s G (dvdAt modulus low)) :
+    BProv Ax_s G (hfDistinguishesAt elem high low) := by
+  have hhighMem : BProv Ax_s G (hfMemAt elem high) :=
+    BProv_Ax_s_hfMemAt_of_eqConst_zero_odd_double
+      (elem := elem) (set := high) (setValue := highValue)
+      (half := highHalf) helem hhigh hodd
+  let lowMem : Formula := hfMemAt elem low
+  have hbot : BProv Ax_s (lowMem :: G) bot := by
+    have helemCtx : BProv Ax_s (lowMem :: G) (eqConstAt elem 0) :=
+      BProv_context_cons (B := Ax_s) helem
+    have hmodCtx : BProv Ax_s (lowMem :: G) (eqConstAt modulus 2) :=
+      BProv_context_cons (B := Ax_s) hmod
+    have hdvdCtx : BProv Ax_s (lowMem :: G) (dvdAt modulus low) :=
+      BProv_context_cons (B := Ax_s) hdvdLow
+    have hlowMem : BProv Ax_s (lowMem :: G) (hfMemAt elem low) :=
+      BProv_ass (B := Ax_s) (G := lowMem :: G) (by simp [lowMem])
+    exact BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_dvd_set
+      helemCtx hmodCtx hdvdCtx hlowMem
+  have hnotLow : BProv Ax_s G (imp (hfMemAt elem low) bot) := by
+    simpa [lowMem] using BProv_impI hbot
+  exact BProv_andI hhighMem hnotLow
+
+/-- Existential form of
+`BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_zero_odd_high_dvd_low
+    {G : List Formula} {elem high low modulus highValue highHalf : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hodd : highValue = highHalf + highHalf + 1)
+    (hmod : BProv Ax_s G (eqConstAt modulus 2))
+    (hdvdLow : BProv Ax_s G (dvdAt modulus low)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) :=
+  BProv_hfSomeDistinguishesAt_intro_var
+    (B := Ax_s) (G := G) (elem := elem) (high := high) (low := low)
+    (BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low
+      helem hhigh hodd hmod hdvdLow)
+
+/-- Closed odd high code plus an open proof that the low code is even yields a
+zero distinguishing member.  The auxiliary modulus slot used to express
+divisibility by `2` is introduced locally, so callers only supply the natural
+`doubleEqAt` proof for the low code. -/
+theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_double_low
+    {G : List Formula} {elem high low highValue highHalf lowHalf : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hodd : highValue = highHalf + highHalf + 1)
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G (hfDistinguishesAt elem high low) := by
+  let modEq : Formula := eqConstAt 0 2
+  have hex : BProv Ax_s G (ex modEq) := by
+    simpa [modEq] using BProv_exists_eqConstAt (B := Ax_s) (G := G) 2
+  have hbody : BProv Ax_s (modEq :: G.map (rename Nat.succ))
+      (rename Nat.succ (hfDistinguishesAt elem high low)) := by
+    let C : List Formula := modEq :: G.map (rename Nat.succ)
+    have hmod : BProv Ax_s C (eqConstAt 0 2) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, modEq])
+    have helemRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt elem 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        helem Nat.succ
+    have helemC : BProv Ax_s C (eqConstAt (elem+1) 0) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := modEq) helemRen
+    have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt high highValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhigh Nat.succ
+    have hhighC : BProv Ax_s C (eqConstAt (high+1) highValue) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := modEq) hhighRen
+    have hdoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt low lowHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hlowDouble Nat.succ
+    have hdoubleC : BProv Ax_s C (doubleEqAt (low+1) (lowHalf+1)) := by
+      simpa [C, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := modEq) hdoubleRen
+    have hdvdLow : BProv Ax_s C (dvdAt 0 (low+1)) :=
+      BProv_Ax_s_dvdAt_of_doubleEqAt_two hmod hdoubleC
+    have hdist : BProv Ax_s C
+        (hfDistinguishesAt (elem+1) (high+1) (low+1)) :=
+      BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_dvd_low
+        (G := C) (elem := elem+1) (high := high+1) (low := low+1)
+        (modulus := 0) (highValue := highValue) (highHalf := highHalf)
+        helemC hhighC hodd hmod hdvdLow
+    simpa [rename_hfDistinguishesAt] using hdist
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [modEq] using hbody)
+
+/-- Existential form of
+`BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_double_low`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_zero_odd_high_double_low
+    {G : List Formula} {elem high low highValue highHalf lowHalf : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hodd : highValue = highHalf + highHalf + 1)
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) :=
+  BProv_hfSomeDistinguishesAt_intro_var
+    (B := Ax_s) (G := G) (elem := elem) (high := high) (low := low)
+    (BProv_Ax_s_hfDistinguishesAt_of_eqConst_zero_odd_high_double_low
+      helem hhigh hodd hlowDouble)
+
 /-- If an element belongs to the high set and the same closed element is not a
 member of the closed low set, then the element distinguishes high from low. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem
