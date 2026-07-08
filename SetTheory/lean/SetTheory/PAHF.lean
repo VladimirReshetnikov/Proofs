@@ -10818,6 +10818,98 @@ theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst_step {G : List Formula}
     hbit hcode hstep hidx hcurLt hcurVal.symm hnextLt hnextVal.symm
     hb hdiv.symm
 
+/-- Once a `betaDiv2BitAt` body has been opened, a zero current value and a
+one output bit contradict the embedded binary-halving step. -/
+theorem BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot {G : List Formula}
+    {bit code step idx : Nat}
+    (hcurZero : BProv Ax_s G (eqConstAt 1 0))
+    (hbitOne : BProv Ax_s G (eqConstAt (bit+2) 1))
+    (hbody : BProv Ax_s G
+      (and
+        (betaAt 1 (code+2) (step+2) (idx+2))
+        (and
+          (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+          (div2StepAt 1 0 (bit+2))))) :
+    BProv Ax_s G bot := by
+  have htail : BProv Ax_s G
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2))) :=
+    BProv_andE2 hbody
+  have hstep : BProv Ax_s G (div2StepAt 1 0 (bit+2)) :=
+    BProv_andE2 htail
+  exact BProv_Ax_s_div2StepAt_zero_one_bot
+    (value := 1) (half := 0) (bit := bit+2)
+    hcurZero hbitOne hstep
+
+/-- Eliminate a final-bit formula to contradiction once the opened current
+witness can be proved to be zero.  The `hcurZero` premise is deliberately a
+proof obligation over the opened existential context: later trace-invariant
+lemmas can provide it without changing the membership definition. -/
+theorem BProv_Ax_s_betaDiv2BitAt_current_zero_bot {G : List Formula}
+    {bit code step idx : Nat}
+    (hbitOne : BProv Ax_s G (eqConstAt bit 1))
+    (hcurZero :
+      let body : Formula :=
+        and
+          (betaAt 1 (code+2) (step+2) (idx+2))
+          (and
+            (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+            (div2StepAt 1 0 (bit+2)))
+      BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        (eqConstAt 1 0))
+    (hbitAt : BProv Ax_s G (betaDiv2BitAt bit code step idx)) :
+    BProv Ax_s G bot := by
+  let body : Formula :=
+    and
+      (betaAt 1 (code+2) (step+2) (idx+2))
+      (and
+        (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+        (div2StepAt 1 0 (bit+2)))
+  have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
+      (eqConstAt (bit+1) 1) := by
+    simpa [eqConstAt, rename, Term.rename] using
+      (BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbitOne Nat.succ)
+  have hbitRen2 : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (eqConstAt (bit+2) 1) := by
+    simpa [eqConstAt, rename, Term.rename] using
+      (BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbitRen1 Nat.succ)
+  have houter : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
+    have hex : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hinner : BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        bot := by
+      have hbody : BProv Ax_s
+          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+          body :=
+        BProv_ass (B := Ax_s)
+          (G := body ::
+            (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+          (by simp)
+      have hbitCtx : BProv Ax_s
+          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+          (eqConstAt (bit+2) 1) := by
+        simpa using BProv_context_cons
+          (BProv_context_cons (B := Ax_s) hbitRen2)
+      exact BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
+        (bit := bit) (code := code) (step := step) (idx := idx)
+        (by simpa [body] using hcurZero) hbitCtx (by simpa [body] using hbody)
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hex (by simpa [rename] using hinner)
+  have hbitAt' : BProv Ax_s G (ex (ex body)) := by
+    simpa [betaDiv2BitAt, body] using hbitAt
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hbitAt' (by simpa [rename] using houter)
+
 /-- Base bounded-trace constructor: if the trace bound is `0`, the quantified
 index in `betaDiv2StepsThroughAt` is forced to be `0`, so one pointwise
 `BetaDiv2Step` supplies the whole bounded trace. -/
