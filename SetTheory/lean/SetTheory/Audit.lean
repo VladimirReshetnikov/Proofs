@@ -323,8 +323,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leTermAt_of_eq_add_right_terms
 #check @PA.Formula.BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
 #check @PA.Formula.BProv_Ax_s_remainder_difference_of_le_quotient_terms
+#check @PA.Formula.BProv_Ax_s_eq_zero_of_bounded_remainder_difference_terms
 #check @PA.Formula.BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
 #check @PA.Formula.BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
+#check @PA.Formula.BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
 #check @PA.Formula.BProv_Ax_s_eqConstAt_mod_two_of_div2StepAt_eqConst
 #check @PA.Formula.BProv_Ax_s_eqConstAt_of_remAt_eqConst
 #check @PA.Formula.BProv_Ax_s_eq_of_remAt_remTermAt_eq_modulus
