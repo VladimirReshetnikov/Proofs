@@ -11320,6 +11320,66 @@ Proof.
     (Term.numeral idxValue) hbody).
 Qed.
 
+Lemma BProv_Ax_s_betaAtSuccIdx_of_eqConst :
+  forall G out code step idx o c s i q,
+  BProv Ax_s G (eqConstAt out o) ->
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  o < BetaModulus s (i + 1) ->
+  q * BetaModulus s (i + 1) + o = c ->
+  BProv Ax_s G (betaAtSuccIdx out code step idx).
+Proof.
+  intros G out code step idx o c s i q hout hcode hstep hidx hlt hval.
+  assert (hidxSuccRaw : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (tSucc (Term.numeral i)))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G (tVar idx)
+      (Term.numeral i) hidx).
+  }
+  assert (hidxSuccForward : BProv Ax_s G
+      (pEq (tSucc (tVar idx)) (Term.numeral (i + 1)))).
+  {
+    replace (i + 1) with (S i) by lia.
+    exact hidxSuccRaw.
+  }
+  assert (hidxSucc : BProv Ax_s G
+      (pEq (Term.numeral (i + 1)) (tSucc (tVar idx)))).
+  {
+    exact (BProv_eqSym Ax_s G
+      (tSucc (tVar idx)) (Term.numeral (i + 1)) hidxSuccForward).
+  }
+  assert (hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (pEq (tVar 0) (tSucc (tVar (S idx)))))).
+  {
+    simpl.
+    exact hidxSucc.
+  }
+  assert (hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (betaAt (S out) (S code) (S step) 0))).
+  {
+    exact (BProv_Ax_s_betaAt_constIdxSubst_of_eqConst
+      G out code step o c s (i + 1) q hout hcode hstep hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (i + 1)))
+        (pAnd
+          (pEq (tVar 0) (tSucc (tVar (S idx))))
+          (betaAt (S out) (S code) (S step) 0)))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hidxBody hbetaBody).
+  }
+  unfold betaAtSuccIdx.
+  exact (BProv_exI Ax_s G
+    (pAnd
+      (pEq (tVar 0) (tSucc (tVar (S idx))))
+      (betaAt (S out) (S code) (S step) 0))
+    (Term.numeral (i + 1)) hbody).
+Qed.
+
 Definition BetaEntry (code step idx value : nat) : Prop :=
   exists q, code = q * BetaModulus step idx + value /\
     value < BetaModulus step idx.
