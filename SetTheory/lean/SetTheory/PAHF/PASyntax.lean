@@ -18087,6 +18087,87 @@ theorem BProv_Ax_s_hfMemTermAt_of_components {G : List Formula}
       (a := ex body)
       (t := codeTerm) hstepEx)
 
+/-- Substitution-stable variant of `BProv_Ax_s_hfMemTermAt_of_components`.
+
+This is useful when the membership formula is later instantiated in its
+element slot, as in the odd-high carry branch where the new witness is the
+successor of the opened IH witness.  The three beta-trace components are still
+ordinary explicit premises; the theorem only repackages them through the same
+existential structure as `hfMemTermAt`. -/
+theorem BProv_Ax_s_subst_hfMemTermAt_of_components
+    {G : List Formula} {elem : Nat}
+    {setCode codeTerm stepTerm : Term} {σ : Nat → Term}
+    (hentry : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaTermAtConstIdx
+              (Term.rename (fun n => n+2) setCode) 1 0 0)))))
+    (hsteps : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaDiv2StepsThroughAt 1 0 (elem+2))))))
+    (hbitEx : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (ex
+              (and
+                (oneAt 0)
+                (betaDiv2BitAt 0 2 1 (elem+3)))))))) :
+    BProv Ax_s G (subst σ (hfMemTermAt elem setCode)) := by
+  let bitEx : Formula :=
+    ex
+      (and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3)))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      bitEx
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx (Term.rename (fun n => n+2) setCode) 1 0 0)
+      tail
+  have htail : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            tail))) := by
+    simpa [tail, bitEx, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hsteps hbitEx)
+  have hbody : BProv Ax_s G
+      (subst σ
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            body))) := by
+    simpa [body, tail, bitEx, subst, instTerm, Term.subst,
+      Term.upSubst] using
+      (BProv_andI hentry htail)
+  have hstepEx : BProv Ax_s G
+      (subst σ (subst (instTerm codeTerm) (ex body))) := by
+    have hbodyInst : BProv Ax_s G
+        (subst (instTerm (Term.subst σ stepTerm))
+          (subst (Term.upSubst σ)
+            (subst (Term.upSubst (instTerm codeTerm)) body))) := by
+      simpa [subst_instTerm_subst_up] using hbody
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst,
+      subst_instTerm_subst_up] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst σ)
+          (subst (Term.upSubst (instTerm codeTerm)) body))
+        (t := Term.subst σ stepTerm) hbodyInst)
+  have hstepExInst : BProv Ax_s G
+      (subst (instTerm (Term.subst σ codeTerm))
+        (subst (Term.upSubst σ) (ex body))) := by
+    simpa [subst_instTerm_subst_up] using hstepEx
+  simpa [hfMemTermAt, body, tail, bitEx, subst, instTerm, Term.subst,
+    Term.upSubst, subst_instTerm_subst_up] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst σ) (ex body))
+      (t := Term.subst σ codeTerm) hstepExInst)
+
 /-- Term-parametric membership introduction variant that takes the final bit
 component before the inner witness bit has been existentially packaged. -/
 theorem BProv_Ax_s_hfMemTermAt_of_bit_components {G : List Formula}
@@ -25672,15 +25753,51 @@ IH witness: if `x` distinguished the predecessor half, use `S x`. -/
 def strictHighOddSuccWitnessTerm : Term :=
   Term.succ (Term.var 0)
 
+/-- Shifted high-code term seen by the positive membership half after opening
+the old IH witness and then opening the new `S x` witness. -/
+def strictHighOddOpenedWitnessSuccHighCode (highHalf : Nat) : Term :=
+  Term.rename Nat.succ
+    (Term.rename Nat.succ (strictHighOddSuccHalfCode highHalf))
+
 /-- Positive membership half of the odd-high carry body when the new witness
 is `S x`. -/
 def strictHighOddOpenedWitnessSuccMemFormula (highHalf : Nat) :
     Formula :=
   subst (instTerm strictHighOddSuccWitnessTerm)
-    (hfMemTermAt 0
-      (Term.rename Nat.succ
-        (Term.rename Nat.succ
-          (strictHighOddSuccHalfCode highHalf))))
+    (hfMemTermAt 0 (strictHighOddOpenedWitnessSuccHighCode highHalf))
+
+/-- Initial beta-entry component sufficient for the `S x` membership half of
+the odd-high carry branch. -/
+def strictHighOddOpenedWitnessSuccMemEntryFormula
+    (highHalf : Nat) (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaTermAtConstIdx
+          (Term.rename (fun n => n+2)
+            (strictHighOddOpenedWitnessSuccHighCode highHalf))
+          1 0 0)))
+
+/-- Bounded-trace component sufficient for the `S x` membership half of the
+odd-high carry branch. -/
+def strictHighOddOpenedWitnessSuccMemStepsFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaDiv2StepsThroughAt 1 0 (0+2))))
+
+/-- Final-bit component sufficient for the `S x` membership half of the
+odd-high carry branch. -/
+def strictHighOddOpenedWitnessSuccMemBitExFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (0+3))))))
 
 /-- Low-membership atom that must be refuted when the odd-high carry uses the
 successor of the opened IH witness. -/
@@ -26778,6 +26895,32 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccBody_of_mem_and_low_bot
   simpa [strictHighOddOpenedWitnessSuccBodyFormula] using
     BProv_andI hmem hnotLow
 
+/-- Package the `S x` positive-membership half of an odd-high carry branch from
+explicit beta-entry, bounded-trace, and final-bit components. -/
+theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+    {G : List Formula} {highHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm)) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  exact
+    BProv_Ax_s_subst_hfMemTermAt_of_components
+      (G := G) (elem := 0)
+      (setCode := strictHighOddOpenedWitnessSuccHighCode highHalf)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (σ := instTerm strictHighOddSuccWitnessTerm)
+      (by
+        simpa [strictHighOddOpenedWitnessSuccMemEntryFormula] using hentry)
+      (by
+        simpa [strictHighOddOpenedWitnessSuccMemStepsFormula] using hsteps)
+      (by
+        simpa [strictHighOddOpenedWitnessSuccMemBitExFormula] using hbitEx)
+
 /-- Introduce the shifted odd-high carry existential using `S x`, where `x` is
 the already-opened IH witness. -/
 theorem BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_body
@@ -26793,6 +26936,7 @@ theorem BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_body
       (subst (instTerm strictHighOddSuccWitnessTerm) body) := by
     simpa [body, highCode, strictHighOddOpenedWitnessSuccBodyFormula,
       strictHighOddOpenedWitnessSuccMemFormula,
+      strictHighOddOpenedWitnessSuccHighCode,
       strictHighOddOpenedWitnessSuccLowMemFormula,
       hfDistinguishesTermAt, subst] using hbody
   have hex : BProv Ax_s G (ex body) :=
@@ -26861,6 +27005,66 @@ theorem
     hlowStep
     (BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
       hmem hlowBot)
+
+/-- Odd-high/even-low carry branch with the `S x` positive membership premise
+reduced to explicit beta components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_components_and_low_bot
+    {highHalf lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_mem_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    hlowStep
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+      hentry hsteps hbitEx)
+    hlowBot
+
+/-- Odd-high/odd-low carry branch with the `S x` positive membership premise
+reduced to explicit beta components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_components_and_low_bot
+    {highHalf lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemBitExFormula codeTerm stepTerm))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_mem_and_low_bot
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    hlowStep
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+      hentry hsteps hbitEx)
+    hlowBot
 
 /-- Strict successor branch with the odd-high carry premises stated at the
 opened-IH body level.

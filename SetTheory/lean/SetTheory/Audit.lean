@@ -547,6 +547,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_components
+#check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_of_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_bit_components
@@ -781,7 +782,11 @@ open SetTheory
 #check PA.Formula.strictHighOddLowOddOpenedIHContext
 #check PA.Formula.strictHighOddOpenedIHTargetFormula
 #check PA.Formula.strictHighOddSuccWitnessTerm
+#check PA.Formula.strictHighOddOpenedWitnessSuccHighCode
 #check PA.Formula.strictHighOddOpenedWitnessSuccMemFormula
+#check PA.Formula.strictHighOddOpenedWitnessSuccMemEntryFormula
+#check PA.Formula.strictHighOddOpenedWitnessSuccMemStepsFormula
+#check PA.Formula.strictHighOddOpenedWitnessSuccMemBitExFormula
 #check PA.Formula.strictHighOddOpenedWitnessSuccLowMemFormula
 #check PA.Formula.strictHighOddOpenedWitnessSuccBodyFormula
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_components
@@ -789,10 +794,13 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_opened_ih
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowOddSuccCarry_of_opened_ih
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccBody_of_mem_and_low_bot
+#check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_body
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_mem_and_low_bot
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_mem_and_low_bot
+#check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_components_and_low_bot
+#check @PA.Formula.BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_components_and_low_bot
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_opened_ih_carry_cases
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_carry_cases
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_remaining_carry_cases
