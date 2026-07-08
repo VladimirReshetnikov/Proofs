@@ -6376,6 +6376,14 @@ Proof.
   induction n as [|n IH]; simpl; congruence.
 Qed.
 
+Lemma subst_subst_numeral : forall sigma tau n,
+  subst sigma (subst tau (numeral n)) = numeral n.
+Proof.
+  intros sigma tau n.
+  rewrite subst_numeral.
+  apply subst_numeral.
+Qed.
+
 Lemma addRightNumeral_numeral : forall m n,
   addRightNumeral (numeral m) n = numeral (m + n).
 Proof.
@@ -10268,6 +10276,249 @@ Proof.
   unfold eqConstAt.
   simpl.
   exact hhalfZero.
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_closedSubst : forall G value half bit,
+  (bit = 0 \/ bit = 1) ->
+  half + half + bit = value ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral bit))
+      (subst (Term.upSubst (instTerm (Term.numeral half)))
+        (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+          (div2StepAt 2 1 0)))).
+Proof.
+  intros G value half bit hbit hval.
+  assert (hbool : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit)) (boolAt 0))).
+  {
+    destruct hbit as [hbit | hbit]; subst bit; simpl.
+    - apply BProv_orI1.
+      apply BProv_eqRefl.
+    - apply BProv_orI2.
+      apply BProv_eqRefl.
+  }
+  assert (hboolBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+            (boolAt 0))))).
+  {
+    unfold boolAt, zeroAt, oneAt, eqConstAt in *.
+    simpl in *.
+    repeat rewrite Term.subst_numeral.
+    repeat rewrite Term.rename_numeral.
+    exact hbool.
+  }
+  assert (hdoubleRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral half) (Term.numeral half))
+        (Term.numeral (half + half)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd
+          (tAdd (Term.numeral half) (Term.numeral half))
+          (Term.numeral bit))
+        (tAdd (Term.numeral (half + half)) (Term.numeral bit)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tAdd (Term.numeral half) (Term.numeral half))
+      (Term.numeral (half + half)) (Term.numeral bit) hdoubleRaw).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (half + half)) (Term.numeral bit))
+        (Term.numeral (half + half + bit)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (half + half)) (Term.numeral bit))
+        (Term.numeral value))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd
+          (tAdd (Term.numeral half) (Term.numeral half))
+          (Term.numeral bit))
+        (Term.numeral value))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tAdd (Term.numeral half) (Term.numeral half))
+        (Term.numeral bit))
+      (tAdd (Term.numeral (half + half)) (Term.numeral bit))
+      (Term.numeral value) haddLeft hadd).
+  }
+  assert (heqBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+            (pEq (tVar 2)
+              (tAdd (tAdd (tVar 1) (tVar 1)) (tVar 0))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    change (BProv Ax_s G
+      (pEq (Term.numeral value)
+        (tAdd (tAdd (Term.numeral half) (Term.numeral half))
+          (Term.numeral bit)))).
+    exact (BProv_eqSym Ax_s G
+      (tAdd (tAdd (Term.numeral half) (Term.numeral half))
+        (Term.numeral bit))
+      (Term.numeral value) hcomputed).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral value))))
+            (pAnd (boolAt 0)
+              (pEq (tVar 2)
+                (tAdd (tAdd (tVar 1) (tVar 1)) (tVar 0)))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst
+            (Term.upSubst (instTerm (Term.numeral value)))) (boolAt 0))))
+      (subst (instTerm (Term.numeral bit))
+        (subst (Term.upSubst (instTerm (Term.numeral half)))
+          (subst (Term.upSubst
+            (Term.upSubst (instTerm (Term.numeral value))))
+            (pEq (tVar 2)
+              (tAdd (tAdd (tVar 1) (tVar 1)) (tVar 0))))))
+      hboolBody heqBody).
+  }
+  unfold div2StepAt.
+  exact hbody.
+Qed.
+
+Lemma BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst :
+  forall G bit b v h,
+  BProv Ax_s G (eqConstAt bit b) ->
+  (b = 0 \/ b = 1) ->
+  h + h + b = v ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral h))
+      (subst (Term.upSubst (instTerm (Term.numeral v)))
+        (div2StepAt 1 0 (S (S bit))))).
+Proof.
+  intros G bit b v h hbit hb hval.
+  pose proof (BProv_Ax_s_boolAt_of_eqConst G bit b hbit hb) as hbool.
+  assert (hboolBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (boolAt (S (S bit)))))).
+  {
+    unfold boolAt, zeroAt, oneAt, eqConstAt in *.
+    simpl in *.
+    repeat rewrite Term.subst_numeral.
+    repeat rewrite Term.rename_numeral.
+    exact hbool.
+  }
+  assert (hdoubleRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral h) (Term.numeral h))
+        (Term.numeral (h + h)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tAdd (Term.numeral h) (Term.numeral h))
+      (Term.numeral (h + h)) (tVar bit) hdoubleRaw).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (h + h)) (tVar bit) (Term.numeral b) hbit).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral (h + h + b)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+      (tAdd (Term.numeral (h + h)) (Term.numeral b))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (tVar bit))
+        (tAdd (Term.numeral (h + h)) (Term.numeral b))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (heqBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (pEq (tVar 1)
+            (tAdd (tAdd (tVar 0) (tVar 0)) (tVar (S (S bit)))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    change (BProv Ax_s G
+      (pEq (Term.numeral v)
+        (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit)))).
+    exact (BProv_eqSym Ax_s G
+      (tAdd (tAdd (Term.numeral h) (Term.numeral h)) (tVar bit))
+      (Term.numeral v) hcomputed).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (pAnd (boolAt (S (S bit)))
+            (pEq (tVar 1)
+              (tAdd (tAdd (tVar 0) (tVar 0))
+                (tVar (S (S bit))))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (boolAt (S (S bit)))))
+      (subst (instTerm (Term.numeral h))
+        (subst (Term.upSubst (instTerm (Term.numeral v)))
+          (pEq (tVar 1)
+            (tAdd (tAdd (tVar 0) (tVar 0)) (tVar (S (S bit)))))))
+      hboolBody heqBody).
+  }
+  unfold div2StepAt.
+  exact hbody.
 Qed.
 
 Definition remAt (rem value modulus : nat) : formula :=

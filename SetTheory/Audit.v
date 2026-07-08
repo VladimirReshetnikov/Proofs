@@ -61,6 +61,7 @@ Check PA.Term.addRightNumeral.
 Check PA.Term.mulRightNumeral.
 Check PA.Term.rename_numeral.
 Check PA.Term.subst_numeral.
+Check PA.Term.subst_subst_numeral.
 Check PA.Term.addRightNumeral_numeral.
 Check PA.Term.subst_comp.
 Check PA.Term.subst_rename_succ_up.
@@ -118,6 +119,8 @@ Check PA.Formula.BProv_Ax_s_boolAt_of_eqConst.
 Check PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst.
 Check PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot.
 Check PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero.
+Check PA.Formula.BProv_Ax_s_div2StepAt_closedSubst.
+Check PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
