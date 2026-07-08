@@ -27484,6 +27484,38 @@ theorem
     strictHighOddOpenedWitnessSuccLowMemBody, subst, Term.subst,
     Term.upSubst] using hentry
 
+/-- Term-indexed form of the initial beta entry in the fully opened
+`S x ∈ low` trace.
+
+The opened entry is the original low-code slot, now visible as `Term.var 3`,
+at beta index `0`.  This wrapper is the form consumed by beta functionality
+lemmas. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_entry_termIdx
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      (betaTermAtTermIdx (Term.var 3) 1 0 Term.zero) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hentry : BProv Ax_s C
+      (betaTermAtConstIdx (Term.var 3) 1 0 0) := by
+    have hraw : BProv Ax_s C
+        strictHighOddOpenedWitnessSuccLowMemOpenedEntryFormula := by
+      simpa [C] using
+        (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_entry
+          (G := G))
+    simpa [strictHighOddOpenedWitnessSuccLowMemOpenedEntryFormula,
+      strictHighOddOpenedWitnessSuccLowMemOpenedSubst, Term.numeral,
+      betaTermAtConstIdx, betaAtConstIdx, betaTermAt, betaAt,
+      remTermAt, remAt, ltTermAt, ltAt, eqConstAt, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp, SetTheory.up, term_rename_up_succ_rename_succ]
+      using hraw
+  simpa [Term.numeral] using
+    (BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
+      (G := C) (out := Term.var 3) (code := 1) (step := 0)
+      (idxValue := 0) hentry)
+
 /-- Projection of the trace tail from the fully opened `S x ∈ low` trace. -/
 theorem
     BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_trace_tail
