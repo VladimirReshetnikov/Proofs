@@ -12429,6 +12429,20 @@ theorem BProv_Ax_s_betaModTerm_modEq_succPredAt
     BProv_eqTrans hmodEq hbetaSucc
   exact BProv_Ax_s_succPredAt_of_eq_succ_term hmodSucc
 
+/-- If a beta modulus variable is the zero-index successor-step beta modulus,
+any slot proved to be `0` is strictly below that modulus. -/
+theorem BProv_Ax_s_ltAt_zero_of_betaModTerm_modEq
+    {G : List Formula} {zeroSlot modulus step idx pred : Nat}
+    (hzero : BProv Ax_s G (eqConstAt zeroSlot 0))
+    (hmodEq : BProv Ax_s G
+      (eq (Term.var modulus) (betaModTerm step idx)))
+    (hidx : BProv Ax_s G (eqConstAt idx 0))
+    (hstep : BProv Ax_s G
+      (eq (Term.var step) (Term.succ (Term.var pred)))) :
+    BProv Ax_s G (ltAt zeroSlot modulus) :=
+  BProv_Ax_s_ltAt_of_eqConst_zero_succPredAt hzero
+    (BProv_Ax_s_betaModTerm_modEq_succPredAt hmodEq hidx hstep)
+
 /-- From fixed numeral proofs for the output, code, step, and index slots, and
 an explicit beta-entry quotient in the metatheory, derive the corresponding
 `betaAt` relation. -/
@@ -12584,6 +12598,50 @@ theorem BProv_Ax_s_betaAt_opened_body_modulus_succPredAt
   exact BProv_Ax_s_betaModTerm_modEq_succPredAt
     (G := C) (modulus := 0) (step := step+1) (idx := idx+1)
     (pred := pred)
+    hmodEq
+    (by simpa [body, C] using hidx)
+    (by simpa [body, C] using hstep)
+
+/-- Opened raw-beta positivity projection for the zero-index,
+successor-step case. -/
+theorem BProv_Ax_s_betaAt_opened_body_zero_lt_modulus
+    {G : List Formula} {out code step idx pred zeroSlot : Nat}
+    (hzero : BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      (eqConstAt zeroSlot 0))
+    (hidx : BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      (eqConstAt (idx+1) 0))
+    (hstep : BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      (eq (Term.var (step+1)) (Term.succ (Term.var pred)))) :
+    BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      (ltAt zeroSlot 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  let C : List Formula := body :: G.map (rename Nat.succ)
+  have hmodEqRaw : BProv Ax_s C
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) :=
+    BProv_Ax_s_betaAt_opened_body_modEq
+      (G := G) (out := out) (code := code) (step := step) (idx := idx)
+  have hmodEq : BProv Ax_s C
+      (eq (Term.var 0) (betaModTerm (step+1) (idx+1))) := by
+    simpa [betaModTerm, rename, Term.rename] using hmodEqRaw
+  exact BProv_Ax_s_ltAt_zero_of_betaModTerm_modEq
+    (G := C) (zeroSlot := zeroSlot) (modulus := 0)
+    (step := step+1) (idx := idx+1) (pred := pred)
+    (by simpa [body, C] using hzero)
     hmodEq
     (by simpa [body, C] using hidx)
     (by simpa [body, C] using hstep)
