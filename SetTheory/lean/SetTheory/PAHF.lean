@@ -19496,6 +19496,98 @@ theorem BProv_Ax_s_translated_HF_empty_of_zero_member_bot
   BProv_Ax_s_translated_HF_empty_of_zero_body
     (BProv_Ax_s_HF_empty_zero_body_of_member_bot hmem)
 
+/-- Instantiating the bound element variable in an Ackermann-membership atom.
+
+The set slot is written as `set+1` because it is one binder outside the member
+variable in formulas such as `∀ z, z ∈ a ↔ z ∈ b`. -/
+theorem subst_instTerm_var_hfMemAt_zero_succ (elem set : Nat) :
+    subst (instTerm (Term.var elem)) (hfMemAt 0 (set+1)) =
+      hfMemAt elem set := by
+  simp [hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt,
+    leAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.numeral]
+
+/-- Instantiating the bound element variable in a translated membership
+equivalence. -/
+theorem subst_instTerm_var_hfMemAt_iff (elem left right : Nat) :
+    subst (instTerm (Term.var elem))
+        (iffForm (hfMemAt 0 (left+1)) (hfMemAt 0 (right+1))) =
+      iffForm (hfMemAt elem left) (hfMemAt elem right) := by
+  simp [iffForm, subst, subst_instTerm_var_hfMemAt_zero_succ]
+
+/-- Instantiate an extensional-membership hypothesis at a PA variable. -/
+theorem BProv_hfMemAt_iff_of_all {B : Formula → Prop} {G : List Formula}
+    {elem left right : Nat}
+    (hsame : BProv B G
+      (all (iffForm (hfMemAt 0 (left+1)) (hfMemAt 0 (right+1))))) :
+    BProv B G (iffForm (hfMemAt elem left) (hfMemAt elem right)) := by
+  have hinst : BProv B G
+      (subst (instTerm (Term.var elem))
+        (iffForm (hfMemAt 0 (left+1)) (hfMemAt 0 (right+1)))) :=
+    BProv_allE (t := Term.var elem) hsame
+  simpa [subst_instTerm_var_hfMemAt_iff] using hinst
+
+/-- Forward direction obtained by instantiating an extensional-membership
+hypothesis. -/
+theorem BProv_hfMemAt_forward_of_all {B : Formula → Prop} {G : List Formula}
+    {elem left right : Nat}
+    (hsame : BProv B G
+      (all (iffForm (hfMemAt 0 (left+1)) (hfMemAt 0 (right+1))))) :
+    BProv B G (imp (hfMemAt elem left) (hfMemAt elem right)) :=
+  BProv_andE1 (BProv_hfMemAt_iff_of_all (elem := elem)
+    (left := left) (right := right) hsame)
+
+/-- Reverse direction obtained by instantiating an extensional-membership
+hypothesis. -/
+theorem BProv_hfMemAt_reverse_of_all {B : Formula → Prop} {G : List Formula}
+    {elem left right : Nat}
+    (hsame : BProv B G
+      (all (iffForm (hfMemAt 0 (left+1)) (hfMemAt 0 (right+1))))) :
+    BProv B G (imp (hfMemAt elem right) (hfMemAt elem left)) :=
+  BProv_andE2 (BProv_hfMemAt_iff_of_all (elem := elem)
+    (left := left) (right := right) hsame)
+
+/-- The translated extensionality hypothesis, shifted under a fresh member
+variable, gives the left-to-right membership implication for that member. -/
+theorem BProv_Ax_s_HF_extensionality_fresh_member_forward :
+    BProv Ax_s
+      [(all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))).rename Nat.succ]
+      (imp (hfMemAt 0 2) (hfMemAt 0 1)) := by
+  let sameMembers : Formula := all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))
+  have hsame : BProv Ax_s [rename Nat.succ sameMembers]
+      (rename Nat.succ sameMembers) :=
+    BProv_ass (B := Ax_s) (G := [rename Nat.succ sameMembers])
+      (by simp [sameMembers])
+  have hforward : BProv Ax_s [rename Nat.succ sameMembers]
+      (imp (hfMemAt 0 2) (hfMemAt 0 1)) := by
+    simpa [sameMembers, rename, rename_hfMemAt, iffForm] using
+      (BProv_hfMemAt_forward_of_all (B := Ax_s)
+        (G := [rename Nat.succ sameMembers])
+        (elem := 0) (left := 2) (right := 1) hsame)
+  simpa [sameMembers] using hforward
+
+/-- The translated extensionality hypothesis, shifted under a fresh member
+variable, gives the right-to-left membership implication for that member. -/
+theorem BProv_Ax_s_HF_extensionality_fresh_member_reverse :
+    BProv Ax_s
+      [(all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))).rename Nat.succ]
+      (imp (hfMemAt 0 1) (hfMemAt 0 2)) := by
+  let sameMembers : Formula := all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))
+  have hsame : BProv Ax_s [rename Nat.succ sameMembers]
+      (rename Nat.succ sameMembers) :=
+    BProv_ass (B := Ax_s) (G := [rename Nat.succ sameMembers])
+      (by simp [sameMembers])
+  have hreverse : BProv Ax_s [rename Nat.succ sameMembers]
+      (imp (hfMemAt 0 1) (hfMemAt 0 2)) := by
+    simpa [sameMembers, rename, rename_hfMemAt, iffForm] using
+      (BProv_hfMemAt_reverse_of_all (B := Ax_s)
+        (G := [rename Nat.succ sameMembers])
+        (elem := 0) (left := 2) (right := 1) hsame)
+  simpa [sameMembers] using hreverse
+
 /-- Inner shell for the translated HF extensionality axiom.
 
 The premise is the real Ackermann-coding obligation: from the PA translation
