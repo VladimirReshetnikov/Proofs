@@ -4760,6 +4760,11 @@ def numeralValue {α : Type u} (M : Model α) : Nat → α
   | 0 => rfl
   | n+1 => by simp [numeral, rename, rename_numeral r n]
 
+@[simp] theorem subst_numeral (σ : Nat → Term) :
+    ∀ n, subst σ (numeral n) = numeral n
+  | 0 => rfl
+  | n+1 => by simp [numeral, subst, subst_numeral σ n]
+
 @[simp] theorem numeral_succ (n : Nat) :
     numeral (n + 1) = succ (numeral n) := by
   rfl
@@ -8686,6 +8691,46 @@ theorem BProv_Ax_s_ltAt_of_eqConst {G : List Formula}
         (Term.var (b+1)))
       (t := Term.numeral w) hbody)
 
+/-- From a PA proof that a slot contains a fixed numeral, derive the
+less-than-a-closed-numeral relation by exhibiting the positive difference
+predecessor. -/
+theorem BProv_Ax_s_ltConst_of_eqConst {G : List Formula}
+    {a m n : Nat}
+    (ha : BProv Ax_s G (eqConstAt a m))
+    (hmn : m < n) :
+    BProv Ax_s G
+      (ex (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+        (Term.numeral n))) := by
+  let w := n - m - 1
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.succ (Term.numeral w)))
+        (Term.add (Term.numeral m) (Term.succ (Term.numeral w)))) :=
+    BProv_eq_congr_add_left (Term.succ (Term.numeral w)) ha
+  have haddRaw : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.numeral (w + 1)))
+        (Term.numeral (m + (w + 1)))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals m (w + 1))
+  have hmw : m + (w + 1) = n := by
+    simp [w]
+    omega
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.succ (Term.numeral w)))
+        (Term.numeral n)) := by
+    simpa [hmw] using haddRaw
+  have htarget : BProv Ax_s G
+      (eq (Term.add (Term.var a) (Term.succ (Term.numeral w)))
+        (Term.numeral n)) :=
+    BProv_eqTrans hleft hadd
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.numeral n))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+      (Term.numeral n))
+    (t := Term.numeral w) hbody
+
 /-- From PA proofs that two slots contain fixed numerals and a divisibility
 witness, derive the corresponding `dvdAt` relation. -/
 theorem BProv_Ax_s_dvdAt_of_eqConst_mul {G : List Formula}
@@ -8814,6 +8859,88 @@ theorem BProv_Ax_s_remAt_of_eqConst {G : List Formula}
         (eq (Term.var (value+1))
           (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
             (Term.var (rem+1)))))
+      (t := Term.numeral q) hbody)
+
+/-- Remainder constructor for the common nested-existential shape where the
+modulus slot of `remAt` has just been instantiated by a closed numeral. -/
+theorem BProv_Ax_s_remAt_constMod_of_eqConst {G : List Formula}
+    {rem value r v m q : Nat}
+    (hrem : BProv Ax_s G (eqConstAt rem r))
+    (hvalue : BProv Ax_s G (eqConstAt value v))
+    (hlt : r < m)
+    (hval : q * m + r = v) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral m)) (remAt (rem+1) (value+1) 0)) := by
+  have hltConst : BProv Ax_s G
+      (ex (eq (Term.add (Term.var (rem+1)) (Term.succ (Term.var 0)))
+        (Term.numeral m))) :=
+    BProv_Ax_s_ltConst_of_eqConst hrem hlt
+  have hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (ltAt ((rem+1)+1) (0+1)))) := by
+    simpa [ltAt, subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+      using hltConst
+  have hmulRaw : BProv Ax_s G
+      (eq (Term.mul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+  have haddLeft : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.var rem))
+        (Term.add (Term.numeral (q * m)) (Term.var rem))) :=
+    BProv_eq_congr_add_left (Term.var rem) hmulRaw
+  have haddRight : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.var rem))
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))) :=
+    BProv_eq_congr_add_right (Term.numeral (q * m)) hrem
+  have haddRaw : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+  have hadd : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v)) := by
+    simpa [hval] using haddRaw
+  have hcomputed : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.var rem))
+        (Term.numeral v)) :=
+    BProv_eqTrans (BProv_eqTrans haddLeft haddRight) hadd
+  have htarget : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.var rem))) :=
+    BProv_eqTrans hvalue (BProv_eqSym hcomputed)
+  have hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (eq (Term.var ((value+1)+1))
+            (Term.add (Term.mul (Term.var 0) (Term.var (0+1)))
+              (Term.var ((rem+1)+1)))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+      using htarget
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (and (ltAt ((rem+1)+1) (0+1))
+            (eq (Term.var ((value+1)+1))
+              (Term.add (Term.mul (Term.var 0) (Term.var (0+1)))
+                (Term.var ((rem+1)+1))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hltBody hvalueBody)
+  simpa [remAt, subst, instTerm, Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm (Term.numeral m)))
+        (and (ltAt ((rem+1)+1) (0+1))
+          (eq (Term.var ((value+1)+1))
+            (Term.add (Term.mul (Term.var 0) (Term.var (0+1)))
+              (Term.var ((rem+1)+1))))))
       (t := Term.numeral q) hbody)
 
 /-- If the `step` and `idx` slots are fixed numerals, PA proves that the
