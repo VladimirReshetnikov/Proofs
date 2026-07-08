@@ -318,10 +318,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_betaTermAt_eqConst_code_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
+#check @PA.Formula.BProv_Ax_s_eq_zero_of_betaTermAt_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAtConstIdx_eqConst_code_zero
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_betaTermAtConstIdx_eqConst_code_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAtSuccIdx_eqConst_code_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAtConstIdx_eqConst_step_zero
+#check @PA.Formula.BProv_Ax_s_eq_zero_of_betaTermAtConstIdx_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAtSuccIdx_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_constOutSubst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaModTerm_constIdx_of_eqConst

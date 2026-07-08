@@ -11538,6 +11538,151 @@ theorem BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one {G : List Formula}
       (BProv_Ax_s_ltAt_eq_bot hltC heq)
   exact BProv_orE hcases hleft hright
 
+/-- PA proves the term-parametric strict closed-one bound case: from
+`a < y` and `y = 1`, derive `a = 0`. -/
+theorem BProv_Ax_s_eq_zero_of_ltTermAt_eqConst_one {G : List Formula}
+    {a : Term} {b : Nat}
+    (hlt : BProv Ax_s G (ltTermAt a (Term.var b)))
+    (hb : BProv Ax_s G (eqConstAt b 1)) :
+    BProv Ax_s G (eq a Term.zero) := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.rename Nat.succ a) (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ (Term.var b))
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq a Term.zero)) := by
+    let C : List Formula := ltBody :: G.map (rename Nat.succ)
+    have hltBody : BProv Ax_s C ltBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hbRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (b+1) 1) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hb Nat.succ
+    have hbC : BProv Ax_s C (eqConstAt (b+1) 1) :=
+      BProv_context_cons hbRen
+    have hltEq : BProv Ax_s C
+        (eq (Term.add (Term.rename Nat.succ a) (Term.succ (Term.var 0)))
+          (Term.var (b+1))) := by
+      simpa [ltBody, Term.rename] using hltBody
+    have hsumOne : BProv Ax_s C
+        (eq (Term.add (Term.rename Nat.succ a) (Term.succ (Term.var 0)))
+          (Term.succ Term.zero)) := by
+      have hbOne : BProv Ax_s C
+          (eq (Term.var (b+1)) (Term.succ Term.zero)) := by
+        simpa [eqConstAt, Term.numeral, Term.numeral_succ] using hbC
+      exact BProv_eqTrans hltEq hbOne
+    have hcases : BProv Ax_s C
+        (or (eq (Term.rename Nat.succ a) Term.zero)
+          (ex (eq (Term.rename Nat.succ (Term.rename Nat.succ a))
+            (Term.succ (Term.var 0))))) :=
+      BProv_Ax_s_zeroOrSuccPred_term (G := C) (Term.rename Nat.succ a)
+    have hzeroBranch : BProv Ax_s
+        (eq (Term.rename Nat.succ a) Term.zero :: C)
+        (rename Nat.succ (eq a Term.zero)) := by
+      have hz : BProv Ax_s
+          (eq (Term.rename Nat.succ a) Term.zero :: C)
+          (eq (Term.rename Nat.succ a) Term.zero) :=
+        BProv_ass (B := Ax_s)
+          (G := eq (Term.rename Nat.succ a) Term.zero :: C) (by simp)
+      simpa [rename, Term.rename] using hz
+    let succBody : Formula :=
+      eq (Term.rename Nat.succ (Term.rename Nat.succ a))
+        (Term.succ (Term.var 0))
+    have hsuccBranch : BProv Ax_s (ex succBody :: C)
+        (rename Nat.succ (eq a Term.zero)) := by
+      have hopened : BProv Ax_s
+          (succBody :: (ex succBody :: C).map (rename Nat.succ)) bot := by
+        let D : List Formula :=
+          succBody :: (ex succBody :: C).map (rename Nat.succ)
+        have hsucc : BProv Ax_s D succBody :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hsumRen : BProv Ax_s (C.map (rename Nat.succ))
+            (rename Nat.succ
+              (eq
+                (Term.add (Term.rename Nat.succ a)
+                  (Term.succ (Term.var 0)))
+                (Term.succ Term.zero))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hsumOne Nat.succ
+        have hsumD : BProv Ax_s D
+            (rename Nat.succ
+              (eq
+                (Term.add (Term.rename Nat.succ a)
+                  (Term.succ (Term.var 0)))
+                (Term.succ Term.zero))) := by
+          exact BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hsumRen)
+        have hsum : BProv Ax_s D
+            (eq
+              (Term.add
+                (Term.rename Nat.succ (Term.rename Nat.succ a))
+                (Term.succ (Term.var 1)))
+              (Term.succ Term.zero)) := by
+          simpa [rename, Term.rename] using hsumD
+        have hleft : BProv Ax_s D
+            (eq
+              (Term.add
+                (Term.rename Nat.succ (Term.rename Nat.succ a))
+                (Term.succ (Term.var 1)))
+              (Term.add (Term.succ (Term.var 0))
+                (Term.succ (Term.var 1)))) :=
+          BProv_eq_congr_add_left (Term.succ (Term.var 1)) hsucc
+        have hsumSucc : BProv Ax_s D
+            (eq
+              (Term.add (Term.succ (Term.var 0))
+                (Term.succ (Term.var 1)))
+              (Term.succ Term.zero)) :=
+          BProv_eqTrans (BProv_eqSym hleft) hsum
+        have hsuccAdd : BProv Ax_s D
+            (eq
+              (Term.add (Term.succ (Term.var 0))
+                (Term.succ (Term.var 1)))
+              (Term.succ
+                (Term.add (Term.var 0) (Term.succ (Term.var 1))))) :=
+          BProv_Ax_s_succ_add_terms (Term.var 0) (Term.succ (Term.var 1))
+        have hsuccEq : BProv Ax_s D
+            (eq
+              (Term.succ
+                (Term.add (Term.var 0) (Term.succ (Term.var 1))))
+              (Term.succ Term.zero)) :=
+          BProv_eqTrans (BProv_eqSym hsuccAdd) hsumSucc
+        have hinj : BProv Ax_s D
+            (imp
+              (eq
+                (Term.succ
+                  (Term.add (Term.var 0) (Term.succ (Term.var 1))))
+                (Term.succ Term.zero))
+              (eq (Term.add (Term.var 0) (Term.succ (Term.var 1)))
+                Term.zero)) :=
+          BProv_weaken_nil
+            (BProv_Ax_s_succInj_terms
+              (Term.add (Term.var 0) (Term.succ (Term.var 1))) Term.zero)
+        have hsumZero : BProv Ax_s D
+            (eq (Term.add (Term.var 0) (Term.succ (Term.var 1)))
+              Term.zero) :=
+          BProv_mp Ax_s D _ _ hinj hsuccEq
+        have hsuccZero : BProv Ax_s D
+            (eq (Term.succ (Term.var 1)) Term.zero) :=
+          BProv_Ax_s_add_eq_zero_right_terms
+            (x := Term.var 0) (y := Term.succ (Term.var 1)) hsumZero
+        have hnot : BProv Ax_s D
+            (imp (eq (Term.succ (Term.var 1)) Term.zero) bot) :=
+          BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term (Term.var 1))
+        exact BProv_mp Ax_s D _ _ hnot hsuccZero
+      have hbot : BProv Ax_s (ex succBody :: C) bot :=
+        BProv_exE_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          (BProv_ass (B := Ax_s) (G := ex succBody :: C)
+            (phi := ex succBody) (by simp))
+          (by simpa [succBody, rename] using hopened)
+      exact BProv_botE hbot
+    exact BProv_orE hcases hzeroBranch (by simpa [succBody] using hsuccBranch)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hlt (by
+      simpa [ltTermAt, ltBody] using hbody)
+
 /-- From a PA proof that a slot contains a fixed numeral, derive the
 less-than-a-closed-numeral relation by exhibiting the positive difference
 predecessor. -/
@@ -12436,6 +12581,15 @@ theorem BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
   BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one
     (BProv_Ax_s_ltAt_of_remAt hrem) hmodulus
 
+/-- A term-parametric remainder modulo `1` is the zero term. -/
+theorem BProv_Ax_s_eq_zero_of_remTermAt_eqConst_modulus_one
+    {G : List Formula} {rem : Term} {value modulus : Nat}
+    (hrem : BProv Ax_s G (remTermAt rem value modulus))
+    (hmodulus : BProv Ax_s G (eqConstAt modulus 1)) :
+    BProv Ax_s G (eq rem Term.zero) :=
+  BProv_Ax_s_eq_zero_of_ltTermAt_eqConst_one
+    (BProv_Ax_s_ltTermAt_of_remTermAt hrem) hmodulus
+
 /-- No remainder can be strictly below modulus `0`. -/
 theorem BProv_Ax_s_remAt_eqConst_modulus_zero_bot
     {G : List Formula} {rem value modulus : Nat}
@@ -13202,6 +13356,51 @@ theorem BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAt, body, eqConstAt, rename, Term.rename] using hbody)
 
+/-- If the beta step parameter is `0`, every term-output raw beta entry
+denotes `0`: all beta moduli are then `1`, so the embedded term remainder is
+modulo `1`. -/
+theorem BProv_Ax_s_eq_zero_of_betaTermAt_eqConst_step_zero
+    {G : List Formula} {out : Term} {code step idx : Nat}
+    (hbeta : BProv Ax_s G (betaTermAt out code step idx))
+    (hstep : BProv Ax_s G (eqConstAt step 0)) :
+    BProv Ax_s G (eq out Term.zero) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remTermAt (Term.rename Nat.succ out) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq out Term.zero)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hmodEqRaw : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) :=
+      BProv_andE1 hbodyAss
+    have hmodEq : BProv Ax_s C
+        (eq (Term.var 0) (betaModTerm (step+1) (idx+1))) := by
+      simpa [betaModTerm, rename, Term.rename] using hmodEqRaw
+    have hrem : BProv Ax_s C
+        (remTermAt (Term.rename Nat.succ out) (code+1) 0) :=
+      BProv_andE2 hbodyAss
+    have hstepRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (step+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hstep Nat.succ
+    have hstepC : BProv Ax_s C (eqConstAt (step+1) 0) :=
+      BProv_context_cons hstepRen
+    have hmodTermOne : BProv Ax_s C
+        (eq (betaModTerm (step+1) (idx+1)) (Term.numeral 1)) :=
+      BProv_Ax_s_betaModTerm_eq_one_of_eqConst_step_zero hstepC
+    have hmodOne : BProv Ax_s C (eqConstAt 0 1) := by
+      simpa [eqConstAt] using BProv_eqTrans hmodEq hmodTermOne
+    exact BProv_Ax_s_eq_zero_of_remTermAt_eqConst_modulus_one
+      hrem hmodOne
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaTermAt, body, eqConstAt, rename, Term.rename] using hbody)
+
 /-- If the beta code is `0`, every constant-index beta wrapper also has
 output `0`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_betaAtConstIdx_eqConst_code_zero
@@ -13326,6 +13525,39 @@ theorem BProv_Ax_s_eqConstAt_zero_of_betaAtConstIdx_eqConst_step_zero
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAtConstIdx, body, eqConstAt, rename, Term.rename] using hbody)
+
+/-- If the beta step parameter is `0`, every term-output constant-index beta
+wrapper also denotes `0`. -/
+theorem BProv_Ax_s_eq_zero_of_betaTermAtConstIdx_eqConst_step_zero
+    {G : List Formula} {out : Term} {code step idxValue : Nat}
+    (hbeta : BProv Ax_s G (betaTermAtConstIdx out code step idxValue))
+    (hstep : BProv Ax_s G (eqConstAt step 0)) :
+    BProv Ax_s G (eq out Term.zero) := by
+  let body : Formula :=
+    and (eqConstAt 0 idxValue)
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq out Term.zero)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hbetaRaw : BProv Ax_s C
+        (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0) :=
+      BProv_andE2 hbodyAss
+    have hstepRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (step+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hstep Nat.succ
+    have hstepC : BProv Ax_s C (eqConstAt (step+1) 0) :=
+      BProv_context_cons hstepRen
+    exact BProv_Ax_s_eq_zero_of_betaTermAt_eqConst_step_zero
+      hbetaRaw hstepC
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaTermAtConstIdx, body, eqConstAt, rename, Term.rename] using
+        hbody)
 
 /-- If the beta step parameter is `0`, every successor-index beta wrapper also
 has output `0`. -/
