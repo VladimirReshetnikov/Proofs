@@ -461,9 +461,11 @@ open SetTheory
 #check @PA.Formula.BProv_hfMemAt_reverse_of_all
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_fresh_member_forward
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_fresh_member_reverse
+#check @PA.Formula.BProv_Ax_s_HF_extensionality_member_ext_of_lt_bots
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_body_of_member_ext
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_body
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_member_ext
+#check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_lt_bots
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd

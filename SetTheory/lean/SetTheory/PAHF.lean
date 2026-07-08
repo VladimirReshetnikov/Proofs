@@ -19588,6 +19588,43 @@ theorem BProv_Ax_s_HF_extensionality_fresh_member_reverse :
         (elem := 0) (left := 2) (right := 1) hsame)
   simpa [sameMembers] using hreverse
 
+/-- Reduce the PA-side Ackermann extensionality core to the two strict-order
+contradictions.  The remaining arithmetic content is precisely: if two codes
+have the same translated members, neither can be strictly smaller than the
+other. -/
+theorem BProv_Ax_s_HF_extensionality_member_ext_of_lt_bots
+    (hlt10_bot : BProv Ax_s
+      [ltAt 1 0, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      bot)
+    (hlt01_bot : BProv Ax_s
+      [ltAt 0 1, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      bot) :
+    BProv Ax_s
+      [all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      (eq (Term.var 1) (Term.var 0)) := by
+  let sameMembers : Formula := all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))
+  have hle10 : BProv Ax_s [sameMembers] (leAt 1 0) := by
+    have hcmp : BProv Ax_s [sameMembers]
+        (or (leAt 1 0) (ltAt 0 1)) :=
+      BProv_Ax_s_leAt_or_gtAt (G := [sameMembers]) (a := 1) (b := 0)
+    have hleBranch : BProv Ax_s (leAt 1 0 :: [sameMembers]) (leAt 1 0) :=
+      BProv_ass (B := Ax_s) (G := leAt 1 0 :: [sameMembers]) (by simp)
+    have hltBranch : BProv Ax_s (ltAt 0 1 :: [sameMembers]) (leAt 1 0) :=
+      BProv_botE (a := leAt 1 0) (by simpa [sameMembers] using hlt01_bot)
+    exact BProv_orE hcmp hleBranch hltBranch
+  have hle01 : BProv Ax_s [sameMembers] (leAt 0 1) := by
+    have hcmp : BProv Ax_s [sameMembers]
+        (or (leAt 0 1) (ltAt 1 0)) :=
+      BProv_Ax_s_leAt_or_gtAt (G := [sameMembers]) (a := 0) (b := 1)
+    have hleBranch : BProv Ax_s (leAt 0 1 :: [sameMembers]) (leAt 0 1) :=
+      BProv_ass (B := Ax_s) (G := leAt 0 1 :: [sameMembers]) (by simp)
+    have hltBranch : BProv Ax_s (ltAt 1 0 :: [sameMembers]) (leAt 0 1) :=
+      BProv_botE (a := leAt 0 1) (by simpa [sameMembers] using hlt10_bot)
+    exact BProv_orE hcmp hleBranch hltBranch
+  simpa [sameMembers] using
+    (BProv_Ax_s_eq_of_leAt_leAt (G := [sameMembers])
+      (a := 1) (b := 0) hle10 hle01)
+
 /-- Inner shell for the translated HF extensionality axiom.
 
 The premise is the real Ackermann-coding obligation: from the PA translation
@@ -19657,6 +19694,22 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_member_ext
         (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
   BProv_Ax_s_translated_HF_extensionality_of_body
     (BProv_Ax_s_HF_extensionality_body_of_member_ext hmem_ext)
+
+/-- Combined translated-extensionality shell from the two remaining strict
+inequality contradictions. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_lt_bots
+    (hlt10_bot : BProv Ax_s
+      [ltAt 1 0, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      bot)
+    (hlt01_bot : BProv Ax_s
+      [ltAt 0 1, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      bot) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_member_ext
+    (BProv_Ax_s_HF_extensionality_member_ext_of_lt_bots
+      hlt10_bot hlt01_bot)
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
