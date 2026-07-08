@@ -746,6 +746,107 @@ theorem liftSimCfg_reaches {Label : Type*} [Inhabited Label]
       rw [liftSimCfg_step]
     exact Relation.ReflTransGen.head hStepLift IH
 
+/-- Start configuration for the nonempty-input initializer. -/
+abbrev initThenTM0Start {Label : Type*} {input : List Bool}
+    (hInput : 0 < input.length) :
+    TypedConfig (InitThenTM0State Label input) :=
+  ({ state := some (Sum.inl (Sum.inl (⟨0, hInput⟩ : Fin input.length))),
+      head := 0, tape := [] } : TypedConfig (InitThenTM0State Label input))
+
+/-- Write-phase configuration after the first `k` input bits have been written. -/
+abbrev initThenTM0WriteCfg {Label : Type*} (input : List Bool) (k : Nat)
+    (hk : k < input.length) : TypedConfig (InitThenTM0State Label input) :=
+  ({ state := some (Sum.inl (Sum.inl (⟨k, hk⟩ : Fin input.length))),
+      head := (k : Int), tape := initInputTape input k } :
+    TypedConfig (InitThenTM0State Label input))
+
+/-- Return-phase configuration, moving left over the initialized input tape. -/
+abbrev initThenTM0ReturnCfg {Label : Type*} (input : List Bool) (k : Nat)
+    (hk : k < input.length) : TypedConfig (InitThenTM0State Label input) :=
+  ({ state := some (Sum.inl (Sum.inr (⟨k, hk⟩ : Fin input.length))),
+      head := ((k + 1 : Nat) : Int), tape := initInputTape input input.length } :
+    TypedConfig (InitThenTM0State Label input))
+
+/-- Wrapper configuration immediately after initialization, just before TM0 simulation. -/
+abbrev initThenTM0SimInitCfg {Label : Type*} [Inhabited Label] (input : List Bool) :
+    TypedConfig (InitThenTM0State Label input) :=
+  let cfg : TypedConfig (TM0RadoState Label) :=
+    { state := some (TM0RadoState.normal (default : Label))
+      head := (0 : Int)
+      tape := initInputTape input input.length }
+  liftSimCfg cfg
+
+theorem initThenTM0_write_reaches {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {input : List Bool}
+    (hInput : 0 < input.length) :
+    ∀ k (hk : k < input.length),
+      TypedMachineReaches (initThenTM0ToTypedRado M input)
+        (initThenTM0Start (Label := Label) hInput)
+        (initThenTM0WriteCfg (Label := Label) input k hk)
+  | 0, _hk => by
+      exact Relation.ReflTransGen.refl
+  | k + 1, hk => by
+      have hkPrev : k < input.length := by omega
+      have hPrev := initThenTM0_write_reaches M hInput k hkPrev
+      have hStep : initThenTM0WriteCfg (Label := Label) input (k + 1) hk =
+          TypedMachine.step (initThenTM0ToTypedRado M input)
+            (initThenTM0WriteCfg (Label := Label) input k hkPrev) := by
+        simp [initThenTM0WriteCfg, TypedMachine.step, initThenTM0ToTypedRado,
+          initInputTape, Move.apply, hk, List.getI_eq_getElem _ hkPrev]
+      exact Relation.ReflTransGen.trans hPrev (Relation.ReflTransGen.single hStep)
+
+theorem initThenTM0_return_reaches {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool) :
+    ∀ k (hk : k < input.length),
+      TypedMachineReaches (initThenTM0ToTypedRado M input)
+        (initThenTM0ReturnCfg (Label := Label) input k hk)
+        (initThenTM0SimInitCfg (Label := Label) input)
+  | 0, hk => by
+      have hStep : initThenTM0SimInitCfg (Label := Label) input =
+          TypedMachine.step (initThenTM0ToTypedRado M input)
+            (initThenTM0ReturnCfg (Label := Label) input 0 hk) := by
+        simp [initThenTM0SimInitCfg, liftSimCfg, TypedMachine.step,
+          initThenTM0ToTypedRado, Move.apply, Tape.write_read_self]
+      exact Relation.ReflTransGen.single hStep
+  | k + 1, hk => by
+      have hkPrev : k < input.length := by omega
+      have hStep : initThenTM0ReturnCfg (Label := Label) input k hkPrev =
+          TypedMachine.step (initThenTM0ToTypedRado M input)
+            (initThenTM0ReturnCfg (Label := Label) input (k + 1) hk) := by
+        simp [initThenTM0ReturnCfg, TypedMachine.step, initThenTM0ToTypedRado, Move.apply,
+          Tape.write_read_self]
+      exact Relation.ReflTransGen.trans (Relation.ReflTransGen.single hStep)
+        (initThenTM0_return_reaches M input k hkPrev)
+
+/-- The initializer reaches the simulator's normal start state with `TM0.init input` on tape. -/
+theorem initThenTM0_reaches_sim_init {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {input : List Bool}
+    (hInput : 0 < input.length) :
+    TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (initThenTM0Start (Label := Label) hInput)
+      (initThenTM0SimInitCfg (Label := Label) input) := by
+  let last := input.length - 1
+  have hLast : last < input.length := by
+    dsimp [last]
+    omega
+  have hLastSucc : last + 1 = input.length := by
+    dsimp [last]
+    omega
+  have hWrite := initThenTM0_write_reaches M hInput last hLast
+  have hStep : initThenTM0ReturnCfg (Label := Label) input last hLast =
+      TypedMachine.step (initThenTM0ToTypedRado M input)
+        (initThenTM0WriteCfg (Label := Label) input last hLast) := by
+    have hNoNext : ¬ last + 1 < input.length := by omega
+    simp [initThenTM0ReturnCfg, TypedMachine.step, initThenTM0ToTypedRado, Move.apply,
+      hNoNext]
+    have hGet : input.getI last = input[last] := by
+      rw [List.getI_eq_getElem _ hLast]
+    rw [← hGet]
+    conv_lhs => rw [← hLastSucc, initInputTape_succ]
+  exact Relation.ReflTransGen.trans
+    (Relation.ReflTransGen.trans hWrite (Relation.ReflTransGen.single hStep))
+    (initThenTM0_return_reaches M input last hLast)
+
 /-- `TM0RadoState Label` is two tagged copies of `Label`. -/
 def tm0RadoStateEquivProd (Label : Type*) : Bool × Label ≃ TM0RadoState Label where
   toFun
