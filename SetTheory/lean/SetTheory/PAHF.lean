@@ -9870,6 +9870,146 @@ theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst {G : List Formula}
       (a := ex body)
       (t := Term.numeral cur) hnextEx)
 
+/-- `BetaEntry`-packaged version of `BProv_Ax_s_betaAt_of_eqConst`. -/
+theorem BProv_Ax_s_betaAt_of_eqConst_entry {G : List Formula}
+    {out code step idx o c s i : Nat}
+    (hout : BProv Ax_s G (eqConstAt out o))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hentry : BetaEntry c s i o) :
+    BProv Ax_s G (betaAt out code step idx) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  exact BProv_Ax_s_betaAt_of_eqConst
+    (out := out) (code := code) (step := step) (idx := idx)
+    (o := o) (c := c) (s := s) (i := i) (q := q)
+    hout hcode hstep hidx hlt hval.symm
+
+/-- `BetaEntry`-packaged version of
+`BProv_Ax_s_betaAt_constOutSubst_of_eqConst`. -/
+theorem BProv_Ax_s_betaAt_constOutSubst_of_eqConst_entry
+    {G : List Formula}
+    {code step idx o c s i : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hentry : BetaEntry c s i o) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral o))
+        (betaAt 0 (code+1) (step+1) (idx+1))) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  exact BProv_Ax_s_betaAt_constOutSubst_of_eqConst
+    (code := code) (step := step) (idx := idx)
+    (o := o) (c := c) (s := s) (i := i) (q := q)
+    hcode hstep hidx hlt hval.symm
+
+/-- `BetaEntry`-packaged version of
+`BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst`. -/
+theorem BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst_entry
+    {G : List Formula}
+    {code step o c s i : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hentry : BetaEntry c s i o) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral i))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (betaAt (0+1) ((code+1)+1) ((step+1)+1) 0))) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  exact BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst
+    (code := code) (step := step)
+    (o := o) (c := c) (s := s) (i := i) (q := q)
+    hcode hstep hlt hval.symm
+
+/-- `BetaEntry`-packaged version of
+`BProv_Ax_s_betaAtConstIdx_of_eqConst`. -/
+theorem BProv_Ax_s_betaAtConstIdx_of_eqConst_entry {G : List Formula}
+    {out code step o c s idxValue : Nat}
+    (hout : BProv Ax_s G (eqConstAt out o))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hentry : BetaEntry c s idxValue o) :
+    BProv Ax_s G (betaAtConstIdx out code step idxValue) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  exact BProv_Ax_s_betaAtConstIdx_of_eqConst
+    (out := out) (code := code) (step := step)
+    (o := o) (c := c) (s := s) (idxValue := idxValue) (q := q)
+    hout hcode hstep hlt hval.symm
+
+/-- `BetaEntry`-packaged version of
+`BProv_Ax_s_betaAtSuccIdx_of_eqConst`. -/
+theorem BProv_Ax_s_betaAtSuccIdx_of_eqConst_entry {G : List Formula}
+    {out code step idx o c s i : Nat}
+    (hout : BProv Ax_s G (eqConstAt out o))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hentry : BetaEntry c s (i + 1) o) :
+    BProv Ax_s G (betaAtSuccIdx out code step idx) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  exact BProv_Ax_s_betaAtSuccIdx_of_eqConst
+    (out := out) (code := code) (step := step) (idx := idx)
+    (o := o) (c := c) (s := s) (i := i) (q := q)
+    hout hcode hstep hidx hlt hval.symm
+
+/-- `BetaEntry`-packaged version of
+`BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst`. -/
+theorem BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst_entry
+    {G : List Formula}
+    {code step idx o c s i : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hentry : BetaEntry c s (i + 1) o) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral o))
+        (betaAtSuccIdx 0 (code+1) (step+1) (idx+1))) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  exact BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
+    (code := code) (step := step) (idx := idx)
+    (o := o) (c := c) (s := s) (i := i) (q := q)
+    hcode hstep hidx hlt hval.symm
+
+/-- `BetaDiv2Step`-packaged version of
+`BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst`. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+    {G : List Formula}
+    {code step idx c s i cur next bit : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hdivStep : BetaDiv2Step c s i cur next bit) :
+    BProv Ax_s G (betaDiv2StepWitnessAt code step idx) := by
+  rcases hdivStep with ⟨hcur, hnext, hbit, hdiv⟩
+  rcases hcur with ⟨qcur, hcurVal, hcurLt⟩
+  rcases hnext with ⟨qnext, hnextVal, hnextLt⟩
+  exact BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst
+    (code := code) (step := step) (idx := idx)
+    (c := c) (s := s) (i := i) (cur := cur) (next := next)
+    (bit := bit) (qcur := qcur) (qnext := qnext)
+    hcode hstep hidx hcurLt hcurVal.symm hnextLt hnextVal.symm
+    hbit hdiv.symm
+
+/-- `BetaDiv2Step`-packaged version of
+`BProv_Ax_s_betaDiv2BitAt_of_eqConst`. -/
+theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst_step {G : List Formula}
+    {bit code step idx b c s i cur next : Nat}
+    (hbit : BProv Ax_s G (eqConstAt bit b))
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hdivStep : BetaDiv2Step c s i cur next b) :
+    BProv Ax_s G (betaDiv2BitAt bit code step idx) := by
+  rcases hdivStep with ⟨hcur, hnext, hb, hdiv⟩
+  rcases hcur with ⟨qcur, hcurVal, hcurLt⟩
+  rcases hnext with ⟨qnext, hnextVal, hnextLt⟩
+  exact BProv_Ax_s_betaDiv2BitAt_of_eqConst
+    (bit := bit) (code := code) (step := step) (idx := idx)
+    (b := b) (c := c) (s := s) (i := i) (cur := cur) (next := next)
+    (qcur := qcur) (qnext := qnext)
+    hbit hcode hstep hidx hcurLt hcurVal.symm hnextLt hnextVal.symm
+    hb hdiv.symm
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :

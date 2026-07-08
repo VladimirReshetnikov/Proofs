@@ -201,6 +201,14 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst
+#check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_betaAt_constOutSubst_of_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_betaAtConstIdx_of_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule
