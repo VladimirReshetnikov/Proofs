@@ -23323,6 +23323,61 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [zeroEq] using hbody)
 
+/-- Even/even branch of the successor strict case: if the predecessor-high code
+is even and the low code is even, then zero belongs to `S high` and not to
+`low`, so it distinguishes them.  This is the distinct-slot generalization of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+    {G : List Formula} {high highHalf low lowHalf : Nat}
+    (hhighDouble : BProv Ax_s G (doubleEqAt high highHalf))
+    (hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  let zeroEq : Formula := eqConstAt 0 0
+  have hex : BProv Ax_s G (ex zeroEq) := by
+    simpa [zeroEq] using BProv_exists_eqConstAt (B := Ax_s) (G := G) 0
+  have hbody : BProv Ax_s (zeroEq :: G.map (rename Nat.succ))
+      (rename Nat.succ
+        (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low)) := by
+    let C : List Formula := zeroEq :: G.map (rename Nat.succ)
+    have hzero : BProv Ax_s C (eqConstAt 0 0) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, zeroEq])
+    have hhighDoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt high highHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhighDouble Nat.succ
+    have hhighDoubleC : BProv Ax_s C
+        (doubleEqAt (high+1) (highHalf+1)) := by
+      simpa [C, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := zeroEq) hhighDoubleRen
+    have hlowDoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt low lowHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hlowDouble Nat.succ
+    have hlowDoubleC : BProv Ax_s C
+        (doubleEqAt (low+1) (lowHalf+1)) := by
+      simpa [C, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := zeroEq) hlowDoubleRen
+    have hmem : BProv Ax_s C
+        (hfMemTermAt 0 (Term.succ (Term.var (high+1)))) :=
+      BProv_Ax_s_hfMemTermAt_evenSucc_of_zero_and_low_double
+        (G := C) (elem := 0) (low := high+1)
+        (lowHalf := highHalf+1) hzero hhighDoubleC
+    have hsome : BProv Ax_s C
+        (hfSomeDistinguishesTermAt
+          (Term.succ (Term.var (high+1))) (low+1)) :=
+      BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
+        (G := C) (elem := 0) (low := low+1) (lowHalf := lowHalf+1)
+        (highCode := Term.succ (Term.var (high+1)))
+        hzero hmem hlowDoubleC
+    simpa [C, rename_hfSomeDistinguishesTermAt_succ, Term.rename] using
+      hsome
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [zeroEq] using hbody)
+
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
