@@ -8915,6 +8915,42 @@ theorem BProv_Ax_s_add_eq_zero_left_terms {G : List Formula}
       using hinst
   exact BProv_mp Ax_s G _ _ himp h
 
+/-- PA proves the base bounded-order case: from `x ≤ y` and `y = 0`, derive
+`x = 0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero {G : List Formula}
+    {a b : Nat}
+    (hle : BProv Ax_s G (leAt a b))
+    (hb : BProv Ax_s G (eqConstAt b 0)) :
+    BProv Ax_s G (eqConstAt a 0) := by
+  let leBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.var (b+1))
+  have hbody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt a 0)) := by
+    have hleBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        leBody :=
+      BProv_ass (B := Ax_s) (G := leBody :: G.map (rename Nat.succ))
+        (by simp)
+    have hbRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt b 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hb Nat.succ
+    have hbBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (eq (Term.var (b+1)) Term.zero) := by
+      simpa [eqConstAt, rename, Term.rename, Term.numeral] using
+        BProv_context_cons hbRen
+    have haddZero : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (eq (Term.add (Term.var (a+1)) (Term.var 0)) Term.zero) :=
+      BProv_eqTrans hleBody hbBody
+    have haZero : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (eq (Term.var (a+1)) Term.zero) :=
+      BProv_Ax_s_add_eq_zero_left_terms haddZero
+    simpa [eqConstAt, rename, Term.rename, Term.numeral] using haZero
+  simpa [leAt, leBody] using
+    (BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      hle hbody)
+
 /-- PA proves every variable-renamed body of multiplication by zero. -/
 theorem BProv_Ax_s_mulZero_rename (r : Nat → Nat) :
     BProv Ax_s [] (rename r mulZero) :=
