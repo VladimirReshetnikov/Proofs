@@ -13054,6 +13054,51 @@ theorem BProv_Ax_s_dvdAt_of_eq_left {G : List Formula}
     (fun f hf => sentence_ax_s (f := f) hf) hdvd (by
       simpa [dvdAt, dvdBody] using hbody)
 
+/-- Transport a divisibility witness across equality of the value slot. -/
+theorem BProv_Ax_s_dvdAt_of_eq_right {G : List Formula}
+    {a b c : Nat}
+    (heq : BProv Ax_s G (eq (Term.var b) (Term.var c)))
+    (hdvd : BProv Ax_s G (dvdAt a b)) :
+    BProv Ax_s G (dvdAt a c) := by
+  let dvdBody : Formula :=
+    eq (Term.mul (Term.var (a+1)) (Term.var 0)) (Term.var (b+1))
+  have hbody : BProv Ax_s (dvdBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (dvdAt a c)) := by
+    let C : List Formula := dvdBody :: G.map (rename Nat.succ)
+    have hdvdEq : BProv Ax_s C
+        (eq (Term.mul (Term.var (a+1)) (Term.var 0))
+          (Term.var (b+1))) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, dvdBody])
+    have heqRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq (Term.var b) (Term.var c))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        heq Nat.succ
+    have heqC : BProv Ax_s C (eq (Term.var (b+1)) (Term.var (c+1))) := by
+      simpa [C, rename, Term.rename] using
+        (BProv_context_cons (B := Ax_s) (a := dvdBody) heqRen)
+    have htarget : BProv Ax_s C
+        (eq (Term.mul (Term.var (a+1)) (Term.var 0))
+          (Term.var (c+1))) :=
+      BProv_eqTrans hdvdEq heqC
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (eq (Term.mul (Term.var (a+1+1)) (Term.var 0))
+            (Term.var (c+1+1)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+    have hex : BProv Ax_s C
+        (ex
+          (eq (Term.mul (Term.var (a+1+1)) (Term.var 0))
+            (Term.var (c+1+1)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq (Term.mul (Term.var (a+1+1)) (Term.var 0))
+          (Term.var (c+1+1)))
+        (t := Term.var 0) hinst
+    simpa [C, dvdAt, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hdvd (by
+      simpa [dvdAt, dvdBody] using hbody)
+
 /-- A value strictly below its modulus cannot be a nonzero multiple of that
 modulus.  This is the quotient-free divisibility/boundedness kernel used later
 when beta functionality has reduced a candidate remainder to a divisor of the

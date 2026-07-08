@@ -347,6 +347,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remainder_zero_of_gt_quotient_at
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eq_left
+#check @PA.Formula.BProv_Ax_s_dvdAt_of_eq_right
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remTermAt_zero
 #check @PA.Formula.BProv_Ax_s_remTermAt_of_remAt_eq_term
 #check @PA.Formula.BProv_Ax_s_remTermAt_zero_of_remAt_eqConst_zero
