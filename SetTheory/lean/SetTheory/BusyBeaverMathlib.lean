@@ -1541,6 +1541,73 @@ theorem tm0_supported_eval_to_rado_lowerBound_of_initial_reaches
   rw [← hLen]
   exact hLower
 
+/--
+Blank-tape wrapper lower-bound bridge: if a finite Bool `TM0` machine evaluates
+`input` and its output has true bits at all offsets in a nodup list, then the
+typed Rado wrapper that first writes `input` from blank tape attains a score at
+least the number of witnessed offsets.
+-/
+theorem tm0_eval_to_init_wrapper_lowerBound {Label : Type*}
+    [Inhabited Label] [Fintype Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {input : List Bool} (hInput : 0 < input.length)
+    {output : Turing.ListBlank Bool} {offsets : List Nat}
+    (hEval : output ∈ Turing.TM0.eval M input)
+    (hOffsets : offsets.Nodup)
+    (hOutputTrue : ∀ n, n ∈ offsets -> output.nth n = true) :
+    ∃ score, offsets.length ≤ score ∧
+      AttainableScore (Fintype.card (InitThenTM0State Label input)) score := by
+  rcases tm0_eval_mem_terminal M hEval with ⟨finalCfg, hReach, hTerminal, hOutput⟩
+  let initCfg : TypedConfig (TM0RadoState Label) :=
+    { state := some (TM0RadoState.normal (default : Label))
+      head := (0 : Int)
+      tape := initInputTape input input.length }
+  have hInitRel : TM0RadoNormalRel (Turing.TM0.init input) initCfg := by
+    constructor
+    · rfl
+    · exact initInputTape_matches_tm0_init input
+  rcases tm0ToTypedRado_reaches_halt_normal M hReach hTerminal hInitRel with
+    ⟨normalCfg, haltCfg, hNormalRel, hHaltState, hHaltTape, hRadoReach⟩
+  have hInitReach : TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (initThenTM0Start (Label := Label) hInput) (liftSimCfg (input := input) initCfg) := by
+    simpa [initThenTM0SimInitCfg, initCfg] using initThenTM0_reaches_sim_init M hInput
+  have hSimReach : TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (liftSimCfg (input := input) initCfg) (liftSimCfg (input := input) haltCfg) :=
+    liftSimCfg_reaches M input hRadoReach
+  have hFullReach : TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (initThenTM0Start (Label := Label) hInput) (liftSimCfg (input := input) haltCfg) :=
+    Relation.ReflTransGen.trans hInitReach hSimReach
+  let positions : Tape := radoPositionsOfNatOffsets normalCfg.head offsets
+  have hPositions : positions.Nodup := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_nodup hOffsets
+  have hOutputTrueFinal : ∀ n, n ∈ offsets -> finalCfg.Tape.right₀.nth n = true := by
+    intro n hn
+    rw [hOutput]
+    exact hOutputTrue n hn
+  have hReadNormal : ∀ pos, pos ∈ positions -> Tape.read normalCfg.tape pos = true := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_read_true hNormalRel.2 hOutputTrueFinal
+  have hRead : ∀ pos, pos ∈ positions ->
+      Tape.read (liftSimCfg (input := input) haltCfg).tape pos = true := by
+    intro pos hpos
+    dsimp [liftSimCfg]
+    rw [hHaltTape]
+    exact hReadNormal pos hpos
+  have hState : (liftSimCfg (input := input) haltCfg).state = none := by
+    simp [liftSimCfg, hHaltState]
+  rcases typedMachineReaches_attainableLowerBound
+      (M := initThenTM0ToTypedRado M input)
+      (start := (Sum.inl (Sum.inl (⟨0, hInput⟩ : Fin input.length)) :
+        InitThenTM0State Label input))
+      (haltCfg := liftSimCfg (input := input) haltCfg)
+      (positions := positions) hFullReach hState hPositions hRead with
+    ⟨score, hLower, hScore⟩
+  have hLen : positions.length = offsets.length := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_length normalCfg.head offsets
+  exact ⟨score, by rwa [hLen] at hLower, hScore⟩
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
