@@ -13328,6 +13328,39 @@ theorem BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
     BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
   exact BProv_andE2 hbody
 
+/-- After opening the raw beta witness inside a zero-output constant-index
+`betaTermAtConstIdx`, the dividend is divisible by the opened beta modulus.
+This is only the shifted wrapper around
+`BProv_Ax_s_betaTermAt_zero_opened_body_dvd`; it exposes the arithmetic fact
+for later functionality proofs without changing the beta definitions. -/
+theorem BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd
+    {G : List Formula} {code step idxValue : Nat} :
+    let body : Formula :=
+      and (eqConstAt 0 idxValue)
+        (betaTermAt (Term.rename Nat.succ Term.zero) (code+1) (step+1) 0)
+    let rawBody : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm (step+1) 0)))
+        (remTermAt
+          (Term.rename Nat.succ (Term.rename Nat.succ Term.zero))
+          ((code+1)+1) 0)
+    BProv Ax_s
+      (rawBody :: (body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+      (dvdAt 0 ((code+1)+1)) := by
+  let body : Formula :=
+    and (eqConstAt 0 idxValue)
+      (betaTermAt (Term.rename Nat.succ Term.zero) (code+1) (step+1) 0)
+  let rawBody : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm (step+1) 0)))
+      (remTermAt
+        (Term.rename Nat.succ (Term.rename Nat.succ Term.zero))
+        ((code+1)+1) 0)
+  simpa [body, rawBody, Term.rename] using
+    (BProv_Ax_s_betaTermAt_zero_opened_body_dvd
+      (G := body :: G.map (rename Nat.succ))
+      (code := code+1) (step := step+1) (idx := 0))
+
 /-- Projection from the opened body of a `betaAtSuccIdx` wrapper to the
 successor-index equation. -/
 theorem BProv_Ax_s_betaAtSuccIdx_opened_body_idx
