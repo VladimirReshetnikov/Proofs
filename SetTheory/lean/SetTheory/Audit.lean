@@ -307,6 +307,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_zero_bot
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step

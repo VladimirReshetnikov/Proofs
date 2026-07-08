@@ -13239,6 +13239,52 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_zero_bot {G : List Formula}
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hbitAt' (by simpa [rename] using houter)
 
+/-- A final beta-bit witness with bit `1` is impossible when the beta step
+parameter is `0`: in that case every beta entry is forced to be `0`, so the
+opened current value contradicts the embedded binary-halving step. -/
+theorem BProv_Ax_s_betaDiv2BitAt_step_zero_bot {G : List Formula}
+    {bit code step idx : Nat}
+    (hbitOne : BProv Ax_s G (eqConstAt bit 1))
+    (hstepZero : BProv Ax_s G (eqConstAt step 0))
+    (hbitAt : BProv Ax_s G (betaDiv2BitAt bit code step idx)) :
+    BProv Ax_s G bot := by
+  exact BProv_Ax_s_betaDiv2BitAt_current_zero_bot
+    (G := G) (bit := bit) (code := code) (step := step) (idx := idx)
+    hbitOne
+    (by
+      let body : Formula :=
+        and
+          (betaAt 1 (code+2) (step+2) (idx+2))
+          (and
+            (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
+            (div2StepAt 1 0 (bit+2)))
+      let C : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      have hbody : BProv Ax_s C body :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have hcur : BProv Ax_s C (betaAt 1 (code+2) (step+2) (idx+2)) :=
+        BProv_andE1 hbody
+      have hstepRen1 : BProv Ax_s (G.map (rename Nat.succ))
+          (eqConstAt (step+1) 0) := by
+        simpa [eqConstAt, rename, Term.rename] using
+          (BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hstepZero Nat.succ)
+      have hstepRen2 : BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ))
+          (eqConstAt (step+2) 0) := by
+        simpa [eqConstAt, rename, Term.rename] using
+          (BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hstepRen1 Nat.succ)
+      have hstepC : BProv Ax_s C (eqConstAt (step+2) 0) := by
+        simpa [C, List.map_map, Function.comp_def] using
+          BProv_context_cons
+            (BProv_context_cons (B := Ax_s) hstepRen2)
+      exact BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
+        hcur hstepC)
+    hbitAt
+
 /-- Base bounded-trace constructor: if the trace bound is `0`, the quantified
 index in `betaDiv2StepsThroughAt` is forced to be `0`, so one pointwise
 `BetaDiv2Step` supplies the whole bounded trace. -/
