@@ -12298,6 +12298,84 @@ Proof.
     sentence_ax_s himp).
 Qed.
 
+Lemma BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst :
+  forall G code step last n,
+  BProv Ax_s G (betaDiv2StepsThroughConstAt code step n) ->
+  BProv Ax_s G (eqConstAt last n) ->
+  BProv Ax_s G (betaDiv2StepsThroughAt code step last).
+Proof.
+  intros G code step last n hconst hlast.
+  set (leHyp := leAt 0 (S last)).
+  set (witness := betaDiv2StepWitnessAt (S code) (S step) 0).
+  assert (hle : BProv Ax_s (leHyp :: map (rename S) G) leHyp).
+  {
+    apply BProv_ass.
+    simpl. left. reflexivity.
+  }
+  assert (hlastRen : BProv Ax_s (map (rename S) G)
+      (rename S (eqConstAt last n))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (eqConstAt last n) hlast S).
+  }
+  assert (hconstRen : BProv Ax_s (map (rename S) G)
+      (rename S (betaDiv2StepsThroughConstAt code step n))).
+  {
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (betaDiv2StepsThroughConstAt code step n) hconst S).
+  }
+  assert (hlastBody : BProv Ax_s (leHyp :: map (rename S) G)
+      (eqConstAt (S last) n)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (eqConstAt last n)) hlastRen) as h.
+    unfold eqConstAt in *.
+    simpl in *.
+    rewrite Term.rename_numeral in h.
+    exact h.
+  }
+  pose proof (BProv_Ax_s_leConstAt_of_leAt_eqConst
+    (leHyp :: map (rename S) G) 0 (S last) n
+    hle hlastBody) as hleConst.
+  assert (hconstAll : BProv Ax_s (leHyp :: map (rename S) G)
+      (betaDiv2StepsThroughConstAt (S code) (S step) n)).
+  {
+    pose proof (BProv_context_cons Ax_s (map (rename S) G)
+      leHyp (rename S (betaDiv2StepsThroughConstAt code step n))
+      hconstRen) as hctx.
+    unfold betaDiv2StepsThroughConstAt, betaDiv2StepWitnessAt,
+      betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, leConstAt, betaModTerm in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    exact hctx.
+  }
+  pose proof (BProv_allE Ax_s (leHyp :: map (rename S) G)
+    _ (tVar 0) hconstAll) as himpRaw.
+  assert (himp : BProv Ax_s (leHyp :: map (rename S) G)
+      (pImp (leConstAt 0 n) witness)).
+  {
+    unfold witness in *.
+    unfold betaDiv2StepsThroughConstAt, leConstAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+      div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    repeat rewrite term_subst_instTerm_rename_succ in *.
+    exact himpRaw.
+  }
+  pose proof (BProv_mp Ax_s (leHyp :: map (rename S) G)
+    (leConstAt 0 n) witness himp hleConst) as hwitness.
+  pose proof (BProv_impI Ax_s (map (rename S) G)
+    leHyp witness hwitness) as hfinal.
+  unfold betaDiv2StepsThroughAt.
+  fold leHyp.
+  fold witness.
+  exact (BProv_allI_of_sentences Ax_s G (pImp leHyp witness)
+    sentence_ax_s hfinal).
+Qed.
+
 Definition hfMemAt (elem set : nat) : formula :=
   pEx (pEx
     (pAnd
