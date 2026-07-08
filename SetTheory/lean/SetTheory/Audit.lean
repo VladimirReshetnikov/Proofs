@@ -342,6 +342,7 @@ open SetTheory
 #check @PA.Formula.remTermAt
 #check @PA.Formula.remTermTermAt
 #check @PA.Formula.ltTermAt_var
+#check @PA.Formula.leTermAt_var
 #check @PA.Formula.remTermAt_var
 #check @PA.Formula.remTermEqAt
 #check @PA.Formula.betaTermAt
@@ -367,6 +368,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eq_of_same_quotient_remainder_terms
 #check @PA.Formula.BProv_Ax_s_leTermAt_of_eq_add_right_terms
+#check @PA.Formula.BProv_Ax_s_leAt_half_of_doubleEqAt
+#check @PA.Formula.BProv_Ax_s_leAt_half_of_oddDoubleEqAt
+#check @PA.Formula.BProv_Ax_s_ltAt_half_of_doubleEqAt_ltAt
+#check @PA.Formula.BProv_Ax_s_ltAt_half_of_oddDoubleEqAt_ltAt
+#check @PA.Formula.BProv_Ax_s_leAt_half_of_div2StepAt
+#check @PA.Formula.BProv_Ax_s_ltAt_half_of_div2StepAt_ltAt
 #check @PA.Formula.BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
 #check @PA.Formula.BProv_Ax_s_remainder_difference_of_le_quotient_terms
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_bounded_remainder_difference_terms

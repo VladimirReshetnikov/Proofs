@@ -2525,6 +2525,10 @@ theorem ltTermAt_var (a b : Nat) :
     ltTermAt (Term.var a) (Term.var b) = ltAt a b := by
   simp [ltTermAt, ltAt, Term.rename]
 
+theorem leTermAt_var (a b : Nat) :
+    leTermAt (Term.var a) (Term.var b) = leAt a b := by
+  simp [leTermAt, leAt, Term.rename]
+
 theorem remTermAt_var (rem value modulus : Nat) :
     remTermAt (Term.var rem) value modulus = remAt rem value modulus := by
   simp [remTermAt, remAt, ltTermAt_var, Term.rename]
@@ -10575,6 +10579,93 @@ theorem BProv_Ax_s_leTermAt_of_eq_add_right_terms
     (a := eq (Term.add (Term.rename Nat.succ lower) (Term.var 0))
       (Term.rename Nat.succ upper))
     (t := diff) hbody
+
+/-- If a slot is explicitly twice its half, PA proves that the half is below
+the slot. -/
+theorem BProv_Ax_s_leAt_half_of_doubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half)) :
+    BProv Ax_s G (leAt half value) := by
+  have hvalue : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.var half) (Term.var half))) := by
+    simpa [doubleEqAt] using hdouble
+  have hle : BProv Ax_s G
+      (leTermAt (Term.var half) (Term.var value)) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := Term.var half) (upper := Term.var value)
+      (diff := Term.var half) hvalue
+  simpa [leTermAt_var] using hle
+
+/-- If a slot is explicitly twice its half plus one, PA proves that the half is
+below the slot. -/
+theorem BProv_Ax_s_leAt_half_of_oddDoubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G (leAt half value) := by
+  let h : Term := Term.var half
+  let double : Term := Term.add h h
+  have hvalue : BProv Ax_s G (eq (Term.var value) (Term.succ double)) := by
+    simpa [oddDoubleEqAt, h, double] using hodd
+  have hhalfLeDouble : BProv Ax_s G (leTermAt h double) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := h) (upper := double) (diff := h)
+      (BProv_eqRefl (B := Ax_s) (G := G) double)
+  have hdoubleLeSucc : BProv Ax_s G (leTermAt double (Term.succ double)) :=
+    BProv_Ax_s_leTermAt_self_succ double
+  have hdoubleLeValue : BProv Ax_s G (leTermAt double (Term.var value)) :=
+    BProv_leTermAt_of_eq_right (BProv_eqSym hvalue) hdoubleLeSucc
+  have hle : BProv Ax_s G (leTermAt h (Term.var value)) :=
+    BProv_Ax_s_leTermAt_trans hhalfLeDouble hdoubleLeValue
+  simpa [h, leTermAt_var] using hle
+
+/-- If `value = 2*half` and `value < upper`, then PA proves
+`half < upper`. -/
+theorem BProv_Ax_s_ltAt_half_of_doubleEqAt_ltAt
+    {G : List Formula} {value half upper : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half))
+    (hlt : BProv Ax_s G (ltAt value upper)) :
+    BProv Ax_s G (ltAt half upper) :=
+  BProv_Ax_s_leAt_ltAt_trans
+    (BProv_Ax_s_leAt_half_of_doubleEqAt hdouble) hlt
+
+/-- If `value = 2*half+1` and `value < upper`, then PA proves
+`half < upper`. -/
+theorem BProv_Ax_s_ltAt_half_of_oddDoubleEqAt_ltAt
+    {G : List Formula} {value half upper : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half))
+    (hlt : BProv Ax_s G (ltAt value upper)) :
+    BProv Ax_s G (ltAt half upper) :=
+  BProv_Ax_s_leAt_ltAt_trans
+    (BProv_Ax_s_leAt_half_of_oddDoubleEqAt hodd) hlt
+
+/-- A binary-halving step proves that its half slot is below the current
+value, regardless of which parity branch the exposed bit selects. -/
+theorem BProv_Ax_s_leAt_half_of_div2StepAt
+    {G : List Formula} {value half bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (leAt half value) := by
+  have heven : BProv Ax_s (doubleEqAt value half :: G) (leAt half value) := by
+    have hdouble : BProv Ax_s (doubleEqAt value half :: G)
+        (doubleEqAt value half) :=
+      BProv_ass (B := Ax_s) (G := doubleEqAt value half :: G) (by simp)
+    exact BProv_Ax_s_leAt_half_of_doubleEqAt hdouble
+  have hodd : BProv Ax_s (oddDoubleEqAt value half :: G) (leAt half value) := by
+    have hoddAss : BProv Ax_s (oddDoubleEqAt value half :: G)
+        (oddDoubleEqAt value half) :=
+      BProv_ass (B := Ax_s) (G := oddDoubleEqAt value half :: G) (by simp)
+    exact BProv_Ax_s_leAt_half_of_oddDoubleEqAt hoddAss
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases hstep heven hodd
+
+/-- If a binary-halving step starts at `value` and PA proves `value < upper`,
+then the extracted half is also strictly below `upper`. -/
+theorem BProv_Ax_s_ltAt_half_of_div2StepAt_ltAt
+    {G : List Formula} {value half bit upper : Nat}
+    (hstep : BProv Ax_s G (div2StepAt value half bit))
+    (hlt : BProv Ax_s G (ltAt value upper)) :
+    BProv Ax_s G (ltAt half upper) :=
+  BProv_Ax_s_leAt_ltAt_trans
+    (BProv_Ax_s_leAt_half_of_div2StepAt hstep) hlt
 
 /-- If a value is explicitly `m * S d + r`, then PA proves `m ≤ value`.
 The witness is `m*d + r`, exposed rather than hidden in a definition. -/
