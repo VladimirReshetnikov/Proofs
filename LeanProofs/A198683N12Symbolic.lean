@@ -53,9 +53,9 @@ def v : ℂ := principalPow Complex.I u
 /-- The reciprocal-side value `(-i)^(i^(i^i))`. -/
 def w : ℂ := principalPow (-Complex.I) u
 
-private def sigma : ℝ := Real.exp ((Real.pi / 2) * Real.exp (Real.pi / 2))
+private def probeSigma : ℝ := Real.exp ((Real.pi / 2) * Real.exp (Real.pi / 2))
 
-private def tau : ℝ := Real.exp (-(Real.pi / 2) * sigma)
+private def probeTau : ℝ := Real.exp (-(Real.pi / 2) * probeSigma)
 
 /--
 The exact positive-real subtree
@@ -475,8 +475,8 @@ theorem q_pow_w_pow_v_eq_q : principalPow (principalPow q w) v = q := by
   rw [show (-(↑Real.pi / 2) : ℂ) = (↑(-(Real.pi / 2)) : ℂ) by norm_num]
   exact (Complex.ofReal_exp (-(Real.pi / 2))).symm
 
-private theorem sigma_pos : 0 < sigma := by
-  dsimp [sigma]
+private theorem sigma_pos : 0 < probeSigma := by
+  dsimp [probeSigma]
   positivity
 
 private theorem log_qInv : Complex.log qInv = (↑Real.pi / 2 : ℂ) := by
@@ -485,40 +485,40 @@ private theorem log_qInv : Complex.log qInv = (↑Real.pi / 2 : ℂ) := by
   norm_num [div_eq_mul_inv]
 
 private theorem qInv_pow_qInv_eq_sigma :
-    principalPow qInv qInv = (sigma : ℂ) := by
-  change Complex.exp (Complex.log qInv * qInv) = (sigma : ℂ)
+    principalPow qInv qInv = (probeSigma : ℂ) := by
+  change Complex.exp (Complex.log qInv * qInv) = (probeSigma : ℂ)
   rw [log_qInv]
-  dsimp [qInv, sigma]
+  dsimp [qInv, probeSigma]
   rw [show (↑Real.pi / 2 : ℂ) * ((Real.exp (Real.pi / 2) : ℝ) : ℂ) =
       (↑(Real.pi / 2 * Real.exp (Real.pi / 2)) : ℂ) by
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
   exact (Complex.ofReal_exp (Real.pi / 2 * Real.exp (Real.pi / 2))).symm
 
-private theorem nearProbeR_eq_sigma : nearProbeR = (sigma : ℂ) := by
+private theorem nearProbeR_eq_sigma : nearProbeR = (probeSigma : ℂ) := by
   dsimp [nearProbeR]
   rw [q_pow_I_eq_neg_I]
   rw [I_pow_neg_I_eq_qInv]
   exact qInv_pow_qInv_eq_sigma
 
 private theorem q_pow_sigma_eq_tau :
-    principalPow q (sigma : ℂ) = (tau : ℂ) := by
-  change Complex.exp (Complex.log q * (sigma : ℂ)) = (tau : ℂ)
+    principalPow q (probeSigma : ℂ) = (probeTau : ℂ) := by
+  change Complex.exp (Complex.log q * (probeSigma : ℂ)) = (probeTau : ℂ)
   rw [log_q]
-  dsimp [tau]
-  rw [show (-(↑Real.pi / 2) : ℂ) * (sigma : ℂ) =
-      (↑ (-(Real.pi / 2) * sigma) : ℂ) by
+  dsimp [probeTau]
+  rw [show (-(↑Real.pi / 2) : ℂ) * (probeSigma : ℂ) =
+      (↑ (-(Real.pi / 2) * probeSigma) : ℂ) by
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
-  exact (Complex.ofReal_exp (-(Real.pi / 2) * sigma)).symm
+  exact (Complex.ofReal_exp (-(Real.pi / 2) * probeSigma)).symm
 
-private theorem nearProbeS_eq_tau : nearProbeS = (tau : ℂ) := by
+private theorem nearProbeS_eq_tau : nearProbeS = (probeTau : ℂ) := by
   dsimp [nearProbeS]
   rw [nearProbeR_eq_sigma]
   exact q_pow_sigma_eq_tau
 
 private theorem log_nearProbeS :
-    Complex.log nearProbeS = (↑ (-(Real.pi / 2) * sigma) : ℂ) := by
+    Complex.log nearProbeS = (↑ (-(Real.pi / 2) * probeSigma) : ℂ) := by
   rw [nearProbeS_eq_tau]
-  dsimp [tau]
+  dsimp [probeTau]
   rw [← Complex.ofReal_log (Real.exp_pos _).le, Real.log_exp]
 
 /-! ## Near-zero doubleton `{2207, 3777}`
@@ -540,35 +540,35 @@ Representative `idx = 3777` from the n = 12 near-zero probe class:
 def nearZero3777 : ℂ := principalPow nearProbeS q
 
 private theorem nearZero2207_eq_exp :
-    nearZero2207 = (Real.exp (-theta * sigma) : ℂ) := by
+    nearZero2207 = (Real.exp (-theta * probeSigma) : ℂ) := by
   change Complex.exp (Complex.log (principalPow q q) * nearProbeR) =
-    (Real.exp (-theta * sigma) : ℂ)
+    (Real.exp (-theta * probeSigma) : ℂ)
   rw [log_q_pow_q]
   rw [nearProbeR_eq_sigma]
-  rw [show (-theta : ℂ) * (sigma : ℂ) = (↑(-theta * sigma) : ℂ) by
+  rw [show (-theta : ℂ) * (probeSigma : ℂ) = (↑(-theta * probeSigma) : ℂ) by
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
-  exact (Complex.ofReal_exp (-theta * sigma)).symm
+  exact (Complex.ofReal_exp (-theta * probeSigma)).symm
 
 private theorem nearZero3777_eq_exp :
-    nearZero3777 = (Real.exp (-theta * sigma) : ℂ) := by
-  change Complex.exp (Complex.log nearProbeS * q) = (Real.exp (-theta * sigma) : ℂ)
+    nearZero3777 = (Real.exp (-theta * probeSigma) : ℂ) := by
+  change Complex.exp (Complex.log nearProbeS * q) = (Real.exp (-theta * probeSigma) : ℂ)
   rw [log_nearProbeS]
-  rw [show (↑ (-(Real.pi / 2) * sigma) : ℂ) * q = (↑(-theta * sigma) : ℂ) by
+  rw [show (↑ (-(Real.pi / 2) * probeSigma) : ℂ) * q = (↑(-theta * probeSigma) : ℂ) by
     dsimp [q, theta]
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
     ring]
-  exact (Complex.ofReal_exp (-theta * sigma)).symm
+  exact (Complex.ofReal_exp (-theta * probeSigma)).symm
 
 /-- The n = 12 near-zero representatives `2207` and `3777` are exactly equal. -/
 theorem nearZero2207_eq_nearZero3777 : nearZero2207 = nearZero3777 := by
   rw [nearZero2207_eq_exp, nearZero3777_eq_exp]
 
-private theorem tau_pos : 0 < tau := by
-  dsimp [tau]
+private theorem tau_pos : 0 < probeTau := by
+  dsimp [probeTau]
   positivity
 
-private theorem tau_lt_one : tau < 1 := by
-  dsimp [tau]
+private theorem tau_lt_one : probeTau < 1 := by
+  dsimp [probeTau]
   exact Real.exp_lt_one_iff.mpr (by nlinarith [Real.pi_pos, sigma_pos])
 
 private theorem log_I_pow_nearProbeS :
@@ -617,9 +617,10 @@ theorem nearOne1404_eq_nearOne4239 : nearOne1404 = nearOne4239 := by
 Layer-by-layer definitions of the `idx = 25` tower and closed forms for the real and imaginary part of each layer. -/
 
 /--
-The `n = 11` exponent subtree used by representative `idx = 25`:
-
-`i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i)))))))`.
+The seven-atom core of the `idx = 25` exponent subtree:
+`((i^i)^i)^(i^(i^(i^i)))`.  Wrapping it in four more `i^·` layers
+(`nearOne25Level1` … `nearOne25Base`) gives the full `n = 11` exponent
+`i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i)))))))` of representative `25`.
 -/
 def nearOne25Seed : ℂ := principalPow (principalPow q Complex.I) v
 
@@ -642,7 +643,7 @@ Representative `idx = 25` from the n = 12 near-one probe class:
 -/
 def nearOne25 : ℂ := principalPow Complex.I nearOne25Base
 
-/-- Exact real part of the `(-i)^...` seed for representative `25`. -/
+/-- Exact real part of the `idx = 25` exponent seed. -/
 theorem nearOne25Seed_re_eq :
     nearOne25Seed.re =
       Real.exp (Real.pi / 2 * v.im) * Real.cos (Real.pi / 2 * v.re) := by
@@ -650,7 +651,7 @@ theorem nearOne25Seed_re_eq :
   rw [q_pow_I_eq_neg_I]
   exact neg_I_pow_re v
 
-/-- Exact imaginary part of the `(-i)^...` seed for representative `25`. -/
+/-- Exact imaginary part of the `idx = 25` exponent seed. -/
 theorem nearOne25Seed_im_eq :
     nearOne25Seed.im =
       -(Real.exp (Real.pi / 2 * v.im) * Real.sin (Real.pi / 2 * v.re)) := by
@@ -732,7 +733,7 @@ theorem nearOne25Level2_im_eq :
 theorem nearOne1404_norm_lt_one : ‖nearOne1404‖ < 1 := by
   dsimp [nearOne1404, principalPow]
   rw [Complex.norm_exp, log_q, nearProbeS_eq_tau]
-  rw [show ((-(Real.pi / 2) : ℂ) * (tau : ℂ)).re = -(Real.pi / 2) * tau by
+  rw [show ((-(Real.pi / 2) : ℂ) * (probeTau : ℂ)).re = -(Real.pi / 2) * probeTau by
     simp [Complex.mul_re]]
   exact Real.exp_lt_one_iff.mpr (by nlinarith [Real.pi_pos, tau_pos])
 
