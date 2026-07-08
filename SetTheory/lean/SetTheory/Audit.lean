@@ -510,6 +510,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_components
+#check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry

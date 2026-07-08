@@ -17318,6 +17318,31 @@ theorem BProv_Ax_s_hfMemTermAt_of_components {G : List Formula}
       (a := ex body)
       (t := codeTerm) hstepEx)
 
+/-- Term-parametric membership introduction variant that takes the final bit
+component before the inner witness bit has been existentially packaged. -/
+theorem BProv_Ax_s_hfMemTermAt_of_bit_components {G : List Formula}
+    {elem : Nat} {setCode codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaTermAtConstIdx (Term.rename (fun n => n+2) setCode) 1 0 0))))
+    (hsteps : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))))
+    (hbit : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm stepTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm codeTerm)))
+            (betaDiv2BitAt 0 2 1 (elem+3)))))) :
+    BProv Ax_s G (hfMemTermAt elem setCode) :=
+  BProv_Ax_s_hfMemTermAt_of_components
+    (elem := elem) (setCode := setCode)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hentry hsteps
+    (BProv_Ax_s_hfMemTermAt_bitOneEx_of_bit
+      (elem := elem) (codeTerm := codeTerm) (stepTerm := stepTerm) hbit)
+
 /-- The explicit even-successor beta code has zero-index entry `S low`.
 This packages only the first beta component; the later branch assumption
 `low = 2*h` is intentionally not part of this theorem. -/
