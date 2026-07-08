@@ -137,6 +137,7 @@ open SetTheory
 #check @PA.Formula.BProv_allE
 #check @PA.Formula.BProv_exI
 #check @PA.Formula.BProv_allI_of_sentences
+#check @PA.Formula.BProv_closeN_nil_of_sentences
 #check @PA.Formula.BProv_exE_of_sentences
 #check @PA.Formula.BProv_closeN_allE_rename
 #check @PA.Formula.BProv_sealPA_allE_rename
@@ -453,6 +454,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_body_of_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_body
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_member_bot
+#check @PA.Formula.BProv_Ax_s_HF_extensionality_body_of_member_ext
+#check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_body
+#check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_member_ext
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd

@@ -6672,6 +6672,23 @@ theorem BProv_allI_of_sentences {B : Formula → Prop} (hB : Sentences B)
   · exact Or.inl (by simpa [hLmap] using hx)
   · exact Or.inr hx
 
+/-- Introduce a finite universal closure from a closed-context relative PA
+proof.  This is the `BProv` companion to `closeN`, and is useful when a
+sealed formula contains more outer closures than the mathematically relevant
+body. -/
+theorem BProv_closeN_nil_of_sentences {B : Formula → Prop} (hB : Sentences B) :
+    ∀ n {phi : Formula}, BProv B [] phi → BProv B [] (closeN n phi) := by
+  intro n
+  induction n with
+  | zero =>
+      intro phi h
+      simpa [closeN] using h
+  | succ n ih =>
+      intro phi h
+      exact ih (phi := all phi)
+        (BProv_allI_of_sentences (B := B) hB (G := []) (a := phi)
+          (by simpa using h))
+
 /-- Existential elimination for relative PA proofs whose theory axioms are
 sentences. -/
 theorem BProv_exE_of_sentences {B : Formula → Prop} (hB : Sentences B)
@@ -19478,6 +19495,76 @@ theorem BProv_Ax_s_translated_HF_empty_of_zero_member_bot
       (translateHFFormula (SetTheory.sealF AckermannHF.HF_empty_form)) :=
   BProv_Ax_s_translated_HF_empty_of_zero_body
     (BProv_Ax_s_HF_empty_zero_body_of_member_bot hmem)
+
+/-- Inner shell for the translated HF extensionality axiom.
+
+The premise is the real Ackermann-coding obligation: from the PA translation
+of "the two candidate sets have exactly the same members", prove equality of
+their codes.  The theorem only packages the two object-level universal
+introductions and the implication introduction. -/
+theorem BProv_Ax_s_HF_extensionality_body_of_member_ext
+    (hmem_ext : BProv Ax_s
+      [all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      (eq (Term.var 1) (Term.var 0))) :
+    BProv Ax_s []
+      (all (all
+        (imp
+          (all (iffForm (hfMemAt 0 2) (hfMemAt 0 1)))
+          (eq (Term.var 1) (Term.var 0))))) := by
+  let sameMembers : Formula := all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))
+  let sameCode : Formula := eq (Term.var 1) (Term.var 0)
+  have himp : BProv Ax_s [] (imp sameMembers sameCode) :=
+    BProv_impI (by simpa [sameMembers, sameCode] using hmem_ext)
+  have h1 : BProv Ax_s [] (all (imp sameMembers sameCode)) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  have h2 : BProv Ax_s [] (all (all (imp sameMembers sameCode))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) h1
+  simpa [sameMembers, sameCode]
+    using h2
+
+/-- Outer shell for the translated HF extensionality axiom.
+
+This theorem only accounts for the syntactic universal closure inserted by
+`sealF`.  The member-extensional equality proof for the translated body stays
+as an explicit premise. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_body
+    (hbody : BProv Ax_s []
+      (all (all
+        (imp
+          (all (iffForm (hfMemAt 0 2) (hfMemAt 0 1)))
+          (eq (Term.var 1) (Term.var 0)))))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) := by
+  let body : Formula :=
+    all (all
+      (imp
+        (all (iffForm (hfMemAt 0 2) (hfMemAt 0 1)))
+        (eq (Term.var 1) (Term.var 0))))
+  have hclosed : BProv Ax_s [] (closeN
+      (SetTheory.bound AckermannHF.HF_extensionality_form) body) :=
+    BProv_closeN_nil_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      (SetTheory.bound AckermannHF.HF_extensionality_form)
+      (by simpa [body] using hbody)
+  simpa [body, translateHFFormula, hfFormulaAt,
+    AckermannHF.HF_extensionality_form, SetTheory.fIff, iffForm,
+    SetTheory.sealF, SetTheory.closeN, SetTheory.bound, hfUpVarMap, closeN]
+    using hclosed
+
+/-- Combined shell for translated HF extensionality: it remains only to prove
+that Ackermann membership extensionality implies equality of the two codes. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_member_ext
+    (hmem_ext : BProv Ax_s
+      [all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      (eq (Term.var 1) (Term.var 0))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_body
+    (BProv_Ax_s_HF_extensionality_body_of_member_ext hmem_ext)
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
