@@ -23,7 +23,7 @@ records the accepted values through `n=11`:
 
 It also records the historical note that `a(12)` was said to be either
 `2919` or `2926`. The local research on this question has been organised
-into four temporal waves, each preserved intact under
+into five temporal waves, each preserved intact under
 [`reports/`](reports/README.md):
 
 - **Wave-1** ([`reports/wave-1/`](reports/wave-1/README.md)) — the two
@@ -44,6 +44,10 @@ into four temporal waves, each preserved intact under
   Lean proof-state checkpoint after the shared lexical-definition refactor,
   including what has been proved, what has been tried, and promising future
   directions while further `a(12)` pinpointing is paused.
+- **Wave-5** ([`reports/wave-5/`](reports/wave-5/README.md)) — the Lean
+  decision-tree certificate (`A198683N12Certificate.lean`) and the proved
+  near-`1` split (`A198683N12Endpoints.lean`), including the two
+  refuted-and-repaired endpoint constants.
 
 The single best entry point to the post-wave-2 corpus is
 [`reports/wave-3/a198683-post-wave2-synthesis.md`](reports/wave-3/a198683-post-wave2-synthesis.md).
