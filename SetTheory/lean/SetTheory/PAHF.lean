@@ -11785,6 +11785,37 @@ theorem BProv_Ax_s_betaAt_of_eqConst {G : List Formula}
         (remAt (out+1) (code+1) 0))
       (t := Term.numeral m) hbody)
 
+/-- If the beta code is `0`, every beta entry extracted from it is `0`. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
+    {G : List Formula} {out code step idx : Nat}
+    (hbeta : BProv Ax_s G (betaAt out code step idx))
+    (hcode : BProv Ax_s G (eqConstAt code 0)) :
+    BProv Ax_s G (eqConstAt out 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt out 0)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hrem : BProv Ax_s C (remAt (out+1) (code+1) 0) :=
+      BProv_andE2 hbodyAss
+    have hcodeRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (code+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hcode Nat.succ
+    have hcodeC : BProv Ax_s C (eqConstAt (code+1) 0) :=
+      BProv_context_cons hcodeRen
+    exact BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
+      (rem := out+1) (value := code+1) (modulus := 0) hrem hcodeC
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaAt, body, eqConstAt, rename, Term.rename] using hbody)
+
 /-- Constructor for the formula obtained by instantiating the output variable
 of `betaAt` with a closed numeral. -/
 theorem BProv_Ax_s_betaAt_constOutSubst_of_eqConst {G : List Formula}
