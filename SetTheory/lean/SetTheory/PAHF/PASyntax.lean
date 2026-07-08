@@ -21968,6 +21968,13 @@ theorem rename_hfLtDistinguishesTermAt_succ (highCode : Term) :
     eqConstAt, betaModTerm, rename, Term.rename, SetTheory.up,
     Term.rename_comp]
 
+/-- Ordinary-slot specialization of `rename_hfLtDistinguishesTermAt_succ`. -/
+theorem rename_hfLtDistinguishesAt_succ (high : Nat) :
+    rename Nat.succ (hfLtDistinguishesAt high) =
+      hfLtDistinguishesAt (high+1) := by
+  simpa [hfLtDistinguishesTermAt_var, Term.rename] using
+    (rename_hfLtDistinguishesTermAt_succ (Term.var high))
+
 /-- Instantiating the low-code binder of `hfLtDistinguishesAt` by an existing
 PA variable recovers the expected open implication. -/
 theorem subst_instTerm_var_hfLtDistinguishesAt_body
@@ -24122,6 +24129,33 @@ theorem BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step
       (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
   simpa [phi] using
     BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero hsuccAll
+
+/-- In the strict branch of the successor step, the renamed induction
+hypothesis already supplies a distinguishing member for the predecessor-high
+code over the current low code.
+
+This deliberately does not perform any binary-carry work: it only extracts the
+predecessor witness that later parity branches must shift through the
+successor code. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesAt 1 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowLtHigh, ih]
+  have hlt : BProv Ax_s C (ltTermAt (Term.var 0) (Term.var 1)) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, lowLtHigh])
+  have hihRaw : BProv Ax_s C ih :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, ih])
+  have hih : BProv Ax_s C (hfLtDistinguishesTermAt (Term.var 1)) := by
+    simpa [ih, hfLtDistinguishesTermAt_var, rename_hfLtDistinguishesAt_succ]
+      using hihRaw
+  have hsome : BProv Ax_s C
+      (hfSomeDistinguishesTermAt (Term.var 1) 0) :=
+    BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt hih hlt
+  simpa [C, lowLtHigh, ih, hfSomeDistinguishesTermAt_var] using hsome
 
 /-- Reduce the open successor step for lower-code distinguishers to the two
 predecessor cases produced by `low < S high`: either `low < high`, or
