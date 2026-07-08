@@ -2525,6 +2525,10 @@ theorem ltTermAt_var (a b : Nat) :
     ltTermAt (Term.var a) (Term.var b) = ltAt a b := by
   simp [ltTermAt, ltAt, Term.rename]
 
+theorem leTermAt_var (a b : Nat) :
+    leTermAt (Term.var a) (Term.var b) = leAt a b := by
+  simp [leTermAt, leAt, Term.rename]
+
 theorem remTermAt_var (rem value modulus : Nat) :
     remTermAt (Term.var rem) value modulus = remAt rem value modulus := by
   simp [remTermAt, remAt, ltTermAt_var, Term.rename]
@@ -4000,6 +4004,18 @@ theorem HFMemTrace_mem {elem set code step : Nat}
   rw [hshift] at hlow
   simpa [AckermannHF.Mem] using hlow
 
+/-- Semantic trace existence for the carry fact used by the high-even
+successor branch: a positive-bit membership trace in an even code can be
+replaced by a membership trace for the incremented code. -/
+theorem HFMemTrace_succ_of_double_mem_succ
+    {x set half code step : Nat}
+    (hset : set = half + half)
+    (htrace : HFMemTrace (x+1) set code step) :
+    ∃ code' step', HFMemTrace (x+1) (set+1) code' step' := by
+  exact HFMemTrace_exists_of_mem
+    (AckermannHF.mem_succ_of_double_mem_succ hset
+      (HFMemTrace_mem htrace))
+
 theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
     Sat natModel e (hfMemAt elem set) → AckermannHF.Mem (e elem) (e set) := by
   intro h
@@ -5064,6 +5080,56 @@ theorem BProv_Ax_s_zeroOrSuccPredAt {G : List Formula} (a : Nat) :
   simpa [zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt, Term.rename,
     Term.numeral]
     using (BProv_Ax_s_zeroOrSuccPred_term (G := G) (Term.var a))
+
+/-- Eliminate a positive-witness formula by opening its predecessor witness.
+
+The opened body uses the orientation built into `nonzeroAt`:
+`S pred = a`.  This keeps later predecessor-sensitive proofs from having to
+open the existential by hand. -/
+theorem BProv_nonzeroAt_elim
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {target : Formula} {a : Nat}
+    (hnonzero : BProv B G (nonzeroAt a))
+    (hbody : BProv B
+      (eq (Term.succ (Term.var 0)) (Term.var (a+1)) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv B G target := by
+  let body : Formula := eq (Term.succ (Term.var 0)) (Term.var (a+1))
+  have hex : BProv B G (ex body) := by
+    simpa [nonzeroAt, body] using hnonzero
+  exact BProv_exE_of_sentences (B := B) hB (a := body)
+    (c := target) hex (by simpa [body] using hbody)
+
+/-- A successor-predecessor witness is the same positive-witness fact as
+`nonzeroAt`, with the equality reversed.  This lemma keeps the orientation
+change as proof plumbing rather than baking it into either macro. -/
+theorem BProv_nonzeroAt_of_succPredAt
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula} {a : Nat}
+    (hsucc : BProv B G (succPredAt a)) :
+    BProv B G (nonzeroAt a) := by
+  let succBody : Formula := eq (Term.var (a+1)) (Term.succ (Term.var 0))
+  let nzBody : Formula := eq (Term.succ (Term.var 0)) (Term.var (a+2))
+  have hbody : BProv B (succBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (nonzeroAt a)) := by
+    let C : List Formula := succBody :: G.map (rename Nat.succ)
+    have hsuccBody : BProv B C succBody :=
+      BProv_ass (B := B) (G := C) (by simp [C, succBody])
+    have hsym : BProv B C
+        (eq (Term.succ (Term.var 0)) (Term.var (a+1))) :=
+      BProv_eqSym hsuccBody
+    have hinst : BProv B C (subst (instTerm (Term.var 0)) nzBody) := by
+      simpa [nzBody, subst, instTerm, Term.subst, Term.upSubst]
+        using hsym
+    have hnonzero : BProv B C (ex nzBody) :=
+      BProv_exI (B := B) (G := C) (a := nzBody)
+        (t := Term.var 0) hinst
+    simpa [C, nonzeroAt, nzBody, rename, Term.rename, SetTheory.up]
+      using hnonzero
+  exact BProv_exE_of_sentences (B := B) hB (a := succBody)
+    (c := nonzeroAt a)
+    (by simpa [succPredAt, succBody] using hsucc)
+    (by simpa [succBody] using hbody)
 
 /-- Zero-substitution removes one surrounding binder from a shifted term. -/
 theorem term_substZero_rename_succ (t : Term) :
@@ -9766,6 +9832,131 @@ theorem BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one {G : List Formula}
     BProv_eqTrans hstepEq hright
   simpa [oddDoubleEqAt, d] using hodd
 
+/-- PA arithmetic for the odd binary-carry case:
+`value = 2*half + 1` implies `S value = S half + S half`.
+
+This is kept as a standalone equality theorem so later successor-code carry
+proofs can transport term-parametric high-code formulas without rebuilding the
+addition algebra. -/
+theorem BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G
+      (eq (Term.succ (Term.var value))
+        (Term.add (Term.succ (Term.var half))
+          (Term.succ (Term.var half)))) := by
+  let h : Term := Term.var half
+  let double : Term := Term.add h h
+  have hvalue : BProv Ax_s G (eq (Term.var value) (Term.succ double)) := by
+    simpa [oddDoubleEqAt, h, double] using hodd
+  have hsuccValue : BProv Ax_s G
+      (eq (Term.succ (Term.var value))
+        (Term.succ (Term.succ double))) :=
+    BProv_eq_congr_succ hvalue
+  have hleft : BProv Ax_s G
+      (eq (Term.add (Term.succ h) (Term.succ h))
+        (Term.succ (Term.add h (Term.succ h)))) :=
+    BProv_Ax_s_succ_add_terms h (Term.succ h)
+  have hrightStep : BProv Ax_s G
+      (eq (Term.add h (Term.succ h)) (Term.succ double)) := by
+    simpa [h, double] using
+      (BProv_weaken_nil (BProv_Ax_s_addSucc_terms h h))
+  have hright : BProv Ax_s G
+      (eq (Term.succ (Term.add h (Term.succ h)))
+        (Term.succ (Term.succ double))) :=
+    BProv_eq_congr_succ hrightStep
+  have hdoubleSucc : BProv Ax_s G
+      (eq (Term.add (Term.succ h) (Term.succ h))
+        (Term.succ (Term.succ double))) :=
+    BProv_eqTrans hleft hright
+  exact BProv_eqTrans hsuccValue (BProv_eqSym hdoubleSucc)
+
+/-- A binary-halving step exposes a concrete parity case for the current
+value: either it is twice its next value, or it is twice its next value plus
+one. -/
+theorem BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt
+    {G : List Formula} {value half bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (or (doubleEqAt value half)
+      (oddDoubleEqAt value half)) := by
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hzero : BProv Ax_s (zeroAt bit :: G)
+      (or (doubleEqAt value half) (oddDoubleEqAt value half)) := by
+    have hbitZero : BProv Ax_s (zeroAt bit :: G) (eqConstAt bit 0) := by
+      have hraw : BProv Ax_s (zeroAt bit :: G) (zeroAt bit) :=
+        BProv_ass (B := Ax_s) (G := zeroAt bit :: G) (by simp)
+      simpa [zeroAt] using hraw
+    have hstepCtx : BProv Ax_s (zeroAt bit :: G)
+        (div2StepAt value half bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    exact BProv_orI1 (B := Ax_s) (G := zeroAt bit :: G)
+      (b := oddDoubleEqAt value half)
+      (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hbitZero hstepCtx)
+  have hone : BProv Ax_s (oneAt bit :: G)
+      (or (doubleEqAt value half) (oddDoubleEqAt value half)) := by
+    have hbitOne : BProv Ax_s (oneAt bit :: G) (eqConstAt bit 1) := by
+      have hraw : BProv Ax_s (oneAt bit :: G) (oneAt bit) :=
+        BProv_ass (B := Ax_s) (G := oneAt bit :: G) (by simp)
+      simpa [oneAt] using hraw
+    have hstepCtx : BProv Ax_s (oneAt bit :: G)
+        (div2StepAt value half bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    exact BProv_orI2 (B := Ax_s) (G := oneAt bit :: G)
+      (a := doubleEqAt value half)
+      (BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one hbitOne hstepCtx)
+  exact BProv_orE hbool hzero hone
+
+/-- Eliminate the parity case exposed by a binary-halving step.  The branch
+premises remain explicit: callers must prove the target from the even and odd
+forms of the current value. -/
+theorem BProv_Ax_s_of_div2StepAt_double_odd_cases
+    {G : List Formula} {value half bit : Nat} {target : Formula}
+    (hstep : BProv Ax_s G (div2StepAt value half bit))
+    (heven : BProv Ax_s (doubleEqAt value half :: G) target)
+    (hodd : BProv Ax_s (oddDoubleEqAt value half :: G) target) :
+    BProv Ax_s G target :=
+  BProv_orE
+    (BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt hstep)
+    heven hodd
+
+/-- Nested parity elimination for two binary-halving steps.  The generated
+contexts put the low-code parity assumption in front of the high-code parity
+assumption, matching the order produced by the inner case split. -/
+theorem BProv_Ax_s_of_two_div2StepAt_double_odd_cases
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    {target : Formula}
+    (hhighStep : BProv Ax_s G (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit))
+    (hdouble_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G) target)
+    (hdouble_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G) target)
+    (hodd_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G) target)
+    (hodd_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G) target) :
+    BProv Ax_s G target := by
+  have hhighEven : BProv Ax_s (doubleEqAt high highHalf :: G) target := by
+    have hlowStepCtx : BProv Ax_s (doubleEqAt high highHalf :: G)
+        (div2StepAt low lowHalf lowBit) :=
+      BProv_context_cons (B := Ax_s) hlowStep
+    exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+      hlowStepCtx hdouble_double hdouble_odd
+  have hhighOdd : BProv Ax_s (oddDoubleEqAt high highHalf :: G) target := by
+    have hlowStepCtx : BProv Ax_s (oddDoubleEqAt high highHalf :: G)
+        (div2StepAt low lowHalf lowBit) :=
+      BProv_context_cons (B := Ax_s) hlowStep
+    exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+      hlowStepCtx hodd_double hodd_odd
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+    hhighStep hhighEven hhighOdd
+
 /-- A binary-halving step is a remainder equation modulo any slot proved to be
 `2`: the output bit is the remainder and the half slot is the quotient. -/
 theorem BProv_Ax_s_remAt_of_div2StepAt_two {G : List Formula}
@@ -10489,6 +10680,93 @@ theorem BProv_Ax_s_leTermAt_of_eq_add_right_terms
     (a := eq (Term.add (Term.rename Nat.succ lower) (Term.var 0))
       (Term.rename Nat.succ upper))
     (t := diff) hbody
+
+/-- If a slot is explicitly twice its half, PA proves that the half is below
+the slot. -/
+theorem BProv_Ax_s_leAt_half_of_doubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half)) :
+    BProv Ax_s G (leAt half value) := by
+  have hvalue : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.var half) (Term.var half))) := by
+    simpa [doubleEqAt] using hdouble
+  have hle : BProv Ax_s G
+      (leTermAt (Term.var half) (Term.var value)) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := Term.var half) (upper := Term.var value)
+      (diff := Term.var half) hvalue
+  simpa [leTermAt_var] using hle
+
+/-- If a slot is explicitly twice its half plus one, PA proves that the half is
+below the slot. -/
+theorem BProv_Ax_s_leAt_half_of_oddDoubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G (leAt half value) := by
+  let h : Term := Term.var half
+  let double : Term := Term.add h h
+  have hvalue : BProv Ax_s G (eq (Term.var value) (Term.succ double)) := by
+    simpa [oddDoubleEqAt, h, double] using hodd
+  have hhalfLeDouble : BProv Ax_s G (leTermAt h double) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := h) (upper := double) (diff := h)
+      (BProv_eqRefl (B := Ax_s) (G := G) double)
+  have hdoubleLeSucc : BProv Ax_s G (leTermAt double (Term.succ double)) :=
+    BProv_Ax_s_leTermAt_self_succ double
+  have hdoubleLeValue : BProv Ax_s G (leTermAt double (Term.var value)) :=
+    BProv_leTermAt_of_eq_right (BProv_eqSym hvalue) hdoubleLeSucc
+  have hle : BProv Ax_s G (leTermAt h (Term.var value)) :=
+    BProv_Ax_s_leTermAt_trans hhalfLeDouble hdoubleLeValue
+  simpa [h, leTermAt_var] using hle
+
+/-- If `value = 2*half` and `value < upper`, then PA proves
+`half < upper`. -/
+theorem BProv_Ax_s_ltAt_half_of_doubleEqAt_ltAt
+    {G : List Formula} {value half upper : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half))
+    (hlt : BProv Ax_s G (ltAt value upper)) :
+    BProv Ax_s G (ltAt half upper) :=
+  BProv_Ax_s_leAt_ltAt_trans
+    (BProv_Ax_s_leAt_half_of_doubleEqAt hdouble) hlt
+
+/-- If `value = 2*half+1` and `value < upper`, then PA proves
+`half < upper`. -/
+theorem BProv_Ax_s_ltAt_half_of_oddDoubleEqAt_ltAt
+    {G : List Formula} {value half upper : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half))
+    (hlt : BProv Ax_s G (ltAt value upper)) :
+    BProv Ax_s G (ltAt half upper) :=
+  BProv_Ax_s_leAt_ltAt_trans
+    (BProv_Ax_s_leAt_half_of_oddDoubleEqAt hodd) hlt
+
+/-- A binary-halving step proves that its half slot is below the current
+value, regardless of which parity branch the exposed bit selects. -/
+theorem BProv_Ax_s_leAt_half_of_div2StepAt
+    {G : List Formula} {value half bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (leAt half value) := by
+  have heven : BProv Ax_s (doubleEqAt value half :: G) (leAt half value) := by
+    have hdouble : BProv Ax_s (doubleEqAt value half :: G)
+        (doubleEqAt value half) :=
+      BProv_ass (B := Ax_s) (G := doubleEqAt value half :: G) (by simp)
+    exact BProv_Ax_s_leAt_half_of_doubleEqAt hdouble
+  have hodd : BProv Ax_s (oddDoubleEqAt value half :: G) (leAt half value) := by
+    have hoddAss : BProv Ax_s (oddDoubleEqAt value half :: G)
+        (oddDoubleEqAt value half) :=
+      BProv_ass (B := Ax_s) (G := oddDoubleEqAt value half :: G) (by simp)
+    exact BProv_Ax_s_leAt_half_of_oddDoubleEqAt hoddAss
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases hstep heven hodd
+
+/-- If a binary-halving step starts at `value` and PA proves `value < upper`,
+then the extracted half is also strictly below `upper`. -/
+theorem BProv_Ax_s_ltAt_half_of_div2StepAt_ltAt
+    {G : List Formula} {value half bit upper : Nat}
+    (hstep : BProv Ax_s G (div2StepAt value half bit))
+    (hlt : BProv Ax_s G (ltAt value upper)) :
+    BProv Ax_s G (ltAt half upper) :=
+  BProv_Ax_s_leAt_ltAt_trans
+    (BProv_Ax_s_leAt_half_of_div2StepAt hstep) hlt
 
 /-- If a value is explicitly `m * S d + r`, then PA proves `m ≤ value`.
 The witness is `m*d + r`, exposed rather than hidden in a definition. -/
@@ -20966,6 +21244,125 @@ theorem BProv_Ax_s_hfMemAt_pred_opened_body_bitEx
     instTerm, Term.subst, Term.upSubst, rename, Term.rename, SetTheory.up,
     succBody, succCtx, bodyCtx, body, tail, bitBody] using hbitCtx
 
+/-- In the predecessor-opened successor branch of `hfMemAt`, the exposed
+code/step witnesses can be repackaged as a term-parametric membership proof.
+
+This theorem performs no trace transformation: it merely records that the
+already-open beta-entry, bounded-trace, and final-bit components are exactly
+the components expected by `hfMemTermAt` when the opened code and step
+witnesses are used as the two existential witnesses. -/
+theorem BProv_Ax_s_hfMemAt_pred_opened_as_hfMemTermAt
+    {G : List Formula} {elem set : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaAtConstIdx (set+2) 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    let succCtx : List Formula := succPredAt 0 :: bodyCtx
+    let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+    BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+      (hfMemTermAt (elem+3) (Term.var (set+3))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+  have hentry : BProv Ax_s C
+      (subst (instTerm (Term.var 1))
+        (subst (Term.upSubst (instTerm (Term.var 2)))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) (Term.var (set+3))) 1 0 0))) := by
+    have hentryRaw : BProv Ax_s C
+        (betaAtConstIdx (set+3) 2 1 0) := by
+      simpa [C, bitBody, tail, body, bodyCtx, succCtx, succBody] using
+        (BProv_Ax_s_hfMemAt_pred_opened_body_entry
+          (G := G) (elem := elem) (set := set))
+    simpa [C, betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+      betaAtConstIdx, betaAt, remAt, ltAt, eqConstAt, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp, SetTheory.up,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hentryRaw
+  have hsteps : BProv Ax_s C
+      (subst (instTerm (Term.var 1))
+        (subst (Term.upSubst (instTerm (Term.var 2)))
+          (betaDiv2StepsThroughAt 1 0 ((elem+3)+2)))) := by
+    have hstepsRaw : BProv Ax_s C
+        (betaDiv2StepsThroughAt 2 1 (elem+3)) := by
+      simpa [C, bitBody, tail, body, bodyCtx, succCtx, succBody] using
+        (BProv_Ax_s_hfMemAt_pred_opened_body_steps
+          (G := G) (elem := elem) (set := set))
+    simpa [C, betaDiv2StepsThroughAt, leAt, betaDiv2StepWitnessAt,
+      betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, betaModTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      SetTheory.up, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hstepsRaw
+  have hbitEx : BProv Ax_s C
+      (subst (instTerm (Term.var 1))
+        (subst (Term.upSubst (instTerm (Term.var 2)))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 ((elem+3)+3)))))) := by
+    have hbitRaw : BProv Ax_s C
+        (ex (and (oneAt 0) (betaDiv2BitAt 0 3 2 (elem+4)))) := by
+      simpa [C, bitBody, tail, body, bodyCtx, succCtx, succBody] using
+        (BProv_Ax_s_hfMemAt_pred_opened_body_bitEx
+          (G := G) (elem := elem) (set := set))
+    simpa [C, betaDiv2BitAt, betaDiv2StepsThroughAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+      remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt,
+      eqConstAt, betaModTerm, subst, instTerm, Term.subst,
+      Term.upSubst, rename, Term.rename, Term.rename_comp, SetTheory.up,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hbitRaw
+  exact BProv_Ax_s_hfMemTermAt_of_components
+    (G := C) (elem := elem+3) (setCode := Term.var (set+3))
+    (codeTerm := Term.var 2) (stepTerm := Term.var 1)
+    hentry hsteps hbitEx
+
 /-- In the successor branch of the opened `hfMemZeroSetAt` code/step
 witnesses, the initial term-output beta-entry component remains available. -/
 theorem BProv_Ax_s_hfMemZeroSetAt_succ_opened_body_entry
@@ -21685,6 +22082,96 @@ theorem BProv_Ax_s_hfMemAt_bot_of_opened_step_pred
         (BProv_Ax_s_hfMemAt_succ_opened_pred_bot
           (G := G) (elem := elem) (set := set) hpred))
     hmem
+
+/-- Target-general eliminator for `hfMemAt` opened down to the predecessor of
+the nonzero code/step witness.
+
+The zero-step branch is contradictory by
+`BProv_Ax_s_hfMemAt_opened_body_step_zero_bot`.  The successor branch is
+opened one binder further, exposing the equation `step = S pred`; callers prove
+the target renamed through the three opened binders. -/
+theorem BProv_Ax_s_hfMemAt_elim_opened_step_pred
+    {G : List Formula} {target : Formula} {elem set : Nat}
+    (hmem : BProv Ax_s G (hfMemAt elem set))
+    (hpred :
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          tail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target)))) :
+    BProv Ax_s G target := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  have hcodeStep : BProv Ax_s (ex body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    have hstepEx : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
+      BProv_ass (B := Ax_s)
+        (G := ex body :: G.map (rename Nat.succ)) (by simp)
+    have hopened : BProv Ax_s
+        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)) := by
+      let bodyCtx : List Formula :=
+        body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+      have hcases : BProv Ax_s bodyCtx (zeroOrSuccPredAt 0) :=
+        BProv_Ax_s_zeroOrSuccPredAt (G := bodyCtx) 0
+      have hzeroBranch : BProv Ax_s (zeroAt 0 :: bodyCtx)
+          (rename Nat.succ (rename Nat.succ target)) := by
+        have hbot : BProv Ax_s (zeroAt 0 :: bodyCtx) bot := by
+          simpa [bitBody, tail, body, bodyCtx] using
+            (BProv_Ax_s_hfMemAt_opened_body_step_zero_bot
+              (G := G) (elem := elem) (set := set))
+        exact BProv_botE (B := Ax_s) (G := zeroAt 0 :: bodyCtx)
+          (a := rename Nat.succ (rename Nat.succ target)) hbot
+      have hsuccBranch : BProv Ax_s (succPredAt 0 :: bodyCtx)
+          (rename Nat.succ (rename Nat.succ target)) := by
+        let succCtx : List Formula := succPredAt 0 :: bodyCtx
+        let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+        have hsucc : BProv Ax_s succCtx (succPredAt 0) :=
+          BProv_ass (B := Ax_s) (G := succCtx) (by simp [succCtx])
+        have hbody : BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ (rename Nat.succ target))) := by
+          simpa [bitBody, tail, body, bodyCtx, succCtx, succBody] using hpred
+        exact BProv_exE_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hsucc (by
+            simpa [succCtx, bodyCtx, body, tail, bitBody, succPredAt,
+              succBody, rename] using hbody)
+      exact BProv_orE (B := Ax_s) (G := bodyCtx)
+        (a := zeroAt 0) (b := succPredAt 0)
+        (c := rename Nat.succ (rename Nat.succ target))
+        (by simpa [zeroOrSuccPredAt] using hcases)
+        hzeroBranch hsuccBranch
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstepEx (by simpa [rename] using hopened)
+  have hmem' : BProv Ax_s G (ex (ex body)) := by
+    simpa [hfMemAt, body, tail, bitBody] using hmem
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hmem' (by simpa [rename] using hcodeStep)
 
 /-- Inner shell for the translated HF empty-set axiom.
 
@@ -22847,6 +23334,47 @@ theorem BProv_hfSomeDistinguishesTermAt_intro_var
         (Term.rename Nat.succ highCode) (low+1))
       (t := Term.var elem) hinst)
 
+/-- Eliminate a slot-level distinguishing existential by opening its witness.
+
+This is the proof-neutral counterpart to
+`BProv_hfSomeDistinguishesAt_intro_var`: callers receive exactly the body of
+`hfSomeDistinguishesAt`, shifted through the fresh witness binder. -/
+theorem BProv_hfSomeDistinguishesAt_elim
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {target : Formula} {high low : Nat}
+    (hsome : BProv B G (hfSomeDistinguishesAt high low))
+    (hbody : BProv B
+      (hfDistinguishesAt 0 (high+1) (low+1) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv B G target := by
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  have hex : BProv B G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesAt] using hsome
+  exact BProv_exE_of_sentences (B := B) hB (a := witness)
+    (c := target) hex (by simpa [witness] using hbody)
+
+/-- Eliminate a term-parametric distinguishing existential by opening its
+witness.
+
+The opened high-code term is the expected shifted high-code term under the
+fresh witness binder; no arithmetic facts are inferred here. -/
+theorem BProv_hfSomeDistinguishesTermAt_elim
+    {B : Formula → Prop} (hB : Sentences B) {G : List Formula}
+    {target : Formula} {highCode : Term} {low : Nat}
+    (hsome : BProv B G (hfSomeDistinguishesTermAt highCode low))
+    (hbody : BProv B
+      (hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (low+1) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv B G target := by
+  let witness : Formula :=
+    hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (low+1)
+  have hex : BProv B G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesTermAt] using hsome
+  exact BProv_exE_of_sentences (B := B) hB (a := witness)
+    (c := target) hex (by simpa [witness] using hbody)
+
 /-- Logical packaging for a distinguishing member: if the same element is
 proved to belong to `high` and to not belong to `low`, then it distinguishes
 the two Ackermann-coded sets. -/
@@ -22997,6 +23525,49 @@ theorem BProv_hfLtDistinguishesTermAt_of_high_eq_term
     BProv_allI_of_sentences (B := B) hB hbody
   simpa [hfLtDistinguishesTermAt, newRen, lowLtNew, targetNew]
     using hallNew
+
+/-- Odd-high carry transport for a single distinguishing existential.
+
+If PA proves `high = 2*half + 1`, then the successor high-code term is equal
+to `S half + S half`.  This theorem only transports the high-code term; the
+positive-bit membership work for the doubled successor-half code remains a
+separate proof obligation. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
+    {G : List Formula} {high highHalf low : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt high highHalf))
+    (hsome : BProv Ax_s G
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) low)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) :=
+  BProv_hfSomeDistinguishesTermAt_of_high_eq_term
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hsome
+    (BProv_eqSym
+      (BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ hodd))
+
+/-- Odd-high carry transport for the full lower-code predicate.
+
+This is the universal version of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ`: it records
+that proving lower-code distinguishers for `S half + S half` is sufficient for
+the successor of an odd high code. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_of_high_odd_double_succ
+    {G : List Formula} {high highHalf : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt high highHalf))
+    (hall : BProv Ax_s G
+      (hfLtDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))))) :
+    BProv Ax_s G
+      (hfLtDistinguishesTermAt (Term.succ (Term.var high))) :=
+  BProv_hfLtDistinguishesTermAt_of_high_eq_term
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hall
+    (BProv_eqSym
+      (BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ hodd))
 
 /-- Transport a slot-level distinguishing-member proof across a PA equality for
 the high set code. -/
@@ -23279,6 +23850,584 @@ theorem BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [modEq, rename] using hbody)
 
+/-- Any member of an explicitly doubled Ackermann code is nonzero.  The zero
+case is discharged by the existing "zero is not a member of an even code"
+lemma; the successor case is only the orientation bridge from `succPredAt` to
+`nonzeroAt`. -/
+theorem BProv_Ax_s_nonzeroAt_of_hfMemAt_double
+    {G : List Formula} {elem set half : Nat}
+    (hmem : BProv Ax_s G (hfMemAt elem set))
+    (hdouble : BProv Ax_s G (doubleEqAt set half)) :
+    BProv Ax_s G (nonzeroAt elem) := by
+  have hcases : BProv Ax_s G (zeroOrSuccPredAt elem) :=
+    BProv_Ax_s_zeroOrSuccPredAt (G := G) elem
+  have hzeroBranch : BProv Ax_s (zeroAt elem :: G) (nonzeroAt elem) := by
+    have helemZero : BProv Ax_s (zeroAt elem :: G) (eqConstAt elem 0) := by
+      have hzero : BProv Ax_s (zeroAt elem :: G) (zeroAt elem) :=
+        BProv_ass (B := Ax_s) (G := zeroAt elem :: G) (by simp)
+      simpa [zeroAt] using
+        hzero
+    have hmemCtx : BProv Ax_s (zeroAt elem :: G) (hfMemAt elem set) :=
+      BProv_context_cons (B := Ax_s) hmem
+    have hdoubleCtx : BProv Ax_s (zeroAt elem :: G)
+        (doubleEqAt set half) :=
+      BProv_context_cons (B := Ax_s) hdouble
+    exact BProv_botE (B := Ax_s) (G := zeroAt elem :: G)
+      (a := nonzeroAt elem)
+      (BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
+        helemZero hdoubleCtx hmemCtx)
+  have hsuccBranch : BProv Ax_s (succPredAt elem :: G) (nonzeroAt elem) := by
+    have hsucc : BProv Ax_s (succPredAt elem :: G) (succPredAt elem) :=
+      BProv_ass (B := Ax_s) (G := succPredAt elem :: G) (by simp)
+    exact BProv_nonzeroAt_of_succPredAt
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf) hsucc
+  exact BProv_orE (by simpa [zeroOrSuccPredAt] using hcases)
+    hzeroBranch hsuccBranch
+
+/-- Eliminate a distinguishing-member existential for an explicitly even high
+code, while exposing that the opened witness is nonzero.
+
+This is proof plumbing for carry branches: the formula
+`hfSomeDistinguishesAt` remains unchanged, and the positivity fact is derived
+from the high-membership half of the opened witness plus the doubled-code
+premise. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double
+    {G : List Formula} {target : Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hbody : BProv Ax_s
+      (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target)) :
+    BProv Ax_s G target := by
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let C : List Formula := witness :: G.map (rename Nat.succ)
+  have hopened : BProv Ax_s C (rename Nat.succ target) := by
+    have hdist : BProv Ax_s C witness :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, witness])
+    have hmemHigh : BProv Ax_s C (hfMemAt 0 (high+1)) := by
+      simpa [witness, hfDistinguishesAt] using BProv_andE1 hdist
+    have hdoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt high half)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhighDouble Nat.succ
+    have hdoubleC : BProv Ax_s C (doubleEqAt (high+1) (half+1)) := by
+      simpa [C, witness, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := witness) hdoubleRen
+    have hnonzero : BProv Ax_s C (nonzeroAt 0) :=
+      BProv_Ax_s_nonzeroAt_of_hfMemAt_double hmemHigh hdoubleC
+    have hbodyC : BProv Ax_s (nonzeroAt 0 :: C)
+        (rename Nat.succ target) := by
+      simpa [C, witness] using hbody
+    exact BProv_cut hbodyC (D := C) (fun g hg => by
+      simp only [List.mem_cons] at hg
+      rcases hg with hg | hg
+      · subst g
+        exact hnonzero
+      · exact BProv_ass (B := Ax_s) (G := C) hg)
+  have hex : BProv Ax_s G (ex witness) := by
+    simpa [witness, hfSomeDistinguishesAt] using hsome
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [C, witness] using hopened)
+
+/-- Open a distinguishing-member existential for an explicitly even high code,
+then open the predecessor of the positive witness derived from that high-code
+membership.
+
+This is a slightly stronger eliminator for carry branches: it leaves the
+definition of `hfSomeDistinguishesAt` alone, but gives callers the predecessor
+equation `S pred = witness` in the local context. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double_pred
+    {G : List Formula} {target : Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hbody : BProv Ax_s
+      (eq (Term.succ (Term.var 0)) (Term.var 1) ::
+        (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+          G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s G target := by
+  exact
+    BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double
+      (G := G) (target := target) (high := high) (low := low)
+      (half := half) hsome hhighDouble
+      (by
+        let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+        let C : List Formula := nonzeroAt 0 :: witness :: G.map (rename Nat.succ)
+        have hnonzero : BProv Ax_s C (nonzeroAt 0) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        exact BProv_nonzeroAt_elim
+          (B := Ax_s) (G := C) (target := rename Nat.succ target)
+          (a := 0)
+          (fun f hf => sentence_ax_s (f := f) hf)
+          hnonzero
+          (by
+            simpa [C, witness] using hbody))
+
+/-- High-even strict successor branch, reduced to the remaining membership
+persistence step for the opened witness.
+
+After opening a distinguishing witness for `high` over `low`, the doubled-code
+assumption on `high` proves that the witness is nonzero and exposes a
+predecessor equation.  If, in that opened context, the same witness is proved
+to be a member of the term code `S high`, then the negative low-membership half
+of the original distinguishing proof closes the branch. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem
+    {G : List Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hmemSucc : BProv Ax_s
+      (eq (Term.succ (Term.var 0)) (Term.var 1) ::
+        (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+          G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2))))) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  let target : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low
+  exact
+    BProv_Ax_s_hfSomeDistinguishesAt_elim_high_double_pred
+      (G := G) (target := target) (high := high) (low := low)
+      (half := half) hsome hhighDouble
+      (by
+        let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+        let C : List Formula :=
+          eq (Term.succ (Term.var 0)) (Term.var 1) ::
+            (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+              (rename Nat.succ)
+        have hmem : BProv Ax_s C
+            (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+          simpa [C, witness] using hmemSucc
+        have hdistRaw : BProv Ax_s C (rename Nat.succ witness) :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C, witness])
+        have hdist : BProv Ax_s C
+            (hfDistinguishesAt 1 (high+2) (low+2)) := by
+          simpa [witness, rename_hfDistinguishesAt, Nat.add_assoc]
+            using hdistRaw
+        let lowMem : Formula := hfMemAt 1 (low+2)
+        have hlowBot : BProv Ax_s (lowMem :: C) bot := by
+          have hdistCtx : BProv Ax_s (lowMem :: C)
+              (hfDistinguishesAt 1 (high+2) (low+2)) :=
+            BProv_context_cons (B := Ax_s) hdist
+          have hnotLow : BProv Ax_s (lowMem :: C)
+              (imp (hfMemAt 1 (low+2)) bot) := by
+            simpa [hfDistinguishesAt] using BProv_andE2 hdistCtx
+          have hlow : BProv Ax_s (lowMem :: C) (hfMemAt 1 (low+2)) := by
+            simpa [lowMem] using
+              (BProv_ass (B := Ax_s) (G := lowMem :: C) (by simp [lowMem]))
+          exact BProv_mp Ax_s (lowMem :: C) _ _ hnotLow hlow
+        have hsomeTerm : BProv Ax_s C
+            (hfSomeDistinguishesTermAt
+              (Term.succ (Term.var (high+2))) (low+2)) :=
+          BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
+            (G := C) (elem := 1) (low := low+2)
+            (highCode := Term.succ (Term.var (high+2)))
+            hmem (by simpa [lowMem] using hlowBot)
+        simpa [C, witness, target, rename_hfSomeDistinguishesTermAt_succ,
+          Term.rename, Nat.add_assoc] using hsomeTerm)
+
+/-- High-even strict successor branch with the evenness premise made available
+inside the opened membership-persistence obligation.
+
+The lower-level persistence proof really needs the shifted proof that the
+predecessor high code is even.  This wrapper keeps
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem` as the
+minimal branch closer while providing the more ergonomic obligation shape for
+the carry proof. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem_with_double
+    {G : List Formula} {high low half : Nat}
+    (hsome : BProv Ax_s G (hfSomeDistinguishesAt high low))
+    (hhighDouble : BProv Ax_s G (doubleEqAt high half))
+    (hmemSucc : BProv Ax_s
+      (doubleEqAt (high+2) (half+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+            G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2))))) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let C : List Formula :=
+    eq (Term.succ (Term.var 0)) (Term.var 1) ::
+      (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+        (rename Nat.succ)
+  have hdoubleRen1 : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (doubleEqAt high half)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hhighDouble Nat.succ
+  have hdoubleRen2 : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ (doubleEqAt high half))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hdoubleRen1 Nat.succ
+  have hdoubleTail : BProv Ax_s
+      ((nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+        (rename Nat.succ))
+      (doubleEqAt (high+2) (half+2)) := by
+    simpa [witness, doubleEqAt, rename, Term.rename, List.map_map,
+      Function.comp_def] using
+      BProv_context_cons (B := Ax_s)
+        (a := rename Nat.succ (nonzeroAt 0))
+        (BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ witness)
+          hdoubleRen2)
+  have hdoubleC : BProv Ax_s C (doubleEqAt (high+2) (half+2)) :=
+    BProv_context_cons (B := Ax_s)
+      (a := eq (Term.succ (Term.var 0)) (Term.var 1))
+      hdoubleTail
+  have hmemC : BProv Ax_s C
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+    exact BProv_cut hmemSucc (D := C) (fun f hf => by
+      simp only [List.mem_cons] at hf
+      rcases hf with hf | hf
+      · subst f
+        exact hdoubleC
+      · exact BProv_ass (B := Ax_s) (G := C) (by simpa [C] using hf))
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem
+      (G := G) (high := high) (low := low) (half := half)
+      hsome hhighDouble (by simpa [C, witness] using hmemC)
+
+/-- In the high-even opened branch, it is enough to prove successor membership
+after exposing the high-membership half of the distinguishing witness as a
+separate head assumption.
+
+This theorem only performs logical projection and cutting.  The real
+positive-bit persistence proof is still the premise with the explicit
+`hfMemAt 1 (high+2)` assumption. -/
+theorem
+    BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_high_mem
+    {G : List Formula} {high low half : Nat}
+    (hmemSucc : BProv Ax_s
+      (doubleEqAt (high+2) (half+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          hfMemAt 1 (high+2) ::
+            (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+              G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2))))) :
+    BProv Ax_s
+      (doubleEqAt (high+2) (half+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+            G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let tail : List Formula :=
+    (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let oldCtx : List Formula :=
+    doubleEqAt (high+2) (half+2) ::
+      eq (Term.succ (Term.var 0)) (Term.var 1) :: tail
+  let newCtx : List Formula :=
+    doubleEqAt (high+2) (half+2) ::
+      eq (Term.succ (Term.var 0)) (Term.var 1) ::
+        hfMemAt 1 (high+2) :: tail
+  have hdistRaw : BProv Ax_s oldCtx (rename Nat.succ witness) :=
+    BProv_ass (B := Ax_s) (G := oldCtx) (by simp [oldCtx, tail, witness])
+  have hdist : BProv Ax_s oldCtx (hfDistinguishesAt 1 (high+2) (low+2)) := by
+    simpa [witness, rename_hfDistinguishesAt, Nat.add_assoc] using hdistRaw
+  have hmem : BProv Ax_s oldCtx (hfMemAt 1 (high+2)) := by
+    simpa [hfDistinguishesAt] using BProv_andE1 hdist
+  have hbody : BProv Ax_s newCtx
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+    simpa [newCtx, tail, witness] using hmemSucc
+  exact BProv_cut hbody (D := oldCtx) (fun f hf => by
+    simp only [newCtx, List.mem_cons] at hf
+    rcases hf with hf | hf
+    · subst f
+      exact BProv_ass (B := Ax_s) (G := oldCtx) (by simp [oldCtx])
+    rcases hf with hf | hf
+    · subst f
+      exact BProv_ass (B := Ax_s) (G := oldCtx) (by simp [oldCtx])
+    rcases hf with hf | hf
+    · subst f
+      exact hmem
+    · exact BProv_ass (B := Ax_s) (G := oldCtx)
+        (by simp [oldCtx, hf]))
+
+/-- In the high-even opened branch, the remaining successor-membership work can
+be pushed under the opened `hfMemAt` code/step witnesses.
+
+The premise is the successor-step branch produced by opening the high-membership
+trace.  It receives the old beta body, a predecessor for the nonzero step, and
+the original branch context shifted through the three opened binders. -/
+theorem
+    BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_step_pred
+    {G : List Formula} {high low half : Nat}
+    (hpred :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target)))) :
+    BProv Ax_s
+      (doubleEqAt (high+2) (half+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 (high+1) (low+1) ::
+            G.map (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
+  let elem : Nat := 1
+  let set : Nat := high+2
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let branchTail : List Formula :=
+    (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let branchCtx : List Formula :=
+    doubleEqAt set (half+2) ::
+      eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+  let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+  have hdistRaw : BProv Ax_s branchCtx (rename Nat.succ witness) :=
+    BProv_ass (B := Ax_s) (G := branchCtx)
+      (by simp [branchCtx, branchTail, witness])
+  have hdist : BProv Ax_s branchCtx (hfDistinguishesAt elem set (low+2)) := by
+    simpa [elem, set, witness, rename_hfDistinguishesAt, Nat.add_assoc]
+      using hdistRaw
+  have hmem : BProv Ax_s branchCtx (hfMemAt elem set) := by
+    simpa [hfDistinguishesAt] using BProv_andE1 hdist
+  have htarget : BProv Ax_s branchCtx target :=
+    BProv_Ax_s_hfMemAt_elim_opened_step_pred
+      (G := branchCtx) (target := target) (elem := elem) (set := set)
+      hmem
+      (by
+        simpa [elem, set, witness, branchTail, branchCtx, target,
+          Nat.add_assoc] using hpred)
+  simpa [elem, set, witness, branchTail, branchCtx, target] using htarget
+
+/-- Component-level builder for the successor-membership target left by
+`BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_step_pred`.
+
+This theorem still does not transform the old membership trace.  It merely
+records the exact component obligations that are sufficient, in the opened
+successor-step branch, to package chosen beta code and step terms into the
+renamed target `1 in S high`. -/
+theorem
+    BProv_Ax_s_hfMemTermAt_succ_opened_step_pred_of_components
+    {G : List Formula} {high low half : Nat} {codeTerm stepTerm : Term}
+    (hentry :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+      let targetCode : Term :=
+        Term.rename Nat.succ
+          (Term.rename Nat.succ
+            (Term.rename Nat.succ (Term.succ (Term.var set))))
+      BProv Ax_s C
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaTermAtConstIdx
+              (Term.rename (fun n => n+2) targetCode) 1 0 0))))
+    (hsteps :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+      BProv Ax_s C
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (betaDiv2StepsThroughAt 1 0 ((elem+3)+2)))))
+    (hbitEx :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+      BProv Ax_s C
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm))
+            (ex
+              (and
+                (oneAt 0)
+                (betaDiv2BitAt 0 2 1 ((elem+3)+3))))))) :
+      let elem : Nat := 1
+      let set : Nat := high+2
+      let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (half+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target))) := by
+  let elem : Nat := 1
+  let set : Nat := high+2
+  let witness : Formula := hfDistinguishesAt 0 (high+1) (low+1)
+  let branchTail : List Formula :=
+    (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let branchCtx : List Formula :=
+    doubleEqAt set (half+2) ::
+      eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+  let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let traceTail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      traceTail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  let C : List Formula := succBody :: succCtx.map (rename Nat.succ)
+  let targetCode : Term :=
+    Term.rename Nat.succ
+      (Term.rename Nat.succ
+        (Term.rename Nat.succ (Term.succ (Term.var set))))
+  have hentry' : BProv Ax_s C
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) targetCode) 1 0 0))) := by
+    simpa [elem, set, witness, branchTail, branchCtx, bitBody, traceTail,
+      body, bodyCtx, succCtx, succBody, C, targetCode] using hentry
+  have hsteps' : BProv Ax_s C
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaDiv2StepsThroughAt 1 0 ((elem+3)+2)))) := by
+    simpa [elem, set, witness, branchTail, branchCtx, bitBody, traceTail,
+      body, bodyCtx, succCtx, succBody, C] using hsteps
+  have hbitEx' : BProv Ax_s C
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 ((elem+3)+3)))))) := by
+    simpa [elem, set, witness, branchTail, branchCtx, bitBody, traceTail,
+      body, bodyCtx, succCtx, succBody, C] using hbitEx
+  have htarget : BProv Ax_s C (hfMemTermAt (elem+3) targetCode) :=
+    BProv_Ax_s_hfMemTermAt_of_components
+      (G := C) (elem := elem+3) (setCode := targetCode)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      hentry' hsteps' hbitEx'
+  simpa [elem, set, witness, branchTail, branchCtx, target, bitBody,
+    traceTail, body, bodyCtx, succCtx, succBody, C, targetCode,
+    rename_hfMemTermAt_succ, Nat.add_assoc] using htarget
+
 /-- If zero belongs to the term-parametric high code and the low code is
 explicitly even, then zero is a concrete distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
@@ -23359,6 +24508,38 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [zeroEq] using hbody)
 
+/-- Step-based even branch of the standalone successor/predecessor
+distinguisher: if a binary-halving witness shows that `low` has output bit
+`0`, the doubled-code branch above applies directly. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_bit_zero
+    {G : List Formula} {low lowHalf lowBit : Nat}
+    (hlowBit : BProv Ax_s G (eqConstAt lowBit 0))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
+    (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hlowBit hlowStep)
+
+/-- Split the standalone successor/predecessor distinguisher by the parity
+exposed by a binary-halving step.  The even branch is discharged by the
+zero-witness proof above; the odd branch is left as an explicit carry
+obligation. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_step_and_odd_case
+    {G : List Formula} {low lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit))
+    (hodd : BProv Ax_s (oddDoubleEqAt low lowHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
+  have heven : BProv Ax_s (doubleEqAt low lowHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
+    have hlowDouble : BProv Ax_s (doubleEqAt low lowHalf :: G)
+        (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := doubleEqAt low lowHalf :: G) (by simp)
+    exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
+      hlowDouble
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases hlowStep heven hodd
+
 /-- Even/even branch of the successor strict case: if the predecessor-high code
 is even and the low code is even, then zero belongs to `S high` and not to
 `low`, so it distinguishes them.  This is the distinct-slot generalization of
@@ -23413,6 +24594,59 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [zeroEq] using hbody)
+
+/-- Step-based even/even branch of the successor strict case.  If explicit
+binary-halving witnesses show that both the predecessor-high code and the low
+code have output bit `0`, then the doubled-code branch above applies. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_bits_zero_zero
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hhighBit : BProv Ax_s G (eqConstAt highBit 0))
+    (hhighStep : BProv Ax_s G (div2StepAt high highHalf highBit))
+    (hlowBit : BProv Ax_s G (eqConstAt lowBit 0))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+    (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hhighBit hhighStep)
+    (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hlowBit hlowStep)
+
+/-- Split the strict successor case by the parities exposed by two
+binary-halving steps.  The even/even branch is discharged by the zero-witness
+proof; the three carry branches remain explicit premises.  In the branch
+premises, the low-code parity assumption is the head of the context and the
+high-code parity assumption follows it. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_steps_and_carry_cases
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s G (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit))
+    (hhighDouble_lowOdd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+  have hhighDouble_lowDouble : BProv Ax_s
+      (doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) := by
+    let C : List Formula :=
+      doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G
+    have hlowDouble : BProv Ax_s C (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhighDouble : BProv Ax_s C (doubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+      hhighDouble hlowDouble
+  exact BProv_Ax_s_of_two_div2StepAt_double_odd_cases
+    hhighStep hlowStep
+    hhighDouble_lowDouble hhighDouble_lowOdd
+    hhighOdd_lowDouble hhighOdd_lowOdd
 
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
@@ -24156,6 +25390,628 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih :
       (hfSomeDistinguishesTermAt (Term.var 1) 0) :=
     BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt hih hlt
   simpa [C, lowLtHigh, ih, hfSomeDistinguishesTermAt_var] using hsome
+
+/-- High-even/low-odd strict branch, reduced to the genuine membership
+persistence obligation.
+
+The low-odd assumption is intentionally only a context component here: for an
+already distinguished predecessor-high member, the branch-closing work is to
+prove that the same positive witness still belongs to `S high` under the
+shifted high-evenness assumption. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_mem
+    {highHalf lowHalf : Nat}
+    (hmemSucc : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+            (oddDoubleEqAt 0 lowHalf ::
+              doubleEqAt 1 highHalf ::
+              [ltTermAt (Term.var 0) (Term.var 1),
+                rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3)))) :
+    BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf ::
+        doubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula :=
+    oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+  have hsomeBase : BProv Ax_s [lowLtHigh, ih]
+      (hfSomeDistinguishesAt 1 0) := by
+    simpa [lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih
+  have hsome : BProv Ax_s C (hfSomeDistinguishesAt 1 0) :=
+    BProv_mono Ax_s [lowLtHigh, ih] C (hfSomeDistinguishesAt 1 0)
+      (by
+        intro f hf
+        simp [C] at hf ⊢
+        exact Or.inr (Or.inr hf))
+      hsomeBase
+  have hhighDouble : BProv Ax_s C (doubleEqAt 1 highHalf) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem_with_double
+      (G := C) (high := 1) (low := 0) (half := highHalf)
+      hsome hhighDouble
+      (by
+        simpa [C, lowLtHigh, ih, Nat.add_assoc] using hmemSucc)
+
+/-- High-even/low-odd strict branch with the high-membership half of the
+opened distinguishing witness exposed as an explicit premise.
+
+The only additional work over
+`..._strict_high_double_low_odd_of_opened_mem` is a proof-level cut that pulls
+`hfMemAt 1 3` from the opened `hfDistinguishesAt 1 3 2` assumption before the
+real successor-membership persistence obligation is used. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_high_mem
+    {highHalf lowHalf : Nat}
+    (hmemSucc : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          hfMemAt 1 3 ::
+            (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+              (oddDoubleEqAt 0 lowHalf ::
+                doubleEqAt 1 highHalf ::
+                [ltTermAt (Term.var 0) (Term.var 1),
+                  rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                  (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3)))) :
+    BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf ::
+        doubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula :=
+    oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_mem
+      (highHalf := highHalf) (lowHalf := lowHalf)
+      (BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_high_mem
+        (G := C) (high := 1) (low := 0) (half := highHalf)
+        (by
+          simpa [C, lowLtHigh, ih, Nat.add_assoc] using hmemSucc))
+
+/-- High-even/low-odd strict branch with the positive high-membership trace
+opened down to its successor-step predecessor case.
+
+This is the same branch as
+`..._strict_high_double_low_odd_of_opened_high_mem`, but the remaining premise
+is the explicit beta-trace update under the opened old code/step witnesses. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_step_pred
+    {highHalf lowHalf : Nat}
+    (hpred :
+      let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+      let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+      let C : List Formula :=
+        oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+      let elem : Nat := 1
+      let set : Nat := 1+2
+      let witness : Formula := hfDistinguishesAt 0 (1+1) (0+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: C.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (highHalf+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target)))) :
+    BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf ::
+        doubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula :=
+    oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_mem
+      (highHalf := highHalf) (lowHalf := lowHalf)
+      (BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_step_pred
+        (G := C) (high := 1) (low := 0) (half := highHalf)
+        (by
+          simpa [C, lowLtHigh, ih, Nat.add_assoc] using hpred))
+
+/-- Strict successor parity split with the high-even/low-odd branch already
+reduced to its opened membership-persistence obligation.
+
+The two odd-high branches remain explicit premises; those are the genuine
+carry cases where `S high` rewrites through the successor of the half code. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_remaining_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+            (oddDoubleEqAt 0 lowHalf ::
+              doubleEqAt 1 highHalf ::
+              [ltTermAt (Term.var 0) (Term.var 1),
+                rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3))))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowLtHigh, ih]
+  have hhighStepC : BProv Ax_s C (div2StepAt 1 highHalf highBit) := by
+    simpa [C, lowLtHigh, ih] using hhighStep
+  have hlowStepC : BProv Ax_s C (div2StepAt 0 lowHalf lowBit) := by
+    simpa [C, lowLtHigh, ih] using hlowStep
+  have hhighDouble_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: C)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [C, lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_mem
+        (highHalf := highHalf) (lowHalf := lowHalf)
+        hhighDouble_lowOdd_mem
+  have hhighOdd_lowDoubleC : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf :: C)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [C, lowLtHigh, ih] using hhighOdd_lowDouble
+  have hhighOdd_lowOddC : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf :: C)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [C, lowLtHigh, ih] using hhighOdd_lowOdd
+  simpa [C, lowLtHigh, ih] using
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_steps_and_carry_cases
+      (G := C) (high := 1) (highHalf := highHalf)
+      (highBit := highBit) (low := 0) (lowHalf := lowHalf)
+      (lowBit := lowBit)
+      hhighStepC hlowStepC
+      hhighDouble_lowOdd hhighOdd_lowDoubleC hhighOdd_lowOddC
+
+/-- Odd-high strict branch reduced to the doubled successor-half high code.
+
+The head context formula is left abstract so the same theorem handles both
+low-even and low-odd branches of the parity split.  Only the odd-high
+arithmetic transport is performed here. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+    {extra : Formula} {highHalf : Nat}
+    (hbody : BProv Ax_s
+      (extra :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0)) :
+    BProv Ax_s
+      (extra :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := extra :: oddDoubleEqAt 1 highHalf :: [lowLtHigh, ih]
+  have hodd : BProv Ax_s C (oddDoubleEqAt 1 highHalf) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
+      (G := C) (high := 1) (highHalf := highHalf) (low := 0)
+      hodd (by simpa [C, lowLtHigh, ih] using hbody)
+
+/-- Strict successor parity split with every odd-high branch reduced to the
+doubled successor-half high-code obligation.
+
+The high-even/low-odd branch is still reduced to its explicit positive
+membership-persistence obligation; the two odd-high branches now ask for
+distinguishers of `S half + S half` instead of `S high`. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_double_succ_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+            (oddDoubleEqAt 0 lowHalf ::
+              doubleEqAt 1 highHalf ::
+              [ltTermAt (Term.var 0) (Term.var 1),
+                rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3))))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  have hhighOdd_lowDoubleTarget : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [lowLtHigh, ih])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+        (extra := doubleEqAt 0 lowHalf) (highHalf := highHalf)
+        hhighOdd_lowDouble
+  have hhighOdd_lowOddTarget : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [lowLtHigh, ih])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+        (extra := oddDoubleEqAt 0 lowHalf) (highHalf := highHalf)
+        hhighOdd_lowOdd
+  simpa [lowLtHigh, ih] using
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_remaining_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      hhighStep hlowStep hhighDouble_lowOdd_mem
+      hhighOdd_lowDoubleTarget hhighOdd_lowOddTarget
+
+/-- Strict successor parity split with the high-even/low-odd membership
+persistence premise sharpened to expose `hfMemAt 1 3`.
+
+This theorem is only a context reducer: the positive-bit persistence proof is
+still a premise, but it can use the high-membership component of the opened
+distinguishing witness directly. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_high_mem_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_high_mem : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          hfMemAt 1 3 ::
+            (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+              (oddDoubleEqAt 0 lowHalf ::
+                doubleEqAt 1 highHalf ::
+                [ltTermAt (Term.var 0) (Term.var 1),
+                  rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                  (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3))))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowLtHigh, ih]
+  have hhighDouble_lowOdd_mem : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+            (oddDoubleEqAt 0 lowHalf ::
+              doubleEqAt 1 highHalf :: C).map
+              (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3))) :=
+    BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_high_mem
+      (G := oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: C)
+      (high := 1) (low := 0) (half := highHalf)
+      (by
+        simpa [C, lowLtHigh, ih, Nat.add_assoc] using
+          hhighDouble_lowOdd_high_mem)
+  simpa [C, lowLtHigh, ih] using
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_remaining_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      hhighStep hlowStep hhighDouble_lowOdd_mem
+      hhighOdd_lowDouble hhighOdd_lowOdd
+
+/-- Strict successor parity split with the high-even/low-odd branch exposing
+`hfMemAt 1 3`, and the odd-high branches reduced to doubled successor-half
+codes.
+
+This is the current proof frontier in a compact reusable form: the remaining
+premises are the positive high-bit membership persistence and the two odd-high
+successor-half distinguisher obligations. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_high_mem_double_succ_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_high_mem : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          hfMemAt 1 3 ::
+            (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+              (oddDoubleEqAt 0 lowHalf ::
+                doubleEqAt 1 highHalf ::
+                [ltTermAt (Term.var 0) (Term.var 1),
+                  rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                  (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3))))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowLtHigh, ih]
+  have hhighDouble_lowOdd_mem : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+            (oddDoubleEqAt 0 lowHalf ::
+              doubleEqAt 1 highHalf :: C).map
+              (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3))) :=
+    BProv_Ax_s_hfMemTermAt_succ_of_high_double_opened_high_mem
+      (G := oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: C)
+      (high := 1) (low := 0) (half := highHalf)
+      (by
+        simpa [C, lowLtHigh, ih, Nat.add_assoc] using
+          hhighDouble_lowOdd_high_mem)
+  simpa [C, lowLtHigh, ih] using
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_double_succ_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      hhighStep hlowStep hhighDouble_lowOdd_mem
+      hhighOdd_lowDouble hhighOdd_lowOdd
+
+/-- Strict successor parity split with the high-even/low-odd branch opened down
+to the successor-step case of its positive membership trace, and the odd-high
+branches reduced to doubled successor-half codes.
+
+This is a pure composition theorem.  It performs the parity split and the
+already-named branch reductions, while leaving the beta-trace update premise
+fully explicit. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_step_pred_double_succ_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_step_pred :
+      let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+      let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+      let C : List Formula :=
+        oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+      let elem : Nat := 1
+      let set : Nat := 1+2
+      let witness : Formula := hfDistinguishesAt 0 (1+1) (0+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: C.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (highHalf+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target))))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowLtHigh, ih]
+  have hhighStepC : BProv Ax_s C (div2StepAt 1 highHalf highBit) := by
+    simpa [C, lowLtHigh, ih] using hhighStep
+  have hlowStepC : BProv Ax_s C (div2StepAt 0 lowHalf lowBit) := by
+    simpa [C, lowLtHigh, ih] using hlowStep
+  have hhighDouble_lowOddTarget : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: C)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [C, lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_step_pred
+        (highHalf := highHalf) (lowHalf := lowHalf)
+        (by
+          simpa [C, lowLtHigh, ih, Nat.add_assoc] using
+            hhighDouble_lowOdd_step_pred)
+  have hhighOdd_lowDoubleTarget : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf :: C)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [C, lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+        (extra := doubleEqAt 0 lowHalf) (highHalf := highHalf)
+        hhighOdd_lowDouble
+  have hhighOdd_lowOddTarget : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf :: C)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [C, lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_odd_of_double_succ
+        (extra := oddDoubleEqAt 0 lowHalf) (highHalf := highHalf)
+        hhighOdd_lowOdd
+  simpa [C, lowLtHigh, ih] using
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_steps_and_carry_cases
+      (G := C) (high := 1) (highHalf := highHalf)
+      (highBit := highBit) (low := 0) (lowHalf := lowHalf)
+      (lowBit := lowBit)
+      hhighStepC hlowStepC
+      hhighDouble_lowOddTarget hhighOdd_lowDoubleTarget
+      hhighOdd_lowOddTarget
+
+/-- If the induction hypothesis distinguishes `high` from every lower code,
+and a binary-halving step extracts `lowHalf` from a strict lower code `low`,
+then the induction hypothesis may be opened at `lowHalf`.
+
+This is only the half-order/IH extraction used by later carry branches; it
+does not shift a predecessor witness through the successor code. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
+    {G : List Formula} {low high lowHalf lowBit : Nat}
+    (hih : BProv Ax_s G (hfLtDistinguishesTermAt (Term.var high)))
+    (hlt : BProv Ax_s G (ltTermAt (Term.var low) (Term.var high)))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high lowHalf) := by
+  have hltAt : BProv Ax_s G (ltAt low high) := by
+    simpa [ltTermAt_var] using hlt
+  have hhalfLtAt : BProv Ax_s G (ltAt lowHalf high) :=
+    BProv_Ax_s_ltAt_half_of_div2StepAt_ltAt hlowStep hltAt
+  have hhalfLt : BProv Ax_s G
+      (ltTermAt (Term.var lowHalf) (Term.var high)) := by
+    simpa [ltTermAt_var] using hhalfLtAt
+  have hsome : BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.var high) lowHalf) :=
+    BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt
+      hih hhalfLt
+  simpa [hfSomeDistinguishesTermAt_var] using hsome
+
+/-- Strict-successor specialization of the half-order/IH extraction: a div2
+witness for the current low code lets the renamed predecessor induction
+hypothesis distinguish the predecessor-high code from the low half. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
+    {lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesAt 1 lowHalf) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := [lowLtHigh, ih]
+  have hlt : BProv Ax_s C (ltTermAt (Term.var 0) (Term.var 1)) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, lowLtHigh])
+  have hihRaw : BProv Ax_s C ih :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, ih])
+  have hih : BProv Ax_s C (hfLtDistinguishesTermAt (Term.var 1)) := by
+    simpa [ih, hfLtDistinguishesTermAt_var, rename_hfLtDistinguishesAt_succ]
+      using hihRaw
+  have hstep : BProv Ax_s C (div2StepAt 0 lowHalf lowBit) := by
+    simpa [C, lowLtHigh, ih] using hlowStep
+  have hsome : BProv Ax_s C (hfSomeDistinguishesAt 1 lowHalf) :=
+    BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
+      hih hlt hstep
+  simpa [C, lowLtHigh, ih] using hsome
 
 /-- Reduce the open successor step for lower-code distinguishers to the two
 predecessor cases produced by `low < S high`: either `low < high`, or
