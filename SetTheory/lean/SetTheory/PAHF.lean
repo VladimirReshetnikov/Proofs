@@ -10704,6 +10704,27 @@ theorem BProv_Ax_s_mulNumerals (m n : Nat) :
   BProv_eqTrans (BProv_Ax_s_mulRightNumeral (Term.numeral m) n)
     (BProv_Ax_s_mulRightNumeral_numeral m n)
 
+/-- PA proves `a ≤ b` from a proof that the two slots are equal. -/
+theorem BProv_Ax_s_leAt_of_eq {G : List Formula} {a b : Nat}
+    (heq : BProv Ax_s G (eq (Term.var a) (Term.var b))) :
+    BProv Ax_s G (leAt a b) := by
+  have haddZero : BProv Ax_s G
+      (eq (Term.add (Term.var a) Term.zero) (Term.var a)) :=
+    BProv_weaken_nil (BProv_Ax_s_addZero_term (Term.var a))
+  have htarget : BProv Ax_s G
+      (eq (Term.add (Term.var a) Term.zero) (Term.var b)) :=
+    BProv_eqTrans haddZero heq
+  have hbody : BProv Ax_s G
+      (subst (instTerm Term.zero)
+        (eq (Term.add (Term.var (a+1)) (Term.var 0))
+          (Term.var (b+1)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+  simpa [leAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := eq (Term.add (Term.var (a+1)) (Term.var 0))
+        (Term.var (b+1)))
+      (t := Term.zero) hbody)
+
 /-- From PA proofs that two slots contain fixed numerals, derive the corresponding
 `leAt` relation by exhibiting the difference as witness. -/
 theorem BProv_Ax_s_leAt_of_eqConst {G : List Formula}
@@ -10876,6 +10897,13 @@ theorem BProv_Ax_s_ltAt_leAt_bot {G : List Formula} {a b : Nat}
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltAt, ltBody] using hbody)
+
+/-- PA refutes `a < b` once the same context proves `b = a`. -/
+theorem BProv_Ax_s_ltAt_eq_bot {G : List Formula} {a b : Nat}
+    (hlt : BProv Ax_s G (ltAt a b))
+    (heq : BProv Ax_s G (eq (Term.var b) (Term.var a))) :
+    BProv Ax_s G bot :=
+  BProv_Ax_s_ltAt_leAt_bot hlt (BProv_Ax_s_leAt_of_eq heq)
 
 /-- From a PA proof that a slot contains a fixed numeral, derive the
 less-than-a-closed-numeral relation by exhibiting the positive difference
