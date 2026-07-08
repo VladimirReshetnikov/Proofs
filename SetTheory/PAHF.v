@@ -12757,6 +12757,44 @@ Proof.
     + apply BProv_eqRefl.
 Qed.
 
+Lemma BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps :
+  forall G elem set elemValue setValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BProv Ax_s G (eqConstAt set setValue) ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))) ->
+  HFMemTrace elemValue setValue code step ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set elemValue setValue code step
+    helem hset hsteps htrace.
+  destruct htrace as [hentry [_hthrough hbit]].
+  exact (BProv_Ax_s_hfMemAt_of_closed_bit_components
+    G elem set code step
+    (BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry
+      G set setValue code step hset hentry)
+    hsteps
+    (BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit
+      G elem elemValue code step helem hbit)).
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_eqConst_trace :
+  forall G elem set elemValue setValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BProv Ax_s G (eqConstAt set setValue) ->
+  HFMemTrace elemValue setValue code step ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set elemValue setValue code step helem hset htrace.
+  exact (BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
+    G elem set elemValue setValue code step helem hset
+    (BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace
+      G elem elemValue code step helem (proj1 (proj2 htrace)))
+    htrace).
+Qed.
+
 Lemma rename_hfMemAt : forall (r : nat -> nat) elem set,
   rename r (hfMemAt elem set) = hfMemAt (r elem) (r set).
 Proof.
@@ -14018,6 +14056,20 @@ Proof.
       * exact hnext.
       * right. reflexivity.
       * exact hcurEq.
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_of_eqConst_mem :
+  forall G elem set elemValue setValue,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BProv Ax_s G (eqConstAt set setValue) ->
+  hf_mem elemValue setValue ->
+  BProv Ax_s G (hfMemAt elem set).
+Proof.
+  intros G elem set elemValue setValue helem hset hmem.
+  destruct (HFMemTrace_exists_of_mem elemValue setValue hmem) as
+    [code [step htrace]].
+  exact (BProv_Ax_s_hfMemAt_of_eqConst_trace
+    G elem set elemValue setValue code step helem hset htrace).
 Qed.
 
 Lemma BetaEntry_functional : forall code step idx a b,
