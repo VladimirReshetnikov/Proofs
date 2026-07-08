@@ -563,6 +563,7 @@ open SetTheory
 #check @PA.Formula.subst_instTerm_hfLtDistinguishesAt_zero_term
 #check PA.Formula.substSuccVar_hfLtDistinguishesAt_zero
 #check @PA.Formula.subst_instTerm_var_hfMemTermAt_zero_rename_succ
+#check @PA.Formula.BProv_hfMemTermAt_of_hfMemAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
 #check @PA.Formula.hfDistinguishesAt_nat
@@ -579,6 +580,8 @@ open SetTheory
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_mem_and_not_mem
+#check @PA.Formula.BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfDistinguishesAt_eq_term
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_mem_and_low_mem_bot
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low

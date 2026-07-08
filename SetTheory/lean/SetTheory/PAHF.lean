@@ -7430,6 +7430,26 @@ theorem subst_instTerm_zero_hfMemAt_succ_zero (elem : Nat) :
     betaModTerm, subst, instTerm, Term.subst, Term.upSubst, Term.rename,
     Term.numeral]
 
+/-- Transport ordinary Ackermann membership in a set slot across a PA equality
+to an arbitrary set-code term.  This is the proof-level bridge from the slot
+macro to `hfMemTermAt`; the formula definitions themselves remain pure
+abbreviations. -/
+theorem BProv_hfMemTermAt_of_hfMemAt_eq_term
+    {B : Formula → Prop} {G : List Formula} {elem set : Nat}
+    {setCode : Term}
+    (hmem : BProv B G (hfMemAt elem set))
+    (hset : BProv B G (eq (Term.var set) setCode)) :
+    BProv B G (hfMemTermAt elem setCode) := by
+  have hmemSubst : BProv B G
+      (subst (instTerm (Term.var set)) (hfMemAt (elem+1) 0)) := by
+    simpa [subst_instTerm_var_hfMemAt_succ_zero] using hmem
+  have htermSubst : BProv B G
+      (subst (instTerm setCode) (hfMemAt (elem+1) 0)) :=
+    BProv_eqElim (B := B) (G := G)
+      (s := Term.var set) (t := setCode)
+      (a := hfMemAt (elem+1) 0) hset hmemSubst
+  simpa [subst_instTerm_hfMemAt_succ_zero] using htermSubst
+
 theorem rename_hfMemAt (r : Nat → Nat) (elem set : Nat) :
     rename r (hfMemAt elem set) = hfMemAt (r elem) (r set) := by
   simp [hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
@@ -25414,6 +25434,34 @@ theorem BProv_hfSomeDistinguishesTermAt_of_mem_and_not_mem
     (B := B) (G := G) (elem := elem) (low := low)
     (highCode := highCode)
     (BProv_hfDistinguishesTermAt_of_mem_and_not_mem hhigh hnotLow)
+
+/-- Transport a slot-level distinguishing-member proof across a PA equality for
+the high set code. -/
+theorem BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term
+    {B : Formula → Prop} {G : List Formula} {elem high low : Nat}
+    {highCode : Term}
+    (hdist : BProv B G (hfDistinguishesAt elem high low))
+    (hhigh : BProv B G (eq (Term.var high) highCode)) :
+    BProv B G (hfDistinguishesTermAt elem highCode low) := by
+  have hhighMem : BProv B G (hfMemAt elem high) := by
+    simpa [hfDistinguishesAt] using BProv_andE1 hdist
+  have hnotLow : BProv B G (imp (hfMemAt elem low) bot) := by
+    simpa [hfDistinguishesAt] using BProv_andE2 hdist
+  exact BProv_hfDistinguishesTermAt_of_mem_and_not_mem
+    (BProv_hfMemTermAt_of_hfMemAt_eq_term hhighMem hhigh) hnotLow
+
+/-- Existential package for
+`BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term`. -/
+theorem BProv_hfSomeDistinguishesTermAt_of_hfDistinguishesAt_eq_term
+    {B : Formula → Prop} {G : List Formula} {elem high low : Nat}
+    {highCode : Term}
+    (hdist : BProv B G (hfDistinguishesAt elem high low))
+    (hhigh : BProv B G (eq (Term.var high) highCode)) :
+    BProv B G (hfSomeDistinguishesTermAt highCode low) :=
+  BProv_hfSomeDistinguishesTermAt_intro_var
+    (B := B) (G := G) (elem := elem) (low := low)
+    (highCode := highCode)
+    (BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term hdist hhigh)
 
 /-- Logical packaging for the proof shape produced by low-side membership
 refutations: if high membership is known, and assuming low membership gives
