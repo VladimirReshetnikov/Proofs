@@ -17,6 +17,20 @@ open Form
 of the set coded by `y`.  Equivalently, the `x`-th binary digit of `y` is set. -/
 def Mem (x y : Nat) : Prop := y.testBit x = true
 
+/-- The zero-th Ackermann member is present exactly when the code is odd; this
+one-way form is the shape produced by a first binary-halving step. -/
+theorem mem_zero_of_odd_double {set half : Nat}
+    (hset : set = half + half + 1) : Mem 0 set := by
+  rw [Mem, hset, Nat.testBit_zero]
+  have hmod : (half + half + 1) % 2 = 1 := by omega
+  simp [hmod]
+
+/-- Nonmembership is the closed Boolean value `false` of the corresponding
+Ackermann bit. -/
+theorem testBit_false_of_not_mem {x y : Nat} (h : ¬ Mem x y) :
+    y.testBit x = false := by
+  cases hb : y.testBit x <;> simp [Mem, hb] at h ⊢
+
 /-- The empty set is coded by `0`. -/
 def empty : Nat := 0
 
@@ -82,6 +96,96 @@ theorem exists_mem_of_ne_empty {a : Nat} (ha : a ≠ empty) : ∃ x, Mem x a := 
   intro h
   apply ha
   exact (eq_empty_iff_no_mem a).mpr (fun x hx => h ⟨x, hx⟩)
+
+/-- If one Ackermann code is strictly below another, some bit is present in the
+larger code and absent from the smaller one. -/
+theorem exists_mem_not_mem_of_lt {low high : Nat} (hlt : low < high) :
+    ∃ x, Mem x high ∧ ¬ Mem x low := by
+  apply Classical.byContradiction
+  intro h
+  have hsubset : ∀ x, Mem x high → Mem x low := by
+    intro x hx
+    apply Classical.byContradiction
+    intro hlow
+    exact h ⟨x, hx, hlow⟩
+  have hle : high ≤ low := by
+    apply Nat.le_of_testBit
+    intro x hx
+    exact hsubset x hx
+  omega
+
+/-- Search for the largest bit below `n` that is present in `high` and absent
+from `low`.  This is semantic data only; PA-side formulas and proofs consume
+its specification through separate lemmas. -/
+noncomputable def maxHighNotLowBelow (low high : Nat) : Nat → Nat
+  | 0 => 0
+  | n+1 => by
+      classical
+      exact
+        if Mem n high ∧ ¬ Mem n low then n
+        else maxHighNotLowBelow low high n
+
+theorem le_maxHighNotLowBelow_of_lt {x low high n : Nat}
+    (hx : x < n) (hhigh : Mem x high) (hlow : ¬ Mem x low) :
+    x ≤ maxHighNotLowBelow low high n := by
+  classical
+  induction n with
+  | zero =>
+      omega
+  | succ n ih =>
+      by_cases hn : Mem n high ∧ ¬ Mem n low
+      · simp [maxHighNotLowBelow, hn]
+        exact Nat.lt_succ_iff.mp hx
+      · simp [maxHighNotLowBelow, hn]
+        have hle : x ≤ n := Nat.lt_succ_iff.mp hx
+        rcases Nat.lt_or_eq_of_le hle with hxlt | hxeq
+        · exact ih hxlt
+        · subst hxeq
+          exact False.elim (hn ⟨hhigh, hlow⟩)
+
+theorem maxHighNotLowBelow_spec_of_exists {low high n : Nat}
+    (hex : ∃ x, x < n ∧ Mem x high ∧ ¬ Mem x low) :
+    Mem (maxHighNotLowBelow low high n) high ∧
+      ¬ Mem (maxHighNotLowBelow low high n) low := by
+  classical
+  induction n with
+  | zero =>
+      rcases hex with ⟨x, hx, _⟩
+      omega
+  | succ n ih =>
+      by_cases hn : Mem n high ∧ ¬ Mem n low
+      · simp [maxHighNotLowBelow, hn]
+      · simp [maxHighNotLowBelow, hn]
+        apply ih
+        rcases hex with ⟨x, hx, hhigh, hlow⟩
+        have hle : x ≤ n := Nat.lt_succ_iff.mp hx
+        rcases Nat.lt_or_eq_of_le hle with hxlt | hxeq
+        · exact ⟨x, hxlt, hhigh, hlow⟩
+        · subst hxeq
+          exact False.elim (hn ⟨hhigh, hlow⟩)
+
+/-- Canonical semantic witness for `low < high`: the largest high-only bit
+below `high`. -/
+noncomputable def highNotLowWitness (low high : Nat) : Nat :=
+  maxHighNotLowBelow low high high
+
+theorem highNotLowWitness_spec_of_lt {low high : Nat} (hlt : low < high) :
+    Mem (highNotLowWitness low high) high ∧
+      ¬ Mem (highNotLowWitness low high) low := by
+  rcases exists_mem_not_mem_of_lt hlt with ⟨x, hhigh, hlow⟩
+  exact maxHighNotLowBelow_spec_of_exists
+    (low := low) (high := high) (n := high)
+    ⟨x, mem_lt hhigh, hhigh, hlow⟩
+
+/-- Unequal Ackermann codes differ in at least one membership bit, in one
+direction or the other. -/
+theorem exists_mem_diff_of_ne {a b : Nat} (hne : a ≠ b) :
+    (∃ x, Mem x a ∧ ¬ Mem x b) ∨
+      (∃ x, Mem x b ∧ ¬ Mem x a) := by
+  by_cases hab : a < b
+  · exact Or.inr (exists_mem_not_mem_of_lt hab)
+  · have hba : b < a := by omega
+    exact Or.inl (exists_mem_not_mem_of_lt hba)
 
 /-- Search for the largest member of `a` below `n`.  The default value at
 `n = 0` is irrelevant; callers use the accompanying existence lemmas. -/
