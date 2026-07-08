@@ -181,6 +181,10 @@ Check BProv_termGraphAt_eqElim_out.
 Check BProv_formulaAt_eqRefl_of_termGraphAt.
 Check BProv_eq_of_formulaAt_eq_var.
 Check BProv_formulaAt_eqElim_var.
+Check BProv_formulaAt_allI_raw.
+Check BProv_formulaAt_allI.
+Check BProv_formulaAt_allI_domainContext.
+Check BProv_formulaAt_allI_domainContext_of_sentences.
 Check BProv_formulaAt_allE_raw.
 Check BProv_formulaAt_allE_var.
 Check BProv_formulaAt_allE_slot_context.

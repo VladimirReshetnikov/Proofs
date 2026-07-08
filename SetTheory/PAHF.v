@@ -15452,6 +15452,89 @@ Proof.
   exact htarget.
 Qed.
 
+Lemma BProv_formulaAt_allI_raw : forall rho G a,
+  BProv translatedPAAx (map (rename S) (translateContextAt rho G))
+    (fImp domainForm (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros rho G a h.
+  change (BProv translatedPAAx (translateContextAt rho G)
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  apply (BProv_allI_of_sentences translatedPAAx
+    (translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a))).
+  - exact Sentences_translatedPAAx.
+  - exact h.
+Qed.
+
+Lemma BProv_formulaAt_allI : forall rho G a,
+  BProv translatedPAAx
+    (translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) a) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros rho G a h.
+  rewrite translateContextAt_rename_succ_upVarMap in h.
+  apply BProv_formulaAt_allI_raw.
+  apply BProv_impI.
+  apply BProv_context_cons.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_allI_domainContext : forall rho n G a,
+  BProv translatedPAAx
+    (domainContextAt (upVarMap rho) (S n) ++
+      translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) a) ->
+  BProv translatedPAAx
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros rho n G a h.
+  rewrite domainContextAt_upVarMap_succ in h.
+  rewrite translateContextAt_rename_succ_upVarMap in h.
+  cbn in h.
+  rewrite <- map_app in h.
+  change (BProv translatedPAAx
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  apply (BProv_allI_of_sentences translatedPAAx
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a))).
+  - exact Sentences_translatedPAAx.
+  - apply BProv_impI.
+    exact h.
+Qed.
+
+Lemma BProv_formulaAt_allI_domainContext_of_sentences :
+  forall (B : form -> Prop) rho n G a,
+  Sentences B ->
+  BProv B
+    (domainContextAt (upVarMap rho) (S n) ++
+      translateContextAt (upVarMap rho) (map (PA.Formula.rename S) G))
+    (formulaAt (upVarMap rho) a) ->
+  BProv B
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pAll a)).
+Proof.
+  intros B rho n G a hB h.
+  rewrite domainContextAt_upVarMap_succ in h.
+  rewrite translateContextAt_rename_succ_upVarMap in h.
+  cbn in h.
+  rewrite <- map_app in h.
+  change (BProv B
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fAll (fImp domainForm (formulaAt (upVarMap rho) a)))).
+  apply (BProv_allI_of_sentences B
+    (domainContextAt rho n ++ translateContextAt rho G)
+    (fImp domainForm (formulaAt (upVarMap rho) a))).
+  - exact hB.
+  - apply BProv_impI.
+    exact h.
+Qed.
+
 Lemma BProv_formulaAt_allE_raw : forall rho G a k,
   BProv translatedPAAx (translateContextAt rho G)
     (formulaAt rho (PA.pAll a)) ->
