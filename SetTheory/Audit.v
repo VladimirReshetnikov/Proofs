@@ -155,6 +155,9 @@ Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace.
 Check PA.Formula.BProv_Ax_s_hfMemAt_bitOneEx_of_bit.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components.
+Check PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit.
+Check PA.Formula.BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.

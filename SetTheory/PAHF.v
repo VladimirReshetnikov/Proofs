@@ -12571,6 +12571,192 @@ Proof.
       G elem code step hbit)).
 Qed.
 
+Lemma BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry :
+  forall G set setValue code step,
+  BProv Ax_s G (eqConstAt set setValue) ->
+  BetaEntry code step 0 setValue ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaAtConstIdx (S (S set)) 1 0 0))).
+Proof.
+  intros G set setValue code step hset hentry.
+  set (H := [
+    eqConstAt (S (S set)) setValue;
+    eqConstAt 1 code;
+    eqConstAt 0 step]).
+  set (sigmaCode := Term.upSubst (instTerm (Term.numeral code))).
+  set (sigmaStep := instTerm (Term.numeral step)).
+  assert (hsetH : BProv Ax_s H (eqConstAt (S (S set)) setValue)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. left. reflexivity.
+  }
+  assert (hcodeH : BProv Ax_s H (eqConstAt 1 code)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. left. reflexivity.
+  }
+  assert (hstepH : BProv Ax_s H (eqConstAt 0 step)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. left. reflexivity.
+  }
+  pose proof (BProv_Ax_s_betaAtConstIdx_of_eqConst_entry
+    H (S (S set)) 1 0 setValue code step 0
+    hsetH hcodeH hstepH hentry) as hopen.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s H
+    (betaAtConstIdx (S (S set)) 1 0 0) hopen sigmaCode)
+    as hsubstCode.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaCode) H)
+    (subst sigmaCode (betaAtConstIdx (S (S set)) 1 0 0))
+    hsubstCode sigmaStep) as hsubst.
+  eapply BProv_cut.
+  - exact hsubst.
+  - intros g hg.
+    unfold H in hg.
+    simpl in hg.
+    destruct hg as [hg | [hg | [hg | []]]]; subst g;
+      unfold sigmaCode, sigmaStep, eqConstAt in *;
+      simpl in *;
+      repeat rewrite Term.rename_numeral in *;
+      repeat rewrite Term.subst_numeral in *.
+    + exact hset.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit :
+  forall G elem elemValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BetaDiv2Bit code step elemValue 1 ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral 1))
+      (subst (Term.upSubst (instTerm (Term.numeral step)))
+        (subst (Term.upSubst (Term.upSubst
+          (instTerm (Term.numeral code))))
+          (betaDiv2BitAt 0 2 1 (S (S (S elem))))))).
+Proof.
+  intros G elem elemValue code step helem hbit.
+  destruct hbit as [cur [next hstepBit]].
+  set (H := [
+    eqConstAt (S (S (S elem))) elemValue;
+    eqConstAt 2 code;
+    eqConstAt 1 step;
+    eqConstAt 0 1]).
+  set (sigmaCode :=
+    Term.upSubst (Term.upSubst (instTerm (Term.numeral code)))).
+  set (sigmaStep := Term.upSubst (instTerm (Term.numeral step))).
+  set (sigmaBit := instTerm (Term.numeral 1)).
+  assert (helemH : BProv Ax_s H
+      (eqConstAt (S (S (S elem))) elemValue)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. left. reflexivity.
+  }
+  assert (hcodeH : BProv Ax_s H (eqConstAt 2 code)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. left. reflexivity.
+  }
+  assert (hstepH : BProv Ax_s H (eqConstAt 1 step)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. left. reflexivity.
+  }
+  assert (hbitH : BProv Ax_s H (eqConstAt 0 1)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. right. left. reflexivity.
+  }
+  pose proof (BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
+    H 0 2 1 (S (S (S elem))) 1 code step elemValue cur next
+    hbitH hcodeH hstepH helemH hstepBit) as hopen.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s H
+    (betaDiv2BitAt 0 2 1 (S (S (S elem)))) hopen sigmaCode)
+    as hsubstCode.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaCode) H)
+    (subst sigmaCode (betaDiv2BitAt 0 2 1 (S (S (S elem)))))
+    hsubstCode sigmaStep) as hsubstStep.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaStep) (map (subst sigmaCode) H))
+    (subst sigmaStep
+      (subst sigmaCode (betaDiv2BitAt 0 2 1 (S (S (S elem))))))
+    hsubstStep sigmaBit) as hsubst.
+  eapply BProv_cut.
+  - exact hsubst.
+  - intros g hg.
+    unfold H in hg.
+    simpl in hg.
+    destruct hg as [hg | [hg | [hg | [hg | []]]]]; subst g;
+      unfold sigmaCode, sigmaStep, sigmaBit, eqConstAt in *;
+      simpl in *;
+      repeat rewrite Term.rename_numeral in *;
+      repeat rewrite Term.subst_numeral in *.
+    + exact helem.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+Qed.
+
+Lemma BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace :
+  forall G elem elemValue code step,
+  BProv Ax_s G (eqConstAt elem elemValue) ->
+  BetaDiv2StepsThrough code step elemValue ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral step))
+      (subst (Term.upSubst (instTerm (Term.numeral code)))
+        (betaDiv2StepsThroughAt 1 0 (S (S elem))))).
+Proof.
+  intros G elem elemValue code step helem hthrough.
+  set (H := [
+    eqConstAt (S (S elem)) elemValue;
+    eqConstAt 1 code;
+    eqConstAt 0 step]).
+  set (sigmaCode := Term.upSubst (instTerm (Term.numeral code))).
+  set (sigmaStep := instTerm (Term.numeral step)).
+  assert (helemH : BProv Ax_s H (eqConstAt (S (S elem)) elemValue)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. left. reflexivity.
+  }
+  assert (hcodeH : BProv Ax_s H (eqConstAt 1 code)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. left. reflexivity.
+  }
+  assert (hstepH : BProv Ax_s H (eqConstAt 0 step)).
+  {
+    apply BProv_ass.
+    unfold H. simpl. right. right. left. reflexivity.
+  }
+  pose proof (BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace
+    H 1 0 (S (S elem)) code step elemValue
+    hcodeH hstepH helemH hthrough) as hopen.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s H
+    (betaDiv2StepsThroughAt 1 0 (S (S elem))) hopen sigmaCode)
+    as hsubstCode.
+  pose proof (BProv_subst_of_sentences Ax_s sentence_ax_s
+    (map (subst sigmaCode) H)
+    (subst sigmaCode (betaDiv2StepsThroughAt 1 0 (S (S elem))))
+    hsubstCode sigmaStep) as hsubst.
+  eapply BProv_cut.
+  - exact hsubst.
+  - intros g hg.
+    unfold H in hg.
+    simpl in hg.
+    destruct hg as [hg | [hg | [hg | []]]]; subst g;
+      unfold sigmaCode, sigmaStep, eqConstAt in *;
+      simpl in *;
+      repeat rewrite Term.rename_numeral in *;
+      repeat rewrite Term.subst_numeral in *.
+    + exact helem.
+    + apply BProv_eqRefl.
+    + apply BProv_eqRefl.
+Qed.
+
 Lemma rename_hfMemAt : forall (r : nat -> nat) elem set,
   rename r (hfMemAt elem set) = hfMemAt (r elem) (r set).
 Proof.
