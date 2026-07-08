@@ -19911,6 +19911,73 @@ theorem subst_instTerm_var_hfLtDistinguishesAt_body
     div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
     subst, instTerm, Term.subst, Term.upSubst, Term.rename]
 
+/-- Instantiating the low-code binder of the term-parametric lower-code
+predicate by an existing PA variable recovers the expected open implication. -/
+theorem subst_instTerm_var_hfLtDistinguishesTermAt_body
+    (low : Nat) (highCode : Term) :
+    subst (instTerm (Term.var low))
+      (imp
+        (ltTermAt (Term.var 0) (Term.rename Nat.succ highCode))
+        (hfSomeDistinguishesTermAt (Term.rename Nat.succ highCode) 0)) =
+      imp (ltTermAt (Term.var low) highCode)
+        (hfSomeDistinguishesTermAt highCode low) := by
+  have hshift1 :
+      Term.subst (Term.upSubst (instTerm (Term.var low)))
+          (Term.rename (fun n : Nat => n + 1 + 1) highCode) =
+        Term.rename Nat.succ highCode := by
+    change Term.subst
+        (Nat.rec (motive := fun _ => Nat → Term)
+          (instTerm (Term.var low)) (fun _ τ => Term.upSubst τ) 1)
+        (Term.rename (fun n : Nat => n + 1 + 1) highCode) =
+      Term.rename Nat.succ highCode
+    simpa [iterUpSubst, Nat.succ_eq_add_one] using
+      (term_subst_iterUpSubst_instTerm_var_rename_add_succ
+        1 low highCode)
+  have hshift6 :
+      Term.subst
+          (Term.upSubst
+            (Term.upSubst
+              (Term.upSubst
+                (Term.upSubst
+                  (Term.upSubst
+                    (Term.upSubst (instTerm (Term.var low))))))))
+          (Term.rename (fun n : Nat => n + 6 + 1) highCode) =
+        Term.rename (fun n : Nat => n + 5 + 1) highCode := by
+    change Term.subst
+        (Nat.rec (motive := fun _ => Nat → Term)
+          (instTerm (Term.var low)) (fun _ τ => Term.upSubst τ) 6)
+        (Term.rename (fun n : Nat => n + 6 + 1) highCode) =
+      Term.rename (fun n : Nat => n + 5 + 1) highCode
+    simpa [iterUpSubst, Nat.add_assoc] using
+      (term_subst_iterUpSubst_instTerm_var_rename_add_succ
+        6 low highCode)
+  have hshift7 :
+      Term.subst
+          (Term.upSubst
+            (Term.upSubst
+              (Term.upSubst
+                (Term.upSubst
+                  (Term.upSubst
+                    (Term.upSubst
+                      (Term.upSubst (instTerm (Term.var low)))))))))
+          (Term.rename (fun n : Nat => n + 7 + 1) highCode) =
+        Term.rename (fun n : Nat => n + 6 + 1) highCode := by
+    change Term.subst
+        (Nat.rec (motive := fun _ => Nat → Term)
+          (instTerm (Term.var low)) (fun _ τ => Term.upSubst τ) 7)
+        (Term.rename (fun n : Nat => n + 7 + 1) highCode) =
+      Term.rename (fun n : Nat => n + 6 + 1) highCode
+    simpa [iterUpSubst, Nat.add_assoc] using
+      (term_subst_iterUpSubst_instTerm_var_rename_add_succ
+        7 low highCode)
+  simp [hfSomeDistinguishesTermAt, hfDistinguishesTermAt, hfMemTermAt,
+    hfMemAt, betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaAtConstIdx, betaAt, remAt, ltAt, leAt, betaDiv2BitAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaAtSuccIdx,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm, subst,
+    instTerm, Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+    hshift1, hshift6, hshift7]
+
 /-- Instantiating the high-code binder of the universal extensionality target
 by an existing PA variable recovers `hfLtDistinguishesAt` for that slot. -/
 theorem subst_instTerm_var_hfLtDistinguishesAt_zero (high : Nat) :
@@ -19970,6 +20037,32 @@ theorem BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
     simpa [subst_instTerm_var_hfLtDistinguishesAt_body] using himpRaw
   exact BProv_mp B G (ltAt low high) (hfSomeDistinguishesAt high low)
     himp hlt
+
+/-- Use an object-language proof of the term-parametric lower-code predicate
+at a particular strictly lower code. -/
+theorem BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt
+    {B : Formula → Prop} {G : List Formula} {low : Nat}
+    {highCode : Term}
+    (hallLow : BProv B G (hfLtDistinguishesTermAt highCode))
+    (hlt : BProv B G (ltTermAt (Term.var low) highCode)) :
+    BProv B G (hfSomeDistinguishesTermAt highCode low) := by
+  have himpRaw : BProv B G
+      (subst (instTerm (Term.var low))
+        (imp
+          (ltTermAt (Term.var 0) (Term.rename Nat.succ highCode))
+          (hfSomeDistinguishesTermAt (Term.rename Nat.succ highCode) 0))) := by
+    simpa [hfLtDistinguishesTermAt] using
+      (BProv_allE (B := B) (G := G)
+        (a := imp
+          (ltTermAt (Term.var 0) (Term.rename Nat.succ highCode))
+          (hfSomeDistinguishesTermAt (Term.rename Nat.succ highCode) 0))
+        (t := Term.var low) hallLow)
+  have himp : BProv B G
+      (imp (ltTermAt (Term.var low) highCode)
+        (hfSomeDistinguishesTermAt highCode low)) := by
+    simpa [subst_instTerm_var_hfLtDistinguishesTermAt_body] using himpRaw
+  exact BProv_mp B G (ltTermAt (Term.var low) highCode)
+    (hfSomeDistinguishesTermAt highCode low) himp hlt
 
 /-- Use the universal extensionality-induction target at arbitrary high/low
 slots. -/

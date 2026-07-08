@@ -560,12 +560,14 @@ open SetTheory
 #check @PA.Formula.rename_hfSomeDistinguishesAt_succ
 #check @PA.Formula.rename_hfSomeDistinguishesTermAt_succ
 #check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_body
+#check @PA.Formula.subst_instTerm_var_hfLtDistinguishesTermAt_body
 #check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_zero
 #check @PA.Formula.subst_instTerm_hfLtDistinguishesAt_zero_term
 #check PA.Formula.substSuccVar_hfLtDistinguishesAt_zero
 #check @PA.Formula.subst_instTerm_var_hfMemTermAt_zero_rename_succ
 #check @PA.Formula.BProv_hfMemTermAt_of_hfMemAt_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
+#check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
 #check @PA.Formula.hfDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat
