@@ -11565,6 +11565,26 @@ theorem BProv_Ax_s_hfMemAt_of_eqConst_mem
     (setValue := setValue) (code := code) (step := step)
     helem hset htrace
 
+/-- Inner shell for the translated HF empty-set axiom.
+
+After the empty witness is instantiated with the closed PA numeral `0`, the
+only remaining task is to refute the corresponding closed-set membership
+assumption for an arbitrary element. -/
+theorem BProv_Ax_s_HF_empty_zero_body_of_member_bot
+    (hmem : BProv Ax_s
+      [subst (Term.upSubst (instTerm Term.zero)) (hfMemAt 0 1)]
+      bot) :
+    BProv Ax_s []
+      (subst (instTerm Term.zero)
+        (all (imp (hfMemAt 0 1) bot))) := by
+  let memZero : Formula := subst (Term.upSubst (instTerm Term.zero)) (hfMemAt 0 1)
+  have himp : BProv Ax_s [] (imp memZero bot) :=
+    BProv_impI (by simpa [memZero] using hmem)
+  have hall : BProv Ax_s [] (all (imp memZero bot)) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [memZero, subst, instTerm, Term.subst, Term.upSubst] using hall
+
 /-- Outer shell for the translated HF empty-set axiom.
 
 The remaining arithmetic obligation is exactly the body obtained by using the
@@ -11591,6 +11611,18 @@ theorem BProv_Ax_s_translated_HF_empty_of_zero_body
       (fun f hf => sentence_ax_s (f := f) hf) h2
   simpa [body, translateHFFormula, hfFormulaAt, AckermannHF.HF_empty_form,
     SetTheory.sealF, SetTheory.closeN, SetTheory.bound, hfUpVarMap] using h3
+
+/-- Combined shell for the translated HF empty-set axiom: it remains only to
+refute the membership formula for an arbitrary element and the closed zero set
+code. -/
+theorem BProv_Ax_s_translated_HF_empty_of_zero_member_bot
+    (hmem : BProv Ax_s
+      [subst (Term.upSubst (instTerm Term.zero)) (hfMemAt 0 1)]
+      bot) :
+    BProv Ax_s []
+      (translateHFFormula (SetTheory.sealF AckermannHF.HF_empty_form)) :=
+  BProv_Ax_s_translated_HF_empty_of_zero_body
+    (BProv_Ax_s_HF_empty_zero_body_of_member_bot hmem)
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
