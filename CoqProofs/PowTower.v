@@ -28,12 +28,6 @@ Fixpoint exprEqb (x y : Expr) : bool :=
   | _, _ => false
   end.
 
-Theorem exprEqb_refl (e : Expr) : exprEqb e e = true.
-Proof.
-  induction e; simpl; auto.
-  now rewrite IHe1, IHe2.
-Qed.
-
 Fixpoint size (e : Expr) : nat :=
   match e with
   | atom => 1

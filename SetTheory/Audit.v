@@ -391,12 +391,12 @@ Print Assumptions BusyBeaver.score_le_sigma_of_atMost.
 Print Assumptions BusyBeaver.sigma_eventually_dominates_every_total_recursive.
 
 (* Coq-side explicit counterpart of the Lean mathlib Turing-machine bridge. *)
+
+(* Proved theorems and executable definitions. *)
 Check BusyBeaverMathlib.positions_length_le_tape_length_of_read_true.
 Check BusyBeaverMathlib.rado_positions_of_nat_offsets_nodup.
-Check BusyBeaverMathlib.SupportedCompilerBridge.
 Check BusyBeaverMathlib.supportedCompilerBridge_has_lowerBoundCompiler.
 Check BusyBeaverMathlib.sigma_eventually_dominates_every_supported_total_recursive.
-Check BusyBeaverMathlib.fintype_card_sum.
 Check BusyBeaverMathlib.initInputTape.
 Check BusyBeaverMathlib.initInputTape_zero.
 Check BusyBeaverMathlib.initInputTape_succ.
@@ -415,24 +415,45 @@ Check BusyBeaverMathlib.initThenTM0SimInitCfg.
 Check BusyBeaverMathlib.initThenTM0_write_reaches.
 Check BusyBeaverMathlib.initThenTM0_return_reaches.
 Check BusyBeaverMathlib.initThenTM0_reaches_sim_init.
-Check BusyBeaverMathlib.initThenTM0State_card.
 Check BusyBeaverMathlib.tm0_eval_to_init_wrapper_lowerBound.
-Check BusyBeaverMathlib.trPosNum_length.
-Check BusyBeaverMathlib.trNum_length.
-Check BusyBeaverMathlib.trNat_length.
-Check BusyBeaverMathlib.trList_singleton_length.
 Check BusyBeaverMathlib.tm2to1_trInit_length_pos.
 Check BusyBeaverMathlib.encoded_partrec_input_length_pos.
 Check BusyBeaverMathlib.tm2to1_trInit_length_le_succ.
 Check BusyBeaverMathlib.encoded_partrec_input_length_le.
 Check BusyBeaverMathlib.TM1to1EncodedInput_length.
 Check BusyBeaverMathlib.partrecToTM1Encoding_width_pos.
-Check BusyBeaverMathlib.EncodedInputBudget.
+
+(* Encoded-input budget arithmetic: real theorems, ported from the Lean
+   proofs in lean/SetTheory/BusyBeaverMathlib.lean. *)
 Check BusyBeaverMathlib.linear_mul_le_two_pow_pred_of_large.
 Check BusyBeaverMathlib.nat_size_linear_le_self_of_large.
 Check BusyBeaverMathlib.init_wrapper_state_count_le_linear.
 Check BusyBeaverMathlib.init_wrapper_state_count_le_linear_size.
+Print Assumptions BusyBeaverMathlib.linear_mul_le_two_pow_pred_of_large.
+Print Assumptions BusyBeaverMathlib.nat_size_linear_le_self_of_large.
+Print Assumptions BusyBeaverMathlib.init_wrapper_state_count_le_linear_size.
+
+(* ------------------------------------------------------------------ *)
+(*  Assumption interfaces and placeholders, NOT theorems.              *)
+(*                                                                     *)
+(*  The Coq development has no mathlib, so the recursive-function /    *)
+(*  Turing-machine compiler connection proved in Lean is packaged as   *)
+(*  explicit assumption records (their fields are hypotheses consumers *)
+(*  must discharge), and the Lean `Fintype.card` / mathlib translation *)
+(*  lengths appear only as numeric placeholder Definitions.  Checking  *)
+(*  them below documents the interface; it does not certify any proof. *)
+(* ------------------------------------------------------------------ *)
+Check BusyBeaverMathlib.SupportedCompilerBridge.                (* assumption record *)
 Check BusyBeaverMathlib.totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding.
+                                       (* projection of TotalRecursiveMathlibBridge *)
+Check BusyBeaverMathlib.fintype_card_sum.                       (* numeric placeholder *)
+Check BusyBeaverMathlib.trPosNum_length.                        (* numeric placeholder *)
+Check BusyBeaverMathlib.trNum_length.                           (* numeric placeholder *)
+Check BusyBeaverMathlib.trNat_length.                           (* numeric placeholder *)
+Check BusyBeaverMathlib.trList_singleton_length.                (* numeric placeholder *)
+Check BusyBeaverMathlib.initThenTM0State_card.                  (* numeric placeholder *)
+
+(* Conditional consequences of the assumption records above. *)
 Check BusyBeaverMathlib.totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler.
 Check BusyBeaverMathlib.sigma_eventually_dominates_every_totalRecursiveMathlib.
 Print Assumptions

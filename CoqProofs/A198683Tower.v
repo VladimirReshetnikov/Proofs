@@ -200,8 +200,14 @@ Definition p6O : Value := principalPow p5B i.
 Theorem i_pow_i_eq : principalPow i i = p2.
 Proof. reflexivity. Qed.
 
+(*
+  In the Lean original, i_pow_i_eq and i_pow_i_eq_rho assert two different
+  closed forms for i^i (exp (-pi/2) and the rho spelling); in this finite
+  symbolic quotient both collapse to the same statement, so the second is a
+  corollary of the first, kept under its Lean name for parity.
+*)
 Theorem i_pow_i_eq_rho : principalPow i i = p2.
-Proof. reflexivity. Qed.
+Proof. exact i_pow_i_eq. Qed.
 
 Theorem ii_pow_i_eq_neg_I : principalPow p2 i = p3R.
 Proof. reflexivity. Qed.
@@ -252,7 +258,10 @@ Theorem a198683_lexical_recursive_match_initial :
     a198683LexicalValueList 1 = a198683ValueList 1 /\
     a198683LexicalValueList 2 = a198683ValueList 2 /\
     a198683LexicalValueList 3 = a198683ValueList 3 /\
-    a198683LexicalValueList 4 = a198683ValueList 4.
+    a198683LexicalValueList 4 = a198683ValueList 4 /\
+    a198683LexicalValueList 5 = a198683ValueList 5 /\
+    a198683LexicalValueList 6 = a198683ValueList 6 /\
+    a198683LexicalValueList 7 = a198683ValueList 7.
 Proof.
   repeat split; vm_compute; reflexivity.
 Qed.

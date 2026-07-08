@@ -6,10 +6,17 @@
   recurrence for the published value certificates.  Materializing the exact
   logarithms as binary naturals is already too large beyond the first few rows;
   the hereditary representation keeps the exponent structure sparse.
+
+  The value certificates are produced by a memoized level table whose rows are
+  kept sorted and duplicate-free by a fueled bottom-up mergesort over
+  `HereditarySparse.compare`, replacing the quadratic `dedupBy` scan.  The
+  counts through n = 17 are computed once into `a002845TableN` and every
+  value theorem is a cheap table lookup.
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
 From Stdlib Require Import Lists.List.
+From Stdlib Require Import Lia.
 From Stdlib Require Import NArith.BinNat.
 From Stdlib Require Import NArith.Nnat.
 From LeanProofsCoq Require Import PowTower SparseBinary.
@@ -213,6 +220,16 @@ Proof.
   apply certifiedSparseCard_eq_directLogCardN.
 Qed.
 
+(*
+  EXECUTABLE-ONLY MODULE.  `HereditarySparse` is a certificate carrier: its
+  fueled comparison/arithmetic and the sorted level recurrence below are not
+  yet connected by machine-checked specifications to the proved `Sparse`
+  (`N`-backed) layer above.  The value theorems it certifies are trusted
+  executable computations — the same trust level as the Lean module's
+  `native_decide` layer — cross-checked below against the quadratic
+  structural-equality dedup on a cheap prefix and against the published OEIS
+  values.
+*)
 Module HereditarySparse.
 
 Inductive t : Type :=
@@ -231,13 +248,6 @@ Fixpoint beq (x y : t) : bool :=
   | scons xh xt, scons yh yt => beq xh yh && beq xt yt
   | _, _ => false
   end.
-
-Theorem beq_refl (x : t) : beq x x = true.
-Proof.
-  induction x as [|h ihh rest ihr].
-  - reflexivity.
-  - simpl. now rewrite ihh, ihr.
-Qed.
 
 Fixpoint revAux (xs acc : t) : t :=
   match xs with
@@ -320,7 +330,110 @@ Definition shift (x b : t) : t :=
 Definition combineLevel (left right : list t) : list t :=
   flat_map (fun a => map (fun b => shift a b) right) left.
 
-Definition levelFromTable (levels : list (list t)) (n : nat) : list t :=
+(* ---------------------------------------------------------------------- *)
+(* Sorted merge-dedup machinery: a fueled bottom-up mergesort over `compare`
+   whose merge step drops `Eq`-adjacent duplicates, so level sets stay sorted
+   and duplicate-free in O(m log m) comparisons instead of the quadratic
+   `dedupBy` scan.
+
+   Unlike the A199812 port, the candidate lists here reach hundreds of
+   thousands of entries (about 250 000 raw candidates at level 18), so every
+   list traversal below is written tail-recursively with accumulators
+   (`rev_append` style): the Coq VM does not grow its stack for deep non-tail
+   recursion, and the direct structural versions overflow it. *)
+
+(* Tail-recursive list length, used only as mergesort fuel (its unary result
+   stays on the VM heap and is never read back). *)
+Fixpoint listLengthOnto (xs : list t) (acc : nat) : nat :=
+  match xs with
+  | [] => acc
+  | _ :: xs' => listLengthOnto xs' (S acc)
+  end.
+
+Definition listLength (xs : list t) : nat := listLengthOnto xs 0.
+
+(* Binary-natural list length, used for the level-count table: reading a
+   unary `nat` of six digits back out of the VM overflows the OCaml stack
+   (the S-chain is read back recursively), while binary `N` readback is
+   logarithmic. *)
+Fixpoint listLengthNOnto (xs : list t) (acc : N) : N :=
+  match xs with
+  | [] => acc
+  | _ :: xs' => listLengthNOnto xs' (N.succ acc)
+  end.
+
+Definition listLengthN (xs : list t) : N := listLengthNOnto xs 0%N.
+
+Lemma listLengthNOnto_spec (xs : list t) (acc : N) :
+    listLengthNOnto xs acc = (N.of_nat (length xs) + acc)%N.
+Proof.
+  revert acc.
+  induction xs as [|x xs ih]; intro acc.
+  - cbn. lia.
+  - cbn [listLengthNOnto length].
+    rewrite ih, Nat2N.inj_succ.
+    lia.
+Qed.
+
+Lemma listLengthN_spec (xs : list t) : listLengthN xs = N.of_nat (length xs).
+Proof.
+  unfold listLengthN. rewrite listLengthNOnto_spec. lia.
+Qed.
+
+(* Merge two sorted duplicate-free lists, dropping duplicates.  The result is
+   accumulated in reverse and flipped back by `rev_append`; the fuel
+   `length xs + length ys` bounds the number of merge steps. *)
+Fixpoint mergeDedupFuel (fuel : nat) (acc xs ys : list t) : list t :=
+  match fuel with
+  | 0 => rev_append acc (xs ++ ys)
+  | S fuel' =>
+      match xs, ys with
+      | [], _ => rev_append acc ys
+      | _, [] => rev_append acc xs
+      | x :: xs', y :: ys' =>
+          match compare x y with
+          | Lt => mergeDedupFuel fuel' (x :: acc) xs' ys
+          | Eq => mergeDedupFuel fuel' (x :: acc) xs' ys'
+          | Gt => mergeDedupFuel fuel' (y :: acc) xs ys'
+          end
+      end
+  end.
+
+Definition mergeDedup (xs ys : list t) : list t :=
+  mergeDedupFuel (listLengthOnto xs (listLength ys)) [] xs ys.
+
+(* One bottom-up round: merge adjacent pairs of sorted runs (the accumulator
+   reverses the run order, which is harmless for the eventual union). *)
+Fixpoint mergePairsOnto (ls acc : list (list t)) : list (list t) :=
+  match ls with
+  | a :: b :: rest => mergePairsOnto rest (mergeDedup a b :: acc)
+  | [l] => l :: acc
+  | [] => acc
+  end.
+
+Fixpoint mergeAllFuel (fuel : nat) (ls : list (list t)) : list t :=
+  match fuel, ls with
+  | _, [] => []
+  | _, [l] => l
+  | 0, l :: _ => l
+  | S f, ls => mergeAllFuel f (mergePairsOnto ls [])
+  end.
+
+Fixpoint singletonsOnto (xs : list t) (acc : list (list t)) :
+    list (list t) :=
+  match xs with
+  | [] => acc
+  | x :: xs' => singletonsOnto xs' ([x] :: acc)
+  end.
+
+(* Each `mergePairsOnto` round halves the run count, so `length xs` rounds of
+   fuel are always enough. *)
+Definition sortDedup (xs : list t) : list t :=
+  mergeAllFuel (listLength xs) (singletonsOnto xs []).
+
+(* Quadratic structural-equality variant, kept only as a cross-check oracle
+   for the sorted recurrence (see `count_agrees_with_beq_through_eleven`). *)
+Definition levelFromTableByBeq (levels : list (list t)) (n : nat) : list t :=
   match n with
   | 0 => []
   | 1 => [one]
@@ -332,6 +445,44 @@ Definition levelFromTable (levels : list (list t)) (n : nat) : list t :=
           (seq 0 (S n')))
   end.
 
+Fixpoint levelTableByBeq (fuel : nat) : list (list t) :=
+  match fuel with
+  | 0 => []
+  | S fuel' =>
+      let levels := levelTableByBeq fuel' in
+      levels ++ [levelFromTableByBeq levels fuel']
+  end.
+
+Definition countByBeq (n : nat) : nat :=
+  length (nth n (levelTableByBeq (S n)) []).
+
+(* Tail-recursive candidate assembly: `shift a b` for every `a` in the left
+   level and `b` in the right level, accumulated in front of `acc`. *)
+Fixpoint shiftAllOnto (a : t) (right acc : list t) : list t :=
+  match right with
+  | [] => acc
+  | b :: right' => shiftAllOnto a right' (shift a b :: acc)
+  end.
+
+Fixpoint combineLevelOnto (left right acc : list t) : list t :=
+  match left with
+  | [] => acc
+  | a :: left' => combineLevelOnto left' right (shiftAllOnto a right acc)
+  end.
+
+Definition levelCandidates (levels : list (list t)) (n' : nat) : list t :=
+  fold_left
+    (fun acc k =>
+       combineLevelOnto (nth (S k) levels []) (nth (S n' - k) levels []) acc)
+    (seq 0 (S n')) [].
+
+Definition levelFromTable (levels : list (list t)) (n : nat) : list t :=
+  match n with
+  | 0 => []
+  | 1 => [one]
+  | S (S n') => sortDedup (levelCandidates levels n')
+  end.
+
 Fixpoint levelTable (fuel : nat) : list (list t) :=
   match fuel with
   | 0 => []
@@ -340,11 +491,59 @@ Fixpoint levelTable (fuel : nat) : list (list t) :=
       levels ++ [levelFromTable levels fuel']
   end.
 
+Lemma levelTable_length (fuel : nat) : length (levelTable fuel) = fuel.
+Proof.
+  induction fuel as [|fuel ih].
+  - reflexivity.
+  - cbn. rewrite length_app, ih. cbn. lia.
+Qed.
+
+Lemma levelTable_prefix (n m : nat) (h : (n <= m)%nat) :
+    exists suffix, levelTable m = levelTable n ++ suffix.
+Proof.
+  induction h as [|m h ih].
+  - exists []. now rewrite app_nil_r.
+  - destruct ih as [suffix hs].
+    exists (suffix ++ [levelFromTable (levelTable m) m]).
+    cbn. rewrite hs. now rewrite app_assoc.
+Qed.
+
+(* Rows already present in a shorter table are unchanged in any longer one,
+   so per-value lookups can all share one computed table. *)
+Lemma nth_levelTable_stable (k n m : nat) (hk : (k < n)%nat)
+    (hnm : (n <= m)%nat) :
+    nth k (levelTable m) [] = nth k (levelTable n) [].
+Proof.
+  destruct (levelTable_prefix hnm) as [suffix hs].
+  rewrite hs.
+  apply app_nth1.
+  now rewrite levelTable_length.
+Qed.
+
+Definition levelCountsN (fuel : nat) : list N :=
+  map listLengthN (levelTable fuel).
+
+Lemma nth_levelCountsN (fuel n : nat) :
+    nth n (levelCountsN fuel) 0%N =
+      N.of_nat (length (nth n (levelTable fuel) [])).
+Proof.
+  unfold levelCountsN.
+  change 0%N with (listLengthN []).
+  rewrite map_nth.
+  apply listLengthN_spec.
+Qed.
+
 Definition level (n : nat) : list t :=
   nth n (levelTable (S n)) [].
 
 Definition count (n : nat) : nat :=
   length (level n).
+
+(* Sanity bridge: the sorted merge-dedup recurrence agrees with the quadratic
+   structural-equality dedup on a cheap prefix. *)
+Theorem count_agrees_with_beq_through_eleven :
+    map countByBeq (seq 0 12) = map count (seq 0 12).
+Proof. vm_compute. reflexivity. Qed.
 
 End HereditarySparse.
 
@@ -353,51 +552,145 @@ Definition certifiedLevelCount : nat -> nat :=
 
 Definition a002845 : nat -> nat := certifiedLevelCount.
 
+(* The counts of levels 0 through 17 as binary naturals (`N` readback from
+   the VM is logarithmic in the value; unary `nat` readback of the larger
+   counts overflows the OCaml stack).  Every value theorem below is a cheap
+   lookup into this table. *)
+Definition a002845TableN : list N :=
+  [0; 1; 1; 1; 2; 4; 8; 17; 36; 78; 171; 379; 851; 1928; 4396; 10087;
+   23273; 53948]%N.
+
+(* The single expensive computation of the file: the kernel VM evaluates the
+   sorted level recurrence once, at Qed time (`vm_cast_no_check` skips the
+   redundant tactic-time evaluation). *)
+Theorem a002845TableN_spec :
+    HereditarySparse.levelCountsN 18 = a002845TableN.
+Proof. vm_cast_no_check (eq_refl a002845TableN). Qed.
+
+Lemma a002845_eq_tableN_nth (n : nat) (h : n < 18) :
+    N.of_nat (a002845 n) = nth n a002845TableN 0%N.
+Proof.
+  rewrite <- a002845TableN_spec, HereditarySparse.nth_levelCountsN.
+  unfold a002845, certifiedLevelCount, HereditarySparse.count,
+    HereditarySparse.level.
+  do 2 f_equal.
+  symmetry.
+  apply HereditarySparse.nth_levelTable_stable; lia.
+Qed.
+
 Definition a002845ValuesThroughFourteen : list nat :=
   [1; 1; 1; 2; 4; 8; 17; 36; 78; 171; 379; 851; 1928; 4396].
 
+Definition a002845ValuesThroughSeventeen : list nat :=
+  [1; 1; 1; 2; 4; 8; 17; 36; 78; 171; 379; 851; 1928; 4396; 10087; 23273;
+   53948].
+
 Theorem a002845_one : a002845 1 = 1.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_two : a002845 2 = 1.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_three : a002845 3 = 1.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_four : a002845 4 = 2.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_five : a002845 5 = 4.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_six : a002845 6 = 8.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_seven : a002845 7 = 17.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_eight : a002845 8 = 36.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_nine : a002845 9 = 78.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_ten : a002845 10 = 171.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_eleven : a002845 11 = 379.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_twelve : a002845 12 = 851.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_thirteen : a002845 13 = 1928.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
 Theorem a002845_fourteen : a002845 14 = 4396.
-Proof. vm_compute. reflexivity. Qed.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
 
+Theorem a002845_fifteen : a002845 15 = 10087.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
+
+Theorem a002845_sixteen : a002845 16 = 23273.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
+
+Theorem a002845_seventeen : a002845 17 = 53948.
+Proof.
+  apply Nat2N.inj. rewrite a002845_eq_tableN_nth by lia.
+  vm_compute. reflexivity.
+Qed.
+
+(* Derived from the individual value lemmas by rewriting; those lemmas are
+   themselves constant-time lookups into the single vm_computed
+   `a002845TableN`, so the level enumeration is computed once for the whole
+   file rather than once per theorem. *)
 Theorem a002845_values_through_fourteen :
     map a002845 (seq 1 14) = a002845ValuesThroughFourteen.
 Proof.
@@ -407,6 +700,21 @@ Proof.
     a002845_ten, a002845_eleven, a002845_twelve, a002845_thirteen,
     a002845_fourteen.
 Qed.
+
+Theorem a002845_values_through_seventeen :
+    map a002845 (seq 1 17) = a002845ValuesThroughSeventeen.
+Proof.
+  cbn [seq map].
+  now rewrite a002845_one, a002845_two, a002845_three, a002845_four,
+    a002845_five, a002845_six, a002845_seven, a002845_eight, a002845_nine,
+    a002845_ten, a002845_eleven, a002845_twelve, a002845_thirteen,
+    a002845_fourteen, a002845_fifteen, a002845_sixteen, a002845_seventeen.
+Qed.
+
+(* The shorter published table is a prefix of the n = 17 table. *)
+Theorem a002845ValuesThroughFourteen_prefix :
+    a002845ValuesThroughFourteen = firstn 14 a002845ValuesThroughSeventeen.
+Proof. reflexivity. Qed.
 
 End PowExpr.
 

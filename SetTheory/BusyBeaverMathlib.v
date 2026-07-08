@@ -38,6 +38,10 @@ Proof.
   - discriminate.
 Qed.
 
+(* The `NoDup tape` hypothesis is not needed by this Coq proof
+   (`NoDup_incl_length` counts only the left list), but it is kept for
+   statement parity with the Lean counterpart, whose erase-based counting
+   argument genuinely uses it. *)
 Theorem positions_length_le_tape_length_of_read_true :
   forall positions tape,
     NoDup positions ->
@@ -341,6 +345,9 @@ Proof.
   reflexivity.
 Qed.
 
+(* The `input` parameter is unused in the body (the Coq state type is not
+   input-indexed), but it is kept so call sites mirror the Lean `abbrev`,
+   whose start state lives in the input-indexed `Fin input.length`. *)
 Definition initThenTM0Start {Label : Type} (input : list bool) :
     BB.typed_config (InitThenTM0State Label) :=
   {| BB.typed_cfg_state := Some (initWrite 0);
@@ -641,21 +648,107 @@ Proof.
   lia.
 Qed.
 
-Record EncodedInputBudget : Prop := {
-  linear_mul_le_two_pow_pred_of_large :
-    forall D m, 2 * (D + 1) + 1 <= m -> D * m <= 2 ^ (m - 1);
-  nat_size_linear_le_self_of_large :
-    forall D n size, 2 ^ (2 * (D + 1) + 1) <= n ->
-      size <= n -> D * size <= n;
-  init_wrapper_state_count_le_linear :
-    forall width C inputLen s,
-      inputLen <= width * (s + 2) -> 0 < s ->
-      2 * inputLen + C <= (2 * width + (4 * width + C) + 1) * s;
-  init_wrapper_state_count_le_linear_size :
-    forall width C inputLen (n size : nat),
-      inputLen <= width * (size + 2) -> 0 < size ->
-      2 * inputLen + C <= (2 * width + (4 * width + C) + 1) * size
-}.
+(* --------------------------------------------------------------------- *)
+(*  Encoded-input budget arithmetic.                                      *)
+(*                                                                        *)
+(*  Coq counterparts of the Lean theorems                                 *)
+(*  `linear_mul_le_two_pow_pred_of_large`,                                *)
+(*  `nat_size_linear_le_self_of_large`,                                   *)
+(*  `init_wrapper_state_count_le_linear`, and                             *)
+(*  `init_wrapper_state_count_le_linear_size` from                        *)
+(*  `lean/SetTheory/BusyBeaverMathlib.lean`, proved here from plain nat   *)
+(*  arithmetic.  `nat_size` below is the Coq analogue of Lean's           *)
+(*  `Nat.size` (binary bit length).                                       *)
+(* --------------------------------------------------------------------- *)
+
+Definition nat_size (n : nat) : nat :=
+  match n with
+  | O => O
+  | S _ => S (Nat.log2 n)
+  end.
+
+Lemma lt_nat_size : forall m n, 2 ^ m <= n -> m < nat_size n.
+Proof.
+  intros m n h.
+  assert (hpow : 2 ^ m <> 0) by (apply Nat.pow_nonzero; lia).
+  destruct n as [|n']; [lia | ].
+  assert (hm : m <= Nat.log2 (S n')).
+  {
+    rewrite <- (Nat.log2_pow2 m) by lia.
+    apply Nat.log2_le_mono.
+    exact h.
+  }
+  simpl. lia.
+Qed.
+
+Lemma pow_pred_nat_size_le : forall n, 0 < n -> 2 ^ (nat_size n - 1) <= n.
+Proof.
+  intros [|n'] h; [lia | ].
+  replace (nat_size (S n') - 1) with (Nat.log2 (S n')) by (simpl; lia).
+  destruct (Nat.log2_spec (S n')) as [hlow _]; [lia | exact hlow].
+Qed.
+
+(* Lean: `Nat.two_mul_sq_add_one_le_two_pow_two_mul`. *)
+Lemma two_mul_sq_add_one_le_two_pow_two_mul :
+  forall k, 2 * (k * k) + 1 <= 2 ^ (2 * k).
+Proof.
+  induction k as [|k IH].
+  - simpl. lia.
+  - replace (2 * S k) with (S (S (2 * k))) by lia.
+    rewrite !Nat.pow_succ_r'.
+    nia.
+Qed.
+
+Theorem linear_mul_le_two_pow_pred_of_large :
+  forall D m, 2 * (D + 1) + 1 <= m -> D * m <= 2 ^ (m - 1).
+Proof.
+  intros D m hm.
+  induction hm as [|m hm IH].
+  - replace (2 * (D + 1) + 1 - 1) with (2 * (D + 1)) by lia.
+    pose proof (two_mul_sq_add_one_le_two_pow_two_mul (D + 1)) as hbase.
+    nia.
+  - replace (S m - 1) with (S (m - 1)) by lia.
+    rewrite Nat.pow_succ_r'.
+    nia.
+Qed.
+
+Theorem nat_size_linear_le_self_of_large :
+  forall D n, 2 ^ (2 * (D + 1) + 1) <= n -> D * nat_size n <= n.
+Proof.
+  intros D n hn.
+  assert (hlt : 2 * (D + 1) + 1 < nat_size n) by (apply lt_nat_size; exact hn).
+  assert (hDsize : D * nat_size n <= 2 ^ (nat_size n - 1))
+    by (apply linear_mul_le_two_pow_pred_of_large; lia).
+  assert (hpow : 2 ^ (2 * (D + 1) + 1) <> 0) by (apply Nat.pow_nonzero; lia).
+  apply Nat.le_trans with (2 ^ (nat_size n - 1)); [exact hDsize | ].
+  apply pow_pred_nat_size_le.
+  lia.
+Qed.
+
+Theorem init_wrapper_state_count_le_linear :
+  forall width C inputLen s,
+    inputLen <= width * (s + 2) -> 0 < s ->
+    2 * inputLen + C <= (2 * width + (4 * width + C) + 1) * s.
+Proof.
+  intros width C inputLen s hInput hs.
+  nia.
+Qed.
+
+(* Lean's version bounds `Fintype.card (InitThenTM0State Label input)`; the
+   Coq development carries that cardinality numerically (see
+   `initThenTM0State_card`), so the bound is stated on
+   `2 * length input + tm0RadoState_card label_card` directly. *)
+Theorem init_wrapper_state_count_le_linear_size :
+  forall width label_card (input : list bool) (n : nat),
+    length input <= width * (nat_size n + 2) ->
+    0 < nat_size n ->
+    2 * length input + tm0RadoState_card label_card <=
+      (2 * width + (4 * width + tm0RadoState_card label_card) + 1) *
+        nat_size n.
+Proof.
+  intros width label_card input n hInput hSize.
+  apply init_wrapper_state_count_le_linear; assumption.
+Qed.
 
 Record SupportedCompilerBridge
     (TotalRecursive : (nat -> nat) -> Prop) : Type := {

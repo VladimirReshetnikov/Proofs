@@ -23,6 +23,8 @@ Local Open Scope nat_scope.
 Module LeanProofs.
 Module RationalFloorOrbit.
 
+(* ## Stern-Brocot / Calkin-Wilf pair generator *)
+
 Definition Coprime (a b : nat) : Prop :=
   Nat.gcd a b = 1.
 
@@ -177,6 +179,8 @@ Theorem cwPair_coprime (n : nat) :
 Proof.
   apply cwPairFuel_coprime.
 Qed.
+
+(* ## Inverse index and the pair <-> position round-trips *)
 
 Fixpoint cwIndexFuel (fuel a b : nat) : nat :=
   match fuel with
@@ -367,6 +371,8 @@ Proof.
       rewrite ihp.
       lia.
 Qed.
+
+(* ## Bridge to Q and the orbit map *)
 
 Definition pairNext (p : nat * nat) : nat * nat :=
   let a := fst p in
@@ -675,6 +681,8 @@ Proof.
     reflexivity.
 Qed.
 
+(* ## Injectivity and the exactly-once enumeration *)
+
 Lemma positiveDenOfNat_pos_to_nat (p : positive) :
     positiveDenOfNat (Pos.to_nat p) = p.
 Proof.
@@ -951,6 +959,8 @@ Proof.
 Qed.
 
 Local Open Scope nat_scope.
+
+(* ## Executable spot checks *)
 
 Theorem pairRat_first_values :
     map pairRat [(1, 1); (1, 2); (2, 1); (1, 3)] =

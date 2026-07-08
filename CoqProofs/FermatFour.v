@@ -355,6 +355,36 @@ Proof.
     (Fermat42_descent_step_of_odd_even odd_even_descent)).
 Qed.
 
+(* Generic public wrappers over any proof of the descent statement.  The
+   three assumption granularities below instantiate these, so the nat-to-Z
+   transport is written once. *)
+
+Theorem fermat_four_no_square_right_int_solutions_of_statement
+    (hstmt : Fermat42_descent_statement)
+    {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
+    ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
+Proof.
+  exact (hstmt a b c ha hb).
+Qed.
+
+Theorem fermat_four_no_positive_nat_solutions_of_statement
+    (hstmt : Fermat42_descent_statement)
+    {a b c : nat}
+    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (_hc : (0 < c)%nat) :
+    (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
+Proof.
+  intro hnat.
+  pose proof (f_equal Z.of_nat hnat) as hz.
+  rewrite Nat2Z.inj_add in hz.
+  repeat rewrite Nat2Z.inj_pow in hz.
+  change (Z.of_nat 4) with 4 in hz.
+  apply (hstmt (Z.of_nat a) (Z.of_nat b) ((Z.of_nat c) ^ 2)).
+  - lia.
+  - lia.
+  - rewrite hz.
+    ring.
+Qed.
+
 Section WithDescent.
 
 Variable descent_step : Fermat42_descent_step.
@@ -368,25 +398,17 @@ Theorem fermat_four_no_square_right_int_solutions
     {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
     ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
 Proof.
-  exact (no_square_right_int_solutions a b c ha hb).
+  exact (fermat_four_no_square_right_int_solutions_of_statement
+    no_square_right_int_solutions ha hb).
 Qed.
 
 Theorem fermat_four_no_positive_nat_solutions
     {a b c : nat}
-    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (_hc : (0 < c)%nat) :
+    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : (0 < c)%nat) :
     (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
 Proof.
-  intro hnat.
-  pose proof (f_equal Z.of_nat hnat) as hz.
-  rewrite Nat2Z.inj_add in hz.
-  repeat rewrite Nat2Z.inj_pow in hz.
-  change (Z.of_nat 4) with 4 in hz.
-  apply (no_square_right_int_solutions
-    (Z.of_nat a) (Z.of_nat b) ((Z.of_nat c) ^ 2)).
-  - lia.
-  - lia.
-  - rewrite hz.
-    ring.
+  exact (fermat_four_no_positive_nat_solutions_of_statement
+    no_square_right_int_solutions ha hb hc).
 Qed.
 
 End WithDescent.
@@ -405,25 +427,17 @@ Theorem fermat_four_no_square_right_int_solutions_of_mixed_parity_descent
     {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
     ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
 Proof.
-  exact (no_square_right_int_solutions_of_mixed_parity_descent a b c ha hb).
+  exact (fermat_four_no_square_right_int_solutions_of_statement
+    no_square_right_int_solutions_of_mixed_parity_descent ha hb).
 Qed.
 
 Theorem fermat_four_no_positive_nat_solutions_of_mixed_parity_descent
     {a b c : nat}
-    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (_hc : (0 < c)%nat) :
+    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : (0 < c)%nat) :
     (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
 Proof.
-  intro hnat.
-  pose proof (f_equal Z.of_nat hnat) as hz.
-  rewrite Nat2Z.inj_add in hz.
-  repeat rewrite Nat2Z.inj_pow in hz.
-  change (Z.of_nat 4) with 4 in hz.
-  apply (no_square_right_int_solutions_of_mixed_parity_descent
-    (Z.of_nat a) (Z.of_nat b) ((Z.of_nat c) ^ 2)).
-  - lia.
-  - lia.
-  - rewrite hz.
-    ring.
+  exact (fermat_four_no_positive_nat_solutions_of_statement
+    no_square_right_int_solutions_of_mixed_parity_descent ha hb hc).
 Qed.
 
 End WithMixedParityDescent.
@@ -442,25 +456,17 @@ Theorem fermat_four_no_square_right_int_solutions_of_odd_even_descent
     {a b c : Z} (ha : a <> 0) (hb : b <> 0) :
     ~ ((a ^ 4 + b ^ 4)%Z = (c ^ 2)%Z).
 Proof.
-  exact (no_square_right_int_solutions_of_odd_even_descent a b c ha hb).
+  exact (fermat_four_no_square_right_int_solutions_of_statement
+    no_square_right_int_solutions_of_odd_even_descent ha hb).
 Qed.
 
 Theorem fermat_four_no_positive_nat_solutions_of_odd_even_descent
     {a b c : nat}
-    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (_hc : (0 < c)%nat) :
+    (ha : (0 < a)%nat) (hb : (0 < b)%nat) (hc : (0 < c)%nat) :
     (a ^ 4 + b ^ 4 <> c ^ 4)%nat.
 Proof.
-  intro hnat.
-  pose proof (f_equal Z.of_nat hnat) as hz.
-  rewrite Nat2Z.inj_add in hz.
-  repeat rewrite Nat2Z.inj_pow in hz.
-  change (Z.of_nat 4) with 4 in hz.
-  apply (no_square_right_int_solutions_of_odd_even_descent
-    (Z.of_nat a) (Z.of_nat b) ((Z.of_nat c) ^ 2)).
-  - lia.
-  - lia.
-  - rewrite hz.
-    ring.
+  exact (fermat_four_no_positive_nat_solutions_of_statement
+    no_square_right_int_solutions_of_odd_even_descent ha hb hc).
 Qed.
 
 End WithOddEvenDescent.

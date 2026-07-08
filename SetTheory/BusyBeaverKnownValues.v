@@ -426,7 +426,7 @@ Proof.
   - exact (a028444_upper_two_remaining hUpper).
   - exact (a028444_upper_three_remaining hUpper).
   - exact (a028444_upper_four_remaining hUpper).
-Defined.
+Qed.
 
 End A028444UpperBoundsThroughFour.
 
