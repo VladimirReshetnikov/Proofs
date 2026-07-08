@@ -113,6 +113,16 @@ theorem exists_mem_not_mem_of_lt {low high : Nat} (hlt : low < high) :
     exact hsubset x hx
   omega
 
+/-- Unequal Ackermann codes differ in at least one membership bit, in one
+direction or the other. -/
+theorem exists_mem_diff_of_ne {a b : Nat} (hne : a ≠ b) :
+    (∃ x, Mem x a ∧ ¬ Mem x b) ∨
+      (∃ x, Mem x b ∧ ¬ Mem x a) := by
+  by_cases hab : a < b
+  · exact Or.inr (exists_mem_not_mem_of_lt hab)
+  · have hba : b < a := by omega
+    exact Or.inl (exists_mem_not_mem_of_lt hba)
+
 /-- Search for the largest member of `a` below `n`.  The default value at
 `n = 0` is irrelevant; callers use the accompanying existence lemmas. -/
 def maxMemberBelow (a : Nat) : Nat → Nat
@@ -19661,6 +19671,16 @@ theorem hfSomeDistinguishesAt_nat_of_lt (e : Nat → Nat) {low high : Nat}
     Sat natModel e (hfSomeDistinguishesAt high low) :=
   (hfSomeDistinguishesAt_nat e high low).mpr
     (AckermannHF.exists_mem_not_mem_of_lt hlt)
+
+/-- In the standard model, unequal Ackermann codes satisfy one of the two
+directional distinguishing-member formulas. -/
+theorem hfSomeDistinguishesAt_nat_or_of_ne (e : Nat → Nat) {left right : Nat}
+    (hne : e left ≠ e right) :
+    Sat natModel e (hfSomeDistinguishesAt left right) ∨
+      Sat natModel e (hfSomeDistinguishesAt right left) := by
+  rcases AckermannHF.exists_mem_diff_of_ne hne with hleft | hright
+  · exact Or.inl ((hfSomeDistinguishesAt_nat e left right).mpr hleft)
+  · exact Or.inr ((hfSomeDistinguishesAt_nat e right left).mpr hright)
 
 /-- If `var 1 < var 0` yields a member of `var 0` not in `var 1`, then the
 translated extensionality hypothesis contradicts that strict inequality. -/

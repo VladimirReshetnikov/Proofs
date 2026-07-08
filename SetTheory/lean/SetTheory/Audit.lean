@@ -466,6 +466,7 @@ open SetTheory
 #check @PA.Formula.hfDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat_of_lt
+#check @PA.Formula.hfSomeDistinguishesAt_nat_or_of_ne
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt01_bot_of_distinguishing
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_member_ext_of_lt_bots
@@ -657,6 +658,7 @@ open SetTheory
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
 #check @AckermannHF.exists_mem_not_mem_of_lt
+#check @AckermannHF.exists_mem_diff_of_ne
 #check @AckermannHF.exists_max_mem_of_ne_empty
 #check @AckermannHF.HF_emptyAt_empty
 #check @AckermannHF.HF_adjoinAt_adjoin
