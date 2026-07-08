@@ -363,17 +363,9 @@ Fixpoint toNand {A : Type} (p : ClassicalFormula A) : Formula A :=
 Theorem eval_toNand {A : Type} (v : A -> bool) :
     forall p : ClassicalFormula A, Formula.eval v (toNand p) = eval v p.
 Proof.
-  induction p; simpl.
-  - reflexivity.
-  - rewrite IHp. destruct (eval v p); reflexivity.
-  - rewrite IHp1, IHp2.
-    destruct (eval v p1), (eval v p2); reflexivity.
-  - rewrite IHp1, IHp2.
-    destruct (eval v p1), (eval v p2); reflexivity.
-  - rewrite IHp1, IHp2.
-    destruct (eval v p1), (eval v p2); reflexivity.
-  - rewrite IHp1, IHp2.
-    destruct (eval v p1), (eval v p2); reflexivity.
+  induction p; simpl; try rewrite IHp; try rewrite IHp1; try rewrite IHp2;
+    repeat match goal with |- context[eval v ?p] => destruct (eval v p) end;
+    reflexivity.
 Qed.
 
 Theorem toNand_valid_iff {A : Type} {p : ClassicalFormula A} :

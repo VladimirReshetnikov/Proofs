@@ -1,11 +1,31 @@
 -Q CoqProofs LeanProofsCoq
+
+# Rocq/Coq ports of the LeanProofs modules, in dependency order.
+# Build with, e.g., `coq_makefile -f _CoqProject -o CoqMakefile && make`,
+# or compile individually with `coqc -Q CoqProofs LeanProofsCoq CoqProofs/<File>.v`.
+CoqProofs/Sheffer.v
 CoqProofs/Nicod.v
 CoqProofs/ArctanSquareIdentity.v
+CoqProofs/TrigGoldenRatio.v
+CoqProofs/TinyExponentTower.v
+CoqProofs/FermatFour.v
 CoqProofs/FloorSqrtSum.v
 CoqProofs/RationalFloorOrbit.v
 CoqProofs/PowTower.v
+CoqProofs/A198683Tower.v
+CoqProofs/A198683FiveSix.v
+CoqProofs/A198683SevenUpper.v
+CoqProofs/A198683.v
+CoqProofs/A000081.v
+CoqProofs/A199812.v
 CoqProofs/SparseBinary.v
 CoqProofs/A002845.v
+CoqProofs/A198683N12Magnitude.v
+CoqProofs/A198683N12Probe.v
+CoqProofs/A198683N12OverflowWitness.v
+CoqProofs/A198683N12Symbolic.v
+CoqProofs/A198683Schoenfield.v
+CoqProofs/A198683SchoenfieldRows.v
 CoqProofs/EquationalLogic.v
 CoqProofs/WolframBooleanCertificates.v
 CoqProofs/WolframBooleanHuntingtonCertificates.v

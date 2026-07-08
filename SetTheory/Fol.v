@@ -123,6 +123,15 @@ Proof.
   intros a k s. rewrite rename_comp. apply rename_ext. intro n. apply inst_up.
 Qed.
 
+(* Pushing a renaming [r] past an instantiation [inst k]: used to normalize the
+   quantifier and equality-elimination cases of [Prov_rename]. *)
+Lemma rename_inst_push : forall a r k,
+  rename r (rename (inst k) a) = rename (inst (r k)) (rename (up r) a).
+Proof.
+  intros a r k. rewrite !rename_comp. apply rename_ext.
+  intro n; destruct n; reflexivity.
+Qed.
+
 Lemma rename_id : forall a, rename (fun n => n) a = a.
 Proof.
   induction a; simpl; try reflexivity.
