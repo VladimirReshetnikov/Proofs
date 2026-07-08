@@ -15566,6 +15566,107 @@ Proof.
     exact hk.
 Qed.
 
+Lemma BProv_formulaAt_exI_raw : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst k)
+      (fAnd domainForm (formulaAt (upVarMap rho) a))) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)).
+Proof.
+  intros rho G a k [L [hL hp]].
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ translateContextAt rho G)
+    (fEx (fAnd domainForm (formulaAt (upVarMap rho) a)))).
+  exact (P_exI (L ++ translateContextAt rho G)
+    (fAnd domainForm (formulaAt (upVarMap rho) a)) k hp).
+Qed.
+
+Lemma BProv_formulaAt_exI_var : forall rho G a k,
+  BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)).
+Proof.
+  intros rho G a k hdom hbody.
+  rewrite formulaAt_subst_instTerm_var in hbody.
+  pose proof (BProv_andI translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k)) domainForm)
+    (rename (inst (rho k)) (formulaAt (upVarMap rho) a))
+    hdom hbody) as hand.
+  change (BProv translatedPAAx (translateContextAt rho G)
+    (rename (inst (rho k))
+      (fAnd domainForm (formulaAt (upVarMap rho) a)))) in hand.
+  exact (BProv_formulaAt_exI_raw rho G a (rho k) hand).
+Qed.
+
+Lemma BProv_formulaAt_exI_slot_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (rename (inst k) domainForm) ->
+  BProv translatedPAAx Gamma
+    (rename (inst k) (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a)).
+Proof.
+  intros Gamma rho a k hdom hbody.
+  pose proof (BProv_andI translatedPAAx Gamma
+    (rename (inst k) domainForm)
+    (rename (inst k) (formulaAt (upVarMap rho) a))
+    hdom hbody) as hand.
+  change (BProv translatedPAAx Gamma
+    (rename (inst k)
+      (fAnd domainForm (formulaAt (upVarMap rho) a)))) in hand.
+  pose proof (BProv_exI translatedPAAx Gamma
+    (fAnd domainForm (formulaAt (upVarMap rho) a)) k hand) as hex.
+  change (BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a))) in hex.
+  exact hex.
+Qed.
+
+Lemma BProv_formulaAt_exI_equal_slot_context :
+  forall Gamma rho a i j,
+  BProv translatedPAAx Gamma (rename (inst j) domainForm) ->
+  BProv translatedPAAx Gamma (fEq i j) ->
+  BProv translatedPAAx Gamma
+    (rename (inst i) (formulaAt (upVarMap rho) a)) ->
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a)).
+Proof.
+  intros Gamma rho a i j hdom heq hbody.
+  apply (BProv_formulaAt_exI_slot_context Gamma rho a j hdom).
+  exact (BProv_formulaAt_slot_eqElim_context Gamma rho a i j heq hbody).
+Qed.
+
+Lemma BProv_formulaAt_exI_var_context :
+  forall Gamma rho a k,
+  BProv translatedPAAx Gamma (rename (inst (rho k)) domainForm) ->
+  BProv translatedPAAx Gamma
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)) ->
+  BProv translatedPAAx Gamma (formulaAt rho (PA.pEx a)).
+Proof.
+  intros Gamma rho a k hdom hbody.
+  rewrite formulaAt_subst_instTerm_var in hbody.
+  exact (BProv_formulaAt_exI_slot_context Gamma rho a (rho k) hdom hbody).
+Qed.
+
+Lemma BProv_formulaAt_exI_var_domainContext :
+  forall rho n G a k,
+  k < n ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho
+      (PA.Formula.subst (PA.Formula.instTerm (PA.tVar k)) a)) ->
+  BProv translatedPAAx (domainContextAt rho n ++ translateContextAt rho G)
+    (formulaAt rho (PA.pEx a)).
+Proof.
+  intros rho n G a k hk hbody.
+  apply (BProv_formulaAt_exI_var_context
+    (domainContextAt rho n ++ translateContextAt rho G) rho a k).
+  - apply BProv_domainContextAt_var.
+    exact hk.
+  - exact hbody.
+Qed.
+
 Lemma BProv_translate_impI : forall G a b,
   BProv translatedPAAx
     (translateFormula a :: translateContext G) (translateFormula b) ->

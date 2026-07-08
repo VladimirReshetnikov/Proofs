@@ -188,6 +188,12 @@ Check BProv_formulaAt_slot_eqElim_context.
 Check BProv_formulaAt_allE_equal_slot_context.
 Check BProv_formulaAt_allE_var_context.
 Check BProv_formulaAt_allE_var_domainContext.
+Check BProv_formulaAt_exI_raw.
+Check BProv_formulaAt_exI_var.
+Check BProv_formulaAt_exI_slot_context.
+Check BProv_formulaAt_exI_equal_slot_context.
+Check BProv_formulaAt_exI_var_context.
+Check BProv_formulaAt_exI_var_domainContext.
 
 Check firstOrderFiniteAdjunctionModel_of_HFFinAx_s.
 Check formulaAt_induction_valid_finite_model.
