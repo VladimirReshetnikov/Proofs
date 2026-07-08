@@ -7068,6 +7068,14 @@ def remTermAt (rem : Term) (value modulus : Nat) : Formula :=
       (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
         (Term.rename Nat.succ rem))))
 
+theorem ltTermAt_var (a b : Nat) :
+    ltTermAt (Term.var a) (Term.var b) = ltAt a b := by
+  simp [ltTermAt, ltAt, Term.rename]
+
+theorem remTermAt_var (rem value modulus : Nat) :
+    remTermAt (Term.var rem) value modulus = remAt rem value modulus := by
+  simp [remTermAt, remAt, ltTermAt_var, Term.rename]
+
 def remEqAt (rem value modulus : Nat) : Formula :=
   ex (eq (Term.var (value+1))
     (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
@@ -7095,6 +7103,10 @@ def betaTermAt (out : Term) (code step idx : Nat) : Formula :=
     (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
     (remTermAt (Term.rename Nat.succ out) (code+1) 0))
 
+theorem betaTermAt_var (out code step idx : Nat) :
+    betaTermAt (Term.var out) code step idx = betaAt out code step idx := by
+  simp [betaTermAt, betaAt, remTermAt_var, Term.rename]
+
 /-- Term-output beta entry whose sequence index is itself specified by a PA
 term.  This generalizes the constant/successor-index wrappers without changing
 the raw beta relation: the index term is represented by an explicit witness
@@ -7111,6 +7123,11 @@ def betaAtConstIdx (out code step idxValue : Nat) : Formula :=
 def betaTermAtConstIdx (out : Term) (code step idxValue : Nat) : Formula :=
   ex (and (eqConstAt 0 idxValue)
     (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0))
+
+theorem betaTermAtConstIdx_var (out code step idxValue : Nat) :
+    betaTermAtConstIdx (Term.var out) code step idxValue =
+      betaAtConstIdx out code step idxValue := by
+  simp [betaTermAtConstIdx, betaAtConstIdx, betaTermAt_var, Term.rename]
 
 def betaAtSuccIdx (out code step idx : Nat) : Formula :=
   ex (and
@@ -7276,6 +7293,21 @@ def hfMemAt (elem set : Nat) : Formula :=
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (elem+3)))))))
 
+/-- Term-parametric variant of `hfMemAt` for the set code.  The element is
+still read from a PA slot, while the initial beta entry may output an arbitrary
+PA term.  This is the exact shape produced by substituting a non-variable term
+for the set-code slot of `hfMemAt`. -/
+def hfMemTermAt (elem : Nat) (setCode : Term) : Formula :=
+  ex (ex
+    (and
+      (betaTermAtConstIdx (Term.rename (fun n => n+2) setCode) 1 0 0)
+      (and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (elem+3)))))))
+
 /-- The actual membership formula obtained after the HF empty witness is
 instantiated with the closed PA term `0`.  The element remains a slot; only the
 set-code output in the initial beta entry is now a closed term. -/
@@ -7289,6 +7321,30 @@ def hfMemZeroSetAt (elem : Nat) : Formula :=
           (and
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (elem+3)))))))
+
+/-- The term-parametric membership macro specializes to ordinary slot
+membership when the set-code term is a variable. -/
+theorem hfMemTermAt_var (elem set : Nat) :
+    hfMemTermAt elem (Term.var set) = hfMemAt elem set := by
+  simp [hfMemTermAt, hfMemAt, betaTermAtConstIdx_var, Term.rename]
+
+/-- The term-parametric membership macro specializes to the closed-zero set
+membership macro. -/
+theorem hfMemTermAt_zero (elem : Nat) :
+    hfMemTermAt elem Term.zero = hfMemZeroSetAt elem := by
+  simp [hfMemTermAt, hfMemZeroSetAt, Term.rename]
+
+/-- Instantiating the set-code slot of `hfMemAt` by an arbitrary PA term yields
+the term-parametric membership macro. -/
+theorem subst_instTerm_hfMemAt_succ_zero (elem : Nat) (setCode : Term) :
+    subst (instTerm setCode) (hfMemAt (elem+1) 0) =
+      hfMemTermAt elem setCode := by
+  simp [hfMemTermAt, hfMemAt, betaTermAtConstIdx, betaTermAt,
+    remTermAt, ltTermAt, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.rename_comp]
 
 theorem subst_up_zero_hfMemAt_zero_set :
     subst (Term.upSubst (instTerm Term.zero)) (hfMemAt 0 1) =
