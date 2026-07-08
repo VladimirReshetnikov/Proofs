@@ -70,6 +70,10 @@ open SetTheory
 #check @PA.Formula.sat_axiom
 #check @PA.Formula.Ax_s
 #check @PA.Formula.sat_axiom_s
+#check @AckermannHF.not_mem_zero_of_double
+#check @AckermannHF.mem_succ_double_iff
+#check @AckermannHF.mem_succ_odd_double_iff
+#check @AckermannHF.mem_succ_double_not_mem_succ_odd_double_of_mem_not_mem
 #check @PA.Formula.Prov
 #check @PA.Formula.Prov_weaken
 #check @PA.Formula.Prov_cons

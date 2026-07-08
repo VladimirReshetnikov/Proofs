@@ -25,6 +25,39 @@ theorem mem_zero_of_odd_double {set half : Nat}
   have hmod : (half + half + 1) % 2 = 1 := by omega
   simp [hmod]
 
+/-- The zero-th Ackermann member is absent from an even code. -/
+theorem not_mem_zero_of_double {set half : Nat}
+    (hset : set = half + half) : ¬ Mem 0 set := by
+  rw [Mem, hset, Nat.testBit_zero]
+  have hmod : (half + half) % 2 = 0 := by omega
+  simp [hmod]
+
+/-- Doubling a code shifts every positive Ackermann member down by one bit. -/
+theorem mem_succ_double_iff (x half : Nat) :
+    Mem (x+1) (half + half) ↔ Mem x half := by
+  unfold Mem
+  rw [Nat.testBit_succ]
+  have hdiv : (half + half) / 2 = half := by omega
+  simp [hdiv]
+
+/-- Odd doubling has the same positive-bit shift as doubling; only bit zero is
+new. -/
+theorem mem_succ_odd_double_iff (x half : Nat) :
+    Mem (x+1) (half + half + 1) ↔ Mem x half := by
+  unfold Mem
+  rw [Nat.testBit_succ]
+  have hdiv : (half + half + 1) / 2 = half := by omega
+  simp [hdiv]
+
+/-- A high-only bit remains high-only after the even/odd carry shift
+`high ↦ 2*high`, `low ↦ 2*low+1`. -/
+theorem mem_succ_double_not_mem_succ_odd_double_of_mem_not_mem
+    {x high low : Nat} (hhigh : Mem x high) (hlow : ¬ Mem x low) :
+    Mem (x+1) (high + high) ∧
+      ¬ Mem (x+1) (low + low + 1) := by
+  exact ⟨(mem_succ_double_iff x high).mpr hhigh,
+    fun h => hlow ((mem_succ_odd_double_iff x low).mp h)⟩
+
 /-- Nonmembership is the closed Boolean value `false` of the corresponding
 Ackermann bit. -/
 theorem testBit_false_of_not_mem {x y : Nat} (h : ¬ Mem x y) :
