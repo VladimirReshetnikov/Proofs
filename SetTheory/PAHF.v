@@ -10638,6 +10638,7 @@ Proof.
   {
     simpl.
     repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
     exact htarget.
   }
   assert (hbody : BProv Ax_s G
@@ -10662,6 +10663,127 @@ Proof.
       (pEq (tVar (S value))
         (tAdd (tMul (tVar 0) (tVar (S modulus)))
           (tVar (S rem)))))
+    (Term.numeral q) hbody).
+Qed.
+
+Lemma BProv_Ax_s_remAt_constMod_of_eqConst :
+  forall G rem value r v m q,
+  BProv Ax_s G (eqConstAt rem r) ->
+  BProv Ax_s G (eqConstAt value v) ->
+  r < m ->
+  q * m + r = v ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral m)) (remAt (S rem) (S value) 0)).
+Proof.
+  intros G rem value r v m q hrem hvalue hlt hval.
+  pose proof (BProv_Ax_s_ltConst_of_eqConst G rem r m hrem hlt)
+    as hltConst.
+  assert (hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (ltAt (S (S rem)) 1)))).
+  {
+    unfold ltAt in *.
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact hltConst.
+  }
+  assert (hmulRaw : BProv Ax_s G
+      (pEq (tMul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulNumerals.
+  }
+  assert (haddLeft : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G
+      (tMul (Term.numeral q) (Term.numeral m))
+      (Term.numeral (q * m)) (tVar rem) hmulRaw).
+  }
+  assert (haddRight : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (Term.numeral (q * m)) (tVar rem) (Term.numeral r) hrem).
+  }
+  assert (haddRaw : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addNumerals.
+  }
+  assert (hadd : BProv Ax_s G
+      (pEq
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v))).
+  {
+    rewrite <- hval.
+    exact haddRaw.
+  }
+  assert (hcomputed : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (Term.numeral v))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+      (tAdd (Term.numeral (q * m)) (Term.numeral r))
+      (Term.numeral v)
+      (BProv_eqTrans Ax_s G
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (tVar rem))
+        (tAdd (Term.numeral (q * m)) (Term.numeral r))
+        haddLeft haddRight)
+      hadd).
+  }
+  assert (htarget : BProv Ax_s G
+      (pEq (tVar value)
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem)))).
+  {
+    exact (BProv_eqTrans Ax_s G
+      (tVar value) (Term.numeral v)
+      (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+      hvalue
+      (BProv_eqSym Ax_s G
+        (tAdd (tMul (Term.numeral q) (Term.numeral m)) (tVar rem))
+        (Term.numeral v) hcomputed)).
+  }
+  assert (hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (pEq (tVar (S (S value)))
+            (tAdd (tMul (tVar 0) (tVar 1)) (tVar (S (S rem)))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact htarget.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (pAnd (ltAt (S (S rem)) 1)
+            (pEq (tVar (S (S value)))
+              (tAdd (tMul (tVar 0) (tVar 1)) (tVar (S (S rem))))))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hltBody hvalueBody).
+  }
+  unfold remAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral m)))
+      (pAnd (ltAt (S (S rem)) 1)
+        (pEq (tVar (S (S value)))
+          (tAdd (tMul (tVar 0) (tVar 1)) (tVar (S (S rem)))))))
     (Term.numeral q) hbody).
 Qed.
 
