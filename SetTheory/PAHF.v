@@ -11036,6 +11036,60 @@ Proof.
     (Term.numeral (BetaModulus s i)) hbody).
 Qed.
 
+Lemma BProv_Ax_s_betaAt_constOutSubst_of_eqConst :
+  forall G code step idx o c s i q,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  BProv Ax_s G (eqConstAt idx i) ->
+  o < BetaModulus s i ->
+  q * BetaModulus s i + o = c ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral o))
+      (betaAt 0 (S code) (S step) (S idx))).
+Proof.
+  intros G code step idx o c s i q hcode hstep hidx hlt hval.
+  pose proof (BProv_Ax_s_betaModTerm_of_eqConst
+    G step idx s i hstep hidx) as hmodTerm.
+  assert (hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (pEq (tVar 0)
+            (Term.rename S (betaModTerm (S step) (S idx))))))).
+  {
+    simpl.
+    exact (BProv_eqSym Ax_s G
+      (betaModTerm step idx) (Term.numeral (BetaModulus s i))
+      hmodTerm).
+  }
+  assert (hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (remAt 1 (S (S code)) 0)))).
+  {
+    exact (BProv_Ax_s_remAt_constRemMod_of_eqConst
+      G code o c (BetaModulus s i) q hcode hlt hval).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (pAnd
+            (pEq (tVar 0)
+              (Term.rename S (betaModTerm (S step) (S idx))))
+            (remAt 1 (S (S code)) 0))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hmodBody hremBody).
+  }
+  unfold betaAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral o)))
+      (pAnd
+        (pEq (tVar 0)
+          (Term.rename S (betaModTerm (S step) (S idx))))
+        (remAt 1 (S (S code)) 0)))
+    (Term.numeral (BetaModulus s i)) hbody).
+Qed.
+
 Definition BetaEntry (code step idx value : nat) : Prop :=
   exists q, code = q * BetaModulus step idx + value /\
     value < BetaModulus step idx.
