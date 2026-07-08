@@ -57,6 +57,13 @@ Check ClosureFO_of_ZF.
 Print Assumptions ClosureFO_of_ZF.
 
 (* PA/HF translation and finite-HF bridge. *)
+Check PA.Term.addRightNumeral.
+Check PA.Term.mulRightNumeral.
+Check PA.Term.addRightNumeral_numeral.
+Check PA.Term.subst_comp.
+Check PA.Term.subst_rename_succ_up.
+Check PA.Term.subst_ext_free.
+Check PA.Term.subst_id.
 Check PA.Formula.Ax_s.
 Check PA.Formula.sat_axiom_s.
 Check PA.Formula.Sentences.
@@ -65,8 +72,15 @@ Check PA.Formula.term_subst_var_rename.
 Check PA.Formula.term_subst_instTerm_var.
 Check PA.Formula.subst_var_rename.
 Check PA.Formula.subst_instTerm_var.
+Check PA.Formula.subst_comp.
+Check PA.Formula.subst_rename_succ_up.
+Check PA.Formula.subst_ext_free.
+Check PA.Formula.subst_id.
+Check PA.Formula.subst_eq_of_sentence.
 Check PA.Formula.term_subst_instTerm_rename_succ.
 Check PA.Formula.subst_instTerm_rename_succ.
+Check PA.Formula.subst_instTerm_subst_up.
+Check PA.Formula.map_subst_rename_succ_up.
 Check PA.Formula.rename_hfMemAt.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
@@ -81,6 +95,7 @@ Check PA.Formula.hfContextAt_cons_rename_succ.
 Check PA.Formula.subst_instTerm_var_hfFormulaAt.
 Check PA.Formula.hfFormulaAt_eq_translateHFFormula_of_HF_sentence.
 Check PA.Formula.Prov_hfFormulaAt_of_Prov.
+Check PA.Formula.Prov_subst.
 Check PA.Formula.BProv_hfFormulaAt_of_BProv_HFFin.
 Check PA.Formula.BProv_translateHFFormula_of_BProv_HFFin.
 Check PA.Formula.BProv_lift.
@@ -99,6 +114,10 @@ Check PA.Formula.BProv_allE.
 Check PA.Formula.BProv_exI.
 Check PA.Formula.BProv_allI_of_sentences.
 Check PA.Formula.BProv_exE_of_sentences.
+Check PA.Formula.BProv_weaken_nil.
+Check PA.Formula.BProv_ass.
+Check PA.Formula.BProv_rename_of_sentences.
+Check PA.Formula.BProv_subst_of_sentences.
 Check PA.Formula.BProv_closeN_allE_rename.
 Check PA.Formula.BProv_sealPA_allE_rename.
 Check PA.Formula.BProv_inductionForm_mp.

@@ -6350,6 +6350,31 @@ Fixpoint numeral (n : nat) : term :=
   | S k => tSucc (numeral k)
   end.
 
+Fixpoint addRightNumeral (t : term) (n : nat) : term :=
+  match n with
+  | 0 => t
+  | S k => tSucc (addRightNumeral t k)
+  end.
+
+Fixpoint mulRightNumeral (t : term) (n : nat) : term :=
+  match n with
+  | 0 => tZero
+  | S k => tAdd (mulRightNumeral t k) t
+  end.
+
+Lemma addRightNumeral_numeral : forall m n,
+  addRightNumeral (numeral m) n = numeral (m + n).
+Proof.
+  intros m n.
+  induction n as [|n IH].
+  - rewrite Nat.add_0_r.
+    reflexivity.
+  - simpl.
+    rewrite IH.
+    rewrite Nat.add_succ_r.
+    reflexivity.
+Qed.
+
 Fixpoint numeralValue (M : Model) (n : nat) : M :=
   match n with
   | 0 => zero M
@@ -6537,6 +6562,51 @@ Proof.
   - now rewrite (IHt r sigma).
   - now rewrite (IHt1 r sigma), (IHt2 r sigma).
   - now rewrite (IHt1 r sigma), (IHt2 r sigma).
+Qed.
+
+Lemma subst_comp : forall t (sigma tau : nat -> term),
+  subst tau (subst sigma t) =
+    subst (fun n => subst tau (sigma n)) t.
+Proof.
+  induction t; simpl; intros sigma tau; try reflexivity.
+  - now rewrite (IHt sigma tau).
+  - now rewrite (IHt1 sigma tau), (IHt2 sigma tau).
+  - now rewrite (IHt1 sigma tau), (IHt2 sigma tau).
+Qed.
+
+Lemma subst_rename_succ_up : forall t (sigma : nat -> term),
+  subst (upSubst sigma) (rename S t) =
+    rename S (subst sigma t).
+Proof.
+  intros t sigma.
+  rewrite subst_rename.
+  rewrite rename_subst.
+  apply subst_ext.
+  intros n. reflexivity.
+Qed.
+
+Lemma subst_ext_free : forall t (sigma tau : nat -> term),
+  (forall n, Free n t -> sigma n = tau n) ->
+  subst sigma t = subst tau t.
+Proof.
+  induction t; simpl; intros sigma tau h; try reflexivity.
+  - apply h. reflexivity.
+  - now rewrite (IHt sigma tau h).
+  - rewrite (IHt1 sigma tau (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 sigma tau (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHt1 sigma tau (fun n hn => h n (or_introl hn))).
+    rewrite (IHt2 sigma tau (fun n hn => h n (or_intror hn))).
+    reflexivity.
+Qed.
+
+Lemma subst_id : forall t,
+  subst (fun n => tVar n) t = t.
+Proof.
+  induction t; simpl; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
 Qed.
 
 End Term.
@@ -7164,6 +7234,70 @@ Proof.
       intro k. reflexivity.
 Qed.
 
+Lemma subst_comp : forall phi (sigma tau : nat -> term),
+  subst tau (subst sigma phi) =
+    subst (fun n => Term.subst tau (sigma n)) phi.
+Proof.
+  induction phi; simpl; intros sigma tau; try reflexivity.
+  - now rewrite !Term.subst_comp.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite Term.subst_rename_succ_up.
+      reflexivity.
+  - rewrite (IHphi (Term.upSubst sigma) (Term.upSubst tau)).
+    apply f_equal.
+    apply subst_ext.
+    intros [|n]; simpl.
+    + reflexivity.
+    + rewrite Term.subst_rename_succ_up.
+      reflexivity.
+Qed.
+
+Lemma subst_rename_succ_up : forall phi (sigma : nat -> term),
+  subst (Term.upSubst sigma) (rename S phi) =
+    rename S (subst sigma phi).
+Proof.
+  intros phi sigma.
+  rewrite subst_rename.
+  rewrite rename_subst.
+  apply subst_ext.
+  intros n. reflexivity.
+Qed.
+
+Lemma subst_ext_free : forall phi (sigma tau : nat -> term),
+  (forall n, Free n phi -> sigma n = tau n) ->
+  subst sigma phi = subst tau phi.
+Proof.
+  induction phi; simpl; intros sigma tau h; try reflexivity.
+  - rewrite (Term.subst_ext_free t sigma tau
+      (fun n hn => h n (or_introl hn))).
+    rewrite (Term.subst_ext_free t0 sigma tau
+      (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - now rewrite (IHphi1 sigma tau (fun n hn => h n (or_introl hn))),
+      (IHphi2 sigma tau (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 sigma tau (fun n hn => h n (or_introl hn))),
+      (IHphi2 sigma tau (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHphi1 sigma tau (fun n hn => h n (or_introl hn))),
+      (IHphi2 sigma tau (fun n hn => h n (or_intror hn))).
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    rewrite (h n hn).
+    reflexivity.
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    rewrite (h n hn).
+    reflexivity.
+Qed.
+
 Lemma subst_var_rename : forall phi (r : nat -> nat),
   subst (fun n => tVar (r n)) phi = rename r phi.
 Proof.
@@ -7191,6 +7325,25 @@ Proof.
   rewrite <- (subst_var_rename phi (inst k)).
   apply subst_ext.
   intros [|n]; reflexivity.
+Qed.
+
+Lemma subst_id : forall phi,
+  subst (fun n => tVar n) phi = phi.
+Proof.
+  intro phi.
+  rewrite subst_var_rename.
+  apply rename_id.
+Qed.
+
+Lemma subst_eq_of_sentence : forall phi,
+  Sentence phi -> forall sigma, subst sigma phi = phi.
+Proof.
+  intros phi hphi sigma.
+  transitivity (subst (fun n => tVar n) phi).
+  - apply subst_ext_free.
+    intros n hn.
+    exfalso. exact (hphi n hn).
+  - apply subst_id.
 Qed.
 
 Lemma subst_instTerm_rename_up : forall phi (r : nat -> nat) t,
@@ -7222,6 +7375,34 @@ Proof.
   change (subst (fun n => tVar n) phi = phi).
   rewrite subst_var_rename.
   apply rename_id.
+Qed.
+
+Lemma subst_instTerm_subst_up : forall phi (sigma : nat -> term) t,
+  subst (instTerm (Term.subst sigma t)) (subst (Term.upSubst sigma) phi) =
+    subst sigma (subst (instTerm t) phi).
+Proof.
+  intros phi sigma t.
+  rewrite subst_comp.
+  rewrite subst_comp.
+  apply subst_ext.
+  intros [|n]; simpl.
+  - reflexivity.
+  - change (Term.subst (instTerm (Term.subst sigma t))
+      (Term.rename S (sigma n)) = sigma n).
+    rewrite term_subst_instTerm_rename_succ.
+    reflexivity.
+Qed.
+
+Lemma map_subst_rename_succ_up : forall (sigma : nat -> term) G,
+  map (subst (Term.upSubst sigma)) (map (rename S) G) =
+    map (rename S) (map (subst sigma) G).
+Proof.
+  intros sigma G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite subst_rename_succ_up.
+    rewrite IH.
+    reflexivity.
 Qed.
 
 Lemma Sat_instTerm : forall (M : Model) phi t (e : nat -> M),
@@ -7419,6 +7600,85 @@ Proof.
     exact hElim.
 Qed.
 
+Lemma Prov_subst : forall G phi,
+  Prov G phi -> forall sigma,
+  Prov (map (subst sigma) G) (subst sigma phi).
+Proof.
+  intros G phi h.
+  induction h; intro sigma; simpl.
+  - apply P_ass.
+    apply in_map.
+    exact H.
+  - apply P_impI.
+    exact (IHh sigma).
+  - exact (P_impE (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh1 sigma) (IHh2 sigma)).
+  - exact (P_botE (map (subst sigma) G) (subst sigma a) (IHh sigma)).
+  - exact (P_lem (map (subst sigma) G) (subst sigma a)).
+  - exact (P_andI (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh1 sigma) (IHh2 sigma)).
+  - exact (P_andE1 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_andE2 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_orI1 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_orI2 (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (IHh sigma)).
+  - exact (P_orE (map (subst sigma) G) (subst sigma a)
+      (subst sigma b) (subst sigma c)
+      (IHh1 sigma) (IHh2 sigma) (IHh3 sigma)).
+  - apply P_allI.
+    rewrite <- map_subst_rename_succ_up.
+    exact (IHh (Term.upSubst sigma)).
+  - rewrite <- subst_instTerm_subst_up.
+    exact (P_allE (map (subst sigma) G) (subst (Term.upSubst sigma) a)
+      (Term.subst sigma t) (IHh sigma)).
+  - apply (P_exI (map (subst sigma) G) (subst (Term.upSubst sigma) a)
+      (Term.subst sigma t)).
+    rewrite subst_instTerm_subst_up.
+    exact (IHh sigma).
+  - assert (hEx : Prov (map (subst sigma) G)
+        (pEx (subst (Term.upSubst sigma) a))).
+    {
+      exact (IHh1 sigma).
+    }
+    assert (hbody :
+        Prov (subst (Term.upSubst sigma) a ::
+            map (rename S) (map (subst sigma) G))
+          (rename S (subst sigma c))).
+    {
+      rewrite <- map_subst_rename_succ_up.
+      rewrite <- subst_rename_succ_up.
+      change (Prov (map (subst (Term.upSubst sigma))
+          (a :: map (rename S) G))
+        (subst (Term.upSubst sigma) (rename S c))).
+      exact (IHh2 (Term.upSubst sigma)).
+    }
+    exact (P_exE (map (subst sigma) G) (subst (Term.upSubst sigma) a)
+      (subst sigma c) hEx hbody).
+  - exact (P_eqRefl (map (subst sigma) G) (Term.subst sigma t)).
+  - assert (hEq :
+        Prov (map (subst sigma) G)
+          (pEq (Term.subst sigma s) (Term.subst sigma t))).
+    {
+      exact (IHh1 sigma).
+    }
+    assert (hA :
+        Prov (map (subst sigma) G)
+          (subst (instTerm (Term.subst sigma s))
+            (subst (Term.upSubst sigma) a))).
+    {
+      rewrite subst_instTerm_subst_up.
+      exact (IHh2 sigma).
+    }
+    pose proof (P_eqElim (map (subst sigma) G)
+      (Term.subst sigma s) (Term.subst sigma t)
+      (subst (Term.upSubst sigma) a) hEq hA) as hElim.
+    rewrite subst_instTerm_subst_up in hElim.
+    exact hElim.
+Qed.
+
 Lemma Prov_cut : forall G phi,
   Prov G phi ->
   forall De, (forall x, In x G -> Prov De x) -> Prov De phi.
@@ -7611,6 +7871,71 @@ Proof.
   split.
   - intros x hx. contradiction.
   - simpl. exact h.
+Qed.
+
+Lemma BProv_weaken_nil : forall (B : formula -> Prop) G phi,
+  BProv B [] phi -> BProv B G phi.
+Proof.
+  intros B G phi h.
+  apply (BProv_mono B [] G phi).
+  - intros x hx. contradiction.
+  - exact h.
+Qed.
+
+Lemma BProv_ass : forall (B : formula -> Prop) G phi,
+  In phi G -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  apply BProv_of_Prov.
+  exact (P_ass G phi hphi).
+Qed.
+
+Lemma BProv_rename_of_sentences : forall (B : formula -> Prop),
+  Sentences B -> forall G phi,
+  BProv B G phi -> forall r,
+  BProv B (map (rename r) G) (rename r phi).
+Proof.
+  intros B hB G phi [L [hL hp]] r.
+  exists L.
+  split; [exact hL |].
+  pose proof (Prov_rename (L ++ G) phi hp r) as hpRen.
+  apply (Prov_weaken (map (rename r) (L ++ G)) (rename r phi) hpRen).
+  intros x hx.
+  rewrite map_app in hx.
+  apply in_app_iff in hx.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left.
+    apply in_map_iff in hx.
+    destruct hx as [y [hy hyL]].
+    subst x.
+    rewrite (rename_eq_of_sentence y (hB y (hL y hyL)) r).
+    exact hyL.
+  - right. exact hx.
+Qed.
+
+Lemma BProv_subst_of_sentences : forall (B : formula -> Prop),
+  Sentences B -> forall G phi,
+  BProv B G phi -> forall sigma,
+  BProv B (map (subst sigma) G) (subst sigma phi).
+Proof.
+  intros B hB G phi [L [hL hp]] sigma.
+  exists L.
+  split; [exact hL |].
+  pose proof (Prov_subst (L ++ G) phi hp sigma) as hpSub.
+  apply (Prov_weaken (map (subst sigma) (L ++ G)) (subst sigma phi) hpSub).
+  intros x hx.
+  rewrite map_app in hx.
+  apply in_app_iff in hx.
+  apply in_app_iff.
+  destruct hx as [hx | hx].
+  - left.
+    apply in_map_iff in hx.
+    destruct hx as [y [hy hyL]].
+    subst x.
+    rewrite (subst_eq_of_sentence y (hB y (hL y hyL)) sigma).
+    exact hyL.
+  - right. exact hx.
 Qed.
 
 Lemma BProv_mp : forall (B : formula -> Prop) G a b,
