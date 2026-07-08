@@ -26398,6 +26398,69 @@ theorem
               simpa [G, lowLtHigh, ih, Nat.add_assoc] using hbitEx)))
       hhighOdd_lowDouble hhighOdd_lowOdd
 
+/-- Named-component variant of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_components_double_succ_carry_cases`.
+
+The three high-even/low-odd successor-trace obligations are phrased with the
+named context/formula abbreviations above.  This theorem is still only a
+composition wrapper: the div2 witnesses, chosen beta terms, odd-high carry
+branches, and all component proofs remain explicit premises. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_components_double_succ_carry_cases
+    {highHalf highBit lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0)) :
+    BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_components_double_succ_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      hhighStep hlowStep
+      (by
+        simpa [strictHighDoubleLowOddSuccComponentContext,
+          strictHighDoubleLowOddSuccEntryFormula,
+          strictHighDoubleLowOddSuccTargetCode, Nat.add_assoc] using hentry)
+      (by
+        simpa [strictHighDoubleLowOddSuccComponentContext,
+          strictHighDoubleLowOddSuccStepsFormula, Nat.add_assoc] using hsteps)
+      (by
+        simpa [strictHighDoubleLowOddSuccComponentContext,
+          strictHighDoubleLowOddSuccBitExFormula, Nat.add_assoc] using hbitEx)
+      hhighOdd_lowDouble hhighOdd_lowOdd
+
 /-- If the induction hypothesis distinguishes `high` from every lower code,
 and a binary-halving step extracts `lowHalf` from a strict lower code `low`,
 then the induction hypothesis may be opened at `lowHalf`.
@@ -26779,6 +26842,61 @@ theorem
       (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
   BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
     (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_components_double_succ_carry_cases
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      hhighStep hlowStep hentry hsteps hbitEx
+      hhighOdd_lowDouble hhighOdd_lowOdd)
+    hself
+
+/-- Successor-step wrapper with the high-even/low-odd beta obligations exposed
+through the named component context/formulas.
+
+This is the extensionality-facing version of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_components_double_succ_carry_cases`.
+It performs no arithmetic carry work itself: the div2 witnesses, beta
+components, odd-high carry branches, and standalone self distinguisher all
+remain ordinary proof arguments. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_div2_named_components_double_succ_carry_and_self
+    {highHalf highBit lowHalf lowBit : Nat} {codeTerm stepTerm : Term}
+    (hhighStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (doubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf :: oddDoubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt
+        (Term.add (Term.succ (Term.var highHalf))
+          (Term.succ (Term.var highHalf))) 0))
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_components_double_succ_carry_cases
       (highHalf := highHalf) (highBit := highBit)
       (lowHalf := lowHalf) (lowBit := lowBit)
       (codeTerm := codeTerm) (stepTerm := stepTerm)
