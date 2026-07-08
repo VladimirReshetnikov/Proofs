@@ -278,10 +278,14 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remEqAt_of_remAt
 #check @PA.Formula.ltTermAt
 #check @PA.Formula.remTermAt
+#check @PA.Formula.remTermEqAt
 #check @PA.Formula.betaTermAt
 #check @PA.Formula.betaTermAtConstIdx
 #check @PA.Formula.hfMemZeroSetAt
 #check @PA.Formula.subst_up_zero_hfMemAt_zero_set
+#check @PA.Formula.BProv_Ax_s_ltTermAt_of_remTermAt
+#check @PA.Formula.BProv_Ax_s_remTermEqAt_of_remTermAt
+#check @PA.Formula.BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
 #check @PA.Formula.BProv_Ax_s_remAt_eqConst_modulus_zero_bot

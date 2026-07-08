@@ -6840,6 +6840,13 @@ def remEqAt (rem value modulus : Nat) : Formula :=
     (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
       (Term.var (rem+1))))
 
+/-- Term-parametric remainder equation, forgetting the strict bound but keeping
+the same quotient witness. -/
+def remTermEqAt (rem : Term) (value modulus : Nat) : Formula :=
+  ex (eq (Term.var (value+1))
+    (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+      (Term.rename Nat.succ rem)))
+
 def betaModTerm (step idx : Nat) : Term :=
   Term.succ (Term.mul (Term.succ (Term.var idx)) (Term.var step))
 
@@ -12253,6 +12260,130 @@ theorem BProv_Ax_s_remEqAt_of_remAt {G : List Formula}
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hrem (by
       simpa [remAt, body] using hbody)
+
+/-- Eliminate a term-parametric remainder proof to its strict boundedness
+component. -/
+theorem BProv_Ax_s_ltTermAt_of_remTermAt {G : List Formula}
+    {rem : Term} {value modulus : Nat}
+    (hrem : BProv Ax_s G (remTermAt rem value modulus)) :
+    BProv Ax_s G (ltTermAt rem (Term.var modulus)) := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ rem) (Term.var (modulus+1)))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.rename Nat.succ rem)))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (ltTermAt rem (Term.var modulus))) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlt : BProv Ax_s C
+        (ltTermAt (Term.rename Nat.succ rem) (Term.var (modulus+1))) :=
+      BProv_andE1 hbodyAss
+    simpa [C, ltTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using hlt
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remTermAt, body] using hbody)
+
+/-- Eliminate a term-parametric remainder proof to the existential quotient
+equation it contains, forgetting only the strict bound. -/
+theorem BProv_Ax_s_remTermEqAt_of_remTermAt {G : List Formula}
+    {rem : Term} {value modulus : Nat}
+    (hrem : BProv Ax_s G (remTermAt rem value modulus)) :
+    BProv Ax_s G (remTermEqAt rem value modulus) := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ rem) (Term.var (modulus+1)))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.rename Nat.succ rem)))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (remTermEqAt rem value modulus)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have heq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ rem))) :=
+      BProv_andE2 hbodyAss
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (eq (Term.var (value+1+1))
+            (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1+1)))
+              (Term.rename Nat.succ (Term.rename Nat.succ rem))))) := by
+      have hremSubst :
+          Term.subst (instTerm (Term.var 0))
+              (Term.rename (fun n => n + 1 + 1) rem) =
+            Term.rename Nat.succ rem := by
+        have hrename :
+            Term.rename (fun n => n + 1 + 1) rem =
+              Term.rename Nat.succ (Term.rename Nat.succ rem) := by
+          rw [Term.rename_comp]
+        rw [hrename]
+        exact term_subst_instTerm_rename_succ (Term.rename Nat.succ rem)
+          (Term.var 0)
+      simpa [subst, instTerm, Term.subst, Term.upSubst,
+        Term.rename_comp, hremSubst] using heq
+    have hex : BProv Ax_s C
+        (ex (eq (Term.var (value+1+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1+1)))
+            (Term.rename Nat.succ (Term.rename Nat.succ rem))))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq (Term.var (value+1+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1+1)))
+            (Term.rename Nat.succ (Term.rename Nat.succ rem))))
+        (t := Term.var 0) hinst
+    simpa [C, remTermEqAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remTermAt, body] using hbody)
+
+/-- A term-parametric remainder of zero-valued division is the zero term.  The
+modulus is deliberately left unconstrained: the conclusion follows from the
+quotient equation alone. -/
+theorem BProv_Ax_s_eq_zero_of_remTermAt_eqConst_zero
+    {G : List Formula} {rem : Term} {value modulus : Nat}
+    (hrem : BProv Ax_s G (remTermAt rem value modulus))
+    (hvalue : BProv Ax_s G (eqConstAt value 0)) :
+    BProv Ax_s G (eq rem Term.zero) := by
+  let eqBody : Formula :=
+    eq (Term.var (value+1))
+      (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+        (Term.rename Nat.succ rem))
+  have heqEx : BProv Ax_s G (remTermEqAt rem value modulus) :=
+    BProv_Ax_s_remTermEqAt_of_remTermAt hrem
+  have hbody : BProv Ax_s (eqBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq rem Term.zero)) := by
+    let C : List Formula := eqBody :: G.map (rename Nat.succ)
+    have heqBody : BProv Ax_s C eqBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hvalueRen : BProv Ax_s (G.map (rename Nat.succ))
+        (eqConstAt (value+1) 0) := by
+      simpa [eqConstAt, rename, Term.rename] using
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hvalue Nat.succ
+    have hvalueC : BProv Ax_s C (eqConstAt (value+1) 0) :=
+      BProv_context_cons hvalueRen
+    have hsumZero : BProv Ax_s C
+        (eq
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ rem))
+          Term.zero) := by
+      simpa [eqConstAt, Term.numeral, eqBody] using
+        BProv_eqTrans (BProv_eqSym heqBody) hvalueC
+    have hremZero : BProv Ax_s C (eq (Term.rename Nat.succ rem) Term.zero) :=
+      BProv_Ax_s_add_eq_zero_right_terms
+        (x := Term.mul (Term.var 0) (Term.var (modulus+1)))
+        (y := Term.rename Nat.succ rem) hsumZero
+    simpa [C, rename, Term.rename, Term.numeral] using hremZero
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) heqEx (by
+      simpa [remTermEqAt, eqBody] using hbody)
 
 /-- A remainder of zero-valued division is zero.  The modulus is deliberately
 left unconstrained: the conclusion follows from the quotient equation alone. -/
