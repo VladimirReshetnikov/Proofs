@@ -590,6 +590,13 @@ open SetTheory
 #check @PA.Formula.betaAtSuccIdx
 #check @PA.Formula.BetaModulus
 #check @PA.Formula.BetaEntry
+#check @PA.Formula.twoEntryBetaStep
+#check @PA.Formula.twoEntryBetaCode
+#check @PA.Formula.BetaEntry_twoEntry_zero
+#check @PA.Formula.BetaEntry_twoEntry_one
+#check @PA.Formula.BetaDiv2Step_twoEntry
+#check @PA.Formula.BetaDiv2StepsThrough_zero_twoEntry
+#check @PA.Formula.HFMemTrace_zero_exists_of_one_step
 #check @PA.Formula.betaFact
 #check @PA.Formula.BetaModuliProduct
 #check @PA.Formula.BetaDiv2Step

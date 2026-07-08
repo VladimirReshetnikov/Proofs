@@ -7119,6 +7119,38 @@ def BetaEntry (code step idx value : Nat) : Prop :=
   ∃ q, code = q * BetaModulus step idx + value ∧
     value < BetaModulus step idx
 
+/-- A simple positive beta step large enough to code two adjacent entries. -/
+def twoEntryBetaStep (cur next : Nat) : Nat :=
+  cur + next + 1
+
+/-- Explicit two-entry beta code for entries `0 ↦ cur` and `1 ↦ next`.
+
+For `s = cur + next + 1`, the beta moduli are `s+1` and `2*s+1`, which are
+coprime with the useful identity `2*(s+1) ≡ 1 [MOD 2*s+1]`.  The code below
+uses only addition and multiplication, avoiding any subtraction or hidden
+bounded search. -/
+def twoEntryBetaCode (cur next : Nat) : Nat :=
+  let s := twoEntryBetaStep cur next
+  cur + (s + 1) * (2 * next + 4 * s * cur)
+
+theorem BetaEntry_twoEntry_zero (cur next : Nat) :
+    BetaEntry (twoEntryBetaCode cur next) (twoEntryBetaStep cur next) 0 cur := by
+  let s := twoEntryBetaStep cur next
+  refine ⟨2 * next + 4 * s * cur, ?_, ?_⟩
+  · simp [twoEntryBetaCode, twoEntryBetaStep, BetaModulus, s, Nat.add_comm,
+      Nat.mul_comm]
+  · simp [twoEntryBetaStep, BetaModulus]
+    omega
+
+theorem BetaEntry_twoEntry_one (cur next : Nat) :
+    BetaEntry (twoEntryBetaCode cur next) (twoEntryBetaStep cur next) 1 next := by
+  let s := twoEntryBetaStep cur next
+  refine ⟨next + (2 * s + 1) * cur, ?_, ?_⟩
+  · simp [twoEntryBetaCode, twoEntryBetaStep, BetaModulus, s]
+    grind
+  · simp [twoEntryBetaStep, BetaModulus]
+    omega
+
 /-- A tiny local factorial, kept here to avoid adding a dependency just for
 the Gödel beta coding lemma. -/
 def betaFact : Nat → Nat
@@ -7149,6 +7181,32 @@ def HFMemTrace (elem set code step : Nat) : Prop :=
   BetaEntry code step 0 set ∧
     BetaDiv2StepsThrough code step elem ∧
       BetaDiv2Bit code step elem 1
+
+theorem BetaDiv2Step_twoEntry {cur next bit : Nat}
+    (hbit : bit = 0 ∨ bit = 1)
+    (hcur : cur = next + next + bit) :
+    BetaDiv2Step (twoEntryBetaCode cur next) (twoEntryBetaStep cur next)
+      0 cur next bit := by
+  exact ⟨BetaEntry_twoEntry_zero cur next,
+    BetaEntry_twoEntry_one cur next, hbit, hcur⟩
+
+theorem BetaDiv2StepsThrough_zero_twoEntry {cur next bit : Nat}
+    (hbit : bit = 0 ∨ bit = 1)
+    (hcur : cur = next + next + bit) :
+    BetaDiv2StepsThrough (twoEntryBetaCode cur next)
+      (twoEntryBetaStep cur next) 0 := by
+  intro k hk
+  have hk0 : k = 0 := by omega
+  subst hk0
+  exact ⟨cur, next, bit, BetaDiv2Step_twoEntry hbit hcur⟩
+
+theorem HFMemTrace_zero_exists_of_one_step {set half : Nat}
+    (hset : set = half + half + 1) :
+    ∃ code step, HFMemTrace 0 set code step := by
+  refine ⟨twoEntryBetaCode set half, twoEntryBetaStep set half, ?_⟩
+  exact ⟨BetaEntry_twoEntry_zero set half,
+    BetaDiv2StepsThrough_zero_twoEntry (Or.inr rfl) hset,
+    ⟨set, half, BetaDiv2Step_twoEntry (Or.inr rfl) hset⟩⟩
 
 /-- A single adjacent beta-coded sequence step is a binary-halving step:
 the current value is `2 * next + bit`, with `bit ∈ {0,1}`. -/
