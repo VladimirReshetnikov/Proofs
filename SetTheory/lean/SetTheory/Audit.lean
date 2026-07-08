@@ -276,6 +276,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remAt_constRemMod_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltAt_of_remAt
 #check @PA.Formula.BProv_Ax_s_remEqAt_of_remAt
+#check @PA.Formula.ltTermAt
+#check @PA.Formula.remTermAt
+#check @PA.Formula.betaTermAt
+#check @PA.Formula.betaTermAtConstIdx
+#check @PA.Formula.hfMemZeroSetAt
+#check @PA.Formula.subst_up_zero_hfMemAt_zero_set
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_remAt_eqConst_modulus_one
 #check @PA.Formula.BProv_Ax_s_remAt_eqConst_modulus_zero_bot
@@ -345,6 +351,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_entry
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_steps
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_body_bitEx
+#check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_opened_body_entry
+#check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_opened_body_steps
+#check @PA.Formula.BProv_Ax_s_hfMemZeroSetAt_opened_body_bitEx
 #check @PA.Formula.BProv_Ax_s_hfMemAt_succ_opened_body_entry
 #check @PA.Formula.BProv_Ax_s_hfMemAt_succ_opened_body_steps
 #check @PA.Formula.BProv_Ax_s_hfMemAt_succ_opened_body_bitEx

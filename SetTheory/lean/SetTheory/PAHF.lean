@@ -6776,6 +6776,12 @@ def leConstAt (a n : Nat) : Formula :=
 def ltAt (a b : Nat) : Formula :=
   ex (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0))) (Term.var (b+1)))
 
+/-- Term-parametric strict order.  This is the same relation as `ltAt`, but
+the compared values may be arbitrary PA terms in the ambient context. -/
+def ltTermAt (a b : Term) : Formula :=
+  ex (eq (Term.add (Term.rename Nat.succ a) (Term.succ (Term.var 0)))
+    (Term.rename Nat.succ b))
+
 def dvdAt (a b : Nat) : Formula :=
   ex (eq (Term.mul (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
 
@@ -6820,6 +6826,15 @@ def remAt (rem value modulus : Nat) : Formula :=
       (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
         (Term.var (rem+1)))))
 
+/-- Term-parametric remainder relation.  The remainder may be an arbitrary PA
+term, while the dividend and modulus remain slots. -/
+def remTermAt (rem : Term) (value modulus : Nat) : Formula :=
+  ex (and
+    (ltTermAt (Term.rename Nat.succ rem) (Term.var (modulus+1)))
+    (eq (Term.var (value+1))
+      (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+        (Term.rename Nat.succ rem))))
+
 def remEqAt (rem value modulus : Nat) : Formula :=
   ex (eq (Term.var (value+1))
     (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
@@ -6833,8 +6848,20 @@ def betaAt (out code step idx : Nat) : Formula :=
     (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
     (remAt (out+1) (code+1) 0))
 
+/-- Term-parametric beta entry.  This is `betaAt` with the output slot allowed
+to be an arbitrary PA term. -/
+def betaTermAt (out : Term) (code step idx : Nat) : Formula :=
+  ex (and
+    (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+    (remTermAt (Term.rename Nat.succ out) (code+1) 0))
+
 def betaAtConstIdx (out code step idxValue : Nat) : Formula :=
   ex (and (eqConstAt 0 idxValue) (betaAt (out+1) (code+1) (step+1) 0))
+
+/-- Constant-index beta entry with a term-parametric output. -/
+def betaTermAtConstIdx (out : Term) (code step idxValue : Nat) : Formula :=
+  ex (and (eqConstAt 0 idxValue)
+    (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0))
 
 def betaAtSuccIdx (out code step idx : Nat) : Formula :=
   ex (and
@@ -6933,6 +6960,30 @@ def hfMemAt (elem set : Nat) : Formula :=
           (and
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (elem+3)))))))
+
+/-- The actual membership formula obtained after the HF empty witness is
+instantiated with the closed PA term `0`.  The element remains a slot; only the
+set-code output in the initial beta entry is now a closed term. -/
+def hfMemZeroSetAt (elem : Nat) : Formula :=
+  ex (ex
+    (and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      (and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (elem+3)))))))
+
+theorem subst_up_zero_hfMemAt_zero_set :
+    subst (Term.upSubst (instTerm Term.zero)) (hfMemAt 0 1) =
+      hfMemZeroSetAt 0 := by
+  simp [hfMemZeroSetAt, hfMemAt, betaTermAtConstIdx, betaTermAt,
+    remTermAt, ltTermAt, betaAtConstIdx, betaAt, remAt, ltAt,
+    leAt, betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, subst, instTerm, Term.subst, Term.upSubst,
+    Term.rename]
 
 theorem rename_hfMemAt (r : Nat → Nat) (elem set : Nat) :
     rename r (hfMemAt elem set) = hfMemAt (r elem) (r set) := by
@@ -14486,6 +14537,122 @@ theorem BProv_Ax_s_hfMemAt_opened_body_bitEx
   let body : Formula :=
     and
       (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbody : BProv Ax_s bodyCtx body :=
+    BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+  have htail : BProv Ax_s bodyCtx tail :=
+    BProv_andE2 hbody
+  exact BProv_andE2 htail
+
+/-- Projection from the opened code/step body of `hfMemZeroSetAt` to its
+initial beta-entry component. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_opened_body_entry
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s bodyCtx (betaTermAtConstIdx Term.zero 1 0 0) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbody : BProv Ax_s bodyCtx body :=
+    BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+  exact BProv_andE1 hbody
+
+/-- Projection from the opened code/step body of `hfMemZeroSetAt` to its
+bounded halving-trace component. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_opened_body_steps
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s bodyCtx (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
+      tail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  have hbody : BProv Ax_s bodyCtx body :=
+    BProv_ass (B := Ax_s) (G := bodyCtx) (by simp [bodyCtx])
+  have htail : BProv Ax_s bodyCtx tail :=
+    BProv_andE2 hbody
+  exact BProv_andE1 htail
+
+/-- Projection from the opened code/step body of `hfMemZeroSetAt` to its
+final-bit existential component. -/
+theorem BProv_Ax_s_hfMemZeroSetAt_opened_body_bitEx
+    {G : List Formula} {elem : Nat} :
+    let bitBody : Formula :=
+      and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3))
+    let tail : Formula :=
+      and
+        (betaDiv2StepsThroughAt 1 0 (elem+2))
+        (ex bitBody)
+    let body : Formula :=
+      and
+        (betaTermAtConstIdx Term.zero 1 0 0)
+        tail
+    let bodyCtx : List Formula :=
+      body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+    BProv Ax_s bodyCtx
+      (ex (and (oneAt 0) (betaDiv2BitAt 0 2 1 (elem+3)))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx Term.zero 1 0 0)
       tail
   let bodyCtx : List Formula :=
     body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
