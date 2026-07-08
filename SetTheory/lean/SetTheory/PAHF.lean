@@ -11043,6 +11043,53 @@ theorem BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst
     BProv_allI_of_sentences (B := Ax_s)
       (fun f hf => sentence_ax_s (f := f) hf) hfinal
 
+/-- Build a closed-standard bounded beta-halving trace from a semantic finite
+trace, by induction on the standard bound. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace
+    {G : List Formula}
+    {code step c s n : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s)) :
+    BetaDiv2StepsThrough c s n →
+      BProv Ax_s G (betaDiv2StepsThroughConstAt code step n) := by
+  induction n with
+  | zero =>
+      intro htrace
+      rcases htrace 0 (by omega) with ⟨cur, next, bit, hdivStep⟩
+      exact BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
+        (code := code) (step := step) (c := c) (s := s)
+        (cur := cur) (next := next) (bit := bit)
+        hcode hstep hdivStep
+  | succ n ih =>
+      intro htrace
+      have hprevTrace : BetaDiv2StepsThrough c s n := by
+        intro k hk
+        exact htrace k (by omega)
+      have hprev : BProv Ax_s G
+          (betaDiv2StepsThroughConstAt code step n) :=
+        ih hprevTrace
+      rcases htrace (n+1) (by omega) with ⟨cur, next, bit, hdivStep⟩
+      exact BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step
+        (code := code) (step := step) (c := c) (s := s)
+        (n := n) (cur := cur) (next := next) (bit := bit)
+        hcode hstep hprev hdivStep
+
+/-- Build the ordinary variable-bound beta-halving trace from a semantic trace
+and a proof that the variable bound contains the corresponding numeral. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace
+    {G : List Formula}
+    {code step last c s n : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hlast : BProv Ax_s G (eqConstAt last n))
+    (htrace : BetaDiv2StepsThrough c s n) :
+    BProv Ax_s G (betaDiv2StepsThroughAt code step last) :=
+  BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst
+    (BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace
+      (code := code) (step := step) (c := c) (s := s) (n := n)
+      hcode hstep htrace)
+    hlast
+
 /-- Package the innermost membership bit witness.  The premise is only the
 closed, code/step-instantiated `betaDiv2BitAt` component; the constructor adds
 the explicit proof that the witness bit is the numeral `1`. -/
@@ -11280,6 +11327,54 @@ theorem BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit
         (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral 1)))
   simpa [σcode, σstep, σbit] using hclosed
 
+/-- Produce the closed bounded-trace component of `hfMemAt` from an ordinary
+proof that the element slot contains the intended numeral and a semantic
+halving trace through that element. -/
+theorem BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace
+    {G : List Formula}
+    {elem elemValue code step : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hthrough : BetaDiv2StepsThrough code step elemValue) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))) := by
+  let H : List Formula :=
+    [eqConstAt (elem+2) elemValue, eqConstAt 1 code,
+      eqConstAt 0 step]
+  let σcode : Nat → Term := Term.upSubst (instTerm (Term.numeral code))
+  let σstep : Nat → Term := instTerm (Term.numeral step)
+  have helemH : BProv Ax_s H (eqConstAt (elem+2) elemValue) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hcodeH : BProv Ax_s H (eqConstAt 1 code) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hstepH : BProv Ax_s H (eqConstAt 0 step) :=
+    BProv_ass (B := Ax_s) (G := H) (by simp [H])
+  have hopen : BProv Ax_s H (betaDiv2StepsThroughAt 1 0 (elem+2)) :=
+    BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace
+      (code := 1) (step := 0) (last := elem+2)
+      (c := code) (s := step) (n := elemValue)
+      hcodeH hstepH helemH hthrough
+  have hsubstCode : BProv Ax_s (H.map (subst σcode))
+      (subst σcode (betaDiv2StepsThroughAt 1 0 (elem+2))) :=
+    BProv_subst_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hopen σcode
+  have hsubst : BProv Ax_s ((H.map (subst σcode)).map (subst σstep))
+      (subst σstep
+        (subst σcode (betaDiv2StepsThroughAt 1 0 (elem+2)))) :=
+    BProv_subst_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsubstCode σstep
+  have hclosed := BProv_cut hsubst (D := G) (fun g hg => by
+    simp [H, σcode, σstep, eqConstAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename] at hg
+    rcases hg with rfl | rfl | rfl
+    · simpa [eqConstAt] using helem
+    · simpa [eqConstAt] using
+        (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral code))
+    · simpa [eqConstAt] using
+        (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral step)))
+  simpa [σcode, σstep] using hclosed
+
 /-- HF-membership introduction from a semantic trace, with the bounded trace
 component still supplied as an explicit PA proof obligation. -/
 theorem BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
@@ -11303,6 +11398,39 @@ theorem BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
     (BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit
       (elem := elem) (elemValue := elemValue) (code := code) (step := step)
       helem hbit)
+
+/-- HF-membership introduction from a semantic trace.  The beta-coded bounded
+trace component is built internally by the closed-bound trace constructors. -/
+theorem BProv_Ax_s_hfMemAt_of_eqConst_trace
+    {G : List Formula}
+    {elem set elemValue setValue code step : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hset : BProv Ax_s G (eqConstAt set setValue))
+    (htrace : HFMemTrace elemValue setValue code step) :
+    BProv Ax_s G (hfMemAt elem set) := by
+  exact BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps
+    (elem := elem) (set := set) (elemValue := elemValue)
+    (setValue := setValue) (code := code) (step := step)
+    helem hset
+    (BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace
+      (elem := elem) (elemValue := elemValue)
+      (code := code) (step := step) helem htrace.2.1)
+    htrace
+
+/-- HF-membership introduction from the Ackermann membership relation on the
+proved numerals. -/
+theorem BProv_Ax_s_hfMemAt_of_eqConst_mem
+    {G : List Formula}
+    {elem set elemValue setValue : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hset : BProv Ax_s G (eqConstAt set setValue))
+    (hmem : AckermannHF.Mem elemValue setValue) :
+    BProv Ax_s G (hfMemAt elem set) := by
+  rcases HFMemTrace_exists_of_mem hmem with ⟨code, step, htrace⟩
+  exact BProv_Ax_s_hfMemAt_of_eqConst_trace
+    (elem := elem) (set := set) (elemValue := elemValue)
+    (setValue := setValue) (code := code) (step := step)
+    helem hset htrace
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
