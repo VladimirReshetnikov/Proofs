@@ -25439,6 +25439,39 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_ltAt
           hhighCtx hlowCtx hltCtx
       exact BProv_orE hcases hleft hright
 
+/-- Closed high numerals prove the object-language lower-code distinguishing
+predicate.  This repackages the finite closed-high search in the shape needed
+by the PA induction target for translated extensionality. -/
+theorem BProv_Ax_s_hfLtDistinguishesAt_of_eqConst_high
+    {G : List Formula} {high highValue : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue)) :
+    BProv Ax_s G (hfLtDistinguishesAt high) := by
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp (ltAt 0 (high+1)) (hfSomeDistinguishesAt (high+1) 0)) := by
+    let C : List Formula := G.map (rename Nat.succ)
+    have hhighRen : BProv Ax_s C
+        (rename Nat.succ (eqConstAt high highValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhigh Nat.succ
+    have hhighC : BProv Ax_s C (eqConstAt (high+1) highValue) := by
+      simpa [C, eqConstAt, rename, Term.rename] using hhighRen
+    have himpBody : BProv Ax_s (ltAt 0 (high+1) :: C)
+        (hfSomeDistinguishesAt (high+1) 0) := by
+      have hhighCtx : BProv Ax_s (ltAt 0 (high+1) :: C)
+          (eqConstAt (high+1) highValue) :=
+        BProv_context_cons (B := Ax_s) hhighC
+      have hlt : BProv Ax_s (ltAt 0 (high+1) :: C)
+          (ltAt 0 (high+1)) :=
+        BProv_ass (B := Ax_s) (G := ltAt 0 (high+1) :: C) (by simp)
+      exact BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_ltAt
+        (G := ltAt 0 (high+1) :: C) (high := high+1) (low := 0)
+        (highValue := highValue) hhighCtx hlt
+    simpa [C] using BProv_impI himpBody
+  simpa [hfLtDistinguishesAt] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
 theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
