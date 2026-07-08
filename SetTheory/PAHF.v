@@ -10245,6 +10245,91 @@ Proof.
   exact (translated_HFFin_axiom_sat_nat phi hphi e).
 Qed.
 
+Lemma Prov_hfFormulaAt_of_Prov : forall G phi,
+  Calculus.Prov G phi ->
+  forall rho, Prov (hfContextAt rho G) (hfFormulaAt rho phi).
+Proof.
+  intros G phi h.
+  induction h; intro rho; simpl.
+  - apply P_ass.
+    unfold hfContextAt.
+    apply in_map.
+    exact H.
+  - apply P_impI.
+    exact (IHh rho).
+  - exact (P_impE _ _ _ (IHh1 rho) (IHh2 rho)).
+  - exact (P_botE _ _ (IHh rho)).
+  - apply P_lem.
+  - exact (P_andI _ _ _ (IHh1 rho) (IHh2 rho)).
+  - exact (P_andE1 _ _ _ (IHh rho)).
+  - exact (P_andE2 _ _ _ (IHh rho)).
+  - exact (P_orI1 _ _ _ (IHh rho)).
+  - exact (P_orI2 _ _ _ (IHh rho)).
+  - exact (P_orE _ _ _ _ (IHh1 rho) (IHh2 rho) (IHh3 rho)).
+  - apply P_allI.
+    rewrite <- hfContextAt_rename_succ.
+    exact (IHh (hfUpVarMap rho)).
+  - pose proof (P_allE _ (hfFormulaAt (hfUpVarMap rho) a)
+      (tVar (rho k)) (IHh rho)) as hinst.
+    rewrite subst_instTerm_var_hfFormulaAt in hinst.
+    exact hinst.
+  - apply (P_exI _ (hfFormulaAt (hfUpVarMap rho) a) (tVar (rho k))).
+    rewrite subst_instTerm_var_hfFormulaAt.
+    exact (IHh rho).
+  - apply (P_exE _ (hfFormulaAt (hfUpVarMap rho) a) (hfFormulaAt rho c)).
+    + exact (IHh1 rho).
+    + rewrite <- hfFormulaAt_rename_succ.
+      rewrite <- hfContextAt_cons_rename_succ.
+      exact (IHh2 (hfUpVarMap rho)).
+  - apply P_eqRefl.
+  - assert (hbody : Prov (hfContextAt rho G)
+        (subst (instTerm (tVar (rho i))) (hfFormulaAt (hfUpVarMap rho) a))).
+    {
+      rewrite subst_instTerm_var_hfFormulaAt.
+      exact (IHh2 rho).
+    }
+    pose proof (P_eqElim _ (tVar (rho i)) (tVar (rho j))
+      (hfFormulaAt (hfUpVarMap rho) a) (IHh1 rho) hbody) as hmain.
+    rewrite subst_instTerm_var_hfFormulaAt in hmain.
+    exact hmain.
+Qed.
+
+Lemma BProv_hfFormulaAt_of_BProv_HFFin : forall G phi,
+  Completeness.BProv HFFinAx_s G phi ->
+  forall rho,
+    BProv translatedHFFinAx (hfContextAt rho G) (hfFormulaAt rho phi).
+Proof.
+  intros G phi [L [hL hprov]] rho.
+  exists (hfContextAt rho L).
+  split.
+  - intros f hf.
+    unfold hfContextAt in hf.
+    apply in_map_iff in hf.
+    destruct hf as [g [hf hg]].
+    subst f.
+    pose proof (hL g hg) as hgAx.
+    rewrite (hfFormulaAt_eq_translateHFFormula_of_HF_sentence
+      g rho (Sentences_HFFin g hgAx)).
+    apply translatedHFFinAx_intro.
+    exact hgAx.
+  - pose proof (Prov_hfFormulaAt_of_Prov (L ++ G) phi hprov rho) as hp.
+    unfold hfContextAt in *.
+    rewrite map_app in hp.
+    exact hp.
+Qed.
+
+Lemma BProv_translateHFFormula_of_BProv_HFFin : forall phi,
+  Completeness.BProv HFFinAx_s [] phi ->
+  BProv translatedHFFinAx [] (translateHFFormula phi).
+Proof.
+  intros phi h.
+  pose proof (BProv_hfFormulaAt_of_BProv_HFFin [] phi h
+    (fun n => n)) as htranslated.
+  unfold hfContextAt, translateHFFormula in htranslated.
+  simpl in htranslated.
+  exact htranslated.
+Qed.
+
 End Formula.
 
 End PA.

@@ -80,6 +80,9 @@ Check PA.Formula.hfContextAt_rename_succ.
 Check PA.Formula.hfContextAt_cons_rename_succ.
 Check PA.Formula.subst_instTerm_var_hfFormulaAt.
 Check PA.Formula.hfFormulaAt_eq_translateHFFormula_of_HF_sentence.
+Check PA.Formula.Prov_hfFormulaAt_of_Prov.
+Check PA.Formula.BProv_hfFormulaAt_of_BProv_HFFin.
+Check PA.Formula.BProv_translateHFFormula_of_BProv_HFFin.
 Check PA.Formula.BProv_lift.
 Check PA.Formula.BProv_eqElim.
 Check PA.Formula.BProv_context_cons.
