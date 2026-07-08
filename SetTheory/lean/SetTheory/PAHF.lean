@@ -14195,6 +14195,35 @@ theorem BProv_Ax_s_betaAt_opened_body_output_zero_of_output_dvd
   exact BProv_Ax_s_eqConstAt_zero_of_dvdAt_remAt
     (by simpa [body] using hdvdOut) hrem
 
+/-- In an opened raw beta witness, the output is zero as soon as the opened
+beta modulus divides the dividend code.  This is the beta-level form of
+remainder functionality: the output is the remainder of `code` modulo the
+opened modulus. -/
+theorem BProv_Ax_s_betaAt_opened_body_output_zero_of_code_dvd
+    {G : List Formula} {out code step idx : Nat}
+    (hdvdCode :
+      let body : Formula :=
+        and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)
+      BProv Ax_s (body :: G.map (rename Nat.succ)) (dvdAt 0 (code+1))) :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+        (remAt (out+1) (code+1) 0)
+    BProv Ax_s (body :: G.map (rename Nat.succ)) (eqConstAt (out+1) 0) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hrem : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (remAt (out+1) (code+1) 0) :=
+    BProv_Ax_s_betaAt_opened_body_rem
+      (G := G) (out := out) (code := code) (step := step) (idx := idx)
+  exact BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt
+    (modulus := 0) (value := code+1) (rem := out+1)
+    (by simpa [body] using hdvdCode) hrem
+
 /-- Opened term-output raw-beta specialization of
 `BProv_Ax_s_betaModTerm_modEq_zero_bot`. -/
 theorem BProv_Ax_s_betaTermAt_opened_body_modulus_zero_bot
