@@ -118,6 +118,36 @@ Proof.
     exact h.
 Qed.
 
+Lemma filter_absent_eq : forall t pos,
+  ~ In pos t -> filter (fun q => negb (Z.eqb q pos)) t = t.
+Proof.
+  induction t as [|x xs IH]; intros pos hnot.
+  - reflexivity.
+  - simpl.
+    destruct (Z.eqb x pos) eqn:heq.
+    + apply Z.eqb_eq in heq.
+      exfalso. apply hnot. left. exact heq.
+    + simpl.
+      f_equal.
+      apply IH.
+      intro hx. apply hnot. right. exact hx.
+Qed.
+
+Lemma write_read_self : forall t pos,
+  write t pos (read t pos) = t.
+Proof.
+  intros t pos.
+  unfold read.
+  destruct (in_dec Z.eq_dec pos t) as [hin | hnot].
+  - unfold write.
+    destruct (in_dec Z.eq_dec pos t) as [_ | hbad].
+    + reflexivity.
+    + contradiction.
+  - unfold write.
+    apply filter_absent_eq.
+    exact hnot.
+Qed.
+
 End Tape.
 
 Definition start_state (states : nat) : option nat :=
