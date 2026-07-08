@@ -14374,6 +14374,120 @@ Proof.
   exact hphi.
 Qed.
 
+Lemma BProv_formulaAt_impI : forall rho G a b,
+  BProv translatedPAAx (formulaAt rho a :: translateContextAt rho G)
+    (formulaAt rho b) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pImp a b)).
+Proof.
+  intros rho G a b h.
+  simpl.
+  apply BProv_impI.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_impE : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pImp a b)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b).
+Proof.
+  intros rho G a b hab ha.
+  simpl in hab.
+  exact (BProv_mp translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) hab ha).
+Qed.
+
+Lemma BProv_formulaAt_botE : forall rho G a,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho PA.pBot) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a).
+Proof.
+  intros rho G a hbot.
+  simpl in hbot.
+  apply BProv_botE.
+  exact hbot.
+Qed.
+
+Lemma BProv_formulaAt_lem : forall rho G a,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a (PA.pImp a PA.pBot))).
+Proof.
+  intros rho G a.
+  simpl.
+  apply BProv_of_Prov.
+  apply P_lem.
+Qed.
+
+Lemma BProv_formulaAt_andI : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAnd a b)).
+Proof.
+  intros rho G a b ha hb.
+  simpl.
+  apply BProv_andI; assumption.
+Qed.
+
+Lemma BProv_formulaAt_andE1 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a).
+Proof.
+  intros rho G a b h.
+  simpl in h.
+  exact (BProv_andE1 translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) h).
+Qed.
+
+Lemma BProv_formulaAt_andE2 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pAnd a b)) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b).
+Proof.
+  intros rho G a b h.
+  simpl in h.
+  exact (BProv_andE2 translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) h).
+Qed.
+
+Lemma BProv_formulaAt_orI1 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho a) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a b)).
+Proof.
+  intros rho G a b h.
+  simpl.
+  apply BProv_orI1.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_orI2 : forall rho G a b,
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho b) ->
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a b)).
+Proof.
+  intros rho G a b h.
+  simpl.
+  apply BProv_orI2.
+  exact h.
+Qed.
+
+Lemma BProv_formulaAt_orE : forall rho G a b c,
+  BProv translatedPAAx (translateContextAt rho G)
+    (formulaAt rho (PA.pOr a b)) ->
+  BProv translatedPAAx (formulaAt rho a :: translateContextAt rho G)
+    (formulaAt rho c) ->
+  BProv translatedPAAx (formulaAt rho b :: translateContextAt rho G)
+    (formulaAt rho c) ->
+  BProv translatedPAAx (translateContextAt rho G) (formulaAt rho c).
+Proof.
+  intros rho G a b c hor ha hb.
+  simpl in hor.
+  exact (BProv_orE translatedPAAx (translateContextAt rho G)
+    (formulaAt rho a) (formulaAt rho b) (formulaAt rho c) hor ha hb).
+Qed.
+
 Lemma BProv_translate_impI : forall G a b,
   BProv translatedPAAx
     (translateFormula a :: translateContext G) (translateFormula b) ->

@@ -112,6 +112,16 @@ Check mem_domainContextAt_mono.
 Check BProv_mono_domainContextAt.
 Check domainContextAt_upVarMap_succ.
 Check BProv_domainContextAt_var.
+Check BProv_formulaAt_impI.
+Check BProv_formulaAt_impE.
+Check BProv_formulaAt_botE.
+Check BProv_formulaAt_lem.
+Check BProv_formulaAt_andI.
+Check BProv_formulaAt_andE1.
+Check BProv_formulaAt_andE2.
+Check BProv_formulaAt_orI1.
+Check BProv_formulaAt_orI2.
+Check BProv_formulaAt_orE.
 
 Check firstOrderFiniteAdjunctionModel_of_HFFinAx_s.
 Check formulaAt_induction_valid_finite_model.
