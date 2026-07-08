@@ -596,6 +596,280 @@ theorem typedMachineReaches_attainableLowerBound {State : Type*} [Fintype State]
     typedMachineReaches_haltsWithScore hReach hState rfl
   exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩
 
+noncomputable instance instFintypeSum {α β : Type*} [Fintype α] [Fintype β] :
+    Fintype (α ⊕ β) := by
+  classical
+  refine ⟨(Finset.univ.map Function.Embedding.inl) ∪
+    (Finset.univ.map Function.Embedding.inr), ?_⟩
+  intro x
+  cases x <;> simp
+
+theorem fintype_card_sum {α β : Type*} [Fintype α] [Fintype β] :
+    Fintype.card (α ⊕ β) = Fintype.card α + Fintype.card β := by
+  classical
+  change (((Finset.univ : Finset α).map Function.Embedding.inl) ∪
+      ((Finset.univ : Finset β).map Function.Embedding.inr)).card =
+    Fintype.card α + Fintype.card β
+  rw [Finset.card_union_of_disjoint]
+  · rw [Finset.card_map, Finset.card_map, Finset.card_univ, Finset.card_univ]
+  · rw [Finset.disjoint_left]
+    intro x hx hx2
+    rw [Finset.mem_map] at hx hx2
+    rcases hx with ⟨a, _ha, rfl⟩
+    rcases hx2 with ⟨b, _hb, h⟩
+    cases h
+
+/--
+The finite Rado tape obtained by writing the first `k` bits of `input` at
+positions `0, ..., k - 1`, in the order produced by the initializer.
+-/
+def initInputTape (input : List Bool) : Nat -> Tape
+  | 0 => []
+  | k + 1 => Tape.write (initInputTape input k) (k : Int) (input.getI k)
+
+@[simp]
+theorem initInputTape_zero (input : List Bool) :
+    initInputTape input 0 = [] := rfl
+
+@[simp]
+theorem initInputTape_succ (input : List Bool) (k : Nat) :
+    initInputTape input (k + 1) =
+      Tape.write (initInputTape input k) (k : Int) (input.getI k) := rfl
+
+theorem initInputTape_read_nat (input : List Bool) :
+    ∀ k j : Nat,
+      Tape.read (initInputTape input k) (j : Int) =
+        if j < k then input.getI j else false
+  | 0, _j => by simp [initInputTape, Tape.read]
+  | k + 1, j => by
+      rw [initInputTape_succ]
+      by_cases hEq : j = k
+      · subst j
+        simp
+      · rw [Tape.read_write_of_ne]
+        · rw [initInputTape_read_nat input k j]
+          have hjIff : j < k + 1 ↔ j < k := by omega
+          by_cases hjk : j < k
+          · have hjsk : j < k + 1 := hjIff.2 hjk
+            simp [hjk, hjsk]
+          · have hjsk : ¬ j < k + 1 := fun h => hjk (hjIff.1 h)
+            simp [hjk, hjsk]
+        · exact_mod_cast hEq
+
+theorem initInputTape_read_neg (input : List Bool) :
+    ∀ k n : Nat,
+      Tape.read (initInputTape input k) (Int.negSucc n) = false
+  | 0, _n => by simp [initInputTape, Tape.read]
+  | k + 1, n => by
+      rw [initInputTape_succ]
+      rw [Tape.read_write_of_ne]
+      · exact initInputTape_read_neg input k n
+      · omega
+
+/-- After all input bits are written, the Rado tape matches mathlib's `TM0.init` tape. -/
+theorem initInputTape_matches_tm0_init {Label : Type*} [Inhabited Label]
+    (input : List Bool) :
+    RadoMatchesTuringTape 0 (initInputTape input input.length)
+      (Turing.TM0.init (Λ := Label) input).Tape := by
+  intro i
+  cases i with
+  | ofNat j =>
+      rw [zero_add]
+      change Tape.read (initInputTape input input.length) (j : Int) =
+        (Turing.TM0.init (Λ := Label) input).Tape.nth (j : Int)
+      rw [initInputTape_read_nat]
+      by_cases hj : j < input.length
+      · rw [if_pos hj]
+        simp [Turing.TM0.init, Turing.Tape.mk₁, Turing.Tape.mk₂]
+      · rw [if_neg hj]
+        have hle : input.length ≤ j := Nat.le_of_not_gt hj
+        have hgetDefault : input.getI j = (default : Bool) := by
+          rw [List.getI_eq_default _ hle]
+        have hget : input.getI j = false := by
+          simpa using hgetDefault
+        simp [Turing.TM0.init, Turing.Tape.mk₁, Turing.Tape.mk₂, hget]
+  | negSucc j =>
+      rw [zero_add]
+      rw [initInputTape_read_neg]
+      simp [Turing.TM0.init, Turing.Tape.mk₁, Turing.Tape.mk₂, Turing.Tape.nth]
+
+/--
+State space for a typed Rado machine that first writes a nonempty Bool input
+and returns to the origin, then hands control to the usual `TM0` simulator.
+
+The two `Fin input.length` summands are the write-right and return-left phases;
+the final summand is the already-proved simulator state space.
+-/
+abbrev InitThenTM0State (Label : Type*) (input : List Bool) :=
+  (Fin input.length ⊕ Fin input.length) ⊕ TM0RadoState Label
+
+/--
+Typed Rado wrapper that initializes the tape with `input` before running the
+standard typed-Rado simulation of a Bool `TM0` machine.
+-/
+def initThenTM0ToTypedRado {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool) :
+    TypedMachine (InitThenTM0State Label input) where
+  transition state bit :=
+    match state with
+    | Sum.inl (Sum.inl i) =>
+        let out := input.get ⟨i.val, i.isLt⟩
+        if hNext : i.val + 1 < input.length then
+          { write := out, move := Move.right,
+            next := some (Sum.inl (Sum.inl ⟨i.val + 1, hNext⟩)) }
+        else
+          { write := out, move := Move.right,
+            next := some (Sum.inl (Sum.inr i)) }
+    | Sum.inl (Sum.inr r) =>
+        if r.val = 0 then
+          { write := bit, move := Move.left,
+            next := some (Sum.inr (TM0RadoState.normal (default : Label))) }
+        else
+          { write := bit, move := Move.left,
+            next := some (Sum.inl (Sum.inr
+              ⟨r.val - 1, Nat.lt_of_le_of_lt (Nat.sub_le _ _) r.isLt⟩)) }
+    | Sum.inr simState =>
+        let action := (tm0ToTypedRado M).transition simState bit
+        { write := action.write, move := action.move, next := action.next.map Sum.inr }
+
+/-- Embed a plain `TM0`-simulator Rado configuration into the wrapper machine. -/
+def liftSimCfg {Label : Type*} {input : List Bool}
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedConfig (InitThenTM0State Label input) where
+  state := cfg.state.map Sum.inr
+  head := cfg.head
+  tape := cfg.tape
+
+@[simp]
+theorem liftSimCfg_step {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool)
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedMachine.step (initThenTM0ToTypedRado M input) (liftSimCfg cfg) =
+      liftSimCfg (TypedMachine.step (tm0ToTypedRado M) cfg) := by
+  cases cfg with
+  | mk state head tape =>
+      cases state with
+      | none => rfl
+      | some simState =>
+          cases simState <;> rfl
+
+theorem liftSimCfg_reaches {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool)
+    {cfg cfg' : TypedConfig (TM0RadoState Label)}
+    (h : TypedRadoReaches (tm0ToTypedRado M) cfg cfg') :
+    TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (liftSimCfg cfg) (liftSimCfg cfg') := by
+  unfold TypedRadoReaches at h
+  refine Relation.ReflTransGen.head_induction_on h ?_ ?_
+  · exact Relation.ReflTransGen.refl
+  · intro a c hStep _hRest IH
+    have hStepLift : liftSimCfg c =
+        TypedMachine.step (initThenTM0ToTypedRado M input) (liftSimCfg a) := by
+      rw [hStep]
+      rw [liftSimCfg_step]
+    exact Relation.ReflTransGen.head hStepLift IH
+
+/-- Start configuration for the nonempty-input initializer. -/
+abbrev initThenTM0Start {Label : Type*} {input : List Bool}
+    (hInput : 0 < input.length) :
+    TypedConfig (InitThenTM0State Label input) :=
+  ({ state := some (Sum.inl (Sum.inl (⟨0, hInput⟩ : Fin input.length))),
+      head := 0, tape := [] } : TypedConfig (InitThenTM0State Label input))
+
+/-- Write-phase configuration after the first `k` input bits have been written. -/
+abbrev initThenTM0WriteCfg {Label : Type*} (input : List Bool) (k : Nat)
+    (hk : k < input.length) : TypedConfig (InitThenTM0State Label input) :=
+  ({ state := some (Sum.inl (Sum.inl (⟨k, hk⟩ : Fin input.length))),
+      head := (k : Int), tape := initInputTape input k } :
+    TypedConfig (InitThenTM0State Label input))
+
+/-- Return-phase configuration, moving left over the initialized input tape. -/
+abbrev initThenTM0ReturnCfg {Label : Type*} (input : List Bool) (k : Nat)
+    (hk : k < input.length) : TypedConfig (InitThenTM0State Label input) :=
+  ({ state := some (Sum.inl (Sum.inr (⟨k, hk⟩ : Fin input.length))),
+      head := ((k + 1 : Nat) : Int), tape := initInputTape input input.length } :
+    TypedConfig (InitThenTM0State Label input))
+
+/-- Wrapper configuration immediately after initialization, just before TM0 simulation. -/
+abbrev initThenTM0SimInitCfg {Label : Type*} [Inhabited Label] (input : List Bool) :
+    TypedConfig (InitThenTM0State Label input) :=
+  let cfg : TypedConfig (TM0RadoState Label) :=
+    { state := some (TM0RadoState.normal (default : Label))
+      head := (0 : Int)
+      tape := initInputTape input input.length }
+  liftSimCfg cfg
+
+theorem initThenTM0_write_reaches {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {input : List Bool}
+    (hInput : 0 < input.length) :
+    ∀ k (hk : k < input.length),
+      TypedMachineReaches (initThenTM0ToTypedRado M input)
+        (initThenTM0Start (Label := Label) hInput)
+        (initThenTM0WriteCfg (Label := Label) input k hk)
+  | 0, _hk => by
+      exact Relation.ReflTransGen.refl
+  | k + 1, hk => by
+      have hkPrev : k < input.length := by omega
+      have hPrev := initThenTM0_write_reaches M hInput k hkPrev
+      have hStep : initThenTM0WriteCfg (Label := Label) input (k + 1) hk =
+          TypedMachine.step (initThenTM0ToTypedRado M input)
+            (initThenTM0WriteCfg (Label := Label) input k hkPrev) := by
+        simp [initThenTM0WriteCfg, TypedMachine.step, initThenTM0ToTypedRado,
+          initInputTape, Move.apply, hk, List.getI_eq_getElem _ hkPrev]
+      exact Relation.ReflTransGen.trans hPrev (Relation.ReflTransGen.single hStep)
+
+theorem initThenTM0_return_reaches {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) (input : List Bool) :
+    ∀ k (hk : k < input.length),
+      TypedMachineReaches (initThenTM0ToTypedRado M input)
+        (initThenTM0ReturnCfg (Label := Label) input k hk)
+        (initThenTM0SimInitCfg (Label := Label) input)
+  | 0, hk => by
+      have hStep : initThenTM0SimInitCfg (Label := Label) input =
+          TypedMachine.step (initThenTM0ToTypedRado M input)
+            (initThenTM0ReturnCfg (Label := Label) input 0 hk) := by
+        simp [initThenTM0SimInitCfg, liftSimCfg, TypedMachine.step,
+          initThenTM0ToTypedRado, Move.apply, Tape.write_read_self]
+      exact Relation.ReflTransGen.single hStep
+  | k + 1, hk => by
+      have hkPrev : k < input.length := by omega
+      have hStep : initThenTM0ReturnCfg (Label := Label) input k hkPrev =
+          TypedMachine.step (initThenTM0ToTypedRado M input)
+            (initThenTM0ReturnCfg (Label := Label) input (k + 1) hk) := by
+        simp [initThenTM0ReturnCfg, TypedMachine.step, initThenTM0ToTypedRado, Move.apply,
+          Tape.write_read_self]
+      exact Relation.ReflTransGen.trans (Relation.ReflTransGen.single hStep)
+        (initThenTM0_return_reaches M input k hkPrev)
+
+/-- The initializer reaches the simulator's normal start state with `TM0.init input` on tape. -/
+theorem initThenTM0_reaches_sim_init {Label : Type*} [Inhabited Label]
+    (M : Turing.TM0.Machine Bool Label) {input : List Bool}
+    (hInput : 0 < input.length) :
+    TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (initThenTM0Start (Label := Label) hInput)
+      (initThenTM0SimInitCfg (Label := Label) input) := by
+  let last := input.length - 1
+  have hLast : last < input.length := by
+    dsimp [last]
+    omega
+  have hLastSucc : last + 1 = input.length := by
+    dsimp [last]
+    omega
+  have hWrite := initThenTM0_write_reaches M hInput last hLast
+  have hStep : initThenTM0ReturnCfg (Label := Label) input last hLast =
+      TypedMachine.step (initThenTM0ToTypedRado M input)
+        (initThenTM0WriteCfg (Label := Label) input last hLast) := by
+    have hNoNext : ¬ last + 1 < input.length := by omega
+    simp [initThenTM0ReturnCfg, TypedMachine.step, initThenTM0ToTypedRado, Move.apply,
+      hNoNext]
+    have hGet : input.getI last = input[last] := by
+      rw [List.getI_eq_getElem _ hLast]
+    rw [← hGet]
+    conv_lhs => rw [← hLastSucc, initInputTape_succ]
+  exact Relation.ReflTransGen.trans
+    (Relation.ReflTransGen.trans hWrite (Relation.ReflTransGen.single hStep))
+    (initThenTM0_return_reaches M input last hLast)
+
 /-- `TM0RadoState Label` is two tagged copies of `Label`. -/
 def tm0RadoStateEquivProd (Label : Type*) : Bool × Label ≃ TM0RadoState Label where
   toFun
@@ -621,6 +895,12 @@ theorem tm0RadoState_card (Label : Type*) [Fintype Label] :
   have h := Fintype.card_congr (tm0RadoStateEquivProd Label)
   rw [← h]
   simp [Fintype.card_prod]
+
+theorem initThenTM0State_card (Label : Type*) [Fintype Label] (input : List Bool) :
+    Fintype.card (InitThenTM0State Label input) =
+      2 * input.length + Fintype.card (TM0RadoState Label) := by
+  rw [fintype_card_sum, fintype_card_sum]
+  simp [Nat.two_mul, Nat.add_assoc]
 
 theorem tm0ToTypedRado_attainableScore {Label : Type*} [Inhabited Label] [Fintype Label]
     (M : Turing.TM0.Machine Bool Label) {score : Nat}
@@ -1261,6 +1541,73 @@ theorem tm0_supported_eval_to_rado_lowerBound_of_initial_reaches
   rw [← hLen]
   exact hLower
 
+/--
+Blank-tape wrapper lower-bound bridge: if a finite Bool `TM0` machine evaluates
+`input` and its output has true bits at all offsets in a nodup list, then the
+typed Rado wrapper that first writes `input` from blank tape attains a score at
+least the number of witnessed offsets.
+-/
+theorem tm0_eval_to_init_wrapper_lowerBound {Label : Type*}
+    [Inhabited Label] [Fintype Label]
+    (M : Turing.TM0.Machine Bool Label)
+    {input : List Bool} (hInput : 0 < input.length)
+    {output : Turing.ListBlank Bool} {offsets : List Nat}
+    (hEval : output ∈ Turing.TM0.eval M input)
+    (hOffsets : offsets.Nodup)
+    (hOutputTrue : ∀ n, n ∈ offsets -> output.nth n = true) :
+    ∃ score, offsets.length ≤ score ∧
+      AttainableScore (Fintype.card (InitThenTM0State Label input)) score := by
+  rcases tm0_eval_mem_terminal M hEval with ⟨finalCfg, hReach, hTerminal, hOutput⟩
+  let initCfg : TypedConfig (TM0RadoState Label) :=
+    { state := some (TM0RadoState.normal (default : Label))
+      head := (0 : Int)
+      tape := initInputTape input input.length }
+  have hInitRel : TM0RadoNormalRel (Turing.TM0.init input) initCfg := by
+    constructor
+    · rfl
+    · exact initInputTape_matches_tm0_init input
+  rcases tm0ToTypedRado_reaches_halt_normal M hReach hTerminal hInitRel with
+    ⟨normalCfg, haltCfg, hNormalRel, hHaltState, hHaltTape, hRadoReach⟩
+  have hInitReach : TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (initThenTM0Start (Label := Label) hInput) (liftSimCfg (input := input) initCfg) := by
+    simpa [initThenTM0SimInitCfg, initCfg] using initThenTM0_reaches_sim_init M hInput
+  have hSimReach : TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (liftSimCfg (input := input) initCfg) (liftSimCfg (input := input) haltCfg) :=
+    liftSimCfg_reaches M input hRadoReach
+  have hFullReach : TypedMachineReaches (initThenTM0ToTypedRado M input)
+      (initThenTM0Start (Label := Label) hInput) (liftSimCfg (input := input) haltCfg) :=
+    Relation.ReflTransGen.trans hInitReach hSimReach
+  let positions : Tape := radoPositionsOfNatOffsets normalCfg.head offsets
+  have hPositions : positions.Nodup := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_nodup hOffsets
+  have hOutputTrueFinal : ∀ n, n ∈ offsets -> finalCfg.Tape.right₀.nth n = true := by
+    intro n hn
+    rw [hOutput]
+    exact hOutputTrue n hn
+  have hReadNormal : ∀ pos, pos ∈ positions -> Tape.read normalCfg.tape pos = true := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_read_true hNormalRel.2 hOutputTrueFinal
+  have hRead : ∀ pos, pos ∈ positions ->
+      Tape.read (liftSimCfg (input := input) haltCfg).tape pos = true := by
+    intro pos hpos
+    dsimp [liftSimCfg]
+    rw [hHaltTape]
+    exact hReadNormal pos hpos
+  have hState : (liftSimCfg (input := input) haltCfg).state = none := by
+    simp [liftSimCfg, hHaltState]
+  rcases typedMachineReaches_attainableLowerBound
+      (M := initThenTM0ToTypedRado M input)
+      (start := (Sum.inl (Sum.inl (⟨0, hInput⟩ : Fin input.length)) :
+        InitThenTM0State Label input))
+      (haltCfg := liftSimCfg (input := input) haltCfg)
+      (positions := positions) hFullReach hState hPositions hRead with
+    ⟨score, hLower, hScore⟩
+  have hLen : positions.length = offsets.length := by
+    dsimp [positions]
+    exact radoPositionsOfNatOffsets_length normalCfg.head offsets
+  exact ⟨score, by rwa [hLen] at hLower, hScore⟩
+
 /-- Singleton constant-one code in mathlib's list-valued recursive-code basis. -/
 def UnaryZerosOneCode : Turing.ToPartrec.Code :=
   Turing.ToPartrec.Code.succ.comp Turing.ToPartrec.Code.zero
@@ -1450,6 +1797,165 @@ theorem tm2to1_tm1to1_unary_true_offsets {width : Nat}
     have hBit : (enc (tm1Output.nth i.val)).get (bitOf i) = true :=
       Classical.choose_spec (bitWitness i)
     exact tm1to1Output_block_true hBool hBit
+
+theorem partrecToTM1Encoding_width_pos {width : Nat}
+    (enc : PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) :
+    0 < width := by
+  let sym : PartrecToTM1Alphabet := (true, fun _ => none)
+  have hSym : sym ≠ default := by
+    intro h
+    have hfst := congrArg Prod.fst h
+    simp [sym, PartrecToTM1Alphabet] at hfst
+  rcases encoded_nondefault_has_true enc dec enc0 encdec hSym with ⟨bit, _hbit⟩
+  exact Nat.zero_lt_of_lt bit.isLt
+
+theorem TM1to1EncodedInput_length {Γ : Type*} {width : Nat}
+    (enc : Γ -> List.Vector Bool width) (input : List Γ) :
+    (TM1to1EncodedInput enc input).length = input.length * width := by
+  induction input with
+  | nil => simp [TM1to1EncodedInput]
+  | cons _a rest IH =>
+      simp [TM1to1EncodedInput, IH, List.Vector.toList_length, Nat.succ_mul, Nat.add_comm]
+
+theorem trPosNum_length (p : PosNum) :
+    (Turing.PartrecToTM2.trPosNum p).length = PosNum.natSize p := by
+  induction p with
+  | one => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize]
+  | bit0 p ih | bit1 p ih => simp [Turing.PartrecToTM2.trPosNum, PosNum.natSize, ih]
+
+theorem trNum_length (m : Num) :
+    (Turing.PartrecToTM2.trNum m).length = Num.natSize m := by
+  cases m <;> simp [Turing.PartrecToTM2.trNum, Num.natSize, trPosNum_length]
+
+theorem trNat_length (n : Nat) :
+    (Turing.PartrecToTM2.trNat n).length = Nat.size n := by
+  simp [Turing.PartrecToTM2.trNat, trNum_length, Num.natSize_to_nat]
+
+theorem trList_singleton_length (n : Nat) :
+    (Turing.PartrecToTM2.trList [n]).length = Nat.size n + 1 := by
+  simp [Turing.PartrecToTM2.trList, trNat_length]
+
+theorem tm2to1_trInit_length_pos
+    (k : Turing.PartrecToTM2.K') (input : List Turing.PartrecToTM2.Γ') :
+    0 < (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+      (fun _ => Turing.PartrecToTM2.Γ') inferInstance k input).length := by
+  simp [Turing.TM2to1.trInit]
+
+/-- The Bool input used by the lowered recursive-code evaluator is nonempty. -/
+theorem encoded_partrec_input_length_pos {width : Nat}
+    (enc : PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) (n : Nat) :
+    0 < (TM1to1EncodedInput enc
+      (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n]))).length := by
+  rw [TM1to1EncodedInput_length]
+  exact Nat.mul_pos (tm2to1_trInit_length_pos _ _)
+    (partrecToTM1Encoding_width_pos enc dec enc0 encdec)
+
+theorem tm2to1_trInit_length_le_succ
+    (k : Turing.PartrecToTM2.K') (input : List Turing.PartrecToTM2.Γ') :
+    (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+      (fun _ => Turing.PartrecToTM2.Γ') inferInstance k input).length ≤
+        input.length + 1 := by
+  simp [Turing.TM2to1.trInit]
+
+/-- The Bool encoding of the recursive evaluator's input has fixed-width binary size. -/
+theorem encoded_partrec_input_length_le {width : Nat}
+    (enc : PartrecToTM1Alphabet -> List.Vector Bool width) (n : Nat) :
+    (TM1to1EncodedInput enc
+      (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n]))).length ≤
+      width * (Nat.size n + 2) := by
+  rw [TM1to1EncodedInput_length]
+  have hInit' :
+      (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+        (fun _ => Turing.PartrecToTM2.Γ') inferInstance Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n])).length ≤ Nat.size n + 2 := by
+    simpa [trList_singleton_length, trNat_length, Nat.add_assoc] using
+      tm2to1_trInit_length_le_succ Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n])
+  calc
+    (@Turing.TM2to1.trInit Turing.PartrecToTM2.K'
+        (fun _ => Turing.PartrecToTM2.Γ') inferInstance Turing.PartrecToTM2.K'.main
+        (Turing.PartrecToTM2.trList [n])).length * width
+        ≤ (Nat.size n + 2) * width := Nat.mul_le_mul_right width hInit'
+    _ = width * (Nat.size n + 2) := Nat.mul_comm _ _
+
+theorem linear_mul_le_two_pow_pred_of_large (D m : Nat)
+    (hm : 2 * (D + 1) + 1 ≤ m) : D * m ≤ 2 ^ (m - 1) := by
+  let M := 2 * (D + 1) + 1
+  have hbaseLinear : D * M ≤ 2 * (D + 1) ^ 2 + 1 := by
+    dsimp [M]
+    grind
+  have hbasePow : 2 * (D + 1) ^ 2 + 1 ≤ 2 ^ (M - 1) := by
+    have h := Nat.two_mul_sq_add_one_le_two_pow_two_mul (D + 1)
+    dsimp [M]
+    simpa [Nat.add_assoc, Nat.mul_add, Nat.add_comm, Nat.add_left_comm] using h
+  have hbase : D * M ≤ 2 ^ (M - 1) := Nat.le_trans hbaseLinear hbasePow
+  induction m, hm using Nat.le_induction with
+  | base => exact hbase
+  | succ n hn ih =>
+      have hnpos : 0 < n := by omega
+      have hDleDn : D ≤ D * n := by
+        exact Nat.le_mul_of_pos_right D hnpos
+      have hDlePow : D ≤ 2 ^ (n - 1) := Nat.le_trans hDleDn ih
+      calc
+        D * (n + 1) = D * n + D := by rw [Nat.mul_add, Nat.mul_one]
+        _ ≤ 2 ^ (n - 1) + 2 ^ (n - 1) := Nat.add_le_add ih hDlePow
+        _ = 2 ^ (n + 1 - 1) := by
+          have hpred : n - 1 + 1 = n :=
+            Nat.sub_add_cancel (Nat.succ_le_iff.mp hnpos)
+          rw [Nat.add_sub_cancel]
+          rw [← hpred]
+          simp [Nat.pow_succ, Nat.mul_comm, Nat.two_mul]
+
+theorem nat_size_linear_le_self_of_large (D n : Nat)
+    (hn : 2 ^ (2 * (D + 1) + 1) ≤ n) : D * Nat.size n ≤ n := by
+  let M := 2 * (D + 1) + 1
+  have hMltSize : M < Nat.size n := (Nat.lt_size (m := M) (n := n)).2 hn
+  have hDsizePow : D * Nat.size n ≤ 2 ^ (Nat.size n - 1) :=
+    linear_mul_le_two_pow_pred_of_large D (Nat.size n) hMltSize.le
+  have hSizePos : 0 < Nat.size n := lt_of_le_of_lt (Nat.zero_le M) hMltSize
+  have hPredLt : Nat.size n - 1 < Nat.size n := Nat.pred_lt hSizePos.ne'
+  have hPowLe : 2 ^ (Nat.size n - 1) ≤ n :=
+    (Nat.lt_size (m := Nat.size n - 1) (n := n)).1 hPredLt
+  exact Nat.le_trans hDsizePow hPowLe
+
+theorem init_wrapper_state_count_le_linear (width C inputLen s : Nat)
+    (hInput : inputLen ≤ width * (s + 2)) (hs : 0 < s) :
+    2 * inputLen + C ≤ (2 * width + (4 * width + C) + 1) * s := by
+  have hInput2 : 2 * inputLen + C ≤ 2 * (width * (s + 2)) + C := by
+    exact Nat.add_le_add_right (Nat.mul_le_mul_left 2 hInput) C
+  have hConst : 4 * width + C ≤ (4 * width + C) * s := by
+    exact Nat.le_mul_of_pos_right (4 * width + C) hs
+  have hConst' : 4 * width + C ≤ ((4 * width + C) + 1) * s := by
+    exact Nat.le_trans hConst (Nat.mul_le_mul_right s (Nat.le_succ (4 * width + C)))
+  have hCore : 2 * (width * (s + 2)) + C ≤
+      (2 * width + (4 * width + C) + 1) * s := by
+    calc
+      2 * (width * (s + 2)) + C = 2 * width * s + (4 * width + C) := by
+        grind
+      _ ≤ 2 * width * s + ((4 * width + C) + 1) * s :=
+        Nat.add_le_add_left hConst' _
+      _ = (2 * width + (4 * width + C) + 1) * s := by
+        simp [Nat.add_mul, Nat.mul_assoc, Nat.add_comm, Nat.add_left_comm]
+  exact Nat.le_trans hInput2 hCore
+
+theorem init_wrapper_state_count_le_linear_size {Label : Type*} [Fintype Label]
+    {width : Nat} {input : List Bool} {n : Nat}
+    (hInput : input.length ≤ width * (Nat.size n + 2))
+    (hSize : 0 < Nat.size n) :
+    Fintype.card (InitThenTM0State Label input) ≤
+      (2 * width + (4 * width + Fintype.card (TM0RadoState Label)) + 1) *
+        Nat.size n := by
+  rw [initThenTM0State_card]
+  exact init_wrapper_state_count_le_linear width
+    (Fintype.card (TM0RadoState Label)) input.length (Nat.size n) hInput hSize
 
 end MathlibBridge
 
@@ -2074,6 +2580,137 @@ theorem partrecToTM2_descends_to_supported_bool_tm0_with_encoding
     (Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine)
     (Turing.TM1to1.tr_supports enc dec MathlibBridge.PartrecToTM1Machine
       (Turing.TM2to1.tr_supports Turing.PartrecToTM2.tr (partrecToTM2_supports c)))
+
+/--
+For a mathlib-total-recursive function and a caller-supplied correct Bool
+encoding, the fully lowered evaluator plus the blank-tape initializer wrapper
+attains, for every input `n`, some Rado score at least `f n`.
+-/
+theorem totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding
+    {f : Nat -> Nat} (hf : TotalRecursiveMathlib f)
+    {width : Nat}
+    (enc : MathlibBridge.PartrecToTM1Alphabet -> List.Vector Bool width)
+    (dec : List.Vector Bool width -> MathlibBridge.PartrecToTM1Alphabet)
+    (enc0 : enc default = List.Vector.replicate width false)
+    (encdec : ∀ a, dec (enc a) = a) :
+    ∃ c : Turing.ToPartrec.Code,
+      letI : Inhabited Turing.PartrecToTM2.Λ' :=
+        ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+      let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+      let suppTM2 := Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt
+      let suppTM1 := Turing.TM2to1.trSupp Turing.PartrecToTM2.tr suppTM2
+      let suppTM1Bool := Turing.TM1to1.trSupp MathlibBridge.PartrecToTM1Machine suppTM1
+      let S : Set (Turing.TM1to0.Λ' tm1Bool) :=
+        Turing.TM1to0.trStmts tm1Bool suppTM1Bool
+      ∀ n,
+        let input := MathlibBridge.TM1to1EncodedInput enc
+          (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+            (Turing.PartrecToTM2.trList [n]))
+        ∃ score, f n ≤ score ∧
+          AttainableScore (Fintype.card (MathlibBridge.InitThenTM0State S input)) score := by
+  rcases totalRecursiveMathlib_bool_tm0_eval_unary_true_offsets
+      hf enc dec enc0 encdec with ⟨c, hEval⟩
+  refine ⟨c, ?_⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  dsimp at hEval ⊢
+  intro n
+  let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+  let tm0Bool := Turing.TM1to0.tr tm1Bool
+  let suppTM2 := Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt
+  let suppTM1 := Turing.TM2to1.trSupp Turing.PartrecToTM2.tr suppTM2
+  let suppTM1Bool := Turing.TM1to1.trSupp MathlibBridge.PartrecToTM1Machine suppTM1
+  let S : Set (Turing.TM1to0.Λ' tm1Bool) := Turing.TM1to0.trStmts tm1Bool suppTM1Bool
+  let input := MathlibBridge.TM1to1EncodedInput enc
+    (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+      (Turing.PartrecToTM2.trList [n]))
+  have hSupp : Turing.TM0.Supports tm0Bool S := by
+    dsimp [tm0Bool, tm1Bool, S, suppTM1Bool, suppTM1, suppTM2]
+    exact partrecToTM2_descends_to_supported_bool_tm0_with_encoding c enc dec
+  letI : Inhabited S := MathlibBridge.tm0SupportedInhabited tm0Bool hSupp
+  rcases hEval n with ⟨boolOutput, offsets, hBoolEval, hOffsets, hLen, hTrue⟩
+  have hEvalSupported : boolOutput ∈
+      @Turing.TM0.eval Bool S (MathlibBridge.tm0SupportedInhabited tm0Bool hSupp) inferInstance
+        (MathlibBridge.tm0SupportedMachine tm0Bool hSupp) input := by
+    exact MathlibBridge.tm0SupportedMachine_eval_of_original tm0Bool hSupp hBoolEval
+  have hInput : 0 < input.length := by
+    dsimp [input]
+    exact MathlibBridge.encoded_partrec_input_length_pos enc dec enc0 encdec n
+  rcases MathlibBridge.tm0_eval_to_init_wrapper_lowerBound
+      (MathlibBridge.tm0SupportedMachine tm0Bool hSupp) hInput hEvalSupported hOffsets hTrue with
+    ⟨score, hLower, hScore⟩
+  refine ⟨score, ?_, hScore⟩
+  rw [← hLen]
+  exact hLower
+
+/--
+Mathlib-total-recursive functions satisfy the eventual lower-bound compiler
+interface for the two-symbol blank-tape Rado model.
+
+The proof keeps every bridge explicit: mathlib's recursive code is evaluated by
+`PartrecToTM2`, lowered through mathlib's proved TM simulations to a supported
+Bool `TM0`, wrapped by the local blank-tape initializer, and finally budgeted by
+the binary input-size bound above.
+-/
+theorem totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler :
+    HasEventuallyAtMostLowerBoundCompiler TotalRecursiveMathlib := by
+  intro f hf
+  classical
+  rcases Turing.TM1to1.exists_enc_dec
+      (Γ := MathlibBridge.PartrecToTM1Alphabet) with
+    ⟨width, enc, dec, enc0, encdec⟩
+  rcases totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding
+      hf enc dec enc0 encdec with
+    ⟨c, hLower⟩
+  letI : Inhabited Turing.PartrecToTM2.Λ' :=
+    ⟨Turing.PartrecToTM2.trNormal c Turing.PartrecToTM2.Cont'.halt⟩
+  dsimp at hLower
+  let tm1Bool := Turing.TM1to1.tr enc dec MathlibBridge.PartrecToTM1Machine
+  let suppTM2 := Turing.PartrecToTM2.codeSupp c Turing.PartrecToTM2.Cont'.halt
+  let suppTM1 := Turing.TM2to1.trSupp Turing.PartrecToTM2.tr suppTM2
+  let suppTM1Bool := Turing.TM1to1.trSupp MathlibBridge.PartrecToTM1Machine suppTM1
+  let S : Set (Turing.TM1to0.Λ' tm1Bool) :=
+    Turing.TM1to0.trStmts tm1Bool suppTM1Bool
+  let C := Fintype.card (MathlibBridge.TM0RadoState S)
+  let D := 2 * width + (4 * width + C) + 1
+  let threshold := 2 ^ (2 * (D + 1) + 1)
+  refine ⟨threshold, ?_⟩
+  intro n hn
+  let input := MathlibBridge.TM1to1EncodedInput enc
+    (Turing.TM2to1.trInit Turing.PartrecToTM2.K'.main
+      (Turing.PartrecToTM2.trList [n]))
+  rcases hLower n with ⟨score, hScoreLower, hAttain⟩
+  refine ⟨score, hScoreLower, ?_⟩
+  refine ⟨Fintype.card (MathlibBridge.InitThenTM0State S input), ?_, hAttain⟩
+  have hInputLen : input.length ≤ width * (Nat.size n + 2) := by
+    dsimp [input]
+    exact MathlibBridge.encoded_partrec_input_length_le enc n
+  have hThresholdPos : 0 < threshold := by
+    dsimp [threshold]
+    exact Nat.pow_pos (by decide : 0 < 2)
+  have hnPos : 0 < n := Nat.lt_of_lt_of_le hThresholdPos hn
+  have hSizePos : 0 < Nat.size n := (Nat.size_pos).2 hnPos
+  have hStateLeD : Fintype.card (MathlibBridge.InitThenTM0State S input) ≤
+      D * Nat.size n := by
+    dsimp [D, C]
+    exact MathlibBridge.init_wrapper_state_count_le_linear_size
+      (Label := S) (width := width) (input := input) (n := n)
+      hInputLen hSizePos
+  have hDSizeLeN : D * Nat.size n ≤ n := by
+    dsimp [threshold] at hn
+    exact MathlibBridge.nat_size_linear_le_self_of_large D n hn
+  exact Nat.le_trans hStateLeD hDSizeLeN
+
+/--
+Concrete final theorem for mathlib's total-recursive predicate: any busy-beaver
+score function eventually dominates every total recursive function `Nat -> Nat`.
+-/
+theorem sigma_eventually_dominates_every_totalRecursiveMathlib
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveMathlib f) :
+    EventuallyDominates Sigma f :=
+  eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
+    hSigma totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler hf
 
 /--
 The finite-support recursive-code evaluator also descends through mathlib's
