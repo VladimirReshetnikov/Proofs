@@ -11,6 +11,13 @@ import LeanProofs.PowTower
 import LeanProofs.SparseBinary
 import LeanProofs.A000081
 import LeanProofs.A002845
+import LeanProofs.A158415
+import LeanProofs.A158415Ten
+import LeanProofs.A158415Eleven
+import LeanProofs.A158415Twelve
+import LeanProofs.A158415Thirteen
+import LeanProofs.A158415Fourteen
+import LeanProofs.A158415Fifteen
 import LeanProofs.A199812
 import LeanProofs.A198683Tower
 import LeanProofs.A198683FiveSix
