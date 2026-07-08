@@ -6907,6 +6907,24 @@ Definition instTerm (t : term) : nat -> term :=
     | S k => tVar k
     end.
 
+Lemma term_subst_var_rename : forall t (r : nat -> nat),
+  Term.subst (fun n => tVar (r n)) t = Term.rename r t.
+Proof.
+  induction t; simpl; intros r; try reflexivity.
+  - now rewrite IHt.
+  - now rewrite IHt1, IHt2.
+  - now rewrite IHt1, IHt2.
+Qed.
+
+Lemma term_subst_instTerm_var : forall t k,
+  Term.subst (instTerm (tVar k)) t = Term.rename (inst k) t.
+Proof.
+  intros t k.
+  rewrite <- (term_subst_var_rename t (inst k)).
+  apply Term.subst_ext.
+  intros [|n]; reflexivity.
+Qed.
+
 Lemma Sat_rename : forall (M : Model) phi
     (r : nat -> nat) (e : nat -> M),
   Sat M e (rename r phi) <-> Sat M (fun n => e (r n)) phi.
@@ -7146,6 +7164,35 @@ Proof.
       intro k. reflexivity.
 Qed.
 
+Lemma subst_var_rename : forall phi (r : nat -> nat),
+  subst (fun n => tVar (r n)) phi = rename r phi.
+Proof.
+  induction phi; simpl; intros r; try reflexivity.
+  - now rewrite !term_subst_var_rename.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - now rewrite IHphi1, IHphi2.
+  - f_equal.
+    transitivity (subst (fun n => tVar (up r n)) phi).
+    + apply subst_ext.
+      intros [|n]; reflexivity.
+    + apply IHphi.
+  - f_equal.
+    transitivity (subst (fun n => tVar (up r n)) phi).
+    + apply subst_ext.
+      intros [|n]; reflexivity.
+    + apply IHphi.
+Qed.
+
+Lemma subst_instTerm_var : forall phi k,
+  subst (instTerm (tVar k)) phi = rename (inst k) phi.
+Proof.
+  intros phi k.
+  rewrite <- (subst_var_rename phi (inst k)).
+  apply subst_ext.
+  intros [|n]; reflexivity.
+Qed.
+
 Lemma subst_instTerm_rename_up : forall phi (r : nat -> nat) t,
   subst (instTerm (Term.rename r t)) (rename (up r) phi) =
     rename r (subst (instTerm t) phi).
@@ -7155,6 +7202,26 @@ Proof.
   rewrite rename_subst.
   apply subst_ext.
   intros [|n]; reflexivity.
+Qed.
+
+Lemma term_subst_instTerm_rename_succ : forall t u,
+  Term.subst (instTerm u) (Term.rename S t) = t.
+Proof.
+  intros t u.
+  rewrite Term.subst_rename.
+  change (Term.subst (fun n => tVar n) t = t).
+  rewrite term_subst_var_rename.
+  apply Term.rename_id.
+Qed.
+
+Lemma subst_instTerm_rename_succ : forall phi t,
+  subst (instTerm t) (rename S phi) = phi.
+Proof.
+  intros phi t.
+  rewrite subst_rename.
+  change (subst (fun n => tVar n) phi = phi).
+  rewrite subst_var_rename.
+  apply rename_id.
 Qed.
 
 Lemma Sat_instTerm : forall (M : Model) phi t (e : nat -> M),

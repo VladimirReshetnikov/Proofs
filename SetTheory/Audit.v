@@ -61,6 +61,12 @@ Check PA.Formula.Ax_s.
 Check PA.Formula.sat_axiom_s.
 Check PA.Formula.Sentences.
 Check PA.Formula.rename_eq_of_sentence.
+Check PA.Formula.term_subst_var_rename.
+Check PA.Formula.term_subst_instTerm_var.
+Check PA.Formula.subst_var_rename.
+Check PA.Formula.subst_instTerm_var.
+Check PA.Formula.term_subst_instTerm_rename_succ.
+Check PA.Formula.subst_instTerm_rename_succ.
 Check PA.Formula.BProv_lift.
 Check PA.Formula.BProv_eqElim.
 Check PA.Formula.BProv_context_cons.
