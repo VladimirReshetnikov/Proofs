@@ -6791,6 +6791,14 @@ def twoAt (a : Nat) : Formula := eqConstAt a 2
 def nonzeroAt (a : Nat) : Formula :=
   ex (eq (Term.succ (Term.var 0)) (Term.var (a+1)))
 
+/-- Slot `a` is the successor of some predecessor. -/
+def succPredAt (a : Nat) : Formula :=
+  ex (eq (Term.var (a+1)) (Term.succ (Term.var 0)))
+
+/-- The elementary PA case split for a number: zero or a successor. -/
+def zeroOrSuccPredAt (a : Nat) : Formula :=
+  or (zeroAt a) (succPredAt a)
+
 def boolAt (a : Nat) : Formula :=
   or (zeroAt a) (oneAt a)
 
@@ -7008,6 +7016,25 @@ theorem nonzeroAt_nat (e : Nat → Nat) (a : Nat) :
     refine ⟨e a - 1, ?_⟩
     simp only [Sat, Term.eval, natModel, scons]
     omega
+
+theorem succPredAt_nat (e : Nat → Nat) (a : Nat) :
+    Sat natModel e (succPredAt a) ↔ ∃ p, e a = p + 1 := by
+  constructor
+  · intro h
+    rcases h with ⟨p, hp⟩
+    simp only [Sat, Term.eval, natModel, scons] at hp
+    exact ⟨p, by omega⟩
+  · intro h
+    rcases h with ⟨p, hp⟩
+    refine ⟨p, ?_⟩
+    simp only [Sat, Term.eval, natModel, scons]
+    omega
+
+theorem zeroOrSuccPredAt_nat (e : Nat → Nat) (a : Nat) :
+    Sat natModel e (zeroOrSuccPredAt a) ↔
+      e a = 0 ∨ ∃ p, e a = p + 1 := by
+  simp only [zeroOrSuccPredAt, Sat]
+  exact or_congr (zeroAt_nat e a) (succPredAt_nat e a)
 
 theorem boolAt_nat (e : Nat → Nat) (a : Nat) :
     Sat natModel e (boolAt a) ↔ e a = 0 ∨ e a = 1 := by
@@ -8807,6 +8834,69 @@ theorem BProv_Ax_s_addSucc_terms (s t : Term) :
   have h2 := BProv_allE (B := Ax_s) (G := []) (t := t) h1
   simpa [addSucc, subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using h2
+
+/-- PA proves that every number is either zero or the successor of a
+predecessor. -/
+theorem BProv_Ax_s_zeroOrSuccPredAt_all :
+    BProv Ax_s [] (all (zeroOrSuccPredAt 0)) := by
+  let phi : Formula := zeroOrSuccPredAt 0
+  have hzeroLeft : BProv Ax_s [] (subst substZero (zeroAt 0)) := by
+    simpa [zeroAt, eqConstAt, substZero, subst, instTerm, Term.subst,
+      Term.upSubst, Term.numeral] using
+      (BProv_eqRefl (B := Ax_s) (G := []) Term.zero)
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, zeroOrSuccPredAt, subst] using
+      (BProv_orI1 (B := Ax_s) (G := [])
+        (b := subst substZero (succPredAt 0)) hzeroLeft)
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    have hrefl : BProv Ax_s [phi]
+        (eq (Term.succ (Term.var 0)) (Term.succ (Term.var 0))) :=
+      BProv_eqRefl (B := Ax_s) (G := [phi])
+        (Term.succ (Term.var 0))
+    have hinst : BProv Ax_s [phi]
+        (subst (instTerm (Term.var 0))
+          (eq (Term.succ (Term.var 1)) (Term.succ (Term.var 0)))) := by
+      simpa [subst, instTerm, Term.subst] using hrefl
+    have hright : BProv Ax_s [phi] (subst substSuccVar (succPredAt 0)) := by
+      simpa [succPredAt, subst, substSuccVar, Term.subst, Term.upSubst,
+        Term.rename]
+        using
+          (BProv_exI (B := Ax_s) (G := [phi])
+            (a := eq (Term.succ (Term.var 1)) (Term.succ (Term.var 0)))
+            (t := Term.var 0) hinst)
+    simpa [phi, zeroOrSuccPredAt, subst] using
+      (BProv_orI2 (B := Ax_s) (G := [phi])
+        (a := subst substSuccVar (zeroAt 0)) hright)
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of the PA zero-or-successor predecessor split. -/
+theorem BProv_Ax_s_zeroOrSuccPred_term {G : List Formula} (t : Term) :
+    BProv Ax_s G
+      (or (eq t Term.zero)
+        (ex (eq (Term.rename Nat.succ t) (Term.succ (Term.var 0))))) := by
+  have hall : BProv Ax_s G (all (zeroOrSuccPredAt 0)) :=
+    BProv_weaken_nil BProv_Ax_s_zeroOrSuccPredAt_all
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := t) hall
+  simpa [zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt, subst,
+    instTerm, Term.subst, Term.upSubst, Term.numeral,
+    term_subst_instTerm_rename_succ]
+    using hinst
+
+/-- Slot-level zero-or-successor predecessor split. -/
+theorem BProv_Ax_s_zeroOrSuccPredAt {G : List Formula} (a : Nat) :
+    BProv Ax_s G (zeroOrSuccPredAt a) := by
+  simpa [zeroOrSuccPredAt, zeroAt, succPredAt, eqConstAt, Term.rename,
+    Term.numeral]
+    using (BProv_Ax_s_zeroOrSuccPred_term (G := G) (Term.var a))
 
 /-- Zero-substitution removes one surrounding binder from a shifted term. -/
 theorem term_substZero_rename_succ (t : Term) :
