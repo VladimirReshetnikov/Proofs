@@ -801,6 +801,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowOddSuccCarry_of_opened_ih
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccBody_of_mem_and_low_bot
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
+#check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_elim_opened_code_step
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_of_components
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_components

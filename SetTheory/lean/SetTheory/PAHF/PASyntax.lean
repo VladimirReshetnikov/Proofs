@@ -26990,6 +26990,73 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
       (by
         simpa [strictHighOddOpenedWitnessSuccMemBitExFormula] using hbitEx)
 
+/-- Open the substituted low-membership assumption `S x ∈ low` down to its
+code and step witnesses.
+
+This is only existential-elimination plumbing for
+`strictHighOddOpenedWitnessSuccLowMemFormula`; the premise receives the
+membership body after the two witnesses have been opened, and proves the target
+renamed through those two binders. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_elim_opened_code_step
+    {G : List Formula} {target : Formula}
+    (hopened :
+      let σ : Nat → Term := instTerm strictHighOddSuccWitnessTerm
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (0+3))
+      let tail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (0+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (2+2) 1 0 0)
+          tail
+      let stepEx : Formula := subst (Term.upSubst σ) (ex body)
+      let stepBody : Formula := subst (Term.upSubst (Term.upSubst σ)) body
+      BProv Ax_s (stepBody :: (stepEx :: G.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)))
+    (hmem : BProv Ax_s G strictHighOddOpenedWitnessSuccLowMemFormula) :
+    BProv Ax_s G target := by
+  let σ : Nat → Term := instTerm strictHighOddSuccWitnessTerm
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (0+3))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (0+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (2+2) 1 0 0)
+      tail
+  let stepEx : Formula := subst (Term.upSubst σ) (ex body)
+  let stepBody : Formula := subst (Term.upSubst (Term.upSubst σ)) body
+  have houter : BProv Ax_s (stepEx :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    have hex : BProv Ax_s (stepEx :: G.map (rename Nat.succ)) stepEx :=
+      BProv_ass (B := Ax_s)
+        (G := stepEx :: G.map (rename Nat.succ)) (by simp)
+    have hinner : BProv Ax_s
+        (stepBody :: (stepEx :: G.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)) := by
+      simpa [σ, bitBody, tail, body, stepEx, stepBody] using hopened
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hex (by
+        simpa [stepEx, stepBody, subst, rename] using hinner)
+  have hmemEx : BProv Ax_s G (ex stepEx) := by
+    simpa [strictHighOddOpenedWitnessSuccLowMemFormula, σ, hfMemAt,
+      bitBody, tail, body, stepEx, subst] using hmem
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hmemEx (by simpa [stepEx] using houter)
+
 /-- Low-side closer for the odd-high carry branch.
 
 After the assumed `S x`-membership in the shifted low code has been converted
