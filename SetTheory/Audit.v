@@ -166,6 +166,9 @@ Check BProv_formulaAt_impE.
 Check BProv_formulaAt_botE.
 Check BProv_formulaAt_lem.
 Check BProv_formulaAt_eqRefl_var.
+Check formulaAt_eqRefl_zero_valid_of_HFFinAx_s.
+Check BProv_HFFin_formulaAt_eqRefl_zero_nil.
+Check BProv_HFFin_formulaAt_eqRefl_zero.
 Check BProv_formulaAt_eq_var_of_eq.
 Check BProv_formulaAt_andI.
 Check BProv_formulaAt_andE1.

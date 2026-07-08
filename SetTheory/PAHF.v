@@ -15127,6 +15127,51 @@ Proof.
   - apply P_andI; apply P_eqRefl.
 Qed.
 
+Lemma formulaAt_eqRefl_zero_valid_of_HFFinAx_s :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+  (forall g, HFFinAx_s g -> Sat V mem v g) ->
+  forall rho e, Sat V mem e (formulaAt rho (PA.pEq PA.tZero PA.tZero)).
+Proof.
+  intros V mem v hHF rho e.
+  pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+  change (Sat V (foam_mem V M) e
+    (formulaAt rho (PA.pEq PA.tZero PA.tZero))).
+  simpl.
+  exists (foam_empty V M).
+  exists (foam_empty V M).
+  repeat split.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (foam_empty V M) e)) 1)).
+    reflexivity.
+  - apply (proj2 (foam_HF_emptyAt_empty V M
+      (scons V (foam_empty V M) (scons V (foam_empty V M) e)) 0)).
+    reflexivity.
+Qed.
+
+Lemma BProv_HFFin_formulaAt_eqRefl_zero_nil : forall rho,
+  BProv HFFinAx_s [] (formulaAt rho (PA.pEq PA.tZero PA.tZero)).
+Proof.
+  intro rho.
+  apply completeness_inf.
+  - exact Sentences_HFFin.
+  - apply formulaAt_sentence_of_PA_sentence.
+    intros n hn.
+    simpl in hn.
+    destruct hn as [hn | hn]; contradiction.
+  - intros Dom mem v hHF.
+    exact (formulaAt_eqRefl_zero_valid_of_HFFinAx_s Dom mem v hHF rho v).
+Qed.
+
+Lemma BProv_HFFin_formulaAt_eqRefl_zero : forall G rho,
+  BProv HFFinAx_s G (formulaAt rho (PA.pEq PA.tZero PA.tZero)).
+Proof.
+  intros G rho.
+  apply (BProv_mono HFFinAx_s [] G
+    (formulaAt rho (PA.pEq PA.tZero PA.tZero))).
+  - intros x hx. contradiction.
+  - apply BProv_HFFin_formulaAt_eqRefl_zero_nil.
+Qed.
+
 Lemma BProv_formulaAt_eq_var_of_eq :
   forall (B : form -> Prop) G rho m n,
   BProv B G (fEq (rho m) (rho n)) ->
