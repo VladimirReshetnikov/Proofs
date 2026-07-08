@@ -119,6 +119,69 @@ theorem exists_mem_not_mem_of_lt {low high : Nat} (hlt : low < high) :
     exact hsubset x hx
   omega
 
+/-- Search for the largest bit below `n` that is present in `high` and absent
+from `low`.  This is semantic data only; PA-side formulas and proofs consume
+its specification through separate lemmas. -/
+noncomputable def maxHighNotLowBelow (low high : Nat) : Nat → Nat
+  | 0 => 0
+  | n+1 => by
+      classical
+      exact
+        if Mem n high ∧ ¬ Mem n low then n
+        else maxHighNotLowBelow low high n
+
+theorem le_maxHighNotLowBelow_of_lt {x low high n : Nat}
+    (hx : x < n) (hhigh : Mem x high) (hlow : ¬ Mem x low) :
+    x ≤ maxHighNotLowBelow low high n := by
+  classical
+  induction n with
+  | zero =>
+      omega
+  | succ n ih =>
+      by_cases hn : Mem n high ∧ ¬ Mem n low
+      · simp [maxHighNotLowBelow, hn]
+        exact Nat.lt_succ_iff.mp hx
+      · simp [maxHighNotLowBelow, hn]
+        have hle : x ≤ n := Nat.lt_succ_iff.mp hx
+        rcases Nat.lt_or_eq_of_le hle with hxlt | hxeq
+        · exact ih hxlt
+        · subst hxeq
+          exact False.elim (hn ⟨hhigh, hlow⟩)
+
+theorem maxHighNotLowBelow_spec_of_exists {low high n : Nat}
+    (hex : ∃ x, x < n ∧ Mem x high ∧ ¬ Mem x low) :
+    Mem (maxHighNotLowBelow low high n) high ∧
+      ¬ Mem (maxHighNotLowBelow low high n) low := by
+  classical
+  induction n with
+  | zero =>
+      rcases hex with ⟨x, hx, _⟩
+      omega
+  | succ n ih =>
+      by_cases hn : Mem n high ∧ ¬ Mem n low
+      · simp [maxHighNotLowBelow, hn]
+      · simp [maxHighNotLowBelow, hn]
+        apply ih
+        rcases hex with ⟨x, hx, hhigh, hlow⟩
+        have hle : x ≤ n := Nat.lt_succ_iff.mp hx
+        rcases Nat.lt_or_eq_of_le hle with hxlt | hxeq
+        · exact ⟨x, hxlt, hhigh, hlow⟩
+        · subst hxeq
+          exact False.elim (hn ⟨hhigh, hlow⟩)
+
+/-- Canonical semantic witness for `low < high`: the largest high-only bit
+below `high`. -/
+noncomputable def highNotLowWitness (low high : Nat) : Nat :=
+  maxHighNotLowBelow low high high
+
+theorem highNotLowWitness_spec_of_lt {low high : Nat} (hlt : low < high) :
+    Mem (highNotLowWitness low high) high ∧
+      ¬ Mem (highNotLowWitness low high) low := by
+  rcases exists_mem_not_mem_of_lt hlt with ⟨x, hhigh, hlow⟩
+  exact maxHighNotLowBelow_spec_of_exists
+    (low := low) (high := high) (n := high)
+    ⟨x, mem_lt hhigh, hhigh, hlow⟩
+
 /-- Unequal Ackermann codes differ in at least one membership bit, in one
 direction or the other. -/
 theorem exists_mem_diff_of_ne {a b : Nat} (hne : a ≠ b) :
@@ -6938,6 +7001,17 @@ def dvdAt (a b : Nat) : Formula :=
 
 def eqConstAt (a n : Nat) : Formula :=
   eq (Term.var a) (Term.numeral n)
+
+/-- PA proves that some value is equal to any fixed standard numeral.  This is
+the small syntactic witness used when a later proof wants to temporarily open a
+fresh variable with a closed value. -/
+theorem BProv_exists_eqConstAt {B : Formula → Prop} {G : List Formula}
+    (n : Nat) : BProv B G (ex (eqConstAt 0 n)) := by
+  have hbody : BProv B G
+      (subst (instTerm (Term.numeral n)) (eqConstAt 0 n)) := by
+    simpa [eqConstAt, subst, instTerm, Term.subst] using
+      (BProv_eqRefl (B := B) (G := G) (Term.numeral n))
+  exact BProv_exI (B := B) (G := G) hbody
 
 def zeroAt (a : Nat) : Formula := eqConstAt a 0
 
@@ -23613,6 +23687,20 @@ by one. -/
 def hfSomeDistinguishesAt (high low : Nat) : Formula :=
   ex (hfDistinguishesAt 0 (high+1) (low+1))
 
+/-- Renaming commutes with the open distinguishing-member macro. -/
+theorem rename_hfDistinguishesAt (r : Nat → Nat) (elem high low : Nat) :
+    rename r (hfDistinguishesAt elem high low) =
+      hfDistinguishesAt (r elem) (r high) (r low) := by
+  simp [hfDistinguishesAt, rename, rename_hfMemAt]
+
+/-- Under one fresh binder, renaming every ambient variable by successor shifts
+the high/low slots of `hfSomeDistinguishesAt`. -/
+theorem rename_hfSomeDistinguishesAt_succ (high low : Nat) :
+    rename Nat.succ (hfSomeDistinguishesAt high low) =
+      hfSomeDistinguishesAt (high+1) (low+1) := by
+  simp [hfSomeDistinguishesAt, hfDistinguishesAt, rename_hfMemAt,
+    rename, SetTheory.up]
+
 /-- Semantic specification of `hfDistinguishesAt` in the standard PA model. -/
 theorem hfDistinguishesAt_nat (e : Nat → Nat) (elem high low : Nat) :
     Sat natModel e (hfDistinguishesAt elem high low) ↔
@@ -24330,6 +24418,81 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem
     (B := Ax_s) (G := G) (elem := elem) (high := high) (low := low)
     (BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem
       helem hhigh hlow hmem hnot)
+
+/-- Closed-numeral distinguishing witness, packaged without making
+`hfMemAt` term-parametric: open a temporary variable known to equal the closed
+witness, use the ordinary variable-slot membership lemmas, then eliminate the
+temporary existential. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem_closed_witness
+    {G : List Formula} {high low highValue lowValue elemValue : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hlow : BProv Ax_s G (eqConstAt low lowValue))
+    (hmem : AckermannHF.Mem elemValue highValue)
+    (hnot : ¬ AckermannHF.Mem elemValue lowValue) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) := by
+  let witnessEq : Formula := eqConstAt 0 elemValue
+  have hex : BProv Ax_s G (ex witnessEq) := by
+    simpa [witnessEq] using
+      (BProv_exists_eqConstAt (B := Ax_s) (G := G) elemValue)
+  have hbody : BProv Ax_s (witnessEq :: G.map (rename Nat.succ))
+      (rename Nat.succ (hfSomeDistinguishesAt high low)) := by
+    let C : List Formula := witnessEq :: G.map (rename Nat.succ)
+    have helem : BProv Ax_s C (eqConstAt 0 elemValue) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, witnessEq])
+    have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt high highValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhigh Nat.succ
+    have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt low lowValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hlow Nat.succ
+    have hhighC : BProv Ax_s C (eqConstAt (high+1) highValue) := by
+      have hctx : BProv Ax_s C
+          (rename Nat.succ (eqConstAt high highValue)) :=
+        BProv_context_cons (B := Ax_s) (a := witnessEq) hhighRen
+      simpa [C, eqConstAt, rename, Term.rename] using hctx
+    have hlowC : BProv Ax_s C (eqConstAt (low+1) lowValue) := by
+      have hctx : BProv Ax_s C
+          (rename Nat.succ (eqConstAt low lowValue)) :=
+        BProv_context_cons (B := Ax_s) (a := witnessEq) hlowRen
+      simpa [C, eqConstAt, rename, Term.rename] using hctx
+    have hsome : BProv Ax_s C
+        (hfSomeDistinguishesAt (high+1) (low+1)) :=
+      BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem
+        (elem := 0) (high := high+1) (low := low+1)
+        (elemValue := elemValue) (highValue := highValue)
+        (lowValue := lowValue) helem hhighC hlowC hmem hnot
+    simpa [rename_hfSomeDistinguishesAt_succ] using hsome
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf)
+    hex hbody
+
+/-- Closed strict inequality of two Ackermann codes yields a PA proof of the
+corresponding distinguishing-member existential.  The witness is the canonical
+semantic high-only bit `AckermannHF.highNotLowWitness`; all object-language
+work is delegated to the explicit closed-witness bridge above. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
+    {G : List Formula} {high low highValue lowValue : Nat}
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hlow : BProv Ax_s G (eqConstAt low lowValue))
+    (hlt : lowValue < highValue) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) := by
+  let elemValue : Nat :=
+    AckermannHF.highNotLowWitness lowValue highValue
+  have hspec :
+      AckermannHF.Mem elemValue highValue ∧
+        ¬ AckermannHF.Mem elemValue lowValue := by
+    simpa [elemValue] using
+      (AckermannHF.highNotLowWitness_spec_of_lt
+        (low := lowValue) (high := highValue) hlt)
+  exact
+    BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem_closed_witness
+      (G := G) (high := high) (low := low)
+      (highValue := highValue) (lowValue := lowValue)
+      (elemValue := elemValue) hhigh hlow hspec.1 hspec.2
 
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/

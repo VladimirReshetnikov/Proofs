@@ -462,6 +462,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_step_zero_bot
 #check @PA.Formula.BProv_Ax_s_hfMemAt_opened_final_current_eqConst_div2Iter
 #check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_not_mem
+#check @PA.Formula.BProv_exists_eqConstAt
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step
@@ -528,6 +529,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_fresh_member_reverse
 #check PA.Formula.hfDistinguishesAt
 #check PA.Formula.hfSomeDistinguishesAt
+#check @PA.Formula.rename_hfDistinguishesAt
+#check @PA.Formula.rename_hfSomeDistinguishesAt_succ
 #check @PA.Formula.hfDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat_of_lt
@@ -538,6 +541,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_not_mem
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_not_mem_closed_witness
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_lt
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
@@ -737,6 +742,11 @@ open SetTheory
 #check @AckermannHF.eq_empty_iff_no_mem
 #check @AckermannHF.exists_mem_of_ne_empty
 #check @AckermannHF.exists_mem_not_mem_of_lt
+#check @AckermannHF.maxHighNotLowBelow
+#check @AckermannHF.le_maxHighNotLowBelow_of_lt
+#check @AckermannHF.maxHighNotLowBelow_spec_of_exists
+#check @AckermannHF.highNotLowWitness
+#check @AckermannHF.highNotLowWitness_spec_of_lt
 #check @AckermannHF.exists_mem_diff_of_ne
 #check @AckermannHF.exists_max_mem_of_ne_empty
 #check @AckermannHF.HF_emptyAt_empty
