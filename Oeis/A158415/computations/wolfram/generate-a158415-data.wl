@@ -587,16 +587,18 @@ printBinaryRangeLemma[name_String, len1_Integer, len2_Integer, body_String, code
   Print[""]
 ];
 
+highValueRefThreshold[] := If[target >= 15, 5, 13];
+
 highValueRefs[{"one"}] := {};
 highValueRefs[{"sqrt", n_Integer, i_Integer}] :=
-  If[n >= 13,
+  If[n >= highValueRefThreshold[],
     Join[{{n, i}}, highValueRefs[values[n][[i + 1, 2]]]],
     {}
   ];
 highValueRefs[{"add", n1_Integer, i1_Integer, n2_Integer, i2_Integer}] :=
   Join[
-    If[n1 >= 13, Join[{{n1, i1}}, highValueRefs[values[n1][[i1 + 1, 2]]]], {}],
-    If[n2 >= 13, Join[{{n2, i2}}, highValueRefs[values[n2][[i2 + 1, 2]]]], {}]
+    If[n1 >= highValueRefThreshold[], Join[{{n1, i1}}, highValueRefs[values[n1][[i1 + 1, 2]]]], {}],
+    If[n2 >= highValueRefThreshold[], Join[{{n2, i2}}, highValueRefs[values[n2][[i2 + 1, 2]]]], {}]
   ];
 
 highValueRewrite[{n_Integer, i_Integer}] :=
@@ -622,7 +624,10 @@ rangeCaseProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewri
         "exact Exists.intro (" <> ToString[idx] <> " : Fin " <> ToString[Length[values[targetN]]] <> ") (by",
         "  change " <> rep <> " = " <> body,
         Sequence @@ (("  " <> highValueRewrite[#]) & /@ rewrites),
-        "  a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num",
+        If[targetN >= 15,
+          "  norm_num [sqrt_four] <;> ring_nf",
+          "  a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num"
+        ],
         ")"
       }
     ]
