@@ -1055,6 +1055,19 @@ theorem term_subst_instTerm_rename_two_succ (t u : Term) :
   rw [hrename]
   exact term_subst_instTerm_rename_succ (Term.rename Nat.succ t) u
 
+/-- Substituting under one lifted binder after shifting a term through two
+binders removes the newest shift and leaves the single shift. -/
+theorem term_subst_upSubst_instTerm_rename_two_succ (t u : Term) :
+    Term.subst (Term.upSubst (instTerm u))
+        (Term.rename (fun n : Nat => n + 1 + 1) t) =
+      Term.rename Nat.succ t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1) t =
+        Term.rename Nat.succ (Term.rename Nat.succ t) := by
+    simpa using (Term.rename_comp t Nat.succ Nat.succ).symm
+  rw [hrename, Term.subst_rename_succ_up]
+  rw [term_subst_instTerm_rename_succ]
+
 /-- Substituting under one lifted binder after shifting a term through three
 binders removes the newest shift and leaves the double shift. -/
 theorem term_subst_upSubst_instTerm_rename_three_succ (t u : Term) :
@@ -1071,6 +1084,32 @@ theorem term_subst_upSubst_instTerm_rename_three_succ (t u : Term) :
   rw [term_subst_instTerm_rename_two_succ]
   simpa using (Term.rename_comp t Nat.succ Nat.succ)
 
+/-- Substituting under two lifted binders after shifting a term through three
+binders removes the newest shift and leaves the double shift. -/
+theorem term_subst_up_up_instTerm_rename_three_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1) t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1)).symm
+  rw [hrename, Term.subst_rename_succ_up]
+  rw [term_subst_upSubst_instTerm_rename_two_succ]
+  simpa using (Term.rename_comp t Nat.succ Nat.succ)
+
+/-- The newest variable shifted through two binders is instantiated by the
+doubly shifted witness. -/
+theorem term_subst_up_up_instTerm_rename_two_var_zero (u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+        (Term.rename (fun n : Nat => n + 1 + 1) (Term.var 0)) =
+      Term.rename (fun n : Nat => n + 1 + 1) u := by
+  simp [Term.rename, Term.subst, Term.upSubst, instTerm]
+  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+    (Term.rename_comp u Nat.succ Nat.succ)
+
 /-- Substituting under two lifted binders after shifting a term through four
 binders removes the newest shift and leaves the triple shift. -/
 theorem term_subst_up_up_instTerm_rename_four_succ (t u : Term) :
@@ -1086,6 +1125,24 @@ theorem term_subst_up_up_instTerm_rename_four_succ (t u : Term) :
         (fun n : Nat => n + 1 + 1 + 1)).symm
   rw [hrename, Term.subst_rename_succ_up]
   rw [term_subst_upSubst_instTerm_rename_three_succ]
+  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1))
+
+/-- Substituting under three lifted binders after shifting a term through four
+binders removes the newest shift and leaves the triple shift. -/
+theorem term_subst_up_up_up_instTerm_rename_four_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1)).symm
+  rw [hrename, Term.subst_rename_succ_up]
+  rw [term_subst_up_up_instTerm_rename_three_succ]
   simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
     (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1))
 
@@ -2389,6 +2446,16 @@ def remTermAt (rem : Term) (value modulus : Nat) : Formula :=
       (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
         (Term.rename Nat.succ rem))))
 
+/-- Fully term-parametric remainder relation.  It is the same bounded
+division graph as `remTermAt`, but the remainder, dividend, and modulus are
+all PA terms. -/
+def remTermTermAt (rem value modulus : Term) : Formula :=
+  ex (and
+    (ltTermAt (Term.rename Nat.succ rem) (Term.rename Nat.succ modulus))
+    (eq (Term.rename Nat.succ value)
+      (Term.add (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
+        (Term.rename Nat.succ rem))))
+
 theorem ltTermAt_var (a b : Nat) :
     ltTermAt (Term.var a) (Term.var b) = ltAt a b := by
   simp [ltTermAt, ltAt, Term.rename]
@@ -2412,6 +2479,10 @@ def remTermEqAt (rem : Term) (value modulus : Nat) : Formula :=
 def betaModTerm (step idx : Nat) : Term :=
   Term.succ (Term.mul (Term.succ (Term.var idx)) (Term.var step))
 
+/-- Fully term-parametric beta modulus term `1 + (idx + 1) * step`. -/
+def betaModTermTerm (step idx : Term) : Term :=
+  Term.succ (Term.mul (Term.succ idx) step)
+
 def betaAt (out code step idx : Nat) : Formula :=
   ex (and
     (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
@@ -2423,6 +2494,14 @@ def betaTermAt (out : Term) (code step idx : Nat) : Formula :=
   ex (and
     (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
     (remTermAt (Term.rename Nat.succ out) (code+1) 0))
+
+/-- Fully term-parametric beta entry.  This is the open-term analogue of
+`betaTermAt`: output, code, step, and index are all PA terms. -/
+def betaTermTermAt (out code step idx : Term) : Formula :=
+  ex (and
+    (eq (Term.var 0) (Term.rename Nat.succ (betaModTermTerm step idx)))
+    (remTermTermAt (Term.rename Nat.succ out)
+      (Term.rename Nat.succ code) (Term.var 0)))
 
 theorem betaTermAt_var (out code step idx : Nat) :
     betaTermAt (Term.var out) code step idx = betaAt out code step idx := by
@@ -2444,6 +2523,14 @@ def betaAtConstIdx (out code step idxValue : Nat) : Formula :=
 def betaTermAtConstIdx (out : Term) (code step idxValue : Nat) : Formula :=
   ex (and (eqConstAt 0 idxValue)
     (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0))
+
+/-- Constant-index wrapper for a fully term-parametric beta entry. -/
+def betaTermTermAtConstIdx
+    (out code step : Term) (idxValue : Nat) : Formula :=
+  ex (and (eqConstAt 0 idxValue)
+    (betaTermTermAt (Term.rename Nat.succ out)
+      (Term.rename Nat.succ code) (Term.rename Nat.succ step)
+      (Term.var 0)))
 
 theorem betaTermAtConstIdx_var (out code step idxValue : Nat) :
     betaTermAtConstIdx (Term.var out) code step idxValue =
@@ -2562,13 +2649,13 @@ def evenSuccBetaStepTerm (low : Nat) : Term :=
 
 /-- Open beta code witness for the even branch of `0 ∈ S low`.
 
-For `cur = S low`, this is `(S cur) * cur + cur`.  Under the branch equation
+For `cur = S low`, this is `cur * S cur + cur`.  Under the branch equation
 `low = 2*h`, it has remainder `cur` modulo `S cur` at index `0` and remainder
 `h` modulo `S (2*cur)` at index `1`; those facts are proved by separate PA
 lemmas rather than hidden in this definition. -/
 def evenSuccBetaCodeTerm (low : Nat) : Term :=
   let cur := evenSuccBetaStepTerm low
-  Term.add (Term.mul (Term.succ cur) cur) cur
+  Term.add (Term.mul cur (Term.succ cur)) cur
 
 /-- A single adjacent beta-coded sequence step is a binary-halving step:
 the current value is `2 * next + bit`, with `bit ∈ {0,1}`. -/
@@ -7890,6 +7977,139 @@ theorem BProv_Ax_s_ltTermAt_self_succ {G : List Formula} (t : Term) :
       (Term.add (Term.rename Nat.succ t) (Term.succ (Term.var 0)))
       (Term.rename Nat.succ (Term.succ t)))
     (t := Term.zero) hbody
+
+/-- Fully term-parametric bounded-division constructor.  The quotient witness
+is supplied explicitly; the strict bound and division equation remain ordinary
+PA proofs. -/
+theorem BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+    {G : List Formula} {rem value modulus quotient : Term}
+    (hlt : BProv Ax_s G (ltTermAt rem modulus))
+    (hvalue : BProv Ax_s G
+      (eq value (Term.add (Term.mul quotient modulus) rem))) :
+    BProv Ax_s G (remTermTermAt rem value modulus) := by
+  have hltBody : BProv Ax_s G
+      (subst (instTerm quotient)
+        (ltTermAt (Term.rename Nat.succ rem)
+          (Term.rename Nat.succ modulus))) := by
+    simpa [ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up, term_subst_instTerm_rename_succ] using hlt
+  have hvalueBody : BProv Ax_s G
+      (subst (instTerm quotient)
+        (eq (Term.rename Nat.succ value)
+          (Term.add (Term.mul (Term.var 0)
+              (Term.rename Nat.succ modulus))
+            (Term.rename Nat.succ rem)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hvalue
+  have hbody : BProv Ax_s G
+      (subst (instTerm quotient)
+        (and
+          (ltTermAt (Term.rename Nat.succ rem)
+            (Term.rename Nat.succ modulus))
+          (eq (Term.rename Nat.succ value)
+            (Term.add (Term.mul (Term.var 0)
+                (Term.rename Nat.succ modulus))
+              (Term.rename Nat.succ rem))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hltBody hvalueBody)
+  simpa [remTermTermAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and
+        (ltTermAt (Term.rename Nat.succ rem)
+          (Term.rename Nat.succ modulus))
+        (eq (Term.rename Nat.succ value)
+          (Term.add (Term.mul (Term.var 0)
+              (Term.rename Nat.succ modulus))
+            (Term.rename Nat.succ rem))))
+      (t := quotient) hbody)
+
+/-- Fully term-parametric beta constructor from a modulus equation and a
+bounded-division remainder proof. -/
+theorem BProv_Ax_s_betaTermTermAt_of_rem
+    {G : List Formula} {out code step idx modulus : Term}
+    (hmod : BProv Ax_s G (eq modulus (betaModTermTerm step idx)))
+    (hrem : BProv Ax_s G (remTermTermAt out code modulus)) :
+    BProv Ax_s G (betaTermTermAt out code step idx) := by
+  have hmodBody : BProv Ax_s G
+      (subst (instTerm modulus)
+        (eq (Term.var 0)
+          (Term.rename Nat.succ (betaModTermTerm step idx)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hmod
+  have hremBody : BProv Ax_s G
+      (subst (instTerm modulus)
+        (remTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code) (Term.var 0))) := by
+    simpa [remTermTermAt, ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up, Term.rename_comp,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hrem
+  have hbody : BProv Ax_s G
+      (subst (instTerm modulus)
+        (and
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (betaModTermTerm step idx)))
+          (remTermTermAt (Term.rename Nat.succ out)
+            (Term.rename Nat.succ code) (Term.var 0)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hmodBody hremBody)
+  simpa [betaTermTermAt] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and
+        (eq (Term.var 0)
+          (Term.rename Nat.succ (betaModTermTerm step idx)))
+        (remTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code) (Term.var 0)))
+      (t := modulus) hbody)
+
+/-- Wrap a fully term-parametric beta entry with a closed index witness. -/
+theorem BProv_Ax_s_betaTermTermAtConstIdx_of_beta
+    {G : List Formula} {out code step : Term} {idxValue : Nat}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out code step (Term.numeral idxValue))) :
+    BProv Ax_s G (betaTermTermAtConstIdx out code step idxValue) := by
+  have hidxBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue)) (eqConstAt 0 idxValue)) := by
+    simpa [eqConstAt, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral idxValue))
+  have hbetaBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (betaTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code) (Term.rename Nat.succ step)
+          (Term.var 0))) := by
+    simpa [betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm, subst,
+      instTerm, Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      Term.subst_rename_succ_up, term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hbeta
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral idxValue))
+        (and (eqConstAt 0 idxValue)
+          (betaTermTermAt (Term.rename Nat.succ out)
+            (Term.rename Nat.succ code) (Term.rename Nat.succ step)
+            (Term.var 0)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hidxBody hbetaBody)
+  simpa [betaTermTermAtConstIdx] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := and (eqConstAt 0 idxValue)
+        (betaTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code) (Term.rename Nat.succ step)
+          (Term.var 0)))
+      (t := Term.numeral idxValue) hbody)
 
 /-- PA preserves term-parametric non-strict order under successor on both
 sides. -/
@@ -16944,6 +17164,61 @@ theorem BProv_Ax_s_hfMemTermAt_of_components {G : List Formula}
     (BProv_exI (B := Ax_s) (G := G)
       (a := ex body)
       (t := codeTerm) hstepEx)
+
+/-- The explicit even-successor beta code has zero-index entry `S low`.
+This packages only the first beta component; the later branch assumption
+`low = 2*h` is intentionally not part of this theorem. -/
+theorem BProv_Ax_s_evenSuccBeta_entryComponent_zero
+    {G : List Formula} {low : Nat} :
+    BProv Ax_s G
+      (subst (instTerm (evenSuccBetaStepTerm low))
+        (subst (Term.upSubst (instTerm (evenSuccBetaCodeTerm low)))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) (Term.succ (Term.var low)))
+            1 0 0))) := by
+  let cur : Term := evenSuccBetaStepTerm low
+  let code : Term := evenSuccBetaCodeTerm low
+  have hmod : BProv Ax_s G
+      (eq (Term.succ cur) (betaModTermTerm cur Term.zero)) := by
+    have hone : BProv Ax_s G
+        (eq (Term.mul (Term.numeral 1) cur) cur) :=
+      BProv_Ax_s_one_mul_term cur
+    simpa [betaModTermTerm, Term.numeral] using
+      (BProv_eqSym (BProv_eq_congr_succ hone))
+  have hlt : BProv Ax_s G (ltTermAt cur (Term.succ cur)) :=
+    BProv_Ax_s_ltTermAt_self_succ cur
+  have hvalue : BProv Ax_s G
+      (eq code (Term.add (Term.mul cur (Term.succ cur)) cur)) := by
+    simpa [code, cur, evenSuccBetaCodeTerm] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.add (Term.mul cur (Term.succ cur)) cur))
+  have hrem : BProv Ax_s G (remTermTermAt cur code (Term.succ cur)) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      (rem := cur) (value := code) (modulus := Term.succ cur)
+      (quotient := cur) hlt hvalue
+  have hbeta : BProv Ax_s G
+      (betaTermTermAt cur code cur Term.zero) :=
+    BProv_Ax_s_betaTermTermAt_of_rem
+      (out := cur) (code := code) (step := cur) (idx := Term.zero)
+      (modulus := Term.succ cur) hmod hrem
+  have hconst : BProv Ax_s G
+      (betaTermTermAtConstIdx cur code cur 0) :=
+    BProv_Ax_s_betaTermTermAtConstIdx_of_beta hbeta
+  simpa [cur, code, evenSuccBetaStepTerm, evenSuccBetaCodeTerm,
+    betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
+    betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+    Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+    term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ] using hconst
 
 /-- Term-parametric membership introduction from the same closed trace
 components as `BProv_Ax_s_hfMemAt_of_closed_components`, but with the initial
