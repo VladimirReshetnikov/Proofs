@@ -8430,6 +8430,18 @@ Definition hfMemAt (elem set : nat) : formula :=
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (S (S (S elem))))))))).
 
+Lemma rename_hfMemAt : forall (r : nat -> nat) elem set,
+  rename r (hfMemAt elem set) = hfMemAt (r elem) (r set).
+Proof.
+  intros r elem set.
+  unfold hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt, leAt, div2StepAt, boolAt, zeroAt, oneAt,
+    eqConstAt, betaModTerm.
+  simpl.
+  reflexivity.
+Qed.
+
 Lemma leAt_nat : forall (e : nat -> nat) a b,
   Sat natModel e (leAt a b) <-> e a <= e b.
 Proof.
@@ -9775,6 +9787,20 @@ Fixpoint hfFormulaAt (rho : nat -> nat) (phi : form) : formula :=
 Definition translateHFFormula (phi : form) : formula :=
   hfFormulaAt (fun n => n) phi.
 
+Definition hfContextAt (rho : nat -> nat) (G : list form) : list formula :=
+  map (hfFormulaAt rho) G.
+
+Definition translateHFContext (G : list form) : list formula :=
+  map translateHFFormula G.
+
+Lemma translateHFContext_eq_hfContextAt_id : forall G,
+  translateHFContext G = hfContextAt (fun n => n) G.
+Proof.
+  intro G.
+  unfold translateHFContext, hfContextAt, translateHFFormula.
+  reflexivity.
+Qed.
+
 Lemma hfFormulaAt_exact : forall phi rho v e,
   (forall n, e (rho n) = v n) ->
   Sat natModel e (hfFormulaAt rho phi) <->
@@ -9924,6 +9950,149 @@ Proof.
       * simpl in hi.
         injection hi as hi.
         exact hi.
+Qed.
+
+Lemma hfFormulaAt_ext : forall phi rho sigma,
+  (forall n, rho n = sigma n) ->
+    hfFormulaAt rho phi = hfFormulaAt sigma phi.
+Proof.
+  induction phi; simpl; intros rho sigma h; try reflexivity.
+  - now rewrite (h n), (h n0).
+  - now rewrite (h n), (h n0).
+  - now rewrite (IHphi1 rho sigma h), (IHphi2 rho sigma h).
+  - now rewrite (IHphi1 rho sigma h), (IHphi2 rho sigma h).
+  - now rewrite (IHphi1 rho sigma h), (IHphi2 rho sigma h).
+  - f_equal.
+    apply IHphi.
+    intros [|n]; simpl; [reflexivity | now rewrite h].
+  - f_equal.
+    apply IHphi.
+    intros [|n]; simpl; [reflexivity | now rewrite h].
+Qed.
+
+Lemma hfFormulaAt_ext_free : forall phi rho sigma,
+  (forall n, Fol.Free n phi -> rho n = sigma n) ->
+    hfFormulaAt rho phi = hfFormulaAt sigma phi.
+Proof.
+  induction phi; simpl; intros rho sigma h; try reflexivity.
+  - rewrite (h n (or_introl eq_refl)).
+    rewrite (h n0 (or_intror eq_refl)).
+    reflexivity.
+  - rewrite (h n (or_introl eq_refl)).
+    rewrite (h n0 (or_intror eq_refl)).
+    reflexivity.
+  - rewrite (IHphi1 rho sigma (fun n hn => h n (or_introl hn))).
+    rewrite (IHphi2 rho sigma (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHphi1 rho sigma (fun n hn => h n (or_introl hn))).
+    rewrite (IHphi2 rho sigma (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - rewrite (IHphi1 rho sigma (fun n hn => h n (or_introl hn))).
+    rewrite (IHphi2 rho sigma (fun n hn => h n (or_intror hn))).
+    reflexivity.
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    now rewrite (h n hn).
+  - f_equal.
+    apply IHphi.
+    intros [|n] hn; simpl; [reflexivity |].
+    now rewrite (h n hn).
+Qed.
+
+Lemma hfFormulaAt_source_rename : forall phi rho r,
+  hfFormulaAt rho (Fol.rename r phi) =
+    hfFormulaAt (fun n => rho (r n)) phi.
+Proof.
+  induction phi; simpl; intros rho r; try reflexivity.
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - rewrite (IHphi (hfUpVarMap rho) (Fol.up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (hfUpVarMap rho) (Fol.up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma rename_hfFormulaAt : forall phi rho r,
+  rename r (hfFormulaAt rho phi) =
+    hfFormulaAt (fun n => r (rho n)) phi.
+Proof.
+  induction phi; simpl; intros rho r; try reflexivity.
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - now rewrite (IHphi1 rho r), (IHphi2 rho r).
+  - rewrite (IHphi (hfUpVarMap rho) (up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+  - rewrite (IHphi (hfUpVarMap rho) (up r)).
+    f_equal.
+    apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+Qed.
+
+Lemma hfFormulaAt_rename_succ : forall phi rho,
+  hfFormulaAt (hfUpVarMap rho) (Fol.rename S phi) =
+    rename S (hfFormulaAt rho phi).
+Proof.
+  intros phi rho.
+  rewrite (hfFormulaAt_source_rename phi (hfUpVarMap rho) S).
+  rewrite (hfFormulaAt_ext phi
+    (fun n => hfUpVarMap rho (S n)) (fun n => S (rho n))).
+  - symmetry.
+    apply rename_hfFormulaAt.
+  - intro n. reflexivity.
+Qed.
+
+Lemma hfContextAt_rename_succ : forall rho G,
+  hfContextAt (hfUpVarMap rho) (map (Fol.rename S) G) =
+    map (rename S) (hfContextAt rho G).
+Proof.
+  intros rho G.
+  induction G as [|phi G IH]; simpl.
+  - reflexivity.
+  - rewrite hfFormulaAt_rename_succ.
+    now rewrite IH.
+Qed.
+
+Lemma hfContextAt_cons_rename_succ : forall rho a G,
+  hfContextAt (hfUpVarMap rho) (a :: map (Fol.rename S) G) =
+    hfFormulaAt (hfUpVarMap rho) a :: map (rename S) (hfContextAt rho G).
+Proof.
+  intros rho a G.
+  simpl.
+  rewrite hfContextAt_rename_succ.
+  reflexivity.
+Qed.
+
+Lemma subst_instTerm_var_hfFormulaAt : forall phi rho k,
+  subst (instTerm (tVar (rho k))) (hfFormulaAt (hfUpVarMap rho) phi) =
+    hfFormulaAt rho (Fol.rename (Fol.inst k) phi).
+Proof.
+  intros phi rho k.
+  rewrite subst_instTerm_var.
+  rewrite (rename_hfFormulaAt phi (hfUpVarMap rho) (inst (rho k))).
+  transitivity (hfFormulaAt (fun n => rho (Fol.inst k n)) phi).
+  - apply hfFormulaAt_ext.
+    intros [|n]; reflexivity.
+  - symmetry.
+    apply hfFormulaAt_source_rename.
+Qed.
+
+Lemma hfFormulaAt_eq_translateHFFormula_of_HF_sentence : forall phi rho,
+  Fol.Sentence phi -> hfFormulaAt rho phi = translateHFFormula phi.
+Proof.
+  intros phi rho hphi.
+  unfold translateHFFormula.
+  apply hfFormulaAt_ext_free.
+  intros n hn.
+  exfalso.
+  exact (hphi n hn).
 Qed.
 
 Lemma hfFormulaAt_sentence_of_HF_sentence : forall phi rho,
