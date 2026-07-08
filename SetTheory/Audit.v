@@ -102,6 +102,7 @@ Check PA.Formula.BProv_Ax_s_add_eq_zero_left_terms.
 Check PA.Formula.BProv_Ax_s_leConstAt_of_leAt_eqConst.
 Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero.
 Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero.
+Check PA.Formula.BProv_Ax_s_leConstAt_succ_cases.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.

@@ -9401,6 +9401,230 @@ Proof.
   exact (BProv_Ax_s_leConstAt_of_leAt_eqConst G a b 0 hle hb).
 Qed.
 
+Lemma BProv_Ax_s_leConstAt_succ_cases : forall G a n,
+  BProv Ax_s G (leConstAt a (S n)) ->
+  BProv Ax_s G (pOr (leConstAt a n) (eqConstAt a (S n))).
+Proof.
+  intros G a n hle.
+  set (target := pOr (leConstAt a n) (eqConstAt a (S n))).
+  set (leBody :=
+    pEq (tAdd (tVar (S a)) (tVar 0)) (Term.numeral (S n))).
+  change (BProv Ax_s G (pEx leBody)) in hle.
+  assert (hbody : BProv Ax_s (leBody :: map (rename S) G)
+      (rename S target)).
+  {
+    set (C := leBody :: map (rename S) G).
+    assert (hcases : BProv Ax_s C (zeroOrSuccPredAt 0)).
+    {
+      apply BProv_Ax_s_zeroOrSuccPredAt.
+    }
+    assert (hzeroBranch : BProv Ax_s (zeroAt 0 :: C)
+        (rename S target)).
+    {
+      assert (hzero : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tVar 0) tZero)).
+      {
+        pose proof (BProv_ass Ax_s (zeroAt 0 :: C) (zeroAt 0)) as h.
+        assert (hin : In (zeroAt 0) (zeroAt 0 :: C)).
+        {
+          simpl. left. reflexivity.
+        }
+        specialize (h hin).
+        unfold zeroAt, eqConstAt in h.
+        simpl in h.
+        exact h.
+      }
+      assert (hleBody : BProv Ax_s (zeroAt 0 :: C) leBody).
+      {
+        apply BProv_ass.
+        simpl. right. unfold C. simpl. left. reflexivity.
+      }
+      assert (hzeroAdd : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tAdd (tVar (S a)) (tVar 0))
+            (tAdd (tVar (S a)) tZero))).
+      {
+        exact (BProv_eq_congr_add_right Ax_s (zeroAt 0 :: C)
+          (tVar (S a)) (tVar 0) tZero hzero).
+      }
+      assert (haddZero : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tAdd (tVar (S a)) tZero) (tVar (S a)))).
+      {
+        apply BProv_weaken_nil.
+        apply BProv_Ax_s_addZero_term.
+      }
+      assert (hleft : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S a)))).
+      {
+        exact (BProv_eqTrans Ax_s (zeroAt 0 :: C)
+          (tAdd (tVar (S a)) (tVar 0))
+          (tAdd (tVar (S a)) tZero) (tVar (S a))
+          hzeroAdd haddZero).
+      }
+      assert (heq : BProv Ax_s (zeroAt 0 :: C)
+          (pEq (tVar (S a)) (Term.numeral (S n)))).
+      {
+        exact (BProv_eqTrans Ax_s (zeroAt 0 :: C)
+          (tVar (S a)) (tAdd (tVar (S a)) (tVar 0))
+          (Term.numeral (S n))
+          (BProv_eqSym Ax_s (zeroAt 0 :: C)
+            (tAdd (tVar (S a)) (tVar 0)) (tVar (S a)) hleft)
+          hleBody).
+      }
+      assert (hright : BProv Ax_s (zeroAt 0 :: C)
+          (rename S (eqConstAt a (S n)))).
+      {
+        unfold eqConstAt.
+        simpl.
+        rewrite Term.rename_numeral.
+        exact heq.
+      }
+      unfold target.
+      exact (BProv_orI2 Ax_s (zeroAt 0 :: C)
+        (rename S (leConstAt a n)) (rename S (eqConstAt a (S n)))
+        hright).
+    }
+    assert (hsuccBranch : BProv Ax_s (succPredAt 0 :: C)
+        (rename S target)).
+    {
+      set (succBody := pEq (tVar 1) (tSucc (tVar 0))).
+      assert (hsuccAss : BProv Ax_s (succPredAt 0 :: C)
+          (succPredAt 0)).
+      {
+        apply BProv_ass.
+        simpl. left. reflexivity.
+      }
+      change (BProv Ax_s (succPredAt 0 :: C) (pEx succBody))
+        in hsuccAss.
+      assert (hsuccBody : BProv Ax_s
+          (succBody :: map (rename S) (succPredAt 0 :: C))
+          (rename S (rename S target))).
+      {
+        set (D := succBody :: map (rename S) (succPredAt 0 :: C)).
+        assert (hpred : BProv Ax_s D succBody).
+        {
+          apply BProv_ass.
+          simpl. left. reflexivity.
+        }
+        assert (hleShiftRaw : BProv Ax_s D (rename S leBody)).
+        {
+          apply BProv_ass.
+          unfold D, C. simpl. right. right. left. reflexivity.
+        }
+        assert (hleShift : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (Term.numeral (S n)))).
+        {
+          unfold leBody in hleShiftRaw.
+          simpl in hleShiftRaw.
+          rewrite Term.rename_numeral in hleShiftRaw.
+          exact hleShiftRaw.
+        }
+        assert (haddPred : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (tAdd (tVar (S (S a))) (tSucc (tVar 0))))).
+        {
+          unfold succBody in hpred.
+          exact (BProv_eq_congr_add_right Ax_s D
+            (tVar (S (S a))) (tVar 1) (tSucc (tVar 0)) hpred).
+        }
+        assert (haddSucc : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tSucc (tVar 0)))
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0))))).
+        {
+          apply BProv_weaken_nil.
+          apply BProv_Ax_s_addSucc_terms.
+        }
+        assert (hleft : BProv Ax_s D
+            (pEq
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0))))).
+        {
+          exact (BProv_eqTrans Ax_s D
+            (tAdd (tVar (S (S a))) (tVar 1))
+            (tAdd (tVar (S (S a))) (tSucc (tVar 0)))
+            (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+            haddPred haddSucc).
+        }
+        assert (hsuccEqRaw : BProv Ax_s D
+            (pEq
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+              (Term.numeral (S n)))).
+        {
+          exact (BProv_eqTrans Ax_s D
+            (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+            (tAdd (tVar (S (S a))) (tVar 1))
+            (Term.numeral (S n))
+            (BProv_eqSym Ax_s D
+              (tAdd (tVar (S (S a))) (tVar 1))
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0))) hleft)
+            hleShift).
+        }
+        assert (hsuccEq : BProv Ax_s D
+            (pEq
+              (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+              (tSucc (Term.numeral n)))).
+        {
+          simpl in hsuccEqRaw.
+          exact hsuccEqRaw.
+        }
+        assert (hinj : BProv Ax_s D
+            (pImp
+              (pEq
+                (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+                (tSucc (Term.numeral n)))
+              (pEq (tAdd (tVar (S (S a))) (tVar 0))
+                (Term.numeral n)))).
+        {
+          apply BProv_weaken_nil.
+          apply BProv_Ax_s_succInj_terms.
+        }
+        pose proof (BProv_mp Ax_s D
+          (pEq
+            (tSucc (tAdd (tVar (S (S a))) (tVar 0)))
+            (tSucc (Term.numeral n)))
+          (pEq (tAdd (tVar (S (S a))) (tVar 0))
+            (Term.numeral n)) hinj hsuccEq) as hsum.
+        assert (hleInst : BProv Ax_s D
+            (subst (instTerm (tVar 0))
+              (pEq (tAdd (tVar (S (S (S a)))) (tVar 0))
+                (Term.numeral n)))).
+        {
+          simpl.
+          rewrite Term.subst_numeral.
+          exact hsum.
+        }
+        assert (hleClosed : BProv Ax_s D
+            (rename S (rename S (leConstAt a n)))).
+        {
+          pose proof (BProv_exI Ax_s D
+            (pEq (tAdd (tVar (S (S (S a)))) (tVar 0))
+              (Term.numeral n))
+            (tVar 0) hleInst) as hex.
+          unfold leConstAt.
+          simpl.
+          repeat rewrite Term.rename_numeral.
+          exact hex.
+        }
+        unfold target.
+        exact (BProv_orI1 Ax_s D
+          (rename S (rename S (leConstAt a n)))
+          (rename S (rename S (eqConstAt a (S n))))
+          hleClosed).
+      }
+      exact (BProv_exE_of_sentences Ax_s (succPredAt 0 :: C)
+        succBody (rename S target) sentence_ax_s hsuccAss hsuccBody).
+    }
+    change (BProv Ax_s C (pOr (zeroAt 0) (succPredAt 0))) in hcases.
+    exact (BProv_orE Ax_s C (zeroAt 0) (succPredAt 0)
+      (rename S target) hcases hzeroBranch hsuccBranch).
+  }
+  exact (BProv_exE_of_sentences Ax_s G leBody target
+    sentence_ax_s hle hbody).
+Qed.
+
 Definition boolAt (a : nat) : formula :=
   pOr (zeroAt a) (oneAt a).
 
