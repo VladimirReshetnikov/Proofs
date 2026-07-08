@@ -8731,6 +8731,34 @@ theorem BProv_Ax_s_ltConst_of_eqConst {G : List Formula}
       (Term.numeral n))
     (t := Term.numeral w) hbody
 
+/-- Closed-numeral version of `BProv_Ax_s_ltConst_of_eqConst`. -/
+theorem BProv_Ax_s_ltConst_closed {G : List Formula}
+    {m n : Nat} (hmn : m < n) :
+    BProv Ax_s G
+      (ex (eq (Term.add (Term.numeral m) (Term.succ (Term.var 0)))
+        (Term.numeral n))) := by
+  let w := n - m - 1
+  have haddRaw : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.numeral (w + 1)))
+        (Term.numeral (m + (w + 1)))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals m (w + 1))
+  have hmw : m + (w + 1) = n := by
+    simp [w]
+    omega
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.numeral m) (Term.succ (Term.numeral w)))
+        (Term.numeral n)) := by
+    simpa [hmw] using haddRaw
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral w))
+        (eq (Term.add (Term.numeral m) (Term.succ (Term.var 0)))
+          (Term.numeral n))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using hadd
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq (Term.add (Term.numeral m) (Term.succ (Term.var 0)))
+      (Term.numeral n))
+    (t := Term.numeral w) hbody
+
 /-- From PA proofs that two slots contain fixed numerals and a divisibility
 witness, derive the corresponding `dvdAt` relation. -/
 theorem BProv_Ax_s_dvdAt_of_eqConst_mul {G : List Formula}
@@ -9017,6 +9045,88 @@ theorem BProv_Ax_s_remAt_constMod_of_eqConst {G : List Formula}
               (Term.var ((rem+1)+1))))))
       (t := Term.numeral q) hbody)
 
+/-- Remainder constructor for the shape where both the remainder and modulus
+slots have just been instantiated by closed numerals. -/
+theorem BProv_Ax_s_remAt_constRemMod_of_eqConst {G : List Formula}
+    {value r v m q : Nat}
+    (hvalue : BProv Ax_s G (eqConstAt value v))
+    (hlt : r < m)
+    (hval : q * m + r = v) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (subst (Term.upSubst (instTerm (Term.numeral r)))
+          (remAt 1 (value+2) 0))) := by
+  have hltClosed : BProv Ax_s G
+      (ex (eq (Term.add (Term.numeral r) (Term.succ (Term.var 0)))
+        (Term.numeral m))) :=
+    BProv_Ax_s_ltConst_closed hlt
+  have hltBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral r))))
+            (ltAt (1+1) (0+1))))) := by
+    simpa [ltAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename] using hltClosed
+  have hmulRaw : BProv Ax_s G
+      (eq (Term.mul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+  have haddLeft : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.numeral r))
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))) :=
+    BProv_eq_congr_add_left (Term.numeral r) hmulRaw
+  have haddRaw : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral (q * m + r))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) r)
+  have hadd : BProv Ax_s G
+      (eq
+        (Term.add (Term.numeral (q * m)) (Term.numeral r))
+        (Term.numeral v)) := by
+    simpa [hval] using haddRaw
+  have hcomputed : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.numeral r))
+        (Term.numeral v)) :=
+    BProv_eqTrans haddLeft hadd
+  have htarget : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.numeral r))) :=
+    BProv_eqTrans hvalue (BProv_eqSym hcomputed)
+  have hvalueBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral r))))
+            (eq (Term.var ((value+2)+1))
+              (Term.add (Term.mul (Term.var 0) (Term.var (0+1)))
+                (Term.var ((1)+1))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+      using htarget
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral q))
+        (subst (Term.upSubst (instTerm (Term.numeral m)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral r))))
+            (and (ltAt (1+1) (0+1))
+              (eq (Term.var ((value+2)+1))
+                (Term.add (Term.mul (Term.var 0) (Term.var (0+1)))
+                  (Term.var ((1)+1)))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hltBody hvalueBody)
+  simpa [remAt, subst, instTerm, Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm (Term.numeral m)))
+        (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral r))))
+          (and (ltAt (1+1) (0+1))
+            (eq (Term.var ((value+2)+1))
+              (Term.add (Term.mul (Term.var 0) (Term.var (0+1)))
+                (Term.var ((1)+1)))))))
+      (t := Term.numeral q) hbody)
+
 /-- If the `step` and `idx` slots are fixed numerals, PA proves that the
 Gödel-beta modulus term computes the corresponding closed numeral. -/
 theorem BProv_Ax_s_betaModTerm_of_eqConst {G : List Formula}
@@ -9088,6 +9198,55 @@ theorem BProv_Ax_s_betaAt_of_eqConst {G : List Formula}
       (a := and
         (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
         (remAt (out+1) (code+1) 0))
+      (t := Term.numeral m) hbody)
+
+/-- Constructor for the formula obtained by instantiating the output variable
+of `betaAt` with a closed numeral. -/
+theorem BProv_Ax_s_betaAt_constOutSubst_of_eqConst {G : List Formula}
+    {code step idx o c s i q : Nat}
+    (hcode : BProv Ax_s G (eqConstAt code c))
+    (hstep : BProv Ax_s G (eqConstAt step s))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (hlt : o < BetaModulus s i)
+    (hval : q * BetaModulus s i + o = c) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral o))
+        (betaAt 0 (code+1) (step+1) (idx+1))) := by
+  let m := BetaModulus s i
+  have hmodTerm : BProv Ax_s G
+      (eq (betaModTerm step idx) (Term.numeral m)) := by
+    simpa [m] using BProv_Ax_s_betaModTerm_of_eqConst hstep hidx
+  have hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (betaModTerm (step+1) (idx+1)))))) := by
+    simpa [betaModTerm, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_subst_instTerm_rename_succ] using
+      BProv_eqSym hmodTerm
+  have hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (remAt (0+1) ((code+1)+1) 0))) := by
+    exact BProv_Ax_s_remAt_constRemMod_of_eqConst
+      (value := code) (r := o) (v := c) (m := m) (q := q)
+      hcode (by simpa [m] using hlt) (by simpa [m] using hval)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral m))
+        (subst (Term.upSubst (instTerm (Term.numeral o)))
+          (and
+            (eq (Term.var 0)
+              (Term.rename Nat.succ (betaModTerm (step+1) (idx+1))))
+            (remAt (0+1) ((code+1)+1) 0)))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hmodBody hremBody)
+  simpa [betaAt, subst, instTerm, Term.subst, Term.upSubst, m] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm (Term.numeral o)))
+        (and
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (betaModTerm (step+1) (idx+1))))
+          (remAt (0+1) ((code+1)+1) 0)))
       (t := Term.numeral m) hbody)
 
 /-- Constant-index variant of `BProv_Ax_s_betaModTerm_of_eqConst`, used after
