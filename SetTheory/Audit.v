@@ -8,7 +8,7 @@
 (* ===================================================================== *)
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
-From SetTheory Require Import BusyBeaver BusyBeaverMathlib.
+From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
 From SetTheory Require Import Forward Reverse.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -57,6 +57,16 @@ Check ClosureFO_of_ZF.
 Print Assumptions ClosureFO_of_ZF.
 
 (* PA/HF translation and finite-HF bridge. *)
+Check PA.Term.addRightNumeral.
+Check PA.Term.mulRightNumeral.
+Check PA.Term.rename_numeral.
+Check PA.Term.subst_numeral.
+Check PA.Term.subst_subst_numeral.
+Check PA.Term.addRightNumeral_numeral.
+Check PA.Term.subst_comp.
+Check PA.Term.subst_rename_succ_up.
+Check PA.Term.subst_ext_free.
+Check PA.Term.subst_id.
 Check PA.Formula.Ax_s.
 Check PA.Formula.sat_axiom_s.
 Check PA.Formula.Sentences.
@@ -65,9 +75,96 @@ Check PA.Formula.term_subst_var_rename.
 Check PA.Formula.term_subst_instTerm_var.
 Check PA.Formula.subst_var_rename.
 Check PA.Formula.subst_instTerm_var.
+Check PA.Formula.subst_comp.
+Check PA.Formula.subst_rename_succ_up.
+Check PA.Formula.subst_ext_free.
+Check PA.Formula.subst_id.
+Check PA.Formula.subst_eq_of_sentence.
 Check PA.Formula.term_subst_instTerm_rename_succ.
 Check PA.Formula.subst_instTerm_rename_succ.
+Check PA.Formula.subst_instTerm_subst_up.
+Check PA.Formula.map_subst_rename_succ_up.
+Check PA.Formula.term_substZero_rename_succ.
+Check PA.Formula.term_substSuccVar_rename_succ.
 Check PA.Formula.rename_hfMemAt.
+Check PA.Formula.leConstAt.
+Check PA.Formula.succPredAt.
+Check PA.Formula.zeroOrSuccPredAt.
+Check PA.Formula.betaDiv2StepsThroughConstAt.
+Check PA.Formula.leConstAt_nat.
+Check PA.Formula.succPredAt_nat.
+Check PA.Formula.zeroOrSuccPredAt_nat.
+Check PA.Formula.betaDiv2StepsThroughConstAt_nat.
+Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all.
+Check PA.Formula.BProv_Ax_s_zeroOrSuccPred_term.
+Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt.
+Check PA.Formula.BProv_Ax_s_add_eq_zero_left_all.
+Check PA.Formula.BProv_Ax_s_add_eq_zero_left_terms.
+Check PA.Formula.BProv_Ax_s_leConstAt_of_leAt_eqConst.
+Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero.
+Check PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero.
+Check PA.Formula.BProv_Ax_s_leConstAt_succ_cases.
+Check PA.Formula.BProv_Ax_s_addRightNumeral.
+Check PA.Formula.BProv_Ax_s_mulRightNumeral.
+Check PA.Formula.BProv_Ax_s_addNumerals.
+Check PA.Formula.BProv_Ax_s_mulRightNumeral_numeral.
+Check PA.Formula.BProv_Ax_s_mulNumerals.
+Check PA.Formula.BProv_Ax_s_leAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_ltAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_ltConst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_ltConst_closed.
+Check PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul.
+Check PA.Formula.BProv_Ax_s_dvdAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_boolAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_div2StepAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_div2StepAt_zero_one_bot.
+Check PA.Formula.BProv_Ax_s_div2StepAt_zero_half_zero.
+Check PA.Formula.BProv_Ax_s_div2StepAt_closedSubst.
+Check PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_remAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_remAt_constMod_of_eqConst.
+Check PA.Formula.BProv_Ax_s_remAt_constRemMod_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaModTerm_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaModTerm_constIdx_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAt_constOutSubst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAt_constIdxSubst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAtConstIdx_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst.
+Check PA.Formula.BProv_Ax_s_betaAt_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_betaAt_constOutSubst_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_betaAtConstIdx_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_betaAtSuccIdx_constOutSubst_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst_step.
+Check PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_body_zero_next_zero.
+Check PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot.
+Check PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_zero_bot.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace.
+Check PA.Formula.BProv_Ax_s_hfMemAt_bitOneEx_of_bit.
+Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components.
+Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components.
+Check PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry.
+Check PA.Formula.BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit.
+Check PA.Formula.BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace.
+Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps.
+Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace.
+Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_mem.
+Check PA.Formula.BProv_Ax_s_hfMemAt_bot_of_opened_final_current_zero.
+Check PA.Formula.BProv_Ax_s_HF_empty_zero_body_of_member_bot.
+Check PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_body.
+Check PA.Formula.BProv_Ax_s_translated_HF_empty_of_zero_member_bot.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.
@@ -81,10 +178,22 @@ Check PA.Formula.hfContextAt_cons_rename_succ.
 Check PA.Formula.subst_instTerm_var_hfFormulaAt.
 Check PA.Formula.hfFormulaAt_eq_translateHFFormula_of_HF_sentence.
 Check PA.Formula.Prov_hfFormulaAt_of_Prov.
+Check PA.Formula.Prov_subst.
 Check PA.Formula.BProv_hfFormulaAt_of_BProv_HFFin.
 Check PA.Formula.BProv_translateHFFormula_of_BProv_HFFin.
 Check PA.Formula.BProv_lift.
 Check PA.Formula.BProv_eqElim.
+Check PA.Formula.BProv_eqRefl.
+Check PA.Formula.BProv_eqSym.
+Check PA.Formula.BProv_eqTrans.
+Check PA.Formula.BProv_eq_congr_term.
+Check PA.Formula.BProv_eq_congr_succ.
+Check PA.Formula.BProv_eq_congr_add_left.
+Check PA.Formula.BProv_eq_congr_add_right.
+Check PA.Formula.BProv_eq_congr_add.
+Check PA.Formula.BProv_eq_congr_mul_left.
+Check PA.Formula.BProv_eq_congr_mul_right.
+Check PA.Formula.BProv_eq_congr_mul.
 Check PA.Formula.BProv_context_cons.
 Check PA.Formula.BProv_impI.
 Check PA.Formula.BProv_impI_after_prefix.
@@ -99,6 +208,10 @@ Check PA.Formula.BProv_allE.
 Check PA.Formula.BProv_exI.
 Check PA.Formula.BProv_allI_of_sentences.
 Check PA.Formula.BProv_exE_of_sentences.
+Check PA.Formula.BProv_weaken_nil.
+Check PA.Formula.BProv_ass.
+Check PA.Formula.BProv_rename_of_sentences.
+Check PA.Formula.BProv_subst_of_sentences.
 Check PA.Formula.BProv_closeN_allE_rename.
 Check PA.Formula.BProv_sealPA_allE_rename.
 Check PA.Formula.BProv_inductionForm_mp.
@@ -124,6 +237,10 @@ Check PA.Formula.BProv_Ax_s_mulSucc_terms.
 Check PA.Formula.BProv_Ax_s_inductionForm_rename.
 Check PA.Formula.BProv_Ax_s_inductionForm.
 Check PA.Formula.BProv_Ax_s_induction_rule.
+Check PA.Formula.TranslatedHFAxiomProofs.
+Check PA.Formula.TranslatedHFFinAxiomProofs.
+Check PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs.
+Check PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs.
 Check PA.Formula.soundness_BProv.
 Check PA.Formula.translated_HF_axiom_sat_nat.
 Check PA.Formula.translated_HFFin_axiom_sat_nat.
@@ -279,8 +396,77 @@ Check BusyBeaverMathlib.rado_positions_of_nat_offsets_nodup.
 Check BusyBeaverMathlib.SupportedCompilerBridge.
 Check BusyBeaverMathlib.supportedCompilerBridge_has_lowerBoundCompiler.
 Check BusyBeaverMathlib.sigma_eventually_dominates_every_supported_total_recursive.
+Check BusyBeaverMathlib.fintype_card_sum.
+Check BusyBeaverMathlib.initInputTape.
+Check BusyBeaverMathlib.initInputTape_zero.
+Check BusyBeaverMathlib.initInputTape_succ.
+Check BusyBeaverMathlib.initInputTape_read_nat.
+Check BusyBeaverMathlib.initInputTape_read_neg.
+Check BusyBeaverMathlib.initInputTape_matches_tm0_init.
+Check BusyBeaverMathlib.InitThenTM0State.
+Check BusyBeaverMathlib.initThenTM0ToTypedRado.
+Check BusyBeaverMathlib.liftSimCfg.
+Check BusyBeaverMathlib.liftSimCfg_step.
+Check BusyBeaverMathlib.liftSimCfg_reaches.
+Check BusyBeaverMathlib.initThenTM0Start.
+Check BusyBeaverMathlib.initThenTM0WriteCfg.
+Check BusyBeaverMathlib.initThenTM0ReturnCfg.
+Check BusyBeaverMathlib.initThenTM0SimInitCfg.
+Check BusyBeaverMathlib.initThenTM0_write_reaches.
+Check BusyBeaverMathlib.initThenTM0_return_reaches.
+Check BusyBeaverMathlib.initThenTM0_reaches_sim_init.
+Check BusyBeaverMathlib.initThenTM0State_card.
+Check BusyBeaverMathlib.tm0_eval_to_init_wrapper_lowerBound.
+Check BusyBeaverMathlib.trPosNum_length.
+Check BusyBeaverMathlib.trNum_length.
+Check BusyBeaverMathlib.trNat_length.
+Check BusyBeaverMathlib.trList_singleton_length.
+Check BusyBeaverMathlib.tm2to1_trInit_length_pos.
+Check BusyBeaverMathlib.encoded_partrec_input_length_pos.
+Check BusyBeaverMathlib.tm2to1_trInit_length_le_succ.
+Check BusyBeaverMathlib.encoded_partrec_input_length_le.
+Check BusyBeaverMathlib.TM1to1EncodedInput_length.
+Check BusyBeaverMathlib.partrecToTM1Encoding_width_pos.
+Check BusyBeaverMathlib.EncodedInputBudget.
+Check BusyBeaverMathlib.linear_mul_le_two_pow_pred_of_large.
+Check BusyBeaverMathlib.nat_size_linear_le_self_of_large.
+Check BusyBeaverMathlib.init_wrapper_state_count_le_linear.
+Check BusyBeaverMathlib.init_wrapper_state_count_le_linear_size.
+Check BusyBeaverMathlib.totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding.
+Check BusyBeaverMathlib.totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler.
+Check BusyBeaverMathlib.sigma_eventually_dominates_every_totalRecursiveMathlib.
 Print Assumptions
   BusyBeaverMathlib.sigma_eventually_dominates_every_supported_total_recursive.
+Print Assumptions
+  BusyBeaverMathlib.sigma_eventually_dominates_every_totalRecursiveMathlib.
+
+(* Concrete small-state busy-beaver witnesses and certificate wrappers. *)
+Check BusyBeaverKnownValues.sigma1Champion.
+Check BusyBeaverKnownValues.sigma2Champion.
+Check BusyBeaverKnownValues.sigma3Champion.
+Check BusyBeaverKnownValues.sigma4Champion.
+Check BusyBeaverKnownValues.sigma1Champion_haltsWithScore.
+Check BusyBeaverKnownValues.sigma2Champion_haltsWithScore.
+Check BusyBeaverKnownValues.sigma3Champion_haltsWithScore.
+Check BusyBeaverKnownValues.sigma4Champion_haltsWithScore.
+Check BusyBeaverKnownValues.attainableScore_one_one.
+Check BusyBeaverKnownValues.attainableScore_two_four.
+Check BusyBeaverKnownValues.attainableScore_three_six.
+Check BusyBeaverKnownValues.attainableScore_four_thirteen.
+Check BusyBeaverKnownValues.a028444_prefix_lower_bounds_through_four.
+Check BusyBeaverKnownValues.upperBound_one.
+Check BusyBeaverKnownValues.ExactScore.
+Check BusyBeaverKnownValues.ExactScore.sigma_eq.
+Check BusyBeaverKnownValues.exactScore_one.
+Check BusyBeaverKnownValues.sigma_one_eq_one.
+Check BusyBeaverKnownValues.A028444UpperBoundsThroughFour.
+Check BusyBeaverKnownValues.A028444UpperBoundsTwoThroughFour.
+Check BusyBeaverKnownValues.A028444UpperBoundsThroughFour.of_twoThroughFour.
+Check BusyBeaverKnownValues.a028444_values_through_four_from_upperBounds.
+Check BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
+Print Assumptions BusyBeaverKnownValues.upperBound_one.
+Print Assumptions
+  BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 
 Print Assumptions PA.Formula.sat_axiom_s.
 Print Assumptions PA.Formula.soundness_BProv.
