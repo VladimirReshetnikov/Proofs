@@ -10486,6 +10486,65 @@ Proof.
   - intros g hg. contradiction.
 Qed.
 
+Record TranslatedHFAxiomProofs := {
+  thf_empty :
+    BProv Ax_s [] (translateHFFormula (seal HF_empty_form));
+  thf_extensionality :
+    BProv Ax_s [] (translateHFFormula (seal HF_extensionality_form));
+  thf_adjoin :
+    BProv Ax_s [] (translateHFFormula (seal HF_adjoin_form));
+  thf_induction : forall phi,
+    BProv Ax_s [] (translateHFFormula (seal (HF_induction_form phi)))
+}.
+
+Record TranslatedHFFinAxiomProofs := {
+  thffin_empty :
+    BProv Ax_s [] (translateHFFormula (seal HF_empty_form));
+  thffin_extensionality :
+    BProv Ax_s [] (translateHFFormula (seal HF_extensionality_form));
+  thffin_adjoin :
+    BProv Ax_s [] (translateHFFormula (seal HF_adjoin_form));
+  thffin_induction : forall phi,
+    BProv Ax_s [] (translateHFFormula (seal (HF_induction_form phi)));
+  thffin_finite_induction : forall phi,
+    BProv Ax_s [] (translateHFFormula (seal (HF_finite_induction_form phi)))
+}.
+
+Definition TranslatedHFAxiomProofs_of_TranslatedHFFinAxiomProofs
+    (P : TranslatedHFFinAxiomProofs) : TranslatedHFAxiomProofs :=
+  {| thf_empty := thffin_empty P;
+     thf_extensionality := thffin_extensionality P;
+     thf_adjoin := thffin_adjoin P;
+     thf_induction := thffin_induction P |}.
+
+Lemma BProv_Ax_s_of_translatedHFAx_of_proofs :
+  forall (P : TranslatedHFAxiomProofs) phi,
+  translatedHFAx phi -> BProv Ax_s [] phi.
+Proof.
+  intros P phi [g [hg ->]].
+  unfold HFAx_s in hg.
+  destruct hg as [hg | [hg | [hg | [psi hg]]]]; subst g.
+  - exact (thf_empty P).
+  - exact (thf_extensionality P).
+  - exact (thf_adjoin P).
+  - exact (thf_induction P psi).
+Qed.
+
+Lemma BProv_Ax_s_of_translatedHFFinAx_of_proofs :
+  forall (P : TranslatedHFFinAxiomProofs) phi,
+  translatedHFFinAx phi -> BProv Ax_s [] phi.
+Proof.
+  intros P phi [g [hg ->]].
+  unfold HFFinAx_s in hg.
+  destruct hg as [hgHF | [psi hgFin]].
+  - apply (BProv_Ax_s_of_translatedHFAx_of_proofs
+      (TranslatedHFAxiomProofs_of_TranslatedHFFinAxiomProofs P)).
+    apply translatedHFAx_intro.
+    exact hgHF.
+  - subst g.
+    exact (thffin_finite_induction P psi).
+Qed.
+
 Lemma standard_sat_translatedHFAx : forall e,
   forall g, translatedHFAx g -> Sat natModel e g.
 Proof.

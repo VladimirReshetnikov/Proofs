@@ -124,6 +124,10 @@ Check PA.Formula.BProv_Ax_s_mulSucc_terms.
 Check PA.Formula.BProv_Ax_s_inductionForm_rename.
 Check PA.Formula.BProv_Ax_s_inductionForm.
 Check PA.Formula.BProv_Ax_s_induction_rule.
+Check PA.Formula.TranslatedHFAxiomProofs.
+Check PA.Formula.TranslatedHFFinAxiomProofs.
+Check PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs.
+Check PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs.
 Check PA.Formula.soundness_BProv.
 Check PA.Formula.translated_HF_axiom_sat_nat.
 Check PA.Formula.translated_HFFin_axiom_sat_nat.
