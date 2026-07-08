@@ -20327,6 +20327,32 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
     (BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
       hhigh hlowZero)
 
+/-- Closed-numeral membership data for the high set, together with a proof that
+the low set is empty, yields an explicit distinguishing member. -/
+theorem BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
+    {G : List Formula} {elem high low elemValue highValue : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hlowZero : BProv Ax_s G (eqConstAt low 0))
+    (hmem : AckermannHF.Mem elemValue highValue) :
+    BProv Ax_s G (hfDistinguishesAt elem high low) :=
+  BProv_Ax_s_hfDistinguishesAt_of_mem_and_eqConst_zero_low
+    (BProv_Ax_s_hfMemAt_of_eqConst_mem helem hhigh hmem)
+    hlowZero
+
+/-- Existential version of
+`BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low`. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
+    {G : List Formula} {elem high low elemValue highValue : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem elemValue))
+    (hhigh : BProv Ax_s G (eqConstAt high highValue))
+    (hlowZero : BProv Ax_s G (eqConstAt low 0))
+    (hmem : AckermannHF.Mem elemValue highValue) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) :=
+  BProv_Ax_s_hfSomeDistinguishesAt_of_mem_and_eqConst_zero_low
+    (BProv_Ax_s_hfMemAt_of_eqConst_mem helem hhigh hmem)
+    hlowZero
+
 /-- The closed-zero-set membership assumption required by the translated
 HF empty-set axiom is contradictory. -/
 theorem BProv_Ax_s_HF_empty_zero_member_bot :
