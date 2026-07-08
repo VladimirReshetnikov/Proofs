@@ -5747,6 +5747,24 @@ theorem term_subst_up_up_instTerm_rename_four_succ (t u : Term) :
   simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
     (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1))
 
+/-- Substituting under three lifted binders after shifting a term through five
+binders removes the newest shift and leaves the quadruple shift. -/
+theorem term_subst_up_up_up_instTerm_rename_five_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1 + 1)).symm
+  rw [hrename, Term.subst_rename_succ_up]
+  rw [term_subst_up_up_instTerm_rename_four_succ]
+  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1 + 1))
+
 /-- Renaming a term already shifted through one binder by the lifted successor
 renaming is the same as shifting it through one more ordinary binder. -/
 theorem term_rename_up_succ_rename_succ (t : Term) :
@@ -16915,6 +16933,72 @@ theorem BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
   have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
     BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
   exact BProv_andE2 hbody
+
+/-- Repackage a constant-index numeric beta wrapper as a term-output wrapper
+when PA proves the numeric output slot equals the target term. -/
+theorem BProv_Ax_s_betaTermAtConstIdx_of_betaAtConstIdx_eq_term
+    {G : List Formula} {out code step idxValue : Nat} {outTerm : Term}
+    (hbeta : BProv Ax_s G (betaAtConstIdx out code step idxValue))
+    (hout : BProv Ax_s G (eq (Term.var out) outTerm)) :
+    BProv Ax_s G (betaTermAtConstIdx outTerm code step idxValue) := by
+  let body : Formula :=
+    and (eqConstAt 0 idxValue)
+      (betaAt (out+1) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaTermAtConstIdx outTerm code step idxValue)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hidx : BProv Ax_s C (eqConstAt 0 idxValue) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaAtConstIdx_opened_body_idx
+          (G := G) (out := out) (code := code) (step := step)
+          (idxValue := idxValue))
+    have hraw : BProv Ax_s C
+        (betaAt (out+1) (code+1) (step+1) 0) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaAtConstIdx_opened_body_beta
+          (G := G) (out := out) (code := code) (step := step)
+          (idxValue := idxValue))
+    have houtRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq (Term.var out) outTerm)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hout Nat.succ
+    have houtC : BProv Ax_s C
+        (eq (Term.var (out+1)) (Term.rename Nat.succ outTerm)) := by
+      simpa [C, body, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) houtRen
+    have hterm : BProv Ax_s C
+        (betaTermAt (Term.rename Nat.succ outTerm)
+          (code+1) (step+1) 0) :=
+      BProv_Ax_s_betaTermAt_of_betaAt_eq_term hraw houtC
+    let termBody : Formula :=
+      and (eqConstAt 0 idxValue)
+        (betaTermAt (Term.rename Nat.succ outTerm)
+          (code+1) (step+1) 0)
+    have hpair : BProv Ax_s C termBody := by
+      simpa [termBody] using BProv_andI hidx hterm
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (rename (SetTheory.up Nat.succ) termBody)) := by
+      simpa [termBody, subst, instTerm, Term.subst, Term.upSubst,
+        Term.rename, eqConstAt, betaTermAt, remTermAt, ltTermAt,
+        betaModTerm, rename, SetTheory.up, Term.rename_comp,
+        term_rename_up_succ_rename_succ,
+        term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_five_succ] using hpair
+    have hex : BProv Ax_s C (ex (rename (SetTheory.up Nat.succ) termBody)) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := rename (SetTheory.up Nat.succ) termBody)
+        (t := Term.var 0) hinst
+    simpa [C, betaTermAtConstIdx, termBody, body, rename, Term.rename,
+      SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ]
+      using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaAtConstIdx, body] using hbody)
 
 /-- Projection from the opened body of a term-indexed beta wrapper to its
 index equation. -/

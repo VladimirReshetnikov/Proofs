@@ -99,6 +99,7 @@ open SetTheory
 #check @PA.Formula.term_subst_instTerm_rename_two_succ
 #check @PA.Formula.term_subst_upSubst_instTerm_rename_three_succ
 #check @PA.Formula.term_subst_up_up_instTerm_rename_four_succ
+#check @PA.Formula.term_subst_up_up_up_instTerm_rename_five_succ
 #check @PA.Formula.term_rename_up_succ_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_up_up_succ
 #check @PA.Formula.subst_instTerm_rename_succ
@@ -383,6 +384,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
+#check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_of_betaAtConstIdx_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_of_eq_beta
