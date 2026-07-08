@@ -25667,6 +25667,33 @@ witness. -/
 def strictHighOddOpenedIHTargetFormula (highHalf : Nat) : Formula :=
   rename Nat.succ (strictHighOddSuccCarryTargetFormula highHalf)
 
+/-- The natural witness term for the odd-high carry body after opening the old
+IH witness: if `x` distinguished the predecessor half, use `S x`. -/
+def strictHighOddSuccWitnessTerm : Term :=
+  Term.succ (Term.var 0)
+
+/-- Positive membership half of the odd-high carry body when the new witness
+is `S x`. -/
+def strictHighOddOpenedWitnessSuccMemFormula (highHalf : Nat) :
+    Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (hfMemTermAt 0
+      (Term.rename Nat.succ
+        (Term.rename Nat.succ
+          (strictHighOddSuccHalfCode highHalf))))
+
+/-- Low-membership atom that must be refuted when the odd-high carry uses the
+successor of the opened IH witness. -/
+def strictHighOddOpenedWitnessSuccLowMemFormula : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm) (hfMemAt 0 2)
+
+/-- Exact distinguishing body obtained by using `S x` as the witness for the
+shifted odd-high carry target. -/
+def strictHighOddOpenedWitnessSuccBodyFormula (highHalf : Nat) :
+    Formula :=
+  and (strictHighOddOpenedWitnessSuccMemFormula highHalf)
+    (imp strictHighOddOpenedWitnessSuccLowMemFormula bot)
+
 /-- High-even/low-odd strict branch with the positive-membership carry reduced
 to explicit beta components for caller-supplied successor-trace witnesses.
 
@@ -26731,6 +26758,109 @@ theorem BProv_Ax_s_strictHighOddLowOddSuccCarry_of_opened_ih
     (by
       simpa [strictHighOddLowOddOpenedIHContext,
         strictHighOddOpenedIHTargetFormula] using hbody)
+
+/-- Package the explicit successor-of-witness odd carry body from its two
+mathematical halves.
+
+The positive membership proof and the low-membership contradiction are kept as
+ordinary premises; this theorem only assembles the formula body. -/
+theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccBody_of_mem_and_low_bot
+    {G : List Formula} {highHalf : Nat}
+    (hmem : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula :: G) bot) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccBodyFormula highHalf) := by
+  have hnotLow : BProv Ax_s G
+      (imp strictHighOddOpenedWitnessSuccLowMemFormula bot) :=
+    BProv_impI hlowBot
+  simpa [strictHighOddOpenedWitnessSuccBodyFormula] using
+    BProv_andI hmem hnotLow
+
+/-- Introduce the shifted odd-high carry existential using `S x`, where `x` is
+the already-opened IH witness. -/
+theorem BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_body
+    {G : List Formula} {highHalf : Nat}
+    (hbody : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccBodyFormula highHalf)) :
+    BProv Ax_s G (strictHighOddOpenedIHTargetFormula highHalf) := by
+  let highCode : Term := strictHighOddSuccHalfCode highHalf
+  let body : Formula :=
+    hfDistinguishesTermAt 0
+      (Term.rename Nat.succ (Term.rename Nat.succ highCode)) 2
+  have hinst : BProv Ax_s G
+      (subst (instTerm strictHighOddSuccWitnessTerm) body) := by
+    simpa [body, highCode, strictHighOddOpenedWitnessSuccBodyFormula,
+      strictHighOddOpenedWitnessSuccMemFormula,
+      strictHighOddOpenedWitnessSuccLowMemFormula,
+      hfDistinguishesTermAt, subst] using hbody
+  have hex : BProv Ax_s G (ex body) :=
+    BProv_exI (B := Ax_s) (G := G) (a := body)
+      (t := strictHighOddSuccWitnessTerm) hinst
+  have hsome : BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.rename Nat.succ highCode) 1) := by
+    simpa [hfSomeDistinguishesTermAt, body] using hex
+  simpa [strictHighOddOpenedIHTargetFormula,
+    strictHighOddSuccCarryTargetFormula, highCode,
+    rename_hfSomeDistinguishesTermAt_succ] using hsome
+
+/-- Odd-high carry target from the two explicit successor-of-witness body
+halves. -/
+theorem BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
+    {G : List Formula} {highHalf : Nat}
+    (hmem : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula :: G) bot) :
+    BProv Ax_s G (strictHighOddOpenedIHTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_body
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccBody_of_mem_and_low_bot
+      hmem hlowBot)
+
+/-- Odd-high/even-low carry branch reduced to the explicit
+successor-of-witness membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_succ_witness_mem_and_low_bot
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hmem : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowDoubleSuccCarry_of_opened_ih
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    hlowStep
+    (BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
+      hmem hlowBot)
+
+/-- Odd-high/odd-low carry branch reduced to the explicit
+successor-of-witness membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddSuccCarry_of_succ_witness_mem_and_low_bot
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hmem : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot) :
+    BProv Ax_s (strictHighOddLowOddSuccCarryContext highHalf lowHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_strictHighOddLowOddSuccCarry_of_opened_ih
+    (highHalf := highHalf) (lowHalf := lowHalf) (lowBit := lowBit)
+    hlowStep
+    (BProv_Ax_s_strictHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
+      hmem hlowBot)
 
 /-- Strict successor branch with the odd-high carry premises stated at the
 opened-IH body level.
