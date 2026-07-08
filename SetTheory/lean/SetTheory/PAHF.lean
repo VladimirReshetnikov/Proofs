@@ -11387,6 +11387,68 @@ theorem BProv_Ax_s_ltAt_eq_bot {G : List Formula} {a b : Nat}
     BProv Ax_s G bot :=
   BProv_Ax_s_ltAt_leAt_bot hlt (BProv_Ax_s_leAt_of_eq heq)
 
+/-- If the left slot is `0` and the right slot is a successor, PA proves the
+strict order between them. -/
+theorem BProv_Ax_s_ltAt_of_eqConst_zero_succPredAt {G : List Formula}
+    {a b : Nat}
+    (ha : BProv Ax_s G (eqConstAt a 0))
+    (hb : BProv Ax_s G (succPredAt b)) :
+    BProv Ax_s G (ltAt a b) := by
+  let succBody : Formula := eq (Term.var (b+1)) (Term.succ (Term.var 0))
+  have hbody : BProv Ax_s (succBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (ltAt a b)) := by
+    let C : List Formula := succBody :: G.map (rename Nat.succ)
+    have hsucc : BProv Ax_s C succBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have haRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt a 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        ha Nat.succ
+    have haC : BProv Ax_s C (eq (Term.var (a+1)) Term.zero) := by
+      simpa [eqConstAt, rename, Term.rename, Term.numeral] using
+        BProv_context_cons haRen
+    have hleftZero : BProv Ax_s C
+        (eq
+          (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.add Term.zero (Term.succ (Term.var 0)))) :=
+      BProv_eq_congr_add_left (Term.succ (Term.var 0)) haC
+    have hzeroAdd : BProv Ax_s C
+        (eq
+          (Term.add Term.zero (Term.succ (Term.var 0)))
+          (Term.succ (Term.var 0))) :=
+      BProv_Ax_s_zero_add_term (Term.succ (Term.var 0))
+    have hleft : BProv Ax_s C
+        (eq
+          (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.succ (Term.var 0))) :=
+      BProv_eqTrans hleftZero hzeroAdd
+    have htarget : BProv Ax_s C
+        (eq
+          (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.var (b+1))) :=
+      BProv_eqTrans hleft (BProv_eqSym hsucc)
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (eq
+            (Term.add (Term.var (a+2)) (Term.succ (Term.var 0)))
+            (Term.var (b+2)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+    have hex : BProv Ax_s C
+        (ex
+          (eq
+            (Term.add (Term.var (a+2)) (Term.succ (Term.var 0)))
+            (Term.var (b+2)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := eq
+          (Term.add (Term.var (a+2)) (Term.succ (Term.var 0)))
+          (Term.var (b+2)))
+        (t := Term.var 0) hinst
+    simpa [C, ltAt, rename, Term.rename, SetTheory.up] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hb (by
+      simpa [succPredAt, succBody] using hbody)
+
 /-- PA proves the strict closed-one bound case: from `x < y` and `y = 1`,
 derive `x = 0`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one {G : List Formula}
