@@ -150,6 +150,7 @@ Check translateContextAt.
 Check translateContextAt_id.
 Check translateContextAt_rename_succ_upVarMap.
 Check mem_translateContextAt_of_mem.
+Check BProv_translate_allE_raw.
 Check BProv_formulaAt_ass.
 Check BProv_formulaAt_ax.
 Check domainContextAt.

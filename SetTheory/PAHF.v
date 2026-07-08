@@ -16160,6 +16160,26 @@ Proof.
   - right. exact hx.
 Qed.
 
+Lemma BProv_translate_allE_raw : forall G a k,
+  BProv translatedPAAx (translateContext G)
+    (translateFormula (PA.pAll a)) ->
+  BProv translatedPAAx (translateContext G)
+    (rename (inst k)
+      (fImp domainForm (formulaAt (upVarMap (fun n => n)) a))).
+Proof.
+  intros G a k [L [hL hp]].
+  change (Prov (L ++ translateContext G)
+    (fAll (fImp domainForm
+      (formulaAt (upVarMap (fun n : nat => n)) a)))) in hp.
+  exists L.
+  split; [ exact hL | ].
+  change (Prov (L ++ translateContext G)
+    (rename (inst k)
+      (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))).
+  exact (P_allE (L ++ translateContext G)
+    (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)) k hp).
+Qed.
+
 Lemma BProv_translate_exI_raw : forall G a k,
   BProv translatedPAAx (translateContext G)
     (rename (inst k)
