@@ -11797,6 +11797,127 @@ theorem BProv_Ax_s_dvdAt_of_eqConst {G : List Formula}
   exact BProv_Ax_s_dvdAt_of_eqConst_mul
     (a := a) (b := b) (m := m) (n := n) (q := q) ha hb hq.symm
 
+/-- A value strictly below its modulus cannot be a nonzero multiple of that
+modulus.  This is the quotient-free divisibility/boundedness kernel used later
+when beta functionality has reduced a candidate remainder to a divisor of the
+opened modulus. -/
+theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt {G : List Formula}
+    {modulus value : Nat}
+    (hdvd : BProv Ax_s G (dvdAt modulus value))
+    (hlt : BProv Ax_s G (ltAt value modulus)) :
+    BProv Ax_s G (eqConstAt value 0) := by
+  let dvdBody : Formula :=
+    eq (Term.mul (Term.var (modulus+1)) (Term.var 0))
+      (Term.var (value+1))
+  have hbody : BProv Ax_s (dvdBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eqConstAt value 0)) := by
+    let C : List Formula := dvdBody :: G.map (rename Nat.succ)
+    have hcases : BProv Ax_s C (zeroOrSuccPredAt 0) :=
+      BProv_Ax_s_zeroOrSuccPredAt (G := C) 0
+    have hzeroBranch : BProv Ax_s (zeroAt 0 :: C)
+        (rename Nat.succ (eqConstAt value 0)) := by
+      have hqZero : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.var 0) Term.zero) := by
+        have hraw : BProv Ax_s (zeroAt 0 :: C) (zeroAt 0) :=
+          BProv_ass (B := Ax_s) (G := zeroAt 0 :: C) (by simp)
+        simpa [zeroAt, eqConstAt, Term.numeral] using hraw
+      have hdvdEq : BProv Ax_s (zeroAt 0 :: C) dvdBody :=
+        BProv_ass (B := Ax_s) (G := zeroAt 0 :: C) (by simp [C])
+      have hmulZeroArg : BProv Ax_s (zeroAt 0 :: C)
+          (eq
+            (Term.mul (Term.var (modulus+1)) (Term.var 0))
+            (Term.mul (Term.var (modulus+1)) Term.zero)) :=
+        BProv_eq_congr_mul_right (Term.var (modulus+1)) hqZero
+      have hmulZero : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.mul (Term.var (modulus+1)) Term.zero) Term.zero) :=
+        BProv_weaken_nil (BProv_Ax_s_mulZero_term (Term.var (modulus+1)))
+      have hprodZero : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.mul (Term.var (modulus+1)) (Term.var 0)) Term.zero) :=
+        BProv_eqTrans hmulZeroArg hmulZero
+      have hvalueZero : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.var (value+1)) Term.zero) :=
+        BProv_eqTrans (BProv_eqSym hdvdEq) hprodZero
+      simpa [C, eqConstAt, rename, Term.rename, Term.numeral] using hvalueZero
+    have hsuccBranch : BProv Ax_s (succPredAt 0 :: C)
+        (rename Nat.succ (eqConstAt value 0)) := by
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      have hopened : BProv Ax_s
+          (succBody :: (succPredAt 0 :: C).map (rename Nat.succ))
+          (rename Nat.succ (rename Nat.succ (eqConstAt value 0))) := by
+        let D : List Formula :=
+          succBody :: (succPredAt 0 :: C).map (rename Nat.succ)
+        let m : Term := Term.var (modulus+2)
+        let v : Term := Term.var (value+2)
+        let q : Term := Term.var 0
+        have hsucc : BProv Ax_s D succBody :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hdvdRaw : BProv Ax_s D (rename Nat.succ dvdBody) :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+        have hdvdEq : BProv Ax_s D (eq (Term.mul m (Term.var 1)) v) := by
+          simpa [dvdBody, m, v, rename, Term.rename] using hdvdRaw
+        have hsuccMulArg : BProv Ax_s D
+            (eq (Term.mul m (Term.var 1)) (Term.mul m (Term.succ q))) := by
+          simpa [succBody, m, q] using BProv_eq_congr_mul_right m hsucc
+        have hmulSucc : BProv Ax_s D
+            (eq (Term.mul m (Term.succ q)) (Term.add (Term.mul m q) m)) :=
+          BProv_weaken_nil (BProv_Ax_s_mulSucc_terms m q)
+        have hprodSucc : BProv Ax_s D
+            (eq (Term.mul m (Term.var 1)) (Term.add (Term.mul m q) m)) :=
+          BProv_eqTrans hsuccMulArg hmulSucc
+        have hsumValue : BProv Ax_s D
+            (eq (Term.add (Term.mul m q) m) v) :=
+          BProv_eqTrans (BProv_eqSym hprodSucc) hdvdEq
+        have hcomm : BProv Ax_s D
+            (eq (Term.add m (Term.mul m q)) (Term.add (Term.mul m q) m)) :=
+          BProv_Ax_s_add_comm_terms m (Term.mul m q)
+        have hleEq : BProv Ax_s D (eq (Term.add m (Term.mul m q)) v) :=
+          BProv_eqTrans hcomm hsumValue
+        have hleInst : BProv Ax_s D
+            (subst (instTerm (Term.mul m q))
+              (eq (Term.add (Term.var (modulus+1+1+1)) (Term.var 0))
+                (Term.var (value+1+1+1)))) := by
+          simpa [subst, instTerm, Term.subst, Term.upSubst, m, v, q] using hleEq
+        have hle : BProv Ax_s D (leAt (modulus+2) (value+2)) := by
+          have hex : BProv Ax_s D
+              (ex (eq
+                (Term.add (Term.var (modulus+1+1+1)) (Term.var 0))
+                (Term.var (value+1+1+1)))) :=
+            BProv_exI (B := Ax_s) (G := D)
+              (a := eq
+                (Term.add (Term.var (modulus+1+1+1)) (Term.var 0))
+                (Term.var (value+1+1+1)))
+              (t := Term.mul m q) hleInst
+          simpa [leAt, m, v, q, rename, Term.rename, SetTheory.up] using hex
+        have hltRen : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ (ltAt value modulus))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            (BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+              hlt Nat.succ)
+            Nat.succ
+        have hltD : BProv Ax_s D (ltAt (value+2) (modulus+2)) := by
+          have hctx : BProv Ax_s D
+              (rename Nat.succ (rename Nat.succ (ltAt value modulus))) := by
+            simpa [D, C, List.map_map, Function.comp_def] using
+              BProv_context_cons
+                (BProv_context_cons
+                  (BProv_context_cons (B := Ax_s) hltRen))
+          simpa [ltAt, rename, Term.rename, SetTheory.up] using hctx
+        have hbot : BProv Ax_s D bot :=
+          BProv_Ax_s_ltAt_leAt_bot hltD hle
+        exact BProv_botE hbot
+      simpa [succPredAt, succBody] using
+        (BProv_exE_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf)
+          (BProv_ass (B := Ax_s) (G := succPredAt 0 :: C)
+            (phi := succPredAt 0) (by simp))
+          (by simpa [rename] using hopened))
+    exact BProv_orE hcases hzeroBranch hsuccBranch
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hdvd (by
+      simpa [dvdAt, dvdBody] using hbody)
+
 /-- A fixed `0` or `1` numeral proof yields the corresponding boolean-slot
 predicate. -/
 theorem BProv_Ax_s_boolAt_of_eqConst {G : List Formula}
