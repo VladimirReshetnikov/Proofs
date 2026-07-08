@@ -128,6 +128,7 @@ open SetTheory
 #check @PA.Formula.BProv_eq_congr_mul_right
 #check @PA.Formula.BProv_eq_congr_mul
 #check @PA.Formula.BProv_context_cons
+#check @PA.Formula.BProv_rename_succ_context_cons_of_sentences
 #check @PA.Formula.BProv_impI
 #check @PA.Formula.BProv_impI_after_prefix
 #check @PA.Formula.BProv_andI
@@ -459,6 +460,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_termIdx_even
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_current_eqConst_even_bot
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_step_zero_bot
+#check @PA.Formula.BProv_Ax_s_hfMemAt_opened_final_current_eqConst_div2Iter
+#check @PA.Formula.BProv_Ax_s_hfMemAt_bot_of_eqConst_not_mem
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_zero_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_zero_of_eqConst_step
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step
@@ -643,6 +646,8 @@ open SetTheory
 #check @PA.Formula.beta_entries_exist_lt_mul_betaFact
 #check @PA.Formula.beta_entries_exist_through_mul_betaFact
 #check @PA.Formula.div2Iter
+#check @PA.Formula.div2Iter_eq_shiftRight
+#check @PA.Formula.div2Iter_mod_two_eq_zero_of_not_mem
 #check @PA.Formula.shiftRight_lt_trace_modulus
 #check @PA.Formula.div2_step_shiftRight
 #check @PA.Formula.div2_step_shiftRight_one
