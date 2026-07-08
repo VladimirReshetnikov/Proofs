@@ -7618,6 +7618,90 @@ theorem BProv_Ax_s_leTermAt_trans {G : List Formula} {s t u : Term}
     (fun f hf => sentence_ax_s (f := f) hf) hst (by
       simpa [leTermAt, stBody] using hstBody)
 
+/-- PA proves antisymmetry of the term-parametric non-strict order macro. -/
+theorem BProv_Ax_s_eq_of_leTermAt_leTermAt {G : List Formula}
+    {s t : Term}
+    (hst : BProv Ax_s G (leTermAt s t))
+    (hts : BProv Ax_s G (leTermAt t s)) :
+    BProv Ax_s G (eq s t) := by
+  let stBody : Formula :=
+    eq (Term.add (Term.rename Nat.succ s) (Term.var 0))
+      (Term.rename Nat.succ t)
+  have hstBody : BProv Ax_s (stBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq s t)) := by
+    let C : List Formula := stBody :: G.map (rename Nat.succ)
+    let tsBody : Formula :=
+      eq
+        (Term.add
+          (Term.rename (SetTheory.up Nat.succ) (Term.rename Nat.succ t))
+          (Term.var 0))
+        (Term.rename (SetTheory.up Nat.succ) (Term.rename Nat.succ s))
+    have htsRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (leTermAt t s)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hts Nat.succ
+    have htsC : BProv Ax_s C (rename Nat.succ (leTermAt t s)) :=
+      BProv_context_cons htsRen
+    have htsBody : BProv Ax_s (tsBody :: C.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (eq s t))) := by
+      let D : List Formula := tsBody :: C.map (rename Nat.succ)
+      let ss : Term := Term.rename Nat.succ (Term.rename Nat.succ s)
+      let tt : Term := Term.rename Nat.succ (Term.rename Nat.succ t)
+      let y : Term := Term.var 1
+      let z : Term := Term.var 0
+      have hstRaw : BProv Ax_s D (rename Nat.succ stBody) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+      have hstEq : BProv Ax_s D (eq (Term.add ss y) tt) := by
+        simpa [stBody, ss, tt, y, rename, Term.rename, Term.rename_comp]
+          using hstRaw
+      have htsRaw : BProv Ax_s D tsBody :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have htsEq : BProv Ax_s D (eq (Term.add tt z) ss) := by
+        simpa [tsBody, ss, tt, z, term_rename_up_succ_rename_succ] using
+          htsRaw
+      have hstAdd : BProv Ax_s D
+          (eq (Term.add (Term.add ss y) z) (Term.add tt z)) :=
+        BProv_eq_congr_add_left z hstEq
+      have hloop : BProv Ax_s D
+          (eq (Term.add (Term.add ss y) z) ss) :=
+        BProv_eqTrans hstAdd htsEq
+      have hassoc : BProv Ax_s D
+          (eq (Term.add (Term.add ss y) z)
+            (Term.add ss (Term.add y z))) :=
+        BProv_Ax_s_add_assoc_terms ss y z
+      have hloop' : BProv Ax_s D
+          (eq (Term.add ss (Term.add y z)) ss) :=
+        BProv_eqTrans (BProv_eqSym hassoc) hloop
+      have hsZero : BProv Ax_s D (eq (Term.add ss Term.zero) ss) :=
+        BProv_weaken_nil (BProv_Ax_s_addZero_term ss)
+      have hsumEqZero : BProv Ax_s D
+          (eq (Term.add ss (Term.add y z)) (Term.add ss Term.zero)) :=
+        BProv_eqTrans hloop' (BProv_eqSym hsZero)
+      have hyzZero : BProv Ax_s D (eq (Term.add y z) Term.zero) :=
+        BProv_Ax_s_add_cancel_left_terms
+          (x := ss) (y := Term.add y z) (z := Term.zero) hsumEqZero
+      have hyZero : BProv Ax_s D (eq y Term.zero) :=
+        BProv_Ax_s_add_eq_zero_left_terms
+          (x := y) (y := z) hyzZero
+      have hsyZero : BProv Ax_s D
+          (eq (Term.add ss y) (Term.add ss Term.zero)) :=
+        BProv_eq_congr_add_right ss hyZero
+      have hst' : BProv Ax_s D (eq ss tt) :=
+        BProv_eqTrans
+          (BProv_eqTrans (BProv_eqSym hsZero) (BProv_eqSym hsyZero))
+          hstEq
+      simpa [D, rename, Term.rename, ss, tt] using hst'
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      htsC (by
+        simpa [C, leTermAt, tsBody, rename, Term.rename, SetTheory.up,
+          term_rename_up_succ_rename_succ, List.map_map, Function.comp_def]
+          using htsBody)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hst (by
+      simpa [leTermAt, stBody] using hstBody)
+
 /-- Transport the left term of a term-parametric strict order proof across PA
 equality. -/
 theorem BProv_ltTermAt_of_eq_left {B : Formula → Prop} {G : List Formula}

@@ -282,6 +282,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leTermAt_zero_left
 #check @PA.Formula.BProv_Ax_s_ltTermAt_zero_succ
 #check @PA.Formula.BProv_Ax_s_leTermAt_succ_succ
+#check @PA.Formula.BProv_Ax_s_eq_of_leTermAt_leTermAt
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_succ
 #check @PA.Formula.BProv_Ax_s_leTermAt_of_ltTermAt_succ_right
 #check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt_all
