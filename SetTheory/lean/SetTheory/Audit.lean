@@ -227,6 +227,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_zero_mul_term
 #check @PA.Formula.BProv_Ax_s_succ_mul_all
 #check @PA.Formula.BProv_Ax_s_succ_mul_terms
+#check @PA.Formula.BProv_Ax_s_mul_comm_all
+#check @PA.Formula.BProv_Ax_s_mul_comm_terms
 #check @PA.Formula.BProv_Ax_s_addRightNumeral
 #check @PA.Formula.BProv_Ax_s_mulRightNumeral
 #check @PA.Formula.BProv_Ax_s_addNumerals

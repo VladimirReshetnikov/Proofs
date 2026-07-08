@@ -10160,6 +10160,79 @@ theorem BProv_Ax_s_succ_mul_terms {G : List Formula} (x y : Term) :
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
+/-- PA proves commutativity of multiplication. -/
+theorem BProv_Ax_s_mul_comm_all (x : Term) :
+    BProv Ax_s []
+      (all
+        (eq
+          (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+          (Term.mul (Term.var 0) (Term.rename Nat.succ x)))) := by
+  let phi : Formula :=
+    eq
+      (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+      (Term.mul (Term.var 0) (Term.rename Nat.succ x))
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    have hrightZero : BProv Ax_s []
+        (eq (Term.mul x Term.zero) Term.zero) :=
+      BProv_Ax_s_mulZero_term x
+    have hleftZero : BProv Ax_s []
+        (eq (Term.mul Term.zero x) Term.zero) :=
+      BProv_Ax_s_zero_mul_term x
+    have htarget : BProv Ax_s []
+        (eq (Term.mul x Term.zero) (Term.mul Term.zero x)) :=
+      BProv_eqTrans hrightZero (BProv_eqSym hleftZero)
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using htarget
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let xs : Term := Term.rename Nat.succ x
+    let y : Term := Term.var 0
+    have hphi : BProv Ax_s [phi]
+        (eq (Term.mul xs y) (Term.mul y xs)) :=
+      BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi, xs, y])
+    have hleftStep : BProv Ax_s [phi]
+        (eq (Term.mul xs (Term.succ y))
+          (Term.add (Term.mul xs y) xs)) :=
+      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms xs y)
+    have hleftCong : BProv Ax_s [phi]
+        (eq
+          (Term.add (Term.mul xs y) xs)
+          (Term.add (Term.mul y xs) xs)) :=
+      BProv_eq_congr_add_left xs hphi
+    have hrightStep : BProv Ax_s [phi]
+        (eq (Term.mul (Term.succ y) xs)
+          (Term.add (Term.mul y xs) xs)) :=
+      BProv_Ax_s_succ_mul_terms y xs
+    have htarget : BProv Ax_s [phi]
+        (eq (Term.mul xs (Term.succ y))
+          (Term.mul (Term.succ y) xs)) :=
+      BProv_eqTrans (BProv_eqTrans hleftStep hleftCong)
+        (BProv_eqSym hrightStep)
+    simpa [phi, xs, y, substSuccVar, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_substSuccVar_rename_succ] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Arbitrary-term instance of multiplication commutativity. -/
+theorem BProv_Ax_s_mul_comm_terms {G : List Formula} (x y : Term) :
+    BProv Ax_s G (eq (Term.mul x y) (Term.mul y x)) := by
+  have hall : BProv Ax_s G
+      (all
+        (eq
+          (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+          (Term.mul (Term.var 0) (Term.rename Nat.succ x)))) :=
+    BProv_weaken_nil (BProv_Ax_s_mul_comm_all x)
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := y) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using hinst
+
 /-- PA proves the recursive normal form of right addition by a standard
 numeral. -/
 theorem BProv_Ax_s_addRightNumeral (t : Term) :
