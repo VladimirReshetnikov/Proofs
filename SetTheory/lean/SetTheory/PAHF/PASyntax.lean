@@ -24933,6 +24933,56 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih :
     BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt hih hlt
   simpa [C, lowLtHigh, ih, hfSomeDistinguishesTermAt_var] using hsome
 
+/-- High-even/low-odd strict branch, reduced to the genuine membership
+persistence obligation.
+
+The low-odd assumption is intentionally only a context component here: for an
+already distinguished predecessor-high member, the branch-closing work is to
+prove that the same positive witness still belongs to `S high` under the
+shifted high-evenness assumption. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_high_double_low_odd_of_opened_mem
+    {highHalf lowHalf : Nat}
+    (hmemSucc : BProv Ax_s
+      (doubleEqAt 3 (highHalf+2) ::
+        eq (Term.succ (Term.var 0)) (Term.var 1) ::
+          (nonzeroAt 0 :: hfDistinguishesAt 0 2 1 ::
+            (oddDoubleEqAt 0 lowHalf ::
+              doubleEqAt 1 highHalf ::
+              [ltTermAt (Term.var 0) (Term.var 1),
+                rename Nat.succ (hfLtDistinguishesAt 0)]).map
+                (rename Nat.succ)).map (rename Nat.succ))
+      (hfMemTermAt 1 (Term.succ (Term.var 3)))) :
+    BProv Ax_s
+      (oddDoubleEqAt 0 lowHalf ::
+        doubleEqAt 1 highHalf ::
+        [ltTermAt (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula :=
+    oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+  have hsomeBase : BProv Ax_s [lowLtHigh, ih]
+      (hfSomeDistinguishesAt 1 0) := by
+    simpa [lowLtHigh, ih] using
+      BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih
+  have hsome : BProv Ax_s C (hfSomeDistinguishesAt 1 0) :=
+    BProv_mono Ax_s [lowLtHigh, ih] C (hfSomeDistinguishesAt 1 0)
+      (by
+        intro f hf
+        simp [C] at hf ⊢
+        exact Or.inr (Or.inr hf))
+      hsomeBase
+  have hhighDouble : BProv Ax_s C (doubleEqAt 1 highHalf) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  exact
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_double_opened_mem_with_double
+      (G := C) (high := 1) (low := 0) (half := highHalf)
+      hsome hhighDouble
+      (by
+        simpa [C, lowLtHigh, ih, Nat.add_assoc] using hmemSucc)
+
 /-- If the induction hypothesis distinguishes `high` from every lower code,
 and a binary-halving step extracts `lowHalf` from a strict lower code `low`,
 then the induction hypothesis may be opened at `lowHalf`.
