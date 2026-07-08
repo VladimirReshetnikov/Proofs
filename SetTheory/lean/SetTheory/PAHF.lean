@@ -5713,6 +5713,40 @@ theorem term_subst_instTerm_rename_two_succ (t u : Term) :
   rw [hrename]
   exact term_subst_instTerm_rename_succ (Term.rename Nat.succ t) u
 
+/-- Substituting under one lifted binder after shifting a term through three
+binders removes the newest shift and leaves the double shift. -/
+theorem term_subst_upSubst_instTerm_rename_three_succ (t u : Term) :
+    Term.subst (Term.upSubst (instTerm u))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1) t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1)).symm
+  rw [hrename, Term.subst_rename_succ_up]
+  rw [term_subst_instTerm_rename_two_succ]
+  simpa using (Term.rename_comp t Nat.succ Nat.succ)
+
+/-- Substituting under two lifted binders after shifting a term through four
+binders removes the newest shift and leaves the triple shift. -/
+theorem term_subst_up_up_instTerm_rename_four_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1)).symm
+  rw [hrename, Term.subst_rename_succ_up]
+  rw [term_subst_upSubst_instTerm_rename_three_succ]
+  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1))
+
 /-- Renaming a term already shifted through one binder by the lifted successor
 renaming is the same as shifting it through one more ordinary binder. -/
 theorem term_rename_up_succ_rename_succ (t : Term) :
@@ -15168,6 +15202,87 @@ theorem BProv_Ax_s_dvdAt_of_remTermAt_zero
     (fun f hf => sentence_ax_s (f := f) hf) hrem (by
       simpa [remTermAt, ltTermAt, body, Term.rename] using hbody)
 
+/-- Convert a slot-output remainder proof to a term-output remainder proof
+when PA proves that the remainder slot equals the target term. -/
+theorem BProv_Ax_s_remTermAt_of_remAt_eq_term
+    {G : List Formula} {rem value modulus : Nat} {remTerm : Term}
+    (hrem : BProv Ax_s G (remAt rem value modulus))
+    (heq : BProv Ax_s G (eq (Term.var rem) remTerm)) :
+    BProv Ax_s G (remTermAt remTerm value modulus) := by
+  let remBody : Formula :=
+    and
+      (ltAt (rem+1) (modulus+1))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+          (Term.var (rem+1))))
+  have hbody : BProv Ax_s (remBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (remTermAt remTerm value modulus)) := by
+    let C : List Formula := remBody :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C remBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hltAt : BProv Ax_s C (ltAt (rem+1) (modulus+1)) :=
+      BProv_andE1 hbodyAss
+    have hltTerm : BProv Ax_s C
+        (ltTermAt (Term.var (rem+1)) (Term.var (modulus+1))) := by
+      simpa [ltAt, ltTermAt, Term.rename] using hltAt
+    have heqRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq (Term.var rem) remTerm)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        heq Nat.succ
+    have heqC : BProv Ax_s C
+        (eq (Term.var (rem+1)) (Term.rename Nat.succ remTerm)) := by
+      simpa [C, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) heqRen
+    have hltNew : BProv Ax_s C
+        (ltTermAt (Term.rename Nat.succ remTerm)
+          (Term.var (modulus+1))) :=
+      BProv_ltTermAt_of_eq_left heqC hltTerm
+    have hremEq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))) :=
+      BProv_andE2 hbodyAss
+    have hsumEq : BProv Ax_s C
+        (eq
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.var (rem+1)))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ remTerm))) :=
+      BProv_eq_congr_add_right
+        (Term.mul (Term.var 0) (Term.var (modulus+1))) heqC
+    have htermEq : BProv Ax_s C
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ remTerm))) :=
+      BProv_eqTrans hremEq hsumEq
+    let termBody : Formula :=
+      and
+        (ltTermAt (Term.rename Nat.succ remTerm)
+          (Term.var (modulus+1)))
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (modulus+1)))
+            (Term.rename Nat.succ remTerm)))
+    have hpair : BProv Ax_s C termBody := by
+      simpa [termBody] using BProv_andI hltNew htermEq
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (rename (SetTheory.up Nat.succ) termBody)) := by
+      simpa [termBody, subst, instTerm, Term.subst, Term.upSubst,
+        Term.rename, ltTermAt, rename, SetTheory.up, Term.rename_comp,
+        Term.subst_rename_succ_up, term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_rename_up_succ_rename_succ] using hpair
+    have hex : BProv Ax_s C (ex (rename (SetTheory.up Nat.succ) termBody)) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := rename (SetTheory.up Nat.succ) termBody)
+        (t := Term.var 0) hinst
+    simpa [C, remTermAt, termBody, rename, Term.rename, SetTheory.up,
+      Term.rename_comp, term_rename_up_succ_rename_succ] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remAt, remBody] using hbody)
+
 /-- Convert a slot-output remainder proof to the term-output-zero form when
 the remainder slot is proved to contain `0`. -/
 theorem BProv_Ax_s_remTermAt_zero_of_remAt_eqConst_zero
@@ -15907,6 +16022,92 @@ theorem BProv_Ax_s_eq_of_betaAt_betaTermAt_same_index
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAt, targetBody] using htargetOpened)
+
+/-- Repackage a numeric beta entry as a term-output beta entry when PA proves
+that the numeric output slot equals the desired term. -/
+theorem BProv_Ax_s_betaTermAt_of_betaAt_eq_term
+    {G : List Formula} {out code step idx : Nat} {outTerm : Term}
+    (hbeta : BProv Ax_s G (betaAt out code step idx))
+    (hout : BProv Ax_s G (eq (Term.var out) outTerm)) :
+    BProv Ax_s G (betaTermAt outTerm code step idx) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (betaTermAt outTerm code step idx)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hmod : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) :=
+      BProv_andE1 hbodyAss
+    have hrem : BProv Ax_s C (remAt (out+1) (code+1) 0) :=
+      BProv_andE2 hbodyAss
+    have houtRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq (Term.var out) outTerm)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hout Nat.succ
+    have houtC : BProv Ax_s C
+        (eq (Term.var (out+1)) (Term.rename Nat.succ outTerm)) := by
+      simpa [C, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) houtRen
+    have hremTerm : BProv Ax_s C
+        (remTermAt (Term.rename Nat.succ outTerm) (code+1) 0) :=
+      BProv_Ax_s_remTermAt_of_remAt_eq_term hrem houtC
+    have hremInst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (rename (SetTheory.up Nat.succ)
+            (remTermAt (Term.rename Nat.succ outTerm) (code+1) 0))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+        remTermAt, ltTermAt, rename, SetTheory.up, Term.rename_comp,
+        term_rename_up_succ_rename_succ,
+        term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_four_succ] using hremTerm
+    have hpairInst : BProv Ax_s C
+        (and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (subst (instTerm (Term.var 0))
+            (rename (SetTheory.up Nat.succ)
+              (remTermAt (Term.rename Nat.succ outTerm) (code+1) 0)))) :=
+      BProv_andI hmod hremInst
+    have hinst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (and
+            (eq (Term.var 0)
+              (Term.rename Nat.succ
+                (Term.rename Nat.succ (betaModTerm step idx))))
+            (rename (SetTheory.up Nat.succ)
+              (remTermAt (Term.rename Nat.succ outTerm) (code+1) 0)))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+        Term.rename_comp, betaModTerm, remTermAt, ltTermAt, rename,
+        SetTheory.up, term_rename_up_succ_rename_succ,
+        term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_four_succ] using hpairInst
+    have hex : BProv Ax_s C
+        (ex
+          (and
+            (eq (Term.var 0)
+              (Term.rename Nat.succ
+                (Term.rename Nat.succ (betaModTerm step idx))))
+            (rename (SetTheory.up Nat.succ)
+              (remTermAt (Term.rename Nat.succ outTerm) (code+1) 0)))) :=
+      BProv_exI (B := Ax_s) (G := C)
+        (a := and
+          (eq (Term.var 0)
+            (Term.rename Nat.succ
+              (Term.rename Nat.succ (betaModTerm step idx))))
+          (rename (SetTheory.up Nat.succ)
+            (remTermAt (Term.rename Nat.succ outTerm) (code+1) 0)))
+        (t := Term.var 0) hinst
+    simpa [C, betaTermAt, body, rename, Term.rename, SetTheory.up,
+      Term.rename_comp, term_rename_up_succ_rename_succ] using hex
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaAt, body] using hbody)
 
 /-- In an opened zero-output `betaTermAt` witness, the dividend is divisible by
 the opened beta modulus.  This is just the zero-remainder projection packaged

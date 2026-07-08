@@ -97,6 +97,8 @@ open SetTheory
 #check @PA.Formula.Prov_cut
 #check @PA.Formula.term_subst_instTerm_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_two_succ
+#check @PA.Formula.term_subst_upSubst_instTerm_rename_three_succ
+#check @PA.Formula.term_subst_up_up_instTerm_rename_four_succ
 #check @PA.Formula.term_rename_up_succ_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_up_up_succ
 #check @PA.Formula.subst_instTerm_rename_succ
@@ -336,6 +338,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_dvdAt_value_remAt
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eq_left
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remTermAt_zero
+#check @PA.Formula.BProv_Ax_s_remTermAt_of_remAt_eq_term
 #check @PA.Formula.BProv_Ax_s_remTermAt_zero_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_remAt_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_opened_body_output_zero_of_output_dvd
@@ -374,6 +377,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_rem
 #check @PA.Formula.BProv_Ax_s_eq_of_betaAt_betaTermAt_same_index
+#check @PA.Formula.BProv_Ax_s_betaTermAt_of_betaAt_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermAt_zero_opened_body_dvd
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
