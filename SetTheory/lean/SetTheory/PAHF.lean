@@ -10362,6 +10362,76 @@ theorem BProv_Ax_s_mul_add_terms {G : List Formula} (x y z : Term) :
   simpa [subst, instTerm, Term.subst, Term.upSubst,
     term_subst_instTerm_rename_succ] using hinst
 
+/-- PA proves right-distributivity of multiplication over addition. -/
+theorem BProv_Ax_s_add_mul_all (x y : Term) :
+    BProv Ax_s []
+      (all
+        (eq
+          (Term.mul
+            (Term.add (Term.rename Nat.succ x) (Term.rename Nat.succ y))
+            (Term.var 0))
+          (Term.add
+            (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+            (Term.mul (Term.rename Nat.succ y) (Term.var 0))))) := by
+  let phi : Formula :=
+    eq
+      (Term.mul
+        (Term.add (Term.rename Nat.succ x) (Term.rename Nat.succ y))
+        (Term.var 0))
+      (Term.add
+        (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+        (Term.mul (Term.rename Nat.succ y) (Term.var 0)))
+  have hbody : BProv Ax_s [] phi := by
+    let xs : Term := Term.rename Nat.succ x
+    let ys : Term := Term.rename Nat.succ y
+    let z : Term := Term.var 0
+    have hcommLeft : BProv Ax_s []
+        (eq (Term.mul (Term.add xs ys) z)
+          (Term.mul z (Term.add xs ys))) :=
+      BProv_Ax_s_mul_comm_terms (Term.add xs ys) z
+    have hdist : BProv Ax_s []
+        (eq (Term.mul z (Term.add xs ys))
+          (Term.add (Term.mul z xs) (Term.mul z ys))) :=
+      BProv_Ax_s_mul_add_terms z xs ys
+    have hxComm : BProv Ax_s []
+        (eq (Term.mul z xs) (Term.mul xs z)) :=
+      BProv_Ax_s_mul_comm_terms z xs
+    have hyComm : BProv Ax_s []
+        (eq (Term.mul z ys) (Term.mul ys z)) :=
+      BProv_Ax_s_mul_comm_terms z ys
+    have hsum : BProv Ax_s []
+        (eq
+          (Term.add (Term.mul z xs) (Term.mul z ys))
+          (Term.add (Term.mul xs z) (Term.mul ys z))) :=
+      BProv_eq_congr_add hxComm hyComm
+    have htarget : BProv Ax_s []
+        (eq
+          (Term.mul (Term.add xs ys) z)
+          (Term.add (Term.mul xs z) (Term.mul ys z))) :=
+      BProv_eqTrans (BProv_eqTrans hcommLeft hdist) hsum
+    simpa [phi, xs, ys, z] using htarget
+  exact BProv_allI_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- Arbitrary-term instance of `(x + y) * z = x * z + y * z`. -/
+theorem BProv_Ax_s_add_mul_terms {G : List Formula} (x y z : Term) :
+    BProv Ax_s G
+      (eq (Term.mul (Term.add x y) z)
+        (Term.add (Term.mul x z) (Term.mul y z))) := by
+  have hall : BProv Ax_s G
+      (all
+        (eq
+          (Term.mul
+            (Term.add (Term.rename Nat.succ x) (Term.rename Nat.succ y))
+            (Term.var 0))
+          (Term.add
+            (Term.mul (Term.rename Nat.succ x) (Term.var 0))
+            (Term.mul (Term.rename Nat.succ y) (Term.var 0))))) :=
+    BProv_weaken_nil (BProv_Ax_s_add_mul_all x y)
+  have hinst := BProv_allE (B := Ax_s) (G := G) (t := z) hall
+  simpa [subst, instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using hinst
+
 /-- PA proves the recursive normal form of right addition by a standard
 numeral. -/
 theorem BProv_Ax_s_addRightNumeral (t : Term) :
