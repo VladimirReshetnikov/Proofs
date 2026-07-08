@@ -277,6 +277,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaModTerm_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_code_zero
+#check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAtConstIdx_eqConst_code_zero
+#check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_betaAtSuccIdx_eqConst_code_zero
 #check @PA.Formula.BProv_Ax_s_betaAt_constOutSubst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaModTerm_constIdx_of_eqConst
 #check @PA.Formula.BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst
