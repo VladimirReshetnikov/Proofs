@@ -82,6 +82,14 @@ Check PA.Formula.subst_instTerm_rename_succ.
 Check PA.Formula.subst_instTerm_subst_up.
 Check PA.Formula.map_subst_rename_succ_up.
 Check PA.Formula.rename_hfMemAt.
+Check PA.Formula.leConstAt.
+Check PA.Formula.succPredAt.
+Check PA.Formula.zeroOrSuccPredAt.
+Check PA.Formula.betaDiv2StepsThroughConstAt.
+Check PA.Formula.leConstAt_nat.
+Check PA.Formula.succPredAt_nat.
+Check PA.Formula.zeroOrSuccPredAt_nat.
+Check PA.Formula.betaDiv2StepsThroughConstAt_nat.
 Check PA.Formula.hfContextAt.
 Check PA.Formula.translateHFContext.
 Check PA.Formula.translateHFContext_eq_hfContextAt_id.

@@ -9035,6 +9035,9 @@ Qed.
 Definition leAt (a b : nat) : formula :=
   pEx (pEq (tAdd (tVar (S a)) (tVar 0)) (tVar (S b))).
 
+Definition leConstAt (a n : nat) : formula :=
+  pEx (pEq (tAdd (tVar (S a)) (tVar 0)) (Term.numeral n)).
+
 Definition ltAt (a b : nat) : formula :=
   pEx (pEq (tAdd (tVar (S a)) (tSucc (tVar 0))) (tVar (S b))).
 
@@ -9052,6 +9055,12 @@ Definition twoAt (a : nat) : formula := eqConstAt a 2.
 
 Definition nonzeroAt (a : nat) : formula :=
   pEx (pEq (tSucc (tVar 0)) (tVar (S a))).
+
+Definition succPredAt (a : nat) : formula :=
+  pEx (pEq (tVar (S a)) (tSucc (tVar 0))).
+
+Definition zeroOrSuccPredAt (a : nat) : formula :=
+  pOr (zeroAt a) (succPredAt a).
 
 Definition boolAt (a : nat) : formula :=
   pOr (zeroAt a) (oneAt a).
@@ -9146,6 +9155,11 @@ Definition betaDiv2StepsThroughAt (code step last : nat) : formula :=
   pAll (pImp (leAt 0 (S last))
     (betaDiv2StepWitnessAt (S code) (S step) 0)).
 
+Definition betaDiv2StepsThroughConstAt
+    (code step last : nat) : formula :=
+  pAll (pImp (leConstAt 0 last)
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
 Definition betaDiv2BitAt (bit code step idx : nat) : formula :=
   pEx (pEx
     (pAnd
@@ -9187,6 +9201,21 @@ Proof.
     lia.
   - intro h.
     exists (e b - e a).
+    lia.
+Qed.
+
+Lemma leConstAt_nat : forall (e : nat -> nat) a n,
+  Sat natModel e (leConstAt a n) <-> e a <= n.
+Proof.
+  intros e a n.
+  unfold leConstAt. simpl.
+  split.
+  - intros [d hd].
+    rewrite Term.eval_numeral_natModel in hd.
+    lia.
+  - intro h.
+    exists (n - e a).
+    rewrite Term.eval_numeral_natModel.
     lia.
 Qed.
 
@@ -9260,6 +9289,33 @@ Proof.
   - intro h.
     exists (e a - 1).
     lia.
+Qed.
+
+Lemma succPredAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (succPredAt a) <-> exists p, e a = p + 1.
+Proof.
+  intros e a.
+  unfold succPredAt. simpl.
+  split.
+  - intros [p hp].
+    exists p. lia.
+  - intros [p hp].
+    exists p. lia.
+Qed.
+
+Lemma zeroOrSuccPredAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (zeroOrSuccPredAt a) <->
+    e a = 0 \/ exists p, e a = p + 1.
+Proof.
+  intros e a.
+  unfold zeroOrSuccPredAt. simpl.
+  split.
+  - intros [hz | hs].
+    + left. exact (proj1 (zeroAt_nat e a) hz).
+    + right. exact (proj1 (succPredAt_nat e a) hs).
+  - intros [hz | hs].
+    + left. exact (proj2 (zeroAt_nat e a) hz).
+    + right. exact (proj2 (succPredAt_nat e a) hs).
 Qed.
 
 Lemma boolAt_nat : forall (e : nat -> nat) a,
@@ -9541,6 +9597,39 @@ Proof.
     assert (hk : k <= e last).
     {
       pose proof (proj1 (leAt_nat (scons nat k e) 0 (S last)) hkSat)
+        as hle.
+      simpl in hle. exact hle.
+    }
+    apply (proj2 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0)).
+    simpl. exact (h k hk).
+Qed.
+
+Lemma betaDiv2StepsThroughConstAt_nat :
+    forall (e : nat -> nat) code step last,
+  Sat natModel e (betaDiv2StepsThroughConstAt code step last) <->
+    forall k, k <= last ->
+      exists cur next bit,
+        BetaEntry (e code) (e step) k cur /\
+        BetaEntry (e code) (e step) (S k) next /\
+        (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step last.
+  unfold betaDiv2StepsThroughConstAt. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat : Sat natModel (scons nat k e) (leConstAt 0 last)).
+    {
+      apply (proj2 (leConstAt_nat (scons nat k e) 0 last)).
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0) (h k hkSat)) as hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k <= last).
+    {
+      pose proof (proj1 (leConstAt_nat (scons nat k e) 0 last) hkSat)
         as hle.
       simpl in hle. exact hle.
     }
