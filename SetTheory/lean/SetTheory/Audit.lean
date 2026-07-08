@@ -326,6 +326,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_div2StepAt_eqConst_even
 #check @PA.Formula.BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
 #check @PA.Formula.BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one
+#check @PA.Formula.BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt
 #check @PA.Formula.BProv_Ax_s_remAt_of_div2StepAt_two
 #check @PA.Formula.BProv_Ax_s_div2StepAt_closedSubst
 #check @PA.Formula.BProv_Ax_s_div2StepAt_constValueHalfSubst_of_eqConst
@@ -737,6 +738,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_bits_zero_zero
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_leConst_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_eqConst_high_ltAt

@@ -9766,6 +9766,46 @@ theorem BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one {G : List Formula}
     BProv_eqTrans hstepEq hright
   simpa [oddDoubleEqAt, d] using hodd
 
+/-- A binary-halving step exposes a concrete parity case for the current
+value: either it is twice its next value, or it is twice its next value plus
+one. -/
+theorem BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt
+    {G : List Formula} {value half bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (or (doubleEqAt value half)
+      (oddDoubleEqAt value half)) := by
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hzero : BProv Ax_s (zeroAt bit :: G)
+      (or (doubleEqAt value half) (oddDoubleEqAt value half)) := by
+    have hbitZero : BProv Ax_s (zeroAt bit :: G) (eqConstAt bit 0) := by
+      have hraw : BProv Ax_s (zeroAt bit :: G) (zeroAt bit) :=
+        BProv_ass (B := Ax_s) (G := zeroAt bit :: G) (by simp)
+      simpa [zeroAt] using hraw
+    have hstepCtx : BProv Ax_s (zeroAt bit :: G)
+        (div2StepAt value half bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    exact BProv_orI1 (B := Ax_s) (G := zeroAt bit :: G)
+      (b := oddDoubleEqAt value half)
+      (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hbitZero hstepCtx)
+  have hone : BProv Ax_s (oneAt bit :: G)
+      (or (doubleEqAt value half) (oddDoubleEqAt value half)) := by
+    have hbitOne : BProv Ax_s (oneAt bit :: G) (eqConstAt bit 1) := by
+      have hraw : BProv Ax_s (oneAt bit :: G) (oneAt bit) :=
+        BProv_ass (B := Ax_s) (G := oneAt bit :: G) (by simp)
+      simpa [oneAt] using hraw
+    have hstepCtx : BProv Ax_s (oneAt bit :: G)
+        (div2StepAt value half bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    exact BProv_orI2 (B := Ax_s) (G := oneAt bit :: G)
+      (a := doubleEqAt value half)
+      (BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one hbitOne hstepCtx)
+  exact BProv_orE hbool hzero hone
+
 /-- A binary-halving step is a remainder equation modulo any slot proved to be
 `2`: the output bit is the remainder and the half slot is the quotient. -/
 theorem BProv_Ax_s_remAt_of_div2StepAt_two {G : List Formula}
@@ -23413,6 +23453,22 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
   exact BProv_exE_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hex (by simpa [zeroEq] using hbody)
+
+/-- Step-based even/even branch of the successor strict case.  If explicit
+binary-halving witnesses show that both the predecessor-high code and the low
+code have output bit `0`, then the doubled-code branch above applies. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_div2_bits_zero_zero
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hhighBit : BProv Ax_s G (eqConstAt highBit 0))
+    (hhighStep : BProv Ax_s G (div2StepAt high highHalf highBit))
+    (hlowBit : BProv Ax_s G (eqConstAt lowBit 0))
+    (hlowStep : BProv Ax_s G (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var high)) low) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+    (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hhighBit hhighStep)
+    (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hlowBit hlowStep)
 
 /-- If an element belongs to the high set and PA proves the low set is the
 empty Ackermann code, then the element distinguishes high from low. -/
