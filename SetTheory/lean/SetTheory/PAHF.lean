@@ -9193,6 +9193,118 @@ theorem BProv_Ax_s_add_cancel_left_terms {G : List Formula}
       term_subst_instTerm_rename_succ] using hinst
   exact BProv_mp Ax_s G _ _ himp h
 
+/-- PA proves, uniformly in the left addend, that adding a successor on the
+right never gives back the original left addend. -/
+theorem BProv_Ax_s_add_succ_ne_self_all (y : Term) :
+    BProv Ax_s []
+      (all
+        (imp
+          (eq
+            (Term.add (Term.var 0) (Term.succ (Term.rename Nat.succ y)))
+            (Term.var 0))
+          bot)) := by
+  let phi : Formula :=
+    imp
+      (eq
+        (Term.add (Term.var 0) (Term.succ (Term.rename Nat.succ y)))
+        (Term.var 0))
+      bot
+  have hzeroBody : BProv Ax_s
+      [eq (Term.add Term.zero (Term.succ y)) Term.zero]
+      bot := by
+    have hbad : BProv Ax_s
+        [eq (Term.add Term.zero (Term.succ y)) Term.zero]
+        (eq (Term.add Term.zero (Term.succ y)) Term.zero) :=
+      BProv_ass (B := Ax_s)
+        (G := [eq (Term.add Term.zero (Term.succ y)) Term.zero])
+        (by simp)
+    have hzeroAdd : BProv Ax_s
+        [eq (Term.add Term.zero (Term.succ y)) Term.zero]
+        (eq (Term.add Term.zero (Term.succ y)) (Term.succ y)) :=
+      BProv_Ax_s_zero_add_term (Term.succ y)
+    have hsuccZero : BProv Ax_s
+        [eq (Term.add Term.zero (Term.succ y)) Term.zero]
+        (eq (Term.succ y) Term.zero) :=
+      BProv_eqTrans (BProv_eqSym hzeroAdd) hbad
+    have hnot : BProv Ax_s
+        [eq (Term.add Term.zero (Term.succ y)) Term.zero]
+        (imp (eq (Term.succ y) Term.zero) bot) :=
+      BProv_weaken_nil (BProv_Ax_s_zeroNotSucc_term y)
+    exact BProv_mp Ax_s _ _ _ hnot hsuccZero
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_substZero_rename_succ] using BProv_impI hzeroBody
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let ys : Term := Term.rename Nat.succ y
+    let succEq : Formula :=
+      eq (Term.add (Term.succ (Term.var 0)) (Term.succ ys))
+        (Term.succ (Term.var 0))
+    have hinner : BProv Ax_s [succEq, phi] bot := by
+      have heqSucc : BProv Ax_s [succEq, phi] succEq :=
+        BProv_ass (B := Ax_s) (G := [succEq, phi]) (by simp)
+      have haddSucc : BProv Ax_s [succEq, phi]
+          (eq (Term.add (Term.succ (Term.var 0)) (Term.succ ys))
+            (Term.succ (Term.add (Term.var 0) (Term.succ ys)))) :=
+        BProv_Ax_s_succ_add_terms (Term.var 0) (Term.succ ys)
+      have hsuccEq : BProv Ax_s [succEq, phi]
+          (eq (Term.succ (Term.add (Term.var 0) (Term.succ ys)))
+            (Term.succ (Term.var 0))) :=
+        BProv_eqTrans (BProv_eqSym haddSucc) heqSucc
+      have hinj : BProv Ax_s [succEq, phi]
+          (imp
+            (eq (Term.succ (Term.add (Term.var 0) (Term.succ ys)))
+              (Term.succ (Term.var 0)))
+            (eq (Term.add (Term.var 0) (Term.succ ys)) (Term.var 0))) :=
+        BProv_weaken_nil
+          (BProv_Ax_s_succInj_terms
+            (Term.add (Term.var 0) (Term.succ ys)) (Term.var 0))
+      have hpredEq : BProv Ax_s [succEq, phi]
+          (eq (Term.add (Term.var 0) (Term.succ ys)) (Term.var 0)) :=
+        BProv_mp Ax_s _ _ _ hinj hsuccEq
+      have hih : BProv Ax_s [succEq, phi]
+          (imp
+            (eq (Term.add (Term.var 0) (Term.succ ys)) (Term.var 0))
+            bot) := by
+        have hphi : BProv Ax_s [succEq, phi] phi :=
+          BProv_ass (B := Ax_s) (G := [succEq, phi]) (by simp [phi])
+        simpa [phi, ys] using hphi
+      exact BProv_mp Ax_s _ _ _ hih hpredEq
+    have himp : BProv Ax_s [phi] (imp succEq bot) :=
+      BProv_impI hinner
+    simpa [phi, ys, succEq, substSuccVar, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_substSuccVar_rename_succ] using himp
+  have hsuccImp : BProv Ax_s []
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Modus-ponens form of `BProv_Ax_s_add_succ_ne_self_all`. -/
+theorem BProv_Ax_s_add_succ_ne_self_terms {G : List Formula}
+    {x y : Term}
+    (h : BProv Ax_s G (eq (Term.add x (Term.succ y)) x)) :
+    BProv Ax_s G bot := by
+  have hall : BProv Ax_s G
+      (all
+        (imp
+          (eq
+            (Term.add (Term.var 0) (Term.succ (Term.rename Nat.succ y)))
+            (Term.var 0))
+          bot)) :=
+    BProv_weaken_nil (BProv_Ax_s_add_succ_ne_self_all y)
+  have himp : BProv Ax_s G
+      (imp (eq (Term.add x (Term.succ y)) x) bot) := by
+    have hinst := BProv_allE (B := Ax_s) (G := G) (t := x) hall
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hinst
+  exact BProv_mp Ax_s G _ _ himp h
+
 /-- PA proves uniformly in the right summand that if `x + y = 0`, then
 `x = 0`.  The free term `x` is shifted under the displayed universal binder. -/
 theorem BProv_Ax_s_add_eq_zero_left_all (x : Term) :
@@ -9738,6 +9850,28 @@ theorem BProv_Ax_s_ltAt_of_eqConst {G : List Formula}
       (a := eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
         (Term.var (b+1)))
       (t := Term.numeral w) hbody)
+
+/-- PA refutes an irreflexive strict order witness. -/
+theorem BProv_Ax_s_ltAt_irrefl_bot {G : List Formula} {a : Nat}
+    (hlt : BProv Ax_s G (ltAt a a)) :
+    BProv Ax_s G bot := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+      (Term.var (a+1))
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ bot) := by
+    have heq : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+        (eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+          (Term.var (a+1))) :=
+      BProv_ass (B := Ax_s)
+        (G := ltBody :: G.map (rename Nat.succ))
+        (by simp [ltBody])
+    have hbot : BProv Ax_s (ltBody :: G.map (rename Nat.succ)) bot :=
+      BProv_Ax_s_add_succ_ne_self_terms heq
+    simpa [rename] using hbot
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hlt (by
+      simpa [ltAt, ltBody] using hbody)
 
 /-- From a PA proof that a slot contains a fixed numeral, derive the
 less-than-a-closed-numeral relation by exhibiting the positive difference
