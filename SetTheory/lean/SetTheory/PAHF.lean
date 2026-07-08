@@ -19588,6 +19588,95 @@ theorem BProv_Ax_s_HF_extensionality_fresh_member_reverse :
         (elem := 0) (left := 2) (right := 1) hsame)
   simpa [sameMembers] using hreverse
 
+/-- Formula macro: `elem` belongs to `high` but not to `low`, in the
+Ackermann membership translation. -/
+def hfDistinguishesAt (elem high low : Nat) : Formula :=
+  and (hfMemAt elem high) (imp (hfMemAt elem low) bot)
+
+/-- There is an Ackermann member of slot `high` that is not a member of slot
+`low`.  The body is under one existential binder, so the set slots are shifted
+by one. -/
+def hfSomeDistinguishesAt (high low : Nat) : Formula :=
+  ex (hfDistinguishesAt 0 (high+1) (low+1))
+
+/-- If `var 1 < var 0` yields a member of `var 0` not in `var 1`, then the
+translated extensionality hypothesis contradicts that strict inequality. -/
+theorem BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
+    (hdist : BProv Ax_s
+      [ltAt 1 0, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      (hfSomeDistinguishesAt 0 1)) :
+    BProv Ax_s
+      [ltAt 1 0, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      bot := by
+  let sameMembers : Formula := all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))
+  let witness : Formula := hfDistinguishesAt 0 1 2
+  let G : List Formula := [ltAt 1 0, sameMembers]
+  have hbody : BProv Ax_s (witness :: G.map (rename Nat.succ)) bot := by
+    let C : List Formula := witness :: G.map (rename Nat.succ)
+    have hwitness : BProv Ax_s C witness :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhigh : BProv Ax_s C (hfMemAt 0 1) := by
+      simpa [witness, hfDistinguishesAt] using BProv_andE1 hwitness
+    have hnotLow : BProv Ax_s C (imp (hfMemAt 0 2) bot) := by
+      simpa [witness, hfDistinguishesAt] using BProv_andE2 hwitness
+    have hhighToLow : BProv Ax_s C (imp (hfMemAt 0 1) (hfMemAt 0 2)) := by
+      have hbase := BProv_Ax_s_HF_extensionality_fresh_member_reverse
+      have hwithLt : BProv Ax_s
+          [rename Nat.succ (ltAt 1 0), rename Nat.succ sameMembers]
+          (imp (hfMemAt 0 1) (hfMemAt 0 2)) :=
+        BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ (ltAt 1 0)) hbase
+      have hwithWitness : BProv Ax_s C
+          (imp (hfMemAt 0 1) (hfMemAt 0 2)) :=
+        BProv_context_cons (B := Ax_s) (a := witness) hwithLt
+      simpa [C, G, sameMembers, witness] using hwithWitness
+    have hlow : BProv Ax_s C (hfMemAt 0 2) :=
+      BProv_mp Ax_s C (hfMemAt 0 1) (hfMemAt 0 2) hhighToLow hhigh
+    exact BProv_mp Ax_s C (hfMemAt 0 2) bot hnotLow hlow
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf)
+    (by simpa [G, sameMembers, hfSomeDistinguishesAt, witness] using hdist)
+    (by simpa [G, sameMembers, witness, rename] using hbody)
+
+/-- If `var 0 < var 1` yields a member of `var 1` not in `var 0`, then the
+translated extensionality hypothesis contradicts that strict inequality. -/
+theorem BProv_Ax_s_HF_extensionality_lt01_bot_of_distinguishing
+    (hdist : BProv Ax_s
+      [ltAt 0 1, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      (hfSomeDistinguishesAt 1 0)) :
+    BProv Ax_s
+      [ltAt 0 1, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      bot := by
+  let sameMembers : Formula := all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))
+  let witness : Formula := hfDistinguishesAt 0 2 1
+  let G : List Formula := [ltAt 0 1, sameMembers]
+  have hbody : BProv Ax_s (witness :: G.map (rename Nat.succ)) bot := by
+    let C : List Formula := witness :: G.map (rename Nat.succ)
+    have hwitness : BProv Ax_s C witness :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhigh : BProv Ax_s C (hfMemAt 0 2) := by
+      simpa [witness, hfDistinguishesAt] using BProv_andE1 hwitness
+    have hnotLow : BProv Ax_s C (imp (hfMemAt 0 1) bot) := by
+      simpa [witness, hfDistinguishesAt] using BProv_andE2 hwitness
+    have hhighToLow : BProv Ax_s C (imp (hfMemAt 0 2) (hfMemAt 0 1)) := by
+      have hbase := BProv_Ax_s_HF_extensionality_fresh_member_forward
+      have hwithLt : BProv Ax_s
+          [rename Nat.succ (ltAt 0 1), rename Nat.succ sameMembers]
+          (imp (hfMemAt 0 2) (hfMemAt 0 1)) :=
+        BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ (ltAt 0 1)) hbase
+      have hwithWitness : BProv Ax_s C
+          (imp (hfMemAt 0 2) (hfMemAt 0 1)) :=
+        BProv_context_cons (B := Ax_s) (a := witness) hwithLt
+      simpa [C, G, sameMembers, witness] using hwithWitness
+    have hlow : BProv Ax_s C (hfMemAt 0 1) :=
+      BProv_mp Ax_s C (hfMemAt 0 2) (hfMemAt 0 1) hhighToLow hhigh
+    exact BProv_mp Ax_s C (hfMemAt 0 1) bot hnotLow hlow
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf)
+    (by simpa [G, sameMembers, hfSomeDistinguishesAt, witness] using hdist)
+    (by simpa [G, sameMembers, witness, rename] using hbody)
+
 /-- Reduce the PA-side Ackermann extensionality core to the two strict-order
 contradictions.  The remaining arithmetic content is precisely: if two codes
 have the same translated members, neither can be strictly smaller than the
@@ -19710,6 +19799,22 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_lt_bots
   BProv_Ax_s_translated_HF_extensionality_of_member_ext
     (BProv_Ax_s_HF_extensionality_member_ext_of_lt_bots
       hlt10_bot hlt01_bot)
+
+/-- Combined translated-extensionality shell from the two remaining
+distinguishing-member witnesses for strict inequalities. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_distinguishing
+    (hdist10 : BProv Ax_s
+      [ltAt 1 0, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      (hfSomeDistinguishesAt 0 1))
+    (hdist01 : BProv Ax_s
+      [ltAt 0 1, all (iffForm (hfMemAt 0 2) (hfMemAt 0 1))]
+      (hfSomeDistinguishesAt 1 0)) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_lt_bots
+    (BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing hdist10)
+    (BProv_Ax_s_HF_extensionality_lt01_bot_of_distinguishing hdist01)
 
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
