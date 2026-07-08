@@ -393,6 +393,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_body_current_zero_of_betaTermAt_zero_eq_index
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_body_next_zero_of_betaTermAt_zero_eq_index
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_zero
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_zero
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_step_of_le
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_step_of_eqConst_zero
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitAt_of_eqConst_step
