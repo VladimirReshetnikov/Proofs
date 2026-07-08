@@ -251,6 +251,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leAt_refl
 #check @PA.Formula.BProv_Ax_s_leAt_trans
 #check @PA.Formula.BProv_Ax_s_ltAt_trans
+#check @PA.Formula.BProv_Ax_s_ltAt_leAt_trans
+#check @PA.Formula.BProv_Ax_s_leAt_ltAt_trans
 #check @PA.Formula.BProv_Ax_s_ltAt_irrefl_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_leAt_bot
 #check @PA.Formula.BProv_Ax_s_ltAt_asymm_bot
