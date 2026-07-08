@@ -17370,6 +17370,86 @@ theorem BProv_Ax_s_evenSuccBeta_index_one_bound
   simpa [half, cur, evenSuccBetaStepTerm] using
     BProv_ltTermAt_of_eq_right hmod hltSuccDouble
 
+/-- Algebraic core of the odd-current beta trace: if `cur = S h + h`, then
+the two-entry code `cur * S cur + cur` has index-one remainder `h` modulo
+`S (cur + cur)`, with quotient `S h`. -/
+theorem BProv_Ax_s_oddCurrent_beta_code_decomp
+    {G : List Formula} {cur half : Term}
+    (hcur : BProv Ax_s G
+      (eq cur (Term.add (Term.succ half) half))) :
+    BProv Ax_s G
+      (eq (Term.add (Term.mul cur (Term.succ cur)) cur)
+        (Term.add
+          (Term.mul (Term.succ half) (Term.succ (Term.add cur cur)))
+          half)) := by
+  let q : Term := Term.succ half
+  let base : Term := Term.add (Term.mul q cur) (Term.mul q cur)
+  have hsuccCurRaw : BProv Ax_s G
+      (eq (Term.succ cur) (Term.succ (Term.add q half))) := by
+    simpa [q] using BProv_eq_congr_succ hcur
+  have hqAddSucc : BProv Ax_s G
+      (eq (Term.add q q) (Term.succ (Term.add q half))) := by
+    simpa [q] using BProv_weaken_nil (BProv_Ax_s_addSucc_terms q half)
+  have hsuccCur : BProv Ax_s G
+      (eq (Term.succ cur) (Term.add q q)) :=
+    BProv_eqTrans hsuccCurRaw (BProv_eqSym hqAddSucc)
+  have hleftArg : BProv Ax_s G
+      (eq (Term.mul cur (Term.succ cur))
+        (Term.mul cur (Term.add q q))) :=
+    BProv_eq_congr_mul_right cur hsuccCur
+  have hleftDist : BProv Ax_s G
+      (eq (Term.mul cur (Term.add q q))
+        (Term.add (Term.mul cur q) (Term.mul cur q))) :=
+    BProv_Ax_s_mul_add_terms cur q q
+  have hmulComm : BProv Ax_s G
+      (eq (Term.mul cur q) (Term.mul q cur)) :=
+    BProv_Ax_s_mul_comm_terms cur q
+  have hleftBase : BProv Ax_s G
+      (eq (Term.add (Term.mul cur q) (Term.mul cur q)) base) := by
+    simpa [base] using BProv_eq_congr_add hmulComm hmulComm
+  have hleftProd : BProv Ax_s G
+      (eq (Term.mul cur (Term.succ cur)) base) :=
+    BProv_eqTrans hleftArg (BProv_eqTrans hleftDist hleftBase)
+  have hleftAdd : BProv Ax_s G
+      (eq (Term.add (Term.mul cur (Term.succ cur)) cur)
+        (Term.add base cur)) :=
+    BProv_eq_congr_add_left cur hleftProd
+  have hleftCur : BProv Ax_s G
+      (eq (Term.add base cur)
+        (Term.add base (Term.add q half))) :=
+    BProv_eq_congr_add_right base hcur
+  have hleftAssoc : BProv Ax_s G
+      (eq (Term.add base (Term.add q half))
+        (Term.add (Term.add base q) half)) :=
+    BProv_eqSym (BProv_Ax_s_add_assoc_terms base q half)
+  have hleftShape : BProv Ax_s G
+      (eq (Term.add (Term.mul cur (Term.succ cur)) cur)
+        (Term.add (Term.add base q) half)) :=
+    BProv_eqTrans hleftAdd (BProv_eqTrans hleftCur hleftAssoc)
+  have hrightSucc : BProv Ax_s G
+      (eq (Term.mul q (Term.succ (Term.add cur cur)))
+        (Term.add (Term.mul q (Term.add cur cur)) q)) :=
+    BProv_weaken_nil (BProv_Ax_s_mulSucc_terms q (Term.add cur cur))
+  have hrightDist : BProv Ax_s G
+      (eq (Term.mul q (Term.add cur cur)) base) := by
+    simpa [base] using BProv_Ax_s_mul_add_terms q cur cur
+  have hrightBase : BProv Ax_s G
+      (eq (Term.add (Term.mul q (Term.add cur cur)) q)
+        (Term.add base q)) :=
+    BProv_eq_congr_add_left q hrightDist
+  have hrightProd : BProv Ax_s G
+      (eq (Term.mul q (Term.succ (Term.add cur cur)))
+        (Term.add base q)) :=
+    BProv_eqTrans hrightSucc hrightBase
+  have hrightShape : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul q (Term.succ (Term.add cur cur))) half)
+        (Term.add (Term.add base q) half)) :=
+    BProv_eq_congr_add_left half hrightProd
+  simpa [q, base] using
+    BProv_eqTrans hleftShape (BProv_eqSym hrightShape)
+
 /-- Term-parametric membership introduction from the same closed trace
 components as `BProv_Ax_s_hfMemAt_of_closed_components`, but with the initial
 zero-index beta entry outputting an arbitrary set-code term. -/
