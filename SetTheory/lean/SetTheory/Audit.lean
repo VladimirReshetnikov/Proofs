@@ -188,6 +188,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leConstAt_of_leAt_eqConst
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero
+#check @PA.Formula.BProv_Ax_s_leConstAt_succ_cases
 #check @PA.Formula.BProv_Ax_s_mulZero_rename
 #check @PA.Formula.BProv_Ax_s_mulZero
 #check @PA.Formula.BProv_Ax_s_mulZero_term

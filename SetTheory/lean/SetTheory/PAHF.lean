@@ -9108,6 +9108,140 @@ theorem BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero {G : List Formula}
   BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero
     (BProv_Ax_s_leConstAt_of_leAt_eqConst hle hb)
 
+/-- Closed-bound successor decomposition for PA order: from `x ≤ n+1`, PA
+derives either `x ≤ n` or `x = n+1`.  The proof explicitly case-splits on the
+existential difference witness for the order relation. -/
+theorem BProv_Ax_s_leConstAt_succ_cases {G : List Formula}
+    {a n : Nat}
+    (hle : BProv Ax_s G (leConstAt a (n+1))) :
+    BProv Ax_s G (or (leConstAt a n) (eqConstAt a (n+1))) := by
+  let target : Formula := or (leConstAt a n) (eqConstAt a (n+1))
+  let leBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.var 0)) (Term.numeral (n+1))
+  have hbody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := leBody :: G.map (rename Nat.succ)
+    have hcases : BProv Ax_s C (zeroOrSuccPredAt 0) :=
+      BProv_Ax_s_zeroOrSuccPredAt (G := C) 0
+    have hzeroBranch : BProv Ax_s (zeroAt 0 :: C)
+        (rename Nat.succ target) := by
+      have hzero : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.var 0) Term.zero) := by
+        have hraw : BProv Ax_s (zeroAt 0 :: C) (zeroAt 0) :=
+          BProv_ass (B := Ax_s) (G := zeroAt 0 :: C) (by simp)
+        simpa [zeroAt, eqConstAt, Term.numeral] using hraw
+      have hleBody : BProv Ax_s (zeroAt 0 :: C) leBody :=
+        BProv_ass (B := Ax_s) (G := zeroAt 0 :: C) (by simp [C])
+      have hzeroAdd : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.add (Term.var (a+1)) (Term.var 0))
+            (Term.add (Term.var (a+1)) Term.zero)) :=
+        BProv_eq_congr_add_right (Term.var (a+1)) hzero
+      have haddZero : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.add (Term.var (a+1)) Term.zero)
+            (Term.var (a+1))) :=
+        BProv_weaken_nil (BProv_Ax_s_addZero_term (Term.var (a+1)))
+      have hleft : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.add (Term.var (a+1)) (Term.var 0))
+            (Term.var (a+1))) :=
+        BProv_eqTrans hzeroAdd haddZero
+      have heq : BProv Ax_s (zeroAt 0 :: C)
+          (eq (Term.var (a+1)) (Term.numeral (n+1))) :=
+        BProv_eqTrans (BProv_eqSym hleft) hleBody
+      simpa [target, eqConstAt, rename, leConstAt, Term.rename,
+        SetTheory.up] using
+        (BProv_orI2 (B := Ax_s) (G := zeroAt 0 :: C)
+          (a := rename Nat.succ (leConstAt a n)) heq)
+    have hsuccBranch : BProv Ax_s (succPredAt 0 :: C)
+        (rename Nat.succ target) := by
+      let succBody : Formula :=
+        eq (Term.var 1) (Term.succ (Term.var 0))
+      have hsuccAss : BProv Ax_s (succPredAt 0 :: C) (succPredAt 0) :=
+        BProv_ass (B := Ax_s) (G := succPredAt 0 :: C) (by simp)
+      have hsuccBody : BProv Ax_s
+          (succBody :: (succPredAt 0 :: C).map (rename Nat.succ))
+          (rename Nat.succ (rename Nat.succ target)) := by
+        let D : List Formula :=
+          succBody :: (succPredAt 0 :: C).map (rename Nat.succ)
+        have hpred : BProv Ax_s D succBody :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hleShiftRaw : BProv Ax_s D (rename Nat.succ leBody) :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+        have hleShift : BProv Ax_s D
+            (eq
+              (Term.add (Term.var (a+2)) (Term.var 1))
+              (Term.numeral (n+1))) := by
+          simpa [leBody, rename, Term.rename] using hleShiftRaw
+        have haddPred : BProv Ax_s D
+            (eq
+              (Term.add (Term.var (a+2)) (Term.var 1))
+              (Term.add (Term.var (a+2)) (Term.succ (Term.var 0)))) := by
+          simpa [succBody] using
+            (BProv_eq_congr_add_right (Term.var (a+2)) hpred)
+        have haddSucc : BProv Ax_s D
+            (eq
+              (Term.add (Term.var (a+2)) (Term.succ (Term.var 0)))
+              (Term.succ (Term.add (Term.var (a+2)) (Term.var 0)))) :=
+          BProv_weaken_nil
+            (BProv_Ax_s_addSucc_terms (Term.var (a+2)) (Term.var 0))
+        have hleft : BProv Ax_s D
+            (eq
+              (Term.add (Term.var (a+2)) (Term.var 1))
+              (Term.succ (Term.add (Term.var (a+2)) (Term.var 0)))) :=
+          BProv_eqTrans haddPred haddSucc
+        have hsuccEqRaw : BProv Ax_s D
+            (eq
+              (Term.succ (Term.add (Term.var (a+2)) (Term.var 0)))
+              (Term.numeral (n+1))) :=
+          BProv_eqTrans (BProv_eqSym hleft) hleShift
+        have hsuccEq : BProv Ax_s D
+            (eq
+              (Term.succ (Term.add (Term.var (a+2)) (Term.var 0)))
+              (Term.succ (Term.numeral n))) := by
+          simpa [Term.numeral_succ] using hsuccEqRaw
+        have hinj : BProv Ax_s D
+            (imp
+              (eq
+                (Term.succ (Term.add (Term.var (a+2)) (Term.var 0)))
+                (Term.succ (Term.numeral n)))
+              (eq (Term.add (Term.var (a+2)) (Term.var 0))
+                (Term.numeral n))) :=
+          BProv_weaken_nil
+            (BProv_Ax_s_succInj_terms
+              (Term.add (Term.var (a+2)) (Term.var 0))
+              (Term.numeral n))
+        have hsum : BProv Ax_s D
+            (eq (Term.add (Term.var (a+2)) (Term.var 0))
+              (Term.numeral n)) :=
+          BProv_mp Ax_s D _ _ hinj hsuccEq
+        have hleInst : BProv Ax_s D
+            (subst (instTerm (Term.var 0))
+              (eq (Term.add (Term.var (a+3)) (Term.var 0))
+                (Term.numeral n))) := by
+          simpa [subst, instTerm, Term.subst, Term.upSubst] using hsum
+        have hleClosed : BProv Ax_s D (rename Nat.succ (rename Nat.succ
+            (leConstAt a n))) := by
+          have hex : BProv Ax_s D
+              (ex (eq (Term.add (Term.var (a+3)) (Term.var 0))
+                (Term.numeral n))) :=
+            BProv_exI (B := Ax_s) (G := D)
+              (a := eq (Term.add (Term.var (a+3)) (Term.var 0))
+                (Term.numeral n))
+              (t := Term.var 0) hleInst
+          simpa [leConstAt, rename, Term.rename, SetTheory.up] using hex
+        simpa [D, target, rename] using
+          (BProv_orI1 (B := Ax_s) (G := D)
+            (b := rename Nat.succ (rename Nat.succ (eqConstAt a (n+1))))
+            hleClosed)
+      simpa [succPredAt, succBody] using
+        (BProv_exE_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf)
+          hsuccAss hsuccBody)
+    exact BProv_orE hcases hzeroBranch hsuccBranch
+  simpa [leConstAt, leBody, target] using
+    (BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      hle hbody)
+
 /-- PA proves every variable-renamed body of multiplication by zero. -/
 theorem BProv_Ax_s_mulZero_rename (r : Nat → Nat) :
     BProv Ax_s [] (rename r mulZero) :=
