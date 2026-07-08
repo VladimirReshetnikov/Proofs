@@ -10010,6 +10010,132 @@ theorem BProv_Ax_s_betaDiv2BitAt_of_eqConst_step {G : List Formula}
     hbit hcode hstep hidx hcurLt hcurVal.symm hnextLt hnextVal.symm
     hb hdiv.symm
 
+/-- Package the innermost membership bit witness.  The premise is only the
+closed, code/step-instantiated `betaDiv2BitAt` component; the constructor adds
+the explicit proof that the witness bit is the numeral `1`. -/
+theorem BProv_Ax_s_hfMemAt_bitOneEx_of_bit {G : List Formula}
+    {elem code step : Nat}
+    (hbit : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral code))))
+            (betaDiv2BitAt 0 2 1 (elem+3)))))) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 (elem+3)))))) := by
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  have hone : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral code))))
+            (oneAt 0)))) := by
+    simpa [oneAt, eqConstAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename] using
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral 1))
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral code))))
+            bitBody))) := by
+    simpa [bitBody, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hone hbit)
+  simpa [bitBody, subst, instTerm, Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a :=
+        subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral code))))
+            bitBody))
+      (t := Term.numeral 1) hbody)
+
+/-- Introduce the PA formula for HF membership from its three closed trace
+components: the zero-index beta entry for the set code, the still-explicit
+bounded halving trace, and the final bit witness existential. -/
+theorem BProv_Ax_s_hfMemAt_of_closed_components {G : List Formula}
+    {elem set code step : Nat}
+    (hentry : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (betaAtConstIdx (set+2) 1 0 0))))
+    (hsteps : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))))
+    (hbitEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (ex
+            (and
+              (oneAt 0)
+              (betaDiv2BitAt 0 2 1 (elem+3))))))) :
+    BProv Ax_s G (hfMemAt elem set) := by
+  let bitEx : Formula :=
+    ex
+      (and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3)))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      bitEx
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      tail
+  have htail : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          tail)) := by
+    simpa [tail, bitEx, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hsteps hbitEx)
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          body)) := by
+    simpa [body, tail, bitEx, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hentry htail)
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral code)) (ex body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm (Term.numeral code))) body)
+        (t := Term.numeral step) hbody)
+  simpa [hfMemAt, body, tail, bitEx, subst, instTerm, Term.subst,
+    Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := ex body)
+      (t := Term.numeral code) hstepEx)
+
+/-- Membership-introduction variant that takes the final bit component before
+the inner witness bit has been existentially packaged. -/
+theorem BProv_Ax_s_hfMemAt_of_closed_bit_components {G : List Formula}
+    {elem set code step : Nat}
+    (hentry : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (betaAtConstIdx (set+2) 1 0 0))))
+    (hsteps : BProv Ax_s G
+      (subst (instTerm (Term.numeral step))
+        (subst (Term.upSubst (instTerm (Term.numeral code)))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))))
+    (hbit : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.numeral step)))
+          (subst (Term.upSubst (Term.upSubst (instTerm (Term.numeral code))))
+            (betaDiv2BitAt 0 2 1 (elem+3)))))) :
+    BProv Ax_s G (hfMemAt elem set) := by
+  exact BProv_Ax_s_hfMemAt_of_closed_components
+    (elem := elem) (set := set) (code := code) (step := step)
+    hentry hsteps
+    (BProv_Ax_s_hfMemAt_bitOneEx_of_bit
+      (elem := elem) (code := code) (step := step) hbit)
+
 /-- PA proves every variable-renamed body of one of its sealed induction
 schema instances. -/
 theorem BProv_Ax_s_inductionForm_rename (phi : Formula) (r : Nat → Nat) :
