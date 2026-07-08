@@ -11149,6 +11149,75 @@ Proof.
     (Term.numeral (BetaModulus s i)) hbody).
 Qed.
 
+Lemma BProv_Ax_s_betaAt_constOutIdxSubst_of_eqConst :
+  forall G code step o c s i q,
+  BProv Ax_s G (eqConstAt code c) ->
+  BProv Ax_s G (eqConstAt step s) ->
+  o < BetaModulus s i ->
+  q * BetaModulus s i + o = c ->
+  BProv Ax_s G
+    (subst (instTerm (Term.numeral i))
+      (subst (Term.upSubst (instTerm (Term.numeral o)))
+        (betaAt 1 (S (S code)) (S (S step)) 0))).
+Proof.
+  intros G code step o c s i q hcode hstep hlt hval.
+  pose proof (BProv_Ax_s_betaModTerm_constIdx_of_eqConst
+    G step s i hstep) as hmodTerm.
+  assert (hmodBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral o))))
+            (pEq (tVar 0)
+              (Term.rename S (betaModTerm (S (S step)) 0))))))).
+  {
+    simpl.
+    repeat rewrite Term.rename_numeral.
+    repeat rewrite Term.subst_numeral.
+    exact (BProv_eqSym Ax_s G
+      (tSucc (tMul (tSucc (Term.numeral i)) (tVar step)))
+      (Term.numeral (BetaModulus s i)) hmodTerm).
+  }
+  pose proof (BProv_Ax_s_remAt_constRemMod_of_eqConst
+    G code o c (BetaModulus s i) q hcode hlt hval) as hremRaw.
+  assert (hremBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral o))))
+            (remAt 2 (S (S (S code))) 0))))).
+  {
+    unfold remAt, ltAt in *.
+    simpl in *.
+    repeat rewrite Term.rename_numeral in *.
+    repeat rewrite Term.subst_numeral in *.
+    exact hremRaw.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral (BetaModulus s i)))
+        (subst (Term.upSubst (instTerm (Term.numeral i)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (Term.numeral o))))
+            (pAnd
+              (pEq (tVar 0)
+                (Term.rename S (betaModTerm (S (S step)) 0)))
+              (remAt 2 (S (S (S code))) 0)))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hmodBody hremBody).
+  }
+  unfold betaAt.
+  exact (BProv_exI Ax_s G
+    (subst (Term.upSubst (instTerm (Term.numeral i)))
+      (subst (Term.upSubst (Term.upSubst
+        (instTerm (Term.numeral o))))
+        (pAnd
+          (pEq (tVar 0)
+            (Term.rename S (betaModTerm (S (S step)) 0)))
+          (remAt 2 (S (S (S code))) 0))))
+    (Term.numeral (BetaModulus s i)) hbody).
+Qed.
+
 Definition BetaEntry (code step idx value : nat) : Prop :=
   exists q, code = q * BetaModulus step idx + value /\
     value < BetaModulus step idx.
