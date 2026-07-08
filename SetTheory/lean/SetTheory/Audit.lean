@@ -247,6 +247,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_leAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltAt_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltAt_irrefl_bot
+#check @PA.Formula.BProv_Ax_s_ltAt_leAt_bot
 #check @PA.Formula.BProv_Ax_s_ltConst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltConst_closed
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul

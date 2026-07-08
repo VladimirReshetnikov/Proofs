@@ -10803,6 +10803,80 @@ theorem BProv_Ax_s_ltAt_irrefl_bot {G : List Formula} {a : Nat}
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltAt, ltBody] using hbody)
 
+/-- PA refutes simultaneous witnesses for `a < b` and `b ≤ a`. -/
+theorem BProv_Ax_s_ltAt_leAt_bot {G : List Formula} {a b : Nat}
+    (hlt : BProv Ax_s G (ltAt a b))
+    (hle : BProv Ax_s G (leAt b a)) :
+    BProv Ax_s G bot := by
+  let ltBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.succ (Term.var 0)))
+      (Term.var (b+1))
+  have hbody : BProv Ax_s (ltBody :: G.map (rename Nat.succ))
+      (rename Nat.succ bot) := by
+    let C : List Formula := ltBody :: G.map (rename Nat.succ)
+    let leBody : Formula :=
+      eq (Term.add (Term.var (b+1+1)) (Term.var 0)) (Term.var (a+1+1))
+    have hleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (leAt b a)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hle Nat.succ
+    have hleC : BProv Ax_s C (rename Nat.succ (leAt b a)) :=
+      BProv_context_cons hleRen
+    have hleBody : BProv Ax_s (leBody :: C.map (rename Nat.succ))
+        (rename Nat.succ bot) := by
+      let D : List Formula := leBody :: C.map (rename Nat.succ)
+      let x : Term := Term.var (a+1+1)
+      let y : Term := Term.var 1
+      let d : Term := Term.var 0
+      have hltRaw : BProv Ax_s D (rename Nat.succ ltBody) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+      have hltEq : BProv Ax_s D
+          (eq (Term.add x (Term.succ y)) (Term.var (b+1+1))) := by
+        simpa [ltBody, x, y, rename, Term.rename] using hltRaw
+      have hleEq : BProv Ax_s D
+          (eq (Term.add (Term.var (b+1+1)) d) x) := by
+        have hraw : BProv Ax_s D leBody :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        simpa [leBody, x, d] using hraw
+      have hltAdd : BProv Ax_s D
+          (eq
+            (Term.add (Term.add x (Term.succ y)) d)
+            (Term.add (Term.var (b+1+1)) d)) :=
+        BProv_eq_congr_add_left d hltEq
+      have hloop : BProv Ax_s D
+          (eq (Term.add (Term.add x (Term.succ y)) d) x) :=
+        BProv_eqTrans hltAdd hleEq
+      have hassoc : BProv Ax_s D
+          (eq
+            (Term.add (Term.add x (Term.succ y)) d)
+            (Term.add x (Term.add (Term.succ y) d))) :=
+        BProv_Ax_s_add_assoc_terms x (Term.succ y) d
+      have hsuccLeft : BProv Ax_s D
+          (eq (Term.add (Term.succ y) d)
+            (Term.succ (Term.add y d))) :=
+        BProv_Ax_s_succ_add_terms y d
+      have hsuccCong : BProv Ax_s D
+          (eq
+            (Term.add x (Term.add (Term.succ y) d))
+            (Term.add x (Term.succ (Term.add y d)))) :=
+        BProv_eq_congr_add_right x hsuccLeft
+      have hbad : BProv Ax_s D
+          (eq (Term.add x (Term.succ (Term.add y d))) x) :=
+        BProv_eqTrans (BProv_eqTrans (BProv_eqSym hsuccCong)
+          (BProv_eqSym hassoc)) hloop
+      have hbot : BProv Ax_s D bot :=
+        BProv_Ax_s_add_succ_ne_self_terms hbad
+      simpa [rename] using hbot
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      hleC (by
+        simpa [C, leAt, leBody, rename, Term.rename, SetTheory.up,
+          List.map_map, Function.comp_def] using hleBody)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hlt (by
+      simpa [ltAt, ltBody] using hbody)
+
 /-- From a PA proof that a slot contains a fixed numeral, derive the
 less-than-a-closed-numeral relation by exhibiting the positive difference
 predecessor. -/
