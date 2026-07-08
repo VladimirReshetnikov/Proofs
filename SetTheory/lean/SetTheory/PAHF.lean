@@ -12317,6 +12317,23 @@ theorem BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
     (BProv_Ax_s_betaModTerm_idx_zero_of_step_succ hidx hstep)
     hzero
 
+/-- If an opened beta witness identifies its modulus variable with the
+zero-index successor-step beta modulus, that modulus variable cannot be `0`. -/
+theorem BProv_Ax_s_betaModTerm_modEq_zero_bot
+    {G : List Formula} {modulus step idx pred : Nat}
+    (hmodEq : BProv Ax_s G
+      (eq (Term.var modulus) (betaModTerm step idx)))
+    (hmodZero : BProv Ax_s G (eqConstAt modulus 0))
+    (hidx : BProv Ax_s G (eqConstAt idx 0))
+    (hstep : BProv Ax_s G
+      (eq (Term.var step) (Term.succ (Term.var pred)))) :
+    BProv Ax_s G bot := by
+  have hbetaZero : BProv Ax_s G (eq (betaModTerm step idx) Term.zero) := by
+    simpa [eqConstAt, Term.numeral] using
+      BProv_eqTrans (BProv_eqSym hmodEq) hmodZero
+  exact BProv_Ax_s_betaModTerm_idx_zero_step_succ_ne_zero_bot
+    hidx hstep hbetaZero
+
 /-- From fixed numeral proofs for the output, code, step, and index slots, and
 an explicit beta-entry quotient in the metatheory, derive the corresponding
 `betaAt` relation. -/
@@ -12393,6 +12410,50 @@ theorem BProv_Ax_s_betaAt_opened_body_rem
   have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
     BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
   exact BProv_andE2 hbody
+
+/-- Opened raw-beta specialization of
+`BProv_Ax_s_betaModTerm_modEq_zero_bot`. -/
+theorem BProv_Ax_s_betaAt_opened_body_modulus_zero_bot
+    {G : List Formula} {out code step idx pred : Nat}
+    (hidx : BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      (eqConstAt (idx+1) 0))
+    (hstep : BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      (eq (Term.var (step+1)) (Term.succ (Term.var pred))))
+    (hmodZero : BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      (eqConstAt 0 0)) :
+    BProv Ax_s
+      ((and
+          (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+          (remAt (out+1) (code+1) 0)) :: G.map (rename Nat.succ))
+      bot := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remAt (out+1) (code+1) 0)
+  let C : List Formula := body :: G.map (rename Nat.succ)
+  have hmodEqRaw : BProv Ax_s C
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) :=
+    BProv_Ax_s_betaAt_opened_body_modEq
+      (G := G) (out := out) (code := code) (step := step) (idx := idx)
+  have hmodEq : BProv Ax_s C
+      (eq (Term.var 0) (betaModTerm (step+1) (idx+1))) := by
+    simpa [betaModTerm, rename, Term.rename] using hmodEqRaw
+  exact BProv_Ax_s_betaModTerm_modEq_zero_bot
+    (G := C) (modulus := 0) (step := step+1) (idx := idx+1)
+    (pred := pred)
+    hmodEq
+    (by simpa [body, C] using hmodZero)
+    (by simpa [body, C] using hidx)
+    (by simpa [body, C] using hstep)
 
 /-- Projection from the opened body of a `betaAtConstIdx` wrapper to its closed
 index equation. -/
