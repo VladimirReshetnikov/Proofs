@@ -15117,6 +15117,176 @@ theorem BProv_Ax_s_eq_of_remAt_remTermAt_same_modulus
   BProv_Ax_s_eq_of_remAt_remTermAt_eq_modulus hrem hterm
     (BProv_eqRefl (B := Ax_s) (G := G) (Term.var modulus))
 
+/-- Functionality for two term-parametric bounded-remainder proofs.  The two
+proofs may use different modulus slots, provided PA proves those modulus slots
+equal in the surrounding context. -/
+theorem BProv_Ax_s_eq_of_remTermAt_remTermAt_eq_modulus
+    {G : List Formula} {rem1 rem2 : Term} {value mod1 mod2 : Nat}
+    (h1 : BProv Ax_s G (remTermAt rem1 value mod1))
+    (h2 : BProv Ax_s G (remTermAt rem2 value mod2))
+    (hmodEq : BProv Ax_s G (eq (Term.var mod2) (Term.var mod1))) :
+    BProv Ax_s G (eq rem2 rem1) := by
+  let body1 : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ rem1) (Term.var (mod1+1)))
+      (eq (Term.var (value+1))
+        (Term.add (Term.mul (Term.var 0) (Term.var (mod1+1)))
+          (Term.rename Nat.succ rem1)))
+  have hopen1 : BProv Ax_s (body1 :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq rem2 rem1)) := by
+    let S : List Formula := body1 :: G.map (rename Nat.succ)
+    have hbody1 : BProv Ax_s S body1 :=
+      BProv_ass (B := Ax_s) (G := S) (by simp [S, body1])
+    have hlt1 : BProv Ax_s S
+        (ltTermAt (Term.rename Nat.succ rem1) (Term.var (mod1+1))) :=
+      BProv_andE1 hbody1
+    have heq1 : BProv Ax_s S
+        (eq (Term.var (value+1))
+          (Term.add (Term.mul (Term.var 0) (Term.var (mod1+1)))
+            (Term.rename Nat.succ rem1))) :=
+      BProv_andE2 hbody1
+    have h2S : BProv Ax_s S
+        (remTermAt (Term.rename Nat.succ rem2) (value+1) (mod2+1)) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (remTermAt rem2 value mod2)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          h2 Nat.succ
+      simpa [S, body1, remTermAt, ltTermAt, rename, Term.rename,
+        SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ]
+        using BProv_context_cons (B := Ax_s) hren
+    have hmodEqS : BProv Ax_s S
+        (eq (Term.var (mod2+1)) (Term.var (mod1+1))) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (eq (Term.var mod2) (Term.var mod1))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hmodEq Nat.succ
+      simpa [S, body1, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hren
+    let body2 : Formula :=
+      and
+        (ltTermAt
+          (Term.rename Nat.succ (Term.rename Nat.succ rem2))
+          (Term.var (mod2+1+1)))
+        (eq (Term.var (value+1+1))
+          (Term.add
+            (Term.mul (Term.var 0) (Term.var (mod2+1+1)))
+            (Term.rename Nat.succ (Term.rename Nat.succ rem2))))
+    have hopen2 : BProv Ax_s (body2 :: S.map (rename Nat.succ))
+        (rename Nat.succ
+          (eq (Term.rename Nat.succ rem2)
+            (Term.rename Nat.succ rem1))) := by
+      let T : List Formula := body2 :: S.map (rename Nat.succ)
+      have hbody2 : BProv Ax_s T body2 :=
+        BProv_ass (B := Ax_s) (G := T) (by simp [T, body2])
+      have hlt2Raw : BProv Ax_s T
+          (ltTermAt
+            (Term.rename Nat.succ (Term.rename Nat.succ rem2))
+            (Term.var (mod2+1+1))) :=
+        BProv_andE1 hbody2
+      have heq2Raw : BProv Ax_s T
+          (eq (Term.var (value+1+1))
+            (Term.add
+              (Term.mul (Term.var 0) (Term.var (mod2+1+1)))
+              (Term.rename Nat.succ (Term.rename Nat.succ rem2)))) :=
+        BProv_andE2 hbody2
+      have hmodEqRen : BProv Ax_s (S.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq (Term.var (mod2+1)) (Term.var (mod1+1)))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hmodEqS Nat.succ
+      have hmodEqT : BProv Ax_s T
+          (eq (Term.var (mod2+1+1)) (Term.var (mod1+1+1))) := by
+        simpa [T, body2, rename, Term.rename] using
+          BProv_context_cons (B := Ax_s) hmodEqRen
+      have hlt2 : BProv Ax_s T
+          (ltTermAt
+            (Term.rename Nat.succ (Term.rename Nat.succ rem2))
+            (Term.var (mod1+1+1))) :=
+        BProv_ltTermAt_of_eq_right hmodEqT hlt2Raw
+      have hmulMod : BProv Ax_s T
+          (eq
+            (Term.mul (Term.var 0) (Term.var (mod2+1+1)))
+            (Term.mul (Term.var 0) (Term.var (mod1+1+1)))) :=
+        BProv_eq_congr_mul_right (Term.var 0) hmodEqT
+      have heq2Mod : BProv Ax_s T
+          (eq
+            (Term.add
+              (Term.mul (Term.var 0) (Term.var (mod2+1+1)))
+              (Term.rename Nat.succ (Term.rename Nat.succ rem2)))
+            (Term.add
+              (Term.mul (Term.var 0) (Term.var (mod1+1+1)))
+              (Term.rename Nat.succ (Term.rename Nat.succ rem2)))) :=
+        BProv_eq_congr_add_left
+          (Term.rename Nat.succ (Term.rename Nat.succ rem2)) hmulMod
+      have heq2 : BProv Ax_s T
+          (eq (Term.var (value+1+1))
+            (Term.add
+              (Term.mul (Term.var 0) (Term.var (mod1+1+1)))
+              (Term.rename Nat.succ (Term.rename Nat.succ rem2)))) :=
+        BProv_eqTrans heq2Raw heq2Mod
+      have hlt1Ren : BProv Ax_s (S.map (rename Nat.succ))
+          (rename Nat.succ
+            (ltTermAt
+              (Term.rename Nat.succ rem1) (Term.var (mod1+1)))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hlt1 Nat.succ
+      have hlt1T : BProv Ax_s T
+          (ltTermAt
+            (Term.rename Nat.succ (Term.rename Nat.succ rem1))
+            (Term.var (mod1+1+1))) := by
+        simpa [T, body2, ltTermAt, rename, Term.rename,
+          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def]
+          using BProv_context_cons (B := Ax_s) hlt1Ren
+      have heq1Ren : BProv Ax_s (S.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq (Term.var (value+1))
+              (Term.add (Term.mul (Term.var 0) (Term.var (mod1+1)))
+                (Term.rename Nat.succ rem1)))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          heq1 Nat.succ
+      have heq1T : BProv Ax_s T
+          (eq (Term.var (value+1+1))
+            (Term.add (Term.mul (Term.var 1) (Term.var (mod1+1+1)))
+              (Term.rename Nat.succ (Term.rename Nat.succ rem1)))) := by
+        simpa [T, body2, rename, Term.rename, List.map_map,
+          Function.comp_def] using
+          BProv_context_cons (B := Ax_s) heq1Ren
+      have heqRems : BProv Ax_s T
+          (eq
+            (Term.rename Nat.succ (Term.rename Nat.succ rem2))
+            (Term.rename Nat.succ (Term.rename Nat.succ rem1))) :=
+        BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
+          (value := Term.var (value+1+1))
+          (modulus := Term.var (mod1+1+1))
+          (lowQuot := Term.var 1) (highQuot := Term.var 0)
+          (lowRem := Term.rename Nat.succ (Term.rename Nat.succ rem1))
+          (highRem := Term.rename Nat.succ (Term.rename Nat.succ rem2))
+          hlt1T hlt2 heq1T heq2
+      simpa [rename, Term.rename] using heqRems
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) h2S (by
+        simpa [S, body1, remTermAt, body2, rename, Term.rename,
+          SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
+          List.map_map, Function.comp_def] using hopen2)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) h1 (by
+      simpa [remTermAt, body1] using hopen1)
+
+/-- Functionality for two term-parametric bounded-remainder proofs using the
+same dividend and modulus slot. -/
+theorem BProv_Ax_s_eq_of_remTermAt_remTermAt_same_modulus
+    {G : List Formula} {rem1 rem2 : Term} {value modulus : Nat}
+    (h1 : BProv Ax_s G (remTermAt rem1 value modulus))
+    (h2 : BProv Ax_s G (remTermAt rem2 value modulus)) :
+    BProv Ax_s G (eq rem2 rem1) :=
+  BProv_Ax_s_eq_of_remTermAt_remTermAt_eq_modulus h1 h2
+    (BProv_eqRefl (B := Ax_s) (G := G) (Term.var modulus))
+
 /-- If `m` is a successor, then `m * S d` is itself a successor.  The theorem
 keeps the predecessor explicit because the quotient-comparison branch only
 needs the successor shape, not a hidden positivity definition. -/
@@ -16516,6 +16686,111 @@ theorem BProv_Ax_s_eq_of_betaAt_betaTermAt_same_index
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
       simpa [betaAt, targetBody] using htargetOpened)
+
+/-- Same-index functionality for two term-output beta entries.  The raw beta
+modulus witnesses are compared first; the remainder witnesses are then reduced
+to term-parametric bounded-remainder functionality. -/
+theorem BProv_Ax_s_eq_of_betaTermAt_betaTermAt_same_index
+    {G : List Formula} {out1 out2 : Term} {code step idx : Nat}
+    (h1 : BProv Ax_s G (betaTermAt out1 code step idx))
+    (h2 : BProv Ax_s G (betaTermAt out2 code step idx)) :
+    BProv Ax_s G (eq out2 out1) := by
+  let body1 : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
+      (remTermAt (Term.rename Nat.succ out1) (code+1) 0)
+  have hopen1 : BProv Ax_s (body1 :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq out2 out1)) := by
+    let S : List Formula := body1 :: G.map (rename Nat.succ)
+    have hmod1 : BProv Ax_s S
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) :=
+      BProv_Ax_s_betaTermAt_opened_body_modEq
+        (G := G) (out := out1) (code := code) (step := step) (idx := idx)
+    have hrem1 : BProv Ax_s S
+        (remTermAt (Term.rename Nat.succ out1) (code+1) 0) :=
+      BProv_Ax_s_betaTermAt_opened_body_rem
+        (G := G) (out := out1) (code := code) (step := step) (idx := idx)
+    have h2S : BProv Ax_s S
+        (betaTermAt (Term.rename Nat.succ out2) (code+1)
+          (step+1) (idx+1)) := by
+      have hren : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (betaTermAt out2 code step idx)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          h2 Nat.succ
+      simpa [S, body1, betaTermAt, remTermAt, ltTermAt,
+        betaModTerm, rename, Term.rename, SetTheory.up, Term.rename_comp,
+        term_rename_up_succ_rename_succ] using
+        BProv_context_cons (B := Ax_s) hren
+    let body2 : Formula :=
+      and
+        (eq (Term.var 0)
+          (Term.rename Nat.succ (betaModTerm (step+1) (idx+1))))
+        (remTermAt (Term.rename Nat.succ (Term.rename Nat.succ out2))
+          (code+1+1) 0)
+    have hopen2 : BProv Ax_s (body2 :: S.map (rename Nat.succ))
+        (rename Nat.succ
+          (eq (Term.rename Nat.succ out2) (Term.rename Nat.succ out1))) := by
+      let T : List Formula := body2 :: S.map (rename Nat.succ)
+      have hmod2 : BProv Ax_s T
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (betaModTerm (step+1) (idx+1)))) := by
+        simpa [body2, T] using
+          (BProv_Ax_s_betaTermAt_opened_body_modEq
+            (G := S) (out := Term.rename Nat.succ out2)
+            (code := code+1) (step := step+1) (idx := idx+1))
+      have hrem2 : BProv Ax_s T
+          (remTermAt (Term.rename Nat.succ (Term.rename Nat.succ out2))
+            (code+1+1) 0) := by
+        simpa [body2, T] using
+          (BProv_Ax_s_betaTermAt_opened_body_rem
+            (G := S) (out := Term.rename Nat.succ out2)
+            (code := code+1) (step := step+1) (idx := idx+1))
+      have hmod1Ren : BProv Ax_s (S.map (rename Nat.succ))
+          (rename Nat.succ
+            (eq (Term.var 0)
+              (Term.rename Nat.succ (betaModTerm step idx)))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hmod1 Nat.succ
+      have hmod1T : BProv Ax_s T
+          (eq (Term.var 1)
+            (Term.rename Nat.succ (betaModTerm (step+1) (idx+1)))) := by
+        simpa [T, body2, betaModTerm, rename, Term.rename,
+          Term.rename_comp] using
+          BProv_context_cons (B := Ax_s) hmod1Ren
+      have hmodEq : BProv Ax_s T (eq (Term.var 0) (Term.var 1)) :=
+        BProv_eqTrans hmod2 (BProv_eqSym hmod1T)
+      have hrem1Ren : BProv Ax_s (S.map (rename Nat.succ))
+          (rename Nat.succ
+            (remTermAt (Term.rename Nat.succ out1) (code+1) 0)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hrem1 Nat.succ
+      have hrem1T : BProv Ax_s T
+          (remTermAt (Term.rename Nat.succ (Term.rename Nat.succ out1))
+            (code+1+1) 1) := by
+        simpa [T, body2, remTermAt, ltTermAt, rename, Term.rename,
+          SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
+          List.map_map, Function.comp_def] using
+          BProv_context_cons (B := Ax_s) hrem1Ren
+      have heq : BProv Ax_s T
+          (eq (Term.rename Nat.succ (Term.rename Nat.succ out2))
+            (Term.rename Nat.succ (Term.rename Nat.succ out1))) :=
+        BProv_Ax_s_eq_of_remTermAt_remTermAt_eq_modulus
+          (rem1 := Term.rename Nat.succ (Term.rename Nat.succ out1))
+          (rem2 := Term.rename Nat.succ (Term.rename Nat.succ out2))
+          (value := code+1+1) (mod1 := 1) (mod2 := 0)
+          hrem1T hrem2 hmodEq
+      simpa [rename, Term.rename] using heq
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) h2S (by
+        simpa [S, body1, betaTermAt, body2, rename, Term.rename,
+          SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
+          List.map_map, Function.comp_def] using hopen2)
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) h1 (by
+      simpa [betaTermAt, body1] using hopen1)
 
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/

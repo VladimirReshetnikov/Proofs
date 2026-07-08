@@ -332,6 +332,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eqConstAt_of_remAt_eqConst
 #check @PA.Formula.BProv_Ax_s_eq_of_remAt_remTermAt_eq_modulus
 #check @PA.Formula.BProv_Ax_s_eq_of_remAt_remTermAt_same_modulus
+#check @PA.Formula.BProv_Ax_s_eq_of_remTermAt_remTermAt_eq_modulus
+#check @PA.Formula.BProv_Ax_s_eq_of_remTermAt_remTermAt_same_modulus
 #check @PA.Formula.BProv_Ax_s_mul_succ_right_eq_succ_terms
 #check @PA.Formula.BProv_Ax_s_add_successor_summand_ne_self_terms
 #check @PA.Formula.BProv_Ax_s_remainder_eq_mul_of_le_quotient_terms
@@ -382,6 +384,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_modEq
 #check @PA.Formula.BProv_Ax_s_betaTermAt_opened_body_rem
 #check @PA.Formula.BProv_Ax_s_eq_of_betaAt_betaTermAt_same_index
+#check @PA.Formula.BProv_Ax_s_eq_of_betaTermAt_betaTermAt_same_index
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_betaAt_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermAt_zero_opened_body_dvd
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_idx
