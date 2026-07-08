@@ -95,6 +95,14 @@ Check prefix_below_self_eq.
 Check sat_HF_finite_induction_standard.
 Check standard_sat_HF.
 Check standard_sat_HFFin.
+Check termGraphAt_map_ext_free.
+Check formulaAt_map_ext_free.
+Check formulaAt_eq_translateFormula_of_PA_sentence.
+Check translateContextAt.
+Check translateContextAt_id.
+Check mem_translateContextAt_of_mem.
+Check BProv_formulaAt_ass.
+Check BProv_formulaAt_ax.
 
 Check firstOrderFiniteAdjunctionModel_of_HFFinAx_s.
 Check formulaAt_induction_valid_finite_model.

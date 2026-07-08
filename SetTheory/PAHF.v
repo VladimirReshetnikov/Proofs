@@ -10097,6 +10097,28 @@ Proof.
     + intro n. now rewrite h.
 Qed.
 
+Lemma termGraphAt_map_ext_free : forall t rho sigma out,
+  (forall n, PA.Term.Free n t -> rho n = sigma n) ->
+  termGraphAt rho out t = termGraphAt sigma out t.
+Proof.
+  induction t as [n | | a IHa | a IHa b IHb | a IHa b IHb];
+    simpl; intros rho sigma out h; try reflexivity.
+  - now rewrite (h n eq_refl).
+  - rewrite (IHa (fun n => rho n + 1) (fun n => sigma n + 1) 0).
+    + reflexivity.
+    + intros n hn. now rewrite (h n hn).
+  - rewrite (IHa (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (IHb (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intros n hn. now rewrite (h n (or_intror hn)).
+    + intros n hn. now rewrite (h n (or_introl hn)).
+  - rewrite (IHa (fun n => rho n + 3) (fun n => sigma n + 3) 1).
+    + rewrite (IHb (fun n => rho n + 3) (fun n => sigma n + 3) 2).
+      * reflexivity.
+      * intros n hn. now rewrite (h n (or_intror hn)).
+    + intros n hn. now rewrite (h n (or_introl hn)).
+Qed.
+
 Lemma termGraphAt_substZeroAt_insert_model : forall V
     (M : FirstOrderAdjunctionModel V) t p k rho out e,
   out < k ->
@@ -11374,6 +11396,44 @@ Proof.
   - assert (hup : forall n, upVarMap rho n = upVarMap sigma n).
     {
       intros [|n]; simpl; [reflexivity | now rewrite h].
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+Qed.
+
+Lemma formulaAt_map_ext_free : forall phi rho sigma,
+  (forall n, PA.Formula.Free n phi -> rho n = sigma n) ->
+  formulaAt rho phi = formulaAt sigma phi.
+Proof.
+  induction phi as [a b | | a IHa b IHb | a IHa b IHb |
+      a IHa b IHb | a IHa | a IHa]; simpl; intros rho sigma h;
+      try reflexivity.
+  - rewrite (termGraphAt_map_ext_free a
+      (fun n => rho n + 2) (fun n => sigma n + 2) 1).
+    + rewrite (termGraphAt_map_ext_free b
+        (fun n => rho n + 2) (fun n => sigma n + 2) 0).
+      * reflexivity.
+      * intros n hn. now rewrite (h n (or_intror hn)).
+    + intros n hn. now rewrite (h n (or_introl hn)).
+  - now rewrite (IHa rho sigma (fun n hn => h n (or_introl hn))),
+      (IHb rho sigma (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHa rho sigma (fun n hn => h n (or_introl hn))),
+      (IHb rho sigma (fun n hn => h n (or_intror hn))).
+  - now rewrite (IHa rho sigma (fun n hn => h n (or_introl hn))),
+      (IHb rho sigma (fun n hn => h n (or_intror hn))).
+  - assert (hup : forall n, PA.Formula.Free n a ->
+        upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n] hn; simpl.
+      - reflexivity.
+      - now rewrite (h n hn).
+    }
+    now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
+  - assert (hup : forall n, PA.Formula.Free n a ->
+        upVarMap rho n = upVarMap sigma n).
+    {
+      intros [|n] hn; simpl.
+      - reflexivity.
+      - now rewrite (h n hn).
     }
     now rewrite (IHa (upVarMap rho) (upVarMap sigma) hup).
 Qed.
@@ -13405,6 +13465,17 @@ Proof.
   exact hphi.
 Qed.
 
+Lemma formulaAt_eq_translateFormula_of_PA_sentence : forall phi rho,
+  PA.Formula.Sentence phi ->
+  formulaAt rho phi = translateFormula phi.
+Proof.
+  intros phi rho hphi.
+  unfold translateFormula.
+  apply formulaAt_map_ext_free.
+  intros n hn.
+  exfalso. exact (hphi n hn).
+Qed.
+
 Lemma translated_PA_axiom_sentence : forall phi,
   PA.Formula.Ax_s phi -> Sentence (translateFormula phi).
 Proof.
@@ -14117,11 +14188,32 @@ Qed.
 Definition translateContext (G : list PA.formula) : list form :=
   map translateFormula G.
 
+Definition translateContextAt (rho : nat -> nat)
+    (G : list PA.formula) : list form :=
+  map (formulaAt rho) G.
+
+Lemma translateContextAt_id : forall G,
+  translateContextAt (fun n => n) G = translateContext G.
+Proof.
+  intro G.
+  unfold translateContextAt, translateContext, translateFormula.
+  reflexivity.
+Qed.
+
 Lemma mem_translateContext_of_mem : forall G phi,
   In phi G -> In (translateFormula phi) (translateContext G).
 Proof.
   intros G phi hphi.
   unfold translateContext.
+  apply in_map.
+  exact hphi.
+Qed.
+
+Lemma mem_translateContextAt_of_mem : forall rho G phi,
+  In phi G -> In (formulaAt rho phi) (translateContextAt rho G).
+Proof.
+  intros rho G phi hphi.
+  unfold translateContextAt.
   apply in_map.
   exact hphi.
 Qed.
@@ -14140,6 +14232,26 @@ Lemma BProv_translate_ax : forall phi,
   PA.Formula.Ax_s phi -> BProv translatedPAAx [] (translateFormula phi).
 Proof.
   apply BProv_translatedPAAx_of_PAAx.
+Qed.
+
+Lemma BProv_formulaAt_ass : forall rho G phi,
+  In phi G -> BProv translatedPAAx (translateContextAt rho G) (formulaAt rho phi).
+Proof.
+  intros rho G phi hphi.
+  apply BProv_of_Prov.
+  apply P_ass.
+  apply mem_translateContextAt_of_mem.
+  exact hphi.
+Qed.
+
+Lemma BProv_formulaAt_ax : forall rho phi,
+  PA.Formula.Ax_s phi -> BProv translatedPAAx [] (formulaAt rho phi).
+Proof.
+  intros rho phi hphi.
+  rewrite (formulaAt_eq_translateFormula_of_PA_sentence phi rho
+    (PA.Formula.sentence_ax_s phi hphi)).
+  apply BProv_translate_ax.
+  exact hphi.
 Qed.
 
 Lemma BProv_translate_impI : forall G a b,
