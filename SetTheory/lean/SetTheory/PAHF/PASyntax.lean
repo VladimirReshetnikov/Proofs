@@ -36141,6 +36141,69 @@ theorem
       (stepTerm := highOddLowOddLowStepTerm)
       hhighOdd_lowOdd_lowTail)
 
+/-- Strict successor branch with the high-even/low-odd case reduced to named
+beta components, while the odd-high positive sides are already packaged as
+full successor-membership proofs and the low sides are closed by shifted
+old-low tails. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_mem_carry_cases_shift_tail_opened_low_half
+    {highHalf highBit lowHalf lowBit : Nat}
+    {codeTerm stepTerm
+      highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+      highOddLowOddLowCodeTerm highOddLowOddLowStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hentry : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccEntryFormula codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccStepsFormula codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighDoubleLowOddSuccComponentContext highHalf lowHalf)
+      (strictHighDoubleLowOddSuccBitExFormula codeTerm stepTerm))
+    (hhighOdd_lowDouble_mem : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowDouble_lowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0
+        highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+        (Term.succ (Term.var 2))))
+    (hhighOdd_lowOdd_mem : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowOdd_lowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0
+        highOddLowOddLowCodeTerm highOddLowOddLowStepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s strictSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_named_succ_witness_carry_cases
+    (highHalf := highHalf) (highBit := highBit)
+    (lowHalf := lowHalf) (lowBit := lowBit)
+    (codeTerm := codeTerm) (stepTerm := stepTerm)
+    hhighStep hlowStep hentry hsteps hbitEx
+    hhighOdd_lowDouble_mem
+    (BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_shift_tail
+      (highHalf := highHalf)
+      (codeTerm := highOddLowDoubleLowCodeTerm)
+      (stepTerm := highOddLowDoubleLowStepTerm)
+      hhighOdd_lowDouble_lowTail)
+    hhighOdd_lowOdd_mem
+    (BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_shift_tail
+      (highHalf := highHalf)
+      (codeTerm := highOddLowOddLowCodeTerm)
+      (stepTerm := highOddLowOddLowStepTerm)
+      hhighOdd_lowOdd_lowTail)
+
 /-- Strict successor branch with the high-even/low-odd case kept at the
 transported opened-trace premise, while the odd-high carry cases use
 successor-membership components and shifted old-low tails.
