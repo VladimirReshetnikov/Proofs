@@ -29,7 +29,12 @@ corpora live alongside it:
   `A198683(12)` value.
 - [`SetTheory/`](SetTheory/README.md) — the Rocq/Coq and independent Lean 4
   proof of the deductive equivalence between Vladimir's Closure
-  axiomatization and ZF, plus the accompanying article.
+  axiomatization and ZF, plus the accompanying article.  Its PA/HF Lean
+  workspace also contains the PA-syntax formalization of the
+  Mertens/Littlewood arithmetic criterion for the Riemann Hypothesis:
+  [`SetTheory/lean/SetTheory/PAHF/RiemannHypothesis.lean`](SetTheory/lean/SetTheory/PAHF/RiemannHypothesis.lean),
+  with the candidate comparison in
+  [`docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md).
 
 The initial module,
 [`LeanProofs/FermatFour.lean`](LeanProofs/FermatFour.lean), records the

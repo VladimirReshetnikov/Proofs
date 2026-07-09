@@ -132,14 +132,35 @@ Two items, in decreasing order of size:
    moderate-magnitude certification of the other 2925 representatives,
    which the same interval pipeline that produces the witness will supply.
 
-## Companion Coq development
+## Companion Coq development — full statement-for-statement parity
 
-[`CoqProofs/A198683N12Bounds.v`](../../../../CoqProofs/A198683N12Bounds.v)
-independently certifies the same separation content by interval arithmetic
-(coq-interval): the `θ`/`ρ` boxes, the endpoint estimates, `base_im < 0`,
-and the norm separation `‖nearOne1404‖ < 1 < ‖nearOne25‖` — proved directly
-on the nested tower expressions, which is why the Coq side never depended on
-the two faulty decomposed constants.
+The endgame is now formalized on the Rocq/Coq side too, over Coquelicot's
+`C`, in five modules (all under [`CoqProofs/`](../../../../CoqProofs/)):
+
+- `A198683N12Bounds.v` — the original interval-certified real boxes: the
+  `θ`/`ρ` boxes, endpoint estimates, `base_im < 0`, and the norm separation
+  `‖nearOne1404‖ < 1 < ‖nearOne25‖`, proved directly on the nested tower
+  expressions (which is why the Coq side never depended on the two faulty
+  decomposed constants).
+- `A198683Complex.v` — `Cexp`/`Cln`/`principalPow` over Coquelicot `C`
+  (Rocq stdlib and Coquelicot ship no complex exponential), with the power
+  re/im formulas and the log-modulus separation criterion.
+- `A198683N12ComplexTowers.v` — the concrete towers as genuine complex
+  numbers, the island identities (`i^i = ρ`, `(i^i)^i = −i` exactly), the
+  re/im glue onto the Bounds quantities (reflexivity after the power
+  formulas), and **`nearOne25C ≠ nearOne1404C`** — the Coq near-`1` split.
+- `A198683N12Certificate.v` — the decision tree, generic over the value
+  domain via a relational `DistinctCount` spec; notably the membership and
+  2926-pinning theorems are **closed under the global context** (fully
+  constructive — a smaller footprint than the Lean originals).
+- `A198683N12OverflowBound.v` — `10^100 < Im overflowBase11C` and the
+  moderate-log-modulus separation criterion, in ~250 lines and 4 s where
+  the Lean counterpart needed ~900 lines of hand Taylor bounds:
+  `interval with (i_prec 200)` certifies the phase-critical `Re(w10)` box
+  through the 35-digit cancellation in one shot.
+- `A198683N12CertificateC.v` — the instantiation at `C`: witness alone
+  gives `count ∈ {2925, 2926}`, and the overflow no-miracles hypothesis
+  decides `2926` versus `2925` — the same headline as Lean.
 
 ## Provenance
 
