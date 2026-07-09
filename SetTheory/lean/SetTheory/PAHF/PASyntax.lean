@@ -4914,6 +4914,83 @@ theorem HFMemTrace_pred_of_succ_div2Step
       (x := x) (set := set) (half := half) (code := code) (step := step)
       (by omega) htrace
 
+/-- Transport one semantic binary-halving step through a shifted beta tail.
+
+The old step at index `k+1` uses old entries `k+1` and `k+2`; a tail through
+`last` with `k+1 <= last` copies those entries to new indices `k` and `k+1`,
+leaving the binary-halving equation unchanged. -/
+theorem BetaShiftTailThrough_step
+    {oldCode oldStep newCode newStep last k cur next bit : Nat}
+    (htail : BetaShiftTailThrough oldCode oldStep newCode newStep last)
+    (hkNext : k + 1 ≤ last)
+    (hstep : BetaDiv2Step oldCode oldStep (k + 1) cur next bit) :
+    BetaDiv2Step newCode newStep k cur next bit := by
+  rcases hstep with ⟨hcur, hnext, hbit, hvalue⟩
+  refine ⟨?_, ?_, hbit, hvalue⟩
+  · exact htail k (by omega) cur hcur
+  · simpa [Nat.add_assoc] using
+      htail (k+1) hkNext next hnext
+
+/-- Transport a semantic bounded halving trace through a shifted beta tail. -/
+theorem BetaShiftTailThrough_stepsThrough
+    {oldCode oldStep newCode newStep last : Nat}
+    (htail : BetaShiftTailThrough oldCode oldStep newCode newStep (last+1))
+    (hsteps : BetaDiv2StepsThrough oldCode oldStep (last+1)) :
+    BetaDiv2StepsThrough newCode newStep last := by
+  intro k hk
+  rcases hsteps (k+1) (by omega) with ⟨cur, next, bit, hstep⟩
+  exact ⟨cur, next, bit,
+    BetaShiftTailThrough_step
+      (oldCode := oldCode) (oldStep := oldStep)
+      (newCode := newCode) (newStep := newStep)
+      (last := last+1) (k := k) (cur := cur) (next := next)
+      (bit := bit) htail (by omega) hstep⟩
+
+/-- Transport a semantic final-bit witness through a shifted beta tail. -/
+theorem BetaShiftTailThrough_bit
+    {oldCode oldStep newCode newStep idx bit : Nat}
+    (htail : BetaShiftTailThrough oldCode oldStep newCode newStep (idx+1))
+    (hbit : BetaDiv2Bit oldCode oldStep (idx+1) bit) :
+    BetaDiv2Bit newCode newStep idx bit := by
+  rcases hbit with ⟨cur, next, hstep⟩
+  exact ⟨cur, next,
+    BetaShiftTailThrough_step
+      (oldCode := oldCode) (oldStep := oldStep)
+      (newCode := newCode) (newStep := newStep)
+      (last := idx+1) (k := idx) (cur := cur) (next := next)
+      (bit := bit) htail (by omega) hstep⟩
+
+/-- A shifted beta tail turns an `S x` membership trace into an `x` trace for
+the first halving successor.
+
+This is the semantic invariant behind the object-language shifted-tail
+construction: the old step at index `0` supplies the new entry value `half`,
+the shifted tail transports all later halving steps, and the old final `1` bit
+at index `S x` becomes the new final `1` bit at index `x`. -/
+theorem HFMemTrace_pred_of_shift_tail
+    {x set half bit oldCode oldStep newCode newStep : Nat}
+    (htrace : HFMemTrace (x+1) set oldCode oldStep)
+    (hstep0 : BetaDiv2Step oldCode oldStep 0 set half bit)
+    (htail : BetaShiftTailThrough oldCode oldStep newCode newStep (x+1)) :
+    HFMemTrace x half newCode newStep := by
+  rcases htrace with ⟨_hentry, hsteps, hbitOne⟩
+  refine ⟨?_, ?_, ?_⟩
+  · exact htail 0 (by omega) half hstep0.2.1
+  · exact BetaShiftTailThrough_stepsThrough htail hsteps
+  · exact BetaShiftTailThrough_bit htail hbitOne
+
+/-- Existential semantic predecessor trace obtained by choosing the fresh
+shifted beta tail with the CRT construction. -/
+theorem HFMemTrace_pred_of_shift_tail_exists
+    {x set half bit oldCode oldStep : Nat}
+    (htrace : HFMemTrace (x+1) set oldCode oldStep)
+    (hstep0 : BetaDiv2Step oldCode oldStep 0 set half bit) :
+    ∃ newCode newStep, HFMemTrace x half newCode newStep := by
+  rcases BetaShiftTailThrough_exists oldCode oldStep (x+1) with
+    ⟨newCode, newStep, htail⟩
+  exact ⟨newCode, newStep,
+    HFMemTrace_pred_of_shift_tail htrace hstep0 htail⟩
+
 theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
     Sat natModel e (hfMemAt elem set) → AckermannHF.Mem (e elem) (e set) := by
   intro h

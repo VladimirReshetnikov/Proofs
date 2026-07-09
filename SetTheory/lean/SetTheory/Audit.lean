@@ -77,6 +77,8 @@ open SetTheory
 #check @PA.Formula.HFMemTrace_pred_of_succ_double
 #check @PA.Formula.HFMemTrace_pred_of_succ_odd_double
 #check @PA.Formula.HFMemTrace_pred_of_succ_div2Step
+#check @PA.Formula.HFMemTrace_pred_of_shift_tail
+#check @PA.Formula.HFMemTrace_pred_of_shift_tail_exists
 #check @AckermannHF.mem_succ_double_not_mem_succ_odd_double_of_mem_not_mem
 #check @AckermannHF.mem_succ_double_not_mem_succ_double_of_mem_not_mem
 #check @AckermannHF.mem_succ_odd_double_not_mem_succ_double_of_mem_not_mem
@@ -1333,6 +1335,9 @@ open SetTheory
 #check PA.Formula.BetaShiftTailThrough
 #check @PA.Formula.BetaShiftTailThrough_exists_with_betaFact_step
 #check @PA.Formula.BetaShiftTailThrough_exists
+#check @PA.Formula.BetaShiftTailThrough_step
+#check @PA.Formula.BetaShiftTailThrough_stepsThrough
+#check @PA.Formula.BetaShiftTailThrough_bit
 #check @PA.Formula.div2Iter
 #check @PA.Formula.div2Iter_eq_shiftRight
 #check @PA.Formula.div2Iter_mod_two_eq_zero_of_not_mem
