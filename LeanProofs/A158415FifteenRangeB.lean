@@ -92,96 +92,36 @@ theorem sqrt_two_add_values10_mem_range_values15_index_spec (i : Fin 54) :
     rw [show values11 (86 : Fin 91) = 1 + values9 (28 : Fin 33) by rfl]
     rw [show values10 (0 : Fin 54) = Real.sqrt (values9 (0 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change Real.sqrt 2 + values10 (1 : Fin 54) = Real.sqrt 2 + values10 (1 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (2 : Fin 54) = Real.sqrt 2 + values10 (2 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (3 : Fin 54) = Real.sqrt 2 + values10 (3 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (4 : Fin 54) = Real.sqrt 2 + values10 (4 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (5 : Fin 54) = Real.sqrt 2 + values10 (5 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (6 : Fin 54) = Real.sqrt 2 + values10 (6 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (7 : Fin 54) = Real.sqrt 2 + values10 (7 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (8 : Fin 54) = Real.sqrt 2 + values10 (8 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (9 : Fin 54) = Real.sqrt 2 + values10 (9 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (10 : Fin 54) = Real.sqrt 2 + values10 (10 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (11 : Fin 54) = Real.sqrt 2 + values10 (11 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (12 : Fin 54) = Real.sqrt 2 + values10 (12 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (13 : Fin 54) = Real.sqrt 2 + values10 (13 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (14 : Fin 54) = Real.sqrt 2 + values10 (14 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (15 : Fin 54) = Real.sqrt 2 + values10 (15 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (16 : Fin 54) = Real.sqrt 2 + values10 (16 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (17 : Fin 54) = Real.sqrt 2 + values10 (17 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (18 : Fin 54) = Real.sqrt 2 + values10 (18 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (19 : Fin 54) = Real.sqrt 2 + values10 (19 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (20 : Fin 54) = Real.sqrt 2 + values10 (20 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (21 : Fin 54) = Real.sqrt 2 + values10 (21 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (22 : Fin 54) = Real.sqrt 2 + values10 (22 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (23 : Fin 54) = Real.sqrt 2 + values10 (23 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (24 : Fin 54) = Real.sqrt 2 + values10 (24 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (25 : Fin 54) = Real.sqrt 2 + values10 (25 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (26 : Fin 54) = Real.sqrt 2 + values10 (26 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (27 : Fin 54) = Real.sqrt 2 + values10 (27 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (28 : Fin 54) = Real.sqrt 2 + values10 (28 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (29 : Fin 54) = Real.sqrt 2 + values10 (29 : Fin 54)
-    rfl
-  next =>
-    change Real.sqrt 2 + values10 (30 : Fin 54) = Real.sqrt 2 + values10 (30 : Fin 54)
-    rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
   next =>
     change 1 + values13 (187 : Fin 264) = Real.sqrt 2 + values10 (31 : Fin 54)
     rw [show values13 (187 : Fin 264) = 1 + values11 (31 : Fin 91) by rfl]
@@ -213,9 +153,7 @@ theorem sqrt_two_add_values10_mem_range_values15_index_spec (i : Fin 54) :
     rw [show values13 (205 : Fin 264) = Real.sqrt 2 + values8 (5 : Fin 20) by rfl]
     rw [show values10 (36 : Fin 54) = 1 + values8 (5 : Fin 20) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change Real.sqrt 2 + values10 (37 : Fin 54) = Real.sqrt 2 + values10 (37 : Fin 54)
-    rfl
+  next => rfl
   next =>
     change 1 + values13 (208 : Fin 264) = Real.sqrt 2 + values10 (38 : Fin 54)
     rw [show values13 (208 : Fin 264) = Real.sqrt 2 + values8 (6 : Fin 20) by rfl]
@@ -241,17 +179,13 @@ theorem sqrt_two_add_values10_mem_range_values15_index_spec (i : Fin 54) :
     rw [show values13 (221 : Fin 264) = Real.sqrt 2 + values8 (10 : Fin 20) by rfl]
     rw [show values10 (42 : Fin 54) = 1 + values8 (10 : Fin 20) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change Real.sqrt 2 + values10 (43 : Fin 54) = Real.sqrt 2 + values10 (43 : Fin 54)
-    rfl
+  next => rfl
   next =>
     change 1 + values13 (230 : Fin 264) = Real.sqrt 2 + values10 (44 : Fin 54)
     rw [show values13 (230 : Fin 264) = Real.sqrt 2 + values8 (11 : Fin 20) by rfl]
     rw [show values10 (44 : Fin 54) = 1 + values8 (11 : Fin 20) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change Real.sqrt 2 + values10 (45 : Fin 54) = Real.sqrt 2 + values10 (45 : Fin 54)
-    rfl
+  next => rfl
   next =>
     change 1 + values13 (238 : Fin 264) = Real.sqrt 2 + values10 (46 : Fin 54)
     rw [show values13 (238 : Fin 264) = 1 + values11 (66 : Fin 91) by rfl]
@@ -304,7 +238,6 @@ theorem sqrt_two_add_values10_mem_range_values15_index_spec (i : Fin 54) :
 theorem sqrt_two_add_values10_mem_range_values15 (i : Fin 54) :
     (Set.range values15) (Real.sqrt 2 + values10 i) := by
   exact ⟨sqrt_two_add_values10_mem_range_values15_index i, sqrt_two_add_values10_mem_range_values15_index_spec i⟩
-
 
 end Expr
 end A158415

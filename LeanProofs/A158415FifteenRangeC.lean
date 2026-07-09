@@ -403,61 +403,27 @@ theorem values5_add_values9_mem_range_values15_index_spec (i : Fin 5) (j : Fin 3
     rw [show values11 (51 : Fin 91) = Real.sqrt (values10 (51 : Fin 54)) by rfl]
     rw [show values10 (51 : Fin 54) = 1 + values8 (17 : Fin 20) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values5 (1 : Fin 5) + values9 (1 : Fin 33) = values5 (1 : Fin 5) + values9 (1 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (2 : Fin 33) = values5 (1 : Fin 5) + values9 (2 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (3 : Fin 33) = values5 (1 : Fin 5) + values9 (3 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (4 : Fin 33) = values5 (1 : Fin 5) + values9 (4 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (5 : Fin 33) = values5 (1 : Fin 5) + values9 (5 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (6 : Fin 33) = values5 (1 : Fin 5) + values9 (6 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (7 : Fin 33) = values5 (1 : Fin 5) + values9 (7 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (8 : Fin 33) = values5 (1 : Fin 5) + values9 (8 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (9 : Fin 33) = values5 (1 : Fin 5) + values9 (9 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (10 : Fin 33) = values5 (1 : Fin 5) + values9 (10 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (11 : Fin 33) = values5 (1 : Fin 5) + values9 (11 : Fin 33)
-    rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
   next =>
     change Real.sqrt 2 + values10 (12 : Fin 54) = values5 (1 : Fin 5) + values9 (12 : Fin 33)
     rw [show values10 (12 : Fin 54) = Real.sqrt (values9 (12 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values5 (1 : Fin 5) + values9 (13 : Fin 33) = values5 (1 : Fin 5) + values9 (13 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (14 : Fin 33) = values5 (1 : Fin 5) + values9 (14 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (15 : Fin 33) = values5 (1 : Fin 5) + values9 (15 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (16 : Fin 33) = values5 (1 : Fin 5) + values9 (16 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (17 : Fin 33) = values5 (1 : Fin 5) + values9 (17 : Fin 33)
-    rfl
-  next =>
-    change values5 (1 : Fin 5) + values9 (18 : Fin 33) = values5 (1 : Fin 5) + values9 (18 : Fin 33)
-    rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
   next =>
     change 1 + values13 (170 : Fin 264) = values5 (1 : Fin 5) + values9 (19 : Fin 33)
     rw [show values13 (170 : Fin 264) = 1 + values11 (19 : Fin 91) by rfl]
@@ -1323,40 +1289,22 @@ theorem values6_add_values8_mem_range_values15_index_spec (i : Fin 8) (j : Fin 2
     rw [show values11 (31 : Fin 91) = Real.sqrt (values10 (31 : Fin 54)) by rfl]
     rw [show values10 (31 : Fin 54) = Real.sqrt (values9 (31 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values6 (1 : Fin 8) + values8 (1 : Fin 20) = values6 (1 : Fin 8) + values8 (1 : Fin 20)
-    rfl
-  next =>
-    change values6 (1 : Fin 8) + values8 (2 : Fin 20) = values6 (1 : Fin 8) + values8 (2 : Fin 20)
-    rfl
-  next =>
-    change values6 (1 : Fin 8) + values8 (3 : Fin 20) = values6 (1 : Fin 8) + values8 (3 : Fin 20)
-    rfl
-  next =>
-    change values6 (1 : Fin 8) + values8 (4 : Fin 20) = values6 (1 : Fin 8) + values8 (4 : Fin 20)
-    rfl
+  next => rfl
+  next => rfl
+  next => rfl
+  next => rfl
   next =>
     change values5 (1 : Fin 5) + values9 (5 : Fin 33) = values6 (1 : Fin 8) + values8 (5 : Fin 20)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values6 (1 : Fin 8) + values8 (6 : Fin 20) = values6 (1 : Fin 8) + values8 (6 : Fin 20)
-    rfl
-  next =>
-    change values6 (1 : Fin 8) + values8 (7 : Fin 20) = values6 (1 : Fin 8) + values8 (7 : Fin 20)
-    rfl
+  next => rfl
+  next => rfl
   next =>
     change Real.sqrt 2 + values10 (8 : Fin 54) = values6 (1 : Fin 8) + values8 (8 : Fin 20)
     rw [show values10 (8 : Fin 54) = Real.sqrt (values9 (8 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values6 (1 : Fin 8) + values8 (9 : Fin 20) = values6 (1 : Fin 8) + values8 (9 : Fin 20)
-    rfl
-  next =>
-    change values6 (1 : Fin 8) + values8 (10 : Fin 20) = values6 (1 : Fin 8) + values8 (10 : Fin 20)
-    rfl
-  next =>
-    change values6 (1 : Fin 8) + values8 (11 : Fin 20) = values6 (1 : Fin 8) + values8 (11 : Fin 20)
-    rfl
+  next => rfl
+  next => rfl
+  next => rfl
   next =>
     change 1 + values13 (160 : Fin 264) = values6 (1 : Fin 8) + values8 (12 : Fin 20)
     rw [show values13 (160 : Fin 264) = 1 + values11 (12 : Fin 91) by rfl]
@@ -1565,40 +1513,24 @@ theorem values6_add_values8_mem_range_values15_index_spec (i : Fin 8) (j : Fin 2
     rw [show values12 (130 : Fin 154) = 1 + values10 (31 : Fin 54) by rfl]
     rw [show values10 (31 : Fin 54) = Real.sqrt (values9 (31 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values6 (4 : Fin 8) + values8 (1 : Fin 20) = values6 (4 : Fin 8) + values8 (1 : Fin 20)
-    rfl
-  next =>
-    change values6 (4 : Fin 8) + values8 (2 : Fin 20) = values6 (4 : Fin 8) + values8 (2 : Fin 20)
-    rfl
+  next => rfl
+  next => rfl
   next =>
     change values6 (1 : Fin 8) + values8 (11 : Fin 20) = values6 (4 : Fin 8) + values8 (3 : Fin 20)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values6 (4 : Fin 8) + values8 (4 : Fin 20) = values6 (4 : Fin 8) + values8 (4 : Fin 20)
-    rfl
+  next => rfl
   next =>
     change values5 (1 : Fin 5) + values9 (17 : Fin 33) = values6 (4 : Fin 8) + values8 (5 : Fin 20)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values6 (4 : Fin 8) + values8 (6 : Fin 20) = values6 (4 : Fin 8) + values8 (6 : Fin 20)
-    rfl
-  next =>
-    change values6 (4 : Fin 8) + values8 (7 : Fin 20) = values6 (4 : Fin 8) + values8 (7 : Fin 20)
-    rfl
+  next => rfl
+  next => rfl
   next =>
     change Real.sqrt 2 + values10 (28 : Fin 54) = values6 (4 : Fin 8) + values8 (8 : Fin 20)
     rw [show values10 (28 : Fin 54) = Real.sqrt (values9 (28 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values6 (4 : Fin 8) + values8 (9 : Fin 20) = values6 (4 : Fin 8) + values8 (9 : Fin 20)
-    rfl
-  next =>
-    change values6 (4 : Fin 8) + values8 (10 : Fin 20) = values6 (4 : Fin 8) + values8 (10 : Fin 20)
-    rfl
-  next =>
-    change values6 (4 : Fin 8) + values8 (11 : Fin 20) = values6 (4 : Fin 8) + values8 (11 : Fin 20)
-    rfl
+  next => rfl
+  next => rfl
+  next => rfl
   next =>
     change 1 + values13 (211 : Fin 264) = values6 (4 : Fin 8) + values8 (12 : Fin 20)
     rw [show values13 (211 : Fin 264) = 1 + values11 (46 : Fin 91) by rfl]
@@ -2216,25 +2148,19 @@ theorem values7_add_values7_mem_range_values15_index_spec (i : Fin 13) (j : Fin 
     rw [show values11 (19 : Fin 91) = Real.sqrt (values10 (19 : Fin 54)) by rfl]
     rw [show values10 (19 : Fin 54) = Real.sqrt (values9 (19 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values7 (1 : Fin 13) + values7 (1 : Fin 13) = values7 (1 : Fin 13) + values7 (1 : Fin 13)
-    rfl
+  next => rfl
   next =>
     change values6 (1 : Fin 8) + values8 (2 : Fin 20) = values7 (1 : Fin 13) + values7 (2 : Fin 13)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
   next =>
     change values5 (1 : Fin 5) + values9 (3 : Fin 33) = values7 (1 : Fin 13) + values7 (3 : Fin 13)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values7 (1 : Fin 13) + values7 (4 : Fin 13) = values7 (1 : Fin 13) + values7 (4 : Fin 13)
-    rfl
+  next => rfl
   next =>
     change Real.sqrt 2 + values10 (5 : Fin 54) = values7 (1 : Fin 13) + values7 (5 : Fin 13)
     rw [show values10 (5 : Fin 54) = Real.sqrt (values9 (5 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values7 (1 : Fin 13) + values7 (6 : Fin 13) = values7 (1 : Fin 13) + values7 (6 : Fin 13)
-    rfl
+  next => rfl
   next =>
     change values6 (4 : Fin 8) + values8 (2 : Fin 20) = values7 (1 : Fin 13) + values7 (7 : Fin 13)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
@@ -2383,16 +2309,12 @@ theorem values7_add_values7_mem_range_values15_index_spec (i : Fin 13) (j : Fin 
   next =>
     change values5 (1 : Fin 5) + values9 (11 : Fin 33) = values7 (4 : Fin 13) + values7 (3 : Fin 13)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values7 (4 : Fin 13) + values7 (4 : Fin 13) = values7 (4 : Fin 13) + values7 (4 : Fin 13)
-    rfl
+  next => rfl
   next =>
     change Real.sqrt 2 + values10 (17 : Fin 54) = values7 (4 : Fin 13) + values7 (5 : Fin 13)
     rw [show values10 (17 : Fin 54) = Real.sqrt (values9 (17 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values7 (4 : Fin 13) + values7 (6 : Fin 13) = values7 (4 : Fin 13) + values7 (6 : Fin 13)
-    rfl
+  next => rfl
   next =>
     change values6 (4 : Fin 8) + values8 (7 : Fin 20) = values7 (4 : Fin 13) + values7 (7 : Fin 13)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
@@ -2500,9 +2422,7 @@ theorem values7_add_values7_mem_range_values15_index_spec (i : Fin 13) (j : Fin 
     change Real.sqrt 2 + values10 (24 : Fin 54) = values7 (6 : Fin 13) + values7 (5 : Fin 13)
     rw [show values10 (24 : Fin 54) = Real.sqrt (values9 (24 : Fin 33)) by rfl]
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
-  next =>
-    change values7 (6 : Fin 13) + values7 (6 : Fin 13) = values7 (6 : Fin 13) + values7 (6 : Fin 13)
-    rfl
+  next => rfl
   next =>
     change values6 (4 : Fin 8) + values8 (10 : Fin 20) = values7 (6 : Fin 13) + values7 (7 : Fin 13)
     a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num
@@ -2909,7 +2829,6 @@ theorem values7_add_values7_mem_range_values15_index_spec (i : Fin 13) (j : Fin 
 theorem values7_add_values7_mem_range_values15 (i : Fin 13) (j : Fin 13) :
     (Set.range values15) (values7 i + values7 j) := by
   exact ⟨values7_add_values7_mem_range_values15_index i j, values7_add_values7_mem_range_values15_index_spec i j⟩
-
 
 end Expr
 end A158415

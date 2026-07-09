@@ -47,6 +47,8 @@ open SetTheory
 #check @BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
 #check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
+#check @BusyBeaver.Machine.runFrom_ne_none_of_shift_loop
+#check @BusyBeaver.Machine.not_haltsWithScore_of_shift_loop_from_run
 #check @BusyBeaver.KnownValues.sigma1Champion_haltsWithScore
 #check @BusyBeaver.KnownValues.sigma2Champion_haltsWithScore
 #check @BusyBeaver.KnownValues.sigma3Champion_haltsWithScore
@@ -60,6 +62,8 @@ open SetTheory
 #print axioms BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
 #print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
+#print axioms BusyBeaver.Machine.runFrom_ne_none_of_shift_loop
+#print axioms BusyBeaver.Machine.not_haltsWithScore_of_shift_loop_from_run
 #print axioms BusyBeaver.KnownValues.sigma4Champion_haltsWithScore
 #print axioms BusyBeaver.KnownValues.sigma_one_eq_one
 #print axioms BusyBeaver.KnownValues.a028444_values_through_four_from_upperBounds
@@ -501,9 +505,16 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
 #check PA.Formula.betaShiftTailExistsTermAtBody
 #check PA.Formula.betaShiftTailExistsTermAtStepEx
 #check PA.Formula.betaShiftTailExistsTermAtOpenedContext
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_through
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_one_bound_of_entries
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_HFMemTrace
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
@@ -525,6 +536,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_code
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_step
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_index
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_modulus
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_zero_double_step_of_one
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_succ_of_betaTermTermAtConstIdx_eq_index
@@ -885,6 +898,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule
+#check @PA.Formula.BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor
 #check @PA.Formula.leAt
 #check @PA.Formula.leTermAt
 #check @PA.Formula.leConstAt
@@ -910,6 +924,15 @@ open SetTheory
 #check @PA.Formula.BetaEntry
 #check @PA.Formula.twoEntryBetaStep
 #check @PA.Formula.twoEntryBetaCode
+#check @PA.Formula.twoEntryBetaStepTerm
+#check @PA.Formula.twoEntryBetaCodeTerm
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_value
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_entries
 #check @PA.Formula.BetaEntry_twoEntry_zero
 #check @PA.Formula.BetaEntry_twoEntry_one
 #check @PA.Formula.BetaDiv2Step_twoEntry

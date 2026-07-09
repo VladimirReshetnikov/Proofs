@@ -26,7 +26,7 @@ ClearAll[
   leanExprCodeExpr,
   leanExprWitnessSimpList,
   leanExprWitnessValueNatName,
-  leanExprRouteEvalSimpList,
+  leanExprEvalSimpList,
   leanExprSizeSimpList,
   leanSmallRealDefs,
   printLeanExprWitnesses,
@@ -204,7 +204,7 @@ leanExprSizeSimpList[n_Integer] :=
     ", "
   ] <> "]";
 
-leanExprRouteEvalSimpList[n_Integer] :=
+leanExprEvalSimpList[n_Integer] :=
   "[" <> StringRiffle[
     Join[
       Table["values" <> ToString[m] <> "Expr_eval", {m, 1, n - 1}],
@@ -471,16 +471,6 @@ printLeanExprWitnesses[n_Integer] := Module[{targetName, targetValueName},
       Print["  ", targetName, "Nat i.1"];
       Print[""]
     ];
-    Print["noncomputable def values", m, "RouteNat : Nat -> Real"];
-    Do[
-      Print["  | ", i - 1, " => ", leanCodeExpr[values[m][[i, 2]]]],
-      {i, Length[values[m]]}
-    ];
-    Print["  | _ => 0"];
-    Print[""];
-    Print["noncomputable def values", m, "Route (i : Fin ", Length[values[m]], ") : Real :="];
-    Print["  values", m, "RouteNat i.1"];
-    Print[""];
     Print["def values", m, "ExprNat : Nat -> Expr"];
     Do[
       Print["  | ", i - 1, " => ", leanExprCodeExpr[values[m][[i, 2]]]],
@@ -507,56 +497,32 @@ printLeanExprWitnesses[n_Integer] := Module[{targetName, targetValueName},
     Print["    (values", m, "Expr i).size = ", m, " := by"];
     Print["  simpa [values", m, "Expr] using values", m, "ExprNat_size i.1 i.2"];
     Print[""];
-    Print["set_option maxHeartbeats 12000000 in"];
-    Print["theorem values", m, "ExprNat_eval_route : ∀ i, i < ", Length[values[m]], " ->"];
-    Print["    (values", m, "ExprNat i).eval = values", m, "RouteNat i"];
-    Do[
-      Print["  | ", i - 1, ", _ => by"];
-      Print["      change (", leanExprCodeExpr[values[m][[i, 2]]], ").eval = ",
-        leanCodeExpr[values[m][[i, 2]]]];
-      Print["      simp ", leanExprRouteEvalSimpList[m], " <;> ring_nf"],
-      {i, Length[values[m]]}
-    ];
-    Print["  | extra + ", Length[values[m]], ", h => by"];
-    Print["      omega"];
-    Print[""];
-    Print["theorem values", m, "Expr_eval_route (i : Fin ", Length[values[m]], ") :"];
-    Print["    (values", m, "Expr i).eval = values", m, "Route i := by"];
-    Print["  simpa [values", m, "Expr, values", m, "Route] using values", m,
-      "ExprNat_eval_route i.1 i.2"];
-    Print[""];
     targetValueName = If[m <= 4,
       "values" <> ToString[m] <> "Real",
       "values" <> ToString[m]
     ];
-    Print["set_option maxHeartbeats 4000000 in"];
-    Print["theorem values", m, "Route_eq_values (i : Fin ", Length[values[m]], ") :"];
-    Print["    values", m, "Route i = ", targetValueName, " i := by"];
-    Print["  fin_cases i"];
-    If[m >= 12,
-      Do[
-        Print["  next => rfl"],
-        {Length[values[m]]}
-      ],
-      If[m <= 4,
-        Do[
-          Print["  next => simp [values", m, "Route, values", m, "RouteNat, ",
-            leanSmallRealDefs[m], ", sqrt_four] <;> ring_nf"],
-          {Length[values[m]]}
-        ],
-        Do[
-          Print["  next =>"];
-          Print["    simp [values", m, "Route, values", m, "RouteNat]"];
-          Print["    a158415_twelve_table"],
-          {Length[values[m]]}
-        ]
-      ]
-    ];
-    Print[""];
     Print["set_option maxHeartbeats 12000000 in"];
     Print["theorem values", m, "Expr_eval (i : Fin ", Length[values[m]], ") :"];
     Print["    (values", m, "Expr i).eval = ", targetValueName, " i := by"];
-    Print["  rw [values", m, "Expr_eval_route, values", m, "Route_eq_values]"];
+    Print["  fin_cases i"];
+    Do[
+      Print["  next =>"];
+      If[5 <= m <= 9,
+        Print["    have hraw : (", leanExprCodeExpr[values[m][[i, 2]]], ").eval = ",
+          leanCodeExpr[values[m][[i, 2]]], " := by"];
+        Print["      change (", leanExprCodeExpr[values[m][[i, 2]]], ").eval = ",
+          leanCodeExpr[values[m][[i, 2]]]];
+        Print["      simp ", leanExprEvalSimpList[m], " <;> ring_nf"];
+        Print["    change (", leanExprCodeExpr[values[m][[i, 2]]], ").eval = ",
+          targetValueName, " (", i - 1, " : Fin ", Length[values[m]], ")"];
+        Print["    rw [hraw]"];
+        Print["    a158415_twelve_table"],
+        Print["    change (", leanExprCodeExpr[values[m][[i, 2]]], ").eval = ",
+          leanCodeExpr[values[m][[i, 2]]]];
+        Print["    simp ", leanExprEvalSimpList[m], " <;> ring_nf"]
+      ],
+      {i, Length[values[m]]}
+    ];
     Print[""],
     {m, 1, n}
   ];
@@ -564,7 +530,13 @@ printLeanExprWitnesses[n_Integer] := Module[{targetName, targetValueName},
   Print["theorem values15_mem_recursiveValueSet (i : Fin 791) :"];
   Print["    values15 i ∈ recursiveValueSet 15 := by"];
   Print["  rw [← values15Expr_eval i]"];
-  Print["  exact eval_mem_recursiveValueSet_of_size (values15Expr_size i)"]
+  Print["  exact eval_mem_recursiveValueSet_of_size (values15Expr_size i)"];
+  Print[""];
+  Print["theorem values15_range_subset_recursiveValueSet_fifteen :"];
+  Print["    Set.range values15 ⊆ recursiveValueSet 15 := by"];
+  Print["  intro x hx"];
+  Print["  rcases hx with ⟨i, rfl⟩"];
+  Print["  exact values15_mem_recursiveValueSet i"]
 ];
 
 intervalCert[{"val", n_Integer, i_Integer}, lo_, hi_] :=
@@ -598,18 +570,23 @@ intervalCert[{"add", n1_Integer, i1_Integer, n2_Integer, i2_Integer},
 ];
 
 printLeanIntervalOrderModule[n_Integer] := Module[
-  {a, b, av, bv, gap, leftHi, rightLo, leftName, rightName, rewrites},
-  If[n =!= 15,
-    Print["lean-interval-order-module is currently implemented only for n = 15"];
+  {a, b, av, bv, gap, leftHi, rightLo, leftName, rightName, rewrites,
+    valueName, titleName, tableModule},
+  If[n =!= 14 && n =!= 15,
+    Print["lean-interval-order-module is currently implemented only for n = 14 or n = 15"];
     Exit[2]
   ];
-  Print["import LeanProofs.A158415FifteenTable"];
+  valueName = "values" <> ToString[n];
+  titleName = If[n === 14, "fourteen", "fifteen"];
+  tableModule = "A158415" <> If[n === 14, "Fourteen", "Fifteen"] <> "Table";
+  Print["import LeanProofs.", tableModule];
+  Print["import LeanProofs.A158415IntervalCert"];
   Print[""];
   Print["/-!"];
-  Print["# Size-fifteen interval order certificates for OEIS A158415"];
+  Print["# Size-", titleName, " interval order certificates for OEIS A158415"];
   Print[""];
   Print["This generated module replaces the large hand-expanded rational-bound"];
-  Print["ladders for the exceptional adjacent comparisons in `values15` with"];
+  Print["ladders for the exceptional adjacent comparisons in `", valueName, "` with"];
   Print["compact interval certificates checked by one soundness theorem."];
   Print["-/"];
   Print[""];
@@ -621,62 +598,6 @@ printLeanIntervalOrderModule[n_Integer] := Module[
   Print["set_option linter.unreachableTactic false"];
   Print["set_option linter.unnecessarySeqFocus false"];
   Print[""];
-  Print["inductive IntervalCert where"];
-  Print["  | one (lo hi : Rat)"];
-  Print["  | sqrt (lo hi : Rat) (c : IntervalCert)"];
-  Print["  | add (lo hi : Rat) (a b : IntervalCert)"];
-  Print[""];
-  Print["namespace IntervalCert"];
-  Print[""];
-  Print["def lower : IntervalCert -> Rat"];
-  Print["  | one lo _ => lo"];
-  Print["  | sqrt lo _ _ => lo"];
-  Print["  | add lo _ _ _ => lo"];
-  Print[""];
-  Print["def upper : IntervalCert -> Rat"];
-  Print["  | one _ hi => hi"];
-  Print["  | sqrt _ hi _ => hi"];
-  Print["  | add _ hi _ _ => hi"];
-  Print[""];
-  Print["def expr : IntervalCert -> Expr"];
-  Print["  | one _ _ => Expr.one"];
-  Print["  | sqrt _ _ c => Expr.sqrt c.expr"];
-  Print["  | add _ _ a b => Expr.add a.expr b.expr"];
-  Print[""];
-  Print["def Valid : IntervalCert -> Prop"];
-  Print["  | one lo hi => (lo : Real) < 1 ∧ (1 : Real) < hi"];
-  Print["  | sqrt lo hi c =>"];
-  Print["      c.Valid ∧ ((lo : Real) < 0 ∨ (lo : Real) ^ 2 < (c.lower : Real)) ∧"];
-  Print["        ((c.upper : Real) < (hi : Real) ^ 2) ∧ (0 : Real) < hi"];
-  Print["  | add lo hi a b =>"];
-  Print["      a.Valid ∧ b.Valid ∧"];
-  Print["        ((lo : Real) < (a.lower : Real) + (b.lower : Real)) ∧"];
-  Print["        ((a.upper : Real) + (b.upper : Real) < (hi : Real))"];
-  Print[""];
-  Print["theorem sound (c : IntervalCert) (h : c.Valid) :"];
-  Print["    (c.lower : Real) < c.expr.eval ∧ c.expr.eval < (c.upper : Real) := by"];
-  Print["  induction c with"];
-  Print["  | one lo hi =>"];
-  Print["      simpa [Valid, lower, upper, expr, eval] using h"];
-  Print["  | sqrt lo hi c ih =>"];
-  Print["      rcases h with ⟨hc, hlo, hhi, hpos⟩"];
-  Print["      have hs := ih hc"];
-  Print["      simp [lower, upper, expr, eval]"];
-  Print["      constructor"];
-  Print["      · rcases hlo with hneg | hsq"];
-  Print["        · exact lt_of_lt_of_le hneg (Real.sqrt_nonneg _)"];
-  Print["        · apply Real.lt_sqrt_of_sq_lt"];
-  Print["          exact lt_trans hsq hs.1"];
-  Print["      · rw [Real.sqrt_lt' hpos]"];
-  Print["        exact lt_trans hs.2 hhi"];
-  Print["  | add lo hi a b iha ihb =>"];
-  Print["      rcases h with ⟨ha, hb, hlo, hhi⟩"];
-  Print["      have hsa := iha ha"];
-  Print["      have hsb := ihb hb"];
-  Print["      constructor <;> simp [lower, upper, expr, eval] at * <;> linarith"];
-  Print[""];
-  Print["end IntervalCert"];
-  Print[""];
   Do[
     a = values[n][[i, 2]];
     b = values[n][[i + 1, 2]];
@@ -686,8 +607,8 @@ printLeanIntervalOrderModule[n_Integer] := Module[
       gap = bv - av;
       leftHi = certRatAbove[av, av + gap/3];
       rightLo = certRatBelow[bv, av + 2 gap/3];
-      leftName = "values15_special_" <> ToString[i - 1] <> "_leftCert";
-      rightName = "values15_special_" <> ToString[i - 1] <> "_rightCert";
+      leftName = valueName <> "_special_" <> ToString[i - 1] <> "_leftCert";
+      rightName = valueName <> "_special_" <> ToString[i - 1] <> "_rightCert";
       Print["private def ", leftName, " : IntervalCert :="];
       Print["  ", intervalCert[a, 0, leftHi]];
       Print[""];
@@ -695,41 +616,26 @@ printLeanIntervalOrderModule[n_Integer] := Module[
       Print["  ", intervalCert[b, rightLo, 100]];
       Print[""];
       Print["set_option linter.unusedTactic false in"];
-      Print["theorem values15_special_", i - 1, " :"];
-      Print["    values15 (", i - 1, " : Fin ", Length[values[n]], ") < values15 (", i,
+      Print["theorem ", valueName, "_special_", i - 1, " :"];
+      Print["    ", valueName, " (", i - 1, " : Fin ", Length[values[n]], ") < ", valueName, " (", i,
         " : Fin ", Length[values[n]], ") := by"];
-      Print["  have hleftRaw := IntervalCert.sound ", leftName, " (by"];
-      Print["    norm_num [", leftName, ", IntervalCert.Valid, IntervalCert.lower, IntervalCert.upper])"];
-      Print["  have hrightRaw := IntervalCert.sound ", rightName, " (by"];
-      Print["    norm_num [", rightName, ", IntervalCert.Valid, IntervalCert.lower, IntervalCert.upper])"];
-      Print["  have hleft : values15 (", i - 1, " : Fin ", Length[values[n]], ") < ",
-        leanRat[leftHi], " := by"];
-      Print["    have heq : values15 (", i - 1, " : Fin ", Length[values[n]], ") = ",
-        leftName, ".expr.eval := by"];
-      Print["      rw [show values15 (", i - 1, " : Fin ", Length[values[n]], ") = ",
+      Print["  refine IntervalCert.lt_of_gap ", leftName, " ", rightName, " ?_ ?_ ?_ ?_ ?_"];
+      Print["  · norm_num [", leftName, ", IntervalCert.Valid, IntervalCert.lower, IntervalCert.upper]"];
+      Print["  · norm_num [", rightName, ", IntervalCert.Valid, IntervalCert.lower, IntervalCert.upper]"];
+      Print["  · rw [show ", valueName, " (", i - 1, " : Fin ", Length[values[n]], ") = ",
         leanCodeExpr[a], " by rfl]"];
-      Print["      simp only [", leftName, ", IntervalCert.expr, eval]"];
+      Print["    simp only [", leftName, ", IntervalCert.expr, eval]"];
       rewrites = DeleteDuplicates[highValueRefs[a]];
-      Scan[Print["      " <> highValueRewrite[#]] &, rewrites];
-      Print["      a158415_twelve_table <;> try norm_num [sqrt_four] <;> try ring_nf"];
-      Print["    rw [heq]"];
-      Print["    simpa [", leftName, ", IntervalCert.upper] using hleftRaw.2"];
-      Print["  have hright : ", leanRat[rightLo], " < values15 (", i, " : Fin ",
-        Length[values[n]], ") := by"];
-      Print["    have heq : values15 (", i, " : Fin ", Length[values[n]], ") = ",
-        rightName, ".expr.eval := by"];
-      Print["      rw [show values15 (", i, " : Fin ", Length[values[n]], ") = ",
+      Scan[Print["    " <> highValueRewrite[#]] &, rewrites];
+      Print["    a158415_twelve_table <;> try norm_num [sqrt_four] <;> try ring_nf"];
+      Print["  · rw [show ", valueName, " (", i, " : Fin ", Length[values[n]], ") = ",
         leanCodeExpr[b], " by rfl]"];
-      Print["      simp only [", rightName, ", IntervalCert.expr, eval]"];
+      Print["    simp only [", rightName, ", IntervalCert.expr, eval]"];
       rewrites = DeleteDuplicates[highValueRefs[b]];
-      Scan[Print["      " <> highValueRewrite[#]] &, rewrites];
-      Print["      a158415_twelve_table <;> try norm_num [sqrt_four] <;> try ring_nf"];
-      Print["    rw [heq]"];
-      Print["    simpa [", rightName, ", IntervalCert.lower] using hrightRaw.1"];
-      Print["  have hgap : ", leanRat[leftHi], " < ", leanRat[rightLo], " := by"];
-      Print["    norm_num"];
-      Print["  linarith"];
-      Print[""]
+      Scan[Print["    " <> highValueRewrite[#]] &, rewrites];
+      Print["    a158415_twelve_table <;> try norm_num [sqrt_four] <;> try ring_nf"];
+      Print["  · norm_num [", leftName, ", ", rightName, ", IntervalCert.upper, IntervalCert.lower]"];
+      Print[""];
     ],
     {i, Length[values[n]] - 1}
   ];
@@ -1018,6 +924,16 @@ highValueRewrite[{n_Integer, i_Integer}] :=
 rangeIndex[targetN_Integer, code_] :=
   valueIndex[targetN, exprValue[code]];
 
+rangeCaseExactQ[targetN_Integer, code_] := Module[{idx, rep, body},
+  idx = valueIndex[targetN, exprValue[code]];
+  If[! IntegerQ[idx],
+    False,
+    rep = leanCodeExpr[values[targetN][[idx + 1, 2]]];
+    body = leanCodeExpr[code];
+    rep === body
+  ]
+];
+
 rangeCaseEqualityProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewrites},
   idx = valueIndex[targetN, exprValue[code]];
   If[! IntegerQ[idx],
@@ -1076,9 +992,12 @@ printUnaryRangeLemmaFor[targetN_Integer, name_String, len_Integer, body_String, 
   Print["  fin_cases i"];
   Do[
     code = codeFn[i - 1];
-    lines = rangeCaseEqualityProof[targetN, code];
-    Print["  next =>"];
-    Scan[Print["    " <> #] &, lines],
+    If[rangeCaseExactQ[targetN, code],
+      Print["  next => rfl"],
+      lines = rangeCaseEqualityProof[targetN, code];
+      Print["  next =>"];
+      Scan[Print["    " <> #] &, lines]
+    ],
     {i, len}
   ];
   Print[""];
@@ -1120,9 +1039,12 @@ printBinaryRangeLemmaFor[targetN_Integer, name_String, len1_Integer, len2_Intege
   Print["  fin_cases i <;> fin_cases j"];
   Do[
     code = codeFn[i - 1, j - 1];
-    lines = rangeCaseEqualityProof[targetN, code];
-    Print["  next =>"];
-    Scan[Print["    " <> #] &, lines],
+    If[rangeCaseExactQ[targetN, code],
+      Print["  next => rfl"],
+      lines = rangeCaseEqualityProof[targetN, code];
+      Print["  next =>"];
+      Scan[Print["    " <> #] &, lines]
+    ],
     {i, len1}, {j, len2}
   ];
   Print[""];
