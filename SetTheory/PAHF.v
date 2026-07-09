@@ -9864,6 +9864,12 @@ Definition ltAt (a b : nat) : formula :=
 Definition dvdAt (a b : nat) : formula :=
   pEx (pEq (tMul (tVar (S a)) (tVar 0)) (tVar (S b))).
 
+(* Lean: dvdTermTermAt *)
+Definition dvdTermTermAt (divisor value : term) : formula :=
+  pEx (pEq
+    (tMul (Term.rename S divisor) (tVar 0))
+    (Term.rename S value)).
+
 Definition eqConstAt (a n : nat) : formula :=
   pEq (tVar a) (Term.numeral n).
 
@@ -9890,6 +9896,24 @@ Definition leTermAt (a b : term) : formula :=
 (* Lean: ltTermAt *)
 Definition ltTermAt (a b : term) : formula :=
   pEx (pEq (tAdd (Term.rename S a) (tSucc (tVar 0))) (Term.rename S b)).
+
+(* Lean: commonMultipleThroughTermAt *)
+Definition commonMultipleThroughTermAt
+    (bound multiple : term) : formula :=
+  pAll (pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (dvdTermTermAt (tSucc (tVar 0))
+      (Term.rename S multiple))).
+
+(* Lean: commonMultipleExistsTermAt *)
+Definition commonMultipleExistsTermAt (bound : term) : formula :=
+  pEx (commonMultipleThroughTermAt
+    (Term.rename S bound) (tVar 0)).
+
+(* Lean: commonMultipleExistsTermAtBody *)
+Definition commonMultipleExistsTermAtBody (bound : term) : formula :=
+  commonMultipleThroughTermAt
+    (Term.rename S bound) (tVar 0).
 
 (* Lean: ltTermAt_var *)
 Lemma ltTermAt_var : forall a b,
@@ -20146,6 +20170,311 @@ Definition HFMemTrace (elem set code step : nat) : Prop :=
     BetaDiv2StepsThrough code step elem /\
       BetaDiv2Bit code step elem 1.
 
+(* Lean: BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms *)
+Lemma BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms :
+  forall G (divisor value quotient : term),
+  BProv Ax_s G (pEq value (tMul divisor quotient)) ->
+  BProv Ax_s G (dvdTermTermAt divisor value).
+Proof.
+  intros G divisor value quotient hmul.
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm quotient)
+        (pEq
+          (tMul (Term.rename S divisor) (tVar 0))
+          (Term.rename S value)))).
+  {
+    simpl.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    exact (BProv_eqSym Ax_s G _ _ hmul).
+  }
+  unfold dvdTermTermAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tMul (Term.rename S divisor) (tVar 0))
+      (Term.rename S value)) quotient hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_dvdTermTermAt_elim_opened *)
+Lemma BProv_Ax_s_dvdTermTermAt_elim_opened :
+  forall G (divisor value : term) target,
+  BProv Ax_s
+    (pEq
+        (tMul (Term.rename S divisor) (tVar 0))
+        (Term.rename S value) ::
+      map (rename S) G)
+    (rename S target) ->
+  BProv Ax_s G (dvdTermTermAt divisor value) ->
+  BProv Ax_s G target.
+Proof.
+  intros G divisor value target hbody hdvd.
+  set (body := pEq
+    (tMul (Term.rename S divisor) (tVar 0))
+    (Term.rename S value)).
+  exact (BProv_exE_of_sentences Ax_s G body target
+    sentence_ax_s hdvd hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_dvdTermTermAt_mul_right *)
+Lemma BProv_Ax_s_dvdTermTermAt_mul_right :
+  forall G (divisor value appended : term),
+  BProv Ax_s G (dvdTermTermAt divisor value) ->
+  BProv Ax_s G (dvdTermTermAt divisor (tMul value appended)).
+Proof.
+  intros G divisor value appended hdvd.
+  set (body := pEq
+    (tMul (Term.rename S divisor) (tVar 0))
+    (Term.rename S value)).
+  set (target := dvdTermTermAt divisor (tMul value appended)).
+  assert (hopened : BProv Ax_s
+      (body :: map (rename S) G) (rename S target)).
+  {
+    set (C := body :: map (rename S) G).
+    set (divisor1 := Term.rename S divisor).
+    set (value1 := Term.rename S value).
+    set (appended1 := Term.rename S appended).
+    assert (hquot : BProv Ax_s C
+        (pEq (tMul divisor1 (tVar 0)) value1)).
+    {
+      apply BProv_ass.
+      unfold C, body, divisor1, value1.
+      simpl. left. reflexivity.
+    }
+    assert (hstart : BProv Ax_s C
+        (pEq (tMul value1 appended1)
+          (tMul (tMul divisor1 (tVar 0)) appended1))).
+    {
+      exact (BProv_eq_congr_mul_left Ax_s C _ _ appended1
+        (BProv_eqSym Ax_s C _ _ hquot)).
+    }
+    assert (hassoc : BProv Ax_s C
+        (pEq
+          (tMul (tMul divisor1 (tVar 0)) appended1)
+          (tMul divisor1 (tMul (tVar 0) appended1)))).
+    { apply BProv_Ax_s_mul_assoc_terms. }
+    assert (hvalue : BProv Ax_s C
+        (pEq (tMul value1 appended1)
+          (tMul divisor1 (tMul (tVar 0) appended1)))).
+    { exact (BProv_eqTrans Ax_s C _ _ _ hstart hassoc). }
+    pose proof (BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms C
+      divisor1 (tMul value1 appended1)
+      (tMul (tVar 0) appended1) hvalue) as hnew.
+    replace (rename S target)
+      with (dvdTermTermAt divisor1 (tMul value1 appended1)).
+    - exact hnew.
+    - unfold target, divisor1, value1, appended1, dvdTermTermAt.
+      simpl.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  exact (BProv_Ax_s_dvdTermTermAt_elim_opened
+    G divisor value target hopened hdvd).
+Qed.
+
+(* Lean: BProv_Ax_s_dvdTermTermAt_of_eq_divisor *)
+Lemma BProv_Ax_s_dvdTermTermAt_of_eq_divisor :
+  forall G (oldDivisor newDivisor value : term),
+  BProv Ax_s G (pEq oldDivisor newDivisor) ->
+  BProv Ax_s G (dvdTermTermAt oldDivisor value) ->
+  BProv Ax_s G (dvdTermTermAt newDivisor value).
+Proof.
+  intros G oldDivisor newDivisor value heq hdvd.
+  set (a := dvdTermTermAt (tVar 0) (Term.rename S value)).
+  assert (hold : BProv Ax_s G (subst (instTerm oldDivisor) a)).
+  {
+    replace (subst (instTerm oldDivisor) a)
+      with (dvdTermTermAt oldDivisor value).
+    - exact hdvd.
+    - unfold a, dvdTermTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      reflexivity.
+  }
+  pose proof (BProv_eqElim Ax_s G oldDivisor newDivisor a
+    heq hold) as hnew.
+  replace (dvdTermTermAt newDivisor value)
+    with (subst (instTerm newDivisor) a).
+  - exact hnew.
+  - unfold a, dvdTermTermAt.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_dvdTermTermAt_of_eq_value *)
+Lemma BProv_Ax_s_dvdTermTermAt_of_eq_value :
+  forall G (divisor oldValue newValue : term),
+  BProv Ax_s G (pEq oldValue newValue) ->
+  BProv Ax_s G (dvdTermTermAt divisor oldValue) ->
+  BProv Ax_s G (dvdTermTermAt divisor newValue).
+Proof.
+  intros G divisor oldValue newValue heq hdvd.
+  set (a := dvdTermTermAt (Term.rename S divisor) (tVar 0)).
+  assert (hold : BProv Ax_s G (subst (instTerm oldValue) a)).
+  {
+    replace (subst (instTerm oldValue) a)
+      with (dvdTermTermAt divisor oldValue).
+    - exact hdvd.
+    - unfold a, dvdTermTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      reflexivity.
+  }
+  pose proof (BProv_eqElim Ax_s G oldValue newValue a heq hold) as hnew.
+  replace (dvdTermTermAt divisor newValue)
+    with (subst (instTerm newValue) a).
+  - exact hnew.
+  - unfold a, dvdTermTermAt.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt *)
+Lemma BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt :
+  forall G (bound multiple gapPred : term),
+  BProv Ax_s G (commonMultipleThroughTermAt bound multiple) ->
+  BProv Ax_s G (ltTermAt gapPred bound) ->
+  BProv Ax_s G (dvdTermTermAt (tSucc gapPred) multiple).
+Proof.
+  intros G bound multiple gapPred hcommon hlt.
+  set (body := pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (dvdTermTermAt (tSucc (tVar 0)) (Term.rename S multiple))).
+  assert (hall : BProv Ax_s G (pAll body)).
+  {
+    unfold body, commonMultipleThroughTermAt in *.
+    exact hcommon.
+  }
+  pose proof (BProv_allE Ax_s G body gapPred hall) as himpRaw.
+  assert (himp : BProv Ax_s G
+      (pImp (ltTermAt gapPred bound)
+        (dvdTermTermAt (tSucc gapPred) multiple))).
+  {
+    replace
+      (pImp (ltTermAt gapPred bound)
+        (dvdTermTermAt (tSucc gapPred) multiple))
+      with (subst (instTerm gapPred) body).
+    - exact himpRaw.
+    - unfold body, ltTermAt, dvdTermTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      reflexivity.
+  }
+  exact (BProv_mp Ax_s G _ _ himp hlt).
+Qed.
+
+(* Lean: BProv_Ax_s_commonMultipleThroughTermAt_zero *)
+Lemma BProv_Ax_s_commonMultipleThroughTermAt_zero :
+  forall G (multiple : term),
+  BProv Ax_s G (commonMultipleThroughTermAt tZero multiple).
+Proof.
+  intros G multiple.
+  set (antecedent := ltTermAt (tVar 0) tZero).
+  set (consequent := dvdTermTermAt
+    (tSucc (tVar 0)) (Term.rename S multiple)).
+  set (body := pImp antecedent consequent).
+  assert (hbody : BProv Ax_s
+      (antecedent :: map (rename S) G) consequent).
+  {
+    set (C := antecedent :: map (rename S) G).
+    assert (hlt : BProv Ax_s C (ltTermAt (tVar 0) tZero)).
+    {
+      apply BProv_ass.
+      unfold C, antecedent.
+      simpl. left. reflexivity.
+    }
+    assert (hle : BProv Ax_s C (leTermAt tZero (tVar 0))).
+    { apply BProv_Ax_s_leTermAt_zero_left. }
+    pose proof (BProv_Ax_s_ltTermAt_leTermAt_bot C
+      (tVar 0) tZero hlt hle) as hbot.
+    exact (BProv_botE Ax_s C consequent hbot).
+  }
+  pose proof (BProv_impI Ax_s (map (rename S) G)
+    antecedent consequent hbody) as himp.
+  pose proof (BProv_allI_of_sentences Ax_s G
+    body sentence_ax_s himp) as hall.
+  unfold commonMultipleThroughTermAt, body, antecedent, consequent.
+  simpl in hall |- *.
+  exact hall.
+Qed.
+
+(* Lean: BProv_Ax_s_commonMultipleExistsTermAt_of_through *)
+Lemma BProv_Ax_s_commonMultipleExistsTermAt_of_through :
+  forall G (bound multiple : term),
+  BProv Ax_s G (commonMultipleThroughTermAt bound multiple) ->
+  BProv Ax_s G (commonMultipleExistsTermAt bound).
+Proof.
+  intros G bound multiple hthrough.
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm multiple)
+        (commonMultipleThroughTermAt
+          (Term.rename S bound) (tVar 0)))).
+  {
+    replace
+      (subst (instTerm multiple)
+        (commonMultipleThroughTermAt
+          (Term.rename S bound) (tVar 0)))
+      with (commonMultipleThroughTermAt bound multiple).
+    - exact hthrough.
+    - unfold commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      reflexivity.
+  }
+  unfold commonMultipleExistsTermAt.
+  exact (BProv_exI Ax_s G
+    (commonMultipleThroughTermAt (Term.rename S bound) (tVar 0))
+    multiple hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_commonMultipleExistsTermAt_elim_opened *)
+Lemma BProv_Ax_s_commonMultipleExistsTermAt_elim_opened :
+  forall G (bound : term) target,
+  BProv Ax_s
+    (commonMultipleExistsTermAtBody bound :: map (rename S) G)
+    (rename S target) ->
+  BProv Ax_s G (commonMultipleExistsTermAt bound) ->
+  BProv Ax_s G target.
+Proof.
+  intros G bound target hbody hex.
+  unfold commonMultipleExistsTermAt in hex.
+  unfold commonMultipleExistsTermAtBody in hbody.
+  exact (BProv_exE_of_sentences Ax_s G
+    (commonMultipleThroughTermAt (Term.rename S bound) (tVar 0))
+    target sentence_ax_s hex hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_commonMultipleExistsTermAt_zero *)
+Lemma BProv_Ax_s_commonMultipleExistsTermAt_zero : forall G,
+  BProv Ax_s G (commonMultipleExistsTermAt tZero).
+Proof.
+  intro G.
+  exact (BProv_Ax_s_commonMultipleExistsTermAt_of_through
+    G tZero (Term.numeral 1)
+    (BProv_Ax_s_commonMultipleThroughTermAt_zero
+      G (Term.numeral 1))).
+Qed.
+
 
 (* Lean: twoEntryBetaStep *)
 Definition twoEntryBetaStep (cur next : nat) : nat := cur + next + 1.
@@ -29174,6 +29503,105 @@ Proof.
       S (Term.eval natModel e b - S (Term.eval natModel e a)) =
       Term.eval natModel e b).
     lia.
+Qed.
+
+(* Lean: dvdTermTermAt_nat *)
+Lemma dvdTermTermAt_nat : forall (e : nat -> nat) divisor value,
+  Sat natModel e (dvdTermTermAt divisor value) <->
+    Nat.divide (Term.eval natModel e divisor)
+      (Term.eval natModel e value).
+Proof.
+  intros e divisor value.
+  unfold dvdTermTermAt. simpl.
+  split.
+  - intros [q hq].
+    repeat rewrite Term.eval_rename in hq.
+    change (Term.eval natModel e divisor * q =
+      Term.eval natModel e value) in hq.
+    exists q.
+    rewrite Nat.mul_comm.
+    symmetry. exact hq.
+  - intros [q hq].
+    exists q.
+    repeat rewrite Term.eval_rename.
+    change (Term.eval natModel e divisor * q =
+      Term.eval natModel e value).
+    rewrite Nat.mul_comm.
+    symmetry. exact hq.
+Qed.
+
+(* Lean: commonMultipleThroughTermAt_nat *)
+Lemma commonMultipleThroughTermAt_nat :
+  forall (e : nat -> nat) bound multiple,
+  Sat natModel e (commonMultipleThroughTermAt bound multiple) <->
+    forall q, q < Term.eval natModel e bound ->
+      Nat.divide (q + 1) (Term.eval natModel e multiple).
+Proof.
+  intros e bound multiple.
+  unfold commonMultipleThroughTermAt. simpl.
+  split.
+  - intros h q hq.
+    assert (hqSat : Sat natModel (scons nat q e)
+        (ltTermAt (tVar 0) (Term.rename S bound))).
+    {
+      apply (proj2 (ltTermAt_nat (scons nat q e)
+        (tVar 0) (Term.rename S bound))).
+      repeat rewrite Term.eval_rename.
+      simpl.
+      exact hq.
+    }
+    pose proof (proj1 (dvdTermTermAt_nat (scons nat q e)
+      (tSucc (tVar 0)) (Term.rename S multiple))
+      (h q hqSat)) as hdvd.
+    repeat rewrite Term.eval_rename in hdvd.
+    simpl in hdvd.
+    replace (q + 1) with (S q) by lia.
+    exact hdvd.
+  - intros h q hqSat.
+    assert (hq : q < Term.eval natModel e bound).
+    {
+      pose proof (proj1 (ltTermAt_nat (scons nat q e)
+        (tVar 0) (Term.rename S bound)) hqSat) as hlt.
+      repeat rewrite Term.eval_rename in hlt.
+      simpl in hlt.
+      exact hlt.
+    }
+    apply (proj2 (dvdTermTermAt_nat (scons nat q e)
+      (tSucc (tVar 0)) (Term.rename S multiple))).
+    repeat rewrite Term.eval_rename.
+    simpl.
+    replace (S q) with (q + 1) by lia.
+    exact (h q hq).
+Qed.
+
+(* Lean: commonMultipleExistsTermAt_nat *)
+Lemma commonMultipleExistsTermAt_nat : forall (e : nat -> nat) bound,
+  Sat natModel e (commonMultipleExistsTermAt bound) <->
+    exists multiple, forall q,
+      q < Term.eval natModel e bound -> Nat.divide (q + 1) multiple.
+Proof.
+  intros e bound.
+  unfold commonMultipleExistsTermAt. simpl.
+  split.
+  - intros [multiple hmultiple].
+    exists multiple.
+    pose proof (proj1 (commonMultipleThroughTermAt_nat
+      (scons nat multiple e) (Term.rename S bound) (tVar 0))
+      hmultiple) as hspec.
+    intros q hq.
+    apply hspec.
+    + repeat rewrite Term.eval_rename.
+      simpl.
+      exact hq.
+  - intros [multiple hmultiple].
+    exists multiple.
+    apply (proj2 (commonMultipleThroughTermAt_nat
+      (scons nat multiple e) (Term.rename S bound) (tVar 0))).
+    intros q hq.
+    apply hmultiple.
+    repeat rewrite Term.eval_rename in hq.
+    simpl in hq.
+    exact hq.
 Qed.
 
 Lemma betaModTerm_nat : forall (e : nat -> nat) step idx,
