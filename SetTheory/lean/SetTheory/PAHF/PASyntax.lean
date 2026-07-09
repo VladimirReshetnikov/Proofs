@@ -38937,6 +38937,90 @@ theorem
   simpa [strictSuccOpenedHighOddOpenedWitnessLowHalfMemOpenedBitExFormula,
     strictHighOddOpenedWitnessLowHalfMemOpenedBitExFormula] using hbit
 
+/-- Shifted odd-high opened low-half membership directly from a shifted-tail
+relation and the old opened trace components.
+
+This is the strict-successor analogue of
+`BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_shift_tail`; here
+the old low-half set is the fixed slot `4`, equivalently the generic
+`lowHalf = 1` instance after the surrounding successor branch has been opened.
+-/
+theorem
+    BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessLowHalfMem_opened_of_shift_tail
+    {G : List Formula} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm
+        (Term.succ (Term.var 2))))
+    (holdEntry : BProv Ax_s G
+      (betaTermAtTermIdx (Term.var 4) 1 0
+        (Term.succ Term.zero)))
+    (holdSteps : BProv Ax_s G
+      (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))))
+    (holdBitEx : BProv Ax_s G
+      (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s G
+      strictSuccOpenedHighOddOpenedWitnessLowHalfMemOpenedFormula := by
+  have hgeneric : BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedFormula 1) :=
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_shift_tail
+      (G := G) (lowHalf := 1)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      htail holdEntry
+      (by
+        simpa [strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula]
+          using holdSteps)
+      (by
+        simpa [strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula]
+          using holdBitEx)
+  simpa [strictSuccOpenedHighOddOpenedWitnessLowHalfMemOpenedFormula,
+    strictSuccOpenedHighOddOpenedWitnessLowHalfMemFormula,
+    strictHighOddOpenedWitnessLowHalfMemOpenedFormula,
+    strictHighOddOpenedWitnessLowHalfMemFormula] using hgeneric
+
+/-- Shifted odd-high/low-even wrapper for the whole opened old low-half
+membership obtained from a tail relation through `S x`. -/
+theorem
+    BProv_Ax_s_strictSuccOpenedHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_mem_of_shift_tail
+    {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowDoubleOpenedIHContext))
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowDoubleOpenedIHContext))
+      strictSuccOpenedHighOddOpenedWitnessLowHalfMemOpenedFormula := by
+  let C : List Formula :=
+    strictSuccOpenedHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowDoubleOpenedIHContext)
+  have holdEntry : BProv Ax_s C
+      (betaTermAtTermIdx (Term.var 4) 1 0
+        (Term.succ Term.zero)) := by
+    simpa [C] using
+      BProv_Ax_s_strictSuccOpenedHighOddLowDoubleOpenedWitnessSuccLowMem_opened_code_step_low_half_entry_termIdx
+  have holdSteps : BProv Ax_s C
+      (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))) := by
+    simpa [C] using
+      (BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
+        (G := strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowDoubleOpenedIHContext))
+  have holdBitEx : BProv Ax_s C
+      (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
+        (Term.succ (Term.var 2))) := by
+    simpa [C] using
+      (BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessSuccLowMem_opened_code_step_bitTermEx
+        (G := strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowDoubleOpenedIHContext))
+  exact
+    BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessLowHalfMem_opened_of_shift_tail
+      (G := C) (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [C] using htail) holdEntry holdSteps holdBitEx
+
 /-- Shifted odd-high/low-even low-side closer directly from a shifted-tail
 relation. -/
 theorem
@@ -39101,6 +39185,49 @@ theorem
         (by simpa [C] using htail))
   simpa [strictSuccOpenedHighOddOpenedWitnessLowHalfMemOpenedBitExFormula,
     strictHighOddOpenedWitnessLowHalfMemOpenedBitExFormula] using hbit
+
+/-- Shifted odd-high/low-odd wrapper for the whole opened old low-half
+membership obtained from a tail relation through `S x`. -/
+theorem
+    BProv_Ax_s_strictSuccOpenedHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_mem_of_shift_tail
+    {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowOddOpenedIHContext))
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowOddOpenedIHContext))
+      strictSuccOpenedHighOddOpenedWitnessLowHalfMemOpenedFormula := by
+  let C : List Formula :=
+    strictSuccOpenedHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowOddOpenedIHContext)
+  have holdEntry : BProv Ax_s C
+      (betaTermAtTermIdx (Term.var 4) 1 0
+        (Term.succ Term.zero)) := by
+    simpa [C] using
+      BProv_Ax_s_strictSuccOpenedHighOddLowOddOpenedWitnessSuccLowMem_opened_code_step_low_half_entry_termIdx
+  have holdSteps : BProv Ax_s C
+      (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))) := by
+    simpa [C] using
+      (BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
+        (G := strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowOddOpenedIHContext))
+  have holdBitEx : BProv Ax_s C
+      (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
+        (Term.succ (Term.var 2))) := by
+    simpa [C] using
+      (BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessSuccLowMem_opened_code_step_bitTermEx
+        (G := strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+          strictSuccOpenedHighOddLowOddOpenedIHContext))
+  exact
+    BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessLowHalfMem_opened_of_shift_tail
+      (G := C) (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [C] using htail) holdEntry holdSteps holdBitEx
 
 /-- Shifted odd-high/low-odd low-side closer directly from a shifted-tail
 relation. -/
