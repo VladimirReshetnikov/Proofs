@@ -31912,6 +31912,39 @@ theorem
     BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_steps_of_term_trace
       hfresh
 
+/-- Construct the opened low-half final-bit component from a shifted-tail
+relation through `S x` and the old opened `S x ∈ low` final-bit component.
+
+The old final bit is read at successor index `S x`; the shifted-tail relation
+copies it to the fresh trace at index `x`.  The result is kept in the reusable
+term-parametric one-bit form rather than repackaging it into the legacy
+membership component. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitTermEx_of_shift_tail
+    {G : List Formula} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm
+        (Term.succ (Term.var 2))))
+    (holdBitEx : BProv Ax_s G
+      strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedBitTermExFormula
+        codeTerm stepTerm) := by
+  have hle : BProv Ax_s G (leTermAt (Term.var 2) (Term.var 2)) :=
+    BProv_Ax_s_leTermAt_refl (Term.var 2)
+  have hnew : BProv Ax_s G
+      (betaDiv2BitOneTermExAt codeTerm stepTerm (Term.var 2)) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_bitOneEx_of_oldBitOneEx
+      (G := G) (oldCode := 1) (oldStep := 0)
+      (newCode := codeTerm) (newStep := stepTerm)
+      (lastTerm := Term.var 2) (idxTerm := Term.var 2)
+      (by simpa using htail) hle
+      (by
+        simpa [strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula]
+          using holdBitEx)
+  simpa [strictHighOddOpenedWitnessLowHalfMemOpenedBitTermExFormula]
+    using hnew
+
 /-- Even-low carry context wrapper for the shifted-tail low-half entry
 component. -/
 theorem
@@ -32009,6 +32042,38 @@ theorem
       (G := C) (codeTerm := codeTerm) (stepTerm := stepTerm)
       (by simpa [C] using htail) holdSteps
 
+/-- Even-low carry context wrapper for the shifted-tail low-half final bit in
+term-parametric form. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_bitTermEx_of_shift_tail
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessLowHalfMemOpenedBitTermExFormula
+        codeTerm stepTerm) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+  have holdBitEx : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitTermEx
+        (G := strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitTermEx_of_shift_tail
+      (G := C) (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [C] using htail) holdBitEx
+
 /-- Odd-low carry context wrapper for the shifted-tail low-half entry
 component. -/
 theorem
@@ -32105,6 +32170,38 @@ theorem
     BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_steps_of_shift_tail
       (G := C) (codeTerm := codeTerm) (stepTerm := stepTerm)
       (by simpa [C] using htail) holdSteps
+
+/-- Odd-low carry context wrapper for the shifted-tail low-half final bit in
+term-parametric form. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_bitTermEx_of_shift_tail
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessLowHalfMemOpenedBitTermExFormula
+        codeTerm stepTerm) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+  have holdBitEx : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitTermEx
+        (G := strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitTermEx_of_shift_tail
+      (G := C) (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [C] using htail) holdBitEx
 
 /-- Low-side closer where the opened old low-half membership is supplied as
 explicit beta-trace components in the opened `S x ∈ low` code/step context. -/
