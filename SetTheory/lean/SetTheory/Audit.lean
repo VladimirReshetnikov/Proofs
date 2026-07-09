@@ -420,6 +420,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eq_of_remAt_remTermAt_same_modulus
 #check @PA.Formula.BProv_Ax_s_eq_of_remTermAt_remTermAt_eq_modulus
 #check @PA.Formula.BProv_Ax_s_eq_of_remTermAt_remTermAt_same_modulus
+#check @PA.Formula.BProv_Ax_s_eq_of_remTermTermAt_remTermTermAt_eq_modulus
+#check @PA.Formula.BProv_Ax_s_eq_of_remTermTermAt_remTermTermAt_same_modulus
 #check @PA.Formula.BProv_Ax_s_mul_succ_right_eq_succ_terms
 #check @PA.Formula.BProv_Ax_s_add_successor_summand_ne_self_terms
 #check @PA.Formula.BProv_Ax_s_remainder_eq_mul_of_le_quotient_terms
