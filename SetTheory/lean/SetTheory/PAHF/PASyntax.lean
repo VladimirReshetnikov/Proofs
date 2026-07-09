@@ -9720,6 +9720,31 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_modulus
     term_subst_up_up_instTerm_rename_two_var_zero,
     term_subst_up_up_instTerm_rename_four_succ] using hnew
 
+/-- Reindex a beta entry at literal index `1` to literal index `0` by doubling
+the step while leaving the code and output unchanged.
+
+The two beta moduli are both `S (step + step)`, so this is a direct application
+of modulus transport rather than a finite recoding argument. -/
+theorem BProv_Ax_s_betaTermTermAt_zero_double_step_of_one
+    {G : List Formula} {out code step : Term}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out code step (Term.succ Term.zero))) :
+    BProv Ax_s G
+      (betaTermTermAt out code (Term.add step step) Term.zero) := by
+  have holdMod : BProv Ax_s G
+      (eq (betaModTermTerm step (Term.succ Term.zero))
+        (Term.succ (Term.add step step))) :=
+    BProv_Ax_s_betaModTermTerm_one_add_self step
+  have hnewMod : BProv Ax_s G
+      (eq (betaModTermTerm (Term.add step step) Term.zero)
+        (Term.succ (Term.add step step))) :=
+    BProv_Ax_s_betaModTermTerm_zero (Term.add step step)
+  have hmod : BProv Ax_s G
+      (eq (betaModTermTerm step (Term.succ Term.zero))
+        (betaModTermTerm (Term.add step step) Term.zero)) :=
+    BProv_eqTrans holdMod (BProv_eqSym hnewMod)
+  exact BProv_Ax_s_betaTermTermAt_of_eq_modulus hmod hbeta
+
 /-- View a slot-indexed beta entry as a fully term-parametric beta entry,
 transporting the index through an explicit PA equality. -/
 theorem BProv_Ax_s_betaTermTermAt_of_betaAt_eq_index
@@ -18387,6 +18412,87 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
       (oldLast := Term.numeral n) (newLast := lastTerm)
       hnum hLast
 
+/-- Every beta code has a shifted tail through the literal bound `0`.
+
+The fresh code is the old code itself and the fresh step is twice the old
+step.  Under the sole bounded index case `i <= 0`, PA proves `i = 0`; the old
+entry at `S i` is therefore the index-one entry, whose modulus agrees exactly
+with the doubled-step modulus at index zero. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound
+    {G : List Formula} {oldCode oldStep : Nat} :
+    BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        (Term.var oldCode)
+        (Term.add (Term.var oldStep) (Term.var oldStep))
+        Term.zero) := by
+  let leHyp : Formula :=
+    leTermAt (Term.var 0) (Term.rename Nat.succ Term.zero)
+  let oldBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.var (oldCode+2)) (Term.var (oldStep+2))
+      (Term.succ (Term.var 1))
+  let newBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n+2) (Term.var oldCode))
+      (Term.rename (fun n => n+2)
+        (Term.add (Term.var oldStep) (Term.var oldStep)))
+      (Term.var 1)
+  let witness : Formula := all (imp oldBeta newBeta)
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hwitness : BProv Ax_s C witness := by
+      have hinner : BProv Ax_s (C.map (rename Nat.succ))
+          (imp oldBeta newBeta) := by
+        let D : List Formula := oldBeta :: C.map (rename Nat.succ)
+        have hold : BProv Ax_s D oldBeta :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hleRaw : BProv Ax_s D (rename Nat.succ leHyp) :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+        have hle : BProv Ax_s D
+            (leTermAt (Term.var 1) Term.zero) := by
+          simpa [leHyp, leTermAt, rename, Term.rename, SetTheory.up]
+            using hleRaw
+        have hzeroLe : BProv Ax_s D
+            (leTermAt Term.zero (Term.var 1)) :=
+          BProv_Ax_s_leTermAt_zero_left (Term.var 1)
+        have hidx : BProv Ax_s D (eq (Term.var 1) Term.zero) :=
+          BProv_Ax_s_eq_of_leTermAt_leTermAt hle hzeroLe
+        have hsuccIdx : BProv Ax_s D
+            (eq (Term.succ (Term.var 1))
+              (Term.succ Term.zero)) :=
+          BProv_eq_congr_succ hidx
+        have holdOne : BProv Ax_s D
+            (betaTermTermAt (Term.var 0)
+              (Term.var (oldCode+2)) (Term.var (oldStep+2))
+              (Term.succ Term.zero)) :=
+          BProv_Ax_s_betaTermTermAt_of_eq_index hsuccIdx hold
+        have hnewZero : BProv Ax_s D
+            (betaTermTermAt (Term.var 0)
+              (Term.var (oldCode+2))
+              (Term.add (Term.var (oldStep+2))
+                (Term.var (oldStep+2)))
+              Term.zero) :=
+          BProv_Ax_s_betaTermTermAt_zero_double_step_of_one holdOne
+        have hnew : BProv Ax_s D newBeta := by
+          have htransport : BProv Ax_s D
+              (betaTermTermAt (Term.var 0)
+                (Term.var (oldCode+2))
+                (Term.add (Term.var (oldStep+2))
+                  (Term.var (oldStep+2)))
+                (Term.var 1)) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_index
+              (BProv_eqSym hidx) hnewZero
+          simpa [newBeta, Term.rename] using htransport
+        simpa [D, oldBeta, newBeta] using BProv_impI hnew
+      simpa [witness, oldBeta, newBeta] using
+        BProv_allI_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf) hinner
+    simpa [C, leHyp, witness] using BProv_impI hwitness
+  simpa [betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+
 /-- If the old beta step is provably zero, the identically-zero beta sequence
 is a shifted tail through any term bound.
 
@@ -18463,6 +18569,64 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
   simpa [betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness] using
     BProv_allI_of_sentences (B := Ax_s)
       (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- Package any proved shifted-tail relation into its two-witness existential
+form.
+
+The arithmetic construction remains entirely in `hthrough`; this theorem only
+introduces the explicit fresh code and step terms. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_through
+    {G : List Formula} {oldCode oldStep : Nat}
+    {newCode newStep lastTerm : Term}
+    (hthrough : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep lastTerm)) :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
+  let body : Formula :=
+    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n => n+2) lastTerm)
+  have hbody : BProv Ax_s G
+      (subst (instTerm newStep)
+        (subst (Term.upSubst (instTerm newCode)) body)) := by
+    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up, Term.rename_comp,
+      term_rename_up_succ_rename_succ, Function.comp_def,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ] using hthrough
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm newCode) (ex body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm newCode)) body)
+        (t := newStep) hbody)
+  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
+      (t := newCode) hstepEx)
+
+/-- Existential shifted-tail base case at the literal bound `0`.
+
+The witnesses are exposed by the preceding relation theorem: the old code and
+twice the old step. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
+    {G : List Formula} {oldCode oldStep : Nat} :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep Term.zero) :=
+  BProv_Ax_s_betaShiftTailExistsTermAt_of_through
+    (BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound
+      (G := G) (oldCode := oldCode) (oldStep := oldStep))
 
 /-- Zero-step existential shifted-tail constructor.
 
