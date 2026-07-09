@@ -494,6 +494,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_betaAt_eq_term
 #check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAt_eq_term
 #check PA.Formula.betaTermAt_eq_betaTermTermAt_var

@@ -18180,6 +18180,78 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
       (oldLast := Term.numeral n) (newLast := lastTerm)
       hnum hLast
 
+/-- Prove the existential shifted-tail formula from semantic finite old-tail
+data and a proved closed standard last bound. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
+    {G : List Formula}
+    {oldCode oldStep : Nat} {lastTerm : Term}
+    {oldCodeValue oldStepValue n : Nat}
+    (hOldCode : BProv Ax_s G (eqConstAt oldCode oldCodeValue))
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep oldStepValue))
+    (hLast : BProv Ax_s G (eq lastTerm (Term.numeral n)))
+    (holdEntries :
+      ∀ i, i ≤ n → ∃ o, BetaEntry oldCodeValue oldStepValue (i+1) o) :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
+  rcases BetaShiftTailThrough_exists oldCodeValue oldStepValue n with
+    ⟨newCodeValue, newStepValue, htail⟩
+  let body : Formula :=
+    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n => n+2) lastTerm)
+  have hNewCode : BProv Ax_s G
+      (eq (Term.numeral newCodeValue)
+        (Term.numeral newCodeValue)) :=
+    BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral newCodeValue)
+  have hNewStep : BProv Ax_s G
+      (eq (Term.numeral newStepValue)
+        (Term.numeral newStepValue)) :=
+    BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral newStepValue)
+  have hthrough : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        (Term.numeral newCodeValue) (Term.numeral newStepValue)
+        lastTerm) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
+      (oldCode := oldCode) (oldStep := oldStep)
+      (newCodeTerm := Term.numeral newCodeValue)
+      (newStepTerm := Term.numeral newStepValue)
+      (lastTerm := lastTerm)
+      (oldCodeValue := oldCodeValue)
+      (oldStepValue := oldStepValue)
+      (newCodeValue := newCodeValue)
+      (newStepValue := newStepValue)
+      (n := n)
+      hOldCode hOldStep hNewCode hNewStep hLast htail holdEntries
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral newStepValue))
+        (subst (Term.upSubst (instTerm (Term.numeral newCodeValue)))
+          body)) := by
+    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_numeral, Term.subst_rename_succ_up,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def, term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hthrough
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm (Term.numeral newCodeValue)) (ex body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst
+          (instTerm (Term.numeral newCodeValue))) body)
+        (t := Term.numeral newStepValue) hbody)
+  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
+      (t := Term.numeral newCodeValue) hstepEx)
+
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/
 theorem BProv_Ax_s_betaTermAt_of_betaAt_eq_term
