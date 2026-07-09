@@ -2933,6 +2933,27 @@ def crtInverseProductQuotTerm
       leftQuot)
     rightQuot
 
+/-- Positive representative of a negative Bezout coefficient.
+
+For moduli `m = S mPred`, `n = S nPred` and a certificate
+`n * positiveCoeff = 1 + m * negativeCoeff`, this term is
+`n * (positiveCoeff + 1) + (n - 1) * negativeCoeff`. -/
+def crtPositiveInverseTerm
+    (rightPred positiveCoeff negativeCoeff : Term) : Term :=
+  Term.add
+    (Term.mul (Term.succ rightPred) (Term.succ positiveCoeff))
+    (Term.mul rightPred negativeCoeff)
+
+/-- Nonnegative quotient paired with `crtPositiveInverseTerm`.
+
+Under the same negative Bezout certificate, this is
+`m * (negativeCoeff + 1) + (m - 1) * positiveCoeff`. -/
+def crtPositiveInverseQuotTerm
+    (leftPred positiveCoeff negativeCoeff : Term) : Term :=
+  Term.add
+    (Term.mul (Term.succ leftPred) (Term.succ negativeCoeff))
+    (Term.mul leftPred positiveCoeff)
+
 /-- Open beta step witness for the even branch of `0 ∈ S low`: when
 `low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
 use `S low` itself as the beta step. -/
@@ -9611,6 +9632,323 @@ theorem BProv_Ax_s_crtInverseProductQuot_expand
     BProv_eq_congr_succ hnormalQuotient
   simpa [leftBase, rightBase] using
     BProv_eqTrans hexpand hsuccCong
+
+/-- The positive inverse representative balances against its discarded
+negative coefficient.
+
+Writing `n = S rightPred`, the identity is
+`crtPositiveInverseTerm + negativeCoeff = n * S (positiveCoeff + negativeCoeff)`.
+-/
+theorem BProv_Ax_s_crtPositiveInverseTerm_add
+    {G : List Formula}
+    (rightPred positiveCoeff negativeCoeff : Term) :
+    BProv Ax_s G
+      (eq
+        (Term.add
+          (crtPositiveInverseTerm
+            rightPred positiveCoeff negativeCoeff)
+          negativeCoeff)
+        (Term.mul (Term.succ rightPred)
+          (Term.succ (Term.add positiveCoeff negativeCoeff)))) := by
+  let modulus : Term := Term.succ rightPred
+  let positivePart : Term :=
+    Term.mul modulus (Term.succ positiveCoeff)
+  let negativePart : Term := Term.mul rightPred negativeCoeff
+  have hassoc : BProv Ax_s G
+      (eq
+        (Term.add (Term.add positivePart negativePart) negativeCoeff)
+        (Term.add positivePart
+          (Term.add negativePart negativeCoeff))) :=
+    BProv_Ax_s_add_assoc_terms positivePart negativePart negativeCoeff
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul modulus negativeCoeff)
+        (Term.add negativePart negativeCoeff)) := by
+    simpa [modulus, negativePart] using
+      BProv_Ax_s_succ_mul_terms rightPred negativeCoeff
+  have hnegativePart : BProv Ax_s G
+      (eq (Term.add negativePart negativeCoeff)
+        (Term.mul modulus negativeCoeff)) :=
+    BProv_eqSym hsuccMul
+  have hnegativeCong : BProv Ax_s G
+      (eq
+        (Term.add positivePart
+          (Term.add negativePart negativeCoeff))
+        (Term.add positivePart
+          (Term.mul modulus negativeCoeff))) :=
+    BProv_eq_congr_add_right positivePart hnegativePart
+  have hfactor : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (Term.add (Term.succ positiveCoeff) negativeCoeff))
+        (Term.add positivePart
+          (Term.mul modulus negativeCoeff))) := by
+    simpa [positivePart] using
+      BProv_Ax_s_mul_add_terms
+        modulus (Term.succ positiveCoeff) negativeCoeff
+  have hsuccAdd : BProv Ax_s G
+      (eq (Term.add (Term.succ positiveCoeff) negativeCoeff)
+        (Term.succ (Term.add positiveCoeff negativeCoeff))) :=
+    BProv_Ax_s_succ_add_terms positiveCoeff negativeCoeff
+  have hsuccCong : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (Term.add (Term.succ positiveCoeff) negativeCoeff))
+        (Term.mul modulus
+          (Term.succ (Term.add positiveCoeff negativeCoeff)))) :=
+    BProv_eq_congr_mul_right modulus hsuccAdd
+  simpa [crtPositiveInverseTerm, modulus, positivePart, negativePart] using
+    BProv_eqTrans hassoc
+      (BProv_eqTrans hnegativeCong
+        (BProv_eqTrans (BProv_eqSym hfactor) hsuccCong))
+
+/-- The nonnegative quotient balances against the positive coefficient.
+
+Writing `m = S leftPred`, the identity is
+`crtPositiveInverseQuotTerm + positiveCoeff = m * S (positiveCoeff + negativeCoeff)`.
+-/
+theorem BProv_Ax_s_crtPositiveInverseQuotTerm_add
+    {G : List Formula}
+    (leftPred positiveCoeff negativeCoeff : Term) :
+    BProv Ax_s G
+      (eq
+        (Term.add
+          (crtPositiveInverseQuotTerm
+            leftPred positiveCoeff negativeCoeff)
+          positiveCoeff)
+        (Term.mul (Term.succ leftPred)
+          (Term.succ (Term.add positiveCoeff negativeCoeff)))) := by
+  let modulus : Term := Term.succ leftPred
+  let negativePart : Term :=
+    Term.mul modulus (Term.succ negativeCoeff)
+  let positivePart : Term := Term.mul leftPred positiveCoeff
+  have hassoc : BProv Ax_s G
+      (eq
+        (Term.add (Term.add negativePart positivePart) positiveCoeff)
+        (Term.add negativePart
+          (Term.add positivePart positiveCoeff))) :=
+    BProv_Ax_s_add_assoc_terms negativePart positivePart positiveCoeff
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul modulus positiveCoeff)
+        (Term.add positivePart positiveCoeff)) := by
+    simpa [modulus, positivePart] using
+      BProv_Ax_s_succ_mul_terms leftPred positiveCoeff
+  have hpositivePart : BProv Ax_s G
+      (eq (Term.add positivePart positiveCoeff)
+        (Term.mul modulus positiveCoeff)) :=
+    BProv_eqSym hsuccMul
+  have hpositiveCong : BProv Ax_s G
+      (eq
+        (Term.add negativePart
+          (Term.add positivePart positiveCoeff))
+        (Term.add negativePart
+          (Term.mul modulus positiveCoeff))) :=
+    BProv_eq_congr_add_right negativePart hpositivePart
+  have hfactor : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (Term.add (Term.succ negativeCoeff) positiveCoeff))
+        (Term.add negativePart
+          (Term.mul modulus positiveCoeff))) := by
+    simpa [negativePart] using
+      BProv_Ax_s_mul_add_terms
+        modulus (Term.succ negativeCoeff) positiveCoeff
+  have hsuccAdd : BProv Ax_s G
+      (eq (Term.add (Term.succ negativeCoeff) positiveCoeff)
+        (Term.succ (Term.add negativeCoeff positiveCoeff))) :=
+    BProv_Ax_s_succ_add_terms negativeCoeff positiveCoeff
+  have hcoeffComm : BProv Ax_s G
+      (eq (Term.add negativeCoeff positiveCoeff)
+        (Term.add positiveCoeff negativeCoeff)) :=
+    BProv_Ax_s_add_comm_terms negativeCoeff positiveCoeff
+  have hcoeffSucc : BProv Ax_s G
+      (eq (Term.succ (Term.add negativeCoeff positiveCoeff))
+        (Term.succ (Term.add positiveCoeff negativeCoeff))) :=
+    BProv_eq_congr_succ hcoeffComm
+  have hinside : BProv Ax_s G
+      (eq (Term.add (Term.succ negativeCoeff) positiveCoeff)
+        (Term.succ (Term.add positiveCoeff negativeCoeff))) :=
+    BProv_eqTrans hsuccAdd hcoeffSucc
+  have hinsideCong : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (Term.add (Term.succ negativeCoeff) positiveCoeff))
+        (Term.mul modulus
+          (Term.succ (Term.add positiveCoeff negativeCoeff)))) :=
+    BProv_eq_congr_mul_right modulus hinside
+  simpa [crtPositiveInverseQuotTerm, modulus, negativePart, positivePart] using
+    BProv_eqTrans hassoc
+      (BProv_eqTrans hpositiveCong
+        (BProv_eqTrans (BProv_eqSym hfactor) hinsideCong))
+
+/-- Convert a negative Bezout-shaped equation into the positive inverse form
+required by `crtExtendCodeTerm`.
+
+No subtraction occurs in the terms.  Both sides are first augmented by the
+same product `m * negativeCoeff`, normalized to a common expression, and then
+PA cancellation removes that addend. -/
+theorem BProv_Ax_s_crtPositiveInverse_of_negative
+    {G : List Formula}
+    {leftPred rightPred positiveCoeff negativeCoeff : Term}
+    (hnegative : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ rightPred) positiveCoeff)
+        (Term.succ
+          (Term.mul (Term.succ leftPred) negativeCoeff)))) :
+    BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ leftPred)
+          (crtPositiveInverseTerm
+            rightPred positiveCoeff negativeCoeff))
+        (Term.succ
+          (Term.mul (Term.succ rightPred)
+            (crtPositiveInverseQuotTerm
+              leftPred positiveCoeff negativeCoeff)))) := by
+  let leftModulus : Term := Term.succ leftPred
+  let rightModulus : Term := Term.succ rightPred
+  let inverse : Term :=
+    crtPositiveInverseTerm rightPred positiveCoeff negativeCoeff
+  let inverseQuot : Term :=
+    crtPositiveInverseQuotTerm leftPred positiveCoeff negativeCoeff
+  let totalCoeff : Term :=
+    Term.succ (Term.add positiveCoeff negativeCoeff)
+  let carry : Term := Term.mul leftModulus negativeCoeff
+  let common : Term :=
+    Term.mul (Term.mul leftModulus rightModulus) totalCoeff
+  have hinverseAdd : BProv Ax_s G
+      (eq (Term.add inverse negativeCoeff)
+        (Term.mul rightModulus totalCoeff)) := by
+    simpa [inverse, rightModulus, totalCoeff] using
+      BProv_Ax_s_crtPositiveInverseTerm_add
+        (G := G) rightPred positiveCoeff negativeCoeff
+  have hquotAdd : BProv Ax_s G
+      (eq (Term.add inverseQuot positiveCoeff)
+        (Term.mul leftModulus totalCoeff)) := by
+    simpa [inverseQuot, leftModulus, totalCoeff] using
+      BProv_Ax_s_crtPositiveInverseQuotTerm_add
+        (G := G) leftPred positiveCoeff negativeCoeff
+  have hleftDist : BProv Ax_s G
+      (eq (Term.mul leftModulus
+          (Term.add inverse negativeCoeff))
+        (Term.add (Term.mul leftModulus inverse) carry)) := by
+    simpa [carry] using
+      BProv_Ax_s_mul_add_terms leftModulus inverse negativeCoeff
+  have hleftAdd : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul leftModulus inverse) carry)
+        common) := by
+    have htoSum : BProv Ax_s G
+        (eq
+          (Term.add (Term.mul leftModulus inverse) carry)
+          (Term.mul leftModulus
+            (Term.add inverse negativeCoeff))) :=
+      BProv_eqSym hleftDist
+    have hsumCong : BProv Ax_s G
+        (eq
+          (Term.mul leftModulus
+            (Term.add inverse negativeCoeff))
+          (Term.mul leftModulus
+            (Term.mul rightModulus totalCoeff))) :=
+      BProv_eq_congr_mul_right leftModulus hinverseAdd
+    have hassoc : BProv Ax_s G
+        (eq
+          (Term.mul leftModulus
+            (Term.mul rightModulus totalCoeff))
+          common) := by
+      simpa [common] using
+        BProv_eqSym
+          (BProv_Ax_s_mul_assoc_terms
+            leftModulus rightModulus totalCoeff)
+    exact BProv_eqTrans htoSum (BProv_eqTrans hsumCong hassoc)
+  have hrightStart : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.succ (Term.mul rightModulus inverseQuot)) carry)
+        (Term.succ
+          (Term.add
+            (Term.mul rightModulus inverseQuot) carry))) :=
+    BProv_Ax_s_succ_add_terms
+      (Term.mul rightModulus inverseQuot) carry
+  have hrightAddSucc : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.add
+            (Term.mul rightModulus inverseQuot) carry))
+        (Term.add
+          (Term.mul rightModulus inverseQuot)
+          (Term.succ carry))) :=
+    BProv_eqSym
+      (BProv_weaken_nil
+        (BProv_Ax_s_addSucc_terms
+          (Term.mul rightModulus inverseQuot) carry))
+  have hnegativeSym : BProv Ax_s G
+      (eq (Term.succ carry)
+        (Term.mul rightModulus positiveCoeff)) := by
+    simpa [leftModulus, rightModulus, carry] using
+      BProv_eqSym hnegative
+  have hnegativeCong : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul rightModulus inverseQuot)
+          (Term.succ carry))
+        (Term.add
+          (Term.mul rightModulus inverseQuot)
+          (Term.mul rightModulus positiveCoeff))) :=
+    BProv_eq_congr_add_right
+      (Term.mul rightModulus inverseQuot) hnegativeSym
+  have hrightFactor : BProv Ax_s G
+      (eq
+        (Term.mul rightModulus
+          (Term.add inverseQuot positiveCoeff))
+        (Term.add
+          (Term.mul rightModulus inverseQuot)
+          (Term.mul rightModulus positiveCoeff))) :=
+    BProv_Ax_s_mul_add_terms
+      rightModulus inverseQuot positiveCoeff
+  have hquotCong : BProv Ax_s G
+      (eq
+        (Term.mul rightModulus
+          (Term.add inverseQuot positiveCoeff))
+        (Term.mul rightModulus
+          (Term.mul leftModulus totalCoeff))) :=
+    BProv_eq_congr_mul_right rightModulus hquotAdd
+  have hassocRight : BProv Ax_s G
+      (eq
+        (Term.mul rightModulus
+          (Term.mul leftModulus totalCoeff))
+        (Term.mul (Term.mul rightModulus leftModulus)
+          totalCoeff)) :=
+    BProv_eqSym
+      (BProv_Ax_s_mul_assoc_terms
+        rightModulus leftModulus totalCoeff)
+  have hmodComm : BProv Ax_s G
+      (eq (Term.mul rightModulus leftModulus)
+        (Term.mul leftModulus rightModulus)) :=
+    BProv_Ax_s_mul_comm_terms rightModulus leftModulus
+  have hmodCommCong : BProv Ax_s G
+      (eq
+        (Term.mul (Term.mul rightModulus leftModulus) totalCoeff)
+        common) := by
+    simpa [common] using
+      BProv_eq_congr_mul_left totalCoeff hmodComm
+  have hrightAdd : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.succ (Term.mul rightModulus inverseQuot)) carry)
+        common) :=
+    BProv_eqTrans hrightStart
+      (BProv_eqTrans hrightAddSucc
+        (BProv_eqTrans hnegativeCong
+          (BProv_eqTrans (BProv_eqSym hrightFactor)
+            (BProv_eqTrans hquotCong
+              (BProv_eqTrans hassocRight hmodCommCong)))))
+  have haugmented : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul leftModulus inverse) carry)
+        (Term.add
+          (Term.succ (Term.mul rightModulus inverseQuot)) carry)) :=
+    BProv_eqTrans hleftAdd (BProv_eqSym hrightAdd)
+  simpa [leftModulus, rightModulus, inverse, inverseQuot] using
+    BProv_Ax_s_add_cancel_right_terms haugmented
 
 /-- Compose two explicit positive inverse certificates modulo the same term.
 
