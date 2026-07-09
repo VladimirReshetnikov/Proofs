@@ -19780,6 +19780,27 @@ Definition betaShiftTailExistsTermAt
       (tVar 1) (tVar 0)
       (Term.rename (fun n => n + 2) last))).
 
+(* Lean: betaShiftTailExistsTermAtBody *)
+Definition betaShiftTailExistsTermAtBody
+    (oldCode oldStep : nat) (last : term) : formula :=
+  betaShiftTailThroughTermAt (oldCode + 2) (oldStep + 2)
+    (tVar 1) (tVar 0)
+    (Term.rename (fun n => n + 2) last).
+
+(* Lean: betaShiftTailExistsTermAtStepEx *)
+Definition betaShiftTailExistsTermAtStepEx
+    (oldCode oldStep : nat) (last : term) : formula :=
+  pEx (betaShiftTailExistsTermAtBody oldCode oldStep last).
+
+(* Lean: betaShiftTailExistsTermAtOpenedContext *)
+Definition betaShiftTailExistsTermAtOpenedContext
+    (oldCode oldStep : nat) (last : term) (G : list formula)
+    : list formula :=
+  betaShiftTailExistsTermAtBody oldCode oldStep last ::
+    map (rename S)
+      (betaShiftTailExistsTermAtStepEx oldCode oldStep last ::
+        map (rename S) G).
+
 (* Lean: betaShiftTailThroughConstAt *)
 Definition betaShiftTailThroughConstAt
     (oldCode oldStep newCode newStep last : nat) : formula :=
@@ -23130,6 +23151,69 @@ Proof.
       reflexivity.
   }
   exact (BProv_mp Ax_s G _ _ hout hold).
+Qed.
+
+(* Lean: BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened *)
+Lemma BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened :
+  forall G target oldCode oldStep (lastTerm : term),
+  BProv Ax_s
+    (betaShiftTailExistsTermAtOpenedContext oldCode oldStep lastTerm G)
+    (rename S (rename S target)) ->
+  BProv Ax_s G
+    (betaShiftTailExistsTermAt oldCode oldStep lastTerm) ->
+  BProv Ax_s G target.
+Proof.
+  intros G target oldCode oldStep lastTerm hopened hex.
+  set (body := betaShiftTailExistsTermAtBody
+    oldCode oldStep lastTerm).
+  set (stepEx := betaShiftTailExistsTermAtStepEx
+    oldCode oldStep lastTerm).
+  assert (houter : BProv Ax_s (stepEx :: map (rename S) G)
+      (rename S target)).
+  {
+    assert (hstepEx : BProv Ax_s (stepEx :: map (rename S) G) stepEx).
+    { apply BProv_ass. simpl. left. reflexivity. }
+    assert (hinner : BProv Ax_s
+        (body :: map (rename S) (stepEx :: map (rename S) G))
+        (rename S (rename S target))).
+    {
+      unfold betaShiftTailExistsTermAtOpenedContext in hopened.
+      unfold body, stepEx, betaShiftTailExistsTermAtStepEx,
+        betaShiftTailExistsTermAtBody in *.
+      exact hopened.
+    }
+    exact (BProv_exE_of_sentences Ax_s (stepEx :: map (rename S) G)
+      body (rename S target) sentence_ax_s hstepEx hinner).
+  }
+  assert (houterEx : BProv Ax_s G (pEx stepEx)).
+  {
+    unfold betaShiftTailExistsTermAt in hex.
+    unfold stepEx, betaShiftTailExistsTermAtStepEx, body,
+      betaShiftTailExistsTermAtBody.
+    exact hex.
+  }
+  exact (BProv_exE_of_sentences Ax_s G stepEx target
+    sentence_ax_s houterEx houter).
+Qed.
+
+(* Lean: BProv_Ax_s_betaShiftTailExistsTermAt_assumption_elim_opened *)
+Lemma BProv_Ax_s_betaShiftTailExistsTermAt_assumption_elim_opened :
+  forall G target oldCode oldStep (lastTerm : term),
+  BProv Ax_s
+    (betaShiftTailExistsTermAtOpenedContext oldCode oldStep lastTerm
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G))
+    (rename S (rename S target)) ->
+  BProv Ax_s
+    (betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G)
+    target.
+Proof.
+  intros G target oldCode oldStep lastTerm hopened.
+  set (C := betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G).
+  assert (hex : BProv Ax_s C
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm)).
+  { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+  exact (BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
+    C target oldCode oldStep lastTerm hopened hex).
 Qed.
 
 Lemma BProv_Ax_s_hfMemAt_bitOneEx_of_bit :
