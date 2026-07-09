@@ -2566,6 +2566,37 @@ def ltTermAt (a b : Term) : Formula :=
 def dvdAt (a b : Nat) : Formula :=
   ex (eq (Term.mul (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
 
+/-- Fully term-parametric divisibility.  The existential witness is an
+ordinary quotient satisfying `divisor * quotient = value`. -/
+def dvdTermTermAt (divisor value : Term) : Formula :=
+  ex (eq
+    (Term.mul (Term.rename Nat.succ divisor) (Term.var 0))
+    (Term.rename Nat.succ value))
+
+/-- A term is divisible by every positive value through a term bound.
+
+The bound variable is represented as a predecessor: for every `q < bound`,
+the successor `q + 1` divides `multiple`.  This avoids a spurious divisibility
+obligation at zero and is the induction-facing common-multiple invariant used
+for beta-modulus gaps. -/
+def commonMultipleThroughTermAt (bound multiple : Term) : Formula :=
+  all (imp
+    (ltTermAt (Term.var 0) (Term.rename Nat.succ bound))
+    (dvdTermTermAt (Term.succ (Term.var 0))
+      (Term.rename Nat.succ multiple)))
+
+/-- Existence of a common multiple for all positive values through a term
+bound.  The witness is explicit and the body is exactly
+`commonMultipleThroughTermAt`; no construction is built into the relation. -/
+def commonMultipleExistsTermAt (bound : Term) : Formula :=
+  ex (commonMultipleThroughTermAt
+    (Term.rename Nat.succ bound) (Term.var 0))
+
+/-- Body exposed after opening `commonMultipleExistsTermAt`. -/
+def commonMultipleExistsTermAtBody (bound : Term) : Formula :=
+  commonMultipleThroughTermAt
+    (Term.rename Nat.succ bound) (Term.var 0)
+
 def eqConstAt (a n : Nat) : Formula :=
   eq (Term.var a) (Term.numeral n)
 
@@ -3481,6 +3512,69 @@ theorem dvdAt_nat (e : Nat → Nat) (a b : Nat) :
     simp only [Sat, Term.eval, natModel, scons]
     change e a * q = e b
     exact hq.symm
+
+theorem dvdTermTermAt_nat (e : Nat → Nat) (divisor value : Term) :
+    Sat natModel e (dvdTermTermAt divisor value) ↔
+      Term.eval natModel e divisor ∣ Term.eval natModel e value := by
+  constructor
+  · intro h
+    rcases h with ⟨q, hq⟩
+    simp only [Sat, Term.eval, natModel, Term.eval_rename, scons] at hq
+    exact ⟨q, hq.symm⟩
+  · intro h
+    rcases h with ⟨q, hq⟩
+    refine ⟨q, ?_⟩
+    simp only [Sat, Term.eval, natModel, Term.eval_rename, scons]
+    exact hq.symm
+
+theorem commonMultipleThroughTermAt_nat
+    (e : Nat → Nat) (bound multiple : Term) :
+    Sat natModel e (commonMultipleThroughTermAt bound multiple) ↔
+      ∀ q, q < Term.eval natModel e bound →
+        q + 1 ∣ Term.eval natModel e multiple := by
+  constructor
+  · intro h q hq
+    have hqSat : Sat natModel (scons q e)
+        (ltTermAt (Term.var 0) (Term.rename Nat.succ bound)) := by
+      exact (ltTermAt_nat (scons q e)
+        (Term.var 0) (Term.rename Nat.succ bound)).mpr (by
+          simpa [Term.eval_rename, Term.eval, scons] using hq)
+    have hdvd := (dvdTermTermAt_nat (scons q e)
+      (Term.succ (Term.var 0))
+      (Term.rename Nat.succ multiple)).mp (h q hqSat)
+    simpa [Term.eval_rename, Term.eval, natModel,
+      Nat.succ_eq_add_one, scons] using hdvd
+  · intro h q hqSat
+    have hq : q < Term.eval natModel e bound := by
+      have hlt := (ltTermAt_nat (scons q e)
+        (Term.var 0) (Term.rename Nat.succ bound)).mp hqSat
+      simpa [Term.eval_rename, Term.eval, scons] using hlt
+    apply (dvdTermTermAt_nat (scons q e)
+      (Term.succ (Term.var 0))
+      (Term.rename Nat.succ multiple)).mpr
+    simpa [Term.eval_rename, Term.eval, natModel,
+      Nat.succ_eq_add_one, scons] using h q hq
+
+theorem commonMultipleExistsTermAt_nat
+    (e : Nat → Nat) (bound : Term) :
+    Sat natModel e (commonMultipleExistsTermAt bound) ↔
+      ∃ multiple, ∀ q, q < Term.eval natModel e bound →
+        q + 1 ∣ multiple := by
+  constructor
+  · intro h
+    rcases h with ⟨multiple, hmultiple⟩
+    refine ⟨multiple, ?_⟩
+    have hspec := (commonMultipleThroughTermAt_nat
+      (scons multiple e) (Term.rename Nat.succ bound)
+      (Term.var 0)).mp hmultiple
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨multiple, hmultiple⟩
+    refine ⟨multiple, ?_⟩
+    apply (commonMultipleThroughTermAt_nat
+      (scons multiple e) (Term.rename Nat.succ bound)
+      (Term.var 0)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hmultiple
 
 theorem eqConstAt_nat (e : Nat → Nat) (a n : Nat) :
     Sat natModel e (eqConstAt a n) ↔ e a = n := by
@@ -13569,6 +13663,421 @@ theorem BProv_Ax_s_dvdAt_of_eqConst {G : List Formula}
   rcases hmn with ⟨q, hq⟩
   exact BProv_Ax_s_dvdAt_of_eqConst_mul
     (a := a) (b := b) (m := m) (n := n) (q := q) ha hb hq.symm
+
+/-- A term quotient equation gives the corresponding fully term-parametric
+divisibility witness. -/
+theorem BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms
+    {G : List Formula} {divisor value quotient : Term}
+    (hmul : BProv Ax_s G
+      (eq value (Term.mul divisor quotient))) :
+    BProv Ax_s G (dvdTermTermAt divisor value) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm quotient)
+        (eq
+          (Term.mul (Term.rename Nat.succ divisor) (Term.var 0))
+          (Term.rename Nat.succ value))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using BProv_eqSym hmul
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq
+      (Term.mul (Term.rename Nat.succ divisor) (Term.var 0))
+      (Term.rename Nat.succ value))
+    (t := quotient) hbody
+
+/-- Eliminate a fully term-parametric divisibility witness by opening its
+quotient equation as the head assumption. -/
+theorem BProv_Ax_s_dvdTermTermAt_elim_opened
+    {G : List Formula} {divisor value : Term} {target : Formula}
+    (hbody : BProv Ax_s
+      (eq
+          (Term.mul (Term.rename Nat.succ divisor) (Term.var 0))
+          (Term.rename Nat.succ value) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hdvd : BProv Ax_s G (dvdTermTermAt divisor value)) :
+    BProv Ax_s G target :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hdvd (by simpa [dvdTermTermAt] using hbody)
+
+/-- Divisibility is preserved when the dividend is multiplied on the right.
+The opened quotient is multiplied by the same factor. -/
+theorem BProv_Ax_s_dvdTermTermAt_mul_right
+    {G : List Formula} {divisor value appended : Term}
+    (hdvd : BProv Ax_s G (dvdTermTermAt divisor value)) :
+    BProv Ax_s G
+      (dvdTermTermAt divisor (Term.mul value appended)) := by
+  let body : Formula :=
+    eq
+      (Term.mul (Term.rename Nat.succ divisor) (Term.var 0))
+      (Term.rename Nat.succ value)
+  let target : Formula :=
+    dvdTermTermAt divisor (Term.mul value appended)
+  have hopened : BProv Ax_s
+      (body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    let divisor1 : Term := Term.rename Nat.succ divisor
+    let value1 : Term := Term.rename Nat.succ value
+    let appended1 : Term := Term.rename Nat.succ appended
+    have hquot : BProv Ax_s C
+        (eq (Term.mul divisor1 (Term.var 0)) value1) := by
+      simpa [C, body, divisor1, value1] using
+        (BProv_ass (B := Ax_s) (G := C) (by simp [C, body]))
+    have hstart : BProv Ax_s C
+        (eq (Term.mul value1 appended1)
+          (Term.mul (Term.mul divisor1 (Term.var 0)) appended1)) :=
+      BProv_eq_congr_mul_left appended1 (BProv_eqSym hquot)
+    have hassoc : BProv Ax_s C
+        (eq
+          (Term.mul (Term.mul divisor1 (Term.var 0)) appended1)
+          (Term.mul divisor1
+            (Term.mul (Term.var 0) appended1))) :=
+      BProv_Ax_s_mul_assoc_terms divisor1 (Term.var 0) appended1
+    have hvalue : BProv Ax_s C
+        (eq (Term.mul value1 appended1)
+          (Term.mul divisor1
+            (Term.mul (Term.var 0) appended1))) :=
+      BProv_eqTrans hstart hassoc
+    have hnew : BProv Ax_s C
+        (dvdTermTermAt divisor1 (Term.mul value1 appended1)) :=
+      BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms hvalue
+    simpa [target, C, body, divisor1, value1, appended1,
+      dvdTermTermAt, rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hnew
+  exact BProv_Ax_s_dvdTermTermAt_elim_opened
+    (G := G) (divisor := divisor) (value := value)
+    (target := target) (by simpa [body] using hopened) hdvd
+
+/-- Transport fully term-parametric divisibility across equality of divisor
+terms. -/
+theorem BProv_Ax_s_dvdTermTermAt_of_eq_divisor
+    {G : List Formula} {oldDivisor newDivisor value : Term}
+    (heq : BProv Ax_s G (eq oldDivisor newDivisor))
+    (hdvd : BProv Ax_s G (dvdTermTermAt oldDivisor value)) :
+    BProv Ax_s G (dvdTermTermAt newDivisor value) := by
+  let a : Formula :=
+    dvdTermTermAt (Term.var 0) (Term.rename Nat.succ value)
+  have hold : BProv Ax_s G (subst (instTerm oldDivisor) a) := by
+    simpa [a, dvdTermTermAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hdvd
+  have hnew : BProv Ax_s G (subst (instTerm newDivisor) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := oldDivisor) (t := newDivisor) (a := a)
+      heq hold
+  simpa [a, dvdTermTermAt, subst, instTerm, Term.subst,
+    Term.upSubst, Term.rename, Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ] using hnew
+
+/-- Transport fully term-parametric divisibility across equality of dividend
+terms. -/
+theorem BProv_Ax_s_dvdTermTermAt_of_eq_value
+    {G : List Formula} {divisor oldValue newValue : Term}
+    (heq : BProv Ax_s G (eq oldValue newValue))
+    (hdvd : BProv Ax_s G (dvdTermTermAt divisor oldValue)) :
+    BProv Ax_s G (dvdTermTermAt divisor newValue) := by
+  let a : Formula :=
+    dvdTermTermAt (Term.rename Nat.succ divisor) (Term.var 0)
+  have hold : BProv Ax_s G (subst (instTerm oldValue) a) := by
+    simpa [a, dvdTermTermAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hdvd
+  have hnew : BProv Ax_s G (subst (instTerm newValue) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := oldValue) (t := newValue) (a := a)
+      heq hold
+  simpa [a, dvdTermTermAt, subst, instTerm, Term.subst,
+    Term.upSubst, Term.rename, Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ] using hnew
+
+/-- Instantiate a common-multiple invariant at one predecessor below its
+bound. -/
+theorem BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
+    {G : List Formula} {bound multiple gapPred : Term}
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound multiple))
+    (hlt : BProv Ax_s G (ltTermAt gapPred bound)) :
+    BProv Ax_s G
+      (dvdTermTermAt (Term.succ gapPred) multiple) := by
+  let body : Formula :=
+    imp
+      (ltTermAt (Term.var 0) (Term.rename Nat.succ bound))
+      (dvdTermTermAt (Term.succ (Term.var 0))
+        (Term.rename Nat.succ multiple))
+  have himpRaw : BProv Ax_s G (subst (instTerm gapPred) body) :=
+    BProv_allE (B := Ax_s) (G := G) (a := body) (t := gapPred)
+      (by simpa [commonMultipleThroughTermAt, body] using hcommon)
+  have himp : BProv Ax_s G
+      (imp (ltTermAt gapPred bound)
+        (dvdTermTermAt (Term.succ gapPred) multiple)) := by
+    simpa [body, ltTermAt, dvdTermTermAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using himpRaw
+  exact BProv_mp Ax_s G
+    (ltTermAt gapPred bound)
+    (dvdTermTermAt (Term.succ gapPred) multiple)
+    himp hlt
+
+/-- Every term is vacuously a common multiple through bound zero. -/
+theorem BProv_Ax_s_commonMultipleThroughTermAt_zero
+    {G : List Formula} (multiple : Term) :
+    BProv Ax_s G
+      (commonMultipleThroughTermAt Term.zero multiple) := by
+  let antecedent : Formula :=
+    ltTermAt (Term.var 0) Term.zero
+  let consequent : Formula :=
+    dvdTermTermAt (Term.succ (Term.var 0))
+      (Term.rename Nat.succ multiple)
+  let body : Formula := imp antecedent consequent
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) consequent := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    have hlt : BProv Ax_s C
+        (ltTermAt (Term.var 0) Term.zero) := by
+      simpa [C, antecedent] using
+        (BProv_ass (B := Ax_s) (G := C) (by simp [C, antecedent]))
+    have hle : BProv Ax_s C
+        (leTermAt Term.zero (Term.var 0)) :=
+      BProv_Ax_s_leTermAt_zero_left (Term.var 0)
+    have hbot : BProv Ax_s C bot :=
+      BProv_Ax_s_ltTermAt_leTermAt_bot hlt hle
+    exact BProv_botE (B := Ax_s) (G := C)
+      (a := consequent) hbot
+  have himp : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    simpa [body] using BProv_impI hbody
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [commonMultipleThroughTermAt, body, antecedent, consequent,
+    Term.rename] using hall
+
+/-- Extend a common-multiple witness through one larger bound by multiplying
+it by that new positive endpoint. -/
+theorem BProv_Ax_s_commonMultipleThroughTermAt_succ
+    {G : List Formula} {bound multiple : Term}
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound multiple)) :
+    BProv Ax_s G
+      (commonMultipleThroughTermAt (Term.succ bound)
+        (Term.mul multiple (Term.succ bound))) := by
+  let newMultiple : Term := Term.mul multiple (Term.succ bound)
+  let antecedent : Formula :=
+    ltTermAt (Term.var 0)
+      (Term.succ (Term.rename Nat.succ bound))
+  let consequent : Formula :=
+    dvdTermTermAt (Term.succ (Term.var 0))
+      (Term.rename Nat.succ newMultiple)
+  let body : Formula := imp antecedent consequent
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) consequent := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    let bound1 : Term := Term.rename Nat.succ bound
+    let multiple1 : Term := Term.rename Nat.succ multiple
+    have hltSucc : BProv Ax_s C
+        (ltTermAt (Term.var 0) (Term.succ bound1)) := by
+      simpa [C, antecedent, bound1] using
+        (BProv_ass (B := Ax_s) (G := C) (by simp [C, antecedent]))
+    have hcases : BProv Ax_s C
+        (or (ltTermAt (Term.var 0) bound1)
+          (eq (Term.var 0) bound1)) :=
+      BProv_Ax_s_ltTermAt_succ_right_cases hltSucc
+    have hcommonRen : BProv Ax_s (G.map (rename Nat.succ))
+        (commonMultipleThroughTermAt bound1 multiple1) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hcommon Nat.succ
+      simpa [bound1, multiple1, commonMultipleThroughTermAt,
+        dvdTermTermAt, ltTermAt, rename, Term.rename,
+        SetTheory.up, Term.rename_comp, Function.comp_def] using hren
+    have hltBranch : BProv Ax_s
+        (ltTermAt (Term.var 0) bound1 :: C) consequent := by
+      let D : List Formula := ltTermAt (Term.var 0) bound1 :: C
+      have hlt : BProv Ax_s D
+          (ltTermAt (Term.var 0) bound1) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hcommonD : BProv Ax_s D
+          (commonMultipleThroughTermAt bound1 multiple1) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hcommonRen)
+      have hdvd : BProv Ax_s D
+          (dvdTermTermAt (Term.succ (Term.var 0)) multiple1) :=
+        BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
+          hcommonD hlt
+      have hmul : BProv Ax_s D
+          (dvdTermTermAt (Term.succ (Term.var 0))
+            (Term.mul multiple1 (Term.succ bound1))) :=
+        BProv_Ax_s_dvdTermTermAt_mul_right hdvd
+      simpa [D, consequent, newMultiple, multiple1, bound1,
+        dvdTermTermAt, rename, Term.rename, SetTheory.up,
+        Term.rename_comp, Function.comp_def] using hmul
+    have heqBranch : BProv Ax_s
+        (eq (Term.var 0) bound1 :: C) consequent := by
+      let D : List Formula := eq (Term.var 0) bound1 :: C
+      have heq : BProv Ax_s D (eq (Term.var 0) bound1) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hfactor : BProv Ax_s D
+          (dvdTermTermAt (Term.succ bound1)
+            (Term.mul multiple1 (Term.succ bound1))) :=
+        BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms
+          (BProv_Ax_s_mul_comm_terms multiple1 (Term.succ bound1))
+      have hdivisor : BProv Ax_s D
+          (eq (Term.succ bound1) (Term.succ (Term.var 0))) :=
+        BProv_eqSym (BProv_eq_congr_succ heq)
+      have hdvd : BProv Ax_s D
+          (dvdTermTermAt (Term.succ (Term.var 0))
+            (Term.mul multiple1 (Term.succ bound1))) :=
+        BProv_Ax_s_dvdTermTermAt_of_eq_divisor hdivisor hfactor
+      simpa [D, consequent, newMultiple, multiple1, bound1,
+        dvdTermTermAt, rename, Term.rename, SetTheory.up,
+        Term.rename_comp, Function.comp_def] using hdvd
+    exact BProv_orE hcases hltBranch heqBranch
+  have himp : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    simpa [body] using BProv_impI hbody
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [commonMultipleThroughTermAt, body, antecedent, consequent,
+    newMultiple, Term.rename] using hall
+
+/-- Package an explicit common-multiple witness into the existential
+relation. -/
+theorem BProv_Ax_s_commonMultipleExistsTermAt_of_through
+    {G : List Formula} {bound multiple : Term}
+    (hthrough : BProv Ax_s G
+      (commonMultipleThroughTermAt bound multiple)) :
+    BProv Ax_s G (commonMultipleExistsTermAt bound) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm multiple)
+        (commonMultipleThroughTermAt
+          (Term.rename Nat.succ bound) (Term.var 0))) := by
+    simpa [commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def] using hthrough
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := commonMultipleThroughTermAt
+      (Term.rename Nat.succ bound) (Term.var 0))
+    (t := multiple) hbody
+
+/-- Eliminate a common-multiple existence witness by opening its explicit
+`commonMultipleThroughTermAt` body. -/
+theorem BProv_Ax_s_commonMultipleExistsTermAt_elim_opened
+    {G : List Formula} {bound : Term} {target : Formula}
+    (hbody : BProv Ax_s
+      (commonMultipleExistsTermAtBody bound ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hex : BProv Ax_s G (commonMultipleExistsTermAt bound)) :
+    BProv Ax_s G target :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [commonMultipleExistsTermAt,
+      commonMultipleExistsTermAtBody] using hbody)
+
+/-- Common-multiple existence at bound zero, witnessed by one. -/
+theorem BProv_Ax_s_commonMultipleExistsTermAt_zero
+    {G : List Formula} :
+    BProv Ax_s G (commonMultipleExistsTermAt Term.zero) :=
+  BProv_Ax_s_commonMultipleExistsTermAt_of_through
+    (multiple := Term.numeral 1)
+    (BProv_Ax_s_commonMultipleThroughTermAt_zero
+      (G := G) (Term.numeral 1))
+
+/-- Extend an existential common-multiple witness to a successor bound. -/
+theorem BProv_Ax_s_commonMultipleExistsTermAt_succ
+    {G : List Formula} {bound : Term}
+    (hex : BProv Ax_s G (commonMultipleExistsTermAt bound)) :
+    BProv Ax_s G
+      (commonMultipleExistsTermAt (Term.succ bound)) := by
+  let target : Formula :=
+    commonMultipleExistsTermAt (Term.succ bound)
+  refine BProv_Ax_s_commonMultipleExistsTermAt_elim_opened
+    (G := G) (bound := bound) (target := target) ?_ hex
+  let D : List Formula :=
+    commonMultipleExistsTermAtBody bound :: G.map (rename Nat.succ)
+  let bound1 : Term := Term.rename Nat.succ bound
+  have hthrough : BProv Ax_s D
+      (commonMultipleThroughTermAt bound1 (Term.var 0)) := by
+    simpa [D, bound1, commonMultipleExistsTermAtBody] using
+      (BProv_ass (B := Ax_s) (G := D)
+        (by simp [D, commonMultipleExistsTermAtBody]))
+  have hnext : BProv Ax_s D
+      (commonMultipleThroughTermAt (Term.succ bound1)
+        (Term.mul (Term.var 0) (Term.succ bound1))) :=
+    BProv_Ax_s_commonMultipleThroughTermAt_succ hthrough
+  have hexNext : BProv Ax_s D
+      (commonMultipleExistsTermAt (Term.succ bound1)) :=
+    BProv_Ax_s_commonMultipleExistsTermAt_of_through hnext
+  simpa [target, D, bound1, commonMultipleExistsTermAt,
+    commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hexNext
+
+/-- PA proves uniformly that every bound has a common multiple of all positive
+values through it.  The proof carries the existential witness by induction;
+there is no factorial function symbol or hidden recursion equation. -/
+theorem BProv_Ax_s_all_commonMultipleExistsTermAt
+    {G : List Formula} :
+    BProv Ax_s G
+      (all (commonMultipleExistsTermAt (Term.var 0))) := by
+  let phi : Formula := commonMultipleExistsTermAt (Term.var 0)
+  have hzeroRaw : BProv Ax_s G
+      (commonMultipleExistsTermAt Term.zero) :=
+    BProv_Ax_s_commonMultipleExistsTermAt_zero
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    simpa [phi, commonMultipleExistsTermAt,
+      commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+      substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_substZero_rename_succ] using hzeroRaw
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    let C : List Formula := phi :: G.map (rename Nat.succ)
+    have hih : BProv Ax_s C
+        (commonMultipleExistsTermAt (Term.var 0)) := by
+      simpa [C, phi] using
+        (BProv_ass (B := Ax_s) (G := C) (by simp [C, phi]))
+    have hnext : BProv Ax_s C
+        (commonMultipleExistsTermAt (Term.succ (Term.var 0))) :=
+      BProv_Ax_s_commonMultipleExistsTermAt_succ hih
+    simpa [C, phi, commonMultipleExistsTermAt,
+      commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+      substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_substSuccVar_rename_succ] using hnext
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hindEmpty : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename
+        (Ax_s_induction phi) (fun n : Nat => n)
+  have hind : BProv Ax_s G (inductionForm phi) :=
+    BProv_mono Ax_s [] G (inductionForm phi)
+      (fun x hx => by cases hx) hindEmpty
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsuccAll
 
 /-- A term quotient equation gives the corresponding `dvdAt` witness.  This is
 the open-term version of `BProv_Ax_s_dvdAt_of_eqConst_mul`, used after
