@@ -29070,6 +29070,85 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_step_and_odd_case
       hlowDouble
   exact BProv_Ax_s_of_div2StepAt_double_odd_cases hlowStep heven hodd
 
+/-- Totality-based standalone successor/predecessor distinguisher.
+
+The binary-halving witness for `low` is supplied by `div2TotalAt`; the only
+remaining premise is the genuine odd-current branch in the two opened witness
+contexts.  Thus the theorem removes the need for callers to provide a div2
+step while keeping the hard HF-coding carry obligation explicit. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_total_and_opened_odd_case
+    {G : List Formula} {low : Nat}
+    (htotal : BProv Ax_s G (div2TotalAt low))
+    (hodd :
+      let target : Formula :=
+        hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low
+      let step : Formula := div2StepAt (low+2) 1 0
+      let inner : Formula := ex step
+      BProv Ax_s
+        (oddDoubleEqAt (low+2) 1 :: step ::
+          (inner :: G.map (rename Nat.succ)).map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
+  let target : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low
+  let step : Formula := div2StepAt (low+2) 1 0
+  let inner : Formula := ex step
+  have htotal' : BProv Ax_s G (ex inner) := by
+    simpa [inner, step, div2TotalAt, div2TotalTermAt, div2StepTermAt,
+      div2StepAt, boolTermAt, boolAt, zeroAt, oneAt, eqConstAt,
+      Term.rename, Term.numeral] using htotal
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := G) (a := inner) (c := target) htotal' ?_
+  let C : List Formula := inner :: G.map (rename Nat.succ)
+  have hinner : BProv Ax_s C (ex step) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, inner])
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := C) (a := step) (c := rename Nat.succ target) hinner ?_
+  let D : List Formula := step :: C.map (rename Nat.succ)
+  have hstep : BProv Ax_s D (div2StepAt (low+2) 1 0) :=
+    BProv_ass (B := Ax_s) (G := D) (by simp [D, step])
+  have hodd' : BProv Ax_s (oddDoubleEqAt (low+2) 1 :: D)
+      (hfSomeDistinguishesTermAt
+        (Term.succ (Term.var (low+2))) (low+2)) := by
+    simpa [target, C, D, step, inner,
+      rename_hfSomeDistinguishesTermAt_succ, Term.rename] using hodd
+  have htarget : BProv Ax_s D
+      (hfSomeDistinguishesTermAt
+        (Term.succ (Term.var (low+2))) (low+2)) :=
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_step_and_odd_case
+      (low := low+2) (lowHalf := 1) (lowBit := 0)
+      hstep hodd'
+  simpa [target, C, D, rename_hfSomeDistinguishesTermAt_succ, Term.rename]
+    using htarget
+
+/-- Closed-context version of
+`BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_total_and_opened_odd_case`.
+
+The new premise is exactly the remaining odd branch after opening PA's total
+binary-halving witness for the zero slot. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_opened_odd_case
+    (hodd :
+      let target : Formula :=
+        hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0
+      let step : Formula := div2StepAt 2 1 0
+      let inner : Formula := ex step
+      BProv Ax_s
+        (oddDoubleEqAt 2 1 :: step ::
+          (inner :: ([] : List Formula).map (rename Nat.succ)).map
+            (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_total_and_opened_odd_case
+    (G := []) (low := 0)
+    (BProv_Ax_s_div2TotalAt 0)
+    (by simpa using hodd)
+
 /-- Even/even branch of the successor strict case: if the predecessor-high code
 is even and the low code is even, then zero belongs to `S high` and not to
 `low`, so it distinguishes them.  This is the distinct-slot generalization of
@@ -36446,6 +36525,30 @@ theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
     hltCase
     (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_self hself)
 
+/-- Strict successor shell with the standalone self distinguisher reduced to
+the explicit opened odd-self branch supplied by total binary halving. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_opened_odd_self
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hselfOdd :
+      let target : Formula :=
+        hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0
+      let step : Formula := div2StepAt 2 1 0
+      let inner : Formula := ex step
+      BProv Ax_s
+        (oddDoubleEqAt 2 1 :: step ::
+          (inner :: ([] : List Formula).map (rename Nat.succ)).map
+            (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    hltCase
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_opened_odd_case
+      hselfOdd)
+
 /-- Translated HF extensionality follows from the single open PA successor
 step for lower-code distinguishers. -/
 theorem BProv_Ax_s_translated_HF_extensionality_of_successor_step
@@ -36490,6 +36593,31 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_strict_and_self
   BProv_Ax_s_translated_HF_extensionality_of_successor_step
     (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
       hltCase hself)
+
+/-- Translated HF extensionality from the strict successor branch and the
+opened odd-self branch left after PA's total binary-halving proof supplies the
+standalone successor/predecessor witness. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_strict_and_opened_odd_self
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hselfOdd :
+      let target : Formula :=
+        hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0
+      let step : Formula := div2StepAt 2 1 0
+      let inner : Formula := ex step
+      BProv Ax_s
+        (oddDoubleEqAt 2 1 :: step ::
+          (inner :: ([] : List Formula).map (rename Nat.succ)).map
+            (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_opened_odd_self
+      hltCase hselfOdd)
 
 /-- Successor-step wrapper whose strict branch is exposed down to the
 component-level high-even/low-odd beta obligations.
