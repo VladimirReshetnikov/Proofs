@@ -43,6 +43,9 @@ def size : Expr -> Nat
   | sqrt e => e.size + 1
   | add a b => a.size + b.size + 1
 
+theorem size_pos (e : Expr) : 0 < e.size := by
+  cases e <;> simp [size]
+
 /-- All expression trees with exactly `n` symbols. -/
 def expressions : Nat -> List Expr
   | 0 => []
@@ -69,6 +72,40 @@ theorem expressions_succ_succ (n : Nat) :
           (expressions (k.1 + 1)).flatMap fun a =>
             (expressions (n - k.1)).map fun b => add a b := by
   rw [expressions.eq_def]
+
+theorem mem_expressions_size (e : Expr) : e ∈ expressions e.size := by
+  induction e with
+  | one =>
+      simp [size, expressions_one]
+  | sqrt e ih =>
+      have hpos := size_pos e
+      rw [show (sqrt e).size = (e.size - 1) + 2 by
+        dsimp [size]
+        omega]
+      rw [expressions_succ_succ]
+      simp only [List.mem_append, List.mem_map]
+      left
+      refine ⟨e, ?_, rfl⟩
+      simpa [Nat.sub_add_cancel hpos] using ih
+  | add a b iha ihb =>
+      have ha := size_pos a
+      have hb := size_pos b
+      rw [show (add a b).size = (a.size + b.size - 1) + 2 by
+        dsimp [size]
+        omega]
+      rw [expressions_succ_succ]
+      simp only [List.mem_append, List.mem_map, List.mem_flatMap]
+      right
+      let k : Fin (a.size + b.size - 1) := ⟨a.size - 1, by omega⟩
+      refine ⟨k, List.mem_finRange k, a, ?_, b, ?_, rfl⟩
+      · have hk : k.1 + 1 = a.size := by
+          simp [k]
+          omega
+        simpa [hk] using iha
+      · have hk : (a.size + b.size - 1) - k.1 = b.size := by
+          simp [k]
+          omega
+        simpa [hk] using ihb
 
 /-- Interpret an expression as a real number. -/
 noncomputable def eval : Expr -> ℝ
@@ -227,6 +264,11 @@ theorem recursiveValueSet_subset_of_le {m n : Nat} (h : m ≤ n) :
   rw [← valueSet_eq_recursiveValueSet m] at hx
   rw [← valueSet_eq_recursiveValueSet n]
   exact valueSet_subset_of_le h hx
+
+theorem eval_mem_recursiveValueSet_of_size {e : Expr} {n : Nat} (h : e.size = n) :
+    e.eval ∈ recursiveValueSet n := by
+  rw [← valueSet_eq_recursiveValueSet]
+  exact ⟨e, by simpa [h] using mem_expressions_size e, rfl⟩
 
 theorem one_add_mem_recursiveValueSet_add_two {n : Nat} (hn : 0 < n) {x : ℝ}
     (hx : x ∈ recursiveValueSet n) : 1 + x ∈ recursiveValueSet (n + 2) := by
