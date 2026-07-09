@@ -120,6 +120,7 @@ open SetTheory
 #check @PA.Formula.term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ
 #check PA.Formula.iterUpSubst
 #check @PA.Formula.term_subst_iterUpSubst_instTerm_var_rename_add_succ
+#check @PA.Formula.term_subst_iterUpSubst_instTerm_rename_add_succ
 #check @PA.Formula.term_rename_up_succ_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_up_up_succ
 #check @PA.Formula.subst_instTerm_rename_succ

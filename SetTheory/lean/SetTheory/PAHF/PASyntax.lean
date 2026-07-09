@@ -1279,6 +1279,52 @@ theorem term_subst_iterUpSubst_instTerm_var_rename_add_succ
       exact Term.rename_ext t (fun n : Nat => Nat.succ (n + k))
         (fun n : Nat => n + (k+1)) (fun n => by omega)
 
+/-- General de Bruijn bookkeeping lemma: substituting an arbitrary term under
+`k` lifted binders through a term renamed by `k+1` successors removes exactly
+the newest shift. -/
+theorem term_subst_iterUpSubst_instTerm_rename_add_succ
+    (k : Nat) (t u : Term) :
+    Term.subst (iterUpSubst k (instTerm u))
+        (Term.rename (fun n : Nat => n + k + 1) t) =
+      Term.rename (fun n : Nat => n + k) t := by
+  induction k with
+  | zero =>
+      change Term.subst (instTerm u)
+          (Term.rename (fun n : Nat => n + 0 + 1) t) =
+        Term.rename (fun n : Nat => n + 0) t
+      have hleft :
+          Term.rename (fun n : Nat => n + 0 + 1) t =
+            Term.rename Nat.succ t :=
+        Term.rename_ext t _ _ (fun n => by omega)
+      have hright :
+          Term.rename (fun n : Nat => n + 0) t = t := by
+        exact Eq.trans
+          (Term.rename_ext t (fun n : Nat => n + 0) (fun n => n)
+            (fun n => by omega))
+          (Term.rename_id t)
+      rw [hleft, hright]
+      exact term_subst_instTerm_rename_succ t u
+  | succ k ih =>
+      have hrename :
+          Term.rename (fun n : Nat => n + (k+1) + 1) t =
+            Term.rename Nat.succ
+              (Term.rename (fun n : Nat => n + k + 1) t) := by
+        simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc,
+          Nat.add_comm, Nat.add_left_comm] using
+          (Term.rename_comp t Nat.succ
+            (fun n : Nat => n + k + 1)).symm
+      rw [iterUpSubst, hrename, Term.subst_rename_succ_up]
+      change Term.rename Nat.succ
+          (Term.subst (iterUpSubst k (instTerm u))
+            (Term.rename (fun n : Nat => n + k + 1) t)) =
+        Term.rename (fun n : Nat => n + (k+1)) t
+      rw [ih]
+      change Term.rename Nat.succ (Term.rename (fun n : Nat => n + k) t) =
+        Term.rename (fun n : Nat => n + (k+1)) t
+      rw [Term.rename_comp]
+      exact Term.rename_ext t (fun n : Nat => Nat.succ (n + k))
+        (fun n : Nat => n + (k+1)) (fun n => by omega)
+
 /-- Renaming a term already shifted through one binder by the lifted successor
 renaming is the same as shifting it through one more ordinary binder. -/
 theorem term_rename_up_succ_rename_succ (t : Term) :
