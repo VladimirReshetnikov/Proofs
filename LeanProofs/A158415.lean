@@ -281,6 +281,22 @@ theorem one_add_mem_recursiveValueSet_add_two {n : Nat} (hn : 0 < n) {x : ℝ}
   · change x ∈ recursiveValueSet n
     exact hx
 
+theorem natCast_add_mem_recursiveValueSet_add_two_mul {m n : Nat} (hn : 0 < n) {x : ℝ}
+    (hx : x ∈ recursiveValueSet n) :
+    (m : ℝ) + x ∈ recursiveValueSet (n + 2 * m) := by
+  induction m with
+  | zero =>
+      simpa using hx
+  | succ m ih =>
+      have hpos : 0 < n + 2 * m := by omega
+      have hstep : 1 + ((m : ℝ) + x) ∈ recursiveValueSet ((n + 2 * m) + 2) :=
+        one_add_mem_recursiveValueSet_add_two hpos ih
+      have hindex : (n + 2 * m) + 2 = n + 2 * Nat.succ m := by omega
+      have heq : ((Nat.succ m : Nat) : ℝ) + x = 1 + ((m : ℝ) + x) := by
+        simp [Nat.cast_succ, add_assoc, add_comm]
+      rw [heq, ← hindex]
+      exact hstep
+
 /-- OEIS A158415, as a cardinality of the lexical real-value set. -/
 noncomputable def a158415 (n : Nat) : Nat :=
   (valueSet n).ncard

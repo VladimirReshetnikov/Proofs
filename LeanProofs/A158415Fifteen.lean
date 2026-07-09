@@ -40,17 +40,25 @@ theorem one_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen {n : Nat
   one_add_mem_range_values15_of_mem_recursiveValueSet_thirteen
     (recursiveValueSet_subset_of_le hn hx)
 
+theorem succ_natCast_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen {m n : Nat}
+    (hnpos : 0 < n) (hn : n + 2 * m ≤ 13) {x : Real} (hx : x ∈ recursiveValueSet n) :
+    (Set.range values15) (((m + 1 : Nat) : Real) + x) := by
+  have hxpad : (m : Real) + x ∈ recursiveValueSet (n + 2 * m) :=
+    natCast_add_mem_recursiveValueSet_add_two_mul (m := m) hnpos hx
+  have hrange :
+      (Set.range values15) (1 + ((m : Real) + x)) :=
+    one_add_mem_range_values15_of_mem_recursiveValueSet_thirteen
+      (recursiveValueSet_subset_of_le hn hxpad)
+  have heq : (((m + 1 : Nat) : Real) + x) = 1 + ((m : Real) + x) := by
+    simp [Nat.cast_add, add_assoc, add_comm]
+  rwa [heq]
+
 theorem two_add_mem_range_values15_of_mem_recursiveValueSet_le_eleven {n : Nat}
     (hnpos : 0 < n) (hn : n + 2 ≤ 13) {x : Real} (hx : x ∈ recursiveValueSet n) :
     (Set.range values15) (2 + x) := by
-  have hx1 : 1 + x ∈ recursiveValueSet (n + 2) :=
-    one_add_mem_recursiveValueSet_add_two hnpos hx
-  have hrange :=
-    one_add_mem_range_values15_of_mem_recursiveValueSet_thirteen
-      (recursiveValueSet_subset_of_le hn hx1)
-  have heq : (2 : Real) + x = 1 + (1 + x) := by
-    linarith
-  rwa [heq]
+  simpa using
+    succ_natCast_add_mem_range_values15_of_mem_recursiveValueSet_le_thirteen
+      (m := 1) (n := n) hnpos (by simpa using hn) hx
 
 set_option maxHeartbeats 3000000 in
 theorem recursiveValueSet_fifteen_subset_range :
