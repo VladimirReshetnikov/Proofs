@@ -31649,6 +31649,195 @@ Proof.
   exact hsome.
 Qed.
 
+(* Lean: BProv_Ax_s_subst_hfMemTermAt_of_components *)
+Lemma BProv_Ax_s_subst_hfMemTermAt_of_components :
+  forall G elem (setCode codeTerm stepTerm : term) (sigma : nat -> term),
+  BProv Ax_s G
+    (subst sigma
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n + 2) setCode) 1 0 0)))) ->
+  BProv Ax_s G
+    (subst sigma
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaDiv2StepsThroughAt 1 0 (elem + 2))))) ->
+  BProv Ax_s G
+    (subst sigma
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (pEx (pAnd (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (elem + 3))))))) ->
+  BProv Ax_s G (subst sigma (hfMemTermAt elem setCode)).
+Proof.
+  intros G elem setCode codeTerm stepTerm sigma hentry hsteps hbitEx.
+  set (bitEx := pEx (pAnd (oneAt 0)
+    (betaDiv2BitAt 0 2 1 (elem + 3)))).
+  set (tail := pAnd (betaDiv2StepsThroughAt 1 0 (elem + 2)) bitEx).
+  set (body := pAnd
+    (betaTermAtConstIdx (Term.rename (fun n => n + 2) setCode)
+      1 0 0)
+    tail).
+  assert (htail : BProv Ax_s G
+      (subst sigma
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm)) tail)))).
+  {
+    unfold tail, bitEx.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hsteps hbitEx).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst sigma
+        (subst (instTerm stepTerm)
+          (subst (Term.upSubst (instTerm codeTerm)) body)))).
+  {
+    unfold body, tail, bitEx in *.
+    simpl in htail |-.
+    exact (BProv_andI Ax_s G _ _ hentry htail).
+  }
+  assert (hbodyInst : BProv Ax_s G
+      (subst (instTerm (Term.subst sigma stepTerm))
+        (subst (Term.upSubst sigma)
+          (subst (Term.upSubst (instTerm codeTerm)) body)))).
+  {
+    rewrite subst_instTerm_subst_up.
+    exact hbody.
+  }
+  pose proof (BProv_exI Ax_s G
+    (subst (Term.upSubst sigma)
+      (subst (Term.upSubst (instTerm codeTerm)) body))
+    (Term.subst sigma stepTerm) hbodyInst) as hstepRaw.
+  assert (hstepEx : BProv Ax_s G
+      (subst sigma (subst (instTerm codeTerm) (pEx body)))).
+  {
+    replace
+      (subst sigma (subst (instTerm codeTerm) (pEx body)))
+      with (pEx
+        (subst (Term.upSubst sigma)
+          (subst (Term.upSubst (instTerm codeTerm)) body))).
+    - exact hstepRaw.
+    - simpl.
+      reflexivity.
+  }
+  assert (hstepExInst : BProv Ax_s G
+      (subst (instTerm (Term.subst sigma codeTerm))
+        (subst (Term.upSubst sigma) (pEx body)))).
+  {
+    rewrite subst_instTerm_subst_up.
+    exact hstepEx.
+  }
+  pose proof (BProv_exI Ax_s G
+    (subst (Term.upSubst sigma) (pEx body))
+    (Term.subst sigma codeTerm) hstepExInst) as hcodeRaw.
+  replace (subst sigma (hfMemTermAt elem setCode))
+    with (pEx (subst (Term.upSubst sigma) (pEx body))).
+  - exact hcodeRaw.
+  - unfold hfMemTermAt, body, tail, bitEx.
+    replace (elem + 2) with (S (S elem)) by lia.
+    replace (elem + 3) with (S (S (S elem))) by lia.
+    replace (Term.rename (fun n => n + 2) setCode)
+      with (Term.rename S (Term.rename S setCode))
+      by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
+    reflexivity.
+Qed.
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessHighHalfMemOpenedStepPredContext *)
+Definition strictSuccOpenedHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+    (G : list formula) : list formula :=
+  let bitBody := pAnd (oneAt 0) (betaDiv2BitAt 0 2 1 3) in
+  let traceTail := pAnd (betaDiv2StepsThroughAt 1 0 2) (pEx bitBody) in
+  let body := pAnd (betaAtConstIdx 8 1 0 0) traceTail in
+  let bodyCtx := body :: map (rename S) (pEx body :: map (rename S) G) in
+  let succCtx := succPredAt 0 :: bodyCtx in
+  let succBody := pEq (tVar 1) (tSucc (tVar 0)) in
+  succBody :: map (rename S) succCtx.
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+    : formula :=
+  rename S (rename S
+    (rename S strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)).
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst
+    : nat -> term :=
+  fun n => Term.rename (fun k => k + 2 + 1)
+    (instTerm strictHighOddSuccWitnessTerm n).
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfCode *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfCode
+    : term :=
+  Term.rename S strictSuccOpenedHighOddOpenedIHHighCode.
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+    (codeTerm stepTerm : term) : formula :=
+  subst strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaTermAtConstIdx
+          (Term.rename (fun n => n + 2)
+            strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfCode)
+          1 0 0))).
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+    (codeTerm stepTerm : term) : formula :=
+  subst strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaDiv2StepsThroughAt 1 0 2))).
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+    (codeTerm stepTerm : term) : formula :=
+  subst strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (pEx (pAnd (oneAt 0) (betaDiv2BitAt 0 2 1 3))))).
+
+(* Lean: BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessSuccMem_opened_high_half_of_components *)
+Lemma BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessSuccMem_opened_high_half_of_components :
+  forall G (codeTerm stepTerm : term),
+  BProv Ax_s G
+    (strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+      codeTerm stepTerm) ->
+  BProv Ax_s G
+    (strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+      codeTerm stepTerm) ->
+  BProv Ax_s G
+    (strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+      codeTerm stepTerm) ->
+  BProv Ax_s G
+    strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula.
+Proof.
+  intros G codeTerm stepTerm hentry hsteps hbitEx.
+  pose proof (BProv_Ax_s_subst_hfMemTermAt_of_components G 0
+    strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfCode
+    codeTerm stepTerm
+    strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst
+    hentry hsteps hbitEx) as hmem.
+  replace
+    strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+    with
+      (subst
+        strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst
+        (hfMemTermAt 0
+          strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfCode)).
+  - exact hmem.
+  - unfold
+      strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula,
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula,
+      succOpenedWitnessMemTermFormula,
+      strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfCode,
+      strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst.
+    rewrite rename_subst.
+    repeat rewrite Term.rename_comp.
+    reflexivity.
+Qed.
+
 (* Lean: subst_instTerm_var_hfLtDistinguishesAt_body *)
 Lemma subst_instTerm_var_hfLtDistinguishesAt_body : forall low high,
   subst (instTerm (tVar low))
