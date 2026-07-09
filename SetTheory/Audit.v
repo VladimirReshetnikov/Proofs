@@ -9,6 +9,7 @@
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
 From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
+From SetTheory Require Import BusyBeaverBB2Bridge.
 From SetTheory Require Import Forward Reverse RiemannHypothesis.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -531,6 +532,11 @@ Check BusyBeaverKnownValues.upperBound_one.
 Check BusyBeaverKnownValues.checkAllCodes2_true.
 Check BusyBeaverKnownValues.two_state_halted_score_le_four_by_time.
 Check BusyBeaverKnownValues.upperBound_two_of_halting_time_bound.
+Check BusyBeaverBB2Bridge.local_halt_event_time_le_six.
+Check BusyBeaverBB2Bridge.two_state_halting_time_bound_event.
+Check BusyBeaverBB2Bridge.upperBound_two.
+Check BusyBeaverBB2Bridge.exactScore_two.
+Check BusyBeaverBB2Bridge.sigma_two_eq_four.
 Check BusyBeaverKnownValues.ExactScore.
 Check BusyBeaverKnownValues.ExactScore.sigma_eq.
 Check BusyBeaverKnownValues.exactScore_one.
@@ -543,6 +549,7 @@ Check BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBound
 Print Assumptions BusyBeaverKnownValues.upperBound_one.
 Print Assumptions BusyBeaverKnownValues.checkAllCodes2_true.
 Print Assumptions BusyBeaverKnownValues.upperBound_two_of_halting_time_bound.
+Print Assumptions BusyBeaverBB2Bridge.sigma_two_eq_four.
 Print Assumptions
   BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 

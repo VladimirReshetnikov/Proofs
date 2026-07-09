@@ -81,6 +81,9 @@ foundational/computability work, each present in both proof assistants
   [`lean/SetTheory/BusyBeaverKnownValues.lean`](lean/SetTheory/BusyBeaverKnownValues.lean)
   (Coq counterpart [`BusyBeaverKnownValues.v`](BusyBeaverKnownValues.v)) adds the
   checked 1–4-state champion witnesses and the A028444-prefix certificates.
+  [`BusyBeaverBB2Bridge.v`](BusyBeaverBB2Bridge.v) is a Coq-first bridge from
+  this local Rado machine model to the vendored CoqBB2 time-bound certificate in
+  [`../CoqBB2`](../CoqBB2), proving `Σ(2)=4` for the local score definition.
 - [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
   is the mathlib-backed bridge for mathlib's `Computable` predicate: it extracts a
   sequential `ToPartrec.Code` evaluated by mathlib's finite-support `PartrecToTM2`
@@ -501,32 +504,34 @@ cross-references).
 
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 
-The full development is the twelve `.v` files listed in
-[`_CoqProject`](_CoqProject):
+The full development is the `.v` files listed in [`_CoqProject`](_CoqProject),
+including the vendored CoqBB2 certificate under [`../CoqBB2`](../CoqBB2):
 
 ```sh
 # the library builds in dependency order under the SetTheory namespace:
-coqc -Q . SetTheory Fol.v
-coqc -Q . SetTheory Calculus.v
-coqc -Q . SetTheory Completeness.v
-coqc -Q . SetTheory Zf.v
-coqc -Q . SetTheory Equivalence.v
-coqc -Q . SetTheory PAHF.v
-coqc -Q . SetTheory BusyBeaver.v
-coqc -Q . SetTheory BusyBeaverKnownValues.v
-coqc -Q . SetTheory BusyBeaverMathlib.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Fol.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Calculus.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Completeness.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Zf.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Equivalence.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory PAHF.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaver.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverKnownValues.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverBB2Bridge.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverMathlib.v
 # the shallow layer is self-contained (also compiles bare: `coqc Forward.v`):
-coqc -Q . SetTheory Forward.v
-coqc -Q . SetTheory Reverse.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Forward.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Reverse.v
 # capstone audit: type-checks headline results, prints axiom footprints:
-coqc -Q . SetTheory Audit.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Audit.v
 ```
 
 `Forward.v` and `Reverse.v` are independent (no inter-file `Require`) and need only
 the standard library. The library files import along the DAG shown above
 (`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
 `Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`; `BusyBeaver` ←
-`BusyBeaverKnownValues`, `BusyBeaverMathlib`; `Audit` imports them all).
+`BusyBeaverKnownValues`, `BusyBeaverBB2Bridge`, `BusyBeaverMathlib`; `Audit`
+imports them all).
 `Completeness.v` additionally uses the standard
 classical/extensionality axiom modules (`ClassicalEpsilon`,
 `FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the
