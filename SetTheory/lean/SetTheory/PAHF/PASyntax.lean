@@ -37294,6 +37294,125 @@ theorem
       hhighOdd_lowOdd_lowTail)
     hself
 
+/-- Extensionality-facing successor wrapper whose high-even/low-odd branch is
+kept at the transported opened-trace premise, while odd-high branches use
+opened old high-half trace components and shifted old-low tails. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_div2_step_pred_opened_high_half_components_carry_cases_shift_tail_opened_low_half_and_self
+    {highHalf highBit lowHalf lowBit : Nat}
+    {highOddLowDoubleCodeTerm highOddLowDoubleStepTerm
+      highOddLowOddCodeTerm highOddLowOddStepTerm
+      highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+      highOddLowOddLowCodeTerm highOddLowOddLowStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_step_pred :
+      let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+      let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+      let C : List Formula :=
+        oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+      let elem : Nat := 1
+      let set : Nat := 1+2
+      let witness : Formula := hfDistinguishesAt 0 (1+1) (0+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: C.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (highHalf+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target))))
+    (hhighOdd_lowDouble_entry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_steps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_bitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        highOddLowDoubleCodeTerm highOddLowDoubleStepTerm))
+    (hhighOdd_lowDouble_lowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0
+        highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+        (Term.succ (Term.var 2))))
+    (hhighOdd_lowOdd_entry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_steps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_bitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        highOddLowOddCodeTerm highOddLowOddStepTerm))
+    (hhighOdd_lowOdd_lowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0
+        highOddLowOddLowCodeTerm highOddLowOddLowStepTerm
+        (Term.succ (Term.var 2))))
+    (hself : BProv Ax_s []
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_div2_steps_and_step_pred_opened_high_half_components_carry_cases_shift_tail_opened_low_half
+      (highHalf := highHalf) (highBit := highBit)
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (highOddLowDoubleCodeTerm := highOddLowDoubleCodeTerm)
+      (highOddLowDoubleStepTerm := highOddLowDoubleStepTerm)
+      (highOddLowOddCodeTerm := highOddLowOddCodeTerm)
+      (highOddLowOddStepTerm := highOddLowOddStepTerm)
+      (highOddLowDoubleLowCodeTerm := highOddLowDoubleLowCodeTerm)
+      (highOddLowDoubleLowStepTerm := highOddLowDoubleLowStepTerm)
+      (highOddLowOddLowCodeTerm := highOddLowOddLowCodeTerm)
+      (highOddLowOddLowStepTerm := highOddLowOddLowStepTerm)
+      hhighStep hlowStep hhighDouble_lowOdd_step_pred
+      hhighOdd_lowDouble_entry
+      hhighOdd_lowDouble_steps
+      hhighOdd_lowDouble_bitEx
+      hhighOdd_lowDouble_lowTail
+      hhighOdd_lowOdd_entry
+      hhighOdd_lowOdd_steps
+      hhighOdd_lowOdd_bitEx
+      hhighOdd_lowOdd_lowTail)
+    hself
+
 /-- Extensionality-facing successor wrapper with odd-high carry premises
 reduced to positive successor-membership components and old low-half membership
 components.
