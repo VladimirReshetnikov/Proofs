@@ -152,9 +152,16 @@ Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace.
+Check PA.Formula.remTermTermAt.
+Check PA.Formula.betaModTermTerm.
+Check PA.Formula.betaTermTermAt.
+Check PA.Formula.betaTermTermAtConstIdx.
+Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
+Check PA.Formula.BProv_Ax_s_betaTermTermAtConstIdx_of_beta.
 Check PA.Formula.BProv_Ax_s_hfMemAt_bitOneEx_of_bit.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components.
+Check PA.Formula.BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero.
 Check PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry.
 Check PA.Formula.BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit.
 Check PA.Formula.BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace.

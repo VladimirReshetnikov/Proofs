@@ -14787,9 +14787,23 @@ Definition remTermAt (rem : term) (value modulus : nat) : formula :=
       (tAdd (tMul (tVar 0) (tVar (S modulus)))
         (Term.rename S rem)))).
 
+(* Lean: remTermTermAt *)
+Definition remTermTermAt (rem value modulus : term) : formula :=
+  pEx (pAnd
+    (ltTermAt (Term.rename S rem) (Term.rename S modulus))
+    (pEq (Term.rename S value)
+      (tAdd (tMul (tVar 0) (Term.rename S modulus))
+        (Term.rename S rem)))).
+
 (* Lean: remTermAt_var *)
 Lemma remTermAt_var : forall rem value modulus,
   remTermAt (tVar rem) value modulus = remAt rem value modulus.
+Proof. reflexivity. Qed.
+
+(* Lean: remTermTermAt_var *)
+Lemma remTermTermAt_var : forall rem value modulus,
+  remTermTermAt (tVar rem) (tVar value) (tVar modulus) =
+    remAt rem value modulus.
 Proof. reflexivity. Qed.
 
 (* Lean: remEqAt *)
@@ -18503,6 +18517,10 @@ Qed.
 Definition betaModTerm (step idx : nat) : term :=
   tSucc (tMul (tSucc (tVar idx)) (tVar step)).
 
+(* Lean: betaModTermTerm *)
+Definition betaModTermTerm (step idx : term) : term :=
+  tSucc (tMul (tSucc idx) step).
+
 Definition betaAt (out code step idx : nat) : formula :=
   pEx (pAnd
     (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
@@ -18524,9 +18542,22 @@ Definition betaTermAt (out : term) (code step idx : nat) : formula :=
     (pEq (tVar 0) (Term.rename S (betaModTerm step idx)))
     (remTermAt (Term.rename S out) (S code) 0)).
 
+(* Lean: betaTermTermAt *)
+Definition betaTermTermAt (out code step idx : term) : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (Term.rename S (betaModTermTerm step idx)))
+    (remTermTermAt (Term.rename S out) (Term.rename S code) (tVar 0))).
+
 (* Lean: betaTermAt_var *)
 Lemma betaTermAt_var : forall out code step idx,
   betaTermAt (tVar out) code step idx = betaAt out code step idx.
+Proof. reflexivity. Qed.
+
+(* Lean: betaTermAt_eq_betaTermTermAt_var *)
+Lemma betaTermAt_eq_betaTermTermAt_var :
+  forall (out : term) code step idx,
+  betaTermAt out code step idx =
+    betaTermTermAt out (tVar code) (tVar step) (tVar idx).
 Proof. reflexivity. Qed.
 
 (* Lean: betaTermAtTermIdx *)
@@ -18541,6 +18572,13 @@ Definition betaTermAtConstIdx (out : term) (code step idxValue : nat)
     : formula :=
   pEx (pAnd (eqConstAt 0 idxValue)
     (betaTermAt (Term.rename S out) (S code) (S step) 0)).
+
+(* Lean: betaTermTermAtConstIdx *)
+Definition betaTermTermAtConstIdx
+    (out code step : term) (idxValue : nat) : formula :=
+  pEx (pAnd (eqConstAt 0 idxValue)
+    (betaTermTermAt (Term.rename S out)
+      (Term.rename S code) (Term.rename S step) (tVar 0))).
 
 (* Lean: betaTermAtConstIdx_var *)
 Lemma betaTermAtConstIdx_var : forall out code step idxValue,
@@ -21464,6 +21502,38 @@ Proof.
   exact hbeta.
 Qed.
 
+(* Lean: BProv_Ax_s_betaTermTermAtConstIdx_of_beta *)
+Lemma BProv_Ax_s_betaTermTermAtConstIdx_of_beta :
+  forall G (out code step : term) idxValue,
+  BProv Ax_s G
+    (betaTermTermAt out code step (Term.numeral idxValue)) ->
+  BProv Ax_s G (betaTermTermAtConstIdx out code step idxValue).
+Proof.
+  intros G out code step idxValue hbeta.
+  unfold betaTermTermAtConstIdx.
+  apply (BProv_exI Ax_s G
+    (pAnd (eqConstAt 0 idxValue)
+      (betaTermTermAt (Term.rename S out)
+        (Term.rename S code) (Term.rename S step) (tVar 0)))
+    (Term.numeral idxValue)).
+  simpl.
+  apply BProv_andI.
+  - unfold eqConstAt.
+    simpl.
+    rewrite Term.subst_numeral.
+    apply BProv_eqRefl.
+  - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm in *.
+    simpl in *.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+    repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+    repeat rewrite Term.rename_numeral in *.
+    exact hbeta.
+Qed.
+
 (* Lean: BProv_Ax_s_betaTermAt_of_eq_index *)
 Lemma BProv_Ax_s_betaTermAt_of_eq_index :
   forall G (out : term) code step idx idx',
@@ -22333,6 +22403,41 @@ Proof.
   apply (BProv_eqElim B G (tVar set) setCode (hfMemAt (S elem) 0) hset).
   rewrite (subst_instTerm_var_hfMemAt_succ_zero elem set).
   exact hmem.
+Qed.
+
+(* Lean: BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero *)
+Lemma BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero :
+  forall G set (codeTerm stepTerm : term),
+  BProv Ax_s G
+    (betaTermTermAt (tVar set) codeTerm stepTerm tZero) ->
+  BProv Ax_s G
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaTermAtConstIdx
+          (Term.rename (fun n => n + 2) (tVar set)) 1 0 0))).
+Proof.
+  intros G set codeTerm stepTerm hbeta.
+  pose proof (BProv_Ax_s_betaTermTermAtConstIdx_of_beta
+    G (tVar set) codeTerm stepTerm 0 hbeta) as hconst.
+  replace (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaTermAtConstIdx
+          (Term.rename (fun n => n + 2) (tVar set)) 1 0 0)))
+    with (betaTermTermAtConstIdx (tVar set) codeTerm stepTerm 0).
+  exact hconst.
+  unfold betaTermTermAtConstIdx, betaTermAtConstIdx, betaTermAt,
+    betaTermTermAt, remTermAt, remTermTermAt, ltTermAt, betaModTerm,
+    betaModTermTerm, eqConstAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  repeat rewrite term_subst_instTerm_rename_succ.
+  repeat rewrite term_subst_instTerm_rename_two_succ.
+  repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+  repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+  repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+  replace (set + 2) with (S (S set)) by lia.
+  simpl.
+  reflexivity.
 Qed.
 
 Lemma BProv_Ax_s_hfMemAt_bitOneEx_of_bit :
