@@ -14277,6 +14277,10 @@ Qed.
 Definition boolAt (a : nat) : formula :=
   pOr (zeroAt a) (oneAt a).
 
+(* Lean: boolTermAt *)
+Definition boolTermAt (a : term) : formula :=
+  pOr (pEq a tZero) (pEq a (Term.numeral 1)).
+
 Definition doubleEqAt (value half : nat) : formula :=
   pEq (tVar value) (tAdd (tVar half) (tVar half)).
 
@@ -14287,6 +14291,11 @@ Definition div2StepAt (value half bit : nat) : formula :=
   pAnd (boolAt bit)
     (pEq (tVar value)
       (tAdd (tAdd (tVar half) (tVar half)) (tVar bit))).
+
+(* Lean: div2StepTermAt *)
+Definition div2StepTermAt (value half bit : term) : formula :=
+  pAnd (boolTermAt bit)
+    (pEq value (tAdd (tAdd half half) bit)).
 
 Lemma BProv_Ax_s_boolAt_of_eqConst : forall G a b,
   BProv Ax_s G (eqConstAt a b) ->
@@ -18580,6 +18589,14 @@ Definition betaTermTermAtConstIdx
     (betaTermTermAt (Term.rename S out)
       (Term.rename S code) (Term.rename S step) (tVar 0))).
 
+(* Lean: betaTermTermAtSuccIdx *)
+Definition betaTermTermAtSuccIdx
+    (out code step : term) (idx : nat) : formula :=
+  pEx (pAnd
+    (pEq (tVar 0) (tSucc (tVar (S idx))))
+    (betaTermTermAt (Term.rename S out)
+      (Term.rename S code) (Term.rename S step) (tVar 0))).
+
 (* Lean: betaTermAtConstIdx_var *)
 Lemma betaTermAtConstIdx_var : forall out code step idxValue,
   betaTermAtConstIdx (tVar out) code step idxValue =
@@ -19232,6 +19249,37 @@ Definition betaDiv2StepWitnessAtTermIdx (code step : nat) (idx : term)
     (pEq (tVar 0) (Term.rename S idx))
     (betaDiv2StepWitnessAt (S code) (S step) 0)).
 
+(* Lean: betaDiv2StepWitnessTermAt *)
+Definition betaDiv2StepWitnessTermAt (code step idx : term) : formula :=
+  pEx (pEx (pEx
+    (pAnd
+      (betaTermTermAt (tVar 2)
+        (Term.rename (fun n => n + 3) code)
+        (Term.rename (fun n => n + 3) step)
+        (Term.rename (fun n => n + 3) idx))
+      (pAnd
+        (betaTermTermAt (tVar 1)
+          (Term.rename (fun n => n + 3) code)
+          (Term.rename (fun n => n + 3) step)
+          (tSucc (Term.rename (fun n => n + 3) idx)))
+        (div2StepTermAt (tVar 2) (tVar 1) (tVar 0)))))).
+
+(* Lean: betaDiv2StepWitnessTermSuccIdxAt *)
+Definition betaDiv2StepWitnessTermSuccIdxAt
+    (code step : term) (idx : nat) : formula :=
+  pEx (pEx (pEx
+    (pAnd
+      (betaTermTermAt (tVar 2)
+        (Term.rename (fun n => n + 3) code)
+        (Term.rename (fun n => n + 3) step)
+        (tVar (idx + 3)))
+      (pAnd
+        (betaTermTermAtSuccIdx (tVar 1)
+          (Term.rename (fun n => n + 3) code)
+          (Term.rename (fun n => n + 3) step)
+          (idx + 3))
+        (div2StepTermAt (tVar 2) (tVar 1) (tVar 0)))))).
+
 Definition betaDiv2StepAt (code step limit : nat) : formula :=
   pAll (pImp (ltAt 0 (S limit))
     (betaDiv2StepWitnessAt (S code) (S step) 0)).
@@ -19239,6 +19287,57 @@ Definition betaDiv2StepAt (code step limit : nat) : formula :=
 Definition betaDiv2StepsThroughAt (code step last : nat) : formula :=
   pAll (pImp (leAt 0 (S last))
     (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
+(* Lean: betaDiv2StepsThroughTermAt *)
+Definition betaDiv2StepsThroughTermAt
+    (code step : nat) (last : term) : formula :=
+  pAll (pImp (leTermAt (tVar 0) (Term.rename S last))
+    (betaDiv2StepWitnessAt (S code) (S step) 0)).
+
+(* Lean: betaDiv2StepsThroughTermTermAt *)
+Definition betaDiv2StepsThroughTermTermAt
+    (code step last : term) : formula :=
+  pAll (pImp
+    (leTermAt (tVar 0) (Term.rename S last))
+    (betaDiv2StepWitnessTermAt
+      (Term.rename S code)
+      (Term.rename S step)
+      (tVar 0))).
+
+(* Lean: betaShiftTailThroughTermAt *)
+Definition betaShiftTailThroughTermAt
+    (oldCode oldStep : nat) (newCode newStep last : term) : formula :=
+  pAll (pImp
+    (leTermAt (tVar 0) (Term.rename S last))
+    (pAll (pImp
+      (betaTermTermAt (tVar 0)
+        (tVar (oldCode + 2)) (tVar (oldStep + 2))
+        (tSucc (tVar 1)))
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) newCode)
+        (Term.rename (fun n => n + 2) newStep)
+        (tVar 1))))).
+
+(* Lean: betaShiftTailExistsTermAt *)
+Definition betaShiftTailExistsTermAt
+    (oldCode oldStep : nat) (last : term) : formula :=
+  pEx (pEx
+    (betaShiftTailThroughTermAt (oldCode + 2) (oldStep + 2)
+      (tVar 1) (tVar 0)
+      (Term.rename (fun n => n + 2) last))).
+
+(* Lean: betaShiftTailThroughConstAt *)
+Definition betaShiftTailThroughConstAt
+    (oldCode oldStep newCode newStep last : nat) : formula :=
+  pAll (pImp
+    (leConstAt 0 last)
+    (pAll (pImp
+      (betaTermTermAt (tVar 0)
+        (tVar (oldCode + 2)) (tVar (oldStep + 2))
+        (tSucc (tVar 1)))
+      (betaTermTermAt (tVar 0)
+        (tVar (newCode + 2)) (tVar (newStep + 2))
+        (tVar 1))))).
 
 Definition betaDiv2StepsThroughConstAt
     (code step last : nat) : formula :=
@@ -19252,6 +19351,32 @@ Definition betaDiv2BitAt (bit code step idx : nat) : formula :=
       (pAnd
         (betaAtSuccIdx 0 (S (S code)) (S (S step)) (S (S idx)))
         (div2StepAt 1 0 (S (S bit)))))).
+
+(* Lean: betaDiv2BitTermAt *)
+Definition betaDiv2BitTermAt (bit code step idx : term) : formula :=
+  pEx (pEx
+    (pAnd
+      (betaTermTermAt (tVar 1)
+        (Term.rename (fun n => n + 2) code)
+        (Term.rename (fun n => n + 2) step)
+        (Term.rename (fun n => n + 2) idx))
+      (pAnd
+        (betaTermTermAt (tVar 0)
+          (Term.rename (fun n => n + 2) code)
+          (Term.rename (fun n => n + 2) step)
+          (tSucc (Term.rename (fun n => n + 2) idx)))
+        (div2StepTermAt (tVar 1) (tVar 0)
+          (Term.rename (fun n => n + 2) bit))))).
+
+(* Lean: betaDiv2BitOneTermExAt *)
+Definition betaDiv2BitOneTermExAt (code step idx : term) : formula :=
+  pEx
+    (pAnd
+      (oneAt 0)
+      (betaDiv2BitTermAt (tVar 0)
+        (Term.rename S code)
+        (Term.rename S step)
+        (Term.rename S idx))).
 
 Lemma BProv_Ax_s_betaDiv2StepWitnessAt_of_eqConst :
   forall G code step idx c s i cur next bit qcur qnext,
@@ -23077,6 +23202,17 @@ Proof.
   reflexivity.
 Qed.
 
+(* Lean: boolTermAt_nat *)
+Lemma boolTermAt_nat : forall (e : nat -> nat) a,
+  Sat natModel e (boolTermAt a) <->
+    Term.eval natModel e a = 0 \/ Term.eval natModel e a = 1.
+Proof.
+  intros e a.
+  unfold boolTermAt. simpl.
+  split; intros h; destruct h as [h | h]; [left | right | left | right];
+    simpl in *; lia.
+Qed.
+
 Lemma doubleEqAt_nat : forall (e : nat -> nat) value half,
   Sat natModel e (doubleEqAt value half) <->
     e value = e half + e half.
@@ -23107,12 +23243,85 @@ Proof.
   - split; [exact hbit | lia].
 Qed.
 
+(* Lean: div2StepTermAt_nat *)
+Lemma div2StepTermAt_nat : forall (e : nat -> nat) value half bit,
+  Sat natModel e (div2StepTermAt value half bit) <->
+    (Term.eval natModel e bit = 0 \/ Term.eval natModel e bit = 1) /\
+      Term.eval natModel e value =
+        Term.eval natModel e half + Term.eval natModel e half +
+          Term.eval natModel e bit.
+Proof.
+  intros e value half bit.
+  unfold div2StepTermAt. simpl.
+  split; intros [hbit hval].
+  - split.
+    + exact (proj1 (boolTermAt_nat e bit) hbit).
+    + simpl in hval. lia.
+  - split.
+    + exact (proj2 (boolTermAt_nat e bit) hbit).
+    + simpl. lia.
+Qed.
+
+(* Lean: leTermAt_nat *)
+Lemma leTermAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (leTermAt a b) <->
+    Term.eval natModel e a <= Term.eval natModel e b.
+Proof.
+  intros e a b.
+  unfold leTermAt. simpl.
+  split.
+  - intros [d h].
+    repeat rewrite Term.eval_rename in h.
+    change (Term.eval natModel e a + d =
+      Term.eval natModel e b) in h.
+    lia.
+  - intro h.
+    exists (Term.eval natModel e b - Term.eval natModel e a).
+    repeat rewrite Term.eval_rename.
+    change (Term.eval natModel e a +
+      (Term.eval natModel e b - Term.eval natModel e a) =
+      Term.eval natModel e b).
+    lia.
+Qed.
+
+(* Lean: ltTermAt_nat *)
+Lemma ltTermAt_nat : forall (e : nat -> nat) a b,
+  Sat natModel e (ltTermAt a b) <->
+    Term.eval natModel e a < Term.eval natModel e b.
+Proof.
+  intros e a b.
+  unfold ltTermAt. simpl.
+  split.
+  - intros [d h].
+    repeat rewrite Term.eval_rename in h.
+    change (Term.eval natModel e a + S d =
+      Term.eval natModel e b) in h.
+    lia.
+  - intro h.
+    exists (Term.eval natModel e b - S (Term.eval natModel e a)).
+    repeat rewrite Term.eval_rename.
+    change (Term.eval natModel e a +
+      S (Term.eval natModel e b - S (Term.eval natModel e a)) =
+      Term.eval natModel e b).
+    lia.
+Qed.
+
 Lemma betaModTerm_nat : forall (e : nat -> nat) step idx,
   Term.eval natModel e (betaModTerm step idx) =
     1 + S (e idx) * e step.
 Proof.
   intros e step idx.
   unfold betaModTerm. simpl.
+  lia.
+Qed.
+
+(* Lean: betaModTermTerm_nat *)
+Lemma betaModTermTerm_nat : forall (e : nat -> nat) step idx,
+  Term.eval natModel e (betaModTermTerm step idx) =
+    1 + S (Term.eval natModel e idx) * Term.eval natModel e step.
+Proof.
+  intros e step idx.
+  unfold betaModTermTerm. simpl.
   lia.
 Qed.
 
@@ -23134,6 +23343,34 @@ Proof.
     split.
     + exact (proj2 (ltAt_nat (scons nat q e) (S rem) (S modulus)) hlt).
     + exact hval.
+Qed.
+
+(* Lean: remTermTermAt_nat *)
+Lemma remTermTermAt_nat : forall (e : nat -> nat) rem value modulus,
+  Sat natModel e (remTermTermAt rem value modulus) <->
+    exists q, Term.eval natModel e value =
+        q * Term.eval natModel e modulus + Term.eval natModel e rem /\
+      Term.eval natModel e rem < Term.eval natModel e modulus.
+Proof.
+  intros e rem value modulus.
+  unfold remTermTermAt. simpl.
+  split.
+  - intros [q [hlt hval]].
+    exists q.
+    split.
+    + repeat rewrite Term.eval_rename in hval. exact hval.
+    + pose proof (proj1 (ltTermAt_nat (scons nat q e)
+        (Term.rename S rem) (Term.rename S modulus)) hlt) as hlt'.
+      repeat rewrite Term.eval_rename in hlt'.
+      exact hlt'.
+  - intros [q [hval hlt]].
+    exists q.
+    split.
+    + apply (proj2 (ltTermAt_nat (scons nat q e)
+        (Term.rename S rem) (Term.rename S modulus))).
+      repeat rewrite Term.eval_rename.
+      exact hlt.
+    + repeat rewrite Term.eval_rename. exact hval.
 Qed.
 
 Lemma betaAt_nat : forall (e : nat -> nat) out code step idx,
@@ -23163,6 +23400,58 @@ Proof.
         (S out) (S code) 0)).
       exists q.
       split; simpl; assumption.
+Qed.
+
+(* Lean: betaTermTermAt_nat_entry *)
+Lemma betaTermTermAt_nat_entry :
+    forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaTermTermAt out code step idx) <->
+    BetaEntry (Term.eval natModel e code)
+      (Term.eval natModel e step)
+      (Term.eval natModel e idx)
+      (Term.eval natModel e out).
+Proof.
+  intros e out code step idx.
+  unfold betaTermTermAt, BetaEntry, BetaModulus. simpl.
+  split.
+  - intros [m [hmod hrem]].
+    assert (hm : m =
+        1 + S (Term.eval natModel e idx) * Term.eval natModel e step).
+    {
+      unfold betaModTermTerm in hmod.
+      simpl in hmod.
+      repeat rewrite Term.eval_rename in hmod.
+      change (m =
+        1 + S (Term.eval natModel e idx) * Term.eval natModel e step) in hmod.
+      exact hmod.
+    }
+    destruct (proj1 (remTermTermAt_nat (scons nat m e)
+        (Term.rename S out) (Term.rename S code) (tVar 0)) hrem)
+      as [q [hval hlt]].
+    exists q.
+    repeat rewrite Term.eval_rename in hval.
+    repeat rewrite Term.eval_rename in hlt.
+    simpl in hval, hlt.
+    rewrite hm in hval, hlt.
+    split; [exact hval | exact hlt].
+  - intros [q [hval hlt]].
+    exists (1 + S (Term.eval natModel e idx) * Term.eval natModel e step).
+    split.
+    + unfold betaModTermTerm.
+      simpl.
+      repeat rewrite Term.eval_rename.
+      change (1 + S (Term.eval natModel e idx) *
+        Term.eval natModel e step =
+        1 + S (Term.eval natModel e idx) *
+          Term.eval natModel e step).
+      reflexivity.
+    + apply (proj2 (remTermTermAt_nat (scons nat
+        (1 + S (Term.eval natModel e idx) * Term.eval natModel e step) e)
+        (Term.rename S out) (Term.rename S code) (tVar 0))).
+      exists q.
+      repeat rewrite Term.eval_rename.
+      simpl.
+      split; assumption.
 Qed.
 
 Lemma betaAtConstIdx_nat : forall (e : nat -> nat) out code step idxValue,
