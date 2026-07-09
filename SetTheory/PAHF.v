@@ -23690,6 +23690,187 @@ Proof.
   reflexivity.
 Qed.
 
+(* Lean: BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace *)
+Lemma BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace :
+  forall G (codeTerm stepTerm : term),
+  BProv Ax_s G
+    (betaDiv2StepsThroughTermTermAt codeTerm stepTerm (tVar 4)) ->
+  BProv Ax_s G
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaDiv2StepsThroughAt 1 0 (4 + 2)))).
+Proof.
+  intros G codeTerm stepTerm hsteps.
+  set (leHyp := leTermAt (tVar 0) (Term.rename S (tVar 4))).
+  set (body :=
+    pImp leHyp
+      (betaDiv2StepWitnessTermSuccIdxAt
+        (Term.rename S codeTerm) (Term.rename S stepTerm) 0)).
+  assert (hbody : BProv Ax_s (map (rename S) G) body).
+  {
+    set (C := leHyp :: map (rename S) G).
+    assert (hle : BProv Ax_s C leHyp).
+    { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+      G (betaDiv2StepsThroughTermTermAt
+        codeTerm stepTerm (tVar 4)) hsteps S) as hstepsRen.
+    assert (hstepsC : BProv Ax_s C
+        (betaDiv2StepsThroughTermTermAt
+          (Term.rename S codeTerm)
+          (Term.rename S stepTerm)
+          (Term.rename S (tVar 4)))).
+    {
+      pose proof (BProv_context_cons Ax_s (map (rename S) G)
+        leHyp _ hstepsRen) as hstepsWeak.
+      replace (betaDiv2StepsThroughTermTermAt
+          (Term.rename S codeTerm)
+          (Term.rename S stepTerm)
+          (Term.rename S (tVar 4)))
+        with (rename S
+          (betaDiv2StepsThroughTermTermAt
+            codeTerm stepTerm (tVar 4))).
+      - exact hstepsWeak.
+      - unfold betaDiv2StepsThroughTermTermAt,
+          betaDiv2StepWitnessTermAt, betaTermTermAt, remTermTermAt,
+          div2StepTermAt, boolTermAt, ltTermAt, leTermAt,
+          betaModTermTerm.
+        replace (Term.rename (fun n => n + 3) codeTerm)
+          with (Term.rename S (Term.rename S (Term.rename S codeTerm)))
+          by (repeat rewrite Term.rename_comp;
+              apply Term.rename_ext; intro n; lia).
+        replace (Term.rename (fun n => n + 3) stepTerm)
+          with (Term.rename S (Term.rename S (Term.rename S stepTerm)))
+          by (repeat rewrite Term.rename_comp;
+              apply Term.rename_ext; intro n; lia).
+        simpl.
+        repeat rewrite term_rename_up_succ_rename_succ.
+        repeat rewrite term_rename_up_up_succ_rename_two_succ.
+        repeat rewrite term_rename_up_up_up_succ_rename_three_succ.
+        repeat rewrite term_rename_up4_rename_four_succ.
+        repeat rewrite Term.rename_comp.
+        replace
+          (Term.rename
+            (fun n => up (up (up (up (up S)))) (S (S n + 3)))
+            stepTerm)
+          with
+          (Term.rename (fun n => S (S (S n) + 3)) stepTerm)
+          by (apply Term.rename_ext; intro n;
+              replace (S n + 3) with (S (n + 3)) by lia;
+              simpl [up];
+              replace (n + 3) with (S (S (S n))) by lia;
+              reflexivity).
+        replace
+          (Term.rename
+            (fun n => up (up (up (up (up (up S)))))
+              (S (S (S n + 3))))
+            codeTerm)
+          with
+          (Term.rename (fun n => S (S (S (S n) + 3))) codeTerm)
+          by (apply Term.rename_ext; intro n;
+              replace (S n + 3) with (S (n + 3)) by lia;
+              simpl [up];
+              replace (n + 3) with (S (S (S n))) by lia;
+              reflexivity).
+        reflexivity.
+    }
+    assert (hpointTerm : BProv Ax_s C
+        (betaDiv2StepWitnessTermAt
+          (Term.rename S codeTerm)
+          (Term.rename S stepTerm)
+          (tVar 0))).
+    {
+      exact
+        (BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm
+          C (Term.rename S codeTerm) (Term.rename S stepTerm)
+          (tVar 0) (Term.rename S (tVar 4)) hstepsC hle).
+    }
+    assert (hpoint : BProv Ax_s C
+        (betaDiv2StepWitnessTermSuccIdxAt
+          (Term.rename S codeTerm) (Term.rename S stepTerm) 0)).
+    {
+      exact (BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt
+        C (Term.rename S codeTerm) (Term.rename S stepTerm) 0
+        hpointTerm).
+    }
+    unfold body, C, leHyp in *.
+    exact (BProv_impI Ax_s (map (rename S) G)
+      (leTermAt (tVar 0) (Term.rename S (tVar 4)))
+      (betaDiv2StepWitnessTermSuccIdxAt
+        (Term.rename S codeTerm) (Term.rename S stepTerm) 0)
+      hpoint).
+  }
+  assert (hcode6 :
+      Term.subst (iterUpSubst 6 (instTerm stepTerm))
+        (Term.rename (fun n => n + 6 + 1) codeTerm) =
+      Term.rename (fun n => n + 6) codeTerm).
+  {
+    exact (term_subst_iterUpSubst_instTerm_rename_add_succ
+      6 codeTerm stepTerm).
+  }
+  assert (hcode7 :
+      Term.subst (iterUpSubst 7 (instTerm stepTerm))
+        (Term.rename (fun n => n + 7 + 1) codeTerm) =
+      Term.rename (fun n => n + 7) codeTerm).
+  {
+    exact (term_subst_iterUpSubst_instTerm_rename_add_succ
+      7 codeTerm stepTerm).
+  }
+  assert (hcodeRename6 :
+      Term.rename (fun n => n + 5 + 1) codeTerm =
+      Term.rename (fun n => n + 6) codeTerm).
+  { apply Term.rename_ext. intro n. lia. }
+  assert (hcodeRename7 :
+      Term.rename (fun n => n + 6 + 1) codeTerm =
+      Term.rename (fun n => n + 7) codeTerm).
+  { apply Term.rename_ext. intro n. lia. }
+  pose proof (BProv_allI_of_sentences Ax_s G
+    body sentence_ax_s hbody) as hall.
+  replace (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaDiv2StepsThroughAt 1 0 (4 + 2))))
+    with (pAll body).
+  - exact hall.
+  - unfold body, leHyp, betaDiv2StepsThroughAt,
+      betaDiv2StepWitnessTermSuccIdxAt, betaDiv2StepWitnessAt,
+      betaTermTermAtSuccIdx, betaTermTermAt, betaAtSuccIdx, betaAt,
+      remTermTermAt, remAt, ltTermAt, ltAt, div2StepTermAt,
+      div2StepAt, boolTermAt, boolAt, zeroAt, oneAt, eqConstAt,
+      leTermAt, leAt, betaModTermTerm, betaModTerm.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_rename_up_succ_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+    repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
+    repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+    repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
+    repeat rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ.
+    repeat rewrite hcode6.
+    repeat rewrite hcode7.
+    repeat rewrite hcodeRename6.
+    repeat rewrite hcodeRename7.
+    repeat rewrite Term.rename_comp.
+    replace (Term.rename (fun n => S (S n + 3)) stepTerm)
+      with (Term.rename (fun n => S (S (S (S (S n))))) stepTerm)
+      by (apply Term.rename_ext; intro n; lia).
+    replace (Term.rename (fun n => S (S (S n + 3))) codeTerm)
+      with (Term.rename (fun n => S (S (S (S (S (S n)))))) codeTerm)
+      by (apply Term.rename_ext; intro n; lia).
+    replace (Term.rename (fun n => S (S (S n + 3))) stepTerm)
+      with (Term.rename (fun n => S (S (S (S (S (S n)))))) stepTerm)
+      by (apply Term.rename_ext; intro n; lia).
+    replace (Term.rename (fun n => S (S (S (S n + 3)))) codeTerm)
+      with (Term.rename
+        (fun n => S (S (S (S (S (S (S n))))))) codeTerm)
+      by (apply Term.rename_ext; intro n; lia).
+    reflexivity.
+Qed.
+
 (* Lean: BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm *)
 Lemma BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm :
   forall G oldCode oldStep (newCode newStep lastTerm idxTerm out : term),

@@ -199,6 +199,7 @@ Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_succ_of_leTerm.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_components.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt.
+Check PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace.
 Check PA.Formula.betaDiv2StepWitnessTermAt_nat.
 Check PA.Formula.betaDiv2StepWitnessTermSuccIdxAt.
 Check PA.Formula.betaDiv2StepsThroughTermAt.
