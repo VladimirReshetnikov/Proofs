@@ -47,6 +47,8 @@ open SetTheory
 #check @BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
 #check @BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
+#check @BusyBeaver.Machine.runFrom_ne_none_of_shift_loop
+#check @BusyBeaver.Machine.not_haltsWithScore_of_shift_loop_from_run
 #check @BusyBeaver.KnownValues.sigma1Champion_haltsWithScore
 #check @BusyBeaver.KnownValues.sigma2Champion_haltsWithScore
 #check @BusyBeaver.KnownValues.sigma3Champion_haltsWithScore
@@ -60,6 +62,8 @@ open SetTheory
 #print axioms BusyBeaver.sigma_eventually_dominates_every_total_recursive
 #print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel
 #print axioms BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel
+#print axioms BusyBeaver.Machine.runFrom_ne_none_of_shift_loop
+#print axioms BusyBeaver.Machine.not_haltsWithScore_of_shift_loop_from_run
 #print axioms BusyBeaver.KnownValues.sigma4Champion_haltsWithScore
 #print axioms BusyBeaver.KnownValues.sigma_one_eq_one
 #print axioms BusyBeaver.KnownValues.a028444_values_through_four_from_upperBounds
