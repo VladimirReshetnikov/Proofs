@@ -65,6 +65,7 @@ Check PA.Term.subst_subst_numeral.
 Check PA.Term.addRightNumeral_numeral.
 Check PA.Term.subst_comp.
 Check PA.Term.subst_rename_succ_up.
+Check PA.Term.upSubst_comp.
 Check PA.Term.subst_ext_free.
 Check PA.Term.subst_id.
 Check PA.Formula.Ax_s.
@@ -97,6 +98,8 @@ Check PA.Formula.iterUpSubst.
 Check PA.Formula.term_subst_iterUpSubst_instTerm_var_rename_add_succ.
 Check PA.Formula.term_subst_iterUpSubst_instTerm_rename_add_succ.
 Check PA.Formula.subst_instTerm_rename_succ.
+Check PA.Formula.subst_instTerm_var_zero_rename_up_succ.
+Check PA.Formula.subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice.
 Check PA.Formula.subst_instTerm_subst_up.
 Check PA.Formula.map_subst_rename_succ_up.
 Check PA.Formula.term_substZero_rename_succ.
@@ -179,6 +182,12 @@ Check PA.Formula.betaModTermTerm.
 Check PA.Formula.betaTermTermAt.
 Check PA.Formula.betaTermTermAtConstIdx.
 Check PA.Formula.betaTermTermAtSuccIdx.
+Check PA.Formula.twoEntryBetaStepTerm.
+Check PA.Formula.twoEntryBetaCodeTerm.
+Check PA.Formula.BProv_Ax_s_betaModTermTerm_zero.
+Check PA.Formula.BProv_Ax_s_betaModTermTerm_one_add_self.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_modulus.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_double_step_of_one.
 Check PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_succ.
 Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
 Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms.
@@ -200,6 +209,12 @@ Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_succ_of_leTerm.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_components.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt.
 Check PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace.
+Check PA.Formula.BProv_Ax_s_subst_betaAt_of_betaTermTermAt.
+Check PA.Formula.BProv_Ax_s_subst_betaAtSuccIdx_of_betaTermTermAt_succ.
+Check PA.Formula.BProv_Ax_s_betaDiv2BitTermAt_of_components.
+Check PA.Formula.BProv_Ax_s_subst_betaDiv2BitAt_of_betaDiv2BitTermAt.
+Check PA.Formula.BProv_Ax_s_subst_bitOneEx_of_betaDiv2BitOneTermExAt.
+Check PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_bitEx_of_betaDiv2BitOneTermExAt.
 Check PA.Formula.betaDiv2StepWitnessTermAt_nat.
 Check PA.Formula.betaDiv2StepWitnessTermSuccIdxAt.
 Check PA.Formula.betaDiv2StepsThroughTermAt.
@@ -473,6 +488,8 @@ Check BusyBeaver.sigma_eventually_dominates_every_total_recursive.
 Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel.
 Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel.
 Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyLowerBoundInRadoModel.
+Check BusyBeaver.Machine.runFrom_ne_none_of_shift_loop.
+Check BusyBeaver.Machine.not_haltsWithScore_of_shift_loop_from_run.
 Print Assumptions BusyBeaver.sigma_mono_of_pos.
 Print Assumptions BusyBeaver.score_le_sigma_of_atMost.
 Print Assumptions BusyBeaver.sigma_eventually_dominates_every_total_recursive.
