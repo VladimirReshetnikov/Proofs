@@ -30197,6 +30197,14 @@ def strictSuccOpenedHighDoubleLowOddMemContext : List Formula :=
 def strictSuccOpenedHighDoubleLowOddMemTarget : Formula :=
   hfMemTermAt 1 (Term.succ (Term.var 7))
 
+/-- Common carry target for the two opened odd-high strict successor branches.
+
+The original high half is the fresh slot `3` after the nested totality
+openings, and the original low code is slot `4`. -/
+def strictSuccOpenedHighOddCarryTarget : Formula :=
+  hfSomeDistinguishesTermAt
+    (Term.add (Term.succ (Term.var 3)) (Term.succ (Term.var 3))) 4
+
 /-- The opened strict successor branch where both predecessor-high and low
 codes are even is closed by the zero-bit distinguisher. -/
 theorem BProv_Ax_s_strictSuccOpenedHighDoubleLowDouble :
@@ -30328,6 +30336,55 @@ theorem BProv_Ax_s_strictSuccOpenedHighDoubleLowOdd_of_opened_mem
   simpa [G, strictSuccOpenedTotalTarget, strictSuccTarget,
     rename_hfSomeDistinguishesTermAt_succ, Term.rename] using hbranch
 
+/-- The opened odd-high/low-even strict successor branch, reduced to the
+doubled successor-half carry target. -/
+theorem BProv_Ax_s_strictSuccOpenedHighOddLowDouble_of_carry
+    (hcarry : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedHighOddCarryTarget) :
+    BProv Ax_s strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedTotalTarget := by
+  let G : List Formula := strictSuccOpenedHighOddLowDoubleContext
+  have hodd : BProv Ax_s G (oddDoubleEqAt 5 3) :=
+    BProv_ass (B := Ax_s) (G := G)
+      (by
+        simp [G, strictSuccOpenedHighOddLowDoubleContext,
+          div2TotalOpenedDoubleContext, div2TotalOpenedOddContext,
+          div2TotalOpenedStepContext, strictSuccContext, oddDoubleEqAt,
+          rename, Term.rename])
+  have hbranch : BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 5)) 4) :=
+    BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
+      (G := G) (high := 5) (highHalf := 3) (low := 4)
+      hodd
+      (by simpa [G, strictSuccOpenedHighOddCarryTarget] using hcarry)
+  simpa [G, strictSuccOpenedTotalTarget, strictSuccTarget,
+    rename_hfSomeDistinguishesTermAt_succ, Term.rename] using hbranch
+
+/-- The opened odd-high/low-odd strict successor branch, reduced to the
+doubled successor-half carry target. -/
+theorem BProv_Ax_s_strictSuccOpenedHighOddLowOdd_of_carry
+    (hcarry : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedHighOddCarryTarget) :
+    BProv Ax_s strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedTotalTarget := by
+  let G : List Formula := strictSuccOpenedHighOddLowOddContext
+  have hodd : BProv Ax_s G (oddDoubleEqAt 5 3) :=
+    BProv_ass (B := Ax_s) (G := G)
+      (by
+        simp [G, strictSuccOpenedHighOddLowOddContext,
+          div2TotalOpenedOddContext, div2TotalOpenedStepContext,
+          strictSuccContext, oddDoubleEqAt, rename, Term.rename])
+  have hbranch : BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 5)) 4) :=
+    BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
+      (G := G) (high := 5) (highHalf := 3) (low := 4)
+      hodd
+      (by simpa [G, strictSuccOpenedHighOddCarryTarget] using hcarry)
+  simpa [G, strictSuccOpenedTotalTarget, strictSuccTarget,
+    rename_hfSomeDistinguishesTermAt_succ, Term.rename] using hbranch
+
 /-- Strict successor branch with PA totality opened, the even/even branch
 closed, and the high-even/low-odd branch reduced to its named membership
 persistence obligation.
@@ -30351,6 +30408,28 @@ theorem
       hhighDouble_lowOdd_mem)
     hhighOdd_lowDouble
     hhighOdd_lowOdd
+
+/-- Strict successor branch with every opened parity branch reduced to its
+carry-specific target: one high-even/low-odd membership-persistence premise
+and two odd-high doubled-successor-half carry premises. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_shifted_carry_targets
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddMemContext
+      strictSuccOpenedHighDoubleLowOddMemTarget)
+    (hhighOdd_lowDouble_carry : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedHighOddCarryTarget)
+    (hhighOdd_lowOdd_carry : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedHighOddCarryTarget) :
+    BProv Ax_s strictSuccContext strictSuccTarget :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_carry_cases
+    hhighDouble_lowOdd_mem
+    (BProv_Ax_s_strictSuccOpenedHighOddLowDouble_of_carry
+      hhighOdd_lowDouble_carry)
+    (BProv_Ax_s_strictSuccOpenedHighOddLowOdd_of_carry
+      hhighOdd_lowOdd_carry)
 
 /-- High-even/low-odd strict branch, reduced to the genuine membership
 persistence obligation.
@@ -37259,6 +37338,31 @@ theorem
           hhighOdd_lowOdd)
     hodd
 
+/-- Successor shell whose opened strict branch is reduced to the shifted
+carry targets for all three nontrivial parity branches. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_shifted_carry_targets_and_eq_opened_odd
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddMemContext
+      strictSuccOpenedHighDoubleLowOddMemTarget)
+    (hhighOdd_lowDouble_carry : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedHighOddCarryTarget)
+    (hhighOdd_lowOdd_carry : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedHighOddCarryTarget)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
+    (by
+      simpa [strictSuccContext, strictSuccTarget] using
+        BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_shifted_carry_targets
+          hhighDouble_lowOdd_mem
+          hhighOdd_lowDouble_carry
+          hhighOdd_lowOdd_carry)
+    hodd
+
 /-- Successor shell whose equality branch is reduced to the ordinary odd-high
 carry frontier.
 
@@ -37454,6 +37558,30 @@ theorem
       hhighDouble_lowOdd_mem
       hhighOdd_lowDouble
       hhighOdd_lowOdd
+      hodd)
+
+/-- Translated HF extensionality with the opened strict successor branch
+reduced to shifted carry targets for all three nontrivial parity branches. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_strict_opened_total_div2_shifted_carry_targets_and_eq_opened_odd
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddMemContext
+      strictSuccOpenedHighDoubleLowOddMemTarget)
+    (hhighOdd_lowDouble_carry : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedHighOddCarryTarget)
+    (hhighOdd_lowOdd_carry : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedHighOddCarryTarget)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_shifted_carry_targets_and_eq_opened_odd
+      hhighDouble_lowOdd_mem
+      hhighOdd_lowDouble_carry
+      hhighOdd_lowOdd_carry
       hodd)
 
 /-- Translated HF extensionality from the strict successor branch and the
