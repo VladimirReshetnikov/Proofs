@@ -18503,6 +18503,55 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
       term_subst_up_up_up_instTerm_rename_five_succ] using houtRaw
   exact BProv_mp Ax_s G _ _ hout hold
 
+/-- Build a fresh term-parametric beta-div2 step from old adjacent entries
+and a shifted-tail relation.
+
+The tail relation is assumed through `S lastTerm`: for a new step at `idxTerm`
+with `idxTerm <= lastTerm`, the current old entry lives at `S idxTerm` and the
+next old entry lives at `S (S idxTerm)`.  The explicit binary-halving equation
+is kept as a premise and reused unchanged. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_components
+    {G : List Formula} {oldCode oldStep : Nat}
+    {newCode newStep lastTerm idxTerm cur next bit : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep (Term.succ lastTerm)))
+    (hle : BProv Ax_s G (leTermAt idxTerm lastTerm))
+    (hcurOld : BProv Ax_s G
+      (betaTermTermAt cur (Term.var oldCode) (Term.var oldStep)
+        (Term.succ idxTerm)))
+    (hnextOld : BProv Ax_s G
+      (betaTermTermAt next (Term.var oldCode) (Term.var oldStep)
+        (Term.succ (Term.succ idxTerm))))
+    (hdiv : BProv Ax_s G (div2StepTermAt cur next bit)) :
+    BProv Ax_s G
+      (betaDiv2StepWitnessTermAt newCode newStep idxTerm) := by
+  have hleCurrent : BProv Ax_s G
+      (leTermAt idxTerm (Term.succ lastTerm)) :=
+    BProv_Ax_s_leTermAt_trans hle
+      (BProv_Ax_s_leTermAt_self_succ lastTerm)
+  have hcurNew : BProv Ax_s G
+      (betaTermTermAt cur newCode newStep idxTerm) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
+      (oldCode := oldCode) (oldStep := oldStep)
+      (newCode := newCode) (newStep := newStep)
+      (lastTerm := Term.succ lastTerm) (idxTerm := idxTerm)
+      (out := cur) htail hleCurrent hcurOld
+  have hleNext : BProv Ax_s G
+      (leTermAt (Term.succ idxTerm) (Term.succ lastTerm)) :=
+    BProv_Ax_s_leTermAt_succ_succ hle
+  have hnextNew : BProv Ax_s G
+      (betaTermTermAt next newCode newStep (Term.succ idxTerm)) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
+      (oldCode := oldCode) (oldStep := oldStep)
+      (newCode := newCode) (newStep := newStep)
+      (lastTerm := Term.succ lastTerm)
+      (idxTerm := Term.succ idxTerm) (out := next)
+      htail hleNext hnextOld
+  exact
+    BProv_Ax_s_betaDiv2StepWitnessTermAt_of_components
+      hcurNew hnextNew hdiv
+
 /-- One-step closed-value propagation from a bounded trace at a PA index term. -/
 theorem BProv_Ax_s_betaDiv2StepsThroughAt_next_termIdx_eqConst_div_two_of_leTerm
     {G : List Formula} {code step last cur : Nat} {idxTerm : Term}
