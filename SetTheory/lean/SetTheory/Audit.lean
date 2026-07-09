@@ -613,6 +613,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_components
+#check @PA.Formula.BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero
 #check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_of_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_components
@@ -1037,6 +1038,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitTermEx_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitEx_of_bitTermEx
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitEx_of_shift_tail
+#check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_steps_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_steps_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_bitTermEx_of_shift_tail

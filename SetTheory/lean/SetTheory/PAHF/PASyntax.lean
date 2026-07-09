@@ -24362,6 +24362,36 @@ theorem BProv_Ax_s_hfMemTermAt_of_components {G : List Formula}
       (a := ex body)
       (t := codeTerm) hstepEx)
 
+/-- Convert a fully term-parametric beta entry at index `0` into the entry
+component expected by `BProv_Ax_s_hfMemTermAt_of_components`. -/
+theorem BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero
+    {G : List Formula} {set : Nat} {codeTerm stepTerm : Term}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt (Term.var set) codeTerm stepTerm Term.zero)) :
+    BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) (Term.var set)) 1 0 0))) := by
+  have hconst : BProv Ax_s G
+      (betaTermTermAtConstIdx (Term.var set) codeTerm stepTerm 0) :=
+    BProv_Ax_s_betaTermTermAtConstIdx_of_beta hbeta
+  simpa [betaTermTermAtConstIdx, betaTermAtConstIdx,
+    betaTermAt_eq_betaTermTermAt_var, betaTermTermAt,
+    remTermTermAt, ltTermAt, betaModTermTerm, eqConstAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up, Term.rename_comp,
+    term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ] using hconst
+
 /-- Substitution-stable variant of `BProv_Ax_s_hfMemTermAt_of_components`.
 
 This is useful when the membership formula is later instantiated in its
@@ -37669,6 +37699,41 @@ theorem
         codeTerm stepTerm) :=
   BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitEx_of_bitTermEx
     (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitTermEx_of_shift_tail
+      htail holdBitEx)
+
+/-- Package the opened old low-half membership directly from a shifted-tail
+relation and the three old opened trace components.
+
+This is the reusable composition point just below the branch-specific
+contexts: callers may provide the old successor entry, bounded trace, and
+final bit in the fully opened `S x in low` context, and this lemma supplies the
+whole opened `x in lowHalf` membership formula. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_shift_tail
+    {G : List Formula} {lowHalf : Nat} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm
+        (Term.succ (Term.var 2))))
+    (holdEntry : BProv Ax_s G
+      (betaTermAtTermIdx (Term.var (lowHalf+3)) 1 0
+        (Term.succ Term.zero)))
+    (holdSteps : BProv Ax_s G
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula)
+    (holdBitEx : BProv Ax_s G
+      strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedFormula lowHalf) :=
+  BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_components
+    (lowHalf := lowHalf) (codeTerm := codeTerm) (stepTerm := stepTerm)
+    (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_shift_tail_succ_bound
+      (G := G) (lowHalf := lowHalf)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      htail holdEntry)
+    (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_steps_of_shift_tail
+      (G := G) (codeTerm := codeTerm) (stepTerm := stepTerm)
+      htail holdSteps)
+    (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitEx_of_shift_tail
+      (G := G) (codeTerm := codeTerm) (stepTerm := stepTerm)
       htail holdBitEx)
 
 /-- Even-low carry context wrapper for the shifted-tail low-half entry
