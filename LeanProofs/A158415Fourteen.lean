@@ -18,6 +18,11 @@ set_option maxRecDepth 10000
 set_option linter.unreachableTactic false
 set_option linter.unnecessarySeqFocus false
 
+private theorem values9_mem_recursiveValueSet_nine (i : Fin 33) :
+    values9 i ∈ recursiveValueSet 9 := by
+  rw [recursiveValueSet_nine]
+  exact ⟨i, rfl⟩
+
 theorem recursiveValueSet_fourteen_unary_subset_range :
     ((fun x : ℝ => Real.sqrt x) '' recursiveValueSet 13) ⊆ Set.range values14 := by
   intro x hx
@@ -94,10 +99,10 @@ theorem recursiveValueSet_fourteen_subset_range :
       rcases hb' with ⟨i, rfl⟩
       rcases ha with rfl | rfl | rfl
       · exact one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
-          (by norm_num) (values9_mem_recursiveValueSet i)
+          (by norm_num) (values9_mem_recursiveValueSet_nine i)
       · exact sqrt_two_add_values9_mem_range_values14 i
       · exact two_add_mem_range_values14_of_mem_recursiveValueSet_le_ten
-          (by norm_num) (by norm_num) (values9_mem_recursiveValueSet i)
+          (by norm_num) (by norm_num) (values9_mem_recursiveValueSet_nine i)
     · rw [recursiveValueSet_five_eq_range_values5] at ha
       have hb' : b ∈ recursiveValueSet 8 := by simpa using hb
       rw [recursiveValueSet_eight] at hb'
@@ -133,13 +138,13 @@ theorem recursiveValueSet_fourteen_subset_range :
       · change (Set.range values14) (values9 i + 1)
         simpa [add_comm] using
           one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
-            (by norm_num) (values9_mem_recursiveValueSet i)
+            (by norm_num) (values9_mem_recursiveValueSet_nine i)
       · change (Set.range values14) (values9 i + Real.sqrt 2)
         simpa [add_comm] using sqrt_two_add_values9_mem_range_values14 i
       · change (Set.range values14) (values9 i + 2)
         simpa [add_comm] using
           two_add_mem_range_values14_of_mem_recursiveValueSet_le_ten
-            (by norm_num) (by norm_num) (values9_mem_recursiveValueSet i)
+            (by norm_num) (by norm_num) (values9_mem_recursiveValueSet_nine i)
     · rw [recursiveValueSet_ten] at ha
       have hb' : b ∈ recursiveValueSet 3 := by simpa using hb
       rw [recursiveValueSet_three] at hb'

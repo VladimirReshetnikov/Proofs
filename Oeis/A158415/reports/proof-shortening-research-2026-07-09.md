@@ -39,11 +39,11 @@ Observed effects:
 
 | Artifact | Before | After |
 |---|---:|---:|
-| `A158415FifteenTable.lean` source | about 1.75 MB / 14,829 lines | about 34 KB / 934 lines |
-| `A158415FifteenTable.olean` | 31.6 MB | 4.39 MB |
+| `A158415FifteenTable.lean` source | about 1.75 MB / 14,829 lines | about 34 KB / 935 lines |
+| `A158415FifteenTable.olean` | 31.6 MB | 4.50 MB |
 | focused size-15 table build | much larger old certificate | 16-18 s |
 | `A158415FourteenTable.lean` source | 59.9 KB / 1,001 lines | 20.9 KB / 583 lines |
-| `A158415FourteenTable.olean` | 4.22 MB | 2.59 MB |
+| `A158415FourteenTable.olean` | 4.22 MB | 2.67 MB |
 | focused size-14 table build | about 49 s before route conversion | 30 s after final route conversion |
 
 This is the largest source and object-size win in the current work.
@@ -171,9 +171,27 @@ with one `by_cases`. Together, these route checks remove 1,135 repetitive
 branches while preserving the two genuine collision proofs.
 
 After both route compressions, `A158415FourteenRange.lean` is about 48 KB /
-1,387 lines and `A158415FifteenRangeA.lean` is about 14 KB / 777 lines. The
-optimization is deliberately limited to structurally exact cases; other
-algebraic collisions still receive explicit equality certificates.
+1,414 lines and its `.olean` is 19.96 MB. `A158415FifteenRangeA.lean` is about
+14 KB / 792 lines and its `.olean` is 1.77 MB, down from 7.81 MB after the
+modulo-backed-index change. The optimization is deliberately limited to
+structurally exact cases; other algebraic collisions still receive explicit
+equality certificates.
+
+## Final verification
+
+After merging current `main`, both final targets built successfully:
+
+```text
+lake build LeanProofs.A158415Fourteen
+lake build LeanProofs.A158415Fifteen
+```
+
+The successful post-merge size-15 run rebuilt the table (31 s), intervals
+(246 s), range A (246 s), range B (60 s), range C (246 s), order proof (366 s),
+and final theorem (27 s). The machine was concurrently running unrelated Lean
+builds, so these figures are a verification record rather than controlled
+benchmarks. The resulting modules prove `a158415 14 = 455` and
+`a158415 15 = 791` with exact certificates.
 
 ## Experiments rejected
 
