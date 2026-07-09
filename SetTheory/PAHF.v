@@ -6852,6 +6852,18 @@ Proof.
   intros n. reflexivity.
 Qed.
 
+(* Lean: Term.upSubst_comp *)
+Lemma upSubst_comp : forall (sigma tau : nat -> term),
+  upSubst (fun n => subst tau (sigma n)) =
+    fun n => subst (upSubst tau) (upSubst sigma n).
+Proof.
+  intros sigma tau.
+  apply functional_extensionality.
+  intros [|n].
+  - reflexivity.
+  - simpl. rewrite subst_rename_succ_up. reflexivity.
+Qed.
+
 Lemma subst_ext_free : forall t (sigma tau : nat -> term),
   (forall n, Free n t -> sigma n = tau n) ->
   subst sigma t = subst tau t.
@@ -7660,6 +7672,32 @@ Proof.
     reflexivity.
 Qed.
 
+(* Lean: subst_instTerm_var_zero_rename_up_succ *)
+Lemma subst_instTerm_var_zero_rename_up_succ : forall phi,
+  subst (instTerm (tVar 0)) (rename (up S) phi) = phi.
+Proof.
+  intro phi.
+  rewrite subst_rename.
+  transitivity (subst (fun n => tVar n) phi).
+  - apply subst_ext. intros [|n]; reflexivity.
+  - apply subst_id.
+Qed.
+
+(* Lean: subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice *)
+Lemma subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice :
+  forall phi,
+  subst (instTerm (tVar 0))
+    (subst (Term.upSubst (instTerm (tVar 1)))
+      (rename (up (up S)) (rename (up (up S)) phi))) = phi.
+Proof.
+  intro phi.
+  rewrite subst_comp, subst_rename, subst_rename.
+  transitivity (subst (fun n => tVar n) phi).
+  - apply subst_ext.
+    intros [|[|n]]; reflexivity.
+  - apply subst_id.
+Qed.
+
 
 (* Lean: term_subst_instTerm_rename_two_succ *)
 Lemma term_subst_instTerm_rename_two_succ : forall t u,
@@ -7855,6 +7893,19 @@ Proof.
     with (Term.rename (fun n => S (S (S n))) t)
     by (apply Term.rename_ext; intro n; lia).
   rewrite term_subst_up_up_instTerm_rename_three_succ.
+  rewrite term_subst_upSubst_instTerm_rename_two_succ.
+  apply term_subst_instTerm_rename_succ.
+Qed.
+
+Lemma term_subst_two_instTerm_rename_add_two : forall t cur next,
+  Term.subst (instTerm next)
+    (Term.subst (Term.upSubst (instTerm cur))
+      (Term.rename (fun n => n + 2) t)) = t.
+Proof.
+  intros t cur next.
+  replace (Term.rename (fun n => n + 2) t)
+    with (Term.rename (fun n => S (S n)) t)
+    by (apply Term.rename_ext; intro n; lia).
   rewrite term_subst_upSubst_instTerm_rename_two_succ.
   apply term_subst_instTerm_rename_succ.
 Qed.
@@ -23186,6 +23237,102 @@ Proof.
   exact hmem.
 Qed.
 
+(* Lean: BProv_Ax_s_subst_betaAt_of_betaTermTermAt *)
+Lemma BProv_Ax_s_subst_betaAt_of_betaTermTermAt :
+  forall G (sigma : nat -> term) out code step idx,
+  BProv Ax_s G
+    (betaTermTermAt
+      (Term.subst sigma (tVar out))
+      (Term.subst sigma (tVar code))
+      (Term.subst sigma (tVar step))
+      (Term.subst sigma (tVar idx))) ->
+  BProv Ax_s G (subst sigma (betaAt out code step idx)).
+Proof.
+  intros G sigma out code step idx hbeta.
+  replace (subst sigma (betaAt out code step idx))
+    with (betaTermTermAt
+      (Term.subst sigma (tVar out))
+      (Term.subst sigma (tVar code))
+      (Term.subst sigma (tVar step))
+      (Term.subst sigma (tVar idx))).
+  - exact hbeta.
+  - unfold betaTermTermAt, betaAt, remTermTermAt, remAt,
+      ltTermAt, ltAt, betaModTermTerm, betaModTerm.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_subst_betaAtSuccIdx_of_betaTermTermAt_succ *)
+Lemma BProv_Ax_s_subst_betaAtSuccIdx_of_betaTermTermAt_succ :
+  forall G (sigma : nat -> term) out code step idx,
+  BProv Ax_s G
+    (betaTermTermAt
+      (Term.subst sigma (tVar out))
+      (Term.subst sigma (tVar code))
+      (Term.subst sigma (tVar step))
+      (tSucc (Term.subst sigma (tVar idx)))) ->
+  BProv Ax_s G (subst sigma (betaAtSuccIdx out code step idx)).
+Proof.
+  intros G sigma out code step idx hbeta.
+  set (outTerm := Term.subst sigma (tVar out)).
+  set (codeTerm := Term.subst sigma (tVar code)).
+  set (stepTerm := Term.subst sigma (tVar step)).
+  set (idxTerm := Term.subst sigma (tVar idx)).
+  set (body :=
+    pAnd
+      (pEq (tVar 0) (tSucc (Term.rename S idxTerm)))
+      (betaTermTermAt (Term.rename S outTerm)
+        (Term.rename S codeTerm) (Term.rename S stepTerm) (tVar 0))).
+  assert (hidx : BProv Ax_s G
+      (subst (instTerm (tSucc idxTerm))
+        (pEq (tVar 0) (tSucc (Term.rename S idxTerm))))).
+  {
+    replace (subst (instTerm (tSucc idxTerm))
+        (pEq (tVar 0) (tSucc (Term.rename S idxTerm))))
+      with (pEq (tSucc idxTerm) (tSucc idxTerm)).
+    - apply BProv_eqRefl.
+    - simpl. rewrite term_subst_instTerm_rename_succ. reflexivity.
+  }
+  assert (hraw : BProv Ax_s G
+      (subst (instTerm (tSucc idxTerm))
+        (betaTermTermAt (Term.rename S outTerm)
+          (Term.rename S codeTerm) (Term.rename S stepTerm) (tVar 0)))).
+  {
+    replace (subst (instTerm (tSucc idxTerm))
+        (betaTermTermAt (Term.rename S outTerm)
+          (Term.rename S codeTerm) (Term.rename S stepTerm) (tVar 0)))
+      with (betaTermTermAt outTerm codeTerm stepTerm (tSucc idxTerm)).
+    - unfold outTerm, codeTerm, stepTerm, idxTerm.
+      exact hbeta.
+    - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      reflexivity.
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm (tSucc idxTerm)) body)).
+  {
+    unfold body.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hidx hraw).
+  }
+  assert (hex : BProv Ax_s G (pEx body)).
+  { exact (BProv_exI Ax_s G body (tSucc idxTerm) hbody). }
+  replace (subst sigma (betaAtSuccIdx out code step idx))
+    with (pEx body).
+  - exact hex.
+  - unfold body, outTerm, codeTerm, stepTerm, idxTerm,
+      betaAtSuccIdx, betaAt, betaTermTermAt, remTermTermAt,
+      remAt, ltTermAt, ltAt, betaModTermTerm, betaModTerm.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_rename_up_succ_rename_succ.
+    repeat rewrite Term.rename_comp.
+    reflexivity.
+Qed.
+
 (* Lean: BProv_Ax_s_betaTermTermAtSuccIdx_of_succ *)
 Lemma BProv_Ax_s_betaTermTermAtSuccIdx_of_succ :
   forall G (out code step : term) idx,
@@ -23428,6 +23575,474 @@ Proof.
           (idx + 3))
         (div2StepTermAt (tVar 2) (tVar 1) (tVar 0))))))
     cur hnextEx).
+Qed.
+
+(* Lean: BProv_Ax_s_betaDiv2BitTermAt_of_components *)
+Lemma BProv_Ax_s_betaDiv2BitTermAt_of_components :
+  forall G (bit code step idx cur next : term),
+  BProv Ax_s G (betaTermTermAt cur code step idx) ->
+  BProv Ax_s G (betaTermTermAt next code step (tSucc idx)) ->
+  BProv Ax_s G (div2StepTermAt cur next bit) ->
+  BProv Ax_s G (betaDiv2BitTermAt bit code step idx).
+Proof.
+  intros G bit code step idx cur next hcur hnext hdiv.
+  set (body :=
+    pAnd
+      (betaTermTermAt (tVar 1)
+        (Term.rename (fun n => n + 2) code)
+        (Term.rename (fun n => n + 2) step)
+        (Term.rename (fun n => n + 2) idx))
+      (pAnd
+        (betaTermTermAt (tVar 0)
+          (Term.rename (fun n => n + 2) code)
+          (Term.rename (fun n => n + 2) step)
+          (tSucc (Term.rename (fun n => n + 2) idx)))
+        (div2StepTermAt (tVar 1) (tVar 0)
+          (Term.rename (fun n => n + 2) bit)))).
+  assert (hcurBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (betaTermTermAt (tVar 1)
+            (Term.rename (fun n => n + 2) code)
+            (Term.rename (fun n => n + 2) step)
+            (Term.rename (fun n => n + 2) idx))))).
+  {
+    replace (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (betaTermTermAt (tVar 1)
+            (Term.rename (fun n => n + 2) code)
+            (Term.rename (fun n => n + 2) step)
+            (Term.rename (fun n => n + 2) idx))))
+      with (betaTermTermAt cur code step idx).
+    - exact hcur.
+    - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite (term_subst_two_instTerm_rename_add_two code cur next).
+      repeat rewrite (term_subst_two_instTerm_rename_add_two step cur next).
+      repeat rewrite (term_subst_two_instTerm_rename_add_two idx cur next).
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  assert (hnextBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (betaTermTermAt (tVar 0)
+            (Term.rename (fun n => n + 2) code)
+            (Term.rename (fun n => n + 2) step)
+            (tSucc (Term.rename (fun n => n + 2) idx)))))).
+  {
+    replace (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (betaTermTermAt (tVar 0)
+            (Term.rename (fun n => n + 2) code)
+            (Term.rename (fun n => n + 2) step)
+            (tSucc (Term.rename (fun n => n + 2) idx)))))
+      with (betaTermTermAt next code step (tSucc idx)).
+    - exact hnext.
+    - unfold betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite (term_subst_two_instTerm_rename_add_two code cur next).
+      repeat rewrite (term_subst_two_instTerm_rename_add_two step cur next).
+      repeat rewrite (term_subst_two_instTerm_rename_add_two idx cur next).
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  assert (hdivBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (div2StepTermAt (tVar 1) (tVar 0)
+            (Term.rename (fun n => n + 2) bit))))).
+  {
+    replace (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (div2StepTermAt (tVar 1) (tVar 0)
+            (Term.rename (fun n => n + 2) bit))))
+      with (div2StepTermAt cur next bit).
+    - exact hdiv.
+    - unfold div2StepTermAt, boolTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite (term_subst_two_instTerm_rename_add_two bit cur next).
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  assert (htailBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (pAnd
+            (betaTermTermAt (tVar 0)
+              (Term.rename (fun n => n + 2) code)
+              (Term.rename (fun n => n + 2) step)
+              (tSucc (Term.rename (fun n => n + 2) idx)))
+            (div2StepTermAt (tVar 1) (tVar 0)
+              (Term.rename (fun n => n + 2) bit)))))).
+  {
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hnextBody hdivBody).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur)) body))).
+  {
+    unfold body.
+    simpl.
+    exact (BProv_andI Ax_s G _ _ hcurBody htailBody).
+  }
+  assert (hnextEx : BProv Ax_s G
+      (subst (instTerm cur) (pEx body))).
+  {
+    exact (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm cur)) body) next hbody).
+  }
+  unfold betaDiv2BitTermAt, body.
+  exact (BProv_exI Ax_s G (pEx
+    (pAnd
+      (betaTermTermAt (tVar 1)
+        (Term.rename (fun n => n + 2) code)
+        (Term.rename (fun n => n + 2) step)
+        (Term.rename (fun n => n + 2) idx))
+      (pAnd
+        (betaTermTermAt (tVar 0)
+          (Term.rename (fun n => n + 2) code)
+          (Term.rename (fun n => n + 2) step)
+          (tSucc (Term.rename (fun n => n + 2) idx)))
+        (div2StepTermAt (tVar 1) (tVar 0)
+          (Term.rename (fun n => n + 2) bit)))))
+    cur hnextEx).
+Qed.
+
+(* Lean: BProv_Ax_s_subst_betaDiv2BitAt_of_betaDiv2BitTermAt *)
+Lemma BProv_Ax_s_subst_betaDiv2BitAt_of_betaDiv2BitTermAt :
+  forall G (sigma : nat -> term) bit code step idx,
+  BProv Ax_s G
+    (betaDiv2BitTermAt
+      (Term.subst sigma (tVar bit))
+      (Term.subst sigma (tVar code))
+      (Term.subst sigma (tVar step))
+      (Term.subst sigma (tVar idx))) ->
+  BProv Ax_s G (subst sigma (betaDiv2BitAt bit code step idx)).
+Proof.
+  intros G sigma bit code step idx hbit.
+  set (bitTerm := Term.subst sigma (tVar bit)).
+  set (codeTerm := Term.subst sigma (tVar code)).
+  set (stepTerm := Term.subst sigma (tVar step)).
+  set (idxTerm := Term.subst sigma (tVar idx)).
+  set (bit2 := Term.rename S (Term.rename S bitTerm)).
+  set (code2 := Term.rename S (Term.rename S codeTerm)).
+  set (step2 := Term.rename S (Term.rename S stepTerm)).
+  set (idx2 := Term.rename S (Term.rename S idxTerm)).
+  set (target := subst sigma (betaDiv2BitAt bit code step idx)).
+  set (termBody :=
+    pAnd
+      (betaTermTermAt (tVar 1) code2 step2 idx2)
+      (pAnd
+        (betaTermTermAt (tVar 0) code2 step2 (tSucc idx2))
+        (div2StepTermAt (tVar 1) (tVar 0) bit2))).
+  set (legacyBody :=
+    pAnd
+      (subst (Term.upSubst (Term.upSubst sigma))
+        (betaAt 1 (code + 2) (step + 2) (idx + 2)))
+      (pAnd
+        (subst (Term.upSubst (Term.upSubst sigma))
+          (betaAtSuccIdx 0 (code + 2) (step + 2) (idx + 2)))
+        (subst (Term.upSubst (Term.upSubst sigma))
+          (div2StepAt 1 0 (bit + 2))))).
+  set (legacyBodyIntro :=
+    rename (up (up S)) (rename (up (up S)) legacyBody)).
+  assert (hbit' : BProv Ax_s G (pEx (pEx termBody))).
+  {
+    replace (pEx (pEx termBody))
+      with (betaDiv2BitTermAt bitTerm codeTerm stepTerm idxTerm).
+    - unfold bitTerm, codeTerm, stepTerm, idxTerm.
+      exact hbit.
+    - unfold termBody, bit2, code2, step2, idx2,
+        betaDiv2BitTermAt.
+      replace (Term.rename (fun n => n + 2) codeTerm)
+        with (Term.rename S (Term.rename S codeTerm))
+        by (repeat rewrite Term.rename_comp;
+            apply Term.rename_ext; intro n; lia).
+      replace (Term.rename (fun n => n + 2) stepTerm)
+        with (Term.rename S (Term.rename S stepTerm))
+        by (repeat rewrite Term.rename_comp;
+            apply Term.rename_ext; intro n; lia).
+      replace (Term.rename (fun n => n + 2) idxTerm)
+        with (Term.rename S (Term.rename S idxTerm))
+        by (repeat rewrite Term.rename_comp;
+            apply Term.rename_ext; intro n; lia).
+      replace (Term.rename (fun n => n + 2) bitTerm)
+        with (Term.rename S (Term.rename S bitTerm))
+        by (repeat rewrite Term.rename_comp;
+            apply Term.rename_ext; intro n; lia).
+      reflexivity.
+  }
+  set (G1 := pEx termBody :: map (rename S) G).
+  assert (houter : BProv Ax_s G1 (rename S target)).
+  {
+    assert (hex2 : BProv Ax_s G1 (pEx termBody)).
+    { apply BProv_ass. unfold G1. simpl. left. reflexivity. }
+    set (C := termBody :: map (rename S) G1).
+    assert (hinner : BProv Ax_s C (rename S (rename S target))).
+    {
+      assert (hbody : BProv Ax_s C termBody).
+      { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+      assert (hcurTerm : BProv Ax_s C
+          (betaTermTermAt (tVar 1) code2 step2 idx2)).
+      { exact (BProv_andE1 Ax_s C _ _ hbody). }
+      assert (htailTerm : BProv Ax_s C
+          (pAnd
+            (betaTermTermAt (tVar 0) code2 step2 (tSucc idx2))
+            (div2StepTermAt (tVar 1) (tVar 0) bit2))).
+      { exact (BProv_andE2 Ax_s C _ _ hbody). }
+      assert (hnextTerm : BProv Ax_s C
+          (betaTermTermAt (tVar 0) code2 step2 (tSucc idx2))).
+      { exact (BProv_andE1 Ax_s C _ _ htailTerm). }
+      assert (hdivTerm : BProv Ax_s C
+          (div2StepTermAt (tVar 1) (tVar 0) bit2)).
+      { exact (BProv_andE2 Ax_s C _ _ htailTerm). }
+      assert (hcurSub : BProv Ax_s C
+          (subst (Term.upSubst (Term.upSubst sigma))
+            (betaAt 1 (code + 2) (step + 2) (idx + 2)))).
+      {
+        apply (BProv_Ax_s_subst_betaAt_of_betaTermTermAt
+          C (Term.upSubst (Term.upSubst sigma))
+          1 (code + 2) (step + 2) (idx + 2)).
+        replace (code + 2) with (S (S code)) by lia.
+        replace (step + 2) with (S (S step)) by lia.
+        replace (idx + 2) with (S (S idx)) by lia.
+        unfold code2, step2, idx2, codeTerm, stepTerm, idxTerm.
+        simpl.
+        exact hcurTerm.
+      }
+      assert (hnextSub : BProv Ax_s C
+          (subst (Term.upSubst (Term.upSubst sigma))
+            (betaAtSuccIdx 0 (code + 2) (step + 2) (idx + 2)))).
+      {
+        apply (BProv_Ax_s_subst_betaAtSuccIdx_of_betaTermTermAt_succ
+          C (Term.upSubst (Term.upSubst sigma))
+          0 (code + 2) (step + 2) (idx + 2)).
+        replace (code + 2) with (S (S code)) by lia.
+        replace (step + 2) with (S (S step)) by lia.
+        replace (idx + 2) with (S (S idx)) by lia.
+        unfold code2, step2, idx2, codeTerm, stepTerm, idxTerm.
+        simpl.
+        exact hnextTerm.
+      }
+      assert (hdivSub : BProv Ax_s C
+          (subst (Term.upSubst (Term.upSubst sigma))
+            (div2StepAt 1 0 (bit + 2)))).
+      {
+        replace (subst (Term.upSubst (Term.upSubst sigma))
+            (div2StepAt 1 0 (bit + 2)))
+          with (div2StepTermAt (tVar 1) (tVar 0) bit2).
+        - exact hdivTerm.
+        - replace (bit + 2) with (S (S bit)) by lia.
+          unfold bit2, bitTerm, div2StepTermAt, div2StepAt,
+            boolTermAt, boolAt, zeroAt, oneAt, eqConstAt.
+          simpl.
+          repeat rewrite Term.subst_rename_succ_up.
+          repeat rewrite term_rename_up_succ_rename_succ.
+          repeat rewrite Term.rename_comp.
+          reflexivity.
+      }
+      assert (hlegacyBody : BProv Ax_s C legacyBody).
+      {
+        unfold legacyBody.
+        exact (BProv_andI Ax_s C _ _ hcurSub
+          (BProv_andI Ax_s C _ _ hnextSub hdivSub)).
+      }
+      assert (hlegacyBodySubst : BProv Ax_s C
+          (subst (instTerm (tVar 0))
+            (subst (Term.upSubst (instTerm (tVar 1)))
+              legacyBodyIntro))).
+      {
+        replace (subst (instTerm (tVar 0))
+            (subst (Term.upSubst (instTerm (tVar 1)))
+              legacyBodyIntro))
+          with legacyBody.
+        - exact hlegacyBody.
+        - unfold legacyBodyIntro.
+          symmetry.
+          apply subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice.
+      }
+      assert (hnextEx : BProv Ax_s C
+          (subst (instTerm (tVar 1)) (pEx legacyBodyIntro))).
+      {
+        exact (BProv_exI Ax_s C
+          (subst (Term.upSubst (instTerm (tVar 1))) legacyBodyIntro)
+          (tVar 0) hlegacyBodySubst).
+      }
+      assert (hlegacyEx : BProv Ax_s C
+          (pEx (pEx legacyBodyIntro))).
+      {
+        exact (BProv_exI Ax_s C (pEx legacyBodyIntro)
+          (tVar 1) hnextEx).
+      }
+      replace (rename S (rename S target))
+        with (pEx (pEx legacyBodyIntro)).
+      - exact hlegacyEx.
+      - replace (code + 2) with (S (S code)) by lia.
+        replace (step + 2) with (S (S step)) by lia.
+        replace (idx + 2) with (S (S idx)) by lia.
+        replace (bit + 2) with (S (S bit)) by lia.
+        unfold target, legacyBodyIntro, legacyBody,
+          betaDiv2BitAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+          div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm.
+        replace (code + 2) with (S (S code)) by lia.
+        replace (step + 2) with (S (S step)) by lia.
+        replace (idx + 2) with (S (S idx)) by lia.
+        replace (bit + 2) with (S (S bit)) by lia.
+        simpl.
+        repeat rewrite term_rename_up_succ_rename_succ.
+        repeat rewrite term_rename_up_up_succ_rename_two_succ.
+        repeat rewrite term_rename_up_up_up_succ_rename_three_succ.
+        repeat rewrite term_rename_up4_rename_four_succ.
+        repeat rewrite Term.rename_comp.
+        reflexivity.
+    }
+    exact (BProv_exE_of_sentences Ax_s G1 termBody
+      (rename S target) sentence_ax_s hex2 hinner).
+  }
+  exact (BProv_exE_of_sentences Ax_s G (pEx termBody)
+    target sentence_ax_s hbit' houter).
+Qed.
+
+(* Lean: BProv_Ax_s_subst_bitOneEx_of_betaDiv2BitOneTermExAt *)
+Lemma BProv_Ax_s_subst_bitOneEx_of_betaDiv2BitOneTermExAt :
+  forall G (sigma : nat -> term) code step idx,
+  BProv Ax_s G
+    (betaDiv2BitOneTermExAt (sigma code) (sigma step) (sigma idx)) ->
+  BProv Ax_s G
+    (subst sigma
+      (pEx
+        (pAnd
+          (oneAt 0)
+          (betaDiv2BitAt 0 (code + 1) (step + 1) (idx + 1))))).
+Proof.
+  intros G sigma code step idx hbitEx.
+  set (code0 := sigma code).
+  set (step0 := sigma step).
+  set (idx0 := sigma idx).
+  set (target :=
+    subst sigma
+      (pEx
+        (pAnd
+          (oneAt 0)
+          (betaDiv2BitAt 0 (code + 1) (step + 1) (idx + 1))))).
+  set (termBody :=
+    pAnd
+      (oneAt 0)
+      (betaDiv2BitTermAt (tVar 0)
+        (Term.rename S code0)
+        (Term.rename S step0)
+        (Term.rename S idx0))).
+  set (legacyBody :=
+    subst (Term.upSubst sigma)
+      (pAnd
+        (oneAt 0)
+        (betaDiv2BitAt 0 (code + 1) (step + 1) (idx + 1)))).
+  assert (hbitEx' : BProv Ax_s G (pEx termBody)).
+  {
+    replace (pEx termBody)
+      with (betaDiv2BitOneTermExAt code0 step0 idx0).
+    - unfold code0, step0, idx0. exact hbitEx.
+    - unfold termBody, betaDiv2BitOneTermExAt. reflexivity.
+  }
+  set (C := termBody :: map (rename S) G).
+  assert (hopened : BProv Ax_s C (rename S target)).
+  {
+    assert (hbody : BProv Ax_s C termBody).
+    { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+    assert (hone : BProv Ax_s C (oneAt 0)).
+    { exact (BProv_andE1 Ax_s C _ _ hbody). }
+    assert (hterm : BProv Ax_s C
+        (betaDiv2BitTermAt (tVar 0)
+          (Term.rename S code0)
+          (Term.rename S step0)
+          (Term.rename S idx0))).
+    { exact (BProv_andE2 Ax_s C _ _ hbody). }
+    assert (honeSub : BProv Ax_s C
+        (subst (Term.upSubst sigma) (oneAt 0))).
+    {
+      replace (subst (Term.upSubst sigma) (oneAt 0))
+        with (oneAt 0).
+      - exact hone.
+      - unfold oneAt, zeroAt, eqConstAt. simpl. reflexivity.
+    }
+    assert (hlegacyBit : BProv Ax_s C
+        (subst (Term.upSubst sigma)
+          (betaDiv2BitAt 0 (code + 1) (step + 1) (idx + 1)))).
+    {
+      apply (BProv_Ax_s_subst_betaDiv2BitAt_of_betaDiv2BitTermAt
+        C (Term.upSubst sigma) 0 (code + 1) (step + 1) (idx + 1)).
+      replace (code + 1) with (S code) by lia.
+      replace (step + 1) with (S step) by lia.
+      replace (idx + 1) with (S idx) by lia.
+      unfold code0, step0, idx0.
+      simpl.
+      exact hterm.
+    }
+    assert (hlegacyBody : BProv Ax_s C legacyBody).
+    {
+      unfold legacyBody.
+      simpl.
+      exact (BProv_andI Ax_s C _ _ honeSub hlegacyBit).
+    }
+    assert (hlegacyBodySubst : BProv Ax_s C
+        (subst (instTerm (tVar 0))
+          (rename (up S) legacyBody))).
+    {
+      replace (subst (instTerm (tVar 0))
+          (rename (up S) legacyBody))
+        with legacyBody.
+      - exact hlegacyBody.
+      - symmetry. apply subst_instTerm_var_zero_rename_up_succ.
+    }
+    assert (htargetEx : BProv Ax_s C
+        (pEx (rename (up S) legacyBody))).
+    {
+      exact (BProv_exI Ax_s C (rename (up S) legacyBody)
+        (tVar 0) hlegacyBodySubst).
+    }
+    replace (rename S target)
+      with (pEx (rename (up S) legacyBody)).
+    - exact htargetEx.
+    - unfold target, legacyBody,
+        betaDiv2BitAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+        div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm.
+      replace (code + 1) with (S code) by lia.
+      replace (step + 1) with (S step) by lia.
+      replace (idx + 1) with (S idx) by lia.
+      simpl.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      repeat rewrite term_rename_up_up_succ_rename_two_succ.
+      repeat rewrite term_rename_up_up_up_succ_rename_three_succ.
+      repeat rewrite term_rename_up4_rename_four_succ.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  exact (BProv_exE_of_sentences Ax_s G termBody target
+    sentence_ax_s hbitEx' hopened).
 Qed.
 
 (* Lean: BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt *)
@@ -23868,6 +24483,85 @@ Proof.
       with (Term.rename
         (fun n => S (S (S (S (S (S (S n))))))) codeTerm)
       by (apply Term.rename_ext; intro n; lia).
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_hfMemTermAt_slot4_bitEx_of_betaDiv2BitOneTermExAt *)
+Lemma BProv_Ax_s_hfMemTermAt_slot4_bitEx_of_betaDiv2BitOneTermExAt :
+  forall G (codeTerm stepTerm : term),
+  BProv Ax_s G
+    (betaDiv2BitOneTermExAt codeTerm stepTerm (tVar 4)) ->
+  BProv Ax_s G
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (4 + 3)))))).
+Proof.
+  intros G codeTerm stepTerm hbit.
+  set (sigma := fun n =>
+    Term.subst (instTerm stepTerm)
+      (Term.upSubst (instTerm codeTerm) n)).
+  assert (hbit' : BProv Ax_s G
+      (betaDiv2BitOneTermExAt (sigma 1) (sigma 0) (sigma 6))).
+  {
+    replace (betaDiv2BitOneTermExAt (sigma 1) (sigma 0) (sigma 6))
+      with (betaDiv2BitOneTermExAt codeTerm stepTerm (tVar 4)).
+    - exact hbit.
+    - unfold sigma, betaDiv2BitOneTermExAt, betaDiv2BitTermAt,
+        betaTermTermAt, remTermTermAt, div2StepTermAt, boolTermAt,
+        ltTermAt, betaModTermTerm, oneAt, zeroAt, eqConstAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
+      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+      repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
+      repeat rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ.
+      repeat rewrite term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  pose proof
+    (BProv_Ax_s_subst_bitOneEx_of_betaDiv2BitOneTermExAt
+      G sigma 1 0 6 hbit') as hlegacy.
+  replace (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (pEx
+          (pAnd
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (4 + 3))))))
+    with (subst sigma
+      (pEx
+        (pAnd
+          (oneAt 0)
+          (betaDiv2BitAt 0 (1 + 1) (0 + 1) (6 + 1))))).
+  - exact hlegacy.
+  - unfold sigma.
+    rewrite subst_comp.
+    try rewrite Term.upSubst_comp.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+    repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
+    repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+    repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
+    repeat rewrite term_subst_up_up_up_up_up_instTerm_rename_six_succ.
+    repeat rewrite term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ.
+    repeat rewrite Term.rename_comp.
     reflexivity.
 Qed.
 
