@@ -11434,6 +11434,70 @@ theorem BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ
     BProv_eqTrans hleft hright
   exact BProv_eqTrans hsuccValue (BProv_eqSym hdoubleSucc)
 
+/-- Even successor case for term-parametric binary halving: if `value` is
+`2*half`, then `S value` has the same half and output bit `1`. -/
+theorem BProv_Ax_s_div2StepTermAt_succ_of_doubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half)) :
+    BProv Ax_s G
+      (div2StepTermAt
+        (Term.succ (Term.var value)) (Term.var half)
+        (Term.succ Term.zero)) := by
+  let d : Term := Term.add (Term.var half) (Term.var half)
+  have hbool : BProv Ax_s G (boolTermAt (Term.succ Term.zero)) := by
+    simpa [boolTermAt, zeroAt, oneAt, eqConstAt, Term.numeral]
+      using
+        (BProv_orI2 (B := Ax_s) (G := G)
+          (a := eq (Term.succ Term.zero) Term.zero)
+          (BProv_eqRefl (B := Ax_s) (G := G) (Term.succ Term.zero)))
+  have hvalue : BProv Ax_s G (eq (Term.var value) d) := by
+    simpa [doubleEqAt, d] using hdouble
+  have hsuccValue : BProv Ax_s G
+      (eq (Term.succ (Term.var value)) (Term.succ d)) :=
+    BProv_eq_congr_succ hvalue
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add d (Term.succ Term.zero))
+        (Term.succ (Term.add d Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
+    BProv_eq_congr_succ
+      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+  have hsum : BProv Ax_s G
+      (eq (Term.add d (Term.succ Term.zero)) (Term.succ d)) :=
+    BProv_eqTrans haddSucc haddZero
+  have heq : BProv Ax_s G
+      (eq (Term.succ (Term.var value))
+        (Term.add d (Term.succ Term.zero))) :=
+    BProv_eqTrans hsuccValue (BProv_eqSym hsum)
+  simpa [div2StepTermAt, d] using BProv_andI hbool heq
+
+/-- Odd successor carry for term-parametric binary halving: if `value` is
+`2*half+1`, then `S value` has half `S half` and output bit `0`. -/
+theorem BProv_Ax_s_div2StepTermAt_succ_of_oddDoubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G
+      (div2StepTermAt
+        (Term.succ (Term.var value)) (Term.succ (Term.var half))
+        Term.zero) := by
+  let d : Term :=
+    Term.add (Term.succ (Term.var half)) (Term.succ (Term.var half))
+  have hbool : BProv Ax_s G (boolTermAt Term.zero) := by
+    simpa [boolTermAt, zeroAt, oneAt, eqConstAt, Term.numeral]
+      using
+        (BProv_orI1 (B := Ax_s) (G := G)
+          (b := eq Term.zero (Term.succ Term.zero))
+          (BProv_eqRefl (B := Ax_s) (G := G) Term.zero))
+  have hvalue : BProv Ax_s G (eq (Term.succ (Term.var value)) d) := by
+    simpa [d] using BProv_Ax_s_succ_oddDoubleEqAt_eq_double_succ hodd
+  have haddZero : BProv Ax_s G (eq (Term.add d Term.zero) d) :=
+    BProv_weaken_nil (BProv_Ax_s_addZero_term d)
+  have heq : BProv Ax_s G
+      (eq (Term.succ (Term.var value)) (Term.add d Term.zero)) :=
+    BProv_eqTrans hvalue (BProv_eqSym haddZero)
+  simpa [div2StepTermAt, d] using BProv_andI hbool heq
+
 /-- A binary-halving step exposes a concrete parity case for the current
 value: either it is twice its next value, or it is twice its next value plus
 one. -/
