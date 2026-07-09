@@ -5444,8 +5444,8 @@ theorem standard_sat_translatedHFFinAx (e : Nat → Nat) :
 under the Ackermann membership translation.
 
 This theorem is intentionally only a proof-calculus translation: source axioms
-are not discharged here.  The finite axiom list introduced by `BProv` is
-handled separately by `BProv_hfFormulaAt_of_BProv_HFFin`. -/
+are not discharged here.  The bounded axiom list introduced by `BProv` is
+handled separately by the `BProv_hfFormulaAt_of_BProv_*` variants. -/
 theorem Prov_hfFormulaAt_of_Prov {G : List Form} {phi : Form}
     (h : SetTheory.Prov G phi) :
     ∀ ρ : Nat → Nat, Prov (hfContextAt ρ G) (hfFormulaAt ρ phi) := by
@@ -5521,6 +5521,30 @@ theorem Prov_hfFormulaAt_of_Prov {G : List Form} {phi : Form}
       have hmain := Prov.P_eqElim _ (Term.var (ρ i)) (Term.var (ρ j))
         (hfFormulaAt (hfUpVarMap ρ) a) (iheq ρ) hbody
       simpa [subst_instTerm_var_hfFormulaAt] using hmain
+
+theorem BProv_hfFormulaAt_of_BProv_HF {G : List Form} {phi : Form}
+    (h : SetTheory.BProv AckermannHF.HFAx_s G phi) :
+    ∀ ρ : Nat → Nat,
+      BProv translatedHFAx (hfContextAt ρ G) (hfFormulaAt ρ phi) := by
+  rcases h with ⟨L, hL, hprov⟩
+  intro ρ
+  refine ⟨hfContextAt ρ L, ?_, ?_⟩
+  · intro f hf
+    simp only [hfContextAt, List.mem_map] at hf
+    rcases hf with ⟨g, hg, rfl⟩
+    have hgAx : AckermannHF.HFAx_s g := hL g hg
+    rw [hfFormulaAt_eq_translateHFFormula_of_HF_sentence g ρ
+      (AckermannHF.Sentences_HF g hgAx)]
+    exact translatedHFAx_intro hgAx
+  · have hp := Prov_hfFormulaAt_of_Prov hprov ρ
+    simpa [hfContextAt, List.map_append] using hp
+
+theorem BProv_translateHFFormula_of_BProv_HF {phi : Form}
+    (h : SetTheory.BProv AckermannHF.HFAx_s [] phi) :
+    BProv translatedHFAx [] (translateHFFormula phi) := by
+  have htranslated :=
+    BProv_hfFormulaAt_of_BProv_HF h (fun n : Nat => n)
+  simpa [hfContextAt, translateHFFormula] using htranslated
 
 theorem BProv_hfFormulaAt_of_BProv_HFFin {G : List Form} {phi : Form}
     (h : SetTheory.BProv AckermannHF.HFFinAx_s G phi) :
