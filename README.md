@@ -450,19 +450,12 @@ order are in `SetTheory/_CoqProject`) and its independent Lean port:
 
 ```powershell
 cd src/Lean/SetTheory
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Fol.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Calculus.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Completeness.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Zf.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Equivalence.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory PAHF.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaver.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverKnownValues.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverBB2Bridge.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverMathlib.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Forward.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Reverse.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Audit.v
+Get-Content _CoqProject |
+  Where-Object { $_ -match '\.v$' } |
+  ForEach-Object {
+    & coqc -Q . SetTheory -Q ../CoqBB2 CoqBB2 $_
+    if ($LASTEXITCODE -ne 0) { throw "coqc failed: $_" }
+  }
 
 cd lean
 lake build

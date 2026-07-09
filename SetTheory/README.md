@@ -508,23 +508,13 @@ The full development is the `.v` files listed in [`_CoqProject`](_CoqProject),
 including the vendored CoqBB2 certificate under [`../CoqBB2`](../CoqBB2):
 
 ```sh
-# the library builds in dependency order under the SetTheory namespace:
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Fol.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Calculus.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Completeness.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Zf.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Equivalence.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory PAHF.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaver.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverKnownValues.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverBB2Bridge.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverMathlib.v
-# the shallow layer is self-contained (also compiles bare: `coqc Forward.v`):
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Forward.v
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Reverse.v
-# capstone audit: type-checks headline results, prints axiom footprints:
-coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Audit.v
+# Generate dependencies from the combined SetTheory/CoqBB2 project, then build.
+coq_makefile -f _CoqProject -o Makefile.coq
+make -f Makefile.coq
 ```
+
+The final `Audit.v` target type-checks the headline results and prints their
+axiom footprints.
 
 `Forward.v` and `Reverse.v` are independent (no inter-file `Require`) and need only
 the standard library. The library files import along the DAG shown above

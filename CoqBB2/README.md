@@ -29,10 +29,11 @@ opam install coq-native
 opam pin add coq 8.20.1
 ```
 
-Then, in order to compile the proof, do:
+Then generate a makefile from the vendored project manifest and compile it:
 
 ```sh
-make
+coq_makefile -f _CoqProject -o Makefile.coq
+make -f Makefile.coq
 ```
 
 ### Used Axiom
@@ -66,25 +67,18 @@ The TNF enumeration algorithm is located in `BB2_TNF_Enumeration.v`.
 
 ### Deciders
 
-Deciders are algorithms trying to prove whether a given Turing machine halts or not. The pipeline of deciders used to solve `BB(4)` (pipeline defined in `BB2_Deciders_Pipeline.v`) is a subset of the `BB(5)` pipeline (see ../BB5):
+Deciders are algorithms trying to prove whether a given Turing machine halts or not. The pipeline used to solve `BB(2)` (defined in `BB2_Deciders_Pipeline.v`) is a subset of the upstream `BB(5)` pipeline:
 
-1. Loops, see `../BB5/Deciders/Decider_Loop.v`
-2. n-gram Closed Position Set (n-gram CPS), see `../BB5/Deciders/Decider_NGramCPS.v`
+1. Loops, see [`Deciders/Decider_Loop.v`](Deciders/Decider_Loop.v)
+2. n-gram Closed Position Set (n-gram CPS), see [`Deciders/Decider_NGramCPS.v`](Deciders/Decider_NGramCPS.v)
 
-Each of these techniques is described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), also see `../BB5/Deciders/README.md` and the comments in each file listed above for some information.
+Each technique is described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper) and in the comments in the files above.
 
 The deciders' algorithms are programmed in Coq and then proved correct in Coq too (i.e. proving that if they output `HALT`/`NONHALT` on a machine then the machine halts/does not halt).
 
 ### Extracting results
 
-The list of all enumerated machines (using [bbchallenge format](https://discuss.bbchallenge.org/t/standard-tm-text-format/60/28?u=cosmo)) with for each, halting status and decider ID can be extracted from the Coq proof by doing (once you've compiled the proof):
-
-```sh
-cd BB2_Extraction
-./BB2_Extraction.sh
-```
-
-Which should produce the file `BB2_verified_enumeration.csv` with shasum ending in `...964aa909d` and file starting with:
+The upstream project publishes the enumerated machines (in [bbchallenge format](https://discuss.bbchallenge.org/t/standard-tm-text-format/60/28?u=cosmo)) with each machine's halting status and decider ID. This vendored subset retains the Coq extraction declaration in `BB2_Extraction.v`, but not upstream's helper directory and shell script. The published CSV has a shasum ending in `...964aa909d` and starts with:
 
 ```
 machine,status,decider
@@ -101,8 +95,6 @@ machine,status,decider
 ```
 
 This step relies on OCaml extraction of the Coq code (specified in `BB2_Extraction.v`).
-
-See `BB2_Extraction/README.md` for more information and troubleshooting.
 
 This extracted `BB2_verified_enumeration.csv` is also available at [https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/](https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/).
 
@@ -131,16 +123,14 @@ Here are more precise counts exactly following the pipeline used by the proof (`
 - `BB2_Encodings.v`: routines that encode objects into numbers for fast lookup using Coq's `FSets.FMapPositive`
 - `BB2_Extraction.v`: OCaml extraction, see [above](#extracting-results)
 - `BB2_Make_TM.v`: mainly routines to build 2-state Turing machines
-- `BB2_Statement.v`: main definition and `BB(4) = 107` theorem statement
-- `BB2_Theorem.v`: entry point of the proof of `BB(4) = 107`
+- `BB2_Statement.v`: main definitions and the `BB(2) = 6` theorem statement
+- `BB2_Theorem.v`: entry point of the proof of `BB(2) = 6`
 - `BB2_TNF_Enumeration.v`: Tree Normal Form enumeration of 2-state Turing machines
-- `BB2_Extraction/BB2_Extraction.sh`: compiles the OCaml extraction, runs it and saves results to [BB2_verified_enumeration.csv](https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/) (also checks hashes)
 
-### Files copied from ../BB5
+### Shared upstream files
 
-The following files are copied from `../BB5` after running `copy_from_BB5.sh` (the script also modifies Coq files' import statements using `sed`):
+The following shared files were selected from the upstream `BB5` development:
 
-- `Makefile`: allows to build the proof with `make`
 - `List_Routines.v`: routines to manipulate lists
 - `List_Tape.v`: routines to manipulate Turing machines tapes as lists
 - `Prelims.v`: various definitions of general interest
@@ -149,16 +139,15 @@ The following files are copied from `../BB5` after running `copy_from_BB5.sh` (t
 - `TNF.v`: tools for the Tree Normal Form enumeration (e.g. `SearchQueue` implementation etc...)
 
 - `Deciders/Deciders_Common.v`: common abstraction needed by deciders
-- `Deciders/Decider_Halt.v`: decider that detects halting by running a machine for some steps
 - `Deciders/Decider_Loop.v`: decider for loops
 - `Deciders/Decider_NGramCPS.v`: n-gram Closed Position Set decider
-- `Deciders/Decider_RepWL.v`: Repeated Word List decider
 - `Deciders/Verifier_Halt.v`: verifier that a machine does halt after a given number of steps
 
-These deciders are described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), also see `../BB5/Deciders/README.md` and the comments in each file listed above for some information.
+These deciders are described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper) and in their source comments.
 
 #### Note to maintainers
 
-Maintainers and programmers of this repo must re-run `./copy_from_BB5.sh` when changing these files in `../BB5` in order to make sure they are propagated here.
+Refresh these files from the pinned upstream commit when needed, preserving the
+local kernel-checked `vm_compute`/`reflexivity` replacement documented above.
 
 [^1]: Removing this axiom would introduce [Setoid](https://coq.inria.fr/doc/v8.9/stdlib/Coq.Setoids.Setoid.html) everywhere.
