@@ -12283,6 +12283,28 @@ theorem BProv_Ax_s_leAt_half_of_oddDoubleEqAt
     BProv_Ax_s_leTermAt_trans hhalfLeDouble hdoubleLeValue
   simpa [h, leTermAt_var] using hle
 
+/-- If a slot is explicitly twice its half plus one, PA proves that the half is
+strictly below the slot. -/
+theorem BProv_Ax_s_ltAt_half_of_oddDoubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G (ltAt half value) := by
+  let h : Term := Term.var half
+  let double : Term := Term.add h h
+  have hvalue : BProv Ax_s G (eq (Term.var value) (Term.succ double)) := by
+    simpa [oddDoubleEqAt, h, double] using hodd
+  have hhalfLeDouble : BProv Ax_s G (leTermAt h double) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := h) (upper := double) (diff := h)
+      (BProv_eqRefl (B := Ax_s) (G := G) double)
+  have hhalfLtSuccDouble : BProv Ax_s G
+      (ltTermAt h (Term.succ double)) :=
+    BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hhalfLeDouble
+  have hlt : BProv Ax_s G (ltTermAt h (Term.var value)) :=
+    BProv_ltTermAt_of_eq_right (BProv_eqSym hvalue)
+      hhalfLtSuccDouble
+  simpa [h, ltTermAt_var] using hlt
+
 /-- If `value = 2*half` and `value < upper`, then PA proves
 `half < upper`. -/
 theorem BProv_Ax_s_ltAt_half_of_doubleEqAt_ltAt
@@ -31113,6 +31135,29 @@ theorem
     simpa [ltTermAt_var] using hhalfLtAt
   have hsome : BProv Ax_s G
       (hfSomeDistinguishesTermAt (Term.var high) lowHalf) :=
+    BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt
+      hih hhalfLt
+  simpa [hfSomeDistinguishesTermAt_var] using hsome
+
+/-- If the induction hypothesis distinguishes a code from every lower code,
+and the code is explicitly odd, the hypothesis may be opened at its half.
+
+This is the self/equality-branch analogue of the strict successor half-order
+extraction: the odd equation gives the strict bound `half < high`, and the IH
+does the actual distinguishing work. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_odd_half
+    {G : List Formula} {high highHalf : Nat}
+    (hih : BProv Ax_s G (hfLtDistinguishesTermAt (Term.var high)))
+    (hodd : BProv Ax_s G (oddDoubleEqAt high highHalf)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high highHalf) := by
+  have hhalfLtAt : BProv Ax_s G (ltAt highHalf high) :=
+    BProv_Ax_s_ltAt_half_of_oddDoubleEqAt hodd
+  have hhalfLt : BProv Ax_s G
+      (ltTermAt (Term.var highHalf) (Term.var high)) := by
+    simpa [ltTermAt_var] using hhalfLtAt
+  have hsome : BProv Ax_s G
+      (hfSomeDistinguishesTermAt (Term.var high) highHalf) :=
     BProv_hfSomeDistinguishesTermAt_of_hfLtDistinguishesTermAt
       hih hhalfLt
   simpa [hfSomeDistinguishesTermAt_var] using hsome

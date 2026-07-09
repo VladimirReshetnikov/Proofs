@@ -317,6 +317,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltTermAt_var_succ_right_of_leAt
 #check @PA.Formula.BProv_Ax_s_ltTermAt_var_succ_right_of_ltAt
 #check @PA.Formula.BProv_Ax_s_leAt_of_ltTermAt_var_succ_right
+#check @PA.Formula.BProv_Ax_s_ltAt_half_of_oddDoubleEqAt
 #check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt_all
 #check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_right_cases
@@ -735,6 +736,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_all_hfLtDistinguishesAt_of_successor_step
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_odd_half
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_self
