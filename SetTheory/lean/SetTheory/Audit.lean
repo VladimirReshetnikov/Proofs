@@ -739,6 +739,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_successor_step
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_successor_cases
 #check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_strict_and_self
+#check @PA.Formula.BProv_Ax_s_translated_HF_extensionality_of_div2_named_succ_witness_components_carry_cases_shift_tail_opened_low_half_and_self
 #check @PA.Formula.BProv_Ax_s_HF_empty_zero_member_bot
 #check @PA.Formula.BProv_Ax_s_translated_HF_empty
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_zero_opened_raw_body_dvd
