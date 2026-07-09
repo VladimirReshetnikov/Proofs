@@ -15959,6 +15959,153 @@ theorem BProv_Ax_s_betaCodeExtensionTermAt_crtExtend
   simpa [betaCodeExtensionTermAt, delta] using
     BProv_andI (B := Ax_s) (G := G) hagreement htarget
 
+/-- Package an explicit one-entry beta extension code. -/
+theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_of_term
+    {G : List Formula}
+    {oldCode step target newOut newCode : Term}
+    (hext : BProv Ax_s G
+      (betaCodeExtensionTermAt
+        oldCode step target newOut newCode)) :
+    BProv Ax_s G
+      (betaCodeExtensionExistsTermAt oldCode step target newOut) := by
+  let body : Formula :=
+    betaCodeExtensionExistsTermAtBody oldCode step target newOut
+  have hbody : BProv Ax_s G (subst (instTerm newCode) body) := by
+    simpa [body, betaCodeExtensionExistsTermAtBody,
+      betaCodeExtensionTermAt, betaPrefixAgreementTermAt,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hext
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := body) (t := newCode)
+    (by simpa [body, betaCodeExtensionExistsTermAt,
+      betaCodeExtensionExistsTermAtBody] using hbody)
+
+/-- Eliminate a product's existential inverse certificate to obtain a fresh
+one-entry beta extension code. -/
+theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_of_prefix_inverse
+    {G : List Formula}
+    {oldCode product step target newOut : Term}
+    (hprefix : BProv Ax_s G
+      (betaPrefixDividesTermAt step target product))
+    (hinverse : BProv Ax_s G
+      (crtInverseExistsTermAt product
+        (betaModTermTerm step target)))
+    (hnewBound : BProv Ax_s G
+      (ltTermAt newOut (betaModTermTerm step target))) :
+    BProv Ax_s G
+      (betaCodeExtensionExistsTermAt oldCode step target newOut) := by
+  let modulus : Term := betaModTermTerm step target
+  let goal : Formula :=
+    betaCodeExtensionExistsTermAt oldCode step target newOut
+  refine BProv_Ax_s_crtInverseExistsTermAt_elim_opened
+    (G := G) (product := product) (modulus := modulus)
+    (target := goal) ?_ (by simpa [modulus] using hinverse)
+  let quotEx : Formula :=
+    crtInverseExistsTermAtQuotEx product modulus
+  let certBody : Formula :=
+    crtInverseExistsTermAtBody product modulus
+  let D : List Formula :=
+    crtInverseExistsTermAtOpenedContext product modulus G
+  let oldCode2 : Term := Term.rename (fun n => n + 2) oldCode
+  let product2 : Term := Term.rename (fun n => n + 2) product
+  let step2 : Term := Term.rename (fun n => n + 2) step
+  let target2 : Term := Term.rename (fun n => n + 2) target
+  let newOut2 : Term := Term.rename (fun n => n + 2) newOut
+  let modulus2 : Term := betaModTermTerm step2 target2
+  have hcert : BProv Ax_s D
+      (crtInverseTermAt product2 modulus2
+        (Term.var 1) (Term.var 0)) := by
+    have hraw : BProv Ax_s D certBody :=
+      BProv_ass (B := Ax_s) (G := D) (by
+        simp [D, crtInverseExistsTermAtOpenedContext, certBody])
+    simpa [certBody, crtInverseExistsTermAtBody, modulus,
+      product2, step2, target2, modulus2, betaModTermTerm,
+      Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using hraw
+  have hprefixRen1 : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaPrefixDividesTermAt step target product)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hprefix Nat.succ
+  have hprefixRen2 : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ
+        (betaPrefixDividesTermAt step target product))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hprefixRen1 Nat.succ
+  have hprefixD : BProv Ax_s D
+      (betaPrefixDividesTermAt step2 target2 product2) := by
+    have h1 := BProv_context_cons (B := Ax_s)
+      (a := rename Nat.succ quotEx) hprefixRen2
+    have h2 := BProv_context_cons (B := Ax_s)
+      (a := certBody) h1
+    simpa [D, crtInverseExistsTermAtOpenedContext,
+      step2, target2, product2, betaPrefixDividesTermAt,
+      betaModTermTerm, dvdTermTermAt, ltTermAt,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using h2
+  have hboundRen1 : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (ltTermAt newOut (betaModTermTerm step target))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hnewBound Nat.succ
+  have hboundRen2 : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ
+        (ltTermAt newOut (betaModTermTerm step target)))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hboundRen1 Nat.succ
+  have hboundD : BProv Ax_s D
+      (ltTermAt newOut2 modulus2) := by
+    have h1 := BProv_context_cons (B := Ax_s)
+      (a := rename Nat.succ quotEx) hboundRen2
+    have h2 := BProv_context_cons (B := Ax_s)
+      (a := certBody) h1
+    simpa [D, crtInverseExistsTermAtOpenedContext,
+      newOut2, step2, target2, modulus2,
+      ltTermAt, betaModTermTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using h2
+  have hext : BProv Ax_s D
+      (betaCodeExtensionTermAt oldCode2 step2 target2 newOut2
+        (crtExtendCodeTerm oldCode2 product2 (Term.var 1)
+          (crtSuccessorCorrectionTerm oldCode2
+            (Term.mul (Term.succ target2) step2) newOut2))) :=
+    BProv_Ax_s_betaCodeExtensionTermAt_crtExtend
+      (G := D) (oldCode := oldCode2) (product := product2)
+      (inverse := Term.var 1) (step := step2) (target := target2)
+      (inverseQuot := Term.var 0) (newOut := newOut2)
+      hprefixD (by simpa [crtInverseTermAt] using hcert) hboundD
+  have hex : BProv Ax_s D
+      (betaCodeExtensionExistsTermAt
+        oldCode2 step2 target2 newOut2) :=
+    BProv_Ax_s_betaCodeExtensionExistsTermAt_of_term hext
+  simpa [goal, D, modulus, quotEx, certBody,
+    oldCode2, product2, step2, target2, newOut2, modulus2,
+    crtInverseExistsTermAtOpenedContext,
+    betaCodeExtensionExistsTermAt,
+    betaCodeExtensionTermAt, betaPrefixAgreementTermAt,
+    betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def, Nat.add_assoc] using hex
+
 /-- Every product vacuously has all beta factors below bound zero. -/
 theorem BProv_Ax_s_betaPrefixDividesTermAt_zero
     {G : List Formula} (step product : Term) :
@@ -16569,6 +16716,85 @@ theorem BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_self
     (leTermAt target target)
     (betaPrefixCRTAccumulatorExistsTermAt step target target)
     himp (BProv_Ax_s_leTermAt_refl target)
+
+/-- Eliminate a beta-prefix accumulator product to obtain a fresh code that
+preserves the prefix and realizes the requested target output. -/
+theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_of_accumulator
+    {G : List Formula} {oldCode step target newOut : Term}
+    (hacc : BProv Ax_s G
+      (betaPrefixCRTAccumulatorExistsTermAt step target target))
+    (hnewBound : BProv Ax_s G
+      (ltTermAt newOut (betaModTermTerm step target))) :
+    BProv Ax_s G
+      (betaCodeExtensionExistsTermAt oldCode step target newOut) := by
+  let goal : Formula :=
+    betaCodeExtensionExistsTermAt oldCode step target newOut
+  refine BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_elim_opened
+    (G := G) (step := step) (target := target) (bound := target)
+    (goal := goal) ?_ hacc
+  let accBody : Formula :=
+    betaPrefixCRTAccumulatorExistsTermAtBody step target target
+  let D : List Formula := accBody :: G.map (rename Nat.succ)
+  let oldCode1 : Term := Term.rename Nat.succ oldCode
+  let step1 : Term := Term.rename Nat.succ step
+  let target1 : Term := Term.rename Nat.succ target
+  let newOut1 : Term := Term.rename Nat.succ newOut
+  have haccD : BProv Ax_s D
+      (betaPrefixCRTAccumulatorTermAt
+        step1 target1 target1 (Term.var 0)) := by
+    have hraw : BProv Ax_s D accBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [accBody, betaPrefixCRTAccumulatorExistsTermAtBody,
+      step1, target1] using hraw
+  have hprefix : BProv Ax_s D
+      (betaPrefixDividesTermAt step1 target1 (Term.var 0)) := by
+    simpa [betaPrefixCRTAccumulatorTermAt] using BProv_andE1 haccD
+  have hinverse : BProv Ax_s D
+      (crtInverseExistsTermAt (Term.var 0)
+        (betaModTermTerm step1 target1)) := by
+    simpa [betaPrefixCRTAccumulatorTermAt] using BProv_andE2 haccD
+  have hboundRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (ltTermAt newOut (betaModTermTerm step target))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hnewBound Nat.succ
+  have hboundD : BProv Ax_s D
+      (ltTermAt newOut1 (betaModTermTerm step1 target1)) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := accBody) hboundRen
+    simpa [D, newOut1, step1, target1,
+      ltTermAt, betaModTermTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hex : BProv Ax_s D
+      (betaCodeExtensionExistsTermAt
+        oldCode1 step1 target1 newOut1) :=
+    BProv_Ax_s_betaCodeExtensionExistsTermAt_of_prefix_inverse
+      (G := D) (oldCode := oldCode1) (product := Term.var 0)
+      (step := step1) (target := target1) (newOut := newOut1)
+      hprefix hinverse hboundD
+  simpa [goal, D, accBody, oldCode1, step1, target1, newOut1,
+    betaPrefixCRTAccumulatorExistsTermAtBody,
+    betaCodeExtensionExistsTermAt, betaCodeExtensionTermAt,
+    betaPrefixAgreementTermAt, betaTermTermAt, remTermTermAt,
+    ltTermAt, betaModTermTerm,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hex
+
+/-- A common-multiple beta step and a bounded requested output suffice for a
+one-entry extension of any old code. -/
+theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_of_common
+    {G : List Formula} {oldCode step target newOut : Term}
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt target step))
+    (hnewBound : BProv Ax_s G
+      (ltTermAt newOut (betaModTermTerm step target))) :
+    BProv Ax_s G
+      (betaCodeExtensionExistsTermAt oldCode step target newOut) :=
+  BProv_Ax_s_betaCodeExtensionExistsTermAt_of_accumulator
+    (BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_self hcommon)
+    hnewBound
 
 /-- A term quotient equation gives the corresponding `dvdAt` witness.  This is
 the open-term version of `BProv_Ax_s_dvdAt_of_eqConst_mul`, used after

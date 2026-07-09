@@ -355,6 +355,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_dvdTermTermAt_of_betaPrefixDividesTermAt
 #check @PA.Formula.BProv_Ax_s_betaPrefixAgreementTermAt_crtExtend
 #check @PA.Formula.BProv_Ax_s_betaCodeExtensionTermAt_crtExtend
+#check @PA.Formula.BProv_Ax_s_betaCodeExtensionExistsTermAt_of_term
+#check @PA.Formula.BProv_Ax_s_betaCodeExtensionExistsTermAt_of_prefix_inverse
 #check @PA.Formula.BProv_Ax_s_betaPrefixDividesTermAt_zero
 #check @PA.Formula.BProv_Ax_s_betaPrefixDividesTermAt_succ
 #check @PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_zero
@@ -365,6 +367,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_succ
 #check @PA.Formula.BProv_Ax_s_all_betaPrefixCRTAccumulatorExistsTermAt_of_common
 #check @PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_self
+#check @PA.Formula.BProv_Ax_s_betaCodeExtensionExistsTermAt_of_accumulator
+#check @PA.Formula.BProv_Ax_s_betaCodeExtensionExistsTermAt_of_common
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition_of_code
