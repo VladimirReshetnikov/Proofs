@@ -2919,6 +2919,20 @@ def crtExtendCodeTerm
     (oldCode product inverse delta : Term) : Term :=
   Term.add oldCode (Term.mul product (Term.mul inverse delta))
 
+/-- Quotient term for composing two positive inverse certificates modulo the
+same modulus.
+
+If `p*u = 1 + m*q` and `r*v = 1 + m*s`, then
+`(p*r)*(u*v) = 1 + m*crtInverseProductQuotTerm m q s`.  The corresponding PA
+proof is separate below. -/
+def crtInverseProductQuotTerm
+    (modulus leftQuot rightQuot : Term) : Term :=
+  Term.add
+    (Term.add
+      (Term.mul leftQuot (Term.mul modulus rightQuot))
+      leftQuot)
+    rightQuot
+
 /-- Open beta step witness for the even branch of `0 ∈ S low`: when
 `low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
 use `S low` itself as the beta step. -/
@@ -9426,6 +9440,258 @@ theorem BProv_Ax_s_remTermTermAt_of_eq_modulus
     term_subst_up_up_instTerm_rename_three_succ,
     term_subst_up_up_instTerm_rename_two_var_zero,
     term_subst_up_up_instTerm_rename_four_succ] using hnew
+
+/-- Reorder the middle factors in a product of two products.
+
+This small commutative-semiring normalization lemma is useful whenever two
+separately proved multiplication certificates have to be composed. -/
+theorem BProv_Ax_s_mul_mul_reorder_middle_terms
+    {G : List Formula} (a b c d : Term) :
+    BProv Ax_s G
+      (eq (Term.mul (Term.mul a b) (Term.mul c d))
+        (Term.mul (Term.mul a c) (Term.mul b d))) := by
+  have hassocLeft : BProv Ax_s G
+      (eq (Term.mul (Term.mul a b) (Term.mul c d))
+        (Term.mul a (Term.mul b (Term.mul c d)))) :=
+    BProv_Ax_s_mul_assoc_terms a b (Term.mul c d)
+  have hmiddle1 : BProv Ax_s G
+      (eq (Term.mul b (Term.mul c d))
+        (Term.mul (Term.mul b c) d)) :=
+    BProv_eqSym (BProv_Ax_s_mul_assoc_terms b c d)
+  have hmiddle2 : BProv Ax_s G
+      (eq (Term.mul (Term.mul b c) d)
+        (Term.mul (Term.mul c b) d)) :=
+    BProv_eq_congr_mul_left d (BProv_Ax_s_mul_comm_terms b c)
+  have hmiddle3 : BProv Ax_s G
+      (eq (Term.mul (Term.mul c b) d)
+        (Term.mul c (Term.mul b d))) :=
+    BProv_Ax_s_mul_assoc_terms c b d
+  have hmiddle : BProv Ax_s G
+      (eq (Term.mul b (Term.mul c d))
+        (Term.mul c (Term.mul b d))) :=
+    BProv_eqTrans hmiddle1 (BProv_eqTrans hmiddle2 hmiddle3)
+  have hmiddleCong : BProv Ax_s G
+      (eq (Term.mul a (Term.mul b (Term.mul c d)))
+        (Term.mul a (Term.mul c (Term.mul b d)))) :=
+    BProv_eq_congr_mul_right a hmiddle
+  have hassocRight : BProv Ax_s G
+      (eq (Term.mul a (Term.mul c (Term.mul b d)))
+        (Term.mul (Term.mul a c) (Term.mul b d))) :=
+    BProv_eqSym (BProv_Ax_s_mul_assoc_terms a c (Term.mul b d))
+  exact BProv_eqTrans hassocLeft
+    (BProv_eqTrans hmiddleCong hassocRight)
+
+/-- Multiply two positive inverse equations with a common modulus.
+
+The quotient is the explicit polynomial
+`q * (m * s) + q + s`; no coprimality or existence claim is hidden here. -/
+theorem BProv_Ax_s_crtInverseProductQuot_expand
+    {G : List Formula} (modulus leftQuot rightQuot : Term) :
+    BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.succ (Term.mul modulus leftQuot))
+          (Term.succ (Term.mul modulus rightQuot)))
+        (Term.succ
+          (Term.mul modulus
+            (crtInverseProductQuotTerm
+              modulus leftQuot rightQuot)))) := by
+  let leftBase : Term := Term.mul modulus leftQuot
+  let rightBase : Term := Term.mul modulus rightQuot
+  let crossCore : Term := Term.mul leftQuot rightBase
+  let normal : Term :=
+    Term.add
+      (Term.add (Term.mul modulus crossCore) leftBase)
+      rightBase
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul (Term.succ leftBase) (Term.succ rightBase))
+        (Term.add
+          (Term.mul leftBase (Term.succ rightBase))
+          (Term.succ rightBase))) :=
+    BProv_Ax_s_succ_mul_terms leftBase (Term.succ rightBase)
+  have hmulSucc : BProv Ax_s G
+      (eq (Term.mul leftBase (Term.succ rightBase))
+        (Term.add (Term.mul leftBase rightBase) leftBase)) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_mulSucc_terms leftBase rightBase)
+  have hmulSuccCong : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul leftBase (Term.succ rightBase))
+          (Term.succ rightBase))
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          (Term.succ rightBase))) :=
+    BProv_eq_congr_add_left (Term.succ rightBase) hmulSucc
+  have haddSucc : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          (Term.succ rightBase))
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul leftBase rightBase) leftBase)
+            rightBase))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms
+        (Term.add (Term.mul leftBase rightBase) leftBase)
+        rightBase)
+  have hexpand : BProv Ax_s G
+      (eq (Term.mul (Term.succ leftBase) (Term.succ rightBase))
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul leftBase rightBase) leftBase)
+            rightBase))) :=
+    BProv_eqTrans hsuccMul (BProv_eqTrans hmulSuccCong haddSucc)
+  have hcross : BProv Ax_s G
+      (eq (Term.mul leftBase rightBase)
+        (Term.mul modulus crossCore)) := by
+    simpa [leftBase, crossCore] using
+      BProv_Ax_s_mul_assoc_terms modulus leftQuot rightBase
+  have hcrossInner : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul leftBase rightBase) leftBase)
+        (Term.add (Term.mul modulus crossCore) leftBase)) :=
+    BProv_eq_congr_add_left leftBase hcross
+  have hnormal : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          rightBase)
+        normal) := by
+    simpa [normal] using
+      BProv_eq_congr_add_left rightBase hcrossInner
+  have houterDist : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (Term.add (Term.add crossCore leftQuot) rightQuot))
+        (Term.add
+          (Term.mul modulus (Term.add crossCore leftQuot))
+          (Term.mul modulus rightQuot))) :=
+    BProv_Ax_s_mul_add_terms modulus
+      (Term.add crossCore leftQuot) rightQuot
+  have hinnerDist : BProv Ax_s G
+      (eq (Term.mul modulus (Term.add crossCore leftQuot))
+        (Term.add (Term.mul modulus crossCore)
+          (Term.mul modulus leftQuot))) :=
+    BProv_Ax_s_mul_add_terms modulus crossCore leftQuot
+  have hinnerDistCong : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul modulus (Term.add crossCore leftQuot))
+          (Term.mul modulus rightQuot))
+        normal) := by
+    simpa [normal, leftBase, rightBase] using
+      BProv_eq_congr_add_left (Term.mul modulus rightQuot) hinnerDist
+  have hquotient : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot))
+        normal) := by
+    simpa [crtInverseProductQuotTerm, crossCore, rightBase] using
+      BProv_eqTrans houterDist hinnerDistCong
+  have hnormalQuotient : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          rightBase)
+        (Term.mul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot))) :=
+    BProv_eqTrans hnormal (BProv_eqSym hquotient)
+  have hsuccCong : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul leftBase rightBase) leftBase)
+            rightBase))
+        (Term.succ
+          (Term.mul modulus
+            (crtInverseProductQuotTerm
+              modulus leftQuot rightQuot)))) :=
+    BProv_eq_congr_succ hnormalQuotient
+  simpa [leftBase, rightBase] using
+    BProv_eqTrans hexpand hsuccCong
+
+/-- Compose two explicit positive inverse certificates modulo the same term.
+
+This is the product step needed by a finite CRT accumulator: inverse witnesses
+for individual factors combine without invoking subtraction or an external
+gcd operation. -/
+theorem BProv_Ax_s_crtInverse_mul
+    {G : List Formula}
+    {leftProduct rightProduct leftInverse rightInverse modulus
+      leftQuot rightQuot : Term}
+    (hleft : BProv Ax_s G
+      (eq (Term.mul leftProduct leftInverse)
+        (Term.succ (Term.mul modulus leftQuot))))
+    (hright : BProv Ax_s G
+      (eq (Term.mul rightProduct rightInverse)
+        (Term.succ (Term.mul modulus rightQuot)))) :
+    BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.mul leftProduct rightProduct)
+          (Term.mul leftInverse rightInverse))
+        (Term.succ
+          (Term.mul modulus
+            (crtInverseProductQuotTerm
+              modulus leftQuot rightQuot)))) := by
+  have hreorder : BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.mul leftProduct rightProduct)
+          (Term.mul leftInverse rightInverse))
+        (Term.mul
+          (Term.mul leftProduct leftInverse)
+          (Term.mul rightProduct rightInverse))) :=
+    BProv_Ax_s_mul_mul_reorder_middle_terms
+      leftProduct rightProduct leftInverse rightInverse
+  have hcertificates : BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.mul leftProduct leftInverse)
+          (Term.mul rightProduct rightInverse))
+        (Term.mul
+          (Term.succ (Term.mul modulus leftQuot))
+          (Term.succ (Term.mul modulus rightQuot)))) :=
+    BProv_eq_congr_mul hleft hright
+  exact BProv_eqTrans hreorder
+    (BProv_eqTrans hcertificates
+      (BProv_Ax_s_crtInverseProductQuot_expand
+        modulus leftQuot rightQuot))
+
+/-- Multiplying a product by one more factor preserves every already exposed
+right factor, with an explicit updated quotient. -/
+theorem BProv_Ax_s_crtProductFactor_mul
+    {G : List Formula}
+    {product factor modulus appended : Term}
+    (hfactor : BProv Ax_s G
+      (eq product (Term.mul factor modulus))) :
+    BProv Ax_s G
+      (eq (Term.mul product appended)
+        (Term.mul (Term.mul factor appended) modulus)) := by
+  have hstart : BProv Ax_s G
+      (eq (Term.mul product appended)
+        (Term.mul (Term.mul factor modulus) appended)) :=
+    BProv_eq_congr_mul_left appended hfactor
+  have hassoc1 : BProv Ax_s G
+      (eq (Term.mul (Term.mul factor modulus) appended)
+        (Term.mul factor (Term.mul modulus appended))) :=
+    BProv_Ax_s_mul_assoc_terms factor modulus appended
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul modulus appended)
+        (Term.mul appended modulus)) :=
+    BProv_Ax_s_mul_comm_terms modulus appended
+  have hcommCong : BProv Ax_s G
+      (eq (Term.mul factor (Term.mul modulus appended))
+        (Term.mul factor (Term.mul appended modulus))) :=
+    BProv_eq_congr_mul_right factor hcomm
+  have hassoc2 : BProv Ax_s G
+      (eq (Term.mul factor (Term.mul appended modulus))
+        (Term.mul (Term.mul factor appended) modulus)) :=
+    BProv_eqSym (BProv_Ax_s_mul_assoc_terms factor appended modulus)
+  exact BProv_eqTrans hstart
+    (BProv_eqTrans hassoc1 (BProv_eqTrans hcommCong hassoc2))
 
 /-- Algebraic preservation half of the generic CRT update.
 

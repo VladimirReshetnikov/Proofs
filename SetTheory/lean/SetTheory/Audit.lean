@@ -320,6 +320,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eq_zero_of_remTermTermAt_eq_one
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition
+#check @PA.Formula.BProv_Ax_s_mul_mul_reorder_middle_terms
+#check @PA.Formula.BProv_Ax_s_crtInverseProductQuot_expand
+#check @PA.Formula.BProv_Ax_s_crtInverse_mul
+#check @PA.Formula.BProv_Ax_s_crtProductFactor_mul
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_elim_opened
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_preserve
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_new
@@ -936,6 +940,7 @@ open SetTheory
 #check @PA.Formula.twoEntryBetaStepTerm
 #check @PA.Formula.twoEntryBetaCodeTerm
 #check @PA.Formula.crtExtendCodeTerm
+#check @PA.Formula.crtInverseProductQuotTerm
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
