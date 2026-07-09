@@ -11734,6 +11734,30 @@ theorem BProv_Ax_s_of_div2TotalAt_opened_step
     (G := C) (a := step) (c := rename Nat.succ target) hinner ?_
   simpa [div2TotalOpenedStepContext, C, step, inner] using hbody
 
+/-- Open a total halving witness and immediately split on the parity exposed by
+the opened `div2StepAt`.
+
+Both branch targets are renamed through the two opened existential binders; the
+even/odd assumptions are consed outside the opened-step context. -/
+theorem BProv_Ax_s_of_div2TotalAt_opened_double_odd_cases
+    {G : List Formula} {value : Nat} {target : Formula}
+    (htotal : BProv Ax_s G (div2TotalAt value))
+    (heven : BProv Ax_s
+      (doubleEqAt (value+2) 1 :: div2TotalOpenedStepContext G value)
+      (rename Nat.succ (rename Nat.succ target)))
+    (hodd : BProv Ax_s
+      (oddDoubleEqAt (value+2) 1 :: div2TotalOpenedStepContext G value)
+      (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s G target :=
+  BProv_Ax_s_of_div2TotalAt_opened_step htotal
+    (BProv_Ax_s_of_div2StepAt_double_odd_cases
+      (value := value+2) (half := 1) (bit := 0)
+      (target := rename Nat.succ (rename Nat.succ target))
+      (BProv_ass (B := Ax_s)
+        (G := div2TotalOpenedStepContext G value)
+        (by simp [div2TotalOpenedStepContext]))
+      heven hodd)
+
 /-- Nested parity elimination for two binary-halving steps.  The generated
 contexts put the low-code parity assumption in front of the high-code parity
 assumption, matching the order produced by the inner case split. -/
