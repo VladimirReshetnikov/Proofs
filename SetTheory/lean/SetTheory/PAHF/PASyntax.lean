@@ -30142,6 +30142,77 @@ def strictSuccContext : List Formula :=
   [ltTermAt (Term.var 0) (Term.var 1),
     rename Nat.succ (hfLtDistinguishesAt 0)]
 
+/-- Target of the strict branch in the successor step for lower-code
+distinguishers. -/
+def strictSuccTarget : Formula :=
+  hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0
+
+/-- Target of the strict successor branch after opening high and low binary
+halving totality witnesses. -/
+def strictSuccOpenedTotalTarget : Formula :=
+  rename Nat.succ (rename Nat.succ
+    (rename Nat.succ (rename Nat.succ strictSuccTarget)))
+
+/-- Strict successor branch after opening high-side totality to the even case
+and low-side totality to the even case.
+
+The low-side parity assumption is outermost because the low witness is opened
+inside the already-opened high-even branch. -/
+def strictSuccOpenedHighDoubleLowDoubleContext : List Formula :=
+  div2TotalOpenedDoubleContext
+    (div2TotalOpenedDoubleContext strictSuccContext 1) (0+2)
+
+/-- Strict successor branch after opening high-side totality to the even case
+and low-side totality to the odd case. -/
+def strictSuccOpenedHighDoubleLowOddContext : List Formula :=
+  div2TotalOpenedOddContext
+    (div2TotalOpenedDoubleContext strictSuccContext 1) (0+2)
+
+/-- Strict successor branch after opening high-side totality to the odd case
+and low-side totality to the even case. -/
+def strictSuccOpenedHighOddLowDoubleContext : List Formula :=
+  div2TotalOpenedDoubleContext
+    (div2TotalOpenedOddContext strictSuccContext 1) (0+2)
+
+/-- Strict successor branch after opening high-side totality to the odd case
+and low-side totality to the odd case. -/
+def strictSuccOpenedHighOddLowOddContext : List Formula :=
+  div2TotalOpenedOddContext
+    (div2TotalOpenedOddContext strictSuccContext 1) (0+2)
+
+/-- Strict successor branch with both high and low binary-halving witnesses
+supplied by PA totality and then split into the four parity branches.
+
+This is only the totality/parity shell: the high-even/low-odd membership
+persistence and both odd-high carry branches remain explicit branch premises. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_cases
+    (hhighDouble_lowDouble : BProv Ax_s
+      strictSuccOpenedHighDoubleLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighDouble_lowOdd : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowDouble : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowOdd : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedTotalTarget) :
+    BProv Ax_s strictSuccContext strictSuccTarget := by
+  simpa [strictSuccTarget, strictSuccOpenedTotalTarget,
+    strictSuccOpenedHighDoubleLowDoubleContext,
+    strictSuccOpenedHighDoubleLowOddContext,
+    strictSuccOpenedHighOddLowDoubleContext,
+    strictSuccOpenedHighOddLowOddContext] using
+    BProv_Ax_s_of_two_div2TotalAt_opened_double_odd_cases
+      (G := strictSuccContext) (high := 1) (low := 0)
+      (target := strictSuccTarget)
+      hhighDouble_lowDouble
+      hhighDouble_lowOdd
+      hhighOdd_lowDouble
+      hhighOdd_lowOdd
+
 /-- High-even/low-odd strict branch, reduced to the genuine membership
 persistence obligation.
 
