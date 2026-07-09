@@ -8752,6 +8752,27 @@ def paInHFFinTheoryInterpretation :
     intro phi hphi hprov
     exact PAInHF.BProv_HFFin_translateFormula_of_PA_BProv hphi hprov
 
+/-- Deductive interpretation of foundation-style HF in the PA-side theory whose
+axioms are exactly the translated HF axioms.
+
+This is a structural proof translation only: it deliberately targets the
+intermediate translated-axiom theory and does not discharge those PA formulas. -/
+def hfInTranslatedHFTheoryInterpretation :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFAx_s PA.Formula.translatedHFAx
+      BProv PA.Formula.BProv where
+  translate := PA.Formula.translateHFFormula
+  maps_sentence := by
+    intro phi hphi
+    exact PA.Formula.translateHFFormula_sentence_of_HF_sentence phi hphi
+  maps_axiom := by
+    intro phi hphi
+    exact PA.Formula.BProv_translatedHFAx_of_HFAx hphi
+  maps_theorem := by
+    intro phi _hphi hprov
+    exact PA.Formula.BProv_translateHFFormula_of_BProv_HF hprov
+
 /-- Deductive interpretation of strengthened finite HF in the PA-side theory
 whose axioms are exactly the translated finite-HF axioms.
 
@@ -8773,6 +8794,20 @@ def hfInTranslatedHFFinTheoryInterpretation :
   maps_theorem := by
     intro phi _hphi hprov
     exact PA.Formula.BProv_translateHFFormula_of_BProv_HFFin hprov
+
+/-- Compose the reverse foundation-style HF proof translation with a future
+discharge of the translated HF axiom theory into PA proper. -/
+def hfInPAOfTranslatedHFTheoryInterpretation
+    (I : TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv) :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  TheoryInterpretation.comp hfInTranslatedHFTheoryInterpretation I
+    (fun {phi} hphi => Sentences_HF phi hphi)
 
 /-- Compose the reverse finite-HF proof translation with a future discharge of
 the translated finite-HF axiom theory into PA proper. -/
@@ -8806,6 +8841,30 @@ def paIdentityInterpretationOfAxiomProofs
     intro phi _ h
     exact PA.Formula.BProv_lift h hAx (fun g hg => nomatch hg)
 
+/-- Identity interpretation from translated HF axioms into PA, once the caller
+supplies explicit PA proofs of those translated axioms. -/
+def translatedHFTheoryInPAInterpretationOfAxiomProofs
+    (hAx : ∀ phi, PA.Formula.translatedHFAx phi →
+      PA.Formula.BProv PA.Formula.Ax_s [] phi) :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv :=
+  paIdentityInterpretationOfAxiomProofs
+    PA.Formula.translatedHFAx PA.Formula.Ax_s hAx
+
+/-- Identity interpretation from translated HF axioms into PA, assembled from
+the named per-axiom proof obligations. -/
+def translatedHFTheoryInPAInterpretationOfProofs
+    (P : PA.Formula.TranslatedHFAxiomProofs) :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv :=
+  translatedHFTheoryInPAInterpretationOfAxiomProofs
+    (fun _ hphi =>
+      PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs P hphi)
+
 /-- Identity interpretation from translated finite-HF axioms into PA, once the
 caller supplies explicit PA proofs of those translated axioms. -/
 def translatedHFFinTheoryInPAInterpretationOfAxiomProofs
@@ -8829,6 +8888,29 @@ def translatedHFFinTheoryInPAInterpretationOfProofs
   translatedHFFinTheoryInPAInterpretationOfAxiomProofs
     (fun _ hphi =>
       PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs P hphi)
+
+/-- Reverse interpretation of foundation-style HF in PA from explicit PA proofs
+of every translated HF axiom. -/
+def hfInPAInterpretationOfTranslatedHFAxiomProofs
+    (hAx : ∀ phi, PA.Formula.translatedHFAx phi →
+      PA.Formula.BProv PA.Formula.Ax_s [] phi) :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAOfTranslatedHFTheoryInterpretation
+    (translatedHFTheoryInPAInterpretationOfAxiomProofs hAx)
+
+/-- Reverse interpretation of foundation-style HF in PA from the structured
+translated-HF axiom proof obligations. -/
+def hfInPAInterpretationOfTranslatedHFProofs
+    (P : PA.Formula.TranslatedHFAxiomProofs) :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAOfTranslatedHFTheoryInterpretation
+    (translatedHFTheoryInPAInterpretationOfProofs P)
 
 /-- Reverse interpretation of finite HF in PA from explicit PA proofs of every
 translated finite-HF axiom. -/
