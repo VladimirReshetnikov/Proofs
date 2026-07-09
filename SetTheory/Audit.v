@@ -195,6 +195,16 @@ Check PA.Formula.BProv_Ax_s_mul_mul_reorder_middle_terms.
 Check PA.Formula.BProv_Ax_s_crtInverseProductQuot_expand.
 Check PA.Formula.BProv_Ax_s_crtInverse_mul.
 Check PA.Formula.BProv_Ax_s_crtProductFactor_mul.
+Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition.
+Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_preserve.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_new.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_opened_body_modEq.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_opened_body_rem.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_of_betaTermTermAt.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_preserve.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_new.
 Check PA.Formula.BProv_Ax_s_ltTermAt_succ_right_of_leTermAt.
 Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero.
 Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound.

@@ -20478,6 +20478,712 @@ Proof.
       (BProv_eqTrans Ax_s G _ _ _ hcommCong hassoc2))).
 Qed.
 
+(* Lean: BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition *)
+Lemma BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition :
+  forall G
+    (oldCode product inverse delta modulus oldQuot oldRem factor : term),
+  BProv Ax_s G
+    (pEq oldCode (tAdd (tMul oldQuot modulus) oldRem)) ->
+  BProv Ax_s G (pEq product (tMul factor modulus)) ->
+  BProv Ax_s G
+    (pEq (crtExtendCodeTerm oldCode product inverse delta)
+      (tAdd
+        (tMul (tAdd oldQuot
+          (tMul factor (tMul inverse delta))) modulus)
+        oldRem)).
+Proof.
+  intros G oldCode product inverse delta modulus oldQuot oldRem factor
+    hOld hProduct.
+  set (increment := tMul inverse delta).
+  set (factorIncrement := tMul factor increment).
+  set (oldBase := tMul oldQuot modulus).
+  set (addedBase := tMul factorIncrement modulus).
+  assert (hcodeOld : BProv Ax_s G
+      (pEq (crtExtendCodeTerm oldCode product inverse delta)
+        (tAdd (tAdd oldBase oldRem) (tMul product increment)))).
+  {
+    unfold crtExtendCodeTerm, increment, oldBase.
+    exact (BProv_eq_congr_add_left Ax_s G _ _
+      (tMul product (tMul inverse delta)) hOld).
+  }
+  assert (hproductMul : BProv Ax_s G
+      (pEq (tMul product increment) addedBase)).
+  {
+    assert (hfactor : BProv Ax_s G
+        (pEq (tMul product increment)
+          (tMul (tMul factor modulus) increment))).
+    { exact (BProv_eq_congr_mul_left Ax_s G _ _ increment hProduct). }
+    assert (hassoc1 : BProv Ax_s G
+        (pEq (tMul (tMul factor modulus) increment)
+          (tMul factor (tMul modulus increment)))).
+    { apply BProv_Ax_s_mul_assoc_terms. }
+    assert (hcomm : BProv Ax_s G
+        (pEq (tMul modulus increment) (tMul increment modulus))).
+    { apply BProv_Ax_s_mul_comm_terms. }
+    assert (hcommCong : BProv Ax_s G
+        (pEq (tMul factor (tMul modulus increment))
+          (tMul factor (tMul increment modulus)))).
+    { exact (BProv_eq_congr_mul_right Ax_s G factor _ _ hcomm). }
+    assert (hassoc2 : BProv Ax_s G
+        (pEq (tMul factor (tMul increment modulus)) addedBase)).
+    {
+      unfold factorIncrement, addedBase.
+      exact (BProv_eqSym Ax_s G _ _
+        (BProv_Ax_s_mul_assoc_terms G factor increment modulus)).
+    }
+    exact (BProv_eqTrans Ax_s G _ _ _ hfactor
+      (BProv_eqTrans Ax_s G _ _ _ hassoc1
+        (BProv_eqTrans Ax_s G _ _ _ hcommCong hassoc2))).
+  }
+  assert (hproductCong : BProv Ax_s G
+      (pEq (tAdd (tAdd oldBase oldRem) (tMul product increment))
+        (tAdd (tAdd oldBase oldRem) addedBase))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (tAdd oldBase oldRem) _ _ hproductMul).
+  }
+  assert (hregroup1 : BProv Ax_s G
+      (pEq (tAdd (tAdd oldBase oldRem) addedBase)
+        (tAdd oldBase (tAdd oldRem addedBase)))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hinnerComm : BProv Ax_s G
+      (pEq (tAdd oldRem addedBase) (tAdd addedBase oldRem))).
+  { apply BProv_Ax_s_add_comm_terms. }
+  assert (hregroup2 : BProv Ax_s G
+      (pEq (tAdd oldBase (tAdd oldRem addedBase))
+        (tAdd oldBase (tAdd addedBase oldRem)))).
+  { exact (BProv_eq_congr_add_right Ax_s G oldBase _ _ hinnerComm). }
+  assert (hregroup3 : BProv Ax_s G
+      (pEq (tAdd oldBase (tAdd addedBase oldRem))
+        (tAdd (tAdd oldBase addedBase) oldRem))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_add_assoc_terms G oldBase addedBase oldRem)).
+  }
+  assert (hnewQuotMul : BProv Ax_s G
+      (pEq (tMul (tAdd oldQuot factorIncrement) modulus)
+        (tAdd oldBase addedBase))).
+  {
+    unfold oldBase, factorIncrement, addedBase.
+    apply BProv_Ax_s_add_mul_terms.
+  }
+  assert (hnewQuotCong : BProv Ax_s G
+      (pEq (tAdd (tAdd oldBase addedBase) oldRem)
+        (tAdd (tMul (tAdd oldQuot factorIncrement) modulus) oldRem))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ oldRem
+      (BProv_eqSym Ax_s G _ _ hnewQuotMul)).
+  }
+  unfold increment, factorIncrement.
+  exact (BProv_eqTrans Ax_s G _ _ _ hcodeOld
+    (BProv_eqTrans Ax_s G _ _ _ hproductCong
+      (BProv_eqTrans Ax_s G _ _ _ hregroup1
+        (BProv_eqTrans Ax_s G _ _ _ hregroup2
+          (BProv_eqTrans Ax_s G _ _ _ hregroup3 hnewQuotCong))))).
+Qed.
+
+(* Lean: BProv_Ax_s_crtExtendCodeTerm_new_decomposition *)
+Lemma BProv_Ax_s_crtExtendCodeTerm_new_decomposition :
+  forall G
+    (oldCode product inverse delta modulus oldQuot oldRem
+      inverseQuot newRem : term),
+  BProv Ax_s G
+    (pEq oldCode (tAdd (tMul oldQuot modulus) oldRem)) ->
+  BProv Ax_s G
+    (pEq (tMul product inverse)
+      (tSucc (tMul modulus inverseQuot))) ->
+  BProv Ax_s G
+    (pEq (tAdd oldRem delta) (tAdd modulus newRem)) ->
+  BProv Ax_s G
+    (pEq (crtExtendCodeTerm oldCode product inverse delta)
+      (tAdd
+        (tMul
+          (tSucc (tAdd oldQuot (tMul inverseQuot delta)))
+          modulus)
+        newRem)).
+Proof.
+  intros G oldCode product inverse delta modulus oldQuot oldRem
+    inverseQuot newRem hOld hInverse hDelta.
+  set (increment := tMul inverse delta).
+  set (inverseContribution := tMul inverseQuot delta).
+  set (oldBase := tMul oldQuot modulus).
+  set (addedBase := tMul modulus inverseContribution).
+  assert (hcodeOld : BProv Ax_s G
+      (pEq (crtExtendCodeTerm oldCode product inverse delta)
+        (tAdd (tAdd oldBase oldRem) (tMul product increment)))).
+  {
+    unfold crtExtendCodeTerm, increment, oldBase.
+    exact (BProv_eq_congr_add_left Ax_s G _ _
+      (tMul product (tMul inverse delta)) hOld).
+  }
+  assert (hincrementAssoc : BProv Ax_s G
+      (pEq (tMul product increment)
+        (tMul (tMul product inverse) delta))).
+  {
+    unfold increment.
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_mul_assoc_terms G product inverse delta)).
+  }
+  assert (hinverseCong : BProv Ax_s G
+      (pEq (tMul (tMul product inverse) delta)
+        (tMul (tSucc (tMul modulus inverseQuot)) delta))).
+  { exact (BProv_eq_congr_mul_left Ax_s G _ _ delta hInverse). }
+  assert (hsuccMul : BProv Ax_s G
+      (pEq (tMul (tSucc (tMul modulus inverseQuot)) delta)
+        (tAdd (tMul (tMul modulus inverseQuot) delta) delta))).
+  { apply BProv_Ax_s_succ_mul_terms. }
+  assert (hassoc : BProv Ax_s G
+      (pEq (tMul (tMul modulus inverseQuot) delta) addedBase)).
+  {
+    unfold inverseContribution, addedBase.
+    apply BProv_Ax_s_mul_assoc_terms.
+  }
+  assert (hassocCong : BProv Ax_s G
+      (pEq (tAdd (tMul (tMul modulus inverseQuot) delta) delta)
+        (tAdd addedBase delta))).
+  { exact (BProv_eq_congr_add_left Ax_s G _ _ delta hassoc). }
+  assert (hincrement : BProv Ax_s G
+      (pEq (tMul product increment) (tAdd addedBase delta))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hincrementAssoc
+      (BProv_eqTrans Ax_s G _ _ _ hinverseCong
+        (BProv_eqTrans Ax_s G _ _ _ hsuccMul hassocCong))).
+  }
+  assert (hincrementCong : BProv Ax_s G
+      (pEq (tAdd (tAdd oldBase oldRem) (tMul product increment))
+        (tAdd (tAdd oldBase oldRem) (tAdd addedBase delta)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (tAdd oldBase oldRem) _ _ hincrement).
+  }
+  assert (hregroup1 : BProv Ax_s G
+      (pEq (tAdd (tAdd oldBase oldRem) (tAdd addedBase delta))
+        (tAdd oldBase (tAdd oldRem (tAdd addedBase delta))))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hinnerAssoc : BProv Ax_s G
+      (pEq (tAdd oldRem (tAdd addedBase delta))
+        (tAdd (tAdd oldRem addedBase) delta))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_add_assoc_terms G oldRem addedBase delta)).
+  }
+  assert (hinnerComm : BProv Ax_s G
+      (pEq (tAdd oldRem addedBase) (tAdd addedBase oldRem))).
+  { apply BProv_Ax_s_add_comm_terms. }
+  assert (hinnerCommCong : BProv Ax_s G
+      (pEq (tAdd (tAdd oldRem addedBase) delta)
+        (tAdd (tAdd addedBase oldRem) delta))).
+  { exact (BProv_eq_congr_add_left Ax_s G _ _ delta hinnerComm). }
+  assert (hinnerAssoc2 : BProv Ax_s G
+      (pEq (tAdd (tAdd addedBase oldRem) delta)
+        (tAdd addedBase (tAdd oldRem delta)))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hinner : BProv Ax_s G
+      (pEq (tAdd oldRem (tAdd addedBase delta))
+        (tAdd addedBase (tAdd oldRem delta)))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hinnerAssoc
+      (BProv_eqTrans Ax_s G _ _ _ hinnerCommCong hinnerAssoc2)).
+  }
+  assert (hinnerCong : BProv Ax_s G
+      (pEq (tAdd oldBase (tAdd oldRem (tAdd addedBase delta)))
+        (tAdd oldBase (tAdd addedBase (tAdd oldRem delta))))).
+  { exact (BProv_eq_congr_add_right Ax_s G oldBase _ _ hinner). }
+  assert (hregroup2 : BProv Ax_s G
+      (pEq (tAdd oldBase (tAdd addedBase (tAdd oldRem delta)))
+        (tAdd (tAdd oldBase addedBase) (tAdd oldRem delta)))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_add_assoc_terms G oldBase addedBase
+        (tAdd oldRem delta))).
+  }
+  assert (hdeltaCong : BProv Ax_s G
+      (pEq (tAdd (tAdd oldBase addedBase) (tAdd oldRem delta))
+        (tAdd (tAdd oldBase addedBase) (tAdd modulus newRem)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (tAdd oldBase addedBase) _ _ hDelta).
+  }
+  assert (hquotMul : BProv Ax_s G
+      (pEq (tMul (tAdd oldQuot inverseContribution) modulus)
+        (tAdd oldBase addedBase))).
+  {
+    assert (hdist : BProv Ax_s G
+        (pEq (tMul (tAdd oldQuot inverseContribution) modulus)
+          (tAdd oldBase (tMul inverseContribution modulus)))).
+    {
+      unfold oldBase.
+      apply BProv_Ax_s_add_mul_terms.
+    }
+    assert (hcomm : BProv Ax_s G
+        (pEq (tMul inverseContribution modulus) addedBase)).
+    {
+      unfold addedBase.
+      apply BProv_Ax_s_mul_comm_terms.
+    }
+    exact (BProv_eqTrans Ax_s G _ _ _ hdist
+      (BProv_eq_congr_add_right Ax_s G oldBase _ _ hcomm)).
+  }
+  assert (hquotMulCong : BProv Ax_s G
+      (pEq (tAdd (tAdd oldBase addedBase) (tAdd modulus newRem))
+        (tAdd (tMul (tAdd oldQuot inverseContribution) modulus)
+          (tAdd modulus newRem)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _
+      (tAdd modulus newRem) (BProv_eqSym Ax_s G _ _ hquotMul)).
+  }
+  assert (hquotAssoc : BProv Ax_s G
+      (pEq
+        (tAdd (tMul (tAdd oldQuot inverseContribution) modulus)
+          (tAdd modulus newRem))
+        (tAdd
+          (tAdd (tMul (tAdd oldQuot inverseContribution) modulus)
+            modulus)
+          newRem))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_add_assoc_terms G
+        (tMul (tAdd oldQuot inverseContribution) modulus)
+        modulus newRem)).
+  }
+  assert (hsuccQuotMul : BProv Ax_s G
+      (pEq (tMul (tSucc (tAdd oldQuot inverseContribution)) modulus)
+        (tAdd (tMul (tAdd oldQuot inverseContribution) modulus)
+          modulus))).
+  { apply BProv_Ax_s_succ_mul_terms. }
+  assert (hsuccQuotCong : BProv Ax_s G
+      (pEq
+        (tAdd
+          (tAdd (tMul (tAdd oldQuot inverseContribution) modulus)
+            modulus)
+          newRem)
+        (tAdd
+          (tMul (tSucc (tAdd oldQuot inverseContribution)) modulus)
+          newRem))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ newRem
+      (BProv_eqSym Ax_s G _ _ hsuccQuotMul)).
+  }
+  unfold increment, inverseContribution.
+  exact (BProv_eqTrans Ax_s G _ _ _ hcodeOld
+    (BProv_eqTrans Ax_s G _ _ _ hincrementCong
+      (BProv_eqTrans Ax_s G _ _ _ hregroup1
+        (BProv_eqTrans Ax_s G _ _ _ hinnerCong
+          (BProv_eqTrans Ax_s G _ _ _ hregroup2
+            (BProv_eqTrans Ax_s G _ _ _ hdeltaCong
+              (BProv_eqTrans Ax_s G _ _ _ hquotMulCong
+                (BProv_eqTrans Ax_s G _ _ _ hquotAssoc
+                  hsuccQuotCong)))))))).
+Qed.
+
+(* Lean: BProv_Ax_s_remTermTermAt_elim_opened *)
+Lemma BProv_Ax_s_remTermTermAt_elim_opened :
+  forall G target (rem value modulus : term),
+  BProv Ax_s
+    (pAnd
+        (ltTermAt (Term.rename S rem) (Term.rename S modulus))
+        (pEq (Term.rename S value)
+          (tAdd (tMul (tVar 0) (Term.rename S modulus))
+            (Term.rename S rem))) ::
+      map (rename S) G)
+    (rename S target) ->
+  BProv Ax_s G (remTermTermAt rem value modulus) ->
+  BProv Ax_s G target.
+Proof.
+  intros G target rem value modulus hopened hrem.
+  set (body := pAnd
+    (ltTermAt (Term.rename S rem) (Term.rename S modulus))
+    (pEq (Term.rename S value)
+      (tAdd (tMul (tVar 0) (Term.rename S modulus))
+        (Term.rename S rem)))).
+  exact (BProv_exE_of_sentences Ax_s G body target
+    sentence_ax_s hrem hopened).
+Qed.
+
+(* Lean: BProv_Ax_s_remTermTermAt_crtExtend_preserve *)
+Lemma BProv_Ax_s_remTermTermAt_crtExtend_preserve :
+  forall G
+    (oldCode product inverse delta modulus oldRem factor : term),
+  BProv Ax_s G (remTermTermAt oldRem oldCode modulus) ->
+  BProv Ax_s G (pEq product (tMul factor modulus)) ->
+  BProv Ax_s G
+    (remTermTermAt oldRem
+      (crtExtendCodeTerm oldCode product inverse delta) modulus).
+Proof.
+  intros G oldCode product inverse delta modulus oldRem factor
+    hrem hProduct.
+  set (body := pAnd
+    (ltTermAt (Term.rename S oldRem) (Term.rename S modulus))
+    (pEq (Term.rename S oldCode)
+      (tAdd (tMul (tVar 0) (Term.rename S modulus))
+        (Term.rename S oldRem)))).
+  set (target := remTermTermAt oldRem
+    (crtExtendCodeTerm oldCode product inverse delta) modulus).
+  assert (hopened : BProv Ax_s (body :: map (rename S) G)
+      (rename S target)).
+  {
+    set (C := body :: map (rename S) G).
+    set (oldCode1 := Term.rename S oldCode).
+    set (product1 := Term.rename S product).
+    set (inverse1 := Term.rename S inverse).
+    set (delta1 := Term.rename S delta).
+    set (modulus1 := Term.rename S modulus).
+    set (oldRem1 := Term.rename S oldRem).
+    set (factor1 := Term.rename S factor).
+    set (increment1 := tMul inverse1 delta1).
+    set (quotient1 := tAdd (tVar 0) (tMul factor1 increment1)).
+    assert (hbody : BProv Ax_s C body).
+    { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+    assert (hlt : BProv Ax_s C (ltTermAt oldRem1 modulus1)).
+    {
+      unfold oldRem1, modulus1.
+      exact (BProv_andE1 Ax_s C _ _ hbody).
+    }
+    assert (hold : BProv Ax_s C
+        (pEq oldCode1 (tAdd (tMul (tVar 0) modulus1) oldRem1))).
+    {
+      unfold oldCode1, modulus1, oldRem1.
+      exact (BProv_andE2 Ax_s C _ _ hbody).
+    }
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (pEq product (tMul factor modulus)) hProduct S) as hProductRen.
+    assert (hProductC : BProv Ax_s C
+        (pEq product1 (tMul factor1 modulus1))).
+    {
+      unfold C, product1, factor1, modulus1.
+      replace
+        (pEq (Term.rename S product)
+          (tMul (Term.rename S factor) (Term.rename S modulus)))
+        with (rename S (pEq product (tMul factor modulus))).
+      - exact (BProv_context_cons Ax_s (map (rename S) G)
+          body _ hProductRen).
+      - reflexivity.
+    }
+    assert (hdecomp : BProv Ax_s C
+        (pEq
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          (tAdd (tMul quotient1 modulus1) oldRem1))).
+    {
+      unfold increment1, quotient1.
+      exact (BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition C
+        oldCode1 product1 inverse1 delta1 modulus1 (tVar 0)
+        oldRem1 factor1 hold hProductC).
+    }
+    assert (hnew : BProv Ax_s C
+        (remTermTermAt oldRem1
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          modulus1)).
+    {
+      exact (BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms C
+        oldRem1
+        (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+        modulus1 quotient1 hlt hdecomp).
+    }
+    replace (rename S target)
+      with (remTermTermAt oldRem1
+        (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+        modulus1).
+    - exact hnew.
+    - unfold target, oldCode1, product1, inverse1, delta1,
+        modulus1, oldRem1, crtExtendCodeTerm,
+        remTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      repeat rewrite term_rename_up_up_succ_rename_two_succ.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  exact (BProv_Ax_s_remTermTermAt_elim_opened G target
+    oldRem oldCode modulus hopened hrem).
+Qed.
+
+(* Lean: BProv_Ax_s_remTermTermAt_crtExtend_new *)
+Lemma BProv_Ax_s_remTermTermAt_crtExtend_new :
+  forall G
+    (oldCode product inverse delta modulus oldRem inverseQuot newRem : term),
+  BProv Ax_s G (remTermTermAt oldRem oldCode modulus) ->
+  BProv Ax_s G
+    (pEq (tMul product inverse)
+      (tSucc (tMul modulus inverseQuot))) ->
+  BProv Ax_s G
+    (pEq (tAdd oldRem delta) (tAdd modulus newRem)) ->
+  BProv Ax_s G (ltTermAt newRem modulus) ->
+  BProv Ax_s G
+    (remTermTermAt newRem
+      (crtExtendCodeTerm oldCode product inverse delta) modulus).
+Proof.
+  intros G oldCode product inverse delta modulus oldRem inverseQuot newRem
+    hrem hInverse hDelta hnewBound.
+  set (body := pAnd
+    (ltTermAt (Term.rename S oldRem) (Term.rename S modulus))
+    (pEq (Term.rename S oldCode)
+      (tAdd (tMul (tVar 0) (Term.rename S modulus))
+        (Term.rename S oldRem)))).
+  set (target := remTermTermAt newRem
+    (crtExtendCodeTerm oldCode product inverse delta) modulus).
+  assert (hopened : BProv Ax_s (body :: map (rename S) G)
+      (rename S target)).
+  {
+    set (C := body :: map (rename S) G).
+    set (oldCode1 := Term.rename S oldCode).
+    set (product1 := Term.rename S product).
+    set (inverse1 := Term.rename S inverse).
+    set (delta1 := Term.rename S delta).
+    set (modulus1 := Term.rename S modulus).
+    set (oldRem1 := Term.rename S oldRem).
+    set (inverseQuot1 := Term.rename S inverseQuot).
+    set (newRem1 := Term.rename S newRem).
+    set (quotient1 := tSucc
+      (tAdd (tVar 0) (tMul inverseQuot1 delta1))).
+    assert (hbody : BProv Ax_s C body).
+    { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+    assert (hold : BProv Ax_s C
+        (pEq oldCode1 (tAdd (tMul (tVar 0) modulus1) oldRem1))).
+    {
+      unfold oldCode1, modulus1, oldRem1.
+      exact (BProv_andE2 Ax_s C _ _ hbody).
+    }
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (pEq (tMul product inverse)
+        (tSucc (tMul modulus inverseQuot))) hInverse S) as hInverseRen.
+    assert (hInverseC : BProv Ax_s C
+        (pEq (tMul product1 inverse1)
+          (tSucc (tMul modulus1 inverseQuot1)))).
+    {
+      unfold C, product1, inverse1, modulus1, inverseQuot1.
+      replace
+        (pEq (tMul (Term.rename S product) (Term.rename S inverse))
+          (tSucc (tMul (Term.rename S modulus)
+            (Term.rename S inverseQuot))))
+        with (rename S
+          (pEq (tMul product inverse)
+            (tSucc (tMul modulus inverseQuot)))).
+      - exact (BProv_context_cons Ax_s (map (rename S) G)
+          body _ hInverseRen).
+      - reflexivity.
+    }
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (pEq (tAdd oldRem delta) (tAdd modulus newRem))
+      hDelta S) as hDeltaRen.
+    assert (hDeltaC : BProv Ax_s C
+        (pEq (tAdd oldRem1 delta1) (tAdd modulus1 newRem1))).
+    {
+      unfold C, oldRem1, delta1, modulus1, newRem1.
+      replace
+        (pEq (tAdd (Term.rename S oldRem) (Term.rename S delta))
+          (tAdd (Term.rename S modulus) (Term.rename S newRem)))
+        with (rename S
+          (pEq (tAdd oldRem delta) (tAdd modulus newRem))).
+      - exact (BProv_context_cons Ax_s (map (rename S) G)
+          body _ hDeltaRen).
+      - reflexivity.
+    }
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (ltTermAt newRem modulus) hnewBound S) as hBoundRen.
+    assert (hBoundC : BProv Ax_s C (ltTermAt newRem1 modulus1)).
+    {
+      unfold C, newRem1, modulus1.
+      replace
+        (ltTermAt (Term.rename S newRem) (Term.rename S modulus))
+        with (rename S (ltTermAt newRem modulus)).
+      - exact (BProv_context_cons Ax_s (map (rename S) G)
+          body _ hBoundRen).
+      - unfold ltTermAt. simpl.
+        rewrite (term_rename_up_succ_rename_succ newRem).
+        rewrite (term_rename_up_succ_rename_succ modulus).
+        reflexivity.
+    }
+    assert (hdecomp : BProv Ax_s C
+        (pEq
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          (tAdd (tMul quotient1 modulus1) newRem1))).
+    {
+      unfold quotient1.
+      exact (BProv_Ax_s_crtExtendCodeTerm_new_decomposition C
+        oldCode1 product1 inverse1 delta1 modulus1 (tVar 0)
+        oldRem1 inverseQuot1 newRem1 hold hInverseC hDeltaC).
+    }
+    assert (hnew : BProv Ax_s C
+        (remTermTermAt newRem1
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          modulus1)).
+    {
+      exact (BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms C
+        newRem1
+        (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+        modulus1 quotient1 hBoundC hdecomp).
+    }
+    replace (rename S target)
+      with (remTermTermAt newRem1
+        (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+        modulus1).
+    - exact hnew.
+    - unfold target, oldCode1, product1, inverse1, delta1,
+        modulus1, newRem1, crtExtendCodeTerm,
+        remTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      repeat rewrite term_rename_up_up_succ_rename_two_succ.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  exact (BProv_Ax_s_remTermTermAt_elim_opened G target
+    oldRem oldCode modulus hopened hrem).
+Qed.
+
+(* Lean: BProv_Ax_s_betaTermTermAt_opened_body_modEq *)
+Lemma BProv_Ax_s_betaTermTermAt_opened_body_modEq :
+  forall G (out code step idx : term),
+  let body := pAnd
+    (pEq (tVar 0) (Term.rename S (betaModTermTerm step idx)))
+    (remTermTermAt (Term.rename S out)
+      (Term.rename S code) (tVar 0)) in
+  BProv Ax_s (body :: map (rename S) G)
+    (pEq (tVar 0) (Term.rename S (betaModTermTerm step idx))).
+Proof.
+  intros G out code step idx body.
+  apply BProv_andE1 with
+    (b := remTermTermAt (Term.rename S out)
+      (Term.rename S code) (tVar 0)).
+  apply BProv_ass. simpl. left. reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_betaTermTermAt_opened_body_rem *)
+Lemma BProv_Ax_s_betaTermTermAt_opened_body_rem :
+  forall G (out code step idx : term),
+  let body := pAnd
+    (pEq (tVar 0) (Term.rename S (betaModTermTerm step idx)))
+    (remTermTermAt (Term.rename S out)
+      (Term.rename S code) (tVar 0)) in
+  BProv Ax_s (body :: map (rename S) G)
+    (remTermTermAt (Term.rename S out)
+      (Term.rename S code) (tVar 0)).
+Proof.
+  intros G out code step idx body.
+  apply BProv_andE2 with
+    (a := pEq (tVar 0)
+      (Term.rename S (betaModTermTerm step idx))).
+  apply BProv_ass. simpl. left. reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_remTermTermAt_of_betaTermTermAt *)
+Lemma BProv_Ax_s_remTermTermAt_of_betaTermTermAt :
+  forall G (out code step idx : term),
+  BProv Ax_s G (betaTermTermAt out code step idx) ->
+  BProv Ax_s G
+    (remTermTermAt out code (betaModTermTerm step idx)).
+Proof.
+  intros G out code step idx hbeta.
+  set (body := pAnd
+    (pEq (tVar 0) (Term.rename S (betaModTermTerm step idx)))
+    (remTermTermAt (Term.rename S out)
+      (Term.rename S code) (tVar 0))).
+  set (target := remTermTermAt out code (betaModTermTerm step idx)).
+  assert (hopened : BProv Ax_s (body :: map (rename S) G)
+      (rename S target)).
+  {
+    set (C := body :: map (rename S) G).
+    assert (hmod : BProv Ax_s C
+        (pEq (tVar 0)
+          (Term.rename S (betaModTermTerm step idx)))).
+    {
+      unfold C, body.
+      apply BProv_Ax_s_betaTermTermAt_opened_body_modEq.
+    }
+    assert (hrem : BProv Ax_s C
+        (remTermTermAt (Term.rename S out)
+          (Term.rename S code) (tVar 0))).
+    {
+      unfold C, body.
+      apply BProv_Ax_s_betaTermTermAt_opened_body_rem.
+    }
+    pose proof (BProv_Ax_s_remTermTermAt_of_eq_modulus C
+      (Term.rename S out) (Term.rename S code) (tVar 0)
+      (Term.rename S (betaModTermTerm step idx)) hmod hrem)
+      as hcanonical.
+    replace (rename S target)
+      with (remTermTermAt (Term.rename S out)
+        (Term.rename S code)
+        (Term.rename S (betaModTermTerm step idx))).
+    - exact hcanonical.
+    - unfold target, remTermTermAt, ltTermAt, betaModTermTerm.
+      simpl.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      repeat rewrite term_rename_up_up_succ_rename_two_succ.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  unfold betaTermTermAt in hbeta.
+  exact (BProv_exE_of_sentences Ax_s G body target
+    sentence_ax_s hbeta hopened).
+Qed.
+
+(* Lean: BProv_Ax_s_betaTermTermAt_crtExtend_preserve *)
+Lemma BProv_Ax_s_betaTermTermAt_crtExtend_preserve :
+  forall G
+    (out oldCode product inverse delta step idx factor : term),
+  BProv Ax_s G (betaTermTermAt out oldCode step idx) ->
+  BProv Ax_s G
+    (pEq product (tMul factor (betaModTermTerm step idx))) ->
+  BProv Ax_s G
+    (betaTermTermAt out
+      (crtExtendCodeTerm oldCode product inverse delta) step idx).
+Proof.
+  intros G out oldCode product inverse delta step idx factor
+    hbeta hProduct.
+  set (modulus := betaModTermTerm step idx).
+  assert (hrem : BProv Ax_s G (remTermTermAt out oldCode modulus)).
+  {
+    unfold modulus.
+    exact (BProv_Ax_s_remTermTermAt_of_betaTermTermAt
+      G out oldCode step idx hbeta).
+  }
+  assert (hnewRem : BProv Ax_s G
+      (remTermTermAt out
+        (crtExtendCodeTerm oldCode product inverse delta) modulus)).
+  {
+    exact (BProv_Ax_s_remTermTermAt_crtExtend_preserve G
+      oldCode product inverse delta modulus out factor hrem hProduct).
+  }
+  exact (BProv_Ax_s_betaTermTermAt_of_rem G out
+    (crtExtendCodeTerm oldCode product inverse delta)
+    step idx modulus (BProv_eqRefl Ax_s G modulus) hnewRem).
+Qed.
+
+(* Lean: BProv_Ax_s_betaTermTermAt_crtExtend_new *)
+Lemma BProv_Ax_s_betaTermTermAt_crtExtend_new :
+  forall G
+    (oldCode product inverse delta step idx oldRem inverseQuot newOut : term),
+  BProv Ax_s G
+    (remTermTermAt oldRem oldCode (betaModTermTerm step idx)) ->
+  BProv Ax_s G
+    (pEq (tMul product inverse)
+      (tSucc (tMul (betaModTermTerm step idx) inverseQuot))) ->
+  BProv Ax_s G
+    (pEq (tAdd oldRem delta)
+      (tAdd (betaModTermTerm step idx) newOut)) ->
+  BProv Ax_s G
+    (ltTermAt newOut (betaModTermTerm step idx)) ->
+  BProv Ax_s G
+    (betaTermTermAt newOut
+      (crtExtendCodeTerm oldCode product inverse delta) step idx).
+Proof.
+  intros G oldCode product inverse delta step idx oldRem
+    inverseQuot newOut hrem hInverse hDelta hnewBound.
+  set (modulus := betaModTermTerm step idx).
+  assert (hnewRem : BProv Ax_s G
+      (remTermTermAt newOut
+        (crtExtendCodeTerm oldCode product inverse delta) modulus)).
+  {
+    exact (BProv_Ax_s_remTermTermAt_crtExtend_new G
+      oldCode product inverse delta modulus oldRem inverseQuot newOut
+      hrem hInverse hDelta hnewBound).
+  }
+  exact (BProv_Ax_s_betaTermTermAt_of_rem G newOut
+    (crtExtendCodeTerm oldCode product inverse delta)
+    step idx modulus (BProv_eqRefl Ax_s G modulus) hnewRem).
+Qed.
+
 (* Lean: BetaEntry_twoEntry_zero *)
 Lemma BetaEntry_twoEntry_zero : forall cur next,
   BetaEntry (twoEntryBetaCode cur next) (twoEntryBetaStep cur next) 0 cur.
