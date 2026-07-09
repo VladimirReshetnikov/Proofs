@@ -2597,6 +2597,22 @@ def commonMultipleExistsTermAtBody (bound : Term) : Formula :=
   commonMultipleThroughTermAt
     (Term.rename Nat.succ bound) (Term.var 0)
 
+/-- Common-multiple invariant with positivity stated explicitly. -/
+def positiveCommonMultipleThroughTermAt
+    (bound multiple : Term) : Formula :=
+  and (ltTermAt Term.zero multiple)
+    (commonMultipleThroughTermAt bound multiple)
+
+/-- Existence of a positive common multiple through a term bound. -/
+def positiveCommonMultipleExistsTermAt (bound : Term) : Formula :=
+  ex (positiveCommonMultipleThroughTermAt
+    (Term.rename Nat.succ bound) (Term.var 0))
+
+/-- Body exposed after opening `positiveCommonMultipleExistsTermAt`. -/
+def positiveCommonMultipleExistsTermAtBody (bound : Term) : Formula :=
+  positiveCommonMultipleThroughTermAt
+    (Term.rename Nat.succ bound) (Term.var 0)
+
 def eqConstAt (a n : Nat) : Formula :=
   eq (Term.var a) (Term.numeral n)
 
@@ -3002,6 +3018,37 @@ def betaPairBezoutNegativeCoeffTerm
     (rightIdx scale : Term) : Term :=
   Term.mul (Term.succ rightIdx)
     (Term.mul (Term.succ rightIdx) scale)
+
+/-- An explicit positive inverse certificate:
+`product * inverse = 1 + modulus * quotient`. -/
+def crtInverseTermAt
+    (product modulus inverse quotient : Term) : Formula :=
+  eq (Term.mul product inverse)
+    (Term.succ (Term.mul modulus quotient))
+
+/-- Existence of a positive inverse certificate, with inverse and quotient as
+separate existential witnesses. -/
+def crtInverseExistsTermAt (product modulus : Term) : Formula :=
+  ex (ex (crtInverseTermAt
+    (Term.rename (fun n => n + 2) product)
+    (Term.rename (fun n => n + 2) modulus)
+    (Term.var 1) (Term.var 0)))
+
+/-- Inner quotient existential exposed after opening the inverse witness. -/
+def crtInverseExistsTermAtQuotEx
+    (product modulus : Term) : Formula :=
+  ex (crtInverseTermAt
+    (Term.rename (fun n => n + 2) product)
+    (Term.rename (fun n => n + 2) modulus)
+    (Term.var 1) (Term.var 0))
+
+/-- Equation exposed after opening both inverse-certificate witnesses. -/
+def crtInverseExistsTermAtBody
+    (product modulus : Term) : Formula :=
+  crtInverseTermAt
+    (Term.rename (fun n => n + 2) product)
+    (Term.rename (fun n => n + 2) modulus)
+    (Term.var 1) (Term.var 0)
 
 /-- Open beta step witness for the even branch of `0 ∈ S low`: when
 `low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
@@ -3575,6 +3622,78 @@ theorem commonMultipleExistsTermAt_nat
       (scons multiple e) (Term.rename Nat.succ bound)
       (Term.var 0)).mpr
     simpa [Term.eval_rename, Term.eval, scons] using hmultiple
+
+theorem positiveCommonMultipleThroughTermAt_nat
+    (e : Nat → Nat) (bound multiple : Term) :
+    Sat natModel e
+      (positiveCommonMultipleThroughTermAt bound multiple) ↔
+      0 < Term.eval natModel e multiple ∧
+        ∀ q, q < Term.eval natModel e bound →
+          q + 1 ∣ Term.eval natModel e multiple := by
+  constructor
+  · intro h
+    exact ⟨(ltTermAt_nat e Term.zero multiple).mp h.1,
+      (commonMultipleThroughTermAt_nat e bound multiple).mp h.2⟩
+  · intro h
+    exact ⟨(ltTermAt_nat e Term.zero multiple).mpr h.1,
+      (commonMultipleThroughTermAt_nat e bound multiple).mpr h.2⟩
+
+theorem positiveCommonMultipleExistsTermAt_nat
+    (e : Nat → Nat) (bound : Term) :
+    Sat natModel e (positiveCommonMultipleExistsTermAt bound) ↔
+      ∃ multiple, 0 < multiple ∧
+        ∀ q, q < Term.eval natModel e bound → q + 1 ∣ multiple := by
+  constructor
+  · intro h
+    rcases h with ⟨multiple, hmultiple⟩
+    refine ⟨multiple, ?_⟩
+    have hspec := (positiveCommonMultipleThroughTermAt_nat
+      (scons multiple e) (Term.rename Nat.succ bound)
+      (Term.var 0)).mp hmultiple
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨multiple, hmultiple⟩
+    refine ⟨multiple, ?_⟩
+    apply (positiveCommonMultipleThroughTermAt_nat
+      (scons multiple e) (Term.rename Nat.succ bound)
+      (Term.var 0)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hmultiple
+
+theorem crtInverseTermAt_nat
+    (e : Nat → Nat) (product modulus inverse quotient : Term) :
+    Sat natModel e
+      (crtInverseTermAt product modulus inverse quotient) ↔
+      Term.eval natModel e product * Term.eval natModel e inverse =
+        Nat.succ
+          (Term.eval natModel e modulus *
+            Term.eval natModel e quotient) := by
+  simp [crtInverseTermAt, Sat, Term.eval, natModel]
+
+theorem crtInverseExistsTermAt_nat
+    (e : Nat → Nat) (product modulus : Term) :
+    Sat natModel e (crtInverseExistsTermAt product modulus) ↔
+      ∃ inverse quotient,
+        Term.eval natModel e product * inverse =
+          Nat.succ (Term.eval natModel e modulus * quotient) := by
+  constructor
+  · intro h
+    rcases h with ⟨inverse, quotient, hcert⟩
+    refine ⟨inverse, quotient, ?_⟩
+    have hspec := (crtInverseTermAt_nat
+      (scons quotient (scons inverse e))
+      (Term.rename (fun n => n + 2) product)
+      (Term.rename (fun n => n + 2) modulus)
+      (Term.var 1) (Term.var 0)).mp hcert
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨inverse, quotient, hcert⟩
+    refine ⟨inverse, quotient, ?_⟩
+    apply (crtInverseTermAt_nat
+      (scons quotient (scons inverse e))
+      (Term.rename (fun n => n + 2) product)
+      (Term.rename (fun n => n + 2) modulus)
+      (Term.var 1) (Term.var 0)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hcert
 
 theorem eqConstAt_nat (e : Nat → Nat) (a n : Nat) :
     Sat natModel e (eqConstAt a n) ↔ e a = n := by
@@ -10364,6 +10483,88 @@ theorem BProv_Ax_s_betaPair_positive_inverse
   simpa [betaModTermTerm] using
     BProv_Ax_s_crtPositiveInverse_of_negative hnegative
 
+/-- Beta-pair inverse certificate in the exact witness shape produced by
+opening `leftIdx < rightIdx` and `S gapPred ∣ step`. -/
+theorem BProv_Ax_s_betaPair_positive_inverse_of_gap_scale
+    {G : List Formula}
+    {leftIdx rightIdx step gapPred scale : Term}
+    (hgap : BProv Ax_s G
+      (eq rightIdx
+        (Term.add leftIdx (Term.succ gapPred))))
+    (hscale : BProv Ax_s G
+      (eq (Term.mul (Term.succ gapPred) scale) step)) :
+    BProv Ax_s G
+      (eq
+        (Term.mul (betaModTermTerm step leftIdx)
+          (crtPositiveInverseTerm
+            (Term.mul (Term.succ rightIdx) step)
+            (betaPairBezoutPositiveCoeffTerm
+              leftIdx rightIdx scale)
+            (betaPairBezoutNegativeCoeffTerm
+              rightIdx scale)))
+        (Term.succ
+          (Term.mul (betaModTermTerm step rightIdx)
+            (crtPositiveInverseQuotTerm
+              (Term.mul (Term.succ leftIdx) step)
+              (betaPairBezoutPositiveCoeffTerm
+                leftIdx rightIdx scale)
+              (betaPairBezoutNegativeCoeffTerm
+                rightIdx scale))))) := by
+  have hgapSucc : BProv Ax_s G
+      (eq (Term.succ rightIdx)
+        (Term.succ
+          (Term.add leftIdx (Term.succ gapPred)))) :=
+    BProv_eq_congr_succ hgap
+  have hsuccAdd : BProv Ax_s G
+      (eq
+        (Term.add (Term.succ leftIdx) (Term.succ gapPred))
+        (Term.succ
+          (Term.add leftIdx (Term.succ gapPred)))) :=
+    BProv_Ax_s_succ_add_terms leftIdx (Term.succ gapPred)
+  have hindex : BProv Ax_s G
+      (eq (Term.succ rightIdx)
+        (Term.add (Term.succ leftIdx) (Term.succ gapPred))) :=
+    BProv_eqTrans hgapSucc (BProv_eqSym hsuccAdd)
+  exact BProv_Ax_s_betaPair_positive_inverse
+    hindex (BProv_eqSym hscale)
+
+/-- Package an explicit inverse equation into its two-witness existential
+relation. -/
+theorem BProv_Ax_s_crtInverseExistsTermAt_of_certificate
+    {G : List Formula}
+    {product modulus inverse quotient : Term}
+    (hcert : BProv Ax_s G
+      (crtInverseTermAt product modulus inverse quotient)) :
+    BProv Ax_s G (crtInverseExistsTermAt product modulus) := by
+  let innerBody : Formula :=
+    crtInverseTermAt
+      (Term.rename Nat.succ product)
+      (Term.rename Nat.succ modulus)
+      (Term.rename Nat.succ inverse)
+      (Term.var 0)
+  have hquotBody : BProv Ax_s G
+      (subst (instTerm quotient) innerBody) := by
+    simpa [innerBody, crtInverseTermAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      term_subst_instTerm_rename_succ] using hcert
+  have hquotEx : BProv Ax_s G (ex innerBody) :=
+    BProv_exI (B := Ax_s) (G := G)
+      (a := innerBody) (t := quotient) hquotBody
+  let outerBody : Formula :=
+    crtInverseExistsTermAtQuotEx product modulus
+  have hinverseBody : BProv Ax_s G
+      (subst (instTerm inverse) outerBody) := by
+    simpa [outerBody, crtInverseExistsTermAtQuotEx, innerBody,
+      crtInverseTermAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hquotEx
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := outerBody) (t := inverse)
+    (by simpa [outerBody, crtInverseExistsTermAtQuotEx,
+      crtInverseExistsTermAt] using hinverseBody)
+
 /-- Compose two explicit positive inverse certificates modulo the same term.
 
 This is the product step needed by a finite CRT accumulator: inverse witnesses
@@ -13799,6 +14000,148 @@ theorem BProv_Ax_s_dvdTermTermAt_of_eq_value
     term_subst_instTerm_rename_two_succ,
     term_subst_upSubst_instTerm_rename_two_succ] using hnew
 
+/-- Eliminate a fully term-parametric strict-order witness by opening its
+explicit positive difference. -/
+theorem BProv_Ax_s_ltTermAt_elim_opened
+    {G : List Formula} {lower upper : Term} {target : Formula}
+    (hbody : BProv Ax_s
+      (eq
+          (Term.add (Term.rename Nat.succ lower)
+            (Term.succ (Term.var 0)))
+          (Term.rename Nat.succ upper) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hlt : BProv Ax_s G (ltTermAt lower upper)) :
+    BProv Ax_s G target :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hlt (by simpa [ltTermAt] using hbody)
+
+/-- If `right = left + S gapPred`, then the gap predecessor itself is strictly
+below `right`.  The explicit strict-order witness is `left`. -/
+theorem BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms
+    {G : List Formula} {left right gapPred : Term}
+    (hgap : BProv Ax_s G
+      (eq right (Term.add left (Term.succ gapPred)))) :
+    BProv Ax_s G (ltTermAt gapPred right) := by
+  have hgapAdd : BProv Ax_s G
+      (eq (Term.add gapPred (Term.succ left))
+        (Term.add left (Term.succ gapPred))) := by
+    have hleftSucc : BProv Ax_s G
+        (eq (Term.add gapPred (Term.succ left))
+          (Term.succ (Term.add gapPred left))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms gapPred left)
+    have hcomm : BProv Ax_s G
+        (eq (Term.add gapPred left) (Term.add left gapPred)) :=
+      BProv_Ax_s_add_comm_terms gapPred left
+    have hcommSucc : BProv Ax_s G
+        (eq (Term.succ (Term.add gapPred left))
+          (Term.succ (Term.add left gapPred))) :=
+      BProv_eq_congr_succ hcomm
+    have hrightSucc : BProv Ax_s G
+        (eq (Term.add left (Term.succ gapPred))
+          (Term.succ (Term.add left gapPred))) :=
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms left gapPred)
+    exact BProv_eqTrans hleftSucc
+      (BProv_eqTrans hcommSucc (BProv_eqSym hrightSucc))
+  have hvalue : BProv Ax_s G
+      (eq (Term.add gapPred (Term.succ left)) right) :=
+    BProv_eqTrans hgapAdd (BProv_eqSym hgap)
+  have hbody : BProv Ax_s G
+      (subst (instTerm left)
+        (eq
+          (Term.add (Term.rename Nat.succ gapPred)
+            (Term.succ (Term.var 0)))
+          (Term.rename Nat.succ right))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hvalue
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := eq
+      (Term.add (Term.rename Nat.succ gapPred)
+        (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ right))
+    (t := left) hbody
+
+/-- A positive term remains positive after multiplication by a successor on
+the right. -/
+theorem BProv_Ax_s_ltTermAt_zero_mul_succ_right
+    {G : List Formula} {value factor : Term}
+    (hpos : BProv Ax_s G (ltTermAt Term.zero value)) :
+    BProv Ax_s G
+      (ltTermAt Term.zero
+        (Term.mul value (Term.succ factor))) := by
+  let target : Formula :=
+    ltTermAt Term.zero (Term.mul value (Term.succ factor))
+  refine BProv_Ax_s_ltTermAt_elim_opened
+    (G := G) (lower := Term.zero) (upper := value)
+    (target := target) ?_ hpos
+  let body : Formula :=
+    eq
+      (Term.add Term.zero (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ value)
+  let D : List Formula := body :: G.map (rename Nat.succ)
+  let value1 : Term := Term.rename Nat.succ value
+  let factor1 : Term := Term.rename Nat.succ factor
+  have hopened : BProv Ax_s D
+      (eq (Term.add Term.zero (Term.succ (Term.var 0))) value1) := by
+    simpa [D, body, value1] using
+      (BProv_ass (B := Ax_s) (G := D) (by simp [D, body]))
+  have hzeroAdd : BProv Ax_s D
+      (eq (Term.add Term.zero (Term.succ (Term.var 0)))
+        (Term.succ (Term.var 0))) :=
+    BProv_Ax_s_zero_add_term (Term.succ (Term.var 0))
+  have hvalue : BProv Ax_s D
+      (eq value1 (Term.succ (Term.var 0))) :=
+    BProv_eqTrans (BProv_eqSym hopened) hzeroAdd
+  have hvalueCong : BProv Ax_s D
+      (eq (Term.mul value1 (Term.succ factor1))
+        (Term.mul (Term.succ (Term.var 0))
+          (Term.succ factor1))) :=
+    BProv_eq_congr_mul_left (Term.succ factor1) hvalue
+  have hsuccMul : BProv Ax_s D
+      (eq
+        (Term.mul (Term.succ (Term.var 0))
+          (Term.succ factor1))
+        (Term.add
+          (Term.mul (Term.var 0) (Term.succ factor1))
+          (Term.succ factor1))) :=
+    BProv_Ax_s_succ_mul_terms (Term.var 0) (Term.succ factor1)
+  have haddSucc : BProv Ax_s D
+      (eq
+        (Term.add
+          (Term.mul (Term.var 0) (Term.succ factor1))
+          (Term.succ factor1))
+        (Term.succ
+          (Term.add
+            (Term.mul (Term.var 0) (Term.succ factor1))
+            factor1))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms
+        (Term.mul (Term.var 0) (Term.succ factor1)) factor1)
+  have hproduct : BProv Ax_s D
+      (eq (Term.mul value1 (Term.succ factor1))
+        (Term.succ
+          (Term.add
+            (Term.mul (Term.var 0) (Term.succ factor1))
+            factor1))) :=
+    BProv_eqTrans hvalueCong (BProv_eqTrans hsuccMul haddSucc)
+  have hpositiveSucc : BProv Ax_s D
+      (ltTermAt Term.zero
+        (Term.succ
+          (Term.add
+            (Term.mul (Term.var 0) (Term.succ factor1))
+            factor1))) :=
+    BProv_Ax_s_ltTermAt_zero_succ
+      (Term.add
+        (Term.mul (Term.var 0) (Term.succ factor1)) factor1)
+  have hpositive : BProv Ax_s D
+      (ltTermAt Term.zero
+        (Term.mul value1 (Term.succ factor1))) :=
+    BProv_ltTermAt_of_eq_right (BProv_eqSym hproduct) hpositiveSucc
+  simpa [target, D, body, value1, factor1, ltTermAt,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hpositive
+
 /-- Instantiate a common-multiple invariant at one predecessor below its
 bound. -/
 theorem BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
@@ -13951,6 +14294,49 @@ theorem BProv_Ax_s_commonMultipleThroughTermAt_succ
   simpa [commonMultipleThroughTermAt, body, antecedent, consequent,
     newMultiple, Term.rename] using hall
 
+/-- One is a positive common multiple through bound zero. -/
+theorem BProv_Ax_s_positiveCommonMultipleThroughTermAt_zero
+    {G : List Formula} :
+    BProv Ax_s G
+      (positiveCommonMultipleThroughTermAt
+        Term.zero (Term.numeral 1)) := by
+  have hpos : BProv Ax_s G
+      (ltTermAt Term.zero (Term.numeral 1)) := by
+    simpa [Term.numeral] using
+      BProv_Ax_s_ltTermAt_zero_succ (G := G) Term.zero
+  have hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt Term.zero (Term.numeral 1)) :=
+    BProv_Ax_s_commonMultipleThroughTermAt_zero
+      (G := G) (Term.numeral 1)
+  exact BProv_andI (B := Ax_s) (G := G)
+    (by simpa [positiveCommonMultipleThroughTermAt] using hpos)
+    (by simpa [positiveCommonMultipleThroughTermAt] using hcommon)
+
+/-- Extend a positive common-multiple witness through a successor bound. -/
+theorem BProv_Ax_s_positiveCommonMultipleThroughTermAt_succ
+    {G : List Formula} {bound multiple : Term}
+    (hcommon : BProv Ax_s G
+      (positiveCommonMultipleThroughTermAt bound multiple)) :
+    BProv Ax_s G
+      (positiveCommonMultipleThroughTermAt (Term.succ bound)
+        (Term.mul multiple (Term.succ bound))) := by
+  have hpos : BProv Ax_s G (ltTermAt Term.zero multiple) := by
+    simpa [positiveCommonMultipleThroughTermAt] using BProv_andE1 hcommon
+  have hthrough : BProv Ax_s G
+      (commonMultipleThroughTermAt bound multiple) := by
+    simpa [positiveCommonMultipleThroughTermAt] using BProv_andE2 hcommon
+  have hposNext : BProv Ax_s G
+      (ltTermAt Term.zero
+        (Term.mul multiple (Term.succ bound))) :=
+    BProv_Ax_s_ltTermAt_zero_mul_succ_right hpos
+  have hthroughNext : BProv Ax_s G
+      (commonMultipleThroughTermAt (Term.succ bound)
+        (Term.mul multiple (Term.succ bound))) :=
+    BProv_Ax_s_commonMultipleThroughTermAt_succ hthrough
+  exact BProv_andI (B := Ax_s) (G := G)
+    (by simpa [positiveCommonMultipleThroughTermAt] using hposNext)
+    (by simpa [positiveCommonMultipleThroughTermAt] using hthroughNext)
+
 /-- Package an explicit common-multiple witness into the existential
 relation. -/
 theorem BProv_Ax_s_commonMultipleExistsTermAt_of_through
@@ -14078,6 +14464,264 @@ theorem BProv_Ax_s_all_commonMultipleExistsTermAt
     BProv_mono Ax_s [] G (inductionForm phi)
       (fun x hx => by cases hx) hindEmpty
   simpa [phi] using BProv_inductionForm_mp hind hzero hsuccAll
+
+/-- Package an explicit positive common-multiple witness. -/
+theorem BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through
+    {G : List Formula} {bound multiple : Term}
+    (hthrough : BProv Ax_s G
+      (positiveCommonMultipleThroughTermAt bound multiple)) :
+    BProv Ax_s G (positiveCommonMultipleExistsTermAt bound) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm multiple)
+        (positiveCommonMultipleThroughTermAt
+          (Term.rename Nat.succ bound) (Term.var 0))) := by
+    simpa [positiveCommonMultipleThroughTermAt,
+      commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def] using hthrough
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := positiveCommonMultipleThroughTermAt
+      (Term.rename Nat.succ bound) (Term.var 0))
+    (t := multiple) hbody
+
+/-- Eliminate positive common-multiple existence by opening its explicit
+conjunction body. -/
+theorem BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened
+    {G : List Formula} {bound : Term} {target : Formula}
+    (hbody : BProv Ax_s
+      (positiveCommonMultipleExistsTermAtBody bound ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hex : BProv Ax_s G
+      (positiveCommonMultipleExistsTermAt bound)) :
+    BProv Ax_s G target :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [positiveCommonMultipleExistsTermAt,
+      positiveCommonMultipleExistsTermAtBody] using hbody)
+
+/-- Positive common-multiple existence at bound zero. -/
+theorem BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero
+    {G : List Formula} :
+    BProv Ax_s G
+      (positiveCommonMultipleExistsTermAt Term.zero) :=
+  BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through
+    (BProv_Ax_s_positiveCommonMultipleThroughTermAt_zero (G := G))
+
+/-- Extend an existential positive common-multiple witness to a successor
+bound. -/
+theorem BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ
+    {G : List Formula} {bound : Term}
+    (hex : BProv Ax_s G
+      (positiveCommonMultipleExistsTermAt bound)) :
+    BProv Ax_s G
+      (positiveCommonMultipleExistsTermAt (Term.succ bound)) := by
+  let target : Formula :=
+    positiveCommonMultipleExistsTermAt (Term.succ bound)
+  refine BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened
+    (G := G) (bound := bound) (target := target) ?_ hex
+  let D : List Formula :=
+    positiveCommonMultipleExistsTermAtBody bound ::
+      G.map (rename Nat.succ)
+  let bound1 : Term := Term.rename Nat.succ bound
+  have hthrough : BProv Ax_s D
+      (positiveCommonMultipleThroughTermAt bound1 (Term.var 0)) := by
+    simpa [D, bound1, positiveCommonMultipleExistsTermAtBody] using
+      (BProv_ass (B := Ax_s) (G := D)
+        (by simp [D, positiveCommonMultipleExistsTermAtBody]))
+  have hnext : BProv Ax_s D
+      (positiveCommonMultipleThroughTermAt (Term.succ bound1)
+        (Term.mul (Term.var 0) (Term.succ bound1))) :=
+    BProv_Ax_s_positiveCommonMultipleThroughTermAt_succ hthrough
+  have hexNext : BProv Ax_s D
+      (positiveCommonMultipleExistsTermAt (Term.succ bound1)) :=
+    BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through hnext
+  simpa [target, D, bound1, positiveCommonMultipleExistsTermAt,
+    positiveCommonMultipleThroughTermAt,
+    commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hexNext
+
+/-- PA proves uniformly that every bound has a positive common multiple of all
+positive values through it. -/
+theorem BProv_Ax_s_all_positiveCommonMultipleExistsTermAt
+    {G : List Formula} :
+    BProv Ax_s G
+      (all (positiveCommonMultipleExistsTermAt (Term.var 0))) := by
+  let phi : Formula :=
+    positiveCommonMultipleExistsTermAt (Term.var 0)
+  have hzeroRaw : BProv Ax_s G
+      (positiveCommonMultipleExistsTermAt Term.zero) :=
+    BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    simpa [phi, positiveCommonMultipleExistsTermAt,
+      positiveCommonMultipleThroughTermAt,
+      commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+      substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_substZero_rename_succ] using hzeroRaw
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    let C : List Formula := phi :: G.map (rename Nat.succ)
+    have hih : BProv Ax_s C
+        (positiveCommonMultipleExistsTermAt (Term.var 0)) := by
+      simpa [C, phi] using
+        (BProv_ass (B := Ax_s) (G := C) (by simp [C, phi]))
+    have hnext : BProv Ax_s C
+        (positiveCommonMultipleExistsTermAt
+          (Term.succ (Term.var 0))) :=
+      BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ hih
+    simpa [C, phi, positiveCommonMultipleExistsTermAt,
+      positiveCommonMultipleThroughTermAt,
+      commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+      substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_substSuccVar_rename_succ] using hnext
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hindEmpty : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename
+        (Ax_s_induction phi) (fun n : Nat => n)
+  have hind : BProv Ax_s G (inductionForm phi) :=
+    BProv_mono Ax_s [] G (inductionForm phi)
+      (fun x hx => by cases hx) hindEmpty
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsuccAll
+
+/-- An earlier beta modulus has an explicit positive inverse modulo a later
+one whenever the step is a common multiple of every positive gap through the
+later index. -/
+theorem BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple
+    {G : List Formula} {leftIdx rightIdx step : Term}
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt rightIdx step))
+    (hlt : BProv Ax_s G (ltTermAt leftIdx rightIdx)) :
+    BProv Ax_s G
+      (crtInverseExistsTermAt
+        (betaModTermTerm step leftIdx)
+        (betaModTermTerm step rightIdx)) := by
+  let target : Formula :=
+    crtInverseExistsTermAt
+      (betaModTermTerm step leftIdx)
+      (betaModTermTerm step rightIdx)
+  refine BProv_Ax_s_ltTermAt_elim_opened
+    (G := G) (lower := leftIdx) (upper := rightIdx)
+    (target := target) ?_ hlt
+  let ltBody : Formula :=
+    eq
+      (Term.add (Term.rename Nat.succ leftIdx)
+        (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ rightIdx)
+  let D : List Formula := ltBody :: G.map (rename Nat.succ)
+  let left1 : Term := Term.rename Nat.succ leftIdx
+  let right1 : Term := Term.rename Nat.succ rightIdx
+  let step1 : Term := Term.rename Nat.succ step
+  have hgap : BProv Ax_s D
+      (eq right1
+        (Term.add left1 (Term.succ (Term.var 0)))) := by
+    have hraw : BProv Ax_s D ltBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [ltBody, left1, right1] using BProv_eqSym hraw
+  have hcommonRen : BProv Ax_s (G.map (rename Nat.succ))
+      (commonMultipleThroughTermAt right1 step1) := by
+    have hren := BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcommon Nat.succ
+    simpa [right1, step1, commonMultipleThroughTermAt,
+      dvdTermTermAt, ltTermAt, rename, Term.rename,
+      SetTheory.up, Term.rename_comp, Function.comp_def] using hren
+  have hcommonD : BProv Ax_s D
+      (commonMultipleThroughTermAt right1 step1) :=
+    BProv_context_cons (B := Ax_s) hcommonRen
+  have hgapLt : BProv Ax_s D
+      (ltTermAt (Term.var 0) right1) :=
+    BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms hgap
+  have hdvd : BProv Ax_s D
+      (dvdTermTermAt (Term.succ (Term.var 0)) step1) :=
+    BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
+      hcommonD hgapLt
+  refine BProv_Ax_s_dvdTermTermAt_elim_opened
+    (G := D) (divisor := Term.succ (Term.var 0))
+    (value := step1) (target := rename Nat.succ target) ?_ hdvd
+  let dvdBody : Formula :=
+    eq
+      (Term.mul
+        (Term.rename Nat.succ (Term.succ (Term.var 0)))
+        (Term.var 0))
+      (Term.rename Nat.succ step1)
+  let E : List Formula := dvdBody :: D.map (rename Nat.succ)
+  let left2 : Term := Term.rename (fun n => n + 2) leftIdx
+  let right2 : Term := Term.rename (fun n => n + 2) rightIdx
+  let step2 : Term := Term.rename (fun n => n + 2) step
+  have hscale : BProv Ax_s E
+      (eq (Term.mul (Term.succ (Term.var 1)) (Term.var 0)) step2) := by
+    have hraw : BProv Ax_s E dvdBody :=
+      BProv_ass (B := Ax_s) (G := E) (by simp [E])
+    simpa [dvdBody, step1, step2, Term.rename,
+      Term.rename_comp, Function.comp_def,
+      Nat.add_assoc] using hraw
+  have hgapRen : BProv Ax_s (D.map (rename Nat.succ))
+      (rename Nat.succ
+        (eq right1
+          (Term.add left1 (Term.succ (Term.var 0))))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hgap Nat.succ
+  have hgapE : BProv Ax_s E
+      (eq right2
+        (Term.add left2 (Term.succ (Term.var 1)))) := by
+    have hctx : BProv Ax_s E
+        (rename Nat.succ
+          (eq right1
+            (Term.add left1 (Term.succ (Term.var 0))))) := by
+      simpa [E] using
+        (BProv_context_cons (B := Ax_s) (a := dvdBody) hgapRen)
+    simpa [E, D, ltBody, left1, right1, left2, right2,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using hctx
+  have hcert : BProv Ax_s E
+      (crtInverseTermAt
+        (betaModTermTerm step2 left2)
+        (betaModTermTerm step2 right2)
+        (crtPositiveInverseTerm
+          (Term.mul (Term.succ right2) step2)
+          (betaPairBezoutPositiveCoeffTerm
+            left2 right2 (Term.var 0))
+          (betaPairBezoutNegativeCoeffTerm
+            right2 (Term.var 0)))
+        (crtPositiveInverseQuotTerm
+          (Term.mul (Term.succ left2) step2)
+          (betaPairBezoutPositiveCoeffTerm
+            left2 right2 (Term.var 0))
+          (betaPairBezoutNegativeCoeffTerm
+            right2 (Term.var 0)))) := by
+    simpa [crtInverseTermAt] using
+      (BProv_Ax_s_betaPair_positive_inverse_of_gap_scale
+        (G := E) (leftIdx := left2) (rightIdx := right2)
+        (step := step2) (gapPred := Term.var 1)
+        (scale := Term.var 0) hgapE hscale)
+  have hex : BProv Ax_s E
+      (crtInverseExistsTermAt
+        (betaModTermTerm step2 left2)
+        (betaModTermTerm step2 right2)) :=
+    BProv_Ax_s_crtInverseExistsTermAt_of_certificate hcert
+  simpa [target, E, D, dvdBody, ltBody, left1, right1, step1,
+    left2, right2, step2, crtInverseExistsTermAt,
+    crtInverseTermAt, betaModTermTerm, rename, Term.rename,
+    SetTheory.up, Term.rename_comp, Function.comp_def,
+    Nat.add_assoc] using hex
 
 /-- A term quotient equation gives the corresponding `dvdAt` witness.  This is
 the open-term version of `BProv_Ax_s_dvdAt_of_eqConst_mul`, used after
