@@ -17055,6 +17055,48 @@ theorem BProv_Ax_s_eq_of_betaTermTermAt_eqConst_entry
   exact BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
     hclosed hidxBeta
 
+/-- Closed one-point shifted-tail transport for fully term-parametric beta
+entries.
+
+The semantic shifted-tail relation and the old closed beta entry are explicit
+proof data.  The object proof first uses beta exactness to identify the
+arbitrary output term with the closed old entry, then transports the closed new
+entry across that equality. -/
+theorem BProv_Ax_s_betaTermTermAt_of_closed_shift_tail_entry
+    {G : List Formula} {out : Term}
+    {oldCode oldStep newCode newStep last i o : Nat}
+    (htail : BetaShiftTailThrough oldCode oldStep newCode newStep last)
+    (hi : i ≤ last)
+    (holdEntry : BetaEntry oldCode oldStep (i+1) o)
+    (hold : BProv Ax_s G
+      (betaTermTermAt out (Term.numeral oldCode)
+        (Term.numeral oldStep) (Term.numeral (i+1)))) :
+    BProv Ax_s G
+      (betaTermTermAt out (Term.numeral newCode)
+        (Term.numeral newStep) (Term.numeral i)) := by
+  have hcodeOld : BProv Ax_s G
+      (eq (Term.numeral oldCode) (Term.numeral oldCode)) :=
+    BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral oldCode)
+  have hstepOld : BProv Ax_s G
+      (eq (Term.numeral oldStep) (Term.numeral oldStep)) :=
+    BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral oldStep)
+  have hidxOld : BProv Ax_s G
+      (eq (Term.numeral (i+1)) (Term.numeral (i+1))) :=
+    BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral (i+1))
+  have hout : BProv Ax_s G (eq out (Term.numeral o)) :=
+    BProv_Ax_s_eq_of_betaTermTermAt_eqConst_entry
+      (c := oldCode) (s := oldStep) (i := i+1) (o := o)
+      hold hcodeOld hstepOld hidxOld holdEntry
+  have hnewEntry : BetaEntry newCode newStep i o :=
+    htail i hi o holdEntry
+  have hclosedNew : BProv Ax_s G
+      (betaTermTermAt (Term.numeral o) (Term.numeral newCode)
+        (Term.numeral newStep) (Term.numeral i)) :=
+    BProv_Ax_s_betaTermTermAt_numeral_entry (G := G) hnewEntry
+  exact
+    BProv_Ax_s_betaTermTermAt_of_eq_output
+      (BProv_eqSym hout) hclosedNew
+
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/
 theorem BProv_Ax_s_betaTermAt_of_betaAt_eq_term

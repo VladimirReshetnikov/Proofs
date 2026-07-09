@@ -482,6 +482,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaModTermTerm_numeral
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_numeral_entry
 #check @PA.Formula.BProv_Ax_s_eq_of_betaTermTermAt_eqConst_entry
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_closed_shift_tail_entry
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_betaAt_eq_term
 #check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAt_eq_term
 #check PA.Formula.betaTermAt_eq_betaTermTermAt_var
