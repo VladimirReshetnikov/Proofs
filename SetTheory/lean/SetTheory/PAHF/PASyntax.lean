@@ -2802,6 +2802,22 @@ def betaTermTermAt (out code step idx : Term) : Formula :=
     (remTermTermAt (Term.rename Nat.succ out)
       (Term.rename Nat.succ code) (Term.var 0)))
 
+/-- Existence of some output for a fully term-parametric beta entry.  This is
+only the quantified relation; no division-totality theorem is built into it.
+-/
+def betaEntryExistsTermAt (code step idx : Term) : Formula :=
+  ex (betaTermTermAt (Term.var 0)
+    (Term.rename Nat.succ code)
+    (Term.rename Nat.succ step)
+    (Term.rename Nat.succ idx))
+
+/-- Body exposed after opening a beta-entry output witness. -/
+def betaEntryExistsTermAtBody (code step idx : Term) : Formula :=
+  betaTermTermAt (Term.var 0)
+    (Term.rename Nat.succ code)
+    (Term.rename Nat.succ step)
+    (Term.rename Nat.succ idx)
+
 theorem betaTermAt_var (out code step idx : Nat) :
     betaTermAt (Term.var out) code step idx = betaAt out code step idx := by
   simp [betaTermAt, betaAt, remTermAt_var, Term.rename]
@@ -3327,6 +3343,46 @@ def betaDiv2StepsThroughTermTermAt
       (Term.rename Nat.succ code)
       (Term.rename Nat.succ step)
       (Term.var 0)))
+
+/-- Strict-prefix form of shifted beta coding.
+
+For every `i < bound`, every old beta entry at `S i` is copied to index `i`
+of the new code.  All code and step parameters are terms so the relation can
+serve as the invariant of an internal PA construction. -/
+def betaShiftPrefixTermAt
+    (oldCode oldStep newCode newStep bound : Term) : Formula :=
+  all (imp
+    (ltTermAt (Term.var 0) (Term.rename Nat.succ bound))
+    (all (imp
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n + 2) oldCode)
+        (Term.rename (fun n => n + 2) oldStep)
+        (Term.succ (Term.var 1)))
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n + 2) newCode)
+        (Term.rename (fun n => n + 2) newStep)
+        (Term.var 1)))))
+
+/-- Existence of a code satisfying a shifted strict prefix for a fixed new
+step. -/
+def betaShiftPrefixCodeExistsTermAt
+    (oldCode oldStep newStep bound : Term) : Formula :=
+  ex (betaShiftPrefixTermAt
+    (Term.rename Nat.succ oldCode)
+    (Term.rename Nat.succ oldStep)
+    (Term.var 0)
+    (Term.rename Nat.succ newStep)
+    (Term.rename Nat.succ bound))
+
+/-- Body exposed after opening a shifted-prefix code witness. -/
+def betaShiftPrefixCodeExistsTermAtBody
+    (oldCode oldStep newStep bound : Term) : Formula :=
+  betaShiftPrefixTermAt
+    (Term.rename Nat.succ oldCode)
+    (Term.rename Nat.succ oldStep)
+    (Term.var 0)
+    (Term.rename Nat.succ newStep)
+    (Term.rename Nat.succ bound)
 
 /-- A pointwise shifted-tail relation between two beta-coded traces.
 
@@ -4357,6 +4413,31 @@ theorem betaTermTermAt_nat_entry
           simpa [m, BetaModulus] using hlt
         simpa [Term.eval_rename, Term.eval, scons] using hltM
 
+theorem betaEntryExistsTermAt_nat
+    (e : Nat → Nat) (code step idx : Term) :
+    Sat natModel e (betaEntryExistsTermAt code step idx) ↔
+      ∃ out,
+        BetaEntry (Term.eval natModel e code)
+          (Term.eval natModel e step)
+          (Term.eval natModel e idx) out := by
+  constructor
+  · intro h
+    rcases h with ⟨out, hentry⟩
+    refine ⟨out, ?_⟩
+    have hspec := (betaTermTermAt_nat_entry (scons out e)
+      (Term.var 0) (Term.rename Nat.succ code)
+      (Term.rename Nat.succ step)
+      (Term.rename Nat.succ idx)).mp hentry
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨out, hentry⟩
+    refine ⟨out, ?_⟩
+    apply (betaTermTermAt_nat_entry (scons out e)
+      (Term.var 0) (Term.rename Nat.succ code)
+      (Term.rename Nat.succ step)
+      (Term.rename Nat.succ idx)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hentry
+
 theorem betaPrefixAgreementTermAt_nat
     (e : Nat → Nat) (oldCode newCode step bound : Term) :
     Sat natModel e
@@ -4649,6 +4730,100 @@ theorem betaDiv2StepsThroughTermAt_nat
     exact ⟨cur, next, bit, by simpa [scons] using hcur,
       by simpa [scons] using hnext, by
         simpa using And.intro hbit hvalue⟩
+
+theorem betaShiftPrefixTermAt_nat
+    (e : Nat → Nat) (oldCode oldStep newCode newStep bound : Term) :
+    Sat natModel e
+      (betaShiftPrefixTermAt
+        oldCode oldStep newCode newStep bound) ↔
+      ∀ i, i < Term.eval natModel e bound → ∀ out,
+        BetaEntry (Term.eval natModel e oldCode)
+            (Term.eval natModel e oldStep) (i + 1) out →
+          BetaEntry (Term.eval natModel e newCode)
+            (Term.eval natModel e newStep) i out := by
+  constructor
+  · intro h i hi out hold
+    have hltSat : Sat natModel (scons i e)
+        (ltTermAt (Term.var 0) (Term.rename Nat.succ bound)) :=
+      (ltTermAt_nat (scons i e)
+        (Term.var 0) (Term.rename Nat.succ bound)).mpr (by
+          simpa [Term.eval_rename, Term.eval, scons] using hi)
+    have houtImp := h i hltSat
+    have holdSat : Sat natModel (scons out (scons i e))
+        (betaTermTermAt (Term.var 0)
+          (Term.rename (fun n => n + 2) oldCode)
+          (Term.rename (fun n => n + 2) oldStep)
+          (Term.succ (Term.var 1))) :=
+      (betaTermTermAt_nat_entry (scons out (scons i e))
+        (Term.var 0)
+        (Term.rename (fun n => n + 2) oldCode)
+        (Term.rename (fun n => n + 2) oldStep)
+        (Term.succ (Term.var 1))).mpr (by
+          simpa [Term.eval_rename, Term.eval, natModel, scons,
+            Nat.succ_eq_add_one] using hold)
+    have hnewSat := houtImp out holdSat
+    have hnew := (betaTermTermAt_nat_entry
+      (scons out (scons i e))
+      (Term.var 0)
+      (Term.rename (fun n => n + 2) newCode)
+      (Term.rename (fun n => n + 2) newStep)
+      (Term.var 1)).mp hnewSat
+    simpa [Term.eval_rename, Term.eval, scons] using hnew
+  · intro h i hltSat out holdSat
+    have hi : i < Term.eval natModel e bound := by
+      have hlt := (ltTermAt_nat (scons i e)
+        (Term.var 0) (Term.rename Nat.succ bound)).mp hltSat
+      simpa [Term.eval_rename, Term.eval, scons] using hlt
+    have hold := (betaTermTermAt_nat_entry
+      (scons out (scons i e))
+      (Term.var 0)
+      (Term.rename (fun n => n + 2) oldCode)
+      (Term.rename (fun n => n + 2) oldStep)
+      (Term.succ (Term.var 1))).mp holdSat
+    apply (betaTermTermAt_nat_entry
+      (scons out (scons i e))
+      (Term.var 0)
+      (Term.rename (fun n => n + 2) newCode)
+      (Term.rename (fun n => n + 2) newStep)
+      (Term.var 1)).mpr
+    simpa [Term.eval_rename, Term.eval, natModel, scons,
+      Nat.succ_eq_add_one] using
+      h i hi out (by
+        simpa [Term.eval_rename, Term.eval, natModel, scons,
+          Nat.succ_eq_add_one] using hold)
+
+theorem betaShiftPrefixCodeExistsTermAt_nat
+    (e : Nat → Nat) (oldCode oldStep newStep bound : Term) :
+    Sat natModel e
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep bound) ↔
+      ∃ newCode, ∀ i, i < Term.eval natModel e bound → ∀ out,
+        BetaEntry (Term.eval natModel e oldCode)
+            (Term.eval natModel e oldStep) (i + 1) out →
+          BetaEntry newCode (Term.eval natModel e newStep) i out := by
+  constructor
+  · intro h
+    rcases h with ⟨newCode, hprefix⟩
+    refine ⟨newCode, ?_⟩
+    have hspec := (betaShiftPrefixTermAt_nat
+      (scons newCode e)
+      (Term.rename Nat.succ oldCode)
+      (Term.rename Nat.succ oldStep)
+      (Term.var 0)
+      (Term.rename Nat.succ newStep)
+      (Term.rename Nat.succ bound)).mp hprefix
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨newCode, hprefix⟩
+    refine ⟨newCode, ?_⟩
+    apply (betaShiftPrefixTermAt_nat
+      (scons newCode e)
+      (Term.rename Nat.succ oldCode)
+      (Term.rename Nat.succ oldStep)
+      (Term.var 0)
+      (Term.rename Nat.succ newStep)
+      (Term.rename Nat.succ bound)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hprefix
 
 theorem betaShiftTailThroughTermAt_nat
     (e : Nat → Nat) (oldCode oldStep : Nat)
@@ -7078,6 +7253,120 @@ theorem term_subst_up_up_up_substSuccVar_rename_four_succ (t : Term) :
   rw [h3, Term.subst_rename_succ_up]
   rw [h2, Term.subst_rename_succ_up]
   rw [term_substSuccVar_rename_succ]
+
+/-- Zero substitution lifted through four inner binders removes the outermost
+of five shifts. -/
+theorem term_subst_up_up_up_up_substZero_rename_five_succ (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst substZero))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
+  have h5 :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1 + 1)).symm
+  rw [h5, Term.subst_rename_succ_up]
+  rw [term_subst_up_up_up_substZero_rename_four_succ]
+  simp [Term.rename_comp, Nat.add_assoc]
+
+/-- Zero substitution lifted through five inner binders removes the outermost
+of six shifts. -/
+theorem term_subst_up_up_up_up_up_substZero_rename_six_succ (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst (Term.upSubst substZero)))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
+  have h6 :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1)).symm
+  rw [h6, Term.subst_rename_succ_up]
+  rw [term_subst_up_up_up_up_substZero_rename_five_succ]
+  simp [Term.rename_comp, Nat.add_assoc]
+
+/-- Successor substitution lifted through four inner binders preserves all
+five shifts of an ambient term. -/
+theorem term_subst_up_up_up_up_substSuccVar_rename_five_succ (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst substSuccVar))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
+  have h5 :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1 + 1)).symm
+  rw [h5, Term.subst_rename_succ_up]
+  rw [term_subst_up_up_up_substSuccVar_rename_four_succ]
+
+/-- Successor substitution lifted through five inner binders preserves all
+six shifts of an ambient term. -/
+theorem term_subst_up_up_up_up_up_substSuccVar_rename_six_succ (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst (Term.upSubst substSuccVar)))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t := by
+  have h6 :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1)).symm
+  rw [h6, Term.subst_rename_succ_up]
+  rw [term_subst_up_up_up_up_substSuccVar_rename_five_succ]
+
+/-- Normalized `+ 5` spelling of the depth-five zero-substitution rule. -/
+theorem term_subst_up_up_up_up_substZero_rename_add_five (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst substZero))))
+        (Term.rename (fun n : Nat => n + 5) t) =
+      Term.rename (fun n : Nat => n + 4) t := by
+  simpa [Nat.add_assoc] using
+    term_subst_up_up_up_up_substZero_rename_five_succ t
+
+/-- Normalized `+ 6` spelling of the depth-six zero-substitution rule. -/
+theorem term_subst_up_up_up_up_up_substZero_rename_add_six (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst (Term.upSubst substZero)))))
+        (Term.rename (fun n : Nat => n + 6) t) =
+      Term.rename (fun n : Nat => n + 5) t := by
+  simpa [Nat.add_assoc] using
+    term_subst_up_up_up_up_up_substZero_rename_six_succ t
+
+/-- Normalized `+ 5` spelling of the depth-five successor-substitution rule. -/
+theorem term_subst_up_up_up_up_substSuccVar_rename_add_five (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst substSuccVar))))
+        (Term.rename (fun n : Nat => n + 5) t) =
+      Term.rename (fun n : Nat => n + 5) t := by
+  simpa [Nat.add_assoc] using
+    term_subst_up_up_up_up_substSuccVar_rename_five_succ t
+
+/-- Normalized `+ 6` spelling of the depth-six successor-substitution rule. -/
+theorem term_subst_up_up_up_up_up_substSuccVar_rename_add_six (t : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst (Term.upSubst substSuccVar)))))
+        (Term.rename (fun n : Nat => n + 6) t) =
+      Term.rename (fun n : Nat => n + 6) t := by
+  simpa [Nat.add_assoc] using
+    term_subst_up_up_up_up_up_substSuccVar_rename_six_succ t
 
 /-- PA proves that successor distributes over addition on the left. -/
 theorem BProv_Ax_s_succ_add_all (x : Term) :
@@ -12425,6 +12714,46 @@ theorem BProv_Ax_s_remTermTermAt_of_betaTermTermAt
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hbeta (by simpa [betaTermTermAt, body] using hopened)
 
+/-- Package an explicit beta output into entry existence. -/
+theorem BProv_Ax_s_betaEntryExistsTermAt_of_term
+    {G : List Formula} {out code step idx : Term}
+    (hentry : BProv Ax_s G
+      (betaTermTermAt out code step idx)) :
+    BProv Ax_s G (betaEntryExistsTermAt code step idx) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm out)
+        (betaEntryExistsTermAtBody code step idx)) := by
+    simpa [betaEntryExistsTermAtBody, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      Term.rename_comp, Function.comp_def] using hentry
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := betaEntryExistsTermAtBody code step idx)
+    (t := out)
+    (by simpa [betaEntryExistsTermAt,
+      betaEntryExistsTermAtBody] using hbody)
+
+/-- Eliminate beta-entry existence by opening its output witness. -/
+theorem BProv_Ax_s_betaEntryExistsTermAt_elim_opened
+    {G : List Formula} {code step idx : Term} {target : Formula}
+    (hopened : BProv Ax_s
+      (betaEntryExistsTermAtBody code step idx ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hex : BProv Ax_s G
+      (betaEntryExistsTermAt code step idx)) :
+    BProv Ax_s G target :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [betaEntryExistsTermAt,
+      betaEntryExistsTermAtBody] using hopened)
+
 /-- A CRT code update preserves any beta entry whose modulus divides the
 product term. -/
 theorem BProv_Ax_s_betaTermTermAt_crtExtend_preserve
@@ -16245,6 +16574,25 @@ theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_of_term
     (by simpa [body, betaCodeExtensionExistsTermAt,
       betaCodeExtensionExistsTermAtBody] using hbody)
 
+/-- Eliminate one-entry beta-extension existence by opening its fresh code
+witness. -/
+theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_elim_opened
+    {G : List Formula} {oldCode step target newOut : Term}
+    {goal : Formula}
+    (hopened : BProv Ax_s
+      (betaCodeExtensionExistsTermAtBody
+          oldCode step target newOut ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ goal))
+    (hex : BProv Ax_s G
+      (betaCodeExtensionExistsTermAt
+        oldCode step target newOut)) :
+    BProv Ax_s G goal :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [betaCodeExtensionExistsTermAt,
+      betaCodeExtensionExistsTermAtBody] using hopened)
+
 /-- Eliminate a product's existential inverse certificate to obtain a fresh
 one-entry beta extension code. -/
 theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_of_prefix_inverse
@@ -16849,6 +17197,10 @@ theorem BProv_Ax_s_all_betaPrefixCRTAccumulatorExistsTermAt_of_common
       term_substZero_rename_succ,
       term_subst_up_substZero_rename_two_succ,
       term_subst_up_up_up_substZero_rename_four_succ,
+      term_subst_up_up_up_up_substZero_rename_five_succ,
+      term_subst_up_up_up_up_up_substZero_rename_six_succ,
+      term_subst_up_up_up_up_substZero_rename_add_five,
+      term_subst_up_up_up_up_up_substZero_rename_add_six,
       Term.rename_comp, Function.comp_def, Nat.add_assoc] using hzeroImp
   have hcommonRen : BProv Ax_s (G.map (rename Nat.succ))
       (commonMultipleThroughTermAt
@@ -16917,6 +17269,10 @@ theorem BProv_Ax_s_all_betaPrefixCRTAccumulatorExistsTermAt_of_common
       term_substSuccVar_rename_succ,
       term_subst_up_substSuccVar_rename_two_succ,
       term_subst_up_up_up_substSuccVar_rename_four_succ,
+      term_subst_up_up_up_up_substSuccVar_rename_five_succ,
+      term_subst_up_up_up_up_up_substSuccVar_rename_six_succ,
+      term_subst_up_up_up_up_substSuccVar_rename_add_five,
+      term_subst_up_up_up_up_up_substSuccVar_rename_add_six,
       Term.rename_comp, Function.comp_def, Nat.add_assoc] using himp
   have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
       (imp phi (subst substSuccVar phi)) :=
@@ -23494,6 +23850,115 @@ theorem BProv_Ax_s_betaTermTermAt_of_shift_tail_entry_eq
     BProv_Ax_s_betaTermTermAt_of_eq_index
       (BProv_eqSym hNewIdx) hnewStep'
 
+/- Build the inner output-universal shifted-tail implication at one closed
+index.
+
+The surrounding context contains the current index in slot `idx`.  The code
+and step slots are proved equal to their closed semantic values, while the old
+successor entry is supplied explicitly as semantic data. -/
+/-- Every pair of codes vacuously satisfies the shifted strict prefix at
+bound zero. -/
+theorem BProv_Ax_s_betaShiftPrefixTermAt_zero
+    {G : List Formula} (oldCode oldStep newCode newStep : Term) :
+    BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep newCode newStep Term.zero) := by
+  let antecedent : Formula := ltTermAt (Term.var 0) Term.zero
+  let innerBody : Formula :=
+    imp
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n + 2) oldCode)
+        (Term.rename (fun n => n + 2) oldStep)
+        (Term.succ (Term.var 1)))
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n + 2) newCode)
+        (Term.rename (fun n => n + 2) newStep)
+        (Term.var 1))
+  let body : Formula := imp antecedent (all innerBody)
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) (all innerBody) := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    have hlt : BProv Ax_s C (ltTermAt (Term.var 0) Term.zero) := by
+      have hraw : BProv Ax_s C antecedent :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [antecedent] using hraw
+    have hle : BProv Ax_s C
+        (leTermAt Term.zero (Term.var 0)) :=
+      BProv_Ax_s_leTermAt_zero_left (Term.var 0)
+    have hbot : BProv Ax_s C bot :=
+      BProv_Ax_s_ltTermAt_leTermAt_bot hlt hle
+    exact BProv_botE (B := Ax_s) (G := C)
+      (a := all innerBody) hbot
+  have himp : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    simpa [body] using BProv_impI hbody
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [betaShiftPrefixTermAt, body, antecedent, innerBody,
+    Term.rename] using hall
+
+/-- Package an explicit shifted-prefix code for a fixed new step. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_term
+    {G : List Formula}
+    {oldCode oldStep newCode newStep bound : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep newCode newStep bound)) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep bound) := by
+  let body : Formula :=
+    betaShiftPrefixCodeExistsTermAtBody
+      oldCode oldStep newStep bound
+  have hbody : BProv Ax_s G (subst (instTerm newCode) body) := by
+    simpa [body, betaShiftPrefixCodeExistsTermAtBody,
+      betaShiftPrefixTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hprefix
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := body) (t := newCode)
+    (by simpa [body, betaShiftPrefixCodeExistsTermAt,
+      betaShiftPrefixCodeExistsTermAtBody] using hbody)
+
+/-- Eliminate shifted-prefix code existence by opening its code witness. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_elim_opened
+    {G : List Formula} {oldCode oldStep newStep bound : Term}
+    {target : Formula}
+    (hopened : BProv Ax_s
+      (betaShiftPrefixCodeExistsTermAtBody
+          oldCode oldStep newStep bound ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hex : BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep bound)) :
+    BProv Ax_s G target :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [betaShiftPrefixCodeExistsTermAt,
+      betaShiftPrefixCodeExistsTermAtBody] using hopened)
+
+/-- A shifted strict prefix always has a code witness at bound zero. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_zero
+    {G : List Formula} (oldCode oldStep newStep : Term) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep Term.zero) :=
+  BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_term
+    (BProv_Ax_s_betaShiftPrefixTermAt_zero
+      (G := G) oldCode oldStep Term.zero newStep)
+
 /-- Build the inner output-universal shifted-tail implication at one closed
 index.
 
@@ -29390,6 +29855,1084 @@ theorem BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_succ_of_leTerm
         (Term.succ idxTerm)) :=
   BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm
     hsteps (BProv_Ax_s_leTermAt_succ_succ hle)
+
+/-- Eliminate beta-prefix agreement at an index below its bound. -/
+theorem BProv_Ax_s_betaPrefixAgreementTermAt_entry_of_ltTerm
+    {G : List Formula}
+    {oldCode newCode step bound idx out : Term}
+    (hagreement : BProv Ax_s G
+      (betaPrefixAgreementTermAt oldCode newCode step bound))
+    (hlt : BProv Ax_s G (ltTermAt idx bound))
+    (hold : BProv Ax_s G
+      (betaTermTermAt out oldCode step idx)) :
+    BProv Ax_s G
+      (betaTermTermAt out newCode step idx) := by
+  have hidxRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := idx) hagreement
+  have hidx : BProv Ax_s G
+      (imp (ltTermAt idx bound)
+        (all (imp
+          (betaTermTermAt (Term.var 0)
+            (Term.rename Nat.succ oldCode)
+            (Term.rename Nat.succ step)
+            (Term.rename Nat.succ idx))
+          (betaTermTermAt (Term.var 0)
+            (Term.rename Nat.succ newCode)
+            (Term.rename Nat.succ step)
+            (Term.rename Nat.succ idx))))) := by
+    simpa [betaPrefixAgreementTermAt, ltTermAt, betaTermTermAt,
+      remTermTermAt, betaModTermTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hidxRaw
+  have hall := BProv_mp Ax_s G _ _ hidx hlt
+  have houtRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := out) hall
+  have hout : BProv Ax_s G
+      (imp (betaTermTermAt out oldCode step idx)
+        (betaTermTermAt out newCode step idx)) := by
+    simpa [betaTermTermAt, remTermTermAt, ltTermAt,
+      betaModTermTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using houtRaw
+  exact BProv_mp Ax_s G _ _ hout hold
+
+/-- Project the target entry from a one-entry beta-code extension. -/
+theorem BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt
+    {G : List Formula}
+    {oldCode step target newOut newCode : Term}
+    (hext : BProv Ax_s G
+      (betaCodeExtensionTermAt
+        oldCode step target newOut newCode)) :
+    BProv Ax_s G
+      (betaTermTermAt newOut newCode step target) := by
+  simpa [betaCodeExtensionTermAt] using BProv_andE2 hext
+
+/-- Project prefix agreement from a one-entry beta-code extension. -/
+theorem BProv_Ax_s_betaPrefixAgreementTermAt_of_betaCodeExtensionTermAt
+    {G : List Formula}
+    {oldCode step target newOut newCode : Term}
+    (hext : BProv Ax_s G
+      (betaCodeExtensionTermAt
+        oldCode step target newOut newCode)) :
+    BProv Ax_s G
+      (betaPrefixAgreementTermAt oldCode newCode step target) := by
+  simpa [betaCodeExtensionTermAt] using BProv_andE1 hext
+
+/-- Eliminate a shifted strict-prefix relation at an index below its bound. -/
+theorem BProv_Ax_s_betaShiftPrefixTermAt_entry_of_ltTerm
+    {G : List Formula}
+    {oldCode oldStep newCode newStep bound idx out : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep newCode newStep bound))
+    (hlt : BProv Ax_s G (ltTermAt idx bound))
+    (hold : BProv Ax_s G
+      (betaTermTermAt out oldCode oldStep (Term.succ idx))) :
+    BProv Ax_s G
+      (betaTermTermAt out newCode newStep idx) := by
+  have hidxRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := idx) hprefix
+  have hidx : BProv Ax_s G
+      (imp (ltTermAt idx bound)
+        (all (imp
+          (betaTermTermAt (Term.var 0)
+            (Term.rename Nat.succ oldCode)
+            (Term.rename Nat.succ oldStep)
+            (Term.succ (Term.rename Nat.succ idx)))
+          (betaTermTermAt (Term.var 0)
+            (Term.rename Nat.succ newCode)
+            (Term.rename Nat.succ newStep)
+            (Term.rename Nat.succ idx))))) := by
+    simpa [betaShiftPrefixTermAt, ltTermAt, betaTermTermAt,
+      remTermTermAt, betaModTermTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hidxRaw
+  have hall := BProv_mp Ax_s G _ _ hidx hlt
+  have houtRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := out) hall
+  have hout : BProv Ax_s G
+      (imp
+        (betaTermTermAt out oldCode oldStep (Term.succ idx))
+        (betaTermTermAt out newCode newStep idx)) := by
+    simpa [betaTermTermAt, remTermTermAt, ltTermAt,
+      betaModTermTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using houtRaw
+  exact BProv_mp Ax_s G _ _ hout hold
+
+/-- Pointwise successor merge for shifted prefixes and one-entry code
+extensions. -/
+theorem BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_extension
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound sourceOut extendedCode
+      idx out : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hext : BProv Ax_s G
+      (betaCodeExtensionTermAt
+        currentCode newStep bound sourceOut extendedCode))
+    (hsource : BProv Ax_s G
+      (betaTermTermAt sourceOut oldCode oldStep (Term.succ bound)))
+    (hltSucc : BProv Ax_s G
+      (ltTermAt idx (Term.succ bound)))
+    (hold : BProv Ax_s G
+      (betaTermTermAt out oldCode oldStep (Term.succ idx))) :
+    BProv Ax_s G
+      (betaTermTermAt out extendedCode newStep idx) := by
+  have hcases : BProv Ax_s G
+      (or (ltTermAt idx bound) (eq idx bound)) :=
+    BProv_Ax_s_ltTermAt_succ_right_cases hltSucc
+  have hltBranch : BProv Ax_s (ltTermAt idx bound :: G)
+      (betaTermTermAt out extendedCode newStep idx) := by
+    let C : List Formula := ltTermAt idx bound :: G
+    have hlt : BProv Ax_s C (ltTermAt idx bound) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hprefixC := BProv_context_cons (B := Ax_s)
+      (a := ltTermAt idx bound) hprefix
+    have holdC := BProv_context_cons (B := Ax_s)
+      (a := ltTermAt idx bound) hold
+    have hcurrent : BProv Ax_s C
+        (betaTermTermAt out currentCode newStep idx) :=
+      BProv_Ax_s_betaShiftPrefixTermAt_entry_of_ltTerm
+        hprefixC hlt holdC
+    have hextC := BProv_context_cons (B := Ax_s)
+      (a := ltTermAt idx bound) hext
+    have hagreement : BProv Ax_s C
+        (betaPrefixAgreementTermAt
+          currentCode extendedCode newStep bound) :=
+      BProv_Ax_s_betaPrefixAgreementTermAt_of_betaCodeExtensionTermAt
+        hextC
+    exact BProv_Ax_s_betaPrefixAgreementTermAt_entry_of_ltTerm
+      hagreement hlt hcurrent
+  have heqBranch : BProv Ax_s (eq idx bound :: G)
+      (betaTermTermAt out extendedCode newStep idx) := by
+    let C : List Formula := eq idx bound :: G
+    have heq : BProv Ax_s C (eq idx bound) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hsuccEq : BProv Ax_s C
+        (eq (Term.succ idx) (Term.succ bound)) :=
+      BProv_eq_congr_succ heq
+    have holdC := BProv_context_cons (B := Ax_s)
+      (a := eq idx bound) hold
+    have holdAtBound : BProv Ax_s C
+        (betaTermTermAt out oldCode oldStep (Term.succ bound)) :=
+      BProv_Ax_s_betaTermTermAt_of_eq_index hsuccEq holdC
+    have hsourceC := BProv_context_cons (B := Ax_s)
+      (a := eq idx bound) hsource
+    have houtEq : BProv Ax_s C (eq sourceOut out) :=
+      BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
+        holdAtBound hsourceC
+    have hextC := BProv_context_cons (B := Ax_s)
+      (a := eq idx bound) hext
+    have htarget : BProv Ax_s C
+        (betaTermTermAt sourceOut extendedCode newStep bound) :=
+      BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt hextC
+    have htargetOut : BProv Ax_s C
+        (betaTermTermAt out extendedCode newStep bound) :=
+      BProv_Ax_s_betaTermTermAt_of_eq_output houtEq htarget
+    exact BProv_Ax_s_betaTermTermAt_of_eq_index
+      (BProv_eqSym heq) htargetOut
+  exact BProv_orE hcases hltBranch heqBranch
+
+/-- Extend a shifted strict prefix by one source entry through a one-entry
+beta-code extension. -/
+theorem BProv_Ax_s_betaShiftPrefixTermAt_succ_of_extension
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound sourceOut extendedCode : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hext : BProv Ax_s G
+      (betaCodeExtensionTermAt
+        currentCode newStep bound sourceOut extendedCode))
+    (hsource : BProv Ax_s G
+      (betaTermTermAt sourceOut oldCode oldStep (Term.succ bound))) :
+    BProv Ax_s G
+      (betaShiftPrefixTermAt oldCode oldStep extendedCode newStep
+        (Term.succ bound)) := by
+  let outerAntecedent : Formula :=
+    ltTermAt (Term.var 0)
+      (Term.succ (Term.rename Nat.succ bound))
+  let oldEntry : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n + 2) oldCode)
+      (Term.rename (fun n => n + 2) oldStep)
+      (Term.succ (Term.var 1))
+  let newEntry : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n + 2) extendedCode)
+      (Term.rename (fun n => n + 2) newStep)
+      (Term.var 1)
+  let innerBody : Formula := imp oldEntry newEntry
+  let outerBody : Formula :=
+    imp outerAntecedent (all innerBody)
+  have houterImp : BProv Ax_s (G.map (rename Nat.succ)) outerBody := by
+    let C : List Formula :=
+      outerAntecedent :: G.map (rename Nat.succ)
+    have hinnerImp : BProv Ax_s (C.map (rename Nat.succ))
+        innerBody := by
+      let D : List Formula := oldEntry :: C.map (rename Nat.succ)
+      let oldCode2 : Term := Term.rename (fun n => n + 2) oldCode
+      let oldStep2 : Term := Term.rename (fun n => n + 2) oldStep
+      let currentCode2 : Term := Term.rename (fun n => n + 2) currentCode
+      let newStep2 : Term := Term.rename (fun n => n + 2) newStep
+      let bound2 : Term := Term.rename (fun n => n + 2) bound
+      let sourceOut2 : Term := Term.rename (fun n => n + 2) sourceOut
+      let extendedCode2 : Term := Term.rename (fun n => n + 2) extendedCode
+      have hold : BProv Ax_s D
+          (betaTermTermAt (Term.var 0) oldCode2 oldStep2
+            (Term.succ (Term.var 1))) := by
+        have hraw : BProv Ax_s D oldEntry :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        simpa [oldEntry, oldCode2, oldStep2] using hraw
+      have hltSucc : BProv Ax_s D
+          (ltTermAt (Term.var 1) (Term.succ bound2)) := by
+        have hraw : BProv Ax_s D (rename Nat.succ outerAntecedent) :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+        simpa [outerAntecedent, bound2, ltTermAt,
+          rename, Term.rename, SetTheory.up, Term.rename_comp,
+          Function.comp_def] using hraw
+      have hprefixRen1 : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (betaShiftPrefixTermAt
+              oldCode oldStep currentCode newStep bound)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hprefix Nat.succ
+      have hprefixRen2 : BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ))
+          (rename Nat.succ (rename Nat.succ
+            (betaShiftPrefixTermAt
+              oldCode oldStep currentCode newStep bound))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hprefixRen1 Nat.succ
+      have hprefixD : BProv Ax_s D
+          (betaShiftPrefixTermAt oldCode2 oldStep2
+            currentCode2 newStep2 bound2) := by
+        have h1 := BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ outerAntecedent) hprefixRen2
+        have h2 := BProv_context_cons (B := Ax_s)
+          (a := oldEntry) h1
+        simpa [D, C, oldCode2, oldStep2, currentCode2,
+          newStep2, bound2, betaShiftPrefixTermAt,
+          betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+          rename, Term.rename, SetTheory.up, Term.rename_comp,
+          Function.comp_def, Nat.add_assoc] using h2
+      have hextRen1 : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (betaCodeExtensionTermAt
+              currentCode newStep bound sourceOut extendedCode)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hext Nat.succ
+      have hextRen2 : BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ))
+          (rename Nat.succ (rename Nat.succ
+            (betaCodeExtensionTermAt
+              currentCode newStep bound sourceOut extendedCode))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hextRen1 Nat.succ
+      have hextD : BProv Ax_s D
+          (betaCodeExtensionTermAt currentCode2 newStep2 bound2
+            sourceOut2 extendedCode2) := by
+        have h1 := BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ outerAntecedent) hextRen2
+        have h2 := BProv_context_cons (B := Ax_s)
+          (a := oldEntry) h1
+        simpa [D, C, currentCode2, newStep2, bound2,
+          sourceOut2, extendedCode2, betaCodeExtensionTermAt,
+          betaPrefixAgreementTermAt, betaTermTermAt,
+          remTermTermAt, ltTermAt, betaModTermTerm,
+          rename, Term.rename, SetTheory.up, Term.rename_comp,
+          Function.comp_def, Nat.add_assoc] using h2
+      have hsourceRen1 : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (betaTermTermAt sourceOut oldCode oldStep
+              (Term.succ bound))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hsource Nat.succ
+      have hsourceRen2 : BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ))
+          (rename Nat.succ (rename Nat.succ
+            (betaTermTermAt sourceOut oldCode oldStep
+              (Term.succ bound)))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hsourceRen1 Nat.succ
+      have hsourceD : BProv Ax_s D
+          (betaTermTermAt sourceOut2 oldCode2 oldStep2
+            (Term.succ bound2)) := by
+        have h1 := BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ outerAntecedent) hsourceRen2
+        have h2 := BProv_context_cons (B := Ax_s)
+          (a := oldEntry) h1
+        simpa [D, C, sourceOut2, oldCode2, oldStep2, bound2,
+          betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+          rename, Term.rename, SetTheory.up, Term.rename_comp,
+          Function.comp_def, Nat.add_assoc] using h2
+      have hnew : BProv Ax_s D
+          (betaTermTermAt (Term.var 0) extendedCode2 newStep2
+            (Term.var 1)) :=
+        BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_extension
+          hprefixD hextD hsourceD hltSucc hold
+      have himp : BProv Ax_s (C.map (rename Nat.succ))
+          (imp oldEntry newEntry) := by
+        have hraw := BProv_impI hnew
+        simpa [D, newEntry, extendedCode2, newStep2] using hraw
+      simpa [innerBody] using himp
+    have hinnerAll : BProv Ax_s C (all innerBody) :=
+      BProv_allI_of_sentences (B := Ax_s)
+        (fun f hf => sentence_ax_s (f := f) hf) hinnerImp
+    have himp : BProv Ax_s (G.map (rename Nat.succ))
+        (imp outerAntecedent (all innerBody)) := by
+      simpa [C] using BProv_impI hinnerAll
+    simpa [outerBody] using himp
+  have hall : BProv Ax_s G (all outerBody) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) houterImp
+  simpa [betaShiftPrefixTermAt, outerBody, outerAntecedent,
+    innerBody, oldEntry, newEntry, Term.rename, SetTheory.up] using hall
+
+/-- Pointwise successor merge when the source has no beta output at the new
+endpoint. -/
+theorem BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_not_exists
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound idx out : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hnone : BProv Ax_s G
+      (imp (betaEntryExistsTermAt
+        oldCode oldStep (Term.succ bound)) bot))
+    (hltSucc : BProv Ax_s G
+      (ltTermAt idx (Term.succ bound)))
+    (hold : BProv Ax_s G
+      (betaTermTermAt out oldCode oldStep (Term.succ idx))) :
+    BProv Ax_s G
+      (betaTermTermAt out currentCode newStep idx) := by
+  have hcases : BProv Ax_s G
+      (or (ltTermAt idx bound) (eq idx bound)) :=
+    BProv_Ax_s_ltTermAt_succ_right_cases hltSucc
+  have hltBranch : BProv Ax_s (ltTermAt idx bound :: G)
+      (betaTermTermAt out currentCode newStep idx) := by
+    let C : List Formula := ltTermAt idx bound :: G
+    have hlt : BProv Ax_s C (ltTermAt idx bound) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    exact BProv_Ax_s_betaShiftPrefixTermAt_entry_of_ltTerm
+      (BProv_context_cons (B := Ax_s)
+        (a := ltTermAt idx bound) hprefix)
+      hlt
+      (BProv_context_cons (B := Ax_s)
+        (a := ltTermAt idx bound) hold)
+  have heqBranch : BProv Ax_s (eq idx bound :: G)
+      (betaTermTermAt out currentCode newStep idx) := by
+    let C : List Formula := eq idx bound :: G
+    have heq : BProv Ax_s C (eq idx bound) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have holdC := BProv_context_cons (B := Ax_s)
+      (a := eq idx bound) hold
+    have holdAtBound : BProv Ax_s C
+        (betaTermTermAt out oldCode oldStep (Term.succ bound)) :=
+      BProv_Ax_s_betaTermTermAt_of_eq_index
+        (BProv_eq_congr_succ heq) holdC
+    have hex : BProv Ax_s C
+        (betaEntryExistsTermAt
+          oldCode oldStep (Term.succ bound)) :=
+      BProv_Ax_s_betaEntryExistsTermAt_of_term holdAtBound
+    have hnoneC := BProv_context_cons (B := Ax_s)
+      (a := eq idx bound) hnone
+    have hbot : BProv Ax_s C bot :=
+      BProv_mp Ax_s C _ _ hnoneC hex
+    exact BProv_botE (B := Ax_s) (G := C)
+      (a := betaTermTermAt out currentCode newStep idx) hbot
+  exact BProv_orE hcases hltBranch heqBranch
+
+/-- Extend a shifted strict prefix vacuously when the source has no beta
+output at the new endpoint. -/
+theorem BProv_Ax_s_betaShiftPrefixTermAt_succ_of_not_exists
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hnone : BProv Ax_s G
+      (imp (betaEntryExistsTermAt
+        oldCode oldStep (Term.succ bound)) bot)) :
+    BProv Ax_s G
+      (betaShiftPrefixTermAt oldCode oldStep currentCode newStep
+        (Term.succ bound)) := by
+  let outerAntecedent : Formula :=
+    ltTermAt (Term.var 0)
+      (Term.succ (Term.rename Nat.succ bound))
+  let oldEntry : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n + 2) oldCode)
+      (Term.rename (fun n => n + 2) oldStep)
+      (Term.succ (Term.var 1))
+  let newEntry : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n + 2) currentCode)
+      (Term.rename (fun n => n + 2) newStep)
+      (Term.var 1)
+  let innerBody : Formula := imp oldEntry newEntry
+  let outerBody : Formula :=
+    imp outerAntecedent (all innerBody)
+  have houterImp : BProv Ax_s (G.map (rename Nat.succ)) outerBody := by
+    let C : List Formula :=
+      outerAntecedent :: G.map (rename Nat.succ)
+    have hinnerImp : BProv Ax_s (C.map (rename Nat.succ))
+        innerBody := by
+      let D : List Formula := oldEntry :: C.map (rename Nat.succ)
+      let oldCode2 : Term := Term.rename (fun n => n + 2) oldCode
+      let oldStep2 : Term := Term.rename (fun n => n + 2) oldStep
+      let currentCode2 : Term := Term.rename (fun n => n + 2) currentCode
+      let newStep2 : Term := Term.rename (fun n => n + 2) newStep
+      let bound2 : Term := Term.rename (fun n => n + 2) bound
+      have hold : BProv Ax_s D
+          (betaTermTermAt (Term.var 0) oldCode2 oldStep2
+            (Term.succ (Term.var 1))) := by
+        have hraw : BProv Ax_s D oldEntry :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        simpa [oldEntry, oldCode2, oldStep2] using hraw
+      have hltSucc : BProv Ax_s D
+          (ltTermAt (Term.var 1) (Term.succ bound2)) := by
+        have hraw : BProv Ax_s D (rename Nat.succ outerAntecedent) :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+        simpa [outerAntecedent, bound2, ltTermAt,
+          rename, Term.rename, SetTheory.up, Term.rename_comp,
+          Function.comp_def] using hraw
+      have hprefixRen1 : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (betaShiftPrefixTermAt
+              oldCode oldStep currentCode newStep bound)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hprefix Nat.succ
+      have hprefixRen2 : BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ))
+          (rename Nat.succ (rename Nat.succ
+            (betaShiftPrefixTermAt
+              oldCode oldStep currentCode newStep bound))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hprefixRen1 Nat.succ
+      have hprefixD : BProv Ax_s D
+          (betaShiftPrefixTermAt oldCode2 oldStep2
+            currentCode2 newStep2 bound2) := by
+        have h1 := BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ outerAntecedent) hprefixRen2
+        have h2 := BProv_context_cons (B := Ax_s)
+          (a := oldEntry) h1
+        simpa [D, C, oldCode2, oldStep2, currentCode2,
+          newStep2, bound2, betaShiftPrefixTermAt,
+          betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+          rename, Term.rename, SetTheory.up, Term.rename_comp,
+          Function.comp_def, Nat.add_assoc] using h2
+      have hnoneRen1 : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (imp (betaEntryExistsTermAt
+              oldCode oldStep (Term.succ bound)) bot)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hnone Nat.succ
+      have hnoneRen2 : BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ))
+          (rename Nat.succ (rename Nat.succ
+            (imp (betaEntryExistsTermAt
+              oldCode oldStep (Term.succ bound)) bot))) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hnoneRen1 Nat.succ
+      have hnoneD : BProv Ax_s D
+          (imp (betaEntryExistsTermAt oldCode2 oldStep2
+            (Term.succ bound2)) bot) := by
+        have h1 := BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ outerAntecedent) hnoneRen2
+        have h2 := BProv_context_cons (B := Ax_s)
+          (a := oldEntry) h1
+        simpa [D, C, oldCode2, oldStep2, bound2,
+          betaEntryExistsTermAt, betaTermTermAt,
+          remTermTermAt, ltTermAt, betaModTermTerm,
+          rename, Term.rename, SetTheory.up, Term.rename_comp,
+          Function.comp_def, Nat.add_assoc] using h2
+      have hnew : BProv Ax_s D
+          (betaTermTermAt (Term.var 0) currentCode2 newStep2
+            (Term.var 1)) :=
+        BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_not_exists
+          hprefixD hnoneD hltSucc hold
+      have himp : BProv Ax_s (C.map (rename Nat.succ))
+          (imp oldEntry newEntry) := by
+        have hraw := BProv_impI hnew
+        simpa [D, newEntry, currentCode2, newStep2] using hraw
+      simpa [innerBody] using himp
+    have hinnerAll : BProv Ax_s C (all innerBody) :=
+      BProv_allI_of_sentences (B := Ax_s)
+        (fun f hf => sentence_ax_s (f := f) hf) hinnerImp
+    have himp : BProv Ax_s (G.map (rename Nat.succ))
+        (imp outerAntecedent (all innerBody)) := by
+      simpa [C] using BProv_impI hinnerAll
+    simpa [outerBody] using himp
+  have hall : BProv Ax_s G (all outerBody) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) houterImp
+  simpa [betaShiftPrefixTermAt, outerBody, outerAntecedent,
+    innerBody, oldEntry, newEntry, Term.rename, SetTheory.up] using hall
+
+/-- Extend an explicit shifted-prefix code at an endpoint carrying a source
+beta output. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_source
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound sourceOut : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hsource : BProv Ax_s G
+      (betaTermTermAt sourceOut oldCode oldStep (Term.succ bound)))
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound newStep))
+    (hlarge : BProv Ax_s G
+      (leTermAt (Term.succ oldCode) newStep)) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep (Term.succ bound)) := by
+  have hbound : BProv Ax_s G
+      (ltTermAt sourceOut (betaModTermTerm newStep bound)) :=
+    BProv_Ax_s_ltTermAt_betaMod_of_betaTermTermAt_le_step
+      hsource hlarge
+  have hextEx : BProv Ax_s G
+      (betaCodeExtensionExistsTermAt
+        currentCode newStep bound sourceOut) :=
+    BProv_Ax_s_betaCodeExtensionExistsTermAt_of_common
+      hcommon hbound
+  let goal : Formula :=
+    betaShiftPrefixCodeExistsTermAt
+      oldCode oldStep newStep (Term.succ bound)
+  refine BProv_Ax_s_betaCodeExtensionExistsTermAt_elim_opened
+    (G := G) (oldCode := currentCode) (step := newStep)
+    (target := bound) (newOut := sourceOut) (goal := goal)
+    ?_ hextEx
+  let extBody : Formula :=
+    betaCodeExtensionExistsTermAtBody
+      currentCode newStep bound sourceOut
+  let D : List Formula := extBody :: G.map (rename Nat.succ)
+  let oldCode1 : Term := Term.rename Nat.succ oldCode
+  let oldStep1 : Term := Term.rename Nat.succ oldStep
+  let currentCode1 : Term := Term.rename Nat.succ currentCode
+  let newStep1 : Term := Term.rename Nat.succ newStep
+  let bound1 : Term := Term.rename Nat.succ bound
+  let sourceOut1 : Term := Term.rename Nat.succ sourceOut
+  have hext : BProv Ax_s D
+      (betaCodeExtensionTermAt currentCode1 newStep1 bound1
+        sourceOut1 (Term.var 0)) := by
+    have hraw : BProv Ax_s D extBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [extBody, betaCodeExtensionExistsTermAtBody,
+      currentCode1, newStep1, bound1, sourceOut1] using hraw
+  have hprefixRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaShiftPrefixTermAt
+          oldCode oldStep currentCode newStep bound)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hprefix Nat.succ
+  have hprefixD : BProv Ax_s D
+      (betaShiftPrefixTermAt
+        oldCode1 oldStep1 currentCode1 newStep1 bound1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := extBody) hprefixRen
+    simpa [D, oldCode1, oldStep1, currentCode1, newStep1,
+      bound1, betaShiftPrefixTermAt,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hsourceRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaTermTermAt sourceOut oldCode oldStep
+          (Term.succ bound))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hsource Nat.succ
+  have hsourceD : BProv Ax_s D
+      (betaTermTermAt sourceOut1 oldCode1 oldStep1
+        (Term.succ bound1)) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := extBody) hsourceRen
+    simpa [D, sourceOut1, oldCode1, oldStep1, bound1,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hnext : BProv Ax_s D
+      (betaShiftPrefixTermAt oldCode1 oldStep1
+        (Term.var 0) newStep1 (Term.succ bound1)) :=
+    BProv_Ax_s_betaShiftPrefixTermAt_succ_of_extension
+      hprefixD hext hsourceD
+  have hex : BProv Ax_s D
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode1 oldStep1 newStep1 (Term.succ bound1)) :=
+    BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_term hnext
+  simpa [goal, D, extBody, oldCode1, oldStep1, currentCode1,
+    newStep1, bound1, sourceOut1,
+    betaCodeExtensionExistsTermAtBody,
+    betaShiftPrefixCodeExistsTermAt,
+    betaShiftPrefixTermAt, betaTermTermAt,
+    remTermTermAt, ltTermAt, betaModTermTerm,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hex
+
+/-- Preserve an explicit shifted-prefix code through a vacuous endpoint. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_not_exists
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hnone : BProv Ax_s G
+      (imp (betaEntryExistsTermAt
+        oldCode oldStep (Term.succ bound)) bot)) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep (Term.succ bound)) :=
+  BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_term
+    (BProv_Ax_s_betaShiftPrefixTermAt_succ_of_not_exists
+      hprefix hnone)
+
+/-- Extend an explicit shifted-prefix code when the source endpoint has some
+beta output. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_entry_exists
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hentryEx : BProv Ax_s G
+      (betaEntryExistsTermAt
+        oldCode oldStep (Term.succ bound)))
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound newStep))
+    (hlarge : BProv Ax_s G
+      (leTermAt (Term.succ oldCode) newStep)) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep (Term.succ bound)) := by
+  let goal : Formula :=
+    betaShiftPrefixCodeExistsTermAt
+      oldCode oldStep newStep (Term.succ bound)
+  refine BProv_Ax_s_betaEntryExistsTermAt_elim_opened
+    (G := G) (code := oldCode) (step := oldStep)
+    (idx := Term.succ bound) (target := goal) ?_ hentryEx
+  let entryBody : Formula :=
+    betaEntryExistsTermAtBody oldCode oldStep (Term.succ bound)
+  let D : List Formula := entryBody :: G.map (rename Nat.succ)
+  let oldCode1 : Term := Term.rename Nat.succ oldCode
+  let oldStep1 : Term := Term.rename Nat.succ oldStep
+  let currentCode1 : Term := Term.rename Nat.succ currentCode
+  let newStep1 : Term := Term.rename Nat.succ newStep
+  let bound1 : Term := Term.rename Nat.succ bound
+  have hsource : BProv Ax_s D
+      (betaTermTermAt (Term.var 0) oldCode1 oldStep1
+        (Term.succ bound1)) := by
+    have hraw : BProv Ax_s D entryBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [entryBody, betaEntryExistsTermAtBody,
+      oldCode1, oldStep1, bound1,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hprefixRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaShiftPrefixTermAt
+          oldCode oldStep currentCode newStep bound)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hprefix Nat.succ
+  have hprefixD : BProv Ax_s D
+      (betaShiftPrefixTermAt
+        oldCode1 oldStep1 currentCode1 newStep1 bound1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := entryBody) hprefixRen
+    simpa [D, oldCode1, oldStep1, currentCode1, newStep1,
+      bound1, betaShiftPrefixTermAt,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hcommonRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (commonMultipleThroughTermAt bound newStep)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcommon Nat.succ
+  have hcommonD : BProv Ax_s D
+      (commonMultipleThroughTermAt bound1 newStep1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := entryBody) hcommonRen
+    simpa [D, bound1, newStep1, commonMultipleThroughTermAt,
+      dvdTermTermAt, ltTermAt,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (leTermAt (Term.succ oldCode) newStep)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlarge Nat.succ
+  have hlargeD : BProv Ax_s D
+      (leTermAt (Term.succ oldCode1) newStep1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := entryBody) hlargeRen
+    simpa [D, oldCode1, newStep1, leTermAt,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hnext : BProv Ax_s D
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode1 oldStep1 newStep1 (Term.succ bound1)) :=
+    BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_source
+      hprefixD hsource hcommonD hlargeD
+  simpa [goal, D, entryBody, oldCode1, oldStep1, currentCode1,
+    newStep1, bound1, betaEntryExistsTermAtBody,
+    betaShiftPrefixCodeExistsTermAt,
+    betaShiftPrefixTermAt, betaTermTermAt,
+    remTermTermAt, ltTermAt, betaModTermTerm,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hnext
+
+/-- Classical endpoint split for extending an explicit shifted-prefix code. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_current
+    {G : List Formula}
+    {oldCode oldStep currentCode newStep bound : Term}
+    (hprefix : BProv Ax_s G
+      (betaShiftPrefixTermAt
+        oldCode oldStep currentCode newStep bound))
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound newStep))
+    (hlarge : BProv Ax_s G
+      (leTermAt (Term.succ oldCode) newStep)) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep (Term.succ bound)) := by
+  let entryEx : Formula :=
+    betaEntryExistsTermAt oldCode oldStep (Term.succ bound)
+  have hem : BProv Ax_s G (or entryEx (imp entryEx bot)) :=
+    BProv_of_Prov (B := Ax_s) (Prov.P_lem G entryEx)
+  have hentryBranch : BProv Ax_s (entryEx :: G)
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep (Term.succ bound)) :=
+    BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_entry_exists
+      (BProv_context_cons (B := Ax_s) (a := entryEx) hprefix)
+      (by
+        have hraw : BProv Ax_s (entryEx :: G) entryEx :=
+          BProv_ass (B := Ax_s) (G := entryEx :: G) (by simp)
+        simpa [entryEx] using hraw)
+      (BProv_context_cons (B := Ax_s) (a := entryEx) hcommon)
+      (BProv_context_cons (B := Ax_s) (a := entryEx) hlarge)
+  have hnoneBranch : BProv Ax_s (imp entryEx bot :: G)
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep (Term.succ bound)) :=
+    BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_not_exists
+      (BProv_context_cons (B := Ax_s) (a := imp entryEx bot) hprefix)
+      (by
+        have hraw : BProv Ax_s (imp entryEx bot :: G)
+            (imp entryEx bot) :=
+          BProv_ass (B := Ax_s) (G := imp entryEx bot :: G) (by simp)
+        simpa [entryEx] using hraw)
+  exact BProv_orE hem hentryBranch hnoneBranch
+
+/-- Existential one-step rule for shifted-prefix code construction. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ
+    {G : List Formula}
+    {oldCode oldStep newStep bound : Term}
+    (hex : BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep bound))
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound newStep))
+    (hlarge : BProv Ax_s G
+      (leTermAt (Term.succ oldCode) newStep)) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep (Term.succ bound)) := by
+  let goal : Formula :=
+    betaShiftPrefixCodeExistsTermAt
+      oldCode oldStep newStep (Term.succ bound)
+  refine BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_elim_opened
+    (G := G) (oldCode := oldCode) (oldStep := oldStep)
+    (newStep := newStep) (bound := bound) (target := goal)
+    ?_ hex
+  let prefixBody : Formula :=
+    betaShiftPrefixCodeExistsTermAtBody
+      oldCode oldStep newStep bound
+  let D : List Formula := prefixBody :: G.map (rename Nat.succ)
+  let oldCode1 : Term := Term.rename Nat.succ oldCode
+  let oldStep1 : Term := Term.rename Nat.succ oldStep
+  let newStep1 : Term := Term.rename Nat.succ newStep
+  let bound1 : Term := Term.rename Nat.succ bound
+  have hprefix : BProv Ax_s D
+      (betaShiftPrefixTermAt
+        oldCode1 oldStep1 (Term.var 0) newStep1 bound1) := by
+    have hraw : BProv Ax_s D prefixBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [prefixBody, betaShiftPrefixCodeExistsTermAtBody,
+      oldCode1, oldStep1, newStep1, bound1] using hraw
+  have hcommonRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (commonMultipleThroughTermAt bound newStep)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcommon Nat.succ
+  have hcommonD : BProv Ax_s D
+      (commonMultipleThroughTermAt bound1 newStep1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := prefixBody) hcommonRen
+    simpa [D, bound1, newStep1, commonMultipleThroughTermAt,
+      dvdTermTermAt, ltTermAt,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (leTermAt (Term.succ oldCode) newStep)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlarge Nat.succ
+  have hlargeD : BProv Ax_s D
+      (leTermAt (Term.succ oldCode1) newStep1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := prefixBody) hlargeRen
+    simpa [D, oldCode1, newStep1, leTermAt,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hnext : BProv Ax_s D
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode1 oldStep1 newStep1 (Term.succ bound1)) :=
+    BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_current
+      hprefix hcommonD hlargeD
+  simpa [goal, D, prefixBody, oldCode1, oldStep1, newStep1, bound1,
+    betaShiftPrefixCodeExistsTermAtBody,
+    betaShiftPrefixCodeExistsTermAt,
+    betaShiftPrefixTermAt, betaTermTermAt,
+    remTermTermAt, ltTermAt, betaModTermTerm,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hnext
+
+/-- Under one fixed coding step, PA constructs shifted-prefix codes through
+every bound not exceeding the step's certified final bound. -/
+theorem BProv_Ax_s_all_betaShiftPrefixCodeExistsTermAt_of_codingStep
+    {G : List Formula}
+    {oldCode oldStep newStep finalBound : Term}
+    (hcoding : BProv Ax_s G
+      (betaCodingStepTermAt finalBound oldCode newStep)) :
+    BProv Ax_s G
+      (all (imp
+        (leTermAt (Term.var 0) (Term.rename Nat.succ finalBound))
+        (betaShiftPrefixCodeExistsTermAt
+          (Term.rename Nat.succ oldCode)
+          (Term.rename Nat.succ oldStep)
+          (Term.rename Nat.succ newStep)
+          (Term.var 0)))) := by
+  let phi : Formula :=
+    imp
+      (leTermAt (Term.var 0) (Term.rename Nat.succ finalBound))
+      (betaShiftPrefixCodeExistsTermAt
+        (Term.rename Nat.succ oldCode)
+        (Term.rename Nat.succ oldStep)
+        (Term.rename Nat.succ newStep)
+        (Term.var 0))
+  have hbase : BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep Term.zero) :=
+    BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_zero
+      oldCode oldStep newStep
+  have hzeroImp : BProv Ax_s G
+      (imp (leTermAt Term.zero finalBound)
+        (betaShiftPrefixCodeExistsTermAt
+          oldCode oldStep newStep Term.zero)) :=
+    BProv_impI (BProv_context_cons (B := Ax_s) hbase)
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    simpa [phi, betaShiftPrefixCodeExistsTermAt,
+      betaShiftPrefixTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_substZero_rename_succ,
+      term_subst_up_substZero_rename_two_succ,
+      term_subst_up_up_up_substZero_rename_four_succ,
+      term_subst_up_up_up_up_substZero_rename_five_succ,
+      term_subst_up_up_up_up_up_substZero_rename_six_succ,
+      term_subst_up_up_up_up_substZero_rename_add_five,
+      term_subst_up_up_up_up_up_substZero_rename_add_six,
+      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hzeroImp
+  have hcodingRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaCodingStepTermAt finalBound oldCode newStep)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcoding Nat.succ
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    let C : List Formula := phi :: G.map (rename Nat.succ)
+    let oldCode1 : Term := Term.rename Nat.succ oldCode
+    let oldStep1 : Term := Term.rename Nat.succ oldStep
+    let newStep1 : Term := Term.rename Nat.succ newStep
+    let finalBound1 : Term := Term.rename Nat.succ finalBound
+    let leSucc : Formula :=
+      leTermAt (Term.succ (Term.var 0)) finalBound1
+    let prefixSucc : Formula :=
+      betaShiftPrefixCodeExistsTermAt
+        oldCode1 oldStep1 newStep1 (Term.succ (Term.var 0))
+    let D : List Formula := leSucc :: C
+    have hleSucc : BProv Ax_s D leSucc :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    have hlePred : BProv Ax_s D
+        (leTermAt (Term.var 0) finalBound1) :=
+      BProv_Ax_s_leTermAt_pred_of_succ_le hleSucc
+    have hihRaw : BProv Ax_s D phi :=
+      BProv_context_cons (B := Ax_s)
+        (a := leSucc)
+        (BProv_ass (B := Ax_s) (G := C) (by simp [C]))
+    have hih : BProv Ax_s D
+        (imp (leTermAt (Term.var 0) finalBound1)
+          (betaShiftPrefixCodeExistsTermAt
+            oldCode1 oldStep1 newStep1 (Term.var 0))) := by
+      simpa [phi, oldCode1, oldStep1, newStep1, finalBound1] using hihRaw
+    have hex : BProv Ax_s D
+        (betaShiftPrefixCodeExistsTermAt
+          oldCode1 oldStep1 newStep1 (Term.var 0)) :=
+      BProv_mp Ax_s D _ _ hih hlePred
+    have hcodingC : BProv Ax_s C
+        (betaCodingStepTermAt
+          finalBound1 oldCode1 newStep1) := by
+      have hraw := BProv_context_cons (B := Ax_s)
+        (a := phi) hcodingRen
+      simpa [C, oldCode1, newStep1, finalBound1,
+        betaCodingStepTermAt, commonMultipleThroughTermAt,
+        dvdTermTermAt, ltTermAt, leTermAt,
+        rename, Term.rename, SetTheory.up, Term.rename_comp,
+        Function.comp_def] using hraw
+    have hcodingD := BProv_context_cons (B := Ax_s)
+      (a := leSucc) hcodingC
+    have hcommonFinal : BProv Ax_s D
+        (commonMultipleThroughTermAt finalBound1 newStep1) := by
+      simpa [betaCodingStepTermAt] using BProv_andE1 hcodingD
+    have hlarge : BProv Ax_s D
+        (leTermAt (Term.succ oldCode1) newStep1) := by
+      simpa [betaCodingStepTermAt] using BProv_andE2 hcodingD
+    have hcommon : BProv Ax_s D
+        (commonMultipleThroughTermAt (Term.var 0) newStep1) :=
+      BProv_Ax_s_commonMultipleThroughTermAt_of_le
+        hcommonFinal hlePred
+    have hnext : BProv Ax_s D prefixSucc := by
+      simpa [prefixSucc] using
+        BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ
+          hex hcommon hlarge
+    have himp : BProv Ax_s C (imp leSucc prefixSucc) :=
+      BProv_impI hnext
+    simpa [C, oldCode1, oldStep1, newStep1, finalBound1,
+      leSucc, prefixSucc, phi,
+      betaShiftPrefixCodeExistsTermAt,
+      betaShiftPrefixTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_substSuccVar_rename_succ,
+      term_subst_up_substSuccVar_rename_two_succ,
+      term_subst_up_up_up_substSuccVar_rename_four_succ,
+      term_subst_up_up_up_up_substSuccVar_rename_five_succ,
+      term_subst_up_up_up_up_up_substSuccVar_rename_six_succ,
+      term_subst_up_up_up_up_substSuccVar_rename_add_five,
+      term_subst_up_up_up_up_up_substSuccVar_rename_add_six,
+      Term.rename_comp, Function.comp_def, Nat.add_assoc] using himp
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hindEmpty : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename
+        (Ax_s_induction phi) (fun n : Nat => n)
+  have hind : BProv Ax_s G (inductionForm phi) :=
+    BProv_mono Ax_s [] G (inductionForm phi)
+      (fun x hx => by cases hx) hindEmpty
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsuccAll
+
+/-- Instantiate the fixed-step shifted-prefix construction at its certified
+final bound. -/
+theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_codingStep
+    {G : List Formula}
+    {oldCode oldStep newStep finalBound : Term}
+    (hcoding : BProv Ax_s G
+      (betaCodingStepTermAt finalBound oldCode newStep)) :
+    BProv Ax_s G
+      (betaShiftPrefixCodeExistsTermAt
+        oldCode oldStep newStep finalBound) := by
+  have hall :=
+    BProv_Ax_s_all_betaShiftPrefixCodeExistsTermAt_of_codingStep
+      (G := G) (oldCode := oldCode) (oldStep := oldStep)
+      (newStep := newStep) (finalBound := finalBound) hcoding
+  have himpRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := finalBound) hall
+  have himp : BProv Ax_s G
+      (imp (leTermAt finalBound finalBound)
+        (betaShiftPrefixCodeExistsTermAt
+          oldCode oldStep newStep finalBound)) := by
+    simpa [betaShiftPrefixCodeExistsTermAt,
+      betaShiftPrefixTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      Term.rename_comp, Function.comp_def] using himpRaw
+  exact BProv_mp Ax_s G _ _ himp
+    (BProv_Ax_s_leTermAt_refl finalBound)
 
 /-- Eliminate a shifted beta-tail relation at a bounded PA index term.
 
