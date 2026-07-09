@@ -34,3 +34,4 @@ CoqProofs/A198683N12Bounds.v
 CoqProofs/A198683Complex.v
 CoqProofs/A198683N12ComplexTowers.v
 CoqProofs/A198683N12Certificate.v
+CoqProofs/A198683N12CertificateC.v
