@@ -30197,6 +30197,29 @@ def strictSuccOpenedHighDoubleLowOddMemContext : List Formula :=
 def strictSuccOpenedHighDoubleLowOddMemTarget : Formula :=
   hfMemTermAt 1 (Term.succ (Term.var 7))
 
+/-- The natural witness term used after opening an existing distinguishing
+witness: if `x` distinguished the predecessor code, use `S x`. -/
+def strictHighOddSuccWitnessTerm : Term :=
+  Term.succ (Term.var 0)
+
+/-- Positive membership half obtained by using `S x` as the opened
+distinguishing witness for an arbitrary target high-code term. -/
+def succOpenedWitnessMemTermFormula (highCode : Term) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (hfMemTermAt 0 (Term.rename Nat.succ highCode))
+
+/-- Low-membership assumption obtained by using `S x` as the opened
+distinguishing witness for an arbitrary target low slot. -/
+def succOpenedWitnessLowMemFormula (low : Nat) : Formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm) (hfMemAt 0 (low+1))
+
+/-- Body proving that `S x` distinguishes an arbitrary high-code term from an
+arbitrary low slot. -/
+def succOpenedWitnessBodyFormula (highCode : Term) (low : Nat) :
+    Formula :=
+  and (succOpenedWitnessMemTermFormula highCode)
+    (imp (succOpenedWitnessLowMemFormula low) bot)
+
 /-- Common carry target for the two opened odd-high strict successor branches.
 
 The original high half is the fresh slot `3` after the nested totality
@@ -30222,6 +30245,71 @@ def strictSuccOpenedHighOddLowOddOpenedIHContext : List Formula :=
 shifted odd-high strict branch. -/
 def strictSuccOpenedHighOddOpenedIHTarget : Formula :=
   rename Nat.succ strictSuccOpenedHighOddCarryTarget
+
+/-- High-code term in the shifted odd-high opened-IH target. -/
+def strictSuccOpenedHighOddOpenedIHHighCode : Term :=
+  Term.add (Term.succ (Term.var 4)) (Term.succ (Term.var 4))
+
+/-- Low slot in the shifted odd-high opened-IH target. -/
+def strictSuccOpenedHighOddOpenedIHLow : Nat :=
+  5
+
+/-- Positive `S x` membership obligation for the shifted odd-high opened-IH
+target. -/
+def strictSuccOpenedHighOddOpenedWitnessSuccMemFormula : Formula :=
+  succOpenedWitnessMemTermFormula strictSuccOpenedHighOddOpenedIHHighCode
+
+/-- Low-membership assumption to refute for the shifted odd-high opened-IH
+target. -/
+def strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula : Formula :=
+  succOpenedWitnessLowMemFormula strictSuccOpenedHighOddOpenedIHLow
+
+/-- Existential distinguisher constructor that uses `S x` as the witness.
+
+The high side is an arbitrary term and the low side is an arbitrary slot; the
+caller supplies the positive membership half and the refutation of the
+corresponding low-membership assumption. -/
+theorem BProv_succOpenedWitness_hfSomeDistinguishesTermAt
+    {B : Formula → Prop} {G : List Formula}
+    {highCode : Term} {low : Nat}
+    (hmem : BProv B G (succOpenedWitnessMemTermFormula highCode))
+    (hlowBot : BProv B (succOpenedWitnessLowMemFormula low :: G) bot) :
+    BProv B G (hfSomeDistinguishesTermAt highCode low) := by
+  let body : Formula :=
+    hfDistinguishesTermAt 0 (Term.rename Nat.succ highCode) (low+1)
+  have himp : BProv B G (imp (succOpenedWitnessLowMemFormula low) bot) :=
+    BProv_impI hlowBot
+  have hbody : BProv B G (succOpenedWitnessBodyFormula highCode low) :=
+    BProv_andI hmem himp
+  have hinst : BProv B G
+      (subst (instTerm strictHighOddSuccWitnessTerm) body) := by
+    simpa [body, succOpenedWitnessBodyFormula,
+      succOpenedWitnessMemTermFormula, succOpenedWitnessLowMemFormula,
+      hfDistinguishesTermAt, subst] using hbody
+  simpa [body, hfSomeDistinguishesTermAt] using
+    (BProv_exI (B := B) (G := G) (a := body)
+      (t := strictHighOddSuccWitnessTerm) hinst)
+
+/-- Shifted odd-high opened-IH target from the explicit `S x` membership and
+low-refutation obligations. -/
+theorem BProv_Ax_s_strictSuccOpenedHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
+    {G : List Formula}
+    (hmem : BProv Ax_s G
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hlowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula :: G) bot) :
+    BProv Ax_s G strictSuccOpenedHighOddOpenedIHTarget := by
+  have hsome : BProv Ax_s G
+      (hfSomeDistinguishesTermAt
+        strictSuccOpenedHighOddOpenedIHHighCode
+        strictSuccOpenedHighOddOpenedIHLow) :=
+    BProv_succOpenedWitness_hfSomeDistinguishesTermAt
+      (B := Ax_s) hmem hlowBot
+  simpa [strictSuccOpenedHighOddOpenedIHTarget,
+    strictSuccOpenedHighOddCarryTarget,
+    strictSuccOpenedHighOddOpenedIHHighCode,
+    strictSuccOpenedHighOddOpenedIHLow,
+    rename_hfSomeDistinguishesTermAt_succ, Term.rename] using hsome
 
 /-- The opened strict successor branch where both predecessor-high and low
 codes are even is closed by the zero-bit distinguisher. -/
@@ -30572,6 +30660,67 @@ theorem
       hhighOdd_lowDouble_body)
     (BProv_Ax_s_strictSuccOpenedHighOddLowOdd_carry_of_opened_ih
       hhighOdd_lowOdd_body)
+
+/-- Shifted odd-high/low-even opened-IH body from the explicit `S x`
+membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_strictSuccOpenedHighOddLowDoubleOpenedIH_of_succ_witness_mem_and_low_bot
+    (hmem : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hlowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowDoubleOpenedIHContext)
+      bot) :
+    BProv Ax_s strictSuccOpenedHighOddLowDoubleOpenedIHContext
+      strictSuccOpenedHighOddOpenedIHTarget :=
+  BProv_Ax_s_strictSuccOpenedHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
+    hmem hlowBot
+
+/-- Shifted odd-high/low-odd opened-IH body from the explicit `S x` membership
+and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_strictSuccOpenedHighOddLowOddOpenedIH_of_succ_witness_mem_and_low_bot
+    (hmem : BProv Ax_s
+      strictSuccOpenedHighOddLowOddOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hlowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowOddOpenedIHContext)
+      bot) :
+    BProv Ax_s strictSuccOpenedHighOddLowOddOpenedIHContext
+      strictSuccOpenedHighOddOpenedIHTarget :=
+  BProv_Ax_s_strictSuccOpenedHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot
+    hmem hlowBot
+
+/-- Strict successor branch with both shifted odd-high carry bodies reduced to
+explicit `S x` membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_succ_witness_mem_and_low_bot
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddMemContext
+      strictSuccOpenedHighDoubleLowOddMemTarget)
+    (hhighOdd_lowDouble_mem : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hhighOdd_lowDouble_lowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowDoubleOpenedIHContext)
+      bot)
+    (hhighOdd_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighOddLowOddOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hhighOdd_lowOdd_lowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowOddOpenedIHContext)
+      bot) :
+    BProv Ax_s strictSuccContext strictSuccTarget :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_opened_ih_bodies
+    hhighDouble_lowOdd_mem
+    (BProv_Ax_s_strictSuccOpenedHighOddLowDoubleOpenedIH_of_succ_witness_mem_and_low_bot
+      hhighOdd_lowDouble_mem hhighOdd_lowDouble_lowBot)
+    (BProv_Ax_s_strictSuccOpenedHighOddLowOddOpenedIH_of_succ_witness_mem_and_low_bot
+      hhighOdd_lowOdd_mem hhighOdd_lowOdd_lowBot)
 
 /-- High-even/low-odd strict branch, reduced to the genuine membership
 persistence obligation.
@@ -31057,11 +31206,6 @@ theorem
 witness. -/
 def strictHighOddOpenedIHTargetFormula (highHalf : Nat) : Formula :=
   rename Nat.succ (strictHighOddSuccCarryTargetFormula highHalf)
-
-/-- The natural witness term for the odd-high carry body after opening the old
-IH witness: if `x` distinguished the predecessor half, use `S x`. -/
-def strictHighOddSuccWitnessTerm : Term :=
-  Term.succ (Term.var 0)
 
 /-- Shifted high-code term seen by the positive membership half after opening
 the old IH witness and then opening the new `S x` witness. -/
@@ -37530,6 +37674,41 @@ theorem
           hhighOdd_lowOdd_body)
     hodd
 
+/-- Successor shell with the odd-high shifted carry targets reduced to explicit
+`S x` membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_succ_witness_mem_and_low_bot_and_eq_opened_odd
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddMemContext
+      strictSuccOpenedHighDoubleLowOddMemTarget)
+    (hhighOdd_lowDouble_mem : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hhighOdd_lowDouble_lowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowDoubleOpenedIHContext)
+      bot)
+    (hhighOdd_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighOddLowOddOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hhighOdd_lowOdd_lowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowOddOpenedIHContext)
+      bot)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
+    (by
+      simpa [strictSuccContext, strictSuccTarget] using
+        BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_succ_witness_mem_and_low_bot
+          hhighDouble_lowOdd_mem
+          hhighOdd_lowDouble_mem
+          hhighOdd_lowDouble_lowBot
+          hhighOdd_lowOdd_mem
+          hhighOdd_lowOdd_lowBot)
+    hodd
+
 /-- Successor shell whose equality branch is reduced to the ordinary odd-high
 carry frontier.
 
@@ -37773,6 +37952,40 @@ theorem
       hhighDouble_lowOdd_mem
       hhighOdd_lowDouble_body
       hhighOdd_lowOdd_body
+      hodd)
+
+/-- Translated HF extensionality with the odd-high shifted carry targets
+reduced to explicit `S x` membership and low-refutation obligations. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_strict_opened_total_div2_succ_witness_mem_and_low_bot_and_eq_opened_odd
+    (hhighDouble_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddMemContext
+      strictSuccOpenedHighDoubleLowOddMemTarget)
+    (hhighOdd_lowDouble_mem : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hhighOdd_lowDouble_lowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowDoubleOpenedIHContext)
+      bot)
+    (hhighOdd_lowOdd_mem : BProv Ax_s
+      strictSuccOpenedHighOddLowOddOpenedIHContext
+      strictSuccOpenedHighOddOpenedWitnessSuccMemFormula)
+    (hhighOdd_lowOdd_lowBot : BProv Ax_s
+      (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula ::
+        strictSuccOpenedHighOddLowOddOpenedIHContext)
+      bot)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_succ_witness_mem_and_low_bot_and_eq_opened_odd
+      hhighDouble_lowOdd_mem
+      hhighOdd_lowDouble_mem
+      hhighOdd_lowDouble_lowBot
+      hhighOdd_lowOdd_mem
+      hhighOdd_lowOdd_lowBot
       hodd)
 
 /-- Translated HF extensionality from the strict successor branch and the
