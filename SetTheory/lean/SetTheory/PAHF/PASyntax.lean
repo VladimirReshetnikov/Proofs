@@ -30057,6 +30057,44 @@ def strictHighOddOpenedWitnessSuccMemBitExFormula
             (oneAt 0)
             (betaDiv2BitAt 0 2 1 (0+3))))))
 
+/-- Context after opening the old high-half membership trace supplied by the
+positive half of the opened odd-high IH witness.
+
+The element is the opened predecessor witness `x` at slot `0`; the set is the
+old high half at slot `2`.  The final head equation records that the exposed
+trace length is a successor, matching the generic
+`BProv_Ax_s_hfMemAt_elim_opened_step_pred` interface. -/
+def strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+    (G : List Formula) : List Formula :=
+  let elem : Nat := 0
+  let set : Nat := 1+1
+  let bitBody : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitAt 0 2 1 (elem+3))
+  let traceTail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      (ex bitBody)
+  let body : Formula :=
+    and
+      (betaAtConstIdx (set+2) 1 0 0)
+      traceTail
+  let bodyCtx : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
+  let succCtx : List Formula := succPredAt 0 :: bodyCtx
+  let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+  succBody :: succCtx.map (rename Nat.succ)
+
+/-- Target left after opening the old high-half membership trace far enough to
+expose a predecessor for its nonzero beta length. -/
+def strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+    (highHalf : Nat) : Formula :=
+  rename Nat.succ
+    (rename Nat.succ
+      (rename Nat.succ
+        (strictHighOddOpenedWitnessSuccMemFormula highHalf)))
+
 /-- Low-membership atom that must be refuted when the odd-high carry uses the
 successor of the opened IH witness. -/
 def strictHighOddOpenedWitnessSuccLowMemFormula : Formula :=
@@ -31429,6 +31467,60 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_components
         simpa [strictHighOddOpenedWitnessSuccMemStepsFormula] using hsteps)
       (by
         simpa [strictHighOddOpenedWitnessSuccMemBitExFormula] using hbitEx)
+
+/-- Reduce the positive `S x ∈ S(2*h+1)` carry half to the opened old
+high-half membership trace from the IH witness.
+
+The theorem projects the positive half `x ∈ h` out of
+`hfDistinguishesAt x h lowHalf` and opens that membership trace down to its
+successor-step branch.  The premise is exactly the renamed successor-membership
+target in that opened trace context; no beta trace is chosen here. -/
+theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+    {G : List Formula} {highHalf lowHalf : Nat}
+    (hpred : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+        highHalf)) :
+    BProv Ax_s
+      (hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  let C : List Formula := hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G
+  have hdist : BProv Ax_s C
+      (hfDistinguishesAt 0 (1+1) (lowHalf+1)) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hmem : BProv Ax_s C (hfMemAt 0 (1+1)) := by
+    simpa [C, hfDistinguishesAt] using BProv_andE1 hdist
+  exact
+    BProv_Ax_s_hfMemAt_elim_opened_step_pred
+      (G := C) (target := strictHighOddOpenedWitnessSuccMemFormula highHalf)
+      (elem := 0) (set := 1+1)
+      hmem
+      (by
+        simpa [C,
+          strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext,
+          strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula]
+          using hpred)
+
+/-- Equality-branch specialization of
+`BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred`.
+
+Here the low half in the opened IH witness is the same `highHalf` selected by
+the equality branch. -/
+theorem BProv_Ax_s_eqHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+    {highHalf : Nat}
+    (hpred : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+        highHalf)) :
+    BProv Ax_s (eqHighOddOpenedIHContext highHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  simpa [eqHighOddOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+      (G := (eqHighOddSuccCarryContext highHalf).map (rename Nat.succ))
+      (highHalf := highHalf) (lowHalf := highHalf)
+      (by simpa [eqHighOddOpenedIHContext] using hpred))
 
 /-- The fully opened `S x ∈ low` code/step body is the head assumption of the
 opened low-membership context. -/
