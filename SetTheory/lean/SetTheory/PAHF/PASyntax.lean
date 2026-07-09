@@ -2839,6 +2839,18 @@ def betaDiv2StepsThroughTermAt (code step : Nat) (last : Term) : Formula :=
   all (imp (leTermAt (Term.var 0) (Term.rename Nat.succ last))
     (betaDiv2StepWitnessAt (code+1) (step+1) 0))
 
+/-- Fully term-parametric bounded beta-halving trace.  For every `i <= last`,
+the beta-coded sequence with term code `code` and term step size `step` has an
+explicit binary-halving step at index `i`. -/
+def betaDiv2StepsThroughTermTermAt
+    (code step last : Term) : Formula :=
+  all (imp
+    (leTermAt (Term.var 0) (Term.rename Nat.succ last))
+    (betaDiv2StepWitnessTermAt
+      (Term.rename Nat.succ code)
+      (Term.rename Nat.succ step)
+      (Term.var 0)))
+
 /-- A pointwise shifted-tail relation between two beta-coded traces.
 
 The old trace is represented by the ambient code and step slots `oldCode` and
@@ -18372,6 +18384,52 @@ theorem BProv_Ax_s_betaDiv2StepsThroughTermAt_step_succ_termIdx_of_leTerm
     BProv Ax_s G
       (betaDiv2StepWitnessAtTermIdx code step (Term.succ idxTerm)) :=
   BProv_Ax_s_betaDiv2StepsThroughTermAt_step_termIdx_of_leTerm
+    hsteps (BProv_Ax_s_leTermAt_succ_succ hle)
+
+/-- Eliminate a fully term-parametric bounded beta-halving trace at an
+arbitrary PA index term. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm
+    {G : List Formula} {codeTerm stepTerm idxTerm lastTerm : Term}
+    (hsteps : BProv Ax_s G
+      (betaDiv2StepsThroughTermTermAt codeTerm stepTerm lastTerm))
+    (hle : BProv Ax_s G (leTermAt idxTerm lastTerm)) :
+    BProv Ax_s G
+      (betaDiv2StepWitnessTermAt codeTerm stepTerm idxTerm) := by
+  have himpRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := idxTerm) hsteps
+  have himp : BProv Ax_s G
+      (imp (leTermAt idxTerm lastTerm)
+        (betaDiv2StepWitnessTermAt codeTerm stepTerm idxTerm)) := by
+    simpa [betaDiv2StepsThroughTermTermAt, betaDiv2StepWitnessTermAt,
+      betaTermTermAt, remTermTermAt, div2StepTermAt, boolTermAt, ltTermAt,
+      leTermAt, betaModTermTerm, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.rename_comp,
+      Term.subst_rename_succ_up, term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ] using himpRaw
+  exact BProv_mp Ax_s G _ _ himp hle
+
+/-- Eliminate a fully term-parametric bounded beta-halving trace at a
+successor index. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_succ_of_leTerm
+    {G : List Formula} {codeTerm stepTerm idxTerm lastTerm : Term}
+    (hsteps : BProv Ax_s G
+      (betaDiv2StepsThroughTermTermAt codeTerm stepTerm
+        (Term.succ lastTerm)))
+    (hle : BProv Ax_s G (leTermAt idxTerm lastTerm)) :
+    BProv Ax_s G
+      (betaDiv2StepWitnessTermAt codeTerm stepTerm
+        (Term.succ idxTerm)) :=
+  BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm
     hsteps (BProv_Ax_s_leTermAt_succ_succ hle)
 
 /-- Eliminate a shifted beta-tail relation at a bounded PA index term.

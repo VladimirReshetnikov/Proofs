@@ -364,6 +364,7 @@ open SetTheory
 #check @PA.Formula.boolTermAt_var
 #check @PA.Formula.div2StepTermAt_var
 #check @PA.Formula.betaDiv2StepWitnessTermAt
+#check @PA.Formula.betaDiv2StepsThroughTermTermAt
 #check @PA.Formula.betaTermAtConstIdx_var
 #check @PA.Formula.BProv_Ax_s_betaModTermTerm_zero
 #check @PA.Formula.BProv_Ax_s_betaModTermTerm_one_mul_two
@@ -885,6 +886,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_termIdx_of_leTerm
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_succ_termIdx_of_leTerm
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_succ_of_leTerm
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitEx
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_zero
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_zero_termIdx
