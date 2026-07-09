@@ -16821,6 +16821,121 @@ theorem BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
     (fun f hf => sentence_ax_s (f := f) hf) h1 (by
       simpa [betaTermTermAt, body1] using hopen1)
 
+/-- Closed numeral computation for the fully term-parametric beta modulus. -/
+theorem BProv_Ax_s_betaModTermTerm_numeral {G : List Formula}
+    (s i : Nat) :
+    BProv Ax_s G
+      (eq (Term.numeral (BetaModulus s i))
+        (betaModTermTerm (Term.numeral s) (Term.numeral i))) := by
+  have hidxSucc : BProv Ax_s G
+      (eq (Term.succ (Term.numeral i)) (Term.numeral (i + 1))) := by
+    simpa [Term.numeral_succ] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.succ (Term.numeral i)))
+  have hmulLeft : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ (Term.numeral i)) (Term.numeral s))
+        (Term.mul (Term.numeral (i + 1)) (Term.numeral s))) :=
+    BProv_eq_congr_mul_left (Term.numeral s) hidxSucc
+  have hmulRaw : BProv Ax_s G
+      (eq
+        (Term.mul (Term.numeral (i + 1)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals (i + 1) s)
+  have hmul : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ (Term.numeral i)) (Term.numeral s))
+        (Term.numeral ((i + 1) * s))) :=
+    BProv_eqTrans hmulLeft hmulRaw
+  have hraw : BProv Ax_s G
+      (eq
+        (betaModTermTerm (Term.numeral s) (Term.numeral i))
+        (Term.numeral ((i + 1) * s + 1))) := by
+    simpa [betaModTermTerm, Term.numeral_succ] using
+      BProv_eq_congr_succ hmul
+  have hbeta : BetaModulus s i = (i + 1) * s + 1 := by
+    unfold BetaModulus
+    omega
+  simpa [hbeta] using BProv_eqSym hraw
+
+/-- Closed fully term-parametric beta constructor from semantic `BetaEntry`
+data.  The quotient from the `BetaEntry` witness remains explicit proof data;
+the beta relation itself stays a plain relation. -/
+theorem BProv_Ax_s_betaTermTermAt_numeral_entry
+    {G : List Formula} {c s i o : Nat}
+    (hentry : BetaEntry c s i o) :
+    BProv Ax_s G
+      (betaTermTermAt (Term.numeral o) (Term.numeral c)
+        (Term.numeral s) (Term.numeral i)) := by
+  rcases hentry with ⟨q, hval, hlt⟩
+  let m := BetaModulus s i
+  have hmod : BProv Ax_s G
+      (eq (Term.numeral m)
+        (betaModTermTerm (Term.numeral s) (Term.numeral i))) := by
+    simpa [m] using BProv_Ax_s_betaModTermTerm_numeral
+      (G := G) s i
+  have hltTerm : BProv Ax_s G
+      (ltTermAt (Term.numeral o) (Term.numeral m)) := by
+    simpa [ltTermAt, Term.rename] using
+      (BProv_Ax_s_ltConst_closed (G := G) (m := o) (n := m) hlt)
+  have hmulRaw : BProv Ax_s G
+      (eq (Term.mul (Term.numeral q) (Term.numeral m))
+        (Term.numeral (q * m))) :=
+    BProv_weaken_nil (BProv_Ax_s_mulNumerals q m)
+  have haddLeft : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.numeral o))
+        (Term.add (Term.numeral (q * m)) (Term.numeral o))) :=
+    BProv_eq_congr_add_left (Term.numeral o) hmulRaw
+  have haddRaw : BProv Ax_s G
+      (eq (Term.add (Term.numeral (q * m)) (Term.numeral o))
+        (Term.numeral (q * m + o))) :=
+    BProv_weaken_nil (BProv_Ax_s_addNumerals (q * m) o)
+  have hsum : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.numeral o))
+        (Term.numeral c)) := by
+    simpa [m, hval] using BProv_eqTrans haddLeft haddRaw
+  have hvalue : BProv Ax_s G
+      (eq (Term.numeral c)
+        (Term.add (Term.mul (Term.numeral q) (Term.numeral m))
+          (Term.numeral o))) :=
+    BProv_eqSym hsum
+  have hrem : BProv Ax_s G
+      (remTermTermAt (Term.numeral o) (Term.numeral c)
+        (Term.numeral m)) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms hltTerm hvalue
+  exact BProv_Ax_s_betaTermTermAt_of_rem hmod hrem
+
+/-- Backward exactness for fully term-parametric beta entries with closed
+code, step, and index data. -/
+theorem BProv_Ax_s_eq_of_betaTermTermAt_eqConst_entry
+    {G : List Formula} {out code step idx : Term} {c s i o : Nat}
+    (hbeta : BProv Ax_s G (betaTermTermAt out code step idx))
+    (hcode : BProv Ax_s G (eq code (Term.numeral c)))
+    (hstep : BProv Ax_s G (eq step (Term.numeral s)))
+    (hidx : BProv Ax_s G (eq idx (Term.numeral i)))
+    (hentry : BetaEntry c s i o) :
+    BProv Ax_s G (eq out (Term.numeral o)) := by
+  have hcodeBeta : BProv Ax_s G
+      (betaTermTermAt out (Term.numeral c) step idx) :=
+    BProv_Ax_s_betaTermTermAt_of_eq_code hcode hbeta
+  have hstepBeta : BProv Ax_s G
+      (betaTermTermAt out (Term.numeral c) (Term.numeral s) idx) :=
+    BProv_Ax_s_betaTermTermAt_of_eq_step hstep hcodeBeta
+  have hidxBeta : BProv Ax_s G
+      (betaTermTermAt out (Term.numeral c) (Term.numeral s)
+        (Term.numeral i)) :=
+    BProv_Ax_s_betaTermTermAt_of_eq_index hidx hstepBeta
+  have hclosed : BProv Ax_s G
+      (betaTermTermAt (Term.numeral o) (Term.numeral c)
+        (Term.numeral s) (Term.numeral i)) :=
+    BProv_Ax_s_betaTermTermAt_numeral_entry (G := G) hentry
+  exact BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
+    hclosed hidxBeta
+
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/
 theorem BProv_Ax_s_betaTermAt_of_betaAt_eq_term
