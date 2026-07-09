@@ -30423,6 +30423,76 @@ theorem
   simpa [target, C, D, rename_hfSomeDistinguishesTermAt_succ, Term.rename]
     using htarget
 
+/-- Slot permutation embedding the ordinary odd equality-carry context into
+the context obtained after opening high-side div2 totality.
+
+The ordinary context uses slots `low = 0`, `high = 1`, and `highHalf = 2`.
+After opening totality these become `low = 2`, `high = 3`, and
+`highHalf = 1`. -/
+def eqSuccOpenedOddRename : Nat → Nat
+  | 0 => 2
+  | 1 => 3
+  | 2 => 1
+  | n+3 => n+3
+
+/-- The opened odd equality-branch obligation is a renamed instance of the
+ordinary odd equality-carry branch, with the opened div2 witnesses merely added
+to the context. -/
+theorem BProv_Ax_s_eqSuccOpenedOdd_of_eqHighOddCarry
+    (hcarry : BProv Ax_s (eqHighOddSuccCarryContext 2)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget := by
+  let r : Nat → Nat := eqSuccOpenedOddRename
+  let source : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0
+  have hrenRaw : BProv Ax_s
+      ((eqHighOddSuccCarryContext 2).map (rename r))
+      (rename r source) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (G := eqHighOddSuccCarryContext 2) (phi := source)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      (by simpa [source] using hcarry) r
+  have hren : BProv Ax_s
+      ((eqHighOddSuccCarryContext 2).map (rename r))
+      eqSuccOpenedOddTarget := by
+    simpa [source, r, eqSuccOpenedOddRename, eqSuccOpenedOddTarget,
+      hfSomeDistinguishesTermAt, hfDistinguishesTermAt, hfMemTermAt,
+      hfMemAt, betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+      betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+      betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+      betaAtSuccIdx, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+      betaModTerm, rename, Term.rename, SetTheory.up, Term.rename_comp]
+      using hrenRaw
+  exact BProv_mono Ax_s
+    ((eqHighOddSuccCarryContext 2).map (rename r))
+    eqSuccOpenedOddContext
+    eqSuccOpenedOddTarget
+    (by
+      intro f hf
+      simp [r, eqSuccOpenedOddRename, eqHighOddSuccCarryContext,
+        eqSuccOpenedOddContext, eqSuccContext, rename, Term.rename,
+        rename_hfLtDistinguishesAt_succ] at hf ⊢
+      rcases hf with hf | hf | hf
+      · exact Or.inl hf
+      · exact Or.inr (Or.inr (Or.inr (Or.inl hf)))
+      · exact Or.inr (Or.inr (Or.inr (Or.inr hf))))
+    hren
+
+/-- Equality branch of the successor split from the ordinary odd-high carry
+frontier.
+
+PA totality supplies the predecessor-high div2 witness; the opened odd branch
+is obtained by renaming the existing `eqHighOddSuccCarryContext 2` proof into
+the opened totality slots. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_eqHighOddCarry
+    (hcarry : BProv Ax_s (eqHighOddSuccCarryContext 2)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s eqSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_total_and_opened_odd_case
+    (BProv_Ax_s_eqSuccOpenedOdd_of_eqHighOddCarry hcarry)
+
 /-- Shifted target formula used after opening an odd-high strict carry IH
 witness. -/
 def strictHighOddOpenedIHTargetFormula (highHalf : Nat) : Formula :=
@@ -36705,6 +36775,29 @@ theorem
         (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_total_and_opened_odd_case
           hodd))
 
+/-- Successor shell whose equality branch is reduced to the ordinary odd-high
+carry frontier.
+
+This packages PA's total high-side halving and the opened-slot renaming bridge,
+so callers can work in `eqHighOddSuccCarryContext 2`, where the existing carry
+lemmas are stated. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eqHighOddCarry
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hcarry : BProv Ax_s (eqHighOddSuccCarryContext 2)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
+    hltCase
+    (by
+      simpa [eqSuccContext] using
+        (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_eqHighOddCarry
+          hcarry))
+
 /-- Strict successor shell with the standalone self distinguisher reduced to
 the explicit opened odd-self branch supplied by total binary halving. -/
 theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_opened_odd_self
@@ -36801,6 +36894,23 @@ theorem
   BProv_Ax_s_translated_HF_extensionality_of_successor_step
     (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
       hltCase hodd)
+
+/-- Translated HF extensionality from the strict successor branch and the
+ordinary odd-high equality carry frontier. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_strict_and_eqHighOddCarry
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hcarry : BProv Ax_s (eqHighOddSuccCarryContext 2)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eqHighOddCarry
+      hltCase hcarry)
 
 /-- Translated HF extensionality from the strict successor branch and the
 opened odd-self branch left after PA's total binary-halving proof supplies the
