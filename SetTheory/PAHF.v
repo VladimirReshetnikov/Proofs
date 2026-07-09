@@ -20168,6 +20168,316 @@ Definition twoEntryBetaCodeTerm (cur next : term) : term :=
         (tMul (Term.numeral 2) next)
         (tMul (tMul (Term.numeral 4) s) cur))).
 
+(* Lean: crtExtendCodeTerm *)
+Definition crtExtendCodeTerm
+    (oldCode product inverse delta : term) : term :=
+  tAdd oldCode (tMul product (tMul inverse delta)).
+
+(* Lean: crtInverseProductQuotTerm *)
+Definition crtInverseProductQuotTerm
+    (modulus leftQuot rightQuot : term) : term :=
+  tAdd
+    (tAdd
+      (tMul leftQuot (tMul modulus rightQuot))
+      leftQuot)
+    rightQuot.
+
+(* Lean: BProv_Ax_s_remTermTermAt_of_eq_modulus *)
+Lemma BProv_Ax_s_remTermTermAt_of_eq_modulus :
+  forall G (rem value oldModulus newModulus : term),
+  BProv Ax_s G (pEq oldModulus newModulus) ->
+  BProv Ax_s G (remTermTermAt rem value oldModulus) ->
+  BProv Ax_s G (remTermTermAt rem value newModulus).
+Proof.
+  intros G rem value oldModulus newModulus hmod hrem.
+  set (a := remTermTermAt
+    (Term.rename S rem) (Term.rename S value) (tVar 0)).
+  assert (hold : BProv Ax_s G (subst (instTerm oldModulus) a)).
+  {
+    replace (subst (instTerm oldModulus) a)
+      with (remTermTermAt rem value oldModulus).
+    - exact hrem.
+    - unfold a, remTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+      reflexivity.
+  }
+  pose proof (BProv_eqElim Ax_s G oldModulus newModulus a
+    hmod hold) as hnew.
+  replace (remTermTermAt rem value newModulus)
+    with (subst (instTerm newModulus) a).
+  - exact hnew.
+  - unfold a, remTermTermAt, ltTermAt.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_mul_mul_reorder_middle_terms *)
+Lemma BProv_Ax_s_mul_mul_reorder_middle_terms :
+  forall G (a b c d : term),
+  BProv Ax_s G
+    (pEq (tMul (tMul a b) (tMul c d))
+      (tMul (tMul a c) (tMul b d))).
+Proof.
+  intros G a b c d.
+  assert (hassocLeft : BProv Ax_s G
+      (pEq (tMul (tMul a b) (tMul c d))
+        (tMul a (tMul b (tMul c d))))).
+  { apply BProv_Ax_s_mul_assoc_terms. }
+  assert (hmiddle1 : BProv Ax_s G
+      (pEq (tMul b (tMul c d)) (tMul (tMul b c) d))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_mul_assoc_terms G b c d)).
+  }
+  assert (hmiddle2 : BProv Ax_s G
+      (pEq (tMul (tMul b c) d) (tMul (tMul c b) d))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G _ _ d
+      (BProv_Ax_s_mul_comm_terms G b c)).
+  }
+  assert (hmiddle3 : BProv Ax_s G
+      (pEq (tMul (tMul c b) d) (tMul c (tMul b d)))).
+  { apply BProv_Ax_s_mul_assoc_terms. }
+  assert (hmiddle : BProv Ax_s G
+      (pEq (tMul b (tMul c d)) (tMul c (tMul b d)))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hmiddle1
+      (BProv_eqTrans Ax_s G _ _ _ hmiddle2 hmiddle3)).
+  }
+  assert (hmiddleCong : BProv Ax_s G
+      (pEq (tMul a (tMul b (tMul c d)))
+        (tMul a (tMul c (tMul b d))))).
+  { exact (BProv_eq_congr_mul_right Ax_s G a _ _ hmiddle). }
+  assert (hassocRight : BProv Ax_s G
+      (pEq (tMul a (tMul c (tMul b d)))
+        (tMul (tMul a c) (tMul b d)))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_mul_assoc_terms G a c (tMul b d))).
+  }
+  exact (BProv_eqTrans Ax_s G _ _ _ hassocLeft
+    (BProv_eqTrans Ax_s G _ _ _ hmiddleCong hassocRight)).
+Qed.
+
+(* Lean: BProv_Ax_s_crtInverseProductQuot_expand *)
+Lemma BProv_Ax_s_crtInverseProductQuot_expand :
+  forall G (modulus leftQuot rightQuot : term),
+  BProv Ax_s G
+    (pEq
+      (tMul
+        (tSucc (tMul modulus leftQuot))
+        (tSucc (tMul modulus rightQuot)))
+      (tSucc
+        (tMul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot)))).
+Proof.
+  intros G modulus leftQuot rightQuot.
+  set (leftBase := tMul modulus leftQuot).
+  set (rightBase := tMul modulus rightQuot).
+  set (crossCore := tMul leftQuot rightBase).
+  set (normal :=
+    tAdd (tAdd (tMul modulus crossCore) leftBase) rightBase).
+  assert (hsuccMul : BProv Ax_s G
+      (pEq (tMul (tSucc leftBase) (tSucc rightBase))
+        (tAdd (tMul leftBase (tSucc rightBase))
+          (tSucc rightBase)))).
+  { apply BProv_Ax_s_succ_mul_terms. }
+  assert (hmulSucc : BProv Ax_s G
+      (pEq (tMul leftBase (tSucc rightBase))
+        (tAdd (tMul leftBase rightBase) leftBase))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulSucc_terms.
+  }
+  assert (hmulSuccCong : BProv Ax_s G
+      (pEq
+        (tAdd (tMul leftBase (tSucc rightBase)) (tSucc rightBase))
+        (tAdd (tAdd (tMul leftBase rightBase) leftBase)
+          (tSucc rightBase)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _
+      (tSucc rightBase) hmulSucc).
+  }
+  assert (haddSucc : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tMul leftBase rightBase) leftBase)
+          (tSucc rightBase))
+        (tSucc
+          (tAdd (tAdd (tMul leftBase rightBase) leftBase) rightBase)))).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addSucc_terms.
+  }
+  assert (hexpand : BProv Ax_s G
+      (pEq (tMul (tSucc leftBase) (tSucc rightBase))
+        (tSucc
+          (tAdd (tAdd (tMul leftBase rightBase) leftBase) rightBase)))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hsuccMul
+      (BProv_eqTrans Ax_s G _ _ _ hmulSuccCong haddSucc)).
+  }
+  assert (hcross : BProv Ax_s G
+      (pEq (tMul leftBase rightBase) (tMul modulus crossCore))).
+  {
+    unfold leftBase, crossCore.
+    apply BProv_Ax_s_mul_assoc_terms.
+  }
+  assert (hcrossInner : BProv Ax_s G
+      (pEq (tAdd (tMul leftBase rightBase) leftBase)
+        (tAdd (tMul modulus crossCore) leftBase))).
+  { exact (BProv_eq_congr_add_left Ax_s G _ _ leftBase hcross). }
+  assert (hnormal : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tMul leftBase rightBase) leftBase) rightBase)
+        normal)).
+  {
+    unfold normal.
+    exact (BProv_eq_congr_add_left Ax_s G _ _ rightBase hcrossInner).
+  }
+  assert (houterDist : BProv Ax_s G
+      (pEq
+        (tMul modulus (tAdd (tAdd crossCore leftQuot) rightQuot))
+        (tAdd
+          (tMul modulus (tAdd crossCore leftQuot))
+          (tMul modulus rightQuot)))).
+  { apply BProv_Ax_s_mul_add_terms. }
+  assert (hinnerDist : BProv Ax_s G
+      (pEq (tMul modulus (tAdd crossCore leftQuot))
+        (tAdd (tMul modulus crossCore) (tMul modulus leftQuot)))).
+  { apply BProv_Ax_s_mul_add_terms. }
+  assert (hinnerDistCong : BProv Ax_s G
+      (pEq
+        (tAdd (tMul modulus (tAdd crossCore leftQuot))
+          (tMul modulus rightQuot))
+        normal)).
+  {
+    unfold normal, leftBase, rightBase.
+    exact (BProv_eq_congr_add_left Ax_s G _ _
+      (tMul modulus rightQuot) hinnerDist).
+  }
+  assert (hquotient : BProv Ax_s G
+      (pEq
+        (tMul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot))
+        normal)).
+  {
+    unfold crtInverseProductQuotTerm, crossCore, rightBase.
+    exact (BProv_eqTrans Ax_s G _ _ _ houterDist hinnerDistCong).
+  }
+  assert (hnormalQuotient : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tMul leftBase rightBase) leftBase) rightBase)
+        (tMul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot)))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hnormal
+      (BProv_eqSym Ax_s G _ _ hquotient)).
+  }
+  assert (hsuccCong : BProv Ax_s G
+      (pEq
+        (tSucc (tAdd (tAdd (tMul leftBase rightBase) leftBase)
+          rightBase))
+        (tSucc
+          (tMul modulus
+            (crtInverseProductQuotTerm modulus leftQuot rightQuot))))).
+  { exact (BProv_eq_congr_succ Ax_s G _ _ hnormalQuotient). }
+  unfold leftBase, rightBase in *.
+  exact (BProv_eqTrans Ax_s G _ _ _ hexpand hsuccCong).
+Qed.
+
+(* Lean: BProv_Ax_s_crtInverse_mul *)
+Lemma BProv_Ax_s_crtInverse_mul :
+  forall G
+    (leftProduct rightProduct leftInverse rightInverse modulus
+      leftQuot rightQuot : term),
+  BProv Ax_s G
+    (pEq (tMul leftProduct leftInverse)
+      (tSucc (tMul modulus leftQuot))) ->
+  BProv Ax_s G
+    (pEq (tMul rightProduct rightInverse)
+      (tSucc (tMul modulus rightQuot))) ->
+  BProv Ax_s G
+    (pEq
+      (tMul (tMul leftProduct rightProduct)
+        (tMul leftInverse rightInverse))
+      (tSucc
+        (tMul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot)))).
+Proof.
+  intros G leftProduct rightProduct leftInverse rightInverse modulus
+    leftQuot rightQuot hleft hright.
+  assert (hreorder : BProv Ax_s G
+      (pEq
+        (tMul (tMul leftProduct rightProduct)
+          (tMul leftInverse rightInverse))
+        (tMul (tMul leftProduct leftInverse)
+          (tMul rightProduct rightInverse)))).
+  {
+    apply BProv_Ax_s_mul_mul_reorder_middle_terms.
+  }
+  assert (hcertificates : BProv Ax_s G
+      (pEq
+        (tMul (tMul leftProduct leftInverse)
+          (tMul rightProduct rightInverse))
+        (tMul (tSucc (tMul modulus leftQuot))
+          (tSucc (tMul modulus rightQuot))))).
+  { exact (BProv_eq_congr_mul Ax_s G _ _ _ _ hleft hright). }
+  exact (BProv_eqTrans Ax_s G _ _ _ hreorder
+    (BProv_eqTrans Ax_s G _ _ _ hcertificates
+      (BProv_Ax_s_crtInverseProductQuot_expand
+        G modulus leftQuot rightQuot))).
+Qed.
+
+(* Lean: BProv_Ax_s_crtProductFactor_mul *)
+Lemma BProv_Ax_s_crtProductFactor_mul :
+  forall G (product factor modulus appended : term),
+  BProv Ax_s G (pEq product (tMul factor modulus)) ->
+  BProv Ax_s G
+    (pEq (tMul product appended)
+      (tMul (tMul factor appended) modulus)).
+Proof.
+  intros G product factor modulus appended hfactor.
+  assert (hstart : BProv Ax_s G
+      (pEq (tMul product appended)
+        (tMul (tMul factor modulus) appended))).
+  { exact (BProv_eq_congr_mul_left Ax_s G _ _ appended hfactor). }
+  assert (hassoc1 : BProv Ax_s G
+      (pEq (tMul (tMul factor modulus) appended)
+        (tMul factor (tMul modulus appended)))).
+  { apply BProv_Ax_s_mul_assoc_terms. }
+  assert (hcomm : BProv Ax_s G
+      (pEq (tMul modulus appended) (tMul appended modulus))).
+  { apply BProv_Ax_s_mul_comm_terms. }
+  assert (hcommCong : BProv Ax_s G
+      (pEq (tMul factor (tMul modulus appended))
+        (tMul factor (tMul appended modulus)))).
+  { exact (BProv_eq_congr_mul_right Ax_s G factor _ _ hcomm). }
+  assert (hassoc2 : BProv Ax_s G
+      (pEq (tMul factor (tMul appended modulus))
+        (tMul (tMul factor appended) modulus))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_mul_assoc_terms G factor appended modulus)).
+  }
+  exact (BProv_eqTrans Ax_s G _ _ _ hstart
+    (BProv_eqTrans Ax_s G _ _ _ hassoc1
+      (BProv_eqTrans Ax_s G _ _ _ hcommCong hassoc2))).
+Qed.
+
 (* Lean: BetaEntry_twoEntry_zero *)
 Lemma BetaEntry_twoEntry_zero : forall cur next,
   BetaEntry (twoEntryBetaCode cur next) (twoEntryBetaStep cur next) 0 cur.
