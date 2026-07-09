@@ -179,6 +179,7 @@ Check PA.Formula.betaModTermTerm.
 Check PA.Formula.betaTermTermAt.
 Check PA.Formula.betaTermTermAtConstIdx.
 Check PA.Formula.betaTermTermAtSuccIdx.
+Check PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_succ.
 Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
 Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms.
 Check PA.Formula.BProv_Ax_s_remTermTermAt_zero_modulus_one.
@@ -194,6 +195,11 @@ Check PA.Formula.remTermTermAt_nat.
 Check PA.Formula.betaTermTermAt_nat_entry.
 Check PA.Formula.betaTermTermAtSuccIdx_nat_entry.
 Check PA.Formula.betaDiv2StepWitnessTermAt.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_succ_of_leTerm.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_components.
+Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt.
+Check PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace.
 Check PA.Formula.betaDiv2StepWitnessTermAt_nat.
 Check PA.Formula.betaDiv2StepWitnessTermSuccIdxAt.
 Check PA.Formula.betaDiv2StepsThroughTermAt.
