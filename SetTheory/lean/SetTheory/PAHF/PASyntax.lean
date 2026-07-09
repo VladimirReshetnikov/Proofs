@@ -33947,6 +33947,139 @@ theorem
       (codeTerm := lowCodeTerm) (stepTerm := lowStepTerm)
       hlowTail)
 
+/-- Equality branch whose positive membership side is supplied as beta
+components in the opened old high-half trace.  The low-refutation side remains
+an explicit contradiction premise. -/
+theorem
+    BProv_Ax_s_eqHighOddSuccCarry_of_opened_high_half_components_and_low_bot
+    {highHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        eqHighOddOpenedIHContext highHalf)
+      bot) :
+    BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_eqHighOddSuccCarry_of_succ_witness_mem_and_low_bot
+    (BProv_Ax_s_eqHighOddOpenedWitnessSuccMem_of_opened_high_half_components
+      hentry hsteps hbitEx)
+    hlowBot
+
+/-- Equality-branch odd predecessor case whose positive side is supplied as
+opened old high-half trace components. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_odd_of_opened_high_half_components_and_low_bot
+    {highHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm))
+    (hlowBot : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        eqHighOddOpenedIHContext highHalf)
+      bot) :
+    BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_odd_of_succ_witness_mem_and_low_bot
+    (BProv_Ax_s_eqHighOddOpenedWitnessSuccMem_of_opened_high_half_components
+      hentry hsteps hbitEx)
+    hlowBot
+
+/-- Equality branch with opened old high-half components for the positive side
+and a shifted old-low tail closing the low-refutation side. -/
+theorem
+    BProv_Ax_s_eqHighOddSuccCarry_of_opened_high_half_components_and_shift_tail_opened_low_half
+    {highHalf : Nat} {codeTerm stepTerm lowCodeTerm lowStepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm))
+    (hlowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          eqHighOddOpenedIHContext highHalf))
+      (betaShiftTailThroughTermAt 1 0 lowCodeTerm lowStepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_eqHighOddSuccCarry_of_opened_high_half_components_and_low_bot
+    hentry hsteps hbitEx
+    (BProv_Ax_s_eqHighOddOpenedWitnessSuccLowMem_bot_of_shift_tail
+      (highHalf := highHalf)
+      (codeTerm := lowCodeTerm) (stepTerm := lowStepTerm)
+      hlowTail)
+
+/-- Equality-branch odd predecessor case with opened old high-half components
+for the positive side and a shifted old-low tail for the low side. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_odd_of_opened_high_half_components_and_shift_tail_opened_low_half
+    {highHalf : Nat} {codeTerm stepTerm lowCodeTerm lowStepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm))
+    (hlowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          eqHighOddOpenedIHContext highHalf))
+      (betaShiftTailThroughTermAt 1 0 lowCodeTerm lowStepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_odd_of_opened_high_half_components_and_low_bot
+    hentry hsteps hbitEx
+    (BProv_Ax_s_eqHighOddOpenedWitnessSuccLowMem_bot_of_shift_tail
+      (highHalf := highHalf)
+      (codeTerm := lowCodeTerm) (stepTerm := lowStepTerm)
+      hlowTail)
+
 /-- Odd-high/even-low carry branch reduced to the explicit
 successor-of-witness membership and low-refutation obligations. -/
 theorem
