@@ -31664,6 +31664,119 @@ theorem
   simpa [strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula]
     using hmem
 
+/-- Positive `S x` membership from explicit components in the opened old
+high-half membership trace.
+
+This composes the old-high trace opener with the component packager for the
+renamed successor-membership target.  The beta transformation itself remains
+visible as the three component premises in the opened source-trace context. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_components
+    {G : List Formula} {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s
+      (hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) :=
+  BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+    (highHalf := highHalf) (lowHalf := lowHalf)
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_opened_high_half_of_components
+      hentry hsteps hbitEx)
+
+/-- Equality-branch positive `S x` membership from explicit opened old
+high-half trace components. -/
+theorem
+    BProv_Ax_s_eqHighOddOpenedWitnessSuccMem_of_opened_high_half_components
+    {highHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (eqHighOddOpenedIHContext highHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s (eqHighOddOpenedIHContext highHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  exact
+    BProv_Ax_s_eqHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_opened_high_half_of_components
+        hentry hsteps hbitEx)
+
+/-- Even-low strict-carry positive `S x` membership from explicit opened old
+high-half trace components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccMem_of_opened_high_half_components
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  exact
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccMem_of_opened_high_half_step_pred
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_opened_high_half_of_components
+        hentry hsteps hbitEx)
+
+/-- Odd-low strict-carry positive `S x` membership from explicit opened old
+high-half trace components. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccMem_of_opened_high_half_components
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  exact
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_opened_high_half_of_components
+        hentry hsteps hbitEx)
+
 /-- The fully opened `S x ∈ low` code/step body is the head assumption of the
 opened low-membership context. -/
 theorem
