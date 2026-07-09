@@ -26974,6 +26974,41 @@ def strictHighOddOpenedWitnessLowHalfMemBitExFormula
           (oneAt 0)
           (betaDiv2BitAt 0 2 1 (0+3)))))
 
+/-- Old low-half membership target as it appears after opening the code and
+step witnesses of the assumed `S x ∈ low` trace. -/
+def strictHighOddOpenedWitnessLowHalfMemOpenedFormula (lowHalf : Nat) :
+    Formula :=
+  rename Nat.succ (rename Nat.succ (hfMemAt 0 (lowHalf+1)))
+
+/-- Initial beta-entry component for the opened old low-half membership target.
+
+The element slot has shifted twice, so the later tail-code construction must
+build a fresh trace for element slot `2` and set-code slot `lowHalf+3`. -/
+def strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula
+    (lowHalf : Nat) (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (betaTermAtConstIdx
+        (Term.rename (fun n => n+2) (Term.var (lowHalf+3)))
+        1 0 0))
+
+/-- Bounded-trace component for the opened old low-half membership target. -/
+def strictHighOddOpenedWitnessLowHalfMemOpenedStepsFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (betaDiv2StepsThroughAt 1 0 (2+2)))
+
+/-- Final-bit component for the opened old low-half membership target. -/
+def strictHighOddOpenedWitnessLowHalfMemOpenedBitExFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst (instTerm stepTerm)
+    (subst (Term.upSubst (instTerm codeTerm))
+      (ex
+        (and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (2+3)))))
+
 /-- Exact distinguishing body obtained by using `S x` as the witness for the
 shifted odd-high carry target. -/
 def strictHighOddOpenedWitnessSuccBodyFormula (highHalf : Nat) :
@@ -28555,6 +28590,78 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_of_components
         simpa [strictHighOddOpenedWitnessLowHalfMemBitExFormula] using hbitEx)
   simpa [strictHighOddOpenedWitnessLowHalfMemFormula, hfMemTermAt_var]
     using hmemTerm
+
+/-- Package the opened old low-half membership target from explicit beta-entry,
+bounded-trace, and final-bit components.
+
+This is the exact component interface needed by the beta-tail construction after
+the code and step witnesses of the assumed `S x ∈ low` trace have been opened.
+It only rebuilds the membership existential; the fresh tail code and all three
+trace components remain theorem premises. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_components
+    {G : List Formula} {lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula
+        lowHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedFormula lowHalf) := by
+  have hmemTerm : BProv Ax_s G
+      (hfMemTermAt 2 (Term.var (lowHalf+3))) :=
+    BProv_Ax_s_hfMemTermAt_of_components
+      (G := G) (elem := 2)
+      (setCode := Term.var (lowHalf+3))
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by
+        simpa [strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula]
+          using hentry)
+      (by
+        simpa [strictHighOddOpenedWitnessLowHalfMemOpenedStepsFormula]
+          using hsteps)
+      (by
+        simpa [strictHighOddOpenedWitnessLowHalfMemOpenedBitExFormula]
+          using hbitEx)
+  simpa [strictHighOddOpenedWitnessLowHalfMemOpenedFormula,
+    hfMemTermAt_var, rename_hfMemAt] using hmemTerm
+
+/-- Low-side closer where the opened old low-half membership is supplied as
+explicit beta-trace components in the opened `S x ∈ low` code/step context. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_components
+    {G : List Formula} {lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula
+        lowHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (strictHighOddOpenedWitnessLowHalfMemOpenedStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G))
+      (strictHighOddOpenedWitnessLowHalfMemOpenedBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      bot := by
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_mem
+      (lowHalf := lowHalf)
+      (BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_components
+        hentry hsteps hbitEx)
 
 /-- Low-side closer whose remaining obligation is expressed as explicit
 beta-trace components for the old low-half membership. -/
