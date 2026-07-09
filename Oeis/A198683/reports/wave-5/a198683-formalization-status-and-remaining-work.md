@@ -37,6 +37,7 @@ Every A198683 claim in this repository sits on exactly one of four rungs:
 | the fourteen near-`i^i` representatives all equal `i^i` exactly; the near-zero pair `{2207, 3777}` and the near-one pair `{1404, 4239}` are exact merges | ✅ | partially (norm-level; the island identities `i^i = ρ`, `(i^i)^i = −i`, `i^{−i}} = e^{π/2}` are proved in `A198683N12ComplexTowers.v`) |
 | **the overflow magnitude** `10^100 < Im(overflowBase11)` and the separation criterion: any principal-power value with log-modulus above `−(π/2)·10^100` differs from candidate `57` — demoting the "no-miracles hypothesis" from a transcendence assumption to a per-class magnitude check | ✅ (~930 lines, 44-digit hand boxes) | ✅ (~250 lines, `interval with (i_prec 200)`) |
 | `overflowCandidate12 ∈` value set at `n = 12` | ✅ | ❌ |
+| **first unconditional bounds beyond `n = 7`**: `1 ≤ a(8) ≤ 135` — the full recurrence candidate pool bound, from the certified `n ≤ 7` value lists (`A198683EightBounds.lean`) | ✅ | ❌ |
 | **the decision tree** (see §3) as implications | ✅ | ✅ (membership and 2926-pinning cores fully constructive) |
 | two of the original ladder endpoint constants were **false** (endpoint-vs-midpoint transcription); refutations preserved as theorems | ✅ | n/a (Coq never used the decomposed constants) |
 
@@ -125,7 +126,7 @@ What does **not** yet exist, and must be built once:
 
 | goal | what it takes | new obligations |
 |------|---------------|-----------------|
-| **G1: `a(8) = 77` unconditional** (the pilot) | the generator's first run: 135 candidates from the certified `n ≤ 7` lists, ~58 merges (mostly syntactic/island-free), ~76 gap checks | ~10² proof obligations; one new module per assistant |
+| **G1: `a(8) = 77` unconditional** (the pilot) | the generator's first run: 135 candidates from the certified `n ≤ 7` lists, ~58 merges (mostly syntactic/island-free), ~76 gap checks.  The candidate-pool half is done: `A198683EightBounds.lean` proves `1 ≤ a(8) ≤ 135` unconditionally (the explicit 135-term list `a198683EightCandidates` is the value-cover; what remains is exactly the merge/separation campaign) | ~10² proof obligations; one new module per assistant |
 | **G2: `a(9..11)` unconditional** | ladder iterations of G1; scale grows ×3 per level; no new kinds of work expected | ~10³ obligations cumulative |
 | **G3: `a(12) ∈ {2925, 2926}` unconditional** | full witness `W`: G2 plus the `n = 12` level (~2213 merges, ~2925 gap checks); the special clusters are already proved | ~5·10³ obligations cumulative |
 | **G4: `a(12) = 2926` unconditional** | G3 plus `O`: per-class log-modulus lower bounds — free by-products of the box table, fed to the proved criterion | negligible marginal cost over G3 |
