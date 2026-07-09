@@ -1184,6 +1184,27 @@ theorem term_subst_up_up_up_up_instTerm_rename_five_succ (t u : Term) :
   simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
     (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1 + 1))
 
+/-- Substituting under four lifted binders after shifting a term through six
+binders removes the newest shift and leaves the quintuple shift. -/
+theorem term_subst_up_up_up_up_instTerm_rename_six_succ (t u : Term) :
+    Term.subst
+        (Term.upSubst
+          (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t =
+        Term.rename Nat.succ
+          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) := by
+    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+      (Term.rename_comp t Nat.succ
+        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1)).symm
+  rw [hrename, Term.subst_rename_succ_up]
+  rw [term_subst_up_up_up_instTerm_rename_five_succ]
+  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
+    (Term.rename_comp t Nat.succ
+      (fun n : Nat => n + 1 + 1 + 1 + 1))
+
 /-- Substituting under five lifted binders after shifting a term through six
 binders removes the newest shift and leaves the quintuple shift. -/
 theorem term_subst_up_up_up_up_up_instTerm_rename_six_succ (t u : Term) :
@@ -2980,6 +3001,19 @@ def betaDiv2BitTermAt (bit code step idx : Term) : Formula :=
           (Term.succ (Term.rename (fun n => n+2) idx)))
         (div2StepTermAt (Term.var 1) (Term.var 0)
           (Term.rename (fun n => n+2) bit)))))
+
+/-- Term-parametric final-bit existential for a beta-coded halving trace.
+
+The existential bit witness is required to be `1`; the trace code, step, and
+index are PA terms from the surrounding context. -/
+def betaDiv2BitOneTermExAt (code step idx : Term) : Formula :=
+  ex
+    (and
+      (oneAt 0)
+      (betaDiv2BitTermAt (Term.var 0)
+        (Term.rename Nat.succ code)
+        (Term.rename Nat.succ step)
+        (Term.rename Nat.succ idx)))
 
 /-- PA formula for Ackermann-coded HF membership, mediated by a beta-coded
 binary-halving trace. -/
@@ -19520,6 +19554,149 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
     BProv_exE_of_sentences
       (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
       hbit' (by simpa [rename, body] using houter)
+
+/-- Shift a final-bit-`1` existential one position down a copied beta tail.
+
+This is the existential wrapper around
+`BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit`: the same opened bit
+witness proves `oneAt 0` for the new trace, while the term-parametric bit read
+is transported through the shifted tail. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_bitOneEx_of_oldBitOneEx
+    {G : List Formula} {oldCode oldStep : Nat}
+    {newCode newStep lastTerm idxTerm : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep (Term.succ lastTerm)))
+    (hle : BProv Ax_s G (leTermAt idxTerm lastTerm))
+    (hbitEx : BProv Ax_s G
+      (betaDiv2BitOneTermExAt
+        (Term.var oldCode) (Term.var oldStep) (Term.succ idxTerm))) :
+    BProv Ax_s G (betaDiv2BitOneTermExAt newCode newStep idxTerm) := by
+  let target : Formula := betaDiv2BitOneTermExAt newCode newStep idxTerm
+  let body : Formula :=
+    and
+      (oneAt 0)
+      (betaDiv2BitTermAt (Term.var 0)
+        (Term.rename Nat.succ (Term.var oldCode))
+        (Term.rename Nat.succ (Term.var oldStep))
+        (Term.rename Nat.succ (Term.succ idxTerm)))
+  have hbitEx' : BProv Ax_s G (ex body) := by
+    simpa [betaDiv2BitOneTermExAt, body] using hbitEx
+  have hopened : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    let idx1 : Term := Term.rename Nat.succ idxTerm
+    let last1 : Term := Term.rename Nat.succ lastTerm
+    let newCode1 : Term := Term.rename Nat.succ newCode
+    let newStep1 : Term := Term.rename Nat.succ newStep
+    have hbody : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hone : BProv Ax_s C (oneAt 0) := by
+      simpa [body] using BProv_andE1 hbody
+    have holdBit : BProv Ax_s C
+        (betaDiv2BitTermAt (Term.var 0)
+          (Term.var (oldCode+1)) (Term.var (oldStep+1))
+          (Term.succ idx1)) := by
+      simpa [body, idx1, betaDiv2BitTermAt, betaTermTermAt,
+        remTermTermAt, div2StepTermAt, boolTermAt, ltTermAt,
+        betaModTermTerm, Term.rename, Term.rename_comp,
+        term_rename_up_succ_rename_succ] using BProv_andE2 hbody
+    have htailRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (betaShiftTailThroughTermAt oldCode oldStep
+            newCode newStep (Term.succ lastTerm))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        htail Nat.succ
+    have htailC : BProv Ax_s C
+        (betaShiftTailThroughTermAt (oldCode+1) (oldStep+1)
+          newCode1 newStep1 (Term.succ last1)) := by
+      simpa [C, newCode1, newStep1, last1, betaShiftTailThroughTermAt,
+        betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+        leTermAt, rename, Term.rename, SetTheory.up, Term.rename_comp,
+        term_rename_up_succ_rename_succ] using
+        BProv_context_cons (B := Ax_s) htailRen
+    have hleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (leTermAt idxTerm lastTerm)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hle Nat.succ
+    have hleC : BProv Ax_s C (leTermAt idx1 last1) := by
+      simpa [C, idx1, last1, leTermAt, rename, Term.rename,
+        SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ]
+        using BProv_context_cons (B := Ax_s) hleRen
+    have hnewBit : BProv Ax_s C
+        (betaDiv2BitTermAt (Term.var 0) newCode1 newStep1 idx1) :=
+      BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
+        (G := C) (oldCode := oldCode+1) (oldStep := oldStep+1)
+        (newCode := newCode1) (newStep := newStep1)
+        (lastTerm := last1) (idxTerm := idx1) (bit := Term.var 0)
+        htailC hleC holdBit
+    have hnewBody : BProv Ax_s C
+        (and
+          (oneAt 0)
+          (betaDiv2BitTermAt (Term.var 0) newCode1 newStep1 idx1)) :=
+      BProv_andI hone hnewBit
+    have hnewBodySubst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (and
+            (oneAt 0)
+            (betaDiv2BitTermAt (Term.var 0)
+              (Term.rename Nat.succ newCode1)
+              (Term.rename Nat.succ newStep1)
+              (Term.rename Nat.succ idx1)))) := by
+      simpa [betaDiv2BitTermAt, betaTermTermAt, remTermTermAt,
+        div2StepTermAt, boolTermAt, ltTermAt, betaModTermTerm,
+        oneAt, zeroAt, eqConstAt, subst, instTerm, Term.subst,
+        Term.upSubst, rename, Term.rename,
+        Term.rename_comp, SetTheory.up, newCode1, newStep1, idx1,
+        term_rename_up_succ_rename_succ,
+        term_subst_instTerm_rename_succ,
+        term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_two_var_zero,
+        term_subst_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_instTerm_rename_six_succ,
+        term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+        term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ,
+        Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hnewBody
+    simpa [target, betaDiv2BitOneTermExAt, betaDiv2BitTermAt,
+      betaTermTermAt, remTermTermAt, div2StepTermAt, boolTermAt,
+      ltTermAt, betaModTermTerm, oneAt, zeroAt, eqConstAt,
+      subst, instTerm, Term.subst,
+      Term.upSubst, rename, Term.rename, Term.rename_comp, SetTheory.up,
+      newCode1, newStep1, idx1, term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+      (BProv_exI (B := Ax_s) (G := C)
+        (a := and
+          (oneAt 0)
+          (betaDiv2BitTermAt (Term.var 0)
+            (Term.rename Nat.succ newCode1)
+            (Term.rename Nat.succ newStep1)
+            (Term.rename Nat.succ idx1)))
+        (t := Term.var 0) hnewBodySubst)
+  simpa [target, body] using
+    BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hbitEx' (by simpa [rename, body] using hopened)
 
 /-- Pointwise shifted-tail step construction from an old bounded slot trace.
 

@@ -889,6 +889,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_to_termAt_of_idxEq
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_to_termAt
 #check PA.Formula.betaDiv2BitTermAt
+#check PA.Formula.betaDiv2BitOneTermExAt
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitTermAt_of_components
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
@@ -902,6 +903,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_components
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldWitness
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_bitOneEx_of_oldBitOneEx
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldSteps
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepsThrough_of_oldSteps
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_steps_of_term_trace
