@@ -30180,6 +30180,31 @@ def strictSuccOpenedHighOddLowOddContext : List Formula :=
   div2TotalOpenedOddContext
     (div2TotalOpenedOddContext strictSuccContext 1) (0+2)
 
+/-- The opened strict successor branch where both predecessor-high and low
+codes are even is closed by the zero-bit distinguisher. -/
+theorem BProv_Ax_s_strictSuccOpenedHighDoubleLowDouble :
+    BProv Ax_s strictSuccOpenedHighDoubleLowDoubleContext
+      strictSuccOpenedTotalTarget := by
+  let C : List Formula := strictSuccOpenedHighDoubleLowDoubleContext
+  have hlowDouble : BProv Ax_s C (doubleEqAt 4 1) :=
+    BProv_ass (B := Ax_s) (G := C)
+      (by
+        simp [C, strictSuccOpenedHighDoubleLowDoubleContext,
+          div2TotalOpenedDoubleContext])
+  have hhighDouble : BProv Ax_s C (doubleEqAt 5 3) :=
+    BProv_ass (B := Ax_s) (G := C)
+      (by
+        simp [C, strictSuccOpenedHighDoubleLowDoubleContext,
+          div2TotalOpenedDoubleContext, div2TotalOpenedStepContext,
+          strictSuccContext, doubleEqAt, rename, Term.rename])
+  have htarget : BProv Ax_s C
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 5)) 4) :=
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+      (G := C) (high := 5) (highHalf := 3) (low := 4) (lowHalf := 1)
+      hhighDouble hlowDouble
+  simpa [C, strictSuccOpenedTotalTarget, strictSuccTarget,
+    rename_hfSomeDistinguishesTermAt_succ, Term.rename] using htarget
+
 /-- Strict successor branch with both high and low binary-halving witnesses
 supplied by PA totality and then split into the four parity branches.
 
@@ -30212,6 +30237,29 @@ theorem
       hhighDouble_lowOdd
       hhighOdd_lowDouble
       hhighOdd_lowOdd
+
+/-- Strict successor branch with PA totality opened and the even/even branch
+discharged by the zero-bit distinguisher.
+
+The high-even/low-odd membership-persistence branch and the two odd-high carry
+branches remain explicit. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_remaining_cases
+    (hhighDouble_lowOdd : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowDouble : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowOdd : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedTotalTarget) :
+    BProv Ax_s strictSuccContext strictSuccTarget :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_cases
+    BProv_Ax_s_strictSuccOpenedHighDoubleLowDouble
+    hhighDouble_lowOdd
+    hhighOdd_lowDouble
+    hhighOdd_lowOdd
 
 /-- High-even/low-odd strict branch, reduced to the genuine membership
 persistence obligation.
@@ -37070,6 +37118,31 @@ theorem
           hhighOdd_lowOdd)
     hodd
 
+/-- Successor shell after closing the opened strict even/even branch by the
+zero-bit distinguisher. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_remaining_cases_and_eq_opened_odd
+    (hhighDouble_lowOdd : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowDouble : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowOdd : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
+    (by
+      simpa [strictSuccContext, strictSuccTarget] using
+        BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_remaining_cases
+          hhighDouble_lowOdd
+          hhighOdd_lowDouble
+          hhighOdd_lowOdd)
+    hodd
+
 /-- Successor shell whose equality branch is reduced to the ordinary odd-high
 carry frontier.
 
@@ -37213,6 +37286,30 @@ theorem
   BProv_Ax_s_translated_HF_extensionality_of_successor_step
     (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_cases_and_eq_opened_odd
       hhighDouble_lowDouble
+      hhighDouble_lowOdd
+      hhighOdd_lowDouble
+      hhighOdd_lowOdd
+      hodd)
+
+/-- Translated HF extensionality after closing the opened strict even/even
+branch by the zero-bit distinguisher. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_strict_opened_total_div2_remaining_cases_and_eq_opened_odd
+    (hhighDouble_lowOdd : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowDouble : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowOdd : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_remaining_cases_and_eq_opened_odd
       hhighDouble_lowOdd
       hhighOdd_lowDouble
       hhighOdd_lowOdd
