@@ -17320,6 +17320,49 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_of_current_oddDoubleEqAt
       (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
       hwit (by simpa [rename, body] using houter)
 
+/-- Slot-indexed beta-step propagation from an explicit `div2StepAt` premise.
+
+The predecessor value may be even or odd.  This wrapper exposes that parity
+split once, using `div2StepAt` only as an ordinary object-language assumption;
+the branch-specific beta propagation lemmas remain responsible for the actual
+next-entry construction. -/
+theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_of_current_div2StepAt
+    {G : List Formula} {code step idx cur knownHalf knownBit : Nat}
+    {idxTerm : Term}
+    (hcurTerm : BProv Ax_s G
+      (betaTermAtTermIdx (Term.var cur) code step idxTerm))
+    (hstep : BProv Ax_s G (div2StepAt cur knownHalf knownBit))
+    (hidxEq : BProv Ax_s G (eq idxTerm (Term.var idx)))
+    (hwitness : BProv Ax_s G (betaDiv2StepWitnessAt code step idx)) :
+    BProv Ax_s G
+      (betaTermAtTermIdx (Term.var knownHalf) code step
+        (Term.succ idxTerm)) := by
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases hstep
+    (by
+      let C : List Formula := doubleEqAt cur knownHalf :: G
+      have hdouble : BProv Ax_s C (doubleEqAt cur knownHalf) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      exact
+        BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_of_current_doubleEqAt
+          (G := C) (code := code) (step := step) (idx := idx)
+          (cur := cur) (knownHalf := knownHalf) (idxTerm := idxTerm)
+          (BProv_context_cons (B := Ax_s) hcurTerm)
+          hdouble
+          (BProv_context_cons (B := Ax_s) hidxEq)
+          (BProv_context_cons (B := Ax_s) hwitness))
+    (by
+      let C : List Formula := oddDoubleEqAt cur knownHalf :: G
+      have hodd : BProv Ax_s C (oddDoubleEqAt cur knownHalf) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      exact
+        BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_of_current_oddDoubleEqAt
+          (G := C) (code := code) (step := step) (idx := idx)
+          (cur := cur) (knownHalf := knownHalf) (idxTerm := idxTerm)
+          (BProv_context_cons (B := Ax_s) hcurTerm)
+          hodd
+          (BProv_context_cons (B := Ax_s) hidxEq)
+          (BProv_context_cons (B := Ax_s) hwitness))
+
 /-- Opened beta-step closed-value propagation for term-indexed sources: if the
 current beta entry is known to be the closed numeral `cur` at a term index
 equal to the current step slot, then the successor entry is known to be
@@ -17940,6 +17983,48 @@ theorem
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hwitness (by
       simpa [betaDiv2StepWitnessAtTermIdx, body] using hopened)
+
+/-- Term-indexed beta-step propagation from an explicit `div2StepAt` premise.
+
+This is the term-indexed counterpart of
+`BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_of_current_div2StepAt`.  It keeps
+the binary-halving fact as a proof premise, then delegates the opened even and
+odd cases to the existing branch-specific wrappers. -/
+theorem
+    BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_of_current_div2StepAt
+    {G : List Formula} {code step cur knownHalf knownBit : Nat}
+    {idxTerm : Term}
+    (hcurTerm : BProv Ax_s G
+      (betaTermAtTermIdx (Term.var cur) code step idxTerm))
+    (hstep : BProv Ax_s G (div2StepAt cur knownHalf knownBit))
+    (hwitness : BProv Ax_s G
+      (betaDiv2StepWitnessAtTermIdx code step idxTerm)) :
+    BProv Ax_s G
+      (betaTermAtTermIdx (Term.var knownHalf) code step
+        (Term.succ idxTerm)) := by
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases hstep
+    (by
+      let C : List Formula := doubleEqAt cur knownHalf :: G
+      have hdouble : BProv Ax_s C (doubleEqAt cur knownHalf) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      exact
+        BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_of_current_doubleEqAt
+          (G := C) (code := code) (step := step)
+          (cur := cur) (knownHalf := knownHalf) (idxTerm := idxTerm)
+          (BProv_context_cons (B := Ax_s) hcurTerm)
+          hdouble
+          (BProv_context_cons (B := Ax_s) hwitness))
+    (by
+      let C : List Formula := oddDoubleEqAt cur knownHalf :: G
+      have hodd : BProv Ax_s C (oddDoubleEqAt cur knownHalf) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      exact
+        BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_of_current_oddDoubleEqAt
+          (G := C) (code := code) (step := step)
+          (cur := cur) (knownHalf := knownHalf) (idxTerm := idxTerm)
+          (BProv_context_cons (B := Ax_s) hcurTerm)
+          hodd
+          (BProv_context_cons (B := Ax_s) hwitness))
 
 /-- Eliminate a bounded beta-halving trace at an arbitrary PA index term. -/
 theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_termIdx_of_leTerm
