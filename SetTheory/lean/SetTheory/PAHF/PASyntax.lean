@@ -31747,6 +31747,58 @@ theorem BProv_Ax_s_induction_rule {G : List Formula} {phi : Formula}
       (fun x hx => by cases hx) hind_empty
   exact BProv_inductionForm_mp hind hzero hsucc
 
+/-- PA induction reduces universal shifted-tail existence to its genuine
+successor-extension step.
+
+The induction body keeps the old code and step in the ambient context and the
+current tail bound in slot `0`.  Its zero case is discharged by
+`BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound`; the caller supplies only the
+proof that a tail through `n` can be extended through `S n`. -/
+theorem BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor
+    {G : List Formula} {oldCode oldStep : Nat}
+    (hsucc : BProv Ax_s
+      (betaShiftTailExistsTermAt (oldCode+1) (oldStep+1)
+          (Term.var 0) ::
+        G.map (rename Nat.succ))
+      (betaShiftTailExistsTermAt (oldCode+1) (oldStep+1)
+        (Term.succ (Term.var 0)))) :
+    BProv Ax_s G
+      (all (betaShiftTailExistsTermAt (oldCode+1) (oldStep+1)
+        (Term.var 0))) := by
+  let phi : Formula :=
+    betaShiftTailExistsTermAt (oldCode+1) (oldStep+1) (Term.var 0)
+  have hzeroRaw : BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep Term.zero) :=
+    BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
+      (G := G) (oldCode := oldCode) (oldStep := oldStep)
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    simpa [phi, betaShiftTailExistsTermAt,
+      betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def, Nat.add_assoc] using hzeroRaw
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    simpa [phi, betaShiftTailExistsTermAt,
+      betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def, Nat.add_assoc] using hsucc
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  simpa [phi] using
+    BProv_Ax_s_induction_rule (G := G) (phi := phi) hzero hsuccAll
+
 /-- If a bounded halving trace starts with a zero beta entry, every index below
 the trace bound has zero beta output.  The proof is PA induction over the
 index, keeping the invariant formula explicit:

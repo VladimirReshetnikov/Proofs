@@ -894,6 +894,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_inductionForm_rename
 #check @PA.Formula.BProv_Ax_s_inductionForm
 #check @PA.Formula.BProv_Ax_s_induction_rule
+#check @PA.Formula.BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor
 #check @PA.Formula.leAt
 #check @PA.Formula.leTermAt
 #check @PA.Formula.leConstAt
