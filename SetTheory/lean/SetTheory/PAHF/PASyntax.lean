@@ -2960,6 +2960,27 @@ def betaDiv2BitAt (bit code step idx : Nat) : Formula :=
         (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
         (div2StepAt 1 0 (bit+2)))))
 
+/-- Fully term-parametric read of a specified bit from a beta-coded halving
+trace at `idx`.
+
+This is the bit-reading companion to `betaDiv2StepWitnessTermAt`: only the
+current and next beta entries are existentially opened here, while the bit,
+code, step, and index are arbitrary PA terms supplied by the caller. -/
+def betaDiv2BitTermAt (bit code step idx : Term) : Formula :=
+  ex (ex
+    (and
+      (betaTermTermAt (Term.var 1)
+        (Term.rename (fun n => n+2) code)
+        (Term.rename (fun n => n+2) step)
+        (Term.rename (fun n => n+2) idx))
+      (and
+        (betaTermTermAt (Term.var 0)
+          (Term.rename (fun n => n+2) code)
+          (Term.rename (fun n => n+2) step)
+          (Term.succ (Term.rename (fun n => n+2) idx)))
+        (div2StepTermAt (Term.var 1) (Term.var 0)
+          (Term.rename (fun n => n+2) bit)))))
+
 /-- PA formula for Ackermann-coded HF membership, mediated by a beta-coded
 binary-halving trace. -/
 def hfMemAt (elem set : Nat) : Formula :=
@@ -8900,6 +8921,99 @@ theorem BProv_Ax_s_betaDiv2StepWitnessTermAt_of_components
   simpa [betaDiv2StepWitnessTermAt, body, subst, instTerm,
     Term.subst, Term.upSubst] using
     (BProv_exI (B := Ax_s) (G := G) (a := ex (ex body))
+      (t := cur) hnextEx)
+
+/-- Package explicit term-parametric beta entries and a term-parametric
+binary-halving equation as a term-parametric beta-div2 bit read. -/
+theorem BProv_Ax_s_betaDiv2BitTermAt_of_components
+    {G : List Formula} {bit code step idx cur next : Term}
+    (hcur : BProv Ax_s G (betaTermTermAt cur code step idx))
+    (hnext : BProv Ax_s G
+      (betaTermTermAt next code step (Term.succ idx)))
+    (hdiv : BProv Ax_s G (div2StepTermAt cur next bit)) :
+    BProv Ax_s G (betaDiv2BitTermAt bit code step idx) := by
+  let body : Formula :=
+    and
+      (betaTermTermAt (Term.var 1)
+        (Term.rename (fun n => n+2) code)
+        (Term.rename (fun n => n+2) step)
+        (Term.rename (fun n => n+2) idx))
+      (and
+        (betaTermTermAt (Term.var 0)
+          (Term.rename (fun n => n+2) code)
+          (Term.rename (fun n => n+2) step)
+          (Term.succ (Term.rename (fun n => n+2) idx)))
+        (div2StepTermAt (Term.var 1) (Term.var 0)
+          (Term.rename (fun n => n+2) bit)))
+  have hcurBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (betaTermTermAt (Term.var 1)
+            (Term.rename (fun n => n+2) code)
+            (Term.rename (fun n => n+2) step)
+            (Term.rename (fun n => n+2) idx)))) := by
+    simpa [betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ] using hcur
+  have hnextBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (betaTermTermAt (Term.var 0)
+            (Term.rename (fun n => n+2) code)
+            (Term.rename (fun n => n+2) step)
+            (Term.succ (Term.rename (fun n => n+2) idx))))) := by
+    simpa [betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ] using hnext
+  have hdivBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (div2StepTermAt (Term.var 1) (Term.var 0)
+            (Term.rename (fun n => n+2) bit)))) := by
+    simpa [div2StepTermAt, boolTermAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.rename_comp,
+      Term.subst_rename_succ_up, term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ] using hdiv
+  have htailBody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur))
+          (and
+            (betaTermTermAt (Term.var 0)
+              (Term.rename (fun n => n+2) code)
+              (Term.rename (fun n => n+2) step)
+              (Term.succ (Term.rename (fun n => n+2) idx)))
+            (div2StepTermAt (Term.var 1) (Term.var 0)
+              (Term.rename (fun n => n+2) bit))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hnextBody hdivBody
+  have hbody : BProv Ax_s G
+      (subst (instTerm next)
+        (subst (Term.upSubst (instTerm cur)) body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hcurBody htailBody
+  have hnextEx : BProv Ax_s G
+      (subst (instTerm cur) (ex body)) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm cur)) body)
+        (t := next) hbody)
+  simpa [betaDiv2BitTermAt, body, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
       (t := cur) hnextEx)
 
 /-- Package explicit term-parametric beta entries, with the successor entry in

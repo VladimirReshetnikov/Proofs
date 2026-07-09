@@ -888,6 +888,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_succ_of_betaAtSuccIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAt_to_termAt_of_idxEq
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_to_termAt
+#check PA.Formula.betaDiv2BitTermAt
+#check @PA.Formula.BProv_Ax_s_betaDiv2BitTermAt_of_components
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_termIdx_of_leTerm
