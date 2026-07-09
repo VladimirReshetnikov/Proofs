@@ -1096,6 +1096,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_div2TotalTermAt_zero
 #check @PA.Formula.BProv_Ax_s_div2TotalAt_all
 #check @PA.Formula.BProv_Ax_s_div2TotalAt
+#check PA.Formula.div2TotalOpenedStepContext
+#check @PA.Formula.BProv_Ax_s_of_div2TotalAt_opened_step
 #check PA.Formula.succSelfOpenedOddContext
 #check PA.Formula.succSelfOpenedOddTarget
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_bit_zero

@@ -11695,6 +11695,45 @@ theorem BProv_Ax_s_div2TotalAt {G : List Formula} (value : Nat) :
   simpa [div2TotalAt, div2TotalTermAt, div2StepTermAt, boolTermAt,
     subst, instTerm, Term.subst, Term.upSubst, Term.rename] using hinst
 
+/-- Context left after opening the two existential witnesses in
+`div2TotalAt value`.
+
+The opened half is slot `1`, the opened bit is slot `0`, and all formulas from
+the source context have been shifted through both binders. -/
+def div2TotalOpenedStepContext (G : List Formula) (value : Nat) :
+    List Formula :=
+  let step : Formula := div2StepAt (value+2) 1 0
+  let inner : Formula := ex step
+  step :: (inner :: G.map (rename Nat.succ)).map (rename Nat.succ)
+
+/-- Generic eliminator for the opened form of `div2TotalAt`.
+
+This performs no parity reasoning: it only exposes the concrete `div2StepAt`
+left by the totality witness, with the target renamed through the two opened
+binders. -/
+theorem BProv_Ax_s_of_div2TotalAt_opened_step
+    {G : List Formula} {value : Nat} {target : Formula}
+    (htotal : BProv Ax_s G (div2TotalAt value))
+    (hbody : BProv Ax_s (div2TotalOpenedStepContext G value)
+      (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s G target := by
+  let step : Formula := div2StepAt (value+2) 1 0
+  let inner : Formula := ex step
+  have htotal' : BProv Ax_s G (ex inner) := by
+    simpa [inner, step, div2TotalAt, div2TotalTermAt, div2StepTermAt,
+      div2StepAt, boolTermAt, boolAt, zeroAt, oneAt, eqConstAt,
+      Term.rename, Term.numeral] using htotal
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := G) (a := inner) (c := target) htotal' ?_
+  let C : List Formula := inner :: G.map (rename Nat.succ)
+  have hinner : BProv Ax_s C (ex step) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, inner])
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := C) (a := step) (c := rename Nat.succ target) hinner ?_
+  simpa [div2TotalOpenedStepContext, C, step, inner] using hbody
+
 /-- Nested parity elimination for two binary-halving steps.  The generated
 contexts put the low-code parity assumption in front of the high-code parity
 assumption, matching the order produced by the inner case split. -/
