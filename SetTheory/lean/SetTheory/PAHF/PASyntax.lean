@@ -3049,6 +3049,23 @@ def betaShiftTailExistsTermAt
       (Term.var 1) (Term.var 0)
       (Term.rename (fun n => n+2) last)))
 
+/-- Closed-bound variant of `betaShiftTailThroughTermAt`.
+
+For every standard `i <= last`, the beta entry at old index `S i` is copied
+to the new trace at index `i`.  This is only the closed formula macro; the
+finite PA construction from semantic beta-entry data is proved separately. -/
+def betaShiftTailThroughConstAt
+    (oldCode oldStep newCode newStep last : Nat) : Formula :=
+  all (imp
+    (leConstAt 0 last)
+    (all (imp
+      (betaTermTermAt (Term.var 0)
+        (Term.var (oldCode+2)) (Term.var (oldStep+2))
+        (Term.succ (Term.var 1)))
+      (betaTermTermAt (Term.var 0)
+        (Term.var (newCode+2)) (Term.var (newStep+2))
+        (Term.var 1)))))
+
 /-- Closed-bound variant of `betaDiv2StepsThroughAt`: every adjacent pair up to
 the standard numeral `last` in a beta-coded sequence is one binary-halving step.
 This is only a formula macro; the PA constructors connecting it to the variable
@@ -3967,6 +3984,47 @@ theorem betaShiftTailExistsTermAt_nat
       (Term.var 1) (Term.var 0)
       (Term.rename (fun n => n+2) last)).mpr
     simpa [Term.eval_rename, Term.eval, scons, Nat.add_assoc] using htail
+
+theorem betaShiftTailThroughConstAt_nat
+    (e : Nat → Nat) (oldCode oldStep newCode newStep last : Nat) :
+    Sat natModel e
+      (betaShiftTailThroughConstAt oldCode oldStep newCode newStep last) ↔
+      BetaShiftTailThrough
+        (e oldCode) (e oldStep) (e newCode) (e newStep) last := by
+  constructor
+  · intro h k hk value hold
+    have hkSat :
+        Sat natModel (scons k e) (leConstAt 0 last) := by
+      exact (leConstAt_nat (scons k e) 0 last).mpr (by
+        simpa [scons] using hk)
+    have holdSat :
+        Sat natModel (scons value (scons k e))
+          (betaTermTermAt (Term.var 0)
+            (Term.var (oldCode+2)) (Term.var (oldStep+2))
+            (Term.succ (Term.var 1))) := by
+      apply (betaTermTermAt_nat_entry (scons value (scons k e))
+        (Term.var 0) (Term.var (oldCode+2)) (Term.var (oldStep+2))
+        (Term.succ (Term.var 1))).mpr
+      simpa [Term.eval, natModel, scons, Nat.add_assoc] using hold
+    have hnewSat := h k hkSat value holdSat
+    have hnew := (betaTermTermAt_nat_entry (scons value (scons k e))
+        (Term.var 0) (Term.var (newCode+2)) (Term.var (newStep+2))
+        (Term.var 1)).mp hnewSat
+    simpa [Term.eval, scons, Nat.add_assoc] using hnew
+  · intro h k hkSat value holdSat
+    have hk : k ≤ last := by
+      have hle := (leConstAt_nat (scons k e) 0 last).mp hkSat
+      simpa [scons] using hle
+    have hold :
+        BetaEntry (e oldCode) (e oldStep) (k + 1) value := by
+      have hb := (betaTermTermAt_nat_entry (scons value (scons k e))
+          (Term.var 0) (Term.var (oldCode+2)) (Term.var (oldStep+2))
+          (Term.succ (Term.var 1))).mp holdSat
+      simpa [Term.eval, natModel, scons, Nat.add_assoc] using hb
+    apply (betaTermTermAt_nat_entry (scons value (scons k e))
+      (Term.var 0) (Term.var (newCode+2)) (Term.var (newStep+2))
+      (Term.var 1)).mpr
+    simpa [Term.eval, scons, Nat.add_assoc] using h k hk value hold
 
 theorem betaDiv2StepsThroughTermTermAt_nat
     (e : Nat → Nat) (code step last : Term) :
