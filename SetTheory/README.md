@@ -64,9 +64,14 @@ foundational/computability work, each present in both proof assistants
 `BusyBeaverMathlib.v`/`BusyBeaverMathlib.lean`):
 
 - [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) (a facade over
-  `lean/SetTheory/PAHF/{PASyntax, AckermannHFCore, Interpretation}.lean`;
+  `lean/SetTheory/PAHF/{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean`;
   Coq counterpart [`PAHF.v`](PAHF.v)) develops Ackermann-coded
   hereditary finite sets and first-order PA/HF interpretation infrastructure.
+  It also contains a first-order PA sentence for the Mertens/Littlewood
+  arithmetic criterion equivalent to the Riemann Hypothesis; see
+  [`lean/SetTheory/PAHF/RiemannHypothesis.lean`](lean/SetTheory/PAHF/RiemannHypothesis.lean)
+  and the comparison report
+  [`../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md).
 - [`lean/SetTheory/BusyBeaver.lean`](lean/SetTheory/BusyBeaver.lean)
   (Coq counterpart [`BusyBeaver.v`](BusyBeaver.v)) formalizes a
   Rado-style two-symbol blank-tape machine model and proves that any busy-beaver
