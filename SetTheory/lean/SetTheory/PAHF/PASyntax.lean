@@ -13816,6 +13816,206 @@ theorem BProv_Ax_s_twoEntryBetaTerm_one_bound
     BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self s)
   simpa [s] using BProv_ltTermAt_of_eq_right hmod hlt
 
+/-- For adjacent two-entry beta moduli `m0 = S step` and
+`m1 = S (step + step)`, PA proves `2*m0 = S m1`.
+
+This is the explicit modular-inverse certificate used by the two-entry CRT
+code: multiplication by `2` is inverse to `m0` modulo `m1`. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
+    {G : List Formula} (step : Term) :
+    let modulusZero := Term.succ step
+    let modulusOne := Term.succ (Term.add step step)
+    BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) modulusZero)
+        (Term.succ modulusOne)) := by
+  let modulusZero : Term := Term.succ step
+  let modulusOne : Term := Term.succ (Term.add step step)
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) modulusZero)
+        (Term.mul modulusZero (Term.numeral 2))) :=
+    BProv_Ax_s_mul_comm_terms (Term.numeral 2) modulusZero
+  have htwo : BProv Ax_s G
+      (eq (Term.mul modulusZero (Term.numeral 2))
+        (Term.add modulusZero modulusZero)) :=
+    BProv_Ax_s_mul_two_right_terms modulusZero
+  have hsuccAdd : BProv Ax_s G
+      (eq (Term.add modulusZero modulusZero)
+        (Term.succ (Term.add step modulusZero))) := by
+    simpa [modulusZero] using BProv_Ax_s_succ_add_terms step modulusZero
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add step modulusZero)
+        (Term.succ (Term.add step step))) := by
+    simpa [modulusZero] using
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms step step)
+  have hsuccCong : BProv Ax_s G
+      (eq (Term.succ (Term.add step modulusZero))
+        (Term.succ (Term.succ (Term.add step step)))) :=
+    BProv_eq_congr_succ haddSucc
+  simpa [modulusZero, modulusOne] using
+    BProv_eqTrans hcomm
+      (BProv_eqTrans htwo (BProv_eqTrans hsuccAdd hsuccCong))
+
+/-- The adjacent index-one beta modulus satisfies
+`m1*m1 = S ((4*step)*m0)` where `m0 = S step`.
+
+Equivalently, `m1^2` is congruent to `1` modulo `m0`.  Together with
+`BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero`, this is the second explicit
+CRT identity needed to verify the generic two-entry code. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
+    {G : List Formula} (step : Term) :
+    let modulusZero := Term.succ step
+    let doubleStep := Term.add step step
+    let modulusOne := Term.succ doubleStep
+    let fourStep := Term.mul (Term.numeral 4) step
+    BProv Ax_s G
+      (eq (Term.mul modulusOne modulusOne)
+        (Term.succ (Term.mul fourStep modulusZero))) := by
+  let modulusZero : Term := Term.succ step
+  let doubleStep : Term := Term.add step step
+  let modulusOne : Term := Term.succ doubleStep
+  let fourStep : Term := Term.mul (Term.numeral 4) step
+  let squareAtom : Term := Term.mul step step
+  let fourSquares : Term :=
+    Term.add (Term.add squareAtom squareAtom)
+      (Term.add squareAtom squareAtom)
+  have htwoStep : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) step) doubleStep) :=
+    BProv_eqTrans
+      (BProv_Ax_s_mul_comm_terms (Term.numeral 2) step)
+      (by simpa [doubleStep] using BProv_Ax_s_mul_two_right_terms step)
+  have hfourNumeral : BProv Ax_s G
+      (eq (Term.numeral 4)
+        (Term.add (Term.numeral 2) (Term.numeral 2))) := by
+    simpa using BProv_eqSym
+      (BProv_weaken_nil (G := G) (BProv_Ax_s_addNumerals 2 2))
+  have hfourArg : BProv Ax_s G
+      (eq fourStep
+        (Term.mul (Term.add (Term.numeral 2) (Term.numeral 2)) step)) := by
+    simpa [fourStep] using BProv_eq_congr_mul_left step hfourNumeral
+  have hfourDist : BProv Ax_s G
+      (eq
+        (Term.mul (Term.add (Term.numeral 2) (Term.numeral 2)) step)
+        (Term.add
+          (Term.mul (Term.numeral 2) step)
+          (Term.mul (Term.numeral 2) step))) :=
+    BProv_Ax_s_add_mul_terms (Term.numeral 2) (Term.numeral 2) step
+  have hfourNorm : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul (Term.numeral 2) step)
+          (Term.mul (Term.numeral 2) step))
+        (Term.add doubleStep doubleStep)) :=
+    BProv_eq_congr_add htwoStep htwoStep
+  have hfourStep : BProv Ax_s G
+      (eq fourStep (Term.add doubleStep doubleStep)) :=
+    BProv_eqTrans hfourArg (BProv_eqTrans hfourDist hfourNorm)
+  have hdoubleSquareDist : BProv Ax_s G
+      (eq (Term.mul doubleStep doubleStep)
+        (Term.add (Term.mul step doubleStep)
+          (Term.mul step doubleStep))) := by
+    simpa [doubleStep] using
+      BProv_Ax_s_add_mul_terms step step doubleStep
+  have hstepDouble : BProv Ax_s G
+      (eq (Term.mul step doubleStep)
+        (Term.add squareAtom squareAtom)) := by
+    simpa [doubleStep, squareAtom] using
+      BProv_Ax_s_mul_add_terms step step step
+  have hdoubleSquareNorm : BProv Ax_s G
+      (eq (Term.mul doubleStep doubleStep) fourSquares) :=
+    BProv_eqTrans hdoubleSquareDist
+      (by simpa [fourSquares] using
+        BProv_eq_congr_add hstepDouble hstepDouble)
+  have hfourMulArg : BProv Ax_s G
+      (eq (Term.mul fourStep step)
+        (Term.mul (Term.add doubleStep doubleStep) step)) :=
+    BProv_eq_congr_mul_left step hfourStep
+  have hfourMulDist : BProv Ax_s G
+      (eq (Term.mul (Term.add doubleStep doubleStep) step)
+        (Term.add (Term.mul doubleStep step)
+          (Term.mul doubleStep step))) :=
+    BProv_Ax_s_add_mul_terms doubleStep doubleStep step
+  have hdoubleMulStep : BProv Ax_s G
+      (eq (Term.mul doubleStep step)
+        (Term.add squareAtom squareAtom)) := by
+    simpa [doubleStep, squareAtom] using
+      BProv_Ax_s_add_mul_terms step step step
+  have hfourMulNorm : BProv Ax_s G
+      (eq (Term.mul fourStep step) fourSquares) :=
+    BProv_eqTrans hfourMulArg
+      (BProv_eqTrans hfourMulDist (by
+        simpa [fourSquares] using
+          BProv_eq_congr_add hdoubleMulStep hdoubleMulStep))
+  have hdoubleSquare : BProv Ax_s G
+      (eq (Term.mul doubleStep doubleStep)
+        (Term.mul fourStep step)) :=
+    BProv_eqTrans hdoubleSquareNorm (BProv_eqSym hfourMulNorm)
+  have hcoreAssoc : BProv Ax_s G
+      (eq
+        (Term.add (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          doubleStep)
+        (Term.add (Term.mul doubleStep doubleStep)
+          (Term.add doubleStep doubleStep))) :=
+    BProv_Ax_s_add_assoc_terms
+      (Term.mul doubleStep doubleStep) doubleStep doubleStep
+  have hcoreCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul doubleStep doubleStep)
+          (Term.add doubleStep doubleStep))
+        (Term.add (Term.mul fourStep step) fourStep)) :=
+    BProv_eq_congr_add hdoubleSquare (BProv_eqSym hfourStep)
+  have hfourMulSucc : BProv Ax_s G
+      (eq (Term.mul fourStep modulusZero)
+        (Term.add (Term.mul fourStep step) fourStep)) := by
+    simpa [modulusZero] using
+      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms fourStep step)
+  have hcore : BProv Ax_s G
+      (eq
+        (Term.add (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          doubleStep)
+        (Term.mul fourStep modulusZero)) :=
+    BProv_eqTrans hcoreAssoc
+      (BProv_eqTrans hcoreCong (BProv_eqSym hfourMulSucc))
+  have hsquareMulSucc : BProv Ax_s G
+      (eq (Term.mul modulusOne modulusOne)
+        (Term.add (Term.mul modulusOne doubleStep) modulusOne)) := by
+    simpa [modulusOne] using
+      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms modulusOne doubleStep)
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul modulusOne doubleStep)
+        (Term.add (Term.mul doubleStep doubleStep) doubleStep)) := by
+    simpa [modulusOne] using
+      BProv_Ax_s_succ_mul_terms doubleStep doubleStep
+  have hsuccMulCong : BProv Ax_s G
+      (eq (Term.add (Term.mul modulusOne doubleStep) modulusOne)
+        (Term.add
+          (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          modulusOne)) :=
+    BProv_eq_congr_add_left modulusOne hsuccMul
+  have haddSucc : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          modulusOne)
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+            doubleStep))) := by
+    simpa [modulusOne] using BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms
+        (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+        doubleStep)
+  have hcoreSucc : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+            doubleStep))
+        (Term.succ (Term.mul fourStep modulusZero))) :=
+    BProv_eq_congr_succ hcore
+  simpa [modulusZero, doubleStep, modulusOne, fourStep] using
+    BProv_eqTrans hsquareMulSucc
+      (BProv_eqTrans hsuccMulCong (BProv_eqTrans haddSucc hcoreSucc))
+
 /-- If a slot is explicitly twice its half, PA proves that the half is below
 the slot. -/
 theorem BProv_Ax_s_leAt_half_of_doubleEqAt

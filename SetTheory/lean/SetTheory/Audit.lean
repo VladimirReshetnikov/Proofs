@@ -921,6 +921,8 @@ open SetTheory
 #check @PA.Formula.twoEntryBetaCodeTerm
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
 #check @PA.Formula.BetaEntry_twoEntry_zero
 #check @PA.Formula.BetaEntry_twoEntry_one
 #check @PA.Formula.BetaDiv2Step_twoEntry
