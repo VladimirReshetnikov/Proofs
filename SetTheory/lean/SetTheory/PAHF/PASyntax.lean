@@ -4050,6 +4050,26 @@ theorem HFMemTrace_pred_of_succ_odd_double
   exact HFMemTrace_exists_of_mem
     ((AckermannHF.mem_succ_odd_double_iff x half).mp hmemOdd)
 
+/-- Unified semantic trace transport for the inverse halving step.
+
+If `set` is `2 * half + bit` with `bit` boolean, then a trace witnessing
+`S x ∈ set` yields some trace witnessing `x ∈ half`.  The object-language PA
+proof still has to construct the new beta witnesses syntactically; this theorem
+is the reusable semantic specification for that beta-tail construction. -/
+theorem HFMemTrace_pred_of_succ_div2Step
+    {x set half bit code step : Nat}
+    (hbit : bit = 0 ∨ bit = 1)
+    (hset : set = half + half + bit)
+    (htrace : HFMemTrace (x+1) set code step) :
+    ∃ code' step', HFMemTrace x half code' step' := by
+  rcases hbit with rfl | rfl
+  · exact HFMemTrace_pred_of_succ_double
+      (x := x) (set := set) (half := half) (code := code) (step := step)
+      (by omega) htrace
+  · exact HFMemTrace_pred_of_succ_odd_double
+      (x := x) (set := set) (half := half) (code := code) (step := step)
+      (by omega) htrace
+
 theorem hfMemAt_sound (e : Nat → Nat) (elem set : Nat) :
     Sat natModel e (hfMemAt elem set) → AckermannHF.Mem (e elem) (e set) := by
   intro h
