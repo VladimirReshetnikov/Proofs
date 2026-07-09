@@ -914,11 +914,20 @@ printLeanSpecial[n_Integer] := Module[{a, b, q, lhs, rhs},
   ];
 ];
 
-printLeanStrict[n_Integer] := Module[{a, b, i1, i2, sqrtN, sqrtLen, addN, addLen},
+printLeanStrict[n_Integer] := Module[{a, b, i1, i2, sqrtN, addN, addLen},
   sqrtN = n - 1;
-  sqrtLen = Length[values[sqrtN]];
   addN = n - 2;
   addLen = Length[values[addN]];
+  Print["macro \"values", n, "_sqrt_run\" : tactic =>"];
+  Print["  `(tactic| exact sqrt_values", sqrtN, "_strictMono (by decide))"];
+  Print[""];
+  Print["macro \"values", n, "_one_add_run\" i:num j:num : tactic =>"];
+  Print["  `(tactic|"];
+  Print["    (change 1 + values", addN, " ($i : Fin ", addLen, ") < 1 + values",
+    addN, " ($j : Fin ", addLen, ");"];
+  Print["      linarith [values", addN,
+    "_strictMono (by native_decide : ($i : Fin ", addLen, ") < $j)]))"];
+  Print[""];
   Print["set_option maxHeartbeats 2000000 in"];
   Print["theorem values", n, "_strictMono : StrictMono values", n, " := by"];
   Print["  rw [Fin.strictMono_iff_lt_succ]"];
@@ -931,24 +940,12 @@ printLeanStrict[n_Integer] := Module[{a, b, i1, i2, sqrtN, sqrtLen, addN, addLen
       ! monotoneAdjacentQ[a, b],
         Print["  next => exact values", n, "_special_", i - 1],
       MatchQ[a, {"sqrt", sqrtN, _Integer}] && MatchQ[b, {"sqrt", sqrtN, _Integer}],
-        Print["  next => exact sqrt_values", sqrtN, "_strictMono (by decide)"],
+        Print["  next => values", n, "_sqrt_run"],
       MatchQ[a, {"add", 1, 0, addN, _Integer}] &&
           MatchQ[b, {"add", 1, 0, addN, _Integer}],
         i1 = a[[5]];
         i2 = b[[5]];
-        Print[
-          "  next =>"
-        ];
-        Print[
-          "    change 1 + values" <> ToString[addN] <> " (" <> ToString[i1] <>
-          " : Fin " <> ToString[addLen] <> ") < 1 + values" <> ToString[addN] <>
-          " (" <> ToString[i2] <> " : Fin " <> ToString[addLen] <> ")"
-        ];
-        Print[
-          "    linarith [values" <> ToString[addN] <>
-          "_strictMono (by native_decide : (" <> ToString[i1] <> " : Fin " <>
-          ToString[addLen] <> ") < " <> ToString[i2] <> ")]"
-        ],
+        Print["  next => values", n, "_one_add_run ", i1, " ", i2],
       True,
         Print["  next => fail \"unsupported adjacent pair: ", codeString[a], " < ", codeString[b], "\""]
     ],
