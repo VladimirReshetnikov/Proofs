@@ -2888,6 +2888,51 @@ theorem HFMemTrace_zero_exists_of_one_step {set half : Nat}
     BetaDiv2StepsThrough_zero_twoEntry (Or.inr rfl) hset,
     ⟨set, half, BetaDiv2Step_twoEntry (Or.inr rfl) hset⟩⟩
 
+/-- Term-parametric counterpart of `twoEntryBetaStep`.
+
+It is only the candidate beta step `S (cur + next)`; its adequacy for the two
+entries is established by separate PA proofs. -/
+def twoEntryBetaStepTerm (cur next : Term) : Term :=
+  Term.succ (Term.add cur next)
+
+/-- Term-parametric counterpart of `twoEntryBetaCode`.
+
+The expression mirrors the semantic CRT witness exactly.  In particular, the
+definition contains no beta-entry or boundedness proof; those are supplied by
+the term-level exactness theorems below. -/
+def twoEntryBetaCodeTerm (cur next : Term) : Term :=
+  let s := twoEntryBetaStepTerm cur next
+  Term.add cur
+    (Term.mul (Term.succ s)
+      (Term.add
+        (Term.mul (Term.numeral 2) next)
+        (Term.mul (Term.mul (Term.numeral 4) s) cur)))
+
+/-- Generic natural-number CRT update term.
+
+If `product * inverse = 1 (mod modulus)` and `delta` corrects the old residue
+to the desired new residue, adding `product * (inverse * delta)` preserves all
+congruences whose moduli divide `product` while establishing the new one.
+Those facts are proof obligations of the theorems below, not part of this
+arithmetic definition. -/
+def crtExtendCodeTerm
+    (oldCode product inverse delta : Term) : Term :=
+  Term.add oldCode (Term.mul product (Term.mul inverse delta))
+
+/-- Quotient term for composing two positive inverse certificates modulo the
+same modulus.
+
+If `p*u = 1 + m*q` and `r*v = 1 + m*s`, then
+`(p*r)*(u*v) = 1 + m*crtInverseProductQuotTerm m q s`.  The corresponding PA
+proof is separate below. -/
+def crtInverseProductQuotTerm
+    (modulus leftQuot rightQuot : Term) : Term :=
+  Term.add
+    (Term.add
+      (Term.mul leftQuot (Term.mul modulus rightQuot))
+      leftQuot)
+    rightQuot
+
 /-- Open beta step witness for the even branch of `0 ∈ S low`: when
 `low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
 use `S low` itself as the beta step. -/
@@ -9359,6 +9404,834 @@ theorem BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
             (Term.rename Nat.succ rem))))
       (t := quotient) hbody)
 
+/-- Transport a fully term-parametric bounded remainder across a PA equality
+of modulus terms. -/
+theorem BProv_Ax_s_remTermTermAt_of_eq_modulus
+    {G : List Formula} {rem value oldModulus newModulus : Term}
+    (hmod : BProv Ax_s G (eq oldModulus newModulus))
+    (hrem : BProv Ax_s G
+      (remTermTermAt rem value oldModulus)) :
+    BProv Ax_s G (remTermTermAt rem value newModulus) := by
+  let a : Formula :=
+    remTermTermAt
+      (Term.rename Nat.succ rem)
+      (Term.rename Nat.succ value)
+      (Term.var 0)
+  have hold : BProv Ax_s G (subst (instTerm oldModulus) a) := by
+    simpa [a, remTermTermAt, ltTermAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hrem
+  have hnew : BProv Ax_s G (subst (instTerm newModulus) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := oldModulus) (t := newModulus) (a := a)
+      hmod hold
+  simpa [a, remTermTermAt, ltTermAt, subst, instTerm,
+    Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ] using hnew
+
+/-- Reorder the middle factors in a product of two products.
+
+This small commutative-semiring normalization lemma is useful whenever two
+separately proved multiplication certificates have to be composed. -/
+theorem BProv_Ax_s_mul_mul_reorder_middle_terms
+    {G : List Formula} (a b c d : Term) :
+    BProv Ax_s G
+      (eq (Term.mul (Term.mul a b) (Term.mul c d))
+        (Term.mul (Term.mul a c) (Term.mul b d))) := by
+  have hassocLeft : BProv Ax_s G
+      (eq (Term.mul (Term.mul a b) (Term.mul c d))
+        (Term.mul a (Term.mul b (Term.mul c d)))) :=
+    BProv_Ax_s_mul_assoc_terms a b (Term.mul c d)
+  have hmiddle1 : BProv Ax_s G
+      (eq (Term.mul b (Term.mul c d))
+        (Term.mul (Term.mul b c) d)) :=
+    BProv_eqSym (BProv_Ax_s_mul_assoc_terms b c d)
+  have hmiddle2 : BProv Ax_s G
+      (eq (Term.mul (Term.mul b c) d)
+        (Term.mul (Term.mul c b) d)) :=
+    BProv_eq_congr_mul_left d (BProv_Ax_s_mul_comm_terms b c)
+  have hmiddle3 : BProv Ax_s G
+      (eq (Term.mul (Term.mul c b) d)
+        (Term.mul c (Term.mul b d))) :=
+    BProv_Ax_s_mul_assoc_terms c b d
+  have hmiddle : BProv Ax_s G
+      (eq (Term.mul b (Term.mul c d))
+        (Term.mul c (Term.mul b d))) :=
+    BProv_eqTrans hmiddle1 (BProv_eqTrans hmiddle2 hmiddle3)
+  have hmiddleCong : BProv Ax_s G
+      (eq (Term.mul a (Term.mul b (Term.mul c d)))
+        (Term.mul a (Term.mul c (Term.mul b d)))) :=
+    BProv_eq_congr_mul_right a hmiddle
+  have hassocRight : BProv Ax_s G
+      (eq (Term.mul a (Term.mul c (Term.mul b d)))
+        (Term.mul (Term.mul a c) (Term.mul b d))) :=
+    BProv_eqSym (BProv_Ax_s_mul_assoc_terms a c (Term.mul b d))
+  exact BProv_eqTrans hassocLeft
+    (BProv_eqTrans hmiddleCong hassocRight)
+
+/-- Multiply two positive inverse equations with a common modulus.
+
+The quotient is the explicit polynomial
+`q * (m * s) + q + s`; no coprimality or existence claim is hidden here. -/
+theorem BProv_Ax_s_crtInverseProductQuot_expand
+    {G : List Formula} (modulus leftQuot rightQuot : Term) :
+    BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.succ (Term.mul modulus leftQuot))
+          (Term.succ (Term.mul modulus rightQuot)))
+        (Term.succ
+          (Term.mul modulus
+            (crtInverseProductQuotTerm
+              modulus leftQuot rightQuot)))) := by
+  let leftBase : Term := Term.mul modulus leftQuot
+  let rightBase : Term := Term.mul modulus rightQuot
+  let crossCore : Term := Term.mul leftQuot rightBase
+  let normal : Term :=
+    Term.add
+      (Term.add (Term.mul modulus crossCore) leftBase)
+      rightBase
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul (Term.succ leftBase) (Term.succ rightBase))
+        (Term.add
+          (Term.mul leftBase (Term.succ rightBase))
+          (Term.succ rightBase))) :=
+    BProv_Ax_s_succ_mul_terms leftBase (Term.succ rightBase)
+  have hmulSucc : BProv Ax_s G
+      (eq (Term.mul leftBase (Term.succ rightBase))
+        (Term.add (Term.mul leftBase rightBase) leftBase)) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_mulSucc_terms leftBase rightBase)
+  have hmulSuccCong : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul leftBase (Term.succ rightBase))
+          (Term.succ rightBase))
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          (Term.succ rightBase))) :=
+    BProv_eq_congr_add_left (Term.succ rightBase) hmulSucc
+  have haddSucc : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          (Term.succ rightBase))
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul leftBase rightBase) leftBase)
+            rightBase))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms
+        (Term.add (Term.mul leftBase rightBase) leftBase)
+        rightBase)
+  have hexpand : BProv Ax_s G
+      (eq (Term.mul (Term.succ leftBase) (Term.succ rightBase))
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul leftBase rightBase) leftBase)
+            rightBase))) :=
+    BProv_eqTrans hsuccMul (BProv_eqTrans hmulSuccCong haddSucc)
+  have hcross : BProv Ax_s G
+      (eq (Term.mul leftBase rightBase)
+        (Term.mul modulus crossCore)) := by
+    simpa [leftBase, crossCore] using
+      BProv_Ax_s_mul_assoc_terms modulus leftQuot rightBase
+  have hcrossInner : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul leftBase rightBase) leftBase)
+        (Term.add (Term.mul modulus crossCore) leftBase)) :=
+    BProv_eq_congr_add_left leftBase hcross
+  have hnormal : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          rightBase)
+        normal) := by
+    simpa [normal] using
+      BProv_eq_congr_add_left rightBase hcrossInner
+  have houterDist : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (Term.add (Term.add crossCore leftQuot) rightQuot))
+        (Term.add
+          (Term.mul modulus (Term.add crossCore leftQuot))
+          (Term.mul modulus rightQuot))) :=
+    BProv_Ax_s_mul_add_terms modulus
+      (Term.add crossCore leftQuot) rightQuot
+  have hinnerDist : BProv Ax_s G
+      (eq (Term.mul modulus (Term.add crossCore leftQuot))
+        (Term.add (Term.mul modulus crossCore)
+          (Term.mul modulus leftQuot))) :=
+    BProv_Ax_s_mul_add_terms modulus crossCore leftQuot
+  have hinnerDistCong : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul modulus (Term.add crossCore leftQuot))
+          (Term.mul modulus rightQuot))
+        normal) := by
+    simpa [normal, leftBase, rightBase] using
+      BProv_eq_congr_add_left (Term.mul modulus rightQuot) hinnerDist
+  have hquotient : BProv Ax_s G
+      (eq
+        (Term.mul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot))
+        normal) := by
+    simpa [crtInverseProductQuotTerm, crossCore, rightBase] using
+      BProv_eqTrans houterDist hinnerDistCong
+  have hnormalQuotient : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul leftBase rightBase) leftBase)
+          rightBase)
+        (Term.mul modulus
+          (crtInverseProductQuotTerm modulus leftQuot rightQuot))) :=
+    BProv_eqTrans hnormal (BProv_eqSym hquotient)
+  have hsuccCong : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul leftBase rightBase) leftBase)
+            rightBase))
+        (Term.succ
+          (Term.mul modulus
+            (crtInverseProductQuotTerm
+              modulus leftQuot rightQuot)))) :=
+    BProv_eq_congr_succ hnormalQuotient
+  simpa [leftBase, rightBase] using
+    BProv_eqTrans hexpand hsuccCong
+
+/-- Compose two explicit positive inverse certificates modulo the same term.
+
+This is the product step needed by a finite CRT accumulator: inverse witnesses
+for individual factors combine without invoking subtraction or an external
+gcd operation. -/
+theorem BProv_Ax_s_crtInverse_mul
+    {G : List Formula}
+    {leftProduct rightProduct leftInverse rightInverse modulus
+      leftQuot rightQuot : Term}
+    (hleft : BProv Ax_s G
+      (eq (Term.mul leftProduct leftInverse)
+        (Term.succ (Term.mul modulus leftQuot))))
+    (hright : BProv Ax_s G
+      (eq (Term.mul rightProduct rightInverse)
+        (Term.succ (Term.mul modulus rightQuot)))) :
+    BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.mul leftProduct rightProduct)
+          (Term.mul leftInverse rightInverse))
+        (Term.succ
+          (Term.mul modulus
+            (crtInverseProductQuotTerm
+              modulus leftQuot rightQuot)))) := by
+  have hreorder : BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.mul leftProduct rightProduct)
+          (Term.mul leftInverse rightInverse))
+        (Term.mul
+          (Term.mul leftProduct leftInverse)
+          (Term.mul rightProduct rightInverse))) :=
+    BProv_Ax_s_mul_mul_reorder_middle_terms
+      leftProduct rightProduct leftInverse rightInverse
+  have hcertificates : BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.mul leftProduct leftInverse)
+          (Term.mul rightProduct rightInverse))
+        (Term.mul
+          (Term.succ (Term.mul modulus leftQuot))
+          (Term.succ (Term.mul modulus rightQuot)))) :=
+    BProv_eq_congr_mul hleft hright
+  exact BProv_eqTrans hreorder
+    (BProv_eqTrans hcertificates
+      (BProv_Ax_s_crtInverseProductQuot_expand
+        modulus leftQuot rightQuot))
+
+/-- Multiplying a product by one more factor preserves every already exposed
+right factor, with an explicit updated quotient. -/
+theorem BProv_Ax_s_crtProductFactor_mul
+    {G : List Formula}
+    {product factor modulus appended : Term}
+    (hfactor : BProv Ax_s G
+      (eq product (Term.mul factor modulus))) :
+    BProv Ax_s G
+      (eq (Term.mul product appended)
+        (Term.mul (Term.mul factor appended) modulus)) := by
+  have hstart : BProv Ax_s G
+      (eq (Term.mul product appended)
+        (Term.mul (Term.mul factor modulus) appended)) :=
+    BProv_eq_congr_mul_left appended hfactor
+  have hassoc1 : BProv Ax_s G
+      (eq (Term.mul (Term.mul factor modulus) appended)
+        (Term.mul factor (Term.mul modulus appended))) :=
+    BProv_Ax_s_mul_assoc_terms factor modulus appended
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul modulus appended)
+        (Term.mul appended modulus)) :=
+    BProv_Ax_s_mul_comm_terms modulus appended
+  have hcommCong : BProv Ax_s G
+      (eq (Term.mul factor (Term.mul modulus appended))
+        (Term.mul factor (Term.mul appended modulus))) :=
+    BProv_eq_congr_mul_right factor hcomm
+  have hassoc2 : BProv Ax_s G
+      (eq (Term.mul factor (Term.mul appended modulus))
+        (Term.mul (Term.mul factor appended) modulus)) :=
+    BProv_eqSym (BProv_Ax_s_mul_assoc_terms factor appended modulus)
+  exact BProv_eqTrans hstart
+    (BProv_eqTrans hassoc1 (BProv_eqTrans hcommCong hassoc2))
+
+/-- Algebraic preservation half of the generic CRT update.
+
+If `product = factor * modulus`, adding a multiple of `product` to an old
+division decomposition leaves its remainder modulo `modulus` unchanged. -/
+theorem BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition
+    {G : List Formula}
+    {oldCode product inverse delta modulus oldQuot oldRem factor : Term}
+    (hOld : BProv Ax_s G
+      (eq oldCode
+        (Term.add (Term.mul oldQuot modulus) oldRem)))
+    (hProduct : BProv Ax_s G
+      (eq product (Term.mul factor modulus))) :
+    BProv Ax_s G
+      (eq (crtExtendCodeTerm oldCode product inverse delta)
+        (Term.add
+          (Term.mul
+            (Term.add oldQuot
+              (Term.mul factor (Term.mul inverse delta)))
+            modulus)
+          oldRem)) := by
+  let increment : Term := Term.mul inverse delta
+  let factorIncrement : Term := Term.mul factor increment
+  let oldBase : Term := Term.mul oldQuot modulus
+  let addedBase : Term := Term.mul factorIncrement modulus
+  have hcodeOld : BProv Ax_s G
+      (eq (crtExtendCodeTerm oldCode product inverse delta)
+        (Term.add
+          (Term.add oldBase oldRem)
+          (Term.mul product increment))) := by
+    have hcongr : BProv Ax_s G
+        (eq (Term.add oldCode (Term.mul product increment))
+          (Term.add (Term.add oldBase oldRem)
+            (Term.mul product increment))) :=
+      BProv_eq_congr_add_left (Term.mul product increment) hOld
+    simpa [crtExtendCodeTerm, increment, oldBase] using hcongr
+  have hproductMul : BProv Ax_s G
+      (eq (Term.mul product increment) addedBase) := by
+    have hfactor : BProv Ax_s G
+        (eq (Term.mul product increment)
+          (Term.mul (Term.mul factor modulus) increment)) :=
+      BProv_eq_congr_mul_left increment hProduct
+    have hassoc1 : BProv Ax_s G
+        (eq (Term.mul (Term.mul factor modulus) increment)
+          (Term.mul factor (Term.mul modulus increment))) :=
+      BProv_Ax_s_mul_assoc_terms factor modulus increment
+    have hcomm : BProv Ax_s G
+        (eq (Term.mul modulus increment)
+          (Term.mul increment modulus)) :=
+      BProv_Ax_s_mul_comm_terms modulus increment
+    have hcommCong : BProv Ax_s G
+        (eq (Term.mul factor (Term.mul modulus increment))
+          (Term.mul factor (Term.mul increment modulus))) :=
+      BProv_eq_congr_mul_right factor hcomm
+    have hassoc2 : BProv Ax_s G
+        (eq (Term.mul factor (Term.mul increment modulus)) addedBase) := by
+      simpa [factorIncrement, addedBase] using
+        BProv_eqSym (BProv_Ax_s_mul_assoc_terms factor increment modulus)
+    exact BProv_eqTrans hfactor
+      (BProv_eqTrans hassoc1 (BProv_eqTrans hcommCong hassoc2))
+  have hproductCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.add oldBase oldRem)
+          (Term.mul product increment))
+        (Term.add (Term.add oldBase oldRem) addedBase)) :=
+    BProv_eq_congr_add_right (Term.add oldBase oldRem) hproductMul
+  have hregroup1 : BProv Ax_s G
+      (eq (Term.add (Term.add oldBase oldRem) addedBase)
+        (Term.add oldBase (Term.add oldRem addedBase))) :=
+    BProv_Ax_s_add_assoc_terms oldBase oldRem addedBase
+  have hinnerComm : BProv Ax_s G
+      (eq (Term.add oldRem addedBase)
+        (Term.add addedBase oldRem)) :=
+    BProv_Ax_s_add_comm_terms oldRem addedBase
+  have hregroup2 : BProv Ax_s G
+      (eq (Term.add oldBase (Term.add oldRem addedBase))
+        (Term.add oldBase (Term.add addedBase oldRem))) :=
+    BProv_eq_congr_add_right oldBase hinnerComm
+  have hregroup3 : BProv Ax_s G
+      (eq (Term.add oldBase (Term.add addedBase oldRem))
+        (Term.add (Term.add oldBase addedBase) oldRem)) :=
+    BProv_eqSym (BProv_Ax_s_add_assoc_terms oldBase addedBase oldRem)
+  have hnewQuotMul : BProv Ax_s G
+      (eq
+        (Term.mul (Term.add oldQuot factorIncrement) modulus)
+        (Term.add oldBase addedBase)) := by
+    simpa [oldBase, factorIncrement, addedBase] using
+      BProv_Ax_s_add_mul_terms oldQuot factorIncrement modulus
+  have hnewQuotCong : BProv Ax_s G
+      (eq (Term.add (Term.add oldBase addedBase) oldRem)
+        (Term.add
+          (Term.mul (Term.add oldQuot factorIncrement) modulus)
+          oldRem)) :=
+    BProv_eq_congr_add_left oldRem (BProv_eqSym hnewQuotMul)
+  simpa [increment, factorIncrement] using
+    BProv_eqTrans hcodeOld
+      (BProv_eqTrans hproductCong
+        (BProv_eqTrans hregroup1
+          (BProv_eqTrans hregroup2
+            (BProv_eqTrans hregroup3 hnewQuotCong))))
+
+/-- Algebraic new-residue half of the generic CRT update.
+
+The inverse equation says `product * inverse = 1 + modulus * inverseQuot`.
+The correction equation says `oldRem + delta = modulus + newRem`.  Together
+they expose the quotient witnessing that the updated code has remainder
+`newRem` modulo `modulus`. -/
+theorem BProv_Ax_s_crtExtendCodeTerm_new_decomposition
+    {G : List Formula}
+    {oldCode product inverse delta modulus oldQuot oldRem
+      inverseQuot newRem : Term}
+    (hOld : BProv Ax_s G
+      (eq oldCode
+        (Term.add (Term.mul oldQuot modulus) oldRem)))
+    (hInverse : BProv Ax_s G
+      (eq (Term.mul product inverse)
+        (Term.succ (Term.mul modulus inverseQuot))))
+    (hDelta : BProv Ax_s G
+      (eq (Term.add oldRem delta)
+        (Term.add modulus newRem))) :
+    BProv Ax_s G
+      (eq (crtExtendCodeTerm oldCode product inverse delta)
+        (Term.add
+          (Term.mul
+            (Term.succ
+              (Term.add oldQuot (Term.mul inverseQuot delta)))
+            modulus)
+          newRem)) := by
+  let increment : Term := Term.mul inverse delta
+  let inverseContribution : Term := Term.mul inverseQuot delta
+  let oldBase : Term := Term.mul oldQuot modulus
+  let addedBase : Term := Term.mul modulus inverseContribution
+  have hcodeOld : BProv Ax_s G
+      (eq (crtExtendCodeTerm oldCode product inverse delta)
+        (Term.add (Term.add oldBase oldRem)
+          (Term.mul product increment))) := by
+    have hcongr : BProv Ax_s G
+        (eq (Term.add oldCode (Term.mul product increment))
+          (Term.add (Term.add oldBase oldRem)
+            (Term.mul product increment))) :=
+      BProv_eq_congr_add_left (Term.mul product increment) hOld
+    simpa [crtExtendCodeTerm, increment, oldBase] using hcongr
+  have hincrementAssoc : BProv Ax_s G
+      (eq (Term.mul product increment)
+        (Term.mul (Term.mul product inverse) delta)) := by
+    simpa [increment] using
+      BProv_eqSym (BProv_Ax_s_mul_assoc_terms product inverse delta)
+  have hinverseCong : BProv Ax_s G
+      (eq (Term.mul (Term.mul product inverse) delta)
+        (Term.mul (Term.succ (Term.mul modulus inverseQuot)) delta)) :=
+    BProv_eq_congr_mul_left delta hInverse
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul (Term.succ (Term.mul modulus inverseQuot)) delta)
+        (Term.add
+          (Term.mul (Term.mul modulus inverseQuot) delta) delta)) :=
+    BProv_Ax_s_succ_mul_terms (Term.mul modulus inverseQuot) delta
+  have hassoc : BProv Ax_s G
+      (eq (Term.mul (Term.mul modulus inverseQuot) delta) addedBase) := by
+    simpa [inverseContribution, addedBase] using
+      BProv_Ax_s_mul_assoc_terms modulus inverseQuot delta
+  have hassocCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul (Term.mul modulus inverseQuot) delta) delta)
+        (Term.add addedBase delta)) :=
+    BProv_eq_congr_add_left delta hassoc
+  have hincrement : BProv Ax_s G
+      (eq (Term.mul product increment)
+        (Term.add addedBase delta)) :=
+    BProv_eqTrans hincrementAssoc
+      (BProv_eqTrans hinverseCong
+        (BProv_eqTrans hsuccMul hassocCong))
+  have hincrementCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.add oldBase oldRem)
+          (Term.mul product increment))
+        (Term.add (Term.add oldBase oldRem)
+          (Term.add addedBase delta))) :=
+    BProv_eq_congr_add_right (Term.add oldBase oldRem) hincrement
+  have hregroup1 : BProv Ax_s G
+      (eq
+        (Term.add (Term.add oldBase oldRem)
+          (Term.add addedBase delta))
+        (Term.add oldBase
+          (Term.add oldRem (Term.add addedBase delta)))) :=
+    BProv_Ax_s_add_assoc_terms oldBase oldRem
+      (Term.add addedBase delta)
+  have hinnerAssoc : BProv Ax_s G
+      (eq (Term.add oldRem (Term.add addedBase delta))
+        (Term.add (Term.add oldRem addedBase) delta)) :=
+    BProv_eqSym (BProv_Ax_s_add_assoc_terms oldRem addedBase delta)
+  have hinnerComm : BProv Ax_s G
+      (eq (Term.add oldRem addedBase)
+        (Term.add addedBase oldRem)) :=
+    BProv_Ax_s_add_comm_terms oldRem addedBase
+  have hinnerCommCong : BProv Ax_s G
+      (eq (Term.add (Term.add oldRem addedBase) delta)
+        (Term.add (Term.add addedBase oldRem) delta)) :=
+    BProv_eq_congr_add_left delta hinnerComm
+  have hinnerAssoc2 : BProv Ax_s G
+      (eq (Term.add (Term.add addedBase oldRem) delta)
+        (Term.add addedBase (Term.add oldRem delta))) :=
+    BProv_Ax_s_add_assoc_terms addedBase oldRem delta
+  have hinner : BProv Ax_s G
+      (eq (Term.add oldRem (Term.add addedBase delta))
+        (Term.add addedBase (Term.add oldRem delta))) :=
+    BProv_eqTrans hinnerAssoc
+      (BProv_eqTrans hinnerCommCong hinnerAssoc2)
+  have hinnerCong : BProv Ax_s G
+      (eq
+        (Term.add oldBase
+          (Term.add oldRem (Term.add addedBase delta)))
+        (Term.add oldBase
+          (Term.add addedBase (Term.add oldRem delta)))) :=
+    BProv_eq_congr_add_right oldBase hinner
+  have hregroup2 : BProv Ax_s G
+      (eq
+        (Term.add oldBase
+          (Term.add addedBase (Term.add oldRem delta)))
+        (Term.add (Term.add oldBase addedBase)
+          (Term.add oldRem delta))) :=
+    BProv_eqSym
+      (BProv_Ax_s_add_assoc_terms oldBase addedBase
+        (Term.add oldRem delta))
+  have hdeltaCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.add oldBase addedBase)
+          (Term.add oldRem delta))
+        (Term.add (Term.add oldBase addedBase)
+          (Term.add modulus newRem))) :=
+    BProv_eq_congr_add_right (Term.add oldBase addedBase) hDelta
+  have hquotMul : BProv Ax_s G
+      (eq
+        (Term.mul (Term.add oldQuot inverseContribution) modulus)
+        (Term.add oldBase addedBase)) := by
+    have hdist : BProv Ax_s G
+        (eq
+          (Term.mul (Term.add oldQuot inverseContribution) modulus)
+          (Term.add oldBase
+            (Term.mul inverseContribution modulus))) := by
+      simpa [oldBase] using
+        BProv_Ax_s_add_mul_terms oldQuot inverseContribution modulus
+    have hcomm : BProv Ax_s G
+        (eq (Term.mul inverseContribution modulus) addedBase) := by
+      simpa [addedBase] using
+        BProv_Ax_s_mul_comm_terms inverseContribution modulus
+    exact BProv_eqTrans hdist
+      (BProv_eq_congr_add_right oldBase hcomm)
+  have hquotMulCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.add oldBase addedBase)
+          (Term.add modulus newRem))
+        (Term.add
+          (Term.mul (Term.add oldQuot inverseContribution) modulus)
+          (Term.add modulus newRem))) :=
+    BProv_eq_congr_add_left (Term.add modulus newRem)
+      (BProv_eqSym hquotMul)
+  have hquotAssoc : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul (Term.add oldQuot inverseContribution) modulus)
+          (Term.add modulus newRem))
+        (Term.add
+          (Term.add
+            (Term.mul (Term.add oldQuot inverseContribution) modulus)
+            modulus)
+          newRem)) :=
+    BProv_eqSym
+      (BProv_Ax_s_add_assoc_terms
+        (Term.mul (Term.add oldQuot inverseContribution) modulus)
+        modulus newRem)
+  have hsuccQuotMul : BProv Ax_s G
+      (eq
+        (Term.mul
+          (Term.succ (Term.add oldQuot inverseContribution)) modulus)
+        (Term.add
+          (Term.mul (Term.add oldQuot inverseContribution) modulus)
+          modulus)) :=
+    BProv_Ax_s_succ_mul_terms
+      (Term.add oldQuot inverseContribution) modulus
+  have hsuccQuotCong : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add
+            (Term.mul (Term.add oldQuot inverseContribution) modulus)
+            modulus)
+          newRem)
+        (Term.add
+          (Term.mul
+            (Term.succ (Term.add oldQuot inverseContribution)) modulus)
+          newRem)) :=
+    BProv_eq_congr_add_left newRem (BProv_eqSym hsuccQuotMul)
+  simpa [increment, inverseContribution] using
+    BProv_eqTrans hcodeOld
+      (BProv_eqTrans hincrementCong
+        (BProv_eqTrans hregroup1
+          (BProv_eqTrans hinnerCong
+            (BProv_eqTrans hregroup2
+              (BProv_eqTrans hdeltaCong
+                (BProv_eqTrans hquotMulCong
+                  (BProv_eqTrans hquotAssoc hsuccQuotCong)))))))
+
+/-- Eliminate a fully term-parametric remainder by opening its quotient
+witness.
+
+The opened body exposes both the strict remainder bound and the exact division
+equation; the target is renamed through the fresh quotient binder. -/
+theorem BProv_Ax_s_remTermTermAt_elim_opened
+    {G : List Formula} {target : Formula}
+    {rem value modulus : Term}
+    (hopened : BProv Ax_s
+      (and
+          (ltTermAt (Term.rename Nat.succ rem)
+            (Term.rename Nat.succ modulus))
+          (eq (Term.rename Nat.succ value)
+            (Term.add
+              (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
+              (Term.rename Nat.succ rem))) ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hrem : BProv Ax_s G (remTermTermAt rem value modulus)) :
+    BProv Ax_s G target := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ rem)
+        (Term.rename Nat.succ modulus))
+      (eq (Term.rename Nat.succ value)
+        (Term.add
+          (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
+          (Term.rename Nat.succ rem)))
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hrem (by simpa [remTermTermAt, body] using hopened)
+
+/-- A generic CRT update preserves a bounded remainder modulo every divisor
+of its product term.
+
+The divisor witness is explicit as `product = factor * modulus`; no
+divisibility proof is hidden in the update definition. -/
+theorem BProv_Ax_s_remTermTermAt_crtExtend_preserve
+    {G : List Formula}
+    {oldCode product inverse delta modulus oldRem factor : Term}
+    (hrem : BProv Ax_s G
+      (remTermTermAt oldRem oldCode modulus))
+    (hProduct : BProv Ax_s G
+      (eq product (Term.mul factor modulus))) :
+    BProv Ax_s G
+      (remTermTermAt oldRem
+        (crtExtendCodeTerm oldCode product inverse delta)
+        modulus) := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ oldRem)
+        (Term.rename Nat.succ modulus))
+      (eq (Term.rename Nat.succ oldCode)
+        (Term.add
+          (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
+          (Term.rename Nat.succ oldRem)))
+  let target : Formula :=
+    remTermTermAt oldRem
+      (crtExtendCodeTerm oldCode product inverse delta) modulus
+  have hopened : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    let oldCode1 : Term := Term.rename Nat.succ oldCode
+    let product1 : Term := Term.rename Nat.succ product
+    let inverse1 : Term := Term.rename Nat.succ inverse
+    let delta1 : Term := Term.rename Nat.succ delta
+    let modulus1 : Term := Term.rename Nat.succ modulus
+    let oldRem1 : Term := Term.rename Nat.succ oldRem
+    let factor1 : Term := Term.rename Nat.succ factor
+    let increment1 : Term := Term.mul inverse1 delta1
+    let quotient1 : Term :=
+      Term.add (Term.var 0) (Term.mul factor1 increment1)
+    have hbody : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlt : BProv Ax_s C (ltTermAt oldRem1 modulus1) := by
+      simpa [body, oldRem1, modulus1] using BProv_andE1 hbody
+    have hold : BProv Ax_s C
+        (eq oldCode1
+          (Term.add (Term.mul (Term.var 0) modulus1) oldRem1)) := by
+      simpa [body, oldCode1, modulus1, oldRem1] using BProv_andE2 hbody
+    have hProductRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (eq product (Term.mul factor modulus))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hProduct Nat.succ
+    have hProductC : BProv Ax_s C
+        (eq product1 (Term.mul factor1 modulus1)) := by
+      simpa [C, body, product1, factor1, modulus1,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hProductRen
+    have hdecomp : BProv Ax_s C
+        (eq
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          (Term.add (Term.mul quotient1 modulus1) oldRem1)) := by
+      simpa [increment1, quotient1] using
+        BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition
+          (G := C) (oldCode := oldCode1) (product := product1)
+          (inverse := inverse1) (delta := delta1)
+          (modulus := modulus1) (oldQuot := Term.var 0)
+          (oldRem := oldRem1) (factor := factor1)
+          hold hProductC
+    have hnew : BProv Ax_s C
+        (remTermTermAt oldRem1
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          modulus1) :=
+      BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+        (rem := oldRem1)
+        (value := crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+        (modulus := modulus1) (quotient := quotient1) hlt hdecomp
+    simpa [target, C, body, oldCode1, product1, inverse1,
+      delta1, modulus1, oldRem1, crtExtendCodeTerm,
+      remTermTermAt, ltTermAt, rename, Term.rename,
+      SetTheory.up, Term.rename_comp,
+      term_rename_up_succ_rename_succ] using hnew
+  exact BProv_Ax_s_remTermTermAt_elim_opened
+    (G := G) (target := target)
+    (rem := oldRem) (value := oldCode) (modulus := modulus)
+    (by simpa [body] using hopened) hrem
+
+/-- A generic CRT update realizes its requested new bounded remainder.
+
+The old remainder is opened only to obtain its quotient.  The inverse,
+correction, and new strict-bound equations remain explicit caller-supplied PA
+proofs. -/
+theorem BProv_Ax_s_remTermTermAt_crtExtend_new
+    {G : List Formula}
+    {oldCode product inverse delta modulus oldRem
+      inverseQuot newRem : Term}
+    (hrem : BProv Ax_s G
+      (remTermTermAt oldRem oldCode modulus))
+    (hInverse : BProv Ax_s G
+      (eq (Term.mul product inverse)
+        (Term.succ (Term.mul modulus inverseQuot))))
+    (hDelta : BProv Ax_s G
+      (eq (Term.add oldRem delta)
+        (Term.add modulus newRem)))
+    (hnewBound : BProv Ax_s G (ltTermAt newRem modulus)) :
+    BProv Ax_s G
+      (remTermTermAt newRem
+        (crtExtendCodeTerm oldCode product inverse delta)
+        modulus) := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ oldRem)
+        (Term.rename Nat.succ modulus))
+      (eq (Term.rename Nat.succ oldCode)
+        (Term.add
+          (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
+          (Term.rename Nat.succ oldRem)))
+  let target : Formula :=
+    remTermTermAt newRem
+      (crtExtendCodeTerm oldCode product inverse delta) modulus
+  have hopened : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    let oldCode1 : Term := Term.rename Nat.succ oldCode
+    let product1 : Term := Term.rename Nat.succ product
+    let inverse1 : Term := Term.rename Nat.succ inverse
+    let delta1 : Term := Term.rename Nat.succ delta
+    let modulus1 : Term := Term.rename Nat.succ modulus
+    let oldRem1 : Term := Term.rename Nat.succ oldRem
+    let inverseQuot1 : Term := Term.rename Nat.succ inverseQuot
+    let newRem1 : Term := Term.rename Nat.succ newRem
+    let quotient1 : Term :=
+      Term.succ
+        (Term.add (Term.var 0) (Term.mul inverseQuot1 delta1))
+    have hbody : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hold : BProv Ax_s C
+        (eq oldCode1
+          (Term.add (Term.mul (Term.var 0) modulus1) oldRem1)) := by
+      simpa [body, oldCode1, modulus1, oldRem1] using BProv_andE2 hbody
+    have hInverseRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (eq (Term.mul product inverse)
+            (Term.succ (Term.mul modulus inverseQuot)))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hInverse Nat.succ
+    have hInverseC : BProv Ax_s C
+        (eq (Term.mul product1 inverse1)
+          (Term.succ (Term.mul modulus1 inverseQuot1))) := by
+      simpa [C, body, product1, inverse1, modulus1, inverseQuot1,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hInverseRen
+    have hDeltaRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (eq (Term.add oldRem delta)
+            (Term.add modulus newRem))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hDelta Nat.succ
+    have hDeltaC : BProv Ax_s C
+        (eq (Term.add oldRem1 delta1)
+          (Term.add modulus1 newRem1)) := by
+      simpa [C, body, oldRem1, delta1, modulus1, newRem1,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hDeltaRen
+    have hBoundRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (ltTermAt newRem modulus)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hnewBound Nat.succ
+    have hBoundC : BProv Ax_s C (ltTermAt newRem1 modulus1) := by
+      simpa [C, body, newRem1, modulus1, ltTermAt,
+        rename, Term.rename, SetTheory.up, Term.rename_comp,
+        term_rename_up_succ_rename_succ] using
+        BProv_context_cons (B := Ax_s) hBoundRen
+    have hdecomp : BProv Ax_s C
+        (eq
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          (Term.add (Term.mul quotient1 modulus1) newRem1)) := by
+      simpa [quotient1] using
+        BProv_Ax_s_crtExtendCodeTerm_new_decomposition
+          (G := C) (oldCode := oldCode1) (product := product1)
+          (inverse := inverse1) (delta := delta1)
+          (modulus := modulus1) (oldQuot := Term.var 0)
+          (oldRem := oldRem1) (inverseQuot := inverseQuot1)
+          (newRem := newRem1) hold hInverseC hDeltaC
+    have hnew : BProv Ax_s C
+        (remTermTermAt newRem1
+          (crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+          modulus1) :=
+      BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+        (rem := newRem1)
+        (value := crtExtendCodeTerm oldCode1 product1 inverse1 delta1)
+        (modulus := modulus1) (quotient := quotient1)
+        hBoundC hdecomp
+    simpa [target, C, body, oldCode1, product1, inverse1,
+      delta1, modulus1, newRem1, crtExtendCodeTerm,
+      remTermTermAt, ltTermAt, rename, Term.rename,
+      SetTheory.up, Term.rename_comp,
+      term_rename_up_succ_rename_succ] using hnew
+  exact BProv_Ax_s_remTermTermAt_elim_opened
+    (G := G) (target := target)
+    (rem := oldRem) (value := oldCode) (modulus := modulus)
+    (by simpa [body] using hopened) hrem
+
 /-- Fully term-parametric beta constructor from a modulus equation and a
 bounded-division remainder proof. -/
 theorem BProv_Ax_s_betaTermTermAt_of_rem
@@ -9575,6 +10448,126 @@ theorem BProv_Ax_s_betaTermTermAt_opened_body_rem
     BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
   exact BProv_andE2 hbody
 
+/-- Project a fully term-parametric beta entry to its canonical bounded
+remainder relation at the syntactic beta modulus term. -/
+theorem BProv_Ax_s_remTermTermAt_of_betaTermTermAt
+    {G : List Formula} {out code step idx : Term}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out code step idx)) :
+    BProv Ax_s G
+      (remTermTermAt out code (betaModTermTerm step idx)) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0)
+        (Term.rename Nat.succ (betaModTermTerm step idx)))
+      (remTermTermAt (Term.rename Nat.succ out)
+        (Term.rename Nat.succ code) (Term.var 0))
+  let target : Formula :=
+    remTermTermAt out code (betaModTermTerm step idx)
+  have hopened : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hmod : BProv Ax_s C
+        (eq (Term.var 0)
+          (Term.rename Nat.succ (betaModTermTerm step idx))) := by
+      simpa [C, body] using
+        (BProv_Ax_s_betaTermTermAt_opened_body_modEq
+          (G := G) (out := out) (code := code)
+          (step := step) (idx := idx))
+    have hrem : BProv Ax_s C
+        (remTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code) (Term.var 0)) := by
+      simpa [C, body] using
+        (BProv_Ax_s_betaTermTermAt_opened_body_rem
+          (G := G) (out := out) (code := code)
+          (step := step) (idx := idx))
+    have hcanonical : BProv Ax_s C
+        (remTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code)
+          (Term.rename Nat.succ (betaModTermTerm step idx))) :=
+      BProv_Ax_s_remTermTermAt_of_eq_modulus hmod hrem
+    simpa [target, C, body, remTermTermAt, ltTermAt,
+      betaModTermTerm, rename, Term.rename, SetTheory.up,
+      Term.rename_comp, term_rename_up_succ_rename_succ] using hcanonical
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hbeta (by simpa [betaTermTermAt, body] using hopened)
+
+/-- A CRT code update preserves any beta entry whose modulus divides the
+product term. -/
+theorem BProv_Ax_s_betaTermTermAt_crtExtend_preserve
+    {G : List Formula}
+    {out oldCode product inverse delta step idx factor : Term}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out oldCode step idx))
+    (hProduct : BProv Ax_s G
+      (eq product
+        (Term.mul factor (betaModTermTerm step idx)))) :
+    BProv Ax_s G
+      (betaTermTermAt out
+        (crtExtendCodeTerm oldCode product inverse delta)
+        step idx) := by
+  let modulus : Term := betaModTermTerm step idx
+  have hrem : BProv Ax_s G
+      (remTermTermAt out oldCode modulus) := by
+    simpa [modulus] using
+      BProv_Ax_s_remTermTermAt_of_betaTermTermAt hbeta
+  have hnewRem : BProv Ax_s G
+      (remTermTermAt out
+        (crtExtendCodeTerm oldCode product inverse delta)
+        modulus) :=
+    BProv_Ax_s_remTermTermAt_crtExtend_preserve
+      (G := G) (oldCode := oldCode) (product := product)
+      (inverse := inverse) (delta := delta) (modulus := modulus)
+      (oldRem := out) (factor := factor)
+      hrem (by simpa [modulus] using hProduct)
+  exact BProv_Ax_s_betaTermTermAt_of_rem
+    (out := out)
+    (code := crtExtendCodeTerm oldCode product inverse delta)
+    (step := step) (idx := idx) (modulus := modulus)
+    (BProv_eqRefl (B := Ax_s) (G := G) modulus) hnewRem
+
+/-- A CRT code update establishes a new beta entry from an explicit old
+remainder, inverse equation, correction equation, and strict output bound. -/
+theorem BProv_Ax_s_betaTermTermAt_crtExtend_new
+    {G : List Formula}
+    {oldCode product inverse delta step idx oldRem
+      inverseQuot newOut : Term}
+    (hrem : BProv Ax_s G
+      (remTermTermAt oldRem oldCode (betaModTermTerm step idx)))
+    (hInverse : BProv Ax_s G
+      (eq (Term.mul product inverse)
+        (Term.succ
+          (Term.mul (betaModTermTerm step idx) inverseQuot))))
+    (hDelta : BProv Ax_s G
+      (eq (Term.add oldRem delta)
+        (Term.add (betaModTermTerm step idx) newOut)))
+    (hnewBound : BProv Ax_s G
+      (ltTermAt newOut (betaModTermTerm step idx))) :
+    BProv Ax_s G
+      (betaTermTermAt newOut
+        (crtExtendCodeTerm oldCode product inverse delta)
+        step idx) := by
+  let modulus : Term := betaModTermTerm step idx
+  have hnewRem : BProv Ax_s G
+      (remTermTermAt newOut
+        (crtExtendCodeTerm oldCode product inverse delta)
+        modulus) :=
+    BProv_Ax_s_remTermTermAt_crtExtend_new
+      (G := G) (oldCode := oldCode) (product := product)
+      (inverse := inverse) (delta := delta) (modulus := modulus)
+      (oldRem := oldRem) (inverseQuot := inverseQuot)
+      (newRem := newOut)
+      (by simpa [modulus] using hrem)
+      (by simpa [modulus] using hInverse)
+      (by simpa [modulus] using hDelta)
+      (by simpa [modulus] using hnewBound)
+  exact BProv_Ax_s_betaTermTermAt_of_rem
+    (out := newOut)
+    (code := crtExtendCodeTerm oldCode product inverse delta)
+    (step := step) (idx := idx) (modulus := modulus)
+    (BProv_eqRefl (B := Ax_s) (G := G) modulus) hnewRem
+
 /-- Transport the output of a fully term-parametric beta entry across a PA
 equality.  This keeps equality transport as proof data rather than hiding it in
 the beta relation itself. -/
@@ -9672,6 +10665,78 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_index
     subst, instTerm, Term.subst, Term.upSubst, Term.rename,
     Term.subst_rename_succ_up,
     term_subst_instTerm_rename_succ] using hnew
+
+/-- Transport a fully term-parametric beta entry between step/index pairs
+whose beta modulus terms are PA-provably equal.
+
+This is more general than separate step or index transport: the code and
+output are unchanged, and the proof records exactly the arithmetic fact on
+which the beta relation depends. -/
+theorem BProv_Ax_s_betaTermTermAt_of_eq_modulus
+    {G : List Formula}
+    {out code oldStep oldIdx newStep newIdx : Term}
+    (hmod : BProv Ax_s G
+      (eq (betaModTermTerm oldStep oldIdx)
+        (betaModTermTerm newStep newIdx)))
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out code oldStep oldIdx)) :
+    BProv Ax_s G (betaTermTermAt out code newStep newIdx) := by
+  let a : Formula :=
+    ex (and
+      (eq (Term.var 0) (Term.var 1))
+      (remTermTermAt
+        (Term.rename (fun n => n+2) out)
+        (Term.rename (fun n => n+2) code)
+        (Term.var 0)))
+  have hold : BProv Ax_s G
+      (subst (instTerm (betaModTermTerm oldStep oldIdx)) a) := by
+    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hbeta
+  have hnew : BProv Ax_s G
+      (subst (instTerm (betaModTermTerm newStep newIdx)) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := betaModTermTerm oldStep oldIdx)
+      (t := betaModTermTerm newStep newIdx)
+      (a := a) hmod hold
+  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ] using hnew
+
+/-- Reindex a beta entry at literal index `1` to literal index `0` by doubling
+the step while leaving the code and output unchanged.
+
+The two beta moduli are both `S (step + step)`, so this is a direct application
+of modulus transport rather than a finite recoding argument. -/
+theorem BProv_Ax_s_betaTermTermAt_zero_double_step_of_one
+    {G : List Formula} {out code step : Term}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out code step (Term.succ Term.zero))) :
+    BProv Ax_s G
+      (betaTermTermAt out code (Term.add step step) Term.zero) := by
+  have holdMod : BProv Ax_s G
+      (eq (betaModTermTerm step (Term.succ Term.zero))
+        (Term.succ (Term.add step step))) :=
+    BProv_Ax_s_betaModTermTerm_one_add_self step
+  have hnewMod : BProv Ax_s G
+      (eq (betaModTermTerm (Term.add step step) Term.zero)
+        (Term.succ (Term.add step step))) :=
+    BProv_Ax_s_betaModTermTerm_zero (Term.add step step)
+  have hmod : BProv Ax_s G
+      (eq (betaModTermTerm step (Term.succ Term.zero))
+        (betaModTermTerm (Term.add step step) Term.zero)) :=
+    BProv_eqTrans holdMod (BProv_eqSym hnewMod)
+  exact BProv_Ax_s_betaTermTermAt_of_eq_modulus hmod hbeta
 
 /-- View a slot-indexed beta entry as a fully term-parametric beta entry,
 transporting the index through an explicit PA equality. -/
@@ -13616,6 +14681,609 @@ theorem BProv_Ax_s_leTermAt_of_eq_add_right_terms
     (a := eq (Term.add (Term.rename Nat.succ lower) (Term.var 0))
       (Term.rename Nat.succ upper))
     (t := diff) hbody
+
+/-- The generic two-entry beta term has its requested current value at index
+zero.
+
+This is the easy half of the internal two-entry CRT construction.  The
+quotient is the explicit coefficient occurring in `twoEntryBetaCodeTerm`, and
+the strict remainder bound follows from `cur < S (S (cur + next))`. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_zero
+    {G : List Formula} (cur next : Term) :
+    BProv Ax_s G
+      (betaTermTermAt cur
+        (twoEntryBetaCodeTerm cur next)
+        (twoEntryBetaStepTerm cur next)
+        Term.zero) := by
+  let s : Term := twoEntryBetaStepTerm cur next
+  let modulus : Term := Term.succ s
+  let quotient : Term :=
+    Term.add
+      (Term.mul (Term.numeral 2) next)
+      (Term.mul (Term.mul (Term.numeral 4) s) cur)
+  have hcurAddSucc : BProv Ax_s G
+      (eq (Term.add cur (Term.succ next)) s) := by
+    simpa [s, twoEntryBetaStepTerm] using
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms cur next)
+  have hcurLeStep : BProv Ax_s G (leTermAt cur s) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := cur) (upper := s) (diff := Term.succ next)
+      (BProv_eqSym hcurAddSucc)
+  have hlt : BProv Ax_s G (ltTermAt cur modulus) := by
+    simpa [modulus] using
+      BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hcurLeStep
+  have hmod : BProv Ax_s G
+      (eq modulus (betaModTermTerm s Term.zero)) := by
+    simpa [modulus] using
+      BProv_eqSym (BProv_Ax_s_betaModTermTerm_zero s)
+  have hcodeCore : BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next)
+        (Term.add cur (Term.mul modulus quotient))) := by
+    simpa [twoEntryBetaCodeTerm, s, modulus, quotient] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.add cur (Term.mul modulus quotient)))
+  have haddComm : BProv Ax_s G
+      (eq (Term.add cur (Term.mul modulus quotient))
+        (Term.add (Term.mul modulus quotient) cur)) :=
+    BProv_Ax_s_add_comm_terms cur (Term.mul modulus quotient)
+  have hmulComm : BProv Ax_s G
+      (eq (Term.mul modulus quotient)
+        (Term.mul quotient modulus)) :=
+    BProv_Ax_s_mul_comm_terms modulus quotient
+  have hmulCong : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus quotient) cur)
+        (Term.add (Term.mul quotient modulus) cur)) :=
+    BProv_eq_congr_add_left cur hmulComm
+  have hvalue : BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next)
+        (Term.add (Term.mul quotient modulus) cur)) :=
+    BProv_eqTrans hcodeCore (BProv_eqTrans haddComm hmulCong)
+  have hrem : BProv Ax_s G
+      (remTermTermAt cur (twoEntryBetaCodeTerm cur next) modulus) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      (rem := cur) (value := twoEntryBetaCodeTerm cur next)
+      (modulus := modulus) (quotient := quotient) hlt hvalue
+  exact BProv_Ax_s_betaTermTermAt_of_rem
+    (out := cur) (code := twoEntryBetaCodeTerm cur next)
+    (step := s) (idx := Term.zero) (modulus := modulus)
+    hmod hrem
+
+/-- The requested second value is strictly below the index-one modulus of the
+generic two-entry beta term.
+
+This theorem isolates the order half of index-one exactness from the remaining
+CRT polynomial decomposition. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_one_bound
+    {G : List Formula} (cur next : Term) :
+    BProv Ax_s G
+      (ltTermAt next
+        (betaModTermTerm (twoEntryBetaStepTerm cur next)
+          (Term.succ Term.zero))) := by
+  let sum : Term := Term.add cur next
+  let s : Term := twoEntryBetaStepTerm cur next
+  have hsumComm : BProv Ax_s G
+      (eq sum (Term.add next cur)) := by
+    simpa [sum] using BProv_Ax_s_add_comm_terms cur next
+  have hnextLeSum : BProv Ax_s G (leTermAt next sum) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := next) (upper := sum) (diff := cur) hsumComm
+  have hsumLeStep : BProv Ax_s G (leTermAt sum s) := by
+    simpa [s, sum, twoEntryBetaStepTerm] using
+      BProv_Ax_s_leTermAt_self_succ sum
+  have hnextLeStep : BProv Ax_s G (leTermAt next s) :=
+    BProv_Ax_s_leTermAt_trans hnextLeSum hsumLeStep
+  have hstepLeDouble : BProv Ax_s G
+      (leTermAt s (Term.add s s)) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := s) (upper := Term.add s s) (diff := s)
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.add s s))
+  have hnextLeDouble : BProv Ax_s G
+      (leTermAt next (Term.add s s)) :=
+    BProv_Ax_s_leTermAt_trans hnextLeStep hstepLeDouble
+  have hlt : BProv Ax_s G
+      (ltTermAt next (Term.succ (Term.add s s))) :=
+    BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hnextLeDouble
+  have hmod : BProv Ax_s G
+      (eq (Term.succ (Term.add s s))
+        (betaModTermTerm s (Term.succ Term.zero))) :=
+    BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self s)
+  simpa [s] using BProv_ltTermAt_of_eq_right hmod hlt
+
+/-- For adjacent two-entry beta moduli `m0 = S step` and
+`m1 = S (step + step)`, PA proves `2*m0 = S m1`.
+
+This is the explicit modular-inverse certificate used by the two-entry CRT
+code: multiplication by `2` is inverse to `m0` modulo `m1`. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
+    {G : List Formula} (step : Term) :
+    let modulusZero := Term.succ step
+    let modulusOne := Term.succ (Term.add step step)
+    BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) modulusZero)
+        (Term.succ modulusOne)) := by
+  let modulusZero : Term := Term.succ step
+  let modulusOne : Term := Term.succ (Term.add step step)
+  have hcomm : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) modulusZero)
+        (Term.mul modulusZero (Term.numeral 2))) :=
+    BProv_Ax_s_mul_comm_terms (Term.numeral 2) modulusZero
+  have htwo : BProv Ax_s G
+      (eq (Term.mul modulusZero (Term.numeral 2))
+        (Term.add modulusZero modulusZero)) :=
+    BProv_Ax_s_mul_two_right_terms modulusZero
+  have hsuccAdd : BProv Ax_s G
+      (eq (Term.add modulusZero modulusZero)
+        (Term.succ (Term.add step modulusZero))) := by
+    simpa [modulusZero] using BProv_Ax_s_succ_add_terms step modulusZero
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add step modulusZero)
+        (Term.succ (Term.add step step))) := by
+    simpa [modulusZero] using
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms step step)
+  have hsuccCong : BProv Ax_s G
+      (eq (Term.succ (Term.add step modulusZero))
+        (Term.succ (Term.succ (Term.add step step)))) :=
+    BProv_eq_congr_succ haddSucc
+  simpa [modulusZero, modulusOne] using
+    BProv_eqTrans hcomm
+      (BProv_eqTrans htwo (BProv_eqTrans hsuccAdd hsuccCong))
+
+/-- The adjacent index-one beta modulus satisfies
+`m1*m1 = S ((4*step)*m0)` where `m0 = S step`.
+
+Equivalently, `m1^2` is congruent to `1` modulo `m0`.  Together with
+`BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero`, this is the second explicit
+CRT identity needed to verify the generic two-entry code. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
+    {G : List Formula} (step : Term) :
+    let modulusZero := Term.succ step
+    let doubleStep := Term.add step step
+    let modulusOne := Term.succ doubleStep
+    let fourStep := Term.mul (Term.numeral 4) step
+    BProv Ax_s G
+      (eq (Term.mul modulusOne modulusOne)
+        (Term.succ (Term.mul fourStep modulusZero))) := by
+  let modulusZero : Term := Term.succ step
+  let doubleStep : Term := Term.add step step
+  let modulusOne : Term := Term.succ doubleStep
+  let fourStep : Term := Term.mul (Term.numeral 4) step
+  let squareAtom : Term := Term.mul step step
+  let fourSquares : Term :=
+    Term.add (Term.add squareAtom squareAtom)
+      (Term.add squareAtom squareAtom)
+  have htwoStep : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) step) doubleStep) :=
+    BProv_eqTrans
+      (BProv_Ax_s_mul_comm_terms (Term.numeral 2) step)
+      (by simpa [doubleStep] using BProv_Ax_s_mul_two_right_terms step)
+  have hfourNumeral : BProv Ax_s G
+      (eq (Term.numeral 4)
+        (Term.add (Term.numeral 2) (Term.numeral 2))) := by
+    simpa using BProv_eqSym
+      (BProv_weaken_nil (G := G) (BProv_Ax_s_addNumerals 2 2))
+  have hfourArg : BProv Ax_s G
+      (eq fourStep
+        (Term.mul (Term.add (Term.numeral 2) (Term.numeral 2)) step)) := by
+    simpa [fourStep] using BProv_eq_congr_mul_left step hfourNumeral
+  have hfourDist : BProv Ax_s G
+      (eq
+        (Term.mul (Term.add (Term.numeral 2) (Term.numeral 2)) step)
+        (Term.add
+          (Term.mul (Term.numeral 2) step)
+          (Term.mul (Term.numeral 2) step))) :=
+    BProv_Ax_s_add_mul_terms (Term.numeral 2) (Term.numeral 2) step
+  have hfourNorm : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul (Term.numeral 2) step)
+          (Term.mul (Term.numeral 2) step))
+        (Term.add doubleStep doubleStep)) :=
+    BProv_eq_congr_add htwoStep htwoStep
+  have hfourStep : BProv Ax_s G
+      (eq fourStep (Term.add doubleStep doubleStep)) :=
+    BProv_eqTrans hfourArg (BProv_eqTrans hfourDist hfourNorm)
+  have hdoubleSquareDist : BProv Ax_s G
+      (eq (Term.mul doubleStep doubleStep)
+        (Term.add (Term.mul step doubleStep)
+          (Term.mul step doubleStep))) := by
+    simpa [doubleStep] using
+      BProv_Ax_s_add_mul_terms step step doubleStep
+  have hstepDouble : BProv Ax_s G
+      (eq (Term.mul step doubleStep)
+        (Term.add squareAtom squareAtom)) := by
+    simpa [doubleStep, squareAtom] using
+      BProv_Ax_s_mul_add_terms step step step
+  have hdoubleSquareNorm : BProv Ax_s G
+      (eq (Term.mul doubleStep doubleStep) fourSquares) :=
+    BProv_eqTrans hdoubleSquareDist
+      (by simpa [fourSquares] using
+        BProv_eq_congr_add hstepDouble hstepDouble)
+  have hfourMulArg : BProv Ax_s G
+      (eq (Term.mul fourStep step)
+        (Term.mul (Term.add doubleStep doubleStep) step)) :=
+    BProv_eq_congr_mul_left step hfourStep
+  have hfourMulDist : BProv Ax_s G
+      (eq (Term.mul (Term.add doubleStep doubleStep) step)
+        (Term.add (Term.mul doubleStep step)
+          (Term.mul doubleStep step))) :=
+    BProv_Ax_s_add_mul_terms doubleStep doubleStep step
+  have hdoubleMulStep : BProv Ax_s G
+      (eq (Term.mul doubleStep step)
+        (Term.add squareAtom squareAtom)) := by
+    simpa [doubleStep, squareAtom] using
+      BProv_Ax_s_add_mul_terms step step step
+  have hfourMulNorm : BProv Ax_s G
+      (eq (Term.mul fourStep step) fourSquares) :=
+    BProv_eqTrans hfourMulArg
+      (BProv_eqTrans hfourMulDist (by
+        simpa [fourSquares] using
+          BProv_eq_congr_add hdoubleMulStep hdoubleMulStep))
+  have hdoubleSquare : BProv Ax_s G
+      (eq (Term.mul doubleStep doubleStep)
+        (Term.mul fourStep step)) :=
+    BProv_eqTrans hdoubleSquareNorm (BProv_eqSym hfourMulNorm)
+  have hcoreAssoc : BProv Ax_s G
+      (eq
+        (Term.add (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          doubleStep)
+        (Term.add (Term.mul doubleStep doubleStep)
+          (Term.add doubleStep doubleStep))) :=
+    BProv_Ax_s_add_assoc_terms
+      (Term.mul doubleStep doubleStep) doubleStep doubleStep
+  have hcoreCong : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul doubleStep doubleStep)
+          (Term.add doubleStep doubleStep))
+        (Term.add (Term.mul fourStep step) fourStep)) :=
+    BProv_eq_congr_add hdoubleSquare (BProv_eqSym hfourStep)
+  have hfourMulSucc : BProv Ax_s G
+      (eq (Term.mul fourStep modulusZero)
+        (Term.add (Term.mul fourStep step) fourStep)) := by
+    simpa [modulusZero] using
+      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms fourStep step)
+  have hcore : BProv Ax_s G
+      (eq
+        (Term.add (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          doubleStep)
+        (Term.mul fourStep modulusZero)) :=
+    BProv_eqTrans hcoreAssoc
+      (BProv_eqTrans hcoreCong (BProv_eqSym hfourMulSucc))
+  have hsquareMulSucc : BProv Ax_s G
+      (eq (Term.mul modulusOne modulusOne)
+        (Term.add (Term.mul modulusOne doubleStep) modulusOne)) := by
+    simpa [modulusOne] using
+      BProv_weaken_nil (BProv_Ax_s_mulSucc_terms modulusOne doubleStep)
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul modulusOne doubleStep)
+        (Term.add (Term.mul doubleStep doubleStep) doubleStep)) := by
+    simpa [modulusOne] using
+      BProv_Ax_s_succ_mul_terms doubleStep doubleStep
+  have hsuccMulCong : BProv Ax_s G
+      (eq (Term.add (Term.mul modulusOne doubleStep) modulusOne)
+        (Term.add
+          (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          modulusOne)) :=
+    BProv_eq_congr_add_left modulusOne hsuccMul
+  have haddSucc : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+          modulusOne)
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+            doubleStep))) := by
+    simpa [modulusOne] using BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms
+        (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+        doubleStep)
+  have hcoreSucc : BProv Ax_s G
+      (eq
+        (Term.succ
+          (Term.add
+            (Term.add (Term.mul doubleStep doubleStep) doubleStep)
+            doubleStep))
+        (Term.succ (Term.mul fourStep modulusZero))) :=
+    BProv_eq_congr_succ hcore
+  simpa [modulusZero, doubleStep, modulusOne, fourStep] using
+    BProv_eqTrans hsquareMulSucc
+      (BProv_eqTrans hsuccMulCong (BProv_eqTrans haddSucc hcoreSucc))
+
+/-- Exact index-one division equation for the generic two-entry beta code.
+
+With `m0 = S step`, `m1 = S (step + step)`, and
+`q1 = next + m1*cur`, PA proves `code = q1*m1 + next`.  The proof combines
+the two preceding CRT identities and keeps the quotient visible. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_one_value
+    {G : List Formula} (cur next : Term) :
+    let step := twoEntryBetaStepTerm cur next
+    let modulusOne := Term.succ (Term.add step step)
+    let quotientOne := Term.add next (Term.mul modulusOne cur)
+    BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next)
+        (Term.add (Term.mul quotientOne modulusOne) next)) := by
+  let step : Term := twoEntryBetaStepTerm cur next
+  let modulusZero : Term := Term.succ step
+  let modulusOne : Term := Term.succ (Term.add step step)
+  let fourStep : Term := Term.mul (Term.numeral 4) step
+  let twiceNext : Term := Term.mul (Term.numeral 2) next
+  let curPart : Term := Term.mul fourStep cur
+  let quotientZero : Term := Term.add twiceNext curPart
+  let quotientOne : Term := Term.add next (Term.mul modulusOne cur)
+  let nextProduct : Term := Term.mul next modulusOne
+  let curProduct : Term := Term.mul (Term.mul modulusOne cur) modulusOne
+  let normal : Term :=
+    Term.add nextProduct (Term.add curProduct next)
+  have hzeroTwoComm : BProv Ax_s G
+      (eq (Term.mul modulusZero (Term.numeral 2))
+        (Term.mul (Term.numeral 2) modulusZero)) :=
+    BProv_Ax_s_mul_comm_terms modulusZero (Term.numeral 2)
+  have htwoCert : BProv Ax_s G
+      (eq (Term.mul (Term.numeral 2) modulusZero)
+        (Term.succ modulusOne)) := by
+    simpa [modulusZero, modulusOne] using
+      BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
+        (G := G) step
+  have hzeroTwo : BProv Ax_s G
+      (eq (Term.mul modulusZero (Term.numeral 2))
+        (Term.succ modulusOne)) :=
+    BProv_eqTrans hzeroTwoComm htwoCert
+  have hnextAssoc : BProv Ax_s G
+      (eq (Term.mul modulusZero twiceNext)
+        (Term.mul (Term.mul modulusZero (Term.numeral 2)) next)) := by
+    simpa [twiceNext] using
+      BProv_eqSym
+        (BProv_Ax_s_mul_assoc_terms modulusZero (Term.numeral 2) next)
+  have hnextFactor : BProv Ax_s G
+      (eq
+        (Term.mul (Term.mul modulusZero (Term.numeral 2)) next)
+        (Term.mul (Term.succ modulusOne) next)) :=
+    BProv_eq_congr_mul_left next hzeroTwo
+  have hnextSucc : BProv Ax_s G
+      (eq (Term.mul (Term.succ modulusOne) next)
+        (Term.add (Term.mul modulusOne next) next)) :=
+    BProv_Ax_s_succ_mul_terms modulusOne next
+  have hnextComm : BProv Ax_s G
+      (eq (Term.mul modulusOne next) nextProduct) := by
+    simpa [nextProduct] using
+      BProv_Ax_s_mul_comm_terms modulusOne next
+  have hnextCommCong : BProv Ax_s G
+      (eq (Term.add (Term.mul modulusOne next) next)
+        (Term.add nextProduct next)) :=
+    BProv_eq_congr_add_left next hnextComm
+  have hnextPart : BProv Ax_s G
+      (eq (Term.mul modulusZero twiceNext)
+        (Term.add nextProduct next)) :=
+    BProv_eqTrans hnextAssoc
+      (BProv_eqTrans hnextFactor
+        (BProv_eqTrans hnextSucc hnextCommCong))
+  have hcurAssoc : BProv Ax_s G
+      (eq (Term.mul modulusZero curPart)
+        (Term.mul (Term.mul modulusZero fourStep) cur)) := by
+    simpa [curPart] using
+      BProv_eqSym (BProv_Ax_s_mul_assoc_terms modulusZero fourStep cur)
+  have hzeroFourComm : BProv Ax_s G
+      (eq (Term.mul modulusZero fourStep)
+        (Term.mul fourStep modulusZero)) :=
+    BProv_Ax_s_mul_comm_terms modulusZero fourStep
+  have hcurFactor : BProv Ax_s G
+      (eq (Term.mul (Term.mul modulusZero fourStep) cur)
+        (Term.mul (Term.mul fourStep modulusZero) cur)) :=
+    BProv_eq_congr_mul_left cur hzeroFourComm
+  have hcurInside : BProv Ax_s G
+      (eq (Term.mul modulusZero curPart)
+        (Term.mul (Term.mul fourStep modulusZero) cur)) :=
+    BProv_eqTrans hcurAssoc hcurFactor
+  have hcurInsideCong : BProv Ax_s G
+      (eq (Term.add cur (Term.mul modulusZero curPart))
+        (Term.add cur (Term.mul (Term.mul fourStep modulusZero) cur))) :=
+    BProv_eq_congr_add_right cur hcurInside
+  have hcurAddComm : BProv Ax_s G
+      (eq (Term.add cur (Term.mul (Term.mul fourStep modulusZero) cur))
+        (Term.add (Term.mul (Term.mul fourStep modulusZero) cur) cur)) :=
+    BProv_Ax_s_add_comm_terms cur
+      (Term.mul (Term.mul fourStep modulusZero) cur)
+  have hcurSuccMul : BProv Ax_s G
+      (eq (Term.mul (Term.succ (Term.mul fourStep modulusZero)) cur)
+        (Term.add (Term.mul (Term.mul fourStep modulusZero) cur) cur)) :=
+    BProv_Ax_s_succ_mul_terms (Term.mul fourStep modulusZero) cur
+  have hsquare : BProv Ax_s G
+      (eq (Term.mul modulusOne modulusOne)
+        (Term.succ (Term.mul fourStep modulusZero))) := by
+    simpa [modulusZero, modulusOne, fourStep] using
+      BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
+        (G := G) step
+  have hsquareCong : BProv Ax_s G
+      (eq (Term.mul (Term.mul modulusOne modulusOne) cur)
+        (Term.mul (Term.succ (Term.mul fourStep modulusZero)) cur)) :=
+    BProv_eq_congr_mul_left cur hsquare
+  have hcurProductAssoc : BProv Ax_s G
+      (eq (Term.mul (Term.mul modulusOne modulusOne) cur)
+        curProduct) := by
+    have hassoc : BProv Ax_s G
+        (eq (Term.mul (Term.mul modulusOne modulusOne) cur)
+          (Term.mul modulusOne (Term.mul modulusOne cur))) :=
+      BProv_Ax_s_mul_assoc_terms modulusOne modulusOne cur
+    have hcomm : BProv Ax_s G
+        (eq (Term.mul modulusOne (Term.mul modulusOne cur))
+          curProduct) := by
+      simpa [curProduct] using
+        BProv_Ax_s_mul_comm_terms modulusOne (Term.mul modulusOne cur)
+    exact BProv_eqTrans hassoc hcomm
+  have hcurGroup : BProv Ax_s G
+      (eq (Term.add cur (Term.mul modulusZero curPart)) curProduct) :=
+    BProv_eqTrans hcurInsideCong
+      (BProv_eqTrans hcurAddComm
+        (BProv_eqTrans (BProv_eqSym hcurSuccMul)
+          (BProv_eqTrans (BProv_eqSym hsquareCong) hcurProductAssoc)))
+  have hcodeCore : BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next)
+        (Term.add cur (Term.mul modulusZero quotientZero))) := by
+    simpa [twoEntryBetaCodeTerm, step, modulusZero,
+      fourStep, twiceNext, curPart, quotientZero] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.add cur (Term.mul modulusZero quotientZero)))
+  have hcodeDist : BProv Ax_s G
+      (eq (Term.add cur (Term.mul modulusZero quotientZero))
+        (Term.add cur
+          (Term.add
+            (Term.mul modulusZero twiceNext)
+            (Term.mul modulusZero curPart)))) := by
+    have hdist : BProv Ax_s G
+        (eq (Term.mul modulusZero quotientZero)
+          (Term.add
+            (Term.mul modulusZero twiceNext)
+            (Term.mul modulusZero curPart))) := by
+      simpa [quotientZero] using
+        BProv_Ax_s_mul_add_terms modulusZero twiceNext curPart
+    exact BProv_eq_congr_add_right cur hdist
+  have hregroupLeft : BProv Ax_s G
+      (eq
+        (Term.add cur
+          (Term.add
+            (Term.mul modulusZero twiceNext)
+            (Term.mul modulusZero curPart)))
+        (Term.add
+          (Term.add cur (Term.mul modulusZero twiceNext))
+          (Term.mul modulusZero curPart))) :=
+    BProv_eqSym
+      (BProv_Ax_s_add_assoc_terms cur
+        (Term.mul modulusZero twiceNext)
+        (Term.mul modulusZero curPart))
+  have hregroupComm : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add cur (Term.mul modulusZero twiceNext))
+          (Term.mul modulusZero curPart))
+        (Term.add
+          (Term.add (Term.mul modulusZero twiceNext) cur)
+          (Term.mul modulusZero curPart))) :=
+    BProv_eq_congr_add_left (Term.mul modulusZero curPart)
+      (BProv_Ax_s_add_comm_terms cur
+        (Term.mul modulusZero twiceNext))
+  have hregroupRight : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.add (Term.mul modulusZero twiceNext) cur)
+          (Term.mul modulusZero curPart))
+        (Term.add (Term.mul modulusZero twiceNext)
+          (Term.add cur (Term.mul modulusZero curPart)))) :=
+    BProv_Ax_s_add_assoc_terms
+      (Term.mul modulusZero twiceNext) cur
+      (Term.mul modulusZero curPart)
+  have hregroup : BProv Ax_s G
+      (eq
+        (Term.add cur
+          (Term.add
+            (Term.mul modulusZero twiceNext)
+            (Term.mul modulusZero curPart)))
+        (Term.add (Term.mul modulusZero twiceNext)
+          (Term.add cur (Term.mul modulusZero curPart)))) :=
+    BProv_eqTrans hregroupLeft
+      (BProv_eqTrans hregroupComm hregroupRight)
+  have hparts : BProv Ax_s G
+      (eq
+        (Term.add (Term.mul modulusZero twiceNext)
+          (Term.add cur (Term.mul modulusZero curPart)))
+        (Term.add (Term.add nextProduct next) curProduct)) :=
+    BProv_eq_congr_add hnextPart hcurGroup
+  have hnormalAssoc : BProv Ax_s G
+      (eq (Term.add (Term.add nextProduct next) curProduct)
+        (Term.add nextProduct (Term.add next curProduct))) :=
+    BProv_Ax_s_add_assoc_terms nextProduct next curProduct
+  have hnormalComm : BProv Ax_s G
+      (eq (Term.add nextProduct (Term.add next curProduct)) normal) := by
+    have hinner : BProv Ax_s G
+        (eq (Term.add next curProduct)
+          (Term.add curProduct next)) :=
+      BProv_Ax_s_add_comm_terms next curProduct
+    simpa [normal] using BProv_eq_congr_add_right nextProduct hinner
+  have hcodeNormal : BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next) normal) :=
+    BProv_eqTrans hcodeCore
+      (BProv_eqTrans hcodeDist
+        (BProv_eqTrans hregroup
+          (BProv_eqTrans hparts
+            (BProv_eqTrans hnormalAssoc hnormalComm))))
+  have hquotDist : BProv Ax_s G
+      (eq (Term.mul quotientOne modulusOne)
+        (Term.add nextProduct curProduct)) := by
+    have hdist : BProv Ax_s G
+        (eq (Term.mul quotientOne modulusOne)
+          (Term.add (Term.mul next modulusOne)
+            (Term.mul (Term.mul modulusOne cur) modulusOne))) := by
+      simpa [quotientOne] using
+        BProv_Ax_s_add_mul_terms next (Term.mul modulusOne cur) modulusOne
+    simpa [nextProduct, curProduct] using hdist
+  have hquotCong : BProv Ax_s G
+      (eq (Term.add (Term.mul quotientOne modulusOne) next)
+        (Term.add (Term.add nextProduct curProduct) next)) :=
+    BProv_eq_congr_add_left next hquotDist
+  have hquotAssoc : BProv Ax_s G
+      (eq (Term.add (Term.add nextProduct curProduct) next) normal) := by
+    simpa [normal] using
+      BProv_Ax_s_add_assoc_terms nextProduct curProduct next
+  have hquotNormal : BProv Ax_s G
+      (eq (Term.add (Term.mul quotientOne modulusOne) next) normal) :=
+    BProv_eqTrans hquotCong hquotAssoc
+  simpa [step, modulusOne, quotientOne] using
+    BProv_eqTrans hcodeNormal (BProv_eqSym hquotNormal)
+
+/-- The generic two-entry beta term has its requested next value at literal
+index one. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_one
+    {G : List Formula} (cur next : Term) :
+    BProv Ax_s G
+      (betaTermTermAt next
+        (twoEntryBetaCodeTerm cur next)
+        (twoEntryBetaStepTerm cur next)
+        (Term.succ Term.zero)) := by
+  let step : Term := twoEntryBetaStepTerm cur next
+  let modulus : Term := Term.succ (Term.add step step)
+  let quotient : Term := Term.add next (Term.mul modulus cur)
+  have hmod : BProv Ax_s G
+      (eq modulus
+        (betaModTermTerm step (Term.succ Term.zero))) := by
+    simpa [modulus] using
+      BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self step)
+  have hltRaw : BProv Ax_s G
+      (ltTermAt next
+        (betaModTermTerm step (Term.succ Term.zero))) := by
+    simpa [step] using
+      BProv_Ax_s_twoEntryBetaTerm_one_bound (G := G) cur next
+  have hlt : BProv Ax_s G (ltTermAt next modulus) :=
+    BProv_ltTermAt_of_eq_right (BProv_eqSym hmod) hltRaw
+  have hvalue : BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next)
+        (Term.add (Term.mul quotient modulus) next)) := by
+    simpa [step, modulus, quotient] using
+      BProv_Ax_s_twoEntryBetaTerm_one_value (G := G) cur next
+  have hrem : BProv Ax_s G
+      (remTermTermAt next (twoEntryBetaCodeTerm cur next) modulus) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      (rem := next) (value := twoEntryBetaCodeTerm cur next)
+      (modulus := modulus) (quotient := quotient) hlt hvalue
+  exact BProv_Ax_s_betaTermTermAt_of_rem
+    (out := next) (code := twoEntryBetaCodeTerm cur next)
+    (step := step) (idx := Term.succ Term.zero)
+    (modulus := modulus) hmod hrem
+
+/-- Paired exactness interface for the generic two-entry beta terms. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_entries
+    {G : List Formula} (cur next : Term) :
+    BProv Ax_s G
+      (and
+        (betaTermTermAt cur
+          (twoEntryBetaCodeTerm cur next)
+          (twoEntryBetaStepTerm cur next)
+          Term.zero)
+        (betaTermTermAt next
+          (twoEntryBetaCodeTerm cur next)
+          (twoEntryBetaStepTerm cur next)
+          (Term.succ Term.zero))) :=
+  BProv_andI
+    (BProv_Ax_s_twoEntryBetaTerm_zero (G := G) cur next)
+    (BProv_Ax_s_twoEntryBetaTerm_one (G := G) cur next)
 
 /-- If a slot is explicitly twice its half, PA proves that the half is below
 the slot. -/
@@ -18339,6 +20007,500 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
     BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
       (oldLast := Term.numeral n) (newLast := lastTerm)
       hnum hLast
+
+/-- Construct the literal bound-one shifted tail from explicit old entries at
+indices `1` and `2`.
+
+The fresh witnesses are the generic two-entry beta code and step.  For an
+arbitrary bounded index PA proves `i = 0 ∨ i = 1`; beta functionality then
+identifies the arbitrary old output with `cur` or `next` before transporting
+the corresponding fresh entry. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
+    {G : List Formula} {oldCode oldStep : Nat} {cur next : Term}
+    (hcur : BProv Ax_s G
+      (betaTermTermAt cur (Term.var oldCode) (Term.var oldStep)
+        (Term.succ Term.zero)))
+    (hnext : BProv Ax_s G
+      (betaTermTermAt next (Term.var oldCode) (Term.var oldStep)
+        (Term.succ (Term.succ Term.zero)))) :
+    BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        (twoEntryBetaCodeTerm cur next)
+        (twoEntryBetaStepTerm cur next)
+        (Term.succ Term.zero)) := by
+  let leHyp : Formula :=
+    leTermAt (Term.var 0)
+      (Term.rename Nat.succ (Term.succ Term.zero))
+  let oldBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.var (oldCode+2)) (Term.var (oldStep+2))
+      (Term.succ (Term.var 1))
+  let newBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n+2) (twoEntryBetaCodeTerm cur next))
+      (Term.rename (fun n => n+2) (twoEntryBetaStepTerm cur next))
+      (Term.var 1)
+  let witness : Formula := all (imp oldBeta newBeta)
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hwitness : BProv Ax_s C witness := by
+      have hinner : BProv Ax_s (C.map (rename Nat.succ))
+          (imp oldBeta newBeta) := by
+        let D : List Formula := oldBeta :: C.map (rename Nat.succ)
+        let cur2 : Term := Term.rename (fun n => n+2) cur
+        let next2 : Term := Term.rename (fun n => n+2) next
+        have hold : BProv Ax_s D oldBeta :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hleRaw : BProv Ax_s D (rename Nat.succ leHyp) :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+        have hle : BProv Ax_s D (leConstAt 1 1) := by
+          simpa [leHyp, leConstAt, leTermAt, rename, Term.rename, Term.numeral,
+            SetTheory.up] using hleRaw
+        have hcases : BProv Ax_s D
+            (or (leConstAt 1 0) (eqConstAt 1 1)) :=
+          BProv_Ax_s_leConstAt_succ_cases hle
+        have hcurRen1 : BProv Ax_s (G.map (rename Nat.succ))
+            (rename Nat.succ
+              (betaTermTermAt cur (Term.var oldCode)
+                (Term.var oldStep) (Term.succ Term.zero))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hcur Nat.succ
+        have hcurRen2 : BProv Ax_s
+            ((G.map (rename Nat.succ)).map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ
+              (betaTermTermAt cur (Term.var oldCode)
+                (Term.var oldStep) (Term.succ Term.zero)))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hcurRen1 Nat.succ
+        have hcurD : BProv Ax_s D
+            (betaTermTermAt cur2
+              (Term.var (oldCode+2)) (Term.var (oldStep+2))
+              (Term.succ Term.zero)) := by
+          simpa [D, C, leHyp, cur2, betaTermTermAt,
+            remTermTermAt, ltTermAt, betaModTermTerm,
+            rename, Term.rename, SetTheory.up, Term.rename_comp,
+            term_rename_up_succ_rename_succ, List.map_map,
+            Function.comp_def] using
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) hcurRen2)
+        have hnextRen1 : BProv Ax_s (G.map (rename Nat.succ))
+            (rename Nat.succ
+              (betaTermTermAt next (Term.var oldCode)
+                (Term.var oldStep)
+                (Term.succ (Term.succ Term.zero)))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hnext Nat.succ
+        have hnextRen2 : BProv Ax_s
+            ((G.map (rename Nat.succ)).map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ
+              (betaTermTermAt next (Term.var oldCode)
+                (Term.var oldStep)
+                (Term.succ (Term.succ Term.zero))))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hnextRen1 Nat.succ
+        have hnextD : BProv Ax_s D
+            (betaTermTermAt next2
+              (Term.var (oldCode+2)) (Term.var (oldStep+2))
+              (Term.succ (Term.succ Term.zero))) := by
+          simpa [D, C, leHyp, next2, betaTermTermAt,
+            remTermTermAt, ltTermAt, betaModTermTerm,
+            rename, Term.rename, SetTheory.up, Term.rename_comp,
+            term_rename_up_succ_rename_succ, List.map_map,
+            Function.comp_def] using
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) hnextRen2)
+        have hleft : BProv Ax_s (leConstAt 1 0 :: D) newBeta := by
+          let L : List Formula := leConstAt 1 0 :: D
+          have hleZero : BProv Ax_s L (leConstAt 1 0) :=
+            BProv_ass (B := Ax_s) (G := L) (by simp [L])
+          have hidx : BProv Ax_s L
+              (eq (Term.var 1) Term.zero) := by
+            simpa [eqConstAt, Term.numeral] using
+              BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero hleZero
+          have holdL : BProv Ax_s L oldBeta :=
+            BProv_context_cons (B := Ax_s) hold
+          have holdOne : BProv Ax_s L
+              (betaTermTermAt (Term.var 0)
+                (Term.var (oldCode+2)) (Term.var (oldStep+2))
+                (Term.succ Term.zero)) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_index
+              (BProv_eq_congr_succ hidx) holdL
+          have hcurL : BProv Ax_s L
+              (betaTermTermAt cur2
+                (Term.var (oldCode+2)) (Term.var (oldStep+2))
+                (Term.succ Term.zero)) :=
+            BProv_context_cons (B := Ax_s) hcurD
+          have hout : BProv Ax_s L (eq (Term.var 0) cur2) :=
+            BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
+              hcurL holdOne
+          have hnewCur : BProv Ax_s L
+              (betaTermTermAt cur2
+                (twoEntryBetaCodeTerm cur2 next2)
+                (twoEntryBetaStepTerm cur2 next2) Term.zero) :=
+            BProv_Ax_s_twoEntryBetaTerm_zero cur2 next2
+          have hnewOut : BProv Ax_s L
+              (betaTermTermAt (Term.var 0)
+                (twoEntryBetaCodeTerm cur2 next2)
+                (twoEntryBetaStepTerm cur2 next2) Term.zero) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_output
+              (BProv_eqSym hout) hnewCur
+          have hnewIdx : BProv Ax_s L
+              (betaTermTermAt (Term.var 0)
+                (twoEntryBetaCodeTerm cur2 next2)
+                (twoEntryBetaStepTerm cur2 next2) (Term.var 1)) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_index
+              (BProv_eqSym hidx) hnewOut
+          simpa [L, D, C, leHyp, newBeta, cur2, next2,
+            twoEntryBetaCodeTerm, twoEntryBetaStepTerm,
+            Term.rename, Term.rename_comp] using hnewIdx
+        have hright : BProv Ax_s (eqConstAt 1 1 :: D) newBeta := by
+          let R : List Formula := eqConstAt 1 1 :: D
+          have hidxRaw : BProv Ax_s R (eqConstAt 1 1) :=
+            BProv_ass (B := Ax_s) (G := R) (by simp [R])
+          have hidx : BProv Ax_s R
+              (eq (Term.var 1) (Term.succ Term.zero)) := by
+            simpa [eqConstAt, Term.numeral] using hidxRaw
+          have holdR : BProv Ax_s R oldBeta :=
+            BProv_context_cons (B := Ax_s) hold
+          have holdTwo : BProv Ax_s R
+              (betaTermTermAt (Term.var 0)
+                (Term.var (oldCode+2)) (Term.var (oldStep+2))
+                (Term.succ (Term.succ Term.zero))) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_index
+              (BProv_eq_congr_succ hidx) holdR
+          have hnextR : BProv Ax_s R
+              (betaTermTermAt next2
+                (Term.var (oldCode+2)) (Term.var (oldStep+2))
+                (Term.succ (Term.succ Term.zero))) :=
+            BProv_context_cons (B := Ax_s) hnextD
+          have hout : BProv Ax_s R (eq (Term.var 0) next2) :=
+            BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
+              hnextR holdTwo
+          have hnewNext : BProv Ax_s R
+              (betaTermTermAt next2
+                (twoEntryBetaCodeTerm cur2 next2)
+                (twoEntryBetaStepTerm cur2 next2)
+                (Term.succ Term.zero)) :=
+            BProv_Ax_s_twoEntryBetaTerm_one cur2 next2
+          have hnewOut : BProv Ax_s R
+              (betaTermTermAt (Term.var 0)
+                (twoEntryBetaCodeTerm cur2 next2)
+                (twoEntryBetaStepTerm cur2 next2)
+                (Term.succ Term.zero)) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_output
+              (BProv_eqSym hout) hnewNext
+          have hnewIdx : BProv Ax_s R
+              (betaTermTermAt (Term.var 0)
+                (twoEntryBetaCodeTerm cur2 next2)
+                (twoEntryBetaStepTerm cur2 next2) (Term.var 1)) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_index
+              (BProv_eqSym hidx) hnewOut
+          simpa [R, D, C, leHyp, newBeta, cur2, next2,
+            twoEntryBetaCodeTerm, twoEntryBetaStepTerm,
+            Term.rename, Term.rename_comp] using hnewIdx
+        have hnew : BProv Ax_s D newBeta :=
+          BProv_orE (B := Ax_s) (G := D)
+            (a := leConstAt 1 0) (b := eqConstAt 1 1)
+            (c := newBeta) hcases hleft hright
+        simpa [D, oldBeta, newBeta] using BProv_impI hnew
+      simpa [witness, oldBeta, newBeta] using
+        BProv_allI_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf) hinner
+    simpa [C, leHyp, witness] using BProv_impI hwitness
+  simpa [betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- Every beta code has a shifted tail through the literal bound `0`.
+
+The fresh code is the old code itself and the fresh step is twice the old
+step.  Under the sole bounded index case `i <= 0`, PA proves `i = 0`; the old
+entry at `S i` is therefore the index-one entry, whose modulus agrees exactly
+with the doubled-step modulus at index zero. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound
+    {G : List Formula} {oldCode oldStep : Nat} :
+    BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        (Term.var oldCode)
+        (Term.add (Term.var oldStep) (Term.var oldStep))
+        Term.zero) := by
+  let leHyp : Formula :=
+    leTermAt (Term.var 0) (Term.rename Nat.succ Term.zero)
+  let oldBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.var (oldCode+2)) (Term.var (oldStep+2))
+      (Term.succ (Term.var 1))
+  let newBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n+2) (Term.var oldCode))
+      (Term.rename (fun n => n+2)
+        (Term.add (Term.var oldStep) (Term.var oldStep)))
+      (Term.var 1)
+  let witness : Formula := all (imp oldBeta newBeta)
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hwitness : BProv Ax_s C witness := by
+      have hinner : BProv Ax_s (C.map (rename Nat.succ))
+          (imp oldBeta newBeta) := by
+        let D : List Formula := oldBeta :: C.map (rename Nat.succ)
+        have hold : BProv Ax_s D oldBeta :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hleRaw : BProv Ax_s D (rename Nat.succ leHyp) :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+        have hle : BProv Ax_s D
+            (leTermAt (Term.var 1) Term.zero) := by
+          simpa [leHyp, leTermAt, rename, Term.rename, SetTheory.up]
+            using hleRaw
+        have hzeroLe : BProv Ax_s D
+            (leTermAt Term.zero (Term.var 1)) :=
+          BProv_Ax_s_leTermAt_zero_left (Term.var 1)
+        have hidx : BProv Ax_s D (eq (Term.var 1) Term.zero) :=
+          BProv_Ax_s_eq_of_leTermAt_leTermAt hle hzeroLe
+        have hsuccIdx : BProv Ax_s D
+            (eq (Term.succ (Term.var 1))
+              (Term.succ Term.zero)) :=
+          BProv_eq_congr_succ hidx
+        have holdOne : BProv Ax_s D
+            (betaTermTermAt (Term.var 0)
+              (Term.var (oldCode+2)) (Term.var (oldStep+2))
+              (Term.succ Term.zero)) :=
+          BProv_Ax_s_betaTermTermAt_of_eq_index hsuccIdx hold
+        have hnewZero : BProv Ax_s D
+            (betaTermTermAt (Term.var 0)
+              (Term.var (oldCode+2))
+              (Term.add (Term.var (oldStep+2))
+                (Term.var (oldStep+2)))
+              Term.zero) :=
+          BProv_Ax_s_betaTermTermAt_zero_double_step_of_one holdOne
+        have hnew : BProv Ax_s D newBeta := by
+          have htransport : BProv Ax_s D
+              (betaTermTermAt (Term.var 0)
+                (Term.var (oldCode+2))
+                (Term.add (Term.var (oldStep+2))
+                  (Term.var (oldStep+2)))
+                (Term.var 1)) :=
+            BProv_Ax_s_betaTermTermAt_of_eq_index
+              (BProv_eqSym hidx) hnewZero
+          simpa [newBeta, Term.rename] using htransport
+        simpa [D, oldBeta, newBeta] using BProv_impI hnew
+      simpa [witness, oldBeta, newBeta] using
+        BProv_allI_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf) hinner
+    simpa [C, leHyp, witness] using BProv_impI hwitness
+  simpa [betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- If the old beta step is provably zero, the identically-zero beta sequence
+is a shifted tail through any term bound.
+
+This is the fully PA-internal degenerate tail constructor: the fresh code and
+step are the literal terms `0` and `0`, and the universal copy implication is
+proved from beta exactness at step `0`. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
+    {G : List Formula} {oldCode oldStep : Nat} {lastTerm : Term}
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep 0)) :
+    BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        Term.zero Term.zero lastTerm) := by
+  let leHyp : Formula :=
+    leTermAt (Term.var 0) (Term.rename Nat.succ lastTerm)
+  let oldBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.var (oldCode+2)) (Term.var (oldStep+2))
+      (Term.succ (Term.var 1))
+  let newBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n+2) Term.zero)
+      (Term.rename (fun n => n+2) Term.zero)
+      (Term.var 1)
+  let witness : Formula := all (imp oldBeta newBeta)
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hwitness : BProv Ax_s C witness := by
+      have hinner : BProv Ax_s (C.map (rename Nat.succ))
+          (imp oldBeta newBeta) := by
+        let D : List Formula := oldBeta :: C.map (rename Nat.succ)
+        have hold : BProv Ax_s D oldBeta :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hstepRen1 : BProv Ax_s (G.map (rename Nat.succ))
+            (rename Nat.succ (eqConstAt oldStep 0)) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hOldStep Nat.succ
+        have hstepRen2 : BProv Ax_s
+            ((G.map (rename Nat.succ)).map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ
+              (eqConstAt oldStep 0))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hstepRen1 Nat.succ
+        have hstepD : BProv Ax_s D
+            (eq (Term.var (oldStep+2)) Term.zero) := by
+          simpa [D, C, leHyp, oldBeta, eqConstAt, zeroAt, rename,
+            Term.rename, Term.numeral, Nat.add_assoc] using
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) hstepRen2)
+        have houtZero : BProv Ax_s D (eq (Term.var 0) Term.zero) :=
+          BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero
+            hold hstepD
+        have hnewStep : BProv Ax_s D
+            (eq (Term.rename (fun n => n+2) Term.zero) Term.zero) := by
+          simpa [Term.rename] using
+            BProv_eqRefl (B := Ax_s) (G := D) Term.zero
+        have hzeroBeta : BProv Ax_s D
+            (betaTermTermAt Term.zero
+              (Term.rename (fun n => n+2) Term.zero)
+              (Term.rename (fun n => n+2) Term.zero)
+              (Term.var 1)) :=
+          BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero hnewStep
+        have hnew : BProv Ax_s D newBeta := by
+          simpa [newBeta] using
+            BProv_Ax_s_betaTermTermAt_of_eq_output
+              (BProv_eqSym houtZero) hzeroBeta
+        simpa [D, oldBeta, newBeta] using BProv_impI hnew
+      simpa [witness, oldBeta, newBeta] using
+        BProv_allI_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf) hinner
+    simpa [C, leHyp, witness] using BProv_impI hwitness
+  simpa [betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- Package any proved shifted-tail relation into its two-witness existential
+form.
+
+The arithmetic construction remains entirely in `hthrough`; this theorem only
+introduces the explicit fresh code and step terms. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_through
+    {G : List Formula} {oldCode oldStep : Nat}
+    {newCode newStep lastTerm : Term}
+    (hthrough : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep lastTerm)) :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
+  let body : Formula :=
+    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n => n+2) lastTerm)
+  have hbody : BProv Ax_s G
+      (subst (instTerm newStep)
+        (subst (Term.upSubst (instTerm newCode)) body)) := by
+    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up, Term.rename_comp,
+      term_rename_up_succ_rename_succ, Function.comp_def,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ] using hthrough
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm newCode) (ex body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm newCode)) body)
+        (t := newStep) hbody)
+  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
+      (t := newCode) hstepEx)
+
+/-- Existential literal bound-one shifted tail from explicit old entries at
+indices `1` and `2`.
+
+The witnesses remain visible in the relation theorem: they are exactly the
+generic two-entry beta code and step built from `cur` and `next`. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_one_bound_of_entries
+    {G : List Formula} {oldCode oldStep : Nat} {cur next : Term}
+    (hcur : BProv Ax_s G
+      (betaTermTermAt cur (Term.var oldCode) (Term.var oldStep)
+        (Term.succ Term.zero)))
+    (hnext : BProv Ax_s G
+      (betaTermTermAt next (Term.var oldCode) (Term.var oldStep)
+        (Term.succ (Term.succ Term.zero)))) :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep
+        (Term.succ Term.zero)) :=
+  BProv_Ax_s_betaShiftTailExistsTermAt_of_through
+    (BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
+      (G := G) (oldCode := oldCode) (oldStep := oldStep)
+      hcur hnext)
+
+/-- Existential shifted-tail base case at the literal bound `0`.
+
+The witnesses are exposed by the preceding relation theorem: the old code and
+twice the old step. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
+    {G : List Formula} {oldCode oldStep : Nat} :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep Term.zero) :=
+  BProv_Ax_s_betaShiftTailExistsTermAt_of_through
+    (BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound
+      (G := G) (oldCode := oldCode) (oldStep := oldStep))
+
+/-- Zero-step existential shifted-tail constructor.
+
+When the ambient old step slot is `0`, no semantic finite tail data is needed:
+the fresh witnesses may both be the literal term `0`, and the universal shifted
+tail relation follows from `BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero`.
+-/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero
+    {G : List Formula} {oldCode oldStep : Nat} {lastTerm : Term}
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep 0)) :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
+  let body : Formula :=
+    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n => n+2) lastTerm)
+  have hthrough : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        Term.zero Term.zero lastTerm) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
+      (oldCode := oldCode) (oldStep := oldStep)
+      (lastTerm := lastTerm) hOldStep
+  have hbody : BProv Ax_s G
+      (subst (instTerm Term.zero)
+        (subst (Term.upSubst (instTerm Term.zero)) body)) := by
+    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up, Term.rename_comp,
+      term_rename_up_succ_rename_succ, Function.comp_def,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hthrough
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm Term.zero) (ex body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm Term.zero)) body)
+        (t := Term.zero) hbody)
+  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
+      (t := Term.zero) hstepEx)
 
 /-- Prove the existential shifted-tail formula from semantic finite old-tail
 data and a proved closed standard last bound. -/
@@ -30557,6 +32719,58 @@ theorem BProv_Ax_s_induction_rule {G : List Formula} {phi : Formula}
     BProv_mono Ax_s [] G (inductionForm phi)
       (fun x hx => by cases hx) hind_empty
   exact BProv_inductionForm_mp hind hzero hsucc
+
+/-- PA induction reduces universal shifted-tail existence to its genuine
+successor-extension step.
+
+The induction body keeps the old code and step in the ambient context and the
+current tail bound in slot `0`.  Its zero case is discharged by
+`BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound`; the caller supplies only the
+proof that a tail through `n` can be extended through `S n`. -/
+theorem BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor
+    {G : List Formula} {oldCode oldStep : Nat}
+    (hsucc : BProv Ax_s
+      (betaShiftTailExistsTermAt (oldCode+1) (oldStep+1)
+          (Term.var 0) ::
+        G.map (rename Nat.succ))
+      (betaShiftTailExistsTermAt (oldCode+1) (oldStep+1)
+        (Term.succ (Term.var 0)))) :
+    BProv Ax_s G
+      (all (betaShiftTailExistsTermAt (oldCode+1) (oldStep+1)
+        (Term.var 0))) := by
+  let phi : Formula :=
+    betaShiftTailExistsTermAt (oldCode+1) (oldStep+1) (Term.var 0)
+  have hzeroRaw : BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep Term.zero) :=
+    BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
+      (G := G) (oldCode := oldCode) (oldStep := oldStep)
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    simpa [phi, betaShiftTailExistsTermAt,
+      betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def, Nat.add_assoc] using hzeroRaw
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    simpa [phi, betaShiftTailExistsTermAt,
+      betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def, Nat.add_assoc] using hsucc
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  simpa [phi] using
+    BProv_Ax_s_induction_rule (G := G) (phi := phi) hzero hsuccAll
 
 /-- If a bounded halving trace starts with a zero beta entry, every index below
 the trace bound has zero beta output.  The proof is PA induction over the
