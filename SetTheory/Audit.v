@@ -223,6 +223,8 @@ Check PA.Formula.BProv_Ax_s_betaPair_negative_bezout.
 Check PA.Formula.BProv_Ax_s_betaPair_positive_inverse.
 Check PA.Formula.BProv_Ax_s_betaPair_positive_inverse_of_gap_scale.
 Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_of_certificate.
+Check PA.Formula.crtInverseExistsTermAtOpenedContext.
+Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_elim_opened.
 Check PA.Formula.BProv_Ax_s_ltTermAt_elim_opened.
 Check PA.Formula.BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms.
 Check PA.Formula.BProv_Ax_s_ltTermAt_zero_mul_succ_right.
@@ -251,6 +253,7 @@ Check PA.Formula.BProv_Ax_s_leTermAt_of_ltTermAt_succ_right.
 Check PA.Formula.BProv_Ax_s_eq_of_leTermAt_leTermAt.
 Check PA.Formula.BProv_Ax_s_ltTermAt_succ_right_cases.
 Check PA.Formula.BProv_Ax_s_crtInverse_mul.
+Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_mul.
 Check PA.Formula.BProv_Ax_s_crtProductFactor_mul.
 Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition.
 Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition.
