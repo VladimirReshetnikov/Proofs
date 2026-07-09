@@ -44,6 +44,12 @@ ClearAll[
   valueIndex,
   printRoutes,
   printLeanTable,
+  leanRatQ,
+  certValue,
+  certRatAbove,
+  certRatBelow,
+  intervalCert,
+  printLeanIntervalOrderModule,
   monotoneAdjacentQ,
   printAdjacent,
   printLeanSpecial,
@@ -117,6 +123,14 @@ leanTableTacticName[n_Integer] := If[n >= 13, "rfl", "a158415_twelve_table"];
 leanRat[r_Rational] :=
   "(" <> ToString[Numerator[r]] <> " / " <> ToString[Denominator[r]] <> " : Real)";
 leanRat[n_Integer] := "(" <> ToString[n] <> " : Real)";
+
+leanRatQ[r_Rational] :=
+  "(" <> ToString[Numerator[r]] <> " / " <> ToString[Denominator[r]] <> " : Rat)";
+leanRatQ[n_Integer] := "(" <> ToString[n] <> " : Rat)";
+
+certValue[code_] := If[$numericDiscovery, numericExprValue[code], exprValue[code]];
+certRatAbove[x_, hi_] := If[$numericDiscovery, numericRatAbove[x, hi], ratAbove[x, hi]];
+certRatBelow[x_, lo_] := If[$numericDiscovery, numericRatBelow[x, lo], ratBelow[x, lo]];
 
 ratBetween[lo_, hi_] := Module[{den = 1000, r},
   While[True,
@@ -323,6 +337,177 @@ printLeanTable[n_Integer] := Module[{name},
     {i, Length[values[n]]}
   ];
   Print["  | _ => 0"];
+];
+
+intervalCert[{"val", n_Integer, i_Integer}, lo_, hi_] :=
+  intervalCert[values[n][[i + 1, 2]], lo, hi];
+intervalCert[{"one"}, lo_, hi_] :=
+  "IntervalCert.one " <> leanRatQ[lo] <> " " <> leanRatQ[hi];
+intervalCert[{"sqrt", n_Integer, i_Integer}, lo_, hi_] := Module[
+  {x, childLo, childHi},
+  x = certValue[{"val", n, i}];
+  childLo = certRatBelow[x, lo^2];
+  childHi = certRatAbove[x, hi^2];
+  "IntervalCert.sqrt " <> leanRatQ[lo] <> " " <> leanRatQ[hi] <>
+    " (" <> intervalCert[{"val", n, i}, childLo, childHi] <> ")"
+];
+intervalCert[{"add", n1_Integer, i1_Integer, n2_Integer, i2_Integer},
+    lo_, hi_] := Module[
+  {a, b, sum, slackLo, slackHi, alo, ahi, blo, bhi, left, right},
+  a = certValue[{"val", n1, i1}];
+  b = certValue[{"val", n2, i2}];
+  sum = a + b;
+  slackLo = sum - lo;
+  slackHi = hi - sum;
+  alo = certRatBelow[a, a - slackLo/3];
+  blo = certRatBelow[b, b - slackLo/3];
+  ahi = certRatAbove[a, a + slackHi/3];
+  bhi = certRatAbove[b, b + slackHi/3];
+  left = intervalCert[{"val", n1, i1}, alo, ahi];
+  right = intervalCert[{"val", n2, i2}, blo, bhi];
+  "IntervalCert.add " <> leanRatQ[lo] <> " " <> leanRatQ[hi] <>
+    " (" <> left <> ") (" <> right <> ")"
+];
+
+printLeanIntervalOrderModule[n_Integer] := Module[
+  {a, b, av, bv, gap, leftHi, rightLo, leftName, rightName, rewrites},
+  If[n =!= 15,
+    Print["lean-interval-order-module is currently implemented only for n = 15"];
+    Exit[2]
+  ];
+  Print["import LeanProofs.A158415FifteenTable"];
+  Print[""];
+  Print["/-!"];
+  Print["# Size-fifteen interval order certificates for OEIS A158415"];
+  Print[""];
+  Print["This generated module replaces the large hand-expanded rational-bound"];
+  Print["ladders for the exceptional adjacent comparisons in `values15` with"];
+  Print["compact interval certificates checked by one soundness theorem."];
+  Print["-/"];
+  Print[""];
+  Print["namespace LeanProofs"];
+  Print["namespace A158415"];
+  Print["namespace Expr"];
+  Print[""];
+  Print["set_option maxRecDepth 10000"];
+  Print["set_option linter.unreachableTactic false"];
+  Print["set_option linter.unnecessarySeqFocus false"];
+  Print[""];
+  Print["inductive IntervalCert where"];
+  Print["  | one (lo hi : Rat)"];
+  Print["  | sqrt (lo hi : Rat) (c : IntervalCert)"];
+  Print["  | add (lo hi : Rat) (a b : IntervalCert)"];
+  Print[""];
+  Print["namespace IntervalCert"];
+  Print[""];
+  Print["def lower : IntervalCert -> Rat"];
+  Print["  | one lo _ => lo"];
+  Print["  | sqrt lo _ _ => lo"];
+  Print["  | add lo _ _ _ => lo"];
+  Print[""];
+  Print["def upper : IntervalCert -> Rat"];
+  Print["  | one _ hi => hi"];
+  Print["  | sqrt _ hi _ => hi"];
+  Print["  | add _ hi _ _ => hi"];
+  Print[""];
+  Print["def expr : IntervalCert -> Expr"];
+  Print["  | one _ _ => Expr.one"];
+  Print["  | sqrt _ _ c => Expr.sqrt c.expr"];
+  Print["  | add _ _ a b => Expr.add a.expr b.expr"];
+  Print[""];
+  Print["def Valid : IntervalCert -> Prop"];
+  Print["  | one lo hi => (lo : Real) < 1 ∧ (1 : Real) < hi"];
+  Print["  | sqrt lo hi c =>"];
+  Print["      c.Valid ∧ ((lo : Real) < 0 ∨ (lo : Real) ^ 2 < (c.lower : Real)) ∧"];
+  Print["        ((c.upper : Real) < (hi : Real) ^ 2) ∧ (0 : Real) < hi"];
+  Print["  | add lo hi a b =>"];
+  Print["      a.Valid ∧ b.Valid ∧"];
+  Print["        ((lo : Real) < (a.lower : Real) + (b.lower : Real)) ∧"];
+  Print["        ((a.upper : Real) + (b.upper : Real) < (hi : Real))"];
+  Print[""];
+  Print["theorem sound (c : IntervalCert) (h : c.Valid) :"];
+  Print["    (c.lower : Real) < c.expr.eval ∧ c.expr.eval < (c.upper : Real) := by"];
+  Print["  induction c with"];
+  Print["  | one lo hi =>"];
+  Print["      simpa [Valid, lower, upper, expr, eval] using h"];
+  Print["  | sqrt lo hi c ih =>"];
+  Print["      rcases h with ⟨hc, hlo, hhi, hpos⟩"];
+  Print["      have hs := ih hc"];
+  Print["      simp [lower, upper, expr, eval]"];
+  Print["      constructor"];
+  Print["      · rcases hlo with hneg | hsq"];
+  Print["        · exact lt_of_lt_of_le hneg (Real.sqrt_nonneg _)"];
+  Print["        · apply Real.lt_sqrt_of_sq_lt"];
+  Print["          exact lt_trans hsq hs.1"];
+  Print["      · rw [Real.sqrt_lt' hpos]"];
+  Print["        exact lt_trans hs.2 hhi"];
+  Print["  | add lo hi a b iha ihb =>"];
+  Print["      rcases h with ⟨ha, hb, hlo, hhi⟩"];
+  Print["      have hsa := iha ha"];
+  Print["      have hsb := ihb hb"];
+  Print["      constructor <;> simp [lower, upper, expr, eval] at * <;> linarith"];
+  Print[""];
+  Print["end IntervalCert"];
+  Print[""];
+  Do[
+    a = values[n][[i, 2]];
+    b = values[n][[i + 1, 2]];
+    If[! monotoneAdjacentQ[a, b],
+      av = certValue[a];
+      bv = certValue[b];
+      gap = bv - av;
+      leftHi = certRatAbove[av, av + gap/3];
+      rightLo = certRatBelow[bv, av + 2 gap/3];
+      leftName = "values15_special_" <> ToString[i - 1] <> "_leftCert";
+      rightName = "values15_special_" <> ToString[i - 1] <> "_rightCert";
+      Print["private def ", leftName, " : IntervalCert :="];
+      Print["  ", intervalCert[a, 0, leftHi]];
+      Print[""];
+      Print["private def ", rightName, " : IntervalCert :="];
+      Print["  ", intervalCert[b, rightLo, 100]];
+      Print[""];
+      Print["set_option linter.unusedTactic false in"];
+      Print["theorem values15_special_", i - 1, " :"];
+      Print["    values15 (", i - 1, " : Fin ", Length[values[n]], ") < values15 (", i,
+        " : Fin ", Length[values[n]], ") := by"];
+      Print["  have hleftRaw := IntervalCert.sound ", leftName, " (by"];
+      Print["    norm_num [", leftName, ", IntervalCert.Valid, IntervalCert.lower, IntervalCert.upper])"];
+      Print["  have hrightRaw := IntervalCert.sound ", rightName, " (by"];
+      Print["    norm_num [", rightName, ", IntervalCert.Valid, IntervalCert.lower, IntervalCert.upper])"];
+      Print["  have hleft : values15 (", i - 1, " : Fin ", Length[values[n]], ") < ",
+        leanRat[leftHi], " := by"];
+      Print["    have heq : values15 (", i - 1, " : Fin ", Length[values[n]], ") = ",
+        leftName, ".expr.eval := by"];
+      Print["      rw [show values15 (", i - 1, " : Fin ", Length[values[n]], ") = ",
+        leanCodeExpr[a], " by rfl]"];
+      Print["      simp only [", leftName, ", IntervalCert.expr, eval]"];
+      rewrites = DeleteDuplicates[highValueRefs[a]];
+      Scan[Print["      " <> highValueRewrite[#]] &, rewrites];
+      Print["      a158415_twelve_table <;> try norm_num [sqrt_four] <;> try ring_nf"];
+      Print["    rw [heq]"];
+      Print["    simpa [", leftName, ", IntervalCert.upper] using hleftRaw.2"];
+      Print["  have hright : ", leanRat[rightLo], " < values15 (", i, " : Fin ",
+        Length[values[n]], ") := by"];
+      Print["    have heq : values15 (", i, " : Fin ", Length[values[n]], ") = ",
+        rightName, ".expr.eval := by"];
+      Print["      rw [show values15 (", i, " : Fin ", Length[values[n]], ") = ",
+        leanCodeExpr[b], " by rfl]"];
+      Print["      simp only [", rightName, ", IntervalCert.expr, eval]"];
+      rewrites = DeleteDuplicates[highValueRefs[b]];
+      Scan[Print["      " <> highValueRewrite[#]] &, rewrites];
+      Print["      a158415_twelve_table <;> try norm_num [sqrt_four] <;> try ring_nf"];
+      Print["    rw [heq]"];
+      Print["    simpa [", rightName, ", IntervalCert.lower] using hrightRaw.1"];
+      Print["  have hgap : ", leanRat[leftHi], " < ", leanRat[rightLo], " := by"];
+      Print["    norm_num"];
+      Print["  linarith"];
+      Print[""]
+    ],
+    {i, Length[values[n]] - 1}
+  ];
+  Print["end Expr"];
+  Print["end A158415"];
+  Print["end LeanProofs"]
 ];
 
 monotoneAdjacentQ[{"sqrt", n_Integer, i_Integer}, {"sqrt", n_Integer, j_Integer}] :=
@@ -977,6 +1162,8 @@ Switch[mode,
   "numeric-lean-special", printLeanSpecial[target],
   "lean-strict", printLeanStrict[target],
   "numeric-lean-strict", printLeanStrict[target],
+  "lean-interval-order-module", printLeanIntervalOrderModule[target],
+  "numeric-lean-interval-order-module", printLeanIntervalOrderModule[target],
   "lean-range", printLeanRange[target],
   "numeric-lean-range", printLeanRange[target],
   "lean-bundle", printLeanBundle[target],

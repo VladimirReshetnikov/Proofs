@@ -116,10 +116,21 @@ Two items, in decreasing order of size:
    astronomical imaginary part is needed — but certifying the *sine factor's
    sign* requires `Re w10 mod 4`, i.e. absolute precision `< 1` on a
    quantity of size `≈ 7×10^34`: a ~36-significant-digit certified chain
-   through `w9`, including `π` beyond mathlib's 20-digit certificates
-   (derivable by the same alternating-series machinery via a Machin
-   formula).  This is the concrete, well-posed remaining formalization
-   problem; work on it was in progress when this report was written.
+   through `w9`.  **This is now done**:
+   [`LeanProofs/A198683N12OverflowBound.lean`](../../../../LeanProofs/A198683N12OverflowBound.lean)
+   proves `overflowBase11_im_gt : (10 : ℝ)^100 < overflowBase11.im` (axioms:
+   `propext`, `Classical.choice`, `Quot.sound`) by boxing the phase-critical
+   `Re(w10)` with 44-digit rational endpoints while using only the crude
+   `Im(w10) < −150` for the exponential factor — the full `10^(4.12×10^34)`
+   magnitude is never materialized.  The derived criterion
+   `overflowCandidate12_ne_of_moderate_logModulus` (any principal-power
+   value with `Re(log a · b) > −(π/2)·10^100` differs from candidate `57`)
+   converts `OverflowIsolated` into a per-class magnitude check: for a
+   future witness it suffices to certify, per class, a crude lower bound on
+   the log-modulus — no transcendence assumption, no mod-`2π` reduction.
+   What remains of the "no-miracles" hypothesis is therefore only the
+   moderate-magnitude certification of the other 2925 representatives,
+   which the same interval pipeline that produces the witness will supply.
 
 ## Companion Coq development
 
