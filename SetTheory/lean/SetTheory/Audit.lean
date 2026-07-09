@@ -359,6 +359,11 @@ open SetTheory
 #check @PA.Formula.betaTermAtTermIdx
 #check @PA.Formula.betaTermAtConstIdx
 #check @PA.Formula.betaTermTermAtConstIdx
+#check @PA.Formula.boolTermAt
+#check @PA.Formula.div2StepTermAt
+#check @PA.Formula.boolTermAt_var
+#check @PA.Formula.div2StepTermAt_var
+#check @PA.Formula.betaDiv2StepWitnessTermAt
 #check @PA.Formula.betaTermAtConstIdx_var
 #check @PA.Formula.BProv_Ax_s_betaModTermTerm_zero
 #check @PA.Formula.BProv_Ax_s_betaModTermTerm_one_mul_two
@@ -477,6 +482,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_succ_of_betaTermTermAtConstIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_succ
 #check @PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_betaTermTermAtConstIdx_eq_index
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermAt_of_components
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_of_eq_beta
