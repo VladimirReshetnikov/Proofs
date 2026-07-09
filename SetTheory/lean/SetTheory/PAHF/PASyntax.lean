@@ -30346,6 +30346,83 @@ theorem
   exact BProv_Ax_s_of_div2StepAt_double_odd_cases
     hhighStep heven hodd'
 
+/-- Opened odd branch left after expanding `div2TotalAt 1` twice in the
+equality branch of the successor split.
+
+The opened halving step is for the predecessor-high slot.  The equality
+assumption from `eqSuccContext` has been shifted under the two existential
+witnesses, so the target distinguishes `S high` from the shifted low slot. -/
+def eqSuccOpenedOddContext : List Formula :=
+  let step : Formula := div2StepAt 3 1 0
+  let inner : Formula := ex step
+  oddDoubleEqAt 3 1 :: step ::
+    (inner :: eqSuccContext.map (rename Nat.succ)).map (rename Nat.succ)
+
+/-- Target paired with `eqSuccOpenedOddContext`: the equality-branch
+successor distinguisher after the two opened high-side totality witnesses. -/
+def eqSuccOpenedOddTarget : Formula :=
+  rename Nat.succ (rename Nat.succ
+    (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+
+/-- Equality branch of the successor split with the high-side div2 witness
+supplied by PA totality.
+
+Opening `div2TotalAt 1` leaves only the odd predecessor-high carry case.  The
+even branch is closed under the opened witnesses by transporting the shifted
+`doubleEqAt` proof from high to low across the shifted equality assumption. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_total_and_opened_odd_case
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s eqSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let target : Formula :=
+    hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0
+  let step : Formula := div2StepAt 3 1 0
+  let inner : Formula := ex step
+  have htotal : BProv Ax_s eqSuccContext (div2TotalAt 1) :=
+    BProv_Ax_s_div2TotalAt 1
+  have htotal' : BProv Ax_s eqSuccContext (ex inner) := by
+    simpa [inner, step, div2TotalAt, div2TotalTermAt, div2StepTermAt,
+      div2StepAt, boolTermAt, boolAt, zeroAt, oneAt, eqConstAt,
+      Term.rename, Term.numeral] using htotal
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := eqSuccContext) (a := inner) (c := target) htotal' ?_
+  let C : List Formula := inner :: eqSuccContext.map (rename Nat.succ)
+  have hinner : BProv Ax_s C (ex step) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, inner])
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := C) (a := step) (c := rename Nat.succ target) hinner ?_
+  let D : List Formula := step :: C.map (rename Nat.succ)
+  have hstep : BProv Ax_s D (div2StepAt 3 1 0) :=
+    BProv_ass (B := Ax_s) (G := D) (by simp [D, step])
+  have heven : BProv Ax_s (doubleEqAt 3 1 :: D)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 3)) 2) := by
+    let E : List Formula := doubleEqAt 3 1 :: D
+    have hhighDouble : BProv Ax_s E (doubleEqAt 3 1) :=
+      BProv_ass (B := Ax_s) (G := E) (by simp [E])
+    have heq : BProv Ax_s E (eq (Term.var 2) (Term.var 3)) :=
+      BProv_ass (B := Ax_s) (G := E)
+        (by
+          simp [E, D, C, eqSuccContext, rename, Term.rename])
+    have hlowDouble : BProv Ax_s E (doubleEqAt 2 1) :=
+      BProv_doubleEqAt_of_eq_value heq hhighDouble
+    exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+      (G := E) (high := 3) (highHalf := 1) (low := 2)
+      (lowHalf := 1) hhighDouble hlowDouble
+  have hodd' : BProv Ax_s (oddDoubleEqAt 3 1 :: D)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 3)) 2) := by
+    simpa [target, C, D, step, inner, eqSuccOpenedOddContext,
+      eqSuccOpenedOddTarget, rename_hfSomeDistinguishesTermAt_succ,
+      Term.rename] using hodd
+  have htarget : BProv Ax_s D
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 3)) 2) :=
+    BProv_Ax_s_of_div2StepAt_double_odd_cases
+      hstep heven hodd'
+  simpa [target, C, D, rename_hfSomeDistinguishesTermAt_succ, Term.rename]
+    using htarget
+
 /-- Shifted target formula used after opening an odd-high strict carry IH
 witness. -/
 def strictHighOddOpenedIHTargetFormula (highHalf : Nat) : Formula :=
@@ -36607,6 +36684,27 @@ theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_div2_step
         (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_step_and_odd_case
           hhighStep hodd))
 
+/-- Successor shell whose equality branch uses PA's total binary-halving
+proof for the predecessor-high slot.
+
+The only remaining equality-branch premise is the opened odd-high carry case
+after the two totality witnesses. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
+    hltCase
+    (by
+      simpa [eqSuccContext] using
+        (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_total_and_opened_odd_case
+          hodd))
+
 /-- Strict successor shell with the standalone self distinguisher reduced to
 the explicit opened odd-self branch supplied by total binary halving. -/
 theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_opened_odd_self
@@ -36687,6 +36785,22 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_strict_and_eq_div2_step
   BProv_Ax_s_translated_HF_extensionality_of_successor_step
     (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_div2_step
       hltCase hhighStep hodd)
+
+/-- Translated HF extensionality from the strict successor branch and the
+opened odd equality-branch carry obligation left by high-side total halving. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_strict_and_eq_opened_odd
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
+      hltCase hodd)
 
 /-- Translated HF extensionality from the strict successor branch and the
 opened odd-self branch left after PA's total binary-halving proof supplies the
