@@ -7784,6 +7784,158 @@ Proof.
     intro n. lia.
 Qed.
 
+(* Lean: term_subst_iterUpSubst_instTerm_rename_add_succ *)
+Lemma term_subst_iterUpSubst_instTerm_rename_add_succ :
+  forall k t u,
+  Term.subst (iterUpSubst k (instTerm u))
+      (Term.rename (fun n => n + k + 1) t) =
+    Term.rename (fun n => n + k) t.
+Proof.
+  induction k as [|k IH]; intros t u.
+  - simpl.
+    replace (Term.rename (fun n => n + 0 + 1) t)
+      with (Term.rename S t)
+      by (apply Term.rename_ext; intro n; lia).
+    replace (Term.rename (fun n => n + 0) t)
+      with t.
+    + apply term_subst_instTerm_rename_succ.
+    + symmetry.
+      transitivity (Term.rename (fun n => n) t).
+      * apply Term.rename_ext. intro n. lia.
+      * apply Term.rename_id.
+  - simpl.
+    replace (Term.rename (fun n => n + S k + 1) t)
+      with (Term.rename S
+        (Term.rename (fun n => n + k + 1) t))
+      by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
+    rewrite Term.subst_rename_succ_up.
+    rewrite IH.
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n. lia.
+Qed.
+
+(* Lean: term_subst_up_up_instTerm_rename_three_succ *)
+Lemma term_subst_up_up_instTerm_rename_three_succ : forall t u,
+  Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+      (Term.rename (fun n => S (S (S n))) t) =
+    Term.rename (fun n => S (S n)) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S n))) t)
+    with (Term.rename (fun n => n + 2 + 1) t)
+    by (apply Term.rename_ext; intro n; lia).
+  replace (Term.rename (fun n => S (S n)) t)
+    with (Term.rename (fun n => n + 2) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 2 t u).
+Qed.
+
+(* Lean: term_subst_up_up_instTerm_rename_two_var_zero *)
+Lemma term_subst_up_up_instTerm_rename_two_var_zero : forall u,
+  Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+      (Term.rename (fun n => S (S n)) (tVar 0)) =
+    Term.rename (fun n => S (S n)) u.
+Proof.
+  intro u.
+  simpl.
+  rewrite Term.rename_comp.
+  reflexivity.
+Qed.
+
+(* Lean: term_subst_up_up_up_instTerm_rename_four_succ *)
+Lemma term_subst_up_up_up_instTerm_rename_four_succ : forall t u,
+  Term.subst
+      (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
+      (Term.rename (fun n => S (S (S (S n)))) t) =
+    Term.rename (fun n => S (S (S n))) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S (S n)))) t)
+    with (Term.rename (fun n => n + 3 + 1) t)
+    by (apply Term.rename_ext; intro n; lia).
+  replace (Term.rename (fun n => S (S (S n))) t)
+    with (Term.rename (fun n => n + 3) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 3 t u).
+Qed.
+
+(* Lean: term_subst_up_up_up_up_instTerm_rename_five_succ *)
+Lemma term_subst_up_up_up_up_instTerm_rename_five_succ : forall t u,
+  Term.subst
+      (Term.upSubst
+        (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))
+      (Term.rename (fun n => S (S (S (S (S n))))) t) =
+    Term.rename (fun n => S (S (S (S n)))) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
+    with (Term.rename (fun n => n + 4 + 1) t)
+    by (apply Term.rename_ext; intro n; lia).
+  replace (Term.rename (fun n => S (S (S (S n)))) t)
+    with (Term.rename (fun n => n + 4) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 4 t u).
+Qed.
+
+(* Lean: term_subst_up_up_up_up_instTerm_rename_six_succ *)
+Lemma term_subst_up_up_up_up_instTerm_rename_six_succ : forall t u,
+  Term.subst
+      (Term.upSubst
+        (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))
+      (Term.rename (fun n => S (S (S (S (S (S n)))))) t) =
+    Term.rename (fun n => S (S (S (S (S n))))) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
+    with (Term.rename S
+      (Term.rename (fun n => S (S (S (S (S n))))) t))
+    by (rewrite Term.rename_comp; reflexivity).
+  rewrite Term.subst_rename_succ_up.
+  rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+  rewrite Term.rename_comp.
+  reflexivity.
+Qed.
+
+(* Lean: term_subst_up_up_up_up_up_instTerm_rename_six_succ *)
+Lemma term_subst_up_up_up_up_up_instTerm_rename_six_succ : forall t u,
+  Term.subst
+      (Term.upSubst
+        (Term.upSubst
+          (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))))
+      (Term.rename (fun n => S (S (S (S (S (S n)))))) t) =
+    Term.rename (fun n => S (S (S (S (S n))))) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
+    with (Term.rename (fun n => n + 5 + 1) t)
+    by (apply Term.rename_ext; intro n; lia).
+  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
+    with (Term.rename (fun n => n + 5) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 5 t u).
+Qed.
+
+(* Lean: term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ *)
+Lemma term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ : forall t u,
+  Term.subst
+      (Term.upSubst
+        (Term.upSubst
+          (Term.upSubst
+            (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))))
+      (Term.rename (fun n => S (S (S (S (S (S (S n))))))) t) =
+    Term.rename (fun n => S (S (S (S (S (S n)))))) t.
+Proof.
+  intros t u.
+  replace (Term.rename (fun n => S (S (S (S (S (S (S n))))))) t)
+    with (Term.rename (fun n => n + 6 + 1) t)
+    by (apply Term.rename_ext; intro n; lia).
+  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
+    with (Term.rename (fun n => n + 6) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 6 t u).
+Qed.
+
 (* Lean: term_rename_up_succ_rename_succ *)
 Lemma term_rename_up_succ_rename_succ : forall t,
   Term.rename (up S) (Term.rename S t) =
