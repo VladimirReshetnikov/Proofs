@@ -738,6 +738,11 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_div2_half
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_odd_half
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eq_case_ih_high_odd_half
+#check @PA.Formula.eqHighOddSuccCarryContext
+#check @PA.Formula.eqHighOddOpenedIHContext
+#check @PA.Formula.BProv_Ax_s_eqHighOddSuccCarry_of_opened_ih
+#check @PA.Formula.BProv_Ax_s_eqHighOddSuccCarry_of_succ_witness_mem_and_low_bot
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_odd_of_succ_witness_mem_and_low_bot
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_strict_ih_low_div2_half
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_self
