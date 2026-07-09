@@ -2621,6 +2621,19 @@ def div2StepTermAt (value half bit : Term) : Formula :=
   and (boolTermAt bit)
     (eq value (Term.add (Term.add half half) bit))
 
+/-- Term-parametric totality predicate for binary halving:
+`value` has some half and some boolean output bit satisfying the halving step.
+
+This is only the object-language relation shape; all arithmetic work remains
+in the accompanying proof theorems. -/
+def div2TotalTermAt (value : Term) : Formula :=
+  ex (ex
+    (div2StepTermAt (Term.rename (fun n => n+1+1) value)
+      (Term.var 1) (Term.var 0)))
+
+def div2TotalAt (value : Nat) : Formula :=
+  div2TotalTermAt (Term.var value)
+
 theorem boolTermAt_var (a : Nat) :
     boolTermAt (Term.var a) = boolAt a := by
   simp [boolTermAt, boolAt, zeroAt, oneAt, eqConstAt, Term.numeral]
@@ -11498,6 +11511,28 @@ theorem BProv_Ax_s_div2StepTermAt_succ_of_oddDoubleEqAt
     BProv_eqTrans hvalue (BProv_eqSym haddZero)
   simpa [div2StepTermAt, d] using BProv_andI hbool heq
 
+/-- Introduce the total binary-halving predicate from an explicit
+term-parametric step witness. -/
+theorem BProv_Ax_s_div2TotalTermAt_intro
+    {G : List Formula} {value half bit : Term}
+    (hstep : BProv Ax_s G (div2StepTermAt value half bit)) :
+    BProv Ax_s G (div2TotalTermAt value) := by
+  let body : Formula :=
+    div2StepTermAt (Term.rename (fun n => n+1+1) value)
+      (Term.var 1) (Term.var 0)
+  have hbit : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm half)) body)) := by
+    simpa [body, div2StepTermAt, boolTermAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hstep
+  have hhalf : BProv Ax_s G (subst (instTerm half) (ex body)) :=
+    BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm half)) body)
+      (t := bit) hbit
+  exact BProv_exI (B := Ax_s) (G := G) (a := ex body)
+    (t := half) (by simpa [body, div2TotalTermAt] using hhalf)
+
 /-- A binary-halving step exposes a concrete parity case for the current
 value: either it is twice its next value, or it is twice its next value plus
 one. -/
@@ -11550,6 +11585,115 @@ theorem BProv_Ax_s_of_div2StepAt_double_odd_cases
   BProv_orE
     (BProv_Ax_s_double_or_oddDoubleEqAt_of_div2StepAt hstep)
     heven hodd
+
+/-- A concrete halving step for `value` gives a total halving witness for
+`S value`: even current values reuse the half with bit `1`, while odd current
+values carry to `S half` with bit `0`. -/
+theorem BProv_Ax_s_div2TotalTermAt_succ_of_div2StepAt
+    {G : List Formula} {value half bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (div2TotalTermAt (Term.succ (Term.var value))) := by
+  have heven : BProv Ax_s (doubleEqAt value half :: G)
+      (div2TotalTermAt (Term.succ (Term.var value))) := by
+    have hdouble : BProv Ax_s (doubleEqAt value half :: G)
+        (doubleEqAt value half) :=
+      BProv_ass (B := Ax_s) (G := doubleEqAt value half :: G) (by simp)
+    exact BProv_Ax_s_div2TotalTermAt_intro
+      (BProv_Ax_s_div2StepTermAt_succ_of_doubleEqAt hdouble)
+  have hodd : BProv Ax_s (oddDoubleEqAt value half :: G)
+      (div2TotalTermAt (Term.succ (Term.var value))) := by
+    have hodd : BProv Ax_s (oddDoubleEqAt value half :: G)
+        (oddDoubleEqAt value half) :=
+      BProv_ass (B := Ax_s) (G := oddDoubleEqAt value half :: G) (by simp)
+    exact BProv_Ax_s_div2TotalTermAt_intro
+      (BProv_Ax_s_div2StepTermAt_succ_of_oddDoubleEqAt hodd)
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases hstep heven hodd
+
+/-- Zero has the closed binary-halving witness `half = 0`, `bit = 0`. -/
+theorem BProv_Ax_s_div2TotalTermAt_zero :
+    BProv Ax_s [] (div2TotalTermAt Term.zero) := by
+  have hbool : BProv Ax_s [] (boolTermAt Term.zero) := by
+    simpa [boolTermAt, zeroAt, oneAt, eqConstAt, Term.numeral]
+      using
+        (BProv_orI1 (B := Ax_s) (G := [])
+          (b := eq Term.zero (Term.succ Term.zero))
+          (BProv_eqRefl (B := Ax_s) (G := []) Term.zero))
+  have hzeroAdd : BProv Ax_s []
+      (eq (Term.add Term.zero Term.zero) Term.zero) :=
+    BProv_Ax_s_addZero_term Term.zero
+  have hsumZero : BProv Ax_s []
+      (eq (Term.add (Term.add Term.zero Term.zero) Term.zero)
+        (Term.add Term.zero Term.zero)) :=
+    BProv_Ax_s_addZero_term (Term.add Term.zero Term.zero)
+  have hsum : BProv Ax_s []
+      (eq (Term.add (Term.add Term.zero Term.zero) Term.zero)
+        Term.zero) :=
+    BProv_eqTrans hsumZero hzeroAdd
+  have hstep : BProv Ax_s []
+      (div2StepTermAt Term.zero Term.zero Term.zero) := by
+    simpa [div2StepTermAt] using BProv_andI hbool (BProv_eqSym hsum)
+  exact BProv_Ax_s_div2TotalTermAt_intro hstep
+
+/-- PA proves the universal totality of binary halving. -/
+theorem BProv_Ax_s_div2TotalAt_all :
+    BProv Ax_s [] (all (div2TotalAt 0)) := by
+  let phi : Formula := div2TotalAt 0
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, div2TotalAt, div2TotalTermAt, div2StepTermAt,
+      boolTermAt, substZero, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.numeral] using BProv_Ax_s_div2TotalTermAt_zero
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    let step : Formula := div2StepAt 2 1 0
+    let inner : Formula := ex step
+    let target : Formula := div2TotalTermAt (Term.succ (Term.var 0))
+    have hphi : BProv Ax_s [phi] (ex inner) := by
+      have hraw : BProv Ax_s [phi] phi :=
+        BProv_ass (B := Ax_s) (G := [phi]) (by simp [phi])
+      simpa [phi, inner, step, div2TotalAt, div2TotalTermAt,
+        div2StepTermAt, div2StepAt, boolTermAt, boolAt, zeroAt, oneAt,
+        eqConstAt, Term.rename, Term.numeral] using hraw
+    have htarget : BProv Ax_s [phi] target := by
+      refine BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := [phi]) (a := inner) (c := target) hphi ?_
+      let C : List Formula := inner :: [phi].map (rename Nat.succ)
+      have hinner : BProv Ax_s C (ex step) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C, inner])
+      refine BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := C) (a := step) (c := rename Nat.succ target)
+        hinner ?_
+      let D : List Formula := step :: C.map (rename Nat.succ)
+      have hstep : BProv Ax_s D (div2StepAt 2 1 0) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D, step])
+      have hsucc : BProv Ax_s D
+          (div2TotalTermAt (Term.succ (Term.var 2))) :=
+        BProv_Ax_s_div2TotalTermAt_succ_of_div2StepAt hstep
+      simpa [target, div2TotalTermAt, div2StepTermAt, boolTermAt,
+        rename, Term.rename, SetTheory.up] using hsucc
+    simpa [phi, target, div2TotalAt, div2TotalTermAt, div2StepTermAt,
+      boolTermAt, substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename] using htarget
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hind : BProv Ax_s [] (inductionForm phi) := by
+    simpa [rename_id] using
+      BProv_Ax_s_of_sealPA_rename (Ax_s_induction phi) (fun n : Nat => n)
+  simpa [phi] using BProv_inductionForm_mp hind hzero hsucc
+
+/-- Slot-level instance of binary-halving totality. -/
+theorem BProv_Ax_s_div2TotalAt {G : List Formula} (value : Nat) :
+    BProv Ax_s G (div2TotalAt value) := by
+  have hall : BProv Ax_s G (all (div2TotalAt 0)) :=
+    BProv_weaken_nil BProv_Ax_s_div2TotalAt_all
+  have hinst := BProv_allE (B := Ax_s) (G := G)
+    (t := Term.var value) hall
+  simpa [div2TotalAt, div2TotalTermAt, div2StepTermAt, boolTermAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename] using hinst
 
 /-- Nested parity elimination for two binary-halving steps.  The generated
 contexts put the low-code parity assumption in front of the high-code parity

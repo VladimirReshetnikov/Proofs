@@ -1055,6 +1055,13 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_low_double
 #check @PA.Formula.BProv_Ax_s_div2StepTermAt_succ_of_doubleEqAt
 #check @PA.Formula.BProv_Ax_s_div2StepTermAt_succ_of_oddDoubleEqAt
+#check @PA.Formula.div2TotalTermAt
+#check @PA.Formula.div2TotalAt
+#check @PA.Formula.BProv_Ax_s_div2TotalTermAt_intro
+#check @PA.Formula.BProv_Ax_s_div2TotalTermAt_succ_of_div2StepAt
+#check @PA.Formula.BProv_Ax_s_div2TotalTermAt_zero
+#check @PA.Formula.BProv_Ax_s_div2TotalAt_all
+#check @PA.Formula.BProv_Ax_s_div2TotalAt
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_bit_zero
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_step_and_odd_case
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
