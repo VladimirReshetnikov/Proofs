@@ -10253,6 +10253,36 @@ theorem BProv_Ax_s_leTermAt_of_ltTermAt_succ_right
     (fun f hf => sentence_ax_s (f := f) hf) hlt (by
       simpa [ltTermAt, ltBody] using hbody)
 
+/-- Slot-level wrapper for raising a non-strict bound to a strict successor
+bound.  The conclusion stays term-parametric because the upper bound is
+`S b`, not a slot. -/
+theorem BProv_Ax_s_ltTermAt_var_succ_right_of_leAt
+    {G : List Formula} {a b : Nat}
+    (hle : BProv Ax_s G (leAt a b)) :
+    BProv Ax_s G (ltTermAt (Term.var a) (Term.succ (Term.var b))) := by
+  have hleTerm : BProv Ax_s G (leTermAt (Term.var a) (Term.var b)) := by
+    simpa [leTermAt_var] using hle
+  exact BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hleTerm
+
+/-- Slot-level wrapper for weakening `a < b` to the term bound `a < S b`. -/
+theorem BProv_Ax_s_ltTermAt_var_succ_right_of_ltAt
+    {G : List Formula} {a b : Nat}
+    (hlt : BProv Ax_s G (ltAt a b)) :
+    BProv Ax_s G (ltTermAt (Term.var a) (Term.succ (Term.var b))) :=
+  BProv_Ax_s_ltTermAt_var_succ_right_of_leAt
+    (BProv_Ax_s_leAt_of_ltAt hlt)
+
+/-- Slot-level converse for a strict successor term bound:
+from `a < S b`, recover `a <= b`. -/
+theorem BProv_Ax_s_leAt_of_ltTermAt_var_succ_right
+    {G : List Formula} {a b : Nat}
+    (hlt : BProv Ax_s G
+      (ltTermAt (Term.var a) (Term.succ (Term.var b)))) :
+    BProv Ax_s G (leAt a b) := by
+  have hleTerm : BProv Ax_s G (leTermAt (Term.var a) (Term.var b)) :=
+    BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
+  simpa [leTermAt_var] using hleTerm
+
 /-- PA proves total comparison for the term-parametric order macros:
 `∀ y, ∀ x, x ≤ y ∨ y < x`.  This is the syntactic comparison splitter used by
 the quotient/remainder functionality proofs; no semantic total-order fact is

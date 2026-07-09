@@ -314,6 +314,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_succ
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_right_of_leTermAt
 #check @PA.Formula.BProv_Ax_s_leTermAt_of_ltTermAt_succ_right
+#check @PA.Formula.BProv_Ax_s_ltTermAt_var_succ_right_of_leAt
+#check @PA.Formula.BProv_Ax_s_ltTermAt_var_succ_right_of_ltAt
+#check @PA.Formula.BProv_Ax_s_leAt_of_ltTermAt_var_succ_right
 #check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt_all
 #check @PA.Formula.BProv_Ax_s_leTermAt_or_gtTermAt
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_right_cases
