@@ -143,7 +143,71 @@ theorem write_nodup {tape : Tape} {pos : Int} {bit : Bool}
     · simp [write, hp, h]
     · simp [write, hp, List.nodup_cons, h]
 
+/-- Translate every `1` position on the tape by a fixed offset. -/
+def shift (tape : Tape) (delta : Int) : Tape :=
+  tape.map (fun pos => pos + delta)
+
+theorem mem_shift_add_iff (tape : Tape) (pos delta : Int) :
+    pos + delta ∈ shift tape delta ↔ pos ∈ tape := by
+  constructor
+  · intro h
+    rcases List.mem_map.mp h with ⟨q, hq, hEq⟩
+    have hqpos : q = pos := by omega
+    simpa [hqpos] using hq
+  · intro h
+    exact List.mem_map.mpr ⟨pos, h, by rfl⟩
+
+@[simp]
+theorem read_shift_add (tape : Tape) (pos delta : Int) :
+    read (shift tape delta) (pos + delta) = read tape pos := by
+  simp [read, mem_shift_add_iff]
+
+private theorem bne_add_iff (a pos delta : Int) :
+    (a + delta != pos + delta) = (a != pos) := by
+  by_cases h : a = pos
+  · subst a
+    simp
+  · have h' : a + delta ≠ pos + delta := by omega
+    exact Eq.trans (bne_iff_ne.mpr h') (bne_iff_ne.mpr h).symm
+
+@[simp]
+theorem shift_filter_ne (tape : Tape) (pos delta : Int) :
+    shift (tape.filter (fun q => q != pos)) delta =
+      (shift tape delta).filter (fun q => q != pos + delta) := by
+  induction tape with
+  | nil => rfl
+  | cons a rest IH =>
+      by_cases h : a != pos
+      · have hshift : (a + delta != pos + delta) = true := by
+          simpa [bne_add_iff] using h
+        simp [shift, List.filter, h, hshift]
+        simpa [shift] using IH
+      · have hfalse : (a != pos) = false := Bool.eq_false_iff.mpr h
+        have hshift : (a + delta != pos + delta) = false := by
+          simpa [bne_add_iff] using hfalse
+        simp [shift, List.filter, hfalse, hshift]
+        simpa [shift] using IH
+
+@[simp]
+theorem write_shift_add (tape : Tape) (pos delta : Int) (bit : Bool) :
+    write (shift tape delta) (pos + delta) bit =
+      shift (write tape pos bit) delta := by
+  cases bit
+  · simp [write]
+  · by_cases h : pos ∈ tape
+    · simp [write, h, shift]
+    · simp [write, h, shift]
+
 end Tape
+
+namespace Move
+
+@[simp]
+theorem apply_add (move : Move) (pos delta : Int) :
+    move.apply (pos + delta) = move.apply pos + delta := by
+  cases move <;> simp [Move.apply] <;> omega
+
+end Move
 
 /-- The start state: state `0` when at least one operational state exists. -/
 def startState : (states : Nat) -> Option (Fin states)
@@ -172,6 +236,12 @@ def castLE {states larger : Nat} (h : states ≤ larger) (cfg : Config states) :
   state := cfg.state.map (Fin.castLE h)
   head := cfg.head
   tape := cfg.tape
+
+/-- Translate the head and tape positions of a configuration. -/
+def shift {states : Nat} (cfg : Config states) (delta : Int) : Config states where
+  state := cfg.state
+  head := cfg.head + delta
+  tape := Tape.shift cfg.tape delta
 
 end Config
 
@@ -215,6 +285,83 @@ def step {states : Nat} (M : Machine states) (cfg : Config states) : Config stat
 def run {states : Nat} (M : Machine states) : Nat -> Config states
   | 0 => initial states
   | t + 1 => M.step (M.run t)
+
+/-- Run a machine from an arbitrary configuration for a fixed number of steps. -/
+def runFrom {states : Nat} (M : Machine states) (cfg : Config states) :
+    Nat -> Config states
+  | 0 => cfg
+  | t + 1 => M.step (M.runFrom cfg t)
+
+@[simp]
+theorem step_shift {states : Nat} (M : Machine states)
+    (cfg : Config states) (delta : Int) :
+    M.step (cfg.shift delta) = (M.step cfg).shift delta := by
+  cases cfg with
+  | mk state head tape =>
+      cases state with
+      | none => rfl
+      | some _q =>
+          simp [step, Config.shift]
+
+@[simp]
+theorem runFrom_shift {states : Nat} (M : Machine states)
+    (cfg : Config states) (delta : Int) :
+    ∀ t, M.runFrom (cfg.shift delta) t = (M.runFrom cfg t).shift delta
+  | 0 => rfl
+  | t + 1 => by
+      simp [runFrom, runFrom_shift M cfg delta t]
+
+theorem runFrom_zero {states : Nat} (M : Machine states) (cfg : Config states) :
+    M.runFrom cfg 0 = cfg :=
+  rfl
+
+theorem runFrom_succ {states : Nat} (M : Machine states)
+    (cfg : Config states) (t : Nat) :
+    M.runFrom cfg (t + 1) = M.step (M.runFrom cfg t) :=
+  rfl
+
+theorem run_add_eq_runFrom {states : Nat} (M : Machine states) :
+    ∀ i k, M.run (i + k) = M.runFrom (M.run i) k
+  | i, 0 => by simp [runFrom]
+  | i, k + 1 => by
+      rw [Nat.add_succ]
+      simp [run, runFrom, run_add_eq_runFrom M i k]
+
+theorem runFrom_add {states : Nat} (M : Machine states) (cfg : Config states) :
+    ∀ i k, M.runFrom cfg (i + k) = M.runFrom (M.runFrom cfg i) k
+  | i, 0 => by simp [runFrom]
+  | i, k + 1 => by
+      rw [Nat.add_succ]
+      simp [runFrom, runFrom_add M cfg i k]
+
+theorem runFrom_ne_none_of_shift_loop {states : Nat} (M : Machine states)
+    (cfg : Config states) {period : Nat} (hPeriod : 0 < period)
+    {delta : Int}
+    (hLoop : M.runFrom cfg period = cfg.shift delta)
+    (hActive : ∀ r, r < period -> (M.runFrom cfg r).state ≠ none) :
+    ∀ t, (M.runFrom cfg t).state ≠ none := by
+  intro t
+  exact Nat.strongRecOn
+    (motive := fun t => (M.runFrom cfg t).state ≠ none) t (by
+      intro t IH
+      by_cases ht : t < period
+      · exact hActive t ht
+      · have hle : period ≤ t := Nat.le_of_not_gt ht
+        let k := t - period
+        have hklt : k < t := by
+          dsimp [k]
+          omega
+        have htEq : period + k = t := by
+          dsimp [k]
+          omega
+        have hState :
+            (M.runFrom cfg t).state = (M.runFrom cfg k).state := by
+          rw [← htEq, runFrom_add]
+          rw [hLoop]
+          rw [runFrom_shift]
+          rfl
+        intro hNone
+        exact IH k hklt (hState ▸ hNone))
 
 @[simp]
 theorem castLE_step {states larger : Nat} (h : states ≤ larger)
@@ -284,6 +431,30 @@ and exactly `score` tape cells contain `1`.
 -/
 def HaltsWithScore {states : Nat} (M : Machine states) (score : Nat) : Prop :=
   ∃ t, (M.run t).state = none ∧ (M.run t).tape.length = score
+
+theorem not_haltsWithScore_of_shift_loop_from_run {states score : Nat}
+    (M : Machine states) {start period : Nat} (hPeriod : 0 < period)
+    {delta : Int}
+    (hLoop : M.runFrom (M.run start) period = (M.run start).shift delta)
+    (hActiveLoop :
+      ∀ r, r < period -> (M.runFrom (M.run start) r).state ≠ none)
+    (hActivePrefix : ∀ t, t < start -> (M.run t).state ≠ none) :
+    ¬ M.HaltsWithScore score := by
+  intro hHalt
+  rcases hHalt with ⟨t, hState, _hScore⟩
+  by_cases ht : t < start
+  · exact hActivePrefix t ht hState
+  · have hStartLe : start ≤ t := Nat.le_of_not_gt ht
+    let k := t - start
+    have htEq : start + k = t := by
+      dsimp [k]
+      omega
+    have hNever :=
+      runFrom_ne_none_of_shift_loop M (M.run start) hPeriod hLoop hActiveLoop k
+    have hRunState :
+        (M.run t).state = (M.runFrom (M.run start) k).state := by
+      rw [← htEq, run_add_eq_runFrom]
+    exact hNever (hRunState ▸ hState)
 
 theorem castLE_haltsWithScore {states larger score : Nat} (hpos : 0 < states)
     (h : states ≤ larger) {M : Machine states} :

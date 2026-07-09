@@ -17,6 +17,7 @@ CoqProofs/A198683FiveSix.v
 CoqProofs/A198683SevenUpper.v
 CoqProofs/A198683.v
 CoqProofs/A000081.v
+CoqProofs/A158415.v
 CoqProofs/A199812.v
 CoqProofs/SparseBinary.v
 CoqProofs/A002845.v
@@ -26,6 +27,7 @@ CoqProofs/A198683N12OverflowWitness.v
 CoqProofs/A198683N12Symbolic.v
 CoqProofs/A198683Schoenfield.v
 CoqProofs/A198683SchoenfieldRows.v
+CoqProofs/A198683EightBounds.v
 CoqProofs/EquationalLogic.v
 CoqProofs/WolframBooleanCertificates.v
 CoqProofs/WolframBooleanHuntingtonCertificates.v
@@ -36,3 +38,4 @@ CoqProofs/A198683N12ComplexTowers.v
 CoqProofs/A198683N12Certificate.v
 CoqProofs/A198683N12OverflowBound.v
 CoqProofs/A198683N12CertificateC.v
+CoqProofs/A198683N12Endpoints.v

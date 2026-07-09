@@ -148,6 +148,70 @@ Proof.
     exact hnot.
 Qed.
 
+Definition shift (t : tape) (delta : Z) : tape :=
+  map (fun pos => (pos + delta)%Z) t.
+
+Lemma mem_shift_add_iff : forall t pos delta,
+  In (pos + delta)%Z (shift t delta) <-> In pos t.
+Proof.
+  intros t pos delta.
+  unfold shift.
+  split.
+  - intro h.
+    apply in_map_iff in h.
+    destruct h as [q [heq hq]].
+    assert (q = pos)%Z by lia.
+    subst q. exact hq.
+  - intro h.
+    apply in_map_iff.
+    exists pos. split; [reflexivity | exact h].
+Qed.
+
+Lemma read_shift_add : forall t pos delta,
+  read (shift t delta) (pos + delta)%Z = read t pos.
+Proof.
+  intros t pos delta.
+  unfold read.
+  destruct (in_dec Z.eq_dec (pos + delta)%Z (shift t delta)) as [hs | hs];
+    destruct (in_dec Z.eq_dec pos t) as [ht | ht]; try reflexivity.
+  - exfalso. apply ht. apply (proj1 (mem_shift_add_iff t pos delta)). exact hs.
+  - exfalso. apply hs. apply (proj2 (mem_shift_add_iff t pos delta)). exact ht.
+Qed.
+
+Lemma shift_filter_ne : forall t pos delta,
+  shift (filter (fun q => negb (Z.eqb q pos)) t) delta =
+    filter (fun q => negb (Z.eqb q (pos + delta)%Z)) (shift t delta).
+Proof.
+  induction t as [|a rest IH]; intros pos delta; [reflexivity |].
+  unfold shift in *.
+  simpl.
+  assert (heq : Z.eqb (a + delta) (pos + delta) = Z.eqb a pos).
+  {
+    destruct (Z.eqb a pos) eqn:hap.
+    - apply Z.eqb_eq in hap. subst a. rewrite Z.eqb_refl. reflexivity.
+    - apply Z.eqb_neq in hap.
+      apply Z.eqb_neq. lia.
+  }
+  rewrite heq.
+  destruct (Z.eqb a pos); simpl; [exact (IH pos delta) |].
+  rewrite (IH pos delta). reflexivity.
+Qed.
+
+Lemma write_shift_add : forall t pos delta bit,
+  write (shift t delta) (pos + delta)%Z bit =
+    shift (write t pos bit) delta.
+Proof.
+  intros t pos delta bit.
+  destruct bit.
+  - unfold write.
+    destruct (in_dec Z.eq_dec (pos + delta)%Z (shift t delta)) as [hs | hs];
+      destruct (in_dec Z.eq_dec pos t) as [ht | ht]; try reflexivity.
+    + exfalso. apply ht. apply (proj1 (mem_shift_add_iff t pos delta)). exact hs.
+    + exfalso. apply hs. apply (proj2 (mem_shift_add_iff t pos delta)). exact ht.
+  - unfold write.
+    symmetry. apply shift_filter_ne.
+Qed.
+
 End Tape.
 
 Definition start_state (states : nat) : option nat :=
@@ -167,6 +231,12 @@ Record typed_config (stateType : Type) := {
   typed_cfg_head : Z;
   typed_cfg_tape : tape
 }.
+
+Definition config_shift {states : nat} (cfg : config states)
+    (delta : Z) : config states :=
+  {| cfg_state := cfg_state _ cfg;
+     cfg_head := (cfg_head _ cfg + delta)%Z;
+     cfg_tape := Tape.shift (cfg_tape _ cfg) delta |}.
 
 Definition config_castLE {states larger : nat}
     (_ : states <= larger) (cfg : config states) : config larger :=
@@ -198,6 +268,25 @@ Definition step {states : nat} (M : machine states)
            (action_write a) |}
   end.
 
+Lemma move_apply_add : forall mv pos delta,
+  move_apply mv (pos + delta)%Z = (move_apply mv pos + delta)%Z.
+Proof.
+  intros [|] pos delta; unfold move_apply; lia.
+Qed.
+
+Lemma step_shift : forall states (M : machine states) cfg delta,
+  step M (config_shift cfg delta) = config_shift (step M cfg) delta.
+Proof.
+  intros states M [st head tp] delta.
+  destruct st as [q|]; [|reflexivity].
+  unfold step, config_shift. simpl.
+  rewrite Tape.read_shift_add.
+  destruct (transition states M q (Tape.read tp head)) as [write mv next].
+  simpl.
+  rewrite move_apply_add, Tape.write_shift_add.
+  reflexivity.
+Qed.
+
 Lemma step_of_halted : forall states (M : machine states) cfg,
   cfg_state _ cfg = None -> step M cfg = cfg.
 Proof.
@@ -211,6 +300,72 @@ Fixpoint run {states : nat} (M : machine states) (t : nat) : config states :=
   | O => initial states
   | S k => step M (run M k)
   end.
+
+Fixpoint runFrom {states : nat} (M : machine states)
+    (cfg : config states) (t : nat) : config states :=
+  match t with
+  | O => cfg
+  | S k => step M (runFrom M cfg k)
+  end.
+
+Lemma runFrom_shift : forall states (M : machine states) cfg delta t,
+  runFrom M (config_shift cfg delta) t =
+    config_shift (runFrom M cfg t) delta.
+Proof.
+  intros states M cfg delta t.
+  induction t as [|t IH]; [reflexivity |].
+  simpl. rewrite IH. apply step_shift.
+Qed.
+
+Lemma run_add_eq_runFrom : forall states (M : machine states) i k,
+  run M (i + k) = runFrom M (run M i) k.
+Proof.
+  intros states M i k.
+  induction k as [|k IH].
+  - rewrite Nat.add_0_r. reflexivity.
+  - rewrite Nat.add_succ_r. simpl. rewrite IH. reflexivity.
+Qed.
+
+Lemma runFrom_add : forall states (M : machine states) cfg i k,
+  runFrom M cfg (i + k) = runFrom M (runFrom M cfg i) k.
+Proof.
+  intros states M cfg i k.
+  induction k as [|k IH].
+  - rewrite Nat.add_0_r. reflexivity.
+  - rewrite Nat.add_succ_r. simpl. rewrite IH. reflexivity.
+Qed.
+
+(* Lean: Machine.runFrom_ne_none_of_shift_loop *)
+Lemma runFrom_ne_none_of_shift_loop :
+  forall states (M : machine states) cfg period delta,
+  0 < period ->
+  runFrom M cfg period = config_shift cfg delta ->
+  (forall r, r < period -> cfg_state _ (runFrom M cfg r) <> None) ->
+  forall t, cfg_state _ (runFrom M cfg t) <> None.
+Proof.
+  intros states M cfg period delta hperiod hloop hactive t.
+  induction t as [t IH] using lt_wf_ind.
+  destruct (lt_dec t period) as [hlt | hnlt].
+  - exact (hactive t hlt).
+  - assert (hle : period <= t) by lia.
+    set (k := t - period).
+    assert (hklt : k < t) by (unfold k; lia).
+    assert (hteq : period + k = t) by (unfold k; lia).
+    assert (hstate :
+        cfg_state _ (runFrom M cfg t) =
+        cfg_state _ (runFrom M cfg k)).
+    {
+      rewrite <- hteq.
+      rewrite runFrom_add.
+      rewrite hloop.
+      rewrite runFrom_shift.
+      reflexivity.
+    }
+    intro hnone.
+    apply (IH k hklt).
+    rewrite <- hstate.
+    exact hnone.
+Qed.
 
 Lemma castLE_step : forall states larger (h : states <= larger)
     (M : machine states) cfg,
@@ -253,6 +408,38 @@ Definition HaltsWithScore {states : nat} (M : machine states)
     (score : nat) : Prop :=
   exists t, cfg_state _ (run M t) = None /\
     length (cfg_tape _ (run M t)) = score.
+
+(* Lean: Machine.not_haltsWithScore_of_shift_loop_from_run *)
+Lemma not_haltsWithScore_of_shift_loop_from_run :
+  forall states score (M : machine states) start period delta,
+  0 < period ->
+  runFrom M (run M start) period = config_shift (run M start) delta ->
+  (forall r, r < period ->
+    cfg_state _ (runFrom M (run M start) r) <> None) ->
+  (forall t, t < start -> cfg_state _ (run M t) <> None) ->
+  ~ HaltsWithScore M score.
+Proof.
+  intros states score M start period delta hperiod hloop
+    hactiveLoop hactivePrefix [t [hstate _]].
+  destruct (lt_dec t start) as [hlt | hnlt].
+  - exact (hactivePrefix t hlt hstate).
+  - assert (hstart : start <= t) by lia.
+    set (k := t - start).
+    assert (hteq : start + k = t) by (unfold k; lia).
+    pose proof (runFrom_ne_none_of_shift_loop states M (run M start)
+      period delta hperiod hloop hactiveLoop k) as hnever.
+    assert (hrunstate :
+        cfg_state _ (run M t) =
+        cfg_state _ (runFrom M (run M start) k)).
+    {
+      rewrite <- hteq.
+      rewrite run_add_eq_runFrom.
+      reflexivity.
+    }
+    apply hnever.
+    rewrite <- hrunstate.
+    exact hstate.
+Qed.
 
 Lemma castLE_haltsWithScore : forall states larger score
     (h : states <= larger) (M : machine states),

@@ -82,12 +82,24 @@ Current ports:
   restating the initial values through `n = 7` and the historical lower/upper
   bound corollaries over the Coq symbolic quotient.  The Lean file's semantic
   complex lower-bound proof is not yet replayed in Coq.
+- `A198683EightBounds.v` records the Coq-side level-8 finite certificate
+  surface corresponding to `A198683EightBounds.lean`: the raw Coq symbolic
+  quotient still has 135 level-8 candidates, while the imported Schoenfield
+  certificate normalizes the generated level-8 class table to 77 classes and
+  hence lies inside the Lean semantic interval `[16, 127]`.  The analytic
+  complex-power bridge proving those bounds for the semantic `a198683 8` is
+  not replayed in Coq.
 - `A000081.v` ports the finite executable certificate from `A000081.lean`.
   It uses a hereditarily sorted exponent normal form for positive-real tower
   functions, preserving the named small parenthesizations and equality
   certificates such as `e4c = e4d` and `e5f = e5j`.  It certifies the Lean
   values through `n = 5` and extends the same executable normal-form count
   through `n = 8`.
+- `A158415.v` ports the finite headline certificate surface from the
+  generated `A158415*.lean` corpus: Coq keeps the expression-tree syntax and
+  the checked cardinality/value table through `n = 15`, including the public
+  `a158415_*` and `recursiveValueSet_*_ncard` theorem names.  The generated
+  real-radical ordering and range proof is not replayed in Coq.
 - `A199812.v` ports the executable ordinal-note recurrence behind
   `A199812.lean`: inner tower exponents are represented as Cantor-normal-form
   notes below epsilon_0, tower splits combine degrees by
@@ -144,6 +156,9 @@ Current ports:
   `A198683SchoenfieldRows.lean`: Coq reconstructs the normalized labels from
   the retained Schoenfield table rows for `n = 7` through `n = 11` and then
   reuses the class-count certificate.
+- `A198683N12Endpoints.v` gives the merged Lean endpoint module its own Coq
+  import surface, re-exporting the complex-instantiated near-one split and
+  n = 12 consequences from `A198683N12CertificateC.v`.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -185,6 +200,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683FiveSix.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SevenUpper.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A000081.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A158415.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
@@ -194,8 +210,10 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12OverflowWitness.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Symbolic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Schoenfield.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SchoenfieldRows.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683EightBounds.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBoolean.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Endpoints.v
 ```
