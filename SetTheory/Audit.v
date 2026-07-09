@@ -9,7 +9,7 @@
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
 From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
-From SetTheory Require Import Forward Reverse.
+From SetTheory Require Import Forward Reverse RiemannHypothesis.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
 Check T_iff_ZF.
@@ -158,6 +158,21 @@ Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components.
 Check PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry.
 Check PA.Formula.BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit.
 Check PA.Formula.BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace.
+
+(* PA statement of the Mertens/Littlewood form of RH. *)
+Check notF.
+Check remTermTermAt.
+Check betaTermTermAt.
+Check completePrimeFactorizationTraceAt.
+Check mobiusPositiveTermAt.
+Check mobiusNegativeTermAt.
+Check mertensCountsTraceAt.
+Check powTraceAt.
+Check powRelAt.
+Check mertensRiemannHypothesisBody.
+Check mertensRiemannHypothesisSentence.
+Check mertensRiemannHypothesisSentence_sentence.
+Print Assumptions mertensRiemannHypothesisSentence_sentence.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_mem.
