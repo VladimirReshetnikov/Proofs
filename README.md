@@ -445,23 +445,24 @@ lake exe cache get
 lake build
 ```
 
-Build the SetTheory Rocq/Coq development (twelve `.v` files; the full list and
+Build the SetTheory Rocq/Coq development (the full list and
 order are in `SetTheory/_CoqProject`) and its independent Lean port:
 
 ```powershell
 cd src/Lean/SetTheory
-coqc -Q . SetTheory Fol.v
-coqc -Q . SetTheory Calculus.v
-coqc -Q . SetTheory Completeness.v
-coqc -Q . SetTheory Zf.v
-coqc -Q . SetTheory Equivalence.v
-coqc -Q . SetTheory PAHF.v
-coqc -Q . SetTheory BusyBeaver.v
-coqc -Q . SetTheory BusyBeaverKnownValues.v
-coqc -Q . SetTheory BusyBeaverMathlib.v
-coqc -Q . SetTheory Forward.v
-coqc -Q . SetTheory Reverse.v
-coqc -Q . SetTheory Audit.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Fol.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Calculus.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Completeness.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Zf.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Equivalence.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory PAHF.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaver.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverKnownValues.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverBB2Bridge.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory BusyBeaverMathlib.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Forward.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Reverse.v
+coqc -Q ../CoqBB2 CoqBB2 -Q . SetTheory Audit.v
 
 cd lean
 lake build
