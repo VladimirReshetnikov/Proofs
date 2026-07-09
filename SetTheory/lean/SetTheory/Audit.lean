@@ -917,6 +917,10 @@ open SetTheory
 #check @PA.Formula.BetaEntry
 #check @PA.Formula.twoEntryBetaStep
 #check @PA.Formula.twoEntryBetaCode
+#check @PA.Formula.twoEntryBetaStepTerm
+#check @PA.Formula.twoEntryBetaCodeTerm
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound
 #check @PA.Formula.BetaEntry_twoEntry_zero
 #check @PA.Formula.BetaEntry_twoEntry_one
 #check @PA.Formula.BetaDiv2Step_twoEntry

@@ -2888,6 +2888,26 @@ theorem HFMemTrace_zero_exists_of_one_step {set half : Nat}
     BetaDiv2StepsThrough_zero_twoEntry (Or.inr rfl) hset,
     ⟨set, half, BetaDiv2Step_twoEntry (Or.inr rfl) hset⟩⟩
 
+/-- Term-parametric counterpart of `twoEntryBetaStep`.
+
+It is only the candidate beta step `S (cur + next)`; its adequacy for the two
+entries is established by separate PA proofs. -/
+def twoEntryBetaStepTerm (cur next : Term) : Term :=
+  Term.succ (Term.add cur next)
+
+/-- Term-parametric counterpart of `twoEntryBetaCode`.
+
+The expression mirrors the semantic CRT witness exactly.  In particular, the
+definition contains no beta-entry or boundedness proof; those are supplied by
+the term-level exactness theorems below. -/
+def twoEntryBetaCodeTerm (cur next : Term) : Term :=
+  let s := twoEntryBetaStepTerm cur next
+  Term.add cur
+    (Term.mul (Term.succ s)
+      (Term.add
+        (Term.mul (Term.numeral 2) next)
+        (Term.mul (Term.mul (Term.numeral 4) s) cur)))
+
 /-- Open beta step witness for the even branch of `0 ∈ S low`: when
 `low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
 use `S low` itself as the beta step. -/
@@ -13688,6 +13708,113 @@ theorem BProv_Ax_s_leTermAt_of_eq_add_right_terms
     (a := eq (Term.add (Term.rename Nat.succ lower) (Term.var 0))
       (Term.rename Nat.succ upper))
     (t := diff) hbody
+
+/-- The generic two-entry beta term has its requested current value at index
+zero.
+
+This is the easy half of the internal two-entry CRT construction.  The
+quotient is the explicit coefficient occurring in `twoEntryBetaCodeTerm`, and
+the strict remainder bound follows from `cur < S (S (cur + next))`. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_zero
+    {G : List Formula} (cur next : Term) :
+    BProv Ax_s G
+      (betaTermTermAt cur
+        (twoEntryBetaCodeTerm cur next)
+        (twoEntryBetaStepTerm cur next)
+        Term.zero) := by
+  let s : Term := twoEntryBetaStepTerm cur next
+  let modulus : Term := Term.succ s
+  let quotient : Term :=
+    Term.add
+      (Term.mul (Term.numeral 2) next)
+      (Term.mul (Term.mul (Term.numeral 4) s) cur)
+  have hcurAddSucc : BProv Ax_s G
+      (eq (Term.add cur (Term.succ next)) s) := by
+    simpa [s, twoEntryBetaStepTerm] using
+      BProv_weaken_nil (BProv_Ax_s_addSucc_terms cur next)
+  have hcurLeStep : BProv Ax_s G (leTermAt cur s) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := cur) (upper := s) (diff := Term.succ next)
+      (BProv_eqSym hcurAddSucc)
+  have hlt : BProv Ax_s G (ltTermAt cur modulus) := by
+    simpa [modulus] using
+      BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hcurLeStep
+  have hmod : BProv Ax_s G
+      (eq modulus (betaModTermTerm s Term.zero)) := by
+    simpa [modulus] using
+      BProv_eqSym (BProv_Ax_s_betaModTermTerm_zero s)
+  have hcodeCore : BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next)
+        (Term.add cur (Term.mul modulus quotient))) := by
+    simpa [twoEntryBetaCodeTerm, s, modulus, quotient] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.add cur (Term.mul modulus quotient)))
+  have haddComm : BProv Ax_s G
+      (eq (Term.add cur (Term.mul modulus quotient))
+        (Term.add (Term.mul modulus quotient) cur)) :=
+    BProv_Ax_s_add_comm_terms cur (Term.mul modulus quotient)
+  have hmulComm : BProv Ax_s G
+      (eq (Term.mul modulus quotient)
+        (Term.mul quotient modulus)) :=
+    BProv_Ax_s_mul_comm_terms modulus quotient
+  have hmulCong : BProv Ax_s G
+      (eq (Term.add (Term.mul modulus quotient) cur)
+        (Term.add (Term.mul quotient modulus) cur)) :=
+    BProv_eq_congr_add_left cur hmulComm
+  have hvalue : BProv Ax_s G
+      (eq (twoEntryBetaCodeTerm cur next)
+        (Term.add (Term.mul quotient modulus) cur)) :=
+    BProv_eqTrans hcodeCore (BProv_eqTrans haddComm hmulCong)
+  have hrem : BProv Ax_s G
+      (remTermTermAt cur (twoEntryBetaCodeTerm cur next) modulus) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      (rem := cur) (value := twoEntryBetaCodeTerm cur next)
+      (modulus := modulus) (quotient := quotient) hlt hvalue
+  exact BProv_Ax_s_betaTermTermAt_of_rem
+    (out := cur) (code := twoEntryBetaCodeTerm cur next)
+    (step := s) (idx := Term.zero) (modulus := modulus)
+    hmod hrem
+
+/-- The requested second value is strictly below the index-one modulus of the
+generic two-entry beta term.
+
+This theorem isolates the order half of index-one exactness from the remaining
+CRT polynomial decomposition. -/
+theorem BProv_Ax_s_twoEntryBetaTerm_one_bound
+    {G : List Formula} (cur next : Term) :
+    BProv Ax_s G
+      (ltTermAt next
+        (betaModTermTerm (twoEntryBetaStepTerm cur next)
+          (Term.succ Term.zero))) := by
+  let sum : Term := Term.add cur next
+  let s : Term := twoEntryBetaStepTerm cur next
+  have hsumComm : BProv Ax_s G
+      (eq sum (Term.add next cur)) := by
+    simpa [sum] using BProv_Ax_s_add_comm_terms cur next
+  have hnextLeSum : BProv Ax_s G (leTermAt next sum) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := next) (upper := sum) (diff := cur) hsumComm
+  have hsumLeStep : BProv Ax_s G (leTermAt sum s) := by
+    simpa [s, sum, twoEntryBetaStepTerm] using
+      BProv_Ax_s_leTermAt_self_succ sum
+  have hnextLeStep : BProv Ax_s G (leTermAt next s) :=
+    BProv_Ax_s_leTermAt_trans hnextLeSum hsumLeStep
+  have hstepLeDouble : BProv Ax_s G
+      (leTermAt s (Term.add s s)) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := s) (upper := Term.add s s) (diff := s)
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.add s s))
+  have hnextLeDouble : BProv Ax_s G
+      (leTermAt next (Term.add s s)) :=
+    BProv_Ax_s_leTermAt_trans hnextLeStep hstepLeDouble
+  have hlt : BProv Ax_s G
+      (ltTermAt next (Term.succ (Term.add s s))) :=
+    BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hnextLeDouble
+  have hmod : BProv Ax_s G
+      (eq (Term.succ (Term.add s s))
+        (betaModTermTerm s (Term.succ Term.zero))) :=
+    BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self s)
+  simpa [s] using BProv_ltTermAt_of_eq_right hmod hlt
 
 /-- If a slot is explicitly twice its half, PA proves that the half is below
 the slot. -/
