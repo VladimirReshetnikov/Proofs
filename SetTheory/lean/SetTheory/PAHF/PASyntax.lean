@@ -7020,6 +7020,54 @@ theorem BProv_Ax_s_leConstAt_of_leAt_eqConst {G : List Formula}
       (fun f hf => sentence_ax_s (f := f) hf)
       hle hbody)
 
+/-- PA turns a term-bounded order proof into a closed-numeral bounded order
+proof once the bound term is known to be that numeral. -/
+theorem BProv_Ax_s_leConstAt_of_leTermAt_eq_numeral {G : List Formula}
+    {a n : Nat} {bound : Term}
+    (hle : BProv Ax_s G (leTermAt (Term.var a) bound))
+    (hbound : BProv Ax_s G (eq bound (Term.numeral n))) :
+    BProv Ax_s G (leConstAt a n) := by
+  let leBody : Formula :=
+    eq (Term.add (Term.var (a+1)) (Term.var 0))
+      (Term.rename Nat.succ bound)
+  have hbody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+      (rename Nat.succ (leConstAt a n)) := by
+    have hleBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        leBody :=
+      BProv_ass (B := Ax_s) (G := leBody :: G.map (rename Nat.succ))
+        (by simp)
+    have hboundRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq bound (Term.numeral n))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbound Nat.succ
+    have hboundBody : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (eq (Term.rename Nat.succ bound) (Term.numeral n)) := by
+      simpa [rename, Term.rename, Term.rename_numeral] using
+        BProv_context_cons hboundRen
+    have htarget : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (eq (Term.add (Term.var (a+1)) (Term.var 0))
+          (Term.numeral n)) :=
+      BProv_eqTrans hleBody hboundBody
+    have hinst : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (subst (instTerm (Term.var 0))
+          (eq (Term.add (Term.var (a+2)) (Term.var 0))
+            (Term.numeral n))) := by
+      simpa [subst, instTerm, Term.subst, Term.upSubst] using htarget
+    have hex : BProv Ax_s (leBody :: G.map (rename Nat.succ))
+        (ex
+          (eq (Term.add (Term.var (a+2)) (Term.var 0))
+            (Term.numeral n))) :=
+      BProv_exI (B := Ax_s) (G := leBody :: G.map (rename Nat.succ))
+        (a := eq (Term.add (Term.var (a+2)) (Term.var 0))
+          (Term.numeral n))
+        (t := Term.var 0) hinst
+    simpa [leConstAt, rename, Term.rename, SetTheory.up] using hex
+  simpa [leTermAt, leBody] using
+    (BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      hle hbody)
+
 /-- PA proves the closed zero bound case: from `x ≤ 0`, derive `x = 0`. -/
 theorem BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero {G : List Formula}
     {a : Nat}
