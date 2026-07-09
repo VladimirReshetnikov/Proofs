@@ -2842,6 +2842,16 @@ def BetaDiv2Step (code step idx cur next bit : Nat) : Prop :=
 def BetaDiv2StepsThrough (code step last : Nat) : Prop :=
   ∀ k, k ≤ last → ∃ cur next bit, BetaDiv2Step code step k cur next bit
 
+/-- Semantic shifted-tail relation between beta-coded traces.
+
+The new trace copies the old trace one position down: for every `k <= last`,
+each old beta entry at index `k+1` is a new beta entry at index `k`. -/
+def BetaShiftTailThrough
+    (oldCode oldStep newCode newStep last : Nat) : Prop :=
+  ∀ k, k ≤ last → ∀ value,
+    BetaEntry oldCode oldStep (k + 1) value →
+      BetaEntry newCode newStep k value
+
 /-- Semantic mirror of the bit read from a beta-coded halving trace. -/
 def BetaDiv2Bit (code step idx bit : Nat) : Prop :=
   ∃ cur next, BetaDiv2Step code step idx cur next bit
@@ -4035,6 +4045,71 @@ theorem beta_entries_exist_through_mul_betaFact {N scale : Nat} (value : Nat →
   refine ⟨code, ?_⟩
   intro i hi
   exact hcode i (by omega)
+
+/-- A finite shifted beta tail exists semantically.
+
+The fresh step is chosen large enough to dominate every old successor-index
+value through `last`; the existing finite CRT construction then packs those
+values into one beta code. -/
+theorem BetaShiftTailThrough_exists_with_betaFact_step
+    (oldCode oldStep last : Nat) :
+    ∃ newCode,
+      BetaShiftTailThrough oldCode oldStep newCode
+        (betaFact last * BetaModulus oldStep (last + 1)) last := by
+  let scale : Nat := BetaModulus oldStep (last + 1)
+  let newStep : Nat := betaFact last * scale
+  let value : Nat → Nat :=
+    fun k => oldCode % BetaModulus oldStep (k + 1)
+  have hsmall : ∀ k, k ≤ last → value k < BetaModulus newStep k := by
+    intro k hk
+    have holdModPos : 0 < BetaModulus oldStep (k + 1) :=
+      BetaModulus_pos oldStep (k + 1)
+    have hvalueOld : value k < BetaModulus oldStep (k + 1) :=
+      Nat.mod_lt oldCode holdModPos
+    have hmul :
+        (k + 2) * oldStep ≤ (last + 2) * oldStep :=
+      Nat.mul_le_mul_right oldStep (by omega)
+    have holdMod_le_scale : BetaModulus oldStep (k + 1) ≤ scale := by
+      simpa [scale, BetaModulus, Nat.add_assoc, Nat.add_comm,
+        Nat.add_left_comm] using Nat.succ_le_succ hmul
+    have hvalue_lt_scale : value k < scale :=
+      Nat.lt_of_lt_of_le hvalueOld holdMod_le_scale
+    have hbetaFact_ge_one : 1 ≤ betaFact last :=
+      betaFact_pos last
+    have hscale_le_newStep : scale ≤ newStep := by
+      calc
+        scale = 1 * scale := by simp
+        _ ≤ betaFact last * scale :=
+          Nat.mul_le_mul_right scale hbetaFact_ge_one
+    have hvalue_lt_newStep : value k < newStep :=
+      Nat.lt_of_lt_of_le hvalue_lt_scale hscale_le_newStep
+    have hnewStep_le_mod : newStep ≤ BetaModulus newStep k := by
+      have hone_le : 1 ≤ k + 1 := by omega
+      have hmulStep : 1 * newStep ≤ (k + 1) * newStep :=
+        Nat.mul_le_mul_right newStep hone_le
+      have hle : newStep ≤ (k + 1) * newStep + 1 := by
+        exact Nat.le_trans (by simpa using hmulStep) (Nat.le_succ _)
+      simpa [BetaModulus, Nat.add_comm, Nat.add_left_comm,
+        Nat.add_assoc] using hle
+    exact Nat.lt_of_lt_of_le hvalue_lt_newStep hnewStep_le_mod
+  rcases beta_entries_exist_through_mul_betaFact
+      (N := last) (scale := scale) value (by
+        simpa [newStep] using hsmall) with ⟨newCode, hnewCode⟩
+  refine ⟨newCode, ?_⟩
+  intro k hk out hold
+  have hvalue : value k = out := by
+    simpa [value] using BetaEntry_mod_eq hold
+  have hnew : BetaEntry newCode newStep k (value k) :=
+    hnewCode k hk
+  simpa [BetaShiftTailThrough, newStep, scale, hvalue] using hnew
+
+/-- Existential form of semantic finite shifted-tail construction. -/
+theorem BetaShiftTailThrough_exists (oldCode oldStep last : Nat) :
+    ∃ newCode newStep,
+      BetaShiftTailThrough oldCode oldStep newCode newStep last := by
+  rcases BetaShiftTailThrough_exists_with_betaFact_step
+      oldCode oldStep last with ⟨newCode, htail⟩
+  exact ⟨newCode, betaFact last * BetaModulus oldStep (last + 1), htail⟩
 
 /-- Iterated closed binary halving, used for meta-level trace propagation
 statements. -/

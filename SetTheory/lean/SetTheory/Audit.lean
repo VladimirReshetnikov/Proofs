@@ -1306,6 +1306,9 @@ open SetTheory
 #check @PA.Formula.BetaModuliProduct_coprime_next_of_le_mul_betaFact
 #check @PA.Formula.beta_entries_exist_lt_mul_betaFact
 #check @PA.Formula.beta_entries_exist_through_mul_betaFact
+#check PA.Formula.BetaShiftTailThrough
+#check @PA.Formula.BetaShiftTailThrough_exists_with_betaFact_step
+#check @PA.Formula.BetaShiftTailThrough_exists
 #check @PA.Formula.div2Iter
 #check @PA.Formula.div2Iter_eq_shiftRight
 #check @PA.Formula.div2Iter_mod_two_eq_zero_of_not_mem
