@@ -3050,6 +3050,14 @@ def crtInverseExistsTermAtBody
     (Term.rename (fun n => n + 2) modulus)
     (Term.var 1) (Term.var 0)
 
+/-- Context obtained after opening both witnesses of
+`crtInverseExistsTermAt`. -/
+def crtInverseExistsTermAtOpenedContext
+    (product modulus : Term) (G : List Formula) : List Formula :=
+  crtInverseExistsTermAtBody product modulus ::
+    (crtInverseExistsTermAtQuotEx product modulus ::
+      G.map (rename Nat.succ)).map (rename Nat.succ)
+
 /-- Open beta step witness for the even branch of `0 ∈ S low`: when
 `low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
 use `S low` itself as the beta step. -/
@@ -10565,6 +10573,46 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_of_certificate
     (by simpa [outerBody, crtInverseExistsTermAtQuotEx,
       crtInverseExistsTermAt] using hinverseBody)
 
+/-- Eliminate inverse-certificate existence by opening the inverse and
+quotient witnesses in that order. -/
+theorem BProv_Ax_s_crtInverseExistsTermAt_elim_opened
+    {G : List Formula} {product modulus : Term} {target : Formula}
+    (hopened : BProv Ax_s
+      (crtInverseExistsTermAtOpenedContext product modulus G)
+      (rename Nat.succ (rename Nat.succ target)))
+    (hex : BProv Ax_s G
+      (crtInverseExistsTermAt product modulus)) :
+    BProv Ax_s G target := by
+  let body : Formula := crtInverseExistsTermAtBody product modulus
+  let quotEx : Formula := crtInverseExistsTermAtQuotEx product modulus
+  have houter : BProv Ax_s (quotEx :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    have hquotEx : BProv Ax_s (quotEx :: G.map (rename Nat.succ))
+        quotEx :=
+      BProv_ass (B := Ax_s)
+        (G := quotEx :: G.map (rename Nat.succ)) (by simp)
+    have hinner : BProv Ax_s
+        (body :: (quotEx :: G.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)) := by
+      simpa [body, quotEx, crtInverseExistsTermAtOpenedContext,
+        crtInverseExistsTermAtQuotEx,
+        crtInverseExistsTermAtBody] using hopened
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hquotEx (by
+        simpa [body, quotEx, crtInverseExistsTermAtQuotEx,
+          crtInverseExistsTermAtBody] using hinner)
+  have houterEx : BProv Ax_s G (ex quotEx) := by
+    simpa [body, quotEx, crtInverseExistsTermAt,
+      crtInverseExistsTermAtQuotEx,
+      crtInverseExistsTermAtBody] using hex
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    houterEx (by
+      simpa [body, quotEx, crtInverseExistsTermAtQuotEx,
+        crtInverseExistsTermAtBody] using houter)
+
 /-- Compose two explicit positive inverse certificates modulo the same term.
 
 This is the product step needed by a finite CRT accumulator: inverse witnesses
@@ -10612,6 +10660,168 @@ theorem BProv_Ax_s_crtInverse_mul
     (BProv_eqTrans hcertificates
       (BProv_Ax_s_crtInverseProductQuot_expand
         modulus leftQuot rightQuot))
+
+/-- Existential inverse certificates compose under multiplication of their
+products when the modulus is shared. -/
+theorem BProv_Ax_s_crtInverseExistsTermAt_mul
+    {G : List Formula} {leftProduct rightProduct modulus : Term}
+    (hleft : BProv Ax_s G
+      (crtInverseExistsTermAt leftProduct modulus))
+    (hright : BProv Ax_s G
+      (crtInverseExistsTermAt rightProduct modulus)) :
+    BProv Ax_s G
+      (crtInverseExistsTermAt
+        (Term.mul leftProduct rightProduct) modulus) := by
+  let target : Formula :=
+    crtInverseExistsTermAt
+      (Term.mul leftProduct rightProduct) modulus
+  refine BProv_Ax_s_crtInverseExistsTermAt_elim_opened
+    (G := G) (product := leftProduct) (modulus := modulus)
+    (target := target) ?_ hleft
+  let L : List Formula :=
+    crtInverseExistsTermAtOpenedContext leftProduct modulus G
+  let leftProduct2 : Term :=
+    Term.rename (fun n => n + 2) leftProduct
+  let rightProduct2 : Term :=
+    Term.rename (fun n => n + 2) rightProduct
+  let modulus2 : Term := Term.rename (fun n => n + 2) modulus
+  have hleftCert : BProv Ax_s L
+      (crtInverseTermAt leftProduct2 modulus2
+        (Term.var 1) (Term.var 0)) := by
+    simpa [L, leftProduct2, modulus2,
+      crtInverseExistsTermAtOpenedContext,
+      crtInverseExistsTermAtBody] using
+      (BProv_ass (B := Ax_s) (G := L)
+        (by simp [L, crtInverseExistsTermAtOpenedContext,
+          crtInverseExistsTermAtBody]))
+  have hrightRen1 : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (crtInverseExistsTermAt rightProduct modulus)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hright Nat.succ
+  have hrightRen2 : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ
+        (crtInverseExistsTermAt rightProduct modulus))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hrightRen1 Nat.succ
+  have hrightBase : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (crtInverseExistsTermAt rightProduct2 modulus2) := by
+    simpa [rightProduct2, modulus2, crtInverseExistsTermAt,
+      crtInverseTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hrightRen2
+  have hrightL : BProv Ax_s L
+      (crtInverseExistsTermAt rightProduct2 modulus2) := by
+    let leftQuotEx : Formula :=
+      crtInverseExistsTermAtQuotEx leftProduct modulus
+    let leftBody : Formula :=
+      crtInverseExistsTermAtBody leftProduct modulus
+    have h1 : BProv Ax_s
+        (rename Nat.succ leftQuotEx ::
+          (G.map (rename Nat.succ)).map (rename Nat.succ))
+        (crtInverseExistsTermAt rightProduct2 modulus2) :=
+      BProv_context_cons (B := Ax_s)
+        (a := rename Nat.succ leftQuotEx) hrightBase
+    have h2 : BProv Ax_s
+        (leftBody :: rename Nat.succ leftQuotEx ::
+          (G.map (rename Nat.succ)).map (rename Nat.succ))
+        (crtInverseExistsTermAt rightProduct2 modulus2) :=
+      BProv_context_cons (B := Ax_s) (a := leftBody) h1
+    simpa [L, leftQuotEx, leftBody,
+      crtInverseExistsTermAtOpenedContext, List.map_map,
+      Function.comp_def] using h2
+  refine BProv_Ax_s_crtInverseExistsTermAt_elim_opened
+    (G := L) (product := rightProduct2) (modulus := modulus2)
+    (target := rename Nat.succ (rename Nat.succ target)) ?_ hrightL
+  let R : List Formula :=
+    crtInverseExistsTermAtOpenedContext rightProduct2 modulus2 L
+  let leftProduct4 : Term :=
+    Term.rename (fun n => n + 4) leftProduct
+  let rightProduct4 : Term :=
+    Term.rename (fun n => n + 4) rightProduct
+  let modulus4 : Term := Term.rename (fun n => n + 4) modulus
+  have hrightCert : BProv Ax_s R
+      (crtInverseTermAt rightProduct4 modulus4
+        (Term.var 1) (Term.var 0)) := by
+    have hraw : BProv Ax_s R
+        (crtInverseExistsTermAtBody rightProduct2 modulus2) :=
+      BProv_ass (B := Ax_s) (G := R)
+        (by simp [R, crtInverseExistsTermAtOpenedContext])
+    simpa [rightProduct2, modulus2, rightProduct4, modulus4,
+      crtInverseExistsTermAtBody, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using hraw
+  have hleftRen1 : BProv Ax_s (L.map (rename Nat.succ))
+      (rename Nat.succ
+        (crtInverseTermAt leftProduct2 modulus2
+          (Term.var 1) (Term.var 0))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hleftCert Nat.succ
+  have hleftRen2 : BProv Ax_s
+      ((L.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ
+        (crtInverseTermAt leftProduct2 modulus2
+          (Term.var 1) (Term.var 0)))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hleftRen1 Nat.succ
+  have hleftBase : BProv Ax_s
+      ((L.map (rename Nat.succ)).map (rename Nat.succ))
+      (crtInverseTermAt leftProduct4 modulus4
+        (Term.var 3) (Term.var 2)) := by
+    simpa [leftProduct2, modulus2, leftProduct4, modulus4,
+      crtInverseTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hleftRen2
+  have hleftR : BProv Ax_s R
+      (crtInverseTermAt leftProduct4 modulus4
+        (Term.var 3) (Term.var 2)) := by
+    let rightQuotEx : Formula :=
+      crtInverseExistsTermAtQuotEx rightProduct2 modulus2
+    let rightBody : Formula :=
+      crtInverseExistsTermAtBody rightProduct2 modulus2
+    have h1 : BProv Ax_s
+        (rename Nat.succ rightQuotEx ::
+          (L.map (rename Nat.succ)).map (rename Nat.succ))
+        (crtInverseTermAt leftProduct4 modulus4
+          (Term.var 3) (Term.var 2)) :=
+      BProv_context_cons (B := Ax_s)
+        (a := rename Nat.succ rightQuotEx) hleftBase
+    have h2 : BProv Ax_s
+        (rightBody :: rename Nat.succ rightQuotEx ::
+          (L.map (rename Nat.succ)).map (rename Nat.succ))
+        (crtInverseTermAt leftProduct4 modulus4
+          (Term.var 3) (Term.var 2)) :=
+      BProv_context_cons (B := Ax_s) (a := rightBody) h1
+    simpa [R, rightQuotEx, rightBody,
+      crtInverseExistsTermAtOpenedContext, List.map_map,
+      Function.comp_def] using h2
+  have hproductCert : BProv Ax_s R
+      (crtInverseTermAt
+        (Term.mul leftProduct4 rightProduct4) modulus4
+        (Term.mul (Term.var 3) (Term.var 1))
+        (crtInverseProductQuotTerm
+          modulus4 (Term.var 2) (Term.var 0))) := by
+    simpa [crtInverseTermAt] using
+      (BProv_Ax_s_crtInverse_mul
+        (G := R) (leftProduct := leftProduct4)
+        (rightProduct := rightProduct4)
+        (leftInverse := Term.var 3) (rightInverse := Term.var 1)
+        (modulus := modulus4) (leftQuot := Term.var 2)
+        (rightQuot := Term.var 0)
+        (by simpa [crtInverseTermAt] using hleftR)
+        (by simpa [crtInverseTermAt] using hrightCert))
+  have hproductEx : BProv Ax_s R
+      (crtInverseExistsTermAt
+        (Term.mul leftProduct4 rightProduct4) modulus4) :=
+    BProv_Ax_s_crtInverseExistsTermAt_of_certificate hproductCert
+  simpa [target, R, L, leftProduct2, rightProduct2, modulus2,
+    leftProduct4, rightProduct4, modulus4,
+    crtInverseExistsTermAt, crtInverseTermAt,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def, Nat.add_assoc] using hproductEx
 
 /-- Multiplying a product by one more factor preserves every already exposed
 right factor, with an explicit updated quotient. -/

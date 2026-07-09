@@ -343,6 +343,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_all_positiveCommonMultipleExistsTermAt
 #check @PA.Formula.BProv_Ax_s_betaPair_positive_inverse_of_gap_scale
 #check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_of_certificate
+#check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_elim_opened
+#check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_mul
 #check @PA.Formula.BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition
@@ -419,6 +421,7 @@ open SetTheory
 #check @PA.Formula.crtInverseExistsTermAt
 #check @PA.Formula.crtInverseExistsTermAtQuotEx
 #check @PA.Formula.crtInverseExistsTermAtBody
+#check @PA.Formula.crtInverseExistsTermAtOpenedContext
 #check @PA.Formula.dvdTermTermAt_nat
 #check @PA.Formula.commonMultipleThroughTermAt_nat
 #check @PA.Formula.commonMultipleExistsTermAt_nat
