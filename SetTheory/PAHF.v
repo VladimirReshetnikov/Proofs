@@ -24139,6 +24139,373 @@ Proof.
     (BProv_Ax_s_twoEntryBetaTerm_one G cur next)).
 Qed.
 
+(* Lean: BProv_Ax_s_betaTermTermAt_of_eq_output *)
+Lemma BProv_Ax_s_betaTermTermAt_of_eq_output :
+  forall G (oldOut newOut code step idx : term),
+  BProv Ax_s G (pEq oldOut newOut) ->
+  BProv Ax_s G (betaTermTermAt oldOut code step idx) ->
+  BProv Ax_s G (betaTermTermAt newOut code step idx).
+Proof.
+  intros G oldOut newOut code step idx hout hbeta.
+  set (a := betaTermTermAt (tVar 0)
+    (Term.rename S code) (Term.rename S step) (Term.rename S idx)).
+  assert (hold : BProv Ax_s G (subst (instTerm oldOut) a)).
+  {
+    replace (subst (instTerm oldOut) a)
+      with (betaTermTermAt oldOut code step idx).
+    - exact hbeta.
+    - unfold a, betaTermTermAt, remTermTermAt, ltTermAt,
+        betaModTermTerm.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      reflexivity.
+  }
+  pose proof (BProv_eqElim Ax_s G oldOut newOut a hout hold) as hnew.
+  replace (betaTermTermAt newOut code step idx)
+    with (subst (instTerm newOut) a).
+  - exact hnew.
+  - unfold a, betaTermTermAt, remTermTermAt, ltTermAt,
+      betaModTermTerm.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_instTerm_rename_two_succ.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_betaTermTermAt_of_eq_index *)
+Lemma BProv_Ax_s_betaTermTermAt_of_eq_index :
+  forall G (out code step oldIdx newIdx : term),
+  BProv Ax_s G (pEq oldIdx newIdx) ->
+  BProv Ax_s G (betaTermTermAt out code step oldIdx) ->
+  BProv Ax_s G (betaTermTermAt out code step newIdx).
+Proof.
+  intros G out code step oldIdx newIdx hidx hbeta.
+  set (a := betaTermTermAt (Term.rename S out)
+    (Term.rename S code) (Term.rename S step) (tVar 0)).
+  assert (hold : BProv Ax_s G (subst (instTerm oldIdx) a)).
+  {
+    replace (subst (instTerm oldIdx) a)
+      with (betaTermTermAt out code step oldIdx).
+    - exact hbeta.
+    - unfold a, betaTermTermAt, remTermTermAt, ltTermAt,
+        betaModTermTerm.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      reflexivity.
+  }
+  pose proof (BProv_eqElim Ax_s G oldIdx newIdx a hidx hold) as hnew.
+  replace (betaTermTermAt out code step newIdx)
+    with (subst (instTerm newIdx) a).
+  - exact hnew.
+  - unfold a, betaTermTermAt, remTermTermAt, ltTermAt,
+      betaModTermTerm.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound *)
+Lemma BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound :
+  forall G oldCode oldStep,
+  BProv Ax_s G
+    (betaShiftTailThroughTermAt oldCode oldStep
+      (tVar oldCode) (tAdd (tVar oldStep) (tVar oldStep)) tZero).
+Proof.
+  intros G oldCode oldStep.
+  set (leHyp := leTermAt (tVar 0) (Term.rename S tZero)).
+  set (oldBeta := betaTermTermAt (tVar 0)
+    (tVar (oldCode + 2)) (tVar (oldStep + 2))
+    (tSucc (tVar 1))).
+  set (newBeta := betaTermTermAt (tVar 0)
+    (Term.rename (fun n => n + 2) (tVar oldCode))
+    (Term.rename (fun n => n + 2)
+      (tAdd (tVar oldStep) (tVar oldStep)))
+    (tVar 1)).
+  set (witness := pAll (pImp oldBeta newBeta)).
+  assert (hbody : BProv Ax_s (map (rename S) G)
+      (pImp leHyp witness)).
+  {
+    set (C := leHyp :: map (rename S) G).
+    assert (hwitness : BProv Ax_s C witness).
+    {
+      assert (hinner : BProv Ax_s (map (rename S) C)
+          (pImp oldBeta newBeta)).
+      {
+        set (D := oldBeta :: map (rename S) C).
+        assert (hold : BProv Ax_s D oldBeta).
+        { apply BProv_ass. unfold D. simpl. left. reflexivity. }
+        assert (hleRaw : BProv Ax_s D (rename S leHyp)).
+        {
+          apply BProv_ass.
+          unfold D, C. simpl. right. left. reflexivity.
+        }
+        assert (hle : BProv Ax_s D (leTermAt (tVar 1) tZero)).
+        {
+          unfold leHyp, leTermAt in hleRaw |-.
+          simpl in hleRaw |-.
+          exact hleRaw.
+        }
+        assert (hlt : BProv Ax_s D
+            (ltTermAt (tVar 1) (tSucc tZero))).
+        {
+          exact (BProv_Ax_s_ltTermAt_succ_right_of_leTermAt
+            D (tVar 1) tZero hle).
+        }
+        assert (hidx : BProv Ax_s D (pEq (tVar 1) tZero)).
+        {
+          exact (BProv_Ax_s_eq_zero_of_ltTermAt_one D (tVar 1) hlt).
+        }
+        assert (hsuccIdx : BProv Ax_s D
+            (pEq (tSucc (tVar 1)) (tSucc tZero))).
+        { exact (BProv_eq_congr_succ Ax_s D _ _ hidx). }
+        assert (holdOne : BProv Ax_s D
+            (betaTermTermAt (tVar 0)
+              (tVar (oldCode + 2)) (tVar (oldStep + 2))
+              (tSucc tZero))).
+        {
+          exact (BProv_Ax_s_betaTermTermAt_of_eq_index D
+            (tVar 0) (tVar (oldCode + 2)) (tVar (oldStep + 2))
+            (tSucc (tVar 1)) (tSucc tZero) hsuccIdx hold).
+        }
+        assert (hnewZero : BProv Ax_s D
+            (betaTermTermAt (tVar 0)
+              (tVar (oldCode + 2))
+              (tAdd (tVar (oldStep + 2)) (tVar (oldStep + 2)))
+              tZero)).
+        {
+          exact (BProv_Ax_s_betaTermTermAt_zero_double_step_of_one D
+            (tVar 0) (tVar (oldCode + 2)) (tVar (oldStep + 2))
+            holdOne).
+        }
+        assert (hnew : BProv Ax_s D newBeta).
+        {
+          pose proof (BProv_Ax_s_betaTermTermAt_of_eq_index D
+            (tVar 0) (tVar (oldCode + 2))
+            (tAdd (tVar (oldStep + 2)) (tVar (oldStep + 2)))
+            tZero (tVar 1) (BProv_eqSym Ax_s D _ _ hidx)
+            hnewZero) as htransport.
+          unfold newBeta.
+          simpl.
+          exact htransport.
+        }
+        exact (BProv_impI Ax_s (map (rename S) C)
+          oldBeta newBeta hnew).
+      }
+      unfold witness.
+      exact (BProv_allI_of_sentences Ax_s C (pImp oldBeta newBeta)
+        sentence_ax_s hinner).
+    }
+    exact (BProv_impI Ax_s (map (rename S) G) leHyp witness hwitness).
+  }
+  unfold betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness in *.
+  exact (BProv_allI_of_sentences Ax_s G _ sentence_ax_s hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero *)
+Lemma BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero :
+  forall G oldCode oldStep (lastTerm : term),
+  BProv Ax_s G (eqConstAt oldStep 0) ->
+  BProv Ax_s G
+    (betaShiftTailThroughTermAt oldCode oldStep
+      tZero tZero lastTerm).
+Proof.
+  intros G oldCode oldStep lastTerm hOldStep.
+  set (leHyp := leTermAt (tVar 0) (Term.rename S lastTerm)).
+  set (oldBeta := betaTermTermAt (tVar 0)
+    (tVar (oldCode + 2)) (tVar (oldStep + 2))
+    (tSucc (tVar 1))).
+  set (newBeta := betaTermTermAt (tVar 0)
+    (Term.rename (fun n => n + 2) tZero)
+    (Term.rename (fun n => n + 2) tZero)
+    (tVar 1)).
+  set (witness := pAll (pImp oldBeta newBeta)).
+  assert (hbody : BProv Ax_s (map (rename S) G)
+      (pImp leHyp witness)).
+  {
+    set (C := leHyp :: map (rename S) G).
+    assert (hwitness : BProv Ax_s C witness).
+    {
+      assert (hinner : BProv Ax_s (map (rename S) C)
+          (pImp oldBeta newBeta)).
+      {
+        set (D := oldBeta :: map (rename S) C).
+        assert (hold : BProv Ax_s D oldBeta).
+        { apply BProv_ass. unfold D. simpl. left. reflexivity. }
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+          (eqConstAt oldStep 0) hOldStep S) as hstepRen1.
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+          (map (rename S) G) (rename S (eqConstAt oldStep 0))
+          hstepRen1 S) as hstepRen2.
+        assert (hstepCtx : BProv Ax_s D
+            (rename S (rename S (eqConstAt oldStep 0)))).
+        {
+          unfold D, C. simpl.
+          apply BProv_context_cons.
+          apply BProv_context_cons.
+          exact hstepRen2.
+        }
+        assert (hstepD : BProv Ax_s D
+            (pEq (tVar (oldStep + 2)) tZero)).
+        {
+          unfold eqConstAt in hstepCtx.
+          simpl in hstepCtx.
+          replace (oldStep + 2) with (S (S oldStep)) by lia.
+          exact hstepCtx.
+        }
+        assert (houtZero : BProv Ax_s D (pEq (tVar 0) tZero)).
+        {
+          exact (BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero
+            D (tVar 0) (tVar (oldCode + 2)) (tVar (oldStep + 2))
+            (tSucc (tVar 1)) hold hstepD).
+        }
+        assert (hnewStep : BProv Ax_s D
+            (pEq (Term.rename (fun n => n + 2) tZero) tZero)).
+        { simpl. apply BProv_eqRefl. }
+        assert (hzeroBeta : BProv Ax_s D
+            (betaTermTermAt tZero
+              (Term.rename (fun n => n + 2) tZero)
+              (Term.rename (fun n => n + 2) tZero)
+              (tVar 1))).
+        {
+          exact (BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero D
+            (Term.rename (fun n => n + 2) tZero)
+            (Term.rename (fun n => n + 2) tZero)
+            (tVar 1) hnewStep).
+        }
+        assert (hnew : BProv Ax_s D newBeta).
+        {
+          unfold newBeta.
+          exact (BProv_Ax_s_betaTermTermAt_of_eq_output D
+            tZero (tVar 0)
+            (Term.rename (fun n => n + 2) tZero)
+            (Term.rename (fun n => n + 2) tZero) (tVar 1)
+            (BProv_eqSym Ax_s D _ _ houtZero) hzeroBeta).
+        }
+        exact (BProv_impI Ax_s (map (rename S) C)
+          oldBeta newBeta hnew).
+      }
+      unfold witness.
+      exact (BProv_allI_of_sentences Ax_s C (pImp oldBeta newBeta)
+        sentence_ax_s hinner).
+    }
+    exact (BProv_impI Ax_s (map (rename S) G) leHyp witness hwitness).
+  }
+  unfold betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness in *.
+  exact (BProv_allI_of_sentences Ax_s G _ sentence_ax_s hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_betaShiftTailExistsTermAt_of_through *)
+Lemma BProv_Ax_s_betaShiftTailExistsTermAt_of_through :
+  forall G oldCode oldStep (newCode newStep lastTerm : term),
+  BProv Ax_s G
+    (betaShiftTailThroughTermAt oldCode oldStep
+      newCode newStep lastTerm) ->
+  BProv Ax_s G
+    (betaShiftTailExistsTermAt oldCode oldStep lastTerm).
+Proof.
+  intros G oldCode oldStep newCode newStep lastTerm hthrough.
+  set (body := betaShiftTailThroughTermAt (oldCode + 2) (oldStep + 2)
+    (tVar 1) (tVar 0) (Term.rename (fun n => n + 2) lastTerm)).
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm newStep)
+        (subst (Term.upSubst (instTerm newCode)) body))).
+  {
+    replace
+      (subst (instTerm newStep)
+        (subst (Term.upSubst (instTerm newCode)) body))
+      with (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep lastTerm).
+    - exact hthrough.
+    - unfold body, betaShiftTailThroughTermAt, betaTermTermAt,
+        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt.
+      assert (hcodeIndex : oldCode + 2 + 2 =
+          S (S (S (S oldCode)))) by lia.
+      assert (hstepIndex : oldStep + 2 + 2 =
+          S (S (S (S oldStep)))) by lia.
+      rewrite hcodeIndex, hstepIndex.
+      simpl.
+      repeat rewrite
+        (term_subst_two_instTerm_rename_add_two
+          lastTerm newCode newStep).
+      repeat rewrite
+        (term_subst_instTerm_rename_succ lastTerm newStep).
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
+      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
+      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
+      repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite
+        (term_subst_instTerm_rename_succ lastTerm newStep).
+      simpl.
+      replace (Term.rename (fun n => S (S (S n))) newStep)
+        with (Term.rename (fun n => S (n + 2)) newStep)
+        by (apply Term.rename_ext; intro n; lia).
+      replace (Term.rename (fun n => S (S (S (S n)))) newCode)
+        with (Term.rename (fun n => S (S (n + 2))) newCode)
+        by (apply Term.rename_ext; intro n; lia).
+      replace (oldCode + 2) with (S (S oldCode)) by lia.
+      replace (oldStep + 2) with (S (S oldStep)) by lia.
+      reflexivity.
+  }
+  assert (hstepEx : BProv Ax_s G
+      (subst (instTerm newCode) (pEx body))).
+  {
+    pose proof (BProv_exI Ax_s G
+      (subst (Term.upSubst (instTerm newCode)) body)
+      newStep hbody) as hex.
+    replace (subst (instTerm newCode) (pEx body))
+      with (pEx (subst (Term.upSubst (instTerm newCode)) body)).
+    - exact hex.
+    - reflexivity.
+  }
+  pose proof (BProv_exI Ax_s G (pEx body) newCode hstepEx) as hex.
+  unfold betaShiftTailExistsTermAt, body in *.
+  exact hex.
+Qed.
+
+(* Lean: BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound *)
+Lemma BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound :
+  forall G oldCode oldStep,
+  BProv Ax_s G
+    (betaShiftTailExistsTermAt oldCode oldStep tZero).
+Proof.
+  intros G oldCode oldStep.
+  exact (BProv_Ax_s_betaShiftTailExistsTermAt_of_through G
+    oldCode oldStep (tVar oldCode)
+    (tAdd (tVar oldStep) (tVar oldStep)) tZero
+    (BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound
+      G oldCode oldStep)).
+Qed.
+
+(* Lean: BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero *)
+Lemma BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero :
+  forall G oldCode oldStep (lastTerm : term),
+  BProv Ax_s G (eqConstAt oldStep 0) ->
+  BProv Ax_s G
+    (betaShiftTailExistsTermAt oldCode oldStep lastTerm).
+Proof.
+  intros G oldCode oldStep lastTerm hOldStep.
+  exact (BProv_Ax_s_betaShiftTailExistsTermAt_of_through G
+    oldCode oldStep tZero tZero lastTerm
+    (BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
+      G oldCode oldStep lastTerm hOldStep)).
+Qed.
+
 (* Lean: BProv_Ax_s_subst_betaAt_of_betaTermTermAt *)
 Lemma BProv_Ax_s_subst_betaAt_of_betaTermTermAt :
   forall G (sigma : nat -> term) out code step idx,
