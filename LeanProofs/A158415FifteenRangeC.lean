@@ -185,9 +185,7 @@ def values5_add_values9_mem_range_values15_indexNat : Nat -> Nat -> Nat
   | _, _ => 0
 
 def values5_add_values9_mem_range_values15_index (i : Fin 5) (j : Fin 33) : Fin 791 :=
-  ⟨values5_add_values9_mem_range_values15_indexNat i.1 j.1, by
-    fin_cases i <;> fin_cases j <;> decide
-  ⟩
+  Fin.ofNat 791 (values5_add_values9_mem_range_values15_indexNat i.1 j.1)
 
 set_option linter.unreachableTactic false in
 set_option linter.unnecessarySeqFocus false in
@@ -1148,9 +1146,7 @@ def values6_add_values8_mem_range_values15_indexNat : Nat -> Nat -> Nat
   | _, _ => 0
 
 def values6_add_values8_mem_range_values15_index (i : Fin 8) (j : Fin 20) : Fin 791 :=
-  ⟨values6_add_values8_mem_range_values15_indexNat i.1 j.1, by
-    fin_cases i <;> fin_cases j <;> decide
-  ⟩
+  Fin.ofNat 791 (values6_add_values8_mem_range_values15_indexNat i.1 j.1)
 
 set_option linter.unreachableTactic false in
 set_option linter.unnecessarySeqFocus false in
@@ -2050,9 +2046,7 @@ def values7_add_values7_mem_range_values15_indexNat : Nat -> Nat -> Nat
   | _, _ => 0
 
 def values7_add_values7_mem_range_values15_index (i : Fin 13) (j : Fin 13) : Fin 791 :=
-  ⟨values7_add_values7_mem_range_values15_indexNat i.1 j.1, by
-    fin_cases i <;> fin_cases j <;> decide
-  ⟩
+  Fin.ofNat 791 (values7_add_values7_mem_range_values15_indexNat i.1 j.1)
 
 set_option linter.unreachableTactic false in
 set_option linter.unnecessarySeqFocus false in
