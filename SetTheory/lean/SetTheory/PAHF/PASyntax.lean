@@ -9236,6 +9236,81 @@ theorem BProv_Ax_s_betaTermTermAtConstIdx_of_beta
           (Term.var 0)))
       (t := Term.numeral idxValue) hbody)
 
+/-- Transport the output of a fully term-parametric beta entry across a PA
+equality.  This keeps equality transport as proof data rather than hiding it in
+the beta relation itself. -/
+theorem BProv_Ax_s_betaTermTermAt_of_eq_output
+    {G : List Formula} {oldOut newOut code step idx : Term}
+    (hout : BProv Ax_s G (eq oldOut newOut))
+    (hbeta : BProv Ax_s G (betaTermTermAt oldOut code step idx)) :
+    BProv Ax_s G (betaTermTermAt newOut code step idx) := by
+  let a : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename Nat.succ code) (Term.rename Nat.succ step)
+      (Term.rename Nat.succ idx)
+  have hold : BProv Ax_s G (subst (instTerm oldOut) a) := by
+    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ] using hbeta
+  have hnew : BProv Ax_s G (subst (instTerm newOut) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := oldOut) (t := newOut) (a := a) hout hold
+  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ] using hnew
+
+/-- Transport the code of a fully term-parametric beta entry across a PA
+equality. -/
+theorem BProv_Ax_s_betaTermTermAt_of_eq_code
+    {G : List Formula} {out oldCode newCode step idx : Term}
+    (hcode : BProv Ax_s G (eq oldCode newCode))
+    (hbeta : BProv Ax_s G (betaTermTermAt out oldCode step idx)) :
+    BProv Ax_s G (betaTermTermAt out newCode step idx) := by
+  let a : Formula :=
+    betaTermTermAt (Term.rename Nat.succ out)
+      (Term.var 0) (Term.rename Nat.succ step) (Term.rename Nat.succ idx)
+  have hold : BProv Ax_s G (subst (instTerm oldCode) a) := by
+    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ] using hbeta
+  have hnew : BProv Ax_s G (subst (instTerm newCode) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := oldCode) (t := newCode) (a := a) hcode hold
+  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ] using hnew
+
+/-- Transport the step of a fully term-parametric beta entry across a PA
+equality. -/
+theorem BProv_Ax_s_betaTermTermAt_of_eq_step
+    {G : List Formula} {out code oldStep newStep idx : Term}
+    (hstep : BProv Ax_s G (eq oldStep newStep))
+    (hbeta : BProv Ax_s G (betaTermTermAt out code oldStep idx)) :
+    BProv Ax_s G (betaTermTermAt out code newStep idx) := by
+  let a : Formula :=
+    betaTermTermAt (Term.rename Nat.succ out)
+      (Term.rename Nat.succ code) (Term.var 0) (Term.rename Nat.succ idx)
+  have hold : BProv Ax_s G (subst (instTerm oldStep) a) := by
+    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using hbeta
+  have hnew : BProv Ax_s G (subst (instTerm newStep) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := oldStep) (t := newStep) (a := a) hstep hold
+  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ] using hnew
+
 /-- Transport the index of a fully term-parametric beta entry across a PA
 equality. -/
 theorem BProv_Ax_s_betaTermTermAt_of_eq_index
