@@ -2954,6 +2954,24 @@ def crtPositiveInverseQuotTerm
     (Term.mul (Term.succ leftPred) (Term.succ negativeCoeff))
     (Term.mul leftPred positiveCoeff)
 
+/-- Positive coefficient in the beta-modulus negative Bezout identity.
+
+For successor indices `L = leftIdx + 1`, `R = rightIdx + 1`, this is
+`1 + R * (L * scale)`. -/
+def betaPairBezoutPositiveCoeffTerm
+    (leftIdx rightIdx scale : Term) : Term :=
+  Term.succ
+    (Term.mul (Term.succ rightIdx)
+      (Term.mul (Term.succ leftIdx) scale))
+
+/-- Negative coefficient in the beta-modulus negative Bezout identity.
+
+With `R = rightIdx + 1`, this is `R * (R * scale)`. -/
+def betaPairBezoutNegativeCoeffTerm
+    (rightIdx scale : Term) : Term :=
+  Term.mul (Term.succ rightIdx)
+    (Term.mul (Term.succ rightIdx) scale)
+
 /-- Open beta step witness for the even branch of `0 ∈ S low`: when
 `low = 2*h`, the current value `S low` is odd, so a one-step halving trace can
 use `S low` itself as the beta step. -/
@@ -9949,6 +9967,308 @@ theorem BProv_Ax_s_crtPositiveInverse_of_negative
     BProv_eqTrans hleftAdd (BProv_eqSym hrightAdd)
   simpa [leftModulus, rightModulus, inverse, inverseQuot] using
     BProv_Ax_s_add_cancel_right_terms haugmented
+
+/-- Explicit negative Bezout identity for two Gödel-beta moduli.
+
+Let `L = leftIdx + 1`, `R = rightIdx + 1`.  Under `R = L + difference`
+and `step = difference * scale`, PA proves
+
+`betaMod(step,rightIdx) * (1 + R*L*scale)
+  = 1 + betaMod(step,leftIdx) * (R*R*scale)`.
+
+The hypotheses expose exactly the index gap and its divisibility witness; no
+coprimality assertion is hidden in the coefficient definitions. -/
+theorem BProv_Ax_s_betaPair_negative_bezout
+    {G : List Formula}
+    {leftIdx rightIdx step difference scale : Term}
+    (hindex : BProv Ax_s G
+      (eq (Term.succ rightIdx)
+        (Term.add (Term.succ leftIdx) difference)))
+    (hstep : BProv Ax_s G
+      (eq step (Term.mul difference scale))) :
+    BProv Ax_s G
+      (eq
+        (Term.mul (betaModTermTerm step rightIdx)
+          (betaPairBezoutPositiveCoeffTerm
+            leftIdx rightIdx scale))
+        (Term.succ
+          (Term.mul (betaModTermTerm step leftIdx)
+            (betaPairBezoutNegativeCoeffTerm
+              rightIdx scale)))) := by
+  let L : Term := Term.succ leftIdx
+  let R : Term := Term.succ rightIdx
+  let leftPred : Term := Term.mul L step
+  let rightPred : Term := Term.mul R step
+  let leftModulus : Term := Term.succ leftPred
+  let rightModulus : Term := Term.succ rightPred
+  let leftScale : Term := Term.mul L scale
+  let rightScale : Term := Term.mul R scale
+  let crossCoeff : Term := Term.mul R leftScale
+  let negativeCoeff : Term := Term.mul R rightScale
+  have hrightScale : BProv Ax_s G
+      (eq rightScale
+        (Term.add step leftScale)) := by
+    have hindexMul : BProv Ax_s G
+        (eq (Term.mul R scale)
+          (Term.mul (Term.add L difference) scale)) := by
+      simpa [R, L] using
+        BProv_eq_congr_mul_left scale hindex
+    have haddMul : BProv Ax_s G
+        (eq (Term.mul (Term.add L difference) scale)
+          (Term.add (Term.mul L scale)
+            (Term.mul difference scale))) :=
+      BProv_Ax_s_add_mul_terms L difference scale
+    have hstepCong : BProv Ax_s G
+        (eq
+          (Term.add (Term.mul L scale)
+            (Term.mul difference scale))
+          (Term.add (Term.mul L scale) step)) :=
+      BProv_eq_congr_add_right (Term.mul L scale)
+        (BProv_eqSym hstep)
+    have hcomm : BProv Ax_s G
+        (eq (Term.add (Term.mul L scale) step)
+          (Term.add step (Term.mul L scale))) :=
+      BProv_Ax_s_add_comm_terms (Term.mul L scale) step
+    simpa [rightScale, leftScale] using
+      BProv_eqTrans hindexMul
+        (BProv_eqTrans haddMul (BProv_eqTrans hstepCong hcomm))
+  have hcross : BProv Ax_s G
+      (eq (Term.mul rightScale leftPred)
+        (Term.mul leftScale rightPred)) := by
+    have hleftNorm : BProv Ax_s G
+        (eq
+          (Term.mul (Term.mul R scale) (Term.mul L step))
+          (Term.mul (Term.mul R L)
+            (Term.mul scale step))) :=
+      BProv_Ax_s_mul_mul_reorder_middle_terms R scale L step
+    have hRL : BProv Ax_s G
+        (eq (Term.mul R L) (Term.mul L R)) :=
+      BProv_Ax_s_mul_comm_terms R L
+    have hRLCong : BProv Ax_s G
+        (eq
+          (Term.mul (Term.mul R L) (Term.mul scale step))
+          (Term.mul (Term.mul L R) (Term.mul scale step))) :=
+      BProv_eq_congr_mul_left (Term.mul scale step) hRL
+    have hrightNorm : BProv Ax_s G
+        (eq
+          (Term.mul (Term.mul L scale) (Term.mul R step))
+          (Term.mul (Term.mul L R)
+            (Term.mul scale step))) :=
+      BProv_Ax_s_mul_mul_reorder_middle_terms L scale R step
+    simpa [rightScale, leftScale, leftPred, rightPred] using
+      BProv_eqTrans hleftNorm
+        (BProv_eqTrans hRLCong (BProv_eqSym hrightNorm))
+  have hcore : BProv Ax_s G
+      (eq (Term.mul rightScale leftModulus)
+        (Term.add step
+          (Term.mul leftScale rightModulus))) := by
+    have hleftExpand : BProv Ax_s G
+        (eq (Term.mul rightScale leftModulus)
+          (Term.add
+            (Term.mul rightScale leftPred) rightScale)) := by
+      simpa [leftModulus] using
+        BProv_weaken_nil
+          (BProv_Ax_s_mulSucc_terms rightScale leftPred)
+    have hrightExpand : BProv Ax_s G
+        (eq (Term.mul leftScale rightModulus)
+          (Term.add
+            (Term.mul leftScale rightPred) leftScale)) := by
+      simpa [rightModulus] using
+        BProv_weaken_nil
+          (BProv_Ax_s_mulSucc_terms leftScale rightPred)
+    have hparts : BProv Ax_s G
+        (eq
+          (Term.add
+            (Term.mul rightScale leftPred) rightScale)
+          (Term.add
+            (Term.mul leftScale rightPred)
+            (Term.add step leftScale))) :=
+      BProv_eq_congr_add hcross hrightScale
+    have hregroup1 : BProv Ax_s G
+        (eq
+          (Term.add
+            (Term.mul leftScale rightPred)
+            (Term.add step leftScale))
+          (Term.add
+            (Term.add (Term.mul leftScale rightPred) step)
+            leftScale)) :=
+      BProv_eqSym
+        (BProv_Ax_s_add_assoc_terms
+          (Term.mul leftScale rightPred) step leftScale)
+    have hinnerComm : BProv Ax_s G
+        (eq
+          (Term.add (Term.mul leftScale rightPred) step)
+          (Term.add step (Term.mul leftScale rightPred))) :=
+      BProv_Ax_s_add_comm_terms
+        (Term.mul leftScale rightPred) step
+    have hinnerCong : BProv Ax_s G
+        (eq
+          (Term.add
+            (Term.add (Term.mul leftScale rightPred) step)
+            leftScale)
+          (Term.add
+            (Term.add step (Term.mul leftScale rightPred))
+            leftScale)) :=
+      BProv_eq_congr_add_left leftScale hinnerComm
+    have hregroup2 : BProv Ax_s G
+        (eq
+          (Term.add
+            (Term.add step (Term.mul leftScale rightPred))
+            leftScale)
+          (Term.add step
+            (Term.add (Term.mul leftScale rightPred) leftScale))) :=
+      BProv_Ax_s_add_assoc_terms
+        step (Term.mul leftScale rightPred) leftScale
+    have hrightCong : BProv Ax_s G
+        (eq
+          (Term.add step
+            (Term.add (Term.mul leftScale rightPred) leftScale))
+          (Term.add step
+            (Term.mul leftScale rightModulus))) :=
+      BProv_eq_congr_add_right step (BProv_eqSym hrightExpand)
+    exact BProv_eqTrans hleftExpand
+      (BProv_eqTrans hparts
+        (BProv_eqTrans hregroup1
+          (BProv_eqTrans hinnerCong
+            (BProv_eqTrans hregroup2 hrightCong))))
+  have hscaled : BProv Ax_s G
+      (eq (Term.mul leftModulus negativeCoeff)
+        (Term.add (Term.mul R step)
+          (Term.mul rightModulus crossCoeff))) := by
+    have hleftComm : BProv Ax_s G
+        (eq (Term.mul leftModulus negativeCoeff)
+          (Term.mul negativeCoeff leftModulus)) :=
+      BProv_Ax_s_mul_comm_terms leftModulus negativeCoeff
+    have hleftAssoc1 : BProv Ax_s G
+        (eq (Term.mul negativeCoeff leftModulus)
+          (Term.mul R
+            (Term.mul rightScale leftModulus))) := by
+      simpa [negativeCoeff] using
+        BProv_Ax_s_mul_assoc_terms R rightScale leftModulus
+    have hcoreCong : BProv Ax_s G
+        (eq
+          (Term.mul R (Term.mul rightScale leftModulus))
+          (Term.mul R
+            (Term.add step
+              (Term.mul leftScale rightModulus)))) :=
+      BProv_eq_congr_mul_right R hcore
+    have hdist : BProv Ax_s G
+        (eq
+          (Term.mul R
+            (Term.add step
+              (Term.mul leftScale rightModulus)))
+          (Term.add (Term.mul R step)
+            (Term.mul R
+              (Term.mul leftScale rightModulus)))) :=
+      BProv_Ax_s_mul_add_terms
+        R step (Term.mul leftScale rightModulus)
+    have hrightAssoc : BProv Ax_s G
+        (eq
+          (Term.mul R (Term.mul leftScale rightModulus))
+          (Term.mul crossCoeff rightModulus)) := by
+      simpa [crossCoeff] using
+        BProv_eqSym
+          (BProv_Ax_s_mul_assoc_terms R leftScale rightModulus)
+    have hrightComm : BProv Ax_s G
+        (eq (Term.mul crossCoeff rightModulus)
+          (Term.mul rightModulus crossCoeff)) :=
+      BProv_Ax_s_mul_comm_terms crossCoeff rightModulus
+    have hright : BProv Ax_s G
+        (eq
+          (Term.mul R (Term.mul leftScale rightModulus))
+          (Term.mul rightModulus crossCoeff)) :=
+      BProv_eqTrans hrightAssoc hrightComm
+    have hrightCong : BProv Ax_s G
+        (eq
+          (Term.add (Term.mul R step)
+            (Term.mul R (Term.mul leftScale rightModulus)))
+          (Term.add (Term.mul R step)
+            (Term.mul rightModulus crossCoeff))) :=
+      BProv_eq_congr_add_right (Term.mul R step) hright
+    exact BProv_eqTrans hleftComm
+      (BProv_eqTrans hleftAssoc1
+        (BProv_eqTrans hcoreCong
+          (BProv_eqTrans hdist hrightCong)))
+  have hmulSucc : BProv Ax_s G
+      (eq
+        (Term.mul rightModulus (Term.succ crossCoeff))
+        (Term.add
+          (Term.mul rightModulus crossCoeff) rightModulus)) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_mulSucc_terms rightModulus crossCoeff)
+  have hcomm : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul rightModulus crossCoeff) rightModulus)
+        (Term.add rightModulus
+          (Term.mul rightModulus crossCoeff))) :=
+    BProv_Ax_s_add_comm_terms
+      (Term.mul rightModulus crossCoeff) rightModulus
+  have hsuccAdd : BProv Ax_s G
+      (eq
+        (Term.add rightModulus
+          (Term.mul rightModulus crossCoeff))
+        (Term.succ
+          (Term.add (Term.mul R step)
+            (Term.mul rightModulus crossCoeff)))) := by
+    simpa [rightModulus, rightPred] using
+      BProv_Ax_s_succ_add_terms
+        (Term.mul R step)
+        (Term.mul rightModulus crossCoeff)
+  have hscaledSucc : BProv Ax_s G
+      (eq
+        (Term.succ (Term.mul leftModulus negativeCoeff))
+        (Term.succ
+          (Term.add (Term.mul R step)
+            (Term.mul rightModulus crossCoeff)))) :=
+    BProv_eq_congr_succ hscaled
+  simpa [leftModulus, rightModulus, leftPred, rightPred,
+    crossCoeff, negativeCoeff,
+    betaModTermTerm, betaPairBezoutPositiveCoeffTerm,
+    betaPairBezoutNegativeCoeffTerm, L, R, leftScale, rightScale] using
+    BProv_eqTrans hmulSucc
+      (BProv_eqTrans hcomm
+        (BProv_eqTrans hsuccAdd (BProv_eqSym hscaledSucc)))
+
+/-- Positive inverse certificate for an earlier beta modulus modulo a later
+one, derived from the explicit gap and step-factor equations. -/
+theorem BProv_Ax_s_betaPair_positive_inverse
+    {G : List Formula}
+    {leftIdx rightIdx step difference scale : Term}
+    (hindex : BProv Ax_s G
+      (eq (Term.succ rightIdx)
+        (Term.add (Term.succ leftIdx) difference)))
+    (hstep : BProv Ax_s G
+      (eq step (Term.mul difference scale))) :
+    BProv Ax_s G
+      (eq
+        (Term.mul (betaModTermTerm step leftIdx)
+          (crtPositiveInverseTerm
+            (Term.mul (Term.succ rightIdx) step)
+            (betaPairBezoutPositiveCoeffTerm
+              leftIdx rightIdx scale)
+            (betaPairBezoutNegativeCoeffTerm
+              rightIdx scale)))
+        (Term.succ
+          (Term.mul (betaModTermTerm step rightIdx)
+            (crtPositiveInverseQuotTerm
+              (Term.mul (Term.succ leftIdx) step)
+              (betaPairBezoutPositiveCoeffTerm
+                leftIdx rightIdx scale)
+              (betaPairBezoutNegativeCoeffTerm
+                rightIdx scale))))) := by
+  have hnegative : BProv Ax_s G
+      (eq
+        (Term.mul (betaModTermTerm step rightIdx)
+          (betaPairBezoutPositiveCoeffTerm
+            leftIdx rightIdx scale))
+        (Term.succ
+          (Term.mul (betaModTermTerm step leftIdx)
+            (betaPairBezoutNegativeCoeffTerm
+              rightIdx scale)))) :=
+    BProv_Ax_s_betaPair_negative_bezout hindex hstep
+  simpa [betaModTermTerm] using
+    BProv_Ax_s_crtPositiveInverse_of_negative hnegative
 
 /-- Compose two explicit positive inverse certificates modulo the same term.
 

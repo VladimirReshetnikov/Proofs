@@ -325,6 +325,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_crtPositiveInverseTerm_add
 #check @PA.Formula.BProv_Ax_s_crtPositiveInverseQuotTerm_add
 #check @PA.Formula.BProv_Ax_s_crtPositiveInverse_of_negative
+#check @PA.Formula.BProv_Ax_s_betaPair_negative_bezout
+#check @PA.Formula.BProv_Ax_s_betaPair_positive_inverse
 #check @PA.Formula.BProv_Ax_s_crtInverse_mul
 #check @PA.Formula.BProv_Ax_s_crtProductFactor_mul
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_elim_opened
@@ -946,6 +948,8 @@ open SetTheory
 #check @PA.Formula.crtInverseProductQuotTerm
 #check @PA.Formula.crtPositiveInverseTerm
 #check @PA.Formula.crtPositiveInverseQuotTerm
+#check @PA.Formula.betaPairBezoutPositiveCoeffTerm
+#check @PA.Formula.betaPairBezoutNegativeCoeffTerm
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
