@@ -2737,6 +2737,23 @@ def evenSuccBetaCodeTerm (low : Nat) : Term :=
   let cur := evenSuccBetaStepTerm low
   Term.add (Term.mul cur (Term.succ cur)) cur
 
+/-- Open beta step term for a generic one-step odd-current trace.
+
+The definition deliberately records only the candidate current value.  The
+fact that this current value is odd, and the identity of its half, are supplied
+by the `oddDoubleEqAt` hypotheses of the later lemmas. -/
+def oddCurrentBetaStepTerm (cur : Nat) : Term :=
+  Term.var cur
+
+/-- Open beta code witness for a generic one-step odd-current trace.
+
+For a current term `cur`, this is `cur * S cur + cur`.  Under a separate proof
+of `cur = S (h + h)`, it has remainders `cur` at index `0` and `h` at index
+`1`; those arithmetic facts are proved by the corresponding PA lemmas below. -/
+def oddCurrentBetaCodeTerm (cur : Nat) : Term :=
+  let current := oddCurrentBetaStepTerm cur
+  Term.add (Term.mul current (Term.succ current)) current
+
 /-- A single adjacent beta-coded sequence step is a binary-halving step:
 the current value is `2 * next + bit`, with `bit ∈ {0,1}`. -/
 def betaDiv2StepWitnessAt (code step idx : Nat) : Formula :=
@@ -19298,6 +19315,58 @@ theorem BProv_Ax_s_evenSuccBeta_entryComponent_zero
     term_subst_up_up_up_instTerm_rename_four_succ,
     term_subst_up_up_up_instTerm_rename_five_succ] using hconst
 
+/-- The generic odd-current beta code has zero-index entry equal to its current
+value.  No oddness assumption is needed for the zeroth beta component. -/
+theorem BProv_Ax_s_oddCurrentBeta_entryComponent_zero
+    {G : List Formula} {cur : Nat} :
+    BProv Ax_s G
+      (subst (instTerm (oddCurrentBetaStepTerm cur))
+        (subst (Term.upSubst (instTerm (oddCurrentBetaCodeTerm cur)))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) (Term.var cur))
+            1 0 0))) := by
+  let current : Term := oddCurrentBetaStepTerm cur
+  let code : Term := oddCurrentBetaCodeTerm cur
+  have hmod : BProv Ax_s G
+      (eq (Term.succ current) (betaModTermTerm current Term.zero)) := by
+    exact BProv_eqSym (BProv_Ax_s_betaModTermTerm_zero current)
+  have hlt : BProv Ax_s G (ltTermAt current (Term.succ current)) :=
+    BProv_Ax_s_ltTermAt_self_succ current
+  have hvalue : BProv Ax_s G
+      (eq code (Term.add (Term.mul current (Term.succ current)) current)) := by
+    simpa [code, current, oddCurrentBetaCodeTerm,
+      oddCurrentBetaStepTerm] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.add (Term.mul current (Term.succ current)) current))
+  have hrem : BProv Ax_s G
+      (remTermTermAt current code (Term.succ current)) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      (rem := current) (value := code) (modulus := Term.succ current)
+      (quotient := current) hlt hvalue
+  have hbeta : BProv Ax_s G
+      (betaTermTermAt current code current Term.zero) :=
+    BProv_Ax_s_betaTermTermAt_of_rem
+      (out := current) (code := code) (step := current) (idx := Term.zero)
+      (modulus := Term.succ current) hmod hrem
+  have hconst : BProv Ax_s G
+      (betaTermTermAtConstIdx current code current 0) :=
+    BProv_Ax_s_betaTermTermAtConstIdx_of_beta hbeta
+  simpa [current, code, oddCurrentBetaStepTerm, oddCurrentBetaCodeTerm,
+    betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
+    betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+    Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+    term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ] using hconst
+
 /-- Under the even branch assumption `low = h + h`, the prospective
 index-one remainder `h` is below the beta modulus for the explicit
 even-successor trace.  This is the strict-bound half of the later
@@ -19341,6 +19410,38 @@ theorem BProv_Ax_s_evenSuccBeta_index_one_bound
         (betaModTermTerm cur (Term.succ Term.zero))) :=
     BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self cur)
   simpa [half, cur, evenSuccBetaStepTerm] using
+    BProv_ltTermAt_of_eq_right hmod hltSuccDouble
+
+/-- Under the odd-current branch assumption `cur = 2*h+1`, the prospective
+index-one remainder `h` is below the beta modulus for the generic one-step
+trace. -/
+theorem BProv_Ax_s_oddCurrentBeta_index_one_bound
+    {G : List Formula} {cur half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G
+      (ltTermAt (Term.var half)
+        (betaModTermTerm (oddCurrentBetaStepTerm cur) (Term.succ Term.zero))) := by
+  let halfTerm : Term := Term.var half
+  let current : Term := oddCurrentBetaStepTerm cur
+  have hhalfLeCurrent : BProv Ax_s G (leTermAt halfTerm current) := by
+    simpa [halfTerm, current, oddCurrentBetaStepTerm, leTermAt_var] using
+      BProv_Ax_s_leAt_half_of_oddDoubleEqAt hodd
+  have hcurrentLeDouble : BProv Ax_s G
+      (leTermAt current (Term.add current current)) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      (lower := current) (upper := Term.add current current) (diff := current)
+      (BProv_eqRefl (B := Ax_s) (G := G) (Term.add current current))
+  have hhalfLeCurrentDouble : BProv Ax_s G
+      (leTermAt halfTerm (Term.add current current)) :=
+    BProv_Ax_s_leTermAt_trans hhalfLeCurrent hcurrentLeDouble
+  have hltSuccDouble : BProv Ax_s G
+      (ltTermAt halfTerm (Term.succ (Term.add current current))) :=
+    BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hhalfLeCurrentDouble
+  have hmod : BProv Ax_s G
+      (eq (Term.succ (Term.add current current))
+        (betaModTermTerm current (Term.succ Term.zero))) :=
+    BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self current)
+  simpa [halfTerm, current, oddCurrentBetaStepTerm] using
     BProv_ltTermAt_of_eq_right hmod hltSuccDouble
 
 /-- Algebraic core of the odd-current beta trace: if `cur = S h + h`, then
@@ -19488,6 +19589,69 @@ theorem BProv_Ax_s_evenSuccBeta_index_one_value
   simpa [half, cur, code, evenSuccBetaStepTerm] using
     BProv_eqTrans hcodeDecomp hrhsMod
 
+/-- Under the odd-current branch assumption `cur = 2*h+1`, the generic
+one-step beta code has index-one division form with remainder `h` and quotient
+`S h`. -/
+theorem BProv_Ax_s_oddCurrentBeta_index_one_value
+    {G : List Formula} {cur half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G
+      (eq (oddCurrentBetaCodeTerm cur)
+        (Term.add
+          (Term.mul (Term.succ (Term.var half))
+            (betaModTermTerm (oddCurrentBetaStepTerm cur) (Term.succ Term.zero)))
+          (Term.var half))) := by
+  let halfTerm : Term := Term.var half
+  let current : Term := oddCurrentBetaStepTerm cur
+  let code : Term := oddCurrentBetaCodeTerm cur
+  have hcurrentSuccDouble : BProv Ax_s G
+      (eq current (Term.succ (Term.add halfTerm halfTerm))) := by
+    simpa [current, oddCurrentBetaStepTerm, halfTerm, oddDoubleEqAt] using hodd
+  have hoddShape : BProv Ax_s G
+      (eq (Term.add (Term.succ halfTerm) halfTerm)
+        (Term.succ (Term.add halfTerm halfTerm))) :=
+    BProv_Ax_s_succ_add_terms halfTerm halfTerm
+  have hcurrentOdd : BProv Ax_s G
+      (eq current (Term.add (Term.succ halfTerm) halfTerm)) :=
+    BProv_eqTrans hcurrentSuccDouble (BProv_eqSym hoddShape)
+  have hcodeCore : BProv Ax_s G
+      (eq code (Term.add (Term.mul current (Term.succ current)) current)) := by
+    simpa [code, current, oddCurrentBetaCodeTerm,
+      oddCurrentBetaStepTerm] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (Term.add (Term.mul current (Term.succ current)) current))
+  have hcodeDecomp : BProv Ax_s G
+      (eq code
+        (Term.add
+          (Term.mul (Term.succ halfTerm)
+            (Term.succ (Term.add current current)))
+          halfTerm)) :=
+    BProv_eqTrans hcodeCore
+      (BProv_Ax_s_oddCurrent_beta_code_decomp hcurrentOdd)
+  have hmod : BProv Ax_s G
+      (eq (Term.succ (Term.add current current))
+        (betaModTermTerm current (Term.succ Term.zero))) :=
+    BProv_eqSym (BProv_Ax_s_betaModTermTerm_one_add_self current)
+  have hmulMod : BProv Ax_s G
+      (eq
+        (Term.mul (Term.succ halfTerm) (Term.succ (Term.add current current)))
+        (Term.mul (Term.succ halfTerm)
+          (betaModTermTerm current (Term.succ Term.zero)))) :=
+    BProv_eq_congr_mul_right (Term.succ halfTerm) hmod
+  have hrhsMod : BProv Ax_s G
+      (eq
+        (Term.add
+          (Term.mul (Term.succ halfTerm)
+            (Term.succ (Term.add current current)))
+          halfTerm)
+        (Term.add
+          (Term.mul (Term.succ halfTerm)
+            (betaModTermTerm current (Term.succ Term.zero)))
+          halfTerm)) :=
+    BProv_eq_congr_add_left halfTerm hmulMod
+  simpa [halfTerm, current, code, oddCurrentBetaStepTerm] using
+    BProv_eqTrans hcodeDecomp hrhsMod
+
 /-- Under the even branch assumption `low = h + h`, the explicit
 even-successor beta trace has index-one entry `h`.  This packages the separate
 strict-bound and value-equation lemmas into the constant-index beta component. -/
@@ -19535,6 +19699,64 @@ theorem BProv_Ax_s_evenSuccBeta_entryComponent_one
     betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
     betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
     betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+    Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+    Term.numeral, term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ] using hconst
+
+/-- Under the odd-current branch assumption `cur = 2*h+1`, the generic
+one-step beta trace has index-one entry `h`. -/
+theorem BProv_Ax_s_oddCurrentBeta_entryComponent_one
+    {G : List Formula} {cur half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G
+      (subst (instTerm (oddCurrentBetaStepTerm cur))
+        (subst (Term.upSubst (instTerm (oddCurrentBetaCodeTerm cur)))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n+2) (Term.var half))
+            1 0 1))) := by
+  let halfTerm : Term := Term.var half
+  let current : Term := oddCurrentBetaStepTerm cur
+  let code : Term := oddCurrentBetaCodeTerm cur
+  let modulus : Term := betaModTermTerm current (Term.succ Term.zero)
+  have hlt : BProv Ax_s G (ltTermAt halfTerm modulus) := by
+    simpa [halfTerm, current, modulus] using
+      BProv_Ax_s_oddCurrentBeta_index_one_bound hodd
+  have hvalue : BProv Ax_s G
+      (eq code (Term.add (Term.mul (Term.succ halfTerm) modulus) halfTerm)) := by
+    simpa [halfTerm, current, code, modulus] using
+      BProv_Ax_s_oddCurrentBeta_index_one_value hodd
+  have hrem : BProv Ax_s G (remTermTermAt halfTerm code modulus) :=
+    BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      (rem := halfTerm) (value := code) (modulus := modulus)
+      (quotient := Term.succ halfTerm) hlt hvalue
+  have hmod : BProv Ax_s G
+      (eq modulus (betaModTermTerm current (Term.succ Term.zero))) := by
+    simpa [modulus] using
+      (BProv_eqRefl (B := Ax_s) (G := G)
+        (betaModTermTerm current (Term.succ Term.zero)))
+  have hbeta : BProv Ax_s G
+      (betaTermTermAt halfTerm code current (Term.succ Term.zero)) :=
+    BProv_Ax_s_betaTermTermAt_of_rem
+      (out := halfTerm) (code := code) (step := current)
+      (idx := Term.succ Term.zero) (modulus := modulus) hmod hrem
+  have hconst : BProv Ax_s G
+      (betaTermTermAtConstIdx halfTerm code current 1) := by
+    simpa [Term.numeral] using
+      (BProv_Ax_s_betaTermTermAtConstIdx_of_beta
+        (out := halfTerm) (code := code) (step := current)
+        (idxValue := 1) hbeta)
+  simpa [halfTerm, current, code, oddCurrentBetaStepTerm,
+    oddCurrentBetaCodeTerm, betaTermTermAtConstIdx, betaTermTermAt,
+    remTermTermAt, betaTermAtConstIdx, betaTermAt, remTermAt,
+    ltTermAt, betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
     Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
     Term.numeral, term_rename_up_succ_rename_succ,
     term_subst_instTerm_rename_succ,
@@ -19614,6 +19836,78 @@ theorem BProv_Ax_s_evenSuccBeta_div2Step_one
         (subst (Term.upSubst (instTerm (Term.var lowHalf)))
           (subst (Term.upSubst (Term.upSubst
             (instTerm (evenSuccBetaStepTerm low))))
+            (and (boolAt 0)
+              (eq (Term.var 2)
+                (Term.add (Term.add (Term.var 1) (Term.var 1))
+                  (Term.var 0))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hboolBody heqBody)
+  simpa [div2StepAt] using hbody
+
+/-- Under the odd-current branch assumption `cur = 2*h+1`, the generic
+one-step trace satisfies the object-level halving step with output bit `1`. -/
+theorem BProv_Ax_s_oddCurrentBeta_div2Step_one
+    {G : List Formula} {cur half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var half)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (oddCurrentBetaStepTerm cur))))
+            (div2StepAt 2 1 0)))) := by
+  let halfTerm : Term := Term.var half
+  let double : Term := Term.add halfTerm halfTerm
+  let current : Term := oddCurrentBetaStepTerm cur
+  have hbool : BProv Ax_s G (subst (instTerm (Term.numeral 1)) (boolAt 0)) := by
+    exact BProv_orI2 (B := Ax_s) (G := G)
+      (a := subst (instTerm (Term.numeral 1)) (zeroAt 0))
+      (by
+        simpa [oneAt, eqConstAt, subst, instTerm, Term.subst,
+          Term.numeral] using
+          (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral 1)))
+  have hboolBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var half)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (oddCurrentBetaStepTerm cur))))
+            (boolAt 0)))) := by
+    simpa [boolAt, zeroAt, oneAt, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.numeral] using hbool
+  have hcurrentOdd : BProv Ax_s G (eq current (Term.succ double)) := by
+    simpa [current, oddCurrentBetaStepTerm, halfTerm, double,
+      oddDoubleEqAt] using hodd
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add double (Term.succ Term.zero))
+        (Term.succ (Term.add double Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms double Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.succ (Term.add double Term.zero)) (Term.succ double)) :=
+    BProv_eq_congr_succ
+      (BProv_weaken_nil (BProv_Ax_s_addZero_term double))
+  have haddOne : BProv Ax_s G
+      (eq (Term.add double (Term.succ Term.zero)) (Term.succ double)) :=
+    BProv_eqTrans haddSucc haddZero
+  have hstepEq : BProv Ax_s G
+      (eq current (Term.add double (Term.succ Term.zero))) :=
+    BProv_eqTrans hcurrentOdd (BProv_eqSym haddOne)
+  have heqBody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var half)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (oddCurrentBetaStepTerm cur))))
+            (eq (Term.var 2)
+              (Term.add (Term.add (Term.var 1) (Term.var 1))
+                (Term.var 0)))))) := by
+    simpa [halfTerm, double, current, oddCurrentBetaStepTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp, Term.numeral,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hstepEq
+  have hbody : BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (Term.var half)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (oddCurrentBetaStepTerm cur))))
             (and (boolAt 0)
               (eq (Term.var 2)
                 (Term.add (Term.add (Term.var 1) (Term.var 1))
