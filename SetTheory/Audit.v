@@ -188,6 +188,14 @@ Check PA.Formula.BProv_Ax_s_betaModTermTerm_zero.
 Check PA.Formula.BProv_Ax_s_betaModTermTerm_one_add_self.
 Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_modulus.
 Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_double_step_of_one.
+Check PA.Formula.BProv_Ax_s_ltTermAt_succ_right_of_leTermAt.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_modulus_one_square.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_value.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_entries.
 Check PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_succ.
 Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
 Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms.

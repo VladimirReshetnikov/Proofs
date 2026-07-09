@@ -14014,6 +14014,77 @@ Proof.
     (ltTermAt (tSucc s) (tSucc t)) sentence_ax_s hlt hbody).
 Qed.
 
+(* Lean: BProv_Ax_s_ltTermAt_succ_right_of_leTermAt *)
+Lemma BProv_Ax_s_ltTermAt_succ_right_of_leTermAt : forall G s t,
+  BProv Ax_s G (leTermAt s t) ->
+  BProv Ax_s G (ltTermAt s (tSucc t)).
+Proof.
+  intros G s t hle.
+  set (leBody :=
+    pEq (tAdd (Term.rename S s) (tVar 0)) (Term.rename S t)).
+  change (BProv Ax_s G (pEx leBody)) in hle.
+  assert (hbody : BProv Ax_s (leBody :: map (rename S) G)
+      (rename S (ltTermAt s (tSucc t)))).
+  {
+    set (C := leBody :: map (rename S) G).
+    assert (hleEq : BProv Ax_s C
+        (pEq (tAdd (Term.rename S s) (tVar 0))
+          (Term.rename S t))).
+    {
+      apply BProv_ass.
+      unfold C, leBody. simpl. left. reflexivity.
+    }
+    assert (haddSucc : BProv Ax_s C
+        (pEq (tAdd (Term.rename S s) (tSucc (tVar 0)))
+          (tSucc (tAdd (Term.rename S s) (tVar 0))))).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hsuccEq : BProv Ax_s C
+        (pEq (tSucc (tAdd (Term.rename S s) (tVar 0)))
+          (tSucc (Term.rename S t)))).
+    {
+      exact (BProv_eq_congr_succ Ax_s C
+        (tAdd (Term.rename S s) (tVar 0))
+        (Term.rename S t) hleEq).
+    }
+    assert (htarget : BProv Ax_s C
+        (pEq (tAdd (Term.rename S s) (tSucc (tVar 0)))
+          (tSucc (Term.rename S t)))).
+    {
+      exact (BProv_eqTrans Ax_s C _ _ _ haddSucc hsuccEq).
+    }
+    assert (hinst : BProv Ax_s C
+        (subst (instTerm (tVar 0))
+          (pEq
+            (tAdd (Term.rename S (Term.rename S s))
+              (tSucc (tVar 0)))
+            (Term.rename S (Term.rename S (tSucc t)))))).
+    {
+      simpl.
+      rewrite (term_subst_instTerm_rename_succ
+        (Term.rename S s) (tVar 0)).
+      rewrite (term_subst_instTerm_rename_succ
+        (Term.rename S t) (tVar 0)).
+      exact htarget.
+    }
+    pose proof (BProv_exI Ax_s C
+      (pEq
+        (tAdd (Term.rename S (Term.rename S s))
+          (tSucc (tVar 0)))
+        (Term.rename S (Term.rename S (tSucc t))))
+      (tVar 0) hinst) as hex.
+    unfold ltTermAt.
+    simpl.
+    rewrite (term_rename_up_succ_rename_succ s).
+    rewrite (term_rename_up_succ_rename_succ t).
+    exact hex.
+  }
+  exact (BProv_exE_of_sentences Ax_s G leBody
+    (ltTermAt s (tSucc t)) sentence_ax_s hle hbody).
+Qed.
+
 (* Lean: BProv_Ax_s_leTermAt_or_gtTermAt_all *)
 Lemma BProv_Ax_s_leTermAt_or_gtTermAt_all :
   BProv Ax_s []
@@ -23358,6 +23429,714 @@ Proof.
   }
   exact (BProv_Ax_s_betaTermTermAt_of_eq_modulus
     G out code step (tSucc tZero) (tAdd step step) tZero hmod hbeta).
+Qed.
+
+(* Lean: BProv_Ax_s_twoEntryBetaTerm_zero *)
+Lemma BProv_Ax_s_twoEntryBetaTerm_zero : forall G cur next,
+  BProv Ax_s G
+    (betaTermTermAt cur
+      (twoEntryBetaCodeTerm cur next)
+      (twoEntryBetaStepTerm cur next) tZero).
+Proof.
+  intros G cur next.
+  set (s := twoEntryBetaStepTerm cur next).
+  set (modulus := tSucc s).
+  set (quotient :=
+    tAdd
+      (tMul (Term.numeral 2) next)
+      (tMul (tMul (Term.numeral 4) s) cur)).
+  assert (hcurAddSucc : BProv Ax_s G
+      (pEq (tAdd cur (tSucc next)) s)).
+  {
+    unfold s, twoEntryBetaStepTerm.
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addSucc_terms.
+  }
+  assert (hcurLeStep : BProv Ax_s G (leTermAt cur s)).
+  {
+    exact (BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      G cur s (tSucc next) (BProv_eqSym Ax_s G _ _ hcurAddSucc)).
+  }
+  assert (hlt : BProv Ax_s G (ltTermAt cur modulus)).
+  {
+    unfold modulus.
+    exact (BProv_Ax_s_ltTermAt_succ_right_of_leTermAt
+      G cur s hcurLeStep).
+  }
+  assert (hmod : BProv Ax_s G
+      (pEq modulus (betaModTermTerm s tZero))).
+  {
+    unfold modulus.
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_betaModTermTerm_zero G s)).
+  }
+  assert (hcodeCore : BProv Ax_s G
+      (pEq (twoEntryBetaCodeTerm cur next)
+        (tAdd cur (tMul modulus quotient)))).
+  {
+    unfold twoEntryBetaCodeTerm, modulus, quotient, s,
+      twoEntryBetaStepTerm.
+    apply BProv_eqRefl.
+  }
+  assert (haddComm : BProv Ax_s G
+      (pEq (tAdd cur (tMul modulus quotient))
+        (tAdd (tMul modulus quotient) cur))).
+  { apply BProv_Ax_s_add_comm_terms. }
+  assert (hmulComm : BProv Ax_s G
+      (pEq (tMul modulus quotient) (tMul quotient modulus))).
+  { apply BProv_Ax_s_mul_comm_terms. }
+  assert (hmulCong : BProv Ax_s G
+      (pEq (tAdd (tMul modulus quotient) cur)
+        (tAdd (tMul quotient modulus) cur))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ cur hmulComm).
+  }
+  assert (hvalue : BProv Ax_s G
+      (pEq (twoEntryBetaCodeTerm cur next)
+        (tAdd (tMul quotient modulus) cur))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hcodeCore
+      (BProv_eqTrans Ax_s G _ _ _ haddComm hmulCong)).
+  }
+  assert (hrem : BProv Ax_s G
+      (remTermTermAt cur (twoEntryBetaCodeTerm cur next) modulus)).
+  {
+    exact (BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      G cur (twoEntryBetaCodeTerm cur next) modulus quotient hlt hvalue).
+  }
+  exact (BProv_Ax_s_betaTermTermAt_of_rem
+    G cur (twoEntryBetaCodeTerm cur next) s tZero modulus hmod hrem).
+Qed.
+
+(* Lean: BProv_Ax_s_twoEntryBetaTerm_one_bound *)
+Lemma BProv_Ax_s_twoEntryBetaTerm_one_bound : forall G cur next,
+  BProv Ax_s G
+    (ltTermAt next
+      (betaModTermTerm (twoEntryBetaStepTerm cur next)
+        (tSucc tZero))).
+Proof.
+  intros G cur next.
+  set (sum := tAdd cur next).
+  set (s := twoEntryBetaStepTerm cur next).
+  assert (hsumComm : BProv Ax_s G
+      (pEq sum (tAdd next cur))).
+  {
+    unfold sum.
+    apply BProv_Ax_s_add_comm_terms.
+  }
+  assert (hnextLeSum : BProv Ax_s G (leTermAt next sum)).
+  {
+    exact (BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      G next sum cur hsumComm).
+  }
+  assert (hsumLeStep : BProv Ax_s G (leTermAt sum s)).
+  {
+    unfold s, twoEntryBetaStepTerm, sum.
+    apply BProv_Ax_s_leTermAt_self_succ.
+  }
+  assert (hnextLeStep : BProv Ax_s G (leTermAt next s)).
+  {
+    exact (BProv_Ax_s_leTermAt_trans G next sum s
+      hnextLeSum hsumLeStep).
+  }
+  assert (hstepLeDouble : BProv Ax_s G
+      (leTermAt s (tAdd s s))).
+  {
+    exact (BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      G s (tAdd s s) s (BProv_eqRefl Ax_s G (tAdd s s))).
+  }
+  assert (hnextLeDouble : BProv Ax_s G
+      (leTermAt next (tAdd s s))).
+  {
+    exact (BProv_Ax_s_leTermAt_trans G next s (tAdd s s)
+      hnextLeStep hstepLeDouble).
+  }
+  assert (hlt : BProv Ax_s G
+      (ltTermAt next (tSucc (tAdd s s)))).
+  {
+    exact (BProv_Ax_s_ltTermAt_succ_right_of_leTermAt
+      G next (tAdd s s) hnextLeDouble).
+  }
+  assert (hmod : BProv Ax_s G
+      (pEq (tSucc (tAdd s s))
+        (betaModTermTerm s (tSucc tZero)))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_betaModTermTerm_one_add_self G s)).
+  }
+  unfold s in *.
+  exact (BProv_ltTermAt_of_eq_right Ax_s G _ _ _ hmod hlt).
+Qed.
+
+(* Lean: BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero *)
+Lemma BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero :
+  forall G step,
+  let modulusZero := tSucc step in
+  let modulusOne := tSucc (tAdd step step) in
+  BProv Ax_s G
+    (pEq (tMul (Term.numeral 2) modulusZero)
+      (tSucc modulusOne)).
+Proof.
+  intros G step modulusZero modulusOne.
+  assert (hcomm : BProv Ax_s G
+      (pEq (tMul (Term.numeral 2) modulusZero)
+        (tMul modulusZero (Term.numeral 2)))).
+  { apply BProv_Ax_s_mul_comm_terms. }
+  assert (htwo : BProv Ax_s G
+      (pEq (tMul modulusZero (Term.numeral 2))
+        (tAdd modulusZero modulusZero))).
+  { apply BProv_Ax_s_mul_two_right_terms. }
+  assert (hsuccAdd : BProv Ax_s G
+      (pEq (tAdd modulusZero modulusZero)
+        (tSucc (tAdd step modulusZero)))).
+  {
+    unfold modulusZero.
+    apply BProv_Ax_s_succ_add_terms.
+  }
+  assert (haddSucc : BProv Ax_s G
+      (pEq (tAdd step modulusZero)
+        (tSucc (tAdd step step)))).
+  {
+    unfold modulusZero.
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addSucc_terms.
+  }
+  assert (hsuccCong : BProv Ax_s G
+      (pEq (tSucc (tAdd step modulusZero))
+        (tSucc (tSucc (tAdd step step))))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G _ _ haddSucc).
+  }
+  unfold modulusOne.
+  exact (BProv_eqTrans Ax_s G _ _ _ hcomm
+    (BProv_eqTrans Ax_s G _ _ _ htwo
+      (BProv_eqTrans Ax_s G _ _ _ hsuccAdd hsuccCong))).
+Qed.
+
+(* Lean: BProv_Ax_s_twoEntryBetaTerm_modulus_one_square *)
+Lemma BProv_Ax_s_twoEntryBetaTerm_modulus_one_square :
+  forall G step,
+  let modulusZero := tSucc step in
+  let doubleStep := tAdd step step in
+  let modulusOne := tSucc doubleStep in
+  let fourStep := tMul (Term.numeral 4) step in
+  BProv Ax_s G
+    (pEq (tMul modulusOne modulusOne)
+      (tSucc (tMul fourStep modulusZero))).
+Proof.
+  intros G step modulusZero doubleStep modulusOne fourStep.
+  set (squareAtom := tMul step step).
+  set (fourSquares :=
+    tAdd (tAdd squareAtom squareAtom)
+      (tAdd squareAtom squareAtom)).
+  assert (htwoStep : BProv Ax_s G
+      (pEq (tMul (Term.numeral 2) step) doubleStep)).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _
+      (BProv_Ax_s_mul_comm_terms G (Term.numeral 2) step)
+      (BProv_Ax_s_mul_two_right_terms G step)).
+  }
+  assert (hfourNumeral : BProv Ax_s G
+      (pEq (Term.numeral 4)
+        (tAdd (Term.numeral 2) (Term.numeral 2)))).
+  {
+    apply BProv_weaken_nil.
+    exact (BProv_eqSym Ax_s [] _ _ (BProv_Ax_s_addNumerals 2 2)).
+  }
+  assert (hfourArg : BProv Ax_s G
+      (pEq fourStep
+        (tMul (tAdd (Term.numeral 2) (Term.numeral 2)) step))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G _ _ step hfourNumeral).
+  }
+  assert (hfourDist : BProv Ax_s G
+      (pEq
+        (tMul (tAdd (Term.numeral 2) (Term.numeral 2)) step)
+        (tAdd
+          (tMul (Term.numeral 2) step)
+          (tMul (Term.numeral 2) step)))).
+  { apply BProv_Ax_s_add_mul_terms. }
+  assert (hfourNorm : BProv Ax_s G
+      (pEq
+        (tAdd
+          (tMul (Term.numeral 2) step)
+          (tMul (Term.numeral 2) step))
+        (tAdd doubleStep doubleStep))).
+  {
+    exact (BProv_eq_congr_add Ax_s G _ _ _ _ htwoStep htwoStep).
+  }
+  assert (hfourStep : BProv Ax_s G
+      (pEq fourStep (tAdd doubleStep doubleStep))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hfourArg
+      (BProv_eqTrans Ax_s G _ _ _ hfourDist hfourNorm)).
+  }
+  assert (hdoubleSquareDist : BProv Ax_s G
+      (pEq (tMul doubleStep doubleStep)
+        (tAdd (tMul step doubleStep) (tMul step doubleStep)))).
+  {
+    unfold doubleStep.
+    apply BProv_Ax_s_add_mul_terms.
+  }
+  assert (hstepDouble : BProv Ax_s G
+      (pEq (tMul step doubleStep)
+        (tAdd squareAtom squareAtom))).
+  {
+    unfold doubleStep, squareAtom.
+    apply BProv_Ax_s_mul_add_terms.
+  }
+  assert (hdoubleSquareNorm : BProv Ax_s G
+      (pEq (tMul doubleStep doubleStep) fourSquares)).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hdoubleSquareDist
+      (BProv_eq_congr_add Ax_s G _ _ _ _ hstepDouble hstepDouble)).
+  }
+  assert (hfourMulArg : BProv Ax_s G
+      (pEq (tMul fourStep step)
+        (tMul (tAdd doubleStep doubleStep) step))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G _ _ step hfourStep).
+  }
+  assert (hfourMulDist : BProv Ax_s G
+      (pEq (tMul (tAdd doubleStep doubleStep) step)
+        (tAdd (tMul doubleStep step) (tMul doubleStep step)))).
+  { apply BProv_Ax_s_add_mul_terms. }
+  assert (hdoubleMulStep : BProv Ax_s G
+      (pEq (tMul doubleStep step)
+        (tAdd squareAtom squareAtom))).
+  {
+    unfold doubleStep, squareAtom.
+    apply BProv_Ax_s_add_mul_terms.
+  }
+  assert (hfourMulNorm : BProv Ax_s G
+      (pEq (tMul fourStep step) fourSquares)).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hfourMulArg
+      (BProv_eqTrans Ax_s G _ _ _ hfourMulDist
+        (BProv_eq_congr_add Ax_s G _ _ _ _
+          hdoubleMulStep hdoubleMulStep))).
+  }
+  assert (hdoubleSquare : BProv Ax_s G
+      (pEq (tMul doubleStep doubleStep) (tMul fourStep step))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hdoubleSquareNorm
+      (BProv_eqSym Ax_s G _ _ hfourMulNorm)).
+  }
+  assert (hcoreAssoc : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tMul doubleStep doubleStep) doubleStep)
+          doubleStep)
+        (tAdd (tMul doubleStep doubleStep)
+          (tAdd doubleStep doubleStep)))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hcoreCong : BProv Ax_s G
+      (pEq
+        (tAdd (tMul doubleStep doubleStep)
+          (tAdd doubleStep doubleStep))
+        (tAdd (tMul fourStep step) fourStep))).
+  {
+    exact (BProv_eq_congr_add Ax_s G _ _ _ _ hdoubleSquare
+      (BProv_eqSym Ax_s G _ _ hfourStep)).
+  }
+  assert (hfourMulSucc : BProv Ax_s G
+      (pEq (tMul fourStep modulusZero)
+        (tAdd (tMul fourStep step) fourStep))).
+  {
+    unfold modulusZero.
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulSucc_terms.
+  }
+  assert (hcore : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tMul doubleStep doubleStep) doubleStep)
+          doubleStep)
+        (tMul fourStep modulusZero))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hcoreAssoc
+      (BProv_eqTrans Ax_s G _ _ _ hcoreCong
+        (BProv_eqSym Ax_s G _ _ hfourMulSucc))).
+  }
+  assert (hsquareMulSucc : BProv Ax_s G
+      (pEq (tMul modulusOne modulusOne)
+        (tAdd (tMul modulusOne doubleStep) modulusOne))).
+  {
+    unfold modulusOne.
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulSucc_terms.
+  }
+  assert (hsuccMul : BProv Ax_s G
+      (pEq (tMul modulusOne doubleStep)
+        (tAdd (tMul doubleStep doubleStep) doubleStep))).
+  {
+    unfold modulusOne.
+    apply BProv_Ax_s_succ_mul_terms.
+  }
+  assert (hsuccMulCong : BProv Ax_s G
+      (pEq (tAdd (tMul modulusOne doubleStep) modulusOne)
+        (tAdd
+          (tAdd (tMul doubleStep doubleStep) doubleStep)
+          modulusOne))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ modulusOne hsuccMul).
+  }
+  assert (haddSucc : BProv Ax_s G
+      (pEq
+        (tAdd
+          (tAdd (tMul doubleStep doubleStep) doubleStep)
+          modulusOne)
+        (tSucc
+          (tAdd
+            (tAdd (tMul doubleStep doubleStep) doubleStep)
+            doubleStep)))).
+  {
+    unfold modulusOne.
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_addSucc_terms.
+  }
+  assert (hcoreSucc : BProv Ax_s G
+      (pEq
+        (tSucc
+          (tAdd
+            (tAdd (tMul doubleStep doubleStep) doubleStep)
+            doubleStep))
+        (tSucc (tMul fourStep modulusZero)))).
+  {
+    exact (BProv_eq_congr_succ Ax_s G _ _ hcore).
+  }
+  exact (BProv_eqTrans Ax_s G _ _ _ hsquareMulSucc
+    (BProv_eqTrans Ax_s G _ _ _ hsuccMulCong
+      (BProv_eqTrans Ax_s G _ _ _ haddSucc hcoreSucc))).
+Qed.
+
+(* Lean: BProv_Ax_s_twoEntryBetaTerm_one_value *)
+Lemma BProv_Ax_s_twoEntryBetaTerm_one_value : forall G cur next,
+  let step := twoEntryBetaStepTerm cur next in
+  let modulusOne := tSucc (tAdd step step) in
+  let quotientOne := tAdd next (tMul modulusOne cur) in
+  BProv Ax_s G
+    (pEq (twoEntryBetaCodeTerm cur next)
+      (tAdd (tMul quotientOne modulusOne) next)).
+Proof.
+  intros G cur next step modulusOne quotientOne.
+  set (modulusZero := tSucc step).
+  set (fourStep := tMul (Term.numeral 4) step).
+  set (twiceNext := tMul (Term.numeral 2) next).
+  set (curPart := tMul fourStep cur).
+  set (quotientZero := tAdd twiceNext curPart).
+  set (nextProduct := tMul next modulusOne).
+  set (curProduct := tMul (tMul modulusOne cur) modulusOne).
+  set (normal := tAdd nextProduct (tAdd curProduct next)).
+  assert (hzeroTwoComm : BProv Ax_s G
+      (pEq (tMul modulusZero (Term.numeral 2))
+        (tMul (Term.numeral 2) modulusZero))).
+  { apply BProv_Ax_s_mul_comm_terms. }
+  assert (htwoCert : BProv Ax_s G
+      (pEq (tMul (Term.numeral 2) modulusZero)
+        (tSucc modulusOne))).
+  {
+    exact (BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero G step).
+  }
+  assert (hzeroTwo : BProv Ax_s G
+      (pEq (tMul modulusZero (Term.numeral 2))
+        (tSucc modulusOne))).
+  { exact (BProv_eqTrans Ax_s G _ _ _ hzeroTwoComm htwoCert). }
+  assert (hnextAssoc : BProv Ax_s G
+      (pEq (tMul modulusZero twiceNext)
+        (tMul (tMul modulusZero (Term.numeral 2)) next))).
+  {
+    unfold twiceNext.
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_mul_assoc_terms G modulusZero
+        (Term.numeral 2) next)).
+  }
+  assert (hnextFactor : BProv Ax_s G
+      (pEq
+        (tMul (tMul modulusZero (Term.numeral 2)) next)
+        (tMul (tSucc modulusOne) next))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G _ _ next hzeroTwo).
+  }
+  assert (hnextSucc : BProv Ax_s G
+      (pEq (tMul (tSucc modulusOne) next)
+        (tAdd (tMul modulusOne next) next))).
+  { apply BProv_Ax_s_succ_mul_terms. }
+  assert (hnextComm : BProv Ax_s G
+      (pEq (tMul modulusOne next) nextProduct)).
+  {
+    unfold nextProduct.
+    apply BProv_Ax_s_mul_comm_terms.
+  }
+  assert (hnextCommCong : BProv Ax_s G
+      (pEq (tAdd (tMul modulusOne next) next)
+        (tAdd nextProduct next))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ next hnextComm).
+  }
+  assert (hnextPart : BProv Ax_s G
+      (pEq (tMul modulusZero twiceNext)
+        (tAdd nextProduct next))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hnextAssoc
+      (BProv_eqTrans Ax_s G _ _ _ hnextFactor
+        (BProv_eqTrans Ax_s G _ _ _ hnextSucc hnextCommCong))).
+  }
+  assert (hcurAssoc : BProv Ax_s G
+      (pEq (tMul modulusZero curPart)
+        (tMul (tMul modulusZero fourStep) cur))).
+  {
+    unfold curPart.
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_mul_assoc_terms G modulusZero fourStep cur)).
+  }
+  assert (hzeroFourComm : BProv Ax_s G
+      (pEq (tMul modulusZero fourStep)
+        (tMul fourStep modulusZero))).
+  { apply BProv_Ax_s_mul_comm_terms. }
+  assert (hcurFactor : BProv Ax_s G
+      (pEq (tMul (tMul modulusZero fourStep) cur)
+        (tMul (tMul fourStep modulusZero) cur))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G _ _ cur hzeroFourComm).
+  }
+  assert (hcurInside : BProv Ax_s G
+      (pEq (tMul modulusZero curPart)
+        (tMul (tMul fourStep modulusZero) cur))).
+  { exact (BProv_eqTrans Ax_s G _ _ _ hcurAssoc hcurFactor). }
+  assert (hcurInsideCong : BProv Ax_s G
+      (pEq (tAdd cur (tMul modulusZero curPart))
+        (tAdd cur (tMul (tMul fourStep modulusZero) cur)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G cur _ _ hcurInside).
+  }
+  assert (hcurAddComm : BProv Ax_s G
+      (pEq (tAdd cur (tMul (tMul fourStep modulusZero) cur))
+        (tAdd (tMul (tMul fourStep modulusZero) cur) cur))).
+  { apply BProv_Ax_s_add_comm_terms. }
+  assert (hcurSuccMul : BProv Ax_s G
+      (pEq (tMul (tSucc (tMul fourStep modulusZero)) cur)
+        (tAdd (tMul (tMul fourStep modulusZero) cur) cur))).
+  { apply BProv_Ax_s_succ_mul_terms. }
+  assert (hsquare : BProv Ax_s G
+      (pEq (tMul modulusOne modulusOne)
+        (tSucc (tMul fourStep modulusZero)))).
+  {
+    exact (BProv_Ax_s_twoEntryBetaTerm_modulus_one_square G step).
+  }
+  assert (hsquareCong : BProv Ax_s G
+      (pEq (tMul (tMul modulusOne modulusOne) cur)
+        (tMul (tSucc (tMul fourStep modulusZero)) cur))).
+  {
+    exact (BProv_eq_congr_mul_left Ax_s G _ _ cur hsquare).
+  }
+  assert (hcurProductAssoc : BProv Ax_s G
+      (pEq (tMul (tMul modulusOne modulusOne) cur) curProduct)).
+  {
+    assert (hassoc : BProv Ax_s G
+        (pEq (tMul (tMul modulusOne modulusOne) cur)
+          (tMul modulusOne (tMul modulusOne cur)))).
+    { apply BProv_Ax_s_mul_assoc_terms. }
+    assert (hcomm : BProv Ax_s G
+        (pEq (tMul modulusOne (tMul modulusOne cur)) curProduct)).
+    {
+      unfold curProduct.
+      apply BProv_Ax_s_mul_comm_terms.
+    }
+    exact (BProv_eqTrans Ax_s G _ _ _ hassoc hcomm).
+  }
+  assert (hcurGroup : BProv Ax_s G
+      (pEq (tAdd cur (tMul modulusZero curPart)) curProduct)).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hcurInsideCong
+      (BProv_eqTrans Ax_s G _ _ _ hcurAddComm
+        (BProv_eqTrans Ax_s G _ _ _
+          (BProv_eqSym Ax_s G _ _ hcurSuccMul)
+          (BProv_eqTrans Ax_s G _ _ _
+            (BProv_eqSym Ax_s G _ _ hsquareCong)
+            hcurProductAssoc)))).
+  }
+  assert (hcodeCore : BProv Ax_s G
+      (pEq (twoEntryBetaCodeTerm cur next)
+        (tAdd cur (tMul modulusZero quotientZero)))).
+  {
+    unfold twoEntryBetaCodeTerm, modulusZero, quotientZero,
+      twiceNext, curPart, fourStep, step, twoEntryBetaStepTerm.
+    apply BProv_eqRefl.
+  }
+  assert (hcodeDist : BProv Ax_s G
+      (pEq (tAdd cur (tMul modulusZero quotientZero))
+        (tAdd cur
+          (tAdd (tMul modulusZero twiceNext)
+            (tMul modulusZero curPart))))).
+  {
+    assert (hdist : BProv Ax_s G
+        (pEq (tMul modulusZero quotientZero)
+          (tAdd (tMul modulusZero twiceNext)
+            (tMul modulusZero curPart)))).
+    {
+      unfold quotientZero.
+      apply BProv_Ax_s_mul_add_terms.
+    }
+    exact (BProv_eq_congr_add_right Ax_s G cur _ _ hdist).
+  }
+  assert (hregroupLeft : BProv Ax_s G
+      (pEq
+        (tAdd cur
+          (tAdd (tMul modulusZero twiceNext)
+            (tMul modulusZero curPart)))
+        (tAdd (tAdd cur (tMul modulusZero twiceNext))
+          (tMul modulusZero curPart)))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_add_assoc_terms G cur
+        (tMul modulusZero twiceNext) (tMul modulusZero curPart))).
+  }
+  assert (hregroupComm : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd cur (tMul modulusZero twiceNext))
+          (tMul modulusZero curPart))
+        (tAdd (tAdd (tMul modulusZero twiceNext) cur)
+          (tMul modulusZero curPart)))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _
+      (tMul modulusZero curPart)
+      (BProv_Ax_s_add_comm_terms G cur
+        (tMul modulusZero twiceNext))).
+  }
+  assert (hregroupRight : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd (tMul modulusZero twiceNext) cur)
+          (tMul modulusZero curPart))
+        (tAdd (tMul modulusZero twiceNext)
+          (tAdd cur (tMul modulusZero curPart))))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hregroup : BProv Ax_s G
+      (pEq
+        (tAdd cur
+          (tAdd (tMul modulusZero twiceNext)
+            (tMul modulusZero curPart)))
+        (tAdd (tMul modulusZero twiceNext)
+          (tAdd cur (tMul modulusZero curPart))))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hregroupLeft
+      (BProv_eqTrans Ax_s G _ _ _ hregroupComm hregroupRight)).
+  }
+  assert (hparts : BProv Ax_s G
+      (pEq
+        (tAdd (tMul modulusZero twiceNext)
+          (tAdd cur (tMul modulusZero curPart)))
+        (tAdd (tAdd nextProduct next) curProduct))).
+  {
+    exact (BProv_eq_congr_add Ax_s G _ _ _ _ hnextPart hcurGroup).
+  }
+  assert (hnormalAssoc : BProv Ax_s G
+      (pEq (tAdd (tAdd nextProduct next) curProduct)
+        (tAdd nextProduct (tAdd next curProduct)))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hnormalComm : BProv Ax_s G
+      (pEq (tAdd nextProduct (tAdd next curProduct)) normal)).
+  {
+    unfold normal.
+    exact (BProv_eq_congr_add_right Ax_s G nextProduct _ _
+      (BProv_Ax_s_add_comm_terms G next curProduct)).
+  }
+  assert (hcodeNormal : BProv Ax_s G
+      (pEq (twoEntryBetaCodeTerm cur next) normal)).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hcodeCore
+      (BProv_eqTrans Ax_s G _ _ _ hcodeDist
+        (BProv_eqTrans Ax_s G _ _ _ hregroup
+          (BProv_eqTrans Ax_s G _ _ _ hparts
+            (BProv_eqTrans Ax_s G _ _ _ hnormalAssoc hnormalComm))))).
+  }
+  assert (hquotDist : BProv Ax_s G
+      (pEq (tMul quotientOne modulusOne)
+        (tAdd nextProduct curProduct))).
+  {
+    unfold quotientOne, nextProduct, curProduct.
+    apply BProv_Ax_s_add_mul_terms.
+  }
+  assert (hquotCong : BProv Ax_s G
+      (pEq (tAdd (tMul quotientOne modulusOne) next)
+        (tAdd (tAdd nextProduct curProduct) next))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ next hquotDist).
+  }
+  assert (hquotAssoc : BProv Ax_s G
+      (pEq (tAdd (tAdd nextProduct curProduct) next) normal)).
+  {
+    unfold normal.
+    apply BProv_Ax_s_add_assoc_terms.
+  }
+  assert (hquotNormal : BProv Ax_s G
+      (pEq (tAdd (tMul quotientOne modulusOne) next) normal)).
+  { exact (BProv_eqTrans Ax_s G _ _ _ hquotCong hquotAssoc). }
+  exact (BProv_eqTrans Ax_s G _ _ _ hcodeNormal
+    (BProv_eqSym Ax_s G _ _ hquotNormal)).
+Qed.
+
+(* Lean: BProv_Ax_s_twoEntryBetaTerm_one *)
+Lemma BProv_Ax_s_twoEntryBetaTerm_one : forall G cur next,
+  BProv Ax_s G
+    (betaTermTermAt next
+      (twoEntryBetaCodeTerm cur next)
+      (twoEntryBetaStepTerm cur next) (tSucc tZero)).
+Proof.
+  intros G cur next.
+  set (step := twoEntryBetaStepTerm cur next).
+  set (modulus := tSucc (tAdd step step)).
+  set (quotient := tAdd next (tMul modulus cur)).
+  assert (hmod : BProv Ax_s G
+      (pEq modulus
+        (betaModTermTerm step (tSucc tZero)))).
+  {
+    unfold modulus.
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_betaModTermTerm_one_add_self G step)).
+  }
+  assert (hltRaw : BProv Ax_s G
+      (ltTermAt next (betaModTermTerm step (tSucc tZero)))).
+  {
+    unfold step.
+    apply BProv_Ax_s_twoEntryBetaTerm_one_bound.
+  }
+  assert (hlt : BProv Ax_s G (ltTermAt next modulus)).
+  {
+    exact (BProv_ltTermAt_of_eq_right Ax_s G _ _ _
+      (BProv_eqSym Ax_s G _ _ hmod) hltRaw).
+  }
+  assert (hvalue : BProv Ax_s G
+      (pEq (twoEntryBetaCodeTerm cur next)
+        (tAdd (tMul quotient modulus) next))).
+  {
+    unfold step, modulus, quotient.
+    apply BProv_Ax_s_twoEntryBetaTerm_one_value.
+  }
+  assert (hrem : BProv Ax_s G
+      (remTermTermAt next (twoEntryBetaCodeTerm cur next) modulus)).
+  {
+    exact (BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+      G next (twoEntryBetaCodeTerm cur next) modulus quotient hlt hvalue).
+  }
+  exact (BProv_Ax_s_betaTermTermAt_of_rem
+    G next (twoEntryBetaCodeTerm cur next) step (tSucc tZero)
+    modulus hmod hrem).
+Qed.
+
+(* Lean: BProv_Ax_s_twoEntryBetaTerm_entries *)
+Lemma BProv_Ax_s_twoEntryBetaTerm_entries : forall G cur next,
+  BProv Ax_s G
+    (pAnd
+      (betaTermTermAt cur
+        (twoEntryBetaCodeTerm cur next)
+        (twoEntryBetaStepTerm cur next) tZero)
+      (betaTermTermAt next
+        (twoEntryBetaCodeTerm cur next)
+        (twoEntryBetaStepTerm cur next) (tSucc tZero))).
+Proof.
+  intros G cur next.
+  exact (BProv_andI Ax_s G _ _
+    (BProv_Ax_s_twoEntryBetaTerm_zero G cur next)
+    (BProv_Ax_s_twoEntryBetaTerm_one G cur next)).
 Qed.
 
 (* Lean: BProv_Ax_s_subst_betaAt_of_betaTermTermAt *)
