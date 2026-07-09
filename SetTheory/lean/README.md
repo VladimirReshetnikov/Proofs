@@ -28,7 +28,7 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/Equivalence.lean`](SetTheory/Equivalence.lean) | `Equivalence.v` | the deep forward trade, `Closure_form` + bridges, `Tax_s`, `Tmodel_sat_ZF` / `ZFmodel_sat_T`, `ZF_implies_T`, `T_implies_ZF`, **`T_iff_ZF`** |
 | [`SetTheory/Forward.lean`](SetTheory/Forward.lean) | `Forward.v` | the shallow (second-order) forward trade, self-contained, dependency-audited |
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
-| [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, Interpretation}.lean` | `PAHF.v` | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, and a separate first-order PA syntax with sealed PA axiom semantics |
+| [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean` | `PAHF.v` | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, a separate first-order PA syntax with sealed PA axiom semantics, and a PA sentence form of the Mertens/Littlewood RH criterion |
 | [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | `BusyBeaver.v` | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
 | [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs |
 | [`SetTheory/BusyBeaverMathlib.lean`](SetTheory/BusyBeaverMathlib.lean) | `BusyBeaverMathlib.v` (explicit assumption-record counterpart) | mathlib's `Computable` predicate as the total-recursive predicate for `Nat -> Nat`, sequential `ToPartrec.Code` extraction, the proved finite-support `PartrecToTM2` evaluator bridge, and the unconditional busy-beaver domination theorem for `Computable` functions |
@@ -109,6 +109,15 @@ theorem PA.Formula.sat_axiom_s
     (M : PA.Model α) (e : Nat → α) :
     ∀ f, PA.Formula.Ax_s f → PA.Formula.Sat M e f
 ```
+
+The PA syntax layer also contains
+[`SetTheory/PAHF/RiemannHypothesis.lean`](SetTheory/PAHF/RiemannHypothesis.lean),
+which defines `PA.Formula.RiemannHypothesis.mertensRiemannHypothesisSentence`:
+the sealed first-order PA sentence corresponding to the Mertens/Littlewood
+growth criterion `forall q > 0, exists C, forall n,
+|M(n)|^(2*q) <= C*n^(q+1)`.  The companion report
+[`../../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](../../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md)
+explains why this was chosen over the Lagarias/Robin/Farey alternatives.
 
 This is a semantic and syntax-preparation checkpoint, not yet the final
 deductive bi-interpretability theorem. The remaining syntactic bridge is the
