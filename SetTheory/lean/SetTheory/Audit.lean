@@ -90,6 +90,7 @@ open SetTheory
 #check @PA.Formula.rename_subst
 #check @PA.Term.subst_comp
 #check @PA.Term.subst_rename_succ_up
+#check @PA.Term.upSubst_comp
 #check @PA.Term.subst_ext_free
 #check @PA.Term.subst_id
 #check @PA.Formula.subst_comp
@@ -124,6 +125,8 @@ open SetTheory
 #check @PA.Formula.term_rename_up_succ_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_up_up_succ
 #check @PA.Formula.subst_instTerm_rename_succ
+#check @PA.Formula.subst_instTerm_var_zero_rename_up_succ
+#check @PA.Formula.subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice
 #check @PA.Formula.soundness
 #check @PA.Formula.BProv
 #check @PA.Formula.BProv_mono
@@ -898,7 +901,9 @@ open SetTheory
 #check PA.Formula.strictHighOddOpenedWitnessLowHalfMemOpenedBitTermExFormula
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitTermAt_of_components
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitTermAt_of_subst_betaDiv2BitAt
+#check @PA.Formula.BProv_Ax_s_subst_betaDiv2BitAt_of_betaDiv2BitTermAt
 #check @PA.Formula.BProv_Ax_s_betaDiv2BitOneTermExAt_of_subst_bitOneEx
+#check @PA.Formula.BProv_Ax_s_subst_bitOneEx_of_betaDiv2BitOneTermExAt
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_termIdx_of_leTerm
@@ -917,10 +922,14 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_steps_of_term_trace
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_steps_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitTermEx_of_shift_tail
+#check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitEx_of_bitTermEx
+#check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_bitEx_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_steps_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_steps_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_bitTermEx_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_bitTermEx_of_shift_tail
+#check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_bitEx_of_shift_tail
+#check @PA.Formula.BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_bitEx_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitEx
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitTermEx
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_zero
