@@ -165,6 +165,15 @@ Check PA.Formula.betaTermTermAt.
 Check PA.Formula.betaTermTermAtConstIdx.
 Check PA.Formula.betaTermTermAtSuccIdx.
 Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_zero_modulus_one.
+Check PA.Formula.BProv_Ax_s_ltTermAt_of_remTermTermAt.
+Check PA.Formula.BProv_Ax_s_eq_zero_of_ltTermAt_one.
+Check PA.Formula.BProv_Ax_s_eq_zero_of_remTermTermAt_eq_one.
+Check PA.Formula.BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_rem.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero.
+Check PA.Formula.BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero.
 Check PA.Formula.betaModTermTerm_nat.
 Check PA.Formula.remTermTermAt_nat.
 Check PA.Formula.betaTermTermAt_nat_entry.
@@ -179,6 +188,9 @@ Check PA.Formula.betaDiv2StepsThroughTermTermAt_nat.
 Check PA.Formula.betaShiftTailThroughTermAt.
 Check PA.Formula.betaShiftTailThroughTermAt_nat.
 Check PA.Formula.betaShiftTailExistsTermAt.
+Check PA.Formula.betaShiftTailExistsTermAtBody.
+Check PA.Formula.betaShiftTailExistsTermAtStepEx.
+Check PA.Formula.betaShiftTailExistsTermAtOpenedContext.
 Check PA.Formula.betaShiftTailExistsTermAt_nat.
 Check PA.Formula.betaShiftTailThroughConstAt.
 Check PA.Formula.betaShiftTailThroughConstAt_nat.
@@ -192,6 +204,8 @@ Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components.
 Check PA.Formula.BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero.
 Check PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm.
+Check PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_assumption_elim_opened.
 Check PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry.
 Check PA.Formula.BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit.
 Check PA.Formula.BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace.
