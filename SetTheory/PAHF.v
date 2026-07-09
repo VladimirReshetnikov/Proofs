@@ -19152,6 +19152,13 @@ Definition BetaDiv2StepsThrough (code step last : nat) : Prop :=
   forall k, k <= last ->
     exists cur next bit, BetaDiv2Step code step k cur next bit.
 
+(* Lean: BetaShiftTailThrough *)
+Definition BetaShiftTailThrough
+    (oldCode oldStep newCode newStep last : nat) : Prop :=
+  forall k, k <= last -> forall value,
+    BetaEntry oldCode oldStep (k + 1) value ->
+      BetaEntry newCode newStep k value.
+
 Definition BetaDiv2Bit (code step idx bit : nat) : Prop :=
   exists cur next, BetaDiv2Step code step idx cur next bit.
 
@@ -23454,6 +23461,135 @@ Proof.
       split; assumption.
 Qed.
 
+(* Lean: betaTermTermAtSuccIdx_nat_entry *)
+Lemma betaTermTermAtSuccIdx_nat_entry :
+    forall (e : nat -> nat) out code step idx,
+  Sat natModel e (betaTermTermAtSuccIdx out code step idx) <->
+    BetaEntry (Term.eval natModel e code)
+      (Term.eval natModel e step)
+      (S (e idx))
+      (Term.eval natModel e out).
+Proof.
+  intros e out code step idx.
+  unfold betaTermTermAtSuccIdx. simpl.
+  split.
+  - intros [m [hm hbeta]].
+    pose proof (proj1 (betaTermTermAt_nat_entry (scons nat m e)
+        (Term.rename S out) (Term.rename S code)
+        (Term.rename S step) (tVar 0)) hbeta) as hbeta'.
+    repeat rewrite Term.eval_rename in hbeta'.
+    simpl in hbeta'.
+    replace m with (S (e idx)) in hbeta' by lia.
+    exact hbeta'.
+  - intro hbeta.
+    exists (S (e idx)).
+    split.
+    + reflexivity.
+    + apply (proj2 (betaTermTermAt_nat_entry (scons nat (S (e idx)) e)
+        (Term.rename S out) (Term.rename S code)
+        (Term.rename S step) (tVar 0))).
+      repeat rewrite Term.eval_rename.
+      simpl.
+      exact hbeta.
+Qed.
+
+(* Lean: betaDiv2StepWitnessTermAt_nat *)
+Lemma betaDiv2StepWitnessTermAt_nat :
+    forall (e : nat -> nat) code step idx,
+  Sat natModel e (betaDiv2StepWitnessTermAt code step idx) <->
+    exists cur next bit,
+      BetaEntry (Term.eval natModel e code)
+        (Term.eval natModel e step)
+        (Term.eval natModel e idx) cur /\
+      BetaEntry (Term.eval natModel e code)
+        (Term.eval natModel e step)
+        (S (Term.eval natModel e idx)) next /\
+      (bit = 0 \/ bit = 1) /\ cur = next + next + bit.
+Proof.
+  intros e code step idx.
+  unfold betaDiv2StepWitnessTermAt. simpl.
+  split.
+  - intros [cur [next [bit [hcur [hnext hstep]]]]].
+    pose proof (proj1 (betaTermTermAt_nat_entry
+        (scons nat bit (scons nat next (scons nat cur e)))
+        (tVar 2)
+        (Term.rename (fun n => n + 3) code)
+        (Term.rename (fun n => n + 3) step)
+        (Term.rename (fun n => n + 3) idx)) hcur) as hcur'.
+    pose proof (proj1 (betaTermTermAt_nat_entry
+        (scons nat bit (scons nat next (scons nat cur e)))
+        (tVar 1)
+        (Term.rename (fun n => n + 3) code)
+        (Term.rename (fun n => n + 3) step)
+        (tSucc (Term.rename (fun n => n + 3) idx))) hnext) as hnext'.
+    pose proof (proj1 (div2StepTermAt_nat
+        (scons nat bit (scons nat next (scons nat cur e)))
+        (tVar 2) (tVar 1) (tVar 0)) hstep) as hstep'.
+    assert (heval3 : forall t,
+      Term.eval natModel
+        (scons nat bit (scons nat next (scons nat cur e)))
+        (Term.rename (fun n : nat => n + 3) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 3) with (S (S (S n))) by lia.
+      reflexivity.
+    }
+    simpl in hcur', hnext', hstep'.
+    repeat rewrite heval3 in hcur'.
+    repeat rewrite heval3 in hnext'.
+    destruct hstep' as [hbit hvalue].
+    exists cur, next, bit.
+    split.
+    + exact hcur'.
+    + split.
+      * exact hnext'.
+      * split; [exact hbit | exact hvalue].
+  - intros [cur [next [bit [hcur [hnext [hbit hvalue]]]]]].
+    assert (heval3 : forall t,
+      Term.eval natModel
+        (scons nat bit (scons nat next (scons nat cur e)))
+        (Term.rename (fun n : nat => n + 3) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 3) with (S (S (S n))) by lia.
+      reflexivity.
+    }
+    exists cur, next, bit.
+    split.
+    + apply (proj2 (betaTermTermAt_nat_entry
+        (scons nat bit (scons nat next (scons nat cur e)))
+        (tVar 2)
+        (Term.rename (fun n => n + 3) code)
+        (Term.rename (fun n => n + 3) step)
+        (Term.rename (fun n => n + 3) idx))).
+      repeat rewrite heval3.
+      exact hcur.
+    + split.
+      * apply (proj2 (betaTermTermAt_nat_entry
+          (scons nat bit (scons nat next (scons nat cur e)))
+          (tVar 1)
+          (Term.rename (fun n => n + 3) code)
+          (Term.rename (fun n => n + 3) step)
+          (tSucc (Term.rename (fun n => n + 3) idx)))).
+        simpl.
+        repeat rewrite heval3.
+        exact hnext.
+      * apply (proj2 (div2StepTermAt_nat
+          (scons nat bit (scons nat next (scons nat cur e)))
+          (tVar 2) (tVar 1) (tVar 0))).
+        simpl. split; assumption.
+Qed.
+
 Lemma betaAtConstIdx_nat : forall (e : nat -> nat) out code step idxValue,
   Sat natModel e (betaAtConstIdx out code step idxValue) <->
     exists q,
@@ -23645,6 +23781,344 @@ Proof.
     simpl. exact (h k hk).
 Qed.
 
+(* Lean: betaDiv2StepsThroughTermAt_nat *)
+Lemma betaDiv2StepsThroughTermAt_nat :
+    forall (e : nat -> nat) code step last,
+  Sat natModel e (betaDiv2StepsThroughTermAt code step last) <->
+    BetaDiv2StepsThrough (e code) (e step)
+      (Term.eval natModel e last).
+Proof.
+  intros e code step last.
+  unfold betaDiv2StepsThroughTermAt, BetaDiv2StepsThrough. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat :
+      Sat natModel (scons nat k e)
+        (leTermAt (tVar 0) (Term.rename S last))).
+    {
+      apply (proj2 (leTermAt_nat (scons nat k e)
+        (tVar 0) (Term.rename S last))).
+      rewrite Term.eval_rename.
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0) (h k hkSat)) as hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k <= Term.eval natModel e last).
+    {
+      pose proof (proj1 (leTermAt_nat (scons nat k e)
+        (tVar 0) (Term.rename S last)) hkSat) as hle.
+      rewrite Term.eval_rename in hle.
+      simpl in hle. exact hle.
+    }
+    apply (proj2 (betaDiv2StepWitnessAt_nat
+      (scons nat k e) (S code) (S step) 0)).
+    simpl. exact (h k hk).
+Qed.
+
+(* Lean: betaDiv2StepsThroughTermTermAt_nat *)
+Lemma betaDiv2StepsThroughTermTermAt_nat :
+    forall (e : nat -> nat) code step last,
+  Sat natModel e (betaDiv2StepsThroughTermTermAt code step last) <->
+    BetaDiv2StepsThrough
+      (Term.eval natModel e code)
+      (Term.eval natModel e step)
+      (Term.eval natModel e last).
+Proof.
+  intros e code step last.
+  unfold betaDiv2StepsThroughTermTermAt, BetaDiv2StepsThrough. simpl.
+  split.
+  - intros h k hk.
+    assert (hkSat :
+      Sat natModel (scons nat k e)
+        (leTermAt (tVar 0) (Term.rename S last))).
+    {
+      apply (proj2 (leTermAt_nat (scons nat k e)
+        (tVar 0) (Term.rename S last))).
+      rewrite Term.eval_rename.
+      simpl. exact hk.
+    }
+    pose proof (proj1 (betaDiv2StepWitnessTermAt_nat
+      (scons nat k e)
+      (Term.rename S code) (Term.rename S step) (tVar 0))
+      (h k hkSat)) as hw.
+    repeat rewrite Term.eval_rename in hw.
+    simpl in hw. exact hw.
+  - intros h k hkSat.
+    assert (hk : k <= Term.eval natModel e last).
+    {
+      pose proof (proj1 (leTermAt_nat (scons nat k e)
+        (tVar 0) (Term.rename S last)) hkSat) as hle.
+      rewrite Term.eval_rename in hle.
+      simpl in hle. exact hle.
+    }
+    apply (proj2 (betaDiv2StepWitnessTermAt_nat
+      (scons nat k e)
+      (Term.rename S code) (Term.rename S step) (tVar 0))).
+    repeat rewrite Term.eval_rename.
+    simpl. exact (h k hk).
+Qed.
+
+(* Lean: betaShiftTailThroughTermAt_nat *)
+Lemma betaShiftTailThroughTermAt_nat :
+    forall (e : nat -> nat) oldCode oldStep newCode newStep last,
+  Sat natModel e
+    (betaShiftTailThroughTermAt oldCode oldStep newCode newStep last) <->
+    BetaShiftTailThrough
+      (e oldCode) (e oldStep)
+      (Term.eval natModel e newCode)
+      (Term.eval natModel e newStep)
+      (Term.eval natModel e last).
+Proof.
+  intros e oldCode oldStep newCode newStep last.
+  unfold betaShiftTailThroughTermAt, BetaShiftTailThrough. simpl.
+  split.
+  - intros h k hk value hold.
+    assert (hkSat :
+      Sat natModel (scons nat k e)
+        (leTermAt (tVar 0) (Term.rename S last))).
+    {
+      apply (proj2 (leTermAt_nat (scons nat k e)
+        (tVar 0) (Term.rename S last))).
+      rewrite Term.eval_rename.
+      simpl. exact hk.
+    }
+    assert (holdSat :
+      Sat natModel (scons nat value (scons nat k e))
+        (betaTermTermAt (tVar 0)
+          (tVar (oldCode + 2)) (tVar (oldStep + 2))
+          (tSucc (tVar 1)))).
+    {
+      apply (proj2 (betaTermTermAt_nat_entry
+        (scons nat value (scons nat k e))
+        (tVar 0) (tVar (oldCode + 2)) (tVar (oldStep + 2))
+        (tSucc (tVar 1)))).
+      replace (oldCode + 2) with (S (S oldCode)) by lia.
+      replace (oldStep + 2) with (S (S oldStep)) by lia.
+      change (BetaEntry (e oldCode) (e oldStep) (S k) value).
+      replace (S k) with (k + 1) by lia.
+      exact hold.
+    }
+    pose proof (h k hkSat value holdSat) as hnewSat.
+    pose proof (proj1 (betaTermTermAt_nat_entry
+        (scons nat value (scons nat k e))
+        (tVar 0)
+        (Term.rename (fun n : nat => n + 2) newCode)
+        (Term.rename (fun n : nat => n + 2) newStep)
+        (tVar 1)) hnewSat) as hnew.
+    assert (heval2 : forall t,
+      Term.eval natModel (scons nat value (scons nat k e))
+        (Term.rename (fun n : nat => n + 2) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    simpl in hnew.
+    repeat rewrite heval2 in hnew.
+    exact hnew.
+  - intros h k hkSat value holdSat.
+    assert (hk : k <= Term.eval natModel e last).
+    {
+      pose proof (proj1 (leTermAt_nat (scons nat k e)
+        (tVar 0) (Term.rename S last)) hkSat) as hle.
+      rewrite Term.eval_rename in hle.
+      simpl in hle. exact hle.
+    }
+    assert (hold :
+      BetaEntry (e oldCode) (e oldStep) (S k) value).
+    {
+      pose proof (proj1 (betaTermTermAt_nat_entry
+        (scons nat value (scons nat k e))
+        (tVar 0) (tVar (oldCode + 2)) (tVar (oldStep + 2))
+        (tSucc (tVar 1))) holdSat) as hold'.
+      replace (oldCode + 2) with (S (S oldCode)) in hold' by lia.
+      replace (oldStep + 2) with (S (S oldStep)) in hold' by lia.
+      simpl in hold'.
+      change (BetaEntry (e oldCode) (e oldStep) (S k) value) in hold'.
+      replace (k + 1) with (S k) by lia.
+      exact hold'.
+    }
+    apply (proj2 (betaTermTermAt_nat_entry
+      (scons nat value (scons nat k e))
+      (tVar 0)
+      (Term.rename (fun n : nat => n + 2) newCode)
+      (Term.rename (fun n : nat => n + 2) newStep)
+      (tVar 1))).
+    assert (heval2 : forall t,
+      Term.eval natModel (scons nat value (scons nat k e))
+        (Term.rename (fun n : nat => n + 2) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    simpl.
+    repeat rewrite heval2.
+    assert (holdPlus :
+      BetaEntry (e oldCode) (e oldStep) (k + 1) value).
+    {
+      replace (k + 1) with (S k) by lia.
+      exact hold.
+    }
+    exact (h k hk value holdPlus).
+Qed.
+
+(* Lean: betaShiftTailExistsTermAt_nat *)
+Lemma betaShiftTailExistsTermAt_nat :
+    forall (e : nat -> nat) oldCode oldStep last,
+  Sat natModel e (betaShiftTailExistsTermAt oldCode oldStep last) <->
+    exists newCode newStep,
+      BetaShiftTailThrough
+        (e oldCode) (e oldStep) newCode newStep
+        (Term.eval natModel e last).
+Proof.
+  intros e oldCode oldStep last.
+  unfold betaShiftTailExistsTermAt. simpl.
+  split.
+  - intros [newCode [newStep htailSat]].
+    pose proof (proj1 (betaShiftTailThroughTermAt_nat
+      (scons nat newStep (scons nat newCode e))
+      (oldCode + 2) (oldStep + 2)
+      (tVar 1) (tVar 0)
+      (Term.rename (fun n : nat => n + 2) last)) htailSat) as htail.
+    assert (heval2 : forall t,
+      Term.eval natModel (scons nat newStep (scons nat newCode e))
+        (Term.rename (fun n : nat => n + 2) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    exists newCode, newStep.
+    simpl in htail.
+    rewrite heval2 in htail.
+    replace (oldCode + 2) with (S (S oldCode)) in htail by lia.
+    replace (oldStep + 2) with (S (S oldStep)) in htail by lia.
+    simpl in htail.
+    exact htail.
+  - intros [newCode [newStep htail]].
+    exists newCode, newStep.
+    apply (proj2 (betaShiftTailThroughTermAt_nat
+      (scons nat newStep (scons nat newCode e))
+      (oldCode + 2) (oldStep + 2)
+      (tVar 1) (tVar 0)
+      (Term.rename (fun n : nat => n + 2) last))).
+    assert (heval2 : forall t,
+      Term.eval natModel (scons nat newStep (scons nat newCode e))
+        (Term.rename (fun n : nat => n + 2) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    simpl.
+    rewrite heval2.
+    replace (oldCode + 2) with (S (S oldCode)) by lia.
+    replace (oldStep + 2) with (S (S oldStep)) by lia.
+    simpl.
+    exact htail.
+Qed.
+
+(* Lean: betaShiftTailThroughConstAt_nat *)
+Lemma betaShiftTailThroughConstAt_nat :
+    forall (e : nat -> nat) oldCode oldStep newCode newStep last,
+  Sat natModel e
+    (betaShiftTailThroughConstAt oldCode oldStep newCode newStep last) <->
+    BetaShiftTailThrough
+      (e oldCode) (e oldStep) (e newCode) (e newStep) last.
+Proof.
+  intros e oldCode oldStep newCode newStep last.
+  unfold betaShiftTailThroughConstAt, BetaShiftTailThrough. simpl.
+  split.
+  - intros h k hk value hold.
+    assert (hkSat : Sat natModel (scons nat k e) (leConstAt 0 last)).
+    {
+      apply (proj2 (leConstAt_nat (scons nat k e) 0 last)).
+      simpl. exact hk.
+    }
+    assert (holdSat :
+      Sat natModel (scons nat value (scons nat k e))
+        (betaTermTermAt (tVar 0)
+          (tVar (oldCode + 2)) (tVar (oldStep + 2))
+          (tSucc (tVar 1)))).
+    {
+      apply (proj2 (betaTermTermAt_nat_entry
+        (scons nat value (scons nat k e))
+        (tVar 0) (tVar (oldCode + 2)) (tVar (oldStep + 2))
+        (tSucc (tVar 1)))).
+      replace (oldCode + 2) with (S (S oldCode)) by lia.
+      replace (oldStep + 2) with (S (S oldStep)) by lia.
+      change (BetaEntry (e oldCode) (e oldStep) (S k) value).
+      replace (S k) with (k + 1) by lia.
+      exact hold.
+    }
+    pose proof (h k hkSat value holdSat) as hnewSat.
+    pose proof (proj1 (betaTermTermAt_nat_entry
+        (scons nat value (scons nat k e))
+        (tVar 0) (tVar (newCode + 2)) (tVar (newStep + 2))
+        (tVar 1)) hnewSat) as hnew.
+    replace (newCode + 2) with (S (S newCode)) in hnew by lia.
+    replace (newStep + 2) with (S (S newStep)) in hnew by lia.
+    simpl in hnew. exact hnew.
+  - intros h k hkSat value holdSat.
+    assert (hk : k <= last).
+    {
+      pose proof (proj1 (leConstAt_nat (scons nat k e) 0 last) hkSat)
+        as hle.
+      simpl in hle. exact hle.
+    }
+    assert (hold :
+      BetaEntry (e oldCode) (e oldStep) (S k) value).
+    {
+      pose proof (proj1 (betaTermTermAt_nat_entry
+        (scons nat value (scons nat k e))
+        (tVar 0) (tVar (oldCode + 2)) (tVar (oldStep + 2))
+        (tSucc (tVar 1))) holdSat) as hold'.
+      replace (oldCode + 2) with (S (S oldCode)) in hold' by lia.
+      replace (oldStep + 2) with (S (S oldStep)) in hold' by lia.
+      simpl in hold'.
+      change (BetaEntry (e oldCode) (e oldStep) (S k) value) in hold'.
+      replace (k + 1) with (S k) by lia.
+      exact hold'.
+    }
+    apply (proj2 (betaTermTermAt_nat_entry
+      (scons nat value (scons nat k e))
+      (tVar 0) (tVar (newCode + 2)) (tVar (newStep + 2))
+      (tVar 1))).
+    replace (newCode + 2) with (S (S newCode)) by lia.
+    replace (newStep + 2) with (S (S newStep)) by lia.
+    simpl.
+    assert (holdPlus :
+      BetaEntry (e oldCode) (e oldStep) (k + 1) value).
+    {
+      replace (k + 1) with (S k) by lia.
+      exact hold.
+    }
+    exact (h k hk value holdPlus).
+Qed.
+
 Lemma betaDiv2StepsThroughConstAt_nat :
     forall (e : nat -> nat) code step last,
   Sat natModel e (betaDiv2StepsThroughConstAt code step last) <->
@@ -23715,6 +24189,136 @@ Proof.
       * apply (proj2 (div2StepAt_nat
           (scons nat next (scons nat cur e)) 1 0 (S (S bit)))).
         simpl. split; assumption.
+Qed.
+
+(* Lean: betaDiv2BitTermAt_nat *)
+Lemma betaDiv2BitTermAt_nat : forall (e : nat -> nat) bit code step idx,
+  Sat natModel e (betaDiv2BitTermAt bit code step idx) <->
+    BetaDiv2Bit
+      (Term.eval natModel e code)
+      (Term.eval natModel e step)
+      (Term.eval natModel e idx)
+      (Term.eval natModel e bit).
+Proof.
+  intros e bit code step idx.
+  unfold betaDiv2BitTermAt, BetaDiv2Bit. simpl.
+  split.
+  - intros [cur [next [hcur [hnext hstep]]]].
+    pose proof (proj1 (betaTermTermAt_nat_entry
+      (scons nat next (scons nat cur e))
+      (tVar 1)
+      (Term.rename (fun n : nat => n + 2) code)
+      (Term.rename (fun n : nat => n + 2) step)
+      (Term.rename (fun n : nat => n + 2) idx)) hcur) as hcur'.
+    pose proof (proj1 (betaTermTermAt_nat_entry
+      (scons nat next (scons nat cur e))
+      (tVar 0)
+      (Term.rename (fun n : nat => n + 2) code)
+      (Term.rename (fun n : nat => n + 2) step)
+      (tSucc (Term.rename (fun n : nat => n + 2) idx))) hnext)
+      as hnext'.
+    pose proof (proj1 (div2StepTermAt_nat
+      (scons nat next (scons nat cur e))
+      (tVar 1) (tVar 0)
+      (Term.rename (fun n : nat => n + 2) bit)) hstep) as hstep'.
+    assert (heval2 : forall t,
+      Term.eval natModel (scons nat next (scons nat cur e))
+        (Term.rename (fun n : nat => n + 2) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    simpl in hcur', hnext', hstep'.
+    repeat rewrite heval2 in hcur'.
+    repeat rewrite heval2 in hnext'.
+    repeat rewrite heval2 in hstep'.
+    destruct hstep' as [hbit hvalue].
+    exists cur, next.
+    unfold BetaDiv2Step.
+    repeat split; assumption.
+  - intros [cur [next [hcur [hnext [hbit hvalue]]]]].
+    assert (heval2 : forall t,
+      Term.eval natModel (scons nat next (scons nat cur e))
+        (Term.rename (fun n : nat => n + 2) t) =
+      Term.eval natModel e t).
+    {
+      intro t.
+      rewrite Term.eval_rename.
+      apply Term.eval_ext.
+      intro n.
+      unfold scons.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    exists cur, next.
+    split.
+    + apply (proj2 (betaTermTermAt_nat_entry
+      (scons nat next (scons nat cur e))
+      (tVar 1)
+      (Term.rename (fun n : nat => n + 2) code)
+      (Term.rename (fun n : nat => n + 2) step)
+      (Term.rename (fun n : nat => n + 2) idx))).
+      repeat rewrite heval2.
+      exact hcur.
+    + split.
+      * apply (proj2 (betaTermTermAt_nat_entry
+        (scons nat next (scons nat cur e))
+        (tVar 0)
+        (Term.rename (fun n : nat => n + 2) code)
+        (Term.rename (fun n : nat => n + 2) step)
+        (tSucc (Term.rename (fun n : nat => n + 2) idx)))).
+        simpl.
+        repeat rewrite heval2.
+        exact hnext.
+      * apply (proj2 (div2StepTermAt_nat
+        (scons nat next (scons nat cur e))
+        (tVar 1) (tVar 0)
+        (Term.rename (fun n : nat => n + 2) bit))).
+        simpl.
+        rewrite heval2.
+        split; assumption.
+Qed.
+
+(* Lean: betaDiv2BitOneTermExAt_nat *)
+Lemma betaDiv2BitOneTermExAt_nat : forall (e : nat -> nat) code step idx,
+  Sat natModel e (betaDiv2BitOneTermExAt code step idx) <->
+    BetaDiv2Bit
+      (Term.eval natModel e code)
+      (Term.eval natModel e step)
+      (Term.eval natModel e idx)
+      1.
+Proof.
+  intros e code step idx.
+  unfold betaDiv2BitOneTermExAt. simpl.
+  split.
+  - intros [bit [hone hbit]].
+    pose proof (proj1 (oneAt_nat (scons nat bit e) 0) hone) as hbitOne.
+    pose proof (proj1 (betaDiv2BitTermAt_nat
+      (scons nat bit e) (tVar 0)
+      (Term.rename S code) (Term.rename S step)
+      (Term.rename S idx)) hbit) as hbitTrace.
+    repeat rewrite Term.eval_rename in hbitTrace.
+    simpl in hbitTrace.
+    subst bit.
+    exact hbitTrace.
+  - intro hbitTrace.
+    exists 1.
+    split.
+    + apply (proj2 (oneAt_nat (scons nat 1 e) 0)).
+      reflexivity.
+    + apply (proj2 (betaDiv2BitTermAt_nat
+      (scons nat 1 e) (tVar 0)
+      (Term.rename S code) (Term.rename S step)
+      (Term.rename S idx))).
+      repeat rewrite Term.eval_rename.
+      simpl.
+      exact hbitTrace.
 Qed.
 
 Lemma hfMemAt_nat_trace : forall (e : nat -> nat) elem set,
