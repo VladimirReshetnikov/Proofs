@@ -21763,6 +21763,600 @@ Proof.
     hnegative).
 Qed.
 
+(* Lean: BProv_Ax_s_betaPair_positive_inverse_of_gap_scale *)
+Lemma BProv_Ax_s_betaPair_positive_inverse_of_gap_scale :
+  forall G (leftIdx rightIdx step gapPred scale : term),
+  BProv Ax_s G
+    (pEq rightIdx (tAdd leftIdx (tSucc gapPred))) ->
+  BProv Ax_s G
+    (pEq (tMul (tSucc gapPred) scale) step) ->
+  BProv Ax_s G
+    (pEq
+      (tMul (betaModTermTerm step leftIdx)
+        (crtPositiveInverseTerm
+          (tMul (tSucc rightIdx) step)
+          (betaPairBezoutPositiveCoeffTerm leftIdx rightIdx scale)
+          (betaPairBezoutNegativeCoeffTerm rightIdx scale)))
+      (tSucc
+        (tMul (betaModTermTerm step rightIdx)
+          (crtPositiveInverseQuotTerm
+            (tMul (tSucc leftIdx) step)
+            (betaPairBezoutPositiveCoeffTerm leftIdx rightIdx scale)
+            (betaPairBezoutNegativeCoeffTerm rightIdx scale))))).
+Proof.
+  intros G leftIdx rightIdx step gapPred scale hgap hscale.
+  assert (hgapSucc : BProv Ax_s G
+      (pEq (tSucc rightIdx)
+        (tSucc (tAdd leftIdx (tSucc gapPred))))).
+  { exact (BProv_eq_congr_succ Ax_s G _ _ hgap). }
+  assert (hsuccAdd : BProv Ax_s G
+      (pEq (tAdd (tSucc leftIdx) (tSucc gapPred))
+        (tSucc (tAdd leftIdx (tSucc gapPred))))).
+  { apply BProv_Ax_s_succ_add_terms. }
+  assert (hindex : BProv Ax_s G
+      (pEq (tSucc rightIdx)
+        (tAdd (tSucc leftIdx) (tSucc gapPred)))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hgapSucc
+      (BProv_eqSym Ax_s G _ _ hsuccAdd)).
+  }
+  exact (BProv_Ax_s_betaPair_positive_inverse G
+    leftIdx rightIdx step (tSucc gapPred) scale hindex
+    (BProv_eqSym Ax_s G _ _ hscale)).
+Qed.
+
+(* Lean: BProv_Ax_s_crtInverseExistsTermAt_of_certificate *)
+Lemma BProv_Ax_s_crtInverseExistsTermAt_of_certificate :
+  forall G (product modulus inverse quotient : term),
+  BProv Ax_s G (crtInverseTermAt product modulus inverse quotient) ->
+  BProv Ax_s G (crtInverseExistsTermAt product modulus).
+Proof.
+  intros G product modulus inverse quotient hcert.
+  set (innerBody := crtInverseTermAt
+    (Term.rename S product) (Term.rename S modulus)
+    (Term.rename S inverse) (tVar 0)).
+  assert (hquotBody : BProv Ax_s G
+      (subst (instTerm quotient) innerBody)).
+  {
+    replace (subst (instTerm quotient) innerBody)
+      with (crtInverseTermAt product modulus inverse quotient).
+    - exact hcert.
+    - unfold innerBody, crtInverseTermAt.
+      simpl.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      reflexivity.
+  }
+  pose proof (BProv_exI Ax_s G innerBody quotient hquotBody) as hquotEx.
+  set (outerBody := crtInverseExistsTermAtQuotEx product modulus).
+  assert (hinverseBody : BProv Ax_s G
+      (subst (instTerm inverse) outerBody)).
+  {
+    replace (subst (instTerm inverse) outerBody) with (pEx innerBody).
+    - exact hquotEx.
+    - unfold outerBody, crtInverseExistsTermAtQuotEx,
+        innerBody, crtInverseTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
+      reflexivity.
+  }
+  unfold crtInverseExistsTermAt.
+  exact (BProv_exI Ax_s G outerBody inverse hinverseBody).
+Qed.
+
+(* Lean: BProv_Ax_s_ltTermAt_elim_opened *)
+Lemma BProv_Ax_s_ltTermAt_elim_opened :
+  forall G (lower upper : term) target,
+  BProv Ax_s
+    (pEq
+        (tAdd (Term.rename S lower) (tSucc (tVar 0)))
+        (Term.rename S upper) ::
+      map (rename S) G)
+    (rename S target) ->
+  BProv Ax_s G (ltTermAt lower upper) ->
+  BProv Ax_s G target.
+Proof.
+  intros G lower upper target hbody hlt.
+  set (body := pEq
+    (tAdd (Term.rename S lower) (tSucc (tVar 0)))
+    (Term.rename S upper)).
+  exact (BProv_exE_of_sentences Ax_s G body target
+    sentence_ax_s hlt hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms *)
+Lemma BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms :
+  forall G (left right gapPred : term),
+  BProv Ax_s G (pEq right (tAdd left (tSucc gapPred))) ->
+  BProv Ax_s G (ltTermAt gapPred right).
+Proof.
+  intros G left right gapPred hgap.
+  assert (hgapAdd : BProv Ax_s G
+      (pEq (tAdd gapPred (tSucc left))
+        (tAdd left (tSucc gapPred)))).
+  {
+    assert (hleftSucc : BProv Ax_s G
+        (pEq (tAdd gapPred (tSucc left))
+          (tSucc (tAdd gapPred left)))).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hcomm : BProv Ax_s G
+        (pEq (tAdd gapPred left) (tAdd left gapPred))).
+    { apply BProv_Ax_s_add_comm_terms. }
+    assert (hcommSucc : BProv Ax_s G
+        (pEq (tSucc (tAdd gapPred left))
+          (tSucc (tAdd left gapPred)))).
+    { exact (BProv_eq_congr_succ Ax_s G _ _ hcomm). }
+    assert (hrightSucc : BProv Ax_s G
+        (pEq (tAdd left (tSucc gapPred))
+          (tSucc (tAdd left gapPred)))).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    exact (BProv_eqTrans Ax_s G _ _ _ hleftSucc
+      (BProv_eqTrans Ax_s G _ _ _ hcommSucc
+        (BProv_eqSym Ax_s G _ _ hrightSucc))).
+  }
+  assert (hvalue : BProv Ax_s G
+      (pEq (tAdd gapPred (tSucc left)) right)).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hgapAdd
+      (BProv_eqSym Ax_s G _ _ hgap)).
+  }
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm left)
+        (pEq
+          (tAdd (Term.rename S gapPred) (tSucc (tVar 0)))
+          (Term.rename S right)))).
+  {
+    simpl.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    exact hvalue.
+  }
+  unfold ltTermAt.
+  exact (BProv_exI Ax_s G
+    (pEq (tAdd (Term.rename S gapPred) (tSucc (tVar 0)))
+      (Term.rename S right)) left hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_ltTermAt_zero_mul_succ_right *)
+Lemma BProv_Ax_s_ltTermAt_zero_mul_succ_right :
+  forall G (value factor : term),
+  BProv Ax_s G (ltTermAt tZero value) ->
+  BProv Ax_s G (ltTermAt tZero (tMul value (tSucc factor))).
+Proof.
+  intros G value factor hpos.
+  set (target := ltTermAt tZero (tMul value (tSucc factor))).
+  apply (BProv_Ax_s_ltTermAt_elim_opened G tZero value target).
+  - set (body := pEq
+      (tAdd tZero (tSucc (tVar 0))) (Term.rename S value)).
+    set (D := body :: map (rename S) G).
+    set (value1 := Term.rename S value).
+    set (factor1 := Term.rename S factor).
+    assert (hopened : BProv Ax_s D
+        (pEq (tAdd tZero (tSucc (tVar 0))) value1)).
+    {
+      apply BProv_ass.
+      unfold D, body, value1.
+      simpl. left. reflexivity.
+    }
+    assert (hzeroAdd : BProv Ax_s D
+        (pEq (tAdd tZero (tSucc (tVar 0))) (tSucc (tVar 0)))).
+    { apply BProv_Ax_s_zero_add_term. }
+    assert (hvalue : BProv Ax_s D
+        (pEq value1 (tSucc (tVar 0)))).
+    {
+      exact (BProv_eqTrans Ax_s D _ _ _
+        (BProv_eqSym Ax_s D _ _ hopened) hzeroAdd).
+    }
+    assert (hvalueCong : BProv Ax_s D
+        (pEq (tMul value1 (tSucc factor1))
+          (tMul (tSucc (tVar 0)) (tSucc factor1)))).
+    {
+      exact (BProv_eq_congr_mul_left Ax_s D _ _
+        (tSucc factor1) hvalue).
+    }
+    assert (hsuccMul : BProv Ax_s D
+        (pEq (tMul (tSucc (tVar 0)) (tSucc factor1))
+          (tAdd (tMul (tVar 0) (tSucc factor1))
+            (tSucc factor1)))).
+    { apply BProv_Ax_s_succ_mul_terms. }
+    assert (haddSucc : BProv Ax_s D
+        (pEq
+          (tAdd (tMul (tVar 0) (tSucc factor1)) (tSucc factor1))
+          (tSucc (tAdd (tMul (tVar 0) (tSucc factor1)) factor1)))).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hproduct : BProv Ax_s D
+        (pEq (tMul value1 (tSucc factor1))
+          (tSucc (tAdd (tMul (tVar 0) (tSucc factor1)) factor1)))).
+    {
+      exact (BProv_eqTrans Ax_s D _ _ _ hvalueCong
+        (BProv_eqTrans Ax_s D _ _ _ hsuccMul haddSucc)).
+    }
+    pose proof (BProv_Ax_s_ltTermAt_zero_succ D
+      (tAdd (tMul (tVar 0) (tSucc factor1)) factor1))
+      as hpositiveSucc.
+    pose proof (BProv_ltTermAt_of_eq_right Ax_s D tZero
+      (tSucc (tAdd (tMul (tVar 0) (tSucc factor1)) factor1))
+      (tMul value1 (tSucc factor1))
+      (BProv_eqSym Ax_s D _ _ hproduct) hpositiveSucc) as hpositive.
+    replace (rename S target)
+      with (ltTermAt tZero (tMul value1 (tSucc factor1))).
+    + exact hpositive.
+    + unfold target, value1, factor1, ltTermAt.
+      simpl.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  - exact hpos.
+Qed.
+
+(* Lean: BProv_Ax_s_positiveCommonMultipleThroughTermAt_zero *)
+Lemma BProv_Ax_s_positiveCommonMultipleThroughTermAt_zero : forall G,
+  BProv Ax_s G
+    (positiveCommonMultipleThroughTermAt tZero (Term.numeral 1)).
+Proof.
+  intro G.
+  assert (hpos : BProv Ax_s G
+      (ltTermAt tZero (Term.numeral 1))).
+  {
+    change (BProv Ax_s G (ltTermAt tZero (tSucc tZero))).
+    apply BProv_Ax_s_ltTermAt_zero_succ.
+  }
+  pose proof (BProv_Ax_s_commonMultipleThroughTermAt_zero G
+    (Term.numeral 1)) as hcommon.
+  unfold positiveCommonMultipleThroughTermAt.
+  exact (BProv_andI Ax_s G _ _ hpos hcommon).
+Qed.
+
+(* Lean: BProv_Ax_s_positiveCommonMultipleThroughTermAt_succ *)
+Lemma BProv_Ax_s_positiveCommonMultipleThroughTermAt_succ :
+  forall G (bound multiple : term),
+  BProv Ax_s G
+    (positiveCommonMultipleThroughTermAt bound multiple) ->
+  BProv Ax_s G
+    (positiveCommonMultipleThroughTermAt (tSucc bound)
+      (tMul multiple (tSucc bound))).
+Proof.
+  intros G bound multiple hcommon.
+  assert (hpos : BProv Ax_s G (ltTermAt tZero multiple)).
+  {
+    exact (BProv_andE1 Ax_s G _ _ hcommon).
+  }
+  assert (hthrough : BProv Ax_s G
+      (commonMultipleThroughTermAt bound multiple)).
+  {
+    exact (BProv_andE2 Ax_s G _ _ hcommon).
+  }
+  pose proof (BProv_Ax_s_ltTermAt_zero_mul_succ_right
+    G multiple bound hpos) as hposNext.
+  pose proof (BProv_Ax_s_commonMultipleThroughTermAt_succ
+    G bound multiple hthrough) as hthroughNext.
+  unfold positiveCommonMultipleThroughTermAt.
+  exact (BProv_andI Ax_s G _ _ hposNext hthroughNext).
+Qed.
+
+(* Lean: BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through *)
+Lemma BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through :
+  forall G (bound multiple : term),
+  BProv Ax_s G
+    (positiveCommonMultipleThroughTermAt bound multiple) ->
+  BProv Ax_s G (positiveCommonMultipleExistsTermAt bound).
+Proof.
+  intros G bound multiple hthrough.
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm multiple)
+        (positiveCommonMultipleThroughTermAt
+          (Term.rename S bound) (tVar 0)))).
+  {
+    replace
+      (subst (instTerm multiple)
+        (positiveCommonMultipleThroughTermAt
+          (Term.rename S bound) (tVar 0)))
+      with (positiveCommonMultipleThroughTermAt bound multiple).
+    - exact hthrough.
+    - unfold positiveCommonMultipleThroughTermAt,
+        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      reflexivity.
+  }
+  unfold positiveCommonMultipleExistsTermAt.
+  exact (BProv_exI Ax_s G
+    (positiveCommonMultipleThroughTermAt
+      (Term.rename S bound) (tVar 0)) multiple hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened *)
+Lemma BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened :
+  forall G (bound : term) target,
+  BProv Ax_s
+    (positiveCommonMultipleExistsTermAtBody bound :: map (rename S) G)
+    (rename S target) ->
+  BProv Ax_s G (positiveCommonMultipleExistsTermAt bound) ->
+  BProv Ax_s G target.
+Proof.
+  intros G bound target hbody hex.
+  unfold positiveCommonMultipleExistsTermAt in hex.
+  unfold positiveCommonMultipleExistsTermAtBody in hbody.
+  exact (BProv_exE_of_sentences Ax_s G
+    (positiveCommonMultipleThroughTermAt
+      (Term.rename S bound) (tVar 0))
+    target sentence_ax_s hex hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero *)
+Lemma BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero : forall G,
+  BProv Ax_s G (positiveCommonMultipleExistsTermAt tZero).
+Proof.
+  intro G.
+  exact (BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through
+    G tZero (Term.numeral 1)
+    (BProv_Ax_s_positiveCommonMultipleThroughTermAt_zero G)).
+Qed.
+
+(* Lean: BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ *)
+Lemma BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ :
+  forall G (bound : term),
+  BProv Ax_s G (positiveCommonMultipleExistsTermAt bound) ->
+  BProv Ax_s G (positiveCommonMultipleExistsTermAt (tSucc bound)).
+Proof.
+  intros G bound hex.
+  set (target := positiveCommonMultipleExistsTermAt (tSucc bound)).
+  apply (BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened
+    G bound target).
+  - set (D :=
+      positiveCommonMultipleExistsTermAtBody bound :: map (rename S) G).
+    set (bound1 := Term.rename S bound).
+    assert (hthrough : BProv Ax_s D
+        (positiveCommonMultipleThroughTermAt bound1 (tVar 0))).
+    {
+      apply BProv_ass.
+      unfold D, positiveCommonMultipleExistsTermAtBody, bound1.
+      simpl. left. reflexivity.
+    }
+    pose proof (BProv_Ax_s_positiveCommonMultipleThroughTermAt_succ D
+      bound1 (tVar 0) hthrough) as hnext.
+    pose proof (BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through D
+      (tSucc bound1) (tMul (tVar 0) (tSucc bound1)) hnext) as hexNext.
+    replace (rename S target)
+      with (positiveCommonMultipleExistsTermAt (tSucc bound1)).
+    + exact hexNext.
+    + unfold target, positiveCommonMultipleExistsTermAt,
+        positiveCommonMultipleThroughTermAt,
+        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt, bound1.
+      simpl.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      reflexivity.
+  - exact hex.
+Qed.
+
+(* Lean: BProv_Ax_s_all_positiveCommonMultipleExistsTermAt *)
+Lemma BProv_Ax_s_all_positiveCommonMultipleExistsTermAt : forall G,
+  BProv Ax_s G
+    (pAll (positiveCommonMultipleExistsTermAt (tVar 0))).
+Proof.
+  intro G.
+  set (phi := positiveCommonMultipleExistsTermAt (tVar 0)).
+  pose proof
+    (BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero G) as hzeroRaw.
+  assert (hzero : BProv Ax_s G (subst substZero phi)).
+  {
+    replace (subst substZero phi)
+      with (positiveCommonMultipleExistsTermAt tZero).
+    - exact hzeroRaw.
+    - unfold phi, positiveCommonMultipleExistsTermAt,
+        positiveCommonMultipleThroughTermAt,
+        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt, substZero.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_substZero_rename_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      reflexivity.
+  }
+  assert (hsuccBody : BProv Ax_s
+      (phi :: map (rename S) G) (subst substSuccVar phi)).
+  {
+    set (C := phi :: map (rename S) G).
+    assert (hih : BProv Ax_s C
+        (positiveCommonMultipleExistsTermAt (tVar 0))).
+    {
+      apply BProv_ass.
+      unfold C, phi. simpl. left. reflexivity.
+    }
+    pose proof (BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ C
+      (tVar 0) hih) as hnext.
+    replace (subst substSuccVar phi)
+      with (positiveCommonMultipleExistsTermAt (tSucc (tVar 0))).
+    - exact hnext.
+    - unfold phi, positiveCommonMultipleExistsTermAt,
+        positiveCommonMultipleThroughTermAt,
+        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
+        substSuccVar.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_substSuccVar_rename_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      reflexivity.
+  }
+  pose proof (BProv_impI Ax_s (map (rename S) G)
+    phi (subst substSuccVar phi) hsuccBody) as hsuccImp.
+  pose proof (BProv_allI_of_sentences Ax_s G
+    (pImp phi (subst substSuccVar phi)) sentence_ax_s hsuccImp)
+    as hsuccAll.
+  unfold phi.
+  exact (BProv_Ax_s_induction_rule G
+    (positiveCommonMultipleExistsTermAt (tVar 0)) hzero hsuccAll).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple *)
+Lemma BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple :
+  forall G (leftIdx rightIdx step : term),
+  BProv Ax_s G (commonMultipleThroughTermAt rightIdx step) ->
+  BProv Ax_s G (ltTermAt leftIdx rightIdx) ->
+  BProv Ax_s G
+    (crtInverseExistsTermAt
+      (betaModTermTerm step leftIdx)
+      (betaModTermTerm step rightIdx)).
+Proof.
+  intros G leftIdx rightIdx step hcommon hlt.
+  set (target := crtInverseExistsTermAt
+    (betaModTermTerm step leftIdx)
+    (betaModTermTerm step rightIdx)).
+  apply (BProv_Ax_s_ltTermAt_elim_opened
+    G leftIdx rightIdx target).
+  - set (ltBody := pEq
+      (tAdd (Term.rename S leftIdx) (tSucc (tVar 0)))
+      (Term.rename S rightIdx)).
+    set (D := ltBody :: map (rename S) G).
+    set (left1 := Term.rename S leftIdx).
+    set (right1 := Term.rename S rightIdx).
+    set (step1 := Term.rename S step).
+    assert (hgap : BProv Ax_s D
+        (pEq right1 (tAdd left1 (tSucc (tVar 0))))).
+    {
+      assert (hraw : BProv Ax_s D ltBody).
+      {
+        apply BProv_ass.
+        unfold D. simpl. left. reflexivity.
+      }
+      unfold ltBody, left1, right1 in hraw.
+      exact (BProv_eqSym Ax_s D _ _ hraw).
+    }
+    assert (hcommonRen : BProv Ax_s (map (rename S) G)
+        (commonMultipleThroughTermAt right1 step1)).
+    {
+      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+        (commonMultipleThroughTermAt rightIdx step) hcommon S) as hren.
+      replace (commonMultipleThroughTermAt right1 step1)
+        with (rename S (commonMultipleThroughTermAt rightIdx step)).
+      - exact hren.
+      - unfold right1, step1, commonMultipleThroughTermAt,
+          dvdTermTermAt, ltTermAt.
+        simpl.
+        repeat rewrite Term.rename_comp.
+        repeat rewrite term_rename_up_succ_rename_succ.
+        reflexivity.
+    }
+    assert (hcommonD : BProv Ax_s D
+        (commonMultipleThroughTermAt right1 step1)).
+    { exact (BProv_context_cons Ax_s _ ltBody _ hcommonRen). }
+    pose proof (BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms
+      D left1 right1 (tVar 0) hgap) as hgapLt.
+    pose proof
+      (BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
+        D right1 step1 (tVar 0) hcommonD hgapLt) as hdvd.
+    apply (BProv_Ax_s_dvdTermTermAt_elim_opened
+      D (tSucc (tVar 0)) step1 (rename S target)).
+    + set (dvdBody := pEq
+        (tMul (Term.rename S (tSucc (tVar 0))) (tVar 0))
+        (Term.rename S step1)).
+      set (E := dvdBody :: map (rename S) D).
+      set (left2 := Term.rename S left1).
+      set (right2 := Term.rename S right1).
+      set (step2 := Term.rename S step1).
+      assert (hscale : BProv Ax_s E
+          (pEq (tMul (tSucc (tVar 1)) (tVar 0)) step2)).
+      {
+        assert (hraw : BProv Ax_s E dvdBody).
+        {
+          apply BProv_ass.
+          unfold E. simpl. left. reflexivity.
+        }
+        unfold dvdBody, step2.
+        simpl in hraw.
+        exact hraw.
+      }
+      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s D
+        (pEq right1 (tAdd left1 (tSucc (tVar 0)))) hgap S)
+        as hgapRen.
+      assert (hgapE : BProv Ax_s E
+          (pEq right2 (tAdd left2 (tSucc (tVar 1))))).
+      {
+        assert (hctx : BProv Ax_s E
+            (rename S
+              (pEq right1 (tAdd left1 (tSucc (tVar 0)))))).
+        {
+          exact (BProv_context_cons Ax_s (map (rename S) D)
+            dvdBody _ hgapRen).
+        }
+        unfold right2, left2.
+        simpl in hctx.
+        exact hctx.
+      }
+      assert (hcert : BProv Ax_s E
+          (crtInverseTermAt
+            (betaModTermTerm step2 left2)
+            (betaModTermTerm step2 right2)
+            (crtPositiveInverseTerm
+              (tMul (tSucc right2) step2)
+              (betaPairBezoutPositiveCoeffTerm left2 right2 (tVar 0))
+              (betaPairBezoutNegativeCoeffTerm right2 (tVar 0)))
+            (crtPositiveInverseQuotTerm
+              (tMul (tSucc left2) step2)
+              (betaPairBezoutPositiveCoeffTerm left2 right2 (tVar 0))
+              (betaPairBezoutNegativeCoeffTerm right2 (tVar 0))))).
+      {
+        unfold crtInverseTermAt.
+        exact (BProv_Ax_s_betaPair_positive_inverse_of_gap_scale E
+          left2 right2 step2 (tVar 1) (tVar 0) hgapE hscale).
+      }
+      pose proof (BProv_Ax_s_crtInverseExistsTermAt_of_certificate E
+        (betaModTermTerm step2 left2)
+        (betaModTermTerm step2 right2)
+        (crtPositiveInverseTerm
+          (tMul (tSucc right2) step2)
+          (betaPairBezoutPositiveCoeffTerm left2 right2 (tVar 0))
+          (betaPairBezoutNegativeCoeffTerm right2 (tVar 0)))
+        (crtPositiveInverseQuotTerm
+          (tMul (tSucc left2) step2)
+          (betaPairBezoutPositiveCoeffTerm left2 right2 (tVar 0))
+          (betaPairBezoutNegativeCoeffTerm right2 (tVar 0)))
+        hcert) as hex.
+      replace (rename S (rename S target))
+        with (crtInverseExistsTermAt
+          (betaModTermTerm step2 left2)
+          (betaModTermTerm step2 right2)).
+      * exact hex.
+      * unfold target, step2, left2, right2, step1, left1, right1,
+          crtInverseExistsTermAt, crtInverseTermAt, betaModTermTerm.
+        simpl.
+        repeat rewrite Term.rename_comp.
+        assert (hshift : forall t,
+            Term.rename
+              (fun n => up (up S) (up (up S) (n + 2))) t =
+            Term.rename (fun n => S (S n) + 2) t).
+        {
+          intro t.
+          apply Term.rename_ext.
+          intro n.
+          replace (n + 2) with (S (S n)) by lia.
+          unfold up.
+          lia.
+        }
+        repeat rewrite hshift.
+        reflexivity.
+    + exact hdvd.
+  - exact hlt.
+Qed.
+
 (* Lean: BProv_Ax_s_crtInverse_mul *)
 Lemma BProv_Ax_s_crtInverse_mul :
   forall G
