@@ -9404,6 +9404,31 @@ theorem BProv_Ax_s_betaTermTermAt_of_rem
           (Term.rename Nat.succ code) (Term.var 0)))
       (t := modulus) hbody)
 
+/-- Fully term-parametric division by the literal modulus `1` has remainder
+`0`, with the dividend itself as quotient. -/
+theorem BProv_Ax_s_remTermTermAt_zero_modulus_one
+    {G : List Formula} (value : Term) :
+    BProv Ax_s G
+      (remTermTermAt Term.zero value (Term.succ Term.zero)) := by
+  have hlt : BProv Ax_s G (ltTermAt Term.zero (Term.succ Term.zero)) :=
+    BProv_Ax_s_ltTermAt_zero_succ Term.zero
+  have hmul : BProv Ax_s G
+      (eq (Term.mul value (Term.succ Term.zero)) value) := by
+    simpa [Term.numeral] using BProv_Ax_s_mul_one_term value
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.mul value (Term.succ Term.zero)) Term.zero)
+        (Term.mul value (Term.succ Term.zero))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_addZero_term (Term.mul value (Term.succ Term.zero)))
+  have hvalue : BProv Ax_s G
+      (eq value
+        (Term.add (Term.mul value (Term.succ Term.zero)) Term.zero)) :=
+    BProv_eqTrans (BProv_eqSym hmul) (BProv_eqSym hadd)
+  exact BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+    (rem := Term.zero) (value := value)
+    (modulus := Term.succ Term.zero) (quotient := value)
+    hlt hvalue
+
 /-- At beta index zero, the fully term-parametric modulus is `S step`. -/
 theorem BProv_Ax_s_betaModTermTerm_zero {G : List Formula} (step : Term) :
     BProv Ax_s G
@@ -9444,6 +9469,27 @@ theorem BProv_Ax_s_betaModTermTerm_one_add_self {G : List Formula}
         (Term.succ (Term.add step step))) :=
     BProv_eq_congr_succ hmul
   simpa [betaModTermTerm, Term.numeral] using hsucc
+
+/-- If the fully term-parametric beta step is `0`, the beta modulus term is the
+literal term `1`, uniformly in the index term. -/
+theorem BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero
+    {G : List Formula} {step idx : Term}
+    (hstep : BProv Ax_s G (eq step Term.zero)) :
+    BProv Ax_s G
+      (eq (betaModTermTerm step idx) (Term.succ Term.zero)) := by
+  let idxSucc : Term := Term.succ idx
+  have hmulLeft : BProv Ax_s G
+      (eq (Term.mul idxSucc step) (Term.mul idxSucc Term.zero)) :=
+    BProv_eq_congr_mul_right idxSucc hstep
+  have hmulZero : BProv Ax_s G
+      (eq (Term.mul idxSucc Term.zero) Term.zero) :=
+    BProv_weaken_nil (BProv_Ax_s_mulZero_term idxSucc)
+  have hmul : BProv Ax_s G (eq (Term.mul idxSucc step) Term.zero) :=
+    BProv_eqTrans hmulLeft hmulZero
+  have hsucc : BProv Ax_s G
+      (eq (Term.succ (Term.mul idxSucc step)) (Term.succ Term.zero)) :=
+    BProv_eq_congr_succ hmul
+  simpa [betaModTermTerm, idxSucc] using hsucc
 
 /-- Wrap a fully term-parametric beta entry with a closed index witness. -/
 theorem BProv_Ax_s_betaTermTermAtConstIdx_of_beta
@@ -11522,6 +11568,26 @@ theorem BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one {G : List Formula}
       (BProv_Ax_s_ltAt_eq_bot hltC heq)
   exact BProv_orE hcases hleft hright
 
+/-- PA proves the literal term-parametric strict-one bound case:
+from `a < 1`, derive `a = 0`. -/
+theorem BProv_Ax_s_eq_zero_of_ltTermAt_one {G : List Formula}
+    {a : Term}
+    (hlt : BProv Ax_s G (ltTermAt a (Term.succ Term.zero))) :
+    BProv Ax_s G (eq a Term.zero) := by
+  have hcases : BProv Ax_s G (or (ltTermAt a Term.zero) (eq a Term.zero)) :=
+    BProv_Ax_s_ltTermAt_succ_right_cases hlt
+  have hleft : BProv Ax_s (ltTermAt a Term.zero :: G) (eq a Term.zero) := by
+    let C : List Formula := ltTermAt a Term.zero :: G
+    have hltZero : BProv Ax_s C (ltTermAt a Term.zero) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hzeroLe : BProv Ax_s C (leTermAt Term.zero a) :=
+      BProv_Ax_s_leTermAt_zero_left a
+    exact BProv_botE (a := eq a Term.zero)
+      (BProv_Ax_s_ltTermAt_leTermAt_bot hltZero hzeroLe)
+  have hright : BProv Ax_s (eq a Term.zero :: G) (eq a Term.zero) :=
+    BProv_ass (B := Ax_s) (G := eq a Term.zero :: G) (by simp)
+  exact BProv_orE hcases hleft hright
+
 /-- PA proves the term-parametric strict closed-one bound case: from
 `a < y` and `y = 1`, derive `a = 0`. -/
 theorem BProv_Ax_s_eq_zero_of_ltTermAt_eqConst_one {G : List Formula}
@@ -13447,6 +13513,33 @@ theorem BProv_Ax_s_remTermEqAt_of_remTermAt {G : List Formula}
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) hrem (by
       simpa [remTermAt, body] using hbody)
+
+/-- Eliminate a fully term-parametric remainder proof to its strict boundedness
+component. -/
+theorem BProv_Ax_s_ltTermAt_of_remTermTermAt {G : List Formula}
+    {rem value modulus : Term}
+    (hrem : BProv Ax_s G (remTermTermAt rem value modulus)) :
+    BProv Ax_s G (ltTermAt rem modulus) := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ rem) (Term.rename Nat.succ modulus))
+      (eq (Term.rename Nat.succ value)
+        (Term.add (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
+          (Term.rename Nat.succ rem)))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ (ltTermAt rem modulus)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hbodyAss : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlt : BProv Ax_s C
+        (ltTermAt (Term.rename Nat.succ rem)
+          (Term.rename Nat.succ modulus)) :=
+      BProv_andE1 hbodyAss
+    simpa [C, ltTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp, term_rename_up_succ_rename_succ] using hlt
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hrem (by
+      simpa [remTermTermAt, body] using hbody)
 
 /-- A term-parametric remainder of zero-valued division is the zero term.  The
 modulus is deliberately left unconstrained: the conclusion follows from the
@@ -16297,6 +16390,16 @@ theorem BProv_Ax_s_eq_zero_of_remTermAt_eqConst_modulus_one
   BProv_Ax_s_eq_zero_of_ltTermAt_eqConst_one
     (BProv_Ax_s_ltTermAt_of_remTermAt hrem) hmodulus
 
+/-- A fully term-parametric remainder modulo the literal term `1` is `0`. -/
+theorem BProv_Ax_s_eq_zero_of_remTermTermAt_eq_one
+    {G : List Formula} {rem value modulus : Term}
+    (hrem : BProv Ax_s G (remTermTermAt rem value modulus))
+    (hmodulus : BProv Ax_s G (eq modulus (Term.succ Term.zero))) :
+    BProv Ax_s G (eq rem Term.zero) :=
+  BProv_Ax_s_eq_zero_of_ltTermAt_one
+    (BProv_ltTermAt_of_eq_right hmodulus
+      (BProv_Ax_s_ltTermAt_of_remTermTermAt hrem))
+
 /-- No remainder can be strictly below modulus `0`. -/
 theorem BProv_Ax_s_remAt_eqConst_modulus_zero_bot
     {G : List Formula} {rem value modulus : Nat}
@@ -17072,6 +17175,36 @@ theorem BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
   exact BProv_exE_of_sentences (B := Ax_s)
     (fun f hf => sentence_ax_s (f := f) hf) h1 (by
       simpa [betaTermTermAt, body1] using hopen1)
+
+/-- A fully term-parametric beta sequence with step `0` has a zero-output beta
+entry at every index.  The equality proof for the step is explicit proof data;
+the relation itself remains the ordinary beta graph. -/
+theorem BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero
+    {G : List Formula} {code step idx : Term}
+    (hstep : BProv Ax_s G (eq step Term.zero)) :
+    BProv Ax_s G (betaTermTermAt Term.zero code step idx) := by
+  have hmodRaw : BProv Ax_s G
+      (eq (betaModTermTerm step idx) (Term.succ Term.zero)) :=
+    BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero hstep
+  have hmod : BProv Ax_s G
+      (eq (Term.succ Term.zero) (betaModTermTerm step idx)) :=
+    BProv_eqSym hmodRaw
+  have hrem : BProv Ax_s G
+      (remTermTermAt Term.zero code (Term.succ Term.zero)) :=
+    BProv_Ax_s_remTermTermAt_zero_modulus_one code
+  exact BProv_Ax_s_betaTermTermAt_of_rem hmod hrem
+
+/-- Exactness for fully term-parametric beta entries with step `0`: every
+output term is PA-equal to `0`. -/
+theorem BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero
+    {G : List Formula} {out code step idx : Term}
+    (hbeta : BProv Ax_s G (betaTermTermAt out code step idx))
+    (hstep : BProv Ax_s G (eq step Term.zero)) :
+    BProv Ax_s G (eq out Term.zero) := by
+  have hzero : BProv Ax_s G (betaTermTermAt Term.zero code step idx) :=
+    BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero hstep
+  exact BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
+    hzero hbeta
 
 /-- Closed numeral computation for the fully term-parametric beta modulus. -/
 theorem BProv_Ax_s_betaModTermTerm_numeral {G : List Formula}

@@ -310,6 +310,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltTermAt_zero_succ
 #check @PA.Formula.BProv_Ax_s_ltTermAt_self_succ
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
+#check @PA.Formula.BProv_Ax_s_remTermTermAt_zero_modulus_one
+#check @PA.Formula.BProv_Ax_s_ltTermAt_of_remTermTermAt
+#check @PA.Formula.BProv_Ax_s_eq_zero_of_remTermTermAt_eq_one
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_rem
 #check @PA.Formula.BProv_Ax_s_betaTermTermAtConstIdx_of_beta
 #check @PA.Formula.BProv_Ax_s_leTermAt_succ_succ
@@ -326,6 +329,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltTermAt_succ_right_cases
 #check @PA.Formula.BProv_Ax_s_leAt_or_gtAt
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_ltAt_eqConst_one
+#check @PA.Formula.BProv_Ax_s_eq_zero_of_ltTermAt_one
 #check @PA.Formula.BProv_Ax_s_ltConst_of_eqConst
 #check @PA.Formula.BProv_Ax_s_ltConst_closed
 #check @PA.Formula.BProv_Ax_s_dvdAt_of_eqConst_mul
@@ -481,7 +485,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eq_of_betaTermAt_betaTermAt_same_index
 #check @PA.Formula.BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
 #check @PA.Formula.BProv_Ax_s_betaModTermTerm_numeral
+#check @PA.Formula.BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_numeral_entry
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero
+#check @PA.Formula.BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero
 #check @PA.Formula.BProv_Ax_s_eq_of_betaTermTermAt_eqConst_entry
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_closed_shift_tail_entry
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_shift_tail_entry_eq
