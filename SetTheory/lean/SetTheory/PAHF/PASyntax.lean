@@ -29070,6 +29070,24 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_step_and_odd_case
       hlowDouble
   exact BProv_Ax_s_of_div2StepAt_double_odd_cases hlowStep heven hodd
 
+/-- Opened odd branch left after expanding `div2TotalAt low` twice in the
+standalone successor/predecessor distinguisher.
+
+The first opened witness packages the half and bit existential, and the second
+opened witness is the concrete `div2StepAt` proof.  The odd assumption is then
+consed outside that opened step context. -/
+def succSelfOpenedOddContext (G : List Formula) (low : Nat) : List Formula :=
+  let step : Formula := div2StepAt (low+2) 1 0
+  let inner : Formula := ex step
+  oddDoubleEqAt (low+2) 1 :: step ::
+    (inner :: G.map (rename Nat.succ)).map (rename Nat.succ)
+
+/-- Target paired with `succSelfOpenedOddContext`: the standalone
+successor/predecessor distinguisher after the two opened totality witnesses. -/
+def succSelfOpenedOddTarget (low : Nat) : Formula :=
+  rename Nat.succ (rename Nat.succ
+    (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low))
+
 /-- Totality-based standalone successor/predecessor distinguisher.
 
 The binary-halving witness for `low` is supplied by `div2TotalAt`; the only
@@ -29080,15 +29098,9 @@ theorem
     BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_total_and_opened_odd_case
     {G : List Formula} {low : Nat}
     (htotal : BProv Ax_s G (div2TotalAt low))
-    (hodd :
-      let target : Formula :=
-        hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low
-      let step : Formula := div2StepAt (low+2) 1 0
-      let inner : Formula := ex step
-      BProv Ax_s
-        (oddDoubleEqAt (low+2) 1 :: step ::
-          (inner :: G.map (rename Nat.succ)).map (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target))) :
+    (hodd : BProv Ax_s
+      (succSelfOpenedOddContext G low)
+      (succSelfOpenedOddTarget low)) :
     BProv Ax_s G
       (hfSomeDistinguishesTermAt (Term.succ (Term.var low)) low) := by
   let target : Formula :=
@@ -29115,6 +29127,7 @@ theorem
       (hfSomeDistinguishesTermAt
         (Term.succ (Term.var (low+2))) (low+2)) := by
     simpa [target, C, D, step, inner,
+      succSelfOpenedOddContext, succSelfOpenedOddTarget,
       rename_hfSomeDistinguishesTermAt_succ, Term.rename] using hodd
   have htarget : BProv Ax_s D
       (hfSomeDistinguishesTermAt
@@ -29132,16 +29145,9 @@ The new premise is exactly the remaining odd branch after opening PA's total
 binary-halving witness for the zero slot. -/
 theorem
     BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_opened_odd_case
-    (hodd :
-      let target : Formula :=
-        hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0
-      let step : Formula := div2StepAt 2 1 0
-      let inner : Formula := ex step
-      BProv Ax_s
-        (oddDoubleEqAt 2 1 :: step ::
-          (inner :: ([] : List Formula).map (rename Nat.succ)).map
-            (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target))) :
+    (hodd : BProv Ax_s
+      (succSelfOpenedOddContext [] 0)
+      (succSelfOpenedOddTarget 0)) :
     BProv Ax_s []
       (hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0) :=
   BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_div2_total_and_opened_odd_case
@@ -36532,16 +36538,9 @@ theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_opened_odd_self
       [ltTermAt (Term.var 0) (Term.var 1),
         rename Nat.succ (hfLtDistinguishesAt 0)]
       (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
-    (hselfOdd :
-      let target : Formula :=
-        hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0
-      let step : Formula := div2StepAt 2 1 0
-      let inner : Formula := ex step
-      BProv Ax_s
-        (oddDoubleEqAt 2 1 :: step ::
-          (inner :: ([] : List Formula).map (rename Nat.succ)).map
-            (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target))) :
+    (hselfOdd : BProv Ax_s
+      (succSelfOpenedOddContext [] 0)
+      (succSelfOpenedOddTarget 0)) :
     BProv Ax_s [hfLtDistinguishesAt 0]
       (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
   BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
@@ -36602,16 +36601,9 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_strict_and_opened_odd_self
       [ltTermAt (Term.var 0) (Term.var 1),
         rename Nat.succ (hfLtDistinguishesAt 0)]
       (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
-    (hselfOdd :
-      let target : Formula :=
-        hfSomeDistinguishesTermAt (Term.succ (Term.var 0)) 0
-      let step : Formula := div2StepAt 2 1 0
-      let inner : Formula := ex step
-      BProv Ax_s
-        (oddDoubleEqAt 2 1 :: step ::
-          (inner :: ([] : List Formula).map (rename Nat.succ)).map
-            (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target))) :
+    (hselfOdd : BProv Ax_s
+      (succSelfOpenedOddContext [] 0)
+      (succSelfOpenedOddTarget 0)) :
     BProv Ax_s []
       (translateHFFormula
         (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
@@ -38698,6 +38690,93 @@ theorem
       hhighOdd_lowOdd_mem
       hhighOdd_lowOdd_lowTail
       hself)
+
+/-- Latest translated-extensionality frontier with the standalone
+successor/predecessor self distinguisher reduced to the named opened odd
+branch left by total binary halving. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_div2_step_pred_named_succ_witness_mem_carry_cases_shift_tail_opened_low_half_and_opened_odd_self
+    {highHalf highBit lowHalf lowBit : Nat}
+    {highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+      highOddLowOddLowCodeTerm highOddLowOddLowStepTerm : Term}
+    (hhighStep : BProv Ax_s strictSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit))
+    (hhighDouble_lowOdd_step_pred :
+      let lowLtHigh : Formula := ltTermAt (Term.var 0) (Term.var 1)
+      let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+      let C : List Formula :=
+        oddDoubleEqAt 0 lowHalf :: doubleEqAt 1 highHalf :: [lowLtHigh, ih]
+      let elem : Nat := 1
+      let set : Nat := 1+2
+      let witness : Formula := hfDistinguishesAt 0 (1+1) (0+1)
+      let branchTail : List Formula :=
+        (nonzeroAt 0 :: witness :: C.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let branchCtx : List Formula :=
+        doubleEqAt set (highHalf+2) ::
+          eq (Term.succ (Term.var 0)) (Term.var 1) :: branchTail
+      let target : Formula := hfMemTermAt elem (Term.succ (Term.var set))
+      let bitBody : Formula :=
+        and
+          (oneAt 0)
+          (betaDiv2BitAt 0 2 1 (elem+3))
+      let traceTail : Formula :=
+        and
+          (betaDiv2StepsThroughAt 1 0 (elem+2))
+          (ex bitBody)
+      let body : Formula :=
+        and
+          (betaAtConstIdx (set+2) 1 0 0)
+          traceTail
+      let bodyCtx : List Formula :=
+        body :: (ex body :: branchCtx.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      let succCtx : List Formula := succPredAt 0 :: bodyCtx
+      let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
+      BProv Ax_s (succBody :: succCtx.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ target))))
+    (hhighOdd_lowDouble_mem : BProv Ax_s
+      (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowDouble_lowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0
+        highOddLowDoubleLowCodeTerm highOddLowDoubleLowStepTerm
+        (Term.succ (Term.var 2))))
+    (hhighOdd_lowOdd_mem : BProv Ax_s
+      (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hhighOdd_lowOdd_lowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0
+        highOddLowOddLowCodeTerm highOddLowOddLowStepTerm
+        (Term.succ (Term.var 2))))
+    (hselfOdd : BProv Ax_s
+      (succSelfOpenedOddContext [] 0)
+      (succSelfOpenedOddTarget 0)) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_div2_step_pred_named_succ_witness_mem_carry_cases_shift_tail_opened_low_half_and_self
+    (highHalf := highHalf) (highBit := highBit)
+    (lowHalf := lowHalf) (lowBit := lowBit)
+    (highOddLowDoubleLowCodeTerm := highOddLowDoubleLowCodeTerm)
+    (highOddLowDoubleLowStepTerm := highOddLowDoubleLowStepTerm)
+    (highOddLowOddLowCodeTerm := highOddLowOddLowCodeTerm)
+    (highOddLowOddLowStepTerm := highOddLowOddLowStepTerm)
+    hhighStep hlowStep hhighDouble_lowOdd_step_pred
+    hhighOdd_lowDouble_mem
+    hhighOdd_lowDouble_lowTail
+    hhighOdd_lowOdd_mem
+    hhighOdd_lowOdd_lowTail
+    (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_self_of_opened_odd_case
+      hselfOdd)
 
 /-- Closed-numeral membership data for the high set, together with a proof that
 the low set is empty, yields an explicit distinguishing member. -/
