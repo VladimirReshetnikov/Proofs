@@ -16,6 +16,7 @@ endpoint constants in the process.
 | Report | What it records |
 |--------|-----------------|
 | [`a198683-n12-decision-tree-and-near-one-split.md`](a198683-n12-decision-tree-and-near-one-split.md) | The `N12PartitionWitness` decision tree, the proved `nearOneSplit`, the two refuted-and-repaired ladder constants, and the remaining road to `a(12) = 2926` |
+| [`a198683-formalization-status-and-remaining-work.md`](a198683-formalization-status-and-remaining-work.md) | The honest ledger: exactly what is proved / conditional / data-certified / heuristic, and the measured remaining work for each goal (`a(8) = 77` pilot through the OEIS-grade `a(12)` artifact) |
 
 The live Lean modules this wave documents:
 

@@ -76,6 +76,11 @@ constants, each refuted in Lean before correction.  Consequently
 overflow no-miracles hypothesis is the single remaining narrow question,
 deciding `2926` versus `2925`.  That module's docstring is the recommended
 summary of exactly which facts the expected value `2926` rests on.
+**No unconditional value of `a(n)` beyond `n = 7` is proved** — the witness
+the decision tree consumes has not been constructed; the authoritative
+proved / conditional / data-certified / heuristic ledger, with the measured
+remaining work for each goal, is
+[`reports/wave-5/a198683-formalization-status-and-remaining-work.md`](reports/wave-5/a198683-formalization-status-and-remaining-work.md).
 
 ## What is settled and what is not
 
