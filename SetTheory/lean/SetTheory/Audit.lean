@@ -325,11 +325,15 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_dvdTermTermAt_of_eq_value
 #check @PA.Formula.BProv_Ax_s_ltTermAt_elim_opened
 #check @PA.Formula.BProv_Ax_s_leTermAt_elim_opened
+#check @PA.Formula.BProv_Ax_s_leTermAt_succ_left_of_ltTermAt
 #check @PA.Formula.BProv_Ax_s_ltTermAt_of_succ_leTermAt
+#check @PA.Formula.BProv_Ax_s_ltTermAt_of_lt_leTermAt
 #check @PA.Formula.BProv_Ax_s_crtCorrectionExistsTermAt_of_lt
 #check @PA.Formula.BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms
 #check @PA.Formula.BProv_Ax_s_ltTermAt_zero_mul_succ_right
 #check @PA.Formula.BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
+#check @PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_of_le
+#check @PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_mul_right
 #check @PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_zero
 #check @PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_succ
 #check @PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_of_through
@@ -344,6 +348,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero
 #check @PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ
 #check @PA.Formula.BProv_Ax_s_all_positiveCommonMultipleExistsTermAt
+#check @PA.Formula.BProv_Ax_s_betaCodingStepTermAt_of_positiveCommon
+#check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt_of_term
+#check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt
 #check @PA.Formula.BProv_Ax_s_betaPair_positive_inverse_of_gap_scale
 #check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_of_certificate
 #check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_one
@@ -386,6 +393,11 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_preserve
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_new
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_successor_new
+#check @PA.Formula.BProv_Ax_s_leTermAt_of_remTermTermAt
+#check @PA.Formula.BProv_Ax_s_leTermAt_output_of_betaTermTermAt
+#check @PA.Formula.BProv_Ax_s_leTermAt_step_betaModTermTerm
+#check @PA.Formula.BProv_Ax_s_leTermAt_succ_mul_succ_of_pos
+#check @PA.Formula.BProv_Ax_s_ltTermAt_betaMod_of_betaTermTermAt_le_step
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_preserve_of_dvd
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_successor_new
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_rem
@@ -445,6 +457,9 @@ open SetTheory
 #check @PA.Formula.positiveCommonMultipleThroughTermAt
 #check @PA.Formula.positiveCommonMultipleExistsTermAt
 #check @PA.Formula.positiveCommonMultipleExistsTermAtBody
+#check @PA.Formula.betaCodingStepTermAt
+#check @PA.Formula.betaCodingStepExistsTermAt
+#check @PA.Formula.betaCodingStepExistsTermAtBody
 #check @PA.Formula.crtInverseTermAt
 #check @PA.Formula.crtInverseExistsTermAt
 #check @PA.Formula.crtInverseExistsTermAtQuotEx
@@ -467,6 +482,8 @@ open SetTheory
 #check @PA.Formula.commonMultipleExistsTermAt_nat
 #check @PA.Formula.positiveCommonMultipleThroughTermAt_nat
 #check @PA.Formula.positiveCommonMultipleExistsTermAt_nat
+#check @PA.Formula.betaCodingStepTermAt_nat
+#check @PA.Formula.betaCodingStepExistsTermAt_nat
 #check @PA.Formula.crtInverseTermAt_nat
 #check @PA.Formula.crtInverseExistsTermAt_nat
 #check @PA.Formula.crtSuccessorCorrectionTerm_nat

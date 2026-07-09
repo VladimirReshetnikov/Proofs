@@ -2613,6 +2613,30 @@ def positiveCommonMultipleExistsTermAtBody (bound : Term) : Formula :=
   positiveCommonMultipleThroughTermAt
     (Term.rename Nat.succ bound) (Term.var 0)
 
+/-- A fixed beta-coding step for copying remainders from `sourceCode` below
+`bound`: it carries every required common divisor and is larger than every
+possible source remainder. -/
+def betaCodingStepTermAt
+    (bound sourceCode step : Term) : Formula :=
+  and (commonMultipleThroughTermAt bound step)
+    (leTermAt (Term.succ sourceCode) step)
+
+/-- Existence of a fixed beta-coding step. -/
+def betaCodingStepExistsTermAt
+    (bound sourceCode : Term) : Formula :=
+  ex (betaCodingStepTermAt
+    (Term.rename Nat.succ bound)
+    (Term.rename Nat.succ sourceCode)
+    (Term.var 0))
+
+/-- Body exposed after opening a fixed beta-coding step witness. -/
+def betaCodingStepExistsTermAtBody
+    (bound sourceCode : Term) : Formula :=
+  betaCodingStepTermAt
+    (Term.rename Nat.succ bound)
+    (Term.rename Nat.succ sourceCode)
+    (Term.var 0)
+
 def eqConstAt (a n : Nat) : Formula :=
   eq (Term.var a) (Term.numeral n)
 
@@ -3787,6 +3811,43 @@ theorem positiveCommonMultipleExistsTermAt_nat
       (scons multiple e) (Term.rename Nat.succ bound)
       (Term.var 0)).mpr
     simpa [Term.eval_rename, Term.eval, scons] using hmultiple
+
+theorem betaCodingStepTermAt_nat
+    (e : Nat → Nat) (bound sourceCode step : Term) :
+    Sat natModel e (betaCodingStepTermAt bound sourceCode step) ↔
+      (∀ q, q < Term.eval natModel e bound →
+        q + 1 ∣ Term.eval natModel e step) ∧
+      Term.eval natModel e sourceCode + 1 ≤
+        Term.eval natModel e step := by
+  constructor
+  · intro h
+    exact ⟨(commonMultipleThroughTermAt_nat e bound step).mp h.1,
+      (leTermAt_nat e (Term.succ sourceCode) step).mp h.2⟩
+  · intro h
+    exact ⟨(commonMultipleThroughTermAt_nat e bound step).mpr h.1,
+      (leTermAt_nat e (Term.succ sourceCode) step).mpr h.2⟩
+
+theorem betaCodingStepExistsTermAt_nat
+    (e : Nat → Nat) (bound sourceCode : Term) :
+    Sat natModel e (betaCodingStepExistsTermAt bound sourceCode) ↔
+      ∃ step,
+        (∀ q, q < Term.eval natModel e bound → q + 1 ∣ step) ∧
+        Term.eval natModel e sourceCode + 1 ≤ step := by
+  constructor
+  · intro h
+    rcases h with ⟨step, hstep⟩
+    refine ⟨step, ?_⟩
+    have hspec := (betaCodingStepTermAt_nat
+      (scons step e) (Term.rename Nat.succ bound)
+      (Term.rename Nat.succ sourceCode) (Term.var 0)).mp hstep
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨step, hstep⟩
+    refine ⟨step, ?_⟩
+    apply (betaCodingStepTermAt_nat
+      (scons step e) (Term.rename Nat.succ bound)
+      (Term.rename Nat.succ sourceCode) (Term.var 0)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hstep
 
 theorem crtInverseTermAt_nat
     (e : Nat → Nat) (product modulus inverse quotient : Term) :
@@ -15064,6 +15125,64 @@ theorem BProv_Ax_s_ltTermAt_elim_opened
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
     hlt (by simpa [ltTermAt] using hbody)
 
+/-- A strict term inequality exposes exactly the witness needed for
+`S lower ≤ upper`. -/
+theorem BProv_Ax_s_leTermAt_succ_left_of_ltTermAt
+    {G : List Formula} {lower upper : Term}
+    (hlt : BProv Ax_s G (ltTermAt lower upper)) :
+    BProv Ax_s G (leTermAt (Term.succ lower) upper) := by
+  let target : Formula := leTermAt (Term.succ lower) upper
+  refine BProv_Ax_s_ltTermAt_elim_opened
+    (G := G) (lower := lower) (upper := upper)
+    (target := target) ?_ hlt
+  let body : Formula :=
+    eq
+      (Term.add (Term.rename Nat.succ lower)
+        (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ upper)
+  let D : List Formula := body :: G.map (rename Nat.succ)
+  let lower1 : Term := Term.rename Nat.succ lower
+  let upper1 : Term := Term.rename Nat.succ upper
+  have hopened : BProv Ax_s D
+      (eq (Term.add lower1 (Term.succ (Term.var 0))) upper1) := by
+    have hraw : BProv Ax_s D body :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [body, lower1, upper1] using hraw
+  have hsuccAdd : BProv Ax_s D
+      (eq (Term.add (Term.succ lower1) (Term.var 0))
+        (Term.succ (Term.add lower1 (Term.var 0)))) :=
+    BProv_Ax_s_succ_add_terms lower1 (Term.var 0)
+  have haddSucc : BProv Ax_s D
+      (eq (Term.add lower1 (Term.succ (Term.var 0)))
+        (Term.succ (Term.add lower1 (Term.var 0)))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms lower1 (Term.var 0))
+  have hleEq : BProv Ax_s D
+      (eq (Term.add (Term.succ lower1) (Term.var 0)) upper1) :=
+    BProv_eqTrans hsuccAdd
+      (BProv_eqTrans (BProv_eqSym haddSucc) hopened)
+  have hsubst : BProv Ax_s D
+      (subst (instTerm (Term.var 0))
+        (eq
+          (Term.add
+            (Term.rename Nat.succ (Term.succ lower1))
+            (Term.var 0))
+          (Term.rename Nat.succ upper1))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using hleEq
+  have hle : BProv Ax_s D
+      (leTermAt (Term.succ lower1) upper1) :=
+    BProv_exI (B := Ax_s) (G := D)
+      (a := eq
+        (Term.add
+          (Term.rename Nat.succ (Term.succ lower1))
+          (Term.var 0))
+        (Term.rename Nat.succ upper1))
+      (t := Term.var 0) hsubst
+  simpa [target, D, body, lower1, upper1, leTermAt,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hle
+
 /-- A strict old-remainder bound supplies an additive correction to any new
 remainder.  The witness is the positive gap to the modulus plus the requested
 new remainder. -/
@@ -15187,6 +15306,16 @@ theorem BProv_Ax_s_ltTermAt_of_succ_leTermAt
   simpa [target, D, body, lower1, upper1, ltTermAt,
     rename, Term.rename, SetTheory.up, Term.rename_comp,
     Function.comp_def] using hstrict
+
+/-- Strict order is transitive through a non-strict upper bound. -/
+theorem BProv_Ax_s_ltTermAt_of_lt_leTermAt
+    {G : List Formula} {lower middle upper : Term}
+    (hlt : BProv Ax_s G (ltTermAt lower middle))
+    (hle : BProv Ax_s G (leTermAt middle upper)) :
+    BProv Ax_s G (ltTermAt lower upper) :=
+  BProv_Ax_s_ltTermAt_of_succ_leTermAt
+    (BProv_Ax_s_leTermAt_trans
+      (BProv_Ax_s_leTermAt_succ_left_of_ltTermAt hlt) hle)
 
 /-- If `right = left + S gapPred`, then the gap predecessor itself is strictly
 below `right`.  The explicit strict-order witness is `left`. -/
@@ -15343,6 +15472,129 @@ theorem BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
     (ltTermAt gapPred bound)
     (dvdTermTermAt (Term.succ gapPred) multiple)
     himp hlt
+
+/-- Restrict a common-multiple invariant along a non-strict bound. -/
+theorem BProv_Ax_s_commonMultipleThroughTermAt_of_le
+    {G : List Formula} {lower upper multiple : Term}
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt upper multiple))
+    (hle : BProv Ax_s G (leTermAt lower upper)) :
+    BProv Ax_s G
+      (commonMultipleThroughTermAt lower multiple) := by
+  let antecedent : Formula :=
+    ltTermAt (Term.var 0) (Term.rename Nat.succ lower)
+  let consequent : Formula :=
+    dvdTermTermAt (Term.succ (Term.var 0))
+      (Term.rename Nat.succ multiple)
+  let body : Formula := imp antecedent consequent
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) consequent := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    let lower1 : Term := Term.rename Nat.succ lower
+    let upper1 : Term := Term.rename Nat.succ upper
+    let multiple1 : Term := Term.rename Nat.succ multiple
+    have hltLower : BProv Ax_s C
+        (ltTermAt (Term.var 0) lower1) := by
+      have hraw : BProv Ax_s C antecedent :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [antecedent, lower1] using hraw
+    have hleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (leTermAt lower upper)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hle Nat.succ
+    have hleC : BProv Ax_s C (leTermAt lower1 upper1) := by
+      have hraw := BProv_context_cons (B := Ax_s)
+        (a := antecedent) hleRen
+      simpa [C, lower1, upper1, leTermAt,
+        rename, Term.rename, SetTheory.up, Term.rename_comp,
+        Function.comp_def] using hraw
+    have hltUpper : BProv Ax_s C
+        (ltTermAt (Term.var 0) upper1) :=
+      BProv_Ax_s_ltTermAt_of_lt_leTermAt hltLower hleC
+    have hcommonRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (commonMultipleThroughTermAt upper multiple)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hcommon Nat.succ
+    have hcommonC : BProv Ax_s C
+        (commonMultipleThroughTermAt upper1 multiple1) := by
+      have hraw := BProv_context_cons (B := Ax_s)
+        (a := antecedent) hcommonRen
+      simpa [C, upper1, multiple1, commonMultipleThroughTermAt,
+        dvdTermTermAt, ltTermAt,
+        rename, Term.rename, SetTheory.up, Term.rename_comp,
+        Function.comp_def] using hraw
+    have hdvd :=
+      BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
+        hcommonC hltUpper
+    simpa [C, consequent, multiple1] using hdvd
+  have himp : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    simpa [body] using BProv_impI hbody
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [commonMultipleThroughTermAt, body, antecedent, consequent]
+    using hall
+
+/-- Multiplying a common multiple on the right preserves every represented
+divisor. -/
+theorem BProv_Ax_s_commonMultipleThroughTermAt_mul_right
+    {G : List Formula} {bound multiple appended : Term}
+    (hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound multiple)) :
+    BProv Ax_s G
+      (commonMultipleThroughTermAt bound
+        (Term.mul multiple appended)) := by
+  let antecedent : Formula :=
+    ltTermAt (Term.var 0) (Term.rename Nat.succ bound)
+  let consequent : Formula :=
+    dvdTermTermAt (Term.succ (Term.var 0))
+      (Term.rename Nat.succ (Term.mul multiple appended))
+  let body : Formula := imp antecedent consequent
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) consequent := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    let bound1 : Term := Term.rename Nat.succ bound
+    let multiple1 : Term := Term.rename Nat.succ multiple
+    let appended1 : Term := Term.rename Nat.succ appended
+    have hlt : BProv Ax_s C
+        (ltTermAt (Term.var 0) bound1) := by
+      have hraw : BProv Ax_s C antecedent :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [antecedent, bound1] using hraw
+    have hcommonRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (commonMultipleThroughTermAt bound multiple)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hcommon Nat.succ
+    have hcommonC : BProv Ax_s C
+        (commonMultipleThroughTermAt bound1 multiple1) := by
+      have hraw := BProv_context_cons (B := Ax_s)
+        (a := antecedent) hcommonRen
+      simpa [C, bound1, multiple1, commonMultipleThroughTermAt,
+        dvdTermTermAt, ltTermAt,
+        rename, Term.rename, SetTheory.up, Term.rename_comp,
+        Function.comp_def] using hraw
+    have hdvd : BProv Ax_s C
+        (dvdTermTermAt (Term.succ (Term.var 0)) multiple1) :=
+      BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
+        hcommonC hlt
+    have hmul :=
+      BProv_Ax_s_dvdTermTermAt_mul_right
+        (appended := appended1) hdvd
+    simpa [C, consequent, multiple1, appended1,
+      dvdTermTermAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp, Function.comp_def] using hmul
+  have himp : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    simpa [body] using BProv_impI hbody
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [commonMultipleThroughTermAt, body, antecedent, consequent,
+    Term.rename] using hall
 
 /-- Every term is vacuously a common multiple through bound zero. -/
 theorem BProv_Ax_s_commonMultipleThroughTermAt_zero
@@ -18565,6 +18817,275 @@ theorem BProv_Ax_s_leTermAt_of_eq_add_right_terms
     (a := eq (Term.add (Term.rename Nat.succ lower) (Term.var 0))
       (Term.rename Nat.succ upper))
     (t := diff) hbody
+
+/-- Every bounded remainder is at most its dividend. -/
+theorem BProv_Ax_s_leTermAt_of_remTermTermAt
+    {G : List Formula} {rem value modulus : Term}
+    (hrem : BProv Ax_s G (remTermTermAt rem value modulus)) :
+    BProv Ax_s G (leTermAt rem value) := by
+  let target : Formula := leTermAt rem value
+  refine BProv_Ax_s_remTermTermAt_elim_opened
+    (G := G) (rem := rem) (value := value) (modulus := modulus)
+    (target := target) ?_ hrem
+  let body : Formula :=
+    and
+      (ltTermAt (Term.rename Nat.succ rem)
+        (Term.rename Nat.succ modulus))
+      (eq (Term.rename Nat.succ value)
+        (Term.add
+          (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
+          (Term.rename Nat.succ rem)))
+  let D : List Formula := body :: G.map (rename Nat.succ)
+  let rem1 : Term := Term.rename Nat.succ rem
+  let value1 : Term := Term.rename Nat.succ value
+  let modulus1 : Term := Term.rename Nat.succ modulus
+  let base : Term := Term.mul (Term.var 0) modulus1
+  have hbody : BProv Ax_s D body :=
+    BProv_ass (B := Ax_s) (G := D) (by simp [D])
+  have hvalue : BProv Ax_s D
+      (eq value1 (Term.add base rem1)) := by
+    simpa [body, value1, modulus1, base] using BProv_andE2 hbody
+  have hcomm : BProv Ax_s D
+      (eq (Term.add base rem1) (Term.add rem1 base)) :=
+    BProv_Ax_s_add_comm_terms base rem1
+  have hvalue' : BProv Ax_s D
+      (eq value1 (Term.add rem1 base)) :=
+    BProv_eqTrans hvalue hcomm
+  have hle : BProv Ax_s D (leTermAt rem1 value1) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms hvalue'
+  simpa [target, D, body, rem1, value1, modulus1,
+    leTermAt, rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hle
+
+/-- A beta output is at most the code whose bounded remainder it is. -/
+theorem BProv_Ax_s_leTermAt_output_of_betaTermTermAt
+    {G : List Formula} {out code step idx : Term}
+    (hbeta : BProv Ax_s G (betaTermTermAt out code step idx)) :
+    BProv Ax_s G (leTermAt out code) :=
+  BProv_Ax_s_leTermAt_of_remTermTermAt
+    (BProv_Ax_s_remTermTermAt_of_betaTermTermAt hbeta)
+
+/-- A beta modulus is at least its step term. -/
+theorem BProv_Ax_s_leTermAt_step_betaModTermTerm
+    {G : List Formula} (step idx : Term) :
+    BProv Ax_s G
+      (leTermAt step (betaModTermTerm step idx)) := by
+  let core : Term := Term.mul idx step
+  have hsuccMul : BProv Ax_s G
+      (eq (Term.mul (Term.succ idx) step)
+        (Term.add core step)) := by
+    simpa [core] using BProv_Ax_s_succ_mul_terms idx step
+  have hsuccMulCong : BProv Ax_s G
+      (eq (Term.succ (Term.mul (Term.succ idx) step))
+        (Term.succ (Term.add core step))) :=
+    BProv_eq_congr_succ hsuccMul
+  have hcomm : BProv Ax_s G
+      (eq (Term.add core step) (Term.add step core)) :=
+    BProv_Ax_s_add_comm_terms core step
+  have hcommSucc : BProv Ax_s G
+      (eq (Term.succ (Term.add core step))
+        (Term.succ (Term.add step core))) :=
+    BProv_eq_congr_succ hcomm
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add step (Term.succ core))
+        (Term.succ (Term.add step core))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms step core)
+  have hmod : BProv Ax_s G
+      (eq (betaModTermTerm step idx)
+        (Term.add step (Term.succ core))) := by
+    simpa [betaModTermTerm] using
+      BProv_eqTrans hsuccMulCong
+        (BProv_eqTrans hcommSucc (BProv_eqSym haddSucc))
+  exact BProv_Ax_s_leTermAt_of_eq_add_right_terms hmod
+
+/-- Multiplying a positive term by `S value` puts `S value` below the
+product. -/
+theorem BProv_Ax_s_leTermAt_succ_mul_succ_of_pos
+    {G : List Formula} {multiple value : Term}
+    (hpos : BProv Ax_s G (ltTermAt Term.zero multiple)) :
+    BProv Ax_s G
+      (leTermAt (Term.succ value)
+        (Term.mul multiple (Term.succ value))) := by
+  let target : Formula :=
+    leTermAt (Term.succ value)
+      (Term.mul multiple (Term.succ value))
+  refine BProv_Ax_s_ltTermAt_elim_opened
+    (G := G) (lower := Term.zero) (upper := multiple)
+    (target := target) ?_ hpos
+  let body : Formula :=
+    eq (Term.add Term.zero (Term.succ (Term.var 0)))
+      (Term.rename Nat.succ multiple)
+  let D : List Formula := body :: G.map (rename Nat.succ)
+  let multiple1 : Term := Term.rename Nat.succ multiple
+  let value1 : Term := Term.rename Nat.succ value
+  let lower : Term := Term.succ value1
+  let diff : Term := Term.mul (Term.var 0) lower
+  have hopened : BProv Ax_s D
+      (eq (Term.add Term.zero (Term.succ (Term.var 0))) multiple1) := by
+    have hraw : BProv Ax_s D body :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [body, multiple1] using hraw
+  have hzeroAdd : BProv Ax_s D
+      (eq (Term.add Term.zero (Term.succ (Term.var 0)))
+        (Term.succ (Term.var 0))) :=
+    BProv_Ax_s_zero_add_term (Term.succ (Term.var 0))
+  have hmultiple : BProv Ax_s D
+      (eq multiple1 (Term.succ (Term.var 0))) :=
+    BProv_eqTrans (BProv_eqSym hopened) hzeroAdd
+  have hproductCong : BProv Ax_s D
+      (eq (Term.mul multiple1 lower)
+        (Term.mul (Term.succ (Term.var 0)) lower)) :=
+    BProv_eq_congr_mul_left lower hmultiple
+  have hsuccMul : BProv Ax_s D
+      (eq (Term.mul (Term.succ (Term.var 0)) lower)
+        (Term.add diff lower)) := by
+    simpa [diff] using
+      BProv_Ax_s_succ_mul_terms (Term.var 0) lower
+  have hcomm : BProv Ax_s D
+      (eq (Term.add diff lower) (Term.add lower diff)) :=
+    BProv_Ax_s_add_comm_terms diff lower
+  have hproduct : BProv Ax_s D
+      (eq (Term.mul multiple1 lower) (Term.add lower diff)) :=
+    BProv_eqTrans hproductCong (BProv_eqTrans hsuccMul hcomm)
+  have hle : BProv Ax_s D
+      (leTermAt lower (Term.mul multiple1 lower)) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms hproduct
+  simpa [target, D, body, multiple1, value1, lower, diff,
+    leTermAt, rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hle
+
+/-- A source beta entry fits every target beta modulus whose step is strictly
+larger than the source code. -/
+theorem BProv_Ax_s_ltTermAt_betaMod_of_betaTermTermAt_le_step
+    {G : List Formula}
+    {out sourceCode sourceStep sourceIdx targetStep targetIdx : Term}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out sourceCode sourceStep sourceIdx))
+    (hlarge : BProv Ax_s G
+      (leTermAt (Term.succ sourceCode) targetStep)) :
+    BProv Ax_s G
+      (ltTermAt out (betaModTermTerm targetStep targetIdx)) := by
+  have houtLe : BProv Ax_s G (leTermAt out sourceCode) :=
+    BProv_Ax_s_leTermAt_output_of_betaTermTermAt hbeta
+  have hsuccOutLe : BProv Ax_s G
+      (leTermAt (Term.succ out) (Term.succ sourceCode)) :=
+    BProv_Ax_s_leTermAt_succ_succ houtLe
+  have hsuccOutStep : BProv Ax_s G
+      (leTermAt (Term.succ out) targetStep) :=
+    BProv_Ax_s_leTermAt_trans hsuccOutLe hlarge
+  have hstepMod : BProv Ax_s G
+      (leTermAt targetStep
+        (betaModTermTerm targetStep targetIdx)) :=
+    BProv_Ax_s_leTermAt_step_betaModTermTerm targetStep targetIdx
+  exact BProv_Ax_s_ltTermAt_of_succ_leTermAt
+    (BProv_Ax_s_leTermAt_trans hsuccOutStep hstepMod)
+
+/-- Scale a positive common multiple by `S sourceCode` to obtain a fixed
+beta-coding step. -/
+theorem BProv_Ax_s_betaCodingStepTermAt_of_positiveCommon
+    {G : List Formula} {bound sourceCode multiple : Term}
+    (hpositive : BProv Ax_s G
+      (positiveCommonMultipleThroughTermAt bound multiple)) :
+    BProv Ax_s G
+      (betaCodingStepTermAt bound sourceCode
+        (Term.mul multiple (Term.succ sourceCode))) := by
+  have hpos : BProv Ax_s G (ltTermAt Term.zero multiple) := by
+    simpa [positiveCommonMultipleThroughTermAt] using
+      BProv_andE1 hpositive
+  have hcommon : BProv Ax_s G
+      (commonMultipleThroughTermAt bound multiple) := by
+    simpa [positiveCommonMultipleThroughTermAt] using
+      BProv_andE2 hpositive
+  have hcommonScaled : BProv Ax_s G
+      (commonMultipleThroughTermAt bound
+        (Term.mul multiple (Term.succ sourceCode))) :=
+    BProv_Ax_s_commonMultipleThroughTermAt_mul_right hcommon
+  have hlarge : BProv Ax_s G
+      (leTermAt (Term.succ sourceCode)
+        (Term.mul multiple (Term.succ sourceCode))) :=
+    BProv_Ax_s_leTermAt_succ_mul_succ_of_pos hpos
+  exact BProv_andI (B := Ax_s) (G := G)
+    (by simpa [betaCodingStepTermAt] using hcommonScaled)
+    (by simpa [betaCodingStepTermAt] using hlarge)
+
+/-- Package an explicit fixed beta-coding step. -/
+theorem BProv_Ax_s_betaCodingStepExistsTermAt_of_term
+    {G : List Formula} {bound sourceCode step : Term}
+    (hstep : BProv Ax_s G
+      (betaCodingStepTermAt bound sourceCode step)) :
+    BProv Ax_s G
+      (betaCodingStepExistsTermAt bound sourceCode) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm step)
+        (betaCodingStepExistsTermAtBody bound sourceCode)) := by
+    simpa [betaCodingStepExistsTermAtBody, betaCodingStepTermAt,
+      commonMultipleThroughTermAt, dvdTermTermAt,
+      ltTermAt, leTermAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def] using hstep
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := betaCodingStepExistsTermAtBody bound sourceCode)
+    (t := step)
+    (by simpa [betaCodingStepExistsTermAt,
+      betaCodingStepExistsTermAtBody] using hbody)
+
+/-- PA proves existence of a fixed beta-coding step for every bound and source
+code. -/
+theorem BProv_Ax_s_betaCodingStepExistsTermAt
+    {G : List Formula} (bound sourceCode : Term) :
+    BProv Ax_s G
+      (betaCodingStepExistsTermAt bound sourceCode) := by
+  have hall : BProv Ax_s G
+      (all (positiveCommonMultipleExistsTermAt (Term.var 0))) :=
+    BProv_Ax_s_all_positiveCommonMultipleExistsTermAt (G := G)
+  have hpositiveRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := bound) hall
+  have hpositiveEx : BProv Ax_s G
+      (positiveCommonMultipleExistsTermAt bound) := by
+    simpa [positiveCommonMultipleExistsTermAt,
+      positiveCommonMultipleThroughTermAt,
+      commonMultipleThroughTermAt, dvdTermTermAt,
+      ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      Term.rename_comp, term_rename_up_succ_rename_succ,
+      Function.comp_def] using hpositiveRaw
+  let goal : Formula := betaCodingStepExistsTermAt bound sourceCode
+  refine BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened
+    (G := G) (bound := bound) (target := goal) ?_ hpositiveEx
+  let positiveBody : Formula :=
+    positiveCommonMultipleExistsTermAtBody bound
+  let D : List Formula := positiveBody :: G.map (rename Nat.succ)
+  let bound1 : Term := Term.rename Nat.succ bound
+  let sourceCode1 : Term := Term.rename Nat.succ sourceCode
+  have hpositive : BProv Ax_s D
+      (positiveCommonMultipleThroughTermAt bound1 (Term.var 0)) := by
+    have hraw : BProv Ax_s D positiveBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [positiveBody, positiveCommonMultipleExistsTermAtBody,
+      bound1] using hraw
+  have hstep : BProv Ax_s D
+      (betaCodingStepTermAt bound1 sourceCode1
+        (Term.mul (Term.var 0) (Term.succ sourceCode1))) :=
+    BProv_Ax_s_betaCodingStepTermAt_of_positiveCommon hpositive
+  have hex : BProv Ax_s D
+      (betaCodingStepExistsTermAt bound1 sourceCode1) :=
+    BProv_Ax_s_betaCodingStepExistsTermAt_of_term hstep
+  simpa [goal, D, positiveBody, bound1, sourceCode1,
+    positiveCommonMultipleExistsTermAtBody,
+    betaCodingStepExistsTermAt, betaCodingStepTermAt,
+    commonMultipleThroughTermAt, dvdTermTermAt,
+    ltTermAt, leTermAt, rename, Term.rename, SetTheory.up,
+    Term.rename_comp, Function.comp_def] using hex
 
 /-- The generic two-entry beta term has its requested current value at index
 zero.
