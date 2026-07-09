@@ -31835,6 +31835,57 @@ theorem
       (knownHalf := lowHalf+3) (idxTerm := Term.zero)
       hentry hodd hstep
 
+/-- Equality-branch analogue of the odd-low entry lemma.
+
+After opening `S x ∈ low`, the low trace starts from the shifted low slot `3`.
+The branch equality gives `low = high`, while the shifted odd-high assumption
+gives the odd decomposition at slot `4`; transporting that odd decomposition
+back to slot `3` exposes the high half as the first old trace value. -/
+theorem
+    BProv_Ax_s_eqHighOddOpenedWitnessSuccLowMem_opened_code_step_high_half_entry_termIdx
+    {highHalf : Nat} :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          eqHighOddOpenedIHContext highHalf))
+      (betaTermAtTermIdx (Term.var (highHalf+3)) 1 0
+        (Term.succ Term.zero)) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        eqHighOddOpenedIHContext highHalf)
+  have hentry : BProv Ax_s C
+      (betaTermAtTermIdx (Term.var 3) 1 0 Term.zero) := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_entry_termIdx
+        (G := strictHighOddOpenedWitnessSuccLowMemFormula ::
+          eqHighOddOpenedIHContext highHalf))
+  have hstep : BProv Ax_s C
+      (betaDiv2StepWitnessAtTermIdx 1 0 Term.zero) := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_zero_termIdx
+        (G := strictHighOddOpenedWitnessSuccLowMemFormula ::
+          eqHighOddOpenedIHContext highHalf))
+  have heq : BProv Ax_s C (eq (Term.var 3) (Term.var 4)) :=
+    BProv_ass (B := Ax_s) (G := C)
+      (by
+        simp [C, strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext,
+          eqHighOddOpenedIHContext, eqHighOddSuccCarryContext,
+          rename, Term.rename])
+  have hoddHigh : BProv Ax_s C (oddDoubleEqAt 4 (highHalf+3)) :=
+    BProv_ass (B := Ax_s) (G := C)
+      (by
+        simp [C, strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext,
+          eqHighOddOpenedIHContext, eqHighOddSuccCarryContext,
+          oddDoubleEqAt, rename, Term.rename])
+  have hoddLow : BProv Ax_s C (oddDoubleEqAt 3 (highHalf+3)) :=
+    BProv_oddDoubleEqAt_of_eq_value heq hoddHigh
+  exact
+    BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_of_current_oddDoubleEqAt
+      (G := C) (code := 1) (step := 0) (cur := 3)
+      (knownHalf := highHalf+3) (idxTerm := Term.zero)
+      hentry hoddLow hstep
+
 /-- Open the substituted low-membership assumption `S x ∈ low` down to its
 code and step witnesses.
 
