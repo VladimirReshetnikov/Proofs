@@ -9292,6 +9292,113 @@ theorem BProv_Ax_s_betaDiv2BitTermAt_of_subst_betaDiv2BitAt
       (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
       hbit' (by simpa [rename, body] using houter)
 
+/-- Convert a substituted legacy final-bit-`1` existential into the reusable
+term-parametric one-bit existential. -/
+theorem BProv_Ax_s_betaDiv2BitOneTermExAt_of_subst_bitOneEx
+    {G : List Formula} {σ : Nat → Term} {code step idx : Nat}
+    (hbitEx : BProv Ax_s G
+      (subst σ
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 (code+1) (step+1) (idx+1)))))) :
+    BProv Ax_s G
+      (betaDiv2BitOneTermExAt (σ code) (σ step) (σ idx)) := by
+  let code0 : Term := σ code
+  let step0 : Term := σ step
+  let idx0 : Term := σ idx
+  let target : Formula := betaDiv2BitOneTermExAt code0 step0 idx0
+  let body : Formula :=
+    subst (Term.upSubst σ)
+      (and
+        (oneAt 0)
+        (betaDiv2BitAt 0 (code+1) (step+1) (idx+1)))
+  have hbitEx' : BProv Ax_s G (ex body) := by
+    simpa [body, subst, Term.subst, Term.upSubst] using hbitEx
+  have hopened : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    let code1 : Term := Term.rename Nat.succ code0
+    let step1 : Term := Term.rename Nat.succ step0
+    let idx1 : Term := Term.rename Nat.succ idx0
+    have hbody : BProv Ax_s C body :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hone : BProv Ax_s C (oneAt 0) := by
+      simpa [body, oneAt, zeroAt, eqConstAt, subst, Term.subst,
+        Term.upSubst, Term.rename] using BProv_andE1 hbody
+    have hlegacy : BProv Ax_s C
+        (subst (Term.upSubst σ)
+          (betaDiv2BitAt 0 (code+1) (step+1) (idx+1))) := by
+      simpa [body, subst, Term.subst, Term.upSubst] using BProv_andE2 hbody
+    have hterm : BProv Ax_s C
+        (betaDiv2BitTermAt (Term.var 0) code1 step1 idx1) := by
+      simpa [code1, step1, idx1, code0, step0, idx0, Term.subst,
+        Term.upSubst, Term.subst_rename_succ_up] using
+          (BProv_Ax_s_betaDiv2BitTermAt_of_subst_betaDiv2BitAt
+          (G := C) (σ := Term.upSubst σ)
+          (bit := 0) (code := code+1) (step := step+1)
+          (idx := idx+1)
+          hlegacy)
+    have hnewBody : BProv Ax_s C
+        (and (oneAt 0)
+          (betaDiv2BitTermAt (Term.var 0) code1 step1 idx1)) :=
+      BProv_andI hone hterm
+    have hnewBodySubst : BProv Ax_s C
+        (subst (instTerm (Term.var 0))
+          (and
+            (oneAt 0)
+            (betaDiv2BitTermAt (Term.var 0)
+              (Term.rename Nat.succ code1)
+              (Term.rename Nat.succ step1)
+              (Term.rename Nat.succ idx1)))) := by
+      simpa [betaDiv2BitTermAt, betaTermTermAt, remTermTermAt,
+        div2StepTermAt, boolTermAt, ltTermAt, betaModTermTerm,
+        oneAt, zeroAt, eqConstAt, subst, instTerm, Term.subst,
+        Term.upSubst, rename, Term.rename, Term.rename_comp,
+        SetTheory.up, code1, step1, idx1, term_rename_up_succ_rename_succ,
+        term_subst_instTerm_rename_succ,
+        term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_two_var_zero,
+        term_subst_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_instTerm_rename_six_succ,
+        term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+        term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ,
+        Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hnewBody
+    have htargetShape :
+        ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitTermAt (Term.var 0)
+              (Term.rename Nat.succ code1)
+              (Term.rename Nat.succ step1)
+              (Term.rename Nat.succ idx1))) =
+          rename Nat.succ target := by
+      simp [target, betaDiv2BitOneTermExAt, code0, step0, idx0,
+        code1, step1, idx1,
+        betaDiv2BitTermAt, betaTermTermAt, remTermTermAt, div2StepTermAt,
+        boolTermAt, ltTermAt, betaModTermTerm, oneAt, eqConstAt,
+        rename, Term.rename, Term.rename_comp, SetTheory.up,
+        Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+    simpa [htargetShape] using
+      (BProv_exI (B := Ax_s) (G := C)
+        (a := and
+          (oneAt 0)
+          (betaDiv2BitTermAt (Term.var 0)
+            (Term.rename Nat.succ code1)
+            (Term.rename Nat.succ step1)
+            (Term.rename Nat.succ idx1)))
+        (t := Term.var 0) hnewBodySubst)
+  simpa [target, body] using
+    BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hbitEx' (by simpa [rename, body] using hopened)
+
 /-- Package explicit term-parametric beta entries, with the successor entry in
 the legacy successor-index wrapper, as a legacy-shaped beta-div2 step witness.
 -/
@@ -31098,6 +31205,49 @@ theorem
     strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
     strictHighOddOpenedWitnessSuccLowMemTraceTail, subst, Term.subst,
     Term.upSubst] using hbit
+
+/-- Projection of the final-bit existential from the fully opened `S x ∈ low`
+trace, converted to the reusable term-parametric bit-read form. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitTermEx
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hbit : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedBitExFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_bitEx
+        (G := G))
+  have hbit' : BProv Ax_s C
+      (subst strictHighOddOpenedWitnessSuccLowMemOpenedSubst
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 (1+1) (0+1) (2+1))))) := by
+    simpa [strictHighOddOpenedWitnessSuccLowMemOpenedBitExFormula,
+      strictHighOddOpenedWitnessSuccLowMemBitBody, Nat.add_assoc,
+      Nat.add_comm, Nat.add_left_comm] using hbit
+  have hterm :
+      BProv Ax_s C
+        (betaDiv2BitOneTermExAt
+          (strictHighOddOpenedWitnessSuccLowMemOpenedSubst 1)
+          (strictHighOddOpenedWitnessSuccLowMemOpenedSubst 0)
+          (strictHighOddOpenedWitnessSuccLowMemOpenedSubst 2)) :=
+    BProv_Ax_s_betaDiv2BitOneTermExAt_of_subst_bitOneEx
+      (G := C)
+      (σ := strictHighOddOpenedWitnessSuccLowMemOpenedSubst)
+      (code := 1) (step := 0) (idx := 2)
+      hbit'
+  simpa [C, strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+    strictHighOddSuccWitnessTerm, betaDiv2BitOneTermExAt,
+    betaDiv2BitTermAt, betaTermTermAt, remTermTermAt, div2StepTermAt,
+    boolTermAt, ltTermAt, betaModTermTerm, oneAt, zeroAt, eqConstAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    term_rename_up_succ_rename_succ, Nat.add_assoc, Nat.add_comm,
+    Nat.add_left_comm] using hterm
 
 /-- The opened `S x ∈ low` trace supplies its old index-`0` binary-halving step.
 
