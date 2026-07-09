@@ -501,12 +501,14 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
 #check PA.Formula.betaShiftTailExistsTermAtBody
 #check PA.Formula.betaShiftTailExistsTermAtStepEx
 #check PA.Formula.betaShiftTailExistsTermAtOpenedContext
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_through
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_one_bound_of_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
@@ -923,6 +925,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero
 #check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_modulus_one_square
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_value
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one
+#check @PA.Formula.BProv_Ax_s_twoEntryBetaTerm_entries
 #check @PA.Formula.BetaEntry_twoEntry_zero
 #check @PA.Formula.BetaEntry_twoEntry_one
 #check @PA.Formula.BetaDiv2Step_twoEntry
