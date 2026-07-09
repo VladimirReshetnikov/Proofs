@@ -3049,6 +3049,33 @@ def betaShiftTailExistsTermAt
       (Term.var 1) (Term.var 0)
       (Term.rename (fun n => n+2) last)))
 
+/-- Body exposed after opening both witnesses in
+`betaShiftTailExistsTermAt`. -/
+def betaShiftTailExistsTermAtBody
+    (oldCode oldStep : Nat) (last : Term) : Formula :=
+  betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
+    (Term.var 1) (Term.var 0)
+    (Term.rename (fun n => n+2) last)
+
+/-- Inner existential exposed after opening the new-code witness in
+`betaShiftTailExistsTermAt`. -/
+def betaShiftTailExistsTermAtStepEx
+    (oldCode oldStep : Nat) (last : Term) : Formula :=
+  ex (betaShiftTailExistsTermAtBody oldCode oldStep last)
+
+/-- Context obtained by opening both fresh witnesses in
+`betaShiftTailExistsTermAt oldCode oldStep last`.
+
+The head assumption is the shifted-tail relation for the freshly bound code
+and step variables.  The next assumption is the still-open inner existential,
+as required by the standard two-step existential elimination shape. -/
+def betaShiftTailExistsTermAtOpenedContext
+    (oldCode oldStep : Nat) (last : Term) (G : List Formula) :
+    List Formula :=
+  betaShiftTailExistsTermAtBody oldCode oldStep last ::
+    (betaShiftTailExistsTermAtStepEx oldCode oldStep last ::
+      G.map (rename Nat.succ)).map (rename Nat.succ)
+
 /-- Closed-bound variant of `betaShiftTailThroughTermAt`.
 
 For every standard `i <= last`, the beta entry at old index `S i` is copied
@@ -18278,6 +18305,76 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_HFMemTrace
   intro i hi
   rcases htrace.2.1 i (by omega) with ⟨cur, next, bit, hstep⟩
   exact ⟨next, hstep.2.1⟩
+
+/-- Eliminate `betaShiftTailExistsTermAt` by opening its fresh code and step
+witnesses.
+
+This is pure proof plumbing: the caller still has to prove the target from the
+opened shifted-tail relation in `betaShiftTailExistsTermAtOpenedContext`. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
+    {G : List Formula} {target : Formula}
+    {oldCode oldStep : Nat} {lastTerm : Term}
+    (hopened : BProv Ax_s
+      (betaShiftTailExistsTermAtOpenedContext oldCode oldStep lastTerm G)
+      (rename Nat.succ (rename Nat.succ target)))
+    (hex : BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm)) :
+    BProv Ax_s G target := by
+  let body : Formula :=
+    betaShiftTailExistsTermAtBody oldCode oldStep lastTerm
+  let stepEx : Formula :=
+    betaShiftTailExistsTermAtStepEx oldCode oldStep lastTerm
+  have houter : BProv Ax_s (stepEx :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    have hstepEx : BProv Ax_s (stepEx :: G.map (rename Nat.succ))
+        stepEx :=
+      BProv_ass (B := Ax_s)
+        (G := stepEx :: G.map (rename Nat.succ)) (by simp)
+    have hinner : BProv Ax_s
+        (body :: (stepEx :: G.map (rename Nat.succ)).map
+          (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)) := by
+      simpa [body, stepEx, betaShiftTailExistsTermAtOpenedContext,
+        betaShiftTailExistsTermAtStepEx,
+        betaShiftTailExistsTermAtBody] using hopened
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hstepEx (by
+        simpa [body, stepEx, betaShiftTailExistsTermAtStepEx,
+          betaShiftTailExistsTermAtBody] using hinner)
+  have houterEx : BProv Ax_s G (ex stepEx) := by
+    simpa [body, stepEx, betaShiftTailExistsTermAt,
+      betaShiftTailExistsTermAtStepEx,
+      betaShiftTailExistsTermAtBody] using hex
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    houterEx (by
+      simpa [body, stepEx, betaShiftTailExistsTermAtStepEx,
+        betaShiftTailExistsTermAtBody] using houter)
+
+/-- Eliminate a shifted-tail existence assumption at the head of a context by
+opening its fresh code and step witnesses. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_assumption_elim_opened
+    {G : List Formula} {target : Formula}
+    {oldCode oldStep : Nat} {lastTerm : Term}
+    (hopened : BProv Ax_s
+      (betaShiftTailExistsTermAtOpenedContext oldCode oldStep lastTerm
+        (betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G))
+      (rename Nat.succ (rename Nat.succ target))) :
+    BProv Ax_s
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G)
+      target := by
+  let C : List Formula :=
+    betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G
+  have hex : BProv Ax_s C
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  exact
+    BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
+      (G := C) (target := target)
+      (oldCode := oldCode) (oldStep := oldStep)
+      (lastTerm := lastTerm)
+      (by simpa [C] using hopened) hex
 
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/
