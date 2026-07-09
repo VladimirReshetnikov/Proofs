@@ -9,7 +9,7 @@
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
 From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
-From SetTheory Require Import Forward Reverse.
+From SetTheory Require Import Forward Reverse RiemannHypothesis.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
 Check T_iff_ZF.
@@ -95,6 +95,13 @@ Check PA.Formula.leConstAt_nat.
 Check PA.Formula.succPredAt_nat.
 Check PA.Formula.zeroOrSuccPredAt_nat.
 Check PA.Formula.betaDiv2StepsThroughConstAt_nat.
+Check PA.Formula.BetaShiftTailThrough.
+Check PA.Formula.boolTermAt.
+Check PA.Formula.div2StepTermAt.
+Check PA.Formula.boolTermAt_nat.
+Check PA.Formula.div2StepTermAt_nat.
+Check PA.Formula.leTermAt_nat.
+Check PA.Formula.ltTermAt_nat.
 Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt_all.
 Check PA.Formula.BProv_Ax_s_zeroOrSuccPred_term.
 Check PA.Formula.BProv_Ax_s_zeroOrSuccPredAt.
@@ -152,12 +159,57 @@ Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_succ_of_eqConst_step.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_const_eqConst.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughConstAt_of_eqConst_trace.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughAt_of_eqConst_trace.
+Check PA.Formula.remTermTermAt.
+Check PA.Formula.betaModTermTerm.
+Check PA.Formula.betaTermTermAt.
+Check PA.Formula.betaTermTermAtConstIdx.
+Check PA.Formula.betaTermTermAtSuccIdx.
+Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
+Check PA.Formula.betaModTermTerm_nat.
+Check PA.Formula.remTermTermAt_nat.
+Check PA.Formula.betaTermTermAt_nat_entry.
+Check PA.Formula.betaTermTermAtSuccIdx_nat_entry.
+Check PA.Formula.betaDiv2StepWitnessTermAt.
+Check PA.Formula.betaDiv2StepWitnessTermAt_nat.
+Check PA.Formula.betaDiv2StepWitnessTermSuccIdxAt.
+Check PA.Formula.betaDiv2StepsThroughTermAt.
+Check PA.Formula.betaDiv2StepsThroughTermAt_nat.
+Check PA.Formula.betaDiv2StepsThroughTermTermAt.
+Check PA.Formula.betaDiv2StepsThroughTermTermAt_nat.
+Check PA.Formula.betaShiftTailThroughTermAt.
+Check PA.Formula.betaShiftTailThroughTermAt_nat.
+Check PA.Formula.betaShiftTailExistsTermAt.
+Check PA.Formula.betaShiftTailExistsTermAt_nat.
+Check PA.Formula.betaShiftTailThroughConstAt.
+Check PA.Formula.betaShiftTailThroughConstAt_nat.
+Check PA.Formula.betaDiv2BitTermAt.
+Check PA.Formula.betaDiv2BitTermAt_nat.
+Check PA.Formula.betaDiv2BitOneTermExAt.
+Check PA.Formula.betaDiv2BitOneTermExAt_nat.
+Check PA.Formula.BProv_Ax_s_betaTermTermAtConstIdx_of_beta.
 Check PA.Formula.BProv_Ax_s_hfMemAt_bitOneEx_of_bit.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_components.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_closed_bit_components.
+Check PA.Formula.BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero.
+Check PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm.
 Check PA.Formula.BProv_Ax_s_hfMemAt_entryComponent_of_eqConst_entry.
 Check PA.Formula.BProv_Ax_s_hfMemAt_bitComponent_of_eqConst_bit.
 Check PA.Formula.BProv_Ax_s_hfMemAt_stepsComponent_of_eqConst_trace.
+
+(* PA statement of the Mertens/Littlewood form of RH. *)
+Check notF.
+Check remTermTermAt.
+Check betaTermTermAt.
+Check completePrimeFactorizationTraceAt.
+Check mobiusPositiveTermAt.
+Check mobiusNegativeTermAt.
+Check mertensCountsTraceAt.
+Check powTraceAt.
+Check powRelAt.
+Check mertensRiemannHypothesisBody.
+Check mertensRiemannHypothesisSentence.
+Check mertensRiemannHypothesisSentence_sentence.
+Print Assumptions mertensRiemannHypothesisSentence_sentence.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace_with_steps.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_trace.
 Check PA.Formula.BProv_Ax_s_hfMemAt_of_eqConst_mem.

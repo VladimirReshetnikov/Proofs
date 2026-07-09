@@ -17,5 +17,8 @@ BusyBeaverMathlib.v
 Forward.v
 Reverse.v
 
+# PA statement of the Mertens/Littlewood form of RH.
+RiemannHypothesis.v
+
 # Capstone: type-checks the headline results and prints their axiom footprints.
 Audit.v
