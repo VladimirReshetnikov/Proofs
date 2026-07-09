@@ -36,6 +36,10 @@ noncomputable section
 
 open Complex
 
+/-! ## Canonical lexical definition layer
+
+Defines principal complex power, the `IPowExpr` lexical syntax, the value sets/finsets and their equivalences, and the `a198683` sequence itself. -/
+
 /-- Principal complex power, written separately from Lean's `Pow` instance so
 the definition used for the sequence is visible in this module. -/
 def principalPow (z w : ℂ) : ℂ :=
@@ -218,6 +222,10 @@ theorem a198683_eq_recursiveValueFinset_card (n : Nat) :
 
 namespace A198683Support
 
+/-! ## Tower constants p2 … p6O
+
+The named `noncomputable` complex constants for every n≤6 parenthesization of the `i` power tower. -/
+
 noncomputable def p2 : ℂ :=
   principalPow Complex.I Complex.I
 
@@ -305,6 +313,10 @@ noncomputable def p6O : ℂ :=
 end A198683Support
 
 open A198683Support
+
+/-! ## Base values n = 1, 2 and the i^i angle constants
+
+Proves `a198683 1` and `a198683 2` and introduces the real angle parameters rho, theta, tau, beta with the core i^i analytic facts. -/
 
 /-- `A198683(1) = 1`. -/
 theorem a198683_one : a198683 1 = 1 := by
@@ -411,6 +423,10 @@ theorem i_pow_ii_ne_ii_pow_i :
   linarith [i_pow_ii_re_pos]
 
 end A198683Support
+
+/-! ## A198683(3) and the n ≤ 3 membership groundwork
+
+Proves `a198683 3` together with the n≤3 value-set membership lemmas and the supporting distinctness facts. -/
 
 /-- `A198683(3) = 2`. -/
 theorem a198683_three : a198683 3 = 2 := by
@@ -577,6 +593,10 @@ theorem mem_valueSet_three {z : ℂ} :
 
 end A198683Support
 
+/-! ## A198683(4) = 3
+
+The standalone proof that the fourth tower yields exactly three distinct values. -/
+
 /-- `A198683(4) = 3`. -/
 theorem a198683_four : a198683 4 = 3 := by
   rw [a198683_eq_valueSet_ncard]
@@ -646,6 +666,10 @@ theorem a198683_four : a198683 4 = 3 := by
   rw [Set.ncard_insert_of_notMem hnot, Set.ncard_pair v4b_ne_v4c]
 
 namespace A198683Support
+
+/-! ## Closed-form and logarithmic rewrites of the tower constants
+
+Re-expresses p2…p6 in exp/log closed forms and records their principal logarithms for the higher-tower analysis. -/
 
 theorem p2_eq_rho :
     p2 = (rho : ℂ) := by
@@ -805,6 +829,10 @@ theorem p5C_eq_exp_pi_mul_exp_neg_theta :
   rw [log_I_real, p4C_eq_exp_neg_theta]
   congr 1
   apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
+
+/-! ## The n = 5 layer: signs, norms, and distinctness
+
+Sign, modulus, and pairwise-distinctness analysis of p4A and the seven p5 constants. -/
 
 theorem p4A_im_pos :
     0 < p4A.im := by
@@ -1096,6 +1124,10 @@ theorem angleC_lt_angleE :
 theorem angleE_lt_pi :
     Real.pi / 2 < Real.pi := by
   linarith [Real.pi_pos]
+
+/-! ## Explicit rational bounds and I-power injectivity infrastructure
+
+Rational numeric bounds on the base angles and p4A, plus the general `I`-power injectivity and norm≤1 lemmas used downstream. -/
 
 theorem exp_pi_div_two_gt_24_div_5 :
     (24 : ℝ) / 5 < Real.exp (Real.pi / 2) := by
@@ -1615,6 +1647,10 @@ theorem p5F_norm_le_one : ‖p5F‖ ≤ 1 := by
 
 theorem p5G_norm_le_one : ‖p5G‖ ≤ 1 := by
   rw [p5G_norm_eq_one]
+
+/-! ## The n = 6 layer: identities, signs, and half-plane distinctness
+
+The p2^p5 / p5^I identities defining the fifteen p6 constants, their sign facts, logarithms, and open-half-plane distinctness. -/
 
 theorem p6A_pow_I_eq_p2_pow_p5A :
     principalPow p6A Complex.I = principalPow p2 p5A := by
@@ -2375,6 +2411,10 @@ theorem p6M_im_neg :
     nlinarith [Real.pi_pos, hcos_le_one]
   exact mul_pos (Real.exp_pos _) (Real.sin_pos_of_mem_Ioo ⟨harg_pos, harg_lt_pi⟩)
 
+/-! ## n = 6 magnitude bounds and real-axis distinctness
+
+Rational im/re bounds, modulus estimates (norm<1, >1, <2), and the real-axis distinctness lemmas among the p6 constants. -/
+
 theorem p6K_im_pos :
     0 < p6K.im := by
   dsimp [p6K, principalPow]
@@ -3025,6 +3065,10 @@ theorem p6J_ne_p6L : p6J ≠ p6L :=
 
 theorem p6N_ne_p6L : p6N ≠ p6L :=
   ne_of_re_lt p6N_re_lt_p6L_re
+
+/-! ## Membership characterization of the A198683(4) value set
+
+The final `mem_valueSet_four` lemma pinning the n=4 value set to {p4A, p4B, p4C} for the sibling modules. -/
 
 theorem mem_valueSet_four {z : ℂ} :
     z ∈ a198683ValueSet 4 ↔ z = p4A ∨ z = p4B ∨ z = p4C := by

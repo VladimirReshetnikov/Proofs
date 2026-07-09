@@ -369,26 +369,6 @@ Proof.
   - apply equation_eq_dec.
 Defined.
 
-Definition checkStep (eqs : list Equation) (step : Step) : bool :=
-  if known eqs (source step) then
-    match Equation.subterm (source step) (pos step),
-          Equation.subterm (target step) (pos step) with
-    | Some old, Some replacement =>
-        match Matching.instanceSubst (ruleEq step)
-          {| lhs := old; rhs := replacement |} with
-        | Some _ =>
-            if equation_eq_dec
-                (option_rect (fun _ => Equation) (fun e => e) (source step)
-                   (Equation.replace (source step) (pos step) replacement))
-                (target step)
-            then known eqs (ruleEq step)
-            else false
-        | None => false
-        end
-    | _, _ => false
-    end
-  else false.
-
 (* A cleaner boolean form of [Equation.replace source pos replacement = Some target]. *)
 Definition replacedBy (source : Equation) (pos : Equation.Pos)
     (replacement : Term) (target : Equation) : bool :=

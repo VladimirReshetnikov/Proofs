@@ -43,11 +43,6 @@ Definition add (x y : Sparse) : Sparse := x + y.
 
 Definition shift (x b : Sparse) : Sparse := x * 2 ^ b.
 
-Theorem beq_refl (x : Sparse) : beq x x = true.
-Proof.
-  apply N.eqb_refl.
-Qed.
-
 Theorem beq_eq {x y : Sparse} : beq x y = true <-> x = y.
 Proof.
   apply N.eqb_eq.

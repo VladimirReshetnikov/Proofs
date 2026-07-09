@@ -429,6 +429,56 @@ Proof.
     + apply (Prov_weaken (Gb2 ++ L) a H2). intros x Hx; mem.
 Qed.
 
+Lemma BProv_eqElim : forall B G i j a,
+  BProv B G (fEq i j) ->
+  BProv B G (rename (inst i) a) ->
+  BProv B G (rename (inst j) a).
+Proof.
+  intros B G i j a [Geq [HGeq Hpeq]] [Ga [HGa Hpa]].
+  exists (Geq ++ Ga).
+  split.
+  - intros x Hx.
+    apply in_app_iff in Hx.
+    destruct Hx as [Hx | Hx].
+    + apply HGeq. exact Hx.
+    + apply HGa. exact Hx.
+  - apply (P_eqElim ((Geq ++ Ga) ++ G) i j a).
+    + apply (Prov_weaken (Geq ++ G) (fEq i j) Hpeq).
+      intros x Hx; mem.
+    + apply (Prov_weaken (Ga ++ G) (rename (inst i) a) Hpa).
+      intros x Hx; mem.
+Qed.
+
+Lemma BProv_eqSym : forall B G i j,
+  BProv B G (fEq i j) -> BProv B G (fEq j i).
+Proof.
+  intros B G i j [Gb [HGb Hp]].
+  exists Gb.
+  split; [ exact HGb | ].
+  apply Prov_eq_sym.
+  exact Hp.
+Qed.
+
+Lemma BProv_eqTrans : forall B G i j k,
+  BProv B G (fEq i j) ->
+  BProv B G (fEq j k) ->
+  BProv B G (fEq i k).
+Proof.
+  intros B G i j k [Gi [HGi Hpi]] [Gj [HGj Hpj]].
+  exists (Gi ++ Gj).
+  split.
+  - intros x Hx.
+    apply in_app_iff in Hx.
+    destruct Hx as [Hx | Hx].
+    + apply HGi. exact Hx.
+    + apply HGj. exact Hx.
+  - apply (Prov_eq_trans ((Gi ++ Gj) ++ G) i j k).
+    + apply (Prov_weaken (Gi ++ G) (fEq i j) Hpi).
+      intros x Hx; mem.
+    + apply (Prov_weaken (Gj ++ G) (fEq j k) Hpj).
+      intros x Hx; mem.
+Qed.
+
 Lemma stepB_pos_in : forall B L phi, BCon B (phi :: L) -> In phi (stepB B L phi).
 Proof.
   intros B L phi Hc. unfold stepB.
@@ -647,6 +697,46 @@ Proof.
   assert (Hp : Sat Dom m v psi) by (apply Hval; exact HsatB).
   assert (Hnpv : Sat Dom m v (fImp psi fBot)) by (apply HsatL; left; reflexivity).
   simpl in Hnpv. exact (Hnpv Hp).
+Qed.
+
+Theorem completeness_inf_context :
+  forall B G psi, Sentences B ->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, B g -> Sat Dom m v g) ->
+       (forall g, In g G -> Sat Dom m v g) ->
+       Sat Dom m v psi) ->
+    BProv B G psi.
+Proof.
+  intros B G psi HB Hval.
+  apply NNPP. intro Hnp.
+  assert (HBcon : BCon B (fImp psi fBot :: G)).
+  {
+    intros [Gb [HGb Hbad]].
+    apply Hnp.
+    exists Gb.
+    split; [ exact HGb | ].
+    apply Prov_byContra.
+    apply (Prov_exch (Gb ++ fImp psi fBot :: G)).
+    - intro x; mem.
+    - exact Hbad.
+  }
+  destruct (model_of_BCon B (fImp psi fBot :: G) HB HBcon)
+    as [Dom [m [v [HsatB HsatL]]]].
+  assert (Hp : Sat Dom m v psi).
+  {
+    apply Hval.
+    - exact HsatB.
+    - intros g hg.
+      apply HsatL.
+      right. exact hg.
+  }
+  assert (Hnpv : Sat Dom m v (fImp psi fBot)).
+  {
+    apply HsatL.
+    left. reflexivity.
+  }
+  simpl in Hnpv.
+  exact (Hnpv Hp).
 Qed.
 
 (* DEDUCTIVE EQUIVALENCE: two sentence theories with the same models prove

@@ -379,7 +379,7 @@ def wolframLhs : Term :=
 def wolframRhs : Term := Term.var 2
 
 theorem wolfram_operator_count : nodeCount wolframLhs + nodeCount wolframRhs = 6 := by
-  native_decide
+  decide
 
 theorem wolfram_equation_characterizes_sheffer_tables :
     characterizesShefferTables wolframLhs wolframRhs = true := by

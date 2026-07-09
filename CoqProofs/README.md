@@ -18,8 +18,9 @@ Current ports:
   `Sheffer.lean`: NAND/NOR truth tables, one-stroke formulas, ordinary
   classical propositional formulas, and truth-preserving translations into
   pure NAND and pure NOR syntax.
-- `Nicod.v` ports the NAND language, Nicod axiom/rule derivations, soundness,
-  and functional-completeness lemmas from `Nicod.lean`.
+- `Nicod.v` ports the Nicod axiom/rule derivations, soundness, and
+  functional-completeness lemmas from `Nicod.lean`, over the shared NAND-only
+  stroke language of `Sheffer.v` (as in the Lean original).
 - `ArctanSquareIdentity.v` ports the quadratic arctangent identity proof.
 - `TrigGoldenRatio.v` ports the elementary identity
   `sin 9° + sin 21° + sin 39° = φ / √2`.  Coq's standard library does not
@@ -81,19 +82,33 @@ Current ports:
   restating the initial values through `n = 7` and the historical lower/upper
   bound corollaries over the Coq symbolic quotient.  The Lean file's semantic
   complex lower-bound proof is not yet replayed in Coq.
+- `A198683EightBounds.v` records the Coq-side level-8 finite certificate
+  surface corresponding to `A198683EightBounds.lean`: the raw Coq symbolic
+  quotient still has 135 level-8 candidates, while the imported Schoenfield
+  certificate normalizes the generated level-8 class table to 77 classes and
+  hence lies inside the Lean semantic interval `[16, 127]`.  The analytic
+  complex-power bridge proving those bounds for the semantic `a198683 8` is
+  not replayed in Coq.
 - `A000081.v` ports the finite executable certificate from `A000081.lean`.
   It uses a hereditarily sorted exponent normal form for positive-real tower
   functions, preserving the named small parenthesizations and equality
   certificates such as `e4c = e4d` and `e5f = e5j`.  It certifies the Lean
   values through `n = 5` and extends the same executable normal-form count
   through `n = 8`.
+- `A158415.v` ports the finite headline certificate surface from the
+  generated `A158415*.lean` corpus: Coq keeps the expression-tree syntax and
+  the checked cardinality/value table through `n = 15`, including the public
+  `a158415_*` and `recursiveValueSet_*_ncard` theorem names.  The generated
+  real-radical ordering and range proof is not replayed in Coq.
 - `A199812.v` ports the executable ordinal-note recurrence behind
   `A199812.lean`: inner tower exponents are represented as Cantor-normal-form
   notes below epsilon_0, tower splits combine degrees by
   `a, b |-> a + omega^b`, and the recurrence is connected to the shared
-  `PowTower.v` evaluator.  It certifies the initial values through `n = 12`;
-  the Lean module's mathlib ordinal-semantics bridge and longer table through
-  `n = 13` are not yet replayed in Coq.
+  `PowTower.v` evaluator.  The counts are produced by a memoized level table
+  deduplicated with a fueled mergesort over `onoteCompare` and computed once
+  into a single vm_computed table, matching the Lean value table through
+  `n = 13`; the Lean module's mathlib ordinal-semantics bridge is not yet
+  replayed in Coq.
 - `SparseBinary.v` ports the proof-facing sparse-arithmetic surface used by
   A002845.  It uses Coq's verified binary natural numbers `N` as the sparse
   carrier, preserving the evaluation/canonicality/comparison and
@@ -101,12 +116,18 @@ Current ports:
 - `A002845.v` ports the exact-logarithm reduction for the natural power tower
   sequence, keeps the binary-`N` executable logarithm bridge for the initial
   direct layer, and adds a hereditary sparse-binary recurrence for the finite
-  certificates.  It verifies the Lean value table through `n = 14`.
+  certificates.  The executable-only `HereditarySparse` level recurrence is
+  deduplicated with a tail-recursive fueled mergesort over its fueled
+  `compare` and computed once into a single vm-checked binary-`N` count
+  table, cross-checked against the quadratic structural-equality dedup on a
+  cheap prefix.  It verifies the value table through `n = 17` (the Lean
+  module's live table reaches `n = 18`).
 - `A198683N12Magnitude.v` ports the finite TSV-metadata layer from
   `A198683N12Magnitude.lean`: the n = 12 huge-negative-exponent,
-  negative-exponent-above-ten, and overflow-regime flags are represented as
-  generated one-hot lists over the 5139 retained candidates, and Coq proves
-  that candidate 57 is the unique flagged row.  The Lean file's
+  negative-exponent-above-ten, and overflow-regime flags are embedded as
+  literal transcriptions of the Lean lists over the 5139 retained candidates;
+  Coq proves each literal equal to the generated one-hot list by `vm_compute`
+  and that candidate 57 is the unique flagged row.  The Lean file's
   complex-analytic exponential separation lemmas are not yet replayed in Coq.
 - `A198683N12Probe.v` ports the finite retained-data certificate from
   `A198683N12Probe.lean`: the `strict_class` labels are generated from
@@ -135,6 +156,9 @@ Current ports:
   `A198683SchoenfieldRows.lean`: Coq reconstructs the normalized labels from
   the retained Schoenfield table rows for `n = 7` through `n = 11` and then
   reuses the class-count certificate.
+- `A198683N12Endpoints.v` gives the merged Lean endpoint module its own Coq
+  import surface, re-exporting the complex-instantiated near-one split and
+  n = 12 consequences from `A198683N12CertificateC.v`.
 - `EquationalLogic.v` ports the executable first-order equational proof
   checker and its soundness theorem.
 - `WolframBooleanCertificates.v` ports the Wolfram/Meredith generated
@@ -142,10 +166,22 @@ Current ports:
 - `WolframBooleanHuntingtonCertificates.v` ports the generated
   Sheffer-to-Huntington certificate.
 - `WolframBoolean.v` exposes the certificate-derived algebraic consequences,
-  Boolean truth-table characterization, NAND/NOR functional-completeness
-  theorem layer, and executable finite-search machinery.  The final Lean
-  `native_decide` lower-bound theorem is not yet replayed in Coq; the direct
-  monolithic `vm_compute`/`native_compute` check was too slow.
+  Boolean truth-table characterization, the NAND/NOR functional-completeness
+  layer (over the shared stroke language of `Sheffer.v`), and the executable
+  finite-search machinery (over the first-order terms of `EquationalLogic.v`).
+  The Lean pair's `native_decide` lower-bound certificate is fully replayed:
+  `shortEquationCountermodelCheck = true` is proved by `vm_compute` through a
+  proved bridge to lazy `match`-based `forallb`/`existsb` combinators.
+  `vm_compute` is call-by-value, so the eager `andb`/`orb` in the original
+  definitions would run the full 128-environment sweep and the entire
+  countermodel search on every candidate equation; the short-circuiting
+  combinators plus hoisting the constant non-Wolfram pool out of the
+  per-equation loop bring the whole check to a few seconds, and bridge
+  equalities transport the result back to the original eager definitions.
+  This yields Coq counterparts of
+  `every_short_boolean_sheffer_equation_has_finite_nonwolfram_countermodel`
+  and `wolfram_six_operations_is_minimal_for_single_equational_axioms` with
+  statements matching the Lean originals.
 
 Build from `src/Lean/`:
 
@@ -164,6 +200,7 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683FiveSix.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SevenUpper.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A000081.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A158415.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
@@ -173,8 +210,10 @@ coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12OverflowWitness.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Symbolic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Schoenfield.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SchoenfieldRows.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683EightBounds.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBoolean.v
+coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Endpoints.v
 ```

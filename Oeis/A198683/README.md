@@ -23,7 +23,7 @@ records the accepted values through `n=11`:
 
 It also records the historical note that `a(12)` was said to be either
 `2919` or `2926`. The local research on this question has been organised
-into four temporal waves, each preserved intact under
+into five temporal waves, each preserved intact under
 [`reports/`](reports/README.md):
 
 - **Wave-1** ([`reports/wave-1/`](reports/wave-1/README.md)) — the two
@@ -44,6 +44,10 @@ into four temporal waves, each preserved intact under
   Lean proof-state checkpoint after the shared lexical-definition refactor,
   including what has been proved, what has been tried, and promising future
   directions while further `a(12)` pinpointing is paused.
+- **Wave-5** ([`reports/wave-5/`](reports/wave-5/README.md)) — the Lean
+  decision-tree certificate (`A198683N12Certificate.lean`) and the proved
+  near-`1` split (`A198683N12Endpoints.lean`), including the two
+  refuted-and-repaired endpoint constants.
 
 The single best entry point to the post-wave-2 corpus is
 [`reports/wave-3/a198683-post-wave2-synthesis.md`](reports/wave-3/a198683-post-wave2-synthesis.md).
@@ -52,6 +56,31 @@ structurally-degenerate candidate clusters that produce the residual
 ambiguity, and the explicit inventory of unsettled questions.
 For the current Lean formalization checkpoint, read
 [`reports/wave-4/a198683-n12-lean-status-and-next-directions.md`](reports/wave-4/a198683-n12-lean-status-and-next-directions.md).
+
+Since wave-4, the Lean module
+[`../../LeanProofs/A198683N12Certificate.lean`](../../LeanProofs/A198683N12Certificate.lean)
+packages the entire residual uncertainty as one machine-checked **decision
+tree**: given a partition witness (the wide, interval-checkable certificate the
+wave-3 pipeline is designed to produce), Lean proves
+`a198683 12 ∈ {2924, 2925, 2926}` outright, and each of the two isolated
+narrow hypotheses — the near-`1` split `nearOne25 ≠ nearOne1404` and the
+overflow **no-miracles** hypothesis for candidate `57` — removes one branch;
+both together pin `a198683 12 = 2926`.  The near-`1` split is now **proved**:
+[`../../LeanProofs/A198683N12Endpoints.lean`](../../LeanProofs/A198683N12Endpoints.lean)
+discharges every scalar endpoint estimate of the Symbolic module's interval
+ladder by Taylor partial sums — settling question Q3 of the wave-3 synthesis
+in the split direction, and en route exposing (and repairing) two
+endpoint-vs-midpoint transcription errors in the ladder's original
+constants, each refuted in Lean before correction.  Consequently
+`a198683 12 ∈ {2925, 2926}` holds given any partition witness alone, and the
+overflow no-miracles hypothesis is the single remaining narrow question,
+deciding `2926` versus `2925`.  That module's docstring is the recommended
+summary of exactly which facts the expected value `2926` rests on.
+**No unconditional value of `a(n)` beyond `n = 7` is proved** — the witness
+the decision tree consumes has not been constructed; the authoritative
+proved / conditional / data-certified / heuristic ledger, with the measured
+remaining work for each goal, is
+[`reports/wave-5/a198683-formalization-status-and-remaining-work.md`](reports/wave-5/a198683-formalization-status-and-remaining-work.md).
 
 ## What is settled and what is not
 

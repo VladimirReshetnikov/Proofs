@@ -1,9 +1,24 @@
 -Q . SetTheory
-Forward.v
-Reverse.v
+
+# Core Closure-axiomatization <-> ZF development.
 Fol.v
 Calculus.v
 Completeness.v
 Zf.v
 Equivalence.v
 PAHF.v
+
+# Busy Beaver domination interface and its mathlib-free witnesses/bridge.
+BusyBeaver.v
+BusyBeaverKnownValues.v
+BusyBeaverMathlib.v
+
+# Self-contained shallow forward/reverse trades.
+Forward.v
+Reverse.v
+
+# PA statement of the Mertens/Littlewood form of RH.
+RiemannHypothesis.v
+
+# Capstone: type-checks the headline results and prints their axiom footprints.
+Audit.v

@@ -65,11 +65,6 @@ noncomputable abbrev sharedEval : PowTower.Expr -> PosReal -> PosReal :=
 noncomputable abbrev eval : PowExpr -> PosReal -> PosReal :=
   sharedEval
 
-/-- A000081's recursive evaluator agrees with the shared lexical evaluator. -/
-theorem eval_eq_sharedEval (e : PowExpr) :
-    eval e = sharedEval e := by
-  rfl
-
 @[simp] theorem eval_atom (t : PosReal) :
     eval .atom t = t := by
   rfl

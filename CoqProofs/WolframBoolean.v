@@ -3,14 +3,18 @@
 
   The generated equational certificates live in
   WolframBooleanCertificates.v and WolframBooleanHuntingtonCertificates.v.
-  This file exposes their algebraic consequences and the two-valued Boolean
-  functional-completeness layer in ordinary Coq definitions.
+  This file exposes their algebraic consequences, the two-valued Boolean
+  functional-completeness layer (over the shared stroke language of
+  Sheffer.v), and the certified finite search behind the six-operator
+  lower bound, including the Lean pair's finite countermodel certificate
+  `shortEquationCountermodelCheck = true`.
 *)
 
 From Stdlib Require Import Bool.Bool.
 From Stdlib Require Import Arith.PeanoNat.
 From Stdlib Require Import Lists.List.
 From LeanProofsCoq Require Import
+  Sheffer
   EquationalLogic
   WolframBooleanCertificates
   WolframBooleanHuntingtonCertificates.
@@ -26,12 +30,12 @@ Module WBC :=
   LeanProofsCoq.WolframBooleanCertificates.LeanProofs.WolframBooleanCertificates.
 Module WBH :=
   LeanProofsCoq.WolframBooleanHuntingtonCertificates.LeanProofs.WolframBooleanHuntingtonCertificates.
+Module Sheffer := LeanProofsCoq.Sheffer.LeanProofs.Sheffer.
+Import Sheffer.
 
-Definition boolNand (p q : bool) : bool :=
-  negb (p && q).
-
-Definition boolNor (p q : bool) : bool :=
-  negb (p || q).
+(* ------------------------------------------------------------------ *)
+(* Single-equation and few-equation axiom systems                      *)
+(* ------------------------------------------------------------------ *)
 
 Definition WolframAxiom {A : Type} (op : A -> A -> A) : Prop :=
   forall a b c, op (op (op a b) c) (op a (op (op a c) a)) = c.
@@ -66,6 +70,10 @@ Definition SameBoolOp (op op' : bool -> bool -> bool) : Prop :=
 
 Definition IsBooleanSheffer (op : bool -> bool -> bool) : Prop :=
   SameBoolOp op boolNand \/ SameBoolOp op boolNor.
+
+(* ------------------------------------------------------------------ *)
+(* Equational certificates over arbitrary carriers                     *)
+(* ------------------------------------------------------------------ *)
 
 Theorem wolfram_derives_sheffer_axioms {A : Type} (op : A -> A -> A)
     (h : WolframAxiom op) : ShefferAxioms op.
@@ -205,37 +213,6 @@ Proof.
   reflexivity.
 Qed.
 
-Ltac finish_bool_table_contradiction H :=
-  cbn in H;
-  repeat match type of H with
-  | context[?op false false] =>
-      match goal with Hff : ?op false false = _ |- _ => rewrite Hff in H end
-  | context[?op false true] =>
-      match goal with Hft : ?op false true = _ |- _ => rewrite Hft in H end
-  | context[?op true false] =>
-      match goal with Htf : ?op true false = _ |- _ => rewrite Htf in H end
-  | context[?op true true] =>
-      match goal with Htt : ?op true true = _ |- _ => rewrite Htt in H end
-  end;
-  discriminate.
-
-Ltac use_wolfram_row h a b c :=
-  let H := fresh "Hw" in
-  pose proof (h a b c) as H;
-  finish_bool_table_contradiction H.
-
-Ltac contradict_wolfram_table h :=
-  first [
-    use_wolfram_row h false false false
-  | use_wolfram_row h false false true
-  | use_wolfram_row h false true false
-  | use_wolfram_row h false true true
-  | use_wolfram_row h true false false
-  | use_wolfram_row h true false true
-  | use_wolfram_row h true true false
-  | use_wolfram_row h true true true
-  ].
-
 Theorem wolfram_characterizes_sheffer_on_bool
     (op : bool -> bool -> bool) (h : WolframAxiom op) : IsBooleanSheffer op.
 Proof.
@@ -287,33 +264,6 @@ Proof.
   reflexivity.
 Qed.
 
-Ltac use_meredith3 h a b c :=
-  let H := fresh "Hm" in
-  pose proof (h a b c) as H;
-  finish_bool_table_contradiction H.
-
-Ltac use_meredith2 h a b :=
-  let H := fresh "Hm" in
-  pose proof (h a b) as H;
-  finish_bool_table_contradiction H.
-
-Ltac contradict_meredith_table h :=
-  destruct h as [h1 h2];
-  first [
-    use_meredith3 h1 false false false
-  | use_meredith3 h1 false false true
-  | use_meredith3 h1 false true false
-  | use_meredith3 h1 false true true
-  | use_meredith3 h1 true false false
-  | use_meredith3 h1 true false true
-  | use_meredith3 h1 true true false
-  | use_meredith3 h1 true true true
-  | use_meredith2 h2 false false
-  | use_meredith2 h2 false true
-  | use_meredith2 h2 true false
-  | use_meredith2 h2 true true
-  ].
-
 Theorem meredith_characterizes_sheffer_on_bool
     (op : bool -> bool -> bool) (h : MeredithAxioms op) : IsBooleanSheffer op.
 Proof.
@@ -336,125 +286,17 @@ Proof.
   discriminate.
 Qed.
 
-Inductive StrokeFormula (A : Type) : Type :=
-| SAtom : A -> StrokeFormula A
-| Stroke : StrokeFormula A -> StrokeFormula A -> StrokeFormula A.
-
-Arguments SAtom {A} _.
-Arguments Stroke {A} _ _.
-
-Fixpoint strokeEvalWith {A : Type} (op : bool -> bool -> bool)
-    (v : A -> bool) (p : StrokeFormula A) : bool :=
-  match p with
-  | SAtom a => v a
-  | Stroke p q => op (strokeEvalWith op v p) (strokeEvalWith op v q)
-  end.
-
-Inductive ClassicalFormula (A : Type) : Type :=
-| CAtom : A -> ClassicalFormula A
-| CNeg : ClassicalFormula A -> ClassicalFormula A
-| CAnd : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A
-| COr : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A
-| CImp : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A
-| CIff : ClassicalFormula A -> ClassicalFormula A -> ClassicalFormula A.
-
-Arguments CAtom {A} _.
-Arguments CNeg {A} _.
-Arguments CAnd {A} _ _.
-Arguments COr {A} _ _.
-Arguments CImp {A} _ _.
-Arguments CIff {A} _ _.
-
-Fixpoint classicalEval {A : Type} (v : A -> bool)
-    (p : ClassicalFormula A) : bool :=
-  match p with
-  | CAtom a => v a
-  | CNeg p => negb (classicalEval v p)
-  | CAnd p q => classicalEval v p && classicalEval v q
-  | COr p q => classicalEval v p || classicalEval v q
-  | CImp p q => negb (classicalEval v p) || classicalEval v q
-  | CIff p q => Bool.eqb (classicalEval v p) (classicalEval v q)
-  end.
-
-Fixpoint toNand {A : Type} (p : ClassicalFormula A) : StrokeFormula A :=
-  match p with
-  | CAtom a => SAtom a
-  | CNeg p =>
-      let p' := toNand p in Stroke p' p'
-  | CAnd p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      let pq := Stroke p' q' in Stroke pq pq
-  | COr p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      Stroke (Stroke p' p') (Stroke q' q')
-  | CImp p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      Stroke p' (Stroke q' q')
-  | CIff p q =>
-      let p' := toNand p in
-      let q' := toNand q in
-      let pq := Stroke p' (Stroke q' q') in
-      let qp := Stroke q' (Stroke p' p') in
-      let both := Stroke pq qp in
-      Stroke both both
-  end.
-
-Fixpoint toNor {A : Type} (p : ClassicalFormula A) : StrokeFormula A :=
-  match p with
-  | CAtom a => SAtom a
-  | CNeg p =>
-      let p' := toNor p in Stroke p' p'
-  | CAnd p q =>
-      let p' := toNor p in
-      let q' := toNor q in
-      Stroke (Stroke p' p') (Stroke q' q')
-  | COr p q =>
-      let p' := toNor p in
-      let q' := toNor q in
-      let pq := Stroke p' q' in Stroke pq pq
-  | CImp p q =>
-      let p' := toNor p in
-      let q' := toNor q in
-      let np := Stroke p' p' in
-      let npq := Stroke np q' in
-      Stroke npq npq
-  | CIff p q =>
-      let p' := toNor p in
-      let q' := toNor q in
-      let np := Stroke p' p' in
-      let nq := Stroke q' q' in
-      let pq := Stroke (Stroke np q') (Stroke np q') in
-      let qp := Stroke (Stroke nq p') (Stroke nq p') in
-      Stroke (Stroke pq pq) (Stroke qp qp)
-  end.
-
-Theorem eval_toNand {A : Type} (v : A -> bool) :
-    forall p : ClassicalFormula A,
-      strokeEvalWith boolNand v (toNand p) = classicalEval v p.
-Proof.
-  induction p; simpl; try rewrite IHp; try rewrite IHp1; try rewrite IHp2;
-    repeat match goal with
-    | |- context[classicalEval v ?p] => destruct (classicalEval v p)
-    end; reflexivity.
-Qed.
-
-Theorem eval_toNor {A : Type} (v : A -> bool) :
-    forall p : ClassicalFormula A,
-      strokeEvalWith boolNor v (toNor p) = classicalEval v p.
-Proof.
-  induction p; simpl; try rewrite IHp; try rewrite IHp1; try rewrite IHp2;
-    repeat match goal with
-    | |- context[classicalEval v ?p] => destruct (classicalEval v p)
-    end; reflexivity.
-Qed.
+(* ------------------------------------------------------------------ *)
+(* Functional completeness for ordinary connectives                    *)
+(*                                                                     *)
+(* The stroke and classical languages and the toNand/toNor             *)
+(* translations are the shared ones from Sheffer.v.                    *)
+(* ------------------------------------------------------------------ *)
 
 Lemma strokeEvalWith_same {A : Type} (op op' : bool -> bool -> bool)
     (hsame : SameBoolOp op op') (v : A -> bool) :
     forall p : StrokeFormula A,
-      strokeEvalWith op v p = strokeEvalWith op' v p.
+      evalWith op v p = evalWith op' v p.
 Proof.
   induction p; simpl.
   - reflexivity.
@@ -465,7 +307,7 @@ Theorem wolfram_functionally_complete {A : Type}
     (op : bool -> bool -> bool) (h : WolframAxiom op)
     (p : ClassicalFormula A) :
     exists q : StrokeFormula A,
-      forall v : A -> bool, strokeEvalWith op v q = classicalEval v p.
+      forall v : A -> bool, evalWith op v q = eval v p.
 Proof.
   destruct (@wolfram_characterizes_sheffer_on_bool op h) as [hop | hop].
   - exists (toNand p). intro v.
@@ -480,7 +322,7 @@ Theorem meredith_functionally_complete {A : Type}
     (op : bool -> bool -> bool) (h : MeredithAxioms op)
     (p : ClassicalFormula A) :
     exists q : StrokeFormula A,
-      forall v : A -> bool, strokeEvalWith op v q = classicalEval v p.
+      forall v : A -> bool, evalWith op v q = eval v p.
 Proof.
   destruct (@meredith_characterizes_sheffer_on_bool op h) as [hop | hop].
   - exists (toNand p). intro v.
@@ -490,6 +332,13 @@ Proof.
     rewrite (strokeEvalWith_same hop v (toNor p)).
     apply eval_toNor.
 Qed.
+
+(* ------------------------------------------------------------------ *)
+(* Certified finite search for the six-operator lower bound            *)
+(*                                                                     *)
+(* The finite search reuses the first-order terms of                   *)
+(* EquationalLogic.v rather than a private copy of the same syntax.    *)
+(* ------------------------------------------------------------------ *)
 
 Record BinOp : Type := {
   ff : bool;
@@ -528,19 +377,7 @@ Definition allBinOps : list BinOp :=
   map (fun tt => {| ff := ff; ft := ft; tf := tf; tt := tt |}) bools)
     bools) bools) bools.
 
-Inductive SearchTerm : Type :=
-| TVar : nat -> SearchTerm
-| TApp : SearchTerm -> SearchTerm -> SearchTerm.
-
-Fixpoint searchTermEqb (x y : SearchTerm) : bool :=
-  match x, y with
-  | TVar i, TVar j => Nat.eqb i j
-  | TApp xl xr, TApp yl yr => searchTermEqb xl yl && searchTermEqb xr yr
-  | _, _ => false
-  end.
-
-Definition pairTermEqb (x y : SearchTerm * SearchTerm) : bool :=
-  searchTermEqb (fst x) (fst y) && searchTermEqb (snd x) (snd y).
+Notation SearchTerm := Term.
 
 Fixpoint listEqb {A : Type} (eqb : A -> A -> bool)
     (xs ys : list A) : bool :=
@@ -552,21 +389,21 @@ Fixpoint listEqb {A : Type} (eqb : A -> A -> bool)
 
 Fixpoint nodeCount (t : SearchTerm) : nat :=
   match t with
-  | TVar _ => 0
-  | TApp l r => nodeCount l + nodeCount r + 1
+  | Var _ => 0
+  | Op l r => nodeCount l + nodeCount r + 1
   end.
 
 Fixpoint varBound (t : SearchTerm) : nat :=
   match t with
-  | TVar i => S i
-  | TApp l r => Nat.max (varBound l) (varBound r)
+  | Var i => S i
+  | Op l r => Nat.max (varBound l) (varBound r)
   end.
 
 Fixpoint evalSearchTerm (op : BinOp) (env : list bool)
     (t : SearchTerm) : bool :=
   match t with
-  | TVar i => nth i env false
-  | TApp l r => binOpApply op (evalSearchTerm op env l) (evalSearchTerm op env r)
+  | Var i => nth i env false
+  | Op l r => binOpApply op (evalSearchTerm op env l) (evalSearchTerm op env r)
   end.
 
 Fixpoint allEnvs (n : nat) : list (list bool) :=
@@ -579,7 +416,7 @@ Fixpoint canonicalTermsAux (fuel nodes next : nat)
     {struct fuel} : list (SearchTerm * nat) :=
   match nodes with
   | 0 =>
-      map (fun i => (TVar i, if Nat.eqb i next then S next else next))
+      map (fun i => (Var i, if Nat.eqb i next then S next else next))
         (seq 0 (S next))
   | S nodes' =>
       match fuel with
@@ -588,7 +425,7 @@ Fixpoint canonicalTermsAux (fuel nodes next : nat)
           flat_map (fun leftNodes =>
             let rightNodes := nodes' - leftNodes in
             flat_map (fun left =>
-              map (fun right => (TApp (fst left) (fst right), snd right))
+              map (fun right => (Op (fst left) (fst right), snd right))
                 (canonicalTermsAux fuel' rightNodes (snd left)))
               (canonicalTermsAux fuel' leftNodes next))
             (seq 0 (S nodes'))
@@ -623,14 +460,14 @@ Definition characterizesShefferTables (lhs rhs : SearchTerm) : bool :=
   hasExactlyModels [norTable; nandTable] lhs rhs.
 
 Definition wolframLhs : SearchTerm :=
-  let a := TVar 0 in
-  let b := TVar 1 in
-  let c := TVar 2 in
-  TApp
-    (TApp (TApp a b) c)
-    (TApp a (TApp (TApp a c) a)).
+  let a := Var 0 in
+  let b := Var 1 in
+  let c := Var 2 in
+  Op
+    (Op (Op a b) c)
+    (Op a (Op (Op a c) a)).
 
-Definition wolframRhs : SearchTerm := TVar 2.
+Definition wolframRhs : SearchTerm := Var 2.
 
 Theorem wolfram_operator_count :
     nodeCount wolframLhs + nodeCount wolframRhs = 6.
@@ -639,6 +476,10 @@ Proof. vm_compute. reflexivity. Qed.
 Theorem wolfram_equation_characterizes_sheffer_tables :
     characterizesShefferTables wolframLhs wolframRhs = true.
 Proof. vm_compute. reflexivity. Qed.
+
+(* ------------------------------------------------------------------ *)
+(* Finite countermodel certificate for the five-operator lower bound   *)
+(* ------------------------------------------------------------------ *)
 
 Record FiniteOp : Type := {
   fsize : nat;
@@ -662,8 +503,8 @@ Fixpoint allFiniteEnvs (size n : nat) : list (list nat) :=
 Fixpoint evalFiniteSearchTerm (op : FiniteOp) (env : list nat)
     (t : SearchTerm) : nat :=
   match t with
-  | TVar i => nth i env 0
-  | TApp l r => finiteApply op (evalFiniteSearchTerm op env l)
+  | Var i => nth i env 0
+  | Op l r => finiteApply op (evalFiniteSearchTerm op env l)
     (evalFiniteSearchTerm op env r)
   end.
 
@@ -726,6 +567,188 @@ Definition shortEquationCountermodelCheck : bool :=
     negb (validInBooleanShefferTables (fst e) (snd e)) ||
       hasFiniteNonWolframCountermodel (fst e) (snd e))
     (equationsUpTo 5).
+
+(*
+  Lazy short-circuit machinery for evaluating the certificate.
+
+  `andb`/`orb`/`forallb`/`existsb` are ordinary function applications, so
+  `vm_compute` (call-by-value) evaluates both arguments before combining
+  them: a direct `vm_compute` on `shortEquationCountermodelCheck` runs the
+  full 128-environment sweep and the entire finite countermodel search for
+  every candidate equation, which is far too slow.  The match-based
+  combinators below keep the recursive call inside a `match` branch, so the
+  VM short-circuits: the countermodel search runs only on the (rare)
+  Sheffer-valid equations, each equation sweep stops at the first failing
+  environment, and the constant non-Wolfram pool is hoisted out of the
+  per-equation loop.  The bridge lemmas transport the fast evaluation back
+  to the original eager definitions, so the capstone theorems below are
+  stated about `shortEquationCountermodelCheck` itself.
+*)
+
+Fixpoint lforallb {A : Type} (f : A -> bool) (l : list A) : bool :=
+  match l with
+  | [] => true
+  | x :: l' => if f x then lforallb f l' else false
+  end.
+
+Fixpoint lexistsb {A : Type} (f : A -> bool) (l : list A) : bool :=
+  match l with
+  | [] => false
+  | x :: l' => if f x then true else lexistsb f l'
+  end.
+
+Lemma lforallb_forallb {A : Type} (f : A -> bool) (l : list A) :
+    lforallb f l = forallb f l.
+Proof.
+  induction l as [| x l IH]; simpl.
+  - reflexivity.
+  - destruct (f x); simpl; [exact IH | reflexivity].
+Qed.
+
+Lemma lexistsb_existsb {A : Type} (f : A -> bool) (l : list A) :
+    lexistsb f l = existsb f l.
+Proof.
+  induction l as [| x l IH]; simpl.
+  - reflexivity.
+  - destruct (f x); simpl; [reflexivity | exact IH].
+Qed.
+
+Lemma existsb_filter {A : Type} (f g : A -> bool) (l : list A) :
+    existsb (fun x => f x && g x) l = existsb f (filter g l).
+Proof.
+  induction l as [| x l IH]; simpl.
+  - reflexivity.
+  - destruct (g x); simpl.
+    + rewrite Bool.andb_true_r, IH. reflexivity.
+    + rewrite Bool.andb_false_r. simpl. exact IH.
+Qed.
+
+Lemma forallb_ext {A : Type} (f g : A -> bool) (l : list A)
+    (h : forall x, f x = g x) : forallb f l = forallb g l.
+Proof.
+  induction l as [| x l IH]; simpl.
+  - reflexivity.
+  - rewrite h, IH. reflexivity.
+Qed.
+
+Lemma existsb_ext {A : Type} (f g : A -> bool) (l : list A)
+    (h : forall x, f x = g x) : existsb f l = existsb g l.
+Proof.
+  induction l as [| x l IH]; simpl.
+  - reflexivity.
+  - rewrite h, IH. reflexivity.
+Qed.
+
+Definition lazyEquationHolds (op : BinOp) (lhs rhs : SearchTerm) : bool :=
+  lforallb (fun env =>
+    Bool.eqb (evalSearchTerm op env lhs) (evalSearchTerm op env rhs))
+    (allEnvs 7).
+
+Definition lazyValidInBooleanShefferTables (lhs rhs : SearchTerm) : bool :=
+  if lazyEquationHolds nandTable lhs rhs
+  then lazyEquationHolds norTable lhs rhs
+  else false.
+
+Definition lazyFiniteEquationHolds (op : FiniteOp)
+    (lhs rhs : SearchTerm) : bool :=
+  lforallb (fun env =>
+    Nat.eqb (evalFiniteSearchTerm op env lhs) (evalFiniteSearchTerm op env rhs))
+    (allFiniteEnvs (fsize op) (Nat.max (varBound lhs) (varBound rhs))).
+
+(* The non-Wolfram sub-pool is constant, so it is evaluated once here
+   instead of refiltering `shortCountermodelPool` for every equation. *)
+Definition nonWolframPool : list FiniteOp :=
+  Eval vm_compute in
+    filter (fun op => negb (finiteWolframHolds op)) shortCountermodelPool.
+
+Definition lazyHasFiniteNonWolframCountermodel (lhs rhs : SearchTerm) : bool :=
+  lexistsb (fun op => lazyFiniteEquationHolds op lhs rhs) nonWolframPool.
+
+Definition lazyShortEquationCountermodelCheck : bool :=
+  lforallb (fun e =>
+    if lazyValidInBooleanShefferTables (fst e) (snd e)
+    then lazyHasFiniteNonWolframCountermodel (fst e) (snd e)
+    else true)
+    (equationsUpTo 5).
+
+Lemma lazyEquationHolds_eq (op : BinOp) (lhs rhs : SearchTerm) :
+    lazyEquationHolds op lhs rhs = equationHolds op lhs rhs.
+Proof.
+  apply lforallb_forallb.
+Qed.
+
+Lemma lazyValidInBooleanShefferTables_eq (lhs rhs : SearchTerm) :
+    lazyValidInBooleanShefferTables lhs rhs =
+      validInBooleanShefferTables lhs rhs.
+Proof.
+  unfold lazyValidInBooleanShefferTables, validInBooleanShefferTables.
+  rewrite !lazyEquationHolds_eq.
+  destruct (equationHolds nandTable lhs rhs); reflexivity.
+Qed.
+
+Lemma nonWolframPool_eq :
+    nonWolframPool =
+      filter (fun op => negb (finiteWolframHolds op)) shortCountermodelPool.
+Proof.
+  vm_compute. reflexivity.
+Qed.
+
+Lemma lazyHasFiniteNonWolframCountermodel_eq (lhs rhs : SearchTerm) :
+    lazyHasFiniteNonWolframCountermodel lhs rhs =
+      hasFiniteNonWolframCountermodel lhs rhs.
+Proof.
+  unfold lazyHasFiniteNonWolframCountermodel, hasFiniteNonWolframCountermodel.
+  rewrite lexistsb_existsb, nonWolframPool_eq, <- existsb_filter.
+  apply existsb_ext.
+  intro op.
+  unfold lazyFiniteEquationHolds, finiteEquationHolds.
+  rewrite lforallb_forallb.
+  reflexivity.
+Qed.
+
+Lemma shortEquationCountermodelCheck_eq_lazy :
+    shortEquationCountermodelCheck = lazyShortEquationCountermodelCheck.
+Proof.
+  unfold shortEquationCountermodelCheck, lazyShortEquationCountermodelCheck.
+  rewrite lforallb_forallb.
+  apply forallb_ext.
+  intro e.
+  cbv beta.
+  rewrite (lazyValidInBooleanShefferTables_eq (fst e) (snd e)).
+  rewrite (lazyHasFiniteNonWolframCountermodel_eq (fst e) (snd e)).
+  destruct (validInBooleanShefferTables (fst e) (snd e)); reflexivity.
+Qed.
+
+(*
+  Every equation with at most five operation occurrences that is true in the
+  two Boolean Sheffer tables is true in one of the finite algebras above
+  while Wolfram's axiom is false there.  This is the Coq replay of the Lean
+  `native_decide` certificate, via the lazy evaluation bridge.
+*)
+Theorem every_short_boolean_sheffer_equation_has_finite_nonwolfram_countermodel :
+    shortEquationCountermodelCheck = true.
+Proof.
+  rewrite shortEquationCountermodelCheck_eq_lazy.
+  vm_compute.
+  reflexivity.
+Qed.
+
+(*
+  Entry-point theorem for the finite lower-bound result: Wolfram's equation
+  has six primitive binary-operation occurrences, it characterizes the
+  Sheffer truth tables on the two-element Boolean algebra, and every shorter
+  equation that is even true of those Boolean Sheffer tables has a finite
+  non-Wolfram model.
+*)
+Theorem wolfram_six_operations_is_minimal_for_single_equational_axioms :
+    nodeCount wolframLhs + nodeCount wolframRhs = 6 /\
+      characterizesShefferTables wolframLhs wolframRhs = true /\
+      shortEquationCountermodelCheck = true.
+Proof.
+  split; [exact wolfram_operator_count |].
+  split; [exact wolfram_equation_characterizes_sheffer_tables |].
+  exact every_short_boolean_sheffer_equation_has_finite_nonwolfram_countermodel.
+Qed.
 
 End WolframBoolean.
 End LeanProofs.

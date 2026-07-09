@@ -1017,8 +1017,7 @@ def e5n : Expr :=
   pow e4e atom
 
 theorem parenthesizations_one :
-    parenthesizations 1 = [atom] := by
-  native_decide
+    parenthesizations 1 = [atom] := parenthesizations_one_eq
 
 theorem parenthesizations_two :
     parenthesizations 2 = [e2] := by

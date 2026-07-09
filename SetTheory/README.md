@@ -57,26 +57,48 @@ The system is **exactly ZF**:
 | `T ⊢ φ ⟹ ZF ⊢ φ` | the converse syntactic direction | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
 | **`T ⊢ φ ⟺ ZF ⊢ φ`** | **full deductive equivalence** (`T_iff_ZF`) | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
 
-The Lean port also contains two Lean-first side modules that support nearby
-foundational/computability work:
+Beyond the Closure/ZF core, the development carries side modules for nearby
+foundational/computability work, each present in both proof assistants
+(`PAHF.v`/`PAHF.lean`, `BusyBeaver.v`/`BusyBeaver.lean`,
+`BusyBeaverKnownValues.v`/`BusyBeaverKnownValues.lean`,
+`BusyBeaverMathlib.v`/`BusyBeaverMathlib.lean`):
 
-- [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) develops Ackermann-coded
+- [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) (a facade over
+  `lean/SetTheory/PAHF/{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean`;
+  Coq counterpart [`PAHF.v`](PAHF.v)) develops Ackermann-coded
   hereditary finite sets and first-order PA/HF interpretation infrastructure.
-- [`lean/SetTheory/BusyBeaver.lean`](lean/SetTheory/BusyBeaver.lean) formalizes a
+  It also contains a first-order PA sentence for the Mertens/Littlewood
+  arithmetic criterion equivalent to the Riemann Hypothesis; see
+  [`lean/SetTheory/PAHF/RiemannHypothesis.lean`](lean/SetTheory/PAHF/RiemannHypothesis.lean)
+  and the comparison report
+  [`../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md).
+- [`lean/SetTheory/BusyBeaver.lean`](lean/SetTheory/BusyBeaver.lean)
+  (Coq counterpart [`BusyBeaver.v`](BusyBeaver.v)) formalizes a
   Rado-style two-symbol blank-tape machine model and proves that any busy-beaver
   score function satisfying the maximum property eventually dominates every
   total recursive function whose recursiveness predicate has the standard
   linear-overhead blank-tape compiler.
+  [`lean/SetTheory/BusyBeaverKnownValues.lean`](lean/SetTheory/BusyBeaverKnownValues.lean)
+  (Coq counterpart [`BusyBeaverKnownValues.v`](BusyBeaverKnownValues.v)) adds the
+  checked 1–4-state champion witnesses and the A028444-prefix certificates.
 - [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
-  is the mathlib-backed bridge showing that mathlib-total-recursive
-  `Nat -> Nat` functions have sequential `ToPartrec.Code`s evaluated by
-  mathlib's finite-support `PartrecToTM2` Turing machine, that this computation
-  can be expressed through mathlib's ordinary `TM2.eval` interface, that a
-  composed unary-output code produces `f n` zero entries, and that both the
-  ordinary and unary-output evaluator witnesses descend to Bool `TM0` through
-  mathlib's proved Turing-machine reductions.  It is built from the root
-  `src/Lean` Lake workspace because the standalone SetTheory Lean project
-  deliberately remains dependency-free.
+  is the mathlib-backed bridge for mathlib's `Computable` predicate: it extracts a
+  sequential `ToPartrec.Code` evaluated by mathlib's finite-support `PartrecToTM2`
+  Turing machine, descends it through mathlib's proved `TM2 -> TM1`,
+  `TM1 -> TM1 Bool`, and `TM1 -> TM0` reductions, wraps the result with a
+  blank-tape initializer, budgets the state count against the binary input size,
+  and proves **unconditionally** that mathlib-total-recursive functions satisfy the
+  eventual lower-bound compiler interface
+  (`totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler`) — hence any
+  busy-beaver score function eventually dominates every `Computable` function
+  (`sigma_eventually_dominates_every_totalRecursiveMathlib`).  It is built from
+  the root `src/Lean` Lake workspace (together with its audit
+  [`lean/SetTheory/AuditMathlib.lean`](lean/SetTheory/AuditMathlib.lean)) because
+  the standalone SetTheory Lean project deliberately remains dependency-free.
+  The Coq counterpart [`BusyBeaverMathlib.v`](BusyBeaverMathlib.v) has no mathlib,
+  so it proves the reusable tape/counting/budget lemmas and the domination
+  consequence directly, while exposing the mathlib-proved compiler connection as
+  explicit assumption records.
 
 ## Module structure — the reusable core vs. the T-specific shell
 
@@ -479,22 +501,33 @@ cross-references).
 
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 
+The full development is the twelve `.v` files listed in
+[`_CoqProject`](_CoqProject):
+
 ```sh
-# the shallow layer is self-contained:
-coqc Forward.v
-coqc Reverse.v
 # the library builds in dependency order under the SetTheory namespace:
 coqc -Q . SetTheory Fol.v
 coqc -Q . SetTheory Calculus.v
 coqc -Q . SetTheory Completeness.v
 coqc -Q . SetTheory Zf.v
 coqc -Q . SetTheory Equivalence.v
+coqc -Q . SetTheory PAHF.v
+coqc -Q . SetTheory BusyBeaver.v
+coqc -Q . SetTheory BusyBeaverKnownValues.v
+coqc -Q . SetTheory BusyBeaverMathlib.v
+# the shallow layer is self-contained (also compiles bare: `coqc Forward.v`):
+coqc -Q . SetTheory Forward.v
+coqc -Q . SetTheory Reverse.v
+# capstone audit: type-checks headline results, prints axiom footprints:
+coqc -Q . SetTheory Audit.v
 ```
 
 `Forward.v` and `Reverse.v` are independent (no inter-file `Require`) and need only
 the standard library. The library files import along the DAG shown above
 (`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
-`Equivalence`). `Completeness.v` additionally uses the standard
+`Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`; `BusyBeaver` ←
+`BusyBeaverKnownValues`, `BusyBeaverMathlib`; `Audit` imports them all).
+`Completeness.v` additionally uses the standard
 classical/extensionality axiom modules (`ClassicalEpsilon`,
 `FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the
 quotient term model — all consistent with the classical setting already in use.
@@ -502,10 +535,12 @@ quotient term model — all consistent with the classical setting already in use
 ## The Lean 4 port (`lean/`)
 
 The entire Closure/ZF development is also machine-checked a **second time, in
-Lean 4** (4.31.0, core only — no Mathlib), under [`lean/`](lean/): seven modules
-mirror the seven Coq files one-to-one (`Fol.lean` … `Equivalence.lean`,
-`Forward.lean`, `Reverse.lean`), every statement with the same logical content,
-through the same headline theorem `T_iff_ZF`. The Lean workspace also contains
+Lean 4** (4.31.0, core only — no Mathlib), under [`lean/`](lean/): the seven
+core Closure/ZF modules mirror the seven core Coq files one-to-one
+(`Fol.lean` … `Equivalence.lean`, `Forward.lean`, `Reverse.lean`), every
+statement with the same logical content, through the same headline theorem
+`T_iff_ZF`; the side modules (`PAHF`, `BusyBeaver`, `BusyBeaverKnownValues`,
+`BusyBeaverMathlib`) are likewise paired with `.v` counterparts. The Lean workspace also contains
 [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first
 formalization toward the bi-interpretability of Peano arithmetic and hereditary
 finite sets. Its current checked surface includes Ackermann-coded HF on `Nat`,

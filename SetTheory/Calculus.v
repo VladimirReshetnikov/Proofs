@@ -217,13 +217,11 @@ Proof.
   - exact (P_orE _ (rename r a) (rename r b) (rename r c) (IHor r) (IHa r) (IHb r)).
   - apply P_allI. rewrite <- (map_rename_up_S r G). exact (IH (up r)).
   - (* P_allE *)
-    assert (Heqj : rename r (rename (inst k) a) = rename (inst (r k)) (rename (up r) a)).
-    { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+    pose proof (rename_inst_push a r k) as Heqj.
     rewrite Heqj. apply (P_allE _ (rename (up r) a) (r k)). exact (IH r).
   - (* P_exI *)
     apply (P_exI _ (rename (up r) a) (r k)).
-    assert (Heqj : rename r (rename (inst k) a) = rename (inst (r k)) (rename (up r) a)).
-    { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+    pose proof (rename_inst_push a r k) as Heqj.
     rewrite <- Heqj. exact (IH r).
   - (* P_exE *)
     apply (P_exE _ (rename (up r) a) (rename r c)).
@@ -233,12 +231,10 @@ Proof.
       rewrite Hc. rewrite <- (map_rename_up_S r G). exact (IHbody (up r)).
   - apply P_eqRefl.
   - (* P_eqElim *)
-    assert (Heqj : rename r (rename (inst j) a) = rename (inst (r j)) (rename (up r) a)).
-    { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+    pose proof (rename_inst_push a r j) as Heqj.
     rewrite Heqj. apply (P_eqElim _ (r i) (r j) (rename (up r) a)).
     + exact (IHeq r).
-    + assert (Heqi : rename r (rename (inst i) a) = rename (inst (r i)) (rename (up r) a)).
-      { rewrite !rename_comp. apply rename_ext. intro n; destruct n; reflexivity. }
+    + pose proof (rename_inst_push a r i) as Heqi.
       rewrite <- Heqi. exact (IHa r).
 Qed.
 (* eigenvariable generalization: from G |- a[w/0] with w fresh, G shifted |- a *)

@@ -31,6 +31,10 @@ open Complex
 
 open A198683Support
 
+/-! ## Base values and principal-power helpers
+
+Defines the island constants `q, qInv, u, v, w` and the private `principalPow` real/imaginary arithmetic lemmas the later reductions run through. -/
+
 /-- The exact value of `i^i`. -/
 def q : ℂ := (rho : ℂ)
 
@@ -49,9 +53,9 @@ def v : ℂ := principalPow Complex.I u
 /-- The reciprocal-side value `(-i)^(i^(i^i))`. -/
 def w : ℂ := principalPow (-Complex.I) u
 
-private def sigma : ℝ := Real.exp ((Real.pi / 2) * Real.exp (Real.pi / 2))
+private def probeSigma : ℝ := Real.exp ((Real.pi / 2) * Real.exp (Real.pi / 2))
 
-private def tau : ℝ := Real.exp (-(Real.pi / 2) * sigma)
+private def probeTau : ℝ := Real.exp (-(Real.pi / 2) * probeSigma)
 
 /--
 The exact positive-real subtree
@@ -112,6 +116,10 @@ private theorem neg_I_pow_im (z : ℂ) :
   dsimp [principalPow]
   rw [log_neg_I_real, Complex.exp_im]
   simp [Complex.mul_re, Complex.mul_im, Real.sin_neg]
+
+/-! ## Near-`i^i` island reduction identities
+
+Principal-power reductions collapsing towers built from `i`, `i^i`, and `i^(i^i)` back to `i`, `-i`, or `i^i`. -/
 
 /-- `i^i = exp(-pi/2)`. -/
 theorem I_pow_I_eq_q : principalPow Complex.I Complex.I = q := by
@@ -467,8 +475,8 @@ theorem q_pow_w_pow_v_eq_q : principalPow (principalPow q w) v = q := by
   rw [show (-(↑Real.pi / 2) : ℂ) = (↑(-(Real.pi / 2)) : ℂ) by norm_num]
   exact (Complex.ofReal_exp (-(Real.pi / 2))).symm
 
-private theorem sigma_pos : 0 < sigma := by
-  dsimp [sigma]
+private theorem sigma_pos : 0 < probeSigma := by
+  dsimp [probeSigma]
   positivity
 
 private theorem log_qInv : Complex.log qInv = (↑Real.pi / 2 : ℂ) := by
@@ -477,41 +485,45 @@ private theorem log_qInv : Complex.log qInv = (↑Real.pi / 2 : ℂ) := by
   norm_num [div_eq_mul_inv]
 
 private theorem qInv_pow_qInv_eq_sigma :
-    principalPow qInv qInv = (sigma : ℂ) := by
-  change Complex.exp (Complex.log qInv * qInv) = (sigma : ℂ)
+    principalPow qInv qInv = (probeSigma : ℂ) := by
+  change Complex.exp (Complex.log qInv * qInv) = (probeSigma : ℂ)
   rw [log_qInv]
-  dsimp [qInv, sigma]
+  dsimp [qInv, probeSigma]
   rw [show (↑Real.pi / 2 : ℂ) * ((Real.exp (Real.pi / 2) : ℝ) : ℂ) =
       (↑(Real.pi / 2 * Real.exp (Real.pi / 2)) : ℂ) by
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
   exact (Complex.ofReal_exp (Real.pi / 2 * Real.exp (Real.pi / 2))).symm
 
-private theorem nearProbeR_eq_sigma : nearProbeR = (sigma : ℂ) := by
+private theorem nearProbeR_eq_sigma : nearProbeR = (probeSigma : ℂ) := by
   dsimp [nearProbeR]
   rw [q_pow_I_eq_neg_I]
   rw [I_pow_neg_I_eq_qInv]
   exact qInv_pow_qInv_eq_sigma
 
 private theorem q_pow_sigma_eq_tau :
-    principalPow q (sigma : ℂ) = (tau : ℂ) := by
-  change Complex.exp (Complex.log q * (sigma : ℂ)) = (tau : ℂ)
+    principalPow q (probeSigma : ℂ) = (probeTau : ℂ) := by
+  change Complex.exp (Complex.log q * (probeSigma : ℂ)) = (probeTau : ℂ)
   rw [log_q]
-  dsimp [tau]
-  rw [show (-(↑Real.pi / 2) : ℂ) * (sigma : ℂ) =
-      (↑ (-(Real.pi / 2) * sigma) : ℂ) by
+  dsimp [probeTau]
+  rw [show (-(↑Real.pi / 2) : ℂ) * (probeSigma : ℂ) =
+      (↑ (-(Real.pi / 2) * probeSigma) : ℂ) by
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
-  exact (Complex.ofReal_exp (-(Real.pi / 2) * sigma)).symm
+  exact (Complex.ofReal_exp (-(Real.pi / 2) * probeSigma)).symm
 
-private theorem nearProbeS_eq_tau : nearProbeS = (tau : ℂ) := by
+private theorem nearProbeS_eq_tau : nearProbeS = (probeTau : ℂ) := by
   dsimp [nearProbeS]
   rw [nearProbeR_eq_sigma]
   exact q_pow_sigma_eq_tau
 
 private theorem log_nearProbeS :
-    Complex.log nearProbeS = (↑ (-(Real.pi / 2) * sigma) : ℂ) := by
+    Complex.log nearProbeS = (↑ (-(Real.pi / 2) * probeSigma) : ℂ) := by
   rw [nearProbeS_eq_tau]
-  dsimp [tau]
+  dsimp [probeTau]
   rw [← Complex.ofReal_log (Real.exp_pos _).le, Real.log_exp]
+
+/-! ## Near-zero doubleton `{2207, 3777}`
+
+The two near-zero representatives and their exact equality via positive-real principal-power associativity. -/
 
 /--
 Representative `idx = 2207` from the n = 12 near-zero probe class:
@@ -528,35 +540,35 @@ Representative `idx = 3777` from the n = 12 near-zero probe class:
 def nearZero3777 : ℂ := principalPow nearProbeS q
 
 private theorem nearZero2207_eq_exp :
-    nearZero2207 = (Real.exp (-theta * sigma) : ℂ) := by
+    nearZero2207 = (Real.exp (-theta * probeSigma) : ℂ) := by
   change Complex.exp (Complex.log (principalPow q q) * nearProbeR) =
-    (Real.exp (-theta * sigma) : ℂ)
+    (Real.exp (-theta * probeSigma) : ℂ)
   rw [log_q_pow_q]
   rw [nearProbeR_eq_sigma]
-  rw [show (-theta : ℂ) * (sigma : ℂ) = (↑(-theta * sigma) : ℂ) by
+  rw [show (-theta : ℂ) * (probeSigma : ℂ) = (↑(-theta * probeSigma) : ℂ) by
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]]
-  exact (Complex.ofReal_exp (-theta * sigma)).symm
+  exact (Complex.ofReal_exp (-theta * probeSigma)).symm
 
 private theorem nearZero3777_eq_exp :
-    nearZero3777 = (Real.exp (-theta * sigma) : ℂ) := by
-  change Complex.exp (Complex.log nearProbeS * q) = (Real.exp (-theta * sigma) : ℂ)
+    nearZero3777 = (Real.exp (-theta * probeSigma) : ℂ) := by
+  change Complex.exp (Complex.log nearProbeS * q) = (Real.exp (-theta * probeSigma) : ℂ)
   rw [log_nearProbeS]
-  rw [show (↑ (-(Real.pi / 2) * sigma) : ℂ) * q = (↑(-theta * sigma) : ℂ) by
+  rw [show (↑ (-(Real.pi / 2) * probeSigma) : ℂ) * q = (↑(-theta * probeSigma) : ℂ) by
     dsimp [q, theta]
     apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
     ring]
-  exact (Complex.ofReal_exp (-theta * sigma)).symm
+  exact (Complex.ofReal_exp (-theta * probeSigma)).symm
 
 /-- The n = 12 near-zero representatives `2207` and `3777` are exactly equal. -/
 theorem nearZero2207_eq_nearZero3777 : nearZero2207 = nearZero3777 := by
   rw [nearZero2207_eq_exp, nearZero3777_eq_exp]
 
-private theorem tau_pos : 0 < tau := by
-  dsimp [tau]
+private theorem tau_pos : 0 < probeTau := by
+  dsimp [probeTau]
   positivity
 
-private theorem tau_lt_one : tau < 1 := by
-  dsimp [tau]
+private theorem tau_lt_one : probeTau < 1 := by
+  dsimp [probeTau]
   exact Real.exp_lt_one_iff.mpr (by nlinarith [Real.pi_pos, sigma_pos])
 
 private theorem log_I_pow_nearProbeS :
@@ -571,6 +583,10 @@ private theorem log_I_pow_nearProbeS :
   · rw [nearProbeS_eq_tau, log_I_real]
     simp [Complex.mul_im]
     nlinarith [Real.pi_pos, tau_lt_one]
+
+/-! ## Near-one pair `{1404, 4239}`
+
+The retained near-one representatives and their exact equality. -/
 
 /--
 Representative `idx = 1404` from the n = 12 near-one probe class:
@@ -596,10 +612,15 @@ theorem nearOne1404_eq_nearOne4239 : nearOne1404 = nearOne4239 := by
   congr 1
   apply Complex.ext <;> simp [Complex.mul_re, Complex.mul_im]
 
-/--
-The `n = 11` exponent subtree used by representative `idx = 25`:
+/-! ## Representative 25: definitions and exact parts
 
-`i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i)))))))`.
+Layer-by-layer definitions of the `idx = 25` tower and closed forms for the real and imaginary part of each layer. -/
+
+/--
+The seven-atom core of the `idx = 25` exponent subtree:
+`((i^i)^i)^(i^(i^(i^i)))`.  Wrapping it in four more `i^·` layers
+(`nearOne25Level1` … `nearOne25Base`) gives the full `n = 11` exponent
+`i^(i^(i^(i^(((i^i)^i)^(i^(i^(i^i)))))))` of representative `25`.
 -/
 def nearOne25Seed : ℂ := principalPow (principalPow q Complex.I) v
 
@@ -622,7 +643,7 @@ Representative `idx = 25` from the n = 12 near-one probe class:
 -/
 def nearOne25 : ℂ := principalPow Complex.I nearOne25Base
 
-/-- Exact real part of the `(-i)^...` seed for representative `25`. -/
+/-- Exact real part of the `idx = 25` exponent seed. -/
 theorem nearOne25Seed_re_eq :
     nearOne25Seed.re =
       Real.exp (Real.pi / 2 * v.im) * Real.cos (Real.pi / 2 * v.re) := by
@@ -630,7 +651,7 @@ theorem nearOne25Seed_re_eq :
   rw [q_pow_I_eq_neg_I]
   exact neg_I_pow_re v
 
-/-- Exact imaginary part of the `(-i)^...` seed for representative `25`. -/
+/-- Exact imaginary part of the `idx = 25` exponent seed. -/
 theorem nearOne25Seed_im_eq :
     nearOne25Seed.im =
       -(Real.exp (Real.pi / 2 * v.im) * Real.sin (Real.pi / 2 * v.re)) := by
@@ -712,7 +733,7 @@ theorem nearOne25Level2_im_eq :
 theorem nearOne1404_norm_lt_one : ‖nearOne1404‖ < 1 := by
   dsimp [nearOne1404, principalPow]
   rw [Complex.norm_exp, log_q, nearProbeS_eq_tau]
-  rw [show ((-(Real.pi / 2) : ℂ) * (tau : ℂ)).re = -(Real.pi / 2) * tau by
+  rw [show ((-(Real.pi / 2) : ℂ) * (probeTau : ℂ)).re = -(Real.pi / 2) * probeTau by
     simp [Complex.mul_re]]
   exact Real.exp_lt_one_iff.mpr (by nlinarith [Real.pi_pos, tau_pos])
 
@@ -721,11 +742,11 @@ theorem nearOne4239_norm_lt_one : ‖nearOne4239‖ < 1 := by
   rw [← nearOne1404_eq_nearOne4239]
   exact nearOne1404_norm_lt_one
 
-private theorem sin_pi_div_two_mul_neg_of_neg766_lt_of_lt_neg765 {r : ℝ}
-    (hlo : (-766 : ℝ) < r) (hhi : r < -765) :
+private theorem sin_pi_div_two_mul_neg_of_neg766_lt_of_lt_neg764 {r : ℝ}
+    (hlo : (-766 : ℝ) < r) (hhi : r < -764) :
     Real.sin (Real.pi / 2 * r) < 0 := by
   have hslo : (-2 : ℝ) < r + 764 := by linarith
-  have hshi : r + 764 < -1 := by linarith
+  have hshi : r + 764 < 0 := by linarith
   have hangle_neg : Real.pi / 2 * (r + 764) < 0 := by
     nlinarith [Real.pi_pos, hshi]
   have hangle_gt_neg_pi : -Real.pi < Real.pi / 2 * (r + 764) := by
@@ -751,10 +772,10 @@ theorem nearOne25Level3_im_eq :
         Real.sin (Real.pi / 2 * nearOne25Level2.re) := by
   simpa [nearOne25Level3] using I_pow_im nearOne25Level2
 
-private theorem mul_mem_neg766_neg765_of_exp_cos_bounds {e c : ℝ}
-    (he0 : (3724 : ℝ) < e) (he1 : e < 3725)
-    (hc0 : (-(257 : ℝ) / 1250) < c) (hc1 : c < (-(411 : ℝ) / 2000)) :
-    (-766 : ℝ) < e * c ∧ e * c < -765 := by
+private theorem mul_mem_neg766_neg764_of_exp_cos_bounds {e c : ℝ}
+    (he0 : (3723 : ℝ) < e) (he1 : e < 3725)
+    (hc0 : (-(257 : ℝ) / 1250) < c) (hc1 : c < (-(1027 : ℝ) / 5000)) :
+    (-766 : ℝ) < e * c ∧ e * c < -764 := by
   have he_pos : 0 < e := by nlinarith
   have hc_neg : c < 0 := by nlinarith
   constructor
@@ -763,9 +784,9 @@ private theorem mul_mem_neg766_neg765_of_exp_cos_bounds {e c : ℝ}
     have h2 : (3725 : ℝ) * c < e * c :=
       mul_lt_mul_of_neg_right he1 hc_neg
     nlinarith
-  · have h1 : e * c < e * (-(411 : ℝ) / 2000) :=
+  · have h1 : e * c < e * (-(1027 : ℝ) / 5000) :=
       mul_lt_mul_of_pos_left hc1 he_pos
-    have h2 : e * (-(411 : ℝ) / 2000) < 3724 * (-(411 : ℝ) / 2000) :=
+    have h2 : e * (-(1027 : ℝ) / 5000) < 3723 * (-(1027 : ℝ) / 5000) :=
       mul_lt_mul_of_neg_right he0 (by norm_num)
     nlinarith
 
@@ -801,29 +822,33 @@ private theorem mul_mem_pos_neg_interval {e s elo ehi slo shi lo hi : ℝ}
     have h2 : e * shi < elo * shi := mul_lt_mul_of_neg_right he0 hshi
     exact (h1.trans h2).trans hhi
 
+/-! ## Certified rational-box propagation
+
+Interval-arithmetic lemmas propagating rational bounds from `rho` and `theta` up through each tower layer. -/
+
 /--
 It is enough to bound the two real scalar factors in the exact formula for
 `nearOne25Level3.re`.
 -/
 theorem nearOne25Level3_re_bounds_of_exp_cos_bounds
-    (hexp0 : (3724 : ℝ) <
+    (hexp0 : (3723 : ℝ) <
       Real.exp (-(Real.pi / 2) * nearOne25Level2.im))
     (hexp1 :
       Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * nearOne25Level2.re))
     (hcos1 :
-      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(411 : ℝ) / 2000)) :
-    (-766 : ℝ) < nearOne25Level3.re ∧ nearOne25Level3.re < -765 := by
+      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(1027 : ℝ) / 5000)) :
+    (-766 : ℝ) < nearOne25Level3.re ∧ nearOne25Level3.re < -764 := by
   rw [nearOne25Level3_re_eq]
-  exact mul_mem_neg766_neg765_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
+  exact mul_mem_neg766_neg764_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
 
 private theorem nearOne25Level2_exp_bounds_of_box_and_endpoints
     (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
     (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725) :
-    (3724 : ℝ) < Real.exp (-(Real.pi / 2) * nearOne25Level2.im) ∧
+    (3723 : ℝ) < Real.exp (-(Real.pi / 2) * nearOne25Level2.im) ∧
       Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725 := by
   have hpi2_pos : 0 < Real.pi / 2 := by positivity
   have hneg_lo : (52346 : ℝ) / 10000 < -nearOne25Level2.im := by linarith
@@ -851,11 +876,11 @@ private theorem nearOne25Level2_cos_bounds_of_box_and_endpoints
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     (-(257 : ℝ) / 1250) <
         Real.cos (Real.pi / 2 * nearOne25Level2.re) ∧
       Real.cos (Real.pi / 2 * nearOne25Level2.re) <
-        (-(411 : ℝ) / 2000) := by
+        (-(1027 : ℝ) / 5000) := by
   have hpi2_pos : 0 < Real.pi / 2 := by positivity
   constructor
   · have hangle_lt_hi :
@@ -893,14 +918,14 @@ theorem nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
     (hre1 : nearOne25Level2.re < (5659 : ℝ) / 5000)
     (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
     (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
-    (-766 : ℝ) < nearOne25Level3.re ∧ nearOne25Level3.re < -765 := by
+        (-(1027 : ℝ) / 5000)) :
+    (-766 : ℝ) < nearOne25Level3.re ∧ nearOne25Level3.re < -764 := by
   have hexp := nearOne25Level2_exp_bounds_of_box_and_endpoints him0 him1 hexp0 hexp1
   have hcos := nearOne25Level2_cos_bounds_of_box_and_endpoints hre0 hre1 hcos0 hcos1
   exact nearOne25Level3_re_bounds_of_exp_cos_bounds hexp.1 hexp.2 hcos.1 hcos.2
@@ -1788,12 +1813,16 @@ theorem nearOne25Seed_box_of_v_box_and_endpoint_bounds
     constructor <;> nlinarith [hprod_bounds.1, hprod_bounds.2]
   exact ⟨hre_bounds.1, hre_bounds.2, him_bounds.1, him_bounds.2⟩
 
+/-! ## Separating representative 25 from the near-one pair
+
+The chain deriving `nearOne25Base.im < 0`, hence `‖nearOne25‖ > 1`, so representative 25 differs from both `1404` and `4239`. -/
+
 /--
 The hard sign condition for `idx = 25` follows from a certified interval for
 the previous level's real part. Numerically this level is about `-765.4119`.
 -/
 theorem nearOne25Base_im_neg_of_level3_re_bounds
-    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -765) :
+    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -764) :
     nearOne25Base.im < 0 := by
   dsimp [nearOne25Base, principalPow]
   rw [log_I_real, Complex.exp_im]
@@ -1802,7 +1831,7 @@ theorem nearOne25Base_im_neg_of_level3_re_bounds
     rw [show (((((Real.pi / 2 : ℝ) : ℂ) * Complex.I) * nearOne25Level3).im) =
         Real.pi / 2 * nearOne25Level3.re by
       simp [Complex.mul_re, Complex.mul_im]]
-    exact sin_pi_div_two_mul_neg_of_neg766_lt_of_lt_neg765 hlo hhi
+    exact sin_pi_div_two_mul_neg_of_neg766_lt_of_lt_neg764 hlo hhi
   exact mul_neg_of_pos_of_neg (Real.exp_pos _) hsin
 
 /--
@@ -1834,34 +1863,13 @@ theorem nearOne25_ne_nearOne1404_of_base_im_neg (h : nearOne25Base.im < 0) :
   linarith
 
 /--
-The same sign obligation separates representative `25` from the other retained
-near-one representative `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_base_im_neg (h : nearOne25Base.im < 0) :
-    nearOne25 ≠ nearOne4239 := by
-  intro heq
-  have hnorm := congrArg (fun z : ℂ => ‖z‖) heq
-  have hgt := nearOne25_norm_gt_one_of_base_im_neg h
-  have hlt := nearOne4239_norm_lt_one
-  linarith
-
-/--
-An interval certificate `-766 < nearOne25Level3.re < -765` is enough to prove
+An interval certificate `-766 < nearOne25Level3.re < -764` is enough to prove
 the strict class-25 split from representative `1404`.
 -/
 theorem nearOne25_ne_nearOne1404_of_level3_re_bounds
-    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -765) :
+    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -764) :
     nearOne25 ≠ nearOne1404 :=
   nearOne25_ne_nearOne1404_of_base_im_neg
-    (nearOne25Base_im_neg_of_level3_re_bounds hlo hhi)
-
-/--
-The same interval certificate separates representative `25` from `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_level3_re_bounds
-    (hlo : (-766 : ℝ) < nearOne25Level3.re) (hhi : nearOne25Level3.re < -765) :
-    nearOne25 ≠ nearOne4239 :=
-  nearOne25_ne_nearOne4239_of_base_im_neg
     (nearOne25Base_im_neg_of_level3_re_bounds hlo hhi)
 
 /--
@@ -1869,33 +1877,17 @@ The strict class-25 split from `1404` follows from scalar interval bounds for
 the exact exponential and cosine factors of `nearOne25Level3.re`.
 -/
 theorem nearOne25_ne_nearOne1404_of_exp_cos_bounds
-    (hexp0 : (3724 : ℝ) <
+    (hexp0 : (3723 : ℝ) <
       Real.exp (-(Real.pi / 2) * nearOne25Level2.im))
     (hexp1 :
       Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * nearOne25Level2.re))
     (hcos1 :
-      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(411 : ℝ) / 2000)) :
+      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   have h := nearOne25Level3_re_bounds_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
   exact nearOne25_ne_nearOne1404_of_level3_re_bounds h.1 h.2
-
-/--
-The same scalar interval bounds separate `25` from `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_exp_cos_bounds
-    (hexp0 : (3724 : ℝ) <
-      Real.exp (-(Real.pi / 2) * nearOne25Level2.im))
-    (hexp1 :
-      Real.exp (-(Real.pi / 2) * nearOne25Level2.im) < 3725)
-    (hcos0 : (-(257 : ℝ) / 1250) <
-      Real.cos (Real.pi / 2 * nearOne25Level2.re))
-    (hcos1 :
-      Real.cos (Real.pi / 2 * nearOne25Level2.re) < (-(411 : ℝ) / 2000)) :
-    nearOne25 ≠ nearOne4239 := by
-  have h := nearOne25Level3_re_bounds_of_exp_cos_bounds hexp0 hexp1 hcos0 hcos1
-  exact nearOne25_ne_nearOne4239_of_level3_re_bounds h.1 h.2
 
 /--
 The strict class-25 split from `1404` follows from a rational box around
@@ -1907,38 +1899,17 @@ theorem nearOne25_ne_nearOne1404_of_level2_box_and_endpoint_bounds
     (hre1 : nearOne25Level2.re < (5659 : ℝ) / 5000)
     (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
     (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   have h := nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
     hre0 hre1 him0 him1 hexp0 hexp1 hcos0 hcos1
   exact nearOne25_ne_nearOne1404_of_level3_re_bounds h.1 h.2
-
-/--
-The same level-2 box and endpoint estimates separate representative `25` from
-the other retained representative `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_level2_box_and_endpoint_bounds
-    (hre0 : (11317 : ℝ) / 10000 < nearOne25Level2.re)
-    (hre1 : nearOne25Level2.re < (5659 : ℝ) / 5000)
-    (him0 : (-(52347 : ℝ) / 10000) < nearOne25Level2.im)
-    (him1 : nearOne25Level2.im < (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
-    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
-    (hcos0 : (-(257 : ℝ) / 1250) <
-      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
-    (hcos1 :
-      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
-    nearOne25 ≠ nearOne4239 := by
-  have h := nearOne25Level3_re_bounds_of_level2_box_and_endpoint_bounds
-    hre0 hre1 him0 him1 hexp0 hexp1 hcos0 hcos1
-  exact nearOne25_ne_nearOne4239_of_level3_re_bounds h.1 h.2
 
 /--
 The strict class-25 split from `1404` follows from a rational box around
@@ -1964,55 +1935,18 @@ theorem nearOne25_ne_nearOne1404_of_level1_box_and_endpoint_bounds
       Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
         Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
           (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   rcases nearOne25Level2_box_of_level1_box_and_endpoint_bounds
       hre0 hre1 him0 him1 h2relo h2rehi h2imlo h2imhi with
     ⟨h2re0, h2re1, h2im0, h2im1⟩
   exact nearOne25_ne_nearOne1404_of_level2_box_and_endpoint_bounds
-    h2re0 h2re1 h2im0 h2im1 hexp0 hexp1 hcos0 hcos1
-
-/--
-The same level-1 box and endpoint estimates separate representative `25` from
-the other retained representative `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_level1_box_and_endpoint_bounds
-    (hre0 : (-(864443 : ℝ) / 1000000) < nearOne25Level1.re)
-    (hre1 : nearOne25Level1.re < (-(432221 : ℝ) / 500000))
-    (him0 : (-(53417 : ℝ) / 50000) < nearOne25Level1.im)
-    (him1 : nearOne25Level1.im < (-(1068339 : ℝ) / 1000000))
-    (h2relo : (11317 : ℝ) / 10000 <
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2rehi :
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (5659 : ℝ) / 5000)
-    (h2imlo : (-(52347 : ℝ) / 10000) <
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2imhi :
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
-    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
-    (hcos0 : (-(257 : ℝ) / 1250) <
-      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
-    (hcos1 :
-      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
-    nearOne25 ≠ nearOne4239 := by
-  rcases nearOne25Level2_box_of_level1_box_and_endpoint_bounds
-      hre0 hre1 him0 him1 h2relo h2rehi h2imlo h2imhi with
-    ⟨h2re0, h2re1, h2im0, h2im1⟩
-  exact nearOne25_ne_nearOne4239_of_level2_box_and_endpoint_bounds
     h2re0 h2re1 h2im0 h2im1 hexp0 hexp1 hcos0 hcos1
 
 /--
@@ -2053,70 +1987,18 @@ theorem nearOne25_ne_nearOne1404_of_seed_box_and_endpoint_bounds
       Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
         Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
           (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   rcases nearOne25Level1_box_of_seed_box_and_endpoint_bounds
       hre0 hre1 him0 him1 h1relo h1rehi h1imlo h1imhi with
     ⟨h1re0, h1re1, h1im0, h1im1⟩
   exact nearOne25_ne_nearOne1404_of_level1_box_and_endpoint_bounds
-    h1re0 h1re1 h1im0 h1im1
-    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
-
-/--
-The same seed box and endpoint estimates separate representative `25` from
-the other retained representative `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_seed_box_and_endpoint_bounds
-    (hre0 : (25669119 : ℝ) / 10000000 < nearOne25Seed.re)
-    (hre1 : nearOne25Seed.re < (320864 : ℝ) / 125000)
-    (him0 : (-(1011973 : ℝ) / 5000000) < nearOne25Seed.im)
-    (him1 : nearOne25Seed.im < (-(404789 : ℝ) / 2000000))
-    (h1relo : (-(864443 : ℝ) / 1000000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
-    (h1rehi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
-          (-(432221 : ℝ) / 500000))
-    (h1imlo : (-(53417 : ℝ) / 50000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
-    (h1imhi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
-          (-(1068339 : ℝ) / 1000000))
-    (h2relo : (11317 : ℝ) / 10000 <
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2rehi :
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (5659 : ℝ) / 5000)
-    (h2imlo : (-(52347 : ℝ) / 10000) <
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2imhi :
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
-    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
-    (hcos0 : (-(257 : ℝ) / 1250) <
-      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
-    (hcos1 :
-      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
-    nearOne25 ≠ nearOne4239 := by
-  rcases nearOne25Level1_box_of_seed_box_and_endpoint_bounds
-      hre0 hre1 him0 him1 h1relo h1rehi h1imlo h1imhi with
-    ⟨h1re0, h1re1, h1im0, h1im1⟩
-  exact nearOne25_ne_nearOne4239_of_level1_box_and_endpoint_bounds
     h1re0 h1re1 h1im0 h1im1
     h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
 
@@ -2173,85 +2055,18 @@ theorem nearOne25_ne_nearOne1404_of_v_box_and_endpoint_bounds
       Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
         Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
           (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   rcases nearOne25Seed_box_of_v_box_and_endpoint_bounds
       hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi with
     ⟨hsre0, hsre1, hsim0, hsim1⟩
   exact nearOne25_ne_nearOne1404_of_seed_box_and_endpoint_bounds
-    hsre0 hsre1 hsim0 hsim1
-    h1relo h1rehi h1imlo h1imhi
-    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
-
-/--
-The same `v` box and endpoint estimates separate representative `25` from the
-other retained representative `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_v_box_and_endpoint_bounds
-    (hvre0 : (50092236 : ℝ) / 1000000000 < v.re)
-    (hvre1 : v.re < (50092237 : ℝ) / 1000000000)
-    (hvim0 : (602116527 : ℝ) / 1000000000 < v.im)
-    (hvim1 : v.im < (602116528 : ℝ) / 1000000000)
-    (hsrelo : (25669119 : ℝ) / 10000000 <
-      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
-        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
-    (hsrehi :
-      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
-        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
-          (320864 : ℝ) / 125000)
-    (hsimlo : (404789 : ℝ) / 2000000 <
-      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
-        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
-    (hsimhi :
-      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
-        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
-          (1011973 : ℝ) / 5000000)
-    (h1relo : (-(864443 : ℝ) / 1000000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
-    (h1rehi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
-          (-(432221 : ℝ) / 500000))
-    (h1imlo : (-(53417 : ℝ) / 50000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
-    (h1imhi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
-          (-(1068339 : ℝ) / 1000000))
-    (h2relo : (11317 : ℝ) / 10000 <
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2rehi :
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (5659 : ℝ) / 5000)
-    (h2imlo : (-(52347 : ℝ) / 10000) <
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2imhi :
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
-    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
-    (hcos0 : (-(257 : ℝ) / 1250) <
-      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
-    (hcos1 :
-      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
-    nearOne25 ≠ nearOne4239 := by
-  rcases nearOne25Seed_box_of_v_box_and_endpoint_bounds
-      hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi with
-    ⟨hsre0, hsre1, hsim0, hsim1⟩
-  exact nearOne25_ne_nearOne4239_of_seed_box_and_endpoint_bounds
     hsre0 hsre1 hsim0 hsim1
     h1relo h1rehi h1imlo h1imhi
     h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
@@ -2320,94 +2135,17 @@ theorem nearOne25_ne_nearOne1404_of_v_exp_cos_sin_bounds_and_endpoint_bounds
       Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
         Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
           (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   rcases v_box_of_exp_cos_sin_bounds hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1 with
     ⟨hvre0, hvre1, hvim0, hvim1⟩
   exact nearOne25_ne_nearOne1404_of_v_box_and_endpoint_bounds
-    hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi
-    h1relo h1rehi h1imlo h1imhi
-    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
-
-/--
-The same scalar `v`-factor bounds and endpoint estimates separate
-representative `25` from the other retained representative `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_v_exp_cos_sin_bounds_and_endpoint_bounds
-    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
-      Real.exp (-(Real.pi / 2) * Real.sin theta))
-    (hvexp1 :
-      Real.exp (-(Real.pi / 2) * Real.sin theta) <
-        (60419661060 : ℝ) / 100000000000)
-    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
-      Real.cos (Real.pi / 2 * Real.cos theta))
-    (hvcos1 :
-      Real.cos (Real.pi / 2 * Real.cos theta) <
-        (8290717829 : ℝ) / 100000000000)
-    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
-      Real.sin (Real.pi / 2 * Real.cos theta))
-    (hvsin1 :
-      Real.sin (Real.pi / 2 * Real.cos theta) <
-        (99655727372 : ℝ) / 100000000000)
-    (hsrelo : (25669119 : ℝ) / 10000000 <
-      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
-        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
-    (hsrehi :
-      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
-        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
-          (320864 : ℝ) / 125000)
-    (hsimlo : (404789 : ℝ) / 2000000 <
-      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
-        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
-    (hsimhi :
-      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
-        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
-          (1011973 : ℝ) / 5000000)
-    (h1relo : (-(864443 : ℝ) / 1000000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
-    (h1rehi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
-          (-(432221 : ℝ) / 500000))
-    (h1imlo : (-(53417 : ℝ) / 50000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
-    (h1imhi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
-          (-(1068339 : ℝ) / 1000000))
-    (h2relo : (11317 : ℝ) / 10000 <
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2rehi :
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (5659 : ℝ) / 5000)
-    (h2imlo : (-(52347 : ℝ) / 10000) <
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2imhi :
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
-    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
-    (hcos0 : (-(257 : ℝ) / 1250) <
-      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
-    (hcos1 :
-      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
-    nearOne25 ≠ nearOne4239 := by
-  rcases v_box_of_exp_cos_sin_bounds hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1 with
-    ⟨hvre0, hvre1, hvim0, hvim1⟩
-  exact nearOne25_ne_nearOne4239_of_v_box_and_endpoint_bounds
     hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi
     h1relo h1rehi h1imlo h1imhi
     h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
@@ -2480,102 +2218,19 @@ theorem nearOne25_ne_nearOne1404_of_sin_cos_theta_bounds_and_endpoint_bounds
       Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
         Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
           (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   rcases v_box_of_sin_cos_theta_bounds_and_endpoint_bounds
       hsinTheta0 hsinTheta1 hcosTheta0 hcosTheta1
       hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1 with
     ⟨hvre0, hvre1, hvim0, hvim1⟩
   exact nearOne25_ne_nearOne1404_of_v_box_and_endpoint_bounds
-    hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi
-    h1relo h1rehi h1imlo h1imhi
-    h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
-
-/--
-The same trigonometric boxes and endpoint estimates separate representative
-`25` from the other retained representative `4239`.
--/
-theorem nearOne25_ne_nearOne4239_of_sin_cos_theta_bounds_and_endpoint_bounds
-    (hsinTheta0 : (320764449975 : ℝ) / 1000000000000 < Real.sin theta)
-    (hsinTheta1 : Real.sin theta < (320764449985 : ℝ) / 1000000000000)
-    (hcosTheta0 : (947158998071 : ℝ) / 1000000000000 < Real.cos theta)
-    (hcosTheta1 : Real.cos theta < (947158998073 : ℝ) / 1000000000000)
-    (hvexp0 : (60419661058 : ℝ) / 100000000000 <
-      Real.exp (-(Real.pi / 2) * ((320764449985 : ℝ) / 1000000000000)))
-    (hvexp1 :
-      Real.exp (-(Real.pi / 2) * ((320764449975 : ℝ) / 1000000000000)) <
-        (60419661060 : ℝ) / 100000000000)
-    (hvcos0 : (8290717827 : ℝ) / 100000000000 <
-      Real.cos (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)))
-    (hvcos1 :
-      Real.cos (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)) <
-        (8290717829 : ℝ) / 100000000000)
-    (hvsin0 : (99655727371 : ℝ) / 100000000000 <
-      Real.sin (Real.pi / 2 * ((947158998071 : ℝ) / 1000000000000)))
-    (hvsin1 :
-      Real.sin (Real.pi / 2 * ((947158998073 : ℝ) / 1000000000000)) <
-        (99655727372 : ℝ) / 100000000000)
-    (hsrelo : (25669119 : ℝ) / 10000000 <
-      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
-        Real.cos (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)))
-    (hsrehi :
-      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
-        Real.cos (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)) <
-          (320864 : ℝ) / 125000)
-    (hsimlo : (404789 : ℝ) / 2000000 <
-      Real.exp (Real.pi / 2 * ((602116527 : ℝ) / 1000000000)) *
-        Real.sin (Real.pi / 2 * ((50092236 : ℝ) / 1000000000)))
-    (hsimhi :
-      Real.exp (Real.pi / 2 * ((602116528 : ℝ) / 1000000000)) *
-        Real.sin (Real.pi / 2 * ((50092237 : ℝ) / 1000000000)) <
-          (1011973 : ℝ) / 5000000)
-    (h1relo : (-(864443 : ℝ) / 1000000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.cos (Real.pi / 2 * ((25669119 : ℝ) / 10000000)))
-    (h1rehi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.cos (Real.pi / 2 * ((320864 : ℝ) / 125000)) <
-          (-(432221 : ℝ) / 500000))
-    (h1imlo : (-(53417 : ℝ) / 50000) <
-      Real.exp (Real.pi / 2 * ((1011973 : ℝ) / 5000000)) *
-        Real.sin (Real.pi / 2 * ((320864 : ℝ) / 125000)))
-    (h1imhi :
-      Real.exp (Real.pi / 2 * ((404789 : ℝ) / 2000000)) *
-        Real.sin (Real.pi / 2 * ((25669119 : ℝ) / 10000000)) <
-          (-(1068339 : ℝ) / 1000000))
-    (h2relo : (11317 : ℝ) / 10000 <
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.cos (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2rehi :
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.cos (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (5659 : ℝ) / 5000)
-    (h2imlo : (-(52347 : ℝ) / 10000) <
-      Real.exp (Real.pi / 2 * ((53417 : ℝ) / 50000)) *
-        Real.sin (Real.pi / 2 * (-(864443 : ℝ) / 1000000)))
-    (h2imhi :
-      Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
-        Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
-          (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
-    (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
-    (hcos0 : (-(257 : ℝ) / 1250) <
-      Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
-    (hcos1 :
-      Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
-    nearOne25 ≠ nearOne4239 := by
-  rcases v_box_of_sin_cos_theta_bounds_and_endpoint_bounds
-      hsinTheta0 hsinTheta1 hcosTheta0 hcosTheta1
-      hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1 with
-    ⟨hvre0, hvre1, hvim0, hvim1⟩
-  exact nearOne25_ne_nearOne4239_of_v_box_and_endpoint_bounds
     hvre0 hvre1 hvim0 hvim1 hsrelo hsrehi hsimlo hsimhi
     h1relo h1rehi h1imlo h1imhi
     h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
@@ -2654,13 +2309,13 @@ theorem nearOne25_ne_nearOne1404_of_endpoint_bounds
       Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
         Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
           (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne1404 := by
   rcases sin_cos_theta_bounds_of_endpoint_bounds htsin0 htsin1 htcos0 htcos1 with
     ⟨hsinTheta0, hsinTheta1, hcosTheta0, hcosTheta1⟩
@@ -2743,22 +2398,25 @@ theorem nearOne25_ne_nearOne4239_of_endpoint_bounds
       Real.exp (Real.pi / 2 * ((1068339 : ℝ) / 1000000)) *
         Real.sin (Real.pi / 2 * (-(432221 : ℝ) / 500000)) <
           (-(52346 : ℝ) / 10000))
-    (hexp0 : (3724 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
+    (hexp0 : (3723 : ℝ) < Real.exp (Real.pi / 2 * ((52346 : ℝ) / 10000)))
     (hexp1 : Real.exp (Real.pi / 2 * ((52347 : ℝ) / 10000)) < 3725)
     (hcos0 : (-(257 : ℝ) / 1250) <
       Real.cos (Real.pi / 2 * ((5659 : ℝ) / 5000)))
     (hcos1 :
       Real.cos (Real.pi / 2 * ((11317 : ℝ) / 10000)) <
-        (-(411 : ℝ) / 2000)) :
+        (-(1027 : ℝ) / 5000)) :
     nearOne25 ≠ nearOne4239 := by
-  rcases sin_cos_theta_bounds_of_endpoint_bounds htsin0 htsin1 htcos0 htcos1 with
-    ⟨hsinTheta0, hsinTheta1, hcosTheta0, hcosTheta1⟩
-  exact nearOne25_ne_nearOne4239_of_sin_cos_theta_bounds_and_endpoint_bounds
-    hsinTheta0 hsinTheta1 hcosTheta0 hcosTheta1
-    hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
-    hsrelo hsrehi hsimlo hsimhi
-    h1relo h1rehi h1imlo h1imhi
+  -- Bridge from the `1404` twin through `nearOne1404 = nearOne4239`; the full
+  -- interval chain is shared with the `nearOne25_ne_nearOne1404_*` lemmas above.
+  rw [← nearOne1404_eq_nearOne4239]
+  exact nearOne25_ne_nearOne1404_of_endpoint_bounds
+    htsin0 htsin1 htcos0 htcos1 hvexp0 hvexp1 hvcos0 hvcos1 hvsin0 hvsin1
+    hsrelo hsrehi hsimlo hsimhi h1relo h1rehi h1imlo h1imhi
     h2relo h2rehi h2imlo h2imhi hexp0 hexp1 hcos0 hcos1
+
+/-! ## The near-`i^i` candidate table
+
+The fourteen `nearIPowerI…` representatives, each proved exactly equal to `q = i^i`. -/
 
 /--
 Representative `idx = 562` from the n = 12 near-`i^i` probe class, written

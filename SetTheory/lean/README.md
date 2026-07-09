@@ -28,11 +28,12 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/Equivalence.lean`](SetTheory/Equivalence.lean) | `Equivalence.v` | the deep forward trade, `Closure_form` + bridges, `Tax_s`, `Tmodel_sat_ZF` / `ZFmodel_sat_T`, `ZF_implies_T`, `T_implies_ZF`, **`T_iff_ZF`** |
 | [`SetTheory/Forward.lean`](SetTheory/Forward.lean) | `Forward.v` | the shallow (second-order) forward trade, self-contained, dependency-audited |
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
-| [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) | new Lean-first module | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, and a separate first-order PA syntax with sealed PA axiom semantics |
-| [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | new Lean-first module | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
-| [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | new Lean-first module | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs |
-| [`SetTheory/BusyBeaverMathlib.lean`](SetTheory/BusyBeaverMathlib.lean) | mathlib-backed bridge module | mathlib's `Computable` predicate as the total-recursive predicate for `Nat -> Nat`, sequential `ToPartrec.Code` extraction, and the proved finite-support `PartrecToTM2` evaluator bridge |
-| [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | trailing `Check` / `Print Assumptions` commands | type-checks the headline results and prints their axioms |
+| [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean` | `PAHF.v` | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, a separate first-order PA syntax with sealed PA axiom semantics, and a PA sentence form of the Mertens/Littlewood RH criterion |
+| [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | `BusyBeaver.v` | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
+| [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs |
+| [`SetTheory/BusyBeaverMathlib.lean`](SetTheory/BusyBeaverMathlib.lean) | `BusyBeaverMathlib.v` (explicit assumption-record counterpart) | mathlib's `Computable` predicate as the total-recursive predicate for `Nat -> Nat`, sequential `ToPartrec.Code` extraction, the proved finite-support `PartrecToTM2` evaluator bridge, and the unconditional busy-beaver domination theorem for `Computable` functions |
+| [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | `Audit.v` | type-checks the headline results and prints their axioms |
+| [`SetTheory/AuditMathlib.lean`](SetTheory/AuditMathlib.lean) | — (root workspace only) | the same assumption audit for the mathlib-backed bridge theorems |
 
 ## Building
 
@@ -41,17 +42,19 @@ Batteries — Lean core only) for the standalone SetTheory workspace:
 
 ```sh
 cd src/Lean/SetTheory/lean
-lake build                            # builds all seven modules
+lake build                            # builds every mathlib-free module
 lake env lean SetTheory/Audit.lean    # re-runs the assumption audit
 ```
 
-The mathlib-backed bridge `SetTheory/BusyBeaverMathlib.lean` is built from the
-root `src/Lean` workspace, which is pinned to mathlib `v4.31.0`:
+The mathlib-backed bridge `SetTheory/BusyBeaverMathlib.lean` and its audit
+`SetTheory/AuditMathlib.lean` are built from the root `src/Lean` workspace,
+which is pinned to mathlib `v4.31.0`:
 
 ```sh
 cd src/Lean
 lake exe cache get Mathlib.Computability.TuringMachine.ToPartrec
 lake build +SetTheory.BusyBeaverMathlib
+lake build SetTheory.AuditMathlib     # replays the bridge assumption audit
 ```
 
 ## The assumption audit
@@ -106,6 +109,15 @@ theorem PA.Formula.sat_axiom_s
     (M : PA.Model α) (e : Nat → α) :
     ∀ f, PA.Formula.Ax_s f → PA.Formula.Sat M e f
 ```
+
+The PA syntax layer also contains
+[`SetTheory/PAHF/RiemannHypothesis.lean`](SetTheory/PAHF/RiemannHypothesis.lean),
+which defines `PA.Formula.RiemannHypothesis.mertensRiemannHypothesisSentence`:
+the sealed first-order PA sentence corresponding to the Mertens/Littlewood
+growth criterion `forall q > 0, exists C, forall n,
+|M(n)|^(2*q) <= C*n^(q+1)`.  The companion report
+[`../../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](../../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md)
+explains why this was chosen over the Lagarias/Robin/Farey alternatives.
 
 This is a semantic and syntax-preparation checkpoint, not yet the final
 deductive bi-interpretability theorem. The remaining syntactic bridge is the
@@ -164,18 +176,37 @@ theorem BusyBeaver.totalRecursiveMathlib_eval_by_supported_tm2
 The companion theorem `BusyBeaver.totalRecursiveMathlib_tm2_eval_main`
 packages the same computation in mathlib's ordinary `TM2.eval` interface:
 the evaluator started with `trList [n]` on the main stack halts with
-`trList [f n]` there.  For the score-counting direction, the bridge also proves
+`trList [f n]` there.  For the score-counting direction, the bridge proves
 a unary-output variant: `BusyBeaver.totalRecursiveMathlib_bool_tm0_eval_unary`
 threads a composed `ToPartrec.Code` through `TM2 -> TM1`, `TM1 -> TM1 Bool`,
 and `TM1 -> TM0` so that the decoded main stack contains
-`trList (List.replicate (f n) 0)`, a list with exactly `f n` zero entries.
-It also proves the support-only lowering
-`BusyBeaver.partrecToTM2_descends_to_supported_bool_tm0`: the finite-support
-`PartrecToTM2` evaluator descends through mathlib's proved reductions to a
-finite-support Bool `TM0` machine.  The remaining bridge for the full
-busy-beaver theorem is the exact output/tape normalization from that Bool
-`TM0` computation into a blank-tape two-symbol Rado machine, including the
-state-count accounting needed by `Σ(n)`.
+`trList (List.replicate (f n) 0)`, a list with exactly `f n` zero entries,
+and the support-preserving lowering
+`BusyBeaver.partrecToTM2_descends_to_supported_bool_tm0_with_encoding`
+carries the finite-support `PartrecToTM2` evaluator through mathlib's proved
+reductions to a finite-support Bool `TM0` machine.  The chain then closes
+**unconditionally**: the supported Bool `TM0` machine is wrapped by a local
+blank-tape initializer (`InitThenTM0State`), its state count is budgeted
+against the binary size of the input
+(`linear_mul_le_two_pow_pred_of_large`, `nat_size_linear_le_self_of_large`,
+`init_wrapper_state_count_le_linear`,
+`init_wrapper_state_count_le_linear_size`), and the file proves
+
+```lean
+theorem BusyBeaver.totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler :
+    HasEventuallyAtMostLowerBoundCompiler TotalRecursiveMathlib
+
+theorem BusyBeaver.sigma_eventually_dominates_every_totalRecursiveMathlib
+    {Sigma : Nat -> Nat} (hSigma : IsSigma Sigma)
+    {f : Nat -> Nat} (hf : TotalRecursiveMathlib f) :
+    EventuallyDominates Sigma f
+```
+
+— any busy-beaver score function eventually dominates every function
+accepted by mathlib's `Computable` predicate.
+[`SetTheory/AuditMathlib.lean`](SetTheory/AuditMathlib.lean) replays the
+`#print axioms` audit for both theorems from the root workspace: only
+`propext`, `Classical.choice`, and `Quot.sound`.
 
 ## Translation notes (Coq → Lean)
 

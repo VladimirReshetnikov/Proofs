@@ -1,10 +1,12 @@
 (*
-  Coq port of the rational core of LeanProofs/FloorSqrtSum.lean.
+  Coq port of LeanProofs/FloorSqrtSum.lean.
 
   The Lean file proves the identity first over Rat and then casts back to Nat.
-  This Coq port records the rational theorem directly; it is the algebraic
-  heart of the argument and avoids a separate natural-division normalization
-  layer for now.
+  This Coq port records the rational theorem directly (the algebraic heart of
+  the argument) and then the Nat-level closed form with truncated subtraction
+  and division, matching the Lean statement `sum_floor_sqrt_eq`.  The Nat layer
+  goes through the subtraction-free key identity
+  `6 * sumFloorSqrt n + s*(s+1)*(2s+1) = 6 * (s * (n+1))` for `s = sqrt n`.
 *)
 
 From Stdlib Require Import Arith.PeanoNat.
@@ -107,6 +109,51 @@ Proof.
     + pose proof (sqrt_jump_square n (Nat.sqrt n) eq_refl hs) as hn.
       rewrite (floorSqrtSumClosedFormQ_step_jump n (Nat.sqrt n) eq_refl hs hn).
       rewrite hs. reflexivity.
+Qed.
+
+(* ## Nat-level closed form with truncated subtraction and division *)
+
+(* Subtraction-free key identity: six times the running sum plus the cubic
+   correction term equals six times the leading product. *)
+Lemma six_mul_sumFloorSqrt_key (n : nat) :
+    (6 * sumFloorSqrt n
+       + Nat.sqrt n * (Nat.sqrt n + 1) * (2 * Nat.sqrt n + 1)
+     = 6 * (Nat.sqrt n * (n + 1)))%nat.
+Proof.
+  induction n as [|n ih].
+  - rewrite Nat.sqrt_0. reflexivity.
+  - simpl sumFloorSqrt.
+    destruct (sqrt_succ_eq_self_or_succ n) as [hs | hs].
+    + rewrite hs in *. nia.
+    + pose proof (sqrt_jump_square n (Nat.sqrt n) eq_refl hs) as hn.
+      rewrite hs in *. nia.
+Qed.
+
+(* The cubic correction term is always divisible by six. *)
+Lemma six_divides_sqrt_term (s : nat) :
+    Nat.divide 6 (s * (s + 1) * (2 * s + 1)).
+Proof.
+  pose proof (six_mul_sumFloorSqrt_key (s * s)) as key.
+  rewrite Nat.sqrt_square in key.
+  exists (s * (s * s + 1) - sumFloorSqrt (s * s))%nat.
+  nia.
+Qed.
+
+(* Lean: sum_floor_sqrt_eq (the natural-number closed form). *)
+Theorem sum_floor_sqrt_eq (n : nat) :
+    sumFloorSqrt n
+      = (Nat.sqrt n * (n + 1)
+         - Nat.sqrt n * (Nat.sqrt n + 1) * (2 * Nat.sqrt n + 1) / 6)%nat.
+Proof.
+  pose proof (six_mul_sumFloorSqrt_key n) as key.
+  set (s := Nat.sqrt n) in *.
+  set (T := (s * (s + 1) * (2 * s + 1))%nat) in *.
+  set (A := (s * (n + 1))%nat) in *.
+  assert (hle : (sumFloorSqrt n <= A)%nat) by lia.
+  assert (hT : T = ((A - sumFloorSqrt n) * 6)%nat) by lia.
+  assert (hdiv : (T / 6 = A - sumFloorSqrt n)%nat).
+  { rewrite hT. apply Nat.div_mul. lia. }
+  rewrite hdiv. lia.
 Qed.
 
 End FloorSqrtSum.

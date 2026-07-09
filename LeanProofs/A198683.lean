@@ -24,6 +24,10 @@ open Complex
 
 open A198683Support
 
+/-! ## Seed family: the six-candidate set and its iᶻ image
+
+The fifteen-element six-candidate set, its cardinality and geometric bounds, and the first seven principal values obtained as its `principalPow I` image. -/
+
 private noncomputable def a198683SixCandidateSet : Set ℂ :=
   ({p6A, p6B, p6C, p6D, p6E, p6F, p6G, p6H, p6I, p6J, p6K, p6L, p6M,
     p6N, p6O} : Set ℂ)
@@ -152,6 +156,10 @@ private theorem I_pow_image_sixCandidateSet_subset_seven :
   refine ⟨0, Complex.I, ?_, x, ?_, rfl⟩
   · exact mem_valueSet_one.2 rfl
   · exact a198683SixCandidateSet_subset_six hx
+
+/-! ## Second family: the p2ᶻ negative-exponent image
+
+The five-element negative-exponent set and the further principal values produced as its `principalPow p2` image. -/
 
 private theorem p5B_im_pos :
     0 < p5B.im := by
@@ -295,6 +303,10 @@ private theorem p2_pow_image_p2NegativeExponents_norm_le_one {z : ℂ}
   rcases hz with ⟨w, hw, rfl⟩
   exact p2_pow_norm_le_one_of_re_nonneg
     (a198683SevenP2NegativeExponents_re_nonneg hw)
+
+/-! ## Off-unit-circle witnesses (p3R^p4A, p4B^p3L)
+
+New principal values separated from the two image families purely by their modulus. -/
 
 private theorem p3R_pow_p4A_im_neg :
     (principalPow p3R p4A).im < 0 := by
@@ -524,6 +536,10 @@ private theorem p4B_pow_p3L_notMem_I_pow_sixCandidateSet :
       norm_num
     exact (ne_of_norm_lt_norm_gt (r := 4) hlt p4B_pow_p3L_norm_gt_four) hzw
 
+/-! ## The principal value i
+
+Identifying `i` itself as a principal value and proving it distinct from the earlier images through the `ne_one` lemmas. -/
+
 private theorem principalPow_I_one_eq_I :
     principalPow Complex.I (1 : ℂ) = Complex.I := by
   dsimp [principalPow]
@@ -639,6 +655,10 @@ private theorem I_notMem_I_pow_sixCandidateSet :
     rw [hpow, principalPow_I_one_eq_I]
   exact a198683SixCandidateSet_ne_one hz
     (I_pow_inj_of_re_mem_two hzre.1 hzre.2 (by norm_num) (by norm_num) hpow_one)
+
+/-! ## Unit-modulus witnesses ordered by cos-angle (p3R^p4B, p3R^p4C, p5G^p2)
+
+Further unit-circle values separated from one another by their real parts, each equal to the cosine of an explicit angle. -/
 
 private theorem p3R_pow_p4B_norm_eq_one :
     ‖principalPow p3R p4B‖ = 1 := by
@@ -868,6 +888,10 @@ private theorem p5G_pow_p2_mem_seven :
   · exact mem_valueSet_five.2
       (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr rfl))))))
   · exact mem_valueSet_two.2 rfl
+
+/-! ## Irrational-angle witnesses via rho and sigma
+
+The constants `rho` and `sigma` and the `p5F^p2`, `p5B^p2` values they certify through numeric real-part bounds. -/
 
 private theorem rho_pos : 0 < rho := by
   dsimp [rho]
@@ -1202,6 +1226,10 @@ private theorem p5B_pow_p2_mem_seven :
   refine ⟨4, p5B, ?_, p2, ?_, rfl⟩
   · exact mem_valueSet_five.2 (Or.inr (Or.inl rfl))
   · exact mem_valueSet_two.2 rfl
+
+/-! ## tau witnesses via exponential and trig bounds
+
+The constant `tau` and the `p4C^p3L`, `p3L^p4C` values, distinguished with explicit exp and sin numeric estimates. -/
 
 private theorem p4C_pow_p3L_norm_lt_one :
     ‖principalPow p4C p3L‖ < 1 := by
@@ -1590,6 +1618,10 @@ private theorem p3L_pow_p4C_mem_seven :
   · exact mem_valueSet_three.2 (Or.inl rfl)
   · exact mem_valueSet_four.2 (Or.inr (Or.inr rfl))
 
+/-! ## Squared and product witnesses (p3L², I·p5G)
+
+Principal values arising from squares and products of base towers, with their distinctness proofs. -/
+
 private theorem p3L_norm_eq_one :
     ‖p3L‖ = 1 := by
   rw [p3L_eq_exp_theta, Complex.norm_exp]
@@ -1805,6 +1837,10 @@ private theorem p2_pow_p5G_mem_seven :
   · exact mem_valueSet_two.2 rfl
   · exact mem_valueSet_five.2
       (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr rfl))))))
+
+/-! ## Final small-norm witnesses (rho·p4A, I·p5D)
+
+The last low-modulus principal values completing the collection of thirty-four distinct points. -/
 
 private theorem p4A_norm_lt_two_div_three :
     ‖p4A‖ < (2 : ℝ) / 3 := by
@@ -2364,6 +2400,10 @@ private theorem p2_pow_p5D_mem_seven :
   refine ⟨1, p2, ?_, p5D, ?_, rfl⟩
   · exact mem_valueSet_two.2 rfl
   · exact mem_valueSet_five.2 (Or.inr (Or.inr (Or.inr (Or.inl rfl))))
+
+/-! ## Lower bound: thirty-four distinct principal values
+
+Assembling every witness into the disjointness argument that proves `thirty_four_le_a198683_seven`. -/
 
 theorem thirty_four_le_a198683_seven : 34 ≤ a198683 7 := by
   classical
@@ -3280,6 +3320,10 @@ theorem thirty_four_le_a198683_seven : 34 ≤ a198683 7 := by
     34 = (insert chi (insert omega (insert xi (insert eta (insert zeta (insert x h)))))).ncard :=
       hchi_card.symm
     _ ≤ (a198683ValueSet 7).ncard := Set.ncard_le_ncard hsubset hfinite7
+
+/-! ## Assembled value and historical bounds
+
+The identity `a198683 7 = 34` together with the weaker lower and upper bounds restated as corollaries. -/
 
 theorem thirty_three_le_a198683_seven : 33 ≤ a198683 7 := by
   exact (by norm_num : 33 ≤ 34).trans thirty_four_le_a198683_seven
