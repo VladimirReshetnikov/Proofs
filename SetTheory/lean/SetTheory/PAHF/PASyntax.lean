@@ -2784,6 +2784,16 @@ def betaDiv2StepsThroughAt (code step last : Nat) : Formula :=
   all (imp (leAt 0 (last+1))
     (betaDiv2StepWitnessAt (code+1) (step+1) 0))
 
+/-- Term-bound variant of `betaDiv2StepsThroughAt`: every adjacent pair through
+the PA term `last` in a beta-coded sequence is one binary-halving step.
+
+This is a formula macro only.  It is useful after opening existential
+witnesses, where the trace bound is often a substituted term such as `S x`
+rather than a bare variable slot. -/
+def betaDiv2StepsThroughTermAt (code step : Nat) (last : Term) : Formula :=
+  all (imp (leTermAt (Term.var 0) (Term.rename Nat.succ last))
+    (betaDiv2StepWitnessAt (code+1) (step+1) 0))
+
 /-- Closed-bound variant of `betaDiv2StepsThroughAt`: every adjacent pair up to
 the standard numeral `last` in a beta-coded sequence is one binary-halving step.
 This is only a formula macro; the PA constructors connecting it to the variable
@@ -18084,6 +18094,59 @@ theorem BProv_Ax_s_betaDiv2StepsThroughAt_step_termIdx_of_leTerm
     BProv_exI (B := Ax_s) (G := G) (a := body)
       (t := idxTerm) hbody
 
+/-- Eliminate a term-bounded beta-halving trace at an arbitrary PA index term. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughTermAt_step_termIdx_of_leTerm
+    {G : List Formula} {code step : Nat} {idxTerm lastTerm : Term}
+    (hsteps : BProv Ax_s G (betaDiv2StepsThroughTermAt code step lastTerm))
+    (hle : BProv Ax_s G (leTermAt idxTerm lastTerm)) :
+    BProv Ax_s G (betaDiv2StepWitnessAtTermIdx code step idxTerm) := by
+  let rawWitness : Formula :=
+    betaDiv2StepWitnessAt (code+1) (step+1) 0
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idxTerm))
+      rawWitness
+  have himpRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := idxTerm) hsteps
+  have himp : BProv Ax_s G
+      (imp (leTermAt idxTerm lastTerm)
+        (subst (instTerm idxTerm) rawWitness)) := by
+    simpa [rawWitness, betaDiv2StepsThroughTermAt, leTermAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+      div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up, term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ] using himpRaw
+  have hwitSubst : BProv Ax_s G
+      (subst (instTerm idxTerm) rawWitness) :=
+    BProv_mp Ax_s G _ _ himp hle
+  have hidxInst : BProv Ax_s G
+      (subst (instTerm idxTerm)
+        (eq (Term.var 0) (Term.rename Nat.succ idxTerm))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst,
+      term_subst_instTerm_rename_succ] using
+      (BProv_eqRefl (B := Ax_s) (G := G) idxTerm)
+  have hbody : BProv Ax_s G (subst (instTerm idxTerm) body) := by
+    simpa [body, rawWitness, subst, instTerm, Term.subst, Term.upSubst]
+      using BProv_andI hidxInst hwitSubst
+  simpa [betaDiv2StepWitnessAtTermIdx, body, rawWitness] using
+    BProv_exI (B := Ax_s) (G := G) (a := body)
+      (t := idxTerm) hbody
+
+/-- Eliminate a term-bounded beta-halving trace at a successor index. -/
+theorem BProv_Ax_s_betaDiv2StepsThroughTermAt_step_succ_termIdx_of_leTerm
+    {G : List Formula} {code step : Nat} {idxTerm lastTerm : Term}
+    (hsteps :
+      BProv Ax_s G
+        (betaDiv2StepsThroughTermAt code step (Term.succ lastTerm)))
+    (hle : BProv Ax_s G (leTermAt idxTerm lastTerm)) :
+    BProv Ax_s G
+      (betaDiv2StepWitnessAtTermIdx code step (Term.succ idxTerm)) :=
+  BProv_Ax_s_betaDiv2StepsThroughTermAt_step_termIdx_of_leTerm
+    hsteps (BProv_Ax_s_leTermAt_succ_succ hle)
+
 /-- One-step closed-value propagation from a bounded trace at a PA index term. -/
 theorem BProv_Ax_s_betaDiv2StepsThroughAt_next_termIdx_eqConst_div_two_of_leTerm
     {G : List Formula} {code step last cur : Nat} {idxTerm : Term}
@@ -27706,6 +27769,12 @@ def strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula : Formula :=
   subst strictHighOddOpenedWitnessSuccLowMemOpenedSubst
     (betaDiv2StepsThroughAt 1 0 (0+2))
 
+/-- Term-bound view of the bounded old trace component in the fully opened
+`S x ∈ low` trace: after opening the beta witnesses, the old trace runs
+through `S x`, where the opened predecessor witness is slot `2`. -/
+def strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula : Formula :=
+  betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))
+
 /-- Final-bit existential component in the fully opened `S x ∈ low` trace. -/
 def strictHighOddOpenedWitnessSuccLowMemOpenedBitExFormula : Formula :=
   subst strictHighOddOpenedWitnessSuccLowMemOpenedSubst
@@ -29019,6 +29088,76 @@ theorem
     strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
     strictHighOddOpenedWitnessSuccLowMemTraceTail, subst, Term.subst,
     Term.upSubst] using hsteps
+
+/-- Projection of the opened old trace as a term-bounded trace through `S x`. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
+    {G : List Formula} :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hsteps : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps
+        (G := G))
+  simpa [C, strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedStepsFormula,
+    strictHighOddOpenedWitnessSuccLowMemOpenedSubst,
+    strictHighOddSuccWitnessTerm, betaDiv2StepsThroughTermAt,
+    betaDiv2StepsThroughAt, leAt, leTermAt, betaDiv2StepWitnessAt,
+    betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt, zeroAt,
+    oneAt, eqConstAt, betaModTerm, subst, instTerm, Term.subst,
+    Term.upSubst, Term.rename, term_rename_up_succ_rename_succ]
+    using hsteps
+
+/-- The opened `S x ∈ low` trace supplies any old step whose index is bounded
+by the opened trace bound. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_termIdx_of_leTerm
+    {G : List Formula} {idxTerm : Term}
+    (hle : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      (leTermAt idxTerm (Term.succ (Term.var 2)))) :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      (betaDiv2StepWitnessAtTermIdx 1 0 idxTerm) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hsteps : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
+        (G := G))
+  exact
+    BProv_Ax_s_betaDiv2StepsThroughTermAt_step_termIdx_of_leTerm
+      (G := C) (code := 1) (step := 0)
+      (idxTerm := idxTerm) (lastTerm := Term.succ (Term.var 2))
+      hsteps (by simpa [C] using hle)
+
+/-- The opened `S x ∈ low` trace supplies the old step at successor index
+`S i` whenever `i <= x`.  This is the reusable shifted-step hook needed for
+the later beta-tail construction for `x ∈ lowHalf`. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_step_succ_termIdx_of_leTerm
+    {G : List Formula} {idxTerm : Term}
+    (hle : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      (leTermAt idxTerm (Term.var 2))) :
+    BProv Ax_s (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G)
+      (betaDiv2StepWitnessAtTermIdx 1 0 (Term.succ idxTerm)) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext G
+  have hsteps : BProv Ax_s C
+      strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps_term
+        (G := G))
+  exact
+    BProv_Ax_s_betaDiv2StepsThroughTermAt_step_succ_termIdx_of_leTerm
+      (G := C) (code := 1) (step := 0)
+      (idxTerm := idxTerm) (lastTerm := Term.var 2)
+      hsteps (by simpa [C] using hle)
 
 /-- Projection of the final-bit existential from the fully opened `S x ∈ low`
 trace. -/
