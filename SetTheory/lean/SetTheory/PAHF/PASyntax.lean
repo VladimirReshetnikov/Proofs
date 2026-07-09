@@ -37038,6 +37038,38 @@ theorem
         (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_total_and_opened_odd_case
           hodd))
 
+/-- Successor shell with PA totality opened for both strict-branch halving
+witnesses and for the equality branch.
+
+The four strict-branch parity cases and the opened equality odd case are all
+kept as explicit premises. -/
+theorem
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_cases_and_eq_opened_odd
+    (hhighDouble_lowDouble : BProv Ax_s
+      strictSuccOpenedHighDoubleLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighDouble_lowOdd : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowDouble : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowOdd : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
+    (by
+      simpa [strictSuccContext, strictSuccTarget] using
+        BProv_Ax_s_hfSomeDistinguishesTermAt_succ_strict_of_opened_total_div2_cases
+          hhighDouble_lowDouble
+          hhighDouble_lowOdd
+          hhighOdd_lowDouble
+          hhighOdd_lowOdd)
+    hodd
+
 /-- Successor shell whose equality branch is reduced to the ordinary odd-high
 carry frontier.
 
@@ -37157,6 +37189,34 @@ theorem
   BProv_Ax_s_translated_HF_extensionality_of_successor_step
     (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_opened_odd
       hltCase hodd)
+
+/-- Translated HF extensionality after opening PA totality in both
+strict-branch halving witnesses and in the equality branch. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_strict_opened_total_div2_cases_and_eq_opened_odd
+    (hhighDouble_lowDouble : BProv Ax_s
+      strictSuccOpenedHighDoubleLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighDouble_lowOdd : BProv Ax_s
+      strictSuccOpenedHighDoubleLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowDouble : BProv Ax_s
+      strictSuccOpenedHighOddLowDoubleContext
+      strictSuccOpenedTotalTarget)
+    (hhighOdd_lowOdd : BProv Ax_s
+      strictSuccOpenedHighOddLowOddContext
+      strictSuccOpenedTotalTarget)
+    (hodd : BProv Ax_s eqSuccOpenedOddContext eqSuccOpenedOddTarget) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_opened_total_div2_cases_and_eq_opened_odd
+      hhighDouble_lowDouble
+      hhighDouble_lowOdd
+      hhighOdd_lowDouble
+      hhighOdd_lowOdd
+      hodd)
 
 /-- Translated HF extensionality from the strict successor branch and the
 ordinary odd-high equality carry frontier. -/
