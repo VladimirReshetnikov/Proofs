@@ -182,6 +182,12 @@ Check PA.Formula.betaModTermTerm.
 Check PA.Formula.betaTermTermAt.
 Check PA.Formula.betaTermTermAtConstIdx.
 Check PA.Formula.betaTermTermAtSuccIdx.
+Check PA.Formula.twoEntryBetaStepTerm.
+Check PA.Formula.twoEntryBetaCodeTerm.
+Check PA.Formula.BProv_Ax_s_betaModTermTerm_zero.
+Check PA.Formula.BProv_Ax_s_betaModTermTerm_one_add_self.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_modulus.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_double_step_of_one.
 Check PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_succ.
 Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
 Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms.

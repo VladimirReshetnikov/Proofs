@@ -19855,6 +19855,19 @@ Definition twoEntryBetaCode (cur next : nat) : nat :=
   cur + (twoEntryBetaStep cur next + 1)
     * (2 * next + 4 * twoEntryBetaStep cur next * cur).
 
+(* Lean: twoEntryBetaStepTerm *)
+Definition twoEntryBetaStepTerm (cur next : term) : term :=
+  tSucc (tAdd cur next).
+
+(* Lean: twoEntryBetaCodeTerm *)
+Definition twoEntryBetaCodeTerm (cur next : term) : term :=
+  let s := twoEntryBetaStepTerm cur next in
+  tAdd cur
+    (tMul (tSucc s)
+      (tAdd
+        (tMul (Term.numeral 2) next)
+        (tMul (tMul (Term.numeral 4) s) cur))).
+
 (* Lean: BetaEntry_twoEntry_zero *)
 Lemma BetaEntry_twoEntry_zero : forall cur next,
   BetaEntry (twoEntryBetaCode cur next) (twoEntryBetaStep cur next) 0 cur.
@@ -23235,6 +23248,116 @@ Proof.
   apply (BProv_eqElim B G (tVar set) setCode (hfMemAt (S elem) 0) hset).
   rewrite (subst_instTerm_var_hfMemAt_succ_zero elem set).
   exact hmem.
+Qed.
+
+(* Lean: BProv_Ax_s_betaModTermTerm_zero *)
+Lemma BProv_Ax_s_betaModTermTerm_zero : forall G step,
+  BProv Ax_s G
+    (pEq (betaModTermTerm step tZero) (tSucc step)).
+Proof.
+  intros G step.
+  pose proof (BProv_Ax_s_one_mul_term G step) as hone.
+  replace (pEq (betaModTermTerm step tZero) (tSucc step))
+    with (pEq (tSucc (tMul (Term.numeral 1) step)) (tSucc step)).
+  - exact (BProv_eq_congr_succ Ax_s G _ _ hone).
+  - unfold betaModTermTerm. reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_betaModTermTerm_one_add_self *)
+Lemma BProv_Ax_s_betaModTermTerm_one_add_self : forall G step,
+  BProv Ax_s G
+    (pEq (betaModTermTerm step (tSucc tZero))
+      (tSucc (tAdd step step))).
+Proof.
+  intros G step.
+  pose proof (BProv_Ax_s_mul_comm_terms G (Term.numeral 2) step) as hcomm.
+  pose proof (BProv_Ax_s_mul_two_right_terms G step) as htwo.
+  assert (hmul : BProv Ax_s G
+      (pEq (tMul (Term.numeral 2) step) (tAdd step step))).
+  { exact (BProv_eqTrans Ax_s G _ _ _ hcomm htwo). }
+  assert (hsucc : BProv Ax_s G
+      (pEq (tSucc (tMul (Term.numeral 2) step))
+        (tSucc (tAdd step step)))).
+  { exact (BProv_eq_congr_succ Ax_s G _ _ hmul). }
+  replace (betaModTermTerm step (tSucc tZero))
+    with (tSucc (tMul (Term.numeral 2) step)) by reflexivity.
+  exact hsucc.
+Qed.
+
+(* Lean: BProv_Ax_s_betaTermTermAt_of_eq_modulus *)
+Lemma BProv_Ax_s_betaTermTermAt_of_eq_modulus :
+  forall G (out code oldStep oldIdx newStep newIdx : term),
+  BProv Ax_s G
+    (pEq (betaModTermTerm oldStep oldIdx)
+      (betaModTermTerm newStep newIdx)) ->
+  BProv Ax_s G (betaTermTermAt out code oldStep oldIdx) ->
+  BProv Ax_s G (betaTermTermAt out code newStep newIdx).
+Proof.
+  intros G out code oldStep oldIdx newStep newIdx hmod hbeta.
+  set (a :=
+    pEx (pAnd
+      (pEq (tVar 0) (tVar 1))
+      (remTermTermAt
+        (Term.rename (fun n => n + 2) out)
+        (Term.rename (fun n => n + 2) code)
+        (tVar 0)))).
+  assert (hold : BProv Ax_s G
+      (subst (instTerm (betaModTermTerm oldStep oldIdx)) a)).
+  {
+    replace (subst (instTerm (betaModTermTerm oldStep oldIdx)) a)
+      with (betaTermTermAt out code oldStep oldIdx).
+    - exact hbeta.
+    - unfold a, betaTermTermAt, remTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+      repeat rewrite Term.rename_comp.
+      reflexivity.
+  }
+  pose proof (BProv_eqElim Ax_s G
+    (betaModTermTerm oldStep oldIdx)
+    (betaModTermTerm newStep newIdx) a hmod hold) as hnew.
+  replace (betaTermTermAt out code newStep newIdx)
+    with (subst (instTerm (betaModTermTerm newStep newIdx)) a).
+  - exact hnew.
+  - unfold a, betaTermTermAt, remTermTermAt, ltTermAt.
+    simpl.
+    repeat rewrite Term.subst_rename_succ_up.
+    repeat rewrite term_subst_instTerm_rename_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+    repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
+    repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+    repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
+    repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
+    repeat rewrite Term.rename_comp.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_betaTermTermAt_zero_double_step_of_one *)
+Lemma BProv_Ax_s_betaTermTermAt_zero_double_step_of_one :
+  forall G (out code step : term),
+  BProv Ax_s G
+    (betaTermTermAt out code step (tSucc tZero)) ->
+  BProv Ax_s G
+    (betaTermTermAt out code (tAdd step step) tZero).
+Proof.
+  intros G out code step hbeta.
+  pose proof (BProv_Ax_s_betaModTermTerm_one_add_self G step) as holdMod.
+  pose proof (BProv_Ax_s_betaModTermTerm_zero G (tAdd step step)) as hnewMod.
+  assert (hmod : BProv Ax_s G
+      (pEq (betaModTermTerm step (tSucc tZero))
+        (betaModTermTerm (tAdd step step) tZero))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ holdMod
+      (BProv_eqSym Ax_s G _ _ hnewMod)).
+  }
+  exact (BProv_Ax_s_betaTermTermAt_of_eq_modulus
+    G out code step (tSucc tZero) (tAdd step step) tZero hmod hbeta).
 Qed.
 
 (* Lean: BProv_Ax_s_subst_betaAt_of_betaTermTermAt *)
