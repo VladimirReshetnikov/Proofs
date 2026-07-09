@@ -31162,6 +31162,36 @@ theorem
       hih hhalfLt
   simpa [hfSomeDistinguishesTermAt_var] using hsome
 
+/-- Equality-branch specialization of the odd-half IH opener.
+
+When the successor split is in the `low = high` branch and the predecessor-high
+code is explicitly odd, the renamed lower-code induction hypothesis can already
+be opened at `highHalf`.  The equality assumption is kept in the context because
+later self-branch plumbing needs that exact branch shape to transport the low
+slot back from `high` to `low`. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesAt_of_eq_case_ih_high_odd_half
+    {highHalf : Nat} :
+    BProv Ax_s
+      (oddDoubleEqAt 1 highHalf ::
+        [eq (Term.var 0) (Term.var 1),
+          rename Nat.succ (hfLtDistinguishesAt 0)])
+      (hfSomeDistinguishesAt 1 highHalf) := by
+  let lowEqHigh : Formula := eq (Term.var 0) (Term.var 1)
+  let ih : Formula := rename Nat.succ (hfLtDistinguishesAt 0)
+  let C : List Formula := oddDoubleEqAt 1 highHalf :: [lowEqHigh, ih]
+  have hihRaw : BProv Ax_s C ih :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, ih])
+  have hih : BProv Ax_s C (hfLtDistinguishesTermAt (Term.var 1)) := by
+    simpa [ih, hfLtDistinguishesTermAt_var,
+      rename_hfLtDistinguishesAt_succ] using hihRaw
+  have hodd : BProv Ax_s C (oddDoubleEqAt 1 highHalf) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hsome : BProv Ax_s C (hfSomeDistinguishesAt 1 highHalf) :=
+    BProv_Ax_s_hfSomeDistinguishesAt_of_hfLtDistinguishesTermAt_odd_half
+      hih hodd
+  simpa [C, lowEqHigh, ih] using hsome
+
 /-- Strict-successor specialization of the half-order/IH extraction: a div2
 witness for the current low code lets the renamed predecessor induction
 hypothesis distinguish the predecessor-high code from the low half. -/
