@@ -2794,6 +2794,29 @@ def betaDiv2StepsThroughTermAt (code step : Nat) (last : Term) : Formula :=
   all (imp (leTermAt (Term.var 0) (Term.rename Nat.succ last))
     (betaDiv2StepWitnessAt (code+1) (step+1) 0))
 
+/-- A pointwise shifted-tail relation between two beta-coded traces.
+
+The old trace is represented by the ambient code and step slots `oldCode` and
+`oldStep`; the new trace is represented by arbitrary PA terms `newCode` and
+`newStep`.  Up to the bound `last`, every old beta entry at successor index
+`S i` is copied to the new beta entry at index `i`.
+
+This is deliberately only the transfer relation.  A later construction must
+still build witnesses for `newCode` and `newStep` and prove this formula from
+the old trace; the definition does not smuggle that construction in. -/
+def betaShiftTailThroughTermAt
+    (oldCode oldStep : Nat) (newCode newStep last : Term) : Formula :=
+  all (imp
+    (leTermAt (Term.var 0) (Term.rename Nat.succ last))
+    (all (imp
+      (betaTermTermAt (Term.var 0)
+        (Term.var (oldCode+2)) (Term.var (oldStep+2))
+        (Term.succ (Term.var 1)))
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n+2) newCode)
+        (Term.rename (fun n => n+2) newStep)
+        (Term.var 1)))))
+
 /-- Closed-bound variant of `betaDiv2StepsThroughAt`: every adjacent pair up to
 the standard numeral `last` in a beta-coded sequence is one binary-halving step.
 This is only a formula macro; the PA constructors connecting it to the variable
@@ -18146,6 +18169,77 @@ theorem BProv_Ax_s_betaDiv2StepsThroughTermAt_step_succ_termIdx_of_leTerm
       (betaDiv2StepWitnessAtTermIdx code step (Term.succ idxTerm)) :=
   BProv_Ax_s_betaDiv2StepsThroughTermAt_step_termIdx_of_leTerm
     hsteps (BProv_Ax_s_leTermAt_succ_succ hle)
+
+/-- Eliminate a shifted beta-tail relation at a bounded PA index term.
+
+If the relation says that the old trace at `S i` is copied into a fresh trace
+at `i`, this lemma performs the two universal instantiations and modus ponens
+steps for an arbitrary output term. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
+    {G : List Formula} {oldCode oldStep : Nat}
+    {newCode newStep lastTerm idxTerm out : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep lastTerm))
+    (hle : BProv Ax_s G (leTermAt idxTerm lastTerm))
+    (hold : BProv Ax_s G
+      (betaTermTermAt out (Term.var oldCode) (Term.var oldStep)
+        (Term.succ idxTerm))) :
+    BProv Ax_s G (betaTermTermAt out newCode newStep idxTerm) := by
+  have hidxRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := idxTerm) htail
+  have hidx : BProv Ax_s G
+      (imp (leTermAt idxTerm lastTerm)
+        (all (imp
+          (betaTermTermAt (Term.var 0)
+            (Term.var (oldCode+1)) (Term.var (oldStep+1))
+            (Term.succ (Term.rename Nat.succ idxTerm)))
+          (betaTermTermAt (Term.var 0)
+            (Term.rename Nat.succ newCode)
+            (Term.rename Nat.succ newStep)
+            (Term.rename Nat.succ idxTerm))))) := by
+    simpa [betaShiftTailThroughTermAt, leTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hidxRaw
+  have hall : BProv Ax_s G
+      (all (imp
+        (betaTermTermAt (Term.var 0)
+          (Term.var (oldCode+1)) (Term.var (oldStep+1))
+          (Term.succ (Term.rename Nat.succ idxTerm)))
+        (betaTermTermAt (Term.var 0)
+          (Term.rename Nat.succ newCode)
+          (Term.rename Nat.succ newStep)
+          (Term.rename Nat.succ idxTerm)))) :=
+    BProv_mp Ax_s G _ _ hidx hle
+  have houtRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := out) hall
+  have hout : BProv Ax_s G
+      (imp
+        (betaTermTermAt out (Term.var oldCode) (Term.var oldStep)
+          (Term.succ idxTerm))
+        (betaTermTermAt out newCode newStep idxTerm)) := by
+    simpa [betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using houtRaw
+  exact BProv_mp Ax_s G _ _ hout hold
 
 /-- One-step closed-value propagation from a bounded trace at a PA index term. -/
 theorem BProv_Ax_s_betaDiv2StepsThroughAt_next_termIdx_eqConst_div_two_of_leTerm
