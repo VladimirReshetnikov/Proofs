@@ -17370,6 +17370,121 @@ theorem BProv_Ax_s_betaShiftTailThrough_inner_of_eqConst_entry
     BProv_allI_of_sentences (B := Ax_s)
       (fun f hf => sentence_ax_s (f := f) hf) hbody
 
+/-- Term-new-code variant of
+`BProv_Ax_s_betaShiftTailThrough_inner_of_eqConst_entry`.
+
+The old trace still lives in slots, while the fresh code and step are arbitrary
+terms in the surrounding context.  This is the shape needed after existentially
+instantiating fresh beta witnesses by closed numerals. -/
+theorem BProv_Ax_s_betaShiftTailThroughTerm_inner_of_eqConst_entry
+    {G : List Formula}
+    {oldCode oldStep idx : Nat} {newCodeTerm newStepTerm : Term}
+    {oldCodeValue oldStepValue newCodeValue newStepValue last i o : Nat}
+    (hOldCode : BProv Ax_s G (eqConstAt oldCode oldCodeValue))
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep oldStepValue))
+    (hNewCode : BProv Ax_s G
+      (eq newCodeTerm (Term.numeral newCodeValue)))
+    (hNewStep : BProv Ax_s G
+      (eq newStepTerm (Term.numeral newStepValue)))
+    (hidx : BProv Ax_s G (eqConstAt idx i))
+    (htail :
+      BetaShiftTailThrough oldCodeValue oldStepValue
+        newCodeValue newStepValue last)
+    (hi : i ≤ last)
+    (holdEntry : BetaEntry oldCodeValue oldStepValue (i+1) o) :
+    BProv Ax_s G
+      (all (imp
+        (betaTermTermAt (Term.var 0)
+          (Term.var (oldCode+1)) (Term.var (oldStep+1))
+          (Term.succ (Term.var (idx+1))))
+        (betaTermTermAt (Term.var 0)
+          (Term.rename Nat.succ newCodeTerm)
+          (Term.rename Nat.succ newStepTerm)
+          (Term.var (idx+1))))) := by
+  let oldBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.var (oldCode+1)) (Term.var (oldStep+1))
+      (Term.succ (Term.var (idx+1)))
+  let newBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename Nat.succ newCodeTerm)
+      (Term.rename Nat.succ newStepTerm)
+      (Term.var (idx+1))
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp oldBeta newBeta) := by
+    let D : List Formula := oldBeta :: G.map (rename Nat.succ)
+    have hold : BProv Ax_s D oldBeta :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    have hOldCodeRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt oldCode oldCodeValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hOldCode Nat.succ
+    have hOldStepRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt oldStep oldStepValue)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hOldStep Nat.succ
+    have hNewCodeRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq newCodeTerm (Term.numeral newCodeValue))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hNewCode Nat.succ
+    have hNewStepRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eq newStepTerm (Term.numeral newStepValue))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hNewStep Nat.succ
+    have hidxRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt idx i)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hidx Nat.succ
+    have hOldCodeD : BProv Ax_s D
+        (eq (Term.var (oldCode+1)) (Term.numeral oldCodeValue)) := by
+      simpa [D, oldBeta, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hOldCodeRen
+    have hOldStepD : BProv Ax_s D
+        (eq (Term.var (oldStep+1)) (Term.numeral oldStepValue)) := by
+      simpa [D, oldBeta, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hOldStepRen
+    have hNewCodeD : BProv Ax_s D
+        (eq (Term.rename Nat.succ newCodeTerm)
+          (Term.numeral newCodeValue)) := by
+      simpa [D, oldBeta, rename, Term.rename, Term.rename_numeral] using
+        BProv_context_cons (B := Ax_s) hNewCodeRen
+    have hNewStepD : BProv Ax_s D
+        (eq (Term.rename Nat.succ newStepTerm)
+          (Term.numeral newStepValue)) := by
+      simpa [D, oldBeta, rename, Term.rename, Term.rename_numeral] using
+        BProv_context_cons (B := Ax_s) hNewStepRen
+    have hNewIdxD : BProv Ax_s D
+        (eq (Term.var (idx+1)) (Term.numeral i)) := by
+      simpa [D, oldBeta, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) hidxRen
+    have hOldIdxD : BProv Ax_s D
+        (eq (Term.succ (Term.var (idx+1))) (Term.numeral (i+1))) := by
+      simpa [Term.numeral_succ] using BProv_eq_congr_succ hNewIdxD
+    have hnew : BProv Ax_s D newBeta :=
+      BProv_Ax_s_betaTermTermAt_of_shift_tail_entry_eq
+        (G := D) (out := Term.var 0)
+        (oldCodeTerm := Term.var (oldCode+1))
+        (oldStepTerm := Term.var (oldStep+1))
+        (oldIdxTerm := Term.succ (Term.var (idx+1)))
+        (newCodeTerm := Term.rename Nat.succ newCodeTerm)
+        (newStepTerm := Term.rename Nat.succ newStepTerm)
+        (newIdxTerm := Term.var (idx+1))
+        (oldCode := oldCodeValue) (oldStep := oldStepValue)
+        (newCode := newCodeValue) (newStep := newStepValue)
+        (last := last) (i := i) (o := o)
+        htail hi holdEntry
+        hOldCodeD hOldStepD hOldIdxD
+        hNewCodeD hNewStepD hNewIdxD hold
+    simpa [D, oldBeta, newBeta] using BProv_impI hnew
+  simpa [oldBeta, newBeta] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+
 /-- Closed-bound base constructor for shifted beta tails.  At bound `0`, the
 only possible index is `0`, so one old successor entry and the semantic
 shifted-tail relation prove the whole closed formula. -/
