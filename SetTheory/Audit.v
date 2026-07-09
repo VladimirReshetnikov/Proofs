@@ -217,9 +217,15 @@ Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_eq_divisor.
 Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_eq_value.
 Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt.
 Check PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_zero.
+Check PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_succ.
 Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_of_through.
 Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_elim_opened.
 Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_zero.
+Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_succ.
+Check PA.Formula.BProv_Ax_s_all_commonMultipleExistsTermAt.
+Check PA.Formula.BProv_Ax_s_leTermAt_of_ltTermAt_succ_right.
+Check PA.Formula.BProv_Ax_s_eq_of_leTermAt_leTermAt.
+Check PA.Formula.BProv_Ax_s_ltTermAt_succ_right_cases.
 Check PA.Formula.BProv_Ax_s_crtInverse_mul.
 Check PA.Formula.BProv_Ax_s_crtProductFactor_mul.
 Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition.
