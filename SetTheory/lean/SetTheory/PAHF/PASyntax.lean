@@ -18051,6 +18051,135 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
         BProv_allI_of_sentences (B := Ax_s)
           (fun f hf => sentence_ax_s (f := f) hf) himp
 
+/-- Transport the last bound of a shifted-tail relation across PA equality.
+
+The orientation is chosen for use after existential instantiation: if PA proves
+`newLast = oldLast`, then an `oldLast`-bounded tail is also available at
+`newLast`. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
+    {G : List Formula} {oldCode oldStep : Nat}
+    {newCode newStep oldLast newLast : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep oldLast))
+    (hlast : BProv Ax_s G (eq newLast oldLast)) :
+    BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCode newStep newLast) := by
+  let leHyp : Formula :=
+    leTermAt (Term.var 0) (Term.rename Nat.succ newLast)
+  let oldLe : Formula :=
+    leTermAt (Term.var 0) (Term.rename Nat.succ oldLast)
+  let witness : Formula :=
+    all (imp
+      (betaTermTermAt (Term.var 0)
+        (Term.var (oldCode+2)) (Term.var (oldStep+2))
+        (Term.succ (Term.var 1)))
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n+2) newCode)
+        (Term.rename (fun n => n+2) newStep)
+        (Term.var 1)))
+  let C : List Formula := leHyp :: G.map (rename Nat.succ)
+  have hleNew : BProv Ax_s C leHyp :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C, leHyp])
+  have hlastRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (eq newLast oldLast)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlast Nat.succ
+  have hlastC : BProv Ax_s C
+      (eq (Term.rename Nat.succ newLast)
+        (Term.rename Nat.succ oldLast)) := by
+    simpa [C, leHyp, rename, Term.rename] using
+      BProv_context_cons (B := Ax_s) hlastRen
+  have hleOld : BProv Ax_s C oldLe := by
+    simpa [oldLe] using
+      BProv_leTermAt_of_eq_right hlastC hleNew
+  have htailRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaShiftTailThroughTermAt oldCode oldStep
+          newCode newStep oldLast)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      htail Nat.succ
+  have htailC : BProv Ax_s C
+      (betaShiftTailThroughTermAt (oldCode+1) (oldStep+1)
+        (Term.rename Nat.succ newCode)
+        (Term.rename Nat.succ newStep)
+        (Term.rename Nat.succ oldLast)) := by
+    have hctx : BProv Ax_s C
+        (rename Nat.succ
+          (betaShiftTailThroughTermAt oldCode oldStep
+            newCode newStep oldLast)) :=
+      BProv_context_cons (B := Ax_s) htailRen
+    simpa [C, leHyp, betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt, rename,
+      Term.rename, SetTheory.up, Term.rename_comp,
+      term_rename_up_succ_rename_succ, Nat.add_assoc] using hctx
+  have himpRaw := BProv_allE (B := Ax_s) (G := C)
+    (t := Term.var 0) htailC
+  have himp : BProv Ax_s C (imp oldLe witness) := by
+    simpa [oldLe, witness, betaShiftTailThroughTermAt, leTermAt,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up, Term.rename_comp,
+      term_rename_up_succ_rename_succ, Function.comp_def,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using himpRaw
+  have hwitness : BProv Ax_s C witness :=
+    BProv_mp Ax_s C oldLe witness himp hleOld
+  have hclosed : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) :=
+    BProv_impI hwitness
+  simpa [betaShiftTailThroughTermAt, leHyp, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hclosed
+
+/-- Build a term-bound shifted-tail relation at an arbitrary term known to be
+a closed standard numeral. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
+    {G : List Formula}
+    {oldCode oldStep : Nat} {newCodeTerm newStepTerm lastTerm : Term}
+    {oldCodeValue oldStepValue newCodeValue newStepValue n : Nat}
+    (hOldCode : BProv Ax_s G (eqConstAt oldCode oldCodeValue))
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep oldStepValue))
+    (hNewCode : BProv Ax_s G
+      (eq newCodeTerm (Term.numeral newCodeValue)))
+    (hNewStep : BProv Ax_s G
+      (eq newStepTerm (Term.numeral newStepValue)))
+    (hLast : BProv Ax_s G (eq lastTerm (Term.numeral n)))
+    (htail :
+      BetaShiftTailThrough oldCodeValue oldStepValue
+        newCodeValue newStepValue n)
+    (holdEntries :
+      ∀ i, i ≤ n → ∃ o, BetaEntry oldCodeValue oldStepValue (i+1) o) :
+    BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCodeTerm newStepTerm lastTerm) := by
+  have hnum : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        newCodeTerm newStepTerm (Term.numeral n)) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
+      (oldCode := oldCode) (oldStep := oldStep)
+      (newCodeTerm := newCodeTerm) (newStepTerm := newStepTerm)
+      (oldCodeValue := oldCodeValue)
+      (oldStepValue := oldStepValue)
+      (newCodeValue := newCodeValue)
+      (newStepValue := newStepValue)
+      (n := n)
+      hOldCode hOldStep hNewCode hNewStep htail holdEntries
+  exact
+    BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
+      (oldLast := Term.numeral n) (newLast := lastTerm)
+      hnum hLast
+
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/
 theorem BProv_Ax_s_betaTermAt_of_betaAt_eq_term
