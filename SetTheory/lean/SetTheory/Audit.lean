@@ -1333,6 +1333,8 @@ open SetTheory
 #check @PA.Formula.beta_entries_exist_lt_mul_betaFact
 #check @PA.Formula.beta_entries_exist_through_mul_betaFact
 #check PA.Formula.BetaShiftTailThrough
+#check PA.Formula.betaShiftTailExistsTermAt
+#check @PA.Formula.betaShiftTailExistsTermAt_nat
 #check @PA.Formula.BetaShiftTailThrough_exists_with_betaFact_step
 #check @PA.Formula.BetaShiftTailThrough_exists
 #check @PA.Formula.BetaShiftTailThrough_step

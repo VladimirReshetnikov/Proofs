@@ -3036,6 +3036,19 @@ def betaShiftTailThroughTermAt
         (Term.rename (fun n => n+2) newStep)
         (Term.var 1)))))
 
+/-- Existential form of `betaShiftTailThroughTermAt`.
+
+This states that there are fresh beta code/step witnesses copying the ambient
+old trace one position down through `last`.  The two existential binders are
+kept explicit: the outer one is the new code and the inner one is the new step.
+-/
+def betaShiftTailExistsTermAt
+    (oldCode oldStep : Nat) (last : Term) : Formula :=
+  ex (ex
+    (betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n => n+2) last)))
+
 /-- Closed-bound variant of `betaDiv2StepsThroughAt`: every adjacent pair up to
 the standard numeral `last` in a beta-coded sequence is one binary-halving step.
 This is only a formula macro; the PA constructors connecting it to the variable
@@ -3925,6 +3938,35 @@ theorem betaShiftTailThroughTermAt_nat
       (Term.var 1)).mpr
     simpa [Term.eval_rename, Term.eval, scons, Nat.add_assoc] using
       h k hk value hold
+
+/-- Standard-model meaning of the existential shifted-tail formula. -/
+theorem betaShiftTailExistsTermAt_nat
+    (e : Nat → Nat) (oldCode oldStep : Nat) (last : Term) :
+    Sat natModel e (betaShiftTailExistsTermAt oldCode oldStep last) ↔
+      ∃ newCode newStep,
+        BetaShiftTailThrough
+          (e oldCode) (e oldStep) newCode newStep
+          (Term.eval natModel e last) := by
+  constructor
+  · intro h
+    rcases h with ⟨newCode, newStep, htailSat⟩
+    have htail :=
+      (betaShiftTailThroughTermAt_nat
+        (scons newStep (scons newCode e))
+        (oldCode+2) (oldStep+2)
+        (Term.var 1) (Term.var 0)
+        (Term.rename (fun n => n+2) last)).mp htailSat
+    refine ⟨newCode, newStep, ?_⟩
+    simpa [Term.eval_rename, Term.eval, scons, Nat.add_assoc] using htail
+  · intro h
+    rcases h with ⟨newCode, newStep, htail⟩
+    refine ⟨newCode, newStep, ?_⟩
+    apply (betaShiftTailThroughTermAt_nat
+      (scons newStep (scons newCode e))
+      (oldCode+2) (oldStep+2)
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n => n+2) last)).mpr
+    simpa [Term.eval_rename, Term.eval, scons, Nat.add_assoc] using htail
 
 theorem betaDiv2StepsThroughTermTermAt_nat
     (e : Nat → Nat) (code step last : Term) :
