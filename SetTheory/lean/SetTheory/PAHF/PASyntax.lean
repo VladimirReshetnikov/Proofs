@@ -20391,6 +20391,500 @@ theorem BProv_Ax_s_evenSuccBeta_stepsComponent_zero
     term_subst_up_up_up_up_up_instTerm_rename_six_succ,
     term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ] using hall
 
+/-- Under the odd-current branch assumption `cur = 2*h+1`, the generic
+one-step halving trace has final bit `1` at element index `0`.  The element
+slot is kept explicit and transported through the proof `elem = 0`. -/
+theorem BProv_Ax_s_oddCurrentBeta_bitComponent_zero
+    {G : List Formula} {elem cur half : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G
+      (subst (instTerm (Term.numeral 1))
+        (subst (Term.upSubst (instTerm (oddCurrentBetaStepTerm cur)))
+          (subst (Term.upSubst (Term.upSubst
+            (instTerm (oddCurrentBetaCodeTerm cur))))
+            (betaDiv2BitAt 0 2 1 (elem+3))))) := by
+  let current : Term := oddCurrentBetaStepTerm cur
+  let code : Term := oddCurrentBetaCodeTerm cur
+  let halfTerm : Term := Term.var half
+  let bit : Term := Term.numeral 1
+  let body : Formula :=
+    and
+      (betaAt 1 (2+2) (1+2) ((elem+3)+2))
+      (and
+        (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+        (div2StepAt 1 0 (0+2)))
+  have hzeroTT : BProv Ax_s G
+      (betaTermTermAtConstIdx current code current 0) := by
+    simpa [current, code, oddCurrentBetaStepTerm, oddCurrentBetaCodeTerm,
+      betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
+      betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+      betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using
+      (BProv_Ax_s_oddCurrentBeta_entryComponent_zero
+        (G := G) (cur := cur))
+  have honeTT : BProv Ax_s G
+      (betaTermTermAtConstIdx halfTerm code current 1) := by
+    simpa [halfTerm, current, code, oddCurrentBetaStepTerm,
+      oddCurrentBetaCodeTerm, betaTermTermAtConstIdx, betaTermTermAt,
+      remTermTermAt, betaTermAtConstIdx, betaTermAt, remTermAt,
+      ltTermAt, betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      Term.numeral, term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using
+      (BProv_Ax_s_oddCurrentBeta_entryComponent_one
+        (G := G) (cur := cur) (half := half) hodd)
+  have hidxZero : BProv Ax_s G (eq (Term.numeral 0) (Term.var elem)) := by
+    simpa [eqConstAt] using BProv_eqSym helem
+  have hcurRaw : BProv Ax_s G
+      (betaTermTermAt current code current (Term.var elem)) :=
+    BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_term
+      hzeroTT hidxZero
+  have hnextRaw : BProv Ax_s G
+      (betaTermTermAt halfTerm code current (Term.succ (Term.var elem))) :=
+    BProv_Ax_s_betaTermTermAt_succ_of_betaTermTermAtConstIdx_eq_index
+      honeTT helem
+  have hnextSucc : BProv Ax_s G
+      (betaTermTermAtSuccIdx halfTerm code current elem) :=
+    BProv_Ax_s_betaTermTermAtSuccIdx_of_succ hnextRaw
+  have hcurBeta : BProv Ax_s G
+      (subst (instTerm halfTerm)
+        (subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm bit)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (betaAt 1 (2+2) (1+2) ((elem+3)+2))))))) := by
+    simpa [body, current, code, halfTerm, bit, betaTermTermAt, betaAt,
+      remTermTermAt, remAt, ltTermAt, ltAt, betaModTermTerm, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ] using hcurRaw
+  have hnextBeta : BProv Ax_s G
+      (subst (instTerm halfTerm)
+        (subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm bit)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))))))) := by
+    simpa [body, current, code, halfTerm, bit, betaTermTermAtSuccIdx,
+      betaTermTermAt, betaAtSuccIdx, betaAt, remTermTermAt, remAt,
+      ltTermAt, ltAt, betaModTermTerm, betaModTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ]
+      using hnextSucc
+  have hdivBody : BProv Ax_s G
+      (subst (instTerm halfTerm)
+        (subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm bit)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (div2StepAt 1 0 (0+2))))))) := by
+    simpa [current, code, halfTerm, bit, div2StepAt, boolAt, zeroAt, oneAt,
+      eqConstAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.rename_comp, Term.numeral,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ] using
+      (BProv_Ax_s_oddCurrentBeta_div2Step_one
+        (G := G) (cur := cur) (half := half) hodd)
+  have htail : BProv Ax_s G
+      (subst (instTerm halfTerm)
+        (subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm bit)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (and
+                  (betaAtSuccIdx 0 (2+2) (1+2) ((elem+3)+2))
+                  (div2StepAt 1 0 (0+2)))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hnextBeta hdivBody
+  have hbody : BProv Ax_s G
+      (subst (instTerm halfTerm)
+        (subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm bit)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hcurBeta htail
+  have hnextEx : BProv Ax_s G
+      (subst (instTerm current)
+        (subst (Term.upSubst (instTerm bit))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm code))))
+              (ex body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm bit)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                body))))
+        (t := halfTerm) hbody)
+  simpa [betaDiv2BitAt, body, current, code, bit, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm bit))
+        (subst (Term.upSubst (Term.upSubst (instTerm current)))
+          (subst (Term.upSubst (Term.upSubst
+            (Term.upSubst (instTerm code))))
+            (ex body))))
+      (t := current) hnextEx)
+
+/-- Pointwise beta-step witness for the generic odd-current one-step trace.
+The sequence index is kept as an explicit slot and transported from `idx = 0`;
+the code, step, current value, next value, and output bit remain explicit PA
+terms. -/
+theorem BProv_Ax_s_oddCurrentBeta_stepWitness_zero
+    {G : List Formula} {idx cur half : Nat}
+    (hidx : BProv Ax_s G (eqConstAt idx 0))
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G
+      (subst (instTerm (oddCurrentBetaStepTerm cur))
+        (subst (Term.upSubst (instTerm (oddCurrentBetaCodeTerm cur)))
+          (betaDiv2StepWitnessAt 1 0 (idx+2)))) := by
+  let current : Term := oddCurrentBetaStepTerm cur
+  let code : Term := oddCurrentBetaCodeTerm cur
+  let halfTerm : Term := Term.var half
+  let bit : Term := Term.numeral 1
+  let body : Formula :=
+    and
+      (betaAt 2 (1+3) (0+3) ((idx+2)+3))
+      (and
+        (betaAtSuccIdx 1 (1+3) (0+3) ((idx+2)+3))
+        (div2StepAt 2 1 0))
+  have hzeroTT : BProv Ax_s G
+      (betaTermTermAtConstIdx current code current 0) := by
+    simpa [current, code, oddCurrentBetaStepTerm, oddCurrentBetaCodeTerm,
+      betaTermTermAtConstIdx, betaTermTermAt, remTermTermAt,
+      betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+      betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using
+      (BProv_Ax_s_oddCurrentBeta_entryComponent_zero
+        (G := G) (cur := cur))
+  have honeTT : BProv Ax_s G
+      (betaTermTermAtConstIdx halfTerm code current 1) := by
+    simpa [halfTerm, current, code, oddCurrentBetaStepTerm,
+      oddCurrentBetaCodeTerm, betaTermTermAtConstIdx, betaTermTermAt,
+      remTermTermAt, betaTermAtConstIdx, betaTermAt, remTermAt,
+      ltTermAt, betaModTermTerm, betaModTerm, eqConstAt, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      Term.numeral, term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using
+      (BProv_Ax_s_oddCurrentBeta_entryComponent_one
+        (G := G) (cur := cur) (half := half) hodd)
+  have hidxZero : BProv Ax_s G (eq (Term.numeral 0) (Term.var idx)) := by
+    simpa [eqConstAt] using BProv_eqSym hidx
+  have hcurRaw : BProv Ax_s G
+      (betaTermTermAt current code current (Term.var idx)) :=
+    BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_term
+      hzeroTT hidxZero
+  have hnextRaw : BProv Ax_s G
+      (betaTermTermAt halfTerm code current (Term.succ (Term.var idx))) :=
+    BProv_Ax_s_betaTermTermAt_succ_of_betaTermTermAtConstIdx_eq_index
+      honeTT hidx
+  have hnextSucc : BProv Ax_s G
+      (betaTermTermAtSuccIdx halfTerm code current idx) :=
+    BProv_Ax_s_betaTermTermAtSuccIdx_of_succ hnextRaw
+  have hcurBeta : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm halfTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (betaAt 2 (1+3) (0+3) ((idx+2)+3))))))) := by
+    simpa [body, current, code, halfTerm, bit, betaTermTermAt, betaAt,
+      remTermTermAt, remAt, ltTermAt, ltAt, betaModTermTerm, betaModTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ] using hcurRaw
+  have hnextBeta : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm halfTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (betaAtSuccIdx 1 (1+3) (0+3) ((idx+2)+3))))))) := by
+    simpa [body, current, code, halfTerm, bit, betaTermTermAtSuccIdx,
+      betaTermTermAt, betaAtSuccIdx, betaAt, remTermTermAt, remAt,
+      ltTermAt, ltAt, betaModTermTerm, betaModTerm, subst, instTerm,
+      Term.subst, Term.upSubst, Term.rename, Term.rename_comp,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ]
+      using hnextSucc
+  have hdivBody : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm halfTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (div2StepAt 2 1 0)))))) := by
+    simpa [current, code, halfTerm, bit, div2StepAt, boolAt, zeroAt, oneAt,
+      eqConstAt, subst, instTerm, Term.subst,
+      Term.upSubst, Term.rename, Term.rename_comp, Term.numeral,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ] using
+      (BProv_Ax_s_oddCurrentBeta_div2Step_one
+        (G := G) (cur := cur) (half := half) hodd)
+  have htail : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm halfTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                (and
+                  (betaAtSuccIdx 1 (1+3) (0+3) ((idx+2)+3))
+                  (div2StepAt 2 1 0))))))) := by
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hnextBeta hdivBody
+  have hbody : BProv Ax_s G
+      (subst (instTerm bit)
+        (subst (Term.upSubst (instTerm halfTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      BProv_andI hcurBeta htail
+  have hbitEx : BProv Ax_s G
+      (subst (instTerm halfTerm)
+        (subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm code))))
+              (ex body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm halfTerm))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm current))))
+              (subst (Term.upSubst (Term.upSubst
+                (Term.upSubst (Term.upSubst (instTerm code)))))
+                body))))
+        (t := bit) hbody)
+  have hnextEx : BProv Ax_s G
+      (subst (instTerm current)
+        (subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm code)))
+            (ex (ex body))))) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm current))
+          (subst (Term.upSubst (Term.upSubst (instTerm current)))
+            (subst (Term.upSubst (Term.upSubst
+              (Term.upSubst (instTerm code))))
+              (ex body))))
+        (t := halfTerm) hbitEx)
+  simpa [betaDiv2StepWitnessAt, body, current, code, bit, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst (instTerm current))
+        (subst (Term.upSubst (Term.upSubst (instTerm code)))
+          (ex (ex body))))
+      (t := current) hnextEx)
+
+/-- Under the odd-current branch assumption `cur = 2*h+1`, the generic
+one-step halving trace supplies every adjacent beta step through element
+index `0`. -/
+theorem BProv_Ax_s_oddCurrentBeta_stepsComponent_zero
+    {G : List Formula} {elem cur half : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G
+      (subst (instTerm (oddCurrentBetaStepTerm cur))
+        (subst (Term.upSubst (instTerm (oddCurrentBetaCodeTerm cur)))
+          (betaDiv2StepsThroughAt 1 0 (elem+2)))) := by
+  let current : Term := oddCurrentBetaStepTerm cur
+  let code : Term := oddCurrentBetaCodeTerm cur
+  let leHyp : Formula := leAt 0 (elem+1)
+  let witness : Formula :=
+    subst (Term.upSubst (instTerm current))
+      (subst (Term.upSubst (Term.upSubst (instTerm code)))
+        (betaDiv2StepWitnessAt (1+1) (0+1) 0))
+  let body : Formula := imp leHyp witness
+  have hbody : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hle : BProv Ax_s C leHyp :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, leHyp])
+    have helemRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (eqConstAt elem 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        helem Nat.succ
+    have helemC : BProv Ax_s C (eqConstAt (elem+1) 0) := by
+      simpa [C, eqConstAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := leHyp) helemRen
+    have hidxZero : BProv Ax_s C (eqConstAt 0 0) :=
+      BProv_Ax_s_eqConstAt_zero_of_leAt_eqConst_zero hle helemC
+    have hoddRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (oddDoubleEqAt cur half)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hodd Nat.succ
+    have hoddC : BProv Ax_s C (oddDoubleEqAt (cur+1) (half+1)) := by
+      simpa [C, oddDoubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := leHyp) hoddRen
+    have hwitnessRaw : BProv Ax_s C
+        (subst (instTerm (oddCurrentBetaStepTerm (cur+1)))
+          (subst (Term.upSubst
+            (instTerm (oddCurrentBetaCodeTerm (cur+1))))
+            (betaDiv2StepWitnessAt 1 0 (0+2)))) :=
+      BProv_Ax_s_oddCurrentBeta_stepWitness_zero
+        (G := C) (idx := 0) (cur := cur+1) (half := half+1)
+        hidxZero hoddC
+    have hwitness : BProv Ax_s C witness := by
+      simpa [C, witness, current, code, oddCurrentBetaStepTerm,
+        oddCurrentBetaCodeTerm, betaDiv2StepWitnessAt, betaAtSuccIdx,
+        betaAt, remAt, ltAt, div2StepAt, boolAt, zeroAt, oneAt,
+        eqConstAt, betaModTerm, subst, instTerm, Term.subst,
+        Term.upSubst, Term.rename, Term.rename_comp,
+        term_rename_up_succ_rename_succ,
+        term_subst_instTerm_rename_succ,
+        term_subst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_two_succ,
+        term_subst_upSubst_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_three_succ,
+        term_subst_up_up_instTerm_rename_two_var_zero,
+        term_subst_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_four_succ,
+        term_subst_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_instTerm_rename_five_succ,
+        term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+        term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ] using
+        hwitnessRaw
+    exact BProv_impI hwitness
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [body, leHyp, witness, current, code, betaDiv2StepsThroughAt,
+    leAt, betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt, ltAt,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.rename_comp, SetTheory.up,
+    term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ,
+    term_subst_up_up_up_up_instTerm_rename_five_succ,
+    term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+    term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ] using hall
+
+/-- If the open current slot is odd, then `0` is a member of that code.  The
+proof uses the generic explicit beta trace rather than a semantic shortcut. -/
+theorem BProv_Ax_s_hfMemTermAt_oddCurrentBeta_of_zero_and_odd
+    {G : List Formula} {elem cur half : Nat}
+    (helem : BProv Ax_s G (eqConstAt elem 0))
+    (hodd : BProv Ax_s G (oddDoubleEqAt cur half)) :
+    BProv Ax_s G (hfMemTermAt elem (Term.var cur)) :=
+  BProv_Ax_s_hfMemTermAt_of_bit_components
+    (elem := elem) (setCode := Term.var cur)
+    (codeTerm := oddCurrentBetaCodeTerm cur)
+    (stepTerm := oddCurrentBetaStepTerm cur)
+    (BProv_Ax_s_oddCurrentBeta_entryComponent_zero
+      (G := G) (cur := cur))
+    (BProv_Ax_s_oddCurrentBeta_stepsComponent_zero
+      (G := G) (elem := elem) (cur := cur) (half := half)
+      helem hodd)
+    (BProv_Ax_s_oddCurrentBeta_bitComponent_zero
+      (G := G) (elem := elem) (cur := cur) (half := half)
+      helem hodd)
+
 /-- If `low` is explicitly even, then `0` is a member of the open successor
 code `S low`.  The proof uses the reusable explicit beta trace rather than a
 semantic shortcut. -/
