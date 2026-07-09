@@ -1018,7 +1018,10 @@ highValueRewrite[{n_Integer, i_Integer}] :=
   "rw [show " <> leanValueExpr[n, i] <> " = " <>
     leanCodeExpr[values[n][[i + 1, 2]]] <> " by rfl]";
 
-rangeCaseProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewrites},
+rangeIndex[targetN_Integer, code_] :=
+  valueIndex[targetN, exprValue[code]];
+
+rangeCaseEqualityProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewrites},
   idx = valueIndex[targetN, exprValue[code]];
   If[! IntegerQ[idx],
     {"fail \"missing value index for " <> codeString[code] <> "\""},
@@ -1027,58 +1030,108 @@ rangeCaseProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewri
     body = leanCodeExpr[code];
     If[rep === body,
       {
-        "exact Exists.intro (" <> ToString[idx] <> " : Fin " <> ToString[Length[values[targetN]]] <> ") (by",
-        "  change " <> rep <> " = " <> body,
-        "  rfl",
-        ")"
+        "change " <> rep <> " = " <> body,
+        "rfl"
       },
       rewrites = DeleteDuplicates[Join[highValueRefs[repCode], highValueRefs[code]]];
       {
-        "exact Exists.intro (" <> ToString[idx] <> " : Fin " <> ToString[Length[values[targetN]]] <> ") (by",
-        "  change " <> rep <> " = " <> body,
-        Sequence @@ (("  " <> highValueRewrite[#]) & /@ rewrites),
-        "  a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num",
-        ")"
+        "change " <> rep <> " = " <> body,
+        Sequence @@ (highValueRewrite /@ rewrites),
+        "a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num"
       }
     ]
   ]
 ];
 
+rangeIndexNatName[name_String] := name <> "_indexNat";
+rangeIndexName[name_String] := name <> "_index";
+rangeIndexSpecName[name_String] := name <> "_index_spec";
+
 printUnaryRangeLemmaFor[targetN_Integer, name_String, len_Integer, body_String, codeFn_] := Module[
-  {code, lines},
+  {code, idx, lines, indexNatName, indexName, specName, targetLen},
+  targetLen = Length[values[targetN]];
+  indexNatName = rangeIndexNatName[name];
+  indexName = rangeIndexName[name];
+  specName = rangeIndexSpecName[name];
+  Print["def ", indexNatName, " : Nat -> Nat"];
+  Do[
+    code = codeFn[i - 1];
+    idx = rangeIndex[targetN, code];
+    If[! IntegerQ[idx],
+      Print["  | ", i - 1, " => 0 -- missing value index for ", codeString[code]],
+      Print["  | ", i - 1, " => ", idx]
+    ],
+    {i, len}
+  ];
+  Print["  | _ => 0"];
+  Print[""];
+  Print["def ", indexName, " (i : Fin ", len, ") : Fin ", targetLen, " :="];
+  Print["  ⟨", indexNatName, " i.1, by"];
+  Print["    fin_cases i <;> decide"];
+  Print["  ⟩"];
+  Print[""];
   Print["set_option linter.unreachableTactic false in"];
   Print["set_option linter.unnecessarySeqFocus false in"];
   Print["set_option linter.unusedTactic false in"];
   Print["set_option maxHeartbeats ", If[targetN >= 15, 20000000, 4000000], " in"];
-  Print["theorem ", name, " (i : Fin ", len, ") :"];
-  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["theorem ", specName, " (i : Fin ", len, ") :"];
+  Print["    values", targetN, " (", indexName, " i) = ", body, " := by"];
   Print["  fin_cases i"];
   Do[
     code = codeFn[i - 1];
-    lines = rangeCaseProof[targetN, code];
+    lines = rangeCaseEqualityProof[targetN, code];
     Print["  next =>"];
     Scan[Print["    " <> #] &, lines],
     {i, len}
   ];
+  Print[""];
+  Print["theorem ", name, " (i : Fin ", len, ") :"];
+  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["  exact ⟨", indexName, " i, ", specName, " i⟩"];
   Print[""]
 ];
 
 printBinaryRangeLemmaFor[targetN_Integer, name_String, len1_Integer, len2_Integer, body_String, codeFn_] := Module[
-  {code, lines},
+  {code, idx, lines, indexNatName, indexName, specName, targetLen},
+  targetLen = Length[values[targetN]];
+  indexNatName = rangeIndexNatName[name];
+  indexName = rangeIndexName[name];
+  specName = rangeIndexSpecName[name];
+  Print["def ", indexNatName, " : Nat -> Nat -> Nat"];
+  Do[
+    code = codeFn[i - 1, j - 1];
+    idx = rangeIndex[targetN, code];
+    If[! IntegerQ[idx],
+      Print["  | ", i - 1, ", ", j - 1, " => 0 -- missing value index for ", codeString[code]],
+      Print["  | ", i - 1, ", ", j - 1, " => ", idx]
+    ],
+    {i, len1}, {j, len2}
+  ];
+  Print["  | _, _ => 0"];
+  Print[""];
+  Print["def ", indexName, " (i : Fin ", len1, ") (j : Fin ", len2, ") : Fin ", targetLen, " :="];
+  Print["  ⟨", indexNatName, " i.1 j.1, by"];
+  Print["    fin_cases i <;> fin_cases j <;> decide"];
+  Print["  ⟩"];
+  Print[""];
   Print["set_option linter.unreachableTactic false in"];
   Print["set_option linter.unnecessarySeqFocus false in"];
   Print["set_option linter.unusedTactic false in"];
   Print["set_option maxHeartbeats ", If[targetN >= 15, 20000000, 4000000], " in"];
-  Print["theorem ", name, " (i : Fin ", len1, ") (j : Fin ", len2, ") :"];
-  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["theorem ", specName, " (i : Fin ", len1, ") (j : Fin ", len2, ") :"];
+  Print["    values", targetN, " (", indexName, " i j) = ", body, " := by"];
   Print["  fin_cases i <;> fin_cases j"];
   Do[
     code = codeFn[i - 1, j - 1];
-    lines = rangeCaseProof[targetN, code];
+    lines = rangeCaseEqualityProof[targetN, code];
     Print["  next =>"];
     Scan[Print["    " <> #] &, lines],
     {i, len1}, {j, len2}
   ];
+  Print[""];
+  Print["theorem ", name, " (i : Fin ", len1, ") (j : Fin ", len2, ") :"];
+  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["  exact ⟨", indexName, " i j, ", specName, " i j⟩"];
   Print[""]
 ];
 
