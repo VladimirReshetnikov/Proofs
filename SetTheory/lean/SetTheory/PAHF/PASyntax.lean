@@ -18252,6 +18252,33 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
     (BProv_exI (B := Ax_s) (G := G) (a := ex body)
       (t := Term.numeral newCodeValue) hstepEx)
 
+/-- Prove the existential shifted-tail formula from a semantic membership trace
+one step longer than the requested tail bound.  The trace premise is used only
+to extract the old beta entries at indices `i+1`; the fresh shifted code/step
+are still introduced by the reusable shifted-tail constructor. -/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_HFMemTrace
+    {G : List Formula}
+    {oldCode oldStep : Nat} {lastTerm : Term}
+    {oldCodeValue oldStepValue setValue n : Nat}
+    (hOldCode : BProv Ax_s G (eqConstAt oldCode oldCodeValue))
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep oldStepValue))
+    (hLast : BProv Ax_s G (eq lastTerm (Term.numeral n)))
+    (htrace :
+      HFMemTrace (n + 1) setValue oldCodeValue oldStepValue) :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
+  refine
+    BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
+      (oldCode := oldCode) (oldStep := oldStep)
+      (lastTerm := lastTerm)
+      (oldCodeValue := oldCodeValue)
+      (oldStepValue := oldStepValue)
+      (n := n)
+      hOldCode hOldStep hLast ?_
+  intro i hi
+  rcases htrace.2.1 i (by omega) with ⟨cur, next, bit, hstep⟩
+  exact ⟨next, hstep.2.1⟩
+
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/
 theorem BProv_Ax_s_betaTermAt_of_betaAt_eq_term
