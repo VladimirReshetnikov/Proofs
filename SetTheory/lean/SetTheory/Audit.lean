@@ -527,6 +527,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_code
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_step
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_index
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_modulus
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_succ_of_betaTermTermAtConstIdx_eq_index

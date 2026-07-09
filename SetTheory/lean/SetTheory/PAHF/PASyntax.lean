@@ -9673,6 +9673,53 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_index
     Term.subst_rename_succ_up,
     term_subst_instTerm_rename_succ] using hnew
 
+/-- Transport a fully term-parametric beta entry between step/index pairs
+whose beta modulus terms are PA-provably equal.
+
+This is more general than separate step or index transport: the code and
+output are unchanged, and the proof records exactly the arithmetic fact on
+which the beta relation depends. -/
+theorem BProv_Ax_s_betaTermTermAt_of_eq_modulus
+    {G : List Formula}
+    {out code oldStep oldIdx newStep newIdx : Term}
+    (hmod : BProv Ax_s G
+      (eq (betaModTermTerm oldStep oldIdx)
+        (betaModTermTerm newStep newIdx)))
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt out code oldStep oldIdx)) :
+    BProv Ax_s G (betaTermTermAt out code newStep newIdx) := by
+  let a : Formula :=
+    ex (and
+      (eq (Term.var 0) (Term.var 1))
+      (remTermTermAt
+        (Term.rename (fun n => n+2) out)
+        (Term.rename (fun n => n+2) code)
+        (Term.var 0)))
+  have hold : BProv Ax_s G
+      (subst (instTerm (betaModTermTerm oldStep oldIdx)) a) := by
+    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hbeta
+  have hnew : BProv Ax_s G
+      (subst (instTerm (betaModTermTerm newStep newIdx)) a) :=
+    BProv_eqElim (B := Ax_s) (G := G)
+      (s := betaModTermTerm oldStep oldIdx)
+      (t := betaModTermTerm newStep newIdx)
+      (a := a) hmod hold
+  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ] using hnew
+
 /-- View a slot-indexed beta entry as a fully term-parametric beta entry,
 transporting the index through an explicit PA equality. -/
 theorem BProv_Ax_s_betaTermTermAt_of_betaAt_eq_index
