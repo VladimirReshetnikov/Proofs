@@ -11706,6 +11706,16 @@ def div2TotalOpenedStepContext (G : List Formula) (value : Nat) :
   let inner : Formula := ex step
   step :: (inner :: G.map (rename Nat.succ)).map (rename Nat.succ)
 
+/-- Even branch context after opening `div2TotalAt value`. -/
+def div2TotalOpenedDoubleContext (G : List Formula) (value : Nat) :
+    List Formula :=
+  doubleEqAt (value+2) 1 :: div2TotalOpenedStepContext G value
+
+/-- Odd branch context after opening `div2TotalAt value`. -/
+def div2TotalOpenedOddContext (G : List Formula) (value : Nat) :
+    List Formula :=
+  oddDoubleEqAt (value+2) 1 :: div2TotalOpenedStepContext G value
+
 /-- Generic eliminator for the opened form of `div2TotalAt`.
 
 This performs no parity reasoning: it only exposes the concrete `div2StepAt`
@@ -11743,10 +11753,10 @@ theorem BProv_Ax_s_of_div2TotalAt_opened_double_odd_cases
     {G : List Formula} {value : Nat} {target : Formula}
     (htotal : BProv Ax_s G (div2TotalAt value))
     (heven : BProv Ax_s
-      (doubleEqAt (value+2) 1 :: div2TotalOpenedStepContext G value)
+      (div2TotalOpenedDoubleContext G value)
       (rename Nat.succ (rename Nat.succ target)))
     (hodd : BProv Ax_s
-      (oddDoubleEqAt (value+2) 1 :: div2TotalOpenedStepContext G value)
+      (div2TotalOpenedOddContext G value)
       (rename Nat.succ (rename Nat.succ target))) :
     BProv Ax_s G target :=
   BProv_Ax_s_of_div2TotalAt_opened_step htotal
@@ -11756,7 +11766,63 @@ theorem BProv_Ax_s_of_div2TotalAt_opened_double_odd_cases
       (BProv_ass (B := Ax_s)
         (G := div2TotalOpenedStepContext G value)
         (by simp [div2TotalOpenedStepContext]))
-      heven hodd)
+      (by simpa [div2TotalOpenedDoubleContext] using heven)
+      (by simpa [div2TotalOpenedOddContext] using hodd))
+
+/-- Open total halving witnesses for two slots and split both by parity.
+
+The high slot is opened first; inside each high-parity branch the low slot has
+been shifted by the two opened high-side binders, so the low totality instance
+is for `low + 2`.  The final branch targets are renamed through four binders. -/
+theorem BProv_Ax_s_of_two_div2TotalAt_opened_double_odd_cases
+    {G : List Formula} {high low : Nat} {target : Formula}
+    (hhighDouble_lowDouble : BProv Ax_s
+      (div2TotalOpenedDoubleContext
+        (div2TotalOpenedDoubleContext G high) (low+2))
+      (rename Nat.succ (rename Nat.succ
+        (rename Nat.succ (rename Nat.succ target)))))
+    (hhighDouble_lowOdd : BProv Ax_s
+      (div2TotalOpenedOddContext
+        (div2TotalOpenedDoubleContext G high) (low+2))
+      (rename Nat.succ (rename Nat.succ
+        (rename Nat.succ (rename Nat.succ target)))))
+    (hhighOdd_lowDouble : BProv Ax_s
+      (div2TotalOpenedDoubleContext
+        (div2TotalOpenedOddContext G high) (low+2))
+      (rename Nat.succ (rename Nat.succ
+        (rename Nat.succ (rename Nat.succ target)))))
+    (hhighOdd_lowOdd : BProv Ax_s
+      (div2TotalOpenedOddContext
+        (div2TotalOpenedOddContext G high) (low+2))
+      (rename Nat.succ (rename Nat.succ
+        (rename Nat.succ (rename Nat.succ target))))) :
+    BProv Ax_s G target := by
+  let target2 : Formula := rename Nat.succ (rename Nat.succ target)
+  have hhighDouble : BProv Ax_s (div2TotalOpenedDoubleContext G high)
+      target2 :=
+    BProv_Ax_s_of_div2TotalAt_opened_double_odd_cases
+      (G := div2TotalOpenedDoubleContext G high)
+      (value := low+2) (target := target2)
+      (BProv_Ax_s_div2TotalAt (low+2))
+      (by
+        simpa [target2] using hhighDouble_lowDouble)
+      (by
+        simpa [target2] using hhighDouble_lowOdd)
+  have hhighOdd : BProv Ax_s (div2TotalOpenedOddContext G high)
+      target2 :=
+    BProv_Ax_s_of_div2TotalAt_opened_double_odd_cases
+      (G := div2TotalOpenedOddContext G high)
+      (value := low+2) (target := target2)
+      (BProv_Ax_s_div2TotalAt (low+2))
+      (by
+        simpa [target2] using hhighOdd_lowDouble)
+      (by
+        simpa [target2] using hhighOdd_lowOdd)
+  exact
+    BProv_Ax_s_of_div2TotalAt_opened_double_odd_cases
+      (G := G) (value := high) (target := target)
+      (BProv_Ax_s_div2TotalAt high)
+      hhighDouble hhighOdd
 
 /-- Nested parity elimination for two binary-halving steps.  The generated
 contexts put the low-code parity assumption in front of the high-code parity
