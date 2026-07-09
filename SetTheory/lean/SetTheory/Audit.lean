@@ -901,6 +901,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_components
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldWitness
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldSteps
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_stepsThrough_of_oldSteps
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_steps_of_term_trace
