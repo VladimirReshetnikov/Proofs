@@ -3393,6 +3393,24 @@ theorem boolAt_nat (e : Nat → Nat) (a : Nat) :
   simp only [boolAt, Sat]
   exact or_congr (zeroAt_nat e a) (oneAt_nat e a)
 
+theorem boolTermAt_nat (e : Nat → Nat) (a : Term) :
+    Sat natModel e (boolTermAt a) ↔
+      Term.eval natModel e a = 0 ∨ Term.eval natModel e a = 1 := by
+  simp only [boolTermAt, Sat]
+  constructor
+  · intro h
+    rcases h with h | h
+    · left
+      simpa [Term.eval, natModel] using h
+    · right
+      simpa [Term.numeral, Term.eval, natModel] using h
+  · intro h
+    rcases h with h | h
+    · left
+      simpa [Term.eval, natModel] using h
+    · right
+      simpa [Term.numeral, Term.eval, natModel] using h
+
 theorem doubleEqAt_nat (e : Nat → Nat) (value half : Nat) :
     Sat natModel e (doubleEqAt value half) ↔ e value = e half + e half := by
   simp only [doubleEqAt, Sat, Term.eval, natModel]
@@ -3421,6 +3439,27 @@ theorem div2StepAt_nat (e : Nat → Nat) (value half bit : Nat) :
       simp only [Term.eval, natModel]
       change e value = e half + e half + e bit
       omega⟩
+
+theorem div2StepTermAt_nat (e : Nat → Nat) (value half bit : Term) :
+    Sat natModel e (div2StepTermAt value half bit) ↔
+      (Term.eval natModel e bit = 0 ∨ Term.eval natModel e bit = 1) ∧
+        Term.eval natModel e value =
+          Term.eval natModel e half + Term.eval natModel e half +
+            Term.eval natModel e bit := by
+  simp only [div2StepTermAt, Sat]
+  constructor
+  · intro h
+    have hval :
+        Term.eval natModel e value =
+          Term.eval natModel e half + Term.eval natModel e half +
+            Term.eval natModel e bit := by
+      have hraw := h.2
+      simp only [Term.eval, natModel] at hraw
+      exact hraw
+    exact ⟨(boolTermAt_nat e bit).mp h.1, hval⟩
+  · intro h
+    exact ⟨(boolTermAt_nat e bit).mpr h.1, by
+      simpa [Term.eval, natModel, Nat.add_assoc] using h.2⟩
 
 theorem betaModTerm_nat (e : Nat → Nat) (step idx : Nat) :
     Term.eval natModel e (betaModTerm step idx) = 1 + (e idx + 1) * e step := by
@@ -3676,6 +3715,63 @@ theorem betaDiv2StepWitnessAt_nat (e : Nat → Nat) (code step idx : Nat) :
       apply (div2StepAt_nat E 2 1 0).mpr
       simpa [E, scons] using hstep
 
+theorem betaDiv2StepWitnessTermAt_nat
+    (e : Nat → Nat) (code step idx : Term) :
+    Sat natModel e (betaDiv2StepWitnessTermAt code step idx) ↔
+      ∃ cur next bit,
+        BetaDiv2Step
+          (Term.eval natModel e code)
+          (Term.eval natModel e step)
+          (Term.eval natModel e idx) cur next bit := by
+  constructor
+  · intro h
+    rcases h with ⟨cur, next, bit, hcur, hnext, hstep⟩
+    let E := scons bit (scons next (scons cur e))
+    have hcur' :
+        BetaEntry (Term.eval natModel e code)
+          (Term.eval natModel e step) (Term.eval natModel e idx) cur := by
+      have hc := (betaTermTermAt_nat_entry E (Term.var 2)
+        (Term.rename (fun n => n+3) code)
+        (Term.rename (fun n => n+3) step)
+        (Term.rename (fun n => n+3) idx)).mp hcur
+      simpa [E, Term.eval_rename, Term.eval, scons, Nat.add_assoc] using hc
+    have hnext' :
+        BetaEntry (Term.eval natModel e code)
+          (Term.eval natModel e step) (Term.eval natModel e idx + 1)
+          next := by
+      have hn := (betaTermTermAt_nat_entry E (Term.var 1)
+        (Term.rename (fun n => n+3) code)
+        (Term.rename (fun n => n+3) step)
+        (Term.succ (Term.rename (fun n => n+3) idx))).mp hnext
+      simpa [E, Term.eval_rename, Term.eval, natModel, scons,
+        Nat.add_assoc] using hn
+    have hstep' :
+        (bit = 0 ∨ bit = 1) ∧ cur = next + next + bit := by
+      have hs := (div2StepTermAt_nat E
+        (Term.var 2) (Term.var 1) (Term.var 0)).mp hstep
+      simpa [E, Term.eval, scons] using hs
+    exact ⟨cur, next, bit, hcur', hnext', hstep'.1, hstep'.2⟩
+  · intro h
+    rcases h with ⟨cur, next, bit, hcur, hnext, hbit, hvalue⟩
+    refine ⟨cur, next, bit, ?_, ?_, ?_⟩
+    · let E := scons bit (scons next (scons cur e))
+      apply (betaTermTermAt_nat_entry E (Term.var 2)
+        (Term.rename (fun n => n+3) code)
+        (Term.rename (fun n => n+3) step)
+        (Term.rename (fun n => n+3) idx)).mpr
+      simpa [E, Term.eval_rename, Term.eval, scons, Nat.add_assoc] using hcur
+    · let E := scons bit (scons next (scons cur e))
+      apply (betaTermTermAt_nat_entry E (Term.var 1)
+        (Term.rename (fun n => n+3) code)
+        (Term.rename (fun n => n+3) step)
+        (Term.succ (Term.rename (fun n => n+3) idx))).mpr
+      simpa [E, Term.eval_rename, Term.eval, natModel, scons,
+        Nat.add_assoc] using hnext
+    · let E := scons bit (scons next (scons cur e))
+      apply (div2StepTermAt_nat E
+        (Term.var 2) (Term.var 1) (Term.var 0)).mpr
+      simpa [E, Term.eval, scons] using And.intro hbit hvalue
+
 theorem betaDiv2StepAt_nat (e : Nat → Nat) (code step limit : Nat) :
     Sat natModel e (betaDiv2StepAt code step limit) ↔
       ∀ k, k < e limit →
@@ -3721,6 +3817,49 @@ theorem betaDiv2StepsThroughAt_nat (e : Nat → Nat) (code step last : Nat) :
       simpa [scons] using hle
     apply (betaDiv2StepWitnessAt_nat (scons k e) (code+1) (step+1) 0).mpr
     simpa [scons] using h k hk
+
+theorem betaDiv2StepsThroughTermAt_nat
+    (e : Nat → Nat) (code step : Nat) (last : Term) :
+    Sat natModel e (betaDiv2StepsThroughTermAt code step last) ↔
+      BetaDiv2StepsThrough (e code) (e step) (Term.eval natModel e last) := by
+  constructor
+  · intro h k hk
+    have hkSat :
+        Sat natModel (scons k e)
+          (leTermAt (Term.var 0) (Term.rename Nat.succ last)) := by
+      exact (leTermAt_nat (scons k e)
+          (Term.var 0) (Term.rename Nat.succ last)).mpr (by
+        calc
+          Term.eval natModel (scons k e) (Term.var 0) = k := by
+            simp [Term.eval, scons]
+          _ ≤ Term.eval natModel e last := hk
+          _ = Term.eval natModel (scons k e)
+                (Term.rename Nat.succ last) := by
+            simp [Term.eval_rename, scons])
+    have hw := (betaDiv2StepWitnessAt_nat (scons k e)
+      (code+1) (step+1) 0).mp (h k hkSat)
+    rcases hw with ⟨cur, next, bit, hcur, hnext, hbit, hvalue⟩
+    exact ⟨cur, next, bit, by
+      simpa [BetaDiv2Step, scons] using
+        And.intro hcur (And.intro hnext (And.intro hbit hvalue))⟩
+  · intro h k hkSat
+    have hk : k ≤ Term.eval natModel e last := by
+      have hle := (leTermAt_nat (scons k e)
+          (Term.var 0) (Term.rename Nat.succ last)).mp hkSat
+      calc
+        k = Term.eval natModel (scons k e) (Term.var 0) := by
+          simp [Term.eval, scons]
+        _ ≤ Term.eval natModel (scons k e)
+            (Term.rename Nat.succ last) := hle
+        _ = Term.eval natModel e last := by
+          simp [Term.eval_rename, scons]
+    rcases h k hk with ⟨cur, next, bit, hdiv⟩
+    rcases hdiv with ⟨hcur, hnext, hbit, hvalue⟩
+    apply (betaDiv2StepWitnessAt_nat (scons k e)
+      (code+1) (step+1) 0).mpr
+    exact ⟨cur, next, bit, by simpa [scons] using hcur,
+      by simpa [scons] using hnext, by
+        simpa using And.intro hbit hvalue⟩
 
 theorem betaShiftTailThroughTermAt_nat
     (e : Nat → Nat) (oldCode oldStep : Nat)
@@ -3787,6 +3926,51 @@ theorem betaShiftTailThroughTermAt_nat
     simpa [Term.eval_rename, Term.eval, scons, Nat.add_assoc] using
       h k hk value hold
 
+theorem betaDiv2StepsThroughTermTermAt_nat
+    (e : Nat → Nat) (code step last : Term) :
+    Sat natModel e (betaDiv2StepsThroughTermTermAt code step last) ↔
+      BetaDiv2StepsThrough
+        (Term.eval natModel e code)
+        (Term.eval natModel e step)
+        (Term.eval natModel e last) := by
+  constructor
+  · intro h k hk
+    have hkSat :
+        Sat natModel (scons k e)
+          (leTermAt (Term.var 0) (Term.rename Nat.succ last)) := by
+      exact (leTermAt_nat (scons k e)
+          (Term.var 0) (Term.rename Nat.succ last)).mpr (by
+        calc
+          Term.eval natModel (scons k e) (Term.var 0) = k := by
+            simp [Term.eval, scons]
+          _ ≤ Term.eval natModel e last := hk
+          _ = Term.eval natModel (scons k e)
+                (Term.rename Nat.succ last) := by
+            simp [Term.eval_rename, scons])
+    have hw := (betaDiv2StepWitnessTermAt_nat (scons k e)
+      (Term.rename Nat.succ code)
+      (Term.rename Nat.succ step) (Term.var 0)).mp (h k hkSat)
+    rcases hw with ⟨cur, next, bit, hdiv⟩
+    refine ⟨cur, next, bit, ?_⟩
+    simpa [BetaDiv2Step, Term.eval_rename, Term.eval, scons] using hdiv
+  · intro h k hkSat
+    have hk : k ≤ Term.eval natModel e last := by
+      have hle := (leTermAt_nat (scons k e)
+          (Term.var 0) (Term.rename Nat.succ last)).mp hkSat
+      calc
+        k = Term.eval natModel (scons k e) (Term.var 0) := by
+          simp [Term.eval, scons]
+        _ ≤ Term.eval natModel (scons k e)
+            (Term.rename Nat.succ last) := hle
+        _ = Term.eval natModel e last := by
+          simp [Term.eval_rename, scons]
+    rcases h k hk with ⟨cur, next, bit, hdiv⟩
+    apply (betaDiv2StepWitnessTermAt_nat (scons k e)
+      (Term.rename Nat.succ code)
+      (Term.rename Nat.succ step) (Term.var 0)).mpr
+    refine ⟨cur, next, bit, ?_⟩
+    simpa [BetaDiv2Step, Term.eval_rename, Term.eval, scons] using hdiv
+
 theorem betaDiv2StepsThroughConstAt_nat
     (e : Nat → Nat) (code step last : Nat) :
     Sat natModel e (betaDiv2StepsThroughConstAt code step last) ↔
@@ -3846,6 +4030,91 @@ theorem betaDiv2BitAt_nat (e : Nat → Nat) (bit code step idx : Nat) :
     · let E := scons next (scons cur e)
       apply (div2StepAt_nat E 1 0 (bit+2)).mpr
       simpa [E, scons] using hstep
+
+theorem betaDiv2BitTermAt_nat
+    (e : Nat → Nat) (bit code step idx : Term) :
+    Sat natModel e (betaDiv2BitTermAt bit code step idx) ↔
+      BetaDiv2Bit
+        (Term.eval natModel e code)
+        (Term.eval natModel e step)
+        (Term.eval natModel e idx)
+        (Term.eval natModel e bit) := by
+  constructor
+  · intro h
+    rcases h with ⟨cur, next, hcur, hnext, hstep⟩
+    let E := scons next (scons cur e)
+    have hcur' :
+        BetaEntry (Term.eval natModel e code)
+          (Term.eval natModel e step) (Term.eval natModel e idx) cur := by
+      have hc := (betaTermTermAt_nat_entry E (Term.var 1)
+        (Term.rename (fun n => n+2) code)
+        (Term.rename (fun n => n+2) step)
+        (Term.rename (fun n => n+2) idx)).mp hcur
+      simpa [E, Term.eval_rename, Term.eval, scons, Nat.add_assoc] using hc
+    have hnext' :
+        BetaEntry (Term.eval natModel e code)
+          (Term.eval natModel e step) (Term.eval natModel e idx + 1)
+          next := by
+      have hn := (betaTermTermAt_nat_entry E (Term.var 0)
+        (Term.rename (fun n => n+2) code)
+        (Term.rename (fun n => n+2) step)
+        (Term.succ (Term.rename (fun n => n+2) idx))).mp hnext
+      simpa [E, Term.eval_rename, Term.eval, natModel, scons,
+        Nat.add_assoc] using hn
+    have hstep' :
+        (Term.eval natModel e bit = 0 ∨ Term.eval natModel e bit = 1) ∧
+          cur = next + next + Term.eval natModel e bit := by
+      have hs := (div2StepTermAt_nat E
+        (Term.var 1) (Term.var 0)
+        (Term.rename (fun n => n+2) bit)).mp hstep
+      simpa [E, Term.eval_rename, Term.eval, scons, Nat.add_assoc] using hs
+    exact ⟨cur, next, hcur', hnext', hstep'.1, hstep'.2⟩
+  · intro h
+    rcases h with ⟨cur, next, hcur, hnext, hbit, hvalue⟩
+    refine ⟨cur, next, ?_, ?_, ?_⟩
+    · let E := scons next (scons cur e)
+      apply (betaTermTermAt_nat_entry E (Term.var 1)
+        (Term.rename (fun n => n+2) code)
+        (Term.rename (fun n => n+2) step)
+        (Term.rename (fun n => n+2) idx)).mpr
+      simpa [E, Term.eval_rename, Term.eval, scons, Nat.add_assoc] using hcur
+    · let E := scons next (scons cur e)
+      apply (betaTermTermAt_nat_entry E (Term.var 0)
+        (Term.rename (fun n => n+2) code)
+        (Term.rename (fun n => n+2) step)
+        (Term.succ (Term.rename (fun n => n+2) idx))).mpr
+      simpa [E, Term.eval_rename, Term.eval, natModel, scons,
+        Nat.add_assoc] using hnext
+    · let E := scons next (scons cur e)
+      apply (div2StepTermAt_nat E
+        (Term.var 1) (Term.var 0)
+        (Term.rename (fun n => n+2) bit)).mpr
+      simpa [E, Term.eval_rename, Term.eval, scons, Nat.add_assoc] using
+        And.intro hbit hvalue
+
+theorem betaDiv2BitOneTermExAt_nat
+    (e : Nat → Nat) (code step idx : Term) :
+    Sat natModel e (betaDiv2BitOneTermExAt code step idx) ↔
+      BetaDiv2Bit
+        (Term.eval natModel e code)
+        (Term.eval natModel e step)
+        (Term.eval natModel e idx) 1 := by
+  constructor
+  · intro h
+    rcases h with ⟨bit, hone, hbit⟩
+    have hbitOne : bit = 1 := (oneAt_nat (scons bit e) 0).mp hone
+    have hb := (betaDiv2BitTermAt_nat (scons bit e)
+      (Term.var 0) (Term.rename Nat.succ code)
+      (Term.rename Nat.succ step) (Term.rename Nat.succ idx)).mp hbit
+    subst hbitOne
+    simpa [Term.eval_rename, Term.eval, scons] using hb
+  · intro h
+    refine ⟨1, ?_, ?_⟩
+    · exact (oneAt_nat (scons 1 e) 0).mpr rfl
+    · apply (betaDiv2BitTermAt_nat (scons 1 e)
+        (Term.var 0) (Term.rename Nat.succ code)
+        (Term.rename Nat.succ step) (Term.rename Nat.succ idx)).mpr
+      simpa [Term.eval_rename, Term.eval, scons] using h
 
 theorem hfMemAt_nat_trace (e : Nat → Nat) (elem set : Nat) :
     Sat natModel e (hfMemAt elem set) ↔
