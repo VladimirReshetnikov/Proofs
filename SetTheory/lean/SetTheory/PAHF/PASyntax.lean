@@ -33452,6 +33452,50 @@ theorem
     (by simpa [strictHighOddSuccCarryTargetFormula,
       strictHighOddSuccHalfCode] using hcarry)
 
+/-- Equality branch where the low-refutation side is closed directly by a
+shifted old-low tail. -/
+theorem
+    BProv_Ax_s_eqHighOddSuccCarry_of_succ_witness_mem_and_shift_tail_opened_low_half
+    {highHalf : Nat} {lowCodeTerm lowStepTerm : Term}
+    (hmem : BProv Ax_s (eqHighOddOpenedIHContext highHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hlowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          eqHighOddOpenedIHContext highHalf))
+      (betaShiftTailThroughTermAt 1 0 lowCodeTerm lowStepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (strictHighOddSuccCarryTargetFormula highHalf) :=
+  BProv_Ax_s_eqHighOddSuccCarry_of_succ_witness_mem_and_low_bot
+    hmem
+    (BProv_Ax_s_eqHighOddOpenedWitnessSuccLowMem_bot_of_shift_tail
+      (highHalf := highHalf)
+      (codeTerm := lowCodeTerm) (stepTerm := lowStepTerm)
+      hlowTail)
+
+/-- Equality-branch odd predecessor case for the successor code, with the
+low-refutation side closed directly by a shifted old-low tail. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_odd_of_succ_witness_mem_and_shift_tail_opened_low_half
+    {highHalf : Nat} {lowCodeTerm lowStepTerm : Term}
+    (hmem : BProv Ax_s (eqHighOddOpenedIHContext highHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf))
+    (hlowTail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          eqHighOddOpenedIHContext highHalf))
+      (betaShiftTailThroughTermAt 1 0 lowCodeTerm lowStepTerm
+        (Term.succ (Term.var 2)))) :
+    BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+  BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_odd_of_succ_witness_mem_and_low_bot
+    hmem
+    (BProv_Ax_s_eqHighOddOpenedWitnessSuccLowMem_bot_of_shift_tail
+      (highHalf := highHalf)
+      (codeTerm := lowCodeTerm) (stepTerm := lowStepTerm)
+      hlowTail)
+
 /-- Odd-high/even-low carry branch reduced to the explicit
 successor-of-witness membership and low-refutation obligations. -/
 theorem
