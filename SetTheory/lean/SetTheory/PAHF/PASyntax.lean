@@ -31522,6 +31522,44 @@ theorem BProv_Ax_s_eqHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
       (highHalf := highHalf) (lowHalf := highHalf)
       (by simpa [eqHighOddOpenedIHContext] using hpred))
 
+/-- Even-low strict-carry specialization of the opened old high-half trace
+interface for the positive `S x` membership half. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccMem_of_opened_high_half_step_pred
+    {highHalf lowHalf : Nat}
+    (hpred : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+        highHalf)) :
+    BProv Ax_s (strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  simpa [strictHighOddLowDoubleOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+      (G := (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (highHalf := highHalf) (lowHalf := lowHalf)
+      (by simpa [strictHighOddLowDoubleOpenedIHContext] using hpred))
+
+/-- Odd-low strict-carry specialization of the opened old high-half trace
+interface for the positive `S x` membership half. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+    {highHalf lowHalf : Nat}
+    (hpred : BProv Ax_s
+      (strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
+        (strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+        highHalf)) :
+    BProv Ax_s (strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      (strictHighOddOpenedWitnessSuccMemFormula highHalf) := by
+  simpa [strictHighOddLowOddOpenedIHContext] using
+    (BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pred
+      (G := (strictHighOddLowOddSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (highHalf := highHalf) (lowHalf := lowHalf)
+      (by simpa [strictHighOddLowOddOpenedIHContext] using hpred))
+
 /-- The fully opened `S x ∈ low` code/step body is the head assumption of the
 opened low-membership context. -/
 theorem
