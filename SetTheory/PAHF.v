@@ -31473,6 +31473,182 @@ Proof.
   reflexivity.
 Qed.
 
+(* Lean: div2TotalOpenedStepContext *)
+Definition div2TotalOpenedStepContext
+    (G : list formula) (value : nat) : list formula :=
+  let step := div2StepAt (value + 2) 1 0 in
+  let inner := pEx step in
+  step :: map (rename S) (inner :: map (rename S) G).
+
+(* Lean: div2TotalOpenedDoubleContext *)
+Definition div2TotalOpenedDoubleContext
+    (G : list formula) (value : nat) : list formula :=
+  doubleEqAt (value + 2) 1 :: div2TotalOpenedStepContext G value.
+
+(* Lean: div2TotalOpenedOddContext *)
+Definition div2TotalOpenedOddContext
+    (G : list formula) (value : nat) : list formula :=
+  oddDoubleEqAt (value + 2) 1 :: div2TotalOpenedStepContext G value.
+
+(* Lean: strictSuccContext *)
+Definition strictSuccContext : list formula :=
+  [ltTermAt (tVar 0) (tVar 1);
+   rename S (hfLtDistinguishesAt 0)].
+
+(* Lean: strictSuccTarget *)
+Definition strictSuccTarget : formula :=
+  hfSomeDistinguishesTermAt (tSucc (tVar 1)) 0.
+
+(* Lean: strictSuccOpenedTotalTarget *)
+Definition strictSuccOpenedTotalTarget : formula :=
+  rename S (rename S (rename S (rename S strictSuccTarget))).
+
+(* Lean: strictSuccOpenedHighDoubleLowDoubleContext *)
+Definition strictSuccOpenedHighDoubleLowDoubleContext : list formula :=
+  div2TotalOpenedDoubleContext
+    (div2TotalOpenedDoubleContext strictSuccContext 1) 2.
+
+(* Lean: strictSuccOpenedHighDoubleLowOddContext *)
+Definition strictSuccOpenedHighDoubleLowOddContext : list formula :=
+  div2TotalOpenedOddContext
+    (div2TotalOpenedDoubleContext strictSuccContext 1) 2.
+
+(* Lean: strictSuccOpenedHighOddLowDoubleContext *)
+Definition strictSuccOpenedHighOddLowDoubleContext : list formula :=
+  div2TotalOpenedDoubleContext
+    (div2TotalOpenedOddContext strictSuccContext 1) 2.
+
+(* Lean: strictSuccOpenedHighOddLowOddContext *)
+Definition strictSuccOpenedHighOddLowOddContext : list formula :=
+  div2TotalOpenedOddContext
+    (div2TotalOpenedOddContext strictSuccContext 1) 2.
+
+(* Lean: strictSuccOpenedHighDoubleLowOddMemContext *)
+Definition strictSuccOpenedHighDoubleLowOddMemContext : list formula :=
+  let G := strictSuccOpenedHighDoubleLowOddContext in
+  doubleEqAt 7 5 ::
+    pEq (tSucc (tVar 0)) (tVar 1) ::
+      map (rename S)
+        (nonzeroAt 0 :: hfDistinguishesAt 0 6 5 ::
+          map (rename S) G).
+
+(* Lean: strictSuccOpenedHighDoubleLowOddMemTarget *)
+Definition strictSuccOpenedHighDoubleLowOddMemTarget : formula :=
+  hfMemTermAt 1 (tSucc (tVar 7)).
+
+(* Lean: strictHighOddSuccWitnessTerm *)
+Definition strictHighOddSuccWitnessTerm : term := tSucc (tVar 0).
+
+(* Lean: succOpenedWitnessMemTermFormula *)
+Definition succOpenedWitnessMemTermFormula (highCode : term) : formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm)
+    (hfMemTermAt 0 (Term.rename S highCode)).
+
+(* Lean: succOpenedWitnessLowMemFormula *)
+Definition succOpenedWitnessLowMemFormula (low : nat) : formula :=
+  subst (instTerm strictHighOddSuccWitnessTerm) (hfMemAt 0 (low + 1)).
+
+(* Lean: succOpenedWitnessBodyFormula *)
+Definition succOpenedWitnessBodyFormula
+    (highCode : term) (low : nat) : formula :=
+  pAnd (succOpenedWitnessMemTermFormula highCode)
+    (pImp (succOpenedWitnessLowMemFormula low) pBot).
+
+(* Lean: strictSuccOpenedHighOddCarryTarget *)
+Definition strictSuccOpenedHighOddCarryTarget : formula :=
+  hfSomeDistinguishesTermAt
+    (tAdd (tSucc (tVar 3)) (tSucc (tVar 3))) 4.
+
+(* Lean: strictSuccOpenedHighOddLowDoubleOpenedIHContext *)
+Definition strictSuccOpenedHighOddLowDoubleOpenedIHContext : list formula :=
+  hfDistinguishesAt 0 6 2 ::
+    map (rename S) strictSuccOpenedHighOddLowDoubleContext.
+
+(* Lean: strictSuccOpenedHighOddLowOddOpenedIHContext *)
+Definition strictSuccOpenedHighOddLowOddOpenedIHContext : list formula :=
+  hfDistinguishesAt 0 6 2 ::
+    map (rename S) strictSuccOpenedHighOddLowOddContext.
+
+(* Lean: strictSuccOpenedHighOddOpenedIHTarget *)
+Definition strictSuccOpenedHighOddOpenedIHTarget : formula :=
+  rename S strictSuccOpenedHighOddCarryTarget.
+
+(* Lean: strictSuccOpenedHighOddOpenedIHHighCode *)
+Definition strictSuccOpenedHighOddOpenedIHHighCode : term :=
+  tAdd (tSucc (tVar 4)) (tSucc (tVar 4)).
+
+(* Lean: strictSuccOpenedHighOddOpenedIHLow *)
+Definition strictSuccOpenedHighOddOpenedIHLow : nat := 5.
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccMemFormula *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccMemFormula : formula :=
+  succOpenedWitnessMemTermFormula strictSuccOpenedHighOddOpenedIHHighCode.
+
+(* Lean: strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula *)
+Definition strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula : formula :=
+  succOpenedWitnessLowMemFormula strictSuccOpenedHighOddOpenedIHLow.
+
+(* Lean: BProv_succOpenedWitness_hfSomeDistinguishesTermAt *)
+Lemma BProv_succOpenedWitness_hfSomeDistinguishesTermAt :
+  forall (B : formula -> Prop) G (highCode : term) low,
+  BProv B G (succOpenedWitnessMemTermFormula highCode) ->
+  BProv B (succOpenedWitnessLowMemFormula low :: G) pBot ->
+  BProv B G (hfSomeDistinguishesTermAt highCode low).
+Proof.
+  intros B G highCode low hmem hlowBot.
+  set (body := hfDistinguishesTermAt 0
+    (Term.rename S highCode) (low + 1)).
+  assert (himp : BProv B G
+      (pImp (succOpenedWitnessLowMemFormula low) pBot)).
+  {
+    exact (BProv_impI B G (succOpenedWitnessLowMemFormula low)
+      pBot hlowBot).
+  }
+  assert (hbody : BProv B G
+      (succOpenedWitnessBodyFormula highCode low)).
+  {
+    exact (BProv_andI B G _ _ hmem himp).
+  }
+  assert (hinst : BProv B G
+      (subst (instTerm strictHighOddSuccWitnessTerm) body)).
+  {
+    unfold body, succOpenedWitnessBodyFormula,
+      succOpenedWitnessMemTermFormula, succOpenedWitnessLowMemFormula,
+      hfDistinguishesTermAt.
+    simpl.
+    exact hbody.
+  }
+  unfold hfSomeDistinguishesTermAt.
+  replace
+    (hfDistinguishesTermAt 0 (Term.rename S highCode) (S low))
+    with body.
+  - exact (BProv_exI B G body strictHighOddSuccWitnessTerm hinst).
+  - unfold body.
+    replace (low + 1) with (S low) by lia.
+    reflexivity.
+Qed.
+
+(* Lean: BProv_Ax_s_strictSuccOpenedHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot *)
+Lemma BProv_Ax_s_strictSuccOpenedHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot :
+  forall G,
+  BProv Ax_s G strictSuccOpenedHighOddOpenedWitnessSuccMemFormula ->
+  BProv Ax_s
+    (strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula :: G) pBot ->
+  BProv Ax_s G strictSuccOpenedHighOddOpenedIHTarget.
+Proof.
+  intros G hmem hlowBot.
+  pose proof (BProv_succOpenedWitness_hfSomeDistinguishesTermAt
+    Ax_s G strictSuccOpenedHighOddOpenedIHHighCode
+    strictSuccOpenedHighOddOpenedIHLow hmem hlowBot) as hsome.
+  unfold strictSuccOpenedHighOddOpenedIHTarget,
+    strictSuccOpenedHighOddCarryTarget.
+  rewrite rename_hfSomeDistinguishesTermAt_succ.
+  unfold strictSuccOpenedHighOddOpenedIHHighCode,
+    strictSuccOpenedHighOddOpenedIHLow in hsome |-.
+  simpl.
+  exact hsome.
+Qed.
+
 (* Lean: subst_instTerm_var_hfLtDistinguishesAt_body *)
 Lemma subst_instTerm_var_hfLtDistinguishesAt_body : forall low high,
   subst (instTerm (tVar low))
