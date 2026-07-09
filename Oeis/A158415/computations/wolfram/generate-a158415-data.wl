@@ -15,12 +15,21 @@
      wolfram -script Oeis/A158415/computations/wolfram/generate-a158415-data.wl 12 lean-special
      wolfram -script Oeis/A158415/computations/wolfram/generate-a158415-data.wl 12 lean-strict
      wolfram -script Oeis/A158415/computations/wolfram/generate-a158415-data.wl 12 lean-range
+     wolfram -script Oeis/A158415/computations/wolfram/generate-a158415-data.wl 15 numeric-lean-expr-witnesses
 *)
 
 ClearAll[
   codeString,
   leanValueExpr,
   leanCodeExpr,
+  leanExprValueExpr,
+  leanExprCodeExpr,
+  leanExprWitnessSimpList,
+  leanExprWitnessValueNatName,
+  leanExprRouteEvalSimpList,
+  leanExprSizeSimpList,
+  leanSmallRealDefs,
+  printLeanExprWitnesses,
   leanRat,
   leanTableTacticName,
   ratBetween,
@@ -117,6 +126,101 @@ leanCodeExpr[{"one"}] := "1";
 leanCodeExpr[{"sqrt", n_Integer, i_Integer}] := "Real.sqrt (" <> leanValueExpr[n, i] <> ")";
 leanCodeExpr[{"add", n1_Integer, i1_Integer, n2_Integer, i2_Integer}] :=
   leanValueExpr[n1, i1] <> " + " <> leanValueExpr[n2, i2];
+
+leanExprValueExpr[n_Integer, i_Integer] :=
+  "values" <> ToString[n] <> "Expr (" <> ToString[i] <> " : Fin " <>
+    ToString[Length[values[n]]] <> ")";
+
+leanExprCodeExpr[{"one"}] := "Expr.one";
+leanExprCodeExpr[{"sqrt", n_Integer, i_Integer}] :=
+  "Expr.sqrt (" <> leanExprValueExpr[n, i] <> ")";
+leanExprCodeExpr[{"add", n1_Integer, i1_Integer, n2_Integer, i2_Integer}] :=
+  "Expr.add (" <> leanExprValueExpr[n1, i1] <> ") (" <> leanExprValueExpr[n2, i2] <> ")";
+
+leanExprWitnessSimpList[n_Integer, kind_String] := Module[
+  {defs, currentRealDefs, smallRealDefs, lowValueDefs, previous, extras},
+  If[kind === "size",
+    Return[
+      "[" <> StringRiffle[
+        Join[
+          {"values" <> ToString[n] <> "Expr", "values" <> ToString[n] <> "ExprNat"},
+          Table["values" <> ToString[m] <> "Expr_size", {m, 1, n - 1}],
+          {"size"}
+        ],
+        ", "
+      ] <> "]"
+    ]
+  ];
+  defs = {"values" <> ToString[n] <> "Expr", "values" <> ToString[n] <> "ExprNat"};
+  currentRealDefs = If[n <= 4,
+    {"values" <> ToString[n] <> "Real", "values" <> ToString[n] <> "RealNat"},
+    If[7 <= n <= 9,
+      {"values" <> ToString[n], "values" <> ToString[n] <> "List"},
+      {"values" <> ToString[n], "values" <> ToString[n] <> "Nat"}
+    ]
+  ];
+  smallRealDefs = Flatten[
+    Table[
+      {"values" <> ToString[m] <> "Real", "values" <> ToString[m] <> "RealNat"},
+      {m, 1, Min[4, n]}
+    ]
+  ];
+  lowValueDefs = If[n <= 9,
+    Flatten[
+      Table[
+        If[7 <= m <= 9,
+          {"values" <> ToString[m], "values" <> ToString[m] <> "List"},
+          {"values" <> ToString[m], "values" <> ToString[m] <> "Nat"}
+        ],
+        {m, 5, n}
+      ]
+    ],
+    {}
+  ];
+  previous = Table["values" <> ToString[m] <> "Expr_eval", {m, 1, n - 1}];
+  extras =
+    {"eval", "values9List", "values8List", "values7List", "rt2_4", "rt2_8",
+      "rt2_16", "rt2_32", "rt2_64", "rt3_4", "rt3_8", "rt3_16",
+      "sqrt_one_add_sqrt_two", "sqrt_sqrt_one_add_sqrt_two",
+      "sqrt_sqrt_sqrt_one_add_sqrt_two", "sqrt_one_add_rt2_4",
+      "sqrt_sqrt_one_add_rt2_4", "sqrt_one_add_rt2_8",
+      "sqrt_one_add_sqrt_three", "sqrt_two_add_sqrt_two", "sqrt_four",
+      "add_comm", "add_assoc", "add_left_comm", "two_mul"};
+  "[" <> StringRiffle[
+    DeleteDuplicates[Join[defs, currentRealDefs, smallRealDefs, lowValueDefs, previous, extras]],
+    ", "
+  ] <> "]"
+];
+
+leanExprWitnessValueNatName[n_Integer] :=
+  If[n <= 4,
+    "values" <> ToString[n] <> "RealNat",
+    "values" <> ToString[n] <> "Nat"
+  ];
+
+leanExprSizeSimpList[n_Integer] :=
+  "[" <> StringRiffle[
+    Join[Table["values" <> ToString[m] <> "Expr_size", {m, 1, n - 1}], {"size"}],
+    ", "
+  ] <> "]";
+
+leanExprRouteEvalSimpList[n_Integer] :=
+  "[" <> StringRiffle[
+    Join[
+      Table["values" <> ToString[m] <> "Expr_eval", {m, 1, n - 1}],
+      Flatten[Table[{"values" <> ToString[m] <> "Real", "values" <> ToString[m] <> "RealNat"},
+        {m, 1, Min[4, n - 1]}]],
+      {"eval"}
+    ],
+    ", "
+  ] <> "]";
+
+leanSmallRealDefs[n_Integer] :=
+  StringRiffle[
+    Flatten[Table[{"values" <> ToString[m] <> "Real", "values" <> ToString[m] <> "RealNat"},
+      {m, 1, Min[4, n]}]],
+    ", "
+  ];
 
 leanTableTacticName[n_Integer] := If[n >= 13, "rfl", "a158415_twelve_table"];
 
@@ -337,6 +441,130 @@ printLeanTable[n_Integer] := Module[{name},
     {i, Length[values[n]]}
   ];
   Print["  | _ => 0"];
+];
+
+printLeanExprWitnesses[n_Integer] := Module[{targetName, targetValueName},
+  If[n =!= 15,
+    Print["lean-expr-witnesses is currently implemented only for n = 15"];
+    Exit[2]
+  ];
+  Print["/-!"];
+  Print["Generated expression witnesses for the size-15 membership certificate."];
+  Print["Regenerate with:"];
+  Print["  wolfram -script Oeis/A158415/computations/wolfram/generate-a158415-data.wl 15 numeric-lean-expr-witnesses"];
+  Print["-/"];
+  Print[""];
+  Print["set_option linter.unusedSimpArgs false"];
+  Print["set_option linter.unusedTactic false"];
+  Print[""];
+  Do[
+    If[m <= 4,
+      targetName = "values" <> ToString[m] <> "Real";
+      Print["noncomputable def ", targetName, "Nat : Nat -> Real"];
+      Do[
+        Print["  | ", i - 1, " => ", leanCodeExpr[values[m][[i, 2]]]],
+        {i, Length[values[m]]}
+      ];
+      Print["  | _ => 0"];
+      Print[""];
+      Print["noncomputable def ", targetName, " (i : Fin ", Length[values[m]], ") : Real :="];
+      Print["  ", targetName, "Nat i.1"];
+      Print[""]
+    ];
+    Print["noncomputable def values", m, "RouteNat : Nat -> Real"];
+    Do[
+      Print["  | ", i - 1, " => ", leanCodeExpr[values[m][[i, 2]]]],
+      {i, Length[values[m]]}
+    ];
+    Print["  | _ => 0"];
+    Print[""];
+    Print["noncomputable def values", m, "Route (i : Fin ", Length[values[m]], ") : Real :="];
+    Print["  values", m, "RouteNat i.1"];
+    Print[""];
+    Print["def values", m, "ExprNat : Nat -> Expr"];
+    Do[
+      Print["  | ", i - 1, " => ", leanExprCodeExpr[values[m][[i, 2]]]],
+      {i, Length[values[m]]}
+    ];
+    Print["  | _ => Expr.one"];
+    Print[""];
+    Print["def values", m, "Expr (i : Fin ", Length[values[m]], ") : Expr :="];
+    Print["  values", m, "ExprNat i.1"];
+    Print[""];
+    Print["set_option maxHeartbeats 8000000 in"];
+    Print["theorem values", m, "ExprNat_size : ∀ i, i < ", Length[values[m]], " ->"];
+    Print["    (values", m, "ExprNat i).size = ", m];
+    Do[
+      Print["  | ", i - 1, ", _ => by"];
+      Print["      change (", leanExprCodeExpr[values[m][[i, 2]]], ").size = ", m];
+      Print["      simp ", leanExprSizeSimpList[m]],
+      {i, Length[values[m]]}
+    ];
+    Print["  | extra + ", Length[values[m]], ", h => by"];
+    Print["      omega"];
+    Print[""];
+    Print["theorem values", m, "Expr_size (i : Fin ", Length[values[m]], ") :"];
+    Print["    (values", m, "Expr i).size = ", m, " := by"];
+    Print["  simpa [values", m, "Expr] using values", m, "ExprNat_size i.1 i.2"];
+    Print[""];
+    Print["set_option maxHeartbeats 12000000 in"];
+    Print["theorem values", m, "ExprNat_eval_route : ∀ i, i < ", Length[values[m]], " ->"];
+    Print["    (values", m, "ExprNat i).eval = values", m, "RouteNat i"];
+    Do[
+      Print["  | ", i - 1, ", _ => by"];
+      Print["      change (", leanExprCodeExpr[values[m][[i, 2]]], ").eval = ",
+        leanCodeExpr[values[m][[i, 2]]]];
+      Print["      simp ", leanExprRouteEvalSimpList[m], " <;> ring_nf"],
+      {i, Length[values[m]]}
+    ];
+    Print["  | extra + ", Length[values[m]], ", h => by"];
+    Print["      omega"];
+    Print[""];
+    Print["theorem values", m, "Expr_eval_route (i : Fin ", Length[values[m]], ") :"];
+    Print["    (values", m, "Expr i).eval = values", m, "Route i := by"];
+    Print["  simpa [values", m, "Expr, values", m, "Route] using values", m,
+      "ExprNat_eval_route i.1 i.2"];
+    Print[""];
+    targetValueName = If[m <= 4,
+      "values" <> ToString[m] <> "Real",
+      "values" <> ToString[m]
+    ];
+    Print["set_option maxHeartbeats 4000000 in"];
+    Print["theorem values", m, "Route_eq_values (i : Fin ", Length[values[m]], ") :"];
+    Print["    values", m, "Route i = ", targetValueName, " i := by"];
+    Print["  fin_cases i"];
+    If[m >= 12,
+      Do[
+        Print["  next => rfl"],
+        {Length[values[m]]}
+      ],
+      If[m <= 4,
+        Do[
+          Print["  next => simp [values", m, "Route, values", m, "RouteNat, ",
+            leanSmallRealDefs[m], ", sqrt_four] <;> ring_nf"],
+          {Length[values[m]]}
+        ],
+        Do[
+          Print["  next =>"];
+          Print["    simp [values", m, "Route, values", m, "RouteNat]"];
+          Print["    a158415_twelve_table"],
+          {Length[values[m]]}
+        ]
+      ]
+    ];
+    Print[""];
+    Print["set_option maxHeartbeats 12000000 in"];
+    Print["theorem values", m, "Expr_eval (i : Fin ", Length[values[m]], ") :"];
+    Print["    (values", m, "Expr i).eval = ", targetValueName, " i := by"];
+    Print["  rw [values", m, "Expr_eval_route, values", m, "Route_eq_values]"];
+    Print[""],
+    {m, 1, n}
+  ];
+  Print["set_option maxHeartbeats 2000000 in"];
+  Print["theorem values15_mem_recursiveValueSet (i : Fin 791) :"];
+  Print["    values15 i ∈ recursiveValueSet 15 := by"];
+  Print["  rw [← values15Expr_eval i]"];
+  Print["  exact eval_mem_recursiveValueSet_of_size (values15Expr_size i)"]
 ];
 
 intervalCert[{"val", n_Integer, i_Integer}, lo_, hi_] :=
@@ -686,11 +914,20 @@ printLeanSpecial[n_Integer] := Module[{a, b, q, lhs, rhs},
   ];
 ];
 
-printLeanStrict[n_Integer] := Module[{a, b, i1, i2, sqrtN, sqrtLen, addN, addLen},
+printLeanStrict[n_Integer] := Module[{a, b, i1, i2, sqrtN, addN, addLen},
   sqrtN = n - 1;
-  sqrtLen = Length[values[sqrtN]];
   addN = n - 2;
   addLen = Length[values[addN]];
+  Print["macro \"values", n, "_sqrt_run\" : tactic =>"];
+  Print["  `(tactic| exact sqrt_values", sqrtN, "_strictMono (by decide))"];
+  Print[""];
+  Print["macro \"values", n, "_one_add_run\" i:num j:num : tactic =>"];
+  Print["  `(tactic|"];
+  Print["    (change 1 + values", addN, " ($i : Fin ", addLen, ") < 1 + values",
+    addN, " ($j : Fin ", addLen, ");"];
+  Print["      linarith [values", addN,
+    "_strictMono (by native_decide : ($i : Fin ", addLen, ") < $j)]))"];
+  Print[""];
   Print["set_option maxHeartbeats 2000000 in"];
   Print["theorem values", n, "_strictMono : StrictMono values", n, " := by"];
   Print["  rw [Fin.strictMono_iff_lt_succ]"];
@@ -703,24 +940,12 @@ printLeanStrict[n_Integer] := Module[{a, b, i1, i2, sqrtN, sqrtLen, addN, addLen
       ! monotoneAdjacentQ[a, b],
         Print["  next => exact values", n, "_special_", i - 1],
       MatchQ[a, {"sqrt", sqrtN, _Integer}] && MatchQ[b, {"sqrt", sqrtN, _Integer}],
-        Print["  next => exact sqrt_values", sqrtN, "_strictMono (by decide)"],
+        Print["  next => values", n, "_sqrt_run"],
       MatchQ[a, {"add", 1, 0, addN, _Integer}] &&
           MatchQ[b, {"add", 1, 0, addN, _Integer}],
         i1 = a[[5]];
         i2 = b[[5]];
-        Print[
-          "  next =>"
-        ];
-        Print[
-          "    change 1 + values" <> ToString[addN] <> " (" <> ToString[i1] <>
-          " : Fin " <> ToString[addLen] <> ") < 1 + values" <> ToString[addN] <>
-          " (" <> ToString[i2] <> " : Fin " <> ToString[addLen] <> ")"
-        ];
-        Print[
-          "    linarith [values" <> ToString[addN] <>
-          "_strictMono (by native_decide : (" <> ToString[i1] <> " : Fin " <>
-          ToString[addLen] <> ") < " <> ToString[i2] <> ")]"
-        ],
+        Print["  next => values", n, "_one_add_run ", i1, " ", i2],
       True,
         Print["  next => fail \"unsupported adjacent pair: ", codeString[a], " < ", codeString[b], "\""]
     ],
@@ -790,7 +1015,10 @@ highValueRewrite[{n_Integer, i_Integer}] :=
   "rw [show " <> leanValueExpr[n, i] <> " = " <>
     leanCodeExpr[values[n][[i + 1, 2]]] <> " by rfl]";
 
-rangeCaseProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewrites},
+rangeIndex[targetN_Integer, code_] :=
+  valueIndex[targetN, exprValue[code]];
+
+rangeCaseEqualityProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewrites},
   idx = valueIndex[targetN, exprValue[code]];
   If[! IntegerQ[idx],
     {"fail \"missing value index for " <> codeString[code] <> "\""},
@@ -799,58 +1027,108 @@ rangeCaseProof[targetN_Integer, code_] := Module[{idx, repCode, rep, body, rewri
     body = leanCodeExpr[code];
     If[rep === body,
       {
-        "exact Exists.intro (" <> ToString[idx] <> " : Fin " <> ToString[Length[values[targetN]]] <> ") (by",
-        "  change " <> rep <> " = " <> body,
-        "  rfl",
-        ")"
+        "change " <> rep <> " = " <> body,
+        "rfl"
       },
       rewrites = DeleteDuplicates[Join[highValueRefs[repCode], highValueRefs[code]]];
       {
-        "exact Exists.intro (" <> ToString[idx] <> " : Fin " <> ToString[Length[values[targetN]]] <> ") (by",
-        "  change " <> rep <> " = " <> body,
-        Sequence @@ (("  " <> highValueRewrite[#]) & /@ rewrites),
-        "  a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num",
-        ")"
+        "change " <> rep <> " = " <> body,
+        Sequence @@ (highValueRewrite /@ rewrites),
+        "a158415_twelve_table <;> try rw [sqrt_four] <;> norm_num"
       }
     ]
   ]
 ];
 
+rangeIndexNatName[name_String] := name <> "_indexNat";
+rangeIndexName[name_String] := name <> "_index";
+rangeIndexSpecName[name_String] := name <> "_index_spec";
+
 printUnaryRangeLemmaFor[targetN_Integer, name_String, len_Integer, body_String, codeFn_] := Module[
-  {code, lines},
+  {code, idx, lines, indexNatName, indexName, specName, targetLen},
+  targetLen = Length[values[targetN]];
+  indexNatName = rangeIndexNatName[name];
+  indexName = rangeIndexName[name];
+  specName = rangeIndexSpecName[name];
+  Print["def ", indexNatName, " : Nat -> Nat"];
+  Do[
+    code = codeFn[i - 1];
+    idx = rangeIndex[targetN, code];
+    If[! IntegerQ[idx],
+      Print["  | ", i - 1, " => 0 -- missing value index for ", codeString[code]],
+      Print["  | ", i - 1, " => ", idx]
+    ],
+    {i, len}
+  ];
+  Print["  | _ => 0"];
+  Print[""];
+  Print["def ", indexName, " (i : Fin ", len, ") : Fin ", targetLen, " :="];
+  Print["  ⟨", indexNatName, " i.1, by"];
+  Print["    fin_cases i <;> decide"];
+  Print["  ⟩"];
+  Print[""];
   Print["set_option linter.unreachableTactic false in"];
   Print["set_option linter.unnecessarySeqFocus false in"];
   Print["set_option linter.unusedTactic false in"];
   Print["set_option maxHeartbeats ", If[targetN >= 15, 20000000, 4000000], " in"];
-  Print["theorem ", name, " (i : Fin ", len, ") :"];
-  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["theorem ", specName, " (i : Fin ", len, ") :"];
+  Print["    values", targetN, " (", indexName, " i) = ", body, " := by"];
   Print["  fin_cases i"];
   Do[
     code = codeFn[i - 1];
-    lines = rangeCaseProof[targetN, code];
+    lines = rangeCaseEqualityProof[targetN, code];
     Print["  next =>"];
     Scan[Print["    " <> #] &, lines],
     {i, len}
   ];
+  Print[""];
+  Print["theorem ", name, " (i : Fin ", len, ") :"];
+  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["  exact ⟨", indexName, " i, ", specName, " i⟩"];
   Print[""]
 ];
 
 printBinaryRangeLemmaFor[targetN_Integer, name_String, len1_Integer, len2_Integer, body_String, codeFn_] := Module[
-  {code, lines},
+  {code, idx, lines, indexNatName, indexName, specName, targetLen},
+  targetLen = Length[values[targetN]];
+  indexNatName = rangeIndexNatName[name];
+  indexName = rangeIndexName[name];
+  specName = rangeIndexSpecName[name];
+  Print["def ", indexNatName, " : Nat -> Nat -> Nat"];
+  Do[
+    code = codeFn[i - 1, j - 1];
+    idx = rangeIndex[targetN, code];
+    If[! IntegerQ[idx],
+      Print["  | ", i - 1, ", ", j - 1, " => 0 -- missing value index for ", codeString[code]],
+      Print["  | ", i - 1, ", ", j - 1, " => ", idx]
+    ],
+    {i, len1}, {j, len2}
+  ];
+  Print["  | _, _ => 0"];
+  Print[""];
+  Print["def ", indexName, " (i : Fin ", len1, ") (j : Fin ", len2, ") : Fin ", targetLen, " :="];
+  Print["  ⟨", indexNatName, " i.1 j.1, by"];
+  Print["    fin_cases i <;> fin_cases j <;> decide"];
+  Print["  ⟩"];
+  Print[""];
   Print["set_option linter.unreachableTactic false in"];
   Print["set_option linter.unnecessarySeqFocus false in"];
   Print["set_option linter.unusedTactic false in"];
   Print["set_option maxHeartbeats ", If[targetN >= 15, 20000000, 4000000], " in"];
-  Print["theorem ", name, " (i : Fin ", len1, ") (j : Fin ", len2, ") :"];
-  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["theorem ", specName, " (i : Fin ", len1, ") (j : Fin ", len2, ") :"];
+  Print["    values", targetN, " (", indexName, " i j) = ", body, " := by"];
   Print["  fin_cases i <;> fin_cases j"];
   Do[
     code = codeFn[i - 1, j - 1];
-    lines = rangeCaseProof[targetN, code];
+    lines = rangeCaseEqualityProof[targetN, code];
     Print["  next =>"];
     Scan[Print["    " <> #] &, lines],
     {i, len1}, {j, len2}
   ];
+  Print[""];
+  Print["theorem ", name, " (i : Fin ", len1, ") (j : Fin ", len2, ") :"];
+  Print["    (Set.range values", targetN, ") (", body, ") := by"];
+  Print["  exact ⟨", indexName, " i j, ", specName, " i j⟩"];
   Print[""]
 ];
 
@@ -1142,7 +1420,10 @@ printLeanBundle[n_Integer] := (
   writeGenerated[n, "adjacent", printAdjacent[n]];
   writeGenerated[n, "special-lean", printLeanSpecial[n]];
   writeGenerated[n, "strict-lean", printLeanStrict[n]];
-  writeGenerated[n, "range-lean", printLeanRange[n]]
+  writeGenerated[n, "range-lean", printLeanRange[n]];
+  If[n === 15,
+    writeGenerated[n, "expr-witnesses-lean", printLeanExprWitnesses[n]]
+  ]
 );
 
 Switch[mode,
@@ -1164,6 +1445,8 @@ Switch[mode,
   "numeric-lean-strict", printLeanStrict[target],
   "lean-interval-order-module", printLeanIntervalOrderModule[target],
   "numeric-lean-interval-order-module", printLeanIntervalOrderModule[target],
+  "lean-expr-witnesses", printLeanExprWitnesses[target],
+  "numeric-lean-expr-witnesses", printLeanExprWitnesses[target],
   "lean-range", printLeanRange[target],
   "numeric-lean-range", printLeanRange[target],
   "lean-bundle", printLeanBundle[target],
