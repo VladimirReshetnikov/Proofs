@@ -187,6 +187,8 @@ Check PA.Formula.twoEntryBetaStepTerm.
 Check PA.Formula.twoEntryBetaCodeTerm.
 Check PA.Formula.crtExtendCodeTerm.
 Check PA.Formula.crtInverseProductQuotTerm.
+Check PA.Formula.crtPositiveInverseTerm.
+Check PA.Formula.crtPositiveInverseQuotTerm.
 Check PA.Formula.BProv_Ax_s_betaModTermTerm_zero.
 Check PA.Formula.BProv_Ax_s_betaModTermTerm_one_add_self.
 Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_modulus.
@@ -194,6 +196,9 @@ Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_double_step_of_one.
 Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_modulus.
 Check PA.Formula.BProv_Ax_s_mul_mul_reorder_middle_terms.
 Check PA.Formula.BProv_Ax_s_crtInverseProductQuot_expand.
+Check PA.Formula.BProv_Ax_s_crtPositiveInverseTerm_add.
+Check PA.Formula.BProv_Ax_s_crtPositiveInverseQuotTerm_add.
+Check PA.Formula.BProv_Ax_s_crtPositiveInverse_of_negative.
 Check PA.Formula.BProv_Ax_s_crtInverse_mul.
 Check PA.Formula.BProv_Ax_s_crtProductFactor_mul.
 Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition.

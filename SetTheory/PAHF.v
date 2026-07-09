@@ -20182,6 +20182,20 @@ Definition crtInverseProductQuotTerm
       leftQuot)
     rightQuot.
 
+(* Lean: crtPositiveInverseTerm *)
+Definition crtPositiveInverseTerm
+    (rightPred positiveCoeff negativeCoeff : term) : term :=
+  tAdd
+    (tMul (tSucc rightPred) (tSucc positiveCoeff))
+    (tMul rightPred negativeCoeff).
+
+(* Lean: crtPositiveInverseQuotTerm *)
+Definition crtPositiveInverseQuotTerm
+    (leftPred positiveCoeff negativeCoeff : term) : term :=
+  tAdd
+    (tMul (tSucc leftPred) (tSucc negativeCoeff))
+    (tMul leftPred positiveCoeff).
+
 (* Lean: BProv_Ax_s_remTermTermAt_of_eq_modulus *)
 Lemma BProv_Ax_s_remTermTermAt_of_eq_modulus :
   forall G (rem value oldModulus newModulus : term),
@@ -20397,6 +20411,323 @@ Proof.
   { exact (BProv_eq_congr_succ Ax_s G _ _ hnormalQuotient). }
   unfold leftBase, rightBase in *.
   exact (BProv_eqTrans Ax_s G _ _ _ hexpand hsuccCong).
+Qed.
+
+(* Lean: BProv_Ax_s_crtPositiveInverseTerm_add *)
+Lemma BProv_Ax_s_crtPositiveInverseTerm_add :
+  forall G (rightPred positiveCoeff negativeCoeff : term),
+  BProv Ax_s G
+    (pEq
+      (tAdd
+        (crtPositiveInverseTerm
+          rightPred positiveCoeff negativeCoeff)
+        negativeCoeff)
+      (tMul (tSucc rightPred)
+        (tSucc (tAdd positiveCoeff negativeCoeff)))).
+Proof.
+  intros G rightPred positiveCoeff negativeCoeff.
+  set (modulus := tSucc rightPred).
+  set (positivePart := tMul modulus (tSucc positiveCoeff)).
+  set (negativePart := tMul rightPred negativeCoeff).
+  assert (hassoc : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd positivePart negativePart) negativeCoeff)
+        (tAdd positivePart (tAdd negativePart negativeCoeff)))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hsuccMul : BProv Ax_s G
+      (pEq (tMul modulus negativeCoeff)
+        (tAdd negativePart negativeCoeff))).
+  {
+    unfold modulus, negativePart.
+    apply BProv_Ax_s_succ_mul_terms.
+  }
+  assert (hnegativePart : BProv Ax_s G
+      (pEq (tAdd negativePart negativeCoeff)
+        (tMul modulus negativeCoeff))).
+  { exact (BProv_eqSym Ax_s G _ _ hsuccMul). }
+  assert (hnegativeCong : BProv Ax_s G
+      (pEq
+        (tAdd positivePart (tAdd negativePart negativeCoeff))
+        (tAdd positivePart (tMul modulus negativeCoeff)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G positivePart _ _
+      hnegativePart).
+  }
+  assert (hfactor : BProv Ax_s G
+      (pEq
+        (tMul modulus (tAdd (tSucc positiveCoeff) negativeCoeff))
+        (tAdd positivePart (tMul modulus negativeCoeff)))).
+  {
+    unfold positivePart.
+    apply BProv_Ax_s_mul_add_terms.
+  }
+  assert (hsuccAdd : BProv Ax_s G
+      (pEq (tAdd (tSucc positiveCoeff) negativeCoeff)
+        (tSucc (tAdd positiveCoeff negativeCoeff)))).
+  { apply BProv_Ax_s_succ_add_terms. }
+  assert (hsuccCong : BProv Ax_s G
+      (pEq
+        (tMul modulus (tAdd (tSucc positiveCoeff) negativeCoeff))
+        (tMul modulus (tSucc (tAdd positiveCoeff negativeCoeff))))).
+  {
+    exact (BProv_eq_congr_mul_right Ax_s G modulus _ _ hsuccAdd).
+  }
+  unfold crtPositiveInverseTerm, modulus, positivePart, negativePart.
+  exact (BProv_eqTrans Ax_s G _ _ _ hassoc
+    (BProv_eqTrans Ax_s G _ _ _ hnegativeCong
+      (BProv_eqTrans Ax_s G _ _ _
+        (BProv_eqSym Ax_s G _ _ hfactor) hsuccCong))).
+Qed.
+
+(* Lean: BProv_Ax_s_crtPositiveInverseQuotTerm_add *)
+Lemma BProv_Ax_s_crtPositiveInverseQuotTerm_add :
+  forall G (leftPred positiveCoeff negativeCoeff : term),
+  BProv Ax_s G
+    (pEq
+      (tAdd
+        (crtPositiveInverseQuotTerm
+          leftPred positiveCoeff negativeCoeff)
+        positiveCoeff)
+      (tMul (tSucc leftPred)
+        (tSucc (tAdd positiveCoeff negativeCoeff)))).
+Proof.
+  intros G leftPred positiveCoeff negativeCoeff.
+  set (modulus := tSucc leftPred).
+  set (negativePart := tMul modulus (tSucc negativeCoeff)).
+  set (positivePart := tMul leftPred positiveCoeff).
+  assert (hassoc : BProv Ax_s G
+      (pEq
+        (tAdd (tAdd negativePart positivePart) positiveCoeff)
+        (tAdd negativePart (tAdd positivePart positiveCoeff)))).
+  { apply BProv_Ax_s_add_assoc_terms. }
+  assert (hsuccMul : BProv Ax_s G
+      (pEq (tMul modulus positiveCoeff)
+        (tAdd positivePart positiveCoeff))).
+  {
+    unfold modulus, positivePart.
+    apply BProv_Ax_s_succ_mul_terms.
+  }
+  assert (hpositivePart : BProv Ax_s G
+      (pEq (tAdd positivePart positiveCoeff)
+        (tMul modulus positiveCoeff))).
+  { exact (BProv_eqSym Ax_s G _ _ hsuccMul). }
+  assert (hpositiveCong : BProv Ax_s G
+      (pEq
+        (tAdd negativePart (tAdd positivePart positiveCoeff))
+        (tAdd negativePart (tMul modulus positiveCoeff)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G negativePart _ _
+      hpositivePart).
+  }
+  assert (hfactor : BProv Ax_s G
+      (pEq
+        (tMul modulus (tAdd (tSucc negativeCoeff) positiveCoeff))
+        (tAdd negativePart (tMul modulus positiveCoeff)))).
+  {
+    unfold negativePart.
+    apply BProv_Ax_s_mul_add_terms.
+  }
+  assert (hsuccAdd : BProv Ax_s G
+      (pEq (tAdd (tSucc negativeCoeff) positiveCoeff)
+        (tSucc (tAdd negativeCoeff positiveCoeff)))).
+  { apply BProv_Ax_s_succ_add_terms. }
+  assert (hcoeffComm : BProv Ax_s G
+      (pEq (tAdd negativeCoeff positiveCoeff)
+        (tAdd positiveCoeff negativeCoeff))).
+  { apply BProv_Ax_s_add_comm_terms. }
+  assert (hcoeffSucc : BProv Ax_s G
+      (pEq (tSucc (tAdd negativeCoeff positiveCoeff))
+        (tSucc (tAdd positiveCoeff negativeCoeff)))).
+  { exact (BProv_eq_congr_succ Ax_s G _ _ hcoeffComm). }
+  assert (hinside : BProv Ax_s G
+      (pEq (tAdd (tSucc negativeCoeff) positiveCoeff)
+        (tSucc (tAdd positiveCoeff negativeCoeff)))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hsuccAdd hcoeffSucc).
+  }
+  assert (hinsideCong : BProv Ax_s G
+      (pEq
+        (tMul modulus (tAdd (tSucc negativeCoeff) positiveCoeff))
+        (tMul modulus (tSucc (tAdd positiveCoeff negativeCoeff))))).
+  {
+    exact (BProv_eq_congr_mul_right Ax_s G modulus _ _ hinside).
+  }
+  unfold crtPositiveInverseQuotTerm, modulus, negativePart, positivePart.
+  exact (BProv_eqTrans Ax_s G _ _ _ hassoc
+    (BProv_eqTrans Ax_s G _ _ _ hpositiveCong
+      (BProv_eqTrans Ax_s G _ _ _
+        (BProv_eqSym Ax_s G _ _ hfactor) hinsideCong))).
+Qed.
+
+(* Lean: BProv_Ax_s_crtPositiveInverse_of_negative *)
+Lemma BProv_Ax_s_crtPositiveInverse_of_negative :
+  forall G
+    (leftPred rightPred positiveCoeff negativeCoeff : term),
+  BProv Ax_s G
+    (pEq
+      (tMul (tSucc rightPred) positiveCoeff)
+      (tSucc (tMul (tSucc leftPred) negativeCoeff))) ->
+  BProv Ax_s G
+    (pEq
+      (tMul (tSucc leftPred)
+        (crtPositiveInverseTerm
+          rightPred positiveCoeff negativeCoeff))
+      (tSucc
+        (tMul (tSucc rightPred)
+          (crtPositiveInverseQuotTerm
+            leftPred positiveCoeff negativeCoeff)))).
+Proof.
+  intros G leftPred rightPred positiveCoeff negativeCoeff hnegative.
+  set (leftModulus := tSucc leftPred).
+  set (rightModulus := tSucc rightPred).
+  set (inverse :=
+    crtPositiveInverseTerm rightPred positiveCoeff negativeCoeff).
+  set (inverseQuot :=
+    crtPositiveInverseQuotTerm leftPred positiveCoeff negativeCoeff).
+  set (totalCoeff := tSucc (tAdd positiveCoeff negativeCoeff)).
+  set (carry := tMul leftModulus negativeCoeff).
+  set (common :=
+    tMul (tMul leftModulus rightModulus) totalCoeff).
+  assert (hinverseAdd : BProv Ax_s G
+      (pEq (tAdd inverse negativeCoeff)
+        (tMul rightModulus totalCoeff))).
+  {
+    unfold inverse, rightModulus, totalCoeff.
+    apply BProv_Ax_s_crtPositiveInverseTerm_add.
+  }
+  assert (hquotAdd : BProv Ax_s G
+      (pEq (tAdd inverseQuot positiveCoeff)
+        (tMul leftModulus totalCoeff))).
+  {
+    unfold inverseQuot, leftModulus, totalCoeff.
+    apply BProv_Ax_s_crtPositiveInverseQuotTerm_add.
+  }
+  assert (hleftDist : BProv Ax_s G
+      (pEq
+        (tMul leftModulus (tAdd inverse negativeCoeff))
+        (tAdd (tMul leftModulus inverse) carry))).
+  {
+    unfold carry.
+    apply BProv_Ax_s_mul_add_terms.
+  }
+  assert (hleftAdd : BProv Ax_s G
+      (pEq (tAdd (tMul leftModulus inverse) carry) common)).
+  {
+    assert (htoSum : BProv Ax_s G
+        (pEq
+          (tAdd (tMul leftModulus inverse) carry)
+          (tMul leftModulus (tAdd inverse negativeCoeff)))).
+    { exact (BProv_eqSym Ax_s G _ _ hleftDist). }
+    assert (hsumCong : BProv Ax_s G
+        (pEq
+          (tMul leftModulus (tAdd inverse negativeCoeff))
+          (tMul leftModulus (tMul rightModulus totalCoeff)))).
+    {
+      exact (BProv_eq_congr_mul_right Ax_s G leftModulus _ _
+        hinverseAdd).
+    }
+    assert (hassoc : BProv Ax_s G
+        (pEq
+          (tMul leftModulus (tMul rightModulus totalCoeff))
+          common)).
+    {
+      unfold common.
+      exact (BProv_eqSym Ax_s G _ _
+        (BProv_Ax_s_mul_assoc_terms G
+          leftModulus rightModulus totalCoeff)).
+    }
+    exact (BProv_eqTrans Ax_s G _ _ _ htoSum
+      (BProv_eqTrans Ax_s G _ _ _ hsumCong hassoc)).
+  }
+  assert (hrightStart : BProv Ax_s G
+      (pEq
+        (tAdd (tSucc (tMul rightModulus inverseQuot)) carry)
+        (tSucc
+          (tAdd (tMul rightModulus inverseQuot) carry)))).
+  { apply BProv_Ax_s_succ_add_terms. }
+  assert (hrightAddSucc : BProv Ax_s G
+      (pEq
+        (tSucc (tAdd (tMul rightModulus inverseQuot) carry))
+        (tAdd (tMul rightModulus inverseQuot) (tSucc carry)))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_weaken_nil Ax_s G _
+        (BProv_Ax_s_addSucc_terms
+          (tMul rightModulus inverseQuot) carry))).
+  }
+  assert (hnegativeSym : BProv Ax_s G
+      (pEq (tSucc carry) (tMul rightModulus positiveCoeff))).
+  {
+    unfold leftModulus, rightModulus, carry.
+    exact (BProv_eqSym Ax_s G _ _ hnegative).
+  }
+  assert (hnegativeCong : BProv Ax_s G
+      (pEq
+        (tAdd (tMul rightModulus inverseQuot) (tSucc carry))
+        (tAdd (tMul rightModulus inverseQuot)
+          (tMul rightModulus positiveCoeff)))).
+  {
+    exact (BProv_eq_congr_add_right Ax_s G
+      (tMul rightModulus inverseQuot) _ _ hnegativeSym).
+  }
+  assert (hrightFactor : BProv Ax_s G
+      (pEq
+        (tMul rightModulus (tAdd inverseQuot positiveCoeff))
+        (tAdd (tMul rightModulus inverseQuot)
+          (tMul rightModulus positiveCoeff)))).
+  { apply BProv_Ax_s_mul_add_terms. }
+  assert (hquotCong : BProv Ax_s G
+      (pEq
+        (tMul rightModulus (tAdd inverseQuot positiveCoeff))
+        (tMul rightModulus (tMul leftModulus totalCoeff)))).
+  {
+    exact (BProv_eq_congr_mul_right Ax_s G rightModulus _ _ hquotAdd).
+  }
+  assert (hassocRight : BProv Ax_s G
+      (pEq
+        (tMul rightModulus (tMul leftModulus totalCoeff))
+        (tMul (tMul rightModulus leftModulus) totalCoeff))).
+  {
+    exact (BProv_eqSym Ax_s G _ _
+      (BProv_Ax_s_mul_assoc_terms G
+        rightModulus leftModulus totalCoeff)).
+  }
+  assert (hmodComm : BProv Ax_s G
+      (pEq (tMul rightModulus leftModulus)
+        (tMul leftModulus rightModulus))).
+  { apply BProv_Ax_s_mul_comm_terms. }
+  assert (hmodCommCong : BProv Ax_s G
+      (pEq
+        (tMul (tMul rightModulus leftModulus) totalCoeff)
+        common)).
+  {
+    unfold common.
+    exact (BProv_eq_congr_mul_left Ax_s G _ _ totalCoeff hmodComm).
+  }
+  assert (hrightAdd : BProv Ax_s G
+      (pEq
+        (tAdd (tSucc (tMul rightModulus inverseQuot)) carry)
+        common)).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hrightStart
+      (BProv_eqTrans Ax_s G _ _ _ hrightAddSucc
+        (BProv_eqTrans Ax_s G _ _ _ hnegativeCong
+          (BProv_eqTrans Ax_s G _ _ _
+            (BProv_eqSym Ax_s G _ _ hrightFactor)
+            (BProv_eqTrans Ax_s G _ _ _ hquotCong
+              (BProv_eqTrans Ax_s G _ _ _ hassocRight
+                hmodCommCong)))))).
+  }
+  assert (haugmented : BProv Ax_s G
+      (pEq
+        (tAdd (tMul leftModulus inverse) carry)
+        (tAdd (tSucc (tMul rightModulus inverseQuot)) carry))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hleftAdd
+      (BProv_eqSym Ax_s G _ _ hrightAdd)).
+  }
+  unfold leftModulus, rightModulus, inverse, inverseQuot in *.
+  exact (BProv_Ax_s_add_cancel_right_terms G _ _ _ haugmented).
 Qed.
 
 (* Lean: BProv_Ax_s_crtInverse_mul *)
