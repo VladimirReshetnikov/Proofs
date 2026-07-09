@@ -30277,6 +30277,13 @@ def strictHighOddLowOddOpenedIHContext
     (strictHighOddLowOddSuccCarryContext highHalf lowHalf).map
       (rename Nat.succ)
 
+/-- Equality branch of the open successor split: the fresh low code is slot
+`0`, the predecessor-high code is slot `1`, and the renamed induction
+hypothesis applies to that predecessor-high code. -/
+def eqSuccContext : List Formula :=
+  [eq (Term.var 0) (Term.var 1),
+    rename Nat.succ (hfLtDistinguishesAt 0)]
+
 /-- Odd-high equality-branch context for the successor split.
 
 The high predecessor is slot `1`, the fresh lower code is slot `0`, and the
@@ -30293,6 +30300,51 @@ odd-high equality branch. -/
 def eqHighOddOpenedIHContext (highHalf : Nat) : List Formula :=
   hfDistinguishesAt 0 (1+1) (highHalf+1) ::
     (eqHighOddSuccCarryContext highHalf).map (rename Nat.succ)
+
+/-- Equality-branch even predecessor case for the successor code.
+
+If `high` is even and `low = high`, then the low code is even by equality
+transport, so the zero-witness even/even successor proof applies. -/
+theorem BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_double
+    {highHalf : Nat} :
+    BProv Ax_s (doubleEqAt 1 highHalf :: eqSuccContext)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  let C : List Formula := doubleEqAt 1 highHalf :: eqSuccContext
+  have hhighDouble : BProv Ax_s C (doubleEqAt 1 highHalf) :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have heq : BProv Ax_s C (eq (Term.var 0) (Term.var 1)) :=
+    BProv_ass (B := Ax_s) (G := C)
+      (by simp [C, eqSuccContext])
+  have hlowDouble : BProv Ax_s C (doubleEqAt 0 highHalf) :=
+    BProv_doubleEqAt_of_eq_value heq hhighDouble
+  exact BProv_Ax_s_hfSomeDistinguishesTermAt_succ_of_high_low_double
+    (G := C) (high := 1) (highHalf := highHalf)
+    (low := 0) (lowHalf := highHalf)
+    hhighDouble hlowDouble
+
+/-- Equality branch of the successor split, reduced by a high-side binary
+halving witness.
+
+The even predecessor-high branch is closed from `low = high`; the odd branch
+is the genuine carry case in `eqHighOddSuccCarryContext`. -/
+theorem
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_step_and_odd_case
+    {highHalf highBit : Nat}
+    (hhighStep : BProv Ax_s eqSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hodd : BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s eqSuccContext
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+  have heven : BProv Ax_s (doubleEqAt 1 highHalf :: eqSuccContext)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) :=
+    BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_high_double
+      (highHalf := highHalf)
+  have hodd' : BProv Ax_s (oddDoubleEqAt 1 highHalf :: eqSuccContext)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0) := by
+    simpa [eqSuccContext, eqHighOddSuccCarryContext] using hodd
+  exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+    hhighStep heven hodd'
 
 /-- Shifted target formula used after opening an odd-high strict carry IH
 witness. -/
@@ -36531,6 +36583,30 @@ theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
     hltCase
     (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_self hself)
 
+/-- Successor shell whose equality branch is reduced by a high-side div2 step
+instead of the standalone successor/predecessor self theorem.
+
+The even equality subcase is closed from `low = high`; the odd subcase remains
+the explicit carry proof in `eqHighOddSuccCarryContext`. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_div2_step
+    {highHalf highBit : Nat}
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hhighStep : BProv Ax_s eqSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hodd : BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s [hfLtDistinguishesAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) :=
+  BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_cases
+    hltCase
+    (by
+      simpa [eqSuccContext] using
+        (BProv_Ax_s_hfSomeDistinguishesTermAt_succ_eq_case_of_div2_step_and_odd_case
+          hhighStep hodd))
+
 /-- Strict successor shell with the standalone self distinguisher reduced to
 the explicit opened odd-self branch supplied by total binary halving. -/
 theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_opened_odd_self
@@ -36592,6 +36668,25 @@ theorem BProv_Ax_s_translated_HF_extensionality_of_strict_and_self
   BProv_Ax_s_translated_HF_extensionality_of_successor_step
     (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_self
       hltCase hself)
+
+/-- Translated HF extensionality from a strict successor branch and an
+equality branch reduced to a high-side div2 split plus odd-high carry case. -/
+theorem BProv_Ax_s_translated_HF_extensionality_of_strict_and_eq_div2_step
+    {highHalf highBit : Nat}
+    (hltCase : BProv Ax_s
+      [ltTermAt (Term.var 0) (Term.var 1),
+        rename Nat.succ (hfLtDistinguishesAt 0)]
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0))
+    (hhighStep : BProv Ax_s eqSuccContext
+      (div2StepAt 1 highHalf highBit))
+    (hodd : BProv Ax_s (eqHighOddSuccCarryContext highHalf)
+      (hfSomeDistinguishesTermAt (Term.succ (Term.var 1)) 0)) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_successor_step
+    (BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_strict_and_eq_div2_step
+      hltCase hhighStep hodd)
 
 /-- Translated HF extensionality from the strict successor branch and the
 opened odd-self branch left after PA's total binary-halving proof supplies the
