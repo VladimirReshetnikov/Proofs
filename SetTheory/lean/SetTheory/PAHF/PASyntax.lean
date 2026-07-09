@@ -18340,6 +18340,132 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
       (oldLast := Term.numeral n) (newLast := lastTerm)
       hnum hLast
 
+/-- If the old beta step is provably zero, the identically-zero beta sequence
+is a shifted tail through any term bound.
+
+This is the fully PA-internal degenerate tail constructor: the fresh code and
+step are the literal terms `0` and `0`, and the universal copy implication is
+proved from beta exactness at step `0`. -/
+theorem BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
+    {G : List Formula} {oldCode oldStep : Nat} {lastTerm : Term}
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep 0)) :
+    BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        Term.zero Term.zero lastTerm) := by
+  let leHyp : Formula :=
+    leTermAt (Term.var 0) (Term.rename Nat.succ lastTerm)
+  let oldBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.var (oldCode+2)) (Term.var (oldStep+2))
+      (Term.succ (Term.var 1))
+  let newBeta : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename (fun n => n+2) Term.zero)
+      (Term.rename (fun n => n+2) Term.zero)
+      (Term.var 1)
+  let witness : Formula := all (imp oldBeta newBeta)
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (imp leHyp witness) := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hwitness : BProv Ax_s C witness := by
+      have hinner : BProv Ax_s (C.map (rename Nat.succ))
+          (imp oldBeta newBeta) := by
+        let D : List Formula := oldBeta :: C.map (rename Nat.succ)
+        have hold : BProv Ax_s D oldBeta :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hstepRen1 : BProv Ax_s (G.map (rename Nat.succ))
+            (rename Nat.succ (eqConstAt oldStep 0)) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hOldStep Nat.succ
+        have hstepRen2 : BProv Ax_s
+            ((G.map (rename Nat.succ)).map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ
+              (eqConstAt oldStep 0))) :=
+          BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            hstepRen1 Nat.succ
+        have hstepD : BProv Ax_s D
+            (eq (Term.var (oldStep+2)) Term.zero) := by
+          simpa [D, C, leHyp, oldBeta, eqConstAt, zeroAt, rename,
+            Term.rename, Term.numeral, Nat.add_assoc] using
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) hstepRen2)
+        have houtZero : BProv Ax_s D (eq (Term.var 0) Term.zero) :=
+          BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero
+            hold hstepD
+        have hnewStep : BProv Ax_s D
+            (eq (Term.rename (fun n => n+2) Term.zero) Term.zero) := by
+          simpa [Term.rename] using
+            BProv_eqRefl (B := Ax_s) (G := D) Term.zero
+        have hzeroBeta : BProv Ax_s D
+            (betaTermTermAt Term.zero
+              (Term.rename (fun n => n+2) Term.zero)
+              (Term.rename (fun n => n+2) Term.zero)
+              (Term.var 1)) :=
+          BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero hnewStep
+        have hnew : BProv Ax_s D newBeta := by
+          simpa [newBeta] using
+            BProv_Ax_s_betaTermTermAt_of_eq_output
+              (BProv_eqSym houtZero) hzeroBeta
+        simpa [D, oldBeta, newBeta] using BProv_impI hnew
+      simpa [witness, oldBeta, newBeta] using
+        BProv_allI_of_sentences (B := Ax_s)
+          (fun f hf => sentence_ax_s (f := f) hf) hinner
+    simpa [C, leHyp, witness] using BProv_impI hwitness
+  simpa [betaShiftTailThroughTermAt, leHyp, oldBeta, newBeta, witness] using
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+
+/-- Zero-step existential shifted-tail constructor.
+
+When the ambient old step slot is `0`, no semantic finite tail data is needed:
+the fresh witnesses may both be the literal term `0`, and the universal shifted
+tail relation follows from `BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero`.
+-/
+theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero
+    {G : List Formula} {oldCode oldStep : Nat} {lastTerm : Term}
+    (hOldStep : BProv Ax_s G (eqConstAt oldStep 0)) :
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
+  let body : Formula :=
+    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n => n+2) lastTerm)
+  have hthrough : BProv Ax_s G
+      (betaShiftTailThroughTermAt oldCode oldStep
+        Term.zero Term.zero lastTerm) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
+      (oldCode := oldCode) (oldStep := oldStep)
+      (lastTerm := lastTerm) hOldStep
+  have hbody : BProv Ax_s G
+      (subst (instTerm Term.zero)
+        (subst (Term.upSubst (instTerm Term.zero)) body)) := by
+    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
+      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up, Term.rename_comp,
+      term_rename_up_succ_rename_succ, Function.comp_def,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ] using hthrough
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm Term.zero) (ex body)) := by
+    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm Term.zero)) body)
+        (t := Term.zero) hbody)
+  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
+    Term.subst, Term.upSubst] using
+    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
+      (t := Term.zero) hstepEx)
+
 /-- Prove the existential shifted-tail formula from semantic finite old-tail
 data and a proved closed standard last bound. -/
 theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries

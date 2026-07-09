@@ -501,9 +501,11 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_eqConst_entries
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
 #check PA.Formula.betaShiftTailExistsTermAtBody
 #check PA.Formula.betaShiftTailExistsTermAtStepEx
 #check PA.Formula.betaShiftTailExistsTermAtOpenedContext
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_HFMemTrace
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
