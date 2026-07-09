@@ -9915,6 +9915,22 @@ Definition commonMultipleExistsTermAtBody (bound : term) : formula :=
   commonMultipleThroughTermAt
     (Term.rename S bound) (tVar 0).
 
+(* Lean: positiveCommonMultipleThroughTermAt *)
+Definition positiveCommonMultipleThroughTermAt
+    (bound multiple : term) : formula :=
+  pAnd (ltTermAt tZero multiple)
+    (commonMultipleThroughTermAt bound multiple).
+
+(* Lean: positiveCommonMultipleExistsTermAt *)
+Definition positiveCommonMultipleExistsTermAt (bound : term) : formula :=
+  pEx (positiveCommonMultipleThroughTermAt
+    (Term.rename S bound) (tVar 0)).
+
+(* Lean: positiveCommonMultipleExistsTermAtBody *)
+Definition positiveCommonMultipleExistsTermAtBody (bound : term) : formula :=
+  positiveCommonMultipleThroughTermAt
+    (Term.rename S bound) (tVar 0).
+
 (* Lean: ltTermAt_var *)
 Lemma ltTermAt_var : forall a b,
   ltTermAt (tVar a) (tVar b) = ltAt a b.
@@ -20903,6 +20919,36 @@ Definition betaPairBezoutNegativeCoeffTerm
   tMul (tSucc rightIdx)
     (tMul (tSucc rightIdx) scale).
 
+(* Lean: crtInverseTermAt *)
+Definition crtInverseTermAt
+    (product modulus inverse quotient : term) : formula :=
+  pEq (tMul product inverse)
+    (tSucc (tMul modulus quotient)).
+
+(* Lean: crtInverseExistsTermAt *)
+Definition crtInverseExistsTermAt
+    (product modulus : term) : formula :=
+  pEx (pEx (crtInverseTermAt
+    (Term.rename (fun n => n + 2) product)
+    (Term.rename (fun n => n + 2) modulus)
+    (tVar 1) (tVar 0))).
+
+(* Lean: crtInverseExistsTermAtQuotEx *)
+Definition crtInverseExistsTermAtQuotEx
+    (product modulus : term) : formula :=
+  pEx (crtInverseTermAt
+    (Term.rename (fun n => n + 2) product)
+    (Term.rename (fun n => n + 2) modulus)
+    (tVar 1) (tVar 0)).
+
+(* Lean: crtInverseExistsTermAtBody *)
+Definition crtInverseExistsTermAtBody
+    (product modulus : term) : formula :=
+  crtInverseTermAt
+    (Term.rename (fun n => n + 2) product)
+    (Term.rename (fun n => n + 2) modulus)
+    (tVar 1) (tVar 0).
+
 (* Lean: BProv_Ax_s_remTermTermAt_of_eq_modulus *)
 Lemma BProv_Ax_s_remTermTermAt_of_eq_modulus :
   forall G (rem value oldModulus newModulus : term),
@@ -29967,6 +30013,128 @@ Proof.
     repeat rewrite Term.eval_rename in hq.
     simpl in hq.
     exact hq.
+Qed.
+
+(* Lean: positiveCommonMultipleThroughTermAt_nat *)
+Lemma positiveCommonMultipleThroughTermAt_nat :
+  forall (e : nat -> nat) bound multiple,
+  Sat natModel e (positiveCommonMultipleThroughTermAt bound multiple) <->
+    0 < Term.eval natModel e multiple /\
+      (forall q, q < Term.eval natModel e bound ->
+        Nat.divide (q + 1) (Term.eval natModel e multiple)).
+Proof.
+  intros e bound multiple.
+  unfold positiveCommonMultipleThroughTermAt. simpl.
+  split.
+  - intros [hpos hcommon].
+    split.
+    + exact (proj1 (ltTermAt_nat e tZero multiple) hpos).
+    + exact (proj1
+        (commonMultipleThroughTermAt_nat e bound multiple) hcommon).
+  - intros [hpos hcommon].
+    split.
+    + exact (proj2 (ltTermAt_nat e tZero multiple) hpos).
+    + exact (proj2
+        (commonMultipleThroughTermAt_nat e bound multiple) hcommon).
+Qed.
+
+(* Lean: positiveCommonMultipleExistsTermAt_nat *)
+Lemma positiveCommonMultipleExistsTermAt_nat :
+  forall (e : nat -> nat) bound,
+  Sat natModel e (positiveCommonMultipleExistsTermAt bound) <->
+    exists multiple, 0 < multiple /\
+      forall q, q < Term.eval natModel e bound ->
+        Nat.divide (q + 1) multiple.
+Proof.
+  intros e bound.
+  unfold positiveCommonMultipleExistsTermAt. simpl.
+  split.
+  - intros [multiple hmultiple].
+    exists multiple.
+    pose proof (proj1 (positiveCommonMultipleThroughTermAt_nat
+      (scons nat multiple e) (Term.rename S bound) (tVar 0))
+      hmultiple) as hspec.
+    destruct hspec as [hpos hdiv].
+    split; [exact hpos |].
+    intros q hq.
+    apply hdiv.
+    repeat rewrite Term.eval_rename.
+    simpl.
+    exact hq.
+  - intros [multiple [hpos hmultiple]].
+    exists multiple.
+    apply (proj2 (positiveCommonMultipleThroughTermAt_nat
+      (scons nat multiple e) (Term.rename S bound) (tVar 0))).
+    split; [exact hpos |].
+    intros q hq.
+    apply hmultiple.
+    repeat rewrite Term.eval_rename in hq.
+    simpl in hq.
+    exact hq.
+Qed.
+
+(* Lean: crtInverseTermAt_nat *)
+Lemma crtInverseTermAt_nat :
+  forall (e : nat -> nat) product modulus inverse quotient,
+  Sat natModel e (crtInverseTermAt product modulus inverse quotient) <->
+    Term.eval natModel e product * Term.eval natModel e inverse =
+      S (Term.eval natModel e modulus *
+        Term.eval natModel e quotient).
+Proof.
+  intros e product modulus inverse quotient.
+  unfold crtInverseTermAt. simpl.
+  reflexivity.
+Qed.
+
+(* Lean: crtInverseExistsTermAt_nat *)
+Lemma crtInverseExistsTermAt_nat :
+  forall (e : nat -> nat) product modulus,
+  Sat natModel e (crtInverseExistsTermAt product modulus) <->
+    exists inverse quotient,
+      Term.eval natModel e product * inverse =
+        S (Term.eval natModel e modulus * quotient).
+Proof.
+  intros e product modulus.
+  unfold crtInverseExistsTermAt. simpl.
+  split.
+  - intros [inverse [quotient hcert]].
+    exists inverse, quotient.
+    pose proof (proj1 (crtInverseTermAt_nat
+      (scons nat quotient (scons nat inverse e))
+      (Term.rename (fun n => n + 2) product)
+      (Term.rename (fun n => n + 2) modulus)
+      (tVar 1) (tVar 0)) hcert) as hspec.
+    repeat rewrite Term.eval_rename in hspec.
+    simpl in hspec.
+    replace
+      (fun n => scons nat quotient (scons nat inverse e) (n + 2))
+      with e in hspec.
+    2: {
+      apply functional_extensionality.
+      intro n.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    exact hspec.
+  - intros [inverse [quotient hcert]].
+    exists inverse, quotient.
+    apply (proj2 (crtInverseTermAt_nat
+      (scons nat quotient (scons nat inverse e))
+      (Term.rename (fun n => n + 2) product)
+      (Term.rename (fun n => n + 2) modulus)
+      (tVar 1) (tVar 0))).
+    repeat rewrite Term.eval_rename.
+    simpl.
+    replace
+      (fun n => scons nat quotient (scons nat inverse e) (n + 2))
+      with e.
+    2: {
+      apply functional_extensionality.
+      intro n.
+      replace (n + 2) with (S (S n)) by lia.
+      reflexivity.
+    }
+    exact hcert.
 Qed.
 
 Lemma betaModTerm_nat : forall (e : nat -> nat) step idx,
