@@ -9236,6 +9236,47 @@ theorem BProv_Ax_s_betaTermTermAtConstIdx_of_beta
           (Term.var 0)))
       (t := Term.numeral idxValue) hbody)
 
+/-- Projection from the opened body of a fully term-parametric beta witness to
+its modulus equation. -/
+theorem BProv_Ax_s_betaTermTermAt_opened_body_modEq
+    {G : List Formula} {out code step idx : Term} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTermTerm step idx)))
+        (remTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code) (Term.var 0))
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTermTerm step idx))) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTermTerm step idx)))
+      (remTermTermAt (Term.rename Nat.succ out)
+        (Term.rename Nat.succ code) (Term.var 0))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE1 hbody
+
+/-- Projection from the opened body of a fully term-parametric beta witness to
+its bounded-remainder component. -/
+theorem BProv_Ax_s_betaTermTermAt_opened_body_rem
+    {G : List Formula} {out code step idx : Term} :
+    let body : Formula :=
+      and
+        (eq (Term.var 0) (Term.rename Nat.succ (betaModTermTerm step idx)))
+        (remTermTermAt (Term.rename Nat.succ out)
+          (Term.rename Nat.succ code) (Term.var 0))
+    BProv Ax_s (body :: G.map (rename Nat.succ))
+      (remTermTermAt (Term.rename Nat.succ out)
+        (Term.rename Nat.succ code) (Term.var 0)) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ (betaModTermTerm step idx)))
+      (remTermTermAt (Term.rename Nat.succ out)
+        (Term.rename Nat.succ code) (Term.var 0))
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ)) body :=
+    BProv_ass (B := Ax_s) (G := body :: G.map (rename Nat.succ)) (by simp)
+  exact BProv_andE2 hbody
+
 /-- Transport the output of a fully term-parametric beta entry across a PA
 equality.  This keeps equality transport as proof data rather than hiding it in
 the beta relation itself. -/

@@ -485,6 +485,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_of_betaAtConstIdx_eq_term
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_eq_index
 #check @PA.Formula.betaTermTermAtSuccIdx
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_opened_body_modEq
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_opened_body_rem
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_output
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_code
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_step
