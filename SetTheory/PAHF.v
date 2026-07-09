@@ -20196,6 +20196,19 @@ Definition crtPositiveInverseQuotTerm
     (tMul (tSucc leftPred) (tSucc negativeCoeff))
     (tMul leftPred positiveCoeff).
 
+(* Lean: betaPairBezoutPositiveCoeffTerm *)
+Definition betaPairBezoutPositiveCoeffTerm
+    (leftIdx rightIdx scale : term) : term :=
+  tSucc
+    (tMul (tSucc rightIdx)
+      (tMul (tSucc leftIdx) scale)).
+
+(* Lean: betaPairBezoutNegativeCoeffTerm *)
+Definition betaPairBezoutNegativeCoeffTerm
+    (rightIdx scale : term) : term :=
+  tMul (tSucc rightIdx)
+    (tMul (tSucc rightIdx) scale).
+
 (* Lean: BProv_Ax_s_remTermTermAt_of_eq_modulus *)
 Lemma BProv_Ax_s_remTermTermAt_of_eq_modulus :
   forall G (rem value oldModulus newModulus : term),
@@ -20728,6 +20741,286 @@ Proof.
   }
   unfold leftModulus, rightModulus, inverse, inverseQuot in *.
   exact (BProv_Ax_s_add_cancel_right_terms G _ _ _ haugmented).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPair_negative_bezout *)
+Lemma BProv_Ax_s_betaPair_negative_bezout :
+  forall G (leftIdx rightIdx step difference scale : term),
+  BProv Ax_s G
+    (pEq (tSucc rightIdx) (tAdd (tSucc leftIdx) difference)) ->
+  BProv Ax_s G (pEq step (tMul difference scale)) ->
+  BProv Ax_s G
+    (pEq
+      (tMul (betaModTermTerm step rightIdx)
+        (betaPairBezoutPositiveCoeffTerm leftIdx rightIdx scale))
+      (tSucc
+        (tMul (betaModTermTerm step leftIdx)
+          (betaPairBezoutNegativeCoeffTerm rightIdx scale)))).
+Proof.
+  intros G leftIdx rightIdx step difference scale hindex hstep.
+  set (L := tSucc leftIdx).
+  set (R := tSucc rightIdx).
+  set (leftPred := tMul L step).
+  set (rightPred := tMul R step).
+  set (leftModulus := tSucc leftPred).
+  set (rightModulus := tSucc rightPred).
+  set (leftScale := tMul L scale).
+  set (rightScale := tMul R scale).
+  set (crossCoeff := tMul R leftScale).
+  set (negativeCoeff := tMul R rightScale).
+  assert (hrightScale : BProv Ax_s G
+      (pEq rightScale (tAdd step leftScale))).
+  {
+    assert (hindexMul : BProv Ax_s G
+        (pEq (tMul R scale)
+          (tMul (tAdd L difference) scale))).
+    {
+      unfold R, L.
+      exact (BProv_eq_congr_mul_left Ax_s G _ _ scale hindex).
+    }
+    assert (haddMul : BProv Ax_s G
+        (pEq (tMul (tAdd L difference) scale)
+          (tAdd (tMul L scale) (tMul difference scale)))).
+    { apply BProv_Ax_s_add_mul_terms. }
+    assert (hstepCong : BProv Ax_s G
+        (pEq
+          (tAdd (tMul L scale) (tMul difference scale))
+          (tAdd (tMul L scale) step))).
+    {
+      exact (BProv_eq_congr_add_right Ax_s G (tMul L scale) _ _
+        (BProv_eqSym Ax_s G _ _ hstep)).
+    }
+    assert (hcomm : BProv Ax_s G
+        (pEq (tAdd (tMul L scale) step)
+          (tAdd step (tMul L scale)))).
+    { apply BProv_Ax_s_add_comm_terms. }
+    unfold rightScale, leftScale.
+    exact (BProv_eqTrans Ax_s G _ _ _ hindexMul
+      (BProv_eqTrans Ax_s G _ _ _ haddMul
+        (BProv_eqTrans Ax_s G _ _ _ hstepCong hcomm))).
+  }
+  assert (hcross : BProv Ax_s G
+      (pEq (tMul rightScale leftPred)
+        (tMul leftScale rightPred))).
+  {
+    assert (hleftNorm : BProv Ax_s G
+        (pEq
+          (tMul (tMul R scale) (tMul L step))
+          (tMul (tMul R L) (tMul scale step)))).
+    { apply BProv_Ax_s_mul_mul_reorder_middle_terms. }
+    assert (hRL : BProv Ax_s G
+        (pEq (tMul R L) (tMul L R))).
+    { apply BProv_Ax_s_mul_comm_terms. }
+    assert (hRLCong : BProv Ax_s G
+        (pEq
+          (tMul (tMul R L) (tMul scale step))
+          (tMul (tMul L R) (tMul scale step)))).
+    {
+      exact (BProv_eq_congr_mul_left Ax_s G _ _
+        (tMul scale step) hRL).
+    }
+    assert (hrightNorm : BProv Ax_s G
+        (pEq
+          (tMul (tMul L scale) (tMul R step))
+          (tMul (tMul L R) (tMul scale step)))).
+    { apply BProv_Ax_s_mul_mul_reorder_middle_terms. }
+    unfold rightScale, leftScale, leftPred, rightPred.
+    exact (BProv_eqTrans Ax_s G _ _ _ hleftNorm
+      (BProv_eqTrans Ax_s G _ _ _ hRLCong
+        (BProv_eqSym Ax_s G _ _ hrightNorm))).
+  }
+  assert (hcore : BProv Ax_s G
+      (pEq (tMul rightScale leftModulus)
+        (tAdd step (tMul leftScale rightModulus)))).
+  {
+    assert (hleftExpand : BProv Ax_s G
+        (pEq (tMul rightScale leftModulus)
+          (tAdd (tMul rightScale leftPred) rightScale))).
+    {
+      unfold leftModulus.
+      exact (BProv_weaken_nil Ax_s G _
+        (BProv_Ax_s_mulSucc_terms rightScale leftPred)).
+    }
+    assert (hrightExpand : BProv Ax_s G
+        (pEq (tMul leftScale rightModulus)
+          (tAdd (tMul leftScale rightPred) leftScale))).
+    {
+      unfold rightModulus.
+      exact (BProv_weaken_nil Ax_s G _
+        (BProv_Ax_s_mulSucc_terms leftScale rightPred)).
+    }
+    assert (hparts : BProv Ax_s G
+        (pEq
+          (tAdd (tMul rightScale leftPred) rightScale)
+          (tAdd (tMul leftScale rightPred)
+            (tAdd step leftScale)))).
+    { exact (BProv_eq_congr_add Ax_s G _ _ _ _ hcross hrightScale). }
+    assert (hregroup1 : BProv Ax_s G
+        (pEq
+          (tAdd (tMul leftScale rightPred) (tAdd step leftScale))
+          (tAdd (tAdd (tMul leftScale rightPred) step) leftScale))).
+    {
+      exact (BProv_eqSym Ax_s G _ _
+        (BProv_Ax_s_add_assoc_terms G
+          (tMul leftScale rightPred) step leftScale)).
+    }
+    assert (hinnerComm : BProv Ax_s G
+        (pEq (tAdd (tMul leftScale rightPred) step)
+          (tAdd step (tMul leftScale rightPred)))).
+    { apply BProv_Ax_s_add_comm_terms. }
+    assert (hinnerCong : BProv Ax_s G
+        (pEq
+          (tAdd (tAdd (tMul leftScale rightPred) step) leftScale)
+          (tAdd (tAdd step (tMul leftScale rightPred)) leftScale))).
+    {
+      exact (BProv_eq_congr_add_left Ax_s G _ _ leftScale hinnerComm).
+    }
+    assert (hregroup2 : BProv Ax_s G
+        (pEq
+          (tAdd (tAdd step (tMul leftScale rightPred)) leftScale)
+          (tAdd step
+            (tAdd (tMul leftScale rightPred) leftScale)))).
+    { apply BProv_Ax_s_add_assoc_terms. }
+    assert (hrightCong : BProv Ax_s G
+        (pEq
+          (tAdd step (tAdd (tMul leftScale rightPred) leftScale))
+          (tAdd step (tMul leftScale rightModulus)))).
+    {
+      exact (BProv_eq_congr_add_right Ax_s G step _ _
+        (BProv_eqSym Ax_s G _ _ hrightExpand)).
+    }
+    exact (BProv_eqTrans Ax_s G _ _ _ hleftExpand
+      (BProv_eqTrans Ax_s G _ _ _ hparts
+        (BProv_eqTrans Ax_s G _ _ _ hregroup1
+          (BProv_eqTrans Ax_s G _ _ _ hinnerCong
+            (BProv_eqTrans Ax_s G _ _ _ hregroup2 hrightCong))))).
+  }
+  assert (hscaled : BProv Ax_s G
+      (pEq (tMul leftModulus negativeCoeff)
+        (tAdd (tMul R step) (tMul rightModulus crossCoeff)))).
+  {
+    assert (hleftComm : BProv Ax_s G
+        (pEq (tMul leftModulus negativeCoeff)
+          (tMul negativeCoeff leftModulus))).
+    { apply BProv_Ax_s_mul_comm_terms. }
+    assert (hleftAssoc1 : BProv Ax_s G
+        (pEq (tMul negativeCoeff leftModulus)
+          (tMul R (tMul rightScale leftModulus)))).
+    {
+      unfold negativeCoeff.
+      apply BProv_Ax_s_mul_assoc_terms.
+    }
+    assert (hcoreCong : BProv Ax_s G
+        (pEq
+          (tMul R (tMul rightScale leftModulus))
+          (tMul R (tAdd step (tMul leftScale rightModulus))))).
+    { exact (BProv_eq_congr_mul_right Ax_s G R _ _ hcore). }
+    assert (hdist : BProv Ax_s G
+        (pEq
+          (tMul R (tAdd step (tMul leftScale rightModulus)))
+          (tAdd (tMul R step)
+            (tMul R (tMul leftScale rightModulus))))).
+    { apply BProv_Ax_s_mul_add_terms. }
+    assert (hrightAssoc : BProv Ax_s G
+        (pEq
+          (tMul R (tMul leftScale rightModulus))
+          (tMul crossCoeff rightModulus))).
+    {
+      unfold crossCoeff.
+      exact (BProv_eqSym Ax_s G _ _
+        (BProv_Ax_s_mul_assoc_terms G R leftScale rightModulus)).
+    }
+    assert (hrightComm : BProv Ax_s G
+        (pEq (tMul crossCoeff rightModulus)
+          (tMul rightModulus crossCoeff))).
+    { apply BProv_Ax_s_mul_comm_terms. }
+    assert (hright : BProv Ax_s G
+        (pEq (tMul R (tMul leftScale rightModulus))
+          (tMul rightModulus crossCoeff))).
+    {
+      exact (BProv_eqTrans Ax_s G _ _ _ hrightAssoc hrightComm).
+    }
+    assert (hrightCong : BProv Ax_s G
+        (pEq
+          (tAdd (tMul R step)
+            (tMul R (tMul leftScale rightModulus)))
+          (tAdd (tMul R step) (tMul rightModulus crossCoeff)))).
+    {
+      exact (BProv_eq_congr_add_right Ax_s G (tMul R step) _ _ hright).
+    }
+    exact (BProv_eqTrans Ax_s G _ _ _ hleftComm
+      (BProv_eqTrans Ax_s G _ _ _ hleftAssoc1
+        (BProv_eqTrans Ax_s G _ _ _ hcoreCong
+          (BProv_eqTrans Ax_s G _ _ _ hdist hrightCong)))).
+  }
+  assert (hmulSucc : BProv Ax_s G
+      (pEq
+        (tMul rightModulus (tSucc crossCoeff))
+        (tAdd (tMul rightModulus crossCoeff) rightModulus))).
+  {
+    exact (BProv_weaken_nil Ax_s G _
+      (BProv_Ax_s_mulSucc_terms rightModulus crossCoeff)).
+  }
+  assert (hcomm : BProv Ax_s G
+      (pEq
+        (tAdd (tMul rightModulus crossCoeff) rightModulus)
+        (tAdd rightModulus (tMul rightModulus crossCoeff)))).
+  { apply BProv_Ax_s_add_comm_terms. }
+  assert (hsuccAdd : BProv Ax_s G
+      (pEq
+        (tAdd rightModulus (tMul rightModulus crossCoeff))
+        (tSucc (tAdd (tMul R step)
+          (tMul rightModulus crossCoeff))))).
+  {
+    unfold rightModulus, rightPred.
+    apply BProv_Ax_s_succ_add_terms.
+  }
+  assert (hscaledSucc : BProv Ax_s G
+      (pEq
+        (tSucc (tMul leftModulus negativeCoeff))
+        (tSucc (tAdd (tMul R step)
+          (tMul rightModulus crossCoeff))))).
+  { exact (BProv_eq_congr_succ Ax_s G _ _ hscaled). }
+  unfold leftModulus, rightModulus, leftPred, rightPred,
+    crossCoeff, negativeCoeff, betaModTermTerm,
+    betaPairBezoutPositiveCoeffTerm,
+    betaPairBezoutNegativeCoeffTerm, L, R, leftScale, rightScale.
+  exact (BProv_eqTrans Ax_s G _ _ _ hmulSucc
+    (BProv_eqTrans Ax_s G _ _ _ hcomm
+      (BProv_eqTrans Ax_s G _ _ _ hsuccAdd
+        (BProv_eqSym Ax_s G _ _ hscaledSucc)))).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPair_positive_inverse *)
+Lemma BProv_Ax_s_betaPair_positive_inverse :
+  forall G (leftIdx rightIdx step difference scale : term),
+  BProv Ax_s G
+    (pEq (tSucc rightIdx) (tAdd (tSucc leftIdx) difference)) ->
+  BProv Ax_s G (pEq step (tMul difference scale)) ->
+  BProv Ax_s G
+    (pEq
+      (tMul (betaModTermTerm step leftIdx)
+        (crtPositiveInverseTerm
+          (tMul (tSucc rightIdx) step)
+          (betaPairBezoutPositiveCoeffTerm leftIdx rightIdx scale)
+          (betaPairBezoutNegativeCoeffTerm rightIdx scale)))
+      (tSucc
+        (tMul (betaModTermTerm step rightIdx)
+          (crtPositiveInverseQuotTerm
+            (tMul (tSucc leftIdx) step)
+            (betaPairBezoutPositiveCoeffTerm leftIdx rightIdx scale)
+            (betaPairBezoutNegativeCoeffTerm rightIdx scale))))).
+Proof.
+  intros G leftIdx rightIdx step difference scale hindex hstep.
+  pose proof (BProv_Ax_s_betaPair_negative_bezout G
+    leftIdx rightIdx step difference scale hindex hstep) as hnegative.
+  unfold betaModTermTerm in hnegative |- *.
+  exact (BProv_Ax_s_crtPositiveInverse_of_negative G
+    (tMul (tSucc leftIdx) step)
+    (tMul (tSucc rightIdx) step)
+    (betaPairBezoutPositiveCoeffTerm leftIdx rightIdx scale)
+    (betaPairBezoutNegativeCoeffTerm rightIdx scale)
+    hnegative).
 Qed.
 
 (* Lean: BProv_Ax_s_crtInverse_mul *)
