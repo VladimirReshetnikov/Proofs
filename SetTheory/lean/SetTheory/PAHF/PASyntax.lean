@@ -2576,6 +2576,15 @@ theorem betaTermAt_var (out code step idx : Nat) :
     betaTermAt (Term.var out) code step idx = betaAt out code step idx := by
   simp [betaTermAt, betaAt, remTermAt_var, Term.rename]
 
+/-- The term-output beta entry is the fully term-parametric beta entry
+specialized to variable code, step, and index slots. -/
+theorem betaTermAt_eq_betaTermTermAt_var
+    (out : Term) (code step idx : Nat) :
+    betaTermAt out code step idx =
+      betaTermTermAt out (Term.var code) (Term.var step) (Term.var idx) := by
+  simp [betaTermAt, betaTermTermAt, betaModTerm, betaModTermTerm,
+    remTermAt, remTermTermAt, ltTermAt, Term.rename]
+
 /-- Term-output beta entry whose sequence index is itself specified by a PA
 term.  This generalizes the constant/successor-index wrappers without changing
 the raw beta relation: the index term is represented by an explicit witness
@@ -15186,6 +15195,49 @@ theorem BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
       (betaTermAtTermIdx out code step (Term.numeral idxValue)) := by
   simpa [betaTermAtTermIdx, betaTermAtConstIdx, eqConstAt, Term.rename] using
     hbeta
+
+/-- Recover the fully term-parametric beta entry from a term-indexed,
+term-output beta wrapper. -/
+theorem BProv_Ax_s_betaTermTermAt_of_betaTermAtTermIdx
+    {G : List Formula} {out idxTerm : Term} {code step : Nat}
+    (hbeta : BProv Ax_s G (betaTermAtTermIdx out code step idxTerm)) :
+    BProv Ax_s G
+      (betaTermTermAt out (Term.var code) (Term.var step) idxTerm) := by
+  let body : Formula :=
+    and
+      (eq (Term.var 0) (Term.rename Nat.succ idxTerm))
+      (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0)
+  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaTermTermAt out (Term.var code) (Term.var step) idxTerm)) := by
+    let C : List Formula := body :: G.map (rename Nat.succ)
+    have hidxSlot : BProv Ax_s C
+        (eq (Term.var 0) (Term.rename Nat.succ idxTerm)) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaTermAtTermIdx_opened_body_idx
+          (G := G) (out := out) (idx := idxTerm)
+          (code := code) (step := step))
+    have hraw : BProv Ax_s C
+        (betaTermAt (Term.rename Nat.succ out) (code+1) (step+1) 0) := by
+      simpa [body, C] using
+        (BProv_Ax_s_betaTermAtTermIdx_opened_body_beta
+          (G := G) (out := out) (idx := idxTerm)
+          (code := code) (step := step))
+    have hrawTerm : BProv Ax_s C
+        (betaTermTermAt (Term.rename Nat.succ out)
+          (Term.var (code+1)) (Term.var (step+1)) (Term.var 0)) := by
+      simpa [betaTermAt_eq_betaTermTermAt_var] using hraw
+    have htarget : BProv Ax_s C
+        (betaTermTermAt (Term.rename Nat.succ out)
+          (Term.var (code+1)) (Term.var (step+1))
+          (Term.rename Nat.succ idxTerm)) :=
+      BProv_Ax_s_betaTermTermAt_of_eq_index hidxSlot hrawTerm
+    simpa [betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      term_rename_up_succ_rename_succ] using htarget
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf => sentence_ax_s (f := f) hf) hbeta (by
+      simpa [betaTermAtTermIdx, body] using hbody)
 
 /-- Recover a raw numeric beta entry from a term-output constant-index wrapper
 when PA identifies the requested index slot with that constant and the output
@@ -29650,6 +29702,141 @@ theorem
           using hbitEx)
   simpa [strictHighOddOpenedWitnessLowHalfMemOpenedFormula,
     hfMemTermAt_var, rename_hfMemAt] using hmemTerm
+
+/-- Package a fully term-parametric beta entry at index `0` as the opened
+low-half entry component.
+
+This is the entry-side half of the forthcoming beta-tail construction: once a
+fresh tail code has been shown to agree with the old trace at the shifted
+entry, this lemma converts the raw beta fact into the component expected by
+the opened membership packager. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_betaTermTermAt_zero
+    {G : List Formula} {lowHalf : Nat} {codeTerm stepTerm : Term}
+    (hbeta : BProv Ax_s G
+      (betaTermTermAt (Term.var (lowHalf+3)) codeTerm stepTerm Term.zero)) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula
+        lowHalf codeTerm stepTerm) := by
+  have hconst : BProv Ax_s G
+      (betaTermTermAtConstIdx (Term.var (lowHalf+3))
+        codeTerm stepTerm 0) :=
+    BProv_Ax_s_betaTermTermAtConstIdx_of_beta hbeta
+  simpa [strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula,
+    betaTermTermAtConstIdx, betaTermAtConstIdx,
+    betaTermAt_eq_betaTermTermAt_var, betaTermTermAt,
+    remTermTermAt, ltTermAt, betaModTermTerm, eqConstAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up, Term.rename_comp,
+    term_rename_up_succ_rename_succ,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_instTerm_rename_five_succ] using hconst
+
+/-- Transfer the old low-half entry through a caller-supplied shifted beta-tail
+relation.
+
+The premise `holdEntry` is the entry already known in the opened `S x ∈ low`
+trace at old index `S 0`; `htail` is the still-to-be-constructed fresh tail
+relation.  The conclusion is exactly the opened low-half entry component needed
+by the membership packager. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_shift_tail
+    {G : List Formula} {lowHalf : Nat} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s G
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm (Term.var 2)))
+    (holdEntry : BProv Ax_s G
+      (betaTermAtTermIdx (Term.var (lowHalf+3)) 1 0
+        (Term.succ Term.zero))) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula
+        lowHalf codeTerm stepTerm) := by
+  have holdRaw : BProv Ax_s G
+      (betaTermTermAt (Term.var (lowHalf+3)) (Term.var 1)
+        (Term.var 0) (Term.succ Term.zero)) :=
+    BProv_Ax_s_betaTermTermAt_of_betaTermAtTermIdx holdEntry
+  have hle : BProv Ax_s G (leTermAt Term.zero (Term.var 2)) :=
+    BProv_Ax_s_leTermAt_zero_left (G := G) (Term.var 2)
+  have hnew : BProv Ax_s G
+      (betaTermTermAt (Term.var (lowHalf+3)) codeTerm stepTerm Term.zero) :=
+    BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
+      (oldCode := 1) (oldStep := 0)
+      (newCode := codeTerm) (newStep := stepTerm)
+      (lastTerm := Term.var 2) (idxTerm := Term.zero)
+      (out := Term.var (lowHalf+3)) htail hle holdRaw
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_betaTermTermAt_zero
+      hnew
+
+/-- Even-low carry context wrapper for the shifted-tail low-half entry
+component. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_entry_of_shift_tail
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm (Term.var 2))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowDoubleOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula
+        lowHalf codeTerm stepTerm) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+  have holdEntry : BProv Ax_s C
+      (betaTermAtTermIdx (Term.var (lowHalf+3)) 1 0
+        (Term.succ Term.zero)) := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_code_step_low_half_entry_termIdx
+        (highHalf := highHalf) (lowHalf := lowHalf))
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_shift_tail
+      (G := C) (lowHalf := lowHalf)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [C] using htail) holdEntry
+
+/-- Odd-low carry context wrapper for the shifted-tail low-half entry
+component. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_entry_of_shift_tail
+    {highHalf lowHalf : Nat} {codeTerm stepTerm : Term}
+    (htail : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (betaShiftTailThroughTermAt 1 0 codeTerm stepTerm (Term.var 2))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+        (strictHighOddOpenedWitnessSuccLowMemFormula ::
+          strictHighOddLowOddOpenedIHContext highHalf lowHalf))
+      (strictHighOddOpenedWitnessLowHalfMemOpenedEntryFormula
+        lowHalf codeTerm stepTerm) := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemOpenedCodeStepContext
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+  have holdEntry : BProv Ax_s C
+      (betaTermAtTermIdx (Term.var (lowHalf+3)) 1 0
+        (Term.succ Term.zero)) := by
+    simpa [C] using
+      (BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_code_step_low_half_entry_termIdx
+        (highHalf := highHalf) (lowHalf := lowHalf))
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_shift_tail
+      (G := C) (lowHalf := lowHalf)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (by simpa [C] using htail) holdEntry
 
 /-- Low-side closer where the opened old low-half membership is supplied as
 explicit beta-trace components in the opened `S x ∈ low` code/step context. -/

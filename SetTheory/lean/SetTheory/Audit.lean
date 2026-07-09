@@ -462,6 +462,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_eq_of_betaTermAt_betaTermAt_same_index
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_betaAt_eq_term
 #check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAt_eq_term
+#check PA.Formula.betaTermAt_eq_betaTermTermAt_var
 #check @PA.Formula.BProv_Ax_s_betaTermAt_zero_opened_body_dvd
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaAtConstIdx_opened_body_beta
@@ -482,6 +483,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_betaTermAtTermIdx_eq_index
 #check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAtTermIdx_eq_output_index
 #check @PA.Formula.BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaTermAtTermIdx
 #check @PA.Formula.BProv_Ax_s_betaAt_of_betaTermAtConstIdx_eq_output_index
 #check @PA.Formula.BProv_Ax_s_betaAtSuccIdx_of_betaTermAtConstIdx_eq_output_index
 #check @PA.Formula.BProv_Ax_s_betaAt_output_zero_of_betaTermAtTermIdx_eq_index
@@ -846,6 +848,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_mem
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_of_components
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_of_components
+#check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_betaTermTermAt_zero
+#check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_entry_of_shift_tail
+#check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_opened_low_half_entry_of_shift_tail
+#check @PA.Formula.BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_opened_low_half_entry_of_shift_tail
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_components
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_opened_low_half_components
 #check @PA.Formula.BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_low_half_mem
