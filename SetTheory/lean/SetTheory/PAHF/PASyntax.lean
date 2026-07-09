@@ -30086,14 +30086,66 @@ def strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext
   let succBody : Formula := eq (Term.var 1) (Term.succ (Term.var 0))
   succBody :: succCtx.map (rename Nat.succ)
 
+/-- Element substitution left by renaming the successor witness through the
+three binders opened from the old high-half membership trace. -/
+def strictHighOddOpenedWitnessSuccMemOpenedHighHalfSubst : Nat → Term :=
+  fun n => Term.rename (fun k => k+2+1)
+    (instTerm strictHighOddSuccWitnessTerm n)
+
+/-- Set-code term for the positive successor-membership target in the normal
+form where the three opened binders are pushed into the element substitution. -/
+def strictHighOddOpenedWitnessSuccMemOpenedHighHalfCode
+    (highHalf : Nat) : Term :=
+  strictHighOddOpenedWitnessSuccHighCode highHalf
+
 /-- Target left after opening the old high-half membership trace far enough to
 expose a predecessor for its nonzero beta length. -/
 def strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
     (highHalf : Nat) : Formula :=
-  rename Nat.succ
-    (rename Nat.succ
-      (rename Nat.succ
-        (strictHighOddOpenedWitnessSuccMemFormula highHalf)))
+  subst
+    (fun n => Term.rename (fun k => k+2+1)
+      (instTerm strictHighOddSuccWitnessTerm n))
+    (hfMemTermAt 0
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfCode highHalf))
+
+/-- Initial beta-entry component for the positive successor-membership target
+in the opened old high-half trace context. -/
+def strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+    (highHalf : Nat) (codeTerm stepTerm : Term) : Formula :=
+  subst
+    (fun n => Term.rename (fun k => k+2+1)
+      (instTerm strictHighOddSuccWitnessTerm n))
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaTermAtConstIdx
+          (Term.rename (fun n => n+2)
+            (strictHighOddOpenedWitnessSuccMemOpenedHighHalfCode highHalf))
+          1 0 0)))
+
+/-- Bounded-trace component for the positive successor-membership target in
+the opened old high-half trace context. -/
+def strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst
+    (fun n => Term.rename (fun k => k+2+1)
+      (instTerm strictHighOddSuccWitnessTerm n))
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (betaDiv2StepsThroughAt 1 0 (0+2))))
+
+/-- Final-bit component for the positive successor-membership target in the
+opened old high-half trace context. -/
+def strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+    (codeTerm stepTerm : Term) : Formula :=
+  subst
+    (fun n => Term.rename (fun k => k+2+1)
+      (instTerm strictHighOddSuccWitnessTerm n))
+    (subst (instTerm stepTerm)
+      (subst (Term.upSubst (instTerm codeTerm))
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (0+3))))))
 
 /-- Low-membership atom that must be refuted when the odd-high carry uses the
 successor of the opened IH witness. -/
@@ -31499,7 +31551,12 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_of_opened_high_half_step_pr
       (by
         simpa [C,
           strictHighOddOpenedWitnessHighHalfMemOpenedStepPredContext,
-          strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula]
+          strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula,
+          strictHighOddOpenedWitnessSuccMemFormula,
+          strictHighOddOpenedWitnessSuccMemOpenedHighHalfSubst,
+          strictHighOddOpenedWitnessSuccMemOpenedHighHalfCode,
+          strictHighOddSuccWitnessTerm, rename_subst, Term.rename_comp,
+          instTerm, strictHighOddOpenedWitnessSuccHighCode]
           using hpred)
 
 /-- Equality-branch specialization of
@@ -31559,6 +31616,53 @@ theorem
         (rename Nat.succ))
       (highHalf := highHalf) (lowHalf := lowHalf)
       (by simpa [strictHighOddLowOddOpenedIHContext] using hpred))
+
+/-- Component-level packager for the positive successor-membership target in
+the opened old high-half trace context.
+
+After the old `x ∈ highHalf` trace has been opened, the predecessor witness
+`x` is reached by renaming the original successor-witness substitution through
+three fresh binders.  This theorem only repackages caller-supplied beta
+components for that renamed target. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccMem_opened_high_half_of_components
+    {G : List Formula} {highHalf : Nat} {codeTerm stepTerm : Term}
+    (hentry : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula
+        highHalf codeTerm stepTerm))
+    (hsteps : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula
+        codeTerm stepTerm))
+    (hbitEx : BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula
+        codeTerm stepTerm)) :
+    BProv Ax_s G
+      (strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula
+        highHalf) := by
+  have hmem : BProv Ax_s G
+      (subst
+        (fun n => Term.rename (fun k => k+2+1)
+          (instTerm strictHighOddSuccWitnessTerm n))
+        (hfMemTermAt 0
+          (strictHighOddOpenedWitnessSuccMemOpenedHighHalfCode highHalf))) :=
+    BProv_Ax_s_subst_hfMemTermAt_of_components
+      (G := G) (elem := 0)
+      (setCode :=
+        strictHighOddOpenedWitnessSuccMemOpenedHighHalfCode highHalf)
+      (codeTerm := codeTerm) (stepTerm := stepTerm)
+      (σ := fun n => Term.rename (fun k => k+2+1)
+        (instTerm strictHighOddSuccWitnessTerm n))
+      (by
+        simpa
+          [strictHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula])
+      (by
+        simpa
+          [strictHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula])
+      (by
+        simpa
+          [strictHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula])
+  simpa [strictHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula]
+    using hmem
 
 /-- The fully opened `S x ∈ low` code/step body is the head assumption of the
 opened low-membership context. -/
