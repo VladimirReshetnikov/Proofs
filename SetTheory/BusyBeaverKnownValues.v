@@ -359,6 +359,220 @@ Proof.
       exact hle.
 Qed.
 
+(* --------------------------------------------------------------------- *)
+(* A bounded two-state score check                                       *)
+(* --------------------------------------------------------------------- *)
+
+Definition actionOfCode2 (code : nat) : BB.action :=
+  match code with
+  | 0 => go false BB.left 0
+  | 1 => go false BB.left 1
+  | 2 => halt false BB.left
+  | 3 => go false BB.right 0
+  | 4 => go false BB.right 1
+  | 5 => halt false BB.right
+  | 6 => go true BB.left 0
+  | 7 => go true BB.left 1
+  | 8 => halt true BB.left
+  | 9 => go true BB.right 0
+  | 10 => go true BB.right 1
+  | _ => halt true BB.right
+  end.
+
+Lemma actionOfCode2_next_lt : forall code next,
+  BB.action_next (actionOfCode2 code) = Some next -> next < 2.
+Proof.
+  intros [|[|[|[|[|[|[|[|[|[|[|code]]]]]]]]]]] next hnext;
+    simpl in hnext; try discriminate; inversion hnext; lia.
+Qed.
+
+Definition codedTransition2 (c00 c01 c10 c11 q : nat) (bit : bool) : BB.action :=
+  match q, bit with
+  | 0, false => actionOfCode2 c00
+  | 0, true => actionOfCode2 c01
+  | _, false => actionOfCode2 c10
+  | _, true => actionOfCode2 c11
+  end.
+
+Lemma codedTransition2_next_lt : forall c00 c01 c10 c11 q bit next,
+  BB.action_next (codedTransition2 c00 c01 c10 c11 q bit) = Some next ->
+  next < 2.
+Proof.
+  intros c00 c01 c10 c11 [|q] [] next hnext;
+    simpl in hnext;
+    eapply actionOfCode2_next_lt; exact hnext.
+Qed.
+
+Definition codedMachine2 (c00 c01 c10 c11 : nat) : BB.machine 2 :=
+  {| BB.transition := codedTransition2 c00 c01 c10 c11;
+     BB.transition_next_lt := codedTransition2_next_lt c00 c01 c10 c11 |}.
+
+Lemma action_code_complete_2 : forall a,
+  (forall next, BB.action_next a = Some next -> next < 2) ->
+  exists code, code < 12 /\ actionOfCode2 code = a.
+Proof.
+  intros [write mv next] hnext.
+  destruct write; destruct mv; destruct next as [next|].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1) as [-> | ->] by lia.
+    + exists 6. split; [lia | reflexivity].
+    + exists 7. split; [lia | reflexivity].
+  - exists 8. split; [lia | reflexivity].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1) as [-> | ->] by lia.
+    + exists 9. split; [lia | reflexivity].
+    + exists 10. split; [lia | reflexivity].
+  - exists 11. split; [lia | reflexivity].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1) as [-> | ->] by lia.
+    + exists 0. split; [lia | reflexivity].
+    + exists 1. split; [lia | reflexivity].
+  - exists 2. split; [lia | reflexivity].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1) as [-> | ->] by lia.
+    + exists 3. split; [lia | reflexivity].
+    + exists 4. split; [lia | reflexivity].
+  - exists 5. split; [lia | reflexivity].
+Qed.
+
+Lemma run_state_lt : forall states (M : BB.machine states) t q,
+  BB.cfg_state _ (BB.Machine.run M t) = Some q -> q < states.
+Proof.
+  intros states M t.
+  induction t as [|t IH]; intros q hq.
+  - simpl in hq.
+    unfold BB.initial, BB.start_state in hq.
+    destruct states as [|states]; simpl in hq; inversion hq; subst; lia.
+  - simpl in hq.
+    unfold BB.Machine.step in hq.
+    destruct (BB.cfg_state states (BB.Machine.run M t)) as [old|] eqn:hOld.
+    + exact (BB.transition_next_lt states M old
+        (BB.Tape.read (BB.cfg_tape states (BB.Machine.run M t))
+          (BB.cfg_head states (BB.Machine.run M t))) q hq).
+    + rewrite hOld in hq. discriminate.
+Qed.
+
+Lemma run_ext_on_two : forall (M N : BB.machine 2),
+  (forall q bit, q < 2 -> BB.transition 2 M q bit = BB.transition 2 N q bit) ->
+  forall t, BB.Machine.run M t = BB.Machine.run N t.
+Proof.
+  intros M N htrans t.
+  induction t as [|t IH]; [reflexivity | ].
+  simpl.
+  rewrite IH.
+  unfold BB.Machine.step.
+  destruct (BB.cfg_state 2 (BB.Machine.run N t)) as [q|] eqn:hq.
+  - rewrite htrans by exact (run_state_lt 2 N t q hq).
+    reflexivity.
+  - reflexivity.
+Qed.
+
+Definition haltedScoreLeFourAtCode
+    (c00 c01 c10 c11 t : nat) : bool :=
+  let cfg := BB.Machine.run (codedMachine2 c00 c01 c10 c11) t in
+  match BB.cfg_state _ cfg with
+  | None => Nat.leb (length (BB.cfg_tape _ cfg)) 4
+  | Some _ => true
+  end.
+
+Definition checkCodeTimes2 (c00 c01 c10 c11 : nat) : bool :=
+  forallb (fun t => haltedScoreLeFourAtCode c00 c01 c10 c11 t)
+    (seq 0 7).
+
+Definition checkAllCodes2 : bool :=
+  forallb (fun c00 =>
+  forallb (fun c01 =>
+  forallb (fun c10 =>
+  forallb (fun c11 => checkCodeTimes2 c00 c01 c10 c11)
+    (seq 0 12)) (seq 0 12)) (seq 0 12)) (seq 0 12).
+
+Lemma checkAllCodes2_true : checkAllCodes2 = true.
+Proof.
+  vm_compute.
+  reflexivity.
+Qed.
+
+Lemma checkAllCodes2_at : forall c00 c01 c10 c11 t,
+  c00 < 12 -> c01 < 12 -> c10 < 12 -> c11 < 12 -> t <= 6 ->
+  haltedScoreLeFourAtCode c00 c01 c10 c11 t = true.
+Proof.
+  intros c00 c01 c10 c11 t hc00 hc01 hc10 hc11 ht.
+  pose proof checkAllCodes2_true as hcheck.
+  unfold checkAllCodes2 in hcheck.
+  rewrite forallb_forall in hcheck.
+  assert (Hin00 : In c00 (seq 0 12)) by (apply in_seq; lia).
+  specialize (hcheck c00 Hin00).
+  rewrite forallb_forall in hcheck.
+  assert (Hin01 : In c01 (seq 0 12)) by (apply in_seq; lia).
+  specialize (hcheck c01 Hin01).
+  rewrite forallb_forall in hcheck.
+  assert (Hin10 : In c10 (seq 0 12)) by (apply in_seq; lia).
+  specialize (hcheck c10 Hin10).
+  rewrite forallb_forall in hcheck.
+  assert (Hin11 : In c11 (seq 0 12)) by (apply in_seq; lia).
+  specialize (hcheck c11 Hin11).
+  unfold checkCodeTimes2 in hcheck.
+  rewrite forallb_forall in hcheck.
+  apply hcheck.
+  apply in_seq. lia.
+Qed.
+
+Lemma haltedScoreLeFourAtCode_sound : forall c00 c01 c10 c11 t,
+  haltedScoreLeFourAtCode c00 c01 c10 c11 t = true ->
+  BB.cfg_state _ (BB.Machine.run (codedMachine2 c00 c01 c10 c11) t) = None ->
+  length (BB.cfg_tape _ (BB.Machine.run (codedMachine2 c00 c01 c10 c11) t)) <= 4.
+Proof.
+  intros c00 c01 c10 c11 t hcheck hhalt.
+  unfold haltedScoreLeFourAtCode in hcheck.
+  rewrite hhalt in hcheck.
+  apply Nat.leb_le.
+  exact hcheck.
+Qed.
+
+Theorem two_state_halted_score_le_four_by_time : forall (M : BB.machine 2) t,
+  t <= 6 ->
+  BB.cfg_state _ (BB.Machine.run M t) = None ->
+  length (BB.cfg_tape _ (BB.Machine.run M t)) <= 4.
+Proof.
+  intros M t ht hhalt.
+  destruct (action_code_complete_2 (BB.transition 2 M 0 false)
+    (fun next h => BB.transition_next_lt 2 M 0 false next h))
+    as [c00 [hc00 hc00eq]].
+  destruct (action_code_complete_2 (BB.transition 2 M 0 true)
+    (fun next h => BB.transition_next_lt 2 M 0 true next h))
+    as [c01 [hc01 hc01eq]].
+  destruct (action_code_complete_2 (BB.transition 2 M 1 false)
+    (fun next h => BB.transition_next_lt 2 M 1 false next h))
+    as [c10 [hc10 hc10eq]].
+  destruct (action_code_complete_2 (BB.transition 2 M 1 true)
+    (fun next h => BB.transition_next_lt 2 M 1 true next h))
+    as [c11 [hc11 hc11eq]].
+  set (N := codedMachine2 c00 c01 c10 c11).
+  assert (hrun : forall k, BB.Machine.run M k = BB.Machine.run N k).
+  {
+    apply run_ext_on_two.
+    intros q bit hq.
+    destruct q as [|[|q]]; try lia; destruct bit;
+      simpl; symmetry; assumption.
+  }
+  rewrite hrun in hhalt |- *.
+  eapply haltedScoreLeFourAtCode_sound.
+  - apply checkAllCodes2_at; eassumption.
+  - exact hhalt.
+Qed.
+
+Theorem upperBound_two_of_halting_time_bound :
+  (forall (M : BB.machine 2) t,
+    BB.cfg_state _ (BB.Machine.run M t) = None -> t <= 6) ->
+  forall score, BB.AttainableScore 2 score -> score <= 4.
+Proof.
+  intros hTime score [M [t [hState hScore]]].
+  pose proof (hTime M t hState) as ht.
+  pose proof (two_state_halted_score_le_four_by_time M t ht hState) as hle.
+  rewrite hScore in hle.
+  exact hle.
+Qed.
+
 Definition ExactScore (states score : nat) : Prop :=
   BB.AttainableScore states score /\
     forall other, BB.AttainableScore states other -> other <= score.
