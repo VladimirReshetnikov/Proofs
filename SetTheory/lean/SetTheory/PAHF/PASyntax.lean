@@ -50678,6 +50678,450 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
   rw [htarget]
   exact hproper
 
+/-- One binary step propagates the empty-or-strict-predecessor decomposition
+from its tail to its head.  The odd branch clears bit zero directly; the even
+branch either propagates tail emptiness or lifts the opened tail adjunction
+through the shared zero bit. -/
+theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_step_and_tail
+    {G : List Formula} {current half bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt current half bit))
+    (htail : BProv Ax_s G (hfEmptyOrStrictPredAdjoinAt half)) :
+    BProv Ax_s G (hfEmptyOrStrictPredAdjoinAt current) := by
+  let target : Formula := hfEmptyOrStrictPredAdjoinAt current
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt] using BProv_andE1 hstep
+  have heven : BProv Ax_s (zeroAt bit :: G) target := by
+    let C : List Formula := zeroAt bit :: G
+    have hbitZero : BProv Ax_s C (eqConstAt bit 0) := by
+      have hraw : BProv Ax_s C (zeroAt bit) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [zeroAt] using hraw
+    have hstepC : BProv Ax_s C (div2StepAt current half bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    have htailC : BProv Ax_s C
+        (hfEmptyOrStrictPredAdjoinAt half) :=
+      BProv_context_cons (B := Ax_s) htail
+    let predBody : Formula :=
+      and (ltAt 1 (half+2))
+        (hfAdjoinGraphAt (half+2) 1 0)
+    let predInner : Formula := ex predBody
+    let predEx : Formula := ex predInner
+    have hcases : BProv Ax_s C
+        (or (hfEmptyAt half) predEx) := by
+      simpa [predEx, predInner, predBody,
+        hfEmptyOrStrictPredAdjoinAt,
+        hfEmptyOrStrictPredAdjoinTermAt,
+        hfStrictPredAdjoinExistsTermAt,
+        hfEmptyAt, hfAdjoinGraphAt,
+        ltTermAt_var, Term.rename] using htailC
+    have hempty : BProv Ax_s (hfEmptyAt half :: C) target := by
+      let E : List Formula := hfEmptyAt half :: C
+      have hemptyTail : BProv Ax_s E
+          (hfEmptyTermAt (Term.var half)) := by
+        have hraw : BProv Ax_s E (hfEmptyAt half) :=
+          BProv_ass (B := Ax_s) (G := E) (by simp [E])
+        simpa [hfEmptyAt] using hraw
+      have hheadEmpty : BProv Ax_s E
+          (hfEmptyTermAt (Term.var current)) :=
+        BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
+          (BProv_context_cons (B := Ax_s) hstepC)
+          (BProv_context_cons (B := Ax_s) hbitZero)
+          hemptyTail
+      simpa [target, hfEmptyOrStrictPredAdjoinAt,
+        hfEmptyOrStrictPredAdjoinTermAt] using
+        (BProv_orI1 (B := Ax_s) (G := E)
+          (b := hfStrictPredAdjoinExistsTermAt
+            (Term.var current)) hheadEmpty)
+    have hpred : BProv Ax_s (predEx :: C) target := by
+      let P : List Formula := predEx :: C
+      have houter : BProv Ax_s P (ex predInner) := by
+        have hraw : BProv Ax_s P predEx :=
+          BProv_ass (B := Ax_s) (G := P) (by simp [P])
+        simpa [predEx] using hraw
+      have houterBody : BProv Ax_s
+          (predInner :: P.map (rename Nat.succ))
+          (rename Nat.succ target) := by
+        let D : List Formula := predInner :: P.map (rename Nat.succ)
+        have hinner : BProv Ax_s D (ex predBody) := by
+          have hraw : BProv Ax_s D predInner :=
+            BProv_ass (B := Ax_s) (G := D) (by simp [D])
+          simpa [predInner] using hraw
+        have hinnerBody : BProv Ax_s
+            (predBody :: D.map (rename Nat.succ))
+            (rename Nat.succ (rename Nat.succ target)) := by
+          let H : List Formula := predBody :: D.map (rename Nat.succ)
+          have hbody : BProv Ax_s H predBody :=
+            BProv_ass (B := Ax_s) (G := H) (by simp [H])
+          have hlt : BProv Ax_s H (ltAt 1 (half+2)) := by
+            simpa [predBody] using BProv_andE1 hbody
+          have hgraph : BProv Ax_s H
+              (hfAdjoinGraphAt (half+2) 1 0) := by
+            simpa [predBody] using BProv_andE2 hbody
+          have hstepP : BProv Ax_s P
+              (div2StepAt current half bit) :=
+            BProv_context_cons (B := Ax_s) hstepC
+          have hstepD : BProv Ax_s D
+              (rename Nat.succ
+                (div2StepAt current half bit)) := by
+            simpa [D] using
+              (BProv_rename_succ_context_cons_of_sentences
+                (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+                (a := predInner) hstepP)
+          have hstepHRaw : BProv Ax_s H
+              (rename Nat.succ (rename Nat.succ
+                (div2StepAt current half bit))) := by
+            simpa [H] using
+              (BProv_rename_succ_context_cons_of_sentences
+                (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+                (a := predBody) hstepD)
+          have hstepH : BProv Ax_s H
+              (div2StepAt (current+2) (half+2) (bit+2)) := by
+            simpa [div2StepAt, boolAt, zeroAt, oneAt,
+              eqConstAt, rename, Term.rename] using hstepHRaw
+          have hbitP : BProv Ax_s P (eqConstAt bit 0) :=
+            BProv_context_cons (B := Ax_s) hbitZero
+          have hbitD : BProv Ax_s D
+              (rename Nat.succ (eqConstAt bit 0)) := by
+            simpa [D] using
+              (BProv_rename_succ_context_cons_of_sentences
+                (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+                (a := predInner) hbitP)
+          have hbitHRaw : BProv Ax_s H
+              (rename Nat.succ (rename Nat.succ
+                (eqConstAt bit 0))) := by
+            simpa [H] using
+              (BProv_rename_succ_context_cons_of_sentences
+                (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+                (a := predBody) hbitD)
+          have hbitH : BProv Ax_s H
+              (eqConstAt (bit+2) 0) := by
+            simpa [eqConstAt, rename, Term.rename] using hbitHRaw
+          have hresult : BProv Ax_s H
+              (hfEmptyOrStrictPredAdjoinAt (current+2)) :=
+            BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
+              hstepH hbitH hlt hgraph
+          simpa [target, hfEmptyOrStrictPredAdjoinAt,
+            rename_hfEmptyOrStrictPredAdjoinTermAt,
+            Term.rename] using hresult
+        exact BProv_exE_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hinner (by simpa [D, predBody] using hinnerBody)
+      exact BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        houter (by simpa [P, predInner] using houterBody)
+    exact BProv_orE hcases hempty hpred
+  have hodd : BProv Ax_s (oneAt bit :: G) target := by
+    let O : List Formula := oneAt bit :: G
+    have hbitOne : BProv Ax_s O (eqConstAt bit 1) := by
+      have hraw : BProv Ax_s O (oneAt bit) :=
+        BProv_ass (B := Ax_s) (G := O) (by simp [O])
+      simpa [oneAt] using hraw
+    exact BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_odd_step
+      (BProv_context_cons (B := Ax_s) hstep) hbitOne
+  exact BProv_orE (by simpa only [boolAt] using hbool)
+    (by simpa only [target] using heven)
+    (by simpa only [target] using hodd)
+
+theorem subst_hfEmptyOrStrictPredAdjoinThroughTermAt
+    (σ : Nat → Term) (bound : Term) :
+    subst σ (hfEmptyOrStrictPredAdjoinThroughTermAt bound) =
+      hfEmptyOrStrictPredAdjoinThroughTermAt (Term.subst σ bound) := by
+  simp only [hfEmptyOrStrictPredAdjoinThroughTermAt,
+    hfEmptyOrStrictPredAdjoinAt, subst]
+  rw [subst_ltTermAt, subst_hfEmptyOrStrictPredAdjoinTermAt]
+  simp [Term.subst, Term.upSubst, Term.subst_rename_succ_up]
+
+theorem rename_hfEmptyOrStrictPredAdjoinThroughTermAt
+    (r : Nat → Nat) (bound : Term) :
+    rename r (hfEmptyOrStrictPredAdjoinThroughTermAt bound) =
+      hfEmptyOrStrictPredAdjoinThroughTermAt (Term.rename r bound) := by
+  rw [← subst_var_rename,
+    subst_hfEmptyOrStrictPredAdjoinThroughTermAt]
+  simp [term_subst_var_rename]
+
+theorem substZero_hfEmptyOrStrictPredAdjoinThroughAt_zero :
+    subst substZero (hfEmptyOrStrictPredAdjoinThroughAt 0) =
+      hfEmptyOrStrictPredAdjoinThroughTermAt Term.zero := by
+  rw [hfEmptyOrStrictPredAdjoinThroughAt,
+    subst_hfEmptyOrStrictPredAdjoinThroughTermAt]
+  rfl
+
+theorem substSuccVar_hfEmptyOrStrictPredAdjoinThroughAt_zero :
+    subst substSuccVar (hfEmptyOrStrictPredAdjoinThroughAt 0) =
+      hfEmptyOrStrictPredAdjoinThroughTermAt
+        (Term.succ (Term.var 0)) := by
+  rw [hfEmptyOrStrictPredAdjoinThroughAt,
+    subst_hfEmptyOrStrictPredAdjoinThroughTermAt]
+  rfl
+
+/-- PA equality transports the decomposition predicate between arbitrary code
+terms. -/
+theorem BProv_hfEmptyOrStrictPredAdjoinTermAt_of_eq_term
+    {B : Formula → Prop} {G : List Formula} {oldCode newCode : Term}
+    (hprop : BProv B G
+      (hfEmptyOrStrictPredAdjoinTermAt oldCode))
+    (heq : BProv B G (eq oldCode newCode)) :
+    BProv B G (hfEmptyOrStrictPredAdjoinTermAt newCode) := by
+  have hprop' : BProv B G
+      (subst (instTerm oldCode)
+        (hfEmptyOrStrictPredAdjoinTermAt (Term.var 0))) := by
+    simpa [subst_hfEmptyOrStrictPredAdjoinTermAt,
+      instTerm, Term.subst] using hprop
+  have htransport := BProv_eqElim
+    (B := B) (G := G) (s := oldCode) (t := newCode)
+    (a := hfEmptyOrStrictPredAdjoinTermAt (Term.var 0)) heq hprop'
+  simpa [subst_hfEmptyOrStrictPredAdjoinTermAt,
+    instTerm, Term.subst] using htransport
+
+/-- Project the one-code decomposition at a slot bounded by the cumulative
+invariant. -/
+theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_throughTermAt
+    {G : List Formula} {boundCode : Term} {current : Nat}
+    (hthrough : BProv Ax_s G
+      (hfEmptyOrStrictPredAdjoinThroughTermAt boundCode))
+    (hle : BProv Ax_s G
+      (leTermAt (Term.var current) boundCode)) :
+    BProv Ax_s G (hfEmptyOrStrictPredAdjoinAt current) := by
+  have hlt : BProv Ax_s G
+      (ltTermAt (Term.var current) (Term.succ boundCode)) :=
+    BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hle
+  have himpRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := Term.var current) hthrough
+  have himp : BProv Ax_s G
+      (imp
+        (ltTermAt (Term.var current) (Term.succ boundCode))
+        (hfEmptyOrStrictPredAdjoinAt current)) := by
+    simpa [hfEmptyOrStrictPredAdjoinThroughTermAt,
+      hfEmptyOrStrictPredAdjoinAt,
+      subst,
+      subst_ltTermAt, subst_hfEmptyOrStrictPredAdjoinTermAt,
+      instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using himpRaw
+  exact BProv_mp Ax_s G _ _ himp hlt
+
+/-- A PA variable equal to zero codes an empty HF set. -/
+theorem BProv_Ax_s_hfEmptyAt_of_eqConst_zero
+    {G : List Formula} {setCode : Nat}
+    (hzero : BProv Ax_s G (eqConstAt setCode 0)) :
+    BProv Ax_s G (hfEmptyAt setCode) := by
+  let Q : List Formula := G.map (rename Nat.succ)
+  have hzeroRen : BProv Ax_s Q
+      (rename Nat.succ (eqConstAt setCode 0)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hzero Nat.succ
+  have hzeroQ : BProv Ax_s Q (eqConstAt (setCode+1) 0) := by
+    simpa [Q, eqConstAt, rename, Term.rename] using hzeroRen
+  let mem : Formula := hfMemAt 0 (setCode+1)
+  let C : List Formula := mem :: Q
+  have hmem : BProv Ax_s C (hfMemAt 0 (setCode+1)) := by
+    simpa [C, mem] using
+      (BProv_ass (B := Ax_s) (G := C) (phi := mem) (by simp [C]))
+  have hzeroC : BProv Ax_s C (eqConstAt (setCode+1) 0) :=
+    BProv_context_cons (B := Ax_s) (a := mem) hzeroQ
+  have hbot : BProv Ax_s C bot :=
+    BProv_Ax_s_hfMemAt_bot_of_eqConst_zero hzeroC hmem
+  have himp : BProv Ax_s Q (imp mem bot) := by
+    simpa [C] using BProv_impI hbot
+  have hall : BProv Ax_s G (all (imp mem bot)) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [hfEmptyAt, hfEmptyTermAt, mem,
+    hfMemTermAt_var, Term.rename] using hall
+
+/-- Base case of the cumulative predecessor-decomposition invariant. -/
+theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinThroughTermAt_zero :
+    BProv Ax_s []
+      (hfEmptyOrStrictPredAdjoinThroughTermAt Term.zero) := by
+  let belowOne : Formula :=
+    ltTermAt (Term.var 0) (Term.succ Term.zero)
+  let C : List Formula := [belowOne]
+  have hlt : BProv Ax_s C belowOne :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hleTerm : BProv Ax_s C
+      (leTermAt (Term.var 0) Term.zero) :=
+    BProv_Ax_s_leTermAt_of_ltTermAt_succ_right
+      (by simpa [belowOne] using hlt)
+  have hle : BProv Ax_s C (leConstAt 0 0) := by
+    simpa [leConstAt, leTermAt, Term.numeral,
+      Term.rename] using hleTerm
+  have hzero : BProv Ax_s C (eqConstAt 0 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero hle
+  have hempty : BProv Ax_s C (hfEmptyAt 0) :=
+    BProv_Ax_s_hfEmptyAt_of_eqConst_zero hzero
+  have hdecomp : BProv Ax_s C
+      (hfEmptyOrStrictPredAdjoinAt 0) := by
+    simpa [hfEmptyOrStrictPredAdjoinAt,
+      hfEmptyOrStrictPredAdjoinTermAt, hfEmptyAt] using
+      (BProv_orI1 (B := Ax_s) (G := C)
+        (b := hfStrictPredAdjoinExistsTermAt (Term.var 0)) hempty)
+  have himp : BProv Ax_s []
+      (imp belowOne (hfEmptyOrStrictPredAdjoinAt 0)) := by
+    simpa [C] using BProv_impI hdecomp
+  simpa [hfEmptyOrStrictPredAdjoinThroughTermAt,
+    belowOne, Term.rename] using
+    (BProv_allI_of_sentences
+      (B := Ax_s) (G := [])
+      (fun f hf => sentence_ax_s (f := f) hf) himp)
+
+/-- Extend the cumulative invariant by one new code decomposition. -/
+theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinThroughTermAt_succ
+    {G : List Formula} {boundCode : Term}
+    (hthrough : BProv Ax_s G
+      (hfEmptyOrStrictPredAdjoinThroughTermAt boundCode))
+    (hnew : BProv Ax_s G
+      (hfEmptyOrStrictPredAdjoinTermAt (Term.succ boundCode))) :
+    BProv Ax_s G
+      (hfEmptyOrStrictPredAdjoinThroughTermAt
+        (Term.succ boundCode)) := by
+  let bound1 : Term := Term.rename Nat.succ boundCode
+  let oldLimit : Term := Term.succ bound1
+  let newLimit : Term := Term.succ oldLimit
+  let antecedent : Formula := ltTermAt (Term.var 0) newLimit
+  let target : Formula := hfEmptyOrStrictPredAdjoinAt 0
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) target := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    have hltNew : BProv Ax_s C
+        (ltTermAt (Term.var 0) (Term.succ oldLimit)) := by
+      simpa [C, antecedent, newLimit] using
+        (BProv_ass (B := Ax_s) (G := C) (phi := antecedent)
+          (by simp [C]))
+    have hcases : BProv Ax_s C
+        (or (ltTermAt (Term.var 0) oldLimit)
+          (eq (Term.var 0) oldLimit)) :=
+      BProv_Ax_s_ltTermAt_succ_right_cases hltNew
+    have hthroughRen : BProv Ax_s (G.map (rename Nat.succ))
+        (hfEmptyOrStrictPredAdjoinThroughTermAt bound1) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hthrough Nat.succ
+      simpa [bound1,
+        rename_hfEmptyOrStrictPredAdjoinThroughTermAt] using hren
+    have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+        (hfEmptyOrStrictPredAdjoinTermAt oldLimit) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hnew Nat.succ
+      simpa [bound1, oldLimit,
+        rename_hfEmptyOrStrictPredAdjoinTermAt, Term.rename] using hren
+    have hstrict : BProv Ax_s
+        (ltTermAt (Term.var 0) oldLimit :: C) target := by
+      let D : List Formula := ltTermAt (Term.var 0) oldLimit :: C
+      have hlt : BProv Ax_s D
+          (ltTermAt (Term.var 0) (Term.succ bound1)) := by
+        simpa [D, oldLimit] using
+          (BProv_ass (B := Ax_s) (G := D)
+            (phi := ltTermAt (Term.var 0) oldLimit) (by simp [D]))
+      have hle : BProv Ax_s D
+          (leTermAt (Term.var 0) bound1) :=
+        BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
+      have hthroughD : BProv Ax_s D
+          (hfEmptyOrStrictPredAdjoinThroughTermAt bound1) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hthroughRen)
+      exact BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_throughTermAt
+        hthroughD hle
+    have hequal : BProv Ax_s
+        (eq (Term.var 0) oldLimit :: C) target := by
+      let D : List Formula := eq (Term.var 0) oldLimit :: C
+      have heq : BProv Ax_s D (eq oldLimit (Term.var 0)) :=
+        BProv_eqSym
+          (BProv_ass (B := Ax_s) (G := D) (by simp [D]))
+      have hnewD : BProv Ax_s D
+          (hfEmptyOrStrictPredAdjoinTermAt oldLimit) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hnewRen)
+      have htransport : BProv Ax_s D
+          (hfEmptyOrStrictPredAdjoinTermAt (Term.var 0)) :=
+        BProv_hfEmptyOrStrictPredAdjoinTermAt_of_eq_term
+          hnewD heq
+      simpa [D, target, hfEmptyOrStrictPredAdjoinAt] using htransport
+    exact BProv_orE hcases hstrict hequal
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp antecedent target) := by
+    simpa using BProv_impI hbody
+  have hall : BProv Ax_s G (all (imp antecedent target)) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [hfEmptyOrStrictPredAdjoinThroughTermAt,
+    antecedent, target, newLimit, oldLimit, bound1,
+    Term.rename] using hall
+
+/-- Ordinary PA induction closes the cumulative invariant once the genuinely
+new successor code can be decomposed from the cumulative induction
+hypothesis. -/
+theorem BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinThroughAt_of_successor_new
+    (hnew : BProv Ax_s [hfEmptyOrStrictPredAdjoinThroughAt 0]
+      (hfEmptyOrStrictPredAdjoinTermAt
+        (Term.succ (Term.var 0)))) :
+    BProv Ax_s []
+      (all (hfEmptyOrStrictPredAdjoinThroughAt 0)) := by
+  let phi : Formula := hfEmptyOrStrictPredAdjoinThroughAt 0
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi,
+      substZero_hfEmptyOrStrictPredAdjoinThroughAt_zero] using
+      BProv_Ax_s_hfEmptyOrStrictPredAdjoinThroughTermAt_zero
+  have hthrough : BProv Ax_s [phi]
+      (hfEmptyOrStrictPredAdjoinThroughTermAt (Term.var 0)) := by
+    simpa [phi, hfEmptyOrStrictPredAdjoinThroughAt] using
+      (BProv_ass (B := Ax_s) (G := [phi]) (phi := phi) (by simp))
+  have hsuccTerm : BProv Ax_s [phi]
+      (hfEmptyOrStrictPredAdjoinThroughTermAt
+        (Term.succ (Term.var 0))) :=
+    BProv_Ax_s_hfEmptyOrStrictPredAdjoinThroughTermAt_succ
+      hthrough (by simpa [phi] using hnew)
+  have hsuccBody : BProv Ax_s [phi]
+      (subst substSuccVar phi) := by
+    simpa [phi,
+      substSuccVar_hfEmptyOrStrictPredAdjoinThroughAt_zero] using
+      hsuccTerm
+  have hsuccImp : BProv Ax_s []
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  simpa [phi] using
+    BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero hsuccAll
+
+/-- Project the pointwise decomposition theorem from the universally closed
+cumulative invariant. -/
+theorem BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt_of_all_through
+    (hall : BProv Ax_s []
+      (all (hfEmptyOrStrictPredAdjoinThroughAt 0))) :
+    BProv Ax_s [] (all (hfEmptyOrStrictPredAdjoinAt 0)) := by
+  have hthroughRaw :=
+    BProv_allE (B := Ax_s) (G := []) (t := Term.var 0) hall
+  have hthrough : BProv Ax_s []
+      (hfEmptyOrStrictPredAdjoinThroughTermAt (Term.var 0)) := by
+    simpa [hfEmptyOrStrictPredAdjoinThroughAt,
+      subst_hfEmptyOrStrictPredAdjoinThroughTermAt,
+      instTerm, Term.subst] using hthroughRaw
+  have hself : BProv Ax_s []
+      (leTermAt (Term.var 0) (Term.var 0)) :=
+    BProv_Ax_s_leTermAt_refl (Term.var 0)
+  have hpoint : BProv Ax_s []
+      (hfEmptyOrStrictPredAdjoinAt 0) :=
+    BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_throughTermAt
+      (boundCode := Term.var 0) (current := 0) hthrough hself
+  exact BProv_allI_of_sentences
+    (B := Ax_s) (G := [])
+    (fun f hf => sentence_ax_s (f := f) hf) hpoint
+
+/-- End-to-end cumulative shell: a local successor-code decomposition yields
+the universal pointwise predecessor theorem. -/
+theorem BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt_of_cumulative_successor_new
+    (hnew : BProv Ax_s [hfEmptyOrStrictPredAdjoinThroughAt 0]
+      (hfEmptyOrStrictPredAdjoinTermAt
+        (Term.succ (Term.var 0)))) :
+    BProv Ax_s [] (all (hfEmptyOrStrictPredAdjoinAt 0)) :=
+  BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt_of_all_through
+    (BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinThroughAt_of_successor_new
+      hnew)
+
 /-- In the opened predecessor-decomposition context (`elem`, `old`,
 `current`, parameters), read the induction predicate at `old`. -/
 def rPredOld : Nat → Nat
