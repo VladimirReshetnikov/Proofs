@@ -48980,6 +48980,122 @@ theorem BProv_Ax_s_hfAdjoinGraph_heads_of_same_bit
   simpa [phi, hfAdjoinGraphTermAt, hfMemTermAt_var,
     Term.rename] using hall
 
+/-- Introduce a fresh PA variable naming an arbitrary term. -/
+theorem BProv_exists_eq_term
+    {B : Formula → Prop} {G : List Formula} (t : Term) :
+    BProv B G (ex (eq (Term.var 0) (Term.rename Nat.succ t))) := by
+  have hinst : BProv B G
+      (subst (instTerm t)
+        (eq (Term.var 0) (Term.rename Nat.succ t))) := by
+    simpa [subst, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using
+      (BProv_eqRefl (B := B) (G := G) t)
+  exact BProv_exI (B := B) (G := G) hinst
+
+/-- A name for `2 * newTail + bit`, together with booleanity of `bit`, is a
+binary-halving step for the named head. -/
+theorem BProv_Ax_s_div2StepAt_of_named_head_and_old_step
+    {G : List Formula}
+    {newHead newTail oldHead oldTail bit : Nat}
+    (hname : BProv Ax_s G
+      (eq (Term.var newHead)
+        (Term.add (Term.add (Term.var newTail) (Term.var newTail))
+          (Term.var bit))))
+    (holdStep : BProv Ax_s G
+      (div2StepAt oldHead oldTail bit)) :
+    BProv Ax_s G (div2StepAt newHead newTail bit) := by
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt] using BProv_andE1 holdStep
+  simpa [div2StepAt] using BProv_andI hbool hname
+
+/-- Lift an adjunction graph through one binary head while preserving the old
+head's low bit, and package the freshly named new head existentially.
+
+This is the successor step consumed by PA induction on
+`hfAdjoinTotalTermAt`: a graph adjoining `elem` to the two tails yields a graph
+adjoining `S elem` to the two heads. -/
+theorem BProv_Ax_s_hfAdjoinExistsTermAt_succ_of_step_and_tail_graph
+    {G : List Formula}
+    {oldHead oldTail bit newTail elem : Nat}
+    (holdStep : BProv Ax_s G
+      (div2StepAt oldHead oldTail bit))
+    (htail : BProv Ax_s G
+      (hfAdjoinGraphAt newTail oldTail elem)) :
+    BProv Ax_s G
+      (hfAdjoinExistsTermAt
+        (Term.var oldHead) (Term.succ (Term.var elem))) := by
+  let newHeadTerm : Term :=
+    Term.add (Term.add (Term.var newTail) (Term.var newTail))
+      (Term.var bit)
+  let nameBody : Formula :=
+    eq (Term.var 0) (Term.rename Nat.succ newHeadTerm)
+  let target : Formula :=
+    hfAdjoinExistsTermAt
+      (Term.var oldHead) (Term.succ (Term.var elem))
+  have hnameEx : BProv Ax_s G (ex nameBody) := by
+    simpa [nameBody] using
+      (BProv_exists_eq_term (B := Ax_s) (G := G) newHeadTerm)
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := G) (a := nameBody) (c := target) hnameEx ?_
+  let H : List Formula := nameBody :: G.map (rename Nat.succ)
+  have hname : BProv Ax_s H
+      (eq (Term.var 0)
+        (Term.add
+          (Term.add (Term.var (newTail+1)) (Term.var (newTail+1)))
+          (Term.var (bit+1)))) := by
+    have hraw : BProv Ax_s H nameBody :=
+      BProv_ass (B := Ax_s) (G := H) (by simp [H])
+    simpa [nameBody, newHeadTerm, Term.rename] using hraw
+  have holdRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (div2StepAt oldHead oldTail bit)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      holdStep Nat.succ
+  have holdH : BProv Ax_s H
+      (div2StepAt (oldHead+1) (oldTail+1) (bit+1)) := by
+    simpa [H, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+      rename, Term.rename] using
+      BProv_context_cons (B := Ax_s) (a := nameBody) holdRen
+  have hnewStep : BProv Ax_s H
+      (div2StepAt 0 (newTail+1) (bit+1)) :=
+    BProv_Ax_s_div2StepAt_of_named_head_and_old_step
+      hname holdH
+  have htailRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (hfAdjoinGraphAt newTail oldTail elem)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      htail Nat.succ
+  have htailH : BProv Ax_s H
+      (hfAdjoinGraphAt (newTail+1) (oldTail+1) (elem+1)) := by
+    have htailRen' : BProv Ax_s (G.map (rename Nat.succ))
+        (hfAdjoinGraphAt (newTail+1) (oldTail+1) (elem+1)) := by
+      simpa only [rename_hfAdjoinGraphAt_succ] using htailRen
+    exact BProv_context_cons (B := Ax_s) (a := nameBody) htailRen'
+  have hgraph : BProv Ax_s H
+      (hfAdjoinGraphTermAt
+        (Term.var 0) (Term.var (oldHead+1))
+        (Term.succ (Term.var (elem+1)))) :=
+    BProv_Ax_s_hfAdjoinGraph_heads_of_same_bit
+      (newHead := 0) (newTail := newTail+1)
+      (oldHead := oldHead+1) (oldTail := oldTail+1)
+      (bit := bit+1) (elem := elem+1)
+      hnewStep holdH htailH
+  let graphBody : Formula :=
+    hfAdjoinGraphTermAt
+      (Term.var 0) (Term.var (oldHead+1))
+      (Term.succ (Term.var (elem+1)))
+  have hinst : BProv Ax_s H
+      (subst (instTerm (Term.var 0))
+        (rename (SetTheory.up Nat.succ) graphBody)) := by
+    rw [subst_instTerm_var_zero_rename_up_succ]
+    simpa [graphBody] using hgraph
+  have hex : BProv Ax_s H
+      (ex (rename (SetTheory.up Nat.succ) graphBody)) :=
+    BProv_exI (B := Ax_s) (G := H) (t := Term.var 0) hinst
+  simpa [target, hfAdjoinExistsTermAt, graphBody, rename, Term.rename]
+    using hex
+
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already
 `BProv_Ax_s_hfLtDistinguishesAt_zero_base`; this lemma keeps the remaining

@@ -1131,6 +1131,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfAdjoin_zero_head_lift
 #check @PA.Formula.BProv_Ax_s_hfAdjoin_positive_head_lift
 #check @PA.Formula.BProv_Ax_s_hfAdjoinGraph_heads_of_same_bit
+#check @PA.Formula.BProv_exists_eq_term
+#check @PA.Formula.BProv_Ax_s_div2StepAt_of_named_head_and_old_step
+#check @PA.Formula.BProv_Ax_s_hfAdjoinExistsTermAt_succ_of_step_and_tail_graph
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
