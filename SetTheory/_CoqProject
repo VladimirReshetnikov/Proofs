@@ -93,6 +93,8 @@ PAHFDeductiveAssembly.v
 PAHFRoundTripArithmetic.v
 PAHFRoundTripEquality.v
 PAHFOrdinalCodeTermCompatibility.v
+PAHFOrdinalCodeInjective.v
+PAHFOrdinalCodeTermOperations.v
 PAHFRoundTripQuantifiers.v
 PAHFOrdinalCodeRange.v
 PAHFHFRoundTripSemantic.v
