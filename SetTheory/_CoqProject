@@ -1,4 +1,24 @@
 -Q . SetTheory
+-Q ../CoqBB2 CoqBB2
+
+# Vendored CoqBB2 certificate for the two-state busy-beaver time bound.
+../CoqBB2/BB2_Statement.v
+../CoqBB2/Tactics.v
+../CoqBB2/Prelims.v
+../CoqBB2/BB2_Encodings.v
+../CoqBB2/List_Routines.v
+../CoqBB2/TM.v
+../CoqBB2/BB2_Make_TM.v
+../CoqBB2/BB2_Deciders_Generic.v
+../CoqBB2/Deciders/Deciders_Common.v
+../CoqBB2/TNF.v
+../CoqBB2/Deciders/Decider_NGramCPS.v
+../CoqBB2/List_Tape.v
+../CoqBB2/Deciders/Decider_Loop.v
+../CoqBB2/Deciders/Verifier_Halt.v
+../CoqBB2/BB2_Deciders_Pipeline.v
+../CoqBB2/BB2_TNF_Enumeration.v
+../CoqBB2/BB2_Theorem.v
 
 # Core Closure-axiomatization <-> ZF development.
 Fol.v
@@ -11,6 +31,7 @@ PAHF.v
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
 BusyBeaver.v
 BusyBeaverKnownValues.v
+BusyBeaverBB2Bridge.v
 BusyBeaverMathlib.v
 
 # Self-contained shallow forward/reverse trades.

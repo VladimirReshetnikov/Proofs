@@ -9,6 +9,7 @@
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
 From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
+From SetTheory Require Import BusyBeaverBB2Bridge.
 From SetTheory Require Import Forward Reverse RiemannHypothesis.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -65,6 +66,7 @@ Check PA.Term.subst_subst_numeral.
 Check PA.Term.addRightNumeral_numeral.
 Check PA.Term.subst_comp.
 Check PA.Term.subst_rename_succ_up.
+Check PA.Term.upSubst_comp.
 Check PA.Term.subst_ext_free.
 Check PA.Term.subst_id.
 Check PA.Formula.Ax_s.
@@ -97,10 +99,16 @@ Check PA.Formula.iterUpSubst.
 Check PA.Formula.term_subst_iterUpSubst_instTerm_var_rename_add_succ.
 Check PA.Formula.term_subst_iterUpSubst_instTerm_rename_add_succ.
 Check PA.Formula.subst_instTerm_rename_succ.
+Check PA.Formula.subst_instTerm_var_zero_rename_up_succ.
+Check PA.Formula.subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice.
 Check PA.Formula.subst_instTerm_subst_up.
 Check PA.Formula.map_subst_rename_succ_up.
 Check PA.Formula.term_substZero_rename_succ.
 Check PA.Formula.term_substSuccVar_rename_succ.
+Check PA.Formula.term_subst_up_up_up_substZero_rename_four_succ.
+Check PA.Formula.term_subst_up_substZero_rename_two_succ.
+Check PA.Formula.term_subst_up_substSuccVar_rename_two_succ.
+Check PA.Formula.term_subst_up_up_up_substSuccVar_rename_four_succ.
 Check PA.Formula.rename_hfMemAt.
 Check PA.Formula.leConstAt.
 Check PA.Formula.succPredAt.
@@ -179,6 +187,157 @@ Check PA.Formula.betaModTermTerm.
 Check PA.Formula.betaTermTermAt.
 Check PA.Formula.betaTermTermAtConstIdx.
 Check PA.Formula.betaTermTermAtSuccIdx.
+Check PA.Formula.twoEntryBetaStepTerm.
+Check PA.Formula.twoEntryBetaCodeTerm.
+Check PA.Formula.crtExtendCodeTerm.
+Check PA.Formula.crtInverseProductQuotTerm.
+Check PA.Formula.crtPositiveInverseTerm.
+Check PA.Formula.crtPositiveInverseQuotTerm.
+Check PA.Formula.betaPairBezoutPositiveCoeffTerm.
+Check PA.Formula.betaPairBezoutNegativeCoeffTerm.
+Check PA.Formula.dvdTermTermAt.
+Check PA.Formula.commonMultipleThroughTermAt.
+Check PA.Formula.commonMultipleExistsTermAt.
+Check PA.Formula.commonMultipleExistsTermAtBody.
+Check PA.Formula.positiveCommonMultipleThroughTermAt.
+Check PA.Formula.positiveCommonMultipleExistsTermAt.
+Check PA.Formula.positiveCommonMultipleExistsTermAtBody.
+Check PA.Formula.crtInverseTermAt.
+Check PA.Formula.crtInverseExistsTermAt.
+Check PA.Formula.crtInverseExistsTermAtQuotEx.
+Check PA.Formula.crtInverseExistsTermAtBody.
+Check PA.Formula.dvdTermTermAt_nat.
+Check PA.Formula.commonMultipleThroughTermAt_nat.
+Check PA.Formula.commonMultipleExistsTermAt_nat.
+Check PA.Formula.positiveCommonMultipleThroughTermAt_nat.
+Check PA.Formula.positiveCommonMultipleExistsTermAt_nat.
+Check PA.Formula.crtInverseTermAt_nat.
+Check PA.Formula.crtInverseExistsTermAt_nat.
+Check PA.Formula.BProv_Ax_s_betaModTermTerm_zero.
+Check PA.Formula.BProv_Ax_s_betaModTermTerm_one_add_self.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_modulus.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_double_step_of_one.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_modulus.
+Check PA.Formula.BProv_Ax_s_mul_mul_reorder_middle_terms.
+Check PA.Formula.BProv_Ax_s_crtInverseProductQuot_expand.
+Check PA.Formula.BProv_Ax_s_crtPositiveInverseTerm_add.
+Check PA.Formula.BProv_Ax_s_crtPositiveInverseQuotTerm_add.
+Check PA.Formula.BProv_Ax_s_crtPositiveInverse_of_negative.
+Check PA.Formula.BProv_Ax_s_betaPair_negative_bezout.
+Check PA.Formula.BProv_Ax_s_betaPair_positive_inverse.
+Check PA.Formula.BProv_Ax_s_betaPair_positive_inverse_of_gap_scale.
+Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_of_certificate.
+Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_one.
+Check PA.Formula.crtInverseExistsTermAtOpenedContext.
+Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_ltTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_leTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_ltTermAt_of_succ_leTermAt.
+Check PA.Formula.BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms.
+Check PA.Formula.BProv_Ax_s_ltTermAt_zero_mul_succ_right.
+Check PA.Formula.BProv_Ax_s_positiveCommonMultipleThroughTermAt_zero.
+Check PA.Formula.BProv_Ax_s_positiveCommonMultipleThroughTermAt_succ.
+Check PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through.
+Check PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero.
+Check PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ.
+Check PA.Formula.BProv_Ax_s_all_positiveCommonMultipleExistsTermAt.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_betaPrefixDividesTermAt.
+Check PA.Formula.BProv_Ax_s_betaPrefixDividesTermAt_zero.
+Check PA.Formula.BProv_Ax_s_betaPrefixDividesTermAt_succ.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_zero.
+Check PA.Formula.BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_mul_right.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_eq_divisor.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_eq_value.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt.
+Check PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_zero.
+Check PA.Formula.BProv_Ax_s_commonMultipleThroughTermAt_succ.
+Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_of_through.
+Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_zero.
+Check PA.Formula.BProv_Ax_s_commonMultipleExistsTermAt_succ.
+Check PA.Formula.BProv_Ax_s_all_commonMultipleExistsTermAt.
+Check PA.Formula.BProv_Ax_s_leTermAt_of_ltTermAt_succ_right.
+Check PA.Formula.BProv_Ax_s_eq_of_leTermAt_leTermAt.
+Check PA.Formula.BProv_Ax_s_ltTermAt_succ_right_cases.
+Check PA.Formula.BProv_Ax_s_crtInverse_mul.
+Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_mul.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_succ.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_of_term.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_zero.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_succ.
+Check PA.Formula.BProv_Ax_s_all_betaPrefixCRTAccumulatorExistsTermAt_of_common.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_self.
+Check PA.Formula.BProv_Ax_s_crtProductFactor_mul.
+Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition.
+Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_preserve.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_crtExtend_new.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_opened_body_modEq.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_opened_body_rem.
+Check PA.Formula.BProv_Ax_s_remTermTermAt_of_betaTermTermAt.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_preserve.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_new.
+Check PA.Formula.div2TotalOpenedStepContext.
+Check PA.Formula.div2TotalOpenedDoubleContext.
+Check PA.Formula.div2TotalOpenedOddContext.
+Check PA.Formula.strictSuccContext.
+Check PA.Formula.strictSuccTarget.
+Check PA.Formula.strictSuccOpenedTotalTarget.
+Check PA.Formula.strictSuccOpenedHighDoubleLowDoubleContext.
+Check PA.Formula.strictSuccOpenedHighDoubleLowOddContext.
+Check PA.Formula.strictSuccOpenedHighOddLowDoubleContext.
+Check PA.Formula.strictSuccOpenedHighOddLowOddContext.
+Check PA.Formula.strictSuccOpenedHighDoubleLowOddMemContext.
+Check PA.Formula.strictSuccOpenedHighDoubleLowOddMemTarget.
+Check PA.Formula.strictHighOddSuccWitnessTerm.
+Check PA.Formula.succOpenedWitnessMemTermFormula.
+Check PA.Formula.succOpenedWitnessLowMemFormula.
+Check PA.Formula.succOpenedWitnessBodyFormula.
+Check PA.Formula.strictSuccOpenedHighOddCarryTarget.
+Check PA.Formula.strictSuccOpenedHighOddLowDoubleOpenedIHContext.
+Check PA.Formula.strictSuccOpenedHighOddLowOddOpenedIHContext.
+Check PA.Formula.strictSuccOpenedHighOddOpenedIHTarget.
+Check PA.Formula.strictSuccOpenedHighOddOpenedIHHighCode.
+Check PA.Formula.strictSuccOpenedHighOddOpenedIHLow.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccMemFormula.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccLowMemFormula.
+Check PA.Formula.BProv_succOpenedWitness_hfSomeDistinguishesTermAt.
+Check PA.Formula.BProv_Ax_s_strictSuccOpenedHighOddOpenedIHTarget_of_succ_witness_mem_and_low_bot.
+Check PA.Formula.BProv_Ax_s_subst_hfMemTermAt_of_components.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessHighHalfMemOpenedStepPredContext.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfTargetFormula.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfSubst.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfCode.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfEntryFormula.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfStepsFormula.
+Check PA.Formula.strictSuccOpenedHighOddOpenedWitnessSuccMemOpenedHighHalfBitExFormula.
+Check PA.Formula.BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessSuccMem_opened_high_half_of_components.
+Check PA.Formula.BProv_Ax_s_ltTermAt_succ_right_of_leTermAt.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_zero.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_bound.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_two_mul_modulus_zero.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_modulus_one_square.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_value.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one.
+Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_entries.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_output.
+Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_index.
+Check PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound.
+Check PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero.
+Check PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_through.
+Check PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound.
+Check PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero.
+Check PA.Formula.BProv_Ax_s_eq_of_remTermTermAt_remTermTermAt_eq_modulus.
+Check PA.Formula.BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index.
+Check PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries.
+Check PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_one_bound_of_entries.
+Check PA.Formula.BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor.
 Check PA.Formula.BProv_Ax_s_betaTermTermAtSuccIdx_of_succ.
 Check PA.Formula.betaTermAt_eq_betaTermTermAt_var.
 Check PA.Formula.BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms.
@@ -191,6 +350,13 @@ Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_rem.
 Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero.
 Check PA.Formula.BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero.
 Check PA.Formula.betaModTermTerm_nat.
+Check PA.Formula.betaPrefixDividesTermAt.
+Check PA.Formula.betaPrefixCRTAccumulatorTermAt.
+Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAt.
+Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAtBody.
+Check PA.Formula.betaPrefixDividesTermAt_nat.
+Check PA.Formula.betaPrefixCRTAccumulatorTermAt_nat.
+Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAt_nat.
 Check PA.Formula.remTermTermAt_nat.
 Check PA.Formula.betaTermTermAt_nat_entry.
 Check PA.Formula.betaTermTermAtSuccIdx_nat_entry.
@@ -200,6 +366,12 @@ Check PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_succ_of_leTerm.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_components.
 Check PA.Formula.BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt.
 Check PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace.
+Check PA.Formula.BProv_Ax_s_subst_betaAt_of_betaTermTermAt.
+Check PA.Formula.BProv_Ax_s_subst_betaAtSuccIdx_of_betaTermTermAt_succ.
+Check PA.Formula.BProv_Ax_s_betaDiv2BitTermAt_of_components.
+Check PA.Formula.BProv_Ax_s_subst_betaDiv2BitAt_of_betaDiv2BitTermAt.
+Check PA.Formula.BProv_Ax_s_subst_bitOneEx_of_betaDiv2BitOneTermExAt.
+Check PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_bitEx_of_betaDiv2BitOneTermExAt.
 Check PA.Formula.betaDiv2StepWitnessTermAt_nat.
 Check PA.Formula.betaDiv2StepWitnessTermSuccIdxAt.
 Check PA.Formula.betaDiv2StepsThroughTermAt.
@@ -473,6 +645,8 @@ Check BusyBeaver.sigma_eventually_dominates_every_total_recursive.
 Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveInRadoModel.
 Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyInRadoModel.
 Check BusyBeaver.sigma_eventually_dominates_every_totalRecursiveEventuallyLowerBoundInRadoModel.
+Check BusyBeaver.Machine.runFrom_ne_none_of_shift_loop.
+Check BusyBeaver.Machine.not_haltsWithScore_of_shift_loop_from_run.
 Print Assumptions BusyBeaver.sigma_mono_of_pos.
 Print Assumptions BusyBeaver.score_le_sigma_of_atMost.
 Print Assumptions BusyBeaver.sigma_eventually_dominates_every_total_recursive.
@@ -563,6 +737,14 @@ Check BusyBeaverKnownValues.attainableScore_three_six.
 Check BusyBeaverKnownValues.attainableScore_four_thirteen.
 Check BusyBeaverKnownValues.a028444_prefix_lower_bounds_through_four.
 Check BusyBeaverKnownValues.upperBound_one.
+Check BusyBeaverKnownValues.checkAllCodes2_true.
+Check BusyBeaverKnownValues.two_state_halted_score_le_four_by_time.
+Check BusyBeaverKnownValues.upperBound_two_of_halting_time_bound.
+Check BusyBeaverBB2Bridge.local_halt_event_time_le_six.
+Check BusyBeaverBB2Bridge.two_state_halting_time_bound_event.
+Check BusyBeaverBB2Bridge.upperBound_two.
+Check BusyBeaverBB2Bridge.exactScore_two.
+Check BusyBeaverBB2Bridge.sigma_two_eq_four.
 Check BusyBeaverKnownValues.ExactScore.
 Check BusyBeaverKnownValues.ExactScore.sigma_eq.
 Check BusyBeaverKnownValues.exactScore_one.
@@ -573,6 +755,9 @@ Check BusyBeaverKnownValues.A028444UpperBoundsThroughFour.of_twoThroughFour.
 Check BusyBeaverKnownValues.a028444_values_through_four_from_upperBounds.
 Check BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 Print Assumptions BusyBeaverKnownValues.upperBound_one.
+Print Assumptions BusyBeaverKnownValues.checkAllCodes2_true.
+Print Assumptions BusyBeaverKnownValues.upperBound_two_of_halting_time_bound.
+Print Assumptions BusyBeaverBB2Bridge.sigma_two_eq_four.
 Print Assumptions
   BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 

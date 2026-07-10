@@ -74,9 +74,7 @@ def sqrt_two_add_values10_mem_range_values15_indexNat : Nat -> Nat
   | _ => 0
 
 def sqrt_two_add_values10_mem_range_values15_index (i : Fin 54) : Fin 791 :=
-  ⟨sqrt_two_add_values10_mem_range_values15_indexNat i.1, by
-    fin_cases i <;> decide
-  ⟩
+  Fin.ofNat 791 (sqrt_two_add_values10_mem_range_values15_indexNat i.1)
 
 set_option linter.unreachableTactic false in
 set_option linter.unnecessarySeqFocus false in

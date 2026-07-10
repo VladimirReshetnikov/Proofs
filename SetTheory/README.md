@@ -81,6 +81,16 @@ foundational/computability work, each present in both proof assistants
   [`lean/SetTheory/BusyBeaverKnownValues.lean`](lean/SetTheory/BusyBeaverKnownValues.lean)
   (Coq counterpart [`BusyBeaverKnownValues.v`](BusyBeaverKnownValues.v)) adds the
   checked 1–4-state champion witnesses and the A028444-prefix certificates.
+  [`BusyBeaverBB2Bridge.v`](BusyBeaverBB2Bridge.v) is a Coq-first bridge from
+  this local Rado machine model to the vendored CoqBB2 time-bound certificate in
+  [`../CoqBB2`](../CoqBB2), proving `Σ(2)=4` for the local score definition.
+  [`lean/SetTheory/BusyBeaverBB2.lean`](lean/SetTheory/BusyBeaverBB2.lean)
+  independently proves the same result in Lean by classifying all 20,736
+  two-state transition tables, checking the left-moving half and deriving the
+  right-moving half through a proved reflection simulation. Nonhalting tables
+  receive checked translated-loop, blank-escape, local-window, or
+  frontier-growth certificates; bounded failure to halt is never itself
+  treated as a certificate.
 - [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
   is the mathlib-backed bridge for mathlib's `Computable` predicate: it extracts a
   sequential `ToPartrec.Code` evaluated by mathlib's finite-support `PartrecToTM2`
@@ -501,32 +511,24 @@ cross-references).
 
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 
-The full development is the twelve `.v` files listed in
-[`_CoqProject`](_CoqProject):
+The full development is the `.v` files listed in [`_CoqProject`](_CoqProject),
+including the vendored CoqBB2 certificate under [`../CoqBB2`](../CoqBB2):
 
 ```sh
-# the library builds in dependency order under the SetTheory namespace:
-coqc -Q . SetTheory Fol.v
-coqc -Q . SetTheory Calculus.v
-coqc -Q . SetTheory Completeness.v
-coqc -Q . SetTheory Zf.v
-coqc -Q . SetTheory Equivalence.v
-coqc -Q . SetTheory PAHF.v
-coqc -Q . SetTheory BusyBeaver.v
-coqc -Q . SetTheory BusyBeaverKnownValues.v
-coqc -Q . SetTheory BusyBeaverMathlib.v
-# the shallow layer is self-contained (also compiles bare: `coqc Forward.v`):
-coqc -Q . SetTheory Forward.v
-coqc -Q . SetTheory Reverse.v
-# capstone audit: type-checks headline results, prints axiom footprints:
-coqc -Q . SetTheory Audit.v
+# Generate dependencies from the combined SetTheory/CoqBB2 project, then build.
+coq_makefile -f _CoqProject -o Makefile.coq
+make -f Makefile.coq
 ```
+
+The final `Audit.v` target type-checks the headline results and prints their
+axiom footprints.
 
 `Forward.v` and `Reverse.v` are independent (no inter-file `Require`) and need only
 the standard library. The library files import along the DAG shown above
 (`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
 `Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`; `BusyBeaver` ←
-`BusyBeaverKnownValues`, `BusyBeaverMathlib`; `Audit` imports them all).
+`BusyBeaverKnownValues`, `BusyBeaverBB2Bridge`, `BusyBeaverMathlib`; `Audit`
+imports them all).
 `Completeness.v` additionally uses the standard
 classical/extensionality axiom modules (`ClassicalEpsilon`,
 `FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the
@@ -540,7 +542,8 @@ core Closure/ZF modules mirror the seven core Coq files one-to-one
 (`Fol.lean` … `Equivalence.lean`, `Forward.lean`, `Reverse.lean`), every
 statement with the same logical content, through the same headline theorem
 `T_iff_ZF`; the side modules (`PAHF`, `BusyBeaver`, `BusyBeaverKnownValues`,
-`BusyBeaverMathlib`) are likewise paired with `.v` counterparts. The Lean workspace also contains
+`BusyBeaverBB2`, `BusyBeaverMathlib`) are likewise paired with `.v` counterparts or
+independently replay the corresponding Coq result. The Lean workspace also contains
 [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first
 formalization toward the bi-interpretability of Peano arithmetic and hereditary
 finite sets. Its current checked surface includes Ackermann-coded HF on `Nat`,

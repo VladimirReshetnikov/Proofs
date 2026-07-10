@@ -445,33 +445,28 @@ lake exe cache get
 lake build
 ```
 
-Build the SetTheory Rocq/Coq development (twelve `.v` files; the full list and
+Build the SetTheory Rocq/Coq development (the full list and
 order are in `SetTheory/_CoqProject`) and its independent Lean port:
 
 ```powershell
 cd src/Lean/SetTheory
-coqc -Q . SetTheory Fol.v
-coqc -Q . SetTheory Calculus.v
-coqc -Q . SetTheory Completeness.v
-coqc -Q . SetTheory Zf.v
-coqc -Q . SetTheory Equivalence.v
-coqc -Q . SetTheory PAHF.v
-coqc -Q . SetTheory BusyBeaver.v
-coqc -Q . SetTheory BusyBeaverKnownValues.v
-coqc -Q . SetTheory BusyBeaverMathlib.v
-coqc -Q . SetTheory Forward.v
-coqc -Q . SetTheory Reverse.v
-coqc -Q . SetTheory Audit.v
+Get-Content _CoqProject |
+  Where-Object { $_ -match '\.v$' } |
+  ForEach-Object {
+    & coqc -Q . SetTheory -Q ../CoqBB2 CoqBB2 $_
+    if ($LASTEXITCODE -ne 0) { throw "coqc failed: $_" }
+  }
 
 cd lean
 lake build
 ```
 
-The mathlib-backed bridge module and its audit build from this root
+The mathlib-backed busy-beaver modules and their audit build from this root
 workspace instead of the standalone `lean/` one:
 
 ```powershell
 cd src/Lean
+lake build +SetTheory.BusyBeaverBB2
 lake build SetTheory.BusyBeaverMathlib
 lake build SetTheory.AuditMathlib
 ```
