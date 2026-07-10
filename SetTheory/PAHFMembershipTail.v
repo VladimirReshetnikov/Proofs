@@ -2423,3 +2423,317 @@ Proof.
     (betaDiv2BitOneTermExAt code0 step0 idx0)
     sentence_ax_s hbitEx' hopened).
 Qed.
+
+(** Complete the membership-tail argument from the one remaining generic
+    arithmetic service: PA-internal existence of a freshly shifted beta
+    tail.  Keeping this premise explicit makes the trace plumbing usable and
+    checkable independently of the fixed-step CRT construction. *)
+Lemma BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt_using_shift :
+  (forall G oldCode oldStep lastTerm,
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm)) ->
+  forall G head tailCode headBit,
+  BProv Ax_s G (div2StepAt head tailCode headBit) ->
+  BProv Ax_s G
+    (subst (instTerm (tSucc (tVar 0))) (hfMemAt 0 (S head))) ->
+  BProv Ax_s G (hfMemAt 0 tailCode).
+Proof.
+  intros shiftExists G head tailCode headBit hheadDiv hsuccMem.
+  set (sigma := instTerm (tSucc (tVar 0))).
+  set (target := hfMemAt 0 tailCode).
+  assert (hsuccTerm : BProv Ax_s G
+      (subst sigma (hfMemTermAt 0 (tVar (S head))))).
+  {
+    unfold sigma.
+    rewrite hfMemTermAt_var.
+    exact hsuccMem.
+  }
+  apply (BProv_Ax_s_subst_hfMemTermAt_elim_opened_code_step
+    G target 0 (tVar (S head)) sigma hsuccTerm).
+  set (bitBody := pAnd (oneAt 0) (betaDiv2BitAt 0 2 1 3)).
+  set (traceTail := pAnd (betaDiv2StepsThroughAt 1 0 2) (pEx bitBody)).
+  set (body := pAnd
+    (betaTermAtConstIdx
+      (Term.rename S (Term.rename S (tVar (S head)))) 1 0 0)
+    traceTail).
+  set (stepEx := subst (Term.upSubst sigma) (pEx body)).
+  set (openedBody := subst (Term.upSubst (Term.upSubst sigma)) body).
+  set (D := openedBody :: map (rename S)
+    (stepEx :: map (rename S) G)).
+  change (BProv Ax_s D (rename S (rename S target))).
+  assert (hopenedBody : BProv Ax_s D openedBody).
+  { apply BProv_ass. unfold D. simpl. left. reflexivity. }
+  assert (hentrySub : BProv Ax_s D
+      (subst (Term.upSubst (Term.upSubst sigma))
+        (betaTermAtConstIdx
+          (Term.rename S (Term.rename S (tVar (S head)))) 1 0 0))).
+  {
+    unfold openedBody, body, traceTail, bitBody in hopenedBody.
+    simpl in hopenedBody.
+    exact (BProv_andE1 Ax_s D _ _ hopenedBody).
+  }
+  assert (hentryLegacy : BProv Ax_s D
+      (betaAtConstIdx (head + 2) 1 0 0)).
+  {
+    replace (Term.rename S (Term.rename S (tVar (S head))))
+      with (tVar (head + 3)) in hentrySub
+      by (simpl; f_equal; lia).
+    rewrite betaTermAtConstIdx_var in hentrySub.
+    replace (head + 3) with (S (S (S head))) in hentrySub by lia.
+    simpl in hentrySub.
+    replace (head + 2) with (S (S head)) by lia.
+    exact hentrySub.
+  }
+  assert (hentryTermLegacy : BProv Ax_s D
+      (betaTermAtConstIdx (tVar (head + 2)) 1 0 0)).
+  {
+    rewrite betaTermAtConstIdx_var.
+    exact hentryLegacy.
+  }
+  assert (hentryTerm : BProv Ax_s D
+      (betaTermAtTermIdx (tVar (head + 2)) 1 0 tZero)).
+  {
+    pose proof (BProv_Ax_s_betaTermAtTermIdx_of_betaTermAtConstIdx
+      D (tVar (head + 2)) 1 0 0 hentryTermLegacy) as h.
+    simpl in h.
+    exact h.
+  }
+  assert (htraceSub : BProv Ax_s D
+      (subst (Term.upSubst (Term.upSubst sigma)) traceTail)).
+  {
+    unfold openedBody, body in hopenedBody.
+    simpl in hopenedBody.
+    exact (BProv_andE2 Ax_s D _ _ hopenedBody).
+  }
+  assert (hstepsSub : BProv Ax_s D
+      (subst (Term.upSubst (Term.upSubst sigma))
+        (betaDiv2StepsThroughAt 1 0 2))).
+  {
+    unfold traceTail, bitBody in htraceSub.
+    simpl in htraceSub.
+    exact (BProv_andE1 Ax_s D _ _ htraceSub).
+  }
+  assert (hstepsTerm : BProv Ax_s D
+      (betaDiv2StepsThroughTermAt 1 0 (tSucc (tVar 2)))).
+  {
+    unfold sigma, betaDiv2StepsThroughTermAt,
+      betaDiv2StepsThroughAt, leAt, leTermAt,
+      betaDiv2StepWitnessAt, betaAtSuccIdx, betaAt, remAt,
+      div2StepAt, boolAt, ltAt, betaModTerm, zeroAt, oneAt,
+      eqConstAt in hstepsSub |-.
+    simpl in hstepsSub |-.
+    repeat rewrite Term.rename_comp in hstepsSub.
+    repeat rewrite term_rename_up_succ_rename_succ in hstepsSub.
+    exact hstepsSub.
+  }
+  assert (hbitSub : BProv Ax_s D
+      (subst (Term.upSubst (Term.upSubst sigma))
+        (pEx (pAnd (oneAt 0) (betaDiv2BitAt 0 2 1 3))))).
+  {
+    unfold traceTail, bitBody in htraceSub.
+    simpl in htraceSub.
+    exact (BProv_andE2 Ax_s D _ _ htraceSub).
+  }
+  pose proof
+    (BProv_Ax_s_betaDiv2BitOneTermExAt_of_subst_bitOneEx
+      D (Term.upSubst (Term.upSubst sigma)) 1 0 2 hbitSub)
+    as hbitTermRaw.
+  assert (hbitTerm : BProv Ax_s D
+      (betaDiv2BitOneTermExAt (tVar 1) (tVar 0)
+        (tSucc (tVar 2)))).
+  {
+    unfold sigma in hbitTermRaw.
+    simpl in hbitTermRaw.
+    exact hbitTermRaw.
+  }
+  assert (hheadDivD : BProv Ax_s D
+      (div2StepAt (head + 2) (tailCode + 2) (headBit + 2))).
+  {
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      _ hheadDiv S) as h1.
+    rewrite rename_S_div2StepAt in h1.
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+      (map (rename S) G) _ h1 S) as h2.
+    rewrite rename_S_div2StepAt in h2.
+    pose proof (BProv_context_cons Ax_s
+      (map (rename S) (map (rename S) G))
+      (rename S stepEx) _ h2) as h3.
+    pose proof (BProv_context_cons Ax_s _ openedBody _ h3) as h4.
+    replace (head + 2) with (S (S head)) by lia.
+    replace (tailCode + 2) with (S (S tailCode)) by lia.
+    replace (headBit + 2) with (S (S headBit)) by lia.
+    unfold D.
+    simpl.
+    exact h4.
+  }
+  assert (hzeroLe : BProv Ax_s D
+      (leTermAt tZero (tSucc (tVar 2)))).
+  { exact (BProv_Ax_s_leTermAt_zero_left D (tSucc (tVar 2))). }
+  assert (hstepZero : BProv Ax_s D
+      (betaDiv2StepWitnessAtTermIdx 1 0 tZero)).
+  {
+    exact
+      (BProv_Ax_s_betaDiv2StepsThroughTermAt_step_termIdx_of_leTerm
+        D 1 0 tZero (tSucc (tVar 2)) hstepsTerm hzeroLe).
+  }
+  assert (htailEntry : BProv Ax_s D
+      (betaTermAtTermIdx (tVar (tailCode + 2)) 1 0
+        (tSucc tZero))).
+  {
+    exact
+      (BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_of_current_div2StepAt
+        D 1 0 (head + 2) (tailCode + 2) (headBit + 2) tZero
+        hentryTerm hheadDivD hstepZero).
+  }
+  assert (hshiftEx : BProv Ax_s D
+      (betaShiftTailExistsTermAt 1 0 (tSucc (tVar 2)))).
+  { exact (shiftExists D 1 0 (tSucc (tVar 2))). }
+  apply (BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
+    D (rename S (rename S target)) 1 0 (tSucc (tVar 2)));
+    [|exact hshiftEx].
+  set (E := betaShiftTailExistsTermAtOpenedContext
+    1 0 (tSucc (tVar 2)) D).
+  change (BProv Ax_s E
+    (rename S (rename S (rename S (rename S target))))).
+  assert (hshift : BProv Ax_s E
+      (betaShiftTailThroughTermAt 3 2 (tVar 1) (tVar 0)
+        (tSucc (tVar 4)))).
+  {
+    assert (hraw : BProv Ax_s E
+        (betaShiftTailExistsTermAtBody 1 0 (tSucc (tVar 2)))).
+    {
+      apply BProv_ass.
+      unfold E, betaShiftTailExistsTermAtOpenedContext.
+      simpl. left. reflexivity.
+    }
+    unfold betaShiftTailExistsTermAtBody in hraw.
+    simpl in hraw.
+    exact hraw.
+  }
+  assert (lift2 : forall f,
+      BProv Ax_s D f ->
+      BProv Ax_s E (rename S (rename S f))).
+  {
+    intros f hf.
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+      D f hf S) as h1.
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+      (map (rename S) D) (rename S f) h1 S) as h2.
+    set (shiftBody := betaShiftTailExistsTermAtBody
+      1 0 (tSucc (tVar 2))).
+    set (shiftStepEx := betaShiftTailExistsTermAtStepEx
+      1 0 (tSucc (tVar 2))).
+    pose proof (BProv_context_cons Ax_s
+      (map (rename S) (map (rename S) D))
+      (rename S shiftStepEx) _ h2) as h3.
+    pose proof (BProv_context_cons Ax_s _ shiftBody _ h3) as h4.
+    unfold E, betaShiftTailExistsTermAtOpenedContext,
+      shiftBody, shiftStepEx.
+    simpl.
+    exact h4.
+  }
+  assert (htailEntryE : BProv Ax_s E
+      (betaTermAtTermIdx (tVar (tailCode + 4)) 3 2
+        (tSucc tZero))).
+  {
+    pose proof (lift2 _ htailEntry) as h.
+    repeat rewrite rename_S_betaTermAtTermIdx in h.
+    simpl in h.
+    replace (tailCode + 4) with (S (S (tailCode + 2))) by lia.
+    exact h.
+  }
+  assert (hstepsE : BProv Ax_s E
+      (betaDiv2StepsThroughTermAt 3 2 (tSucc (tVar 4)))).
+  {
+    pose proof (lift2 _ hstepsTerm) as h.
+    repeat rewrite rename_S_betaDiv2StepsThroughTermAt in h.
+    simpl in h.
+    exact h.
+  }
+  assert (hbitE : BProv Ax_s E
+      (betaDiv2BitOneTermExAt (tVar 3) (tVar 2)
+        (tSucc (tVar 4)))).
+  {
+    pose proof (lift2 _ hbitTerm) as h.
+    repeat rewrite rename_S_betaDiv2BitOneTermExAt in h.
+    simpl in h.
+    exact h.
+  }
+  assert (htailEntryRaw : BProv Ax_s E
+      (betaTermTermAt (tVar (tailCode + 4))
+        (tVar 3) (tVar 2) (tSucc tZero))).
+  {
+    exact (BProv_Ax_s_betaTermTermAt_of_betaTermAtTermIdx
+      E (tVar (tailCode + 4)) (tSucc tZero) 3 2 htailEntryE).
+  }
+  assert (hnewEntry : BProv Ax_s E
+      (betaTermTermAt (tVar (tailCode + 4))
+        (tVar 1) (tVar 0) tZero)).
+  {
+    exact (BProv_Ax_s_betaShiftTailThroughTermAt_entry_of_leTerm
+      E 3 2 (tVar 1) (tVar 0) (tSucc (tVar 4))
+      tZero (tVar (tailCode + 4)) hshift
+      (BProv_Ax_s_leTermAt_zero_left E (tSucc (tVar 4)))
+      htailEntryRaw).
+  }
+  assert (hnewSteps : BProv Ax_s E
+      (betaDiv2StepsThroughTermTermAt
+        (tVar 1) (tVar 0) (tVar 4))).
+  {
+    exact
+      (BProv_Ax_s_betaShiftTailThroughTermAt_stepsThrough_of_oldSteps
+        E 3 2 (tVar 1) (tVar 0) (tVar 4) hshift hstepsE).
+  }
+  assert (hnewBit : BProv Ax_s E
+      (betaDiv2BitOneTermExAt
+        (tVar 1) (tVar 0) (tVar 4))).
+  {
+    exact
+      (BProv_Ax_s_betaShiftTailThroughTermAt_bitOneEx_of_oldBitOneEx
+        E 3 2 (tVar 1) (tVar 0) (tVar 4) (tVar 4)
+        hshift (BProv_Ax_s_leTermAt_refl E (tVar 4)) hbitE).
+  }
+  assert (hentryComponent : BProv Ax_s E
+      (subst (instTerm (tVar 0))
+        (subst (Term.upSubst (instTerm (tVar 1)))
+          (betaTermAtConstIdx
+            (Term.rename (fun n => n + 2) (tVar (tailCode + 4)))
+            1 0 0)))).
+  {
+    exact (BProv_Ax_s_hfMemTermAt_entry_of_betaTermTermAt_zero
+      E (tailCode + 4) (tVar 1) (tVar 0) hnewEntry).
+  }
+  assert (hstepsComponent : BProv Ax_s E
+      (subst (instTerm (tVar 0))
+        (subst (Term.upSubst (instTerm (tVar 1)))
+          (betaDiv2StepsThroughAt 1 0 (4 + 2))))).
+  {
+    exact (BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace
+      E (tVar 1) (tVar 0) hnewSteps).
+  }
+  assert (hbitComponent : BProv Ax_s E
+      (subst (instTerm (tVar 0))
+        (subst (Term.upSubst (instTerm (tVar 1)))
+          (pEx (pAnd (oneAt 0)
+            (betaDiv2BitAt 0 2 1 (4 + 3))))))).
+  {
+    exact
+      (BProv_Ax_s_hfMemTermAt_slot4_bitEx_of_betaDiv2BitOneTermExAt
+        E (tVar 1) (tVar 0) hnewBit).
+  }
+  assert (hpacked : BProv Ax_s E
+      (hfMemTermAt 4 (tVar (tailCode + 4)))).
+  {
+    pose proof (BProv_Ax_s_subst_hfMemTermAt_of_components
+      E 4 (tVar (tailCode + 4)) (tVar 1) (tVar 0)
+      (fun n => tVar n)) as pack.
+    repeat rewrite subst_id in pack.
+    exact (pack hentryComponent hstepsComponent hbitComponent).
+  }
+  rewrite hfMemTermAt_var in hpacked.
+  repeat rewrite rename_hfMemAt.
+  unfold target.
+  replace (tailCode + 4) with (S (S (S (S tailCode)))) in hpacked
+    by lia.
+  exact hpacked.
+Qed.
