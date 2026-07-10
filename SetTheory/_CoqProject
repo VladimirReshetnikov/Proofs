@@ -75,6 +75,10 @@ BusyBeaverKnownValues.v
 BusyBeaverBB2Bridge.v
 BusyBeaverBB3Bridge.v
 BusyBeaverBB4Bridge.v
+BusyBeaverBB4Score.v
+BusyBeaverBB4ScoreComputation.v
+BusyBeaverBB4ScoreCertificate.v
+BusyBeaverBB4ScoreBridge.v
 BusyBeaverMathlib.v
 
 # Self-contained shallow forward/reverse trades.

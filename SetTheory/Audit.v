@@ -10,7 +10,8 @@
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
 From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
 From SetTheory Require Import BusyBeaverBB2Bridge BusyBeaverBB3Bridge
-  BusyBeaverBB4Bridge.
+  BusyBeaverBB4Bridge BusyBeaverBB4Score BusyBeaverBB4ScoreComputation
+  BusyBeaverBB4ScoreCertificate BusyBeaverBB4ScoreBridge.
 From SetTheory Require Import Forward Reverse RiemannHypothesis.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -765,6 +766,12 @@ Check BusyBeaverBB4Bridge.haltsAtTime_is_first.
 Check BusyBeaverBB4Bridge.sigma4Champion_maps_to_coqbb4_halt_at_106.
 Check BusyBeaverBB4Bridge.attainableHaltingTime_four_le_107.
 Check BusyBeaverBB4Bridge.busy_beaver_time_four_eq_107.
+Check BusyBeaverBB4ScoreComputation.score_q_200_empty.
+Check BusyBeaverBB4ScoreCertificate.root_score_upper_bound.
+Check BusyBeaverBB4ScoreCertificate.allTM_first_halt_list_score_le_twelve.
+Check BusyBeaverBB4ScoreBridge.upperBound_four.
+Check BusyBeaverBB4ScoreBridge.exactScore_four.
+Check BusyBeaverBB4ScoreBridge.sigma_four_eq_thirteen.
 Check BusyBeaverKnownValues.ExactScore.
 Check BusyBeaverKnownValues.ExactScore.sigma_eq.
 Check BusyBeaverKnownValues.exactScore_one.
@@ -788,6 +795,12 @@ Print Assumptions
   BusyBeaverBB4Bridge.local_halt_event_time_le_one_hundred_seven.
 Print Assumptions BusyBeaverBB4Bridge.sigma4Champion_halts_at_time_107.
 Print Assumptions BusyBeaverBB4Bridge.busy_beaver_time_four_eq_107.
+Print Assumptions BusyBeaverBB4ScoreComputation.score_q_200_empty.
+Print Assumptions
+  BusyBeaverBB4ScoreCertificate.allTM_first_halt_list_score_le_twelve.
+Print Assumptions BusyBeaverBB4ScoreBridge.upperBound_four.
+Print Assumptions BusyBeaverBB4ScoreBridge.exactScore_four.
+Print Assumptions BusyBeaverBB4ScoreBridge.sigma_four_eq_thirteen.
 Print Assumptions
   BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 
