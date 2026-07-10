@@ -49952,6 +49952,293 @@ theorem BProv_Ax_s_translated_HF_adjoin :
     BProv_Ax_s_hfAdjoinTotalTermAt_zero
     BProv_Ax_s_hfAdjoinTotalTermAt_succ
 
+def hfEmptyTermAt (setCode : Term) : Formula :=
+  all
+    (imp
+      (hfMemTermAt 0 (Term.rename Nat.succ setCode))
+      bot)
+
+def hfEmptyAt (setCode : Nat) : Formula :=
+  hfEmptyTermAt (Term.var setCode)
+
+/-- The translated finite-generation hypotheses for a predicate `psi`:
+`psi` holds of empty codes and is preserved by one-point adjunction. -/
+def hfFiniteGenerationAt (psi : Formula) : Formula :=
+  and
+    (all (imp (hfEmptyAt 0) psi))
+    (all (all (all
+      (imp
+        (hfAdjoinGraphAt 0 2 1)
+        (imp
+          (rename AckermannHF.rAdjStepOld psi)
+          (rename AckermannHF.rAdjStepNew psi))))))
+
+/-- Unsealed PA rendering of the translated finite-generation induction
+schema. -/
+def translatedHFFiniteInductionBody (psi : Formula) : Formula :=
+  imp (hfFiniteGenerationAt psi) (all psi)
+
+theorem hfFormulaAt_HF_emptyAt_zero :
+    hfFormulaAt (fun n : Nat => n) (AckermannHF.HF_emptyAt 0) =
+      hfEmptyAt 0 := by
+  rfl
+
+theorem hfFormulaAt_HF_adjoinAt_zero_two_one :
+    hfFormulaAt (fun n : Nat => n) (AckermannHF.HF_adjoinAt 0 2 1) =
+      hfAdjoinGraphAt 0 2 1 := by
+  rfl
+
+theorem hfFormulaAt_rename_rAdjStepOld (phi : Form) :
+    hfFormulaAt (fun n : Nat => n)
+        (SetTheory.rename AckermannHF.rAdjStepOld phi) =
+      rename AckermannHF.rAdjStepOld
+        (hfFormulaAt (fun n : Nat => n) phi) := by
+  have hsource :=
+    hfFormulaAt_source_rename phi (fun n : Nat => n)
+      AckermannHF.rAdjStepOld
+  have htarget :=
+    rename_hfFormulaAt phi (fun n : Nat => n)
+      AckermannHF.rAdjStepOld
+  simpa using hsource.trans htarget.symm
+
+theorem hfFormulaAt_rename_rAdjStepNew (phi : Form) :
+    hfFormulaAt (fun n : Nat => n)
+        (SetTheory.rename AckermannHF.rAdjStepNew phi) =
+      rename AckermannHF.rAdjStepNew
+        (hfFormulaAt (fun n : Nat => n) phi) := by
+  have hsource :=
+    hfFormulaAt_source_rename phi (fun n : Nat => n)
+      AckermannHF.rAdjStepNew
+  have htarget :=
+    rename_hfFormulaAt phi (fun n : Nat => n)
+      AckermannHF.rAdjStepNew
+  simpa using hsource.trans htarget.symm
+
+theorem hfFormulaAt_HF_finite_induction_form (phi : Form) :
+    hfFormulaAt (fun n : Nat => n)
+        (AckermannHF.HF_finite_induction_form phi) =
+      translatedHFFiniteInductionBody
+        (hfFormulaAt (fun n : Nat => n) phi) := by
+  have hup : hfUpVarMap (fun n : Nat => n) =
+      (fun n : Nat => n) := by
+    funext n
+    cases n <;> rfl
+  simp only [AckermannHF.HF_finite_induction_form,
+    translatedHFFiniteInductionBody,
+    hfFiniteGenerationAt,
+    hfFormulaAt_HF_emptyAt_zero,
+    hfFormulaAt_HF_adjoinAt_zero_two_one,
+    hfFormulaAt_rename_rAdjStepOld,
+    hfFormulaAt_rename_rAdjStepNew,
+    hfFormulaAt, hup]
+
+theorem translateHFFormula_sealed_finite_induction (phi : Form) :
+    translateHFFormula
+        (SetTheory.sealF
+          (AckermannHF.HF_finite_induction_form phi)) =
+      closeN
+        (SetTheory.bound (AckermannHF.HF_finite_induction_form phi))
+        (translatedHFFiniteInductionBody
+          (hfFormulaAt (fun n : Nat => n) phi)) := by
+  rw [translateHFFormula, SetTheory.sealF,
+    hfFormulaAt_closeN_id,
+    hfFormulaAt_HF_finite_induction_form]
+
+/-- Closing shell: only the unsealed translated finite-generation body
+remains to be proved arithmetically. -/
+theorem BProv_Ax_s_translated_HF_finite_induction_of_body
+    (phi : Form)
+    (hbody : BProv Ax_s []
+      (translatedHFFiniteInductionBody
+        (hfFormulaAt (fun n : Nat => n) phi))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF
+          (AckermannHF.HF_finite_induction_form phi))) := by
+  have hclosed : BProv Ax_s []
+      (closeN
+        (SetTheory.bound (AckermannHF.HF_finite_induction_form phi))
+        (translatedHFFiniteInductionBody
+          (hfFormulaAt (fun n : Nat => n) phi))) :=
+    BProv_closeN_nil_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      (SetTheory.bound (AckermannHF.HF_finite_induction_form phi))
+      hbody
+  rw [translateHFFormula_sealed_finite_induction]
+  exact hclosed
+
+/-- A code is either empty or is obtained by adjoining one element to a
+strictly smaller code.  The existential order is old code, then element. -/
+def hfStrictPredAdjoinExistsTermAt (current : Term) : Formula :=
+  ex (ex
+    (and
+      (ltTermAt (Term.var 1)
+        (Term.rename (fun n => n+2) current))
+      (hfAdjoinGraphTermAt
+        (Term.rename (fun n => n+2) current)
+        (Term.var 1) (Term.var 0))))
+
+def hfEmptyOrStrictPredAdjoinTermAt (current : Term) : Formula :=
+  or
+    (hfEmptyTermAt current)
+    (hfStrictPredAdjoinExistsTermAt current)
+
+def hfEmptyOrStrictPredAdjoinAt (current : Nat) : Formula :=
+  hfEmptyOrStrictPredAdjoinTermAt (Term.var current)
+
+/-- Pure strong-induction shell for finite generation.  `hcurrent` is the
+single local step still to be obtained from the strict predecessor adjunction
+decomposition: the generation hypotheses plus `psi` below the current code
+must yield `psi` at the current code. -/
+theorem BProv_Ax_s_translatedHFFiniteInductionBody_of_current
+    (psi : Formula)
+    (hcurrent :
+      ∀ {G : List Formula},
+        BProv Ax_s G
+            (rename Nat.succ (hfFiniteGenerationAt psi)) →
+        BProv Ax_s G (hfStrongBelowAt psi) →
+        BProv Ax_s G psi) :
+    BProv Ax_s [] (translatedHFFiniteInductionBody psi) := by
+  let generation : Formula := hfFiniteGenerationAt psi
+  let below : Formula := hfStrongBelowAt psi
+  have hzero : BProv Ax_s [generation] (subst substZero below) := by
+    change BProv Ax_s [generation]
+      (subst substZero (hfStrongBelowAt psi))
+    rw [substZero_hfStrongBelowAt]
+    let lowLtZero : Formula := ltTermAt (Term.var 0) Term.zero
+    have hbody : BProv Ax_s ([generation].map (rename Nat.succ))
+        (imp lowLtZero psi) := by
+      let D : List Formula :=
+        lowLtZero :: [generation].map (rename Nat.succ)
+      have hlt : BProv Ax_s D lowLtZero :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hzeroLe : BProv Ax_s D
+          (leTermAt Term.zero (Term.var 0)) :=
+        BProv_Ax_s_leTermAt_zero_left (Term.var 0)
+      have hbot : BProv Ax_s D bot :=
+        BProv_Ax_s_ltTermAt_leTermAt_bot hlt hzeroLe
+      have hpsi : BProv Ax_s D psi :=
+        BProv_botE (B := Ax_s) (G := D) (a := psi) hbot
+      simpa [D, lowLtZero] using BProv_impI hpsi
+    simpa [lowLtZero] using
+      (BProv_allI_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbody)
+  have hsuccBody : BProv Ax_s
+      (below :: [generation].map (rename Nat.succ))
+      (subst substSuccVar below) := by
+    let S : List Formula :=
+      below :: [generation].map (rename Nat.succ)
+    have hbelowS : BProv Ax_s S below :=
+      BProv_ass (B := Ax_s) (G := S) (by simp [S])
+    have hgenerationS : BProv Ax_s S
+        (rename Nat.succ generation) :=
+      BProv_ass (B := Ax_s) (G := S) (by simp [S])
+    have hpsiCurrent : BProv Ax_s S psi :=
+      hcurrent
+        (by simpa [generation] using hgenerationS)
+        (by simpa [below] using hbelowS)
+    let lowLtSucc : Formula :=
+      ltTermAt (Term.var 0) (Term.succ (Term.var 1))
+    let psiAtLow : Formula := rename AckermannHF.rSkipParam psi
+    have htarget : BProv Ax_s S (all (imp lowLtSucc psiAtLow)) := by
+      let R : List Formula := S.map (rename Nat.succ)
+      have hbody : BProv Ax_s R (imp lowLtSucc psiAtLow) := by
+        let D : List Formula := lowLtSucc :: R
+        have hlt : BProv Ax_s D lowLtSucc :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        have hcases : BProv Ax_s D
+            (or
+              (ltTermAt (Term.var 0) (Term.var 1))
+              (eq (Term.var 0) (Term.var 1))) :=
+          BProv_Ax_s_ltTermAt_succ_right_cases hlt
+        have hbelowRen : BProv Ax_s R (rename Nat.succ below) := by
+          simpa [R] using
+            (BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+              hbelowS Nat.succ)
+        have hbelowBody : BProv Ax_s R
+            (imp
+              (ltTermAt (Term.var 0) (Term.var 1))
+              psiAtLow) := by
+          simpa [below, hfStrongBelowAt, ltTermAt_var,
+            psiAtLow] using
+            (BProv_allE_current_of_renamed hbelowRen)
+        have hstrict : BProv Ax_s
+            (ltTermAt (Term.var 0) (Term.var 1) :: D)
+            psiAtLow := by
+          let E : List Formula :=
+            ltTermAt (Term.var 0) (Term.var 1) :: D
+          have hltPred : BProv Ax_s E
+              (ltTermAt (Term.var 0) (Term.var 1)) :=
+            BProv_ass (B := Ax_s) (G := E) (by simp [E])
+          have hbelowE : BProv Ax_s E
+              (imp
+                (ltTermAt (Term.var 0) (Term.var 1))
+                psiAtLow) :=
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) hbelowBody)
+          exact BProv_mp Ax_s E _ _ hbelowE hltPred
+        have hequal : BProv Ax_s
+            (eq (Term.var 0) (Term.var 1) :: D)
+            psiAtLow := by
+          let E : List Formula :=
+            eq (Term.var 0) (Term.var 1) :: D
+          have heq : BProv Ax_s E
+              (eq (Term.var 0) (Term.var 1)) :=
+            BProv_ass (B := Ax_s) (G := E) (by simp [E])
+          have hpsiRen : BProv Ax_s R (rename Nat.succ psi) := by
+            simpa [R] using
+              (BProv_rename_of_sentences
+                (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+                hpsiCurrent Nat.succ)
+          have hpsiE : BProv Ax_s E (rename Nat.succ psi) :=
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) hpsiRen)
+          simpa [psiAtLow] using
+            (BProv_predicate_current_of_eq_previous heq hpsiE)
+        have hpsi : BProv Ax_s D psiAtLow :=
+          BProv_orE hcases hstrict hequal
+        simpa [D, lowLtSucc, psiAtLow] using BProv_impI hpsi
+      simpa [R] using
+        (BProv_allI_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hbody)
+    change BProv Ax_s S
+      (subst substSuccVar (hfStrongBelowAt psi))
+    rw [substSuccVar_hfStrongBelowAt]
+    simpa [lowLtSucc, psiAtLow] using htarget
+  have hsuccImp : BProv Ax_s ([generation].map (rename Nat.succ))
+      (imp below (subst substSuccVar below)) := by
+    simpa using BProv_impI hsuccBody
+  have hsucc : BProv Ax_s [generation]
+      (all (imp below (subst substSuccVar below))) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hsuccImp
+  have hallBelow : BProv Ax_s [generation] (all below) :=
+    BProv_Ax_s_induction_rule hzero hsucc
+  have hpsiBody : BProv Ax_s ([generation].map (rename Nat.succ)) psi := by
+    let Q : List Formula := [generation].map (rename Nat.succ)
+    have hgenerationQ : BProv Ax_s Q (rename Nat.succ generation) :=
+      BProv_ass (B := Ax_s) (G := Q) (by simp [Q])
+    have hallBelowRen : BProv Ax_s Q (rename Nat.succ (all below)) := by
+      simpa [Q] using
+        (BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hallBelow Nat.succ)
+    have hbelowQ : BProv Ax_s Q below :=
+      BProv_allE_current_of_renamed hallBelowRen
+    exact hcurrent
+      (by simpa only [generation] using hgenerationQ)
+      (by simpa only [below] using hbelowQ)
+  have hallPsi : BProv Ax_s [generation] (all psi) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hpsiBody
+  simpa [translatedHFFiniteInductionBody, generation] using
+    BProv_impI hallPsi
+
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already
 `BProv_Ax_s_hfLtDistinguishesAt_zero_base`; this lemma keeps the remaining
