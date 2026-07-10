@@ -2737,3 +2737,34 @@ Proof.
     by lia.
   exact hpacked.
 Qed.
+
+Definition hfMembershipTailStep_of_shift
+    (shiftExists : forall G oldCode oldStep lastTerm,
+      BProv Ax_s G
+        (betaShiftTailExistsTermAt oldCode oldStep lastTerm))
+    : HFMembershipTailStep :=
+  BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt_using_shift
+    shiftExists.
+
+Lemma BProv_Ax_s_all_hfMembersBelowAt_using_shift :
+  forall (shiftExists : forall G oldCode oldStep lastTerm,
+    BProv Ax_s G
+      (betaShiftTailExistsTermAt oldCode oldStep lastTerm)),
+  BProv Ax_s [] (pAll (hfMembersBelowAt 0)).
+Proof.
+  intro shiftExists.
+  exact (BProv_Ax_s_all_hfMembersBelowAt_of_tail
+    (hfMembershipTailStep_of_shift shiftExists)).
+Qed.
+
+Lemma BProv_Ax_s_translated_HF_induction_using_shift :
+  forall (shiftExists : forall G oldCode oldStep lastTerm,
+      BProv Ax_s G
+        (betaShiftTailExistsTermAt oldCode oldStep lastTerm)) phi,
+  BProv Ax_s []
+    (translateHFFormula (Fol.seal (HF_induction_form phi))).
+Proof.
+  intros shiftExists phi.
+  exact (BProv_Ax_s_translated_HF_induction_of_tail
+    (hfMembershipTailStep_of_shift shiftExists) phi).
+Qed.
