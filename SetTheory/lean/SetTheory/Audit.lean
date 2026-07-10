@@ -1174,6 +1174,15 @@ open SetTheory
 #check @PA.Formula.hfStrictPredAdjoinExistsTermAt
 #check @PA.Formula.hfEmptyOrStrictPredAdjoinTermAt
 #check @PA.Formula.hfEmptyOrStrictPredAdjoinAt
+#check @PA.Formula.hfEmptyOrStrictPredAdjoinThroughTermAt
+#check @PA.Formula.hfEmptyOrStrictPredAdjoinThroughAt
+#check @PA.Formula.subst_ltTermAt
+#check @PA.Formula.subst_hfEmptyTermAt
+#check @PA.Formula.subst_hfStrictPredAdjoinExistsTermAt
+#check @PA.Formula.subst_hfEmptyOrStrictPredAdjoinTermAt
+#check @PA.Formula.rename_hfEmptyOrStrictPredAdjoinTermAt
+#check @PA.Formula.BProv_hfStrictPredAdjoinExistsTermAt_of_terms
+#check @PA.Formula.BProv_hfEmptyOrStrictPredAdjoinTermAt_of_terms
 #check @PA.Formula.BProv_Ax_s_translatedHFFiniteInductionBody_of_current
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
@@ -2443,6 +2452,10 @@ open SetTheory
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
+#check @AckermannHF.standard_pa_composite_exact
+#check @AckermannHF.standard_hf_composite_exact
+#check @AckermannHF.PAHFFinDeductiveBiInterpretationCertificate_of_remaining
+#check @AckermannHF.PAHFFinDeductiveBiInterpretationCertificate_of_roundTrips
 #check @AckermannHF.StandardModelInterpretationCertificateFor
 #check @AckermannHF.StandardModelInterpretationCertificate
 #check @AckermannHF.StandardModelFiniteInterpretationCertificate

@@ -50086,6 +50086,147 @@ def hfEmptyOrStrictPredAdjoinTermAt (current : Term) : Formula :=
 def hfEmptyOrStrictPredAdjoinAt (current : Nat) : Formula :=
   hfEmptyOrStrictPredAdjoinTermAt (Term.var current)
 
+/-- Cumulative form used with ordinary PA induction: every code at most the
+bound is empty or has a proper adjunction predecessor. -/
+def hfEmptyOrStrictPredAdjoinThroughTermAt (bound : Term) : Formula :=
+  all
+    (imp
+      (ltTermAt (Term.var 0)
+        (Term.succ (Term.rename Nat.succ bound)))
+      (hfEmptyOrStrictPredAdjoinAt 0))
+
+def hfEmptyOrStrictPredAdjoinThroughAt (bound : Nat) : Formula :=
+  hfEmptyOrStrictPredAdjoinThroughTermAt (Term.var bound)
+
+theorem subst_ltTermAt (σ : Nat → Term) (a b : Term) :
+    subst σ (ltTermAt a b) =
+      ltTermAt (Term.subst σ a) (Term.subst σ b) := by
+  simp [ltTermAt, subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem subst_hfEmptyTermAt
+    (σ : Nat → Term) (code : Term) :
+    subst σ (hfEmptyTermAt code) =
+      hfEmptyTermAt (Term.subst σ code) := by
+  simp [hfEmptyTermAt, subst,
+    subst_up_hfMemTermAt_zero_rename_succ]
+
+theorem subst_hfStrictPredAdjoinExistsTermAt
+    (σ : Nat → Term) (code : Term) :
+    subst σ (hfStrictPredAdjoinExistsTermAt code) =
+      hfStrictPredAdjoinExistsTermAt (Term.subst σ code) := by
+  have hcode :
+      Term.subst (Term.upSubst (Term.upSubst σ))
+          (Term.rename (fun n => n + 2) code) =
+        Term.rename (fun n => n + 2) (Term.subst σ code) := by
+    change Term.subst (iterUpSubst 2 σ)
+        (Term.rename (fun n => n + 2) code) =
+      Term.rename (fun n => n + 2) (Term.subst σ code)
+    exact term_subst_iterUpSubst_rename_add 2 σ code
+  have hlt :
+      subst (Term.upSubst (Term.upSubst σ))
+          (ltTermAt (Term.var 1)
+            (Term.rename (fun n => n + 2) code)) =
+        ltTermAt (Term.var 1)
+          (Term.rename (fun n => n + 2) (Term.subst σ code)) := by
+    simp [ltTermAt, subst, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up, hcode]
+  have hgraph :
+      subst (Term.upSubst (Term.upSubst σ))
+          (hfAdjoinGraphTermAt
+            (Term.rename (fun n => n + 2) code)
+            (Term.var 1) (Term.var 0)) =
+        hfAdjoinGraphTermAt
+          (Term.rename (fun n => n + 2) (Term.subst σ code))
+          (Term.var 1) (Term.var 0) := by
+    rw [subst_hfAdjoinGraphTermAt]
+    simp [Term.subst, Term.upSubst, Term.rename, hcode]
+  simp only [hfStrictPredAdjoinExistsTermAt, subst]
+  rw [hlt, hgraph]
+
+theorem subst_hfEmptyOrStrictPredAdjoinTermAt
+    (σ : Nat → Term) (code : Term) :
+    subst σ (hfEmptyOrStrictPredAdjoinTermAt code) =
+      hfEmptyOrStrictPredAdjoinTermAt (Term.subst σ code) := by
+  simp only [hfEmptyOrStrictPredAdjoinTermAt, subst]
+  rw [subst_hfEmptyTermAt,
+    subst_hfStrictPredAdjoinExistsTermAt]
+
+theorem rename_hfEmptyOrStrictPredAdjoinTermAt
+    (r : Nat → Nat) (code : Term) :
+    rename r (hfEmptyOrStrictPredAdjoinTermAt code) =
+      hfEmptyOrStrictPredAdjoinTermAt (Term.rename r code) := by
+  rw [← subst_var_rename,
+    subst_hfEmptyOrStrictPredAdjoinTermAt]
+  simp [term_subst_var_rename]
+
+/-- Package concrete term witnesses into the two-existential proper
+adjunction predecessor predicate. -/
+theorem BProv_hfStrictPredAdjoinExistsTermAt_of_terms
+    {B : Formula → Prop} {G : List Formula}
+    {code oldCode elemCode : Term}
+    (hlt : BProv B G (ltTermAt oldCode code))
+    (hgraph : BProv B G
+      (hfAdjoinGraphTermAt code oldCode elemCode)) :
+    BProv B G (hfStrictPredAdjoinExistsTermAt code) := by
+  let body : Formula :=
+    and
+      (ltTermAt (Term.var 1)
+        (Term.rename (fun n => n+2) code))
+      (hfAdjoinGraphTermAt
+        (Term.rename (fun n => n+2) code)
+        (Term.var 1) (Term.var 0))
+  let τ : Nat → Term :=
+    fun n => Term.subst (instTerm elemCode)
+      (Term.upSubst (instTerm oldCode) n)
+  have hτ (n : Nat) : τ (n+2) = Term.var n := by
+    simp [τ, instTerm, Term.upSubst, Term.subst, Term.rename]
+  have hτ0 : τ 0 = elemCode := by
+    simp [τ, instTerm, Term.upSubst, Term.subst]
+  have hτ1 : τ 1 = oldCode := by
+    simp [τ, instTerm, Term.upSubst,
+      term_subst_instTerm_rename_succ]
+  have hcode :
+      Term.subst τ (Term.rename (fun n => n+2) code) = code := by
+    rw [Term.subst_rename]
+    calc
+      Term.subst (fun n => τ (n+2)) code =
+          Term.subst (fun n => Term.var n) code :=
+        Term.subst_ext code _ _ hτ
+      _ = code := Term.subst_id code
+  have hnorm :
+      subst (instTerm elemCode)
+          (subst (Term.upSubst (instTerm oldCode)) body) =
+        and (ltTermAt oldCode code)
+          (hfAdjoinGraphTermAt code oldCode elemCode) := by
+    rw [subst_comp]
+    change subst τ body = _
+    simp only [body, subst]
+    rw [subst_ltTermAt, subst_hfAdjoinGraphTermAt]
+    rw [hcode]
+    simp only [Term.subst, hτ0, hτ1]
+  have hinst : BProv B G
+      (subst (instTerm elemCode)
+        (subst (Term.upSubst (instTerm oldCode)) body)) := by
+    rw [hnorm]
+    exact BProv_andI hlt hgraph
+  have helem : BProv B G
+      (ex (subst (Term.upSubst (instTerm oldCode)) body)) :=
+    BProv_exI (B := B) (G := G) (t := elemCode) hinst
+  have hold : BProv B G (ex (ex body)) :=
+    BProv_exI (B := B) (G := G) (t := oldCode) helem
+  simpa [hfStrictPredAdjoinExistsTermAt, body] using hold
+
+theorem BProv_hfEmptyOrStrictPredAdjoinTermAt_of_terms
+    {B : Formula → Prop} {G : List Formula}
+    {code oldCode elemCode : Term}
+    (hlt : BProv B G (ltTermAt oldCode code))
+    (hgraph : BProv B G
+      (hfAdjoinGraphTermAt code oldCode elemCode)) :
+    BProv B G (hfEmptyOrStrictPredAdjoinTermAt code) :=
+  BProv_orI2
+    (BProv_hfStrictPredAdjoinExistsTermAt_of_terms hlt hgraph)
+
 /-- Pure strong-induction shell for finite generation.  `hcurrent` is the
 single local step still to be obtained from the strict predecessor adjunction
 decomposition: the generation hypotheses plus `psi` below the current code
