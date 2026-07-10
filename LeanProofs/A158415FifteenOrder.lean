@@ -33,7 +33,8 @@ macro "values15_sqrt_run" : tactic =>
 macro "values15_one_add_run" i:num j:num : tactic =>
   `(tactic|
     (change 1 + values13 ($i : Fin 264) < 1 + values13 ($j : Fin 264);
-      linarith [values13_strictMono (by native_decide : ($i : Fin 264) < $j)]))
+      exact add_lt_add_right
+        (values13_strictMono (by decide : ($i : Fin 264) < ($j : Fin 264))) 1))
 
 set_option maxHeartbeats 2000000 in
 theorem values15_strictMono : StrictMono values15 := by

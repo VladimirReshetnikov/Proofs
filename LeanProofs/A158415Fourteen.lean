@@ -18,6 +18,11 @@ set_option maxRecDepth 10000
 set_option linter.unreachableTactic false
 set_option linter.unnecessarySeqFocus false
 
+private theorem values9_mem_recursiveValueSet_nine (i : Fin 33) :
+    values9 i ∈ recursiveValueSet 9 := by
+  rw [recursiveValueSet_nine]
+  exact ⟨i, rfl⟩
+
 theorem recursiveValueSet_fourteen_unary_subset_range :
     ((fun x : ℝ => Real.sqrt x) '' recursiveValueSet 13) ⊆ Set.range values14 := by
   intro x hx
@@ -25,6 +30,38 @@ theorem recursiveValueSet_fourteen_unary_subset_range :
   rw [recursiveValueSet_thirteen] at hy
   rcases hy with ⟨i, rfl⟩
   exact sqrt_values13_mem_range_values14 i
+
+theorem one_add_mem_range_values14_of_mem_recursiveValueSet_twelve {x : Real}
+    (hx : x ∈ recursiveValueSet 12) : (Set.range values14) (1 + x) := by
+  rw [recursiveValueSet_twelve] at hx
+  rcases hx with ⟨i, rfl⟩
+  exact one_add_values12_mem_range_values14 i
+
+theorem one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve {n : Nat}
+    (hn : n ≤ 12) {x : Real} (hx : x ∈ recursiveValueSet n) :
+    (Set.range values14) (1 + x) :=
+  one_add_mem_range_values14_of_mem_recursiveValueSet_twelve
+    (recursiveValueSet_subset_of_le hn hx)
+
+theorem succ_natCast_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+    {m n : Nat} (hnpos : 0 < n) (hn : n + 2 * m ≤ 12) {x : Real}
+    (hx : x ∈ recursiveValueSet n) :
+    (Set.range values14) (((m + 1 : Nat) : Real) + x) := by
+  have hxpad : (m : Real) + x ∈ recursiveValueSet (n + 2 * m) :=
+    natCast_add_mem_recursiveValueSet_add_two_mul (m := m) hnpos hx
+  have hrange : (Set.range values14) (1 + ((m : Real) + x)) :=
+    one_add_mem_range_values14_of_mem_recursiveValueSet_twelve
+      (recursiveValueSet_subset_of_le hn hxpad)
+  have heq : (((m + 1 : Nat) : Real) + x) = 1 + ((m : Real) + x) := by
+    simp [Nat.cast_add, add_assoc, add_comm]
+  rwa [heq]
+
+theorem two_add_mem_range_values14_of_mem_recursiveValueSet_le_ten {n : Nat}
+    (hnpos : 0 < n) (hn : n + 2 ≤ 12) {x : Real}
+    (hx : x ∈ recursiveValueSet n) : (Set.range values14) (2 + x) := by
+  simpa using
+    succ_natCast_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+      (m := 1) (n := n) hnpos (by simpa using hn) hx
 
 set_option maxHeartbeats 2000000 in
 theorem recursiveValueSet_fourteen_subset_range :
@@ -43,28 +80,29 @@ theorem recursiveValueSet_fourteen_subset_range :
       exact one_add_values12_mem_range_values14 i
     · rw [recursiveValueSet_two] at ha
       have hb' : b ∈ recursiveValueSet 11 := by simpa using hb
-      rw [recursiveValueSet_eleven] at hb'
       simp only [Set.mem_singleton_iff] at ha
       rcases ha with rfl
-      rcases hb' with ⟨i, rfl⟩
-      exact one_add_values11_mem_range_values14 i
+      exact one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+        (by norm_num) hb'
     · rw [recursiveValueSet_three] at ha
       have hb' : b ∈ recursiveValueSet 10 := by simpa using hb
-      rw [recursiveValueSet_ten] at hb'
       simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at ha
-      rcases hb' with ⟨i, rfl⟩
       rcases ha with rfl | rfl
-      · exact one_add_values10_mem_range_values14 i
-      · exact two_add_values10_mem_range_values14 i
+      · exact one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+          (by norm_num) hb'
+      · exact two_add_mem_range_values14_of_mem_recursiveValueSet_le_ten
+          (by norm_num) (by norm_num) hb'
     · rw [recursiveValueSet_four] at ha
       have hb' : b ∈ recursiveValueSet 9 := by simpa using hb
       rw [recursiveValueSet_nine] at hb'
       simp only [Set.mem_insert_iff, Set.mem_singleton_iff] at ha
       rcases hb' with ⟨i, rfl⟩
       rcases ha with rfl | rfl | rfl
-      · exact one_add_values9_mem_range_values14 i
+      · exact one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+          (by norm_num) (values9_mem_recursiveValueSet_nine i)
       · exact sqrt_two_add_values9_mem_range_values14 i
-      · exact two_add_values9_mem_range_values14 i
+      · exact two_add_mem_range_values14_of_mem_recursiveValueSet_le_ten
+          (by norm_num) (by norm_num) (values9_mem_recursiveValueSet_nine i)
     · rw [recursiveValueSet_five_eq_range_values5] at ha
       have hb' : b ∈ recursiveValueSet 8 := by simpa using hb
       rw [recursiveValueSet_eight] at hb'
@@ -98,11 +136,15 @@ theorem recursiveValueSet_fourteen_subset_range :
       rcases ha with ⟨i, rfl⟩
       rcases hb' with rfl | rfl | rfl
       · change (Set.range values14) (values9 i + 1)
-        simpa [add_comm] using one_add_values9_mem_range_values14 i
+        simpa [add_comm] using
+          one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+            (by norm_num) (values9_mem_recursiveValueSet_nine i)
       · change (Set.range values14) (values9 i + Real.sqrt 2)
         simpa [add_comm] using sqrt_two_add_values9_mem_range_values14 i
       · change (Set.range values14) (values9 i + 2)
-        simpa [add_comm] using two_add_values9_mem_range_values14 i
+        simpa [add_comm] using
+          two_add_mem_range_values14_of_mem_recursiveValueSet_le_ten
+            (by norm_num) (by norm_num) (values9_mem_recursiveValueSet_nine i)
     · rw [recursiveValueSet_ten] at ha
       have hb' : b ∈ recursiveValueSet 3 := by simpa using hb
       rw [recursiveValueSet_three] at hb'
@@ -110,9 +152,13 @@ theorem recursiveValueSet_fourteen_subset_range :
       rcases ha with ⟨i, rfl⟩
       rcases hb' with rfl | rfl
       · change (Set.range values14) (values10 i + 1)
-        simpa [add_comm] using one_add_values10_mem_range_values14 i
+        simpa [add_comm] using
+          one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+            (by norm_num) (values10_mem_recursiveValueSet i)
       · change (Set.range values14) (values10 i + 2)
-        simpa [add_comm] using two_add_values10_mem_range_values14 i
+        simpa [add_comm] using
+          two_add_mem_range_values14_of_mem_recursiveValueSet_le_ten
+            (by norm_num) (by norm_num) (values10_mem_recursiveValueSet i)
     · rw [recursiveValueSet_eleven] at ha
       have hb' : b ∈ recursiveValueSet 2 := by simpa using hb
       rw [recursiveValueSet_two] at hb'
@@ -120,7 +166,9 @@ theorem recursiveValueSet_fourteen_subset_range :
       rcases ha with ⟨i, rfl⟩
       rcases hb' with rfl
       change (Set.range values14) (values11 i + 1)
-      simpa [add_comm] using one_add_values11_mem_range_values14 i
+      simpa [add_comm] using
+        one_add_mem_range_values14_of_mem_recursiveValueSet_le_twelve
+          (by norm_num) (values11_mem_recursiveValueSet i)
     · rw [recursiveValueSet_twelve] at ha
       simp [recursiveValueSet] at hb
       rcases ha with ⟨i, rfl⟩

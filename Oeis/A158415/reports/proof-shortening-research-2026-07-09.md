@@ -1,182 +1,311 @@
-# A158415 Proof-Shortening Research
+# A158415 Proof-Shortening and Build-Time Research
 
 Date: 2026-07-09.
 
-This note records concrete ways to shorten the current A158415 Lean
-formalization after the size-15 proof work.  The main lesson is that the
-largest remaining savings are in generated certificate shape, not in local
-tactic golf.
+This note records the proof-format experiments performed after formalizing the
+known values through `a(15) = 791`. The main conclusion is that generated data
+representation matters much more than local tactic golf. The best changes make
+Lean check a small soundness kernel plus finite data, rather than repeatedly
+elaborating the same proof shape.
 
-## Current proof surface
+Wolfram's `RootReduce` remains a discovery tool only. The generated Lean files
+contain exact expressions, rational interval certificates, and finite route or
+index tables. No floating-point comparison or arbitrary epsilon enters the
+trusted proof.
 
-Line counts and rough declaration counts after the size-15 work:
+## Implemented improvements
 
-| File | Lines | Defs | Theorems | Macros | `next` branches |
-|---|---:|---:|---:|---:|---:|
-| `LeanProofs/A158415.lean` | 1973 | 13 | 106 | 0 | 0 |
-| `LeanProofs/A158415Ten.lean` | 778 | 2 | 26 | 0 | 0 |
-| `LeanProofs/A158415Eleven.lean` | 1074 | 6 | 62 | 1 | 0 |
-| `LeanProofs/A158415Twelve.lean` | 2778 | 2 | 51 | 1 | 0 |
-| `LeanProofs/A158415Thirteen.lean` | 6892 | 2 | 76 | 1 | 0 |
-| `LeanProofs/A158415Fourteen.lean` | 13875 | 2 | 121 | 0 | 1829 |
-| `LeanProofs/A158415Fifteen.lean` | 196 | 0 | 9 | 0 | 0 |
-| `LeanProofs/A158415FifteenIntervals.lean` | 6161 | 352 | 175 | 0 | 0 |
-| `LeanProofs/A158415FifteenOrder.lean` | 841 | 0 | 4 | 2 | 790 |
-| `LeanProofs/A158415FifteenRangeA.lean` | 2945 | 4 | 4 | 0 | 719 |
-| `LeanProofs/A158415FifteenRangeB.lean` | 311 | 2 | 2 | 0 | 54 |
-| `LeanProofs/A158415FifteenRangeC.lean` | 2916 | 6 | 6 | 0 | 494 |
-| `LeanProofs/A158415FifteenTable.lean` | 19070 | 70 | 98 | 0 | 1895 |
+### 1. Typed route tables instead of expression-witness forests
 
-Range proof branch counts:
+Sizes 14 and 15 now store one canonical route per value. For example, a
+size-15 route is one of:
 
-| File | Branches | Exact `rfl` branches | Nontrivial branches |
+```lean
+inductive Values15Route where
+  | sqrt14 (i : Fin 455)
+  | oneAdd13 (i : Fin 264)
+  | sqrtTwoAdd10 (i : Fin 54)
+  | add5_9 (i : Fin 5) (j : Fin 33)
+  | add6_8 (i : Fin 8) (j : Fin 20)
+  | add7_7 (i j : Fin 13)
+```
+
+Its evaluator gives the real value, and a six-case theorem proves that every
+route belongs to `recursiveValueSet 15`. This replaces thousands of generated
+expression declarations, size proofs, evaluation proofs, and route-equality
+proofs.
+
+Observed effects:
+
+| Artifact | Before | After |
+|---|---:|---:|
+| `A158415FifteenTable.lean` source | about 1.75 MB / 14,829 lines | about 34 KB / 935 lines |
+| `A158415FifteenTable.olean` | 31.6 MB | 4.50 MB |
+| focused size-15 table build | much larger old certificate | 16-18 s |
+| `A158415FourteenTable.lean` source | 59.9 KB / 1,001 lines | 20.9 KB / 583 lines |
+| `A158415FourteenTable.olean` | 4.22 MB | 2.67 MB |
+| focused size-14 table build | about 49 s before route conversion | 30 s after final route conversion |
+
+This is the largest source and object-size win in the current work.
+
+### 2. Boolean rational interval validation
+
+`IntervalCert.Valid` used to be a tree of propositions over `Real`. Every
+generated special comparison separately invoked arithmetic tactics to prove
+the same kinds of inequalities. It is now backed by a Boolean `valid` checker
+whose arithmetic is entirely in `Rat`:
+
+```lean
+def Valid (c : IntervalCert) : Prop := c.valid = true
+
+def separated (left right : IntervalCert) : Bool :=
+  left.valid && right.valid && decide (left.upper < right.lower)
+```
+
+The generic soundness proof performs the rational-to-real casts once. Each
+generated interval module has one finite `native_decide` theorem validating
+all adjacent special certificate pairs. Individual order lemmas only select a
+pair, connect its exact expression to the table entry, and invoke
+`lt_of_separated`.
+
+Observed effects:
+
+| Module | Before | After |
+|---|---:|---:|
+| size-15 intervals, focused build | about 478 s | about 85 s |
+| size-15 intervals `.olean` | 30.83 MB | 10.38 MB |
+| size-14 intervals, focused build | about 770 s under the earlier shape | about 139 s |
+| size-14 intervals `.olean` | about 33.8 MB | about 22.4 MB |
+
+The timings were collected amid intermittent unrelated Lean builds, so they
+are not controlled microbenchmarks. The improvement is nevertheless much
+larger than the observed contention.
+
+### 3. Modulo-backed finite indices
+
+Generated range witnesses formerly had both a `Nat` lookup table and a second
+large proof that every result was below the target table length. They now use:
+
+```lean
+def candidate_index (i : Fin sourceLength) : Fin targetLength :=
+  Fin.ofNat targetLength (candidate_indexNat i.1)
+```
+
+Every generated index is already in range, so the modulo does not alter its
+value. It removes a duplicate `fin_cases ... <;> decide` certificate and makes
+the `Fin` bound true by construction.
+
+Before the later route compression, this reduced the size-15 range object
+files as follows:
+
+| Module | Before `.olean` | After `.olean` | Focused build after change |
 |---|---:|---:|---:|
-| `A158415FifteenRangeA.lean` | 719 | 718 | 1 |
-| `A158415FifteenRangeB.lean` | 54 | 33 | 21 |
-| `A158415FifteenRangeC.lean` | 494 | 40 | 454 |
+| `A158415FifteenRangeA` | 10.90 MB | 7.81 MB | 74 s, from about 90 s |
+| `A158415FifteenRangeB` | 1.21 MB | 0.97 MB | 19 s |
+| `A158415FifteenRangeC` | 8.06 MB | 5.86 MB | 141 s |
 
-## Highest-payoff opportunities
+### 4. Derive padded range families instead of generating them
 
-### 1. Remove the route table layer from expression witnesses
+Several size-14 range families were redundant. Once `1 + x` is known to occur
+for every size-12 value, values from smaller sizes can be padded into size 12.
+The generic lemmas now derive lower one-add and two-add families from
+`recursiveValueSet_subset_of_le` and
+`natCast_add_mem_recursiveValueSet_add_two_mul`.
 
-The generated size-15 table currently carries parallel data:
+This removed five generated families:
 
-- `values15Nat`
-- `values15RouteNat`
-- `values15Route`
-- `values15ExprNat`
-- `values15Expr`
-- per-index route equality proofs
-- per-index expression evaluation via route equality
+- `1 + values11`
+- `1 + values10`
+- `2 + values10`
+- `1 + values9`
+- `2 + values9`
 
-The generator emits this in
-`Oeis/A158415/computations/wolfram/generate-a158415-data.wl`, in
-`printLeanExprWitnesses`.  The route layer was useful while developing the
-certificate format, but the final membership theorem only needs:
+The size-14 range source fell from about 100 KB / 3,000 lines to 54 KB / 1,825
+lines before the later route compression. Its focused build improved from
+about 748 s to 624 s, and its `.olean` fell from 27.07 MB to 23.47 MB (31.06 MB
+before the modulo-backed-index change).
 
-1. an expression witness,
-2. its size proof,
-3. an exact proof that evaluating the expression equals the target value.
+The same mathematical pattern had already proved useful at size 15. It should
+be preferred whenever a larger canonical family subsumes smaller padded
+families.
 
-So the generator can emit direct `valuesmExpr_eval` proofs and stop emitting
-`valuesmRouteNat`, `valuesmRoute`, and `valuesmRoute_eq_values` for production
-tables.  This should save thousands of generated lines in
-`A158415FifteenTable.lean`; it also removes one moving part from every future
-`m`.
+### 5. Direct inherited-order proofs
 
-Risk: low to medium.  This is generator surgery rather than mathematical proof
-work.  The direct proofs should still be mechanically checkable by the same
-table tactics.
-
-### 2. Compress exact range branches with `all_goals try rfl`
-
-The range modules are mostly generated case splits.  `RangeA` is especially
-ripe: 718 of 719 branches are exact `rfl` cases.  The generator can produce:
+When adjacent entries are both `1 + values13 i`, the order proof no longer
+asks `linarith` to rediscover monotonicity. It uses the inherited theorem
+directly:
 
 ```lean
-  all_goals try rfl
+exact add_lt_add_right
+  (values13_strictMono (by decide : (i : Nat) < j)) 1
 ```
 
-after the `fin_cases` split, then emit only the nontrivial collision branches.
+This reduced the size-15 order build from about 379 s to 351 s and its `.olean`
+from 8.62 MB to 7.44 MB. The analogous size-14 change reduced its build from
+about 160 s to 133 s and its `.olean` from 4.88 MB to 4.18 MB.
 
-This should almost delete `A158415FifteenRangeA.lean` and noticeably shrink
-`RangeB`.  `RangeC` has many real collisions, so the win there is smaller.
+### 6. Route-checked exact and almost-exact unary ranges
 
-Risk: low for `RangeA`, medium elsewhere.  A similar ultra-compact experiment
-on the order proof was too costly for elaboration, but the range proof's exact
-`rfl` branches are simpler.  Build time still needs to be measured.
-
-### 3. Factor interval order theorem boilerplate
-
-`A158415FifteenIntervals.lean` already has `IntervalCert`, but every special
-ordering theorem still repeats the same shape:
-
-1. show left certificate validity,
-2. show right certificate validity,
-3. rewrite certificate evaluations,
-4. finish from a rational endpoint gap.
-
-A generic lemma could capture the pattern:
+The square-root range families are definitionally exact: the first 264
+size-14 routes are `sqrt13`, and the first 455 size-15 routes are `sqrt14`.
+Enumerating one `rfl` branch per input is unnecessary. The generator now emits
+one finite route theorem:
 
 ```lean
-theorem IntervalCert.lt_of_gap
-    (left right : IntervalCert)
-    (hleft : left.Valid)
-    (hright : right.Valid)
-    (hleftEval : x = left.expr.eval)
-    (hrightEval : y = right.expr.eval)
-    (hgap : (left.upper : Real) < (right.lower : Real)) :
-    x < y := ...
+private theorem sqrt_values13_mem_range_values14_route_spec :
+    forall i : Fin 264,
+      values14RouteNat (sqrt_values13_mem_range_values14_index i).1 =
+        Values14Route.sqrt13 i := by
+  native_decide
 ```
 
-The generated special theorems would then be reduced to certificate validity,
-two evaluation rewrites, and `norm_num` on the gap.
+The real-valued range equality then follows by rewriting the route and `rfl`.
+The size-14 range built in 506 s with this change, versus 624 s after the
+padding-family cleanup, despite concurrent load.
 
-Risk: low.  The proof principle is already used repeatedly; this just names it.
-The payoff is moderate for line count and good for readability.
+The one-add families are almost exact: 153 of 154 size-14 cases and 263 of 264
+size-15 cases are direct `oneAdd` routes. In each family, index zero is the
+only algebraic collision. The generator therefore emits a route theorem under
+`Not (i = 0)`, retains the original exact proof for index zero, and dispatches
+with one `by_cases`. Together, these route checks remove 1,135 repetitive
+branches while preserving the two genuine collision proofs.
 
-### 4. Port size 14 and older special-order proofs to interval certificates
+After both route compressions, `A158415FourteenRange.lean` is about 48 KB /
+1,414 lines and its `.olean` is 19.96 MB. `A158415FifteenRangeA.lean` is about
+14 KB / 792 lines and its `.olean` is 1.77 MB, down from 7.81 MB after the
+modulo-backed-index change. The optimization is deliberately limited to
+structurally exact cases; other algebraic collisions still receive explicit
+equality certificates.
 
-`A158415Fourteen.lean` is still 13875 lines and uses older hand-expanded
-rational upper/lower proofs.  Size 15 showed that named interval certificates
-are a better surface: the order proof is split, more inspectable, and easier
-to regenerate.
+## Final verification
 
-The likely next cleanup is to split size 14 into table/order/range modules and
-reuse the interval-certificate generator.  The same approach may simplify size
-13 and size 12, though the payoff drops quickly with `m`.
+After merging current `main`, both final targets built successfully:
 
-Risk: medium.  This is not conceptually hard, but it touches older generated
-artifacts and may expose compile-time regressions.
+```text
+lake build LeanProofs.A158415Fourteen
+lake build LeanProofs.A158415Fifteen
+```
 
-### 5. Share interval subcertificates
+The successful post-merge size-15 run rebuilt the table (31 s), intervals
+(246 s), range A (246 s), range B (60 s), range C (246 s), order proof (366 s),
+and final theorem (27 s). The machine was concurrently running unrelated Lean
+builds, so these figures are a verification record rather than controlled
+benchmarks. The resulting modules prove `a158415 14 = 455` and
+`a158415 15 = 791` with exact certificates.
 
-`IntervalCert` is currently tree-shaped.  Repeated nested radicals therefore
-duplicate source text and elaboration work.  A DAG-style certificate table
-would name shared subcertificates once and refer to them by index.
+## Experiments rejected
 
-Potential shape:
+### Broad `try rfl` sweeps
 
-- a generated array/list of certificate nodes,
-- a validity theorem per node,
-- an evaluation theorem per node,
-- order certificates that point at node indices.
+Replacing explicit branches by
+`fin_cases ... <;> try rfl` made `A158415FifteenRangeA` much shorter (roughly
+1,508 lines to 790), but slowed its build from about 90 s to 115 s. Lean was
+paying to search all goals rather than following generated deterministic
+branches. The experiment was reverted.
 
-Risk: medium to high.  This is a bigger certificate-format change, but it is
-one of the few options that could reduce both source size and elaboration work
-substantially for later `n`.
+The typed-route finite check achieves the desired source compression without
+that elaboration penalty.
 
-### 6. Long-term: algebraic-number certificates
+### Splitting the size-14 range into five modules
 
-Wolfram/Tungsten `RootReduce` is useful for discovery, but Lean cannot trust
-it directly.  A more ambitious direction is to emit algebraic-number
-certificates:
+Parallel module compilation reduced one contended wall-clock run only from
+about 748 s to 713 s, while the combined `.olean` footprint grew to roughly
+94 MB from 27 MB. The aggregator alone took about 93 s. Repeated imports and
+environment serialization outweighed the limited parallelism. The split was
+fully reverted.
 
-- a minimal polynomial,
-- an isolating interval,
-- a proof that the nested radical expression is the isolated root,
-- exact comparison via interval separation or polynomial sign data.
+### Tactic-only strict-order compression
 
-This could eventually replace large nested radical interval trees.  It is
-probably not the next engineering step; it is a separate formalization project.
+An ultra-short `values15_strictMono` built from broad `all_goals` tactic sweeps
+was slow and fragile. Generated branch-local proofs are longer, but give Lean
+the intended theorem immediately. The lesson is consistent: source line count
+is not a useful objective unless elaboration time and object size are measured
+alongside it.
 
-## Less promising tactic-only compression
+## Further ways to shorten the proofs
 
-An ultra-compact `values15_strictMono` proof using broad `all_goals` tactic
-sweeps was much shorter on paper, but it was too slow or fragile in practice.
-The current generated macro-per-branch proof is less elegant, but it builds.
-Future proof shortening should therefore measure elaboration time, not just
-source lines.
+The following ideas remain promising, in approximate payoff order.
 
-## Suggested next implementation order
+### 1. A checked collision-certificate language
 
-1. Implement `all_goals try rfl` compression for generated range modules and
-   rebuild `LeanProofs.A158415Fifteen`.
-2. Remove the route table layer from `printLeanExprWitnesses`; regenerate
-   `A158415FifteenTable.lean`; rebuild.
-3. Add `IntervalCert.lt_of_gap`; regenerate or manually shorten the special
-   interval-order theorems.
-4. Port size 14 to the size-15 split/certificate style.
+Most remaining range cost is in algebraic collisions: a generated candidate
+has the same value as a canonical route but is not definitionally the same
+expression. Introduce a small certificate syntax whose steps are known exact
+identities, for example:
 
-The first two items are likely to produce the most visible line-count reduction
-with the least mathematical risk.
+- commutativity and associativity of addition;
+- route unfolding;
+- named radical identities already proved in the development;
+- congruence under `sqrt` and addition;
+- transitivity through an intermediate canonical expression.
+
+A single sound interpreter would turn certificate data into real equalities.
+The generator could then emit compact data rather than hundreds of tactic
+scripts. Unlike asking Lean to normalize arbitrary nested radicals, this keeps
+the successful current strategy: Wolfram discovers a path, Lean checks each
+step.
+
+### 2. Batch the adjacent-order dispatcher
+
+Rational certificate validity is already batched, but the final strict-order
+modules still dispatch one branch per adjacent pair. A table indexed by
+`Fin (count - 1)` could store either:
+
+- an inherited-monotonicity route, or
+- indices into the special interval-pair table.
+
+One theorem over the dispatcher would replace most of the 454/790-way order
+case splits. The key is to make dispatch decidable data and keep expression
+evaluation lemmas separate, avoiding a broad tactic sweep.
+
+### 3. DAG-shaped interval certificates
+
+`IntervalCert` is tree-shaped, so repeated radical subexpressions duplicate
+source and elaboration work. A generated array of certificate nodes could
+refer to child nodes by index. Prove soundness by a well-founded node order or
+store a topological `Fin` bound in each reference. Reused radicals would then
+be validated once.
+
+This is likely the best route to scaling the interval method beyond size 15.
+
+### 4. Benchmark array-backed lookup tables
+
+The route and index maps are currently large `Nat` pattern matches. An
+`Array`/`Vector` representation may produce smaller environments and faster
+native checks, but it may also add lookup-proof overhead. Benchmark it on the
+455-entry route table before changing the generator. The existing pattern
+match is simple and already performs well, so this is an empirical question.
+
+### 5. Share canonical padded-family theorems across sizes
+
+The size-14 and size-15 padding arguments have nearly the same shape. A generic
+lemma parameterized by a table-range hypothesis could package the arithmetic
+once. This is a modest source/readability improvement, not a major build-time
+win, but it would keep future size proofs from copying orchestration code.
+
+### 6. Verified algebraic-number certificates
+
+The ambitious endpoint is a Lean-side algebraic-number comparison backend:
+minimal polynomials, isolating rational intervals, and exact sign or root
+selection proofs. `RootReduce` could emit those certificates, while Lean proves
+that each nested radical is the isolated root and compares roots exactly.
+
+This may eventually beat interval trees for deeply nested expressions, but it
+is a separate formalization project. The collision language and DAG interval
+format are smaller, more immediate steps.
+
+## Recommended next implementation order
+
+1. Prototype the checked collision-certificate interpreter on the size-15
+   binary range module, where explicit collision proofs dominate.
+2. Replace the adjacent-order branch dispatcher with a typed finite table.
+3. Prototype DAG interval certificates and compare source, `.olean`, and build
+   time on size 15.
+4. Benchmark an array-backed route table before adopting it globally.
+5. Consider algebraic-number isolation only after the lighter certificate
+   formats reach their limits.
+
+The practical rule from all of these experiments is simple: generate explicit
+data for choices, prove its interpreter sound once, and let native finite
+computation check the data. Do not ask the elaborator to search for structure
+that the generator already knows.
