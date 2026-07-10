@@ -353,7 +353,7 @@ Qed.
 
 (** Arithmetic kernel left after both recursive operand graphs have been
     normalized. *)
-Definition PAOrdinalCodeMulCoreCompatibility : Prop :=
+Definition PAOrdinalCodeMulOpenCoreCompatibility : Prop :=
   forall (G : list formula) (leftRaw rightRaw : term) (codedOut : nat),
     BProv Ax_s G
       (ordinalCodeGraphTermAt leftRaw (tVar 1)) ->
@@ -364,3 +364,24 @@ Definition PAOrdinalCodeMulCoreCompatibility : Prop :=
         (compositeMulCoreAt codedOut)
         (ordinalCodeGraphTermAt
           (tMul leftRaw rightRaw) (tVar (codedOut + 3)))).
+
+(** The same core with its local output existentially bound.  Before the
+    binder, the operand codes are slots zero and one and the external output
+    is slot [codedOut + 2].  This is the form needed to reconstruct a
+    multiplication term graph from its target ordinal-code graph. *)
+Definition PAOrdinalCodeMulBoundCoreCompatibility : Prop :=
+  forall (G : list formula) (leftRaw rightRaw : term) (codedOut : nat),
+    BProv Ax_s G
+      (ordinalCodeGraphTermAt leftRaw (tVar 0)) ->
+    BProv Ax_s G
+      (ordinalCodeGraphTermAt rightRaw (tVar 1)) ->
+    BProv Ax_s G
+      (iffForm
+        (pEx (compositeMulCoreAt codedOut))
+        (ordinalCodeGraphTermAt
+          (tMul leftRaw rightRaw) (tVar (codedOut + 2)))).
+
+Record PAOrdinalCodeMulCoreProofs : Prop := {
+  pa_mul_open_core : PAOrdinalCodeMulOpenCoreCompatibility;
+  pa_mul_bound_core : PAOrdinalCodeMulBoundCoreCompatibility
+}.

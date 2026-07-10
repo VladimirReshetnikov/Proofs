@@ -97,6 +97,7 @@ PAHFOrdinalCodeFunctional.v
 PAHFOrdinalCodeInjective.v
 PAHFOrdinalCodeTermOperations.v
 PAHFOrdinalCodeTermAdd.v
+PAHFOrdinalCodeTermMul.v
 PAHFRoundTripQuantifiers.v
 PAHFOrdinalCodeRange.v
 PAHFHFRoundTripSemantic.v
