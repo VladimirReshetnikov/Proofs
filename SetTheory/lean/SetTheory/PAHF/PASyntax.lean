@@ -2637,6 +2637,33 @@ def betaCodingStepExistsTermAtBody
     (Term.rename Nat.succ sourceCode)
     (Term.var 0)
 
+/-- A fixed beta-coding step for prepending one entry to a copied source
+prefix.  Besides the common-divisor invariant, it separately bounds the
+source code and the new head output. -/
+def betaPrependCodingStepTermAt
+    (bound sourceCode head step : Term) : Formula :=
+  and (commonMultipleThroughTermAt bound step)
+    (and (leTermAt (Term.succ sourceCode) step)
+      (leTermAt (Term.succ head) step))
+
+/-- Existence of a fixed beta-prepend coding step. -/
+def betaPrependCodingStepExistsTermAt
+    (bound sourceCode head : Term) : Formula :=
+  ex (betaPrependCodingStepTermAt
+    (Term.rename Nat.succ bound)
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ head)
+    (Term.var 0))
+
+/-- Body exposed after opening a beta-prepend coding-step witness. -/
+def betaPrependCodingStepExistsTermAtBody
+    (bound sourceCode head : Term) : Formula :=
+  betaPrependCodingStepTermAt
+    (Term.rename Nat.succ bound)
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ head)
+    (Term.var 0)
+
 def eqConstAt (a n : Nat) : Formula :=
   eq (Term.var a) (Term.numeral n)
 
@@ -3424,6 +3451,39 @@ def betaUnshiftPrefixCodeExistsTermAtBody
     (Term.rename Nat.succ targetStep)
     (Term.rename Nat.succ bound)
 
+/-- A head-preserving beta prepend prefix.
+
+The target code has `head` at index `0`, while the independent unshift
+relation copies every source entry below `bound` to its successor index. -/
+def betaPrependPrefixTermAt
+    (sourceCode sourceStep head targetCode targetStep bound : Term) : Formula :=
+  and (betaTermTermAt head targetCode targetStep Term.zero)
+    (betaUnshiftPrefixTermAt
+      sourceCode sourceStep targetCode targetStep bound)
+
+/-- Existence of a target code satisfying a head-preserving beta prepend
+prefix for one fixed target step. -/
+def betaPrependPrefixCodeExistsTermAt
+    (sourceCode sourceStep head targetStep bound : Term) : Formula :=
+  ex (betaPrependPrefixTermAt
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ sourceStep)
+    (Term.rename Nat.succ head)
+    (Term.var 0)
+    (Term.rename Nat.succ targetStep)
+    (Term.rename Nat.succ bound))
+
+/-- Body exposed after opening a beta-prepend prefix-code witness. -/
+def betaPrependPrefixCodeExistsTermAtBody
+    (sourceCode sourceStep head targetStep bound : Term) : Formula :=
+  betaPrependPrefixTermAt
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ sourceStep)
+    (Term.rename Nat.succ head)
+    (Term.var 0)
+    (Term.rename Nat.succ targetStep)
+    (Term.rename Nat.succ bound)
+
 /-- Source-side availability contract for beta-prefix constructions: every
 index strictly below `bound` has some beta output. -/
 def betaEntryExistsPrefixTermAt
@@ -3954,6 +4014,56 @@ theorem betaCodingStepExistsTermAt_nat
     apply (betaCodingStepTermAt_nat
       (scons step e) (Term.rename Nat.succ bound)
       (Term.rename Nat.succ sourceCode) (Term.var 0)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hstep
+
+theorem betaPrependCodingStepTermAt_nat
+    (e : Nat → Nat) (bound sourceCode head step : Term) :
+    Sat natModel e
+      (betaPrependCodingStepTermAt bound sourceCode head step) ↔
+      (∀ q, q < Term.eval natModel e bound →
+        q + 1 ∣ Term.eval natModel e step) ∧
+      Term.eval natModel e sourceCode + 1 ≤
+        Term.eval natModel e step ∧
+      Term.eval natModel e head + 1 ≤
+        Term.eval natModel e step := by
+  constructor
+  · intro h
+    exact ⟨(commonMultipleThroughTermAt_nat e bound step).mp h.1,
+      (leTermAt_nat e (Term.succ sourceCode) step).mp h.2.1,
+      (leTermAt_nat e (Term.succ head) step).mp h.2.2⟩
+  · intro h
+    exact ⟨(commonMultipleThroughTermAt_nat e bound step).mpr h.1,
+      (leTermAt_nat e (Term.succ sourceCode) step).mpr h.2.1,
+      (leTermAt_nat e (Term.succ head) step).mpr h.2.2⟩
+
+theorem betaPrependCodingStepExistsTermAt_nat
+    (e : Nat → Nat) (bound sourceCode head : Term) :
+    Sat natModel e
+      (betaPrependCodingStepExistsTermAt bound sourceCode head) ↔
+      ∃ step,
+        (∀ q, q < Term.eval natModel e bound → q + 1 ∣ step) ∧
+        Term.eval natModel e sourceCode + 1 ≤ step ∧
+        Term.eval natModel e head + 1 ≤ step := by
+  constructor
+  · intro h
+    rcases h with ⟨step, hstep⟩
+    refine ⟨step, ?_⟩
+    have hspec := (betaPrependCodingStepTermAt_nat
+      (scons step e)
+      (Term.rename Nat.succ bound)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ head)
+      (Term.var 0)).mp hstep
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨step, hstep⟩
+    refine ⟨step, ?_⟩
+    apply (betaPrependCodingStepTermAt_nat
+      (scons step e)
+      (Term.rename Nat.succ bound)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ head)
+      (Term.var 0)).mpr
     simpa [Term.eval_rename, Term.eval, scons] using hstep
 
 theorem crtInverseTermAt_nat
@@ -4965,6 +5075,72 @@ theorem betaUnshiftPrefixCodeExistsTermAt_nat
       (scons targetCode e)
       (Term.rename Nat.succ sourceCode)
       (Term.rename Nat.succ sourceStep)
+      (Term.var 0)
+      (Term.rename Nat.succ targetStep)
+      (Term.rename Nat.succ bound)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hprefix
+
+theorem betaPrependPrefixTermAt_nat
+    (e : Nat → Nat)
+    (sourceCode sourceStep head targetCode targetStep bound : Term) :
+    Sat natModel e
+      (betaPrependPrefixTermAt
+        sourceCode sourceStep head targetCode targetStep bound) ↔
+      BetaEntry (Term.eval natModel e targetCode)
+          (Term.eval natModel e targetStep) 0
+          (Term.eval natModel e head) ∧
+        ∀ i, i < Term.eval natModel e bound → ∀ out,
+          BetaEntry (Term.eval natModel e sourceCode)
+              (Term.eval natModel e sourceStep) i out →
+            BetaEntry (Term.eval natModel e targetCode)
+              (Term.eval natModel e targetStep) (i + 1) out := by
+  constructor
+  · intro h
+    exact ⟨(betaTermTermAt_nat_entry e head targetCode targetStep
+        Term.zero).mp h.1,
+      (betaUnshiftPrefixTermAt_nat e sourceCode sourceStep
+        targetCode targetStep bound).mp h.2⟩
+  · intro h
+    exact ⟨(betaTermTermAt_nat_entry e head targetCode targetStep
+        Term.zero).mpr h.1,
+      (betaUnshiftPrefixTermAt_nat e sourceCode sourceStep
+        targetCode targetStep bound).mpr h.2⟩
+
+theorem betaPrependPrefixCodeExistsTermAt_nat
+    (e : Nat → Nat)
+    (sourceCode sourceStep head targetStep bound : Term) :
+    Sat natModel e
+      (betaPrependPrefixCodeExistsTermAt
+        sourceCode sourceStep head targetStep bound) ↔
+      ∃ targetCode,
+        BetaEntry targetCode (Term.eval natModel e targetStep) 0
+            (Term.eval natModel e head) ∧
+          ∀ i, i < Term.eval natModel e bound → ∀ out,
+            BetaEntry (Term.eval natModel e sourceCode)
+                (Term.eval natModel e sourceStep) i out →
+              BetaEntry targetCode (Term.eval natModel e targetStep)
+                (i + 1) out := by
+  constructor
+  · intro h
+    rcases h with ⟨targetCode, hprefix⟩
+    refine ⟨targetCode, ?_⟩
+    have hspec := (betaPrependPrefixTermAt_nat
+      (scons targetCode e)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ sourceStep)
+      (Term.rename Nat.succ head)
+      (Term.var 0)
+      (Term.rename Nat.succ targetStep)
+      (Term.rename Nat.succ bound)).mp hprefix
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨targetCode, hprefix⟩
+    refine ⟨targetCode, ?_⟩
+    apply (betaPrependPrefixTermAt_nat
+      (scons targetCode e)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ sourceStep)
+      (Term.rename Nat.succ head)
       (Term.var 0)
       (Term.rename Nat.succ targetStep)
       (Term.rename Nat.succ bound)).mpr

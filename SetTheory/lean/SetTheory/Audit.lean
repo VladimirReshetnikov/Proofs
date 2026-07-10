@@ -507,6 +507,9 @@ open SetTheory
 #check @PA.Formula.betaCodingStepTermAt
 #check @PA.Formula.betaCodingStepExistsTermAt
 #check @PA.Formula.betaCodingStepExistsTermAtBody
+#check @PA.Formula.betaPrependCodingStepTermAt
+#check @PA.Formula.betaPrependCodingStepExistsTermAt
+#check @PA.Formula.betaPrependCodingStepExistsTermAtBody
 #check @PA.Formula.crtInverseTermAt
 #check @PA.Formula.crtInverseExistsTermAt
 #check @PA.Formula.crtInverseExistsTermAtQuotEx
@@ -529,6 +532,9 @@ open SetTheory
 #check @PA.Formula.betaUnshiftPrefixTermAt
 #check @PA.Formula.betaUnshiftPrefixCodeExistsTermAt
 #check @PA.Formula.betaUnshiftPrefixCodeExistsTermAtBody
+#check @PA.Formula.betaPrependPrefixTermAt
+#check @PA.Formula.betaPrependPrefixCodeExistsTermAt
+#check @PA.Formula.betaPrependPrefixCodeExistsTermAtBody
 #check @PA.Formula.betaPrefixDividesTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAt
@@ -540,6 +546,8 @@ open SetTheory
 #check @PA.Formula.positiveCommonMultipleExistsTermAt_nat
 #check @PA.Formula.betaCodingStepTermAt_nat
 #check @PA.Formula.betaCodingStepExistsTermAt_nat
+#check @PA.Formula.betaPrependCodingStepTermAt_nat
+#check @PA.Formula.betaPrependCodingStepExistsTermAt_nat
 #check @PA.Formula.crtInverseTermAt_nat
 #check @PA.Formula.crtInverseExistsTermAt_nat
 #check @PA.Formula.crtSuccessorCorrectionTerm_nat
@@ -554,6 +562,8 @@ open SetTheory
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAt_nat
 #check @PA.Formula.betaUnshiftPrefixTermAt_nat
 #check @PA.Formula.betaUnshiftPrefixCodeExistsTermAt_nat
+#check @PA.Formula.betaPrependPrefixTermAt_nat
+#check @PA.Formula.betaPrependPrefixCodeExistsTermAt_nat
 #check @PA.Formula.betaPrefixDividesTermAt_nat
 #check @PA.Formula.betaPrefixCRTAccumulatorTermAt_nat
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAt_nat
