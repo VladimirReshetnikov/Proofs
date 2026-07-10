@@ -891,7 +891,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaPrependPrefixTermAt_succ_mem_of_source_trace
 #check @PA.Formula.BProv_Ax_s_betaPrependExistsTermAt_succ_mem_of_source_trace
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_elim_opened_code_step
+#check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_elim_opened_code_step
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_succ_of_div2StepTermAt
+#check @PA.Formula.BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_bit_components
