@@ -78,6 +78,7 @@ PAHFMembershipBoundSucc.v
 PAHFInterpretations.v
 PAHFTermGraphModel.v
 PAHFTermGraphTotal.v
+PAHFTermGraphFunctional.v
 PAHFRawSemantics.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
