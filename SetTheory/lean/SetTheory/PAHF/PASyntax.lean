@@ -46970,6 +46970,264 @@ theorem BProv_Ax_s_hfLtDistinguishesThroughTermAt_zero :
       (fun f hf => sentence_ax_s (f := f) hf)
       (by simpa using himp))
 
+/-- If a binary head is the successor of `pred`, its extracted half is at
+most `pred`.  The contradiction branch uses the sharp fact that
+`pred < half` forces `S(S(2*pred)) <= 2*half`. -/
+theorem BProv_Ax_s_leTermAt_half_of_div2StepAt_eq_succ
+    {G : List Formula} {head half bit : Nat} {pred : Term}
+    (hstep : BProv Ax_s G (div2StepAt head half bit))
+    (hhead : BProv Ax_s G
+      (eq (Term.var head) (Term.succ pred))) :
+    BProv Ax_s G (leTermAt (Term.var half) pred) := by
+  let halfTerm : Term := Term.var half
+  let doubleHalf : Term := Term.add halfTerm halfTerm
+  let doublePred : Term := Term.add pred pred
+  let target : Formula := leTermAt halfTerm pred
+  have hcmp : BProv Ax_s G
+      (or target (ltTermAt pred halfTerm)) := by
+    simpa [target, halfTerm] using
+      BProv_Ax_s_leTermAt_or_gtTermAt halfTerm pred
+  have hleBranch : BProv Ax_s (target :: G) target :=
+    BProv_ass (B := Ax_s) (G := target :: G) (by simp)
+  have hgtBranch : BProv Ax_s (ltTermAt pred halfTerm :: G) target := by
+    let C : List Formula := ltTermAt pred halfTerm :: G
+    have hlt : BProv Ax_s C (ltTermAt pred halfTerm) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hsuccLe : BProv Ax_s C
+        (leTermAt (Term.succ pred) halfTerm) :=
+      BProv_Ax_s_leTermAt_succ_left_of_ltTermAt hlt
+    have hfirst : BProv Ax_s C
+        (leTermAt
+          (Term.add (Term.succ pred) (Term.succ pred))
+          (Term.add (Term.succ pred) halfTerm)) :=
+      BProv_Ax_s_leTermAt_add_left hsuccLe
+    have hsecond : BProv Ax_s C
+        (leTermAt
+          (Term.add (Term.succ pred) halfTerm)
+          doubleHalf) := by
+      simpa [doubleHalf] using
+        BProv_Ax_s_leTermAt_add_right
+          (a := halfTerm) hsuccLe
+    have hsum : BProv Ax_s C
+        (leTermAt
+          (Term.add (Term.succ pred) (Term.succ pred))
+          doubleHalf) :=
+      BProv_Ax_s_leTermAt_trans hfirst hsecond
+    have hsuccAdd : BProv Ax_s C
+        (eq (Term.add (Term.succ pred) (Term.succ pred))
+          (Term.succ (Term.add pred (Term.succ pred)))) :=
+      BProv_Ax_s_succ_add_terms pred (Term.succ pred)
+    have haddSucc : BProv Ax_s C
+        (eq (Term.add pred (Term.succ pred))
+          (Term.succ doublePred)) := by
+      simpa [doublePred] using
+        BProv_weaken_nil (BProv_Ax_s_addSucc_terms pred pred)
+    have htwoSucc : BProv Ax_s C
+        (eq (Term.add (Term.succ pred) (Term.succ pred))
+          (Term.succ (Term.succ doublePred))) :=
+      BProv_eqTrans hsuccAdd (BProv_eq_congr_succ haddSucc)
+    have hlarge : BProv Ax_s C
+        (leTermAt (Term.succ (Term.succ doublePred)) doubleHalf) :=
+      BProv_leTermAt_of_eq_left htwoSucc hsum
+    have hstepC : BProv Ax_s C (div2StepAt head half bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    have hheadC : BProv Ax_s C
+        (eq (Term.var head) (Term.succ pred)) :=
+      BProv_context_cons (B := Ax_s) hhead
+    have hdoubleLeHead : BProv Ax_s C
+        (leTermAt doubleHalf (Term.var head)) := by
+      have heven : BProv Ax_s (doubleEqAt head half :: C)
+          (leTermAt doubleHalf (Term.var head)) := by
+        simpa [doubleHalf] using
+          BProv_Ax_s_double_le_of_doubleEqAt
+            (BProv_ass (B := Ax_s)
+              (G := doubleEqAt head half :: C) (by simp))
+      have hodd : BProv Ax_s (oddDoubleEqAt head half :: C)
+          (leTermAt doubleHalf (Term.var head)) := by
+        simpa [doubleHalf] using
+          BProv_Ax_s_double_le_of_oddDoubleEqAt
+            (BProv_ass (B := Ax_s)
+              (G := oddDoubleEqAt head half :: C) (by simp))
+      exact BProv_Ax_s_of_div2StepAt_double_odd_cases
+        hstepC heven hodd
+    have hdoubleLeSuccPred : BProv Ax_s C
+        (leTermAt doubleHalf (Term.succ pred)) :=
+      BProv_leTermAt_of_eq_right hheadC hdoubleLeHead
+    have hbadLe : BProv Ax_s C
+        (leTermAt (Term.succ (Term.succ doublePred))
+          (Term.succ pred)) :=
+      BProv_Ax_s_leTermAt_trans hlarge hdoubleLeSuccPred
+    have hbadLt : BProv Ax_s C
+        (ltTermAt (Term.succ doublePred) (Term.succ pred)) :=
+      BProv_Ax_s_ltTermAt_of_succ_leTermAt hbadLe
+    have hpredLeDouble : BProv Ax_s C
+        (leTermAt pred doublePred) := by
+      apply BProv_Ax_s_leTermAt_of_eq_add_right_terms
+      exact BProv_eqRefl (B := Ax_s) (G := C) doublePred
+    have hsuccPredLeSuccDouble : BProv Ax_s C
+        (leTermAt (Term.succ pred) (Term.succ doublePred)) :=
+      BProv_Ax_s_leTermAt_succ_succ hpredLeDouble
+    exact BProv_botE (a := target)
+      (BProv_Ax_s_ltTermAt_leTermAt_bot
+        hbadLt hsuccPredLeSuccDouble)
+  exact BProv_orE hcmp hleBranch hgtBranch
+
+/-- The genuinely new one-code fact required by cumulative PA induction. -/
+theorem BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_through_zero :
+    BProv Ax_s [hfLtDistinguishesThroughAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0))) := by
+  let through : Formula := hfLtDistinguishesThroughAt 0
+  let G : List Formula := [through]
+  let highCode : Term := Term.succ (Term.var 1)
+  let lowLtHigh : Formula := ltTermAt (Term.var 0) highCode
+  let target : Formula := hfSomeDistinguishesTermAt highCode 0
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp lowLtHigh target) := by
+    let C : List Formula := lowLtHigh :: G.map (rename Nat.succ)
+    let highEqBody : Formula :=
+      eq (Term.var 0) (Term.rename Nat.succ highCode)
+    have hhighEqEx : BProv Ax_s C (ex highEqBody) := by
+      have hinst : BProv Ax_s C
+          (subst (instTerm highCode) highEqBody) := by
+        simpa [highEqBody, subst, instTerm, Term.subst,
+          Term.upSubst, term_subst_instTerm_rename_succ] using
+          (BProv_eqRefl (B := Ax_s) (G := C) highCode)
+      exact BProv_exI (B := Ax_s) (G := C) hinst
+    have htarget : BProv Ax_s C target := by
+      refine BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := C) (a := highEqBody) (c := target) hhighEqEx ?_
+      let H : List Formula := highEqBody :: C.map (rename Nat.succ)
+      let slotTarget : Formula := hfSomeDistinguishesAt 0 1
+      have hslot : BProv Ax_s H slotTarget := by
+        refine BProv_Ax_s_of_div2TotalAt_opened_step
+          (G := H) (value := 0) (target := slotTarget)
+          (BProv_Ax_s_div2TotalAt 0) ?_
+        let HH : List Formula := div2TotalOpenedStepContext H 0
+        let target2 : Formula := rename Nat.succ (rename Nat.succ slotTarget)
+        refine BProv_Ax_s_of_div2TotalAt_opened_step
+          (G := HH) (value := 3) (target := target2)
+          (BProv_Ax_s_div2TotalAt 3) ?_
+        let K : List Formula := div2TotalOpenedStepContext HH 3
+        have hhighStep : BProv Ax_s K (div2StepAt 4 3 2) := by
+          apply BProv_ass (B := Ax_s) (G := K)
+          simp [K, HH, H, div2TotalOpenedStepContext,
+            div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+            rename, Term.rename, SetTheory.up, List.map_map,
+            Function.comp_def]
+        have hlowStep : BProv Ax_s K (div2StepAt 5 1 0) := by
+          apply BProv_ass (B := Ax_s) (G := K)
+          simp [K, div2TotalOpenedStepContext]
+        have hhighEq : BProv Ax_s K
+            (eq (Term.var 4) (Term.succ (Term.var 6))) := by
+          apply BProv_ass (B := Ax_s) (G := K)
+          simp [K, HH, H, C, highEqBody, highCode,
+            div2TotalOpenedStepContext, rename, Term.rename,
+            List.map_map, Function.comp_def]
+        have hltRaw : BProv Ax_s K
+            (ltTermAt (Term.var 5) (Term.succ (Term.var 6))) := by
+          apply BProv_ass (B := Ax_s) (G := K)
+          simp [K, HH, H, C, lowLtHigh, highCode,
+            div2TotalOpenedStepContext, ltTermAt, rename, Term.rename,
+            SetTheory.up, List.map_map, Function.comp_def]
+        have hlt : BProv Ax_s K (ltAt 5 4) := by
+          simpa [ltTermAt_var] using
+            BProv_ltTermAt_of_eq_right (BProv_eqSym hhighEq) hltRaw
+        have hthrough : BProv Ax_s K
+            (hfLtDistinguishesThroughTermAt (Term.var 6)) := by
+          apply BProv_ass (B := Ax_s) (G := K)
+          simp [K, HH, H, C, G, through,
+            div2TotalOpenedStepContext, hfLtDistinguishesThroughAt,
+            rename_hfLtDistinguishesThroughTermAt_succ, Term.rename]
+        have hcases : BProv Ax_s K
+            (or
+              (ltAt 1 3)
+              (and
+                (eq (Term.var 1) (Term.var 3))
+                (and (eqConstAt 2 1) (eqConstAt 0 0)))) :=
+          BProv_Ax_s_div2_order_cases hlt hhighStep hlowStep
+        have hstrict : BProv Ax_s (ltAt 1 3 :: K)
+            (hfSomeDistinguishesAt 4 5) := by
+          let S : List Formula := ltAt 1 3 :: K
+          have hhalfLt : BProv Ax_s S (ltAt 1 3) :=
+            BProv_ass (B := Ax_s) (G := S) (by simp [S])
+          have hhighStepS : BProv Ax_s S (div2StepAt 4 3 2) :=
+            BProv_context_cons (B := Ax_s) hhighStep
+          have hlowStepS : BProv Ax_s S (div2StepAt 5 1 0) :=
+            BProv_context_cons (B := Ax_s) hlowStep
+          have hhighEqS : BProv Ax_s S
+              (eq (Term.var 4) (Term.succ (Term.var 6))) :=
+            BProv_context_cons (B := Ax_s) hhighEq
+          have hhalfLe : BProv Ax_s S
+              (leTermAt (Term.var 3) (Term.var 6)) :=
+            BProv_Ax_s_leTermAt_half_of_div2StepAt_eq_succ
+              hhighStepS hhighEqS
+          have hthroughS : BProv Ax_s S
+              (hfLtDistinguishesThroughTermAt (Term.var 6)) :=
+            BProv_context_cons (B := Ax_s) hthrough
+          have hallHalf : BProv Ax_s S (hfLtDistinguishesAt 3) :=
+            BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
+              hthroughS hhalfLe
+          have hhalfSome : BProv Ax_s S
+              (hfSomeDistinguishesAt 3 1) :=
+            BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
+              hallHalf hhalfLt
+          exact
+            BProv_Ax_s_hfSomeDistinguishesAt_of_div2_steps_and_half_distinguishes
+              hhighStepS hlowStepS hhalfSome
+        have htie : BProv Ax_s
+            (and
+              (eq (Term.var 1) (Term.var 3))
+              (and (eqConstAt 2 1) (eqConstAt 0 0)) :: K)
+            (hfSomeDistinguishesAt 4 5) := by
+          let tie : Formula :=
+            and
+              (eq (Term.var 1) (Term.var 3))
+              (and (eqConstAt 2 1) (eqConstAt 0 0))
+          let T : List Formula := tie :: K
+          have htieAss : BProv Ax_s T tie :=
+            BProv_ass (B := Ax_s) (G := T) (by simp [T])
+          have hbits : BProv Ax_s T
+              (and (eqConstAt 2 1) (eqConstAt 0 0)) :=
+            BProv_andE2 htieAss
+          have hhighBit : BProv Ax_s T (eqConstAt 2 1) :=
+            BProv_andE1 hbits
+          have hlowBit : BProv Ax_s T (eqConstAt 0 0) :=
+            BProv_andE2 hbits
+          exact BProv_Ax_s_hfSomeDistinguishesAt_of_div2_bits_one_zero
+            hhighBit
+            (BProv_context_cons (B := Ax_s) hhighStep)
+            hlowBit
+            (BProv_context_cons (B := Ax_s) hlowStep)
+        have hresult : BProv Ax_s K (hfSomeDistinguishesAt 4 5) :=
+          BProv_orE hcases hstrict htie
+        simpa [K, HH, H, C, G, through, highEqBody, highCode,
+          lowLtHigh, target, slotTarget, target2,
+          div2TotalOpenedStepContext, rename_hfSomeDistinguishesAt_succ,
+          rename, Term.rename, SetTheory.up, List.map_map,
+          Function.comp_def] using hresult
+      have hslotTerm : BProv Ax_s H
+          (hfSomeDistinguishesTermAt (Term.var 0) 1) := by
+        simpa [hfSomeDistinguishesTermAt_var] using hslot
+      have hhighEq : BProv Ax_s H
+          (eq (Term.var 0) (Term.rename Nat.succ highCode)) :=
+        BProv_ass (B := Ax_s) (G := H) (by simp [H, highEqBody])
+      have htransport : BProv Ax_s H
+          (hfSomeDistinguishesTermAt
+            (Term.rename Nat.succ highCode) 1) :=
+        BProv_hfSomeDistinguishesTermAt_of_high_eq_term
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hslotTerm hhighEq
+      simpa [H, C, target,
+        rename_hfSomeDistinguishesTermAt_succ] using htransport
+    simpa [C] using BProv_impI htarget
+  have hall : BProv Ax_s G
+      (all (imp lowLtHigh target)) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [G, through, hfLtDistinguishesTermAt, highCode,
+    lowLtHigh, target, Term.rename] using hall
+
 /-- The cumulative shell plugs directly into ordinary PA induction: only the
 proof of the genuinely new one-code invariant remains. -/
 theorem BProv_Ax_s_all_hfLtDistinguishesThroughAt_of_successor_new
@@ -47000,6 +47258,78 @@ theorem BProv_Ax_s_all_hfLtDistinguishesThroughAt_of_successor_new
       (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
   simpa [phi] using
     BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero hsuccAll
+
+/-- Project the pointwise strong-induction invariant from its cumulative
+universal closure by instantiating the bound at the current high code. -/
+theorem BProv_Ax_s_all_hfLtDistinguishesAt_of_all_through
+    (hall : BProv Ax_s [] (all (hfLtDistinguishesThroughAt 0))) :
+    BProv Ax_s [] (all (hfLtDistinguishesAt 0)) := by
+  have hthroughRaw :=
+    BProv_allE (B := Ax_s) (G := []) (t := Term.var 0) hall
+  have hthrough : BProv Ax_s []
+      (hfLtDistinguishesThroughTermAt (Term.var 0)) := by
+    simpa [hfLtDistinguishesThroughAt,
+      hfLtDistinguishesThroughTermAt, hfLtDistinguishesAt,
+      hfSomeDistinguishesAt, hfDistinguishesAt, hfMemAt,
+      betaDiv2BitAt, betaDiv2StepsThroughAt, betaDiv2StepWitnessAt,
+      betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+      ltTermAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+      betaModTerm, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename]
+      using hthroughRaw
+  have hself : BProv Ax_s []
+      (leTermAt (Term.var 0) (Term.var 0)) :=
+    BProv_Ax_s_leTermAt_refl (Term.var 0)
+  have hpoint : BProv Ax_s [] (hfLtDistinguishesAt 0) :=
+    BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
+      (boundCode := Term.var 0) (high := 0) hthrough hself
+  exact BProv_allI_of_sentences
+    (B := Ax_s) (G := [])
+    (fun f hf => sentence_ax_s (f := f) hf) hpoint
+
+/-- The cumulative universal invariant is already sufficient for translated
+HF extensionality. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesThroughAt
+    (hall : BProv Ax_s [] (all (hfLtDistinguishesThroughAt 0))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesAt
+    (BProv_Ax_s_all_hfLtDistinguishesAt_of_all_through hall)
+
+/-- End-to-end cumulative induction shell: a proof of the genuinely new
+successor code invariant yields translated HF extensionality. -/
+theorem
+    BProv_Ax_s_translated_HF_extensionality_of_cumulative_successor_new
+    (hnew : BProv Ax_s [hfLtDistinguishesThroughAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0)))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesThroughAt
+    (BProv_Ax_s_all_hfLtDistinguishesThroughAt_of_successor_new hnew)
+
+/-- PA proves the universal cumulative binary-induction invariant. -/
+theorem BProv_Ax_s_all_hfLtDistinguishesThroughAt :
+    BProv Ax_s [] (all (hfLtDistinguishesThroughAt 0)) :=
+  BProv_Ax_s_all_hfLtDistinguishesThroughAt_of_successor_new
+    BProv_Ax_s_hfLtDistinguishesTermAt_succ_of_through_zero
+
+/-- PA proves that every strictly smaller Ackermann code has a distinguishing
+member. -/
+theorem BProv_Ax_s_all_hfLtDistinguishesAt :
+    BProv Ax_s [] (all (hfLtDistinguishesAt 0)) :=
+  BProv_Ax_s_all_hfLtDistinguishesAt_of_all_through
+    BProv_Ax_s_all_hfLtDistinguishesThroughAt
+
+/-- PA proves the Ackermann translation of HF extensionality. -/
+theorem BProv_Ax_s_translated_HF_extensionality :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_extensionality_form)) :=
+  BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesThroughAt
+    BProv_Ax_s_all_hfLtDistinguishesThroughAt
 
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already
