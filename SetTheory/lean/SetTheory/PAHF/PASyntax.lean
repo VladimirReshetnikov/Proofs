@@ -43824,6 +43824,20 @@ theorem BProv_hfSomeDistinguishesAt_intro_var
       (a := hfDistinguishesAt 0 (high+1) (low+1))
       (t := Term.var elem) hinst)
 
+/-- Existential introduction for the distinguishing-member macro using an
+arbitrary PA term as the witness. -/
+theorem BProv_hfSomeDistinguishesAt_intro_term
+    {B : Formula → Prop} {G : List Formula} {high low : Nat}
+    {elem : Term}
+    (hdist : BProv B G
+      (subst (instTerm elem)
+        (hfDistinguishesAt 0 (high+1) (low+1)))) :
+    BProv B G (hfSomeDistinguishesAt high low) := by
+  simpa [hfSomeDistinguishesAt] using
+    (BProv_exI (B := B) (G := G)
+      (a := hfDistinguishesAt 0 (high+1) (low+1))
+      (t := elem) hdist)
+
 /-- Existential introduction for the term-parametric distinguishing-member
 macro, using an existing PA variable as the witness. -/
 theorem BProv_hfSomeDistinguishesTermAt_intro_var
@@ -43881,6 +43895,117 @@ theorem BProv_hfSomeDistinguishesTermAt_elim
     simpa [witness, hfSomeDistinguishesTermAt] using hsome
   exact BProv_exE_of_sentences (B := B) hB (a := witness)
     (c := target) hex (by simpa [witness] using hbody)
+
+/-- A distinguishing bit for two binary tails lifts to a distinguishing
+positive bit for the original codes.
+
+If `x` belongs to `highHalf` but not `lowHalf`, then `S x` belongs to `high`
+by membership introduction across `hhighStep`.  Conversely, any assumed
+`S x ∈ low` descends across `hlowStep` to the forbidden `x ∈ lowHalf`.
+Unlike the predecessor-successor carry frontier, this transport is uniform in
+both parity bits. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_div2_steps_and_half_distinguishes
+    {G : List Formula}
+    {high low highHalf lowHalf highBit lowBit : Nat}
+    (hhighStep : BProv Ax_s G
+      (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G
+      (div2StepAt low lowHalf lowBit))
+    (hhalf : BProv Ax_s G
+      (hfSomeDistinguishesAt highHalf lowHalf)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) := by
+  let target : Formula := hfSomeDistinguishesAt high low
+  refine BProv_hfSomeDistinguishesAt_elim
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := G) (target := target) (high := highHalf) (low := lowHalf)
+    hhalf ?_
+  let witness : Formula :=
+    hfDistinguishesAt 0 (highHalf+1) (lowHalf+1)
+  let C : List Formula := witness :: G.map (rename Nat.succ)
+  have hwitness : BProv Ax_s C witness :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hhalfHigh : BProv Ax_s C
+      (hfMemTermAt 0 (Term.var (highHalf+1))) := by
+    have hraw : BProv Ax_s C (hfMemAt 0 (highHalf+1)) := by
+      simpa [witness, hfDistinguishesAt] using BProv_andE1 hwitness
+    simpa [hfMemTermAt_var] using hraw
+  have hhighStepRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (div2StepAt high highHalf highBit)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hhighStep Nat.succ
+  have hhighStepC : BProv Ax_s C
+      (div2StepTermAt
+        (Term.var (high+1))
+        (Term.var (highHalf+1))
+        (Term.var (highBit+1))) := by
+    have h := BProv_context_cons (B := Ax_s) (a := witness) hhighStepRen
+    simpa [C, div2StepTermAt_var, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using h
+  have hhighMemRaw : BProv Ax_s C
+      (subst (instTerm (Term.succ (Term.var 0)))
+        (hfMemTermAt 0
+          (Term.rename Nat.succ (Term.var (high+1))))) :=
+    BProv_Ax_s_hfMemTermAt_succ_of_div2StepTermAt
+      (G := C)
+      (head := Term.var (high+1))
+      (tailCode := Term.var (highHalf+1))
+      (headBit := Term.var (highBit+1))
+      hhighStepC hhalfHigh
+  have hhighMem : BProv Ax_s C
+      (subst (instTerm (Term.succ (Term.var 0)))
+        (hfMemAt 0 (high+2))) := by
+    simpa [hfMemTermAt_var, Term.rename] using hhighMemRaw
+  have hnotHalfLow : BProv Ax_s C
+      (imp (hfMemAt 0 (lowHalf+1)) bot) := by
+    simpa [witness, hfDistinguishesAt] using BProv_andE2 hwitness
+  let lowSuccMem : Formula :=
+    subst (instTerm (Term.succ (Term.var 0)))
+      (hfMemAt 0 (low+2))
+  let D : List Formula := lowSuccMem :: C
+  have hlowStepRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ (div2StepAt low lowHalf lowBit)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlowStep Nat.succ
+  have hlowStepC : BProv Ax_s C
+      (div2StepAt (low+1) (lowHalf+1) (lowBit+1)) := by
+    have h := BProv_context_cons (B := Ax_s) (a := witness) hlowStepRen
+    simpa [C, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+      rename, Term.rename, SetTheory.up, Term.rename_comp] using h
+  have hlowStepD : BProv Ax_s D
+      (div2StepAt (low+1) (lowHalf+1) (lowBit+1)) :=
+    BProv_context_cons (B := Ax_s) (a := lowSuccMem) hlowStepC
+  have hlowSuccMem : BProv Ax_s D
+      (subst (instTerm (Term.succ (Term.var 0)))
+        (hfMemAt 0 ((low+1)+1))) := by
+    have h : BProv Ax_s D lowSuccMem :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [lowSuccMem, Nat.add_assoc] using h
+  have hlowHalfMem : BProv Ax_s D (hfMemAt 0 (lowHalf+1)) :=
+    BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt
+      (G := D) (head := low+1) (tailCode := lowHalf+1)
+      (headBit := lowBit+1) hlowStepD hlowSuccMem
+  have hnotHalfLowD : BProv Ax_s D
+      (imp (hfMemAt 0 (lowHalf+1)) bot) :=
+    BProv_context_cons (B := Ax_s) (a := lowSuccMem) hnotHalfLow
+  have hlowBot : BProv Ax_s D bot :=
+    BProv_mp Ax_s D (hfMemAt 0 (lowHalf+1)) bot
+      hnotHalfLowD hlowHalfMem
+  have hnotLow : BProv Ax_s C (imp lowSuccMem bot) := by
+    simpa [D] using BProv_impI hlowBot
+  have hdist : BProv Ax_s C
+      (subst (instTerm (Term.succ (Term.var 0)))
+        (hfDistinguishesAt 0 (high+2) (low+2))) := by
+    simpa [hfDistinguishesAt, lowSuccMem, subst] using
+      BProv_andI hhighMem hnotLow
+  have hsome : BProv Ax_s C
+      (hfSomeDistinguishesAt (high+1) (low+1)) :=
+    BProv_hfSomeDistinguishesAt_intro_term
+      (B := Ax_s) (G := C) (high := high+1) (low := low+1)
+      (elem := Term.succ (Term.var 0)) hdist
+  simpa [target, C, witness, rename_hfSomeDistinguishesAt_succ] using hsome
 
 /-- Logical packaging for a distinguishing member: if the same element is
 proved to belong to `high` and to not belong to `low`, then it distinguishes
