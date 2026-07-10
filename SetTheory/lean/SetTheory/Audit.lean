@@ -396,6 +396,13 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_of_term
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_elim_opened
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_zero
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_self_zero_of_succ_le_step
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_head_of_betaPrependPrefixTermAt
+#check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixTermAt_of_betaPrependPrefixTermAt
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixTermAt_of_components
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_of_term
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_elim_opened
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_zero
 #check @PA.Formula.BProv_Ax_s_betaPrefixAgreementTermAt_entry_of_ltTerm
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt
 #check @PA.Formula.BProv_Ax_s_betaPrefixAgreementTermAt_of_betaCodeExtensionTermAt
@@ -408,6 +415,11 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ_of_source
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ_of_entry_exists
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ
+#check @PA.Formula.BProv_Ax_s_betaTermTermAt_zero_of_succ_extension
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixTermAt_succ_of_extension
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ_of_source
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ_of_entry_exists
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ
 #check @PA.Formula.BProv_Ax_s_betaEntryExistsPrefixTermAt_entry_of_ltTerm
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_not_exists
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixTermAt_succ_of_not_exists
