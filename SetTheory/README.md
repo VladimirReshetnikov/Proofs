@@ -58,10 +58,11 @@ The system is **exactly ZF**:
 | **`T ⊢ φ ⟺ ZF ⊢ φ`** | **full deductive equivalence** (`T_iff_ZF`) | **machine-checked** | [`Equivalence.v`](Equivalence.v) |
 
 Beyond the Closure/ZF core, the development carries side modules for nearby
-foundational/computability work, each present in both proof assistants
+foundational/computability work. Most have paired Rocq and Lean surfaces
 (`PAHF.v`/`PAHF.lean`, `BusyBeaver.v`/`BusyBeaver.lean`,
 `BusyBeaverKnownValues.v`/`BusyBeaverKnownValues.lean`,
-`BusyBeaverMathlib.v`/`BusyBeaverMathlib.lean`):
+`BusyBeaverMathlib.v`/`BusyBeaverMathlib.lean`); the exact parity boundaries
+are documented below:
 
 - [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) (a facade over
   `lean/SetTheory/PAHF/{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean`;
@@ -84,6 +85,12 @@ foundational/computability work, each present in both proof assistants
   [`BusyBeaverBB2Bridge.v`](BusyBeaverBB2Bridge.v) is a Coq-first bridge from
   this local Rado machine model to the vendored CoqBB2 time-bound certificate in
   [`../CoqBB2`](../CoqBB2), proving `Σ(2)=4` for the local score definition.
+  [`BusyBeaverBB3Bridge.v`](BusyBeaverBB3Bridge.v) similarly imports the
+  vendored [`../CoqBB3`](../CoqBB3) proof that every halting three-state
+  machine stops within 21 transitions. A sound lazy partial-table checker in
+  [`BusyBeaverKnownValues.v`](BusyBeaverKnownValues.v) explores only table
+  entries reached within that bound and kernel-checks the remaining score
+  obligation, yielding `Σ(3)=6`.
   [`lean/SetTheory/BusyBeaverBB2.lean`](lean/SetTheory/BusyBeaverBB2.lean)
   independently proves the same result in Lean by classifying all 20,736
   two-state transition tables, checking the left-moving half and deriving the
@@ -512,10 +519,11 @@ cross-references).
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 
 The full development is the `.v` files listed in [`_CoqProject`](_CoqProject),
-including the vendored CoqBB2 certificate under [`../CoqBB2`](../CoqBB2):
+including the vendored CoqBB2 and CoqBB3 certificates under
+[`../CoqBB2`](../CoqBB2) and [`../CoqBB3`](../CoqBB3):
 
 ```sh
-# Generate dependencies from the combined SetTheory/CoqBB2 project, then build.
+# Generate dependencies from the combined SetTheory/CoqBB2/CoqBB3 project.
 coq_makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq
 ```
@@ -527,8 +535,8 @@ axiom footprints.
 the standard library. The library files import along the DAG shown above
 (`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
 `Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`; `BusyBeaver` ←
-`BusyBeaverKnownValues`, `BusyBeaverBB2Bridge`, `BusyBeaverMathlib`; `Audit`
-imports them all).
+`BusyBeaverKnownValues`, `BusyBeaverBB2Bridge`, `BusyBeaverBB3Bridge`,
+`BusyBeaverMathlib`; `Audit` imports them all).
 `Completeness.v` additionally uses the standard
 classical/extensionality axiom modules (`ClassicalEpsilon`,
 `FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the
@@ -543,7 +551,9 @@ core Closure/ZF modules mirror the seven core Coq files one-to-one
 statement with the same logical content, through the same headline theorem
 `T_iff_ZF`; the side modules (`PAHF`, `BusyBeaver`, `BusyBeaverKnownValues`,
 `BusyBeaverBB2`, `BusyBeaverMathlib`) are likewise paired with `.v` counterparts or
-independently replay the corresponding Coq result. The Lean workspace also contains
+independently replay the corresponding Coq result. The exact three-state score
+theorem currently remains Rocq-only: its proof consumes the vendored CoqBB3
+certificate through `BusyBeaverBB3Bridge.v`. The Lean workspace also contains
 [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first
 formalization toward the bi-interpretability of Peano arithmetic and hereditary
 finite sets. Its current checked surface includes Ackermann-coded HF on `Nat`,

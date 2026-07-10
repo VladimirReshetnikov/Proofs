@@ -1,3 +1,14 @@
+(* ===================================================================== *)
+(*  Bridge from the local Rado machine model to the vendored CoqBB3       *)
+(*  proof of BB(3)=21, and from that time bound to the exact score         *)
+(*  Sigma(3)=6.                                                           *)
+(*                                                                       *)
+(*  CoqBB3 represents halting as an undefined transition, while the local *)
+(*  model executes a final write/move action whose next state is [None].  *)
+(*  The bridge therefore uses CoqBB3 only for the first-halt time bound;   *)
+(*  the local lazy score checker accounts for the final write explicitly. *)
+(* ===================================================================== *)
+
 From Stdlib Require Import ZArith Lia List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 
@@ -347,5 +358,4 @@ Proof.
 Qed.
 
 End BusyBeaverBB3Bridge.
-
 

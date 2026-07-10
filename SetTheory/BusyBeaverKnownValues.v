@@ -4,8 +4,9 @@
 (*  Coq counterpart of the Lean small-state Rado busy-beaver witnesses.  *)
 (*  The concrete machines prove the lower-bound half of the A028444       *)
 (*  prefix through four states.  The one-state upper bound is proved      *)
-(*  directly; the remaining upper bounds are kept as explicit certificate *)
-(*  interfaces, just as in the Lean development.                          *)
+(*  directly. Bounded score checkers for two and three states support the *)
+(*  certified time-bound bridges; the remaining four-state upper bound is *)
+(*  retained as an explicit certificate interface.                       *)
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Bool.Bool Lia List ZArith.

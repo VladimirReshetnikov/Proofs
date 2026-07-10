@@ -3,7 +3,7 @@
 - Created (UTC): 2026-07-02T02:12:50Z
 - Repository HEAD: 50a14cc6ba5c0dfca20cafd0a24df7b224a5e817
 
-A complete Lean 4 port of the Rocq/Coq development in [`../`](../) —
+A complete Lean 4 port of the core Rocq/Coq Closure/ZF development in [`../`](../) —
 Vladimir Reshetnikov's **"Closure" axiomatization of set theory and its
 machine-checked equivalence with ZF**, up to and including the headline
 syntactic theorem
@@ -14,8 +14,9 @@ theorem T_iff_ZF (phi : Form) (hphi : Sentence phi) :
 ```
 
 — *T and ZF prove exactly the same sentences* — plus the Gödel-completeness
-library it stands on. Every Coq statement has a Lean counterpart with the
-same logical content; no `sorry`, no extra axioms.
+library it stands on. The core statements have Lean counterparts with the same
+logical content; parity and deliberate side-module differences are recorded in
+the table below. There is no `sorry` and no project-specific Lean axiom.
 
 ## Module map
 
@@ -30,8 +31,9 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
 | [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean` | `PAHF.v` | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, a separate first-order PA syntax with sealed PA axiom semantics, and a PA sentence form of the Mertens/Littlewood RH criterion |
 | [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | `BusyBeaver.v` | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
-| [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs |
+| [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs; the Rocq file additionally hosts the bounded three-state score checker |
 | [`SetTheory/BusyBeaverBB2.lean`](SetTheory/BusyBeaverBB2.lean) | `BusyBeaverBB2Bridge.v` + vendored CoqBB2 | an independent Lean proof of `Σ(2)=4`, using kernel-checked halting/nonhalting certificates for the left-moving half of the 20,736 tables and a proved reflection simulation for the right-moving half |
+| — | `BusyBeaverBB3Bridge.v` + vendored CoqBB3 | Rocq-only proof of `Σ(3)=6`, combining the certified 21-step time bound with a sound lazy partial-table score search |
 | [`SetTheory/BusyBeaverMathlib.lean`](SetTheory/BusyBeaverMathlib.lean) | `BusyBeaverMathlib.v` (explicit assumption-record counterpart) | mathlib's `Computable` predicate as the total-recursive predicate for `Nat -> Nat`, sequential `ToPartrec.Code` extraction, the proved finite-support `PartrecToTM2` evaluator bridge, and the unconditional busy-beaver domination theorem for `Computable` functions |
 | [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | `Audit.v` | type-checks the headline results and prints their axioms |
 | [`SetTheory/AuditMathlib.lean`](SetTheory/AuditMathlib.lean) | — (root workspace only) | the same assumption audit for the mathlib-backed bridge theorems |
@@ -233,6 +235,11 @@ theorem BusyBeaver.BB2.upperBound_two :
 theorem BusyBeaver.BB2.sigma_two_eq_four
     (hSigma : BusyBeaver.IsSigma Sigma) : Sigma 2 = 4
 ```
+
+The corresponding exact three-state theorem is currently checked on the Rocq
+side. `BusyBeaverBB3Bridge.v` imports the vendored `BB(3)=21` certificate and
+combines it with the local lazy score checker to prove `Sigma 3 = 6`; there is
+not yet an independent Lean port of that exhaustive upper bound.
 
 ## Translation notes (Coq → Lean)
 

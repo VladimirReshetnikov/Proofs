@@ -1,5 +1,6 @@
 -Q . SetTheory
 -Q ../CoqBB2 CoqBB2
+-Q ../CoqBB3 CoqBB3
 
 # Vendored CoqBB2 certificate for the two-state busy-beaver time bound.
 ../CoqBB2/BB2_Statement.v
@@ -20,6 +21,25 @@
 ../CoqBB2/BB2_TNF_Enumeration.v
 ../CoqBB2/BB2_Theorem.v
 
+# Vendored CoqBB3 certificate for the three-state busy-beaver time bound.
+../CoqBB3/BB3_Statement.v
+../CoqBB3/Tactics.v
+../CoqBB3/Prelims.v
+../CoqBB3/BB3_Encodings.v
+../CoqBB3/List_Routines.v
+../CoqBB3/TM.v
+../CoqBB3/BB3_Make_TM.v
+../CoqBB3/BB3_Deciders_Generic.v
+../CoqBB3/Deciders/Deciders_Common.v
+../CoqBB3/TNF.v
+../CoqBB3/Deciders/Decider_NGramCPS.v
+../CoqBB3/List_Tape.v
+../CoqBB3/Deciders/Decider_Loop.v
+../CoqBB3/Deciders/Verifier_Halt.v
+../CoqBB3/BB3_Deciders_Pipeline.v
+../CoqBB3/BB3_TNF_Enumeration.v
+../CoqBB3/BB3_Theorem.v
+
 # Core Closure-axiomatization <-> ZF development.
 Fol.v
 Calculus.v
@@ -32,6 +52,7 @@ PAHF.v
 BusyBeaver.v
 BusyBeaverKnownValues.v
 BusyBeaverBB2Bridge.v
+BusyBeaverBB3Bridge.v
 BusyBeaverMathlib.v
 
 # Self-contained shallow forward/reverse trades.
