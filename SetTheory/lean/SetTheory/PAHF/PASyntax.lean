@@ -48290,6 +48290,696 @@ theorem BProv_Ax_s_translated_HF_induction (phi : Form) :
   BProv_Ax_s_translated_HF_induction_of_all_hfMembersBelowAt
     BProv_Ax_s_all_hfMembersBelowAt phi
 
+/-- Syntactic outer shell for the translated HF adjunction axiom.  The premise
+is its exact unsealed PA body. -/
+theorem BProv_Ax_s_translated_HF_adjoin_of_body
+    (hbody : BProv Ax_s []
+      (all (all (ex (all
+        (iffForm
+          (hfMemAt 0 1)
+          (or (hfMemAt 0 3)
+            (eq (Term.var 0) (Term.var 2))))))))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)) := by
+  let body : Formula :=
+    all (all (ex (all
+      (iffForm
+        (hfMemAt 0 1)
+        (or (hfMemAt 0 3)
+          (eq (Term.var 0) (Term.var 2)))))))
+  have hclosed : BProv Ax_s []
+      (closeN (SetTheory.bound AckermannHF.HF_adjoin_form) body) :=
+    BProv_closeN_nil_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf)
+      (SetTheory.bound AckermannHF.HF_adjoin_form)
+      (by simpa [body] using hbody)
+  simpa [body, translateHFFormula, hfFormulaAt,
+    AckermannHF.HF_adjoin_form, SetTheory.fIff, iffForm,
+    SetTheory.sealF, SetTheory.closeN, SetTheory.bound,
+    hfUpVarMap, closeN] using hclosed
+
+/-- One binary head step gives the uniform positive-index membership
+equivalence used by recursive adjunction: `S x` belongs to the head exactly
+when `x` belongs to its half. -/
+theorem BProv_Ax_s_hfMem_succ_iff_tail_of_div2StepAt
+    {G : List Formula} {head tail bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt head tail bit)) :
+    BProv Ax_s G
+      (iffForm
+        (subst (instTerm (Term.succ (Term.var 0)))
+          (hfMemAt 0 (head+1)))
+        (hfMemAt 0 tail)) := by
+  let succMem : Formula :=
+    subst (instTerm (Term.succ (Term.var 0)))
+      (hfMemAt 0 (head+1))
+  let tailMem : Formula := hfMemAt 0 tail
+  have hforward : BProv Ax_s G (imp succMem tailMem) := by
+    let C : List Formula := succMem :: G
+    have hstepC : BProv Ax_s C (div2StepAt head tail bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    have hsucc : BProv Ax_s C succMem :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have htail : BProv Ax_s C tailMem :=
+      BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt
+        hstepC (by simpa [succMem] using hsucc)
+    simpa [C, succMem, tailMem] using BProv_impI htail
+  have hreverse : BProv Ax_s G (imp tailMem succMem) := by
+    let C : List Formula := tailMem :: G
+    have hstepC : BProv Ax_s C (div2StepAt head tail bit) :=
+      BProv_context_cons (B := Ax_s) hstep
+    have hstepTerm : BProv Ax_s C
+        (div2StepTermAt
+          (Term.var head) (Term.var tail) (Term.var bit)) := by
+      simpa [div2StepTermAt_var] using hstepC
+    have htail : BProv Ax_s C (hfMemTermAt 0 (Term.var tail)) := by
+      have hraw : BProv Ax_s C tailMem :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [tailMem, hfMemTermAt_var] using hraw
+    have hsucc : BProv Ax_s C succMem := by
+      have hraw :=
+        BProv_Ax_s_hfMemTermAt_succ_of_div2StepTermAt
+          hstepTerm htail
+      simpa [succMem, hfMemTermAt_var, Term.rename] using hraw
+    simpa [C, succMem, tailMem] using BProv_impI hsucc
+  simpa [iffForm, succMem, tailMem] using
+    BProv_andI hforward hreverse
+
+/-- Term-parametric graph saying that `newCode` is obtained from `oldCode` by
+adjoining the element coded by `elemCode`. -/
+def hfAdjoinGraphTermAt
+    (newCode oldCode elemCode : Term) : Formula :=
+  all
+    (iffForm
+      (hfMemTermAt 0 (Term.rename Nat.succ newCode))
+      (or
+        (hfMemTermAt 0 (Term.rename Nat.succ oldCode))
+        (eq (Term.var 0) (Term.rename Nat.succ elemCode))))
+
+/-- Slot specialization of the term-parametric adjunction graph. -/
+def hfAdjoinGraphAt (newCode oldCode elemCode : Nat) : Formula :=
+  hfAdjoinGraphTermAt
+    (Term.var newCode) (Term.var oldCode) (Term.var elemCode)
+
+theorem hfAdjoinGraphAt_unfold (newCode oldCode elemCode : Nat) :
+    hfAdjoinGraphAt newCode oldCode elemCode =
+      all
+        (iffForm
+          (hfMemAt 0 (newCode+1))
+          (or
+            (hfMemAt 0 (oldCode+1))
+            (eq (Term.var 0) (Term.var (elemCode+1))))) := by
+  simp [hfAdjoinGraphAt, hfAdjoinGraphTermAt,
+    hfMemTermAt_var, Term.rename]
+
+theorem rename_hfAdjoinGraphAt_succ
+    (newCode oldCode elemCode : Nat) :
+    rename Nat.succ
+        (hfAdjoinGraphAt newCode oldCode elemCode) =
+      hfAdjoinGraphAt
+        (newCode+1) (oldCode+1) (elemCode+1) := by
+  rw [hfAdjoinGraphAt_unfold,
+    hfAdjoinGraphAt_unfold]
+  apply congrArg all
+  change
+    iffForm
+        (rename (SetTheory.up Nat.succ) (hfMemAt 0 (newCode+1)))
+        (or
+          (rename (SetTheory.up Nat.succ) (hfMemAt 0 (oldCode+1)))
+          (eq
+            (Term.rename (SetTheory.up Nat.succ) (Term.var 0))
+            (Term.rename (SetTheory.up Nat.succ)
+              (Term.var (elemCode+1))))) =
+      iffForm
+        (hfMemAt 0 (newCode+1+1))
+        (or
+          (hfMemAt 0 (oldCode+1+1))
+          (eq (Term.var 0) (Term.var (elemCode+1+1))))
+  rw [rename_hfMemAt, rename_hfMemAt]
+  simp [SetTheory.up, Term.rename]
+
+theorem BProv_hfAdjoinGraphAt_point
+    {B : Formula → Prop} {G : List Formula}
+    {query newCode oldCode elemCode : Nat}
+    (hgraph : BProv B G
+      (hfAdjoinGraphAt newCode oldCode elemCode)) :
+    BProv B G
+      (iffForm
+        (hfMemAt query newCode)
+        (or
+          (hfMemAt query oldCode)
+          (eq (Term.var query) (Term.var elemCode)))) := by
+  have hgraph' : BProv B G
+      (all
+        (iffForm
+          (hfMemAt 0 (newCode+1))
+          (or
+            (hfMemAt 0 (oldCode+1))
+            (eq (Term.var 0) (Term.var (elemCode+1)))))) := by
+    simpa [hfAdjoinGraphAt_unfold] using hgraph
+  have hpoint := BProv_allE (B := B) (G := G)
+    (t := Term.var query) hgraph'
+  change BProv B G
+    (iffForm
+      (subst (instTerm (Term.var query)) (hfMemAt 0 (newCode+1)))
+      (or
+        (subst (instTerm (Term.var query)) (hfMemAt 0 (oldCode+1)))
+        (eq
+          (Term.subst (instTerm (Term.var query)) (Term.var 0))
+          (Term.subst (instTerm (Term.var query))
+            (Term.var (elemCode+1)))))) at hpoint
+  rw [subst_instTerm_var_hfMemAt_zero_succ,
+    subst_instTerm_var_hfMemAt_zero_succ] at hpoint
+  simpa [instTerm, Term.subst] using hpoint
+
+theorem substSuccVar_eq_instSucc_rename_up (f : Formula) :
+    subst substSuccVar f =
+      subst (instTerm (Term.succ (Term.var 0)))
+        (rename (SetTheory.up Nat.succ) f) := by
+  rw [subst_rename]
+  apply subst_ext
+  intro n
+  cases n <;> rfl
+
+theorem substSuccVar_hfMemAt_zero_succ (set : Nat) :
+    subst substSuccVar (hfMemAt 0 (set+1)) =
+      subst (instTerm (Term.succ (Term.var 0)))
+        (hfMemAt 0 (set+1+1)) := by
+  rw [substSuccVar_eq_instSucc_rename_up, rename_hfMemAt]
+  simp [SetTheory.up]
+
+/-- For fixed old/element codes, some code realizes their adjunction graph. -/
+def hfAdjoinExistsTermAt (oldCode elemCode : Term) : Formula :=
+  ex
+    (hfAdjoinGraphTermAt
+      (Term.var 0)
+      (Term.rename Nat.succ oldCode)
+      (Term.rename Nat.succ elemCode))
+
+/-- PA-induction invariant for a fixed adjoined element: every old code has an
+adjunction result. -/
+def hfAdjoinTotalTermAt (elemCode : Term) : Formula :=
+  all
+    (hfAdjoinExistsTermAt
+      (Term.var 0) (Term.rename Nat.succ elemCode))
+
+def hfAdjoinTotalAt (elemCode : Nat) : Formula :=
+  all (ex (hfAdjoinGraphAt 0 1 (elemCode+2)))
+
+/-- Heads built with the same boolean low bit agree on zero membership. -/
+theorem BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
+    {G : List Formula}
+    {query newHead newTail oldHead oldTail bit : Nat}
+    (hqueryZero : BProv Ax_s G (eqConstAt query 0))
+    (hnewStep : BProv Ax_s G (div2StepAt newHead newTail bit))
+    (holdStep : BProv Ax_s G (div2StepAt oldHead oldTail bit)) :
+    BProv Ax_s G
+      (iffForm (hfMemAt query newHead) (hfMemAt query oldHead)) := by
+  let newMem : Formula := hfMemAt query newHead
+  let oldMem : Formula := hfMemAt query oldHead
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [div2StepAt] using
+      (BProv_andE1 (a := boolAt bit)
+        (b := eq (Term.var newHead)
+          (Term.add (Term.add (Term.var newTail) (Term.var newTail))
+            (Term.var bit))) hnewStep)
+  have hzeroBit : BProv Ax_s (zeroAt bit :: G)
+      (iffForm newMem oldMem) := by
+    let C : List Formula := zeroAt bit :: G
+    have hbitZero : BProv Ax_s C (eqConstAt bit 0) := by
+      have hraw : BProv Ax_s C (zeroAt bit) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [zeroAt] using hraw
+    have hnewStepC : BProv Ax_s C
+        (div2StepAt newHead newTail bit) :=
+      BProv_context_cons (B := Ax_s) hnewStep
+    have holdStepC : BProv Ax_s C
+        (div2StepAt oldHead oldTail bit) :=
+      BProv_context_cons (B := Ax_s) holdStep
+    have hnewDouble : BProv Ax_s C (doubleEqAt newHead newTail) :=
+      BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hbitZero hnewStepC
+    have holdDouble : BProv Ax_s C (doubleEqAt oldHead oldTail) :=
+      BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hbitZero holdStepC
+    have hforward : BProv Ax_s C (imp newMem oldMem) := by
+      let D : List Formula := newMem :: C
+      have hqueryZeroD : BProv Ax_s D (eqConstAt query 0) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hqueryZero)
+      have hnewDoubleD : BProv Ax_s D (doubleEqAt newHead newTail) :=
+        BProv_context_cons (B := Ax_s) hnewDouble
+      have hnewMem : BProv Ax_s D (hfMemAt query newHead) := by
+        have hraw : BProv Ax_s D newMem :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        simpa [newMem] using hraw
+      have hbot : BProv Ax_s D bot :=
+        BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
+          hqueryZeroD hnewDoubleD hnewMem
+      exact BProv_impI (BProv_botE hbot)
+    have hreverse : BProv Ax_s C (imp oldMem newMem) := by
+      let D : List Formula := oldMem :: C
+      have hqueryZeroD : BProv Ax_s D (eqConstAt query 0) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hqueryZero)
+      have holdDoubleD : BProv Ax_s D (doubleEqAt oldHead oldTail) :=
+        BProv_context_cons (B := Ax_s) holdDouble
+      have holdMem : BProv Ax_s D (hfMemAt query oldHead) := by
+        have hraw : BProv Ax_s D oldMem :=
+          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        simpa [oldMem] using hraw
+      have hbot : BProv Ax_s D bot :=
+        BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
+          hqueryZeroD holdDoubleD holdMem
+      exact BProv_impI (BProv_botE hbot)
+    simpa [iffForm] using BProv_andI hforward hreverse
+  have honeBit : BProv Ax_s (oneAt bit :: G)
+      (iffForm newMem oldMem) := by
+    let C : List Formula := oneAt bit :: G
+    have hbitOne : BProv Ax_s C (eqConstAt bit 1) := by
+      have hraw : BProv Ax_s C (oneAt bit) :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      simpa [oneAt] using hraw
+    have hnewStepC : BProv Ax_s C
+        (div2StepAt newHead newTail bit) :=
+      BProv_context_cons (B := Ax_s) hnewStep
+    have holdStepC : BProv Ax_s C
+        (div2StepAt oldHead oldTail bit) :=
+      BProv_context_cons (B := Ax_s) holdStep
+    have hnewOdd : BProv Ax_s C (oddDoubleEqAt newHead newTail) :=
+      BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one hbitOne hnewStepC
+    have holdOdd : BProv Ax_s C (oddDoubleEqAt oldHead oldTail) :=
+      BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one hbitOne holdStepC
+    have hqueryZeroC : BProv Ax_s C (eqConstAt query 0) :=
+      BProv_context_cons (B := Ax_s) hqueryZero
+    have hnewMem : BProv Ax_s C newMem := by
+      have hraw :=
+        BProv_Ax_s_hfMemTermAt_oddCurrentBeta_of_zero_and_odd
+          hqueryZeroC hnewOdd
+      simpa [newMem, hfMemTermAt_var] using hraw
+    have holdMem : BProv Ax_s C oldMem := by
+      have hraw :=
+        BProv_Ax_s_hfMemTermAt_oddCurrentBeta_of_zero_and_odd
+          hqueryZeroC holdOdd
+      simpa [oldMem, hfMemTermAt_var] using hraw
+    have hforward : BProv Ax_s C (imp newMem oldMem) :=
+      BProv_impI (BProv_context_cons (B := Ax_s) holdMem)
+    have hreverse : BProv Ax_s C (imp oldMem newMem) :=
+      BProv_impI (BProv_context_cons (B := Ax_s) hnewMem)
+    simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_orE hbool
+    (by simpa [newMem, oldMem] using hzeroBit)
+    (by simpa [newMem, oldMem] using honeBit)
+
+/-- Zero-query half of successor adjunction for same-bit heads.  The shared
+bit makes old/new membership agree, while zero cannot equal `S elem`. -/
+theorem BProv_Ax_s_hfAdjoin_zero_head_lift
+    {G : List Formula}
+    {query newHead newTail oldHead oldTail bit elem : Nat}
+    (hqueryZero : BProv Ax_s G (eqConstAt query 0))
+    (hnewStep : BProv Ax_s G (div2StepAt newHead newTail bit))
+    (holdStep : BProv Ax_s G (div2StepAt oldHead oldTail bit)) :
+    BProv Ax_s G
+      (iffForm
+        (hfMemAt query newHead)
+        (or
+          (hfMemAt query oldHead)
+          (eq (Term.var query) (Term.succ (Term.var elem))))) := by
+  let newMem : Formula := hfMemAt query newHead
+  let oldMem : Formula := hfMemAt query oldHead
+  let succEq : Formula :=
+    eq (Term.var query) (Term.succ (Term.var elem))
+  let rhs : Formula := or oldMem succEq
+  have hsame : BProv Ax_s G (iffForm newMem oldMem) := by
+    simpa [newMem, oldMem] using
+      BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
+        hqueryZero hnewStep holdStep
+  have hforward : BProv Ax_s G (imp newMem rhs) := by
+    let C : List Formula := newMem :: G
+    have hsameC : BProv Ax_s C (iffForm newMem oldMem) :=
+      BProv_context_cons (B := Ax_s) hsame
+    have hnew : BProv Ax_s C newMem :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have htoOld : BProv Ax_s C (imp newMem oldMem) := by
+      simpa [iffForm] using BProv_andE1 hsameC
+    have hold : BProv Ax_s C oldMem :=
+      BProv_mp Ax_s C newMem oldMem htoOld hnew
+    exact BProv_impI (BProv_orI1 hold)
+  have hreverse : BProv Ax_s G (imp rhs newMem) := by
+    let C : List Formula := rhs :: G
+    have hcases : BProv Ax_s C rhs :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hleft : BProv Ax_s (oldMem :: C) newMem := by
+      let D : List Formula := oldMem :: C
+      have hsameD : BProv Ax_s D (iffForm newMem oldMem) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hsame)
+      have hold : BProv Ax_s D oldMem :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have htoNew : BProv Ax_s D (imp oldMem newMem) := by
+        simpa [iffForm] using BProv_andE2 hsameD
+      exact BProv_mp Ax_s D oldMem newMem htoNew hold
+    have hright : BProv Ax_s (succEq :: C) newMem := by
+      let D : List Formula := succEq :: C
+      have heq : BProv Ax_s D succEq :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hzeroD : BProv Ax_s D
+          (eq (Term.var query) Term.zero) := by
+        simpa [eqConstAt, Term.numeral] using
+          BProv_context_cons (B := Ax_s)
+            (BProv_context_cons (B := Ax_s) hqueryZero)
+      have hbad : BProv Ax_s D
+          (eq (Term.succ (Term.var elem)) Term.zero) :=
+        BProv_eqTrans (BProv_eqSym (by simpa [succEq] using heq)) hzeroD
+      have hnot : BProv Ax_s D
+          (imp (eq (Term.succ (Term.var elem)) Term.zero) bot) :=
+        BProv_weaken_nil
+          (BProv_Ax_s_zeroNotSucc_term (Term.var elem))
+      exact BProv_botE
+        (BProv_mp Ax_s D
+          (eq (Term.succ (Term.var elem)) Term.zero) bot hnot hbad)
+    exact BProv_impI (BProv_orE hcases hleft hright)
+  simpa [iffForm, newMem, oldMem, succEq, rhs] using
+    BProv_andI hforward hreverse
+
+/-- Lift one point of an adjunction graph from binary tails to heads carrying
+the same low bit.  This is the positive-query core of the successor case:
+if the tail graph adjoins `elem`, then the two heads' membership relation at
+`S query` adjoins `S elem`. -/
+theorem BProv_Ax_s_hfAdjoin_positive_head_lift
+    {G : List Formula}
+    {newHead newTail oldHead oldTail bit elem : Nat}
+    (hnewStep : BProv Ax_s G (div2StepAt newHead newTail bit))
+    (holdStep : BProv Ax_s G (div2StepAt oldHead oldTail bit))
+    (htail : BProv Ax_s G
+      (iffForm
+        (hfMemAt 0 newTail)
+        (or (hfMemAt 0 oldTail)
+          (eq (Term.var 0) (Term.var elem))))) :
+    BProv Ax_s G
+      (iffForm
+        (subst (instTerm (Term.succ (Term.var 0)))
+          (hfMemAt 0 (newHead+1)))
+        (or
+          (subst (instTerm (Term.succ (Term.var 0)))
+            (hfMemAt 0 (oldHead+1)))
+          (eq (Term.succ (Term.var 0))
+            (Term.succ (Term.var elem))))) := by
+  let newSucc : Formula :=
+    subst (instTerm (Term.succ (Term.var 0)))
+      (hfMemAt 0 (newHead+1))
+  let oldSucc : Formula :=
+    subst (instTerm (Term.succ (Term.var 0)))
+      (hfMemAt 0 (oldHead+1))
+  let newTailMem : Formula := hfMemAt 0 newTail
+  let oldTailMem : Formula := hfMemAt 0 oldTail
+  let tailEq : Formula := eq (Term.var 0) (Term.var elem)
+  let headEq : Formula :=
+    eq (Term.succ (Term.var 0)) (Term.succ (Term.var elem))
+  let rhs : Formula := or oldSucc headEq
+  have hnewIff : BProv Ax_s G (iffForm newSucc newTailMem) := by
+    simpa [newSucc, newTailMem] using
+      BProv_Ax_s_hfMem_succ_iff_tail_of_div2StepAt hnewStep
+  have holdIff : BProv Ax_s G (iffForm oldSucc oldTailMem) := by
+    simpa [oldSucc, oldTailMem] using
+      BProv_Ax_s_hfMem_succ_iff_tail_of_div2StepAt holdStep
+  have htailIff : BProv Ax_s G
+      (iffForm newTailMem (or oldTailMem tailEq)) := by
+    simpa [newTailMem, oldTailMem, tailEq] using htail
+  have hforward : BProv Ax_s G (imp newSucc rhs) := by
+    let C : List Formula := newSucc :: G
+    have hnewC : BProv Ax_s C (iffForm newSucc newTailMem) :=
+      BProv_context_cons (B := Ax_s) hnewIff
+    have hnewAss : BProv Ax_s C newSucc :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hnewToTail : BProv Ax_s C (imp newSucc newTailMem) := by
+      simpa [iffForm] using BProv_andE1 hnewC
+    have hnewTail : BProv Ax_s C newTailMem :=
+      BProv_mp Ax_s C newSucc newTailMem hnewToTail hnewAss
+    have htailC : BProv Ax_s C
+        (iffForm newTailMem (or oldTailMem tailEq)) :=
+      BProv_context_cons (B := Ax_s) htailIff
+    have htailToCases : BProv Ax_s C
+        (imp newTailMem (or oldTailMem tailEq)) := by
+      simpa [iffForm] using BProv_andE1 htailC
+    have hcases : BProv Ax_s C (or oldTailMem tailEq) :=
+      BProv_mp Ax_s C newTailMem (or oldTailMem tailEq)
+        htailToCases hnewTail
+    have hleft : BProv Ax_s (oldTailMem :: C) rhs := by
+      let D : List Formula := oldTailMem :: C
+      have holdD : BProv Ax_s D (iffForm oldSucc oldTailMem) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) holdIff)
+      have htailAss : BProv Ax_s D oldTailMem :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have htailToOld : BProv Ax_s D (imp oldTailMem oldSucc) := by
+        simpa [iffForm] using BProv_andE2 holdD
+      have holdMem : BProv Ax_s D oldSucc :=
+        BProv_mp Ax_s D oldTailMem oldSucc htailToOld htailAss
+      exact BProv_orI1 holdMem
+    have hright : BProv Ax_s (tailEq :: C) rhs := by
+      let D : List Formula := tailEq :: C
+      have heq : BProv Ax_s D tailEq :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hsuccEq : BProv Ax_s D headEq := by
+        simpa [tailEq, headEq] using BProv_eq_congr_succ heq
+      exact BProv_orI2 hsuccEq
+    exact BProv_impI (BProv_orE hcases hleft hright)
+  have hreverse : BProv Ax_s G (imp rhs newSucc) := by
+    let C : List Formula := rhs :: G
+    have hcases : BProv Ax_s C rhs :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hleft : BProv Ax_s (oldSucc :: C) newSucc := by
+      let D : List Formula := oldSucc :: C
+      have holdD : BProv Ax_s D (iffForm oldSucc oldTailMem) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) holdIff)
+      have holdAss : BProv Ax_s D oldSucc :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have holdToTail : BProv Ax_s D (imp oldSucc oldTailMem) := by
+        simpa [iffForm] using BProv_andE1 holdD
+      have holdTail : BProv Ax_s D oldTailMem :=
+        BProv_mp Ax_s D oldSucc oldTailMem holdToTail holdAss
+      have htailD : BProv Ax_s D
+          (iffForm newTailMem (or oldTailMem tailEq)) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) htailIff)
+      have hcasesTail : BProv Ax_s D (or oldTailMem tailEq) :=
+        BProv_orI1 holdTail
+      have hcasesToNew : BProv Ax_s D
+          (imp (or oldTailMem tailEq) newTailMem) := by
+        simpa [iffForm] using BProv_andE2 htailD
+      have hnewTail : BProv Ax_s D newTailMem :=
+        BProv_mp Ax_s D (or oldTailMem tailEq) newTailMem
+          hcasesToNew hcasesTail
+      have hnewD : BProv Ax_s D (iffForm newSucc newTailMem) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hnewIff)
+      have htailToNew : BProv Ax_s D (imp newTailMem newSucc) := by
+        simpa [iffForm] using BProv_andE2 hnewD
+      exact BProv_mp Ax_s D newTailMem newSucc htailToNew hnewTail
+    have hright : BProv Ax_s (headEq :: C) newSucc := by
+      let D : List Formula := headEq :: C
+      have hheadEq : BProv Ax_s D headEq :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hinj : BProv Ax_s D (imp headEq tailEq) := by
+        simpa [headEq, tailEq] using
+          BProv_weaken_nil (G := D)
+            (BProv_Ax_s_succInj_terms
+              (Term.var 0) (Term.var elem))
+      have heq : BProv Ax_s D tailEq :=
+        BProv_mp Ax_s D headEq tailEq hinj hheadEq
+      have htailD : BProv Ax_s D
+          (iffForm newTailMem (or oldTailMem tailEq)) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) htailIff)
+      have hcasesTail : BProv Ax_s D (or oldTailMem tailEq) :=
+        BProv_orI2 heq
+      have hcasesToNew : BProv Ax_s D
+          (imp (or oldTailMem tailEq) newTailMem) := by
+        simpa [iffForm] using BProv_andE2 htailD
+      have hnewTail : BProv Ax_s D newTailMem :=
+        BProv_mp Ax_s D (or oldTailMem tailEq) newTailMem
+          hcasesToNew hcasesTail
+      have hnewD : BProv Ax_s D (iffForm newSucc newTailMem) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hnewIff)
+      have htailToNew : BProv Ax_s D (imp newTailMem newSucc) := by
+        simpa [iffForm] using BProv_andE2 hnewD
+      exact BProv_mp Ax_s D newTailMem newSucc htailToNew hnewTail
+    exact BProv_impI (BProv_orE hcases hleft hright)
+  simpa [iffForm, newSucc, oldSucc, headEq, rhs] using
+    BProv_andI hforward hreverse
+
+/-- A tail adjunction graph lifts to heads carrying the same low bit, with
+the adjoined element shifted by successor.  Ordinary PA induction ranges over
+the queried membership index; its induction hypothesis is intentionally
+unused in the positive case. -/
+theorem BProv_Ax_s_hfAdjoinGraph_heads_of_same_bit
+    {G : List Formula}
+    {newHead newTail oldHead oldTail bit elem : Nat}
+    (hnewStep : BProv Ax_s G (div2StepAt newHead newTail bit))
+    (holdStep : BProv Ax_s G (div2StepAt oldHead oldTail bit))
+    (htail : BProv Ax_s G
+      (hfAdjoinGraphAt newTail oldTail elem)) :
+    BProv Ax_s G
+      (hfAdjoinGraphTermAt
+        (Term.var newHead) (Term.var oldHead)
+        (Term.succ (Term.var elem))) := by
+  let phi : Formula :=
+    iffForm
+      (hfMemAt 0 (newHead+1))
+      (or
+        (hfMemAt 0 (oldHead+1))
+        (eq (Term.var 0) (Term.succ (Term.var (elem+1)))))
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    let zeroEq : Formula := eqConstAt 0 0
+    have hex : BProv Ax_s G (ex zeroEq) := by
+      simpa [zeroEq] using
+        (BProv_exists_eqConstAt (B := Ax_s) (G := G) 0)
+    have hopened : BProv Ax_s (zeroEq :: G.map (rename Nat.succ))
+        (rename Nat.succ (subst substZero phi)) := by
+      let C : List Formula := zeroEq :: G.map (rename Nat.succ)
+      have hqueryZero : BProv Ax_s C (eqConstAt 0 0) := by
+        have hraw : BProv Ax_s C zeroEq :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        simpa [zeroEq] using hraw
+      have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (div2StepAt newHead newTail bit)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hnewStep Nat.succ
+      have hnewC : BProv Ax_s C
+          (div2StepAt (newHead+1) (newTail+1) (bit+1)) := by
+        simpa [C, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+          rename, Term.rename] using
+          BProv_context_cons (B := Ax_s) (a := zeroEq) hnewRen
+      have holdRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (div2StepAt oldHead oldTail bit)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          holdStep Nat.succ
+      have holdC : BProv Ax_s C
+          (div2StepAt (oldHead+1) (oldTail+1) (bit+1)) := by
+        simpa [C, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+          rename, Term.rename] using
+          BProv_context_cons (B := Ax_s) (a := zeroEq) holdRen
+      have hpoint : BProv Ax_s C
+          (iffForm
+            (hfMemAt 0 (newHead+1))
+            (or
+              (hfMemAt 0 (oldHead+1))
+              (eq (Term.var 0)
+                (Term.succ (Term.var (elem+1)))))) :=
+        BProv_Ax_s_hfAdjoin_zero_head_lift
+          (query := 0)
+          (newHead := newHead+1) (newTail := newTail+1)
+          (oldHead := oldHead+1) (oldTail := oldTail+1)
+          (bit := bit+1) (elem := elem+1)
+          hqueryZero hnewC holdC
+      have hpointSub : BProv Ax_s C
+          (subst (instTerm (Term.var 0))
+            (rename (SetTheory.up Nat.succ) phi)) := by
+        rw [subst_instTerm_var_zero_rename_up_succ]
+        simpa [phi] using hpoint
+      have hzeroSub : BProv Ax_s C
+          (subst (instTerm Term.zero)
+            (rename (SetTheory.up Nat.succ) phi)) :=
+        BProv_eqElim (B := Ax_s) (G := C)
+          (s := Term.var 0) (t := Term.zero)
+          (a := rename (SetTheory.up Nat.succ) phi)
+          (by simpa [eqConstAt, Term.numeral] using hqueryZero)
+          hpointSub
+      have hnorm :
+          subst (instTerm Term.zero)
+              (rename (SetTheory.up Nat.succ) phi) =
+            rename Nat.succ (subst substZero phi) := by
+        have hσ : instTerm Term.zero = substZero := by
+          funext n
+          cases n <;> rfl
+        simpa [hσ, Term.rename] using
+          (subst_instTerm_rename_up phi Nat.succ Term.zero)
+      rw [hnorm] at hzeroSub
+      exact hzeroSub
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hex (by simpa [zeroEq] using hopened)
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    let S : List Formula := phi :: G.map (rename Nat.succ)
+    have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (div2StepAt newHead newTail bit)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hnewStep Nat.succ
+    have hnewS : BProv Ax_s S
+        (div2StepAt (newHead+1) (newTail+1) (bit+1)) := by
+      simpa [S, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := phi) hnewRen
+    have holdRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (div2StepAt oldHead oldTail bit)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        holdStep Nat.succ
+    have holdS : BProv Ax_s S
+        (div2StepAt (oldHead+1) (oldTail+1) (bit+1)) := by
+      simpa [S, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := phi) holdRen
+    have htailRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (hfAdjoinGraphAt newTail oldTail elem)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        htail Nat.succ
+    have htailRen' : BProv Ax_s (G.map (rename Nat.succ))
+        (hfAdjoinGraphAt
+          (newTail+1) (oldTail+1) (elem+1)) := by
+      simpa only [rename_hfAdjoinGraphAt_succ] using htailRen
+    have htailS : BProv Ax_s S
+        (hfAdjoinGraphAt
+          (newTail+1) (oldTail+1) (elem+1)) :=
+      BProv_context_cons (B := Ax_s) (a := phi) htailRen'
+    have htailPoint : BProv Ax_s S
+        (iffForm
+          (hfMemAt 0 (newTail+1))
+          (or
+            (hfMemAt 0 (oldTail+1))
+            (eq (Term.var 0) (Term.var (elem+1))))) := by
+      exact BProv_hfAdjoinGraphAt_point
+        (query := 0) (newCode := newTail+1)
+        (oldCode := oldTail+1) (elemCode := elem+1) htailS
+    have hlift :=
+      BProv_Ax_s_hfAdjoin_positive_head_lift
+        (G := S)
+        (newHead := newHead+1) (newTail := newTail+1)
+        (oldHead := oldHead+1) (oldTail := oldTail+1)
+        (bit := bit+1) (elem := elem+1)
+        hnewS holdS htailPoint
+    change BProv Ax_s S
+      (iffForm
+        (subst substSuccVar (hfMemAt 0 (newHead+1)))
+        (or
+          (subst substSuccVar (hfMemAt 0 (oldHead+1)))
+          (eq
+            (Term.subst substSuccVar (Term.var 0))
+            (Term.subst substSuccVar
+              (Term.succ (Term.var (elem+1)))))))
+    rw [substSuccVar_hfMemAt_zero_succ,
+      substSuccVar_hfMemAt_zero_succ]
+    simpa [S, substSuccVar, Term.subst] using hlift
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI (by simpa using hsuccBody)
+  have hsucc : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hall : BProv Ax_s G (all phi) :=
+    BProv_Ax_s_induction_rule (G := G) (phi := phi) hzero hsucc
+  simpa [phi, hfAdjoinGraphTermAt, hfMemTermAt_var,
+    Term.rename] using hall
+
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already
 `BProv_Ax_s_hfLtDistinguishesAt_zero_base`; this lemma keeps the remaining
