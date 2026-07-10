@@ -2,8 +2,7 @@
 
 **Machine-checked mathematics in Lean 4 and Rocq/Coq.**
 
-`Proofs` is [Vladimir Reshetnikov's](https://github.com/VladimirReshetnikov)
-public collection of formal mathematics and auditable computational
+`Proofs` is a public collection of formal mathematics and auditable computational
 certificates. It ranges from classical number theory and exact analytic
 identities to OEIS power-tower sequences, propositional and equational logic,
 alternative foundations of set theory, and Busy Beaver results.
@@ -25,7 +24,7 @@ theorems, checked facts about retained data, and heuristic evidence.
 | Classical mathematics | Fermat's Last Theorem for `n = 4`, an exact floor-square-root sum, a bijective rational orbit, and exact trigonometric, arctangent, and power-tower identities | [`LeanProofs/`](LeanProofs/) |
 | OEIS and power towers | Formal semantics and exact finite certificates for A000081, A002845, A158415, A198683, and A199812 | [OEIS and power towers](#oeis-and-power-towers) |
 | Logic | Nicod's single NAND axiom, Wolfram's single Sheffer-stroke equation, Meredith's basis, and checked equational certificates | [`LeanProofs/WolframBoolean.lean`](LeanProofs/WolframBoolean.lean) |
-| Set theory | Full deductive equivalence of Vladimir's Closure axiomatization and ZF, checked independently in Rocq and Lean | [`SetTheory/`](SetTheory/README.md) |
+| Set theory | Full deductive equivalence of Closure axiomatization and ZF, checked independently in Rocq and Lean | [`SetTheory/`](SetTheory/README.md) |
 | Computability | Busy Beaver domination results; exact score proofs `Σ(2) = 4` and `Σ(3) = 6` in Lean and Rocq; exact Rocq proofs of `Σ(4) = 13` and times `BB(2) = 6`, `BB(3) = 21`, `BB(4) = 107` | [`SetTheory/`](SetTheory/README.md), [`CoqBB2/`](CoqBB2/README.md), [`CoqBB3/`](CoqBB3/README.md), [`CoqBB4/`](CoqBB4/README.md) |
 | Reproducible research | Source snapshots, exact generators, retained data, investigation reports, and proof-status ledgers for difficult certificate projects | [`Oeis/`](Oeis/) |
 
@@ -156,7 +155,7 @@ The same project contains adjacent foundational and computability work:
   infrastructure;
 - a first-order PA sentence expressing the Mertens/Littlewood arithmetic
   criterion associated with the Riemann Hypothesis—the repository formalizes
-  the statement, not a proof of RH or yet its analytic equivalence;
+  the statement, not yet its analytic equivalence;
 - Busy Beaver champion witnesses and eventual-domination theorems;
 - an exhaustive Lean classification of all `12^4 = 20,736` two-state tables,
   proving the marked-symbol score `Σ(2) = 4`;
@@ -333,20 +332,7 @@ For individual files, use the same logical-path flags. See
   and
   [`SetTheory/lean/SetTheory/AuditMathlib.lean`](SetTheory/lean/SetTheory/AuditMathlib.lean).
 
-## Provenance
-
-This repository was extracted from
-[`VladimirReshetnikov/Smithereens`](https://github.com/VladimirReshetnikov/Smithereens)
-on 2026-07-09 from source snapshot
-[`6955227fc5bf55d368b4c40644767b3749234425`](https://github.com/VladimirReshetnikov/Smithereens/commit/6955227fc5bf55d368b4c40644767b3749234425).
-The filtered history lifts the former proof-owned paths to the repository root
-while retaining their relevant ancestry, authorship, timestamps, messages,
-and contents; commit identifiers necessarily changed during filtering. The
-filtered repository's ordinary `git log` and `git blame` expose that rewritten
-history; consult Smithereens for the original path names.
-
-BusyLean was intentionally excluded from this repository and remains in
-[Smithereens at `src/BusyLean`](https://github.com/VladimirReshetnikov/Smithereens/tree/main/src/BusyLean).
+## Vendored components
 
 The vendored [`CoqBB2/`](CoqBB2/), [`CoqBB3/`](CoqBB3/), and
 [`CoqBB4/`](CoqBB4/) source snapshots come from
