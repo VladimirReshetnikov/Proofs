@@ -409,6 +409,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_of_term
 #check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_elim_opened
 #check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_zero
+#check @PA.Formula.BProv_Ax_s_betaPrependExistsTermAt_of_step
+#check @PA.Formula.BProv_Ax_s_betaPrependExistsTermAt_elim_opened
 #check @PA.Formula.BProv_Ax_s_betaPrefixAgreementTermAt_entry_of_ltTerm
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt
 #check @PA.Formula.BProv_Ax_s_betaPrefixAgreementTermAt_of_betaCodeExtensionTermAt
@@ -440,6 +442,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_all_betaPrependPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_of_codingStep
+#check @PA.Formula.BProv_Ax_s_betaPrependExistsTermAt_of_entries
+#check @PA.Formula.BProv_Ax_s_betaPrependExistsTermAt_of_stepsThrough
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_shiftPrefix_succ
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt
 #check @PA.Formula.BProv_Ax_s_all_betaShiftTailExistsTermAt
@@ -555,6 +559,8 @@ open SetTheory
 #check @PA.Formula.betaPrependPrefixTermAt
 #check @PA.Formula.betaPrependPrefixCodeExistsTermAt
 #check @PA.Formula.betaPrependPrefixCodeExistsTermAtBody
+#check @PA.Formula.betaPrependExistsTermAt
+#check @PA.Formula.betaPrependExistsTermAtBody
 #check @PA.Formula.betaPrefixDividesTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAt
@@ -584,6 +590,7 @@ open SetTheory
 #check @PA.Formula.betaUnshiftPrefixCodeExistsTermAt_nat
 #check @PA.Formula.betaPrependPrefixTermAt_nat
 #check @PA.Formula.betaPrependPrefixCodeExistsTermAt_nat
+#check @PA.Formula.betaPrependExistsTermAt_nat
 #check @PA.Formula.betaPrefixDividesTermAt_nat
 #check @PA.Formula.betaPrefixCRTAccumulatorTermAt_nat
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAt_nat

@@ -3484,6 +3484,27 @@ def betaPrependPrefixCodeExistsTermAtBody
     (Term.rename Nat.succ targetStep)
     (Term.rename Nat.succ bound)
 
+/-- Existence of both a target step and target code for a head-preserving
+beta prepend prefix. -/
+def betaPrependExistsTermAt
+    (sourceCode sourceStep head bound : Term) : Formula :=
+  ex (betaPrependPrefixCodeExistsTermAt
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ sourceStep)
+    (Term.rename Nat.succ head)
+    (Term.var 0)
+    (Term.rename Nat.succ bound))
+
+/-- Body exposed after opening the target-step witness of a beta prepend. -/
+def betaPrependExistsTermAtBody
+    (sourceCode sourceStep head bound : Term) : Formula :=
+  betaPrependPrefixCodeExistsTermAt
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ sourceStep)
+    (Term.rename Nat.succ head)
+    (Term.var 0)
+    (Term.rename Nat.succ bound)
+
 /-- Source-side availability contract for beta-prefix constructions: every
 index strictly below `bound` has some beta output. -/
 def betaEntryExistsPrefixTermAt
@@ -5144,6 +5165,42 @@ theorem betaPrependPrefixCodeExistsTermAt_nat
       (Term.var 0)
       (Term.rename Nat.succ targetStep)
       (Term.rename Nat.succ bound)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hprefix
+
+theorem betaPrependExistsTermAt_nat
+    (e : Nat → Nat) (sourceCode sourceStep head bound : Term) :
+    Sat natModel e
+      (betaPrependExistsTermAt sourceCode sourceStep head bound) ↔
+      ∃ targetStep targetCode,
+        BetaEntry targetCode targetStep 0
+            (Term.eval natModel e head) ∧
+          ∀ i, i < Term.eval natModel e bound → ∀ out,
+            BetaEntry (Term.eval natModel e sourceCode)
+                (Term.eval natModel e sourceStep) i out →
+              BetaEntry targetCode targetStep (i + 1) out := by
+  constructor
+  · intro h
+    rcases h with ⟨targetStep, hcode⟩
+    have hspec := (betaPrependPrefixCodeExistsTermAt_nat
+      (scons targetStep e)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ sourceStep)
+      (Term.rename Nat.succ head)
+      (Term.var 0)
+      (Term.rename Nat.succ bound)).mp hcode
+    refine ⟨targetStep, ?_⟩
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨targetStep, targetCode, hprefix⟩
+    refine ⟨targetStep, ?_⟩
+    apply (betaPrependPrefixCodeExistsTermAt_nat
+      (scons targetStep e)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ sourceStep)
+      (Term.rename Nat.succ head)
+      (Term.var 0)
+      (Term.rename Nat.succ bound)).mpr
+    refine ⟨targetCode, ?_⟩
     simpa [Term.eval_rename, Term.eval, scons] using hprefix
 
 theorem betaEntryExistsPrefixTermAt_nat
@@ -24755,6 +24812,61 @@ theorem BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_zero
   exact BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_of_term
     (BProv_Ax_s_betaPrependPrefixTermAt_of_components hhead hunshift)
 
+/-- Package a fixed-step beta-prepend prefix-code witness by existentially
+quantifying its target step. -/
+theorem BProv_Ax_s_betaPrependExistsTermAt_of_step
+    {G : List Formula}
+    {sourceCode sourceStep head targetStep bound : Term}
+    (hcode : BProv Ax_s G
+      (betaPrependPrefixCodeExistsTermAt
+        sourceCode sourceStep head targetStep bound)) :
+    BProv Ax_s G
+      (betaPrependExistsTermAt sourceCode sourceStep head bound) := by
+  have hbody : BProv Ax_s G
+      (subst (instTerm targetStep)
+        (betaPrependExistsTermAtBody
+          sourceCode sourceStep head bound)) := by
+    simpa [betaPrependExistsTermAtBody,
+      betaPrependPrefixCodeExistsTermAt,
+      betaPrependPrefixTermAt, betaUnshiftPrefixTermAt,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hcode
+  exact BProv_exI (B := Ax_s) (G := G)
+    (a := betaPrependExistsTermAtBody
+      sourceCode sourceStep head bound)
+    (t := targetStep)
+    (by simpa [betaPrependExistsTermAt,
+      betaPrependExistsTermAtBody] using hbody)
+
+/-- Eliminate beta-prepend existence by opening its target-step witness. -/
+theorem BProv_Ax_s_betaPrependExistsTermAt_elim_opened
+    {G : List Formula} {sourceCode sourceStep head bound : Term}
+    {target : Formula}
+    (hopened : BProv Ax_s
+      (betaPrependExistsTermAtBody sourceCode sourceStep head bound ::
+        G.map (rename Nat.succ))
+      (rename Nat.succ target))
+    (hex : BProv Ax_s G
+      (betaPrependExistsTermAt sourceCode sourceStep head bound)) :
+    BProv Ax_s G target :=
+  BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [betaPrependExistsTermAt,
+      betaPrependExistsTermAtBody] using hopened)
+
 /-- Build the inner output-universal shifted-tail implication at one closed
 index.
 
@@ -33382,6 +33494,87 @@ theorem BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_of_codingStep
       Term.rename_comp, Function.comp_def] using himpRaw
   exact BProv_mp Ax_s G _ _ himp
     (BProv_Ax_s_leTermAt_refl finalBound)
+
+/-- Source-entry availability alone suffices for existence of both a target
+step and target code realizing the complete beta prepend prefix. -/
+theorem BProv_Ax_s_betaPrependExistsTermAt_of_entries
+    {G : List Formula}
+    {sourceCode sourceStep head finalBound : Term}
+    (hentries : BProv Ax_s G
+      (betaEntryExistsPrefixTermAt sourceCode sourceStep finalBound)) :
+    BProv Ax_s G
+      (betaPrependExistsTermAt
+        sourceCode sourceStep head finalBound) := by
+  have hcodingEx : BProv Ax_s G
+      (betaPrependCodingStepExistsTermAt
+        finalBound sourceCode head) :=
+    BProv_Ax_s_betaPrependCodingStepExistsTermAt
+      finalBound sourceCode head
+  let goal : Formula :=
+    betaPrependExistsTermAt sourceCode sourceStep head finalBound
+  refine BProv_Ax_s_betaPrependCodingStepExistsTermAt_elim_opened
+    (G := G) (bound := finalBound) (sourceCode := sourceCode)
+    (head := head) (target := goal) ?_ hcodingEx
+  let codingBody : Formula :=
+    betaPrependCodingStepExistsTermAtBody finalBound sourceCode head
+  let D : List Formula := codingBody :: G.map (rename Nat.succ)
+  let sourceCode1 : Term := Term.rename Nat.succ sourceCode
+  let sourceStep1 : Term := Term.rename Nat.succ sourceStep
+  let head1 : Term := Term.rename Nat.succ head
+  let finalBound1 : Term := Term.rename Nat.succ finalBound
+  have hcoding : BProv Ax_s D
+      (betaPrependCodingStepTermAt
+        finalBound1 sourceCode1 head1 (Term.var 0)) := by
+    have hraw : BProv Ax_s D codingBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [codingBody, betaPrependCodingStepExistsTermAtBody,
+      sourceCode1, head1, finalBound1] using hraw
+  have hentriesRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (betaEntryExistsPrefixTermAt
+          sourceCode sourceStep finalBound)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hentries Nat.succ
+  have hentriesD : BProv Ax_s D
+      (betaEntryExistsPrefixTermAt
+        sourceCode1 sourceStep1 finalBound1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := codingBody) hentriesRen
+    simpa [D, sourceCode1, sourceStep1, finalBound1,
+      betaEntryExistsPrefixTermAt, betaEntryExistsTermAt,
+      betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+      rename, Term.rename, SetTheory.up, Term.rename_comp,
+      Function.comp_def] using hraw
+  have hcode : BProv Ax_s D
+      (betaPrependPrefixCodeExistsTermAt
+        sourceCode1 sourceStep1 head1 (Term.var 0) finalBound1) :=
+    BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_of_codingStep
+      hentriesD hcoding
+  have hex : BProv Ax_s D
+      (betaPrependExistsTermAt
+        sourceCode1 sourceStep1 head1 finalBound1) :=
+    BProv_Ax_s_betaPrependExistsTermAt_of_step hcode
+  simpa [goal, D, codingBody, sourceCode1, sourceStep1, head1,
+    finalBound1, betaPrependCodingStepExistsTermAtBody,
+    betaPrependExistsTermAt,
+    betaPrependPrefixCodeExistsTermAt,
+    betaPrependPrefixTermAt, betaUnshiftPrefixTermAt,
+    betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hex
+
+/-- A bounded source halving trace supplies all data needed to prepend one
+new head step, including fresh target-step and target-code witnesses. -/
+theorem BProv_Ax_s_betaPrependExistsTermAt_of_stepsThrough
+    {G : List Formula} {sourceCode sourceStep head last : Term}
+    (hsteps : BProv Ax_s G
+      (betaDiv2StepsThroughTermTermAt sourceCode sourceStep last)) :
+    BProv Ax_s G
+      (betaPrependExistsTermAt sourceCode sourceStep head
+        (Term.succ (Term.succ last))) :=
+  BProv_Ax_s_betaPrependExistsTermAt_of_entries
+    (BProv_Ax_s_betaEntryExistsPrefixTermAt_of_stepsThrough hsteps)
 
 /-- Convert a strict shifted prefix through `S last` into the corresponding
 non-strict shifted tail through `last`.
