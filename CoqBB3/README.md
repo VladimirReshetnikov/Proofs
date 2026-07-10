@@ -67,11 +67,10 @@ The TNF enumeration algorithm is located in `BB3_TNF_Enumeration.v`.
 
 ### Deciders
 
-Deciders are algorithms trying to prove whether a given Turing machine halts or not. The pipeline of deciders used to solve `BB(4)` (pipeline defined in `BB3_Deciders_Pipeline.v`) is a subset of the `BB(5)` pipeline (see ../BB5):
+Deciders are algorithms trying to prove whether a given Turing machine halts or not. The pipeline used to solve `BB(3)` (defined in `BB3_Deciders_Pipeline.v`) is a subset of the upstream `BB(5)` pipeline:
 
-1. Loops, see `../BB5/Deciders/Decider_Loop.v`
-2. n-gram Closed Position Set (n-gram CPS), see `../BB5/Deciders/Decider_NGramCPS.v`
-3. Repeated Word List (RepWL), see `../BB5/Deciders/Decider_RepWL.v`
+1. Loops, see [`Deciders/Decider_Loop.v`](Deciders/Decider_Loop.v)
+2. n-gram Closed Position Set (n-gram CPS), see [`Deciders/Decider_NGramCPS.v`](Deciders/Decider_NGramCPS.v)
 
 Each of these techniques is described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), also see `../BB5/Deciders/README.md` and the comments in each file listed above for some information.
 
@@ -79,14 +78,14 @@ The deciders' algorithms are programmed in Coq and then proved correct in Coq to
 
 ### Extracting results
 
-The list of all enumerated machines (using [bbchallenge format](https://discuss.bbchallenge.org/t/standard-tm-text-format/60/28?u=cosmo)) with for each, halting status and decider ID can be extracted from the Coq proof by doing (once you've compiled the proof):
-
-```sh
-cd BB3_Extraction
-./BB3_Extraction.sh
-```
-
-Which should produce the file `BB3_verified_enumeration.csv` with shasum ending in `...1c351e9c38` and file starting with:
+The upstream project publishes the enumerated machines (in
+[bbchallenge format](https://discuss.bbchallenge.org/t/standard-tm-text-format/60/28?u=cosmo))
+with each machine's halting status and decider ID. This vendored subset retains
+the Rocq extraction declaration in `BB3_Extraction.v`, but not upstream's
+helper directory and shell script. The published
+`BB3_verified_enumeration.csv` has SHA-256
+`d1b5df70df506eab6607edeaa181274d5f5a7c58e8aad24bba4a991c351e9c38` and
+starts with:
 
 ```
 machine,status,decider
@@ -101,10 +100,6 @@ machine,status,decider
 0RB---_1LA0RA_------,nonhalt,LOOP1_params_21
 ...
 ```
-
-This step relies on OCaml extraction of the Coq code (specified in `BB3_Extraction.v`).
-
-See `BB3_Extraction/README.md` for more information and troubleshooting.
 
 This extracted `BB3_verified_enumeration.csv` is also available at [https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/](https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/).
 
@@ -137,14 +132,13 @@ Here are more precise counts exactly following the pipeline used by the proof (`
 - `BB3_Encodings.v`: routines that encode objects into numbers for fast lookup using Coq's `FSets.FMapPositive`
 - `BB3_Extraction.v`: OCaml extraction, see [above](#extracting-results)
 - `BB3_Make_TM.v`: mainly routines to build 3-state Turing machines
-- `BB3_Statement.v`: main definition and `BB(4) = 107` theorem statement
-- `BB3_Theorem.v`: entry point of the proof of `BB(4) = 107`
+- `BB3_Statement.v`: main definition and `BB(3) = 21` theorem statement
+- `BB3_Theorem.v`: entry point of the proof of `BB(3) = 21`
 - `BB3_TNF_Enumeration.v`: Tree Normal Form enumeration of 3-state Turing machines
-- `BB3_Extraction/BB3_Extraction.sh`: compiles the OCaml extraction, runs it and saves results to [BB3_verified_enumeration.csv](https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/) (also checks hashes)
 
-### Files copied from ../BB5
+### Shared upstream files
 
-The following files are copied from `../BB5` after running `copy_from_BB5.sh` (the script also modifies Coq files' import statements using `sed`):
+The following shared files were selected from the upstream BB5 development:
 
 - `List_Routines.v`: routines to manipulate lists
 - `List_Tape.v`: routines to manipulate Turing machines tapes as lists
@@ -154,10 +148,8 @@ The following files are copied from `../BB5` after running `copy_from_BB5.sh` (t
 - `TNF.v`: tools for the Tree Normal Form enumeration (e.g. `SearchQueue` implementation etc...)
 
 - `Deciders/Deciders_Common.v`: common abstraction needed by deciders
-- `Deciders/Decider_Halt.v`: decider that detects halting by running a machine for some steps
 - `Deciders/Decider_Loop.v`: decider for loops
 - `Deciders/Decider_NGramCPS.v`: n-gram Closed Position Set decider
-- `Deciders/Decider_RepWL.v`: Repeated Word List decider
 - `Deciders/Verifier_Halt.v`: verifier that a machine does halt after a given number of steps
 
 These deciders are described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), also see `../BB5/Deciders/README.md` and the comments in each file listed above for some information.
