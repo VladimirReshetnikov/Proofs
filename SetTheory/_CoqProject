@@ -73,6 +73,7 @@ PAHFOrdinalCodeTotal.v
 PAHFTranslatedHFFin.v
 PAHFMembershipBound.v
 PAHFInterpretations.v
+PAHFTermGraphModel.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
 PAHFHFRepresentationMerge.v
