@@ -126,6 +126,8 @@ open SetTheory
 #check @PA.Formula.term_subst_up_up_up_up_up_instTerm_rename_six_succ
 #check @PA.Formula.term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ
 #check @PA.Formula.term_subst_up_up_up_up_substZero_rename_five_succ
+#check @PA.Formula.term_subst_up_up_substZero_rename_three_succ
+#check @PA.Formula.term_subst_up_up_substSuccVar_rename_three_succ
 #check @PA.Formula.term_subst_up_up_up_up_up_substZero_rename_six_succ
 #check @PA.Formula.term_subst_up_up_up_up_substSuccVar_rename_five_succ
 #check @PA.Formula.term_subst_up_up_up_up_up_substSuccVar_rename_six_succ
@@ -360,6 +362,10 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt_of_term
 #check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt_elim_opened
 #check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt
+#check @PA.Formula.BProv_Ax_s_betaPrependCodingStepTermAt_of_positiveCommon
+#check @PA.Formula.BProv_Ax_s_betaPrependCodingStepExistsTermAt_of_term
+#check @PA.Formula.BProv_Ax_s_betaPrependCodingStepExistsTermAt_elim_opened
+#check @PA.Formula.BProv_Ax_s_betaPrependCodingStepExistsTermAt
 #check @PA.Formula.BProv_Ax_s_betaPair_positive_inverse_of_gap_scale
 #check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_of_certificate
 #check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_one
@@ -432,6 +438,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_all_betaUnshiftPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_of_codingStep
+#check @PA.Formula.BProv_Ax_s_all_betaPrependPrefixCodeExistsTermAt_of_codingStep
+#check @PA.Formula.BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_shiftPrefix_succ
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt
 #check @PA.Formula.BProv_Ax_s_all_betaShiftTailExistsTermAt
