@@ -85,6 +85,7 @@ PAHFHFRepresentationMerge.v
 PAHFHFRepresentationFinite.v
 PAHFDeductiveAssembly.v
 PAHFHFRoundTripSemantic.v
+PAHFHFRepresentationRange.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
 BusyBeaver.v
