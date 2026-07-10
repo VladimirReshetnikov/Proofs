@@ -1131,6 +1131,17 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfAdjoin_zero_head_lift
 #check @PA.Formula.BProv_Ax_s_hfAdjoin_positive_head_lift
 #check @PA.Formula.BProv_Ax_s_hfAdjoinGraph_heads_of_same_bit
+#check @PA.Formula.hfAdjoinTotalTermAt_var
+#check @PA.Formula.term_subst_iterUpSubst_rename_add
+#check @PA.Formula.subst_up_hfMemTermAt_zero_rename_succ
+#check @PA.Formula.subst_hfAdjoinGraphTermAt
+#check @PA.Formula.subst_hfAdjoinExistsTermAt
+#check @PA.Formula.subst_hfAdjoinTotalTermAt
+#check @PA.Formula.BProv_hfAdjoinTotalTermAt_of_all
+#check @PA.Formula.BProv_hfAdjoinExistsTermAt_of_total
+#check @PA.Formula.BProv_Ax_s_all_hfAdjoinTotalAt_of_zero_succ
+#check @PA.Formula.BProv_Ax_s_translated_HF_adjoin_of_all_total
+#check @PA.Formula.BProv_Ax_s_translated_HF_adjoin_of_zero_succ
 #check @PA.Formula.BProv_exists_eq_term
 #check @PA.Formula.BProv_Ax_s_div2StepAt_of_named_head_and_old_step
 #check @PA.Formula.BProv_Ax_s_hfAdjoinExistsTermAt_succ_of_step_and_tail_graph

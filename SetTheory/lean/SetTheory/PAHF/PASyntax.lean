@@ -48486,6 +48486,207 @@ def hfAdjoinTotalTermAt (elemCode : Term) : Formula :=
 def hfAdjoinTotalAt (elemCode : Nat) : Formula :=
   all (ex (hfAdjoinGraphAt 0 1 (elemCode+2)))
 
+theorem hfAdjoinTotalTermAt_var (elem : Nat) :
+    hfAdjoinTotalTermAt (Term.var elem) = hfAdjoinTotalAt elem := by
+  simp [hfAdjoinTotalTermAt, hfAdjoinExistsTermAt,
+    hfAdjoinTotalAt, hfAdjoinGraphAt, Term.rename]
+
+/-- Iterated lifted substitution commutes with the matching variable shift. -/
+theorem term_subst_iterUpSubst_rename_add
+    (k : Nat) (σ : Nat → Term) (t : Term) :
+    Term.subst (iterUpSubst k σ)
+        (Term.rename (fun n => n+k) t) =
+      Term.rename (fun n => n+k) (Term.subst σ t) := by
+  induction k with
+  | zero =>
+      change Term.subst σ (Term.rename (fun n => n) t) =
+        Term.rename (fun n => n) (Term.subst σ t)
+      rw [Term.rename_id, Term.rename_id]
+  | succ k ih =>
+      have hrename :
+          Term.rename (fun n => n+(k+1)) t =
+            Term.rename Nat.succ (Term.rename (fun n => n+k) t) := by
+        rw [Term.rename_comp]
+        exact Term.rename_ext t _ _ (fun n => by omega)
+      rw [iterUpSubst, hrename, Term.subst_rename_succ_up]
+      change Term.rename Nat.succ
+          (Term.subst (iterUpSubst k σ)
+            (Term.rename (fun n => n+k) t)) =
+        Term.rename (fun n => n+(k+1)) (Term.subst σ t)
+      rw [ih]
+      rw [Term.rename_comp]
+      exact Term.rename_ext (Term.subst σ t)
+        (fun n => Nat.succ (n+k))
+        (fun n => n+(k+1)) (fun n => by omega)
+
+/-- Substitution of a protected query leaves the query at zero and acts only
+on the term-valued set code. -/
+theorem subst_up_hfMemTermAt_zero_rename_succ
+    (σ : Nat → Term) (setCode : Term) :
+    subst (Term.upSubst σ)
+        (hfMemTermAt 0 (Term.rename Nat.succ setCode)) =
+      hfMemTermAt 0
+        (Term.rename Nat.succ (Term.subst σ setCode)) := by
+  simp [hfMemTermAt, betaTermAtConstIdx, betaTermAt,
+    remTermAt, ltTermAt, betaAt, remAt, ltAt, leAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt,
+    betaDiv2BitAt, betaAtSuccIdx, div2StepAt, boolAt,
+    zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, Term.subst, Term.upSubst, Term.rename,
+    Term.rename_comp]
+  constructor
+  · change Term.subst (iterUpSubst 7 σ)
+        (Term.rename (fun n => n+7) setCode) =
+      Term.rename (fun n => n+7) (Term.subst σ setCode)
+    exact term_subst_iterUpSubst_rename_add 7 σ setCode
+  · change Term.subst (iterUpSubst 6 σ)
+        (Term.rename (fun n => n+6) setCode) =
+      Term.rename (fun n => n+6) (Term.subst σ setCode)
+    exact term_subst_iterUpSubst_rename_add 6 σ setCode
+
+theorem subst_hfAdjoinGraphTermAt
+    (σ : Nat → Term) (newCode oldCode elemCode : Term) :
+    subst σ (hfAdjoinGraphTermAt newCode oldCode elemCode) =
+      hfAdjoinGraphTermAt
+        (Term.subst σ newCode)
+        (Term.subst σ oldCode)
+        (Term.subst σ elemCode) := by
+  simp only [hfAdjoinGraphTermAt, subst]
+  apply congrArg all
+  change
+    iffForm
+        (subst (Term.upSubst σ)
+          (hfMemTermAt 0 (Term.rename Nat.succ newCode)))
+        (or
+          (subst (Term.upSubst σ)
+            (hfMemTermAt 0 (Term.rename Nat.succ oldCode)))
+          (eq (Term.var 0)
+            (Term.subst (Term.upSubst σ)
+              (Term.rename Nat.succ elemCode)))) =
+      iffForm
+        (hfMemTermAt 0
+          (Term.rename Nat.succ (Term.subst σ newCode)))
+        (or
+          (hfMemTermAt 0
+            (Term.rename Nat.succ (Term.subst σ oldCode)))
+          (eq (Term.var 0)
+            (Term.rename Nat.succ (Term.subst σ elemCode))))
+  rw [subst_up_hfMemTermAt_zero_rename_succ,
+    subst_up_hfMemTermAt_zero_rename_succ,
+    Term.subst_rename_succ_up]
+
+theorem subst_hfAdjoinExistsTermAt
+    (σ : Nat → Term) (oldCode elemCode : Term) :
+    subst σ (hfAdjoinExistsTermAt oldCode elemCode) =
+      hfAdjoinExistsTermAt
+        (Term.subst σ oldCode) (Term.subst σ elemCode) := by
+  simp [hfAdjoinExistsTermAt,
+    subst_hfAdjoinGraphTermAt,
+    subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem subst_hfAdjoinTotalTermAt
+    (σ : Nat → Term) (elemCode : Term) :
+    subst σ (hfAdjoinTotalTermAt elemCode) =
+      hfAdjoinTotalTermAt (Term.subst σ elemCode) := by
+  simp [hfAdjoinTotalTermAt,
+    subst_hfAdjoinExistsTermAt,
+    subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+/-- Instantiate universal adjunction totality at an arbitrary term-coded
+element. -/
+theorem BProv_hfAdjoinTotalTermAt_of_all
+    {B : Formula → Prop} {G : List Formula} {elemCode : Term}
+    (hall : BProv B G
+      (all (hfAdjoinTotalTermAt (Term.var 0)))) :
+    BProv B G (hfAdjoinTotalTermAt elemCode) := by
+  have hraw := BProv_allE (B := B) (G := G)
+    (t := elemCode) hall
+  rw [subst_hfAdjoinTotalTermAt] at hraw
+  simpa [instTerm, Term.subst] using hraw
+
+/-- Instantiate adjunction totality at an arbitrary term-coded old set. -/
+theorem BProv_hfAdjoinExistsTermAt_of_total
+    {B : Formula → Prop} {G : List Formula}
+    {elemCode oldCode : Term}
+    (htotal : BProv B G (hfAdjoinTotalTermAt elemCode)) :
+    BProv B G (hfAdjoinExistsTermAt oldCode elemCode) := by
+  have hraw := BProv_allE (B := B) (G := G)
+    (t := oldCode) htotal
+  rw [subst_hfAdjoinExistsTermAt] at hraw
+  simpa [hfAdjoinTotalTermAt, instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hraw
+
+/-- PA-induction shell for adjunction totality.  The arithmetic construction
+is isolated to the zero and successor premises. -/
+theorem BProv_Ax_s_all_hfAdjoinTotalAt_of_zero_succ
+    (hzero : BProv Ax_s [] (hfAdjoinTotalTermAt Term.zero))
+    (hsucc : BProv Ax_s [hfAdjoinTotalTermAt (Term.var 0)]
+      (hfAdjoinTotalTermAt (Term.succ (Term.var 0)))) :
+    BProv Ax_s [] (all (hfAdjoinTotalAt 0)) := by
+  let phi : Formula := hfAdjoinTotalTermAt (Term.var 0)
+  have hzero' : BProv Ax_s [] (subst substZero phi) := by
+    rw [subst_hfAdjoinTotalTermAt]
+    simpa [phi, substZero, Term.subst] using hzero
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    rw [subst_hfAdjoinTotalTermAt]
+    simpa [phi, substSuccVar, Term.subst] using hsucc
+  have hsuccImp : BProv Ax_s []
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hall : BProv Ax_s [] (all phi) :=
+    BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero' hsuccAll
+  simpa [phi, hfAdjoinTotalTermAt_var] using hall
+
+/-- Swap the two outer universals of the totality invariant and discharge the
+exact translated HF adjunction axiom. -/
+theorem BProv_Ax_s_translated_HF_adjoin_of_all_total
+    (hall : BProv Ax_s [] (all (hfAdjoinTotalAt 0))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)) := by
+  have hallTerm : BProv Ax_s []
+      (all (hfAdjoinTotalTermAt (Term.var 0))) := by
+    simpa [hfAdjoinTotalTermAt_var] using hall
+  have helem : BProv Ax_s []
+      (hfAdjoinTotalTermAt (Term.var 0)) :=
+    BProv_hfAdjoinTotalTermAt_of_all
+      (elemCode := Term.var 0) hallTerm
+  have hold : BProv Ax_s []
+      (hfAdjoinExistsTermAt (Term.var 1) (Term.var 0)) :=
+    BProv_hfAdjoinExistsTermAt_of_total
+      (oldCode := Term.var 1) helem
+  have hbody : BProv Ax_s [] (ex (hfAdjoinGraphAt 0 2 1)) := by
+    simpa [hfAdjoinExistsTermAt, hfAdjoinGraphAt,
+      Term.rename] using hold
+  have hforElem : BProv Ax_s []
+      (all (ex (hfAdjoinGraphAt 0 2 1))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+  have hforOld : BProv Ax_s []
+      (all (all (ex (hfAdjoinGraphAt 0 2 1)))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hforElem
+  apply BProv_Ax_s_translated_HF_adjoin_of_body
+  simpa [hfAdjoinGraphAt_unfold] using hforOld
+
+/-- Close translated HF adjunction from its concrete PA induction base and
+successor cases. -/
+theorem BProv_Ax_s_translated_HF_adjoin_of_zero_succ
+    (hzero : BProv Ax_s [] (hfAdjoinTotalTermAt Term.zero))
+    (hsucc : BProv Ax_s [hfAdjoinTotalTermAt (Term.var 0)]
+      (hfAdjoinTotalTermAt (Term.succ (Term.var 0)))) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)) :=
+  BProv_Ax_s_translated_HF_adjoin_of_all_total
+    (BProv_Ax_s_all_hfAdjoinTotalAt_of_zero_succ hzero hsucc)
+
 /-- Heads built with the same boolean low bit agree on zero membership. -/
 theorem BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
     {G : List Formula}
