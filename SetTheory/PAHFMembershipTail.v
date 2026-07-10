@@ -1685,3 +1685,402 @@ Proof.
     (betaDiv2BitOneTermExAt newCode newStep idxTerm)
     sentence_ax_s hbitEx' hopened).
 Qed.
+
+Lemma rename_S_div2StepAt : forall value half bit,
+  rename S (div2StepAt value half bit) =
+  div2StepAt (S value) (S half) (S bit).
+Proof.
+  intros value half bit.
+  unfold div2StepAt, boolAt, zeroAt, oneAt, eqConstAt.
+  simpl. reflexivity.
+Qed.
+
+(** Every term-valued Boolean is below the closed numeral two. *)
+Lemma BProv_Ax_s_ltTermAt_two_of_boolTermAt :
+  forall G bit,
+  BProv Ax_s G (boolTermAt bit) ->
+  BProv Ax_s G (ltTermAt bit (Term.numeral 2)).
+Proof.
+  intros G bit hbool.
+  unfold boolTermAt in hbool.
+  apply (BProv_orE Ax_s G (pEq bit tZero) (pEq bit (tSucc tZero))
+    (ltTermAt bit (Term.numeral 2)) hbool).
+  - set (C := pEq bit tZero :: G).
+    assert (heq : BProv Ax_s C (pEq bit tZero)).
+    { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+    assert (hlt0 : BProv Ax_s C
+        (ltTermAt tZero (Term.numeral 2))).
+    {
+      exact (BProv_Ax_s_ltConst_closed C 0 2 ltac:(lia)).
+    }
+    exact (BProv_ltTermAt_of_eq_left Ax_s C tZero bit
+      (Term.numeral 2) (BProv_eqSym Ax_s C _ _ heq) hlt0).
+  - set (C := pEq bit (tSucc tZero) :: G).
+    assert (heq : BProv Ax_s C (pEq bit (tSucc tZero))).
+    { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+    assert (hlt1 : BProv Ax_s C
+        (ltTermAt (Term.numeral 1) (Term.numeral 2))).
+    {
+      exact (BProv_Ax_s_ltConst_closed C 1 2 ltac:(lia)).
+    }
+    replace (Term.numeral 1) with (tSucc tZero) in hlt1
+      by reflexivity.
+    exact (BProv_ltTermAt_of_eq_left Ax_s C (tSucc tZero) bit
+      (Term.numeral 2) (BProv_eqSym Ax_s C _ _ heq) hlt1).
+Qed.
+
+(** Binary-halving quotient functionality for fully term-parametric steps. *)
+Lemma BProv_Ax_s_eq_next_of_div2StepTermAt_pair :
+  forall G curHidden curKnown nextHidden knownHalf bitHidden knownBit,
+  BProv Ax_s G (pEq curHidden curKnown) ->
+  BProv Ax_s G
+    (div2StepTermAt curHidden nextHidden bitHidden) ->
+  BProv Ax_s G
+    (div2StepTermAt curKnown knownHalf knownBit) ->
+  BProv Ax_s G (pEq nextHidden knownHalf).
+Proof.
+  intros G curHidden curKnown nextHidden knownHalf bitHidden knownBit
+    hcurEq hhidden hknown.
+  assert (hhiddenBool : BProv Ax_s G (boolTermAt bitHidden)).
+  {
+    unfold div2StepTermAt in hhidden.
+    exact (BProv_andE1 Ax_s G _ _ hhidden).
+  }
+  assert (hhiddenEq : BProv Ax_s G
+      (pEq curHidden
+        (tAdd (tAdd nextHidden nextHidden) bitHidden))).
+  {
+    unfold div2StepTermAt in hhidden.
+    exact (BProv_andE2 Ax_s G _ _ hhidden).
+  }
+  assert (hknownBool : BProv Ax_s G (boolTermAt knownBit)).
+  {
+    unfold div2StepTermAt in hknown.
+    exact (BProv_andE1 Ax_s G _ _ hknown).
+  }
+  assert (hknownEq : BProv Ax_s G
+      (pEq curKnown (tAdd (tAdd knownHalf knownHalf) knownBit))).
+  {
+    unfold div2StepTermAt in hknown.
+    exact (BProv_andE2 Ax_s G _ _ hknown).
+  }
+  set (two := Term.numeral 2).
+  assert (hhiddenLt : BProv Ax_s G (ltTermAt bitHidden two)).
+  {
+    unfold two.
+    exact (BProv_Ax_s_ltTermAt_two_of_boolTermAt G bitHidden hhiddenBool).
+  }
+  assert (hknownLt : BProv Ax_s G (ltTermAt knownBit two)).
+  {
+    unfold two.
+    exact (BProv_Ax_s_ltTermAt_two_of_boolTermAt G knownBit hknownBool).
+  }
+  assert (hhiddenMul : BProv Ax_s G
+      (pEq (tMul nextHidden two) (tAdd nextHidden nextHidden))).
+  {
+    unfold two.
+    exact (BProv_Ax_s_mul_two_right_terms G nextHidden).
+  }
+  assert (hhiddenShape : BProv Ax_s G
+      (pEq (tAdd (tMul nextHidden two) bitHidden)
+        (tAdd (tAdd nextHidden nextHidden) bitHidden))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ bitHidden hhiddenMul).
+  }
+  assert (hhiddenDecomp : BProv Ax_s G
+      (pEq curHidden (tAdd (tMul nextHidden two) bitHidden))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hhiddenEq
+      (BProv_eqSym Ax_s G _ _ hhiddenShape)).
+  }
+  assert (hknownMul : BProv Ax_s G
+      (pEq (tMul knownHalf two) (tAdd knownHalf knownHalf))).
+  {
+    unfold two.
+    exact (BProv_Ax_s_mul_two_right_terms G knownHalf).
+  }
+  assert (hknownShape : BProv Ax_s G
+      (pEq (tAdd (tMul knownHalf two) knownBit)
+        (tAdd (tAdd knownHalf knownHalf) knownBit))).
+  {
+    exact (BProv_eq_congr_add_left Ax_s G _ _ knownBit hknownMul).
+  }
+  assert (hknownDecomp : BProv Ax_s G
+      (pEq curKnown (tAdd (tMul knownHalf two) knownBit))).
+  {
+    exact (BProv_eqTrans Ax_s G _ _ _ hknownEq
+      (BProv_eqSym Ax_s G _ _ hknownShape)).
+  }
+  assert (hknownAtHidden : BProv Ax_s G
+      (pEq curHidden (tAdd (tMul knownHalf two) knownBit))).
+  { exact (BProv_eqTrans Ax_s G _ _ _ hcurEq hknownDecomp). }
+  exact
+    (BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
+      G curHidden two knownHalf nextHidden knownBit bitHidden
+      hknownLt hhiddenLt hknownAtHidden hhiddenDecomp).
+Qed.
+
+(** Package a fully term-parametric beta entry in the legacy term-index
+    wrapper. *)
+Lemma BProv_Ax_s_betaTermAtTermIdx_of_betaTermTermAt :
+  forall G out code step idxTerm,
+  BProv Ax_s G
+    (betaTermTermAt out (tVar code) (tVar step) idxTerm) ->
+  BProv Ax_s G (betaTermAtTermIdx out code step idxTerm).
+Proof.
+  intros G out code step idxTerm hbeta.
+  set (body := pAnd
+    (pEq (tVar 0) (Term.rename S idxTerm))
+    (betaTermAt (Term.rename S out) (S code) (S step) 0)).
+  assert (hidx : BProv Ax_s G
+      (subst (instTerm idxTerm)
+        (pEq (tVar 0) (Term.rename S idxTerm)))).
+  {
+    simpl. rewrite term_subst_instTerm_rename_succ.
+    apply BProv_eqRefl.
+  }
+  assert (hbetaBody : BProv Ax_s G
+      (subst (instTerm idxTerm)
+        (betaTermAt (Term.rename S out) (S code) (S step) 0))).
+  {
+    replace (subst (instTerm idxTerm)
+        (betaTermAt (Term.rename S out) (S code) (S step) 0))
+      with (betaTermTermAt out (tVar code) (tVar step) idxTerm).
+    - exact hbeta.
+    - unfold betaTermAt, betaTermTermAt, remTermAt, remTermTermAt,
+        ltTermAt, betaModTerm, betaModTermTerm.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      reflexivity.
+  }
+  assert (hbody : BProv Ax_s G (subst (instTerm idxTerm) body)).
+  { unfold body. exact (BProv_andI Ax_s G _ _ hidx hbetaBody). }
+  unfold betaTermAtTermIdx, body.
+  exact (BProv_exI Ax_s G
+    (pAnd
+      (pEq (tVar 0) (Term.rename S idxTerm))
+      (betaTermAt (Term.rename S out) (S code) (S step) 0))
+    idxTerm hbody).
+Qed.
+
+(** Propagate an explicit binary-halving quotient through a term-indexed beta
+    step.  Quotient uniqueness avoids a separate even/odd case split. *)
+Lemma
+    BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_next_termIdx_of_current_div2StepAt :
+  forall G code step cur knownHalf knownBit idxTerm,
+  BProv Ax_s G
+    (betaTermAtTermIdx (tVar cur) code step idxTerm) ->
+  BProv Ax_s G (div2StepAt cur knownHalf knownBit) ->
+  BProv Ax_s G
+    (betaDiv2StepWitnessAtTermIdx code step idxTerm) ->
+  BProv Ax_s G
+    (betaTermAtTermIdx (tVar knownHalf) code step (tSucc idxTerm)).
+Proof.
+  intros G code step cur knownHalf knownBit idxTerm
+    hcurTerm hstep hwitness.
+  assert (hcurFull : BProv Ax_s G
+      (betaTermTermAt (tVar cur) (tVar code) (tVar step) idxTerm)).
+  {
+    exact (BProv_Ax_s_betaTermTermAt_of_betaTermAtTermIdx
+      G (tVar cur) idxTerm code step hcurTerm).
+  }
+  assert (hwitnessFull : BProv Ax_s G
+      (betaDiv2StepWitnessTermAt (tVar code) (tVar step) idxTerm)).
+  {
+    exact (BProv_Ax_s_betaDiv2StepWitnessAtTermIdx_to_termAt
+      G code step idxTerm hwitness).
+  }
+  set (target := betaTermAtTermIdx
+    (tVar knownHalf) code step (tSucc idxTerm)).
+  set (body := pAnd
+    (betaTermTermAt (tVar 2)
+      (Term.rename S (Term.rename S (Term.rename S (tVar code))))
+      (Term.rename S (Term.rename S (Term.rename S (tVar step))))
+      (Term.rename S (Term.rename S (Term.rename S idxTerm))))
+    (pAnd
+      (betaTermTermAt (tVar 1)
+        (Term.rename S (Term.rename S (Term.rename S (tVar code))))
+        (Term.rename S (Term.rename S (Term.rename S (tVar step))))
+        (tSucc (Term.rename S (Term.rename S (Term.rename S idxTerm)))))
+      (div2StepTermAt (tVar 2) (tVar 1) (tVar 0)))).
+  assert (hwit : BProv Ax_s G (pEx (pEx (pEx body)))).
+  {
+    unfold betaDiv2StepWitnessTermAt in hwitnessFull.
+    unfold body.
+    assert (hrename3 : forall t,
+        Term.rename (fun n => n + 3) t =
+        Term.rename S (Term.rename S (Term.rename S t))).
+    {
+      intro t. repeat rewrite Term.rename_comp.
+      apply Term.rename_ext. intro n. lia.
+    }
+    repeat rewrite hrename3 in hwitnessFull.
+    exact hwitnessFull.
+  }
+  assert (houter : BProv Ax_s
+      (pEx (pEx body) :: map (rename S) G)
+      (rename S target)).
+  {
+    set (G1 := pEx (pEx body) :: map (rename S) G).
+    assert (hex2 : BProv Ax_s G1 (pEx (pEx body))).
+    { apply BProv_ass. unfold G1. simpl. left. reflexivity. }
+    assert (hmid : BProv Ax_s
+        (pEx body :: map (rename S) G1)
+        (rename S (rename S target))).
+    {
+      set (G2 := pEx body :: map (rename S) G1).
+      assert (hex3 : BProv Ax_s G2 (pEx body)).
+      { apply BProv_ass. unfold G2. simpl. left. reflexivity. }
+      assert (hinner : BProv Ax_s
+          (body :: map (rename S) G2)
+          (rename S (rename S (rename S target)))).
+      {
+        set (C := body :: map (rename S) G2).
+        set (idx3 := Term.rename S (Term.rename S (Term.rename S idxTerm))).
+        assert (hbody : BProv Ax_s C body).
+        { apply BProv_ass. unfold C. simpl. left. reflexivity. }
+        assert (hcurHidden : BProv Ax_s C
+            (betaTermTermAt (tVar 2)
+              (tVar (S (S (S code)))) (tVar (S (S (S step))))
+              idx3)).
+        {
+          pose proof (BProv_andE1 Ax_s C _ _ hbody) as hcur.
+          unfold body, idx3 in *.
+          simpl in *.
+          exact hcur.
+        }
+        assert (htailBody : BProv Ax_s C
+            (pAnd
+              (betaTermTermAt (tVar 1)
+                (tVar (S (S (S code)))) (tVar (S (S (S step))))
+                (tSucc idx3))
+              (div2StepTermAt (tVar 2) (tVar 1) (tVar 0)))).
+        {
+          pose proof (BProv_andE2 Ax_s C _ _ hbody) as htail.
+          unfold body, idx3 in *.
+          simpl in *.
+          exact htail.
+        }
+        assert (hnextHidden : BProv Ax_s C
+            (betaTermTermAt (tVar 1)
+              (tVar (S (S (S code)))) (tVar (S (S (S step))))
+              (tSucc idx3))).
+        { exact (BProv_andE1 Ax_s C _ _ htailBody). }
+        assert (hdivHidden : BProv Ax_s C
+            (div2StepTermAt (tVar 2) (tVar 1) (tVar 0))).
+        { exact (BProv_andE2 Ax_s C _ _ htailBody). }
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+          _ hcurFull S) as hcurRen1.
+        rewrite rename_S_betaTermTermAt in hcurRen1.
+        simpl in hcurRen1.
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+          (map (rename S) G) _ hcurRen1 S) as hcurRen2.
+        rewrite rename_S_betaTermTermAt in hcurRen2.
+        simpl in hcurRen2.
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+          (map (rename S) (map (rename S) G)) _ hcurRen2 S)
+          as hcurRen3.
+        rewrite rename_S_betaTermTermAt in hcurRen3.
+        simpl in hcurRen3.
+        pose proof (BProv_context_cons Ax_s
+          (map (rename S) (map (rename S) (map (rename S) G)))
+          (rename S (rename S (pEx (pEx body)))) _ hcurRen3) as hc4.
+        pose proof (BProv_context_cons Ax_s _
+          (rename S (pEx body)) _ hc4) as hc5.
+        pose proof (BProv_context_cons Ax_s _ body _ hc5) as hc6.
+        assert (hcurKnown : BProv Ax_s C
+            (betaTermTermAt (tVar (S (S (S cur))))
+              (tVar (S (S (S code)))) (tVar (S (S (S step))))
+              idx3)).
+        {
+          unfold C, G2, G1, idx3.
+          exact hc6.
+        }
+        assert (hcurEq : BProv Ax_s C
+            (pEq (tVar 2) (tVar (S (S (S cur)))))).
+        {
+          exact
+            (BProv_Ax_s_eq_of_betaTermTermAt_betaTermTermAt_same_index
+              C (tVar (S (S (S cur)))) (tVar 2)
+              (tVar (S (S (S code)))) (tVar (S (S (S step)))) idx3
+              hcurKnown hcurHidden).
+        }
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+          _ hstep S) as hstepRen1.
+        rewrite rename_S_div2StepAt in hstepRen1.
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+          (map (rename S) G) _ hstepRen1 S) as hstepRen2.
+        rewrite rename_S_div2StepAt in hstepRen2.
+        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
+          (map (rename S) (map (rename S) G)) _ hstepRen2 S)
+          as hstepRen3.
+        rewrite rename_S_div2StepAt in hstepRen3.
+        pose proof (BProv_context_cons Ax_s
+          (map (rename S) (map (rename S) (map (rename S) G)))
+          (rename S (rename S (pEx (pEx body)))) _ hstepRen3) as hs4.
+        pose proof (BProv_context_cons Ax_s _
+          (rename S (pEx body)) _ hs4) as hs5.
+        pose proof (BProv_context_cons Ax_s _ body _ hs5) as hs6.
+        assert (hdivKnown : BProv Ax_s C
+            (div2StepTermAt
+              (tVar (S (S (S cur))))
+              (tVar (S (S (S knownHalf))))
+              (tVar (S (S (S knownBit)))))).
+        {
+          unfold C, G2, G1.
+          replace (div2StepTermAt
+              (tVar (S (S (S cur))))
+              (tVar (S (S (S knownHalf))))
+              (tVar (S (S (S knownBit)))))
+            with (div2StepAt (S (S (S cur)))
+              (S (S (S knownHalf))) (S (S (S knownBit))))
+            by reflexivity.
+          exact hs6.
+        }
+        assert (hnextEq : BProv Ax_s C
+            (pEq (tVar 1) (tVar (S (S (S knownHalf)))))).
+        {
+          exact (BProv_Ax_s_eq_next_of_div2StepTermAt_pair C
+            (tVar 2) (tVar (S (S (S cur))))
+            (tVar 1) (tVar (S (S (S knownHalf))))
+            (tVar 0) (tVar (S (S (S knownBit))))
+            hcurEq hdivHidden hdivKnown).
+        }
+        assert (hnextKnown : BProv Ax_s C
+            (betaTermTermAt (tVar (S (S (S knownHalf))))
+              (tVar (S (S (S code)))) (tVar (S (S (S step))))
+              (tSucc idx3))).
+        {
+          exact (BProv_Ax_s_betaTermTermAt_of_eq_output C
+            (tVar 1) (tVar (S (S (S knownHalf))))
+            (tVar (S (S (S code)))) (tVar (S (S (S step))))
+            (tSucc idx3) hnextEq hnextHidden).
+        }
+        assert (hpacked : BProv Ax_s C
+            (betaTermAtTermIdx (tVar (S (S (S knownHalf))))
+              (S (S (S code))) (S (S (S step))) (tSucc idx3))).
+        {
+          exact (BProv_Ax_s_betaTermAtTermIdx_of_betaTermTermAt C
+            (tVar (S (S (S knownHalf))))
+            (S (S (S code))) (S (S (S step)))
+            (tSucc idx3) hnextKnown).
+        }
+        unfold target.
+        repeat rewrite rename_S_betaTermAtTermIdx.
+        unfold C, G2, G1, idx3.
+        simpl.
+        exact hpacked.
+      }
+      exact (BProv_exE_of_sentences Ax_s G2 body
+        (rename S (rename S target)) sentence_ax_s hex3 hinner).
+    }
+    exact (BProv_exE_of_sentences Ax_s G1 (pEx body)
+      (rename S target) sentence_ax_s hex2 hmid).
+  }
+  unfold target.
+  exact (BProv_exE_of_sentences Ax_s G (pEx (pEx body))
+    (betaTermAtTermIdx (tVar knownHalf) code step (tSucc idxTerm))
+    sentence_ax_s hwit houter).
+Qed.
