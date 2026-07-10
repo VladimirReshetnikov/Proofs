@@ -75,19 +75,27 @@ PAHFOrdinalCodeTotalInduction.v
 PAHFTranslatedHFFin.v
 PAHFMembershipBound.v
 PAHFMembershipBoundSucc.v
+PAHFBetaShiftPrefix.v
+PAHFMembershipTail.v
 PAHFInterpretations.v
 PAHFTermGraphModel.v
 PAHFTermGraphTotal.v
 PAHFTermGraphFunctional.v
 PAHFRawSemantics.v
 PAHFRawSemanticsGraph.v
+PAHFProofTranslationSemantic.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
 PAHFHFRepresentationMerge.v
 PAHFHFRepresentationFinite.v
 PAHFDeductiveAssembly.v
+PAHFRoundTripArithmetic.v
+PAHFRoundTripEquality.v
+PAHFRoundTripQuantifiers.v
 PAHFHFRoundTripSemantic.v
 PAHFHFRepresentationRange.v
+PAHFCompositeMemBelow.v
+PAHFCompositeArithmetic.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
 BusyBeaver.v
