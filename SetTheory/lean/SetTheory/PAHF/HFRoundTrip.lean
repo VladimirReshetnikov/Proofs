@@ -2611,6 +2611,774 @@ def ModelSetOrdinalRepMergeLaw
       Nonempty (ModelSetOrdinalRepMergeResult M rootEnv
         old oldCode elem elemCode)
 
+/-! ## Finite-model merging of independently chosen representation graphs -/
+
+private theorem mergeModelSetOrdinalRep_changeEnv
+    {α : Type u} (M : FirstOrderAdjunctionModel α)
+    {e e' : Nat → α} {set code : α}
+    (h : ModelSetOrdinalRep M e set code) :
+    ModelSetOrdinalRep M e' set code := by
+  rcases h with ⟨relation, hroot, hcertificate⟩
+  exact ⟨relation, hroot,
+    ModelSetOrdinalRepCertificate_changeEnv M hcertificate⟩
+
+private def mergeCanonicalRepEnv
+    {α : Type u} (M : FirstOrderAdjunctionModel α) : Nat → α :=
+  fun _ => M.empty
+
+/-- The exact compatibility invariant needed to take the union of two
+set-to-ordinal representation graphs.  The first clause is mixed graph
+functionality; the second is mixed graph injectivity. -/
+def ModelSetOrdinalRepRelationsCompatible {α : Type u}
+    (M : FirstOrderAdjunctionModel α) (left right : α) : Prop :=
+  (∀ {set leftCode rightCode},
+      M.mem (FirstOrderAdjunctionModel.kpair M set leftCode) left →
+      M.mem (FirstOrderAdjunctionModel.kpair M set rightCode) right →
+        leftCode = rightCode) ∧
+    (∀ {leftSet rightSet code},
+      (M.mem (FirstOrderAdjunctionModel.kpair M leftSet code) left ∨
+        M.mem (FirstOrderAdjunctionModel.kpair M leftSet code) right) →
+      (M.mem (FirstOrderAdjunctionModel.kpair M rightSet code) left ∨
+        M.mem (FirstOrderAdjunctionModel.kpair M rightSet code) right) →
+          leftSet = rightSet)
+
+/-- The union of two compatible certified representation graphs is again a
+certified representation graph.  Finite-generation induction is used only to
+obtain the binary union object; the certificate argument below is algebraic. -/
+theorem ModelSetOrdinalRepCertificate_binUnion
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    {e : Nat → α} {left right union : α}
+    (hleft : ModelSetOrdinalRepCertificate
+      M.toFirstOrderAdjunctionModel e left)
+    (hright : ModelSetOrdinalRepCertificate
+      M.toFirstOrderAdjunctionModel e right)
+    (hcompat : ModelSetOrdinalRepRelationsCompatible
+      M.toFirstOrderAdjunctionModel left right)
+    (hunion : ∀ p, M.mem p union ↔ M.mem p left ∨ M.mem p right) :
+    ModelSetOrdinalRepCertificate
+      M.toFirstOrderAdjunctionModel e union := by
+  let N := M.toFirstOrderAdjunctionModel
+  refine ⟨?_, ?_⟩
+  · intro set code code' hcode hcode'
+    rcases (hunion _).mp hcode with hcodeLeft | hcodeRight <;>
+      rcases (hunion _).mp hcode' with hcodeLeft' | hcodeRight'
+    · exact hleft.1 set code code' hcodeLeft hcodeLeft'
+    · exact hcompat.1 hcodeLeft hcodeRight'
+    · exact (hcompat.1 hcodeLeft' hcodeRight).symm
+    · exact hright.1 set code code' hcodeRight hcodeRight'
+  · intro set code hroot
+    rcases (hunion _).mp hroot with hrootLeft | hrootRight
+    · have hlocal := hleft.2 set code hrootLeft
+      refine ⟨hlocal.1, ?_, ?_⟩
+      · intro elem
+        constructor
+        · intro helem
+          rcases (hlocal.2.1 elem).mp helem with
+            ⟨elemCode, hpair, hcoded⟩
+          exact ⟨elemCode, (hunion _).mpr (Or.inl hpair), hcoded⟩
+        · rintro ⟨elemCode, hpair, hcoded⟩
+          rcases (hunion _).mp hpair with hpairLeft | hpairRight
+          · exact (hlocal.2.1 elem).mpr ⟨elemCode, hpairLeft, hcoded⟩
+          · have helemOrd : OrdinalLike M.mem elemCode :=
+              (hright.2 elem elemCode hpairRight).1
+            have hcodedModel : ModelCompositeMem N elemCode code := by
+              have hspec := HF_compositeMemAt_02_model N
+                (scons elemCode (scons elem (scons code (scons set e))))
+              exact hspec.mp hcoded
+            have hcodedLocal : Sat N.mem
+                (scons elemCode (scons code (scons set e)))
+                (HF_compositeMemAt 0 1) := by
+              apply (HF_compositeMemAt_01_model N
+                (scons elemCode (scons code (scons set e)))).mpr
+              simpa [scons] using hcodedModel
+            rcases hlocal.2.2 elemCode helemOrd hcodedLocal with
+              ⟨leftElem, hleftPair⟩
+            have heq : leftElem = elem :=
+              hcompat.2 (Or.inl hleftPair) (Or.inr hpairRight)
+            subst leftElem
+            exact (hlocal.2.1 elem).mpr
+              ⟨elemCode, hleftPair, hcoded⟩
+      · intro elemCode helemOrd hcoded
+        rcases hlocal.2.2 elemCode helemOrd hcoded with ⟨elem, hpair⟩
+        exact ⟨elem, (hunion _).mpr (Or.inl hpair)⟩
+    · have hlocal := hright.2 set code hrootRight
+      refine ⟨hlocal.1, ?_, ?_⟩
+      · intro elem
+        constructor
+        · intro helem
+          rcases (hlocal.2.1 elem).mp helem with
+            ⟨elemCode, hpair, hcoded⟩
+          exact ⟨elemCode, (hunion _).mpr (Or.inr hpair), hcoded⟩
+        · rintro ⟨elemCode, hpair, hcoded⟩
+          rcases (hunion _).mp hpair with hpairLeft | hpairRight
+          · have helemOrd : OrdinalLike M.mem elemCode :=
+              (hleft.2 elem elemCode hpairLeft).1
+            have hcodedModel : ModelCompositeMem N elemCode code := by
+              have hspec := HF_compositeMemAt_02_model N
+                (scons elemCode (scons elem (scons code (scons set e))))
+              exact hspec.mp hcoded
+            have hcodedLocal : Sat N.mem
+                (scons elemCode (scons code (scons set e)))
+                (HF_compositeMemAt 0 1) := by
+              apply (HF_compositeMemAt_01_model N
+                (scons elemCode (scons code (scons set e)))).mpr
+              simpa [scons] using hcodedModel
+            rcases hlocal.2.2 elemCode helemOrd hcodedLocal with
+              ⟨rightElem, hrightPair⟩
+            have heq : elem = rightElem :=
+              hcompat.2 (Or.inl hpairLeft) (Or.inr hrightPair)
+            subst rightElem
+            exact (hlocal.2.1 elem).mpr
+              ⟨elemCode, hrightPair, hcoded⟩
+          · exact (hlocal.2.1 elem).mpr ⟨elemCode, hpairRight, hcoded⟩
+      · intro elemCode helemOrd hcoded
+        rcases hlocal.2.2 elemCode helemOrd hcoded with ⟨elem, hpair⟩
+        exact ⟨elem, (hunion _).mpr (Or.inr hpair)⟩
+
+/-- Two compatible representation witnesses admit exactly the common graph
+required by `ModelSetOrdinalRepMergeResult`. -/
+theorem ModelSetOrdinalRepMergeResult_of_compatible
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (rootEnv : Nat → α) (old oldCode elem elemCode : α)
+    (hold : ModelSetOrdinalRep M.toFirstOrderAdjunctionModel
+      rootEnv old oldCode)
+    (helem : ModelSetOrdinalRep M.toFirstOrderAdjunctionModel
+      rootEnv elem elemCode)
+    (hcompat : ∀ {left right},
+      ModelSetOrdinalRepCertificate M.toFirstOrderAdjunctionModel
+        (scons left rootEnv) left →
+      ModelSetOrdinalRepCertificate M.toFirstOrderAdjunctionModel
+        (scons right rootEnv) right →
+      ModelSetOrdinalRepRelationsCompatible
+        M.toFirstOrderAdjunctionModel left right) :
+    Nonempty (ModelSetOrdinalRepMergeResult
+      M.toFirstOrderAdjunctionModel rootEnv old oldCode elem elemCode) := by
+  rcases hold with ⟨left, holdRoot, hleft⟩
+  rcases helem with ⟨right, helemRoot, hright⟩
+  rcases M.binUnion_exists left right with ⟨union, hunion⟩
+  let N := M.toFirstOrderAdjunctionModel
+  have hcompat' := hcompat hleft hright
+  have hleft' : ModelSetOrdinalRepCertificate N
+      (scons union rootEnv) left :=
+    ModelSetOrdinalRepCertificate_changeEnv N hleft
+  have hright' : ModelSetOrdinalRepCertificate N
+      (scons union rootEnv) right :=
+    ModelSetOrdinalRepCertificate_changeEnv N hright
+  have hcertificate : ModelSetOrdinalRepCertificate N
+      (scons union rootEnv) union :=
+    ModelSetOrdinalRepCertificate_binUnion M
+      hleft' hright' hcompat' hunion
+  exact ⟨{
+    relation := union
+    certificate := hcertificate
+    code_injective := by
+      intro set₁ set₂ code hset₁ hset₂
+      exact hcompat'.2 ((hunion _).mp hset₁) ((hunion _).mp hset₂)
+    old_root := (hunion _).mpr (Or.inl holdRoot)
+    elem_root := (hunion _).mpr (Or.inr helemRoot)
+  }⟩
+
+/-- Uniform cross-certificate compatibility.  This is the exact semantic
+uniqueness property left after the finite union construction is factored out. -/
+def ModelSetOrdinalRepRelationsCompatibilityLaw
+    {α : Type u} (M : FirstOrderAdjunctionModel α) : Prop :=
+  ∀ {leftEnv rightEnv : Nat → α} {left right : α},
+    ModelSetOrdinalRepCertificate M leftEnv left →
+    ModelSetOrdinalRepCertificate M rightEnv right →
+      ModelSetOrdinalRepRelationsCompatible M left right
+
+/-- In a finite adjunction model, uniform compatibility closes the published
+merge law.  No arithmetic or representation-specific premise remains in the
+construction itself. -/
+theorem ModelSetOrdinalRepMergeLaw_of_finite_compatibility
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (hcompat : ModelSetOrdinalRepRelationsCompatibilityLaw
+      M.toFirstOrderAdjunctionModel) :
+    ModelSetOrdinalRepMergeLaw M.toFirstOrderAdjunctionModel := by
+  intro rootEnv old oldCode elem elemCode hold helem
+  apply ModelSetOrdinalRepMergeResult_of_compatible M
+    rootEnv old oldCode elem elemCode hold helem
+  intro left right hleft hright
+  exact hcompat hleft hright
+
+/-- The published merge law already contains code functionality; taking the
+two inputs to represent the same set forces their codes to agree. -/
+theorem ModelSetOrdinalRep_code_eq_of_mergeLaw
+    {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (hmerge : ModelSetOrdinalRepMergeLaw M)
+    {rootEnv : Nat → α} {set code₁ code₂ : α}
+    (h₁ : ModelSetOrdinalRep M rootEnv set code₁)
+    (h₂ : ModelSetOrdinalRep M rootEnv set code₂) :
+    code₁ = code₂ := by
+  rcases hmerge rootEnv set code₁ set code₂ h₁ h₂ with ⟨R⟩
+  exact R.certificate.1 set code₁ code₂ R.old_root R.elem_root
+
+/-- The published merge law also contains set injectivity; taking the two
+inputs to use the same code forces their represented sets to agree. -/
+theorem ModelSetOrdinalRep_set_eq_of_mergeLaw
+    {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (hmerge : ModelSetOrdinalRepMergeLaw M)
+    {rootEnv : Nat → α} {set₁ set₂ code : α}
+    (h₁ : ModelSetOrdinalRep M rootEnv set₁ code)
+    (h₂ : ModelSetOrdinalRep M rootEnv set₂ code) :
+    set₁ = set₂ := by
+  rcases hmerge rootEnv set₁ code set₂ code h₁ h₂ with ⟨R⟩
+  exact R.code_injective R.old_root R.elem_root
+
+/-- Global functionality of the semantic representation relation. -/
+def ModelSetOrdinalRepCodeFunctionalLaw
+    {α : Type u} (M : FirstOrderAdjunctionModel α) : Prop :=
+  ∀ (rootEnv : Nat → α) (set code₁ code₂ : α),
+    ModelSetOrdinalRep M rootEnv set code₁ →
+    ModelSetOrdinalRep M rootEnv set code₂ →
+      code₁ = code₂
+
+/-- Global injectivity of the semantic representation relation. -/
+def ModelSetOrdinalRepSetInjectiveLaw
+    {α : Type u} (M : FirstOrderAdjunctionModel α) : Prop :=
+  ∀ (rootEnv : Nat → α) (set₁ set₂ code : α),
+    ModelSetOrdinalRep M rootEnv set₁ code →
+    ModelSetOrdinalRep M rootEnv set₂ code →
+      set₁ = set₂
+
+/-- The two global uniqueness laws imply compatibility of every pair of
+certified graphs. -/
+theorem ModelSetOrdinalRepRelationsCompatibilityLaw_of_uniqueness
+    {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (hfunctional : ModelSetOrdinalRepCodeFunctionalLaw M)
+    (hinjective : ModelSetOrdinalRepSetInjectiveLaw M) :
+    ModelSetOrdinalRepRelationsCompatibilityLaw M := by
+  intro leftEnv rightEnv left right hleft hright
+  let rootEnv : Nat → α := fun _ => M.empty
+  have leftRep : ∀ {set code},
+      M.mem (FirstOrderAdjunctionModel.kpair M set code) left →
+        ModelSetOrdinalRep M rootEnv set code := by
+    intro set code hroot
+    exact ⟨left, hroot,
+      ModelSetOrdinalRepCertificate_changeEnv M hleft⟩
+  have rightRep : ∀ {set code},
+      M.mem (FirstOrderAdjunctionModel.kpair M set code) right →
+        ModelSetOrdinalRep M rootEnv set code := by
+    intro set code hroot
+    exact ⟨right, hroot,
+      ModelSetOrdinalRepCertificate_changeEnv M hright⟩
+  refine ⟨?_, ?_⟩
+  · intro set leftCode rightCode hleftRoot hrightRoot
+    exact hfunctional rootEnv set leftCode rightCode
+      (leftRep hleftRoot) (rightRep hrightRoot)
+  · intro leftSet rightSet code hleftSet hrightSet
+    rcases hleftSet with hleftRoot | hrightRoot <;>
+      rcases hrightSet with hleftRoot' | hrightRoot'
+    · exact hinjective rootEnv leftSet rightSet code
+        (leftRep hleftRoot) (leftRep hleftRoot')
+    · exact hinjective rootEnv leftSet rightSet code
+        (leftRep hleftRoot) (rightRep hrightRoot')
+    · exact hinjective rootEnv leftSet rightSet code
+        (rightRep hrightRoot) (leftRep hleftRoot')
+    · exact hinjective rootEnv leftSet rightSet code
+        (rightRep hrightRoot) (rightRep hrightRoot')
+
+/-- In a finite adjunction model, the published merge law contains exactly the
+two global uniqueness directions and no additional representation content. -/
+theorem ModelSetOrdinalRepMergeLaw_iff_uniqueness
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α) :
+    ModelSetOrdinalRepMergeLaw M.toFirstOrderAdjunctionModel ↔
+      ModelSetOrdinalRepCodeFunctionalLaw
+          M.toFirstOrderAdjunctionModel ∧
+        ModelSetOrdinalRepSetInjectiveLaw
+          M.toFirstOrderAdjunctionModel := by
+  let N := M.toFirstOrderAdjunctionModel
+  constructor
+  · intro hmerge
+    constructor
+    · intro rootEnv set code₁ code₂ h₁ h₂
+      exact ModelSetOrdinalRep_code_eq_of_mergeLaw N
+        hmerge h₁ h₂
+    · intro rootEnv set₁ set₂ code h₁ h₂
+      exact ModelSetOrdinalRep_set_eq_of_mergeLaw N
+        hmerge h₁ h₂
+  · rintro ⟨hfunctional, hinjective⟩
+    apply ModelSetOrdinalRepMergeLaw_of_finite_compatibility M
+    exact ModelSetOrdinalRepRelationsCompatibilityLaw_of_uniqueness N
+      hfunctional hinjective
+
+/-! ## Deriving set injectivity from certificate recursion -/
+
+/-- Set injectivity needs no arithmetic property of Ackermann membership.
+First-order HF induction on the left represented set recursively identifies
+the two elements carrying each common child code. -/
+theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
+    {α : Type u} (M : FirstOrderAdjunctionModel α) :
+    ModelSetOrdinalRepSetInjectiveLaw M := by
+  let phi : Form :=
+    fAll (fAll
+      (fImp (HF_setOrdinalRepAt 2 0)
+        (fImp (HF_setOrdinalRepAt 1 0) (fEq 2 1))))
+  let tail : Nat → α := mergeCanonicalRepEnv M
+  have hind := M.induction_schema phi tail
+  have hall : ∀ set₁, Sat M.mem (scons set₁ tail) phi := by
+    apply hind
+    intro set₁ ih set₂ code hrep₁Sat hrep₂Sat
+    let E : Nat → α := scons code (scons set₂ (scons set₁ tail))
+    have hrep₁ : ModelSetOrdinalRep M E set₁ code := by
+      apply (HF_setOrdinalRepAt_model M E 2 0).mp
+      simpa [E, scons] using hrep₁Sat
+    have hrep₂ : ModelSetOrdinalRep M E set₂ code := by
+      apply (HF_setOrdinalRepAt_model M E 1 0).mp
+      simpa [E, scons] using hrep₂Sat
+    rcases hrep₁ with ⟨relation₁, hroot₁, hcert₁⟩
+    rcases hrep₂ with ⟨relation₂, hroot₂, hcert₂⟩
+    have hlocal₁ := hcert₁.2 set₁ code hroot₁
+    have hlocal₂ := hcert₂.2 set₂ code hroot₂
+    apply M.extensional
+    intro member
+    constructor
+    · intro hmember₁
+      rcases (hlocal₁.2.1 member).mp hmember₁ with
+        ⟨memberCode, hmemberRoot₁, hcoded₁⟩
+      have hmemberCodeOrd : OrdinalLike M.mem memberCode :=
+        (hcert₁.2 member memberCode hmemberRoot₁).1
+      have hcodedModel : ModelCompositeMem M memberCode code := by
+        have hspec := HF_compositeMemAt_02_model M
+          (scons memberCode
+            (scons member (scons code (scons set₁ (scons relation₁ E)))))
+        exact hspec.mp hcoded₁
+      have hcoded₂Complete : Sat M.mem
+          (scons memberCode (scons code (scons set₂ (scons relation₂ E))))
+          (HF_compositeMemAt 0 1) := by
+        apply (HF_compositeMemAt_01_model M
+          (scons memberCode
+            (scons code (scons set₂ (scons relation₂ E))))).mpr
+        simpa [scons] using hcodedModel
+      rcases hlocal₂.2.2 memberCode hmemberCodeOrd hcoded₂Complete with
+        ⟨other, hotherRoot₂⟩
+      have hcoded₂Member : Sat M.mem
+          (scons memberCode
+            (scons other (scons code (scons set₂ (scons relation₂ E)))))
+          (HF_compositeMemAt 0 2) := by
+        apply (HF_compositeMemAt_02_model M
+          (scons memberCode
+            (scons other (scons code (scons set₂ (scons relation₂ E)))))).mpr
+        simpa [scons] using hcodedModel
+      have hother₂ : M.mem other set₂ :=
+        (hlocal₂.2.1 other).mpr
+          ⟨memberCode, hotherRoot₂, hcoded₂Member⟩
+      have hmemberIH : Sat M.mem (scons member tail) phi :=
+        (Sat_rename_rSkipParam phi tail set₁ member).mp
+          (ih member hmember₁)
+      let EI : Nat → α :=
+        scons memberCode (scons other (scons member tail))
+      have hmemberRep : ModelSetOrdinalRep M EI member memberCode :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₁, hmemberRoot₁, hcert₁⟩
+      have hotherRep : ModelSetOrdinalRep M EI other memberCode :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₂, hotherRoot₂, hcert₂⟩
+      have hmemberRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
+        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
+          simpa [EI, scons] using hmemberRep)
+      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 1 0) :=
+        (HF_setOrdinalRepAt_model M EI 1 0).mpr (by
+          simpa [EI, scons] using hotherRep)
+      have heq : member = other := by
+        exact hmemberIH other memberCode
+          (by simpa [EI] using hmemberRepSat)
+          (by simpa [EI] using hotherRepSat)
+      simpa [E, scons, ← heq] using hother₂
+    · intro hmember₂
+      rcases (hlocal₂.2.1 member).mp hmember₂ with
+        ⟨memberCode, hmemberRoot₂, hcoded₂⟩
+      have hmemberCodeOrd : OrdinalLike M.mem memberCode :=
+        (hcert₂.2 member memberCode hmemberRoot₂).1
+      have hcodedModel : ModelCompositeMem M memberCode code := by
+        have hspec := HF_compositeMemAt_02_model M
+          (scons memberCode
+            (scons member (scons code (scons set₂ (scons relation₂ E)))))
+        exact hspec.mp hcoded₂
+      have hcoded₁Complete : Sat M.mem
+          (scons memberCode (scons code (scons set₁ (scons relation₁ E))))
+          (HF_compositeMemAt 0 1) := by
+        apply (HF_compositeMemAt_01_model M
+          (scons memberCode
+            (scons code (scons set₁ (scons relation₁ E))))).mpr
+        simpa [scons] using hcodedModel
+      rcases hlocal₁.2.2 memberCode hmemberCodeOrd hcoded₁Complete with
+        ⟨other, hotherRoot₁⟩
+      have hcoded₁Member : Sat M.mem
+          (scons memberCode
+            (scons other (scons code (scons set₁ (scons relation₁ E)))))
+          (HF_compositeMemAt 0 2) := by
+        apply (HF_compositeMemAt_02_model M
+          (scons memberCode
+            (scons other (scons code (scons set₁ (scons relation₁ E)))))).mpr
+        simpa [scons] using hcodedModel
+      have hother₁ : M.mem other set₁ :=
+        (hlocal₁.2.1 other).mpr
+          ⟨memberCode, hotherRoot₁, hcoded₁Member⟩
+      have hotherIH : Sat M.mem (scons other tail) phi :=
+        (Sat_rename_rSkipParam phi tail set₁ other).mp
+          (ih other hother₁)
+      let EI : Nat → α :=
+        scons memberCode (scons member (scons other tail))
+      have hotherRep : ModelSetOrdinalRep M EI other memberCode :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₁, hotherRoot₁, hcert₁⟩
+      have hmemberRep : ModelSetOrdinalRep M EI member memberCode :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₂, hmemberRoot₂, hcert₂⟩
+      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
+        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
+          simpa [EI, scons] using hotherRep)
+      have hmemberRepSat : Sat M.mem EI (HF_setOrdinalRepAt 1 0) :=
+        (HF_setOrdinalRepAt_model M EI 1 0).mpr (by
+          simpa [EI, scons] using hmemberRep)
+      have heq : other = member := by
+        exact hotherIH member memberCode
+          (by simpa [EI] using hotherRepSat)
+          (by simpa [EI] using hmemberRepSat)
+      simpa [E, scons, heq] using hother₁
+  intro rootEnv set₁ set₂ code hrep₁ hrep₂
+  have hmain : Sat M.mem (scons set₁ tail) phi := hall set₁
+  let E : Nat → α := scons code (scons set₂ (scons set₁ tail))
+  have hrep₁' : ModelSetOrdinalRep M E set₁ code :=
+    mergeModelSetOrdinalRep_changeEnv M hrep₁
+  have hrep₂' : ModelSetOrdinalRep M E set₂ code :=
+    mergeModelSetOrdinalRep_changeEnv M hrep₂
+  have hrep₁Sat : Sat M.mem E (HF_setOrdinalRepAt 2 0) :=
+    (HF_setOrdinalRepAt_model M E 2 0).mpr (by
+      simpa [E, scons] using hrep₁')
+  have hrep₂Sat : Sat M.mem E (HF_setOrdinalRepAt 1 0) :=
+    (HF_setOrdinalRepAt_model M E 1 0).mpr (by
+      simpa [E, scons] using hrep₂')
+  exact hmain set₂ code
+    (by simpa [E] using hrep₁Sat)
+    (by simpa [E] using hrep₂Sat)
+
+/-! ## Deriving code functionality from Ackermann extensionality -/
+
+/-- Arithmetic extensionality of the translated Ackermann-membership
+relation, restricted to its ordinal domain. -/
+def ModelCompositeMemExtensionalLaw
+    {α : Type u} (M : FirstOrderAdjunctionModel α) : Prop :=
+  ∀ left right,
+    OrdinalLike M.mem left →
+    OrdinalLike M.mem right →
+    (∀ query, OrdinalLike M.mem query →
+      (ModelCompositeMem M query left ↔
+        ModelCompositeMem M query right)) →
+      left = right
+
+/-- Assuming arithmetic extensionality of Ackermann codes, first-order HF
+induction on the represented set makes its ordinal representation functional. -/
+theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
+    {α : Type u} (M : FirstOrderAdjunctionModel α)
+    (hext : ModelCompositeMemExtensionalLaw M) :
+    ModelSetOrdinalRepCodeFunctionalLaw M := by
+  let phi : Form :=
+    fAll (fAll
+      (fImp (HF_setOrdinalRepAt 2 1)
+        (fImp (HF_setOrdinalRepAt 2 0) (fEq 1 0))))
+  let tail : Nat → α := mergeCanonicalRepEnv M
+  have hind := M.induction_schema phi tail
+  have hall : ∀ set, Sat M.mem (scons set tail) phi := by
+    apply hind
+    intro set ih code₁ code₂ hrep₁Sat hrep₂Sat
+    let E : Nat → α := scons code₂ (scons code₁ (scons set tail))
+    have hrep₁ : ModelSetOrdinalRep M E set code₁ := by
+      apply (HF_setOrdinalRepAt_model M E 2 1).mp
+      simpa [E, scons] using hrep₁Sat
+    have hrep₂ : ModelSetOrdinalRep M E set code₂ := by
+      apply (HF_setOrdinalRepAt_model M E 2 0).mp
+      simpa [E, scons] using hrep₂Sat
+    rcases hrep₁ with ⟨relation₁, hroot₁, hcert₁⟩
+    rcases hrep₂ with ⟨relation₂, hroot₂, hcert₂⟩
+    have hlocal₁ := hcert₁.2 set code₁ hroot₁
+    have hlocal₂ := hcert₂.2 set code₂ hroot₂
+    apply hext code₁ code₂ hlocal₁.1 hlocal₂.1
+    intro query hqueryOrd
+    constructor
+    · intro hcoded₁Model
+      have hcoded₁Complete : Sat M.mem
+          (scons query (scons code₁ (scons set (scons relation₁ E))))
+          (HF_compositeMemAt 0 1) := by
+        apply (HF_compositeMemAt_01_model M
+          (scons query
+            (scons code₁ (scons set (scons relation₁ E))))).mpr
+        simpa [scons] using hcoded₁Model
+      rcases hlocal₁.2.2 query hqueryOrd hcoded₁Complete with
+        ⟨member, hmemberRoot₁⟩
+      have hcoded₁Member : Sat M.mem
+          (scons query
+            (scons member
+              (scons code₁ (scons set (scons relation₁ E)))))
+          (HF_compositeMemAt 0 2) := by
+        apply (HF_compositeMemAt_02_model M
+          (scons query
+            (scons member
+              (scons code₁ (scons set (scons relation₁ E)))))).mpr
+        simpa [scons] using hcoded₁Model
+      have hmember : M.mem member set :=
+        (hlocal₁.2.1 member).mpr
+          ⟨query, hmemberRoot₁, hcoded₁Member⟩
+      rcases (hlocal₂.2.1 member).mp hmember with
+        ⟨otherCode, hmemberRoot₂, hcoded₂⟩
+      have hcoded₂Model : ModelCompositeMem M otherCode code₂ := by
+        have hspec := HF_compositeMemAt_02_model M
+          (scons otherCode
+            (scons member
+              (scons code₂ (scons set (scons relation₂ E)))))
+        exact hspec.mp hcoded₂
+      have hmemberIH : Sat M.mem (scons member tail) phi :=
+        (Sat_rename_rSkipParam phi tail set member).mp
+          (ih member hmember)
+      let EI : Nat → α :=
+        scons otherCode (scons query (scons member tail))
+      have hqueryRep : ModelSetOrdinalRep M EI member query :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₁, hmemberRoot₁, hcert₁⟩
+      have hotherRep : ModelSetOrdinalRep M EI member otherCode :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₂, hmemberRoot₂, hcert₂⟩
+      have hqueryRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 1) :=
+        (HF_setOrdinalRepAt_model M EI 2 1).mpr (by
+          simpa [EI, scons] using hqueryRep)
+      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
+        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
+          simpa [EI, scons] using hotherRep)
+      have heq : query = otherCode :=
+        hmemberIH query otherCode
+          (by simpa [EI] using hqueryRepSat)
+          (by simpa [EI] using hotherRepSat)
+      simpa [heq] using hcoded₂Model
+    · intro hcoded₂Model
+      have hcoded₂Complete : Sat M.mem
+          (scons query (scons code₂ (scons set (scons relation₂ E))))
+          (HF_compositeMemAt 0 1) := by
+        apply (HF_compositeMemAt_01_model M
+          (scons query
+            (scons code₂ (scons set (scons relation₂ E))))).mpr
+        simpa [scons] using hcoded₂Model
+      rcases hlocal₂.2.2 query hqueryOrd hcoded₂Complete with
+        ⟨member, hmemberRoot₂⟩
+      have hcoded₂Member : Sat M.mem
+          (scons query
+            (scons member
+              (scons code₂ (scons set (scons relation₂ E)))))
+          (HF_compositeMemAt 0 2) := by
+        apply (HF_compositeMemAt_02_model M
+          (scons query
+            (scons member
+              (scons code₂ (scons set (scons relation₂ E)))))).mpr
+        simpa [scons] using hcoded₂Model
+      have hmember : M.mem member set :=
+        (hlocal₂.2.1 member).mpr
+          ⟨query, hmemberRoot₂, hcoded₂Member⟩
+      rcases (hlocal₁.2.1 member).mp hmember with
+        ⟨otherCode, hmemberRoot₁, hcoded₁⟩
+      have hcoded₁Model : ModelCompositeMem M otherCode code₁ := by
+        have hspec := HF_compositeMemAt_02_model M
+          (scons otherCode
+            (scons member
+              (scons code₁ (scons set (scons relation₁ E)))))
+        exact hspec.mp hcoded₁
+      have hmemberIH : Sat M.mem (scons member tail) phi :=
+        (Sat_rename_rSkipParam phi tail set member).mp
+          (ih member hmember)
+      let EI : Nat → α :=
+        scons query (scons otherCode (scons member tail))
+      have hotherRep : ModelSetOrdinalRep M EI member otherCode :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₁, hmemberRoot₁, hcert₁⟩
+      have hqueryRep : ModelSetOrdinalRep M EI member query :=
+        mergeModelSetOrdinalRep_changeEnv M
+          ⟨relation₂, hmemberRoot₂, hcert₂⟩
+      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 1) :=
+        (HF_setOrdinalRepAt_model M EI 2 1).mpr (by
+          simpa [EI, scons] using hotherRep)
+      have hqueryRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
+        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
+          simpa [EI, scons] using hqueryRep)
+      have heq : otherCode = query :=
+        hmemberIH otherCode query
+          (by simpa [EI] using hotherRepSat)
+          (by simpa [EI] using hqueryRepSat)
+      simpa [heq] using hcoded₁Model
+  intro rootEnv set code₁ code₂ hrep₁ hrep₂
+  have hmain : Sat M.mem (scons set tail) phi := hall set
+  let E : Nat → α := scons code₂ (scons code₁ (scons set tail))
+  have hrep₁' : ModelSetOrdinalRep M E set code₁ :=
+    mergeModelSetOrdinalRep_changeEnv M hrep₁
+  have hrep₂' : ModelSetOrdinalRep M E set code₂ :=
+    mergeModelSetOrdinalRep_changeEnv M hrep₂
+  have hrep₁Sat : Sat M.mem E (HF_setOrdinalRepAt 2 1) :=
+    (HF_setOrdinalRepAt_model M E 2 1).mpr (by
+      simpa [E, scons] using hrep₁')
+  have hrep₂Sat : Sat M.mem E (HF_setOrdinalRepAt 2 0) :=
+    (HF_setOrdinalRepAt_model M E 2 0).mpr (by
+      simpa [E, scons] using hrep₂')
+  exact hmain code₁ code₂
+    (by simpa [E] using hrep₁Sat)
+    (by simpa [E] using hrep₂Sat)
+
+/-- Composite-membership extensionality is the only remaining input needed
+for the exact finite-model merge law. -/
+theorem ModelSetOrdinalRepMergeLaw_of_composite_extensionality
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (hext : ModelCompositeMemExtensionalLaw
+      M.toFirstOrderAdjunctionModel) :
+    ModelSetOrdinalRepMergeLaw M.toFirstOrderAdjunctionModel := by
+  apply (ModelSetOrdinalRepMergeLaw_iff_uniqueness M).mpr
+  exact ⟨
+    ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
+      M.toFirstOrderAdjunctionModel hext,
+    ModelSetOrdinalRepSetInjectiveLaw_of_induction
+      M.toFirstOrderAdjunctionModel⟩
+
+/-! ## Semantic finite-HF model and translated Ackermann extensionality -/
+
+/-- A bundled finite adjunction model satisfies every sealed finite-HF axiom. -/
+theorem FirstOrderFiniteAdjunctionModel_sat_HFFin
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α) (v : Nat → α) :
+    ∀ g, HFFinAx_s g → Sat M.mem v g := by
+  intro g hg
+  rcases hg with hg | ⟨phi, rfl⟩
+  · rcases hg with rfl | rfl | rfl | ⟨phi, rfl⟩
+    · apply (seal_valid (mem := M.mem) HF_empty_form).mpr
+      intro e
+      exact ⟨M.empty, fun x hx => M.empty_spec x hx⟩
+    · apply (seal_valid (mem := M.mem) HF_extensionality_form).mpr
+      intro e left right hsame
+      apply M.extensional
+      intro x
+      exact (Sat_fIff (mem := M.mem)
+        (e := scons x (scons right (scons left e)))).mp (hsame x)
+    · apply (seal_valid (mem := M.mem) HF_adjoin_form).mpr
+      intro e left elem
+      refine ⟨M.adjoin left elem, fun x => ?_⟩
+      apply (Sat_fIff (mem := M.mem)
+        (e := scons x
+          (scons (M.adjoin left elem) (scons elem (scons left e))))).mpr
+      exact M.adjoin_spec x left elem
+    · exact (seal_valid (mem := M.mem) (HF_induction_form phi)).mpr
+        (fun e => M.induction_schema phi e) v
+  · exact (seal_valid (mem := M.mem) (HF_finite_induction_form phi)).mpr
+      (fun e => M.finite_induction_schema phi e) v
+
+/-- Relative PA extensionality in the exact one-assumption form needed by the
+semantic translation below. -/
+theorem PA_BProv_hfMembership_extensional :
+    PA.Formula.BProv PA.Formula.Ax_s
+      [PA.Formula.all
+        (PA.Formula.iffForm
+          (PA.Formula.hfMemAt 0 2)
+          (PA.Formula.hfMemAt 0 1))]
+      (PA.Formula.eq (PA.Term.var 1) (PA.Term.var 0)) := by
+  let sameMembers : PA.Formula :=
+    PA.Formula.all
+      (PA.Formula.iffForm
+        (PA.Formula.hfMemAt 0 2)
+        (PA.Formula.hfMemAt 0 1))
+  have hsame : PA.Formula.BProv PA.Formula.Ax_s [sameMembers] sameMembers :=
+    PA.Formula.BProv_ass (by simp)
+  apply PA.Formula.BProv_Ax_s_eq_of_hfSameMembersTermAt
+    (left := PA.Term.var 1) (right := PA.Term.var 0)
+  simpa [sameMembers, PA.Formula.hfMemTermAt_var,
+    PA.Term.rename] using hsame
+
+/-- Translated PA extensionality makes `ModelCompositeMem` extensional on the
+ordinal domain of every finite first-order HF model. -/
+theorem ModelCompositeMemExtensionalLaw_finite
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α) :
+    ModelCompositeMemExtensionalLaw
+      M.toFirstOrderAdjunctionModel := by
+  let N := M.toFirstOrderAdjunctionModel
+  let sameMembers : PA.Formula :=
+    PA.Formula.all
+      (PA.Formula.iffForm
+        (PA.Formula.hfMemAt 0 2)
+        (PA.Formula.hfMemAt 0 1))
+  rcases PAInHF.BProv_HFFin_formulaAt_of_PA_BProv_domainContext
+      PA_BProv_hfMembership_extensional with
+    ⟨n, htranslated⟩
+  intro left right hleft hright hsame
+  let env : Nat → α :=
+    scons right (scons left (fun _ => M.empty))
+  let ρ : Nat → Nat := fun k => k
+  have hord : ∀ k, k < n → OrdinalLike M.mem (env (ρ k)) := by
+    intro k _hk
+    cases k with
+    | zero => simpa [env, ρ, scons] using hright
+    | succ k =>
+        cases k with
+        | zero => simpa [env, ρ, scons] using hleft
+        | succ k =>
+            simpa [env, ρ, scons] using
+              (FirstOrderAdjunctionModel.ordinalLike_empty N)
+  have hdomain : ∀ g,
+      g ∈ PAInHF.domainContextAt ρ n → Sat M.mem env g :=
+    PAInHF.Sat_domainContextAt_of_ordinalLike hord
+  have hleftFormula :
+      PAInHF.formulaAt (PAInHF.upVarMap ρ) (PA.Formula.hfMemAt 0 2) =
+        HF_compositeMemAt 0 2 := by
+    have hup : PAInHF.upVarMap ρ = (fun k : Nat => k) := by
+      funext k
+      cases k <;> rfl
+    rw [hup]
+    change hfCompositeAt (fun k : Nat => k) (fMem 0 2) =
+      HF_compositeMemAt 0 2
+    exact hfCompositeAt_mem (fun k : Nat => k) 0 2
+  have hrightFormula :
+      PAInHF.formulaAt (PAInHF.upVarMap ρ) (PA.Formula.hfMemAt 0 1) =
+        HF_compositeMemAt 0 1 := by
+    have hup : PAInHF.upVarMap ρ = (fun k : Nat => k) := by
+      funext k
+      cases k <;> rfl
+    rw [hup]
+    change hfCompositeAt (fun k : Nat => k) (fMem 0 1) =
+      HF_compositeMemAt 0 1
+    exact hfCompositeAt_mem (fun k : Nat => k) 0 1
+  have hsameSat : Sat M.mem env (PAInHF.formulaAt ρ sameMembers) := by
+    intro query hqueryDomain
+    have hqueryOrd : OrdinalLike M.mem query :=
+      (HF_ordinalLikeAt_spec (scons query env) 0).mp hqueryDomain
+    change Sat M.mem (scons query env)
+      (fIff
+        (PAInHF.formulaAt (PAInHF.upVarMap ρ)
+          (PA.Formula.hfMemAt 0 2))
+        (PAInHF.formulaAt (PAInHF.upVarMap ρ)
+          (PA.Formula.hfMemAt 0 1)))
+    rw [Sat_fIff, hleftFormula, hrightFormula]
+    constructor
+    · intro hqueryLeft
+      apply (HF_compositeMemAt_01_model N (scons query env)).mpr
+      exact (hsame query hqueryOrd).mp
+        ((HF_compositeMemAt_02_model N (scons query env)).mp hqueryLeft)
+    · intro hqueryRight
+      apply (HF_compositeMemAt_02_model N (scons query env)).mpr
+      exact (hsame query hqueryOrd).mpr
+        ((HF_compositeMemAt_01_model N (scons query env)).mp hqueryRight)
+  have htranslatedSat := soundness_BProv (htranslated ρ) env
+    (FirstOrderFiniteAdjunctionModel_sat_HFFin M env) (by
+      intro g hg
+      simp only [List.mem_append] at hg
+      rcases hg with hgDomain | hgContext
+      · exact hdomain g hgDomain
+      · simp only [PAInHF.translateContextAt, List.map_singleton,
+          List.mem_singleton] at hgContext
+        subst g
+        exact hsameSat)
+  have heq : env (ρ 1) = env (ρ 0) :=
+    (PAInHF.formulaAt_eq_var_spec ρ 1 0 env).mp htranslatedSat
+  simpa [env, ρ, scons] using heq
+
+/-- Every finite first-order adjunction model satisfies the exact published
+merge law for set-to-ordinal representation witnesses. -/
+theorem ModelSetOrdinalRepMergeLaw_finite
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α) :
+    ModelSetOrdinalRepMergeLaw M.toFirstOrderAdjunctionModel :=
+  ModelSetOrdinalRepMergeLaw_of_composite_extensionality M
+    (ModelCompositeMemExtensionalLaw_finite M)
+
 /-- Arithmetic/freshness data for extending a common relation by one adjunction
 root.  This is separate from `ModelSetOrdinalRepMergeLaw`: the latter merges
 graphs, while this package is the PA-in-HF Ackermann-code obligation. -/
