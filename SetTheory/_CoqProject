@@ -68,6 +68,8 @@ Completeness.v
 Zf.v
 Equivalence.v
 PAHF.v
+PAHFInterpretations.v
+PAHFHFRoundTrip.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
 BusyBeaver.v
