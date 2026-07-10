@@ -4166,6 +4166,105 @@ theorem BProv_Ax_s_hfEmptyTermAt_zero :
   simpa [hfEmptyTermAt, subst,
     subst_up_inst_hfMemAt_zero_one] using hraw
 
+/-- A term-parametric empty code has no member in any selected slot. -/
+theorem BProv_hfEmptyTermAt_not_mem
+    {B : Formula → Prop} {G : List Formula}
+    {setCode : Term} {elem : Nat}
+    (hempty : BProv B G (hfEmptyTermAt setCode)) :
+    BProv B G (imp (hfMemTermAt elem setCode) bot) := by
+  have hraw := BProv_allE (B := B) (G := G)
+    (t := Term.var elem) hempty
+  simpa only [hfEmptyTermAt, subst,
+    subst_instTerm_var_hfMemTermAt_zero_rename_succ] using hraw
+
+/-- Any two term-parametric empty codes have pointwise identical Ackermann
+membership predicates. -/
+theorem BProv_Ax_s_same_members_of_hfEmptyTermAt
+    {G : List Formula} {left right : Term}
+    (hleft : BProv Ax_s G (hfEmptyTermAt left))
+    (hright : BProv Ax_s G (hfEmptyTermAt right)) :
+    BProv Ax_s G
+      (all (iffForm
+        (hfMemTermAt 0 (Term.rename Nat.succ left))
+        (hfMemTermAt 0 (Term.rename Nat.succ right)))) := by
+  let Q : List Formula := G.map (rename Nat.succ)
+  have hleftRenRaw : BProv Ax_s Q
+      (rename Nat.succ (hfEmptyTermAt left)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      hleft Nat.succ
+  have hleftRen : BProv Ax_s Q
+      (hfEmptyTermAt (Term.rename Nat.succ left)) := by
+    simpa [rename_hfEmptyTermAt] using hleftRenRaw
+  have hrightRenRaw : BProv Ax_s Q
+      (rename Nat.succ (hfEmptyTermAt right)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      hright Nat.succ
+  have hrightRen : BProv Ax_s Q
+      (hfEmptyTermAt (Term.rename Nat.succ right)) := by
+    simpa [rename_hfEmptyTermAt] using hrightRenRaw
+  let leftMem : Formula :=
+    hfMemTermAt 0 (Term.rename Nat.succ left)
+  let rightMem : Formula :=
+    hfMemTermAt 0 (Term.rename Nat.succ right)
+  have hforward : BProv Ax_s Q (imp leftMem rightMem) := by
+    let C : List Formula := leftMem :: Q
+    have hmem : BProv Ax_s C leftMem :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hnot : BProv Ax_s C (imp leftMem bot) :=
+      BProv_context_cons (B := Ax_s) (a := leftMem)
+        (BProv_hfEmptyTermAt_not_mem hleftRen)
+    have hbot : BProv Ax_s C bot :=
+      BProv_mp Ax_s C leftMem bot hnot hmem
+    simpa [C] using BProv_impI (BProv_botE (a := rightMem) hbot)
+  have hreverse : BProv Ax_s Q (imp rightMem leftMem) := by
+    let C : List Formula := rightMem :: Q
+    have hmem : BProv Ax_s C rightMem :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hnot : BProv Ax_s C (imp rightMem bot) :=
+      BProv_context_cons (B := Ax_s) (a := rightMem)
+        (BProv_hfEmptyTermAt_not_mem hrightRen)
+    have hbot : BProv Ax_s C bot :=
+      BProv_mp Ax_s C rightMem bot hnot hmem
+    simpa [C] using BProv_impI (BProv_botE (a := leftMem) hbot)
+  have hbody : BProv Ax_s Q (iffForm leftMem rightMem) :=
+    BProv_andI hforward hreverse
+  simpa [leftMem, rightMem] using
+    (BProv_allI_of_sentences
+      (B := Ax_s) (G := G)
+      (fun f hf ↦ sentence_ax_s (f := f) hf) hbody)
+
+/-- Ackermann extensionality identifies any two term-parametric empty codes. -/
+theorem BProv_Ax_s_eq_of_hfEmptyTermAt_hfEmptyTermAt
+    {G : List Formula} {left right : Term}
+    (hleft : BProv Ax_s G (hfEmptyTermAt left))
+    (hright : BProv Ax_s G (hfEmptyTermAt right)) :
+    BProv Ax_s G (eq left right) :=
+  BProv_Ax_s_eq_of_hfSameMembersTermAt
+    (BProv_Ax_s_same_members_of_hfEmptyTermAt hleft hright)
+
+/-- A PA variable satisfying the translated empty predicate equals the closed
+Ackermann empty code `0`. -/
+theorem BProv_Ax_s_eq_zero_of_hfEmptyAt
+    {G : List Formula} {set : Nat}
+    (hempty : BProv Ax_s G (hfEmptyAt set)) :
+    BProv Ax_s G (eq (Term.var set) Term.zero) := by
+  apply BProv_Ax_s_eq_of_hfEmptyTermAt_hfEmptyTermAt
+    (by simpa [hfEmptyAt] using hempty)
+  exact BProv_weaken_nil BProv_Ax_s_hfEmptyTermAt_zero
+
+/-- The only coded endpoint of the ordinal-code graph at raw zero is the
+closed Ackermann empty code. -/
+theorem BProv_Ax_s_eq_zero_of_ordinalCodeGraphTermAt_zero
+    {G : List Formula} {coded : Term}
+    (hgraph : BProv Ax_s G
+      (ordinalCodeGraphTermAt Term.zero coded)) :
+    BProv Ax_s G (eq coded Term.zero) :=
+  BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_traceAgreement
+    ordinalCodeTraceAgreementProof hgraph
+    BProv_Ax_s_ordinalCodeGraphTermAt_zero
+
 theorem BProv_Ax_s_ordinalCodeMemZeroOrSuccTermAt_of_domain
     {G : List Formula} {current : Term}
     (hdomain : BProv Ax_s G
@@ -4374,6 +4473,45 @@ theorem OrdinalCodeGraphRangeLocalFacts_domain_decompose :
       instTerm, Term.subst, Term.upSubst] using himpRaw
   exact BProv_mp Ax_s G _ _ himp hdomain
 
+/-- Remaining successor-closure obligation for the ordinal-code graph. -/
+def OrdinalCodeGraphSuccClosure : Prop :=
+  ∀ {G : List Formula} {raw pred current : Term},
+    BProv Ax_s G (ordinalCodeGraphTermAt raw pred) →
+    BProv Ax_s G (hfAdjoinGraphTermAt current pred pred) →
+    BProv Ax_s G (ordinalCodeGraphTermAt (Term.succ raw) current)
+
+/-- Remaining codomain-safety obligation for the ordinal-code graph. -/
+def OrdinalCodeGraphCodomain : Prop :=
+  ∀ {G : List Formula} {coded : Term},
+    BProv Ax_s G (ordinalCodeGraphRangeExistsTermAt coded) →
+    BProv Ax_s G (subst (instTerm coded) codedOrdinalDomain)
+
+/-- The proved finite-ordinal decomposition reduces the local range package to
+successor closure and codomain safety alone. -/
+def OrdinalCodeGraphRangeLocalFacts_of_succ_codomain
+    (hsucc : OrdinalCodeGraphSuccClosure)
+    (hcodomain : OrdinalCodeGraphCodomain) :
+    OrdinalCodeGraphRangeLocalFacts where
+  domain_decompose := OrdinalCodeGraphRangeLocalFacts_domain_decompose
+  graph_succ := hsucc
+  graph_codomain := hcodomain
+
+/-- Successor closure and codomain safety now imply the exact public graph
+range field; predecessor decomposition is fully discharged. -/
+theorem OrdinalCodeGraphProofs_range_of_succ_codomain
+    (hsucc : OrdinalCodeGraphSuccClosure)
+    (hcodomain : OrdinalCodeGraphCodomain) :
+    ∀ (G : List Formula) (coded : Term),
+      BProv Ax_s G
+        (iffForm
+          (subst (instTerm coded) codedOrdinalDomain)
+          (ex (ordinalCodeGraphTermAt
+            (Term.var 0) (Term.rename Nat.succ coded)))) :=
+  OrdinalCodeGraphProofs_range_of_strongStep
+    (OrdinalCodeGraphRangeStrongStep_of_localFacts
+      (OrdinalCodeGraphRangeLocalFacts_of_succ_codomain
+        hsucc hcodomain))
+
 /-! ### Atomic equality through ordinal codes -/
 
 /-- Binder-free equality comparison through a common ordinal-code witness. -/
@@ -4567,6 +4705,25 @@ theorem OrdinalCodeGraphFunctional_of_traceAgreement
   exact BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_traceAgreement
     hagreement hgraph₁ hgraph₂
 
+/-- PA proves that the ordinal-code graph is single-valued in its coded
+output.  This is the direct public endpoint of the concrete trace-agreement
+induction. -/
+theorem BProv_Ax_s_ordinalCodeGraphTermAt_functional
+    {G : List Formula} {raw coded₁ coded₂ : Term}
+    (hgraph₁ : BProv Ax_s G
+      (ordinalCodeGraphTermAt raw coded₁))
+    (hgraph₂ : BProv Ax_s G
+      (ordinalCodeGraphTermAt raw coded₂)) :
+    BProv Ax_s G (eq coded₁ coded₂) :=
+  BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_traceAgreement
+    ordinalCodeTraceAgreementProof hgraph₁ hgraph₂
+
+/-- Concrete operation-facing functionality package for the ordinal-code
+term-graph induction. -/
+theorem ordinalCodeGraphFunctional : OrdinalCodeGraphFunctional :=
+  OrdinalCodeGraphFunctional_of_traceAgreement
+    ordinalCodeTraceAgreementProof
+
 /-- Functionality is exactly sufficient for the variable constructor of the
 ordinal-code term-graph induction. -/
 theorem BProv_Ax_s_term_graph_var
@@ -4686,6 +4843,62 @@ structure OrdinalCodeTermCompatibilityProofs where
         (compositeTermGraphAt codedOut codedMap (Term.mul a b))
         (ordinalCodeGraphTermAt
           (Term.rename rawMap (Term.mul a b)) (Term.var codedOut)))
+
+/-- Exact zero-constructor field of `OrdinalCodeTermCompatibilityProofs`.
+The reverse-translated composite is the HF-empty predicate, which is
+equivalent to the unique ordinal-code graph endpoint at raw zero. -/
+theorem OrdinalCodeTermCompatibilityProofs_zero_compatible :
+    ∀ (G : List Formula) (codedMap : Nat → Nat) (codedOut : Nat),
+      BProv Ax_s G
+        (iffForm
+          (compositeTermGraphAt codedOut codedMap Term.zero)
+          (ordinalCodeGraphTermAt Term.zero (Term.var codedOut))) := by
+  intro G codedMap codedOut
+  have hnormal :
+      compositeTermGraphAt codedOut codedMap Term.zero =
+        hfEmptyAt codedOut := by
+    simp [compositeTermGraphAt, codedTermSlotMap,
+      AckermannHF.PAInHF.termGraphAt,
+      AckermannHF.HF_emptyAt, hfFormulaAt, hfUpVarMap,
+      hfEmptyAt, hfEmptyTermAt, hfMemTermAt_var,
+      Term.rename]
+  rw [hnormal]
+  have hforward : BProv Ax_s G
+      (imp
+        (hfEmptyAt codedOut)
+        (ordinalCodeGraphTermAt Term.zero (Term.var codedOut))) := by
+    let C : List Formula := hfEmptyAt codedOut :: G
+    have hempty : BProv Ax_s C (hfEmptyAt codedOut) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have heq : BProv Ax_s C
+        (eq (Term.var codedOut) Term.zero) :=
+      BProv_Ax_s_eq_zero_of_hfEmptyAt hempty
+    have hzero : BProv Ax_s C
+        (ordinalCodeGraphTermAt Term.zero Term.zero) :=
+      BProv_Ax_s_ordinalCodeGraphTermAt_zero
+    have hgraph : BProv Ax_s C
+        (ordinalCodeGraphTermAt Term.zero (Term.var codedOut)) :=
+      BProv_ordinalCodeGraphTermAt_congr_coded
+        (BProv_eqSym heq) hzero
+    simpa [C] using BProv_impI hgraph
+  have hreverse : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt Term.zero (Term.var codedOut))
+        (hfEmptyAt codedOut)) := by
+    let C : List Formula :=
+      ordinalCodeGraphTermAt Term.zero (Term.var codedOut) :: G
+    have hgraph : BProv Ax_s C
+        (ordinalCodeGraphTermAt Term.zero (Term.var codedOut)) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have heq : BProv Ax_s C
+        (eq (Term.var codedOut) Term.zero) :=
+      BProv_Ax_s_eq_zero_of_ordinalCodeGraphTermAt_zero hgraph
+    have hzero : BProv Ax_s C (eqConstAt codedOut 0) := by
+      simpa [eqConstAt, Term.numeral] using heq
+    have hempty : BProv Ax_s C (hfEmptyAt codedOut) :=
+      BProv_Ax_s_hfEmptyAt_of_eqConst_zero hzero
+    simpa [C] using BProv_impI hempty
+  exact BProv_andI hforward hreverse
 
 /-- The operation interface closes the full `term_graph` field by ordinary
 structural induction on PA terms. -/
