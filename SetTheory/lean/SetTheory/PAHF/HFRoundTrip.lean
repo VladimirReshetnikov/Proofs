@@ -1019,5 +1019,766 @@ theorem BProv_HFFin_hfCompositeAt_iff_of_quantifierFree
       exact False.elim hq
 
 
+theorem hfCompositeAt_all
+    (codedMap : Nat → Nat) (a : Form) :
+    hfCompositeAt codedMap (fAll a) =
+      fAll (fImp PAInHF.domainForm
+        (hfCompositeAt (PAInHF.upVarMap codedMap) a)) := by
+  have hinner :
+      PA.Formula.hfFormulaAt
+          (PA.Formula.hfUpVarMap (fun n => n)) a =
+        PA.Formula.hfFormulaAt (fun n => n) a := by
+    apply PA.Formula.hfFormulaAt_ext
+    intro n
+    cases n <;> rfl
+  simp only [hfCompositeAt, PA.Formula.hfFormulaAt,
+    PAInHF.formulaAt]
+  rw [hinner]
+
+theorem hfCompositeAt_ex
+    (codedMap : Nat → Nat) (a : Form) :
+    hfCompositeAt codedMap (fEx a) =
+      fEx (fAnd PAInHF.domainForm
+        (hfCompositeAt (PAInHF.upVarMap codedMap) a)) := by
+  have hinner :
+      PA.Formula.hfFormulaAt
+          (PA.Formula.hfUpVarMap (fun n => n)) a =
+        PA.Formula.hfFormulaAt (fun n => n) a := by
+    apply PA.Formula.hfFormulaAt_ext
+    intro n
+    cases n <;> rfl
+  simp only [hfCompositeAt, PA.Formula.hfFormulaAt,
+    PAInHF.formulaAt]
+  rw [hinner]
+
+/-! ### Paired slots under range and totality witnesses -/
+
+/-- After opening the range witness for a coded value, the fresh raw set is
+slot `0`, the coded value is slot `1`, and ambient raw slots move by two. -/
+def rangeRawMap (rawMap : Nat → Nat) : Nat → Nat
+  | 0 => 0
+  | n+1 => rawMap n + 2
+
+/-- Coded companion to `rangeRawMap`. -/
+def rangeCodedMap (codedMap : Nat → Nat) : Nat → Nat
+  | 0 => 1
+  | n+1 => codedMap n + 2
+
+/-- After totality opens a code for a fresh raw set, the code is slot `0`,
+the raw set is slot `1`, and ambient raw slots move by two. -/
+def totalRawMap (rawMap : Nat → Nat) : Nat → Nat
+  | 0 => 1
+  | n+1 => rawMap n + 2
+
+/-- Coded companion to `totalRawMap`. -/
+def totalCodedMap (codedMap : Nat → Nat) : Nat → Nat
+  | 0 => 0
+  | n+1 => codedMap n + 2
+
+theorem rename_hfCompositeAt
+    (r codedMap : Nat → Nat) (phi : Form) :
+    rename r (hfCompositeAt codedMap phi) =
+      hfCompositeAt (fun n => r (codedMap n)) phi := by
+  simpa [hfCompositeAt] using
+    (PAInHF.formulaAt_rename
+      (PA.Formula.hfFormulaAt (fun n : Nat => n) phi)
+      (ρ := codedMap) (r := r))
+
+theorem rename_succ_hfCompositeAt_up
+    (codedMap : Nat → Nat) (phi : Form) :
+    rename Nat.succ
+        (hfCompositeAt (PAInHF.upVarMap codedMap) phi) =
+      hfCompositeAt (rangeCodedMap codedMap) phi := by
+  rw [rename_hfCompositeAt]
+  apply congrArg (fun m => hfCompositeAt m phi)
+  funext n
+  cases n <;> rfl
+
+theorem rename_succ_rawBody
+    (rawMap : Nat → Nat) (phi : Form) :
+    rename Nat.succ
+        (rename (PAInHF.upVarMap rawMap) phi) =
+      rename (totalRawMap rawMap) phi := by
+  rw [rename_comp]
+  apply rename_ext
+  intro n
+  cases n <;> rfl
+
+theorem inst_range_rawBody
+    (rawMap : Nat → Nat) (phi : Form) :
+    rename (inst 0)
+        (rename (SetTheory.up Nat.succ)
+          (rename (SetTheory.up Nat.succ)
+            (rename (PAInHF.upVarMap rawMap) phi))) =
+      rename (rangeRawMap rawMap) phi := by
+  repeat rw [rename_comp]
+  apply rename_ext
+  intro n
+  cases n <;> rfl
+
+theorem inst_total_codedBody
+    (codedMap : Nat → Nat) (phi : Form) :
+    rename (inst 0)
+        (rename (SetTheory.up Nat.succ)
+          (rename (SetTheory.up Nat.succ)
+            (hfCompositeAt (PAInHF.upVarMap codedMap) phi))) =
+      hfCompositeAt (totalCodedMap codedMap) phi := by
+  simp only [rename_hfCompositeAt]
+  apply congrArg (fun m => hfCompositeAt m phi)
+  funext n
+  cases n <;> rfl
+
+/-! ### Proof-calculus support for paired binders -/
+
+theorem BProv_rename_of_sentences
+    {B : Form → Prop} (hB : Sentences B)
+    {G : List Form} {phi : Form}
+    (h : BProv B G phi) (r : Nat → Nat) :
+    BProv B (G.map (rename r)) (rename r phi) := by
+  rcases h with ⟨L, hL, hp⟩
+  have hLmap : L.map (rename r) = L := by
+    calc
+      L.map (rename r) = L.map (fun x => x) := by
+        apply List.map_congr_left
+        intro x hx
+        exact PAInHF.rename_eq_of_sentence (hB x (hL x hx)) r
+      _ = L := by simp
+  refine ⟨L, hL, ?_⟩
+  have hpRen : Prov ((L ++ G).map (rename r)) (rename r phi) :=
+    Prov_rename hp r
+  apply Prov_weaken hpRen
+  intro x hx
+  simp only [List.map_append, List.mem_append] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (by simpa [hLmap] using hx)
+  · exact Or.inr hx
+
+theorem BProv_HFFin_rep_exists_of_ordinalLike
+    (P : SetOrdinalRepresentationProofs)
+    {G : List Form} {code : Nat}
+    (hdom : BProv HFFinAx_s G (HF_ordinalLikeAt code)) :
+    BProv HFFinAx_s G
+      (fEx (HF_setOrdinalRepAt 0 (code+1))) := by
+  have hforward : BProv HFFinAx_s G
+      (fImp (HF_ordinalLikeAt code)
+        (fEx (HF_setOrdinalRepAt 0 (code+1)))) := by
+    simpa [fIff] using PAInHF.BProv_andE1 (P.range G code)
+  exact BProv_mp HFFinAx_s G _ _ hforward hdom
+
+theorem BProv_HFFin_ordinalLike_of_rep
+    (P : SetOrdinalRepresentationProofs)
+    {G : List Form} {set code : Nat}
+    (hrep : BProv HFFinAx_s G (HF_setOrdinalRepAt set code)) :
+    BProv HFFinAx_s G (HF_ordinalLikeAt code) := by
+  have hex : BProv HFFinAx_s G
+      (fEx (HF_setOrdinalRepAt 0 (code+1))) := by
+    apply PAInHF.BProv_exI (k := set)
+    simpa [rename_HF_setOrdinalRepAt, inst] using hrep
+  have hreverse : BProv HFFinAx_s G
+      (fImp (fEx (HF_setOrdinalRepAt 0 (code+1)))
+        (HF_ordinalLikeAt code)) := by
+    simpa [fIff] using PAInHF.BProv_andE2 (P.range G code)
+  exact BProv_mp HFFinAx_s G _ _ hreverse hex
+
+/-! ### Paired-variable universal steps -/
+
+theorem BProv_HFFin_hfCompositeAt_all_forward
+    (P : SetOrdinalRepresentationProofs)
+    (phi : Form)
+    (ih : ∀ (G : List Form) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)))
+    (G : List Form) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (fAll phi) →
+      BProv HFFinAx_s G
+        (HF_setOrdinalRepAt (rawMap n) (codedMap n))) :
+    BProv HFFinAx_s G
+      (fImp (rename rawMap (fAll phi))
+        (hfCompositeAt codedMap (fAll phi))) := by
+  let rawBody : Form :=
+    rename (PAInHF.upVarMap rawMap) phi
+  let codedBody : Form :=
+    hfCompositeAt (PAInHF.upVarMap codedMap) phi
+  let rawAll : Form := fAll rawBody
+  let codedAll : Form :=
+    fAll (fImp PAInHF.domainForm codedBody)
+  let C₀ : List Form := rawAll :: G
+  let C₁ : List Form := C₀.map (rename Nat.succ)
+  let C₂ : List Form := PAInHF.domainForm :: C₁
+  have hcodedBody : BProv HFFinAx_s C₂ codedBody := by
+    have hdomain : BProv HFFinAx_s C₂ PAInHF.domainForm :=
+      BProv_of_Prov (B := HFFinAx_s)
+        (Prov.P_ass C₂ _ (by simp [C₂]))
+    have hrange :=
+      BProv_HFFin_rep_exists_of_ordinalLike P hdomain
+    let repBody : Form := HF_setOrdinalRepAt 0 1
+    have hrange' : BProv HFFinAx_s C₂ (fEx repBody) := by
+      simpa [repBody] using hrange
+    let C₃ : List Form := repBody :: C₂.map (rename Nat.succ)
+    have hopened : BProv HFFinAx_s C₃ (rename Nat.succ codedBody) := by
+      have hrep : BProv HFFinAx_s C₃
+          (HF_setOrdinalRepAt 0 1) := by
+        have hass : BProv HFFinAx_s C₃ repBody :=
+          BProv_of_Prov (B := HFFinAx_s)
+            (Prov.P_ass C₃ _ (by simp [C₃]))
+        simpa [repBody] using hass
+      have hpaired : ∀ n, Free n phi →
+          BProv HFFinAx_s C₃
+            (HF_setOrdinalRepAt
+              (rangeRawMap rawMap n)
+              (rangeCodedMap codedMap n)) := by
+        intro n hn
+        cases n with
+        | zero =>
+            simpa [rangeRawMap,
+              rangeCodedMap] using hrep
+        | succ n =>
+            have h₀ := hcode n hn
+            have h₁ := BProv_rename_of_sentences
+              Sentences_HFFin h₀ Nat.succ
+            have h₂ := BProv_rename_of_sentences
+              Sentences_HFFin h₁ Nat.succ
+            have hrawCtx := PAInHF.BProv_context_cons
+              (a := rename Nat.succ (rename Nat.succ rawAll)) h₂
+            have hdomainCtx := PAInHF.BProv_context_cons
+              (a := rename Nat.succ PAInHF.domainForm) hrawCtx
+            have hctx := PAInHF.BProv_context_cons
+              (a := repBody) hdomainCtx
+            simpa [C₃, C₂, C₁, C₀,
+              rangeRawMap, rangeCodedMap,
+              rename_HF_setOrdinalRepAt, List.map_map,
+              Function.comp_def] using hctx
+      have hih := ih C₃
+        (rangeRawMap rawMap)
+        (rangeCodedMap codedMap) hpaired
+      have hihForward : BProv HFFinAx_s C₃
+          (fImp
+            (rename (rangeRawMap rawMap) phi)
+            (hfCompositeAt (rangeCodedMap codedMap) phi)) := by
+        simpa [fIff] using PAInHF.BProv_andE1 hih
+      have hall₀ : BProv HFFinAx_s C₀ rawAll :=
+        BProv_of_Prov (B := HFFinAx_s)
+          (Prov.P_ass C₀ _ (by simp [C₀]))
+      have hall₁ := BProv_rename_of_sentences
+        Sentences_HFFin hall₀ Nat.succ
+      have hall₂ := BProv_rename_of_sentences
+        Sentences_HFFin hall₁ Nat.succ
+      have hallDomainCtx := PAInHF.BProv_context_cons
+        (a := rename Nat.succ PAInHF.domainForm) hall₂
+      have hallCtx := PAInHF.BProv_context_cons
+        (a := repBody) hallDomainCtx
+      have hallCtx' : BProv HFFinAx_s C₃
+          (fAll (rename (SetTheory.up Nat.succ)
+            (rename (SetTheory.up Nat.succ) rawBody))) := by
+        simpa [C₃, C₂, C₁, C₀, rawAll, rename] using hallCtx
+      have hrawInst := PAInHF.BProv_allE
+        (B := HFFinAx_s) (G := C₃) (k := 0) hallCtx'
+      have hraw : BProv HFFinAx_s C₃
+          (rename (rangeRawMap rawMap) phi) := by
+        simpa [rawBody, inst_range_rawBody] using hrawInst
+      have hcomp : BProv HFFinAx_s C₃
+          (hfCompositeAt (rangeCodedMap codedMap) phi) :=
+        BProv_mp HFFinAx_s C₃ _ _ hihForward hraw
+      simpa [codedBody, rename_succ_hfCompositeAt_up]
+        using hcomp
+    exact PAInHF.BProv_exE_of_sentences
+      (B := HFFinAx_s) Sentences_HFFin
+      (a := repBody) (c := codedBody) hrange' (by
+        simpa [C₃] using hopened)
+  have himp : BProv HFFinAx_s C₁
+      (fImp PAInHF.domainForm codedBody) := by
+    simpa [C₂] using PAInHF.BProv_impI hcodedBody
+  have hall : BProv HFFinAx_s C₀ codedAll := by
+    simpa [codedAll, C₁] using
+      (PAInHF.BProv_allI_of_sentences
+        (B := HFFinAx_s) Sentences_HFFin (G := C₀) himp)
+  have hmain : BProv HFFinAx_s G (fImp rawAll codedAll) := by
+    simpa [C₀] using PAInHF.BProv_impI hall
+  have hup : PAInHF.upVarMap rawMap = SetTheory.up rawMap := by
+    funext n
+    cases n <;> rfl
+  simpa [rawAll, rawBody, codedAll, codedBody, hup,
+    rename, hfCompositeAt_all] using hmain
+
+theorem BProv_HFFin_hfCompositeAt_all_reverse
+    (P : SetOrdinalRepresentationProofs)
+    (phi : Form)
+    (ih : ∀ (G : List Form) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)))
+    (G : List Form) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (fAll phi) →
+      BProv HFFinAx_s G
+        (HF_setOrdinalRepAt (rawMap n) (codedMap n))) :
+    BProv HFFinAx_s G
+      (fImp (hfCompositeAt codedMap (fAll phi))
+        (rename rawMap (fAll phi))) := by
+  let rawBody : Form :=
+    rename (PAInHF.upVarMap rawMap) phi
+  let codedBody : Form :=
+    hfCompositeAt (PAInHF.upVarMap codedMap) phi
+  let rawAll : Form := fAll rawBody
+  let codedAll : Form :=
+    fAll (fImp PAInHF.domainForm codedBody)
+  let C₀ : List Form := codedAll :: G
+  let C₁ : List Form := C₀.map (rename Nat.succ)
+  have hrawBody : BProv HFFinAx_s C₁ rawBody := by
+    have htotal := P.total C₁ 0
+    let repBody : Form := HF_setOrdinalRepAt 1 0
+    have htotal' : BProv HFFinAx_s C₁ (fEx repBody) := by
+      simpa [repBody] using htotal
+    let C₂ : List Form := repBody :: C₁.map (rename Nat.succ)
+    have hopened : BProv HFFinAx_s C₂ (rename Nat.succ rawBody) := by
+      have hrep : BProv HFFinAx_s C₂
+          (HF_setOrdinalRepAt 1 0) := by
+        have hass : BProv HFFinAx_s C₂ repBody :=
+          BProv_of_Prov (B := HFFinAx_s)
+            (Prov.P_ass C₂ _ (by simp [C₂]))
+        simpa [repBody] using hass
+      have hpaired : ∀ n, Free n phi →
+          BProv HFFinAx_s C₂
+            (HF_setOrdinalRepAt
+              (totalRawMap rawMap n)
+              (totalCodedMap codedMap n)) := by
+        intro n hn
+        cases n with
+        | zero =>
+            simpa [totalRawMap,
+              totalCodedMap] using hrep
+        | succ n =>
+            have h₀ := hcode n hn
+            have h₁ := BProv_rename_of_sentences
+              Sentences_HFFin h₀ Nat.succ
+            have h₂ := BProv_rename_of_sentences
+              Sentences_HFFin h₁ Nat.succ
+            have hcodedCtx := PAInHF.BProv_context_cons
+              (a := rename Nat.succ (rename Nat.succ codedAll)) h₂
+            have hctx := PAInHF.BProv_context_cons
+              (a := repBody) hcodedCtx
+            simpa [C₂, C₁, C₀,
+              totalRawMap, totalCodedMap,
+              rename_HF_setOrdinalRepAt, List.map_map,
+              Function.comp_def] using hctx
+      have hih := ih C₂
+        (totalRawMap rawMap)
+        (totalCodedMap codedMap) hpaired
+      have hihReverse : BProv HFFinAx_s C₂
+          (fImp
+            (hfCompositeAt (totalCodedMap codedMap) phi)
+            (rename (totalRawMap rawMap) phi)) := by
+        simpa [fIff] using PAInHF.BProv_andE2 hih
+      have hall₀ : BProv HFFinAx_s C₀ codedAll :=
+        BProv_of_Prov (B := HFFinAx_s)
+          (Prov.P_ass C₀ _ (by simp [C₀]))
+      have hall₁ := BProv_rename_of_sentences
+        Sentences_HFFin hall₀ Nat.succ
+      have hall₂ := BProv_rename_of_sentences
+        Sentences_HFFin hall₁ Nat.succ
+      have hallCtx := PAInHF.BProv_context_cons
+        (a := repBody) hall₂
+      have hallCtx' : BProv HFFinAx_s C₂
+          (fAll (rename (SetTheory.up Nat.succ)
+            (rename (SetTheory.up Nat.succ)
+              (fImp PAInHF.domainForm codedBody)))) := by
+        simpa [C₂, C₁, C₀, codedAll, rename] using hallCtx
+      have hbodyInst := PAInHF.BProv_allE
+        (B := HFFinAx_s) (G := C₂) (k := 0) hallCtx'
+      have hcodedImp : BProv HFFinAx_s C₂
+          (fImp PAInHF.domainForm
+            (hfCompositeAt (totalCodedMap codedMap) phi)) := by
+        simpa [rename, PAInHF.rename_domainForm_up,
+          PAInHF.rename_domainForm_inst_zero, codedBody,
+          inst_total_codedBody] using hbodyInst
+      have hdomain : BProv HFFinAx_s C₂ PAInHF.domainForm := by
+        simpa [PAInHF.domainForm] using
+          BProv_HFFin_ordinalLike_of_rep P hrep
+      have hcomp : BProv HFFinAx_s C₂
+          (hfCompositeAt (totalCodedMap codedMap) phi) :=
+        BProv_mp HFFinAx_s C₂ _ _ hcodedImp hdomain
+      have hraw : BProv HFFinAx_s C₂
+          (rename (totalRawMap rawMap) phi) :=
+        BProv_mp HFFinAx_s C₂ _ _ hihReverse hcomp
+      simpa [rawBody, rename_succ_rawBody] using hraw
+    exact PAInHF.BProv_exE_of_sentences
+      (B := HFFinAx_s) Sentences_HFFin
+      (a := repBody) (c := rawBody) htotal' (by
+        simpa [C₂] using hopened)
+  have hall : BProv HFFinAx_s C₀ rawAll := by
+    simpa [rawAll, C₁] using
+      (PAInHF.BProv_allI_of_sentences
+        (B := HFFinAx_s) Sentences_HFFin (G := C₀) hrawBody)
+  have hmain : BProv HFFinAx_s G (fImp codedAll rawAll) := by
+    simpa [C₀] using PAInHF.BProv_impI hall
+  have hup : PAInHF.upVarMap rawMap = SetTheory.up rawMap := by
+    funext n
+    cases n <;> rfl
+  simpa [rawAll, rawBody, codedAll, codedBody, hup,
+    rename, hfCompositeAt_all] using hmain
+
+theorem BProv_HFFin_hfCompositeAt_all
+    (P : SetOrdinalRepresentationProofs)
+    (phi : Form)
+    (ih : ∀ (G : List Form) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)))
+    (G : List Form) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (fAll phi) →
+      BProv HFFinAx_s G
+        (HF_setOrdinalRepAt (rawMap n) (codedMap n))) :
+    BProv HFFinAx_s G
+      (fIff (rename rawMap (fAll phi))
+        (hfCompositeAt codedMap (fAll phi))) := by
+  have hforward :=
+    BProv_HFFin_hfCompositeAt_all_forward
+      P phi ih G rawMap codedMap hcode
+  have hreverse :=
+    BProv_HFFin_hfCompositeAt_all_reverse
+      P phi ih G rawMap codedMap hcode
+  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+
+/-! ### Paired-variable existential steps -/
+
+theorem BProv_HFFin_hfCompositeAt_ex_forward
+    (P : SetOrdinalRepresentationProofs)
+    (phi : Form)
+    (ih : ∀ (G : List Form) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)))
+    (G : List Form) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (fEx phi) →
+      BProv HFFinAx_s G
+        (HF_setOrdinalRepAt (rawMap n) (codedMap n))) :
+    BProv HFFinAx_s G
+      (fImp (rename rawMap (fEx phi))
+        (hfCompositeAt codedMap (fEx phi))) := by
+  let rawBody : Form :=
+    rename (PAInHF.upVarMap rawMap) phi
+  let codedBody : Form :=
+    hfCompositeAt (PAInHF.upVarMap codedMap) phi
+  let rawEx : Form := fEx rawBody
+  let codedEx : Form :=
+    fEx (fAnd PAInHF.domainForm codedBody)
+  let C₀ : List Form := rawEx :: G
+  have hcodedEx : BProv HFFinAx_s C₀ codedEx := by
+    have hrawEx : BProv HFFinAx_s C₀ rawEx :=
+      BProv_of_Prov (B := HFFinAx_s)
+        (Prov.P_ass C₀ _ (by simp [C₀]))
+    let C₁ : List Form := rawBody :: C₀.map (rename Nat.succ)
+    have hrawOpened : BProv HFFinAx_s C₁
+        (rename Nat.succ codedEx) := by
+      have htotal := P.total C₁ 0
+      let repBody : Form := HF_setOrdinalRepAt 1 0
+      have htotal' : BProv HFFinAx_s C₁ (fEx repBody) := by
+        simpa [repBody] using htotal
+      let C₂ : List Form := repBody :: C₁.map (rename Nat.succ)
+      have hcodeOpened : BProv HFFinAx_s C₂
+          (rename Nat.succ (rename Nat.succ codedEx)) := by
+        have hrep : BProv HFFinAx_s C₂
+            (HF_setOrdinalRepAt 1 0) := by
+          have hass : BProv HFFinAx_s C₂ repBody :=
+            BProv_of_Prov (B := HFFinAx_s)
+              (Prov.P_ass C₂ _ (by simp [C₂]))
+          simpa [repBody] using hass
+        have hpaired : ∀ n, Free n phi →
+            BProv HFFinAx_s C₂
+              (HF_setOrdinalRepAt
+                (totalRawMap rawMap n)
+                (totalCodedMap codedMap n)) := by
+          intro n hn
+          cases n with
+          | zero =>
+              simpa [totalRawMap,
+                totalCodedMap] using hrep
+          | succ n =>
+              have h₀ := hcode n hn
+              have h₁ := BProv_rename_of_sentences
+                Sentences_HFFin h₀ Nat.succ
+              have h₂ := BProv_rename_of_sentences
+                Sentences_HFFin h₁ Nat.succ
+              have hexCtx := PAInHF.BProv_context_cons
+                (a := rename Nat.succ (rename Nat.succ rawEx)) h₂
+              have hrawCtx := PAInHF.BProv_context_cons
+                (a := rename Nat.succ rawBody) hexCtx
+              have hctx := PAInHF.BProv_context_cons
+                (a := repBody) hrawCtx
+              simpa [C₂, C₁, C₀,
+                totalRawMap, totalCodedMap,
+                rename_HF_setOrdinalRepAt, List.map_map,
+                Function.comp_def] using hctx
+        have hih := ih C₂
+          (totalRawMap rawMap)
+          (totalCodedMap codedMap) hpaired
+        have hihForward : BProv HFFinAx_s C₂
+            (fImp
+              (rename (totalRawMap rawMap) phi)
+              (hfCompositeAt (totalCodedMap codedMap) phi)) := by
+          simpa [fIff] using PAInHF.BProv_andE1 hih
+        have hrawShifted : BProv HFFinAx_s C₂
+            (rename Nat.succ rawBody) :=
+          BProv_of_Prov (B := HFFinAx_s)
+            (Prov.P_ass C₂ _ (by simp [C₂, C₁]))
+        have hraw : BProv HFFinAx_s C₂
+            (rename (totalRawMap rawMap) phi) := by
+          simpa [rawBody, rename_succ_rawBody]
+            using hrawShifted
+        have hcomp : BProv HFFinAx_s C₂
+            (hfCompositeAt (totalCodedMap codedMap) phi) :=
+          BProv_mp HFFinAx_s C₂ _ _ hihForward hraw
+        have hdomain : BProv HFFinAx_s C₂ PAInHF.domainForm := by
+          simpa [PAInHF.domainForm] using
+            BProv_HFFin_ordinalLike_of_rep P hrep
+        have hconj : BProv HFFinAx_s C₂
+            (fAnd PAInHF.domainForm
+              (hfCompositeAt (totalCodedMap codedMap) phi)) :=
+          PAInHF.BProv_andI hdomain hcomp
+        apply PAInHF.BProv_exI (k := 0)
+        simpa [codedEx, codedBody, rename,
+          PAInHF.rename_domainForm_up,
+          PAInHF.rename_domainForm_inst_zero,
+          inst_total_codedBody] using hconj
+      exact PAInHF.BProv_exE_of_sentences
+        (B := HFFinAx_s) Sentences_HFFin
+        (a := repBody) (c := rename Nat.succ codedEx)
+        htotal' (by simpa [C₂] using hcodeOpened)
+    exact PAInHF.BProv_exE_of_sentences
+      (B := HFFinAx_s) Sentences_HFFin
+      (a := rawBody) (c := codedEx)
+      hrawEx (by simpa [C₁] using hrawOpened)
+  have hmain : BProv HFFinAx_s G (fImp rawEx codedEx) := by
+    simpa [C₀] using PAInHF.BProv_impI hcodedEx
+  have hup : PAInHF.upVarMap rawMap = SetTheory.up rawMap := by
+    funext n
+    cases n <;> rfl
+  simpa [rawEx, rawBody, codedEx, codedBody, hup,
+    rename, hfCompositeAt_ex] using hmain
+
+theorem BProv_HFFin_hfCompositeAt_ex_reverse
+    (P : SetOrdinalRepresentationProofs)
+    (phi : Form)
+    (ih : ∀ (G : List Form) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)))
+    (G : List Form) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (fEx phi) →
+      BProv HFFinAx_s G
+        (HF_setOrdinalRepAt (rawMap n) (codedMap n))) :
+    BProv HFFinAx_s G
+      (fImp (hfCompositeAt codedMap (fEx phi))
+        (rename rawMap (fEx phi))) := by
+  let rawBody : Form :=
+    rename (PAInHF.upVarMap rawMap) phi
+  let codedBody : Form :=
+    hfCompositeAt (PAInHF.upVarMap codedMap) phi
+  let rawEx : Form := fEx rawBody
+  let pairBody : Form := fAnd PAInHF.domainForm codedBody
+  let codedEx : Form := fEx pairBody
+  let C₀ : List Form := codedEx :: G
+  have hrawEx : BProv HFFinAx_s C₀ rawEx := by
+    have hcodedEx : BProv HFFinAx_s C₀ codedEx :=
+      BProv_of_Prov (B := HFFinAx_s)
+        (Prov.P_ass C₀ _ (by simp [C₀]))
+    let C₁ : List Form := pairBody :: C₀.map (rename Nat.succ)
+    have hcodedOpened : BProv HFFinAx_s C₁
+        (rename Nat.succ rawEx) := by
+      have hpair : BProv HFFinAx_s C₁ pairBody :=
+        BProv_of_Prov (B := HFFinAx_s)
+          (Prov.P_ass C₁ _ (by simp [C₁]))
+      have hdomain : BProv HFFinAx_s C₁ PAInHF.domainForm := by
+        simpa [pairBody] using PAInHF.BProv_andE1 hpair
+      have hrange :=
+        BProv_HFFin_rep_exists_of_ordinalLike P hdomain
+      let repBody : Form := HF_setOrdinalRepAt 0 1
+      have hrange' : BProv HFFinAx_s C₁ (fEx repBody) := by
+        simpa [repBody] using hrange
+      let C₂ : List Form := repBody :: C₁.map (rename Nat.succ)
+      have hrawOpened : BProv HFFinAx_s C₂
+          (rename Nat.succ (rename Nat.succ rawEx)) := by
+        have hrep : BProv HFFinAx_s C₂
+            (HF_setOrdinalRepAt 0 1) := by
+          have hass : BProv HFFinAx_s C₂ repBody :=
+            BProv_of_Prov (B := HFFinAx_s)
+              (Prov.P_ass C₂ _ (by simp [C₂]))
+          simpa [repBody] using hass
+        have hpaired : ∀ n, Free n phi →
+            BProv HFFinAx_s C₂
+              (HF_setOrdinalRepAt
+                (rangeRawMap rawMap n)
+                (rangeCodedMap codedMap n)) := by
+          intro n hn
+          cases n with
+          | zero =>
+              simpa [rangeRawMap,
+                rangeCodedMap] using hrep
+          | succ n =>
+              have h₀ := hcode n hn
+              have h₁ := BProv_rename_of_sentences
+                Sentences_HFFin h₀ Nat.succ
+              have h₂ := BProv_rename_of_sentences
+                Sentences_HFFin h₁ Nat.succ
+              have hexCtx := PAInHF.BProv_context_cons
+                (a := rename Nat.succ (rename Nat.succ codedEx)) h₂
+              have hpairCtx := PAInHF.BProv_context_cons
+                (a := rename Nat.succ pairBody) hexCtx
+              have hctx := PAInHF.BProv_context_cons
+                (a := repBody) hpairCtx
+              simpa [C₂, C₁, C₀,
+                rangeRawMap, rangeCodedMap,
+                rename_HF_setOrdinalRepAt, List.map_map,
+                Function.comp_def] using hctx
+        have hih := ih C₂
+          (rangeRawMap rawMap)
+          (rangeCodedMap codedMap) hpaired
+        have hihReverse : BProv HFFinAx_s C₂
+            (fImp
+              (hfCompositeAt (rangeCodedMap codedMap) phi)
+              (rename (rangeRawMap rawMap) phi)) := by
+          simpa [fIff] using PAInHF.BProv_andE2 hih
+        have hpairShifted : BProv HFFinAx_s C₂
+            (rename Nat.succ pairBody) :=
+          BProv_of_Prov (B := HFFinAx_s)
+            (Prov.P_ass C₂ _ (by simp [C₂, C₁]))
+        have hcompShifted : BProv HFFinAx_s C₂
+            (rename Nat.succ codedBody) := by
+          simpa [pairBody, rename] using
+            PAInHF.BProv_andE2 hpairShifted
+        have hcomp : BProv HFFinAx_s C₂
+            (hfCompositeAt (rangeCodedMap codedMap) phi) := by
+          simpa [codedBody, rename_succ_hfCompositeAt_up]
+            using hcompShifted
+        have hraw : BProv HFFinAx_s C₂
+            (rename (rangeRawMap rawMap) phi) :=
+          BProv_mp HFFinAx_s C₂ _ _ hihReverse hcomp
+        apply PAInHF.BProv_exI (k := 0)
+        simpa [rawEx, rawBody, rename,
+          inst_range_rawBody] using hraw
+      exact PAInHF.BProv_exE_of_sentences
+        (B := HFFinAx_s) Sentences_HFFin
+        (a := repBody) (c := rename Nat.succ rawEx)
+        hrange' (by simpa [C₂] using hrawOpened)
+    exact PAInHF.BProv_exE_of_sentences
+      (B := HFFinAx_s) Sentences_HFFin
+      (a := pairBody) (c := rawEx)
+      hcodedEx (by simpa [C₁] using hcodedOpened)
+  have hmain : BProv HFFinAx_s G (fImp codedEx rawEx) := by
+    simpa [C₀] using PAInHF.BProv_impI hrawEx
+  have hup : PAInHF.upVarMap rawMap = SetTheory.up rawMap := by
+    funext n
+    cases n <;> rfl
+  simpa [rawEx, rawBody, codedEx, pairBody, codedBody, hup,
+    rename, hfCompositeAt_ex] using hmain
+
+theorem BProv_HFFin_hfCompositeAt_ex
+    (P : SetOrdinalRepresentationProofs)
+    (phi : Form)
+    (ih : ∀ (G : List Form) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)))
+    (G : List Form) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (fEx phi) →
+      BProv HFFinAx_s G
+        (HF_setOrdinalRepAt (rawMap n) (codedMap n))) :
+    BProv HFFinAx_s G
+      (fIff (rename rawMap (fEx phi))
+        (hfCompositeAt codedMap (fEx phi))) := by
+  have hforward :=
+    BProv_HFFin_hfCompositeAt_ex_forward
+      P phi ih G rawMap codedMap hcode
+  have hreverse :=
+    BProv_HFFin_hfCompositeAt_ex_reverse
+      P phi ih G rawMap codedMap hcode
+  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+
+/-! ### Full paired-variable structural induction -/
+
+theorem BProv_HFFin_hfCompositeAt_iff
+    (P : SetOrdinalRepresentationProofs) :
+    ∀ (G : List Form) (phi : Form) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)) := by
+  intro G phi
+  induction phi generalizing G with
+  | fMem elem set =>
+      intro rawMap codedMap hrep
+      exact BProv_HFFin_hfCompositeAt_mem_of_representations
+        P rawMap codedMap
+        (hrep elem (Or.inl rfl))
+        (hrep set (Or.inr rfl))
+  | fEq left right =>
+      intro rawMap codedMap hrep
+      exact BProv_HFFin_hfCompositeAt_eq_of_representations
+        P rawMap codedMap
+        (hrep left (Or.inl rfl))
+        (hrep right (Or.inr rfl))
+  | fBot =>
+      intro rawMap codedMap hrep
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        (BProv_fIff_refl (B := HFFinAx_s) (G := G) fBot)
+  | fImp a b iha ihb =>
+      intro rawMap codedMap hrep
+      have ha := iha G rawMap codedMap
+        (fun n hn => hrep n (Or.inl hn))
+      have hb := ihb G rawMap codedMap
+        (fun n hn => hrep n (Or.inr hn))
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        BProv_fIff_imp_congr ha hb
+  | fAnd a b iha ihb =>
+      intro rawMap codedMap hrep
+      have ha := iha G rawMap codedMap
+        (fun n hn => hrep n (Or.inl hn))
+      have hb := ihb G rawMap codedMap
+        (fun n hn => hrep n (Or.inr hn))
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        BProv_fIff_and_congr ha hb
+  | fOr a b iha ihb =>
+      intro rawMap codedMap hrep
+      have ha := iha G rawMap codedMap
+        (fun n hn => hrep n (Or.inl hn))
+      have hb := ihb G rawMap codedMap
+        (fun n hn => hrep n (Or.inr hn))
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        BProv_fIff_or_congr ha hb
+  | fAll a ih =>
+      intro rawMap codedMap hrep
+      exact BProv_HFFin_hfCompositeAt_all
+        P a (fun G rawMap codedMap => ih G rawMap codedMap)
+        G rawMap codedMap hrep
+  | fEx a ih =>
+      intro rawMap codedMap hrep
+      exact BProv_HFFin_hfCompositeAt_ex
+        P a (fun G rawMap codedMap => ih G rawMap codedMap)
+        G rawMap codedMap hrep
+
+def HFCompositeStructuralProofs_of_representationProofs
+    (P : SetOrdinalRepresentationProofs) :
+    HFCompositeStructuralProofs where
+  toSetOrdinalRepresentationProofs := P
+  formula_exact := BProv_HFFin_hfCompositeAt_iff P
+
+
 end AckermannHF
 end SetTheory
