@@ -4074,6 +4074,104 @@ theorem ModelSetOrdinalRep_adjoin_of_merge_arithmetic
     }
     exact ModelSetOrdinalRep_adjoin_of_merge M rootEnv R D
 
+/-- In a finite HF model, adjoining two represented sets realizes the exact
+arithmetic adjunction code, even when the merged certificate already contains
+a root for the ambient adjunction result. -/
+theorem ModelSetOrdinalRep_adjoin_exact
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    {rootEnv : Nat → α}
+    {old oldCode elem elemCode newSet newCode : α}
+    (hnew : ∀ x, M.mem x newSet ↔ M.mem x old ∨ x = elem)
+    (hold : ModelSetOrdinalRep M.toFirstOrderAdjunctionModel
+      rootEnv old oldCode)
+    (helem : ModelSetOrdinalRep M.toFirstOrderAdjunctionModel
+      rootEnv elem elemCode)
+    (C : ModelCompositeAdjoinCodeData
+      M.toFirstOrderAdjunctionModel oldCode elemCode newCode) :
+    ModelSetOrdinalRep M.toFirstOrderAdjunctionModel
+      rootEnv newSet newCode := by
+  let N := M.toFirstOrderAdjunctionModel
+  rcases hold with ⟨oldRelation, holdRoot, holdCertificate⟩
+  rcases helem with ⟨elemRelation, helemRoot, helemCertificate⟩
+  let holdRep : ModelSetOrdinalRep N rootEnv old oldCode :=
+    ⟨oldRelation, holdRoot, holdCertificate⟩
+  let helemRep : ModelSetOrdinalRep N rootEnv elem elemCode :=
+    ⟨elemRelation, helemRoot, helemCertificate⟩
+  have hmerge := ModelSetOrdinalRepMergeLaw_finite M
+  rcases hmerge rootEnv old oldCode elem elemCode holdRep helemRep with ⟨R⟩
+  rcases ModelSetOrdinalRep_adjoin_of_merge_arithmetic
+      N rootEnv R hnew C with ⟨resultCode, hresult⟩
+  rcases hresult with ⟨resultRelation, hresultRoot, hresultCertificate⟩
+  let hresultRep : ModelSetOrdinalRep N rootEnv newSet resultCode :=
+    ⟨resultRelation, hresultRoot, hresultCertificate⟩
+  have holdLocal := ModelSetOrdinalRepCertificate_root_model N
+    holdCertificate holdRoot
+  have hresultLocal := ModelSetOrdinalRepCertificate_root_model N
+    hresultCertificate hresultRoot
+  have hresultCodeEq : resultCode = newCode := by
+    apply (ModelCompositeMemExtensionalLaw_finite M)
+      resultCode newCode hresultLocal.1 C.newCode_ordinal
+    intro query hquery
+    constructor
+    · intro hqueryResult
+      rcases hresultLocal.2.2 query hquery hqueryResult with
+        ⟨represented, hrepresentedRoot⟩
+      let hrepresentedRep : ModelSetOrdinalRep N rootEnv represented query :=
+        ⟨resultRelation, hrepresentedRoot, hresultCertificate⟩
+      have hrepresentedNew : M.mem represented newSet :=
+        (hresultLocal.2.1 represented).mpr
+          ⟨query, hrepresentedRoot, hqueryResult⟩
+      apply (C.code_adjoin query hquery).mpr
+      rcases (hnew represented).mp hrepresentedNew with
+        hrepresentedOld | hrepresentedElem
+      · rcases (holdLocal.2.1 represented).mp hrepresentedOld with
+          ⟨oldChildCode, holdChildRoot, holdChildBit⟩
+        let holdChildRep : ModelSetOrdinalRep N rootEnv
+            represented oldChildCode :=
+          ⟨oldRelation, holdChildRoot, holdCertificate⟩
+        have hcodeEq : query = oldChildCode :=
+          ModelSetOrdinalRep_code_eq_of_mergeLaw N hmerge
+            hrepresentedRep holdChildRep
+        exact Or.inl (by simpa [hcodeEq] using holdChildBit)
+      · subst represented
+        have hcodeEq : query = elemCode :=
+          ModelSetOrdinalRep_code_eq_of_mergeLaw N hmerge
+            hrepresentedRep helemRep
+        exact Or.inr hcodeEq
+    · intro hqueryNew
+      rcases (C.code_adjoin query hquery).mp hqueryNew with
+        hqueryOld | hqueryElem
+      · rcases holdLocal.2.2 query hquery hqueryOld with
+          ⟨represented, holdChildRoot⟩
+        let holdChildRep : ModelSetOrdinalRep N rootEnv represented query :=
+          ⟨oldRelation, holdChildRoot, holdCertificate⟩
+        have hrepresentedOld : M.mem represented old :=
+          (holdLocal.2.1 represented).mpr
+            ⟨query, holdChildRoot, hqueryOld⟩
+        have hrepresentedNew : M.mem represented newSet :=
+          (hnew represented).mpr (Or.inl hrepresentedOld)
+        rcases (hresultLocal.2.1 represented).mp hrepresentedNew with
+          ⟨resultChildCode, hresultChildRoot, hresultChildBit⟩
+        let hresultChildRep : ModelSetOrdinalRep N rootEnv
+            represented resultChildCode :=
+          ⟨resultRelation, hresultChildRoot, hresultCertificate⟩
+        have hcodeEq : query = resultChildCode :=
+          ModelSetOrdinalRep_code_eq_of_mergeLaw N hmerge
+            holdChildRep hresultChildRep
+        simpa [← hcodeEq] using hresultChildBit
+      · have helemNew : M.mem elem newSet :=
+          (hnew elem).mpr (Or.inr rfl)
+        rcases (hresultLocal.2.1 elem).mp helemNew with
+          ⟨resultChildCode, hresultChildRoot, hresultChildBit⟩
+        let hresultChildRep : ModelSetOrdinalRep N rootEnv
+            elem resultChildCode :=
+          ⟨resultRelation, hresultChildRoot, hresultCertificate⟩
+        have hcodeEq : elemCode = resultChildCode :=
+          ModelSetOrdinalRep_code_eq_of_mergeLaw N hmerge
+            helemRep hresultChildRep
+        simpa [hqueryElem, ← hcodeEq] using hresultChildBit
+  simpa [N, hresultCodeEq] using hresultRep
+
 theorem ModelSetOrdinalRep_changeEnv
     {α : Type u} (M : FirstOrderAdjunctionModel α)
     {e e' : Nat → α} {set code : α}
@@ -4411,25 +4509,321 @@ theorem BProv_HFFin_setOrdinalRep_mem_exact
     refine ⟨v elemCode, R.old_root, ?_⟩
     exact (HF_compositeMemAt_model N v elemCode setCode).mp hcodedSat
 
-/-! ## Exact residual for the range field -/
+/-! ## Surjectivity onto ordinal codes -/
 
 /-- Model-level surjectivity of the representation relation onto the ordinal
-domain.  Unlike the three fields above, this does not follow from merging two
-already existing representation witnesses. -/
+domain. -/
 def ModelSetOrdinalRepRangeLaw
     {α : Type u} (M : FirstOrderAdjunctionModel α) : Prop :=
   ∀ (e : Nat → α) (code : α),
     OrdinalLike M.mem code →
       ∃ set, ModelSetOrdinalRep M (scons set e) set code
 
-/-- The exact completeness-facing residual: ordinal-surjectivity only for the
-chosen finite adjunction models reconstructed from HFFin semantics. -/
+/-- Ordinal-surjectivity for the finite adjunction models reconstructed from
+HFFin semantics. -/
 def HFFinModelSetOrdinalRepRangeLaw : Prop :=
   ∀ {α : Type} {mem : α → α → Prop}
     (v : Nat → α)
     (hHF : ∀ g, HFFinAx_s g → Sat mem v g),
       let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
       ModelSetOrdinalRepRangeLaw M.toFirstOrderAdjunctionModel
+
+/-- Object-language accumulator for the range construction.  Slot `0` is the
+finite set of code positions already inspected and slot `1` is the target
+ordinal code.  The two witnesses are the represented raw set and its current
+Ackermann code. -/
+def setOrdinalRangeAccumulator : Form :=
+  fEx (fEx
+    (fAnd (HF_setOrdinalRepAt 1 0)
+      (fAnd (HF_ordinalLikeAt 0)
+        (fAll
+          (fImp (HF_ordinalLikeAt 0)
+            (fIff (HF_compositeMemAt 0 1)
+              (fAnd (HF_compositeMemAt 0 4) (fMem 0 3))))))))
+
+theorem setOrdinalRangeAccumulator_spec
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (env : Nat → α) :
+    Sat M.mem env setOrdinalRangeAccumulator ↔
+      ∃ raw code,
+        ModelSetOrdinalRep M.toFirstOrderAdjunctionModel
+          (scons code (scons raw env)) raw code ∧
+        OrdinalLike M.mem code ∧
+        ∀ query,
+          OrdinalLike M.mem query →
+            (ModelCompositeMem M.toFirstOrderAdjunctionModel query code ↔
+              ModelCompositeMem M.toFirstOrderAdjunctionModel query (env 1) ∧
+                M.mem query (env 0)) := by
+  let N := M.toFirstOrderAdjunctionModel
+  constructor
+  · rintro ⟨raw, code, hrepSat, hcodeSat, hinvariantSat⟩
+    let E : Nat → α := scons code (scons raw env)
+    have hrep : ModelSetOrdinalRep N E raw code := by
+      apply (HF_setOrdinalRepAt_model N E 1 0).mp
+      simpa [E, scons] using hrepSat
+    have hcode : OrdinalLike M.mem code := by
+      apply (HF_ordinalLikeAt_spec E 0).mp
+      simpa [E, scons] using hcodeSat
+    refine ⟨raw, code, hrep, hcode, ?_⟩
+    intro query hquery
+    let Eq : Nat → α := scons query E
+    have hquerySat : Sat M.mem Eq (HF_ordinalLikeAt 0) :=
+      (HF_ordinalLikeAt_spec Eq 0).mpr hquery
+    have hpoint := hinvariantSat query (by
+      simpa [E, Eq, scons] using hquerySat)
+    rw [Sat_fIff,
+      HF_compositeMemAt_model N Eq 0 1] at hpoint
+    change ModelCompositeMem N (Eq 0) (Eq 1) ↔
+      (Sat M.mem Eq (HF_compositeMemAt 0 4) ∧ M.mem (Eq 0) (Eq 3))
+      at hpoint
+    rw [HF_compositeMemAt_model N Eq 0 4] at hpoint
+    simpa [E, Eq, scons] using hpoint
+  · rintro ⟨raw, code, hrep, hcode, hinvariant⟩
+    let E : Nat → α := scons code (scons raw env)
+    refine ⟨raw, code, ?_, ?_, ?_⟩
+    · apply (HF_setOrdinalRepAt_model N E 1 0).mpr
+      simpa [E, scons] using hrep
+    · apply (HF_ordinalLikeAt_spec E 0).mpr
+      simpa [E, scons] using hcode
+    · intro query hquerySat
+      let Eq : Nat → α := scons query E
+      have hquery : OrdinalLike M.mem query :=
+        (HF_ordinalLikeAt_spec Eq 0).mp (by
+          simpa [E, Eq, scons] using hquerySat)
+      rw [Sat_fIff,
+        HF_compositeMemAt_model N Eq 0 1]
+      change ModelCompositeMem N (Eq 0) (Eq 1) ↔
+        (Sat M.mem Eq (HF_compositeMemAt 0 4) ∧ M.mem (Eq 0) (Eq 3))
+      rw [HF_compositeMemAt_model N Eq 0 4]
+      simpa [E, Eq, scons] using hinvariant query hquery
+
+/-- Ackermann membership between ordinal codes lies below the target ordinal
+in the ambient HF membership relation. -/
+def ModelCompositeMemBelowLaw
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α) : Prop :=
+  ∀ {elemCode setCode},
+    OrdinalLike M.mem elemCode →
+    OrdinalLike M.mem setCode →
+    ModelCompositeMem M.toFirstOrderAdjunctionModel elemCode setCode →
+      M.mem elemCode setCode
+
+theorem ModelCompositeMemBelowLaw_finite
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α) :
+    ModelCompositeMemBelowLaw M := by
+  intro elemCode setCode helem hset hcomp
+  exact ModelCompositeMem_mem_finite M helem hset hcomp
+
+/-- Outer ordinal induction supplies exact representations of target members;
+inner finite-generation induction scans a finite subset of the target ordinal
+and maintains an exact representation of precisely the target bits already
+encountered. -/
+theorem ModelSetOrdinalRepRangeLaw_of_empty_below
+    {α : Type u} (M : FirstOrderFiniteAdjunctionModel α)
+    (hempty : ∀ rootEnv,
+      ModelSetOrdinalRep M.toFirstOrderAdjunctionModel
+        rootEnv M.empty M.empty)
+    (hbelow : ModelCompositeMemBelowLaw M) :
+    ModelSetOrdinalRepRangeLaw M.toFirstOrderAdjunctionModel := by
+  classical
+  let N := M.toFirstOrderAdjunctionModel
+  intro tail target htarget
+  let rangeForm : Form :=
+    fImp (HF_ordinalLikeAt 0) (fEx (HF_setOrdinalRepAt 0 1))
+  have houter := M.induction_schema rangeForm tail
+  have hall : ∀ code,
+      Sat M.mem (scons code tail) rangeForm := by
+    apply (HF_induction_form_spec rangeForm tail).mp houter
+    intro code hmembers hcodeSat
+    have hcode : OrdinalLike M.mem code :=
+      (HF_ordinalLikeAt_spec (scons code tail) 0).mp hcodeSat
+    let codeEnv : Nat → α := scons code tail
+    let subsetAccumulator : Form :=
+      fImp (HF_subsetAt 0 1) setOrdinalRangeAccumulator
+    have hfinite := M.finite_induction_schema subsetAccumulator codeEnv
+    have hsubsets : ∀ current,
+        Sat M.mem (scons current codeEnv) subsetAccumulator := by
+      apply (HF_finite_induction_form_spec subsetAccumulator codeEnv).mp hfinite
+      constructor
+      · intro emptyLike hemptyLike _hsubset
+        have hemptyEq : emptyLike = M.empty := by
+          apply M.extensional
+          intro x
+          constructor
+          · intro hx
+            exact False.elim (hemptyLike x hx)
+          · intro hx
+            exact False.elim (M.empty_spec x hx)
+        subst emptyLike
+        let currentEnv : Nat → α := scons M.empty codeEnv
+        let repEnv : Nat → α :=
+          scons M.empty (scons M.empty currentEnv)
+        rcases hempty repEnv with
+          ⟨emptyRelation, hemptyRoot, hemptyCertificate⟩
+        let hemptyRep : ModelSetOrdinalRep N repEnv M.empty M.empty :=
+          ⟨emptyRelation, hemptyRoot, hemptyCertificate⟩
+        have hemptyLocal := ModelSetOrdinalRepCertificate_root_model N
+          hemptyCertificate hemptyRoot
+        apply (setOrdinalRangeAccumulator_spec M currentEnv).mpr
+        refine ⟨M.empty, M.empty, hemptyRep,
+          FirstOrderAdjunctionModel.ordinalLike_empty N, ?_⟩
+        intro query hquery
+        constructor
+        · intro hqueryEmpty
+          rcases hemptyLocal.2.2 query hquery hqueryEmpty with
+            ⟨represented, hrepresentedRoot⟩
+          have hrepresentedEmpty : M.mem represented M.empty :=
+            (hemptyLocal.2.1 represented).mpr
+              ⟨query, hrepresentedRoot, hqueryEmpty⟩
+          exact False.elim (M.empty_spec represented hrepresentedEmpty)
+        · rintro ⟨_hqueryCode, hqueryEmpty⟩
+          exact False.elim (M.empty_spec query hqueryEmpty)
+      · intro old elem newCurrent hcurrentAdjoin hOld
+        intro hnewSubsetSat
+        let newCurrentEnv : Nat → α := scons newCurrent codeEnv
+        have hnewSubset : ∀ x, M.mem x newCurrent → M.mem x code :=
+          (HF_subsetAt_spec newCurrentEnv 0 1).mp (by
+            simpa [newCurrentEnv, codeEnv, scons] using hnewSubsetSat)
+        let oldEnv : Nat → α := scons old codeEnv
+        have holdSubsetSat : Sat M.mem oldEnv (HF_subsetAt 0 1) := by
+          apply (HF_subsetAt_spec oldEnv 0 1).mpr
+          intro x hx
+          exact hnewSubset x ((hcurrentAdjoin x).mpr (Or.inl hx))
+        have hOldAccumulatorSat :
+            Sat M.mem oldEnv setOrdinalRangeAccumulator :=
+          hOld (by simpa [oldEnv] using holdSubsetSat)
+        rcases (setOrdinalRangeAccumulator_spec M oldEnv).mp
+            hOldAccumulatorSat with
+          ⟨oldRaw, oldCode, holdRep, holdCodeOrd, holdInvariant⟩
+        have helemCode : M.mem elem code :=
+          hnewSubset elem ((hcurrentAdjoin elem).mpr (Or.inr rfl))
+        have helemCodeOrd : OrdinalLike M.mem elem :=
+          OrdinalLike.of_mem hcode helemCode
+        by_cases helemBit : ModelCompositeMem N elem code
+        · have helemOuter : Sat M.mem (scons elem tail) rangeForm :=
+            hmembers elem helemCode
+          have helemOrdSat :
+              Sat M.mem (scons elem tail) (HF_ordinalLikeAt 0) :=
+            (HF_ordinalLikeAt_spec (scons elem tail) 0).mpr helemCodeOrd
+          have helemRangeSat :
+              Sat M.mem (scons elem tail)
+                (fEx (HF_setOrdinalRepAt 0 1)) :=
+            helemOuter helemOrdSat
+          rcases helemRangeSat with ⟨elemRaw, helemRepSat⟩
+          let elemRepEnv : Nat → α := scons elemRaw (scons elem tail)
+          have helemRep : ModelSetOrdinalRep N elemRepEnv elemRaw elem := by
+            apply (HF_setOrdinalRepAt_model N elemRepEnv 0 1).mp
+            simpa [elemRepEnv, scons] using helemRepSat
+          rcases ModelCompositeAdjoinCodeLaw_finite M
+              oldCode elem holdCodeOrd helemCodeOrd with
+            ⟨newCode, C⟩
+          let newRaw : α := N.adjoin oldRaw elemRaw
+          have hrawAdjoin : ∀ x,
+              M.mem x newRaw ↔ M.mem x oldRaw ∨ x = elemRaw := by
+            intro x
+            exact N.adjoin_spec x oldRaw elemRaw
+          let commonEnv : Nat → α := canonicalRepEnv N
+          have holdCommon : ModelSetOrdinalRep N commonEnv oldRaw oldCode :=
+            ModelSetOrdinalRep_changeEnv N holdRep
+          have helemCommon : ModelSetOrdinalRep N commonEnv elemRaw elem :=
+            ModelSetOrdinalRep_changeEnv N helemRep
+          have hnewRepCommon :
+              ModelSetOrdinalRep N commonEnv newRaw newCode :=
+            ModelSetOrdinalRep_adjoin_exact M
+              hrawAdjoin holdCommon helemCommon C
+          let newRepEnv : Nat → α :=
+            scons newCode (scons newRaw newCurrentEnv)
+          have hnewRep : ModelSetOrdinalRep N newRepEnv newRaw newCode :=
+            ModelSetOrdinalRep_changeEnv N hnewRepCommon
+          apply (setOrdinalRangeAccumulator_spec M
+            newCurrentEnv).mpr
+          refine ⟨newRaw, newCode, hnewRep, C.newCode_ordinal, ?_⟩
+          intro query hquery
+          rw [C.code_adjoin query hquery, holdInvariant query hquery]
+          constructor
+          · intro hqueryNew
+            rcases hqueryNew with
+              ⟨hqueryTarget, hqueryOld⟩ | hqueryElem
+            · exact ⟨hqueryTarget,
+                (hcurrentAdjoin query).mpr (Or.inl hqueryOld)⟩
+            · subst query
+              exact ⟨helemBit,
+                (hcurrentAdjoin elem).mpr (Or.inr rfl)⟩
+          · rintro ⟨hqueryTarget, hqueryCurrent⟩
+            rcases (hcurrentAdjoin query).mp hqueryCurrent with
+              hqueryOld | hqueryElem
+            · exact Or.inl ⟨hqueryTarget, hqueryOld⟩
+            · exact Or.inr hqueryElem
+        · let newRepEnv : Nat → α :=
+            scons oldCode (scons oldRaw newCurrentEnv)
+          have holdNewEnv :
+              ModelSetOrdinalRep N newRepEnv oldRaw oldCode :=
+            ModelSetOrdinalRep_changeEnv N holdRep
+          apply (setOrdinalRangeAccumulator_spec M
+            newCurrentEnv).mpr
+          refine ⟨oldRaw, oldCode, holdNewEnv, holdCodeOrd, ?_⟩
+          intro query hquery
+          rw [holdInvariant query hquery]
+          constructor
+          · rintro ⟨hqueryTarget, hqueryOld⟩
+            exact ⟨hqueryTarget,
+              (hcurrentAdjoin query).mpr (Or.inl hqueryOld)⟩
+          · rintro ⟨hqueryTarget, hqueryCurrent⟩
+            rcases (hcurrentAdjoin query).mp hqueryCurrent with
+              hqueryOld | hqueryElem
+            · exact ⟨hqueryTarget, hqueryOld⟩
+            · subst query
+              exact False.elim (helemBit hqueryTarget)
+    have hselfSubset :
+        Sat M.mem (scons code codeEnv) (HF_subsetAt 0 1) := by
+      apply (HF_subsetAt_spec (scons code codeEnv) 0 1).mpr
+      intro x hx
+      exact hx
+    have hfinalAccumulatorSat : Sat M.mem
+        (scons code codeEnv) setOrdinalRangeAccumulator :=
+      hsubsets code hselfSubset
+    rcases (setOrdinalRangeAccumulator_spec M
+        (scons code codeEnv)).mp hfinalAccumulatorSat with
+      ⟨raw, accumulatedCode, hrep, haccumulatedOrd, hinvariant⟩
+    have hcodeEq : accumulatedCode = code := by
+      apply (ModelCompositeMemExtensionalLaw_finite M)
+        accumulatedCode code haccumulatedOrd hcode
+      intro query hquery
+      rw [hinvariant query hquery]
+      constructor
+      · exact fun h ↦ h.1
+      · intro hqueryCode
+        exact ⟨hqueryCode, hbelow hquery hcode hqueryCode⟩
+    refine ⟨raw, ?_⟩
+    let resultEnv : Nat → α := scons raw (scons code tail)
+    apply (HF_setOrdinalRepAt_model N resultEnv 0 1).mpr
+    have hrepResult : ModelSetOrdinalRep N resultEnv raw accumulatedCode :=
+      ModelSetOrdinalRep_changeEnv N hrep
+    simpa [resultEnv, hcodeEq, scons] using hrepResult
+  have htargetSat :
+      Sat M.mem (scons target tail) (HF_ordinalLikeAt 0) :=
+    (HF_ordinalLikeAt_spec (scons target tail) 0).mpr htarget
+  have htargetRangeSat :
+      Sat M.mem (scons target tail) (fEx (HF_setOrdinalRepAt 0 1)) :=
+    hall target htargetSat
+  rcases htargetRangeSat with ⟨set, hrepSat⟩
+  refine ⟨set, ?_⟩
+  have hrep : ModelSetOrdinalRep N
+      (scons set (scons target tail)) set target := by
+    exact (HF_setOrdinalRepAt_model N
+      (scons set (scons target tail)) 0 1).mp hrepSat
+  exact ModelSetOrdinalRep_changeEnv N hrep
+
+/-- Every HFFin model reconstructed by relative completeness realizes every
+ordinal code as the code of a represented finite set. -/
+theorem HFFinModelSetOrdinalRepRangeLaw_finite :
+    HFFinModelSetOrdinalRepRangeLaw := by
+  intro α mem v hHF
+  let M : FirstOrderFiniteAdjunctionModel α :=
+    firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  apply ModelSetOrdinalRepRangeLaw_of_empty_below M
+  · intro rootEnv
+    exact ModelSetOrdinalRep_empty_of_HFFinAx_s v hHF rootEnv
+  · exact ModelCompositeMemBelowLaw_finite M
 
 /-- The easy direction of `SetOrdinalRepresentationProofs.range`: every
 represented code is ordinal-like. -/
@@ -4455,8 +4849,7 @@ theorem BProv_HFFin_setOrdinalRep_range_reverse
   apply (HF_ordinalLikeAt_spec v code).mpr
   exact (hcertificate.2 set (v code) hroot).1
 
-/-- The full deductive range field follows from precisely the remaining
-model-level ordinal-surjectivity law. -/
+/-- A model-level ordinal-surjectivity law implies the deductive range field. -/
 theorem BProv_HFFin_setOrdinalRep_range_of_model_range
     (hmodel : HFFinModelSetOrdinalRepRangeLaw)
     (G : List Form) (code : Nat) :
@@ -4491,13 +4884,21 @@ theorem BProv_HFFin_setOrdinalRep_range_of_model_range
     apply (HF_ordinalLikeAt_spec v code).mpr
     exact (hcertificate.2 set (v code) hroot).1
 
-/-- The concrete totality theorem and merge-derived structural fields reduce
-the full representation package to the single HFFin-model range law. -/
-def SetOrdinalRepresentationProofs_of_model_range
-    (hrange : HFFinModelSetOrdinalRepRangeLaw) :
-    SetOrdinalRepresentationProofs where
+/-- The set-to-ordinal representation relation has exactly the ordinal-like
+codes as its range in HFFin. -/
+theorem BProv_HFFin_setOrdinalRep_range
+    (G : List Form) (code : Nat) :
+    BProv HFFinAx_s G
+      (fIff (HF_ordinalLikeAt code)
+        (fEx (HF_setOrdinalRepAt 0 (code+1)))) :=
+  BProv_HFFin_setOrdinalRep_range_of_model_range
+    HFFinModelSetOrdinalRepRangeLaw_finite G code
+
+/-- Complete unconditional proof package for the internal set-to-ordinal
+representation relation. -/
+def setOrdinalRepresentationProofs : SetOrdinalRepresentationProofs where
   total := BProv_HFFin_setOrdinalRep_total
-  range := BProv_HFFin_setOrdinalRep_range_of_model_range hrange
+  range := BProv_HFFin_setOrdinalRep_range
   code_functional := BProv_HFFin_setOrdinalRep_code_functional
   set_injective := BProv_HFFin_setOrdinalRep_set_injective
   mem_exact := BProv_HFFin_setOrdinalRep_mem_exact
