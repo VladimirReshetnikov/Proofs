@@ -9308,6 +9308,81 @@ Proof.
   - now rewrite IHt1, IHt2.
 Qed.
 
+(* Lean: term_subst_up_up_up_substZero_rename_four_succ *)
+Lemma term_subst_up_up_up_substZero_rename_four_succ : forall t,
+  Term.subst
+      (Term.upSubst (Term.upSubst (Term.upSubst substZero)))
+      (Term.rename (fun n => n + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n => n + 1 + 1 + 1) t.
+Proof.
+  intro t.
+  assert (hzero : substZero = instTerm tZero).
+  {
+    apply functional_extensionality.
+    intros [|n]; reflexivity.
+  }
+  rewrite hzero.
+  replace (Term.rename (fun n => n + 1 + 1 + 1 + 1) t)
+    with (Term.rename (fun n => S (S (S (S n)))) t)
+    by (apply Term.rename_ext; intro n; lia).
+  replace (Term.rename (fun n => n + 1 + 1 + 1) t)
+    with (Term.rename (fun n => S (S (S n))) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_up_up_up_instTerm_rename_four_succ t tZero).
+Qed.
+
+(* Lean: term_subst_up_substZero_rename_two_succ *)
+Lemma term_subst_up_substZero_rename_two_succ : forall t,
+  Term.subst (Term.upSubst substZero)
+      (Term.rename (fun n => n + 1 + 1) t) =
+    Term.rename S t.
+Proof.
+  intro t.
+  assert (hzero : substZero = instTerm tZero).
+  {
+    apply functional_extensionality.
+    intros [|n]; reflexivity.
+  }
+  rewrite hzero.
+  replace (Term.rename (fun n => n + 1 + 1) t)
+    with (Term.rename (fun n => S (S n)) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_upSubst_instTerm_rename_two_succ t tZero).
+Qed.
+
+(* Lean: term_subst_up_substSuccVar_rename_two_succ *)
+Lemma term_subst_up_substSuccVar_rename_two_succ : forall t,
+  Term.subst (Term.upSubst substSuccVar)
+      (Term.rename (fun n => n + 1 + 1) t) =
+    Term.rename (fun n => n + 1 + 1) t.
+Proof.
+  intro t.
+  replace (Term.rename (fun n => n + 1 + 1) t)
+    with (Term.rename S (Term.rename S t))
+    by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
+  rewrite Term.subst_rename_succ_up.
+  rewrite term_substSuccVar_rename_succ.
+  reflexivity.
+Qed.
+
+(* Lean: term_subst_up_up_up_substSuccVar_rename_four_succ *)
+Lemma term_subst_up_up_up_substSuccVar_rename_four_succ : forall t,
+  Term.subst
+      (Term.upSubst (Term.upSubst (Term.upSubst substSuccVar)))
+      (Term.rename (fun n => n + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n => n + 1 + 1 + 1 + 1) t.
+Proof.
+  intro t.
+  replace (Term.rename (fun n => n + 1 + 1 + 1 + 1) t)
+    with (Term.rename S
+      (Term.rename S (Term.rename S (Term.rename S t))))
+    by (repeat rewrite Term.rename_comp;
+        apply Term.rename_ext; intro n; lia).
+  repeat rewrite Term.subst_rename_succ_up.
+  rewrite term_substSuccVar_rename_succ.
+  reflexivity.
+Qed.
+
 Definition substSuccAt (p : nat) : nat -> term :=
   fun n => if n =? p then tSucc (tVar p) else tVar n.
 
@@ -19549,6 +19624,15 @@ Definition betaModTerm (step idx : nat) : term :=
 Definition betaModTermTerm (step idx : term) : term :=
   tSucc (tMul (tSucc idx) step).
 
+(* Lean: betaPrefixDividesTermAt *)
+Definition betaPrefixDividesTermAt
+    (step bound product : term) : formula :=
+  pAll (pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (dvdTermTermAt
+      (betaModTermTerm (Term.rename S step) (tVar 0))
+      (Term.rename S product))).
+
 (* Lean: BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero *)
 Lemma BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero :
   forall G (step idx : term),
@@ -20956,6 +21040,30 @@ Definition crtInverseExistsTermAtOpenedContext
     map (rename S)
       (crtInverseExistsTermAtQuotEx product modulus ::
         map (rename S) G).
+
+(* Lean: betaPrefixCRTAccumulatorTermAt *)
+Definition betaPrefixCRTAccumulatorTermAt
+    (step target bound product : term) : formula :=
+  pAnd (betaPrefixDividesTermAt step bound product)
+    (crtInverseExistsTermAt product (betaModTermTerm step target)).
+
+(* Lean: betaPrefixCRTAccumulatorExistsTermAt *)
+Definition betaPrefixCRTAccumulatorExistsTermAt
+    (step target bound : term) : formula :=
+  pEx (betaPrefixCRTAccumulatorTermAt
+    (Term.rename S step)
+    (Term.rename S target)
+    (Term.rename S bound)
+    (tVar 0)).
+
+(* Lean: betaPrefixCRTAccumulatorExistsTermAtBody *)
+Definition betaPrefixCRTAccumulatorExistsTermAtBody
+    (step target bound : term) : formula :=
+  betaPrefixCRTAccumulatorTermAt
+    (Term.rename S step)
+    (Term.rename S target)
+    (Term.rename S bound)
+    (tVar 0).
 
 (* Lean: BProv_Ax_s_remTermTermAt_of_eq_modulus *)
 Lemma BProv_Ax_s_remTermTermAt_of_eq_modulus :
@@ -30994,6 +31102,134 @@ Proof.
   intros e step idx.
   unfold betaModTermTerm. simpl.
   lia.
+Qed.
+
+(* Lean: betaPrefixDividesTermAt_nat *)
+Lemma betaPrefixDividesTermAt_nat :
+  forall (e : nat -> nat) step bound product,
+  Sat natModel e (betaPrefixDividesTermAt step bound product) <->
+    forall i, i < Term.eval natModel e bound ->
+      Nat.divide (BetaModulus (Term.eval natModel e step) i)
+        (Term.eval natModel e product).
+Proof.
+  intros e step bound product.
+  unfold betaPrefixDividesTermAt. simpl.
+  split.
+  - intros h i hi.
+    assert (hiSat : Sat natModel (scons nat i e)
+        (ltTermAt (tVar 0) (Term.rename S bound))).
+    {
+      apply (proj2 (ltTermAt_nat (scons nat i e)
+        (tVar 0) (Term.rename S bound))).
+      rewrite Term.eval_rename.
+      simpl. exact hi.
+    }
+    pose proof (proj1 (dvdTermTermAt_nat (scons nat i e)
+      (betaModTermTerm (Term.rename S step) (tVar 0))
+      (Term.rename S product)) (h i hiSat)) as hdvd.
+    repeat rewrite Term.eval_rename in hdvd.
+    rewrite betaModTermTerm_nat in hdvd.
+    repeat rewrite Term.eval_rename in hdvd.
+    simpl in hdvd.
+    unfold BetaModulus.
+    replace (1 + S i * Term.eval natModel e step)
+      with (S (Term.eval natModel e step +
+        i * Term.eval natModel e step)) by lia.
+    exact hdvd.
+  - intros h i hiSat.
+    assert (hi : i < Term.eval natModel e bound).
+    {
+      pose proof (proj1 (ltTermAt_nat (scons nat i e)
+        (tVar 0) (Term.rename S bound)) hiSat) as hlt.
+      rewrite Term.eval_rename in hlt.
+      simpl in hlt. exact hlt.
+    }
+    apply (proj2 (dvdTermTermAt_nat (scons nat i e)
+      (betaModTermTerm (Term.rename S step) (tVar 0))
+      (Term.rename S product))).
+    repeat rewrite Term.eval_rename.
+    rewrite betaModTermTerm_nat.
+    repeat rewrite Term.eval_rename.
+    simpl.
+    pose proof (h i hi) as hdiv.
+    unfold BetaModulus in hdiv.
+    replace
+      (S (Term.eval natModel e step +
+        i * Term.eval natModel e step))
+      with (1 + S i * Term.eval natModel e step) by lia.
+    exact hdiv.
+Qed.
+
+(* Lean: betaPrefixCRTAccumulatorTermAt_nat *)
+Lemma betaPrefixCRTAccumulatorTermAt_nat :
+  forall (e : nat -> nat) step target bound product,
+  Sat natModel e
+      (betaPrefixCRTAccumulatorTermAt step target bound product) <->
+    (forall i, i < Term.eval natModel e bound ->
+      Nat.divide (BetaModulus (Term.eval natModel e step) i)
+        (Term.eval natModel e product)) /\
+    exists inverse quotient,
+      Term.eval natModel e product * inverse =
+        S (BetaModulus (Term.eval natModel e step)
+          (Term.eval natModel e target) * quotient).
+Proof.
+  intros e step target bound product.
+  unfold betaPrefixCRTAccumulatorTermAt. simpl.
+  split.
+  - intros [hprefix hinverse].
+    split.
+    + exact (proj1 (betaPrefixDividesTermAt_nat
+        e step bound product) hprefix).
+    + pose proof (proj1 (crtInverseExistsTermAt_nat e product
+        (betaModTermTerm step target)) hinverse) as hspec.
+      rewrite betaModTermTerm_nat in hspec.
+      unfold BetaModulus.
+      exact hspec.
+  - intros [hprefix hinverse].
+    split.
+    + exact (proj2 (betaPrefixDividesTermAt_nat
+        e step bound product) hprefix).
+    + apply (proj2 (crtInverseExistsTermAt_nat e product
+        (betaModTermTerm step target))).
+      rewrite betaModTermTerm_nat.
+      unfold BetaModulus in hinverse.
+      exact hinverse.
+Qed.
+
+(* Lean: betaPrefixCRTAccumulatorExistsTermAt_nat *)
+Lemma betaPrefixCRTAccumulatorExistsTermAt_nat :
+  forall (e : nat -> nat) step target bound,
+  Sat natModel e
+      (betaPrefixCRTAccumulatorExistsTermAt step target bound) <->
+    exists product,
+      (forall i, i < Term.eval natModel e bound ->
+        Nat.divide (BetaModulus (Term.eval natModel e step) i) product) /\
+      exists inverse quotient,
+        product * inverse =
+          S (BetaModulus (Term.eval natModel e step)
+            (Term.eval natModel e target) * quotient).
+Proof.
+  intros e step target bound.
+  unfold betaPrefixCRTAccumulatorExistsTermAt. simpl.
+  split.
+  - intros [product hproduct].
+    exists product.
+    pose proof (proj1 (betaPrefixCRTAccumulatorTermAt_nat
+      (scons nat product e)
+      (Term.rename S step) (Term.rename S target)
+      (Term.rename S bound) (tVar 0)) hproduct) as hspec.
+    repeat rewrite Term.eval_rename in hspec.
+    simpl in hspec.
+    exact hspec.
+  - intros [product hproduct].
+    exists product.
+    apply (proj2 (betaPrefixCRTAccumulatorTermAt_nat
+      (scons nat product e)
+      (Term.rename S step) (Term.rename S target)
+      (Term.rename S bound) (tVar 0))).
+    repeat rewrite Term.eval_rename.
+    simpl.
+    exact hproduct.
 Qed.
 
 Lemma remAt_nat : forall (e : nat -> nat) rem value modulus,

@@ -105,6 +105,10 @@ Check PA.Formula.subst_instTerm_subst_up.
 Check PA.Formula.map_subst_rename_succ_up.
 Check PA.Formula.term_substZero_rename_succ.
 Check PA.Formula.term_substSuccVar_rename_succ.
+Check PA.Formula.term_subst_up_up_up_substZero_rename_four_succ.
+Check PA.Formula.term_subst_up_substZero_rename_two_succ.
+Check PA.Formula.term_subst_up_substSuccVar_rename_two_succ.
+Check PA.Formula.term_subst_up_up_up_substSuccVar_rename_four_succ.
 Check PA.Formula.rename_hfMemAt.
 Check PA.Formula.leConstAt.
 Check PA.Formula.succPredAt.
@@ -332,6 +336,13 @@ Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_rem.
 Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero.
 Check PA.Formula.BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero.
 Check PA.Formula.betaModTermTerm_nat.
+Check PA.Formula.betaPrefixDividesTermAt.
+Check PA.Formula.betaPrefixCRTAccumulatorTermAt.
+Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAt.
+Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAtBody.
+Check PA.Formula.betaPrefixDividesTermAt_nat.
+Check PA.Formula.betaPrefixCRTAccumulatorTermAt_nat.
+Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAt_nat.
 Check PA.Formula.remTermTermAt_nat.
 Check PA.Formula.betaTermTermAt_nat_entry.
 Check PA.Formula.betaTermTermAtSuccIdx_nat_entry.
