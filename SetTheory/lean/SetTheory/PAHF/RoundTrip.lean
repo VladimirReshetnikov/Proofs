@@ -6031,6 +6031,1965 @@ def OrdinalCodeTermAddCompatibility : Prop :=
     OrdinalCodeTermGraphProof b →
     OrdinalCodeTermGraphProof (Term.add a b)
 
+/-! ## Addition compatibility for ordinal-code term graphs -/
+
+private def addLeftShift : Nat → Nat
+  | 0 => 1
+  | n+1 => n+3
+
+private def addRightShift : Nat → Nat
+  | 0 => 0
+  | n+1 => n+3
+
+theorem hfFormulaAt_add_left_termGraph_eq_composite
+    (codedOut : Nat) (codedMap : Nat → Nat) (t : Term) :
+    hfFormulaAt
+        (hfUpVarMap (hfUpVarMap
+          (codedTermSlotMap codedOut codedMap)))
+        (AckermannHF.PAInHF.termGraphAt (fun n ↦ n+3) 1 t) =
+      compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) t := by
+  let graph : Form :=
+    AckermannHF.PAInHF.termGraphAt (fun n ↦ n+1) 0 t
+  have hgraph : SetTheory.rename addLeftShift graph =
+      AckermannHF.PAInHF.termGraphAt (fun n ↦ n+3) 1 t := by
+    simpa [graph, addLeftShift] using
+      (AckermannHF.PAInHF.termGraphAt_rename t
+        (ρ := fun n ↦ n+1) (out := 0) (r := addLeftShift))
+  rw [← hgraph, hfFormulaAt_source_rename]
+  apply hfFormulaAt_ext
+  intro n
+  cases n <;> rfl
+
+theorem hfFormulaAt_add_right_termGraph_eq_composite
+    (codedOut : Nat) (codedMap : Nat → Nat) (t : Term) :
+    hfFormulaAt
+        (hfUpVarMap (hfUpVarMap
+          (codedTermSlotMap codedOut codedMap)))
+        (AckermannHF.PAInHF.termGraphAt (fun n ↦ n+3) 0 t) =
+      compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) t := by
+  let graph : Form :=
+    AckermannHF.PAInHF.termGraphAt (fun n ↦ n+1) 0 t
+  have hgraph : SetTheory.rename addRightShift graph =
+      AckermannHF.PAInHF.termGraphAt (fun n ↦ n+3) 0 t := by
+    simpa [graph, addRightShift] using
+      (AckermannHF.PAInHF.termGraphAt_rename t
+        (ρ := fun n ↦ n+1) (out := 0) (r := addRightShift))
+  rw [← hgraph, hfFormulaAt_source_rename]
+  apply hfFormulaAt_ext
+  intro n
+  cases n <;> rfl
+
+def compositeAddGraphAt
+    (codedOut : Nat) (codedMap : Nat → Nat) : Formula :=
+  hfFormulaAt
+    (hfUpVarMap (hfUpVarMap
+      (codedTermSlotMap codedOut codedMap)))
+    (AckermannHF.PAInHF.addGraphAt 2 1 0)
+
+private def compositeAddCoreSlotMap (codedOut : Nat) : Nat → Nat
+  | 0 => 0
+  | 1 => 1
+  | n+2 => codedOut + n + 2
+
+def compositeAddCoreAt (codedOut : Nat) : Formula :=
+  hfFormulaAt (compositeAddCoreSlotMap codedOut)
+    (AckermannHF.PAInHF.addGraphAt 2 1 0)
+
+theorem compositeAddGraphAt_eq_core
+    (codedOut : Nat) (codedMap : Nat → Nat) :
+    compositeAddGraphAt codedOut codedMap =
+      compositeAddCoreAt codedOut := by
+  apply hfFormulaAt_ext_free
+  intro n hn
+  rcases AckermannHF.PAInHF.addGraphAt_free hn with rfl | rfl | rfl
+  · rfl
+  · rfl
+  · rfl
+
+theorem compositeTermGraphAt_add_normalForm
+    (codedOut : Nat) (codedMap : Nat → Nat) (a b : Term) :
+    compositeTermGraphAt codedOut codedMap (Term.add a b) =
+      ex (ex
+        (and
+          (compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) a)
+          (and
+            (compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) b)
+            (compositeAddCoreAt codedOut)))) := by
+  rw [← compositeAddGraphAt_eq_core codedOut codedMap]
+  simp [compositeTermGraphAt,
+    AckermannHF.PAInHF.termGraphAt, hfFormulaAt,
+    compositeAddGraphAt,
+    hfFormulaAt_add_left_termGraph_eq_composite,
+    hfFormulaAt_add_right_termGraph_eq_composite]
+
+/-- Arithmetic kernel left after the recursive subterm graphs have been
+normalized: the translated HF addition graph agrees with the beta-coded
+ordinal graph of PA addition. -/
+private def OrdinalCodeAddCoreCompatibility : Prop :=
+  ∀ {G : List Formula} {leftRaw rightRaw : Term} {codedOut : Nat},
+    BProv Ax_s G
+      (ordinalCodeGraphTermAt leftRaw (Term.var 1)) →
+    BProv Ax_s G
+      (ordinalCodeGraphTermAt rightRaw (Term.var 0)) →
+    BProv Ax_s G
+      (iffForm
+        (compositeAddCoreAt codedOut)
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw rightRaw) (Term.var (codedOut+2))))
+
+/-- Reverse translation of the HF addition graph while retaining explicit PA
+variable slots. -/
+def hfAddGraphAt (out left right : Nat) : Formula :=
+  hfFormulaAt (fun n : Nat ↦ n)
+    (AckermannHF.PAInHF.addGraphAt out left right)
+
+def addHFOrdinalLikeAt (slot : Nat) : Formula :=
+  hfFormulaAt (fun n : Nat ↦ n)
+    (AckermannHF.HF_ordinalLikeAt slot)
+
+theorem hfUpVarMap_id_add :
+    hfUpVarMap (fun n : Nat ↦ n) = (fun n : Nat ↦ n) := by
+  funext n
+  cases n <;> rfl
+
+def HF_addZeroRightSentence : SetTheory.Form :=
+  SetTheory.Form.fAll (SetTheory.Form.fAll (SetTheory.Form.fAll
+    (SetTheory.Form.fImp
+      (AckermannHF.HF_emptyAt 1)
+      (SetTheory.Form.fImp
+        (SetTheory.Form.fEq 0 2)
+        (AckermannHF.PAInHF.addGraphAt 0 2 1)))))
+
+theorem HF_addZeroRightSentence_sentence :
+    SetTheory.Sentence HF_addZeroRightSentence := by
+  intro i hi
+  simp only [HF_addZeroRightSentence, SetTheory.Free] at hi
+  rcases hi with hempty | heq | hadd
+  · have := AckermannHF.HF_emptyAt_free hempty
+    omega
+  · rcases heq with heq | heq <;> omega
+  · rcases AckermannHF.PAInHF.addGraphAt_free hadd with
+      hadd | hadd | hadd <;> omega
+
+theorem BProv_HFFin_addZeroRightSentence :
+    SetTheory.BProv AckermannHF.HFFinAx_s []
+      HF_addZeroRightSentence := by
+  apply SetTheory.completeness_inf AckermannHF.HFFinAx_s
+  · exact AckermannHF.Sentences_HFFin
+  · exact HF_addZeroRightSentence_sentence
+  · intro Dom mem v hHF
+    let M := AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+    intro left right out hright hout
+    let e : Nat → Dom :=
+      SetTheory.scons out (SetTheory.scons right (SetTheory.scons left v))
+    have hrightM : SetTheory.Sat M.mem e
+        (AckermannHF.HF_emptyAt 1) := by
+      change SetTheory.Sat mem e (AckermannHF.HF_emptyAt 1)
+      simpa [e, SetTheory.scons] using hright
+    apply AckermannHF.PAInHF.addGraphAt_zero_right_model
+      M.toFirstOrderAdjunctionModel e 0 2 1
+    · simpa [e, M, SetTheory.scons, SetTheory.Sat] using hout
+    · exact
+        (AckermannHF.FirstOrderAdjunctionModel.HF_emptyAt_empty
+          M.toFirstOrderAdjunctionModel e 1).mp
+          hrightM
+
+theorem translateHFFormula_addZeroRightSentence :
+    translateHFFormula HF_addZeroRightSentence =
+      all (all (all
+        (imp
+          (hfEmptyAt 1)
+          (imp
+            (eq (Term.var 0) (Term.var 2))
+            (hfAddGraphAt 0 2 1))))) := by
+  let ρ : Nat → Nat :=
+    hfUpVarMap (hfUpVarMap
+      (hfUpVarMap (fun n : Nat ↦ n)))
+  change all (all (all
+    (imp
+      (hfFormulaAt ρ (AckermannHF.HF_emptyAt 1))
+      (imp
+        (eq (Term.var (ρ 0)) (Term.var (ρ 2)))
+        (hfFormulaAt ρ
+          (AckermannHF.PAInHF.addGraphAt 0 2 1)))))) = _
+  have hρ : ∀ n, ρ n = n := by
+    intro n
+    simp only [ρ, hfUpVarMap_id_add]
+  rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
+    hρ 0, hρ 2]
+  rfl
+
+theorem BProv_Ax_s_addZeroRightSentence :
+    BProv Ax_s []
+      (all (all (all
+        (imp
+          (hfEmptyAt 1)
+          (imp
+            (eq (Term.var 0) (Term.var 2))
+            (hfAddGraphAt 0 2 1)))))) := by
+  have htranslated : BProv translatedHFFinAx []
+      (translateHFFormula HF_addZeroRightSentence) :=
+    BProv_translateHFFormula_of_BProv_HFFin
+      BProv_HFFin_addZeroRightSentence
+  have hpa : BProv Ax_s []
+      (translateHFFormula HF_addZeroRightSentence) :=
+    BProv_lift_translatedHFFinAx_to_PA
+      (fun f hf ↦ BProv_Ax_s_of_translatedHFFinAx hf)
+      htranslated
+  rwa [translateHFFormula_addZeroRightSentence] at hpa
+
+def HF_addSuccRightSentence : SetTheory.Form :=
+  SetTheory.Form.fAll (SetTheory.Form.fAll (SetTheory.Form.fAll
+    (SetTheory.Form.fAll (SetTheory.Form.fAll
+      (SetTheory.Form.fImp
+        (AckermannHF.HF_ordinalLikeAt 3)
+        (SetTheory.Form.fImp
+          (AckermannHF.HF_succAt 2 3)
+          (SetTheory.Form.fImp
+            (AckermannHF.HF_succAt 0 1)
+            (SetTheory.Form.fImp
+              (AckermannHF.PAInHF.addGraphAt 1 4 3)
+              (AckermannHF.PAInHF.addGraphAt 0 4 2)))))))))
+
+theorem HF_addSuccRightSentence_sentence :
+    SetTheory.Sentence HF_addSuccRightSentence := by
+  intro i hi
+  simp only [HF_addSuccRightSentence, SetTheory.Free] at hi
+  rcases hi with hord | hright | hout | hadd | hnext
+  · have := AckermannHF.HF_ordinalLikeAt_free hord
+    omega
+  · rcases AckermannHF.HF_succAt_free hright with h | h <;> omega
+  · rcases AckermannHF.HF_succAt_free hout with h | h <;> omega
+  · rcases AckermannHF.PAInHF.addGraphAt_free hadd with
+      h | h | h <;> omega
+  · rcases AckermannHF.PAInHF.addGraphAt_free hnext with
+      h | h | h <;> omega
+
+theorem BProv_HFFin_addSuccRightSentence :
+    SetTheory.BProv AckermannHF.HFFinAx_s []
+      HF_addSuccRightSentence := by
+  apply SetTheory.completeness_inf AckermannHF.HFFinAx_s
+  · exact AckermannHF.Sentences_HFFin
+  · exact HF_addSuccRightSentence_sentence
+  · intro Dom mem v hHF
+    let M := AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+    intro left right rightSucc out outSucc
+      hrightOrd hrightSucc houtSucc hadd
+    let e : Nat → Dom :=
+      SetTheory.scons outSucc
+        (SetTheory.scons out
+          (SetTheory.scons rightSucc
+            (SetTheory.scons right (SetTheory.scons left v))))
+    have hrightOrdM : SetTheory.Sat M.mem e
+        (AckermannHF.HF_ordinalLikeAt 3) := by
+      change SetTheory.Sat mem e (AckermannHF.HF_ordinalLikeAt 3)
+      simpa [e, SetTheory.scons] using hrightOrd
+    have hrightSuccM : SetTheory.Sat M.mem e
+        (AckermannHF.HF_succAt 2 3) := by
+      change SetTheory.Sat mem e (AckermannHF.HF_succAt 2 3)
+      simpa [e, SetTheory.scons] using hrightSucc
+    have houtSuccM : SetTheory.Sat M.mem e
+        (AckermannHF.HF_succAt 0 1) := by
+      change SetTheory.Sat mem e (AckermannHF.HF_succAt 0 1)
+      simpa [e, SetTheory.scons] using houtSucc
+    have haddM : SetTheory.Sat M.mem e
+        (AckermannHF.PAInHF.addGraphAt 1 4 3) := by
+      change SetTheory.Sat mem e
+        (AckermannHF.PAInHF.addGraphAt 1 4 3)
+      simpa [e, SetTheory.scons] using hadd
+    apply AckermannHF.PAInHF.addGraphAt_succ_right_of_addGraphAt_model
+      M.toFirstOrderAdjunctionModel e 0 1 4 2 3
+    · exact
+        (AckermannHF.HF_ordinalLikeAt_spec e 3).mp
+          hrightOrdM
+    · exact
+        (AckermannHF.FirstOrderAdjunctionModel.HF_succAt_spec
+          M.toFirstOrderAdjunctionModel e 2 3).mp
+          hrightSuccM
+    · exact
+        (AckermannHF.FirstOrderAdjunctionModel.HF_succAt_spec
+          M.toFirstOrderAdjunctionModel e 0 1).mp
+          houtSuccM
+    · exact haddM
+
+theorem translateHFFormula_addSuccRightSentence :
+    translateHFFormula HF_addSuccRightSentence =
+      all (all (all (all (all
+        (imp
+          (addHFOrdinalLikeAt 3)
+          (imp
+            (hfAdjoinGraphAt 2 3 3)
+            (imp
+              (hfAdjoinGraphAt 0 1 1)
+              (imp
+                (hfAddGraphAt 1 4 3)
+                (hfAddGraphAt 0 4 2))))))))) := by
+  let ρ : Nat → Nat :=
+    hfUpVarMap (hfUpVarMap (hfUpVarMap
+      (hfUpVarMap (hfUpVarMap (fun n : Nat ↦ n)))))
+  change all (all (all (all (all
+    (imp
+      (hfFormulaAt ρ (AckermannHF.HF_ordinalLikeAt 3))
+      (imp
+        (hfFormulaAt ρ (AckermannHF.HF_succAt 2 3))
+        (imp
+          (hfFormulaAt ρ (AckermannHF.HF_succAt 0 1))
+          (imp
+            (hfFormulaAt ρ
+              (AckermannHF.PAInHF.addGraphAt 1 4 3))
+            (hfFormulaAt ρ
+              (AckermannHF.PAInHF.addGraphAt 0 4 2)))))))))) = _
+  have hρ : ∀ n, ρ n = n := by
+    intro n
+    simp only [ρ, hfUpVarMap_id_add]
+  rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
+    hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
+    hfFormulaAt_ext _ hρ]
+  rfl
+
+theorem BProv_Ax_s_addSuccRightSentence :
+    BProv Ax_s []
+      (all (all (all (all (all
+        (imp
+          (addHFOrdinalLikeAt 3)
+          (imp
+            (hfAdjoinGraphAt 2 3 3)
+            (imp
+              (hfAdjoinGraphAt 0 1 1)
+              (imp
+                (hfAddGraphAt 1 4 3)
+                (hfAddGraphAt 0 4 2)))))))))) := by
+  have htranslated : BProv translatedHFFinAx []
+      (translateHFFormula HF_addSuccRightSentence) :=
+    BProv_translateHFFormula_of_BProv_HFFin
+      BProv_HFFin_addSuccRightSentence
+  have hpa : BProv Ax_s []
+      (translateHFFormula HF_addSuccRightSentence) :=
+    BProv_lift_translatedHFFinAx_to_PA
+      (fun f hf ↦ BProv_Ax_s_of_translatedHFFinAx hf)
+      htranslated
+  rwa [translateHFFormula_addSuccRightSentence] at hpa
+
+def HF_addFunctionalSentence : SetTheory.Form :=
+  SetTheory.Form.fAll (SetTheory.Form.fAll (SetTheory.Form.fAll
+    (SetTheory.Form.fAll
+      (SetTheory.Form.fImp
+        (AckermannHF.HF_ordinalLikeAt 2)
+        (SetTheory.Form.fImp
+          (AckermannHF.PAInHF.addGraphAt 1 3 2)
+          (SetTheory.Form.fImp
+            (AckermannHF.PAInHF.addGraphAt 0 3 2)
+            (SetTheory.Form.fEq 1 0)))))))
+
+theorem HF_addFunctionalSentence_sentence :
+    SetTheory.Sentence HF_addFunctionalSentence := by
+  intro i hi
+  simp only [HF_addFunctionalSentence, SetTheory.Free] at hi
+  rcases hi with hord | hadd₁ | hadd₂ | heq
+  · have := AckermannHF.HF_ordinalLikeAt_free hord
+    omega
+  · rcases AckermannHF.PAInHF.addGraphAt_free hadd₁ with
+      h | h | h <;> omega
+  · rcases AckermannHF.PAInHF.addGraphAt_free hadd₂ with
+      h | h | h <;> omega
+  · rcases heq with h | h <;> omega
+
+theorem BProv_HFFin_addFunctionalSentence :
+    SetTheory.BProv AckermannHF.HFFinAx_s []
+      HF_addFunctionalSentence := by
+  apply SetTheory.completeness_inf AckermannHF.HFFinAx_s
+  · exact AckermannHF.Sentences_HFFin
+  · exact HF_addFunctionalSentence_sentence
+  · intro Dom mem v hHF
+    let M := AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+    intro left right out₁ out₂ hrightOrd hadd₁ hadd₂
+    let e : Nat → Dom :=
+      SetTheory.scons out₂
+        (SetTheory.scons out₁
+          (SetTheory.scons right (SetTheory.scons left v)))
+    have hrightOrdM : SetTheory.Sat M.mem e
+        (AckermannHF.HF_ordinalLikeAt 2) := by
+      change SetTheory.Sat mem e (AckermannHF.HF_ordinalLikeAt 2)
+      simpa [e, SetTheory.scons] using hrightOrd
+    have hadd₁M : SetTheory.Sat M.mem e
+        (AckermannHF.PAInHF.addGraphAt 1 3 2) := by
+      change SetTheory.Sat mem e
+        (AckermannHF.PAInHF.addGraphAt 1 3 2)
+      simpa [e, SetTheory.scons] using hadd₁
+    have hadd₂M : SetTheory.Sat M.mem e
+        (AckermannHF.PAInHF.addGraphAt 0 3 2) := by
+      change SetTheory.Sat mem e
+        (AckermannHF.PAInHF.addGraphAt 0 3 2)
+      simpa [e, SetTheory.scons] using hadd₂
+    exact AckermannHF.PAInHF.addGraphAt_value_unique_finite_model
+      M e 1 0 3 2
+      ((AckermannHF.HF_ordinalLikeAt_spec e 2).mp
+        hrightOrdM)
+      hadd₁M hadd₂M
+
+theorem translateHFFormula_addFunctionalSentence :
+    translateHFFormula HF_addFunctionalSentence =
+      all (all (all (all
+        (imp
+          (addHFOrdinalLikeAt 2)
+          (imp
+            (hfAddGraphAt 1 3 2)
+            (imp
+              (hfAddGraphAt 0 3 2)
+              (eq (Term.var 1) (Term.var 0)))))))) := by
+  let ρ : Nat → Nat :=
+    hfUpVarMap (hfUpVarMap
+      (hfUpVarMap (hfUpVarMap (fun n : Nat ↦ n))))
+  change all (all (all (all
+    (imp
+      (hfFormulaAt ρ (AckermannHF.HF_ordinalLikeAt 2))
+      (imp
+        (hfFormulaAt ρ
+          (AckermannHF.PAInHF.addGraphAt 1 3 2))
+        (imp
+          (hfFormulaAt ρ
+            (AckermannHF.PAInHF.addGraphAt 0 3 2))
+          (eq (Term.var (ρ 1)) (Term.var (ρ 0))))))))) = _
+  have hρ : ∀ n, ρ n = n := by
+    intro n
+    simp only [ρ, hfUpVarMap_id_add]
+  rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
+    hfFormulaAt_ext _ hρ, hρ 1, hρ 0]
+  rfl
+
+theorem BProv_Ax_s_addFunctionalSentence :
+    BProv Ax_s []
+      (all (all (all (all
+        (imp
+          (addHFOrdinalLikeAt 2)
+          (imp
+            (hfAddGraphAt 1 3 2)
+            (imp
+              (hfAddGraphAt 0 3 2)
+              (eq (Term.var 1) (Term.var 0))))))))) := by
+  have htranslated : BProv translatedHFFinAx []
+      (translateHFFormula HF_addFunctionalSentence) :=
+    BProv_translateHFFormula_of_BProv_HFFin
+      BProv_HFFin_addFunctionalSentence
+  have hpa : BProv Ax_s []
+      (translateHFFormula HF_addFunctionalSentence) :=
+    BProv_lift_translatedHFFinAx_to_PA
+      (fun f hf ↦ BProv_Ax_s_of_translatedHFFinAx hf)
+      htranslated
+  rwa [translateHFFormula_addFunctionalSentence] at hpa
+
+private def addTermSubst
+    (out left right : Term) : Nat → Term
+  | 0 => right
+  | 1 => left
+  | 2 => out
+  | n+3 => Term.var (n+3)
+
+/-- Term-parametric form of the reverse-translated HF addition graph. -/
+def hfAddGraphTermAt
+    (out left right : Term) : Formula :=
+  subst (addTermSubst out left right)
+    (hfAddGraphAt 2 1 0)
+
+theorem hfAddGraphAt_eq_termAt
+    (out left right : Nat) :
+    hfAddGraphAt out left right =
+      hfAddGraphTermAt
+        (Term.var out) (Term.var left) (Term.var right) := by
+  let r : Nat → Nat
+    | 0 => right
+    | 1 => left
+    | 2 => out
+    | n+3 => n+3
+  have hsubst :
+      addTermSubst
+          (Term.var out) (Term.var left) (Term.var right) =
+        fun n ↦ Term.var (r n) := by
+    funext n
+    rcases n with _ | _ | _ | n <;> rfl
+  have hsource :
+      SetTheory.rename r
+          (AckermannHF.PAInHF.addGraphAt 2 1 0) =
+        AckermannHF.PAInHF.addGraphAt out left right := by
+    simpa [r] using
+      (AckermannHF.PAInHF.rename_addGraphAt r 2 1 0)
+  simp only [hfAddGraphTermAt, hsubst, subst_var_rename,
+    hfAddGraphAt, rename_hfFormulaAt]
+  rw [← hsource, hfFormulaAt_source_rename]
+
+theorem subst_hfAddGraphTermAt
+    (sigma : Nat → Term) (out left right : Term) :
+    subst sigma (hfAddGraphTermAt out left right) =
+      hfAddGraphTermAt
+        (Term.subst sigma out)
+        (Term.subst sigma left)
+        (Term.subst sigma right) := by
+  simp only [hfAddGraphTermAt, subst_comp]
+  apply subst_ext_free
+  intro n hn
+  rcases hfFormulaAt_free _ hn with ⟨m, hm, rfl⟩
+  rcases AckermannHF.PAInHF.addGraphAt_free hm with rfl | rfl | rfl
+  · rfl
+  · rfl
+  · rfl
+
+theorem rename_hfAddGraphTermAt
+    (r : Nat → Nat) (out left right : Term) :
+    rename r (hfAddGraphTermAt out left right) =
+      hfAddGraphTermAt
+        (Term.rename r out)
+        (Term.rename r left)
+        (Term.rename r right) := by
+  rw [← subst_var_rename]
+  simp only [subst_hfAddGraphTermAt,
+    term_subst_var_rename]
+
+theorem compositeAddCoreAt_eq_termAt
+    (codedOut : Nat) :
+    compositeAddCoreAt codedOut =
+      hfAddGraphTermAt
+        (Term.var (codedOut+2)) (Term.var 1) (Term.var 0) := by
+  rw [← hfAddGraphAt_eq_termAt]
+  simp only [compositeAddCoreAt, hfAddGraphAt]
+  let r : Nat → Nat := compositeAddCoreSlotMap codedOut
+  have hsource :
+      SetTheory.rename r
+          (AckermannHF.PAInHF.addGraphAt 2 1 0) =
+        AckermannHF.PAInHF.addGraphAt (codedOut+2) 1 0 := by
+    simpa [r, compositeAddCoreSlotMap] using
+      (AckermannHF.PAInHF.rename_addGraphAt r 2 1 0)
+  rw [← hsource, hfFormulaAt_source_rename]
+
+theorem BProv_Ax_s_hfAddGraphTermAt_zero_right
+    {G : List Formula} {out left right : Term}
+    (hright : BProv Ax_s G (hfEmptyTermAt right))
+    (hout : BProv Ax_s G (eq out left)) :
+    BProv Ax_s G (hfAddGraphTermAt out left right) := by
+  have hall : BProv Ax_s G
+      (all (all (all
+        (imp
+          (hfEmptyTermAt (Term.var 1))
+          (imp
+            (eq (Term.var 0) (Term.var 2))
+            (hfAddGraphTermAt
+              (Term.var 0) (Term.var 2) (Term.var 1))))))) := by
+    simpa only [hfEmptyAt, hfAddGraphAt_eq_termAt] using
+      (BProv_weaken_nil
+        (G := G) BProv_Ax_s_addZeroRightSentence)
+  have hleft := BProv_allE (B := Ax_s) (G := G) (t := left) hall
+  have hright₀ := BProv_allE (B := Ax_s) (G := G) (t := right) hleft
+  have hout₀ := BProv_allE (B := Ax_s) (G := G) (t := out) hright₀
+  have himp : BProv Ax_s G
+      (imp
+        (hfEmptyTermAt right)
+        (imp (eq out left)
+          (hfAddGraphTermAt out left right))) := by
+    simpa [subst_hfEmptyTermAt,
+      subst_hfAddGraphTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using hout₀
+  have hstep := BProv_mp Ax_s G _ _ himp hright
+  exact BProv_mp Ax_s G _ _ hstep hout
+
+theorem addHFOrdinalLikeAt_eq_domainTermAt (slot : Nat) :
+    addHFOrdinalLikeAt slot =
+      subst (instTerm (Term.var slot)) codedOrdinalDomain := by
+  have hsource :
+      SetTheory.rename (SetTheory.inst slot)
+          AckermannHF.PAInHF.domainForm =
+        AckermannHF.HF_ordinalLikeAt slot := by
+    simp [AckermannHF.PAInHF.domainForm,
+      AckermannHF.HF_ordinalLikeAt,
+      AckermannHF.HF_transitiveAt,
+      AckermannHF.HF_memTotalOnAt,
+      SetTheory.rename, SetTheory.up, SetTheory.inst]
+  simp only [addHFOrdinalLikeAt, codedOrdinalDomain,
+    translateHFFormula, subst_instTerm_var, rename_hfFormulaAt]
+  rw [← hsource, hfFormulaAt_source_rename]
+
+theorem subst_domainTermAt
+    (sigma : Nat → Term) (coded : Term) :
+    subst sigma (subst (instTerm coded) codedOrdinalDomain) =
+      subst (instTerm (Term.subst sigma coded))
+        codedOrdinalDomain := by
+  rw [subst_comp]
+  apply subst_ext_free
+  intro n hn
+  have hn₀ := codedOrdinalDomain_free hn
+  subst n
+  rfl
+
+theorem BProv_Ax_s_hfAddGraphTermAt_succ_right
+    {G : List Formula}
+    {outSucc out left rightSucc right : Term}
+    (hrightDomain : BProv Ax_s G
+      (subst (instTerm right) codedOrdinalDomain))
+    (hrightSucc : BProv Ax_s G
+      (hfAdjoinGraphTermAt rightSucc right right))
+    (houtSucc : BProv Ax_s G
+      (hfAdjoinGraphTermAt outSucc out out))
+    (hadd : BProv Ax_s G
+      (hfAddGraphTermAt out left right)) :
+    BProv Ax_s G
+      (hfAddGraphTermAt outSucc left rightSucc) := by
+  have hall : BProv Ax_s G
+      (all (all (all (all (all
+        (imp
+          (subst (instTerm (Term.var 3)) codedOrdinalDomain)
+          (imp
+            (hfAdjoinGraphTermAt
+              (Term.var 2) (Term.var 3) (Term.var 3))
+            (imp
+              (hfAdjoinGraphTermAt
+                (Term.var 0) (Term.var 1) (Term.var 1))
+              (imp
+                (hfAddGraphTermAt
+                  (Term.var 1) (Term.var 4) (Term.var 3))
+                (hfAddGraphTermAt
+                  (Term.var 0) (Term.var 4) (Term.var 2))))))))))) := by
+    simpa only [addHFOrdinalLikeAt_eq_domainTermAt,
+      hfAdjoinGraphAt, hfAddGraphAt_eq_termAt] using
+      (BProv_weaken_nil
+        (G := G) BProv_Ax_s_addSuccRightSentence)
+  have hleft := BProv_allE (B := Ax_s) (G := G) (t := left) hall
+  have hright₀ := BProv_allE (B := Ax_s) (G := G) (t := right) hleft
+  have hrightSucc₀ :=
+    BProv_allE (B := Ax_s) (G := G) (t := rightSucc) hright₀
+  have hout₀ := BProv_allE (B := Ax_s) (G := G) (t := out) hrightSucc₀
+  have houtSucc₀ :=
+    BProv_allE (B := Ax_s) (G := G) (t := outSucc) hout₀
+  have himp : BProv Ax_s G
+      (imp
+        (subst (instTerm right) codedOrdinalDomain)
+        (imp
+          (hfAdjoinGraphTermAt rightSucc right right)
+          (imp
+            (hfAdjoinGraphTermAt outSucc out out)
+            (imp
+              (hfAddGraphTermAt out left right)
+              (hfAddGraphTermAt outSucc left rightSucc))))) := by
+    simpa [subst_domainTermAt,
+      subst_hfAdjoinGraphTermAt,
+      subst_hfAddGraphTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using houtSucc₀
+  have h₁ := BProv_mp Ax_s G _ _ himp hrightDomain
+  have h₂ := BProv_mp Ax_s G _ _ h₁ hrightSucc
+  have h₃ := BProv_mp Ax_s G _ _ h₂ houtSucc
+  exact BProv_mp Ax_s G _ _ h₃ hadd
+
+theorem BProv_Ax_s_hfAddGraphTermAt_functional
+    {G : List Formula} {out₁ out₂ left right : Term}
+    (hrightDomain : BProv Ax_s G
+      (subst (instTerm right) codedOrdinalDomain))
+    (hadd₁ : BProv Ax_s G
+      (hfAddGraphTermAt out₁ left right))
+    (hadd₂ : BProv Ax_s G
+      (hfAddGraphTermAt out₂ left right)) :
+    BProv Ax_s G (eq out₁ out₂) := by
+  have hall : BProv Ax_s G
+      (all (all (all (all
+        (imp
+          (subst (instTerm (Term.var 2)) codedOrdinalDomain)
+          (imp
+            (hfAddGraphTermAt
+              (Term.var 1) (Term.var 3) (Term.var 2))
+            (imp
+              (hfAddGraphTermAt
+                (Term.var 0) (Term.var 3) (Term.var 2))
+              (eq (Term.var 1) (Term.var 0))))))))) := by
+    simpa only [addHFOrdinalLikeAt_eq_domainTermAt,
+      hfAddGraphAt_eq_termAt] using
+      (BProv_weaken_nil
+        (G := G) BProv_Ax_s_addFunctionalSentence)
+  have hleft := BProv_allE (B := Ax_s) (G := G) (t := left) hall
+  have hright₀ := BProv_allE (B := Ax_s) (G := G) (t := right) hleft
+  have hout₁₀ := BProv_allE (B := Ax_s) (G := G) (t := out₁) hright₀
+  have hout₂₀ := BProv_allE (B := Ax_s) (G := G) (t := out₂) hout₁₀
+  have himp : BProv Ax_s G
+      (imp
+        (subst (instTerm right) codedOrdinalDomain)
+        (imp
+          (hfAddGraphTermAt out₁ left right)
+          (imp
+            (hfAddGraphTermAt out₂ left right)
+            (eq out₁ out₂)))) := by
+    simpa [subst_domainTermAt,
+      subst_hfAddGraphTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using hout₂₀
+  have h₁ := BProv_mp Ax_s G _ _ himp hrightDomain
+  have h₂ := BProv_mp Ax_s G _ _ h₁ hadd₁
+  exact BProv_mp Ax_s G _ _ h₂ hadd₂
+
+theorem BProv_Ax_s_codedOrdinalDomain_of_graph
+    {G : List Formula} {raw coded : Term}
+    (hgraph : BProv Ax_s G
+      (ordinalCodeGraphTermAt raw coded)) :
+    BProv Ax_s G
+      (subst (instTerm coded) codedOrdinalDomain) := by
+  have hrange : BProv Ax_s G
+      (ordinalCodeGraphRangeExistsTermAt coded) := by
+    apply BProv_exI (t := raw)
+    simpa [ordinalCodeGraphRangeExistsTermAt,
+      subst_ordinalCodeGraphTermAt,
+      subst, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hgraph
+  exact ordinalCodeGraphCodomain hrange
+
+theorem BProv_Ax_s_hfEmptyTermAt_of_eq_zero
+    {G : List Formula} {term : Term}
+    (heq : BProv Ax_s G (eq term Term.zero)) :
+    BProv Ax_s G (hfEmptyTermAt term) := by
+  let context : Formula := hfEmptyTermAt (Term.var 0)
+  have hzero : BProv Ax_s G
+      (subst (instTerm Term.zero) context) := by
+    simpa [context, subst_hfEmptyTermAt,
+      instTerm, Term.subst] using
+      (BProv_weaken_nil (G := G) BProv_Ax_s_hfEmptyTermAt_zero)
+  have htransport := BProv_eqElim
+    (B := Ax_s) (G := G) (a := context)
+    (BProv_eqSym heq) hzero
+  simpa [context, subst_hfEmptyTermAt,
+    instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using htransport
+
+/-- Base case of ordinal-code addition: HF successor recursion at the empty
+right code agrees exactly with PA addition by zero. -/
+theorem BProv_Ax_s_ordinalCodeAddCore_zero
+    {G : List Formula} {leftRaw leftCode rightCode out : Term}
+    (hleft : BProv Ax_s G
+      (ordinalCodeGraphTermAt leftRaw leftCode))
+    (hright : BProv Ax_s G
+      (ordinalCodeGraphTermAt Term.zero rightCode)) :
+    BProv Ax_s G
+      (iffForm
+        (hfAddGraphTermAt out leftCode rightCode)
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw Term.zero) out)) := by
+  have hrightEq : BProv Ax_s G (eq rightCode Term.zero) :=
+    BProv_Ax_s_eq_zero_of_ordinalCodeGraphTermAt_zero hright
+  have hrightEmpty : BProv Ax_s G (hfEmptyTermAt rightCode) :=
+    BProv_Ax_s_hfEmptyTermAt_of_eq_zero hrightEq
+  have hrightDomain :=
+    BProv_Ax_s_codedOrdinalDomain_of_graph hright
+  have hbase : BProv Ax_s G
+      (hfAddGraphTermAt leftCode leftCode rightCode) :=
+    BProv_Ax_s_hfAddGraphTermAt_zero_right
+      hrightEmpty (BProv_eqRefl leftCode)
+  have haddZero : BProv Ax_s G
+      (eq (Term.add leftRaw Term.zero) leftRaw) :=
+    BProv_weaken_nil (BProv_Ax_s_addZero_term leftRaw)
+  have hforward : BProv Ax_s G
+      (imp
+        (hfAddGraphTermAt out leftCode rightCode)
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw Term.zero) out)) := by
+    apply BProv_impI
+    let C : List Formula :=
+      hfAddGraphTermAt out leftCode rightCode :: G
+    have hadd : BProv Ax_s C
+        (hfAddGraphTermAt out leftCode rightCode) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have houtEq : BProv Ax_s C (eq out leftCode) :=
+      BProv_Ax_s_hfAddGraphTermAt_functional
+        (BProv_context_cons hrightDomain)
+        hadd (BProv_context_cons hbase)
+    have houtGraph : BProv Ax_s C
+        (ordinalCodeGraphTermAt leftRaw out) :=
+      BProv_ordinalCodeGraphTermAt_congr_coded
+        (BProv_eqSym houtEq) (BProv_context_cons hleft)
+    exact BProv_ordinalCodeGraphTermAt_congr_raw
+      (BProv_eqSym (BProv_context_cons haddZero)) houtGraph
+  have hreverse : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw Term.zero) out)
+        (hfAddGraphTermAt out leftCode rightCode)) := by
+    apply BProv_impI
+    let C : List Formula :=
+      ordinalCodeGraphTermAt
+        (Term.add leftRaw Term.zero) out :: G
+    have htarget : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw Term.zero) out) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have houtGraph : BProv Ax_s C
+        (ordinalCodeGraphTermAt leftRaw out) :=
+      BProv_ordinalCodeGraphTermAt_congr_raw
+        (BProv_context_cons haddZero) htarget
+    have houtEq : BProv Ax_s C (eq out leftCode) :=
+      BProv_Ax_s_ordinalCodeGraphTermAt_functional
+        houtGraph (BProv_context_cons hleft)
+    exact BProv_Ax_s_hfAddGraphTermAt_zero_right
+      (BProv_context_cons hrightEmpty) houtEq
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+def ordinalCodeAddOutputTermAt
+    (leftRaw leftCode rightRaw rightCode : Term) : Formula :=
+  all
+    (iffForm
+      (hfAddGraphTermAt
+        (Term.var 0)
+        (Term.rename Nat.succ leftCode)
+        (Term.rename Nat.succ rightCode))
+      (ordinalCodeGraphTermAt
+        (Term.rename Nat.succ (Term.add leftRaw rightRaw))
+        (Term.var 0)))
+
+theorem subst_ordinalCodeAddOutputTermAt
+    (sigma : Nat → Term)
+    (leftRaw leftCode rightRaw rightCode : Term) :
+    subst sigma
+        (ordinalCodeAddOutputTermAt
+          leftRaw leftCode rightRaw rightCode) =
+      ordinalCodeAddOutputTermAt
+        (Term.subst sigma leftRaw)
+        (Term.subst sigma leftCode)
+        (Term.subst sigma rightRaw)
+        (Term.subst sigma rightCode) := by
+  simp only [ordinalCodeAddOutputTermAt, iffForm, subst]
+  rw [subst_hfAddGraphTermAt,
+    subst_ordinalCodeGraphTermAt]
+  simp only [Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem rename_ordinalCodeAddOutputTermAt
+    (r : Nat → Nat)
+    (leftRaw leftCode rightRaw rightCode : Term) :
+    rename r
+        (ordinalCodeAddOutputTermAt
+          leftRaw leftCode rightRaw rightCode) =
+      ordinalCodeAddOutputTermAt
+        (Term.rename r leftRaw)
+        (Term.rename r leftCode)
+        (Term.rename r rightRaw)
+        (Term.rename r rightCode) := by
+  rw [← subst_var_rename]
+  simp only [subst_ordinalCodeAddOutputTermAt,
+    term_subst_var_rename]
+
+def ordinalCodeAddPointTermAt
+    (leftRaw leftCode rightRaw : Term) : Formula :=
+  all
+    (imp
+      (ordinalCodeGraphTermAt
+        (Term.rename Nat.succ rightRaw) (Term.var 0))
+      (ordinalCodeAddOutputTermAt
+        (Term.rename Nat.succ leftRaw)
+        (Term.rename Nat.succ leftCode)
+        (Term.rename Nat.succ rightRaw)
+        (Term.var 0)))
+
+theorem subst_ordinalCodeAddPointTermAt
+    (sigma : Nat → Term)
+    (leftRaw leftCode rightRaw : Term) :
+    subst sigma
+        (ordinalCodeAddPointTermAt
+          leftRaw leftCode rightRaw) =
+      ordinalCodeAddPointTermAt
+        (Term.subst sigma leftRaw)
+        (Term.subst sigma leftCode)
+        (Term.subst sigma rightRaw) := by
+  simp [ordinalCodeAddPointTermAt,
+    subst_ordinalCodeGraphTermAt,
+    subst_ordinalCodeAddOutputTermAt,
+    subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem rename_ordinalCodeAddPointTermAt
+    (r : Nat → Nat)
+    (leftRaw leftCode rightRaw : Term) :
+    rename r
+        (ordinalCodeAddPointTermAt
+          leftRaw leftCode rightRaw) =
+      ordinalCodeAddPointTermAt
+        (Term.rename r leftRaw)
+        (Term.rename r leftCode)
+        (Term.rename r rightRaw) := by
+  rw [← subst_var_rename]
+  simp only [subst_ordinalCodeAddPointTermAt,
+    term_subst_var_rename]
+
+theorem BProv_Ax_s_ordinalCodeAddPointTermAt_zero
+    {G : List Formula} {leftRaw leftCode : Term}
+    (hleft : BProv Ax_s G
+      (ordinalCodeGraphTermAt leftRaw leftCode)) :
+    BProv Ax_s G
+      (ordinalCodeAddPointTermAt
+        leftRaw leftCode Term.zero) := by
+  let rightGraph : Formula :=
+    ordinalCodeGraphTermAt Term.zero (Term.var 0)
+  let Q : List Formula := G.map (rename Nat.succ)
+  have hbody : BProv Ax_s Q
+      (imp rightGraph
+        (ordinalCodeAddOutputTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ leftCode)
+          Term.zero (Term.var 0))) := by
+    apply BProv_impI
+    let C : List Formula := rightGraph :: Q
+    have hright : BProv Ax_s C rightGraph :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    let D : List Formula := C.map (rename Nat.succ)
+    have hleftD : BProv Ax_s D
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) leftRaw)
+          (Term.rename (fun n ↦ n+2) leftCode)) := by
+      have h₁ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        hleft Nat.succ
+      have h₂ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        h₁ Nat.succ
+      have hctx := BProv_context_cons
+        (B := Ax_s) (a := rename Nat.succ rightGraph) h₂
+      simpa [D, C, Q, rename_ordinalCodeGraphTermAt,
+        Term.rename_comp, Function.comp_def, Nat.add_assoc] using hctx
+    have hrightD : BProv Ax_s D
+        (ordinalCodeGraphTermAt Term.zero (Term.var 1)) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        hright Nat.succ
+      simpa [D, rightGraph,
+        rename_ordinalCodeGraphTermAt, Term.rename] using hren
+    have hiff := BProv_Ax_s_ordinalCodeAddCore_zero
+      (out := Term.var 0) hleftD hrightD
+    have hall := BProv_allI_of_sentences
+      (B := Ax_s) (G := C)
+      (fun f hf ↦ sentence_ax_s (f := f) hf) hiff
+    simpa [ordinalCodeAddOutputTermAt,
+      D, Term.rename, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using hall
+  have hall := BProv_allI_of_sentences
+    (B := Ax_s) (G := G)
+    (fun f hf ↦ sentence_ax_s (f := f) hf) hbody
+  simpa [ordinalCodeAddPointTermAt,
+    rightGraph, Q, Term.rename] using hall
+
+theorem BProv_Ax_s_ordinalCodeAddCore_succ_of_pred
+    {G : List Formula}
+    {leftRaw leftCode rightRaw rightCode rightSuccCode predOut out : Term}
+    (hright : BProv Ax_s G
+      (ordinalCodeGraphTermAt rightRaw rightCode))
+    (hrightSucc : BProv Ax_s G
+      (ordinalCodeGraphTermAt (Term.succ rightRaw) rightSuccCode))
+    (hsumPred : BProv Ax_s G
+      (ordinalCodeGraphTermAt
+        (Term.add leftRaw rightRaw) predOut))
+    (haddPred : BProv Ax_s G
+      (hfAddGraphTermAt predOut leftCode rightCode)) :
+    BProv Ax_s G
+      (iffForm
+        (hfAddGraphTermAt out leftCode rightSuccCode)
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw (Term.succ rightRaw)) out)) := by
+  have hrightDomain :=
+    BProv_Ax_s_codedOrdinalDomain_of_graph hright
+  have hrightSuccDomain :=
+    BProv_Ax_s_codedOrdinalDomain_of_graph hrightSucc
+  have hrightStep :=
+    BProv_Ax_s_hfAdjoinGraphTermAt_iff_ordinalCodeGraphTermAt_succ
+      ordinalCodeGraphSuccClosure ordinalCodeGraphFunctional
+      (codedOut := rightSuccCode) hright
+  have hrightStepReverse : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt
+          (Term.succ rightRaw) rightSuccCode)
+        (hfAdjoinGraphTermAt
+          rightSuccCode rightCode rightCode)) := by
+    simpa [iffForm] using BProv_andE2 hrightStep
+  have hrightAdjoin : BProv Ax_s G
+      (hfAdjoinGraphTermAt rightSuccCode rightCode rightCode) :=
+    BProv_mp Ax_s G _ _ hrightStepReverse hrightSucc
+  have haddSucc : BProv Ax_s G
+      (eq
+        (Term.add leftRaw (Term.succ rightRaw))
+        (Term.succ (Term.add leftRaw rightRaw))) :=
+    BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms leftRaw rightRaw)
+  have hforward : BProv Ax_s G
+      (imp
+        (hfAddGraphTermAt out leftCode rightSuccCode)
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw (Term.succ rightRaw)) out)) := by
+    apply BProv_impI
+    let C : List Formula :=
+      hfAddGraphTermAt out leftCode rightSuccCode :: G
+    have haddOut : BProv Ax_s C
+        (hfAddGraphTermAt out leftCode rightSuccCode) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hex : BProv Ax_s C
+        (hfAdjoinExistsTermAt predOut predOut) :=
+      BProv_Ax_s_hfAdjoinExistsTermAt predOut predOut
+    let body : Formula :=
+      hfAdjoinGraphTermAt
+        (Term.var 0)
+        (Term.rename Nat.succ predOut)
+        (Term.rename Nat.succ predOut)
+    let D : List Formula := body :: C.map (rename Nat.succ)
+    have hinner : BProv Ax_s D
+        (rename Nat.succ
+          (ordinalCodeGraphTermAt
+            (Term.add leftRaw (Term.succ rightRaw)) out)) := by
+      have hadjoin : BProv Ax_s D body :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have lift : ∀ {phi : Formula}, BProv Ax_s C phi →
+          BProv Ax_s D (rename Nat.succ phi) := by
+        intro phi hphi
+        simpa [D] using
+          (BProv_rename_succ_context_cons_of_sentences
+            (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+            (a := body) hphi)
+      have hrightDomainD : BProv Ax_s D
+          (subst
+            (instTerm (Term.rename Nat.succ rightCode))
+            codedOrdinalDomain) := by
+        have hraw := lift (BProv_context_cons hrightDomain)
+        simpa [rename_subst_instTerm_codedOrdinalDomain] using hraw
+      have hrightSuccDomainD : BProv Ax_s D
+          (subst
+            (instTerm (Term.rename Nat.succ rightSuccCode))
+            codedOrdinalDomain) := by
+        have hraw := lift (BProv_context_cons hrightSuccDomain)
+        simpa [rename_subst_instTerm_codedOrdinalDomain] using hraw
+      have hrightAdjoinD : BProv Ax_s D
+          (hfAdjoinGraphTermAt
+            (Term.rename Nat.succ rightSuccCode)
+            (Term.rename Nat.succ rightCode)
+            (Term.rename Nat.succ rightCode)) := by
+        simpa [rename_hfAdjoinGraphTermAt] using
+          (lift (BProv_context_cons hrightAdjoin))
+      have haddPredD : BProv Ax_s D
+          (hfAddGraphTermAt
+            (Term.rename Nat.succ predOut)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightCode)) := by
+        simpa [rename_hfAddGraphTermAt] using
+          (lift (BProv_context_cons haddPred))
+      have haddOutD : BProv Ax_s D
+          (hfAddGraphTermAt
+            (Term.rename Nat.succ out)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightSuccCode)) := by
+        simpa [rename_hfAddGraphTermAt] using (lift haddOut)
+      have hsumPredD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.rename Nat.succ
+              (Term.add leftRaw rightRaw))
+            (Term.rename Nat.succ predOut)) := by
+        simpa [rename_ordinalCodeGraphTermAt] using
+          (lift (BProv_context_cons hsumPred))
+      have haddKnown : BProv Ax_s D
+          (hfAddGraphTermAt
+            (Term.var 0)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightSuccCode)) :=
+        BProv_Ax_s_hfAddGraphTermAt_succ_right
+          hrightDomainD hrightAdjoinD
+          (by simpa [body] using hadjoin) haddPredD
+      have houtEq : BProv Ax_s D
+          (eq (Term.rename Nat.succ out) (Term.var 0)) :=
+        BProv_Ax_s_hfAddGraphTermAt_functional
+          hrightSuccDomainD haddOutD haddKnown
+      have hsumSuccD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.succ
+              (Term.rename Nat.succ
+                (Term.add leftRaw rightRaw)))
+            (Term.var 0)) :=
+        ordinalCodeGraphSuccClosure hsumPredD
+          (by simpa [body] using hadjoin)
+      have hsumOutD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.succ
+              (Term.rename Nat.succ
+                (Term.add leftRaw rightRaw)))
+            (Term.rename Nat.succ out)) :=
+        BProv_ordinalCodeGraphTermAt_congr_coded
+          (BProv_eqSym houtEq) hsumSuccD
+      have haddSuccD : BProv Ax_s D
+          (eq
+            (Term.rename Nat.succ
+              (Term.add leftRaw (Term.succ rightRaw)))
+            (Term.succ
+              (Term.rename Nat.succ
+                (Term.add leftRaw rightRaw)))) := by
+        simpa [rename, Term.rename] using
+          (lift (BProv_context_cons haddSucc))
+      have hresult := BProv_ordinalCodeGraphTermAt_congr_raw
+        (BProv_eqSym haddSuccD) hsumOutD
+      simpa [rename_ordinalCodeGraphTermAt] using hresult
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (G := C) (a := body)
+      (c := ordinalCodeGraphTermAt
+        (Term.add leftRaw (Term.succ rightRaw)) out)
+      (by simpa [hfAdjoinExistsTermAt, body] using hex)
+      (by simpa [D] using hinner)
+  have hreverse : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw (Term.succ rightRaw)) out)
+        (hfAddGraphTermAt out leftCode rightSuccCode)) := by
+    apply BProv_impI
+    let C : List Formula :=
+      ordinalCodeGraphTermAt
+        (Term.add leftRaw (Term.succ rightRaw)) out :: G
+    have htarget : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw (Term.succ rightRaw)) out) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hsumSucc : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.succ (Term.add leftRaw rightRaw)) out) :=
+      BProv_ordinalCodeGraphTermAt_congr_raw
+        (BProv_context_cons haddSucc) htarget
+    have hstep :=
+      BProv_Ax_s_hfAdjoinGraphTermAt_iff_ordinalCodeGraphTermAt_succ
+        ordinalCodeGraphSuccClosure ordinalCodeGraphFunctional
+        (G := C) (codedOut := out)
+        (BProv_context_cons
+          (a := ordinalCodeGraphTermAt
+            (Term.add leftRaw (Term.succ rightRaw)) out)
+          hsumPred)
+    have hstepReverse : BProv Ax_s C
+        (imp
+          (ordinalCodeGraphTermAt
+            (Term.succ (Term.add leftRaw rightRaw)) out)
+          (hfAdjoinGraphTermAt out predOut predOut)) := by
+      simpa [iffForm] using BProv_andE2 hstep
+    have houtAdjoin : BProv Ax_s C
+        (hfAdjoinGraphTermAt out predOut predOut) :=
+      BProv_mp Ax_s C _ _ hstepReverse hsumSucc
+    exact BProv_Ax_s_hfAddGraphTermAt_succ_right
+      (BProv_context_cons hrightDomain)
+      (BProv_context_cons hrightAdjoin)
+      houtAdjoin (BProv_context_cons haddPred)
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+set_option maxHeartbeats 600000 in
+theorem BProv_Ax_s_ordinalCodeAddOutputTermAt_succ
+    {G : List Formula}
+    {leftRaw leftCode rightRaw rightCode rightSuccCode : Term}
+    (hright : BProv Ax_s G
+      (ordinalCodeGraphTermAt rightRaw rightCode))
+    (hrightSucc : BProv Ax_s G
+      (ordinalCodeGraphTermAt (Term.succ rightRaw) rightSuccCode))
+    (hih : BProv Ax_s G
+      (ordinalCodeAddOutputTermAt
+        leftRaw leftCode rightRaw rightCode)) :
+    BProv Ax_s G
+      (ordinalCodeAddOutputTermAt
+        leftRaw leftCode (Term.succ rightRaw) rightSuccCode) := by
+  let graphBody : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.add
+        (Term.rename Nat.succ leftRaw)
+        (Term.rename Nat.succ rightRaw))
+      (Term.var 0)
+  have htotal : BProv Ax_s G (ex graphBody) := by
+    simpa [graphBody, Term.rename] using
+      (OrdinalCodeGraphProofs_total G
+        (Term.add leftRaw rightRaw))
+  let C : List Formula := graphBody :: G.map (rename Nat.succ)
+  have hinner : BProv Ax_s C
+      (rename Nat.succ
+        (ordinalCodeAddOutputTermAt
+          leftRaw leftCode (Term.succ rightRaw) rightSuccCode)) := by
+    have hsumPred : BProv Ax_s C graphBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have lift : ∀ {phi : Formula}, BProv Ax_s G phi →
+        BProv Ax_s C (rename Nat.succ phi) := by
+      intro phi hphi
+      simpa [C] using
+        (BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          (a := graphBody) hphi)
+    have hrightC : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.rename Nat.succ rightRaw)
+          (Term.rename Nat.succ rightCode)) := by
+      simpa [rename_ordinalCodeGraphTermAt] using (lift hright)
+    have hrightSuccC : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.succ (Term.rename Nat.succ rightRaw))
+          (Term.rename Nat.succ rightSuccCode)) := by
+      simpa [rename_ordinalCodeGraphTermAt, Term.rename] using
+        (lift hrightSucc)
+    have hihC : BProv Ax_s C
+        (ordinalCodeAddOutputTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ leftCode)
+          (Term.rename Nat.succ rightRaw)
+          (Term.rename Nat.succ rightCode)) := by
+      simpa only [rename_ordinalCodeAddOutputTermAt] using
+        (lift hih)
+    have hpointRaw := BProv_allE
+      (B := Ax_s) (G := C) (t := Term.var 0) hihC
+    have hpoint : BProv Ax_s C
+        (iffForm
+          (hfAddGraphTermAt
+            (Term.var 0)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightCode))
+          graphBody) := by
+      simpa only [ordinalCodeAddOutputTermAt, iffForm,
+        graphBody, subst_hfAddGraphTermAt,
+        subst_ordinalCodeGraphTermAt,
+        subst, instTerm, Term.subst,
+        Term.upSubst,
+        term_subst_instTerm_rename_succ] using hpointRaw
+    have hpointReverse : BProv Ax_s C
+        (imp graphBody
+          (hfAddGraphTermAt
+            (Term.var 0)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightCode))) := by
+      simpa [iffForm] using BProv_andE2 hpoint
+    have haddPred : BProv Ax_s C
+        (hfAddGraphTermAt
+          (Term.var 0)
+          (Term.rename Nat.succ leftCode)
+          (Term.rename Nat.succ rightCode)) :=
+      BProv_mp Ax_s C _ _ hpointReverse hsumPred
+    let D : List Formula := C.map (rename Nat.succ)
+    have hbody : BProv Ax_s D
+        (iffForm
+          (hfAddGraphTermAt
+            (Term.var 0)
+            (Term.rename (fun n ↦ n+2) leftCode)
+            (Term.rename (fun n ↦ n+2) rightSuccCode))
+          (ordinalCodeGraphTermAt
+            (Term.add
+              (Term.rename (fun n ↦ n+2) leftRaw)
+              (Term.succ
+                (Term.rename (fun n ↦ n+2) rightRaw)))
+            (Term.var 0))) := by
+      have liftC : ∀ {phi : Formula}, BProv Ax_s C phi →
+          BProv Ax_s D (rename Nat.succ phi) := by
+        intro phi hphi
+        simpa [D] using
+          (BProv_rename_of_sentences
+            (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+            hphi Nat.succ)
+      have hrightD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) rightRaw)
+            (Term.rename (fun n ↦ n+2) rightCode)) := by
+        simpa [rename_ordinalCodeGraphTermAt,
+          Term.rename_comp, Function.comp_def,
+          Nat.add_assoc] using (liftC hrightC)
+      have hrightSuccD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.succ
+              (Term.rename (fun n ↦ n+2) rightRaw))
+            (Term.rename (fun n ↦ n+2) rightSuccCode)) := by
+        simpa [rename_ordinalCodeGraphTermAt, Term.rename,
+          Term.rename_comp, Function.comp_def,
+          Nat.add_assoc] using (liftC hrightSuccC)
+      have hsumPredD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.add
+              (Term.rename (fun n ↦ n+2) leftRaw)
+              (Term.rename (fun n ↦ n+2) rightRaw))
+            (Term.var 1)) := by
+        simpa [graphBody, rename_ordinalCodeGraphTermAt,
+          Term.rename,
+          Term.rename_comp, Function.comp_def,
+          Nat.add_assoc] using (liftC hsumPred)
+      have haddPredD : BProv Ax_s D
+          (hfAddGraphTermAt
+            (Term.var 1)
+            (Term.rename (fun n ↦ n+2) leftCode)
+            (Term.rename (fun n ↦ n+2) rightCode)) := by
+        simpa [rename_hfAddGraphTermAt,
+          Term.rename,
+          Term.rename_comp, Function.comp_def,
+          Nat.add_assoc] using (liftC haddPred)
+      exact BProv_Ax_s_ordinalCodeAddCore_succ_of_pred
+        hrightD hrightSuccD hsumPredD haddPredD
+    have hall := BProv_allI_of_sentences
+      (B := Ax_s) (G := C)
+      (fun f hf ↦ sentence_ax_s (f := f) hf) hbody
+    have hall' : BProv Ax_s C
+        (ordinalCodeAddOutputTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ leftCode)
+          (Term.succ (Term.rename Nat.succ rightRaw))
+          (Term.rename Nat.succ rightSuccCode)) := by
+      simpa [ordinalCodeAddOutputTermAt, D,
+        Term.rename, Term.rename_comp, Function.comp_def,
+        Nat.add_assoc] using hall
+    simpa only [rename_ordinalCodeAddOutputTermAt,
+      Term.rename] using hall'
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+    (G := G) (a := graphBody)
+    (c := ordinalCodeAddOutputTermAt
+      leftRaw leftCode (Term.succ rightRaw) rightSuccCode)
+    htotal (by simpa [C] using hinner)
+
+theorem BProv_Ax_s_ordinalCodeAddPointTermAt_of_graph
+    {G : List Formula}
+    {leftRaw leftCode rightRaw rightCode : Term}
+    (hpoint : BProv Ax_s G
+      (ordinalCodeAddPointTermAt
+        leftRaw leftCode rightRaw))
+    (hgraph : BProv Ax_s G
+      (ordinalCodeGraphTermAt rightRaw rightCode)) :
+    BProv Ax_s G
+      (ordinalCodeAddOutputTermAt
+        leftRaw leftCode rightRaw rightCode) := by
+  have himpRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := rightCode) hpoint
+  have himp : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt rightRaw rightCode)
+        (ordinalCodeAddOutputTermAt
+          leftRaw leftCode rightRaw rightCode)) := by
+    simpa [ordinalCodeAddPointTermAt,
+      subst_ordinalCodeGraphTermAt,
+      subst_ordinalCodeAddOutputTermAt,
+      subst, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using himpRaw
+  exact BProv_mp Ax_s G _ _ himp hgraph
+
+set_option maxHeartbeats 600000 in
+theorem BProv_Ax_s_ordinalCodeAddPointTermAt_succ
+    {G : List Formula} {leftRaw leftCode rightRaw : Term}
+    (hih : BProv Ax_s G
+      (ordinalCodeAddPointTermAt
+        leftRaw leftCode rightRaw)) :
+    BProv Ax_s G
+      (ordinalCodeAddPointTermAt
+        leftRaw leftCode (Term.succ rightRaw)) := by
+  let rightSuccGraph : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.succ (Term.rename Nat.succ rightRaw))
+      (Term.var 0)
+  let Q : List Formula := G.map (rename Nat.succ)
+  have hbody : BProv Ax_s Q
+      (imp rightSuccGraph
+        (ordinalCodeAddOutputTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ leftCode)
+          (Term.succ (Term.rename Nat.succ rightRaw))
+          (Term.var 0))) := by
+    apply BProv_impI
+    let C : List Formula := rightSuccGraph :: Q
+    have hrightSucc : BProv Ax_s C rightSuccGraph :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    let predBody : Formula :=
+      ordinalCodeGraphTermAt
+        (Term.rename (fun n ↦ n+2) rightRaw)
+        (Term.var 0)
+    have htotal : BProv Ax_s C (ex predBody) := by
+      simpa [predBody, Term.rename_comp,
+        Function.comp_def, Nat.add_assoc] using
+        (OrdinalCodeGraphProofs_total C
+          (Term.rename Nat.succ rightRaw))
+    let D : List Formula := predBody :: C.map (rename Nat.succ)
+    have hinner : BProv Ax_s D
+        (rename Nat.succ
+          (ordinalCodeAddOutputTermAt
+            (Term.rename Nat.succ leftRaw)
+            (Term.rename Nat.succ leftCode)
+            (Term.succ (Term.rename Nat.succ rightRaw))
+            (Term.var 0))) := by
+      have hpred : BProv Ax_s D predBody :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hrightSuccD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.succ
+              (Term.rename (fun n ↦ n+2) rightRaw))
+            (Term.var 1)) := by
+        have hren := BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          hrightSucc Nat.succ
+        simpa [D, rightSuccGraph,
+          rename_ordinalCodeGraphTermAt, Term.rename,
+          Term.rename_comp, Function.comp_def,
+          Nat.add_assoc] using
+            (BProv_context_cons (a := predBody) hren)
+      have hihQ : BProv Ax_s Q
+          (ordinalCodeAddPointTermAt
+            (Term.rename Nat.succ leftRaw)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightRaw)) := by
+        have hren := BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          hih Nat.succ
+        simpa [Q, rename_ordinalCodeAddPointTermAt] using hren
+      have hihC : BProv Ax_s C
+          (ordinalCodeAddPointTermAt
+            (Term.rename Nat.succ leftRaw)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightRaw)) :=
+        BProv_context_cons (a := rightSuccGraph) hihQ
+      have hihD : BProv Ax_s D
+          (ordinalCodeAddPointTermAt
+            (Term.rename (fun n ↦ n+2) leftRaw)
+            (Term.rename (fun n ↦ n+2) leftCode)
+            (Term.rename (fun n ↦ n+2) rightRaw)) := by
+        have hren := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          (a := predBody) hihC
+        simpa [D, C, Q,
+          rename_ordinalCodeAddPointTermAt,
+          Term.rename_comp, Function.comp_def,
+          Nat.add_assoc] using hren
+      have houtputPred :=
+        BProv_Ax_s_ordinalCodeAddPointTermAt_of_graph
+          hihD (by simpa [predBody] using hpred)
+      have houtputSucc :=
+        BProv_Ax_s_ordinalCodeAddOutputTermAt_succ
+          (by simpa [predBody] using hpred)
+          hrightSuccD houtputPred
+      simpa only [rename_ordinalCodeAddOutputTermAt,
+        Term.rename, Term.rename_comp, Function.comp_def,
+        Nat.add_assoc] using houtputSucc
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (G := C) (a := predBody)
+      (c := ordinalCodeAddOutputTermAt
+        (Term.rename Nat.succ leftRaw)
+        (Term.rename Nat.succ leftCode)
+        (Term.succ (Term.rename Nat.succ rightRaw))
+        (Term.var 0))
+      htotal (by simpa [D] using hinner)
+  have hall := BProv_allI_of_sentences
+    (B := Ax_s) (G := G)
+    (fun f hf ↦ sentence_ax_s (f := f) hf) hbody
+  simpa [ordinalCodeAddPointTermAt,
+    rightSuccGraph, Q, Term.rename] using hall
+
+attribute [irreducible]
+  hfAddGraphTermAt
+  ordinalCodeAddOutputTermAt
+  ordinalCodeAddPointTermAt
+
+set_option maxHeartbeats 400000 in
+theorem BProv_Ax_s_all_ordinalCodeAddPoint
+    {G : List Formula} {leftRaw leftCode : Term}
+    (hleft : BProv Ax_s G
+      (ordinalCodeGraphTermAt leftRaw leftCode)) :
+    BProv Ax_s G
+      (all
+        (ordinalCodeAddPointTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ leftCode)
+          (Term.var 0))) := by
+  let phi : Formula :=
+    ordinalCodeAddPointTermAt
+      (Term.rename Nat.succ leftRaw)
+      (Term.rename Nat.succ leftCode)
+      (Term.var 0)
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    have hbase :=
+      BProv_Ax_s_ordinalCodeAddPointTermAt_zero
+        (G := G) (leftRaw := leftRaw) (leftCode := leftCode) hleft
+    change BProv Ax_s G
+      (subst substZero
+        (ordinalCodeAddPointTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ leftCode)
+          (Term.var 0)))
+    rw [subst_ordinalCodeAddPointTermAt]
+    simpa only [substZero, Term.subst,
+      term_substZero_rename_succ] using hbase
+  let Q : List Formula := G.map (rename Nat.succ)
+  have hsuccImp : BProv Ax_s Q
+      (imp phi (subst substSuccVar phi)) := by
+    let C : List Formula := phi :: Q
+    have hihRaw : BProv Ax_s C phi :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hih : BProv Ax_s C
+        (ordinalCodeAddPointTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ leftCode)
+          (Term.var 0)) := by
+      simpa only [phi] using hihRaw
+    have hnext :=
+      BProv_Ax_s_ordinalCodeAddPointTermAt_succ
+        (G := C)
+        (leftRaw := Term.rename Nat.succ leftRaw)
+        (leftCode := Term.rename Nat.succ leftCode)
+        (rightRaw := Term.var 0) hih
+    have hnextSub : BProv Ax_s C (subst substSuccVar phi) := by
+      change BProv Ax_s C
+        (subst substSuccVar
+          (ordinalCodeAddPointTermAt
+            (Term.rename Nat.succ leftRaw)
+            (Term.rename Nat.succ leftCode)
+            (Term.var 0)))
+      rw [subst_ordinalCodeAddPointTermAt]
+      simpa only [substSuccVar, Term.subst,
+        term_substSuccVar_rename_succ] using hnext
+    exact BProv_impI (B := Ax_s) (G := Q)
+      (a := phi) (b := subst substSuccVar phi)
+      (by simpa only [C] using hnextSub)
+  have hsucc : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (G := G)
+      (fun f hf ↦ sentence_ax_s (f := f) hf) hsuccImp
+  simpa only [phi] using
+    (BProv_Ax_s_induction_rule (G := G) (phi := phi) hzero hsucc)
+
+theorem BProv_Ax_s_ordinalCodeAddPointTermAt
+    {G : List Formula} {leftRaw leftCode rightRaw : Term}
+    (hleft : BProv Ax_s G
+      (ordinalCodeGraphTermAt leftRaw leftCode)) :
+    BProv Ax_s G
+      (ordinalCodeAddPointTermAt
+        leftRaw leftCode rightRaw) := by
+  have hall := BProv_Ax_s_all_ordinalCodeAddPoint hleft
+  have hraw := BProv_allE
+    (B := Ax_s) (G := G) (t := rightRaw) hall
+  rw [subst_ordinalCodeAddPointTermAt] at hraw
+  simpa only [instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hraw
+
+theorem BProv_Ax_s_ordinalCodeAddTermAt
+    {G : List Formula}
+    {leftRaw leftCode rightRaw rightCode out : Term}
+    (hleft : BProv Ax_s G
+      (ordinalCodeGraphTermAt leftRaw leftCode))
+    (hright : BProv Ax_s G
+      (ordinalCodeGraphTermAt rightRaw rightCode)) :
+    BProv Ax_s G
+      (iffForm
+        (hfAddGraphTermAt out leftCode rightCode)
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw rightRaw) out)) := by
+  have hpoint :=
+    BProv_Ax_s_ordinalCodeAddPointTermAt
+      (rightRaw := rightRaw) hleft
+  have houtput :=
+    BProv_Ax_s_ordinalCodeAddPointTermAt_of_graph
+      hpoint hright
+  have houtput' : BProv Ax_s G
+      (all
+        (iffForm
+          (hfAddGraphTermAt
+            (Term.var 0)
+            (Term.rename Nat.succ leftCode)
+            (Term.rename Nat.succ rightCode))
+          (ordinalCodeGraphTermAt
+            (Term.rename Nat.succ
+              (Term.add leftRaw rightRaw))
+            (Term.var 0)))) := by
+    simpa only [ordinalCodeAddOutputTermAt] using houtput
+  have hraw := BProv_allE
+    (B := Ax_s) (G := G) (t := out) houtput'
+  simpa only [iffForm, subst,
+    subst_hfAddGraphTermAt,
+    subst_ordinalCodeGraphTermAt,
+    instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ] using hraw
+
+theorem ordinalCodeAddCoreCompatibility :
+    OrdinalCodeAddCoreCompatibility := by
+  intro G leftRaw rightRaw codedOut hleft hright
+  have hiff := BProv_Ax_s_ordinalCodeAddTermAt
+    (out := Term.var (codedOut+2)) hleft hright
+  simpa only [compositeAddCoreAt_eq_termAt] using hiff
+
+theorem BProv_add_ex_exE_of_sentences
+    {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {body target : Formula}
+    (hex : BProv B G (ex (ex body)))
+    (hopened : BProv B
+      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ target))) :
+    BProv B G target := by
+  let C : List Formula := ex body :: G.map (rename Nat.succ)
+  have hinner : BProv B C (ex body) :=
+    BProv_ass (B := B) (G := C) (by simp [C])
+  have htargetC : BProv B C (rename Nat.succ target) :=
+    BProv_exE_of_sentences (B := B) hB hinner
+      (by simpa [C] using hopened)
+  exact BProv_exE_of_sentences (B := B) hB hex
+    (by simpa [C] using htargetC)
+
+theorem BProv_Ax_s_term_graph_add_forward_of_shifted_operands
+    (G : List Formula) (a b leftRaw rightRaw : Term)
+    (codedMap : Nat → Nat) (codedOut : Nat)
+    (hleft : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) a)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) leftRaw) (Term.var 1))))
+    (hright : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) b)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) rightRaw) (Term.var 0)))) :
+    BProv Ax_s G
+      (imp
+        (compositeTermGraphAt codedOut codedMap (Term.add a b))
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw rightRaw) (Term.var codedOut))) := by
+  let composite : Formula :=
+    compositeTermGraphAt codedOut codedMap (Term.add a b)
+  let target : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.add leftRaw rightRaw) (Term.var codedOut)
+  let leftComposite : Formula :=
+    compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) a
+  let rightComposite : Formula :=
+    compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) b
+  let core : Formula := compositeAddCoreAt codedOut
+  let body : Formula :=
+    and leftComposite (and rightComposite core)
+  apply BProv_impI
+  let C : List Formula := composite :: G
+  have hcomposite : BProv Ax_s C composite :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hex : BProv Ax_s C (ex (ex body)) := by
+    simpa [composite, body, leftComposite, rightComposite, core,
+      compositeTermGraphAt_add_normalForm] using hcomposite
+  let inner : Formula := ex body
+  let D : List Formula :=
+    body :: (inner :: C.map (rename Nat.succ)).map (rename Nat.succ)
+  have hopened : BProv Ax_s D
+      (rename Nat.succ (rename Nat.succ target)) := by
+    have hbody : BProv Ax_s D body :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    have hleftComposite : BProv Ax_s D leftComposite :=
+      BProv_andE1 hbody
+    have htail := BProv_andE2 hbody
+    have hrightComposite : BProv Ax_s D rightComposite :=
+      BProv_andE1 htail
+    have hcore : BProv Ax_s D core :=
+      BProv_andE2 htail
+    have liftShifted : ∀ {phi : Formula},
+        BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ)) phi →
+        BProv Ax_s D phi := by
+      intro phi hphi
+      have h₁ := BProv_context_cons
+        (B := Ax_s) (a := rename Nat.succ (rename Nat.succ composite)) hphi
+      have h₂ := BProv_context_cons
+        (B := Ax_s) (a := rename Nat.succ inner) h₁
+      have h₃ := BProv_context_cons
+        (B := Ax_s) (a := body) h₂
+      simpa [D, C, List.map_map] using h₃
+    have hleftD := liftShifted hleft
+    have hleftForward : BProv Ax_s D
+        (imp leftComposite
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) leftRaw)
+            (Term.var 1))) := by
+      simpa [iffForm, leftComposite] using BProv_andE1 hleftD
+    have hleftGraph := BProv_mp Ax_s D _ _
+      hleftForward hleftComposite
+    have hrightD := liftShifted hright
+    have hrightForward : BProv Ax_s D
+        (imp rightComposite
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) rightRaw)
+            (Term.var 0))) := by
+      simpa [iffForm, rightComposite] using BProv_andE1 hrightD
+    have hrightGraph := BProv_mp Ax_s D _ _
+      hrightForward hrightComposite
+    have hcoreIff := ordinalCodeAddCoreCompatibility
+      (G := D)
+      (leftRaw := Term.rename (fun n ↦ n+2) leftRaw)
+      (rightRaw := Term.rename (fun n ↦ n+2) rightRaw)
+      (codedOut := codedOut) hleftGraph hrightGraph
+    have hcoreForward : BProv Ax_s D
+        (imp core
+          (ordinalCodeGraphTermAt
+            (Term.add
+              (Term.rename (fun n ↦ n+2) leftRaw)
+              (Term.rename (fun n ↦ n+2) rightRaw))
+            (Term.var (codedOut+2)))) := by
+      simpa [iffForm, core] using BProv_andE1 hcoreIff
+    have htarget := BProv_mp Ax_s D _ _ hcoreForward hcore
+    simpa [target, rename_ordinalCodeGraphTermAt,
+      Term.rename, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using htarget
+  exact BProv_add_ex_exE_of_sentences
+    (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+    (G := C) (body := body) (target := target)
+    hex (by simpa [D, inner] using hopened)
+
+theorem subst_two_witnesses_rename_two_succ
+    (phi : Formula) :
+    subst (instTerm (Term.var 0))
+        (subst (Term.upSubst (instTerm (Term.var 1)))
+          (rename (SetTheory.up (SetTheory.up Nat.succ))
+            (rename (SetTheory.up (SetTheory.up Nat.succ)) phi))) =
+      phi := by
+  rw [subst_comp, subst_rename, subst_rename]
+  calc
+    _ = subst (fun n ↦ Term.var n) phi := by
+      apply subst_ext_free
+      intro n hn
+      rcases n with _ | _ | n <;> rfl
+    _ = phi := subst_id phi
+
+theorem BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
+    (G : List Formula) (a b leftRaw rightRaw : Term)
+    (codedMap : Nat → Nat) (codedOut : Nat)
+    (hleft : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) a)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) leftRaw) (Term.var 1))))
+    (hright : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) b)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) rightRaw) (Term.var 0)))) :
+    BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw rightRaw) (Term.var codedOut))
+        (compositeTermGraphAt codedOut codedMap (Term.add a b))) := by
+  let composite : Formula :=
+    compositeTermGraphAt codedOut codedMap (Term.add a b)
+  let target : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.add leftRaw rightRaw) (Term.var codedOut)
+  let leftComposite : Formula :=
+    compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) a
+  let rightComposite : Formula :=
+    compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) b
+  let core : Formula := compositeAddCoreAt codedOut
+  let body : Formula :=
+    and leftComposite (and rightComposite core)
+  apply BProv_impI
+  let C : List Formula := target :: G
+  have htarget : BProv Ax_s C target :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  let leftGraphBody : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.rename Nat.succ leftRaw) (Term.var 0)
+  have hleftTotal : BProv Ax_s C (ex leftGraphBody) := by
+    simpa [leftGraphBody] using
+      (OrdinalCodeGraphProofs_total C leftRaw)
+  let L : List Formula := leftGraphBody :: C.map (rename Nat.succ)
+  let rightGraphBody : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.rename (fun n ↦ n+2) rightRaw) (Term.var 0)
+  have hrightTotal : BProv Ax_s L (ex rightGraphBody) := by
+    simpa [rightGraphBody, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using
+      (OrdinalCodeGraphProofs_total L
+        (Term.rename Nat.succ rightRaw))
+  let R : List Formula := rightGraphBody :: L.map (rename Nat.succ)
+  have hrenamedComposite : BProv Ax_s R
+      (rename Nat.succ (rename Nat.succ composite)) := by
+    have hrightGraph : BProv Ax_s R rightGraphBody :=
+      BProv_ass (B := Ax_s) (G := R) (by simp [R])
+    have hleftGraphL : BProv Ax_s L leftGraphBody :=
+      BProv_ass (B := Ax_s) (G := L) (by simp [L])
+    have hleftGraph : BProv Ax_s R
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) leftRaw)
+          (Term.var 1)) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        hleftGraphL Nat.succ
+      simpa [R, leftGraphBody,
+        rename_ordinalCodeGraphTermAt,
+        Term.rename,
+        Term.rename_comp, Function.comp_def,
+        Nat.add_assoc] using
+          (BProv_context_cons (a := rightGraphBody) hren)
+    have htargetR : BProv Ax_s R
+        (ordinalCodeGraphTermAt
+          (Term.add
+            (Term.rename (fun n ↦ n+2) leftRaw)
+            (Term.rename (fun n ↦ n+2) rightRaw))
+          (Term.var (codedOut+2))) := by
+      have h₁ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        htarget Nat.succ
+      have h₁' := BProv_context_cons
+        (B := Ax_s) (a := leftGraphBody) h₁
+      have h₂ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        h₁' Nat.succ
+      have h₂' := BProv_context_cons
+        (B := Ax_s) (a := rightGraphBody) h₂
+      simpa [R, L, C, target,
+        rename_ordinalCodeGraphTermAt, Term.rename,
+        Term.rename_comp, Function.comp_def,
+        Nat.add_assoc] using h₂'
+    have liftShifted : ∀ {phi : Formula},
+        BProv Ax_s
+          ((G.map (rename Nat.succ)).map (rename Nat.succ)) phi →
+        BProv Ax_s R phi := by
+      intro phi hphi
+      have h₁ := BProv_context_cons
+        (B := Ax_s) (a := rename Nat.succ (rename Nat.succ target)) hphi
+      have h₂ := BProv_context_cons
+        (B := Ax_s) (a := rename Nat.succ leftGraphBody) h₁
+      have h₃ := BProv_context_cons
+        (B := Ax_s) (a := rightGraphBody) h₂
+      simpa [R, L, C, List.map_map] using h₃
+    have hleftR := liftShifted hleft
+    have hleftReverse : BProv Ax_s R
+        (imp
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) leftRaw) (Term.var 1))
+          leftComposite) := by
+      simpa [iffForm, leftComposite] using BProv_andE2 hleftR
+    have hleftComposite : BProv Ax_s R leftComposite :=
+      BProv_mp Ax_s R _ _ hleftReverse hleftGraph
+    have hrightR := liftShifted hright
+    have hrightReverse : BProv Ax_s R
+        (imp
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) rightRaw) (Term.var 0))
+          rightComposite) := by
+      simpa [iffForm, rightComposite] using BProv_andE2 hrightR
+    have hrightComposite : BProv Ax_s R rightComposite :=
+      BProv_mp Ax_s R _ _ hrightReverse hrightGraph
+    have hcoreIff := ordinalCodeAddCoreCompatibility
+      (G := R)
+      (leftRaw := Term.rename (fun n ↦ n+2) leftRaw)
+      (rightRaw := Term.rename (fun n ↦ n+2) rightRaw)
+      (codedOut := codedOut) hleftGraph hrightGraph
+    have hcoreReverse : BProv Ax_s R
+        (imp
+          (ordinalCodeGraphTermAt
+            (Term.add
+              (Term.rename (fun n ↦ n+2) leftRaw)
+              (Term.rename (fun n ↦ n+2) rightRaw))
+            (Term.var (codedOut+2)))
+          core) := by
+      simpa [iffForm, core] using BProv_andE2 hcoreIff
+    have hcore : BProv Ax_s R core :=
+      BProv_mp Ax_s R _ _ hcoreReverse htargetR
+    have hbody : BProv Ax_s R body :=
+      BProv_andI hleftComposite
+        (BProv_andI hrightComposite hcore)
+    change BProv Ax_s R
+      (rename Nat.succ (rename Nat.succ
+        (compositeTermGraphAt codedOut codedMap (Term.add a b))))
+    rw [compositeTermGraphAt_add_normalForm]
+    apply BProv_exI (t := Term.var 1)
+    apply BProv_exI (t := Term.var 0)
+    rw [subst_two_witnesses_rename_two_succ]
+    exact hbody
+  have hcompositeL : BProv Ax_s L (rename Nat.succ composite) :=
+    BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (G := L) (a := rightGraphBody)
+      (c := rename Nat.succ composite)
+      hrightTotal (by simpa [R] using hrenamedComposite)
+  have hcompositeC : BProv Ax_s C composite :=
+    BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (G := C) (a := leftGraphBody) (c := composite)
+      hleftTotal (by simpa [L] using hcompositeL)
+  exact hcompositeC
+
+theorem BProv_Ax_s_term_graph_add_of_shifted_operands
+    (G : List Formula) (a b leftRaw rightRaw : Term)
+    (codedMap : Nat → Nat) (codedOut : Nat)
+    (hleft : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) a)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) leftRaw) (Term.var 1))))
+    (hright : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) b)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) rightRaw) (Term.var 0)))) :
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap (Term.add a b))
+        (ordinalCodeGraphTermAt
+          (Term.add leftRaw rightRaw) (Term.var codedOut))) := by
+  have hforward :=
+    BProv_Ax_s_term_graph_add_forward_of_shifted_operands
+      G a b leftRaw rightRaw codedMap codedOut hleft hright
+  have hreverse :=
+    BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
+      G a b leftRaw rightRaw codedMap codedOut hleft hright
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+/-- Addition preserves the complete ordinal-code term-graph property. -/
+theorem ordinalCodeTermGraphProof_add
+    (a b : Term)
+    (iha : OrdinalCodeTermGraphProof a)
+    (ihb : OrdinalCodeTermGraphProof b) :
+    OrdinalCodeTermGraphProof (Term.add a b) := by
+  intro G rawMap codedMap codedOut hcode
+  let G₂ : List Formula :=
+    (G.map (rename Nat.succ)).map (rename Nat.succ)
+  let rawMap₂ : Nat → Nat := fun n ↦ rawMap n + 2
+  let codedMap₂ : Nat → Nat := fun n ↦ codedMap n + 2
+  have hcode₂ : ∀ n, Term.Free n (Term.add a b) →
+      BProv Ax_s G₂
+        (ordinalCodeGraphAt (rawMap₂ n) (codedMap₂ n)) := by
+    intro n hn
+    have h₀ := hcode n hn
+    have h₁ := BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      h₀ Nat.succ
+    have h₂ := BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      h₁ Nat.succ
+    simpa [G₂, rawMap₂, codedMap₂, ordinalCodeGraphAt,
+      rename_ordinalCodeGraphTermAt, Term.rename,
+      List.map_map, Function.comp_def, Nat.add_assoc] using h₂
+  have hleftCode : ∀ n, Term.Free n a →
+      BProv Ax_s G₂
+        (ordinalCodeGraphAt (rawMap₂ n) (codedMap₂ n)) :=
+    fun n hn ↦ hcode₂ n (Or.inl hn)
+  have hrightCode : ∀ n, Term.Free n b →
+      BProv Ax_s G₂
+        (ordinalCodeGraphAt (rawMap₂ n) (codedMap₂ n)) :=
+    fun n hn ↦ hcode₂ n (Or.inr hn)
+  have hleft₀ := iha G₂ rawMap₂ codedMap₂ 1 hleftCode
+  have hleft : BProv Ax_s G₂
+      (iffForm
+        (compositeTermGraphAt 1 (fun n ↦ codedMap n + 2) a)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) (Term.rename rawMap a))
+          (Term.var 1))) := by
+    simpa [rawMap₂, codedMap₂,
+      Term.rename_comp, Function.comp_def,
+      Nat.add_assoc] using hleft₀
+  have hright₀ := ihb G₂ rawMap₂ codedMap₂ 0 hrightCode
+  have hright : BProv Ax_s G₂
+      (iffForm
+        (compositeTermGraphAt 0 (fun n ↦ codedMap n + 2) b)
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) (Term.rename rawMap b))
+          (Term.var 0))) := by
+    simpa [rawMap₂, codedMap₂,
+      Term.rename_comp, Function.comp_def,
+      Nat.add_assoc] using hright₀
+  have hadd := BProv_Ax_s_term_graph_add_of_shifted_operands
+    G a b (Term.rename rawMap a) (Term.rename rawMap b)
+    codedMap codedOut
+    (by simpa [G₂] using hleft)
+    (by simpa [G₂] using hright)
+  simpa [Term.rename] using hadd
+
+theorem ordinalCodeTermAddCompatibility :
+    OrdinalCodeTermAddCompatibility := by
+  intro a b iha ihb
+  exact ordinalCodeTermGraphProof_add a b iha ihb
+
 /-- Remaining multiplication-constructor obligation for the complete
 term-graph induction. -/
 def OrdinalCodeTermMulCompatibility : Prop :=
@@ -6039,8 +7998,8 @@ def OrdinalCodeTermMulCompatibility : Prop :=
     OrdinalCodeTermGraphProof b →
     OrdinalCodeTermGraphProof (Term.mul a b)
 
-/-- Functionality, zero, and successor are concrete; addition and
-multiplication alone construct the full operation interface. -/
+/-- Modular compatibility constructor retaining explicit addition and
+multiplication arguments. -/
 def OrdinalCodeTermCompatibilityProofs_of_add_mul
     (hadd : OrdinalCodeTermAddCompatibility)
     (hmul : OrdinalCodeTermMulCompatibility) :
@@ -6049,6 +8008,17 @@ def OrdinalCodeTermCompatibilityProofs_of_add_mul
   zero_compatible := OrdinalCodeTermGraphProof_zero
   succ_compatible := ordinalCodeTermGraphProof_succ
   add_compatible := hadd
+  mul_compatible := hmul
+
+/-- Functionality, zero, successor, and addition are concrete;
+multiplication alone now constructs the full operation interface. -/
+def OrdinalCodeTermCompatibilityProofs_of_mul
+    (hmul : OrdinalCodeTermMulCompatibility) :
+    OrdinalCodeTermCompatibilityProofs where
+  graph_functional := ordinalCodeGraphFunctional
+  zero_compatible := OrdinalCodeTermGraphProof_zero
+  succ_compatible := ordinalCodeTermGraphProof_succ
+  add_compatible := ordinalCodeTermAddCompatibility
   mul_compatible := hmul
 
 /-- The operation interface closes the full `term_graph` field by ordinary
@@ -6939,6 +8909,16 @@ def OrdinalCodeGraphProofs_of_injective_add_mul
   OrdinalCodeGraphProofs_of_remaining_and_compatibility
     (OrdinalCodeGraphRemainingProofs_of_injective hinjective)
     (OrdinalCodeTermCompatibilityProofs_of_add_mul hadd hmul)
+
+/-- With range, injectivity, and addition concrete, multiplication is the sole
+remaining input needed for the complete ordinal-code graph package. -/
+def OrdinalCodeGraphProofs_of_mul
+    (hmul : OrdinalCodeTermMulCompatibility) :
+    OrdinalCodeGraphProofs :=
+  OrdinalCodeGraphProofs_of_remaining_and_compatibility
+    (OrdinalCodeGraphRemainingProofs_of_injective
+      ordinalCodeGraphInjective)
+    (OrdinalCodeTermCompatibilityProofs_of_mul hmul)
 
 /-- Totality of the ordinal-code graph turns equality of raw terms into
 relational equality of their codes. -/
