@@ -155,7 +155,7 @@ The same project contains adjacent foundational and computability work:
   infrastructure;
 - a first-order PA sentence expressing the Mertens/Littlewood arithmetic
   criterion associated with the Riemann Hypothesis—the repository formalizes
-  the statement, not a proof of RH or yet its analytic equivalence;
+  the statement, not yet its analytic equivalence;
 - Busy Beaver champion witnesses and eventual-domination theorems;
 - an exhaustive Lean classification of all `12^4 = 20,736` two-state tables,
   proving the marked-symbol score `Σ(2) = 4`;
