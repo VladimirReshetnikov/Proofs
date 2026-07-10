@@ -42849,6 +42849,22 @@ def hfLtDistinguishesTermAt (highCode : Term) : Formula :=
       (ltTermAt (Term.var 0) (Term.rename Nat.succ highCode))
       (hfSomeDistinguishesTermAt (Term.rename Nat.succ highCode) 0))
 
+/-- Cumulative version of the lower-code distinguishing invariant.
+
+Every code at most `boundCode` satisfies `hfLtDistinguishesAt`.  Ordinary PA
+induction over this formula therefore provides the strong induction hypothesis
+needed by binary halving. -/
+def hfLtDistinguishesThroughTermAt (boundCode : Term) : Formula :=
+  all
+    (imp
+      (ltTermAt (Term.var 0)
+        (Term.succ (Term.rename Nat.succ boundCode)))
+      (hfLtDistinguishesAt 0))
+
+/-- Slot specialization of the cumulative binary-induction invariant. -/
+def hfLtDistinguishesThroughAt (bound : Nat) : Formula :=
+  hfLtDistinguishesThroughTermAt (Term.var bound)
+
 /-- The term-parametric distinguishing macro specializes to the slot macro. -/
 theorem hfDistinguishesTermAt_var (elem high low : Nat) :
     hfDistinguishesTermAt elem (Term.var high) low =
@@ -42868,6 +42884,12 @@ theorem hfLtDistinguishesTermAt_var (high : Nat) :
     hfLtDistinguishesTermAt (Term.var high) = hfLtDistinguishesAt high := by
   simp [hfLtDistinguishesTermAt, hfLtDistinguishesAt, ltTermAt_var,
     hfSomeDistinguishesTermAt_var, Term.rename]
+
+/-- The term-parametric cumulative invariant specializes to the slot macro. -/
+theorem hfLtDistinguishesThroughTermAt_var (bound : Nat) :
+    hfLtDistinguishesThroughTermAt (Term.var bound) =
+      hfLtDistinguishesThroughAt bound := by
+  rfl
 
 /-- Renaming commutes with the open distinguishing-member macro. -/
 theorem rename_hfDistinguishesAt (r : Nat → Nat) (elem high low : Nat) :
@@ -43036,6 +43058,41 @@ theorem substSuccVar_hfLtDistinguishesAt_zero :
     div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm, subst,
     substSuccVar, Term.subst, Term.upSubst, Term.rename]
 
+/-- Project the one-code distinguishing invariant at any slot bounded by the
+cumulative strong-induction invariant. -/
+theorem BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
+    {G : List Formula} {boundCode : Term}
+    {high : Nat}
+    (hthrough : BProv Ax_s G
+      (hfLtDistinguishesThroughTermAt boundCode))
+    (hle : BProv Ax_s G
+      (leTermAt (Term.var high) boundCode)) :
+    BProv Ax_s G (hfLtDistinguishesAt high) := by
+  have hlt : BProv Ax_s G
+      (ltTermAt (Term.var high) (Term.succ boundCode)) :=
+    BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hle
+  have himpRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := Term.var high) hthrough
+  have hbound :
+      Term.subst (Term.upSubst (instTerm (Term.var high)))
+          (Term.rename Nat.succ (Term.rename Nat.succ boundCode)) =
+        Term.rename Nat.succ boundCode := by
+    have hrename :
+        Term.rename Nat.succ (Term.rename Nat.succ boundCode) =
+          Term.rename (fun n : Nat => n + 1 + 1) boundCode := by
+      simpa using (Term.rename_comp boundCode Nat.succ Nat.succ)
+    rw [hrename]
+    exact term_subst_upSubst_instTerm_rename_two_succ
+      boundCode (Term.var high)
+  have himp : BProv Ax_s G
+      (imp (ltTermAt (Term.var high) (Term.succ boundCode))
+        (hfLtDistinguishesAt high)) := by
+    simpa [hfLtDistinguishesThroughTermAt,
+      subst_instTerm_var_hfLtDistinguishesAt_zero,
+      ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_subst_instTerm_rename_succ, hbound] using himpRaw
+  exact BProv_mp Ax_s G _ _ himp hlt
+
 /-- Use an object-language proof of `hfLtDistinguishesAt high` at a particular
 strictly lower code. -/
 theorem BProv_hfSomeDistinguishesAt_of_hfLtDistinguishesAt
@@ -43135,6 +43192,74 @@ theorem hfSomeDistinguishesAt_nat (e : Nat → Nat) (high low : Nat) :
       (hfDistinguishesAt_nat (SetTheory.scons elem e) 0 (high+1) (low+1)).mpr
         (by simpa [SetTheory.scons] using helem)
     simpa [hfSomeDistinguishesAt] using hspec
+
+/-- Standard-model meaning of the one-code lower-code distinguishing
+property. -/
+theorem hfLtDistinguishesAt_nat (e : Nat → Nat) (high : Nat) :
+    Sat natModel e (hfLtDistinguishesAt high) ↔
+      ∀ low, low < e high →
+        ∃ elem, AckermannHF.Mem elem (e high) ∧
+          ¬ AckermannHF.Mem elem low := by
+  constructor
+  · intro h low hlt
+    have himp := h low
+    have hltSat :
+        Sat natModel (SetTheory.scons low e) (ltAt 0 (high+1)) :=
+      (ltAt_nat (SetTheory.scons low e) 0 (high+1)).mpr (by
+        simpa [SetTheory.scons] using hlt)
+    have hsome := himp hltSat
+    have hspec :=
+      (hfSomeDistinguishesAt_nat
+        (SetTheory.scons low e) (high+1) 0).mp hsome
+    simpa [SetTheory.scons] using hspec
+  · intro h low hltSat
+    have hlt : low < e high := by
+      have :=
+        (ltAt_nat (SetTheory.scons low e) 0 (high+1)).mp hltSat
+      simpa [SetTheory.scons] using this
+    have hsome := h low hlt
+    apply (hfSomeDistinguishesAt_nat
+      (SetTheory.scons low e) (high+1) 0).mpr
+    simpa [SetTheory.scons] using hsome
+
+/-- Standard-model meaning of the cumulative strong-induction invariant. -/
+theorem hfLtDistinguishesThroughAt_nat
+    (e : Nat → Nat) (bound : Nat) :
+    Sat natModel e (hfLtDistinguishesThroughAt bound) ↔
+      ∀ high, high ≤ e bound → ∀ low, low < high →
+        ∃ elem, AckermannHF.Mem elem high ∧
+          ¬ AckermannHF.Mem elem low := by
+  constructor
+  · intro h high hle
+    have himp := h high
+    have hboundSat : Sat natModel (SetTheory.scons high e)
+        (ltTermAt (Term.var 0)
+          (Term.succ (Term.var (bound+1)))) :=
+      (ltTermAt_nat (SetTheory.scons high e)
+        (Term.var 0) (Term.succ (Term.var (bound+1)))).mpr (by
+          simp only [Term.eval, natModel, SetTheory.scons]
+          omega)
+    have hprop := himp hboundSat
+    have hspec :=
+      (hfLtDistinguishesAt_nat (SetTheory.scons high e) 0).mp hprop
+    simpa [SetTheory.scons] using hspec
+  · intro h high hboundSat
+    have hle : high ≤ e bound := by
+      have hlt :=
+        (ltTermAt_nat (SetTheory.scons high e)
+          (Term.var 0) (Term.succ (Term.var (bound+1)))).mp hboundSat
+      simp only [Term.eval, natModel, SetTheory.scons] at hlt
+      omega
+    apply (hfLtDistinguishesAt_nat (SetTheory.scons high e) 0).mpr
+    simpa [SetTheory.scons] using h high hle
+
+/-- The cumulative invariant has its intended standard-model semantics. -/
+theorem hfLtDistinguishesThroughAt_valid
+    (e : Nat → Nat) (bound : Nat) :
+    Sat natModel e (hfLtDistinguishesThroughAt bound) := by
+  apply (hfLtDistinguishesThroughAt_nat e bound).mpr
+  intro high _hle low hlt
+  exact AckermannHF.exists_mem_not_mem_of_lt hlt
 
 /-- The standard model satisfies the distinguishing-member formula whenever
 the lower code is strictly smaller than the higher code. -/
@@ -46058,6 +46183,36 @@ theorem BProv_Ax_s_hfLtDistinguishesAt_zero_base :
       (fun f hf => sentence_ax_s (f := f) hf) hbody
   simpa [hfLtDistinguishesAt, lowLtZero, target, ltAt, ltTermAt, substZero,
     subst, instTerm, Term.subst, Term.upSubst, Term.rename] using hall
+
+/-- Base case of the cumulative binary strong-induction invariant. -/
+theorem BProv_Ax_s_hfLtDistinguishesThroughTermAt_zero :
+    BProv Ax_s []
+      (hfLtDistinguishesThroughTermAt Term.zero) := by
+  let belowOne : Formula :=
+    ltTermAt (Term.var 0) (Term.succ Term.zero)
+  have hlt : BProv Ax_s [belowOne] belowOne :=
+    BProv_ass (B := Ax_s) (G := [belowOne]) (by simp)
+  have hleTerm : BProv Ax_s [belowOne]
+      (leTermAt (Term.var 0) Term.zero) :=
+    BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
+  have hle : BProv Ax_s [belowOne] (leConstAt 0 0) := by
+    simpa [belowOne, leConstAt, leTermAt, Term.numeral,
+      Term.rename] using hleTerm
+  have hzero : BProv Ax_s [belowOne] (eqConstAt 0 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero hle
+  have hprop : BProv Ax_s [belowOne] (hfLtDistinguishesAt 0) :=
+    BProv_Ax_s_hfLtDistinguishesAt_of_eqConst_high hzero
+  have himp : BProv Ax_s []
+      (imp (ltTermAt (Term.var 0) (Term.succ Term.zero))
+        (hfLtDistinguishesAt 0)) := by
+    simpa [belowOne] using BProv_impI hprop
+  simpa [hfLtDistinguishesThroughTermAt, Term.rename] using
+    (BProv_allI_of_sentences
+      (B := Ax_s) (G := [])
+      (a := imp (ltTermAt (Term.var 0) (Term.succ Term.zero))
+        (hfLtDistinguishesAt 0))
+      (fun f hf => sentence_ax_s (f := f) hf)
+      (by simpa using himp))
 
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already

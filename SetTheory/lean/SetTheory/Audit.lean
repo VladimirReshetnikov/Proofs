@@ -968,9 +968,12 @@ open SetTheory
 #check PA.Formula.hfSomeDistinguishesTermAt
 #check PA.Formula.hfLtDistinguishesAt
 #check PA.Formula.hfLtDistinguishesTermAt
+#check PA.Formula.hfLtDistinguishesThroughTermAt
+#check PA.Formula.hfLtDistinguishesThroughAt
 #check @PA.Formula.hfDistinguishesTermAt_var
 #check @PA.Formula.hfSomeDistinguishesTermAt_var
 #check @PA.Formula.hfLtDistinguishesTermAt_var
+#check @PA.Formula.hfLtDistinguishesThroughTermAt_var
 #check @PA.Formula.rename_hfDistinguishesAt
 #check @PA.Formula.rename_hfSomeDistinguishesAt_succ
 #check @PA.Formula.rename_hfSomeDistinguishesTermAt_succ
@@ -981,6 +984,7 @@ open SetTheory
 #check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_zero
 #check @PA.Formula.subst_instTerm_hfLtDistinguishesAt_zero_term
 #check PA.Formula.substSuccVar_hfLtDistinguishesAt_zero
+#check @PA.Formula.BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
 #check @PA.Formula.subst_instTerm_var_hfMemTermAt_zero_rename_succ
 #check @PA.Formula.BProv_hfMemTermAt_of_hfMemAt_eq_term
 #check @PA.Formula.BProv_hfMemTermAt_of_hfMemTermAt_eq_term
@@ -989,6 +993,9 @@ open SetTheory
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_all_hfLtDistinguishesAt
 #check @PA.Formula.hfDistinguishesAt_nat
 #check @PA.Formula.hfSomeDistinguishesAt_nat
+#check @PA.Formula.hfLtDistinguishesAt_nat
+#check @PA.Formula.hfLtDistinguishesThroughAt_nat
+#check @PA.Formula.hfLtDistinguishesThroughAt_valid
 #check @PA.Formula.hfSomeDistinguishesAt_nat_of_lt
 #check @PA.Formula.hfSomeDistinguishesAt_nat_or_of_ne
 #check @PA.Formula.subst_instTerm_var_hfDistinguishesAt_zero_succ
@@ -1036,6 +1043,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_high_ltAt
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesAt_of_eqConst_high
 #check PA.Formula.BProv_Ax_s_hfLtDistinguishesAt_zero_base
+#check PA.Formula.BProv_Ax_s_hfLtDistinguishesThroughTermAt_zero
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
