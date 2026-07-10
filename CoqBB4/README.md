@@ -1,33 +1,43 @@
 # BB(4) = 107
 
 This directory is a vendored copy of the modular `BB4/` proof from
-<https://github.com/ccz181078/Coq-BB5>, upstream commit
-`9142e219229baf2245d3f70851947230ea28a318`, used as a Rocq-side certificate
-for the four-state busy-beaver time bound in Proofs.
+[`ccz181078/Coq-BB5` at commit `9142e219...`](https://github.com/ccz181078/Coq-BB5/tree/9142e219229baf2245d3f70851947230ea28a318/CoqBB5/BB4),
+used as a Rocq-side certificate for the four-state busy-beaver time bound in
+Proofs.
 
 Repository-local change: `BB4_TNF_Enumeration.v` replaces upstream's
 `native_compute`/`native_cast_no_check` cache equation with `vm_compute` and a
 kernel-checked `reflexivity` proof. The upstream MIT license is included in
 `LICENSE`.
 
+The companion
+[`SetTheory/BusyBeaverBB4Bridge.v`](../SetTheory/BusyBeaverBB4Bridge.v)
+transports this time bound into Proofs' local machine model and proves
+`ExactBusyBeaverTime 4 107`. It does not claim the separate marked-symbol score
+upper bound needed for `Σ(4)=13`.
+
 This folder contains the Coq ([v8.20.1](https://github.com/coq/coq/blob/V8.20.1/INSTALL.md)) proof that `BB(4) = 107`. This result was first proved, to a certain extent[^1], in [[Brady, 1983]](https://www.ams.org/journals/mcom/1983-40-162/S0025-5718-1983-0689479-6/).
 
 This result means that the maximum number of steps that a halting 4-state Turing machine can do from all-0 tape is 107. See [bbchallenge's wiki](https://wiki.bbchallenge.org/wiki/Main_Page) or [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper) for more background and detailed information.
 
-Proving this results involves enumerating 4-state Turing machines and deciding for each whether it halts or not and, if it halts, that it halts in at most 107 steps.
+Proving this result involves enumerating 4-state Turing machines and deciding for each whether it halts or not and, if it halts, that it halts in at most 107 steps.
 
 The extracted data from this proof is available at [https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/BB4_verified_enumeration.csv](https://docs.bbchallenge.org/CoqBB5_release_v1.0.0/BB4_verified_enumeration.csv) in the form of a CSV file listing each enumerated machine with its halting status (halt/nonhalt) as well as the ID of the decider that decided it (IDs as defined in `BB4_Deciders_Generic.v`). More details [below](#extracting-results).
 
 ## Compiling the proof
 
-Assuming you have [opam installed](https://opam.ocaml.org/doc/Install.html), you can install Coq v8.20.1 using:
+The upstream proof was developed with Coq 8.20.1. The vendored source is also
+checked by this repository's combined build with Rocq 9.0.1. Assuming you have
+[opam installed](https://opam.ocaml.org/doc/Install.html), one way to install
+the upstream toolchain is:
 
 ```sh
 opam switch create 4.14.2 # if already existent do: opam switch 4.14.2
 eval $(opam env)
-opam install coq-native
 opam pin add coq 8.20.1
 ```
+
+The local `vm_compute` hardening means `coq-native` is not required.
 
 Then generate a makefile from the vendored project manifest and compile it:
 
@@ -36,9 +46,10 @@ coq_makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq
 ```
 
-#### Compile time 
+#### Compile time
 
-Compiling the proof takes about 30 seconds (Apple silicon), using `coq-native`.
+Upstream reports a roughly 30-second build on Apple silicon; exact time varies
+by Rocq version and host.
 
 ### Used Axiom
 
@@ -77,7 +88,7 @@ Deciders are algorithms trying to prove whether a given Turing machine halts or 
 2. n-gram Closed Position Set (n-gram CPS), see [`Deciders/Decider_NGramCPS.v`](Deciders/Decider_NGramCPS.v)
 3. Repeated Word List (RepWL), see [`Deciders/Decider_RepWL.v`](Deciders/Decider_RepWL.v)
 
-Each of these techniques is described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), also see `../BB5/Deciders/README.md` and the comments in each file listed above for some information.
+Each of these techniques is described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), the pinned upstream [`BB5/Deciders/README.md`](https://github.com/ccz181078/Coq-BB5/blob/9142e219229baf2245d3f70851947230ea28a318/CoqBB5/BB5/Deciders/README.md), and the comments in each file listed above.
 
 The deciders' algorithms are programmed in Coq and then proved correct in Coq too (i.e. proving that if they output `HALT`/`NONHALT` on a machine then the machine halts/does not halt).
 
@@ -87,9 +98,11 @@ The upstream project publishes the enumerated machines (in
 [bbchallenge format](https://discuss.bbchallenge.org/t/standard-tm-text-format/60/28?u=cosmo))
 with each machine's halting status and decider ID. This vendored subset retains
 the Rocq extraction declaration in `BB4_Extraction.v`, but not upstream's
-helper directory and shell script. The published
+helper scripts. Compiling that declaration regenerates ignored
+`BB4_Extraction/*.out` files; those build artifacts are not part of the
+vendored source snapshot. The published
 `BB4_verified_enumeration.csv` has SHA-256
-`6a4abba432b1b36ad7c45a2382ed1d8ce08aee30401964e36ce74453755b5c08` and
+`c517de277a3f0c8c95ffefa510caf834d8f53763e59623813f98c2b64c6df621` and
 starts with:
 
 ```
@@ -150,6 +163,7 @@ Here are more precise counts exactly following the pipeline used by the proof (`
 - `BB4_Statement.v`: main definition and `BB(4) = 107` theorem statement
 - `BB4_Theorem.v`: entry point of the proof of `BB(4) = 107`
 - `BB4_TNF_Enumeration.v`: Tree Normal Form enumeration of 4-state Turing machines
+- `_CoqProject`: standalone logical-path declaration and source manifest
 
 ### Shared upstream files
 
@@ -169,7 +183,7 @@ The following shared files were selected from the upstream BB5 development:
 - `Deciders/Decider_RepWL.v`: Repeated Word List decider
 - `Deciders/Verifier_Halt.v`: verifier that a machine does halt after a given number of steps
 
-These deciders are described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), also see `../BB5/Deciders/README.md` and the comments in each file listed above for some information.
+These deciders are described at length in [bbchallenge's BB5 paper](https://github.com/bbchallenge/bbchallenge-paper), the pinned upstream [`BB5/Deciders/README.md`](https://github.com/ccz181078/Coq-BB5/blob/9142e219229baf2245d3f70851947230ea28a318/CoqBB5/BB5/Deciders/README.md), and the comments in each file listed above.
 
 #### Note to maintainers
 

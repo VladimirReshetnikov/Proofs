@@ -91,6 +91,14 @@ are documented below:
   [`BusyBeaverKnownValues.v`](BusyBeaverKnownValues.v) explores only table
   entries reached within that bound and kernel-checks the remaining score
   obligation, yielding `Σ(3)=6`.
+  [`BusyBeaverBB4Bridge.v`](BusyBeaverBB4Bridge.v) transports the vendored
+  [`../CoqBB4`](../CoqBB4) four-state time certificate into the same local
+  machine model. It reconciles CoqBB4's undefined-transition halt with the
+  local model's executed final write/move action, verifies that
+  `sigma4Champion` attains 107 local steps, and proves
+  `ExactBusyBeaverTime 4 107`. This is deliberately only an exact halting-time
+  theorem: it does not prove the marked-symbol upper bound required for
+  `Σ(4)=13`.
   [`lean/SetTheory/BusyBeaverBB2.lean`](lean/SetTheory/BusyBeaverBB2.lean)
   independently proves the same result in Lean by classifying all 20,736
   two-state transition tables, checking the left-moving half and deriving the
@@ -98,6 +106,16 @@ are documented below:
   receive checked translated-loop, blank-escape, local-window, or
   frontier-growth certificates; bounded failure to halt is never itself
   treated as a certificate.
+  [`lean/SetTheory/BusyBeaverBB3.lean`](lean/SetTheory/BusyBeaverBB3.lean)
+  independently proves `Σ(3)=6` in Lean. Its lazy search checks both possible
+  final writes whenever a new table entry is reached, explores all twelve
+  continuing actions, and requires every branch still active after 21 steps to
+  carry a proved nonhalting certificate. Those certificates are complete
+  continuing tables or declaratively verified n-gram CPS fixed points, with a
+  depth-two per-cell history pass for the final cases. The exhaustive check is
+  organized into twelve first-action groups and subdivided further at later
+  freshly encountered table entries as needed; every shard uses ordinary
+  kernel `decide`, not `native_decide`.
 - [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
   is the mathlib-backed bridge for mathlib's `Computable` predicate: it extracts a
   sequential `ToPartrec.Code` evaluated by mathlib's finite-support `PartrecToTM2`
@@ -519,11 +537,12 @@ cross-references).
 Rocq/Coq ≥ 9.0 (developed against Rocq 9.0.1):
 
 The full development is the `.v` files listed in [`_CoqProject`](_CoqProject),
-including the vendored CoqBB2 and CoqBB3 certificates under
-[`../CoqBB2`](../CoqBB2) and [`../CoqBB3`](../CoqBB3):
+including the vendored CoqBB2, CoqBB3, and CoqBB4 certificates under
+[`../CoqBB2`](../CoqBB2), [`../CoqBB3`](../CoqBB3), and
+[`../CoqBB4`](../CoqBB4):
 
 ```sh
-# Generate dependencies from the combined SetTheory/CoqBB2/CoqBB3 project.
+# Generate dependencies from the combined SetTheory/CoqBB2/CoqBB3/CoqBB4 project.
 coq_makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq
 ```
@@ -536,7 +555,7 @@ the standard library. The library files import along the DAG shown above
 (`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
 `Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`; `BusyBeaver` ←
 `BusyBeaverKnownValues`, `BusyBeaverBB2Bridge`, `BusyBeaverBB3Bridge`,
-`BusyBeaverMathlib`; `Audit` imports them all).
+`BusyBeaverBB4Bridge`, `BusyBeaverMathlib`; `Audit` imports them all).
 `Completeness.v` additionally uses the standard
 classical/extensionality axiom modules (`ClassicalEpsilon`,
 `FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the
@@ -550,10 +569,13 @@ core Closure/ZF modules mirror the seven core Coq files one-to-one
 (`Fol.lean` … `Equivalence.lean`, `Forward.lean`, `Reverse.lean`), every
 statement with the same logical content, through the same headline theorem
 `T_iff_ZF`; the side modules (`PAHF`, `BusyBeaver`, `BusyBeaverKnownValues`,
-`BusyBeaverBB2`, `BusyBeaverMathlib`) are likewise paired with `.v` counterparts or
-independently replay the corresponding Coq result. The exact three-state score
-theorem currently remains Rocq-only: its proof consumes the vendored CoqBB3
-certificate through `BusyBeaverBB3Bridge.v`. The Lean workspace also contains
+`BusyBeaverBB2`, `BusyBeaverBB3`, `BusyBeaverMathlib`) are likewise paired with
+`.v` counterparts or independently replay the corresponding Coq result. In
+particular, Lean's `BusyBeaverBB3` proves `Σ(3)=6` without importing the
+vendored CoqBB3 certificate. Build that expensive certificate target and its
+assumption audit explicitly from the repository root with
+`lake build +SetTheory.BusyBeaverBB3` and
+`lake build +SetTheory.AuditMathlib`. The Lean workspace also contains
 [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first
 formalization toward the bi-interpretability of Peano arithmetic and hereditary
 finite sets. Its current checked surface includes Ackermann-coded HF on `Nat`,
