@@ -1779,6 +1779,29 @@ def HFCompositeStructuralProofs_of_representationProofs
   toSetOrdinalRepresentationProofs := P
   formula_exact := BProv_HFFin_hfCompositeAt_iff P
 
+/-- A representation proof package alone closes the HF composite identity on
+every sentence. -/
+theorem BProv_HFFin_hf_roundTrip_of_representationProofs
+    (P : SetOrdinalRepresentationProofs)
+    (phi : Form) (hphi : Sentence phi) :
+    BProv HFFinAx_s []
+      (fIff phi
+        (PAInHF.translateFormula
+          (PA.Formula.translateHFFormula phi))) :=
+  BProv_HFFin_hf_roundTrip_of_structuralProofs
+    (HFCompositeStructuralProofs_of_representationProofs P) phi hphi
+
+/-- The two concrete relational proof packages now suffice to assemble the
+full deductive PA/finite-HF bi-interpretation certificate.  Both formula-level
+structural inductions are supplied canonically. -/
+def PAHFFinDeductiveBiInterpretationCertificate_of_graphRepresentationProofs
+    (PPA : PA.Formula.OrdinalCodeGraphProofs)
+    (PHF : SetOrdinalRepresentationProofs) :
+    PAHFFinDeductiveBiInterpretationCertificate :=
+  PAHFFinDeductiveBiInterpretationCertificate_of_structuralProofs
+    (PA.Formula.PACompositeStructuralProofs_of_graphProofs PPA)
+    (HFCompositeStructuralProofs_of_representationProofs PHF)
+
 
 end AckermannHF
 end SetTheory
