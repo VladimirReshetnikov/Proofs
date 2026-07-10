@@ -304,3 +304,274 @@ Proof.
   exact (BProv_Ax_s_translateHFFin_theorem P _
     BProv_HFFin_addFunctionalSentence).
 Qed.
+
+(* --------------------------------------------------------------------- *)
+(*  Multiplication                                                       *)
+(* --------------------------------------------------------------------- *)
+
+Definition HF_mulZeroRightSentence : form :=
+  fAll (fAll (fAll
+    (fImp
+      (HF_emptyAt 1)
+      (fImp
+        (HF_emptyAt 0)
+        (mulGraphAt 0 2 1))))).
+
+Lemma HF_mulZeroRightSentence_sentence :
+  Fol.Sentence HF_mulZeroRightSentence.
+Proof.
+  intros i hi.
+  unfold HF_mulZeroRightSentence, HF_emptyAt, mulGraphAt,
+    mulRecApproxAt, mulStepAt, addGraphAt, HF_succRecApproxAt,
+    HF_pairMemAt, HF_kpairAt, HF_singleAt, HF_upairAt,
+    HF_pairFunctionalAt, HF_pairKeysBelowSuccAt, HF_pairZeroBaseAt,
+    HF_pairTotalBelowSuccAt, HF_pairSuccStepAt, HF_succAt,
+    HF_adjoinAt, fIff in hi.
+  simpl in hi.
+  lia.
+Qed.
+
+Lemma BProv_HFFin_mulZeroRightSentence :
+  Completeness.BProv HFFinAx_s [] HF_mulZeroRightSentence.
+Proof.
+  apply Completeness.completeness_inf.
+  - exact Sentences_HFFin.
+  - exact HF_mulZeroRightSentence_sentence.
+  - intros V mem v hHF.
+    pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+    intros left right out hright hout.
+    set (e := scons V out (scons V right (scons V left v))).
+    assert (hrightM : Fol.Sat V (foam_mem V M) e (HF_emptyAt 1)).
+    { change (Fol.Sat V mem e (HF_emptyAt 1)). unfold e, scons. exact hright. }
+    assert (houtM : Fol.Sat V (foam_mem V M) e (HF_emptyAt 0)).
+    { change (Fol.Sat V mem e (HF_emptyAt 0)). unfold e, scons. exact hout. }
+    apply (mulGraphAt_zero_right_model V M e 0 2 1).
+    + exact (proj1 (foam_HF_emptyAt_empty V M e 0) houtM).
+    + exact (proj1 (foam_HF_emptyAt_empty V M e 1) hrightM).
+Qed.
+
+Lemma translateHFFormula_mulZeroRightSentence :
+  translateHFFormula HF_mulZeroRightSentence =
+    pAll (pAll (pAll
+      (pImp
+        (hfEmptyCodeAt 1)
+        (pImp
+          (hfEmptyCodeAt 0)
+          (hfMulGraphAt 0 2 1))))).
+Proof.
+  unfold HF_mulZeroRightSentence, translateHFFormula,
+    hfMulGraphAt, hfEmptyCodeAt.
+  simpl.
+  repeat rewrite hfUpVarMap_id.
+  reflexivity.
+Qed.
+
+Lemma BProv_Ax_s_mulZeroRightSentence : forall
+    (P : TranslatedHFFinAxiomProofs),
+  BProv Ax_s []
+    (pAll (pAll (pAll
+      (pImp
+        (hfEmptyCodeAt 1)
+        (pImp
+          (hfEmptyCodeAt 0)
+          (hfMulGraphAt 0 2 1)))))).
+Proof.
+  intro P.
+  rewrite <- translateHFFormula_mulZeroRightSentence.
+  exact (BProv_Ax_s_translateHFFin_theorem P _
+    BProv_HFFin_mulZeroRightSentence).
+Qed.
+
+Definition HF_mulSuccRightSentence : form :=
+  fAll (fAll (fAll (fAll (fAll
+    (fImp
+      (HF_ordinalLikeAt 3)
+      (fImp
+        (HF_succAt 2 3)
+        (fImp
+          (mulGraphAt 1 4 3)
+          (fImp
+            (addGraphAt 0 1 4)
+            (mulGraphAt 0 4 2))))))))).
+
+Lemma HF_mulSuccRightSentence_sentence :
+  Fol.Sentence HF_mulSuccRightSentence.
+Proof.
+  intros i hi.
+  unfold HF_mulSuccRightSentence, HF_ordinalLikeAt, HF_transitiveAt,
+    HF_memTotalOnAt, HF_succAt, HF_adjoinAt, mulGraphAt,
+    mulRecApproxAt, mulStepAt, addGraphAt, HF_succRecApproxAt,
+    HF_pairMemAt, HF_kpairAt, HF_singleAt, HF_upairAt,
+    HF_pairFunctionalAt, HF_pairKeysBelowSuccAt, HF_pairZeroBaseAt,
+    HF_pairTotalBelowSuccAt, HF_pairSuccStepAt, fIff in hi.
+  simpl in hi.
+  lia.
+Qed.
+
+Lemma BProv_HFFin_mulSuccRightSentence :
+  Completeness.BProv HFFinAx_s [] HF_mulSuccRightSentence.
+Proof.
+  apply Completeness.completeness_inf.
+  - exact Sentences_HFFin.
+  - exact HF_mulSuccRightSentence_sentence.
+  - intros V mem v hHF.
+    pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+    intros left right rightSucc previous out
+      hrightOrd hrightSucc hmul hadd.
+    set (e := scons V out (scons V previous
+      (scons V rightSucc (scons V right (scons V left v))))).
+    assert (hrightOrdM : Fol.Sat V (foam_mem V M) e (HF_ordinalLikeAt 3)).
+    { change (Fol.Sat V mem e (HF_ordinalLikeAt 3)). unfold e, scons. exact hrightOrd. }
+    assert (hrightSuccM : Fol.Sat V (foam_mem V M) e (HF_succAt 2 3)).
+    { change (Fol.Sat V mem e (HF_succAt 2 3)). unfold e, scons. exact hrightSucc. }
+    assert (hmulM : Fol.Sat V (foam_mem V M) e (mulGraphAt 1 4 3)).
+    { change (Fol.Sat V mem e (mulGraphAt 1 4 3)). unfold e, scons. exact hmul. }
+    assert (haddM : Fol.Sat V (foam_mem V M) e (addGraphAt 0 1 4)).
+    { change (Fol.Sat V mem e (addGraphAt 0 1 4)). unfold e, scons. exact hadd. }
+    unfold mulGraphAt in hmulM.
+    destruct hmulM as [f [hf hprevious]].
+    unfold addGraphAt in haddM.
+    destruct haddM as [g [hg hout]].
+    apply (mulGraphAt_succ_right_of_mulRecApprox_model V M e
+      0 4 2 3 f (e 1) g (e 0)).
+    + exact (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M) e 3)
+        hrightOrdM).
+    + exact (proj1 (foam_HF_succAt_spec V M e 2 3) hrightSuccM).
+    + reflexivity.
+    + exact (proj1 (foam_mulRecApproxAt_spec V M
+        (scons V f e) 0 5 4) hf).
+    + exact (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V f e) 4 2 0) hprevious).
+    + exact (proj1 (foam_HF_succRecApproxAt_spec V M
+        (scons V g e) 0 2 5) hg).
+    + exact (proj1 (foam_HF_pairMemAt_spec V M
+        (scons V g e) 5 1 0) hout).
+Qed.
+
+Lemma translateHFFormula_mulSuccRightSentence :
+  translateHFFormula HF_mulSuccRightSentence =
+    pAll (pAll (pAll (pAll (pAll
+      (pImp
+        (addHFOrdinalLikeAt 3)
+        (pImp
+          (hfAdjoinGraphTermAt (tVar 2) (tVar 3) (tVar 3))
+          (pImp
+            (hfMulGraphAt 1 4 3)
+            (pImp
+              (hfAddGraphAt 0 1 4)
+              (hfMulGraphAt 0 4 2))))))))).
+Proof.
+  unfold HF_mulSuccRightSentence, translateHFFormula,
+    addHFOrdinalLikeAt, hfAdjoinGraphTermAt,
+    hfMulGraphAt, hfAddGraphAt.
+  simpl.
+  repeat rewrite hfUpVarMap_id.
+  reflexivity.
+Qed.
+
+Lemma BProv_Ax_s_mulSuccRightSentence : forall
+    (P : TranslatedHFFinAxiomProofs),
+  BProv Ax_s []
+    (pAll (pAll (pAll (pAll (pAll
+      (pImp
+        (addHFOrdinalLikeAt 3)
+        (pImp
+          (hfAdjoinGraphTermAt (tVar 2) (tVar 3) (tVar 3))
+          (pImp
+            (hfMulGraphAt 1 4 3)
+            (pImp
+              (hfAddGraphAt 0 1 4)
+              (hfMulGraphAt 0 4 2)))))))))).
+Proof.
+  intro P.
+  rewrite <- translateHFFormula_mulSuccRightSentence.
+  exact (BProv_Ax_s_translateHFFin_theorem P _
+    BProv_HFFin_mulSuccRightSentence).
+Qed.
+
+Definition HF_mulFunctionalSentence : form :=
+  fAll (fAll (fAll (fAll
+    (fImp
+      (HF_ordinalLikeAt 3)
+      (fImp
+        (HF_ordinalLikeAt 2)
+        (fImp
+          (mulGraphAt 1 3 2)
+          (fImp
+            (mulGraphAt 0 3 2)
+            (fEq 1 0)))))))).
+
+Lemma HF_mulFunctionalSentence_sentence :
+  Fol.Sentence HF_mulFunctionalSentence.
+Proof.
+  intros i hi.
+  unfold HF_mulFunctionalSentence, HF_ordinalLikeAt, HF_transitiveAt,
+    HF_memTotalOnAt, mulGraphAt, mulRecApproxAt, mulStepAt,
+    addGraphAt, HF_succRecApproxAt, HF_pairMemAt, HF_kpairAt,
+    HF_singleAt, HF_upairAt, HF_pairFunctionalAt,
+    HF_pairKeysBelowSuccAt, HF_pairZeroBaseAt, HF_pairTotalBelowSuccAt,
+    HF_pairSuccStepAt, HF_succAt, HF_adjoinAt, fIff in hi.
+  simpl in hi.
+  lia.
+Qed.
+
+Lemma BProv_HFFin_mulFunctionalSentence :
+  Completeness.BProv HFFinAx_s [] HF_mulFunctionalSentence.
+Proof.
+  apply Completeness.completeness_inf.
+  - exact Sentences_HFFin.
+  - exact HF_mulFunctionalSentence_sentence.
+  - intros V mem v hHF.
+    pose (M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s V mem v hHF).
+    intros left right out1 out2 hleftOrd hrightOrd hgraph1 hgraph2.
+    set (e := scons V out2 (scons V out1
+      (scons V right (scons V left v)))).
+    apply (mulGraphAt_outputs_eq_finite_model V M e e
+      1 0 3 3 2 2); try reflexivity.
+    + exact (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M) e 3)
+        hleftOrd).
+    + exact (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M) e 2)
+        hrightOrd).
+    + exact hgraph1.
+    + exact hgraph2.
+Qed.
+
+Lemma translateHFFormula_mulFunctionalSentence :
+  translateHFFormula HF_mulFunctionalSentence =
+    pAll (pAll (pAll (pAll
+      (pImp
+        (addHFOrdinalLikeAt 3)
+        (pImp
+          (addHFOrdinalLikeAt 2)
+          (pImp
+            (hfMulGraphAt 1 3 2)
+            (pImp
+              (hfMulGraphAt 0 3 2)
+              (pEq (tVar 1) (tVar 0))))))))).
+Proof.
+  unfold HF_mulFunctionalSentence, translateHFFormula,
+    addHFOrdinalLikeAt, hfMulGraphAt.
+  simpl.
+  repeat rewrite hfUpVarMap_id.
+  reflexivity.
+Qed.
+
+Lemma BProv_Ax_s_mulFunctionalSentence : forall
+    (P : TranslatedHFFinAxiomProofs),
+  BProv Ax_s []
+    (pAll (pAll (pAll (pAll
+      (pImp
+        (addHFOrdinalLikeAt 3)
+        (pImp
+          (addHFOrdinalLikeAt 2)
+          (pImp
+            (hfMulGraphAt 1 3 2)
+            (pImp
+              (hfMulGraphAt 0 3 2)
+              (pEq (tVar 1) (tVar 0)))))))))).
+Proof.
+  intro P.
+  rewrite <- translateHFFormula_mulFunctionalSentence.
+  exact (BProv_Ax_s_translateHFFin_theorem P _
+    BProv_HFFin_mulFunctionalSentence).
+Qed.
