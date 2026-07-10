@@ -51122,6 +51122,77 @@ theorem BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt_of_cumulative_successor_new
     (BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinThroughAt_of_successor_new
       hnew)
 
+/-- Cross-check of the final local arithmetic premise for cumulative
+predecessor decomposition. -/
+theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoin_successor_new :
+    BProv Ax_s [hfEmptyOrStrictPredAdjoinThroughAt 0]
+      (hfEmptyOrStrictPredAdjoinTermAt
+        (Term.succ (Term.var 0))) := by
+  let through : Formula := hfEmptyOrStrictPredAdjoinThroughAt 0
+  let currentTerm : Term := Term.succ (Term.var 0)
+  let target : Formula :=
+    hfEmptyOrStrictPredAdjoinTermAt currentTerm
+  let nameBody : Formula :=
+    eq (Term.var 0) (Term.rename Nat.succ currentTerm)
+  have hnameEx : BProv Ax_s [through] (ex nameBody) := by
+    simpa [nameBody] using
+      (BProv_exists_eq_term (B := Ax_s) (G := [through]) currentTerm)
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := [through]) (a := nameBody) (c := target) hnameEx ?_
+  let H : List Formula := nameBody :: [through].map (rename Nat.succ)
+  have htotal : BProv Ax_s H (div2TotalAt 0) :=
+    BProv_Ax_s_div2TotalAt (G := H) 0
+  refine BProv_Ax_s_of_div2TotalAt_opened_step
+    (G := H) (value := 0) (target := rename Nat.succ target)
+    htotal ?_
+  let J : List Formula := div2TotalOpenedStepContext H 0
+  have hstep : BProv Ax_s J (div2StepAt 2 1 0) :=
+    BProv_ass (B := Ax_s) (G := J)
+      (by simp [J, div2TotalOpenedStepContext])
+  have hheadEq : BProv Ax_s J
+      (eq (Term.var 2) (Term.succ (Term.var 3))) := by
+    apply BProv_ass (B := Ax_s) (G := J)
+    simp [J, H, div2TotalOpenedStepContext,
+      nameBody, currentTerm, through,
+      rename, Term.rename]
+  have hthrough : BProv Ax_s J
+      (hfEmptyOrStrictPredAdjoinThroughTermAt (Term.var 3)) := by
+    apply BProv_ass (B := Ax_s) (G := J)
+    simp [J, H, through, div2TotalOpenedStepContext,
+      hfEmptyOrStrictPredAdjoinThroughAt,
+      rename_hfEmptyOrStrictPredAdjoinThroughTermAt,
+      Term.rename]
+  have hhalfLe : BProv Ax_s J
+      (leTermAt (Term.var 1) (Term.var 3)) :=
+    BProv_Ax_s_leTermAt_half_of_div2StepAt_eq_succ
+      hstep hheadEq
+  have htail : BProv Ax_s J
+      (hfEmptyOrStrictPredAdjoinAt 1) :=
+    BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_throughTermAt
+      (boundCode := Term.var 3) (current := 1)
+      hthrough hhalfLe
+  have hnamed : BProv Ax_s J
+      (hfEmptyOrStrictPredAdjoinAt 2) :=
+    BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_step_and_tail
+      hstep htail
+  have htransport : BProv Ax_s J
+      (hfEmptyOrStrictPredAdjoinTermAt
+        (Term.succ (Term.var 3))) :=
+    BProv_hfEmptyOrStrictPredAdjoinTermAt_of_eq_term
+      (by simpa [hfEmptyOrStrictPredAdjoinAt] using hnamed)
+      hheadEq
+  simpa [target, currentTerm,
+    rename_hfEmptyOrStrictPredAdjoinTermAt,
+    Term.rename] using htransport
+
+/-- PA proves the universal empty-or-strict-predecessor decomposition for
+Ackermann codes. -/
+theorem BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt :
+    BProv Ax_s [] (all (hfEmptyOrStrictPredAdjoinAt 0)) :=
+  BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt_of_cumulative_successor_new
+    BProv_Ax_s_hfEmptyOrStrictPredAdjoin_successor_new
+
 /-- In the opened predecessor-decomposition context (`elem`, `old`,
 `current`, parameters), read the induction predicate at `old`. -/
 def rPredOld : Nat → Nat
@@ -51601,6 +51672,16 @@ theorem BProv_Ax_s_translated_HF_finite_induction_of_all_decomposition
   BProv_Ax_s_translated_HF_finite_induction_of_body phi
     (BProv_Ax_s_translatedHFFiniteInductionBody_of_all_decomposition
       hall (hfFormulaAt (fun n : Nat => n) phi))
+
+/-- PA proves every Ackermann translation of the HF finite-generation
+induction schema. -/
+theorem BProv_Ax_s_translated_HF_finite_induction (phi : Form) :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF
+          (AckermannHF.HF_finite_induction_form phi))) :=
+  BProv_Ax_s_translated_HF_finite_induction_of_all_decomposition
+    BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt phi
 
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already
@@ -68172,19 +68253,19 @@ was the last remaining foundation-HF proof obligation. -/
 abbrev translatedHFAxiomProofs_of_remaining : TranslatedHFAxiomProofs :=
   translatedHFAxiomProofs
 
-/-- Build the translated finite-HF proof-obligation record from its sole
-remaining axiom, finite-generation induction. -/
-def translatedHFFinAxiomProofs_of_remaining
-    (hfinite_induction :
-      ∀ phi : Form,
-        BProv Ax_s [] (translateHFFormula
-          (SetTheory.sealF (AckermannHF.HF_finite_induction_form phi)))) :
-    TranslatedHFFinAxiomProofs where
+/-- The complete collection of PA proofs of the translated finite-HF axioms. -/
+def translatedHFFinAxiomProofs : TranslatedHFFinAxiomProofs where
   empty := BProv_Ax_s_translated_HF_empty
   extensionality := BProv_Ax_s_translated_HF_extensionality
   adjoin := BProv_Ax_s_translated_HF_adjoin
   induction := BProv_Ax_s_translated_HF_induction
-  finite_induction := hfinite_induction
+  finite_induction := BProv_Ax_s_translated_HF_finite_induction
+
+/-- Compatibility name retained from the period when finite-generation
+induction was the last translated finite-HF proof obligation. -/
+abbrev translatedHFFinAxiomProofs_of_remaining :
+    TranslatedHFFinAxiomProofs :=
+  translatedHFFinAxiomProofs
 
 /-- Assemble the translated-HF axiom predicate from its named PA proof
 obligations. -/
@@ -68223,18 +68304,19 @@ theorem BProv_Ax_s_of_translatedHFAx_of_remaining
     BProv Ax_s [] phi :=
   BProv_Ax_s_of_translatedHFAx hphi
 
-/-- Direct translated finite-HF axiom dispatcher exposing only the remaining
-finite-generation induction theorem. -/
-theorem BProv_Ax_s_of_translatedHFFinAx_of_remaining
-    (hfinite_induction :
-      ∀ psi : Form,
-        BProv Ax_s [] (translateHFFormula
-          (SetTheory.sealF (AckermannHF.HF_finite_induction_form psi))))
+/-- Every translated finite-HF axiom is a PA theorem. -/
+theorem BProv_Ax_s_of_translatedHFFinAx
     {phi : Formula} (hphi : translatedHFFinAx phi) :
     BProv Ax_s [] phi :=
   BProv_Ax_s_of_translatedHFFinAx_of_proofs
-    (translatedHFFinAxiomProofs_of_remaining
-      hfinite_induction) hphi
+    translatedHFFinAxiomProofs hphi
+
+/-- Compatibility name for the now-unconditional translated finite-HF axiom
+dispatcher. -/
+theorem BProv_Ax_s_of_translatedHFFinAx_of_remaining
+    {phi : Formula} (hphi : translatedHFFinAx phi) :
+    BProv Ax_s [] phi :=
+  BProv_Ax_s_of_translatedHFFinAx hphi
 
 end Formula
 

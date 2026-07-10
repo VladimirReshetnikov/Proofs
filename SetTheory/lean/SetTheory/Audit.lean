@@ -1201,6 +1201,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinThroughAt_of_successor_new
 #check @PA.Formula.BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt_of_all_through
 #check @PA.Formula.BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt_of_cumulative_successor_new
+#check @PA.Formula.BProv_Ax_s_hfEmptyOrStrictPredAdjoin_successor_new
+#check @PA.Formula.BProv_Ax_s_all_hfEmptyOrStrictPredAdjoinAt
 #check @PA.Formula.rPredOld
 #check @PA.Formula.BProv_hfStrongBelowAt_old_of_opened_pred
 #check @PA.Formula.rPredInstantiate
@@ -1211,6 +1213,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_translatedHFFiniteInductionBody_of_current
 #check @PA.Formula.BProv_Ax_s_translatedHFFiniteInductionBody_of_all_decomposition
 #check @PA.Formula.BProv_Ax_s_translated_HF_finite_induction_of_all_decomposition
+#check @PA.Formula.BProv_Ax_s_translated_HF_finite_induction
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
@@ -1927,11 +1930,13 @@ open SetTheory
 #check @PA.Formula.TranslatedHFAxiomProofs
 #check @PA.Formula.TranslatedHFFinAxiomProofs
 #check PA.Formula.translatedHFAxiomProofs
+#check PA.Formula.translatedHFFinAxiomProofs
 #check @PA.Formula.translatedHFAxiomProofs_of_remaining
 #check @PA.Formula.translatedHFFinAxiomProofs_of_remaining
 #check @PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs
 #check @PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs
 #check @PA.Formula.BProv_Ax_s_of_translatedHFAx
+#check @PA.Formula.BProv_Ax_s_of_translatedHFFinAx
 #check @PA.Formula.BProv_Ax_s_of_translatedHFAx_of_remaining
 #check @PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_remaining
 #check @PA.Formula.Prov_hfFormulaAt_of_Prov
@@ -2469,6 +2474,7 @@ open SetTheory
 #check AckermannHF.translatedHFTheoryInPAInterpretation
 #check @AckermannHF.translatedHFFinTheoryInPAInterpretationOfAxiomProofs
 #check @AckermannHF.translatedHFFinTheoryInPAInterpretationOfProofs
+#check AckermannHF.translatedHFFinTheoryInPAInterpretation
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFAxiomProofs
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFProofs
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFFinAxiomProofs
@@ -2476,6 +2482,7 @@ open SetTheory
 #check AckermannHF.hfInPAInterpretation
 #check @AckermannHF.hfInPAInterpretationOfRemaining
 #check @AckermannHF.hfInPAInterpretationOfRemainingFin
+#check AckermannHF.hfInPAFiniteInterpretation
 #check @AckermannHF.DeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFDeductiveBiInterpretationCertificate
 #check AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
