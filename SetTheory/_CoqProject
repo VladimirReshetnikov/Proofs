@@ -1,6 +1,7 @@
 -Q . SetTheory
 -Q ../CoqBB2 CoqBB2
 -Q ../CoqBB3 CoqBB3
+-Q ../CoqBB4 CoqBB4
 
 # Vendored CoqBB2 certificate for the two-state busy-beaver time bound.
 ../CoqBB2/BB2_Statement.v
@@ -40,6 +41,26 @@
 ../CoqBB3/BB3_TNF_Enumeration.v
 ../CoqBB3/BB3_Theorem.v
 
+# Vendored CoqBB4 certificate for the four-state busy-beaver time bound.
+../CoqBB4/BB4_Statement.v
+../CoqBB4/Tactics.v
+../CoqBB4/Prelims.v
+../CoqBB4/BB4_Encodings.v
+../CoqBB4/List_Routines.v
+../CoqBB4/TM.v
+../CoqBB4/BB4_Make_TM.v
+../CoqBB4/BB4_Deciders_Generic.v
+../CoqBB4/Deciders/Deciders_Common.v
+../CoqBB4/TNF.v
+../CoqBB4/Deciders/Decider_NGramCPS.v
+../CoqBB4/List_Tape.v
+../CoqBB4/Deciders/Decider_Loop.v
+../CoqBB4/Deciders/Decider_RepWL.v
+../CoqBB4/Deciders/Verifier_Halt.v
+../CoqBB4/BB4_Deciders_Pipeline.v
+../CoqBB4/BB4_TNF_Enumeration.v
+../CoqBB4/BB4_Theorem.v
+
 # Core Closure-axiomatization <-> ZF development.
 Fol.v
 Calculus.v
@@ -53,6 +74,7 @@ BusyBeaver.v
 BusyBeaverKnownValues.v
 BusyBeaverBB2Bridge.v
 BusyBeaverBB3Bridge.v
+BusyBeaverBB4Bridge.v
 BusyBeaverMathlib.v
 
 # Self-contained shallow forward/reverse trades.
