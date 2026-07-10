@@ -2586,6 +2586,12 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_paCompositeAt_all_forward
 #check @PA.Formula.BProv_Ax_s_paCompositeAt_all_reverse
 #check @PA.Formula.BProv_Ax_s_paCompositeAt_all_exact
+#check @PA.Formula.BProv_Ax_s_paCompositeAt_ex_forward
+#check @PA.Formula.BProv_Ax_s_paCompositeAt_ex_reverse
+#check @PA.Formula.BProv_Ax_s_paCompositeAt_ex_exact
+#check @PA.Formula.BProv_Ax_s_paCompositeAt_formula_exact
+#check @PA.Formula.PACompositeStructuralProofs_of_graphProofs
+#check @PA.Formula.BProv_Ax_s_pa_roundTrip_of_graphProofs
 #check @PA.Formula.QuantifierFree
 #check @PA.Formula.BProv_Ax_s_paCompositeAt_iff_of_quantifierFree
 #check @AckermannHF.PAHFFinDeductiveBiInterpretationCertificate_of_codeStructuralProofs
