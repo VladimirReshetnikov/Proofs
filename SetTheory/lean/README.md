@@ -31,6 +31,7 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean` | `PAHF.v` | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, a separate first-order PA syntax with sealed PA axiom semantics, and a PA sentence form of the Mertens/Littlewood RH criterion |
 | [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | `BusyBeaver.v` | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
 | [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs |
+| [`SetTheory/BusyBeaverBB2.lean`](SetTheory/BusyBeaverBB2.lean) | `BusyBeaverBB2Bridge.v` + vendored CoqBB2 | an independent Lean proof of `Σ(2)=4`, using kernel-checked halting/nonhalting certificates for the left-moving half of the 20,736 tables and a proved reflection simulation for the right-moving half |
 | [`SetTheory/BusyBeaverMathlib.lean`](SetTheory/BusyBeaverMathlib.lean) | `BusyBeaverMathlib.v` (explicit assumption-record counterpart) | mathlib's `Computable` predicate as the total-recursive predicate for `Nat -> Nat`, sequential `ToPartrec.Code` extraction, the proved finite-support `PartrecToTM2` evaluator bridge, and the unconditional busy-beaver domination theorem for `Computable` functions |
 | [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | `Audit.v` | type-checks the headline results and prints their axioms |
 | [`SetTheory/AuditMathlib.lean`](SetTheory/AuditMathlib.lean) | — (root workspace only) | the same assumption audit for the mathlib-backed bridge theorems |
@@ -46,13 +47,15 @@ lake build                            # builds every mathlib-free module
 lake env lean SetTheory/Audit.lean    # re-runs the assumption audit
 ```
 
-The mathlib-backed bridge `SetTheory/BusyBeaverMathlib.lean` and its audit
-`SetTheory/AuditMathlib.lean` are built from the root `src/Lean` workspace,
+The mathlib-backed modules `SetTheory/BusyBeaverBB2.lean` and
+`SetTheory/BusyBeaverMathlib.lean`, together with their audit
+`SetTheory/AuditMathlib.lean`, are built from the root `src/Lean` workspace,
 which is pinned to mathlib `v4.31.0`:
 
 ```sh
 cd src/Lean
 lake exe cache get Mathlib.Computability.TuringMachine.ToPartrec
+lake build +SetTheory.BusyBeaverBB2
 lake build +SetTheory.BusyBeaverMathlib
 lake build SetTheory.AuditMathlib     # replays the bridge assumption audit
 ```
@@ -207,6 +210,29 @@ accepted by mathlib's `Computable` predicate.
 [`SetTheory/AuditMathlib.lean`](SetTheory/AuditMathlib.lean) replays the
 `#print axioms` audit for both theorems from the root workspace: only
 `propext`, `Classical.choice`, and `Quot.sound`.
+
+`BusyBeaverBB2.lean` proves the exact second score value without importing the
+Coq theorem. It enumerates the 12 possible actions in each table entry,
+kernel-checks the `6 * 12^3 = 10,368` tables whose first move is left, and
+covers the right-moving half by a proved tape-reflection simulation. Thus all
+`12^4 = 20,736` machines are covered. A table that has halted by step six is
+checked to have at most four marked cells. Every other table must carry a sound
+nonhalting certificate: an exact or translated loop, a one-way blank escape, a
+closed three-cell local abstraction, or one of seven proved frontier-growth
+invariants (plus their reflected forms). In particular, a machine that prints
+an unbounded trail is handled by a blank-escape or frontier invariant, not by
+an invalid repeated-configuration assumption. The expensive Boolean checks
+are split into 144-table modules under `SetTheory/BusyBeaverBB2/` and proved by
+kernel `decide`; the proof does not use `native_decide`. The exported results
+are:
+
+```lean
+theorem BusyBeaver.BB2.upperBound_two :
+    BusyBeaver.AttainableScore 2 score -> score <= 4
+
+theorem BusyBeaver.BB2.sigma_two_eq_four
+    (hSigma : BusyBeaver.IsSigma Sigma) : Sigma 2 = 4
+```
 
 ## Translation notes (Coq → Lean)
 
