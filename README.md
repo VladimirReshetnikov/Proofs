@@ -1,36 +1,63 @@
-# Machine-Checkable Proofs
+# Proofs
 
-This repository is home for machine-checkable proofs and the
-research artifacts that support them. Most checked proof modules here are
-Lean, but the scope is intentionally broader: Rocq/Coq developments and
-associated research code in Python, Wolfram Language, or other languages
-belong here when they are part of producing or auditing formal mathematical
-certificates.
+**Machine-checked mathematics in Lean 4 and Rocq/Coq.**
 
-The root of this directory is a Lake/mathlib workspace named `LeanProofs`.
-It also exposes the SetTheory Lean sources as a secondary root-workspace
-library for modules that intentionally use mathlib, such as the
-Busy-Beaver/recursive-function bridge. Additional proof-oriented subject
-corpora live alongside it:
+`Proofs` is [Vladimir Reshetnikov's](https://github.com/VladimirReshetnikov)
+public collection of formal mathematics and auditable computational
+certificates. It ranges from classical number theory and exact analytic
+identities to OEIS power-tower sequences, propositional and equational logic,
+alternative foundations of set theory, and Busy Beaver results.
 
-- [`LeanProofs/`](LeanProofs/) — the root Lean 4 proof library, pinned to
-  Lean `4.31.0` and mathlib `v4.31.0`.
-- [`Oeis/A198683/`](Oeis/A198683/README.md) — the local research corpus for
-  the OEIS A198683 formalization, including Python/Wolfram computations,
-  source snapshots, generated data, and the wave reports around the disputed
-  `A198683(12)` value.
-- [`SetTheory/`](SetTheory/README.md) — the Rocq/Coq and independent Lean 4
-  proof of the deductive equivalence between Vladimir's Closure
-  axiomatization and ZF, plus the accompanying article.  Its PA/HF Lean
-  workspace also contains the PA-syntax formalization of the
-  Mertens/Littlewood arithmetic criterion for the Riemann Hypothesis:
-  [`SetTheory/lean/SetTheory/PAHF/RiemannHypothesis.lean`](SetTheory/lean/SetTheory/PAHF/RiemannHypothesis.lean),
-  with the candidate comparison in
-  [`docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md).
+Lean 4 with mathlib is the primary environment. Rocq (formerly Coq)
+developments provide independent or complementary checks. Supporting Python
+and Wolfram Language programs are retained when they generate, reconstruct, or
+audit certificate data; they are proof support, not substitutes for kernel
+checking. The repository distinguishes semantic theorems, conditional
+theorems, checked facts about retained data, and heuristic evidence.
 
-The initial module,
-[`LeanProofs/FermatFour.lean`](LeanProofs/FermatFour.lean), records the
-`n = 4` special case of Fermat's Last Theorem:
+**Toolchains:** Lean `4.31.0` · mathlib `v4.31.0` · Rocq `≥ 9.0`
+(developed against `9.0.1`) · [MIT-0](LICENSE)
+
+## Highlights
+
+| Area | Machine-checked result | Entry point |
+| --- | --- | --- |
+| Classical mathematics | Fermat's Last Theorem for `n = 4`, an exact floor-square-root sum, a bijective rational orbit, and exact trigonometric, arctangent, and power-tower identities | [`LeanProofs/`](LeanProofs/) |
+| OEIS and power towers | Formal semantics and exact finite certificates for A000081, A002845, A158415, A198683, and A199812 | [OEIS and power towers](#oeis-and-power-towers) |
+| Logic | Nicod's single NAND axiom, Wolfram's single Sheffer-stroke equation, Meredith's basis, and checked equational certificates | [`LeanProofs/WolframBoolean.lean`](LeanProofs/WolframBoolean.lean) |
+| Set theory | Full deductive equivalence of Vladimir's Closure axiomatization and ZF, checked independently in Rocq and Lean | [`SetTheory/`](SetTheory/README.md) |
+| Computability | Busy Beaver domination results, an exhaustive Lean proof that the two-state score is `Σ(2) = 4`, and a vendored Rocq certificate that the two-state time bound is `BB(2) = 6` | [`SetTheory/`](SetTheory/README.md), [`CoqBB2/`](CoqBB2/README.md) |
+| Reproducible research | Source snapshots, exact generators, retained data, investigation reports, and proof-status ledgers for difficult certificate projects | [`Oeis/`](Oeis/) |
+
+## Repository map
+
+| Path | Purpose |
+| --- | --- |
+| [`LeanProofs/`](LeanProofs/) | Root Lean 4/mathlib library and generated certificate modules. [`LeanProofs.lean`](LeanProofs.lean) is its import surface. |
+| [`CoqProofs/`](CoqProofs/README.md) | Rocq ports of the root Lean developments, with their parity limits documented explicitly. |
+| [`SetTheory/`](SetTheory/README.md) | Closure ↔ ZF, first-order logic and completeness, PA/HF work, Busy Beaver formalizations, and the accompanying article. |
+| [`CoqBB2/`](CoqBB2/README.md) | Vendored upstream Rocq proof of the two-state Busy Beaver time bound, with repository-local hardening. |
+| [`Oeis/A158415/`](Oeis/A158415/) | Exact Wolfram generator and research notes behind the A158415 radical certificates. |
+| [`Oeis/A198683/`](Oeis/A198683/README.md) | Wave-organized source, data, computation, and report corpus for the disputed value of A198683(12). |
+| [`docs/reports/`](docs/reports/) | Repository-wide comparison and status reports. |
+
+There is no `src/` prefix in this repository: all paths above are relative to
+the repository root.
+
+## Formalizations
+
+### Exact identities and enumerations
+
+| Lean module | Result |
+| --- | --- |
+| [`FermatFour.lean`](LeanProofs/FermatFour.lean) | The positive-natural-number `n = 4` case of Fermat's Last Theorem, via the stronger classical descent statement. |
+| [`FloorSqrtSum.lean`](LeanProofs/FloorSqrtSum.lean) | A closed form for `∑ k ∈ [1,n], ⌊√k⌋` as an exact natural-number identity. |
+| [`RationalFloorOrbit.lean`](LeanProofs/RationalFloorOrbit.lean) | The orbit of `q ↦ 1 / (1 - q + 2⌊q⌋)` from `0` visits every nonnegative rational exactly once. |
+| [`TinyExponentTower.lean`](LeanProofs/TinyExponentTower.lean) | The exact floor offset `2811012357389` for a five-level tiny-exponent tower. |
+| [`TrigGoldenRatio.lean`](LeanProofs/TrigGoldenRatio.lean) | `sin 9° + sin 21° + sin 39° = φ / √2`. |
+| [`ArctanSquareIdentity.lean`](LeanProofs/ArctanSquareIdentity.lean) | An exact eleven-term quadratic identity among `arctan` values. |
+
+A representative public theorem is:
 
 ```lean
 theorem fermat_four_no_positive_nat_solutions
@@ -38,427 +65,240 @@ theorem fermat_four_no_positive_nat_solutions
     a ^ 4 + b ^ 4 ≠ c ^ 4
 ```
 
-This is the positive-natural-number form of the statement that there are no
-positive integers satisfying `a^4 + b^4 = c^4`. The same module also records
-the stronger integer descent statement `a^4 + b^4 != c^2`, which is the
-classical route to Fermat's `n = 4` case.
+### OEIS and power towers
 
-[`LeanProofs/FloorSqrtSum.lean`](LeanProofs/FloorSqrtSum.lean) records the
-reconstructed blurred formula:
+[`LeanProofs/PowTower.lean`](LeanProofs/PowTower.lean) supplies the shared
+lexical syntax for binary parenthesizations and proves the equivalence between
+the canonical semantic value set and the recursive, finite, memoized, and
+hash-set presentations used by certificate code.
+[`LeanProofs/SparseBinary.lean`](LeanProofs/SparseBinary.lean) provides the
+verified sparse arithmetic used by the natural-power certificates.
 
-```lean
-theorem sum_floor_sqrt_eq (n : Nat) :
-    (∑ k ∈ Finset.Icc 1 n, Nat.sqrt k : Nat) =
-      Nat.sqrt n * (n + 1)
-        - Nat.sqrt n * (Nat.sqrt n + 1)
-          * (2 * Nat.sqrt n + 1) / 6
-```
+| Sequence | Formalized interpretation | Unconditional Lean result |
+| --- | --- | --- |
+| [A000081](https://oeis.org/A000081) | Distinct positive-real functions represented by parenthesizations of `x^x^...^x` | Values through `n = 5`, ending in `9` |
+| [A002845](https://oeis.org/A002845) | Distinct natural values of parenthesizations of `2^2^...^2` | Values through `n = 18`, ending in `125608` |
+| [A158415](https://oeis.org/A158415) | Distinct real values of expressions over `1`, unary `√`, and binary `+`, counted by symbol size | Values through `n = 15`, ending in `791` |
+| [A198683](https://oeis.org/A198683) | Distinct principal-complex-power values of parenthesizations of `i^i^...^i` | Exact values through `n = 7`; `16 ≤ a(8) ≤ 127` |
+| [A199812](https://oeis.org/A199812) | Distinct ordinal values of parenthesizations of `ω^ω^...^ω` | Values through `n = 13`, ending in `20287` |
 
-Here `Nat.sqrt k` is Lean's natural-number floor square-root, and the
-formula is stated as a natural-number identity.
+The main modules are
+[`A000081.lean`](LeanProofs/A000081.lean),
+[`A002845.lean`](LeanProofs/A002845.lean),
+[`A158415.lean`](LeanProofs/A158415.lean),
+[`A158415Fifteen.lean`](LeanProofs/A158415Fifteen.lean),
+[`A198683.lean`](LeanProofs/A198683.lean),
+[`A198683EightBounds.lean`](LeanProofs/A198683EightBounds.lean), and
+[`A199812.lean`](LeanProofs/A199812.lean).
 
-[`LeanProofs/RationalFloorOrbit.lean`](LeanProofs/RationalFloorOrbit.lean)
-proves that the orbit starting at `0` under
-`q ↦ 1 / (1 - q + 2 * floor q)` visits every nonnegative rational exactly
-once:
+#### The A198683(12) checkpoint
 
-```lean
-theorem rationalFloorOrbit_visits_each_nonnegative_rat_exactly_once
-    (q : Rat) (hq : 0 ≤ q) :
-    ∃ n : Nat, rationalFloorOrbit n = q ∧
-      ∀ m : Nat, rationalFloorOrbit m = q → m = n
-```
+A198683(12) is deliberately presented as an open formalization checkpoint,
+not as a proved value. The retained recurrence produces `5139` candidates,
+and the probe-refined data partition has `2926` classes, but checking those
+facts about retained data does not by itself prove the semantic cardinality.
 
-[`LeanProofs/TinyExponentTower.lean`](LeanProofs/TinyExponentTower.lean)
-proves the tiny-exponent power-tower floor identity:
+The current Lean endgame provides:
 
-```lean
-theorem floor_tinyExponentTower_sub :
-    ⌊tinyExponentTower⌋ - (10 : Int) ^ (10 ^ 10 : Nat) =
-      (2811012357389 : Int)
+- an explicit conditional decision tree in
+  [`A198683N12Certificate.lean`](LeanProofs/A198683N12Certificate.lean);
+- an unconditional proof of the extremely close near-`1` separation in
+  [`A198683N12Endpoints.lean`](LeanProofs/A198683N12Endpoints.lean);
+- a certified lower bound on the overflow witness in
+  [`A198683N12OverflowBound.lean`](LeanProofs/A198683N12OverflowBound.lean);
+- checked retained-data and exact symbolic subcertificates in the other
+  `A198683N12*.lean` modules.
 
-theorem floor_expanded_tinyExponentTower_sub :
-    Int.floor
-      ((10 : ℝ) ^
-        ((10 : ℝ) ^
-          ((10 : ℝ) ^
-            ((10 : ℝ) ^
-              ((10 : ℝ) ^ (-((10 ^ 10 : Nat) : ℝ))))))) -
-      (10 : Int) ^ (10 ^ 10 : Nat) = (2811012357389 : Int)
-```
+An exact theorem for `a(12)` still requires the wide semantic partition
+witness and resolution of the overflow candidate's isolation. The
+[wave-5 status ledger](Oeis/A198683/reports/wave-5/a198683-formalization-status-and-remaining-work.md)
+is the authoritative proved/conditional/data-certified/heuristic inventory.
 
-[`LeanProofs/TrigGoldenRatio.lean`](LeanProofs/TrigGoldenRatio.lean) proves
-the trigonometric golden-ratio identity from the degree angles in the image:
+### Propositional and equational logic
 
-```lean
-theorem sin_deg9_add_sin_deg21_add_sin_deg39 :
-    Real.sin (9 * Real.pi / 180) +
-        Real.sin (21 * Real.pi / 180) +
-        Real.sin (39 * Real.pi / 180) = φ / √2
-```
+- [`Sheffer.lean`](LeanProofs/Sheffer.lean) defines NAND and NOR, a
+  one-stroke formula language, and truth-preserving translations from ordinary
+  propositional formulas.
+- [`Nicod.lean`](LeanProofs/Nicod.lean) formalizes Nicod's one-axiom,
+  one-rule NAND calculus, proves soundness, and derives the standard
+  Łukasiewicz Hilbert basis.
+- [`EquationalLogic.lean`](LeanProofs/EquationalLogic.lean) implements a small
+  first-order equational proof checker and proves its soundness.
+- [`WolframBoolean.lean`](LeanProofs/WolframBoolean.lean) uses checked
+  certificates to connect Wolfram's single equation, Meredith's two-axiom
+  system, the Sheffer axioms, and Huntington's Boolean-algebra basis. It also
+  proves the six-operation equation minimal against every canonical candidate
+  with at most five operation occurrences by a finite countermodel
+  certificate.
 
-[`LeanProofs/ArctanSquareIdentity.lean`](LeanProofs/ArctanSquareIdentity.lean)
-proves the quadratic arctangent identity:
+### Foundations and computability
 
-```lean
-theorem arctan_square_identity :
-    (2939 : ℝ) * Real.arctan (2 : ℝ) ^ 2 -
-      1250 * Real.arctan (3 : ℝ) ^ 2 -
-      252 * Real.arctan (4 : ℝ) ^ 2 -
-      360 * Real.arctan (5 : ℝ) ^ 2 -
-      870 * Real.arctan (7 : ℝ) ^ 2 +
-      450 * Real.arctan (8 : ℝ) ^ 2 +
-      84 * Real.arctan (13 : ℝ) ^ 2 +
-      330 * Real.arctan (18 : ℝ) ^ 2 -
-      210 * Real.arctan (21 : ℝ) ^ 2 +
-      147 * Real.arctan (38 : ℝ) ^ 2 -
-      210 * Real.arctan (47 : ℝ) ^ 2 = 0
-```
+[`SetTheory/`](SetTheory/README.md) proves that the following alternative
+axiomatization is deductively equivalent to ordinary ZF:
 
-[`LeanProofs/PowTower.lean`](LeanProofs/PowTower.lean) is the shared lexical
-layer for the power-tower OEIS formalizations.  It defines the one-token
-binary parenthesization syntax `PowTower.Expr`, its canonical semantic
-`valueSet`/`valueCard`, and proved computation-oriented bridges such as
-`valueSet_eq_recursiveValueSet`, `valueCard_eq_recursiveValueSet_ncard`, and
-the finite/memoized recursive finite-set variants used by decidable
-interpretations.  Two shared devices keep the per-sequence modules thin:
-`eq_recursiveValueSet_of_recurrence` lets any local recursion of the standard
-split shape inherit the equivalence with the canonical lexical definition
-without repeating the strong induction, and the hash-set fast-level machinery
-(`fastLevelFromTable`/`fastLevelTable`/`fastCountsThrough`) is a proved
-executable fast path whose duplicate-free rows are shown to enumerate exactly
-`recursiveValueFinset`, so large certificate rows never rely on an unproved
-backend.  The module also carries the shared size-`1..5` parenthesization
-enumeration certificates reused by the sequence modules.
+- retain Extensionality, Regularity, Separation, and Powerset;
+- replace Pairing, Union, Infinity, and Replacement with a single Closure
+  schema asserting set-sized transitive closures for set-like relations.
 
-[`LeanProofs/A000081.lean`](LeanProofs/A000081.lean) defines OEIS A000081
-from the exponent-function description itself: it enumerates all legal binary
-parenthesizations of `x^x^...^x`, interprets them as functions
-`{x : ℝ // 0 < x} -> {x : ℝ // 0 < x}`, and counts the resulting semantic
-function set.  It proves the listed values through `n = 5` directly from that
-definition:
+The result is checked in a canonical Rocq development and in an independent,
+mathlib-free Lean 4 port under [`SetTheory/lean/`](SetTheory/lean/README.md).
+The development includes its own first-order syntax, proof calculus,
+soundness, Gödel completeness, model theory, and both directions of the
+axiom trade. The mathematical exposition is available as
+[`closure-axiomatization.pdf`](SetTheory/article/closure-axiomatization.pdf)
+with [LaTeX source](SetTheory/article/closure-axiomatization.tex).
 
-```lean
-theorem a000081_zero : a000081 0 = 0
-theorem a000081_one : a000081 1 = 1
-theorem a000081_two : a000081 2 = 1
-theorem a000081_three : a000081 3 = 2
-theorem a000081_four : a000081 4 = 4
-theorem a000081_five : a000081 5 = 9
-```
+The same project contains adjacent foundational and computability work:
 
-The `n = 4` proof includes the positive-real identity
-`(x^x)^(x^x) = (x^(x^x))^x`; the remaining representatives are separated as
-functions by exact exponent comparisons at `x = 3`.  The `n = 5` proof
-enumerates the 14 legal binary parenthesizations, collapses them to 9
-positive-real functions with proved exponent identities, and proves those 9
-representatives distinct by a finite strict-exponent certificate at `x = 3`.
-The size-`1..5` parenthesization enumerations are inherited from the shared
-`PowTower.Expr` certificates rather than re-checked locally.
-No Pólya recurrence or rooted-tree counter is used as a counting shortcut
-without a semantic bridge.
+- Ackermann-coded hereditary finite sets and PA/HF interpretation
+  infrastructure;
+- a first-order PA sentence expressing the Mertens/Littlewood arithmetic
+  criterion associated with the Riemann Hypothesis—the repository formalizes
+  the statement, not a proof of RH or yet its analytic equivalence;
+- Busy Beaver champion witnesses and eventual-domination theorems;
+- an exhaustive Lean classification of all `12^4 = 20,736` two-state tables,
+  proving the marked-symbol score `Σ(2) = 4`;
+- a bridge to the vendored Rocq proof that the maximum halting time for the
+  corresponding two-state model is `BB(2) = 6`.
 
-[`LeanProofs/A002845.lean`](LeanProofs/A002845.lean) defines OEIS A002845
-canonically as the number of distinct natural-number values of all binary
-parenthesizations of the literal expression `2^2^...^2`.  The primary
-definition is the semantic value set of expression trees evaluated by `Nat`
-exponentiation:
+The score theorem `Σ(2) = 4` and time theorem `BB(2) = 6` use different Busy
+Beaver measures; the differing numbers are intentional.
 
-```lean
-noncomputable def a002845 (n : Nat) : Nat
-theorem a002845_eq_logCard (n : Nat) : a002845 n = a002845LogCard n
-theorem a002845_eq_directLogCard (n : Nat) : a002845 n = directLogCard n
-theorem a002845_eq_certifiedSparseCard (n : Nat) :
-  a002845 n = certifiedSparseCard n
-theorem a002845_one : a002845 1 = 1
--- ...
-theorem a002845_eighteen : a002845 18 = 125608
-```
+### Rocq/Coq coverage
 
-All value theorems read off a single native prefix-table certificate:
-`certifiedLevelCountsThrough_eighteen` computes the counts for sizes
-`1, ..., 18` once through the shared proved hash-set fast table of
-`PowTower.Expr` (atom `Sparse.ofNat 1`, combine `certifiedCombineLog` over
-the verified hereditary sparse binary numbers of
-[`LeanProofs/SparseBinary.lean`](LeanProofs/SparseBinary.lean)), and each
-`a002845_<n>` is then a kernel-checked table lookup — the module contains
-exactly one `native_decide`.  Measured on the local Windows machine
-(2026-07-07), the module builds in about 134 s in this default form.  The
-five heavy certificates `a002845 19` through `a002845 23` (about nine
-million distinct sparse logarithms in one native run) are kept in the module
-as a commented-out block using the identical table pattern; uncommenting it
-re-verifies them with the same machinery and raises the module build to
-roughly 1300-2450 s (about 22-40 min, varying with concurrent build load).  The alternative computation views (the direct
-logarithm enumeration and the sparse-log evaluator over all parenthesization
-trees) remain as Lean-proved equivalences (`a002845_eq_directLogCard`,
-`a002845_eq_certifiedSparseCard`).  The combine operation itself is the total
-verified `Sparse.shift` — `SparseBinary.lean` proves the comparator
-numerically correct on canonical values (`compare_iff`) and proves that the
-structural carry-insertion arithmetic (`incr`/`insBit`/`add`/`shift`) returns
-the canonical representation of the expected number (`shift_eq_ofNat`) — so
-no `implemented_by` substitution is involved anywhere: the executable path
-*is* the proved path, and the only remaining trust in the value certificates
-is `native_decide` itself.
+[`CoqProofs/`](CoqProofs/README.md) contains idiomatic Rocq ports of the root
+Lean modules. Some ports reproduce the full mathematical statement; others
+check the finite certificate surface while an analytic or semantic bridge
+remains Lean-only. The directory README records those boundaries module by
+module rather than claiming blanket parity.
 
-[`LeanProofs/A158415.lean`](LeanProofs/A158415.lean) defines OEIS A158415
-directly from expression trees over the signature `1`, unary `sqrt`, and
-binary `+`, with size equal to the number of symbols and semantics in `ℝ`:
+[`CoqBB2/`](CoqBB2/README.md) is a vendored copy of the upstream `BB2/` proof
+from `ccz181078/Coq-BB5`. The local version replaces an upstream unchecked
+native-cache cast with a kernel-checked `vm_compute`/`reflexivity` proof and
+retains the upstream provenance and license.
 
-```lean
-noncomputable def a158415 (n : Nat) : Nat
-theorem a158415_eq_recursiveValueSet_ncard (n : Nat) :
-  a158415 n = (recursiveValueSet n).ncard
-theorem a158415_one : a158415 1 = 1
--- ...
-theorem a158415_nine : a158415 9 = 33
-theorem a158415_ten : a158415 10 = 54
-theorem a158415_eleven : a158415 11 = 91
-theorem a158415_twelve : a158415 12 = 154
-theorem a158415_thirteen : a158415 13 = 264
-theorem a158415_fourteen : a158415 14 = 455
-```
+## Research artifacts
 
-The module proves the lexical expression-set definition equivalent to the
-split-recursive value-set recurrence used by the OEIS program, then proves
-the listed values through `n = 14` over exact real square roots, including the
-first non-Fibonacci value `a158415 8 = 20` and the next value
-`a158415 9 = 33`.  The proof is
-deliberately not a floating-point de-duplication argument: equalities are
-proved by the recurrence and `Real.sqrt` identities, while distinctness is
-certified by exact inequality chains over the finite radical tables.
-[`LeanProofs/A158415Ten.lean`](LeanProofs/A158415Ten.lean) carries the
-larger size-10 certificate: it defines the 54-entry table, proves the table is
-strictly ordered, and routes every recurrence-produced value into that exact
-range to obtain `a158415_ten`.
-[`LeanProofs/A158415Eleven.lean`](LeanProofs/A158415Eleven.lean) advances the
-size-11 certificate: it records the 91 sorted representatives, proves the table
-is strictly ordered, proves its range has cardinality 91, proves that every
-representative is generated by the recurrence, and routes every
-recurrence-produced value, including the middle binary splits, back into that
-exact range to obtain `a158415_eleven`.  The
-[`LeanProofs/A158415Twelve.lean`](LeanProofs/A158415Twelve.lean) module
-completes the size-12 certificate: it records the 154 sorted representatives,
-proves the 27 non-monotone adjacent comparisons by exact rational radical
-bounds, proves the whole table is strictly ordered, proves every listed
-representative is produced by the recurrence, and routes every size-12
-recurrence candidate back into the table range to obtain `a158415_twelve`.
-[`LeanProofs/A158415Thirteen.lean`](LeanProofs/A158415Thirteen.lean) proves
-the first post-154 certificate: it records the 264 sorted representatives,
-proves the 50 non-monotone adjacent comparisons by exact rational radical
-bounds, proves the table is strictly ordered, proves every listed
-representative is generated by the recurrence, and routes every size-13
-recurrence candidate back into the table range to obtain `a158415_thirteen`.
-[`LeanProofs/A158415Fourteen.lean`](LeanProofs/A158415Fourteen.lean) carries
-the next certificate: it records the 455 sorted representatives, proves the
-291 non-monotone adjacent comparisons by exact rational radical bounds, proves
-the table is strictly ordered, proves every listed representative is generated
-by the recurrence, and routes every one of the 1576 size-14 recurrence
-candidates back into the table range to obtain `a158415_fourteen`.
-The size-15 proof is split across
-[`LeanProofs/A158415FifteenTable.lean`](LeanProofs/A158415FifteenTable.lean),
-[`LeanProofs/A158415FifteenOrder.lean`](LeanProofs/A158415FifteenOrder.lean),
-[`LeanProofs/A158415FifteenRangeA.lean`](LeanProofs/A158415FifteenRangeA.lean),
-[`LeanProofs/A158415FifteenRangeB.lean`](LeanProofs/A158415FifteenRangeB.lean),
-[`LeanProofs/A158415FifteenRangeC.lean`](LeanProofs/A158415FifteenRangeC.lean),
-and [`LeanProofs/A158415Fifteen.lean`](LeanProofs/A158415Fifteen.lean):
-it records the 791 sorted representatives, proves the table is strictly
-ordered by exact rational radical bounds, proves every listed representative is
-generated by the recurrence, and routes every size-15 recurrence candidate
-back into the table range to obtain `a158415_fifteen`.
-The exact RootReduce-based discovery/audit script that produced the tables,
-routes, collision summaries, adjacent-comparison metadata, and Lean
-certificate fragments lives at
-[`Oeis/A158415/computations/wolfram/generate-a158415-data.wl`](Oeis/A158415/computations/wolfram/generate-a158415-data.wl);
-it is proof support only, not a trusted replacement for the Lean checks.
+Proof discovery is part of the repository when it is needed to reproduce or
+audit a certificate:
 
-OEIS A198683 is defined from the canonical lexical syntax of all binary
-parenthesizations of `i^i^...^i`, interpreting every binary node as the
-principal complex power `exp (log z * w)`, and taking the number of distinct
-evaluated values.  Its recursive value-set helper is Lean-proved equivalent to
-that lexical definition before being used by the computational proofs.  The
-formalization proves the accepted values through `n = 7` directly over `ℂ`,
-with public theorems `a198683_one` through `a198683_seven`, split across four
-modules:
-[`LeanProofs/A198683Tower.lean`](LeanProofs/A198683Tower.lean) holds the
-canonical definition layer, the tower constants `p2, ..., p6O` with their
-analytic facts (in the shared internal namespace `A198683Support`), and the
-values through `n = 4`;
-[`LeanProofs/A198683FiveSix.lean`](LeanProofs/A198683FiveSix.lean) proves
-`a198683 5 = 7` and `a198683 6 = 15`;
-[`LeanProofs/A198683SevenUpper.lean`](LeanProofs/A198683SevenUpper.lean)
-carries the representative-list refinement pipeline ending in
-`a198683_seven_le_thirty_four`; and
-[`LeanProofs/A198683.lean`](LeanProofs/A198683.lean) proves the matching
-lower bound `thirty_four_le_a198683_seven`, assembles
-`a198683_seven : a198683 7 = 34`, and restates the historical intermediate
-bounds as corollaries of the final pair.
-Two companion certificate modules record finite checked data from the local
-[`Oeis/A198683/`](Oeis/A198683/README.md) corpus:
-[`LeanProofs/A198683Schoenfield.lean`](LeanProofs/A198683Schoenfield.lean)
-checks the Schoenfield labels through `n = 11`,
-[`LeanProofs/A198683SchoenfieldRows.lean`](LeanProofs/A198683SchoenfieldRows.lean)
-reconstructs the `n = 7` through `n = 11` labels from the source table's
-Count/Match rows, and
-[`LeanProofs/A198683N12Probe.lean`](LeanProofs/A198683N12Probe.lean) checks
-that the strict `n = 12` candidate table has 2925 classes among 5139
-candidates and that the documented probe split refines it to 2926 classes.
-[`LeanProofs/A198683N12Magnitude.lean`](LeanProofs/A198683N12Magnitude.lean)
-checks that the retained overflow/magnitude metadata isolates candidate `57`.
-[`LeanProofs/A198683N12OverflowWitness.lean`](LeanProofs/A198683N12OverflowWitness.lean)
-records the traced candidate-57 expression semantically and proves it lies in
-the `n = 11` and `n = 12` value sets, with a log-modulus separation criterion
-for comparing that overflow witness against candidates whose exponent real
-part is certified larger.
-[`LeanProofs/A198683N12Symbolic.lean`](LeanProofs/A198683N12Symbolic.lean)
-replaces the n = 12 heuristic cluster analysis with exact symbolic Lean
-reductions.  It proves that all fourteen representatives from the
-near-`i^i` probe class are exactly `i^i = exp(-pi/2)`, and proves the exact
-merges of the n = 12 near-zero probe doubleton `{2207, 3777}` and of the
-retained near-one pair `{1404, 4239}`.  For the remaining near-one split it
-defines representative `25` and reduces the separation of `25` from
-`{1404, 4239}` to one conditional pair,
-`nearOne25_ne_nearOne1404_of_endpoint_bounds` /
-`nearOne25_ne_nearOne4239_of_endpoint_bounds`, whose every hypothesis is a
-scalar endpoint estimate for `exp`, `sin`, or `cos` at an explicit rational
-point.  The supporting layers are already unconditional: the module certifies
-rational boxes for `rho = exp(-pi/2)` (from mathlib's 20-decimal `exp 1`
-certificate and a Taylor bound for the residual), for `pi/2` (from mathlib's
-20-decimal `pi` certificate), and hence for `theta = (pi/2) * rho`
-(`rho_bounds`, `theta_box`), and it exposes the level-by-level reduction
-lemmas that propagate an interval certificate from those boxes through
-`v = i^(i^(i^i))`, the representative-`25` seed, and the higher tower levels
-down to the final sign obligation `nearOne25Base.im < 0`, together with exact
-real/imaginary recurrence formulas for the `(-i)^z` seed and lower `i^z`
-layers of representative `25`.
-These n = 12 companion modules are progress toward, but still not, a semantic
-proof of `a198683 12 = 2926`.
-The current formalization checkpoint and next directions are summarized in
-[`Oeis/A198683/reports/wave-4/a198683-n12-lean-status-and-next-directions.md`](Oeis/A198683/reports/wave-4/a198683-n12-lean-status-and-next-directions.md).
+- [`Oeis/A158415/computations/wolfram/generate-a158415-data.wl`](Oeis/A158415/computations/wolfram/generate-a158415-data.wl)
+  generates and audits the exact radical tables and Lean certificate
+  fragments for A158415.
+- [`Oeis/A198683/`](Oeis/A198683/README.md) preserves source snapshots,
+  Python and Wolfram computations, generated tables, discrepancy analyses,
+  and five waves of formalization reports.
+- [`docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md)
+  compares the formal PA statement with the intended analytic criterion.
 
-[`LeanProofs/A199812.lean`](LeanProofs/A199812.lean) defines OEIS A199812
-from the same shared `PowTower.Expr` lexical syntax used by the other
-power-tower OEIS modules, interpreting the atom as ordinal `omega` and each
-node as ordinal exponentiation. It uses Cantor normal forms and dynamic
-normal-form counts that are direct instances of the shared
-`PowTower.Expr` finite recurrence, and certifies the listed values through
-`n = 13` from one prefix-table certificate over the shared proved hash-set
-fast table (atom `0 : ONote`, combine `a + omega^b` on inner exponents):
+Generated tables and scripts remain outside the trusted theorem boundary
+unless a proof-assistant checker connects them to the mathematical semantics.
 
-```lean
-theorem a199812_one : a199812 1 = 1
--- ...
-theorem a199812_thirteen : a199812 13 = 20287
-```
+## Building and checking
 
-[`LeanProofs/Sheffer.lean`](LeanProofs/Sheffer.lean) is the shared core-only
-vocabulary for the single-binary-connective propositional modules: the two
-Boolean Sheffer strokes (NAND and NOR), formulas over one anonymous stroke,
-the ordinary classical propositional language, and the truth-preserving
-translations from the classical language into pure stroke formulas for both
-stroke conventions.
+### Lean/mathlib workspace
 
-[`LeanProofs/Nicod.lean`](LeanProofs/Nicod.lean) formalizes Nicod's one-axiom
-propositional calculus over that shared NAND-only language, including the
-exact axiom schema
-
-```text
-(p ↑ (q ↑ r)) ↑ ((u ↑ (u ↑ u)) ↑ ((w ↑ q) ↑ ((p ↑ w) ↑ (p ↑ w))))
-```
-
-and the exact rule `(p ↑ (q ↑ r)), p ⊢ r`.  Lean uses `↑` for coercions, so
-the formal notation uses `⊼` for the same NAND connective.  The module proves
-that the Nicod axiom is classically valid, that the rule is classically sound,
-and therefore that every formula derivable in the one-axiom/one-rule calculus
-is a classical tautology; expressive completeness of NAND is inherited from
-the shared translation of `Sheffer.lean` (`toNand_valid_iff`).
-It also derives the three Lukasiewicz Hilbert axiom schemas and standard modus
-ponens for NAND-defined implication, formalized as
-`Formula.implementsLukasiewicz`, so every theorem of that standard classical
-propositional calculus has a Nicod proof.
-
-[`LeanProofs/WolframBoolean.lean`](LeanProofs/WolframBoolean.lean)
-formalizes Wolfram's single Sheffer-stroke equation
-
-```text
-((a ↑ b) ↑ c) ↑ (a ↑ ((a ↑ c) ↑ a)) = c
-```
-
-and Meredith's two-axiom Sheffer-stroke system, over the shared stroke
-language of `Sheffer.lean` and the first-order terms of
-`EquationalLogic.lean`.  Since Lean uses `↑` for coercions, the formal
-notation uses `⊙`.  A small equational checker in
-[`LeanProofs/EquationalLogic.lean`](LeanProofs/EquationalLogic.lean), applied
-to generated certificates in
-[`LeanProofs/WolframBooleanCertificates.lean`](LeanProofs/WolframBooleanCertificates.lean),
-proves over an arbitrary carrier with one binary operation that Wolfram's
-equation derives the standard three Sheffer axioms, and that Meredith's pair
-derives Wolfram's equation.  A second generated certificate in
-[`LeanProofs/WolframBooleanHuntingtonCertificates.lean`](LeanProofs/WolframBooleanHuntingtonCertificates.lean)
-derives Huntington's three-equation Boolean-algebra basis for the operations
-`¬a = a ⊙ a` and `a ∨ b = ¬a ⊙ ¬b`.  The public entry points are:
-
-```lean
-theorem wolfram_derives_sheffer_axioms {α : Type u} (op : α → α → α)
-    (h : WolframAxiom op) : ShefferAxioms op
-
-theorem meredith_derives_wolfram_axiom {α : Type u} (op : α → α → α)
-    (h : MeredithAxioms op) : WolframAxiom op
-
-theorem meredith_derives_sheffer_axioms {α : Type u} (op : α → α → α)
-    (h : MeredithAxioms op) : ShefferAxioms op
-
-theorem wolfram_derives_huntington_axioms {α : Type u} (op : α → α → α)
-    (h : WolframAxiom op) :
-    HuntingtonAxioms (strokeJoin op) (strokeCompl op)
-
-theorem meredith_derives_huntington_axioms {α : Type u} (op : α → α → α)
-    (h : MeredithAxioms op) :
-    HuntingtonAxioms (strokeJoin op) (strokeCompl op)
-```
-
-The same module separately proves that, on the two-element Boolean algebra,
-Wolfram's equation and Meredith's pair each have exactly the two Sheffer
-truth-table models, NAND and its dual NOR; consequently any Boolean binary
-operation satisfying either system expresses every ordinary classical
-connective.  It also includes a native-checked finite lower-bound certificate:
-for every canonical single equation with at most five primitive
-binary-operation occurrences that is true in the Boolean Sheffer tables, one of
-30 explicitly listed finite algebras satisfies that short equation while
-violating Wolfram's axiom.  Thus no such shorter equation can axiomatize the
-same equational class, while Wolfram's equation uses six operation symbols.
-
-## Building
-
-Build the root Lake/mathlib workspace:
+The root workspace is pinned by [`lean-toolchain`](lean-toolchain) and
+[`lake-manifest.json`](lake-manifest.json). With Git and
+[elan](https://github.com/leanprover/elan) installed:
 
 ```powershell
-cd src/Lean
+git clone https://github.com/VladimirReshetnikov/Proofs.git
+cd Proofs
 lake exe cache get
 lake build
 ```
 
-Build the SetTheory Rocq/Coq development (the full list and
-order are in `SetTheory/_CoqProject`) and its independent Lean port:
+The broad build includes large exact certificates and can be expensive. For
+focused work, build the affected module and its dependencies:
 
 ```powershell
-cd src/Lean/SetTheory
+lake build +LeanProofs.FermatFour
+lake build +LeanProofs.A198683EightBounds
+lake build +SetTheory.BusyBeaverBB2
+lake build +SetTheory.BusyBeaverMathlib
+lake build +SetTheory.AuditMathlib
+```
+
+The Closure ↔ ZF Lean port also has a standalone, mathlib-free workspace:
+
+```powershell
+cd SetTheory/lean
+lake build
+lake env lean SetTheory/Audit.lean
+```
+
+### Rocq/Coq developments
+
+The root [`_CoqProject`](_CoqProject) lists the `CoqProofs` modules in
+dependency order. On PowerShell, compile them with:
+
+```powershell
+cd C:\path\to\Proofs
+Get-Content _CoqProject |
+  Where-Object { $_ -match '^CoqProofs/.+\.v$' } |
+  ForEach-Object {
+    & coqc -Q CoqProofs LeanProofsCoq $_
+    if ($LASTEXITCODE -ne 0) { throw "coqc failed: $_" }
+  }
+```
+
+The SetTheory manifest includes its vendored CoqBB2 dependencies in the
+required order:
+
+```powershell
+cd C:\path\to\Proofs\SetTheory
 Get-Content _CoqProject |
   Where-Object { $_ -match '\.v$' } |
   ForEach-Object {
     & coqc -Q . SetTheory -Q ../CoqBB2 CoqBB2 $_
     if ($LASTEXITCODE -ne 0) { throw "coqc failed: $_" }
   }
-
-cd lean
-lake build
 ```
 
-The mathlib-backed busy-beaver modules and their audit build from this root
-workspace instead of the standalone `lean/` one:
+For individual files, use the same logical-path flags. See
+[`CoqProofs/README.md`](CoqProofs/README.md),
+[`SetTheory/README.md`](SetTheory/README.md), and
+[`CoqBB2/README.md`](CoqBB2/README.md) for project-specific details.
 
-```powershell
-cd src/Lean
-lake build +SetTheory.BusyBeaverBB2
-lake build SetTheory.BusyBeaverMathlib
-lake build SetTheory.AuditMathlib
-```
+## Trust and status
+
+- Lean theorem statements are checked by Lean's kernel. Some finite
+  certificates use `native_decide`; those sites deliberately extend the
+  trusted boundary to Lean's native compiler and runtime and are visible in
+  source.
+- Rocq certificates use kernel checking and, where documented, `vm_compute`.
+  The vendored CoqBB2 proof uses functional extensionality; its README records
+  the exact assumption.
+- Generated equational traces, interval tables, and candidate partitions are
+  accepted only through proved checkers or explicit hypotheses. Numerical
+  agreement alone is never presented as a theorem.
+- Conditional theorems remain useful: their hypotheses identify the exact
+  mathematical or certificate obligations still open. They are labeled as
+  conditional in module documentation and status reports.
+- Assumption audits live in [`SetTheory/Audit.v`](SetTheory/Audit.v),
+  [`SetTheory/lean/SetTheory/Audit.lean`](SetTheory/lean/SetTheory/Audit.lean),
+  and
+  [`SetTheory/lean/SetTheory/AuditMathlib.lean`](SetTheory/lean/SetTheory/AuditMathlib.lean).
+
+## Provenance
+
+This repository was extracted from
+[`VladimirReshetnikov/Smithereens`](https://github.com/VladimirReshetnikov/Smithereens)
+on 2026-07-09 from source snapshot
+[`6955227fc5bf55d368b4c40644767b3749234425`](https://github.com/VladimirReshetnikov/Smithereens/commit/6955227fc5bf55d368b4c40644767b3749234425).
+The filtered history lifts the former proof-owned paths to the repository root
+while retaining their relevant ancestry, authorship, timestamps, messages,
+and contents; commit identifiers necessarily changed during filtering. The
+filtered repository's ordinary `git log` and `git blame` expose that rewritten
+history; consult Smithereens for the original path names.
+
+BusyLean was intentionally excluded from this repository and remains in
+[Smithereens at `src/BusyLean`](https://github.com/VladimirReshetnikov/Smithereens/tree/main/src/BusyLean).
+
+## License
+
+Unless a nested license says otherwise, this repository is available under
+the [MIT No Attribution License (MIT-0)](LICENSE). The vendored
+[`CoqBB2/`](CoqBB2/) subtree retains its upstream
+[MIT license](CoqBB2/LICENSE) and provenance.

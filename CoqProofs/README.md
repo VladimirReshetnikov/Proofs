@@ -12,7 +12,7 @@ definitions, tactics, and proof organization.
 The SetTheory project already has its own Coq development in
 `SetTheory/`; it is not duplicated here.
 
-Current ports:
+## Current ports
 
 - `Sheffer.v` ports the shared Sheffer-stroke vocabulary from
   `Sheffer.lean`: NAND/NOR truth tables, one-stroke formulas, ordinary
@@ -27,13 +27,13 @@ Current ports:
   provide the exact `cos (π / 5)` value used by Lean/mathlib, so the port
   derives it locally from the triple-angle formula and the positive quadratic
   root.
-- `TinyExponentTower.v` ports the final floor-certification layer from
-  `TinyExponentTower.lean`: Coq defines the real power tower using `Rpower`,
-  proves that the expanded tower equals the compact named tower, factors the
-  top power as `10^n * exp x`, and proves a generic `Zfloor` theorem turning
-  explicit exponential/logarithmic increment bounds into the stated
-  `10^(10^10) + 2811012357389` floor.  The Lean module's long interval proof
-  of those logarithmic and exponential bounds is not yet replayed in Coq.
+- `TinyExponentTower.v` ports the complete floor certificate from
+  `TinyExponentTower.lean`. It proves the generic `Zfloor` conversion layer,
+  then discharges the concrete logarithmic and exponential bounds
+  unconditionally with `coq-interval` and the same first-order remainder
+  argument as the Lean proof. The exported `floor_tinyExponentTower_sub` and
+  `floor_expanded_tinyExponentTower_sub` theorems therefore have no
+  analytic-bound hypotheses.
 - `FermatFour.v` ports the project-local wrapper surface from
   `FermatFour.lean`: Coq defines the `a^4 + b^4 = c^2` counterexample
   predicate, proves elementary structural facts and the well-founded infinite
@@ -156,6 +156,29 @@ Current ports:
   `A198683SchoenfieldRows.lean`: Coq reconstructs the normalized labels from
   the retained Schoenfield table rows for `n = 7` through `n = 11` and then
   reuses the class-count certificate.
+- `A198683N12Bounds.v` certifies the real interval boxes behind the `n = 12`
+  near-one analysis with `coq-interval`, including the norm separation used
+  to distinguish representatives `25` and `1404`.
+- `A198683Complex.v` supplies a reusable Coquelicot complex-number model of
+  principal exponentiation, together with the real/imaginary formulas and
+  modulus-separation lemmas used by the A198683 tower proofs.
+- `A198683N12ComplexTowers.v` instantiates the concrete near-one and overflow
+  towers in that complex model, proves their island identities, connects them
+  to the interval-box shadows, and derives the genuine complex inequality
+  `nearOne25C <> nearOne1404C`.
+- `A198683N12Certificate.v` ports the generic `n = 12` partition-witness
+  decision tree. It uses a relational distinct-count specification over
+  arbitrary evaluated values, so the witness, cover, separation, and
+  `2924`/`2925`/`2926` consequences are independent of the concrete complex
+  implementation.
+- `A198683N12OverflowBound.v` proves with `coq-interval` that the overflow
+  base has imaginary part greater than `10^100`, and derives the
+  moderate-log-modulus criterion separating candidate `57` from ordinary
+  candidates.
+- `A198683N12CertificateC.v` instantiates the generic decision tree over
+  Coquelicot complex numbers and principal powers. Because the near-one split
+  is proved, any partition witness confines the count to `{2925, 2926}`;
+  overflow isolation then pins `2926`.
 - `A198683N12Endpoints.v` gives the merged Lean endpoint module its own Coq
   import surface, re-exporting the complex-instantiated near-one split and
   n = 12 consequences from `A198683N12CertificateC.v`.
@@ -183,37 +206,17 @@ Current ports:
   and `wolfram_six_operations_is_minimal_for_single_equational_axioms` with
   statements matching the Lean originals.
 
-Build from the repository root:
+## Building
+
+The full port requires Rocq/Coq, Coquelicot, and `coq-interval`. Build from the
+repository root; the committed `_CoqProject` is dependency-ordered and is the
+canonical module list:
 
 ```powershell
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/Sheffer.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/Nicod.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/ArctanSquareIdentity.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/TrigGoldenRatio.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/TinyExponentTower.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/FermatFour.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/FloorSqrtSum.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/RationalFloorOrbit.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/PowTower.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Tower.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683FiveSix.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SevenUpper.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A000081.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A158415.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A199812.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/SparseBinary.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A002845.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Magnitude.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Probe.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12OverflowWitness.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Symbolic.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683Schoenfield.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683SchoenfieldRows.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683EightBounds.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/EquationalLogic.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanCertificates.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBooleanHuntingtonCertificates.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/WolframBoolean.v
-coqc -Q CoqProofs LeanProofsCoq CoqProofs/A198683N12Endpoints.v
+Get-Content _CoqProject |
+  Where-Object { $_ -match '^CoqProofs/.+\.v$' } |
+  ForEach-Object {
+    & coqc -Q CoqProofs LeanProofsCoq $_
+    if ($LASTEXITCODE -ne 0) { throw "coqc failed: $_" }
+  }
 ```

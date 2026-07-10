@@ -20,7 +20,7 @@ same logical content; no `sorry`, no extra axioms.
 ## Module map
 
 | Lean module | Coq file | contents |
-|---|---|---|
+| --- | --- | --- |
 | [`SetTheory/Fol.lean`](SetTheory/Fol.lean) | `Fol.v` | formulas over {∈, =} with De Bruijn variables, renaming, free variables, sentences, sealing, a surjective enumeration (self-contained Cantor pairing), Tarski satisfaction `Sat`, `relOf` |
 | [`SetTheory/Calculus.lean`](SetTheory/Calculus.lean) | `Calculus.v` | the ND calculus `Prov`, weakening/deduction/cut, the equality kit, renaming admissibility, Henkin-witness cores, **soundness** |
 | [`SetTheory/Completeness.lean`](SetTheory/Completeness.lean) | `Completeness.v` | the quotient term model + truth lemma (`model_exists`), the sentence-base Lindenbaum/Henkin chain (`model_of_BCon`; finite-context completeness is its `B = ∅` instance), **Gödel completeness** (`prov_iff_valid`), infinite completeness (`completeness_inf`), **`theory_equiv`** |
@@ -57,7 +57,7 @@ cd "$(git rev-parse --show-toplevel)"
 lake exe cache get Mathlib.Computability.TuringMachine.ToPartrec
 lake build +SetTheory.BusyBeaverBB2
 lake build +SetTheory.BusyBeaverMathlib
-lake build SetTheory.AuditMathlib     # replays the bridge assumption audit
+lake build +SetTheory.AuditMathlib    # replays the bridge assumption audit
 ```
 
 ## The assumption audit
@@ -65,7 +65,7 @@ lake build SetTheory.AuditMathlib     # replays the bridge assumption audit
 `SetTheory/Audit.lean` is the Lean analogue of the Coq files' trailing
 `Print Assumptions` commands. Its output certifies:
 
-```
+```text
 'SetTheory.T_iff_ZF' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
