@@ -358,6 +358,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_all_positiveCommonMultipleExistsTermAt
 #check @PA.Formula.BProv_Ax_s_betaCodingStepTermAt_of_positiveCommon
 #check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt_of_term
+#check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt_elim_opened
 #check @PA.Formula.BProv_Ax_s_betaCodingStepExistsTermAt
 #check @PA.Formula.BProv_Ax_s_betaPair_positive_inverse_of_gap_scale
 #check @PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_of_certificate
@@ -406,6 +407,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ
 #check @PA.Formula.BProv_Ax_s_all_betaShiftPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_codingStep
+#check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_shiftPrefix_succ
+#check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt
+#check @PA.Formula.BProv_Ax_s_all_betaShiftTailExistsTermAt
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition
 #check @PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition_of_code
