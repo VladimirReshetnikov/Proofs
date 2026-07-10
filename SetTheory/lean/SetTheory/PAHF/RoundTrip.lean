@@ -2005,6 +2005,428 @@ theorem BProv_Ax_s_ordinalCodeTraceCapacityTermAt_succ
   simpa [ordinalCodeTraceCapacityTermAt,
     body, antecedent, consequent, Term.rename] using hall
 
+theorem subst_betaCodingStepTermAt
+    (sigma : Nat → Term) (bound sourceCode step : Term) :
+    subst sigma (betaCodingStepTermAt bound sourceCode step) =
+      betaCodingStepTermAt
+        (Term.subst sigma bound) (Term.subst sigma sourceCode)
+        (Term.subst sigma step) := by
+  simp [betaCodingStepTermAt, commonMultipleThroughTermAt,
+    dvdTermTermAt, ltTermAt, leTermAt,
+    subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem subst_ordinalCodeTraceCapacityTermAt
+    (sigma : Nat → Term) (raw coded capacity : Term) :
+    subst sigma
+        (ordinalCodeTraceCapacityTermAt raw coded capacity) =
+      ordinalCodeTraceCapacityTermAt
+        (Term.subst sigma raw) (Term.subst sigma coded)
+        (Term.subst sigma capacity) := by
+  simp [ordinalCodeTraceCapacityTermAt,
+    subst_betaCodingStepTermAt,
+    subst_ordinalCodeGraphBodyExistsTermAt,
+    subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+/-- Existential PA-induction invariant: a raw number has an ordinal code and
+an arithmetic capacity supporting traces at every certified coding step. -/
+def ordinalCodeTotalCapacityTermAt (raw : Term) : Formula :=
+  ex (ex
+    (ordinalCodeTraceCapacityTermAt
+      (Term.rename (fun n => n + 2) raw)
+      (Term.var 1) (Term.var 0)))
+
+theorem subst_ordinalCodeTotalCapacityTermAt
+    (sigma : Nat → Term) (raw : Term) :
+    subst sigma (ordinalCodeTotalCapacityTermAt raw) =
+      ordinalCodeTotalCapacityTermAt
+        (Term.subst sigma raw) := by
+  have hshift2 :
+      Term.subst (Term.upSubst (Term.upSubst sigma))
+          (Term.rename (fun n => n + 2) raw) =
+        Term.rename (fun n => n + 2) (Term.subst sigma raw) := by
+    change Term.subst (iterUpSubst 2 sigma)
+        (Term.rename (fun n => n + 2) raw) =
+      Term.rename (fun n => n + 2) (Term.subst sigma raw)
+    exact term_subst_iterUpSubst_rename_add 2 sigma raw
+  simp [ordinalCodeTotalCapacityTermAt,
+    subst_ordinalCodeTraceCapacityTermAt,
+    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
+
+theorem rename_ordinalCodeTotalCapacityTermAt
+    (r : Nat → Nat) (raw : Term) :
+    rename r (ordinalCodeTotalCapacityTermAt raw) =
+      ordinalCodeTotalCapacityTermAt (Term.rename r raw) := by
+  rw [← subst_var_rename,
+    subst_ordinalCodeTotalCapacityTermAt]
+  simp only [term_subst_var_rename]
+
+theorem BProv_ordinalCodeTotalCapacityTermAt_of_terms
+    {B : Formula → Prop} {G : List Formula}
+    {raw coded capacity : Term}
+    (hcapacity : BProv B G
+      (ordinalCodeTraceCapacityTermAt raw coded capacity)) :
+    BProv B G (ordinalCodeTotalCapacityTermAt raw) := by
+  apply BProv_exI (t := coded)
+  apply BProv_exI (t := capacity)
+  simpa [ordinalCodeTotalCapacityTermAt,
+    subst_ordinalCodeTraceCapacityTermAt,
+    instTerm, Term.subst, Term.upSubst,
+    term_subst_instTerm_rename_succ,
+    term_subst_instTerm_rename_two_succ,
+    term_subst_upSubst_instTerm_rename_two_succ] using hcapacity
+
+theorem BProv_Ax_s_ordinalCodeTotalCapacityTermAt_zero
+    {G : List Formula} :
+    BProv Ax_s G
+      (ordinalCodeTotalCapacityTermAt Term.zero) :=
+  BProv_ordinalCodeTotalCapacityTermAt_of_terms
+    BProv_Ax_s_ordinalCodeTraceCapacityTermAt_zero
+
+/-- Unconditional term-parametric Ackermann adjunction, extracted from the
+already closed PA proof of translated HF adjunction totality. -/
+theorem BProv_Ax_s_hfAdjoinExistsTermAt
+    {G : List Formula} (oldCode elemCode : Term) :
+    BProv Ax_s G (hfAdjoinExistsTermAt oldCode elemCode) := by
+  have hallEmpty : BProv Ax_s [] (all (hfAdjoinTotalAt 0)) :=
+    BProv_Ax_s_all_hfAdjoinTotalAt_of_zero_succ
+      BProv_Ax_s_hfAdjoinTotalTermAt_zero
+      BProv_Ax_s_hfAdjoinTotalTermAt_succ
+  have hall : BProv Ax_s G (all (hfAdjoinTotalAt 0)) :=
+    BProv_mono Ax_s [] G _ (fun x hx => by cases hx) hallEmpty
+  have hallTerm : BProv Ax_s G
+      (all (hfAdjoinTotalTermAt (Term.var 0))) := by
+    simpa [hfAdjoinTotalTermAt_var] using hall
+  have htotal : BProv Ax_s G
+      (hfAdjoinTotalTermAt elemCode) :=
+    BProv_hfAdjoinTotalTermAt_of_all
+      (elemCode := elemCode) hallTerm
+  exact BProv_hfAdjoinExistsTermAt_of_total
+    (oldCode := oldCode) htotal
+
+/-- Advance the existential totality invariant from explicit predecessor
+code/capacity witnesses, opening only the fresh adjunction result. -/
+theorem BProv_Ax_s_ordinalCodeTotalCapacityTermAt_succ_of_terms
+    {G : List Formula} {raw oldCoded oldCapacity : Term}
+    (holdCapacity : BProv Ax_s G
+      (ordinalCodeTraceCapacityTermAt
+        raw oldCoded oldCapacity)) :
+    BProv Ax_s G
+      (ordinalCodeTotalCapacityTermAt (Term.succ raw)) := by
+  let goal : Formula :=
+    ordinalCodeTotalCapacityTermAt (Term.succ raw)
+  have hex : BProv Ax_s G
+      (hfAdjoinExistsTermAt oldCoded oldCoded) :=
+    BProv_Ax_s_hfAdjoinExistsTermAt oldCoded oldCoded
+  let graphBody : Formula :=
+    hfAdjoinGraphTermAt
+      (Term.var 0)
+      (Term.rename Nat.succ oldCoded)
+      (Term.rename Nat.succ oldCoded)
+  have hopened : BProv Ax_s
+      (graphBody :: G.map (rename Nat.succ))
+      (rename Nat.succ goal) := by
+    let D : List Formula := graphBody :: G.map (rename Nat.succ)
+    let raw1 : Term := Term.rename Nat.succ raw
+    let oldCoded1 : Term := Term.rename Nat.succ oldCoded
+    let oldCapacity1 : Term := Term.rename Nat.succ oldCapacity
+    have hgraph : BProv Ax_s D
+        (hfAdjoinGraphTermAt (Term.var 0) oldCoded1 oldCoded1) := by
+      simpa [D, graphBody, oldCoded1] using
+        (BProv_ass (B := Ax_s) (G := D) (by simp [D, graphBody]))
+    have holdCapacityRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (ordinalCodeTraceCapacityTermAt
+            raw oldCoded oldCapacity)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        holdCapacity Nat.succ
+    have holdCapacityD : BProv Ax_s D
+        (ordinalCodeTraceCapacityTermAt
+          raw1 oldCoded1 oldCapacity1) := by
+      have hraw := BProv_context_cons (B := Ax_s)
+        (a := graphBody) holdCapacityRen
+      simpa [D, raw1, oldCoded1, oldCapacity1,
+        rename_ordinalCodeTraceCapacityTermAt] using hraw
+    have hnewCapacity : BProv Ax_s D
+        (ordinalCodeTraceCapacityTermAt
+          (Term.succ raw1) (Term.var 0)
+          (Term.add oldCapacity1 (Term.var 0))) :=
+      BProv_Ax_s_ordinalCodeTraceCapacityTermAt_succ
+        holdCapacityD hgraph
+    have hnewTotal : BProv Ax_s D
+        (ordinalCodeTotalCapacityTermAt (Term.succ raw1)) :=
+      BProv_ordinalCodeTotalCapacityTermAt_of_terms hnewCapacity
+    simpa [goal, D, raw1,
+      rename_ordinalCodeTotalCapacityTermAt,
+      Term.rename] using hnewTotal
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [hfAdjoinExistsTermAt, graphBody] using hopened)
+
+/-- Successor rule for the existential `(coded, capacity)` induction
+invariant. -/
+theorem BProv_Ax_s_ordinalCodeTotalCapacityTermAt_succ
+    {G : List Formula} {raw : Term}
+    (holdTotal : BProv Ax_s G
+      (ordinalCodeTotalCapacityTermAt raw)) :
+    BProv Ax_s G
+      (ordinalCodeTotalCapacityTermAt (Term.succ raw)) := by
+  let goal : Formula :=
+    ordinalCodeTotalCapacityTermAt (Term.succ raw)
+  let pairBody : Formula :=
+    ordinalCodeTraceCapacityTermAt
+      (Term.rename (fun n => n + 2) raw)
+      (Term.var 1) (Term.var 0)
+  have holdEx : BProv Ax_s G (ex (ex pairBody)) := by
+    simpa [ordinalCodeTotalCapacityTermAt, pairBody] using holdTotal
+  have houter : BProv Ax_s
+      (ex pairBody :: G.map (rename Nat.succ))
+      (rename Nat.succ goal) := by
+    let G1 : List Formula := ex pairBody :: G.map (rename Nat.succ)
+    have hinnerEx : BProv Ax_s G1 (ex pairBody) :=
+      BProv_ass (B := Ax_s) (G := G1) (by simp [G1])
+    have hinner : BProv Ax_s
+        (pairBody :: G1.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ goal)) := by
+      let C : List Formula := pairBody :: G1.map (rename Nat.succ)
+      let raw2 : Term := Term.rename (fun n => n + 2) raw
+      have hcapacity : BProv Ax_s C
+          (ordinalCodeTraceCapacityTermAt
+            raw2 (Term.var 1) (Term.var 0)) := by
+        simpa [C, pairBody, raw2] using
+          (BProv_ass (B := Ax_s) (G := C) (by simp [C, pairBody]))
+      have hsucc : BProv Ax_s C
+          (ordinalCodeTotalCapacityTermAt (Term.succ raw2)) :=
+        BProv_Ax_s_ordinalCodeTotalCapacityTermAt_succ_of_terms
+          hcapacity
+      simpa [goal, C, G1, raw2,
+        rename_ordinalCodeTotalCapacityTermAt,
+        Term.rename, Term.rename_comp, Function.comp_def,
+        Nat.add_assoc] using hsucc
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hinnerEx hinner
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    holdEx houter
+
+/-- PA induction closes the existential code/capacity invariant for every raw
+number. -/
+theorem BProv_Ax_s_all_ordinalCodeTotalCapacityTermAt
+    {G : List Formula} :
+    BProv Ax_s G
+      (all (ordinalCodeTotalCapacityTermAt (Term.var 0))) := by
+  let phi : Formula :=
+    ordinalCodeTotalCapacityTermAt (Term.var 0)
+  have hzeroRaw : BProv Ax_s G
+      (ordinalCodeTotalCapacityTermAt Term.zero) :=
+    BProv_Ax_s_ordinalCodeTotalCapacityTermAt_zero
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    rw [subst_ordinalCodeTotalCapacityTermAt]
+    simpa [phi, substZero, Term.subst] using hzeroRaw
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    let C : List Formula := phi :: G.map (rename Nat.succ)
+    have hcurrent : BProv Ax_s C
+        (ordinalCodeTotalCapacityTermAt (Term.var 0)) := by
+      simpa [C, phi] using
+        (BProv_ass (B := Ax_s) (G := C) (by simp [C, phi]))
+    have hnext : BProv Ax_s C
+        (ordinalCodeTotalCapacityTermAt
+          (Term.succ (Term.var 0))) :=
+      BProv_Ax_s_ordinalCodeTotalCapacityTermAt_succ hcurrent
+    rw [subst_ordinalCodeTotalCapacityTermAt]
+    simpa [C, phi, substSuccVar, Term.subst] using hnext
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  exact BProv_Ax_s_induction_rule
+    (G := G) (phi := phi) hzero hsuccAll
+
+/-- Forget the chosen beta step and sequence-code witness, retaining the
+ordinary ordinal-code graph. -/
+theorem BProv_Ax_s_ordinalCodeGraphTermAt_of_bodyExists
+    {G : List Formula} {step raw coded : Term}
+    (htrace : BProv Ax_s G
+      (ordinalCodeGraphBodyExistsTermAt step raw coded)) :
+    BProv Ax_s G (ordinalCodeGraphTermAt raw coded) := by
+  let target : Formula := ordinalCodeGraphTermAt raw coded
+  refine BProv_Ax_s_ordinalCodeGraphBodyExistsTermAt_elim_opened
+    (G := G) (step := step) (raw := raw) (coded := coded)
+    (target := target) ?_ htrace
+  let body : Formula :=
+    ordinalCodeGraphBodyTermAt
+      (Term.var 0)
+      (Term.rename Nat.succ step)
+      (Term.rename Nat.succ raw)
+      (Term.rename Nat.succ coded)
+  let D : List Formula := body :: G.map (rename Nat.succ)
+  have hbody : BProv Ax_s D body :=
+    BProv_ass (B := Ax_s) (G := D) (by simp [D])
+  have hgraph : BProv Ax_s D
+      (ordinalCodeGraphTermAt
+        (Term.rename Nat.succ raw)
+        (Term.rename Nat.succ coded)) :=
+    BProv_ordinalCodeGraphTermAt_of_body hbody
+  simpa [target, D, body,
+    rename_ordinalCodeGraphTermAt] using hgraph
+
+/-- Every capacity-parametric code yields the ordinary graph after choosing a
+certified beta coding step. -/
+theorem BProv_Ax_s_ordinalCodeGraphTermAt_of_capacity
+    {G : List Formula} {raw coded capacity : Term}
+    (hcapacity : BProv Ax_s G
+      (ordinalCodeTraceCapacityTermAt raw coded capacity)) :
+    BProv Ax_s G (ordinalCodeGraphTermAt raw coded) := by
+  let target : Formula := ordinalCodeGraphTermAt raw coded
+  have hstepExists : BProv Ax_s G
+      (betaCodingStepExistsTermAt raw capacity) :=
+    BProv_Ax_s_betaCodingStepExistsTermAt raw capacity
+  refine BProv_Ax_s_betaCodingStepExistsTermAt_elim_opened
+    (G := G) (bound := raw) (sourceCode := capacity)
+    (target := target) ?_ hstepExists
+  let codingBody : Formula :=
+    betaCodingStepExistsTermAtBody raw capacity
+  let D : List Formula := codingBody :: G.map (rename Nat.succ)
+  let raw1 : Term := Term.rename Nat.succ raw
+  let coded1 : Term := Term.rename Nat.succ coded
+  let capacity1 : Term := Term.rename Nat.succ capacity
+  have hcoding : BProv Ax_s D
+      (betaCodingStepTermAt raw1 capacity1 (Term.var 0)) := by
+    have hraw : BProv Ax_s D codingBody :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    simpa [codingBody, betaCodingStepExistsTermAtBody,
+      raw1, capacity1] using hraw
+  have hcapacityRen : BProv Ax_s (G.map (rename Nat.succ))
+      (rename Nat.succ
+        (ordinalCodeTraceCapacityTermAt raw coded capacity)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcapacity Nat.succ
+  have hcapacityD : BProv Ax_s D
+      (ordinalCodeTraceCapacityTermAt
+        raw1 coded1 capacity1) := by
+    have hraw := BProv_context_cons (B := Ax_s)
+      (a := codingBody) hcapacityRen
+    simpa [D, raw1, coded1, capacity1,
+      rename_ordinalCodeTraceCapacityTermAt] using hraw
+  have htrace : BProv Ax_s D
+      (ordinalCodeGraphBodyExistsTermAt
+        (Term.var 0) raw1 coded1) :=
+    BProv_Ax_s_ordinalCodeTraceCapacityTermAt_trace_of_coding
+      hcapacityD hcoding
+  have hgraph : BProv Ax_s D
+      (ordinalCodeGraphTermAt raw1 coded1) :=
+    BProv_Ax_s_ordinalCodeGraphTermAt_of_bodyExists htrace
+  simpa [target, D, raw1, coded1,
+    rename_ordinalCodeGraphTermAt] using hgraph
+
+def ordinalCodeGraphExistsTermAt (raw : Term) : Formula :=
+  ex (ordinalCodeGraphTermAt
+    (Term.rename Nat.succ raw) (Term.var 0))
+
+theorem subst_ordinalCodeGraphExistsTermAt
+    (sigma : Nat → Term) (raw : Term) :
+    subst sigma (ordinalCodeGraphExistsTermAt raw) =
+      ordinalCodeGraphExistsTermAt (Term.subst sigma raw) := by
+  simp [ordinalCodeGraphExistsTermAt,
+    subst_ordinalCodeGraphTermAt,
+    subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem rename_ordinalCodeGraphExistsTermAt
+    (r : Nat → Nat) (raw : Term) :
+    rename r (ordinalCodeGraphExistsTermAt raw) =
+      ordinalCodeGraphExistsTermAt (Term.rename r raw) := by
+  rw [← subst_var_rename,
+    subst_ordinalCodeGraphExistsTermAt]
+  simp only [term_subst_var_rename]
+
+theorem BProv_ordinalCodeGraphExistsTermAt_of_term
+    {B : Formula → Prop} {G : List Formula} {raw coded : Term}
+    (hgraph : BProv B G (ordinalCodeGraphTermAt raw coded)) :
+    BProv B G (ordinalCodeGraphExistsTermAt raw) := by
+  apply BProv_exI (t := coded)
+  simpa [ordinalCodeGraphExistsTermAt,
+    subst_ordinalCodeGraphTermAt,
+    instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hgraph
+
+/-- Project a plain graph witness from the existential code/capacity
+invariant. -/
+theorem BProv_Ax_s_ordinalCodeGraphExistsTermAt_of_totalCapacity
+    {G : List Formula} {raw : Term}
+    (htotal : BProv Ax_s G
+      (ordinalCodeTotalCapacityTermAt raw)) :
+    BProv Ax_s G (ordinalCodeGraphExistsTermAt raw) := by
+  let target : Formula := ordinalCodeGraphExistsTermAt raw
+  let pairBody : Formula :=
+    ordinalCodeTraceCapacityTermAt
+      (Term.rename (fun n => n + 2) raw)
+      (Term.var 1) (Term.var 0)
+  have holdEx : BProv Ax_s G (ex (ex pairBody)) := by
+    simpa [ordinalCodeTotalCapacityTermAt, pairBody] using htotal
+  have houter : BProv Ax_s
+      (ex pairBody :: G.map (rename Nat.succ))
+      (rename Nat.succ target) := by
+    let G1 : List Formula := ex pairBody :: G.map (rename Nat.succ)
+    have hinnerEx : BProv Ax_s G1 (ex pairBody) :=
+      BProv_ass (B := Ax_s) (G := G1) (by simp [G1])
+    have hinner : BProv Ax_s
+        (pairBody :: G1.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ target)) := by
+      let C : List Formula := pairBody :: G1.map (rename Nat.succ)
+      let raw2 : Term := Term.rename (fun n => n + 2) raw
+      have hcapacity : BProv Ax_s C
+          (ordinalCodeTraceCapacityTermAt
+            raw2 (Term.var 1) (Term.var 0)) := by
+        simpa [C, pairBody, raw2] using
+          (BProv_ass (B := Ax_s) (G := C) (by simp [C, pairBody]))
+      have hgraph : BProv Ax_s C
+          (ordinalCodeGraphTermAt raw2 (Term.var 1)) :=
+        BProv_Ax_s_ordinalCodeGraphTermAt_of_capacity hcapacity
+      have hex : BProv Ax_s C
+          (ordinalCodeGraphExistsTermAt raw2) :=
+        BProv_ordinalCodeGraphExistsTermAt_of_term hgraph
+      simpa [target, C, G1, raw2,
+        rename_ordinalCodeGraphExistsTermAt,
+        Term.rename, Term.rename_comp, Function.comp_def,
+        Nat.add_assoc] using hex
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hinnerEx hinner
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    holdEx houter
+
+/-- Exact proof term for the `OrdinalCodeGraphProofs.total` field. -/
+theorem OrdinalCodeGraphProofs_total :
+    ∀ (G : List Formula) (raw : Term),
+      BProv Ax_s G
+        (ex (ordinalCodeGraphTermAt
+          (Term.rename Nat.succ raw) (Term.var 0))) := by
+  intro G raw
+  have hall : BProv Ax_s G
+      (all (ordinalCodeTotalCapacityTermAt (Term.var 0))) :=
+    BProv_Ax_s_all_ordinalCodeTotalCapacityTermAt
+  have hrawRaw := BProv_allE (B := Ax_s) (G := G)
+    (t := raw) hall
+  have hraw : BProv Ax_s G
+      (ordinalCodeTotalCapacityTermAt raw) := by
+    rw [subst_ordinalCodeTotalCapacityTermAt] at hrawRaw
+    simpa [instTerm, Term.subst] using hrawRaw
+  have hex : BProv Ax_s G
+      (ordinalCodeGraphExistsTermAt raw) :=
+    BProv_Ax_s_ordinalCodeGraphExistsTermAt_of_totalCapacity hraw
+  simpa [ordinalCodeGraphExistsTermAt] using hex
+
 /-! ### Atomic equality through ordinal codes -/
 
 /-- Binder-free equality comparison through a common ordinal-code witness. -/
