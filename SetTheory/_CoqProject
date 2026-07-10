@@ -71,6 +71,7 @@ PAHF.v
 PAHFOrdinalCode.v
 PAHFInterpretations.v
 PAHFHFRoundTrip.v
+PAHFHFRepresentation.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
 BusyBeaver.v
