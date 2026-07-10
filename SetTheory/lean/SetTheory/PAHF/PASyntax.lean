@@ -36769,6 +36769,259 @@ theorem BProv_Ax_s_subst_hfMemTermAt_of_components
       (a := subst (Term.upSubst σ) (ex body))
       (t := Term.subst σ codeTerm) hstepExInst)
 
+/-- Substitution-stable membership introduction where the beta code and step
+witnesses are chosen after the outer element substitution.
+
+This dependency order is useful for internally constructed traces: `σ` first
+instantiates the element and set-code context, and `codeTerm`/`stepTerm` then
+name witnesses in that resulting context. -/
+theorem BProv_Ax_s_subst_hfMemTermAt_of_postsubst_components
+    {G : List Formula} {elem : Nat}
+    {setCode codeTerm stepTerm : Term} {σ : Nat → Term}
+    (hentry : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ))
+            (betaTermAtConstIdx
+              (Term.rename (fun n => n+2) setCode) 1 0 0)))))
+    (hsteps : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ))
+            (betaDiv2StepsThroughAt 1 0 (elem+2))))))
+    (hbitEx : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ))
+            (ex
+              (and
+                (oneAt 0)
+                (betaDiv2BitAt 0 2 1 (elem+3)))))))) :
+    BProv Ax_s G (subst σ (hfMemTermAt elem setCode)) := by
+  let bitEx : Formula :=
+    ex
+      (and
+        (oneAt 0)
+        (betaDiv2BitAt 0 2 1 (elem+3)))
+  let tail : Formula :=
+    and
+      (betaDiv2StepsThroughAt 1 0 (elem+2))
+      bitEx
+  let body : Formula :=
+    and
+      (betaTermAtConstIdx (Term.rename (fun n => n+2) setCode) 1 0 0)
+      tail
+  have htail : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ)) tail))) := by
+    simpa [tail, bitEx, subst, instTerm, Term.subst, Term.upSubst] using
+      (BProv_andI hsteps hbitEx)
+  have hbody : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ)) body))) := by
+    simpa [body, tail, bitEx, subst, instTerm, Term.subst,
+      Term.upSubst] using BProv_andI hentry htail
+  have hstepEx : BProv Ax_s G
+      (subst (instTerm codeTerm)
+        (subst (Term.upSubst σ) (ex body))) := by
+    have hex : BProv Ax_s G
+        (ex
+          (subst (Term.upSubst (instTerm codeTerm))
+            (subst (Term.upSubst (Term.upSubst σ)) body))) :=
+      BProv_exI (B := Ax_s) (G := G)
+        (a := subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ)) body))
+        (t := stepTerm) hbody
+    simpa [subst, instTerm, Term.subst, Term.upSubst] using hex
+  have hcodeEx : BProv Ax_s G
+      (ex (subst (Term.upSubst σ) (ex body))) :=
+    BProv_exI (B := Ax_s) (G := G)
+      (a := subst (Term.upSubst σ) (ex body))
+      (t := codeTerm) hstepEx
+  simpa [hfMemTermAt, body, tail, bitEx, subst, instTerm,
+    Term.subst, Term.upSubst] using hcodeEx
+
+/-- Convert a fully term-parametric bounded halving trace into the
+corresponding substituted legacy trace.  The conversion is proof-level because
+the legacy relation packages the successor index through `betaAtSuccIdx`,
+whereas the term relation uses the literal successor of the index term. -/
+theorem BProv_Ax_s_subst_betaDiv2StepsThroughAt_of_term_trace
+    {G : List Formula} {σ : Nat → Term} {code step last : Nat}
+    (hsteps : BProv Ax_s G
+      (betaDiv2StepsThroughTermTermAt
+        (σ code) (σ step) (σ last))) :
+    BProv Ax_s G
+      (subst σ (betaDiv2StepsThroughAt code step last)) := by
+  let leHyp : Formula :=
+    subst (Term.upSubst σ) (leAt 0 (last+1))
+  let point : Formula :=
+    subst (Term.upSubst σ)
+      (betaDiv2StepWitnessAt (code+1) (step+1) 0)
+  let body : Formula := imp leHyp point
+  have hbody : BProv Ax_s (G.map (rename Nat.succ)) body := by
+    let C : List Formula := leHyp :: G.map (rename Nat.succ)
+    have hleRaw : BProv Ax_s C leHyp :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hle : BProv Ax_s C
+        (leTermAt (Term.var 0) (Term.rename Nat.succ (σ last))) := by
+      simpa [leHyp, leAt, leTermAt, subst, Term.subst,
+        Term.upSubst, Term.rename] using hleRaw
+    have hstepsRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (betaDiv2StepsThroughTermTermAt
+            (σ code) (σ step) (σ last))) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hsteps Nat.succ
+    have hstepsC : BProv Ax_s C
+        (betaDiv2StepsThroughTermTermAt
+          (Term.rename Nat.succ (σ code))
+          (Term.rename Nat.succ (σ step))
+          (Term.rename Nat.succ (σ last))) := by
+      simpa [C, leHyp, betaDiv2StepsThroughTermTermAt,
+        betaDiv2StepWitnessTermAt, betaTermTermAt,
+        remTermTermAt, div2StepTermAt, boolTermAt, ltTermAt,
+        leTermAt, betaModTermTerm, rename, Term.rename,
+        SetTheory.up, Term.rename_comp,
+        term_rename_up_succ_rename_succ] using
+        BProv_context_cons (B := Ax_s) hstepsRen
+    have hpointTerm : BProv Ax_s C
+        (betaDiv2StepWitnessTermAt
+          (Term.rename Nat.succ (σ code))
+          (Term.rename Nat.succ (σ step))
+          (Term.var 0)) :=
+      BProv_Ax_s_betaDiv2StepsThroughTermTermAt_step_of_leTerm
+        (G := C)
+        (codeTerm := Term.rename Nat.succ (σ code))
+        (stepTerm := Term.rename Nat.succ (σ step))
+        (idxTerm := Term.var 0)
+        (lastTerm := Term.rename Nat.succ (σ last))
+        hstepsC hle
+    have hpointWrapped : BProv Ax_s C
+        (betaDiv2StepWitnessTermSuccIdxAt
+          (Term.rename Nat.succ (σ code))
+          (Term.rename Nat.succ (σ step)) 0) :=
+      BProv_Ax_s_betaDiv2StepWitnessTermSuccIdxAt_of_termAt
+        (G := C) (code := Term.rename Nat.succ (σ code))
+        (step := Term.rename Nat.succ (σ step)) (idx := 0)
+        hpointTerm
+    have hpoint : BProv Ax_s C point := by
+      simpa [point, betaDiv2StepWitnessTermSuccIdxAt,
+        betaDiv2StepWitnessAt, betaTermTermAtSuccIdx,
+        betaTermTermAt, betaAtSuccIdx, betaAt, remTermTermAt,
+        remAt, div2StepTermAt, div2StepAt, boolTermAt, boolAt,
+        ltTermAt, ltAt, betaModTermTerm, betaModTerm,
+        zeroAt, oneAt, eqConstAt, subst, Term.subst,
+        Term.upSubst, Term.rename, Term.rename_comp, Term.numeral,
+        term_rename_up_succ_rename_succ,
+        Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        hpointWrapped
+    simpa [body, C] using BProv_impI hpoint
+  have hall : BProv Ax_s G (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [betaDiv2StepsThroughAt, body, leHyp, point,
+    subst, Term.subst, Term.upSubst] using hall
+
+/-- Package a fully term-parametric beta trace as membership at an arbitrary
+term-valued element index.  The set term is explicitly lifted across the
+element slot appearing in the resulting membership formula. -/
+theorem BProv_Ax_s_subst_hfMemTermAt_zero_of_term_components
+    {G : List Formula} {setTerm codeTerm stepTerm elemTerm : Term}
+    (hentry : BProv Ax_s G
+      (betaTermTermAt setTerm codeTerm stepTerm Term.zero))
+    (hsteps : BProv Ax_s G
+      (betaDiv2StepsThroughTermTermAt codeTerm stepTerm elemTerm))
+    (hbitEx : BProv Ax_s G
+      (betaDiv2BitOneTermExAt codeTerm stepTerm elemTerm)) :
+    BProv Ax_s G
+      (subst (instTerm elemTerm)
+        (hfMemTermAt 0 (Term.rename Nat.succ setTerm))) := by
+  let σ : Nat → Term := instTerm elemTerm
+  let setLift : Term := Term.rename Nat.succ setTerm
+  let τ : Nat → Term := fun n =>
+    Term.subst (instTerm stepTerm)
+      (Term.subst (Term.upSubst (instTerm codeTerm))
+        (Term.upSubst (Term.upSubst σ) n))
+  have hentryConst : BProv Ax_s G
+      (betaTermTermAtConstIdx setTerm codeTerm stepTerm 0) :=
+    BProv_Ax_s_betaTermTermAtConstIdx_of_beta hentry
+  have hentry' : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ))
+            (betaTermAtConstIdx
+              (Term.rename (fun n => n+2) setLift) 1 0 0)))) := by
+    simpa [σ, setLift, betaTermTermAtConstIdx, betaTermAtConstIdx,
+      betaTermAt, betaTermTermAt, remTermAt, remTermTermAt,
+      ltTermAt, betaModTerm, betaModTermTerm, eqConstAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.rename_comp, Term.subst_rename_succ_up,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_upSubst_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_four_succ,
+      term_subst_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_five_succ,
+      term_subst_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_instTerm_rename_six_succ,
+      term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ,
+      Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hentryConst
+  have hstepsτ : BProv Ax_s G
+      (betaDiv2StepsThroughTermTermAt (τ 1) (τ 0) (τ 2)) := by
+    simpa [τ, σ, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.rename_comp,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hsteps
+  have hstepsLegacy : BProv Ax_s G
+      (subst τ (betaDiv2StepsThroughAt 1 0 2)) :=
+    BProv_Ax_s_subst_betaDiv2StepsThroughAt_of_term_trace
+      (G := G) (σ := τ) (code := 1) (step := 0) (last := 2)
+      hstepsτ
+  have hsteps' : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ))
+            (betaDiv2StepsThroughAt 1 0 (0+2))))) := by
+    simpa only [τ, subst_comp] using hstepsLegacy
+  have hbitτ : BProv Ax_s G
+      (betaDiv2BitOneTermExAt (τ 1) (τ 0) (τ 2)) := by
+    simpa [τ, σ, instTerm, Term.subst, Term.upSubst,
+      Term.rename, Term.rename_comp,
+      term_rename_up_succ_rename_succ,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ] using hbitEx
+  have hbitLegacy : BProv Ax_s G
+      (subst τ
+        (ex
+          (and
+            (oneAt 0)
+            (betaDiv2BitAt 0 (1+1) (0+1) (2+1))))) :=
+    BProv_Ax_s_subst_bitOneEx_of_betaDiv2BitOneTermExAt
+      (G := G) (σ := τ) (code := 1) (step := 0) (idx := 2)
+      hbitτ
+  have hbitEx' : BProv Ax_s G
+      (subst (instTerm stepTerm)
+        (subst (Term.upSubst (instTerm codeTerm))
+          (subst (Term.upSubst (Term.upSubst σ))
+            (ex
+              (and
+                (oneAt 0)
+                (betaDiv2BitAt 0 2 1 (0+3))))))) := by
+    simpa only [τ, subst_comp] using hbitLegacy
+  exact BProv_Ax_s_subst_hfMemTermAt_of_postsubst_components
+    (G := G) (elem := 0) (setCode := setLift)
+    (codeTerm := codeTerm) (stepTerm := stepTerm) (σ := σ)
+    hentry' hsteps' hbitEx'
+
 /-- Term-parametric membership introduction variant that takes the final bit
 component before the inner witness bit has been existentially packaged. -/
 theorem BProv_Ax_s_hfMemTermAt_of_bit_components {G : List Formula}

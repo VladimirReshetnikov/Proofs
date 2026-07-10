@@ -883,6 +883,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_steps_of_term_trace
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_slot4_bitEx_of_betaDiv2BitOneTermExAt
 #check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_of_components
+#check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_of_postsubst_components
+#check @PA.Formula.BProv_Ax_s_subst_betaDiv2StepsThroughAt_of_term_trace
+#check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_zero_of_term_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_bit_components
