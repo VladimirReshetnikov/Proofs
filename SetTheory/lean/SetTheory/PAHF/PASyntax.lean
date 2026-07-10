@@ -49297,6 +49297,661 @@ theorem BProv_Ax_s_hfAdjoinExistsTermAt_succ_of_step_and_tail_graph
   simpa [target, hfAdjoinExistsTermAt, graphBody, rename, Term.rename]
     using hex
 
+theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
+    {G : List Formula}
+    {newHead oldHead tail newBit oldBit : Nat}
+    (hnewBitOne : BProv Ax_s G (eqConstAt newBit 1))
+    (hnewStep : BProv Ax_s G
+      (div2StepAt newHead tail newBit))
+    (holdStep : BProv Ax_s G
+      (div2StepAt oldHead tail oldBit)) :
+    BProv Ax_s G
+      (hfAdjoinGraphTermAt
+        (Term.var newHead) (Term.var oldHead) Term.zero) := by
+  let phi : Formula :=
+    iffForm
+      (hfMemAt 0 (newHead+1))
+      (or
+        (hfMemAt 0 (oldHead+1))
+        (eq (Term.var 0) Term.zero))
+  have hzero : BProv Ax_s G (subst substZero phi) := by
+    let zeroEq : Formula := eqConstAt 0 0
+    have hex : BProv Ax_s G (ex zeroEq) := by
+      simpa [zeroEq] using
+        (BProv_exists_eqConstAt (B := Ax_s) (G := G) 0)
+    have hopened : BProv Ax_s
+        (zeroEq :: G.map (rename Nat.succ))
+        (rename Nat.succ (subst substZero phi)) := by
+      let C : List Formula := zeroEq :: G.map (rename Nat.succ)
+      have hqueryZero : BProv Ax_s C (eqConstAt 0 0) := by
+        have hraw : BProv Ax_s C zeroEq :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        simpa [zeroEq] using hraw
+      have hnewStepRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ
+            (div2StepAt newHead tail newBit)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hnewStep Nat.succ
+      have hnewStepC : BProv Ax_s C
+          (div2StepAt (newHead+1) (tail+1) (newBit+1)) := by
+        simpa [C, div2StepAt, boolAt, zeroAt, oneAt,
+          eqConstAt, rename, Term.rename] using
+          BProv_context_cons (B := Ax_s) (a := zeroEq) hnewStepRen
+      have hnewBitRen : BProv Ax_s (G.map (rename Nat.succ))
+          (rename Nat.succ (eqConstAt newBit 1)) :=
+        BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hnewBitOne Nat.succ
+      have hnewBitC : BProv Ax_s C
+          (eqConstAt (newBit+1) 1) := by
+        simpa [C, eqConstAt, rename, Term.rename] using
+          BProv_context_cons (B := Ax_s) (a := zeroEq) hnewBitRen
+      have hnewOdd : BProv Ax_s C
+          (oddDoubleEqAt (newHead+1) (tail+1)) :=
+        BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one
+          hnewBitC hnewStepC
+      have hnewMemTerm : BProv Ax_s C
+          (hfMemTermAt 0 (Term.var (newHead+1))) :=
+        BProv_Ax_s_hfMemTermAt_oddCurrentBeta_of_zero_and_odd
+          hqueryZero hnewOdd
+      have hnewMem : BProv Ax_s C (hfMemAt 0 (newHead+1)) := by
+        simpa [hfMemTermAt_var] using hnewMemTerm
+      let newMem : Formula := hfMemAt 0 (newHead+1)
+      let oldMem : Formula := hfMemAt 0 (oldHead+1)
+      let queryEq : Formula := eq (Term.var 0) Term.zero
+      let rhs : Formula := or oldMem queryEq
+      have hpoint : BProv Ax_s C (iffForm newMem rhs) := by
+        have hforward : BProv Ax_s C (imp newMem rhs) := by
+          let D : List Formula := newMem :: C
+          have hqueryEq : BProv Ax_s D queryEq := by
+            simpa [queryEq, eqConstAt, Term.numeral] using
+              BProv_context_cons (B := Ax_s) hqueryZero
+          exact BProv_impI (BProv_orI2 hqueryEq)
+        have hreverse : BProv Ax_s C (imp rhs newMem) :=
+          BProv_impI (BProv_context_cons (B := Ax_s) hnewMem)
+        simpa [iffForm] using BProv_andI hforward hreverse
+      have hpointSub : BProv Ax_s C
+          (subst (instTerm (Term.var 0))
+            (rename (SetTheory.up Nat.succ) phi)) := by
+        rw [subst_instTerm_var_zero_rename_up_succ]
+        simpa [phi, newMem, oldMem, queryEq, rhs] using hpoint
+      have hzeroSub : BProv Ax_s C
+          (subst (instTerm Term.zero)
+            (rename (SetTheory.up Nat.succ) phi)) :=
+        BProv_eqElim (B := Ax_s) (G := C)
+          (s := Term.var 0) (t := Term.zero)
+          (a := rename (SetTheory.up Nat.succ) phi)
+          (by simpa [eqConstAt, Term.numeral] using hqueryZero)
+          hpointSub
+      have hnorm :
+          subst (instTerm Term.zero)
+              (rename (SetTheory.up Nat.succ) phi) =
+            rename Nat.succ (subst substZero phi) := by
+        have hσ : instTerm Term.zero = substZero := by
+          funext n
+          cases n <;> rfl
+        simpa [hσ, Term.rename] using
+          (subst_instTerm_rename_up phi Nat.succ Term.zero)
+      rw [hnorm] at hzeroSub
+      exact hzeroSub
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hex (by simpa [zeroEq] using hopened)
+  have hsuccBody : BProv Ax_s
+      (phi :: G.map (rename Nat.succ))
+      (subst substSuccVar phi) := by
+    let S : List Formula := phi :: G.map (rename Nat.succ)
+    have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (div2StepAt newHead tail newBit)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hnewStep Nat.succ
+    have hnewS : BProv Ax_s S
+        (div2StepAt (newHead+1) (tail+1) (newBit+1)) := by
+      simpa [S, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := phi) hnewRen
+    have holdRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ
+          (div2StepAt oldHead tail oldBit)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        holdStep Nat.succ
+    have holdS : BProv Ax_s S
+        (div2StepAt (oldHead+1) (tail+1) (oldBit+1)) := by
+      simpa [S, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := phi) holdRen
+    let newSucc : Formula :=
+      subst (instTerm (Term.succ (Term.var 0)))
+        (hfMemAt 0 (newHead+1+1))
+    let oldSucc : Formula :=
+      subst (instTerm (Term.succ (Term.var 0)))
+        (hfMemAt 0 (oldHead+1+1))
+    let tailMem : Formula := hfMemAt 0 (tail+1)
+    let badEq : Formula := eq (Term.succ (Term.var 0)) Term.zero
+    let rhs : Formula := or oldSucc badEq
+    have hnewIff : BProv Ax_s S
+        (iffForm newSucc tailMem) := by
+      simpa [newSucc, tailMem] using
+        BProv_Ax_s_hfMem_succ_iff_tail_of_div2StepAt hnewS
+    have holdIff : BProv Ax_s S
+        (iffForm oldSucc tailMem) := by
+      simpa [oldSucc, tailMem] using
+        BProv_Ax_s_hfMem_succ_iff_tail_of_div2StepAt holdS
+    have hlift : BProv Ax_s S (iffForm newSucc rhs) := by
+      have hforward : BProv Ax_s S (imp newSucc rhs) := by
+        let C : List Formula := newSucc :: S
+        have hnewC : BProv Ax_s C (iffForm newSucc tailMem) :=
+          BProv_context_cons (B := Ax_s) hnewIff
+        have hnewAss : BProv Ax_s C newSucc :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        have hnewToTail : BProv Ax_s C
+            (imp newSucc tailMem) := by
+          simpa [iffForm] using BProv_andE1 hnewC
+        have htail : BProv Ax_s C tailMem :=
+          BProv_mp Ax_s C newSucc tailMem hnewToTail hnewAss
+        have holdC : BProv Ax_s C (iffForm oldSucc tailMem) :=
+          BProv_context_cons (B := Ax_s) holdIff
+        have htailToOld : BProv Ax_s C
+            (imp tailMem oldSucc) := by
+          simpa [iffForm] using BProv_andE2 holdC
+        have hold : BProv Ax_s C oldSucc :=
+          BProv_mp Ax_s C tailMem oldSucc htailToOld htail
+        exact BProv_impI (BProv_orI1 hold)
+      have hreverse : BProv Ax_s S (imp rhs newSucc) := by
+        let C : List Formula := rhs :: S
+        have hcases : BProv Ax_s C rhs :=
+          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        have hleft : BProv Ax_s (oldSucc :: C) newSucc := by
+          let D : List Formula := oldSucc :: C
+          have holdD : BProv Ax_s D
+              (iffForm oldSucc tailMem) :=
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) holdIff)
+          have holdAss : BProv Ax_s D oldSucc :=
+            BProv_ass (B := Ax_s) (G := D) (by simp [D])
+          have holdToTail : BProv Ax_s D
+              (imp oldSucc tailMem) := by
+            simpa [iffForm] using BProv_andE1 holdD
+          have htail : BProv Ax_s D tailMem :=
+            BProv_mp Ax_s D oldSucc tailMem holdToTail holdAss
+          have hnewD : BProv Ax_s D
+              (iffForm newSucc tailMem) :=
+            BProv_context_cons (B := Ax_s)
+              (BProv_context_cons (B := Ax_s) hnewIff)
+          have htailToNew : BProv Ax_s D
+              (imp tailMem newSucc) := by
+            simpa [iffForm] using BProv_andE2 hnewD
+          exact BProv_mp Ax_s D tailMem newSucc htailToNew htail
+        have hright : BProv Ax_s (badEq :: C) newSucc := by
+          let D : List Formula := badEq :: C
+          have hbad : BProv Ax_s D badEq :=
+            BProv_ass (B := Ax_s) (G := D) (by simp [D])
+          have hnot : BProv Ax_s D (imp badEq bot) := by
+            simpa [badEq] using
+              BProv_weaken_nil (G := D)
+                (BProv_Ax_s_zeroNotSucc_term (Term.var 0))
+          exact BProv_botE
+            (BProv_mp Ax_s D badEq bot hnot hbad)
+        exact BProv_impI (BProv_orE hcases hleft hright)
+      simpa [iffForm] using BProv_andI hforward hreverse
+    change BProv Ax_s S
+      (iffForm
+        (subst substSuccVar (hfMemAt 0 (newHead+1)))
+        (or
+          (subst substSuccVar (hfMemAt 0 (oldHead+1)))
+          (eq
+            (Term.subst substSuccVar (Term.var 0))
+            (Term.subst substSuccVar Term.zero))))
+    rw [substSuccVar_hfMemAt_zero_succ,
+      substSuccVar_hfMemAt_zero_succ]
+    simpa [S, newSucc, oldSucc, badEq, rhs,
+      substSuccVar, Term.subst] using hlift
+  have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI (by simpa using hsuccBody)
+  have hsucc : BProv Ax_s G
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  have hall : BProv Ax_s G (all phi) :=
+    BProv_Ax_s_induction_rule (G := G) (phi := phi) hzero hsucc
+  simpa [phi, hfAdjoinGraphTermAt, hfMemTermAt_var,
+    Term.rename] using hall
+
+/-- An odd head equation together with a named bit equal to one gives the
+corresponding binary-halving step. -/
+theorem BProv_Ax_s_div2StepAt_of_oddDoubleEqAt_bit_one
+    {G : List Formula} {value half bit : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half))
+    (hbit : BProv Ax_s G (eqConstAt bit 1)) :
+    BProv Ax_s G (div2StepAt value half bit) := by
+  let d : Term := Term.add (Term.var half) (Term.var half)
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [boolAt, zeroAt, oneAt] using
+      (BProv_orI2 (B := Ax_s) (G := G)
+        (a := eqConstAt bit 0) hbit)
+  have hvalue : BProv Ax_s G
+      (eq (Term.var value) (Term.succ d)) := by
+    simpa [oddDoubleEqAt, d] using hodd
+  have hbit' : BProv Ax_s G
+      (eq (Term.var bit) (Term.succ Term.zero)) := by
+    simpa [eqConstAt, Term.numeral] using hbit
+  have hreplace : BProv Ax_s G
+      (eq (Term.add d (Term.var bit))
+        (Term.add d (Term.succ Term.zero))) :=
+    BProv_eq_congr_add_right d hbit'
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add d (Term.succ Term.zero))
+        (Term.succ (Term.add d Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
+    BProv_eq_congr_succ
+      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+  have hsum : BProv Ax_s G
+      (eq (Term.add d (Term.var bit)) (Term.succ d)) :=
+    BProv_eqTrans hreplace (BProv_eqTrans haddSucc haddZero)
+  have heq : BProv Ax_s G
+      (eq (Term.var value) (Term.add d (Term.var bit))) :=
+    BProv_eqTrans hvalue (BProv_eqSym hsum)
+  simpa [div2StepAt, d] using BProv_andI hbool heq
+
+/-- Instantiate a term-parametric adjoin graph at a query slot. -/
+theorem BProv_hfAdjoinGraphTermAt_point
+    {B : Formula → Prop} {G : List Formula}
+    {query : Nat} {newCode oldCode elemCode : Term}
+    (hgraph : BProv B G
+      (hfAdjoinGraphTermAt newCode oldCode elemCode)) :
+    BProv B G
+      (iffForm
+        (hfMemTermAt query newCode)
+        (or
+          (hfMemTermAt query oldCode)
+          (eq (Term.var query) elemCode))) := by
+  have hraw := BProv_allE
+    (B := B) (G := G) (t := Term.var query) hgraph
+  change BProv B G
+    (iffForm
+      (subst (instTerm (Term.var query))
+        (hfMemTermAt 0 (Term.rename Nat.succ newCode)))
+      (or
+        (subst (instTerm (Term.var query))
+          (hfMemTermAt 0 (Term.rename Nat.succ oldCode)))
+        (eq
+          (Term.subst (instTerm (Term.var query)) (Term.var 0))
+          (Term.subst (instTerm (Term.var query))
+            (Term.rename Nat.succ elemCode))))) at hraw
+  rw [subst_instTerm_var_hfMemTermAt_zero_rename_succ,
+    subst_instTerm_var_hfMemTermAt_zero_rename_succ] at hraw
+  simpa [instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hraw
+
+/-- Renaming the free parameters of a term-parametric adjoin graph. -/
+theorem rename_hfAdjoinGraphTermAt_succ
+    (newCode oldCode elemCode : Term) :
+    rename Nat.succ
+        (hfAdjoinGraphTermAt newCode oldCode elemCode) =
+      hfAdjoinGraphTermAt
+        (Term.rename Nat.succ newCode)
+        (Term.rename Nat.succ oldCode)
+        (Term.rename Nat.succ elemCode) := by
+  rw [hfAdjoinGraphTermAt, hfAdjoinGraphTermAt]
+  apply congrArg all
+  change
+    iffForm
+        (rename (SetTheory.up Nat.succ)
+          (hfMemTermAt 0 (Term.rename Nat.succ newCode)))
+        (or
+          (rename (SetTheory.up Nat.succ)
+            (hfMemTermAt 0 (Term.rename Nat.succ oldCode)))
+          (eq
+            (Term.rename (SetTheory.up Nat.succ) (Term.var 0))
+            (Term.rename (SetTheory.up Nat.succ)
+              (Term.rename Nat.succ elemCode)))) =
+      iffForm
+        (hfMemTermAt 0
+          (Term.rename Nat.succ (Term.rename Nat.succ newCode)))
+        (or
+          (hfMemTermAt 0
+            (Term.rename Nat.succ (Term.rename Nat.succ oldCode)))
+          (eq (Term.var 0)
+            (Term.rename Nat.succ
+              (Term.rename Nat.succ elemCode))))
+  rw [rename_hfMemTermAt_zero_up,
+    rename_hfMemTermAt_zero_up]
+  simp [SetTheory.up, Term.rename, Term.rename_comp]
+
+theorem term_subst_up_six_instTerm_var_six (u : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst (Term.upSubst
+            (Term.upSubst (instTerm u)))))))
+        (Term.var 6) =
+      Term.rename (fun n : Nat => n + 6) u := by
+  simp [Term.subst, Term.upSubst, instTerm, Term.rename_comp,
+    Nat.add_assoc]
+
+theorem term_subst_up_seven_instTerm_rename_eight_succ
+    (t u : Term) :
+    Term.subst
+        (Term.upSubst (Term.upSubst (Term.upSubst
+          (Term.upSubst (Term.upSubst (Term.upSubst
+            (Term.upSubst (instTerm u))))))))
+        (Term.rename (fun n : Nat => n + 7 + 1) t) =
+      Term.rename (fun n : Nat => n + 7) t := by
+  change Term.subst (iterUpSubst 7 (instTerm u))
+      (Term.rename (fun n : Nat => n + 7 + 1) t) =
+    Term.rename (fun n : Nat => n + 7) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ 7 t u
+
+/-- Instantiating the distinguished new-code variable recovers the fully
+term-parametric adjoin graph. -/
+theorem subst_instTerm_hfAdjoinGraphTermAt_var_zero
+    (newCode oldCode elemCode : Term) :
+    subst (instTerm newCode)
+        (hfAdjoinGraphTermAt
+          (Term.var 0)
+          (Term.rename Nat.succ oldCode)
+          (Term.rename Nat.succ elemCode)) =
+      hfAdjoinGraphTermAt newCode oldCode elemCode := by
+  simp [hfAdjoinGraphTermAt, iffForm, hfMemTermAt,
+    betaTermAtConstIdx, betaTermAt, remTermAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, betaAt, remAt, ltAt, leAt, ltTermAt,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.rename_comp,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ,
+    term_subst_up_seven_instTerm_rename_eight_succ]
+
+/-- Renaming the free old/element parameters of the existential adjoin
+witness. -/
+theorem rename_hfAdjoinExistsTermAt_succ
+    (oldCode elemCode : Term) :
+    rename Nat.succ (hfAdjoinExistsTermAt oldCode elemCode) =
+      hfAdjoinExistsTermAt
+        (Term.rename Nat.succ oldCode)
+        (Term.rename Nat.succ elemCode) := by
+  simp [hfAdjoinExistsTermAt, hfAdjoinGraphTermAt, iffForm,
+    rename_hfMemTermAt_zero_up, rename, Term.rename,
+    SetTheory.up, Term.rename_comp]
+
+/-- Transport the new-code parameter of an adjoin graph across equality. -/
+theorem BProv_hfAdjoinGraphTermAt_of_new_eq_term
+    {G : List Formula}
+    {oldNew newNew oldCode elemCode : Term}
+    (hgraph : BProv Ax_s G
+      (hfAdjoinGraphTermAt oldNew oldCode elemCode))
+    (heq : BProv Ax_s G (eq oldNew newNew)) :
+    BProv Ax_s G
+      (hfAdjoinGraphTermAt newNew oldCode elemCode) := by
+  let oldNew1 : Term := Term.rename Nat.succ oldNew
+  let newNew1 : Term := Term.rename Nat.succ newNew
+  let oldCode1 : Term := Term.rename Nat.succ oldCode
+  let elemCode1 : Term := Term.rename Nat.succ elemCode
+  let oldMem : Formula := hfMemTermAt 0 oldNew1
+  let newMem : Formula := hfMemTermAt 0 newNew1
+  let rhs : Formula :=
+    or (hfMemTermAt 0 oldCode1)
+      (eq (Term.var 0) elemCode1)
+  have hgraphRenRaw := BProv_rename_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hgraph Nat.succ
+  have hgraphRen : BProv Ax_s (G.map (rename Nat.succ))
+      (hfAdjoinGraphTermAt oldNew1 oldCode1 elemCode1) := by
+    simpa [oldNew1, oldCode1, elemCode1,
+      rename_hfAdjoinGraphTermAt_succ] using hgraphRenRaw
+  have hpoint : BProv Ax_s (G.map (rename Nat.succ))
+      (iffForm oldMem rhs) := by
+    simpa [oldMem, rhs] using
+      (BProv_hfAdjoinGraphTermAt_point
+        (query := 0) hgraphRen)
+  have heqRenRaw := BProv_rename_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    heq Nat.succ
+  have heqRen : BProv Ax_s (G.map (rename Nat.succ))
+      (eq oldNew1 newNew1) := by
+    simpa [oldNew1, newNew1, rename, Term.rename] using heqRenRaw
+  have hbody : BProv Ax_s (G.map (rename Nat.succ))
+      (iffForm newMem rhs) := by
+    have hforward : BProv Ax_s (G.map (rename Nat.succ))
+        (imp newMem rhs) := by
+      let C : List Formula := newMem :: G.map (rename Nat.succ)
+      have hnew : BProv Ax_s C newMem :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have hold : BProv Ax_s C oldMem :=
+        BProv_hfMemTermAt_of_hfMemTermAt_eq_term hnew
+          (BProv_context_cons (B := Ax_s) (BProv_eqSym heqRen))
+      have hpointC : BProv Ax_s C (iffForm oldMem rhs) :=
+        BProv_context_cons (B := Ax_s) hpoint
+      have htoRhs : BProv Ax_s C (imp oldMem rhs) := by
+        simpa [iffForm] using BProv_andE1 hpointC
+      exact BProv_impI
+        (BProv_mp Ax_s C oldMem rhs htoRhs hold)
+    have hreverse : BProv Ax_s (G.map (rename Nat.succ))
+        (imp rhs newMem) := by
+      let C : List Formula := rhs :: G.map (rename Nat.succ)
+      have hrhs : BProv Ax_s C rhs :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have hpointC : BProv Ax_s C (iffForm oldMem rhs) :=
+        BProv_context_cons (B := Ax_s) hpoint
+      have htoOld : BProv Ax_s C (imp rhs oldMem) := by
+        simpa [iffForm] using BProv_andE2 hpointC
+      have hold : BProv Ax_s C oldMem :=
+        BProv_mp Ax_s C rhs oldMem htoOld hrhs
+      have hnew : BProv Ax_s C newMem :=
+        BProv_hfMemTermAt_of_hfMemTermAt_eq_term hold
+          (BProv_context_cons (B := Ax_s) heqRen)
+      exact BProv_impI hnew
+    simpa [iffForm] using BProv_andI hforward hreverse
+  have hall := BProv_allI_of_sentences
+    (B := Ax_s) (G := G)
+    (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [hfAdjoinGraphTermAt, oldNew1, newNew1,
+    oldCode1, elemCode1, oldMem, newMem, rhs]
+    using hall
+
+/-- In any proof context, every named old code has a code realizing
+adjunction of the element zero. -/
+theorem BProv_Ax_s_hfAdjoinExistsTermAt_zero
+    {G : List Formula} (oldCode : Nat) :
+    BProv Ax_s G
+      (hfAdjoinExistsTermAt (Term.var oldCode) Term.zero) := by
+  let target : Formula :=
+    hfAdjoinExistsTermAt (Term.var oldCode) Term.zero
+  refine BProv_Ax_s_of_div2TotalAt_opened_step
+    (G := G) (value := oldCode) (target := target)
+    (BProv_Ax_s_div2TotalAt oldCode) ?_
+  let J : List Formula := div2TotalOpenedStepContext G oldCode
+  let newTerm : Term :=
+    Term.succ (Term.add (Term.var 1) (Term.var 1))
+  let graphJ : Formula :=
+    hfAdjoinGraphTermAt newTerm
+      (Term.var (oldCode+2)) Term.zero
+  let newEqBody : Formula :=
+    eq (Term.var 0) (Term.rename Nat.succ newTerm)
+  have hnewEqEx : BProv Ax_s J (ex newEqBody) := by
+    have hinst : BProv Ax_s J
+        (subst (instTerm newTerm) newEqBody) := by
+      simpa [newEqBody, subst, instTerm, Term.subst,
+        Term.upSubst, term_subst_instTerm_rename_succ] using
+        (BProv_eqRefl (B := Ax_s) (G := J) newTerm)
+    exact BProv_exI (B := Ax_s) (G := J) hinst
+  have hgraphJ : BProv Ax_s J graphJ := by
+    refine BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      (G := J) (a := newEqBody) (c := graphJ) hnewEqEx ?_
+    let H : List Formula := newEqBody :: J.map (rename Nat.succ)
+    let oneEq : Formula := eqConstAt 0 1
+    have honeEx : BProv Ax_s H (ex oneEq) :=
+      BProv_exists_eqConstAt (B := Ax_s) (G := H) 1
+    have hgraphH : BProv Ax_s H (rename Nat.succ graphJ) := by
+      refine BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := H) (a := oneEq) (c := rename Nat.succ graphJ)
+        honeEx ?_
+      let K : List Formula := oneEq :: H.map (rename Nat.succ)
+      let explicitNew : Term :=
+        Term.succ (Term.add (Term.var 3) (Term.var 3))
+      have hone : BProv Ax_s K (eqConstAt 0 1) :=
+        BProv_ass (B := Ax_s) (G := K) (by simp [K, oneEq])
+      have hnewEq : BProv Ax_s K
+          (eq (Term.var 1) explicitNew) := by
+        apply BProv_ass (B := Ax_s) (G := K)
+        simp [K, H, newEqBody, newTerm, explicitNew,
+          rename, Term.rename]
+      have hnewOdd : BProv Ax_s K (oddDoubleEqAt 1 3) := by
+        simpa [oddDoubleEqAt, explicitNew] using hnewEq
+      have hnewStep : BProv Ax_s K (div2StepAt 1 3 0) :=
+        BProv_Ax_s_div2StepAt_of_oddDoubleEqAt_bit_one
+          hnewOdd hone
+      have holdStep : BProv Ax_s K
+          (div2StepAt (oldCode+4) 3 2) := by
+        apply BProv_ass (B := Ax_s) (G := K)
+        simp [K, H, J, div2TotalOpenedStepContext,
+          div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+          rename, Term.rename, SetTheory.up, List.map_map,
+          Function.comp_def]
+      have hgraphNamed : BProv Ax_s K
+          (hfAdjoinGraphTermAt
+            (Term.var 1) (Term.var (oldCode+4)) Term.zero) :=
+        BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
+          (newHead := 1) (oldHead := oldCode+4) (tail := 3)
+          (newBit := 0) (oldBit := 2)
+          hone hnewStep holdStep
+      have hgraphExplicit : BProv Ax_s K
+          (hfAdjoinGraphTermAt
+            explicitNew (Term.var (oldCode+4)) Term.zero) :=
+        BProv_hfAdjoinGraphTermAt_of_new_eq_term
+          hgraphNamed hnewEq
+      simpa [K, H, J, graphJ, newTerm, explicitNew,
+        rename_hfAdjoinGraphTermAt_succ,
+        Term.rename] using hgraphExplicit
+    simpa [H] using hgraphH
+  let body : Formula :=
+    hfAdjoinGraphTermAt
+      (Term.var 0)
+      (Term.rename Nat.succ (Term.var (oldCode+2)))
+      (Term.rename Nat.succ Term.zero)
+  have hgraphInst : BProv Ax_s J
+      (subst (instTerm newTerm) body) := by
+    simpa [body, graphJ,
+      subst_instTerm_hfAdjoinGraphTermAt_var_zero] using hgraphJ
+  have hex : BProv Ax_s J
+      (hfAdjoinExistsTermAt
+        (Term.var (oldCode+2)) Term.zero) := by
+    simpa [hfAdjoinExistsTermAt, body] using
+      (BProv_exI (B := Ax_s) (G := J) hgraphInst)
+  simpa [target,
+    rename_hfAdjoinExistsTermAt_succ,
+    Term.rename] using hex
+
+/-- PA proves that every old code has a result after adjoining zero. -/
+theorem BProv_Ax_s_hfAdjoinTotalTermAt_zero :
+    BProv Ax_s [] (hfAdjoinTotalTermAt Term.zero) := by
+  have hbody : BProv Ax_s []
+      (hfAdjoinExistsTermAt (Term.var 0) Term.zero) :=
+    BProv_Ax_s_hfAdjoinExistsTermAt_zero (G := []) 0
+  have hall := BProv_allI_of_sentences
+    (B := Ax_s) (G := [])
+    (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [hfAdjoinTotalTermAt, Term.rename] using hall
+
+theorem rename_hfAdjoinExistsTermAt
+    (r : Nat → Nat) (oldCode elemCode : Term) :
+    rename r (hfAdjoinExistsTermAt oldCode elemCode) =
+      hfAdjoinExistsTermAt
+        (Term.rename r oldCode) (Term.rename r elemCode) := by
+  rw [← subst_var_rename, subst_hfAdjoinExistsTermAt]
+  simp [term_subst_var_rename]
+
+/-- Renaming acts covariantly on the term-parametric totality invariant. -/
+theorem rename_hfAdjoinTotalTermAt
+    (r : Nat → Nat) (elemCode : Term) :
+    rename r (hfAdjoinTotalTermAt elemCode) =
+      hfAdjoinTotalTermAt (Term.rename r elemCode) := by
+  rw [← subst_var_rename, subst_hfAdjoinTotalTermAt]
+  simp [term_subst_var_rename]
+
+/-- Concrete successor premise for PA induction on adjunction totality. -/
+theorem BProv_Ax_s_hfAdjoinTotalTermAt_succ :
+    BProv Ax_s [hfAdjoinTotalTermAt (Term.var 0)]
+      (hfAdjoinTotalTermAt (Term.succ (Term.var 0))) := by
+  let phi : Formula := hfAdjoinTotalTermAt (Term.var 0)
+  let body : Formula :=
+    hfAdjoinExistsTermAt
+      (Term.var 0) (Term.succ (Term.var 1))
+  have hbody : BProv Ax_s ([phi].map (rename Nat.succ)) body := by
+    let G : List Formula := [rename Nat.succ phi]
+    change BProv Ax_s G body
+    refine BProv_Ax_s_of_div2TotalAt_opened_step
+      (G := G) (value := 0) (target := body)
+      (BProv_Ax_s_div2TotalAt 0) ?_
+    let H : List Formula := div2TotalOpenedStepContext G 0
+    have holdStep : BProv Ax_s H (div2StepAt 2 1 0) :=
+      BProv_ass (B := Ax_s) (G := H)
+        (by simp [H, div2TotalOpenedStepContext])
+    have hihRaw : BProv Ax_s H
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ phi))) :=
+      BProv_ass (B := Ax_s) (G := H) (by
+        simp [H, G, div2TotalOpenedStepContext])
+    have htotal : BProv Ax_s H
+        (hfAdjoinTotalTermAt (Term.var 3)) := by
+      simpa [phi, rename_hfAdjoinTotalTermAt,
+        Term.rename] using hihRaw
+    have htailEx : BProv Ax_s H
+        (hfAdjoinExistsTermAt (Term.var 1) (Term.var 3)) :=
+      BProv_hfAdjoinExistsTermAt_of_total
+        (oldCode := Term.var 1) htotal
+    let tailGraph : Formula := hfAdjoinGraphAt 0 2 4
+    have htailEx' : BProv Ax_s H (ex tailGraph) := by
+      simpa [tailGraph, hfAdjoinExistsTermAt,
+        hfAdjoinGraphAt, Term.rename] using htailEx
+    refine BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      (G := H) (a := tailGraph)
+      (c := rename Nat.succ (rename Nat.succ body)) htailEx' ?_
+    let K : List Formula := tailGraph :: H.map (rename Nat.succ)
+    have htail : BProv Ax_s K (hfAdjoinGraphAt 0 2 4) := by
+      have hraw : BProv Ax_s K tailGraph :=
+        BProv_ass (B := Ax_s) (G := K) (by simp [K])
+      simpa [tailGraph] using hraw
+    have holdRen : BProv Ax_s (H.map (rename Nat.succ))
+        (rename Nat.succ (div2StepAt 2 1 0)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        holdStep Nat.succ
+    have holdK : BProv Ax_s K (div2StepAt 3 2 1) := by
+      simpa [K, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+        rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := tailGraph) holdRen
+    have hresult : BProv Ax_s K
+        (hfAdjoinExistsTermAt
+          (Term.var 3) (Term.succ (Term.var 4))) :=
+      BProv_Ax_s_hfAdjoinExistsTermAt_succ_of_step_and_tail_graph
+        (oldHead := 3) (oldTail := 2) (bit := 1)
+        (newTail := 0) (elem := 4) holdK htail
+    simpa [body, rename_hfAdjoinExistsTermAt,
+      Term.rename] using hresult
+  have hall : BProv Ax_s [phi] (all body) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hbody
+  simpa [phi, body, hfAdjoinTotalTermAt, Term.rename] using hall
+
+/-- PA proves the Ackermann translation of the HF adjunction axiom. -/
+theorem BProv_Ax_s_translated_HF_adjoin :
+    BProv Ax_s []
+      (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)) :=
+  BProv_Ax_s_translated_HF_adjoin_of_zero_succ
+    BProv_Ax_s_hfAdjoinTotalTermAt_zero
+    BProv_Ax_s_hfAdjoinTotalTermAt_succ
+
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already
 `BProv_Ax_s_hfLtDistinguishesAt_zero_base`; this lemma keeps the remaining
