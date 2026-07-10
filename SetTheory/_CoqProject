@@ -80,6 +80,7 @@ PAHFTermGraphModel.v
 PAHFTermGraphTotal.v
 PAHFTermGraphFunctional.v
 PAHFRawSemantics.v
+PAHFRawSemanticsGraph.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
 PAHFHFRepresentationMerge.v
