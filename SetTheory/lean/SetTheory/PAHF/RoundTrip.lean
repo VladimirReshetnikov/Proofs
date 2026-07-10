@@ -804,6 +804,328 @@ theorem BProv_Ax_s_ordinalCodeGraphTermAt_zero_exists
     Term.rename] using
     (BProv_Ax_s_ordinalCodeGraphTermAt_zero (G := G))
 
+/-! ### Atomic equality through ordinal codes -/
+
+/-- Binder-free equality comparison through a common ordinal-code witness. -/
+def codeEqualityBodyTermAt
+    (leftCode rightCode leftRaw rightRaw : Term) : Formula :=
+  and
+    (ordinalCodeGraphTermAt leftRaw leftCode)
+    (and
+      (ordinalCodeGraphTermAt rightRaw rightCode)
+      (eq leftCode rightCode))
+
+/-- Relational equality obtained by evaluating both raw terms into coded
+finite ordinals and comparing those codes. -/
+def codeEqualityTermAt (leftRaw rightRaw : Term) : Formula :=
+  ex (ex
+    (codeEqualityBodyTermAt
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n ↦ n+2) leftRaw)
+      (Term.rename (fun n ↦ n+2) rightRaw)))
+
+theorem subst_codeEqualityBodyTermAt
+    (sigma : Nat → Term)
+    (leftCode rightCode leftRaw rightRaw : Term) :
+    subst sigma
+        (codeEqualityBodyTermAt
+          leftCode rightCode leftRaw rightRaw) =
+      codeEqualityBodyTermAt
+        (Term.subst sigma leftCode)
+        (Term.subst sigma rightCode)
+        (Term.subst sigma leftRaw)
+        (Term.subst sigma rightRaw) := by
+  simp [codeEqualityBodyTermAt,
+    subst_ordinalCodeGraphTermAt, subst]
+
+theorem subst_codeEqualityTermAt
+    (sigma : Nat → Term) (leftRaw rightRaw : Term) :
+    subst sigma (codeEqualityTermAt leftRaw rightRaw) =
+      codeEqualityTermAt
+        (Term.subst sigma leftRaw)
+        (Term.subst sigma rightRaw) := by
+  have hshift2 (t : Term) :
+      Term.subst (Term.upSubst (Term.upSubst sigma))
+          (Term.rename (fun n ↦ n+2) t) =
+        Term.rename (fun n ↦ n+2) (Term.subst sigma t) := by
+    change Term.subst (iterUpSubst 2 sigma)
+        (Term.rename (fun n ↦ n+2) t) =
+      Term.rename (fun n ↦ n+2) (Term.subst sigma t)
+    exact term_subst_iterUpSubst_rename_add 2 sigma t
+  simp [codeEqualityTermAt,
+    subst_codeEqualityBodyTermAt,
+    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
+
+theorem rename_codeEqualityTermAt
+    (r : Nat → Nat) (leftRaw rightRaw : Term) :
+    rename r (codeEqualityTermAt leftRaw rightRaw) =
+      codeEqualityTermAt
+        (Term.rename r leftRaw) (Term.rename r rightRaw) := by
+  rw [← subst_var_rename, subst_codeEqualityTermAt]
+  simp only [term_subst_var_rename]
+
+theorem subst_instTerm_codeEqualityBody_inner
+    (leftCode rightCode leftRaw rightRaw : Term) :
+    subst (instTerm rightCode)
+        (codeEqualityBodyTermAt
+          (Term.rename Nat.succ leftCode)
+          (Term.var 0)
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ rightRaw)) =
+      codeEqualityBodyTermAt
+        leftCode rightCode leftRaw rightRaw := by
+  rw [subst_codeEqualityBodyTermAt]
+  simp [instTerm, Term.subst, term_subst_instTerm_rename_succ]
+
+theorem subst_instTerm_codeEqualityBody_outer
+    (leftCode leftRaw rightRaw : Term) :
+    subst (instTerm leftCode)
+        (ex (codeEqualityBodyTermAt
+          (Term.var 1) (Term.var 0)
+          (Term.rename (fun n ↦ n+2) leftRaw)
+          (Term.rename (fun n ↦ n+2) rightRaw))) =
+      ex (codeEqualityBodyTermAt
+        (Term.rename Nat.succ leftCode) (Term.var 0)
+        (Term.rename Nat.succ leftRaw)
+        (Term.rename Nat.succ rightRaw)) := by
+  simp only [subst, subst_codeEqualityBodyTermAt]
+  simp [instTerm, Term.subst, Term.upSubst,
+    term_subst_upSubst_instTerm_rename_two_succ]
+
+/-- Package two explicit code witnesses and their equality into relational
+equality. -/
+theorem BProv_codeEqualityTermAt_of_components
+    {B : Formula → Prop} {G : List Formula}
+    {leftCode rightCode leftRaw rightRaw : Term}
+    (hleft : BProv B G
+      (ordinalCodeGraphTermAt leftRaw leftCode))
+    (hright : BProv B G
+      (ordinalCodeGraphTermAt rightRaw rightCode))
+    (heq : BProv B G (eq leftCode rightCode)) :
+    BProv B G (codeEqualityTermAt leftRaw rightRaw) := by
+  have hbody : BProv B G
+      (codeEqualityBodyTermAt
+        leftCode rightCode leftRaw rightRaw) := by
+    simpa [codeEqualityBodyTermAt] using
+      BProv_andI hleft (BProv_andI hright heq)
+  have hinnerInst : BProv B G
+      (subst (instTerm rightCode)
+        (codeEqualityBodyTermAt
+          (Term.rename Nat.succ leftCode)
+          (Term.var 0)
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ rightRaw))) := by
+    rw [subst_instTerm_codeEqualityBody_inner]
+    exact hbody
+  have hinner : BProv B G
+      (ex (codeEqualityBodyTermAt
+        (Term.rename Nat.succ leftCode) (Term.var 0)
+        (Term.rename Nat.succ leftRaw)
+        (Term.rename Nat.succ rightRaw))) :=
+    BProv_exI hinnerInst
+  have houterInst : BProv B G
+      (subst (instTerm leftCode)
+        (ex (codeEqualityBodyTermAt
+          (Term.var 1) (Term.var 0)
+          (Term.rename (fun n ↦ n+2) leftRaw)
+          (Term.rename (fun n ↦ n+2) rightRaw)))) := by
+    rw [subst_instTerm_codeEqualityBody_outer]
+    exact hinner
+  simpa [codeEqualityTermAt] using
+    (BProv_exI houterInst)
+
+/-- Equality transport in the raw argument of the ordinal-code graph. -/
+theorem BProv_ordinalCodeGraphTermAt_congr_raw
+    {B : Formula → Prop} {G : List Formula}
+    {leftRaw rightRaw coded : Term}
+    (heq : BProv B G (eq leftRaw rightRaw))
+    (hleft : BProv B G
+      (ordinalCodeGraphTermAt leftRaw coded)) :
+    BProv B G (ordinalCodeGraphTermAt rightRaw coded) := by
+  let context : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.var 0) (Term.rename Nat.succ coded)
+  have hleftInst : BProv B G
+      (subst (instTerm leftRaw) context) := by
+    simpa [context, subst_ordinalCodeGraphTermAt,
+      instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hleft
+  have hrightInst := BProv_eqElim (B := B) (G := G)
+    (a := context) heq hleftInst
+  simpa [context, subst_ordinalCodeGraphTermAt,
+    instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hrightInst
+
+/-- Equality transport in the coded argument of the ordinal-code graph. -/
+theorem BProv_ordinalCodeGraphTermAt_congr_coded
+    {B : Formula → Prop} {G : List Formula}
+    {raw leftCode rightCode : Term}
+    (heq : BProv B G (eq leftCode rightCode))
+    (hleft : BProv B G
+      (ordinalCodeGraphTermAt raw leftCode)) :
+    BProv B G (ordinalCodeGraphTermAt raw rightCode) := by
+  let context : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.rename Nat.succ raw) (Term.var 0)
+  have hleftInst : BProv B G
+      (subst (instTerm leftCode) context) := by
+    simpa [context, subst_ordinalCodeGraphTermAt,
+      instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hleft
+  have hrightInst := BProv_eqElim (B := B) (G := G)
+    (a := context) heq hleftInst
+  simpa [context, subst_ordinalCodeGraphTermAt,
+    instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hrightInst
+
+/-- Totality of the ordinal-code graph turns equality of raw terms into
+relational equality of their codes. -/
+theorem BProv_codeEqualityTermAt_of_eq
+    (P : OrdinalCodeGraphProofs)
+    {G : List Formula} {leftRaw rightRaw : Term}
+    (heq : BProv Ax_s G (eq leftRaw rightRaw)) :
+    BProv Ax_s G
+      (codeEqualityTermAt leftRaw rightRaw) := by
+  let graphBody : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.rename Nat.succ leftRaw) (Term.var 0)
+  have htotal : BProv Ax_s G (ex graphBody) := by
+    simpa [graphBody] using P.total G leftRaw
+  have hbody : BProv Ax_s
+      (graphBody :: G.map (rename Nat.succ))
+      (rename Nat.succ
+        (codeEqualityTermAt leftRaw rightRaw)) := by
+    let C : List Formula := graphBody :: G.map (rename Nat.succ)
+    have hleft : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.rename Nat.succ leftRaw) (Term.var 0)) := by
+      exact BProv_ass (B := Ax_s) (G := C) (by simp [C, graphBody])
+    have heqShift : BProv Ax_s C
+        (eq (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ rightRaw)) := by
+      simpa [C, rename, Term.rename] using
+        (BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          (a := graphBody) heq)
+    have hright : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.rename Nat.succ rightRaw) (Term.var 0)) :=
+      BProv_ordinalCodeGraphTermAt_congr_raw heqShift hleft
+    have hcodes : BProv Ax_s C
+        (codeEqualityTermAt
+          (Term.rename Nat.succ leftRaw)
+          (Term.rename Nat.succ rightRaw)) :=
+      BProv_codeEqualityTermAt_of_components
+        hleft hright (BProv_eqRefl (Term.var 0))
+    simpa [C, rename_codeEqualityTermAt] using hcodes
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf ↦ sentence_ax_s (f := f) hf)
+    (a := graphBody)
+    (c := codeEqualityTermAt leftRaw rightRaw)
+    htotal hbody
+
+/-- Injectivity of the ordinal-code graph recovers equality of raw terms from
+relational equality of their codes. -/
+theorem BProv_eq_of_codeEqualityTermAt
+    (P : OrdinalCodeGraphProofs)
+    {G : List Formula} {leftRaw rightRaw : Term}
+    (hcodes : BProv Ax_s G
+      (codeEqualityTermAt leftRaw rightRaw)) :
+    BProv Ax_s G (eq leftRaw rightRaw) := by
+  let body : Formula :=
+    codeEqualityBodyTermAt
+      (Term.var 1) (Term.var 0)
+      (Term.rename (fun n ↦ n+2) leftRaw)
+      (Term.rename (fun n ↦ n+2) rightRaw)
+  let inner : Formula := ex body
+  have houter : BProv Ax_s G (ex inner) := by
+    simpa [codeEqualityTermAt, inner, body] using hcodes
+  have houterBody : BProv Ax_s
+      (inner :: G.map (rename Nat.succ))
+      (rename Nat.succ (eq leftRaw rightRaw)) := by
+    let G₁ : List Formula := inner :: G.map (rename Nat.succ)
+    have hinner : BProv Ax_s G₁ (ex body) :=
+      BProv_ass (B := Ax_s) (G := G₁) (by simp [G₁, inner])
+    have hinnerBody : BProv Ax_s
+        (body :: G₁.map (rename Nat.succ))
+        (rename Nat.succ (rename Nat.succ
+          (eq leftRaw rightRaw))) := by
+      let C : List Formula := body :: G₁.map (rename Nat.succ)
+      have hpacked : BProv Ax_s C body :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have hleft : BProv Ax_s C
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) leftRaw)
+            (Term.var 1)) := by
+        simpa [body, codeEqualityBodyTermAt] using
+          BProv_andE1 hpacked
+      have hrightAndEq : BProv Ax_s C
+          (and
+            (ordinalCodeGraphTermAt
+              (Term.rename (fun n ↦ n+2) rightRaw)
+              (Term.var 0))
+            (eq (Term.var 1) (Term.var 0))) := by
+        simpa [body, codeEqualityBodyTermAt] using
+          BProv_andE2 hpacked
+      have hright : BProv Ax_s C
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) rightRaw)
+            (Term.var 0)) :=
+        BProv_andE1 hrightAndEq
+      have heqCode : BProv Ax_s C
+          (eq (Term.var 1) (Term.var 0)) :=
+        BProv_andE2 hrightAndEq
+      have hleftAtRightCode : BProv Ax_s C
+          (ordinalCodeGraphTermAt
+            (Term.rename (fun n ↦ n+2) leftRaw)
+            (Term.var 0)) :=
+        BProv_ordinalCodeGraphTermAt_congr_coded
+          heqCode hleft
+      have hraw : BProv Ax_s C
+          (eq
+            (Term.rename (fun n ↦ n+2) leftRaw)
+            (Term.rename (fun n ↦ n+2) rightRaw)) :=
+        P.injective hleftAtRightCode hright
+      simpa [C, rename, Term.rename, Term.rename_comp,
+        Function.comp_def] using hraw
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (a := body) (c := rename Nat.succ (eq leftRaw rightRaw))
+      hinner hinnerBody
+  exact BProv_exE_of_sentences (B := Ax_s)
+    (fun f hf ↦ sentence_ax_s (f := f) hf)
+    (a := inner) (c := eq leftRaw rightRaw)
+    houter houterBody
+
+/-- Raw equality is equivalent in PA to equality through existentially chosen
+ordinal codes.  The forward direction uses graph totality; the reverse direction
+uses graph injectivity. -/
+theorem BProv_eq_iff_codeEqualityTermAt
+    (P : OrdinalCodeGraphProofs)
+    (G : List Formula) (leftRaw rightRaw : Term) :
+    BProv Ax_s G
+      (iffForm
+        (eq leftRaw rightRaw)
+        (codeEqualityTermAt leftRaw rightRaw)) := by
+  have hforward : BProv Ax_s G
+      (imp
+        (eq leftRaw rightRaw)
+        (codeEqualityTermAt leftRaw rightRaw)) := by
+    apply BProv_impI
+    exact BProv_codeEqualityTermAt_of_eq P
+      (BProv_ass (B := Ax_s)
+        (G := eq leftRaw rightRaw :: G) (by simp))
+  have hreverse : BProv Ax_s G
+      (imp
+        (codeEqualityTermAt leftRaw rightRaw)
+        (eq leftRaw rightRaw)) := by
+    apply BProv_impI
+    exact BProv_eq_of_codeEqualityTermAt P
+      (BProv_ass (B := Ax_s)
+        (G := codeEqualityTermAt leftRaw rightRaw :: G)
+        (by simp))
+  simpa [iffForm] using BProv_andI hforward hreverse
+
 /-! ### Equivalence calculus for the structural round trip -/
 
 theorem BProv_iffForm_refl
@@ -994,6 +1316,110 @@ theorem BProv_iffForm_or_congr
           (BProv_context_cons
             (BProv_context_cons hb'b)) hb'C)
     exact BProv_orE hor hleft hright
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+theorem BProv_iffForm_ex_congr_of_sentences
+    {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {a b : Formula}
+    (h : BProv B (G.map (rename Nat.succ)) (iffForm a b)) :
+    BProv B G (iffForm (ex a) (ex b)) := by
+  have hab : BProv B (G.map (rename Nat.succ)) (imp a b) := by
+    simpa [iffForm] using BProv_andE1 h
+  have hba : BProv B (G.map (rename Nat.succ)) (imp b a) := by
+    simpa [iffForm] using BProv_andE2 h
+  have hforward : BProv B G (imp (ex a) (ex b)) := by
+    apply BProv_impI
+    let C : List Formula := ex a :: G
+    have hexa : BProv B C (ex a) :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    refine BProv_exE_of_sentences hB hexa ?_
+    let D : List Formula := a :: C.map (rename Nat.succ)
+    have ha : BProv B D a :=
+      BProv_ass (B := B) (G := D) (by simp [D])
+    have habD : BProv B D (imp a b) := by
+      have hctx := BProv_context_cons (B := B) (a := a)
+        (BProv_context_cons (B := B)
+          (a := rename Nat.succ (ex a)) hab)
+      simpa [D, C] using hctx
+    have hb : BProv B D b := BProv_mp B D a b habD ha
+    have hinst : BProv B D
+        (subst (instTerm (Term.var 0))
+          (rename (SetTheory.up Nat.succ) b)) := by
+      simpa [subst_instTerm_var_zero_rename_up_succ] using hb
+    have hex : BProv B D
+        (ex (rename (SetTheory.up Nat.succ) b)) :=
+      BProv_exI hinst
+    simpa [D, C, rename] using hex
+  have hreverse : BProv B G (imp (ex b) (ex a)) := by
+    apply BProv_impI
+    let C : List Formula := ex b :: G
+    have hexb : BProv B C (ex b) :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    refine BProv_exE_of_sentences hB hexb ?_
+    let D : List Formula := b :: C.map (rename Nat.succ)
+    have hb : BProv B D b :=
+      BProv_ass (B := B) (G := D) (by simp [D])
+    have hbaD : BProv B D (imp b a) := by
+      have hctx := BProv_context_cons (B := B) (a := b)
+        (BProv_context_cons (B := B)
+          (a := rename Nat.succ (ex b)) hba)
+      simpa [D, C] using hctx
+    have ha : BProv B D a := BProv_mp B D b a hbaD hb
+    have hinst : BProv B D
+        (subst (instTerm (Term.var 0))
+          (rename (SetTheory.up Nat.succ) a)) := by
+      simpa [subst_instTerm_var_zero_rename_up_succ] using ha
+    have hex : BProv B D
+        (ex (rename (SetTheory.up Nat.succ) a)) :=
+      BProv_exI hinst
+    simpa [D, C, rename] using hex
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+theorem BProv_iffForm_all_congr_of_sentences
+    {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {a b : Formula}
+    (h : BProv B (G.map (rename Nat.succ)) (iffForm a b)) :
+    BProv B G (iffForm (all a) (all b)) := by
+  have hab : BProv B (G.map (rename Nat.succ)) (imp a b) := by
+    simpa [iffForm] using BProv_andE1 h
+  have hba : BProv B (G.map (rename Nat.succ)) (imp b a) := by
+    simpa [iffForm] using BProv_andE2 h
+  have hforward : BProv B G (imp (all a) (all b)) := by
+    apply BProv_impI
+    let C : List Formula := all a :: G
+    apply BProv_allI_of_sentences hB
+    let D : List Formula := C.map (rename Nat.succ)
+    have halla : BProv B C (all a) :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have hallaRen : BProv B D (rename Nat.succ (all a)) := by
+      simpa [D] using BProv_rename_of_sentences hB halla Nat.succ
+    have hainst := BProv_allE (B := B) (G := D)
+      (t := Term.var 0) hallaRen
+    have ha : BProv B D a := by
+      simpa [rename, subst_instTerm_var_zero_rename_up_succ] using hainst
+    have habD : BProv B D (imp a b) := by
+      have hctx := BProv_context_cons (B := B)
+        (a := rename Nat.succ (all a)) hab
+      simpa [D, C] using hctx
+    exact BProv_mp B D a b habD ha
+  have hreverse : BProv B G (imp (all b) (all a)) := by
+    apply BProv_impI
+    let C : List Formula := all b :: G
+    apply BProv_allI_of_sentences hB
+    let D : List Formula := C.map (rename Nat.succ)
+    have hallb : BProv B C (all b) :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have hallbRen : BProv B D (rename Nat.succ (all b)) := by
+      simpa [D] using BProv_rename_of_sentences hB hallb Nat.succ
+    have hbinst := BProv_allE (B := B) (G := D)
+      (t := Term.var 0) hallbRen
+    have hb : BProv B D b := by
+      simpa [rename, subst_instTerm_var_zero_rename_up_succ] using hbinst
+    have hbaD : BProv B D (imp b a) := by
+      have hctx := BProv_context_cons (B := B)
+        (a := rename Nat.succ (all b)) hba
+      simpa [D, C] using hctx
+    exact BProv_mp B D b a hbaD hb
   simpa [iffForm] using BProv_andI hforward hreverse
 
 /-- The fragment of PA formulas whose syntax contains no quantifier. -/
