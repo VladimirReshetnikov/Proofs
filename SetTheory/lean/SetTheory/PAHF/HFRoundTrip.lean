@@ -4089,5 +4089,174 @@ theorem BProv_HFFin_setOrdinalRep_total
         (firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF))
     G set
 
+/-! ## Three deductive fields supplied by the exact merge law -/
+
+theorem BProv_HFFin_setOrdinalRep_code_functional
+    {G : List Form} {set code₁ code₂ : Nat}
+    (h₁ : BProv HFFinAx_s G (HF_setOrdinalRepAt set code₁))
+    (h₂ : BProv HFFinAx_s G (HF_setOrdinalRepAt set code₂)) :
+    BProv HFFinAx_s G (fEq code₁ code₂) := by
+  apply completeness_inf_context HFFinAx_s G (fEq code₁ code₂) Sentences_HFFin
+  intro Dom mem v hHF hG
+  let M : FirstOrderFiniteAdjunctionModel Dom :=
+    firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  let N := M.toFirstOrderAdjunctionModel
+  have h₁Sat := soundness_BProv h₁ v hHF hG
+  have h₂Sat := soundness_BProv h₂ v hHF hG
+  have h₁Model : ModelSetOrdinalRep N v (v set) (v code₁) :=
+    (HF_setOrdinalRepAt_model N v set code₁).mp h₁Sat
+  have h₂Model : ModelSetOrdinalRep N v (v set) (v code₂) :=
+    (HF_setOrdinalRepAt_model N v set code₂).mp h₂Sat
+  exact ModelSetOrdinalRep_code_eq_of_mergeLaw N
+    (ModelSetOrdinalRepMergeLaw_finite M) h₁Model h₂Model
+
+theorem BProv_HFFin_setOrdinalRep_set_injective
+    {G : List Form} {set₁ set₂ code : Nat}
+    (h₁ : BProv HFFinAx_s G (HF_setOrdinalRepAt set₁ code))
+    (h₂ : BProv HFFinAx_s G (HF_setOrdinalRepAt set₂ code)) :
+    BProv HFFinAx_s G (fEq set₁ set₂) := by
+  apply completeness_inf_context HFFinAx_s G (fEq set₁ set₂) Sentences_HFFin
+  intro Dom mem v hHF hG
+  let M : FirstOrderFiniteAdjunctionModel Dom :=
+    firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  let N := M.toFirstOrderAdjunctionModel
+  have h₁Sat := soundness_BProv h₁ v hHF hG
+  have h₂Sat := soundness_BProv h₂ v hHF hG
+  have h₁Model : ModelSetOrdinalRep N v (v set₁) (v code) :=
+    (HF_setOrdinalRepAt_model N v set₁ code).mp h₁Sat
+  have h₂Model : ModelSetOrdinalRep N v (v set₂) (v code) :=
+    (HF_setOrdinalRepAt_model N v set₂ code).mp h₂Sat
+  exact ModelSetOrdinalRep_set_eq_of_mergeLaw N
+    (ModelSetOrdinalRepMergeLaw_finite M) h₁Model h₂Model
+
+theorem BProv_HFFin_setOrdinalRep_mem_exact
+    {G : List Form} {elem set elemCode setCode : Nat}
+    (helem : BProv HFFinAx_s G (HF_setOrdinalRepAt elem elemCode))
+    (hset : BProv HFFinAx_s G (HF_setOrdinalRepAt set setCode)) :
+    BProv HFFinAx_s G
+      (fIff (fMem elem set) (HF_compositeMemAt elemCode setCode)) := by
+  apply completeness_inf_context HFFinAx_s G
+    (fIff (fMem elem set) (HF_compositeMemAt elemCode setCode)) Sentences_HFFin
+  intro Dom mem v hHF hG
+  let M : FirstOrderFiniteAdjunctionModel Dom :=
+    firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  let N := M.toFirstOrderAdjunctionModel
+  have helemSat := soundness_BProv helem v hHF hG
+  have hsetSat := soundness_BProv hset v hHF hG
+  have helemModel : ModelSetOrdinalRep N v (v elem) (v elemCode) :=
+    (HF_setOrdinalRepAt_model N v elem elemCode).mp helemSat
+  have hsetModel : ModelSetOrdinalRep N v (v set) (v setCode) :=
+    (HF_setOrdinalRepAt_model N v set setCode).mp hsetSat
+  rcases (ModelSetOrdinalRepMergeLaw_finite M)
+      v (v elem) (v elemCode) (v set) (v setCode)
+      helemModel hsetModel with
+    ⟨R⟩
+  have hsetLocal := ModelSetOrdinalRepCertificate_root_model N
+    R.certificate R.elem_root
+  rw [Sat_fIff]
+  constructor
+  · intro hmem
+    rcases (hsetLocal.2.1 (v elem)).mp hmem with
+      ⟨code, hroot, hcoded⟩
+    have hcode : code = v elemCode :=
+      R.certificate.1 (v elem) code (v elemCode) hroot R.old_root
+    apply (HF_compositeMemAt_model N v elemCode setCode).mpr
+    simpa [hcode] using hcoded
+  · intro hcodedSat
+    apply (hsetLocal.2.1 (v elem)).mpr
+    refine ⟨v elemCode, R.old_root, ?_⟩
+    exact (HF_compositeMemAt_model N v elemCode setCode).mp hcodedSat
+
+/-! ## Exact residual for the range field -/
+
+/-- Model-level surjectivity of the representation relation onto the ordinal
+domain.  Unlike the three fields above, this does not follow from merging two
+already existing representation witnesses. -/
+def ModelSetOrdinalRepRangeLaw
+    {α : Type u} (M : FirstOrderAdjunctionModel α) : Prop :=
+  ∀ (e : Nat → α) (code : α),
+    OrdinalLike M.mem code →
+      ∃ set, ModelSetOrdinalRep M (scons set e) set code
+
+/-- The exact completeness-facing residual: ordinal-surjectivity only for the
+chosen finite adjunction models reconstructed from HFFin semantics. -/
+def HFFinModelSetOrdinalRepRangeLaw : Prop :=
+  ∀ {α : Type} {mem : α → α → Prop}
+    (v : Nat → α)
+    (hHF : ∀ g, HFFinAx_s g → Sat mem v g),
+      let M := firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+      ModelSetOrdinalRepRangeLaw M.toFirstOrderAdjunctionModel
+
+/-- The easy direction of `SetOrdinalRepresentationProofs.range`: every
+represented code is ordinal-like. -/
+theorem BProv_HFFin_setOrdinalRep_range_reverse
+    (G : List Form) (code : Nat) :
+    BProv HFFinAx_s G
+      (fImp (fEx (HF_setOrdinalRepAt 0 (code+1)))
+        (HF_ordinalLikeAt code)) := by
+  apply completeness_inf_context HFFinAx_s G
+    (fImp (fEx (HF_setOrdinalRepAt 0 (code+1)))
+      (HF_ordinalLikeAt code)) Sentences_HFFin
+  intro Dom mem v hHF _hG hrepEx
+  let M : FirstOrderFiniteAdjunctionModel Dom :=
+    firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  let N := M.toFirstOrderAdjunctionModel
+  rcases hrepEx with ⟨set, hrepSat⟩
+  change Sat N.mem (scons set v)
+    (HF_setOrdinalRepAt 0 (code+1)) at hrepSat
+  have hrep : ModelSetOrdinalRep N (scons set v) set (v code) := by
+    apply (HF_setOrdinalRepAt_model N (scons set v) 0 (code+1)).mp
+    simpa [scons] using hrepSat
+  rcases hrep with ⟨relation, hroot, hcertificate⟩
+  apply (HF_ordinalLikeAt_spec v code).mpr
+  exact (hcertificate.2 set (v code) hroot).1
+
+/-- The full deductive range field follows from precisely the remaining
+model-level ordinal-surjectivity law. -/
+theorem BProv_HFFin_setOrdinalRep_range_of_model_range
+    (hmodel : HFFinModelSetOrdinalRepRangeLaw)
+    (G : List Form) (code : Nat) :
+    BProv HFFinAx_s G
+      (fIff (HF_ordinalLikeAt code)
+        (fEx (HF_setOrdinalRepAt 0 (code+1)))) := by
+  apply completeness_inf_context HFFinAx_s G
+    (fIff (HF_ordinalLikeAt code)
+      (fEx (HF_setOrdinalRepAt 0 (code+1)))) Sentences_HFFin
+  intro Dom mem v hHF _hG
+  let M : FirstOrderFiniteAdjunctionModel Dom :=
+    firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+  let N := M.toFirstOrderAdjunctionModel
+  have hmodel' : ModelSetOrdinalRepRangeLaw N :=
+    hmodel v hHF
+  rw [Sat_fIff]
+  constructor
+  · intro hcodeSat
+    have hcode : OrdinalLike M.mem (v code) :=
+      (HF_ordinalLikeAt_spec v code).mp hcodeSat
+    rcases hmodel' v (v code) hcode with ⟨set, hrep⟩
+    refine ⟨set, ?_⟩
+    apply (HF_setOrdinalRepAt_model N (scons set v) 0 (code+1)).mpr
+    simpa [scons] using hrep
+  · rintro ⟨set, hrepSat⟩
+    change Sat N.mem (scons set v)
+      (HF_setOrdinalRepAt 0 (code+1)) at hrepSat
+    have hrep : ModelSetOrdinalRep N (scons set v) set (v code) := by
+      apply (HF_setOrdinalRepAt_model N (scons set v) 0 (code+1)).mp
+      simpa [scons] using hrepSat
+    rcases hrep with ⟨relation, hroot, hcertificate⟩
+    apply (HF_ordinalLikeAt_spec v code).mpr
+    exact (hcertificate.2 set (v code) hroot).1
+
+/-- The concrete totality theorem and merge-derived structural fields reduce
+the full representation package to the single HFFin-model range law. -/
+def SetOrdinalRepresentationProofs_of_model_range
+    (hrange : HFFinModelSetOrdinalRepRangeLaw) :
+    SetOrdinalRepresentationProofs where
+  total := BProv_HFFin_setOrdinalRep_total
+  range := BProv_HFFin_setOrdinalRep_range_of_model_range hrange
+  code_functional := BProv_HFFin_setOrdinalRep_code_functional
+  set_injective := BProv_HFFin_setOrdinalRep_set_injective
+  mem_exact := BProv_HFFin_setOrdinalRep_mem_exact
+
 end AckermannHF
 end SetTheory
