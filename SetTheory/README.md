@@ -96,9 +96,15 @@ are documented below:
   machine model. It reconciles CoqBB4's undefined-transition halt with the
   local model's executed final write/move action, verifies that
   `sigma4Champion` attains 107 local steps, and proves
-  `ExactBusyBeaverTime 4 107`. This is deliberately only an exact halting-time
-  theorem: it does not prove the marked-symbol upper bound required for
-  `Σ(4)=13`.
+  `ExactBusyBeaverTime 4 107`.
+  The separate [`BusyBeaverBB4Score.v`](BusyBeaverBB4Score.v),
+  [`BusyBeaverBB4ScoreComputation.v`](BusyBeaverBB4ScoreComputation.v), and
+  [`BusyBeaverBB4ScoreCertificate.v`](BusyBeaverBB4ScoreCertificate.v) modules
+  propagate a marked-cell invariant through the same TNF search and prove that
+  its undefined-transition halts contain at most twelve marks.
+  [`BusyBeaverBB4ScoreBridge.v`](BusyBeaverBB4ScoreBridge.v) synchronizes that
+  list-tape score with the local model, accounts for its executed final action,
+  and proves the exact score theorem `Σ(4)=13`.
   [`lean/SetTheory/BusyBeaverBB2.lean`](lean/SetTheory/BusyBeaverBB2.lean)
   independently proves the same result in Lean by classifying all 20,736
   two-state transition tables, checking the left-moving half and deriving the
@@ -116,6 +122,14 @@ are documented below:
   organized into twelve first-action groups and subdivided further at later
   freshly encountered table entries as needed; every shard uses ordinary
   kernel `decide`, not `native_decide`.
+- [`lean/SetTheory/BusyBeaverBB4/TNFRoot.lean`](lean/SetTheory/BusyBeaverBB4/TNFRoot.lean)
+  proves a sound four-state tree-normal-form reduction in Lean. State
+  permutations canonicalize each newly reached state, tape reflection orients
+  the first continuing transition, and both transformations preserve exact
+  halting score. The resulting upper-bound theorem is conditional on
+  `TNF.checkRoot BB4.leaf = true`; the reduction and leaf checker are proved,
+  but that exhaustive Boolean computation has not yet been sharded into a
+  kernel certificate.
 - [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
   is the mathlib-backed bridge for mathlib's `Computable` predicate: it extracts a
   sequential `ToPartrec.Code` evaluated by mathlib's finite-support `PartrecToTM2`
@@ -555,7 +569,10 @@ the standard library. The library files import along the DAG shown above
 (`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
 `Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`; `BusyBeaver` ←
 `BusyBeaverKnownValues`, `BusyBeaverBB2Bridge`, `BusyBeaverBB3Bridge`,
-`BusyBeaverBB4Bridge`, `BusyBeaverMathlib`; `Audit` imports them all).
+`BusyBeaverBB4Bridge`; `BusyBeaverBB4Score` ←
+`BusyBeaverBB4ScoreComputation` ← `BusyBeaverBB4ScoreCertificate`; the last
+certificate and `BusyBeaverBB4Bridge` feed `BusyBeaverBB4ScoreBridge`; plus
+`BusyBeaverMathlib`; `Audit` imports them all).
 `Completeness.v` additionally uses the standard
 classical/extensionality axiom modules (`ClassicalEpsilon`,
 `FunctionalExtensionality`, `PropExtensionality`, `ProofIrrelevance`) for the

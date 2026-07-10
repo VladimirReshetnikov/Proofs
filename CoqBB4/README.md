@@ -13,8 +13,18 @@ kernel-checked `reflexivity` proof. The upstream MIT license is included in
 The companion
 [`SetTheory/BusyBeaverBB4Bridge.v`](../SetTheory/BusyBeaverBB4Bridge.v)
 transports this time bound into Proofs' local machine model and proves
-`ExactBusyBeaverTime 4 107`. It does not claim the separate marked-symbol score
-upper bound needed for `Σ(4)=13`.
+`ExactBusyBeaverTime 4 107`. A separate local chain beginning with
+[`SetTheory/BusyBeaverBB4Score.v`](../SetTheory/BusyBeaverBB4Score.v) propagates
+a marked-cell invariant through the same TNF enumeration. Its bridge accounts
+for the local model's executed final action and proves the exact score
+`Σ(4)=13`.
+
+The score computation cache uses `vm_cast_no_check`, not native compilation.
+The [Rocq 9.0 manual](https://rocq-prover.org/doc/V9.0.0/refman/proof-engine/tactics.html#performance-oriented-tactic-variants)
+explains that this skips only the tactic-side check: the kernel performs the VM
+conversion when `Qed` closes the proof. `Print Assumptions` reports that cache
+equality closed under the global context; the semantic score theorems inherit
+only the functional-extensionality axiom already documented below.
 
 This folder contains the Coq ([v8.20.1](https://github.com/coq/coq/blob/V8.20.1/INSTALL.md)) proof that `BB(4) = 107`. This result was first proved, to a certain extent[^1], in [[Brady, 1983]](https://www.ams.org/journals/mcom/1983-40-162/S0025-5718-1983-0689479-6/).
 
