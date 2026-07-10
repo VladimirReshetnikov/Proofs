@@ -265,6 +265,11 @@ Check PA.Formula.BProv_Ax_s_eq_of_leTermAt_leTermAt.
 Check PA.Formula.BProv_Ax_s_ltTermAt_succ_right_cases.
 Check PA.Formula.BProv_Ax_s_crtInverse_mul.
 Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_mul.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_succ.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_of_term.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_zero.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_succ.
 Check PA.Formula.BProv_Ax_s_crtProductFactor_mul.
 Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_preserve_decomposition.
 Check PA.Formula.BProv_Ax_s_crtExtendCodeTerm_new_decomposition.

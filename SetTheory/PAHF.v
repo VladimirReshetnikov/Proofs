@@ -23099,6 +23099,253 @@ Proof.
   - exact hleft.
 Qed.
 
+(* Lean: BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_succ *)
+Lemma BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_succ :
+  forall G (step target bound product : term),
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorTermAt step target bound product) ->
+  BProv Ax_s G (commonMultipleThroughTermAt target step) ->
+  BProv Ax_s G (ltTermAt bound target) ->
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorTermAt step target
+      (tSucc bound)
+      (tMul product (betaModTermTerm step bound))).
+Proof.
+  intros G step target bound product hacc hcommon hlt.
+  assert (hprefix : BProv Ax_s G
+      (betaPrefixDividesTermAt step bound product)).
+  {
+    exact (BProv_andE1 Ax_s G _ _ hacc).
+  }
+  assert (hinverse : BProv Ax_s G
+      (crtInverseExistsTermAt product
+        (betaModTermTerm step target))).
+  {
+    exact (BProv_andE2 Ax_s G _ _ hacc).
+  }
+  pose proof
+    (BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple
+      G bound target step hcommon hlt) as hfactorInverse.
+  pose proof (BProv_Ax_s_crtInverseExistsTermAt_mul G
+    product (betaModTermTerm step bound)
+    (betaModTermTerm step target) hinverse hfactorInverse)
+    as hproductInverse.
+  pose proof (BProv_Ax_s_betaPrefixDividesTermAt_succ
+    G step bound product hprefix) as hprefixNext.
+  unfold betaPrefixCRTAccumulatorTermAt.
+  exact (BProv_andI Ax_s G _ _ hprefixNext hproductInverse).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_of_term *)
+Lemma BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_of_term :
+  forall G (step target bound product : term),
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorTermAt step target bound product) ->
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorExistsTermAt step target bound).
+Proof.
+  intros G step target bound product hacc.
+  assert (hbody : BProv Ax_s G
+      (subst (instTerm product)
+        (betaPrefixCRTAccumulatorTermAt
+          (Term.rename S step) (Term.rename S target)
+          (Term.rename S bound) (tVar 0)))).
+  {
+    assert (hrename2 : forall t,
+        Term.rename (fun n => S (S n)) t =
+        Term.rename (fun n => n + 2) t).
+    {
+      intro t.
+      apply Term.rename_ext.
+      intro n. lia.
+    }
+    assert (hsubst3 : forall t,
+        Term.subst (Term.upSubst (Term.upSubst (instTerm product)))
+          (Term.rename (fun n => S n + 2) t) =
+        Term.rename (fun n => n + 2) t).
+    {
+      intro t.
+      replace (Term.rename (fun n => S n + 2) t)
+        with (Term.rename (fun n => S (S (S n))) t)
+        by (apply Term.rename_ext; intro n; lia).
+      replace (Term.rename (fun n => n + 2) t)
+        with (Term.rename (fun n => S (S n)) t)
+        by (apply Term.rename_ext; intro n; lia).
+      apply term_subst_up_up_instTerm_rename_three_succ.
+    }
+    replace
+      (subst (instTerm product)
+        (betaPrefixCRTAccumulatorTermAt
+          (Term.rename S step) (Term.rename S target)
+          (Term.rename S bound) (tVar 0)))
+      with (betaPrefixCRTAccumulatorTermAt step target bound product).
+    - exact hacc.
+    - unfold betaPrefixCRTAccumulatorTermAt,
+        betaPrefixDividesTermAt, crtInverseExistsTermAt,
+        crtInverseTermAt, betaModTermTerm, dvdTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      rewrite (hsubst3 target), (hsubst3 step).
+      repeat rewrite hsubst3.
+      repeat rewrite hrename2.
+      reflexivity.
+  }
+  unfold betaPrefixCRTAccumulatorExistsTermAt.
+  exact (BProv_exI Ax_s G
+    (betaPrefixCRTAccumulatorTermAt
+      (Term.rename S step) (Term.rename S target)
+      (Term.rename S bound) (tVar 0)) product hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_elim_opened *)
+Lemma BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_elim_opened :
+  forall G (step target bound : term) goal,
+  BProv Ax_s
+    (betaPrefixCRTAccumulatorExistsTermAtBody step target bound ::
+      map (rename S) G)
+    (rename S goal) ->
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorExistsTermAt step target bound) ->
+  BProv Ax_s G goal.
+Proof.
+  intros G step target bound goal hbody hex.
+  unfold betaPrefixCRTAccumulatorExistsTermAt in hex.
+  unfold betaPrefixCRTAccumulatorExistsTermAtBody in hbody.
+  exact (BProv_exE_of_sentences Ax_s G
+    (betaPrefixCRTAccumulatorTermAt
+      (Term.rename S step) (Term.rename S target)
+      (Term.rename S bound) (tVar 0))
+    goal sentence_ax_s hex hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_zero *)
+Lemma BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_zero :
+  forall G (step target : term),
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorExistsTermAt step target tZero).
+Proof.
+  intros G step target.
+  exact (BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_of_term
+    G step target tZero (Term.numeral 1)
+    (BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_zero G step target)).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_succ *)
+Lemma BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_succ :
+  forall G (step target bound : term),
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorExistsTermAt step target bound) ->
+  BProv Ax_s G (commonMultipleThroughTermAt target step) ->
+  BProv Ax_s G (ltTermAt bound target) ->
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorExistsTermAt
+      step target (tSucc bound)).
+Proof.
+  intros G step target bound hex hcommon hlt.
+  set (goal := betaPrefixCRTAccumulatorExistsTermAt
+    step target (tSucc bound)).
+  apply (BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_elim_opened
+    G step target bound goal).
+  - set (D := betaPrefixCRTAccumulatorExistsTermAtBody
+      step target bound :: map (rename S) G).
+    set (step1 := Term.rename S step).
+    set (target1 := Term.rename S target).
+    set (bound1 := Term.rename S bound).
+    assert (hacc : BProv Ax_s D
+        (betaPrefixCRTAccumulatorTermAt
+          step1 target1 bound1 (tVar 0))).
+    {
+      apply BProv_ass.
+      unfold D, betaPrefixCRTAccumulatorExistsTermAtBody,
+        step1, target1, bound1.
+      simpl. left. reflexivity.
+    }
+    assert (hcommonRen : BProv Ax_s (map (rename S) G)
+        (commonMultipleThroughTermAt target1 step1)).
+    {
+      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+        (commonMultipleThroughTermAt target step) hcommon S) as hren.
+      replace (commonMultipleThroughTermAt target1 step1)
+        with (rename S (commonMultipleThroughTermAt target step)).
+      - exact hren.
+      - unfold commonMultipleThroughTermAt, target1, step1,
+          dvdTermTermAt, ltTermAt.
+        simpl.
+        repeat rewrite Term.rename_comp.
+        repeat rewrite term_rename_up_succ_rename_succ.
+        reflexivity.
+    }
+    assert (hcommonD : BProv Ax_s D
+        (commonMultipleThroughTermAt target1 step1)).
+    { exact (BProv_context_cons Ax_s _ _ _ hcommonRen). }
+    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+      (ltTermAt bound target) hlt S) as hltRen.
+    assert (hltD : BProv Ax_s D (ltTermAt bound1 target1)).
+    {
+      assert (hctx : BProv Ax_s D
+          (rename S (ltTermAt bound target))).
+      { exact (BProv_context_cons Ax_s _ _ _ hltRen). }
+      replace (ltTermAt bound1 target1)
+        with (rename S (ltTermAt bound target)).
+      - exact hctx.
+      - unfold bound1, target1, ltTermAt.
+        simpl.
+        repeat rewrite Term.rename_comp.
+        repeat rewrite term_rename_up_succ_rename_succ.
+        reflexivity.
+    }
+    pose proof (BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_succ D
+      step1 target1 bound1 (tVar 0) hacc hcommonD hltD) as hnext.
+    pose proof
+      (BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_of_term D
+        step1 target1 (tSucc bound1)
+        (tMul (tVar 0) (betaModTermTerm step1 bound1)) hnext)
+      as hexNext.
+    assert (hshift4 : forall t,
+        Term.rename
+          (fun n => up (up (up S)) (S (S (S n)))) t =
+        Term.rename (fun n => S (S (S (S n)))) t).
+    {
+      intro t.
+      apply Term.rename_ext.
+      intro n. reflexivity.
+    }
+    assert (hshiftMixed : forall t,
+        Term.rename
+          (fun n => up (up (up S)) (S n + 2)) t =
+        Term.rename (fun n => S (S n) + 2) t).
+    {
+      intro t.
+      apply Term.rename_ext.
+      intro n.
+      replace (S n + 2) with (S (S (S n))) by lia.
+      replace (S (S n) + 2) with (S (S (S (S n)))) by lia.
+      reflexivity.
+    }
+    replace (rename S goal) with
+      (betaPrefixCRTAccumulatorExistsTermAt
+        step1 target1 (tSucc bound1)).
+    + exact hexNext.
+    + unfold goal, step1, target1, bound1,
+        betaPrefixCRTAccumulatorExistsTermAt,
+        betaPrefixCRTAccumulatorTermAt, betaPrefixDividesTermAt,
+        crtInverseExistsTermAt, crtInverseTermAt,
+        betaModTermTerm, dvdTermTermAt, ltTermAt.
+      simpl.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      repeat rewrite hshift4.
+      repeat rewrite hshiftMixed.
+      reflexivity.
+  - exact hex.
+Qed.
+
 (* Lean: BProv_Ax_s_crtProductFactor_mul *)
 Lemma BProv_Ax_s_crtProductFactor_mul :
   forall G (product factor modulus appended : term),
