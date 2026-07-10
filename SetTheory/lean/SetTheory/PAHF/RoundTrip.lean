@@ -6092,6 +6092,822 @@ def OrdinalCodeGraphInjective : Prop :=
     BProv Ax_s G (ordinalCodeGraphTermAt raw₂ coded) →
     BProv Ax_s G (eq raw₁ raw₂)
 
+/-! ## Raw-side injectivity of `ordinalCodeGraphTermAt` -/
+
+/-- On ordinal-like HF objects, two self-successors with a common output
+have equal inputs. -/
+def HF_selfSuccInjectiveSentence : SetTheory.Form :=
+  SetTheory.Form.fAll (SetTheory.Form.fAll (SetTheory.Form.fAll
+    (SetTheory.Form.fImp
+      (AckermannHF.HF_ordinalLikeAt 2)
+      (SetTheory.Form.fImp
+        (AckermannHF.HF_ordinalLikeAt 1)
+        (SetTheory.Form.fImp
+          (AckermannHF.HF_succAt 0 2)
+          (SetTheory.Form.fImp
+            (AckermannHF.HF_succAt 0 1)
+            (SetTheory.Form.fEq 2 1)))))))
+
+theorem HF_selfSuccInjectiveSentence_sentence :
+    SetTheory.Sentence HF_selfSuccInjectiveSentence := by
+  intro i hi
+  simp [HF_selfSuccInjectiveSentence,
+    AckermannHF.HF_ordinalLikeAt,
+    AckermannHF.HF_transitiveAt,
+    AckermannHF.HF_memTotalOnAt,
+    AckermannHF.HF_succAt,
+    AckermannHF.HF_adjoinAt,
+    SetTheory.fIff, SetTheory.Free] at hi
+
+theorem BProv_HFFin_selfSuccInjectiveSentence :
+    SetTheory.BProv AckermannHF.HFFinAx_s []
+      HF_selfSuccInjectiveSentence := by
+  apply SetTheory.completeness_inf AckermannHF.HFFinAx_s
+  · exact AckermannHF.Sentences_HFFin
+  · exact HF_selfSuccInjectiveSentence_sentence
+  · intro Dom mem v hHF
+    let M := AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+    intro a b out ha hb hsuccA hsuccB
+    have ha' : AckermannHF.OrdinalLike M.mem a :=
+      (AckermannHF.HF_ordinalLikeAt_spec
+        (SetTheory.scons out (SetTheory.scons b (SetTheory.scons a v))) 2).mp ha
+    have hb' : AckermannHF.OrdinalLike M.mem b :=
+      (AckermannHF.HF_ordinalLikeAt_spec
+        (SetTheory.scons out (SetTheory.scons b (SetTheory.scons a v))) 1).mp hb
+    have hsuccA' : out = M.adjoin a a :=
+      (AckermannHF.FirstOrderAdjunctionModel.HF_succAt_spec
+        M.toFirstOrderAdjunctionModel
+        (SetTheory.scons out (SetTheory.scons b (SetTheory.scons a v)))
+        0 2).mp hsuccA
+    have hsuccB' : out = M.adjoin b b :=
+      (AckermannHF.FirstOrderAdjunctionModel.HF_succAt_spec
+        M.toFirstOrderAdjunctionModel
+        (SetTheory.scons out (SetTheory.scons b (SetTheory.scons a v)))
+        0 1).mp hsuccB
+    apply AckermannHF.FirstOrderAdjunctionModel.adjoin_self_injective_on_ordinalLike
+      M.toFirstOrderAdjunctionModel ha' hb'
+    rw [← hsuccA', ← hsuccB']
+
+def selfSuccInjectivePAFormula : Formula :=
+  all <| all <| all <|
+    imp (rename (fun n : Nat ↦ n + 2) codedOrdinalDomain) <|
+    imp (rename Nat.succ codedOrdinalDomain) <|
+    imp (hfAdjoinGraphAt 0 2 2) <|
+    imp (hfAdjoinGraphAt 0 1 1) <|
+    eq (Term.var 2) (Term.var 1)
+
+theorem translateHFFormula_selfSuccInjectiveSentence :
+    translateHFFormula HF_selfSuccInjectiveSentence =
+      selfSuccInjectivePAFormula := by
+  rfl
+
+theorem BProv_Ax_s_selfSuccInjectiveSentence :
+    BProv Ax_s [] selfSuccInjectivePAFormula := by
+  have htranslated : BProv translatedHFFinAx []
+      (translateHFFormula HF_selfSuccInjectiveSentence) :=
+    BProv_translateHFFormula_of_BProv_HFFin
+      BProv_HFFin_selfSuccInjectiveSentence
+  have hpa : BProv Ax_s []
+      (translateHFFormula HF_selfSuccInjectiveSentence) :=
+    BProv_lift_translatedHFFinAx_to_PA
+      (fun f hf => BProv_Ax_s_of_translatedHFFinAx hf)
+      htranslated
+  rwa [translateHFFormula_selfSuccInjectiveSentence] at hpa
+
+/-- Term-parametric form of self-successor injectivity on the translated
+ordinal domain. -/
+theorem BProv_Ax_s_hfAdjoinGraphTermAt_injective_self
+    {G : List Formula} {a b out : Term}
+    (ha : BProv Ax_s G
+      (subst (instTerm a) codedOrdinalDomain))
+    (hb : BProv Ax_s G
+      (subst (instTerm b) codedOrdinalDomain))
+    (hsuccA : BProv Ax_s G (hfAdjoinGraphTermAt out a a))
+    (hsuccB : BProv Ax_s G (hfAdjoinGraphTermAt out b b)) :
+    BProv Ax_s G (eq a b) := by
+  have hall : BProv Ax_s G selfSuccInjectivePAFormula :=
+    BProv_weaken_nil BProv_Ax_s_selfSuccInjectiveSentence
+  have haRaw := BProv_allE (B := Ax_s) (G := G) (t := a) hall
+  have hbRaw := BProv_allE (B := Ax_s) (G := G) (t := b) haRaw
+  have houtRaw := BProv_allE (B := Ax_s) (G := G) (t := out) hbRaw
+  have hrename :
+      rename (fun n : Nat ↦ n + 2) codedOrdinalDomain =
+        rename Nat.succ (rename Nat.succ codedOrdinalDomain) := by
+    rw [rename_comp]
+  have haNorm :
+      subst (instTerm out)
+          (subst (Term.upSubst (instTerm b))
+            (subst (Term.upSubst (Term.upSubst (instTerm a)))
+              (rename (fun n : Nat ↦ n + 2) codedOrdinalDomain))) =
+        subst (instTerm a) codedOrdinalDomain := by
+    rw [hrename]
+    rw [subst_rename_succ_up]
+    rw [subst_rename_succ_up]
+    rw [subst_rename_succ_up]
+    rw [subst_instTerm_rename_succ]
+    rw [subst_instTerm_rename_succ]
+  have hbNorm :
+      subst (instTerm b)
+          (subst (Term.upSubst (instTerm a)) codedOrdinalDomain) =
+        subst (instTerm b) codedOrdinalDomain := by
+    rw [subst_up_inst_codedOrdinalDomain]
+  have houtExpanded : BProv Ax_s G
+      (imp
+        (subst (instTerm out)
+          (subst (Term.upSubst (instTerm b))
+            (subst (Term.upSubst (Term.upSubst (instTerm a)))
+              (rename (fun n : Nat ↦ n + 2) codedOrdinalDomain))))
+        (imp
+          (subst (instTerm b)
+            (subst (Term.upSubst (instTerm a)) codedOrdinalDomain))
+          (imp
+            (hfAdjoinGraphTermAt out a a)
+            (imp
+              (hfAdjoinGraphTermAt out b b)
+              (eq a b))))) := by
+    simpa [hfAdjoinGraphAt, subst_hfAdjoinGraphTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      subst_rename_succ_up,
+      subst_instTerm_rename_succ] using houtRaw
+  rw [haNorm, hbNorm] at houtExpanded
+  exact BProv_mp Ax_s G _ _
+    (BProv_mp Ax_s G _ _
+      (BProv_mp Ax_s G _ _
+        (BProv_mp Ax_s G _ _ houtExpanded ha) hb) hsuccA) hsuccB
+
+/-- No HF self-successor can be empty. -/
+def HF_selfSuccNonemptySentence : SetTheory.Form :=
+  SetTheory.Form.fAll (SetTheory.Form.fAll
+    (SetTheory.Form.fImp
+      (AckermannHF.HF_succAt 0 1)
+      (SetTheory.Form.fImp
+        (AckermannHF.HF_emptyAt 0)
+        SetTheory.Form.fBot)))
+
+theorem HF_selfSuccNonemptySentence_sentence :
+    SetTheory.Sentence HF_selfSuccNonemptySentence := by
+  intro i hi
+  simp [HF_selfSuccNonemptySentence,
+    AckermannHF.HF_succAt,
+    AckermannHF.HF_adjoinAt,
+    AckermannHF.HF_emptyAt,
+    SetTheory.fIff, SetTheory.Free] at hi
+
+theorem BProv_HFFin_selfSuccNonemptySentence :
+    SetTheory.BProv AckermannHF.HFFinAx_s []
+      HF_selfSuccNonemptySentence := by
+  apply SetTheory.completeness_inf AckermannHF.HFFinAx_s
+  · exact AckermannHF.Sentences_HFFin
+  · exact HF_selfSuccNonemptySentence_sentence
+  · intro Dom mem v hHF
+    let M := AckermannHF.firstOrderFiniteAdjunctionModel_of_HFFinAx_s v hHF
+    intro a out hsucc hempty
+    have hsucc' : out = M.adjoin a a :=
+      (AckermannHF.FirstOrderAdjunctionModel.HF_succAt_spec
+        M.toFirstOrderAdjunctionModel
+        (SetTheory.scons out (SetTheory.scons a v)) 0 1).mp hsucc
+    have hempty' : out = M.empty :=
+      (AckermannHF.FirstOrderAdjunctionModel.HF_emptyAt_empty
+        M.toFirstOrderAdjunctionModel
+        (SetTheory.scons out (SetTheory.scons a v)) 0).mp hempty
+    have hEq : M.adjoin a a = M.empty := hsucc'.symm.trans hempty'
+    have haMem : M.mem a (M.adjoin a a) :=
+      (M.adjoin_spec a a a).mpr (Or.inr rfl)
+    rw [hEq] at haMem
+    exact M.empty_spec a haMem
+
+theorem translateHFFormula_selfSuccNonemptySentence :
+    translateHFFormula HF_selfSuccNonemptySentence =
+      all (all
+        (imp
+          (hfAdjoinGraphAt 0 1 1)
+          (imp (hfEmptyAt 0) bot))) := by
+  rfl
+
+theorem BProv_Ax_s_selfSuccNonemptySentence :
+    BProv Ax_s []
+      (all (all
+        (imp
+          (hfAdjoinGraphAt 0 1 1)
+          (imp (hfEmptyAt 0) bot)))) := by
+  have htranslated : BProv translatedHFFinAx []
+      (translateHFFormula HF_selfSuccNonemptySentence) :=
+    BProv_translateHFFormula_of_BProv_HFFin
+      BProv_HFFin_selfSuccNonemptySentence
+  have hpa : BProv Ax_s []
+      (translateHFFormula HF_selfSuccNonemptySentence) :=
+    BProv_lift_translatedHFFinAx_to_PA
+      (fun f hf => BProv_Ax_s_of_translatedHFFinAx hf)
+      htranslated
+  rwa [translateHFFormula_selfSuccNonemptySentence] at hpa
+
+theorem BProv_Ax_s_bot_of_hfAdjoinGraphTermAt_hfEmptyTermAt
+    {G : List Formula} {a out : Term}
+    (hsucc : BProv Ax_s G (hfAdjoinGraphTermAt out a a))
+    (hempty : BProv Ax_s G (hfEmptyTermAt out)) :
+    BProv Ax_s G bot := by
+  have hall : BProv Ax_s G
+      (all (all
+        (imp
+          (hfAdjoinGraphAt 0 1 1)
+          (imp (hfEmptyAt 0) bot)))) :=
+    BProv_weaken_nil BProv_Ax_s_selfSuccNonemptySentence
+  have haRaw := BProv_allE (B := Ax_s) (G := G) (t := a) hall
+  have houtRaw := BProv_allE (B := Ax_s) (G := G) (t := out) haRaw
+  have himp : BProv Ax_s G
+      (imp
+        (hfAdjoinGraphTermAt out a a)
+        (imp (hfEmptyTermAt out) bot)) := by
+    simpa [hfAdjoinGraphAt, hfEmptyAt,
+      subst_hfAdjoinGraphTermAt, subst_hfEmptyTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using houtRaw
+  exact BProv_mp Ax_s G _ _
+    (BProv_mp Ax_s G _ _ himp hsucc) hempty
+
+/-- Direct term-level use of the already proved graph-codomain induction. -/
+theorem BProv_Ax_s_codedOrdinalDomain_of_ordinalCodeGraphTermAt
+    {G : List Formula} {raw coded : Term}
+    (hgraph : BProv Ax_s G (ordinalCodeGraphTermAt raw coded)) :
+    BProv Ax_s G (subst (instTerm coded) codedOrdinalDomain) := by
+  have hall : BProv Ax_s G
+      (all (ordinalCodeCodomainTermAt (Term.var 0))) :=
+    BProv_weaken_nil BProv_Ax_s_all_ordinalCodeCodomain
+  have hrawRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := raw) hall
+  have hraw : BProv Ax_s G (ordinalCodeCodomainTermAt raw) := by
+    simpa [subst_ordinalCodeCodomainTermAt,
+      instTerm, Term.subst] using hrawRaw
+  have hcodedRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := coded) hraw
+  have himp : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt raw coded)
+        (subst (instTerm coded) codedOrdinalDomain)) := by
+    simpa [ordinalCodeCodomainTermAt,
+      subst_ordinalCodeGraphTermAt,
+      subst, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hcodedRaw
+  exact BProv_mp Ax_s G _ _ himp hgraph
+
+/-- A zero-stage trace and a successor-stage trace cannot have the same
+endpoint. -/
+theorem BProv_Ax_s_bot_of_ordinalCodeGraphTermAt_zero_succ
+    {G : List Formula} {raw coded : Term}
+    (hzero : BProv Ax_s G
+      (ordinalCodeGraphTermAt Term.zero coded))
+    (hsucc : BProv Ax_s G
+      (ordinalCodeGraphTermAt (Term.succ raw) coded)) :
+    BProv Ax_s G bot := by
+  have hcodedZero : BProv Ax_s G (eq coded Term.zero) :=
+    BProv_Ax_s_eq_zero_of_ordinalCodeGraphTermAt_zero hzero
+  have hedge : BProv Ax_s G
+      (ordinalCodePredEdgeTermAt raw coded) :=
+    BProv_Ax_s_ordinalCodePredEdgeTermAt_of_succ_graph hsucc
+  let edgeBody : Formula :=
+    and
+      (ordinalCodeGraphTermAt
+        (Term.rename Nat.succ raw) (Term.var 0))
+      (hfAdjoinGraphTermAt
+        (Term.rename Nat.succ coded) (Term.var 0) (Term.var 0))
+  let C : List Formula := edgeBody :: G.map (rename Nat.succ)
+  have hopened : BProv Ax_s C (rename Nat.succ bot) := by
+    have hedgeBody : BProv Ax_s C edgeBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hadjoin : BProv Ax_s C
+        (hfAdjoinGraphTermAt
+          (Term.rename Nat.succ coded) (Term.var 0) (Term.var 0)) := by
+      simpa [edgeBody] using BProv_andE2 hedgeBody
+    have hcodedZeroRen := BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hcodedZero Nat.succ
+    have hcodedZeroC : BProv Ax_s C
+        (eq (Term.rename Nat.succ coded) Term.zero) := by
+      have hctx := BProv_context_cons
+        (B := Ax_s) (a := edgeBody) hcodedZeroRen
+      simpa [C, rename, Term.rename] using hctx
+    have hadjoinZero : BProv Ax_s C
+        (hfAdjoinGraphTermAt
+          Term.zero (Term.var 0) (Term.var 0)) :=
+      BProv_hfAdjoinGraphTermAt_of_new_eq_term
+        hadjoin hcodedZeroC
+    have hempty : BProv Ax_s C (hfEmptyTermAt Term.zero) :=
+      BProv_weaken_nil BProv_Ax_s_hfEmptyTermAt_zero
+    simpa [rename] using
+      (BProv_Ax_s_bot_of_hfAdjoinGraphTermAt_hfEmptyTermAt
+        hadjoinZero hempty)
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := G) (a := edgeBody) (c := bot)
+    (by simpa [ordinalCodePredEdgeTermAt, edgeBody] using hedge)
+    (by simpa [C, rename] using hopened)
+
+/-- The zero-stage trace has no raw preimage other than zero. -/
+theorem BProv_Ax_s_eq_zero_of_ordinalCodeGraphTermAt_common
+    {G : List Formula} {raw coded : Term}
+    (hzero : BProv Ax_s G
+      (ordinalCodeGraphTermAt Term.zero coded))
+    (hraw : BProv Ax_s G
+      (ordinalCodeGraphTermAt raw coded)) :
+    BProv Ax_s G (eq Term.zero raw) := by
+  let target : Formula := eq Term.zero raw
+  let succBody : Formula :=
+    eq (Term.rename Nat.succ raw) (Term.succ (Term.var 0))
+  have hcases : BProv Ax_s G
+      (or
+        (eq raw Term.zero)
+        (ex succBody)) := by
+    simpa [succBody] using
+      (BProv_Ax_s_zeroOrSuccPred_term (G := G) raw)
+  have hzeroBranch : BProv Ax_s
+      (eq raw Term.zero :: G) target := by
+    have heq : BProv Ax_s (eq raw Term.zero :: G)
+        (eq raw Term.zero) :=
+      BProv_ass (B := Ax_s) (G := eq raw Term.zero :: G) (by simp)
+    simpa [target] using BProv_eqSym heq
+  have hsuccBranch : BProv Ax_s (ex succBody :: G) target := by
+    let H : List Formula := ex succBody :: G
+    let C : List Formula := succBody :: H.map (rename Nat.succ)
+    have hopened : BProv Ax_s C (rename Nat.succ target) := by
+      have hsuccEq : BProv Ax_s C succBody :=
+        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      have lift : ∀ {phi : Formula}, BProv Ax_s G phi →
+          BProv Ax_s C (rename Nat.succ phi) := by
+        intro phi hphi
+        have hren := BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hphi Nat.succ
+        have hinnerCtx := BProv_context_cons
+          (B := Ax_s) (a := rename Nat.succ (ex succBody)) hren
+        have hbodyCtx := BProv_context_cons
+          (B := Ax_s) (a := succBody) hinnerCtx
+        simpa [C, H] using hbodyCtx
+      have hzeroC : BProv Ax_s C
+          (ordinalCodeGraphTermAt
+            Term.zero (Term.rename Nat.succ coded)) := by
+        have h := lift hzero
+        simpa [rename_ordinalCodeGraphTermAt,
+          rename, Term.rename] using h
+      have hrawC : BProv Ax_s C
+          (ordinalCodeGraphTermAt
+            (Term.rename Nat.succ raw)
+            (Term.rename Nat.succ coded)) := by
+        have h := lift hraw
+        simpa [rename_ordinalCodeGraphTermAt] using h
+      have hsuccC : BProv Ax_s C
+          (ordinalCodeGraphTermAt
+            (Term.succ (Term.var 0))
+            (Term.rename Nat.succ coded)) :=
+        BProv_ordinalCodeGraphTermAt_congr_raw hsuccEq hrawC
+      have hbot : BProv Ax_s C bot :=
+        BProv_Ax_s_bot_of_ordinalCodeGraphTermAt_zero_succ
+          hzeroC hsuccC
+      exact BProv_botE hbot
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      (G := H) (a := succBody) (c := target)
+      (BProv_ass (B := Ax_s) (G := H) (by simp [H]))
+      (by simpa [C] using hopened)
+  exact BProv_orE hcases
+    (by simpa [target] using hzeroBranch)
+    (by simpa [target, succBody] using hsuccBranch)
+
+/-- Induction invariant at a raw input: every other raw input with the same
+ordinal-code endpoint is equal to it.  The outer binder is the competing raw
+input and the inner binder is the common endpoint. -/
+def ordinalCodeInjectiveTermAt (raw : Term) : Formula :=
+  all (all
+    (imp
+      (ordinalCodeGraphTermAt
+        (Term.rename Nat.succ (Term.rename Nat.succ raw))
+        (Term.var 0))
+      (imp
+        (ordinalCodeGraphTermAt (Term.var 1) (Term.var 0))
+        (eq
+          (Term.rename Nat.succ (Term.rename Nat.succ raw))
+          (Term.var 1)))))
+
+theorem subst_ordinalCodeInjectiveTermAt
+    (sigma : Nat → Term) (raw : Term) :
+    subst sigma (ordinalCodeInjectiveTermAt raw) =
+      ordinalCodeInjectiveTermAt (Term.subst sigma raw) := by
+  have hraw :
+      Term.subst (Term.upSubst (Term.upSubst sigma))
+          (Term.rename Nat.succ (Term.rename Nat.succ raw)) =
+        Term.rename Nat.succ
+          (Term.rename Nat.succ (Term.subst sigma raw)) := by
+    rw [Term.subst_rename_succ_up]
+    rw [Term.subst_rename_succ_up]
+  simp [ordinalCodeInjectiveTermAt,
+    subst_ordinalCodeGraphTermAt,
+    subst, Term.subst, Term.upSubst,
+    Term.rename, hraw]
+
+theorem rename_ordinalCodeInjectiveTermAt
+    (r : Nat → Nat) (raw : Term) :
+    rename r (ordinalCodeInjectiveTermAt raw) =
+      ordinalCodeInjectiveTermAt (Term.rename r raw) := by
+  rw [← subst_var_rename]
+  simpa [term_subst_var_rename] using
+    (subst_ordinalCodeInjectiveTermAt
+      (fun n => Term.var (r n)) raw)
+
+/-- Instantiate the universal induction invariant at explicit competing raw
+and endpoint terms. -/
+theorem BProv_eq_of_ordinalCodeInjectiveTermAt
+    {G : List Formula} {left right coded : Term}
+    (hinjective : BProv Ax_s G
+      (ordinalCodeInjectiveTermAt left))
+    (hleft : BProv Ax_s G
+      (ordinalCodeGraphTermAt left coded))
+    (hright : BProv Ax_s G
+      (ordinalCodeGraphTermAt right coded)) :
+    BProv Ax_s G (eq left right) := by
+  have hrightRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := right) hinjective
+  have hcodedRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := coded) hrightRaw
+  have himp : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt left coded)
+        (imp
+          (ordinalCodeGraphTermAt right coded)
+          (eq left right))) := by
+    simpa [ordinalCodeInjectiveTermAt,
+      subst_ordinalCodeGraphTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using hcodedRaw
+  exact BProv_mp Ax_s G _ _
+    (BProv_mp Ax_s G _ _ himp hleft) hright
+
+/-- Base case of the raw-side injectivity induction. -/
+theorem BProv_Ax_s_ordinalCodeInjectiveTermAt_zero
+    {G : List Formula} :
+    BProv Ax_s G
+      (ordinalCodeInjectiveTermAt Term.zero) := by
+  let Q₁ : List Formula := G.map (rename Nat.succ)
+  let Q₂ : List Formula := Q₁.map (rename Nat.succ)
+  let leftGraph : Formula :=
+    ordinalCodeGraphTermAt Term.zero (Term.var 0)
+  let rightGraph : Formula :=
+    ordinalCodeGraphTermAt (Term.var 1) (Term.var 0)
+  let target : Formula := eq Term.zero (Term.var 1)
+  have hbody : BProv Ax_s Q₂
+      (imp leftGraph (imp rightGraph target)) := by
+    let C : List Formula := leftGraph :: Q₂
+    let D : List Formula := rightGraph :: C
+    have hleft : BProv Ax_s D leftGraph :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+    have hright : BProv Ax_s D rightGraph :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    have heq : BProv Ax_s D target := by
+      simpa [leftGraph, rightGraph, target] using
+        (BProv_Ax_s_eq_zero_of_ordinalCodeGraphTermAt_common
+          hleft hright)
+    have hrightImp : BProv Ax_s C (imp rightGraph target) := by
+      simpa [D] using BProv_impI heq
+    simpa [C] using BProv_impI hrightImp
+  have hinner : BProv Ax_s Q₁
+      (all (imp
+        (ordinalCodeGraphTermAt Term.zero (Term.var 0))
+        (imp
+          (ordinalCodeGraphTermAt (Term.var 1) (Term.var 0))
+          (eq Term.zero (Term.var 1))))) := by
+    simpa [Q₂, leftGraph, rightGraph, target] using
+      (BProv_allI_of_sentences
+        (B := Ax_s) (G := Q₁)
+        (fun f hf => sentence_ax_s (f := f) hf) hbody)
+  have houter := BProv_allI_of_sentences
+    (B := Ax_s) (G := G)
+    (fun f hf => sentence_ax_s (f := f) hf) hinner
+  simpa [ordinalCodeInjectiveTermAt,
+    Q₁, Term.rename] using houter
+
+/-- If the injectivity invariant holds at both predecessors, equality of the
+two successor-stage endpoints forces equality of the successor raw inputs. -/
+theorem BProv_Ax_s_eq_succ_of_common_ordinalCodeGraphs
+    {G : List Formula} {left right coded : Term}
+    (hinjective : BProv Ax_s G
+      (ordinalCodeInjectiveTermAt left))
+    (hleft : BProv Ax_s G
+      (ordinalCodeGraphTermAt (Term.succ left) coded))
+    (hright : BProv Ax_s G
+      (ordinalCodeGraphTermAt (Term.succ right) coded)) :
+    BProv Ax_s G (eq (Term.succ left) (Term.succ right)) := by
+  let target : Formula := eq (Term.succ left) (Term.succ right)
+  have hedgeLeft : BProv Ax_s G
+      (ordinalCodePredEdgeTermAt left coded) :=
+    BProv_Ax_s_ordinalCodePredEdgeTermAt_of_succ_graph hleft
+  have hedgeRight : BProv Ax_s G
+      (ordinalCodePredEdgeTermAt right coded) :=
+    BProv_Ax_s_ordinalCodePredEdgeTermAt_of_succ_graph hright
+  let left₁ : Term := Term.rename Nat.succ left
+  let right₁ : Term := Term.rename Nat.succ right
+  let coded₁ : Term := Term.rename Nat.succ coded
+  let leftBody : Formula :=
+    and
+      (ordinalCodeGraphTermAt left₁ (Term.var 0))
+      (hfAdjoinGraphTermAt coded₁ (Term.var 0) (Term.var 0))
+  let C : List Formula := leftBody :: G.map (rename Nat.succ)
+  have hopenedLeft : BProv Ax_s C (rename Nat.succ target) := by
+    have hleftBody : BProv Ax_s C leftBody :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hleftPred : BProv Ax_s C
+        (ordinalCodeGraphTermAt left₁ (Term.var 0)) := by
+      simpa [leftBody] using BProv_andE1 hleftBody
+    have hleftAdjoin : BProv Ax_s C
+        (hfAdjoinGraphTermAt coded₁ (Term.var 0) (Term.var 0)) := by
+      simpa [leftBody] using BProv_andE2 hleftBody
+    have hedgeRightRen := BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hedgeRight Nat.succ
+    have hedgeRightC : BProv Ax_s C
+        (ordinalCodePredEdgeTermAt right₁ coded₁) := by
+      have hctx := BProv_context_cons
+        (B := Ax_s) (a := leftBody) hedgeRightRen
+      simpa [C, right₁, coded₁,
+        ordinalCodePredEdgeTermAt,
+        rename_ordinalCodeGraphTermAt,
+        rename_hfAdjoinGraphTermAt,
+        rename, Term.rename, Term.rename_comp,
+        Function.comp_def, SetTheory.up, Nat.add_assoc] using hctx
+    let left₂ : Term := Term.rename Nat.succ left₁
+    let right₂ : Term := Term.rename Nat.succ right₁
+    let coded₂ : Term := Term.rename Nat.succ coded₁
+    let rightBody : Formula :=
+      and
+        (ordinalCodeGraphTermAt right₂ (Term.var 0))
+        (hfAdjoinGraphTermAt coded₂ (Term.var 0) (Term.var 0))
+    let D : List Formula := rightBody :: C.map (rename Nat.succ)
+    have hopenedRight : BProv Ax_s D
+        (rename Nat.succ (rename Nat.succ target)) := by
+      have hrightBody : BProv Ax_s D rightBody :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hrightPred : BProv Ax_s D
+          (ordinalCodeGraphTermAt right₂ (Term.var 0)) := by
+        simpa [rightBody] using BProv_andE1 hrightBody
+      have hrightAdjoin : BProv Ax_s D
+          (hfAdjoinGraphTermAt coded₂ (Term.var 0) (Term.var 0)) := by
+        simpa [rightBody] using BProv_andE2 hrightBody
+      have hleftBodyRen : BProv Ax_s D (rename Nat.succ leftBody) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+      have hleftPredD : BProv Ax_s D
+          (ordinalCodeGraphTermAt left₂ (Term.var 1)) := by
+        have h := BProv_andE1 hleftBodyRen
+        simpa [leftBody, left₁, left₂,
+          rename_ordinalCodeGraphTermAt,
+          rename, Term.rename, Term.rename_comp,
+          Function.comp_def] using h
+      have hleftAdjoinD : BProv Ax_s D
+          (hfAdjoinGraphTermAt coded₂ (Term.var 1) (Term.var 1)) := by
+        have h := BProv_andE2 hleftBodyRen
+        simpa [leftBody, coded₁, coded₂,
+          rename_hfAdjoinGraphTermAt,
+          rename, Term.rename, Term.rename_comp,
+          Function.comp_def] using h
+      have hleftDomain : BProv Ax_s D
+          (subst (instTerm (Term.var 1)) codedOrdinalDomain) :=
+        BProv_Ax_s_codedOrdinalDomain_of_ordinalCodeGraphTermAt
+          hleftPredD
+      have hrightDomain : BProv Ax_s D
+          (subst (instTerm (Term.var 0)) codedOrdinalDomain) :=
+        BProv_Ax_s_codedOrdinalDomain_of_ordinalCodeGraphTermAt
+          hrightPred
+      have hcodedEq : BProv Ax_s D
+          (eq (Term.var 1) (Term.var 0)) :=
+        BProv_Ax_s_hfAdjoinGraphTermAt_injective_self
+          hleftDomain hrightDomain hleftAdjoinD hrightAdjoin
+      have hrightPred' : BProv Ax_s D
+          (ordinalCodeGraphTermAt right₂ (Term.var 1)) :=
+        BProv_ordinalCodeGraphTermAt_congr_coded
+          (BProv_eqSym hcodedEq) hrightPred
+      have hinjectiveRen₁ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hinjective Nat.succ
+      have hinjectiveRen₂ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hinjectiveRen₁ Nat.succ
+      have hinjectiveD : BProv Ax_s D
+          (ordinalCodeInjectiveTermAt left₂) := by
+        have hleftCtx := BProv_context_cons
+          (B := Ax_s) (a := rename Nat.succ leftBody) hinjectiveRen₂
+        have hrightCtx := BProv_context_cons
+          (B := Ax_s) (a := rightBody) hleftCtx
+        simpa [D, C, left₁, left₂,
+          rename_ordinalCodeInjectiveTermAt,
+          Term.rename_comp, Function.comp_def] using hrightCtx
+      have hrawEq : BProv Ax_s D (eq left₂ right₂) :=
+        BProv_eq_of_ordinalCodeInjectiveTermAt
+          hinjectiveD hleftPredD hrightPred'
+      have hsuccEq := BProv_eq_congr_succ hrawEq
+      simpa [target, left₁, right₁, left₂, right₂,
+        rename, Term.rename, Term.rename_comp,
+        Function.comp_def] using hsuccEq
+    have hresultC : BProv Ax_s C (rename Nat.succ target) :=
+      BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := C) (a := rightBody) (c := rename Nat.succ target)
+        (by simpa [ordinalCodePredEdgeTermAt,
+            rightBody, right₁, right₂, coded₁, coded₂,
+            Term.rename] using hedgeRightC)
+        (by simpa [D] using hopenedRight)
+    exact hresultC
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := G) (a := leftBody) (c := target)
+    (by simpa [ordinalCodePredEdgeTermAt,
+        leftBody, left₁, coded₁, Term.rename] using hedgeLeft)
+    (by simpa [C] using hopenedLeft)
+
+/-- Successor step of the raw-side injectivity induction. -/
+theorem BProv_Ax_s_ordinalCodeInjectiveTermAt_succ
+    {G : List Formula} {raw : Term}
+    (hinjective : BProv Ax_s G
+      (ordinalCodeInjectiveTermAt raw)) :
+    BProv Ax_s G
+      (ordinalCodeInjectiveTermAt (Term.succ raw)) := by
+  let Q₁ : List Formula := G.map (rename Nat.succ)
+  let Q₂ : List Formula := Q₁.map (rename Nat.succ)
+  let raw₂ : Term := Term.rename Nat.succ (Term.rename Nat.succ raw)
+  let leftGraph : Formula :=
+    ordinalCodeGraphTermAt (Term.succ raw₂) (Term.var 0)
+  let rightGraph : Formula :=
+    ordinalCodeGraphTermAt (Term.var 1) (Term.var 0)
+  let target : Formula := eq (Term.succ raw₂) (Term.var 1)
+  have hinjectiveRen₁ := BProv_rename_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hinjective Nat.succ
+  have hinjectiveRen₂ := BProv_rename_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hinjectiveRen₁ Nat.succ
+  have hinjectiveQ₂ : BProv Ax_s Q₂
+      (ordinalCodeInjectiveTermAt raw₂) := by
+    simpa [Q₁, Q₂, raw₂,
+      rename_ordinalCodeInjectiveTermAt,
+      Term.rename_comp, Function.comp_def] using hinjectiveRen₂
+  have hbody : BProv Ax_s Q₂
+      (imp leftGraph (imp rightGraph target)) := by
+    let C : List Formula := leftGraph :: Q₂
+    let D : List Formula := rightGraph :: C
+    have hleft : BProv Ax_s D leftGraph :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D, C])
+    have hright : BProv Ax_s D rightGraph :=
+      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+    have hcases : BProv Ax_s D
+        (or
+          (eq (Term.var 1) Term.zero)
+          (ex (eq
+            (Term.rename Nat.succ (Term.var 1))
+            (Term.succ (Term.var 0))))) :=
+      BProv_Ax_s_zeroOrSuccPred_term (G := D) (Term.var 1)
+    have hzeroBranch : BProv Ax_s
+        (eq (Term.var 1) Term.zero :: D) target := by
+      let Z : List Formula := eq (Term.var 1) Term.zero :: D
+      have heq : BProv Ax_s Z (eq (Term.var 1) Term.zero) :=
+        BProv_ass (B := Ax_s) (G := Z) (by simp [Z])
+      have hleftZ : BProv Ax_s Z leftGraph :=
+        BProv_ass (B := Ax_s) (G := Z) (by simp [Z, D, C])
+      have hrightZ : BProv Ax_s Z rightGraph :=
+        BProv_ass (B := Ax_s) (G := Z) (by simp [Z, D])
+      have hzeroGraph : BProv Ax_s Z
+          (ordinalCodeGraphTermAt Term.zero (Term.var 0)) :=
+        BProv_ordinalCodeGraphTermAt_congr_raw heq hrightZ
+      have hbot : BProv Ax_s Z bot :=
+        BProv_Ax_s_bot_of_ordinalCodeGraphTermAt_zero_succ
+          hzeroGraph hleftZ
+      exact BProv_botE hbot
+    let succBody : Formula :=
+      eq (Term.rename Nat.succ (Term.var 1))
+        (Term.succ (Term.var 0))
+    have hsuccBranch : BProv Ax_s (ex succBody :: D) target := by
+      let H : List Formula := ex succBody :: D
+      let E : List Formula := succBody :: H.map (rename Nat.succ)
+      have hopened : BProv Ax_s E (rename Nat.succ target) := by
+        have hsuccEq : BProv Ax_s E succBody :=
+          BProv_ass (B := Ax_s) (G := E) (by simp [E])
+        let raw₃ : Term := Term.rename Nat.succ raw₂
+        have hleftE : BProv Ax_s E
+            (ordinalCodeGraphTermAt
+              (Term.succ raw₃) (Term.var 1)) := by
+          have hraw : BProv Ax_s E (rename Nat.succ leftGraph) :=
+            BProv_ass (B := Ax_s) (G := E) (by simp [E, H, D, C])
+          simpa [leftGraph, raw₃,
+            rename_ordinalCodeGraphTermAt,
+            rename, Term.rename] using hraw
+        have hrightE : BProv Ax_s E
+            (ordinalCodeGraphTermAt (Term.var 2) (Term.var 1)) := by
+          have hraw : BProv Ax_s E (rename Nat.succ rightGraph) :=
+            BProv_ass (B := Ax_s) (G := E) (by simp [E, H, D])
+          simpa [rightGraph,
+            rename_ordinalCodeGraphTermAt,
+            rename, Term.rename] using hraw
+        have hrightSuccE : BProv Ax_s E
+            (ordinalCodeGraphTermAt
+              (Term.succ (Term.var 0)) (Term.var 1)) :=
+          BProv_ordinalCodeGraphTermAt_congr_raw hsuccEq hrightE
+        have hinjectiveRen₃ := BProv_rename_of_sentences
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hinjectiveQ₂ Nat.succ
+        have hinjectiveE : BProv Ax_s E
+            (ordinalCodeInjectiveTermAt raw₃) := by
+          have hleftCtx := BProv_context_cons
+            (B := Ax_s) (a := rename Nat.succ leftGraph) hinjectiveRen₃
+          have hrightCtx := BProv_context_cons
+            (B := Ax_s) (a := rename Nat.succ rightGraph) hleftCtx
+          have hexCtx := BProv_context_cons
+            (B := Ax_s) (a := rename Nat.succ (ex succBody)) hrightCtx
+          have hbodyCtx := BProv_context_cons
+            (B := Ax_s) (a := succBody) hexCtx
+          simpa [E, H, D, C, raw₃,
+            rename_ordinalCodeInjectiveTermAt] using hbodyCtx
+        have hsuccRawEq : BProv Ax_s E
+            (eq
+              (Term.succ raw₃)
+              (Term.succ (Term.var 0))) :=
+          BProv_Ax_s_eq_succ_of_common_ordinalCodeGraphs
+            hinjectiveE hleftE hrightSuccE
+        have htarget : BProv Ax_s E
+            (eq (Term.succ raw₃) (Term.var 2)) :=
+          BProv_eqTrans hsuccRawEq (BProv_eqSym hsuccEq)
+        simpa [target, raw₃,
+          rename, Term.rename] using htarget
+      exact BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := H) (a := succBody) (c := target)
+        (BProv_ass (B := Ax_s) (G := H) (by simp [H]))
+        (by simpa [E] using hopened)
+    have heq : BProv Ax_s D target :=
+      BProv_orE hcases
+        (by simpa using hzeroBranch)
+        (by simpa [succBody] using hsuccBranch)
+    have hrightImp : BProv Ax_s C (imp rightGraph target) := by
+      simpa [D] using BProv_impI heq
+    simpa [C] using BProv_impI hrightImp
+  have hinner : BProv Ax_s Q₁
+      (all (imp leftGraph (imp rightGraph target))) := by
+    simpa [Q₂] using
+      (BProv_allI_of_sentences
+        (B := Ax_s) (G := Q₁)
+        (fun f hf => sentence_ax_s (f := f) hf) hbody)
+  have houter := BProv_allI_of_sentences
+    (B := Ax_s) (G := G)
+    (fun f hf => sentence_ax_s (f := f) hf) hinner
+  simpa [ordinalCodeInjectiveTermAt,
+    Q₁, raw₂, leftGraph, rightGraph, target,
+    Term.rename] using houter
+
+/-- PA induction proves the raw-side injectivity invariant at every input. -/
+theorem BProv_Ax_s_all_ordinalCodeInjective :
+    BProv Ax_s []
+      (all (ordinalCodeInjectiveTermAt (Term.var 0))) := by
+  let phi : Formula :=
+    ordinalCodeInjectiveTermAt (Term.var 0)
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    have hbase :=
+      BProv_Ax_s_ordinalCodeInjectiveTermAt_zero (G := [])
+    simpa [phi, subst_ordinalCodeInjectiveTermAt,
+      substZero, Term.subst] using hbase
+  have hsuccImp : BProv Ax_s []
+      (imp phi (subst substSuccVar phi)) := by
+    let C : List Formula := [phi]
+    have hih : BProv Ax_s C phi :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hnext : BProv Ax_s C
+        (ordinalCodeInjectiveTermAt
+          (Term.succ (Term.var 0))) :=
+      BProv_Ax_s_ordinalCodeInjectiveTermAt_succ hih
+    have hnextSub : BProv Ax_s C (subst substSuccVar phi) := by
+      simpa [phi, subst_ordinalCodeInjectiveTermAt,
+        substSuccVar, Term.subst] using hnext
+    simpa [C] using BProv_impI hnextSub
+  have hsucc : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (G := [])
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  simpa [phi] using BProv_Ax_s_induction_rule hzero hsucc
+
+/-- Exact closure of the sole remaining ordinal-code graph law. -/
+theorem ordinalCodeGraphInjective :
+    OrdinalCodeGraphInjective := by
+  intro G raw₁ raw₂ coded hgraph₁ hgraph₂
+  have hall : BProv Ax_s G
+      (all (ordinalCodeInjectiveTermAt (Term.var 0))) :=
+    BProv_weaken_nil BProv_Ax_s_all_ordinalCodeInjective
+  have hpointRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := raw₁) hall
+  have hpoint : BProv Ax_s G
+      (ordinalCodeInjectiveTermAt raw₁) := by
+    rw [subst_ordinalCodeInjectiveTermAt] at hpointRaw
+    simpa [instTerm, Term.subst] using hpointRaw
+  exact BProv_eq_of_ordinalCodeInjectiveTermAt
+    hpoint hgraph₁ hgraph₂
+
+
 /-- Concrete graph range reduces the remaining graph package to raw-side
 injectivity alone. -/
 def OrdinalCodeGraphRemainingProofs_of_injective
