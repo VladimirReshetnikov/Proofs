@@ -63888,14 +63888,10 @@ structure TranslatedHFFinAxiomProofs extends TranslatedHFAxiomProofs where
       BProv Ax_s [] (translateHFFormula
         (SetTheory.sealF (AckermannHF.HF_finite_induction_form phi)))
 
-/-- Build the translated-HF proof-obligation record once the remaining
-non-empty axioms have been proved.  The empty-set component is the theorem
-`BProv_Ax_s_translated_HF_empty`; the other fields stay as explicit proof
-arguments. -/
+/-- Build the translated-HF proof-obligation record from the two genuinely
+remaining axioms.  Empty set and extensionality are already closed PA
+theorems. -/
 def translatedHFAxiomProofs_of_remaining
-    (hextensionality :
-      BProv Ax_s [] (translateHFFormula
-        (SetTheory.sealF AckermannHF.HF_extensionality_form)))
     (hadjoin :
       BProv Ax_s [] (translateHFFormula
         (SetTheory.sealF AckermannHF.HF_adjoin_form)))
@@ -63905,16 +63901,14 @@ def translatedHFAxiomProofs_of_remaining
           (SetTheory.sealF (AckermannHF.HF_induction_form phi)))) :
     TranslatedHFAxiomProofs where
   empty := BProv_Ax_s_translated_HF_empty
-  extensionality := hextensionality
+  extensionality := BProv_Ax_s_translated_HF_extensionality
   adjoin := hadjoin
   induction := hinduction
 
-/-- Build the translated finite-HF proof-obligation record with the completed
-empty-set component and explicit premises for the remaining axioms. -/
+/-- Build the translated finite-HF proof-obligation record from its three
+genuinely remaining axioms.  Empty set and extensionality are already closed
+PA theorems. -/
 def translatedHFFinAxiomProofs_of_remaining
-    (hextensionality :
-      BProv Ax_s [] (translateHFFormula
-        (SetTheory.sealF AckermannHF.HF_extensionality_form)))
     (hadjoin :
       BProv Ax_s [] (translateHFFormula
         (SetTheory.sealF AckermannHF.HF_adjoin_form)))
@@ -63928,7 +63922,7 @@ def translatedHFFinAxiomProofs_of_remaining
           (SetTheory.sealF (AckermannHF.HF_finite_induction_form phi)))) :
     TranslatedHFFinAxiomProofs where
   empty := BProv_Ax_s_translated_HF_empty
-  extensionality := hextensionality
+  extensionality := BProv_Ax_s_translated_HF_extensionality
   adjoin := hadjoin
   induction := hinduction
   finite_induction := hfinite_induction
@@ -63955,6 +63949,41 @@ theorem BProv_Ax_s_of_translatedHFFinAx_of_proofs
   · exact BProv_Ax_s_of_translatedHFAx_of_proofs
       P.toTranslatedHFAxiomProofs (translatedHFAx_intro hgHF)
   · exact P.finite_induction psi
+
+/-- Direct translated-HF axiom dispatcher exposing only the adjoin and set
+induction proofs that remain open. -/
+theorem BProv_Ax_s_of_translatedHFAx_of_remaining
+    (hadjoin :
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)))
+    (hinduction :
+      ∀ psi : Form,
+        BProv Ax_s [] (translateHFFormula
+          (SetTheory.sealF (AckermannHF.HF_induction_form psi))))
+    {phi : Formula} (hphi : translatedHFAx phi) :
+    BProv Ax_s [] phi :=
+  BProv_Ax_s_of_translatedHFAx_of_proofs
+    (translatedHFAxiomProofs_of_remaining hadjoin hinduction) hphi
+
+/-- Direct translated finite-HF axiom dispatcher exposing only adjoin, set
+induction, and finite-generation induction. -/
+theorem BProv_Ax_s_of_translatedHFFinAx_of_remaining
+    (hadjoin :
+      BProv Ax_s [] (translateHFFormula
+        (SetTheory.sealF AckermannHF.HF_adjoin_form)))
+    (hinduction :
+      ∀ psi : Form,
+        BProv Ax_s [] (translateHFFormula
+          (SetTheory.sealF (AckermannHF.HF_induction_form psi))))
+    (hfinite_induction :
+      ∀ psi : Form,
+        BProv Ax_s [] (translateHFFormula
+          (SetTheory.sealF (AckermannHF.HF_finite_induction_form psi))))
+    {phi : Formula} (hphi : translatedHFFinAx phi) :
+    BProv Ax_s [] phi :=
+  BProv_Ax_s_of_translatedHFFinAx_of_proofs
+    (translatedHFFinAxiomProofs_of_remaining
+      hadjoin hinduction hfinite_induction) hphi
 
 end Formula
 
