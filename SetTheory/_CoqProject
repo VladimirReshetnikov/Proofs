@@ -73,6 +73,7 @@ PAHFTranslatedHFFin.v
 PAHFInterpretations.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
+PAHFDeductiveAssembly.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
 BusyBeaver.v
