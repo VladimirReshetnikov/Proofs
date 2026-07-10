@@ -468,11 +468,12 @@ cd lean
 lake build
 ```
 
-The mathlib-backed bridge module and its audit build from this root
+The mathlib-backed busy-beaver modules and their audit build from this root
 workspace instead of the standalone `lean/` one:
 
 ```powershell
 cd src/Lean
+lake build +SetTheory.BusyBeaverBB2
 lake build SetTheory.BusyBeaverMathlib
 lake build SetTheory.AuditMathlib
 ```

@@ -84,6 +84,13 @@ foundational/computability work, each present in both proof assistants
   [`BusyBeaverBB2Bridge.v`](BusyBeaverBB2Bridge.v) is a Coq-first bridge from
   this local Rado machine model to the vendored CoqBB2 time-bound certificate in
   [`../CoqBB2`](../CoqBB2), proving `Σ(2)=4` for the local score definition.
+  [`lean/SetTheory/BusyBeaverBB2.lean`](lean/SetTheory/BusyBeaverBB2.lean)
+  independently proves the same result in Lean by classifying all 20,736
+  two-state transition tables, checking the left-moving half and deriving the
+  right-moving half through a proved reflection simulation. Nonhalting tables
+  receive checked translated-loop, blank-escape, local-window, or
+  frontier-growth certificates; bounded failure to halt is never itself
+  treated as a certificate.
 - [`lean/SetTheory/BusyBeaverMathlib.lean`](lean/SetTheory/BusyBeaverMathlib.lean)
   is the mathlib-backed bridge for mathlib's `Computable` predicate: it extracts a
   sequential `ToPartrec.Code` evaluated by mathlib's finite-support `PartrecToTM2`
@@ -545,7 +552,8 @@ core Closure/ZF modules mirror the seven core Coq files one-to-one
 (`Fol.lean` … `Equivalence.lean`, `Forward.lean`, `Reverse.lean`), every
 statement with the same logical content, through the same headline theorem
 `T_iff_ZF`; the side modules (`PAHF`, `BusyBeaver`, `BusyBeaverKnownValues`,
-`BusyBeaverMathlib`) are likewise paired with `.v` counterparts. The Lean workspace also contains
+`BusyBeaverBB2`, `BusyBeaverMathlib`) are likewise paired with `.v` counterparts or
+independently replay the corresponding Coq result. The Lean workspace also contains
 [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first
 formalization toward the bi-interpretability of Peano arithmetic and hereditary
 finite sets. Its current checked surface includes Ackermann-coded HF on `Nat`,

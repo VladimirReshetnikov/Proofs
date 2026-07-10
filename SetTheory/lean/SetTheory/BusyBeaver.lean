@@ -40,7 +40,7 @@ structure Action (states : Nat) where
   write : Bool
   move : Move
   next : Option (Fin states)
-  deriving Repr
+  deriving DecidableEq, Repr
 
 /--
 An `n`-state busy-beaver machine.  The operational states are `Fin n`; the halt
@@ -219,7 +219,7 @@ structure Config (states : Nat) where
   state : Option (Fin states)
   head : Int
   tape : Tape
-  deriving Repr
+  deriving DecidableEq, Repr
 
 /-- A typed-state Rado configuration. -/
 structure TypedConfig (stateType : Type u) where
