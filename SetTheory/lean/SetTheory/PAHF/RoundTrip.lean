@@ -4786,63 +4786,169 @@ theorem BProv_Ax_s_term_graph_var
   simpa [compositeTermGraphAt, codedTermSlotMap,
     AckermannHF.PAInHF.termGraphAt, hfFormulaAt, Term.rename] using hiff
 
-/-- Minimal operation-facing interface for the remaining term-graph proof.
-Each non-variable constructor consumes exactly the normalized graph theorem(s)
-for its recursive operand(s). -/
-structure OrdinalCodeTermCompatibilityProofs where
-  graph_functional : OrdinalCodeGraphFunctional
-  zero_compatible : ∀ (G : List Formula) (codedMap : Nat → Nat)
-      (codedOut : Nat),
+/-- Reverse translation of a successor term exposes exactly one fresh
+intermediate slot for the translated operand, followed by HF adjunction of
+that operand to itself. -/
+theorem compositeTermGraphAt_succ
+    (codedOut : Nat) (codedMap : Nat → Nat) (t : Term) :
+    compositeTermGraphAt codedOut codedMap (Term.succ t) =
+      ex (and
+        (compositeTermGraphAt 0 (fun n ↦ codedMap n + 1) t)
+        (hfAdjoinGraphAt (codedOut + 1) 0 0)) := by
+  have hterm :
+      hfFormulaAt (hfUpVarMap (codedTermSlotMap codedOut codedMap))
+          (AckermannHF.PAInHF.termGraphAt (fun n ↦ n + 2) 0 t) =
+        compositeTermGraphAt 0 (fun n ↦ codedMap n + 1) t := by
+    let graph : SetTheory.Form :=
+      AckermannHF.PAInHF.termGraphAt (fun n ↦ n + 1) 0 t
+    have hgraph : SetTheory.rename (SetTheory.up Nat.succ) graph =
+        AckermannHF.PAInHF.termGraphAt (fun n ↦ n + 2) 0 t := by
+      simpa [graph, SetTheory.up] using
+        (AckermannHF.PAInHF.termGraphAt_rename t
+          (ρ := fun n ↦ n + 1) (out := 0)
+          (r := SetTheory.up Nat.succ))
+    rw [← hgraph]
+    rw [hfFormulaAt_source_rename]
+    apply hfFormulaAt_ext
+    intro n
+    cases n <;> rfl
+  have hsucc :
+      hfFormulaAt (hfUpVarMap (codedTermSlotMap codedOut codedMap))
+          (AckermannHF.HF_succAt 1 0) =
+        hfAdjoinGraphAt (codedOut + 1) 0 0 := by
+    rfl
+  simp [compositeTermGraphAt,
+    AckermannHF.PAInHF.termGraphAt,
+    hfFormulaAt, hterm, hsucc]
+
+/-- Successor closure, graph functionality, and unconditional HF-adjoin
+totality strengthen the one-way graph recurrence to the exact equivalence
+needed by the successor term constructor. -/
+theorem BProv_Ax_s_hfAdjoinGraphTermAt_iff_ordinalCodeGraphTermAt_succ
+    (hsucc : OrdinalCodeGraphSuccClosure)
+    (hfunctional : OrdinalCodeGraphFunctional)
+    {G : List Formula} {raw pred codedOut : Term}
+    (hpred : BProv Ax_s G (ordinalCodeGraphTermAt raw pred)) :
     BProv Ax_s G
       (iffForm
-        (compositeTermGraphAt codedOut codedMap Term.zero)
-        (ordinalCodeGraphTermAt Term.zero (Term.var codedOut)))
-  succ_compatible : ∀ (G : List Formula) (t : Term)
-      (rawMap codedMap : Nat → Nat) (codedOut : Nat),
+        (hfAdjoinGraphTermAt codedOut pred pred)
+        (ordinalCodeGraphTermAt (Term.succ raw) codedOut)) := by
+  have hforward : BProv Ax_s G
+      (imp
+        (hfAdjoinGraphTermAt codedOut pred pred)
+        (ordinalCodeGraphTermAt (Term.succ raw) codedOut)) := by
+    apply BProv_impI
+    let C : List Formula :=
+      hfAdjoinGraphTermAt codedOut pred pred :: G
+    have hadjoin : BProv Ax_s C
+        (hfAdjoinGraphTermAt codedOut pred pred) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hpredC : BProv Ax_s C
+        (ordinalCodeGraphTermAt raw pred) :=
+      BProv_context_cons (B := Ax_s) hpred
+    exact hsucc hpredC hadjoin
+  have hreverse : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt (Term.succ raw) codedOut)
+        (hfAdjoinGraphTermAt codedOut pred pred)) := by
+    apply BProv_impI
+    let C : List Formula :=
+      ordinalCodeGraphTermAt (Term.succ raw) codedOut :: G
+    have htarget : BProv Ax_s C
+        (ordinalCodeGraphTermAt (Term.succ raw) codedOut) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hpredC : BProv Ax_s C
+        (ordinalCodeGraphTermAt raw pred) :=
+      BProv_context_cons (B := Ax_s) hpred
+    have hall : BProv Ax_s C
+        (all (hfAdjoinTotalTermAt (Term.var 0))) := by
+      have hbase := BProv_Ax_s_all_hfAdjoinTotalAt_of_zero_succ
+        BProv_Ax_s_hfAdjoinTotalTermAt_zero
+        BProv_Ax_s_hfAdjoinTotalTermAt_succ
+      simpa [hfAdjoinTotalTermAt_var] using
+        (BProv_weaken_nil (G := C) hbase)
+    have htotal : BProv Ax_s C (hfAdjoinTotalTermAt pred) :=
+      BProv_hfAdjoinTotalTermAt_of_all hall
+    have hex : BProv Ax_s C (hfAdjoinExistsTermAt pred pred) :=
+      BProv_hfAdjoinExistsTermAt_of_total htotal
+    let body : Formula :=
+      hfAdjoinGraphTermAt
+        (Term.var 0) (Term.rename Nat.succ pred)
+        (Term.rename Nat.succ pred)
+    let D : List Formula := body :: C.map (rename Nat.succ)
+    have hinner : BProv Ax_s D
+        (rename Nat.succ
+          (hfAdjoinGraphTermAt codedOut pred pred)) := by
+      have hadjoin : BProv Ax_s D body :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hpredD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.rename Nat.succ raw)
+            (Term.rename Nat.succ pred)) := by
+        have hren := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          (a := body) hpredC
+        simpa [D, C, rename_ordinalCodeGraphTermAt] using hren
+      have hnew : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.succ (Term.rename Nat.succ raw))
+            (Term.var 0)) :=
+        hsucc hpredD hadjoin
+      have htargetD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.succ (Term.rename Nat.succ raw))
+            (Term.rename Nat.succ codedOut)) := by
+        have hren := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          (a := body) htarget
+        simpa [D, C, rename_ordinalCodeGraphTermAt,
+          Term.rename] using hren
+      have heq : BProv Ax_s D
+          (eq (Term.var 0) (Term.rename Nat.succ codedOut)) :=
+        hfunctional hnew htargetD
+      have htransport :=
+        BProv_hfAdjoinGraphTermAt_of_new_eq_term hadjoin heq
+      simpa [body, rename_hfAdjoinGraphTermAt_succ]
+        using htransport
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (G := C) (a := body)
+      (c := hfAdjoinGraphTermAt codedOut pred pred)
+      (by simpa [hfAdjoinExistsTermAt, body] using hex)
+      (by simpa [D] using hinner)
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+/-- Complete ordinal-code term-graph induction property for one PA term.
+Constructor laws consume this polymorphic property, so recursive hypotheses
+remain available after opening fresh intermediate-output binders. -/
+def OrdinalCodeTermGraphProof (t : Term) : Prop :=
+  ∀ (G : List Formula) (rawMap codedMap : Nat → Nat) (codedOut : Nat),
+    (∀ n, Term.Free n t →
+      BProv Ax_s G
+        (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
     BProv Ax_s G
       (iffForm
         (compositeTermGraphAt codedOut codedMap t)
         (ordinalCodeGraphTermAt
-          (Term.rename rawMap t) (Term.var codedOut))) →
-    BProv Ax_s G
-      (iffForm
-        (compositeTermGraphAt codedOut codedMap (Term.succ t))
-        (ordinalCodeGraphTermAt
-          (Term.rename rawMap (Term.succ t)) (Term.var codedOut)))
-  add_compatible : ∀ (G : List Formula) (a b : Term)
-      (rawMap codedMap : Nat → Nat) (codedOut : Nat),
-    BProv Ax_s G
-      (iffForm
-        (compositeTermGraphAt codedOut codedMap a)
-        (ordinalCodeGraphTermAt
-          (Term.rename rawMap a) (Term.var codedOut))) →
-    BProv Ax_s G
-      (iffForm
-        (compositeTermGraphAt codedOut codedMap b)
-        (ordinalCodeGraphTermAt
-          (Term.rename rawMap b) (Term.var codedOut))) →
-    BProv Ax_s G
-      (iffForm
-        (compositeTermGraphAt codedOut codedMap (Term.add a b))
-        (ordinalCodeGraphTermAt
-          (Term.rename rawMap (Term.add a b)) (Term.var codedOut)))
-  mul_compatible : ∀ (G : List Formula) (a b : Term)
-      (rawMap codedMap : Nat → Nat) (codedOut : Nat),
-    BProv Ax_s G
-      (iffForm
-        (compositeTermGraphAt codedOut codedMap a)
-        (ordinalCodeGraphTermAt
-          (Term.rename rawMap a) (Term.var codedOut))) →
-    BProv Ax_s G
-      (iffForm
-        (compositeTermGraphAt codedOut codedMap b)
-        (ordinalCodeGraphTermAt
-          (Term.rename rawMap b) (Term.var codedOut))) →
-    BProv Ax_s G
-      (iffForm
-        (compositeTermGraphAt codedOut codedMap (Term.mul a b))
-        (ordinalCodeGraphTermAt
-          (Term.rename rawMap (Term.mul a b)) (Term.var codedOut)))
+          (Term.rename rawMap t) (Term.var codedOut)))
+
+/-- Operation-facing interface for the remaining term-graph proof.  Recursive
+constructors consume the complete graph property of each operand instead of a
+premature specialization to one output slot. -/
+structure OrdinalCodeTermCompatibilityProofs where
+  graph_functional : OrdinalCodeGraphFunctional
+  zero_compatible : OrdinalCodeTermGraphProof Term.zero
+  succ_compatible : ∀ t,
+    OrdinalCodeTermGraphProof t →
+    OrdinalCodeTermGraphProof (Term.succ t)
+  add_compatible : ∀ a b,
+    OrdinalCodeTermGraphProof a →
+    OrdinalCodeTermGraphProof b →
+    OrdinalCodeTermGraphProof (Term.add a b)
+  mul_compatible : ∀ a b,
+    OrdinalCodeTermGraphProof a →
+    OrdinalCodeTermGraphProof b →
+    OrdinalCodeTermGraphProof (Term.mul a b)
 
 /-- Exact zero-constructor field of `OrdinalCodeTermCompatibilityProofs`.
 The reverse-translated composite is the HF-empty predicate, which is
@@ -4900,20 +5006,194 @@ theorem OrdinalCodeTermCompatibilityProofs_zero_compatible :
     simpa [C] using BProv_impI hempty
   exact BProv_andI hforward hreverse
 
+/-- The normalized zero theorem supplies the complete induction property;
+raw-variable data are vacuous because zero has no free variables. -/
+theorem OrdinalCodeTermGraphProof_zero :
+    OrdinalCodeTermGraphProof Term.zero := by
+  intro G rawMap codedMap codedOut hcode
+  exact OrdinalCodeTermCompatibilityProofs_zero_compatible
+    G codedMap codedOut
+
+/-- Successor compatibility after the recursive operand theorem has been
+instantiated at the fresh output slot introduced by the translated successor
+graph. -/
+theorem BProv_Ax_s_term_graph_succ_of_shifted_operand
+    (hsucc : OrdinalCodeGraphSuccClosure)
+    (G : List Formula) (t : Term)
+    (rawMap codedMap : Nat → Nat) (codedOut : Nat)
+    (hoperand : BProv Ax_s (G.map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 0 (fun n ↦ codedMap n + 1) t)
+        (ordinalCodeGraphTermAt
+          (Term.rename Nat.succ (Term.rename rawMap t))
+          (Term.var 0)))) :
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap (Term.succ t))
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap (Term.succ t))
+          (Term.var codedOut))) := by
+  let raw : Term := Term.rename rawMap t
+  let composite : Formula :=
+    compositeTermGraphAt codedOut codedMap (Term.succ t)
+  let target : Formula :=
+    ordinalCodeGraphTermAt (Term.succ raw) (Term.var codedOut)
+  let operandComposite : Formula :=
+    compositeTermGraphAt 0 (fun n ↦ codedMap n + 1) t
+  let operandGraph : Formula :=
+    ordinalCodeGraphTermAt
+      (Term.rename Nat.succ raw) (Term.var 0)
+  let adjoinGraph : Formula :=
+    hfAdjoinGraphAt (codedOut + 1) 0 0
+  let body : Formula := and operandComposite adjoinGraph
+  have hforward : BProv Ax_s G (imp composite target) := by
+    apply BProv_impI
+    let C : List Formula := composite :: G
+    have hcomposite : BProv Ax_s C composite :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hex : BProv Ax_s C (ex body) := by
+      simpa [composite, body, operandComposite, adjoinGraph,
+        compositeTermGraphAt_succ] using hcomposite
+    let D : List Formula := body :: C.map (rename Nat.succ)
+    have hinner : BProv Ax_s D (rename Nat.succ target) := by
+      have hbody : BProv Ax_s D body :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hoperandComposite : BProv Ax_s D operandComposite :=
+        BProv_andE1 hbody
+      have hadjoin : BProv Ax_s D adjoinGraph :=
+        BProv_andE2 hbody
+      have hoperandD : BProv Ax_s D
+          (iffForm operandComposite operandGraph) := by
+        have hctx := BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ composite) hoperand
+        have hctx' := BProv_context_cons (B := Ax_s)
+          (a := body) hctx
+        simpa [D, C, raw, operandComposite, operandGraph]
+          using hctx'
+      have hoperandForward : BProv Ax_s D
+          (imp operandComposite operandGraph) := by
+        simpa [iffForm] using BProv_andE1 hoperandD
+      have hgraph : BProv Ax_s D operandGraph :=
+        BProv_mp Ax_s D _ _ hoperandForward hoperandComposite
+      have hstep :=
+        BProv_Ax_s_hfAdjoinGraphTermAt_iff_ordinalCodeGraphTermAt_succ
+          hsucc ordinalCodeGraphFunctional
+          (codedOut := Term.var (codedOut + 1)) hgraph
+      have hstepForward : BProv Ax_s D
+          (imp adjoinGraph
+            (ordinalCodeGraphTermAt
+              (Term.succ (Term.rename Nat.succ raw))
+              (Term.var (codedOut + 1)))) := by
+        simpa [iffForm, operandGraph, adjoinGraph,
+          hfAdjoinGraphAt] using BProv_andE1 hstep
+      have hnext := BProv_mp Ax_s D _ _ hstepForward hadjoin
+      simpa [target, raw, rename_ordinalCodeGraphTermAt,
+        Term.rename] using hnext
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (G := C) (a := body) (c := target)
+      hex (by simpa [D] using hinner)
+  have hreverse : BProv Ax_s G (imp target composite) := by
+    apply BProv_impI
+    let C : List Formula := target :: G
+    have htarget : BProv Ax_s C target :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have htotal : BProv Ax_s C (ex operandGraph) := by
+      simpa [operandGraph, raw] using
+        (OrdinalCodeGraphProofs_total C raw)
+    let D : List Formula := operandGraph :: C.map (rename Nat.succ)
+    have hinner : BProv Ax_s D (rename Nat.succ composite) := by
+      have hgraph : BProv Ax_s D operandGraph :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hoperandD : BProv Ax_s D
+          (iffForm operandComposite operandGraph) := by
+        have hctx := BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ target) hoperand
+        have hctx' := BProv_context_cons (B := Ax_s)
+          (a := operandGraph) hctx
+        simpa [D, C, raw, operandComposite, operandGraph]
+          using hctx'
+      have hoperandReverse : BProv Ax_s D
+          (imp operandGraph operandComposite) := by
+        simpa [iffForm] using BProv_andE2 hoperandD
+      have hoperandComposite : BProv Ax_s D operandComposite :=
+        BProv_mp Ax_s D _ _ hoperandReverse hgraph
+      have htargetD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.succ (Term.rename Nat.succ raw))
+            (Term.var (codedOut + 1))) := by
+        have hren := BProv_rename_succ_context_cons_of_sentences
+          (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+          (a := operandGraph) htarget
+        simpa [D, C, target,
+          rename_ordinalCodeGraphTermAt, Term.rename] using hren
+      have hstep :=
+        BProv_Ax_s_hfAdjoinGraphTermAt_iff_ordinalCodeGraphTermAt_succ
+          hsucc ordinalCodeGraphFunctional
+          (codedOut := Term.var (codedOut + 1)) hgraph
+      have hstepReverse : BProv Ax_s D
+          (imp
+            (ordinalCodeGraphTermAt
+              (Term.succ (Term.rename Nat.succ raw))
+              (Term.var (codedOut + 1)))
+            adjoinGraph) := by
+        simpa [iffForm, operandGraph, adjoinGraph,
+          hfAdjoinGraphAt] using BProv_andE2 hstep
+      have hadjoin : BProv Ax_s D adjoinGraph :=
+        BProv_mp Ax_s D _ _ hstepReverse htargetD
+      have hbody : BProv Ax_s D body :=
+        BProv_andI hoperandComposite hadjoin
+      change BProv Ax_s D
+        (rename Nat.succ
+          (compositeTermGraphAt codedOut codedMap (Term.succ t)))
+      rw [compositeTermGraphAt_succ]
+      apply BProv_exI (t := Term.var 0)
+      rw [subst_instTerm_var_zero_rename_up_succ]
+      simpa [body, operandComposite, adjoinGraph] using hbody
+    exact BProv_exE_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (G := C) (a := operandGraph) (c := composite)
+      htotal (by simpa [D] using hinner)
+  simpa [iffForm, composite, target, raw, Term.rename] using
+    BProv_andI hforward hreverse
+
+/-- Successor preserves the complete term-graph induction property.  The
+recursive theorem is instantiated after opening the constructor's fresh
+operand-output slot, with all ambient input slots shifted by one. -/
+theorem OrdinalCodeTermGraphProof_succ
+    (hsucc : OrdinalCodeGraphSuccClosure) (t : Term)
+    (ih : OrdinalCodeTermGraphProof t) :
+    OrdinalCodeTermGraphProof (Term.succ t) := by
+  intro G rawMap codedMap codedOut hcode
+  let rawMap₁ : Nat → Nat := fun n ↦ rawMap n + 1
+  let codedMap₁ : Nat → Nat := fun n ↦ codedMap n + 1
+  have hcode₁ : ∀ n, Term.Free n t →
+      BProv Ax_s (G.map (rename Nat.succ))
+        (ordinalCodeGraphAt (rawMap₁ n) (codedMap₁ n)) := by
+    intro n hn
+    have hren := BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (hcode n hn) Nat.succ
+    simpa [rawMap₁, codedMap₁, ordinalCodeGraphAt,
+      rename_ordinalCodeGraphTermAt, Term.rename] using hren
+  have hoperand₀ := ih
+    (G.map (rename Nat.succ)) rawMap₁ codedMap₁ 0 hcode₁
+  have hoperand : BProv Ax_s (G.map (rename Nat.succ))
+      (iffForm
+        (compositeTermGraphAt 0 (fun n ↦ codedMap n + 1) t)
+        (ordinalCodeGraphTermAt
+          (Term.rename Nat.succ (Term.rename rawMap t))
+          (Term.var 0))) := by
+    simpa [rawMap₁, codedMap₁, Term.rename_comp,
+      Function.comp_def, Nat.add_assoc] using hoperand₀
+  exact BProv_Ax_s_term_graph_succ_of_shifted_operand
+    hsucc G t rawMap codedMap codedOut hoperand
+
 /-- The operation interface closes the full `term_graph` field by ordinary
 structural induction on PA terms. -/
 theorem BProv_Ax_s_term_graph_of_compatibility
     (C : OrdinalCodeTermCompatibilityProofs) :
-    ∀ (t : Term) (G : List Formula)
-        (rawMap codedMap : Nat → Nat) (codedOut : Nat),
-      (∀ n, Term.Free n t →
-        BProv Ax_s G
-          (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
-      BProv Ax_s G
-        (iffForm
-          (compositeTermGraphAt codedOut codedMap t)
-          (ordinalCodeGraphTermAt
-            (Term.rename rawMap t) (Term.var codedOut))) := by
+    ∀ t, OrdinalCodeTermGraphProof t := by
   intro t
   induction t with
   | var n =>
@@ -4921,26 +5201,13 @@ theorem BProv_Ax_s_term_graph_of_compatibility
       exact BProv_Ax_s_term_graph_var
         C.graph_functional G n rawMap codedMap codedOut hcode
   | zero =>
-      intro G rawMap codedMap codedOut hcode
-      simpa [Term.rename] using C.zero_compatible G codedMap codedOut
+      exact C.zero_compatible
   | succ t ih =>
-      intro G rawMap codedMap codedOut hcode
-      exact C.succ_compatible G t rawMap codedMap codedOut
-        (ih G rawMap codedMap codedOut hcode)
+      exact C.succ_compatible t ih
   | add a b iha ihb =>
-      intro G rawMap codedMap codedOut hcode
-      exact C.add_compatible G a b rawMap codedMap codedOut
-        (iha G rawMap codedMap codedOut
-          (fun n hn ↦ hcode n (Or.inl hn)))
-        (ihb G rawMap codedMap codedOut
-          (fun n hn ↦ hcode n (Or.inr hn)))
+      exact C.add_compatible a b iha ihb
   | mul a b iha ihb =>
-      intro G rawMap codedMap codedOut hcode
-      exact C.mul_compatible G a b rawMap codedMap codedOut
-        (iha G rawMap codedMap codedOut
-          (fun n hn ↦ hcode n (Or.inl hn)))
-        (ihb G rawMap codedMap codedOut
-          (fun n hn ↦ hcode n (Or.inr hn)))
+      exact C.mul_compatible a b iha ihb
 
 /-- The graph-level proof obligations remaining after totality. -/
 structure OrdinalCodeGraphRemainingProofs where

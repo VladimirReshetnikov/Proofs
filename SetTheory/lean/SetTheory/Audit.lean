@@ -2649,8 +2649,14 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ordinalCodeGraphTermAt_functional
 #check @PA.Formula.ordinalCodeGraphFunctional
 #check @PA.Formula.BProv_Ax_s_term_graph_var
+#check @PA.Formula.compositeTermGraphAt_succ
+#check @PA.Formula.BProv_Ax_s_hfAdjoinGraphTermAt_iff_ordinalCodeGraphTermAt_succ
+#check @PA.Formula.OrdinalCodeTermGraphProof
 #check @PA.Formula.OrdinalCodeTermCompatibilityProofs
 #check @PA.Formula.OrdinalCodeTermCompatibilityProofs_zero_compatible
+#check @PA.Formula.OrdinalCodeTermGraphProof_zero
+#check @PA.Formula.BProv_Ax_s_term_graph_succ_of_shifted_operand
+#check @PA.Formula.OrdinalCodeTermGraphProof_succ
 #check @PA.Formula.BProv_Ax_s_term_graph_of_compatibility
 #check @PA.Formula.OrdinalCodeGraphRemainingProofs
 #check @PA.Formula.OrdinalCodeGraphProofs_of_remaining_and_compatibility
