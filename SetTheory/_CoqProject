@@ -96,6 +96,7 @@ PAHFHFRoundTripSemantic.v
 PAHFHFRepresentationRange.v
 PAHFCompositeMemBelow.v
 PAHFCompositeArithmetic.v
+PAHFFinalAssembly.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
 BusyBeaver.v
