@@ -188,9 +188,9 @@ def leftSuccessor (action : PAction State Symbol)
   center := mw.left.headD blank
   state := action.next
 
-/-- Declarative closure of one recorded local context.  `List.Forall` is used
-deliberately: unlike an unbounded `forall edge`, this proposition is directly
-decidable for finite certificates. -/
+/-- Declarative closure of one recorded local context.  The finite `All`
+predicate is used deliberately: unlike an unbounded `forall edge`, this
+proposition is directly decidable for finite certificates. -/
 def ClosedAt [DecidableEq Symbol] [DecidableEq State]
     (M : PTM State Symbol) (leftLen rightLen : Nat) (blank : Symbol)
     (cert : Cert State Symbol) (mw : MidWord State Symbol) : Prop :=
