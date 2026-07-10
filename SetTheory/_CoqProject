@@ -76,6 +76,7 @@ PAHFMembershipBound.v
 PAHFMembershipBoundSucc.v
 PAHFInterpretations.v
 PAHFTermGraphModel.v
+PAHFTermGraphTotal.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
 PAHFHFRepresentationMerge.v
