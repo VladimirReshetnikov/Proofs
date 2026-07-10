@@ -29,7 +29,7 @@ the table below. There is no `sorry` and no project-specific Lean axiom.
 | [`SetTheory/Equivalence.lean`](SetTheory/Equivalence.lean) | `Equivalence.v` | the deep forward trade, `Closure_form` + bridges, `Tax_s`, `Tmodel_sat_ZF` / `ZFmodel_sat_T`, `ZF_implies_T`, `T_implies_ZF`, **`T_iff_ZF`** |
 | [`SetTheory/Forward.lean`](SetTheory/Forward.lean) | `Forward.v` | the shallow (second-order) forward trade, self-contained, dependency-audited |
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
-| [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean` | `PAHF.v` | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, a separate first-order PA syntax with sealed PA axiom semantics, and a PA sentence form of the Mertens/Littlewood RH criterion |
+| [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation, RoundTrip, HFRoundTrip}.lean` | `PAHF.v` covers the earlier infrastructure only | Full Lean deductive bi-interpretation of PA and finite-generation HF (`HFFinAx_s`), via Ackermann coding and finite von Neumann ordinals; explicit formula translations and theorem transfer in both directions; both composite translations provably equivalent to the identity on sentences; plus the PA sentence form of the Mertens/Littlewood RH criterion |
 | [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | `BusyBeaver.v` | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
 | [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs; the Rocq file additionally hosts its local bounded three-state score checker |
 | [`SetTheory/BusyBeaverBB2.lean`](SetTheory/BusyBeaverBB2.lean) | `BusyBeaverBB2Bridge.v` + vendored CoqBB2 | an independent Lean proof of `Σ(2)=4`, using kernel-checked halting/nonhalting certificates for the left-moving half of the 20,736 tables and a proved reflection simulation for the right-moving half |
@@ -101,23 +101,21 @@ parameters. So the signatures themselves certify, e.g.:
   exactly {Ext, Sep, Pair, Union, Inf, Repl} — the deep reverse likewise
   needs neither Powerset nor Regularity.
 
-The PA/HF work in `PAHF.lean` is also included in the audit. Its current
-checked surface is deliberately explicit:
+The PA/HF work in `PAHF.lean` is also included in the audit. Its headline
+deductive surface is deliberately explicit:
 
 ```lean
-theorem AckermannHF.PA_biinterpretable_with_HF_standard :
-    Nonempty (PA.Iso PA.natModel AckermannHF.ordinalPAModel) ∧
-      Nonempty (AckermannHF.AdjunctionIso
-        AckermannHF.standardModel AckermannHF.ordinalHFModel)
+def AckermannHF.paHFFinDeductiveBiInterpretation :
+    AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
 
-theorem AckermannHF.sat_HF_model
-    (M : AckermannHF.AdjunctionModel α) (v : Nat → α) :
-    ∀ g, AckermannHF.HFAx_s g → Sat M.mem v g
-
-theorem PA.Formula.sat_axiom_s
-    (M : PA.Model α) (e : Nat → α) :
-    ∀ f, PA.Formula.Ax_s f → PA.Formula.Sat M e f
+theorem AckermannHF.PA_biinterpretable_with_HFFin :
+    Nonempty AckermannHF.PAHFFinDeductiveBiInterpretationCertificate
 ```
+
+The certificate contains theory interpretations in both directions and proves,
+inside PA and `HFFinAx_s` respectively, that each composite translation is
+equivalent to the identity on every sentence. The earlier standard-model
+isomorphisms and semantic exactness theorems remain available separately.
 
 The PA syntax layer also contains
 [`SetTheory/PAHF/RiemannHypothesis.lean`](SetTheory/PAHF/RiemannHypothesis.lean),
@@ -128,12 +126,12 @@ growth criterion `forall q > 0, exists C, forall n,
 [`../../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](../../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md)
 explains why this was chosen over the Lagarias/Robin/Farey alternatives.
 
-This is a semantic and syntax-preparation checkpoint, not yet the final
-deductive bi-interpretability theorem. The remaining syntactic bridge is the
-interpretation layer itself: PA terms/formulas must be translated to
-membership-language formulas over the finite ordinals, and HF membership must
-be translated back to PA by a definable bit predicate rather than by treating
-`Nat.testBit` as primitive.
+This closes the deductive theorem for the strengthened finite-HF theory
+`HFFinAx_s`. Its finite-generation induction schema is essential: the
+foundation-style theory `HFAx_s` alone admits infinite models and is not the
+claimed counterpart of PA. The Rocq [`../PAHF.v`](../PAHF.v) development
+contains the earlier semantic and interpretation infrastructure, but does not
+claim the final deductive theorem proved by the Lean modules.
 
 `BusyBeaver.lean` adds a small, independent computability-theory interface.  It
 does not attempt to formalize a universal-machine compiler inside this file;

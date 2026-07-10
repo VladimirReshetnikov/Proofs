@@ -2688,13 +2688,19 @@ open SetTheory
 #check @PA.Formula.ordinalCodeTermGraphProof_succ
 #check @PA.Formula.OrdinalCodeTermAddCompatibility
 #check @PA.Formula.OrdinalCodeTermMulCompatibility
+#check PA.Formula.ordinalCodeTermAddCompatibility
+#check PA.Formula.ordinalCodeTermMulCompatibility
 #check @PA.Formula.OrdinalCodeTermCompatibilityProofs_of_add_mul
+#check @PA.Formula.OrdinalCodeTermCompatibilityProofs_of_mul
 #check @PA.Formula.BProv_Ax_s_term_graph_of_compatibility
 #check @PA.Formula.OrdinalCodeGraphRemainingProofs
 #check @PA.Formula.OrdinalCodeGraphInjective
+#check PA.Formula.ordinalCodeGraphInjective
 #check @PA.Formula.OrdinalCodeGraphRemainingProofs_of_injective
 #check @PA.Formula.OrdinalCodeGraphProofs_of_remaining_and_compatibility
 #check @PA.Formula.OrdinalCodeGraphProofs_of_injective_add_mul
+#check @PA.Formula.OrdinalCodeGraphProofs_of_mul
+#check PA.Formula.ordinalCodeGraphProofs
 #check @PA.Formula.BProv_codeEqualityTermAt_of_eq
 #check @PA.Formula.BProv_eq_of_codeEqualityTermAt
 #check @PA.Formula.BProv_eq_iff_codeEqualityTermAt
@@ -2757,6 +2763,12 @@ open SetTheory
 #check @AckermannHF.BProv_hfCompositeAt_eq_of_eq
 #check @AckermannHF.BProv_eq_of_hfCompositeAt_eq
 #check @AckermannHF.SetOrdinalRepresentationProofs
+#check @AckermannHF.BProv_HFFin_setOrdinalRep_total
+#check @AckermannHF.BProv_HFFin_setOrdinalRep_range
+#check @AckermannHF.BProv_HFFin_setOrdinalRep_code_functional
+#check @AckermannHF.BProv_HFFin_setOrdinalRep_set_injective
+#check @AckermannHF.BProv_HFFin_setOrdinalRep_mem_exact
+#check AckermannHF.setOrdinalRepresentationProofs
 #check @AckermannHF.BProv_HFFin_hfCompositeAt_mem_of_representations
 #check @AckermannHF.BProv_HFFin_hfCompositeAt_eq_of_representations
 #check @AckermannHF.BProv_fIff_refl
@@ -2822,7 +2834,10 @@ open SetTheory
 #check @AckermannHF.canonicalRepEnv
 #check @AckermannHF.HasSetOrdinalRep
 #check @AckermannHF.setOrdinalRepExists_model
-#check @AckermannHF.ModelSetOrdinalRepCodeAdjoinLaw
+#check @AckermannHF.ModelCompositeAdjoinCodeData
+#check @AckermannHF.ModelCompositeAdjoinCodeData_exists_finite
+#check @AckermannHF.ModelCompositeAdjoinCodeLaw
+#check @AckermannHF.ModelCompositeAdjoinCodeLaw_finite
 #check @AckermannHF.HasSetOrdinalRep_adjoin_of_merge_code
 #check @AckermannHF.HF_induction_form_spec
 #check @AckermannHF.HasSetOrdinalRep_total_of_empty_adjoin
@@ -2836,6 +2851,13 @@ open SetTheory
 #check @AckermannHF.PA_standard_model_interpretable_with_HFFin
 #check @AckermannHF.PA_biinterpretable_with_HF_standard
 #check @AckermannHF.PA_biinterpretable_with_HFFin_standard
+#check AckermannHF.paHFFinDeductiveBiInterpretation
+#check AckermannHF.PA_biinterpretable_with_HFFin
+#print axioms PA.Formula.ordinalCodeTermMulCompatibility
+#print axioms PA.Formula.ordinalCodeGraphProofs
+#print axioms AckermannHF.setOrdinalRepresentationProofs
+#print axioms AckermannHF.paHFFinDeductiveBiInterpretation
+#print axioms AckermannHF.PA_biinterpretable_with_HFFin
 #print axioms PA.Formula.sat_axiom
 #print axioms PA.Formula.sat_axiom_s
 #print axioms PA.Formula.soundness

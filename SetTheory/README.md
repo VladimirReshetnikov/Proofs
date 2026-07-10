@@ -65,11 +65,17 @@ foundational/computability work. Most have paired Rocq and Lean surfaces
 are documented below:
 
 - [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) (a facade over
-  `lean/SetTheory/PAHF/{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean`;
-  Coq counterpart [`PAHF.v`](PAHF.v)) develops Ackermann-coded
-  hereditary finite sets and first-order PA/HF interpretation infrastructure.
+  `lean/SetTheory/PAHF/{PASyntax, AckermannHFCore, RiemannHypothesis,
+  Interpretation, RoundTrip, HFRoundTrip}.lean`) proves a full deductive
+  bi-interpretation between PA and the finite-generation HF theory `HFFinAx_s`.
+  The construction uses Ackermann coding from HF into PA and the finite von
+  Neumann ordinals from PA into HF, transfers theorems in both directions, and
+  proves both composite translations equivalent to the identity on sentences.
+  The Coq counterpart [`PAHF.v`](PAHF.v) covers the earlier Ackermann-coded
+  semantic and interpretation infrastructure, but not this final Lean
+  deductive theorem.
   It also contains a first-order PA sentence for the Mertens/Littlewood
-  arithmetic criterion equivalent to the Riemann Hypothesis; see
+  arithmetic criterion associated with the Riemann Hypothesis; see
   [`lean/SetTheory/PAHF/RiemannHypothesis.lean`](lean/SetTheory/PAHF/RiemannHypothesis.lean)
   and the comparison report
   [`../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md`](../docs/reports/riemann-hypothesis-pa-statement-2026-07-09.md).
@@ -593,16 +599,22 @@ vendored CoqBB3 certificate. Build that expensive certificate target and its
 assumption audit explicitly from the repository root with
 `lake build +SetTheory.BusyBeaverBB3` and
 `lake build +SetTheory.AuditMathlib`. The Lean workspace also contains
-[`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first
-formalization toward the bi-interpretability of Peano arithmetic and hereditary
-finite sets. Its current checked surface includes Ackermann-coded HF on `Nat`,
-finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order
-HF axiom schemas in the membership language, and a separate first-order PA syntax
-with sealed PA axiom semantics; the remaining syntactic bridge is the explicit
-formula translation between PA and HF. `lean/SetTheory/Audit.lean` replays the
-`Print Assumptions` audit: the Lean proof depends only on `propext`,
-`Classical.choice`, and `Quot.sound` — Lean's standard classical axioms — with no
-`sorry` anywhere.
+[`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean), a Lean-first full
+deductive bi-interpretation of Peano arithmetic and the hereditary-finite-set
+theory `HFFinAx_s`. Its public witness
+`AckermannHF.paHFFinDeductiveBiInterpretation` has type
+`AckermannHF.PAHFFinDeductiveBiInterpretationCertificate`, and the headline
+existence theorem is `AckermannHF.PA_biinterpretable_with_HFFin`. The
+certificate packages the explicit PA-to-HF and HF-to-PA formula translations,
+theorem transfer in both directions, and proofs in the respective source
+theories that both composite translations are equivalent to the identity on
+sentences. The extra finite-generation schema in `HFFinAx_s` is essential:
+the foundation-style theory `HFAx_s` alone also has infinite models and is not
+the claimed PA counterpart. [`lean/SetTheory/Audit.lean`](lean/SetTheory/Audit.lean)
+replays the `Print Assumptions` audit: the Lean proof depends only on `propext`,
+`Classical.choice`, and `Quot.sound` — Lean's standard classical axioms — with
+no `sorry` anywhere. The Rocq [`PAHF.v`](PAHF.v) development retains the
+earlier semantic infrastructure and does not claim this final deductive result.
 Because Lean generalizes hypotheses as explicit named parameters rather than
 via Coq's `Section` mechanism, the free dependency audit is *visible in each
 theorem's signature* there (e.g. `Reverse.Closure_holds` literally takes no

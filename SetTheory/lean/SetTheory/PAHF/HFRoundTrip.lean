@@ -2294,6 +2294,8 @@ theorem formulaAt_ltAt_mem {α : Type u}
   rw [hleftValue, hxy, hy] at hbaseMem
   exact hbaseMem
 
+end FirstOrderFiniteAdjunctionModel
+
 /-- PA proves that Ackermann membership is strictly bounded. -/
 theorem PA_BProv_hfMem_imp_lt :
     PA.Formula.BProv PA.Formula.Ax_s []
@@ -2302,8 +2304,6 @@ theorem PA_BProv_hfMem_imp_lt :
   apply PA.Formula.BProv_impI
   exact PA.Formula.BProv_Ax_s_ltAt_of_hfMemAt
     (PA.Formula.BProv_ass (by simp))
-
-end FirstOrderFiniteAdjunctionModel
 
 theorem hfCompositeAt_imp
     (ρ : Nat → Nat) (a b : Form) :
@@ -3653,7 +3653,7 @@ theorem ModelCompositeMem_mem_finite {α : Type u}
     M.mem elem set := by
   let N := M.toFirstOrderAdjunctionModel
   rcases PAInHF.BProv_HFFin_formulaAt_of_PA_BProv_domainContext
-      FirstOrderFiniteAdjunctionModel.PA_BProv_hfMem_imp_lt with
+      PA_BProv_hfMem_imp_lt with
     ⟨n, htranslated⟩
   let env : Nat → α := scons elem (scons set (fun _ => M.empty))
   let ρ : Nat → Nat := fun k => k
@@ -4902,6 +4902,21 @@ def setOrdinalRepresentationProofs : SetOrdinalRepresentationProofs where
   code_functional := BProv_HFFin_setOrdinalRep_code_functional
   set_injective := BProv_HFFin_setOrdinalRep_set_injective
   mem_exact := BProv_HFFin_setOrdinalRep_mem_exact
+
+/-- The concrete deductive bi-interpretation of PA and finite-generation HF.
+It transfers theorems in both directions and proves both composite
+translations equivalent to the identity on every sentence. -/
+def paHFFinDeductiveBiInterpretation :
+    PAHFFinDeductiveBiInterpretationCertificate :=
+  PAHFFinDeductiveBiInterpretationCertificate_of_graphRepresentationProofs
+    PA.Formula.ordinalCodeGraphProofs
+    setOrdinalRepresentationProofs
+
+/-- Peano arithmetic and finite-generation hereditary finite set theory are
+deductively bi-interpretable. -/
+theorem PA_biinterpretable_with_HFFin :
+    Nonempty PAHFFinDeductiveBiInterpretationCertificate :=
+  ⟨paHFFinDeductiveBiInterpretation⟩
 
 end AckermannHF
 end SetTheory

@@ -8995,11 +8995,11 @@ abbrev PAProvability :=
 
 /-- The exact target for a deductive PA/HF bi-interpretability theorem.
 
-Unlike `StandardModelInterpretationCertificate`, this record is not inhabited
-in this file.  It states the remaining proof obligations at the theory level:
-both syntactic translations must transfer theorems between the PA axiom theory
-and the chosen HF-side axiom theory, and the two composites must be provably
-equivalent to the identity translations on sentences. -/
+Unlike `StandardModelInterpretationCertificate`, this record states the full
+theory-level target: both syntactic translations transfer theorems between the
+PA axiom theory and the chosen HF-side axiom theory, and the two composites are
+provably equivalent to the identity translations on sentences.  The concrete
+finite-HF inhabitant is assembled in `HFRoundTrip`. -/
 structure DeductiveBiInterpretationCertificate
     (HFAxTarget : Form → Prop) (PAProv : PAProvability) where
   paInHf : TheoryInterpretation PA.Formula Form

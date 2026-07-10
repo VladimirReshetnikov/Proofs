@@ -151,8 +151,10 @@ with [LaTeX source](SetTheory/article/closure-axiomatization.tex).
 
 The same project contains adjacent foundational and computability work:
 
-- Ackermann-coded hereditary finite sets and PA/HF interpretation
-  infrastructure;
+- an unconditional Lean deductive bi-interpretation between Peano arithmetic
+  and hereditary finite set theory strengthened by finite-generation induction,
+  using Ackermann coding in one direction and finite von Neumann ordinals in
+  the other;
 - a first-order PA sentence expressing the Mertens/Littlewood arithmetic
   criterion associated with the Riemann Hypothesis—the repository formalizes
   the statement, not yet its analytic equivalence;

@@ -3,18 +3,21 @@
 
   Peano arithmetic and hereditary finite sets.
 
-  This module starts the formalization of the classical bi-interpretability
-  route:
+  This facade exports the complete Lean formalization of the classical
+  deductive bi-interpretability route between Peano arithmetic and the
+  finite-generation hereditary-finite-set theory `HFFinAx_s`:
 
   * interpret hereditary finite sets in arithmetic by Ackermann's bit coding;
   * interpret arithmetic in hereditary finite sets by the finite von Neumann
     ordinals;
-  * prove the round trips by explicit isomorphisms.
+  * transfer first-order theorems in both directions;
+  * prove both composite translations equivalent to the identity on sentences.
 
-  The first section below is intentionally modest and reusable: it builds the
-  Ackermann membership relation on `Nat` and proves the finite-set axioms that
-  only need bit arithmetic.  Later sections use these lemmas as the semantic
-  core of the interpretation data.
+  The public certificate is `paHFFinDeductiveBiInterpretation`, and
+  `PA_biinterpretable_with_HFFin` states its existence.  The extra
+  finite-generation schema is essential: the foundation-style theory `HFAx_s`
+  alone also has infinite models.  The reusable semantic layer additionally
+  exposes the standard Ackermann model and its explicit round-trip isomorphisms.
 -/
 
 import SetTheory.PAHF.AckermannHFCore
