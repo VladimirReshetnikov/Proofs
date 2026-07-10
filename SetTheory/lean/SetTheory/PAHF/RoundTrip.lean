@@ -639,6 +639,24 @@ theorem subst_instTerm_var_zero_codedOrdinalDomain :
       rfl
     _ = codedOrdinalDomain := rename_id codedOrdinalDomain
 
+/-- Instantiating the current coded witness after two surrounding proof
+binders recovers the coded-ordinal domain formula. -/
+theorem subst_instTerm_total_codedOrdinalDomain :
+    subst (instTerm (Term.var 0))
+        (rename (SetTheory.up Nat.succ)
+          (rename (SetTheory.up Nat.succ) codedOrdinalDomain)) =
+      codedOrdinalDomain := by
+  rw [subst_instTerm_var_zero_rename_up_succ]
+  calc
+    rename (SetTheory.up Nat.succ) codedOrdinalDomain =
+        rename (fun n : Nat ↦ n) codedOrdinalDomain := by
+      apply rename_ext_free
+      intro n hn
+      have hn0 := codedOrdinalDomain_free hn
+      subst n
+      rfl
+    _ = codedOrdinalDomain := rename_id codedOrdinalDomain
+
 /-- Use the range equivalence to open an arbitrary coded ordinal as the Code
 of a raw PA value. -/
 theorem BProv_Ax_s_ordinalCodeGraph_range_of_domain
@@ -2784,6 +2802,295 @@ theorem BProv_Ax_s_paCompositeAt_eq_exact
   have h := BProv_iffForm_trans hraw
     (BProv_iffForm_symm hcomposite)
   simpa [rename] using h
+
+/-! ### Paired-variable quantifier steps -/
+
+/-- Forward half of the universal structural step: a raw universal statement
+implies its coded, domain-relativized composite. -/
+theorem BProv_Ax_s_paCompositeAt_all_forward
+    (P : OrdinalCodeGraphProofs)
+    (phi : Formula)
+    (ih : ∀ (G : List Formula) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv Ax_s G
+          (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
+      BProv Ax_s G
+        (iffForm (rename rawMap phi) (paCompositeAt codedMap phi)))
+    (G : List Formula) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (all phi) →
+      BProv Ax_s G
+        (ordinalCodeGraphAt (rawMap n) (codedMap n))) :
+    BProv Ax_s G
+      (imp (rename rawMap (all phi))
+        (paCompositeAt codedMap (all phi))) := by
+  let rawBody : Formula :=
+    rename (AckermannHF.PAInHF.upVarMap rawMap) phi
+  let codedBody : Formula :=
+    paCompositeAt (hfUpVarMap codedMap) phi
+  let rawAll : Formula := all rawBody
+  let codedAll : Formula :=
+    all (imp codedOrdinalDomain codedBody)
+  let C₀ : List Formula := rawAll :: G
+  let C₁ : List Formula := C₀.map (rename Nat.succ)
+  let C₂ : List Formula := codedOrdinalDomain :: C₁
+  have hcodedBody : BProv Ax_s C₂ codedBody := by
+    have hdomain : BProv Ax_s C₂ codedOrdinalDomain :=
+      BProv_ass (B := Ax_s) (G := C₂) (by simp [C₂])
+    have hdomainInst : BProv Ax_s C₂
+        (subst (instTerm (Term.var 0)) codedOrdinalDomain) := by
+      simpa [subst_instTerm_var_zero_codedOrdinalDomain] using hdomain
+    have hrange :=
+      BProv_Ax_s_ordinalCodeGraph_range_of_domain P hdomainInst
+    let graphBody : Formula :=
+      ordinalCodeGraphTermAt (Term.var 0) (Term.var 1)
+    have hrange' : BProv Ax_s C₂ (ex graphBody) := by
+      simpa [graphBody, Term.rename] using hrange
+    let C₃ : List Formula := graphBody :: C₂.map (rename Nat.succ)
+    have hopened : BProv Ax_s C₃ (rename Nat.succ codedBody) := by
+      have hgraph : BProv Ax_s C₃
+          (ordinalCodeGraphAt 0 1) := by
+        have hass : BProv Ax_s C₃ graphBody :=
+          BProv_ass (B := Ax_s) (G := C₃) (by simp [C₃])
+        simpa [graphBody, ordinalCodeGraphAt] using hass
+      have hpaired : ∀ n, Free n phi →
+          BProv Ax_s C₃
+            (ordinalCodeGraphAt
+              (rangeRawMap rawMap n)
+              (rangeCodedMap codedMap n)) := by
+        intro n hn
+        cases n with
+        | zero =>
+            simpa [rangeRawMap, rangeCodedMap] using hgraph
+        | succ n =>
+            have h₀ := hcode n hn
+            have h₁ := BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+              h₀ Nat.succ
+            have h₂ := BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+              h₁ Nat.succ
+            have hrawCtx := BProv_context_cons (B := Ax_s)
+              (a := rename Nat.succ (rename Nat.succ rawAll)) h₂
+            have hdomainCtx := BProv_context_cons (B := Ax_s)
+              (a := rename Nat.succ codedOrdinalDomain) hrawCtx
+            have hctx := BProv_context_cons (B := Ax_s)
+              (a := graphBody) hdomainCtx
+            simpa [C₃, C₂, C₁, C₀,
+              rangeRawMap, rangeCodedMap,
+              ordinalCodeGraphAt, rename_ordinalCodeGraphTermAt,
+              Term.rename, List.map_map, Function.comp_def] using hctx
+      have hih := ih C₃
+        (rangeRawMap rawMap)
+        (rangeCodedMap codedMap) hpaired
+      have hihForward : BProv Ax_s C₃
+          (imp
+            (rename (rangeRawMap rawMap) phi)
+            (paCompositeAt (rangeCodedMap codedMap) phi)) := by
+        simpa [iffForm] using BProv_andE1 hih
+      have hall₀ : BProv Ax_s C₀ rawAll :=
+        BProv_ass (B := Ax_s) (G := C₀) (by simp [C₀])
+      have hall₁ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        hall₀ Nat.succ
+      have hall₂ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        hall₁ Nat.succ
+      have hallDomainCtx := BProv_context_cons (B := Ax_s)
+        (a := rename Nat.succ codedOrdinalDomain) hall₂
+      have hallCtx := BProv_context_cons (B := Ax_s)
+        (a := graphBody) hallDomainCtx
+      have hallCtx' : BProv Ax_s C₃
+          (all (rename (SetTheory.up Nat.succ)
+            (rename (SetTheory.up Nat.succ) rawBody))) := by
+        simpa [C₃, C₂, C₁, C₀, rawAll, rename] using hallCtx
+      have hrawInst := BProv_allE (B := Ax_s) (G := C₃)
+        (t := Term.var 0) hallCtx'
+      have hraw : BProv Ax_s C₃
+          (rename (rangeRawMap rawMap) phi) := by
+        simpa [rawAll, rawBody, rename,
+          subst_instTerm_range_rawBody] using hrawInst
+      have hcomp : BProv Ax_s C₃
+          (paCompositeAt (rangeCodedMap codedMap) phi) :=
+        BProv_mp Ax_s C₃ _ _ hihForward hraw
+      simpa [codedBody, rename_succ_paCompositeAt_up] using hcomp
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (a := graphBody) (c := codedBody) hrange' (by
+        simpa [C₃] using hopened)
+  have himp : BProv Ax_s C₁
+      (imp codedOrdinalDomain codedBody) := by
+    simpa [C₂] using BProv_impI hcodedBody
+  have hall : BProv Ax_s C₀ codedAll := by
+    simpa [codedAll, C₁] using
+      (BProv_allI_of_sentences (B := Ax_s)
+        (fun f hf ↦ sentence_ax_s (f := f) hf)
+        (G := C₀) himp)
+  have hmain : BProv Ax_s G (imp rawAll codedAll) := by
+    simpa [C₀] using BProv_impI hall
+  have hup : AckermannHF.PAInHF.upVarMap rawMap =
+      SetTheory.up rawMap := by
+    funext n
+    cases n <;> rfl
+  have hmain' : BProv Ax_s G
+      (imp (all (rename (SetTheory.up rawMap) phi)) codedAll) := by
+    simpa [rawAll, rawBody, hup] using hmain
+  simpa [codedAll, codedBody, rename,
+    paCompositeAt_all_normalForm] using hmain'
+
+/-- Reverse half of the universal structural step: totality supplies a code
+for the freshly bound raw value, and range supplies the coded-domain premise. -/
+theorem BProv_Ax_s_paCompositeAt_all_reverse
+    (P : OrdinalCodeGraphProofs)
+    (phi : Formula)
+    (ih : ∀ (G : List Formula) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv Ax_s G
+          (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
+      BProv Ax_s G
+        (iffForm (rename rawMap phi) (paCompositeAt codedMap phi)))
+    (G : List Formula) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (all phi) →
+      BProv Ax_s G
+        (ordinalCodeGraphAt (rawMap n) (codedMap n))) :
+    BProv Ax_s G
+      (imp (paCompositeAt codedMap (all phi))
+        (rename rawMap (all phi))) := by
+  let rawBody : Formula :=
+    rename (AckermannHF.PAInHF.upVarMap rawMap) phi
+  let codedBody : Formula :=
+    paCompositeAt (hfUpVarMap codedMap) phi
+  let rawAll : Formula := all rawBody
+  let codedAll : Formula :=
+    all (imp codedOrdinalDomain codedBody)
+  let C₀ : List Formula := codedAll :: G
+  let C₁ : List Formula := C₀.map (rename Nat.succ)
+  have hrawBody : BProv Ax_s C₁ rawBody := by
+    have htotal := P.total C₁ (Term.var 0)
+    let graphBody : Formula :=
+      ordinalCodeGraphTermAt (Term.var 1) (Term.var 0)
+    have htotal' : BProv Ax_s C₁ (ex graphBody) := by
+      simpa [graphBody, Term.rename] using htotal
+    let C₂ : List Formula := graphBody :: C₁.map (rename Nat.succ)
+    have hopened : BProv Ax_s C₂ (rename Nat.succ rawBody) := by
+      have hgraphTerm : BProv Ax_s C₂
+          (ordinalCodeGraphTermAt (Term.var 1) (Term.var 0)) := by
+        have hass : BProv Ax_s C₂ graphBody :=
+          BProv_ass (B := Ax_s) (G := C₂) (by simp [C₂])
+        simpa [graphBody] using hass
+      have hgraph : BProv Ax_s C₂
+          (ordinalCodeGraphAt 1 0) := by
+        simpa [ordinalCodeGraphAt] using hgraphTerm
+      have hpaired : ∀ n, Free n phi →
+          BProv Ax_s C₂
+            (ordinalCodeGraphAt
+              (totalRawMap rawMap n)
+              (totalCodedMap codedMap n)) := by
+        intro n hn
+        cases n with
+        | zero =>
+            simpa [totalRawMap, totalCodedMap] using hgraph
+        | succ n =>
+            have h₀ := hcode n hn
+            have h₁ := BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+              h₀ Nat.succ
+            have h₂ := BProv_rename_of_sentences
+              (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+              h₁ Nat.succ
+            have hcodedCtx := BProv_context_cons (B := Ax_s)
+              (a := rename Nat.succ (rename Nat.succ codedAll)) h₂
+            have hctx := BProv_context_cons (B := Ax_s)
+              (a := graphBody) hcodedCtx
+            simpa [C₂, C₁, C₀,
+              totalRawMap, totalCodedMap,
+              ordinalCodeGraphAt, rename_ordinalCodeGraphTermAt,
+              Term.rename, List.map_map, Function.comp_def] using hctx
+      have hih := ih C₂
+        (totalRawMap rawMap)
+        (totalCodedMap codedMap) hpaired
+      have hihReverse : BProv Ax_s C₂
+          (imp
+            (paCompositeAt (totalCodedMap codedMap) phi)
+            (rename (totalRawMap rawMap) phi)) := by
+        simpa [iffForm] using BProv_andE2 hih
+      have hall₀ : BProv Ax_s C₀ codedAll :=
+        BProv_ass (B := Ax_s) (G := C₀) (by simp [C₀])
+      have hall₁ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        hall₀ Nat.succ
+      have hall₂ := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        hall₁ Nat.succ
+      have hallCtx := BProv_context_cons (B := Ax_s)
+        (a := graphBody) hall₂
+      have hallCtx' : BProv Ax_s C₂
+          (all (rename (SetTheory.up Nat.succ)
+            (rename (SetTheory.up Nat.succ)
+              (imp codedOrdinalDomain codedBody)))) := by
+        simpa [C₂, C₁, C₀, codedAll, rename] using hallCtx
+      have hbodyInst := BProv_allE (B := Ax_s) (G := C₂)
+        (t := Term.var 0) hallCtx'
+      have hcodedImp : BProv Ax_s C₂
+          (imp codedOrdinalDomain
+            (paCompositeAt (totalCodedMap codedMap) phi)) := by
+        simpa [codedBody, subst, rename,
+          subst_instTerm_total_codedOrdinalDomain,
+          subst_instTerm_total_codedBody] using hbodyInst
+      have hdomainInst :=
+        BProv_Ax_s_codedOrdinalDomain_of_ordinalCodeGraph P hgraphTerm
+      have hdomain : BProv Ax_s C₂ codedOrdinalDomain := by
+        simpa [subst_instTerm_var_zero_codedOrdinalDomain]
+          using hdomainInst
+      have hcomp : BProv Ax_s C₂
+          (paCompositeAt (totalCodedMap codedMap) phi) :=
+        BProv_mp Ax_s C₂ _ _ hcodedImp hdomain
+      have hraw : BProv Ax_s C₂
+          (rename (totalRawMap rawMap) phi) :=
+        BProv_mp Ax_s C₂ _ _ hihReverse hcomp
+      simpa [rawBody, rename_succ_rawBody] using hraw
+    exact BProv_exE_of_sentences (B := Ax_s)
+      (fun f hf ↦ sentence_ax_s (f := f) hf)
+      (a := graphBody) (c := rawBody) htotal' (by
+        simpa [C₂] using hopened)
+  have hall : BProv Ax_s C₀ rawAll := by
+    simpa [rawAll, C₁] using
+      (BProv_allI_of_sentences (B := Ax_s)
+        (fun f hf ↦ sentence_ax_s (f := f) hf)
+        (G := C₀) hrawBody)
+  have hmain : BProv Ax_s G (imp codedAll rawAll) := by
+    simpa [C₀] using BProv_impI hall
+  have hup : AckermannHF.PAInHF.upVarMap rawMap =
+      SetTheory.up rawMap := by
+    funext n
+    cases n <;> rfl
+  have hmain' : BProv Ax_s G
+      (imp codedAll (all (rename (SetTheory.up rawMap) phi))) := by
+    simpa [rawAll, rawBody, hup] using hmain
+  simpa [codedAll, codedBody, rename,
+    paCompositeAt_all_normalForm] using hmain'
+
+/-- Full reusable universal step for paired raw/coded structural induction. -/
+theorem BProv_Ax_s_paCompositeAt_all_exact
+    (P : OrdinalCodeGraphProofs)
+    (phi : Formula)
+    (ih : ∀ (G : List Formula) (rawMap codedMap : Nat → Nat),
+      (∀ n, Free n phi →
+        BProv Ax_s G
+          (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
+      BProv Ax_s G
+        (iffForm (rename rawMap phi) (paCompositeAt codedMap phi)))
+    (G : List Formula) (rawMap codedMap : Nat → Nat)
+    (hcode : ∀ n, Free n (all phi) →
+      BProv Ax_s G
+        (ordinalCodeGraphAt (rawMap n) (codedMap n))) :
+    BProv Ax_s G
+      (iffForm (rename rawMap (all phi))
+        (paCompositeAt codedMap (all phi))) := by
+  exact BProv_andI
+    (BProv_Ax_s_paCompositeAt_all_forward
+      P phi ih G rawMap codedMap hcode)
+    (BProv_Ax_s_paCompositeAt_all_reverse
+      P phi ih G rawMap codedMap hcode)
 
 /-- The fragment of PA formulas whose syntax contains no quantifier. -/
 def QuantifierFree : Formula → Prop

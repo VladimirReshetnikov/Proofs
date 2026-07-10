@@ -592,5 +592,432 @@ theorem SetOrdinalRep_iff (set code : Nat) :
     exact SetOrdinalRep_exists set
 
 
+theorem rename_HF_compositeMemAt
+    (r : Nat → Nat) (elemCode setCode : Nat) :
+    rename r (HF_compositeMemAt elemCode setCode) =
+      HF_compositeMemAt (r elemCode) (r setCode) := by
+  simp only [HF_compositeMemAt]
+  rw [PAInHF.formulaAt_rename]
+  apply PAInHF.formulaAt_map_ext
+  intro n
+  cases n <;> rfl
+
+theorem HF_compositeMemAt_free
+    {i elemCode setCode : Nat}
+    (h : Free i (HF_compositeMemAt elemCode setCode)) :
+    i = elemCode ∨ i = setCode := by
+  rcases PAInHF.formulaAt_free (PA.Formula.hfMemAt 0 1) h with
+    ⟨n, hn, hi⟩
+  rcases PA.Formula.hfMemAt_free hn with hzero | hone
+  · subst n
+    exact Or.inl hi
+  · subst n
+    exact Or.inr hi
+
+theorem rename_HF_ordinalLikeAt
+    (r : Nat → Nat) (code : Nat) :
+    rename r (HF_ordinalLikeAt code) = HF_ordinalLikeAt (r code) := by
+  simp [HF_ordinalLikeAt, HF_transitiveAt, HF_memTotalOnAt,
+    rename, SetTheory.up]
+
+theorem rename_HF_setOrdinalRepCertificateAt
+    (r : Nat → Nat) (relation : Nat) :
+    rename r (HF_setOrdinalRepCertificateAt relation) =
+      HF_setOrdinalRepCertificateAt (r relation) := by
+  simp [HF_setOrdinalRepCertificateAt, fIff, rename, SetTheory.up,
+    PAInHF.rename_HF_pairFunctionalAt,
+    PAInHF.rename_HF_pairMemAt,
+    rename_HF_ordinalLikeAt,
+    rename_HF_compositeMemAt]
+
+theorem rename_HF_setOrdinalRepAt
+    (r : Nat → Nat) (set code : Nat) :
+    rename r (HF_setOrdinalRepAt set code) =
+      HF_setOrdinalRepAt (r set) (r code) := by
+  simp [HF_setOrdinalRepAt, rename, SetTheory.up,
+    PAInHF.rename_HF_pairMemAt,
+    rename_HF_setOrdinalRepCertificateAt]
+
+theorem HF_setOrdinalRepCertificateAt_free
+    {i relation : Nat}
+    (h : Free i (HF_setOrdinalRepCertificateAt relation)) :
+    i = relation := by
+  simp only [HF_setOrdinalRepCertificateAt, fIff, Free] at h
+  repeat first
+    | omega
+    | have hf := HF_pairFunctionalAt_free h; omega
+    | have hp := HF_pairMemAt_free h; omega
+    | have hd := HF_ordinalLikeAt_free h; omega
+    | have hc := HF_compositeMemAt_free h; omega
+    | rcases h with h | h
+
+theorem HF_setOrdinalRepAt_free
+    {i set code : Nat}
+    (h : Free i (HF_setOrdinalRepAt set code)) :
+    i = set ∨ i = code := by
+  simp only [HF_setOrdinalRepAt, Free] at h
+  rcases h with hroot | hcert
+  · have hp := HF_pairMemAt_free hroot
+    omega
+  · have hc := HF_setOrdinalRepCertificateAt_free hcert
+    omega
+
+theorem BProv_HF_setOrdinalRepAt_of_set_eq
+    {B : Form → Prop} {G : List Form}
+    {oldSet newSet code : Nat}
+    (heq : BProv B G (fEq oldSet newSet))
+    (hrep : BProv B G (HF_setOrdinalRepAt oldSet code)) :
+    BProv B G (HF_setOrdinalRepAt newSet code) := by
+  let body : Form := HF_setOrdinalRepAt 0 (code+1)
+  have hrepInst : BProv B G (rename (inst oldSet) body) := by
+    simpa [body, rename_HF_setOrdinalRepAt, inst] using hrep
+  have htransport := BProv_eqElim heq hrepInst
+  simpa [body, rename_HF_setOrdinalRepAt, inst] using htransport
+
+theorem BProv_HF_setOrdinalRepAt_of_code_eq
+    {B : Form → Prop} {G : List Form}
+    {set oldCode newCode : Nat}
+    (heq : BProv B G (fEq oldCode newCode))
+    (hrep : BProv B G (HF_setOrdinalRepAt set oldCode)) :
+    BProv B G (HF_setOrdinalRepAt set newCode) := by
+  let body : Form := HF_setOrdinalRepAt (set+1) 0
+  have hrepInst : BProv B G (rename (inst oldCode) body) := by
+    simpa [body, rename_HF_setOrdinalRepAt, inst] using hrep
+  have htransport := BProv_eqElim heq hrepInst
+  simpa [body, rename_HF_setOrdinalRepAt, inst] using htransport
+
+theorem hfCompositeAt_mem
+    (codedMap : Nat → Nat) (elem set : Nat) :
+    hfCompositeAt codedMap (fMem elem set) =
+      HF_compositeMemAt (codedMap elem) (codedMap set) := by
+  simp only [hfCompositeAt, PA.Formula.hfFormulaAt]
+  have hmem : PA.Formula.hfMemAt elem set =
+      PA.Formula.rename (repPairNatMap elem set)
+        (PA.Formula.hfMemAt 0 1) := by
+    rw [PA.Formula.rename_hfMemAt]
+    rfl
+  rw [hmem]
+  rw [PAInHF.formulaAt_PA_rename]
+  simp only [HF_compositeMemAt]
+  apply PAInHF.formulaAt_map_ext
+  intro n
+  cases n <;> rfl
+
+theorem BProv_hfCompositeAt_eq_of_eq
+    {B : Form → Prop} {G : List Form}
+    (codedMap : Nat → Nat) (left right : Nat)
+    (heq : BProv B G (fEq (codedMap left) (codedMap right))) :
+    BProv B G (hfCompositeAt codedMap (fEq left right)) := by
+  simpa [hfCompositeAt, PA.Formula.hfFormulaAt] using
+    PAInHF.BProv_formulaAt_eq_var_of_eq codedMap left right heq
+
+theorem BProv_eq_of_hfCompositeAt_eq
+    {B : Form → Prop} {G : List Form}
+    (codedMap : Nat → Nat) (left right : Nat)
+    (heq : BProv B G (hfCompositeAt codedMap (fEq left right))) :
+    BProv B G (fEq (codedMap left) (codedMap right)) := by
+  apply PAInHF.BProv_eq_of_formulaAt_eq_var codedMap left right
+  simpa [hfCompositeAt, PA.Formula.hfFormulaAt] using heq
+
+theorem BProv_HFFin_hfCompositeAt_mem_of_representations
+    (P : SetOrdinalRepresentationProofs)
+    {G : List Form} {elem set : Nat}
+    (rawMap codedMap : Nat → Nat)
+    (helem : BProv HFFinAx_s G
+      (HF_setOrdinalRepAt (rawMap elem) (codedMap elem)))
+    (hset : BProv HFFinAx_s G
+      (HF_setOrdinalRepAt (rawMap set) (codedMap set))) :
+    BProv HFFinAx_s G
+      (fIff
+        (rename rawMap (fMem elem set))
+        (hfCompositeAt codedMap (fMem elem set))) := by
+  simpa [rename, hfCompositeAt_mem] using
+    P.mem_exact helem hset
+
+theorem BProv_HFFin_hfCompositeAt_eq_of_representations
+    (P : SetOrdinalRepresentationProofs)
+    {G : List Form} {left right : Nat}
+    (rawMap codedMap : Nat → Nat)
+    (hleft : BProv HFFinAx_s G
+      (HF_setOrdinalRepAt (rawMap left) (codedMap left)))
+    (hright : BProv HFFinAx_s G
+      (HF_setOrdinalRepAt (rawMap right) (codedMap right))) :
+    BProv HFFinAx_s G
+      (fIff
+        (rename rawMap (fEq left right))
+        (hfCompositeAt codedMap (fEq left right))) := by
+  have hforward : BProv HFFinAx_s G
+      (fImp
+        (fEq (rawMap left) (rawMap right))
+        (hfCompositeAt codedMap (fEq left right))) := by
+    apply PAInHF.BProv_impI
+    let C : List Form := fEq (rawMap left) (rawMap right) :: G
+    have hrawEq : BProv HFFinAx_s C
+        (fEq (rawMap left) (rawMap right)) :=
+      BProv_of_Prov (B := HFFinAx_s)
+        (Prov.P_ass C _ (by simp [C]))
+    have hleftC : BProv HFFinAx_s C
+        (HF_setOrdinalRepAt (rawMap left) (codedMap left)) :=
+      PAInHF.BProv_context_cons hleft
+    have hrightC : BProv HFFinAx_s C
+        (HF_setOrdinalRepAt (rawMap right) (codedMap right)) :=
+      PAInHF.BProv_context_cons hright
+    have hleftAtRight : BProv HFFinAx_s C
+        (HF_setOrdinalRepAt (rawMap right) (codedMap left)) :=
+      BProv_HF_setOrdinalRepAt_of_set_eq hrawEq hleftC
+    have hcodeEq : BProv HFFinAx_s C
+        (fEq (codedMap left) (codedMap right)) :=
+      P.code_functional hleftAtRight hrightC
+    exact BProv_hfCompositeAt_eq_of_eq
+      codedMap left right hcodeEq
+  have hreverse : BProv HFFinAx_s G
+      (fImp
+        (hfCompositeAt codedMap (fEq left right))
+        (fEq (rawMap left) (rawMap right))) := by
+    apply PAInHF.BProv_impI
+    let C : List Form := hfCompositeAt codedMap (fEq left right) :: G
+    have hcomposite : BProv HFFinAx_s C
+        (hfCompositeAt codedMap (fEq left right)) :=
+      BProv_of_Prov (B := HFFinAx_s)
+        (Prov.P_ass C _ (by simp [C]))
+    have hcodeEq : BProv HFFinAx_s C
+        (fEq (codedMap left) (codedMap right)) :=
+      BProv_eq_of_hfCompositeAt_eq
+        codedMap left right hcomposite
+    have hleftC : BProv HFFinAx_s C
+        (HF_setOrdinalRepAt (rawMap left) (codedMap left)) :=
+      PAInHF.BProv_context_cons hleft
+    have hrightC : BProv HFFinAx_s C
+        (HF_setOrdinalRepAt (rawMap right) (codedMap right)) :=
+      PAInHF.BProv_context_cons hright
+    have hleftAtRightCode : BProv HFFinAx_s C
+        (HF_setOrdinalRepAt (rawMap left) (codedMap right)) :=
+      BProv_HF_setOrdinalRepAt_of_code_eq hcodeEq hleftC
+    exact P.set_injective hleftAtRightCode hrightC
+  simpa [fIff, rename] using PAInHF.BProv_andI hforward hreverse
+
+/-! ### Set-formula equivalence calculus -/
+
+theorem BProv_fIff_refl
+    {B : Form → Prop} {G : List Form} (a : Form) :
+    BProv B G (fIff a a) := by
+  have haa : BProv B G (fImp a a) :=
+    PAInHF.BProv_impI
+      (BProv_of_Prov (B := B) (Prov.P_ass (a :: G) a (by simp)))
+  simpa [fIff] using PAInHF.BProv_andI haa haa
+
+theorem BProv_fIff_imp_congr
+    {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fIff a a'))
+    (hb : BProv B G (fIff b b')) :
+    BProv B G (fIff (fImp a b) (fImp a' b')) := by
+  have haa' : BProv B G (fImp a a') := by
+    simpa [fIff] using PAInHF.BProv_andE1 ha
+  have ha'a : BProv B G (fImp a' a) := by
+    simpa [fIff] using PAInHF.BProv_andE2 ha
+  have hbb' : BProv B G (fImp b b') := by
+    simpa [fIff] using PAInHF.BProv_andE1 hb
+  have hb'b : BProv B G (fImp b' b) := by
+    simpa [fIff] using PAInHF.BProv_andE2 hb
+  have hforward : BProv B G (fImp (fImp a b) (fImp a' b')) := by
+    apply PAInHF.BProv_impI
+    apply PAInHF.BProv_impI
+    let C : List Form := a' :: fImp a b :: G
+    have ha'C : BProv B C a' :=
+      BProv_of_Prov (B := B) (Prov.P_ass C a' (by simp [C]))
+    have haC : BProv B C a :=
+      BProv_mp B C a' a
+        (PAInHF.BProv_context_cons
+          (PAInHF.BProv_context_cons ha'a)) ha'C
+    have habC : BProv B C (fImp a b) :=
+      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
+    have hbC : BProv B C b := BProv_mp B C a b habC haC
+    exact BProv_mp B C b b'
+      (PAInHF.BProv_context_cons
+        (PAInHF.BProv_context_cons hbb')) hbC
+  have hreverse : BProv B G (fImp (fImp a' b') (fImp a b)) := by
+    apply PAInHF.BProv_impI
+    apply PAInHF.BProv_impI
+    let C : List Form := a :: fImp a' b' :: G
+    have haC : BProv B C a :=
+      BProv_of_Prov (B := B) (Prov.P_ass C a (by simp [C]))
+    have ha'C : BProv B C a' :=
+      BProv_mp B C a a'
+        (PAInHF.BProv_context_cons
+          (PAInHF.BProv_context_cons haa')) haC
+    have ha'b'C : BProv B C (fImp a' b') :=
+      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
+    have hb'C : BProv B C b' := BProv_mp B C a' b' ha'b'C ha'C
+    exact BProv_mp B C b' b
+      (PAInHF.BProv_context_cons
+        (PAInHF.BProv_context_cons hb'b)) hb'C
+  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+
+theorem BProv_fIff_and_congr
+    {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fIff a a'))
+    (hb : BProv B G (fIff b b')) :
+    BProv B G (fIff (fAnd a b) (fAnd a' b')) := by
+  have haa' : BProv B G (fImp a a') := by
+    simpa [fIff] using PAInHF.BProv_andE1 ha
+  have ha'a : BProv B G (fImp a' a) := by
+    simpa [fIff] using PAInHF.BProv_andE2 ha
+  have hbb' : BProv B G (fImp b b') := by
+    simpa [fIff] using PAInHF.BProv_andE1 hb
+  have hb'b : BProv B G (fImp b' b) := by
+    simpa [fIff] using PAInHF.BProv_andE2 hb
+  have hforward : BProv B G (fImp (fAnd a b) (fAnd a' b')) := by
+    apply PAInHF.BProv_impI
+    let C : List Form := fAnd a b :: G
+    have hp : BProv B C (fAnd a b) :=
+      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
+    have haC : BProv B C a := PAInHF.BProv_andE1 hp
+    have hbC : BProv B C b := PAInHF.BProv_andE2 hp
+    exact PAInHF.BProv_andI
+      (BProv_mp B C a a' (PAInHF.BProv_context_cons haa') haC)
+      (BProv_mp B C b b' (PAInHF.BProv_context_cons hbb') hbC)
+  have hreverse : BProv B G (fImp (fAnd a' b') (fAnd a b)) := by
+    apply PAInHF.BProv_impI
+    let C : List Form := fAnd a' b' :: G
+    have hp : BProv B C (fAnd a' b') :=
+      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
+    have ha'C : BProv B C a' := PAInHF.BProv_andE1 hp
+    have hb'C : BProv B C b' := PAInHF.BProv_andE2 hp
+    exact PAInHF.BProv_andI
+      (BProv_mp B C a' a (PAInHF.BProv_context_cons ha'a) ha'C)
+      (BProv_mp B C b' b (PAInHF.BProv_context_cons hb'b) hb'C)
+  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+
+theorem BProv_fIff_or_congr
+    {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fIff a a'))
+    (hb : BProv B G (fIff b b')) :
+    BProv B G (fIff (fOr a b) (fOr a' b')) := by
+  have haa' : BProv B G (fImp a a') := by
+    simpa [fIff] using PAInHF.BProv_andE1 ha
+  have ha'a : BProv B G (fImp a' a) := by
+    simpa [fIff] using PAInHF.BProv_andE2 ha
+  have hbb' : BProv B G (fImp b b') := by
+    simpa [fIff] using PAInHF.BProv_andE1 hb
+  have hb'b : BProv B G (fImp b' b) := by
+    simpa [fIff] using PAInHF.BProv_andE2 hb
+  have hforward : BProv B G (fImp (fOr a b) (fOr a' b')) := by
+    apply PAInHF.BProv_impI
+    let C : List Form := fOr a b :: G
+    have hor : BProv B C (fOr a b) :=
+      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
+    have hleft : BProv B (a :: C) (fOr a' b') := by
+      have haC : BProv B (a :: C) a :=
+        BProv_of_Prov (B := B) (Prov.P_ass (a :: C) a (by simp))
+      exact PAInHF.BProv_orI1
+        (BProv_mp B (a :: C) a a'
+          (PAInHF.BProv_context_cons
+            (PAInHF.BProv_context_cons haa')) haC)
+    have hright : BProv B (b :: C) (fOr a' b') := by
+      have hbC : BProv B (b :: C) b :=
+        BProv_of_Prov (B := B) (Prov.P_ass (b :: C) b (by simp))
+      exact PAInHF.BProv_orI2
+        (BProv_mp B (b :: C) b b'
+          (PAInHF.BProv_context_cons
+            (PAInHF.BProv_context_cons hbb')) hbC)
+    exact PAInHF.BProv_orE hor hleft hright
+  have hreverse : BProv B G (fImp (fOr a' b') (fOr a b)) := by
+    apply PAInHF.BProv_impI
+    let C : List Form := fOr a' b' :: G
+    have hor : BProv B C (fOr a' b') :=
+      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
+    have hleft : BProv B (a' :: C) (fOr a b) := by
+      have ha'C : BProv B (a' :: C) a' :=
+        BProv_of_Prov (B := B) (Prov.P_ass (a' :: C) a' (by simp))
+      exact PAInHF.BProv_orI1
+        (BProv_mp B (a' :: C) a' a
+          (PAInHF.BProv_context_cons
+            (PAInHF.BProv_context_cons ha'a)) ha'C)
+    have hright : BProv B (b' :: C) (fOr a b) := by
+      have hb'C : BProv B (b' :: C) b' :=
+        BProv_of_Prov (B := B) (Prov.P_ass (b' :: C) b' (by simp))
+      exact PAInHF.BProv_orI2
+        (BProv_mp B (b' :: C) b' b
+          (PAInHF.BProv_context_cons
+            (PAInHF.BProv_context_cons hb'b)) hb'C)
+    exact PAInHF.BProv_orE hor hleft hright
+  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+
+def HFQuantifierFree : Form → Prop
+  | fMem _ _ => True
+  | fEq _ _ => True
+  | fBot => True
+  | fImp a b => HFQuantifierFree a ∧ HFQuantifierFree b
+  | fAnd a b => HFQuantifierFree a ∧ HFQuantifierFree b
+  | fOr a b => HFQuantifierFree a ∧ HFQuantifierFree b
+  | fAll _ => False
+  | fEx _ => False
+
+theorem BProv_HFFin_hfCompositeAt_iff_of_quantifierFree
+    (P : SetOrdinalRepresentationProofs) :
+    ∀ (G : List Form) (phi : Form) (rawMap codedMap : Nat → Nat),
+      HFQuantifierFree phi →
+      (∀ n, Free n phi →
+        BProv HFFinAx_s G
+          (HF_setOrdinalRepAt (rawMap n) (codedMap n))) →
+      BProv HFFinAx_s G
+        (fIff (rename rawMap phi) (hfCompositeAt codedMap phi)) := by
+  intro G phi
+  induction phi with
+  | fMem elem set =>
+      intro rawMap codedMap hq hrep
+      exact BProv_HFFin_hfCompositeAt_mem_of_representations
+        P rawMap codedMap
+        (hrep elem (Or.inl rfl))
+        (hrep set (Or.inr rfl))
+  | fEq left right =>
+      intro rawMap codedMap hq hrep
+      exact BProv_HFFin_hfCompositeAt_eq_of_representations
+        P rawMap codedMap
+        (hrep left (Or.inl rfl))
+        (hrep right (Or.inr rfl))
+  | fBot =>
+      intro rawMap codedMap hq hrep
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        (BProv_fIff_refl (B := HFFinAx_s) (G := G) fBot)
+  | fImp a b iha ihb =>
+      intro rawMap codedMap hq hrep
+      have ha := iha rawMap codedMap hq.1
+        (fun n hn => hrep n (Or.inl hn))
+      have hb := ihb rawMap codedMap hq.2
+        (fun n hn => hrep n (Or.inr hn))
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        BProv_fIff_imp_congr ha hb
+  | fAnd a b iha ihb =>
+      intro rawMap codedMap hq hrep
+      have ha := iha rawMap codedMap hq.1
+        (fun n hn => hrep n (Or.inl hn))
+      have hb := ihb rawMap codedMap hq.2
+        (fun n hn => hrep n (Or.inr hn))
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        BProv_fIff_and_congr ha hb
+  | fOr a b iha ihb =>
+      intro rawMap codedMap hq hrep
+      have ha := iha rawMap codedMap hq.1
+        (fun n hn => hrep n (Or.inl hn))
+      have hb := ihb rawMap codedMap hq.2
+        (fun n hn => hrep n (Or.inr hn))
+      simpa [hfCompositeAt, PA.Formula.hfFormulaAt,
+        PAInHF.formulaAt, rename] using
+        BProv_fIff_or_congr ha hb
+  | fAll a ih =>
+      intro rawMap codedMap hq hrep
+      exact False.elim hq
+  | fEx a ih =>
+      intro rawMap codedMap hq hrep
+      exact False.elim hq
+
+
 end AckermannHF
 end SetTheory
