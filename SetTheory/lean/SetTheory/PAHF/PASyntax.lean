@@ -50576,6 +50576,127 @@ theorem BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
     simpa [C] using hhalfMem
   exact BProv_mp Ax_s C (hfMemAt 0 (lowHalf+1)) bot hnotLow hmem
 
+/-- Close an odd-high carry low side directly from the shifted binary-halving
+step for the low code.
+
+The assumed `S x ∈ low` membership descends across that step to
+`x ∈ lowHalf`; the negative half of the opened induction witness then gives
+the contradiction.  This avoids exposing or rebuilding either membership's
+beta-code witnesses. -/
+theorem
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_shifted_div2Step
+    {G : List Formula} {lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      (div2StepAt 1 (lowHalf+1) (lowBit+1))) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G)
+      bot := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemFormula ::
+      hfDistinguishesAt 0 (1+1) (lowHalf+1) :: G
+  have hsuccMem : BProv Ax_s C
+      (subst (instTerm (Term.succ (Term.var 0)))
+        (hfMemAt 0 (1+1))) := by
+    have hass : BProv Ax_s C
+        strictHighOddOpenedWitnessSuccLowMemFormula :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    simpa [strictHighOddOpenedWitnessSuccLowMemFormula,
+      strictHighOddSuccWitnessTerm] using hass
+  have hhalfMem : BProv Ax_s C (hfMemAt 0 (lowHalf+1)) :=
+    BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt
+      (G := C) (head := 1) (tailCode := lowHalf+1)
+      (headBit := lowBit+1)
+      (by simpa [C] using hlowStep)
+      hsuccMem
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_low_half_mem
+      (G := G) (lowHalf := lowHalf) hhalfMem
+
+/-- Even-low strict carry: the outer low-side halving witness supplies the
+shifted step needed by direct membership descent. -/
+theorem
+    BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_div2Step
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit)) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowDoubleOpenedIHContext highHalf lowHalf)
+      bot := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemFormula ::
+      strictHighOddLowDoubleOpenedIHContext highHalf lowHalf
+  have hren : BProv Ax_s (strictSuccContext.map (rename Nat.succ))
+      (rename Nat.succ (div2StepAt 0 lowHalf lowBit)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlowStep Nat.succ
+  have hodd := BProv_context_cons (B := Ax_s)
+    (a := rename Nat.succ (oddDoubleEqAt 1 highHalf)) hren
+  have hlow := BProv_context_cons (B := Ax_s)
+    (a := rename Nat.succ (doubleEqAt 0 lowHalf)) hodd
+  have hdist := BProv_context_cons (B := Ax_s)
+    (a := hfDistinguishesAt 0 (1+1) (lowHalf+1)) hlow
+  have hmem := BProv_context_cons (B := Ax_s)
+    (a := strictHighOddOpenedWitnessSuccLowMemFormula) hdist
+  have hshifted : BProv Ax_s C
+      (div2StepAt 1 (lowHalf+1) (lowBit+1)) := by
+    simpa [C, strictHighOddLowDoubleOpenedIHContext,
+      strictHighOddLowDoubleSuccCarryContext, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using hmem
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_shifted_div2Step
+      (G := (strictHighOddLowDoubleSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (by
+        simpa [C, strictHighOddLowDoubleOpenedIHContext] using hshifted)
+
+/-- Odd-low strict carry analogue of
+`BProv_Ax_s_strictHighOddLowDoubleOpenedWitnessSuccLowMem_bot_of_div2Step`. -/
+theorem
+    BProv_Ax_s_strictHighOddLowOddOpenedWitnessSuccLowMem_bot_of_div2Step
+    {highHalf lowHalf lowBit : Nat}
+    (hlowStep : BProv Ax_s strictSuccContext
+      (div2StepAt 0 lowHalf lowBit)) :
+    BProv Ax_s
+      (strictHighOddOpenedWitnessSuccLowMemFormula ::
+        strictHighOddLowOddOpenedIHContext highHalf lowHalf)
+      bot := by
+  let C : List Formula :=
+    strictHighOddOpenedWitnessSuccLowMemFormula ::
+      strictHighOddLowOddOpenedIHContext highHalf lowHalf
+  have hren : BProv Ax_s (strictSuccContext.map (rename Nat.succ))
+      (rename Nat.succ (div2StepAt 0 lowHalf lowBit)) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hlowStep Nat.succ
+  have hhigh := BProv_context_cons (B := Ax_s)
+    (a := rename Nat.succ (oddDoubleEqAt 1 highHalf)) hren
+  have hlow := BProv_context_cons (B := Ax_s)
+    (a := rename Nat.succ (oddDoubleEqAt 0 lowHalf)) hhigh
+  have hdist := BProv_context_cons (B := Ax_s)
+    (a := hfDistinguishesAt 0 (1+1) (lowHalf+1)) hlow
+  have hmem := BProv_context_cons (B := Ax_s)
+    (a := strictHighOddOpenedWitnessSuccLowMemFormula) hdist
+  have hshifted : BProv Ax_s C
+      (div2StepAt 1 (lowHalf+1) (lowBit+1)) := by
+    simpa [C, strictHighOddLowOddOpenedIHContext,
+      strictHighOddLowOddSuccCarryContext, div2StepAt, boolAt,
+      zeroAt, oneAt, eqConstAt, rename, Term.rename, SetTheory.up,
+      Term.rename_comp] using hmem
+  exact
+    BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_bot_of_shifted_div2Step
+      (G := (strictHighOddLowOddSuccCarryContext highHalf lowHalf).map
+        (rename Nat.succ))
+      (lowHalf := lowHalf) (lowBit := lowBit)
+      (by
+        simpa [C, strictHighOddLowOddOpenedIHContext] using hshifted)
+
 /-- Low-side closer where the remaining old low-half membership proof is
 allowed to work in the fully opened `S x ∈ low` code/step context.
 
