@@ -69,6 +69,7 @@ Zf.v
 Equivalence.v
 PAHF.v
 PAHFOrdinalCode.v
+PAHFTranslatedHFFin.v
 PAHFInterpretations.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
