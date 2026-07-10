@@ -66509,26 +66509,22 @@ structure TranslatedHFFinAxiomProofs extends TranslatedHFAxiomProofs where
       BProv Ax_s [] (translateHFFormula
         (SetTheory.sealF (AckermannHF.HF_finite_induction_form phi)))
 
-/-- Build the translated-HF proof-obligation record from translated adjoin,
-the sole remaining foundation-HF axiom.  Empty set, extensionality, and every
-set-induction instance are already closed PA theorems. -/
-def translatedHFAxiomProofs_of_remaining
-    (hadjoin :
-      BProv Ax_s [] (translateHFFormula
-        (SetTheory.sealF AckermannHF.HF_adjoin_form))) :
-    TranslatedHFAxiomProofs where
+/-- The complete collection of PA proofs of the translated foundation-HF
+axioms. -/
+def translatedHFAxiomProofs : TranslatedHFAxiomProofs where
   empty := BProv_Ax_s_translated_HF_empty
   extensionality := BProv_Ax_s_translated_HF_extensionality
-  adjoin := hadjoin
+  adjoin := BProv_Ax_s_translated_HF_adjoin
   induction := BProv_Ax_s_translated_HF_induction
 
-/-- Build the translated finite-HF proof-obligation record from translated
-adjoin and finite-generation induction.  The shared foundation-HF axioms,
-including set induction, are already closed PA theorems. -/
+/-- Compatibility name retained from the period when translated adjunction
+was the last remaining foundation-HF proof obligation. -/
+abbrev translatedHFAxiomProofs_of_remaining : TranslatedHFAxiomProofs :=
+  translatedHFAxiomProofs
+
+/-- Build the translated finite-HF proof-obligation record from its sole
+remaining axiom, finite-generation induction. -/
 def translatedHFFinAxiomProofs_of_remaining
-    (hadjoin :
-      BProv Ax_s [] (translateHFFormula
-        (SetTheory.sealF AckermannHF.HF_adjoin_form)))
     (hfinite_induction :
       ∀ phi : Form,
         BProv Ax_s [] (translateHFFormula
@@ -66536,7 +66532,7 @@ def translatedHFFinAxiomProofs_of_remaining
     TranslatedHFFinAxiomProofs where
   empty := BProv_Ax_s_translated_HF_empty
   extensionality := BProv_Ax_s_translated_HF_extensionality
-  adjoin := hadjoin
+  adjoin := BProv_Ax_s_translated_HF_adjoin
   induction := BProv_Ax_s_translated_HF_induction
   finite_induction := hfinite_induction
 
@@ -66563,23 +66559,23 @@ theorem BProv_Ax_s_of_translatedHFFinAx_of_proofs
       P.toTranslatedHFAxiomProofs (translatedHFAx_intro hgHF)
   · exact P.finite_induction psi
 
-/-- Direct translated-HF axiom dispatcher exposing only the adjoin proof that
-remains open. -/
-theorem BProv_Ax_s_of_translatedHFAx_of_remaining
-    (hadjoin :
-      BProv Ax_s [] (translateHFFormula
-        (SetTheory.sealF AckermannHF.HF_adjoin_form)))
+/-- Every translated foundation-HF axiom is a PA theorem. -/
+theorem BProv_Ax_s_of_translatedHFAx
     {phi : Formula} (hphi : translatedHFAx phi) :
     BProv Ax_s [] phi :=
   BProv_Ax_s_of_translatedHFAx_of_proofs
-    (translatedHFAxiomProofs_of_remaining hadjoin) hphi
+    translatedHFAxiomProofs hphi
 
-/-- Direct translated finite-HF axiom dispatcher exposing only adjoin and
-finite-generation induction. -/
+/-- Compatibility name for the now-unconditional translated-HF axiom
+dispatcher. -/
+theorem BProv_Ax_s_of_translatedHFAx_of_remaining
+    {phi : Formula} (hphi : translatedHFAx phi) :
+    BProv Ax_s [] phi :=
+  BProv_Ax_s_of_translatedHFAx hphi
+
+/-- Direct translated finite-HF axiom dispatcher exposing only the remaining
+finite-generation induction theorem. -/
 theorem BProv_Ax_s_of_translatedHFFinAx_of_remaining
-    (hadjoin :
-      BProv Ax_s [] (translateHFFormula
-        (SetTheory.sealF AckermannHF.HF_adjoin_form)))
     (hfinite_induction :
       ∀ psi : Form,
         BProv Ax_s [] (translateHFFormula
@@ -66588,7 +66584,7 @@ theorem BProv_Ax_s_of_translatedHFFinAx_of_remaining
     BProv Ax_s [] phi :=
   BProv_Ax_s_of_translatedHFFinAx_of_proofs
     (translatedHFFinAxiomProofs_of_remaining
-      hadjoin hfinite_induction) hphi
+      hfinite_induction) hphi
 
 end Formula
 

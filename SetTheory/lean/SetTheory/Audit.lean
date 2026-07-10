@@ -1875,10 +1875,12 @@ open SetTheory
 #check @PA.Formula.standard_sat_translatedHFFinAx
 #check @PA.Formula.TranslatedHFAxiomProofs
 #check @PA.Formula.TranslatedHFFinAxiomProofs
+#check PA.Formula.translatedHFAxiomProofs
 #check @PA.Formula.translatedHFAxiomProofs_of_remaining
 #check @PA.Formula.translatedHFFinAxiomProofs_of_remaining
 #check @PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs
 #check @PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs
+#check @PA.Formula.BProv_Ax_s_of_translatedHFAx
 #check @PA.Formula.BProv_Ax_s_of_translatedHFAx_of_remaining
 #check @PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_remaining
 #check @PA.Formula.Prov_hfFormulaAt_of_Prov
@@ -2413,12 +2415,14 @@ open SetTheory
 #check @AckermannHF.paIdentityInterpretationOfAxiomProofs
 #check @AckermannHF.translatedHFTheoryInPAInterpretationOfAxiomProofs
 #check @AckermannHF.translatedHFTheoryInPAInterpretationOfProofs
+#check AckermannHF.translatedHFTheoryInPAInterpretation
 #check @AckermannHF.translatedHFFinTheoryInPAInterpretationOfAxiomProofs
 #check @AckermannHF.translatedHFFinTheoryInPAInterpretationOfProofs
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFAxiomProofs
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFProofs
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFFinAxiomProofs
 #check @AckermannHF.hfInPAInterpretationOfTranslatedHFFinProofs
+#check AckermannHF.hfInPAInterpretation
 #check @AckermannHF.hfInPAInterpretationOfRemaining
 #check @AckermannHF.hfInPAInterpretationOfRemainingFin
 #check @AckermannHF.DeductiveBiInterpretationCertificate

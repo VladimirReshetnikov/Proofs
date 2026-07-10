@@ -8865,6 +8865,16 @@ def translatedHFTheoryInPAInterpretationOfProofs
     (fun _ hphi =>
       PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs P hphi)
 
+/-- Unconditional identity interpretation of the translated foundation-HF
+theory in PA. -/
+def translatedHFTheoryInPAInterpretation :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv :=
+  translatedHFTheoryInPAInterpretationOfProofs
+    PA.Formula.translatedHFAxiomProofs
+
 /-- Identity interpretation from translated finite-HF axioms into PA, once the
 caller supplies explicit PA proofs of those translated axioms. -/
 def translatedHFFinTheoryInPAInterpretationOfAxiomProofs
@@ -8912,6 +8922,15 @@ def hfInPAInterpretationOfTranslatedHFProofs
   hfInPAOfTranslatedHFTheoryInterpretation
     (translatedHFTheoryInPAInterpretationOfProofs P)
 
+/-- Unconditional reverse interpretation of foundation-style HF in PA. -/
+def hfInPAInterpretation :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAOfTranslatedHFTheoryInterpretation
+    translatedHFTheoryInPAInterpretation
+
 /-- Reverse interpretation of finite HF in PA from explicit PA proofs of every
 translated finite-HF axiom. -/
 def hfInPAInterpretationOfTranslatedHFFinAxiomProofs
@@ -8935,28 +8954,18 @@ def hfInPAInterpretationOfTranslatedHFFinProofs
   hfInPAOfTranslatedHFFinTheoryInterpretation
     (translatedHFFinTheoryInPAInterpretationOfProofs P)
 
-/-- Reverse foundation-HF interpretation constructor exposing only translated
-adjoin, the sole HF axiom not yet discharged in PA. -/
-def hfInPAInterpretationOfRemaining
-    (hadjoin :
-      PA.Formula.BProv PA.Formula.Ax_s []
-        (PA.Formula.translateHFFormula
-          (SetTheory.sealF HF_adjoin_form))) :
+/-- Compatibility name retained from the period when translated adjunction
+was the last foundation-HF proof obligation. -/
+abbrev hfInPAInterpretationOfRemaining :
     TheoryInterpretation Form PA.Formula
       Sentence PA.Formula.Sentence
       HFAx_s PA.Formula.Ax_s
       BProv PA.Formula.BProv :=
-  hfInPAInterpretationOfTranslatedHFProofs
-    (PA.Formula.translatedHFAxiomProofs_of_remaining
-      hadjoin)
+  hfInPAInterpretation
 
-/-- Reverse finite-HF interpretation constructor exposing only translated
-adjoin and finite-generation induction. -/
+/-- Reverse finite-HF interpretation constructor exposing only the remaining
+finite-generation induction theorem. -/
 def hfInPAInterpretationOfRemainingFin
-    (hadjoin :
-      PA.Formula.BProv PA.Formula.Ax_s []
-        (PA.Formula.translateHFFormula
-          (SetTheory.sealF HF_adjoin_form)))
     (hfinite_induction :
       ∀ phi : Form,
         PA.Formula.BProv PA.Formula.Ax_s []
@@ -8968,7 +8977,7 @@ def hfInPAInterpretationOfRemainingFin
       BProv PA.Formula.BProv :=
   hfInPAInterpretationOfTranslatedHFFinProofs
     (PA.Formula.translatedHFFinAxiomProofs_of_remaining
-      hadjoin hfinite_induction)
+      hfinite_induction)
 
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
