@@ -227,9 +227,12 @@ Check PA.Formula.BProv_Ax_s_betaPair_negative_bezout.
 Check PA.Formula.BProv_Ax_s_betaPair_positive_inverse.
 Check PA.Formula.BProv_Ax_s_betaPair_positive_inverse_of_gap_scale.
 Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_of_certificate.
+Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_one.
 Check PA.Formula.crtInverseExistsTermAtOpenedContext.
 Check PA.Formula.BProv_Ax_s_crtInverseExistsTermAt_elim_opened.
 Check PA.Formula.BProv_Ax_s_ltTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_leTermAt_elim_opened.
+Check PA.Formula.BProv_Ax_s_ltTermAt_of_succ_leTermAt.
 Check PA.Formula.BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms.
 Check PA.Formula.BProv_Ax_s_ltTermAt_zero_mul_succ_right.
 Check PA.Formula.BProv_Ax_s_positiveCommonMultipleThroughTermAt_zero.
@@ -239,6 +242,10 @@ Check PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened.
 Check PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_zero.
 Check PA.Formula.BProv_Ax_s_positiveCommonMultipleExistsTermAt_succ.
 Check PA.Formula.BProv_Ax_s_all_positiveCommonMultipleExistsTermAt.
+Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_betaPrefixDividesTermAt.
+Check PA.Formula.BProv_Ax_s_betaPrefixDividesTermAt_zero.
+Check PA.Formula.BProv_Ax_s_betaPrefixDividesTermAt_succ.
+Check PA.Formula.BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_zero.
 Check PA.Formula.BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple.
 Check PA.Formula.BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms.
 Check PA.Formula.BProv_Ax_s_dvdTermTermAt_elim_opened.

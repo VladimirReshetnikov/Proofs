@@ -21963,6 +21963,42 @@ Proof.
   exact (BProv_exI Ax_s G outerBody inverse hinverseBody).
 Qed.
 
+(* Lean: BProv_Ax_s_crtInverseExistsTermAt_one *)
+Lemma BProv_Ax_s_crtInverseExistsTermAt_one :
+  forall G (modulus : term),
+  BProv Ax_s G
+    (crtInverseExistsTermAt (Term.numeral 1) modulus).
+Proof.
+  intros G modulus.
+  assert (hleft : BProv Ax_s G
+      (pEq (tMul (Term.numeral 1) (Term.numeral 1))
+        (Term.numeral 1))).
+  { apply BProv_Ax_s_mul_one_term. }
+  assert (hzero : BProv Ax_s G
+      (pEq (tMul modulus tZero) tZero)).
+  {
+    apply BProv_weaken_nil.
+    apply BProv_Ax_s_mulZero_term.
+  }
+  assert (hsucc : BProv Ax_s G
+      (pEq (tSucc (tMul modulus tZero)) (Term.numeral 1))).
+  {
+    change (BProv Ax_s G
+      (pEq (tSucc (tMul modulus tZero)) (tSucc tZero))).
+    exact (BProv_eq_congr_succ Ax_s G _ _ hzero).
+  }
+  assert (hcert : BProv Ax_s G
+      (crtInverseTermAt (Term.numeral 1) modulus
+        (Term.numeral 1) tZero)).
+  {
+    unfold crtInverseTermAt.
+    exact (BProv_eqTrans Ax_s G _ _ _ hleft
+      (BProv_eqSym Ax_s G _ _ hsucc)).
+  }
+  exact (BProv_Ax_s_crtInverseExistsTermAt_of_certificate G
+    (Term.numeral 1) modulus (Term.numeral 1) tZero hcert).
+Qed.
+
 (* Lean: BProv_Ax_s_crtInverseExistsTermAt_elim_opened *)
 Lemma BProv_Ax_s_crtInverseExistsTermAt_elim_opened :
   forall G (product modulus : term) target,
@@ -22026,6 +22062,88 @@ Proof.
     (Term.rename S upper)).
   exact (BProv_exE_of_sentences Ax_s G body target
     sentence_ax_s hlt hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_leTermAt_elim_opened *)
+Lemma BProv_Ax_s_leTermAt_elim_opened :
+  forall G (lower upper : term) target,
+  BProv Ax_s
+    (pEq (tAdd (Term.rename S lower) (tVar 0))
+        (Term.rename S upper) :: map (rename S) G)
+    (rename S target) ->
+  BProv Ax_s G (leTermAt lower upper) ->
+  BProv Ax_s G target.
+Proof.
+  intros G lower upper target hbody hle.
+  set (body := pEq
+    (tAdd (Term.rename S lower) (tVar 0))
+    (Term.rename S upper)).
+  exact (BProv_exE_of_sentences Ax_s G body target
+    sentence_ax_s hle hbody).
+Qed.
+
+(* Lean: BProv_Ax_s_ltTermAt_of_succ_leTermAt *)
+Lemma BProv_Ax_s_ltTermAt_of_succ_leTermAt :
+  forall G (lower upper : term),
+  BProv Ax_s G (leTermAt (tSucc lower) upper) ->
+  BProv Ax_s G (ltTermAt lower upper).
+Proof.
+  intros G lower upper hle.
+  set (target := ltTermAt lower upper).
+  apply (BProv_Ax_s_leTermAt_elim_opened
+    G (tSucc lower) upper target).
+  - set (body := pEq
+      (tAdd (tSucc (Term.rename S lower)) (tVar 0))
+      (Term.rename S upper)).
+    set (D := body :: map (rename S) G).
+    set (lower1 := Term.rename S lower).
+    set (upper1 := Term.rename S upper).
+    assert (hopened : BProv Ax_s D
+        (pEq (tAdd (tSucc lower1) (tVar 0)) upper1)).
+    {
+      apply BProv_ass.
+      unfold D, body, lower1, upper1.
+      simpl. left. reflexivity.
+    }
+    assert (hsuccAdd : BProv Ax_s D
+        (pEq (tAdd (tSucc lower1) (tVar 0))
+          (tSucc (tAdd lower1 (tVar 0))))).
+    { apply BProv_Ax_s_succ_add_terms. }
+    assert (haddSucc : BProv Ax_s D
+        (pEq (tAdd lower1 (tSucc (tVar 0)))
+          (tSucc (tAdd lower1 (tVar 0))))).
+    {
+      apply BProv_weaken_nil.
+      apply BProv_Ax_s_addSucc_terms.
+    }
+    assert (hstrictEq : BProv Ax_s D
+        (pEq (tAdd lower1 (tSucc (tVar 0))) upper1)).
+    {
+      exact (BProv_eqTrans Ax_s D _ _ _ haddSucc
+        (BProv_eqTrans Ax_s D _ _ _
+          (BProv_eqSym Ax_s D _ _ hsuccAdd) hopened)).
+    }
+    assert (hsubst : BProv Ax_s D
+        (subst (instTerm (tVar 0))
+          (pEq
+            (tAdd (Term.rename S lower1) (tSucc (tVar 0)))
+            (Term.rename S upper1)))).
+    {
+      simpl.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      exact hstrictEq.
+    }
+    pose proof (BProv_exI Ax_s D
+      (pEq (tAdd (Term.rename S lower1) (tSucc (tVar 0)))
+        (Term.rename S upper1)) (tVar 0) hsubst) as hstrict.
+    replace (rename S target) with (ltTermAt lower1 upper1).
+    + exact hstrict.
+    + unfold target, lower1, upper1, ltTermAt.
+      simpl.
+      repeat rewrite Term.rename_comp.
+      repeat rewrite term_rename_up_succ_rename_succ.
+      reflexivity.
+  - exact hle.
 Qed.
 
 (* Lean: BProv_Ax_s_ltTermAt_gapPred_of_eq_add_succ_terms *)
@@ -22365,6 +22483,233 @@ Proof.
   unfold phi.
   exact (BProv_Ax_s_induction_rule G
     (positiveCommonMultipleExistsTermAt (tVar 0)) hzero hsuccAll).
+Qed.
+
+(* Lean: BProv_Ax_s_dvdTermTermAt_of_betaPrefixDividesTermAt *)
+Lemma BProv_Ax_s_dvdTermTermAt_of_betaPrefixDividesTermAt :
+  forall G (step bound product idx : term),
+  BProv Ax_s G (betaPrefixDividesTermAt step bound product) ->
+  BProv Ax_s G (ltTermAt idx bound) ->
+  BProv Ax_s G
+    (dvdTermTermAt (betaModTermTerm step idx) product).
+Proof.
+  intros G step bound product idx hprefix hlt.
+  set (body := pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (dvdTermTermAt
+      (betaModTermTerm (Term.rename S step) (tVar 0))
+      (Term.rename S product))).
+  assert (hall : BProv Ax_s G (pAll body)).
+  {
+    unfold body, betaPrefixDividesTermAt in *.
+    exact hprefix.
+  }
+  pose proof (BProv_allE Ax_s G body idx hall) as himpRaw.
+  assert (himp : BProv Ax_s G
+      (pImp (ltTermAt idx bound)
+        (dvdTermTermAt (betaModTermTerm step idx) product))).
+  {
+    replace
+      (pImp (ltTermAt idx bound)
+        (dvdTermTermAt (betaModTermTerm step idx) product))
+      with (subst (instTerm idx) body).
+    - exact himpRaw.
+    - unfold body, ltTermAt, dvdTermTermAt, betaModTermTerm.
+      simpl.
+      repeat rewrite Term.subst_rename_succ_up.
+      repeat rewrite term_subst_instTerm_rename_succ.
+      repeat rewrite term_subst_instTerm_rename_two_succ.
+      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
+      reflexivity.
+  }
+  exact (BProv_mp Ax_s G _ _ himp hlt).
+Qed.
+
+(* Lean: BProv_Ax_s_betaPrefixDividesTermAt_zero *)
+Lemma BProv_Ax_s_betaPrefixDividesTermAt_zero :
+  forall G (step product : term),
+  BProv Ax_s G (betaPrefixDividesTermAt step tZero product).
+Proof.
+  intros G step product.
+  set (antecedent := ltTermAt (tVar 0) tZero).
+  set (consequent := dvdTermTermAt
+    (betaModTermTerm (Term.rename S step) (tVar 0))
+    (Term.rename S product)).
+  set (body := pImp antecedent consequent).
+  assert (hbody : BProv Ax_s
+      (antecedent :: map (rename S) G) consequent).
+  {
+    set (C := antecedent :: map (rename S) G).
+    assert (hlt : BProv Ax_s C (ltTermAt (tVar 0) tZero)).
+    {
+      apply BProv_ass.
+      unfold C, antecedent.
+      simpl. left. reflexivity.
+    }
+    assert (hle : BProv Ax_s C (leTermAt tZero (tVar 0))).
+    { apply BProv_Ax_s_leTermAt_zero_left. }
+    pose proof (BProv_Ax_s_ltTermAt_leTermAt_bot C
+      (tVar 0) tZero hlt hle) as hbot.
+    exact (BProv_botE Ax_s C consequent hbot).
+  }
+  pose proof (BProv_impI Ax_s (map (rename S) G)
+    antecedent consequent hbody) as himp.
+  pose proof (BProv_allI_of_sentences Ax_s G body
+    sentence_ax_s himp) as hall.
+  unfold betaPrefixDividesTermAt, body, antecedent, consequent in hall |- *.
+  simpl in hall |- *.
+  exact hall.
+Qed.
+
+(* Lean: BProv_Ax_s_betaPrefixDividesTermAt_succ *)
+Lemma BProv_Ax_s_betaPrefixDividesTermAt_succ :
+  forall G (step bound product : term),
+  BProv Ax_s G (betaPrefixDividesTermAt step bound product) ->
+  BProv Ax_s G
+    (betaPrefixDividesTermAt step (tSucc bound)
+      (tMul product (betaModTermTerm step bound))).
+Proof.
+  intros G step bound product hprefix.
+  set (endpoint := betaModTermTerm step bound).
+  set (newProduct := tMul product endpoint).
+  set (antecedent :=
+    ltTermAt (tVar 0) (tSucc (Term.rename S bound))).
+  set (consequent := dvdTermTermAt
+    (betaModTermTerm (Term.rename S step) (tVar 0))
+    (Term.rename S newProduct)).
+  set (body := pImp antecedent consequent).
+  assert (hbody : BProv Ax_s
+      (antecedent :: map (rename S) G) consequent).
+  {
+    set (C := antecedent :: map (rename S) G).
+    set (step1 := Term.rename S step).
+    set (bound1 := Term.rename S bound).
+    set (product1 := Term.rename S product).
+    set (endpoint1 := betaModTermTerm step1 bound1).
+    assert (hltSucc : BProv Ax_s C
+        (ltTermAt (tVar 0) (tSucc bound1))).
+    {
+      apply BProv_ass.
+      unfold C, antecedent, bound1.
+      simpl. left. reflexivity.
+    }
+    pose proof (BProv_Ax_s_ltTermAt_succ_right_cases
+      C (tVar 0) bound1 hltSucc) as hcases.
+    assert (hprefixRen : BProv Ax_s (map (rename S) G)
+        (betaPrefixDividesTermAt step1 bound1 product1)).
+    {
+      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
+        (betaPrefixDividesTermAt step bound product) hprefix S) as hren.
+      replace (betaPrefixDividesTermAt step1 bound1 product1)
+        with (rename S (betaPrefixDividesTermAt step bound product)).
+      - exact hren.
+      - unfold betaPrefixDividesTermAt, step1, bound1, product1,
+          betaModTermTerm, dvdTermTermAt, ltTermAt.
+        simpl.
+        repeat rewrite Term.rename_comp.
+        repeat rewrite term_rename_up_succ_rename_succ.
+        reflexivity.
+    }
+    assert (hltBranch : BProv Ax_s
+        (ltTermAt (tVar 0) bound1 :: C) consequent).
+    {
+      set (D := ltTermAt (tVar 0) bound1 :: C).
+      assert (hlt : BProv Ax_s D (ltTermAt (tVar 0) bound1)).
+      {
+        apply BProv_ass.
+        unfold D. simpl. left. reflexivity.
+      }
+      assert (hprefixD : BProv Ax_s D
+          (betaPrefixDividesTermAt step1 bound1 product1)).
+      {
+        apply BProv_context_cons.
+        apply BProv_context_cons.
+        exact hprefixRen.
+      }
+      pose proof
+        (BProv_Ax_s_dvdTermTermAt_of_betaPrefixDividesTermAt
+          D step1 bound1 product1 (tVar 0) hprefixD hlt) as hdvd.
+      pose proof (BProv_Ax_s_dvdTermTermAt_mul_right D
+        (betaModTermTerm step1 (tVar 0)) product1 endpoint1 hdvd)
+        as hmul.
+      replace consequent with
+        (dvdTermTermAt (betaModTermTerm step1 (tVar 0))
+          (tMul product1 endpoint1)).
+      - exact hmul.
+      - unfold consequent, newProduct, endpoint,
+          step1, bound1, product1, endpoint1, betaModTermTerm.
+        simpl. reflexivity.
+    }
+    assert (heqBranch : BProv Ax_s
+        (pEq (tVar 0) bound1 :: C) consequent).
+    {
+      set (D := pEq (tVar 0) bound1 :: C).
+      assert (heq : BProv Ax_s D (pEq (tVar 0) bound1)).
+      {
+        apply BProv_ass.
+        unfold D. simpl. left. reflexivity.
+      }
+      assert (hidxSucc : BProv Ax_s D
+          (pEq (tSucc (tVar 0)) (tSucc bound1))).
+      { exact (BProv_eq_congr_succ Ax_s D _ _ heq). }
+      assert (hmulIdx : BProv Ax_s D
+          (pEq (tMul (tSucc (tVar 0)) step1)
+            (tMul (tSucc bound1) step1))).
+      { exact (BProv_eq_congr_mul_left Ax_s D _ _ step1 hidxSucc). }
+      assert (hmodEq : BProv Ax_s D
+          (pEq (betaModTermTerm step1 (tVar 0)) endpoint1)).
+      {
+        unfold betaModTermTerm, endpoint1.
+        exact (BProv_eq_congr_succ Ax_s D _ _ hmulIdx).
+      }
+      assert (hfactor : BProv Ax_s D
+          (dvdTermTermAt endpoint1 (tMul product1 endpoint1))).
+      {
+        apply BProv_Ax_s_dvdTermTermAt_of_eq_mul_terms
+          with (quotient := product1).
+        apply BProv_Ax_s_mul_comm_terms.
+      }
+      pose proof (BProv_Ax_s_dvdTermTermAt_of_eq_divisor D
+        endpoint1 (betaModTermTerm step1 (tVar 0))
+        (tMul product1 endpoint1)
+        (BProv_eqSym Ax_s D _ _ hmodEq) hfactor) as hdvd.
+      replace consequent with
+        (dvdTermTermAt (betaModTermTerm step1 (tVar 0))
+          (tMul product1 endpoint1)).
+      - exact hdvd.
+      - unfold consequent, newProduct, endpoint,
+          step1, bound1, product1, endpoint1, betaModTermTerm.
+        simpl. reflexivity.
+    }
+    exact (BProv_orE Ax_s C
+      (ltTermAt (tVar 0) bound1) (pEq (tVar 0) bound1)
+      consequent hcases hltBranch heqBranch).
+  }
+  pose proof (BProv_impI Ax_s (map (rename S) G)
+    antecedent consequent hbody) as himp.
+  pose proof (BProv_allI_of_sentences Ax_s G body
+    sentence_ax_s himp) as hall.
+  unfold betaPrefixDividesTermAt, body, antecedent, consequent,
+    newProduct, endpoint in hall |- *.
+  simpl in hall |- *.
+  repeat rewrite Term.rename_comp in hall |- *.
+  exact hall.
+Qed.
+
+(* Lean: BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_zero *)
+Lemma BProv_Ax_s_betaPrefixCRTAccumulatorTermAt_zero :
+  forall G (step target : term),
+  BProv Ax_s G
+    (betaPrefixCRTAccumulatorTermAt
+      step target tZero (Term.numeral 1)).
+Proof.
+  intros G step target.
+  pose proof (BProv_Ax_s_betaPrefixDividesTermAt_zero
+    G step (Term.numeral 1)) as hprefix.
+  pose proof (BProv_Ax_s_crtInverseExistsTermAt_one G
+    (betaModTermTerm step target)) as hinverse.
+  unfold betaPrefixCRTAccumulatorTermAt.
+  exact (BProv_andI Ax_s G _ _ hprefix hinverse).
 Qed.
 
 (* Lean: BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple *)
