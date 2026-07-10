@@ -81,6 +81,7 @@ PAHFInterpretations.v
 PAHFTermGraphModel.v
 PAHFTermGraphTotal.v
 PAHFTermGraphFunctional.v
+PAHFTranslatedOperations.v
 PAHFRawSemantics.v
 PAHFRawSemanticsGraph.v
 PAHFProofTranslationSemantic.v
@@ -91,7 +92,9 @@ PAHFHFRepresentationFinite.v
 PAHFDeductiveAssembly.v
 PAHFRoundTripArithmetic.v
 PAHFRoundTripEquality.v
+PAHFOrdinalCodeTermCompatibility.v
 PAHFRoundTripQuantifiers.v
+PAHFOrdinalCodeRange.v
 PAHFHFRoundTripSemantic.v
 PAHFHFRepresentationRange.v
 PAHFCompositeMemBelow.v
