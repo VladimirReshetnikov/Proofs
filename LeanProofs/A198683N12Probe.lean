@@ -8,8 +8,8 @@ set_option maxRecDepth 50000
 This module checks the finite n = 12 partition retained in the local A198683
 research corpus:
 
-* `src/Lean/Oeis/A198683/data/a198683-n12-candidates.tsv`
-* `src/Lean/Oeis/A198683/data/a198683-n12-equivalence-classes.txt`
+* `Oeis/A198683/data/a198683-n12-candidates.tsv`
+* `Oeis/A198683/data/a198683-n12-equivalence-classes.txt`
 
 The TSV's strict value-space partition has 2925 classes. The equivalence-class
 report then applies the documented multi-precision probe refinement: strict

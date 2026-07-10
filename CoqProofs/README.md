@@ -4,13 +4,13 @@
 - Initial source HEAD: f3be2772be5658f305f509b584b0cb99d97cbe7a
 
 This directory contains Rocq/Coq ports of proof modules from the root
-`src/Lean/LeanProofs/` Lean workspace.  The ports are intentionally
+`LeanProofs/` Lean workspace.  The ports are intentionally
 Coq-idiomatic rather than line-by-line translations: each module preserves the
 mathematical certificate surface where practical, but uses Coq standard-library
 definitions, tactics, and proof organization.
 
 The SetTheory project already has its own Coq development in
-`src/Lean/SetTheory/`; it is not duplicated here.
+`SetTheory/`; it is not duplicated here.
 
 Current ports:
 
@@ -183,7 +183,7 @@ Current ports:
   and `wolfram_six_operations_is_minimal_for_single_equational_axioms` with
   statements matching the Lean originals.
 
-Build from `src/Lean/`:
+Build from the repository root:
 
 ```powershell
 coqc -Q CoqProofs LeanProofsCoq CoqProofs/Sheffer.v

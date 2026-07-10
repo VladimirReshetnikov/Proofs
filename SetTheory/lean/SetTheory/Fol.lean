@@ -5,7 +5,7 @@
   relation symbol (rendered fMem) and equality (fEq), with De Bruijn
   variables.  Nothing in this file mentions any particular theory.
 
-  Lean 4 port of the Rocq/Coq development `src/Lean/SetTheory/Fol.v`.
+  Lean 4 port of the Rocq/Coq development `SetTheory/Fol.v`.
   Statement-for-statement faithful; proofs re-idiomatized for Lean.
 
   - Created (UTC): 2026-07-01T00:00:00Z  (see git history for exact stamp)

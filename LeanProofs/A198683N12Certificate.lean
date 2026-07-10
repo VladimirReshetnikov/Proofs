@@ -30,7 +30,7 @@ and proves the complete decision tree relating them to `a198683 12`:
 `i^i^…^i` (`n` copies, principal powers throughout).  At `n = 12` the shared
 recurrence produces `5139` candidate values, and every historical disagreement
 (`2919`–`2927`) is a deduplication disagreement about those candidates
-(see `src/Lean/Oeis/A198683/reports/wave-3/a198683-post-wave2-synthesis.md`).
+(see `Oeis/A198683/reports/wave-3/a198683-post-wave2-synthesis.md`).
 The probe-refined partition of the retained table has `2926` classes
 (`LeanProofs.A198683N12Probe` certifies the table bookkeeping), and its
 residual uncertainty is *structural*, concentrated in exactly two places:

@@ -42,18 +42,18 @@ Lean 4.31.0 via elan/lake; **no external dependencies** (no Mathlib, no
 Batteries — Lean core only) for the standalone SetTheory workspace:
 
 ```sh
-cd src/Lean/SetTheory/lean
+cd SetTheory/lean
 lake build                            # builds every mathlib-free module
 lake env lean SetTheory/Audit.lean    # re-runs the assumption audit
 ```
 
 The mathlib-backed modules `SetTheory/BusyBeaverBB2.lean` and
 `SetTheory/BusyBeaverMathlib.lean`, together with their audit
-`SetTheory/AuditMathlib.lean`, are built from the root `src/Lean` workspace,
+`SetTheory/AuditMathlib.lean`, are built from the repository-root workspace,
 which is pinned to mathlib `v4.31.0`:
 
 ```sh
-cd src/Lean
+cd "$(git rev-parse --show-toplevel)"
 lake exe cache get Mathlib.Computability.TuringMachine.ToPartrec
 lake build +SetTheory.BusyBeaverBB2
 lake build +SetTheory.BusyBeaverMathlib

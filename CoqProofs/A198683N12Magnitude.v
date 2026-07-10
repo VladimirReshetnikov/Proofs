@@ -7,7 +7,7 @@
   rows, candidate 57 is the unique row marked by each overflow/magnitude flag.
   The three flag lists below are literal transcriptions of the corresponding
   Lean lists (themselves transcribed from three columns of
-  src/Lean/Oeis/A198683/data/a198683-n12-candidates.tsv); each *_eq_oneHot
+  Oeis/A198683/data/a198683-n12-candidates.tsv); each *_eq_oneHot
   theorem then certifies by vm_compute that the transcribed data is one-hot at
   index 57, and the pointwise facts follow from the generated one-hot lists.
 *)

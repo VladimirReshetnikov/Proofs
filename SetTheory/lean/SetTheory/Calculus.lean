@@ -16,7 +16,7 @@
    - SOUNDNESS: `Prov G a → ∀ e, (e ⊨ G) → Sat e a` over any
      structure (V, mem).
 
-  Lean 4 port of the Rocq/Coq development `src/Lean/SetTheory/Calculus.v`.
+  Lean 4 port of the Rocq/Coq development `SetTheory/Calculus.v`.
 -/
 import SetTheory.Fol
 

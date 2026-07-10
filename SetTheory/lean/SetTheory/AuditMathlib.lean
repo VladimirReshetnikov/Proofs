@@ -4,12 +4,11 @@
   (dependency-free) SetTheory workspace deliberately excludes.
 
   Like `BusyBeaverMathlib.lean` itself, this file is NOT imported by the
-  workspace root `SetTheory.lean`; it is built from the root `src/Lean`
-  Lake workspace (which exposes these sources as the `SetTheory` library
+  workspace root `SetTheory.lean`; it is built from the repository-root Lake
+  workspace (which exposes these sources as the `SetTheory` library
   pinned to mathlib v4.31.0):
 
-      cd src/Lean
-      lake build SetTheory.AuditMathlib
+      lake build SetTheory.AuditMathlib  # from the repository root
 
   Expected: only Lean's standard classical axioms
   (`propext`, `Classical.choice`, `Quot.sound`) — no `sorry`, no `axiom`.

@@ -3,7 +3,7 @@
   LeanProofs/A198683Schoenfield.lean.
 
   The normalized labels below are generated from
-  src/Lean/Oeis/A198683/sources/schoenfield-a198683.txt.  For each
+  Oeis/A198683/sources/schoenfield-a198683.txt.  For each
   table row, a Count entry introduces the next class label and a Match
   entry reuses the label of the referenced earlier row.
 *)

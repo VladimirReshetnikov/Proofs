@@ -15,7 +15,7 @@ it does not certify A198683(12). The n=12 deduplication is numerical
 working precision (`mp.mp.dps`); reruns above the original precision window
 change the n=12 count (stabilising around 2924 between --dps 2000 and 8000,
 still below the Wolfram 2926). Use the root-cause reports under
-src/Lean/Oeis/A198683/reports/ before treating this script's output as evidence.
+Oeis/A198683/reports/ before treating this script's output as evidence.
 
 Key engineering points:
 

@@ -102,7 +102,7 @@ foundational/computability work, each present in both proof assistants
   (`totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler`) — hence any
   busy-beaver score function eventually dominates every `Computable` function
   (`sigma_eventually_dominates_every_totalRecursiveMathlib`).  It is built from
-  the root `src/Lean` Lake workspace (together with its audit
+  the repository-root Lake workspace (together with its audit
   [`lean/SetTheory/AuditMathlib.lean`](lean/SetTheory/AuditMathlib.lean)) because
   the standalone SetTheory Lean project deliberately remains dependency-free.
   The Coq counterpart [`BusyBeaverMathlib.v`](BusyBeaverMathlib.v) has no mathlib,

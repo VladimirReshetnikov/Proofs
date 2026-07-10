@@ -3,9 +3,9 @@
 This directory is a vendored copy of the `BB2/` proof from
 <https://github.com/ccz181078/Coq-BB5>, upstream commit
 `9142e219229baf2245d3f70851947230ea28a318`, used as a Coq-side certificate
-for the two-state busy-beaver time bound in Smithereens.
+for the two-state busy-beaver time bound in Proofs.
 
-Local Smithereens change: `BB2_TNF_Enumeration.v` replaces upstream's
+Repository-local change: `BB2_TNF_Enumeration.v` replaces upstream's
 `native_compute`/`native_cast_no_check` cache equation with `vm_compute` and a
 kernel-checked `reflexivity` proof.  The MIT license is included in
 `LICENSE`.

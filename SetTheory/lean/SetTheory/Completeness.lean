@@ -18,7 +18,7 @@
      sentences — the abstract engine for proving any two
      axiomatizations deductively equivalent.
 
-  Lean 4 port of the Rocq/Coq development `src/Lean/SetTheory/Completeness.v`.
+  Lean 4 port of the Rocq/Coq development `SetTheory/Completeness.v`.
 -/
 import SetTheory.Calculus
 

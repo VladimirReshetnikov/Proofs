@@ -3,7 +3,7 @@
   LeanProofs/A198683SchoenfieldRows.lean.
 
   The Count/Match rows below are generated from
-  src/Lean/Oeis/A198683/sources/schoenfield-a198683.txt.  None
+  Oeis/A198683/sources/schoenfield-a198683.txt.  None
   represents a Count entry introducing a new class; Some j represents
   a Match entry pointing to the earlier 1-based row j.
 *)

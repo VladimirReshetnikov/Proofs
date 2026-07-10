@@ -3,7 +3,7 @@
   LeanProofs/A198683N12Probe.lean.
 
   The n = 12 strict labels below are generated from the
-  strict_class column of src/Lean/Oeis/A198683/data/a198683-n12-candidates.tsv.
+  strict_class column of Oeis/A198683/data/a198683-n12-candidates.tsv.
   The class-count certificate uses one representative row for each normalized
   class label, plus a range check that excludes any extra labels.
 *)

@@ -4,7 +4,7 @@
    certificate-generation aid.  The Lean proofs consume the resulting finite
    tables and prove their equalities/inequalities independently.
 
-   Run from src/Lean with:
+   Run from the repository root with:
 
      wolfram -script Oeis/A158415/computations/wolfram/generate-a158415-data.wl 11 summary
      wolfram -script Oeis/A158415/computations/wolfram/generate-a158415-data.wl 11 table

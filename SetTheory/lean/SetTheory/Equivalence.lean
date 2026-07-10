@@ -21,7 +21,7 @@
    - the syntactic equivalence, both directions:
          ZF_implies_T, T_implies_ZF, and the headline T_iff_ZF.
 
-  Lean 4 port of the Rocq/Coq development `src/Lean/SetTheory/Equivalence.v`.
+  Lean 4 port of the Rocq/Coq development `SetTheory/Equivalence.v`.
 -/
 import SetTheory.Completeness
 import SetTheory.Zf

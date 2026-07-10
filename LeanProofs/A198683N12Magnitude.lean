@@ -10,7 +10,7 @@ set_option maxRecDepth 50000
 # N = 12 overflow-magnitude data certificate for OEIS A198683
 
 This module checks finite metadata derived from the retained TSV
-`src/Lean/Oeis/A198683/data/a198683-n12-candidates.tsv`.
+`Oeis/A198683/data/a198683-n12-candidates.tsv`.
 
 It does not certify the complex values themselves. Instead, it records two
 cheap, TSV-level facts about candidate `57`, the sole tentative overflow
@@ -21,7 +21,7 @@ singleton in the local probe-refined partition:
   has scientific exponent greater than `10000` (indeed, greater than `10`).
 
 Those facts support the certification plan in
-`src/Lean/Oeis/A198683/reports/wave-3/a198683-n12-overflow-magnitude-note.md`: the
+`Oeis/A198683/reports/wave-3/a198683-n12-overflow-magnitude-note.md`: the
 overflow singleton should be attacked by certified log-modulus bounds before
 attempting astronomical argument reduction.
 -/
