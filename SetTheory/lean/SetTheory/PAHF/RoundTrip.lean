@@ -777,6 +777,303 @@ theorem BProv_ordinalCodeGraphTermAt_of_body
   simpa [ordinalCodeGraphTermAt,
     ordinalCodeGraphBodyTermAt] using hgraph
 
+/-- The explicit beta trace witnessing the Ackermann ordinal code of zero. -/
+theorem BProv_Ax_s_ordinalCodeGraphTermAt_zero
+    {G : List Formula} :
+    BProv Ax_s G
+      (ordinalCodeGraphTermAt Term.zero Term.zero) := by
+  have hstepZero : BProv Ax_s G (eq Term.zero Term.zero) :=
+    BProv_eqRefl (B := Ax_s) (G := G) Term.zero
+  have hentry : BProv Ax_s G
+      (betaTermTermAt Term.zero Term.zero Term.zero Term.zero) :=
+    BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero hstepZero
+  have hsteps : BProv Ax_s G
+      (ordinalCodeStepsTermAt Term.zero Term.zero Term.zero) :=
+    BProv_Ax_s_ordinalCodeStepsTermAt_zero Term.zero Term.zero
+  exact BProv_ordinalCodeGraphTermAt_of_body
+    (BProv_andI hentry (BProv_andI hentry hsteps))
+
+/-- Base case in precisely the existential shape used by graph totality. -/
+theorem BProv_Ax_s_ordinalCodeGraphTermAt_zero_exists
+    {G : List Formula} :
+    BProv Ax_s G
+      (ex (ordinalCodeGraphTermAt
+        (Term.rename Nat.succ Term.zero) (Term.var 0))) := by
+  apply BProv_exI (t := Term.zero)
+  simpa [subst_ordinalCodeGraphTermAt, instTerm, Term.subst,
+    Term.rename] using
+    (BProv_Ax_s_ordinalCodeGraphTermAt_zero (G := G))
+
+/-! ### Equivalence calculus for the structural round trip -/
+
+theorem BProv_iffForm_refl
+    {B : Formula → Prop} {G : List Formula} (a : Formula) :
+    BProv B G (iffForm a a) := by
+  have haa : BProv B G (imp a a) :=
+    BProv_impI (BProv_ass (B := B) (G := a :: G) (by simp))
+  simpa [iffForm] using BProv_andI haa haa
+
+theorem BProv_iffForm_symm
+    {B : Formula → Prop} {G : List Formula} {a b : Formula}
+    (h : BProv B G (iffForm a b)) :
+    BProv B G (iffForm b a) := by
+  have hab : BProv B G (imp a b) := by
+    simpa [iffForm] using BProv_andE1 h
+  have hba : BProv B G (imp b a) := by
+    simpa [iffForm] using BProv_andE2 h
+  simpa [iffForm] using BProv_andI hba hab
+
+theorem BProv_iffForm_trans
+    {B : Formula → Prop} {G : List Formula} {a b c : Formula}
+    (hab : BProv B G (iffForm a b))
+    (hbc : BProv B G (iffForm b c)) :
+    BProv B G (iffForm a c) := by
+  have habForward : BProv B G (imp a b) := by
+    simpa [iffForm] using BProv_andE1 hab
+  have habReverse : BProv B G (imp b a) := by
+    simpa [iffForm] using BProv_andE2 hab
+  have hbcForward : BProv B G (imp b c) := by
+    simpa [iffForm] using BProv_andE1 hbc
+  have hbcReverse : BProv B G (imp c b) := by
+    simpa [iffForm] using BProv_andE2 hbc
+  have hac : BProv B G (imp a c) := by
+    apply BProv_impI
+    have ha : BProv B (a :: G) a :=
+      BProv_ass (B := B) (G := a :: G) (by simp)
+    have hb : BProv B (a :: G) b :=
+      BProv_mp B (a :: G) a b
+        (BProv_context_cons habForward) ha
+    exact BProv_mp B (a :: G) b c
+      (BProv_context_cons hbcForward) hb
+  have hca : BProv B G (imp c a) := by
+    apply BProv_impI
+    have hc : BProv B (c :: G) c :=
+      BProv_ass (B := B) (G := c :: G) (by simp)
+    have hb : BProv B (c :: G) b :=
+      BProv_mp B (c :: G) c b
+        (BProv_context_cons hbcReverse) hc
+    exact BProv_mp B (c :: G) b a
+      (BProv_context_cons habReverse) hb
+  simpa [iffForm] using BProv_andI hac hca
+
+theorem BProv_iffForm_imp_congr
+    {B : Formula → Prop} {G : List Formula}
+    {a a' b b' : Formula}
+    (ha : BProv B G (iffForm a a'))
+    (hb : BProv B G (iffForm b b')) :
+    BProv B G (iffForm (imp a b) (imp a' b')) := by
+  have haa' : BProv B G (imp a a') := by
+    simpa [iffForm] using BProv_andE1 ha
+  have ha'a : BProv B G (imp a' a) := by
+    simpa [iffForm] using BProv_andE2 ha
+  have hbb' : BProv B G (imp b b') := by
+    simpa [iffForm] using BProv_andE1 hb
+  have hb'b : BProv B G (imp b' b) := by
+    simpa [iffForm] using BProv_andE2 hb
+  have hforward : BProv B G (imp (imp a b) (imp a' b')) := by
+    apply BProv_impI
+    apply BProv_impI
+    let C : List Formula := a' :: imp a b :: G
+    have ha'C : BProv B C a' :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have haC : BProv B C a :=
+      BProv_mp B C a' a
+        (BProv_context_cons (BProv_context_cons ha'a)) ha'C
+    have habC : BProv B C (imp a b) :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have hbC : BProv B C b := BProv_mp B C a b habC haC
+    exact BProv_mp B C b b'
+      (BProv_context_cons (BProv_context_cons hbb')) hbC
+  have hreverse : BProv B G (imp (imp a' b') (imp a b)) := by
+    apply BProv_impI
+    apply BProv_impI
+    let C : List Formula := a :: imp a' b' :: G
+    have haC : BProv B C a :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have ha'C : BProv B C a' :=
+      BProv_mp B C a a'
+        (BProv_context_cons (BProv_context_cons haa')) haC
+    have ha'b'C : BProv B C (imp a' b') :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have hb'C : BProv B C b' := BProv_mp B C a' b' ha'b'C ha'C
+    exact BProv_mp B C b' b
+      (BProv_context_cons (BProv_context_cons hb'b)) hb'C
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+theorem BProv_iffForm_and_congr
+    {B : Formula → Prop} {G : List Formula}
+    {a a' b b' : Formula}
+    (ha : BProv B G (iffForm a a'))
+    (hb : BProv B G (iffForm b b')) :
+    BProv B G (iffForm (and a b) (and a' b')) := by
+  have haa' : BProv B G (imp a a') := by
+    simpa [iffForm] using BProv_andE1 ha
+  have ha'a : BProv B G (imp a' a) := by
+    simpa [iffForm] using BProv_andE2 ha
+  have hbb' : BProv B G (imp b b') := by
+    simpa [iffForm] using BProv_andE1 hb
+  have hb'b : BProv B G (imp b' b) := by
+    simpa [iffForm] using BProv_andE2 hb
+  have hforward : BProv B G (imp (and a b) (and a' b')) := by
+    apply BProv_impI
+    let C : List Formula := and a b :: G
+    have hp : BProv B C (and a b) :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have haC : BProv B C a := BProv_andE1 hp
+    have hbC : BProv B C b := BProv_andE2 hp
+    have ha'C : BProv B C a' :=
+      BProv_mp B C a a' (BProv_context_cons haa') haC
+    have hb'C : BProv B C b' :=
+      BProv_mp B C b b' (BProv_context_cons hbb') hbC
+    exact BProv_andI ha'C hb'C
+  have hreverse : BProv B G (imp (and a' b') (and a b)) := by
+    apply BProv_impI
+    let C : List Formula := and a' b' :: G
+    have hp : BProv B C (and a' b') :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have ha'C : BProv B C a' := BProv_andE1 hp
+    have hb'C : BProv B C b' := BProv_andE2 hp
+    have haC : BProv B C a :=
+      BProv_mp B C a' a (BProv_context_cons ha'a) ha'C
+    have hbC : BProv B C b :=
+      BProv_mp B C b' b (BProv_context_cons hb'b) hb'C
+    exact BProv_andI haC hbC
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+theorem BProv_iffForm_or_congr
+    {B : Formula → Prop} {G : List Formula}
+    {a a' b b' : Formula}
+    (ha : BProv B G (iffForm a a'))
+    (hb : BProv B G (iffForm b b')) :
+    BProv B G (iffForm (or a b) (or a' b')) := by
+  have haa' : BProv B G (imp a a') := by
+    simpa [iffForm] using BProv_andE1 ha
+  have ha'a : BProv B G (imp a' a) := by
+    simpa [iffForm] using BProv_andE2 ha
+  have hbb' : BProv B G (imp b b') := by
+    simpa [iffForm] using BProv_andE1 hb
+  have hb'b : BProv B G (imp b' b) := by
+    simpa [iffForm] using BProv_andE2 hb
+  have hforward : BProv B G (imp (or a b) (or a' b')) := by
+    apply BProv_impI
+    let C : List Formula := or a b :: G
+    have hor : BProv B C (or a b) :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have hleft : BProv B (a :: C) (or a' b') := by
+      have haC : BProv B (a :: C) a :=
+        BProv_ass (B := B) (G := a :: C) (by simp)
+      exact BProv_orI1
+        (BProv_mp B (a :: C) a a'
+          (BProv_context_cons
+            (BProv_context_cons haa')) haC)
+    have hright : BProv B (b :: C) (or a' b') := by
+      have hbC : BProv B (b :: C) b :=
+        BProv_ass (B := B) (G := b :: C) (by simp)
+      exact BProv_orI2
+        (BProv_mp B (b :: C) b b'
+          (BProv_context_cons
+            (BProv_context_cons hbb')) hbC)
+    exact BProv_orE hor hleft hright
+  have hreverse : BProv B G (imp (or a' b') (or a b)) := by
+    apply BProv_impI
+    let C : List Formula := or a' b' :: G
+    have hor : BProv B C (or a' b') :=
+      BProv_ass (B := B) (G := C) (by simp [C])
+    have hleft : BProv B (a' :: C) (or a b) := by
+      have ha'C : BProv B (a' :: C) a' :=
+        BProv_ass (B := B) (G := a' :: C) (by simp)
+      exact BProv_orI1
+        (BProv_mp B (a' :: C) a' a
+          (BProv_context_cons
+            (BProv_context_cons ha'a)) ha'C)
+    have hright : BProv B (b' :: C) (or a b) := by
+      have hb'C : BProv B (b' :: C) b' :=
+        BProv_ass (B := B) (G := b' :: C) (by simp)
+      exact BProv_orI2
+        (BProv_mp B (b' :: C) b' b
+          (BProv_context_cons
+            (BProv_context_cons hb'b)) hb'C)
+    exact BProv_orE hor hleft hright
+  simpa [iffForm] using BProv_andI hforward hreverse
+
+/-- The fragment of PA formulas whose syntax contains no quantifier. -/
+def QuantifierFree : Formula → Prop
+  | eq _ _ => True
+  | bot => True
+  | imp a b => QuantifierFree a ∧ QuantifierFree b
+  | and a b => QuantifierFree a ∧ QuantifierFree b
+  | or a b => QuantifierFree a ∧ QuantifierFree b
+  | all _ => False
+  | ex _ => False
+
+/-- Once equality atoms are related through the ordinal-code graph, the
+entire quantifier-free fragment follows by structural proof composition. -/
+theorem BProv_Ax_s_paCompositeAt_iff_of_quantifierFree
+    (equality_exact :
+      ∀ (G : List Formula) (left right : Term)
+          (rawMap codedMap : Nat → Nat),
+        (∀ n, Free n (eq left right) →
+          BProv Ax_s G
+            (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
+        BProv Ax_s G
+          (iffForm
+            (rename rawMap (eq left right))
+            (paCompositeAt codedMap (eq left right)))) :
+    ∀ (phi : Formula), QuantifierFree phi →
+      ∀ (G : List Formula) (rawMap codedMap : Nat → Nat),
+        (∀ n, Free n phi →
+          BProv Ax_s G
+            (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
+        BProv Ax_s G
+          (iffForm (rename rawMap phi) (paCompositeAt codedMap phi)) := by
+  intro phi hqf
+  induction phi with
+  | eq left right =>
+      intro G rawMap codedMap hcode
+      exact equality_exact G left right rawMap codedMap hcode
+  | bot =>
+      intro G rawMap codedMap hcode
+      simpa [rename, paCompositeAt,
+        AckermannHF.PAInHF.formulaAt, hfFormulaAt] using
+        (BProv_iffForm_refl (B := Ax_s) (G := G) bot)
+  | imp a b iha ihb =>
+      intro G rawMap codedMap hcode
+      have hqa : QuantifierFree a := hqf.1
+      have hqb : QuantifierFree b := hqf.2
+      have ha := iha hqa G rawMap codedMap
+        (fun n hn ↦ hcode n (Or.inl hn))
+      have hb := ihb hqb G rawMap codedMap
+        (fun n hn ↦ hcode n (Or.inr hn))
+      simpa [rename, paCompositeAt,
+        AckermannHF.PAInHF.formulaAt, hfFormulaAt] using
+        BProv_iffForm_imp_congr ha hb
+  | and a b iha ihb =>
+      intro G rawMap codedMap hcode
+      have hqa : QuantifierFree a := hqf.1
+      have hqb : QuantifierFree b := hqf.2
+      have ha := iha hqa G rawMap codedMap
+        (fun n hn ↦ hcode n (Or.inl hn))
+      have hb := ihb hqb G rawMap codedMap
+        (fun n hn ↦ hcode n (Or.inr hn))
+      simpa [rename, paCompositeAt,
+        AckermannHF.PAInHF.formulaAt, hfFormulaAt] using
+        BProv_iffForm_and_congr ha hb
+  | or a b iha ihb =>
+      intro G rawMap codedMap hcode
+      have hqa : QuantifierFree a := hqf.1
+      have hqb : QuantifierFree b := hqf.2
+      have ha := iha hqa G rawMap codedMap
+        (fun n hn ↦ hcode n (Or.inl hn))
+      have hb := ihb hqb G rawMap codedMap
+        (fun n hn ↦ hcode n (Or.inr hn))
+      simpa [rename, paCompositeAt,
+        AckermannHF.PAInHF.formulaAt, hfFormulaAt] using
+        BProv_iffForm_or_congr ha hb
+  | all a ih =>
+      exact False.elim hqf
+  | ex a ih =>
+      exact False.elim hqf
+
 
 end Formula
 end PA

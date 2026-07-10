@@ -2512,6 +2512,16 @@ open SetTheory
 #check @PA.Formula.subst_instTerm_ordinalCodeGraphBody_inner
 #check @PA.Formula.subst_instTerm_ordinalCodeGraphBody_outer
 #check @PA.Formula.BProv_ordinalCodeGraphTermAt_of_body
+#check @PA.Formula.BProv_Ax_s_ordinalCodeGraphTermAt_zero
+#check @PA.Formula.BProv_Ax_s_ordinalCodeGraphTermAt_zero_exists
+#check @PA.Formula.BProv_iffForm_refl
+#check @PA.Formula.BProv_iffForm_symm
+#check @PA.Formula.BProv_iffForm_trans
+#check @PA.Formula.BProv_iffForm_imp_congr
+#check @PA.Formula.BProv_iffForm_and_congr
+#check @PA.Formula.BProv_iffForm_or_congr
+#check @PA.Formula.QuantifierFree
+#check @PA.Formula.BProv_Ax_s_paCompositeAt_iff_of_quantifierFree
 #check @AckermannHF.PAHFFinDeductiveBiInterpretationCertificate_of_codeStructuralProofs
 #check @AckermannHF.StandardModelInterpretationCertificateFor
 #check @AckermannHF.StandardModelInterpretationCertificate
