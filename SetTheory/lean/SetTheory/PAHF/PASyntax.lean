@@ -47331,6 +47331,581 @@ theorem BProv_Ax_s_translated_HF_extensionality :
   BProv_Ax_s_translated_HF_extensionality_of_all_hfLtDistinguishesThroughAt
     BProv_Ax_s_all_hfLtDistinguishesThroughAt
 
+/-- Every Ackermann member of `set` has a strictly smaller numeric code. -/
+def hfMembersBelowAt (set : Nat) : Formula :=
+  all (imp (hfMemAt 0 (set+1)) (ltAt 0 (set+1)))
+
+/-- Term-parametric set-code variant of `hfMembersBelowAt`. -/
+def hfMembersBelowTermAt (setCode : Term) : Formula :=
+  all
+    (imp
+      (hfMemTermAt 0 (Term.rename Nat.succ setCode))
+      (ltTermAt (Term.var 0) (Term.rename Nat.succ setCode)))
+
+/-- Cumulative strong-induction invariant for membership boundedness. -/
+def hfMembersBelowThroughTermAt (boundCode : Term) : Formula :=
+  all
+    (imp
+      (ltTermAt (Term.var 0)
+        (Term.succ (Term.rename Nat.succ boundCode)))
+      (hfMembersBelowAt 0))
+
+/-- Slot specialization of the cumulative invariant. -/
+def hfMembersBelowThroughAt (bound : Nat) : Formula :=
+  hfMembersBelowThroughTermAt (Term.var bound)
+
+theorem hfMembersBelowTermAt_var (set : Nat) :
+    hfMembersBelowTermAt (Term.var set) =
+      hfMembersBelowAt set := by
+  simp [hfMembersBelowTermAt, hfMembersBelowAt,
+    hfMemTermAt_var, ltTermAt_var, Term.rename]
+
+theorem rename_hfMembersBelowTermAt_succ (setCode : Term) :
+    rename Nat.succ (hfMembersBelowTermAt setCode) =
+      hfMembersBelowTermAt (Term.rename Nat.succ setCode) := by
+  simp [hfMembersBelowTermAt, hfMemTermAt,
+    betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, betaAt, remAt, ltAt, leAt, div2StepAt,
+    boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    rename, Term.rename, SetTheory.up, Term.rename_comp]
+
+theorem rename_hfMembersBelowThroughTermAt_succ
+    (boundCode : Term) :
+    rename Nat.succ (hfMembersBelowThroughTermAt boundCode) =
+      hfMembersBelowThroughTermAt
+        (Term.rename Nat.succ boundCode) := by
+  simp [hfMembersBelowThroughTermAt,
+    hfMembersBelowAt, hfMemAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    ltTermAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, rename, Term.rename, SetTheory.up, Term.rename_comp]
+
+theorem subst_instTerm_var_hfMembersBelowAt_body
+    (elem set : Nat) :
+    subst (instTerm (Term.var elem))
+      (imp (hfMemAt 0 (set+1)) (ltAt 0 (set+1))) =
+      imp (hfMemAt elem set) (ltAt elem set) := by
+  simp [subst_instTerm_var_hfMemAt_zero_succ,
+    ltAt, subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+
+theorem subst_instTerm_var_hfMembersBelowAt_zero (set : Nat) :
+    subst (instTerm (Term.var set)) (hfMembersBelowAt 0) =
+      hfMembersBelowAt set := by
+  simp [hfMembersBelowAt, hfMemAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename]
+
+/-- Transport the element slot of membership to an arbitrary proved term. -/
+theorem BProv_hfMemAt_of_elem_eq_term
+    {B : Formula → Prop} {G : List Formula} {elem set : Nat}
+    {elemTerm : Term}
+    (hmem : BProv B G (hfMemAt elem set))
+    (helem : BProv B G (eq (Term.var elem) elemTerm)) :
+    BProv B G
+      (subst (instTerm elemTerm) (hfMemAt 0 (set+1))) := by
+  have hmemSubst : BProv B G
+      (subst (instTerm (Term.var elem)) (hfMemAt 0 (set+1))) := by
+    simpa [subst_instTerm_var_hfMemAt_zero_succ] using hmem
+  exact BProv_eqElim (B := B) (G := G)
+    (s := Term.var elem) (t := elemTerm)
+    (a := hfMemAt 0 (set+1)) helem hmemSubst
+
+/-- Project one boundedness instance from the cumulative invariant. -/
+theorem BProv_Ax_s_hfMembersBelowAt_of_throughTermAt
+    {G : List Formula} {boundCode : Term} {set : Nat}
+    (hthrough : BProv Ax_s G
+      (hfMembersBelowThroughTermAt boundCode))
+    (hle : BProv Ax_s G
+      (leTermAt (Term.var set) boundCode)) :
+    BProv Ax_s G (hfMembersBelowAt set) := by
+  have hlt : BProv Ax_s G
+      (ltTermAt (Term.var set) (Term.succ boundCode)) :=
+    BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hle
+  have himpRaw := BProv_allE
+    (B := Ax_s) (G := G) (t := Term.var set) hthrough
+  have hbound :
+      Term.subst (Term.upSubst (instTerm (Term.var set)))
+          (Term.rename Nat.succ (Term.rename Nat.succ boundCode)) =
+        Term.rename Nat.succ boundCode := by
+    have hrename :
+        Term.rename Nat.succ (Term.rename Nat.succ boundCode) =
+          Term.rename (fun n : Nat => n + 1 + 1) boundCode := by
+      simpa using (Term.rename_comp boundCode Nat.succ Nat.succ)
+    rw [hrename]
+    exact term_subst_upSubst_instTerm_rename_two_succ
+      boundCode (Term.var set)
+  have himp : BProv Ax_s G
+      (imp (ltTermAt (Term.var set) (Term.succ boundCode))
+        (hfMembersBelowAt set)) := by
+    simpa [hfMembersBelowThroughTermAt,
+      subst_instTerm_var_hfMembersBelowAt_zero,
+      ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename, term_subst_instTerm_rename_succ, hbound]
+      using himpRaw
+  exact BProv_mp Ax_s G _ _ himp hlt
+
+theorem subst_instTerm_hfMembersBelowTermAt_var_zero
+    (setCode : Term) :
+    subst (instTerm setCode)
+      (hfMembersBelowTermAt (Term.var 0)) =
+      hfMembersBelowTermAt setCode := by
+  simp [hfMembersBelowTermAt, hfMemTermAt,
+    betaTermAtConstIdx, betaTermAt, remTermAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, betaAt, remAt, ltAt, leAt, ltTermAt,
+    div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.rename_comp]
+
+/-- Transport the term-parametric boundedness predicate across set-code
+equality. -/
+theorem BProv_hfMembersBelowTermAt_of_set_eq_term
+    {B : Formula → Prop} {G : List Formula} {oldCode newCode : Term}
+    (hold : BProv B G (hfMembersBelowTermAt oldCode))
+    (heq : BProv B G (eq oldCode newCode)) :
+    BProv B G (hfMembersBelowTermAt newCode) := by
+  have holdSubst : BProv B G
+      (subst (instTerm oldCode)
+        (hfMembersBelowTermAt (Term.var 0))) := by
+    simpa [subst_instTerm_hfMembersBelowTermAt_var_zero] using hold
+  have hnewSubst := BProv_eqElim (B := B) (G := G)
+    (s := oldCode) (t := newCode)
+    (a := hfMembersBelowTermAt (Term.var 0)) heq holdSubst
+  simpa [subst_instTerm_hfMembersBelowTermAt_var_zero]
+    using hnewSubst
+
+/-- Extend the cumulative membership-bound invariant by one code. -/
+theorem BProv_Ax_s_hfMembersBelowThroughTermAt_succ
+    {G : List Formula} {boundCode : Term}
+    (hthrough : BProv Ax_s G
+      (hfMembersBelowThroughTermAt boundCode))
+    (hnew : BProv Ax_s G
+      (hfMembersBelowTermAt (Term.succ boundCode))) :
+    BProv Ax_s G
+      (hfMembersBelowThroughTermAt
+        (Term.succ boundCode)) := by
+  let bound1 : Term := Term.rename Nat.succ boundCode
+  let oldLimit : Term := Term.succ bound1
+  let newLimit : Term := Term.succ oldLimit
+  let antecedent : Formula := ltTermAt (Term.var 0) newLimit
+  let target : Formula := hfMembersBelowAt 0
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) target := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    have hltNew : BProv Ax_s C
+        (ltTermAt (Term.var 0) (Term.succ oldLimit)) := by
+      simpa [C, antecedent, newLimit, oldLimit] using
+        (BProv_ass (B := Ax_s) (G := C) (phi := antecedent)
+          (by simp [C]))
+    have hcases : BProv Ax_s C
+        (or (ltTermAt (Term.var 0) oldLimit)
+          (eq (Term.var 0) oldLimit)) :=
+      BProv_Ax_s_ltTermAt_succ_right_cases hltNew
+    have hthroughRen : BProv Ax_s (G.map (rename Nat.succ))
+        (hfMembersBelowThroughTermAt bound1) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hthrough Nat.succ
+      simpa [bound1,
+        rename_hfMembersBelowThroughTermAt_succ] using hren
+    have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+        (hfMembersBelowTermAt oldLimit) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hnew Nat.succ
+      simpa [bound1, oldLimit,
+        rename_hfMembersBelowTermAt_succ, Term.rename] using hren
+    have hstrict : BProv Ax_s
+        (ltTermAt (Term.var 0) oldLimit :: C) target := by
+      let D : List Formula := ltTermAt (Term.var 0) oldLimit :: C
+      have hlt : BProv Ax_s D
+          (ltTermAt (Term.var 0) (Term.succ bound1)) := by
+        simpa [D, oldLimit] using
+          (BProv_ass (B := Ax_s) (G := D)
+            (phi := ltTermAt (Term.var 0) oldLimit) (by simp [D]))
+      have hle : BProv Ax_s D
+          (leTermAt (Term.var 0) bound1) :=
+        BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
+      have hthroughD : BProv Ax_s D
+          (hfMembersBelowThroughTermAt bound1) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hthroughRen)
+      exact BProv_Ax_s_hfMembersBelowAt_of_throughTermAt
+        hthroughD hle
+    have hequal : BProv Ax_s
+        (eq (Term.var 0) oldLimit :: C) target := by
+      let D : List Formula := eq (Term.var 0) oldLimit :: C
+      have heq : BProv Ax_s D (eq oldLimit (Term.var 0)) :=
+        BProv_eqSym
+          (BProv_ass (B := Ax_s) (G := D) (by simp [D]))
+      have hnewD : BProv Ax_s D
+          (hfMembersBelowTermAt oldLimit) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hnewRen)
+      have htransport : BProv Ax_s D
+          (hfMembersBelowTermAt (Term.var 0)) :=
+        BProv_hfMembersBelowTermAt_of_set_eq_term hnewD heq
+      simpa [D, target, hfMembersBelowTermAt_var]
+        using htransport
+    exact BProv_orE hcases hstrict hequal
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp antecedent target) := by
+    simpa using BProv_impI hbody
+  have hall : BProv Ax_s G (all (imp antecedent target)) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [hfMembersBelowThroughTermAt, antecedent, target,
+    newLimit, oldLimit, bound1, Term.rename] using hall
+
+/-- A slot proved to be zero has no members, hence vacuously bounds every
+member. -/
+theorem BProv_Ax_s_hfMembersBelowAt_of_eqConst_zero
+    {G : List Formula} {set : Nat}
+    (hzero : BProv Ax_s G (eqConstAt set 0)) :
+    BProv Ax_s G (hfMembersBelowAt set) := by
+  have hzeroRen : BProv Ax_s (G.map (rename Nat.succ))
+      (eqConstAt (set+1) 0) := by
+    have hren := BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      hzero Nat.succ
+    simpa [eqConstAt, rename, Term.rename] using hren
+  let memHyp : Formula := hfMemAt 0 (set+1)
+  have hbody : BProv Ax_s (memHyp :: G.map (rename Nat.succ))
+      (ltAt 0 (set+1)) := by
+    let C : List Formula := memHyp :: G.map (rename Nat.succ)
+    have hmem : BProv Ax_s C (hfMemAt 0 (set+1)) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, memHyp])
+    have hzeroC : BProv Ax_s C (eqConstAt (set+1) 0) :=
+      BProv_context_cons (B := Ax_s) (a := memHyp) hzeroRen
+    exact BProv_botE
+      (BProv_Ax_s_hfMemAt_bot_of_eqConst_zero hzeroC hmem)
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp (hfMemAt 0 (set+1)) (ltAt 0 (set+1))) := by
+    simpa [memHyp] using BProv_impI hbody
+  simpa [hfMembersBelowAt] using
+    (BProv_allI_of_sentences
+      (B := Ax_s) (G := G)
+      (fun f hf => sentence_ax_s (f := f) hf) himp)
+
+/-- Base case of the cumulative membership-bound invariant. -/
+theorem BProv_Ax_s_hfMembersBelowThroughTermAt_zero :
+    BProv Ax_s []
+      (hfMembersBelowThroughTermAt Term.zero) := by
+  let belowOne : Formula :=
+    ltTermAt (Term.var 0) (Term.succ Term.zero)
+  have hlt : BProv Ax_s [belowOne] belowOne :=
+    BProv_ass (B := Ax_s) (G := [belowOne]) (by simp)
+  have hleTerm : BProv Ax_s [belowOne]
+      (leTermAt (Term.var 0) Term.zero) :=
+    BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
+  have hle : BProv Ax_s [belowOne] (leConstAt 0 0) := by
+    simpa [belowOne, leConstAt, leTermAt, Term.numeral,
+      Term.rename] using hleTerm
+  have hzero : BProv Ax_s [belowOne] (eqConstAt 0 0) :=
+    BProv_Ax_s_eqConstAt_zero_of_leConstAt_zero hle
+  have hprop : BProv Ax_s [belowOne]
+      (hfMembersBelowAt 0) :=
+    BProv_Ax_s_hfMembersBelowAt_of_eqConst_zero hzero
+  have himp : BProv Ax_s []
+      (imp (ltTermAt (Term.var 0) (Term.succ Term.zero))
+        (hfMembersBelowAt 0)) := by
+    simpa [belowOne] using BProv_impI hprop
+  simpa [hfMembersBelowThroughTermAt, Term.rename] using
+    (BProv_allI_of_sentences
+      (B := Ax_s) (G := [])
+      (fun f hf => sentence_ax_s (f := f) hf)
+      (by simpa using himp))
+
+/-- Apply a one-code membership-bound invariant to a concrete member slot. -/
+theorem BProv_ltAt_of_hfMembersBelowAt
+    {B : Formula → Prop} {G : List Formula} {elem set : Nat}
+    (hall : BProv B G (hfMembersBelowAt set))
+    (hmem : BProv B G (hfMemAt elem set)) :
+    BProv B G (ltAt elem set) := by
+  have himpRaw := BProv_allE
+    (B := B) (G := G) (t := Term.var elem) hall
+  have himp : BProv B G
+      (imp (hfMemAt elem set) (ltAt elem set)) := by
+    simpa [hfMembersBelowAt,
+      subst_instTerm_var_hfMembersBelowAt_body] using himpRaw
+  exact BProv_mp B G _ _ himp hmem
+
+/-- The genuinely new successor-code fact for cumulative membership
+boundedness. -/
+theorem BProv_Ax_s_hfMembersBelowTermAt_succ_of_through_zero :
+    BProv Ax_s [hfMembersBelowThroughAt 0]
+      (hfMembersBelowTermAt (Term.succ (Term.var 0))) := by
+  let through : Formula := hfMembersBelowThroughAt 0
+  let G : List Formula := [through]
+  let highCode : Term := Term.succ (Term.var 1)
+  let memHyp : Formula := hfMemTermAt 0 highCode
+  let target : Formula := ltTermAt (Term.var 0) highCode
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp memHyp target) := by
+    let C : List Formula := memHyp :: G.map (rename Nat.succ)
+    let highEqBody : Formula :=
+      eq (Term.var 0) (Term.rename Nat.succ highCode)
+    have hhighEqEx : BProv Ax_s C (ex highEqBody) := by
+      have hinst : BProv Ax_s C
+          (subst (instTerm highCode) highEqBody) := by
+        simpa [highEqBody, subst, instTerm, Term.subst,
+          Term.upSubst, term_subst_instTerm_rename_succ] using
+          (BProv_eqRefl (B := Ax_s) (G := C) highCode)
+      exact BProv_exI (B := Ax_s) (G := C) hinst
+    have htarget : BProv Ax_s C target := by
+      refine BProv_exE_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        (G := C) (a := highEqBody) (c := target) hhighEqEx ?_
+      let H : List Formula := highEqBody :: C.map (rename Nat.succ)
+      let targetH : Formula := rename Nat.succ target
+      have htargetH : BProv Ax_s H targetH := by
+        refine BProv_Ax_s_of_div2TotalAt_opened_step
+          (G := H) (value := 0) (target := targetH)
+          (BProv_Ax_s_div2TotalAt 0) ?_
+        let J : List Formula := div2TotalOpenedStepContext H 0
+        let targetJ : Formula := rename Nat.succ (rename Nat.succ targetH)
+        have hcases : BProv Ax_s J (zeroOrSuccPredAt 3) :=
+          BProv_Ax_s_zeroOrSuccPredAt (G := J) 3
+        have hzeroBranch : BProv Ax_s (zeroAt 3 :: J) targetJ := by
+          let Z : List Formula := zeroAt 3 :: J
+          have hzero : BProv Ax_s Z
+              (eq (Term.var 3) Term.zero) := by
+            have hz : BProv Ax_s Z (zeroAt 3) :=
+              BProv_ass (B := Ax_s) (G := Z) (by simp [Z])
+            simpa [zeroAt, eqConstAt, Term.numeral] using hz
+          have hzeroLe : BProv Ax_s Z
+              (leTermAt Term.zero (Term.var 4)) :=
+            BProv_Ax_s_leTermAt_zero_left (Term.var 4)
+          have hzeroLt : BProv Ax_s Z
+              (ltTermAt Term.zero (Term.succ (Term.var 4))) :=
+            BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hzeroLe
+          have hlt : BProv Ax_s Z
+              (ltTermAt (Term.var 3) (Term.succ (Term.var 4))) :=
+            BProv_ltTermAt_of_eq_left (BProv_eqSym hzero) hzeroLt
+          simpa [Z, J, H, C, G, targetJ, targetH, target,
+            highCode, div2TotalOpenedStepContext,
+            ltTermAt, rename, Term.rename, SetTheory.up,
+            Term.rename_comp] using hlt
+        have hsuccBranch : BProv Ax_s (succPredAt 3 :: J) targetJ := by
+          let S : List Formula := succPredAt 3 :: J
+          let predBody : Formula :=
+            eq (Term.var 4) (Term.succ (Term.var 0))
+          have hsucc : BProv Ax_s S (succPredAt 3) :=
+            BProv_ass (B := Ax_s) (G := S) (by simp [S])
+          refine BProv_exE_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            (G := S) (a := predBody) (c := targetJ) hsucc ?_
+          let P : List Formula := predBody :: S.map (rename Nat.succ)
+          have hstep : BProv Ax_s P (div2StepAt 3 2 1) := by
+            apply BProv_ass (B := Ax_s) (G := P)
+            simp [P, S, J, div2TotalOpenedStepContext,
+              div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+              rename, Term.rename, SetTheory.up, List.map_map,
+              Function.comp_def]
+          have hhighEq : BProv Ax_s P
+              (eq (Term.var 3) (Term.succ (Term.var 5))) := by
+            apply BProv_ass (B := Ax_s) (G := P)
+            simp [P, S, J, H, C, highEqBody, highCode,
+              div2TotalOpenedStepContext, rename, Term.rename,
+              List.map_map, Function.comp_def]
+          have helemEq : BProv Ax_s P
+              (eq (Term.var 4) (Term.succ (Term.var 0))) :=
+            BProv_ass (B := Ax_s) (G := P) (by simp [P, predBody])
+          have hmemTerm : BProv Ax_s P
+              (hfMemTermAt 4 (Term.succ (Term.var 5))) := by
+            apply BProv_ass (B := Ax_s) (G := P)
+            simp [P, S, J, H, C, memHyp, highCode,
+              div2TotalOpenedStepContext,
+              rename_hfMemTermAt_succ, Term.rename,
+              List.map_map, Function.comp_def]
+          have hmemNamedTerm : BProv Ax_s P
+              (hfMemTermAt 4 (Term.var 3)) :=
+            BProv_hfMemTermAt_of_hfMemTermAt_eq_term
+              hmemTerm (BProv_eqSym hhighEq)
+          have hmemNamed : BProv Ax_s P (hfMemAt 4 3) := by
+            simpa [hfMemTermAt_var] using hmemNamedTerm
+          have hsuccMem : BProv Ax_s P
+              (subst (instTerm (Term.succ (Term.var 0)))
+                (hfMemAt 0 (3+1))) :=
+            BProv_hfMemAt_of_elem_eq_term hmemNamed helemEq
+          have hhalfMem : BProv Ax_s P (hfMemAt 0 2) :=
+            BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt
+              (G := P) (head := 3) (tailCode := 2) (headBit := 1)
+              hstep hsuccMem
+          have hhalfLe : BProv Ax_s P
+              (leTermAt (Term.var 2) (Term.var 5)) :=
+            BProv_Ax_s_leTermAt_half_of_div2StepAt_eq_succ
+              hstep hhighEq
+          have hthrough : BProv Ax_s P
+              (hfMembersBelowThroughTermAt (Term.var 5)) := by
+            apply BProv_ass (B := Ax_s) (G := P)
+            simp [P, S, J, H, C, G, through,
+              div2TotalOpenedStepContext,
+              hfMembersBelowThroughAt,
+              rename_hfMembersBelowThroughTermAt_succ,
+              Term.rename]
+          have hallHalf : BProv Ax_s P
+              (hfMembersBelowAt 2) :=
+            BProv_Ax_s_hfMembersBelowAt_of_throughTermAt
+              hthrough hhalfLe
+          have hpredLtHalf : BProv Ax_s P (ltAt 0 2) :=
+            BProv_ltAt_of_hfMembersBelowAt hallHalf hhalfMem
+          have hpredLtHalfTerm : BProv Ax_s P
+              (ltTermAt (Term.var 0) (Term.var 2)) := by
+            simpa [ltTermAt_var] using hpredLtHalf
+          have hsuccPredLeHalf : BProv Ax_s P
+              (leTermAt (Term.succ (Term.var 0)) (Term.var 2)) :=
+            BProv_Ax_s_leTermAt_succ_left_of_ltTermAt hpredLtHalfTerm
+          have hsuccPredLeBound : BProv Ax_s P
+              (leTermAt (Term.succ (Term.var 0)) (Term.var 5)) :=
+            BProv_Ax_s_leTermAt_trans hsuccPredLeHalf hhalfLe
+          have hsuccPredLtSuccBound : BProv Ax_s P
+              (ltTermAt (Term.succ (Term.var 0))
+                (Term.succ (Term.var 5))) :=
+            BProv_Ax_s_ltTermAt_succ_right_of_leTermAt hsuccPredLeBound
+          have hlt : BProv Ax_s P
+              (ltTermAt (Term.var 4) (Term.succ (Term.var 5))) :=
+            BProv_ltTermAt_of_eq_left
+              (BProv_eqSym helemEq) hsuccPredLtSuccBound
+          simpa [P, S, J, H, C, G, targetJ, targetH, target,
+            highCode, predBody, div2TotalOpenedStepContext,
+            ltTermAt, rename, Term.rename, SetTheory.up,
+            Term.rename_comp, List.map_map, Function.comp_def]
+            using hlt
+        exact BProv_orE hcases hzeroBranch hsuccBranch
+      simpa [H, C, targetH, target, highCode] using htargetH
+    simpa [C] using BProv_impI htarget
+  have hall : BProv Ax_s G (all (imp memHyp target)) :=
+    BProv_allI_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [G, through, hfMembersBelowTermAt,
+    highCode, memHyp, target, Term.rename] using hall
+
+/-- The zero instance generated by PA induction for the cumulative
+membership-boundedness invariant. -/
+theorem substZero_hfMembersBelowThroughAt_zero :
+    subst substZero (hfMembersBelowThroughAt 0) =
+      hfMembersBelowThroughTermAt Term.zero := by
+  simp [hfMembersBelowThroughAt,
+    hfMembersBelowThroughTermAt,
+    hfMembersBelowAt, hfMemAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    ltTermAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, subst, substZero, Term.subst, Term.upSubst,
+    Term.rename]
+
+/-- The successor instance generated by PA induction for the cumulative
+membership-boundedness invariant. -/
+theorem substSuccVar_hfMembersBelowThroughAt_zero :
+    subst substSuccVar (hfMembersBelowThroughAt 0) =
+      hfMembersBelowThroughTermAt
+        (Term.succ (Term.var 0)) := by
+  simp [hfMembersBelowThroughAt,
+    hfMembersBelowThroughTermAt,
+    hfMembersBelowAt, hfMemAt,
+    betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+    betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    ltTermAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, subst, substSuccVar, Term.subst, Term.upSubst,
+    Term.rename]
+
+/-- Ordinary PA induction closes the cumulative membership-boundedness
+invariant from its genuinely new successor-code fact. -/
+theorem BProv_Ax_s_all_hfMembersBelowThroughAt_of_successor_new
+    (hnew : BProv Ax_s [hfMembersBelowThroughAt 0]
+      (hfMembersBelowTermAt
+        (Term.succ (Term.var 0)))) :
+    BProv Ax_s [] (all (hfMembersBelowThroughAt 0)) := by
+  let phi : Formula := hfMembersBelowThroughAt 0
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, substZero_hfMembersBelowThroughAt_zero] using
+      BProv_Ax_s_hfMembersBelowThroughTermAt_zero
+  have hthrough : BProv Ax_s [phi]
+      (hfMembersBelowThroughTermAt (Term.var 0)) := by
+    simpa [phi, hfMembersBelowThroughAt] using
+      (BProv_ass (B := Ax_s) (G := [phi]) (phi := phi) (by simp))
+  have hsuccTerm : BProv Ax_s [phi]
+      (hfMembersBelowThroughTermAt
+        (Term.succ (Term.var 0))) :=
+    BProv_Ax_s_hfMembersBelowThroughTermAt_succ
+      hthrough (by simpa [phi] using hnew)
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    simpa [phi,
+      substSuccVar_hfMembersBelowThroughAt_zero] using
+      hsuccTerm
+  have hsuccImp : BProv Ax_s []
+      (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  simpa [phi] using
+    BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero hsuccAll
+
+/-- PA proves the universal cumulative membership-boundedness invariant. -/
+theorem BProv_Ax_s_all_hfMembersBelowThroughAt :
+    BProv Ax_s [] (all (hfMembersBelowThroughAt 0)) :=
+  BProv_Ax_s_all_hfMembersBelowThroughAt_of_successor_new
+    BProv_Ax_s_hfMembersBelowTermAt_succ_of_through_zero
+
+/-- Project the pointwise invariant from its cumulative universal closure by
+instantiating the cumulative bound at the current set code. -/
+theorem BProv_Ax_s_all_hfMembersBelowAt_of_all_through
+    (hall : BProv Ax_s []
+      (all (hfMembersBelowThroughAt 0))) :
+    BProv Ax_s [] (all (hfMembersBelowAt 0)) := by
+  have hthroughRaw :=
+    BProv_allE (B := Ax_s) (G := []) (t := Term.var 0) hall
+  have hthrough : BProv Ax_s []
+      (hfMembersBelowThroughTermAt (Term.var 0)) := by
+    simpa [hfMembersBelowThroughAt,
+      hfMembersBelowThroughTermAt,
+      hfMembersBelowAt, hfMemAt,
+      betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaDiv2BitAt,
+      betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+      ltTermAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+      betaModTerm, subst, instTerm, Term.subst, Term.upSubst,
+      Term.rename]
+      using hthroughRaw
+  have hself : BProv Ax_s []
+      (leTermAt (Term.var 0) (Term.var 0)) :=
+    BProv_Ax_s_leTermAt_refl (Term.var 0)
+  have hpoint : BProv Ax_s [] (hfMembersBelowAt 0) :=
+    BProv_Ax_s_hfMembersBelowAt_of_throughTermAt
+      (boundCode := Term.var 0) (set := 0) hthrough hself
+  exact BProv_allI_of_sentences
+    (B := Ax_s) (G := [])
+    (fun f hf => sentence_ax_s (f := f) hf) hpoint
+
+/-- PA proves the universal pointwise membership-boundedness invariant. -/
+theorem BProv_Ax_s_all_hfMembersBelowAt :
+    BProv Ax_s [] (all (hfMembersBelowAt 0)) :=
+  BProv_Ax_s_all_hfMembersBelowAt_of_all_through
+    BProv_Ax_s_all_hfMembersBelowThroughAt
+
+/-- Every PA-provable Ackermann membership entails strict numeric order, in
+an arbitrary proof context. -/
+theorem BProv_Ax_s_ltAt_of_hfMemAt
+    {G : List Formula} {elem set : Nat}
+    (hmem : BProv Ax_s G (hfMemAt elem set)) :
+    BProv Ax_s G (ltAt elem set) := by
+  have hsetRaw := BProv_allE
+    (B := Ax_s) (G := []) (t := Term.var set)
+    BProv_Ax_s_all_hfMembersBelowAt
+  have hsetClosed : BProv Ax_s []
+      (hfMembersBelowAt set) := by
+    simpa [subst_instTerm_var_hfMembersBelowAt_zero]
+      using hsetRaw
+  have hset : BProv Ax_s G (hfMembersBelowAt set) :=
+    BProv_weaken_nil hsetClosed
+  exact BProv_ltAt_of_hfMembersBelowAt hset hmem
+
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already
 `BProv_Ax_s_hfLtDistinguishesAt_zero_base`; this lemma keeps the remaining
