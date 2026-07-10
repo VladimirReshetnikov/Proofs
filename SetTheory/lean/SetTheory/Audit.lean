@@ -512,6 +512,9 @@ open SetTheory
 #check @PA.Formula.betaShiftPrefixTermAt
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAt
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAtBody
+#check @PA.Formula.betaUnshiftPrefixTermAt
+#check @PA.Formula.betaUnshiftPrefixCodeExistsTermAt
+#check @PA.Formula.betaUnshiftPrefixCodeExistsTermAtBody
 #check @PA.Formula.betaPrefixDividesTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAt
@@ -534,6 +537,8 @@ open SetTheory
 #check @PA.Formula.betaEntryExistsTermAt_nat
 #check @PA.Formula.betaShiftPrefixTermAt_nat
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAt_nat
+#check @PA.Formula.betaUnshiftPrefixTermAt_nat
+#check @PA.Formula.betaUnshiftPrefixCodeExistsTermAt_nat
 #check @PA.Formula.betaPrefixDividesTermAt_nat
 #check @PA.Formula.betaPrefixCRTAccumulatorTermAt_nat
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAt_nat

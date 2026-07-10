@@ -3384,6 +3384,46 @@ def betaShiftPrefixCodeExistsTermAtBody
     (Term.rename Nat.succ newStep)
     (Term.rename Nat.succ bound)
 
+/-- Strict-prefix form of beta-index successor transport.
+
+For every `i < bound`, every source beta entry at index `i` is copied to the
+target entry at index `S i`.  This is the index-direction needed when a
+one-step binary predecessor is prepended to an existing halving trace. -/
+def betaUnshiftPrefixTermAt
+    (sourceCode sourceStep targetCode targetStep bound : Term) : Formula :=
+  all (imp
+    (ltTermAt (Term.var 0) (Term.rename Nat.succ bound))
+    (all (imp
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n + 2) sourceCode)
+        (Term.rename (fun n => n + 2) sourceStep)
+        (Term.var 1))
+      (betaTermTermAt (Term.var 0)
+        (Term.rename (fun n => n + 2) targetCode)
+        (Term.rename (fun n => n + 2) targetStep)
+        (Term.succ (Term.var 1))))))
+
+/-- Existence of a code satisfying a beta-unshift strict prefix for a fixed
+target step. -/
+def betaUnshiftPrefixCodeExistsTermAt
+    (sourceCode sourceStep targetStep bound : Term) : Formula :=
+  ex (betaUnshiftPrefixTermAt
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ sourceStep)
+    (Term.var 0)
+    (Term.rename Nat.succ targetStep)
+    (Term.rename Nat.succ bound))
+
+/-- Body exposed after opening a beta-unshift prefix code witness. -/
+def betaUnshiftPrefixCodeExistsTermAtBody
+    (sourceCode sourceStep targetStep bound : Term) : Formula :=
+  betaUnshiftPrefixTermAt
+    (Term.rename Nat.succ sourceCode)
+    (Term.rename Nat.succ sourceStep)
+    (Term.var 0)
+    (Term.rename Nat.succ targetStep)
+    (Term.rename Nat.succ bound)
+
 /-- A pointwise shifted-tail relation between two beta-coded traces.
 
 The old trace is represented by the ambient code and step slots `oldCode` and
@@ -4822,6 +4862,100 @@ theorem betaShiftPrefixCodeExistsTermAt_nat
       (Term.rename Nat.succ oldStep)
       (Term.var 0)
       (Term.rename Nat.succ newStep)
+      (Term.rename Nat.succ bound)).mpr
+    simpa [Term.eval_rename, Term.eval, scons] using hprefix
+
+theorem betaUnshiftPrefixTermAt_nat
+    (e : Nat → Nat)
+    (sourceCode sourceStep targetCode targetStep bound : Term) :
+    Sat natModel e
+      (betaUnshiftPrefixTermAt
+        sourceCode sourceStep targetCode targetStep bound) ↔
+      ∀ i, i < Term.eval natModel e bound → ∀ out,
+        BetaEntry (Term.eval natModel e sourceCode)
+            (Term.eval natModel e sourceStep) i out →
+          BetaEntry (Term.eval natModel e targetCode)
+            (Term.eval natModel e targetStep) (i + 1) out := by
+  constructor
+  · intro h i hi out hsource
+    have hltSat : Sat natModel (scons i e)
+        (ltTermAt (Term.var 0) (Term.rename Nat.succ bound)) :=
+      (ltTermAt_nat (scons i e)
+        (Term.var 0) (Term.rename Nat.succ bound)).mpr (by
+          simpa [Term.eval_rename, Term.eval, scons] using hi)
+    have houtImp := h i hltSat
+    have hsourceSat : Sat natModel (scons out (scons i e))
+        (betaTermTermAt (Term.var 0)
+          (Term.rename (fun n => n + 2) sourceCode)
+          (Term.rename (fun n => n + 2) sourceStep)
+          (Term.var 1)) :=
+      (betaTermTermAt_nat_entry (scons out (scons i e))
+        (Term.var 0)
+        (Term.rename (fun n => n + 2) sourceCode)
+        (Term.rename (fun n => n + 2) sourceStep)
+        (Term.var 1)).mpr (by
+          simpa [Term.eval_rename, Term.eval, scons] using hsource)
+    have htargetSat := houtImp out hsourceSat
+    have htarget := (betaTermTermAt_nat_entry
+      (scons out (scons i e))
+      (Term.var 0)
+      (Term.rename (fun n => n + 2) targetCode)
+      (Term.rename (fun n => n + 2) targetStep)
+      (Term.succ (Term.var 1))).mp htargetSat
+    simpa [Term.eval_rename, Term.eval, natModel, scons,
+      Nat.succ_eq_add_one] using htarget
+  · intro h i hltSat out hsourceSat
+    have hi : i < Term.eval natModel e bound := by
+      have hlt := (ltTermAt_nat (scons i e)
+        (Term.var 0) (Term.rename Nat.succ bound)).mp hltSat
+      simpa [Term.eval_rename, Term.eval, scons] using hlt
+    have hsource := (betaTermTermAt_nat_entry
+      (scons out (scons i e))
+      (Term.var 0)
+      (Term.rename (fun n => n + 2) sourceCode)
+      (Term.rename (fun n => n + 2) sourceStep)
+      (Term.var 1)).mp hsourceSat
+    apply (betaTermTermAt_nat_entry
+      (scons out (scons i e))
+      (Term.var 0)
+      (Term.rename (fun n => n + 2) targetCode)
+      (Term.rename (fun n => n + 2) targetStep)
+      (Term.succ (Term.var 1))).mpr
+    simpa [Term.eval_rename, Term.eval, natModel, scons,
+      Nat.succ_eq_add_one] using h i hi out (by
+        simpa [Term.eval_rename, Term.eval, scons] using hsource)
+
+theorem betaUnshiftPrefixCodeExistsTermAt_nat
+    (e : Nat → Nat) (sourceCode sourceStep targetStep bound : Term) :
+    Sat natModel e
+      (betaUnshiftPrefixCodeExistsTermAt
+        sourceCode sourceStep targetStep bound) ↔
+      ∃ targetCode, ∀ i, i < Term.eval natModel e bound → ∀ out,
+        BetaEntry (Term.eval natModel e sourceCode)
+            (Term.eval natModel e sourceStep) i out →
+          BetaEntry targetCode (Term.eval natModel e targetStep)
+            (i + 1) out := by
+  constructor
+  · intro h
+    rcases h with ⟨targetCode, hprefix⟩
+    refine ⟨targetCode, ?_⟩
+    have hspec := (betaUnshiftPrefixTermAt_nat
+      (scons targetCode e)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ sourceStep)
+      (Term.var 0)
+      (Term.rename Nat.succ targetStep)
+      (Term.rename Nat.succ bound)).mp hprefix
+    simpa [Term.eval_rename, Term.eval, scons] using hspec
+  · intro h
+    rcases h with ⟨targetCode, hprefix⟩
+    refine ⟨targetCode, ?_⟩
+    apply (betaUnshiftPrefixTermAt_nat
+      (scons targetCode e)
+      (Term.rename Nat.succ sourceCode)
+      (Term.rename Nat.succ sourceStep)
+      (Term.var 0)
+      (Term.rename Nat.succ targetStep)
       (Term.rename Nat.succ bound)).mpr
     simpa [Term.eval_rename, Term.eval, scons] using hprefix
 
