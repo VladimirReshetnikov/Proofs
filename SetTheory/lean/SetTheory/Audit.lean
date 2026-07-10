@@ -885,10 +885,13 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_of_components
 #check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_of_postsubst_components
 #check @PA.Formula.BProv_Ax_s_subst_betaDiv2StepsThroughAt_of_term_trace
+#check @PA.Formula.BProv_Ax_s_betaDiv2StepsThroughTermTermAt_vars_of_legacy
 #check @PA.Formula.BProv_Ax_s_subst_hfMemTermAt_zero_of_term_components
 #check @PA.Formula.rename_hfMemTermAt_zero_up
 #check @PA.Formula.BProv_Ax_s_betaPrependPrefixTermAt_succ_mem_of_source_trace
 #check @PA.Formula.BProv_Ax_s_betaPrependExistsTermAt_succ_mem_of_source_trace
+#check @PA.Formula.BProv_Ax_s_hfMemTermAt_elim_opened_code_step
+#check @PA.Formula.BProv_Ax_s_hfMemTermAt_succ_of_div2StepTermAt
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_bit_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_components
 #check @PA.Formula.BProv_Ax_s_hfMemTermAt_of_closed_bit_components
