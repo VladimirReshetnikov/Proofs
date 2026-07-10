@@ -7,7 +7,8 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import
-  PAHF PAHFTranslatedHFFin PAHFMembershipBound PAHFMembershipBoundSucc.
+  PAHF PAHFBetaShiftPrefix PAHFTranslatedHFFin
+  PAHFMembershipBound PAHFMembershipBoundSucc.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
@@ -2767,4 +2768,37 @@ Proof.
   intros shiftExists phi.
   exact (BProv_Ax_s_translated_HF_induction_of_tail
     (hfMembershipTailStep_of_shift shiftExists) phi).
+Qed.
+
+(** The CRT shifted-prefix construction discharges the sole premise of the
+    conditional trace proof. *)
+Lemma BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt :
+  forall G head tailCode headBit,
+  BProv Ax_s G (div2StepAt head tailCode headBit) ->
+  BProv Ax_s G
+    (subst (instTerm (tSucc (tVar 0))) (hfMemAt 0 (S head))) ->
+  BProv Ax_s G (hfMemAt 0 tailCode).
+Proof.
+  exact
+    (BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt_using_shift
+      BProv_Ax_s_betaShiftTailExistsTermAt).
+Qed.
+
+Definition hfMembershipTailStep : HFMembershipTailStep :=
+  BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt.
+
+Lemma BProv_Ax_s_all_hfMembersBelowAt :
+  BProv Ax_s [] (pAll (hfMembersBelowAt 0)).
+Proof.
+  exact (BProv_Ax_s_all_hfMembersBelowAt_of_tail
+    hfMembershipTailStep).
+Qed.
+
+Lemma BProv_Ax_s_translated_HF_induction :
+  forall phi,
+  BProv Ax_s []
+    (translateHFFormula (Fol.seal (HF_induction_form phi))).
+Proof.
+  exact (BProv_Ax_s_translated_HF_induction_of_tail
+    hfMembershipTailStep).
 Qed.
