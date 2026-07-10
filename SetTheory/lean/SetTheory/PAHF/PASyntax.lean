@@ -45346,6 +45346,577 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
     (BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
       helem hhigh hlowDouble)
 
+/-- Addition on the left preserves the PA non-strict term order. -/
+theorem BProv_Ax_s_leTermAt_add_left
+    {G : List Formula} {a b c : Term}
+    (hbc : BProv Ax_s G (leTermAt b c)) :
+    BProv Ax_s G
+      (leTermAt (Term.add a b) (Term.add a c)) := by
+  let target : Formula :=
+    leTermAt (Term.add a b) (Term.add a c)
+  refine BProv_Ax_s_leTermAt_elim_opened
+    (G := G) (lower := b) (upper := c) (target := target) ?_ hbc
+  let body : Formula :=
+    eq (Term.add (Term.rename Nat.succ b) (Term.var 0))
+      (Term.rename Nat.succ c)
+  let D : List Formula := body :: G.map (rename Nat.succ)
+  let a1 : Term := Term.rename Nat.succ a
+  let b1 : Term := Term.rename Nat.succ b
+  let c1 : Term := Term.rename Nat.succ c
+  let d : Term := Term.var 0
+  have hbcEq : BProv Ax_s D (eq (Term.add b1 d) c1) := by
+    simpa [D, body, b1, c1, d] using
+      (BProv_ass (B := Ax_s) (G := D) (by simp [D, body]))
+  have hassoc : BProv Ax_s D
+      (eq (Term.add (Term.add a1 b1) d)
+        (Term.add a1 (Term.add b1 d))) :=
+    BProv_Ax_s_add_assoc_terms a1 b1 d
+  have hcongr : BProv Ax_s D
+      (eq (Term.add a1 (Term.add b1 d)) (Term.add a1 c1)) :=
+    BProv_eq_congr_add_right a1 hbcEq
+  have hshape : BProv Ax_s D
+      (eq (Term.add (Term.add a1 b1) d) (Term.add a1 c1)) :=
+    BProv_eqTrans hassoc hcongr
+  have hle : BProv Ax_s D
+      (leTermAt (Term.add a1 b1) (Term.add a1 c1)) :=
+    BProv_Ax_s_leTermAt_of_eq_add_right_terms (BProv_eqSym hshape)
+  simpa [target, D, body, a1, b1, c1, d, leTermAt,
+    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    Function.comp_def] using hle
+
+/-- Addition on the right preserves the PA non-strict term order. -/
+theorem BProv_Ax_s_leTermAt_add_right
+    {G : List Formula} {a b c : Term}
+    (hbc : BProv Ax_s G (leTermAt b c)) :
+    BProv Ax_s G
+      (leTermAt (Term.add b a) (Term.add c a)) := by
+  have hleft : BProv Ax_s G
+      (leTermAt (Term.add a b) (Term.add a c)) :=
+    BProv_Ax_s_leTermAt_add_left hbc
+  have hcommLeft : BProv Ax_s G
+      (eq (Term.add a b) (Term.add b a)) :=
+    BProv_Ax_s_add_comm_terms a b
+  have hcommRight : BProv Ax_s G
+      (eq (Term.add a c) (Term.add c a)) :=
+    BProv_Ax_s_add_comm_terms a c
+  exact BProv_leTermAt_of_eq_right hcommRight
+    (BProv_leTermAt_of_eq_left hcommLeft hleft)
+
+/-- If `highHalf < lowHalf`, then even the largest one-bit extension of the
+high half is no larger than the smallest extension of the low half. -/
+theorem BProv_Ax_s_succ_double_le_double_of_ltTermAt
+    {G : List Formula} {highHalf lowHalf : Term}
+    (hlt : BProv Ax_s G (ltTermAt highHalf lowHalf)) :
+    BProv Ax_s G
+      (leTermAt
+        (Term.succ (Term.add highHalf highHalf))
+        (Term.add lowHalf lowHalf)) := by
+  have hsuccLe : BProv Ax_s G
+      (leTermAt (Term.succ highHalf) lowHalf) :=
+    BProv_Ax_s_leTermAt_succ_left_of_ltTermAt hlt
+  have hle : BProv Ax_s G (leTermAt highHalf lowHalf) :=
+    BProv_Ax_s_leTermAt_trans
+      (BProv_Ax_s_leTermAt_self_succ highHalf) hsuccLe
+  have hfirst : BProv Ax_s G
+      (leTermAt
+        (Term.add highHalf (Term.succ highHalf))
+        (Term.add highHalf lowHalf)) :=
+    BProv_Ax_s_leTermAt_add_left hsuccLe
+  have hsecond : BProv Ax_s G
+      (leTermAt
+        (Term.add highHalf lowHalf)
+        (Term.add lowHalf lowHalf)) :=
+    BProv_Ax_s_leTermAt_add_right hle
+  have hsum : BProv Ax_s G
+      (leTermAt
+        (Term.add highHalf (Term.succ highHalf))
+        (Term.add lowHalf lowHalf)) :=
+    BProv_Ax_s_leTermAt_trans hfirst hsecond
+  exact BProv_leTermAt_of_eq_left
+    (BProv_weaken_nil
+      (BProv_Ax_s_addSucc_terms highHalf highHalf)) hsum
+
+/-- The common order core for binary heads: strict order of the halves,
+together with the sharp one-bit upper/lower bounds, orders the heads. -/
+theorem BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
+    {G : List Formula} {high highHalf low lowHalf : Nat}
+    (hhalfLt : BProv Ax_s G (ltAt highHalf lowHalf))
+    (hhighUpper : BProv Ax_s G
+      (leTermAt (Term.var high)
+        (Term.succ
+          (Term.add (Term.var highHalf) (Term.var highHalf)))))
+    (hlowLower : BProv Ax_s G
+      (leTermAt
+        (Term.add (Term.var lowHalf) (Term.var lowHalf))
+        (Term.var low))) :
+    BProv Ax_s G (leAt high low) := by
+  have hhalfLtTerm : BProv Ax_s G
+      (ltTermAt (Term.var highHalf) (Term.var lowHalf)) := by
+    simpa [ltTermAt_var] using hhalfLt
+  have hmiddle : BProv Ax_s G
+      (leTermAt
+        (Term.succ
+          (Term.add (Term.var highHalf) (Term.var highHalf)))
+        (Term.add (Term.var lowHalf) (Term.var lowHalf))) :=
+    BProv_Ax_s_succ_double_le_double_of_ltTermAt hhalfLtTerm
+  have hle : BProv Ax_s G
+      (leTermAt (Term.var high) (Term.var low)) :=
+    BProv_Ax_s_leTermAt_trans
+      (BProv_Ax_s_leTermAt_trans hhighUpper hmiddle) hlowLower
+  simpa [leTermAt_var] using hle
+
+/-- An even binary head is below the successor of its doubled half. -/
+theorem BProv_Ax_s_le_succ_double_of_doubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half)) :
+    BProv Ax_s G
+      (leTermAt (Term.var value)
+        (Term.succ (Term.add (Term.var half) (Term.var half)))) := by
+  have heq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.var half) (Term.var half))) := by
+    simpa [doubleEqAt] using hdouble
+  exact BProv_leTermAt_of_eq_left (BProv_eqSym heq)
+    (BProv_Ax_s_leTermAt_self_succ
+      (Term.add (Term.var half) (Term.var half)))
+
+/-- An odd binary head equals, hence is below, the successor of its doubled
+half. -/
+theorem BProv_Ax_s_le_succ_double_of_oddDoubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G
+      (leTermAt (Term.var value)
+        (Term.succ (Term.add (Term.var half) (Term.var half)))) := by
+  have heq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.succ (Term.add (Term.var half) (Term.var half)))) := by
+    simpa [oddDoubleEqAt] using hodd
+  exact BProv_leTermAt_of_eq_left (BProv_eqSym heq)
+    (BProv_Ax_s_leTermAt_refl
+      (Term.succ (Term.add (Term.var half) (Term.var half))))
+
+/-- The doubled half is below an even binary head. -/
+theorem BProv_Ax_s_double_le_of_doubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half)) :
+    BProv Ax_s G
+      (leTermAt
+        (Term.add (Term.var half) (Term.var half))
+        (Term.var value)) := by
+  have heq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.add (Term.var half) (Term.var half))) := by
+    simpa [doubleEqAt] using hdouble
+  exact BProv_leTermAt_of_eq_right (BProv_eqSym heq)
+    (BProv_Ax_s_leTermAt_refl
+      (Term.add (Term.var half) (Term.var half)))
+
+/-- The doubled half is below an odd binary head. -/
+theorem BProv_Ax_s_double_le_of_oddDoubleEqAt
+    {G : List Formula} {value half : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half)) :
+    BProv Ax_s G
+      (leTermAt
+        (Term.add (Term.var half) (Term.var half))
+        (Term.var value)) := by
+  have heq : BProv Ax_s G
+      (eq (Term.var value)
+        (Term.succ (Term.add (Term.var half) (Term.var half)))) := by
+    simpa [oddDoubleEqAt] using hodd
+  exact BProv_leTermAt_of_eq_right (BProv_eqSym heq)
+    (BProv_Ax_s_leTermAt_self_succ
+      (Term.add (Term.var half) (Term.var half)))
+
+/-- Binary halving is order-reflecting in the only direction needed here:
+if the high head's half is strictly below the low head's half, then the high
+head is no larger than the low head, independently of the two bits. -/
+theorem BProv_Ax_s_leAt_of_div2_steps_and_half_lt
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hhighStep : BProv Ax_s G
+      (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G
+      (div2StepAt low lowHalf lowBit))
+    (hhalfLt : BProv Ax_s G (ltAt highHalf lowHalf)) :
+    BProv Ax_s G (leAt high low) := by
+  have hdouble_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      (leAt high low) := by
+    let C : List Formula :=
+      doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (doubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
+      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := doubleEqAt high highHalf) hhalfLt)
+    exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
+      hhalfLtC
+      (BProv_Ax_s_le_succ_double_of_doubleEqAt hhigh)
+      (BProv_Ax_s_double_le_of_doubleEqAt hlow)
+  have hdouble_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      (leAt high low) := by
+    let C : List Formula :=
+      oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (doubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
+      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := doubleEqAt high highHalf) hhalfLt)
+    exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
+      hhalfLtC
+      (BProv_Ax_s_le_succ_double_of_doubleEqAt hhigh)
+      (BProv_Ax_s_double_le_of_oddDoubleEqAt hlow)
+  have hodd_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      (leAt high low) := by
+    let C : List Formula :=
+      doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (oddDoubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
+      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := oddDoubleEqAt high highHalf) hhalfLt)
+    exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
+      hhalfLtC
+      (BProv_Ax_s_le_succ_double_of_oddDoubleEqAt hhigh)
+      (BProv_Ax_s_double_le_of_doubleEqAt hlow)
+  have hodd_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      (leAt high low) := by
+    let C : List Formula :=
+      oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (oddDoubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
+      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := oddDoubleEqAt high highHalf) hhalfLt)
+    exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
+      hhalfLtC
+      (BProv_Ax_s_le_succ_double_of_oddDoubleEqAt hhigh)
+      (BProv_Ax_s_double_le_of_oddDoubleEqAt hlow)
+  exact BProv_Ax_s_of_two_div2StepAt_double_odd_cases
+    hhighStep hlowStep
+    hdouble_double hdouble_odd hodd_double hodd_odd
+
+/-- The odd form of a binary head forces its compatible halving-step bit to
+be one. -/
+theorem BProv_Ax_s_eqConstAt_one_of_oddDoubleEqAt_div2StepAt
+    {G : List Formula} {value half bit : Nat}
+    (hodd : BProv Ax_s G (oddDoubleEqAt value half))
+    (hstep : BProv Ax_s G (div2StepAt value half bit)) :
+    BProv Ax_s G (eqConstAt bit 1) := by
+  let d : Term := Term.add (Term.var half) (Term.var half)
+  have hoddEq : BProv Ax_s G
+      (eq (Term.var value) (Term.succ d)) := by
+    simpa [oddDoubleEqAt, d] using hodd
+  have hstepEq : BProv Ax_s G
+      (eq (Term.var value) (Term.add d (Term.var bit))) := by
+    simpa [div2StepAt, d] using
+      (BProv_andE2 (a := boolAt bit)
+        (b := eq (Term.var value)
+          (Term.add
+            (Term.add (Term.var half) (Term.var half))
+            (Term.var bit))) hstep)
+  have hbitSucc : BProv Ax_s G
+      (eq (Term.add d (Term.var bit)) (Term.succ d)) :=
+    BProv_eqTrans (BProv_eqSym hstepEq) hoddEq
+  have haddSucc : BProv Ax_s G
+      (eq (Term.add d (Term.succ Term.zero))
+        (Term.succ (Term.add d Term.zero))) :=
+    BProv_weaken_nil (BProv_Ax_s_addSucc_terms d Term.zero)
+  have haddZero : BProv Ax_s G
+      (eq (Term.succ (Term.add d Term.zero)) (Term.succ d)) :=
+    BProv_eq_congr_succ
+      (BProv_weaken_nil (BProv_Ax_s_addZero_term d))
+  have honeSucc : BProv Ax_s G
+      (eq (Term.add d (Term.succ Term.zero)) (Term.succ d)) :=
+    BProv_eqTrans haddSucc haddZero
+  have hsame : BProv Ax_s G
+      (eq (Term.add d (Term.var bit))
+        (Term.add d (Term.succ Term.zero))) :=
+    BProv_eqTrans hbitSucc (BProv_eqSym honeSucc)
+  have hbit : BProv Ax_s G
+      (eq (Term.var bit) (Term.succ Term.zero)) :=
+    BProv_Ax_s_add_cancel_left_terms hsame
+  simpa [eqConstAt, Term.numeral] using hbit
+
+/-- With equal binary halves, strict order of the heads forces the unique
+bit pattern `lowBit = 0`, `highBit = 1`. -/
+theorem BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hlt : BProv Ax_s G (ltAt low high))
+    (hhighStep : BProv Ax_s G
+      (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G
+      (div2StepAt low lowHalf lowBit))
+    (hhalfEq : BProv Ax_s G
+      (eq (Term.var lowHalf) (Term.var highHalf))) :
+    BProv Ax_s G
+      (and
+        (eqConstAt highBit 1)
+        (eqConstAt lowBit 0)) := by
+  let target : Formula :=
+    and (eqConstAt highBit 1) (eqConstAt lowBit 0)
+  have hdouble_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      target := by
+    let C : List Formula :=
+      doubleEqAt low lowHalf :: doubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (doubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhalfEqC : BProv Ax_s C
+        (eq (Term.var lowHalf) (Term.var highHalf)) :=
+      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := doubleEqAt high highHalf) hhalfEq)
+    have hltC : BProv Ax_s C (ltAt low high) :=
+      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := doubleEqAt high highHalf) hlt)
+    have hhighEq : BProv Ax_s C
+        (eq (Term.var high)
+          (Term.add (Term.var highHalf) (Term.var highHalf))) := by
+      simpa [doubleEqAt] using hhigh
+    have hlowEq : BProv Ax_s C
+        (eq (Term.var low)
+          (Term.add (Term.var lowHalf) (Term.var lowHalf))) := by
+      simpa [doubleEqAt] using hlow
+    have hhalves : BProv Ax_s C
+        (eq
+          (Term.add (Term.var lowHalf) (Term.var lowHalf))
+          (Term.add (Term.var highHalf) (Term.var highHalf))) :=
+      BProv_eq_congr_add hhalfEqC hhalfEqC
+    have hheads : BProv Ax_s C
+        (eq (Term.var high) (Term.var low)) :=
+      BProv_eqTrans hhighEq
+        (BProv_eqTrans (BProv_eqSym hhalves) (BProv_eqSym hlowEq))
+    exact BProv_botE (a := target)
+      (BProv_Ax_s_ltAt_eq_bot hltC hheads)
+  have hdouble_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G)
+      target := by
+    let C : List Formula :=
+      oddDoubleEqAt low lowHalf :: doubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (doubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhalfEqC : BProv Ax_s C
+        (eq (Term.var lowHalf) (Term.var highHalf)) :=
+      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := doubleEqAt high highHalf) hhalfEq)
+    have hltC : BProv Ax_s C (ltAt low high) :=
+      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := doubleEqAt high highHalf) hlt)
+    have hhighEq : BProv Ax_s C
+        (eq (Term.var high)
+          (Term.add (Term.var highHalf) (Term.var highHalf))) := by
+      simpa [doubleEqAt] using hhigh
+    have hlowEq : BProv Ax_s C
+        (eq (Term.var low)
+          (Term.succ
+            (Term.add (Term.var lowHalf) (Term.var lowHalf)))) := by
+      simpa [oddDoubleEqAt] using hlow
+    have hhalves : BProv Ax_s C
+        (eq
+          (Term.add (Term.var lowHalf) (Term.var lowHalf))
+          (Term.add (Term.var highHalf) (Term.var highHalf))) :=
+      BProv_eq_congr_add hhalfEqC hhalfEqC
+    have hhighToLowDouble : BProv Ax_s C
+        (eq (Term.var high)
+          (Term.add (Term.var lowHalf) (Term.var lowHalf))) :=
+      BProv_eqTrans hhighEq (BProv_eqSym hhalves)
+    have hheadLeTerm : BProv Ax_s C
+        (leTermAt (Term.var high) (Term.var low)) :=
+      BProv_leTermAt_of_eq_right (BProv_eqSym hlowEq)
+        (BProv_leTermAt_of_eq_left (BProv_eqSym hhighToLowDouble)
+          (BProv_Ax_s_leTermAt_self_succ
+            (Term.add (Term.var lowHalf) (Term.var lowHalf))))
+    have hheadLe : BProv Ax_s C (leAt high low) := by
+      simpa [leTermAt_var] using hheadLeTerm
+    exact BProv_botE (a := target)
+      (BProv_Ax_s_ltAt_leAt_bot hltC hheadLe)
+  have hodd_double : BProv Ax_s
+      (doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      target := by
+    let C : List Formula :=
+      doubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (oddDoubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (doubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhighStepC : BProv Ax_s C
+        (div2StepAt high highHalf highBit) :=
+      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := oddDoubleEqAt high highHalf) hhighStep)
+    have hlowStepC : BProv Ax_s C
+        (div2StepAt low lowHalf lowBit) :=
+      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := oddDoubleEqAt high highHalf) hlowStep)
+    exact BProv_andI
+      (BProv_Ax_s_eqConstAt_one_of_oddDoubleEqAt_div2StepAt
+        hhigh hhighStepC)
+      (BProv_Ax_s_eqConstAt_zero_of_div2StepAt_double hlow hlowStepC)
+  have hodd_odd : BProv Ax_s
+      (oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G)
+      target := by
+    let C : List Formula :=
+      oddDoubleEqAt low lowHalf :: oddDoubleEqAt high highHalf :: G
+    have hhigh : BProv Ax_s C (oddDoubleEqAt high highHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhalfEqC : BProv Ax_s C
+        (eq (Term.var lowHalf) (Term.var highHalf)) :=
+      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := oddDoubleEqAt high highHalf) hhalfEq)
+    have hltC : BProv Ax_s C (ltAt low high) :=
+      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
+        (BProv_context_cons (B := Ax_s)
+          (a := oddDoubleEqAt high highHalf) hlt)
+    have hhighEq : BProv Ax_s C
+        (eq (Term.var high)
+          (Term.succ
+            (Term.add (Term.var highHalf) (Term.var highHalf)))) := by
+      simpa [oddDoubleEqAt] using hhigh
+    have hlowEq : BProv Ax_s C
+        (eq (Term.var low)
+          (Term.succ
+            (Term.add (Term.var lowHalf) (Term.var lowHalf)))) := by
+      simpa [oddDoubleEqAt] using hlow
+    have hhalves : BProv Ax_s C
+        (eq
+          (Term.succ
+            (Term.add (Term.var lowHalf) (Term.var lowHalf)))
+          (Term.succ
+            (Term.add (Term.var highHalf) (Term.var highHalf)))) :=
+      BProv_eq_congr_succ (BProv_eq_congr_add hhalfEqC hhalfEqC)
+    have hheads : BProv Ax_s C
+        (eq (Term.var high) (Term.var low)) :=
+      BProv_eqTrans hhighEq
+        (BProv_eqTrans (BProv_eqSym hhalves) (BProv_eqSym hlowEq))
+    exact BProv_botE (a := target)
+      (BProv_Ax_s_ltAt_eq_bot hltC hheads)
+  exact BProv_Ax_s_of_two_div2StepAt_double_odd_cases
+    hhighStep hlowStep
+    hdouble_double hdouble_odd hodd_double hodd_odd
+
+/-- Object-language arithmetic split for two binary heads under `low < high`:
+either the low half is strictly smaller, or the halves coincide and the only
+possible head-bit pattern is high one / low zero. -/
+theorem BProv_Ax_s_div2_order_cases
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hlt : BProv Ax_s G (ltAt low high))
+    (hhighStep : BProv Ax_s G
+      (div2StepAt high highHalf highBit))
+    (hlowStep : BProv Ax_s G
+      (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G
+      (or
+        (ltAt lowHalf highHalf)
+        (and
+          (eq (Term.var lowHalf) (Term.var highHalf))
+          (and
+            (eqConstAt highBit 1)
+            (eqConstAt lowBit 0)))) := by
+  let target : Formula :=
+    or
+      (ltAt lowHalf highHalf)
+      (and
+        (eq (Term.var lowHalf) (Term.var highHalf))
+        (and (eqConstAt highBit 1) (eqConstAt lowBit 0)))
+  have hcmp : BProv Ax_s G
+      (or (leAt lowHalf highHalf) (ltAt highHalf lowHalf)) :=
+    BProv_Ax_s_leAt_or_gtAt
+      (G := G) (a := lowHalf) (b := highHalf)
+  have hleBranch : BProv Ax_s (leAt lowHalf highHalf :: G) target := by
+    let C : List Formula := leAt lowHalf highHalf :: G
+    have hcmp' : BProv Ax_s C
+        (or (leAt highHalf lowHalf) (ltAt lowHalf highHalf)) :=
+      BProv_Ax_s_leAt_or_gtAt
+        (G := C) (a := highHalf) (b := lowHalf)
+    have heqBranch : BProv Ax_s (leAt highHalf lowHalf :: C) target := by
+      let D : List Formula := leAt highHalf lowHalf :: C
+      have hleLowHigh : BProv Ax_s D (leAt lowHalf highHalf) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_ass (B := Ax_s) (G := C) (by simp [C]))
+      have hleHighLow : BProv Ax_s D (leAt highHalf lowHalf) :=
+        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      have hhalfEq : BProv Ax_s D
+          (eq (Term.var lowHalf) (Term.var highHalf)) :=
+        BProv_eqSym
+          (BProv_Ax_s_eq_of_leAt_leAt hleHighLow hleLowHigh)
+      have hltD : BProv Ax_s D (ltAt low high) :=
+        BProv_context_cons (B := Ax_s) (a := leAt highHalf lowHalf)
+          (BProv_context_cons (B := Ax_s)
+            (a := leAt lowHalf highHalf) hlt)
+      have hhighStepD : BProv Ax_s D
+          (div2StepAt high highHalf highBit) :=
+        BProv_context_cons (B := Ax_s) (a := leAt highHalf lowHalf)
+          (BProv_context_cons (B := Ax_s)
+            (a := leAt lowHalf highHalf) hhighStep)
+      have hlowStepD : BProv Ax_s D
+          (div2StepAt low lowHalf lowBit) :=
+        BProv_context_cons (B := Ax_s) (a := leAt highHalf lowHalf)
+          (BProv_context_cons (B := Ax_s)
+            (a := leAt lowHalf highHalf) hlowStep)
+      have hbits : BProv Ax_s D
+          (and (eqConstAt highBit 1) (eqConstAt lowBit 0)) :=
+        BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
+          hltD hhighStepD hlowStepD hhalfEq
+      exact BProv_orI2 (B := Ax_s) (G := D)
+        (a := ltAt lowHalf highHalf)
+        (BProv_andI hhalfEq hbits)
+    have hltBranch : BProv Ax_s (ltAt lowHalf highHalf :: C) target :=
+      BProv_orI1 (B := Ax_s) (G := ltAt lowHalf highHalf :: C)
+        (b := and
+          (eq (Term.var lowHalf) (Term.var highHalf))
+          (and (eqConstAt highBit 1) (eqConstAt lowBit 0)))
+        (BProv_ass (B := Ax_s) (G := ltAt lowHalf highHalf :: C)
+          (by simp))
+    exact BProv_orE hcmp' heqBranch hltBranch
+  have hgtBranch : BProv Ax_s (ltAt highHalf lowHalf :: G) target := by
+    let C : List Formula := ltAt highHalf lowHalf :: G
+    have hhalfLt : BProv Ax_s C (ltAt highHalf lowHalf) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hhighStepC : BProv Ax_s C
+        (div2StepAt high highHalf highBit) :=
+      BProv_context_cons (B := Ax_s) hhighStep
+    have hlowStepC : BProv Ax_s C
+        (div2StepAt low lowHalf lowBit) :=
+      BProv_context_cons (B := Ax_s) hlowStep
+    have hheadLe : BProv Ax_s C (leAt high low) :=
+      BProv_Ax_s_leAt_of_div2_steps_and_half_lt
+        hhighStepC hlowStepC hhalfLt
+    have hltC : BProv Ax_s C (ltAt low high) :=
+      BProv_context_cons (B := Ax_s) hlt
+    exact BProv_botE (a := target)
+      (BProv_Ax_s_ltAt_leAt_bot hltC hheadLe)
+  exact BProv_orE hcmp hleBranch hgtBranch
+
 /-- A high binary head with bit `1` and a low binary head with bit `0` are
 distinguished by bit index zero.  Equality of the two halves is not needed. -/
 theorem BProv_Ax_s_hfSomeDistinguishesAt_of_div2_bits_one_zero
