@@ -2605,6 +2605,13 @@ open SetTheory
 #check @PA.Formula.BProv_codeEqualityTermAt_of_components
 #check @PA.Formula.BProv_ordinalCodeGraphTermAt_congr_raw
 #check @PA.Formula.BProv_ordinalCodeGraphTermAt_congr_coded
+#check @PA.Formula.OrdinalCodeGraphFunctional
+#check @PA.Formula.OrdinalCodeGraphFunctional_of_traceAgreement
+#check @PA.Formula.BProv_Ax_s_term_graph_var
+#check @PA.Formula.OrdinalCodeTermCompatibilityProofs
+#check @PA.Formula.BProv_Ax_s_term_graph_of_compatibility
+#check @PA.Formula.OrdinalCodeGraphRemainingProofs
+#check @PA.Formula.OrdinalCodeGraphProofs_of_remaining_and_compatibility
 #check @PA.Formula.BProv_codeEqualityTermAt_of_eq
 #check @PA.Formula.BProv_eq_of_codeEqualityTermAt
 #check @PA.Formula.BProv_eq_iff_codeEqualityTermAt

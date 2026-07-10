@@ -3361,6 +3361,213 @@ theorem BProv_ordinalCodeGraphTermAt_congr_coded
     instTerm, Term.subst,
     term_subst_instTerm_rename_succ] using hrightInst
 
+/-! ### Term-language compatibility reduction -/
+
+/-- The exact dual of `OrdinalCodeGraphProofs.injective` needed by translated
+term graphs: a raw PA value has at most one ordinal code. -/
+def OrdinalCodeGraphFunctional : Prop :=
+  ∀ {G : List Formula} {raw coded₁ coded₂ : Term},
+    BProv Ax_s G (ordinalCodeGraphTermAt raw coded₁) →
+    BProv Ax_s G (ordinalCodeGraphTermAt raw coded₂) →
+    BProv Ax_s G (eq coded₁ coded₂)
+
+/-- The trace-agreement induction frontier canonically supplies graph
+functionality. -/
+theorem OrdinalCodeGraphFunctional_of_traceAgreement
+    (hagreement : OrdinalCodeTraceAgreementProof) :
+    OrdinalCodeGraphFunctional := by
+  intro G raw coded₁ coded₂ hgraph₁ hgraph₂
+  exact BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_traceAgreement
+    hagreement hgraph₁ hgraph₂
+
+/-- Functionality is exactly sufficient for the variable constructor of the
+ordinal-code term-graph induction. -/
+theorem BProv_Ax_s_term_graph_var
+    (hfunctional : OrdinalCodeGraphFunctional)
+    (G : List Formula) (n : Nat)
+    (rawMap codedMap : Nat → Nat) (codedOut : Nat)
+    (hcode : ∀ k, Term.Free k (Term.var n) →
+      BProv Ax_s G
+        (ordinalCodeGraphAt (rawMap k) (codedMap k))) :
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap (Term.var n))
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap (Term.var n)) (Term.var codedOut))) := by
+  have hinput : BProv Ax_s G
+      (ordinalCodeGraphTermAt
+        (Term.var (rawMap n)) (Term.var (codedMap n))) := by
+    simpa [ordinalCodeGraphAt] using hcode n rfl
+  have hforward : BProv Ax_s G
+      (imp
+        (eq (Term.var codedOut) (Term.var (codedMap n)))
+        (ordinalCodeGraphTermAt
+          (Term.var (rawMap n)) (Term.var codedOut))) := by
+    apply BProv_impI
+    let C : List Formula :=
+      eq (Term.var codedOut) (Term.var (codedMap n)) :: G
+    have heq : BProv Ax_s C
+        (eq (Term.var codedOut) (Term.var (codedMap n))) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hinputC : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.var (rawMap n)) (Term.var (codedMap n))) :=
+      BProv_context_cons hinput
+    exact BProv_ordinalCodeGraphTermAt_congr_coded
+      (BProv_eqSym heq) hinputC
+  have hreverse : BProv Ax_s G
+      (imp
+        (ordinalCodeGraphTermAt
+          (Term.var (rawMap n)) (Term.var codedOut))
+        (eq (Term.var codedOut) (Term.var (codedMap n)))) := by
+    apply BProv_impI
+    let C : List Formula :=
+      ordinalCodeGraphTermAt
+        (Term.var (rawMap n)) (Term.var codedOut) :: G
+    have hout : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.var (rawMap n)) (Term.var codedOut)) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+    have hinputC : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.var (rawMap n)) (Term.var (codedMap n))) :=
+      BProv_context_cons hinput
+    exact BProv_eqSym (hfunctional hinputC hout)
+  have hiff : BProv Ax_s G
+      (iffForm
+        (eq (Term.var codedOut) (Term.var (codedMap n)))
+        (ordinalCodeGraphTermAt
+          (Term.var (rawMap n)) (Term.var codedOut))) :=
+    BProv_andI hforward hreverse
+  simpa [compositeTermGraphAt, codedTermSlotMap,
+    AckermannHF.PAInHF.termGraphAt, hfFormulaAt, Term.rename] using hiff
+
+/-- Minimal operation-facing interface for the remaining term-graph proof.
+Each non-variable constructor consumes exactly the normalized graph theorem(s)
+for its recursive operand(s). -/
+structure OrdinalCodeTermCompatibilityProofs where
+  graph_functional : OrdinalCodeGraphFunctional
+  zero_compatible : ∀ (G : List Formula) (codedMap : Nat → Nat)
+      (codedOut : Nat),
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap Term.zero)
+        (ordinalCodeGraphTermAt Term.zero (Term.var codedOut)))
+  succ_compatible : ∀ (G : List Formula) (t : Term)
+      (rawMap codedMap : Nat → Nat) (codedOut : Nat),
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap t)
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap t) (Term.var codedOut))) →
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap (Term.succ t))
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap (Term.succ t)) (Term.var codedOut)))
+  add_compatible : ∀ (G : List Formula) (a b : Term)
+      (rawMap codedMap : Nat → Nat) (codedOut : Nat),
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap a)
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap a) (Term.var codedOut))) →
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap b)
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap b) (Term.var codedOut))) →
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap (Term.add a b))
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap (Term.add a b)) (Term.var codedOut)))
+  mul_compatible : ∀ (G : List Formula) (a b : Term)
+      (rawMap codedMap : Nat → Nat) (codedOut : Nat),
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap a)
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap a) (Term.var codedOut))) →
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap b)
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap b) (Term.var codedOut))) →
+    BProv Ax_s G
+      (iffForm
+        (compositeTermGraphAt codedOut codedMap (Term.mul a b))
+        (ordinalCodeGraphTermAt
+          (Term.rename rawMap (Term.mul a b)) (Term.var codedOut)))
+
+/-- The operation interface closes the full `term_graph` field by ordinary
+structural induction on PA terms. -/
+theorem BProv_Ax_s_term_graph_of_compatibility
+    (C : OrdinalCodeTermCompatibilityProofs) :
+    ∀ (t : Term) (G : List Formula)
+        (rawMap codedMap : Nat → Nat) (codedOut : Nat),
+      (∀ n, Term.Free n t →
+        BProv Ax_s G
+          (ordinalCodeGraphAt (rawMap n) (codedMap n))) →
+      BProv Ax_s G
+        (iffForm
+          (compositeTermGraphAt codedOut codedMap t)
+          (ordinalCodeGraphTermAt
+            (Term.rename rawMap t) (Term.var codedOut))) := by
+  intro t
+  induction t with
+  | var n =>
+      intro G rawMap codedMap codedOut hcode
+      exact BProv_Ax_s_term_graph_var
+        C.graph_functional G n rawMap codedMap codedOut hcode
+  | zero =>
+      intro G rawMap codedMap codedOut hcode
+      simpa [Term.rename] using C.zero_compatible G codedMap codedOut
+  | succ t ih =>
+      intro G rawMap codedMap codedOut hcode
+      exact C.succ_compatible G t rawMap codedMap codedOut
+        (ih G rawMap codedMap codedOut hcode)
+  | add a b iha ihb =>
+      intro G rawMap codedMap codedOut hcode
+      exact C.add_compatible G a b rawMap codedMap codedOut
+        (iha G rawMap codedMap codedOut
+          (fun n hn ↦ hcode n (Or.inl hn)))
+        (ihb G rawMap codedMap codedOut
+          (fun n hn ↦ hcode n (Or.inr hn)))
+  | mul a b iha ihb =>
+      intro G rawMap codedMap codedOut hcode
+      exact C.mul_compatible G a b rawMap codedMap codedOut
+        (iha G rawMap codedMap codedOut
+          (fun n hn ↦ hcode n (Or.inl hn)))
+        (ihb G rawMap codedMap codedOut
+          (fun n hn ↦ hcode n (Or.inr hn)))
+
+/-- The graph-level proof obligations remaining after totality. -/
+structure OrdinalCodeGraphRemainingProofs where
+  range : ∀ (G : List Formula) (coded : Term),
+    BProv Ax_s G
+      (iffForm
+        (subst (instTerm coded) codedOrdinalDomain)
+        (ex (ordinalCodeGraphTermAt
+          (Term.var 0) (Term.rename Nat.succ coded))))
+  injective : ∀ {G : List Formula} {raw₁ raw₂ coded : Term},
+    BProv Ax_s G (ordinalCodeGraphTermAt raw₁ coded) →
+    BProv Ax_s G (ordinalCodeGraphTermAt raw₂ coded) →
+    BProv Ax_s G (eq raw₁ raw₂)
+
+/-- The remaining graph laws plus four term-operation laws construct the
+complete package; graph totality is already unconditional. -/
+def OrdinalCodeGraphProofs_of_remaining_and_compatibility
+    (P : OrdinalCodeGraphRemainingProofs)
+    (C : OrdinalCodeTermCompatibilityProofs) :
+    OrdinalCodeGraphProofs where
+  total := OrdinalCodeGraphProofs_total
+  range := P.range
+  injective := P.injective
+  term_graph := fun G t rawMap codedMap codedOut hcode ↦
+    BProv_Ax_s_term_graph_of_compatibility
+      C t G rawMap codedMap codedOut hcode
+
 /-- Totality of the ordinal-code graph turns equality of raw terms into
 relational equality of their codes. -/
 theorem BProv_codeEqualityTermAt_of_eq
