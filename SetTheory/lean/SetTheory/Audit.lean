@@ -408,6 +408,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ_of_source
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ_of_entry_exists
 #check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ
+#check @PA.Formula.BProv_Ax_s_betaEntryExistsPrefixTermAt_entry_of_ltTerm
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_not_exists
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixTermAt_succ_of_not_exists
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_source
@@ -417,6 +418,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ
 #check @PA.Formula.BProv_Ax_s_all_betaShiftPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_of_codingStep
+#check @PA.Formula.BProv_Ax_s_all_betaUnshiftPrefixCodeExistsTermAt_of_codingStep
+#check @PA.Formula.BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_of_codingStep
 #check @PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_of_shiftPrefix_succ
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt
 #check @PA.Formula.BProv_Ax_s_all_betaShiftTailExistsTermAt
@@ -519,6 +522,7 @@ open SetTheory
 #check @PA.Formula.betaCodeExtensionExistsTermAtBody
 #check @PA.Formula.betaEntryExistsTermAt
 #check @PA.Formula.betaEntryExistsTermAtBody
+#check @PA.Formula.betaEntryExistsPrefixTermAt
 #check @PA.Formula.betaShiftPrefixTermAt
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAt
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAtBody
@@ -545,6 +549,7 @@ open SetTheory
 #check @PA.Formula.betaCodeExtensionTermAt_nat
 #check @PA.Formula.betaCodeExtensionExistsTermAt_nat
 #check @PA.Formula.betaEntryExistsTermAt_nat
+#check @PA.Formula.betaEntryExistsPrefixTermAt_nat
 #check @PA.Formula.betaShiftPrefixTermAt_nat
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAt_nat
 #check @PA.Formula.betaUnshiftPrefixTermAt_nat
