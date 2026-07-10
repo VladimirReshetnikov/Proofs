@@ -4,8 +4,9 @@
 (*  Coq counterpart of the Lean small-state Rado busy-beaver witnesses.  *)
 (*  The concrete machines prove the lower-bound half of the A028444       *)
 (*  prefix through four states.  The one-state upper bound is proved      *)
-(*  directly; the remaining upper bounds are kept as explicit certificate *)
-(*  interfaces, just as in the Lean development.                          *)
+(*  directly. Bounded score checkers for two and three states support the *)
+(*  certified time-bound bridges; the remaining four-state upper bound is *)
+(*  retained as an explicit certificate interface.                       *)
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Bool.Bool Lia List ZArith.
@@ -571,6 +572,258 @@ Proof.
   pose proof (two_state_halted_score_le_four_by_time M t ht hState) as hle.
   rewrite hScore in hle.
   exact hle.
+Qed.
+
+(* --------------------------------------------------------------------- *)
+(* A lazy bounded three-state score check                                *)
+(* --------------------------------------------------------------------- *)
+
+(** The three-state bounded check is deliberately not a flat enumeration
+    of all [16^6] complete transition tables.  It starts with an undefined
+    table, follows the unique execution path, and branches over the sixteen
+    possible actions only when that path first encounters a new table slot.
+    Thus irrelevant transitions are never materialized. *)
+
+Definition actionOfCode3 (code : nat) : BB.action :=
+  match code with
+  | 0 => go false BB.left 0
+  | 1 => go false BB.left 1
+  | 2 => go false BB.left 2
+  | 3 => halt false BB.left
+  | 4 => go false BB.right 0
+  | 5 => go false BB.right 1
+  | 6 => go false BB.right 2
+  | 7 => halt false BB.right
+  | 8 => go true BB.left 0
+  | 9 => go true BB.left 1
+  | 10 => go true BB.left 2
+  | 11 => halt true BB.left
+  | 12 => go true BB.right 0
+  | 13 => go true BB.right 1
+  | 14 => go true BB.right 2
+  | _ => halt true BB.right
+  end.
+
+Lemma actionOfCode3_complete : forall a,
+  (forall next, BB.action_next a = Some next -> next < 3) ->
+  exists code, code < 16 /\ actionOfCode3 code = a.
+Proof.
+  intros [write mv next] hnext.
+  destruct write; destruct mv; destruct next as [next|].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1 \/ next = 2) as [-> | [-> | ->]] by lia.
+    + exists 8. split; [lia | reflexivity].
+    + exists 9. split; [lia | reflexivity].
+    + exists 10. split; [lia | reflexivity].
+  - exists 11. split; [lia | reflexivity].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1 \/ next = 2) as [-> | [-> | ->]] by lia.
+    + exists 12. split; [lia | reflexivity].
+    + exists 13. split; [lia | reflexivity].
+    + exists 14. split; [lia | reflexivity].
+  - exists 15. split; [lia | reflexivity].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1 \/ next = 2) as [-> | [-> | ->]] by lia.
+    + exists 0. split; [lia | reflexivity].
+    + exists 1. split; [lia | reflexivity].
+    + exists 2. split; [lia | reflexivity].
+  - exists 3. split; [lia | reflexivity].
+  - pose proof (hnext next eq_refl) as hlt.
+    assert (next = 0 \/ next = 1 \/ next = 2) as [-> | [-> | ->]] by lia.
+    + exists 4. split; [lia | reflexivity].
+    + exists 5. split; [lia | reflexivity].
+    + exists 6. split; [lia | reflexivity].
+  - exists 7. split; [lia | reflexivity].
+Qed.
+
+Definition actionList3 : list BB.action :=
+  map actionOfCode3 (seq 0 16).
+
+Lemma action_mem_actionList3 : forall a,
+  (forall next, BB.action_next a = Some next -> next < 3) ->
+  In a actionList3.
+Proof.
+  intros a hnext.
+  destruct (actionOfCode3_complete a hnext) as [code [hcode haction]].
+  unfold actionList3.
+  apply in_map_iff.
+  exists code. split; [exact haction |].
+  apply in_seq. lia.
+Qed.
+
+Definition partialTable3 : Type := nat -> bool -> option BB.action.
+
+Definition emptyPartialTable3 : partialTable3 := fun _ _ => None.
+
+Definition partialTable3_set (table : partialTable3)
+    (q : nat) (bit : bool) (a : BB.action) : partialTable3 :=
+  fun q' bit' =>
+    if Nat.eqb q' q then
+      if Bool.eqb bit' bit then Some a else table q' bit'
+    else table q' bit'.
+
+Definition partialTable3_agrees (M : BB.machine 3)
+    (table : partialTable3) : Prop :=
+  forall q bit a,
+    table q bit = Some a -> a = BB.transition 3 M q bit.
+
+Lemma emptyPartialTable3_agrees : forall M,
+  partialTable3_agrees M emptyPartialTable3.
+Proof.
+  intros M q bit a h. discriminate h.
+Qed.
+
+Lemma partialTable3_set_agrees : forall M table q bit a,
+  partialTable3_agrees M table ->
+  a = BB.transition 3 M q bit ->
+  partialTable3_agrees M (partialTable3_set table q bit a).
+Proof.
+  intros M table q bit a hagree haction q' bit' a' hlookup.
+  unfold partialTable3_set in hlookup.
+  destruct (Nat.eqb q' q) eqn:hq.
+  - apply Nat.eqb_eq in hq. subst q'.
+    destruct (Bool.eqb bit' bit) eqn:hbit.
+    + apply Bool.eqb_prop in hbit. subst bit'.
+      inversion hlookup. subst a'. exact haction.
+    + eapply hagree. exact hlookup.
+  - eapply hagree. exact hlookup.
+Qed.
+
+Definition stepAction3 (cfg : BB.config 3) (a : BB.action) : BB.config 3 :=
+  {| BB.cfg_state := BB.action_next a;
+     BB.cfg_head := BB.move_apply (BB.action_move a) (BB.cfg_head _ cfg);
+     BB.cfg_tape := BB.Tape.write (BB.cfg_tape _ cfg) (BB.cfg_head _ cfg)
+       (BB.action_write a) |}.
+
+Lemma stepAction3_eq_step : forall (M : BB.machine 3) cfg q a,
+  BB.cfg_state _ cfg = Some q ->
+  a = BB.transition 3 M q
+    (BB.Tape.read (BB.cfg_tape _ cfg) (BB.cfg_head _ cfg)) ->
+  stepAction3 cfg a = BB.Machine.step M cfg.
+Proof.
+  intros M cfg q a hstate haction.
+  unfold stepAction3, BB.Machine.step.
+  rewrite hstate.
+  rewrite <- haction.
+  reflexivity.
+Qed.
+
+Fixpoint checkFrom3 (fuel : nat) (table : partialTable3)
+    (cfg : BB.config 3) : bool :=
+  match BB.cfg_state _ cfg with
+  | None => Nat.leb (length (BB.cfg_tape _ cfg)) 6
+  | Some q =>
+      match fuel with
+      | O => true
+      | S remaining =>
+          let bit := BB.Tape.read (BB.cfg_tape _ cfg) (BB.cfg_head _ cfg) in
+          match table q bit with
+          | Some a => checkFrom3 remaining table (stepAction3 cfg a)
+          | None =>
+              forallb (fun a =>
+                checkFrom3 remaining (partialTable3_set table q bit a)
+                  (stepAction3 cfg a)) actionList3
+          end
+      end
+  end.
+
+Lemma runFrom_succ_start : forall (M : BB.machine 3) cfg t,
+  BB.Machine.runFrom M cfg (S t) =
+    BB.Machine.runFrom M (BB.Machine.step M cfg) t.
+Proof.
+  intros M cfg t.
+  replace (S t) with (1 + t) by lia.
+  rewrite BB.Machine.runFrom_add.
+  reflexivity.
+Qed.
+
+Lemma runFrom_of_halted : forall (M : BB.machine 3) cfg,
+  BB.cfg_state _ cfg = None ->
+  forall t, BB.Machine.runFrom M cfg t = cfg.
+Proof.
+  intros M cfg hhalt t.
+  induction t as [|t IH]; [reflexivity |].
+  simpl. rewrite IH.
+  apply BB.Machine.step_of_halted.
+  exact hhalt.
+Qed.
+
+Lemma checkFrom3_sound : forall fuel table cfg (M : BB.machine 3),
+  checkFrom3 fuel table cfg = true ->
+  partialTable3_agrees M table ->
+  forall t,
+    t <= fuel ->
+    BB.cfg_state _ (BB.Machine.runFrom M cfg t) = None ->
+    length (BB.cfg_tape _ (BB.Machine.runFrom M cfg t)) <= 6.
+Proof.
+  induction fuel as [|fuel IH]; intros table cfg M hcheck hagree t ht hhalt.
+  - assert (t = 0) as -> by lia.
+    simpl in hhalt |- *.
+    destruct (BB.cfg_state 3 cfg) as [q|] eqn:hstate.
+    + discriminate hhalt.
+    + unfold checkFrom3 in hcheck.
+      rewrite hstate in hcheck.
+      apply Nat.leb_le. exact hcheck.
+  - destruct (BB.cfg_state 3 cfg) as [q|] eqn:hstate.
+    + destruct t as [|t].
+      * simpl in hhalt. rewrite hstate in hhalt. discriminate hhalt.
+      * assert (ht' : t <= fuel) by lia.
+        unfold checkFrom3 in hcheck.
+        rewrite hstate in hcheck.
+        set (bit := BB.Tape.read (BB.cfg_tape 3 cfg) (BB.cfg_head 3 cfg)) in *.
+        destruct (table q bit) as [a|] eqn:hlookup.
+        -- pose proof (hagree q bit a hlookup) as haction.
+           pose proof (stepAction3_eq_step M cfg q a hstate haction) as hstep.
+           rewrite runFrom_succ_start in hhalt |- *.
+           rewrite <- hstep in hhalt |- *.
+           eapply IH; eassumption.
+        -- rewrite forallb_forall in hcheck.
+           set (a := BB.transition 3 M q bit).
+           assert (haction : a = BB.transition 3 M q bit) by reflexivity.
+           assert (haIn : In a actionList3).
+           { apply action_mem_actionList3.
+             intros next hnext.
+             exact (BB.transition_next_lt 3 M q bit next hnext). }
+           specialize (hcheck a haIn).
+           pose proof (partialTable3_set_agrees M table q bit a
+             hagree haction) as hagree'.
+           pose proof (stepAction3_eq_step M cfg q a hstate haction) as hstep.
+           rewrite runFrom_succ_start in hhalt |- *.
+           rewrite <- hstep in hhalt |- *.
+           eapply IH; eassumption.
+    + rewrite (runFrom_of_halted M cfg hstate t) in hhalt |- *.
+      unfold checkFrom3 in hcheck.
+      rewrite hstate in hcheck.
+      apply Nat.leb_le. exact hcheck.
+Qed.
+
+(** Kernel-checked exploration of the reachable partial-table tree. *)
+Lemma checkThreeStatesTwentyOne_true :
+  checkFrom3 21 emptyPartialTable3 (BB.initial 3) = true.
+Proof.
+  vm_compute.
+  reflexivity.
+Qed.
+
+Lemma run_eq_runFrom_initial_three : forall (M : BB.machine 3) t,
+  BB.Machine.run M t = BB.Machine.runFrom M (BB.initial 3) t.
+Proof.
+  intros M t. induction t as [|t IH]; [reflexivity |].
+  simpl. rewrite IH. reflexivity.
+Qed.
+
+Theorem three_state_halted_score_le_six_by_time : forall (M : BB.machine 3) t,
+  t <= 21 ->
+  BB.cfg_state _ (BB.Machine.run M t) = None ->
+  length (BB.cfg_tape _ (BB.Machine.run M t)) <= 6.
+Proof.
+  intros M t ht hhalt.
+  rewrite run_eq_runFrom_initial_three in hhalt |- *.
+  eapply checkFrom3_sound.
+  - exact checkThreeStatesTwentyOne_true.
+  - apply emptyPartialTable3_agrees.
+  - exact ht.
+  - exact hhalt.
 Qed.
 
 Definition ExactScore (states score : nat) : Prop :=

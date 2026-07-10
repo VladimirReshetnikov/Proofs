@@ -26,7 +26,7 @@ theorems, checked facts about retained data, and heuristic evidence.
 | OEIS and power towers | Formal semantics and exact finite certificates for A000081, A002845, A158415, A198683, and A199812 | [OEIS and power towers](#oeis-and-power-towers) |
 | Logic | Nicod's single NAND axiom, Wolfram's single Sheffer-stroke equation, Meredith's basis, and checked equational certificates | [`LeanProofs/WolframBoolean.lean`](LeanProofs/WolframBoolean.lean) |
 | Set theory | Full deductive equivalence of Vladimir's Closure axiomatization and ZF, checked independently in Rocq and Lean | [`SetTheory/`](SetTheory/README.md) |
-| Computability | Busy Beaver domination results, an exhaustive Lean proof that the two-state score is `Σ(2) = 4`, and a vendored Rocq certificate that the two-state time bound is `BB(2) = 6` | [`SetTheory/`](SetTheory/README.md), [`CoqBB2/`](CoqBB2/README.md) |
+| Computability | Busy Beaver domination results; exact score proofs `Σ(2) = 4` and `Σ(3) = 6` in Lean and Rocq; exact Rocq proofs of `Σ(4) = 13` and times `BB(2) = 6`, `BB(3) = 21`, `BB(4) = 107` | [`SetTheory/`](SetTheory/README.md), [`CoqBB2/`](CoqBB2/README.md), [`CoqBB3/`](CoqBB3/README.md), [`CoqBB4/`](CoqBB4/README.md) |
 | Reproducible research | Source snapshots, exact generators, retained data, investigation reports, and proof-status ledgers for difficult certificate projects | [`Oeis/`](Oeis/) |
 
 ## Repository map
@@ -37,6 +37,8 @@ theorems, checked facts about retained data, and heuristic evidence.
 | [`CoqProofs/`](CoqProofs/README.md) | Rocq ports of the root Lean developments, with their parity limits documented explicitly. |
 | [`SetTheory/`](SetTheory/README.md) | Closure ↔ ZF, first-order logic and completeness, PA/HF work, Busy Beaver formalizations, and the accompanying article. |
 | [`CoqBB2/`](CoqBB2/README.md) | Vendored upstream Rocq proof of the two-state Busy Beaver time bound, with repository-local hardening. |
+| [`CoqBB3/`](CoqBB3/README.md) | Vendored upstream Rocq proof of the three-state Busy Beaver time bound, with the same kernel hardening. |
+| [`CoqBB4/`](CoqBB4/README.md) | Vendored upstream Rocq proof of the four-state Busy Beaver time bound, likewise hardened and bridged to the local machine model. |
 | [`Oeis/A158415/`](Oeis/A158415/) | Exact Wolfram generator and research notes behind the A158415 radical certificates. |
 | [`Oeis/A198683/`](Oeis/A198683/README.md) | Wave-organized source, data, computation, and report corpus for the disputed value of A198683(12). |
 | [`docs/reports/`](docs/reports/) | Repository-wide comparison and status reports. |
@@ -159,10 +161,28 @@ The same project contains adjacent foundational and computability work:
 - an exhaustive Lean classification of all `12^4 = 20,736` two-state tables,
   proving the marked-symbol score `Σ(2) = 4`;
 - a bridge to the vendored Rocq proof that the maximum halting time for the
-  corresponding two-state model is `BB(2) = 6`.
+  corresponding two-state model is `BB(2) = 6`;
+- an [independent Lean proof](SetTheory/lean/SetTheory/BusyBeaverBB3.lean) of
+  `Σ(3) = 6`, using a kernel-checked lazy partial-table search whose active
+  leaves carry declaratively verified n-gram CPS nonhalting certificates;
+- a [separate Rocq proof](SetTheory/BusyBeaverBB3Bridge.v) of `Σ(3) = 6`,
+  combining its kernel-checked lazy score search with the vendored
+  `BB(3) = 21` time certificate;
+- a [Rocq bridge](SetTheory/BusyBeaverBB4Bridge.v) from the vendored
+  `BB(4) = 107` certificate to the local machine model, proving the exact
+  local time statement `ExactBusyBeaverTime 4 107`;
+- a separate score-aware Rocq replay of the four-state TNF enumeration in
+  [`BusyBeaverBB4Score.v`](SetTheory/BusyBeaverBB4Score.v) and its companion
+  modules, bounding the tape immediately before the final action by twelve
+  marks and the executed final write by one more, proving `Σ(4) = 13`;
+- a sound, mathlib-free Lean four-state TNF reduction with state-renaming and
+  reflection proofs; its exact upper bound remains conditional on the still
+  unsharded equality `TNF.checkRoot BB4.leaf = true`.
 
-The score theorem `Σ(2) = 4` and time theorem `BB(2) = 6` use different Busy
-Beaver measures; the differing numbers are intentional.
+The score theorems `Σ(2) = 4`, `Σ(3) = 6`, `Σ(4) = 13` and time theorems
+`BB(2) = 6`, `BB(3) = 21`, `BB(4) = 107` use different Busy Beaver measures;
+the differing numbers are intentional. The four-state score theorem is a
+separate certificate, not a consequence of the 107-step time theorem.
 
 ### Rocq/Coq coverage
 
@@ -176,6 +196,27 @@ module rather than claiming blanket parity.
 from `ccz181078/Coq-BB5`. The local version replaces an upstream unchecked
 native-cache cast with a kernel-checked `vm_compute`/`reflexivity` proof and
 retains the upstream provenance and license.
+
+[`CoqBB3/`](CoqBB3/README.md) similarly vendors the upstream `BB3/` proof of
+the 21-step bound and applies the same hardening. The local
+[`BusyBeaverBB3Bridge.v`](SetTheory/BusyBeaverBB3Bridge.v) transports that time
+bound into the repository's Rado model and combines it with a proved lazy
+partial-table score checker to obtain the exact score `Σ(3) = 6`.
+
+[`CoqBB4/`](CoqBB4/README.md) vendors the modular upstream `BB4/` proof of the
+107-step bound and replaces its unchecked native-cache cast by the same
+kernel-checked `vm_compute`/`reflexivity` path. The local
+[`BusyBeaverBB4Bridge.v`](SetTheory/BusyBeaverBB4Bridge.v) proves that its
+undefined-transition convention corresponds to the final-action convention
+of the local model, checks that the standard four-state champion attains 107
+local steps, and exports `ExactBusyBeaverTime 4 107`.
+
+The distinct [`BusyBeaverBB4Score.v`](SetTheory/BusyBeaverBB4Score.v) checker
+augments the same TNF queue with a proved score invariant. Its cached q200
+computation shows that every undefined-transition halt has at most twelve
+marks; [`BusyBeaverBB4ScoreBridge.v`](SetTheory/BusyBeaverBB4ScoreBridge.v)
+proves exact synchronization with the local list tape and accounts for the
+executed final write, exporting `sigma_four_eq_thirteen`.
 
 ## Research artifacts
 
@@ -216,6 +257,7 @@ focused work, build the affected module and its dependencies:
 lake build +LeanProofs.FermatFour
 lake build +LeanProofs.A198683EightBounds
 lake build +SetTheory.BusyBeaverBB2
+lake build +SetTheory.BusyBeaverBB3
 lake build +SetTheory.BusyBeaverMathlib
 lake build +SetTheory.AuditMathlib
 ```
@@ -243,33 +285,43 @@ Get-Content _CoqProject |
   }
 ```
 
-The SetTheory manifest includes its vendored CoqBB2 dependencies in the
-required order:
+The SetTheory manifest includes its vendored CoqBB2, CoqBB3, and CoqBB4
+dependencies in the required order:
 
 ```powershell
 cd C:\path\to\Proofs\SetTheory
 Get-Content _CoqProject |
   Where-Object { $_ -match '\.v$' } |
   ForEach-Object {
-    & coqc -Q . SetTheory -Q ../CoqBB2 CoqBB2 $_
+    & coqc -Q . SetTheory -Q ../CoqBB2 CoqBB2 -Q ../CoqBB3 CoqBB3 `
+        -Q ../CoqBB4 CoqBB4 $_
     if ($LASTEXITCODE -ne 0) { throw "coqc failed: $_" }
   }
 ```
 
 For individual files, use the same logical-path flags. See
 [`CoqProofs/README.md`](CoqProofs/README.md),
-[`SetTheory/README.md`](SetTheory/README.md), and
-[`CoqBB2/README.md`](CoqBB2/README.md) for project-specific details.
+[`SetTheory/README.md`](SetTheory/README.md),
+[`CoqBB2/README.md`](CoqBB2/README.md),
+[`CoqBB3/README.md`](CoqBB3/README.md), and
+[`CoqBB4/README.md`](CoqBB4/README.md) for project-specific details.
 
 ## Trust and status
 
 - Lean theorem statements are checked by Lean's kernel. Some finite
   certificates use `native_decide`; those sites deliberately extend the
   trusted boundary to Lean's native compiler and runtime and are visible in
-  source.
+  source. The exhaustive `Σ(2)=4` and `Σ(3)=6` Busy Beaver shards use ordinary
+  kernel `decide`, not `native_decide`.
 - Rocq certificates use kernel checking and, where documented, `vm_compute`.
-  The vendored CoqBB2 proof uses functional extensionality; its README records
-  the exact assumption.
+  The vendored CoqBB2, CoqBB3, and CoqBB4 proofs use functional
+  extensionality; their READMEs record the exact assumption. Their locally
+  hardened enumeration cache equations do not use `native_cast_no_check`.
+  The four-state score equality uses `vm_cast_no_check`: despite its historical
+  name, the [Rocq 9.0 manual](https://rocq-prover.org/doc/V9.0.0/refman/proof-engine/tactics.html#performance-oriented-tactic-variants)
+  specifies that it skips only the tactic-side precheck and asks the kernel to
+  perform VM conversion at `Qed`. The equality is closed under the global
+  context and does not use native OCaml compilation.
 - Generated equational traces, interval tables, and candidate partitions are
   accepted only through proved checkers or explicit hypotheses. Numerical
   agreement alone is never presented as a theorem.
@@ -296,9 +348,16 @@ history; consult Smithereens for the original path names.
 BusyLean was intentionally excluded from this repository and remains in
 [Smithereens at `src/BusyLean`](https://github.com/VladimirReshetnikov/Smithereens/tree/main/src/BusyLean).
 
+The vendored [`CoqBB2/`](CoqBB2/), [`CoqBB3/`](CoqBB3/), and
+[`CoqBB4/`](CoqBB4/) source snapshots come from
+[`ccz181078/Coq-BB5` commit `9142e219...`](https://github.com/ccz181078/Coq-BB5/commit/9142e219229baf2245d3f70851947230ea28a318).
+Their directory READMEs identify the selected upstream proof and each
+repository-local kernel-hardening change.
+
 ## License
 
 Unless a nested license says otherwise, this repository is available under
 the [MIT No Attribution License (MIT-0)](LICENSE). The vendored
-[`CoqBB2/`](CoqBB2/) subtree retains its upstream
-[MIT license](CoqBB2/LICENSE) and provenance.
+[`CoqBB2/`](CoqBB2/), [`CoqBB3/`](CoqBB3/), and [`CoqBB4/`](CoqBB4/)
+subtrees retain their upstream MIT licenses ([BB2](CoqBB2/LICENSE),
+[BB3](CoqBB3/LICENSE), [BB4](CoqBB4/LICENSE)) and provenance.

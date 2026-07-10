@@ -1,0 +1,28 @@
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C03
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C04
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C05
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C00
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C01
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C02
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C09
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C10
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C11
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C06
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C07
+import SetTheory.BusyBeaverBB3.Certificates.C11.C00.C08
+
+namespace SetTheory.BusyBeaver.BB3.Certificates
+
+
+theorem secondBranch_a11_a00 : secondBranch a11 a00 = true := by
+  have hAll : actionList.all (thirdMarkedBranch a11 a00) = true := by
+    rw [actionList_eq]
+    simp only [List.all_cons, List.all_nil, Bool.and_eq_true, thirdMarkedBranch_a11_a00_a03, thirdMarkedBranch_a11_a00_a04, thirdMarkedBranch_a11_a00_a05, thirdMarkedBranch_a11_a00_a00, thirdMarkedBranch_a11_a00_a01, thirdMarkedBranch_a11_a00_a02, thirdMarkedBranch_a11_a00_a09, thirdMarkedBranch_a11_a00_a10, thirdMarkedBranch_a11_a00_a11, thirdMarkedBranch_a11_a00_a06, thirdMarkedBranch_a11_a00_a07, thirdMarkedBranch_a11_a00_a08]
+    simp
+  change
+    (haltWritesSafe (stepGo (stepGo (initial 3) a11) a00) &&
+      actionList.all (thirdMarkedBranch a11 a00)) = true
+  exact Bool.and_eq_true_iff.mpr ⟨by decide, hAll⟩
+
+end SetTheory.BusyBeaver.BB3.Certificates
+

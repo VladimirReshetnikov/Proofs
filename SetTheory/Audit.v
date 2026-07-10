@@ -9,7 +9,9 @@
 
 From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
 From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
-From SetTheory Require Import BusyBeaverBB2Bridge.
+From SetTheory Require Import BusyBeaverBB2Bridge BusyBeaverBB3Bridge
+  BusyBeaverBB4Bridge BusyBeaverBB4Score BusyBeaverBB4ScoreComputation
+  BusyBeaverBB4ScoreCertificate BusyBeaverBB4ScoreBridge.
 From SetTheory Require Import Forward Reverse RiemannHypothesis.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -735,16 +737,41 @@ Check BusyBeaverKnownValues.attainableScore_one_one.
 Check BusyBeaverKnownValues.attainableScore_two_four.
 Check BusyBeaverKnownValues.attainableScore_three_six.
 Check BusyBeaverKnownValues.attainableScore_four_thirteen.
+Check BusyBeaverKnownValues.six_le_sigma_three.
 Check BusyBeaverKnownValues.a028444_prefix_lower_bounds_through_four.
 Check BusyBeaverKnownValues.upperBound_one.
 Check BusyBeaverKnownValues.checkAllCodes2_true.
 Check BusyBeaverKnownValues.two_state_halted_score_le_four_by_time.
 Check BusyBeaverKnownValues.upperBound_two_of_halting_time_bound.
+Check BusyBeaverKnownValues.actionOfCode3_complete.
+Check BusyBeaverKnownValues.checkThreeStatesTwentyOne_true.
+Check BusyBeaverKnownValues.checkFrom3_sound.
+Check BusyBeaverKnownValues.three_state_halted_score_le_six_by_time.
 Check BusyBeaverBB2Bridge.local_halt_event_time_le_six.
 Check BusyBeaverBB2Bridge.two_state_halting_time_bound_event.
 Check BusyBeaverBB2Bridge.upperBound_two.
 Check BusyBeaverBB2Bridge.exactScore_two.
 Check BusyBeaverBB2Bridge.sigma_two_eq_four.
+Check BusyBeaverBB3Bridge.local_halt_event_time_le_twenty_one.
+Check BusyBeaverBB3Bridge.three_state_halting_time_bound_event.
+Check BusyBeaverBB3Bridge.upperBound_three.
+Check BusyBeaverBB3Bridge.exactScore_three.
+Check BusyBeaverBB3Bridge.sigma_three_eq_six.
+Check BusyBeaverBB4Bridge.local_halt_event_to_coqbb4_plus_one.
+Check BusyBeaverBB4Bridge.local_halt_event_time_le_one_hundred_seven.
+Check BusyBeaverBB4Bridge.four_state_halting_time_bound_event.
+Check BusyBeaverBB4Bridge.tmOf_sigma4Champion_eq_BB4_champion.
+Check BusyBeaverBB4Bridge.sigma4Champion_halts_at_time_107.
+Check BusyBeaverBB4Bridge.haltsAtTime_is_first.
+Check BusyBeaverBB4Bridge.sigma4Champion_maps_to_coqbb4_halt_at_106.
+Check BusyBeaverBB4Bridge.attainableHaltingTime_four_le_107.
+Check BusyBeaverBB4Bridge.busy_beaver_time_four_eq_107.
+Check BusyBeaverBB4ScoreComputation.score_q_200_empty.
+Check BusyBeaverBB4ScoreCertificate.root_score_upper_bound.
+Check BusyBeaverBB4ScoreCertificate.allTM_first_halt_list_score_le_twelve.
+Check BusyBeaverBB4ScoreBridge.upperBound_four.
+Check BusyBeaverBB4ScoreBridge.exactScore_four.
+Check BusyBeaverBB4ScoreBridge.sigma_four_eq_thirteen.
 Check BusyBeaverKnownValues.ExactScore.
 Check BusyBeaverKnownValues.ExactScore.sigma_eq.
 Check BusyBeaverKnownValues.exactScore_one.
@@ -755,9 +782,25 @@ Check BusyBeaverKnownValues.A028444UpperBoundsThroughFour.of_twoThroughFour.
 Check BusyBeaverKnownValues.a028444_values_through_four_from_upperBounds.
 Check BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 Print Assumptions BusyBeaverKnownValues.upperBound_one.
+Print Assumptions BusyBeaverKnownValues.six_le_sigma_three.
 Print Assumptions BusyBeaverKnownValues.checkAllCodes2_true.
 Print Assumptions BusyBeaverKnownValues.upperBound_two_of_halting_time_bound.
 Print Assumptions BusyBeaverBB2Bridge.sigma_two_eq_four.
+Print Assumptions BusyBeaverKnownValues.checkThreeStatesTwentyOne_true.
+Print Assumptions BusyBeaverKnownValues.three_state_halted_score_le_six_by_time.
+Print Assumptions BusyBeaverBB3Bridge.local_halt_event_time_le_twenty_one.
+Print Assumptions BusyBeaverBB3Bridge.upperBound_three.
+Print Assumptions BusyBeaverBB3Bridge.sigma_three_eq_six.
+Print Assumptions
+  BusyBeaverBB4Bridge.local_halt_event_time_le_one_hundred_seven.
+Print Assumptions BusyBeaverBB4Bridge.sigma4Champion_halts_at_time_107.
+Print Assumptions BusyBeaverBB4Bridge.busy_beaver_time_four_eq_107.
+Print Assumptions BusyBeaverBB4ScoreComputation.score_q_200_empty.
+Print Assumptions
+  BusyBeaverBB4ScoreCertificate.allTM_first_halt_list_score_le_twelve.
+Print Assumptions BusyBeaverBB4ScoreBridge.upperBound_four.
+Print Assumptions BusyBeaverBB4ScoreBridge.exactScore_four.
+Print Assumptions BusyBeaverBB4ScoreBridge.sigma_four_eq_thirteen.
 Print Assumptions
   BusyBeaverKnownValues.a028444_values_through_four_from_remainingUpperBounds.
 

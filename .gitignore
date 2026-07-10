@@ -11,6 +11,8 @@
 .lia.cache
 .nia.cache
 .nra.cache
+Makefile.coq
+Makefile.coq.conf
 
 # General build output
 [Bb]in/

@@ -3,7 +3,7 @@
 - Created (UTC): 2026-07-02T02:12:50Z
 - Repository HEAD: 50a14cc6ba5c0dfca20cafd0a24df7b224a5e817
 
-A complete Lean 4 port of the Rocq/Coq development in [`../`](../) —
+A complete Lean 4 port of the core Rocq/Coq Closure/ZF development in [`../`](../) —
 Vladimir Reshetnikov's **"Closure" axiomatization of set theory and its
 machine-checked equivalence with ZF**, up to and including the headline
 syntactic theorem
@@ -14,8 +14,9 @@ theorem T_iff_ZF (phi : Form) (hphi : Sentence phi) :
 ```
 
 — *T and ZF prove exactly the same sentences* — plus the Gödel-completeness
-library it stands on. Every Coq statement has a Lean counterpart with the
-same logical content; no `sorry`, no extra axioms.
+library it stands on. The core statements have Lean counterparts with the same
+logical content; parity and deliberate side-module differences are recorded in
+the table below. There is no `sorry` and no project-specific Lean axiom.
 
 ## Module map
 
@@ -30,11 +31,13 @@ same logical content; no `sorry`, no extra axioms.
 | [`SetTheory/Reverse.lean`](SetTheory/Reverse.lean) | `Reverse.v` | the shallow reverse direction (ZF ⊢ Closure), self-contained, Foundation-free numerals |
 | [`SetTheory/PAHF.lean`](SetTheory/PAHF.lean) — a facade over [`SetTheory/PAHF/`](SetTheory/PAHF/)`{PASyntax, AckermannHFCore, RiemannHypothesis, Interpretation}.lean` | `PAHF.v` | PA/HF formalization work: Ackermann-coded HF on `Nat`, finite von Neumann ordinals, shallow PA/HF round-trip isomorphisms, first-order HF axiom schemas in the one-relation language, a separate first-order PA syntax with sealed PA axiom semantics, and a PA sentence form of the Mertens/Littlewood RH criterion |
 | [`SetTheory/BusyBeaver.lean`](SetTheory/BusyBeaver.lean) | `BusyBeaver.v` | Rado-style two-symbol blank-tape machines, attainable halting scores, the maximum-property interface `IsSigma`, and the theorem that any such busy-beaver score function eventually dominates every total recursive function whose recursiveness predicate has the standard linear-overhead blank-tape compiler |
-| [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs |
+| [`SetTheory/BusyBeaverKnownValues.lean`](SetTheory/BusyBeaverKnownValues.lean) | `BusyBeaverKnownValues.v` | standard 1-, 2-, 3-, and 4-state busy-beaver score champion tables, checked halting-score witnesses for `1, 4, 6, 13`, a direct proof that `Σ(1)=1`, and a certificate interface proving the exact A028444 prefix from the remaining explicit upper-bound proofs; the Rocq file additionally hosts its local bounded three-state score checker |
 | [`SetTheory/BusyBeaverBB2.lean`](SetTheory/BusyBeaverBB2.lean) | `BusyBeaverBB2Bridge.v` + vendored CoqBB2 | an independent Lean proof of `Σ(2)=4`, using kernel-checked halting/nonhalting certificates for the left-moving half of the 20,736 tables and a proved reflection simulation for the right-moving half |
+| [`SetTheory/BusyBeaverBB3.lean`](SetTheory/BusyBeaverBB3.lean) — a facade over [`SetTheory/BusyBeaverBB3/`](SetTheory/BusyBeaverBB3/) | `BusyBeaverBB3Bridge.v` + vendored CoqBB3 | independent Lean proof of `Σ(3)=6` by a sound lazy partial-table search and declaratively checked n-gram CPS nonhalting certificates; the separate Rocq proof combines its lazy score checker with the certified 21-step time bound |
+| [`SetTheory/BusyBeaverBB4/`](SetTheory/BusyBeaverBB4/) | `BusyBeaverBB4Bridge.v`, `BusyBeaverBB4Score*.v` + vendored CoqBB4 | Lean proves a sound partial-table search, nonhalting leaves, and arbitrary-machine TNF/state-renaming/reflection reductions, with exact coverage still conditional; Rocq proves both `ExactBusyBeaverTime 4 107` and the exact score `Σ(4)=13` |
 | [`SetTheory/BusyBeaverMathlib.lean`](SetTheory/BusyBeaverMathlib.lean) | `BusyBeaverMathlib.v` (explicit assumption-record counterpart) | mathlib's `Computable` predicate as the total-recursive predicate for `Nat -> Nat`, sequential `ToPartrec.Code` extraction, the proved finite-support `PartrecToTM2` evaluator bridge, and the unconditional busy-beaver domination theorem for `Computable` functions |
 | [`SetTheory/Audit.lean`](SetTheory/Audit.lean) | `Audit.v` | type-checks the headline results and prints their axioms |
-| [`SetTheory/AuditMathlib.lean`](SetTheory/AuditMathlib.lean) | — (root workspace only) | the same assumption audit for the mathlib-backed bridge theorems |
+| [`SetTheory/AuditMathlib.lean`](SetTheory/AuditMathlib.lean) | — (root workspace only) | assumption audit for the explicit Busy Beaver certificate targets and mathlib-backed bridge theorems |
 
 ## Building
 
@@ -45,17 +48,20 @@ Batteries — Lean core only) for the standalone SetTheory workspace:
 cd SetTheory/lean
 lake build                            # builds every mathlib-free module
 lake env lean SetTheory/Audit.lean    # re-runs the assumption audit
+lake build +SetTheory.BusyBeaverBB4.TNFAudit
 ```
 
-The mathlib-backed modules `SetTheory/BusyBeaverBB2.lean` and
-`SetTheory/BusyBeaverMathlib.lean`, together with their audit
-`SetTheory/AuditMathlib.lean`, are built from the repository-root workspace,
-which is pinned to mathlib `v4.31.0`:
+The expensive Busy Beaver certificate modules
+`SetTheory/BusyBeaverBB2.lean` and `SetTheory/BusyBeaverBB3.lean`, the
+mathlib-backed `SetTheory/BusyBeaverMathlib.lean` bridge, and their combined
+`SetTheory/AuditMathlib.lean` audit are built explicitly from the
+repository-root workspace, which is pinned to mathlib `v4.31.0`:
 
 ```sh
 cd "$(git rev-parse --show-toplevel)"
 lake exe cache get Mathlib.Computability.TuringMachine.ToPartrec
 lake build +SetTheory.BusyBeaverBB2
+lake build +SetTheory.BusyBeaverBB3
 lake build +SetTheory.BusyBeaverMathlib
 lake build +SetTheory.AuditMathlib    # replays the bridge assumption audit
 ```
@@ -233,6 +239,68 @@ theorem BusyBeaver.BB2.upperBound_two :
 theorem BusyBeaver.BB2.sigma_two_eq_four
     (hSigma : BusyBeaver.IsSigma Sigma) : Sigma 2 = 4
 ```
+
+`BusyBeaverBB3.lean` independently proves the exact three-state value. Its lazy
+partial table stores only continuing transitions. Whenever execution first
+reaches an unassigned entry, the search checks both possible final writes and
+recurses through all twelve continuing actions; after 21 transitions, every
+still-active branch must supply a sound nonhalting certificate. The leaf
+pipeline first recognizes a table with all six continuing entries assigned,
+then tries Boolean n-gram CPS certificates of widths one, two, and three, and
+finally width two over symbols carrying a depth-two per-cell write history.
+
+The fixed-point builder is only a certificate generator: its output is accepted
+solely after the proved declarative `NGramCPS.Valid` checker has rechecked every
+seed, length, transition, and closure obligation. The exhaustive computation is
+split first by the twelve possible initial continuing actions under
+`SetTheory/BusyBeaverBB3/Certificates/`, then subdivided further at later
+freshly encountered table entries as needed. Every computational shard is
+proved with ordinary kernel `decide`; none uses `native_decide`. The public
+results are:
+
+```lean
+theorem BusyBeaver.BB3.upperBound_three :
+    BusyBeaver.AttainableScore 3 score -> score <= 6
+
+theorem BusyBeaver.BB3.sigma_three_eq_six
+    (hSigma : BusyBeaver.IsSigma Sigma) : Sigma 3 = 6
+```
+
+This Lean proof does not import the Coq development. Independently,
+`BusyBeaverBB3Bridge.v` imports the vendored Rocq `BB(3)=21` certificate and
+combines it with the Rocq lazy score checker to prove the same `Sigma 3 = 6`
+statement through a different upper-bound route.
+
+For four states, Lean now proves the semantic search and symmetry layer under
+`BusyBeaverBB4/`. `TNF.checkFrom_sound` applies a whole-machine state
+permutation whenever execution first reaches a noncanonical fresh state;
+`TNF.upperBound_of_checkRoot` additionally proves first-transition target
+canonicalization and left/right tape reflection. These are arbitrary-machine
+theorems, not assumptions that the input was already normalized, and their
+axiom footprint is only `propext` and `Quot.sound`.
+
+The strongest Lean result is deliberately still conditional:
+
+```lean
+theorem BusyBeaver.BB4.TNF.upperBound_of_checkRoot
+    (hLeaf : LeafSound leaf) (hCheck : checkRoot leaf = true) :
+    AttainableScore 4 score -> score <= 13
+```
+
+The remaining obligation is the kernel-checked exhaustive equality
+`TNF.checkRoot BB4.leaf = true`; direct evaluation is too large and needs the
+same kind of sharding used for the three-state proof. A 100,000-node coverage
+probe reached 1,053 leaves, all accepted by the existing sound leaf pipeline;
+a separate million-node structural probe reached 10,691 leaves and no unsafe
+halt. These bounded probes are evidence about the search shape rather than the
+missing exhaustive theorem.
+
+Independently, Rocq imports the vendored `BB(4)=107` certificate through
+`BusyBeaverBB4Bridge.v`, proving `ExactBusyBeaverTime 4 107` in the local
+model. The `BusyBeaverBB4Score*.v` chain propagates a score invariant through
+the TNF enumeration, bounds the tape before the undefined transition by twelve
+marks, and proves that the local final action adds at most one, yielding the
+unconditional exact score theorem `Σ(4)=13`.
 
 ## Translation notes (Coq → Lean)
 
