@@ -1,9 +1,6 @@
 # Machine-Checkable Proofs
 
-- Created (UTC): 2026-07-04T17:38:16Z
-- Repository HEAD: not pinned; see git history for the exact checkpoint commit
-
-`src/Lean/` is the repository home for machine-checkable proofs and the
+This repository is home for machine-checkable proofs and the
 research artifacts that support them. Most checked proof modules here are
 Lean, but the scope is intentionally broader: Rocq/Coq developments and
 associated research code in Python, Wolfram Language, or other languages
