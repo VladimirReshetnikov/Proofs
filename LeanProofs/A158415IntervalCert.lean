@@ -34,46 +34,87 @@ def expr : IntervalCert -> Expr
   | sqrt _ _ c => Expr.sqrt c.expr
   | add _ _ a b => Expr.add a.expr b.expr
 
-def Valid : IntervalCert -> Prop
-  | one lo hi => (lo : Real) < 1 ∧ (1 : Real) < hi
+def valid : IntervalCert -> Bool
+  | one lo hi => decide (lo < 1) && decide (1 < hi)
   | sqrt lo hi c =>
-      c.Valid ∧ ((lo : Real) < 0 ∨ (lo : Real) ^ 2 < (c.lower : Real)) ∧
-        ((c.upper : Real) < (hi : Real) ^ 2) ∧ (0 : Real) < hi
+      c.valid && (decide (lo < 0) || decide (lo ^ 2 < c.lower)) &&
+        decide (c.upper < hi ^ 2) && decide (0 < hi)
   | add lo hi a b =>
-      a.Valid ∧ b.Valid ∧
-        ((lo : Real) < (a.lower : Real) + (b.lower : Real)) ∧
-        ((a.upper : Real) + (b.upper : Real) < (hi : Real))
+      a.valid && b.valid && decide (lo < a.lower + b.lower) &&
+        decide (a.upper + b.upper < hi)
+
+def Valid (c : IntervalCert) : Prop := c.valid = true
+
+def separated (left right : IntervalCert) : Bool :=
+  left.valid && right.valid && decide (left.upper < right.lower)
+
+private theorem cast_lt {a b : Rat} (h : a < b) : (a : Real) < (b : Real) :=
+  (Rat.cast_lt (K := Real)).2 h
+
+private theorem cast_sq_lt {a b : Rat} (h : a ^ 2 < b) :
+    (a : Real) ^ 2 < (b : Real) := by
+  rw [← Rat.cast_pow]
+  exact cast_lt h
+
+private theorem cast_lt_sq {a b : Rat} (h : a < b ^ 2) :
+    (a : Real) < (b : Real) ^ 2 := by
+  rw [← Rat.cast_pow]
+  exact cast_lt h
+
+private theorem cast_lt_add {a b c : Rat} (h : a < b + c) :
+    (a : Real) < (b : Real) + (c : Real) := by
+  rw [← Rat.cast_add]
+  exact cast_lt h
+
+private theorem cast_add_lt {a b c : Rat} (h : a + b < c) :
+    (a : Real) + (b : Real) < (c : Real) := by
+  rw [← Rat.cast_add]
+  exact cast_lt h
 
 theorem sound (c : IntervalCert) (h : c.Valid) :
     (c.lower : Real) < c.expr.eval ∧ c.expr.eval < (c.upper : Real) := by
   induction c with
   | one lo hi =>
-      simpa [Valid, lower, upper, expr, eval] using h
+      simp only [Valid, valid, Bool.and_eq_true, decide_eq_true_eq] at h
+      simp only [lower, upper, expr, eval]
+      exact And.intro
+        (by simpa only [Rat.cast_one] using cast_lt h.1)
+        (by simpa only [Rat.cast_one] using cast_lt h.2)
   | sqrt lo hi c ih =>
-      rcases h with ⟨hc, hlo, hhi, hpos⟩
+      simp only [Valid, valid, Bool.and_eq_true, Bool.or_eq_true,
+        decide_eq_true_eq] at h
+      rcases h with ⟨⟨⟨hc, hlo⟩, hhi⟩, hpos⟩
       have hs := ih hc
-      simp [lower, upper, expr, eval]
+      simp only [lower, upper, expr, eval]
       constructor
       · rcases hlo with hneg | hsq
-        · exact lt_of_lt_of_le hneg (Real.sqrt_nonneg _)
+        · exact lt_of_lt_of_le
+            (by simpa only [Rat.cast_zero] using cast_lt hneg) (Real.sqrt_nonneg _)
         · apply Real.lt_sqrt_of_sq_lt
-          exact lt_trans hsq hs.1
-      · rw [Real.sqrt_lt' hpos]
-        exact lt_trans hs.2 hhi
+          exact lt_trans (cast_sq_lt hsq) hs.1
+      · rw [Real.sqrt_lt'
+            (by simpa only [Rat.cast_zero] using cast_lt hpos)]
+        exact lt_trans hs.2 (cast_lt_sq hhi)
   | add lo hi a b iha ihb =>
-      rcases h with ⟨ha, hb, hlo, hhi⟩
+      simp only [Valid, valid, Bool.and_eq_true, decide_eq_true_eq] at h
+      rcases h with ⟨⟨⟨ha, hb⟩, hlo⟩, hhi⟩
       have hsa := iha ha
       have hsb := ihb hb
-      constructor <;> simp [lower, upper, expr, eval] at * <;> linarith
+      simp only [lower, upper, expr, eval]
+      constructor
+      · exact lt_trans (cast_lt_add hlo) (add_lt_add hsa.1 hsb.1)
+      · exact lt_trans (add_lt_add hsa.2 hsb.2) (cast_add_lt hhi)
 
-theorem lt_of_gap {x y : Real} (left right : IntervalCert)
-    (hleft : left.Valid) (hright : right.Valid)
+theorem lt_of_separated {x y : Real} (left right : IntervalCert)
+    (hcert : left.separated right = true)
     (hleftEval : x = left.expr.eval) (hrightEval : y = right.expr.eval)
-    (hgap : (left.upper : Real) < (right.lower : Real)) : x < y := by
+    : x < y := by
+  simp only [separated, Bool.and_eq_true, decide_eq_true_eq] at hcert
+  rcases hcert with ⟨⟨hleft, hright⟩, hgap⟩
   have hleftRaw := sound left hleft
   have hrightRaw := sound right hright
   rw [hleftEval, hrightEval]
-  exact lt_trans hleftRaw.2 (lt_trans hgap hrightRaw.1)
+  exact lt_trans hleftRaw.2 (lt_trans (cast_lt hgap) hrightRaw.1)
 
 end IntervalCert
 
