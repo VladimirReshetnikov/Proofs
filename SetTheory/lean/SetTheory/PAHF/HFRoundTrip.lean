@@ -407,6 +407,190 @@ def PAHFFinDeductiveBiInterpretationCertificate_of_structuralProofs
     (fun phi hphi =>
       BProv_HFFin_hf_roundTrip_of_structuralProofs PHF phi hphi)
 
+theorem SetOrdinalRep_code_eq :
+  ∀ set code, SetOrdinalRep set code → code = ordinalCode set := by
+  intro set
+  exact Nat.strongRecOn set (fun set ih => by
+      intro code hrep
+      rcases hrep with ⟨relation, hroot, hcert⟩
+      have hlocal := hcert.2 set code hroot
+      rcases hlocal.1 with ⟨rawCode, hcode⟩
+      have hset : set = rawCode := by
+        apply AckermannHF.ext
+        intro elem
+        constructor
+        · intro helemSet
+          rcases (hlocal.2.1 elem).mp helemSet with
+            ⟨elemCode, hchildPair, hcoded⟩
+          rcases hcoded with
+            ⟨rawElem, rawSet, helemCode, hsetCode, hrawMem⟩
+          have hchildRep : SetOrdinalRep elem elemCode :=
+            ⟨relation, hchildPair, hcert⟩
+          have hchildCode : elemCode = ordinalCode elem :=
+            ih elem (mem_lt helemSet) elemCode hchildRep
+          have hrawElem : rawElem = elem :=
+            ordinalCode_injective (helemCode.symm.trans hchildCode)
+          have hrawSet : rawSet = rawCode :=
+            (ordinalCode_injective (hcode.trans hsetCode)).symm
+          simpa [hrawElem, hrawSet] using hrawMem
+        · intro helemRaw
+          let elemCode : Nat := ordinalCode elem
+          have helemOrd : IsOrdinalCode elemCode :=
+            ⟨elem, rfl⟩
+          have hcoded : CompositeMemObj elemCode code :=
+            ⟨elem, rawCode, rfl, hcode.symm, helemRaw⟩
+          rcases hlocal.2.2 elemCode helemOrd hcoded with
+            ⟨setElem, hchildPair⟩
+          have hsetElemMem : Mem setElem set :=
+            (hlocal.2.1 setElem).mpr
+              ⟨elemCode, hchildPair, hcoded⟩
+          have hchildRep : SetOrdinalRep setElem elemCode :=
+            ⟨relation, hchildPair, hcert⟩
+          have hchildCode : elemCode = ordinalCode setElem :=
+            ih setElem (mem_lt hsetElemMem) elemCode hchildRep
+          have heq : elem = setElem := by
+            apply ordinalCode_injective
+            simpa [elemCode] using hchildCode
+          simpa [heq] using hsetElemMem
+      calc
+        code = ordinalCode rawCode := hcode.symm
+        _ = ordinalCode set := by rw [hset])
+
+/-- The concrete finite certificate containing `(x, ordinalCode x)` for every
+`x ≤ bound`. -/
+def standardSetOrdinalRepGraph : Nat → Nat
+  | 0 => adjoin empty
+      (kpair standardModel 0 (ordinalCode 0))
+  | bound+1 => adjoin (standardSetOrdinalRepGraph bound)
+      (kpair standardModel (bound+1) (ordinalCode (bound+1)))
+
+theorem mem_standardSetOrdinalRepGraph_iff
+    (pair bound : Nat) :
+    Mem pair (standardSetOrdinalRepGraph bound) ↔
+      ∃ set, set ≤ bound ∧
+        pair = kpair standardModel set (ordinalCode set) := by
+  induction bound with
+  | zero =>
+      constructor
+      · intro h
+        rcases (mem_adjoin pair empty
+          (kpair standardModel 0 (ordinalCode 0))).mp h with
+          hfalse | hpair
+        · exact False.elim (mem_empty pair hfalse)
+        · exact ⟨0, Nat.le_refl 0, hpair⟩
+      · intro h
+        rcases h with ⟨set, hset, hpair⟩
+        have hzero : set = 0 := Nat.eq_zero_of_le_zero hset
+        subst set
+        apply (mem_adjoin pair empty
+          (kpair standardModel 0 (ordinalCode 0))).mpr
+        exact Or.inr hpair
+  | succ bound ih =>
+      constructor
+      · intro h
+        rcases (mem_adjoin pair
+          (standardSetOrdinalRepGraph bound)
+          (kpair standardModel (bound+1)
+            (ordinalCode (bound+1)))).mp h with
+          hold | hnew
+        · rcases ih.mp hold with ⟨set, hset, hpair⟩
+          exact ⟨set, Nat.le_trans hset (Nat.le_succ bound), hpair⟩
+        · exact ⟨bound+1, Nat.le_refl (bound+1), hnew⟩
+      · intro h
+        rcases h with ⟨set, hset, hpair⟩
+        apply (mem_adjoin pair
+          (standardSetOrdinalRepGraph bound)
+          (kpair standardModel (bound+1)
+            (ordinalCode (bound+1)))).mpr
+        rcases Nat.lt_or_eq_of_le hset with hlt | heq
+        · exact Or.inl (ih.mpr
+            ⟨set, Nat.le_of_lt_succ hlt, hpair⟩)
+        · exact Or.inr (by simpa [heq] using hpair)
+
+theorem standardSetOrdinalRepGraph_certificate (bound : Nat) :
+    SetOrdinalRepCertificate
+      (standardSetOrdinalRepGraph bound) := by
+  constructor
+  · intro key value value' hvalue hvalue'
+    rcases (mem_standardSetOrdinalRepGraph_iff
+      (kpair standardModel key value) bound).mp hvalue with
+      ⟨i, hi, hpair⟩
+    rcases (mem_standardSetOrdinalRepGraph_iff
+      (kpair standardModel key value') bound).mp hvalue' with
+      ⟨j, hj, hpair'⟩
+    have hcomp := kpair_injective standardModel hpair
+    have hcomp' := kpair_injective standardModel hpair'
+    have hij : i = j := hcomp.1.symm.trans hcomp'.1
+    calc
+      value = ordinalCode i := hcomp.2
+      _ = ordinalCode j := by rw [hij]
+      _ = value' := hcomp'.2.symm
+  · intro set code hpair
+    rcases (mem_standardSetOrdinalRepGraph_iff
+      (kpair standardModel set code) bound).mp hpair with
+      ⟨root, hroot, hrootPair⟩
+    have hcomp := kpair_injective standardModel hrootPair
+    have hset : set = root := hcomp.1
+    have hcode : code = ordinalCode root := hcomp.2
+    subst set
+    subst code
+    refine ⟨⟨root, rfl⟩, ?_, ?_⟩
+    · intro elem
+      constructor
+      · intro helem
+        have helemLe : elem ≤ bound :=
+          Nat.le_trans (Nat.le_of_lt (mem_lt helem)) hroot
+        have hchild : Mem
+            (kpair standardModel elem (ordinalCode elem))
+            (standardSetOrdinalRepGraph bound) :=
+          (mem_standardSetOrdinalRepGraph_iff _ bound).mpr
+            ⟨elem, helemLe, rfl⟩
+        exact ⟨ordinalCode elem, hchild,
+          ⟨elem, root, rfl, rfl, helem⟩⟩
+      · intro h
+        rcases h with ⟨elemCode, hchild, hcoded⟩
+        rcases (mem_standardSetOrdinalRepGraph_iff
+          (kpair standardModel elem elemCode) bound).mp hchild with
+          ⟨child, hchildLe, hchildPair⟩
+        have hchildComp := kpair_injective standardModel hchildPair
+        rcases hcoded with
+          ⟨rawElem, rawSet, helemCode, hsetCode, hmem⟩
+        have hrawElem : rawElem = child := by
+          apply ordinalCode_injective
+          exact helemCode.symm.trans hchildComp.2
+        have hrawSet : rawSet = root := by
+          apply ordinalCode_injective
+          exact hsetCode.symm
+        simpa [hchildComp.1, hrawElem, hrawSet] using hmem
+    · intro elemCode helemOrd hcoded
+      rcases hcoded with
+        ⟨rawElem, rawSet, helemCode, hsetCode, hmem⟩
+      have hrawSet : rawSet = root := by
+        apply ordinalCode_injective
+        exact hsetCode.symm
+      have hrawElemLe : rawElem ≤ bound := by
+        apply Nat.le_trans (Nat.le_of_lt ?_) hroot
+        simpa [hrawSet] using mem_lt hmem
+      refine ⟨rawElem, ?_⟩
+      apply (mem_standardSetOrdinalRepGraph_iff _ bound).mpr
+      refine ⟨rawElem, hrawElemLe, ?_⟩
+      simp [helemCode]
+
+theorem SetOrdinalRep_exists (set : Nat) :
+    SetOrdinalRep set (ordinalCode set) := by
+  refine ⟨standardSetOrdinalRepGraph set, ?_,
+    standardSetOrdinalRepGraph_certificate set⟩
+  apply (mem_standardSetOrdinalRepGraph_iff _ set).mpr
+  exact ⟨set, Nat.le_refl set, rfl⟩
+
+theorem SetOrdinalRep_iff (set code : Nat) :
+    SetOrdinalRep set code ↔ code = ordinalCode set := by
+  constructor
+  · exact SetOrdinalRep_code_eq set code
+  · intro h
+    rw [h]
+    exact SetOrdinalRep_exists set
+
+
 end AckermannHF
 end SetTheory
-
