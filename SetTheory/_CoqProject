@@ -70,6 +70,7 @@ Equivalence.v
 PAHF.v
 PAHFOrdinalCode.v
 PAHFTranslatedHFFin.v
+PAHFMembershipBound.v
 PAHFInterpretations.v
 PAHFHFRoundTrip.v
 PAHFHFRepresentation.v
