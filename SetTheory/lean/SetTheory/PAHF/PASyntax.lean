@@ -42939,6 +42939,19 @@ theorem rename_hfLtDistinguishesAt_succ (high : Nat) :
   simpa [hfLtDistinguishesTermAt_var, Term.rename] using
     (rename_hfLtDistinguishesTermAt_succ (Term.var high))
 
+/-- Renaming the ambient context shifts the term parameter of the cumulative
+invariant. -/
+theorem rename_hfLtDistinguishesThroughTermAt_succ
+    (boundCode : Term) :
+    rename Nat.succ (hfLtDistinguishesThroughTermAt boundCode) =
+      hfLtDistinguishesThroughTermAt (Term.rename Nat.succ boundCode) := by
+  simp [hfLtDistinguishesThroughTermAt, hfLtDistinguishesAt,
+    hfSomeDistinguishesAt, hfDistinguishesAt, hfMemAt,
+    betaDiv2BitAt, betaDiv2StepsThroughAt, betaDiv2StepWitnessAt,
+    betaAtSuccIdx, betaAtConstIdx, betaAt, remAt, ltAt, leAt,
+    ltTermAt, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
+    betaModTerm, rename, Term.rename, SetTheory.up, Term.rename_comp]
+
 /-- Instantiating the low-code binder of `hfLtDistinguishesAt` by an existing
 PA variable recovers the expected open implication. -/
 theorem subst_instTerm_var_hfLtDistinguishesAt_body
@@ -43057,6 +43070,33 @@ theorem substSuccVar_hfLtDistinguishesAt_zero :
     betaDiv2StepsThroughAt, betaDiv2StepWitnessAt, betaAtSuccIdx,
     div2StepAt, boolAt, zeroAt, oneAt, eqConstAt, betaModTerm, subst,
     substSuccVar, Term.subst, Term.upSubst, Term.rename]
+
+/-- The zero instance generated when PA induction is applied to the
+cumulative invariant. -/
+theorem substZero_hfLtDistinguishesThroughAt_zero :
+    subst substZero (hfLtDistinguishesThroughAt 0) =
+      hfLtDistinguishesThroughTermAt Term.zero := by
+  simp [hfLtDistinguishesThroughAt, hfLtDistinguishesThroughTermAt,
+    hfLtDistinguishesAt, hfSomeDistinguishesAt, hfDistinguishesAt,
+    hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt, leAt, ltTermAt, div2StepAt, boolAt, zeroAt, oneAt,
+    eqConstAt, betaModTerm, subst, substZero, Term.subst,
+    Term.upSubst, Term.rename]
+
+/-- The successor instance generated when PA induction is applied to the
+cumulative invariant. -/
+theorem substSuccVar_hfLtDistinguishesThroughAt_zero :
+    subst substSuccVar (hfLtDistinguishesThroughAt 0) =
+      hfLtDistinguishesThroughTermAt
+        (Term.succ (Term.var 0)) := by
+  simp [hfLtDistinguishesThroughAt, hfLtDistinguishesThroughTermAt,
+    hfLtDistinguishesAt, hfSomeDistinguishesAt, hfDistinguishesAt,
+    hfMemAt, betaDiv2BitAt, betaDiv2StepsThroughAt,
+    betaDiv2StepWitnessAt, betaAtSuccIdx, betaAtConstIdx, betaAt,
+    remAt, ltAt, leAt, ltTermAt, div2StepAt, boolAt, zeroAt, oneAt,
+    eqConstAt, betaModTerm, subst, substSuccVar, Term.subst,
+    Term.upSubst, Term.rename]
 
 /-- Project the one-code distinguishing invariant at any slot bounded by the
 cumulative strong-induction invariant. -/
@@ -44283,6 +44323,89 @@ theorem BProv_hfLtDistinguishesTermAt_of_high_eq_term
   simpa [hfLtDistinguishesTermAt, newRen, lowLtNew, targetNew]
     using hallNew
 
+/-- Extend the cumulative invariant by its next one-code instance. -/
+theorem BProv_Ax_s_hfLtDistinguishesThroughTermAt_succ
+    {G : List Formula} {boundCode : Term}
+    (hthrough : BProv Ax_s G
+      (hfLtDistinguishesThroughTermAt boundCode))
+    (hnew : BProv Ax_s G
+      (hfLtDistinguishesTermAt (Term.succ boundCode))) :
+    BProv Ax_s G
+      (hfLtDistinguishesThroughTermAt (Term.succ boundCode)) := by
+  let bound1 : Term := Term.rename Nat.succ boundCode
+  let oldLimit : Term := Term.succ bound1
+  let newLimit : Term := Term.succ oldLimit
+  let antecedent : Formula := ltTermAt (Term.var 0) newLimit
+  let target : Formula := hfLtDistinguishesAt 0
+  have hbody : BProv Ax_s
+      (antecedent :: G.map (rename Nat.succ)) target := by
+    let C : List Formula := antecedent :: G.map (rename Nat.succ)
+    have hltNew : BProv Ax_s C
+        (ltTermAt (Term.var 0) (Term.succ oldLimit)) := by
+      simpa [C, antecedent, newLimit, oldLimit] using
+        (BProv_ass (B := Ax_s) (G := C) (phi := antecedent)
+          (by simp [C]))
+    have hcases : BProv Ax_s C
+        (or (ltTermAt (Term.var 0) oldLimit)
+          (eq (Term.var 0) oldLimit)) :=
+      BProv_Ax_s_ltTermAt_succ_right_cases hltNew
+    have hthroughRen : BProv Ax_s (G.map (rename Nat.succ))
+        (hfLtDistinguishesThroughTermAt bound1) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hthrough Nat.succ
+      simpa [bound1,
+        rename_hfLtDistinguishesThroughTermAt_succ] using hren
+    have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+        (hfLtDistinguishesTermAt oldLimit) := by
+      have hren := BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hnew Nat.succ
+      simpa [bound1, oldLimit, rename_hfLtDistinguishesTermAt_succ,
+        Term.rename] using hren
+    have hstrict : BProv Ax_s
+        (ltTermAt (Term.var 0) oldLimit :: C) target := by
+      let D : List Formula := ltTermAt (Term.var 0) oldLimit :: C
+      have hlt : BProv Ax_s D
+          (ltTermAt (Term.var 0) (Term.succ bound1)) := by
+        simpa [D, oldLimit] using
+          (BProv_ass (B := Ax_s) (G := D)
+            (phi := ltTermAt (Term.var 0) oldLimit) (by simp [D]))
+      have hle : BProv Ax_s D
+          (leTermAt (Term.var 0) bound1) :=
+        BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
+      have hthroughD : BProv Ax_s D
+          (hfLtDistinguishesThroughTermAt bound1) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hthroughRen)
+      exact BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
+        hthroughD hle
+    have hequal : BProv Ax_s
+        (eq (Term.var 0) oldLimit :: C) target := by
+      let D : List Formula := eq (Term.var 0) oldLimit :: C
+      have heq : BProv Ax_s D (eq oldLimit (Term.var 0)) :=
+        BProv_eqSym
+          (BProv_ass (B := Ax_s) (G := D) (by simp [D]))
+      have hnewD : BProv Ax_s D
+          (hfLtDistinguishesTermAt oldLimit) :=
+        BProv_context_cons (B := Ax_s)
+          (BProv_context_cons (B := Ax_s) hnewRen)
+      have htransport : BProv Ax_s D
+          (hfLtDistinguishesTermAt (Term.var 0)) :=
+        BProv_hfLtDistinguishesTermAt_of_high_eq_term
+          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+          hnewD heq
+      simpa [D, target, hfLtDistinguishesTermAt_var] using htransport
+    exact BProv_orE hcases hstrict hequal
+  have himp : BProv Ax_s (G.map (rename Nat.succ))
+      (imp antecedent target) := by
+    simpa using BProv_impI hbody
+  have hall : BProv Ax_s G (all (imp antecedent target)) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) himp
+  simpa [hfLtDistinguishesThroughTermAt, antecedent, target,
+    newLimit, oldLimit, bound1, Term.rename] using hall
+
 /-- Odd-high carry transport for a single distinguishing existential.
 
 If PA proves `high = 2*half + 1`, then the successor high-code term is equal
@@ -45222,6 +45345,68 @@ theorem BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
     (highCode := highCode)
     (BProv_Ax_s_hfDistinguishesTermAt_of_zero_mem_and_low_double
       helem hhigh hlowDouble)
+
+/-- A high binary head with bit `1` and a low binary head with bit `0` are
+distinguished by bit index zero.  Equality of the two halves is not needed. -/
+theorem BProv_Ax_s_hfSomeDistinguishesAt_of_div2_bits_one_zero
+    {G : List Formula}
+    {high highHalf highBit low lowHalf lowBit : Nat}
+    (hhighBit : BProv Ax_s G (eqConstAt highBit 1))
+    (hhighStep : BProv Ax_s G
+      (div2StepAt high highHalf highBit))
+    (hlowBit : BProv Ax_s G (eqConstAt lowBit 0))
+    (hlowStep : BProv Ax_s G
+      (div2StepAt low lowHalf lowBit)) :
+    BProv Ax_s G (hfSomeDistinguishesAt high low) := by
+  have hhighOdd : BProv Ax_s G (oddDoubleEqAt high highHalf) :=
+    BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one
+      hhighBit hhighStep
+  have hlowDouble : BProv Ax_s G (doubleEqAt low lowHalf) :=
+    BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
+      hlowBit hlowStep
+  let zeroEq : Formula := eqConstAt 0 0
+  have hex : BProv Ax_s G (ex zeroEq) := by
+    simpa [zeroEq] using
+      BProv_exists_eqConstAt (B := Ax_s) (G := G) 0
+  have hbody : BProv Ax_s (zeroEq :: G.map (rename Nat.succ))
+      (rename Nat.succ (hfSomeDistinguishesAt high low)) := by
+    let C : List Formula := zeroEq :: G.map (rename Nat.succ)
+    have hzero : BProv Ax_s C (eqConstAt 0 0) :=
+      BProv_ass (B := Ax_s) (G := C) (by simp [C, zeroEq])
+    have hhighOddRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (oddDoubleEqAt high highHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hhighOdd Nat.succ
+    have hhighOddC : BProv Ax_s C
+        (oddDoubleEqAt (high+1) (highHalf+1)) := by
+      simpa [C, oddDoubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := zeroEq) hhighOddRen
+    have hlowDoubleRen : BProv Ax_s (G.map (rename Nat.succ))
+        (rename Nat.succ (doubleEqAt low lowHalf)) :=
+      BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hlowDouble Nat.succ
+    have hlowDoubleC : BProv Ax_s C
+        (doubleEqAt (low+1) (lowHalf+1)) := by
+      simpa [C, doubleEqAt, rename, Term.rename] using
+        BProv_context_cons (B := Ax_s) (a := zeroEq) hlowDoubleRen
+    have hhighMem : BProv Ax_s C
+        (hfMemTermAt 0 (Term.var (high+1))) :=
+      BProv_Ax_s_hfMemTermAt_oddCurrentBeta_of_zero_and_odd
+        (G := C) (elem := 0) (cur := high+1)
+        (half := highHalf+1) hzero hhighOddC
+    have hsome : BProv Ax_s C
+        (hfSomeDistinguishesTermAt (Term.var (high+1)) (low+1)) :=
+      BProv_Ax_s_hfSomeDistinguishesTermAt_of_zero_mem_and_low_double
+        (G := C) (elem := 0) (low := low+1)
+        (lowHalf := lowHalf+1) (highCode := Term.var (high+1))
+        hzero hhighMem hlowDoubleC
+    simpa [C, hfSomeDistinguishesTermAt_var,
+      rename_hfSomeDistinguishesAt_succ] using hsome
+  exact BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    hex (by simpa [zeroEq] using hbody)
 
 /-- Even-low branch of the successor/predecessor distinguisher: if `low` is
 `2*h`, then the fresh zero element belongs to `S low` but not to `low`. -/
@@ -46213,6 +46398,37 @@ theorem BProv_Ax_s_hfLtDistinguishesThroughTermAt_zero :
         (hfLtDistinguishesAt 0))
       (fun f hf => sentence_ax_s (f := f) hf)
       (by simpa using himp))
+
+/-- The cumulative shell plugs directly into ordinary PA induction: only the
+proof of the genuinely new one-code invariant remains. -/
+theorem BProv_Ax_s_all_hfLtDistinguishesThroughAt_of_successor_new
+    (hnew : BProv Ax_s [hfLtDistinguishesThroughAt 0]
+      (hfLtDistinguishesTermAt (Term.succ (Term.var 0)))) :
+    BProv Ax_s [] (all (hfLtDistinguishesThroughAt 0)) := by
+  let phi : Formula := hfLtDistinguishesThroughAt 0
+  have hzero : BProv Ax_s [] (subst substZero phi) := by
+    simpa [phi, substZero_hfLtDistinguishesThroughAt_zero] using
+      BProv_Ax_s_hfLtDistinguishesThroughTermAt_zero
+  have hthrough : BProv Ax_s [phi]
+      (hfLtDistinguishesThroughTermAt (Term.var 0)) := by
+    simpa [phi, hfLtDistinguishesThroughAt] using
+      (BProv_ass (B := Ax_s) (G := [phi]) (phi := phi) (by simp))
+  have hsuccTerm : BProv Ax_s [phi]
+      (hfLtDistinguishesThroughTermAt
+        (Term.succ (Term.var 0))) :=
+    BProv_Ax_s_hfLtDistinguishesThroughTermAt_succ
+      hthrough (by simpa [phi] using hnew)
+  have hsuccBody : BProv Ax_s [phi] (subst substSuccVar phi) := by
+    simpa [phi, substSuccVar_hfLtDistinguishesThroughAt_zero] using
+      hsuccTerm
+  have hsuccImp : BProv Ax_s [] (imp phi (subst substSuccVar phi)) :=
+    BProv_impI hsuccBody
+  have hsuccAll : BProv Ax_s []
+      (all (imp phi (subst substSuccVar phi))) :=
+    BProv_allI_of_sentences (B := Ax_s)
+      (fun f hf => sentence_ax_s (f := f) hf) hsuccImp
+  simpa [phi] using
+    BProv_Ax_s_induction_rule (G := []) (phi := phi) hzero hsuccAll
 
 /-- PA induction reduces the universal lower-code distinguishing theorem to
 its successor step.  The base case is already

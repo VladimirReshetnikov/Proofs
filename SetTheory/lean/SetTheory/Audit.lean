@@ -979,11 +979,14 @@ open SetTheory
 #check @PA.Formula.rename_hfSomeDistinguishesTermAt_succ
 #check @PA.Formula.rename_hfLtDistinguishesTermAt_succ
 #check @PA.Formula.rename_hfLtDistinguishesAt_succ
+#check @PA.Formula.rename_hfLtDistinguishesThroughTermAt_succ
 #check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_body
 #check @PA.Formula.subst_instTerm_var_hfLtDistinguishesTermAt_body
 #check @PA.Formula.subst_instTerm_var_hfLtDistinguishesAt_zero
 #check @PA.Formula.subst_instTerm_hfLtDistinguishesAt_zero_term
 #check PA.Formula.substSuccVar_hfLtDistinguishesAt_zero
+#check PA.Formula.substZero_hfLtDistinguishesThroughAt_zero
+#check PA.Formula.substSuccVar_hfLtDistinguishesThroughAt_zero
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
 #check @PA.Formula.subst_instTerm_var_hfMemTermAt_zero_rename_succ
 #check @PA.Formula.BProv_hfMemTermAt_of_hfMemAt_eq_term
@@ -1006,6 +1009,7 @@ open SetTheory
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_elim
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_elim
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_div2_steps_and_half_distinguishes
+#check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_div2_bits_one_zero
 #check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfSomeDistinguishesAt_of_mem_and_not_mem
 #check @PA.Formula.BProv_hfDistinguishesAt_of_mem_and_low_mem_bot
@@ -1015,6 +1019,7 @@ open SetTheory
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_high_eq_term
 #check @PA.Formula.BProv_hfSomeDistinguishesTermAt_of_high_eq_term
 #check @PA.Formula.BProv_hfLtDistinguishesTermAt_of_high_eq_term
+#check @PA.Formula.BProv_Ax_s_hfLtDistinguishesThroughTermAt_succ
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesTermAt_of_high_odd_double_succ
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesTermAt_of_high_odd_double_succ
 #check @PA.Formula.BProv_hfDistinguishesTermAt_of_hfDistinguishesAt_eq_term
@@ -1044,6 +1049,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_hfLtDistinguishesAt_of_eqConst_high
 #check PA.Formula.BProv_Ax_s_hfLtDistinguishesAt_zero_base
 #check PA.Formula.BProv_Ax_s_hfLtDistinguishesThroughTermAt_zero
+#check PA.Formula.BProv_Ax_s_all_hfLtDistinguishesThroughAt_of_successor_new
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_HF_extensionality_lt10_bot_of_distinguishing
