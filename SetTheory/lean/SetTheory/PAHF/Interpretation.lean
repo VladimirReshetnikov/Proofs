@@ -8865,6 +8865,16 @@ def translatedHFTheoryInPAInterpretationOfProofs
     (fun _ hphi =>
       PA.Formula.BProv_Ax_s_of_translatedHFAx_of_proofs P hphi)
 
+/-- Unconditional identity interpretation of the translated foundation-HF
+theory in PA. -/
+def translatedHFTheoryInPAInterpretation :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv :=
+  translatedHFTheoryInPAInterpretationOfProofs
+    PA.Formula.translatedHFAxiomProofs
+
 /-- Identity interpretation from translated finite-HF axioms into PA, once the
 caller supplies explicit PA proofs of those translated axioms. -/
 def translatedHFFinTheoryInPAInterpretationOfAxiomProofs
@@ -8889,6 +8899,15 @@ def translatedHFFinTheoryInPAInterpretationOfProofs
     (fun _ hphi =>
       PA.Formula.BProv_Ax_s_of_translatedHFFinAx_of_proofs P hphi)
 
+/-- Unconditional identity interpretation of translated finite HF in PA. -/
+def translatedHFFinTheoryInPAInterpretation :
+    TheoryInterpretation PA.Formula PA.Formula
+      PA.Formula.Sentence PA.Formula.Sentence
+      PA.Formula.translatedHFFinAx PA.Formula.Ax_s
+      PA.Formula.BProv PA.Formula.BProv :=
+  translatedHFFinTheoryInPAInterpretationOfProofs
+    PA.Formula.translatedHFFinAxiomProofs
+
 /-- Reverse interpretation of foundation-style HF in PA from explicit PA proofs
 of every translated HF axiom. -/
 def hfInPAInterpretationOfTranslatedHFAxiomProofs
@@ -8912,6 +8931,15 @@ def hfInPAInterpretationOfTranslatedHFProofs
   hfInPAOfTranslatedHFTheoryInterpretation
     (translatedHFTheoryInPAInterpretationOfProofs P)
 
+/-- Unconditional reverse interpretation of foundation-style HF in PA. -/
+def hfInPAInterpretation :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAOfTranslatedHFTheoryInterpretation
+    translatedHFTheoryInPAInterpretation
+
 /-- Reverse interpretation of finite HF in PA from explicit PA proofs of every
 translated finite-HF axiom. -/
 def hfInPAInterpretationOfTranslatedHFFinAxiomProofs
@@ -8934,6 +8962,33 @@ def hfInPAInterpretationOfTranslatedHFFinProofs
       BProv PA.Formula.BProv :=
   hfInPAOfTranslatedHFFinTheoryInterpretation
     (translatedHFFinTheoryInPAInterpretationOfProofs P)
+
+/-- Unconditional reverse interpretation of finite HF in PA. -/
+def hfInPAFiniteInterpretation :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFFinAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAOfTranslatedHFFinTheoryInterpretation
+    translatedHFFinTheoryInPAInterpretation
+
+/-- Compatibility name retained from the period when translated adjunction
+was the last foundation-HF proof obligation. -/
+abbrev hfInPAInterpretationOfRemaining :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAInterpretation
+
+/-- Compatibility name retained from the period when finite-generation
+induction was the last reverse finite-HF interpretation obligation. -/
+abbrev hfInPAInterpretationOfRemainingFin :
+    TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFFinAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv :=
+  hfInPAFiniteInterpretation
 
 abbrev PAProvability :=
   (PA.Formula → Prop) → List PA.Formula → PA.Formula → Prop
@@ -8972,6 +9027,87 @@ set theory `HFFinAx_s`.  This is the target relevant to the PA/HF theorem:
 `HFAx_s` alone still has infinite ZF-style models. -/
 abbrev PAHFFinDeductiveBiInterpretationCertificate : Type :=
   DeductiveBiInterpretationCertificate HFFinAx_s PA.Formula.BProv
+
+/-- On the standard natural-number model, the PA-side composite has exactly
+the original sentence semantics.  This is semantic evidence only: it is not a
+PA derivation of the composite equivalence. -/
+theorem standard_pa_composite_exact
+    (phi : PA.Formula) (hphi : phi.Sentence) (v : Nat → Nat) :
+    PA.Formula.Sat PA.natModel v
+        (PA.Formula.translateHFFormula (PAInHF.translateFormula phi)) ↔
+      PA.Formula.Sat PA.natModel v phi := by
+  let psi : Form := PAInHF.translateFormula phi
+  have hpsi : Sentence psi :=
+    PAInHF.translateFormula_sentence_of_PA_sentence phi hphi
+  exact
+    (PA.Formula.translateHFFormula_exact psi v).trans
+      ((Sat_sentence_inv psi hpsi v (fun n ↦ ordinalCode (v n))).trans
+        (PAInHF.translateFormula_exact phi v))
+
+/-- On standard Ackermann HF, the HF-side composite has exactly the original
+sentence semantics.  As above, standard-model exactness does not by itself
+yield the requested HFFin derivation. -/
+theorem standard_hf_composite_exact
+    (phi : Form) (hphi : Sentence phi) (v : Nat → Nat) :
+    Sat Mem v
+        (PAInHF.translateFormula (PA.Formula.translateHFFormula phi)) ↔
+      Sat Mem v phi := by
+  let chi : PA.Formula := PA.Formula.translateHFFormula phi
+  let psi : Form := PAInHF.translateFormula chi
+  have hchi : chi.Sentence :=
+    PA.Formula.translateHFFormula_sentence_of_HF_sentence phi hphi
+  have hpsi : Sentence psi :=
+    PAInHF.translateFormula_sentence_of_PA_sentence chi hchi
+  exact
+    (Sat_sentence_inv psi hpsi v (fun n ↦ ordinalCode (v n))).trans
+      ((PAInHF.translateFormula_exact chi v).trans
+        (PA.Formula.translateHFFormula_exact phi v))
+
+/-- Exact assembly point for the remaining HFFin deductive
+bi-interpretability obligations. -/
+def PAHFFinDeductiveBiInterpretationCertificate_of_remaining
+    (hpa_roundTrip :
+      ∀ (phi : PA.Formula), phi.Sentence →
+        PA.Formula.BProv PA.Formula.Ax_s []
+          (PA.Formula.iffForm phi
+            (PA.Formula.translateHFFormula
+              (PAInHF.translateFormula phi))))
+    (hhf_roundTrip :
+      ∀ (phi : Form), Sentence phi →
+        BProv HFFinAx_s []
+          (fIff phi
+            (PAInHF.translateFormula
+              (PA.Formula.translateHFFormula phi)))) :
+    PAHFFinDeductiveBiInterpretationCertificate where
+  paInHf := paInHFFinTheoryInterpretation
+  hfInPa := hfInPAFiniteInterpretation
+  pa_roundTrip := hpa_roundTrip
+  hf_roundTrip := hhf_roundTrip
+
+/-- Once finite-generation induction has been discharged independently, the
+two concrete composite-identity theorems are the only remaining fields. -/
+def PAHFFinDeductiveBiInterpretationCertificate_of_roundTrips
+    (hfInPa : TheoryInterpretation Form PA.Formula
+      Sentence PA.Formula.Sentence
+      HFFinAx_s PA.Formula.Ax_s
+      BProv PA.Formula.BProv)
+    (hpa_roundTrip :
+      ∀ (phi : PA.Formula), phi.Sentence →
+        PA.Formula.BProv PA.Formula.Ax_s []
+          (PA.Formula.iffForm phi
+            (hfInPa.translate
+              (PAInHF.translateFormula phi))))
+    (hhf_roundTrip :
+      ∀ (phi : Form), Sentence phi →
+        BProv HFFinAx_s []
+          (fIff phi
+            (PAInHF.translateFormula
+              (hfInPa.translate phi)))) :
+    PAHFFinDeductiveBiInterpretationCertificate where
+  paInHf := paInHFFinTheoryInterpretation
+  hfInPa := hfInPa
+  pa_roundTrip := hpa_roundTrip
+  hf_roundTrip := hhf_roundTrip
 
 /-- A standard-model interpretation certificate with the actual syntactic
 translations attached, parameterized by the HF-side axiom theory and its

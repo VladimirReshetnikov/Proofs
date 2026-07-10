@@ -21,3 +21,5 @@ import SetTheory.PAHF.AckermannHFCore
 import SetTheory.PAHF.PASyntax
 import SetTheory.PAHF.RiemannHypothesis
 import SetTheory.PAHF.Interpretation
+import SetTheory.PAHF.RoundTrip
+import SetTheory.PAHF.HFRoundTrip
