@@ -1183,6 +1183,12 @@ open SetTheory
 #check @PA.Formula.rename_hfEmptyOrStrictPredAdjoinTermAt
 #check @PA.Formula.BProv_hfStrictPredAdjoinExistsTermAt_of_terms
 #check @PA.Formula.BProv_hfEmptyOrStrictPredAdjoinTermAt_of_terms
+#check @PA.Formula.BProv_Ax_s_div2StepAt_of_doubleEqAt_bit_zero
+#check @PA.Formula.BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_odd_step
+#check @PA.Formula.rPredOld
+#check @PA.Formula.BProv_hfStrongBelowAt_old_of_opened_pred
+#check @PA.Formula.rPredInstantiate
+#check @PA.Formula.BProv_hfFiniteGenerationAt_step_of_opened_pred
 #check @PA.Formula.BProv_Ax_s_translatedHFFiniteInductionBody_of_current
 #check @PA.Formula.BProv_Ax_s_hfDistinguishesAt_of_eqConst_mem_zero_low
 #check @PA.Formula.BProv_Ax_s_hfSomeDistinguishesAt_of_eqConst_mem_zero_low

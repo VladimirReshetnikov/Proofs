@@ -50227,6 +50227,303 @@ theorem BProv_hfEmptyOrStrictPredAdjoinTermAt_of_terms
   BProv_orI2
     (BProv_hfStrictPredAdjoinExistsTermAt_of_terms hlt hgraph)
 
+/-- The even equation and a named zero bit form a binary-halving step. -/
+theorem BProv_Ax_s_div2StepAt_of_doubleEqAt_bit_zero
+    {G : List Formula} {value half bit : Nat}
+    (hdouble : BProv Ax_s G (doubleEqAt value half))
+    (hbit : BProv Ax_s G (eqConstAt bit 0)) :
+    BProv Ax_s G (div2StepAt value half bit) := by
+  let d : Term := Term.add (Term.var half) (Term.var half)
+  have hbool : BProv Ax_s G (boolAt bit) := by
+    simpa [boolAt, zeroAt, oneAt] using
+      (BProv_orI1 (B := Ax_s) (G := G)
+        (b := eqConstAt bit 1) hbit)
+  have hvalue : BProv Ax_s G (eq (Term.var value) d) := by
+    simpa [doubleEqAt, d] using hdouble
+  have hbit' : BProv Ax_s G (eq (Term.var bit) Term.zero) := by
+    simpa [eqConstAt, Term.numeral] using hbit
+  have haddBit : BProv Ax_s G
+      (eq (Term.add d (Term.var bit))
+        (Term.add d Term.zero)) :=
+    BProv_eq_congr_add_right d hbit'
+  have haddZero : BProv Ax_s G
+      (eq (Term.add d Term.zero) d) :=
+    BProv_weaken_nil (BProv_Ax_s_addZero_term d)
+  have hsum : BProv Ax_s G
+      (eq (Term.add d (Term.var bit)) d) :=
+    BProv_eqTrans haddBit haddZero
+  have heq : BProv Ax_s G
+      (eq (Term.var value) (Term.add d (Term.var bit))) :=
+    BProv_eqTrans hvalue (BProv_eqSym hsum)
+  simpa [div2StepAt, d] using BProv_andI hbool heq
+
+/-- Odd binary heads have the direct strict predecessor obtained by clearing
+bit zero; the adjoined element is zero. -/
+theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_odd_step
+    {G : List Formula} {current half bit : Nat}
+    (hstep : BProv Ax_s G (div2StepAt current half bit))
+    (hbitOne : BProv Ax_s G (eqConstAt bit 1)) :
+    BProv Ax_s G (hfEmptyOrStrictPredAdjoinAt current) := by
+  let oldTerm : Term :=
+    Term.add (Term.var half) (Term.var half)
+  let nameBody : Formula :=
+    eq (Term.var 0) (Term.rename Nat.succ oldTerm)
+  let target : Formula := hfEmptyOrStrictPredAdjoinAt current
+  have hnameEx : BProv Ax_s G (ex nameBody) := by
+    simpa [nameBody] using
+      (BProv_exists_eq_term (B := Ax_s) (G := G) oldTerm)
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := G) (a := nameBody) (c := target) hnameEx ?_
+  let H : List Formula := nameBody :: G.map (rename Nat.succ)
+  let zeroBit : Formula := eqConstAt 0 0
+  have hzeroEx : BProv Ax_s H (ex zeroBit) :=
+    BProv_exists_eqConstAt (B := Ax_s) (G := H) 0
+  refine BProv_exE_of_sentences
+    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+    (G := H) (a := zeroBit) (c := rename Nat.succ target)
+    hzeroEx ?_
+  let K : List Formula := zeroBit :: H.map (rename Nat.succ)
+  have hzero : BProv Ax_s K (eqConstAt 0 0) :=
+    BProv_ass (B := Ax_s) (G := K) (by simp [K, zeroBit])
+  have hname : BProv Ax_s K
+      (eq (Term.var 1)
+        (Term.add (Term.var (half+2)) (Term.var (half+2)))) := by
+    apply BProv_ass (B := Ax_s) (G := K)
+    simp [K, H, nameBody, oldTerm, rename, Term.rename]
+  have holdDouble : BProv Ax_s K (doubleEqAt 1 (half+2)) := by
+    simpa [doubleEqAt] using hname
+  have holdStep : BProv Ax_s K (div2StepAt 1 (half+2) 0) :=
+    BProv_Ax_s_div2StepAt_of_doubleEqAt_bit_zero
+      holdDouble hzero
+  have hstepRen : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ
+        (div2StepAt current half bit))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      (BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hstep Nat.succ) Nat.succ
+  have hnewStep : BProv Ax_s K
+      (div2StepAt (current+2) (half+2) (bit+2)) := by
+    simpa [K, H, div2StepAt, boolAt, zeroAt, oneAt,
+      eqConstAt, rename, Term.rename, List.map_map,
+      Function.comp_def] using
+      BProv_context_cons (B := Ax_s) (a := zeroBit)
+        (BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ nameBody) hstepRen)
+  have hbitRen : BProv Ax_s
+      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ (eqConstAt bit 1))) :=
+    BProv_rename_of_sentences
+      (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+      (BProv_rename_of_sentences
+        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+        hbitOne Nat.succ) Nat.succ
+  have hnewBitOne : BProv Ax_s K (eqConstAt (bit+2) 1) := by
+    simpa [K, H, eqConstAt, rename, Term.rename,
+      List.map_map, Function.comp_def] using
+      BProv_context_cons (B := Ax_s) (a := zeroBit)
+        (BProv_context_cons (B := Ax_s)
+          (a := rename Nat.succ nameBody) hbitRen)
+  have hnewOdd : BProv Ax_s K
+      (oddDoubleEqAt (current+2) (half+2)) :=
+    BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one
+      hnewBitOne hnewStep
+  have hcurrentEq : BProv Ax_s K
+      (eq (Term.var (current+2))
+        (Term.succ
+          (Term.add (Term.var (half+2)) (Term.var (half+2))))) := by
+    simpa [oddDoubleEqAt] using hnewOdd
+  have hsuccOldEq : BProv Ax_s K
+      (eq (Term.succ (Term.var 1))
+        (Term.succ
+          (Term.add (Term.var (half+2)) (Term.var (half+2))))) :=
+    BProv_eq_congr_succ hname
+  have hsuccLe : BProv Ax_s K
+      (leTermAt (Term.succ (Term.var 1))
+        (Term.var (current+2))) :=
+    BProv_leTermAt_of_eq_right (BProv_eqSym hcurrentEq)
+      (BProv_leTermAt_of_eq_left (BProv_eqSym hsuccOldEq)
+        (BProv_Ax_s_leTermAt_refl
+          (Term.succ
+            (Term.add (Term.var (half+2)) (Term.var (half+2))))))
+  have hlt : BProv Ax_s K
+      (ltTermAt (Term.var 1) (Term.var (current+2))) :=
+    BProv_Ax_s_ltTermAt_of_succ_leTermAt hsuccLe
+  have hgraph : BProv Ax_s K
+      (hfAdjoinGraphTermAt
+        (Term.var (current+2)) (Term.var 1) Term.zero) :=
+    BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
+      (newHead := current+2) (oldHead := 1)
+      (tail := half+2) (newBit := bit+2) (oldBit := 0)
+      hnewBitOne hnewStep holdStep
+  have hproper : BProv Ax_s K
+      (hfEmptyOrStrictPredAdjoinTermAt
+        (Term.var (current+2))) :=
+    BProv_hfEmptyOrStrictPredAdjoinTermAt_of_terms
+      hlt hgraph
+  have htarget :
+      rename Nat.succ (rename Nat.succ target) =
+        hfEmptyOrStrictPredAdjoinTermAt
+          (Term.var (current+2)) := by
+    simp [target, hfEmptyOrStrictPredAdjoinAt,
+      rename_hfEmptyOrStrictPredAdjoinTermAt,
+      Term.rename]
+  rw [htarget]
+  exact hproper
+
+/-- In the opened predecessor-decomposition context (`elem`, `old`,
+`current`, parameters), read the induction predicate at `old`. -/
+def rPredOld : Nat → Nat
+  | 0 => 1
+  | n+1 => n+3
+
+theorem BProv_hfStrongBelowAt_old_of_opened_pred
+    {G : List Formula} {psi : Formula}
+    (hbelow : BProv Ax_s G
+      (rename Nat.succ (rename Nat.succ (hfStrongBelowAt psi)))) :
+    BProv Ax_s G
+      (imp
+        (ltAt 1 2)
+        (rename rPredOld psi)) := by
+  let body : Formula :=
+    imp (ltAt 0 1) (rename AckermannHF.rSkipParam psi)
+  have hraw := BProv_allE (B := Ax_s) (G := G)
+    (t := Term.var 1) hbelow
+  change BProv Ax_s G
+    (subst (instTerm (Term.var 1))
+      (rename (SetTheory.up Nat.succ)
+        (rename (SetTheory.up Nat.succ) body))) at hraw
+  let R : Nat → Nat := fun n =>
+    SetTheory.inst 1
+      (SetTheory.up Nat.succ (SetTheory.up Nat.succ n))
+  have hraw' : BProv Ax_s G (rename R body) := by
+    rw [subst_instTerm_var, rename_comp, rename_comp] at hraw
+    simpa [R] using hraw
+  have hlt : rename R (ltAt 0 1) = ltAt 1 2 := by
+    simp [R, ltAt, rename, Term.rename, SetTheory.up, SetTheory.inst]
+  have hpsi :
+      rename R (rename AckermannHF.rSkipParam psi) =
+        rename rPredOld psi := by
+    rw [rename_comp]
+    apply rename_ext
+    intro n
+    cases n <;> rfl
+  change BProv Ax_s G
+    (imp
+      (rename R (ltAt 0 1))
+      (rename R (rename AckermannHF.rSkipParam psi))) at hraw'
+  rw [hlt, hpsi] at hraw'
+  exact hraw'
+
+/-- Map the local `c,b,a` slots of the generation rule to the opened
+decomposition context `elem,old,current`. -/
+def rPredInstantiate : Nat → Nat
+  | 0 => 2
+  | 1 => 0
+  | 2 => 1
+  | n+3 => n+3
+
+theorem BProv_hfFiniteGenerationAt_step_of_opened_pred
+    {G : List Formula} {psi : Formula}
+    (hgeneration : BProv Ax_s G
+      (rename Nat.succ (rename Nat.succ (rename Nat.succ
+        (hfFiniteGenerationAt psi))))) :
+    BProv Ax_s G
+      (imp
+        (hfAdjoinGraphAt 2 1 0)
+        (imp
+          (rename rPredOld psi)
+          (rename AckermannHF.rAdjStepOld psi))) := by
+  let body : Formula :=
+    imp
+      (hfAdjoinGraphAt 0 2 1)
+      (imp
+        (rename AckermannHF.rAdjStepOld psi)
+        (rename AckermannHF.rAdjStepNew psi))
+  let A : Nat → Nat := fun n => n+3
+  let R1 : Nat → Nat := fun n =>
+    SetTheory.inst 1 (SetTheory.up A n)
+  let R2 : Nat → Nat := fun n =>
+    SetTheory.inst 0 (SetTheory.up R1 n)
+  let R3 : Nat → Nat := fun n =>
+    SetTheory.inst 2 (SetTheory.up R2 n)
+  have hgenerationA : BProv Ax_s G
+      (rename A (hfFiniteGenerationAt psi)) := by
+    simpa [A, rename_comp, Function.comp_def] using hgeneration
+  have hstepAll : BProv Ax_s G
+      (rename A (all (all (all body)))) := by
+    simpa [hfFiniteGenerationAt, body] using
+      BProv_andE2 hgenerationA
+  have ha := BProv_allE (B := Ax_s) (G := G)
+    (t := Term.var 1) hstepAll
+  rw [subst_instTerm_var] at ha
+  have ha' : BProv Ax_s G (rename R1 (all (all body))) := by
+    change BProv Ax_s G
+      (rename (SetTheory.inst 1)
+        (rename (SetTheory.up A) (all (all body)))) at ha
+    rw [rename_comp] at ha
+    simpa [R1] using ha
+  have hb := BProv_allE (B := Ax_s) (G := G)
+    (t := Term.var 0) ha'
+  rw [subst_instTerm_var] at hb
+  have hb' : BProv Ax_s G (rename R2 (all body)) := by
+    change BProv Ax_s G
+      (rename (SetTheory.inst 0)
+        (rename (SetTheory.up R1) (all body))) at hb
+    rw [rename_comp] at hb
+    simpa [R2] using hb
+  have hc := BProv_allE (B := Ax_s) (G := G)
+    (t := Term.var 2) hb'
+  rw [subst_instTerm_var] at hc
+  have hcR3 : BProv Ax_s G (rename R3 body) := by
+    change BProv Ax_s G
+      (rename (SetTheory.inst 2)
+        (rename (SetTheory.up R2) body)) at hc
+    rw [rename_comp] at hc
+    simpa [R3] using hc
+  have hR3 : R3 = rPredInstantiate := by
+    funext n
+    rcases n with _ | _ | _ | n <;>
+      simp [R3, R2, R1, A, rPredInstantiate,
+        SetTheory.up, SetTheory.inst]
+  have hc' : BProv Ax_s G (rename rPredInstantiate body) := by
+    simpa [hR3] using hcR3
+  have hgraph :
+      rename rPredInstantiate (hfAdjoinGraphAt 0 2 1) =
+        hfAdjoinGraphAt 2 1 0 := by
+    simp [hfAdjoinGraphAt, ← subst_var_rename,
+      subst_hfAdjoinGraphTermAt, term_subst_var_rename,
+      rPredInstantiate, Term.rename]
+  have hold :
+      rename rPredInstantiate
+          (rename AckermannHF.rAdjStepOld psi) =
+        rename rPredOld psi := by
+    rw [rename_comp]
+    apply rename_ext
+    intro n
+    cases n <;> rfl
+  have hnew :
+      rename rPredInstantiate
+          (rename AckermannHF.rAdjStepNew psi) =
+        rename AckermannHF.rAdjStepOld psi := by
+    rw [rename_comp]
+    apply rename_ext
+    intro n
+    cases n <;> rfl
+  change BProv Ax_s G
+    (imp
+      (rename rPredInstantiate (hfAdjoinGraphAt 0 2 1))
+      (imp
+        (rename rPredInstantiate
+          (rename AckermannHF.rAdjStepOld psi))
+        (rename rPredInstantiate
+          (rename AckermannHF.rAdjStepNew psi)))) at hc'
+  rw [hgraph, hold, hnew] at hc'
+  exact hc'
+
 /-- Pure strong-induction shell for finite generation.  `hcurrent` is the
 single local step still to be obtained from the strict predecessor adjunction
 decomposition: the generation hypotheses plus `psi` below the current code
