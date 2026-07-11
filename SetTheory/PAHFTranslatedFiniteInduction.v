@@ -1471,24 +1471,22 @@ Proof.
       exact (BProv_Ax_s_ltTermAt_succ_right_cases
         C (tVar 0) oldLimit hltNew).
     }
-    assert (hthroughRen : BProv Ax_s (map (rename S) G)
+    assert (hthroughC : BProv Ax_s C
       (hfEmptyOrStrictPredAdjoinThroughTermAt bound1)).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-        (hfEmptyOrStrictPredAdjoinThroughTermAt boundCode)
-        hthrough S) as hren.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G antecedent _ hthrough) as hren.
       rewrite rename_hfEmptyOrStrictPredAdjoinThroughTermAt in hren.
-      unfold bound1.
+      unfold C, bound1.
       exact hren.
     }
-    assert (hnewRen : BProv Ax_s (map (rename S) G)
+    assert (hnewC : BProv Ax_s C
       (hfEmptyOrStrictPredAdjoinTermAt oldLimit)).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-        (hfEmptyOrStrictPredAdjoinTermAt (tSucc boundCode))
-        hnew S) as hren.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G antecedent _ hnew) as hren.
       rewrite rename_hfEmptyOrStrictPredAdjoinTermAt in hren.
-      unfold oldLimit, bound1.
+      unfold C, oldLimit, bound1.
       simpl in hren.
       exact hren.
     }
@@ -1512,10 +1510,9 @@ Proof.
       assert (hthroughD : BProv Ax_s D
         (hfEmptyOrStrictPredAdjoinThroughTermAt bound1)).
       {
-        unfold D, C.
+        unfold D.
         apply BProv_context_cons.
-        apply BProv_context_cons.
-        exact hthroughRen.
+        exact hthroughC.
       }
       unfold target.
       exact (BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_throughTermAt
@@ -1535,10 +1532,9 @@ Proof.
       assert (hnewD : BProv Ax_s D
         (hfEmptyOrStrictPredAdjoinTermAt oldLimit)).
       {
-        unfold D, C.
+        unfold D.
         apply BProv_context_cons.
-        apply BProv_context_cons.
-        exact hnewRen.
+        exact hnewC.
       }
       pose proof
         (BProv_hfEmptyOrStrictPredAdjoinTermAt_of_eq_term

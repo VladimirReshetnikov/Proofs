@@ -51091,19 +51091,17 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinThroughTermAt_succ
         (or (ltTermAt (Term.var 0) oldLimit)
           (eq (Term.var 0) oldLimit)) :=
       BProv_Ax_s_ltTermAt_succ_right_cases hltNew
-    have hthroughRen : BProv Ax_s (G.map (rename Nat.succ))
+    have hthroughC : BProv Ax_s C
         (hfEmptyOrStrictPredAdjoinThroughTermAt bound1) := by
-      have hren := BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hthrough Nat.succ
-      simpa [bound1,
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := Ax_s) Ax_s_sentences (a := antecedent) hthrough
+      simpa [C, bound1,
         rename_hfEmptyOrStrictPredAdjoinThroughTermAt] using hren
-    have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+    have hnewC : BProv Ax_s C
         (hfEmptyOrStrictPredAdjoinTermAt oldLimit) := by
-      have hren := BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hnew Nat.succ
-      simpa [bound1, oldLimit,
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := Ax_s) Ax_s_sentences (a := antecedent) hnew
+      simpa [C, bound1, oldLimit,
         rename_hfEmptyOrStrictPredAdjoinTermAt, Term.rename] using hren
     have hstrict : BProv Ax_s
         (ltTermAt (Term.var 0) oldLimit :: C) target := by
@@ -51118,8 +51116,7 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinThroughTermAt_succ
         BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
       have hthroughD : BProv Ax_s D
           (hfEmptyOrStrictPredAdjoinThroughTermAt bound1) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hthroughRen)
+        BProv_context_cons (B := Ax_s) hthroughC
       exact BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_throughTermAt
         hthroughD hle
     have hequal : BProv Ax_s
@@ -51130,8 +51127,7 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinThroughTermAt_succ
           (BProv_ass (B := Ax_s) (G := D) (by simp [D]))
       have hnewD : BProv Ax_s D
           (hfEmptyOrStrictPredAdjoinTermAt oldLimit) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hnewRen)
+        BProv_context_cons (B := Ax_s) hnewC
       have htransport : BProv Ax_s D
           (hfEmptyOrStrictPredAdjoinTermAt (Term.var 0)) :=
         BProv_hfEmptyOrStrictPredAdjoinTermAt_of_eq_term
