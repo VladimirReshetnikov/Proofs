@@ -600,17 +600,9 @@ Proof.
       BProv Ax_s D (rename S (rename S phi))).
   {
     intros phi hphi.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s C _
-      hphi S) as hren1.
-    pose proof (BProv_context_cons Ax_s (map (rename S) C)
-      stepInner _ hren1) as hinnerCtx.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      (stepInner :: map (rename S) C) _ hinnerCtx S) as hren2.
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (stepInner :: map (rename S) C))
-      stepBody _ hren2) as hbodyCtx.
-    unfold D.
-    exact hbodyCtx.
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s C stepInner stepBody phi hphi) as h.
+    unfold D. exact h.
   }
   pose proof (lift2ToD _ hzeroC) as hzeroDRaw.
   assert (hzeroD : BProv Ax_s D
@@ -1114,22 +1106,15 @@ Proof.
           Ax_s D right2 (tVar 0) (tVar 1)
           (BProv_eqSym Ax_s D _ _ hcodedEq) hrightPred).
       }
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-        hinjective S) as hinjectiveRen1.
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        (map (rename S) G) _ hinjectiveRen1 S) as hinjectiveRen2.
+      pose proof (BProv_lift_two_contexts_of_sentences
+        Ax_s sentence_ax_s G leftBody rightBody _ hinjective)
+        as hinjectiveCtx.
       assert (hinjectiveD : BProv Ax_s D
           (ordinalCodeInjectiveTermAt left2)).
       {
-        pose proof (BProv_context_cons Ax_s
-          (map (rename S) (map (rename S) G))
-          (rename S leftBody) _ hinjectiveRen2) as hleftCtx.
-        pose proof (BProv_context_cons Ax_s
-          (rename S leftBody :: map (rename S) (map (rename S) G))
-          rightBody _ hleftCtx) as hrightCtx.
         unfold D, C, left1, left2.
-        rewrite !rename_ordinalCodeInjectiveTermAt in hrightCtx.
-        exact hrightCtx.
+        rewrite !rename_ordinalCodeInjectiveTermAt in hinjectiveCtx.
+        exact hinjectiveCtx.
       }
       assert (hrawEq : BProv Ax_s D (pEq left2 right2)).
       {
@@ -1172,10 +1157,9 @@ Proof.
   set (leftGraph := ordinalCodeGraphTermAt (tSucc raw2) (tVar 0)).
   set (rightGraph := ordinalCodeGraphTermAt (tVar 1) (tVar 0)).
   set (target := pEq (tSucc raw2) (tVar 1)).
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hinjective S) as hinjectiveRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hinjectiveRen1 S) as hinjectiveRen2.
+  pose proof (BProv_iterRenameSucc_of_sentences
+    Ax_s sentence_ax_s 2 G _ hinjective) as hinjectiveRen2.
+  cbn [iterRenameContextSucc iterRenameSucc] in hinjectiveRen2.
   assert (hinjectiveQ2 : BProv Ax_s Q2
       (ordinalCodeInjectiveTermAt raw2)).
   {

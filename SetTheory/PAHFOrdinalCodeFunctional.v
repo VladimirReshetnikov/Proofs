@@ -314,25 +314,14 @@ Proof.
   set (A := body1 :: map (rename S) (inner1 :: map (rename S) G)).
   assert (hbody1A : BProv Ax_s A body1).
   { apply BProv_ass. unfold A. simpl. now left. }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    G _ hgraph2 S) as hgraph2Ren1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hgraph2Ren1 S) as hgraph2Ren2.
-  pose proof (BProv_context_cons Ax_s
-    (map (rename S) (map (rename S) G))
-    (rename S inner1) _ hgraph2Ren2) as hgraph2Ctx1.
-  pose proof (BProv_context_cons Ax_s
-    (rename S inner1 :: map (rename S) (map (rename S) G))
-    body1 _ hgraph2Ctx1) as hgraph2Ctx2.
+  pose proof (BProv_lift_two_opened_of_sentences
+    Ax_s sentence_ax_s G body1 _ hgraph2) as hgraph2Ctx2.
   assert (hgraph2A : BProv Ax_s A
       (ordinalCodeGraphTermAt
         (Term.rename (fun n => n + 2) raw)
         (Term.rename (fun n => n + 2) coded2))).
   {
     unfold A.
-    rewrite rename_ordinalCodeGraphTermAt in hgraph2Ren1.
-    rewrite rename_ordinalCodeGraphTermAt in hgraph2Ren2.
-    simpl in hgraph2Ren1, hgraph2Ren2.
     rewrite !rename_ordinalCodeGraphTermAt in hgraph2Ctx2.
     rewrite !Term.rename_comp in hgraph2Ctx2.
     replace (fun x : nat => S (S x)) with
@@ -356,16 +345,8 @@ Proof.
     - set (B := body2 :: map (rename S) (inner2 :: map (rename S) A)).
       assert (hbody2B : BProv Ax_s B body2).
       { apply BProv_ass. unfold B. simpl. now left. }
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        A _ hbody1A S) as hbody1Ren1.
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        (map (rename S) A) _ hbody1Ren1 S) as hbody1Ren2.
-      pose proof (BProv_context_cons Ax_s
-        (map (rename S) (map (rename S) A))
-        (rename S inner2) _ hbody1Ren2) as hbody1Ctx1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S inner2 :: map (rename S) (map (rename S) A))
-        body2 _ hbody1Ctx1) as hbody1Ctx2.
+      pose proof (BProv_lift_two_opened_of_sentences
+        Ax_s sentence_ax_s A body2 _ hbody1A) as hbody1Ctx2.
       set (raw4 := Term.rename (fun n => n + 4) raw).
       set (coded14 := Term.rename (fun n => n + 4) coded1).
       set (coded24 := Term.rename (fun n => n + 4) coded2).

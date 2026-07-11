@@ -7,6 +7,7 @@
 From Stdlib Require Import Arith.Arith Lia List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import Fol Calculus Completeness PAHF
+  PAHFProofCalculus
   PAHFOrdinalCode PAHFOrdinalCodeTotal PAHFOrdinalCodeTotalCapacity
   PAHFOrdinalCodeTotalInduction PAHFTranslatedHFFin PAHFMembershipTail
   PAHFOrdinalCodeTermCompatibility PAHFOrdinalCodeInjective
@@ -619,15 +620,9 @@ Proof.
           BProv Ax_s G phi -> BProv Ax_s E (rename S (rename S phi))).
       {
         intros phi hphi.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hphi S) as hren1.
-        pose proof (BProv_context_cons Ax_s (map (rename S) G)
-          outGraph _ hren1) as houtCtx.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s C _
-          houtCtx S) as hren2.
-        pose proof (BProv_context_cons Ax_s (map (rename S) C)
-          edgeBody _ hren2) as hedgeCtx.
-        unfold E, C. exact hedgeCtx.
+        pose proof (BProv_lift_two_contexts_of_sentences
+          Ax_s sentence_ax_s G outGraph edgeBody phi hphi) as h.
+        unfold E, C. exact h.
       }
       pose proof (lift2 _ hpred) as hpredRaw.
       assert (hpredE : BProv Ax_s E
