@@ -982,24 +982,11 @@ theorem BProv_Ax_s_ordinalCodeGraphTermAt_elim_opened
       (Term.var 1) (Term.var 0)
       (Term.rename (fun n ↦ n+2) raw)
       (Term.rename (fun n ↦ n+2) coded)
-  let inner : Formula := ex body
-  have houterGraph : BProv Ax_s G (ex inner) := by
+  have hgraph' : BProv Ax_s G (ex (ex body)) := by
     simpa [ordinalCodeGraphTermAt, ordinalCodeGraphBodyTermAt,
-      body, inner] using hgraph
-  have houterOpened : BProv Ax_s
-      (inner :: G.map (rename Nat.succ))
-      (rename Nat.succ target) := by
-    let C : List Formula := inner :: G.map (rename Nat.succ)
-    have hinnerGraph : BProv Ax_s C (ex body) :=
-      BProv_ass (B := Ax_s) (G := C) (by simp [C, inner])
-    exact BProv_exE_of_sentences (B := Ax_s)
-      Ax_s_sentences
-      (a := body) (c := rename Nat.succ target)
-      hinnerGraph (by simpa [C, body, inner] using hopened)
-  exact BProv_exE_of_sentences (B := Ax_s)
-    Ax_s_sentences
-    (a := inner) (c := target) houterGraph
-    (by simpa [inner] using houterOpened)
+      body] using hgraph
+  exact BProv_two_exE_of_sentences (B := Ax_s)
+    Ax_s_sentences hgraph' (by simpa [body] using hopened)
 
 /-- The genuine internal induction frontier: two explicit beta traces with a
 common raw bound have equal endpoints. -/

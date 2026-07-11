@@ -7,7 +7,7 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import
-  Fol PAHF PAHFOrdinalCode PAHFOrdinalCodeTotal
+  Fol PAHF PAHFProofCalculus PAHFOrdinalCode PAHFOrdinalCodeTotal
   PAHFOrdinalCodeTotalCapacity.
 
 Import ListNotations.
@@ -502,17 +502,11 @@ Proof.
     fold pairBody in holdTotal.
     exact holdTotal.
   }
-  set (G1 := pEx pairBody :: map (rename S) G).
-  assert (houter : BProv Ax_s G1 (rename S goal)).
-  {
-    assert (hinnerEx : BProv Ax_s G1 (pEx pairBody)).
-    {
-      apply BProv_ass.
-      unfold G1. simpl. left. reflexivity.
-    }
-    set (C := pairBody :: map (rename S) G1).
-    assert (hinner : BProv Ax_s C (rename S (rename S goal))).
-    {
+  apply (BProv_two_exE_of_sentences
+    Ax_s sentence_ax_s G pairBody goal holdEx).
+  set (C := pairBody ::
+    map (rename S) (pEx pairBody :: map (rename S) G)).
+  change (BProv Ax_s C (rename S (rename S goal))).
       set (raw2 := Term.rename (fun n => n + 2) raw).
       assert (hcapacity : BProv Ax_s C
         (ordinalCodeTraceCapacityTermAt raw2 (tVar 1) (tVar 0))).
@@ -530,16 +524,6 @@ Proof.
       change (BProv Ax_s C
         (ordinalCodeTotalCapacityTermAt (tSucc raw2))).
       exact hsucc.
-    }
-    apply (BProv_exE_of_sentences Ax_s G1 pairBody (rename S goal)
-      sentence_ax_s hinnerEx).
-    change (BProv Ax_s C (rename S (rename S goal))).
-    exact hinner.
-  }
-  apply (BProv_exE_of_sentences Ax_s G (pEx pairBody) goal
-    sentence_ax_s holdEx).
-  change (BProv Ax_s G1 (rename S goal)).
-  exact houter.
 Qed.
 
 Lemma BProv_Ax_s_all_ordinalCodeTotalCapacityTermAt :
@@ -950,17 +934,11 @@ Proof.
     fold pairBody in htotal.
     exact htotal.
   }
-  set (G1 := pEx pairBody :: map (rename S) G).
-  assert (houter : BProv Ax_s G1 (rename S target)).
-  {
-    assert (hinnerEx : BProv Ax_s G1 (pEx pairBody)).
-    {
-      apply BProv_ass.
-      unfold G1. simpl. left. reflexivity.
-    }
-    set (C := pairBody :: map (rename S) G1).
-    assert (hinner : BProv Ax_s C (rename S (rename S target))).
-    {
+  apply (BProv_two_exE_of_sentences
+    Ax_s sentence_ax_s G pairBody target holdEx).
+  set (C := pairBody ::
+    map (rename S) (pEx pairBody :: map (rename S) G)).
+  change (BProv Ax_s C (rename S (rename S target))).
       set (raw2 := Term.rename (fun n => n + 2) raw).
       assert (hcapacity : BProv Ax_s C
         (ordinalCodeTraceCapacityTermAt raw2 (tVar 1) (tVar 0))).
@@ -977,16 +955,6 @@ Proof.
       rewrite term_rename_succ_twice_add_two.
       change (BProv Ax_s C (ordinalCodeGraphExistsTermAt raw2)).
       exact hex.
-    }
-    apply (BProv_exE_of_sentences Ax_s G1 pairBody (rename S target)
-      sentence_ax_s hinnerEx).
-    change (BProv Ax_s C (rename S (rename S target))).
-    exact hinner.
-  }
-  apply (BProv_exE_of_sentences Ax_s G (pEx pairBody) target
-    sentence_ax_s holdEx).
-  change (BProv Ax_s G1 (rename S target)).
-  exact houter.
 Qed.
 
 Theorem OrdinalCodeGraphProofs_total_of_adjoinExistence :

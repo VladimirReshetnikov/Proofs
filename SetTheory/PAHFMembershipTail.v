@@ -964,25 +964,12 @@ Proof.
       (div2StepAt 2 1 0))).
   assert (hwit : BProv Ax_s G (pEx (pEx (pEx body)))).
   { unfold betaDiv2StepWitnessAt in hwitness. unfold body. exact hwitness. }
-  assert (houter : BProv Ax_s
-      (pEx (pEx body) :: map (rename S) G)
-      (rename S target)).
-  {
-    set (G1 := pEx (pEx body) :: map (rename S) G).
-    assert (hex2 : BProv Ax_s G1 (pEx (pEx body))).
-    { apply BProv_ass. unfold G1. simpl. left. reflexivity. }
-    assert (hmid : BProv Ax_s
-        (pEx body :: map (rename S) G1)
-        (rename S (rename S target))).
-    {
-      set (G2 := pEx body :: map (rename S) G1).
-      assert (hex3 : BProv Ax_s G2 (pEx body)).
-      { apply BProv_ass. unfold G2. simpl. left. reflexivity. }
-      assert (hinner : BProv Ax_s
-          (body :: map (rename S) G2)
-          (rename S (rename S (rename S target)))).
-      {
-        set (C := body :: map (rename S) G2).
+  apply (BProv_three_exE_of_sentences
+    Ax_s sentence_ax_s G body target hwit).
+  set (C := body :: map (rename S)
+    (pEx body :: map (rename S)
+      (pEx (pEx body) :: map (rename S) G))).
+  change (BProv Ax_s C (rename S (rename S (rename S target)))).
         set (idx3 := Term.rename S (Term.rename S (Term.rename S idxTerm))).
         assert (hbody : BProv Ax_s C body).
         { apply BProv_ass. unfold C. simpl. left. reflexivity. }
@@ -1019,7 +1006,7 @@ Proof.
         assert (hidxC : BProv Ax_s C
             (pEq idx3 (tVar (S (S (S idx)))))).
         {
-          unfold C, G2, G1, idx3.
+          unfold C, idx3.
           exact hi6.
         }
         assert (hcurTerm : BProv Ax_s C
@@ -1054,20 +1041,9 @@ Proof.
           hcurTerm hnextTerm hdivTerm) as hpacked.
         unfold target.
         repeat rewrite rename_S_betaDiv2StepWitnessTermAt.
-        unfold C, G2, G1, idx3.
+        unfold C, idx3.
         simpl.
         exact hpacked.
-      }
-      exact (BProv_exE_of_sentences Ax_s G2 body
-        (rename S (rename S target)) sentence_ax_s hex3 hinner).
-    }
-    exact (BProv_exE_of_sentences Ax_s G1 (pEx body)
-      (rename S target) sentence_ax_s hex2 hmid).
-  }
-  unfold target.
-  exact (BProv_exE_of_sentences Ax_s G (pEx (pEx body))
-    (betaDiv2StepWitnessTermAt (tVar code) (tVar step) idxTerm)
-    sentence_ax_s hwit houter).
 Qed.
 
 (** Remove the outer term-index wrapper around a legacy step witness. *)
@@ -1167,25 +1143,12 @@ Proof.
     repeat rewrite hrename3 in hwitness.
     exact hwitness.
   }
-  assert (houter : BProv Ax_s
-      (pEx (pEx body) :: map (rename S) G)
-      (rename S target)).
-  {
-    set (G1 := pEx (pEx body) :: map (rename S) G).
-    assert (hex2 : BProv Ax_s G1 (pEx (pEx body))).
-    { apply BProv_ass. unfold G1. simpl. left. reflexivity. }
-    assert (hmid : BProv Ax_s
-        (pEx body :: map (rename S) G1)
-        (rename S (rename S target))).
-    {
-      set (G2 := pEx body :: map (rename S) G1).
-      assert (hex3 : BProv Ax_s G2 (pEx body)).
-      { apply BProv_ass. unfold G2. simpl. left. reflexivity. }
-      assert (hinner : BProv Ax_s
-          (body :: map (rename S) G2)
-          (rename S (rename S (rename S target)))).
-      {
-        set (C := body :: map (rename S) G2).
+  apply (BProv_three_exE_of_sentences
+    Ax_s sentence_ax_s G body target hwit).
+  set (C := body :: map (rename S)
+    (pEx body :: map (rename S)
+      (pEx (pEx body) :: map (rename S) G))).
+  change (BProv Ax_s C (rename S (rename S (rename S target)))).
         set (idx3 := Term.rename S (Term.rename S (Term.rename S idxTerm))).
         set (last3 := Term.rename S (Term.rename S (Term.rename S lastTerm))).
         set (newCode3 := Term.rename S (Term.rename S (Term.rename S newCode))).
@@ -1246,7 +1209,7 @@ Proof.
               (S (S (S oldStep)))
               newCode3 newStep3 (tSucc last3))).
         {
-          unfold C, G2, G1, newCode3, newStep3, last3.
+          unfold C, newCode3, newStep3, last3.
           exact ht6.
         }
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
@@ -1267,7 +1230,7 @@ Proof.
         pose proof (BProv_context_cons Ax_s _ body _ hl5) as hl6.
         assert (hleC : BProv Ax_s C (leTermAt idx3 last3)).
         {
-          unfold C, G2, G1, idx3, last3.
+          unfold C, idx3, last3.
           exact hl6.
         }
         pose proof
@@ -1278,19 +1241,8 @@ Proof.
             htailC hleC hcurOld hnextOld hdiv) as hshifted.
         unfold target.
         repeat rewrite rename_S_betaDiv2StepWitnessTermAt.
-        unfold C, G2, G1, idx3, newCode3, newStep3.
+        unfold C, idx3, newCode3, newStep3.
         exact hshifted.
-      }
-      exact (BProv_exE_of_sentences Ax_s G2 body
-        (rename S (rename S target)) sentence_ax_s hex3 hinner).
-    }
-    exact (BProv_exE_of_sentences Ax_s G1 (pEx body)
-      (rename S target) sentence_ax_s hex2 hmid).
-  }
-  unfold target.
-  exact (BProv_exE_of_sentences Ax_s G (pEx (pEx body))
-    (betaDiv2StepWitnessTermAt newCode newStep idxTerm)
-    sentence_ax_s hwit houter).
 Qed.
 
 Lemma BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldSteps :
@@ -1920,25 +1872,12 @@ Proof.
     repeat rewrite hrename3 in hwitnessFull.
     exact hwitnessFull.
   }
-  assert (houter : BProv Ax_s
-      (pEx (pEx body) :: map (rename S) G)
-      (rename S target)).
-  {
-    set (G1 := pEx (pEx body) :: map (rename S) G).
-    assert (hex2 : BProv Ax_s G1 (pEx (pEx body))).
-    { apply BProv_ass. unfold G1. simpl. left. reflexivity. }
-    assert (hmid : BProv Ax_s
-        (pEx body :: map (rename S) G1)
-        (rename S (rename S target))).
-    {
-      set (G2 := pEx body :: map (rename S) G1).
-      assert (hex3 : BProv Ax_s G2 (pEx body)).
-      { apply BProv_ass. unfold G2. simpl. left. reflexivity. }
-      assert (hinner : BProv Ax_s
-          (body :: map (rename S) G2)
-          (rename S (rename S (rename S target)))).
-      {
-        set (C := body :: map (rename S) G2).
+  apply (BProv_three_exE_of_sentences
+    Ax_s sentence_ax_s G body target hwit).
+  set (C := body :: map (rename S)
+    (pEx body :: map (rename S)
+      (pEx (pEx body) :: map (rename S) G))).
+  change (BProv Ax_s C (rename S (rename S (rename S target)))).
         set (idx3 := Term.rename S (Term.rename S (Term.rename S idxTerm))).
         assert (hbody : BProv Ax_s C body).
         { apply BProv_ass. unfold C. simpl. left. reflexivity. }
@@ -1996,7 +1935,7 @@ Proof.
               (tVar (S (S (S code)))) (tVar (S (S (S step))))
               idx3)).
         {
-          unfold C, G2, G1, idx3.
+          unfold C, idx3.
           exact hc6.
         }
         assert (hcurEq : BProv Ax_s C
@@ -2030,7 +1969,7 @@ Proof.
               (tVar (S (S (S knownHalf))))
               (tVar (S (S (S knownBit)))))).
         {
-          unfold C, G2, G1.
+          unfold C.
           replace (div2StepTermAt
               (tVar (S (S (S cur))))
               (tVar (S (S (S knownHalf))))
@@ -2070,20 +2009,9 @@ Proof.
         }
         unfold target.
         repeat rewrite rename_S_betaTermAtTermIdx.
-        unfold C, G2, G1, idx3.
+        unfold C, idx3.
         simpl.
         exact hpacked.
-      }
-      exact (BProv_exE_of_sentences Ax_s G2 body
-        (rename S (rename S target)) sentence_ax_s hex3 hinner).
-    }
-    exact (BProv_exE_of_sentences Ax_s G1 (pEx body)
-      (rename S target) sentence_ax_s hex2 hmid).
-  }
-  unfold target.
-  exact (BProv_exE_of_sentences Ax_s G (pEx (pEx body))
-    (betaTermAtTermIdx (tVar knownHalf) code step (tSucc idxTerm))
-    sentence_ax_s hwit houter).
 Qed.
 
 Lemma BProv_Ax_s_betaTermTermAt_of_subst_betaAt :

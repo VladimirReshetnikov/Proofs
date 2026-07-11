@@ -77,19 +77,8 @@ Proof.
           apply Term.rename_ext; intro n; lia).
     exact hmem.
   }
-  set (D1 := pEx body :: map (rename S) G).
-  assert (houter : BProv Ax_s D1 (rename S target)).
-  {
-    assert (hex : BProv Ax_s D1 (pEx body)).
-    { apply BProv_ass. unfold D1. simpl. left. reflexivity. }
-    apply (BProv_exE_of_sentences Ax_s D1 body
-      (rename S target) sentence_ax_s hex).
-    unfold D1.
-    exact hopened.
-  }
-  unfold D1 in houter.
-  exact (BProv_exE_of_sentences Ax_s G (pEx body) target
-    sentence_ax_s hmem' houter).
+  exact (BProv_two_exE_of_sentences
+    Ax_s sentence_ax_s G body target hmem' hopened).
 Qed.
 
 Lemma BProv_Ax_s_betaTermTermAt_of_betaTermTermAtConstIdx_eq_term :

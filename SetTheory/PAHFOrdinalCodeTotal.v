@@ -572,17 +572,10 @@ Proof.
     fold body in hwitness.
     exact hwitness.
   }
-  set (G1 := pEx body :: map (rename S) G).
-  assert (houter : BProv Ax_s G1 (rename S target)).
-  {
-    assert (hexInner : BProv Ax_s G1 (pEx body)).
-    {
-      apply BProv_ass.
-      unfold G1. simpl. left. reflexivity.
-    }
-    set (C := body :: map (rename S) G1).
-    assert (hinner : BProv Ax_s C (rename S (rename S target))).
-    {
+  apply (BProv_two_exE_of_sentences
+    Ax_s sentence_ax_s G body target hwit).
+  set (C := body :: map (rename S) (pEx body :: map (rename S) G)).
+  change (BProv Ax_s C (rename S (rename S target))).
       set (oldCode2 := Term.rename (fun n => n + 2) oldCode).
       set (newCode2 := Term.rename (fun n => n + 2) newCode).
       set (step2 := Term.rename (fun n => n + 2) step).
@@ -652,16 +645,6 @@ Proof.
       change (BProv Ax_s C
         (ordinalCodeStepWitnessTermAt newCode2 step2 index2)).
       exact hnew.
-    }
-    apply (BProv_exE_of_sentences Ax_s G1 body (rename S target)
-      sentence_ax_s hexInner).
-    change (BProv Ax_s C (rename S (rename S target))).
-    exact hinner.
-  }
-  apply (BProv_exE_of_sentences Ax_s G (pEx body) target
-    sentence_ax_s hwit).
-  change (BProv Ax_s G1 (rename S target)).
-  exact houter.
 Qed.
 
 (* A one-entry beta-code extension preserves the old recurrence and adds the
