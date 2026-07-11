@@ -9,8 +9,7 @@
 (*  hidden in the construction.                                          *)
 (* ===================================================================== *)
 
-From Stdlib Require Import Arith.Arith Lia List.
-From Stdlib Require Import Logic.FunctionalExtensionality.
+From Stdlib Require Import List.
 From SetTheory Require Import
   Fol Calculus PAHF PAHFOrdinalCode
   PAHFTranslatedOperations PAHFOrdinalCodeMulCore
@@ -26,89 +25,10 @@ Import PA PA.Term PA.Formula.
 (* --------------------------------------------------------------------- *)
 (* The addition bridge consumed by multiplication.                       *)
 
-Definition addTermSubst_mul
-    (out left right : term) (n : nat) : term :=
-  match n with
-  | 0 => right
-  | 1 => left
-  | 2 => out
-  | S (S (S k)) => tVar (k + 3)
-  end.
-
-Definition hfAddGraphTermAt_mul
-    (out left right : term) : formula :=
-  subst (addTermSubst_mul out left right) (hfAddGraphAt 2 1 0).
-
-Lemma hfAddGraphAt_eq_termAt_mul : forall out left right,
-  hfAddGraphAt out left right =
-    hfAddGraphTermAt_mul (tVar out) (tVar left) (tVar right).
-Proof.
-  intros out left right.
-  set (r := fun n =>
-    match n with
-    | 0 => right
-    | 1 => left
-    | 2 => out
-    | S (S (S k)) => k + 3
-    end).
-  assert (hsubst :
-      addTermSubst_mul (tVar out) (tVar left) (tVar right) =
-      fun n => tVar (r n)).
-  {
-    apply functional_extensionality.
-    intros [|[|[|n]]]; reflexivity.
-  }
-  assert (hsource : Fol.rename r (addGraphAt 2 1 0) =
-      addGraphAt out left right).
-  {
-    rewrite rename_addGraphAt.
-    unfold r.
-    reflexivity.
-  }
-  unfold hfAddGraphTermAt_mul, hfAddGraphAt.
-  rewrite hsubst, subst_var_rename.
-  rewrite rename_hfFormulaAt.
-  rewrite <- hsource.
-  rewrite hfFormulaAt_source_rename.
-  reflexivity.
-Qed.
-
-Lemma subst_hfAddGraphTermAt_mul : forall sigma out left right,
-  subst sigma (hfAddGraphTermAt_mul out left right) =
-    hfAddGraphTermAt_mul
-      (Term.subst sigma out)
-      (Term.subst sigma left)
-      (Term.subst sigma right).
-Proof.
-  intros sigma out left right.
-  unfold hfAddGraphTermAt_mul.
-  rewrite subst_comp.
-  apply subst_ext_free.
-  intros n hn.
-  destruct (hfFormulaAt_free (addGraphAt 2 1 0)
-    (fun n => n) n hn) as [m [hm ->]].
-  destruct (addGraphAt_free m 2 1 0 hm) as [-> | [-> | ->]];
-    reflexivity.
-Qed.
-
-Lemma rename_hfAddGraphTermAt_mul : forall r out left right,
-  rename r (hfAddGraphTermAt_mul out left right) =
-    hfAddGraphTermAt_mul
-      (Term.rename r out)
-      (Term.rename r left)
-      (Term.rename r right).
-Proof.
-  intros r out left right.
-  rewrite <- subst_var_rename.
-  rewrite subst_hfAddGraphTermAt_mul.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
-Qed.
-
 (** Keep the three term-parametric graph predicates atomic during the many
     substitution rewrites below.  Unfolding their large recursive formulas
     during failed rewrite matching otherwise dominates compilation time. *)
-Local Opaque hfAddGraphTermAt_mul hfMulGraphTermAt_core
+Local Opaque hfAddGraphTermAt hfMulGraphTermAt_core
   hfAdjoinGraphTermAt.
 
 Definition PAOrdinalCodeAddTermCompatibility_mul : Prop :=
@@ -118,27 +38,8 @@ Definition PAOrdinalCodeAddTermCompatibility_mul : Prop :=
     BProv Ax_s G (ordinalCodeGraphTermAt rightRaw rightCode) ->
     BProv Ax_s G
       (iffForm
-        (hfAddGraphTermAt_mul out leftCode rightCode)
+        (hfAddGraphTermAt out leftCode rightCode)
         (ordinalCodeGraphTermAt (tAdd leftRaw rightRaw) out)).
-
-Definition PAOrdinalCodeSuccAdjoinCompatibility_mul : Prop :=
-  forall (G : list formula) (raw pred out : term),
-    BProv Ax_s G (ordinalCodeGraphTermAt raw pred) ->
-    BProv Ax_s G
-      (iffForm
-        (hfAdjoinGraphTermAt out pred pred)
-        (ordinalCodeGraphTermAt (tSucc raw) out)).
-
-(** The multiplication recursion consumes the already proved addition
-    kernel.  The local wrapper is definitionally the same term-substitution
-    specialization used by [PAHFOrdinalCodeAddCore]. *)
-Lemma hfAddGraphTermAt_mul_eq_add : forall out left right,
-  hfAddGraphTermAt_mul out left right =
-    hfAddGraphTermAt out left right.
-Proof.
-  intros out left right.
-  reflexivity.
-Qed.
 
 Definition PAOrdinalCodeAddTermCompatibility_mul_of_interfaces
     (P : TranslatedHFFinAxiomProofs)
@@ -146,104 +47,9 @@ Definition PAOrdinalCodeAddTermCompatibility_mul_of_interfaces
     (hfunctional : PAOrdinalCodeGraphFunctionalProof)
     (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
     (htotal : PAOrdinalCodeGraphTotalProof) :
-  PAOrdinalCodeAddTermCompatibility_mul.
-Proof.
-  intros G leftRaw leftCode rightRaw rightCode out hleft hright.
-  rewrite hfAddGraphTermAt_mul_eq_add.
-  exact (BProv_Ax_s_ordinalCodeAddTermAt
-    P hcodomain hfunctional hsucc htotal
-    G leftRaw leftCode rightRaw rightCode out hleft hright).
-Defined.
-
-Definition PAOrdinalCodeSuccAdjoinCompatibility_mul_of_add
-    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility) :
-  PAOrdinalCodeSuccAdjoinCompatibility_mul := hsucc.
-
-(* --------------------------------------------------------------------- *)
-(* Small normalization and range lemmas.                                *)
-
-Lemma hfEmptyCodeAt_eq_termAt_mul : forall slot,
-  hfEmptyCodeAt slot = hfEmptyTermAt (tVar slot).
-Proof.
-  intro slot.
-  unfold hfEmptyCodeAt, hfEmptyTermAt, HF_emptyAt.
-  cbn [hfFormulaAt hfUpVarMap Term.rename].
-  rewrite hfMemTermAt_var.
-  reflexivity.
-Qed.
-
-Lemma addHFOrdinalLikeAt_eq_domainTermAt_mul : forall slot,
-  addHFOrdinalLikeAt slot =
-    subst (instTerm (tVar slot)) codedOrdinalDomain.
-Proof.
-  intro slot.
-  assert (hsource :
-      Fol.rename (Fol.inst slot) domainForm = HF_ordinalLikeAt slot).
-  {
-    unfold domainForm, HF_ordinalLikeAt, HF_transitiveAt,
-      HF_memTotalOnAt.
-    cbn [Fol.rename Fol.up Fol.inst].
-    reflexivity.
-  }
-  unfold addHFOrdinalLikeAt, codedOrdinalDomain, translateHFFormula.
-  rewrite subst_instTerm_var.
-  rewrite rename_hfFormulaAt.
-  rewrite <- hsource.
-  rewrite hfFormulaAt_source_rename.
-  apply hfFormulaAt_ext.
-  intro n. reflexivity.
-Qed.
-
-Lemma subst_domainTermAt_mul : forall sigma coded,
-  subst sigma (subst (instTerm coded) codedOrdinalDomain) =
-    subst (instTerm (Term.subst sigma coded)) codedOrdinalDomain.
-Proof.
-  intros sigma coded.
-  rewrite subst_comp.
-  apply subst_ext_free.
-  intros n hn.
-  pose proof (codedOrdinalDomain_free n hn) as ->.
-  reflexivity.
-Qed.
-
-Lemma BProv_Ax_s_codedOrdinalDomain_of_graph_mul : forall
-    (hcodomain : PAOrdinalCodeGraphCodomainProof)
-    G raw coded,
-  BProv Ax_s G (ordinalCodeGraphTermAt raw coded) ->
-  BProv Ax_s G (subst (instTerm coded) codedOrdinalDomain).
-Proof.
-  intros hcodomain G raw coded hgraph.
-  apply (hcodomain G coded).
-  unfold ordinalCodeGraphRangeExistsTermAt.
-  apply (BProv_exI Ax_s G _ raw).
-  rewrite subst_ordinalCodeGraphTermAt.
-  cbn [instTerm Term.subst].
-  rewrite term_subst_instTerm_rename_succ.
-  exact hgraph.
-Qed.
-
-Lemma BProv_Ax_s_hfEmptyTermAt_of_eq_zero_mul : forall G t,
-  BProv Ax_s G (pEq t tZero) ->
-  BProv Ax_s G (hfEmptyTermAt t).
-Proof.
-  intros G t heq.
-  set (context := hfEmptyTermAt (tVar 0)).
-  assert (hzero : BProv Ax_s G
-      (subst (instTerm tZero) context)).
-  {
-    unfold context.
-    rewrite subst_hfEmptyTermAt.
-    cbn [instTerm Term.subst].
-    exact (BProv_weaken_nil Ax_s G _ BProv_Ax_s_hfEmptyTermAt_zero).
-  }
-  pose proof (BProv_eqElim Ax_s G tZero t context
-    (BProv_eqSym Ax_s G _ _ heq) hzero) as htransport.
-  unfold context in htransport.
-  repeat rewrite subst_hfEmptyTermAt in htransport.
-  cbn [instTerm Term.subst] in htransport.
-  repeat rewrite term_subst_instTerm_rename_succ in htransport.
-  exact htransport.
-Qed.
+  PAOrdinalCodeAddTermCompatibility_mul :=
+  BProv_Ax_s_ordinalCodeAddTermAt
+    P hcodomain hfunctional hsucc htotal.
 
 (* --------------------------------------------------------------------- *)
 (* Arbitrary-term instances of the three translated multiplication laws. *)
@@ -266,7 +72,7 @@ Proof.
   {
     pose proof (BProv_weaken_nil Ax_s G _
       (BProv_Ax_s_mulZeroRightSentence P)) as h.
-    repeat rewrite hfEmptyCodeAt_eq_termAt_mul in h.
+    repeat rewrite hfEmptyCodeAt_eq_termAt in h.
     repeat rewrite hfMulGraphAt_eq_termAt_core in h.
     exact h.
   }
@@ -300,7 +106,7 @@ Lemma BProv_Ax_s_hfMulGraphTermAt_succ_right_mul : forall
   BProv Ax_s G (subst (instTerm right) codedOrdinalDomain) ->
   BProv Ax_s G (hfAdjoinGraphTermAt rightSucc right right) ->
   BProv Ax_s G (hfMulGraphTermAt_core previous left right) ->
-  BProv Ax_s G (hfAddGraphTermAt_mul out previous left) ->
+  BProv Ax_s G (hfAddGraphTermAt out previous left) ->
   BProv Ax_s G (hfMulGraphTermAt_core out left rightSucc).
 Proof.
   intros P G out previous left rightSucc right
@@ -314,12 +120,12 @@ Proof.
             (pImp
               (hfMulGraphTermAt_core (tVar 1) (tVar 4) (tVar 3))
               (pImp
-                (hfAddGraphTermAt_mul (tVar 0) (tVar 1) (tVar 4))
+                (hfAddGraphTermAt (tVar 0) (tVar 1) (tVar 4))
                 (hfMulGraphTermAt_core
                   (tVar 0) (tVar 4) (tVar 2)))))))))))).
   {
     pose proof (BProv_Ax_s_mulSuccRightSentence P) as h.
-    rewrite addHFOrdinalLikeAt_eq_domainTermAt_mul in h.
+    rewrite addHFOrdinalLikeAt_eq_domainTermAt in h.
     repeat rewrite hfMulGraphAt_eq_termAt_core in h.
     repeat rewrite hfAddGraphAt_eq_termAt_mul in h.
     exact h.
@@ -346,7 +152,7 @@ Proof.
   rewrite subst_comp in hsub.
   rewrite subst_comp in hsub.
   cbn [subst] in hsub.
-  rewrite subst_domainTermAt_mul in hsub.
+  rewrite subst_domainTermAt in hsub.
   rewrite subst_hfAdjoinGraphTermAt in hsub.
   unfold sigma in hsub.
   cbn [Term.subst Term.upSubst instTerm] in hsub.
@@ -372,9 +178,9 @@ Proof.
   match type of haddStep with
   | BProv _ _ (pImp ?a ?b) =>
       assert (haddAntecedentEq :
-        a = hfAddGraphTermAt_mul out previous left);
+        a = hfAddGraphTermAt out previous left);
       [ repeat rewrite subst_comp;
-        rewrite subst_hfAddGraphTermAt_mul;
+        rewrite subst_hfAddGraphTermAt;
         cbn [Term.subst Term.upSubst instTerm];
         reflexivity
       | assert (hmulResultEq :
@@ -386,7 +192,7 @@ Proof.
         | rewrite haddAntecedentEq, hmulResultEq in haddStep ] ]
   end.
   exact (BProv_mp Ax_s G
-    (hfAddGraphTermAt_mul out previous left) _ haddStep hadd).
+    (hfAddGraphTermAt out previous left) _ haddStep hadd).
 Qed.
 
 Lemma BProv_Ax_s_hfMulGraphTermAt_functional_mul : forall
@@ -413,7 +219,7 @@ Proof.
   {
     pose proof (BProv_weaken_nil Ax_s G _
       (BProv_Ax_s_mulFunctionalSentence P)) as h.
-    repeat rewrite addHFOrdinalLikeAt_eq_domainTermAt_mul in h.
+    repeat rewrite addHFOrdinalLikeAt_eq_domainTermAt in h.
     repeat rewrite hfMulGraphAt_eq_termAt_core in h.
     exact h.
   }
@@ -433,12 +239,12 @@ Proof.
               (pEq out1 out2)))))).
   {
     cbn [subst instTerm Term.subst Term.upSubst] in hout2.
-    repeat rewrite subst_domainTermAt_mul in hout2.
+    repeat rewrite subst_domainTermAt in hout2.
     repeat rewrite subst_hfMulGraphTermAt_core in hout2.
     repeat rewrite Term.subst_rename_succ_up in hout2.
     repeat rewrite term_subst_instTerm_rename_succ in hout2.
     cbn [Term.subst Term.upSubst instTerm] in hout2.
-    repeat rewrite subst_domainTermAt_mul in hout2.
+    repeat rewrite subst_domainTermAt in hout2.
     repeat rewrite subst_hfMulGraphTermAt_core in hout2.
     repeat rewrite Term.subst_rename_succ_up in hout2.
     repeat rewrite term_subst_instTerm_rename_succ in hout2.
@@ -468,13 +274,13 @@ Lemma BProv_Ax_s_ordinalCodeMulCore_zero_mul : forall
 Proof.
   intros P hcodomain hfunctional G
     leftRaw leftCode rightCode out hleft hright.
-  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
+  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
     hcodomain G leftRaw leftCode hleft) as hleftDomain.
-  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
+  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
     hcodomain G tZero rightCode hright) as hrightDomain.
   pose proof (BProv_Ax_s_eq_zero_of_ordinalCodeGraphTermAt_zero
     G rightCode hright) as hrightEq.
-  pose proof (BProv_Ax_s_hfEmptyTermAt_of_eq_zero_mul
+  pose proof (BProv_Ax_s_hfEmptyTermAt_of_eq_zero
     G rightCode hrightEq) as hrightEmpty.
   assert (hzeroEmpty : BProv Ax_s G (hfEmptyTermAt tZero)).
   { exact (BProv_weaken_nil Ax_s G _ BProv_Ax_s_hfEmptyTermAt_zero). }
@@ -554,7 +360,7 @@ Proof.
         (BProv_context_cons Ax_s G antecedent _ hzeroGraph)).
     }
     assert (houtEmpty : BProv Ax_s C (hfEmptyTermAt out)).
-    { exact (BProv_Ax_s_hfEmptyTermAt_of_eq_zero_mul C out houtEq). }
+    { exact (BProv_Ax_s_hfEmptyTermAt_of_eq_zero C out houtEq). }
     assert (hresult : BProv Ax_s C
         (hfMulGraphTermAt_core out leftCode rightCode)).
     {
@@ -576,7 +382,7 @@ Qed.
 Lemma BProv_Ax_s_ordinalCodeMulCore_succ_of_pred_mul : forall
     (P : TranslatedHFFinAxiomProofs)
     (hcodomain : PAOrdinalCodeGraphCodomainProof)
-    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility_mul)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
     (htotal : PAOrdinalCodeGraphTotalProof)
     (hadd : PAOrdinalCodeAddTermCompatibility_mul)
     G leftRaw leftCode rightRaw rightCode rightSuccCode predOut out,
@@ -599,13 +405,8 @@ Proof.
     hleft hright hrightSucc hprodPred hmulPred.
   set (sumRaw := tAdd (tMul leftRaw rightRaw) leftRaw).
   set (targetRaw := tMul leftRaw (tSucc rightRaw)).
-  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
-    hcodomain G leftRaw leftCode hleft) as hleftDomain.
-  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
+  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
     hcodomain G rightRaw rightCode hright) as hrightDomain.
-  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
-    hcodomain G (tSucc rightRaw) rightSuccCode hrightSucc)
-    as hrightSuccDomain.
   pose proof (hsucc G rightRaw rightCode rightSuccCode hright)
     as hrightStep.
   assert (hrightAdjoin : BProv Ax_s G
@@ -712,13 +513,13 @@ Proof.
         rewrite rename_hfAdjoinGraphTermAt in h.
         exact h.
       }
-      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
+      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
         hcodomain D (Term.rename S leftRaw)
         (Term.rename S leftCode) hleftD) as hleftDomainD.
-      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
+      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
         hcodomain D (Term.rename S rightRaw)
         (Term.rename S rightCode) hrightD) as hrightDomainD.
-      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph_mul
+      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
         hcodomain D (tSucc (Term.rename S rightRaw))
         (Term.rename S rightSuccCode) hrightSuccD)
         as hrightSuccDomainD.
@@ -735,7 +536,7 @@ Proof.
       }
       assert (haddIff : BProv Ax_s D
           (iffForm
-            (hfAddGraphTermAt_mul
+            (hfAddGraphTermAt
               (tVar 0) (Term.rename S predOut) (Term.rename S leftCode))
             graphBody)).
       {
@@ -749,7 +550,7 @@ Proof.
         exact hraw.
       }
       assert (haddOut : BProv Ax_s D
-          (hfAddGraphTermAt_mul
+          (hfAddGraphTermAt
             (tVar 0) (Term.rename S predOut) (Term.rename S leftCode))).
       {
         unfold iffForm in haddIff.
@@ -835,7 +636,7 @@ Proof.
     }
     assert (haddIff : BProv Ax_s C
         (iffForm
-          (hfAddGraphTermAt_mul out predOut leftCode)
+          (hfAddGraphTermAt out predOut leftCode)
           (ordinalCodeGraphTermAt sumRaw out))).
     {
       pose proof (hadd C
@@ -845,7 +646,7 @@ Proof.
       exact hraw.
     }
     assert (haddOut : BProv Ax_s C
-        (hfAddGraphTermAt_mul out predOut leftCode)).
+        (hfAddGraphTermAt out predOut leftCode)).
     {
       unfold iffForm in haddIff.
       pose proof (BProv_andE2 Ax_s C _ _ haddIff) as himp.
@@ -1063,7 +864,7 @@ Qed.
 Lemma BProv_Ax_s_ordinalCodeMulOutputTermAt_succ : forall
     (P : TranslatedHFFinAxiomProofs)
     (hcodomain : PAOrdinalCodeGraphCodomainProof)
-    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility_mul)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
     (htotal : PAOrdinalCodeGraphTotalProof)
     (hadd : PAOrdinalCodeAddTermCompatibility_mul)
     G leftRaw leftCode rightRaw rightCode rightSuccCode,
@@ -1261,7 +1062,7 @@ Qed.
 Lemma BProv_Ax_s_ordinalCodeMulPointTermAt_succ : forall
     (P : TranslatedHFFinAxiomProofs)
     (hcodomain : PAOrdinalCodeGraphCodomainProof)
-    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility_mul)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
     (htotal : PAOrdinalCodeGraphTotalProof)
     (hadd : PAOrdinalCodeAddTermCompatibility_mul)
     G leftRaw leftCode rightRaw,
@@ -1414,7 +1215,7 @@ Lemma BProv_Ax_s_all_ordinalCodeMulPoint : forall
     (P : TranslatedHFFinAxiomProofs)
     (hcodomain : PAOrdinalCodeGraphCodomainProof)
     (hfunctional : PAOrdinalCodeGraphFunctionalProof)
-    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility_mul)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
     (htotal : PAOrdinalCodeGraphTotalProof)
     (hadd : PAOrdinalCodeAddTermCompatibility_mul)
     G leftRaw leftCode,
@@ -1501,7 +1302,7 @@ Lemma BProv_Ax_s_ordinalCodeMulPointTermAt : forall
     (P : TranslatedHFFinAxiomProofs)
     (hcodomain : PAOrdinalCodeGraphCodomainProof)
     (hfunctional : PAOrdinalCodeGraphFunctionalProof)
-    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility_mul)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
     (htotal : PAOrdinalCodeGraphTotalProof)
     (hadd : PAOrdinalCodeAddTermCompatibility_mul)
     G leftRaw leftCode rightRaw,
@@ -1525,7 +1326,7 @@ Theorem BProv_Ax_s_ordinalCodeMulTermAt : forall
     (P : TranslatedHFFinAxiomProofs)
     (hcodomain : PAOrdinalCodeGraphCodomainProof)
     (hfunctional : PAOrdinalCodeGraphFunctionalProof)
-    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility_mul)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
     (htotal : PAOrdinalCodeGraphTotalProof)
     (hadd : PAOrdinalCodeAddTermCompatibility_mul)
     G leftRaw leftCode rightRaw rightCode out,
@@ -1553,7 +1354,7 @@ Theorem PAOrdinalCodeMulTermCompatibility_of_term_interfaces :
   TranslatedHFFinAxiomProofs ->
   PAOrdinalCodeGraphCodomainProof ->
   PAOrdinalCodeGraphFunctionalProof ->
-  PAOrdinalCodeSuccAdjoinCompatibility_mul ->
+  PAOrdinalCodeSuccAdjoinCompatibility ->
   PAOrdinalCodeGraphTotalProof ->
   PAOrdinalCodeAddTermCompatibility_mul ->
   PAOrdinalCodeMulTermCompatibility.
@@ -1577,8 +1378,7 @@ Theorem PAOrdinalCodeMulTermCompatibility_of_interfaces :
 Proof.
   intros P hcodomain hfunctional hsucc htotal.
   exact (PAOrdinalCodeMulTermCompatibility_of_term_interfaces
-    P hcodomain hfunctional
-    (PAOrdinalCodeSuccAdjoinCompatibility_mul_of_add hsucc)
+    P hcodomain hfunctional hsucc
     htotal
     (PAOrdinalCodeAddTermCompatibility_mul_of_interfaces
       P hcodomain hfunctional hsucc htotal)).
