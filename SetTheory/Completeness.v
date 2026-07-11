@@ -353,6 +353,25 @@ Proof.
   exact (Prov_cut Delta phi hp (Lb ++ G) hpDelta).
 Qed.
 
+(* Lift unary and binary proof rules uniformly over relative provability. *)
+Lemma BProv_rule1 : forall (B : form -> Prop) G a b,
+  (forall Delta, Prov Delta a -> Prov Delta b) ->
+  BProv B G a -> BProv B G b.
+Proof.
+  intros B G a b Hrule [L [HL Hp]].
+  exists L. split; [ exact HL | exact (Hrule (L ++ G) Hp) ].
+Qed.
+
+Lemma BProv_rule2 : forall (B : form -> Prop) G a b c,
+  (forall Delta, Prov Delta a -> Prov Delta b -> Prov Delta c) ->
+  BProv B G a -> BProv B G b -> BProv B G c.
+Proof.
+  intros B G a b c Hrule Ha Hb.
+  apply (BProv_derive B G (a :: b :: nil) c).
+  - apply Hrule; apply P_ass; simpl; tauto.
+  - intros d [<- | [<- | []]]; assumption.
+Qed.
+
 (* Transport a relative proof once every used source axiom and every finite
    context assumption has been proved in the target. *)
 Lemma BProv_lift : forall (B C : form -> Prop) G D phi,
@@ -537,47 +556,23 @@ Proof.
 Qed.
 
 Lemma BProv_mp : forall B L a b, BProv B L (fImp a b) -> BProv B L a -> BProv B L b.
-Proof.
-  intros B L a b hImp ha.
-  apply (BProv_derive B L (fImp a b :: a :: nil) b).
-  - apply (P_impE (fImp a b :: a :: nil) a b); apply P_ass; simpl; tauto.
-  - intros d [<- | [<- | []]]; assumption.
-Qed.
+Proof. intros B L a b hImp ha; exact (BProv_rule2 B L (fImp a b) a b (fun D => P_impE D a b) hImp ha). Qed.
 
 Lemma BProv_eqElim : forall B G i j a,
   BProv B G (fEq i j) ->
   BProv B G (rename (inst i) a) ->
   BProv B G (rename (inst j) a).
-Proof.
-  intros B G i j a heq ha.
-  apply (BProv_derive B G
-    (fEq i j :: rename (inst i) a :: nil) (rename (inst j) a)).
-  - apply (P_eqElim (fEq i j :: rename (inst i) a :: nil) i j a);
-      apply P_ass; simpl; tauto.
-  - intros d [<- | [<- | []]]; assumption.
-Qed.
+Proof. intros B G i j a heq ha; exact (BProv_rule2 B G (fEq i j) (rename (inst i) a) (rename (inst j) a) (fun D => P_eqElim D i j a) heq ha). Qed.
 
 Lemma BProv_eqSym : forall B G i j,
   BProv B G (fEq i j) -> BProv B G (fEq j i).
-Proof.
-  intros B G i j [Gb [HGb Hp]].
-  exists Gb.
-  split; [ exact HGb | ].
-  apply Prov_eq_sym.
-  exact Hp.
-Qed.
+Proof. intros B G i j heq; exact (BProv_rule1 B G (fEq i j) (fEq j i) (fun D => Prov_eq_sym D i j) heq). Qed.
 
 Lemma BProv_eqTrans : forall B G i j k,
   BProv B G (fEq i j) ->
   BProv B G (fEq j k) ->
   BProv B G (fEq i k).
-Proof.
-  intros B G i j k hij hjk.
-  apply (BProv_derive B G (fEq i j :: fEq j k :: nil) (fEq i k)).
-  - apply (Prov_eq_trans (fEq i j :: fEq j k :: nil) i j k);
-      apply P_ass; simpl; tauto.
-  - intros d [<- | [<- | []]]; assumption.
-Qed.
+Proof. intros B G i j k hij hjk; exact (BProv_rule2 B G (fEq i j) (fEq j k) (fEq i k) (fun D => Prov_eq_trans D i j k) hij hjk). Qed.
 
 (* ---- natural-deduction rules lifted to relative provability ----
 
@@ -615,47 +610,27 @@ Qed.
 
 Lemma BProv_andI : forall (B : form -> Prop) G a b,
   BProv B G a -> BProv B G b -> BProv B G (fAnd a b).
-Proof.
-  intros B G a b ha hb.
-  apply (BProv_derive B G (a :: b :: nil) (fAnd a b)).
-  - apply P_andI; apply P_ass; simpl; tauto.
-  - intros d [<- | [<- | []]]; assumption.
-Qed.
+Proof. intros B G a b ha hb; exact (BProv_rule2 B G a b (fAnd a b) (fun D => P_andI D a b) ha hb). Qed.
 
 Lemma BProv_botE : forall (B : form -> Prop) G a,
   BProv B G fBot -> BProv B G a.
-Proof.
-  intros B G a [L [hL hp]].
-  exists L. split; [ exact hL | exact (P_botE (L ++ G) a hp) ].
-Qed.
+Proof. intros B G a hbot; exact (BProv_rule1 B G fBot a (fun D => P_botE D a) hbot). Qed.
 
 Lemma BProv_andE1 : forall (B : form -> Prop) G a b,
   BProv B G (fAnd a b) -> BProv B G a.
-Proof.
-  intros B G a b [L [hL hp]].
-  exists L. split; [ exact hL | exact (P_andE1 (L ++ G) a b hp) ].
-Qed.
+Proof. intros B G a b hand; exact (BProv_rule1 B G (fAnd a b) a (fun D => P_andE1 D a b) hand). Qed.
 
 Lemma BProv_andE2 : forall (B : form -> Prop) G a b,
   BProv B G (fAnd a b) -> BProv B G b.
-Proof.
-  intros B G a b [L [hL hp]].
-  exists L. split; [ exact hL | exact (P_andE2 (L ++ G) a b hp) ].
-Qed.
+Proof. intros B G a b hand; exact (BProv_rule1 B G (fAnd a b) b (fun D => P_andE2 D a b) hand). Qed.
 
 Lemma BProv_orI1 : forall (B : form -> Prop) G a b,
   BProv B G a -> BProv B G (fOr a b).
-Proof.
-  intros B G a b [L [hL hp]].
-  exists L. split; [ exact hL | exact (P_orI1 (L ++ G) a b hp) ].
-Qed.
+Proof. intros B G a b ha; exact (BProv_rule1 B G a (fOr a b) (fun D => P_orI1 D a b) ha). Qed.
 
 Lemma BProv_orI2 : forall (B : form -> Prop) G a b,
   BProv B G b -> BProv B G (fOr a b).
-Proof.
-  intros B G a b [L [hL hp]].
-  exists L. split; [ exact hL | exact (P_orI2 (L ++ G) a b hp) ].
-Qed.
+Proof. intros B G a b hb; exact (BProv_rule1 B G b (fOr a b) (fun D => P_orI2 D a b) hb). Qed.
 
 Lemma BProv_orE_imp : forall (B : form -> Prop) G a b c,
   BProv B G (fOr a b) ->
@@ -698,17 +673,11 @@ Qed.
 
 Lemma BProv_allE : forall (B : form -> Prop) G a k,
   BProv B G (fAll a) -> BProv B G (rename (inst k) a).
-Proof.
-  intros B G a k [L [hL hp]].
-  exists L. split; [ exact hL | exact (P_allE (L ++ G) a k hp) ].
-Qed.
+Proof. intros B G a k hall; exact (BProv_rule1 B G (fAll a) (rename (inst k) a) (fun D => P_allE D a k) hall). Qed.
 
 Lemma BProv_exI : forall (B : form -> Prop) G a k,
   BProv B G (rename (inst k) a) -> BProv B G (fEx a).
-Proof.
-  intros B G a k [L [hL hp]].
-  exists L. split; [ exact hL | exact (P_exI (L ++ G) a k hp) ].
-Qed.
+Proof. intros B G a k hex; exact (BProv_rule1 B G (rename (inst k) a) (fEx a) (fun D => P_exI D a k) hex). Qed.
 
 Lemma map_rename_eq_of_sentences : forall (B : form -> Prop) L,
   Sentences B ->
@@ -993,23 +962,30 @@ Proof.
   exact (Prov_cut G phi Hp (Gb ++ chainB B L0 N) HN).
 Qed.
 
+Lemma Tinf_mp : forall B L0 a b,
+  Tinf B L0 (fImp a b) -> Tinf B L0 a -> Tinf B L0 b.
+Proof.
+  intros B L0 a b Himp Ha.
+  apply (Tinf_closed B L0 (fImp a b :: a :: nil) b).
+  - intros x [<- | [<- | []]]; assumption.
+  - apply (P_impE (fImp a b :: a :: nil) a b); apply P_ass; simpl; tauto.
+Qed.
+
 Lemma Tinf_henkin_ex :
   forall B L0, Sentences B -> BCon B L0 -> forall a,
     Tinf B L0 (fEx a) -> exists k, Tinf B L0 (rename (inst k) a).
 Proof.
-  intros B L0 HB H0 a [N HN]. destruct (Enum_surj (fEx a)) as [m Hm].
+  intros B L0 HB H0 a HEx. destruct (Enum_surj (fEx a)) as [m Hm].
   destruct (classic (BCon B (fEx a :: chainB B L0 m))) as [Hpos | Hnc].
   - exists (freshFor (fEx a :: chainB B L0 m)). exists (S m). exists nil. split;
       [ intros x [] | ].
     cbn [chainB app]. rewrite Hm. apply P_ass. apply stepB_ex_pos. exact Hpos.
   - exfalso.
-    assert (Hneg : BProv B (chainB B L0 (S m)) (fImp (fEx a) fBot)).
-    { exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
+    assert (Hneg : Tinf B L0 (fImp (fEx a) fBot)).
+    { exists (S m). exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
       apply P_ass. apply stepB_neg_in. exact Hnc. }
-    apply (chainB_con B L0 HB H0 (Nat.max N (S m))).
-    apply (BProv_mp B (chainB B L0 (Nat.max N (S m))) (fEx a) fBot).
-    + apply (BProv_weaken_chain B L0 (S m) (Nat.max N (S m))); [ lia | exact Hneg ].
-    + apply (BProv_weaken_chain B L0 N (Nat.max N (S m))); [ lia | exact HN ].
+    apply (Tinf_cons B L0 HB H0).
+    exact (Tinf_mp B L0 (fEx a) fBot Hneg HEx).
 Qed.
 
 Lemma Tinf_henkin_all :
@@ -1024,20 +1000,14 @@ Proof.
     { exists (S m). exists nil. split; [ intros x [] | ].
       cbn [chainB app]. rewrite Hm. apply P_ass. apply stepB_pos_in. exact Hc. }
     apply (Tinf_cons B L0 HB H0).
-    destruct Hposfa as [n1 H1]. destruct Hneg as [n2 H2]. exists (Nat.max n1 n2).
-    apply (BProv_mp B (chainB B L0 (Nat.max n1 n2)) (fAll a) fBot).
-    + apply (BProv_weaken_chain B L0 n2 (Nat.max n1 n2)); [ lia | exact H2 ].
-    + apply (BProv_weaken_chain B L0 n1 (Nat.max n1 n2)); [ lia | exact H1 ].
-  - assert (Hnegw : BProv B (chainB B L0 (S m))
+    exact (Tinf_mp B L0 (fAll a) fBot Hneg Hposfa).
+  - assert (Hnegw : Tinf B L0
                       (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a) fBot)).
-    { exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
+    { exists (S m). exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
       apply P_ass. apply stepB_all_neg. exact Hnc. }
     set (w := freshFor (fImp (fAll a) fBot :: chainB B L0 m)) in *.
-    destruct (Hall w) as [n1 H1].
-    apply (Tinf_cons B L0 HB H0). exists (Nat.max n1 (S m)).
-    apply (BProv_mp B (chainB B L0 (Nat.max n1 (S m))) (rename (inst w) a) fBot).
-    + apply (BProv_weaken_chain B L0 (S m) (Nat.max n1 (S m))); [ lia | exact Hnegw ].
-    + apply (BProv_weaken_chain B L0 n1 (Nat.max n1 (S m))); [ lia | exact H1 ].
+    apply (Tinf_cons B L0 HB H0).
+    exact (Tinf_mp B L0 (rename (inst w) a) fBot Hnegw (Hall w)).
 Qed.
 
 (* MODEL EXISTENCE for a consistent sentence theory with a finite extra list. *)

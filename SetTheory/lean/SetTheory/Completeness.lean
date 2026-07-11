@@ -428,6 +428,29 @@ theorem BProv_derive {B : Form → Prop} {G Δ : List Form} {phi : Form}
     (hΔ : ∀ d, d ∈ Δ → BProv B G d) : BProv B G phi :=
   BProv_cut (BProv_of_Prov (B := B) hp) hΔ
 
+/-- Lift a unary finite-context proof rule uniformly over relative
+provability. -/
+theorem BProv_rule1 {B : Form → Prop} {G : List Form} {a b : Form}
+    (rule : ∀ Δ, Prov Δ a → Prov Δ b)
+    (ha : BProv B G a) : BProv B G b := by
+  rcases ha with ⟨L, hL, hp⟩
+  exact ⟨L, hL, rule (L ++ G) hp⟩
+
+/-- Lift a binary finite-context proof rule uniformly over relative
+provability. -/
+theorem BProv_rule2 {B : Form → Prop} {G : List Form} {a b c : Form}
+    (rule : ∀ Δ, Prov Δ a → Prov Δ b → Prov Δ c)
+    (ha : BProv B G a) (hb : BProv B G b) : BProv B G c := by
+  apply BProv_derive
+    (rule [a, b]
+      (Prov.P_ass _ _ (by simp))
+      (Prov.P_ass _ _ (by simp)))
+  intro d hd
+  simp at hd
+  rcases hd with rfl | rfl
+  · exact ha
+  · exact hb
+
 /-- Enlarging the background theory preserves relative provability. -/
 theorem BProv_theory_mono {B C : Form → Prop} {G : List Form} {phi : Form}
     (hBC : ∀ b, B b → C b) (h : BProv B G phi) : BProv C G phi :=
@@ -442,34 +465,19 @@ theorem BProv_eqElim {B : Form → Prop} {G : List Form} {i j : Nat}
     {a : Form}
     (heq : BProv B G (fEq i j))
     (ha : BProv B G (rename (inst i) a)) :
-    BProv B G (rename (inst j) a) := by
-  apply BProv_derive
-    (Prov.P_eqElim [fEq i j, rename (inst i) a] i j a
-      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
-  intro g hg
-  simp at hg
-  rcases hg with rfl | rfl
-  · exact heq
-  · exact ha
+    BProv B G (rename (inst j) a) :=
+  BProv_rule2 (fun Δ heq' ha' => Prov.P_eqElim Δ i j a heq' ha') heq ha
 
 /-- Relative provability is closed under symmetry of equality. -/
 theorem BProv_eqSym {B : Form → Prop} {G : List Form} {i j : Nat}
-    (heq : BProv B G (fEq i j)) : BProv B G (fEq j i) := by
-  rcases heq with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov_eq_sym _ i j hp⟩
+    (heq : BProv B G (fEq i j)) : BProv B G (fEq j i) :=
+  BProv_rule1 (fun Δ heq' => Prov_eq_sym Δ i j heq') heq
 
 /-- Relative provability is closed under transitivity of equality. -/
 theorem BProv_eqTrans {B : Form → Prop} {G : List Form} {i j k : Nat}
     (hij : BProv B G (fEq i j)) (hjk : BProv B G (fEq j k)) :
-    BProv B G (fEq i k) := by
-  apply BProv_derive
-    (Prov_eq_trans [fEq i j, fEq j k] i j k
-      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
-  intro g hg
-  simp at hg
-  rcases hg with rfl | rfl
-  · exact hij
-  · exact hjk
+    BProv B G (fEq i k) :=
+  BProv_rule2 (fun Δ hij' hjk' => Prov_eq_trans Δ i j k hij' hjk') hij hjk
 
 /-- Soundness for relative provability from a base theory and finite context. -/
 theorem soundness_BProv {α : Type u} {mem : α → α → Prop} {B : Form → Prop}
@@ -627,15 +635,8 @@ theorem BProv_weaken_chain (B : Form → Prop) (L0 : List Form) (n n' : Nat)
   BProv_mono B _ _ phi (chainB_mono B L0 n' n hle) h
 
 theorem BProv_mp (B : Form → Prop) (L : List Form) (a b : Form)
-    (h1 : BProv B L (fImp a b)) (h2 : BProv B L a) : BProv B L b := by
-  apply BProv_derive
-    (Prov.P_impE [fImp a b, a] a b
-      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
-  intro g hg
-  simp at hg
-  rcases hg with rfl | rfl
-  · exact h1
-  · exact h2
+    (h1 : BProv B L (fImp a b)) (h2 : BProv B L a) : BProv B L b :=
+  BProv_rule2 (fun Δ hImp ha => Prov.P_impE Δ a b hImp ha) h1 h2
 
 /-! ### Natural-deduction rules lifted to relative provability
 
@@ -675,45 +676,33 @@ theorem BProv_impI_after_prefix {B : Form → Prop} {Γ Δ : List Form}
 
 /-- Relative provability is closed under conjunction introduction. -/
 theorem BProv_andI {B : Form → Prop} {G : List Form} {a b : Form}
-    (ha : BProv B G a) (hb : BProv B G b) : BProv B G (fAnd a b) := by
-  apply BProv_derive
-    (Prov.P_andI [a, b] a b
-      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
-  intro g hg
-  simp at hg
-  rcases hg with rfl | rfl
-  · exact ha
-  · exact hb
+    (ha : BProv B G a) (hb : BProv B G b) : BProv B G (fAnd a b) :=
+  BProv_rule2 (fun Δ ha' hb' => Prov.P_andI Δ a b ha' hb') ha hb
 
 /-- Relative provability is closed under bottom elimination. -/
 theorem BProv_botE {B : Form → Prop} {G : List Form} {a : Form}
-    (hbot : BProv B G fBot) : BProv B G a := by
-  rcases hbot with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_botE _ a hp⟩
+    (hbot : BProv B G fBot) : BProv B G a :=
+  BProv_rule1 (fun Δ hbot' => Prov.P_botE Δ a hbot') hbot
 
 /-- Relative provability is closed under the first conjunction projection. -/
 theorem BProv_andE1 {B : Form → Prop} {G : List Form} {a b : Form}
-    (h : BProv B G (fAnd a b)) : BProv B G a := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_andE1 _ a b hp⟩
+    (h : BProv B G (fAnd a b)) : BProv B G a :=
+  BProv_rule1 (fun Δ hand => Prov.P_andE1 Δ a b hand) h
 
 /-- Relative provability is closed under the second conjunction projection. -/
 theorem BProv_andE2 {B : Form → Prop} {G : List Form} {a b : Form}
-    (h : BProv B G (fAnd a b)) : BProv B G b := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_andE2 _ a b hp⟩
+    (h : BProv B G (fAnd a b)) : BProv B G b :=
+  BProv_rule1 (fun Δ hand => Prov.P_andE2 Δ a b hand) h
 
 /-- Relative provability is closed under left disjunction introduction. -/
 theorem BProv_orI1 {B : Form → Prop} {G : List Form} {a b : Form}
-    (ha : BProv B G a) : BProv B G (fOr a b) := by
-  rcases ha with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_orI1 _ a b hp⟩
+    (ha : BProv B G a) : BProv B G (fOr a b) :=
+  BProv_rule1 (fun Δ ha' => Prov.P_orI1 Δ a b ha') ha
 
 /-- Relative provability is closed under right disjunction introduction. -/
 theorem BProv_orI2 {B : Form → Prop} {G : List Form} {a b : Form}
-    (hb : BProv B G b) : BProv B G (fOr a b) := by
-  rcases hb with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_orI2 _ a b hp⟩
+    (hb : BProv B G b) : BProv B G (fOr a b) :=
+  BProv_rule1 (fun Δ hb' => Prov.P_orI2 Δ a b hb') hb
 
 /-- Disjunction elimination when both branches are already implications in
 the shared context. -/
@@ -754,15 +743,13 @@ theorem BProv_orE_after_prefix {B : Form → Prop} {Γ Δ : List Form}
 
 /-- Relative provability is closed under universal elimination. -/
 theorem BProv_allE {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
-    (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_allE _ _ k hp⟩
+    (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) :=
+  BProv_rule1 (fun Δ hall => Prov.P_allE Δ a k hall) h
 
 /-- Relative provability is closed under existential introduction. -/
 theorem BProv_exI {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
-    (h : BProv B G (rename (inst k) a)) : BProv B G (fEx a) := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_exI _ _ k hp⟩
+    (h : BProv B G (rename (inst k) a)) : BProv B G (fEx a) :=
+  BProv_rule1 (fun Δ hex => Prov.P_exI Δ a k hex) h
 
 /-- A finite list of axioms from a sentence theory is unchanged by renaming. -/
 theorem map_rename_eq_of_sentences {B : Form → Prop} (hB : Sentences B)
@@ -1005,10 +992,21 @@ theorem Tinf_closed (B : Form → Prop) (L0 : List Form) (G : List Form)
   obtain ⟨N, Gb, hGb, hN⟩ := Tinf_bound B L0 G hall
   exact ⟨N, Gb, hGb, Prov_cut hp (Gb ++ chainB B L0 N) hN⟩
 
+theorem Tinf_mp (B : Form → Prop) (L0 : List Form) (a b : Form)
+    (hImp : Tinf B L0 (fImp a b)) (ha : Tinf B L0 a) : Tinf B L0 b := by
+  apply Tinf_closed B L0 [fImp a b, a] b
+  · intro x hx
+    simp at hx
+    rcases hx with rfl | rfl
+    · exact hImp
+    · exact ha
+  · exact Prov.P_impE _ a b
+      (Prov.P_ass _ _ (by simp))
+      (Prov.P_ass _ _ (by simp))
+
 theorem Tinf_henkin_ex (B : Form → Prop) (L0 : List Form)
     (hB : Sentences B) (h0 : BCon B L0) (a : Form)
     (hex : Tinf B L0 (fEx a)) : ∃ k, Tinf B L0 (rename (inst k) a) := by
-  obtain ⟨N, hN⟩ := hex
   obtain ⟨m, hm⟩ := Enum_surj (fEx a)
   rcases Classical.em (BCon B (fEx a :: chainB B L0 m)) with hpos | hnc
   · refine ⟨freshFor (fEx a :: chainB B L0 m), m+1, [], mem_T_nil, ?_⟩
@@ -1016,15 +1014,12 @@ theorem Tinf_henkin_ex (B : Form → Prop) (L0 : List Form)
     rw [hm]
     exact .P_ass _ _ (by simpa using stepB_ex_pos B _ a hpos)
   · exfalso
-    have hneg : BProv B (chainB B L0 (m+1)) (fImp (fEx a) fBot) := by
-      refine ⟨[], mem_T_nil, ?_⟩
+    have hneg : Tinf B L0 (fImp (fEx a) fBot) := by
+      refine ⟨m+1, [], mem_T_nil, ?_⟩
       show Prov ([] ++ stepB B (chainB B L0 m) (Enum m)) _
       rw [hm]
       exact .P_ass _ _ (by simpa using stepB_neg_in B _ (fEx a) hnc)
-    apply chainB_con B L0 hB h0 (max N (m+1))
-    apply BProv_mp B _ (fEx a) fBot
-    · exact BProv_weaken_chain B L0 (m+1) _ _ (by omega) hneg
-    · exact BProv_weaken_chain B L0 N _ _ (by omega) hN
+    exact (Tinf_cons B L0 hB h0) (Tinf_mp B L0 (fEx a) fBot hneg hex)
 
 theorem Tinf_henkin_all (B : Form → Prop) (L0 : List Form)
     (hB : Sentences B) (h0 : BCon B L0) (a : Form)
@@ -1039,27 +1034,19 @@ theorem Tinf_henkin_all (B : Form → Prop) (L0 : List Form)
       show Prov ([] ++ stepB B (chainB B L0 m) (Enum m)) _
       rw [hm]
       exact .P_ass _ _ (by simpa using stepB_pos_in B _ (fAll a) hc)
-    apply Tinf_cons B L0 hB h0
-    obtain ⟨n1, h1⟩ := hposfa
-    obtain ⟨n2, h2⟩ := hneg
-    refine ⟨max n1 n2, ?_⟩
-    apply BProv_mp B _ (fAll a) fBot
-    · exact BProv_weaken_chain B L0 n2 _ _ (by omega) h2
-    · exact BProv_weaken_chain B L0 n1 _ _ (by omega) h1
-  · have hnegw : BProv B (chainB B L0 (m+1))
+    exact (Tinf_cons B L0 hB h0) (Tinf_mp B L0 (fAll a) fBot hneg hposfa)
+  · have hnegw : Tinf B L0
         (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a)
               fBot) := by
-      refine ⟨[], mem_T_nil, ?_⟩
+      refine ⟨m+1, [], mem_T_nil, ?_⟩
       show Prov ([] ++ stepB B (chainB B L0 m) (Enum m)) _
       rw [hm]
       exact .P_ass _ _ (by simpa using stepB_all_neg B _ a hnc)
-    obtain ⟨n1, h1⟩ := hall (freshFor (fImp (fAll a) fBot :: chainB B L0 m))
-    apply Tinf_cons B L0 hB h0
-    refine ⟨max n1 (m+1), ?_⟩
-    apply BProv_mp B _
-      (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a) fBot
-    · exact BProv_weaken_chain B L0 (m+1) _ _ (by omega) hnegw
-    · exact BProv_weaken_chain B L0 n1 _ _ (by omega) h1
+    exact (Tinf_cons B L0 hB h0)
+      (Tinf_mp B L0
+        (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a)
+        fBot hnegw
+        (hall (freshFor (fImp (fAll a) fBot :: chainB B L0 m))))
 
 /-- MODEL EXISTENCE for a consistent sentence theory with a finite extra list. -/
 theorem model_of_BCon (B : Form → Prop) (L0 : List Form)
