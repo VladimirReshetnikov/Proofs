@@ -94,24 +94,6 @@ Fixpoint openedExContext
         (iterEx k body :: map (rename S) G)
   end.
 
-(** Lift any relative derivation through [n] freshly opened existential
-    binders.  This is the reusable form of the many local [lift2] proofs
-    previously repeated in graph functionality and round-trip arguments. *)
-Lemma BProv_lift_openedExContext_of_sentences : forall
-    (B : formula -> Prop), Sentences B ->
-  forall n G body phi,
-    BProv B G phi ->
-    BProv B (openedExContext n body G) (iterRenameSucc n phi).
-Proof.
-  intros B hB n.
-  induction n as [|n IH]; intros G body phi hphi.
-  - exact hphi.
-  - cbn [openedExContext iterRenameSucc].
-    apply IH.
-    exact (BProv_rename_succ_context_cons_of_sentences
-      B hB G (iterEx n body) phi hphi).
-Qed.
-
 (** Eliminate an arbitrary finite block of existential witnesses in one
     step.  The opened proof uses exactly [openedExContext n body G], so the
     theorem records all de Bruijn shifting in its type instead of leaving it
@@ -186,8 +168,8 @@ Lemma BProv_lift_two_opened_of_sentences : forall
       (rename S (rename S phi)).
 Proof.
   intros B hB G body phi hphi.
-  exact (BProv_lift_openedExContext_of_sentences
-    B hB 2 G body phi hphi).
+  exact (BProv_lift_openedContext_of_sentences
+    B hB [pEx body; body] G phi hphi).
 Qed.
 
 (** Two-step specialization for distinct outer and inner witness bodies. *)

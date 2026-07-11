@@ -69,21 +69,6 @@ def openedExContext : Nat → Formula → List Formula → List Formula
       openedExContext n body
         (iterEx n body :: G.map (rename Nat.succ))
 
-/-- Lift a relative derivation through any finite block of freshly opened
-existential witnesses. -/
-theorem BProv_lift_openedExContext_of_sentences
-    {B : Formula → Prop} (hB : Sentences B)
-    (n : Nat) {G : List Formula} {body phi : Formula}
-    (hphi : BProv B G phi) :
-    BProv B (openedExContext n body G) (iterRenameSucc n phi) := by
-  induction n generalizing G phi with
-  | zero => exact hphi
-  | succ n ih =>
-      simp only [openedExContext, iterRenameSucc]
-      apply ih
-      exact BProv_rename_succ_context_cons_of_sentences
-        (B := B) hB (a := iterEx n body) hphi
-
 /-- Eliminate an arbitrary finite block of existential witnesses in one
 step.  All de Bruijn shifting is exposed by `openedExContext` and
 `iterRenameSucc`, rather than hidden in a client-specific proof. -/
@@ -140,8 +125,8 @@ theorem BProv_lift_two_opened_of_sentences
     BProv B
       (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
       (rename Nat.succ (rename Nat.succ phi)) := by
-  exact BProv_lift_openedExContext_of_sentences
-    (B := B) hB 2 (body := body) hphi
+  exact BProv_lift_openedContext_of_sentences
+    (B := B) hB [ex body, body] hphi
 
 /-- Two-step specialization for distinct outer and inner witness bodies. -/
 theorem BProv_lift_two_contexts_of_sentences
