@@ -8,59 +8,13 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
+  PAHFProofCalculus
   PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic
   PAHFRoundTripEquality PAHFOrdinalCodeTermCompatibility
   PAHFOrdinalCodeTermOperations PAHFOrdinalCodeTermAdd.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
-
-Lemma BProv_three_exE_of_sentences : forall
-    (B : formula -> Prop), Sentences B ->
-  forall G body target,
-    BProv B G (pEx (pEx (pEx body))) ->
-    BProv B
-      (body :: map (rename S)
-        (pEx body :: map (rename S)
-          (pEx (pEx body) :: map (rename S) G)))
-      (rename S (rename S (rename S target))) ->
-    BProv B G target.
-Proof.
-  intros B hB G body target hex hopened.
-  set (C := pEx (pEx body) :: map (rename S) G).
-  assert (houter : BProv B C (pEx (pEx body))).
-  { apply BProv_ass. unfold C. simpl. now left. }
-  assert (htargetC : BProv B C (rename S target)).
-  {
-    apply (BProv_two_exE_of_sentences B hB C body
-      (rename S target) houter).
-    unfold C.
-    exact hopened.
-  }
-  apply (BProv_exE_of_sentences B G (pEx (pEx body))
-    target hB hex).
-  unfold C in htargetC.
-  exact htargetC.
-Qed.
-
-Lemma subst_three_witnesses_rename_three_succ : forall phi,
-  subst (instTerm (tVar 0))
-    (subst (Term.upSubst (instTerm (tVar 1)))
-      (subst
-        (Term.upSubst (Term.upSubst (instTerm (tVar 2))))
-        (rename (Fol.up (Fol.up (Fol.up S)))
-          (rename (Fol.up (Fol.up (Fol.up S)))
-            (rename (Fol.up (Fol.up (Fol.up S))) phi))))) =
-  phi.
-Proof.
-  intro phi.
-  rewrite subst_comp, subst_comp.
-  repeat rewrite subst_rename.
-  transitivity (subst (fun n => tVar n) phi).
-  - apply subst_ext_free.
-    intros [|[|[|n]]] hn; reflexivity.
-  - apply subst_id.
-Qed.
 
 Lemma BProv_Ax_s_term_graph_mul_forward_of_shifted_operands : forall
     (hcore : PAOrdinalCodeMulOpenCoreCompatibility)
@@ -120,32 +74,23 @@ Proof.
     pose proof (BProv_andE2 Ax_s D _ _ hbody) as htail.
     pose proof (BProv_andE1 Ax_s D _ _ htail) as hrightComposite.
     pose proof (BProv_andE2 Ax_s D _ _ htail) as hcoreD.
+    (* Three opened witnesses shift the operand hypotheses three times.  The
+       remaining difference between their context and [D] is only this local
+       four-formula prefix. *)
     assert (liftShifted : forall phi,
         BProv Ax_s
           (map (rename S) (map (rename S) (map (rename S) G))) phi ->
         BProv Ax_s D phi).
     {
       intros phi hphi.
-      pose proof (BProv_context_cons Ax_s
+      pose proof (BProv_context_prefix Ax_s
+        [body; rename S inner1; rename S (rename S inner2);
+          rename S (rename S (rename S composite))]
         (map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S (rename S (rename S composite))) _ hphi) as h0.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S (rename S composite)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S (rename S inner2)) _ h0) as h1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S inner2) ::
-          rename S (rename S (rename S composite)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S inner1) _ h1) as h2.
-      pose proof (BProv_context_cons Ax_s
-        (rename S inner1 :: rename S (rename S inner2) ::
-          rename S (rename S (rename S composite)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        body _ h2) as h3.
+        phi hphi) as h.
       unfold D, C.
       simpl.
-      exact h3.
+      exact h.
     }
     pose proof (liftShifted _ hleft) as hleftD.
     assert (hleftForward : BProv Ax_s D
@@ -341,32 +286,23 @@ Proof.
   {
     assert (hcoreD : BProv Ax_s D core).
     { apply BProv_ass. unfold D. simpl. now left. }
+    (* Reconstruct the existential graph by weakening under its four opened
+       assumptions; no additional renaming is performed at this stage. *)
     assert (liftShifted : forall phi,
         BProv Ax_s
           (map (rename S) (map (rename S) (map (rename S) G))) phi ->
         BProv Ax_s D phi).
     {
       intros phi hphi.
-      pose proof (BProv_context_cons Ax_s
+      pose proof (BProv_context_prefix Ax_s
+        [core; rename S leftGraphBody;
+          rename S (rename S rightGraphBody);
+          rename S (rename S (rename S target))]
         (map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S (rename S (rename S target))) _ hphi) as h0.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S (rename S target)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S (rename S rightGraphBody)) _ h0) as h1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S rightGraphBody) ::
-          rename S (rename S (rename S target)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S leftGraphBody) _ h1) as h2.
-      pose proof (BProv_context_cons Ax_s
-        (rename S leftGraphBody :: rename S (rename S rightGraphBody) ::
-          rename S (rename S (rename S target)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        core _ h2) as h3.
+        phi hphi) as h.
       unfold D, L, R, C.
       simpl.
-      exact h3.
+      exact h.
     }
     pose proof (liftShifted _ hleft) as hleftD.
     assert (hleftReverse : BProv Ax_s D

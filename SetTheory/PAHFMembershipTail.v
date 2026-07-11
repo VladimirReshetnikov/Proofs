@@ -7,7 +7,7 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import
-  PAHF PAHFBetaShiftPrefix PAHFTranslatedHFFin
+  PAHF PAHFProofCalculus PAHFBetaShiftPrefix PAHFTranslatedHFFin
   PAHFMembershipBound PAHFMembershipBoundSucc.
 
 Import ListNotations.
@@ -2550,22 +2550,15 @@ Proof.
   assert (hheadDivD : BProv Ax_s D
       (div2StepAt (head + 2) (tailCode + 2) (headBit + 2))).
   {
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      _ hheadDiv S) as h1.
-    rewrite rename_S_div2StepAt in h1.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      (map (rename S) G) _ h1 S) as h2.
-    rewrite rename_S_div2StepAt in h2.
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (map (rename S) G))
-      (rename S stepEx) _ h2) as h3.
-    pose proof (BProv_context_cons Ax_s _ openedBody _ h3) as h4.
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s G stepEx openedBody _ hheadDiv) as h.
+    repeat rewrite rename_S_div2StepAt in h.
     replace (head + 2) with (S (S head)) by lia.
     replace (tailCode + 2) with (S (S tailCode)) by lia.
     replace (headBit + 2) with (S (S headBit)) by lia.
     unfold D.
     simpl.
-    exact h4.
+    exact h.
   }
   assert (hzeroLe : BProv Ax_s D
       (leTermAt tZero (tSucc (tVar 2)))).
@@ -2616,22 +2609,16 @@ Proof.
       BProv Ax_s E (rename S (rename S f))).
   {
     intros f hf.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      D f hf S) as h1.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      (map (rename S) D) (rename S f) h1 S) as h2.
     set (shiftBody := betaShiftTailExistsTermAtBody
       1 0 (tSucc (tVar 2))).
     set (shiftStepEx := betaShiftTailExistsTermAtStepEx
       1 0 (tSucc (tVar 2))).
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (map (rename S) D))
-      (rename S shiftStepEx) _ h2) as h3.
-    pose proof (BProv_context_cons Ax_s _ shiftBody _ h3) as h4.
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s D shiftStepEx shiftBody f hf) as h.
     unfold E, betaShiftTailExistsTermAtOpenedContext,
       shiftBody, shiftStepEx.
     simpl.
-    exact h4.
+    exact h.
   }
   assert (htailEntryE : BProv Ax_s E
       (betaTermAtTermIdx (tVar (tailCode + 4)) 3 2

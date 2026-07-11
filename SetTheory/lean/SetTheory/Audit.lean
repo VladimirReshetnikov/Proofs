@@ -114,6 +114,14 @@ open SetTheory
 #check @PA.Formula.Prov_subst
 #check @PA.Formula.Prov_cut
 #check @PA.Formula.term_subst_instTerm_rename_succ
+#check PA.Formula.iterEx
+#check PA.Formula.openedContext
+#check PA.Formula.openedExContext
+#check @PA.Formula.BProv_context_prefix
+#check @PA.Formula.BProv_lift_openedContext_of_sentences
+#check @PA.Formula.BProv_iterExE_of_sentences
+#check @PA.Formula.subst_three_witnesses_rename_three_succ
+#print axioms PA.Formula.BProv_iterExE_of_sentences
 #check @PA.Formula.term_subst_instTerm_rename_two_succ
 #check @PA.Formula.term_subst_upSubst_instTerm_rename_two_succ
 #check @PA.Formula.term_subst_upSubst_instTerm_rename_three_succ

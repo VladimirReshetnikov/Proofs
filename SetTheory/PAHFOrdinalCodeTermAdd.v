@@ -8,36 +8,13 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
+  PAHFProofCalculus
   PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic
   PAHFRoundTripEquality PAHFOrdinalCodeTermCompatibility
   PAHFOrdinalCodeTermOperations.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
-
-Lemma BProv_two_exE_of_sentences : forall
-    (B : formula -> Prop), Sentences B ->
-  forall G body target,
-    BProv B G (pEx (pEx body)) ->
-    BProv B
-      (body :: map (rename S) (pEx body :: map (rename S) G))
-      (rename S (rename S target)) ->
-    BProv B G target.
-Proof.
-  intros B hB G body target hex hopened.
-  set (C := pEx body :: map (rename S) G).
-  assert (hinner : BProv B C (pEx body)).
-  { apply BProv_ass. unfold C. simpl. now left. }
-  assert (htargetC : BProv B C (rename S target)).
-  {
-    apply (BProv_exE_of_sentences B C body (rename S target)
-      hB hinner).
-    unfold C. exact hopened.
-  }
-  apply (BProv_exE_of_sentences B G (pEx body) target hB hex).
-  unfold C in htargetC.
-  exact htargetC.
-Qed.
 
 (** Forward direction after both recursive operand theorems have been
     instantiated below the two fresh output-code binders. *)
@@ -95,25 +72,20 @@ Proof.
     pose proof (BProv_andE2 Ax_s D _ _ hbody) as htail.
     pose proof (BProv_andE1 Ax_s D _ _ htail) as hrightComposite.
     pose proof (BProv_andE2 Ax_s D _ _ htail) as hcoreD.
+    (* The operand induction hypotheses are already shifted twice.  Opening
+       the two output witnesses only prepends the three formulas listed
+       below, so generic prefix weakening is sufficient. *)
     assert (liftShifted : forall phi,
         BProv Ax_s (map (rename S) (map (rename S) G)) phi ->
         BProv Ax_s D phi).
     {
       intros phi hphi.
-      pose proof (BProv_context_cons Ax_s
-        (map (rename S) (map (rename S) G))
-        (rename S (rename S composite)) _ hphi) as h1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S composite) ::
-          map (rename S) (map (rename S) G))
-        (rename S inner) _ h1) as h2.
-      pose proof (BProv_context_cons Ax_s
-        (rename S inner :: rename S (rename S composite) ::
-          map (rename S) (map (rename S) G))
-        body _ h2) as h3.
+      pose proof (BProv_context_prefix Ax_s
+        [body; rename S inner; rename S (rename S composite)]
+        (map (rename S) (map (rename S) G)) phi hphi) as h.
       unfold D, C.
       simpl.
-      exact h3.
+      exact h.
     }
     pose proof (liftShifted _ hleft) as hleftD.
     assert (hleftForward : BProv Ax_s D
@@ -300,25 +272,20 @@ Proof.
       replace (S (S codedOut)) with (codedOut + 2) in h2c by lia.
       exact h2c.
     }
+    (* The reverse branch has the same shifted tail but a different local
+       prefix: right witness, left witness, then the translated target. *)
     assert (liftShifted : forall phi,
         BProv Ax_s (map (rename S) (map (rename S) G)) phi ->
         BProv Ax_s R phi).
     {
       intros phi hphi.
-      pose proof (BProv_context_cons Ax_s
-        (map (rename S) (map (rename S) G))
-        (rename S (rename S target)) _ hphi) as h1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S target) ::
-          map (rename S) (map (rename S) G))
-        (rename S leftGraphBody) _ h1) as h2.
-      pose proof (BProv_context_cons Ax_s
-        (rename S leftGraphBody :: rename S (rename S target) ::
-          map (rename S) (map (rename S) G))
-        rightGraphBody _ h2) as h3.
+      pose proof (BProv_context_prefix Ax_s
+        [rightGraphBody; rename S leftGraphBody;
+          rename S (rename S target)]
+        (map (rename S) (map (rename S) G)) phi hphi) as h.
       unfold R, L, C.
       simpl.
-      exact h3.
+      exact h.
     }
     pose proof (liftShifted _ hleft) as hleftR.
     assert (hleftReverse : BProv Ax_s R

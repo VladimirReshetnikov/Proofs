@@ -8,6 +8,7 @@
   the composite-identity theorem for PA sentences.
 -/
 import SetTheory.PAHF.Interpretation
+import SetTheory.PAHF.ProofCalculus
 
 namespace SetTheory
 namespace PA
@@ -1605,23 +1606,6 @@ theorem BProv_ordinalCodeTraceAgreementAt_of_components
     term_subst_upSubst_instTerm_rename_two_succ]
     using hcomponents
 
-private theorem BProv_ex_exE_of_sentences
-    {B : Formula → Prop} (hB : Sentences B)
-    {G : List Formula} {body target : Formula}
-    (hex : BProv B G (ex (ex body)))
-    (hopened : BProv B
-      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ target))) :
-    BProv B G target := by
-  let C : List Formula := ex body :: G.map (rename Nat.succ)
-  have hinner : BProv B C (ex body) :=
-    BProv_ass (B := B) (G := C) (by simp [C])
-  have htargetC : BProv B C (rename Nat.succ target) :=
-    BProv_exE_of_sentences (B := B) hB hinner
-      (by simpa [C] using hopened)
-  exact BProv_exE_of_sentences (B := B) hB hex
-    (by simpa [C] using htargetC)
-
 private def ordinalCodeStepBodyTermAt
     (current next sequenceCode sequenceStep index : Term) : Formula :=
   and
@@ -1670,7 +1654,7 @@ theorem BProv_Ax_s_ordinalCodeTraceAgreementAt_succ
     simpa [ordinalCodeStepWitnessTermAt, body₁,
       sequenceCode₁A, sequenceStep₁A, indexA,
       ordinalCodeStepBodyTermAt] using hstep₁
-  refine BProv_ex_exE_of_sentences
+  refine BProv_two_exE_of_sentences
     (B := Ax_s) (G := G) (body := body₁) (target := target)
     (fun f hf ↦ sentence_ax_s (f := f) hf) hstep₁Ex ?_
   let A : List Formula :=
@@ -1681,17 +1665,10 @@ theorem BProv_Ax_s_ordinalCodeTraceAgreementAt_succ
   have lift2ToA : ∀ {phi : Formula}, BProv Ax_s G phi →
       BProv Ax_s A (rename Nat.succ (rename Nat.succ phi)) := by
     intro phi hphi
-    have hren₁ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hphi Nat.succ
-    have hinner₁Ctx := BProv_context_cons (B := Ax_s)
-      (a := inner₁) hren₁
-    have hren₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hinner₁Ctx Nat.succ
-    have hbody₁Ctx := BProv_context_cons (B := Ax_s)
-      (a := body₁) hren₂
-    simpa [A, inner₁] using hbody₁Ctx
+    simpa [A] using
+      (BProv_lift_two_contexts_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        (outer := inner₁) (inner := body₁) hphi)
   have hstep₂ARaw := lift2ToA hstep₂
   have hstep₂A : BProv Ax_s A
       (ordinalCodeStepWitnessTermAt
@@ -1731,7 +1708,7 @@ theorem BProv_Ax_s_ordinalCodeTraceAgreementAt_succ
       ordinalCodeStepBodyTermAt,
       Term.rename_comp, Function.comp_def, Nat.add_assoc]
       using hstep₂A
-  refine BProv_ex_exE_of_sentences
+  refine BProv_two_exE_of_sentences
     (B := Ax_s) (G := A) (body := body₂)
     (target := rename Nat.succ (rename Nat.succ target))
     (fun f hf ↦ sentence_ax_s (f := f) hf) hstep₂Ex ?_
@@ -1745,17 +1722,10 @@ theorem BProv_Ax_s_ordinalCodeTraceAgreementAt_succ
   have lift2ToD : ∀ {phi : Formula}, BProv Ax_s A phi →
       BProv Ax_s D (rename Nat.succ (rename Nat.succ phi)) := by
     intro phi hphi
-    have hren₁ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hphi Nat.succ
-    have hinner₂Ctx := BProv_context_cons (B := Ax_s)
-      (a := inner₂) hren₁
-    have hren₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hinner₂Ctx Nat.succ
-    have hbody₂Ctx := BProv_context_cons (B := Ax_s)
-      (a := body₂) hren₂
-    simpa [D, inner₂] using hbody₂Ctx
+    simpa [D] using
+      (BProv_lift_two_contexts_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        (outer := inner₂) (inner := body₂) hphi)
   have hcurrent₁A : BProv Ax_s A
       (betaTermTermAt (Term.var 1)
         sequenceCode₁A sequenceStep₁A indexA) := by
@@ -5066,7 +5036,7 @@ theorem BProv_Ax_s_ordinalCodePredEdgeTermAt_of_succ_graph
     simpa [ordinalCodeStepWitnessTermAt, stepBody,
       raw₂, raw₄, Term.rename, Term.rename_comp,
       Function.comp_def, Nat.add_assoc] using hstepC
-  refine BProv_ex_exE_of_sentences
+  refine BProv_two_exE_of_sentences
     (B := Ax_s) (G := C) (body := stepBody)
     (target := rename Nat.succ (rename Nat.succ target))
     (fun f hf ↦ sentence_ax_s (f := f) hf) hstepEx ?_
@@ -5081,17 +5051,10 @@ theorem BProv_Ax_s_ordinalCodePredEdgeTermAt_of_succ_graph
   have lift2ToD : ∀ {phi : Formula}, BProv Ax_s C phi →
       BProv Ax_s D (rename Nat.succ (rename Nat.succ phi)) := by
     intro phi hphi
-    have hren₁ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hphi Nat.succ
-    have hinnerCtx := BProv_context_cons (B := Ax_s)
-      (a := stepInner) hren₁
-    have hren₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hinnerCtx Nat.succ
-    have hbodyCtx := BProv_context_cons (B := Ax_s)
-      (a := stepBody) hren₂
-    simpa [D, stepInner] using hbodyCtx
+    simpa [D] using
+      (BProv_lift_two_contexts_of_sentences
+        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
+        (outer := stepInner) (inner := stepBody) hphi)
   have hzeroDRaw := lift2ToD hzeroC
   have hzeroD : BProv Ax_s D
       (betaTermTermAt Term.zero (Term.var 3) (Term.var 2) Term.zero) := by
@@ -5469,17 +5432,10 @@ theorem ordinalCodeGraphSuccClosure :
           BProv Ax_s D
             (rename Nat.succ (rename Nat.succ phi)) := by
         intro phi hphi
-        have hren₁ := BProv_rename_of_sentences
-          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          hphi Nat.succ
-        have houtCtx := BProv_context_cons
-          (B := Ax_s) (a := outGraph) hren₁
-        have hren₂ := BProv_rename_of_sentences
-          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          houtCtx Nat.succ
-        have hedgeCtx := BProv_context_cons
-          (B := Ax_s) (a := edgeBody) hren₂
-        simpa [D, C] using hedgeCtx
+        simpa [D, C] using
+          (BProv_lift_two_contexts_of_sentences
+            (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
+            (outer := outGraph) (inner := edgeBody) hphi)
       have hpredD : BProv Ax_s D
           (ordinalCodeGraphTermAt raw₂ pred₂) := by
         have hraw := lift2 hpred
@@ -7599,23 +7555,6 @@ theorem ordinalCodeAddCoreCompatibility :
     (out := Term.var (codedOut+2)) hleft hright
   simpa only [compositeAddCoreAt_eq_termAt] using hiff
 
-theorem BProv_add_ex_exE_of_sentences
-    {B : Formula → Prop} (hB : Sentences B)
-    {G : List Formula} {body target : Formula}
-    (hex : BProv B G (ex (ex body)))
-    (hopened : BProv B
-      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ target))) :
-    BProv B G target := by
-  let C : List Formula := ex body :: G.map (rename Nat.succ)
-  have hinner : BProv B C (ex body) :=
-    BProv_ass (B := B) (G := C) (by simp [C])
-  have htargetC : BProv B C (rename Nat.succ target) :=
-    BProv_exE_of_sentences (B := B) hB hinner
-      (by simpa [C] using hopened)
-  exact BProv_exE_of_sentences (B := B) hB hex
-    (by simpa [C] using htargetC)
-
 theorem BProv_Ax_s_term_graph_add_forward_of_shifted_operands
     (G : List Formula) (a b leftRaw rightRaw : Term)
     (codedMap : Nat → Nat) (codedOut : Nat)
@@ -7669,18 +7608,17 @@ theorem BProv_Ax_s_term_graph_add_forward_of_shifted_operands
       BProv_andE1 htail
     have hcore : BProv Ax_s D core :=
       BProv_andE2 htail
+    -- `hleft` and `hright` are already shifted through both witnesses.  The
+    -- opened context differs only by this explicit local prefix.
     have liftShifted : ∀ {phi : Formula},
         BProv Ax_s
           ((G.map (rename Nat.succ)).map (rename Nat.succ)) phi →
         BProv Ax_s D phi := by
       intro phi hphi
-      have h₁ := BProv_context_cons
-        (B := Ax_s) (a := rename Nat.succ (rename Nat.succ composite)) hphi
-      have h₂ := BProv_context_cons
-        (B := Ax_s) (a := rename Nat.succ inner) h₁
-      have h₃ := BProv_context_cons
-        (B := Ax_s) (a := body) h₂
-      simpa [D, C, List.map_map] using h₃
+      simpa [D, C, List.map_map] using
+        (BProv_context_prefix (B := Ax_s)
+          [body, rename Nat.succ inner,
+            rename Nat.succ (rename Nat.succ composite)] hphi)
     have hleftD := liftShifted hleft
     have hleftForward : BProv Ax_s D
         (imp leftComposite
@@ -7716,25 +7654,10 @@ theorem BProv_Ax_s_term_graph_add_forward_of_shifted_operands
     simpa [target, rename_ordinalCodeGraphTermAt,
       Term.rename, Term.rename_comp,
       Function.comp_def, Nat.add_assoc] using htarget
-  exact BProv_add_ex_exE_of_sentences
+  exact BProv_two_exE_of_sentences
     (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
     (G := C) (body := body) (target := target)
     hex (by simpa [D, inner] using hopened)
-
-theorem subst_two_witnesses_rename_two_succ
-    (phi : Formula) :
-    subst (instTerm (Term.var 0))
-        (subst (Term.upSubst (instTerm (Term.var 1)))
-          (rename (SetTheory.up (SetTheory.up Nat.succ))
-            (rename (SetTheory.up (SetTheory.up Nat.succ)) phi))) =
-      phi := by
-  rw [subst_comp, subst_rename, subst_rename]
-  calc
-    _ = subst (fun n ↦ Term.var n) phi := by
-      apply subst_ext_free
-      intro n hn
-      rcases n with _ | _ | n <;> rfl
-    _ = phi := subst_id phi
 
 theorem BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
     (G : List Formula) (a b leftRaw rightRaw : Term)
@@ -7832,13 +7755,10 @@ theorem BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
           ((G.map (rename Nat.succ)).map (rename Nat.succ)) phi →
         BProv Ax_s R phi := by
       intro phi hphi
-      have h₁ := BProv_context_cons
-        (B := Ax_s) (a := rename Nat.succ (rename Nat.succ target)) hphi
-      have h₂ := BProv_context_cons
-        (B := Ax_s) (a := rename Nat.succ leftGraphBody) h₁
-      have h₃ := BProv_context_cons
-        (B := Ax_s) (a := rightGraphBody) h₂
-      simpa [R, L, C, List.map_map] using h₃
+      simpa [R, L, C, List.map_map] using
+        (BProv_context_prefix (B := Ax_s)
+          [rightGraphBody, rename Nat.succ leftGraphBody,
+            rename Nat.succ (rename Nat.succ target)] hphi)
     have hleftR := liftShifted hleft
     have hleftReverse : BProv Ax_s R
         (imp
@@ -7882,7 +7802,7 @@ theorem BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
     rw [compositeTermGraphAt_add_normalForm]
     apply BProv_exI (t := Term.var 1)
     apply BProv_exI (t := Term.var 0)
-    rw [subst_two_witnesses_rename_two_succ]
+    rw [subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice]
     exact hbody
   have hcompositeL : BProv Ax_s L (rename Nat.succ composite) :=
     BProv_exE_of_sentences
@@ -9732,51 +9652,6 @@ theorem ordinalCodeMulCoreCompatibility :
     exact hcoreEx
   simpa [iffForm, coreEx, target] using BProv_andI hforward hreverse
 
-theorem BProv_mul_ex_ex_exE_of_sentences
-    {B : Formula → Prop} (hB : Sentences B)
-    {G : List Formula} {body target : Formula}
-    (hex : BProv B G (ex (ex (ex body))))
-    (hopened : BProv B
-      (body ::
-        (ex body ::
-          (ex (ex body) :: G.map (rename Nat.succ)).map
-            (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ (rename Nat.succ target)))) :
-    BProv B G target := by
-  let C : List Formula := ex (ex body) :: G.map (rename Nat.succ)
-  have houter : BProv B C (ex (ex body)) :=
-    BProv_ass (B := B) (G := C) (by simp [C])
-  have htargetC : BProv B C (rename Nat.succ target) :=
-    BProv_ex_exE_of_sentences
-      (B := B) hB (G := C) (body := body)
-      (target := rename Nat.succ target) houter
-      (by simpa [C] using hopened)
-  exact BProv_exE_of_sentences (B := B) hB hex
-    (by simpa [C] using htargetC)
-
-theorem subst_three_witnesses_rename_three_succ
-    (phi : Formula) :
-    subst (instTerm (Term.var 0))
-        (subst (Term.upSubst (instTerm (Term.var 1)))
-          (subst
-            (Term.upSubst
-              (Term.upSubst (instTerm (Term.var 2))))
-            (rename
-              (SetTheory.up (SetTheory.up (SetTheory.up Nat.succ)))
-              (rename
-                (SetTheory.up (SetTheory.up (SetTheory.up Nat.succ)))
-                (rename
-                  (SetTheory.up (SetTheory.up (SetTheory.up Nat.succ)))
-                  phi))))) =
-      phi := by
-  rw [subst_comp, subst_comp, subst_rename, subst_rename, subst_rename]
-  calc
-    _ = subst (fun n ↦ Term.var n) phi := by
-      apply subst_ext_free
-      intro n hn
-      rcases n with _ | _ | _ | n <;> rfl
-    _ = phi := subst_id phi
-
 theorem BProv_Ax_s_term_graph_mul_forward_of_shifted_operands
     (G : List Formula) (a b leftRaw rightRaw : Term)
     (codedMap : Nat → Nat) (codedOut : Nat)
@@ -9836,24 +9711,20 @@ theorem BProv_Ax_s_term_graph_mul_forward_of_shifted_operands
       BProv_andE1 htail
     have hcore : BProv Ax_s D core :=
       BProv_andE2 htail
+    -- The three existential outputs account for the triple renaming; after
+    -- that, moving into `D` is ordinary prefix weakening.
     have liftShifted : ∀ {phi : Formula},
         BProv Ax_s
           (((G.map (rename Nat.succ)).map (rename Nat.succ)).map
             (rename Nat.succ)) phi →
         BProv Ax_s D phi := by
       intro phi hphi
-      have h₀ := BProv_context_cons
-        (B := Ax_s)
-        (a := rename Nat.succ (rename Nat.succ
-          (rename Nat.succ composite))) hphi
-      have h₁ := BProv_context_cons
-        (B := Ax_s)
-        (a := rename Nat.succ (rename Nat.succ inner₂)) h₀
-      have h₂ := BProv_context_cons
-        (B := Ax_s) (a := rename Nat.succ inner₁) h₁
-      have h₃ := BProv_context_cons
-        (B := Ax_s) (a := body) h₂
-      simpa [D, C, inner₁, inner₂, List.map_map] using h₃
+      simpa [D, C, inner₁, inner₂, List.map_map] using
+        (BProv_context_prefix (B := Ax_s)
+          [body, rename Nat.succ inner₁,
+            rename Nat.succ (rename Nat.succ inner₂),
+            rename Nat.succ (rename Nat.succ
+              (rename Nat.succ composite))] hphi)
     have hleftD := liftShifted hleft
     have hleftForward : BProv Ax_s D
         (imp leftComposite
@@ -9908,7 +9779,7 @@ theorem BProv_Ax_s_term_graph_mul_forward_of_shifted_operands
     simpa [target, rename_ordinalCodeGraphTermAt,
       Term.rename, Term.rename_comp,
       Function.comp_def, Nat.add_assoc] using hresult
-  have htargetC := BProv_mul_ex_ex_exE_of_sentences
+  have htargetC := BProv_three_exE_of_sentences
     (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
     (G := C) (body := body) (target := target)
     hex (by simpa [D, inner₁, inner₂] using hopened)
@@ -10028,18 +9899,12 @@ theorem BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
             (rename Nat.succ)) phi →
         BProv Ax_s D phi := by
       intro phi hphi
-      have h₀ := BProv_context_cons
-        (B := Ax_s)
-        (a := rename Nat.succ (rename Nat.succ
-          (rename Nat.succ target))) hphi
-      have h₁ := BProv_context_cons
-        (B := Ax_s)
-        (a := rename Nat.succ (rename Nat.succ rightGraphBody)) h₀
-      have h₂ := BProv_context_cons
-        (B := Ax_s) (a := rename Nat.succ leftGraphBody) h₁
-      have h₃ := BProv_context_cons
-        (B := Ax_s) (a := core) h₂
-      simpa [D, L, R, C, List.map_map] using h₃
+      simpa [D, L, R, C, List.map_map] using
+        (BProv_context_prefix (B := Ax_s)
+          [core, rename Nat.succ leftGraphBody,
+            rename Nat.succ (rename Nat.succ rightGraphBody),
+            rename Nat.succ (rename Nat.succ
+              (rename Nat.succ target))] hphi)
     have hleftD := liftShifted hleft
     have hleftReverse : BProv Ax_s D
         (imp

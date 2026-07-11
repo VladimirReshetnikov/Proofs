@@ -12,6 +12,7 @@
 From Stdlib Require Import Arith.Arith Lia List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import Fol Calculus Completeness PAHF
+  PAHFProofCalculus
   PAHFOrdinalCode PAHFOrdinalCodeTotal PAHFOrdinalCodeTotalCapacity
   PAHFOrdinalCodeTotalInduction
   PAHFRoundTripArithmetic PAHFRoundTripEquality.
@@ -217,29 +218,6 @@ Proof.
   }
   apply (BProv_exE_of_sentences Ax_s G inner target
     sentence_ax_s houter).
-  unfold C in htargetC.
-  exact htargetC.
-Qed.
-
-Lemma BProv_ex_exE_of_sentences : forall
-    (B : formula -> Prop), Sentences B ->
-  forall G body target,
-    BProv B G (pEx (pEx body)) ->
-    BProv B
-      (body :: map (rename S) (pEx body :: map (rename S) G))
-      (rename S (rename S target)) ->
-    BProv B G target.
-Proof.
-  intros B hB G body target hex hopened.
-  set (C := pEx body :: map (rename S) G).
-  assert (hinner : BProv B C (pEx body)).
-  { apply BProv_ass. unfold C. simpl. now left. }
-  assert (htargetC : BProv B C (rename S target)).
-  {
-    apply (BProv_exE_of_sentences B C body (rename S target) hB hinner).
-    unfold C. exact hopened.
-  }
-  apply (BProv_exE_of_sentences B G (pEx body) target hB hex).
   unfold C in htargetC.
   exact htargetC.
 Qed.
@@ -609,7 +587,7 @@ Proof.
       by (apply functional_extensionality; intro x; lia).
     exact hstepC.
   }
-  apply (BProv_ex_exE_of_sentences Ax_s sentence_ax_s
+  apply (BProv_two_exE_of_sentences Ax_s sentence_ax_s
     C stepBody (rename S (rename S target)) hstepEx).
   set (D := stepBody ::
     map (rename S) (stepInner :: map (rename S) C)).

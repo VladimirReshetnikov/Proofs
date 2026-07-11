@@ -68,6 +68,7 @@ Completeness.v
 Zf.v
 Equivalence.v
 PAHF.v
+PAHFProofCalculus.v
 PAHFOrdinalCode.v
 PAHFOrdinalCodeTotal.v
 PAHFOrdinalCodeTotalCapacity.v

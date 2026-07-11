@@ -100,6 +100,14 @@ Proof.
     (BProv_mp Ax_s G _ _ himp hright) hout).
 Qed.
 
+(** Instantiate the closed multiplication-successor law at arbitrary terms.
+
+    Directly eliminating the five universal binders at those terms makes Rocq
+    repeatedly normalize the large HF graph macros.  Instead we first open
+    them at fresh variables and apply one simultaneous substitution.  The two
+    [match type of] blocks below normalize only the implication leaves needed
+    by modus ponens; keeping the graph predicates opaque makes this proof both
+    clearer about its binder map and dramatically faster to check. *)
 Lemma BProv_Ax_s_hfMulGraphTermAt_succ_right_mul : forall
     (P : TranslatedHFFinAxiomProofs) G
     out previous left rightSucc right,

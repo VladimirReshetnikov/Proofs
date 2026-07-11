@@ -75,6 +75,10 @@ are documented below:
   in [`PAHFConcreteAssembly.v`](PAHFConcreteAssembly.v), whose unconditional
   endpoint is
   `paHFFinDeductiveBiInterpretation : PAHFFinDeductiveBiInterpretationCertificate`.
+  The parallel [`PAHFProofCalculus.v`](PAHFProofCalculus.v) and
+  [`lean/SetTheory/PAHF/ProofCalculus.lean`](lean/SetTheory/PAHF/ProofCalculus.lean)
+  modules factor the reusable de Bruijn bookkeeping for finite blocks of
+  opened existential witnesses out of the arithmetic proofs.
   [`Audit.v`](Audit.v) type-checks this endpoint and confirms that its only
   assumptions are the development's established classical choice and
   extensionality basis.

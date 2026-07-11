@@ -13,7 +13,7 @@
 From Stdlib Require Import Arith.Arith Lia List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import
-  Fol Calculus PAHF PAHFOrdinalCode PAHFOrdinalCodeTotal
+  Fol Calculus PAHF PAHFProofCalculus PAHFOrdinalCode PAHFOrdinalCodeTotal
   PAHFOrdinalCodeTotalCapacity PAHFOrdinalCodeTotalInduction
   PAHFCompositeArithmetic PAHFOrdinalCodeTermCompatibility.
 
@@ -436,51 +436,6 @@ Qed.
 (* --------------------------------------------------------------------- *)
 (* Pointwise trace agreement.                                            *)
 
-(** Lift a derivation through the two witness binders opened by an
-    existential pair. *)
-Lemma BProv_Ax_s_lift2_opened_functional : forall G body phi,
-  BProv Ax_s G phi ->
-  BProv Ax_s
-    (body :: map (rename S) (pEx body :: map (rename S) G))
-    (rename S (rename S phi)).
-Proof.
-  intros G body phi hphi.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    G phi hphi S) as hren1.
-  pose proof (BProv_context_cons Ax_s (map (rename S) G)
-    (pEx body) _ hren1) as hctx1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (pEx body :: map (rename S) G) _ hctx1 S) as hren2.
-  pose proof (BProv_context_cons Ax_s
-    (map (rename S) (pEx body :: map (rename S) G))
-    body _ hren2) as hctx2.
-  exact hctx2.
-Qed.
-
-Lemma BProv_ex_exE_of_sentences_functional : forall
-    (B : formula -> Prop), Sentences B ->
-  forall G body target,
-    BProv B G (pEx (pEx body)) ->
-    BProv B
-      (body :: map (rename S) (pEx body :: map (rename S) G))
-      (rename S (rename S target)) ->
-    BProv B G target.
-Proof.
-  intros B hB G body target hex hopened.
-  set (C := pEx body :: map (rename S) G).
-  assert (hinner : BProv B C (pEx body)).
-  { apply BProv_ass. unfold C. simpl. now left. }
-  assert (htargetC : BProv B C (rename S target)).
-  {
-    apply (BProv_exE_of_sentences B C body (rename S target)
-      hB hinner).
-    unfold C. exact hopened.
-  }
-  apply (BProv_exE_of_sentences B G (pEx body) target hB hex).
-  unfold C in htargetC.
-  exact htargetC.
-Qed.
-
 (** Two beta traces agree at [index], with both current values explicitly
     named by the existential witnesses. *)
 Definition ordinalCodeTraceAgreementAt
@@ -629,7 +584,7 @@ Proof.
     unfold body.
     exact hagreement.
   }
-  apply (BProv_ex_exE_of_sentences_functional
+  apply (BProv_two_exE_of_sentences
     Ax_s sentence_ax_s G body (pEq coded1 coded2) houter).
   set (D := body :: map (rename S) (pEx body :: map (rename S) G)).
   assert (hbody : BProv Ax_s D body).
@@ -649,7 +604,7 @@ Proof.
   { unfold body in htail. exact (BProv_andE1 Ax_s D _ _ htail). }
   assert (hcurrentEq : BProv Ax_s D (pEq (tVar 1) (tVar 0))).
   { unfold body in htail. exact (BProv_andE2 Ax_s D _ _ htail). }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     G body _ hendpoint1) as hendpoint1Raw.
   assert (hendpoint1D : BProv Ax_s D
       (betaTermTermAt
@@ -666,7 +621,7 @@ Proof.
       by (apply functional_extensionality; intro x; lia).
     exact hendpoint1Raw.
   }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     G body _ hendpoint2) as hendpoint2Raw.
   assert (hendpoint2D : BProv Ax_s D
       (betaTermTermAt
@@ -928,12 +883,12 @@ Proof.
       sequenceCode1A, sequenceStep1A, indexA.
     exact hstep1.
   }
-  apply (BProv_ex_exE_of_sentences_functional
+  apply (BProv_two_exE_of_sentences
     Ax_s sentence_ax_s G body1 target hstep1Ex).
   set (A := body1 :: map (rename S) (pEx body1 :: map (rename S) G)).
   assert (hbody1A : BProv Ax_s A body1).
   { apply BProv_ass. unfold A. simpl. now left. }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     G body1 _ hstep2) as hstep2ARaw.
   assert (hstep2A : BProv Ax_s A
       (ordinalCodeStepWitnessTermAt sequenceCode2A sequenceStep2A indexA)).
@@ -947,7 +902,7 @@ Proof.
     unfold sequenceCode2A, sequenceStep2A, indexA.
     exact hstep2ARaw.
   }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     G body1 _ hagreement) as hagreementARaw.
   assert (hagreementA : BProv Ax_s A
       (ordinalCodeTraceAgreementAt
@@ -983,7 +938,7 @@ Proof.
       by (apply functional_extensionality; intro x; lia).
     exact hstep2A.
   }
-  apply (BProv_ex_exE_of_sentences_functional
+  apply (BProv_two_exE_of_sentences
     Ax_s sentence_ax_s A body2 (rename S (rename S target)) hstep2Ex).
   set (D := body2 :: map (rename S) (pEx body2 :: map (rename S) A)).
   assert (hbody2D : BProv Ax_s D body2).
@@ -1009,7 +964,7 @@ Proof.
     unfold body1, ordinalCodeStepBodyTermAt_functional in htail1A.
     exact (BProv_andE2 Ax_s A _ _ htail1A).
   }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     A body2 _ hcurrent1A) as hcurrent1DRaw.
   assert (hcurrent1D : BProv Ax_s D
       (betaTermTermAt (tVar 3)
@@ -1026,7 +981,7 @@ Proof.
     cbn [Term.rename] in hcurrent1DRaw.
     exact hcurrent1DRaw.
   }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     A body2 _ hnext1A) as hnext1DRaw.
   assert (hnext1D : BProv Ax_s D
       (betaTermTermAt (tVar 2)
@@ -1047,7 +1002,7 @@ Proof.
       by (apply functional_extensionality; intro x; lia).
     exact hnext1DRaw.
   }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     A body2 _ hgraph1A) as hgraph1DRaw.
   assert (hgraph1D : BProv Ax_s D
       (hfAdjoinGraphTermAt (tVar 2) (tVar 3) (tVar 3))).
@@ -1057,7 +1012,7 @@ Proof.
     simpl in hgraph1DRaw.
     exact hgraph1DRaw.
   }
-  pose proof (BProv_Ax_s_lift2_opened_functional
+  pose proof (BProv_lift_two_opened_of_sentences Ax_s sentence_ax_s
     A body2 _ hagreementA) as hagreementDRaw.
   assert (hagreementD : BProv Ax_s D
       (ordinalCodeTraceAgreementAt

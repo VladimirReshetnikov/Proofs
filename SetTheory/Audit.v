@@ -7,7 +7,8 @@
 (*  a proof development.                                                 *)
 (* ===================================================================== *)
 
-From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF.
+From SetTheory Require Import Fol Calculus Completeness Zf Equivalence PAHF
+  PAHFProofCalculus.
 From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues.
 From SetTheory Require Import BusyBeaverBB2Bridge BusyBeaverBB3Bridge
   BusyBeaverBB4Bridge BusyBeaverBB4Score BusyBeaverBB4ScoreComputation
@@ -86,6 +87,14 @@ Check PA.Formula.subst_ext_free.
 Check PA.Formula.subst_id.
 Check PA.Formula.subst_eq_of_sentence.
 Check PA.Formula.term_subst_instTerm_rename_succ.
+Check iterEx.
+Check openedContext.
+Check openedExContext.
+Check BProv_context_prefix.
+Check BProv_lift_openedContext_of_sentences.
+Check BProv_iterExE_of_sentences.
+Check subst_three_witnesses_rename_three_succ.
+Print Assumptions BProv_iterExE_of_sentences.
 Check PA.Formula.term_subst_instTerm_rename_two_succ.
 Check PA.Formula.term_subst_upSubst_instTerm_rename_two_succ.
 Check PA.Formula.term_subst_upSubst_instTerm_rename_three_succ.

@@ -11,6 +11,7 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
+  PAHFProofCalculus
   PAHFDeductiveAssembly PAHFCompositeArithmetic
   PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic
   PAHFRoundTripEquality PAHFRoundTripQuantifiers
@@ -87,26 +88,14 @@ Proof.
         BProv Ax_s D phi).
     {
       intros phi hphi.
-      pose proof (BProv_context_cons Ax_s
+      pose proof (BProv_context_prefix Ax_s
+        [body; rename S inner1; rename S (rename S inner2);
+          rename S (rename S (rename S composite))]
         (map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S (rename S (rename S composite))) _ hphi) as h0.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S (rename S composite)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S (rename S inner2)) _ h0) as h1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (rename S inner2) ::
-          rename S (rename S (rename S composite)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        (rename S inner1) _ h1) as h2.
-      pose proof (BProv_context_cons Ax_s
-        (rename S inner1 :: rename S (rename S inner2) ::
-          rename S (rename S (rename S composite)) ::
-          map (rename S) (map (rename S) (map (rename S) G)))
-        body _ h2) as h3.
+        phi hphi) as h.
       unfold D, C.
       simpl.
-      exact h3.
+      exact h.
     }
     pose proof (liftShifted _ hleft) as hleftD.
     assert (hleftForward : BProv Ax_s D
