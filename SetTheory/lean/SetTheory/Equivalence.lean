@@ -331,12 +331,10 @@ theorem chi_spec (psi : Form) (e : Nat → V) (a y : V) :
   constructor
   · intro ⟨d, hda, hpsi⟩
     refine ⟨d, hda, ?_⟩
-    rw [Sat_rename] at hpsi
-    exact (Sat_ext psi _ _ (rho_env d y a e)).mp hpsi
+    exact (Sat_rename_ext psi rhoRepl _ _ (rho_env d y a e)).mp hpsi
   · intro ⟨d, hda, hpsi⟩
     refine ⟨d, hda, ?_⟩
-    rw [Sat_rename]
-    exact (Sat_ext psi _ _ (rho_env d y a e)).mpr hpsi
+    exact (Sat_rename_ext psi rhoRepl _ _ (rho_env d y a e)).mpr hpsi
 
 theorem ReplacementFO (witness : V) (hSep : SepFOAx mem) (hPow : PowAx mem)
     (hClo : ClosureFOAx mem) :
@@ -425,10 +423,8 @@ theorem sat_Repl (witness : V) (hSep : SepFOAx mem) (hPow : PowAx mem)
     intro x y1 y2 h1 h2
     apply hfunc x y1 y2
     constructor
-    · rw [Sat_rename]
-      exact (Sat_ext psi _ _ (rf1_env y2 y1 x e)).mpr h1
-    · rw [Sat_rename]
-      exact (Sat_ext psi _ _ (rf2_env y2 y1 x e)).mpr h2
+    · exact (Sat_rename_ext psi rf1 _ _ (rf1_env y2 y1 x e)).mpr h1
+    · exact (Sat_rename_ext psi rf2 _ _ (rf2_env y2 y1 x e)).mpr h2
   intro da
   obtain ⟨r, hr⟩ := ReplacementFO witness hSep hPow hClo psi e hfun da
   refine ⟨r, fun dy => ?_⟩
@@ -436,13 +432,11 @@ theorem sat_Repl (witness : V) (hSep : SepFOAx mem) (hPow : PowAx mem)
   · intro hin
     obtain ⟨dx, hdx, hrel⟩ := (hr dy).mp hin
     refine ⟨dx, hdx, ?_⟩
-    rw [Sat_rename]
-    exact (Sat_ext psi _ _ (ri_env dx dy r da e)).mpr hrel
+    exact (Sat_rename_ext psi ri _ _ (ri_env dx dy r da e)).mpr hrel
   · intro ⟨dx, hdx, hsat⟩
     apply (hr dy).mpr
     refine ⟨dx, hdx, ?_⟩
-    rw [Sat_rename] at hsat
-    exact (Sat_ext psi _ _ (ri_env dx dy r da e)).mp hsat
+    exact (Sat_rename_ext psi ri _ _ (ri_env dx dy r da e)).mp hsat
 
 theorem sat_ZFax (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     (hPow : PowAx mem) (hClo : ClosureFOAx mem) (hReg : RegAx mem) :
@@ -515,8 +509,7 @@ theorem rcl_rel (psi : Form) (e : Nat → V) (d1 d2 w s : V) :
     Sat mem (scons d2 (scons d1 (scons w (scons s e)))) (rename r_cl psi)
       ↔ relOf mem psi e d1 d2 := by
   unfold relOf
-  rw [Sat_rename]
-  exact Sat_ext psi _ _ (r_cl_env d2 d1 w s e)
+  exact Sat_rename_ext psi r_cl _ _ (r_cl_env d2 d1 w s e)
 
 theorem bridge_SetLike (psi : Form) (e : Nat → V) :
     Sat mem e (SetLikeForm psi) ↔ SetLike mem (relOf mem psi e) := by
@@ -525,14 +518,12 @@ theorem bridge_SetLike (psi : Form) (e : Nat → V) :
     obtain ⟨y, hy⟩ := h x
     refine ⟨y, fun z hz => ?_⟩
     apply hy z
-    rw [Sat_rename]
-    exact (Sat_ext psi _ _ (r_sl_env z y x e)).mpr hz
+    exact (Sat_rename_ext psi r_sl _ _ (r_sl_env z y x e)).mpr hz
   · intro h x
     obtain ⟨y, hy⟩ := h x
     refine ⟨y, fun z hz => ?_⟩
     apply hy z
-    rw [Sat_rename] at hz
-    exact (Sat_ext psi _ _ (r_sl_env z y x e)).mp hz
+    exact (Sat_rename_ext psi r_sl _ _ (r_sl_env z y x e)).mp hz
 
 theorem bridge_ClosureBody (psi : Form) (e : Nat → V) :
     Sat mem e (ClosureBodyForm psi) ↔

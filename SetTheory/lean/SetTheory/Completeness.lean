@@ -1027,31 +1027,10 @@ theorem prov_iff_valid (G : List Form) (phi : Form) :
     exact soundness h v hg
   · exact completeness G phi
 
-/-- INFINITE COMPLETENESS: validity in all models of a sentence theory `B`
-implies provability of a sentence `psi` from `B`. -/
-theorem completeness_inf (B : Form → Prop) (psi : Form)
-    (hB : Sentences B) (_hpsi : Sentence psi)
-    (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
-      (∀ g, B g → Sat m v g) → Sat m v psi) :
-    BProv B [] psi := by
-  apply Classical.byContradiction
-  intro hnp
-  have hBcon : BCon B [fImp psi fBot] := by
-    intro ⟨Gb, hGb, hbad⟩
-    apply hnp
-    refine ⟨Gb, hGb, ?_⟩
-    rw [List.append_nil]
-    apply Prov_dne
-    apply Prov.P_impI
-    exact Prov_exch (G := Gb ++ [fImp psi fBot]) (by mem_tac) hbad
-  obtain ⟨Dom, m, v, hsatB, hsatL⟩ := model_of_BCon B [fImp psi fBot] hB hBcon
-  have hp : Sat m v psi := hval Dom m v hsatB
-  have hnpv : Sat m v (fImp psi fBot) := hsatL _ (by simp)
-  exact hnpv hp
-
 /-- Relative completeness with a finite context: semantic validity over every
 model of the sentence theory `B` satisfying the finite list `G` yields
-relative provability from `B` and `G`. -/
+relative provability from `B` and `G`.  Only `B` must consist of sentences;
+neither the finite context nor the target formula has that restriction. -/
 theorem completeness_inf_context (B : Form → Prop) (G : List Form) (psi : Form)
     (hB : Sentences B)
     (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
@@ -1073,6 +1052,17 @@ theorem completeness_inf_context (B : Form → Prop) (G : List Form) (psi : Form
     hval Dom m v hsatB (fun g hg => hsatL g (by simp [hg]))
   have hnpv : Sat m v (fImp psi fBot) := hsatL _ (by simp)
   exact hnpv hp
+
+/-- INFINITE COMPLETENESS: the historical empty-context interface.
+The target-sentence premise is retained for compatibility; the stronger
+finite-context theorem does not need it. -/
+theorem completeness_inf (B : Form → Prop) (psi : Form)
+    (hB : Sentences B) (_hpsi : Sentence psi)
+    (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+      (∀ g, B g → Sat m v g) → Sat m v psi) :
+    BProv B [] psi :=
+  completeness_inf_context B [] psi hB
+    (fun Dom m v hsatB _ => hval Dom m v hsatB)
 
 /-- DEDUCTIVE EQUIVALENCE: two sentence theories with the same models prove
 the same sentences. -/

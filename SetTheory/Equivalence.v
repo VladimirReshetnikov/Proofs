@@ -48,8 +48,7 @@ Local Notation relOf := (Fol.relOf V mem).
 Local Notation SetLike := (Fol.SetLike V mem).
 Local Notation Sub := (Fol.Sub V mem).
 Local Notation Functional := (Fol.Functional V).
-Local Notation Sat_ext := (Fol.Sat_ext V mem).
-Local Notation Sat_rename := (Fol.Sat_rename V mem).
+Local Notation Sat_rename_ext := (Fol.Sat_rename_ext V mem).
 Local Notation rsep_env := (Zf.rsep_env V).
 Local Notation rf1_env := (Zf.rf1_env V).
 Local Notation rf2_env := (Zf.rf2_env V).
@@ -316,15 +315,15 @@ Proof.
   intros psi e a y. unfold chi, relOf. simpl. split.
   - intros [d [Hda Hpsi]]. exists d. split.
     + exact Hda.
-    + apply (proj1 (Sat_rename psi rho (scons d (scons y (scons a e))))) in Hpsi.
-      apply (proj1 (Sat_ext psi (fun n => scons d (scons y (scons a e)) (rho n))
-                            (scons y (scons d e)) (fun n => rho_env d y a e n))) in Hpsi.
+    + apply (proj1 (Sat_rename_ext psi rho
+                      (scons d (scons y (scons a e))) (scons y (scons d e))
+                      (fun n => rho_env d y a e n))) in Hpsi.
       exact Hpsi.
   - intros [d [Hda Hpsi]]. exists d. split.
     + exact Hda.
-    + apply (proj2 (Sat_rename psi rho (scons d (scons y (scons a e))))).
-      apply (proj2 (Sat_ext psi (fun n => scons d (scons y (scons a e)) (rho n))
-                            (scons y (scons d e)) (fun n => rho_env d y a e n))).
+    + apply (proj2 (Sat_rename_ext psi rho
+                      (scons d (scons y (scons a e))) (scons y (scons d e))
+                      (fun n => rho_env d y a e n))).
       exact Hpsi.
 Qed.
 
@@ -386,9 +385,8 @@ Lemma sat_Sep : forall phi e, Sat e (Sep_form phi).
 Proof.
   intros phi e. simpl. intro da. destruct (SeparationFO phi e da) as [s Hs].
   exists s. intro dx.
-  rewrite (Sat_rename phi rsep (scons dx (scons s (scons da e)))).
-  rewrite (Sat_ext phi (fun n => scons dx (scons s (scons da e)) (rsep n))
-                   (scons dx e) (rsep_env dx s da e)).
+  rewrite (Sat_rename_ext phi rsep (scons dx (scons s (scons da e)))
+             (scons dx e) (rsep_env dx s da e)).
   exact (Hs dx).
 Qed.
 
@@ -397,26 +395,22 @@ Proof.
   intros psi e. unfold Repl_form, Func_form, Image_form. simpl. intro Hfunc.
   assert (Hfun : Functional (relOf psi e)).
   { intros x y1 y2 H1 H2. apply (Hfunc x y1 y2). split.
-    - rewrite (Sat_rename psi rf1 (scons y2 (scons y1 (scons x e)))).
-      rewrite (Sat_ext psi (fun n => scons y2 (scons y1 (scons x e)) (rf1 n))
-                       (scons y1 (scons x e)) (rf1_env y2 y1 x e)).
+    - rewrite (Sat_rename_ext psi rf1 (scons y2 (scons y1 (scons x e)))
+                 (scons y1 (scons x e)) (rf1_env y2 y1 x e)).
       exact H1.
-    - rewrite (Sat_rename psi rf2 (scons y2 (scons y1 (scons x e)))).
-      rewrite (Sat_ext psi (fun n => scons y2 (scons y1 (scons x e)) (rf2 n))
-                       (scons y2 (scons x e)) (rf2_env y2 y1 x e)).
+    - rewrite (Sat_rename_ext psi rf2 (scons y2 (scons y1 (scons x e)))
+                 (scons y2 (scons x e)) (rf2_env y2 y1 x e)).
       exact H2. }
   intro da. destruct (ReplacementFO psi e Hfun da) as [r Hr].
   exists r. intro dy. split.
   - intro Hin. apply (proj1 (Hr dy)) in Hin. destruct Hin as [dx [Hdx Hrel]].
     exists dx. split; [ exact Hdx | ].
-    rewrite (Sat_rename psi ri (scons dx (scons dy (scons r (scons da e))))).
-    rewrite (Sat_ext psi (fun n => scons dx (scons dy (scons r (scons da e))) (ri n))
-                     (scons dy (scons dx e)) (ri_env dx dy r da e)).
+    rewrite (Sat_rename_ext psi ri (scons dx (scons dy (scons r (scons da e))))
+               (scons dy (scons dx e)) (ri_env dx dy r da e)).
     exact Hrel.
   - intros [dx [Hdx Hsat]]. apply (proj2 (Hr dy)). exists dx. split; [ exact Hdx | ].
-    rewrite (Sat_rename psi ri (scons dx (scons dy (scons r (scons da e))))) in Hsat.
-    rewrite (Sat_ext psi (fun n => scons dx (scons dy (scons r (scons da e))) (ri n))
-                     (scons dy (scons dx e)) (ri_env dx dy r da e)) in Hsat.
+    rewrite (Sat_rename_ext psi ri (scons dx (scons dy (scons r (scons da e))))
+               (scons dy (scons dx e)) (ri_env dx dy r da e)) in Hsat.
     exact Hsat.
 Qed.
 
@@ -490,9 +484,8 @@ Section ClosureBridge.
     <-> relOf V mem psi e d1 d2.
   Proof.
     intros psi e d1 d2 w s. unfold relOf.
-    rewrite (Sat_rename V mem psi r_cl (scons V d2 (scons V d1 (scons V w (scons V s e))))).
-    apply (Sat_ext V mem psi
-             (fun n => scons V d2 (scons V d1 (scons V w (scons V s e))) (r_cl n))
+    apply (Sat_rename_ext V mem psi r_cl
+             (scons V d2 (scons V d1 (scons V w (scons V s e))))
              (scons V d1 (scons V d2 e)) (r_cl_env d2 d1 w s e)).
   Qed.
 
@@ -502,15 +495,15 @@ Section ClosureBridge.
     intros psi e. unfold SetLikeForm, SetLike. cbn [Sat]. split.
     - intros H x. destruct (H x) as [y Hy]. exists y. intros z Hz.
       apply Hy. unfold relOf in Hz.
-      rewrite (Sat_rename V mem psi r_sl (scons V z (scons V y (scons V x e)))).
-      rewrite (Sat_ext V mem psi (fun n => scons V z (scons V y (scons V x e)) (r_sl n))
-                       (scons V z (scons V x e)) (r_sl_env z y x e)).
+      rewrite (Sat_rename_ext V mem psi r_sl
+                 (scons V z (scons V y (scons V x e)))
+                 (scons V z (scons V x e)) (r_sl_env z y x e)).
       exact Hz.
     - intros H x. destruct (H x) as [y Hy]. exists y. intros z Hz.
       apply Hy. unfold relOf.
-      rewrite (Sat_rename V mem psi r_sl (scons V z (scons V y (scons V x e)))) in Hz.
-      rewrite (Sat_ext V mem psi (fun n => scons V z (scons V y (scons V x e)) (r_sl n))
-                       (scons V z (scons V x e)) (r_sl_env z y x e)) in Hz.
+      rewrite (Sat_rename_ext V mem psi r_sl
+                 (scons V z (scons V y (scons V x e)))
+                 (scons V z (scons V x e)) (r_sl_env z y x e)) in Hz.
       exact Hz.
   Qed.
 
@@ -711,6 +704,5 @@ Check T_ZF_same_models.
 Check T_implies_ZF.
 Check T_iff_ZF.
 Print Assumptions T_iff_ZF.
-
 
 

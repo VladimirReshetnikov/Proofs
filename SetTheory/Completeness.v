@@ -959,25 +959,9 @@ Proof.
   - apply completeness.
 Qed.
 
-(* INFINITE COMPLETENESS: validity in all models of a sentence theory B
-   implies provability of a sentence psi from B. *)
-Theorem completeness_inf :
-  forall B psi, Sentences B -> Sentence psi ->
-    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
-       (forall g, B g -> Sat Dom m v g) -> Sat Dom m v psi) ->
-    BProv B nil psi.
-Proof.
-  intros B psi HB Hpsi Hval. apply NNPP. intro Hnp.
-  assert (HBcon : BCon B (fImp psi fBot :: nil)).
-  { intros [Gb [HGb Hbad]]. apply Hnp. exists Gb. split; [ exact HGb | ].
-    rewrite app_nil_r. apply Prov_dne. apply P_impI.
-    apply (Prov_exch (Gb ++ fImp psi fBot :: nil)); [ intro x; mem | exact Hbad ]. }
-  destruct (model_of_BCon B (fImp psi fBot :: nil) HB HBcon) as [Dom [m [v [HsatB HsatL]]]].
-  assert (Hp : Sat Dom m v psi) by (apply Hval; exact HsatB).
-  assert (Hnpv : Sat Dom m v (fImp psi fBot)) by (apply HsatL; left; reflexivity).
-  simpl in Hnpv. exact (Hnpv Hp).
-Qed.
-
+(* Relative infinite completeness needs the base theory to consist of
+   sentences, but imposes no sentence restriction on either the finite
+   context G or the target psi. *)
 Theorem completeness_inf_context :
   forall B G psi, Sentences B ->
     (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
@@ -1016,6 +1000,21 @@ Proof.
   }
   simpl in Hnpv.
   exact (Hnpv Hp).
+Qed.
+
+(* INFINITE COMPLETENESS: the historical empty-context interface.  The target
+   sentence premise is retained for compatibility, although the stronger
+   finite-context theorem above does not need it. *)
+Theorem completeness_inf :
+  forall B psi, Sentences B -> Sentence psi ->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, B g -> Sat Dom m v g) -> Sat Dom m v psi) ->
+    BProv B nil psi.
+Proof.
+  intros B psi HB _ Hval.
+  apply (completeness_inf_context B nil psi HB).
+  intros Dom m v HsatB _.
+  exact (Hval Dom m v HsatB).
 Qed.
 
 (* DEDUCTIVE EQUIVALENCE: two sentence theories with the same models prove

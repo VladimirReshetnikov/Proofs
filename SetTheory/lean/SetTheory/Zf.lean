@@ -173,8 +173,7 @@ theorem bridge_Reg_fwd (H : ∀ e : Nat → V, Sat mem e Reg_form) :
 theorem rsep_rel (phi : Form) (x s da : V) (e : Nat → V) :
     Sat mem (scons x (scons s (scons da e))) (rename rsep phi)
       ↔ Sat mem (scons x e) phi := by
-  rw [Sat_rename]
-  exact Sat_ext phi _ _ (rsep_env x s da e)
+  exact Sat_rename_ext phi rsep _ _ (rsep_env x s da e)
 
 theorem bridge_Sep_fwd (H : ∀ (phi : Form) (e : Nat → V), Sat mem e (Sep_form phi)) :
     ∀ (phi : Form) (e : Nat → V) (a : V),
@@ -225,10 +224,8 @@ theorem bridge_Repl_fwd (H : ∀ (psi : Form) (e : Nat → V), Sat mem e (Repl_f
     show ∀ x y1 y2, Sat mem _ (rename rf1 psi) ∧ Sat mem _ (rename rf2 psi) → y1 = y2
     intro x y1 y2 ⟨h1, h2⟩
     apply hfun x y1 y2
-    · rw [Sat_rename] at h1
-      exact (Sat_ext psi _ _ (rf1_env y2 y1 x e)).mp h1
-    · rw [Sat_rename] at h2
-      exact (Sat_ext psi _ _ (rf2_env y2 y1 x e)).mp h2
+    · exact (Sat_rename_ext psi rf1 _ _ (rf1_env y2 y1 x e)).mp h1
+    · exact (Sat_rename_ext psi rf2 _ _ (rf2_env y2 y1 x e)).mp h2
   have himg := hr hfunc
   obtain ⟨r, himg⟩ := himg a
   refine ⟨r, fun y => ?_⟩
@@ -237,13 +234,11 @@ theorem bridge_Repl_fwd (H : ∀ (psi : Form) (e : Nat → V), Sat mem e (Repl_f
   · intro hy
     obtain ⟨x, hxa, hsat⟩ := h.1 hy
     refine ⟨x, hxa, ?_⟩
-    rw [Sat_rename] at hsat
-    exact (Sat_ext psi _ _ (ri_env x y r a e)).mp hsat
+    exact (Sat_rename_ext psi ri _ _ (ri_env x y r a e)).mp hsat
   · intro ⟨x, hxa, hrel⟩
     apply h.2
     refine ⟨x, hxa, ?_⟩
-    rw [Sat_rename]
-    exact (Sat_ext psi _ _ (ri_env x y r a e)).mpr hrel
+    exact (Sat_rename_ext psi ri _ _ (ri_env x y r a e)).mpr hrel
 
 end Bridges
 
@@ -740,8 +735,7 @@ theorem psiPS_rel (psiC : Form) (eC : Nat → V) (y x : V) :
         ↔ relOf mem psiC eC u x := by
     intro u
     unfold relOf
-    rw [Sat_rename]
-    exact Sat_ext psiC _ _
+    exact Sat_rename_ext psiC rPS _ _
       (fun n => match n with | 0 => rfl | 1 => rfl | _+2 => rfl)
   constructor
   · intro h u
@@ -818,8 +812,7 @@ theorem fRF_spec (psiC : Form) (eC : Nat → V) (ee : Nat → V) (i j off : Nat)
     (hoff : ∀ k, ee (k + off) = eC k) :
     Sat mem ee (fRF psiC i j off) ↔ relOf mem psiC eC (ee i) (ee j) := by
   unfold fRF relOf
-  rw [Sat_rename]
-  exact Sat_ext psiC _ _
+  exact Sat_rename_ext psiC (rRF i j off) _ _
     (fun n => match n with | 0 => rfl | 1 => rfl | k+2 => hoff k)
 
 /-- "slot `i` = gstep (slot `j`)" -/

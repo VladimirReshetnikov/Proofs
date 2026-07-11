@@ -370,8 +370,7 @@ Variable V : Type.
 Variable mem : V -> V -> Prop.
 Local Notation Sat := (Fol.Sat V mem).
 Local Notation scons := (Fol.scons V).
-Local Notation Sat_ext := (Fol.Sat_ext V mem).
-Local Notation Sat_rename := (Fol.Sat_rename V mem).
+Local Notation Sat_rename_ext := (Fol.Sat_rename_ext V mem).
 Local Notation inst_env := (Fol.inst_env V).
 
 (* environment lemma for the context shift *)
@@ -380,8 +379,7 @@ Lemma shift_sat :
                 forall y, In y (map (rename S) G) -> Sat (scons d e) y.
 Proof.
   intros G e d HG y Hy. apply in_map_iff in Hy. destruct Hy as [x [Hxr Hxin]]. subst y.
-  apply (proj2 (Sat_rename x S (scons d e))).
-  apply (proj2 (Sat_ext x (fun n => scons d e (S n)) e (fun n => eq_refl))).
+  apply (proj2 (Sat_rename_ext x S (scons d e) e (fun n => eq_refl))).
   exact (HG x Hxin).
 Qed.
 Theorem soundness :
@@ -423,28 +421,24 @@ Proof.
     + apply (IHa e). intros x Hx. destruct Hx as [Hxa | HxG]; [ subst x; exact Ha | exact (HG x HxG) ].
     + apply (IHb e). intros x Hx. destruct Hx as [Hxb | HxG]; [ subst x; exact Hb | exact (HG x HxG) ].
   - simpl. intro d. exact (IH (scons d e) (shift_sat G e d HG)).
-  - apply (proj2 (Sat_rename a (inst k) e)).
-    apply (proj2 (Sat_ext a (fun n => e (inst k n)) (scons (e k) e) (inst_env k e))).
+  - apply (proj2 (Sat_rename_ext a (inst k) e (scons (e k) e) (inst_env k e))).
     exact (IH e HG (e k)).
   - simpl. exists (e k).
-    apply (proj1 (Sat_ext a (fun n => e (inst k n)) (scons (e k) e) (inst_env k e))).
-    apply (proj1 (Sat_rename a (inst k) e)). exact (IH e HG).
+    apply (proj1 (Sat_rename_ext a (inst k) e (scons (e k) e) (inst_env k e))).
+    exact (IH e HG).
   - destruct (IHex e HG) as [d Hd].
     assert (Hc : Sat (scons d e) (rename S c)).
     { apply (IHbody (scons d e)). intros y Hy. destruct Hy as [Hya | HyG].
       - subst y. exact Hd.
       - exact (shift_sat G e d HG y HyG). }
-    apply (proj1 (Sat_rename c S (scons d e))) in Hc.
-    apply (proj1 (Sat_ext c (fun n => scons d e (S n)) e (fun n => eq_refl))) in Hc.
+    apply (proj1 (Sat_rename_ext c S (scons d e) e (fun n => eq_refl))) in Hc.
     exact Hc.
   - simpl. reflexivity.
   - (* P_eqElim *)
     assert (Hij : e i = e j) by exact (IHeq e HG).
-    apply (proj2 (Sat_rename a (inst j) e)).
-    apply (proj2 (Sat_ext a (fun n => e (inst j n)) (scons (e j) e) (inst_env j e))).
+    apply (proj2 (Sat_rename_ext a (inst j) e (scons (e j) e) (inst_env j e))).
     pose proof (IHa e HG) as Ha.
-    apply (proj1 (Sat_rename a (inst i) e)) in Ha.
-    apply (proj1 (Sat_ext a (fun n => e (inst i n)) (scons (e i) e) (inst_env i e))) in Ha.
+    apply (proj1 (Sat_rename_ext a (inst i) e (scons (e i) e) (inst_env i e))) in Ha.
     rewrite Hij in Ha. exact Ha.
 Qed.
 

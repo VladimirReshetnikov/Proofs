@@ -140,9 +140,8 @@ Lemma rsep_rel :
     <-> Sat V mem (scons V x e) phi.
 Proof.
   intros V mem phi x s da e.
-  rewrite (Sat_rename V mem phi rsep (scons V x (scons V s (scons V da e)))).
-  apply (Sat_ext V mem phi
-           (fun n => scons V x (scons V s (scons V da e)) (rsep n))
+  apply (Sat_rename_ext V mem phi rsep
+           (scons V x (scons V s (scons V da e)))
            (scons V x e) (rsep_env V x s da e)).
 Qed.
 
@@ -213,14 +212,12 @@ Proof.
   assert (Hfunc : Sat V mem e (Func_form psi)).
   { unfold Func_form. cbn [Sat]. intros x y1 y2 [H1 H2].
     apply (Hfun x y1 y2).
-    - rewrite (Sat_rename V mem psi rf1 (scons V y2 (scons V y1 (scons V x e)))) in H1.
-      rewrite (Sat_ext V mem psi
-                 (fun n => scons V y2 (scons V y1 (scons V x e)) (rf1 n))
+    - rewrite (Sat_rename_ext V mem psi rf1
+                 (scons V y2 (scons V y1 (scons V x e)))
                  (scons V y1 (scons V x e)) (rf1_env V y2 y1 x e)) in H1.
       exact H1.
-    - rewrite (Sat_rename V mem psi rf2 (scons V y2 (scons V y1 (scons V x e)))) in H2.
-      rewrite (Sat_ext V mem psi
-                 (fun n => scons V y2 (scons V y1 (scons V x e)) (rf2 n))
+    - rewrite (Sat_rename_ext V mem psi rf2
+                 (scons V y2 (scons V y1 (scons V x e)))
                  (scons V y2 (scons V x e)) (rf2_env V y2 y1 x e)) in H2.
       exact H2. }
   specialize (Hr Hfunc). unfold Image_form in Hr. cbn [Sat] in Hr.
@@ -228,15 +225,13 @@ Proof.
   exists r. intro y. specialize (Himg y). split.
   - intro Hy. destruct (proj1 Himg Hy) as [x [Hxa Hsat]].
     exists x. split; [ exact Hxa | ].
-    rewrite (Sat_rename V mem psi ri (scons V x (scons V y (scons V r (scons V a e))))) in Hsat.
-    rewrite (Sat_ext V mem psi
-               (fun n => scons V x (scons V y (scons V r (scons V a e))) (ri n))
+    rewrite (Sat_rename_ext V mem psi ri
+               (scons V x (scons V y (scons V r (scons V a e))))
                (scons V y (scons V x e)) (ri_env V x y r a e)) in Hsat.
     exact Hsat.
   - intros [x [Hxa Hrel]]. apply (proj2 Himg). exists x. split; [ exact Hxa | ].
-    rewrite (Sat_rename V mem psi ri (scons V x (scons V y (scons V r (scons V a e))))).
-    rewrite (Sat_ext V mem psi
-               (fun n => scons V x (scons V y (scons V r (scons V a e))) (ri n))
+    rewrite (Sat_rename_ext V mem psi ri
+               (scons V x (scons V y (scons V r (scons V a e))))
                (scons V y (scons V x e)) (ri_env V x y r a e)).
     exact Hrel.
 Qed.
@@ -730,9 +725,9 @@ Proof.
   assert (Hin : forall u,
       Sat V mem (SC u (SC y (SC x eC))) (rename rPS psiC) <-> RC u x).
   { intro u.
-    rewrite (Sat_rename V mem psiC rPS (SC u (SC y (SC x eC)))).
     unfold relOf.
-    apply (Sat_ext V mem psiC).
+    apply (Sat_rename_ext V mem psiC rPS
+             (SC u (SC y (SC x eC))) (SC u (SC x eC))).
     intro n. destruct n as [| [| k]]; reflexivity. }
   split.
   - intros H u. specialize (H u). specialize (Hin u). tauto.
@@ -798,9 +793,9 @@ Lemma fRF_spec :
     (SAT ee (fRF i j off) <-> RC (ee i) (ee j)).
 Proof.
   intros ee i j off Hoff. unfold fRF.
-  rewrite (Sat_rename V mem psiC (rRF i j off) ee).
   unfold relOf.
-  apply (Sat_ext V mem psiC).
+  apply (Sat_rename_ext V mem psiC (rRF i j off) ee
+           (SC (ee i) (SC (ee j) eC))).
   intro n. destruct n as [| [| k]]; cbn.
   - reflexivity.
   - reflexivity.

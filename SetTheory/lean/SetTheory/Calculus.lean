@@ -349,8 +349,7 @@ theorem shift_sat (G : List Form) (e : Nat → V) (d : V)
   intro y hy
   rw [List.mem_map] at hy
   obtain ⟨x, hxin, rfl⟩ := hy
-  rw [Sat_rename]
-  exact (Sat_ext x _ _ (fun n => rfl)).mpr (hG x hxin)
+  exact (Sat_rename_ext x Nat.succ _ _ (fun n => rfl)).mpr (hG x hxin)
 
 theorem soundness {G : List Form} {a : Form} (h : Prov G a) :
     ∀ e : Nat → V, (∀ x ∈ G, Sat mem e x) → Sat mem e a := by
@@ -396,14 +395,12 @@ theorem soundness {G : List Form} {a : Form} (h : Prov G a) :
     exact ih (scons d e) (shift_sat G e d hG)
   | P_allE G a k _ ih =>
     intro e hG
-    rw [Sat_rename]
-    exact (Sat_ext a _ _ (inst_env k e)).mpr (ih e hG (e k))
+    exact (Sat_rename_ext a (inst k) _ _ (inst_env k e)).mpr (ih e hG (e k))
   | P_exI G a k _ ih =>
     intro e hG
     refine ⟨e k, ?_⟩
     have := ih e hG
-    rw [Sat_rename] at this
-    exact (Sat_ext a _ _ (inst_env k e)).mp this
+    exact (Sat_rename_ext a (inst k) _ _ (inst_env k e)).mp this
   | P_exE G a c _ _ ihex ihbody =>
     intro e hG
     obtain ⟨d, hd⟩ := ihex e hG
@@ -413,17 +410,14 @@ theorem soundness {G : List Form} {a : Form} (h : Prov G a) :
       rcases List.mem_cons.mp hy with rfl | hy
       · exact hd
       · exact shift_sat G e d hG y hy
-    rw [Sat_rename] at hc
-    exact (Sat_ext c _ _ (fun n => rfl)).mp hc
+    exact (Sat_rename_ext c Nat.succ _ _ (fun n => rfl)).mp hc
   | P_eqRefl G k => intro e hG; exact rfl
   | P_eqElim G i j a _ _ iheq iha =>
     intro e hG
     have hij : e i = e j := iheq e hG
-    rw [Sat_rename]
-    refine (Sat_ext a _ _ (inst_env j e)).mpr ?_
+    refine (Sat_rename_ext a (inst j) _ _ (inst_env j e)).mpr ?_
     have ha := iha e hG
-    rw [Sat_rename] at ha
-    have ha' := (Sat_ext a _ _ (inst_env i e)).mp ha
+    have ha' := (Sat_rename_ext a (inst i) _ _ (inst_env i e)).mp ha
     rw [hij] at ha'
     exact ha'
 
