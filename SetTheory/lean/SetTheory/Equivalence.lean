@@ -88,6 +88,14 @@ theorem Sub_refl (a : V) : Sub mem a a := fun _ h => h
 theorem self_in_power (hPow : PowAx mem) (a : V) : mem a (power hPow a) :=
   power_intro hPow a a (Sub_refl a)
 
+private theorem setLike_of_functional_host
+    (bound : V → V) (hbound : ∀ a, mem a (bound a))
+    (fallback : V) {R : V → V → Prop} (hfun : Functional R) : SetLike mem R := by
+  intro x
+  rcases Classical.em (∃ y, R y x) with ⟨y, hy⟩ | hnone
+  · exact ⟨bound y, fun z hz => (hfun x z y hz hy).symm ▸ hbound y⟩
+  · exact ⟨fallback, fun z hz => (hnone ⟨z, hz⟩).elim⟩
+
 /-! ### Empty set -/
 
 noncomputable def emptyset (hSep : SepFOAx mem) (witness : V) : V :=
@@ -170,22 +178,16 @@ theorem Pairing (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     (hPow : PowAx mem) (hClo : ClosureFOAx mem) :
     ∀ a b : V, ∃ p, ∀ x, mem x p ↔ (x = a ∨ x = b) := by
   intro a b
-  have hSL : SetLike mem (relOf mem psi_pair (e_pair hSep hPow witness a b)) := by
-    intro x
-    rcases Classical.em (x = emptyset hSep witness) with hx | hx
-    · refine ⟨power hPow a, fun z hz => ?_⟩
-      rcases (Hrel_pair hSep hPow witness a b z x).mp hz with ⟨_, hza⟩ | ⟨hxs, _⟩
-      · rw [hza]; exact self_in_power hPow a
-      · exact absurd (hx ▸ hxs) (empty_neq_single hExt hSep hPow witness)
-    · rcases Classical.em (x = single_empty hSep hPow witness) with hs | hs
-      · refine ⟨power hPow b, fun z hz => ?_⟩
-        rcases (Hrel_pair hSep hPow witness a b z x).mp hz with ⟨hxe, _⟩ | ⟨_, hzb⟩
-        · exact absurd hxe hx
-        · rw [hzb]; exact self_in_power hPow b
-      · refine ⟨emptyset hSep witness, fun z hz => ?_⟩
-        rcases (Hrel_pair hSep hPow witness a b z x).mp hz with ⟨hxe, _⟩ | ⟨hxs, _⟩
-        · exact absurd hxe hx
-        · exact absurd hxs hs
+  have hfun : Functional (relOf mem psi_pair (e_pair hSep hPow witness a b)) := by
+    intro x z₁ z₂ hz₁ hz₂
+    rcases (Hrel_pair hSep hPow witness a b z₁ x).mp hz₁ with h₁ | h₁ <;>
+      rcases (Hrel_pair hSep hPow witness a b z₂ x).mp hz₂ with h₂ | h₂
+    · exact h₁.2.trans h₂.2.symm
+    · exact (empty_neq_single hExt hSep hPow witness (h₁.1.symm.trans h₂.1)).elim
+    · exact (empty_neq_single hExt hSep hPow witness (h₂.1.symm.trans h₁.1)).elim
+    · exact h₁.2.trans h₂.2.symm
+  have hSL : SetLike mem (relOf mem psi_pair (e_pair hSep hPow witness a b)) :=
+    setLike_of_functional_host (power hPow) (self_in_power hPow) witness hfun
   obtain ⟨w, hsub, hclosed⟩ :=
     hClo psi_pair (e_pair hSep hPow witness a b) hSL (pair_empty hSep hPow witness)
   have ha : mem a w := by
@@ -288,17 +290,15 @@ theorem Infinity (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     ∃ I : V, (∃ e0, mem e0 I ∧ ∀ z, ¬ mem z e0) ∧
       (∀ x, mem x I →
         ∃ sx, mem sx I ∧ ∀ t, mem t sx ↔ (mem t x ∨ t = x)) := by
-  have hSL : SetLike mem (relOf mem psi_succ (fun _ => witness)) := by
-    intro x
-    obtain ⟨sx, hsx⟩ := succ_exists witness hExt hSep hPow hClo x
-    refine ⟨power hPow sx, fun z hz0 => ?_⟩
-    have hz := (Hrel_succ (fun _ => witness) z x).mp hz0
-    have hzs : z = sx := by
-      apply hExt
-      intro t
-      rw [hz t, hsx t]
-    subst hzs
-    exact self_in_power hPow z
+  have hfun : Functional (relOf mem psi_succ (fun _ => witness)) := by
+    intro x z₁ z₂ hz₁ hz₂
+    have h₁ := (Hrel_succ (fun _ => witness) z₁ x).mp hz₁
+    have h₂ := (Hrel_succ (fun _ => witness) z₂ x).mp hz₂
+    apply hExt
+    intro t
+    rw [h₁ t, h₂ t]
+  have hSL : SetLike mem (relOf mem psi_succ (fun _ => witness)) :=
+    setLike_of_functional_host (power hPow) (self_in_power hPow) witness hfun
   obtain ⟨w, hsub, hclosed⟩ :=
     hClo psi_succ (fun _ => witness) hSL (single_empty hSep hPow witness)
   refine ⟨w, ⟨emptyset hSep witness, ?_, emptyset_spec hSep witness⟩, ?_⟩
@@ -342,15 +342,8 @@ theorem ReplacementFO (witness : V) (hSep : SepFOAx mem) (hPow : PowAx mem)
       Functional (relOf mem psi e) →
       ∀ a : V, ∃ r, ∀ y, mem y r ↔ ∃ x, mem x a ∧ relOf mem psi e y x := by
   intro psi e hfun a
-  have hSL : SetLike mem (relOf mem psi e) := by
-    intro x
-    rcases Classical.em (∃ y0, relOf mem psi e y0 x) with ⟨y0, hy0⟩ | hno
-    · refine ⟨power hPow y0, fun z hz => ?_⟩
-      have : z = y0 := hfun x z y0 hz hy0
-      subst this
-      exact self_in_power hPow z
-    · refine ⟨emptyset hSep witness, fun z hz => ?_⟩
-      exact absurd ⟨z, hz⟩ hno
+  have hSL : SetLike mem (relOf mem psi e) :=
+    setLike_of_functional_host (power hPow) (self_in_power hPow) witness hfun
   obtain ⟨w, hsub, hclosed⟩ := hClo psi e hSL a
   refine ⟨sepF hSep w (chi psi) (scons a e), fun y => ?_⟩
   constructor

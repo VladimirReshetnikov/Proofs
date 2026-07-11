@@ -72,6 +72,8 @@ Hypothesis Hosting :
 Definition SetLike (R : V -> V -> Prop) : Prop :=
   forall x, exists y, forall z, R z x -> z ∈ y.
 
+Local Definition Functional (R : V -> V -> Prop) : Prop := forall x y1 y2, R y1 x -> R y2 x -> y1 = y2.
+
 Hypothesis Closure :
   forall R : V -> V -> Prop, SetLike R ->
     forall s, exists w, Sub s w /\ (forall u v, R u v -> v ∈ w -> u ∈ w).
@@ -111,6 +113,17 @@ Definition host (a : V) : V :=
   proj1_sig (constructive_indefinite_description _ (Hosting a)).
 Lemma host_spec : forall a, a ∈ host a.
 Proof. intro a. exact (proj2_sig (constructive_indefinite_description _ (Hosting a))). Qed.
+
+Local Lemma functional_setlike_of_host :
+  forall (bound : V -> V),
+    (forall a, a ∈ bound a) ->
+    forall (fallback : V) R, Functional R -> SetLike R.
+Proof.
+  intros bound Hbound fallback R Hfun x.
+  destruct (classic (exists y, R y x)) as [[y Hy] | Hnone].
+  - exists (bound y). intros z Hz. rewrite (Hfun x z y Hz Hy). apply Hbound.
+  - exists fallback. intros z Hz. exfalso. apply Hnone. now exists z.
+Qed.
 
 (* Powerset is one way to satisfy Hosting (a in P(a)); Powerset restricted to *)
 (* finite sets is NOT, since it cannot host an infinite set.  This is the      *)
@@ -225,22 +238,12 @@ Theorem Pairing :
   forall a b, exists p, forall x, x ∈ p <-> (x = a \/ x = b).
 Proof.
   intros a b.
-  assert (HSL : SetLike (pairRel a b)).
-  { intro x.
-    destruct (classic (x = emptyset)) as [Hx | Hx].
-    - exists (host a). intros z HR. unfold pairRel in HR.
-      destruct HR as [[_ Hz] | [Hxs _]].
-      + subst z. apply host_spec.
-      + exfalso. apply empty_neq_single. rewrite <- Hx. exact Hxs.
-    - destruct (classic (x = single_empty)) as [Hs | Hs].
-      + exists (host b). intros z HR. unfold pairRel in HR.
-        destruct HR as [[Hxe _] | [_ Hz]].
-        * exfalso. apply Hx. exact Hxe.
-        * subst z. apply host_spec.
-      + exists emptyset. intros z HR. unfold pairRel in HR.
-        destruct HR as [[Hxe _] | [Hxs _]].
-        * exfalso. apply Hx. exact Hxe.
-        * exfalso. apply Hs. exact Hxs. }
+  assert (Hfun : Functional (pairRel a b)).
+  { unfold Functional, pairRel. intros x z1 z2 Hz1 Hz2.
+    pose proof empty_neq_single as Hne.
+    destruct Hz1 as [[Hx1 Hz1] | [Hx1 Hz1]];
+      destruct Hz2 as [[Hx2 Hz2] | [Hx2 Hz2]]; congruence. }
+  pose proof (functional_setlike_of_host host host_spec witness (pairRel a b) Hfun) as HSL.
   destruct (Closure (pairRel a b) HSL pair_empty) as [w [Hsub Hclosed]].
   assert (Ha : a ∈ w).
   { apply (Hclosed a emptyset).
@@ -332,14 +335,10 @@ Theorem Infinity :
     (forall x, x ∈ I ->
        exists sx, sx ∈ I /\ forall t, t ∈ sx <-> (t ∈ x \/ t = x)).
 Proof.
-  assert (HSL : SetLike succRel).
-  { intro x. destruct (succ_exists x) as [sx Hsx].
-    exists (host sx). intros z HR. unfold succRel in HR.
-    assert (Hz : z = sx).
-    { apply Extensionality. intro t. split.
-      - intro Ht. apply (proj2 (Hsx t)). exact (proj1 (HR t) Ht).
-      - intro Ht. apply (proj2 (HR t)).  exact (proj1 (Hsx t) Ht). }
-    subst z. apply host_spec. }
+  assert (Hfun : Functional succRel).
+  { unfold Functional, succRel. intros x z1 z2 Hz1 Hz2.
+    apply Extensionality. intro t. rewrite (Hz1 t), (Hz2 t). reflexivity. }
+  pose proof (functional_setlike_of_host host host_spec witness succRel Hfun) as HSL.
   destruct (Closure succRel HSL single_empty) as [w [Hsub Hclosed]].
   exists w. split.
   - exists emptyset. split.

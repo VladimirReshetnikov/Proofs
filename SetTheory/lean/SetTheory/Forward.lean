@@ -61,6 +61,8 @@ def Sub (mem : V → V → Prop) (a b : V) : Prop := ∀ x, mem x a → mem x b
 def SetLike (mem : V → V → Prop) (R : V → V → Prop) : Prop :=
   ∀ x, ∃ y, ∀ z, R z x → mem z y
 
+private def Functional (R : V → V → Prop) : Prop := ∀ x y₁ y₂, R y₁ x → R y₂ x → y₁ = y₂
+
 /- ------------------------- the surviving axioms ------------------------ -/
 /- The axiom-schema statements, as named `def`s, so hypotheses stay readable
    and each theorem's parameter list is a literal dependency audit. -/
@@ -126,6 +128,14 @@ noncomputable def host (hHost : HostAx mem) (a : V) : V :=
 
 theorem host_spec (hHost : HostAx mem) (a : V) : mem a (host hHost a) :=
   (hHost a).choose_spec
+
+private theorem setLike_of_functional_host
+    (bound : V → V) (hbound : ∀ a, mem a (bound a))
+    (fallback : V) {R : V → V → Prop} (hfun : Functional R) : SetLike mem R := by
+  intro x
+  rcases Classical.em (∃ y, R y x) with ⟨y, hy⟩ | hnone
+  · exact ⟨bound y, fun z hz => (hfun x z y hz hy).symm ▸ hbound y⟩
+  · exact ⟨fallback, fun z hz => (hnone ⟨z, hz⟩).elim⟩
 
 /- Powerset is one way to satisfy Hosting (a ∈ P(a)); Powerset restricted to
    finite sets is NOT, since it cannot host an infinite set.  This is the
@@ -276,33 +286,16 @@ theorem Pairing (witness : V) (hSep : SepAx mem) (hHost : HostAx mem)
     (hClo : ClosureAx mem) :
     ∀ a b, ∃ p, ∀ x, mem x p ↔ (x = a ∨ x = b) := by
   intro a b
-  have HSL : SetLike mem (pairRel witness hSep hHost a b) := by
-    intro x
-    rcases Classical.em (x = emptyset witness hSep) with Hx | Hx
-    · refine ⟨host hHost a, ?_⟩
-      intro z HR
-      unfold pairRel at HR
-      rcases HR with ⟨_, Hz⟩ | ⟨Hxs, _⟩
-      · subst Hz
-        exact host_spec hHost _
-      · exfalso
-        apply empty_neq_single witness hSep hHost
-        rw [← Hx]
-        exact Hxs
-    · rcases Classical.em (x = single_empty witness hSep hHost) with Hs | Hs
-      · refine ⟨host hHost b, ?_⟩
-        intro z HR
-        unfold pairRel at HR
-        rcases HR with ⟨Hxe, _⟩ | ⟨_, Hz⟩
-        · exact absurd Hxe Hx
-        · subst Hz
-          exact host_spec hHost _
-      · refine ⟨emptyset witness hSep, ?_⟩
-        intro z HR
-        unfold pairRel at HR
-        rcases HR with ⟨Hxe, _⟩ | ⟨Hxs, _⟩
-        · exact absurd Hxe Hx
-        · exact absurd Hxs Hs
+  have hfun : Functional (pairRel witness hSep hHost a b) := by
+    intro x z₁ z₂ hz₁ hz₂
+    unfold pairRel at hz₁ hz₂
+    rcases hz₁ with h₁ | h₁ <;> rcases hz₂ with h₂ | h₂
+    · exact h₁.2.trans h₂.2.symm
+    · exact (empty_neq_single witness hSep hHost (h₁.1.symm.trans h₂.1)).elim
+    · exact (empty_neq_single witness hSep hHost (h₂.1.symm.trans h₁.1)).elim
+    · exact h₁.2.trans h₂.2.symm
+  have HSL : SetLike mem (pairRel witness hSep hHost a b) :=
+    setLike_of_functional_host (host hHost) (host_spec hHost) witness hfun
   obtain ⟨w, Hsub, Hclosed⟩ :=
     hClo (pairRel witness hSep hHost a b) HSL (pair_empty witness hSep hHost hClo)
   have Ha : mem a w := by
@@ -421,22 +414,13 @@ theorem Infinity (witness : V) (hExt : ExtAx mem) (hSep : SepAx mem)
       (∃ e, mem e I ∧ ∀ z, ¬ mem z e) ∧
       (∀ x, mem x I →
         ∃ sx, mem sx I ∧ ∀ t, mem t sx ↔ (mem t x ∨ t = x)) := by
-  have HSL : SetLike mem (succRel mem) := by
-    intro x
-    obtain ⟨sx, Hsx⟩ := succ_exists witness hSep hHost hClo x
-    refine ⟨host hHost sx, ?_⟩
-    intro z HR
-    unfold succRel at HR
-    have Hz : z = sx := by
-      apply hExt
-      intro t
-      constructor
-      · intro Ht
-        exact (Hsx t).mpr ((HR t).mp Ht)
-      · intro Ht
-        exact (HR t).mpr ((Hsx t).mp Ht)
-    subst Hz
-    exact host_spec hHost _
+  have hfun : Functional (succRel mem) := by
+    intro x z₁ z₂ hz₁ hz₂
+    apply hExt
+    intro t
+    rw [hz₁ t, hz₂ t]
+  have HSL : SetLike mem (succRel mem) :=
+    setLike_of_functional_host (host hHost) (host_spec hHost) witness hfun
   obtain ⟨w, Hsub, Hclosed⟩ := hClo (succRel mem) HSL (single_empty witness hSep hHost)
   refine ⟨w, ⟨emptyset witness hSep, ?_, ?_⟩, ?_⟩
   · exact Hsub _ (empty_in_single witness hSep hHost)

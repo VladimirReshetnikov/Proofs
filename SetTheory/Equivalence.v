@@ -105,6 +105,17 @@ Proof. intros a x H. exact H. Qed.
 Lemma self_in_power : forall a, a ∈ power a.
 Proof. intro a. apply power_intro. apply Sub_refl. Qed.
 
+Local Lemma functional_setlike_of_host :
+  forall (bound : V -> V),
+    (forall a, a ∈ bound a) ->
+    forall (fallback : V) R, Functional R -> SetLike R.
+Proof.
+  intros bound Hbound fallback R Hfun x.
+  destruct (classic (exists y, R y x)) as [[y Hy] | Hnone].
+  - exists (bound y). intros z Hz. rewrite (Hfun x z y Hz Hy). apply Hbound.
+  - exists fallback. intros z Hz. exfalso. apply Hnone. now exists z.
+Qed.
+
 (* ------------------------------ empty set ----------------------------- *)
 
 Definition emptyset : V := sepF witness fBot (fun _ => witness).
@@ -164,22 +175,15 @@ Theorem Pairing :
   forall a b, exists p, forall x, x ∈ p <-> (x = a \/ x = b).
 Proof.
   intros a b.
-  assert (HSL : SetLike (relOf psi_pair (e_pair a b))).
-  { intro x.
-    destruct (classic (x = emptyset)) as [Hx | Hx].
-    - exists (power a). intros z Hz. apply (proj1 (Hrel_pair a b z x)) in Hz.
-      destruct Hz as [[_ Hza] | [Hxs _]].
-      + subst z. apply self_in_power.
-      + exfalso. apply empty_neq_single. rewrite <- Hx. exact Hxs.
-    - destruct (classic (x = single_empty)) as [Hs | Hs].
-      + exists (power b). intros z Hz. apply (proj1 (Hrel_pair a b z x)) in Hz.
-        destruct Hz as [[Hxe _] | [_ Hzb]].
-        * exfalso. apply Hx. exact Hxe.
-        * subst z. apply self_in_power.
-      + exists emptyset. intros z Hz. apply (proj1 (Hrel_pair a b z x)) in Hz.
-        destruct Hz as [[Hxe _] | [Hxs _]].
-        * exfalso. apply Hx. exact Hxe.
-        * exfalso. apply Hs. exact Hxs. }
+  assert (Hfun : Functional (relOf psi_pair (e_pair a b))).
+  { unfold Functional. intros x z1 z2 Hz1 Hz2.
+    apply (proj1 (Hrel_pair a b z1 x)) in Hz1.
+    apply (proj1 (Hrel_pair a b z2 x)) in Hz2.
+    pose proof empty_neq_single as Hne.
+    destruct Hz1 as [[Hx1 Hz1] | [Hx1 Hz1]];
+      destruct Hz2 as [[Hx2 Hz2] | [Hx2 Hz2]]; congruence. }
+  pose proof (functional_setlike_of_host power self_in_power witness
+    (relOf psi_pair (e_pair a b)) Hfun) as HSL.
   destruct (ClosureFO psi_pair (e_pair a b) HSL pair_empty) as [w [Hsub Hclosed]].
   assert (Ha : a ∈ w).
   { apply (Hclosed a emptyset).
@@ -271,15 +275,13 @@ Theorem Infinity :
     (forall x, x ∈ I ->
        exists sx, sx ∈ I /\ forall t, t ∈ sx <-> (t ∈ x \/ t = x)).
 Proof.
-  assert (HSL : SetLike (relOf psi_succ (fun _ => witness))).
-  { intro x. destruct (succ_exists x) as [sx Hsx].
-    exists (power sx). intros z Hz0.
-    pose proof (proj1 (Hrel_succ (fun _ => witness) z x) Hz0) as Hz.
-    assert (Hzs : z = sx).
-    { apply Extensionality. intro t. split.
-      - intro Ht. apply (proj2 (Hsx t)). exact (proj1 (Hz t) Ht).
-      - intro Ht. apply (proj2 (Hz t)).  exact (proj1 (Hsx t) Ht). }
-    subst z. apply self_in_power. }
+  assert (Hfun : Functional (relOf psi_succ (fun _ => witness))).
+  { unfold Functional. intros x z1 z2 Hz1 Hz2.
+    pose proof (proj1 (Hrel_succ (fun _ => witness) z1 x) Hz1) as H1.
+    pose proof (proj1 (Hrel_succ (fun _ => witness) z2 x) Hz2) as H2.
+    apply Extensionality. intro t. rewrite (H1 t), (H2 t). reflexivity. }
+  pose proof (functional_setlike_of_host power self_in_power witness
+    (relOf psi_succ (fun _ => witness)) Hfun) as HSL.
   destruct (ClosureFO psi_succ (fun _ => witness) HSL single_empty) as [w [Hsub Hclosed]].
   exists w. split.
   - exists emptyset. split.
@@ -331,12 +333,8 @@ Theorem ReplacementFO :
     forall a, exists r, forall y, y ∈ r <-> exists x, x ∈ a /\ relOf psi e y x.
 Proof.
   intros psi e Hfun a.
-  assert (HSL : SetLike (relOf psi e)).
-  { intro x. destruct (classic (exists y0, relOf psi e y0 x)) as [[y0 Hy0] | Hno].
-    - exists (power y0). intros z Hz.
-      assert (z = y0) by (apply (Hfun x z y0); [ exact Hz | exact Hy0 ]).
-      subst z. apply self_in_power.
-    - exists emptyset. intros z Hz. exfalso. apply Hno. exists z. exact Hz. }
+  pose proof (functional_setlike_of_host power self_in_power witness
+    (relOf psi e) Hfun) as HSL.
   destruct (ClosureFO psi e HSL a) as [w [Hsub Hclosed]].
   exists (sepF w (chi psi) (scons a e)).
   intro y. split.
