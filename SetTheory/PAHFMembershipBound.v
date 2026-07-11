@@ -7,7 +7,7 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Lia List.
-From SetTheory Require Import PAHF PAHFTranslatedHFFin.
+From SetTheory Require Import PAHF PAHFProofCalculus PAHFTranslatedHFFin.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
@@ -315,14 +315,10 @@ Proof.
     }
     assert (htarget : BProv Ax_s [phi] target).
     {
-      apply (BProv_exE_of_sentences Ax_s [phi] inner target
-        sentence_ax_s hphi).
-      set (C := inner :: map (rename S) [phi]).
-      assert (hinner : BProv Ax_s C (pEx step)).
-      { apply BProv_ass. unfold C. simpl. left. reflexivity. }
-      apply (BProv_exE_of_sentences Ax_s C step (rename S target)
-        sentence_ax_s hinner).
-      set (D := step :: map (rename S) C).
+      apply (BProv_two_exE_of_sentences
+        Ax_s sentence_ax_s [phi] step target hphi).
+      set (D := step :: map (rename S)
+        (pEx step :: map (rename S) [phi])).
       assert (hstep : BProv Ax_s D (div2StepAt 2 1 0)).
       { apply BProv_ass. unfold D, step. simpl. left. reflexivity. }
       assert (hsucc : BProv Ax_s D
@@ -331,7 +327,7 @@ Proof.
         exact (BProv_Ax_s_div2TotalTermAt_succ_of_div2StepAt
           D 2 1 0 hstep).
       }
-      unfold D, C, target, div2TotalTermAt.
+      unfold D, target, div2TotalTermAt.
       simpl.
       repeat rewrite Term.rename_comp.
       exact hsucc.
@@ -392,15 +388,10 @@ Proof.
     unfold inner, step.
     exact htotal.
   }
-  apply (BProv_exE_of_sentences Ax_s G inner target
-    sentence_ax_s htotal').
-  set (C := inner :: map (rename S) G).
-  assert (hinner : BProv Ax_s C (pEx step)).
-  { apply BProv_ass. unfold C. simpl. left. reflexivity. }
-  apply (BProv_exE_of_sentences Ax_s C step (rename S target)
-    sentence_ax_s hinner).
+  apply (BProv_two_exE_of_sentences
+    Ax_s sentence_ax_s G step target htotal').
   unfold div2TotalOpenedStepContext in hbody.
-  unfold C, inner, step.
+  unfold inner, step.
   exact hbody.
 Qed.
 
