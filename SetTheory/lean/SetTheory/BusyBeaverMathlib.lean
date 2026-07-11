@@ -377,57 +377,105 @@ def TM0RadoNormalRel {Label : Type*} (tmCfg : Turing.TM0.Cfg Bool Label)
   radoCfg.state = some (TM0RadoState.normal tmCfg.q) ∧
     RadoMatchesTuringTape radoCfg.head radoCfg.tape tmCfg.Tape
 
-/--
-Finite-step reachability for the typed Rado simulator generated from a Bool
-`TM0` machine.
--/
-def TypedRadoReaches {Label : Type*} (M : TypedMachine (TM0RadoState Label)) :
-    TypedConfig (TM0RadoState Label) -> TypedConfig (TM0RadoState Label) -> Prop :=
+/-- Finite-step reachability for any typed Rado machine. -/
+def TypedMachineReaches {State : Type*} (M : TypedMachine State) :
+    TypedConfig State -> TypedConfig State -> Prop :=
   Relation.ReflTransGen fun a b => b = TypedMachine.step M a
 
-theorem typedRadoReaches_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
-    (cfg : TypedConfig (TM0RadoState Label)) :
-    TypedRadoReaches M cfg (TypedMachine.step M cfg) := by
+theorem typedMachineReaches_step {State : Type*} (M : TypedMachine State)
+    (cfg : TypedConfig State) :
+    TypedMachineReaches M cfg (TypedMachine.step M cfg) := by
   exact Relation.ReflTransGen.single rfl
 
-theorem typedRadoReaches_step_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
-    (cfg : TypedConfig (TM0RadoState Label)) :
-    TypedRadoReaches M cfg (TypedMachine.step M (TypedMachine.step M cfg)) := by
+theorem typedMachineReaches_step_step {State : Type*} (M : TypedMachine State)
+    (cfg : TypedConfig State) :
+    TypedMachineReaches M cfg (TypedMachine.step M (TypedMachine.step M cfg)) := by
   exact Relation.ReflTransGen.tail (Relation.ReflTransGen.single rfl) rfl
 
-theorem typedRadoRunFrom_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
-    (cfg : TypedConfig (TM0RadoState Label)) :
+theorem typedMachineRunFrom_step {State : Type*} (M : TypedMachine State)
+    (cfg : TypedConfig State) :
     ∀ t,
       TypedMachine.runFrom M (TypedMachine.step M cfg) t =
         TypedMachine.runFrom M cfg (t + 1)
   | 0 => rfl
   | t + 1 => by
-      simp [TypedMachine.runFrom, typedRadoRunFrom_step M cfg t]
+      simp [TypedMachine.runFrom, typedMachineRunFrom_step M cfg t]
 
-theorem typedRadoReaches_runFrom {Label : Type*} {M : TypedMachine (TM0RadoState Label)}
-    {cfg cfg' : TypedConfig (TM0RadoState Label)}
-    (h : TypedRadoReaches M cfg cfg') :
+theorem typedMachineReaches_runFrom {State : Type*} {M : TypedMachine State}
+    {cfg cfg' : TypedConfig State}
+    (h : TypedMachineReaches M cfg cfg') :
     ∃ t, TypedMachine.runFrom M cfg t = cfg' := by
-  unfold TypedRadoReaches at h
+  unfold TypedMachineReaches at h
   refine Relation.ReflTransGen.head_induction_on h ?_ ?_
   · exact ⟨0, rfl⟩
   · intro a c hStep _hRest IH
     rcases IH with ⟨t, ht⟩
     refine ⟨t + 1, ?_⟩
-    rw [← typedRadoRunFrom_step M a t]
+    rw [← typedMachineRunFrom_step M a t]
     rw [← hStep]
     exact ht
+
+theorem typedMachineReaches_run {State : Type*} {M : TypedMachine State}
+    {start : State} {cfg : TypedConfig State}
+    (h : TypedMachineReaches M
+      ({ state := some start, head := 0, tape := [] } : TypedConfig State)
+      cfg) :
+    ∃ t, M.run start t = cfg := by
+  rcases typedMachineReaches_runFrom h with ⟨t, ht⟩
+  refine ⟨t, ?_⟩
+  rw [TypedMachine.run_eq_runFrom M start t]
+  exact ht
+
+theorem typedMachineReaches_haltsWithScore {State : Type*}
+    {M : TypedMachine State} {start : State} {haltCfg : TypedConfig State}
+    {score : Nat}
+    (hReach : TypedMachineReaches M
+      ({ state := some start, head := 0, tape := [] } : TypedConfig State)
+      haltCfg)
+    (hState : haltCfg.state = none)
+    (hScore : haltCfg.tape.length = score) :
+    M.HaltsWithScore start score := by
+  rcases typedMachineReaches_run hReach with ⟨t, ht⟩
+  exact ⟨t, by rw [ht]; exact hState, by rw [ht]; exact hScore⟩
+
+/--
+Compatibility specialization for the typed Rado simulator generated from a
+Bool `TM0` machine. All reachability reasoning lives in the generic layer.
+-/
+abbrev TypedRadoReaches {Label : Type*} (M : TypedMachine (TM0RadoState Label)) :
+    TypedConfig (TM0RadoState Label) -> TypedConfig (TM0RadoState Label) -> Prop :=
+  TypedMachineReaches M
+
+theorem typedRadoReaches_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedRadoReaches M cfg (TypedMachine.step M cfg) :=
+  typedMachineReaches_step M cfg
+
+theorem typedRadoReaches_step_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    TypedRadoReaches M cfg (TypedMachine.step M (TypedMachine.step M cfg)) :=
+  typedMachineReaches_step_step M cfg
+
+theorem typedRadoRunFrom_step {Label : Type*} (M : TypedMachine (TM0RadoState Label))
+    (cfg : TypedConfig (TM0RadoState Label)) :
+    ∀ t,
+      TypedMachine.runFrom M (TypedMachine.step M cfg) t =
+        TypedMachine.runFrom M cfg (t + 1) :=
+  typedMachineRunFrom_step M cfg
+
+theorem typedRadoReaches_runFrom {Label : Type*} {M : TypedMachine (TM0RadoState Label)}
+    {cfg cfg' : TypedConfig (TM0RadoState Label)}
+    (h : TypedRadoReaches M cfg cfg') :
+    ∃ t, TypedMachine.runFrom M cfg t = cfg' :=
+  typedMachineReaches_runFrom h
 
 theorem typedRadoReaches_run {Label : Type*} {M : TypedMachine (TM0RadoState Label)}
     {start : TM0RadoState Label} {cfg : TypedConfig (TM0RadoState Label)}
     (h : TypedRadoReaches M
       ({ state := some start, head := 0, tape := [] } : TypedConfig (TM0RadoState Label))
       cfg) :
-    ∃ t, M.run start t = cfg := by
-  rcases typedRadoReaches_runFrom h with ⟨t, ht⟩
-  refine ⟨t, ?_⟩
-  rw [TypedMachine.run_eq_runFrom M start t]
-  exact ht
+    ∃ t, M.run start t = cfg :=
+  typedMachineReaches_run h
 
 theorem typedRadoReaches_haltsWithScore {Label : Type*}
     {M : TypedMachine (TM0RadoState Label)}
@@ -438,9 +486,8 @@ theorem typedRadoReaches_haltsWithScore {Label : Type*}
       haltCfg)
     (hState : haltCfg.state = none)
     (hScore : haltCfg.tape.length = score) :
-    M.HaltsWithScore start score := by
-  rcases typedRadoReaches_run hReach with ⟨t, ht⟩
-  exact ⟨t, by rw [ht]; exact hState, by rw [ht]; exact hScore⟩
+    M.HaltsWithScore start score :=
+  typedMachineReaches_haltsWithScore hReach hState hScore
 
 /-- Reindex a typed configuration through an explicit finite-state equivalence. -/
 def typedConfigToConfig {State : Type*} {n : Nat} (e : State ≃ Fin n)
@@ -523,57 +570,6 @@ theorem typedMachineToMachine_attainableScore {State : Type*} [Fintype State]
   have hpos : 0 < Fintype.card State := Fintype.card_pos_iff.2 ⟨start⟩
   rw [startState_eq_some_zero hpos]
   simp [e]
-
-/-- Finite-step reachability for any typed Rado machine. -/
-def TypedMachineReaches {State : Type*} (M : TypedMachine State) :
-    TypedConfig State -> TypedConfig State -> Prop :=
-  Relation.ReflTransGen fun a b => b = TypedMachine.step M a
-
-theorem typedMachineRunFrom_step {State : Type*} (M : TypedMachine State)
-    (cfg : TypedConfig State) :
-    ∀ t,
-      TypedMachine.runFrom M (TypedMachine.step M cfg) t =
-        TypedMachine.runFrom M cfg (t + 1)
-  | 0 => rfl
-  | t + 1 => by
-      simp [TypedMachine.runFrom, typedMachineRunFrom_step M cfg t]
-
-theorem typedMachineReaches_runFrom {State : Type*} {M : TypedMachine State}
-    {cfg cfg' : TypedConfig State}
-    (h : TypedMachineReaches M cfg cfg') :
-    ∃ t, TypedMachine.runFrom M cfg t = cfg' := by
-  unfold TypedMachineReaches at h
-  refine Relation.ReflTransGen.head_induction_on h ?_ ?_
-  · exact ⟨0, rfl⟩
-  · intro a c hStep _hRest IH
-    rcases IH with ⟨t, ht⟩
-    refine ⟨t + 1, ?_⟩
-    rw [← typedMachineRunFrom_step M a t]
-    rw [← hStep]
-    exact ht
-
-theorem typedMachineReaches_run {State : Type*} {M : TypedMachine State}
-    {start : State} {cfg : TypedConfig State}
-    (h : TypedMachineReaches M
-      ({ state := some start, head := 0, tape := [] } : TypedConfig State)
-      cfg) :
-    ∃ t, M.run start t = cfg := by
-  rcases typedMachineReaches_runFrom h with ⟨t, ht⟩
-  refine ⟨t, ?_⟩
-  rw [TypedMachine.run_eq_runFrom M start t]
-  exact ht
-
-theorem typedMachineReaches_haltsWithScore {State : Type*}
-    {M : TypedMachine State} {start : State} {haltCfg : TypedConfig State}
-    {score : Nat}
-    (hReach : TypedMachineReaches M
-      ({ state := some start, head := 0, tape := [] } : TypedConfig State)
-      haltCfg)
-    (hState : haltCfg.state = none)
-    (hScore : haltCfg.tape.length = score) :
-    M.HaltsWithScore start score := by
-  rcases typedMachineReaches_run hReach with ⟨t, ht⟩
-  exact ⟨t, by rw [ht]; exact hState, by rw [ht]; exact hScore⟩
 
 theorem typedMachineReaches_attainableLowerBound {State : Type*} [Fintype State]
     {M : TypedMachine State} {start : State}
@@ -916,10 +912,8 @@ theorem typedRadoReaches_attainableLowerBound {Label : Type*} [Fintype Label]
     (hRead : ∀ pos, pos ∈ positions -> Tape.read haltCfg.tape pos = true) :
     ∃ score, positions.length ≤ score ∧
       AttainableScore (Fintype.card (TM0RadoState Label)) score := by
-  have hLower := positions_length_le_tape_length_of_read_true hPositions hRead
-  have hHalt : M.HaltsWithScore start haltCfg.tape.length :=
-    typedRadoReaches_haltsWithScore hReach hState rfl
-  exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩
+  exact typedMachineReaches_attainableLowerBound
+    hReach hState hPositions hRead
 
 theorem tm0ToTypedRado_step_move {Label : Type*} [Inhabited Label]
     (M : Turing.TM0.Machine Bool Label)
