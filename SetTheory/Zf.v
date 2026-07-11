@@ -455,54 +455,67 @@ Proof.
 Qed.
 Local Opaque fEmptyF.
 
+(* "slot i contains exactly the objects satisfying phi"; phi is read under
+   the newly bound slot 0. *)
+Definition fSetByF (i : nat) (phi : form) : form :=
+  fAll (fIff (fMem 0 (S i)) phi).
+
+Lemma fSetByF_sat :
+  forall ee i phi,
+    SAT ee (fSetByF i phi) <->
+    forall x, x ∈ ee i <-> SAT (SC x ee) phi.
+Proof.
+  intros ee i phi. unfold fSetByF, fIff. cbn. tauto.
+Qed.
+
+(* Extensionality turns a semantic specification of the element formula
+   into the equality asserted by fSetByF. *)
+Lemma fSetByF_spec :
+  forall ee i phi b,
+    (forall x, SAT (SC x ee) phi <-> x ∈ b) ->
+    (SAT ee (fSetByF i phi) <-> ee i = b).
+Proof.
+  intros ee i phi b Hphi. rewrite fSetByF_sat. split.
+  - intro H. apply AxExt. intro x.
+    specialize (H x). specialize (Hphi x). tauto.
+  - intros Heq x. rewrite Heq. specialize (Hphi x). tauto.
+Qed.
+Local Opaque fSetByF.
+
 (* "slot i = {slot j}" *)
 Definition fSingF (i j : nat) : form :=
-  fAll (fIff (fMem 0 (S i)) (fEq 0 (S j))).
+  fSetByF i (fEq 0 (S j)).
 
 Lemma fSingF_spec : forall ee i j, SAT ee (fSingF i j) <-> ee i = vsingle (ee j).
 Proof.
-  intros ee i j. unfold fSingF, fIff. cbn. split.
-  - intro H. apply AxExt. intro x. rewrite (vsingle_spec (ee j) x).
-    specialize (H x). tauto.
-  - intros Heq d. rewrite Heq. rewrite (vsingle_spec (ee j) d). tauto.
+  intros ee i j. unfold fSingF. apply fSetByF_spec. intro x. cbn.
+  symmetry. apply vsingle_spec.
 Qed.
 Local Opaque fSingF.
 
 (* "slot i = {slot j, slot k}" *)
 Definition fUPairF (i j k : nat) : form :=
-  fAll (fIff (fMem 0 (S i)) (fOr (fEq 0 (S j)) (fEq 0 (S k)))).
+  fSetByF i (fOr (fEq 0 (S j)) (fEq 0 (S k))).
 
 Lemma fUPairF_spec :
   forall ee i j k, SAT ee (fUPairF i j k) <-> ee i = vpair (ee j) (ee k).
 Proof.
-  intros ee i j k. unfold fUPairF, fIff. cbn. split.
-  - intro H. apply AxExt. intro x. rewrite (vpair_spec (ee j) (ee k) x).
-    specialize (H x). tauto.
-  - intros Heq d. rewrite Heq. rewrite (vpair_spec (ee j) (ee k) d). tauto.
+  intros ee i j k. unfold fUPairF. apply fSetByF_spec. intro x. cbn.
+  symmetry. apply vpair_spec.
 Qed.
 Local Opaque fUPairF.
 
 (* "slot i = <slot j, slot k>"  (Kuratowski) *)
 Definition fKPairF (i j k : nat) : form :=
-  fAll (fIff (fMem 0 (S i)) (fOr (fSingF 0 (S j)) (fUPairF 0 (S j) (S k)))).
+  fSetByF i (fOr (fSingF 0 (S j)) (fUPairF 0 (S j) (S k))).
 
 Lemma fKPairF_spec :
   forall ee i j k, SAT ee (fKPairF i j k) <-> ee i = kpair (ee j) (ee k).
 Proof.
-  intros ee i j k. unfold fKPairF, fIff. cbn.
-  assert (Hq : forall q,
-      (Sat V mem (SC q ee) (fSingF 0 (S j)) \/ Sat V mem (SC q ee) (fUPairF 0 (S j) (S k)))
-      <-> (q = vsingle (ee j) \/ q = vpair (ee j) (ee k))).
-  { intro q.
-    rewrite (fSingF_spec (SC q ee) 0 (S j)).
-    rewrite (fUPairF_spec (SC q ee) 0 (S j) (S k)).
-    cbn. tauto. }
-  split.
-  - intro H. apply AxExt. intro q.
-    rewrite (kpair_mem (ee j) (ee k) q). rewrite <- (Hq q).
-    specialize (H q). tauto.
-  - intros Heq q. rewrite Heq. rewrite (kpair_mem (ee j) (ee k) q).
-    rewrite <- (Hq q). tauto.
+  intros ee i j k. unfold fKPairF. apply fSetByF_spec. intro q. cbn [Sat].
+  rewrite (fSingF_spec (SC q ee) 0 (S j)).
+  rewrite (fUPairF_spec (SC q ee) 0 (S j) (S k)). cbn.
+  symmetry. apply kpair_mem.
 Qed.
 Local Opaque fKPairF.
 
@@ -526,15 +539,13 @@ Local Opaque fPairMemF.
 
 (* "slot i = successor of slot j" *)
 Definition fSuccF (i j : nat) : form :=
-  fAll (fIff (fMem 0 (S i)) (fOr (fMem 0 (S j)) (fEq 0 (S j)))).
+  fSetByF i (fOr (fMem 0 (S j)) (fEq 0 (S j))).
 
 Lemma fSuccF_spec :
   forall ee i j, SAT ee (fSuccF i j) <-> ee i = vsucc (ee j).
 Proof.
-  intros ee i j. unfold fSuccF, fIff. cbn. split.
-  - intro H. apply AxExt. intro x. rewrite (vsucc_spec (ee j) x).
-    specialize (H x). tauto.
-  - intros Heq d. rewrite Heq. rewrite (vsucc_spec (ee j) d). tauto.
+  intros ee i j. unfold fSuccF. apply fSetByF_spec. intro x. cbn.
+  symmetry. apply vsucc_spec.
 Qed.
 Local Opaque fSuccF.
 
@@ -716,12 +727,13 @@ Qed.
 (* the graph formula "slot 0 = the set of RC-predecessors of slot 1"      *)
 Definition rPS : nat -> nat :=
   fun n => match n with 0 => 0 | 1 => 2 | S (S k) => S (S (S k)) end.
-Definition psiPS : form := fAll (fIff (fMem 0 1) (rename rPS psiC)).
+Definition psiPS : form := fSetByF 0 (rename rPS psiC).
 
 Lemma psiPS_rel :
   forall y x, relOf V mem psiPS eC y x <-> (forall u, u ∈ y <-> RC u x).
 Proof.
-  intros y x. unfold relOf at 1. unfold psiPS, fIff. cbn.
+  intros y x. unfold relOf at 1. unfold psiPS.
+  rewrite fSetByF_sat. cbn.
   assert (Hin : forall u,
       Sat V mem (SC u (SC y (SC x eC))) (rename rPS psiC) <-> RC u x).
   { intro u.
@@ -805,37 +817,27 @@ Local Opaque fRF.
 
 (* "slot i = gstep (slot j)" *)
 Definition fStepF (i j off : nat) : form :=
-  fAll (fIff (fMem 0 (S i))
-             (fOr (fMem 0 (S j))
-                  (fEx (fAnd (fMem 0 (S (S j))) (fRF 1 0 (S (S off))))))).
+  fSetByF i
+    (fOr (fMem 0 (S j))
+      (fEx (fAnd (fMem 0 (S (S j))) (fRF 1 0 (S (S off)))))).
 
 Lemma fStepF_spec :
   forall ee i j off,
     (forall k, ee (off + k) = eC k) ->
     (SAT ee (fStepF i j off) <-> ee i = gstep (ee j)).
 Proof.
-  intros ee i j off Hoff. unfold fStepF, fIff. cbn.
+  intros ee i j off Hoff. unfold fStepF.
   assert (Hin : forall u v,
       Sat V mem (SC v (SC u ee)) (fRF 1 0 (S (S off))) <-> RC u v).
   { intros u v.
     apply (fRF_spec (SC v (SC u ee)) 1 0 (S (S off))).
     intro k. exact (Hoff k). }
-  transitivity (forall u, u ∈ ee i <-> u ∈ gstep (ee j)).
-  - split.
-    + intros H u. specialize (H u). destruct H as [H1 H2].
-      rewrite (gstep_spec (ee j) u). split.
-      * intro Hu. destruct (H1 Hu) as [Hl | [v [Hv HR]]]; [ left; exact Hl | right ].
-        exists v. split; [ exact Hv | ]. apply (proj1 (Hin u v)). exact HR.
-      * intros [Hl | [v [Hv HR]]]; apply H2; [ left; exact Hl | right ].
-        exists v. split; [ exact Hv | ]. apply (proj2 (Hin u v)). exact HR.
-    + intros H u. specialize (H u). rewrite (gstep_spec (ee j) u) in H. split.
-      * intro Hu. destruct (proj1 H Hu) as [Hl | [v [Hv HR]]]; [ left; exact Hl | right ].
-        exists v. split; [ exact Hv | ]. apply (proj2 (Hin u v)). exact HR.
-      * intros [Hl | [v [Hv HR]]]; apply (proj2 H); [ left; exact Hl | right ].
-        exists v. split; [ exact Hv | ]. apply (proj1 (Hin u v)). exact HR.
-  - split.
-    + intro H. apply AxExt. exact H.
-    + intros Heq u. rewrite Heq. tauto.
+  apply fSetByF_spec. intro u. cbn [Sat]. rewrite (gstep_spec (ee j) u).
+  split; intros [Hl | [v [Hv HR]]].
+  - left. exact Hl.
+  - right. exists v. split; [ exact Hv | ]. apply (proj1 (Hin u v)). exact HR.
+  - left. exact Hl.
+  - right. exists v. split; [ exact Hv | ]. apply (proj2 (Hin u v)). exact HR.
 Qed.
 Local Opaque fStepF.
 

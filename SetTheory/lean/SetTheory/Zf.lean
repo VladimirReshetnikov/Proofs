@@ -450,71 +450,66 @@ theorem fEmptyF_spec (H : ZFAxioms mem) (ee : Nat → V) (i : Nat) :
     rw [heq] at hd
     exact vempty_spec H d hd
 
+/-- `fSetByF i phi` says that slot `i` contains exactly the objects
+satisfying `phi` under the newly bound slot 0. -/
+def fSetByF (i : Nat) (phi : Form) : Form :=
+  fAll (fIff (fMem 0 (i+1)) phi)
+
+theorem fSetByF_sat (ee : Nat → V) (i : Nat) (phi : Form) :
+    Sat mem ee (fSetByF i phi) ↔
+      ∀ x, mem x (ee i) ↔ Sat mem (scons x ee) phi := by
+  simp only [fSetByF, Sat, Sat_fIff, scons]
+
+/-- Extensionality turns a semantic specification of the element formula
+into the equality asserted by `fSetByF`. -/
+theorem fSetByF_spec (H : ZFAxioms mem) (ee : Nat → V) (i : Nat)
+    (phi : Form) (b : V)
+    (hphi : ∀ x, Sat mem (scons x ee) phi ↔ mem x b) :
+    Sat mem ee (fSetByF i phi) ↔ ee i = b := by
+  rw [fSetByF_sat]
+  constructor
+  · intro h
+    apply H.ext
+    intro x
+    exact (h x).trans (hphi x)
+  · intro heq x
+    rw [heq]
+    exact (hphi x).symm
+
 /-- "slot `i` = {slot `j`}" -/
 def fSingF (i j : Nat) : Form :=
-  fAll (fIff (fMem 0 (i+1)) (fEq 0 (j+1)))
+  fSetByF i (fEq 0 (j+1))
 
 theorem fSingF_spec (H : ZFAxioms mem) (ee : Nat → V) (i j : Nat) :
     Sat mem ee (fSingF i j) ↔ ee i = vsingle H (ee j) := by
-  show (∀ d, (mem d (ee i) → d = ee j) ∧ (d = ee j → mem d (ee i))) ↔ _
-  constructor
-  · intro h
-    apply H.ext
-    intro x
-    rw [vsingle_spec H (ee j) x]
-    exact ⟨(h x).1, (h x).2⟩
-  · intro heq d
-    rw [heq, vsingle_spec H (ee j) d]
-    exact ⟨id, id⟩
+  apply fSetByF_spec H
+  intro x
+  exact (vsingle_spec H (ee j) x).symm
 
 /-- "slot `i` = {slot `j`, slot `k`}" -/
 def fUPairF (i j k : Nat) : Form :=
-  fAll (fIff (fMem 0 (i+1)) (fOr (fEq 0 (j+1)) (fEq 0 (k+1))))
+  fSetByF i (fOr (fEq 0 (j+1)) (fEq 0 (k+1)))
 
 theorem fUPairF_spec (H : ZFAxioms mem) (ee : Nat → V) (i j k : Nat) :
     Sat mem ee (fUPairF i j k) ↔ ee i = vpair H (ee j) (ee k) := by
-  show (∀ d, (mem d (ee i) → (d = ee j ∨ d = ee k)) ∧
-             ((d = ee j ∨ d = ee k) → mem d (ee i))) ↔ _
-  constructor
-  · intro h
-    apply H.ext
-    intro x
-    rw [vpair_spec H (ee j) (ee k) x]
-    exact ⟨(h x).1, (h x).2⟩
-  · intro heq d
-    rw [heq, vpair_spec H (ee j) (ee k) d]
-    exact ⟨id, id⟩
+  apply fSetByF_spec H
+  intro x
+  exact (vpair_spec H (ee j) (ee k) x).symm
 
 /-- "slot `i` = ⟨slot `j`, slot `k`⟩" (Kuratowski) -/
 def fKPairF (i j k : Nat) : Form :=
-  fAll (fIff (fMem 0 (i+1)) (fOr (fSingF 0 (j+1)) (fUPairF 0 (j+1) (k+1))))
+  fSetByF i (fOr (fSingF 0 (j+1)) (fUPairF 0 (j+1) (k+1)))
 
 theorem fKPairF_spec (H : ZFAxioms mem) (ee : Nat → V) (i j k : Nat) :
     Sat mem ee (fKPairF i j k) ↔ ee i = kpair H (ee j) (ee k) := by
-  have hq : ∀ q : V,
-      (Sat mem (scons q ee) (fSingF 0 (j+1)) ∨
-       Sat mem (scons q ee) (fUPairF 0 (j+1) (k+1)))
-        ↔ (q = vsingle H (ee j) ∨ q = vpair H (ee j) (ee k)) := by
-    intro q
-    rw [fSingF_spec H (scons q ee) 0 (j+1),
-        fUPairF_spec H (scons q ee) 0 (j+1) (k+1)]
-    exact Iff.rfl
-  constructor
-  · intro h
-    apply H.ext
-    intro q
-    rw [kpair_mem H (ee j) (ee k) q, ← hq q]
-    exact ⟨(h q).1, (h q).2⟩
-  · intro heq q
-    constructor
-    · intro hq'
-      have h1 : mem q (ee i) := hq'
-      rw [heq] at h1
-      exact (hq q).mpr ((kpair_mem H (ee j) (ee k) q).mp h1)
-    · intro hs
-      show mem q (ee i)
-      rw [heq]
-      exact (kpair_mem H (ee j) (ee k) q).mpr ((hq q).mp hs)
+  apply fSetByF_spec H
+  intro q
+  change (Sat mem (scons q ee) (fSingF 0 (j+1)) ∨
+      Sat mem (scons q ee) (fUPairF 0 (j+1) (k+1))) ↔ _
+  rw [fSingF_spec H (scons q ee) 0 (j+1),
+      fUPairF_spec H (scons q ee) 0 (j+1) (k+1),
+      kpair_mem H (ee j) (ee k) q]
+  simp only [scons]
 
 /-- "⟨slot `i`, slot `j`⟩ ∈ slot `k`" -/
 def fPairMemF (i j k : Nat) : Form :=
@@ -535,21 +530,13 @@ theorem fPairMemF_spec (H : ZFAxioms mem) (ee : Nat → V) (i j k : Nat) :
 
 /-- "slot `i` = successor of slot `j`" -/
 def fSuccF (i j : Nat) : Form :=
-  fAll (fIff (fMem 0 (i+1)) (fOr (fMem 0 (j+1)) (fEq 0 (j+1))))
+  fSetByF i (fOr (fMem 0 (j+1)) (fEq 0 (j+1)))
 
 theorem fSuccF_spec (H : ZFAxioms mem) (ee : Nat → V) (i j : Nat) :
     Sat mem ee (fSuccF i j) ↔ ee i = vsucc H (ee j) := by
-  show (∀ d, (mem d (ee i) → (mem d (ee j) ∨ d = ee j)) ∧
-             ((mem d (ee j) ∨ d = ee j) → mem d (ee i))) ↔ _
-  constructor
-  · intro h
-    apply H.ext
-    intro x
-    rw [vsucc_spec H (ee j) x]
-    exact ⟨(h x).1, (h x).2⟩
-  · intro heq d
-    rw [heq, vsucc_spec H (ee j) d]
-    exact ⟨id, id⟩
+  apply fSetByF_spec H
+  intro x
+  exact (vsucc_spec H (ee j) x).symm
 
 /-! ### The internal omega -/
 
@@ -726,7 +713,7 @@ def rPS : Nat → Nat
   | 1 => 2
   | k+2 => k+3
 
-def psiPS (psiC : Form) : Form := fAll (fIff (fMem 0 1) (rename rPS psiC))
+def psiPS (psiC : Form) : Form := fSetByF 0 (rename rPS psiC)
 
 theorem psiPS_rel (psiC : Form) (eC : Nat → V) (y x : V) :
     relOf mem (psiPS psiC) eC y x ↔ (∀ u, mem u y ↔ relOf mem psiC eC u x) := by
@@ -737,6 +724,9 @@ theorem psiPS_rel (psiC : Form) (eC : Nat → V) (y x : V) :
     unfold relOf
     exact Sat_rename_ext psiC rPS _ _
       (fun n => match n with | 0 => rfl | 1 => rfl | _+2 => rfl)
+  unfold relOf psiPS
+  rw [fSetByF_sat]
+  simp only [scons]
   constructor
   · intro h u
     have hu := h u
@@ -817,9 +807,9 @@ theorem fRF_spec (psiC : Form) (eC : Nat → V) (ee : Nat → V) (i j off : Nat)
 
 /-- "slot `i` = gstep (slot `j`)" -/
 def fStepF (psiC : Form) (i j off : Nat) : Form :=
-  fAll (fIff (fMem 0 (i+1))
-             (fOr (fMem 0 (j+1))
-                  (fEx (fAnd (fMem 0 (j+2)) (fRF psiC 1 0 (off+2))))))
+  fSetByF i
+    (fOr (fMem 0 (j+1))
+      (fEx (fAnd (fMem 0 (j+2)) (fRF psiC 1 0 (off+2)))))
 
 theorem fStepF_spec (H : ZFAxioms mem) (psiC : Form) (eC : Nat → V)
     (HSL : SetLike mem (relOf mem psiC eC)) (ee : Nat → V) (i j off : Nat)
@@ -830,41 +820,18 @@ theorem fStepF_spec (H : ZFAxioms mem) (psiC : Form) (eC : Nat → V)
         ↔ relOf mem psiC eC u v := by
     intro u v
     exact fRF_spec psiC eC (scons v (scons u ee)) 1 0 (off+2) (fun k => hoff k)
+  apply fSetByF_spec H
+  intro u
+  change (mem u (ee j) ∨ ∃ v, mem v (ee j) ∧
+      Sat mem (scons v (scons u ee)) (fRF psiC 1 0 (off+2))) ↔ _
+  rw [gstep_spec H psiC eC HSL (ee j) u]
   constructor
-  · intro h
-    apply H.ext
-    intro u
-    rw [gstep_spec H psiC eC HSL (ee j) u]
-    have hu := h u
-    constructor
-    · intro hm
-      have hd : mem u (ee j) ∨ ∃ v, mem v (ee j) ∧
-          Sat mem (scons v (scons u ee)) (fRF psiC 1 0 (off+2)) := hu.1 hm
-      rcases hd with hl | ⟨v, hv, hr⟩
-      · exact Or.inl hl
-      · exact Or.inr ⟨v, hv, (hin u v).mp hr⟩
-    · intro hm
-      apply hu.2
-      rcases hm with hl | ⟨v, hv, hr⟩
-      · exact Or.inl hl
-      · exact Or.inr ⟨v, hv, (hin u v).mpr hr⟩
-  · intro heq d
-    constructor
-    · intro hm
-      have hm' : mem d (ee i) := hm
-      rw [heq] at hm'
-      rcases (gstep_spec H psiC eC HSL (ee j) d).mp hm' with hl | ⟨v, hv, hr⟩
-      · exact Or.inl hl
-      · exact Or.inr ⟨v, hv, (hin d v).mpr hr⟩
-    · intro hm
-      show mem d (ee i)
-      rw [heq]
-      apply (gstep_spec H psiC eC HSL (ee j) d).mpr
-      have hd : mem d (ee j) ∨ ∃ v, mem v (ee j) ∧
-          Sat mem (scons v (scons d ee)) (fRF psiC 1 0 (off+2)) := hm
-      rcases hd with hl | ⟨v, hv, hr⟩
-      · exact Or.inl hl
-      · exact Or.inr ⟨v, hv, (hin d v).mp hr⟩
+  · rintro (hl | ⟨v, hv, hr⟩)
+    · exact Or.inl hl
+    · exact Or.inr ⟨v, hv, (hin u v).mp hr⟩
+  · rintro (hl | ⟨v, hv, hr⟩)
+    · exact Or.inl hl
+    · exact Or.inr ⟨v, hv, (hin u v).mpr hr⟩
 
 /-! ### The approximation predicate -/
 
