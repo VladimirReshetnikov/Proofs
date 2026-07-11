@@ -337,11 +337,8 @@ Proof.
       { unfold edgeBody in hedgeBody; exact (BProv_andE2 Ax_s E _ _ hedgeBody). }
       pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s Q _
         hihQ S) as hihRen.
-      pose proof (BProv_context_cons Ax_s (map (rename S) Q)
-        (rename S graph) _ hihRen) as hgraphCtx.
-      pose proof (BProv_context_cons Ax_s
-        (rename S graph :: map (rename S) Q)
-        edgeBody _ hgraphCtx) as hihE0.
+      pose proof (BProv_context_prefix Ax_s
+        [edgeBody; rename S graph] (map (rename S) Q) _ hihRen) as hihE0.
       assert (hihE : BProv Ax_s E (ordinalCodeCodomainTermAt raw2)).
       {
         unfold E, C, raw1, raw2.
@@ -590,10 +587,8 @@ Proof.
           by (apply functional_extensionality; intro x; lia).
         exact hadjoinRaw.
       }
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s C _
-        hout S) as houtRen.
-      pose proof (BProv_context_cons Ax_s (map (rename S) C)
-        edgeBody _ houtRen) as houtE0.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s C edgeBody _ hout) as houtE0.
       assert (houtE : BProv Ax_s E
           (ordinalCodeGraphTermAt (tSucc raw2) (tVar 1))).
       {

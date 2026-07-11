@@ -4773,10 +4773,8 @@ theorem BProv_Ax_s_ordinalCodeCodomainTermAt_succ
       have hihRen := BProv_rename_of_sentences
         (B := Ax_s) Ax_s_sentences
         hihQ Nat.succ
-      have hgraphCtx := BProv_context_cons
-        (B := Ax_s) (a := rename Nat.succ graph) hihRen
-      have hihD₀ := BProv_context_cons
-        (B := Ax_s) (a := edgeBody) hgraphCtx
+      have hihD₀ := BProv_context_prefix
+        (B := Ax_s) [edgeBody, rename Nat.succ graph] hihRen
       have hihD : BProv Ax_s D
           (ordinalCodeCodomainTermAt raw₂) := by
         simpa [D, C, Q, raw₁, raw₂,
@@ -4973,11 +4971,9 @@ theorem ordinalCodeGraphSuccClosure :
           rename_hfAdjoinGraphTermAt,
           Term.rename, Term.rename_comp,
           Function.comp_def, Nat.add_assoc] using hraw
-      have houtRen := BProv_rename_of_sentences
+      have houtD₀ := BProv_rename_succ_context_cons_of_sentences
         (B := Ax_s) Ax_s_sentences
-        hout Nat.succ
-      have houtD₀ := BProv_context_cons
-        (B := Ax_s) (a := edgeBody) houtRen
+        (a := edgeBody) hout
       have houtD : BProv Ax_s D
           (ordinalCodeGraphTermAt
             (Term.succ raw₂) (Term.var 1)) := by
