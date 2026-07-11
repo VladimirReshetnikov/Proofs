@@ -135,6 +135,15 @@ Check BProv_iterExE_of_sentences.
 Check subst_three_witnesses_rename_three_succ.
 Print Assumptions BProv_iterExE_of_sentences.
 Print Assumptions BProv_iterRenameSucc_of_sentences.
+Check BProv_PA_iffForm_intro.
+Check BProv_PA_iffForm_forward.
+Check BProv_PA_iffForm_reverse.
+Check BProv_PA_imp_trans.
+Check BProv_PA_imp_mono.
+Check BProv_PA_and_mono.
+Check BProv_PA_or_mono.
+Check BProv_PA_ex_mono_of_sentences.
+Check BProv_PA_iffForm_ex_congr_of_sentences.
 Check BProv_Ax_s_all_of_strongStep_under.
 Check BProv_ordinalCodeGraphTermAt_congr.
 Check PA.Formula.term_subst_instTerm_rename_two_succ.

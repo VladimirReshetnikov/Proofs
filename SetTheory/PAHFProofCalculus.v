@@ -251,3 +251,288 @@ Proof.
     intros [|[|[|n]]] hn; reflexivity.
   - apply subst_id.
 Qed.
+
+(* ===================================================================== *)
+(*  Provable equivalence in the PA formula calculus.                     *)
+(* ===================================================================== *)
+
+Lemma BProv_PA_iffForm_intro : forall
+    (B : formula -> Prop) G a b,
+  BProv B G (pImp a b) ->
+  BProv B G (pImp b a) ->
+  BProv B G (iffForm a b).
+Proof.
+  intros B G a b hab hba.
+  unfold iffForm.
+  exact (BProv_andI B G _ _ hab hba).
+Qed.
+
+Lemma BProv_PA_iffForm_forward : forall
+    (B : formula -> Prop) G a b,
+  BProv B G (iffForm a b) ->
+  BProv B G (pImp a b).
+Proof.
+  intros B G a b h.
+  unfold iffForm in h.
+  exact (BProv_andE1 B G _ _ h).
+Qed.
+
+Lemma BProv_PA_iffForm_reverse : forall
+    (B : formula -> Prop) G a b,
+  BProv B G (iffForm a b) ->
+  BProv B G (pImp b a).
+Proof.
+  intros B G a b h.
+  unfold iffForm in h.
+  exact (BProv_andE2 B G _ _ h).
+Qed.
+
+Lemma BProv_PA_imp_trans : forall
+    (B : formula -> Prop) G a b c,
+  BProv B G (pImp a b) ->
+  BProv B G (pImp b c) ->
+  BProv B G (pImp a c).
+Proof.
+  intros B G a b c hab hbc.
+  apply BProv_impI.
+  set (C := a :: G).
+  assert (ha : BProv B C a).
+  { apply BProv_ass. unfold C. simpl. now left. }
+  assert (hb : BProv B C b).
+  {
+    exact (BProv_mp B C a b
+      (BProv_context_cons B G a (pImp a b) hab) ha).
+  }
+  exact (BProv_mp B C b c
+    (BProv_context_cons B G a (pImp b c) hbc) hb).
+Qed.
+
+Lemma BProv_PA_imp_mono : forall
+    (B : formula -> Prop) G a a' b b',
+  BProv B G (pImp a' a) ->
+  BProv B G (pImp b b') ->
+  BProv B G (pImp (pImp a b) (pImp a' b')).
+Proof.
+  intros B G a a' b b' ha hbb'.
+  apply BProv_impI.
+  apply BProv_impI.
+  set (C := a' :: pImp a b :: G).
+  assert (ha'C : BProv B C a').
+  { apply BProv_ass. unfold C. simpl. now left. }
+  assert (haC : BProv B C a).
+  {
+    exact (BProv_mp B C a' a
+      (BProv_context_cons B (pImp a b :: G) a' (pImp a' a)
+        (BProv_context_cons B G (pImp a b) (pImp a' a) ha)) ha'C).
+  }
+  assert (habC : BProv B C (pImp a b)).
+  { apply BProv_ass. unfold C. simpl. tauto. }
+  assert (hbC : BProv B C b).
+  { exact (BProv_mp B C a b habC haC). }
+  exact (BProv_mp B C b b'
+    (BProv_context_cons B (pImp a b :: G) a' (pImp b b')
+      (BProv_context_cons B G (pImp a b) (pImp b b') hbb')) hbC).
+Qed.
+
+Lemma BProv_PA_and_mono : forall
+    (B : formula -> Prop) G a a' b b',
+  BProv B G (pImp a a') ->
+  BProv B G (pImp b b') ->
+  BProv B G (pImp (pAnd a b) (pAnd a' b')).
+Proof.
+  intros B G a a' b b' haa' hbb'.
+  apply BProv_impI.
+  set (C := pAnd a b :: G).
+  assert (hp : BProv B C (pAnd a b)).
+  { apply BProv_ass. unfold C. simpl. now left. }
+  assert (haC : BProv B C a).
+  { exact (BProv_andE1 B C a b hp). }
+  assert (hbC : BProv B C b).
+  { exact (BProv_andE2 B C a b hp). }
+  assert (ha'C : BProv B C a').
+  {
+    exact (BProv_mp B C a a'
+      (BProv_context_cons B G (pAnd a b) (pImp a a') haa') haC).
+  }
+  assert (hb'C : BProv B C b').
+  {
+    exact (BProv_mp B C b b'
+      (BProv_context_cons B G (pAnd a b) (pImp b b') hbb') hbC).
+  }
+  exact (BProv_andI B C a' b' ha'C hb'C).
+Qed.
+
+Lemma BProv_PA_or_mono : forall
+    (B : formula -> Prop) G a a' b b',
+  BProv B G (pImp a a') ->
+  BProv B G (pImp b b') ->
+  BProv B G (pImp (pOr a b) (pOr a' b')).
+Proof.
+  intros B G a a' b b' haa' hbb'.
+  apply BProv_impI.
+  set (C := pOr a b :: G).
+  assert (hor : BProv B C (pOr a b)).
+  { apply BProv_ass. unfold C. simpl. now left. }
+  assert (hleft : BProv B (a :: C) (pOr a' b')).
+  {
+    apply BProv_orI1.
+    assert (haC : BProv B (a :: C) a).
+    { apply BProv_ass. simpl. now left. }
+    exact (BProv_mp B (a :: C) a a'
+      (BProv_context_cons B (pOr a b :: G) a (pImp a a')
+        (BProv_context_cons B G (pOr a b) (pImp a a') haa')) haC).
+  }
+  assert (hright : BProv B (b :: C) (pOr a' b')).
+  {
+    apply BProv_orI2.
+    assert (hbC : BProv B (b :: C) b).
+    { apply BProv_ass. simpl. now left. }
+    exact (BProv_mp B (b :: C) b b'
+      (BProv_context_cons B (pOr a b :: G) b (pImp b b')
+        (BProv_context_cons B G (pOr a b) (pImp b b') hbb')) hbC).
+  }
+  exact (BProv_orE B C a b (pOr a' b') hor hleft hright).
+Qed.
+
+Lemma BProv_PA_iffForm_refl : forall
+    (B : formula -> Prop) (G : list formula) a,
+  BProv B G (iffForm a a).
+Proof.
+  intros B G a.
+  assert (haa : BProv B G (pImp a a)).
+  {
+    apply BProv_impI.
+    apply BProv_ass.
+    simpl. now left.
+  }
+  exact (BProv_PA_iffForm_intro B G a a haa haa).
+Qed.
+
+Lemma BProv_PA_iffForm_symm : forall
+    (B : formula -> Prop) G a b,
+  BProv B G (iffForm a b) ->
+  BProv B G (iffForm b a).
+Proof.
+  intros B G a b h.
+  exact (BProv_PA_iffForm_intro B G b a
+    (BProv_PA_iffForm_reverse B G a b h)
+    (BProv_PA_iffForm_forward B G a b h)).
+Qed.
+
+Lemma BProv_PA_iffForm_trans : forall
+    (B : formula -> Prop) G a b c,
+  BProv B G (iffForm a b) ->
+  BProv B G (iffForm b c) ->
+  BProv B G (iffForm a c).
+Proof.
+  intros B G a b c hab hbc.
+  apply (BProv_PA_iffForm_intro B G a c).
+  - exact (BProv_PA_imp_trans B G a b c
+      (BProv_PA_iffForm_forward B G a b hab)
+      (BProv_PA_iffForm_forward B G b c hbc)).
+  - exact (BProv_PA_imp_trans B G c b a
+      (BProv_PA_iffForm_reverse B G b c hbc)
+      (BProv_PA_iffForm_reverse B G a b hab)).
+Qed.
+
+Lemma BProv_PA_iffForm_imp_congr : forall
+    (B : formula -> Prop) (G : list formula) a a' b b',
+  BProv B G (iffForm a a') ->
+  BProv B G (iffForm b b') ->
+  BProv B G (iffForm (pImp a b) (pImp a' b')).
+Proof.
+  intros B G a a' b b' ha hb.
+  apply BProv_PA_iffForm_intro.
+  - exact (BProv_PA_imp_mono B G a a' b b'
+      (BProv_PA_iffForm_reverse B G a a' ha)
+      (BProv_PA_iffForm_forward B G b b' hb)).
+  - exact (BProv_PA_imp_mono B G a' a b' b
+      (BProv_PA_iffForm_forward B G a a' ha)
+      (BProv_PA_iffForm_reverse B G b b' hb)).
+Qed.
+
+Lemma BProv_PA_iffForm_and_congr : forall
+    (B : formula -> Prop) (G : list formula) a a' b b',
+  BProv B G (iffForm a a') ->
+  BProv B G (iffForm b b') ->
+  BProv B G (iffForm (pAnd a b) (pAnd a' b')).
+Proof.
+  intros B G a a' b b' ha hb.
+  apply BProv_PA_iffForm_intro.
+  - exact (BProv_PA_and_mono B G a a' b b'
+      (BProv_PA_iffForm_forward B G a a' ha)
+      (BProv_PA_iffForm_forward B G b b' hb)).
+  - exact (BProv_PA_and_mono B G a' a b' b
+      (BProv_PA_iffForm_reverse B G a a' ha)
+      (BProv_PA_iffForm_reverse B G b b' hb)).
+Qed.
+
+Lemma BProv_PA_iffForm_or_congr : forall
+    (B : formula -> Prop) (G : list formula) a a' b b',
+  BProv B G (iffForm a a') ->
+  BProv B G (iffForm b b') ->
+  BProv B G (iffForm (pOr a b) (pOr a' b')).
+Proof.
+  intros B G a a' b b' ha hb.
+  apply BProv_PA_iffForm_intro.
+  - exact (BProv_PA_or_mono B G a a' b b'
+      (BProv_PA_iffForm_forward B G a a' ha)
+      (BProv_PA_iffForm_forward B G b b' hb)).
+  - exact (BProv_PA_or_mono B G a' a b' b
+      (BProv_PA_iffForm_reverse B G a a' ha)
+      (BProv_PA_iffForm_reverse B G b b' hb)).
+Qed.
+
+Lemma BProv_PA_ex_mono_of_sentences : forall
+    (B : formula -> Prop), Sentences B ->
+  forall G a b,
+    BProv B (map (rename S) G) (pImp a b) ->
+    BProv B G (pImp (pEx a) (pEx b)).
+Proof.
+  intros B hB G a b hab.
+  apply BProv_impI.
+  set (C := pEx a :: G).
+  assert (hexa : BProv B C (pEx a)).
+  { apply BProv_ass. unfold C. simpl. now left. }
+  apply (BProv_exE_of_sentences B C a (pEx b) hB hexa).
+  set (D := a :: map (rename S) C).
+  assert (ha : BProv B D a).
+  { apply BProv_ass. unfold D. simpl. now left. }
+  assert (habD : BProv B D (pImp a b)).
+  {
+    pose proof (BProv_context_cons B (map (rename S) G)
+      (rename S (pEx a)) (pImp a b) hab) as hctx.
+    pose proof (BProv_context_cons B
+      (rename S (pEx a) :: map (rename S) G)
+      a (pImp a b) hctx) as hctx'.
+    unfold D, C.
+    simpl.
+    exact hctx'.
+  }
+  assert (hb : BProv B D b).
+  { exact (BProv_mp B D a b habD ha). }
+  assert (hinst : BProv B D
+      (subst (instTerm (tVar 0)) (rename (up S) b))).
+  {
+    rewrite subst_instTerm_var_zero_rename_up_succ.
+    exact hb.
+  }
+  pose proof (BProv_exI B D (rename (up S) b) (tVar 0) hinst) as hex.
+  change (BProv B D (rename S (pEx b))).
+  simpl.
+  exact hex.
+Qed.
+
+Lemma BProv_PA_iffForm_ex_congr_of_sentences : forall
+    (B : formula -> Prop), Sentences B ->
+  forall G a b,
+    BProv B (map (rename S) G) (iffForm a b) ->
+    BProv B G (iffForm (pEx a) (pEx b)).
+Proof.
+  intros B hB G a b h.
+  apply BProv_PA_iffForm_intro.
+  - exact (BProv_PA_ex_mono_of_sentences B hB G a b
+      (BProv_PA_iffForm_forward B (map (rename S) G) a b h)).
+  - exact (BProv_PA_ex_mono_of_sentences B hB G b a
+      (BProv_PA_iffForm_reverse B (map (rename S) G) a b h)).
+Qed.

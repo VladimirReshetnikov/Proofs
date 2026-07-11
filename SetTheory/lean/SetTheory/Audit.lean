@@ -2769,6 +2769,15 @@ open SetTheory
 #check @PA.Formula.BProv_iffForm_refl
 #check @PA.Formula.BProv_iffForm_symm
 #check @PA.Formula.BProv_iffForm_trans
+#check @PA.Formula.BProv_iffForm_intro
+#check @PA.Formula.BProv_iffForm_forward
+#check @PA.Formula.BProv_iffForm_reverse
+#check @PA.Formula.BProv_imp_trans
+#check @PA.Formula.BProv_imp_mono
+#check @PA.Formula.BProv_and_mono
+#check @PA.Formula.BProv_or_mono
+#check @PA.Formula.BProv_ex_mono_of_sentences
+#check @PA.Formula.BProv_all_mono_of_sentences
 #check @PA.Formula.BProv_iffForm_imp_congr
 #check @PA.Formula.BProv_iffForm_and_congr
 #check @PA.Formula.BProv_iffForm_or_congr
