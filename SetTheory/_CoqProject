@@ -108,6 +108,7 @@ PAHFOrdinalCodeRange.v
 PAHFOrdinalCodeRangeArithmetic.v
 PAHFOrdinalCodeTermBase.v
 PAHFOrdinalCodeAddCore.v
+PAHFOrdinalCodeMulTerm.v
 PAHFRoundTripArithmeticAssembly.v
 PAHFHFRoundTripSemantic.v
 PAHFHFRepresentationRange.v
