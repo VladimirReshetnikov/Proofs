@@ -998,13 +998,13 @@ Proof.
       (BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt
         C currentCode targetStep (tSucc bound) sourceOut extendedCode
         hextC) as htarget.
-    pose proof (BProv_Ax_s_betaTermTermAt_of_eq_output
-      C sourceOut out extendedCode targetStep (tSucc bound)
-      houtEq htarget) as htargetOut.
-    pose proof (BProv_eq_congr_succ Ax_s C idx bound heq) as hsuccEq.
-    exact (BProv_Ax_s_betaTermTermAt_of_eq_index
-      C out extendedCode targetStep (tSucc bound) (tSucc idx)
-      (BProv_eqSym Ax_s C _ _ hsuccEq) htargetOut).
+    exact (BProv_betaTermTermAt_congr Ax_s C
+      sourceOut out extendedCode extendedCode targetStep targetStep
+      (tSucc bound) (tSucc idx)
+      houtEq (BProv_eqRefl Ax_s C extendedCode)
+      (BProv_eqRefl Ax_s C targetStep)
+      (BProv_eqSym Ax_s C _ _
+        (BProv_eq_congr_succ Ax_s C idx bound heq)) htarget).
   }
   exact (BProv_orE Ax_s G
     (ltTermAt idx bound) (pEq idx bound)

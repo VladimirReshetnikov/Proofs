@@ -514,12 +514,11 @@ Proof.
       (BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt
         C currentCode newStep bound sourceOut extendedCode hextC)
       as htarget.
-    pose proof (BProv_Ax_s_betaTermTermAt_of_eq_output C
-      sourceOut out extendedCode newStep bound houtEq htarget)
-      as htargetOut.
-    exact (BProv_Ax_s_betaTermTermAt_of_eq_index C
-      out extendedCode newStep bound idx
-      (BProv_eqSym Ax_s C idx bound heq) htargetOut).
+    exact (BProv_betaTermTermAt_congr Ax_s C
+      sourceOut out extendedCode extendedCode newStep newStep bound idx
+      houtEq (BProv_eqRefl Ax_s C extendedCode)
+      (BProv_eqRefl Ax_s C newStep)
+      (BProv_eqSym Ax_s C idx bound heq) htarget).
   }
   exact (BProv_orE Ax_s G
     (ltTermAt idx bound) (pEq idx bound)

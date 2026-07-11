@@ -31305,11 +31305,9 @@ theorem BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_extension
     have htarget : BProv Ax_s C
         (betaTermTermAt sourceOut extendedCode newStep bound) :=
       BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt hextC
-    have htargetOut : BProv Ax_s C
-        (betaTermTermAt out extendedCode newStep bound) :=
-      BProv_Ax_s_betaTermTermAt_of_eq_output houtEq htarget
-    exact BProv_Ax_s_betaTermTermAt_of_eq_index
-      (BProv_eqSym heq) htargetOut
+    exact BProv_betaTermTermAt_congr
+      houtEq (BProv_eqRefl extendedCode) (BProv_eqRefl newStep)
+      (BProv_eqSym heq) htarget
   exact BProv_orE hcases hltBranch heqBranch
 
 /-- Extend a shifted strict prefix by one source entry through a one-entry
@@ -31543,12 +31541,9 @@ theorem BProv_Ax_s_betaUnshiftPrefixTermAt_succ_entry_of_extension
         (betaTermTermAt sourceOut extendedCode targetStep
           (Term.succ bound)) :=
       BProv_Ax_s_betaTermTermAt_of_betaCodeExtensionTermAt hextC
-    have htargetOut : BProv Ax_s C
-        (betaTermTermAt out extendedCode targetStep
-          (Term.succ bound)) :=
-      BProv_Ax_s_betaTermTermAt_of_eq_output houtEq htarget
-    exact BProv_Ax_s_betaTermTermAt_of_eq_index
-      (BProv_eqSym (BProv_eq_congr_succ heq)) htargetOut
+    exact BProv_betaTermTermAt_congr
+      houtEq (BProv_eqRefl extendedCode) (BProv_eqRefl targetStep)
+      (BProv_eqSym (BProv_eq_congr_succ heq)) htarget
   exact BProv_orE hcases hltBranch heqBranch
 
 /-- Extend a beta-unshift strict prefix by one source entry through a
