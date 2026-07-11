@@ -6096,13 +6096,8 @@ theorem Sentences_translatedPAAx : Sentences translatedPAAx := by
 
 /-- Renaming does not change a sentence. -/
 theorem rename_eq_of_sentence {g : Form} (hg : Sentence g) (r : Nat → Nat) :
-    rename r g = g := by
-  calc
-    rename r g = rename (fun n => n) g := by
-      apply rename_ext_free
-      intro n hn
-      exact False.elim (hg n hn)
-    _ = g := rename_id g
+    rename r g = g :=
+  SetTheory.rename_eq_of_sentence g hg r
 
 theorem BProv_translatedPAAx_of_PAAx {phi : PA.Formula}
     (hphi : PA.Formula.Ax_s phi) :
@@ -6312,234 +6307,79 @@ theorem BProv_formulaAt_ax {ρ : Nat → Nat} {phi : PA.Formula}
     (PA.Formula.sentence_ax_s hphi)]
   exact BProv_translate_ax hphi
 
-/-- A relative HF proof may ignore one extra finite-context assumption. -/
+/-! ### Compatibility names for the generic relative-proof calculus
+
+The implementations now live in SetTheory.Completeness. These thin aliases
+preserve the established PAInHF API for downstream developments. -/
+
 theorem BProv_context_cons {B : Form → Prop} {G : List Form} {a b : Form}
     (h : BProv B G b) : BProv B (a :: G) b :=
-  BProv_mono B G (a :: G) b
-    (fun _ hx => List.mem_cons.mpr (Or.inr hx)) h
+  SetTheory.BProv_context_cons h
 
-/-- Relative HF provability is closed under implication introduction. -/
 theorem BProv_impI {B : Form → Prop} {G : List Form} {a b : Form}
-    (h : BProv B (a :: G) b) : BProv B G (fImp a b) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_impI
-  apply Prov_weaken hp
-  intro x hx
-  rw [List.mem_append] at hx
-  rcases hx with hx | hx
-  · exact List.mem_cons.mpr
-      (Or.inr (List.mem_append.mpr (Or.inl hx)))
-  · rw [List.mem_cons] at hx
-    rcases hx with hx | hx
-    · exact List.mem_cons.mpr (Or.inl hx)
-    · exact List.mem_cons.mpr
-        (Or.inr (List.mem_append.mpr (Or.inr hx)))
+    (h : BProv B (a :: G) b) : BProv B G (fImp a b) :=
+  SetTheory.BProv_impI h
 
-/-- Implication introduction with a fixed prefix of assumptions.
-
-This is the context-shaping form needed when an object-language assumption is
-discharged behind explicit domain hypotheses. -/
 theorem BProv_impI_after_prefix {B : Form → Prop} {Γ Δ : List Form}
-    {a b : Form}
-    (h : BProv B (Γ ++ a :: Δ) b) :
-    BProv B (Γ ++ Δ) (fImp a b) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_impI
-  apply Prov_weaken hp
-  intro x hx
-  simp only [List.mem_append, List.mem_cons] at hx ⊢
-  grind
+    {a b : Form} (h : BProv B (Γ ++ a :: Δ) b) :
+    BProv B (Γ ++ Δ) (fImp a b) :=
+  SetTheory.BProv_impI_after_prefix h
 
-/-- Relative HF provability is closed under conjunction introduction. -/
 theorem BProv_andI {B : Form → Prop} {G : List Form} {a b : Form}
-    (ha : BProv B G a) (hb : BProv B G b) : BProv B G (fAnd a b) := by
-  rcases ha with ⟨La, hLa, hpa⟩
-  rcases hb with ⟨Lb, hLb, hpb⟩
-  refine ⟨La ++ Lb, ?_, ?_⟩
-  · intro x hx
-    rw [List.mem_append] at hx
-    rcases hx with hx | hx
-    · exact hLa x hx
-    · exact hLb x hx
-  · apply Prov.P_andI
-    · apply Prov_weaken hpa
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
-      · exact Or.inr hx
-    · apply Prov_weaken hpb
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
-      · exact Or.inr hx
+    (ha : BProv B G a) (hb : BProv B G b) : BProv B G (fAnd a b) :=
+  SetTheory.BProv_andI ha hb
 
-/-- Relative HF provability is closed under bottom elimination. -/
 theorem BProv_botE {B : Form → Prop} {G : List Form} {a : Form}
-    (hbot : BProv B G fBot) : BProv B G a := by
-  rcases hbot with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_botE _ a hp⟩
+    (hbot : BProv B G fBot) : BProv B G a :=
+  SetTheory.BProv_botE hbot
 
-/-- Relative HF provability is closed under the first conjunction projection. -/
 theorem BProv_andE1 {B : Form → Prop} {G : List Form} {a b : Form}
-    (h : BProv B G (fAnd a b)) : BProv B G a := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_andE1 _ a b hp⟩
+    (h : BProv B G (fAnd a b)) : BProv B G a :=
+  SetTheory.BProv_andE1 h
 
-/-- Relative HF provability is closed under the second conjunction projection. -/
 theorem BProv_andE2 {B : Form → Prop} {G : List Form} {a b : Form}
-    (h : BProv B G (fAnd a b)) : BProv B G b := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_andE2 _ a b hp⟩
+    (h : BProv B G (fAnd a b)) : BProv B G b :=
+  SetTheory.BProv_andE2 h
 
-/-- Relative HF provability is closed under left disjunction introduction. -/
 theorem BProv_orI1 {B : Form → Prop} {G : List Form} {a b : Form}
-    (ha : BProv B G a) : BProv B G (fOr a b) := by
-  rcases ha with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_orI1 _ a b hp⟩
+    (ha : BProv B G a) : BProv B G (fOr a b) :=
+  SetTheory.BProv_orI1 ha
 
-/-- Relative HF provability is closed under right disjunction introduction. -/
 theorem BProv_orI2 {B : Form → Prop} {G : List Form} {a b : Form}
-    (hb : BProv B G b) : BProv B G (fOr a b) := by
-  rcases hb with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_orI2 _ a b hp⟩
+    (hb : BProv B G b) : BProv B G (fOr a b) :=
+  SetTheory.BProv_orI2 hb
 
-/-- Relative HF provability is closed under disjunction elimination. -/
 theorem BProv_orE {B : Form → Prop} {G : List Form} {a b c : Form}
     (hor : BProv B G (fOr a b))
-    (ha : BProv B (a :: G) c)
-    (hb : BProv B (b :: G) c) : BProv B G c := by
-  rcases hor with ⟨Lo, hLo, hpo⟩
-  rcases ha with ⟨La, hLa, hpa⟩
-  rcases hb with ⟨Lb, hLb, hpb⟩
-  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
-  · intro x hx
-    simp only [List.mem_append] at hx
-    grind
-  · apply Prov.P_orE _ a b c
-    · apply Prov_weaken hpo
-      intro x hx
-      simp only [List.mem_append] at hx ⊢
-      grind
-    · apply Prov_weaken hpa
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
-    · apply Prov_weaken hpb
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
+    (ha : BProv B (a :: G) c) (hb : BProv B (b :: G) c) : BProv B G c :=
+  SetTheory.BProv_orE hor ha hb
 
-/-- Disjunction elimination with a fixed prefix of assumptions before each
-branch assumption. -/
 theorem BProv_orE_after_prefix {B : Form → Prop} {Γ Δ : List Form}
     {a b c : Form}
     (hor : BProv B (Γ ++ Δ) (fOr a b))
     (ha : BProv B (Γ ++ a :: Δ) c)
-    (hb : BProv B (Γ ++ b :: Δ) c) :
-    BProv B (Γ ++ Δ) c := by
-  rcases hor with ⟨Lo, hLo, hpo⟩
-  rcases ha with ⟨La, hLa, hpa⟩
-  rcases hb with ⟨Lb, hLb, hpb⟩
-  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
-  · intro x hx
-    simp only [List.mem_append] at hx
-    grind
-  · apply Prov.P_orE _ a b c
-    · apply Prov_weaken hpo
-      intro x hx
-      simp only [List.mem_append] at hx ⊢
-      grind
-    · apply Prov_weaken hpa
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
-    · apply Prov_weaken hpb
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
+    (hb : BProv B (Γ ++ b :: Δ) c) : BProv B (Γ ++ Δ) c :=
+  SetTheory.BProv_orE_after_prefix hor ha hb
 
-/-- Relative HF provability is closed under universal elimination. -/
 theorem BProv_allE {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
-    (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_allE _ _ k hp⟩
+    (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) :=
+  SetTheory.BProv_allE h
 
-/-- Relative HF provability is closed under existential introduction. -/
 theorem BProv_exI {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
-    (h : BProv B G (rename (inst k) a)) : BProv B G (fEx a) := by
-  rcases h with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_exI _ _ k hp⟩
+    (h : BProv B G (rename (inst k) a)) : BProv B G (fEx a) :=
+  SetTheory.BProv_exI h
 
-/-- Universal introduction for relative HF proofs whose theory axioms are
-sentences.  The sentence premise keeps the finite list of used theory axioms
-stable under the binder shift. -/
 theorem BProv_allI_of_sentences {B : Form → Prop} (hB : Sentences B)
     {G : List Form} {a : Form}
-    (h : BProv B (G.map (rename Nat.succ)) a) : BProv B G (fAll a) := by
-  rcases h with ⟨L, hL, hp⟩
-  have hLmap : L.map (rename Nat.succ) = L := by
-    calc
-      L.map (rename Nat.succ) = L.map (fun x => x) := by
-        apply List.map_congr_left
-        intro x hx
-        exact rename_eq_of_sentence (hB x (hL x hx)) Nat.succ
-      _ = L := by simp
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_allI
-  apply Prov_weaken hp
-  intro x hx
-  simp only [List.map_append, List.mem_append] at hx ⊢
-  rcases hx with hx | hx
-  · exact Or.inl (by simpa [hLmap] using hx)
-  · exact Or.inr hx
+    (h : BProv B (G.map (rename Nat.succ)) a) : BProv B G (fAll a) :=
+  SetTheory.BProv_allI_of_sentences hB h
 
-/-- Existential elimination for relative HF proofs whose theory axioms are
-sentences.  The sentence premise keeps the finite list of used theory axioms
-stable under the binder shift. -/
 theorem BProv_exE_of_sentences {B : Form → Prop} (hB : Sentences B)
     {G : List Form} {a c : Form}
     (hex : BProv B G (fEx a))
-    (hbody : BProv B (a :: G.map (rename Nat.succ))
-      (rename Nat.succ c)) :
-    BProv B G c := by
-  rcases hex with ⟨Le, hLe, hpe⟩
-  rcases hbody with ⟨Lb, hLb, hpb⟩
-  have hLbmap : Lb.map (rename Nat.succ) = Lb := by
-    calc
-      Lb.map (rename Nat.succ) = Lb.map (fun x => x) := by
-        apply List.map_congr_left
-        intro x hx
-        exact rename_eq_of_sentence (hB x (hLb x hx)) Nat.succ
-      _ = Lb := by simp
-  refine ⟨Le ++ Lb, ?_, ?_⟩
-  · intro x hx
-    simp only [List.mem_append] at hx
-    grind
-  · apply Prov.P_exE _ a c
-    · apply Prov_weaken hpe
-      intro x hx
-      simp only [List.mem_append] at hx ⊢
-      grind
-    · apply Prov_weaken hpb
-      intro x hx
-      rw [List.mem_append] at hx
-      rcases hx with hx | hx
-      · apply List.mem_cons.mpr
-        apply Or.inr
-        simp only [List.map_append, List.mem_append]
-        apply Or.inl
-        exact Or.inr (by simpa [hLbmap] using hx)
-      · rw [List.mem_cons] at hx
-        rcases hx with hx | hx
-        · exact List.mem_cons.mpr (Or.inl hx)
-        · apply List.mem_cons.mpr
-          apply Or.inr
-          simp only [List.map_append, List.mem_append]
-          exact Or.inr hx
+    (hbody : BProv B (a :: G.map (rename Nat.succ)) (rename Nat.succ c)) :
+    BProv B G c :=
+  SetTheory.BProv_exE_of_sentences hB hex hbody
 
 /-- Translated implication introduction for the PA-in-HF translation. -/
 theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}

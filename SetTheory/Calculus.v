@@ -112,6 +112,24 @@ Qed.
 Lemma Prov_cons : forall G a b, Prov G b -> Prov (a :: G) b.
 Proof. intros G a b H. apply (Prov_weaken G b H). intros x Hx. right. exact Hx. Qed.
 
+(* Disjunction elimination in implication form.  All three premises share a
+   context, which makes this form especially convenient for BProv lifting. *)
+Lemma Prov_orE_imp : forall G a b c,
+  Prov G (fOr a b) ->
+  Prov G (fImp a c) ->
+  Prov G (fImp b c) ->
+  Prov G c.
+Proof.
+  intros G a b c Hor Ha Hb.
+  apply (P_orE G a b c Hor).
+  - apply (P_impE (a :: G) a c).
+    + apply Prov_cons. exact Ha.
+    + apply P_ass. left. reflexivity.
+  - apply (P_impE (b :: G) b c).
+    + apply Prov_cons. exact Hb.
+    + apply P_ass. left. reflexivity.
+Qed.
+
 (* Proof by contradiction as a derived rule. *)
 Lemma Prov_byContra : forall G a, Prov (fImp a fBot :: G) fBot -> Prov G a.
 Proof.

@@ -106,6 +106,19 @@ theorem Prov_weaken {G : List Form} {a : Form} (h : Prov G a) :
 theorem Prov_cons {G : List Form} {a b : Form} (h : Prov G b) : Prov (a :: G) b :=
   Prov_weaken h _ (fun _ hx => List.mem_cons.mpr (Or.inr hx))
 
+/-- Disjunction elimination in implication form.  This derived rule is often
+more convenient for lifting finite derivations into relative provability,
+where all premises naturally share one context. -/
+theorem Prov_orE_imp {G : List Form} {a b c : Form}
+    (hor : Prov G (fOr a b))
+    (ha : Prov G (fImp a c))
+    (hb : Prov G (fImp b c)) : Prov G c :=
+  .P_orE G a b c hor
+    (.P_impE (a :: G) a c (Prov_cons ha)
+      (.P_ass _ _ (List.mem_cons.mpr (Or.inl rfl))))
+    (.P_impE (b :: G) b c (Prov_cons hb)
+      (.P_ass _ _ (List.mem_cons.mpr (Or.inl rfl))))
+
 /-- Proof by contradiction. -/
 theorem Prov_byContra {G : List Form} {a : Form}
     (h : Prov (fImp a fBot :: G) fBot) : Prov G a :=

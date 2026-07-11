@@ -346,6 +346,11 @@ theorem BProv_of_Prov {B : Form → Prop} {G : List Form} {phi : Form}
     cases hx
   · simpa using h
 
+/-- A finite-context assumption is available in relative provability. -/
+theorem BProv_ass {B : Form → Prop} {G : List Form} {phi : Form}
+    (hphi : phi ∈ G) : BProv B G phi :=
+  BProv_of_Prov (B := B) (Prov.P_ass G phi hphi)
+
 /-- A finite list of relative proofs can be put over one shared finite list of
 theory axioms. -/
 theorem BProv_bound_list (B : Form → Prop) (D : List Form) :
@@ -411,6 +416,17 @@ theorem BProv_cut {B : Form → Prop} {G D : List Form} {phi : Form}
     (hG : ∀ g, g ∈ G → BProv B D g) : BProv B D phi :=
   BProv_lift h (fun _ hb => BProv_ax (G := D) hb) hG
 
+/-- Lift an arbitrary finite natural-deduction derivation into relative
+provability by supplying relative proofs of its assumptions.
+
+This is the reusable closure principle behind the connective and equality
+rules below; clients should not need to reopen and merge the finite lists of
+background-theory axioms stored inside `BProv`. -/
+theorem BProv_derive {B : Form → Prop} {G Δ : List Form} {phi : Form}
+    (hp : Prov Δ phi)
+    (hΔ : ∀ d, d ∈ Δ → BProv B G d) : BProv B G phi :=
+  BProv_cut (BProv_of_Prov (B := B) hp) hΔ
+
 /-- Enlarging the background theory preserves relative provability. -/
 theorem BProv_theory_mono {B C : Form → Prop} {G : List Form} {phi : Form}
     (hBC : ∀ b, B b → C b) (h : BProv B G phi) : BProv C G phi :=
@@ -426,21 +442,14 @@ theorem BProv_eqElim {B : Form → Prop} {G : List Form} {i j : Nat}
     (heq : BProv B G (fEq i j))
     (ha : BProv B G (rename (inst i) a)) :
     BProv B G (rename (inst j) a) := by
-  have hbare : BProv B [fEq i j, rename (inst i) a]
-      (rename (inst j) a) := by
-    apply BProv_of_Prov
-    apply Prov.P_eqElim [fEq i j, rename (inst i) a] i j a
-    · exact Prov.P_ass _ _ (by simp)
-    · exact Prov.P_ass _ _ (by simp)
-  exact BProv_lift hbare
-    (fun _ hb => BProv_ax (G := G) hb)
-    (fun g hg => by
-      simp only [List.mem_cons, List.not_mem_nil] at hg
-      rcases hg with rfl | hg
-      · exact heq
-      · rcases hg with rfl | hnil
-        · exact ha
-        · cases hnil)
+  apply BProv_derive
+    (Prov.P_eqElim [fEq i j, rename (inst i) a] i j a
+      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
+  intro g hg
+  simp at hg
+  rcases hg with rfl | rfl
+  · exact heq
+  · exact ha
 
 /-- Relative provability is closed under symmetry of equality. -/
 theorem BProv_eqSym {B : Form → Prop} {G : List Form} {i j : Nat}
@@ -452,26 +461,14 @@ theorem BProv_eqSym {B : Form → Prop} {G : List Form} {i j : Nat}
 theorem BProv_eqTrans {B : Form → Prop} {G : List Form} {i j k : Nat}
     (hij : BProv B G (fEq i j)) (hjk : BProv B G (fEq j k)) :
     BProv B G (fEq i k) := by
-  rcases hij with ⟨Li, hLi, hpi⟩
-  rcases hjk with ⟨Lj, hLj, hpj⟩
-  refine ⟨Li ++ Lj, ?_, ?_⟩
-  · intro x hx
-    rcases List.mem_append.mp hx with hx | hx
-    · exact hLi x hx
-    · exact hLj x hx
-  · apply Prov_eq_trans _ i j k
-    · apply Prov_weaken hpi
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
-      · exact Or.inr hx
-    · apply Prov_weaken hpj
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
-      · exact Or.inr hx
+  apply BProv_derive
+    (Prov_eq_trans [fEq i j, fEq j k] i j k
+      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
+  intro g hg
+  simp at hg
+  rcases hg with rfl | rfl
+  · exact hij
+  · exact hjk
 
 /-- Soundness for relative provability from an infinite sentence theory and a
 finite context. -/
@@ -631,16 +628,204 @@ theorem BProv_weaken_chain (B : Form → Prop) (L0 : List Form) (n n' : Nat)
 
 theorem BProv_mp (B : Form → Prop) (L : List Form) (a b : Form)
     (h1 : BProv B L (fImp a b)) (h2 : BProv B L a) : BProv B L b := by
-  obtain ⟨Gb1, hGb1, hp1⟩ := h1
-  obtain ⟨Gb2, hGb2, hp2⟩ := h2
-  refine ⟨Gb1 ++ Gb2, ?_, ?_⟩
+  apply BProv_derive
+    (Prov.P_impE [fImp a b, a] a b
+      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
+  intro g hg
+  simp at hg
+  rcases hg with rfl | rfl
+  · exact h1
+  · exact h2
+
+/-! ### Natural-deduction rules lifted to relative provability
+
+These rules are theory-independent.  They live beside `BProv`, rather than in
+any particular interpretation, so every future relative theory can reuse the
+same finite-axiom bookkeeping. -/
+
+/-- A relative proof may ignore one extra finite-context assumption. -/
+theorem BProv_context_cons {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G b) : BProv B (a :: G) b :=
+  BProv_mono B G (a :: G) b
+    (fun _ hx => List.mem_cons.mpr (Or.inr hx)) h
+
+/-- Relative provability is closed under implication introduction. -/
+theorem BProv_impI {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B (a :: G) b) : BProv B G (fImp a b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.mem_append, List.mem_cons] at hx ⊢
+  grind
+
+/-- Implication introduction behind a fixed prefix of assumptions. -/
+theorem BProv_impI_after_prefix {B : Form → Prop} {Γ Δ : List Form}
+    {a b : Form}
+    (h : BProv B (Γ ++ a :: Δ) b) :
+    BProv B (Γ ++ Δ) (fImp a b) := by
+  rcases h with ⟨L, hL, hp⟩
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_impI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.mem_append, List.mem_cons] at hx ⊢
+  grind
+
+/-- Relative provability is closed under conjunction introduction. -/
+theorem BProv_andI {B : Form → Prop} {G : List Form} {a b : Form}
+    (ha : BProv B G a) (hb : BProv B G b) : BProv B G (fAnd a b) := by
+  apply BProv_derive
+    (Prov.P_andI [a, b] a b
+      (Prov.P_ass _ _ (by simp)) (Prov.P_ass _ _ (by simp)))
+  intro g hg
+  simp at hg
+  rcases hg with rfl | rfl
+  · exact ha
+  · exact hb
+
+/-- Relative provability is closed under bottom elimination. -/
+theorem BProv_botE {B : Form → Prop} {G : List Form} {a : Form}
+    (hbot : BProv B G fBot) : BProv B G a := by
+  rcases hbot with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_botE _ a hp⟩
+
+/-- Relative provability is closed under the first conjunction projection. -/
+theorem BProv_andE1 {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G (fAnd a b)) : BProv B G a := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_andE1 _ a b hp⟩
+
+/-- Relative provability is closed under the second conjunction projection. -/
+theorem BProv_andE2 {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G (fAnd a b)) : BProv B G b := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_andE2 _ a b hp⟩
+
+/-- Relative provability is closed under left disjunction introduction. -/
+theorem BProv_orI1 {B : Form → Prop} {G : List Form} {a b : Form}
+    (ha : BProv B G a) : BProv B G (fOr a b) := by
+  rcases ha with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_orI1 _ a b hp⟩
+
+/-- Relative provability is closed under right disjunction introduction. -/
+theorem BProv_orI2 {B : Form → Prop} {G : List Form} {a b : Form}
+    (hb : BProv B G b) : BProv B G (fOr a b) := by
+  rcases hb with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_orI2 _ a b hp⟩
+
+/-- Disjunction elimination when both branches are already implications in
+the shared context. -/
+theorem BProv_orE_imp {B : Form → Prop} {G : List Form} {a b c : Form}
+    (hor : BProv B G (fOr a b))
+    (ha : BProv B G (fImp a c))
+    (hb : BProv B G (fImp b c)) : BProv B G c := by
+  apply BProv_derive
+    (Prov_orE_imp (G := [fOr a b, fImp a c, fImp b c])
+      (a := a) (b := b) (c := c)
+      (Prov.P_ass _ _ (by simp))
+      (Prov.P_ass _ _ (by simp))
+      (Prov.P_ass _ _ (by simp)))
+  intro g hg
+  simp at hg
+  rcases hg with rfl | rfl | rfl
+  · exact hor
+  · exact ha
+  · exact hb
+
+/-- Relative provability is closed under disjunction elimination. -/
+theorem BProv_orE {B : Form → Prop} {G : List Form} {a b c : Form}
+    (hor : BProv B G (fOr a b))
+    (ha : BProv B (a :: G) c)
+    (hb : BProv B (b :: G) c) : BProv B G c :=
+  BProv_orE_imp hor (BProv_impI ha) (BProv_impI hb)
+
+/-- Disjunction elimination with a fixed prefix before each branch
+assumption. -/
+theorem BProv_orE_after_prefix {B : Form → Prop} {Γ Δ : List Form}
+    {a b c : Form}
+    (hor : BProv B (Γ ++ Δ) (fOr a b))
+    (ha : BProv B (Γ ++ a :: Δ) c)
+    (hb : BProv B (Γ ++ b :: Δ) c) :
+    BProv B (Γ ++ Δ) c :=
+  BProv_orE_imp hor
+    (BProv_impI_after_prefix ha) (BProv_impI_after_prefix hb)
+
+/-- Relative provability is closed under universal elimination. -/
+theorem BProv_allE {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
+    (h : BProv B G (fAll a)) : BProv B G (rename (inst k) a) := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_allE _ _ k hp⟩
+
+/-- Relative provability is closed under existential introduction. -/
+theorem BProv_exI {B : Form → Prop} {G : List Form} {a : Form} {k : Nat}
+    (h : BProv B G (rename (inst k) a)) : BProv B G (fEx a) := by
+  rcases h with ⟨L, hL, hp⟩
+  exact ⟨L, hL, Prov.P_exI _ _ k hp⟩
+
+/-- A finite list of axioms from a sentence theory is unchanged by renaming. -/
+theorem map_rename_eq_of_sentences {B : Form → Prop} (hB : Sentences B)
+    {L : List Form} (hL : ∀ x, x ∈ L → B x) (r : Nat → Nat) :
+    L.map (rename r) = L := by
+  calc
+    L.map (rename r) = L.map (fun x => x) := by
+      apply List.map_congr_left
+      intro x hx
+      exact rename_eq_of_sentence x (hB x (hL x hx)) r
+    _ = L := by simp
+
+/-- Universal introduction for a relative proof whose theory axioms are
+sentences. -/
+theorem BProv_allI_of_sentences {B : Form → Prop} (hB : Sentences B)
+    {G : List Form} {a : Form}
+    (h : BProv B (G.map (rename Nat.succ)) a) : BProv B G (fAll a) := by
+  rcases h with ⟨L, hL, hp⟩
+  have hLmap := map_rename_eq_of_sentences hB hL Nat.succ
+  refine ⟨L, hL, ?_⟩
+  apply Prov.P_allI
+  apply Prov_weaken hp
+  intro x hx
+  simp only [List.map_append, List.mem_append] at hx ⊢
+  rcases hx with hx | hx
+  · exact Or.inl (by simpa [hLmap] using hx)
+  · exact Or.inr hx
+
+/-- Existential elimination for a relative proof whose theory axioms are
+sentences. -/
+theorem BProv_exE_of_sentences {B : Form → Prop} (hB : Sentences B)
+    {G : List Form} {a c : Form}
+    (hex : BProv B G (fEx a))
+    (hbody : BProv B (a :: G.map (rename Nat.succ))
+      (rename Nat.succ c)) : BProv B G c := by
+  rcases hex with ⟨Le, hLe, hpe⟩
+  rcases hbody with ⟨Lb, hLb, hpb⟩
+  have hLbmap := map_rename_eq_of_sentences hB hLb Nat.succ
+  refine ⟨Le ++ Lb, ?_, ?_⟩
   · intro x hx
-    rcases List.mem_append.mp hx with hx | hx
-    · exact hGb1 x hx
-    · exact hGb2 x hx
-  · apply Prov.P_impE _ a b
-    · exact Prov_weaken hp1 _ (by mem_tac)
-    · exact Prov_weaken hp2 _ (by mem_tac)
+    simp only [List.mem_append] at hx
+    grind
+  · apply Prov.P_exE _ a c
+    · apply Prov_weaken hpe
+      intro x hx
+      simp only [List.mem_append] at hx ⊢
+      grind
+    · apply Prov_weaken hpb
+      intro x hx
+      rw [List.mem_append] at hx
+      rcases hx with hx | hx
+      · apply List.mem_cons.mpr
+        apply Or.inr
+        simp only [List.map_append, List.mem_append]
+        apply Or.inl
+        exact Or.inr (by simpa [hLbmap] using hx)
+      · rw [List.mem_cons] at hx
+        rcases hx with hx | hx
+        · exact List.mem_cons.mpr (Or.inl hx)
+        · apply List.mem_cons.mpr
+          apply Or.inr
+          simp only [List.map_append, List.mem_append]
+          exact Or.inr hx
 
 theorem stepB_pos_in (B : Form → Prop) (L : List Form) (phi : Form)
     (hc : BCon B (phi :: L)) : phi ∈ stepB B L phi := by

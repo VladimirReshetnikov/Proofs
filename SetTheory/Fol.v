@@ -232,6 +232,18 @@ Proof.
 Qed.
 Definition Sentence (f : form) : Prop := forall n, ~ Free n f.
 Definition Sentences (B : form -> Prop) : Prop := forall f, B f -> Sentence f.
+
+(* Closed formulas are invariant under every variable renaming.  This belongs
+   to the formula layer rather than any particular translated theory. *)
+Lemma rename_eq_of_sentence : forall f,
+  Sentence f -> forall r, rename r f = f.
+Proof.
+  intros f hf r.
+  transitivity (rename (fun n => n) f).
+  - apply rename_ext_free. intros n hn. exfalso. exact (hf n hn).
+  - apply rename_id.
+Qed.
+
 Fixpoint closeN (k : nat) (f : form) : form :=
   match k with O => f | S k' => closeN k' (fAll f) end.
 
@@ -407,6 +419,19 @@ Proof.
                             (scons d (fun m => e (r m))) (fun n => up_env r d e n))).
       exact HH.
 Qed.
+
+(* The standard semantic transport step: rename a formula and identify the
+   resulting environment pointwise with the intended target environment. *)
+Lemma Sat_rename_ext : forall f r e e',
+  (forall n, e (r n) = e' n) ->
+  (Sat e (rename r f) <-> Sat e' f).
+Proof.
+  intros f r e e' h.
+  rewrite Sat_rename.
+  apply Sat_ext.
+  exact h.
+Qed.
+
 (* environment lemmas for the quantifier/equality cases *)
 Lemma inst_env : forall k e n, e (inst k n) = scons (e k) e n.
 Proof. intros k e n. destruct n; reflexivity. Qed.

@@ -27,17 +27,39 @@ open SetTheory
 #check @theory_equiv
 #check @BProv_ax
 #check @BProv_of_Prov
+#check @BProv_ass
+#check @BProv_bound_list
 #check @BProv_lift
 #check @BProv_cut
+#check @BProv_derive
 #check @BProv_theory_mono
 #check @BProv_eqElim
 #check @BProv_eqSym
 #check @BProv_eqTrans
+#check @BProv_context_cons
+#check @BProv_impI
+#check @BProv_impI_after_prefix
+#check @BProv_andI
+#check @BProv_botE
+#check @BProv_andE1
+#check @BProv_andE2
+#check @BProv_orI1
+#check @BProv_orI2
+#check @BProv_orE_imp
+#check @BProv_orE
+#check @BProv_orE_after_prefix
+#check @BProv_allE
+#check @BProv_exI
+#check @BProv_allI_of_sentences
+#check @BProv_exE_of_sentences
 #check @soundness_BProv
 #print axioms prov_iff_valid
 
 -- calculus soundness and the deep reverse (internal recursion theorem)
 #check @soundness
+#check @Prov_orE_imp
+#check @rename_eq_of_sentence
+#check @Sat_rename_ext
 #check @ClosureFO_of_ZF
 #print axioms ClosureFO_of_ZF
 

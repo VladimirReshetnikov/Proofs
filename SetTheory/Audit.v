@@ -35,7 +35,10 @@ Check completeness_inf.
 Check theory_equiv.
 Check BProv_ax.
 Check BProv_of_Prov.
+Check BProv_ass.
+Check BProv_bound_list.
 Check BProv_lift.
+Check BProv_derive.
 Check BProv_eqElim.
 Check BProv_eqSym.
 Check BProv_eqTrans.
@@ -49,6 +52,7 @@ Check BProv_andE1.
 Check BProv_andE2.
 Check BProv_orI1.
 Check BProv_orI2.
+Check BProv_orE_imp.
 Check BProv_orE.
 Check BProv_orE_after_prefix.
 Check BProv_allE.
@@ -59,6 +63,9 @@ Check completeness_inf_context.
 Print Assumptions prov_iff_valid.
 
 Check soundness.
+Check Prov_orE_imp.
+Check rename_eq_of_sentence.
+Check Sat_rename_ext.
 Check ClosureFO_of_ZF.
 Print Assumptions ClosureFO_of_ZF.
 

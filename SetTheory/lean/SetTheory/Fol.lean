@@ -333,6 +333,14 @@ def Sentence (f : Form) : Prop := ∀ n, ¬ Free n f
 
 def Sentences (B : Form → Prop) : Prop := ∀ f, B f → Sentence f
 
+/-- A sentence is invariant under every variable renaming.  Keeping this at
+the formula layer avoids reproving the same closed-formula fact in each
+theory-specific translation. -/
+theorem rename_eq_of_sentence (f : Form) (hf : Sentence f) (r : Nat → Nat) :
+    rename r f = f := by
+  rw [rename_ext_free f r (fun n => n) (fun n hn => (hf n hn).elim)]
+  exact rename_id f
+
 def closeN : Nat → Form → Form
   | 0, f => f
   | k+1, f => closeN k (fAll f)
@@ -557,6 +565,17 @@ theorem Sat_rename (f : Form) :
     refine exists_congr fun d => ?_
     rw [ih]
     exact Sat_ext a _ _ (up_env r d e)
+
+/-- Renaming followed by a pointwise environment identification.
+
+This is the common semantic transport step for instantiation and binder
+bookkeeping: clients can state the intended target environment directly
+instead of chaining `Sat_rename` and `Sat_ext` by hand. -/
+theorem Sat_rename_ext (f : Form) (r : Nat → Nat) (e e' : Nat → V)
+    (h : ∀ n, e (r n) = e' n) :
+    Sat mem e (rename r f) ↔ Sat mem e' f := by
+  rw [Sat_rename]
+  exact Sat_ext f _ _ h
 
 /-- Environment lemma for the quantifier/equality cases. -/
 theorem inst_env (k : Nat) (e : Nat → V) (n : Nat) :

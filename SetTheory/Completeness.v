@@ -281,6 +281,15 @@ Definition BProv (B : form -> Prop) (G : list form) (phi : form) : Prop :=
   exists Gb, (forall x, In x Gb -> B x) /\ Prov (Gb ++ G) phi.
 Definition BCon (B : form -> Prop) (G : list form) : Prop := ~ BProv B G fBot.
 
+(* A finite-context assumption is available in relative provability. *)
+Lemma BProv_ass : forall B G phi,
+  In phi G -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  exists nil. split; [ intros x hx; contradiction | ].
+  simpl. apply P_ass. exact hphi.
+Qed.
+
 Lemma BProv_mono :
   forall B G G' phi, (forall x, In x G -> In x G') -> BProv B G phi -> BProv B G' phi.
 Proof.
@@ -288,6 +297,97 @@ Proof.
   apply (Prov_weaken (Gb ++ G) phi Hp). intros x Hx.
   apply in_app_iff in Hx. apply in_app_iff. destruct Hx as [Hx | Hx];
     [ left; exact Hx | right; apply Hsub; exact Hx ].
+Qed.
+
+(* A base-theory axiom and a bare finite-context derivation are the two
+   primitive ways to enter relative provability. *)
+Lemma BProv_ax : forall (B : form -> Prop) G phi,
+  B phi -> BProv B G phi.
+Proof.
+  intros B G phi hphi.
+  exists (phi :: nil). split.
+  - intros x [hx | []]. subst x. exact hphi.
+  - apply P_ass. apply in_app_iff. left. left. reflexivity.
+Qed.
+
+Lemma BProv_of_Prov : forall (B : form -> Prop) G phi,
+  Prov G phi -> BProv B G phi.
+Proof.
+  intros B G phi hp.
+  exists nil. split; [ intros x hx; contradiction | exact hp ].
+Qed.
+
+(* Finitely many relative proofs can share one finite list of background
+   axioms. *)
+Lemma BProv_bound_list : forall B D L,
+  (forall x, In x L -> BProv B D x) ->
+  exists Lb,
+    (forall x, In x Lb -> B x) /\
+    (forall x, In x L -> Prov (Lb ++ D) x).
+Proof.
+  intros B D L. induction L as [|a L IH]; intro hL.
+  - exists nil. split; intros x hx; contradiction.
+  - destruct (hL a (or_introl eq_refl)) as [La [hLa hpa]].
+    destruct (IH (fun x hx => hL x (or_intror hx))) as [Lb [hLb hpL]].
+    exists (La ++ Lb). split.
+    + intros x hx. apply in_app_iff in hx. destruct hx as [hx | hx].
+      * exact (hLa x hx).
+      * exact (hLb x hx).
+    + intros x hx. destruct hx as [hx | hx].
+      * subst x. apply (Prov_weaken (La ++ D) a hpa). intros y hy; mem.
+      * apply (Prov_weaken (Lb ++ D) x (hpL x hx)). intros y hy; mem.
+Qed.
+
+(* Lift any finite natural-deduction derivation into relative provability by
+   supplying relative proofs of all its assumptions.  This hides the finite
+   list of used background axioms from every derived proof rule. *)
+Lemma BProv_derive : forall B G Delta phi,
+  Prov Delta phi ->
+  (forall d, In d Delta -> BProv B G d) ->
+  BProv B G phi.
+Proof.
+  intros B G Delta phi hp hDelta.
+  destruct (BProv_bound_list B G Delta hDelta) as [Lb [hLb hpDelta]].
+  exists Lb. split; [ exact hLb | ].
+  exact (Prov_cut Delta phi hp (Lb ++ G) hpDelta).
+Qed.
+
+(* Transport a relative proof once every used source axiom and every finite
+   context assumption has been proved in the target. *)
+Lemma BProv_lift : forall (B C : form -> Prop) G D phi,
+  BProv B G phi ->
+  (forall b, B b -> BProv C D b) ->
+  (forall g, In g G -> BProv C D g) ->
+  BProv C D phi.
+Proof.
+  intros B C G D phi [Lb [hLb hp]] hB hG.
+  assert (hctx : forall x, In x (Lb ++ G) -> BProv C D x).
+  {
+    intros x hx. apply in_app_iff in hx. destruct hx as [hx | hx].
+    - exact (hB x (hLb x hx)).
+    - exact (hG x hx).
+  }
+  destruct (BProv_bound_list C D (Lb ++ G) hctx) as [Lc [hLc hpctx]].
+  exists Lc. split; [ exact hLc | ].
+  exact (Prov_cut (Lb ++ G) phi hp (Lc ++ D) hpctx).
+Qed.
+
+Lemma BProv_cut : forall (B : form -> Prop) G D phi,
+  BProv B G phi ->
+  (forall g, In g G -> BProv B D g) ->
+  BProv B D phi.
+Proof.
+  intros B G D phi hp hG.
+  apply (BProv_lift B B G D phi hp).
+  - intros b hb. apply BProv_ax. exact hb.
+  - exact hG.
+Qed.
+
+Lemma BProv_theory_mono : forall (B C : form -> Prop) G phi,
+  (forall b, B b -> C b) -> BProv B G phi -> BProv C G phi.
+Proof.
+  intros B C G phi hBC [L [hL hp]].
+  exists L. split; [ intros x hx; exact (hBC x (hL x hx)) | exact hp ].
 Qed.
 
 Lemma BCon_cons_or :
@@ -421,12 +521,10 @@ Qed.
 
 Lemma BProv_mp : forall B L a b, BProv B L (fImp a b) -> BProv B L a -> BProv B L b.
 Proof.
-  intros B L a b [Gb1 [HGb1 H1]] [Gb2 [HGb2 H2]]. exists (Gb1 ++ Gb2). split.
-  - intros x Hx. apply in_app_iff in Hx. destruct Hx as [Hx | Hx];
-      [ apply HGb1; exact Hx | apply HGb2; exact Hx ].
-  - apply (P_impE ((Gb1 ++ Gb2) ++ L) a b).
-    + apply (Prov_weaken (Gb1 ++ L) (fImp a b) H1). intros x Hx; mem.
-    + apply (Prov_weaken (Gb2 ++ L) a H2). intros x Hx; mem.
+  intros B L a b hImp ha.
+  apply (BProv_derive B L (fImp a b :: a :: nil) b).
+  - apply (P_impE (fImp a b :: a :: nil) a b); apply P_ass; simpl; tauto.
+  - intros d [<- | [<- | []]]; assumption.
 Qed.
 
 Lemma BProv_eqElim : forall B G i j a,
@@ -434,19 +532,12 @@ Lemma BProv_eqElim : forall B G i j a,
   BProv B G (rename (inst i) a) ->
   BProv B G (rename (inst j) a).
 Proof.
-  intros B G i j a [Geq [HGeq Hpeq]] [Ga [HGa Hpa]].
-  exists (Geq ++ Ga).
-  split.
-  - intros x Hx.
-    apply in_app_iff in Hx.
-    destruct Hx as [Hx | Hx].
-    + apply HGeq. exact Hx.
-    + apply HGa. exact Hx.
-  - apply (P_eqElim ((Geq ++ Ga) ++ G) i j a).
-    + apply (Prov_weaken (Geq ++ G) (fEq i j) Hpeq).
-      intros x Hx; mem.
-    + apply (Prov_weaken (Ga ++ G) (rename (inst i) a) Hpa).
-      intros x Hx; mem.
+  intros B G i j a heq ha.
+  apply (BProv_derive B G
+    (fEq i j :: rename (inst i) a :: nil) (rename (inst j) a)).
+  - apply (P_eqElim (fEq i j :: rename (inst i) a :: nil) i j a);
+      apply P_ass; simpl; tauto.
+  - intros d [<- | [<- | []]]; assumption.
 Qed.
 
 Lemma BProv_eqSym : forall B G i j,
@@ -464,19 +555,207 @@ Lemma BProv_eqTrans : forall B G i j k,
   BProv B G (fEq j k) ->
   BProv B G (fEq i k).
 Proof.
-  intros B G i j k [Gi [HGi Hpi]] [Gj [HGj Hpj]].
-  exists (Gi ++ Gj).
-  split.
-  - intros x Hx.
-    apply in_app_iff in Hx.
-    destruct Hx as [Hx | Hx].
-    + apply HGi. exact Hx.
-    + apply HGj. exact Hx.
-  - apply (Prov_eq_trans ((Gi ++ Gj) ++ G) i j k).
-    + apply (Prov_weaken (Gi ++ G) (fEq i j) Hpi).
-      intros x Hx; mem.
-    + apply (Prov_weaken (Gj ++ G) (fEq j k) Hpj).
-      intros x Hx; mem.
+  intros B G i j k hij hjk.
+  apply (BProv_derive B G (fEq i j :: fEq j k :: nil) (fEq i k)).
+  - apply (Prov_eq_trans (fEq i j :: fEq j k :: nil) i j k);
+      apply P_ass; simpl; tauto.
+  - intros d [<- | [<- | []]]; assumption.
+Qed.
+
+(* ---- natural-deduction rules lifted to relative provability ----
+
+   These rules are independent of the base theory.  Keeping them beside
+   [BProv] prevents each interpretation from duplicating the finite-axiom
+   list bookkeeping. *)
+
+Lemma BProv_context_cons : forall (B : form -> Prop) G a b,
+  BProv B G b -> BProv B (a :: G) b.
+Proof.
+  intros B G a b h.
+  apply (BProv_mono B G (a :: G) b); [ intros x hx; right; exact hx | exact h ].
+Qed.
+
+Lemma BProv_impI : forall (B : form -> Prop) G a b,
+  BProv B (a :: G) b -> BProv B G (fImp a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [ exact hL | ].
+  apply P_impI.
+  apply (Prov_weaken (L ++ a :: G) b hp).
+  intros x hx; mem.
+Qed.
+
+Lemma BProv_impI_after_prefix : forall (B : form -> Prop) Gamma Delta a b,
+  BProv B (Gamma ++ a :: Delta) b ->
+  BProv B (Gamma ++ Delta) (fImp a b).
+Proof.
+  intros B Gamma Delta a b [L [hL hp]].
+  exists L. split; [ exact hL | ].
+  apply P_impI.
+  apply (Prov_weaken (L ++ Gamma ++ a :: Delta) b hp).
+  intros x hx; mem.
+Qed.
+
+Lemma BProv_andI : forall (B : form -> Prop) G a b,
+  BProv B G a -> BProv B G b -> BProv B G (fAnd a b).
+Proof.
+  intros B G a b ha hb.
+  apply (BProv_derive B G (a :: b :: nil) (fAnd a b)).
+  - apply P_andI; apply P_ass; simpl; tauto.
+  - intros d [<- | [<- | []]]; assumption.
+Qed.
+
+Lemma BProv_botE : forall (B : form -> Prop) G a,
+  BProv B G fBot -> BProv B G a.
+Proof.
+  intros B G a [L [hL hp]].
+  exists L. split; [ exact hL | exact (P_botE (L ++ G) a hp) ].
+Qed.
+
+Lemma BProv_andE1 : forall (B : form -> Prop) G a b,
+  BProv B G (fAnd a b) -> BProv B G a.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [ exact hL | exact (P_andE1 (L ++ G) a b hp) ].
+Qed.
+
+Lemma BProv_andE2 : forall (B : form -> Prop) G a b,
+  BProv B G (fAnd a b) -> BProv B G b.
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [ exact hL | exact (P_andE2 (L ++ G) a b hp) ].
+Qed.
+
+Lemma BProv_orI1 : forall (B : form -> Prop) G a b,
+  BProv B G a -> BProv B G (fOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [ exact hL | exact (P_orI1 (L ++ G) a b hp) ].
+Qed.
+
+Lemma BProv_orI2 : forall (B : form -> Prop) G a b,
+  BProv B G b -> BProv B G (fOr a b).
+Proof.
+  intros B G a b [L [hL hp]].
+  exists L. split; [ exact hL | exact (P_orI2 (L ++ G) a b hp) ].
+Qed.
+
+Lemma BProv_orE_imp : forall (B : form -> Prop) G a b c,
+  BProv B G (fOr a b) ->
+  BProv B G (fImp a c) ->
+  BProv B G (fImp b c) ->
+  BProv B G c.
+Proof.
+  intros B G a b c hor ha hb.
+  apply (BProv_derive B G
+    (fOr a b :: fImp a c :: fImp b c :: nil) c).
+  - apply (Prov_orE_imp
+      (fOr a b :: fImp a c :: fImp b c :: nil) a b c);
+      apply P_ass; simpl; tauto.
+  - intros d [<- | [<- | [<- | []]]]; assumption.
+Qed.
+
+Lemma BProv_orE : forall (B : form -> Prop) G a b c,
+  BProv B G (fOr a b) ->
+  BProv B (a :: G) c ->
+  BProv B (b :: G) c ->
+  BProv B G c.
+Proof.
+  intros B G a b c hor ha hb.
+  apply (BProv_orE_imp B G a b c hor).
+  - apply BProv_impI. exact ha.
+  - apply BProv_impI. exact hb.
+Qed.
+
+Lemma BProv_orE_after_prefix : forall (B : form -> Prop) Gamma Delta a b c,
+  BProv B (Gamma ++ Delta) (fOr a b) ->
+  BProv B (Gamma ++ a :: Delta) c ->
+  BProv B (Gamma ++ b :: Delta) c ->
+  BProv B (Gamma ++ Delta) c.
+Proof.
+  intros B Gamma Delta a b c hor ha hb.
+  apply (BProv_orE_imp B (Gamma ++ Delta) a b c hor).
+  - apply BProv_impI_after_prefix. exact ha.
+  - apply BProv_impI_after_prefix. exact hb.
+Qed.
+
+Lemma BProv_allE : forall (B : form -> Prop) G a k,
+  BProv B G (fAll a) -> BProv B G (rename (inst k) a).
+Proof.
+  intros B G a k [L [hL hp]].
+  exists L. split; [ exact hL | exact (P_allE (L ++ G) a k hp) ].
+Qed.
+
+Lemma BProv_exI : forall (B : form -> Prop) G a k,
+  BProv B G (rename (inst k) a) -> BProv B G (fEx a).
+Proof.
+  intros B G a k [L [hL hp]].
+  exists L. split; [ exact hL | exact (P_exI (L ++ G) a k hp) ].
+Qed.
+
+Lemma map_rename_eq_of_sentences : forall (B : form -> Prop) L,
+  Sentences B ->
+  (forall x, In x L -> B x) ->
+  forall r, map (rename r) L = L.
+Proof.
+  intros B L. induction L as [|x xs IH]; intros hB hL r; simpl.
+  - reflexivity.
+  - rewrite (rename_eq_of_sentence x (hB x (hL x (or_introl eq_refl))) r).
+    rewrite (IH hB (fun y hy => hL y (or_intror hy)) r).
+    reflexivity.
+Qed.
+
+Lemma BProv_allI_of_sentences : forall (B : form -> Prop) G a,
+  Sentences B ->
+  BProv B (map (rename S) G) a ->
+  BProv B G (fAll a).
+Proof.
+  intros B G a hB [L [hL hp]].
+  pose proof (map_rename_eq_of_sentences B L hB hL S) as hLmap.
+  exists L. split; [ exact hL | ].
+  apply P_allI.
+  apply (Prov_weaken (L ++ map (rename S) G) a hp).
+  intros x hx. rewrite map_app, hLmap. exact hx.
+Qed.
+
+Lemma BProv_exE_of_sentences : forall (B : form -> Prop) G a c,
+  Sentences B ->
+  BProv B G (fEx a) ->
+  BProv B (a :: map (rename S) G) (rename S c) ->
+  BProv B G c.
+Proof.
+  intros B G a c hB [Le [hLe hpe]] [Lb [hLb hpb]].
+  pose proof (map_rename_eq_of_sentences B Lb hB hLb S) as hLbmap.
+  exists (Le ++ Lb). split.
+  - intros x hx. apply in_app_iff in hx. destruct hx as [hx | hx].
+    + exact (hLe x hx).
+    + exact (hLb x hx).
+  - apply (P_exE ((Le ++ Lb) ++ G) a c).
+    + apply (Prov_weaken (Le ++ G) (fEx a) hpe).
+      intros x hx.
+      apply in_app_iff in hx.
+      apply in_app_iff.
+      destruct hx as [hx | hx].
+      * left. apply in_app_iff. left. exact hx.
+      * right. exact hx.
+    + apply (Prov_weaken (Lb ++ a :: map (rename S) G) (rename S c) hpb).
+      intros x hx.
+      apply in_app_iff in hx.
+      simpl in hx.
+      simpl.
+      destruct hx as [hx | [hx | hx]].
+      * right.
+        rewrite map_app.
+        apply in_app_iff. left.
+        rewrite map_app.
+        apply in_app_iff. right.
+        rewrite hLbmap.
+        exact hx.
+      * left. exact hx.
+      * right.
+        rewrite map_app.
+        apply in_app_iff. right.
+        exact hx.
 Qed.
 
 Lemma stepB_pos_in : forall B L phi, BCon B (phi :: L) -> In phi (stepB B L phi).
