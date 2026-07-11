@@ -207,4 +207,3 @@ Proof.
            pa_term_graph_add := hadd;
            pa_term_graph_mul := hmul |}.
 Qed.
-
