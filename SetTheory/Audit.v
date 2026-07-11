@@ -14,6 +14,7 @@ From SetTheory Require Import BusyBeaverBB2Bridge BusyBeaverBB3Bridge
   BusyBeaverBB4Bridge BusyBeaverBB4Score BusyBeaverBB4ScoreComputation
   BusyBeaverBB4ScoreCertificate BusyBeaverBB4ScoreBridge.
 From SetTheory Require Import Forward Reverse RiemannHypothesis
+  PAHFOrdinalCodeMulCore PAHFOrdinalCodeTermMul
   PAHFConcreteAssembly.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
@@ -639,6 +640,11 @@ Check PAHFDeductiveBiInterpretationCertificate.
 Check PAHFFinDeductiveBiInterpretationCertificate.
 Check concreteTranslatedHFFinAxiomProofs.
 Check concretePAOrdinalCodeMulTermCompatibility.
+(** The multiplication induction is shared by the historical and corrected
+    core packages; the audit keeps that weaker, reusable boundary visible. *)
+Check PAOrdinalCodeMulOpenCoreForwardCompatibility_of_open.
+Check PAOrdinalCodeTermMulCompatibility_of_total_core_halves.
+Print Assumptions PAOrdinalCodeTermMulCompatibility_of_total_core_halves.
 Check concretePARoundTripProof.
 Check concreteHFRoundTripProof.
 Check paHFFinDeductiveBiInterpretation.

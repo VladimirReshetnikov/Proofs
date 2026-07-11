@@ -160,6 +160,17 @@ Definition PAOrdinalCodeMulOpenCoreForwardCompatibility : Prop :=
         (ordinalCodeGraphTermAt
           (tMul leftRaw rightRaw) (tVar (codedOut + 3)))).
 
+(** Forget the unsound reverse half of the historical open-core interface.
+    Keeping this projection named is useful at compatibility boundaries: the
+    structural term proof below needs only this forward implication, while
+    older callers may still package it as an [iffForm]. *)
+Definition PAOrdinalCodeMulOpenCoreForwardCompatibility_of_open
+    (hopen : PAOrdinalCodeMulOpenCoreCompatibility) :
+  PAOrdinalCodeMulOpenCoreForwardCompatibility :=
+  fun G leftRaw rightRaw codedOut hleft hright =>
+    BProv_andE1 Ax_s G _ _
+      (hopen G leftRaw rightRaw codedOut hleft hright).
+
 Record PAOrdinalCodeMulCoreProofsCorrected : Prop := {
   pa_mul_open_core_forward : PAOrdinalCodeMulOpenCoreForwardCompatibility;
   pa_mul_bound_core_exact : PAOrdinalCodeMulBoundCoreCompatibility
@@ -383,10 +394,7 @@ Definition PAOrdinalCodeMulCoreProofsCorrected_of_historical
   PAOrdinalCodeMulCoreProofsCorrected.
 Proof.
   constructor.
-  - intros G leftRaw rightRaw codedOut hleft hright.
-    pose proof (pa_mul_open_core P G leftRaw rightRaw codedOut
-      hleft hright) as hiff.
-    unfold iffForm in hiff.
-    exact (BProv_andE1 Ax_s G _ _ hiff).
+  - exact (PAOrdinalCodeMulOpenCoreForwardCompatibility_of_open
+      (pa_mul_open_core P)).
   - exact (pa_mul_bound_core P).
 Defined.

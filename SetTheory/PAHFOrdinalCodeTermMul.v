@@ -11,13 +11,14 @@ From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
   PAHFProofCalculus
   PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic
   PAHFRoundTripEquality PAHFOrdinalCodeTermCompatibility
-  PAHFOrdinalCodeTermOperations PAHFOrdinalCodeTermAdd.
+  PAHFOrdinalCodeTermOperations PAHFOrdinalCodeTermAdd
+  PAHFOrdinalCodeMulCore.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
 
 Lemma BProv_Ax_s_term_graph_mul_forward_of_shifted_operands : forall
-    (hcore : PAOrdinalCodeMulOpenCoreCompatibility)
+    (hcore : PAOrdinalCodeMulOpenCoreForwardCompatibility)
     G left right leftRaw rightRaw codedMap codedOut,
   BProv Ax_s
     (map (rename S) (map (rename S) (map (rename S) G)))
@@ -121,18 +122,7 @@ Proof.
     pose proof (hcore D
       (Term.rename (fun n => n + 3) leftRaw)
       (Term.rename (fun n => n + 3) rightRaw)
-      codedOut hleftGraph hrightGraph) as hcoreIff.
-    assert (hcoreForward : BProv Ax_s D
-        (pImp core
-          (ordinalCodeGraphTermAt
-            (tMul
-              (Term.rename (fun n => n + 3) leftRaw)
-              (Term.rename (fun n => n + 3) rightRaw))
-            (tVar (codedOut + 3))))).
-    {
-      unfold iffForm in hcoreIff.
-      exact (BProv_andE1 Ax_s D _ _ hcoreIff).
-    }
+      codedOut hleftGraph hrightGraph) as hcoreForward.
     pose proof (BProv_mp Ax_s D _ _ hcoreForward hcoreD) as htarget.
     unfold target.
     repeat rewrite rename_ordinalCodeGraphTermAt.
@@ -412,9 +402,10 @@ Proof.
   exact hcompositeC.
 Qed.
 
-Lemma BProv_Ax_s_term_graph_mul_of_shifted_operands : forall
+Lemma BProv_Ax_s_term_graph_mul_of_shifted_operands_core_halves : forall
     (htotal : PAOrdinalCodeGraphTotalProof)
-    (hcores : PAOrdinalCodeMulCoreProofs)
+    (hforward : PAOrdinalCodeMulOpenCoreForwardCompatibility)
+    (hbound : PAOrdinalCodeMulBoundCoreCompatibility)
     G left right leftRaw rightRaw codedMap codedOut,
   BProv Ax_s
     (map (rename S) (map (rename S) (map (rename S) G)))
@@ -434,26 +425,31 @@ Lemma BProv_Ax_s_term_graph_mul_of_shifted_operands : forall
       (ordinalCodeGraphTermAt
         (tMul leftRaw rightRaw) (tVar codedOut))).
 Proof.
-  intros htotal hcores G left right leftRaw rightRaw codedMap codedOut
+  intros htotal hforward hbound G left right leftRaw rightRaw codedMap codedOut
     hleft hright.
-  assert (hforward :=
+  assert (hforwardProof :=
     BProv_Ax_s_term_graph_mul_forward_of_shifted_operands
-      (pa_mul_open_core hcores)
+      hforward
       G left right leftRaw rightRaw codedMap codedOut hleft hright).
   assert (hreverse :=
     BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
-      htotal (pa_mul_bound_core hcores)
+      htotal hbound
       G left right leftRaw rightRaw codedMap codedOut hleft hright).
   unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (BProv_andI Ax_s G _ _ hforwardProof hreverse).
 Qed.
 
-Theorem PAOrdinalCodeTermMulCompatibility_of_total_cores :
+(** Structural multiplication needs two logically independent arithmetic
+    facts: the sound forward open core and the exact bound-output core.  This
+    theorem is the common assembly point for both the corrected interface and
+    the historical record that bundled an unnecessary open reverse half. *)
+Theorem PAOrdinalCodeTermMulCompatibility_of_total_core_halves :
   PAOrdinalCodeGraphTotalProof ->
-  PAOrdinalCodeMulCoreProofs ->
+  PAOrdinalCodeMulOpenCoreForwardCompatibility ->
+  PAOrdinalCodeMulBoundCoreCompatibility ->
   PAOrdinalCodeTermMulCompatibility.
 Proof.
-  intros htotal hcores left right ihleft ihrigh.
+  intros htotal hforward hbound left right ihleft ihrigh.
   intros G rawMap codedMap codedOut hcode.
   set (G3 := map (rename S) (map (rename S) (map (rename S) G))).
   set (rawMap3 := fun n => rawMap n + 3).
@@ -520,10 +516,56 @@ Proof.
     - rewrite Term.rename_comp.
       apply Term.rename_ext. intro n. reflexivity.
   }
-  pose proof (BProv_Ax_s_term_graph_mul_of_shifted_operands
-    htotal hcores G left right
+  pose proof (BProv_Ax_s_term_graph_mul_of_shifted_operands_core_halves
+    htotal hforward hbound G left right
     (Term.rename rawMap left) (Term.rename rawMap right)
     codedMap codedOut hleft hright) as hmul.
   cbn [Term.rename].
   exact hmul.
+Qed.
+
+(** Backward-compatible wrapper for the historical core record. *)
+Lemma BProv_Ax_s_term_graph_mul_of_shifted_operands : forall
+    (htotal : PAOrdinalCodeGraphTotalProof)
+    (hcores : PAOrdinalCodeMulCoreProofs)
+    G left right leftRaw rightRaw codedMap codedOut,
+  BProv Ax_s
+    (map (rename S) (map (rename S) (map (rename S) G)))
+    (iffForm
+      (compositeTermGraphAt 1 (fun n => codedMap n + 3) left)
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n => n + 3) leftRaw) (tVar 1))) ->
+  BProv Ax_s
+    (map (rename S) (map (rename S) (map (rename S) G)))
+    (iffForm
+      (compositeTermGraphAt 2 (fun n => codedMap n + 3) right)
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n => n + 3) rightRaw) (tVar 2))) ->
+  BProv Ax_s G
+    (iffForm
+      (compositeTermGraphAt codedOut codedMap (tMul left right))
+      (ordinalCodeGraphTermAt
+        (tMul leftRaw rightRaw) (tVar codedOut))).
+Proof.
+  intros htotal hcores.
+  exact (BProv_Ax_s_term_graph_mul_of_shifted_operands_core_halves
+    htotal
+    (PAOrdinalCodeMulOpenCoreForwardCompatibility_of_open
+      (pa_mul_open_core hcores))
+    (pa_mul_bound_core hcores)).
+Qed.
+
+(** The historical record remains supported by forgetting its unused open
+    reverse implication before entering the common structural proof. *)
+Theorem PAOrdinalCodeTermMulCompatibility_of_total_cores :
+  PAOrdinalCodeGraphTotalProof ->
+  PAOrdinalCodeMulCoreProofs ->
+  PAOrdinalCodeTermMulCompatibility.
+Proof.
+  intros htotal hcores.
+  exact (PAOrdinalCodeTermMulCompatibility_of_total_core_halves
+    htotal
+    (PAOrdinalCodeMulOpenCoreForwardCompatibility_of_open
+      (pa_mul_open_core hcores))
+    (pa_mul_bound_core hcores)).
 Qed.
