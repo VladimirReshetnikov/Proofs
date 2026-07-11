@@ -1,8 +1,7 @@
 (* ===================================================================== *)
 (*  PAHFConcreteAssembly.v                                              *)
 (*                                                                       *)
-(*  Concrete deductive PA/HFFin assembly, with the sole remaining       *)
-(*  arithmetic argument isolated to term-parametric multiplication.      *)
+(*  Concrete deductive PA/HFFin assembly.                               *)
 (* ===================================================================== *)
 
 From Stdlib Require Import List.
@@ -16,7 +15,7 @@ From SetTheory Require Import
   PAHFAdjoinTotal PAHFTranslatedAdjoin
   PAHFTranslatedExtensionality PAHFTranslatedFiniteInduction
   PAHFOrdinalCodeFunctional PAHFOrdinalCodeRangeArithmetic
-  PAHFOrdinalCodeTermBase PAHFOrdinalCodeAddCore
+  PAHFOrdinalCodeTermBase PAHFOrdinalCodeAddCore PAHFOrdinalCodeMulTerm
   PAHFRoundTripArithmeticAssembly
   PAHFOrdinalCodeMulCore PAHFOrdinalCodeTermMulCorrected.
 
@@ -84,6 +83,15 @@ Definition concretePAOrdinalCodeAddCoreCompatibility :
     concretePAOrdinalCodeSuccAdjoinCompatibility
     concretePAOrdinalCodeGraphTotalProof.
 
+Definition concretePAOrdinalCodeMulTermCompatibility :
+    PAOrdinalCodeMulTermCompatibility :=
+  PAOrdinalCodeMulTermCompatibility_of_interfaces
+    concreteTranslatedHFFinAxiomProofs
+    concretePAOrdinalCodeGraphCodomainProof
+    concretePAOrdinalCodeGraphFunctionalProof
+    concretePAOrdinalCodeSuccAdjoinCompatibility
+    concretePAOrdinalCodeGraphTotalProof.
+
 (** The HF-side round trip no longer has any residual arithmetic input. *)
 Definition concreteHFRoundTripProof : HFRoundTripProof :=
   HFRoundTripProof_of_translation_composite_arithmetic
@@ -96,24 +104,21 @@ Definition concreteHFRoundTripProof : HFRoundTripProof :=
       (PAHFCompositeAdjoinExistenceProof_of_total
         concretePAHFAdjoinExistence)).
 
-(** Sound final assembly from the exact multiplication compatibility theorem.
-    The corrected multiplication bridge never assumes the invalid reverse
+(** The corrected multiplication bridge never assumes the invalid reverse
     direction for a core with an unbound local output slot. *)
-Definition concretePARoundTripProof_of_mulTerm
-    (hmulTerm : PAOrdinalCodeMulTermCompatibility) :
-    PARoundTripProof :=
+Definition concretePARoundTripProof : PARoundTripProof :=
   PARoundTripProof_of_arithmetic_inputs_corrected
     concreteTranslatedHFFinAxiomProofs
     concretePAHFMembershipExtensionalityProof
     concretePAHFAdjoinExistence
     concretePAOrdinalCodeAddCoreCompatibility
-    (PAOrdinalCodeMulCoreProofsCorrected_of_term hmulTerm).
+    (PAOrdinalCodeMulCoreProofsCorrected_of_term
+      concretePAOrdinalCodeMulTermCompatibility).
 
-Definition paHFFinDeductiveBiInterpretation_of_mulTerm
-    (hmulTerm : PAOrdinalCodeMulTermCompatibility) :
+Definition paHFFinDeductiveBiInterpretation :
     PAHFFinDeductiveBiInterpretationCertificate :=
   paHFFinDeductiveBiInterpretation_of_proofs
     HFFinPAProofTranslation_raw_semantic
     concreteTranslatedHFFinAxiomProofs
-    (concretePARoundTripProof_of_mulTerm hmulTerm)
+    concretePARoundTripProof
     concreteHFRoundTripProof.

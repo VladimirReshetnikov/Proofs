@@ -12,7 +12,8 @@ From SetTheory Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues
 From SetTheory Require Import BusyBeaverBB2Bridge BusyBeaverBB3Bridge
   BusyBeaverBB4Bridge BusyBeaverBB4Score BusyBeaverBB4ScoreComputation
   BusyBeaverBB4ScoreCertificate BusyBeaverBB4ScoreBridge.
-From SetTheory Require Import Forward Reverse RiemannHypothesis.
+From SetTheory Require Import Forward Reverse RiemannHypothesis
+  PAHFConcreteAssembly.
 
 (* Full deductive equivalence between the Closure axiomatization and ZF. *)
 Check T_iff_ZF.
@@ -627,6 +628,12 @@ Check paIdentityInterpretationOfAxiomProofs.
 Check DeductiveBiInterpretationCertificate.
 Check PAHFDeductiveBiInterpretationCertificate.
 Check PAHFFinDeductiveBiInterpretationCertificate.
+Check concreteTranslatedHFFinAxiomProofs.
+Check concretePAOrdinalCodeMulTermCompatibility.
+Check concretePARoundTripProof.
+Check concreteHFRoundTripProof.
+Check paHFFinDeductiveBiInterpretation.
+Print Assumptions paHFFinDeductiveBiInterpretation.
 Check StandardModelInterpretationCertificateFor.
 Check StandardModelHFInterpretationCertificate.
 Check StandardModelFiniteInterpretationCertificate.
