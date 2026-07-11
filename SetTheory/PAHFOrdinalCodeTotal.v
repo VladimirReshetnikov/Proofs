@@ -7,7 +7,7 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Lia List.
-From SetTheory Require Import Fol PAHF PAHFOrdinalCode.
+From SetTheory Require Import Fol PAHF PAHFProofCalculus PAHFOrdinalCode.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
@@ -577,16 +577,8 @@ Proof.
       pose proof (BProv_andE1 Ax_s C _ _ htail) as hnext.
       pose proof (BProv_andE2 Ax_s C _ _ htail) as hadjoin.
 
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-        hagreement S) as hagreementRen1.
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        (map (rename S) G) _ hagreementRen1 S) as hagreementRen2.
-      pose proof (BProv_context_cons Ax_s
-        (map (rename S) (map (rename S) G))
-        (rename S (pEx body)) _ hagreementRen2) as hagreementCtx1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (pEx body) :: map (rename S) (map (rename S) G))
-        body _ hagreementCtx1) as hagreementC.
+      pose proof (BProv_lift_two_opened_of_sentences
+        Ax_s sentence_ax_s G body _ hagreement) as hagreementC.
       change (BProv Ax_s C
         (rename S (rename S
           (betaPrefixAgreementTermAt oldCode newCode step bound))))
@@ -597,32 +589,16 @@ Proof.
         (betaPrefixAgreementTermAt oldCode2 newCode2 step2 bound2))
         in hagreementC.
 
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-        hltCurrent S) as hltCurrentRen1.
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        (map (rename S) G) _ hltCurrentRen1 S) as hltCurrentRen2.
-      pose proof (BProv_context_cons Ax_s
-        (map (rename S) (map (rename S) G))
-        (rename S (pEx body)) _ hltCurrentRen2) as hltCurrentCtx1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (pEx body) :: map (rename S) (map (rename S) G))
-        body _ hltCurrentCtx1) as hltCurrentC.
+      pose proof (BProv_lift_two_opened_of_sentences
+        Ax_s sentence_ax_s G body _ hltCurrent) as hltCurrentC.
       change (BProv Ax_s C
         (rename S (rename S (ltTermAt index bound))))
         in hltCurrentC.
       rewrite rename_succ_twice_ltTermAt in hltCurrentC.
       change (BProv Ax_s C (ltTermAt index2 bound2)) in hltCurrentC.
 
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-        hltNext S) as hltNextRen1.
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        (map (rename S) G) _ hltNextRen1 S) as hltNextRen2.
-      pose proof (BProv_context_cons Ax_s
-        (map (rename S) (map (rename S) G))
-        (rename S (pEx body)) _ hltNextRen2) as hltNextCtx1.
-      pose proof (BProv_context_cons Ax_s
-        (rename S (pEx body) :: map (rename S) (map (rename S) G))
-        body _ hltNextCtx1) as hltNextC.
+      pose proof (BProv_lift_two_opened_of_sentences
+        Ax_s sentence_ax_s G body _ hltNext) as hltNextC.
       change (BProv Ax_s C
         (rename S (rename S (ltTermAt (tSucc index) bound))))
         in hltNextC.

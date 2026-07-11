@@ -7,7 +7,8 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Lia List.
-From SetTheory Require Import Fol PAHF PAHFOrdinalCode PAHFOrdinalCodeTotal.
+From SetTheory Require Import Fol PAHF PAHFProofCalculus
+  PAHFOrdinalCode PAHFOrdinalCodeTotal.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
@@ -1234,16 +1235,8 @@ Proof.
       product2, modulus2.
     simpl. left. reflexivity.
   }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hprefix S) as hprefixRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hprefixRen1 S) as hprefixRen2.
-  pose proof (BProv_context_cons Ax_s
-    (map (rename S) (map (rename S) G))
-    (rename S quotEx) _ hprefixRen2) as hprefixCtx1.
-  pose proof (BProv_context_cons Ax_s
-    (rename S quotEx :: map (rename S) (map (rename S) G))
-    certBody _ hprefixCtx1) as hprefixD.
+  pose proof (BProv_lift_two_contexts_of_sentences
+    Ax_s sentence_ax_s G quotEx certBody _ hprefix) as hprefixD.
   change (BProv Ax_s D
     (rename S (rename S
       (betaPrefixDividesTermAt step target product)))) in hprefixD.
@@ -1251,16 +1244,8 @@ Proof.
   change (BProv Ax_s D
     (betaPrefixDividesTermAt step2 target2 product2)) in hprefixD.
 
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hnewBound S) as hboundRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hboundRen1 S) as hboundRen2.
-  pose proof (BProv_context_cons Ax_s
-    (map (rename S) (map (rename S) G))
-    (rename S quotEx) _ hboundRen2) as hboundCtx1.
-  pose proof (BProv_context_cons Ax_s
-    (rename S quotEx :: map (rename S) (map (rename S) G))
-    certBody _ hboundCtx1) as hboundD.
+  pose proof (BProv_lift_two_contexts_of_sentences
+    Ax_s sentence_ax_s G quotEx certBody _ hnewBound) as hboundD.
   change (BProv Ax_s D
     (rename S (rename S (ltTermAt newOut modulus)))) in hboundD.
   rewrite rename_succ_twice_ltTermAt in hboundD.

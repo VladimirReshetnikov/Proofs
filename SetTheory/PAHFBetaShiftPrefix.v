@@ -10,7 +10,7 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import
-  Fol PAHF PAHFOrdinalCode PAHFOrdinalCodeTotal
+  Fol PAHF PAHFProofCalculus PAHFOrdinalCode PAHFOrdinalCodeTotal
   PAHFOrdinalCodeTotalCapacity PAHFOrdinalCodeTotalInduction.
 
 Import ListNotations.
@@ -587,65 +587,32 @@ Proof.
     rewrite term_rename_succ_twice_add_two in hraw.
     exact hraw.
   }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hprefix S) as hprefixRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hprefixRen1 S) as hprefixRen2.
-  rewrite rename_betaShiftPrefixTermAt in hprefixRen2.
-  rewrite rename_betaShiftPrefixTermAt in hprefixRen2.
-  repeat rewrite term_rename_succ_twice_add_two in hprefixRen2.
+  pose proof (BProv_lift_two_contexts_of_sentences
+    Ax_s sentence_ax_s G outerAntecedent oldEntry _ hprefix) as hprefixD0.
+  rewrite rename_betaShiftPrefixTermAt in hprefixD0.
+  rewrite rename_betaShiftPrefixTermAt in hprefixD0.
+  repeat rewrite term_rename_succ_twice_add_two in hprefixD0.
   assert (hprefixD : BProv Ax_s D
       (betaShiftPrefixTermAt oldCode2 oldStep2
         currentCode2 newStep2 bound2)).
-  {
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (map (rename S) G))
-      (rename S outerAntecedent) _ hprefixRen2) as h1.
-    pose proof (BProv_context_cons Ax_s
-      (rename S outerAntecedent :: map (rename S) (map (rename S) G))
-      oldEntry _ h1) as h2.
-    unfold D, C.
-    exact h2.
-  }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hext S) as hextRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hextRen1 S) as hextRen2.
-  rewrite rename_betaCodeExtensionTermAt in hextRen2.
-  rewrite rename_betaCodeExtensionTermAt in hextRen2.
-  repeat rewrite term_rename_succ_twice_add_two in hextRen2.
+  { unfold D, C in hprefixD0. exact hprefixD0. }
+  pose proof (BProv_lift_two_contexts_of_sentences
+    Ax_s sentence_ax_s G outerAntecedent oldEntry _ hext) as hextD0.
+  rewrite rename_betaCodeExtensionTermAt in hextD0.
+  rewrite rename_betaCodeExtensionTermAt in hextD0.
+  repeat rewrite term_rename_succ_twice_add_two in hextD0.
   assert (hextD : BProv Ax_s D
       (betaCodeExtensionTermAt currentCode2 newStep2 bound2
         sourceOut2 extendedCode2)).
-  {
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (map (rename S) G))
-      (rename S outerAntecedent) _ hextRen2) as h1.
-    pose proof (BProv_context_cons Ax_s
-      (rename S outerAntecedent :: map (rename S) (map (rename S) G))
-      oldEntry _ h1) as h2.
-    unfold D, C.
-    exact h2.
-  }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hsource S) as hsourceRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hsourceRen1 S) as hsourceRen2.
-  rewrite rename_betaTermTermAt in hsourceRen2.
-  rewrite rename_betaTermTermAt in hsourceRen2.
-  repeat rewrite term_rename_succ_twice_add_two in hsourceRen2.
+  { unfold D, C in hextD0. exact hextD0. }
+  pose proof (BProv_lift_two_contexts_of_sentences
+    Ax_s sentence_ax_s G outerAntecedent oldEntry _ hsource) as hsourceD0.
+  rewrite rename_betaTermTermAt in hsourceD0.
+  rewrite rename_betaTermTermAt in hsourceD0.
+  repeat rewrite term_rename_succ_twice_add_two in hsourceD0.
   assert (hsourceD : BProv Ax_s D
       (betaTermTermAt sourceOut2 oldCode2 oldStep2 (tSucc bound2))).
-  {
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (map (rename S) G))
-      (rename S outerAntecedent) _ hsourceRen2) as h1.
-    pose proof (BProv_context_cons Ax_s
-      (rename S outerAntecedent :: map (rename S) (map (rename S) G))
-      oldEntry _ h1) as h2.
-    unfold D, C.
-    exact h2.
-  }
+  { unfold D, C in hsourceD0. exact hsourceD0. }
   pose proof
     (BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_extension
       D oldCode2 oldStep2 currentCode2 newStep2 bound2 sourceOut2
@@ -796,54 +763,32 @@ Proof.
     rewrite term_rename_succ_twice_add_two in hraw.
     exact hraw.
   }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hprefix S) as hprefixRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hprefixRen1 S) as hprefixRen2.
-  rewrite rename_betaShiftPrefixTermAt in hprefixRen2.
-  rewrite rename_betaShiftPrefixTermAt in hprefixRen2.
-  repeat rewrite term_rename_succ_twice_add_two in hprefixRen2.
+  pose proof (BProv_lift_two_contexts_of_sentences
+    Ax_s sentence_ax_s G outerAntecedent oldEntry _ hprefix) as hprefixD0.
+  rewrite rename_betaShiftPrefixTermAt in hprefixD0.
+  rewrite rename_betaShiftPrefixTermAt in hprefixD0.
+  repeat rewrite term_rename_succ_twice_add_two in hprefixD0.
   assert (hprefixD : BProv Ax_s D
       (betaShiftPrefixTermAt oldCode2 oldStep2
         currentCode2 newStep2 bound2)).
-  {
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (map (rename S) G))
-      (rename S outerAntecedent) _ hprefixRen2) as h1.
-    pose proof (BProv_context_cons Ax_s
-      (rename S outerAntecedent :: map (rename S) (map (rename S) G))
-      oldEntry _ h1) as h2.
-    unfold D, C.
-    exact h2.
-  }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hnone S) as hnoneRen1.
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-    (map (rename S) G) _ hnoneRen1 S) as hnoneRen2.
-  change (BProv Ax_s (map (rename S) (map (rename S) G))
+  { unfold D, C in hprefixD0. exact hprefixD0. }
+  pose proof (BProv_lift_two_contexts_of_sentences
+    Ax_s sentence_ax_s G outerAntecedent oldEntry _ hnone) as hnoneD0.
+  change (BProv Ax_s D
     (pImp
       (rename S (rename S
         (betaShiftSourceEntryExistsTermAt
           oldCode oldStep (tSucc bound))))
-      pBot)) in hnoneRen2.
-  rewrite rename_betaShiftSourceEntryExistsTermAt in hnoneRen2.
-  rewrite rename_betaShiftSourceEntryExistsTermAt in hnoneRen2.
-  repeat rewrite term_rename_succ_twice_add_two in hnoneRen2.
+      pBot)) in hnoneD0.
+  rewrite rename_betaShiftSourceEntryExistsTermAt in hnoneD0.
+  rewrite rename_betaShiftSourceEntryExistsTermAt in hnoneD0.
+  repeat rewrite term_rename_succ_twice_add_two in hnoneD0.
   assert (hnoneD : BProv Ax_s D
       (pImp
         (betaShiftSourceEntryExistsTermAt
           oldCode2 oldStep2 (tSucc bound2))
         pBot)).
-  {
-    pose proof (BProv_context_cons Ax_s
-      (map (rename S) (map (rename S) G))
-      (rename S outerAntecedent) _ hnoneRen2) as h1.
-    pose proof (BProv_context_cons Ax_s
-      (rename S outerAntecedent :: map (rename S) (map (rename S) G))
-      oldEntry _ h1) as h2.
-    unfold D, C.
-    exact h2.
-  }
+  { unfold D, C in hnoneD0. exact hnoneD0. }
   pose proof
     (BProv_Ax_s_betaShiftPrefixTermAt_succ_entry_of_not_exists
       D oldCode2 oldStep2 currentCode2 newStep2 bound2
