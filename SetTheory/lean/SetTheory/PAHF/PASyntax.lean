@@ -3014,6 +3014,18 @@ def betaTermTermAt (out code step idx : Term) : Formula :=
     (remTermTermAt (Term.rename Nat.succ out)
       (Term.rename Nat.succ code) (Term.var 0)))
 
+theorem subst_betaTermTermAt
+    (sigma : Nat → Term) (out code step index : Term) :
+    subst sigma (betaTermTermAt out code step index) =
+      betaTermTermAt
+        (Term.subst sigma out)
+        (Term.subst sigma code)
+        (Term.subst sigma step)
+        (Term.subst sigma index) := by
+  simp [betaTermTermAt, betaModTermTerm, remTermTermAt,
+    ltTermAt, subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
 /-- Existence of some output for a fully term-parametric beta entry.  This is
 only the quantified relation; no division-totality theorem is built into it.
 -/
@@ -13630,6 +13642,98 @@ theorem BProv_Ax_s_betaTermTermAt_crtExtend_successor_new
     (modulus := Term.succ modulusPred)
     (BProv_eqRefl (B := Ax_s) (G := G) (Term.succ modulusPred)) hrem
 
+/-- Simultaneously transport the output, code, and beta modulus of a fully
+term-parametric beta entry.  The background theory is completely generic. -/
+theorem BProv_betaTermTermAt_congr_modulus
+    {B : Formula → Prop} {G : List Formula}
+    {out₁ out₂ code₁ code₂ step₁ idx₁ step₂ idx₂ : Term}
+    (hout : BProv B G (eq out₁ out₂))
+    (hcode : BProv B G (eq code₁ code₂))
+    (hmod : BProv B G
+      (eq (betaModTermTerm step₁ idx₁)
+        (betaModTermTerm step₂ idx₂)))
+    (hβ : BProv B G (betaTermTermAt out₁ code₁ step₁ idx₁)) :
+    BProv B G (betaTermTermAt out₂ code₂ step₂ idx₂) := by
+  let outputBody : Formula :=
+    betaTermTermAt (Term.var 0)
+      (Term.rename Nat.succ code₁)
+      (Term.rename Nat.succ step₁)
+      (Term.rename Nat.succ idx₁)
+  have houtputOld : BProv B G (subst (instTerm out₁) outputBody) := by
+    simpa [outputBody, subst_betaTermTermAt, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hβ
+  have houtputNew : BProv B G (subst (instTerm out₂) outputBody) :=
+    BProv_eqElim (B := B) (G := G)
+      (s := out₁) (t := out₂) (a := outputBody) hout houtputOld
+  have hβoutput : BProv B G
+      (betaTermTermAt out₂ code₁ step₁ idx₁) := by
+    simpa [outputBody, subst_betaTermTermAt, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using houtputNew
+  let codeBody : Formula :=
+    betaTermTermAt (Term.rename Nat.succ out₂)
+      (Term.var 0)
+      (Term.rename Nat.succ step₁)
+      (Term.rename Nat.succ idx₁)
+  have hcodeOld : BProv B G (subst (instTerm code₁) codeBody) := by
+    simpa [codeBody, subst_betaTermTermAt, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hβoutput
+  have hcodeNew : BProv B G (subst (instTerm code₂) codeBody) :=
+    BProv_eqElim (B := B) (G := G)
+      (s := code₁) (t := code₂) (a := codeBody) hcode hcodeOld
+  have hβcode : BProv B G
+      (betaTermTermAt out₂ code₂ step₁ idx₁) := by
+    simpa [codeBody, subst_betaTermTermAt, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hcodeNew
+  let modulusBody : Formula :=
+    ex (and
+      (eq (Term.var 0) (Term.var 1))
+      (remTermTermAt
+        (Term.rename (fun n => n+2) out₂)
+        (Term.rename (fun n => n+2) code₂)
+        (Term.var 0)))
+  have hmodulusOld : BProv B G
+      (subst (instTerm (betaModTermTerm step₁ idx₁)) modulusBody) := by
+    simpa [modulusBody, betaTermTermAt, remTermTermAt, ltTermAt,
+      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ,
+      term_subst_upSubst_instTerm_rename_two_succ,
+      term_subst_up_up_instTerm_rename_three_succ,
+      term_subst_up_up_instTerm_rename_two_var_zero,
+      term_subst_up_up_instTerm_rename_four_succ] using hβcode
+  have hmodulusNew : BProv B G
+      (subst (instTerm (betaModTermTerm step₂ idx₂)) modulusBody) :=
+    BProv_eqElim (B := B) (G := G)
+      (s := betaModTermTerm step₁ idx₁)
+      (t := betaModTermTerm step₂ idx₂)
+      (a := modulusBody) hmod hmodulusOld
+  simpa [modulusBody, betaTermTermAt, remTermTermAt, ltTermAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.subst_rename_succ_up,
+    term_subst_instTerm_rename_succ,
+    term_subst_upSubst_instTerm_rename_two_succ,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_instTerm_rename_two_var_zero,
+    term_subst_up_up_instTerm_rename_four_succ] using hmodulusNew
+
+/-- Coordinatewise congruence for fully term-parametric beta entries. -/
+theorem BProv_betaTermTermAt_congr
+    {B : Formula → Prop} {G : List Formula}
+    {out₁ out₂ code₁ code₂ step₁ step₂ idx₁ idx₂ : Term}
+    (hout : BProv B G (eq out₁ out₂))
+    (hcode : BProv B G (eq code₁ code₂))
+    (hstep : BProv B G (eq step₁ step₂))
+    (hidx : BProv B G (eq idx₁ idx₂))
+    (hβ : BProv B G (betaTermTermAt out₁ code₁ step₁ idx₁)) :
+    BProv B G (betaTermTermAt out₂ code₂ step₂ idx₂) := by
+  have hmod : BProv B G
+      (eq (betaModTermTerm step₁ idx₁)
+        (betaModTermTerm step₂ idx₂)) := by
+    simpa [betaModTermTerm] using
+      BProv_eq_congr_succ (BProv_eq_congr_mul
+        (BProv_eq_congr_succ hidx) hstep)
+  exact BProv_betaTermTermAt_congr_modulus hout hcode hmod hβ
+
 /-- Transport the output of a fully term-parametric beta entry across a PA
 equality.  This keeps equality transport as proof data rather than hiding it in
 the beta relation itself. -/
@@ -13637,25 +13741,9 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_output
     {G : List Formula} {oldOut newOut code step idx : Term}
     (hout : BProv Ax_s G (eq oldOut newOut))
     (hbeta : BProv Ax_s G (betaTermTermAt oldOut code step idx)) :
-    BProv Ax_s G (betaTermTermAt newOut code step idx) := by
-  let a : Formula :=
-    betaTermTermAt (Term.var 0)
-      (Term.rename Nat.succ code) (Term.rename Nat.succ step)
-      (Term.rename Nat.succ idx)
-  have hold : BProv Ax_s G (subst (instTerm oldOut) a) := by
-    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ] using hbeta
-  have hnew : BProv Ax_s G (subst (instTerm newOut) a) :=
-    BProv_eqElim (B := Ax_s) (G := G)
-      (s := oldOut) (t := newOut) (a := a) hout hold
-  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-    Term.subst_rename_succ_up,
-    term_subst_instTerm_rename_succ,
-    term_subst_instTerm_rename_two_succ] using hnew
+    BProv Ax_s G (betaTermTermAt newOut code step idx) :=
+  BProv_betaTermTermAt_congr hout
+    (BProv_eqRefl code) (BProv_eqRefl step) (BProv_eqRefl idx) hbeta
 
 /-- Transport the code of a fully term-parametric beta entry across a PA
 equality. -/
@@ -13663,24 +13751,10 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_code
     {G : List Formula} {out oldCode newCode step idx : Term}
     (hcode : BProv Ax_s G (eq oldCode newCode))
     (hbeta : BProv Ax_s G (betaTermTermAt out oldCode step idx)) :
-    BProv Ax_s G (betaTermTermAt out newCode step idx) := by
-  let a : Formula :=
-    betaTermTermAt (Term.rename Nat.succ out)
-      (Term.var 0) (Term.rename Nat.succ step) (Term.rename Nat.succ idx)
-  have hold : BProv Ax_s G (subst (instTerm oldCode) a) := by
-    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ] using hbeta
-  have hnew : BProv Ax_s G (subst (instTerm newCode) a) :=
-    BProv_eqElim (B := Ax_s) (G := G)
-      (s := oldCode) (t := newCode) (a := a) hcode hold
-  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-    Term.subst_rename_succ_up,
-    term_subst_instTerm_rename_succ,
-    term_subst_instTerm_rename_two_succ] using hnew
+    BProv Ax_s G (betaTermTermAt out newCode step idx) :=
+  BProv_betaTermTermAt_congr
+    (BProv_eqRefl out) hcode
+    (BProv_eqRefl step) (BProv_eqRefl idx) hbeta
 
 /-- Transport the step of a fully term-parametric beta entry across a PA
 equality. -/
@@ -13688,22 +13762,10 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_step
     {G : List Formula} {out code oldStep newStep idx : Term}
     (hstep : BProv Ax_s G (eq oldStep newStep))
     (hbeta : BProv Ax_s G (betaTermTermAt out code oldStep idx)) :
-    BProv Ax_s G (betaTermTermAt out code newStep idx) := by
-  let a : Formula :=
-    betaTermTermAt (Term.rename Nat.succ out)
-      (Term.rename Nat.succ code) (Term.var 0) (Term.rename Nat.succ idx)
-  have hold : BProv Ax_s G (subst (instTerm oldStep) a) := by
-    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ] using hbeta
-  have hnew : BProv Ax_s G (subst (instTerm newStep) a) :=
-    BProv_eqElim (B := Ax_s) (G := G)
-      (s := oldStep) (t := newStep) (a := a) hstep hold
-  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-    Term.subst_rename_succ_up,
-    term_subst_instTerm_rename_succ] using hnew
+    BProv Ax_s G (betaTermTermAt out code newStep idx) :=
+  BProv_betaTermTermAt_congr
+    (BProv_eqRefl out) (BProv_eqRefl code)
+    hstep (BProv_eqRefl idx) hbeta
 
 /-- Transport the index of a fully term-parametric beta entry across a PA
 equality. -/
@@ -13711,22 +13773,10 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_index
     {G : List Formula} {out code step oldIdx newIdx : Term}
     (hidx : BProv Ax_s G (eq oldIdx newIdx))
     (hbeta : BProv Ax_s G (betaTermTermAt out code step oldIdx)) :
-    BProv Ax_s G (betaTermTermAt out code step newIdx) := by
-  let a : Formula :=
-    betaTermTermAt (Term.rename Nat.succ out)
-      (Term.rename Nat.succ code) (Term.rename Nat.succ step) (Term.var 0)
-  have hold : BProv Ax_s G (subst (instTerm oldIdx) a) := by
-    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ] using hbeta
-  have hnew : BProv Ax_s G (subst (instTerm newIdx) a) :=
-    BProv_eqElim (B := Ax_s) (G := G)
-      (s := oldIdx) (t := newIdx) (a := a) hidx hold
-  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-    Term.subst_rename_succ_up,
-    term_subst_instTerm_rename_succ] using hnew
+    BProv Ax_s G (betaTermTermAt out code step newIdx) :=
+  BProv_betaTermTermAt_congr
+    (BProv_eqRefl out) (BProv_eqRefl code)
+    (BProv_eqRefl step) hidx hbeta
 
 /-- Transport a fully term-parametric beta entry between step/index pairs
 whose beta modulus terms are PA-provably equal.
@@ -13742,38 +13792,9 @@ theorem BProv_Ax_s_betaTermTermAt_of_eq_modulus
         (betaModTermTerm newStep newIdx)))
     (hbeta : BProv Ax_s G
       (betaTermTermAt out code oldStep oldIdx)) :
-    BProv Ax_s G (betaTermTermAt out code newStep newIdx) := by
-  let a : Formula :=
-    ex (and
-      (eq (Term.var 0) (Term.var 1))
-      (remTermTermAt
-        (Term.rename (fun n => n+2) out)
-        (Term.rename (fun n => n+2) code)
-        (Term.var 0)))
-  have hold : BProv Ax_s G
-      (subst (instTerm (betaModTermTerm oldStep oldIdx)) a) := by
-    simpa [a, betaTermTermAt, remTermTermAt, ltTermAt,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      term_subst_up_up_instTerm_rename_two_var_zero,
-      term_subst_up_up_instTerm_rename_four_succ] using hbeta
-  have hnew : BProv Ax_s G
-      (subst (instTerm (betaModTermTerm newStep newIdx)) a) :=
-    BProv_eqElim (B := Ax_s) (G := G)
-      (s := betaModTermTerm oldStep oldIdx)
-      (t := betaModTermTerm newStep newIdx)
-      (a := a) hmod hold
-  simpa [a, betaTermTermAt, remTermTermAt, ltTermAt,
-    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-    Term.subst_rename_succ_up,
-    term_subst_instTerm_rename_succ,
-    term_subst_upSubst_instTerm_rename_two_succ,
-    term_subst_up_up_instTerm_rename_three_succ,
-    term_subst_up_up_instTerm_rename_two_var_zero,
-    term_subst_up_up_instTerm_rename_four_succ] using hnew
+    BProv Ax_s G (betaTermTermAt out code newStep newIdx) :=
+  BProv_betaTermTermAt_congr_modulus
+    (BProv_eqRefl out) (BProv_eqRefl code) hmod hbeta
 
 /-- Reindex a beta entry at literal index `1` to literal index `0` by doubling
 the step while leaving the code and output unchanged.
@@ -24512,16 +24533,11 @@ theorem BProv_Ax_s_eq_of_betaTermTermAt_eqConst_entry
     (hidx : BProv Ax_s G (eq idx (Term.numeral i)))
     (hentry : BetaEntry c s i o) :
     BProv Ax_s G (eq out (Term.numeral o)) := by
-  have hcodeBeta : BProv Ax_s G
-      (betaTermTermAt out (Term.numeral c) step idx) :=
-    BProv_Ax_s_betaTermTermAt_of_eq_code hcode hbeta
-  have hstepBeta : BProv Ax_s G
-      (betaTermTermAt out (Term.numeral c) (Term.numeral s) idx) :=
-    BProv_Ax_s_betaTermTermAt_of_eq_step hstep hcodeBeta
   have hidxBeta : BProv Ax_s G
       (betaTermTermAt out (Term.numeral c) (Term.numeral s)
         (Term.numeral i)) :=
-    BProv_Ax_s_betaTermTermAt_of_eq_index hidx hstepBeta
+    BProv_betaTermTermAt_congr
+      (BProv_eqRefl out) hcode hstep hidx hbeta
   have hclosed : BProv Ax_s G
       (betaTermTermAt (Term.numeral o) (Term.numeral c)
         (Term.numeral s) (Term.numeral i)) :=
@@ -24610,24 +24626,9 @@ theorem BProv_Ax_s_betaTermTermAt_of_shift_tail_entry_eq
       (betaTermTermAt (Term.numeral o) (Term.numeral newCode)
         (Term.numeral newStep) (Term.numeral i)) :=
     BProv_Ax_s_betaTermTermAt_numeral_entry (G := G) hnewEntry
-  have hnewOut : BProv Ax_s G
-      (betaTermTermAt out (Term.numeral newCode)
-        (Term.numeral newStep) (Term.numeral i)) :=
-    BProv_Ax_s_betaTermTermAt_of_eq_output
-      (BProv_eqSym hout) hclosedNew
-  have hnewCode' : BProv Ax_s G
-      (betaTermTermAt out newCodeTerm
-        (Term.numeral newStep) (Term.numeral i)) :=
-    BProv_Ax_s_betaTermTermAt_of_eq_code
-      (BProv_eqSym hNewCode) hnewOut
-  have hnewStep' : BProv Ax_s G
-      (betaTermTermAt out newCodeTerm newStepTerm
-        (Term.numeral i)) :=
-    BProv_Ax_s_betaTermTermAt_of_eq_step
-      (BProv_eqSym hNewStep) hnewCode'
-  exact
-    BProv_Ax_s_betaTermTermAt_of_eq_index
-      (BProv_eqSym hNewIdx) hnewStep'
+  exact BProv_betaTermTermAt_congr
+    (BProv_eqSym hout) (BProv_eqSym hNewCode)
+    (BProv_eqSym hNewStep) (BProv_eqSym hNewIdx) hclosedNew
 
 /- Build the inner output-universal shifted-tail implication at one closed
 index.
@@ -26095,18 +26096,15 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
                 (twoEntryBetaCodeTerm cur2 next2)
                 (twoEntryBetaStepTerm cur2 next2) Term.zero) :=
             BProv_Ax_s_twoEntryBetaTerm_zero cur2 next2
-          have hnewOut : BProv Ax_s L
-              (betaTermTermAt (Term.var 0)
-                (twoEntryBetaCodeTerm cur2 next2)
-                (twoEntryBetaStepTerm cur2 next2) Term.zero) :=
-            BProv_Ax_s_betaTermTermAt_of_eq_output
-              (BProv_eqSym hout) hnewCur
           have hnewIdx : BProv Ax_s L
               (betaTermTermAt (Term.var 0)
                 (twoEntryBetaCodeTerm cur2 next2)
                 (twoEntryBetaStepTerm cur2 next2) (Term.var 1)) :=
-            BProv_Ax_s_betaTermTermAt_of_eq_index
-              (BProv_eqSym hidx) hnewOut
+            BProv_betaTermTermAt_congr
+              (BProv_eqSym hout)
+              (BProv_eqRefl (twoEntryBetaCodeTerm cur2 next2))
+              (BProv_eqRefl (twoEntryBetaStepTerm cur2 next2))
+              (BProv_eqSym hidx) hnewCur
           simpa [L, D, C, leHyp, newBeta, cur2, next2,
             twoEntryBetaCodeTerm, twoEntryBetaStepTerm,
             Term.rename, Term.rename_comp] using hnewIdx
@@ -26139,19 +26137,15 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
                 (twoEntryBetaStepTerm cur2 next2)
                 (Term.succ Term.zero)) :=
             BProv_Ax_s_twoEntryBetaTerm_one cur2 next2
-          have hnewOut : BProv Ax_s R
-              (betaTermTermAt (Term.var 0)
-                (twoEntryBetaCodeTerm cur2 next2)
-                (twoEntryBetaStepTerm cur2 next2)
-                (Term.succ Term.zero)) :=
-            BProv_Ax_s_betaTermTermAt_of_eq_output
-              (BProv_eqSym hout) hnewNext
           have hnewIdx : BProv Ax_s R
               (betaTermTermAt (Term.var 0)
                 (twoEntryBetaCodeTerm cur2 next2)
                 (twoEntryBetaStepTerm cur2 next2) (Term.var 1)) :=
-            BProv_Ax_s_betaTermTermAt_of_eq_index
-              (BProv_eqSym hidx) hnewOut
+            BProv_betaTermTermAt_congr
+              (BProv_eqSym hout)
+              (BProv_eqRefl (twoEntryBetaCodeTerm cur2 next2))
+              (BProv_eqRefl (twoEntryBetaStepTerm cur2 next2))
+              (BProv_eqSym hidx) hnewNext
           simpa [R, D, C, leHyp, newBeta, cur2, next2,
             twoEntryBetaCodeTerm, twoEntryBetaStepTerm,
             Term.rename, Term.rename_comp] using hnewIdx
@@ -48689,18 +48683,6 @@ def ordinalCodeGraphTermAt (raw coded : Term) : Formula :=
 
 def ordinalCodeGraphAt (raw coded : Nat) : Formula :=
   ordinalCodeGraphTermAt (Term.var raw) (Term.var coded)
-
-theorem subst_betaTermTermAt
-    (sigma : Nat → Term) (out code step index : Term) :
-    subst sigma (betaTermTermAt out code step index) =
-      betaTermTermAt
-        (Term.subst sigma out)
-        (Term.subst sigma code)
-        (Term.subst sigma step)
-        (Term.subst sigma index) := by
-  simp [betaTermTermAt, betaModTermTerm, remTermTermAt,
-    ltTermAt, subst, Term.subst, Term.upSubst,
-    Term.subst_rename_succ_up]
 
 theorem rename_betaTermTermAt
     (r : Nat → Nat) (out code step index : Term) :

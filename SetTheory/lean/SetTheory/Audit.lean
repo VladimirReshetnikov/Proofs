@@ -46,6 +46,9 @@ open SetTheory
 #check @BProv_lift
 #check @BProv_cut
 #check @BProv_derive
+#check @BProv_rule1
+#check @BProv_rule2
+#check @Tinf_mp
 #check @BProv_theory_mono
 #check @BProv_eqElim
 #check @BProv_eqSym
@@ -833,6 +836,8 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_remTermTermAt_of_betaTermTermAt
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_preserve
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_crtExtend_new
+#check @PA.Formula.BProv_betaTermTermAt_congr_modulus
+#check @PA.Formula.BProv_betaTermTermAt_congr
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_output
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_code
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_step

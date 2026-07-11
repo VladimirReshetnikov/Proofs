@@ -54,6 +54,9 @@ Check BProv_ass.
 Check BProv_bound_list.
 Check BProv_lift.
 Check BProv_derive.
+Check BProv_rule1.
+Check BProv_rule2.
+Check Tinf_mp.
 Check BProv_eqElim.
 Check BProv_eqSym.
 Check BProv_eqTrans.
@@ -389,6 +392,8 @@ Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_modulus_one_square.
 Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one_value.
 Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_one.
 Check PA.Formula.BProv_Ax_s_twoEntryBetaTerm_entries.
+Check PA.Formula.BProv_betaTermTermAt_congr_modulus.
+Check PA.Formula.BProv_betaTermTermAt_congr.
 Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_output.
 Check PA.Formula.BProv_Ax_s_betaTermTermAt_of_eq_index.
 Check PA.Formula.BProv_Ax_s_betaShiftTailThroughTermAt_zero_bound.

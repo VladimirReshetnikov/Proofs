@@ -547,21 +547,6 @@ Proof.
     lia.
 Qed.
 
-Lemma subst_betaTermTermAt : forall sigma out code step index,
-  subst sigma (betaTermTermAt out code step index) =
-    betaTermTermAt
-      (Term.subst sigma out)
-      (Term.subst sigma code)
-      (Term.subst sigma step)
-      (Term.subst sigma index).
-Proof.
-  intros sigma out code step index.
-  unfold betaTermTermAt, betaModTermTerm, remTermTermAt, ltTermAt.
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
-Qed.
-
 Lemma rename_betaTermTermAt : forall r out code step index,
   rename r (betaTermTermAt out code step index) =
     betaTermTermAt
