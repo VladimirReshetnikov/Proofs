@@ -93,9 +93,6 @@ def squarefreeTermAt (n : Term) : Formula :=
 
 /-! ## PA certificates for small arithmetic facts -/
 
-theorem Ax_s_sentences : Sentences Ax_s :=
-  fun f hf => sentence_ax_s (f := f) hf
-
 theorem term_subst_upSubst_instTerm_rename_two_succ_exact
     (t u : Term) :
     Term.subst (Term.upSubst (instTerm u))
