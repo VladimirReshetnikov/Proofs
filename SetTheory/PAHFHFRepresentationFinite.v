@@ -32,40 +32,24 @@ Lemma ModelSetOrdinalRepRelationsCompatibilityLaw_of_uniqueness :
     ModelSetOrdinalRepRelationsCompatibilityLaw M.
 Proof.
   intros V M hfunctional hinjective left right hleft hright.
-  assert (leftRep : forall set code,
-      foam_mem V M (foam_kpair_obj V M set code) left ->
+  assert (eitherRep : forall set code,
+      (foam_mem V M (foam_kpair_obj V M set code) left \/
+       foam_mem V M (foam_kpair_obj V M set code) right) ->
         ModelSetOrdinalRep M set code).
   {
-    intros set code hroot.
-    exists left. now split.
-  }
-  assert (rightRep : forall set code,
-      foam_mem V M (foam_kpair_obj V M set code) right ->
-        ModelSetOrdinalRep M set code).
-  {
-    intros set code hroot.
-    exists right. now split.
+    intros set code [hroot | hroot].
+    - exists left. now split.
+    - exists right. now split.
   }
   split.
   - intros set leftCode rightCode hleftRoot hrightRoot.
     exact (hfunctional set leftCode rightCode
-      (leftRep set leftCode hleftRoot)
-      (rightRep set rightCode hrightRoot)).
+      (eitherRep set leftCode (or_introl hleftRoot))
+      (eitherRep set rightCode (or_intror hrightRoot))).
   - intros leftSet rightSet code hleftSet hrightSet.
-    destruct hleftSet as [hleftRoot | hrightRoot];
-    destruct hrightSet as [hleftRoot' | hrightRoot'].
-    + exact (hinjective leftSet rightSet code
-        (leftRep leftSet code hleftRoot)
-        (leftRep rightSet code hleftRoot')).
-    + exact (hinjective leftSet rightSet code
-        (leftRep leftSet code hleftRoot)
-        (rightRep rightSet code hrightRoot')).
-    + exact (hinjective leftSet rightSet code
-        (rightRep leftSet code hrightRoot)
-        (leftRep rightSet code hleftRoot')).
-    + exact (hinjective leftSet rightSet code
-        (rightRep leftSet code hrightRoot)
-        (rightRep rightSet code hrightRoot')).
+    exact (hinjective leftSet rightSet code
+      (eitherRep leftSet code hleftSet)
+      (eitherRep rightSet code hrightSet)).
 Qed.
 
 Lemma ModelSetOrdinalRepMergeLaw_iff_uniqueness :

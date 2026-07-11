@@ -2870,7 +2870,7 @@ def ModelSetOrdinalRepMergeLaw
 
 /-! ## Finite-model merging of independently chosen representation graphs -/
 
-private theorem mergeModelSetOrdinalRep_changeEnv
+theorem ModelSetOrdinalRep_changeEnv
     {α : Type u} (M : FirstOrderAdjunctionModel α)
     {e e' : Nat → α} {set code : α}
     (h : ModelSetOrdinalRep M e set code) :
@@ -2879,7 +2879,7 @@ private theorem mergeModelSetOrdinalRep_changeEnv
   exact ⟨relation, hroot,
     ModelSetOrdinalRepCertificate_changeEnv M hcertificate⟩
 
-private def mergeCanonicalRepEnv
+def canonicalRepEnv
     {α : Type u} (M : FirstOrderAdjunctionModel α) : Nat → α :=
   fun _ => M.empty
 
@@ -3107,33 +3107,23 @@ theorem ModelSetOrdinalRepRelationsCompatibilityLaw_of_uniqueness
     ModelSetOrdinalRepRelationsCompatibilityLaw M := by
   intro leftEnv rightEnv left right hleft hright
   let rootEnv : Nat → α := fun _ => M.empty
-  have leftRep : ∀ {set code},
-      M.mem (FirstOrderAdjunctionModel.kpair M set code) left →
+  have eitherRep : ∀ {set code},
+      (M.mem (FirstOrderAdjunctionModel.kpair M set code) left ∨
+        M.mem (FirstOrderAdjunctionModel.kpair M set code) right) →
         ModelSetOrdinalRep M rootEnv set code := by
     intro set code hroot
-    exact ⟨left, hroot,
-      ModelSetOrdinalRepCertificate_changeEnv M hleft⟩
-  have rightRep : ∀ {set code},
-      M.mem (FirstOrderAdjunctionModel.kpair M set code) right →
-        ModelSetOrdinalRep M rootEnv set code := by
-    intro set code hroot
-    exact ⟨right, hroot,
-      ModelSetOrdinalRepCertificate_changeEnv M hright⟩
+    rcases hroot with hroot | hroot
+    · exact ⟨left, hroot,
+        ModelSetOrdinalRepCertificate_changeEnv M hleft⟩
+    · exact ⟨right, hroot,
+        ModelSetOrdinalRepCertificate_changeEnv M hright⟩
   refine ⟨?_, ?_⟩
   · intro set leftCode rightCode hleftRoot hrightRoot
     exact hfunctional rootEnv set leftCode rightCode
-      (leftRep hleftRoot) (rightRep hrightRoot)
+      (eitherRep (Or.inl hleftRoot)) (eitherRep (Or.inr hrightRoot))
   · intro leftSet rightSet code hleftSet hrightSet
-    rcases hleftSet with hleftRoot | hrightRoot <;>
-      rcases hrightSet with hleftRoot' | hrightRoot'
-    · exact hinjective rootEnv leftSet rightSet code
-        (leftRep hleftRoot) (leftRep hleftRoot')
-    · exact hinjective rootEnv leftSet rightSet code
-        (leftRep hleftRoot) (rightRep hrightRoot')
-    · exact hinjective rootEnv leftSet rightSet code
-        (rightRep hrightRoot) (leftRep hleftRoot')
-    · exact hinjective rootEnv leftSet rightSet code
-        (rightRep hrightRoot) (rightRep hrightRoot')
+    exact hinjective rootEnv leftSet rightSet code
+      (eitherRep hleftSet) (eitherRep hrightSet)
 
 /-- In a finite adjunction model, the published merge law contains exactly the
 two global uniqueness directions and no additional representation content. -/
@@ -3171,7 +3161,7 @@ theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
     fAll (fAll
       (fImp (HF_setOrdinalRepAt 2 0)
         (fImp (HF_setOrdinalRepAt 1 0) (fEq 2 1))))
-  let tail : Nat → α := mergeCanonicalRepEnv M
+  let tail : Nat → α := canonicalRepEnv M
   have hind := M.induction_schema phi tail
   have hall : ∀ set₁, Sat M.mem (scons set₁ tail) phi := by
     apply hind
@@ -3226,10 +3216,10 @@ theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
       let EI : Nat → α :=
         scons memberCode (scons other (scons member tail))
       have hmemberRep : ModelSetOrdinalRep M EI member memberCode :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₁, hmemberRoot₁, hcert₁⟩
       have hotherRep : ModelSetOrdinalRep M EI other memberCode :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₂, hotherRoot₂, hcert₂⟩
       have hmemberRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
         (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
@@ -3278,10 +3268,10 @@ theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
       let EI : Nat → α :=
         scons memberCode (scons member (scons other tail))
       have hotherRep : ModelSetOrdinalRep M EI other memberCode :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₁, hotherRoot₁, hcert₁⟩
       have hmemberRep : ModelSetOrdinalRep M EI member memberCode :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₂, hmemberRoot₂, hcert₂⟩
       have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
         (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
@@ -3298,9 +3288,9 @@ theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
   have hmain : Sat M.mem (scons set₁ tail) phi := hall set₁
   let E : Nat → α := scons code (scons set₂ (scons set₁ tail))
   have hrep₁' : ModelSetOrdinalRep M E set₁ code :=
-    mergeModelSetOrdinalRep_changeEnv M hrep₁
+    ModelSetOrdinalRep_changeEnv M hrep₁
   have hrep₂' : ModelSetOrdinalRep M E set₂ code :=
-    mergeModelSetOrdinalRep_changeEnv M hrep₂
+    ModelSetOrdinalRep_changeEnv M hrep₂
   have hrep₁Sat : Sat M.mem E (HF_setOrdinalRepAt 2 0) :=
     (HF_setOrdinalRepAt_model M E 2 0).mpr (by
       simpa [E, scons] using hrep₁')
@@ -3335,7 +3325,7 @@ theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
     fAll (fAll
       (fImp (HF_setOrdinalRepAt 2 1)
         (fImp (HF_setOrdinalRepAt 2 0) (fEq 1 0))))
-  let tail : Nat → α := mergeCanonicalRepEnv M
+  let tail : Nat → α := canonicalRepEnv M
   have hind := M.induction_schema phi tail
   have hall : ∀ set, Sat M.mem (scons set tail) phi := by
     apply hind
@@ -3391,10 +3381,10 @@ theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
       let EI : Nat → α :=
         scons otherCode (scons query (scons member tail))
       have hqueryRep : ModelSetOrdinalRep M EI member query :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₁, hmemberRoot₁, hcert₁⟩
       have hotherRep : ModelSetOrdinalRep M EI member otherCode :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₂, hmemberRoot₂, hcert₂⟩
       have hqueryRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 1) :=
         (HF_setOrdinalRepAt_model M EI 2 1).mpr (by
@@ -3444,10 +3434,10 @@ theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
       let EI : Nat → α :=
         scons query (scons otherCode (scons member tail))
       have hotherRep : ModelSetOrdinalRep M EI member otherCode :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₁, hmemberRoot₁, hcert₁⟩
       have hqueryRep : ModelSetOrdinalRep M EI member query :=
-        mergeModelSetOrdinalRep_changeEnv M
+        ModelSetOrdinalRep_changeEnv M
           ⟨relation₂, hmemberRoot₂, hcert₂⟩
       have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 1) :=
         (HF_setOrdinalRepAt_model M EI 2 1).mpr (by
@@ -3464,9 +3454,9 @@ theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
   have hmain : Sat M.mem (scons set tail) phi := hall set
   let E : Nat → α := scons code₂ (scons code₁ (scons set tail))
   have hrep₁' : ModelSetOrdinalRep M E set code₁ :=
-    mergeModelSetOrdinalRep_changeEnv M hrep₁
+    ModelSetOrdinalRep_changeEnv M hrep₁
   have hrep₂' : ModelSetOrdinalRep M E set code₂ :=
-    mergeModelSetOrdinalRep_changeEnv M hrep₂
+    ModelSetOrdinalRep_changeEnv M hrep₂
   have hrep₁Sat : Sat M.mem E (HF_setOrdinalRepAt 2 1) :=
     (HF_setOrdinalRepAt_model M E 2 1).mpr (by
       simpa [E, scons] using hrep₁')
@@ -4049,19 +4039,6 @@ theorem ModelSetOrdinalRep_adjoin_exact
             helemRep hresultChildRep
         simpa [hqueryElem, ← hcodeEq] using hresultChildBit
   simpa [N, hresultCodeEq] using hresultRep
-
-theorem ModelSetOrdinalRep_changeEnv
-    {α : Type u} (M : FirstOrderAdjunctionModel α)
-    {e e' : Nat → α} {set code : α}
-    (h : ModelSetOrdinalRep M e set code) :
-    ModelSetOrdinalRep M e' set code := by
-  rcases h with ⟨relation, hroot, hcert⟩
-  exact ⟨relation, hroot,
-    ModelSetOrdinalRepCertificate_changeEnv M hcert⟩
-
-def canonicalRepEnv {α : Type u}
-    (M : FirstOrderAdjunctionModel α) : Nat → α :=
-  fun _ => M.empty
 
 def HasSetOrdinalRep {α : Type u}
     (M : FirstOrderAdjunctionModel α) (set : α) : Prop :=
