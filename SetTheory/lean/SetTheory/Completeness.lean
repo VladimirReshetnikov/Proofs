@@ -193,6 +193,12 @@ theorem D_eq {x y : D T} (h : x.val = y.val) : x = y := Subtype.ext h
 theorem mkD_proj (h : MCHT T) (x : D T) : mkD h x.val = x :=
   Subtype.ext x.property
 
+private theorem canonical_scons (h : MCHT T) (d : D T) (k : Nat)
+    (s : Nat → Nat) (hd : d = mkD h k) : ∀ n,
+    scons d (fun i => mkD h (s i)) n =
+      (fun i => mkD h (scons_nat k s i)) n :=
+  fun n => match n with | 0 => hd | _+1 => rfl
+
 /-- The truth lemma, by structural induction on the formula with the
 substitution generalized (the quantifier cases recurse on the body at a
 consed substitution, via `rename_inst_up`): under the canonical variable
@@ -247,21 +253,14 @@ theorem truth (h : MCHT T) :
       intro k
       rw [rename_inst_up a1 k s]
       apply (IH (scons_nat k s)).mp
-      have hpt : ∀ n0, scons (mkD h k) (fun i => mkD h (s i)) n0
-          = (fun i => mkD h (scons_nat k s i)) n0 := by
-        intro n0; cases n0 <;> rfl
-      exact (Sat_ext a1 _ _ hpt).mp (HSat (mkD h k))
+      exact (Sat_ext a1 _ _ (canonical_scons h (mkD h k) k s rfl)).mp
+        (HSat (mkD h k))
     · intro HT d
       have hk := (T_all_iff h (rename (up s) a1)).mp HT d.val
       rw [rename_inst_up a1 d.val s] at hk
       have hk' := (IH (scons_nat d.val s)).mpr hk
-      have hpt : ∀ n0, (fun i => mkD h (scons_nat d.val s i)) n0
-          = scons d (fun i => mkD h (s i)) n0 := by
-        intro n0
-        cases n0 with
-        | zero => exact mkD_proj h d
-        | succ m => rfl
-      exact (Sat_ext a1 _ _ hpt).mp hk'
+      exact (Sat_ext a1 _ _
+        (canonical_scons h d d.val s (mkD_proj h d).symm)).mpr hk'
   | fEx a1 IH =>
     intro s
     show (∃ d, Sat (memD T) (scons d _) a1) ↔ T (fEx (rename (up s) a1))
@@ -271,22 +270,14 @@ theorem truth (h : MCHT T) :
       refine ⟨d.val, ?_⟩
       rw [rename_inst_up a1 d.val s]
       apply (IH (scons_nat d.val s)).mp
-      have hpt : ∀ n0, scons d (fun i => mkD h (s i)) n0
-          = (fun i => mkD h (scons_nat d.val s i)) n0 := by
-        intro n0
-        cases n0 with
-        | zero => exact (mkD_proj h d).symm
-        | succ m => rfl
-      exact (Sat_ext a1 _ _ hpt).mp HSat
+      exact (Sat_ext a1 _ _
+        (canonical_scons h d d.val s (mkD_proj h d).symm)).mp HSat
     · intro HT
       obtain ⟨k, hk⟩ := (T_ex_iff h (rename (up s) a1)).mp HT
       rw [rename_inst_up a1 k s] at hk
       have hk' := (IH (scons_nat k s)).mpr hk
       refine ⟨mkD h k, ?_⟩
-      have hpt : ∀ n0, (fun i => mkD h (scons_nat k s i)) n0
-          = scons (mkD h k) (fun i => mkD h (s i)) n0 := by
-        intro n0; cases n0 <;> rfl
-      exact (Sat_ext a1 _ _ hpt).mp hk'
+      exact (Sat_ext a1 _ _ (canonical_scons h (mkD h k) k s rfl)).mpr hk'
 
 /-- Canonical assignment: satisfaction matches `T` outright. -/
 theorem truth_id (h : MCHT T) (a : Form) :
@@ -1090,18 +1081,35 @@ theorem model_of_con (G0 : List Form) (hG0 : Con G0) :
       (fun hbad => hG0 ((BProv_empty G0 fBot).mp hbad))
   exact ⟨Dom, m, v, hsatL⟩
 
+/-- Shared countermodel kernel for finite and sentence-theory completeness. -/
+private theorem completeness_inf_context_core (B : Form → Prop)
+    (G : List Form) (psi : Form) (hB : Sentences B)
+    (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+      (∀ g, B g → Sat m v g) →
+      (∀ g, g ∈ G → Sat m v g) →
+      Sat m v psi) :
+    BProv B G psi := by
+  apply Classical.byContradiction
+  intro hnp
+  have hBcon : BCon B (fImp psi fBot :: G) := by
+    intro ⟨Gb, hGb, hbad⟩
+    apply hnp
+    refine ⟨Gb, hGb, ?_⟩
+    apply Prov_byContra
+    exact Prov_exch (G := Gb ++ (fImp psi fBot :: G)) (by mem_tac) hbad
+  obtain ⟨Dom, m, v, hsatB, hsatL⟩ :=
+    model_of_BCon B (fImp psi fBot :: G) hB hBcon
+  exact (hsatL (fImp psi fBot) (by simp))
+    (hval Dom m v hsatB (fun g hg => hsatL g (by simp [hg])))
+
 /-- COMPLETENESS: validity in all models implies provability. -/
 theorem completeness (G : List Form) (phi : Form)
     (hval : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
       (∀ g ∈ G, Sat m v g) → Sat m v phi) :
     Prov G phi := by
-  apply Classical.byContradiction
-  intro hnp
-  have hcon : Con (fImp phi fBot :: G) := fun hbad => hnp (Prov_byContra hbad)
-  obtain ⟨Dom, m, v, hsat⟩ := model_of_con (fImp phi fBot :: G) hcon
-  have hphi : Sat m v phi := hval Dom m v (fun g hg => hsat g (by simp [hg]))
-  have hnphi : Sat m v (fImp phi fBot) := hsat _ (by simp)
-  exact hnphi hphi
+  apply (BProv_empty G phi).mp
+  exact completeness_inf_context_core (fun _ => False) G phi
+    (fun _ hf => hf.elim) (fun Dom m v _ hG => hval Dom m v hG)
 
 /-- SOUNDNESS + COMPLETENESS: provability coincides with validity. -/
 theorem prov_iff_valid (G : List Form) (phi : Form) :
@@ -1123,21 +1131,8 @@ theorem completeness_inf_context (B : Form → Prop) (G : List Form) (psi : Form
       (∀ g, B g → Sat m v g) →
       (∀ g, g ∈ G → Sat m v g) →
       Sat m v psi) :
-    BProv B G psi := by
-  apply Classical.byContradiction
-  intro hnp
-  have hBcon : BCon B (fImp psi fBot :: G) := by
-    intro ⟨Gb, hGb, hbad⟩
-    apply hnp
-    refine ⟨Gb, hGb, ?_⟩
-    apply Prov_byContra
-    exact Prov_exch (G := Gb ++ (fImp psi fBot :: G)) (by mem_tac) hbad
-  obtain ⟨Dom, m, v, hsatB, hsatL⟩ :=
-    model_of_BCon B (fImp psi fBot :: G) hB hBcon
-  have hp : Sat m v psi :=
-    hval Dom m v hsatB (fun g hg => hsatL g (by simp [hg]))
-  have hnpv : Sat m v (fImp psi fBot) := hsatL _ (by simp)
-  exact hnpv hp
+    BProv B G psi :=
+  completeness_inf_context_core B G psi hB hval
 
 /-- INFINITE COMPLETENESS: the historical empty-context interface.
 The target-sentence premise is retained for compatibility; the stronger

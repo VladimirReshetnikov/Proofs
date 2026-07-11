@@ -184,6 +184,12 @@ Section CanonicalModel.
   Lemma mkD_proj : forall x : D, mkD (proj1_sig x) = x.
   Proof. intro x. destruct x as [v pv]. apply D_eq. simpl. exact pv. Qed.
 
+  Local Lemma canonical_scons :
+    forall (d : D) k (s : nat -> nat), d = mkD k -> forall n,
+      scons D d (fun i => mkD (s i)) n =
+      (fun i => mkD (scons_nat k s i)) n.
+  Proof. intros d k s Hd [| n]; cbn; [ exact Hd | reflexivity ]. Qed.
+
   (* The truth lemma, by structural induction on the formula with the        *)
   (* substitution generalized (the quantifier cases recurse on the body at a *)
   (* consed substitution, via rename_inst_up): under the canonical variable  *)
@@ -221,34 +227,25 @@ Section CanonicalModel.
       + intros HSat. apply (proj2 (T_all_iff (rename (up s) a1))). intro k.
         rewrite (rename_inst_up a1 k s).
         apply (proj1 (IH (scons_nat k s))).
-        assert (Hpt : forall n0, scons D (mkD k) (fun i => mkD (s i)) n0
-                                 = (fun i => mkD (scons_nat k s i)) n0).
-        { intro n0; destruct n0; reflexivity. }
-        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). apply (HSat (mkD k)).
+        exact (proj1 (Sat_ext D memD a1 _ _ (canonical_scons (mkD k) k s eq_refl))
+                 (HSat (mkD k))).
       + intros HT d.
         pose proof (proj1 (T_all_iff (rename (up s) a1)) HT (proj1_sig d)) as Hk.
         rewrite (rename_inst_up a1 (proj1_sig d) s) in Hk.
         apply (proj2 (IH (scons_nat (proj1_sig d) s))) in Hk.
-        assert (Hpt : forall n0, (fun i => mkD (scons_nat (proj1_sig d) s i)) n0
-                                 = scons D d (fun i => mkD (s i)) n0).
-        { intro n0; destruct n0; simpl; [ apply mkD_proj | reflexivity ]. }
-        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact Hk.
+        exact (proj2 (Sat_ext D memD a1 _ _
+                 (canonical_scons d (proj1_sig d) s (eq_sym (mkD_proj d)))) Hk).
     - (* fEx *) simpl. split.
       + intros [d HSat]. apply (proj2 (T_ex_iff (rename (up s) a1))).
         exists (proj1_sig d). rewrite (rename_inst_up a1 (proj1_sig d) s).
         apply (proj1 (IH (scons_nat (proj1_sig d) s))).
-        assert (Hpt : forall n0, scons D d (fun i => mkD (s i)) n0
-                                 = (fun i => mkD (scons_nat (proj1_sig d) s i)) n0).
-        { intro n0; destruct n0; simpl; [ symmetry; apply mkD_proj | reflexivity ]. }
-        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact HSat.
+        exact (proj1 (Sat_ext D memD a1 _ _
+                 (canonical_scons d (proj1_sig d) s (eq_sym (mkD_proj d)))) HSat).
       + intro HT. destruct (proj1 (T_ex_iff (rename (up s) a1)) HT) as [k Hk].
         rewrite (rename_inst_up a1 k s) in Hk.
         apply (proj2 (IH (scons_nat k s))) in Hk.
         exists (mkD k).
-        assert (Hpt : forall n0, (fun i => mkD (scons_nat k s i)) n0
-                                 = scons D (mkD k) (fun i => mkD (s i)) n0).
-        { intro n0; destruct n0; reflexivity. }
-        apply (proj1 (Sat_ext D memD a1 _ _ Hpt)). exact Hk.
+        exact (proj2 (Sat_ext D memD a1 _ _ (canonical_scons (mkD k) k s eq_refl)) Hk).
   Qed.
 
   (* canonical assignment: satisfaction matches T outright *)
@@ -1059,6 +1056,27 @@ Proof.
   exists Dom, m, v. exact HsatL.
 Qed.
 
+(* Shared countermodel kernel for finite and sentence-theory completeness. *)
+Local Lemma completeness_inf_context_core :
+  forall B G psi, Sentences B ->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, B g -> Sat Dom m v g) ->
+       (forall g, In g G -> Sat Dom m v g) ->
+       Sat Dom m v psi) ->
+    BProv B G psi.
+Proof.
+  intros B G psi HB Hval.
+  apply NNPP. intro Hnp.
+  assert (HBcon : BCon B (fImp psi fBot :: G)).
+  { intros [Gb [HGb Hbad]]. apply Hnp. exists Gb. split; [ exact HGb | ].
+    apply Prov_byContra.
+    apply (Prov_exch (Gb ++ fImp psi fBot :: G)); [ intro x; mem | exact Hbad ]. }
+  destruct (model_of_BCon B (fImp psi fBot :: G) HB HBcon)
+    as [Dom [m [v [HsatB HsatL]]]].
+  exact (HsatL _ (or_introl eq_refl)
+           (Hval Dom m v HsatB (fun g hg => HsatL g (or_intror hg)))).
+Qed.
+
 (* COMPLETENESS: validity in all models implies provability. *)
 Theorem completeness :
   forall G phi,
@@ -1066,14 +1084,11 @@ Theorem completeness :
        (forall g, In g G -> Sat Dom m v g) -> Sat Dom m v phi) ->
     Prov G phi.
 Proof.
-  intros G phi Hval. apply NNPP. intro Hnp.
-  assert (Hcon : Con (fImp phi fBot :: G)).
-  { intro Hbad. apply Hnp. apply Prov_byContra. exact Hbad. }
-  destruct (model_of_con (fImp phi fBot :: G) Hcon) as [Dom [m [v Hsat]]].
-  assert (Hphi : Sat Dom m v phi).
-  { apply Hval. intros g Hg. apply Hsat. right. exact Hg. }
-  assert (Hnphi : Sat Dom m v (fImp phi fBot)) by (apply Hsat; left; reflexivity).
-  simpl in Hnphi. exact (Hnphi Hphi).
+  intros G phi Hval.
+  apply (proj1 (BProv_empty G phi)).
+  apply (completeness_inf_context_core (fun _ => False) G phi).
+  - intros f Hf. destruct Hf.
+  - intros Dom m v _ HG. exact (Hval Dom m v HG).
 Qed.
 
 (* SOUNDNESS + COMPLETENESS: provability coincides with validity. *)
@@ -1098,38 +1113,7 @@ Theorem completeness_inf_context :
        (forall g, In g G -> Sat Dom m v g) ->
        Sat Dom m v psi) ->
     BProv B G psi.
-Proof.
-  intros B G psi HB Hval.
-  apply NNPP. intro Hnp.
-  assert (HBcon : BCon B (fImp psi fBot :: G)).
-  {
-    intros [Gb [HGb Hbad]].
-    apply Hnp.
-    exists Gb.
-    split; [ exact HGb | ].
-    apply Prov_byContra.
-    apply (Prov_exch (Gb ++ fImp psi fBot :: G)).
-    - intro x; mem.
-    - exact Hbad.
-  }
-  destruct (model_of_BCon B (fImp psi fBot :: G) HB HBcon)
-    as [Dom [m [v [HsatB HsatL]]]].
-  assert (Hp : Sat Dom m v psi).
-  {
-    apply Hval.
-    - exact HsatB.
-    - intros g hg.
-      apply HsatL.
-      right. exact hg.
-  }
-  assert (Hnpv : Sat Dom m v (fImp psi fBot)).
-  {
-    apply HsatL.
-    left. reflexivity.
-  }
-  simpl in Hnpv.
-  exact (Hnpv Hp).
-Qed.
+Proof. exact completeness_inf_context_core. Qed.
 
 (* INFINITE COMPLETENESS: the historical empty-context interface.  The target
    sentence premise is retained for compatibility, although the stronger
