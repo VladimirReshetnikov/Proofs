@@ -3207,36 +3207,24 @@ theorem BProv_Ax_s_ordinalCodeTotalCapacityTermAt_succ
       (Term.var 1) (Term.var 0)
   have holdEx : BProv Ax_s G (ex (ex pairBody)) := by
     simpa [ordinalCodeTotalCapacityTermAt, pairBody] using holdTotal
-  have houter : BProv Ax_s
-      (ex pairBody :: G.map (rename Nat.succ))
-      (rename Nat.succ goal) := by
-    let G1 : List Formula := ex pairBody :: G.map (rename Nat.succ)
-    have hinnerEx : BProv Ax_s G1 (ex pairBody) :=
-      BProv_ass (B := Ax_s) (G := G1) (by simp [G1])
-    have hinner : BProv Ax_s
-        (pairBody :: G1.map (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ goal)) := by
-      let C : List Formula := pairBody :: G1.map (rename Nat.succ)
-      let raw2 : Term := Term.rename (fun n => n + 2) raw
-      have hcapacity : BProv Ax_s C
-          (ordinalCodeTraceCapacityTermAt
-            raw2 (Term.var 1) (Term.var 0)) := by
-        simpa [C, pairBody, raw2] using
-          (BProv_ass (B := Ax_s) (G := C) (by simp [C, pairBody]))
-      have hsucc : BProv Ax_s C
-          (ordinalCodeTotalCapacityTermAt (Term.succ raw2)) :=
-        BProv_Ax_s_ordinalCodeTotalCapacityTermAt_succ_of_terms
-          hcapacity
-      simpa [goal, C, G1, raw2,
-        rename_ordinalCodeTotalCapacityTermAt,
-        Term.rename, Term.rename_comp, Function.comp_def,
-        Nat.add_assoc] using hsucc
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hinnerEx hinner
-  exact BProv_exE_of_sentences
-    (B := Ax_s) Ax_s_sentences
-    holdEx houter
+  refine BProv_two_exE_of_sentences
+    (B := Ax_s) Ax_s_sentences holdEx ?_
+  let C : List Formula :=
+    pairBody :: (ex pairBody :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let raw2 : Term := Term.rename (fun n => n + 2) raw
+  have hcapacity : BProv Ax_s C
+      (ordinalCodeTraceCapacityTermAt
+        raw2 (Term.var 1) (Term.var 0)) := by
+    simpa [C, pairBody, raw2] using
+      (BProv_ass (B := Ax_s) (G := C) (by simp [C, pairBody]))
+  have hsucc : BProv Ax_s C
+      (ordinalCodeTotalCapacityTermAt (Term.succ raw2)) :=
+    BProv_Ax_s_ordinalCodeTotalCapacityTermAt_succ_of_terms hcapacity
+  simpa [goal, C, raw2,
+    rename_ordinalCodeTotalCapacityTermAt,
+    Term.rename, Term.rename_comp, Function.comp_def,
+    Nat.add_assoc] using hsucc
 
 /-- PA induction closes the existential code/capacity invariant for every raw
 number. -/
@@ -3399,38 +3387,27 @@ theorem BProv_Ax_s_ordinalCodeGraphExistsTermAt_of_totalCapacity
       (Term.var 1) (Term.var 0)
   have holdEx : BProv Ax_s G (ex (ex pairBody)) := by
     simpa [ordinalCodeTotalCapacityTermAt, pairBody] using htotal
-  have houter : BProv Ax_s
-      (ex pairBody :: G.map (rename Nat.succ))
-      (rename Nat.succ target) := by
-    let G1 : List Formula := ex pairBody :: G.map (rename Nat.succ)
-    have hinnerEx : BProv Ax_s G1 (ex pairBody) :=
-      BProv_ass (B := Ax_s) (G := G1) (by simp [G1])
-    have hinner : BProv Ax_s
-        (pairBody :: G1.map (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target)) := by
-      let C : List Formula := pairBody :: G1.map (rename Nat.succ)
-      let raw2 : Term := Term.rename (fun n => n + 2) raw
-      have hcapacity : BProv Ax_s C
-          (ordinalCodeTraceCapacityTermAt
-            raw2 (Term.var 1) (Term.var 0)) := by
-        simpa [C, pairBody, raw2] using
-          (BProv_ass (B := Ax_s) (G := C) (by simp [C, pairBody]))
-      have hgraph : BProv Ax_s C
-          (ordinalCodeGraphTermAt raw2 (Term.var 1)) :=
-        BProv_Ax_s_ordinalCodeGraphTermAt_of_capacity hcapacity
-      have hex : BProv Ax_s C
-          (ordinalCodeGraphExistsTermAt raw2) :=
-        BProv_ordinalCodeGraphExistsTermAt_of_term hgraph
-      simpa [target, C, G1, raw2,
-        rename_ordinalCodeGraphExistsTermAt,
-        Term.rename, Term.rename_comp, Function.comp_def,
-        Nat.add_assoc] using hex
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hinnerEx hinner
-  exact BProv_exE_of_sentences
-    (B := Ax_s) Ax_s_sentences
-    holdEx houter
+  refine BProv_two_exE_of_sentences
+    (B := Ax_s) Ax_s_sentences holdEx ?_
+  let C : List Formula :=
+    pairBody :: (ex pairBody :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  let raw2 : Term := Term.rename (fun n => n + 2) raw
+  have hcapacity : BProv Ax_s C
+      (ordinalCodeTraceCapacityTermAt
+        raw2 (Term.var 1) (Term.var 0)) := by
+    simpa [C, pairBody, raw2] using
+      (BProv_ass (B := Ax_s) (G := C) (by simp [C, pairBody]))
+  have hgraph : BProv Ax_s C
+      (ordinalCodeGraphTermAt raw2 (Term.var 1)) :=
+    BProv_Ax_s_ordinalCodeGraphTermAt_of_capacity hcapacity
+  have hex : BProv Ax_s C
+      (ordinalCodeGraphExistsTermAt raw2) :=
+    BProv_ordinalCodeGraphExistsTermAt_of_term hgraph
+  simpa [target, C, raw2,
+    rename_ordinalCodeGraphExistsTermAt,
+    Term.rename, Term.rename_comp, Function.comp_def,
+    Nat.add_assoc] using hex
 
 /-- Exact proof term for the `OrdinalCodeGraphProofs.total` field. -/
 theorem OrdinalCodeGraphProofs_total :
