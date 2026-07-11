@@ -590,16 +590,14 @@ Qed.
 Theorem ZF_implies_T :
   forall phi, Sentence phi -> BProv ZFax_s nil phi -> BProv Tax_s nil phi.
 Proof.
-  intros phi Hphi HZF.
-  apply completeness_inf; [ exact Sentences_Tax | exact Hphi | ].
-  intros Dom m v HTsat.
-  destruct HZF as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
-  apply (soundness Dom m Gb phi Hp v).
-  intros x Hx. apply (Tmodel_sat_ZF Dom m v HTsat). apply HGb. exact Hx.
+  intros phi _ HZF.
+  apply (theory_transfer ZFax_s Tax_s nil phi Sentences_Tax).
+  - intros Dom m v HTsat. exact (Tmodel_sat_ZF Dom m v HTsat).
+  - exact HZF.
 Qed.
 (* ===================================================================== *)
 (*  Part C.  Every first-order ZF model satisfies the Closure schema,     *)
-(*  hence is a T-model; with completeness_inf this yields the converse    *)
+(*  hence is a T-model; generic theory transfer yields the converse       *)
 (*  syntactic direction and the full deductive equivalence.               *)
 (* ===================================================================== *)
 
@@ -673,12 +671,10 @@ Qed.
 Theorem T_implies_ZF :
   forall phi, Sentence phi -> BProv Tax_s nil phi -> BProv ZFax_s nil phi.
 Proof.
-  intros phi Hphi HT.
-  apply completeness_inf; [ exact Sentences_ZF | exact Hphi | ].
-  intros Dom m v HZsat.
-  destruct HT as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
-  apply (soundness Dom m Gb phi Hp v).
-  intros x Hx. apply (ZFmodel_sat_T Dom m v HZsat). apply HGb. exact Hx.
+  intros phi _ HT.
+  apply (theory_transfer Tax_s ZFax_s nil phi Sentences_ZF).
+  - intros Dom m v HZsat. exact (ZFmodel_sat_T Dom m v HZsat).
+  - exact HT.
 Qed.
 
 (* THE HEADLINE: deductive equivalence of T and ZF, both directions. *)
@@ -704,5 +700,3 @@ Check T_ZF_same_models.
 Check T_implies_ZF.
 Check T_iff_ZF.
 Print Assumptions T_iff_ZF.
-
-

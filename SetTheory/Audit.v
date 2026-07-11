@@ -32,6 +32,8 @@ Print Assumptions T_ZF_same_models.
 Check completeness.
 Check prov_iff_valid.
 Check completeness_inf.
+Check theory_transfer.
+Print Assumptions theory_transfer.
 Check theory_equiv.
 Check BProv_ax.
 Check BProv_of_Prov.
@@ -43,6 +45,7 @@ Check BProv_eqElim.
 Check BProv_eqSym.
 Check BProv_eqTrans.
 Check BProv_theory_mono.
+Check soundness_BProv.
 Check BProv_context_cons.
 Check BProv_impI.
 Check BProv_impI_after_prefix.
@@ -78,6 +81,9 @@ Check rename_eq_of_sentence.
 Check Sat_rename_ext.
 Check ClosureFO_of_ZF.
 Print Assumptions ClosureFO_of_ZF.
+
+(* Canonical sentence invariant for the PA axiom theory. *)
+Check PA.Formula.sentence_ax_s.
 
 (* PA/HF translation and finite-HF bridge. *)
 Check PA.Term.addRightNumeral.

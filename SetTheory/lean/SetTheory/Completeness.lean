@@ -13,7 +13,8 @@
      (`Prov G phi ↔ G ⊨ phi`) — obtained from `model_of_BCon` at the
      EMPTY base theory `B = ∅` (`model_of_con` is that instance);
    - infinite-theory completeness for sentence theories
-     (`completeness_inf`), and DEDUCTIVE EQUIVALENCE `theory_equiv`:
+     (`completeness_inf`), one-way semantic proof transfer
+     (`theory_transfer`), and DEDUCTIVE EQUIVALENCE `theory_equiv`:
      two sentence theories with the same models prove the same
      sentences — the abstract engine for proving any two
      axiomatizations deductively equivalent.
@@ -470,8 +471,7 @@ theorem BProv_eqTrans {B : Form → Prop} {G : List Form} {i j k : Nat}
   · exact hij
   · exact hjk
 
-/-- Soundness for relative provability from an infinite sentence theory and a
-finite context. -/
+/-- Soundness for relative provability from a base theory and finite context. -/
 theorem soundness_BProv {α : Type u} {mem : α → α → Prop} {B : Form → Prop}
     {G : List Form} {phi : Form} (h : BProv B G phi) (e : Nat → α)
     (hB : ∀ b, B b → Sat mem e b)
@@ -1163,30 +1163,29 @@ theorem completeness_inf (B : Form → Prop) (psi : Form)
   completeness_inf_context B [] psi hB
     (fun Dom m v hsatB _ => hval Dom m v hsatB)
 
+/-- SEMANTIC THEORY TRANSFER: if every model of `B₂` is a model of `B₁`,
+proofs over `B₁` transfer to `B₂`.  The finite context and target formula are
+unrestricted; only the destination base theory must consist of sentences. -/
+theorem theory_transfer (B₁ B₂ : Form → Prop) (G : List Form) (psi : Form)
+    (hB₂ : Sentences B₂)
+    (hmodels : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
+      (∀ g, B₂ g → Sat m v g) → ∀ g, B₁ g → Sat m v g)
+    (hp : BProv B₁ G psi) : BProv B₂ G psi :=
+  completeness_inf_context B₂ G psi hB₂ fun Dom m v hB₂sat hGsat =>
+    soundness_BProv hp v (hmodels Dom m v hB₂sat) hGsat
+
 /-- DEDUCTIVE EQUIVALENCE: two sentence theories with the same models prove
 the same sentences. -/
 theorem theory_equiv (B1 B2 : Form → Prop)
     (hB1 : Sentences B1) (hB2 : Sentences B2)
     (hsame : ∀ (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Dom),
       (∀ g, B1 g → Sat m v g) ↔ (∀ g, B2 g → Sat m v g))
-    (psi : Form) (hpsi : Sentence psi) :
+    (psi : Form) (_hpsi : Sentence psi) :
     BProv B1 [] psi ↔ BProv B2 [] psi := by
   constructor
-  · intro h
-    apply completeness_inf B2 psi hB2 hpsi
-    intro Dom m v hB2sat
-    obtain ⟨Gb, hGb, hp⟩ := h
-    rw [List.append_nil] at hp
-    apply soundness hp v
-    intro x hx
-    exact (hsame Dom m v).mpr hB2sat x (hGb x hx)
-  · intro h
-    apply completeness_inf B1 psi hB1 hpsi
-    intro Dom m v hB1sat
-    obtain ⟨Gb, hGb, hp⟩ := h
-    rw [List.append_nil] at hp
-    apply soundness hp v
-    intro x hx
-    exact (hsame Dom m v).mp hB1sat x (hGb x hx)
+  · exact theory_transfer B1 B2 [] psi hB2
+      (fun Dom m v hB2sat => (hsame Dom m v).mpr hB2sat)
+  · exact theory_transfer B2 B1 [] psi hB1
+      (fun Dom m v hB1sat => (hsame Dom m v).mp hB1sat)
 
 end SetTheory

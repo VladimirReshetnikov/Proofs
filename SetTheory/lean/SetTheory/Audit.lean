@@ -24,6 +24,8 @@ open SetTheory
 #check @prov_iff_valid
 #check @completeness_inf
 #check @completeness_inf_context
+#check @theory_transfer
+#print axioms theory_transfer
 #check @theory_equiv
 #check @BProv_ax
 #check @BProv_of_Prov
@@ -72,6 +74,9 @@ open SetTheory
 #check @Sat_rename_ext
 #check @ClosureFO_of_ZF
 #print axioms ClosureFO_of_ZF
+
+-- canonical sentence invariant for the PA axiom theory
+#check @PA.Formula.Ax_s_sentences
 
 -- Busy Beaver domination interface
 #check @BusyBeaver.sigma_mono_of_pos

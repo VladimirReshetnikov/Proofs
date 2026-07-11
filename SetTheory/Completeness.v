@@ -13,7 +13,8 @@
 (*     (Prov G phi <-> G |= phi) -- obtained from `model_of_BCon` at the  *)
 (*     EMPTY base theory B = emptyset (`model_of_con` is that instance);  *)
 (*   - infinite-theory completeness for sentence theories                 *)
-(*     (`completeness_inf`), and DEDUCTIVE EQUIVALENCE `theory_equiv`:    *)
+(*     (`completeness_inf`), one-way semantic proof transfer              *)
+(*     (`theory_transfer`), and DEDUCTIVE EQUIVALENCE `theory_equiv`:     *)
 (*     two sentence theories with the same models prove the same          *)
 (*     sentences -- the abstract engine for proving any two               *)
 (*     axiomatizations deductively equivalent.                            *)
@@ -388,6 +389,22 @@ Lemma BProv_theory_mono : forall (B C : form -> Prop) G phi,
 Proof.
   intros B C G phi hBC [L [hL hp]].
   exists L. split; [ intros x hx; exact (hBC x (hL x hx)) | exact hp ].
+Qed.
+
+(* Soundness for relative provability from a base theory and finite context. *)
+Lemma soundness_BProv :
+  forall (Dom : Type) (m : Dom -> Dom -> Prop) B G phi,
+    BProv B G phi ->
+    forall v,
+      (forall b, B b -> Sat Dom m v b) ->
+      (forall g, In g G -> Sat Dom m v g) ->
+      Sat Dom m v phi.
+Proof.
+  intros Dom m B G phi [L [hL hp]] v hB hG.
+  apply (soundness Dom m (L ++ G) phi hp v).
+  intros x hx. apply in_app_iff in hx. destruct hx as [hx | hx].
+  - exact (hB x (hL x hx)).
+  - exact (hG x hx).
 Qed.
 
 Lemma BCon_cons_or :
@@ -1159,6 +1176,23 @@ Proof.
   exact (Hval Dom m v HsatB).
 Qed.
 
+(* SEMANTIC THEORY TRANSFER: if every model of B2 is a model of B1, proofs
+   over B1 transfer to B2.  The finite context and target formula are
+   unrestricted; only the destination base theory must consist of sentences. *)
+Theorem theory_transfer :
+  forall B1 B2 G psi, Sentences B2 ->
+    (forall (Dom : Type) (m : Dom -> Dom -> Prop) (v : nat -> Dom),
+       (forall g, B2 g -> Sat Dom m v g) ->
+       forall g, B1 g -> Sat Dom m v g) ->
+    BProv B1 G psi -> BProv B2 G psi.
+Proof.
+  intros B1 B2 G psi HB2 Hmodels Hp.
+  apply (completeness_inf_context B2 G psi HB2).
+  intros Dom m v HB2sat HGsat.
+  exact (soundness_BProv Dom m B1 G psi Hp v
+           (Hmodels Dom m v HB2sat) HGsat).
+Qed.
+
 (* DEDUCTIVE EQUIVALENCE: two sentence theories with the same models prove
    the same sentences. *)
 Theorem theory_equiv :
@@ -1167,19 +1201,16 @@ Theorem theory_equiv :
        (forall g, B1 g -> Sat Dom m v g) <-> (forall g, B2 g -> Sat Dom m v g)) ->
     forall psi, Sentence psi -> (BProv B1 nil psi <-> BProv B2 nil psi).
 Proof.
-  intros B1 B2 HB1 HB2 Hsame psi Hpsi. split; intro H.
-  - apply completeness_inf; [ exact HB2 | exact Hpsi | ]. intros Dom m v HB2sat.
-    destruct H as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
-    apply (soundness Dom m Gb psi Hp v).
-    intros x Hx. apply (proj2 (Hsame Dom m v) HB2sat). apply HGb. exact Hx.
-  - apply completeness_inf; [ exact HB1 | exact Hpsi | ]. intros Dom m v HB1sat.
-    destruct H as [Gb [HGb Hp]]. rewrite app_nil_r in Hp.
-    apply (soundness Dom m Gb psi Hp v).
-    intros x Hx. apply (proj1 (Hsame Dom m v) HB1sat). apply HGb. exact Hx.
+  intros B1 B2 HB1 HB2 Hsame psi _. split.
+  - apply (theory_transfer B1 B2 nil psi HB2).
+    intros Dom m v HB2sat. exact (proj2 (Hsame Dom m v) HB2sat).
+  - apply (theory_transfer B2 B1 nil psi HB1).
+    intros Dom m v HB1sat. exact (proj1 (Hsame Dom m v) HB1sat).
 Qed.
 
 Check model_exists.
 Check completeness.
 Check prov_iff_valid.
 Check completeness_inf.
+Check theory_transfer.
 Check theory_equiv.

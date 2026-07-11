@@ -608,18 +608,13 @@ theorem Tmodel_sat_ZF {V : Type u} {mem : V → V → Prop} (v : Nat → V)
       (sat_Repl (v 0) AxS AxP AxC psi) v
 
 /-- FORWARD SYNTACTIC DIRECTION: everything ZF proves, T proves. -/
-theorem ZF_implies_T (phi : Form) (hphi : Sentence phi)
+theorem ZF_implies_T (phi : Form) (_hphi : Sentence phi)
     (hZF : BProv ZFax_s [] phi) : BProv Tax_s [] phi := by
-  apply completeness_inf Tax_s phi Sentences_Tax hphi
-  intro Dom m v hTsat
-  obtain ⟨Gb, hGb, hp⟩ := hZF
-  rw [List.append_nil] at hp
-  apply soundness hp v
-  intro x hx
-  exact Tmodel_sat_ZF v hTsat x (hGb x hx)
+  exact theory_transfer ZFax_s Tax_s [] phi Sentences_Tax
+    (fun _Dom _m v hTsat => Tmodel_sat_ZF v hTsat) hZF
 
 /-! ## Part C.  Every first-order ZF model satisfies the Closure schema,
-hence is a T-model; with completeness_inf this yields the converse
+hence is a T-model; generic theory transfer yields the converse
 syntactic direction and the full deductive equivalence. -/
 
 /-- every ZF model satisfies every instance of the (open) Closure formula -/
@@ -673,15 +668,10 @@ theorem T_ZF_same_models (Dom : Type) (m : Dom → Dom → Prop) (v : Nat → Do
   ⟨Tmodel_sat_ZF v, ZFmodel_sat_T v⟩
 
 /-- THE CONVERSE SYNTACTIC DIRECTION: everything T proves, ZF proves. -/
-theorem T_implies_ZF (phi : Form) (hphi : Sentence phi)
+theorem T_implies_ZF (phi : Form) (_hphi : Sentence phi)
     (hT : BProv Tax_s [] phi) : BProv ZFax_s [] phi := by
-  apply completeness_inf ZFax_s phi Sentences_ZF hphi
-  intro Dom m v hZsat
-  obtain ⟨Gb, hGb, hp⟩ := hT
-  rw [List.append_nil] at hp
-  apply soundness hp v
-  intro x hx
-  exact ZFmodel_sat_T v hZsat x (hGb x hx)
+  exact theory_transfer Tax_s ZFax_s [] phi Sentences_ZF
+    (fun _Dom _m v hZsat => ZFmodel_sat_T v hZsat) hT
 
 /-- THE HEADLINE: deductive equivalence of T and ZF, both directions. -/
 theorem T_iff_ZF (phi : Form) (hphi : Sentence phi) :
