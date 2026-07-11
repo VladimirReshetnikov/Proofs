@@ -213,32 +213,67 @@ theorem bridge_Inf_fwd (v : Nat → V) (H : Sat mem v Inf_form) :
   obtain ⟨sx, hsx, hspec⟩ := hsucc x hx
   exact ⟨sx, hsx, fun t => ⟨(hspec t).1, (hspec t).2⟩⟩
 
+/-- The internal functionality formula says exactly that `psi` defines a
+functional relation under the surrounding parameter environment. -/
+theorem bridge_Func (psi : Form) (e : Nat → V) :
+    Sat mem e (Func_form psi) ↔ Functional (relOf mem psi e) := by
+  constructor
+  · intro h x y1 y2 h1 h2
+    exact h x y1 y2 ⟨
+      (Sat_rename_relOf psi rf1 _ e y1 x (rf1_env y2 y1 x e)).mpr h1,
+      (Sat_rename_relOf psi rf2 _ e y2 x (rf2_env y2 y1 x e)).mpr h2⟩
+  · intro h x y1 y2 hsat
+    exact h x y1 y2
+      ((Sat_rename_relOf psi rf1 _ e y1 x (rf1_env y2 y1 x e)).mp hsat.1)
+      ((Sat_rename_relOf psi rf2 _ e y2 x (rf2_env y2 y1 x e)).mp hsat.2)
+
+/-- The internal image formula denotes the set-theoretic image of `a` under
+the relation defined by `psi`. -/
+theorem bridge_Image (psi : Form) (e : Nat → V) :
+    Sat mem e (Image_form psi) ↔
+      ∀ a, ∃ r, ∀ y, mem y r ↔ ∃ x, mem x a ∧ relOf mem psi e y x := by
+  constructor
+  · intro h a
+    obtain ⟨r, hr⟩ := h a
+    refine ⟨r, fun y => ?_⟩
+    constructor
+    · intro hy
+      obtain ⟨x, hxa, hsat⟩ := (hr y).1 hy
+      exact ⟨x, hxa,
+        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mp hsat⟩
+    · intro ⟨x, hxa, hrel⟩
+      exact (hr y).2 ⟨x, hxa,
+        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mpr hrel⟩
+  · intro h a
+    obtain ⟨r, hr⟩ := h a
+    refine ⟨r, fun y => ?_⟩
+    constructor
+    · intro hy
+      obtain ⟨x, hxa, hrel⟩ := (hr y).mp hy
+      exact ⟨x, hxa,
+        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mpr hrel⟩
+    · intro ⟨x, hxa, hsat⟩
+      exact (hr y).mpr ⟨x, hxa,
+        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mp hsat⟩
+
+/-- Satisfaction of a Replacement instance is exactly the semantic
+replacement implication for the relation defined by `psi`. -/
+theorem bridge_Repl (psi : Form) (e : Nat → V) :
+    Sat mem e (Repl_form psi) ↔
+      (Functional (relOf mem psi e) →
+        ∀ a, ∃ r, ∀ y, mem y r ↔ ∃ x, mem x a ∧ relOf mem psi e y x) := by
+  constructor
+  · intro h hfun
+    exact (bridge_Image psi e).mp (h ((bridge_Func psi e).mpr hfun))
+  · intro h hfunc
+    exact (bridge_Image psi e).mpr (h ((bridge_Func psi e).mp hfunc))
+
 theorem bridge_Repl_fwd (H : ∀ (psi : Form) (e : Nat → V), Sat mem e (Repl_form psi)) :
     ∀ (psi : Form) (e : Nat → V),
       Functional (relOf mem psi e) →
       ∀ a, ∃ r, ∀ y, mem y r ↔ ∃ x, mem x a ∧ relOf mem psi e y x := by
-  intro psi e hfun a
-  have hr := H psi e
-  -- discharge the internal functionality premise Func_form
-  have hfunc : Sat mem e (Func_form psi) := by
-    show ∀ x y1 y2, Sat mem _ (rename rf1 psi) ∧ Sat mem _ (rename rf2 psi) → y1 = y2
-    intro x y1 y2 ⟨h1, h2⟩
-    apply hfun x y1 y2
-    · exact (Sat_rename_ext psi rf1 _ _ (rf1_env y2 y1 x e)).mp h1
-    · exact (Sat_rename_ext psi rf2 _ _ (rf2_env y2 y1 x e)).mp h2
-  have himg := hr hfunc
-  obtain ⟨r, himg⟩ := himg a
-  refine ⟨r, fun y => ?_⟩
-  have h := himg y
-  constructor
-  · intro hy
-    obtain ⟨x, hxa, hsat⟩ := h.1 hy
-    refine ⟨x, hxa, ?_⟩
-    exact (Sat_rename_ext psi ri _ _ (ri_env x y r a e)).mp hsat
-  · intro ⟨x, hxa, hrel⟩
-    apply h.2
-    refine ⟨x, hxa, ?_⟩
-    exact (Sat_rename_ext psi ri _ _ (ri_env x y r a e)).mpr hrel
+  intro psi e
+  exact (bridge_Repl psi e).mp (H psi e)
 
 end Bridges
 

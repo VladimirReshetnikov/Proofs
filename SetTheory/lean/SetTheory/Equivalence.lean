@@ -418,25 +418,8 @@ theorem sat_Sep (hSep : SepFOAx mem) :
 theorem sat_Repl (witness : V) (hSep : SepFOAx mem) (hPow : PowAx mem)
     (hClo : ClosureFOAx mem) :
     ∀ (psi : Form) (e : Nat → V), Sat mem e (Repl_form psi) := by
-  intro psi e hfunc
-  have hfun : Functional (relOf mem psi e) := by
-    intro x y1 y2 h1 h2
-    apply hfunc x y1 y2
-    constructor
-    · exact (Sat_rename_ext psi rf1 _ _ (rf1_env y2 y1 x e)).mpr h1
-    · exact (Sat_rename_ext psi rf2 _ _ (rf2_env y2 y1 x e)).mpr h2
-  intro da
-  obtain ⟨r, hr⟩ := ReplacementFO witness hSep hPow hClo psi e hfun da
-  refine ⟨r, fun dy => ?_⟩
-  constructor
-  · intro hin
-    obtain ⟨dx, hdx, hrel⟩ := (hr dy).mp hin
-    refine ⟨dx, hdx, ?_⟩
-    exact (Sat_rename_ext psi ri _ _ (ri_env dx dy r da e)).mpr hrel
-  · intro ⟨dx, hdx, hsat⟩
-    apply (hr dy).mpr
-    refine ⟨dx, hdx, ?_⟩
-    exact (Sat_rename_ext psi ri _ _ (ri_env dx dy r da e)).mp hsat
+  intro psi e
+  exact (bridge_Repl psi e).mpr (ReplacementFO witness hSep hPow hClo psi e)
 
 theorem sat_ZFax (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     (hPow : PowAx mem) (hClo : ClosureFOAx mem) (hReg : RegAx mem) :
@@ -508,8 +491,7 @@ theorem r_cl_env (d2 d1 w s : V) (e : Nat → V) :
 theorem rcl_rel (psi : Form) (e : Nat → V) (d1 d2 w s : V) :
     Sat mem (scons d2 (scons d1 (scons w (scons s e)))) (rename r_cl psi)
       ↔ relOf mem psi e d1 d2 := by
-  unfold relOf
-  exact Sat_rename_ext psi r_cl _ _ (r_cl_env d2 d1 w s e)
+  exact Sat_rename_relOf psi r_cl _ e d1 d2 (r_cl_env d2 d1 w s e)
 
 theorem bridge_SetLike (psi : Form) (e : Nat → V) :
     Sat mem e (SetLikeForm psi) ↔ SetLike mem (relOf mem psi e) := by
@@ -518,12 +500,12 @@ theorem bridge_SetLike (psi : Form) (e : Nat → V) :
     obtain ⟨y, hy⟩ := h x
     refine ⟨y, fun z hz => ?_⟩
     apply hy z
-    exact (Sat_rename_ext psi r_sl _ _ (r_sl_env z y x e)).mpr hz
+    exact (Sat_rename_relOf psi r_sl _ e z x (r_sl_env z y x e)).mpr hz
   · intro h x
     obtain ⟨y, hy⟩ := h x
     refine ⟨y, fun z hz => ?_⟩
     apply hy z
-    exact (Sat_rename_ext psi r_sl _ _ (r_sl_env z y x e)).mp hz
+    exact (Sat_rename_relOf psi r_sl _ e z x (r_sl_env z y x e)).mp hz
 
 theorem bridge_ClosureBody (psi : Form) (e : Nat → V) :
     Sat mem e (ClosureBodyForm psi) ↔

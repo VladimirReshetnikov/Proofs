@@ -586,6 +586,14 @@ theorem inst_env (k : Nat) (e : Nat → V) (n : Nat) :
 def relOf (mem : V → V → Prop) (psi : Form) (e : Nat → V) : V → V → Prop :=
   fun z x => Sat mem (scons z (scons x e)) psi
 
+/-- A renamed relation formula denotes `relOf` whenever its environment agrees
+pointwise with the relation's two distinguished arguments and parameters. -/
+theorem Sat_rename_relOf (psi : Form) (r : Nat → Nat) (env e : Nat → V)
+    (z x : V) (h : ∀ n, env (r n) = scons z (scons x e) n) :
+    Sat mem env (rename r psi) ↔ relOf mem psi e z x := by
+  unfold relOf
+  exact Sat_rename_ext psi r env _ h
+
 def SetLike (mem : V → V → Prop) (R : V → V → Prop) : Prop :=
   ∀ x, ∃ y, ∀ z, R z x → mem z y
 

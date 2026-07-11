@@ -198,6 +198,69 @@ Proof.
     exists sx. split; [ exact Hsx | ]. intro t. specialize (Hspec t). tauto.
 Qed.
 
+(* Canonical semantic readings of the two components of Replacement. *)
+Lemma bridge_Func :
+  forall (V : Type) (mem : V -> V -> Prop) psi e,
+    Sat V mem e (Func_form psi) <-> Functional V (relOf V mem psi e).
+Proof.
+  intros V mem psi e. unfold Func_form, Functional. cbn [Sat].
+  assert (H1 : forall x y1 y2,
+      Sat V mem (scons V y2 (scons V y1 (scons V x e))) (rename rf1 psi) <->
+      relOf V mem psi e y1 x).
+  { intros x y1 y2. exact (Sat_rename_relOf V mem psi rf1
+      (scons V y2 (scons V y1 (scons V x e))) e y1 x
+      (rf1_env V y2 y1 x e)). }
+  assert (H2 : forall x y1 y2,
+      Sat V mem (scons V y2 (scons V y1 (scons V x e))) (rename rf2 psi) <->
+      relOf V mem psi e y2 x).
+  { intros x y1 y2. exact (Sat_rename_relOf V mem psi rf2
+      (scons V y2 (scons V y1 (scons V x e))) e y2 x
+      (rf2_env V y2 y1 x e)). }
+  split; intros H x y1 y2; specialize (H x y1 y2);
+    pose proof (H1 x y1 y2); pose proof (H2 x y1 y2); tauto.
+Qed.
+
+Lemma bridge_Image :
+  forall (V : Type) (mem : V -> V -> Prop) psi e,
+    Sat V mem e (Image_form psi) <->
+    (forall a, exists r, forall y,
+       mem y r <-> exists x, mem x a /\ relOf V mem psi e y x).
+Proof.
+  intros V mem psi e. unfold Image_form. cbn [Sat].
+  assert (Hrel : forall a r y x,
+      Sat V mem (scons V x (scons V y (scons V r (scons V a e))))
+        (rename ri psi) <-> relOf V mem psi e y x).
+  { intros a r y x. exact (Sat_rename_relOf V mem psi ri
+      (scons V x (scons V y (scons V r (scons V a e)))) e y x
+      (ri_env V x y r a e)). }
+  assert (Hbody : forall a r y,
+      (exists x, mem x a /\
+        Sat V mem (scons V x (scons V y (scons V r (scons V a e))))
+          (rename ri psi)) <->
+      (exists x, mem x a /\ relOf V mem psi e y x)).
+  { intros a r y. split; intros [x [Hxa Hpsi]]; exists x; split;
+      [ exact Hxa | exact (proj1 (Hrel a r y x) Hpsi)
+      | exact Hxa | exact (proj2 (Hrel a r y x) Hpsi) ]. }
+  split; intros H a; destruct (H a) as [r Hr]; exists r; intro y.
+  - split; intro Hy.
+    + apply (proj1 (Hbody a r y)), (proj1 (Hr y)), Hy.
+    + apply (proj2 (Hr y)), (proj2 (Hbody a r y)), Hy.
+  - split; intro Hy.
+    + apply (proj2 (Hbody a r y)), (proj1 (Hr y)), Hy.
+    + apply (proj2 (Hr y)), (proj1 (Hbody a r y)), Hy.
+Qed.
+
+Lemma bridge_Repl :
+  forall (V : Type) (mem : V -> V -> Prop) psi e,
+    Sat V mem e (Repl_form psi) <->
+    (Functional V (relOf V mem psi e) ->
+     forall a, exists r, forall y,
+       mem y r <-> exists x, mem x a /\ relOf V mem psi e y x).
+Proof.
+  intros V mem psi e. unfold Repl_form. cbn [Sat].
+  rewrite (bridge_Func V mem psi e), (bridge_Image V mem psi e). tauto.
+Qed.
+
 Lemma bridge_Repl_fwd :
   forall (V : Type) (mem : V -> V -> Prop),
     (forall psi e, Sat V mem e (Repl_form psi)) ->
@@ -206,34 +269,8 @@ Lemma bridge_Repl_fwd :
       forall a, exists r, forall y,
         mem y r <-> exists x, mem x a /\ relOf V mem psi e y x.
 Proof.
-  intros V mem H psi e Hfun a.
-  pose proof (H psi e) as Hr. unfold Repl_form in Hr. cbn [Sat] in Hr.
-  (* discharge the internal functionality premise Func_form *)
-  assert (Hfunc : Sat V mem e (Func_form psi)).
-  { unfold Func_form. cbn [Sat]. intros x y1 y2 [H1 H2].
-    apply (Hfun x y1 y2).
-    - rewrite (Sat_rename_ext V mem psi rf1
-                 (scons V y2 (scons V y1 (scons V x e)))
-                 (scons V y1 (scons V x e)) (rf1_env V y2 y1 x e)) in H1.
-      exact H1.
-    - rewrite (Sat_rename_ext V mem psi rf2
-                 (scons V y2 (scons V y1 (scons V x e)))
-                 (scons V y2 (scons V x e)) (rf2_env V y2 y1 x e)) in H2.
-      exact H2. }
-  specialize (Hr Hfunc). unfold Image_form in Hr. cbn [Sat] in Hr.
-  destruct (Hr a) as [r Himg].
-  exists r. intro y. specialize (Himg y). split.
-  - intro Hy. destruct (proj1 Himg Hy) as [x [Hxa Hsat]].
-    exists x. split; [ exact Hxa | ].
-    rewrite (Sat_rename_ext V mem psi ri
-               (scons V x (scons V y (scons V r (scons V a e))))
-               (scons V y (scons V x e)) (ri_env V x y r a e)) in Hsat.
-    exact Hsat.
-  - intros [x [Hxa Hrel]]. apply (proj2 Himg). exists x. split; [ exact Hxa | ].
-    rewrite (Sat_rename_ext V mem psi ri
-               (scons V x (scons V y (scons V r (scons V a e))))
-               (scons V y (scons V x e)) (ri_env V x y r a e)).
-    exact Hrel.
+  intros V mem H psi e Hfun.
+  exact (proj1 (bridge_Repl V mem psi e) (H psi e) Hfun).
 Qed.
 
 (* ===================================================================== *)
@@ -737,9 +774,8 @@ Proof.
   assert (Hin : forall u,
       Sat V mem (SC u (SC y (SC x eC))) (rename rPS psiC) <-> RC u x).
   { intro u.
-    unfold relOf.
-    apply (Sat_rename_ext V mem psiC rPS
-             (SC u (SC y (SC x eC))) (SC u (SC x eC))).
+    apply (Sat_rename_relOf V mem psiC rPS
+             (SC u (SC y (SC x eC))) eC u x).
     intro n. destruct n as [| [| k]]; reflexivity. }
   split.
   - intros H u. specialize (H u). specialize (Hin u). tauto.
@@ -805,9 +841,7 @@ Lemma fRF_spec :
     (SAT ee (fRF i j off) <-> RC (ee i) (ee j)).
 Proof.
   intros ee i j off Hoff. unfold fRF.
-  unfold relOf.
-  apply (Sat_rename_ext V mem psiC (rRF i j off) ee
-           (SC (ee i) (SC (ee j) eC))).
+  apply (Sat_rename_relOf V mem psiC (rRF i j off) ee eC (ee i) (ee j)).
   intro n. destruct n as [| [| k]]; cbn.
   - reflexivity.
   - reflexivity.

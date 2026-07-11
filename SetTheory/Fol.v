@@ -439,6 +439,15 @@ Proof. intros k e n. destruct n; reflexivity. Qed.
 Definition relOf (psi : form) (e : nat -> V) : V -> V -> Prop :=
   fun z x => Sat (scons z (scons x e)) psi.
 
+(* The common binary-relation specialization of [Sat_rename_ext]. *)
+Lemma Sat_rename_relOf : forall psi r outer e z x,
+  (forall n, outer (r n) = scons z (scons x e) n) ->
+  (Sat outer (rename r psi) <-> relOf psi e z x).
+Proof.
+  intros psi r outer e z x h. unfold relOf.
+  exact (Sat_rename_ext psi r outer (scons z (scons x e)) h).
+Qed.
+
 Definition SetLike (R : V -> V -> Prop) : Prop :=
   forall x, exists y, forall z, R z x -> z ∈ y.
 
