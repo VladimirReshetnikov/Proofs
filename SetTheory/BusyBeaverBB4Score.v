@@ -867,10 +867,4 @@ Proof.
     + apply hKept. subst x. cbn. tauto.
 Qed.
 
-Lemma root_score_q_upd1_simplified_eq :
-  root_score_q_upd1_simplified = (q_0, true).
-Proof.
-  reflexivity.
-Qed.
-
 End BusyBeaverBB4Score.

@@ -39,13 +39,12 @@ theorem list_mem_erase_of_ne_of_mem {α : Type*} [BEq α] [LawfulBEq α]
         · simpa [Bool.not_eq_true] using hcb
 
 /--
-A nodup list cannot inject into a shorter nodup list by membership.  This is
-the finite-list counting lemma used to turn many distinct known-true tape
-positions into a lower bound on the Rado score.
+A nodup list cannot inject into a shorter list by membership.  This is the
+finite-list counting lemma used to turn many distinct known-true tape positions
+into a lower bound on the Rado score.
 -/
 theorem list_length_le_of_nodup_subset {α : Type*} [BEq α] [LawfulBEq α]
-    {xs ys : List α} (hxs : xs.Nodup) (hys : ys.Nodup)
-    (hsub : ∀ x, x ∈ xs -> x ∈ ys) :
+    {xs ys : List α} (hxs : xs.Nodup) (hsub : ∀ x, x ∈ xs -> x ∈ ys) :
     xs.length ≤ ys.length := by
   induction xs generalizing ys with
   | nil => simp
@@ -56,7 +55,7 @@ theorem list_length_le_of_nodup_subset {α : Type*} [BEq α] [LawfulBEq α]
         intro x hx
         exact list_mem_erase_of_ne_of_mem
           (fun hxa => hxs.1 (hxa ▸ hx)) (hsub x (by simp [hx]))
-      have hle := IH hxs.2 (List.Nodup.erase a hys) hrestSub
+      have hle := IH hxs.2 hrestSub
       have hlen := List.length_erase_add_one ha
       change rest.length + 1 ≤ ys.length
       rw [← hlen]
@@ -68,14 +67,14 @@ theorem tape_mem_of_read_true {tape : Tape} {pos : Int}
   simp [Tape.read, hp] at h
 
 /--
-If a nodup list of positions all read as `1` on a nodup Rado tape, then the tape
-score is at least the number of witnessed positions.
+If a nodup list of positions all read as `1` on a Rado tape, then the tape score
+is at least the number of witnessed positions.
 -/
 theorem positions_length_le_tape_length_of_read_true {positions tape : Tape}
-    (hPositions : positions.Nodup) (hTape : tape.Nodup)
+    (hPositions : positions.Nodup)
     (hRead : ∀ pos, pos ∈ positions -> Tape.read tape pos = true) :
     positions.length ≤ tape.length := by
-  exact list_length_le_of_nodup_subset hPositions hTape
+  exact list_length_le_of_nodup_subset hPositions
     (fun pos hpos => tape_mem_of_read_true (hRead pos hpos))
 
 /-- `PartrecToTM2.K'` has exactly the four stack indices used by the evaluator. -/
@@ -587,11 +586,7 @@ theorem typedMachineReaches_attainableLowerBound {State : Type*} [Fintype State]
     (hRead : ∀ pos, pos ∈ positions -> Tape.read haltCfg.tape pos = true) :
     ∃ score, positions.length ≤ score ∧
       AttainableScore (Fintype.card State) score := by
-  rcases typedMachineReaches_run hReach with ⟨t, ht⟩
-  have hTapeNodup : haltCfg.tape.Nodup := by
-    rw [← ht]
-    exact TypedMachine.run_tape_nodup M start t
-  have hLower := positions_length_le_tape_length_of_read_true hPositions hTapeNodup hRead
+  have hLower := positions_length_le_tape_length_of_read_true hPositions hRead
   have hHalt : M.HaltsWithScore start haltCfg.tape.length :=
     typedMachineReaches_haltsWithScore hReach hState rfl
   exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩
@@ -921,11 +916,7 @@ theorem typedRadoReaches_attainableLowerBound {Label : Type*} [Fintype Label]
     (hRead : ∀ pos, pos ∈ positions -> Tape.read haltCfg.tape pos = true) :
     ∃ score, positions.length ≤ score ∧
       AttainableScore (Fintype.card (TM0RadoState Label)) score := by
-  rcases typedRadoReaches_run hReach with ⟨t, ht⟩
-  have hTapeNodup : haltCfg.tape.Nodup := by
-    rw [← ht]
-    exact TypedMachine.run_tape_nodup M start t
-  have hLower := positions_length_le_tape_length_of_read_true hPositions hTapeNodup hRead
+  have hLower := positions_length_le_tape_length_of_read_true hPositions hRead
   have hHalt : M.HaltsWithScore start haltCfg.tape.length :=
     typedRadoReaches_haltsWithScore hReach hState rfl
   exact ⟨haltCfg.tape.length, hLower, typedMachineToMachine_attainableScore M start hHalt⟩

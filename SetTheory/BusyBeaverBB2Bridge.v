@@ -63,12 +63,6 @@ Definition tapeOfConfig {states : nat} (cfg : BB.config states) : Z -> Σ :=
 Definition esOfConfig {states : nat} (cfg : BB.config states) (q : nat) : ExecState Σ :=
   (stOfNat q, tapeOfConfig cfg).
 
-Lemma sigmaOfBool_inj : forall b c,
-  sigmaOfBool b = sigmaOfBool c -> b = c.
-Proof.
-  destruct b, c; cbn; congruence.
-Qed.
-
 Lemma boolOfSigma_sigmaOfBool : forall b,
   boolOfSigma (sigmaOfBool b) = b.
 Proof.

@@ -127,21 +127,6 @@ Proof.
     exact ih.
 Qed.
 
-Lemma runFrom_tape_NoDup : forall states (M : BB.machine states) cfg n,
-  NoDup (BB.cfg_tape _ cfg) ->
-  NoDup (BB.cfg_tape _ (BB.Machine.runFrom M cfg n)).
-Proof.
-  intros states M cfg n.
-  induction n as [|n ih]; intro hNoDup; [exact hNoDup|].
-  cbn.
-  unfold BB.Machine.step.
-  destruct (BB.cfg_state states (BB.Machine.runFrom M cfg n)) as [q|] eqn:hState;
-    [|apply ih; exact hNoDup].
-  cbn.
-  apply BB.Tape.write_nodup.
-  now apply ih.
-Qed.
-
 Lemma runFrom_succ_start_four : forall (M : BB.machine 4) cfg n,
   BB.Machine.runFrom M cfg (S n) =
   BB.Machine.runFrom M (BB.Machine.step M cfg) n.
