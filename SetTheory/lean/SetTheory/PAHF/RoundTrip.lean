@@ -10941,62 +10941,45 @@ theorem BProv_eq_of_codeEqualityTermAt
   let inner : Formula := ex body
   have houter : BProv Ax_s G (ex inner) := by
     simpa [codeEqualityTermAt, inner, body] using hcodes
-  have houterBody : BProv Ax_s
-      (inner :: G.map (rename Nat.succ))
-      (rename Nat.succ (eq leftRaw rightRaw)) := by
-    let G₁ : List Formula := inner :: G.map (rename Nat.succ)
-    have hinner : BProv Ax_s G₁ (ex body) :=
-      BProv_ass (B := Ax_s) (G := G₁) (by simp [G₁, inner])
-    have hinnerBody : BProv Ax_s
-        (body :: G₁.map (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ
-          (eq leftRaw rightRaw))) := by
-      let C : List Formula := body :: G₁.map (rename Nat.succ)
-      have hpacked : BProv Ax_s C body :=
-        BProv_ass (B := Ax_s) (G := C) (by simp [C])
-      have hleft : BProv Ax_s C
-          (ordinalCodeGraphTermAt
-            (Term.rename (fun n ↦ n+2) leftRaw)
-            (Term.var 1)) := by
-        simpa [body, codeEqualityBodyTermAt] using
-          BProv_andE1 hpacked
-      have hrightAndEq : BProv Ax_s C
-          (and
-            (ordinalCodeGraphTermAt
-              (Term.rename (fun n ↦ n+2) rightRaw)
-              (Term.var 0))
-            (eq (Term.var 1) (Term.var 0))) := by
-        simpa [body, codeEqualityBodyTermAt] using
-          BProv_andE2 hpacked
-      have hright : BProv Ax_s C
-          (ordinalCodeGraphTermAt
-            (Term.rename (fun n ↦ n+2) rightRaw)
-            (Term.var 0)) :=
-        BProv_andE1 hrightAndEq
-      have heqCode : BProv Ax_s C
-          (eq (Term.var 1) (Term.var 0)) :=
-        BProv_andE2 hrightAndEq
-      have hleftAtRightCode : BProv Ax_s C
-          (ordinalCodeGraphTermAt
-            (Term.rename (fun n ↦ n+2) leftRaw)
-            (Term.var 0)) :=
-        BProv_ordinalCodeGraphTermAt_congr_coded
-          heqCode hleft
-      have hraw : BProv Ax_s C
-          (eq
-            (Term.rename (fun n ↦ n+2) leftRaw)
-            (Term.rename (fun n ↦ n+2) rightRaw)) :=
-        P.injective hleftAtRightCode hright
-      simpa [C, rename, Term.rename, Term.rename_comp,
-        Function.comp_def] using hraw
-    exact BProv_exE_of_sentences (B := Ax_s)
-      Ax_s_sentences
-      (a := body) (c := rename Nat.succ (eq leftRaw rightRaw))
-      hinner hinnerBody
-  exact BProv_exE_of_sentences (B := Ax_s)
-    Ax_s_sentences
-    (a := inner) (c := eq leftRaw rightRaw)
-    houter houterBody
+  refine BProv_two_exE_of_sentences
+    (B := Ax_s) Ax_s_sentences houter ?_
+  let C : List Formula :=
+    body :: (ex body :: G.map (rename Nat.succ)).map
+      (rename Nat.succ)
+  have hpacked : BProv Ax_s C body :=
+    BProv_ass (B := Ax_s) (G := C) (by simp [C])
+  have hleft : BProv Ax_s C
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n ↦ n+2) leftRaw)
+        (Term.var 1)) := by
+    simpa [body, codeEqualityBodyTermAt] using BProv_andE1 hpacked
+  have hrightAndEq : BProv Ax_s C
+      (and
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n ↦ n+2) rightRaw)
+          (Term.var 0))
+        (eq (Term.var 1) (Term.var 0))) := by
+    simpa [body, codeEqualityBodyTermAt] using BProv_andE2 hpacked
+  have hright : BProv Ax_s C
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n ↦ n+2) rightRaw)
+        (Term.var 0)) :=
+    BProv_andE1 hrightAndEq
+  have heqCode : BProv Ax_s C
+      (eq (Term.var 1) (Term.var 0)) :=
+    BProv_andE2 hrightAndEq
+  have hleftAtRightCode : BProv Ax_s C
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n ↦ n+2) leftRaw)
+        (Term.var 0)) :=
+    BProv_ordinalCodeGraphTermAt_congr_coded heqCode hleft
+  have hraw : BProv Ax_s C
+      (eq
+        (Term.rename (fun n ↦ n+2) leftRaw)
+        (Term.rename (fun n ↦ n+2) rightRaw)) :=
+    P.injective hleftAtRightCode hright
+  simpa [C, rename, Term.rename, Term.rename_comp,
+    Function.comp_def] using hraw
 
 /-- Raw equality is equivalent in PA to equality through existentially chosen
 ordinal codes.  The forward direction uses graph totality; the reverse direction

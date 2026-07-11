@@ -12,7 +12,7 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
-  PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic.
+  PAHFProofCalculus PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
@@ -485,77 +485,58 @@ Proof.
     unfold inner, body.
     exact hcodes.
   }
-  assert (houterBody : BProv Ax_s
-      (inner :: map (rename S) G)
-      (rename S (pEq leftRaw rightRaw))).
+  apply (BProv_two_exE_of_sentences
+    Ax_s sentence_ax_s G body (pEq leftRaw rightRaw) houter).
+  set (C := body ::
+    map (rename S) (pEx body :: map (rename S) G)).
+  assert (hpacked : BProv Ax_s C body).
+  { apply BProv_ass. unfold C. simpl. now left. }
+  assert (hleft : BProv Ax_s C
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n => n + 2) leftRaw) (tVar 1))).
   {
-    set (G1 := inner :: map (rename S) G).
-    assert (hinner : BProv Ax_s G1 (pEx body)).
-    {
-      apply BProv_ass.
-      unfold G1, inner. simpl. now left.
-    }
-    assert (hinnerBody : BProv Ax_s
-        (body :: map (rename S) G1)
-        (rename S (rename S (pEq leftRaw rightRaw)))).
-    {
-      set (C := body :: map (rename S) G1).
-      assert (hpacked : BProv Ax_s C body).
-      { apply BProv_ass. unfold C. simpl. now left. }
-      assert (hleft : BProv Ax_s C
-          (ordinalCodeGraphTermAt
-            (Term.rename (fun n => n + 2) leftRaw) (tVar 1))).
-      {
-        unfold body, codeEqualityBodyTermAt in hpacked.
-        exact (BProv_andE1 Ax_s C _ _ hpacked).
-      }
-      assert (hrightAndEq : BProv Ax_s C
-          (pAnd
-            (ordinalCodeGraphTermAt
-              (Term.rename (fun n => n + 2) rightRaw) (tVar 0))
-            (pEq (tVar 1) (tVar 0)))).
-      {
-        unfold body, codeEqualityBodyTermAt in hpacked.
-        exact (BProv_andE2 Ax_s C _ _ hpacked).
-      }
-      assert (hright : BProv Ax_s C
-          (ordinalCodeGraphTermAt
-            (Term.rename (fun n => n + 2) rightRaw) (tVar 0))).
-      { exact (BProv_andE1 Ax_s C _ _ hrightAndEq). }
-      assert (heqCode : BProv Ax_s C (pEq (tVar 1) (tVar 0))).
-      { exact (BProv_andE2 Ax_s C _ _ hrightAndEq). }
-      assert (hleftAtRightCode : BProv Ax_s C
-          (ordinalCodeGraphTermAt
-            (Term.rename (fun n => n + 2) leftRaw) (tVar 0))).
-      {
-        exact (BProv_ordinalCodeGraphTermAt_congr_coded
-          Ax_s C _ _ _ heqCode hleft).
-      }
-      assert (hraw : BProv Ax_s C
-          (pEq
-            (Term.rename (fun n => n + 2) leftRaw)
-            (Term.rename (fun n => n + 2) rightRaw))).
-      {
-        exact (pa_eq_graph_injective P C _ _ _
-          hleftAtRightCode hright).
-      }
-      cbn [rename].
-      rewrite !Term.rename_comp.
-      replace (Term.rename (fun n => S (S n)) leftRaw)
-        with (Term.rename (fun n => n + 2) leftRaw)
-        by (apply Term.rename_ext; intro n; lia).
-      replace (Term.rename (fun n => S (S n)) rightRaw)
-        with (Term.rename (fun n => n + 2) rightRaw)
-        by (apply Term.rename_ext; intro n; lia).
-      exact hraw.
-    }
-    exact (BProv_exE_of_sentences Ax_s G1 body
-      (rename S (pEq leftRaw rightRaw))
-      sentence_ax_s hinner hinnerBody).
+    unfold body, codeEqualityBodyTermAt in hpacked.
+    exact (BProv_andE1 Ax_s C _ _ hpacked).
   }
-  exact (BProv_exE_of_sentences Ax_s G inner
-    (pEq leftRaw rightRaw)
-    sentence_ax_s houter houterBody).
+  assert (hrightAndEq : BProv Ax_s C
+      (pAnd
+        (ordinalCodeGraphTermAt
+          (Term.rename (fun n => n + 2) rightRaw) (tVar 0))
+        (pEq (tVar 1) (tVar 0)))).
+  {
+    unfold body, codeEqualityBodyTermAt in hpacked.
+    exact (BProv_andE2 Ax_s C _ _ hpacked).
+  }
+  assert (hright : BProv Ax_s C
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n => n + 2) rightRaw) (tVar 0))).
+  { exact (BProv_andE1 Ax_s C _ _ hrightAndEq). }
+  assert (heqCode : BProv Ax_s C (pEq (tVar 1) (tVar 0))).
+  { exact (BProv_andE2 Ax_s C _ _ hrightAndEq). }
+  assert (hleftAtRightCode : BProv Ax_s C
+      (ordinalCodeGraphTermAt
+        (Term.rename (fun n => n + 2) leftRaw) (tVar 0))).
+  {
+    exact (BProv_ordinalCodeGraphTermAt_congr_coded
+      Ax_s C _ _ _ heqCode hleft).
+  }
+  assert (hraw : BProv Ax_s C
+      (pEq
+        (Term.rename (fun n => n + 2) leftRaw)
+        (Term.rename (fun n => n + 2) rightRaw))).
+  {
+    exact (pa_eq_graph_injective P C _ _ _
+      hleftAtRightCode hright).
+  }
+  cbn [rename].
+  rewrite !Term.rename_comp.
+  replace (Term.rename (fun n => S (S n)) leftRaw)
+    with (Term.rename (fun n => n + 2) leftRaw)
+    by (apply Term.rename_ext; intro n; lia).
+  replace (Term.rename (fun n => S (S n)) rightRaw)
+    with (Term.rename (fun n => n + 2) rightRaw)
+    by (apply Term.rename_ext; intro n; lia).
+  exact hraw.
 Qed.
 
 Lemma BProv_eq_iff_codeEqualityTermAt : forall
