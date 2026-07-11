@@ -99,6 +99,7 @@ PAHFOrdinalCodeTermCompatibility.v
 PAHFOrdinalCodeFunctional.v
 PAHFOrdinalCodeInjective.v
 PAHFOrdinalCodeTermOperations.v
+PAHFOrdinalCodeMulCore.v
 PAHFOrdinalCodeTermAdd.v
 PAHFOrdinalCodeTermMul.v
 PAHFRoundTripQuantifiers.v
@@ -111,6 +112,7 @@ PAHFHFRoundTripSemantic.v
 PAHFHFRepresentationRange.v
 PAHFCompositeMemBelow.v
 PAHFCompositeArithmetic.v
+PAHFOrdinalCodeTermMulCorrected.v
 PAHFFinalAssembly.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
