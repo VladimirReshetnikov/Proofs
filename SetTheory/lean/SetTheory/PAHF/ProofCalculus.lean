@@ -33,6 +33,26 @@ def iterRenameSucc : Nat → Formula → Formula
   | 0, phi => phi
   | n + 1, phi => iterRenameSucc n (rename Nat.succ phi)
 
+/-- Rename an entire context once for every newly opened binder.  Its
+recursive shape matches repeated applications of
+`BProv_rename_of_sentences`. -/
+def iterRenameContextSucc : Nat → List Formula → List Formula
+  | 0, G => G
+  | n + 1, G => iterRenameContextSucc n (G.map (rename Nat.succ))
+
+/-- Iterated admissibility of successor renaming.  This packages the common
+pattern of naming two or three consecutive one-step renamed derivations. -/
+theorem BProv_iterRenameSucc_of_sentences
+    {B : Formula → Prop} (hB : Sentences B)
+    (n : Nat) {G : List Formula} {phi : Formula}
+    (hphi : BProv B G phi) :
+    BProv B (iterRenameContextSucc n G) (iterRenameSucc n phi) := by
+  induction n generalizing G phi with
+  | zero => exact hphi
+  | succ n ih =>
+      simp only [iterRenameContextSucc, iterRenameSucc]
+      exact ih (BProv_rename_of_sentences (B := B) hB hphi Nat.succ)
+
 /-- Add freshly opened assumptions in outside-in order.  In particular,
 `openedContext [outer, inner] G` is
 `inner :: (outer :: G.map (rename Nat.succ)).map (rename Nat.succ)`. -/

@@ -246,14 +246,9 @@ Proof.
             (Term.rename (fun n => n + 2) rightRaw))
           (tVar (codedOut + 2)))).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        C target htarget S) as h1.
-      pose proof (BProv_context_cons Ax_s (map (rename S) C)
-        leftGraphBody _ h1) as h1c.
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        L _ h1c S) as h2.
-      pose proof (BProv_context_cons Ax_s (map (rename S) L)
-        rightGraphBody _ h2) as h2c.
+      pose proof (BProv_lift_two_contexts_of_sentences
+        Ax_s sentence_ax_s C leftGraphBody rightGraphBody target htarget)
+        as h2c.
       unfold R, L, C, target in h2c.
       repeat rewrite rename_ordinalCodeGraphTermAt in h2c.
       cbn [Term.rename] in h2c.
@@ -419,10 +414,9 @@ Proof.
   {
     intros n hn.
     pose proof (hcode n hn) as h0.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      G _ h0 S) as h1.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      (map (rename S) G) _ h1 S) as h2.
+    pose proof (BProv_iterRenameSucc_of_sentences
+      Ax_s sentence_ax_s 2 G _ h0) as h2.
+    cbn [iterRenameContextSucc iterRenameSucc] in h2.
     unfold G2, rawMap2, codedMap2, ordinalCodeGraphAt.
     unfold ordinalCodeGraphAt in h2.
     repeat rewrite rename_ordinalCodeGraphTermAt in h2.

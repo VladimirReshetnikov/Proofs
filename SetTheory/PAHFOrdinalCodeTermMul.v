@@ -233,14 +233,9 @@ Proof.
     (tVar (codedOut + 2))).
   assert (htargetL : BProv Ax_s L targetL).
   {
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      C target htarget S) as h1.
-    pose proof (BProv_context_cons Ax_s (map (rename S) C)
-      rightGraphBody _ h1) as h1c.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      R _ h1c S) as h2.
-    pose proof (BProv_context_cons Ax_s (map (rename S) R)
-      leftGraphBody _ h2) as h2c.
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s C rightGraphBody leftGraphBody target htarget)
+      as h2c.
     unfold L, R, C, target, targetL in h2c.
     repeat rewrite rename_ordinalCodeGraphTermAt in h2c.
     cbn [Term.rename] in h2c.
@@ -460,12 +455,9 @@ Proof.
   {
     intros n hn.
     pose proof (hcode n hn) as h0.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      G _ h0 S) as h1.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      (map (rename S) G) _ h1 S) as h2.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      (map (rename S) (map (rename S) G)) _ h2 S) as h3.
+    pose proof (BProv_iterRenameSucc_of_sentences
+      Ax_s sentence_ax_s 3 G _ h0) as h3.
+    cbn [iterRenameContextSucc iterRenameSucc] in h3.
     unfold G3, rawMap3, codedMap3, ordinalCodeGraphAt.
     unfold ordinalCodeGraphAt in h3.
     repeat rewrite rename_ordinalCodeGraphTermAt in h3.

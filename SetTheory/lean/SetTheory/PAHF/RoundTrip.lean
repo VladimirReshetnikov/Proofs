@@ -1038,12 +1038,9 @@ theorem BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_body
     body₁ :: (inner₁ :: G.map (rename Nat.succ)).map (rename Nat.succ)
   have hbody₁A : BProv Ax_s A body₁ :=
     BProv_ass (B := Ax_s) (G := A) (by simp [A])
-  have hgraph₂Ren₁ := BProv_rename_of_sentences
+  have hgraph₂Ren₂ := BProv_iterRenameSucc_of_sentences
     (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-    hgraph₂ Nat.succ
-  have hgraph₂Ren₂ := BProv_rename_of_sentences
-    (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-    hgraph₂Ren₁ Nat.succ
+    2 hgraph₂
   have hinner₁Ctx := BProv_context_cons (B := Ax_s)
     (a := rename Nat.succ inner₁) hgraph₂Ren₂
   have hgraph₂A0 := BProv_context_cons (B := Ax_s)
@@ -1052,7 +1049,8 @@ theorem BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_body
       (ordinalCodeGraphTermAt
         (Term.rename (fun n ↦ n+2) raw)
         (Term.rename (fun n ↦ n+2) coded₂)) := by
-    simpa [A, body₁, inner₁, rename_ordinalCodeGraphTermAt,
+    simpa [A, body₁, inner₁, iterRenameContextSucc, iterRenameSucc,
+      rename_ordinalCodeGraphTermAt,
       Term.rename, Term.rename_comp, List.map_map,
       Function.comp_def, Nat.add_assoc] using hgraph₂A0
   let raw₂ : Term := Term.rename (fun n ↦ n+2) raw
@@ -1073,12 +1071,9 @@ theorem BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_body
       body₂ :: (inner₂ :: A.map (rename Nat.succ)).map (rename Nat.succ)
     have hbody₂B : BProv Ax_s B body₂ :=
       BProv_ass (B := Ax_s) (G := B) (by simp [B])
-    have hbody₁Ren₁ := BProv_rename_of_sentences
+    have hbody₁Ren₂ := BProv_iterRenameSucc_of_sentences
       (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hbody₁A Nat.succ
-    have hbody₁Ren₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      hbody₁Ren₁ Nat.succ
+      2 hbody₁A
     have hinner₂Ctx := BProv_context_cons (B := Ax_s)
       (a := rename Nat.succ inner₂) hbody₁Ren₂
     have hbody₁B0 := BProv_context_cons (B := Ax_s)
@@ -1090,6 +1085,7 @@ theorem BProv_Ax_s_ordinalCodeGraphTermAt_functional_of_body
         (ordinalCodeGraphBodyTermAt
           (Term.var 3) (Term.var 2) raw₄ coded₁₄) := by
       simpa [B, A, body₁, inner₁, body₂, inner₂,
+        iterRenameContextSucc, iterRenameSucc,
         raw₄, coded₁₄, rename_ordinalCodeGraphBodyTermAt,
         Term.rename, Term.rename_comp, List.map_map,
         Function.comp_def, Nat.add_assoc] using hbody₁B0
@@ -1184,12 +1180,9 @@ theorem BProv_Ax_s_eq_of_ordinalCodeTraceAgreementAt
         simpa [body] using BProv_andE2 hbody
       have hcurrent₂ := BProv_andE1 htail
       have hcurrentEq := BProv_andE2 htail
-      have hendpoint₁Ren₁ := BProv_rename_of_sentences
+      have hendpoint₁Ren₂ := BProv_iterRenameSucc_of_sentences
         (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hendpoint₁ Nat.succ
-      have hendpoint₁Ren₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hendpoint₁Ren₁ Nat.succ
+        2 hendpoint₁
       have hendpoint₁C := BProv_context_cons (B := Ax_s)
         (a := rename Nat.succ inner) hendpoint₁Ren₂
       have hendpoint₁D0 := BProv_context_cons (B := Ax_s)
@@ -1200,15 +1193,13 @@ theorem BProv_Ax_s_eq_of_ordinalCodeTraceAgreementAt
             (Term.rename (fun n ↦ n+2) sequenceCode₁)
             (Term.rename (fun n ↦ n+2) sequenceStep₁)
             (Term.rename (fun n ↦ n+2) raw)) := by
-        simpa [D, C, body, inner, rename_betaTermTermAt,
+        simpa [D, C, body, inner, iterRenameContextSucc, iterRenameSucc,
+          rename_betaTermTermAt,
           Term.rename, Term.rename_comp, List.map_map,
           Function.comp_def, Nat.add_assoc] using hendpoint₁D0
-      have hendpoint₂Ren₁ := BProv_rename_of_sentences
+      have hendpoint₂Ren₂ := BProv_iterRenameSucc_of_sentences
         (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hendpoint₂ Nat.succ
-      have hendpoint₂Ren₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hendpoint₂Ren₁ Nat.succ
+        2 hendpoint₂
       have hendpoint₂C := BProv_context_cons (B := Ax_s)
         (a := rename Nat.succ inner) hendpoint₂Ren₂
       have hendpoint₂D0 := BProv_context_cons (B := Ax_s)
@@ -1219,7 +1210,8 @@ theorem BProv_Ax_s_eq_of_ordinalCodeTraceAgreementAt
             (Term.rename (fun n ↦ n+2) sequenceCode₂)
             (Term.rename (fun n ↦ n+2) sequenceStep₂)
             (Term.rename (fun n ↦ n+2) raw)) := by
-        simpa [D, C, body, inner, rename_betaTermTermAt,
+        simpa [D, C, body, inner, iterRenameContextSucc, iterRenameSucc,
+          rename_betaTermTermAt,
           Term.rename, Term.rename_comp, List.map_map,
           Function.comp_def, Nat.add_assoc] using hendpoint₂D0
       have hcurrent₁ToEndpoint : BProv Ax_s D
@@ -2240,19 +2232,13 @@ theorem BProv_Ax_s_ordinalCodeStepWitnessTermAt_of_prefixAgreement
       have hadjoin : BProv Ax_s C
           (hfAdjoinGraphTermAt
             (Term.var 0) (Term.var 1) (Term.var 1)) := BProv_andE2 htail
-      have hagreementRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (betaPrefixAgreementTermAt oldCode newCode step bound)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          hagreement Nat.succ
       have hagreementRen2 : BProv Ax_s
           ((G.map (rename Nat.succ)).map (rename Nat.succ))
           (rename Nat.succ (rename Nat.succ
             (betaPrefixAgreementTermAt oldCode newCode step bound))) :=
-        BProv_rename_of_sentences
+        BProv_iterRenameSucc_of_sentences
           (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          hagreementRen1 Nat.succ
+          2 hagreement
       have hagreementC : BProv Ax_s C
           (betaPrefixAgreementTermAt
             oldCode2 newCode2 step2 bound2) := by
@@ -2264,18 +2250,13 @@ theorem BProv_Ax_s_ordinalCodeStepWitnessTermAt_of_prefixAgreement
           remTermTermAt, ltTermAt, betaModTermTerm,
           rename, Term.rename, SetTheory.up, Term.rename_comp,
           Function.comp_def, Nat.add_assoc] using h2
-      have hltCurrentRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt index bound)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          hltCurrent Nat.succ
       have hltCurrentRen2 : BProv Ax_s
           ((G.map (rename Nat.succ)).map (rename Nat.succ))
           (rename Nat.succ (rename Nat.succ
             (ltTermAt index bound))) :=
-        BProv_rename_of_sentences
+        BProv_iterRenameSucc_of_sentences
           (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          hltCurrentRen1 Nat.succ
+          2 hltCurrent
       have hltCurrentC : BProv Ax_s C (ltTermAt index2 bound2) := by
         have h1 := BProv_context_cons (B := Ax_s)
           (a := rename Nat.succ (ex body)) hltCurrentRen2
@@ -2283,18 +2264,13 @@ theorem BProv_Ax_s_ordinalCodeStepWitnessTermAt_of_prefixAgreement
         simpa [C, G1, index2, bound2, ltTermAt,
           rename, Term.rename, SetTheory.up, Term.rename_comp,
           Function.comp_def, Nat.add_assoc] using h2
-      have hltNextRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt (Term.succ index) bound)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          hltNext Nat.succ
       have hltNextRen2 : BProv Ax_s
           ((G.map (rename Nat.succ)).map (rename Nat.succ))
           (rename Nat.succ (rename Nat.succ
             (ltTermAt (Term.succ index) bound))) :=
-        BProv_rename_of_sentences
+        BProv_iterRenameSucc_of_sentences
           (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-          hltNextRen1 Nat.succ
+          2 hltNext
       have hltNextC : BProv Ax_s C
           (ltTermAt (Term.succ index2) bound2) := by
         have h1 := BProv_context_cons (B := Ax_s)
@@ -6895,15 +6871,13 @@ theorem BProv_Ax_s_ordinalCodeAddPointTermAt_zero
         (ordinalCodeGraphTermAt
           (Term.rename (fun n ↦ n+2) leftRaw)
           (Term.rename (fun n ↦ n+2) leftCode)) := by
-      have h₁ := BProv_rename_of_sentences
+      have h₂ := BProv_iterRenameSucc_of_sentences
         (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hleft Nat.succ
-      have h₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        h₁ Nat.succ
+        2 hleft
       have hctx := BProv_context_cons
         (B := Ax_s) (a := rename Nat.succ rightGraph) h₂
-      simpa [D, C, Q, rename_ordinalCodeGraphTermAt,
+      simpa [D, C, Q, iterRenameContextSucc, iterRenameSucc,
+        rename_ordinalCodeGraphTermAt,
         Term.rename_comp, Function.comp_def, Nat.add_assoc] using hctx
     have hrightD : BProv Ax_s D
         (ordinalCodeGraphTermAt Term.zero (Term.var 1)) := by
@@ -7736,20 +7710,13 @@ theorem BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
             (Term.rename (fun n ↦ n+2) leftRaw)
             (Term.rename (fun n ↦ n+2) rightRaw))
           (Term.var (codedOut+2))) := by
-      have h₁ := BProv_rename_of_sentences
+      have htargetLift := BProv_lift_two_contexts_of_sentences
         (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        htarget Nat.succ
-      have h₁' := BProv_context_cons
-        (B := Ax_s) (a := leftGraphBody) h₁
-      have h₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        h₁' Nat.succ
-      have h₂' := BProv_context_cons
-        (B := Ax_s) (a := rightGraphBody) h₂
+        (outer := leftGraphBody) (inner := rightGraphBody) htarget
       simpa [R, L, C, target,
         rename_ordinalCodeGraphTermAt, Term.rename,
         Term.rename_comp, Function.comp_def,
-        Nat.add_assoc] using h₂'
+        Nat.add_assoc] using htargetLift
     have liftShifted : ∀ {phi : Formula},
         BProv Ax_s
           ((G.map (rename Nat.succ)).map (rename Nat.succ)) phi →
@@ -7861,13 +7828,11 @@ theorem ordinalCodeTermGraphProof_add
         (ordinalCodeGraphAt (rawMap₂ n) (codedMap₂ n)) := by
     intro n hn
     have h₀ := hcode n hn
-    have h₁ := BProv_rename_of_sentences
+    have h₂ := BProv_iterRenameSucc_of_sentences
       (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₀ Nat.succ
-    have h₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₁ Nat.succ
-    simpa [G₂, rawMap₂, codedMap₂, ordinalCodeGraphAt,
+      2 h₀
+    simpa [G₂, rawMap₂, codedMap₂, iterRenameContextSucc, iterRenameSucc,
+      ordinalCodeGraphAt,
       rename_ordinalCodeGraphTermAt, Term.rename,
       List.map_map, Function.comp_def, Nat.add_assoc] using h₂
   have hleftCode : ∀ n, Term.Free n a →
@@ -9024,15 +8989,13 @@ theorem BProv_Ax_s_ordinalCodeMulPointTermAt_zero
         (ordinalCodeGraphTermAt
           (Term.rename (fun n ↦ n+2) leftRaw)
           (Term.rename (fun n ↦ n+2) leftCode)) := by
-      have h₁ := BProv_rename_of_sentences
+      have h₂ := BProv_iterRenameSucc_of_sentences
         (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hleft Nat.succ
-      have h₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        h₁ Nat.succ
+        2 hleft
       have hctx := BProv_context_cons
         (B := Ax_s) (a := rename Nat.succ rightGraph) h₂
-      simpa [D, C, Q, rename_ordinalCodeGraphTermAt,
+      simpa [D, C, Q, iterRenameContextSucc, iterRenameSucc,
+        rename_ordinalCodeGraphTermAt,
         Term.rename_comp, Function.comp_def, Nat.add_assoc] using hctx
     have hrightD : BProv Ax_s D
         (ordinalCodeGraphTermAt Term.zero (Term.var 1)) := by
@@ -9861,20 +9824,13 @@ theorem BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
         (Term.rename (fun n ↦ n+2) rightRaw))
       (Term.var (codedOut+2))
   have htargetL : BProv Ax_s L targetL := by
-    have h₁ := BProv_rename_of_sentences
+    have htargetLift := BProv_lift_two_contexts_of_sentences
       (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      htarget Nat.succ
-    have h₁' := BProv_context_cons
-      (B := Ax_s) (a := rightGraphBody) h₁
-    have h₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₁' Nat.succ
-    have h₂' := BProv_context_cons
-      (B := Ax_s) (a := leftGraphBody) h₂
+      (outer := rightGraphBody) (inner := leftGraphBody) htarget
     simpa [L, R, C, target, targetL,
       rename_ordinalCodeGraphTermAt, Term.rename,
       Term.rename_comp, Function.comp_def,
-      Nat.add_assoc] using h₂'
+      Nat.add_assoc] using htargetLift
   have hcoreIff := ordinalCodeMulCoreCompatibility
     (G := L)
     (leftRaw := Term.rename (fun n ↦ n+2) leftRaw)
@@ -10024,16 +9980,11 @@ theorem ordinalCodeTermGraphProof_mul
         (ordinalCodeGraphAt (rawMap₃ n) (codedMap₃ n)) := by
     intro n hn
     have h₀ := hcode n hn
-    have h₁ := BProv_rename_of_sentences
+    have h₃ := BProv_iterRenameSucc_of_sentences
       (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₀ Nat.succ
-    have h₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₁ Nat.succ
-    have h₃ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₂ Nat.succ
-    simpa [G₃, rawMap₃, codedMap₃, ordinalCodeGraphAt,
+      3 h₀
+    simpa [G₃, rawMap₃, codedMap₃, iterRenameContextSucc, iterRenameSucc,
+      ordinalCodeGraphAt,
       rename_ordinalCodeGraphTermAt, Term.rename,
       List.map_map, Function.comp_def, Nat.add_assoc] using h₃
   have hleftCode : ∀ n, Term.Free n a →
@@ -10731,12 +10682,9 @@ theorem BProv_Ax_s_eq_succ_of_common_ordinalCodeGraphs
           (ordinalCodeGraphTermAt right₂ (Term.var 1)) :=
         BProv_ordinalCodeGraphTermAt_congr_coded
           (BProv_eqSym hcodedEq) hrightPred
-      have hinjectiveRen₁ := BProv_rename_of_sentences
+      have hinjectiveRen₂ := BProv_iterRenameSucc_of_sentences
         (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-        hinjective Nat.succ
-      have hinjectiveRen₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-        hinjectiveRen₁ Nat.succ
+        2 hinjective
       have hinjectiveD : BProv Ax_s D
           (ordinalCodeInjectiveTermAt left₂) := by
         have hleftCtx := BProv_context_cons
@@ -10744,6 +10692,7 @@ theorem BProv_Ax_s_eq_succ_of_common_ordinalCodeGraphs
         have hrightCtx := BProv_context_cons
           (B := Ax_s) (a := rightBody) hleftCtx
         simpa [D, C, left₁, left₂,
+          iterRenameContextSucc, iterRenameSucc,
           rename_ordinalCodeInjectiveTermAt,
           Term.rename_comp, Function.comp_def] using hrightCtx
       have hrawEq : BProv Ax_s D (eq left₂ right₂) :=
@@ -10784,15 +10733,12 @@ theorem BProv_Ax_s_ordinalCodeInjectiveTermAt_succ
   let rightGraph : Formula :=
     ordinalCodeGraphTermAt (Term.var 1) (Term.var 0)
   let target : Formula := eq (Term.succ raw₂) (Term.var 1)
-  have hinjectiveRen₁ := BProv_rename_of_sentences
+  have hinjectiveRen₂ := BProv_iterRenameSucc_of_sentences
     (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-    hinjective Nat.succ
-  have hinjectiveRen₂ := BProv_rename_of_sentences
-    (B := Ax_s) (fun f hf => sentence_ax_s (f := f) hf)
-    hinjectiveRen₁ Nat.succ
+    2 hinjective
   have hinjectiveQ₂ : BProv Ax_s Q₂
       (ordinalCodeInjectiveTermAt raw₂) := by
-    simpa [Q₁, Q₂, raw₂,
+    simpa [Q₁, Q₂, raw₂, iterRenameContextSucc, iterRenameSucc,
       rename_ordinalCodeInjectiveTermAt,
       Term.rename_comp, Function.comp_def] using hinjectiveRen₂
   have hbody : BProv Ax_s Q₂
@@ -11578,13 +11524,11 @@ theorem BProv_Ax_s_paCompositeAt_eq_exact
         (ordinalCodeGraphAt (rawMap₂ n) (codedMap₂ n)) := by
     intro n hn
     have h₀ := hcode n hn
-    have h₁ := BProv_rename_of_sentences
+    have h₂ := BProv_iterRenameSucc_of_sentences
       (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₀ Nat.succ
-    have h₂ := BProv_rename_of_sentences
-      (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-      h₁ Nat.succ
-    simpa [G₂, rawMap₂, codedMap₂, ordinalCodeGraphAt,
+      2 h₀
+    simpa [G₂, rawMap₂, codedMap₂, iterRenameContextSucc, iterRenameSucc,
+      ordinalCodeGraphAt,
       rename_ordinalCodeGraphTermAt, Term.rename] using h₂
   have hleftRaw : ∀ n, Term.Free n left →
       BProv Ax_s G₂
@@ -11684,12 +11628,9 @@ theorem BProv_Ax_s_paCompositeAt_all_forward
             simpa [rangeRawMap, rangeCodedMap] using hgraph
         | succ n =>
             have h₀ := hcode n hn
-            have h₁ := BProv_rename_of_sentences
+            have h₂ := BProv_iterRenameSucc_of_sentences
               (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-              h₀ Nat.succ
-            have h₂ := BProv_rename_of_sentences
-              (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-              h₁ Nat.succ
+              2 h₀
             have hrawCtx := BProv_context_cons (B := Ax_s)
               (a := rename Nat.succ (rename Nat.succ rawAll)) h₂
             have hdomainCtx := BProv_context_cons (B := Ax_s)
@@ -11697,6 +11638,7 @@ theorem BProv_Ax_s_paCompositeAt_all_forward
             have hctx := BProv_context_cons (B := Ax_s)
               (a := graphBody) hdomainCtx
             simpa [C₃, C₂, C₁, C₀,
+              iterRenameContextSucc, iterRenameSucc,
               rangeRawMap, rangeCodedMap,
               ordinalCodeGraphAt, rename_ordinalCodeGraphTermAt,
               Term.rename, List.map_map, Function.comp_def] using hctx
@@ -11710,12 +11652,9 @@ theorem BProv_Ax_s_paCompositeAt_all_forward
         simpa [iffForm] using BProv_andE1 hih
       have hall₀ : BProv Ax_s C₀ rawAll :=
         BProv_ass (B := Ax_s) (G := C₀) (by simp [C₀])
-      have hall₁ := BProv_rename_of_sentences
+      have hall₂ := BProv_iterRenameSucc_of_sentences
         (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hall₀ Nat.succ
-      have hall₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hall₁ Nat.succ
+        2 hall₀
       have hallDomainCtx := BProv_context_cons (B := Ax_s)
         (a := rename Nat.succ codedOrdinalDomain) hall₂
       have hallCtx := BProv_context_cons (B := Ax_s)
@@ -11723,7 +11662,8 @@ theorem BProv_Ax_s_paCompositeAt_all_forward
       have hallCtx' : BProv Ax_s C₃
           (all (rename (SetTheory.up Nat.succ)
             (rename (SetTheory.up Nat.succ) rawBody))) := by
-        simpa [C₃, C₂, C₁, C₀, rawAll, rename] using hallCtx
+        simpa [C₃, C₂, C₁, C₀, rawAll,
+          iterRenameContextSucc, iterRenameSucc, rename] using hallCtx
       have hrawInst := BProv_allE (B := Ax_s) (G := C₃)
         (t := Term.var 0) hallCtx'
       have hraw : BProv Ax_s C₃
@@ -11812,17 +11752,15 @@ theorem BProv_Ax_s_paCompositeAt_all_reverse
             simpa [totalRawMap, totalCodedMap] using hgraph
         | succ n =>
             have h₀ := hcode n hn
-            have h₁ := BProv_rename_of_sentences
+            have h₂ := BProv_iterRenameSucc_of_sentences
               (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-              h₀ Nat.succ
-            have h₂ := BProv_rename_of_sentences
-              (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-              h₁ Nat.succ
+              2 h₀
             have hcodedCtx := BProv_context_cons (B := Ax_s)
               (a := rename Nat.succ (rename Nat.succ codedAll)) h₂
             have hctx := BProv_context_cons (B := Ax_s)
               (a := graphBody) hcodedCtx
             simpa [C₂, C₁, C₀,
+              iterRenameContextSucc, iterRenameSucc,
               totalRawMap, totalCodedMap,
               ordinalCodeGraphAt, rename_ordinalCodeGraphTermAt,
               Term.rename, List.map_map, Function.comp_def] using hctx
@@ -11836,19 +11774,17 @@ theorem BProv_Ax_s_paCompositeAt_all_reverse
         simpa [iffForm] using BProv_andE2 hih
       have hall₀ : BProv Ax_s C₀ codedAll :=
         BProv_ass (B := Ax_s) (G := C₀) (by simp [C₀])
-      have hall₁ := BProv_rename_of_sentences
+      have hall₂ := BProv_iterRenameSucc_of_sentences
         (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hall₀ Nat.succ
-      have hall₂ := BProv_rename_of_sentences
-        (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-        hall₁ Nat.succ
+        2 hall₀
       have hallCtx := BProv_context_cons (B := Ax_s)
         (a := graphBody) hall₂
       have hallCtx' : BProv Ax_s C₂
           (all (rename (SetTheory.up Nat.succ)
             (rename (SetTheory.up Nat.succ)
               (imp codedOrdinalDomain codedBody)))) := by
-        simpa [C₂, C₁, C₀, codedAll, rename] using hallCtx
+        simpa [C₂, C₁, C₀, codedAll,
+          iterRenameContextSucc, iterRenameSucc, rename] using hallCtx
       have hbodyInst := BProv_allE (B := Ax_s) (G := C₂)
         (t := Term.var 0) hallCtx'
       have hcodedImp : BProv Ax_s C₂
@@ -11971,12 +11907,9 @@ theorem BProv_Ax_s_paCompositeAt_ex_forward
               simpa [totalRawMap, totalCodedMap] using hgraph
           | succ n =>
               have h₀ := hcode n hn
-              have h₁ := BProv_rename_of_sentences
+              have h₂ := BProv_iterRenameSucc_of_sentences
                 (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-                h₀ Nat.succ
-              have h₂ := BProv_rename_of_sentences
-                (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-                h₁ Nat.succ
+                2 h₀
               have hexCtx := BProv_context_cons (B := Ax_s)
                 (a := rename Nat.succ (rename Nat.succ rawEx)) h₂
               have hrawCtx := BProv_context_cons (B := Ax_s)
@@ -11984,6 +11917,7 @@ theorem BProv_Ax_s_paCompositeAt_ex_forward
               have hctx := BProv_context_cons (B := Ax_s)
                 (a := graphBody) hrawCtx
               simpa [C₂, C₁, C₀,
+                iterRenameContextSucc, iterRenameSucc,
                 totalRawMap, totalCodedMap,
                 ordinalCodeGraphAt, rename_ordinalCodeGraphTermAt,
                 Term.rename, List.map_map, Function.comp_def] using hctx
@@ -12113,12 +12047,9 @@ theorem BProv_Ax_s_paCompositeAt_ex_reverse
               simpa [rangeRawMap, rangeCodedMap] using hgraph
           | succ n =>
               have h₀ := hcode n hn
-              have h₁ := BProv_rename_of_sentences
+              have h₂ := BProv_iterRenameSucc_of_sentences
                 (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-                h₀ Nat.succ
-              have h₂ := BProv_rename_of_sentences
-                (B := Ax_s) (fun f hf ↦ sentence_ax_s (f := f) hf)
-                h₁ Nat.succ
+                2 h₀
               have hexCtx := BProv_context_cons (B := Ax_s)
                 (a := rename Nat.succ (rename Nat.succ codedEx)) h₂
               have handCtx := BProv_context_cons (B := Ax_s)
@@ -12126,6 +12057,7 @@ theorem BProv_Ax_s_paCompositeAt_ex_reverse
               have hctx := BProv_context_cons (B := Ax_s)
                 (a := graphBody) handCtx
               simpa [C₂, C₁, C₀,
+                iterRenameContextSucc, iterRenameSucc,
                 rangeRawMap, rangeCodedMap,
                 ordinalCodeGraphAt, rename_ordinalCodeGraphTermAt,
                 Term.rename, List.map_map, Function.comp_def] using hctx

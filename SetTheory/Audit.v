@@ -89,13 +89,16 @@ Check PA.Formula.subst_id.
 Check PA.Formula.subst_eq_of_sentence.
 Check PA.Formula.term_subst_instTerm_rename_succ.
 Check iterEx.
+Check iterRenameContextSucc.
 Check openedContext.
 Check openedExContext.
 Check BProv_context_prefix.
+Check BProv_iterRenameSucc_of_sentences.
 Check BProv_lift_openedContext_of_sentences.
 Check BProv_iterExE_of_sentences.
 Check subst_three_witnesses_rename_three_succ.
 Print Assumptions BProv_iterExE_of_sentences.
+Print Assumptions BProv_iterRenameSucc_of_sentences.
 Check PA.Formula.term_subst_instTerm_rename_two_succ.
 Check PA.Formula.term_subst_upSubst_instTerm_rename_two_succ.
 Check PA.Formula.term_subst_upSubst_instTerm_rename_three_succ.

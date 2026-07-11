@@ -5,7 +5,7 @@
 (*                                                                       *)
 (*  Opening several existential witnesses creates a nontrivial context:  *)
 (*  each older assumption is de Bruijn-renamed once for every witness    *)
-(*  witness opened after it.  The definitions below make that pattern     *)
+(*  opened after it.  The definitions below make that pattern explicit,  *)
 (*  explicit, and the two generic lemmas package the corresponding        *)
 (*  proof lifting and nested existential elimination.                     *)
 (* ===================================================================== *)
@@ -44,6 +44,35 @@ Fixpoint iterRenameSucc (n : nat) (phi : formula) : formula :=
   | 0 => phi
   | S k => iterRenameSucc k (rename S phi)
   end.
+
+(** Rename every formula in a context once per opened binder.  The
+    recursive shape deliberately matches the contexts produced by repeated
+    applications of [BProv_rename_of_sentences]. *)
+Fixpoint iterRenameContextSucc
+    (n : nat) (G : list formula) : list formula :=
+  match n with
+  | 0 => G
+  | S k => iterRenameContextSucc k (map (rename S) G)
+  end.
+
+(** Iterated admissibility of successor renaming.  Clients that merely need
+    to move a derivation under several binders should use this theorem rather
+    than name a chain of one-step renamed proofs. *)
+Lemma BProv_iterRenameSucc_of_sentences : forall
+    (B : formula -> Prop), Sentences B ->
+  forall n G phi,
+    BProv B G phi ->
+    BProv B
+      (iterRenameContextSucc n G)
+      (iterRenameSucc n phi).
+Proof.
+  intros B hB n.
+  induction n as [|n IH]; intros G phi hphi.
+  - exact hphi.
+  - cbn [iterRenameContextSucc iterRenameSucc].
+    apply IH.
+    exact (BProv_rename_of_sentences B hB G phi hphi S).
+Qed.
 
 (** Add a sequence of freshly opened assumptions, in outside-in order.
     Thus [openedContext [outer; inner] G] is
