@@ -10,19 +10,12 @@
 From Stdlib Require Import Arith.Arith Lia List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import
-  PAHF PAHFOrdinalCode PAHFTranslatedHFFin
+  PAHF PAHFOrdinalCode PAHFOrdinalCodeInjective PAHFTranslatedHFFin
   PAHFMembershipBound PAHFMembershipBoundSucc PAHFMembershipTail
   PAHFTranslatedExtensionality PAHFAdjoinTotal.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
-
-(** An Ackermann code is empty when none of its translated members exist. *)
-Definition hfEmptyTermAt (setCode : term) : formula :=
-  pAll
-    (pImp
-      (hfMemTermAt 0 (Term.rename S setCode))
-      pBot).
 
 Definition hfEmptyAt (setCode : nat) : formula :=
   hfEmptyTermAt (tVar setCode).
@@ -155,38 +148,6 @@ Definition hfEmptyOrStrictPredAdjoinThroughTermAt
 
 Definition hfEmptyOrStrictPredAdjoinThroughAt (bound : nat) : formula :=
   hfEmptyOrStrictPredAdjoinThroughTermAt (tVar bound).
-
-Lemma subst_ltTermAt : forall sigma a b,
-  subst sigma (ltTermAt a b) =
-  ltTermAt (Term.subst sigma a) (Term.subst sigma b).
-Proof.
-  intros sigma a b.
-  unfold ltTermAt, leAt.
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
-Qed.
-
-Lemma subst_hfEmptyTermAt : forall sigma code,
-  subst sigma (hfEmptyTermAt code) =
-  hfEmptyTermAt (Term.subst sigma code).
-Proof.
-  intros sigma code.
-  unfold hfEmptyTermAt.
-  change
-    (pAll
-      (pImp
-        (subst (Term.upSubst sigma)
-          (hfMemTermAt 0 (Term.rename S code)))
-        pBot) =
-     pAll
-      (pImp
-        (hfMemTermAt 0
-          (Term.rename S (Term.subst sigma code)))
-        pBot)).
-  rewrite subst_up_hfMemTermAt_zero_rename_succ.
-  reflexivity.
-Qed.
 
 Lemma subst_hfStrictPredAdjoinExistsTermAt : forall sigma code,
   subst sigma (hfStrictPredAdjoinExistsTermAt code) =

@@ -79,7 +79,6 @@ PAHFBetaShiftPrefix.v
 PAHFMembershipTail.v
 PAHFAdjoinTotal.v
 PAHFTranslatedExtensionality.v
-PAHFTranslatedFiniteInduction.v
 PAHFInterpretations.v
 PAHFTermGraphModel.v
 PAHFTermGraphTotal.v
@@ -98,6 +97,7 @@ PAHFRoundTripEquality.v
 PAHFOrdinalCodeTermCompatibility.v
 PAHFOrdinalCodeFunctional.v
 PAHFOrdinalCodeInjective.v
+PAHFTranslatedFiniteInduction.v
 PAHFOrdinalCodeTermOperations.v
 PAHFOrdinalCodeMulCore.v
 PAHFOrdinalCodeTermAdd.v
