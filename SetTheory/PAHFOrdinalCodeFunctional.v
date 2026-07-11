@@ -252,33 +252,8 @@ Lemma BProv_Ax_s_ordinalCodeGraphTermAt_elim_opened_functional : forall
   BProv Ax_s G target.
 Proof.
   intros G raw coded target hgraph.
-  cbn.
-  set (body := ordinalCodeGraphBodyTermAt
-    (tVar 1) (tVar 0)
-    (Term.rename (fun n => n + 2) raw)
-    (Term.rename (fun n => n + 2) coded)).
-  set (inner := pEx body).
-  intro hopened.
-  assert (houter : BProv Ax_s G (pEx inner)).
-  {
-    unfold ordinalCodeGraphTermAt, ordinalCodeGraphBodyTermAt in hgraph.
-    unfold inner, body, ordinalCodeGraphBodyTermAt.
-    exact hgraph.
-  }
-  set (C := inner :: map (rename S) G).
-  assert (hinner : BProv Ax_s C (pEx body)).
-  { apply BProv_ass. unfold C, inner. simpl. now left. }
-  assert (htargetC : BProv Ax_s C (rename S target)).
-  {
-    apply (BProv_exE_of_sentences Ax_s C body (rename S target)
-      sentence_ax_s hinner).
-    unfold C.
-    exact hopened.
-  }
-  apply (BProv_exE_of_sentences Ax_s G inner target
-    sentence_ax_s houter).
-  unfold C in htargetC.
-  exact htargetC.
+  exact (BProv_ordinalCodeGraphTermAt_elim_opened
+    Ax_s sentence_ax_s G raw coded target hgraph).
 Qed.
 
 (** Two explicit graph bodies with a common raw endpoint have equal

@@ -175,6 +175,35 @@ Proof.
   exact hgraph.
 Qed.
 
+(** Eliminate the graph's two sequence witnesses while retaining its
+    binder-free body as a local assumption.  Keeping this rule next to the
+    introduction rule above gives later graph arguments a common interface
+    and hides the repeated de Bruijn context calculation. *)
+Lemma BProv_ordinalCodeGraphTermAt_elim_opened : forall
+  (B : formula -> Prop) (hB : Sentences B) G raw coded target,
+  BProv B G (ordinalCodeGraphTermAt raw coded) ->
+  let body := ordinalCodeGraphBodyTermAt
+    (tVar 1) (tVar 0)
+    (Term.rename (fun n => n + 2) raw)
+    (Term.rename (fun n => n + 2) coded) in
+  let inner := pEx body in
+  BProv B (body :: map (rename S) (inner :: map (rename S) G))
+    (rename S (rename S target)) ->
+  BProv B G target.
+Proof.
+  intros B hB G raw coded target hgraph.
+  cbn.
+  set (body := ordinalCodeGraphBodyTermAt
+    (tVar 1) (tVar 0)
+    (Term.rename (fun n => n + 2) raw)
+    (Term.rename (fun n => n + 2) coded)).
+  intro hopened.
+  apply (BProv_two_exE_of_sentences B hB G body target).
+  - unfold ordinalCodeGraphTermAt, body, ordinalCodeGraphBodyTermAt in *.
+    exact hgraph.
+  - exact hopened.
+Qed.
+
 (* Explicit graph witness for zero. *)
 Lemma BProv_Ax_s_ordinalCodeGraphTermAt_zero : forall G,
   BProv Ax_s G (ordinalCodeGraphTermAt tZero tZero).
