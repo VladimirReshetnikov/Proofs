@@ -692,28 +692,22 @@ Proof.
     pose proof (BProv_Ax_s_ltTermAt_succ_right_cases
       C (tVar 0) raw1 hltSucc) as hcases.
 
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hsteps S) as hstepsRen.
-    pose proof (BProv_context_cons Ax_s (map (rename S) G)
-      antecedent _ hstepsRen) as hstepsC.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hsteps) as hstepsC.
     rewrite rename_ordinalCodeStepsTermAt in hstepsC.
     change (BProv Ax_s C
       (ordinalCodeStepsTermAt oldSequenceCode1 sequenceStep1 raw1))
       in hstepsC.
 
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hendpoint S) as hendpointRen.
-    pose proof (BProv_context_cons Ax_s (map (rename S) G)
-      antecedent _ hendpointRen) as hendpointC.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hendpoint) as hendpointC.
     rewrite rename_betaTermTermAt in hendpointC.
     change (BProv Ax_s C
       (betaTermTermAt oldCoded1 oldSequenceCode1 sequenceStep1 raw1))
       in hendpointC.
 
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hextension S) as hextensionRen.
-    pose proof (BProv_context_cons Ax_s (map (rename S) G)
-      antecedent _ hextensionRen) as hextensionC.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hextension) as hextensionC.
     rewrite rename_betaCodeExtensionTermAt in hextensionC.
     change (BProv Ax_s C
       (betaCodeExtensionTermAt oldSequenceCode1 sequenceStep1
@@ -723,10 +717,8 @@ Proof.
         C oldSequenceCode1 sequenceStep1 (tSucc raw1)
         newCoded1 newSequenceCode1 hextensionC) as hagreementC.
 
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hadjoin S) as hadjoinRen.
-    pose proof (BProv_context_cons Ax_s (map (rename S) G)
-      antecedent _ hadjoinRen) as hadjoinC.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hadjoin) as hadjoinC.
     rewrite rename_hfAdjoinGraphTermAt in hadjoinC.
     change (BProv Ax_s C
       (hfAdjoinGraphTermAt newCoded1 oldCoded1 oldCoded1))

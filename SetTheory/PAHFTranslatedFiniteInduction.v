@@ -10,7 +10,8 @@
 From Stdlib Require Import Arith.Arith Lia List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import
-  PAHF PAHFOrdinalCode PAHFOrdinalCodeInjective PAHFTranslatedHFFin
+  PAHF PAHFProofCalculus PAHFOrdinalCode PAHFOrdinalCodeInjective
+  PAHFTranslatedHFFin
   PAHFMembershipBound PAHFMembershipBoundSucc PAHFMembershipTail
   PAHFTranslatedExtensionality PAHFAdjoinTotal.
 
@@ -346,21 +347,13 @@ Proof.
     exact (BProv_Ax_s_div2StepAt_of_doubleEqAt_bit_zero_FI
       K 1 (S (S half)) 0 holdDouble hzero).
   }
-  assert (hstepH : BProv Ax_s H
-    (rename S (div2StepAt current half bit))).
-  {
-    unfold H.
-    exact (BProv_rename_succ_context_cons_of_sentences
-      Ax_s sentence_ax_s G nameBody
-      (div2StepAt current half bit) hstep).
-  }
   assert (hstepKRaw : BProv Ax_s K
     (rename S (rename S (div2StepAt current half bit)))).
   {
-    unfold K.
-    exact (BProv_rename_succ_context_cons_of_sentences
-      Ax_s sentence_ax_s H zeroBit
-      (rename S (div2StepAt current half bit)) hstepH).
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s G nameBody zeroBit _ hstep) as h.
+    unfold K, H.
+    exact h.
   }
   assert (hnewStep : BProv Ax_s K
     (div2StepAt (S (S current)) (S (S half)) (S (S bit)))).
@@ -368,20 +361,13 @@ Proof.
     repeat rewrite rename_S_div2StepAt in hstepKRaw.
     exact hstepKRaw.
   }
-  assert (hbitH : BProv Ax_s H
-    (rename S (eqConstAt bit 1))).
-  {
-    unfold H.
-    exact (BProv_rename_succ_context_cons_of_sentences
-      Ax_s sentence_ax_s G nameBody (eqConstAt bit 1) hbitOne).
-  }
   assert (hbitKRaw : BProv Ax_s K
     (rename S (rename S (eqConstAt bit 1)))).
   {
-    unfold K.
-    exact (BProv_rename_succ_context_cons_of_sentences
-      Ax_s sentence_ax_s H zeroBit
-      (rename S (eqConstAt bit 1)) hbitH).
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s G nameBody zeroBit _ hbitOne) as h.
+    unfold K, H.
+    exact h.
   }
   assert (hnewBitOne : BProv Ax_s K (eqConstAt (S (S bit)) 1)).
   {
@@ -1037,111 +1023,75 @@ Proof.
     assert (hpred : BProv Ax_s (predEx :: C) target).
     {
       set (Pctx := predEx :: C).
-      assert (houter : BProv Ax_s Pctx (pEx predInner)).
+      assert (hpredEx : BProv Ax_s Pctx (pEx (pEx predBody))).
       {
-        unfold Pctx, predEx.
+        unfold Pctx, predEx, predInner.
         apply BProv_ass.
         simpl; auto.
       }
-      assert (houterBody : BProv Ax_s
-        (predInner :: map (rename S) Pctx) (rename S target)).
+      apply (BProv_two_exE_of_sentences
+        Ax_s sentence_ax_s Pctx predBody target hpredEx).
+      set (H := predBody :: map (rename S)
+        (pEx predBody :: map (rename S) Pctx)).
+      change (BProv Ax_s H (rename S (rename S target))).
+      assert (hbody : BProv Ax_s H predBody).
       {
-        set (D := predInner :: map (rename S) Pctx).
-        assert (hinner : BProv Ax_s D (pEx predBody)).
-        {
-          unfold D, predInner.
-          apply BProv_ass.
-          simpl; auto.
-        }
-        assert (hinnerBody : BProv Ax_s
-          (predBody :: map (rename S) D)
-          (rename S (rename S target))).
-        {
-          set (H := predBody :: map (rename S) D).
-          assert (hbody : BProv Ax_s H predBody).
-          {
-            unfold H.
-            apply BProv_ass.
-            simpl; auto.
-          }
-          assert (hlt : BProv Ax_s H (ltAt 1 (S (S half)))).
-          {
-            unfold predBody in hbody.
-            change (BProv Ax_s H
-              (ltTermAt (tVar 1) (tVar (S (S half))))).
-            exact (BProv_andE1 Ax_s H _ _ hbody).
-          }
-          assert (hgraph : BProv Ax_s H
-            (hfFIAdjoinGraphAt (S (S half)) 1 0)).
-          {
-            unfold predBody in hbody.
-            change (BProv Ax_s H
-              (hfAdjoinGraphTermAt
-                (tVar (S (S half))) (tVar 1) (tVar 0))).
-            exact (BProv_andE2 Ax_s H _ _ hbody).
-          }
-          assert (hstepP : BProv Ax_s Pctx
-            (div2StepAt current half bit)).
-          { unfold Pctx. exact (BProv_context_cons Ax_s C _ _ hstepC). }
-          assert (hstepD : BProv Ax_s D
-            (rename S (div2StepAt current half bit))).
-          {
-            unfold D.
-            exact (BProv_rename_succ_context_cons_of_sentences
-              Ax_s sentence_ax_s Pctx predInner
-              (div2StepAt current half bit) hstepP).
-          }
-          assert (hstepHRaw : BProv Ax_s H
-            (rename S (rename S (div2StepAt current half bit)))).
-          {
-            unfold H.
-            exact (BProv_rename_succ_context_cons_of_sentences
-              Ax_s sentence_ax_s D predBody
-              (rename S (div2StepAt current half bit)) hstepD).
-          }
-          assert (hstepH : BProv Ax_s H
-            (div2StepAt (S (S current)) (S (S half)) (S (S bit)))).
-          {
-            repeat rewrite rename_S_div2StepAt in hstepHRaw.
-            exact hstepHRaw.
-          }
-          assert (hbitP : BProv Ax_s Pctx (eqConstAt bit 0)).
-          { unfold Pctx. exact (BProv_context_cons Ax_s C _ _ hbitZero). }
-          assert (hbitD : BProv Ax_s D
-            (rename S (eqConstAt bit 0))).
-          {
-            unfold D.
-            exact (BProv_rename_succ_context_cons_of_sentences
-              Ax_s sentence_ax_s Pctx predInner
-              (eqConstAt bit 0) hbitP).
-          }
-          assert (hbitHRaw : BProv Ax_s H
-            (rename S (rename S (eqConstAt bit 0)))).
-          {
-            unfold H.
-            exact (BProv_rename_succ_context_cons_of_sentences
-              Ax_s sentence_ax_s D predBody
-              (rename S (eqConstAt bit 0)) hbitD).
-          }
-          assert (hbitH : BProv Ax_s H (eqConstAt (S (S bit)) 0)).
-          { unfold eqConstAt in *. simpl in hbitHRaw. exact hbitHRaw. }
-          pose proof
-            (BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
-              P H (S (S current)) (S (S half)) (S (S bit))
-              1 0 hstepH hbitH hlt hgraph) as hresult.
-          unfold target, hfEmptyOrStrictPredAdjoinAt.
-          repeat rewrite rename_hfEmptyOrStrictPredAdjoinTermAt.
-          exact hresult.
-        }
-        unfold D in hinner, hinnerBody.
-        exact (BProv_exE_of_sentences Ax_s
-          (predInner :: map (rename S) Pctx) predBody
-          (rename S target) sentence_ax_s hinner hinnerBody).
+        unfold H.
+        apply BProv_ass.
+        simpl; auto.
       }
-      unfold Pctx in houter, houterBody.
-      exact (BProv_exE_of_sentences Ax_s
-        (predEx :: C) predInner target
-        sentence_ax_s houter houterBody).
+      assert (hlt : BProv Ax_s H (ltAt 1 (S (S half)))).
+      {
+        unfold predBody in hbody.
+        change (BProv Ax_s H
+          (ltTermAt (tVar 1) (tVar (S (S half))))).
+        exact (BProv_andE1 Ax_s H _ _ hbody).
+      }
+      assert (hgraph : BProv Ax_s H
+        (hfFIAdjoinGraphAt (S (S half)) 1 0)).
+      {
+        unfold predBody in hbody.
+        change (BProv Ax_s H
+          (hfAdjoinGraphTermAt
+            (tVar (S (S half))) (tVar 1) (tVar 0))).
+        exact (BProv_andE2 Ax_s H _ _ hbody).
+      }
+      assert (hstepP : BProv Ax_s Pctx
+        (div2StepAt current half bit)).
+      { unfold Pctx. exact (BProv_context_cons Ax_s C _ _ hstepC). }
+      assert (hstepHRaw : BProv Ax_s H
+        (rename S (rename S (div2StepAt current half bit)))).
+      {
+        pose proof (BProv_lift_two_opened_of_sentences
+          Ax_s sentence_ax_s Pctx predBody _ hstepP) as h.
+        unfold H.
+        exact h.
+      }
+      assert (hstepH : BProv Ax_s H
+        (div2StepAt (S (S current)) (S (S half)) (S (S bit)))).
+      {
+        repeat rewrite rename_S_div2StepAt in hstepHRaw.
+        exact hstepHRaw.
+      }
+      assert (hbitP : BProv Ax_s Pctx (eqConstAt bit 0)).
+      { unfold Pctx. exact (BProv_context_cons Ax_s C _ _ hbitZero). }
+      assert (hbitHRaw : BProv Ax_s H
+        (rename S (rename S (eqConstAt bit 0)))).
+      {
+        pose proof (BProv_lift_two_opened_of_sentences
+          Ax_s sentence_ax_s Pctx predBody _ hbitP) as h.
+        unfold H.
+        exact h.
+      }
+      assert (hbitH : BProv Ax_s H (eqConstAt (S (S bit)) 0)).
+      { unfold eqConstAt in *. simpl in hbitHRaw. exact hbitHRaw. }
+      pose proof
+        (BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
+          P H (S (S current)) (S (S half)) (S (S bit))
+          1 0 hstepH hbitH hlt hgraph) as hresult.
+      unfold target, hfEmptyOrStrictPredAdjoinAt.
+      repeat rewrite rename_hfEmptyOrStrictPredAdjoinTermAt.
+      exact hresult.
     }
     exact (BProv_orE Ax_s C tailEmpty predEx target
       hcases hempty hpred).
@@ -1940,119 +1890,81 @@ Proof.
   assert (hpred : BProv Ax_s (predEx :: G) psi).
   {
     set (C := predEx :: G).
-    assert (hpredEx : BProv Ax_s C (pEx predInner)).
+    assert (hpredEx : BProv Ax_s C (pEx (pEx predBody))).
     {
-      unfold C, predEx.
+      unfold C, predEx, predInner.
       apply BProv_ass.
       simpl; auto.
     }
-    assert (houterBody : BProv Ax_s
-      (predInner :: map (rename S) C) (rename S psi)).
+    apply (BProv_two_exE_of_sentences
+      Ax_s sentence_ax_s C predBody psi hpredEx).
+    set (H := predBody :: map (rename S)
+      (pEx predBody :: map (rename S) C)).
+    change (BProv Ax_s H (rename S (rename S psi))).
+    assert (hpredBody : BProv Ax_s H predBody).
     {
-      set (D := predInner :: map (rename S) C).
-      assert (hinnerEx : BProv Ax_s D (pEx predBody)).
-      {
-        unfold D, predInner.
-        apply BProv_ass.
-        simpl; auto.
-      }
-      assert (hinnerBody : BProv Ax_s
-        (predBody :: map (rename S) D)
-        (rename S (rename S psi))).
-      {
-        set (H := predBody :: map (rename S) D).
-        assert (hpredBody : BProv Ax_s H predBody).
-        {
-          unfold H.
-          apply BProv_ass.
-          simpl; auto.
-        }
-        assert (hlt : BProv Ax_s H (ltAt 1 2)).
-        {
-          unfold predBody in hpredBody.
-          exact (BProv_andE1 Ax_s H _ _ hpredBody).
-        }
-        assert (hgraph : BProv Ax_s H (hfFIAdjoinGraphAt 2 1 0)).
-        {
-          unfold predBody in hpredBody.
-          exact (BProv_andE2 Ax_s H _ _ hpredBody).
-        }
-        assert (hbelowC : BProv Ax_s C (hfStrongBelowAt psi)).
-        { unfold C. exact (BProv_context_cons Ax_s G _ _ hbelow). }
-        assert (hbelowD : BProv Ax_s D
-          (rename S (hfStrongBelowAt psi))).
-        {
-          unfold D.
-          exact (BProv_rename_succ_context_cons_of_sentences
-            Ax_s sentence_ax_s C predInner (hfStrongBelowAt psi)
-            hbelowC).
-        }
-        assert (hbelowH : BProv Ax_s H
-          (rename S (rename S (hfStrongBelowAt psi)))).
-        {
-          unfold H.
-          exact (BProv_rename_succ_context_cons_of_sentences
-            Ax_s sentence_ax_s D predBody
-            (rename S (hfStrongBelowAt psi)) hbelowD).
-        }
-        pose proof (BProv_hfStrongBelowAt_old_of_opened_pred
-          H psi hbelowH) as holdImp.
-        assert (hold : BProv Ax_s H (rename rPredOld psi)).
-        {
-          exact (BProv_mp Ax_s H (ltAt 1 2)
-            (rename rPredOld psi) holdImp hlt).
-        }
-        assert (hgenerationC : BProv Ax_s C
-          (rename S (hfFiniteGenerationAt psi))).
-        { unfold C. exact (BProv_context_cons Ax_s G _ _ hgeneration). }
-        assert (hgenerationD : BProv Ax_s D
-          (rename S (rename S (hfFiniteGenerationAt psi)))).
-        {
-          unfold D.
-          exact (BProv_rename_succ_context_cons_of_sentences
-            Ax_s sentence_ax_s C predInner
-            (rename S (hfFiniteGenerationAt psi)) hgenerationC).
-        }
-        assert (hgenerationH : BProv Ax_s H
-          (rename S (rename S (rename S
-            (hfFiniteGenerationAt psi))))).
-        {
-          unfold H.
-          exact (BProv_rename_succ_context_cons_of_sentences
-            Ax_s sentence_ax_s D predBody
-            (rename S (rename S (hfFiniteGenerationAt psi)))
-            hgenerationD).
-        }
-        pose proof (BProv_hfFiniteGenerationAt_step_of_opened_pred
-          H psi hgenerationH) as hstep.
-        assert (hstepOld : BProv Ax_s H
-          (pImp (rename rPredOld psi) (rename rAdjStepOld psi))).
-        {
-          exact (BProv_mp Ax_s H (hfFIAdjoinGraphAt 2 1 0) _
-            hstep hgraph).
-        }
-        assert (hcurrent : BProv Ax_s H (rename rAdjStepOld psi)).
-        {
-          exact (BProv_mp Ax_s H (rename rPredOld psi) _
-            hstepOld hold).
-        }
-        replace (rename rAdjStepOld psi)
-          with (rename S (rename S psi)) in hcurrent.
-        - exact hcurrent.
-        - rewrite rename_comp.
-          apply rename_ext.
-          intros [|n]; reflexivity.
-      }
-      unfold D in hinnerEx, hinnerBody.
-      exact (BProv_exE_of_sentences Ax_s
-        (predInner :: map (rename S) C) predBody
-        (rename S psi) sentence_ax_s
-        hinnerEx hinnerBody).
+      unfold H.
+      apply BProv_ass.
+      simpl; auto.
     }
-    unfold C in hpredEx, houterBody.
-    exact (BProv_exE_of_sentences Ax_s
-      (predEx :: G) predInner psi
-      sentence_ax_s hpredEx houterBody).
+    assert (hlt : BProv Ax_s H (ltAt 1 2)).
+    {
+      unfold predBody in hpredBody.
+      exact (BProv_andE1 Ax_s H _ _ hpredBody).
+    }
+    assert (hgraph : BProv Ax_s H (hfFIAdjoinGraphAt 2 1 0)).
+    {
+      unfold predBody in hpredBody.
+      exact (BProv_andE2 Ax_s H _ _ hpredBody).
+    }
+    assert (hbelowC : BProv Ax_s C (hfStrongBelowAt psi)).
+    { unfold C. exact (BProv_context_cons Ax_s G _ _ hbelow). }
+    assert (hbelowH : BProv Ax_s H
+      (rename S (rename S (hfStrongBelowAt psi)))).
+    {
+      pose proof (BProv_lift_two_opened_of_sentences
+        Ax_s sentence_ax_s C predBody _ hbelowC) as h.
+      unfold H.
+      exact h.
+    }
+    pose proof (BProv_hfStrongBelowAt_old_of_opened_pred
+      H psi hbelowH) as holdImp.
+    assert (hold : BProv Ax_s H (rename rPredOld psi)).
+    {
+      exact (BProv_mp Ax_s H (ltAt 1 2)
+        (rename rPredOld psi) holdImp hlt).
+    }
+    assert (hgenerationC : BProv Ax_s C
+      (rename S (hfFiniteGenerationAt psi))).
+    { unfold C. exact (BProv_context_cons Ax_s G _ _ hgeneration). }
+    assert (hgenerationH : BProv Ax_s H
+      (rename S (rename S (rename S
+        (hfFiniteGenerationAt psi))))).
+    {
+      pose proof (BProv_lift_two_opened_of_sentences
+        Ax_s sentence_ax_s C predBody _ hgenerationC) as h.
+      unfold H.
+      exact h.
+    }
+    pose proof (BProv_hfFiniteGenerationAt_step_of_opened_pred
+      H psi hgenerationH) as hstep.
+    assert (hstepOld : BProv Ax_s H
+      (pImp (rename rPredOld psi) (rename rAdjStepOld psi))).
+    {
+      exact (BProv_mp Ax_s H (hfFIAdjoinGraphAt 2 1 0) _
+        hstep hgraph).
+    }
+    assert (hcurrent : BProv Ax_s H (rename rAdjStepOld psi)).
+    {
+      exact (BProv_mp Ax_s H (rename rPredOld psi) _
+        hstepOld hold).
+    }
+    replace (rename rAdjStepOld psi)
+      with (rename S (rename S psi)) in hcurrent.
+    - exact hcurrent.
+    - rewrite rename_comp.
+      apply rename_ext.
+      intros [|n]; reflexivity.
   }
   exact (BProv_orE Ax_s G (hfEmptyAt 0) predEx psi
     hcases hempty hpred).

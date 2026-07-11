@@ -1527,34 +1527,15 @@ Proof.
       sourceCode1, sourceStep1, bound1.
     simpl. left. reflexivity.
   }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hprefix S) as hprefixRen.
-  rewrite rename_betaPrependPrefixTermAt in hprefixRen.
-  assert (hprefixD : BProv Ax_s D
-      (betaPrependPrefixTermAt sourceCode1 sourceStep1 head1
-        currentCode1 targetStep1 bound1)).
-  {
-    exact (BProv_context_cons Ax_s (map (rename S) G)
-      entryBody _ hprefixRen).
-  }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hcommon S) as hcommonRen.
-  rewrite rename_commonMultipleThroughTermAt in hcommonRen.
-  assert (hcommonD : BProv Ax_s D
-      (commonMultipleThroughTermAt (tSucc bound1) targetStep1)).
-  {
-    exact (BProv_context_cons Ax_s (map (rename S) G)
-      entryBody _ hcommonRen).
-  }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hlarge S) as hlargeRen.
-  rewrite rename_leTermAt in hlargeRen.
-  assert (hlargeD : BProv Ax_s D
-      (leTermAt (tSucc sourceCode1) targetStep1)).
-  {
-    exact (BProv_context_cons Ax_s (map (rename S) G)
-      entryBody _ hlargeRen).
-  }
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G entryBody _ hprefix) as hprefixD.
+  rewrite rename_betaPrependPrefixTermAt in hprefixD.
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G entryBody _ hcommon) as hcommonD.
+  rewrite rename_commonMultipleThroughTermAt in hcommonD.
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G entryBody _ hlarge) as hlargeD.
+  rewrite rename_leTermAt in hlargeD.
   pose proof
     (BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ_of_source
       D sourceCode1 sourceStep1 head1 currentCode1 targetStep1
