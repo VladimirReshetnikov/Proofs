@@ -13,8 +13,7 @@ From Stdlib Require Import Arith.Arith Lia List.
 From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import
   Fol Calculus PAHF PAHFOrdinalCode
-  PAHFTranslatedOperations PAHFOrdinalCodeTermOperations
-  PAHFRoundTripEquality.
+  PAHFTranslatedOperations PAHFOrdinalCodeTermOperations.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.

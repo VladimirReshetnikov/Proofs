@@ -11,8 +11,7 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import List.
-From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
-  PAHFRoundTripEquality.
+From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.

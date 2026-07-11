@@ -210,58 +210,6 @@ Proof.
   exact (BProv_exI B G _ leftCode houterInst).
 Qed.
 
-Lemma BProv_ordinalCodeGraphTermAt_congr_raw : forall
-    (B : formula -> Prop) G leftRaw rightRaw coded,
-  BProv B G (pEq leftRaw rightRaw) ->
-  BProv B G (ordinalCodeGraphTermAt leftRaw coded) ->
-  BProv B G (ordinalCodeGraphTermAt rightRaw coded).
-Proof.
-  intros B G leftRaw rightRaw coded heq hleft.
-  set (context := ordinalCodeGraphTermAt
-    (tVar 0) (Term.rename S coded)).
-  assert (hleftInst : BProv B G (subst (instTerm leftRaw) context)).
-  {
-    unfold context.
-    rewrite subst_ordinalCodeGraphTermAt.
-    cbn [instTerm Term.subst].
-    rewrite term_subst_instTerm_rename_succ.
-    exact hleft.
-  }
-  pose proof (BProv_eqElim B G leftRaw rightRaw context
-    heq hleftInst) as hrightInst.
-  unfold context in hrightInst.
-  rewrite subst_ordinalCodeGraphTermAt in hrightInst.
-  cbn [instTerm Term.subst] in hrightInst.
-  rewrite term_subst_instTerm_rename_succ in hrightInst.
-  exact hrightInst.
-Qed.
-
-Lemma BProv_ordinalCodeGraphTermAt_congr_coded : forall
-    (B : formula -> Prop) G raw leftCode rightCode,
-  BProv B G (pEq leftCode rightCode) ->
-  BProv B G (ordinalCodeGraphTermAt raw leftCode) ->
-  BProv B G (ordinalCodeGraphTermAt raw rightCode).
-Proof.
-  intros B G raw leftCode rightCode heq hleft.
-  set (context := ordinalCodeGraphTermAt
-    (Term.rename S raw) (tVar 0)).
-  assert (hleftInst : BProv B G (subst (instTerm leftCode) context)).
-  {
-    unfold context.
-    rewrite subst_ordinalCodeGraphTermAt.
-    cbn [instTerm Term.subst].
-    rewrite term_subst_instTerm_rename_succ.
-    exact hleft.
-  }
-  pose proof (BProv_eqElim B G leftCode rightCode context
-    heq hleftInst) as hrightInst.
-  unfold context in hrightInst.
-  rewrite subst_ordinalCodeGraphTermAt in hrightInst.
-  cbn [instTerm Term.subst] in hrightInst.
-  rewrite term_subst_instTerm_rename_succ in hrightInst.
-  exact hrightInst.
-Qed.
-
 (** Small equivalence-calculus kit needed to lift graph equivalences through
     the two existential witnesses of an equality atom. *)
 Lemma BProv_PA_iffForm_symm : forall

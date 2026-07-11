@@ -17,7 +17,7 @@ From SetTheory Require Import
   PAHFOrdinalCodeTotal PAHFOrdinalCodeInjective PAHFOrdinalCodeRange
   PAHFOrdinalCodeRangeArithmetic PAHFOrdinalCodeFunctional
   PAHFOrdinalCodeTermCompatibility
-  PAHFRoundTripArithmetic PAHFRoundTripEquality.
+  PAHFRoundTripArithmetic.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.

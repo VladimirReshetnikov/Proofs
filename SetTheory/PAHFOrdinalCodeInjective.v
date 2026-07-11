@@ -15,7 +15,7 @@ From SetTheory Require Import Fol Calculus Completeness PAHF
   PAHFProofCalculus
   PAHFOrdinalCode PAHFOrdinalCodeTotal PAHFOrdinalCodeTotalCapacity
   PAHFOrdinalCodeTotalInduction
-  PAHFRoundTripArithmetic PAHFRoundTripEquality.
+  PAHFRoundTripArithmetic.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.

@@ -13,7 +13,7 @@ From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import
   Fol Calculus PAHF PAHFOrdinalCode PAHFOrdinalCodeTotal
   PAHFOrdinalCodeTotalInduction PAHFOrdinalCodeRange
-  PAHFRoundTripArithmetic PAHFRoundTripEquality
+  PAHFRoundTripArithmetic
   PAHFOrdinalCodeTermCompatibility
   PAHFCompositeArithmetic PAHFOrdinalCodeFunctional
   PAHFOrdinalCodeTermOperations.

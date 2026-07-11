@@ -11,7 +11,7 @@
 From Stdlib Require Import Arith.Arith Lia List Logic.FunctionalExtensionality.
 From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
   PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic
-  PAHFRoundTripEquality PAHFOrdinalCodeTermCompatibility
+  PAHFOrdinalCodeTermCompatibility
   PAHFOrdinalCodeInjective PAHFOrdinalCodeRange PAHFTranslatedOperations
   PAHFOrdinalCodeTermOperations.
 
@@ -425,21 +425,14 @@ Proof.
         (BProv_context_cons Ax_s G
           (hfAddGraphTermAt out leftCode rightCode) _ hbase)).
     }
-    assert (houtGraph : BProv Ax_s C
-        (ordinalCodeGraphTermAt leftRaw out)).
-    {
-      exact (BProv_ordinalCodeGraphTermAt_congr_coded
-        Ax_s C leftRaw leftCode out
-        (BProv_eqSym Ax_s C _ _ houtEq)
-        (BProv_context_cons Ax_s G
-          (hfAddGraphTermAt out leftCode rightCode) _ hleft)).
-    }
-      exact (BProv_ordinalCodeGraphTermAt_congr_raw
-        Ax_s C leftRaw (tAdd leftRaw tZero) out
+    exact (BProv_ordinalCodeGraphTermAt_congr
+      Ax_s C leftRaw (tAdd leftRaw tZero) leftCode out
       (BProv_eqSym Ax_s C _ _
         (BProv_context_cons Ax_s G
           (hfAddGraphTermAt out leftCode rightCode) _ haddZero))
-      houtGraph).
+      (BProv_eqSym Ax_s C _ _ houtEq)
+      (BProv_context_cons Ax_s G
+        (hfAddGraphTermAt out leftCode rightCode) _ hleft)).
   }
   assert (hreverse : BProv Ax_s G
       (pImp

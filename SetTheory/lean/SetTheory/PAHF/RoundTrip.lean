@@ -176,52 +176,6 @@ theorem OrdinalCodeBetaTrace_exists (raw : Nat) :
     · exact hentries (i+1) (by omega)
     · exact AckermannHF.ordinalCode_succ i
 
-/-- Fully term-parametric one-step witness for the ordinal-code trace. -/
-def ordinalCodeStepWitnessTermAt
-    (sequenceCode sequenceStep index : Term) : Formula :=
-  ex (ex
-    (and
-      (betaTermTermAt (Term.var 1)
-        (Term.rename (fun n ↦ n+2) sequenceCode)
-        (Term.rename (fun n ↦ n+2) sequenceStep)
-        (Term.rename (fun n ↦ n+2) index))
-      (and
-        (betaTermTermAt (Term.var 0)
-          (Term.rename (fun n ↦ n+2) sequenceCode)
-          (Term.rename (fun n ↦ n+2) sequenceStep)
-          (Term.succ (Term.rename (fun n ↦ n+2) index)))
-        (hfAdjoinGraphTermAt
-          (Term.var 0) (Term.var 1) (Term.var 1)))))
-
-/-- Every adjacent beta entry below `raw` follows Ackermann ordinal
-successor. -/
-def ordinalCodeStepsTermAt
-    (sequenceCode sequenceStep raw : Term) : Formula :=
-  all
-    (imp
-      (ltTermAt (Term.var 0) (Term.rename Nat.succ raw))
-      (ordinalCodeStepWitnessTermAt
-        (Term.rename Nat.succ sequenceCode)
-        (Term.rename Nat.succ sequenceStep)
-        (Term.var 0)))
-
-/-- Internal PA graph for Ackermann's finite-ordinal code function. -/
-def ordinalCodeGraphTermAt (raw coded : Term) : Formula :=
-  ex (ex
-    (and
-      (betaTermTermAt Term.zero (Term.var 1) (Term.var 0) Term.zero)
-      (and
-        (betaTermTermAt
-          (Term.rename (fun n ↦ n+2) coded)
-          (Term.var 1) (Term.var 0)
-          (Term.rename (fun n ↦ n+2) raw))
-        (ordinalCodeStepsTermAt
-          (Term.var 1) (Term.var 0)
-          (Term.rename (fun n ↦ n+2) raw)))))
-
-def ordinalCodeGraphAt (raw coded : Nat) : Formula :=
-  ordinalCodeGraphTermAt (Term.var raw) (Term.var coded)
-
 theorem ordinalCodeStepWitnessTermAt_exact
     (e : Nat → Nat) (sequenceCode sequenceStep index : Term) :
     Sat natModel e
@@ -745,81 +699,6 @@ def ordinalCodeGraphBodyTermAt
       (betaTermTermAt coded sequenceCode sequenceStep raw)
       (ordinalCodeStepsTermAt sequenceCode sequenceStep raw))
 
-theorem subst_betaTermTermAt
-    (sigma : Nat → Term) (out code step index : Term) :
-    subst sigma (betaTermTermAt out code step index) =
-      betaTermTermAt
-        (Term.subst sigma out)
-        (Term.subst sigma code)
-        (Term.subst sigma step)
-        (Term.subst sigma index) := by
-  simp [betaTermTermAt, betaModTermTerm, remTermTermAt,
-    ltTermAt, subst, Term.subst, Term.upSubst,
-    Term.subst_rename_succ_up]
-
-theorem rename_betaTermTermAt
-    (r : Nat → Nat) (out code step index : Term) :
-    rename r (betaTermTermAt out code step index) =
-      betaTermTermAt
-        (Term.rename r out)
-        (Term.rename r code)
-        (Term.rename r step)
-        (Term.rename r index) := by
-  rw [← subst_var_rename, subst_betaTermTermAt]
-  simp only [term_subst_var_rename]
-
-theorem subst_ordinalCodeStepWitnessTermAt
-    (sigma : Nat → Term) (sequenceCode sequenceStep index : Term) :
-    subst sigma
-        (ordinalCodeStepWitnessTermAt
-          sequenceCode sequenceStep index) =
-      ordinalCodeStepWitnessTermAt
-        (Term.subst sigma sequenceCode)
-        (Term.subst sigma sequenceStep)
-        (Term.subst sigma index) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n ↦ n+2) t) =
-        Term.rename (fun n ↦ n+2) (Term.subst sigma t) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n ↦ n+2) t) =
-      Term.rename (fun n ↦ n+2) (Term.subst sigma t)
-    exact term_subst_iterUpSubst_rename_add 2 sigma t
-  simp [ordinalCodeStepWitnessTermAt,
-    subst_betaTermTermAt, subst_hfAdjoinGraphTermAt,
-    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
-
-theorem subst_ordinalCodeStepsTermAt
-    (sigma : Nat → Term) (sequenceCode sequenceStep raw : Term) :
-    subst sigma
-        (ordinalCodeStepsTermAt sequenceCode sequenceStep raw) =
-      ordinalCodeStepsTermAt
-        (Term.subst sigma sequenceCode)
-        (Term.subst sigma sequenceStep)
-        (Term.subst sigma raw) := by
-  simp [ordinalCodeStepsTermAt,
-    subst_ordinalCodeStepWitnessTermAt, subst_ltTermAt,
-    subst, Term.subst, Term.upSubst,
-    Term.subst_rename_succ_up]
-
-theorem subst_ordinalCodeGraphTermAt
-    (sigma : Nat → Term) (raw coded : Term) :
-    subst sigma (ordinalCodeGraphTermAt raw coded) =
-      ordinalCodeGraphTermAt
-        (Term.subst sigma raw) (Term.subst sigma coded) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n ↦ n+2) t) =
-        Term.rename (fun n ↦ n+2) (Term.subst sigma t) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n ↦ n+2) t) =
-      Term.rename (fun n ↦ n+2) (Term.subst sigma t)
-    exact term_subst_iterUpSubst_rename_add 2 sigma t
-  simp [ordinalCodeGraphTermAt,
-    subst_betaTermTermAt,
-    subst_ordinalCodeStepsTermAt,
-    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
-
 theorem subst_ordinalCodeGraphBodyTermAt
     (sigma : Nat → Term)
     (sequenceCode sequenceStep raw coded : Term) :
@@ -834,38 +713,6 @@ theorem subst_ordinalCodeGraphBodyTermAt
   simp [ordinalCodeGraphBodyTermAt,
     subst_betaTermTermAt,
     subst_ordinalCodeStepsTermAt, subst, Term.subst]
-
-theorem rename_ordinalCodeStepWitnessTermAt
-    (r : Nat → Nat) (sequenceCode sequenceStep index : Term) :
-    rename r
-        (ordinalCodeStepWitnessTermAt
-          sequenceCode sequenceStep index) =
-      ordinalCodeStepWitnessTermAt
-        (Term.rename r sequenceCode)
-        (Term.rename r sequenceStep)
-        (Term.rename r index) := by
-  rw [← subst_var_rename,
-    subst_ordinalCodeStepWitnessTermAt]
-  simp only [term_subst_var_rename]
-
-theorem rename_ordinalCodeStepsTermAt
-    (r : Nat → Nat) (sequenceCode sequenceStep raw : Term) :
-    rename r
-        (ordinalCodeStepsTermAt sequenceCode sequenceStep raw) =
-      ordinalCodeStepsTermAt
-        (Term.rename r sequenceCode)
-        (Term.rename r sequenceStep)
-        (Term.rename r raw) := by
-  rw [← subst_var_rename, subst_ordinalCodeStepsTermAt]
-  simp only [term_subst_var_rename]
-
-theorem rename_ordinalCodeGraphTermAt
-    (r : Nat → Nat) (raw coded : Term) :
-    rename r (ordinalCodeGraphTermAt raw coded) =
-      ordinalCodeGraphTermAt
-        (Term.rename r raw) (Term.rename r coded) := by
-  rw [← subst_var_rename, subst_ordinalCodeGraphTermAt]
-  simp only [term_subst_var_rename]
 
 theorem rename_ordinalCodeGraphBodyTermAt
     (r : Nat → Nat)
@@ -4521,50 +4368,6 @@ theorem BProv_codeEqualityTermAt_of_components
   simpa [codeEqualityTermAt] using
     (BProv_exI houterInst)
 
-/-- Equality transport in the raw argument of the ordinal-code graph. -/
-theorem BProv_ordinalCodeGraphTermAt_congr_raw
-    {B : Formula → Prop} {G : List Formula}
-    {leftRaw rightRaw coded : Term}
-    (heq : BProv B G (eq leftRaw rightRaw))
-    (hleft : BProv B G
-      (ordinalCodeGraphTermAt leftRaw coded)) :
-    BProv B G (ordinalCodeGraphTermAt rightRaw coded) := by
-  let context : Formula :=
-    ordinalCodeGraphTermAt
-      (Term.var 0) (Term.rename Nat.succ coded)
-  have hleftInst : BProv B G
-      (subst (instTerm leftRaw) context) := by
-    simpa [context, subst_ordinalCodeGraphTermAt,
-      instTerm, Term.subst,
-      term_subst_instTerm_rename_succ] using hleft
-  have hrightInst := BProv_eqElim (B := B) (G := G)
-    (a := context) heq hleftInst
-  simpa [context, subst_ordinalCodeGraphTermAt,
-    instTerm, Term.subst,
-    term_subst_instTerm_rename_succ] using hrightInst
-
-/-- Equality transport in the coded argument of the ordinal-code graph. -/
-theorem BProv_ordinalCodeGraphTermAt_congr_coded
-    {B : Formula → Prop} {G : List Formula}
-    {raw leftCode rightCode : Term}
-    (heq : BProv B G (eq leftCode rightCode))
-    (hleft : BProv B G
-      (ordinalCodeGraphTermAt raw leftCode)) :
-    BProv B G (ordinalCodeGraphTermAt raw rightCode) := by
-  let context : Formula :=
-    ordinalCodeGraphTermAt
-      (Term.rename Nat.succ raw) (Term.var 0)
-  have hleftInst : BProv B G
-      (subst (instTerm leftCode) context) := by
-    simpa [context, subst_ordinalCodeGraphTermAt,
-      instTerm, Term.subst,
-      term_subst_instTerm_rename_succ] using hleft
-  have hrightInst := BProv_eqElim (B := B) (G := G)
-    (a := context) heq hleftInst
-  simpa [context, subst_ordinalCodeGraphTermAt,
-    instTerm, Term.subst,
-    term_subst_instTerm_rename_succ] using hrightInst
-
 /-! ### Term-language compatibility reduction -/
 
 /-- The exact dual of `OrdinalCodeGraphProofs.injective` needed by translated
@@ -6663,12 +6466,9 @@ theorem BProv_Ax_s_ordinalCodeAddCore_zero
       BProv_Ax_s_hfAddGraphTermAt_functional
         (BProv_context_cons hrightDomain)
         hadd (BProv_context_cons hbase)
-    have houtGraph : BProv Ax_s C
-        (ordinalCodeGraphTermAt leftRaw out) :=
-      BProv_ordinalCodeGraphTermAt_congr_coded
-        (BProv_eqSym houtEq) (BProv_context_cons hleft)
-    exact BProv_ordinalCodeGraphTermAt_congr_raw
-      (BProv_eqSym (BProv_context_cons haddZero)) houtGraph
+    exact BProv_ordinalCodeGraphTermAt_congr
+      (BProv_eqSym (BProv_context_cons haddZero))
+      (BProv_eqSym houtEq) (BProv_context_cons hleft)
   have hreverse : BProv Ax_s G
       (imp
         (ordinalCodeGraphTermAt

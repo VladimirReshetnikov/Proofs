@@ -883,6 +883,75 @@ Proof.
   reflexivity.
 Qed.
 
+(** Equality transport in the raw argument of the ordinal-code graph. *)
+Lemma BProv_ordinalCodeGraphTermAt_congr_raw : forall
+    (B : formula -> Prop) G leftRaw rightRaw coded,
+  BProv B G (pEq leftRaw rightRaw) ->
+  BProv B G (ordinalCodeGraphTermAt leftRaw coded) ->
+  BProv B G (ordinalCodeGraphTermAt rightRaw coded).
+Proof.
+  intros B G leftRaw rightRaw coded heq hleft.
+  set (context := ordinalCodeGraphTermAt
+    (tVar 0) (Term.rename S coded)).
+  assert (hleftInst : BProv B G (subst (instTerm leftRaw) context)).
+  {
+    unfold context.
+    rewrite subst_ordinalCodeGraphTermAt.
+    cbn [instTerm Term.subst].
+    rewrite term_subst_instTerm_rename_succ.
+    exact hleft.
+  }
+  pose proof (BProv_eqElim B G leftRaw rightRaw context
+    heq hleftInst) as hrightInst.
+  unfold context in hrightInst.
+  rewrite subst_ordinalCodeGraphTermAt in hrightInst.
+  cbn [instTerm Term.subst] in hrightInst.
+  rewrite term_subst_instTerm_rename_succ in hrightInst.
+  exact hrightInst.
+Qed.
+
+(** Equality transport in the coded argument of the ordinal-code graph. *)
+Lemma BProv_ordinalCodeGraphTermAt_congr_coded : forall
+    (B : formula -> Prop) G raw leftCode rightCode,
+  BProv B G (pEq leftCode rightCode) ->
+  BProv B G (ordinalCodeGraphTermAt raw leftCode) ->
+  BProv B G (ordinalCodeGraphTermAt raw rightCode).
+Proof.
+  intros B G raw leftCode rightCode heq hleft.
+  set (context := ordinalCodeGraphTermAt
+    (Term.rename S raw) (tVar 0)).
+  assert (hleftInst : BProv B G (subst (instTerm leftCode) context)).
+  {
+    unfold context.
+    rewrite subst_ordinalCodeGraphTermAt.
+    cbn [instTerm Term.subst].
+    rewrite term_subst_instTerm_rename_succ.
+    exact hleft.
+  }
+  pose proof (BProv_eqElim B G leftCode rightCode context
+    heq hleftInst) as hrightInst.
+  unfold context in hrightInst.
+  rewrite subst_ordinalCodeGraphTermAt in hrightInst.
+  cbn [instTerm Term.subst] in hrightInst.
+  rewrite term_subst_instTerm_rename_succ in hrightInst.
+  exact hrightInst.
+Qed.
+
+(** Simultaneous equality transport in both graph arguments. *)
+Lemma BProv_ordinalCodeGraphTermAt_congr : forall
+    (B : formula -> Prop) G raw1 raw2 coded1 coded2,
+  BProv B G (pEq raw1 raw2) ->
+  BProv B G (pEq coded1 coded2) ->
+  BProv B G (ordinalCodeGraphTermAt raw1 coded1) ->
+  BProv B G (ordinalCodeGraphTermAt raw2 coded2).
+Proof.
+  intros B G raw1 raw2 coded1 coded2 hraw hcoded hgraph.
+  apply (BProv_ordinalCodeGraphTermAt_congr_coded
+    B G raw2 coded1 coded2 hcoded).
+  exact (BProv_ordinalCodeGraphTermAt_congr_raw
+    B G raw1 raw2 coded1 hraw hgraph).
+Qed.
+
 Lemma codedOrdinalDomain_free : forall i,
   Free i codedOrdinalDomain -> i = 0.
 Proof.

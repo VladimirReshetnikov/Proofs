@@ -11,7 +11,7 @@ From SetTheory Require Import Fol Calculus Completeness PAHF
   PAHFOrdinalCode PAHFOrdinalCodeTotal PAHFOrdinalCodeTotalCapacity
   PAHFOrdinalCodeTotalInduction PAHFTranslatedHFFin PAHFMembershipTail
   PAHFOrdinalCodeTermCompatibility PAHFOrdinalCodeInjective
-  PAHFRoundTripArithmetic PAHFRoundTripEquality PAHFRoundTripQuantifiers
+  PAHFRoundTripArithmetic PAHFRoundTripQuantifiers
   PAHFOrdinalCodeRange.
 
 Import ListNotations.
