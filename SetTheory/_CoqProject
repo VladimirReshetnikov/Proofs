@@ -78,6 +78,7 @@ PAHFMembershipBoundSucc.v
 PAHFBetaShiftPrefix.v
 PAHFMembershipTail.v
 PAHFAdjoinTotal.v
+PAHFTranslatedAdjoin.v
 PAHFTranslatedExtensionality.v
 PAHFInterpretations.v
 PAHFTermGraphModel.v
