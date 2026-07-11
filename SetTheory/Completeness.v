@@ -544,6 +544,10 @@ Qed.
 Definition Tinf (B : form -> Prop) (L0 : list form) (phi : form) : Prop :=
   exists n, BProv B (chainB B L0 n) phi.
 
+Local Lemma Tinf_of_chain_in : forall B L0 n phi,
+  In phi (chainB B L0 n) -> Tinf B L0 phi.
+Proof. intros B L0 n phi Hin. exists n, nil. split; [ intros x [] | apply P_ass; exact Hin ]. Qed.
+
 Lemma BProv_weaken_chain :
   forall B L0 n n' phi, n <= n' ->
     BProv B (chainB B L0 n) phi -> BProv B (chainB B L0 n') phi.
@@ -922,10 +926,20 @@ Lemma Tinf_compl : forall B L0 phi, Tinf B L0 phi \/ Tinf B L0 (fImp phi fBot).
 Proof.
   intros B L0 phi. destruct (Enum_surj phi) as [n Hn]. subst phi.
   destruct (stepB_decides B (chainB B L0 n) (Enum n)) as [Hin | Hin].
-  - left. exists (S n). exists nil. split; [ intros x [] | ].
-    cbn [chainB app]. apply P_ass. exact Hin.
-  - right. exists (S n). exists nil. split; [ intros x [] | ].
-    cbn [chainB app]. apply P_ass. exact Hin.
+  - left. apply (Tinf_of_chain_in B L0 (S n)). cbn [chainB]. exact Hin.
+  - right. apply (Tinf_of_chain_in B L0 (S n)). cbn [chainB]. exact Hin.
+Qed.
+
+Local Lemma Tinf_common_stage :
+  forall B L0 G, (forall x, In x G -> Tinf B L0 x) ->
+    exists n, forall x, In x G -> BProv B (chainB B L0 n) x.
+Proof. intros B L0 G. induction G as [| g G' IHG]; intro Hall.
+  - exists 0. intros x [].
+  - destruct (Hall g (or_introl eq_refl)) as [ng Hg].
+    destruct (IHG (fun x Hx => Hall x (or_intror Hx))) as [n Hn].
+    exists (Nat.max ng n). intros x [Heq | Hx].
+    + subst x. apply (BProv_weaken_chain B L0 ng (Nat.max ng n) g); [ lia | exact Hg ].
+    + apply (BProv_weaken_chain B L0 n (Nat.max ng n) x); [ lia | apply Hn; exact Hx ].
 Qed.
 
 Lemma Tinf_bound :
@@ -933,22 +947,10 @@ Lemma Tinf_bound :
     exists n Gb, (forall x, In x Gb -> B x) /\
                  (forall x, In x G -> Prov (Gb ++ chainB B L0 n) x).
 Proof.
-  intros B L0 G. induction G as [| g G' IHG]; intro Hall.
-  - exists 0, nil. split; [ intros x [] | intros x [] ].
-  - destruct (Hall g (or_introl eq_refl)) as [ng [Gbg [HGbg Hpg]]].
-    destruct IHG as [N' [Gb' [HGb' HG']]]; [ intros x Hx; apply Hall; right; exact Hx | ].
-    exists (Nat.max ng N'), (Gbg ++ Gb'). split.
-    + intros x Hx. apply in_app_iff in Hx. destruct Hx as [Hx | Hx];
-        [ apply HGbg; exact Hx | apply HGb'; exact Hx ].
-    + intros x [Heq | Hx].
-      * subst x. apply (Prov_weaken (Gbg ++ chainB B L0 ng) g Hpg).
-        intros y Hy. apply in_app_iff in Hy. apply in_app_iff. destruct Hy as [Hy | Hy].
-        -- left. apply in_app_iff. left. exact Hy.
-        -- right. apply (chainB_mono B L0 (Nat.max ng N') ng); [ lia | exact Hy ].
-      * apply (Prov_weaken (Gb' ++ chainB B L0 N') x (HG' x Hx)).
-        intros y Hy. apply in_app_iff in Hy. apply in_app_iff. destruct Hy as [Hy | Hy].
-        -- left. apply in_app_iff. right. exact Hy.
-        -- right. apply (chainB_mono B L0 (Nat.max ng N') N'); [ lia | exact Hy ].
+  intros B L0 G Hall.
+  destruct (Tinf_common_stage B L0 G Hall) as [n Hn].
+  destruct (BProv_bound_list B (chainB B L0 n) G Hn) as [Gb [HGb Hp]].
+  exists n, Gb. split; assumption.
 Qed.
 
 Lemma Tinf_closed :
@@ -974,13 +976,13 @@ Lemma Tinf_henkin_ex :
 Proof.
   intros B L0 HB H0 a HEx. destruct (Enum_surj (fEx a)) as [m Hm].
   destruct (classic (BCon B (fEx a :: chainB B L0 m))) as [Hpos | Hnc].
-  - exists (freshFor (fEx a :: chainB B L0 m)). exists (S m). exists nil. split;
-      [ intros x [] | ].
-    cbn [chainB app]. rewrite Hm. apply P_ass. apply stepB_ex_pos. exact Hpos.
+  - exists (freshFor (fEx a :: chainB B L0 m)).
+    apply (Tinf_of_chain_in B L0 (S m)).
+    cbn [chainB]. rewrite Hm. apply stepB_ex_pos. exact Hpos.
   - exfalso.
     assert (Hneg : Tinf B L0 (fImp (fEx a) fBot)).
-    { exists (S m). exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
-      apply P_ass. apply stepB_neg_in. exact Hnc. }
+    { apply (Tinf_of_chain_in B L0 (S m)). cbn [chainB]. rewrite Hm.
+      apply stepB_neg_in. exact Hnc. }
     apply (Tinf_cons B L0 HB H0).
     exact (Tinf_mp B L0 (fEx a) fBot Hneg HEx).
 Qed.
@@ -994,14 +996,14 @@ Proof.
   exfalso. destruct (Enum_surj (fAll a)) as [m Hm].
   destruct (classic (BCon B (fAll a :: chainB B L0 m))) as [Hc | Hnc].
   - assert (Hposfa : Tinf B L0 (fAll a)).
-    { exists (S m). exists nil. split; [ intros x [] | ].
-      cbn [chainB app]. rewrite Hm. apply P_ass. apply stepB_pos_in. exact Hc. }
+    { apply (Tinf_of_chain_in B L0 (S m)). cbn [chainB]. rewrite Hm.
+      apply stepB_pos_in. exact Hc. }
     apply (Tinf_cons B L0 HB H0).
     exact (Tinf_mp B L0 (fAll a) fBot Hneg Hposfa).
   - assert (Hnegw : Tinf B L0
                       (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a) fBot)).
-    { exists (S m). exists nil. split; [ intros x [] | ]. cbn [chainB app]. rewrite Hm.
-      apply P_ass. apply stepB_all_neg. exact Hnc. }
+    { apply (Tinf_of_chain_in B L0 (S m)). cbn [chainB]. rewrite Hm.
+      apply stepB_all_neg. exact Hnc. }
     set (w := freshFor (fImp (fAll a) fBot :: chainB B L0 m)) in *.
     apply (Tinf_cons B L0 HB H0).
     exact (Tinf_mp B L0 (rename (inst w) a) fBot Hnegw (Hall w)).
@@ -1021,9 +1023,7 @@ Proof.
   - intros g Hg. apply (proj2 (Hsat g)). exists 0. exists (g :: nil). split.
     + intros x [Heq | []]. subst x. exact Hg.
     + cbn [chainB app]. apply P_ass. left. reflexivity.
-  - intros g Hg. apply (proj2 (Hsat g)). exists 0. exists nil. split.
-    + intros x [].
-    + cbn [chainB app]. apply P_ass. exact Hg.
+  - intros g Hg. apply (proj2 (Hsat g)). apply (Tinf_of_chain_in B L0 0). exact Hg.
 Qed.
 
 (* ===================================================================== *)

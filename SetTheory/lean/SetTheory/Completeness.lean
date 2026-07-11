@@ -620,6 +620,10 @@ theorem chainB_con (B : Form → Prop) (L0 : List Form)
 def Tinf (B : Form → Prop) (L0 : List Form) (phi : Form) : Prop :=
   ∃ n, BProv B (chainB B L0 n) phi
 
+private theorem Tinf_of_chain_in (B : Form → Prop) (L0 : List Form)
+    (n : Nat) (phi : Form) (h : phi ∈ chainB B L0 n) : Tinf B L0 phi :=
+  ⟨n, [], mem_T_nil, .P_ass _ _ (by simpa using h)⟩
+
 theorem BProv_weaken_chain (B : Form → Prop) (L0 : List Form) (n n' : Nat)
     (phi : Form) (hle : n ≤ n') (h : BProv B (chainB B L0 n) phi) :
     BProv B (chainB B L0 n') phi :=
@@ -939,43 +943,33 @@ theorem Tinf_compl (B : Form → Prop) (L0 : List Form) (phi : Form) :
     Tinf B L0 phi ∨ Tinf B L0 (fImp phi fBot) := by
   obtain ⟨n, rfl⟩ := Enum_surj phi
   rcases stepB_decides B (chainB B L0 n) (Enum n) with hin | hin
-  · refine Or.inl ⟨n+1, [], mem_T_nil, .P_ass _ _ ?_⟩
-    show _ ∈ [] ++ stepB B (chainB B L0 n) (Enum n)
-    simpa using hin
-  · refine Or.inr ⟨n+1, [], mem_T_nil, .P_ass _ _ ?_⟩
-    show _ ∈ [] ++ stepB B (chainB B L0 n) (Enum n)
-    simpa using hin
+  · exact Or.inl (Tinf_of_chain_in B L0 (n+1) (Enum n) (by simpa [chainB] using hin))
+  · exact Or.inr (Tinf_of_chain_in B L0 (n+1) _ (by simpa [chainB] using hin))
+
+private theorem Tinf_common_stage (B : Form → Prop) (L0 : List Form) :
+    ∀ G : List Form, (∀ x ∈ G, Tinf B L0 x) →
+      ∃ n, ∀ x ∈ G, BProv B (chainB B L0 n) x := by
+  intro G
+  induction G with
+  | nil => intro _; exact ⟨0, fun x hx => nomatch hx⟩
+  | cons g G' ih =>
+    intro hall
+    obtain ⟨ng, hg⟩ := hall g (by simp)
+    obtain ⟨n, hn⟩ := ih (fun x hx => hall x (by simp [hx]))
+    refine ⟨max ng n, ?_⟩
+    intro x hx
+    rcases List.mem_cons.mp hx with rfl | hx
+    · exact BProv_weaken_chain B L0 ng (max ng n) x (by omega) hg
+    · exact BProv_weaken_chain B L0 n (max ng n) x (by omega) (hn x hx)
 
 theorem Tinf_bound (B : Form → Prop) (L0 : List Form) :
     ∀ G : List Form, (∀ x ∈ G, Tinf B L0 x) →
       ∃ n Gb, (∀ x ∈ Gb, B x) ∧
         (∀ x ∈ G, Prov (Gb ++ chainB B L0 n) x) := by
-  intro G
-  induction G with
-  | nil => intro _; exact ⟨0, [], mem_T_nil, fun x hx => nomatch hx⟩
-  | cons g G' IHG =>
-    intro hall
-    obtain ⟨ng, Gbg, hGbg, hpg⟩ := hall g (by simp)
-    obtain ⟨N', Gb', hGb', hG'⟩ := IHG (fun x hx => hall x (by simp [hx]))
-    refine ⟨max ng N', Gbg ++ Gb', ?_, ?_⟩
-    · intro x hx
-      rcases List.mem_append.mp hx with hx | hx
-      · exact hGbg x hx
-      · exact hGb' x hx
-    · intro x hx
-      rcases List.mem_cons.mp hx with rfl | hx
-      · apply Prov_weaken hpg
-        intro y hy
-        rcases List.mem_append.mp hy with hy | hy
-        · exact List.mem_append.mpr (Or.inl (List.mem_append.mpr (Or.inl hy)))
-        · exact List.mem_append.mpr
-            (Or.inr (chainB_mono B L0 _ ng (by omega) y hy))
-      · apply Prov_weaken (hG' x hx)
-        intro y hy
-        rcases List.mem_append.mp hy with hy | hy
-        · exact List.mem_append.mpr (Or.inl (List.mem_append.mpr (Or.inr hy)))
-        · exact List.mem_append.mpr
-            (Or.inr (chainB_mono B L0 _ N' (by omega) y hy))
+  intro G hall
+  obtain ⟨n, hn⟩ := Tinf_common_stage B L0 G hall
+  obtain ⟨Gb, hGb, hp⟩ := BProv_bound_list B (chainB B L0 n) G hn
+  exact ⟨n, Gb, hGb, hp⟩
 
 theorem Tinf_closed (B : Form → Prop) (L0 : List Form) (G : List Form)
     (phi : Form) (hall : ∀ x ∈ G, Tinf B L0 x) (hp : Prov G phi) :
@@ -1000,16 +994,12 @@ theorem Tinf_henkin_ex (B : Form → Prop) (L0 : List Form)
     (hex : Tinf B L0 (fEx a)) : ∃ k, Tinf B L0 (rename (inst k) a) := by
   obtain ⟨m, hm⟩ := Enum_surj (fEx a)
   rcases Classical.em (BCon B (fEx a :: chainB B L0 m)) with hpos | hnc
-  · refine ⟨freshFor (fEx a :: chainB B L0 m), m+1, [], mem_T_nil, ?_⟩
-    show Prov ([] ++ stepB B (chainB B L0 m) (Enum m)) _
-    rw [hm]
-    exact .P_ass _ _ (by simpa using stepB_ex_pos B _ a hpos)
+  · refine ⟨freshFor (fEx a :: chainB B L0 m), Tinf_of_chain_in B L0 (m+1) _ ?_⟩
+    simpa [chainB, hm] using stepB_ex_pos B (chainB B L0 m) a hpos
   · exfalso
     have hneg : Tinf B L0 (fImp (fEx a) fBot) := by
-      refine ⟨m+1, [], mem_T_nil, ?_⟩
-      show Prov ([] ++ stepB B (chainB B L0 m) (Enum m)) _
-      rw [hm]
-      exact .P_ass _ _ (by simpa using stepB_neg_in B _ (fEx a) hnc)
+      apply Tinf_of_chain_in B L0 (m+1)
+      simpa [chainB, hm] using stepB_neg_in B (chainB B L0 m) (fEx a) hnc
     exact (Tinf_cons B L0 hB h0) (Tinf_mp B L0 (fEx a) fBot hneg hex)
 
 theorem Tinf_henkin_all (B : Form → Prop) (L0 : List Form)
@@ -1021,18 +1011,14 @@ theorem Tinf_henkin_all (B : Form → Prop) (L0 : List Form)
   obtain ⟨m, hm⟩ := Enum_surj (fAll a)
   rcases Classical.em (BCon B (fAll a :: chainB B L0 m)) with hc | hnc
   · have hposfa : Tinf B L0 (fAll a) := by
-      refine ⟨m+1, [], mem_T_nil, ?_⟩
-      show Prov ([] ++ stepB B (chainB B L0 m) (Enum m)) _
-      rw [hm]
-      exact .P_ass _ _ (by simpa using stepB_pos_in B _ (fAll a) hc)
+      apply Tinf_of_chain_in B L0 (m+1)
+      simpa [chainB, hm] using stepB_pos_in B (chainB B L0 m) (fAll a) hc
     exact (Tinf_cons B L0 hB h0) (Tinf_mp B L0 (fAll a) fBot hneg hposfa)
   · have hnegw : Tinf B L0
         (fImp (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a)
               fBot) := by
-      refine ⟨m+1, [], mem_T_nil, ?_⟩
-      show Prov ([] ++ stepB B (chainB B L0 m) (Enum m)) _
-      rw [hm]
-      exact .P_ass _ _ (by simpa using stepB_all_neg B _ a hnc)
+      apply Tinf_of_chain_in B L0 (m+1)
+      simpa [chainB, hm] using stepB_all_neg B (chainB B L0 m) a hnc
     exact (Tinf_cons B L0 hB h0)
       (Tinf_mp B L0
         (rename (inst (freshFor (fImp (fAll a) fBot :: chainB B L0 m))) a)
@@ -1053,10 +1039,7 @@ theorem model_of_BCon (B : Form → Prop) (L0 : List Form)
     refine ⟨0, [g], mem_T_cons hg mem_T_nil, ?_⟩
     exact .P_ass _ _ (by simp)
   · intro g hg
-    apply (hsat g).mpr
-    refine ⟨0, [], mem_T_nil, .P_ass _ _ ?_⟩
-    show g ∈ ([] ++ L0 : List Form)
-    simpa using hg
+    exact (hsat g).mpr (Tinf_of_chain_in B L0 0 g (by simpa [chainB] using hg))
 
 /-! ## Finite-context completeness, as the `B = ∅` instance -/
 
