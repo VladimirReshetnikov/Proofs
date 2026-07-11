@@ -6389,20 +6389,7 @@ theorem BProv_translate_impI {G : List PA.Formula} {a b : PA.Formula}
       (translateFormula (PA.Formula.imp a b)) := by
   change BProv translatedPAAx (translateContext G)
     (fImp (translateFormula a) (translateFormula b))
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_impI
-  apply Prov_weaken hp
-  intro x hx
-  rw [List.mem_append] at hx
-  rcases hx with hx | hx
-  · exact List.mem_cons.mpr
-      (Or.inr (List.mem_append.mpr (Or.inl hx)))
-  · rw [List.mem_cons] at hx
-    rcases hx with hx | hx
-    · exact List.mem_cons.mpr (Or.inl hx)
-    · exact List.mem_cons.mpr
-        (Or.inr (List.mem_append.mpr (Or.inr hx)))
+  exact BProv_impI h
 
 /-- Translated implication elimination for the PA-in-HF translation. -/
 theorem BProv_translate_impE {G : List PA.Formula} {a b : PA.Formula}
@@ -6418,8 +6405,7 @@ theorem BProv_translate_impE {G : List PA.Formula} {a b : PA.Formula}
 theorem BProv_translate_botE {G : List PA.Formula} {a : PA.Formula}
     (hbot : BProv translatedPAAx (translateContext G) fBot) :
     BProv translatedPAAx (translateContext G) (translateFormula a) := by
-  rcases hbot with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_botE _ (translateFormula a) hp⟩
+  exact BProv_botE hbot
 
 /-- Translated law of excluded middle for the PA-in-HF translation. -/
 theorem BProv_translate_lem (G : List PA.Formula) (a : PA.Formula) :
@@ -6437,69 +6423,41 @@ theorem BProv_translate_andI {G : List PA.Formula} {a b : PA.Formula}
       (translateFormula (PA.Formula.and a b)) := by
   change BProv translatedPAAx (translateContext G)
     (fAnd (translateFormula a) (translateFormula b))
-  rcases ha with ⟨La, hLa, hpa⟩
-  rcases hb with ⟨Lb, hLb, hpb⟩
-  refine ⟨La ++ Lb, ?_, ?_⟩
-  · intro x hx
-    rw [List.mem_append] at hx
-    rcases hx with hx | hx
-    · exact hLa x hx
-    · exact hLb x hx
-  · apply Prov.P_andI
-    · apply Prov_weaken hpa
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
-      · exact Or.inr hx
-    · apply Prov_weaken hpb
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
-      · exact Or.inr hx
+  exact BProv_andI ha hb
 
 /-- First translated conjunction projection for the PA-in-HF translation. -/
 theorem BProv_translate_andE1 {G : List PA.Formula} {a b : PA.Formula}
     (h : BProv translatedPAAx (translateContext G)
       (translateFormula (PA.Formula.and a b))) :
     BProv translatedPAAx (translateContext G) (translateFormula a) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_andE1 _ (translateFormula a) (translateFormula b)
-  simpa [translateFormula, formulaAt] using hp
+  exact BProv_andE1 (by
+    simpa [translateFormula, formulaAt] using h)
 
 /-- Second translated conjunction projection for the PA-in-HF translation. -/
 theorem BProv_translate_andE2 {G : List PA.Formula} {a b : PA.Formula}
     (h : BProv translatedPAAx (translateContext G)
       (translateFormula (PA.Formula.and a b))) :
     BProv translatedPAAx (translateContext G) (translateFormula b) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_andE2 _ (translateFormula a) (translateFormula b)
-  simpa [translateFormula, formulaAt] using hp
+  exact BProv_andE2 (by
+    simpa [translateFormula, formulaAt] using h)
 
 /-- Left translated disjunction introduction for the PA-in-HF translation. -/
 theorem BProv_translate_orI1 {G : List PA.Formula} {a b : PA.Formula}
     (ha : BProv translatedPAAx (translateContext G) (translateFormula a)) :
     BProv translatedPAAx (translateContext G)
       (translateFormula (PA.Formula.or a b)) := by
-  rcases ha with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContext G)
+  change BProv translatedPAAx (translateContext G)
     (fOr (translateFormula a) (translateFormula b))
-  exact Prov.P_orI1 _ _ _ hp
+  exact BProv_orI1 ha
 
 /-- Right translated disjunction introduction for the PA-in-HF translation. -/
 theorem BProv_translate_orI2 {G : List PA.Formula} {a b : PA.Formula}
     (hb : BProv translatedPAAx (translateContext G) (translateFormula b)) :
     BProv translatedPAAx (translateContext G)
       (translateFormula (PA.Formula.or a b)) := by
-  rcases hb with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContext G)
+  change BProv translatedPAAx (translateContext G)
     (fOr (translateFormula a) (translateFormula b))
-  exact Prov.P_orI2 _ _ _ hp
+  exact BProv_orI2 hb
 
 /-- Translated disjunction elimination for the PA-in-HF translation. -/
 theorem BProv_translate_orE {G : List PA.Formula} {a b c : PA.Formula}
@@ -6510,26 +6468,8 @@ theorem BProv_translate_orE {G : List PA.Formula} {a b c : PA.Formula}
     (hb : BProv translatedPAAx
       (translateFormula b :: translateContext G) (translateFormula c)) :
     BProv translatedPAAx (translateContext G) (translateFormula c) := by
-  rcases hor with ⟨Lo, hLo, hpo⟩
-  rcases ha with ⟨La, hLa, hpa⟩
-  rcases hb with ⟨Lb, hLb, hpb⟩
-  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
-  · intro x hx
-    simp only [List.mem_append] at hx
-    grind
-  · apply Prov.P_orE _ (translateFormula a) (translateFormula b) (translateFormula c)
-    · apply Prov_weaken hpo
-      intro x hx
-      simp only [List.mem_append] at hx ⊢
-      grind
-    · apply Prov_weaken hpa
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
-    · apply Prov_weaken hpb
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
+  exact BProv_orE
+    (by simpa [translateFormula, formulaAt] using hor) ha hb
 
 /-- Translated implication introduction for an explicit PA-variable-to-HF-slot
 map. -/
@@ -6541,20 +6481,7 @@ theorem BProv_formulaAt_impI {ρ : Nat → Nat} {G : List PA.Formula}
       (formulaAt ρ (PA.Formula.imp a b)) := by
   change BProv translatedPAAx (translateContextAt ρ G)
     (fImp (formulaAt ρ a) (formulaAt ρ b))
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_impI
-  apply Prov_weaken hp
-  intro x hx
-  rw [List.mem_append] at hx
-  rcases hx with hx | hx
-  · exact List.mem_cons.mpr
-      (Or.inr (List.mem_append.mpr (Or.inl hx)))
-  · rw [List.mem_cons] at hx
-    rcases hx with hx | hx
-    · exact List.mem_cons.mpr (Or.inl hx)
-    · exact List.mem_cons.mpr
-        (Or.inr (List.mem_append.mpr (Or.inr hx)))
+  exact BProv_impI h
 
 /-- Translated implication elimination for an explicit PA-variable-to-HF-slot
 map. -/
@@ -6573,8 +6500,7 @@ theorem BProv_formulaAt_botE {ρ : Nat → Nat} {G : List PA.Formula}
     {a : PA.Formula}
     (hbot : BProv translatedPAAx (translateContextAt ρ G) fBot) :
     BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ a) := by
-  rcases hbot with ⟨L, hL, hp⟩
-  exact ⟨L, hL, Prov.P_botE _ (formulaAt ρ a) hp⟩
+  exact BProv_botE hbot
 
 /-- Translated law of excluded middle for an explicit PA-variable-to-HF-slot
 map. -/
@@ -7250,27 +7176,7 @@ theorem BProv_formulaAt_andI {ρ : Nat → Nat} {G : List PA.Formula}
       (formulaAt ρ (PA.Formula.and a b)) := by
   change BProv translatedPAAx (translateContextAt ρ G)
     (fAnd (formulaAt ρ a) (formulaAt ρ b))
-  rcases ha with ⟨La, hLa, hpa⟩
-  rcases hb with ⟨Lb, hLb, hpb⟩
-  refine ⟨La ++ Lb, ?_, ?_⟩
-  · intro x hx
-    rw [List.mem_append] at hx
-    rcases hx with hx | hx
-    · exact hLa x hx
-    · exact hLb x hx
-  · apply Prov.P_andI
-    · apply Prov_weaken hpa
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inl hx))
-      · exact Or.inr hx
-    · apply Prov_weaken hpb
-      intro x hx
-      rw [List.mem_append] at hx ⊢
-      rcases hx with hx | hx
-      · exact Or.inl (List.mem_append.mpr (Or.inr hx))
-      · exact Or.inr hx
+  exact BProv_andI ha hb
 
 /-- First translated conjunction projection for an explicit
 PA-variable-to-HF-slot map. -/
@@ -7279,10 +7185,7 @@ theorem BProv_formulaAt_andE1 {ρ : Nat → Nat} {G : List PA.Formula}
     (h : BProv translatedPAAx (translateContextAt ρ G)
       (formulaAt ρ (PA.Formula.and a b))) :
     BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ a) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_andE1 _ (formulaAt ρ a) (formulaAt ρ b)
-  simpa [formulaAt] using hp
+  exact BProv_andE1 (by simpa [formulaAt] using h)
 
 /-- Second translated conjunction projection for an explicit
 PA-variable-to-HF-slot map. -/
@@ -7291,10 +7194,7 @@ theorem BProv_formulaAt_andE2 {ρ : Nat → Nat} {G : List PA.Formula}
     (h : BProv translatedPAAx (translateContextAt ρ G)
       (formulaAt ρ (PA.Formula.and a b))) :
     BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ b) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  apply Prov.P_andE2 _ (formulaAt ρ a) (formulaAt ρ b)
-  simpa [formulaAt] using hp
+  exact BProv_andE2 (by simpa [formulaAt] using h)
 
 /-- Left translated disjunction introduction for an explicit
 PA-variable-to-HF-slot map. -/
@@ -7303,11 +7203,9 @@ theorem BProv_formulaAt_orI1 {ρ : Nat → Nat} {G : List PA.Formula}
     (ha : BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ a)) :
     BProv translatedPAAx (translateContextAt ρ G)
       (formulaAt ρ (PA.Formula.or a b)) := by
-  rcases ha with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContextAt ρ G)
+  change BProv translatedPAAx (translateContextAt ρ G)
     (fOr (formulaAt ρ a) (formulaAt ρ b))
-  exact Prov.P_orI1 _ _ _ hp
+  exact BProv_orI1 ha
 
 /-- Right translated disjunction introduction for an explicit
 PA-variable-to-HF-slot map. -/
@@ -7316,11 +7214,9 @@ theorem BProv_formulaAt_orI2 {ρ : Nat → Nat} {G : List PA.Formula}
     (hb : BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ b)) :
     BProv translatedPAAx (translateContextAt ρ G)
       (formulaAt ρ (PA.Formula.or a b)) := by
-  rcases hb with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContextAt ρ G)
+  change BProv translatedPAAx (translateContextAt ρ G)
     (fOr (formulaAt ρ a) (formulaAt ρ b))
-  exact Prov.P_orI2 _ _ _ hp
+  exact BProv_orI2 hb
 
 /-- Translated disjunction elimination for an explicit PA-variable-to-HF-slot
 map. -/
@@ -7333,26 +7229,7 @@ theorem BProv_formulaAt_orE {ρ : Nat → Nat} {G : List PA.Formula}
     (hb : BProv translatedPAAx
       (formulaAt ρ b :: translateContextAt ρ G) (formulaAt ρ c)) :
     BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ c) := by
-  rcases hor with ⟨Lo, hLo, hpo⟩
-  rcases ha with ⟨La, hLa, hpa⟩
-  rcases hb with ⟨Lb, hLb, hpb⟩
-  refine ⟨Lo ++ La ++ Lb, ?_, ?_⟩
-  · intro x hx
-    simp only [List.mem_append] at hx
-    grind
-  · apply Prov.P_orE _ (formulaAt ρ a) (formulaAt ρ b) (formulaAt ρ c)
-    · apply Prov_weaken hpo
-      intro x hx
-      simp only [List.mem_append] at hx ⊢
-      grind
-    · apply Prov_weaken hpa
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
-    · apply Prov_weaken hpb
-      intro x hx
-      simp only [List.mem_append, List.mem_cons] at hx ⊢
-      grind
+  exact BProv_orE (by simpa [formulaAt] using hor) ha hb
 
 /-- Raw translated universal introduction.
 
@@ -7366,24 +7243,9 @@ theorem BProv_translate_allI_raw {G : List PA.Formula} {a : PA.Formula}
       (fImp domainForm (formulaAt (upVarMap (fun n => n)) a))) :
     BProv translatedPAAx (translateContext G)
       (translateFormula (PA.Formula.all a)) := by
-  rcases h with ⟨L, hL, hp⟩
-  have hLmap : L.map (rename Nat.succ) = L := by
-    calc
-      L.map (rename Nat.succ) = L.map (fun x => x) := by
-        apply List.map_congr_left
-        intro x hx
-        exact rename_eq_of_sentence (Sentences_translatedPAAx x (hL x hx)) Nat.succ
-      _ = L := by simp
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContext G)
+  change BProv translatedPAAx (translateContext G)
     (fAll (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))
-  apply Prov.P_allI
-  apply Prov_weaken hp
-  intro x hx
-  simp only [List.map_append, List.mem_append] at hx ⊢
-  rcases hx with hx | hx
-  · exact Or.inl (by simpa [hLmap] using hx)
-  · exact Or.inr hx
+  exact BProv_allI_of_sentences Sentences_translatedPAAx h
 
 /-- Raw translated universal elimination by an HF variable instance. -/
 theorem BProv_translate_allE_raw {G : List PA.Formula} {a : PA.Formula} {k : Nat}
@@ -7392,12 +7254,8 @@ theorem BProv_translate_allE_raw {G : List PA.Formula} {a : PA.Formula} {k : Nat
     BProv translatedPAAx (translateContext G)
       (rename (inst k)
         (fImp domainForm (formulaAt (upVarMap (fun n => n)) a))) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContext G)
-    (rename (inst k)
-      (fImp domainForm (formulaAt (upVarMap (fun n => n)) a)))
-  exact Prov.P_allE _ _ k hp
+  exact BProv_allE (by
+    simpa [translateFormula, formulaAt] using h)
 
 /-- Raw translated existential introduction by an HF variable witness. -/
 theorem BProv_translate_exI_raw {G : List PA.Formula} {a : PA.Formula} {k : Nat}
@@ -7406,11 +7264,9 @@ theorem BProv_translate_exI_raw {G : List PA.Formula} {a : PA.Formula} {k : Nat}
         (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)))) :
     BProv translatedPAAx (translateContext G)
       (translateFormula (PA.Formula.ex a)) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContext G)
+  change BProv translatedPAAx (translateContext G)
     (fEx (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a)))
-  exact Prov.P_exI _ _ k hp
+  exact BProv_exI h
 
 /-- Raw translated existential elimination.
 
@@ -7426,41 +7282,8 @@ theorem BProv_translate_exE_raw {G : List PA.Formula} {a c : PA.Formula}
         (translateContext G).map (rename Nat.succ))
       (rename Nat.succ (translateFormula c))) :
     BProv translatedPAAx (translateContext G) (translateFormula c) := by
-  rcases hex with ⟨Le, hLe, hpe⟩
-  rcases hbody with ⟨Lb, hLb, hpb⟩
-  have hLbmap : Lb.map (rename Nat.succ) = Lb := by
-    calc
-      Lb.map (rename Nat.succ) = Lb.map (fun x => x) := by
-        apply List.map_congr_left
-        intro x hx
-        exact rename_eq_of_sentence (Sentences_translatedPAAx x (hLb x hx)) Nat.succ
-      _ = Lb := by simp
-  refine ⟨Le ++ Lb, ?_, ?_⟩
-  · intro x hx
-    simp only [List.mem_append] at hx
-    grind
-  · apply Prov.P_exE _ (fAnd domainForm (formulaAt (upVarMap (fun n => n)) a))
-      (translateFormula c)
-    · apply Prov_weaken hpe
-      intro x hx
-      simp only [List.mem_append] at hx ⊢
-      grind
-    · apply Prov_weaken hpb
-      intro x hx
-      rw [List.mem_append] at hx
-      rcases hx with hx | hx
-      · apply List.mem_cons.mpr
-        apply Or.inr
-        simp only [List.map_append, List.mem_append]
-        apply Or.inl
-        exact Or.inr (by simpa [hLbmap] using hx)
-      · rw [List.mem_cons] at hx
-        rcases hx with hx | hx
-        · exact List.mem_cons.mpr (Or.inl hx)
-        · apply List.mem_cons.mpr
-          apply Or.inr
-          simp only [List.map_append, List.mem_append]
-          exact Or.inr hx
+  exact BProv_exE_of_sentences Sentences_translatedPAAx
+    (by simpa [translateFormula, formulaAt] using hex) hbody
 
 /-- Raw translated universal introduction under an explicit slot map. -/
 theorem BProv_formulaAt_allI_raw {ρ : Nat → Nat} {G : List PA.Formula}
@@ -7469,24 +7292,9 @@ theorem BProv_formulaAt_allI_raw {ρ : Nat → Nat} {G : List PA.Formula}
       (fImp domainForm (formulaAt (upVarMap ρ) a))) :
     BProv translatedPAAx (translateContextAt ρ G)
       (formulaAt ρ (PA.Formula.all a)) := by
-  rcases h with ⟨L, hL, hp⟩
-  have hLmap : L.map (rename Nat.succ) = L := by
-    calc
-      L.map (rename Nat.succ) = L.map (fun x => x) := by
-        apply List.map_congr_left
-        intro x hx
-        exact rename_eq_of_sentence (Sentences_translatedPAAx x (hL x hx)) Nat.succ
-      _ = L := by simp
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContextAt ρ G)
+  change BProv translatedPAAx (translateContextAt ρ G)
     (fAll (fImp domainForm (formulaAt (upVarMap ρ) a)))
-  apply Prov.P_allI
-  apply Prov_weaken hp
-  intro x hx
-  simp only [List.map_append, List.mem_append] at hx ⊢
-  rcases hx with hx | hx
-  · exact Or.inl (by simpa [hLmap] using hx)
-  · exact Or.inr hx
+  exact BProv_allI_of_sentences Sentences_translatedPAAx h
 
 /-- Translated universal introduction in the PA proof-rule shape.
 
@@ -7567,12 +7375,7 @@ theorem BProv_formulaAt_allE_raw {ρ : Nat → Nat} {G : List PA.Formula}
     BProv translatedPAAx (translateContextAt ρ G)
       (rename (inst k)
         (fImp domainForm (formulaAt (upVarMap ρ) a))) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContextAt ρ G)
-    (rename (inst k)
-      (fImp domainForm (formulaAt (upVarMap ρ) a)))
-  exact Prov.P_allE _ _ k hp
+  exact BProv_allE (by simpa [formulaAt] using h)
 
 /-- Translated universal elimination when PA instantiates by a variable.
 
@@ -7690,11 +7493,9 @@ theorem BProv_formulaAt_exI_raw {ρ : Nat → Nat} {G : List PA.Formula}
         (fAnd domainForm (formulaAt (upVarMap ρ) a)))) :
     BProv translatedPAAx (translateContextAt ρ G)
       (formulaAt ρ (PA.Formula.ex a)) := by
-  rcases h with ⟨L, hL, hp⟩
-  refine ⟨L, hL, ?_⟩
-  change Prov (L ++ translateContextAt ρ G)
+  change BProv translatedPAAx (translateContextAt ρ G)
     (fEx (fAnd domainForm (formulaAt (upVarMap ρ) a)))
-  exact Prov.P_exI _ _ k hp
+  exact BProv_exI h
 
 /-- Translated existential introduction when PA supplies a variable witness.
 
@@ -7801,41 +7602,8 @@ theorem BProv_formulaAt_exE_raw {ρ : Nat → Nat} {G : List PA.Formula}
         (translateContextAt ρ G).map (rename Nat.succ))
       (rename Nat.succ (formulaAt ρ c))) :
     BProv translatedPAAx (translateContextAt ρ G) (formulaAt ρ c) := by
-  rcases hex with ⟨Le, hLe, hpe⟩
-  rcases hbody with ⟨Lb, hLb, hpb⟩
-  have hLbmap : Lb.map (rename Nat.succ) = Lb := by
-    calc
-      Lb.map (rename Nat.succ) = Lb.map (fun x => x) := by
-        apply List.map_congr_left
-        intro x hx
-        exact rename_eq_of_sentence (Sentences_translatedPAAx x (hLb x hx)) Nat.succ
-      _ = Lb := by simp
-  refine ⟨Le ++ Lb, ?_, ?_⟩
-  · intro x hx
-    simp only [List.mem_append] at hx
-    grind
-  · apply Prov.P_exE _ (fAnd domainForm (formulaAt (upVarMap ρ) a))
-      (formulaAt ρ c)
-    · apply Prov_weaken hpe
-      intro x hx
-      simp only [List.mem_append] at hx ⊢
-      grind
-    · apply Prov_weaken hpb
-      intro x hx
-      rw [List.mem_append] at hx
-      rcases hx with hx | hx
-      · apply List.mem_cons.mpr
-        apply Or.inr
-        simp only [List.map_append, List.mem_append]
-        apply Or.inl
-        exact Or.inr (by simpa [hLbmap] using hx)
-      · rw [List.mem_cons] at hx
-        rcases hx with hx | hx
-        · exact List.mem_cons.mpr (Or.inl hx)
-        · apply List.mem_cons.mpr
-          apply Or.inr
-          simp only [List.map_append, List.mem_append]
-          exact Or.inr hx
+  exact BProv_exE_of_sentences Sentences_translatedPAAx
+    (by simpa [formulaAt] using hex) hbody
 
 /-- Translated existential elimination in the PA proof-rule shape.
 
