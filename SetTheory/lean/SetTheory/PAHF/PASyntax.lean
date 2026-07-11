@@ -50452,37 +50452,25 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_odd_step
   have holdStep : BProv Ax_s K (div2StepAt 1 (half+2) 0) :=
     BProv_Ax_s_div2StepAt_of_doubleEqAt_bit_zero
       holdDouble hzero
-  have hstepRen : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
+  have hstepKRaw : BProv Ax_s K
       (rename Nat.succ (rename Nat.succ
-        (div2StepAt current half bit))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      (BProv_rename_of_sentences
+        (div2StepAt current half bit))) := by
+    simpa [K, H] using
+      (BProv_lift_two_contexts_of_sentences
         (B := Ax_s) Ax_s_sentences
-        hstep Nat.succ) Nat.succ
+        (outer := nameBody) (inner := zeroBit) hstep)
   have hnewStep : BProv Ax_s K
       (div2StepAt (current+2) (half+2) (bit+2)) := by
-    simpa [K, H, div2StepAt, boolAt, zeroAt, oneAt,
-      eqConstAt, rename, Term.rename, List.map_map,
-      Function.comp_def] using
-      BProv_context_cons (B := Ax_s) (a := zeroBit)
-        (BProv_context_cons (B := Ax_s)
-          (a := rename Nat.succ nameBody) hstepRen)
-  have hbitRen : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ (eqConstAt bit 1))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      (BProv_rename_of_sentences
+    simpa [div2StepAt, boolAt, zeroAt, oneAt,
+      eqConstAt, rename, Term.rename] using hstepKRaw
+  have hbitKRaw : BProv Ax_s K
+      (rename Nat.succ (rename Nat.succ (eqConstAt bit 1))) := by
+    simpa [K, H] using
+      (BProv_lift_two_contexts_of_sentences
         (B := Ax_s) Ax_s_sentences
-        hbitOne Nat.succ) Nat.succ
+        (outer := nameBody) (inner := zeroBit) hbitOne)
   have hnewBitOne : BProv Ax_s K (eqConstAt (bit+2) 1) := by
-    simpa [K, H, eqConstAt, rename, Term.rename,
-      List.map_map, Function.comp_def] using
-      BProv_context_cons (B := Ax_s) (a := zeroBit)
-        (BProv_context_cons (B := Ax_s)
-          (a := rename Nat.succ nameBody) hbitRen)
+    simpa [eqConstAt, rename, Term.rename] using hbitKRaw
   have hnewOdd : BProv Ax_s K
       (oddDoubleEqAt (current+2) (half+2)) :=
     BProv_Ax_s_oddDoubleEqAt_of_div2StepAt_bit_one
@@ -50732,46 +50720,32 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
     have hraw : BProv Ax_s H nameBody :=
       BProv_ass (B := Ax_s) (G := H) (by simp [H])
     simpa [nameBody, oldHeadTerm, Term.rename] using hraw
-  have hstepRenRaw : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ (div2StepAt current half bit)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hstep Nat.succ
   have hnewStep : BProv Ax_s H
       (div2StepAt (current+1) (half+1) (bit+1)) := by
+    have hraw := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) Ax_s_sentences (a := nameBody) hstep
     simpa [H, div2StepAt, boolAt, zeroAt, oneAt,
-      eqConstAt, rename, Term.rename] using
-      BProv_context_cons (B := Ax_s) (a := nameBody) hstepRenRaw
+      eqConstAt, rename, Term.rename] using hraw
   have holdStep : BProv Ax_s H
       (div2StepAt 0 (oldTail+1) (bit+1)) :=
     BProv_Ax_s_div2StepAt_of_named_head_and_old_step
       (newHead := 0) (newTail := oldTail+1)
       (oldHead := current+1) (oldTail := half+1)
       (bit := bit+1) hname hnewStep
-  have hbitRenRaw : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ (eqConstAt bit 0)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hbitZero Nat.succ
   have hbitH : BProv Ax_s H (eqConstAt (bit+1) 0) := by
-    simpa [H, eqConstAt, rename, Term.rename] using
-      BProv_context_cons (B := Ax_s) (a := nameBody) hbitRenRaw
+    have hraw := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) Ax_s_sentences (a := nameBody) hbitZero
+    simpa [H, eqConstAt, rename, Term.rename] using hraw
   have hnewDouble : BProv Ax_s H
       (doubleEqAt (current+1) (half+1)) :=
     BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hbitH hnewStep
   have holdDouble : BProv Ax_s H
       (doubleEqAt 0 (oldTail+1)) :=
     BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero hbitH holdStep
-  have hltRenRaw : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ (ltAt oldTail half)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hltTail Nat.succ
   have hltH : BProv Ax_s H
       (ltTermAt (Term.var (oldTail+1)) (Term.var (half+1))) := by
-    have hraw : BProv Ax_s H
-        (rename Nat.succ (ltAt oldTail half)) :=
-      BProv_context_cons (B := Ax_s) (a := nameBody) hltRenRaw
+    have hraw := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) Ax_s_sentences (a := nameBody) hltTail
     simpa [ltAt, ltTermAt, rename, Term.rename, SetTheory.up]
       using hraw
   have hmiddle : BProv Ax_s H
@@ -50801,16 +50775,10 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
   have hltHead : BProv Ax_s H
       (ltTermAt (Term.var 0) (Term.var (current+1))) :=
     BProv_Ax_s_ltTermAt_of_succ_leTermAt hsuccLe
-  have htailRenRaw : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ (hfAdjoinGraphAt half oldTail elem)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      htailGraph Nat.succ
   have htailH : BProv Ax_s H
       (hfAdjoinGraphAt (half+1) (oldTail+1) (elem+1)) := by
-    have hraw : BProv Ax_s H
-        (rename Nat.succ (hfAdjoinGraphAt half oldTail elem)) :=
-      BProv_context_cons (B := Ax_s) (a := nameBody) htailRenRaw
+    have hraw := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) Ax_s_sentences (a := nameBody) htailGraph
     simpa only [rename_hfAdjoinGraphAt_succ] using hraw
   have hgraph : BProv Ax_s H
       (hfAdjoinGraphTermAt
@@ -50890,81 +50858,56 @@ theorem BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_step_and_tail
             (Term.var current)) hheadEmpty)
     have hpred : BProv Ax_s (predEx :: C) target := by
       let P : List Formula := predEx :: C
-      have houter : BProv Ax_s P (ex predInner) := by
+      have hpredEx : BProv Ax_s P (ex (ex predBody)) := by
         have hraw : BProv Ax_s P predEx :=
           BProv_ass (B := Ax_s) (G := P) (by simp [P])
-        simpa [predEx] using hraw
-      have houterBody : BProv Ax_s
-          (predInner :: P.map (rename Nat.succ))
-          (rename Nat.succ target) := by
-        let D : List Formula := predInner :: P.map (rename Nat.succ)
-        have hinner : BProv Ax_s D (ex predBody) := by
-          have hraw : BProv Ax_s D predInner :=
-            BProv_ass (B := Ax_s) (G := D) (by simp [D])
-          simpa [predInner] using hraw
-        have hinnerBody : BProv Ax_s
-            (predBody :: D.map (rename Nat.succ))
-            (rename Nat.succ (rename Nat.succ target)) := by
-          let H : List Formula := predBody :: D.map (rename Nat.succ)
-          have hbody : BProv Ax_s H predBody :=
-            BProv_ass (B := Ax_s) (G := H) (by simp [H])
-          have hlt : BProv Ax_s H (ltAt 1 (half+2)) := by
-            simpa [predBody] using BProv_andE1 hbody
-          have hgraph : BProv Ax_s H
-              (hfAdjoinGraphAt (half+2) 1 0) := by
-            simpa [predBody] using BProv_andE2 hbody
-          have hstepP : BProv Ax_s P
-              (div2StepAt current half bit) :=
-            BProv_context_cons (B := Ax_s) hstepC
-          have hstepD : BProv Ax_s D
-              (rename Nat.succ
-                (div2StepAt current half bit)) := by
-            simpa [D] using
-              (BProv_rename_succ_context_cons_of_sentences
-                (B := Ax_s) Ax_s_sentences
-                (a := predInner) hstepP)
-          have hstepHRaw : BProv Ax_s H
-              (rename Nat.succ (rename Nat.succ
-                (div2StepAt current half bit))) := by
-            simpa [H] using
-              (BProv_rename_succ_context_cons_of_sentences
-                (B := Ax_s) Ax_s_sentences
-                (a := predBody) hstepD)
-          have hstepH : BProv Ax_s H
-              (div2StepAt (current+2) (half+2) (bit+2)) := by
-            simpa [div2StepAt, boolAt, zeroAt, oneAt,
-              eqConstAt, rename, Term.rename] using hstepHRaw
-          have hbitP : BProv Ax_s P (eqConstAt bit 0) :=
-            BProv_context_cons (B := Ax_s) hbitZero
-          have hbitD : BProv Ax_s D
-              (rename Nat.succ (eqConstAt bit 0)) := by
-            simpa [D] using
-              (BProv_rename_succ_context_cons_of_sentences
-                (B := Ax_s) Ax_s_sentences
-                (a := predInner) hbitP)
-          have hbitHRaw : BProv Ax_s H
-              (rename Nat.succ (rename Nat.succ
-                (eqConstAt bit 0))) := by
-            simpa [H] using
-              (BProv_rename_succ_context_cons_of_sentences
-                (B := Ax_s) Ax_s_sentences
-                (a := predBody) hbitD)
-          have hbitH : BProv Ax_s H
-              (eqConstAt (bit+2) 0) := by
-            simpa [eqConstAt, rename, Term.rename] using hbitHRaw
-          have hresult : BProv Ax_s H
-              (hfEmptyOrStrictPredAdjoinAt (current+2)) :=
-            BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
-              hstepH hbitH hlt hgraph
-          simpa [target, hfEmptyOrStrictPredAdjoinAt,
-            rename_hfEmptyOrStrictPredAdjoinTermAt,
-            Term.rename] using hresult
-        exact BProv_exE_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hinner (by simpa [D, predBody] using hinnerBody)
-      exact BProv_exE_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        houter (by simpa [P, predInner] using houterBody)
+        simpa [predEx, predInner] using hraw
+      refine BProv_two_exE_of_sentences
+        (B := Ax_s) Ax_s_sentences hpredEx ?_
+      let H : List Formula :=
+        predBody :: (ex predBody :: P.map (rename Nat.succ)).map
+          (rename Nat.succ)
+      change BProv Ax_s H (rename Nat.succ (rename Nat.succ target))
+      have hbody : BProv Ax_s H predBody :=
+        BProv_ass (B := Ax_s) (G := H) (by simp [H])
+      have hlt : BProv Ax_s H (ltAt 1 (half+2)) := by
+        simpa [predBody] using BProv_andE1 hbody
+      have hgraph : BProv Ax_s H
+          (hfAdjoinGraphAt (half+2) 1 0) := by
+        simpa [predBody] using BProv_andE2 hbody
+      have hstepP : BProv Ax_s P
+          (div2StepAt current half bit) :=
+        BProv_context_cons (B := Ax_s) hstepC
+      have hstepHRaw : BProv Ax_s H
+          (rename Nat.succ (rename Nat.succ
+            (div2StepAt current half bit))) := by
+        simpa [H] using
+          (BProv_lift_two_opened_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (G := P) (body := predBody) hstepP)
+      have hstepH : BProv Ax_s H
+          (div2StepAt (current+2) (half+2) (bit+2)) := by
+        simpa [div2StepAt, boolAt, zeroAt, oneAt,
+          eqConstAt, rename, Term.rename] using hstepHRaw
+      have hbitP : BProv Ax_s P (eqConstAt bit 0) :=
+        BProv_context_cons (B := Ax_s) hbitZero
+      have hbitHRaw : BProv Ax_s H
+          (rename Nat.succ (rename Nat.succ
+            (eqConstAt bit 0))) := by
+        simpa [H] using
+          (BProv_lift_two_opened_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (G := P) (body := predBody) hbitP)
+      have hbitH : BProv Ax_s H
+          (eqConstAt (bit+2) 0) := by
+        simpa [eqConstAt, rename, Term.rename] using hbitHRaw
+      have hresult : BProv Ax_s H
+          (hfEmptyOrStrictPredAdjoinAt (current+2)) :=
+        BProv_Ax_s_hfEmptyOrStrictPredAdjoinAt_of_even_step_tail_pred
+          hstepH hbitH hlt hgraph
+      simpa [target, hfEmptyOrStrictPredAdjoinAt,
+        rename_hfEmptyOrStrictPredAdjoinTermAt,
+        Term.rename] using hresult
     exact BProv_orE hcases hempty hpred
   have hodd : BProv Ax_s (oneAt bit :: G) target := by
     let O : List Formula := oneAt bit :: G
@@ -51553,93 +51496,68 @@ theorem BProv_Ax_s_finiteGeneration_current_of_decomposition
     exact BProv_mp Ax_s C (hfEmptyAt 0) psi hbase hemptyC
   have hpred : BProv Ax_s (predEx :: G) psi := by
     let C : List Formula := predEx :: G
-    have hpredEx : BProv Ax_s C (ex predInner) := by
+    have hpredEx : BProv Ax_s C (ex (ex predBody)) := by
       have hraw : BProv Ax_s C predEx :=
         BProv_ass (B := Ax_s) (G := C) (by simp [C])
-      simpa [predEx] using hraw
-    have houterBody : BProv Ax_s
-        (predInner :: C.map (rename Nat.succ))
-        (rename Nat.succ psi) := by
-      let D : List Formula := predInner :: C.map (rename Nat.succ)
-      have hinnerEx : BProv Ax_s D (ex predBody) := by
-        have hraw : BProv Ax_s D predInner :=
-          BProv_ass (B := Ax_s) (G := D) (by simp [D])
-        simpa [predInner] using hraw
-      have hinnerBody : BProv Ax_s
-          (predBody :: D.map (rename Nat.succ))
-          (rename Nat.succ (rename Nat.succ psi)) := by
-        let H : List Formula := predBody :: D.map (rename Nat.succ)
-        have hpredBody : BProv Ax_s H predBody :=
-          BProv_ass (B := Ax_s) (G := H) (by simp [H])
-        have hlt : BProv Ax_s H (ltAt 1 2) := by
-          simpa [predBody] using BProv_andE1 hpredBody
-        have hgraph : BProv Ax_s H (hfAdjoinGraphAt 2 1 0) := by
-          simpa [predBody] using BProv_andE2 hpredBody
-        have hbelowC : BProv Ax_s C (hfStrongBelowAt psi) :=
-          BProv_context_cons (B := Ax_s) hbelow
-        have hbelowD : BProv Ax_s D
-            (rename Nat.succ (hfStrongBelowAt psi)) := by
-          simpa [D] using
-            (BProv_rename_succ_context_cons_of_sentences
-              (B := Ax_s) Ax_s_sentences
-              (a := predInner) hbelowC)
-        have hbelowH : BProv Ax_s H
-            (rename Nat.succ
-              (rename Nat.succ (hfStrongBelowAt psi))) := by
-          simpa [H] using
-            (BProv_rename_succ_context_cons_of_sentences
-              (B := Ax_s) Ax_s_sentences
-              (a := predBody) hbelowD)
-        have holdImp : BProv Ax_s H
-            (imp (ltAt 1 2) (rename rPredOld psi)) :=
-          BProv_hfStrongBelowAt_old_of_opened_pred hbelowH
-        have hold : BProv Ax_s H (rename rPredOld psi) :=
-          BProv_mp Ax_s H (ltAt 1 2) (rename rPredOld psi)
-            holdImp hlt
-        have hgenerationC : BProv Ax_s C
-            (rename Nat.succ (hfFiniteGenerationAt psi)) :=
-          BProv_context_cons (B := Ax_s) hgeneration
-        have hgenerationD : BProv Ax_s D
-            (rename Nat.succ
-              (rename Nat.succ (hfFiniteGenerationAt psi))) := by
-          simpa [D] using
-            (BProv_rename_succ_context_cons_of_sentences
-              (B := Ax_s) Ax_s_sentences
-              (a := predInner) hgenerationC)
-        have hgenerationH : BProv Ax_s H
-            (rename Nat.succ (rename Nat.succ (rename Nat.succ
-              (hfFiniteGenerationAt psi)))) := by
-          simpa [H] using
-            (BProv_rename_succ_context_cons_of_sentences
-              (B := Ax_s) Ax_s_sentences
-              (a := predBody) hgenerationD)
-        have hstep : BProv Ax_s H
-            (imp
-              (hfAdjoinGraphAt 2 1 0)
-              (imp
-                (rename rPredOld psi)
-                (rename AckermannHF.rAdjStepOld psi))) :=
-          BProv_hfFiniteGenerationAt_step_of_opened_pred hgenerationH
-        have hstepOld : BProv Ax_s H
-            (imp
-              (rename rPredOld psi)
-              (rename AckermannHF.rAdjStepOld psi)) :=
-          BProv_mp Ax_s H _ _ hstep hgraph
-        have hcurrent : BProv Ax_s H
-            (rename AckermannHF.rAdjStepOld psi) :=
-          BProv_mp Ax_s H _ _ hstepOld hold
-        have hr : AckermannHF.rAdjStepOld =
-            (fun n : Nat => n+2) := by
-          funext n
-          cases n <;> rfl
-        rw [hr] at hcurrent
-        simpa [rename_comp, Function.comp_def] using hcurrent
-      exact BProv_exE_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hinnerEx (by simpa [D, predBody] using hinnerBody)
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hpredEx (by simpa [C, predInner] using houterBody)
+      simpa [predEx, predInner] using hraw
+    refine BProv_two_exE_of_sentences
+      (B := Ax_s) Ax_s_sentences hpredEx ?_
+    let H : List Formula :=
+      predBody :: (ex predBody :: C.map (rename Nat.succ)).map
+        (rename Nat.succ)
+    change BProv Ax_s H (rename Nat.succ (rename Nat.succ psi))
+    have hpredBody : BProv Ax_s H predBody :=
+      BProv_ass (B := Ax_s) (G := H) (by simp [H])
+    have hlt : BProv Ax_s H (ltAt 1 2) := by
+      simpa [predBody] using BProv_andE1 hpredBody
+    have hgraph : BProv Ax_s H (hfAdjoinGraphAt 2 1 0) := by
+      simpa [predBody] using BProv_andE2 hpredBody
+    have hbelowC : BProv Ax_s C (hfStrongBelowAt psi) :=
+      BProv_context_cons (B := Ax_s) hbelow
+    have hbelowH : BProv Ax_s H
+        (rename Nat.succ
+          (rename Nat.succ (hfStrongBelowAt psi))) := by
+      simpa [H] using
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (G := C) (body := predBody) hbelowC)
+    have holdImp : BProv Ax_s H
+        (imp (ltAt 1 2) (rename rPredOld psi)) :=
+      BProv_hfStrongBelowAt_old_of_opened_pred hbelowH
+    have hold : BProv Ax_s H (rename rPredOld psi) :=
+      BProv_mp Ax_s H (ltAt 1 2) (rename rPredOld psi)
+        holdImp hlt
+    have hgenerationC : BProv Ax_s C
+        (rename Nat.succ (hfFiniteGenerationAt psi)) :=
+      BProv_context_cons (B := Ax_s) hgeneration
+    have hgenerationH : BProv Ax_s H
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ
+          (hfFiniteGenerationAt psi)))) := by
+      simpa [H] using
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (G := C) (body := predBody) hgenerationC)
+    have hstep : BProv Ax_s H
+        (imp
+          (hfAdjoinGraphAt 2 1 0)
+          (imp
+            (rename rPredOld psi)
+            (rename AckermannHF.rAdjStepOld psi))) :=
+      BProv_hfFiniteGenerationAt_step_of_opened_pred hgenerationH
+    have hstepOld : BProv Ax_s H
+        (imp
+          (rename rPredOld psi)
+          (rename AckermannHF.rAdjStepOld psi)) :=
+      BProv_mp Ax_s H _ _ hstep hgraph
+    have hcurrent : BProv Ax_s H
+        (rename AckermannHF.rAdjStepOld psi) :=
+      BProv_mp Ax_s H _ _ hstepOld hold
+    have hr : AckermannHF.rAdjStepOld =
+        (fun n : Nat => n+2) := by
+      funext n
+      cases n <;> rfl
+    rw [hr] at hcurrent
+    simpa [rename_comp, Function.comp_def] using hcurrent
   exact BProv_orE hcases hempty hpred
 
 /-- Pure strong-induction shell for finite generation.  `hcurrent` is the
