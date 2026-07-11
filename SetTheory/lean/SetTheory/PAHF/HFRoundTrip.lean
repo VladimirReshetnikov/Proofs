@@ -1031,6 +1031,23 @@ theorem BProv_rename_of_sentences
   · exact Or.inl (by simpa [hLmap] using hx)
   · exact Or.inr hx
 
+private theorem BProv_rename_twice_of_sentences
+    {B : Form → Prop} (hB : Sentences B)
+    {G : List Form} {phi : Form} (h : BProv B G phi) :
+    BProv B ((G.map (rename Nat.succ)).map (rename Nat.succ))
+      (rename Nat.succ (rename Nat.succ phi)) :=
+  BProv_rename_of_sentences hB
+    (BProv_rename_of_sentences hB h Nat.succ) Nat.succ
+
+private theorem BProv_context_prefix
+    {B : Form → Prop} (pre : List Form)
+    {G : List Form} {phi : Form} (h : BProv B G phi) :
+    BProv B (pre ++ G) phi := by
+  induction pre with
+  | nil => exact h
+  | cons head tail ih =>
+      exact PAInHF.BProv_context_cons (a := head) ih
+
 theorem BProv_HFFin_rep_exists_of_ordinalLike
     (P : SetOrdinalRepresentationProofs)
     {G : List Form} {code : Nat}
@@ -1114,17 +1131,11 @@ theorem BProv_HFFin_hfCompositeAt_all_forward
             simpa [rangeRawMap,
               rangeCodedMap] using hrep
         | succ n =>
-            have h₀ := hcode n hn
-            have h₁ := BProv_rename_of_sentences
-              Sentences_HFFin h₀ Nat.succ
-            have h₂ := BProv_rename_of_sentences
-              Sentences_HFFin h₁ Nat.succ
-            have hrawCtx := PAInHF.BProv_context_cons
-              (a := rename Nat.succ (rename Nat.succ rawAll)) h₂
-            have hdomainCtx := PAInHF.BProv_context_cons
-              (a := rename Nat.succ PAInHF.domainForm) hrawCtx
-            have hctx := PAInHF.BProv_context_cons
-              (a := repBody) hdomainCtx
+            have h₂ := BProv_rename_twice_of_sentences
+              Sentences_HFFin (hcode n hn)
+            have hctx := BProv_context_prefix
+              [repBody, rename Nat.succ PAInHF.domainForm,
+                rename Nat.succ (rename Nat.succ rawAll)] h₂
             simpa [C₃, C₂, C₁, C₀,
               rangeRawMap, rangeCodedMap,
               rename_HF_setOrdinalRepAt, List.map_map,
@@ -1140,14 +1151,10 @@ theorem BProv_HFFin_hfCompositeAt_all_forward
       have hall₀ : BProv HFFinAx_s C₀ rawAll :=
         BProv_of_Prov (B := HFFinAx_s)
           (Prov.P_ass C₀ _ (by simp [C₀]))
-      have hall₁ := BProv_rename_of_sentences
-        Sentences_HFFin hall₀ Nat.succ
-      have hall₂ := BProv_rename_of_sentences
-        Sentences_HFFin hall₁ Nat.succ
-      have hallDomainCtx := PAInHF.BProv_context_cons
-        (a := rename Nat.succ PAInHF.domainForm) hall₂
-      have hallCtx := PAInHF.BProv_context_cons
-        (a := repBody) hallDomainCtx
+      have hall₂ := BProv_rename_twice_of_sentences
+        Sentences_HFFin hall₀
+      have hallCtx := BProv_context_prefix
+        [repBody, rename Nat.succ PAInHF.domainForm] hall₂
       have hallCtx' : BProv HFFinAx_s C₃
           (fAll (rename (SetTheory.up Nat.succ)
             (rename (SetTheory.up Nat.succ) rawBody))) := by
@@ -1230,15 +1237,10 @@ theorem BProv_HFFin_hfCompositeAt_all_reverse
             simpa [totalRawMap,
               totalCodedMap] using hrep
         | succ n =>
-            have h₀ := hcode n hn
-            have h₁ := BProv_rename_of_sentences
-              Sentences_HFFin h₀ Nat.succ
-            have h₂ := BProv_rename_of_sentences
-              Sentences_HFFin h₁ Nat.succ
-            have hcodedCtx := PAInHF.BProv_context_cons
-              (a := rename Nat.succ (rename Nat.succ codedAll)) h₂
-            have hctx := PAInHF.BProv_context_cons
-              (a := repBody) hcodedCtx
+            have h₂ := BProv_rename_twice_of_sentences
+              Sentences_HFFin (hcode n hn)
+            have hctx := BProv_context_prefix
+              [repBody, rename Nat.succ (rename Nat.succ codedAll)] h₂
             simpa [C₂, C₁, C₀,
               totalRawMap, totalCodedMap,
               rename_HF_setOrdinalRepAt, List.map_map,
@@ -1254,12 +1256,9 @@ theorem BProv_HFFin_hfCompositeAt_all_reverse
       have hall₀ : BProv HFFinAx_s C₀ codedAll :=
         BProv_of_Prov (B := HFFinAx_s)
           (Prov.P_ass C₀ _ (by simp [C₀]))
-      have hall₁ := BProv_rename_of_sentences
-        Sentences_HFFin hall₀ Nat.succ
-      have hall₂ := BProv_rename_of_sentences
-        Sentences_HFFin hall₁ Nat.succ
-      have hallCtx := PAInHF.BProv_context_cons
-        (a := repBody) hall₂
+      have hall₂ := BProv_rename_twice_of_sentences
+        Sentences_HFFin hall₀
+      have hallCtx := BProv_context_prefix [repBody] hall₂
       have hallCtx' : BProv HFFinAx_s C₂
           (fAll (rename (SetTheory.up Nat.succ)
             (rename (SetTheory.up Nat.succ)
@@ -1380,17 +1379,11 @@ theorem BProv_HFFin_hfCompositeAt_ex_forward
               simpa [totalRawMap,
                 totalCodedMap] using hrep
           | succ n =>
-              have h₀ := hcode n hn
-              have h₁ := BProv_rename_of_sentences
-                Sentences_HFFin h₀ Nat.succ
-              have h₂ := BProv_rename_of_sentences
-                Sentences_HFFin h₁ Nat.succ
-              have hexCtx := PAInHF.BProv_context_cons
-                (a := rename Nat.succ (rename Nat.succ rawEx)) h₂
-              have hrawCtx := PAInHF.BProv_context_cons
-                (a := rename Nat.succ rawBody) hexCtx
-              have hctx := PAInHF.BProv_context_cons
-                (a := repBody) hrawCtx
+              have h₂ := BProv_rename_twice_of_sentences
+                Sentences_HFFin (hcode n hn)
+              have hctx := BProv_context_prefix
+                [repBody, rename Nat.succ rawBody,
+                  rename Nat.succ (rename Nat.succ rawEx)] h₂
               simpa [C₂, C₁, C₀,
                 totalRawMap, totalCodedMap,
                 rename_HF_setOrdinalRepAt, List.map_map,
@@ -1503,17 +1496,11 @@ theorem BProv_HFFin_hfCompositeAt_ex_reverse
               simpa [rangeRawMap,
                 rangeCodedMap] using hrep
           | succ n =>
-              have h₀ := hcode n hn
-              have h₁ := BProv_rename_of_sentences
-                Sentences_HFFin h₀ Nat.succ
-              have h₂ := BProv_rename_of_sentences
-                Sentences_HFFin h₁ Nat.succ
-              have hexCtx := PAInHF.BProv_context_cons
-                (a := rename Nat.succ (rename Nat.succ codedEx)) h₂
-              have hpairCtx := PAInHF.BProv_context_cons
-                (a := rename Nat.succ pairBody) hexCtx
-              have hctx := PAInHF.BProv_context_cons
-                (a := repBody) hpairCtx
+              have h₂ := BProv_rename_twice_of_sentences
+                Sentences_HFFin (hcode n hn)
+              have hctx := BProv_context_prefix
+                [repBody, rename Nat.succ pairBody,
+                  rename Nat.succ (rename Nat.succ codedEx)] h₂
               simpa [C₂, C₁, C₀,
                 rangeRawMap, rangeCodedMap,
                 rename_HF_setOrdinalRepAt, List.map_map,
