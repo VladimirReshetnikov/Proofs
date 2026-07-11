@@ -100,6 +100,10 @@ PAHFOrdinalCodeTermAdd.v
 PAHFOrdinalCodeTermMul.v
 PAHFRoundTripQuantifiers.v
 PAHFOrdinalCodeRange.v
+PAHFOrdinalCodeRangeArithmetic.v
+PAHFOrdinalCodeTermBase.v
+PAHFOrdinalCodeAddCore.v
+PAHFRoundTripArithmeticAssembly.v
 PAHFHFRoundTripSemantic.v
 PAHFHFRepresentationRange.v
 PAHFCompositeMemBelow.v
