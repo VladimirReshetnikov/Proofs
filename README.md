@@ -151,10 +151,12 @@ with [LaTeX source](SetTheory/article/closure-axiomatization.tex).
 
 The same project contains adjacent foundational and computability work:
 
-- an unconditional Lean deductive bi-interpretation between Peano arithmetic
-  and hereditary finite set theory strengthened by finite-generation induction,
-  using Ackermann coding in one direction and finite von Neumann ordinals in
-  the other;
+- unconditional Lean and Rocq deductive bi-interpretations between Peano
+  arithmetic and the hereditary-finite-set theory `HFFinAx_s`, which includes
+  finite-generation induction, using Ackermann coding in one direction and
+  finite von Neumann ordinals in the other; the Rocq endpoint is
+  `paHFFinDeductiveBiInterpretation` in
+  [`PAHFConcreteAssembly.v`](SetTheory/PAHFConcreteAssembly.v);
 - a first-order PA sentence expressing the Mertens/Littlewood arithmetic
   criterion associated with the Riemann Hypothesis—the repository formalizes
   the statement, not yet its analytic equivalence;

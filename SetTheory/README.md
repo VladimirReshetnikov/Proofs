@@ -64,16 +64,26 @@ foundational/computability work. Most have paired Rocq and Lean surfaces
 `BusyBeaverMathlib.v`/`BusyBeaverMathlib.lean`); the exact parity boundaries
 are documented below:
 
-- [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) (a facade over
+- The Rocq and Lean developments both prove a full deductive bi-interpretation
+  between PA and the finite-generation HF theory `HFFinAx_s`. The construction
+  uses Ackermann coding from HF into PA and finite von Neumann ordinals from PA
+  into HF, transfers theorems in both directions, and proves in the respective
+  source theories that both composite translations are equivalent to the
+  identity on sentences. On the Rocq side, [`PAHF.v`](PAHF.v) separately
+  establishes the semantic standard-model PA/HF picture and supplies the common
+  syntax and certificate interfaces; the concrete deductive proof is assembled
+  in [`PAHFConcreteAssembly.v`](PAHFConcreteAssembly.v), whose unconditional
+  endpoint is
+  `paHFFinDeductiveBiInterpretation : PAHFFinDeductiveBiInterpretationCertificate`.
+  [`Audit.v`](Audit.v) type-checks this endpoint and confirms that its only
+  assumptions are the development's established classical choice and
+  extensionality basis.
+  This deductive result is specifically about `HFFinAx_s`: the weaker
+  foundation-style `HFAx_s` also has infinite models and is not claimed to be
+  the PA counterpart. The independent Lean certificate is exposed by
+  [`lean/SetTheory/PAHF.lean`](lean/SetTheory/PAHF.lean) (a facade over
   `lean/SetTheory/PAHF/{PASyntax, AckermannHFCore, RiemannHypothesis,
-  Interpretation, RoundTrip, HFRoundTrip}.lean`) proves a full deductive
-  bi-interpretation between PA and the finite-generation HF theory `HFFinAx_s`.
-  The construction uses Ackermann coding from HF into PA and the finite von
-  Neumann ordinals from PA into HF, transfers theorems in both directions, and
-  proves both composite translations equivalent to the identity on sentences.
-  The Coq counterpart [`PAHF.v`](PAHF.v) covers the earlier Ackermann-coded
-  semantic and interpretation infrastructure, but not this final Lean
-  deductive theorem.
+  Interpretation, RoundTrip, HFRoundTrip}.lean).
   It also contains a first-order PA sentence for the Mertens/Littlewood
   arithmetic criterion associated with the Riemann Hypothesis; see
   [`lean/SetTheory/PAHF/RiemannHypothesis.lean`](lean/SetTheory/PAHF/RiemannHypothesis.lean)
@@ -573,7 +583,8 @@ axiom footprints.
 `Forward.v` and `Reverse.v` are independent (no inter-file `Require`) and need only
 the standard library. The library files import along the DAG shown above
 (`Fol` ← `Calculus` ← `Completeness`; `Fol`, `Calculus` ← `Zf`; everything ←
-`Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`; `BusyBeaver` ←
+`Equivalence`; `PAHF` builds on `Fol`/`Calculus`/`Completeness`, and its
+deductive proof modules culminate in `PAHFConcreteAssembly`; `BusyBeaver` ←
 `BusyBeaverKnownValues`, `BusyBeaverBB2Bridge`, `BusyBeaverBB3Bridge`,
 `BusyBeaverBB4Bridge`; `BusyBeaverBB4Score` ←
 `BusyBeaverBB4ScoreComputation` ← `BusyBeaverBB4ScoreCertificate`; the last
@@ -613,8 +624,10 @@ the foundation-style theory `HFAx_s` alone also has infinite models and is not
 the claimed PA counterpart. [`lean/SetTheory/Audit.lean`](lean/SetTheory/Audit.lean)
 replays the `Print Assumptions` audit: the Lean proof depends only on `propext`,
 `Classical.choice`, and `Quot.sound` — Lean's standard classical axioms — with
-no `sorry` anywhere. The Rocq [`PAHF.v`](PAHF.v) development retains the
-earlier semantic infrastructure and does not claim this final deductive result.
+no `sorry` anywhere. The Rocq development independently exports the matching
+theory-level certificate as `paHFFinDeductiveBiInterpretation` from
+[`PAHFConcreteAssembly.v`](PAHFConcreteAssembly.v), while [`PAHF.v`](PAHF.v)
+also retains the distinct semantic standard-model PA/HF result.
 Because Lean generalizes hypotheses as explicit named parameters rather than
 via Coq's `Section` mechanism, the free dependency audit is *visible in each
 theorem's signature* there (e.g. `Reverse.Closure_holds` literally takes no
