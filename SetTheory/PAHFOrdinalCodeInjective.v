@@ -15,7 +15,9 @@ From SetTheory Require Import Fol Calculus Completeness PAHF
   PAHFProofCalculus
   PAHFOrdinalCode PAHFOrdinalCodeTotal PAHFOrdinalCodeTotalCapacity
   PAHFOrdinalCodeTotalInduction
-  PAHFRoundTripArithmetic.
+  PAHFRoundTripArithmetic
+  (* The injectivity interface itself remains in the round-trip layer. *)
+  PAHFRoundTripEquality.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.

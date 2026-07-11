@@ -14,6 +14,8 @@ From SetTheory Require Import
   Fol Calculus PAHF PAHFOrdinalCode PAHFOrdinalCodeTotal
   PAHFOrdinalCodeTotalInduction PAHFOrdinalCodeRange
   PAHFRoundTripArithmetic
+  (* The composite-term graph syntax remains in the round-trip layer. *)
+  PAHFRoundTripEquality
   PAHFOrdinalCodeTermCompatibility
   PAHFCompositeArithmetic PAHFOrdinalCodeFunctional
   PAHFOrdinalCodeTermOperations.

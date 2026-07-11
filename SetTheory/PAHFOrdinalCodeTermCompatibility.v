@@ -11,7 +11,10 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import List.
-From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode.
+(* [compositeTermGraphAt] remains part of the round-trip syntax layer even
+   though ordinal-graph congruence now lives in [PAHFOrdinalCode]. *)
+From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
+  PAHFRoundTripEquality.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
