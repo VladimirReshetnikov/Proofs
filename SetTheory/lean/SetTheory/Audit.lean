@@ -19,6 +19,18 @@ open SetTheory
 #check @T_ZF_same_models
 #print axioms T_ZF_same_models
 
+-- bidirectional readings of the open ZF axiom formulas
+#check @bridge_Ext
+#check @bridge_Pow
+#check @bridge_Reg
+#check @bridge_Sep
+#check @bridge_Pair
+#check @bridge_Union
+#check @bridge_Inf
+#check @bridge_Func
+#check @bridge_Image
+#check @bridge_Repl
+
 -- Gödel completeness layer
 #check @completeness
 #check @prov_iff_valid

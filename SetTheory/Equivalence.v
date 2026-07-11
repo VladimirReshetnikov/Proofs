@@ -359,34 +359,25 @@ Qed.
 (* --- this T-model satisfies each ZF axiom --- *)
 
 Lemma sat_Ext : forall e, Sat e Ext_form.
-Proof. intro e. simpl. intros a b H. apply Extensionality. exact H. Qed.
+Proof. exact (proj2 (bridge_Ext V mem) Extensionality). Qed.
 
 Lemma sat_Pair : forall e, Sat e Pair_form.
-Proof. intro e. simpl. intros a b. destruct (Pairing a b) as [p Hp]. exists p. intro x. exact (Hp x). Qed.
+Proof. exact (proj2 (bridge_Pair V mem) Pairing). Qed.
 
 Lemma sat_Union : forall e, Sat e Union_form.
-Proof. intro e. simpl. intro s. destruct (Union s) as [u Hu]. exists u. intro x. exact (Hu x). Qed.
+Proof. exact (proj2 (bridge_Union V mem) Union). Qed.
 
 Lemma sat_Pow : forall e, Sat e Pow_form.
-Proof. intro e. simpl. intro a. destruct (Powerset a) as [p Hp]. exists p. intro x. exact (Hp x). Qed.
+Proof. exact (proj2 (bridge_Pow V mem) Powerset). Qed.
 
 Lemma sat_Inf : forall e, Sat e Inf_form.
-Proof. intro e. simpl. destruct Infinity as [I [He Hs]]. exists I. split; [ exact He | exact Hs ]. Qed.
+Proof. intro e. exact (proj2 (bridge_Inf V mem e) Infinity). Qed.
 
 Lemma sat_Reg : forall e, Sat e Reg_form.
-Proof.
-  intro e. simpl. intros a Hne. destruct (Regularity a Hne) as [m [Hm Hno]].
-  exists m. split; [ exact Hm | exact Hno ].
-Qed.
+Proof. exact (proj2 (bridge_Reg V mem) Regularity). Qed.
 
 Lemma sat_Sep : forall phi e, Sat e (Sep_form phi).
-Proof.
-  intros phi e. simpl. intro da. destruct (SeparationFO phi e da) as [s Hs].
-  exists s. intro dx.
-  rewrite (Sat_rename_ext phi rsep (scons dx (scons s (scons da e)))
-             (scons dx e) (rsep_env dx s da e)).
-  exact (Hs dx).
-Qed.
+Proof. exact (proj2 (bridge_Sep V mem) SeparationFO). Qed.
 
 Lemma sat_Repl : forall psi e, Sat e (Repl_form psi).
 Proof.

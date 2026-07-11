@@ -365,55 +365,32 @@ theorem ReplacementFO (witness : V) (hSep : SepFOAx mem) (hPow : PowAx mem)
 /-! ### This T-model satisfies each ZF axiom -/
 
 theorem sat_Ext (hExt : ExtAx mem) : ∀ e : Nat → V, Sat mem e Ext_form := by
-  intro e a b hab
-  exact hExt a b (fun x => ⟨(hab x).1, (hab x).2⟩)
+  exact bridge_Ext.mpr (by simpa only [ExtAx] using hExt)
 
 theorem sat_Pair (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     (hPow : PowAx mem) (hClo : ClosureFOAx mem) :
     ∀ e : Nat → V, Sat mem e Pair_form := by
-  intro e a b
-  obtain ⟨p, hp⟩ := Pairing witness hExt hSep hPow hClo a b
-  exact ⟨p, fun x => ⟨(hp x).mp, (hp x).mpr⟩⟩
+  exact bridge_Pair.mpr (Pairing witness hExt hSep hPow hClo)
 
 theorem sat_Union (witness : V) (hSep : SepFOAx mem) (hClo : ClosureFOAx mem) :
     ∀ e : Nat → V, Sat mem e Union_form := by
-  intro e s
-  obtain ⟨u, hu⟩ := Union witness hSep hClo s
-  exact ⟨u, fun x => ⟨(hu x).mp, (hu x).mpr⟩⟩
+  exact bridge_Union.mpr (Union witness hSep hClo)
 
 theorem sat_Pow (hPow : PowAx mem) : ∀ e : Nat → V, Sat mem e Pow_form := by
-  intro e a
-  obtain ⟨p, hp⟩ := hPow a
-  exact ⟨p, fun x => ⟨fun h => (hp x).mp h, fun h => (hp x).mpr h⟩⟩
+  exact bridge_Pow.mpr (by simpa only [PowAx] using hPow)
 
 theorem sat_Inf (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     (hPow : PowAx mem) (hClo : ClosureFOAx mem) :
     ∀ e : Nat → V, Sat mem e Inf_form := by
   intro e
-  obtain ⟨I, ⟨e0, he0, hemp⟩, hsucc⟩ := Infinity witness hExt hSep hPow hClo
-  refine ⟨I, ⟨e0, he0, fun z hz => hemp z hz⟩, ?_⟩
-  intro x hx
-  obtain ⟨sx, hsx, hspec⟩ := hsucc x hx
-  exact ⟨sx, hsx, fun t => ⟨(hspec t).mp, (hspec t).mpr⟩⟩
+  exact (bridge_Inf e).mpr (Infinity witness hExt hSep hPow hClo)
 
 theorem sat_Reg (hReg : RegAx mem) : ∀ e : Nat → V, Sat mem e Reg_form := by
-  intro e a hne
-  obtain ⟨m, hm, hno⟩ := hReg a hne
-  exact ⟨m, hm, hno⟩
+  exact bridge_Reg.mpr (by simpa only [RegAx] using hReg)
 
 theorem sat_Sep (hSep : SepFOAx mem) :
     ∀ (phi : Form) (e : Nat → V), Sat mem e (Sep_form phi) := by
-  intro phi e da
-  obtain ⟨s, hs⟩ := hSep phi e da
-  refine ⟨s, fun dx => ?_⟩
-  constructor
-  · intro hin
-    obtain ⟨h1, h2⟩ := (hs dx).mp hin
-    exact ⟨h1, (rsep_rel phi dx s da e).mpr h2⟩
-  · intro hc
-    have hc' : mem dx da ∧
-        Sat mem (scons dx (scons s (scons da e))) (rename rsep phi) := hc
-    exact (hs dx).mpr ⟨hc'.1, (rsep_rel phi dx s da e).mp hc'.2⟩
+  exact bridge_Sep.mpr (by simpa only [SepFOAx] using hSep)
 
 theorem sat_Repl (witness : V) (hSep : SepFOAx mem) (hPow : PowAx mem)
     (hClo : ClosureFOAx mem) :

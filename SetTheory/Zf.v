@@ -9,7 +9,7 @@
 (*     (every axiom universally closed by `seal`);                        *)
 (*   - extraction bridges: satisfaction of each (open) axiom formula in   *)
 (*     a structure (V, mem) is equivalent to the abstract semantic axiom  *)
-(*     (`bridge_Ext_fwd` ... `bridge_Repl_fwd`);                          *)
+(*     (`bridge_Ext` ... `bridge_Repl`, with legacy `_fwd` projections);  *)
 (*   - INTERNAL MATHEMATICS of an arbitrary first-order model of          *)
 (*     {Ext, Sep, Pair, Union, Inf, Repl} (note: no Powerset, no          *)
 (*     Regularity): internal set algebra, Kuratowski pairs with           *)
@@ -119,20 +119,51 @@ Qed.
 
 (* --- bridges: model satisfaction of the (open) axioms <-> abstract axioms --- *)
 
+Lemma bridge_Ext :
+  forall (V : Type) (mem : V -> V -> Prop),
+    (forall e, Sat V mem e Ext_form) <->
+    (forall a b, (forall x, mem x a <-> mem x b) -> a = b).
+Proof.
+  intros V mem. split.
+  - intros H a b Hab. exact (H (fun _ => a) a b Hab).
+  - intros H e a b Hab. exact (H a b Hab).
+Qed.
+
 Lemma bridge_Ext_fwd :
   forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Ext_form) ->
     (forall a b, (forall x, mem x a <-> mem x b) -> a = b).
-Proof. intros V mem H a b Hab. exact (H (fun _ => a) a b Hab). Qed.
+Proof. intros V mem H. exact (proj1 (bridge_Ext V mem) H). Qed.
+
+Lemma bridge_Pow :
+  forall (V : Type) (mem : V -> V -> Prop),
+    (forall e, Sat V mem e Pow_form) <->
+    (forall a, exists p, forall x, mem x p <-> Sub V mem x a).
+Proof.
+  intros V mem. split.
+  - intros H a. exact (H (fun _ => a) a).
+  - intros H e a. exact (H a).
+Qed.
 
 Lemma bridge_Pow_fwd :
   forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Pow_form) ->
     (forall a, exists p, forall x, mem x p <-> Sub V mem x a).
-Proof. intros V mem H a. exact (H (fun _ => a) a). Qed.
+Proof. intros V mem H. exact (proj1 (bridge_Pow V mem) H). Qed.
+
+Lemma bridge_Reg :
+  forall (V : Type) (mem : V -> V -> Prop),
+    (forall e, Sat V mem e Reg_form) <->
+    (forall a, (exists x, mem x a) ->
+      exists m, mem m a /\ ~ (exists z, mem z m /\ mem z a)).
+Proof.
+  intros V mem. split.
+  - intros H a. exact (H (fun _ => a) a).
+  - intros H e a. exact (H a).
+Qed.
 
 Lemma bridge_Reg_fwd :
   forall (V : Type) (mem : V -> V -> Prop), (forall e, Sat V mem e Reg_form) ->
     (forall a, (exists x, mem x a) -> exists m, mem m a /\ ~ (exists z, mem z m /\ mem z a)).
-Proof. intros V mem H a. exact (H (fun _ => a) a). Qed.
+Proof. intros V mem H. exact (proj1 (bridge_Reg V mem) H). Qed.
 
 Lemma rsep_rel :
   forall (V : Type) (mem : V -> V -> Prop) phi x s da e,
@@ -145,41 +176,98 @@ Proof.
            (scons V x e) (rsep_env V x s da e)).
 Qed.
 
+Lemma bridge_Sep :
+  forall (V : Type) (mem : V -> V -> Prop),
+    (forall phi e, Sat V mem e (Sep_form phi)) <->
+    (forall phi e a, exists s, forall x,
+      mem x s <-> (mem x a /\ Sat V mem (scons V x e) phi)).
+Proof.
+  intros V mem. split.
+  - intros H phi e a.
+    pose proof (H phi e) as He. unfold Sep_form, fIff in He. cbn [Sat] in He.
+    destruct (He a) as [s Hs]. exists s. intro x. specialize (Hs x). split.
+    + intro Hin. destruct (proj1 Hs Hin) as [Hxa Hsat]. split;
+        [ exact Hxa | apply (proj1 (rsep_rel V mem phi x s a e)); exact Hsat ].
+    + intros [Hxa Hsat]. apply (proj2 Hs). split;
+        [ exact Hxa | apply (proj2 (rsep_rel V mem phi x s a e)); exact Hsat ].
+  - intros H phi e. unfold Sep_form, fIff. cbn [Sat]. intro a.
+    destruct (H phi e a) as [s Hs]. exists s. intro x. specialize (Hs x). split.
+    + intro Hin. destruct (proj1 Hs Hin) as [Hxa Hsat]. split;
+        [ exact Hxa | apply (proj2 (rsep_rel V mem phi x s a e)); exact Hsat ].
+    + intros [Hxa Hsat]. apply (proj2 Hs). split;
+        [ exact Hxa | apply (proj1 (rsep_rel V mem phi x s a e)); exact Hsat ].
+Qed.
+
 Lemma bridge_Sep_fwd :
   forall (V : Type) (mem : V -> V -> Prop), (forall phi e, Sat V mem e (Sep_form phi)) ->
     (forall phi e a, exists s, forall x, mem x s <-> (mem x a /\ Sat V mem (scons V x e) phi)).
-Proof.
-  intros V mem H phi e a.
-  pose proof (H phi e) as He. unfold Sep_form, fIff in He. cbn [Sat] in He.
-  destruct (He a) as [s Hs]. exists s. intro x. specialize (Hs x). split.
-  - intro Hin. destruct (proj1 Hs Hin) as [Hxa Hsat]. split;
-      [ exact Hxa | apply (proj1 (rsep_rel V mem phi x s a e)); exact Hsat ].
-  - intros [Hxa Hsat]. apply (proj2 Hs). split;
-      [ exact Hxa | apply (proj2 (rsep_rel V mem phi x s a e)); exact Hsat ].
-Qed.
+Proof. intros V mem H. exact (proj1 (bridge_Sep V mem) H). Qed.
 (* --- bridges for the four generative axioms --- *)
+
+Lemma bridge_Pair :
+  forall (V : Type) (mem : V -> V -> Prop),
+    (forall e, Sat V mem e Pair_form) <->
+    (forall a b, exists p, forall x, mem x p <-> (x = a \/ x = b)).
+Proof.
+  intros V mem. split.
+  - intros H a b. destruct (H (fun _ => a) a b) as [p Hp].
+    exists p. intro x. specialize (Hp x). cbn in Hp. tauto.
+  - intros H e a b. destruct (H a b) as [p Hp].
+    exists p. intro x. specialize (Hp x). cbn. tauto.
+Qed.
 
 Lemma bridge_Pair_fwd :
   forall (V : Type) (mem : V -> V -> Prop),
     (forall e, Sat V mem e Pair_form) ->
     forall a b, exists p, forall x, mem x p <-> (x = a \/ x = b).
+Proof. intros V mem H. exact (proj1 (bridge_Pair V mem) H). Qed.
+
+Lemma bridge_Union :
+  forall (V : Type) (mem : V -> V -> Prop),
+    (forall e, Sat V mem e Union_form) <->
+    (forall u, exists w, forall x,
+      mem x w <-> exists v, mem x v /\ mem v u).
 Proof.
-  intros V mem H a b.
-  destruct (H (fun _ => a) a b) as [p Hp].
-  exists p. intro x. specialize (Hp x). cbn in Hp. tauto.
+  intros V mem. split.
+  - intros H u. destruct (H (fun _ => u) u) as [w Hw].
+    exists w. intro x. specialize (Hw x). cbn in Hw.
+    split.
+    + intro Hx. destruct (proj1 Hw Hx) as [v [Hv1 Hv2]]. exists v. tauto.
+    + intros [v [Hv1 Hv2]]. apply (proj2 Hw). exists v. tauto.
+  - intros H e u. destruct (H u) as [w Hw].
+    exists w. intro x. specialize (Hw x). cbn.
+    split.
+    + intro Hx. destruct (proj1 Hw Hx) as [v [Hv1 Hv2]]. exists v. tauto.
+    + intros [v [Hv1 Hv2]]. apply (proj2 Hw). exists v. tauto.
 Qed.
 
 Lemma bridge_Union_fwd :
   forall (V : Type) (mem : V -> V -> Prop),
     (forall e, Sat V mem e Union_form) ->
     forall u, exists w, forall x, mem x w <-> exists v, mem x v /\ mem v u.
+Proof. intros V mem H. exact (proj1 (bridge_Union V mem) H). Qed.
+
+(** [Inf_form] is closed, but the pointwise environment is retained so the
+    legacy extraction theorem remains a literal projection. *)
+Lemma bridge_Inf :
+  forall (V : Type) (mem : V -> V -> Prop) (v : nat -> V),
+    Sat V mem v Inf_form <->
+    exists I,
+      (exists e0, mem e0 I /\ forall z, ~ mem z e0) /\
+      (forall x, mem x I ->
+         exists sx, mem sx I /\ forall t, mem t sx <-> (mem t x \/ t = x)).
 Proof.
-  intros V mem H u.
-  destruct (H (fun _ => u) u) as [w Hw].
-  exists w. intro x. specialize (Hw x). cbn in Hw.
-  split.
-  - intro Hx. destruct (proj1 Hw Hx) as [v [Hv1 Hv2]]. exists v. tauto.
-  - intros [v [Hv1 Hv2]]. apply (proj2 Hw). exists v. tauto.
+  intros V mem v. split.
+  - intro H. cbn in H. destruct H as [I [[e0 [He0 Hemp]] Hsucc]].
+    exists I. split.
+    + exists e0. split; [ exact He0 | ]. intros z Hz. exact (Hemp z Hz).
+    + intros x Hx. destruct (Hsucc x Hx) as [sx [Hsx Hspec]].
+      exists sx. split; [ exact Hsx | ]. intro t. specialize (Hspec t). tauto.
+  - intros [I [[e0 [He0 Hemp]] Hsucc]]. cbn [Sat].
+    exists I. split.
+    + exists e0. split; [ exact He0 | ]. intros z Hz. exact (Hemp z Hz).
+    + intros x Hx. destruct (Hsucc x Hx) as [sx [Hsx Hspec]].
+      exists sx. split; [ exact Hsx | ]. intro t. exact (Hspec t).
 Qed.
 
 Lemma bridge_Inf_fwd :
@@ -189,14 +277,7 @@ Lemma bridge_Inf_fwd :
       (exists e0, mem e0 I /\ forall z, ~ mem z e0) /\
       (forall x, mem x I ->
          exists sx, mem sx I /\ forall t, mem t sx <-> (mem t x \/ t = x)).
-Proof.
-  intros V mem v H. cbn in H.
-  destruct H as [I [[e0 [He0 Hemp]] Hsucc]].
-  exists I. split.
-  - exists e0. split; [ exact He0 | ]. intros z Hz. exact (Hemp z Hz).
-  - intros x Hx. destruct (Hsucc x Hx) as [sx [Hsx Hspec]].
-    exists sx. split; [ exact Hsx | ]. intro t. specialize (Hspec t). tauto.
-Qed.
+Proof. intros V mem v H. exact (proj1 (bridge_Inf V mem v) H). Qed.
 
 (* Canonical semantic readings of the two components of Replacement. *)
 Lemma bridge_Func :

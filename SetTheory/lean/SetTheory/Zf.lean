@@ -9,7 +9,7 @@
      universally closed by `sealF`);
    - extraction bridges: satisfaction of each (open) axiom formula in a
      structure (V, mem) is equivalent to the abstract semantic axiom
-     (`bridge_Ext_fwd` … `bridge_Repl_fwd`);
+     (`bridge_Ext` … `bridge_Repl`, with legacy `_fwd` projections);
    - INTERNAL MATHEMATICS of an arbitrary first-order model of
      {Ext, Sep, Pair, Union, Inf, Repl} (note: no Powerset, no
      Regularity): internal set algebra, Kuratowski pairs with
@@ -151,67 +151,139 @@ section Bridges
 universe u
 variable {V : Type u} {mem : V → V → Prop}
 
+theorem bridge_Ext :
+    (∀ e : Nat → V, Sat mem e Ext_form) ↔
+      ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b := by
+  constructor
+  · intro h a b hab
+    exact h (fun _ => a) a b (fun x => ⟨(hab x).mp, (hab x).mpr⟩)
+  · intro h e a b hab
+    exact h a b (fun x => ⟨(hab x).1, (hab x).2⟩)
+
 theorem bridge_Ext_fwd (H : ∀ e : Nat → V, Sat mem e Ext_form) :
-    ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b := by
-  intro a b hab
-  have h := H (fun _ => a) a b
-  exact h (fun x => ⟨(hab x).mp, (hab x).mpr⟩)
+    ∀ a b, (∀ x, mem x a ↔ mem x b) → a = b :=
+  bridge_Ext.mp H
+
+theorem bridge_Pow :
+    (∀ e : Nat → V, Sat mem e Pow_form) ↔
+      ∀ a, ∃ p, ∀ x, mem x p ↔ Sub mem x a := by
+  constructor
+  · intro h a
+    obtain ⟨p, hp⟩ := h (fun _ => a) a
+    exact ⟨p, fun x => ⟨(hp x).1, (hp x).2⟩⟩
+  · intro h e a
+    obtain ⟨p, hp⟩ := h a
+    exact ⟨p, fun x => ⟨(hp x).mp, (hp x).mpr⟩⟩
 
 theorem bridge_Pow_fwd (H : ∀ e : Nat → V, Sat mem e Pow_form) :
-    ∀ a, ∃ p, ∀ x, mem x p ↔ Sub mem x a := by
-  intro a
-  obtain ⟨p, hp⟩ := H (fun _ => a) a
-  refine ⟨p, fun x => ⟨fun hin => ?_, fun hsub => ?_⟩⟩
-  · exact (hp x).1 hin
-  · exact (hp x).2 hsub
+    ∀ a, ∃ p, ∀ x, mem x p ↔ Sub mem x a :=
+  bridge_Pow.mp H
+
+theorem bridge_Reg :
+    (∀ e : Nat → V, Sat mem e Reg_form) ↔
+      ∀ a, (∃ x, mem x a) → ∃ m, mem m a ∧ ¬ ∃ z, mem z m ∧ mem z a := by
+  constructor
+  · intro h a hne
+    exact h (fun _ => a) a hne
+  · intro h e a hne
+    exact h a hne
 
 theorem bridge_Reg_fwd (H : ∀ e : Nat → V, Sat mem e Reg_form) :
-    ∀ a, (∃ x, mem x a) → ∃ m, mem m a ∧ ¬ ∃ z, mem z m ∧ mem z a := by
-  intro a hne
-  exact H (fun _ => a) a hne
+    ∀ a, (∃ x, mem x a) → ∃ m, mem m a ∧ ¬ ∃ z, mem z m ∧ mem z a :=
+  bridge_Reg.mp H
 
 theorem rsep_rel (phi : Form) (x s da : V) (e : Nat → V) :
     Sat mem (scons x (scons s (scons da e))) (rename rsep phi)
       ↔ Sat mem (scons x e) phi := by
   exact Sat_rename_ext phi rsep _ _ (rsep_env x s da e)
 
+theorem bridge_Sep :
+    (∀ (phi : Form) (e : Nat → V), Sat mem e (Sep_form phi)) ↔
+      ∀ (phi : Form) (e : Nat → V) (a : V),
+        ∃ s, ∀ x, mem x s ↔ (mem x a ∧ Sat mem (scons x e) phi) := by
+  constructor
+  · intro h phi e a
+    obtain ⟨s, hs⟩ := h phi e a
+    refine ⟨s, fun x => ?_⟩
+    constructor
+    · intro hin
+      obtain ⟨hxa, hsat⟩ := (hs x).1 hin
+      exact ⟨hxa, (rsep_rel phi x s a e).mp hsat⟩
+    · intro ⟨hxa, hsat⟩
+      exact (hs x).2 ⟨hxa, (rsep_rel phi x s a e).mpr hsat⟩
+  · intro h phi e a
+    obtain ⟨s, hs⟩ := h phi e a
+    refine ⟨s, fun x => ?_⟩
+    constructor
+    · intro hin
+      obtain ⟨hxa, hsat⟩ := (hs x).mp hin
+      exact ⟨hxa, (rsep_rel phi x s a e).mpr hsat⟩
+    · intro ⟨hxa, hsat⟩
+      exact (hs x).mpr ⟨hxa, (rsep_rel phi x s a e).mp hsat⟩
+
 theorem bridge_Sep_fwd (H : ∀ (phi : Form) (e : Nat → V), Sat mem e (Sep_form phi)) :
     ∀ (phi : Form) (e : Nat → V) (a : V),
-      ∃ s, ∀ x, mem x s ↔ (mem x a ∧ Sat mem (scons x e) phi) := by
-  intro phi e a
-  obtain ⟨s, hs⟩ := H phi e a
-  refine ⟨s, fun x => ?_⟩
-  have h := hs x
-  constructor
-  · intro hin
-    obtain ⟨hxa, hsat⟩ := h.1 hin
-    exact ⟨hxa, (rsep_rel phi x s a e).mp hsat⟩
-  · intro ⟨hxa, hsat⟩
-    exact h.2 ⟨hxa, (rsep_rel phi x s a e).mpr hsat⟩
+      ∃ s, ∀ x, mem x s ↔ (mem x a ∧ Sat mem (scons x e) phi) :=
+  bridge_Sep.mp H
 
 /-! ### Bridges for the four generative axioms -/
 
+theorem bridge_Pair :
+    (∀ e : Nat → V, Sat mem e Pair_form) ↔
+      ∀ a b, ∃ p, ∀ x, mem x p ↔ (x = a ∨ x = b) := by
+  constructor
+  · intro h a b
+    obtain ⟨p, hp⟩ := h (fun _ => a) a b
+    exact ⟨p, fun x => ⟨(hp x).1, (hp x).2⟩⟩
+  · intro h e a b
+    obtain ⟨p, hp⟩ := h a b
+    exact ⟨p, fun x => ⟨(hp x).mp, (hp x).mpr⟩⟩
+
 theorem bridge_Pair_fwd (H : ∀ e : Nat → V, Sat mem e Pair_form) :
-    ∀ a b, ∃ p, ∀ x, mem x p ↔ (x = a ∨ x = b) := by
-  intro a b
-  obtain ⟨p, hp⟩ := H (fun _ => a) a b
-  exact ⟨p, fun x => ⟨(hp x).1, (hp x).2⟩⟩
+    ∀ a b, ∃ p, ∀ x, mem x p ↔ (x = a ∨ x = b) :=
+  bridge_Pair.mp H
+
+theorem bridge_Union :
+    (∀ e : Nat → V, Sat mem e Union_form) ↔
+      ∀ u, ∃ w, ∀ x, mem x w ↔ ∃ v, mem x v ∧ mem v u := by
+  constructor
+  · intro h u
+    obtain ⟨w, hw⟩ := h (fun _ => u) u
+    exact ⟨w, fun x => ⟨(hw x).1, (hw x).2⟩⟩
+  · intro h e u
+    obtain ⟨w, hw⟩ := h u
+    exact ⟨w, fun x => ⟨(hw x).mp, (hw x).mpr⟩⟩
 
 theorem bridge_Union_fwd (H : ∀ e : Nat → V, Sat mem e Union_form) :
-    ∀ u, ∃ w, ∀ x, mem x w ↔ ∃ v, mem x v ∧ mem v u := by
-  intro u
-  obtain ⟨w, hw⟩ := H (fun _ => u) u
-  exact ⟨w, fun x => ⟨(hw x).1, (hw x).2⟩⟩
+    ∀ u, ∃ w, ∀ x, mem x w ↔ ∃ v, mem x v ∧ mem v u :=
+  bridge_Union.mp H
+
+/-- `Inf_form` is closed, but its pointwise environment stays explicit so the
+legacy extraction theorem is a literal projection. -/
+theorem bridge_Inf (v : Nat → V) :
+    Sat mem v Inf_form ↔
+      ∃ I, (∃ e0, mem e0 I ∧ ∀ z, ¬ mem z e0) ∧
+        (∀ x, mem x I →
+          ∃ sx, mem sx I ∧ ∀ t, mem t sx ↔ (mem t x ∨ t = x)) := by
+  constructor
+  · intro h
+    obtain ⟨I, ⟨e0, he0, hemp⟩, hsucc⟩ := h
+    refine ⟨I, ⟨e0, he0, fun z hz => hemp z hz⟩, ?_⟩
+    intro x hx
+    obtain ⟨sx, hsx, hspec⟩ := hsucc x hx
+    exact ⟨sx, hsx, fun t => ⟨(hspec t).1, (hspec t).2⟩⟩
+  · intro h
+    obtain ⟨I, ⟨e0, he0, hemp⟩, hsucc⟩ := h
+    refine ⟨I, ⟨e0, he0, fun z hz => hemp z hz⟩, ?_⟩
+    intro x hx
+    obtain ⟨sx, hsx, hspec⟩ := hsucc x hx
+    exact ⟨sx, hsx, fun t => ⟨(hspec t).mp, (hspec t).mpr⟩⟩
 
 theorem bridge_Inf_fwd (v : Nat → V) (H : Sat mem v Inf_form) :
     ∃ I, (∃ e0, mem e0 I ∧ ∀ z, ¬ mem z e0) ∧
       (∀ x, mem x I →
-        ∃ sx, mem sx I ∧ ∀ t, mem t sx ↔ (mem t x ∨ t = x)) := by
-  obtain ⟨I, ⟨e0, he0, hemp⟩, hsucc⟩ := H
-  refine ⟨I, ⟨e0, he0, fun z hz => hemp z hz⟩, ?_⟩
-  intro x hx
-  obtain ⟨sx, hsx, hspec⟩ := hsucc x hx
-  exact ⟨sx, hsx, fun t => ⟨(hspec t).1, (hspec t).2⟩⟩
+        ∃ sx, mem sx I ∧ ∀ t, mem t sx ↔ (mem t x ∨ t = x)) :=
+  (bridge_Inf v).mp H
 
 /-- The internal functionality formula says exactly that `psi` defines a
 functional relation under the surrounding parameter environment. -/

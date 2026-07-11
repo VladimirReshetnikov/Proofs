@@ -14,6 +14,7 @@ From SetTheory Require Import BusyBeaverBB2Bridge BusyBeaverBB3Bridge
   BusyBeaverBB4Bridge BusyBeaverBB4Score BusyBeaverBB4ScoreComputation
   BusyBeaverBB4ScoreCertificate BusyBeaverBB4ScoreBridge.
 From SetTheory Require Import Forward Reverse RiemannHypothesis
+  PAHFOrdinalCode PAHFTranslatedHFFin
   PAHFOrdinalCodeMulCore PAHFOrdinalCodeTermMul
   PAHFConcreteAssembly.
 
@@ -27,6 +28,18 @@ Check ZF_implies_T.
 Check T_implies_ZF.
 Check T_ZF_same_models.
 Print Assumptions T_ZF_same_models.
+
+(* Bidirectional readings of the open ZF axiom formulas. *)
+Check bridge_Ext.
+Check bridge_Pow.
+Check bridge_Reg.
+Check bridge_Sep.
+Check bridge_Pair.
+Check bridge_Union.
+Check bridge_Inf.
+Check bridge_Func.
+Check bridge_Image.
+Check bridge_Repl.
 
 (* Generic calculus and completeness layer. *)
 Check completeness.
@@ -122,8 +135,8 @@ Check BProv_iterExE_of_sentences.
 Check subst_three_witnesses_rename_three_succ.
 Print Assumptions BProv_iterExE_of_sentences.
 Print Assumptions BProv_iterRenameSucc_of_sentences.
-Check PA.Formula.BProv_Ax_s_all_of_strongStep_under.
-Check PA.Formula.BProv_ordinalCodeGraphTermAt_congr.
+Check BProv_Ax_s_all_of_strongStep_under.
+Check BProv_ordinalCodeGraphTermAt_congr.
 Check PA.Formula.term_subst_instTerm_rename_two_succ.
 Check PA.Formula.term_subst_upSubst_instTerm_rename_two_succ.
 Check PA.Formula.term_subst_upSubst_instTerm_rename_three_succ.
