@@ -44056,17 +44056,13 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_div2_steps_and_half_distinguishes
     have hraw : BProv Ax_s C (hfMemAt 0 (highHalf+1)) := by
       simpa [witness, hfDistinguishesAt] using BProv_andE1 hwitness
     simpa [hfMemTermAt_var] using hraw
-  have hhighStepRen : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ (div2StepAt high highHalf highBit)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hhighStep Nat.succ
   have hhighStepC : BProv Ax_s C
       (div2StepTermAt
         (Term.var (high+1))
         (Term.var (highHalf+1))
         (Term.var (highBit+1))) := by
-    have h := BProv_context_cons (B := Ax_s) (a := witness) hhighStepRen
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) Ax_s_sentences (a := witness) hhighStep
     simpa [C, div2StepTermAt_var, div2StepAt, boolAt,
       zeroAt, oneAt, eqConstAt, rename, Term.rename, SetTheory.up,
       Term.rename_comp] using h
@@ -44091,14 +44087,10 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_div2_steps_and_half_distinguishes
     subst (instTerm (Term.succ (Term.var 0)))
       (hfMemAt 0 (low+2))
   let D : List Formula := lowSuccMem :: C
-  have hlowStepRen : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ (div2StepAt low lowHalf lowBit)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hlowStep Nat.succ
   have hlowStepC : BProv Ax_s C
       (div2StepAt (low+1) (lowHalf+1) (lowBit+1)) := by
-    have h := BProv_context_cons (B := Ax_s) (a := witness) hlowStepRen
+    have h := BProv_rename_succ_context_cons_of_sentences
+      (B := Ax_s) Ax_s_sentences (a := witness) hlowStep
     simpa [C, div2StepAt, boolAt, zeroAt, oneAt, eqConstAt,
       rename, Term.rename, SetTheory.up, Term.rename_comp] using h
   have hlowStepD : BProv Ax_s D
@@ -44311,19 +44303,17 @@ theorem BProv_Ax_s_hfLtDistinguishesThroughTermAt_succ
         (or (ltTermAt (Term.var 0) oldLimit)
           (eq (Term.var 0) oldLimit)) :=
       BProv_Ax_s_ltTermAt_succ_right_cases hltNew
-    have hthroughRen : BProv Ax_s (G.map (rename Nat.succ))
+    have hthroughC : BProv Ax_s C
         (hfLtDistinguishesThroughTermAt bound1) := by
-      have hren := BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hthrough Nat.succ
-      simpa [bound1,
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := Ax_s) Ax_s_sentences (a := antecedent) hthrough
+      simpa [C, bound1,
         rename_hfLtDistinguishesThroughTermAt_succ] using hren
-    have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
+    have hnewC : BProv Ax_s C
         (hfLtDistinguishesTermAt oldLimit) := by
-      have hren := BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hnew Nat.succ
-      simpa [bound1, oldLimit, rename_hfLtDistinguishesTermAt_succ,
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := Ax_s) Ax_s_sentences (a := antecedent) hnew
+      simpa [C, bound1, oldLimit, rename_hfLtDistinguishesTermAt_succ,
         Term.rename] using hren
     have hstrict : BProv Ax_s
         (ltTermAt (Term.var 0) oldLimit :: C) target := by
@@ -44338,8 +44328,7 @@ theorem BProv_Ax_s_hfLtDistinguishesThroughTermAt_succ
         BProv_Ax_s_leTermAt_of_ltTermAt_succ_right hlt
       have hthroughD : BProv Ax_s D
           (hfLtDistinguishesThroughTermAt bound1) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hthroughRen)
+        BProv_context_cons (B := Ax_s) hthroughC
       exact BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
         hthroughD hle
     have hequal : BProv Ax_s
@@ -44350,8 +44339,7 @@ theorem BProv_Ax_s_hfLtDistinguishesThroughTermAt_succ
           (BProv_ass (B := Ax_s) (G := D) (by simp [D]))
       have hnewD : BProv Ax_s D
           (hfLtDistinguishesTermAt oldLimit) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hnewRen)
+        BProv_context_cons (B := Ax_s) hnewC
       have htransport : BProv Ax_s D
           (hfLtDistinguishesTermAt (Term.var 0)) :=
         BProv_hfLtDistinguishesTermAt_of_high_eq_term
@@ -45512,9 +45500,8 @@ theorem BProv_Ax_s_leAt_of_div2_steps_and_half_lt
     have hlow : BProv Ax_s C (doubleEqAt low lowHalf) :=
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
-      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := doubleEqAt high highHalf) hhalfLt)
+      BProv_context_prefix
+        [doubleEqAt low lowHalf, doubleEqAt high highHalf] hhalfLt
     exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
       hhalfLtC
       (BProv_Ax_s_le_succ_double_of_doubleEqAt hhigh)
@@ -45529,9 +45516,8 @@ theorem BProv_Ax_s_leAt_of_div2_steps_and_half_lt
     have hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf) :=
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
-      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := doubleEqAt high highHalf) hhalfLt)
+      BProv_context_prefix
+        [oddDoubleEqAt low lowHalf, doubleEqAt high highHalf] hhalfLt
     exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
       hhalfLtC
       (BProv_Ax_s_le_succ_double_of_doubleEqAt hhigh)
@@ -45546,9 +45532,8 @@ theorem BProv_Ax_s_leAt_of_div2_steps_and_half_lt
     have hlow : BProv Ax_s C (doubleEqAt low lowHalf) :=
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
-      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := oddDoubleEqAt high highHalf) hhalfLt)
+      BProv_context_prefix
+        [doubleEqAt low lowHalf, oddDoubleEqAt high highHalf] hhalfLt
     exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
       hhalfLtC
       (BProv_Ax_s_le_succ_double_of_oddDoubleEqAt hhigh)
@@ -45563,9 +45548,8 @@ theorem BProv_Ax_s_leAt_of_div2_steps_and_half_lt
     have hlow : BProv Ax_s C (oddDoubleEqAt low lowHalf) :=
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhalfLtC : BProv Ax_s C (ltAt highHalf lowHalf) :=
-      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := oddDoubleEqAt high highHalf) hhalfLt)
+      BProv_context_prefix
+        [oddDoubleEqAt low lowHalf, oddDoubleEqAt high highHalf] hhalfLt
     exact BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
       hhalfLtC
       (BProv_Ax_s_le_succ_double_of_oddDoubleEqAt hhigh)
@@ -45645,13 +45629,11 @@ theorem BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhalfEqC : BProv Ax_s C
         (eq (Term.var lowHalf) (Term.var highHalf)) :=
-      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := doubleEqAt high highHalf) hhalfEq)
+      BProv_context_prefix
+        [doubleEqAt low lowHalf, doubleEqAt high highHalf] hhalfEq
     have hltC : BProv Ax_s C (ltAt low high) :=
-      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := doubleEqAt high highHalf) hlt)
+      BProv_context_prefix
+        [doubleEqAt low lowHalf, doubleEqAt high highHalf] hlt
     have hhighEq : BProv Ax_s C
         (eq (Term.var high)
           (Term.add (Term.var highHalf) (Term.var highHalf))) := by
@@ -45682,13 +45664,11 @@ theorem BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhalfEqC : BProv Ax_s C
         (eq (Term.var lowHalf) (Term.var highHalf)) :=
-      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := doubleEqAt high highHalf) hhalfEq)
+      BProv_context_prefix
+        [oddDoubleEqAt low lowHalf, doubleEqAt high highHalf] hhalfEq
     have hltC : BProv Ax_s C (ltAt low high) :=
-      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := doubleEqAt high highHalf) hlt)
+      BProv_context_prefix
+        [oddDoubleEqAt low lowHalf, doubleEqAt high highHalf] hlt
     have hhighEq : BProv Ax_s C
         (eq (Term.var high)
           (Term.add (Term.var highHalf) (Term.var highHalf))) := by
@@ -45728,14 +45708,12 @@ theorem BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhighStepC : BProv Ax_s C
         (div2StepAt high highHalf highBit) :=
-      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := oddDoubleEqAt high highHalf) hhighStep)
+      BProv_context_prefix
+        [doubleEqAt low lowHalf, oddDoubleEqAt high highHalf] hhighStep
     have hlowStepC : BProv Ax_s C
         (div2StepAt low lowHalf lowBit) :=
-      BProv_context_cons (B := Ax_s) (a := doubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := oddDoubleEqAt high highHalf) hlowStep)
+      BProv_context_prefix
+        [doubleEqAt low lowHalf, oddDoubleEqAt high highHalf] hlowStep
     exact BProv_andI
       (BProv_Ax_s_eqConstAt_one_of_oddDoubleEqAt_div2StepAt
         hhigh hhighStepC)
@@ -45751,13 +45729,11 @@ theorem BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
       BProv_ass (B := Ax_s) (G := C) (by simp [C])
     have hhalfEqC : BProv Ax_s C
         (eq (Term.var lowHalf) (Term.var highHalf)) :=
-      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := oddDoubleEqAt high highHalf) hhalfEq)
+      BProv_context_prefix
+        [oddDoubleEqAt low lowHalf, oddDoubleEqAt high highHalf] hhalfEq
     have hltC : BProv Ax_s C (ltAt low high) :=
-      BProv_context_cons (B := Ax_s) (a := oddDoubleEqAt low lowHalf)
-        (BProv_context_cons (B := Ax_s)
-          (a := oddDoubleEqAt high highHalf) hlt)
+      BProv_context_prefix
+        [oddDoubleEqAt low lowHalf, oddDoubleEqAt high highHalf] hlt
     have hhighEq : BProv Ax_s C
         (eq (Term.var high)
           (Term.succ
@@ -45832,19 +45808,16 @@ theorem BProv_Ax_s_div2_order_cases
         BProv_eqSym
           (BProv_Ax_s_eq_of_leAt_leAt hleHighLow hleLowHigh)
       have hltD : BProv Ax_s D (ltAt low high) :=
-        BProv_context_cons (B := Ax_s) (a := leAt highHalf lowHalf)
-          (BProv_context_cons (B := Ax_s)
-            (a := leAt lowHalf highHalf) hlt)
+        BProv_context_prefix
+          [leAt highHalf lowHalf, leAt lowHalf highHalf] hlt
       have hhighStepD : BProv Ax_s D
           (div2StepAt high highHalf highBit) :=
-        BProv_context_cons (B := Ax_s) (a := leAt highHalf lowHalf)
-          (BProv_context_cons (B := Ax_s)
-            (a := leAt lowHalf highHalf) hhighStep)
+        BProv_context_prefix
+          [leAt highHalf lowHalf, leAt lowHalf highHalf] hhighStep
       have hlowStepD : BProv Ax_s D
           (div2StepAt low lowHalf lowBit) :=
-        BProv_context_cons (B := Ax_s) (a := leAt highHalf lowHalf)
-          (BProv_context_cons (B := Ax_s)
-            (a := leAt lowHalf highHalf) hlowStep)
+        BProv_context_prefix
+          [leAt highHalf lowHalf, leAt lowHalf highHalf] hlowStep
       have hbits : BProv Ax_s D
           (and (eqConstAt highBit 1) (eqConstAt lowBit 0)) :=
         BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
@@ -45906,24 +45879,16 @@ theorem BProv_Ax_s_hfSomeDistinguishesAt_of_div2_bits_one_zero
     let C : List Formula := zeroEq :: G.map (rename Nat.succ)
     have hzero : BProv Ax_s C (eqConstAt 0 0) :=
       BProv_ass (B := Ax_s) (G := C) (by simp [C, zeroEq])
-    have hhighOddRen : BProv Ax_s (G.map (rename Nat.succ))
-        (rename Nat.succ (oddDoubleEqAt high highHalf)) :=
-      BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hhighOdd Nat.succ
     have hhighOddC : BProv Ax_s C
         (oddDoubleEqAt (high+1) (highHalf+1)) := by
-      simpa [C, oddDoubleEqAt, rename, Term.rename] using
-        BProv_context_cons (B := Ax_s) (a := zeroEq) hhighOddRen
-    have hlowDoubleRen : BProv Ax_s (G.map (rename Nat.succ))
-        (rename Nat.succ (doubleEqAt low lowHalf)) :=
-      BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hlowDouble Nat.succ
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := Ax_s) Ax_s_sentences (a := zeroEq) hhighOdd
+      simpa [C, oddDoubleEqAt, rename, Term.rename] using hren
     have hlowDoubleC : BProv Ax_s C
         (doubleEqAt (low+1) (lowHalf+1)) := by
-      simpa [C, doubleEqAt, rename, Term.rename] using
-        BProv_context_cons (B := Ax_s) (a := zeroEq) hlowDoubleRen
+      have hren := BProv_rename_succ_context_cons_of_sentences
+        (B := Ax_s) Ax_s_sentences (a := zeroEq) hlowDouble
+      simpa [C, doubleEqAt, rename, Term.rename] using hren
     have hhighMem : BProv Ax_s C
         (hfMemTermAt 0 (Term.var (high+1))) :=
       BProv_Ax_s_hfMemTermAt_oddCurrentBeta_of_zero_and_odd

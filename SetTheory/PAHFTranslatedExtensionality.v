@@ -9,7 +9,7 @@
 
 From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import
-  PAHF PAHFOrdinalCode PAHFOrdinalCodeTotalCapacity
+  PAHF PAHFProofCalculus PAHFOrdinalCode PAHFOrdinalCodeTotalCapacity
   PAHFMembershipBound PAHFMembershipBoundSucc
   PAHFBetaShiftPrefix PAHFMembershipTail PAHFAdjoinTotal.
 
@@ -176,16 +176,15 @@ Proof.
         (leTermAt (tVar 0) bound1)).
     { exact (BProv_Ax_s_leTermAt_of_ltTermAt_succ_right
         D (tVar 0) bound1 hlt). }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hthrough S) as hthroughRen.
-    rewrite rename_hfLtDistinguishesThroughTermAt_succ in hthroughRen.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hthrough) as hthroughC.
+    rewrite rename_hfLtDistinguishesThroughTermAt_succ in hthroughC.
     assert (hthroughD : BProv Ax_s D
         (hfLtDistinguishesThroughTermAt bound1)).
     {
-      apply BProv_context_cons.
       unfold C, D.
       apply BProv_context_cons.
-      exact hthroughRen.
+      exact hthroughC.
     }
     unfold target.
     exact (BProv_Ax_s_hfLtDistinguishesAt_of_throughTermAt
@@ -200,16 +199,15 @@ Proof.
       apply BProv_eqSym.
       apply BProv_ass. unfold D. simpl. left. reflexivity.
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hnew S) as hnewRen.
-    rewrite rename_hfLtDistinguishesTermAt_succ in hnewRen.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hnew) as hnewC.
+    rewrite rename_hfLtDistinguishesTermAt_succ in hnewC.
     assert (hnewD : BProv Ax_s D
         (hfLtDistinguishesTermAt oldLimit)).
     {
-      apply BProv_context_cons.
       unfold C, D.
       apply BProv_context_cons.
-      exact hnewRen.
+      exact hnewC.
     }
     assert (htransport : BProv Ax_s D
         (hfLtDistinguishesTermAt (tVar 0))).
@@ -530,8 +528,10 @@ Proof.
     + set (C := doubleEqAt low lowHalf :: GH).
       apply BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
         with (highHalf := highHalf) (lowHalf := lowHalf).
-      * unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhalfLt.
+      * unfold C, GH.
+        exact (BProv_context_prefix Ax_s
+          [doubleEqAt low lowHalf; doubleEqAt high highHalf]
+          G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_doubleEqAt.
         apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
       * apply BProv_Ax_s_double_le_of_doubleEqAt.
@@ -539,8 +539,10 @@ Proof.
     + set (C := oddDoubleEqAt low lowHalf :: GH).
       apply BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
         with (highHalf := highHalf) (lowHalf := lowHalf).
-      * unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhalfLt.
+      * unfold C, GH.
+        exact (BProv_context_prefix Ax_s
+          [oddDoubleEqAt low lowHalf; doubleEqAt high highHalf]
+          G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_doubleEqAt.
         apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
       * apply BProv_Ax_s_double_le_of_oddDoubleEqAt.
@@ -554,8 +556,10 @@ Proof.
     + set (C := doubleEqAt low lowHalf :: GH).
       apply BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
         with (highHalf := highHalf) (lowHalf := lowHalf).
-      * unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhalfLt.
+      * unfold C, GH.
+        exact (BProv_context_prefix Ax_s
+          [doubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
+          G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_oddDoubleEqAt.
         apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
       * apply BProv_Ax_s_double_le_of_doubleEqAt.
@@ -563,8 +567,10 @@ Proof.
     + set (C := oddDoubleEqAt low lowHalf :: GH).
       apply BProv_Ax_s_leAt_of_half_lt_and_binary_head_bounds
         with (highHalf := highHalf) (lowHalf := lowHalf).
-      * unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhalfLt.
+      * unfold C, GH.
+        exact (BProv_context_prefix Ax_s
+          [oddDoubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
+          G _ hhalfLt).
       * apply BProv_Ax_s_le_succ_double_of_oddDoubleEqAt.
         apply BProv_context_cons. apply BProv_ass. simpl. left. reflexivity.
       * apply BProv_Ax_s_double_le_of_oddDoubleEqAt.
@@ -633,11 +639,13 @@ Proof.
       { apply BProv_ass. simpl. left. reflexivity. }
       assert (hhalfEqC : BProv Ax_s C
           (pEq (tVar lowHalf) (tVar highHalf))).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhalfEq. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [doubleEqAt low lowHalf; doubleEqAt high highHalf]
+          G _ hhalfEq). }
       assert (hltC : BProv Ax_s C (ltAt low high)).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hlt. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [doubleEqAt low lowHalf; doubleEqAt high highHalf]
+          G _ hlt). }
       assert (hhalves : BProv Ax_s C
           (pEq (tAdd (tVar lowHalf) (tVar lowHalf))
             (tAdd (tVar highHalf) (tVar highHalf)))).
@@ -658,11 +666,13 @@ Proof.
       { apply BProv_ass. simpl. left. reflexivity. }
       assert (hhalfEqC : BProv Ax_s C
           (pEq (tVar lowHalf) (tVar highHalf))).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhalfEq. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [oddDoubleEqAt low lowHalf; doubleEqAt high highHalf]
+          G _ hhalfEq). }
       assert (hltC : BProv Ax_s C (ltAt low high)).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hlt. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [oddDoubleEqAt low lowHalf; doubleEqAt high highHalf]
+          G _ hlt). }
       assert (hhalves : BProv Ax_s C
           (pEq (tAdd (tVar lowHalf) (tVar lowHalf))
             (tAdd (tVar highHalf) (tVar highHalf)))).
@@ -699,12 +709,14 @@ Proof.
       { apply BProv_ass. simpl. left. reflexivity. }
       assert (hhighStepC : BProv Ax_s C
           (div2StepAt high highHalf highBit)).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhighStep. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [doubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
+          G _ hhighStep). }
       assert (hlowStepC : BProv Ax_s C
           (div2StepAt low lowHalf lowBit)).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hlowStep. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [doubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
+          G _ hlowStep). }
       exact (BProv_andI Ax_s C _ _
         (BProv_Ax_s_eqConstAt_one_of_oddDoubleEqAt_div2StepAt
           C high highHalf highBit hhigh hhighStepC)
@@ -717,11 +729,13 @@ Proof.
       { apply BProv_ass. simpl. left. reflexivity. }
       assert (hhalfEqC : BProv Ax_s C
           (pEq (tVar lowHalf) (tVar highHalf))).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhalfEq. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [oddDoubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
+          G _ hhalfEq). }
       assert (hltC : BProv Ax_s C (ltAt low high)).
-      { unfold C, GH. apply BProv_context_cons. apply BProv_context_cons.
-        exact hlt. }
+      { unfold C, GH. exact (BProv_context_prefix Ax_s
+          [oddDoubleEqAt low lowHalf; oddDoubleEqAt high highHalf]
+          G _ hlt). }
       assert (hhalves : BProv Ax_s C
           (pEq (tSucc (tAdd (tVar lowHalf) (tVar lowHalf)))
             (tSucc (tAdd (tVar highHalf) (tVar highHalf))))).
@@ -770,16 +784,19 @@ Proof.
       { apply BProv_eqSym. exact (BProv_Ax_s_eq_of_leAt_leAt
           D highHalf lowHalf hleHighLow hleLowHigh). }
       assert (hltD : BProv Ax_s D (ltAt low high)).
-      { unfold D, C. apply BProv_context_cons. apply BProv_context_cons.
-        exact hlt. }
+      { unfold D, C. exact (BProv_context_prefix Ax_s
+          [leAt highHalf lowHalf; leAt lowHalf highHalf]
+          G _ hlt). }
       assert (hhighStepD : BProv Ax_s D
           (div2StepAt high highHalf highBit)).
-      { unfold D, C. apply BProv_context_cons. apply BProv_context_cons.
-        exact hhighStep. }
+      { unfold D, C. exact (BProv_context_prefix Ax_s
+          [leAt highHalf lowHalf; leAt lowHalf highHalf]
+          G _ hhighStep). }
       assert (hlowStepD : BProv Ax_s D
           (div2StepAt low lowHalf lowBit)).
-      { unfold D, C. apply BProv_context_cons. apply BProv_context_cons.
-        exact hlowStep. }
+      { unfold D, C. exact (BProv_context_prefix Ax_s
+          [leAt highHalf lowHalf; leAt lowHalf highHalf]
+          G _ hlowStep). }
       assert (hbits : BProv Ax_s D
           (pAnd (eqConstAt highBit 1) (eqConstAt lowBit 0))).
       { exact (BProv_Ax_s_div2_bits_one_zero_of_lt_and_equal_halves
@@ -972,12 +989,9 @@ Proof.
   assert (hhalfHigh : BProv Ax_s C (hfMemAt 0 (S highHalf))).
   { unfold witness, hfDistinguishesAt in hwitness.
     exact (BProv_andE1 Ax_s C _ _ hwitness). }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hhighStep S) as hhighStepRen.
-  rewrite rename_S_div2StepAt in hhighStepRen.
-  assert (hhighStepC : BProv Ax_s C
-      (div2StepAt (S high) (S highHalf) (S highBit))).
-  { apply BProv_context_cons. exact hhighStepRen. }
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G witness _ hhighStep) as hhighStepC.
+  rewrite rename_S_div2StepAt in hhighStepC.
   assert (hhighMem : BProv Ax_s C
       (subst (instTerm (tSucc (tVar 0))) (hfMemAt 0 (S (S high))))).
   { exact (hlift C (S high) (S highHalf) (S highBit)
@@ -989,13 +1003,12 @@ Proof.
   set (lowSuccMem :=
     subst (instTerm (tSucc (tVar 0))) (hfMemAt 0 (S (S low)))).
   set (D := lowSuccMem :: C).
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hlowStep S) as hlowStepRen.
-  rewrite rename_S_div2StepAt in hlowStepRen.
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G witness _ hlowStep) as hlowStepC.
+  rewrite rename_S_div2StepAt in hlowStepC.
   assert (hlowStepD : BProv Ax_s D
       (div2StepAt (S low) (S lowHalf) (S lowBit))).
-  { unfold D, C. apply BProv_context_cons. apply BProv_context_cons.
-    exact hlowStepRen. }
+  { unfold D, C. apply BProv_context_cons. exact hlowStepC. }
   assert (hlowSuccMem : BProv Ax_s D
       (subst (instTerm (tSucc (tVar 0))) (hfMemAt 0 (S (S low))))).
   { apply BProv_ass. unfold D, lowSuccMem. simpl. left. reflexivity. }
@@ -1048,26 +1061,18 @@ Proof.
   set (C := zeroEq :: map (rename S) G).
   assert (hzeroEq : BProv Ax_s C (eqConstAt 0 0)).
   { apply BProv_ass. unfold C, zeroEq. simpl. left. reflexivity. }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hhighBit S) as hhighBitRen.
-  assert (hhighBitC : BProv Ax_s C (eqConstAt (S highBit) 1)).
-  { apply BProv_context_cons. unfold eqConstAt in hhighBitRen.
-    simpl in hhighBitRen.
-    exact hhighBitRen. }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hhighStep S) as hhighStepRen.
-  rewrite rename_S_div2StepAt in hhighStepRen.
-  assert (hhighStepC : BProv Ax_s C
-      (div2StepAt (S high) (S highHalf) (S highBit))).
-  { apply BProv_context_cons. exact hhighStepRen. }
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G zeroEq _ hhighBit) as hhighBitC.
+  unfold eqConstAt in hhighBitC.
+  simpl in hhighBitC.
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G zeroEq _ hhighStep) as hhighStepC.
+  rewrite rename_S_div2StepAt in hhighStepC.
   assert (hhighMem : BProv Ax_s C (hfMemAt 0 (S high))).
   { exact (hzero C 0 (S high) (S highHalf) (S highBit)
       hzeroEq hhighBitC hhighStepC). }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hlowDouble S) as hlowDoubleRen.
-  assert (hlowDoubleC : BProv Ax_s C
-      (doubleEqAt (S low) (S lowHalf))).
-  { apply BProv_context_cons. exact hlowDoubleRen. }
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G zeroEq _ hlowDouble) as hlowDoubleC.
   assert (hnotLow : BProv Ax_s C
       (pImp (hfMemAt 0 (S low)) pBot)).
   {
