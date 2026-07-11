@@ -152,48 +152,45 @@ Definition mobiusPositiveTermAt (n : PA.term) : PA.formula :=
 Definition mobiusNegativeTermAt (n : PA.term) : PA.formula :=
   PA.pAnd (squarefreeTermAt n) (factorizationOddTermAt n).
 
+(* One guarded transition of two synchronized beta-coded traces.  [guard],
+   [leftNext], and [rightNext] live under the current-value witnesses
+   [leftCur = var 1] and [rightCur = var 0]; the trace index is [var 2]. *)
+Definition pairedBetaTraceStepAt
+    (leftCode leftStep rightCode rightStep : PA.term)
+    (guard : PA.formula) (leftNext rightNext : PA.term) : PA.formula :=
+  let leftCode' := shiftTerm 2 leftCode in
+  let leftStep' := shiftTerm 2 leftStep in
+  let rightCode' := shiftTerm 2 rightCode in
+  let rightStep' := shiftTerm 2 rightStep in
+  let leftCur := PA.tVar 1 in
+  let rightCur := PA.tVar 0 in
+  let i' := PA.tVar 2 in
+  PA.pEx (PA.pEx (PA.pAnd guard
+    (PA.pAnd
+      (betaTermTermAt leftCur leftCode' leftStep' i')
+      (PA.pAnd
+        (betaTermTermAt leftNext leftCode' leftStep' (PA.tSucc i'))
+        (PA.pAnd
+          (betaTermTermAt rightCur rightCode' rightStep' i')
+          (betaTermTermAt rightNext rightCode' rightStep'
+            (PA.tSucc i'))))))).
+
 Definition mertensCountStepAt
     (posCode posStep negCode negStep : PA.term) : PA.formula :=
-  let posCode' := shiftTerm 2 posCode in
-  let posStep' := shiftTerm 2 posStep in
-  let negCode' := shiftTerm 2 negCode in
-  let negStep' := shiftTerm 2 negStep in
   let posCur := PA.tVar 1 in
   let negCur := PA.tVar 0 in
-  let i' := PA.tVar 2 in
-  let k' := PA.tSucc i' in
+  let k' := PA.tSucc (PA.tVar 2) in
   let positiveUpdate :=
-    PA.pEx (PA.pEx (PA.pAnd (mobiusPositiveTermAt k')
-      (PA.pAnd
-        (betaTermTermAt posCur posCode' posStep' i')
-        (PA.pAnd
-          (betaTermTermAt (PA.tSucc posCur) posCode' posStep'
-            (PA.tSucc i'))
-          (PA.pAnd
-            (betaTermTermAt negCur negCode' negStep' i')
-            (betaTermTermAt negCur negCode' negStep'
-              (PA.tSucc i'))))))) in
+    pairedBetaTraceStepAt posCode posStep negCode negStep
+      (mobiusPositiveTermAt k') (PA.tSucc posCur) negCur in
   let negativeUpdate :=
-    PA.pEx (PA.pEx (PA.pAnd (mobiusNegativeTermAt k')
-      (PA.pAnd
-        (betaTermTermAt posCur posCode' posStep' i')
-        (PA.pAnd
-          (betaTermTermAt posCur posCode' posStep' (PA.tSucc i'))
-          (PA.pAnd
-            (betaTermTermAt negCur negCode' negStep' i')
-            (betaTermTermAt (PA.tSucc negCur) negCode' negStep'
-              (PA.tSucc i'))))))) in
+    pairedBetaTraceStepAt posCode posStep negCode negStep
+      (mobiusNegativeTermAt k') posCur (PA.tSucc negCur) in
   let zeroUpdate :=
-    PA.pEx (PA.pEx (PA.pAnd (notF (mobiusPositiveTermAt k'))
-      (PA.pAnd (notF (mobiusNegativeTermAt k'))
-        (PA.pAnd
-          (betaTermTermAt posCur posCode' posStep' i')
-          (PA.pAnd
-            (betaTermTermAt posCur posCode' posStep' (PA.tSucc i'))
-            (PA.pAnd
-              (betaTermTermAt negCur negCode' negStep' i')
-              (betaTermTermAt negCur negCode' negStep'
-                (PA.tSucc i')))))))) in
+    pairedBetaTraceStepAt posCode posStep negCode negStep
+      (PA.pAnd (notF (mobiusPositiveTermAt k'))
+        (notF (mobiusNegativeTermAt k')))
+      posCur negCur in
   PA.pOr positiveUpdate (PA.pOr negativeUpdate zeroUpdate).
 
 Definition mertensCountsTraceAt

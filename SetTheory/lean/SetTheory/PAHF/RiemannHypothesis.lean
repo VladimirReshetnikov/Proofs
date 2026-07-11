@@ -146,6 +146,31 @@ theorem subst_properRemainder_body
     term_subst_two_witnesses_rename_two_succ_add,
     term_subst_up2_instTerm_rename_three_succ_add]
 
+/--
+Transport a concrete Euclidean decomposition `q * m + r = v` through a proof
+that an open modulus term denotes `m`.  Both remainder-certificate constructors
+below use this same arithmetic core.
+-/
+theorem BProv_Ax_s_euclideanDecomposition_of_modEq
+    {G : List Formula} {modulus : Term} {r v m q : Nat}
+    (hmod : BProv Ax_s G (eq modulus (Term.numeral m)))
+    (hdiv : q * m + r = v) :
+    BProv Ax_s G
+      (eq (Term.add (Term.mul (Term.numeral q) modulus) (Term.numeral r))
+        (Term.numeral v)) := by
+  have hmul : BProv Ax_s G
+      (eq (Term.mul (Term.numeral q) modulus) (Term.numeral (q * m))) :=
+    BProv_eqTrans
+      (BProv_eq_congr_mul_right (B := Ax_s) (G := G) (Term.numeral q) hmod)
+      (BProv_weaken_nil (G := G) (BProv_Ax_s_mulNumerals q m))
+  have hadd : BProv Ax_s G
+      (eq (Term.add (Term.mul (Term.numeral q) modulus) (Term.numeral r))
+        (Term.numeral (q * m + r))) :=
+    BProv_eqTrans
+      (BProv_eq_congr_add_left (B := Ax_s) (G := G) (Term.numeral r) hmul)
+      (BProv_weaken_nil (G := G) (BProv_Ax_s_addNumerals (q * m) r))
+  simpa [hdiv] using hadd
+
 theorem BProv_Ax_s_properRemainderWitnessAt_numeral_of_modEq
     {G : List Formula} {modulus : Term} {r v m q : Nat}
     (hmod : BProv Ax_s G (eq modulus (Term.numeral m)))
@@ -167,40 +192,15 @@ theorem BProv_Ax_s_properRemainderWitnessAt_numeral_of_modEq
       (ltTermAt (Term.succ (Term.numeral pred)) modulus) :=
     BProv_ltTermAt_of_eq_right (B := Ax_s) (G := G)
       (BProv_eqSym hmod) hltR
-  have hmulMod : BProv Ax_s G
-      (eq (Term.mul (Term.numeral q) modulus)
-        (Term.mul (Term.numeral q) (Term.numeral m))) :=
-    BProv_eq_congr_mul_right (B := Ax_s) (G := G) (Term.numeral q) hmod
-  have hmulNum : BProv Ax_s G
-      (eq (Term.mul (Term.numeral q) (Term.numeral m))
-        (Term.numeral (q * m))) :=
-    BProv_weaken_nil (G := G) (BProv_Ax_s_mulNumerals q m)
-  have hmul : BProv Ax_s G
-      (eq (Term.mul (Term.numeral q) modulus) (Term.numeral (q * m))) :=
-    BProv_eqTrans hmulMod hmulNum
-  have haddMod : BProv Ax_s G
-      (eq
-        (Term.add (Term.mul (Term.numeral q) modulus)
-          (Term.succ (Term.numeral pred)))
-        (Term.add (Term.numeral (q * m))
-          (Term.succ (Term.numeral pred)))) :=
-    BProv_eq_congr_add_left (B := Ax_s) (G := G)
-      (Term.succ (Term.numeral pred)) hmul
-  have haddNum : BProv Ax_s G
-      (eq (Term.add (Term.numeral (q * m)) (Term.numeral r))
-        (Term.numeral (q * m + r))) :=
-    BProv_weaken_nil (G := G) (BProv_Ax_s_addNumerals (q * m) r)
-  have haddNumPred : BProv Ax_s G
-      (eq
-        (Term.add (Term.numeral (q * m)) (Term.succ (Term.numeral pred)))
-        (Term.numeral (q * m + r))) := by
-    simpa [hnumPred] using haddNum
   have hsum : BProv Ax_s G
       (eq
         (Term.add (Term.mul (Term.numeral q) modulus)
           (Term.succ (Term.numeral pred)))
         (Term.numeral v)) := by
-    simpa [hdiv] using BProv_eqTrans haddMod haddNumPred
+    simpa [hnumPred] using
+      (BProv_Ax_s_euclideanDecomposition_of_modEq
+        (G := G) (modulus := modulus) (r := r) (v := v) (m := m) (q := q)
+        hmod hdiv)
   have hbodyQ : BProv Ax_s G
       (subst (instTerm (Term.numeral q))
         (subst (Term.upSubst (instTerm (Term.numeral pred)))
@@ -539,28 +539,10 @@ theorem BProv_Ax_s_remTermTermAt_numeral_of_modEq
     simpa [ltTermAt, Term.rename] using BProv_Ax_s_ltConst_closed (G := G) hr
   have hlt : BProv Ax_s G (ltTermAt (Term.numeral r) modulus) :=
     BProv_ltTermAt_of_eq_right (B := Ax_s) (G := G) (BProv_eqSym hmod) hltClosed
-  have hmulMod : BProv Ax_s G
-      (eq (Term.mul (Term.numeral q) modulus)
-        (Term.mul (Term.numeral q) (Term.numeral m))) :=
-    BProv_eq_congr_mul_right (B := Ax_s) (G := G) (Term.numeral q) hmod
-  have hmulNum : BProv Ax_s G
-      (eq (Term.mul (Term.numeral q) (Term.numeral m)) (Term.numeral (q * m))) :=
-    BProv_weaken_nil (G := G) (BProv_Ax_s_mulNumerals q m)
-  have hmul : BProv Ax_s G
-      (eq (Term.mul (Term.numeral q) modulus) (Term.numeral (q * m))) :=
-    BProv_eqTrans hmulMod hmulNum
-  have haddMod : BProv Ax_s G
-      (eq (Term.add (Term.mul (Term.numeral q) modulus) (Term.numeral r))
-        (Term.add (Term.numeral (q * m)) (Term.numeral r))) :=
-    BProv_eq_congr_add_left (B := Ax_s) (G := G) (Term.numeral r) hmul
-  have haddNum : BProv Ax_s G
-      (eq (Term.add (Term.numeral (q * m)) (Term.numeral r))
-        (Term.numeral (q * m + r))) :=
-    BProv_weaken_nil (G := G) (BProv_Ax_s_addNumerals (q * m) r)
   have hsum : BProv Ax_s G
       (eq (Term.add (Term.mul (Term.numeral q) modulus) (Term.numeral r))
-        (Term.numeral v)) := by
-    simpa [hdiv] using BProv_eqTrans haddMod haddNum
+        (Term.numeral v)) :=
+    BProv_Ax_s_euclideanDecomposition_of_modEq hmod hdiv
   exact BProv_Ax_s_remTermTermAt_of_eq_add_mul_terms
     (G := G) (rem := Term.numeral r) (value := Term.numeral v)
     (modulus := modulus) (quotient := Term.numeral q) hlt (BProv_eqSym hsum)
@@ -763,6 +745,34 @@ theorem BProv_Ax_s_mobiusNegative_three :
 /-! ## Prefix-count traces for the Mertens function -/
 
 /--
+One guarded transition of two synchronized beta-coded traces.  The guard and
+the two next-value terms live under the current-value witnesses
+`leftCur = var 1` and `rightCur = var 0`; the trace index is `var 2`.
+
+Keeping the shared four-entry beta plumbing here makes other paired trace
+relations depend only on their guard and update expressions.
+-/
+def pairedBetaTraceStepAt
+    (leftCode leftStep rightCode rightStep : Term)
+    (guard : Formula) (leftNext rightNext : Term) : Formula :=
+  let leftCode' := shiftTerm 2 leftCode
+  let leftStep' := shiftTerm 2 leftStep
+  let rightCode' := shiftTerm 2 rightCode
+  let rightStep' := shiftTerm 2 rightStep
+  let leftCur := Term.var 1
+  let rightCur := Term.var 0
+  let i' := Term.var 2
+  ex (ex (and guard
+    (and
+      (betaTermTermAt leftCur leftCode' leftStep' i')
+      (and
+        (betaTermTermAt leftNext leftCode' leftStep' (Term.succ i'))
+        (and
+          (betaTermTermAt rightCur rightCode' rightStep' i')
+          (betaTermTermAt rightNext rightCode' rightStep'
+            (Term.succ i')))))))
+
+/--
 The update relation for the two cumulative counts in the Mertens function.
 
 At loop index `i`, the integer being inspected is `i+1`.  The positive count is
@@ -771,46 +781,20 @@ incremented when `mu(i+1)=+1`, the negative count is incremented when
 -/
 def mertensCountStepAt
     (posCode posStep negCode negStep : Term) : Formula :=
-  let posCode' := shiftTerm 2 posCode
-  let posStep' := shiftTerm 2 posStep
-  let negCode' := shiftTerm 2 negCode
-  let negStep' := shiftTerm 2 negStep
   let posCur := Term.var 1
   let negCur := Term.var 0
-  let i' := Term.var 2
-  let k' := Term.succ i'
+  let k' := Term.succ (Term.var 2)
   let positiveUpdate :=
-    ex (ex (and (mobiusPositiveTermAt k')
-      (and
-        (betaTermTermAt posCur posCode' posStep' i')
-        (and
-          (betaTermTermAt (Term.succ posCur) posCode' posStep'
-            (Term.succ i'))
-          (and
-            (betaTermTermAt negCur negCode' negStep' i')
-            (betaTermTermAt negCur negCode' negStep'
-              (Term.succ i')))))))
+    pairedBetaTraceStepAt posCode posStep negCode negStep
+      (mobiusPositiveTermAt k') (Term.succ posCur) negCur
   let negativeUpdate :=
-    ex (ex (and (mobiusNegativeTermAt k')
-      (and
-        (betaTermTermAt posCur posCode' posStep' i')
-        (and
-          (betaTermTermAt posCur posCode' posStep' (Term.succ i'))
-          (and
-            (betaTermTermAt negCur negCode' negStep' i')
-            (betaTermTermAt (Term.succ negCur) negCode' negStep'
-              (Term.succ i')))))))
+    pairedBetaTraceStepAt posCode posStep negCode negStep
+      (mobiusNegativeTermAt k') posCur (Term.succ negCur)
   let zeroUpdate :=
-    ex (ex (and (notF (mobiusPositiveTermAt k'))
-      (and (notF (mobiusNegativeTermAt k'))
-        (and
-          (betaTermTermAt posCur posCode' posStep' i')
-          (and
-            (betaTermTermAt posCur posCode' posStep' (Term.succ i'))
-            (and
-              (betaTermTermAt negCur negCode' negStep' i')
-              (betaTermTermAt negCur negCode' negStep'
-                (Term.succ i'))))))))
+    pairedBetaTraceStepAt posCode posStep negCode negStep
+      (and (notF (mobiusPositiveTermAt k'))
+        (notF (mobiusNegativeTermAt k')))
+      posCur negCur
   or positiveUpdate (or negativeUpdate zeroUpdate)
 
 /--
