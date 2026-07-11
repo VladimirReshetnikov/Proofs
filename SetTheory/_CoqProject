@@ -79,6 +79,7 @@ PAHFBetaShiftPrefix.v
 PAHFMembershipTail.v
 PAHFAdjoinTotal.v
 PAHFTranslatedExtensionality.v
+PAHFTranslatedFiniteInduction.v
 PAHFInterpretations.v
 PAHFTermGraphModel.v
 PAHFTermGraphTotal.v
