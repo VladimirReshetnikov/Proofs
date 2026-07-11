@@ -508,70 +508,6 @@ Definition PAHFAdjoinOutputFunctionalProof : Prop :=
     BProv Ax_s G (hfAdjoinGraphTermAt new2 oldCode elemCode) ->
     BProv Ax_s G (pEq new1 new2).
 
-Lemma BProv_hfAdjoinGraphTermAt_congr_old : forall
-    (B : formula -> Prop) G newCode old1 old2 elemCode,
-  BProv B G (pEq old1 old2) ->
-  BProv B G (hfAdjoinGraphTermAt newCode old1 elemCode) ->
-  BProv B G (hfAdjoinGraphTermAt newCode old2 elemCode).
-Proof.
-  intros B G newCode old1 old2 elemCode heq hgraph.
-  set (context := hfAdjoinGraphTermAt
-    (Term.rename S newCode) (tVar 0) (Term.rename S elemCode)).
-  assert (hinst : BProv B G (subst (instTerm old1) context)).
-  {
-    unfold context.
-    rewrite subst_hfAdjoinGraphTermAt.
-    simpl.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    exact hgraph.
-  }
-  pose proof (BProv_eqElim B G old1 old2 context heq hinst) as hout.
-  unfold context in hout.
-  rewrite subst_hfAdjoinGraphTermAt in hout.
-  simpl in hout.
-  repeat rewrite term_subst_instTerm_rename_succ in hout.
-  exact hout.
-Qed.
-
-Lemma BProv_hfAdjoinGraphTermAt_congr_elem : forall
-    (B : formula -> Prop) G newCode oldCode elem1 elem2,
-  BProv B G (pEq elem1 elem2) ->
-  BProv B G (hfAdjoinGraphTermAt newCode oldCode elem1) ->
-  BProv B G (hfAdjoinGraphTermAt newCode oldCode elem2).
-Proof.
-  intros B G newCode oldCode elem1 elem2 heq hgraph.
-  set (context := hfAdjoinGraphTermAt
-    (Term.rename S newCode) (Term.rename S oldCode) (tVar 0)).
-  assert (hinst : BProv B G (subst (instTerm elem1) context)).
-  {
-    unfold context.
-    rewrite subst_hfAdjoinGraphTermAt.
-    simpl.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    exact hgraph.
-  }
-  pose proof (BProv_eqElim B G elem1 elem2 context heq hinst) as hout.
-  unfold context in hout.
-  rewrite subst_hfAdjoinGraphTermAt in hout.
-  simpl in hout.
-  repeat rewrite term_subst_instTerm_rename_succ in hout.
-  exact hout.
-Qed.
-
-Lemma BProv_Ax_s_hfAdjoinGraphTermAt_congr_inputs : forall
-    G newCode old1 old2 elem1 elem2,
-  BProv Ax_s G (pEq old1 old2) ->
-  BProv Ax_s G (pEq elem1 elem2) ->
-  BProv Ax_s G (hfAdjoinGraphTermAt newCode old1 elem1) ->
-  BProv Ax_s G (hfAdjoinGraphTermAt newCode old2 elem2).
-Proof.
-  intros G newCode old1 old2 elem1 elem2 hold helem hgraph.
-  apply (BProv_hfAdjoinGraphTermAt_congr_elem
-    Ax_s G newCode old2 elem1 elem2 helem).
-  exact (BProv_hfAdjoinGraphTermAt_congr_old
-    Ax_s G newCode old1 old2 elem1 hold hgraph).
-Qed.
-
 (** Totality plus the two output-functionality laws force the independently
     selected successor graph endpoint to be the supplied Ackermann adjoin. *)
 Definition PAOrdinalCodeGraphSuccClosureProof_of_functionality
@@ -679,8 +615,8 @@ Proof.
       assert (hedgeAdjoin' : BProv Ax_s E
           (hfAdjoinGraphTermAt (tVar 1) pred2 pred2)).
       {
-        exact (BProv_Ax_s_hfAdjoinGraphTermAt_congr_inputs
-          E (tVar 1) (tVar 0) pred2 (tVar 0) pred2
+        exact (BProv_hfAdjoinGraphTermAt_congr_inputs
+          Ax_s E (tVar 1) (tVar 0) pred2 (tVar 0) pred2
           (BProv_eqSym Ax_s E _ _ hpredEq)
           (BProv_eqSym Ax_s E _ _ hpredEq) hedgeAdjoin).
       }

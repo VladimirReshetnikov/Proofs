@@ -1518,38 +1518,7 @@ theorem BProv_Ax_s_hfAdjoinGraphTermAt_congr_inputs
       (hfAdjoinGraphTermAt newCode oldCode₁ elemCode₁)) :
     BProv Ax_s G
       (hfAdjoinGraphTermAt newCode oldCode₂ elemCode₂) := by
-  let oldContext : Formula :=
-    hfAdjoinGraphTermAt
-      (Term.rename Nat.succ newCode)
-      (Term.var 0)
-      (Term.rename Nat.succ elemCode₁)
-  have holdInst : BProv Ax_s G
-      (subst (instTerm oldCode₁) oldContext) := by
-    simpa [oldContext, subst_hfAdjoinGraphTermAt,
-      instTerm, Term.subst,
-      term_subst_instTerm_rename_succ] using hgraph
-  have holdInst' := BProv_eqElim
-    (B := Ax_s) (G := G) (a := oldContext) hold holdInst
-  have hgraphOld : BProv Ax_s G
-      (hfAdjoinGraphTermAt newCode oldCode₂ elemCode₁) := by
-    simpa [oldContext, subst_hfAdjoinGraphTermAt,
-      instTerm, Term.subst,
-      term_subst_instTerm_rename_succ] using holdInst'
-  let elemContext : Formula :=
-    hfAdjoinGraphTermAt
-      (Term.rename Nat.succ newCode)
-      (Term.rename Nat.succ oldCode₂)
-      (Term.var 0)
-  have helemInst : BProv Ax_s G
-      (subst (instTerm elemCode₁) elemContext) := by
-    simpa [elemContext, subst_hfAdjoinGraphTermAt,
-      instTerm, Term.subst,
-      term_subst_instTerm_rename_succ] using hgraphOld
-  have helemInst' := BProv_eqElim
-    (B := Ax_s) (G := G) (a := elemContext) helem helemInst
-  simpa [elemContext, subst_hfAdjoinGraphTermAt,
-    instTerm, Term.subst,
-    term_subst_instTerm_rename_succ] using helemInst'
+  exact BProv_hfAdjoinGraphTermAt_congr_inputs hold helem hgraph
 
 /-- Package two named beta values and their equality as trace agreement. -/
 theorem BProv_ordinalCodeTraceAgreementAt_of_components

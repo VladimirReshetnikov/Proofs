@@ -48580,6 +48580,87 @@ theorem subst_hfAdjoinGraphTermAt
     subst_up_hfMemTermAt_zero_rename_succ,
     Term.subst_rename_succ_up]
 
+/-- Equality transport in the output-code position of an adjoin graph. -/
+theorem BProv_hfAdjoinGraphTermAt_congr_output
+    {B : Formula → Prop} {G : List Formula}
+    {newCode₁ newCode₂ oldCode elemCode : Term}
+    (hnew : BProv B G (eq newCode₁ newCode₂))
+    (hgraph : BProv B G
+      (hfAdjoinGraphTermAt newCode₁ oldCode elemCode)) :
+    BProv B G (hfAdjoinGraphTermAt newCode₂ oldCode elemCode) := by
+  let context : Formula :=
+    hfAdjoinGraphTermAt
+      (Term.var 0)
+      (Term.rename Nat.succ oldCode)
+      (Term.rename Nat.succ elemCode)
+  have hinst : BProv B G (subst (instTerm newCode₁) context) := by
+    simpa [context, subst_hfAdjoinGraphTermAt,
+      instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hgraph
+  have hinst' := BProv_eqElim
+    (B := B) (G := G) (a := context) hnew hinst
+  simpa [context, subst_hfAdjoinGraphTermAt,
+    instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hinst'
+
+/-- Equality transport in the old-code position of an adjoin graph. -/
+theorem BProv_hfAdjoinGraphTermAt_congr_old
+    {B : Formula → Prop} {G : List Formula}
+    {newCode oldCode₁ oldCode₂ elemCode : Term}
+    (hold : BProv B G (eq oldCode₁ oldCode₂))
+    (hgraph : BProv B G
+      (hfAdjoinGraphTermAt newCode oldCode₁ elemCode)) :
+    BProv B G (hfAdjoinGraphTermAt newCode oldCode₂ elemCode) := by
+  let context : Formula :=
+    hfAdjoinGraphTermAt
+      (Term.rename Nat.succ newCode)
+      (Term.var 0)
+      (Term.rename Nat.succ elemCode)
+  have hinst : BProv B G (subst (instTerm oldCode₁) context) := by
+    simpa [context, subst_hfAdjoinGraphTermAt,
+      instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hgraph
+  have hinst' := BProv_eqElim
+    (B := B) (G := G) (a := context) hold hinst
+  simpa [context, subst_hfAdjoinGraphTermAt,
+    instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hinst'
+
+/-- Equality transport in the element-code position of an adjoin graph. -/
+theorem BProv_hfAdjoinGraphTermAt_congr_elem
+    {B : Formula → Prop} {G : List Formula}
+    {newCode oldCode elemCode₁ elemCode₂ : Term}
+    (helem : BProv B G (eq elemCode₁ elemCode₂))
+    (hgraph : BProv B G
+      (hfAdjoinGraphTermAt newCode oldCode elemCode₁)) :
+    BProv B G (hfAdjoinGraphTermAt newCode oldCode elemCode₂) := by
+  let context : Formula :=
+    hfAdjoinGraphTermAt
+      (Term.rename Nat.succ newCode)
+      (Term.rename Nat.succ oldCode)
+      (Term.var 0)
+  have hinst : BProv B G (subst (instTerm elemCode₁) context) := by
+    simpa [context, subst_hfAdjoinGraphTermAt,
+      instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hgraph
+  have hinst' := BProv_eqElim
+    (B := B) (G := G) (a := context) helem hinst
+  simpa [context, subst_hfAdjoinGraphTermAt,
+    instTerm, Term.subst,
+    term_subst_instTerm_rename_succ] using hinst'
+
+/-- Equality transport in both input positions of an adjoin graph. -/
+theorem BProv_hfAdjoinGraphTermAt_congr_inputs
+    {B : Formula → Prop} {G : List Formula}
+    {newCode oldCode₁ oldCode₂ elemCode₁ elemCode₂ : Term}
+    (hold : BProv B G (eq oldCode₁ oldCode₂))
+    (helem : BProv B G (eq elemCode₁ elemCode₂))
+    (hgraph : BProv B G
+      (hfAdjoinGraphTermAt newCode oldCode₁ elemCode₁)) :
+    BProv B G (hfAdjoinGraphTermAt newCode oldCode₂ elemCode₂) :=
+  BProv_hfAdjoinGraphTermAt_congr_elem helem
+    (BProv_hfAdjoinGraphTermAt_congr_old hold hgraph)
+
 theorem subst_hfAdjoinExistsTermAt
     (σ : Nat → Term) (oldCode elemCode : Term) :
     subst σ (hfAdjoinExistsTermAt oldCode elemCode) =
@@ -49695,71 +49776,7 @@ theorem BProv_hfAdjoinGraphTermAt_of_new_eq_term
     (heq : BProv Ax_s G (eq oldNew newNew)) :
     BProv Ax_s G
       (hfAdjoinGraphTermAt newNew oldCode elemCode) := by
-  let oldNew1 : Term := Term.rename Nat.succ oldNew
-  let newNew1 : Term := Term.rename Nat.succ newNew
-  let oldCode1 : Term := Term.rename Nat.succ oldCode
-  let elemCode1 : Term := Term.rename Nat.succ elemCode
-  let oldMem : Formula := hfMemTermAt 0 oldNew1
-  let newMem : Formula := hfMemTermAt 0 newNew1
-  let rhs : Formula :=
-    or (hfMemTermAt 0 oldCode1)
-      (eq (Term.var 0) elemCode1)
-  have hgraphRenRaw := BProv_rename_of_sentences
-    (B := Ax_s) Ax_s_sentences
-    hgraph Nat.succ
-  have hgraphRen : BProv Ax_s (G.map (rename Nat.succ))
-      (hfAdjoinGraphTermAt oldNew1 oldCode1 elemCode1) := by
-    simpa [oldNew1, oldCode1, elemCode1,
-      rename_hfAdjoinGraphTermAt_succ] using hgraphRenRaw
-  have hpoint : BProv Ax_s (G.map (rename Nat.succ))
-      (iffForm oldMem rhs) := by
-    simpa [oldMem, rhs] using
-      (BProv_hfAdjoinGraphTermAt_point
-        (query := 0) hgraphRen)
-  have heqRenRaw := BProv_rename_of_sentences
-    (B := Ax_s) Ax_s_sentences
-    heq Nat.succ
-  have heqRen : BProv Ax_s (G.map (rename Nat.succ))
-      (eq oldNew1 newNew1) := by
-    simpa [oldNew1, newNew1, rename, Term.rename] using heqRenRaw
-  have hbody : BProv Ax_s (G.map (rename Nat.succ))
-      (iffForm newMem rhs) := by
-    have hforward : BProv Ax_s (G.map (rename Nat.succ))
-        (imp newMem rhs) := by
-      let C : List Formula := newMem :: G.map (rename Nat.succ)
-      have hnew : BProv Ax_s C newMem :=
-        BProv_ass (B := Ax_s) (G := C) (by simp [C])
-      have hold : BProv Ax_s C oldMem :=
-        BProv_hfMemTermAt_of_hfMemTermAt_eq_term hnew
-          (BProv_context_cons (B := Ax_s) (BProv_eqSym heqRen))
-      have hpointC : BProv Ax_s C (iffForm oldMem rhs) :=
-        BProv_context_cons (B := Ax_s) hpoint
-      have htoRhs : BProv Ax_s C (imp oldMem rhs) := by
-        simpa [iffForm] using BProv_andE1 hpointC
-      exact BProv_impI
-        (BProv_mp Ax_s C oldMem rhs htoRhs hold)
-    have hreverse : BProv Ax_s (G.map (rename Nat.succ))
-        (imp rhs newMem) := by
-      let C : List Formula := rhs :: G.map (rename Nat.succ)
-      have hrhs : BProv Ax_s C rhs :=
-        BProv_ass (B := Ax_s) (G := C) (by simp [C])
-      have hpointC : BProv Ax_s C (iffForm oldMem rhs) :=
-        BProv_context_cons (B := Ax_s) hpoint
-      have htoOld : BProv Ax_s C (imp rhs oldMem) := by
-        simpa [iffForm] using BProv_andE2 hpointC
-      have hold : BProv Ax_s C oldMem :=
-        BProv_mp Ax_s C rhs oldMem htoOld hrhs
-      have hnew : BProv Ax_s C newMem :=
-        BProv_hfMemTermAt_of_hfMemTermAt_eq_term hold
-          (BProv_context_cons (B := Ax_s) heqRen)
-      exact BProv_impI hnew
-    simpa [iffForm] using BProv_andI hforward hreverse
-  have hall := BProv_allI_of_sentences
-    (B := Ax_s) (G := G)
-    Ax_s_sentences hbody
-  simpa [hfAdjoinGraphTermAt, oldNew1, newNew1,
-    oldCode1, elemCode1, oldMem, newMem, rhs]
-    using hall
+  exact BProv_hfAdjoinGraphTermAt_congr_output heq hgraph
 
 /-- In any proof context, every named old code has a code realizing
 adjunction of the element zero. -/

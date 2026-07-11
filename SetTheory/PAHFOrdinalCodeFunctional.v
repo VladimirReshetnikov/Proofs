@@ -632,86 +632,6 @@ Proof.
   exact heq.
 Qed.
 
-(** Equality transport in the two input positions of an adjoin graph. *)
-Lemma BProv_Ax_s_hfAdjoinGraphTermAt_congr_inputs : forall G
-    newCode oldCode1 oldCode2 elemCode1 elemCode2,
-  BProv Ax_s G (pEq oldCode1 oldCode2) ->
-  BProv Ax_s G (pEq elemCode1 elemCode2) ->
-  BProv Ax_s G
-    (hfAdjoinGraphTermAt newCode oldCode1 elemCode1) ->
-  BProv Ax_s G
-    (hfAdjoinGraphTermAt newCode oldCode2 elemCode2).
-Proof.
-  intros G newCode oldCode1 oldCode2 elemCode1 elemCode2
-    hold helem hgraph.
-  set (oldContext := hfAdjoinGraphTermAt
-    (Term.rename S newCode) (tVar 0) (Term.rename S elemCode1)).
-  assert (holdInst : BProv Ax_s G
-      (subst (instTerm oldCode1) oldContext)).
-  {
-    unfold oldContext.
-    rewrite subst_hfAdjoinGraphTermAt.
-    simpl.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    exact hgraph.
-  }
-  pose proof (BProv_eqElim Ax_s G oldCode1 oldCode2
-    oldContext hold holdInst) as holdInst'.
-  assert (hgraphOld : BProv Ax_s G
-      (hfAdjoinGraphTermAt newCode oldCode2 elemCode1)).
-  {
-    unfold oldContext in holdInst'.
-    rewrite subst_hfAdjoinGraphTermAt in holdInst'.
-    simpl in holdInst'.
-    repeat rewrite term_subst_instTerm_rename_succ in holdInst'.
-    exact holdInst'.
-  }
-  set (elemContext := hfAdjoinGraphTermAt
-    (Term.rename S newCode) (Term.rename S oldCode2) (tVar 0)).
-  assert (helemInst : BProv Ax_s G
-      (subst (instTerm elemCode1) elemContext)).
-  {
-    unfold elemContext.
-    rewrite subst_hfAdjoinGraphTermAt.
-    simpl.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    exact hgraphOld.
-  }
-  pose proof (BProv_eqElim Ax_s G elemCode1 elemCode2
-    elemContext helem helemInst) as helemInst'.
-  unfold elemContext in helemInst'.
-  rewrite subst_hfAdjoinGraphTermAt in helemInst'.
-  simpl in helemInst'.
-  repeat rewrite term_subst_instTerm_rename_succ in helemInst'.
-  exact helemInst'.
-Qed.
-
-(** Equality transport in the output position. *)
-Lemma BProv_hfAdjoinGraphTermAt_congr_output : forall
-    (B : formula -> Prop) G oldNew newNew oldCode elemCode,
-  BProv B G (pEq oldNew newNew) ->
-  BProv B G (hfAdjoinGraphTermAt oldNew oldCode elemCode) ->
-  BProv B G (hfAdjoinGraphTermAt newNew oldCode elemCode).
-Proof.
-  intros B G oldNew newNew oldCode elemCode heq hgraph.
-  set (context := hfAdjoinGraphTermAt
-    (tVar 0) (Term.rename S oldCode) (Term.rename S elemCode)).
-  assert (hinst : BProv B G (subst (instTerm oldNew) context)).
-  {
-    unfold context.
-    rewrite subst_hfAdjoinGraphTermAt.
-    simpl.
-    repeat rewrite term_subst_instTerm_rename_succ.
-    exact hgraph.
-  }
-  pose proof (BProv_eqElim B G oldNew newNew context heq hinst) as hnew.
-  unfold context in hnew.
-  rewrite subst_hfAdjoinGraphTermAt in hnew.
-  simpl in hnew.
-  repeat rewrite term_subst_instTerm_rename_succ in hnew.
-  exact hnew.
-Qed.
-
 (* --------------------------------------------------------------------- *)
 (* Public trace-agreement reduction.                                     *)
 
@@ -1018,8 +938,8 @@ Proof.
   assert (hgraph2D' : BProv Ax_s D
       (hfAdjoinGraphTermAt (tVar 0) (tVar 3) (tVar 3))).
   {
-    exact (BProv_Ax_s_hfAdjoinGraphTermAt_congr_inputs
-      D (tVar 0) (tVar 1) (tVar 3) (tVar 1) (tVar 3)
+    exact (BProv_hfAdjoinGraphTermAt_congr_inputs
+      Ax_s D (tVar 0) (tVar 1) (tVar 3) (tVar 1) (tVar 3)
       (BProv_eqSym Ax_s D _ _ hcurrentEq)
       (BProv_eqSym Ax_s D _ _ hcurrentEq) hgraph2D).
   }
