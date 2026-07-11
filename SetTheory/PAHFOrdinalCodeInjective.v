@@ -372,27 +372,6 @@ Proof.
     (Term.rename S sequenceCode)
     (Term.rename S sequenceStep) (tVar 0)).
   set (Q := map (rename S) G).
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hsteps S) as hstepsRaw.
-  assert (hstepsQ : BProv Ax_s Q
-      (ordinalCodeStepsTermAt
-        (Term.rename S sequenceCode)
-        (Term.rename S sequenceStep)
-        (Term.rename S high))).
-  {
-    unfold Q.
-    rewrite rename_ordinalCodeStepsTermAt in hstepsRaw.
-    exact hstepsRaw.
-  }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hle S) as hleRaw.
-  assert (hleQ : BProv Ax_s Q
-      (leTermAt (Term.rename S low) (Term.rename S high))).
-  {
-    unfold Q.
-    rewrite rename_leTermAt in hleRaw.
-    exact hleRaw.
-  }
   set (C := antecedent :: Q).
   assert (hbody : BProv Ax_s C consequent).
   {
@@ -401,7 +380,13 @@ Proof.
     { apply BProv_ass. unfold C, antecedent. simpl. now left. }
     assert (hleC : BProv Ax_s C
         (leTermAt (Term.rename S low) (Term.rename S high))).
-    { exact (BProv_context_cons Ax_s Q antecedent _ hleQ). }
+    {
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G antecedent _ hle) as h.
+      unfold C, Q.
+      rewrite rename_leTermAt in h.
+      exact h.
+    }
     assert (hltHigh : BProv Ax_s C
         (ltTermAt (tVar 0) (Term.rename S high))).
     {
@@ -414,7 +399,13 @@ Proof.
           (Term.rename S sequenceCode)
           (Term.rename S sequenceStep)
           (Term.rename S high))).
-    { exact (BProv_context_cons Ax_s Q antecedent _ hstepsQ). }
+    {
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G antecedent _ hsteps) as h.
+      unfold C, Q.
+      rewrite rename_ordinalCodeStepsTermAt in h.
+      exact h.
+    }
     exact (BProv_Ax_s_ordinalCodeStepsTermAt_step_of_ltTerm
       C (Term.rename S sequenceCode) (Term.rename S sequenceStep)
       (Term.rename S high) (tVar 0) hstepsC hltHigh).
@@ -741,13 +732,11 @@ Proof.
       unfold edgeBody in hedgeBody.
       exact (BProv_andE2 Ax_s C _ _ hedgeBody).
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hcodedZero S) as hcodedZeroRen.
     assert (hcodedZeroC : BProv Ax_s C
         (pEq (Term.rename S coded) tZero)).
     {
-      pose proof (BProv_context_cons Ax_s (map (rename S) G)
-        edgeBody _ hcodedZeroRen) as hctx.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G edgeBody _ hcodedZero) as hctx.
       unfold C.
       simpl in hctx.
       exact hctx.
@@ -805,13 +794,10 @@ Proof.
           BProv Ax_s G phi -> BProv Ax_s C (rename S phi)).
       {
         intros phi hphi.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hphi S) as hren.
-        pose proof (BProv_context_cons Ax_s (map (rename S) G)
-          (rename S (pEx succBody)) _ hren) as hinnerCtx.
-        pose proof (BProv_context_cons Ax_s
-          (rename S (pEx succBody) :: map (rename S) G)
-          succBody _ hinnerCtx) as hbodyCtx.
+        pose proof (BProv_context_cons Ax_s G
+          (pEx succBody) _ hphi) as hinnerCtx.
+        pose proof (BProv_rename_succ_context_cons_of_sentences
+          Ax_s sentence_ax_s H succBody _ hinnerCtx) as hbodyCtx.
         unfold C, H.
         simpl.
         exact hbodyCtx.
@@ -1007,13 +993,11 @@ Proof.
       unfold leftBody in hleftBody.
       exact (BProv_andE2 Ax_s C _ _ hleftBody).
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hedgeRight S) as hedgeRightRen.
     assert (hedgeRightC : BProv Ax_s C
         (ordinalCodePredEdgeTermAt right1 coded1)).
     {
-      pose proof (BProv_context_cons Ax_s (map (rename S) G)
-        leftBody _ hedgeRightRen) as hctx.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G leftBody _ hedgeRight) as hctx.
       unfold C, right1, coded1.
       rewrite rename_ordinalCodePredEdgeTermAt in hctx.
       exact hctx.
@@ -1218,26 +1202,20 @@ Proof.
             Ax_s E (tVar 2) (tSucc (tVar 0)) (tVar 1)
             hsuccEq hrightE).
         }
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s Q2 _
-          hinjectiveQ2 S) as hinjectiveRen3.
         assert (hinjectiveE : BProv Ax_s E
             (ordinalCodeInjectiveTermAt raw3)).
         {
-          pose proof (BProv_context_cons Ax_s
-            (map (rename S) Q2) (rename S leftGraph) _
-            hinjectiveRen3) as hleftCtx.
-          pose proof (BProv_context_cons Ax_s
-            (rename S leftGraph :: map (rename S) Q2)
-            (rename S rightGraph) _ hleftCtx) as hrightCtx.
-          pose proof (BProv_context_cons Ax_s
-            (rename S rightGraph :: rename S leftGraph ::
-              map (rename S) Q2)
-            (rename S (pEx succBody)) _ hrightCtx) as hexCtx.
-          pose proof (BProv_context_cons Ax_s
-            (rename S (pEx succBody) :: rename S rightGraph ::
-              rename S leftGraph :: map (rename S) Q2)
-            succBody _ hexCtx) as hbodyCtx.
-          unfold E, H, D, C, raw3.
+          assert (hinjectiveH : BProv Ax_s H
+              (ordinalCodeInjectiveTermAt raw2)).
+          {
+            unfold H, D, C.
+            exact (BProv_context_prefix Ax_s
+              [pEx succBody; rightGraph; leftGraph]
+              Q2 _ hinjectiveQ2).
+          }
+          pose proof (BProv_rename_succ_context_cons_of_sentences
+            Ax_s sentence_ax_s H succBody _ hinjectiveH) as hbodyCtx.
+          unfold E, raw3.
           rewrite rename_ordinalCodeInjectiveTermAt in hbodyCtx.
           exact hbodyCtx.
         }
