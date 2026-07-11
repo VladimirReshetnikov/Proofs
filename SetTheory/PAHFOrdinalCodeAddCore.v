@@ -476,3 +476,891 @@ Proof.
   unfold iffForm.
   exact (BProv_andI Ax_s G _ _ hforward hreverse).
 Qed.
+
+(** The output predicate packages compatibility for every possible code of
+    one fixed right-hand PA value. *)
+Definition ordinalCodeAddOutputTermAt
+    (leftRaw leftCode rightRaw rightCode : term) : formula :=
+  pAll
+    (iffForm
+      (hfAddGraphTermAt
+        (tVar 0)
+        (Term.rename S leftCode)
+        (Term.rename S rightCode))
+      (ordinalCodeGraphTermAt
+        (Term.rename S (tAdd leftRaw rightRaw))
+        (tVar 0))).
+
+Lemma subst_ordinalCodeAddOutputTermAt : forall sigma
+    leftRaw leftCode rightRaw rightCode,
+  subst sigma
+      (ordinalCodeAddOutputTermAt
+        leftRaw leftCode rightRaw rightCode) =
+    ordinalCodeAddOutputTermAt
+      (Term.subst sigma leftRaw)
+      (Term.subst sigma leftCode)
+      (Term.subst sigma rightRaw)
+      (Term.subst sigma rightCode).
+Proof.
+  intros sigma leftRaw leftCode rightRaw rightCode.
+  unfold ordinalCodeAddOutputTermAt, iffForm.
+  cbn [subst].
+  rewrite subst_hfAddGraphTermAt.
+  rewrite subst_ordinalCodeGraphTermAt.
+  cbn [Term.subst Term.upSubst].
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_ordinalCodeAddOutputTermAt : forall r
+    leftRaw leftCode rightRaw rightCode,
+  rename r
+      (ordinalCodeAddOutputTermAt
+        leftRaw leftCode rightRaw rightCode) =
+    ordinalCodeAddOutputTermAt
+      (Term.rename r leftRaw)
+      (Term.rename r leftCode)
+      (Term.rename r rightRaw)
+      (Term.rename r rightCode).
+Proof.
+  intros r leftRaw leftCode rightRaw rightCode.
+  rewrite <- subst_var_rename.
+  rewrite subst_ordinalCodeAddOutputTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma BProv_Ax_s_ordinalCodeAddOutputTermAt_at : forall
+    G leftRaw leftCode rightRaw rightCode out,
+  BProv Ax_s G
+    (ordinalCodeAddOutputTermAt
+      leftRaw leftCode rightRaw rightCode) ->
+  BProv Ax_s G
+    (iffForm
+      (hfAddGraphTermAt out leftCode rightCode)
+      (ordinalCodeGraphTermAt (tAdd leftRaw rightRaw) out)).
+Proof.
+  intros G leftRaw leftCode rightRaw rightCode out hall.
+  pose proof (BProv_allE Ax_s G _ out hall) as hraw.
+  unfold ordinalCodeAddOutputTermAt, iffForm in hraw.
+  cbn [subst instTerm Term.subst Term.upSubst] in hraw.
+  repeat rewrite subst_hfAddGraphTermAt in hraw.
+  repeat rewrite subst_ordinalCodeGraphTermAt in hraw.
+  cbn [Term.subst Term.upSubst instTerm] in hraw.
+  repeat rewrite Term.subst_rename_succ_up in hraw.
+  repeat rewrite term_subst_instTerm_rename_succ in hraw.
+  exact hraw.
+Qed.
+
+(** A point says that every graph output for one right-hand PA value satisfies
+    the output predicate.  This form is deliberately stable under PA
+    induction in [rightRaw]. *)
+Definition ordinalCodeAddPointTermAt
+    (leftRaw leftCode rightRaw : term) : formula :=
+  pAll
+    (pImp
+      (ordinalCodeGraphTermAt
+        (Term.rename S rightRaw) (tVar 0))
+      (ordinalCodeAddOutputTermAt
+        (Term.rename S leftRaw)
+        (Term.rename S leftCode)
+        (Term.rename S rightRaw)
+        (tVar 0))).
+
+Lemma subst_ordinalCodeAddPointTermAt : forall sigma
+    leftRaw leftCode rightRaw,
+  subst sigma
+      (ordinalCodeAddPointTermAt leftRaw leftCode rightRaw) =
+    ordinalCodeAddPointTermAt
+      (Term.subst sigma leftRaw)
+      (Term.subst sigma leftCode)
+      (Term.subst sigma rightRaw).
+Proof.
+  intros sigma leftRaw leftCode rightRaw.
+  unfold ordinalCodeAddPointTermAt.
+  cbn [subst].
+  rewrite subst_ordinalCodeGraphTermAt.
+  rewrite subst_ordinalCodeAddOutputTermAt.
+  cbn [Term.subst Term.upSubst].
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_ordinalCodeAddPointTermAt : forall r
+    leftRaw leftCode rightRaw,
+  rename r
+      (ordinalCodeAddPointTermAt leftRaw leftCode rightRaw) =
+    ordinalCodeAddPointTermAt
+      (Term.rename r leftRaw)
+      (Term.rename r leftCode)
+      (Term.rename r rightRaw).
+Proof.
+  intros r leftRaw leftCode rightRaw.
+  rewrite <- subst_var_rename.
+  rewrite subst_ordinalCodeAddPointTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+(** Successor step at already selected predecessor outputs.  In the forward
+    direction we deliberately use graph totality for the successor sum,
+    instead of opening a second, unrelated HF-adjoin existence proof.  The
+    exact successor/adjoin equivalence then makes that graph witness the
+    canonical output of the translated addition recursion. *)
+Lemma BProv_Ax_s_ordinalCodeAddCore_succ_of_pred : forall
+    (P : TranslatedHFFinAxiomProofs)
+    (hcodomain : PAOrdinalCodeGraphCodomainProof)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
+    (htotal : PAOrdinalCodeGraphTotalProof)
+    G leftRaw leftCode rightRaw rightCode rightSuccCode predOut out,
+  BProv Ax_s G (ordinalCodeGraphTermAt rightRaw rightCode) ->
+  BProv Ax_s G
+    (ordinalCodeGraphTermAt (tSucc rightRaw) rightSuccCode) ->
+  BProv Ax_s G
+    (ordinalCodeGraphTermAt (tAdd leftRaw rightRaw) predOut) ->
+  BProv Ax_s G (hfAddGraphTermAt predOut leftCode rightCode) ->
+  BProv Ax_s G
+    (iffForm
+      (hfAddGraphTermAt out leftCode rightSuccCode)
+      (ordinalCodeGraphTermAt
+        (tAdd leftRaw (tSucc rightRaw)) out)).
+Proof.
+  intros P hcodomain hsucc htotal G
+    leftRaw leftCode rightRaw rightCode rightSuccCode predOut out
+    hright hrightSucc hsumPred haddPred.
+  pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
+    hcodomain G rightRaw rightCode hright) as hrightDomain.
+  pose proof (hsucc G rightRaw rightCode rightSuccCode hright)
+    as hrightStep.
+  assert (hrightAdjoin : BProv Ax_s G
+      (hfAdjoinGraphTermAt rightSuccCode rightCode rightCode)).
+  {
+    pose proof (BProv_andE2 Ax_s G _ _ hrightStep) as himp.
+    exact (BProv_mp Ax_s G _ _ himp hrightSucc).
+  }
+  pose proof (BProv_weaken_nil Ax_s G _
+    (BProv_Ax_s_addSucc_terms leftRaw rightRaw)) as haddSucc.
+  assert (hforward : BProv Ax_s G
+      (pImp
+        (hfAddGraphTermAt out leftCode rightSuccCode)
+        (ordinalCodeGraphTermAt
+          (tAdd leftRaw (tSucc rightRaw)) out))).
+  {
+    apply BProv_impI.
+    set (antecedent := hfAddGraphTermAt out leftCode rightSuccCode).
+    set (target := ordinalCodeGraphTermAt
+      (tAdd leftRaw (tSucc rightRaw)) out).
+    set (C := antecedent :: G).
+    assert (haddOut : BProv Ax_s C antecedent).
+    { apply BProv_ass. unfold C. simpl. now left. }
+    set (sumSuccRaw := tSucc (tAdd leftRaw rightRaw)).
+    set (body := ordinalCodeGraphTermAt
+      (Term.rename S sumSuccRaw) (tVar 0)).
+    pose proof (htotal C sumSuccRaw) as hex.
+    set (D := body :: map (rename S) C).
+    assert (hinner : BProv Ax_s D (rename S target)).
+    {
+      assert (hsumSuccD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (tSucc (Term.rename S (tAdd leftRaw rightRaw)))
+            (tVar 0))).
+      {
+        apply BProv_ass.
+        unfold D, body, sumSuccRaw.
+        cbn [Term.rename].
+        now left.
+      }
+      assert (liftC : forall phi,
+          BProv Ax_s C phi -> BProv Ax_s D (rename S phi)).
+      {
+        intros phi hphi.
+        unfold D.
+        exact (BProv_rename_succ_context_cons_of_sentences
+          Ax_s sentence_ax_s C body phi hphi).
+      }
+      assert (liftG : forall phi,
+          BProv Ax_s G phi -> BProv Ax_s D (rename S phi)).
+      {
+        intros phi hphi.
+        apply liftC.
+        exact (BProv_context_cons Ax_s G antecedent phi hphi).
+      }
+      assert (hrightD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.rename S rightRaw) (Term.rename S rightCode))).
+      {
+        pose proof (liftG _ hright) as h.
+        rewrite rename_ordinalCodeGraphTermAt in h.
+        exact h.
+      }
+      assert (hrightSuccD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (tSucc (Term.rename S rightRaw))
+            (Term.rename S rightSuccCode))).
+      {
+        pose proof (liftG _ hrightSucc) as h.
+        rewrite rename_ordinalCodeGraphTermAt in h.
+        cbn [Term.rename] in h.
+        exact h.
+      }
+      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
+        hcodomain D (Term.rename S rightRaw)
+        (Term.rename S rightCode) hrightD) as hrightDomainD.
+      pose proof (BProv_Ax_s_codedOrdinalDomain_of_graph
+        hcodomain D (tSucc (Term.rename S rightRaw))
+        (Term.rename S rightSuccCode) hrightSuccD)
+        as hrightSuccDomainD.
+      assert (hrightAdjoinD : BProv Ax_s D
+          (hfAdjoinGraphTermAt
+            (Term.rename S rightSuccCode)
+            (Term.rename S rightCode)
+            (Term.rename S rightCode))).
+      {
+        pose proof (liftG _ hrightAdjoin) as h.
+        rewrite rename_hfAdjoinGraphTermAt in h.
+        exact h.
+      }
+      assert (hsumPredD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.rename S (tAdd leftRaw rightRaw))
+            (Term.rename S predOut))).
+      {
+        pose proof (liftG _ hsumPred) as h.
+        rewrite rename_ordinalCodeGraphTermAt in h.
+        exact h.
+      }
+      assert (haddPredD : BProv Ax_s D
+          (hfAddGraphTermAt
+            (Term.rename S predOut)
+            (Term.rename S leftCode)
+            (Term.rename S rightCode))).
+      {
+        pose proof (liftG _ haddPred) as h.
+        rewrite rename_hfAddGraphTermAt in h.
+        exact h.
+      }
+      assert (haddOutD : BProv Ax_s D
+          (hfAddGraphTermAt
+            (Term.rename S out)
+            (Term.rename S leftCode)
+            (Term.rename S rightSuccCode))).
+      {
+        pose proof (liftC _ haddOut) as h.
+        unfold antecedent in h.
+        rewrite rename_hfAddGraphTermAt in h.
+        exact h.
+      }
+      pose proof (hsucc D
+        (Term.rename S (tAdd leftRaw rightRaw))
+        (Term.rename S predOut) (tVar 0) hsumPredD) as hsumStep.
+      assert (hsumAdjoinD : BProv Ax_s D
+          (hfAdjoinGraphTermAt
+            (tVar 0) (Term.rename S predOut) (Term.rename S predOut))).
+      {
+        pose proof (BProv_andE2 Ax_s D _ _ hsumStep) as himp.
+        exact (BProv_mp Ax_s D _ _ himp hsumSuccD).
+      }
+      assert (haddKnown : BProv Ax_s D
+          (hfAddGraphTermAt
+            (tVar 0)
+            (Term.rename S leftCode)
+            (Term.rename S rightSuccCode))).
+      {
+        exact (BProv_Ax_s_hfAddGraphTermAt_succ_right
+          P D (tVar 0) (Term.rename S predOut)
+          (Term.rename S leftCode)
+          (Term.rename S rightSuccCode) (Term.rename S rightCode)
+          hrightDomainD hrightAdjoinD hsumAdjoinD haddPredD).
+      }
+      assert (houtEq : BProv Ax_s D
+          (pEq (Term.rename S out) (tVar 0))).
+      {
+        exact (BProv_Ax_s_hfAddGraphTermAt_functional
+          P D (Term.rename S out) (tVar 0)
+          (Term.rename S leftCode) (Term.rename S rightSuccCode)
+          hrightSuccDomainD haddOutD haddKnown).
+      }
+      assert (hsumOutD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (tSucc (Term.rename S (tAdd leftRaw rightRaw)))
+            (Term.rename S out))).
+      {
+        exact (BProv_ordinalCodeGraphTermAt_congr_coded
+          Ax_s D _ (tVar 0) (Term.rename S out)
+          (BProv_eqSym Ax_s D _ _ houtEq) hsumSuccD).
+      }
+      pose proof (BProv_weaken_nil Ax_s D _
+        (BProv_Ax_s_addSucc_terms
+          (Term.rename S leftRaw) (Term.rename S rightRaw)))
+        as haddSuccD.
+      pose proof (BProv_ordinalCodeGraphTermAt_congr_raw
+        Ax_s D
+        (tSucc (tAdd (Term.rename S leftRaw) (Term.rename S rightRaw)))
+        (tAdd (Term.rename S leftRaw) (tSucc (Term.rename S rightRaw)))
+        (Term.rename S out)
+        (BProv_eqSym Ax_s D _ _ haddSuccD) hsumOutD) as hresult.
+      unfold target.
+      rewrite rename_ordinalCodeGraphTermAt.
+      cbn [Term.rename].
+      exact hresult.
+    }
+    unfold target, C in *.
+    exact (BProv_exE_of_sentences
+      Ax_s (antecedent :: G) body
+      (ordinalCodeGraphTermAt (tAdd leftRaw (tSucc rightRaw)) out)
+      sentence_ax_s hex hinner).
+  }
+  assert (hreverse : BProv Ax_s G
+      (pImp
+        (ordinalCodeGraphTermAt
+          (tAdd leftRaw (tSucc rightRaw)) out)
+        (hfAddGraphTermAt out leftCode rightSuccCode))).
+  {
+    apply BProv_impI.
+    set (antecedent := ordinalCodeGraphTermAt
+      (tAdd leftRaw (tSucc rightRaw)) out).
+    set (C := antecedent :: G).
+    assert (htarget : BProv Ax_s C antecedent).
+    { apply BProv_ass. unfold C. simpl. now left. }
+    assert (liftG : forall phi,
+        BProv Ax_s G phi -> BProv Ax_s C phi).
+    {
+      intros phi hphi.
+      exact (BProv_context_cons Ax_s G antecedent phi hphi).
+    }
+    assert (hsumSucc : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (tSucc (tAdd leftRaw rightRaw)) out)).
+    {
+      exact (BProv_ordinalCodeGraphTermAt_congr_raw
+        Ax_s C
+        (tAdd leftRaw (tSucc rightRaw))
+        (tSucc (tAdd leftRaw rightRaw)) out
+        (liftG _ haddSucc) htarget).
+    }
+    pose proof (hsucc C (tAdd leftRaw rightRaw) predOut out
+      (liftG _ hsumPred)) as hsumStep.
+    assert (hsumAdjoin : BProv Ax_s C
+        (hfAdjoinGraphTermAt out predOut predOut)).
+    {
+      pose proof (BProv_andE2 Ax_s C _ _ hsumStep) as himp.
+      exact (BProv_mp Ax_s C _ _ himp hsumSucc).
+    }
+    exact (BProv_Ax_s_hfAddGraphTermAt_succ_right
+      P C out predOut leftCode rightSuccCode rightCode
+      (liftG _ hrightDomain)
+      (liftG _ hrightAdjoin)
+      hsumAdjoin
+      (liftG _ haddPred)).
+  }
+  unfold iffForm.
+  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+Qed.
+
+Lemma BProv_Ax_s_ordinalCodeAddPointTermAt_zero : forall
+    (P : TranslatedHFFinAxiomProofs)
+    (hcodomain : PAOrdinalCodeGraphCodomainProof)
+    (hfunctional : PAOrdinalCodeGraphFunctionalProof)
+    G leftRaw leftCode,
+  BProv Ax_s G (ordinalCodeGraphTermAt leftRaw leftCode) ->
+  BProv Ax_s G
+    (ordinalCodeAddPointTermAt leftRaw leftCode tZero).
+Proof.
+  intros P hcodomain hfunctional G leftRaw leftCode hleft.
+  set (rightGraph := ordinalCodeGraphTermAt tZero (tVar 0)).
+  set (Q := map (rename S) G).
+  assert (hbody : BProv Ax_s Q
+      (pImp rightGraph
+        (ordinalCodeAddOutputTermAt
+          (Term.rename S leftRaw)
+          (Term.rename S leftCode) tZero (tVar 0)))).
+  {
+    apply BProv_impI.
+    set (C := rightGraph :: Q).
+    assert (hright : BProv Ax_s C rightGraph).
+    { apply BProv_ass. unfold C. simpl. now left. }
+    set (D := map (rename S) C).
+    assert (hleftD : BProv Ax_s D
+        (ordinalCodeGraphTermAt
+          (Term.rename S (Term.rename S leftRaw))
+          (Term.rename S (Term.rename S leftCode)))).
+    {
+      pose proof (BProv_rename_of_sentences
+        Ax_s sentence_ax_s G _ hleft S) as h1.
+      pose proof (BProv_context_cons Ax_s Q rightGraph _ h1) as h2.
+      pose proof (BProv_rename_of_sentences
+        Ax_s sentence_ax_s C _ h2 S) as h3.
+      unfold D, C, Q in h3 |- *.
+      repeat rewrite rename_ordinalCodeGraphTermAt in h3.
+      exact h3.
+    }
+    assert (hrightD : BProv Ax_s D
+        (ordinalCodeGraphTermAt tZero (tVar 1))).
+    {
+      pose proof (BProv_rename_of_sentences
+        Ax_s sentence_ax_s C _ hright S) as h.
+      unfold D, rightGraph in h.
+      rewrite rename_ordinalCodeGraphTermAt in h.
+      cbn [Term.rename] in h.
+      exact h.
+    }
+    pose proof (BProv_Ax_s_ordinalCodeAddCore_zero
+      P hcodomain hfunctional D
+      (Term.rename S (Term.rename S leftRaw))
+      (Term.rename S (Term.rename S leftCode))
+      (tVar 1) (tVar 0) hleftD hrightD) as hiff.
+    pose proof (BProv_allI_of_sentences
+      Ax_s C _ sentence_ax_s hiff) as hall.
+    unfold ordinalCodeAddOutputTermAt.
+    unfold D, C, Q, rightGraph in hall |- *.
+    cbn [Term.rename] in hall |- *.
+    exact hall.
+  }
+  pose proof (BProv_allI_of_sentences
+    Ax_s G _ sentence_ax_s hbody) as hall.
+  unfold ordinalCodeAddPointTermAt, rightGraph, Q in hall |- *.
+  cbn [Term.rename] in hall |- *.
+  exact hall.
+Qed.
+
+Lemma BProv_Ax_s_ordinalCodeAddOutputTermAt_succ : forall
+    (P : TranslatedHFFinAxiomProofs)
+    (hcodomain : PAOrdinalCodeGraphCodomainProof)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
+    (htotal : PAOrdinalCodeGraphTotalProof)
+    G leftRaw leftCode rightRaw rightCode rightSuccCode,
+  BProv Ax_s G (ordinalCodeGraphTermAt rightRaw rightCode) ->
+  BProv Ax_s G
+    (ordinalCodeGraphTermAt (tSucc rightRaw) rightSuccCode) ->
+  BProv Ax_s G
+    (ordinalCodeAddOutputTermAt
+      leftRaw leftCode rightRaw rightCode) ->
+  BProv Ax_s G
+    (ordinalCodeAddOutputTermAt
+      leftRaw leftCode (tSucc rightRaw) rightSuccCode).
+Proof.
+  intros P hcodomain hsucc htotal G
+    leftRaw leftCode rightRaw rightCode rightSuccCode
+    hright hrightSucc hih.
+  set (sumRaw := tAdd leftRaw rightRaw).
+  set (graphBody := ordinalCodeGraphTermAt
+    (Term.rename S sumRaw) (tVar 0)).
+  pose proof (htotal G sumRaw) as hex.
+  set (target := ordinalCodeAddOutputTermAt
+    leftRaw leftCode (tSucc rightRaw) rightSuccCode).
+  set (C := graphBody :: map (rename S) G).
+  assert (hinner : BProv Ax_s C (rename S target)).
+  {
+    assert (hsumPred : BProv Ax_s C graphBody).
+    { apply BProv_ass. unfold C. simpl. now left. }
+    assert (liftG : forall phi,
+        BProv Ax_s G phi -> BProv Ax_s C (rename S phi)).
+    {
+      intros phi hphi.
+      unfold C.
+      exact (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G graphBody phi hphi).
+    }
+    assert (hrightC : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (Term.rename S rightRaw) (Term.rename S rightCode))).
+    {
+      pose proof (liftG _ hright) as h.
+      rewrite rename_ordinalCodeGraphTermAt in h.
+      exact h.
+    }
+    assert (hrightSuccC : BProv Ax_s C
+        (ordinalCodeGraphTermAt
+          (tSucc (Term.rename S rightRaw))
+          (Term.rename S rightSuccCode))).
+    {
+      pose proof (liftG _ hrightSucc) as h.
+      rewrite rename_ordinalCodeGraphTermAt in h.
+      cbn [Term.rename] in h.
+      exact h.
+    }
+    assert (hihC : BProv Ax_s C
+        (ordinalCodeAddOutputTermAt
+          (Term.rename S leftRaw)
+          (Term.rename S leftCode)
+          (Term.rename S rightRaw)
+          (Term.rename S rightCode))).
+    {
+      pose proof (liftG _ hih) as h.
+      rewrite rename_ordinalCodeAddOutputTermAt in h.
+      exact h.
+    }
+    pose proof (BProv_Ax_s_ordinalCodeAddOutputTermAt_at
+      C (Term.rename S leftRaw) (Term.rename S leftCode)
+      (Term.rename S rightRaw) (Term.rename S rightCode)
+      (tVar 0) hihC) as hpoint.
+    assert (haddPred : BProv Ax_s C
+        (hfAddGraphTermAt
+          (tVar 0) (Term.rename S leftCode) (Term.rename S rightCode))).
+    {
+      pose proof (BProv_andE2 Ax_s C _ _ hpoint) as himp.
+      unfold graphBody, sumRaw in hsumPred.
+      cbn [Term.rename] in hsumPred.
+      exact (BProv_mp Ax_s C _ _ himp hsumPred).
+    }
+    set (D := map (rename S) C).
+    assert (hrightD : BProv Ax_s D
+        (ordinalCodeGraphTermAt
+          (Term.rename S (Term.rename S rightRaw))
+          (Term.rename S (Term.rename S rightCode)))).
+    {
+      pose proof (BProv_rename_of_sentences
+        Ax_s sentence_ax_s C _ hrightC S) as h.
+      unfold D in h.
+      repeat rewrite rename_ordinalCodeGraphTermAt in h.
+      exact h.
+    }
+    assert (hrightSuccD : BProv Ax_s D
+        (ordinalCodeGraphTermAt
+          (tSucc (Term.rename S (Term.rename S rightRaw)))
+          (Term.rename S (Term.rename S rightSuccCode)))).
+    {
+      pose proof (BProv_rename_of_sentences
+        Ax_s sentence_ax_s C _ hrightSuccC S) as h.
+      unfold D in h.
+      rewrite rename_ordinalCodeGraphTermAt in h.
+      cbn [Term.rename] in h.
+      exact h.
+    }
+    assert (hsumPredD : BProv Ax_s D
+        (ordinalCodeGraphTermAt
+          (tAdd
+            (Term.rename S (Term.rename S leftRaw))
+            (Term.rename S (Term.rename S rightRaw)))
+          (tVar 1))).
+    {
+      pose proof (BProv_rename_of_sentences
+        Ax_s sentence_ax_s C _ hsumPred S) as h.
+      unfold D, graphBody, sumRaw in h.
+      repeat rewrite rename_ordinalCodeGraphTermAt in h.
+      cbn [Term.rename] in h.
+      exact h.
+    }
+    assert (haddPredD : BProv Ax_s D
+        (hfAddGraphTermAt
+          (tVar 1)
+          (Term.rename S (Term.rename S leftCode))
+          (Term.rename S (Term.rename S rightCode)))).
+    {
+      pose proof (BProv_rename_of_sentences
+        Ax_s sentence_ax_s C _ haddPred S) as h.
+      unfold D in h.
+      rewrite rename_hfAddGraphTermAt in h.
+      cbn [Term.rename] in h.
+      exact h.
+    }
+    pose proof (BProv_Ax_s_ordinalCodeAddCore_succ_of_pred
+      P hcodomain hsucc htotal D
+      (Term.rename S (Term.rename S leftRaw))
+      (Term.rename S (Term.rename S leftCode))
+      (Term.rename S (Term.rename S rightRaw))
+      (Term.rename S (Term.rename S rightCode))
+      (Term.rename S (Term.rename S rightSuccCode))
+      (tVar 1) (tVar 0)
+      hrightD hrightSuccD hsumPredD haddPredD) as hiff.
+    pose proof (BProv_allI_of_sentences
+      Ax_s C _ sentence_ax_s hiff) as hall.
+    unfold D in hall.
+    unfold target.
+    rewrite rename_ordinalCodeAddOutputTermAt.
+    cbn [Term.rename].
+    exact hall.
+  }
+  unfold target, C in *.
+  exact (BProv_exE_of_sentences
+    Ax_s G graphBody
+    (ordinalCodeAddOutputTermAt
+      leftRaw leftCode (tSucc rightRaw) rightSuccCode)
+    sentence_ax_s hex hinner).
+Qed.
+
+Lemma BProv_Ax_s_ordinalCodeAddPointTermAt_of_graph : forall
+    G leftRaw leftCode rightRaw rightCode,
+  BProv Ax_s G
+    (ordinalCodeAddPointTermAt leftRaw leftCode rightRaw) ->
+  BProv Ax_s G (ordinalCodeGraphTermAt rightRaw rightCode) ->
+  BProv Ax_s G
+    (ordinalCodeAddOutputTermAt
+      leftRaw leftCode rightRaw rightCode).
+Proof.
+  intros G leftRaw leftCode rightRaw rightCode hpoint hgraph.
+  pose proof (BProv_allE Ax_s G _ rightCode hpoint) as hraw.
+  unfold ordinalCodeAddPointTermAt in hraw.
+  cbn [subst instTerm Term.subst Term.upSubst] in hraw.
+  rewrite subst_ordinalCodeGraphTermAt in hraw.
+  rewrite subst_ordinalCodeAddOutputTermAt in hraw.
+  cbn [Term.subst Term.upSubst instTerm] in hraw.
+  repeat rewrite Term.subst_rename_succ_up in hraw.
+  repeat rewrite term_subst_instTerm_rename_succ in hraw.
+  exact (BProv_mp Ax_s G _ _ hraw hgraph).
+Qed.
+
+Lemma BProv_Ax_s_ordinalCodeAddPointTermAt_succ : forall
+    (P : TranslatedHFFinAxiomProofs)
+    (hcodomain : PAOrdinalCodeGraphCodomainProof)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
+    (htotal : PAOrdinalCodeGraphTotalProof)
+    G leftRaw leftCode rightRaw,
+  BProv Ax_s G
+    (ordinalCodeAddPointTermAt leftRaw leftCode rightRaw) ->
+  BProv Ax_s G
+    (ordinalCodeAddPointTermAt leftRaw leftCode (tSucc rightRaw)).
+Proof.
+  intros P hcodomain hsucc htotal G leftRaw leftCode rightRaw hih.
+  set (rightSuccGraph := ordinalCodeGraphTermAt
+    (tSucc (Term.rename S rightRaw)) (tVar 0)).
+  set (Q := map (rename S) G).
+  assert (hbody : BProv Ax_s Q
+      (pImp rightSuccGraph
+        (ordinalCodeAddOutputTermAt
+          (Term.rename S leftRaw)
+          (Term.rename S leftCode)
+          (tSucc (Term.rename S rightRaw))
+          (tVar 0)))).
+  {
+    apply BProv_impI.
+    set (C := rightSuccGraph :: Q).
+    assert (hrightSucc : BProv Ax_s C rightSuccGraph).
+    { apply BProv_ass. unfold C. simpl. now left. }
+    set (predRaw := Term.rename S rightRaw).
+    set (predBody := ordinalCodeGraphTermAt
+      (Term.rename S predRaw) (tVar 0)).
+    pose proof (htotal C predRaw) as hex.
+    set (target := ordinalCodeAddOutputTermAt
+      (Term.rename S leftRaw)
+      (Term.rename S leftCode)
+      (tSucc (Term.rename S rightRaw))
+      (tVar 0)).
+    set (D := predBody :: map (rename S) C).
+    assert (hinner : BProv Ax_s D (rename S target)).
+    {
+      assert (hpred : BProv Ax_s D predBody).
+      { apply BProv_ass. unfold D. simpl. now left. }
+      assert (hrightSuccD : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (tSucc (Term.rename S (Term.rename S rightRaw)))
+            (tVar 1))).
+      {
+        pose proof (BProv_rename_succ_context_cons_of_sentences
+          Ax_s sentence_ax_s C predBody rightSuccGraph hrightSucc) as h.
+        unfold D, rightSuccGraph in h.
+        rewrite rename_ordinalCodeGraphTermAt in h.
+        cbn [Term.rename] in h.
+        exact h.
+      }
+      assert (hihQ : BProv Ax_s Q
+          (ordinalCodeAddPointTermAt
+            (Term.rename S leftRaw)
+            (Term.rename S leftCode)
+            (Term.rename S rightRaw))).
+      {
+        pose proof (BProv_rename_of_sentences
+          Ax_s sentence_ax_s G _ hih S) as h.
+        unfold Q in h.
+        rewrite rename_ordinalCodeAddPointTermAt in h.
+        exact h.
+      }
+      assert (hihC : BProv Ax_s C
+          (ordinalCodeAddPointTermAt
+            (Term.rename S leftRaw)
+            (Term.rename S leftCode)
+            (Term.rename S rightRaw))).
+      {
+        exact (BProv_context_cons Ax_s Q rightSuccGraph _ hihQ).
+      }
+      assert (hihD : BProv Ax_s D
+          (ordinalCodeAddPointTermAt
+            (Term.rename S (Term.rename S leftRaw))
+            (Term.rename S (Term.rename S leftCode))
+            (Term.rename S (Term.rename S rightRaw)))).
+      {
+        pose proof (BProv_rename_succ_context_cons_of_sentences
+          Ax_s sentence_ax_s C predBody _ hihC) as h.
+        unfold D in h.
+        rewrite rename_ordinalCodeAddPointTermAt in h.
+        exact h.
+      }
+      assert (hpredGraph : BProv Ax_s D
+          (ordinalCodeGraphTermAt
+            (Term.rename S (Term.rename S rightRaw)) (tVar 0))).
+      { unfold predBody, predRaw in hpred. exact hpred. }
+      pose proof (BProv_Ax_s_ordinalCodeAddPointTermAt_of_graph
+        D
+        (Term.rename S (Term.rename S leftRaw))
+        (Term.rename S (Term.rename S leftCode))
+        (Term.rename S (Term.rename S rightRaw))
+        (tVar 0) hihD hpredGraph) as houtputPred.
+      pose proof (BProv_Ax_s_ordinalCodeAddOutputTermAt_succ
+        P hcodomain hsucc htotal D
+        (Term.rename S (Term.rename S leftRaw))
+        (Term.rename S (Term.rename S leftCode))
+        (Term.rename S (Term.rename S rightRaw))
+        (tVar 0) (tVar 1)
+        hpredGraph hrightSuccD houtputPred) as houtputSucc.
+      unfold target.
+      rewrite rename_ordinalCodeAddOutputTermAt.
+      cbn [Term.rename].
+      exact houtputSucc.
+    }
+    unfold target, C in *.
+    exact (BProv_exE_of_sentences
+      Ax_s (rightSuccGraph :: Q) predBody
+      (ordinalCodeAddOutputTermAt
+        (Term.rename S leftRaw)
+        (Term.rename S leftCode)
+        (tSucc (Term.rename S rightRaw))
+        (tVar 0))
+      sentence_ax_s hex hinner).
+  }
+  pose proof (BProv_allI_of_sentences
+    Ax_s G _ sentence_ax_s hbody) as hall.
+  unfold ordinalCodeAddPointTermAt, rightSuccGraph, Q in hall |- *.
+  cbn [Term.rename] in hall |- *.
+  exact hall.
+Qed.
+
+(** One ordinary PA induction now closes the point predicate for every raw
+    right operand. *)
+Lemma BProv_Ax_s_all_ordinalCodeAddPoint : forall
+    (P : TranslatedHFFinAxiomProofs)
+    (hcodomain : PAOrdinalCodeGraphCodomainProof)
+    (hfunctional : PAOrdinalCodeGraphFunctionalProof)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
+    (htotal : PAOrdinalCodeGraphTotalProof)
+    G leftRaw leftCode,
+  BProv Ax_s G (ordinalCodeGraphTermAt leftRaw leftCode) ->
+  BProv Ax_s G
+    (pAll
+      (ordinalCodeAddPointTermAt
+        (Term.rename S leftRaw)
+        (Term.rename S leftCode)
+        (tVar 0))).
+Proof.
+  intros P hcodomain hfunctional hsucc htotal
+    G leftRaw leftCode hleft.
+  set (phi := ordinalCodeAddPointTermAt
+    (Term.rename S leftRaw) (Term.rename S leftCode) (tVar 0)).
+  assert (hzero : BProv Ax_s G (subst substZero phi)).
+  {
+    pose proof (BProv_Ax_s_ordinalCodeAddPointTermAt_zero
+      P hcodomain hfunctional G leftRaw leftCode hleft) as hbase.
+    unfold phi.
+    rewrite subst_ordinalCodeAddPointTermAt.
+    cbn [substZero Term.subst].
+    repeat rewrite term_substZero_rename_succ.
+    exact hbase.
+  }
+  set (Q := map (rename S) G).
+  assert (hsuccImp : BProv Ax_s Q
+      (pImp phi (subst substSuccVar phi))).
+  {
+    set (C := phi :: Q).
+    assert (hih : BProv Ax_s C phi).
+    { apply BProv_ass. unfold C. simpl. now left. }
+    assert (hnext : BProv Ax_s C
+        (ordinalCodeAddPointTermAt
+          (Term.rename S leftRaw)
+          (Term.rename S leftCode)
+          (tSucc (tVar 0)))).
+    {
+      unfold phi in hih.
+      exact (BProv_Ax_s_ordinalCodeAddPointTermAt_succ
+        P hcodomain hsucc htotal C
+        (Term.rename S leftRaw) (Term.rename S leftCode)
+        (tVar 0) hih).
+    }
+    assert (hnextSub : BProv Ax_s C (subst substSuccVar phi)).
+    {
+      unfold phi.
+      rewrite subst_ordinalCodeAddPointTermAt.
+      cbn [substSuccVar Term.subst].
+      repeat rewrite term_substSuccVar_rename_succ.
+      exact hnext.
+    }
+    unfold C in hnextSub.
+    exact (BProv_impI Ax_s Q phi _ hnextSub).
+  }
+  assert (hsuccAll : BProv Ax_s G
+      (pAll (pImp phi (subst substSuccVar phi)))).
+  {
+    exact (BProv_allI_of_sentences
+      Ax_s G _ sentence_ax_s hsuccImp).
+  }
+  unfold phi.
+  exact (BProv_Ax_s_induction_rule G
+    (ordinalCodeAddPointTermAt
+      (Term.rename S leftRaw) (Term.rename S leftCode) (tVar 0))
+    hzero hsuccAll).
+Qed.
+
+Lemma BProv_Ax_s_ordinalCodeAddPointTermAt : forall
+    (P : TranslatedHFFinAxiomProofs)
+    (hcodomain : PAOrdinalCodeGraphCodomainProof)
+    (hfunctional : PAOrdinalCodeGraphFunctionalProof)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
+    (htotal : PAOrdinalCodeGraphTotalProof)
+    G leftRaw leftCode rightRaw,
+  BProv Ax_s G (ordinalCodeGraphTermAt leftRaw leftCode) ->
+  BProv Ax_s G
+    (ordinalCodeAddPointTermAt leftRaw leftCode rightRaw).
+Proof.
+  intros P hcodomain hfunctional hsucc htotal
+    G leftRaw leftCode rightRaw hleft.
+  pose proof (BProv_Ax_s_all_ordinalCodeAddPoint
+    P hcodomain hfunctional hsucc htotal
+    G leftRaw leftCode hleft) as hall.
+  pose proof (BProv_allE Ax_s G _ rightRaw hall) as hraw.
+  rewrite subst_ordinalCodeAddPointTermAt in hraw.
+  cbn [instTerm Term.subst] in hraw.
+  repeat rewrite term_subst_instTerm_rename_succ in hraw.
+  exact hraw.
+Qed.
+
+Lemma BProv_Ax_s_ordinalCodeAddTermAt : forall
+    (P : TranslatedHFFinAxiomProofs)
+    (hcodomain : PAOrdinalCodeGraphCodomainProof)
+    (hfunctional : PAOrdinalCodeGraphFunctionalProof)
+    (hsucc : PAOrdinalCodeSuccAdjoinCompatibility)
+    (htotal : PAOrdinalCodeGraphTotalProof)
+    G leftRaw leftCode rightRaw rightCode out,
+  BProv Ax_s G (ordinalCodeGraphTermAt leftRaw leftCode) ->
+  BProv Ax_s G (ordinalCodeGraphTermAt rightRaw rightCode) ->
+  BProv Ax_s G
+    (iffForm
+      (hfAddGraphTermAt out leftCode rightCode)
+      (ordinalCodeGraphTermAt (tAdd leftRaw rightRaw) out)).
+Proof.
+  intros P hcodomain hfunctional hsucc htotal G
+    leftRaw leftCode rightRaw rightCode out hleft hright.
+  pose proof (BProv_Ax_s_ordinalCodeAddPointTermAt
+    P hcodomain hfunctional hsucc htotal
+    G leftRaw leftCode rightRaw hleft) as hpoint.
+  pose proof (BProv_Ax_s_ordinalCodeAddPointTermAt_of_graph
+    G leftRaw leftCode rightRaw rightCode hpoint hright) as houtput.
+  exact (BProv_Ax_s_ordinalCodeAddOutputTermAt_at
+    G leftRaw leftCode rightRaw rightCode out houtput).
+Qed.
+
+(** Concrete addition-core certificate consumed by the structural term lift. *)
+Theorem PAOrdinalCodeAddCoreCompatibility_of_interfaces :
+  TranslatedHFFinAxiomProofs ->
+  PAOrdinalCodeGraphCodomainProof ->
+  PAOrdinalCodeGraphFunctionalProof ->
+  PAOrdinalCodeSuccAdjoinCompatibility ->
+  PAOrdinalCodeGraphTotalProof ->
+  PAOrdinalCodeAddCoreCompatibility.
+Proof.
+  intros P hcodomain hfunctional hsucc htotal
+    G leftRaw rightRaw codedOut hleft hright.
+  pose proof (BProv_Ax_s_ordinalCodeAddTermAt
+    P hcodomain hfunctional hsucc htotal
+    G leftRaw (tVar 1) rightRaw (tVar 0)
+    (tVar (codedOut + 2)) hleft hright) as hiff.
+  rewrite compositeAddCoreAt_eq_termAt.
+  exact hiff.
+Qed.
