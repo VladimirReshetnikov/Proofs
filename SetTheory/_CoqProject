@@ -114,6 +114,7 @@ PAHFHFRepresentationRange.v
 PAHFCompositeMemBelow.v
 PAHFCompositeArithmetic.v
 PAHFOrdinalCodeTermMulCorrected.v
+PAHFConcreteAssembly.v
 PAHFFinalAssembly.v
 
 # Busy Beaver domination interface and its mathlib-free witnesses/bridge.
