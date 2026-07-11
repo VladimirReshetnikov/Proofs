@@ -106,6 +106,31 @@ Proof.
     destruct hrep2 as [relation2 [hroot2 hcert2]].
     pose proof (proj2 hcert1 set1 code hroot1) as hlocal1.
     pose proof (proj2 hcert2 set2 code hroot2) as hlocal2.
+    assert (childSetEq : forall child other childCode,
+      foam_mem V M child set1 ->
+      foam_mem V M (foam_kpair_obj V M child childCode) relation1 ->
+      foam_mem V M (foam_kpair_obj V M other childCode) relation2 ->
+        child = other).
+    {
+      intros child other childCode hchild hchildRoot1 hotherRoot2.
+      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
+        phi tail set1 child) (ih child hchild)) as hchildIH.
+      pose (EI :=
+        scons V childCode (scons V other (scons V child tail))).
+      assert (hchildRepSat : Sat V (foam_mem V M) EI
+          (HF_setOrdinalRepAt 2 0)).
+      {
+        apply (proj2 (HF_setOrdinalRepAt_model V M EI 2 0)).
+        exists relation1. now split.
+      }
+      assert (hotherRepSat : Sat V (foam_mem V M) EI
+          (HF_setOrdinalRepAt 1 0)).
+      {
+        apply (proj2 (HF_setOrdinalRepAt_model V M EI 1 0)).
+        exists relation2. now split.
+      }
+      exact (hchildIH other childCode hchildRepSat hotherRepSat).
+    }
     apply (foam_extensional V M set1 set2).
     intro member. split.
     - intro hmember1.
@@ -120,28 +145,8 @@ Proof.
         apply (proj2 (proj1 (proj2 hlocal2) other)).
         exists memberCode. now split.
       }
-      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
-        phi tail set1 member) (ih member hmember1)) as hmemberIH.
-      assert (hmemberRepSat : Sat V (foam_mem V M)
-          (scons V memberCode (scons V other (scons V member tail)))
-          (HF_setOrdinalRepAt 2 0)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V memberCode (scons V other (scons V member tail)))
-          2 0)).
-        exists relation1. now split.
-      }
-      assert (hotherRepSat : Sat V (foam_mem V M)
-          (scons V memberCode (scons V other (scons V member tail)))
-          (HF_setOrdinalRepAt 1 0)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V memberCode (scons V other (scons V member tail)))
-          1 0)).
-        exists relation2. now split.
-      }
-      assert (heq : member = other).
-      { exact (hmemberIH other memberCode hmemberRepSat hotherRepSat). }
+      pose proof (childSetEq member other memberCode
+        hmember1 hmemberRoot1 hotherRoot2) as heq.
       now rewrite <- heq in hother2.
     - intro hmember2.
       destruct (proj1 (proj1 (proj2 hlocal2) member) hmember2)
@@ -155,28 +160,8 @@ Proof.
         apply (proj2 (proj1 (proj2 hlocal1) other)).
         exists memberCode. now split.
       }
-      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
-        phi tail set1 other) (ih other hother1)) as hotherIH.
-      assert (hotherRepSat : Sat V (foam_mem V M)
-          (scons V memberCode (scons V member (scons V other tail)))
-          (HF_setOrdinalRepAt 2 0)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V memberCode (scons V member (scons V other tail)))
-          2 0)).
-        exists relation1. now split.
-      }
-      assert (hmemberRepSat : Sat V (foam_mem V M)
-          (scons V memberCode (scons V member (scons V other tail)))
-          (HF_setOrdinalRepAt 1 0)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V memberCode (scons V member (scons V other tail)))
-          1 0)).
-        exists relation2. now split.
-      }
-      assert (heq : other = member).
-      { exact (hotherIH member memberCode hotherRepSat hmemberRepSat). }
+      pose proof (childSetEq other member memberCode
+        hother1 hotherRoot1 hmemberRoot2) as heq.
       now rewrite heq in hother1.
   }
   intros set1 set2 code hrep1 hrep2.
@@ -234,6 +219,34 @@ Proof.
     destruct hrep2 as [relation2 [hroot2 hcert2]].
     pose proof (proj2 hcert1 set code1 hroot1) as hlocal1.
     pose proof (proj2 hcert2 set code2 hroot2) as hlocal2.
+    assert (childCodeEq : forall member leftCode rightCode,
+      foam_mem V M member set ->
+      foam_mem V M (foam_kpair_obj V M member leftCode) relation1 ->
+      foam_mem V M (foam_kpair_obj V M member rightCode) relation2 ->
+        leftCode = rightCode).
+    {
+      intros member leftCode rightCode hmember hleftRoot hrightRoot.
+      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
+        phi tail set member) (ih member hmember)) as hmemberIH.
+      pose (EI :=
+        scons V rightCode (scons V leftCode (scons V member tail))).
+      assert (hleftRepSat : Sat V (foam_mem V M) EI
+          (HF_setOrdinalRepAt 2 1)).
+      {
+        apply (proj2 (HF_setOrdinalRepAt_model V M EI 2 1)).
+        exists relation1. now split.
+      }
+      assert (hrightRepSat : Sat V (foam_mem V M) EI
+          (HF_setOrdinalRepAt 2 0)).
+      {
+        apply (proj2 (HF_setOrdinalRepAt_model V M EI 2 0)).
+        exists relation2. now split.
+      }
+      pose proof (hmemberIH leftCode rightCode
+        hleftRepSat hrightRepSat) as heq.
+      cbn [scons] in heq.
+      exact heq.
+    }
     apply (hext code1 code2 (proj1 hlocal1) (proj1 hlocal2)).
     intro query. intro hqueryOrd. split.
     - intro hcoded1.
@@ -246,29 +259,8 @@ Proof.
       }
       destruct (proj1 (proj1 (proj2 hlocal2) member) hmember)
         as [otherCode [hmemberRoot2 hcoded2]].
-      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
-        phi tail set member) (ih member hmember)) as hmemberIH.
-      assert (hqueryRepSat : Sat V (foam_mem V M)
-          (scons V otherCode (scons V query (scons V member tail)))
-          (HF_setOrdinalRepAt 2 1)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V otherCode (scons V query (scons V member tail)))
-          2 1)).
-        exists relation1. now split.
-      }
-      assert (hotherRepSat : Sat V (foam_mem V M)
-          (scons V otherCode (scons V query (scons V member tail)))
-          (HF_setOrdinalRepAt 2 0)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V otherCode (scons V query (scons V member tail)))
-          2 0)).
-        exists relation2. now split.
-      }
-      pose proof (hmemberIH query otherCode hqueryRepSat hotherRepSat)
-        as heq.
-      cbn [scons] in heq.
+      pose proof (childCodeEq member query otherCode
+        hmember hmemberRoot1 hmemberRoot2) as heq.
       now rewrite heq.
     - intro hcoded2.
       destruct (proj2 (proj2 hlocal2) query hqueryOrd hcoded2)
@@ -280,29 +272,8 @@ Proof.
       }
       destruct (proj1 (proj1 (proj2 hlocal1) member) hmember)
         as [otherCode [hmemberRoot1 hcoded1]].
-      pose proof (proj1 (Sat_rename_rSkipParam V (foam_mem V M)
-        phi tail set member) (ih member hmember)) as hmemberIH.
-      assert (hotherRepSat : Sat V (foam_mem V M)
-          (scons V query (scons V otherCode (scons V member tail)))
-          (HF_setOrdinalRepAt 2 1)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V query (scons V otherCode (scons V member tail)))
-          2 1)).
-        exists relation1. now split.
-      }
-      assert (hqueryRepSat : Sat V (foam_mem V M)
-          (scons V query (scons V otherCode (scons V member tail)))
-          (HF_setOrdinalRepAt 2 0)).
-      {
-        apply (proj2 (HF_setOrdinalRepAt_model V M
-          (scons V query (scons V otherCode (scons V member tail)))
-          2 0)).
-        exists relation2. now split.
-      }
-      pose proof (hmemberIH otherCode query hotherRepSat hqueryRepSat)
-        as heq.
-      cbn [scons] in heq.
+      pose proof (childCodeEq member otherCode query
+        hmember hmemberRoot1 hmemberRoot2) as heq.
       now rewrite heq in hcoded1.
   }
   intros set code1 code2 hrep1 hrep2.

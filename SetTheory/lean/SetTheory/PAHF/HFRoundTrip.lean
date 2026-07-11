@@ -3177,6 +3177,34 @@ theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
     rcases hrep₂ with ⟨relation₂, hroot₂, hcert₂⟩
     have hlocal₁ := hcert₁.2 set₁ code hroot₁
     have hlocal₂ := hcert₂.2 set₂ code hroot₂
+    have childSetEq : ∀ {leftChild rightChild childCode : α},
+        M.mem leftChild set₁ →
+        M.mem (FirstOrderAdjunctionModel.kpair M leftChild childCode)
+          relation₁ →
+        M.mem (FirstOrderAdjunctionModel.kpair M rightChild childCode)
+          relation₂ →
+          leftChild = rightChild := by
+      intro leftChild rightChild childCode hleftMem hleftRoot hrightRoot
+      have hleftIH : Sat M.mem (scons leftChild tail) phi :=
+        (Sat_rename_rSkipParam phi tail set₁ leftChild).mp
+          (ih leftChild hleftMem)
+      let EI : Nat → α :=
+        scons childCode (scons rightChild (scons leftChild tail))
+      have hleftRep : ModelSetOrdinalRep M EI leftChild childCode :=
+        ModelSetOrdinalRep_changeEnv M
+          ⟨relation₁, hleftRoot, hcert₁⟩
+      have hrightRep : ModelSetOrdinalRep M EI rightChild childCode :=
+        ModelSetOrdinalRep_changeEnv M
+          ⟨relation₂, hrightRoot, hcert₂⟩
+      have hleftRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
+        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
+          simpa [EI, scons] using hleftRep)
+      have hrightRepSat : Sat M.mem EI (HF_setOrdinalRepAt 1 0) :=
+        (HF_setOrdinalRepAt_model M EI 1 0).mpr (by
+          simpa [EI, scons] using hrightRep)
+      exact hleftIH rightChild childCode
+        (by simpa [EI] using hleftRepSat)
+        (by simpa [EI] using hrightRepSat)
     apply M.extensional
     intro member
     constructor
@@ -3210,27 +3238,8 @@ theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
       have hother₂ : M.mem other set₂ :=
         (hlocal₂.2.1 other).mpr
           ⟨memberCode, hotherRoot₂, hcoded₂Member⟩
-      have hmemberIH : Sat M.mem (scons member tail) phi :=
-        (Sat_rename_rSkipParam phi tail set₁ member).mp
-          (ih member hmember₁)
-      let EI : Nat → α :=
-        scons memberCode (scons other (scons member tail))
-      have hmemberRep : ModelSetOrdinalRep M EI member memberCode :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₁, hmemberRoot₁, hcert₁⟩
-      have hotherRep : ModelSetOrdinalRep M EI other memberCode :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₂, hotherRoot₂, hcert₂⟩
-      have hmemberRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
-        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
-          simpa [EI, scons] using hmemberRep)
-      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 1 0) :=
-        (HF_setOrdinalRepAt_model M EI 1 0).mpr (by
-          simpa [EI, scons] using hotherRep)
-      have heq : member = other := by
-        exact hmemberIH other memberCode
-          (by simpa [EI] using hmemberRepSat)
-          (by simpa [EI] using hotherRepSat)
+      have heq : member = other :=
+        childSetEq hmember₁ hmemberRoot₁ hotherRoot₂
       simpa [E, scons, ← heq] using hother₂
     · intro hmember₂
       rcases (hlocal₂.2.1 member).mp hmember₂ with
@@ -3262,27 +3271,8 @@ theorem ModelSetOrdinalRepSetInjectiveLaw_of_induction
       have hother₁ : M.mem other set₁ :=
         (hlocal₁.2.1 other).mpr
           ⟨memberCode, hotherRoot₁, hcoded₁Member⟩
-      have hotherIH : Sat M.mem (scons other tail) phi :=
-        (Sat_rename_rSkipParam phi tail set₁ other).mp
-          (ih other hother₁)
-      let EI : Nat → α :=
-        scons memberCode (scons member (scons other tail))
-      have hotherRep : ModelSetOrdinalRep M EI other memberCode :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₁, hotherRoot₁, hcert₁⟩
-      have hmemberRep : ModelSetOrdinalRep M EI member memberCode :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₂, hmemberRoot₂, hcert₂⟩
-      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
-        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
-          simpa [EI, scons] using hotherRep)
-      have hmemberRepSat : Sat M.mem EI (HF_setOrdinalRepAt 1 0) :=
-        (HF_setOrdinalRepAt_model M EI 1 0).mpr (by
-          simpa [EI, scons] using hmemberRep)
-      have heq : other = member := by
-        exact hotherIH member memberCode
-          (by simpa [EI] using hotherRepSat)
-          (by simpa [EI] using hmemberRepSat)
+      have heq : other = member :=
+        childSetEq hother₁ hotherRoot₁ hmemberRoot₂
       simpa [E, scons, heq] using hother₁
   intro rootEnv set₁ set₂ code hrep₁ hrep₂
   have hmain : Sat M.mem (scons set₁ tail) phi := hall set₁
@@ -3341,6 +3331,34 @@ theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
     rcases hrep₂ with ⟨relation₂, hroot₂, hcert₂⟩
     have hlocal₁ := hcert₁.2 set code₁ hroot₁
     have hlocal₂ := hcert₂.2 set code₂ hroot₂
+    have childCodeEq : ∀ {member leftCode rightCode : α},
+        M.mem member set →
+        M.mem (FirstOrderAdjunctionModel.kpair M member leftCode)
+          relation₁ →
+        M.mem (FirstOrderAdjunctionModel.kpair M member rightCode)
+          relation₂ →
+          leftCode = rightCode := by
+      intro member leftCode rightCode hmember hleftRoot hrightRoot
+      have hmemberIH : Sat M.mem (scons member tail) phi :=
+        (Sat_rename_rSkipParam phi tail set member).mp
+          (ih member hmember)
+      let EI : Nat → α :=
+        scons rightCode (scons leftCode (scons member tail))
+      have hleftRep : ModelSetOrdinalRep M EI member leftCode :=
+        ModelSetOrdinalRep_changeEnv M
+          ⟨relation₁, hleftRoot, hcert₁⟩
+      have hrightRep : ModelSetOrdinalRep M EI member rightCode :=
+        ModelSetOrdinalRep_changeEnv M
+          ⟨relation₂, hrightRoot, hcert₂⟩
+      have hleftRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 1) :=
+        (HF_setOrdinalRepAt_model M EI 2 1).mpr (by
+          simpa [EI, scons] using hleftRep)
+      have hrightRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
+        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
+          simpa [EI, scons] using hrightRep)
+      exact hmemberIH leftCode rightCode
+        (by simpa [EI] using hleftRepSat)
+        (by simpa [EI] using hrightRepSat)
     apply hext code₁ code₂ hlocal₁.1 hlocal₂.1
     intro query hqueryOrd
     constructor
@@ -3375,27 +3393,8 @@ theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
             (scons member
               (scons code₂ (scons set (scons relation₂ E)))))
         exact hspec.mp hcoded₂
-      have hmemberIH : Sat M.mem (scons member tail) phi :=
-        (Sat_rename_rSkipParam phi tail set member).mp
-          (ih member hmember)
-      let EI : Nat → α :=
-        scons otherCode (scons query (scons member tail))
-      have hqueryRep : ModelSetOrdinalRep M EI member query :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₁, hmemberRoot₁, hcert₁⟩
-      have hotherRep : ModelSetOrdinalRep M EI member otherCode :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₂, hmemberRoot₂, hcert₂⟩
-      have hqueryRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 1) :=
-        (HF_setOrdinalRepAt_model M EI 2 1).mpr (by
-          simpa [EI, scons] using hqueryRep)
-      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
-        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
-          simpa [EI, scons] using hotherRep)
       have heq : query = otherCode :=
-        hmemberIH query otherCode
-          (by simpa [EI] using hqueryRepSat)
-          (by simpa [EI] using hotherRepSat)
+        childCodeEq hmember hmemberRoot₁ hmemberRoot₂
       simpa [heq] using hcoded₂Model
     · intro hcoded₂Model
       have hcoded₂Complete : Sat M.mem
@@ -3428,27 +3427,8 @@ theorem ModelSetOrdinalRepCodeFunctionalLaw_of_composite_extensionality
             (scons member
               (scons code₁ (scons set (scons relation₁ E)))))
         exact hspec.mp hcoded₁
-      have hmemberIH : Sat M.mem (scons member tail) phi :=
-        (Sat_rename_rSkipParam phi tail set member).mp
-          (ih member hmember)
-      let EI : Nat → α :=
-        scons query (scons otherCode (scons member tail))
-      have hotherRep : ModelSetOrdinalRep M EI member otherCode :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₁, hmemberRoot₁, hcert₁⟩
-      have hqueryRep : ModelSetOrdinalRep M EI member query :=
-        ModelSetOrdinalRep_changeEnv M
-          ⟨relation₂, hmemberRoot₂, hcert₂⟩
-      have hotherRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 1) :=
-        (HF_setOrdinalRepAt_model M EI 2 1).mpr (by
-          simpa [EI, scons] using hotherRep)
-      have hqueryRepSat : Sat M.mem EI (HF_setOrdinalRepAt 2 0) :=
-        (HF_setOrdinalRepAt_model M EI 2 0).mpr (by
-          simpa [EI, scons] using hqueryRep)
       have heq : otherCode = query :=
-        hmemberIH otherCode query
-          (by simpa [EI] using hotherRepSat)
-          (by simpa [EI] using hqueryRepSat)
+        childCodeEq hmember hmemberRoot₁ hmemberRoot₂
       simpa [heq] using hcoded₁Model
   intro rootEnv set code₁ code₂ hrep₁ hrep₂
   have hmain : Sat M.mem (scons set tail) phi := hall set
