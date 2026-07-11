@@ -829,6 +829,7 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_idx
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_opened_body_beta
 #check @PA.Formula.BProv_Ax_s_betaTermAtConstIdx_of_betaAtConstIdx_eq_term
+#check @PA.Formula.BProv_betaTermAt_of_eq_index
 #check @PA.Formula.BProv_Ax_s_betaTermAt_of_eq_index
 #check @PA.Formula.betaTermTermAtSuccIdx
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_opened_body_modEq

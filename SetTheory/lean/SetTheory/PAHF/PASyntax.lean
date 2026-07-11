@@ -13734,6 +13734,19 @@ theorem BProv_betaTermTermAt_congr
         (BProv_eq_congr_succ hidx) hstep)
   exact BProv_betaTermTermAt_congr_modulus hout hcode hmod hβ
 
+/-- Transport the index slot of a term-output beta entry across equality in
+an arbitrary background theory. -/
+theorem BProv_betaTermAt_of_eq_index
+    {B : Formula → Prop} {G : List Formula}
+    {out : Term} {code step idx idx' : Nat}
+    (hidxEq : BProv B G (eq (Term.var idx) (Term.var idx')))
+    (hbeta : BProv B G (betaTermAt out code step idx)) :
+    BProv B G (betaTermAt out code step idx') := by
+  rw [betaTermAt_eq_betaTermTermAt_var] at hbeta ⊢
+  exact BProv_betaTermTermAt_congr (B := B) (G := G)
+    (BProv_eqRefl out) (BProv_eqRefl (Term.var code))
+    (BProv_eqRefl (Term.var step)) hidxEq hbeta
+
 /-- Transport the output of a fully term-parametric beta entry across a PA
 equality.  This keeps equality transport as proof data rather than hiding it in
 the beta relation itself. -/
@@ -27601,74 +27614,8 @@ theorem BProv_Ax_s_betaTermAt_of_eq_index
     {G : List Formula} {out : Term} {code step idx idx' : Nat}
     (hidxEq : BProv Ax_s G (eq (Term.var idx) (Term.var idx')))
     (hbeta : BProv Ax_s G (betaTermAt out code step idx)) :
-    BProv Ax_s G (betaTermAt out code step idx') := by
-  let body : Formula :=
-    and
-      (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx)))
-      (remTermAt (Term.rename Nat.succ out) (code+1) 0)
-  have hbody : BProv Ax_s (body :: G.map (rename Nat.succ))
-      (rename Nat.succ (betaTermAt out code step idx')) := by
-    let C : List Formula := body :: G.map (rename Nat.succ)
-    have hmod : BProv Ax_s C
-        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx))) := by
-      simpa [body, C] using
-        (BProv_Ax_s_betaTermAt_opened_body_modEq
-          (G := G) (out := out) (code := code) (step := step) (idx := idx))
-    have hrem : BProv Ax_s C
-        (remTermAt (Term.rename Nat.succ out) (code+1) 0) := by
-      simpa [body, C] using
-        (BProv_Ax_s_betaTermAt_opened_body_rem
-          (G := G) (out := out) (code := code) (step := step) (idx := idx))
-    have hidxRen : BProv Ax_s (G.map (rename Nat.succ))
-        (rename Nat.succ (eq (Term.var idx) (Term.var idx'))) :=
-      BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hidxEq Nat.succ
-    have hidxC : BProv Ax_s C
-        (eq (Term.var (idx+1)) (Term.var (idx'+1))) := by
-      simpa [C, body, rename, Term.rename] using
-        BProv_context_cons (B := Ax_s) hidxRen
-    have hmodTermsRaw : BProv Ax_s C
-        (eq (betaModTerm (step+1) (idx+1))
-          (betaModTerm (step+1) (idx'+1))) :=
-      BProv_Ax_s_betaModTerm_congr
-        (G := C) (step := step+1) (step' := step+1)
-        (idx := idx+1) (idx' := idx'+1)
-        (BProv_eqRefl (B := Ax_s) (G := C) (Term.var (step+1)))
-        hidxC
-    have hmodTerms : BProv Ax_s C
-        (eq
-          (Term.rename Nat.succ (betaModTerm step idx))
-          (Term.rename Nat.succ (betaModTerm step idx'))) := by
-      simpa [betaModTerm, rename, Term.rename] using hmodTermsRaw
-    have hmod' : BProv Ax_s C
-        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx'))) :=
-      BProv_eqTrans hmod hmodTerms
-    let targetBody : Formula :=
-      and
-        (eq (Term.var 0) (Term.rename Nat.succ (betaModTerm step idx')))
-        (remTermAt (Term.rename Nat.succ out) (code+1) 0)
-    have hpair : BProv Ax_s C targetBody := by
-      simpa [targetBody] using BProv_andI hmod' hrem
-    have hinst : BProv Ax_s C
-        (subst (instTerm (Term.var 0))
-          (rename (SetTheory.up Nat.succ) targetBody)) := by
-      simpa [targetBody, subst, instTerm, Term.subst, Term.upSubst,
-        Term.rename, betaModTerm, remTermAt, ltTermAt, rename,
-        SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
-        term_subst_instTerm_rename_two_succ,
-        term_subst_upSubst_instTerm_rename_three_succ,
-        term_subst_up_up_instTerm_rename_four_succ] using hpair
-    have hex : BProv Ax_s C (ex (rename (SetTheory.up Nat.succ) targetBody)) :=
-      BProv_exI (B := Ax_s) (G := C)
-        (a := rename (SetTheory.up Nat.succ) targetBody)
-        (t := Term.var 0) hinst
-    simpa [C, betaTermAt, targetBody, body, rename, Term.rename,
-      SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ]
-      using hex
-  exact BProv_exE_of_sentences (B := Ax_s)
-    Ax_s_sentences hbeta (by
-      simpa [betaTermAt, body] using hbody)
+    BProv Ax_s G (betaTermAt out code step idx') :=
+  BProv_betaTermAt_of_eq_index hidxEq hbeta
 
 /-- Projection from the opened body of a term-indexed beta wrapper to its
 index equation. -/
@@ -27781,7 +27728,7 @@ theorem BProv_Ax_s_betaTermAt_of_betaTermAtTermIdx_eq_index
     have htarget : BProv Ax_s C
         (betaTermAt (Term.rename Nat.succ out)
           (code+1) (step+1) (idx+1)) :=
-      BProv_Ax_s_betaTermAt_of_eq_index hidxSlotTarget hraw
+      BProv_betaTermAt_of_eq_index hidxSlotTarget hraw
     simpa [betaTermAt, remTermAt, ltTermAt, betaModTerm,
       rename, Term.rename, SetTheory.up, Term.rename_comp,
       term_rename_up_succ_rename_succ] using htarget
@@ -28043,7 +27990,7 @@ theorem BProv_Ax_s_eq_of_betaAt_betaTermAtTermIdx_eq_index
       -- witness variable to the target numeric beta index.
       have hmodEq : BProv Ax_s C
           (eq (Term.var 0) (Term.var (idx+1))) := hidxSame
-      exact BProv_Ax_s_betaTermAt_of_eq_index
+      exact BProv_betaTermAt_of_eq_index
         (G := C) (out := Term.rename Nat.succ outTerm)
         (code := code+1) (step := step+1)
         (idx := 0) (idx' := idx+1) hmodEq htermRaw
@@ -28200,7 +28147,7 @@ theorem BProv_Ax_s_eq_of_betaTermAtTermIdx_betaTermAtTermIdx_eq_index
       have hraw2At1 : BProv Ax_s T
           (betaTermAt (Term.rename Nat.succ (Term.rename Nat.succ out2))
             (code+1+1) (step+1+1) 1) :=
-        BProv_Ax_s_betaTermAt_of_eq_index
+        BProv_betaTermAt_of_eq_index
           (G := T)
           (out := Term.rename Nat.succ (Term.rename Nat.succ out2))
           (code := code+1+1) (step := step+1+1)
