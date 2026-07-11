@@ -827,6 +827,105 @@ theorem BProv_exE_of_sentences {B : Form → Prop} (hB : Sentences B)
           simp only [List.map_append, List.mem_append]
           exact Or.inr hx
 
+/-! ### Directed connective and equivalence calculus -/
+
+/-- Implication is contravariant in its premise and covariant in its result. -/
+theorem BProv_imp_mono {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fImp a' a))
+    (hb : BProv B G (fImp b b')) :
+    BProv B G (fImp (fImp a b) (fImp a' b')) := by
+  apply BProv_impI
+  apply BProv_impI
+  let C : List Form := a' :: fImp a b :: G
+  have ha'C : BProv B C a' := BProv_ass (by simp [C])
+  have haC : BProv B C a :=
+    BProv_mp B C a' a
+      (BProv_context_cons (BProv_context_cons ha)) ha'C
+  have habC : BProv B C (fImp a b) := BProv_ass (by simp [C])
+  have hbC : BProv B C b := BProv_mp B C a b habC haC
+  exact BProv_mp B C b b'
+    (BProv_context_cons (BProv_context_cons hb)) hbC
+
+/-- Conjunction is covariant in both components. -/
+theorem BProv_and_mono {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fImp a a'))
+    (hb : BProv B G (fImp b b')) :
+    BProv B G (fImp (fAnd a b) (fAnd a' b')) := by
+  apply BProv_impI
+  let C : List Form := fAnd a b :: G
+  have habC : BProv B C (fAnd a b) := BProv_ass (by simp [C])
+  exact BProv_andI
+    (BProv_mp B C a a' (BProv_context_cons ha) (BProv_andE1 habC))
+    (BProv_mp B C b b' (BProv_context_cons hb) (BProv_andE2 habC))
+
+/-- Disjunction is covariant in both components. -/
+theorem BProv_or_mono {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fImp a a'))
+    (hb : BProv B G (fImp b b')) :
+    BProv B G (fImp (fOr a b) (fOr a' b')) := by
+  apply BProv_impI
+  let C : List Form := fOr a b :: G
+  have horC : BProv B C (fOr a b) := BProv_ass (by simp [C])
+  apply BProv_orE horC
+  · exact BProv_orI1
+      (BProv_mp B (a :: C) a a'
+        (BProv_context_cons (BProv_context_cons ha))
+        (BProv_ass (by simp)))
+  · exact BProv_orI2
+      (BProv_mp B (b :: C) b b'
+        (BProv_context_cons (BProv_context_cons hb))
+        (BProv_ass (by simp)))
+
+/-- Build a formula equivalence from its two directed implications. -/
+theorem BProv_fIff_intro {B : Form → Prop} {G : List Form} {a b : Form}
+    (hab : BProv B G (fImp a b))
+    (hba : BProv B G (fImp b a)) : BProv B G (fIff a b) := by
+  simpa [fIff] using BProv_andI hab hba
+
+theorem BProv_fIff_forward {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G (fIff a b)) : BProv B G (fImp a b) := by
+  simpa [fIff] using BProv_andE1 h
+
+theorem BProv_fIff_reverse {B : Form → Prop} {G : List Form} {a b : Form}
+    (h : BProv B G (fIff a b)) : BProv B G (fImp b a) := by
+  simpa [fIff] using BProv_andE2 h
+
+theorem BProv_fIff_refl {B : Form → Prop} {G : List Form} (a : Form) :
+    BProv B G (fIff a a) := by
+  have haa : BProv B G (fImp a a) :=
+    BProv_impI (BProv_ass (by simp))
+  exact BProv_fIff_intro haa haa
+
+theorem BProv_fIff_imp_congr {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fIff a a'))
+    (hb : BProv B G (fIff b b')) :
+    BProv B G (fIff (fImp a b) (fImp a' b')) :=
+  BProv_fIff_intro
+    (BProv_imp_mono (BProv_fIff_reverse ha) (BProv_fIff_forward hb))
+    (BProv_imp_mono (BProv_fIff_forward ha) (BProv_fIff_reverse hb))
+
+theorem BProv_fIff_and_congr {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fIff a a'))
+    (hb : BProv B G (fIff b b')) :
+    BProv B G (fIff (fAnd a b) (fAnd a' b')) :=
+  BProv_fIff_intro
+    (BProv_and_mono (BProv_fIff_forward ha) (BProv_fIff_forward hb))
+    (BProv_and_mono (BProv_fIff_reverse ha) (BProv_fIff_reverse hb))
+
+theorem BProv_fIff_or_congr {B : Form → Prop} {G : List Form}
+    {a a' b b' : Form}
+    (ha : BProv B G (fIff a a'))
+    (hb : BProv B G (fIff b b')) :
+    BProv B G (fIff (fOr a b) (fOr a' b')) :=
+  BProv_fIff_intro
+    (BProv_or_mono (BProv_fIff_forward ha) (BProv_fIff_forward hb))
+    (BProv_or_mono (BProv_fIff_reverse ha) (BProv_fIff_reverse hb))
+
 theorem stepB_pos_in (B : Form → Prop) (L : List Form) (phi : Form)
     (hc : BCon B (phi :: L)) : phi ∈ stepB B L phi := by
   unfold stepB

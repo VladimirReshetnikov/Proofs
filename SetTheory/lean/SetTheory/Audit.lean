@@ -52,6 +52,16 @@ open SetTheory
 #check @BProv_exI
 #check @BProv_allI_of_sentences
 #check @BProv_exE_of_sentences
+#check @BProv_imp_mono
+#check @BProv_and_mono
+#check @BProv_or_mono
+#check @BProv_fIff_intro
+#check @BProv_fIff_forward
+#check @BProv_fIff_reverse
+#check @BProv_fIff_refl
+#check @BProv_fIff_imp_congr
+#check @BProv_fIff_and_congr
+#check @BProv_fIff_or_congr
 #check @soundness_BProv
 #print axioms prov_iff_valid
 

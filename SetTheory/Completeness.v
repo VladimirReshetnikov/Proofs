@@ -758,6 +758,148 @@ Proof.
         exact hx.
 Qed.
 
+(* ---- directed connective and equivalence calculus ---- *)
+
+(* Implication is contravariant in its premise and covariant in its result. *)
+Lemma BProv_imp_mono : forall (B : form -> Prop) G a a' b b',
+  BProv B G (fImp a' a) ->
+  BProv B G (fImp b b') ->
+  BProv B G (fImp (fImp a b) (fImp a' b')).
+Proof.
+  intros B G a a' b b' ha hb.
+  apply (BProv_impI B G (fImp a b) (fImp a' b')).
+  apply (BProv_impI B (fImp a b :: G) a' b').
+  set (C := a' :: fImp a b :: G).
+  assert (ha'C : BProv B C a').
+  { apply BProv_ass. unfold C. simpl. tauto. }
+  assert (haC : BProv B C a).
+  { apply (BProv_mp B C a' a).
+    - apply BProv_context_cons. apply BProv_context_cons. exact ha.
+    - exact ha'C. }
+  assert (habC : BProv B C (fImp a b)).
+  { apply BProv_ass. unfold C. simpl. tauto. }
+  assert (hbC : BProv B C b).
+  { exact (BProv_mp B C a b habC haC). }
+  apply (BProv_mp B C b b').
+  - apply BProv_context_cons. apply BProv_context_cons. exact hb.
+  - exact hbC.
+Qed.
+
+(* Conjunction is covariant in both components. *)
+Lemma BProv_and_mono : forall (B : form -> Prop) G a a' b b',
+  BProv B G (fImp a a') ->
+  BProv B G (fImp b b') ->
+  BProv B G (fImp (fAnd a b) (fAnd a' b')).
+Proof.
+  intros B G a a' b b' ha hb.
+  apply (BProv_impI B G (fAnd a b) (fAnd a' b')).
+  set (C := fAnd a b :: G).
+  assert (habC : BProv B C (fAnd a b)).
+  { apply BProv_ass. unfold C. simpl. tauto. }
+  apply (BProv_andI B C a' b').
+  - apply (BProv_mp B C a a').
+    + apply BProv_context_cons. exact ha.
+    + exact (BProv_andE1 B C a b habC).
+  - apply (BProv_mp B C b b').
+    + apply BProv_context_cons. exact hb.
+    + exact (BProv_andE2 B C a b habC).
+Qed.
+
+(* Disjunction is covariant in both components. *)
+Lemma BProv_or_mono : forall (B : form -> Prop) G a a' b b',
+  BProv B G (fImp a a') ->
+  BProv B G (fImp b b') ->
+  BProv B G (fImp (fOr a b) (fOr a' b')).
+Proof.
+  intros B G a a' b b' ha hb.
+  apply (BProv_impI B G (fOr a b) (fOr a' b')).
+  set (C := fOr a b :: G).
+  assert (horC : BProv B C (fOr a b)).
+  { apply BProv_ass. unfold C. simpl. tauto. }
+  apply (BProv_orE B C a b (fOr a' b') horC).
+  - apply (BProv_orI1 B (a :: C) a' b').
+    apply (BProv_mp B (a :: C) a a').
+    + apply BProv_context_cons. apply BProv_context_cons. exact ha.
+    + apply BProv_ass. simpl. tauto.
+  - apply (BProv_orI2 B (b :: C) a' b').
+    apply (BProv_mp B (b :: C) b b').
+    + apply BProv_context_cons. apply BProv_context_cons. exact hb.
+    + apply BProv_ass. simpl. tauto.
+Qed.
+
+Lemma BProv_fIff_intro : forall (B : form -> Prop) G a b,
+  BProv B G (fImp a b) ->
+  BProv B G (fImp b a) ->
+  BProv B G (fIff a b).
+Proof.
+  intros B G a b hab hba. unfold fIff.
+  exact (BProv_andI B G (fImp a b) (fImp b a) hab hba).
+Qed.
+
+Lemma BProv_fIff_forward : forall (B : form -> Prop) G a b,
+  BProv B G (fIff a b) -> BProv B G (fImp a b).
+Proof.
+  intros B G a b h. unfold fIff in h.
+  exact (BProv_andE1 B G (fImp a b) (fImp b a) h).
+Qed.
+
+Lemma BProv_fIff_reverse : forall (B : form -> Prop) G a b,
+  BProv B G (fIff a b) -> BProv B G (fImp b a).
+Proof.
+  intros B G a b h. unfold fIff in h.
+  exact (BProv_andE2 B G (fImp a b) (fImp b a) h).
+Qed.
+
+Lemma BProv_fIff_refl : forall (B : form -> Prop) G a,
+  BProv B G (fIff a a).
+Proof.
+  intros B G a. apply BProv_fIff_intro.
+  - apply BProv_impI. apply BProv_ass. simpl. tauto.
+  - apply BProv_impI. apply BProv_ass. simpl. tauto.
+Qed.
+
+Lemma BProv_fIff_imp_congr : forall (B : form -> Prop) G a a' b b',
+  BProv B G (fIff a a') ->
+  BProv B G (fIff b b') ->
+  BProv B G (fIff (fImp a b) (fImp a' b')).
+Proof.
+  intros B G a a' b b' ha hb. apply BProv_fIff_intro.
+  - apply BProv_imp_mono.
+    + exact (BProv_fIff_reverse B G a a' ha).
+    + exact (BProv_fIff_forward B G b b' hb).
+  - apply BProv_imp_mono.
+    + exact (BProv_fIff_forward B G a a' ha).
+    + exact (BProv_fIff_reverse B G b b' hb).
+Qed.
+
+Lemma BProv_fIff_and_congr : forall (B : form -> Prop) G a a' b b',
+  BProv B G (fIff a a') ->
+  BProv B G (fIff b b') ->
+  BProv B G (fIff (fAnd a b) (fAnd a' b')).
+Proof.
+  intros B G a a' b b' ha hb. apply BProv_fIff_intro.
+  - apply BProv_and_mono.
+    + exact (BProv_fIff_forward B G a a' ha).
+    + exact (BProv_fIff_forward B G b b' hb).
+  - apply BProv_and_mono.
+    + exact (BProv_fIff_reverse B G a a' ha).
+    + exact (BProv_fIff_reverse B G b b' hb).
+Qed.
+
+Lemma BProv_fIff_or_congr : forall (B : form -> Prop) G a a' b b',
+  BProv B G (fIff a a') ->
+  BProv B G (fIff b b') ->
+  BProv B G (fIff (fOr a b) (fOr a' b')).
+Proof.
+  intros B G a a' b b' ha hb. apply BProv_fIff_intro.
+  - apply BProv_or_mono.
+    + exact (BProv_fIff_forward B G a a' ha).
+    + exact (BProv_fIff_forward B G b b' hb).
+  - apply BProv_or_mono.
+    + exact (BProv_fIff_reverse B G a a' ha).
+    + exact (BProv_fIff_reverse B G b b' hb).
+Qed.
+
 Lemma stepB_pos_in : forall B L phi, BCon B (phi :: L) -> In phi (stepB B L phi).
 Proof.
   intros B L phi Hc. unfold stepB.

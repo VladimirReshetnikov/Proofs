@@ -796,155 +796,33 @@ theorem BProv_HFFin_hfCompositeAt_eq_of_representations
     exact P.set_injective hleftAtRightCode hrightC
   simpa [fIff, rename] using PAInHF.BProv_andI hforward hreverse
 
-/-! ### Set-formula equivalence calculus -/
+/-! ### Compatibility names for the generic set-formula equivalence calculus -/
 
 theorem BProv_fIff_refl
     {B : Form → Prop} {G : List Form} (a : Form) :
-    BProv B G (fIff a a) := by
-  have haa : BProv B G (fImp a a) :=
-    PAInHF.BProv_impI
-      (BProv_of_Prov (B := B) (Prov.P_ass (a :: G) a (by simp)))
-  simpa [fIff] using PAInHF.BProv_andI haa haa
+    BProv B G (fIff a a) :=
+  SetTheory.BProv_fIff_refl a
 
 theorem BProv_fIff_imp_congr
-    {B : Form → Prop} {G : List Form}
-    {a a' b b' : Form}
+    {B : Form → Prop} {G : List Form} {a a' b b' : Form}
     (ha : BProv B G (fIff a a'))
     (hb : BProv B G (fIff b b')) :
-    BProv B G (fIff (fImp a b) (fImp a' b')) := by
-  have haa' : BProv B G (fImp a a') := by
-    simpa [fIff] using PAInHF.BProv_andE1 ha
-  have ha'a : BProv B G (fImp a' a) := by
-    simpa [fIff] using PAInHF.BProv_andE2 ha
-  have hbb' : BProv B G (fImp b b') := by
-    simpa [fIff] using PAInHF.BProv_andE1 hb
-  have hb'b : BProv B G (fImp b' b) := by
-    simpa [fIff] using PAInHF.BProv_andE2 hb
-  have hforward : BProv B G (fImp (fImp a b) (fImp a' b')) := by
-    apply PAInHF.BProv_impI
-    apply PAInHF.BProv_impI
-    let C : List Form := a' :: fImp a b :: G
-    have ha'C : BProv B C a' :=
-      BProv_of_Prov (B := B) (Prov.P_ass C a' (by simp [C]))
-    have haC : BProv B C a :=
-      BProv_mp B C a' a
-        (PAInHF.BProv_context_cons
-          (PAInHF.BProv_context_cons ha'a)) ha'C
-    have habC : BProv B C (fImp a b) :=
-      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
-    have hbC : BProv B C b := BProv_mp B C a b habC haC
-    exact BProv_mp B C b b'
-      (PAInHF.BProv_context_cons
-        (PAInHF.BProv_context_cons hbb')) hbC
-  have hreverse : BProv B G (fImp (fImp a' b') (fImp a b)) := by
-    apply PAInHF.BProv_impI
-    apply PAInHF.BProv_impI
-    let C : List Form := a :: fImp a' b' :: G
-    have haC : BProv B C a :=
-      BProv_of_Prov (B := B) (Prov.P_ass C a (by simp [C]))
-    have ha'C : BProv B C a' :=
-      BProv_mp B C a a'
-        (PAInHF.BProv_context_cons
-          (PAInHF.BProv_context_cons haa')) haC
-    have ha'b'C : BProv B C (fImp a' b') :=
-      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
-    have hb'C : BProv B C b' := BProv_mp B C a' b' ha'b'C ha'C
-    exact BProv_mp B C b' b
-      (PAInHF.BProv_context_cons
-        (PAInHF.BProv_context_cons hb'b)) hb'C
-  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+    BProv B G (fIff (fImp a b) (fImp a' b')) :=
+  SetTheory.BProv_fIff_imp_congr ha hb
 
 theorem BProv_fIff_and_congr
-    {B : Form → Prop} {G : List Form}
-    {a a' b b' : Form}
+    {B : Form → Prop} {G : List Form} {a a' b b' : Form}
     (ha : BProv B G (fIff a a'))
     (hb : BProv B G (fIff b b')) :
-    BProv B G (fIff (fAnd a b) (fAnd a' b')) := by
-  have haa' : BProv B G (fImp a a') := by
-    simpa [fIff] using PAInHF.BProv_andE1 ha
-  have ha'a : BProv B G (fImp a' a) := by
-    simpa [fIff] using PAInHF.BProv_andE2 ha
-  have hbb' : BProv B G (fImp b b') := by
-    simpa [fIff] using PAInHF.BProv_andE1 hb
-  have hb'b : BProv B G (fImp b' b) := by
-    simpa [fIff] using PAInHF.BProv_andE2 hb
-  have hforward : BProv B G (fImp (fAnd a b) (fAnd a' b')) := by
-    apply PAInHF.BProv_impI
-    let C : List Form := fAnd a b :: G
-    have hp : BProv B C (fAnd a b) :=
-      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
-    have haC : BProv B C a := PAInHF.BProv_andE1 hp
-    have hbC : BProv B C b := PAInHF.BProv_andE2 hp
-    exact PAInHF.BProv_andI
-      (BProv_mp B C a a' (PAInHF.BProv_context_cons haa') haC)
-      (BProv_mp B C b b' (PAInHF.BProv_context_cons hbb') hbC)
-  have hreverse : BProv B G (fImp (fAnd a' b') (fAnd a b)) := by
-    apply PAInHF.BProv_impI
-    let C : List Form := fAnd a' b' :: G
-    have hp : BProv B C (fAnd a' b') :=
-      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
-    have ha'C : BProv B C a' := PAInHF.BProv_andE1 hp
-    have hb'C : BProv B C b' := PAInHF.BProv_andE2 hp
-    exact PAInHF.BProv_andI
-      (BProv_mp B C a' a (PAInHF.BProv_context_cons ha'a) ha'C)
-      (BProv_mp B C b' b (PAInHF.BProv_context_cons hb'b) hb'C)
-  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+    BProv B G (fIff (fAnd a b) (fAnd a' b')) :=
+  SetTheory.BProv_fIff_and_congr ha hb
 
 theorem BProv_fIff_or_congr
-    {B : Form → Prop} {G : List Form}
-    {a a' b b' : Form}
+    {B : Form → Prop} {G : List Form} {a a' b b' : Form}
     (ha : BProv B G (fIff a a'))
     (hb : BProv B G (fIff b b')) :
-    BProv B G (fIff (fOr a b) (fOr a' b')) := by
-  have haa' : BProv B G (fImp a a') := by
-    simpa [fIff] using PAInHF.BProv_andE1 ha
-  have ha'a : BProv B G (fImp a' a) := by
-    simpa [fIff] using PAInHF.BProv_andE2 ha
-  have hbb' : BProv B G (fImp b b') := by
-    simpa [fIff] using PAInHF.BProv_andE1 hb
-  have hb'b : BProv B G (fImp b' b) := by
-    simpa [fIff] using PAInHF.BProv_andE2 hb
-  have hforward : BProv B G (fImp (fOr a b) (fOr a' b')) := by
-    apply PAInHF.BProv_impI
-    let C : List Form := fOr a b :: G
-    have hor : BProv B C (fOr a b) :=
-      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
-    have hleft : BProv B (a :: C) (fOr a' b') := by
-      have haC : BProv B (a :: C) a :=
-        BProv_of_Prov (B := B) (Prov.P_ass (a :: C) a (by simp))
-      exact PAInHF.BProv_orI1
-        (BProv_mp B (a :: C) a a'
-          (PAInHF.BProv_context_cons
-            (PAInHF.BProv_context_cons haa')) haC)
-    have hright : BProv B (b :: C) (fOr a' b') := by
-      have hbC : BProv B (b :: C) b :=
-        BProv_of_Prov (B := B) (Prov.P_ass (b :: C) b (by simp))
-      exact PAInHF.BProv_orI2
-        (BProv_mp B (b :: C) b b'
-          (PAInHF.BProv_context_cons
-            (PAInHF.BProv_context_cons hbb')) hbC)
-    exact PAInHF.BProv_orE hor hleft hright
-  have hreverse : BProv B G (fImp (fOr a' b') (fOr a b)) := by
-    apply PAInHF.BProv_impI
-    let C : List Form := fOr a' b' :: G
-    have hor : BProv B C (fOr a' b') :=
-      BProv_of_Prov (B := B) (Prov.P_ass C _ (by simp [C]))
-    have hleft : BProv B (a' :: C) (fOr a b) := by
-      have ha'C : BProv B (a' :: C) a' :=
-        BProv_of_Prov (B := B) (Prov.P_ass (a' :: C) a' (by simp))
-      exact PAInHF.BProv_orI1
-        (BProv_mp B (a' :: C) a' a
-          (PAInHF.BProv_context_cons
-            (PAInHF.BProv_context_cons ha'a)) ha'C)
-    have hright : BProv B (b' :: C) (fOr a b) := by
-      have hb'C : BProv B (b' :: C) b' :=
-        BProv_of_Prov (B := B) (Prov.P_ass (b' :: C) b' (by simp))
-      exact PAInHF.BProv_orI2
-        (BProv_mp B (b' :: C) b' b
-          (PAInHF.BProv_context_cons
-            (PAInHF.BProv_context_cons hb'b)) hb'C)
-    exact PAInHF.BProv_orE hor hleft hright
-  simpa [fIff] using PAInHF.BProv_andI hforward hreverse
+    BProv B G (fIff (fOr a b) (fOr a' b')) :=
+  SetTheory.BProv_fIff_or_congr ha hb
 
 def HFQuantifierFree : Form → Prop
   | fMem _ _ => True

@@ -59,6 +59,16 @@ Check BProv_allE.
 Check BProv_exI.
 Check BProv_allI_of_sentences.
 Check BProv_exE_of_sentences.
+Check BProv_imp_mono.
+Check BProv_and_mono.
+Check BProv_or_mono.
+Check BProv_fIff_intro.
+Check BProv_fIff_forward.
+Check BProv_fIff_reverse.
+Check BProv_fIff_refl.
+Check BProv_fIff_imp_congr.
+Check BProv_fIff_and_congr.
+Check BProv_fIff_or_congr.
 Check completeness_inf_context.
 Print Assumptions prov_iff_valid.
 
