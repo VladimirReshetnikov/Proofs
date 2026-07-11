@@ -10,8 +10,8 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Lia List.
-From SetTheory Require Import Fol Calculus PAHF PAHFOrdinalCode
-  PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic.
+From SetTheory Require Import Fol Calculus PAHF PAHFProofCalculus
+  PAHFOrdinalCode PAHFOrdinalCodeTotalInduction PAHFRoundTripArithmetic.
 
 Import ListNotations.
 Import PA PA.Term PA.Formula.
@@ -330,16 +330,13 @@ Proof.
         - unfold rangeRawMap, rangeCodedMap.
           exact hgraph.
         - pose proof (hcode n hn) as h0.
-          pose proof (BProv_rename_of_sentences Ax_s
-            sentence_ax_s G _ h0 S) as h1.
-          pose proof (BProv_rename_of_sentences Ax_s
-            sentence_ax_s (map (rename S) G) _ h1 S) as h2.
-          pose proof (BProv_context_cons Ax_s _
-            (rename S (rename S rawAll)) _ h2) as hrawCtx.
-          pose proof (BProv_context_cons Ax_s _
-            (rename S codedOrdinalDomain) _ hrawCtx) as hdomainCtx.
-          pose proof (BProv_context_cons Ax_s _
-            graphBody _ hdomainCtx) as hctx.
+          pose proof (BProv_context_cons Ax_s G rawAll _ h0) as hC0.
+          pose proof (BProv_iterRenameSucc_of_sentences
+            Ax_s sentence_ax_s 2 C0 _ hC0) as hrenamed.
+          pose proof (BProv_context_prefix Ax_s
+            [graphBody; rename S codedOrdinalDomain]
+            _ _ hrenamed) as hctx.
+          cbn [iterRenameContextSucc iterRenameSucc] in hctx.
           unfold C3, C2, C1, C0 in hctx |- *.
           cbn [map] in hctx |- *.
           unfold rangeRawMap, rangeCodedMap.
@@ -358,14 +355,12 @@ Proof.
         apply BProv_ass.
         unfold C0. simpl. now left.
       }
-      pose proof (BProv_rename_of_sentences Ax_s
-        sentence_ax_s C0 _ hall0 S) as hall1.
-      pose proof (BProv_rename_of_sentences Ax_s
-        sentence_ax_s (map (rename S) C0) _ hall1 S) as hall2.
-      pose proof (BProv_context_cons Ax_s _
-        (rename S codedOrdinalDomain) _ hall2) as hallDomainCtx.
-      pose proof (BProv_context_cons Ax_s _
-        graphBody _ hallDomainCtx) as hallCtx.
+      pose proof (BProv_iterRenameSucc_of_sentences
+        Ax_s sentence_ax_s 2 C0 _ hall0) as hallRenamed.
+      pose proof (BProv_context_prefix Ax_s
+        [graphBody; rename S codedOrdinalDomain]
+        _ _ hallRenamed) as hallCtx.
+      cbn [iterRenameContextSucc iterRenameSucc] in hallCtx.
       assert (hallCtx' : BProv Ax_s C3
         (pAll (rename (up S) (rename (up S) rawBody)))).
       {
@@ -481,14 +476,12 @@ Proof.
         - unfold totalRawMap, totalCodedMap.
           exact hgraph.
         - pose proof (hcode n hn) as h0.
-          pose proof (BProv_rename_of_sentences Ax_s
-            sentence_ax_s G _ h0 S) as h1.
-          pose proof (BProv_rename_of_sentences Ax_s
-            sentence_ax_s (map (rename S) G) _ h1 S) as h2.
-          pose proof (BProv_context_cons Ax_s _
-            (rename S (rename S codedAll)) _ h2) as hcodedCtx.
-          pose proof (BProv_context_cons Ax_s _
-            graphBody _ hcodedCtx) as hctx.
+          pose proof (BProv_context_cons Ax_s G codedAll _ h0) as hC0.
+          pose proof (BProv_iterRenameSucc_of_sentences
+            Ax_s sentence_ax_s 2 C0 _ hC0) as hrenamed.
+          pose proof (BProv_context_prefix Ax_s
+            [graphBody] _ _ hrenamed) as hctx.
+          cbn [iterRenameContextSucc iterRenameSucc] in hctx.
           unfold C2, C1, C0 in hctx |- *.
           cbn [map] in hctx |- *.
           unfold totalRawMap, totalCodedMap.
@@ -507,12 +500,11 @@ Proof.
         apply BProv_ass.
         unfold C0. simpl. now left.
       }
-      pose proof (BProv_rename_of_sentences Ax_s
-        sentence_ax_s C0 _ hall0 S) as hall1.
-      pose proof (BProv_rename_of_sentences Ax_s
-        sentence_ax_s (map (rename S) C0) _ hall1 S) as hall2.
-      pose proof (BProv_context_cons Ax_s _
-        graphBody _ hall2) as hallCtx.
+      pose proof (BProv_iterRenameSucc_of_sentences
+        Ax_s sentence_ax_s 2 C0 _ hall0) as hallRenamed.
+      pose proof (BProv_context_prefix Ax_s
+        [graphBody] _ _ hallRenamed) as hallCtx.
+      cbn [iterRenameContextSucc iterRenameSucc] in hallCtx.
       assert (hallCtx' : BProv Ax_s C2
         (pAll (rename (up S) (rename (up S)
           (pImp codedOrdinalDomain codedBody))))).
@@ -669,16 +661,9 @@ Proof.
           - unfold totalRawMap, totalCodedMap.
             exact hgraph.
           - pose proof (hcode n hn) as h0.
-            pose proof (BProv_rename_of_sentences Ax_s
-              sentence_ax_s G _ h0 S) as h1.
-            pose proof (BProv_rename_of_sentences Ax_s
-              sentence_ax_s (map (rename S) G) _ h1 S) as h2.
-            pose proof (BProv_context_cons Ax_s _
-              (rename S (rename S rawEx)) _ h2) as hexCtx.
-            pose proof (BProv_context_cons Ax_s _
-              (rename S rawBody) _ hexCtx) as hrawCtx.
-            pose proof (BProv_context_cons Ax_s _
-              graphBody _ hrawCtx) as hctx.
+            pose proof (BProv_context_cons Ax_s G rawEx _ h0) as hC0.
+            pose proof (BProv_lift_two_contexts_of_sentences
+              Ax_s sentence_ax_s C0 rawBody graphBody _ hC0) as hctx.
             unfold C2, C1, C0 in hctx |- *.
             cbn [map] in hctx |- *.
             unfold totalRawMap, totalCodedMap.
@@ -697,10 +682,8 @@ Proof.
           apply BProv_ass.
           unfold C1. simpl. now left.
         }
-        pose proof (BProv_rename_of_sentences Ax_s
-          sentence_ax_s C1 _ hraw0 S) as hraw1.
-        pose proof (BProv_context_cons Ax_s _ graphBody _ hraw1)
-          as hrawCtx.
+        pose proof (BProv_rename_succ_context_cons_of_sentences
+          Ax_s sentence_ax_s C1 graphBody _ hraw0) as hrawCtx.
         assert (hraw : BProv Ax_s C2
           (rename (totalRawMap rawMap) phi)).
         {
@@ -859,16 +842,9 @@ Proof.
           - unfold rangeRawMap, rangeCodedMap.
             exact hgraph.
           - pose proof (hcode n hn) as h0.
-            pose proof (BProv_rename_of_sentences Ax_s
-              sentence_ax_s G _ h0 S) as h1.
-            pose proof (BProv_rename_of_sentences Ax_s
-              sentence_ax_s (map (rename S) G) _ h1 S) as h2.
-            pose proof (BProv_context_cons Ax_s _
-              (rename S (rename S codedEx)) _ h2) as hexCtx.
-            pose proof (BProv_context_cons Ax_s _
-              (rename S codedAnd) _ hexCtx) as handCtx.
-            pose proof (BProv_context_cons Ax_s _
-              graphBody _ handCtx) as hctx.
+            pose proof (BProv_context_cons Ax_s G codedEx _ h0) as hC0.
+            pose proof (BProv_lift_two_contexts_of_sentences
+              Ax_s sentence_ax_s C0 codedAnd graphBody _ hC0) as hctx.
             unfold C2, C1, C0 in hctx |- *.
             cbn [map] in hctx |- *.
             unfold rangeRawMap, rangeCodedMap.
@@ -887,10 +863,8 @@ Proof.
           unfold codedAnd in hand.
           exact (BProv_andE2 Ax_s C1 _ _ hand).
         }
-        pose proof (BProv_rename_of_sentences Ax_s
-          sentence_ax_s C1 _ hcoded S) as hcodedRen.
-        pose proof (BProv_context_cons Ax_s _ graphBody _ hcodedRen)
-          as hcodedCtx.
+        pose proof (BProv_rename_succ_context_cons_of_sentences
+          Ax_s sentence_ax_s C1 graphBody _ hcoded) as hcodedCtx.
         assert (hcomp : BProv Ax_s C2
           (paCompositeAt (rangeCodedMap codedMap) phi)).
         {
