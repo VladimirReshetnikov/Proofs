@@ -1154,6 +1154,7 @@ open SetTheory
 #check @PA.Formula.subst_up_succ_rename_rSkipParam
 #check @PA.Formula.substZero_hfStrongBelowAt
 #check @PA.Formula.substSuccVar_hfStrongBelowAt
+#check @PA.Formula.BProv_Ax_s_all_of_strongStep_under
 #check PA.Formula.translatedHFInductionBody
 #check @PA.Formula.BProv_Ax_s_ltAt_of_hfMemAt_of_all
 #check @PA.Formula.BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
@@ -2692,6 +2693,7 @@ open SetTheory
 #check @PA.Formula.BProv_codeEqualityTermAt_of_components
 #check @PA.Formula.BProv_ordinalCodeGraphTermAt_congr_raw
 #check @PA.Formula.BProv_ordinalCodeGraphTermAt_congr_coded
+#check @PA.Formula.BProv_ordinalCodeGraphTermAt_congr
 #check @PA.Formula.OrdinalCodeGraphFunctional
 #check @PA.Formula.OrdinalCodeGraphFunctional_of_traceAgreement
 #check @PA.Formula.BProv_Ax_s_ordinalCodeGraphTermAt_functional

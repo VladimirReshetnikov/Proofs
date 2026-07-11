@@ -48068,23 +48068,30 @@ theorem BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
       hmemberBody
   exact BProv_mp Ax_s G _ _ hstep hmembers
 
-/-- Ordinary PA induction on the cumulative strict-prefix predicate proves
-the unsealed translated HF set-induction body. -/
-theorem BProv_Ax_s_translatedHFInductionBody_of_all_hfMembersBelowAt
-    (hmembersBelow : BProv Ax_s [] (all (hfMembersBelowAt 0)))
-    (psi : Formula) :
-    BProv Ax_s [] (translatedHFInductionBody psi) := by
-  let hereditary : Formula := hfHereditaryAt psi
+/-- Strong induction on the current code while retaining arbitrary persistent
+premises.  The local rule receives every premise renamed beneath the current
+induction variable, together with the cumulative strict-below hypothesis.
+Ordinal range, ordinary HF induction, and finite-generation induction share
+this shell and differ only in their local current-code rule. -/
+theorem BProv_Ax_s_all_of_strongStep_under
+    (premises : List Formula) (psi : Formula)
+    (hcurrent :
+      ∀ {G : List Formula},
+        (∀ premise, premise ∈ premises →
+          BProv Ax_s G (rename Nat.succ premise)) →
+        BProv Ax_s G (hfStrongBelowAt psi) →
+        BProv Ax_s G psi) :
+    BProv Ax_s premises (all psi) := by
   let below : Formula := hfStrongBelowAt psi
-  have hzero : BProv Ax_s [hereditary] (subst substZero below) := by
-    change BProv Ax_s [hereditary]
+  have hzero : BProv Ax_s premises (subst substZero below) := by
+    change BProv Ax_s premises
       (subst substZero (hfStrongBelowAt psi))
     rw [substZero_hfStrongBelowAt]
     let lowLtZero : Formula := ltTermAt (Term.var 0) Term.zero
-    have hbody : BProv Ax_s ([hereditary].map (rename Nat.succ))
+    have hbody : BProv Ax_s (premises.map (rename Nat.succ))
         (imp lowLtZero psi) := by
       let D : List Formula :=
-        lowLtZero :: [hereditary].map (rename Nat.succ)
+        lowLtZero :: premises.map (rename Nat.succ)
       have hlt : BProv Ax_s D lowLtZero :=
         BProv_ass (B := Ax_s) (G := D) (by simp [D])
       have hzeroLe : BProv Ax_s D
@@ -48100,21 +48107,20 @@ theorem BProv_Ax_s_translatedHFInductionBody_of_all_hfMembersBelowAt
         (B := Ax_s) Ax_s_sentences
         hbody)
   have hsuccBody : BProv Ax_s
-      (below :: [hereditary].map (rename Nat.succ))
+      (below :: premises.map (rename Nat.succ))
       (subst substSuccVar below) := by
     let S : List Formula :=
-      below :: [hereditary].map (rename Nat.succ)
+      below :: premises.map (rename Nat.succ)
     have hbelowS : BProv Ax_s S below :=
       BProv_ass (B := Ax_s) (G := S) (by simp [S])
-    have hhereditaryS : BProv Ax_s S
-        (rename Nat.succ hereditary) :=
-      BProv_ass (B := Ax_s) (G := S) (by simp [S])
+    have hpremisesS : ∀ premise, premise ∈ premises →
+        BProv Ax_s S (rename Nat.succ premise) := by
+      intro premise hpremise
+      exact BProv_ass (B := Ax_s) (G := S) (by
+        simp only [S, List.mem_cons, List.mem_map]
+        exact Or.inr ⟨premise, hpremise, rfl⟩)
     have hpsiCurrent : BProv Ax_s S psi := by
-      exact
-        BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
-          hmembersBelow
-          (by simpa [hereditary] using hhereditaryS)
-          (by simpa [below] using hbelowS)
+      exact hcurrent hpremisesS (by simpa [below] using hbelowS)
     let lowLtSucc : Formula :=
       ltTermAt (Term.var 0) (Term.succ (Term.var 1))
     let psiAtLow : Formula := rename AckermannHF.rSkipParam psi
@@ -48185,20 +48191,24 @@ theorem BProv_Ax_s_translatedHFInductionBody_of_all_hfMembersBelowAt
       (subst substSuccVar (hfStrongBelowAt psi))
     rw [substSuccVar_hfStrongBelowAt]
     simpa [lowLtSucc, psiAtLow] using htarget
-  have hsuccImp : BProv Ax_s ([hereditary].map (rename Nat.succ))
+  have hsuccImp : BProv Ax_s (premises.map (rename Nat.succ))
       (imp below (subst substSuccVar below)) := by
     simpa using BProv_impI hsuccBody
-  have hsucc : BProv Ax_s [hereditary]
+  have hsucc : BProv Ax_s premises
       (all (imp below (subst substSuccVar below))) :=
     BProv_allI_of_sentences
       (B := Ax_s) Ax_s_sentences
       hsuccImp
-  have hallBelow : BProv Ax_s [hereditary] (all below) :=
+  have hallBelow : BProv Ax_s premises (all below) :=
     BProv_Ax_s_induction_rule hzero hsucc
-  have hpsiBody : BProv Ax_s ([hereditary].map (rename Nat.succ)) psi := by
-    let Q : List Formula := [hereditary].map (rename Nat.succ)
-    have hhereditaryQ : BProv Ax_s Q (rename Nat.succ hereditary) :=
-      BProv_ass (B := Ax_s) (G := Q) (by simp [Q])
+  have hpsiBody : BProv Ax_s (premises.map (rename Nat.succ)) psi := by
+    let Q : List Formula := premises.map (rename Nat.succ)
+    have hpremisesQ : ∀ premise, premise ∈ premises →
+        BProv Ax_s Q (rename Nat.succ premise) := by
+      intro premise hpremise
+      exact BProv_ass (B := Ax_s) (G := Q) (by
+        simp only [Q, List.mem_map]
+        exact ⟨premise, hpremise, rfl⟩)
     have hallBelowRen : BProv Ax_s Q (rename Nat.succ (all below)) := by
       simpa [Q] using
         (BProv_rename_of_sentences
@@ -48206,15 +48216,25 @@ theorem BProv_Ax_s_translatedHFInductionBody_of_all_hfMembersBelowAt
           hallBelow Nat.succ)
     have hbelowQ : BProv Ax_s Q below :=
       BProv_allE_current_of_renamed hallBelowRen
-    exact
-      BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
-        hmembersBelow (G := Q) (psi := psi)
-        (by simpa only [hereditary] using hhereditaryQ)
-        (by simpa only [below] using hbelowQ)
-  have hallPsi : BProv Ax_s [hereditary] (all psi) :=
-    BProv_allI_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hpsiBody
+    exact hcurrent hpremisesQ (by simpa only [below] using hbelowQ)
+  exact BProv_allI_of_sentences
+    (B := Ax_s) Ax_s_sentences
+    hpsiBody
+
+/-- Ordinary PA induction on the cumulative strict-prefix predicate proves
+the unsealed translated HF set-induction body. -/
+theorem BProv_Ax_s_translatedHFInductionBody_of_all_hfMembersBelowAt
+    (hmembersBelow : BProv Ax_s [] (all (hfMembersBelowAt 0)))
+    (psi : Formula) :
+    BProv Ax_s [] (translatedHFInductionBody psi) := by
+  let hereditary : Formula := hfHereditaryAt psi
+  have hallPsi : BProv Ax_s [hereditary] (all psi) := by
+    apply BProv_Ax_s_all_of_strongStep_under [hereditary] psi
+    intro G hpremises hbelow
+    exact BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
+      hmembersBelow
+      (hpremises hereditary (by simp))
+      hbelow
   simpa [translatedHFInductionBody, hereditary] using
     BProv_impI hallPsi
 
@@ -51731,142 +51751,12 @@ theorem BProv_Ax_s_translatedHFFiniteInductionBody_of_current
         BProv Ax_s G psi) :
     BProv Ax_s [] (translatedHFFiniteInductionBody psi) := by
   let generation : Formula := hfFiniteGenerationAt psi
-  let below : Formula := hfStrongBelowAt psi
-  have hzero : BProv Ax_s [generation] (subst substZero below) := by
-    change BProv Ax_s [generation]
-      (subst substZero (hfStrongBelowAt psi))
-    rw [substZero_hfStrongBelowAt]
-    let lowLtZero : Formula := ltTermAt (Term.var 0) Term.zero
-    have hbody : BProv Ax_s ([generation].map (rename Nat.succ))
-        (imp lowLtZero psi) := by
-      let D : List Formula :=
-        lowLtZero :: [generation].map (rename Nat.succ)
-      have hlt : BProv Ax_s D lowLtZero :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
-      have hzeroLe : BProv Ax_s D
-          (leTermAt Term.zero (Term.var 0)) :=
-        BProv_Ax_s_leTermAt_zero_left (Term.var 0)
-      have hbot : BProv Ax_s D bot :=
-        BProv_Ax_s_ltTermAt_leTermAt_bot hlt hzeroLe
-      have hpsi : BProv Ax_s D psi :=
-        BProv_botE (B := Ax_s) (G := D) (a := psi) hbot
-      simpa [D, lowLtZero] using BProv_impI hpsi
-    simpa [lowLtZero] using
-      (BProv_allI_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hbody)
-  have hsuccBody : BProv Ax_s
-      (below :: [generation].map (rename Nat.succ))
-      (subst substSuccVar below) := by
-    let S : List Formula :=
-      below :: [generation].map (rename Nat.succ)
-    have hbelowS : BProv Ax_s S below :=
-      BProv_ass (B := Ax_s) (G := S) (by simp [S])
-    have hgenerationS : BProv Ax_s S
-        (rename Nat.succ generation) :=
-      BProv_ass (B := Ax_s) (G := S) (by simp [S])
-    have hpsiCurrent : BProv Ax_s S psi :=
-      hcurrent
-        (by simpa [generation] using hgenerationS)
-        (by simpa [below] using hbelowS)
-    let lowLtSucc : Formula :=
-      ltTermAt (Term.var 0) (Term.succ (Term.var 1))
-    let psiAtLow : Formula := rename AckermannHF.rSkipParam psi
-    have htarget : BProv Ax_s S (all (imp lowLtSucc psiAtLow)) := by
-      let R : List Formula := S.map (rename Nat.succ)
-      have hbody : BProv Ax_s R (imp lowLtSucc psiAtLow) := by
-        let D : List Formula := lowLtSucc :: R
-        have hlt : BProv Ax_s D lowLtSucc :=
-          BProv_ass (B := Ax_s) (G := D) (by simp [D])
-        have hcases : BProv Ax_s D
-            (or
-              (ltTermAt (Term.var 0) (Term.var 1))
-              (eq (Term.var 0) (Term.var 1))) :=
-          BProv_Ax_s_ltTermAt_succ_right_cases hlt
-        have hbelowRen : BProv Ax_s R (rename Nat.succ below) := by
-          simpa [R] using
-            (BProv_rename_of_sentences
-              (B := Ax_s) Ax_s_sentences
-              hbelowS Nat.succ)
-        have hbelowBody : BProv Ax_s R
-            (imp
-              (ltTermAt (Term.var 0) (Term.var 1))
-              psiAtLow) := by
-          simpa [below, hfStrongBelowAt, ltTermAt_var,
-            psiAtLow] using
-            (BProv_allE_current_of_renamed hbelowRen)
-        have hstrict : BProv Ax_s
-            (ltTermAt (Term.var 0) (Term.var 1) :: D)
-            psiAtLow := by
-          let E : List Formula :=
-            ltTermAt (Term.var 0) (Term.var 1) :: D
-          have hltPred : BProv Ax_s E
-              (ltTermAt (Term.var 0) (Term.var 1)) :=
-            BProv_ass (B := Ax_s) (G := E) (by simp [E])
-          have hbelowE : BProv Ax_s E
-              (imp
-                (ltTermAt (Term.var 0) (Term.var 1))
-                psiAtLow) :=
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hbelowBody)
-          exact BProv_mp Ax_s E _ _ hbelowE hltPred
-        have hequal : BProv Ax_s
-            (eq (Term.var 0) (Term.var 1) :: D)
-            psiAtLow := by
-          let E : List Formula :=
-            eq (Term.var 0) (Term.var 1) :: D
-          have heq : BProv Ax_s E
-              (eq (Term.var 0) (Term.var 1)) :=
-            BProv_ass (B := Ax_s) (G := E) (by simp [E])
-          have hpsiRen : BProv Ax_s R (rename Nat.succ psi) := by
-            simpa [R] using
-              (BProv_rename_of_sentences
-                (B := Ax_s) Ax_s_sentences
-                hpsiCurrent Nat.succ)
-          have hpsiE : BProv Ax_s E (rename Nat.succ psi) :=
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hpsiRen)
-          simpa [psiAtLow] using
-            (BProv_predicate_current_of_eq_previous heq hpsiE)
-        have hpsi : BProv Ax_s D psiAtLow :=
-          BProv_orE hcases hstrict hequal
-        simpa [D, lowLtSucc, psiAtLow] using BProv_impI hpsi
-      simpa [R] using
-        (BProv_allI_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hbody)
-    change BProv Ax_s S
-      (subst substSuccVar (hfStrongBelowAt psi))
-    rw [substSuccVar_hfStrongBelowAt]
-    simpa [lowLtSucc, psiAtLow] using htarget
-  have hsuccImp : BProv Ax_s ([generation].map (rename Nat.succ))
-      (imp below (subst substSuccVar below)) := by
-    simpa using BProv_impI hsuccBody
-  have hsucc : BProv Ax_s [generation]
-      (all (imp below (subst substSuccVar below))) :=
-    BProv_allI_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hsuccImp
-  have hallBelow : BProv Ax_s [generation] (all below) :=
-    BProv_Ax_s_induction_rule hzero hsucc
-  have hpsiBody : BProv Ax_s ([generation].map (rename Nat.succ)) psi := by
-    let Q : List Formula := [generation].map (rename Nat.succ)
-    have hgenerationQ : BProv Ax_s Q (rename Nat.succ generation) :=
-      BProv_ass (B := Ax_s) (G := Q) (by simp [Q])
-    have hallBelowRen : BProv Ax_s Q (rename Nat.succ (all below)) := by
-      simpa [Q] using
-        (BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hallBelow Nat.succ)
-    have hbelowQ : BProv Ax_s Q below :=
-      BProv_allE_current_of_renamed hallBelowRen
+  have hallPsi : BProv Ax_s [generation] (all psi) := by
+    apply BProv_Ax_s_all_of_strongStep_under [generation] psi
+    intro G hpremises hbelow
     exact hcurrent
-      (by simpa only [generation] using hgenerationQ)
-      (by simpa only [below] using hbelowQ)
-  have hallPsi : BProv Ax_s [generation] (all psi) :=
-    BProv_allI_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hpsiBody
+      (hpremises generation (by simp))
+      hbelow
   simpa [translatedHFFiniteInductionBody, generation] using
     BProv_impI hallPsi
 

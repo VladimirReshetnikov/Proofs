@@ -407,66 +407,67 @@ Proof.
   exact (BProv_mp Ax_s G (pAll memberImp) psi hstep hmembers).
 Qed.
 
-(** Ordinary PA induction on the cumulative strict-prefix predicate proves
-    the unsealed translated HF set-induction body. *)
-Lemma BProv_Ax_s_translatedHFInductionBody_of_all_hfMembersBelowAt :
-  forall (hmembersBelow : BProv Ax_s [] (pAll (hfMembersBelowAt 0))) psi,
-  BProv Ax_s [] (translatedHFInductionBody psi).
+(** Strong induction on the current code, retaining an arbitrary context of
+    persistent premises.  The local rule receives those premises in the
+    renamed form appropriate below the induction variable.  This common shell
+    is shared by ordinal range, ordinary HF induction, and finite-generation
+    induction; only their local current-code rules differ. *)
+Lemma BProv_Ax_s_all_of_strongStep_under : forall premises psi,
+  (forall G,
+    (forall premise, In premise premises ->
+      BProv Ax_s G (rename S premise)) ->
+    BProv Ax_s G (hfStrongBelowAt psi) ->
+    BProv Ax_s G psi) ->
+  BProv Ax_s premises (pAll psi).
 Proof.
-  intros hmembersBelow psi.
-  set (hereditary := hfHereditaryAt psi).
+  intros premises psi hcurrent.
   set (below := hfStrongBelowAt psi).
-  assert (hzero : BProv Ax_s [hereditary] (subst substZero below)).
+  assert (hzero : BProv Ax_s premises (subst substZero below)).
   {
     unfold below.
     rewrite substZero_hfStrongBelowAt.
     set (lowLtZero := ltTermAt (tVar 0) tZero).
-    assert (hbody : BProv Ax_s (map (rename S) [hereditary])
+    assert (hbody : BProv Ax_s (map (rename S) premises)
         (pImp lowLtZero psi)).
     {
-      set (D := lowLtZero :: map (rename S) [hereditary]).
+      set (D := lowLtZero :: map (rename S) premises).
       assert (hlt : BProv Ax_s D lowLtZero).
-      {
-        apply BProv_ass.
-        unfold D. simpl. left. reflexivity.
-      }
+      { apply BProv_ass. unfold D. simpl. now left. }
       assert (hzeroLe : BProv Ax_s D (leTermAt tZero (tVar 0))).
       { exact (BProv_Ax_s_leTermAt_zero_left D (tVar 0)). }
       assert (hbot : BProv Ax_s D pBot).
       {
-        exact (BProv_Ax_s_ltTermAt_leTermAt_bot D (tVar 0) tZero
-          hlt hzeroLe).
+        exact (BProv_Ax_s_ltTermAt_leTermAt_bot D
+          (tVar 0) tZero hlt hzeroLe).
       }
       assert (hpsi : BProv Ax_s D psi).
       { exact (BProv_botE Ax_s D psi hbot). }
       unfold D in hpsi.
-      exact (BProv_impI Ax_s (map (rename S) [hereditary])
+      exact (BProv_impI Ax_s (map (rename S) premises)
         lowLtZero psi hpsi).
     }
-    exact (BProv_allI_of_sentences Ax_s [hereditary]
+    exact (BProv_allI_of_sentences Ax_s premises
       (pImp lowLtZero psi) sentence_ax_s hbody).
   }
   assert (hsuccBody : BProv Ax_s
-      (below :: map (rename S) [hereditary])
+      (below :: map (rename S) premises)
       (subst substSuccVar below)).
   {
-    set (Sctx := below :: map (rename S) [hereditary]).
+    set (Sctx := below :: map (rename S) premises).
     assert (hbelowS : BProv Ax_s Sctx below).
+    { apply BProv_ass. unfold Sctx. simpl. now left. }
+    assert (hpremisesS : forall premise, In premise premises ->
+        BProv Ax_s Sctx (rename S premise)).
     {
+      intros premise hpremise.
       apply BProv_ass.
-      unfold Sctx. simpl. left. reflexivity.
-    }
-    assert (hhereditaryS : BProv Ax_s Sctx (rename S hereditary)).
-    {
-      apply BProv_ass.
-      unfold Sctx. simpl. right. left. reflexivity.
+      unfold Sctx. simpl. right.
+      apply in_map. exact hpremise.
     }
     assert (hpsiCurrent : BProv Ax_s Sctx psi).
     {
-      apply (BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
-        hmembersBelow Sctx psi).
-      - unfold hereditary in hhereditaryS. exact hhereditaryS.
-      - unfold below in hbelowS. exact hbelowS.
+      apply (hcurrent Sctx hpremisesS).
+      unfold below in hbelowS. exact hbelowS.
     }
     set (lowLtSucc := ltTermAt (tVar 0) (tSucc (tVar 1))).
     set (psiAtLow := rename rSkipParam psi).
@@ -478,10 +479,7 @@ Proof.
       {
         set (D := lowLtSucc :: R).
         assert (hlt : BProv Ax_s D lowLtSucc).
-        {
-          apply BProv_ass.
-          unfold D. simpl. left. reflexivity.
-        }
+        { apply BProv_ass. unfold D. simpl. now left. }
         assert (hcases : BProv Ax_s D
             (pOr (ltTermAt (tVar 0) (tVar 1))
                  (pEq (tVar 0) (tVar 1)))).
@@ -499,7 +497,8 @@ Proof.
             (pImp (ltTermAt (tVar 0) (tVar 1)) psiAtLow)).
         {
           pose proof (BProv_allE_current_of_renamed R
-            (pImp (ltAt 0 1) (rename rSkipParam psi)) hbelowRen) as h.
+            (pImp (ltAt 0 1) (rename rSkipParam psi))
+            hbelowRen) as h.
           unfold below, hfStrongBelowAt in hbelowRen.
           rewrite ltTermAt_var.
           unfold psiAtLow.
@@ -511,10 +510,7 @@ Proof.
           set (E := ltTermAt (tVar 0) (tVar 1) :: D).
           assert (hltPred : BProv Ax_s E
               (ltTermAt (tVar 0) (tVar 1))).
-          {
-            apply BProv_ass.
-            unfold E. simpl. left. reflexivity.
-          }
+          { apply BProv_ass. unfold E. simpl. now left. }
           assert (hbelowE : BProv Ax_s E
               (pImp (ltTermAt (tVar 0) (tVar 1)) psiAtLow)).
           {
@@ -523,18 +519,16 @@ Proof.
             apply BProv_context_cons.
             exact hbelowBody.
           }
-          exact (BProv_mp Ax_s E (ltTermAt (tVar 0) (tVar 1))
-            psiAtLow hbelowE hltPred).
+          exact (BProv_mp Ax_s E
+            (ltTermAt (tVar 0) (tVar 1)) psiAtLow
+            hbelowE hltPred).
         }
         assert (hequal : BProv Ax_s
             (pEq (tVar 0) (tVar 1) :: D) psiAtLow).
         {
           set (E := pEq (tVar 0) (tVar 1) :: D).
           assert (heq : BProv Ax_s E (pEq (tVar 0) (tVar 1))).
-          {
-            apply BProv_ass.
-            unfold E. simpl. left. reflexivity.
-          }
+          { apply BProv_ass. unfold E. simpl. now left. }
           assert (hpsiRen : BProv Ax_s R (rename S psi)).
           {
             unfold R.
@@ -549,7 +543,8 @@ Proof.
             exact hpsiRen.
           }
           unfold psiAtLow.
-          exact (BProv_predicate_current_of_eq_previous E psi heq hpsiE).
+          exact (BProv_predicate_current_of_eq_previous
+            E psi heq hpsiE).
         }
         assert (hpsi : BProv Ax_s D psiAtLow).
         {
@@ -571,49 +566,62 @@ Proof.
     unfold lowLtSucc, psiAtLow in htarget.
     exact htarget.
   }
-  assert (hsuccImp : BProv Ax_s (map (rename S) [hereditary])
+  assert (hsuccImp : BProv Ax_s (map (rename S) premises)
       (pImp below (subst substSuccVar below))).
   {
-    exact (BProv_impI Ax_s (map (rename S) [hereditary]) below
+    exact (BProv_impI Ax_s (map (rename S) premises) below
       (subst substSuccVar below) hsuccBody).
   }
-  assert (hsucc : BProv Ax_s [hereditary]
+  assert (hsucc : BProv Ax_s premises
       (pAll (pImp below (subst substSuccVar below)))).
   {
-    exact (BProv_allI_of_sentences Ax_s [hereditary]
+    exact (BProv_allI_of_sentences Ax_s premises
       (pImp below (subst substSuccVar below)) sentence_ax_s hsuccImp).
   }
-  assert (hallBelow : BProv Ax_s [hereditary] (pAll below)).
+  assert (hallBelow : BProv Ax_s premises (pAll below)).
+  { exact (BProv_Ax_s_induction_rule premises below hzero hsucc). }
+  set (Q := map (rename S) premises).
+  assert (hpremisesQ : forall premise, In premise premises ->
+      BProv Ax_s Q (rename S premise)).
   {
-    exact (BProv_Ax_s_induction_rule [hereditary] below hzero hsucc).
+    intros premise hpremise.
+    apply BProv_ass.
+    unfold Q. apply in_map. exact hpremise.
   }
-  assert (hpsiBody : BProv Ax_s (map (rename S) [hereditary]) psi).
+  assert (hallBelowRen : BProv Ax_s Q (rename S (pAll below))).
   {
-    set (Q := map (rename S) [hereditary]).
-    assert (hhereditaryQ : BProv Ax_s Q (rename S hereditary)).
-    {
-      apply BProv_ass.
-      unfold Q. simpl. left. reflexivity.
-    }
-    assert (hallBelowRen : BProv Ax_s Q (rename S (pAll below))).
-    {
-      unfold Q.
-      exact (BProv_rename_of_sentences Ax_s sentence_ax_s [hereditary]
-        (pAll below) hallBelow S).
-    }
-    assert (hbelowQ : BProv Ax_s Q below).
-    {
-      exact (BProv_allE_current_of_renamed Q below hallBelowRen).
-    }
-    apply (BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
-      hmembersBelow Q psi).
-    - unfold hereditary in hhereditaryQ. exact hhereditaryQ.
-    - unfold below in hbelowQ. exact hbelowQ.
+    unfold Q.
+    exact (BProv_rename_of_sentences Ax_s sentence_ax_s premises
+      (pAll below) hallBelow S).
   }
+  assert (hbelowQ : BProv Ax_s Q below).
+  { exact (BProv_allE_current_of_renamed Q below hallBelowRen). }
+  assert (hpsiBody : BProv Ax_s Q psi).
+  {
+    apply (hcurrent Q hpremisesQ).
+    unfold below in hbelowQ. exact hbelowQ.
+  }
+  unfold Q in hpsiBody.
+  exact (BProv_allI_of_sentences Ax_s premises psi
+    sentence_ax_s hpsiBody).
+Qed.
+
+(** Ordinary PA induction on the cumulative strict-prefix predicate proves
+    the unsealed translated HF set-induction body. *)
+Lemma BProv_Ax_s_translatedHFInductionBody_of_all_hfMembersBelowAt :
+  forall (hmembersBelow : BProv Ax_s [] (pAll (hfMembersBelowAt 0))) psi,
+  BProv Ax_s [] (translatedHFInductionBody psi).
+Proof.
+  intros hmembersBelow psi.
+  set (hereditary := hfHereditaryAt psi).
   assert (hallPsi : BProv Ax_s [hereditary] (pAll psi)).
   {
-    exact (BProv_allI_of_sentences Ax_s [hereditary] psi
-      sentence_ax_s hpsiBody).
+    apply (BProv_Ax_s_all_of_strongStep_under [hereditary] psi).
+    intros G hpremises hbelow.
+    apply (BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
+      hmembersBelow G psi).
+    - exact (hpremises hereditary (or_introl eq_refl)).
+    - exact hbelow.
   }
   unfold translatedHFInductionBody.
   unfold hereditary in hallPsi.
