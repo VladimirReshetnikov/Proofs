@@ -223,8 +223,7 @@ Proof.
             (hfStrongBelowAt ordinalCodeGraphRangePoint)).
         {
           unfold Sctx, D.
-          apply BProv_context_cons.
-          apply BProv_context_cons.
+          apply BProv_context_two.
           exact hbelow.
         }
         assert (hbelowC : BProv Ax_s C

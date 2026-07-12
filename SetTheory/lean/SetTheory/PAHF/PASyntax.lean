@@ -47867,8 +47867,7 @@ theorem BProv_Ax_s_all_of_strongStep_under
               (imp
                 (ltTermAt (Term.var 0) (Term.var 1))
                 psiAtLow) :=
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hbelowBody)
+            BProv_context_two hbelowBody
           exact BProv_mp Ax_s E _ _ hbelowE hltPred
         have hequal : BProv Ax_s
             (eq (Term.var 0) (Term.var 1) :: D)
@@ -47884,8 +47883,7 @@ theorem BProv_Ax_s_all_of_strongStep_under
                 (B := Ax_s) Ax_s_sentences
                 hpsiCurrent Nat.succ)
           have hpsiE : BProv Ax_s E (rename Nat.succ psi) :=
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hpsiRen)
+            BProv_context_two hpsiRen
           simpa [psiAtLow] using
             (BProv_predicate_current_of_eq_previous heq hpsiE)
         have hpsi : BProv Ax_s D psiAtLow :=

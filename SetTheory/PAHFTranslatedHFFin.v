@@ -515,8 +515,7 @@ Proof.
               (pImp (ltTermAt (tVar 0) (tVar 1)) psiAtLow)).
           {
             unfold E, D.
-            apply BProv_context_cons.
-            apply BProv_context_cons.
+            apply BProv_context_two.
             exact hbelowBody.
           }
           exact (BProv_mp Ax_s E
@@ -538,8 +537,7 @@ Proof.
           assert (hpsiE : BProv Ax_s E (rename S psi)).
           {
             unfold E, D.
-            apply BProv_context_cons.
-            apply BProv_context_cons.
+            apply BProv_context_two.
             exact hpsiRen.
           }
           unfold psiAtLow.

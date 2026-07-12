@@ -1108,14 +1108,12 @@ Proof.
     assert (hsteps1D : BProv Ax_s D
         (ordinalCodeStepsTermAt sequenceCode1R sequenceStep1R rawR)).
     {
-      exact (BProv_context_cons Ax_s C leNext _
-        (BProv_context_cons Ax_s R phi _ hsteps1R)).
+      exact (BProv_context_two Ax_s R leNext phi _ hsteps1R).
     }
     assert (hsteps2D : BProv Ax_s D
         (ordinalCodeStepsTermAt sequenceCode2R sequenceStep2R rawR)).
     {
-      exact (BProv_context_cons Ax_s C leNext _
-        (BProv_context_cons Ax_s R phi _ hsteps2R)).
+      exact (BProv_context_two Ax_s R leNext phi _ hsteps2R).
     }
     assert (hstep1D : BProv Ax_s D
         (ordinalCodeStepWitnessTermAt

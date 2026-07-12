@@ -1696,12 +1696,10 @@ theorem ordinalCodeTraceAgreementProof :
       BProv_Ax_s_ltTermAt_of_succ_leTermAt hleNext
     have hsteps₁D : BProv Ax_s D
         (ordinalCodeStepsTermAt sequenceCode₁R sequenceStep₁R rawR) :=
-      BProv_context_cons (B := Ax_s) (a := leNext)
-        (BProv_context_cons (B := Ax_s) (a := phi) hsteps₁R)
+      BProv_context_two hsteps₁R
     have hsteps₂D : BProv Ax_s D
         (ordinalCodeStepsTermAt sequenceCode₂R sequenceStep₂R rawR) :=
-      BProv_context_cons (B := Ax_s) (a := leNext)
-        (BProv_context_cons (B := Ax_s) (a := phi) hsteps₂R)
+      BProv_context_two hsteps₂R
     have hstep₁D : BProv Ax_s D
         (ordinalCodeStepWitnessTermAt
           sequenceCode₁R sequenceStep₁R (Term.var 0)) :=
@@ -3405,8 +3403,7 @@ theorem OrdinalCodeGraphRangeStrongStep_of_localFacts
           BProv_andE2 hrest
         have hbelowS : BProv Ax_s S
             (hfStrongBelowAt ordinalCodeGraphRangePoint) :=
-          BProv_context_cons (B := Ax_s) (a := succCase)
-            (BProv_context_cons (B := Ax_s) (a := domain) hbelow)
+          BProv_context_two hbelow
         have hbelowC : BProv Ax_s C
             (rename Nat.succ
               (hfStrongBelowAt ordinalCodeGraphRangePoint)) := by
