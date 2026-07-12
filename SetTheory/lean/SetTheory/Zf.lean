@@ -201,25 +201,19 @@ theorem bridge_Sep :
     (∀ (phi : Form) (e : Nat → V), Sat mem e (Sep_form phi)) ↔
       ∀ (phi : Form) (e : Nat → V) (a : V),
         ∃ s, ∀ x, mem x s ↔ (mem x a ∧ Sat mem (scons x e) phi) := by
+  have hbody (phi : Form) (e : Nat → V) (a s x : V) :
+      (mem x a ∧ Sat mem (scons x (scons s (scons a e))) (rename rsep phi)) ↔
+        (mem x a ∧ Sat mem (scons x e) phi) :=
+    and_congr_right fun _ => rsep_rel phi x s a e
   constructor
   · intro h phi e a
     obtain ⟨s, hs⟩ := h phi e a
-    refine ⟨s, fun x => ?_⟩
-    constructor
-    · intro hin
-      obtain ⟨hxa, hsat⟩ := (hs x).1 hin
-      exact ⟨hxa, (rsep_rel phi x s a e).mp hsat⟩
-    · intro ⟨hxa, hsat⟩
-      exact (hs x).2 ⟨hxa, (rsep_rel phi x s a e).mpr hsat⟩
+    exact ⟨s, fun x =>
+      ((Sat_fIff (mem := mem)).mp (hs x)).trans (hbody phi e a s x)⟩
   · intro h phi e a
     obtain ⟨s, hs⟩ := h phi e a
-    refine ⟨s, fun x => ?_⟩
-    constructor
-    · intro hin
-      obtain ⟨hxa, hsat⟩ := (hs x).mp hin
-      exact ⟨hxa, (rsep_rel phi x s a e).mpr hsat⟩
-    · intro ⟨hxa, hsat⟩
-      exact (hs x).mpr ⟨hxa, (rsep_rel phi x s a e).mp hsat⟩
+    exact ⟨s, fun x => (Sat_fIff (mem := mem)).mpr
+      ((hs x).trans (hbody phi e a s x).symm)⟩
 
 theorem bridge_Sep_fwd (H : ∀ (phi : Form) (e : Nat → V), Sat mem e (Sep_form phi)) :
     ∀ (phi : Form) (e : Nat → V) (a : V),
@@ -304,29 +298,23 @@ the relation defined by `psi`. -/
 theorem bridge_Image (psi : Form) (e : Nat → V) :
     Sat mem e (Image_form psi) ↔
       ∀ a, ∃ r, ∀ y, mem y r ↔ ∃ x, mem x a ∧ relOf mem psi e y x := by
+  have hbody (a r y : V) :
+      (∃ x, mem x a ∧
+        Sat mem (scons x (scons y (scons r (scons a e)))) (rename ri psi)) ↔
+      (∃ x, mem x a ∧ relOf mem psi e y x) := by
+    apply exists_congr
+    intro x
+    exact and_congr_right fun _ =>
+      Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)
   constructor
   · intro h a
     obtain ⟨r, hr⟩ := h a
-    refine ⟨r, fun y => ?_⟩
-    constructor
-    · intro hy
-      obtain ⟨x, hxa, hsat⟩ := (hr y).1 hy
-      exact ⟨x, hxa,
-        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mp hsat⟩
-    · intro ⟨x, hxa, hrel⟩
-      exact (hr y).2 ⟨x, hxa,
-        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mpr hrel⟩
+    exact ⟨r, fun y =>
+      ((Sat_fIff (mem := mem)).mp (hr y)).trans (hbody a r y)⟩
   · intro h a
     obtain ⟨r, hr⟩ := h a
-    refine ⟨r, fun y => ?_⟩
-    constructor
-    · intro hy
-      obtain ⟨x, hxa, hrel⟩ := (hr y).mp hy
-      exact ⟨x, hxa,
-        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mpr hrel⟩
-    · intro ⟨x, hxa, hsat⟩
-      exact (hr y).mpr ⟨x, hxa,
-        (Sat_rename_relOf psi ri _ e y x (ri_env x y r a e)).mp hsat⟩
+    exact ⟨r, fun y => (Sat_fIff (mem := mem)).mpr
+      ((hr y).trans (hbody a r y).symm)⟩
 
 /-- Satisfaction of a Replacement instance is exactly the semantic
 replacement implication for the relation defined by `psi`. -/

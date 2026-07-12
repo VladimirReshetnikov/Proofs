@@ -182,20 +182,21 @@ Lemma bridge_Sep :
     (forall phi e a, exists s, forall x,
       mem x s <-> (mem x a /\ Sat V mem (scons V x e) phi)).
 Proof.
-  intros V mem. split.
+  intros V mem.
+  assert (Hbody : forall phi e a s x,
+      (mem x a /\
+       Sat V mem (scons V x (scons V s (scons V a e))) (rename rsep phi)) <->
+      (mem x a /\ Sat V mem (scons V x e) phi)).
+  { intros phi e a s x.
+    pose proof (rsep_rel V mem phi x s a e). tauto. }
+  split.
   - intros H phi e a.
     pose proof (H phi e) as He. unfold Sep_form, fIff in He. cbn [Sat] in He.
-    destruct (He a) as [s Hs]. exists s. intro x. specialize (Hs x). split.
-    + intro Hin. destruct (proj1 Hs Hin) as [Hxa Hsat]. split;
-        [ exact Hxa | apply (proj1 (rsep_rel V mem phi x s a e)); exact Hsat ].
-    + intros [Hxa Hsat]. apply (proj2 Hs). split;
-        [ exact Hxa | apply (proj2 (rsep_rel V mem phi x s a e)); exact Hsat ].
+    destruct (He a) as [s Hs]. exists s. intro x.
+    exact (iff_trans (Hs x) (Hbody phi e a s x)).
   - intros H phi e. unfold Sep_form, fIff. cbn [Sat]. intro a.
-    destruct (H phi e a) as [s Hs]. exists s. intro x. specialize (Hs x). split.
-    + intro Hin. destruct (proj1 Hs Hin) as [Hxa Hsat]. split;
-        [ exact Hxa | apply (proj2 (rsep_rel V mem phi x s a e)); exact Hsat ].
-    + intros [Hxa Hsat]. apply (proj2 Hs). split;
-        [ exact Hxa | apply (proj1 (rsep_rel V mem phi x s a e)); exact Hsat ].
+    destruct (H phi e a) as [s Hs]. exists s. intro x.
+    exact (iff_trans (Hs x) (iff_sym (Hbody phi e a s x))).
 Qed.
 
 Lemma bridge_Sep_fwd :
@@ -323,12 +324,8 @@ Proof.
       [ exact Hxa | exact (proj1 (Hrel a r y x) Hpsi)
       | exact Hxa | exact (proj2 (Hrel a r y x) Hpsi) ]. }
   split; intros H a; destruct (H a) as [r Hr]; exists r; intro y.
-  - split; intro Hy.
-    + apply (proj1 (Hbody a r y)), (proj1 (Hr y)), Hy.
-    + apply (proj2 (Hr y)), (proj2 (Hbody a r y)), Hy.
-  - split; intro Hy.
-    + apply (proj2 (Hbody a r y)), (proj1 (Hr y)), Hy.
-    + apply (proj2 (Hr y)), (proj1 (Hbody a r y)), Hy.
+  - exact (iff_trans (Hr y) (Hbody a r y)).
+  - exact (iff_trans (Hr y) (iff_sym (Hbody a r y))).
 Qed.
 
 Lemma bridge_Repl :
