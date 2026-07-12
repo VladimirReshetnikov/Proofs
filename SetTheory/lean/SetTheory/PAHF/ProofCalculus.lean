@@ -43,7 +43,7 @@ theorem BProv_imp_trans
     BProv B G (imp a c) := by
   apply BProv_impI
   have ha : BProv B (a :: G) a :=
-    BProv_ass (B := B) (G := a :: G) (by simp)
+    BProv_ass_head
   exact BProv_mp B (a :: G) b c (BProv_context_cons hbc)
     (BProv_mp B (a :: G) a b (BProv_context_cons hab) ha)
 
@@ -57,7 +57,7 @@ theorem BProv_imp_mono
   apply BProv_impI
   let C : List Formula := a' :: imp a b :: G
   have ha'C : BProv B C a' :=
-    BProv_ass (B := B) (G := C) (by simp [C])
+    BProv_ass_head
   have haC : BProv B C a :=
     BProv_mp B C a' a
       (PA.Formula.BProv_context_prefix [a', imp a b] ha) ha'C
@@ -76,7 +76,7 @@ theorem BProv_and_mono
   apply BProv_impI
   let C : List Formula := and a b :: G
   have habC : BProv B C (and a b) :=
-    BProv_ass (B := B) (G := C) (by simp [C])
+    BProv_ass_head
   exact BProv_andI
     (BProv_mp B C a a' (BProv_context_cons ha) (BProv_andE1 habC))
     (BProv_mp B C b b' (BProv_context_cons hb) (BProv_andE2 habC))
@@ -90,22 +90,22 @@ theorem BProv_or_mono
   apply BProv_impI
   let C : List Formula := or a b :: G
   have horC : BProv B C (or a b) :=
-    BProv_ass (B := B) (G := C) (by simp [C])
+    BProv_ass_head
   apply BProv_orE horC
   · exact BProv_orI1
       (BProv_mp B (a :: C) a a'
         (PA.Formula.BProv_context_prefix [a, or a b] ha)
-        (BProv_ass (B := B) (by simp)))
+        BProv_ass_head)
   · exact BProv_orI2
       (BProv_mp B (b :: C) b b'
         (PA.Formula.BProv_context_prefix [b, or a b] hb)
-        (BProv_ass (B := B) (by simp)))
+        BProv_ass_head)
 
 theorem BProv_iffForm_refl
     {B : Formula → Prop} {G : List Formula} (a : Formula) :
     BProv B G (iffForm a a) := by
   have haa : BProv B G (imp a a) :=
-    BProv_impI (BProv_ass (B := B) (G := a :: G) (by simp))
+    BProv_impI BProv_ass_head
   exact BProv_iffForm_intro haa haa
 
 theorem BProv_iffForm_symm
@@ -159,11 +159,11 @@ theorem BProv_ex_mono_of_sentences
   apply BProv_impI
   let C : List Formula := ex a :: G
   have hexa : BProv B C (ex a) :=
-    BProv_ass (B := B) (G := C) (by simp [C])
+    BProv_ass_head
   refine BProv_exE_of_sentences hB hexa ?_
   let D : List Formula := a :: C.map (rename Nat.succ)
   have ha : BProv B D a :=
-    BProv_ass (B := B) (G := D) (by simp [D])
+    BProv_ass_head
   have habD : BProv B D (imp a b) := by
     simpa [D, C] using
       (BProv_context_two (first := a) (second := rename Nat.succ (ex a)) hab)
@@ -196,7 +196,7 @@ theorem BProv_all_mono_of_sentences
   apply BProv_allI_of_sentences hB
   let D : List Formula := C.map (rename Nat.succ)
   have halla : BProv B C (all a) :=
-    BProv_ass (B := B) (G := C) (by simp [C])
+    BProv_ass_head
   have hallaRen : BProv B D (rename Nat.succ (all a)) := by
     simpa [D] using BProv_rename_of_sentences hB halla Nat.succ
   have hainst := BProv_allE (B := B) (G := D)

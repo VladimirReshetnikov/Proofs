@@ -8583,6 +8583,14 @@ Proof.
   exact (P_ass G phi hphi).
 Qed.
 
+(* The head of a finite context is available without a membership subproof. *)
+Lemma BProv_ass_head : forall (B : formula -> Prop) phi G,
+  BProv B (phi :: G) phi.
+Proof.
+  intros B phi G.
+  exact (BProv_ass B (phi :: G) phi (or_introl eq_refl)).
+Qed.
+
 Lemma BProv_rename_of_sentences : forall (B : formula -> Prop),
   Sentences B -> forall G phi,
   BProv B G phi -> forall r,

@@ -131,7 +131,7 @@ Proof.
   - cbn [iterEx openedExContext iterRenameSucc] in hex, hopened.
     set (C := iterEx n body :: map (rename S) G).
     assert (hinner : BProv B C (iterEx n body)).
-    { apply BProv_ass. unfold C. simpl. now left. }
+    { apply BProv_ass_head. }
     assert (htargetC : BProv B C (rename S target)).
     {
       apply (IH C body (rename S target) hinner).
@@ -286,7 +286,7 @@ Proof.
   apply BProv_impI.
   set (C := a :: G).
   assert (ha : BProv B C a).
-  { apply BProv_ass. unfold C. simpl. now left. }
+  { apply BProv_ass_head. }
   assert (hb : BProv B C b).
   {
     exact (BProv_mp B C a b
@@ -307,7 +307,7 @@ Proof.
   apply BProv_impI.
   set (C := a' :: pImp a b :: G).
   assert (ha'C : BProv B C a').
-  { apply BProv_ass. unfold C. simpl. now left. }
+  { apply BProv_ass_head. }
   assert (haC : BProv B C a).
   {
     exact (BProv_mp B C a' a
@@ -331,7 +331,7 @@ Proof.
   apply BProv_impI.
   set (C := pAnd a b :: G).
   assert (hp : BProv B C (pAnd a b)).
-  { apply BProv_ass. unfold C. simpl. now left. }
+  { apply BProv_ass_head. }
   assert (haC : BProv B C a).
   { exact (BProv_andE1 B C a b hp). }
   assert (hbC : BProv B C b).
@@ -359,12 +359,12 @@ Proof.
   apply BProv_impI.
   set (C := pOr a b :: G).
   assert (hor : BProv B C (pOr a b)).
-  { apply BProv_ass. unfold C. simpl. now left. }
+  { apply BProv_ass_head. }
   assert (hleft : BProv B (a :: C) (pOr a' b')).
   {
     apply BProv_orI1.
     assert (haC : BProv B (a :: C) a).
-    { apply BProv_ass. simpl. now left. }
+    { apply BProv_ass_head. }
     exact (BProv_mp B (a :: C) a a'
       (BProv_context_prefix B [a; pOr a b] G (pImp a a') haa') haC).
   }
@@ -372,7 +372,7 @@ Proof.
   {
     apply BProv_orI2.
     assert (hbC : BProv B (b :: C) b).
-    { apply BProv_ass. simpl. now left. }
+    { apply BProv_ass_head. }
     exact (BProv_mp B (b :: C) b b'
       (BProv_context_prefix B [b; pOr a b] G (pImp b b') hbb') hbC).
   }
@@ -387,8 +387,7 @@ Proof.
   assert (haa : BProv B G (pImp a a)).
   {
     apply BProv_impI.
-    apply BProv_ass.
-    simpl. now left.
+    apply BProv_ass_head.
   }
   exact (BProv_PA_iffForm_intro B G a a haa haa).
 Qed.
@@ -478,11 +477,11 @@ Proof.
   apply BProv_impI.
   set (C := pEx a :: G).
   assert (hexa : BProv B C (pEx a)).
-  { apply BProv_ass. unfold C. simpl. now left. }
+  { apply BProv_ass_head. }
   apply (BProv_exE_of_sentences B C a (pEx b) hB hexa).
   set (D := a :: map (rename S) C).
   assert (ha : BProv B D a).
-  { apply BProv_ass. unfold D. simpl. now left. }
+  { apply BProv_ass_head. }
   assert (habD : BProv B D (pImp a b)).
   {
     unfold D, C.

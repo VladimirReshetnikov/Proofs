@@ -361,10 +361,7 @@ Proof.
   {
     set (D := hfMemAt 0 1 :: map (rename S) G).
     assert (hmem : BProv Ax_s D (hfMemAt 0 1)).
-    {
-      apply BProv_ass.
-      unfold D. simpl. left. reflexivity.
-    }
+    { apply BProv_ass_head. }
     assert (hlt : BProv Ax_s D (ltAt 0 1)).
     {
       exact (BProv_Ax_s_ltAt_of_hfMemAt_of_all
@@ -432,7 +429,7 @@ Proof.
     {
       set (D := lowLtZero :: map (rename S) premises).
       assert (hlt : BProv Ax_s D lowLtZero).
-      { apply BProv_ass. unfold D. simpl. now left. }
+      { apply BProv_ass_head. }
       assert (hzeroLe : BProv Ax_s D (leTermAt tZero (tVar 0))).
       { exact (BProv_Ax_s_leTermAt_zero_left D (tVar 0)). }
       assert (hbot : BProv Ax_s D pBot).
@@ -455,7 +452,7 @@ Proof.
   {
     set (Sctx := below :: map (rename S) premises).
     assert (hbelowS : BProv Ax_s Sctx below).
-    { apply BProv_ass. unfold Sctx. simpl. now left. }
+    { apply BProv_ass_head. }
     assert (hpremisesS : forall premise, In premise premises ->
         BProv Ax_s Sctx (rename S premise)).
     {
@@ -479,7 +476,7 @@ Proof.
       {
         set (D := lowLtSucc :: R).
         assert (hlt : BProv Ax_s D lowLtSucc).
-        { apply BProv_ass. unfold D. simpl. now left. }
+        { apply BProv_ass_head. }
         assert (hcases : BProv Ax_s D
             (pOr (ltTermAt (tVar 0) (tVar 1))
                  (pEq (tVar 0) (tVar 1)))).
@@ -510,7 +507,7 @@ Proof.
           set (E := ltTermAt (tVar 0) (tVar 1) :: D).
           assert (hltPred : BProv Ax_s E
               (ltTermAt (tVar 0) (tVar 1))).
-          { apply BProv_ass. unfold E. simpl. now left. }
+          { apply BProv_ass_head. }
           assert (hbelowE : BProv Ax_s E
               (pImp (ltTermAt (tVar 0) (tVar 1)) psiAtLow)).
           {
@@ -527,7 +524,7 @@ Proof.
         {
           set (E := pEq (tVar 0) (tVar 1) :: D).
           assert (heq : BProv Ax_s E (pEq (tVar 0) (tVar 1))).
-          { apply BProv_ass. unfold E. simpl. now left. }
+          { apply BProv_ass_head. }
           assert (hpsiRen : BProv Ax_s R (rename S psi)).
           {
             unfold R.

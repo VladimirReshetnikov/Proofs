@@ -1985,6 +1985,11 @@ theorem BProv_ass {B : Formula → Prop} {G : List Formula} {phi : Formula}
     (hphi : phi ∈ G) : BProv B G phi :=
   BProv_of_Prov (Prov.P_ass G phi hphi)
 
+/-- The head of a finite context is available without a membership subproof. -/
+theorem BProv_ass_head {B : Formula → Prop} {G : List Formula}
+    {phi : Formula} : BProv B (phi :: G) phi :=
+  BProv_ass List.mem_cons_self
+
 /-- Rename every finite-context assumption in a relative PA proof.  The
 background theory is preserved when its axioms are sentences, since renaming a
 sentence is syntactically equal to itself. -/
@@ -21627,7 +21632,7 @@ theorem BProv_Ax_s_ltTermAt_two_of_boolAt
     let C : List Formula := zeroAt bit :: G
     have hbitZero : BProv Ax_s C (eqConstAt bit 0) := by
       have hraw : BProv Ax_s C (zeroAt bit) :=
-        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        BProv_ass_head
       simpa [zeroAt] using hraw
     simpa [C, ltTermAt, Term.rename] using
       (BProv_Ax_s_ltConst_of_eqConst (G := C) (a := bit)
@@ -47563,7 +47568,7 @@ theorem BProv_Ax_s_predicate_of_renamed_hereditary_and_strongBelow
   have hmemberBody : BProv Ax_s (G.map (rename Nat.succ)) memberImp := by
     let D : List Formula := hfMemAt 0 1 :: G.map (rename Nat.succ)
     have hmem : BProv Ax_s D (hfMemAt 0 1) :=
-      BProv_ass (B := Ax_s) (G := D) (by simp [D])
+      BProv_ass_head
     have hlt : BProv Ax_s D (ltAt 0 1) :=
       BProv_Ax_s_ltAt_of_hfMemAt_of_all
         hmembersBelow hmem
@@ -47614,7 +47619,7 @@ theorem BProv_Ax_s_all_of_strongStep_under
       let D : List Formula :=
         lowLtZero :: premises.map (rename Nat.succ)
       have hlt : BProv Ax_s D lowLtZero :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        BProv_ass_head
       have hzeroLe : BProv Ax_s D
           (leTermAt Term.zero (Term.var 0)) :=
         BProv_Ax_s_leTermAt_zero_left (Term.var 0)
@@ -47633,7 +47638,7 @@ theorem BProv_Ax_s_all_of_strongStep_under
     let S : List Formula :=
       below :: premises.map (rename Nat.succ)
     have hbelowS : BProv Ax_s S below :=
-      BProv_ass (B := Ax_s) (G := S) (by simp [S])
+      BProv_ass_head
     have hpremisesS : ∀ premise, premise ∈ premises →
         BProv Ax_s S (rename Nat.succ premise) := by
       intro premise hpremise
@@ -47650,7 +47655,7 @@ theorem BProv_Ax_s_all_of_strongStep_under
       have hbody : BProv Ax_s R (imp lowLtSucc psiAtLow) := by
         let D : List Formula := lowLtSucc :: R
         have hlt : BProv Ax_s D lowLtSucc :=
-          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+          BProv_ass_head
         have hcases : BProv Ax_s D
             (or
               (ltTermAt (Term.var 0) (Term.var 1))
@@ -47675,7 +47680,7 @@ theorem BProv_Ax_s_all_of_strongStep_under
             ltTermAt (Term.var 0) (Term.var 1) :: D
           have hltPred : BProv Ax_s E
               (ltTermAt (Term.var 0) (Term.var 1)) :=
-            BProv_ass (B := Ax_s) (G := E) (by simp [E])
+            BProv_ass_head
           have hbelowE : BProv Ax_s E
               (imp
                 (ltTermAt (Term.var 0) (Term.var 1))
@@ -47689,7 +47694,7 @@ theorem BProv_Ax_s_all_of_strongStep_under
             eq (Term.var 0) (Term.var 1) :: D
           have heq : BProv Ax_s E
               (eq (Term.var 0) (Term.var 1)) :=
-            BProv_ass (B := Ax_s) (G := E) (by simp [E])
+            BProv_ass_head
           have hpsiRen : BProv Ax_s R (rename Nat.succ psi) := by
             simpa [R] using
               (BProv_rename_of_sentences
@@ -48509,7 +48514,7 @@ theorem BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
         BProv_context_cons (B := Ax_s) hnewDouble
       have hnewMem : BProv Ax_s D (hfMemAt query newHead) := by
         have hraw : BProv Ax_s D newMem :=
-          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+          BProv_ass_head
         simpa [newMem] using hraw
       have hbot : BProv Ax_s D bot :=
         BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
@@ -48523,7 +48528,7 @@ theorem BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
         BProv_context_cons (B := Ax_s) holdDouble
       have holdMem : BProv Ax_s D (hfMemAt query oldHead) := by
         have hraw : BProv Ax_s D oldMem :=
-          BProv_ass (B := Ax_s) (G := D) (by simp [D])
+          BProv_ass_head
         simpa [oldMem] using hraw
       have hbot : BProv Ax_s D bot :=
         BProv_Ax_s_hfMemAt_bot_of_eqConst_zero_elem_low_double
@@ -48535,7 +48540,7 @@ theorem BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
     let C : List Formula := oneAt bit :: G
     have hbitOne : BProv Ax_s C (eqConstAt bit 1) := by
       have hraw : BProv Ax_s C (oneAt bit) :=
-        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        BProv_ass_head
       simpa [oneAt] using hraw
     have hnewStepC : BProv Ax_s C
         (div2StepAt newHead newTail bit) :=
@@ -48596,7 +48601,7 @@ theorem BProv_Ax_s_hfAdjoin_zero_head_lift
     have hsameC : BProv Ax_s C (iffForm newMem oldMem) :=
       BProv_context_cons (B := Ax_s) hsame
     have hnew : BProv Ax_s C newMem :=
-      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      BProv_ass_head
     have htoOld : BProv Ax_s C (imp newMem oldMem) := by
       simpa [iffForm] using BProv_andE1 hsameC
     have hold : BProv Ax_s C oldMem :=
@@ -48605,20 +48610,20 @@ theorem BProv_Ax_s_hfAdjoin_zero_head_lift
   have hreverse : BProv Ax_s G (imp rhs newMem) := by
     let C : List Formula := rhs :: G
     have hcases : BProv Ax_s C rhs :=
-      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      BProv_ass_head
     have hleft : BProv Ax_s (oldMem :: C) newMem := by
       let D : List Formula := oldMem :: C
       have hsameD : BProv Ax_s D (iffForm newMem oldMem) :=
         BProv_context_prefix [oldMem, rhs] hsame
       have hold : BProv Ax_s D oldMem :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        BProv_ass_head
       have htoNew : BProv Ax_s D (imp oldMem newMem) := by
         simpa [iffForm] using BProv_andE2 hsameD
       exact BProv_mp Ax_s D oldMem newMem htoNew hold
     have hright : BProv Ax_s (succEq :: C) newMem := by
       let D : List Formula := succEq :: C
       have heq : BProv Ax_s D succEq :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        BProv_ass_head
       have hzeroD : BProv Ax_s D
           (eq (Term.var query) Term.zero) := by
         simpa [eqConstAt, Term.numeral] using
@@ -48686,7 +48691,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
     have hnewC : BProv Ax_s C (iffForm newSucc newTailMem) :=
       BProv_context_cons (B := Ax_s) hnewIff
     have hnewAss : BProv Ax_s C newSucc :=
-      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      BProv_ass_head
     have hnewToTail : BProv Ax_s C (imp newSucc newTailMem) := by
       simpa [iffForm] using BProv_andE1 hnewC
     have hnewTail : BProv Ax_s C newTailMem :=
@@ -48705,7 +48710,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
       have holdD : BProv Ax_s D (iffForm oldSucc oldTailMem) :=
         BProv_context_prefix [oldTailMem, newSucc] holdIff
       have htailAss : BProv Ax_s D oldTailMem :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        BProv_ass_head
       have htailToOld : BProv Ax_s D (imp oldTailMem oldSucc) := by
         simpa [iffForm] using BProv_andE2 holdD
       have holdMem : BProv Ax_s D oldSucc :=
@@ -48714,7 +48719,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
     have hright : BProv Ax_s (tailEq :: C) rhs := by
       let D : List Formula := tailEq :: C
       have heq : BProv Ax_s D tailEq :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        BProv_ass_head
       have hsuccEq : BProv Ax_s D headEq := by
         simpa [tailEq, headEq] using BProv_eq_congr_succ heq
       exact BProv_orI2 hsuccEq
@@ -48722,13 +48727,13 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
   have hreverse : BProv Ax_s G (imp rhs newSucc) := by
     let C : List Formula := rhs :: G
     have hcases : BProv Ax_s C rhs :=
-      BProv_ass (B := Ax_s) (G := C) (by simp [C])
+      BProv_ass_head
     have hleft : BProv Ax_s (oldSucc :: C) newSucc := by
       let D : List Formula := oldSucc :: C
       have holdD : BProv Ax_s D (iffForm oldSucc oldTailMem) :=
         BProv_context_prefix [oldSucc, rhs] holdIff
       have holdAss : BProv Ax_s D oldSucc :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        BProv_ass_head
       have holdToTail : BProv Ax_s D (imp oldSucc oldTailMem) := by
         simpa [iffForm] using BProv_andE1 holdD
       have holdTail : BProv Ax_s D oldTailMem :=
@@ -48752,7 +48757,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
     have hright : BProv Ax_s (headEq :: C) newSucc := by
       let D : List Formula := headEq :: C
       have hheadEq : BProv Ax_s D headEq :=
-        BProv_ass (B := Ax_s) (G := D) (by simp [D])
+        BProv_ass_head
       have hinj : BProv Ax_s D (imp headEq tailEq) := by
         simpa [headEq, tailEq] using
           BProv_weaken_nil (G := D)
@@ -48811,7 +48816,7 @@ theorem BProv_Ax_s_hfAdjoinGraph_heads_of_same_bit
       let C : List Formula := zeroEq :: G.map (rename Nat.succ)
       have hqueryZero : BProv Ax_s C (eqConstAt 0 0) := by
         have hraw : BProv Ax_s C zeroEq :=
-          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+          BProv_ass_head
         simpa [zeroEq] using hraw
       have hnewRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ (div2StepAt newHead newTail bit)) :=
@@ -49095,7 +49100,7 @@ theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
       let C : List Formula := zeroEq :: G.map (rename Nat.succ)
       have hqueryZero : BProv Ax_s C (eqConstAt 0 0) := by
         have hraw : BProv Ax_s C zeroEq :=
-          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+          BProv_ass_head
         simpa [zeroEq] using hraw
       have hnewStepRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
@@ -49217,7 +49222,7 @@ theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
         have hnewC : BProv Ax_s C (iffForm newSucc tailMem) :=
           BProv_context_cons (B := Ax_s) hnewIff
         have hnewAss : BProv Ax_s C newSucc :=
-          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+          BProv_ass_head
         have hnewToTail : BProv Ax_s C
             (imp newSucc tailMem) := by
           simpa [iffForm] using BProv_andE1 hnewC
@@ -49234,14 +49239,14 @@ theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
       have hreverse : BProv Ax_s S (imp rhs newSucc) := by
         let C : List Formula := rhs :: S
         have hcases : BProv Ax_s C rhs :=
-          BProv_ass (B := Ax_s) (G := C) (by simp [C])
+          BProv_ass_head
         have hleft : BProv Ax_s (oldSucc :: C) newSucc := by
           let D : List Formula := oldSucc :: C
           have holdD : BProv Ax_s D
               (iffForm oldSucc tailMem) :=
             BProv_context_prefix [oldSucc, rhs] holdIff
           have holdAss : BProv Ax_s D oldSucc :=
-            BProv_ass (B := Ax_s) (G := D) (by simp [D])
+            BProv_ass_head
           have holdToTail : BProv Ax_s D
               (imp oldSucc tailMem) := by
             simpa [iffForm] using BProv_andE1 holdD
@@ -49257,7 +49262,7 @@ theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
         have hright : BProv Ax_s (badEq :: C) newSucc := by
           let D : List Formula := badEq :: C
           have hbad : BProv Ax_s D badEq :=
-            BProv_ass (B := Ax_s) (G := D) (by simp [D])
+            BProv_ass_head
           have hnot : BProv Ax_s D (imp badEq bot) := by
             simpa [badEq] using
               BProv_weaken_nil (G := D)
