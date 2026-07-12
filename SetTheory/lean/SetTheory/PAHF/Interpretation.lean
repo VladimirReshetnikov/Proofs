@@ -7316,31 +7316,6 @@ theorem BProv_formulaAt_allI {ρ : Nat → Nat} {G : List PA.Formula}
   exact BProv_formulaAt_allI_raw
     (BProv_impI (BProv_context_cons hshift))
 
-/-- Translated universal introduction while carrying explicit domain
-assumptions for the currently available PA variables. -/
-theorem BProv_formulaAt_allI_domainContext {ρ : Nat → Nat}
-    {n : Nat} {G : List PA.Formula} {a : PA.Formula}
-    (h : BProv translatedPAAx
-      (domainContextAt (upVarMap ρ) (n+1) ++
-        translateContextAt (upVarMap ρ) (G.map (PA.Formula.rename Nat.succ)))
-      (formulaAt (upVarMap ρ) a)) :
-    BProv translatedPAAx
-      (domainContextAt ρ n ++ translateContextAt ρ G)
-      (formulaAt ρ (PA.Formula.all a)) := by
-  have hshift : BProv translatedPAAx
-      (domainForm ::
-        ((domainContextAt ρ n ++ translateContextAt ρ G).map
-          (rename Nat.succ)))
-      (formulaAt (upVarMap ρ) a) := by
-    simpa [domainContextAt_upVarMap_succ,
-      translateContextAt_rename_succ_upVarMap, List.map_append,
-      List.cons_append] using h
-  change BProv translatedPAAx
-    (domainContextAt ρ n ++ translateContextAt ρ G)
-    (fAll (fImp domainForm (formulaAt (upVarMap ρ) a)))
-  exact BProv_allI_of_sentences Sentences_translatedPAAx
-    (BProv_impI hshift)
-
 /-- Universal introduction under explicit PA-domain assumptions for any
 sentence theory of HF formulas. -/
 theorem BProv_formulaAt_allI_domainContext_of_sentences {B : Form → Prop}
@@ -7365,6 +7340,20 @@ theorem BProv_formulaAt_allI_domainContext_of_sentences {B : Form → Prop}
     (domainContextAt ρ n ++ translateContextAt ρ G)
     (fAll (fImp domainForm (formulaAt (upVarMap ρ) a)))
   exact BProv_allI_of_sentences hB (BProv_impI hshift)
+
+/-- Translated universal introduction while carrying explicit domain
+assumptions for the currently available PA variables. -/
+theorem BProv_formulaAt_allI_domainContext {ρ : Nat → Nat}
+    {n : Nat} {G : List PA.Formula} {a : PA.Formula}
+    (h : BProv translatedPAAx
+      (domainContextAt (upVarMap ρ) (n+1) ++
+        translateContextAt (upVarMap ρ) (G.map (PA.Formula.rename Nat.succ)))
+      (formulaAt (upVarMap ρ) a)) :
+    BProv translatedPAAx
+      (domainContextAt ρ n ++ translateContextAt ρ G)
+      (formulaAt ρ (PA.Formula.all a)) :=
+  BProv_formulaAt_allI_domainContext_of_sentences
+    Sentences_translatedPAAx h
 
 /-- Raw translated universal elimination by an HF variable instance under an
 explicit slot map. -/
@@ -8152,11 +8141,7 @@ theorem BProv_HFFin_translateFormula_of_PA_BProv {phi : PA.Formula}
           g ∈ domainContextAt (fun k : Nat => k) n ++
               translateContextAt (fun k : Nat => k) [] →
           Sat mem e0 g := by
-      intro g hg
-      rw [List.mem_append] at hg
-      rcases hg with hg | hg
-      · exact hdomain g hg
-      · simp [translateContextAt] at hg
+      simpa [translateContextAt] using hdomain
     have hHF_e0 : ∀ g, HFFinAx_s g → Sat mem e0 g := by
       intro g hg
       exact (Sat_sentence_inv g (Sentences_HFFin g hg) v e0).mp

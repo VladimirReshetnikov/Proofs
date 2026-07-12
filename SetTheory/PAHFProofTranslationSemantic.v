@@ -63,17 +63,13 @@ Proof.
       apply hctx.
       apply in_app_iff. now left.
     }
-    assert (hord : forall k, k < n ->
-        OrdinalLike mem (e (rho k))).
-    {
-      exact (Sat_domainContextAt_ordinalLike V mem rho n e hdomain).
-    }
     assert (hordM : forall k, k < n ->
         OrdinalLike (foam_mem V M) (e (rho k))).
     {
       intros k hk.
       change (OrdinalLike mem (e (rho k))).
-      exact (hord k hk).
+      exact (Sat_domainContextAt_ordinalLike
+        V mem rho n e hdomain k hk).
     }
     pose (vord := fun k =>
       match lt_dec k n with
