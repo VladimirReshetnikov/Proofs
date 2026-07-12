@@ -114,36 +114,84 @@ for monomials `w^L`, to the classical residue identity
 `s e^u/(e^u-1)^{s+1} = -d/du (e^u-1)^{-s}` — all provable in formal power
 series over ℚ, no analysis required.
 
-## What remains open: nonvanishing
+## Nonvanishing: solved strata and the open core
 
 The remaining content of the conjecture is that `gamma(k,D,M) != 0` everywhere
-else in the region `D >= 1`, `M >= D`:
+else in the region `D >= 1`, `M >= D`. Status by stratum:
 
-1. **Bulk positivity** (`M <= k + 2D`, i.e. `j >= 0`): all checked values are
-   strictly positive.
-2. **Negative region** (`M > k + 2D`, off the hole line): all checked values
-   are nonzero (grid `k, D <= 9`, `M <= 140`), with sign *mostly*
-   `(-1)^(M-D)`-alternating in the far tail but with sporadic non-alternating
-   sign "wobbles" at moderate `M` (e.g. `k=2, D=5`), which never pass through
-   zero. Any naive sign-induction along the recurrences therefore fails, and
-   the following routes were checked and ruled out empirically:
-   * clean 2-adic/3-adic valuation formulas for `gamma` (valuations are
-     erratic in exactly the wobble zones);
-   * eventually-strict alternation at a uniform distance from the hole line.
-3. For `D = 1`, `gamma(k,1,M)` is an explicit rational function of `M`:
-   `gamma(k,1,M) = 2(-1)^(M+1) N_k(M) / (M(M-1)...(M-k-2))` with `N_k` monic of
-   degree `k` in `M`, e.g. `N_0 = 1`, `N_1 = M - 6`, `N_2 = M^2 - 13M + 48`,
-   `N_3 = (M-8)(M^2 - 13M + 60)`. The claim for `D = 1` is that `N_k` has no
-   integer roots `M >= k+3` besides `M = k+5` for odd `k`.
-4. In Nørlund language `gamma(0,D,M) = B_{M-D}^{(M+1)}(2D+1)/(M-D)!`, so the
-   negative region is a nonvanishing statement about higher-order Bernoulli
-   (Nørlund) polynomials at odd integer arguments; the hole line is the
-   reflection point `x = (a - ...)/2`-symmetry of `B_n^{(a)}(x)`.
+1. **Depth `D = 1` — solved.** Beta-integral representation (proved by
+   induction on `k` from the coefficient recurrence, base case
+   `phi_m = 2(-1)^(m+1)/((m-2)(m-1)m)`):
 
-The Lean development therefore (i) proves everything except nonvanishing
-unconditionally, (ii) states the nonvanishing as an explicit hypothesis, and
-(iii) verifies the conjecture exactly on the published OEIS range by kernel
-computation.
+   ```text
+   gamma(k,1,M) = (-1)^(M+1) * I(M-k-3, k),
+   I(p,k) := ∫_0^1 t^p (2t-1)^k (1-t)^2 dt.
+   ```
+
+   For even `k` the integrand is nonnegative, so `I > 0`. For odd `k`, the
+   reflection `t -> 1-t` symmetrizes the integrand to
+   `(2t-1)^k · t^2(1-t)^2 · (t^(p-2) - (1-t)^(p-2))` (for `p >= 2`), which is
+   pointwise `>= 0` and not a.e. zero unless `p = 2`, where it vanishes
+   identically — exactly the hole `M = k + 5`. For `p < 2` the same
+   factorization gives `I < 0`. Bulk `1 <= M <= k+2` follows by a small
+   induction via `gamma(k+1,1,M) = 2 gamma(k,1,M) + gamma(k,1,M-1)` anchored
+   at the (always positive) `r = 1` column `M = k+3`. Hence for `M >= 1`,
+   `gamma(k,1,M) = 0` iff `k` odd and `M = k+5`.
+
+2. **Depth `D = 2` — solved (paper proof).** The two-variable Beta
+   representation gives, for `q := M - k - 5 >= 0`,
+
+   ```text
+   gamma(k,2,M) = c_M * ∫_0^1 ∫_0^1 (F(x) - F(y))/(x - y) dx dy,
+   F(x) := x^q (2x-1)^k (1-x)^4,
+   ```
+
+   and integrating the divided difference against the exact Peano kernel of
+   the double integral — computable in closed form as the entropy density
+   `K(u) = -2(u ln u + (1-u) ln(1-u))`, since `K(u) = ∫_0^1 f_t(u) dt` over
+   trapezoidal densities — one integration by parts yields
+   `gamma(k,2,M) = ±∫_0^1 F(u) · 2 ln(u/(1-u)) du` (boundary terms vanish as
+   `K(0) = K(1) = 0`). The weight `ln(u/(1-u))` is antisymmetric and positive
+   on `(1/2, 1)`; antisymmetrizing `F` gives the pointwise sign-definite
+   integrand `(2u-1)^k [u^q(1-u)^4 - (-1)^k u^4(1-u)^q] · ln(u/(1-u))`,
+   nonzero unless `q = 4` with `k` even — exactly the `D = 2` holes.
+
+3. **`k = 0` bulk — trivial** in the falling-factorial picture:
+   `gamma(0,D,M)·M! = P_M^(D)(2D+1)` with `P_M(x) = (x-1)...(x-M)`
+   (equivalently the Nørlund value `B_{M-D}^{(M+1)}(2D+1)·M!/(M-D)!`), and for
+   `M <= 2D` the evaluation point lies beyond all roots, so every term of the
+   derivative sum is positive.
+
+4. **Open core: `D >= 3` negative region** (and general-`k` bulk). Here
+   `gamma(0,D,M)·M!/D! = (-1)^q (2D)! q! · e_{D-1}(1, 1/2, ..., 1/(2D), -1,
+   -1/2, ..., -1/q)`, `q = M-2D-1`, an elementary-symmetric-function value on
+   a signed harmonic multiset; equivalently the coefficient of `t^(D-1)` in
+   the real-rooted polynomial `(t+1)...(t+2D)(t-1)...(t-q)`. The `D`-fold
+   Peano kernel argument breaks down for `D >= 3` because the symmetrized
+   integrand is no longer sign-definite (the kernel's higher derivatives
+   oscillate). Checked and ruled out empirically: clean 2-adic/3-adic
+   valuation formulas; uniform tail sign-alternation induction (sign
+   "wobbles" — e.g. `k=2, D=5` — never pass through zero but break
+   alternation); all-terms-one-sign pairings.
+
+**Literature status** (searched July 2026): the conjecture is open; no
+published attack on A290268/A293239/A281434 exists. The closest proven result
+is Štampach (J. Approx. Theory 262 (2021), arXiv:2011.13808): sign-alternation
+and nonvanishing of `B_n^{(n)}(x)` at integers — the order-excess-0 analog of
+what is needed here (order excess `D+1`). The hole direction is classical:
+Nørlund's reflection `B_n^{(a)}(a-x) = (-1)^n B_n^{(a)}(x)`. Cautionary fact:
+in the `x^x` family (A008296/A293239) the analogous coefficient array has a
+*sporadic* zero at `A008296(8,5) = 0` beyond the symmetry-forced ones, so
+nonvanishing genuinely needs proof, not just symmetry bookkeeping. For the
+present `x^(x^2)` family, an exact scan found **no** unexpected zeros in
+`k <= 20`, `D <= 14`, `M <= 400` (and none for `k <= 9, D <= 9, M <= 140`
+from the earlier scan).
+
+The Lean development therefore (i) proves everything except `D >= 3`
+nonvanishing unconditionally where feasible (holes, `D = 1`, structural
+zeros, count combinatorics), (ii) states the remaining nonvanishing as an
+explicit hypothesis, and (iii) verifies the conjecture exactly on the
+published OEIS range by verified computation.
 
 ## Contents
 
