@@ -165,9 +165,8 @@ theorem BProv_ex_mono_of_sentences
   have ha : BProv B D a :=
     BProv_ass (B := B) (G := D) (by simp [D])
   have habD : BProv B D (imp a b) := by
-    have hctx := BProv_context_cons (B := B) (a := a)
-      (BProv_context_cons (B := B) (a := rename Nat.succ (ex a)) hab)
-    simpa [D, C] using hctx
+    simpa [D, C] using
+      (BProv_context_two (first := a) (second := rename Nat.succ (ex a)) hab)
   have hb : BProv B D b := BProv_mp B D a b habD ha
   have hinst : BProv B D
       (subst (instTerm (Term.var 0))

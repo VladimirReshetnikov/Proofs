@@ -485,14 +485,10 @@ Proof.
   { apply BProv_ass. unfold D. simpl. now left. }
   assert (habD : BProv B D (pImp a b)).
   {
-    pose proof (BProv_context_cons B (map (rename S) G)
-      (rename S (pEx a)) (pImp a b) hab) as hctx.
-    pose proof (BProv_context_cons B
-      (rename S (pEx a) :: map (rename S) G)
-      a (pImp a b) hctx) as hctx'.
     unfold D, C.
     simpl.
-    exact hctx'.
+    exact (BProv_context_two B (map (rename S) G)
+      a (rename S (pEx a)) (pImp a b) hab).
   }
   assert (hb : BProv B D b).
   { exact (BProv_mp B D a b habD ha). }
