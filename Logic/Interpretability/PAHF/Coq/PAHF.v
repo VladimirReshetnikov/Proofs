@@ -7645,6 +7645,130 @@ Proof.
   apply Term.rename_id.
 Qed.
 
+(* Iterate lifting of a term substitution through [k] binders. *)
+Fixpoint iterUpSubst (k : nat) (sigma : nat -> term) : nat -> term :=
+  match k with
+  | 0 => sigma
+  | S k' => Term.upSubst (iterUpSubst k' sigma)
+  end.
+
+(* Iterated lifted substitution commutes with the matching variable shift. *)
+Lemma term_subst_iterUpSubst_rename_add :
+  forall k (sigma : nat -> term) t,
+  Term.subst (iterUpSubst k sigma)
+      (Term.rename (fun n => n + k) t) =
+    Term.rename (fun n => n + k) (Term.subst sigma t).
+Proof.
+  induction k as [|k IH]; intros sigma t.
+  - simpl.
+    replace (Term.rename (fun n => n + 0) t) with t.
+    2: {
+      transitivity (Term.rename (fun n => n) t).
+      - symmetry. apply Term.rename_id.
+      - apply Term.rename_ext. intro n. lia.
+    }
+    replace (Term.rename (fun n => n + 0) (Term.subst sigma t))
+      with (Term.subst sigma t).
+    + reflexivity.
+    + transitivity (Term.rename (fun n => n) (Term.subst sigma t)).
+      * symmetry. apply Term.rename_id.
+      * apply Term.rename_ext. intro n. lia.
+  - simpl.
+    replace (Term.rename (fun n => n + S k) t)
+      with (Term.rename S (Term.rename (fun n => n + k) t)).
+    2: {
+      rewrite Term.rename_comp.
+      apply Term.rename_ext.
+      intro n.
+      lia.
+    }
+    rewrite Term.subst_rename_succ_up.
+    rewrite IH.
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n.
+    lia.
+Qed.
+
+(* Substituting an arbitrary witness below [k] binders removes the newest
+   shift; this is the common source of all fixed-depth corollaries below. *)
+Lemma term_subst_iterUpSubst_instTerm_rename_add_succ :
+  forall k t u,
+  Term.subst (iterUpSubst k (instTerm u))
+      (Term.rename (fun n => n + k + 1) t) =
+    Term.rename (fun n => n + k) t.
+Proof.
+  intros k t u.
+  replace (Term.rename (fun n => n + k + 1) t)
+    with (Term.rename (fun n => n + k) (Term.rename S t)).
+  2: {
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+  }
+  rewrite term_subst_iterUpSubst_rename_add.
+  rewrite term_subst_instTerm_rename_succ.
+  reflexivity.
+Qed.
+
+(* The same law with an additional pre-existing shift. *)
+Lemma term_subst_iterUpSubst_instTerm_rename_add_succ_offset :
+  forall k d t u,
+  Term.subst (iterUpSubst k (instTerm u))
+      (Term.rename (fun n => n + (d + k + 1)) t) =
+    Term.rename (fun n => n + (d + k)) t.
+Proof.
+  intros k d t u.
+  replace (Term.rename (fun n => n + (d + k + 1)) t)
+    with (Term.rename (fun n => n + k + 1)
+      (Term.rename (fun n => n + d) t)).
+  2: {
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+  }
+  rewrite term_subst_iterUpSubst_instTerm_rename_add_succ.
+  rewrite Term.rename_comp.
+  apply Term.rename_ext.
+  intro n; lia.
+Qed.
+
+(* Pointwise normalization lets fixed-depth compatibility lemmas keep their
+   historical spellings of successor shifts. *)
+Lemma term_subst_iterUpSubst_instTerm_rename_ext :
+  forall k d t u (r s : nat -> nat),
+  (forall n, r n = n + (d + k + 1)) ->
+  (forall n, s n = n + (d + k)) ->
+  Term.subst (iterUpSubst k (instTerm u)) (Term.rename r t) =
+    Term.rename s t.
+Proof.
+  intros k d t u r s hr hs.
+  rewrite (Term.rename_ext t r (fun n => n + (d + k + 1)) hr).
+  rewrite (Term.rename_ext t s (fun n => n + (d + k)) hs).
+  apply term_subst_iterUpSubst_instTerm_rename_add_succ_offset.
+Qed.
+
+(* Substitution at the variable exposed by [k] lifts inserts the witness
+   shifted through exactly those binders. *)
+Lemma term_subst_iterUpSubst_instTerm_var_depth : forall k u,
+  Term.subst (iterUpSubst k (instTerm u)) (tVar k) =
+    Term.rename (fun n => n + k) u.
+Proof.
+  induction k as [|k IH]; intro u.
+  - simpl.
+    symmetry.
+    transitivity (Term.rename (fun n => n) u).
+    + apply Term.rename_ext. intro n; lia.
+    + apply Term.rename_id.
+  - simpl.
+    change (Term.rename S
+      (Term.subst (iterUpSubst k (instTerm u)) (tVar k)) =
+      Term.rename (fun n => n + S k) u).
+    rewrite IH, Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+Qed.
+
 Lemma subst_instTerm_rename_succ : forall phi t,
   subst (instTerm t) (rename S phi) = phi.
 Proof.
@@ -7704,10 +7828,8 @@ Lemma term_subst_instTerm_rename_two_succ : forall t u,
     Term.rename S t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S n)) t)
-    with (Term.rename S (Term.rename S t))
-    by (rewrite Term.rename_comp; reflexivity).
-  apply term_subst_instTerm_rename_succ.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 0 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_upSubst_instTerm_rename_two_succ *)
@@ -7717,12 +7839,8 @@ Lemma term_subst_upSubst_instTerm_rename_two_succ : forall t u,
     Term.rename S t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S n)) t)
-    with (Term.rename S (Term.rename S t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_instTerm_rename_succ.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_upSubst_instTerm_rename_add_two *)
@@ -7732,10 +7850,8 @@ Lemma term_subst_upSubst_instTerm_rename_add_two : forall t u,
     Term.rename S t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => n + 2) t)
-    with (Term.rename (fun n => S (S n)) t)
-    by (apply Term.rename_ext; intro n; lia).
-  apply term_subst_upSubst_instTerm_rename_two_succ.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_upSubst_instTerm_rename_three_succ *)
@@ -7745,13 +7861,8 @@ Lemma term_subst_upSubst_instTerm_rename_three_succ : forall t u,
     Term.rename (fun n => S (S n)) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S n))) t)
-    with (Term.rename S (Term.rename (fun n => S (S n)) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_instTerm_rename_two_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_instTerm_rename_four_succ *)
@@ -7761,13 +7872,8 @@ Lemma term_subst_up_up_instTerm_rename_four_succ : forall t u,
     Term.rename (fun n => S (S (S n))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S n)))) t)
-    with (Term.rename S (Term.rename (fun n => S (S (S n))) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_upSubst_instTerm_rename_three_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 2 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_instTerm_rename_five_succ *)
@@ -7777,58 +7883,8 @@ Lemma term_subst_up_up_up_instTerm_rename_five_succ : forall t u,
     Term.rename (fun n => S (S (S (S n)))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
-    with (Term.rename S (Term.rename (fun n => S (S (S (S n)))) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_up_up_instTerm_rename_four_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
-Qed.
-
-(* Lean: iterUpSubst *)
-Fixpoint iterUpSubst (k : nat) (sigma : nat -> term) : nat -> term :=
-  match k with
-  | 0 => sigma
-  | S k' => Term.upSubst (iterUpSubst k' sigma)
-  end.
-
-(* Iterated lifted substitution commutes with the matching variable shift. *)
-Lemma term_subst_iterUpSubst_rename_add :
-  forall k (sigma : nat -> term) t,
-  Term.subst (iterUpSubst k sigma)
-      (Term.rename (fun n => n + k) t) =
-    Term.rename (fun n => n + k) (Term.subst sigma t).
-Proof.
-  induction k as [|k IH]; intros sigma t.
-  - simpl.
-    replace (Term.rename (fun n => n + 0) t) with t.
-    2: {
-      transitivity (Term.rename (fun n => n) t).
-      - symmetry. apply Term.rename_id.
-      - apply Term.rename_ext. intro n. lia.
-    }
-    replace (Term.rename (fun n => n + 0) (Term.subst sigma t))
-      with (Term.subst sigma t).
-    + reflexivity.
-    + transitivity (Term.rename (fun n => n) (Term.subst sigma t)).
-      * symmetry. apply Term.rename_id.
-      * apply Term.rename_ext. intro n. lia.
-  - simpl.
-    replace (Term.rename (fun n => n + S k) t)
-      with (Term.rename S (Term.rename (fun n => n + k) t)).
-    2: {
-      rewrite Term.rename_comp.
-      apply Term.rename_ext.
-      intro n.
-      lia.
-    }
-    rewrite Term.subst_rename_succ_up.
-    rewrite IH.
-    rewrite Term.rename_comp.
-    apply Term.rename_ext.
-    intro n.
-    lia.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_rename_add_two *)
@@ -7848,56 +7904,12 @@ Lemma term_subst_iterUpSubst_instTerm_var_rename_add_succ :
       (Term.rename (fun n => S (n + k)) t) =
     Term.rename (fun n => n + k) t.
 Proof.
-  induction k as [|k IH]; intros elem t.
-  - simpl.
-    replace (Term.rename (fun n => S (n + 0)) t)
-      with (Term.rename S t)
-      by (apply Term.rename_ext; intro n; lia).
-    replace (Term.rename (fun n => n + 0) t)
-      with (Term.rename (fun n => n) t)
-      by (apply Term.rename_ext; intro n; lia).
-    rewrite Term.rename_id.
-    apply term_subst_instTerm_rename_succ.
-  - simpl.
-    replace (Term.rename (fun n => S (n + S k)) t)
-      with (Term.rename S (Term.rename (fun n => S (n + k)) t))
-      by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
-    rewrite Term.subst_rename_succ_up.
-    rewrite IH.
-    rewrite Term.rename_comp.
-    apply Term.rename_ext.
-    intro n. lia.
-Qed.
-
-(* Lean: term_subst_iterUpSubst_instTerm_rename_add_succ *)
-Lemma term_subst_iterUpSubst_instTerm_rename_add_succ :
-  forall k t u,
-  Term.subst (iterUpSubst k (instTerm u))
-      (Term.rename (fun n => n + k + 1) t) =
-    Term.rename (fun n => n + k) t.
-Proof.
-  induction k as [|k IH]; intros t u.
-  - simpl.
-    replace (Term.rename (fun n => n + 0 + 1) t)
-      with (Term.rename S t)
-      by (apply Term.rename_ext; intro n; lia).
-    replace (Term.rename (fun n => n + 0) t)
-      with t.
-    + apply term_subst_instTerm_rename_succ.
-    + symmetry.
-      transitivity (Term.rename (fun n => n) t).
-      * apply Term.rename_ext. intro n. lia.
-      * apply Term.rename_id.
-  - simpl.
-    replace (Term.rename (fun n => n + S k + 1) t)
-      with (Term.rename S
-        (Term.rename (fun n => n + k + 1) t))
-      by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
-    rewrite Term.subst_rename_succ_up.
-    rewrite IH.
-    rewrite Term.rename_comp.
-    apply Term.rename_ext.
-    intro n. lia.
+  intros k elem t.
+  replace (Term.rename (fun n => S (n + k)) t)
+    with (Term.rename (fun n => n + k + 1) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_iterUpSubst_instTerm_rename_add_succ
+    k t (tVar elem)).
 Qed.
 
 (* Lean: term_subst_up_up_instTerm_rename_three_succ *)
@@ -7907,13 +7919,8 @@ Lemma term_subst_up_up_instTerm_rename_three_succ : forall t u,
     Term.rename (fun n => S (S n)) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S n))) t)
-    with (Term.rename (fun n => n + 2 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S n)) t)
-    with (Term.rename (fun n => n + 2) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 2 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 2 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_instTerm_rename_two_var_zero *)
@@ -7923,9 +7930,11 @@ Lemma term_subst_up_up_instTerm_rename_two_var_zero : forall u,
     Term.rename (fun n => S (S n)) u.
 Proof.
   intro u.
-  simpl.
-  rewrite Term.rename_comp.
-  reflexivity.
+  change (Term.subst (iterUpSubst 2 (instTerm u)) (tVar 2) =
+    Term.rename (fun n => S (S n)) u).
+  rewrite term_subst_iterUpSubst_instTerm_var_depth.
+  apply Term.rename_ext.
+  intro n; lia.
 Qed.
 
 Lemma term_subst_three_instTerm_rename_add_three :
@@ -7965,13 +7974,8 @@ Lemma term_subst_up_up_up_instTerm_rename_four_succ : forall t u,
     Term.rename (fun n => S (S (S n))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S n)))) t)
-    with (Term.rename (fun n => n + 3 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S n))) t)
-    with (Term.rename (fun n => n + 3) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 3 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 0);
+    intro n; lia.
 Qed.
 
 Lemma term_subst_up_up_up_instTerm_rename_succ_add_three : forall t u,
@@ -7981,10 +7985,8 @@ Lemma term_subst_up_up_up_instTerm_rename_succ_add_three : forall t u,
     Term.rename (fun n => n + 3) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S n + 3) t)
-    with (Term.rename (fun n => n + 3 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 3 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_instTerm_rename_five_succ *)
@@ -7996,13 +7998,8 @@ Lemma term_subst_up_up_up_up_instTerm_rename_five_succ : forall t u,
     Term.rename (fun n => S (S (S (S n)))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
-    with (Term.rename (fun n => n + 4 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S (S n)))) t)
-    with (Term.rename (fun n => n + 4) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 4 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 4 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_instTerm_rename_six_succ *)
@@ -8014,14 +8011,8 @@ Lemma term_subst_up_up_up_up_instTerm_rename_six_succ : forall t u,
     Term.rename (fun n => S (S (S (S (S n))))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
-    with (Term.rename S
-      (Term.rename (fun n => S (S (S (S (S n))))) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 4 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_up_instTerm_rename_six_succ *)
@@ -8034,13 +8025,8 @@ Lemma term_subst_up_up_up_up_up_instTerm_rename_six_succ : forall t u,
     Term.rename (fun n => S (S (S (S (S n))))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
-    with (Term.rename (fun n => n + 5 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
-    with (Term.rename (fun n => n + 5) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 5 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 5 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ *)
@@ -8054,13 +8040,8 @@ Lemma term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ : forall t u,
     Term.rename (fun n => S (S (S (S (S (S n)))))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S (S (S n))))))) t)
-    with (Term.rename (fun n => n + 6 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
-    with (Term.rename (fun n => n + 6) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 6 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 6 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_rename_up_succ_rename_succ *)
@@ -9306,6 +9287,12 @@ Definition substZero : nat -> term :=
     | S k => tVar k
     end.
 
+Lemma substZero_eq_instTerm : substZero = instTerm tZero.
+Proof.
+  apply functional_extensionality.
+  intros [|n]; reflexivity.
+Qed.
+
 Definition substZeroAt (p : nat) : nat -> term :=
   fun n =>
     if n <? p then tVar n
@@ -9382,19 +9369,59 @@ Definition substSuccVar : nat -> term :=
 Lemma term_substZero_rename_succ : forall t,
   Term.subst substZero (Term.rename S t) = t.
 Proof.
-  induction t; simpl; try reflexivity.
-  - now rewrite IHt.
-  - now rewrite IHt1, IHt2.
-  - now rewrite IHt1, IHt2.
+  intro t.
+  rewrite substZero_eq_instTerm.
+  apply term_subst_instTerm_rename_succ.
 Qed.
 
 Lemma term_substSuccVar_rename_succ : forall t,
   Term.subst substSuccVar (Term.rename S t) = Term.rename S t.
 Proof.
-  induction t; simpl; try reflexivity.
-  - now rewrite IHt.
-  - now rewrite IHt1, IHt2.
-  - now rewrite IHt1, IHt2.
+  intro t.
+  rewrite Term.subst_rename.
+  change (Term.subst (fun n => tVar (S n)) t = Term.rename S t).
+  apply term_subst_var_rename.
+Qed.
+
+Lemma term_subst_iterUpSubst_substZero_rename_add_succ :
+  forall k t,
+  Term.subst (iterUpSubst k substZero)
+      (Term.rename (fun n => n + k + 1) t) =
+    Term.rename (fun n => n + k) t.
+Proof.
+  intros k t.
+  rewrite substZero_eq_instTerm.
+  apply term_subst_iterUpSubst_instTerm_rename_add_succ.
+Qed.
+
+Lemma term_subst_iterUpSubst_substSuccVar_rename_add_succ :
+  forall k t,
+  Term.subst (iterUpSubst k substSuccVar)
+      (Term.rename (fun n => n + k + 1) t) =
+    Term.rename (fun n => n + k + 1) t.
+Proof.
+  intros k t.
+  replace (Term.rename (fun n => n + k + 1) t)
+    with (Term.rename (fun n => n + k) (Term.rename S t)).
+  2: {
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+  }
+  rewrite term_subst_iterUpSubst_rename_add.
+  rewrite term_substSuccVar_rename_succ.
+  reflexivity.
+Qed.
+
+Lemma term_subst_iterUpSubst_substSuccVar_rename_ext :
+  forall k t (r : nat -> nat),
+  (forall n, r n = n + k + 1) ->
+  Term.subst (iterUpSubst k substSuccVar) (Term.rename r t) =
+    Term.rename r t.
+Proof.
+  intros k t r hr.
+  rewrite (Term.rename_ext t r (fun n => n + k + 1) hr).
+  apply term_subst_iterUpSubst_substSuccVar_rename_add_succ.
 Qed.
 
 (* Lean: term_subst_up_up_up_substZero_rename_four_succ *)
@@ -9405,19 +9432,9 @@ Lemma term_subst_up_up_up_substZero_rename_four_succ : forall t,
     Term.rename (fun n => n + 1 + 1 + 1) t.
 Proof.
   intro t.
-  assert (hzero : substZero = instTerm tZero).
-  {
-    apply functional_extensionality.
-    intros [|n]; reflexivity.
-  }
-  rewrite hzero.
-  replace (Term.rename (fun n => n + 1 + 1 + 1 + 1) t)
-    with (Term.rename (fun n => S (S (S (S n)))) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => n + 1 + 1 + 1) t)
-    with (Term.rename (fun n => S (S (S n))) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_up_up_up_instTerm_rename_four_succ t tZero).
+  rewrite substZero_eq_instTerm.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_substZero_rename_two_succ *)
@@ -9427,16 +9444,9 @@ Lemma term_subst_up_substZero_rename_two_succ : forall t,
     Term.rename S t.
 Proof.
   intro t.
-  assert (hzero : substZero = instTerm tZero).
-  {
-    apply functional_extensionality.
-    intros [|n]; reflexivity.
-  }
-  rewrite hzero.
-  replace (Term.rename (fun n => n + 1 + 1) t)
-    with (Term.rename (fun n => S (S n)) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_upSubst_instTerm_rename_two_succ t tZero).
+  rewrite substZero_eq_instTerm.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_substSuccVar_rename_two_succ *)
@@ -9446,12 +9456,8 @@ Lemma term_subst_up_substSuccVar_rename_two_succ : forall t,
     Term.rename (fun n => n + 1 + 1) t.
 Proof.
   intro t.
-  replace (Term.rename (fun n => n + 1 + 1) t)
-    with (Term.rename S (Term.rename S t))
-    by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_substSuccVar_rename_succ.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_substSuccVar_rename_ext 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_substSuccVar_rename_four_succ *)
@@ -9462,14 +9468,8 @@ Lemma term_subst_up_up_up_substSuccVar_rename_four_succ : forall t,
     Term.rename (fun n => n + 1 + 1 + 1 + 1) t.
 Proof.
   intro t.
-  replace (Term.rename (fun n => n + 1 + 1 + 1 + 1) t)
-    with (Term.rename S
-      (Term.rename S (Term.rename S (Term.rename S t))))
-    by (repeat rewrite Term.rename_comp;
-        apply Term.rename_ext; intro n; lia).
-  repeat rewrite Term.subst_rename_succ_up.
-  rewrite term_substSuccVar_rename_succ.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_substSuccVar_rename_ext 3);
+    intro n; lia.
 Qed.
 
 Definition substSuccAt (p : nat) : nat -> term :=
@@ -19418,10 +19418,9 @@ Lemma term_subst_upSubst_instTerm_rename_two : forall t u,
     (Term.rename S (Term.rename S t)) = Term.rename S t.
 Proof.
   intros t u.
-  repeat rewrite Term.subst_rename.
-  rewrite <- (term_subst_var_rename t S).
-  apply Term.subst_ext.
-  intro n. reflexivity.
+  rewrite Term.rename_comp.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: BProv_Ax_s_remTermAt_of_remAt_eq_term *)

@@ -1052,213 +1052,6 @@ theorem term_subst_instTerm_rename_succ (t u : Term) :
   simpa [instTerm, Term.rename_id] using
     (term_subst_var_rename t (fun n : Nat => n))
 
-/-- Instantiating the newest variable after shifting a term through two binders
-removes the outer shift and leaves the term shifted through one binder. -/
-theorem term_subst_instTerm_rename_two_succ (t u : Term) :
-    Term.subst (instTerm u) (Term.rename (fun n : Nat => n + 1 + 1) t) =
-      Term.rename Nat.succ t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1) t =
-        Term.rename Nat.succ (Term.rename Nat.succ t) := by
-    simpa using (Term.rename_comp t Nat.succ Nat.succ).symm
-  rw [hrename]
-  exact term_subst_instTerm_rename_succ (Term.rename Nat.succ t) u
-
-/-- Substituting under one lifted binder after shifting a term through two
-binders removes the newest shift and leaves the single shift. -/
-theorem term_subst_upSubst_instTerm_rename_two_succ (t u : Term) :
-    Term.subst (Term.upSubst (instTerm u))
-        (Term.rename (fun n : Nat => n + 1 + 1) t) =
-      Term.rename Nat.succ t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1) t =
-        Term.rename Nat.succ (Term.rename Nat.succ t) := by
-    simpa using (Term.rename_comp t Nat.succ Nat.succ).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_instTerm_rename_succ]
-
-/-- Substituting under one lifted binder after shifting a term through three
-binders removes the newest shift and leaves the double shift. -/
-theorem term_subst_upSubst_instTerm_rename_three_succ (t u : Term) :
-    Term.subst (Term.upSubst (instTerm u))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_instTerm_rename_two_succ]
-  simpa using (Term.rename_comp t Nat.succ Nat.succ)
-
-/-- Substituting under two lifted binders after shifting a term through three
-binders removes the newest shift and leaves the double shift. -/
-theorem term_subst_up_up_instTerm_rename_three_succ (t u : Term) :
-    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_upSubst_instTerm_rename_two_succ]
-  simpa using (Term.rename_comp t Nat.succ Nat.succ)
-
-/-- The newest variable shifted through two binders is instantiated by the
-doubly shifted witness. -/
-theorem term_subst_up_up_instTerm_rename_two_var_zero (u : Term) :
-    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
-        (Term.rename (fun n : Nat => n + 1 + 1) (Term.var 0)) =
-      Term.rename (fun n : Nat => n + 1 + 1) u := by
-  simp [Term.rename, Term.subst, Term.upSubst, instTerm]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp u Nat.succ Nat.succ)
-
-/-- Substituting under two lifted binders after shifting a term through four
-binders removes the newest shift and leaves the triple shift. -/
-theorem term_subst_up_up_instTerm_rename_four_succ (t u : Term) :
-    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_upSubst_instTerm_rename_three_succ]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1))
-
-/-- Substituting under three lifted binders after shifting a term through four
-binders removes the newest shift and leaves the triple shift. -/
-theorem term_subst_up_up_up_instTerm_rename_four_succ (t u : Term) :
-    Term.subst (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_instTerm_rename_three_succ]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1))
-
-/-- Substituting under three lifted binders after shifting a term through five
-binders removes the newest shift and leaves the quadruple shift. -/
-theorem term_subst_up_up_up_instTerm_rename_five_succ (t u : Term) :
-    Term.subst (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_instTerm_rename_four_succ]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1 + 1))
-
-/-- Substituting under four lifted binders after shifting a term through five
-binders removes the newest shift and leaves the quadruple shift. -/
-theorem term_subst_up_up_up_up_instTerm_rename_five_succ (t u : Term) :
-    Term.subst
-        (Term.upSubst
-          (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_instTerm_rename_four_succ]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1 + 1))
-
-/-- Substituting under four lifted binders after shifting a term through six
-binders removes the newest shift and leaves the quintuple shift. -/
-theorem term_subst_up_up_up_up_instTerm_rename_six_succ (t u : Term) :
-    Term.subst
-        (Term.upSubst
-          (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_instTerm_rename_five_succ]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp t Nat.succ
-      (fun n : Nat => n + 1 + 1 + 1 + 1))
-
-/-- Substituting under five lifted binders after shifting a term through six
-binders removes the newest shift and leaves the quintuple shift. -/
-theorem term_subst_up_up_up_up_up_instTerm_rename_six_succ (t u : Term) :
-    Term.subst
-        (Term.upSubst
-          (Term.upSubst
-            (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_up_instTerm_rename_five_succ]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp t Nat.succ (fun n : Nat => n + 1 + 1 + 1 + 1))
-
-/-- Substituting under six lifted binders after shifting a term through seven
-binders removes the newest shift and leaves the sextuple shift. -/
-theorem term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ
-    (t u : Term) :
-    Term.subst
-        (Term.upSubst
-          (Term.upSubst
-            (Term.upSubst
-              (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))))
-        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1 + 1) t) =
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t := by
-  have hrename :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1)).symm
-  rw [hrename, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_up_up_instTerm_rename_six_succ]
-  simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-    (Term.rename_comp t Nat.succ
-      (fun n : Nat => n + 1 + 1 + 1 + 1 + 1))
-
 /-- Iterate lifting of a term substitution through `k` binders. -/
 def iterUpSubst (k : Nat) (σ : Nat → Term) : Nat → Term :=
   Nat.rec σ (fun _ τ => Term.upSubst τ) k
@@ -1291,6 +1084,199 @@ theorem term_subst_iterUpSubst_rename_add
         (fun n => Nat.succ (n+k))
         (fun n => n+(k+1)) (fun n => by omega)
 
+/-- Instantiating below an arbitrary block of unused variables removes the
+newest variable of that block. -/
+theorem term_subst_instTerm_rename_add_succ
+    (d : Nat) (t u : Term) :
+    Term.subst (instTerm u)
+        (Term.rename (fun n : Nat => n + d + 1) t) =
+      Term.rename (fun n : Nat => n + d) t := by
+  have hrename :
+      Term.rename (fun n : Nat => n + d + 1) t =
+        Term.rename Nat.succ (Term.rename (fun n : Nat => n + d) t) := by
+    rw [Term.rename_comp]
+  rw [hrename]
+  exact term_subst_instTerm_rename_succ
+    (Term.rename (fun n : Nat => n + d) t) u
+
+/-- Transport instantiation through `k` surrounding binders and an additional
+block of `d` variables. -/
+theorem term_subst_iterUpSubst_instTerm_rename_add_succ_offset
+    (k d : Nat) (t u : Term) :
+    Term.subst (iterUpSubst k (instTerm u))
+        (Term.rename (fun n : Nat => n + k + d + 1) t) =
+      Term.rename (fun n : Nat => n + k + d) t := by
+  have hinput :
+      Term.rename (fun n : Nat => n + k + d + 1) t =
+        Term.rename (fun n : Nat => n + k)
+          (Term.rename (fun n : Nat => n + d + 1) t) := by
+    rw [Term.rename_comp]
+    exact Term.rename_ext t _ _ (fun n => by omega)
+  rw [hinput, term_subst_iterUpSubst_rename_add]
+  rw [term_subst_instTerm_rename_add_succ]
+  rw [Term.rename_comp]
+  exact Term.rename_ext t _ _ (fun n => by omega)
+
+/-- The variable exposed at lift depth `k` is replaced by the witness shifted
+through those `k` binders. -/
+theorem term_subst_iterUpSubst_instTerm_var_depth
+    (k : Nat) (u : Term) :
+    Term.subst (iterUpSubst k (instTerm u)) (Term.var k) =
+      Term.rename (fun n : Nat => n + k) u := by
+  induction k with
+  | zero =>
+      change u = Term.rename (fun n : Nat => n + 0) u
+      exact (Term.rename_id u).symm
+  | succ k ih =>
+      rw [iterUpSubst]
+      change Term.rename Nat.succ
+          (Term.subst (iterUpSubst k (instTerm u)) (Term.var k)) =
+        Term.rename (fun n : Nat => n + (k+1)) u
+      rw [ih, Term.rename_comp]
+      exact Term.rename_ext u _ _ (fun n => by omega)
+
+/-- Instantiating the newest variable after shifting a term through two binders
+removes the outer shift and leaves the term shifted through one binder. -/
+theorem term_subst_instTerm_rename_two_succ (t u : Term) :
+    Term.subst (instTerm u) (Term.rename (fun n : Nat => n + 1 + 1) t) =
+      Term.rename Nat.succ t := by
+  change Term.subst (iterUpSubst 0 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1) t) =
+    Term.rename Nat.succ t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 0 1 t u
+
+/-- Substituting under one lifted binder after shifting a term through two
+binders removes the newest shift and leaves the single shift. -/
+theorem term_subst_upSubst_instTerm_rename_two_succ (t u : Term) :
+    Term.subst (Term.upSubst (instTerm u))
+        (Term.rename (fun n : Nat => n + 1 + 1) t) =
+      Term.rename Nat.succ t := by
+  change Term.subst (iterUpSubst 1 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1) t) =
+    Term.rename Nat.succ t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 1 0 t u
+
+/-- Substituting under one lifted binder after shifting a term through three
+binders removes the newest shift and leaves the double shift. -/
+theorem term_subst_upSubst_instTerm_rename_three_succ (t u : Term) :
+    Term.subst (Term.upSubst (instTerm u))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1) t := by
+  change Term.subst (iterUpSubst 1 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 1 1 t u
+
+/-- Substituting under two lifted binders after shifting a term through three
+binders removes the newest shift and leaves the double shift. -/
+theorem term_subst_up_up_instTerm_rename_three_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1) t := by
+  change Term.subst (iterUpSubst 2 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 2 0 t u
+
+/-- The newest variable shifted through two binders is instantiated by the
+doubly shifted witness. -/
+theorem term_subst_up_up_instTerm_rename_two_var_zero (u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+        (Term.rename (fun n : Nat => n + 1 + 1) (Term.var 0)) =
+      Term.rename (fun n : Nat => n + 1 + 1) u := by
+  change Term.subst (iterUpSubst 2 (instTerm u)) (Term.var 2) =
+    Term.rename (fun n : Nat => n + 1 + 1) u
+  exact term_subst_iterUpSubst_instTerm_var_depth 2 u
+
+/-- Substituting under two lifted binders after shifting a term through four
+binders removes the newest shift and leaves the triple shift. -/
+theorem term_subst_up_up_instTerm_rename_four_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (instTerm u)))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
+  change Term.subst (iterUpSubst 2 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 2 1 t u
+
+/-- Substituting under three lifted binders after shifting a term through four
+binders removes the newest shift and leaves the triple shift. -/
+theorem term_subst_up_up_up_instTerm_rename_four_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
+  change Term.subst (iterUpSubst 3 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 3 0 t u
+
+/-- Substituting under three lifted binders after shifting a term through five
+binders removes the newest shift and leaves the quadruple shift. -/
+theorem term_subst_up_up_up_instTerm_rename_five_succ (t u : Term) :
+    Term.subst (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
+  change Term.subst (iterUpSubst 3 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 3 1 t u
+
+/-- Substituting under four lifted binders after shifting a term through five
+binders removes the newest shift and leaves the quadruple shift. -/
+theorem term_subst_up_up_up_up_instTerm_rename_five_succ (t u : Term) :
+    Term.subst
+        (Term.upSubst
+          (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
+  change Term.subst (iterUpSubst 4 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 4 0 t u
+
+/-- Substituting under four lifted binders after shifting a term through six
+binders removes the newest shift and leaves the quintuple shift. -/
+theorem term_subst_up_up_up_up_instTerm_rename_six_succ (t u : Term) :
+    Term.subst
+        (Term.upSubst
+          (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
+  change Term.subst (iterUpSubst 4 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 4 1 t u
+
+/-- Substituting under five lifted binders after shifting a term through six
+binders removes the newest shift and leaves the quintuple shift. -/
+theorem term_subst_up_up_up_up_up_instTerm_rename_six_succ (t u : Term) :
+    Term.subst
+        (Term.upSubst
+          (Term.upSubst
+            (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u))))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
+  change Term.subst (iterUpSubst 5 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 5 0 t u
+
+/-- Substituting under six lifted binders after shifting a term through seven
+binders removes the newest shift and leaves the sextuple shift. -/
+theorem term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ
+    (t u : Term) :
+    Term.subst
+        (Term.upSubst
+          (Term.upSubst
+            (Term.upSubst
+              (Term.upSubst (Term.upSubst (Term.upSubst (instTerm u)))))))
+        (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1 + 1) t) =
+      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t := by
+  change Term.subst (iterUpSubst 6 (instTerm u))
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset 6 0 t u
+
 /-- Two lifted substitutions commute with the matching two-variable shift. -/
 theorem term_subst_up_up_rename_add_two
     (σ : Nat → Term) (t : Term) :
@@ -1307,43 +1293,8 @@ theorem term_subst_iterUpSubst_instTerm_var_rename_add_succ
     Term.subst (iterUpSubst k (instTerm (Term.var elem)))
         (Term.rename (fun n : Nat => n + k + 1) t) =
       Term.rename (fun n : Nat => n + k) t := by
-  induction k with
-  | zero =>
-      change Term.subst (instTerm (Term.var elem))
-          (Term.rename (fun n : Nat => n + 0 + 1) t) =
-        Term.rename (fun n : Nat => n + 0) t
-      have hleft :
-          Term.rename (fun n : Nat => n + 0 + 1) t =
-            Term.rename Nat.succ t :=
-        Term.rename_ext t _ _ (fun n => by omega)
-      have hright :
-          Term.rename (fun n : Nat => n + 0) t = t := by
-        exact Eq.trans
-          (Term.rename_ext t (fun n : Nat => n + 0) (fun n => n)
-            (fun n => by omega))
-          (Term.rename_id t)
-      rw [hleft, hright]
-      exact term_subst_instTerm_rename_succ t (Term.var elem)
-  | succ k ih =>
-      have hrename :
-          Term.rename (fun n : Nat => n + (k+1) + 1) t =
-            Term.rename Nat.succ
-              (Term.rename (fun n : Nat => n + k + 1) t) := by
-        simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc,
-          Nat.add_comm, Nat.add_left_comm] using
-          (Term.rename_comp t Nat.succ
-            (fun n : Nat => n + k + 1)).symm
-      rw [iterUpSubst, hrename, Term.subst_rename_succ_up]
-      change Term.rename Nat.succ
-          (Term.subst (iterUpSubst k (instTerm (Term.var elem)))
-            (Term.rename (fun n : Nat => n + k + 1) t)) =
-        Term.rename (fun n : Nat => n + (k+1)) t
-      rw [ih]
-      change Term.rename Nat.succ (Term.rename (fun n : Nat => n + k) t) =
-        Term.rename (fun n : Nat => n + (k+1)) t
-      rw [Term.rename_comp]
-      exact Term.rename_ext t (fun n : Nat => Nat.succ (n + k))
-        (fun n : Nat => n + (k+1)) (fun n => by omega)
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset
+    k 0 t (Term.var elem)
 
 /-- General de Bruijn bookkeeping lemma: substituting an arbitrary term under
 `k` lifted binders through a term renamed by `k+1` successors removes exactly
@@ -1353,43 +1304,7 @@ theorem term_subst_iterUpSubst_instTerm_rename_add_succ
     Term.subst (iterUpSubst k (instTerm u))
         (Term.rename (fun n : Nat => n + k + 1) t) =
       Term.rename (fun n : Nat => n + k) t := by
-  induction k with
-  | zero =>
-      change Term.subst (instTerm u)
-          (Term.rename (fun n : Nat => n + 0 + 1) t) =
-        Term.rename (fun n : Nat => n + 0) t
-      have hleft :
-          Term.rename (fun n : Nat => n + 0 + 1) t =
-            Term.rename Nat.succ t :=
-        Term.rename_ext t _ _ (fun n => by omega)
-      have hright :
-          Term.rename (fun n : Nat => n + 0) t = t := by
-        exact Eq.trans
-          (Term.rename_ext t (fun n : Nat => n + 0) (fun n => n)
-            (fun n => by omega))
-          (Term.rename_id t)
-      rw [hleft, hright]
-      exact term_subst_instTerm_rename_succ t u
-  | succ k ih =>
-      have hrename :
-          Term.rename (fun n : Nat => n + (k+1) + 1) t =
-            Term.rename Nat.succ
-              (Term.rename (fun n : Nat => n + k + 1) t) := by
-        simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc,
-          Nat.add_comm, Nat.add_left_comm] using
-          (Term.rename_comp t Nat.succ
-            (fun n : Nat => n + k + 1)).symm
-      rw [iterUpSubst, hrename, Term.subst_rename_succ_up]
-      change Term.rename Nat.succ
-          (Term.subst (iterUpSubst k (instTerm u))
-            (Term.rename (fun n : Nat => n + k + 1) t)) =
-        Term.rename (fun n : Nat => n + (k+1)) t
-      rw [ih]
-      change Term.rename Nat.succ (Term.rename (fun n : Nat => n + k) t) =
-        Term.rename (fun n : Nat => n + (k+1)) t
-      rw [Term.rename_comp]
-      exact Term.rename_ext t (fun n : Nat => Nat.succ (n + k))
-        (fun n : Nat => n + (k+1)) (fun n => by omega)
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset k 0 t u
 
 /-- Renaming a term already shifted through one binder by the lifted successor
 renaming is the same as shifting it through one more ordinary binder. -/
@@ -7406,6 +7321,11 @@ def substZero : Nat → Term
   | 0 => Term.zero
   | n+1 => Term.var n
 
+theorem substZero_eq_instTerm :
+    substZero = instTerm Term.zero := by
+  funext n
+  cases n <;> rfl
+
 def substZeroAt (p : Nat) : Nat → Term :=
   fun n => if n < p then Term.var n else if n = p then Term.zero else Term.var (n - 1)
 
@@ -7889,23 +7809,41 @@ theorem BProv_nonzeroAt_of_succPredAt
 /-- Zero-substitution removes one surrounding binder from a shifted term. -/
 theorem term_substZero_rename_succ (t : Term) :
     Term.subst substZero (Term.rename Nat.succ t) = t := by
-  induction t with
-  | var n => rfl
-  | zero => rfl
-  | succ t ih => simp [Term.rename, Term.subst, ih]
-  | add a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
-  | mul a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
+  rw [substZero_eq_instTerm]
+  exact term_subst_instTerm_rename_succ t Term.zero
 
 /-- Successor-substitution leaves a term shifted through the induction binder. -/
 theorem term_substSuccVar_rename_succ (t : Term) :
     Term.subst substSuccVar (Term.rename Nat.succ t) =
       Term.rename Nat.succ t := by
-  induction t with
-  | var n => rfl
-  | zero => rfl
-  | succ t ih => simp [Term.rename, Term.subst, ih]
-  | add a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
-  | mul a b iha ihb => simp [Term.rename, Term.subst, iha, ihb]
+  rw [Term.subst_rename]
+  simpa [substSuccVar] using term_subst_var_rename t Nat.succ
+
+/-- Zero substitution lifted through any number of binders removes the
+outermost of the corresponding shifts. -/
+theorem term_subst_iterUpSubst_substZero_rename_add_succ
+    (k : Nat) (t : Term) :
+    Term.subst (iterUpSubst k substZero)
+        (Term.rename (fun n : Nat => n + k + 1) t) =
+      Term.rename (fun n : Nat => n + k) t := by
+  rw [substZero_eq_instTerm]
+  exact term_subst_iterUpSubst_instTerm_rename_add_succ k t Term.zero
+
+/-- Successor substitution lifted through any number of binders preserves a
+term shifted through the induction variable and those binders. -/
+theorem term_subst_iterUpSubst_substSuccVar_rename_add_succ
+    (k : Nat) (t : Term) :
+    Term.subst (iterUpSubst k substSuccVar)
+        (Term.rename (fun n : Nat => n + k + 1) t) =
+      Term.rename (fun n : Nat => n + k + 1) t := by
+  have hinput :
+      Term.rename (fun n : Nat => n + k + 1) t =
+        Term.rename (fun n : Nat => n + k)
+          (Term.rename Nat.succ t) := by
+    rw [Term.rename_comp]
+    exact Term.rename_ext t _ _ (fun n => by omega)
+  rw [hinput, term_subst_iterUpSubst_rename_add]
+  rw [term_substSuccVar_rename_succ]
 
 /-- Zero substitution lifted through three inner binders removes the outermost
 of four shifts. -/
@@ -7914,12 +7852,10 @@ theorem term_subst_up_up_up_substZero_rename_four_succ (t : Term) :
         (Term.upSubst (Term.upSubst (Term.upSubst substZero)))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
-  have hzero : substZero = instTerm Term.zero := by
-    funext n
-    cases n <;> rfl
-  rw [hzero]
-  exact
-    term_subst_up_up_up_instTerm_rename_four_succ t Term.zero
+  change Term.subst (iterUpSubst 3 substZero)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_substZero_rename_add_succ 3 t
 
 /-- Zero substitution lifted through one inner binder removes the outermost
 of two shifts. -/
@@ -7927,11 +7863,10 @@ theorem term_subst_up_substZero_rename_two_succ (t : Term) :
     Term.subst (Term.upSubst substZero)
         (Term.rename (fun n : Nat => n + 1 + 1) t) =
       Term.rename Nat.succ t := by
-  have hzero : substZero = instTerm Term.zero := by
-    funext n
-    cases n <;> rfl
-  rw [hzero]
-  exact term_subst_upSubst_instTerm_rename_two_succ t Term.zero
+  change Term.subst (iterUpSubst 1 substZero)
+      (Term.rename (fun n : Nat => n + 1 + 1) t) =
+    Term.rename Nat.succ t
+  exact term_subst_iterUpSubst_substZero_rename_add_succ 1 t
 
 /-- Zero substitution lifted through two inner binders removes the outermost
 of three shifts. -/
@@ -7939,11 +7874,10 @@ theorem term_subst_up_up_substZero_rename_three_succ (t : Term) :
     Term.subst (Term.upSubst (Term.upSubst substZero))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1) t := by
-  have hzero : substZero = instTerm Term.zero := by
-    funext n
-    cases n <;> rfl
-  rw [hzero]
-  exact term_subst_up_up_instTerm_rename_three_succ t Term.zero
+  change Term.subst (iterUpSubst 2 substZero)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1) t
+  exact term_subst_iterUpSubst_substZero_rename_add_succ 2 t
 
 /-- Successor substitution lifted through one inner binder preserves both
 shifts of an ambient term. -/
@@ -7951,12 +7885,10 @@ theorem term_subst_up_substSuccVar_rename_two_succ (t : Term) :
     Term.subst (Term.upSubst substSuccVar)
         (Term.rename (fun n : Nat => n + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1) t := by
-  have h2 :
-      Term.rename (fun n : Nat => n + 1 + 1) t =
-        Term.rename Nat.succ (Term.rename Nat.succ t) := by
-    simpa using (Term.rename_comp t Nat.succ Nat.succ).symm
-  rw [h2, Term.subst_rename_succ_up]
-  rw [term_substSuccVar_rename_succ]
+  change Term.subst (iterUpSubst 1 substSuccVar)
+      (Term.rename (fun n : Nat => n + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1) t
+  exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 1 t
 
 /-- Successor substitution lifted through two inner binders preserves all
 three shifts of an ambient term. -/
@@ -7964,15 +7896,10 @@ theorem term_subst_up_up_substSuccVar_rename_three_succ (t : Term) :
     Term.subst (Term.upSubst (Term.upSubst substSuccVar))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1 + 1) t := by
-  have h3 :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1)).symm
-  rw [h3, Term.subst_rename_succ_up]
-  rw [term_subst_up_substSuccVar_rename_two_succ]
+  change Term.subst (iterUpSubst 2 substSuccVar)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 2 t
 
 /-- Successor substitution lifted through three inner binders preserves all
 four shifts of an ambient term. -/
@@ -7981,28 +7908,10 @@ theorem term_subst_up_up_up_substSuccVar_rename_four_succ (t : Term) :
         (Term.upSubst (Term.upSubst (Term.upSubst substSuccVar)))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
-  have h4 :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1)).symm
-  have h3 :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1)).symm
-  have h2 :
-      Term.rename (fun n : Nat => n + 1 + 1) t =
-        Term.rename Nat.succ (Term.rename Nat.succ t) := by
-    simpa using (Term.rename_comp t Nat.succ Nat.succ).symm
-  rw [h4, Term.subst_rename_succ_up]
-  rw [h3, Term.subst_rename_succ_up]
-  rw [h2, Term.subst_rename_succ_up]
-  rw [term_substSuccVar_rename_succ]
+  change Term.subst (iterUpSubst 3 substSuccVar)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 3 t
 
 /-- Zero substitution lifted through four inner binders removes the outermost
 of five shifts. -/
@@ -8012,16 +7921,10 @@ theorem term_subst_up_up_up_up_substZero_rename_five_succ (t : Term) :
           (Term.upSubst substZero))))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t := by
-  have h5 :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1)).symm
-  rw [h5, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_substZero_rename_four_succ]
-  simp [Term.rename_comp, Nat.add_assoc]
+  change Term.subst (iterUpSubst 4 substZero)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_substZero_rename_add_succ 4 t
 
 /-- Zero substitution lifted through five inner binders removes the outermost
 of six shifts. -/
@@ -8031,16 +7934,10 @@ theorem term_subst_up_up_up_up_up_substZero_rename_six_succ (t : Term) :
           (Term.upSubst (Term.upSubst substZero)))))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
-  have h6 :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1)).symm
-  rw [h6, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_up_substZero_rename_five_succ]
-  simp [Term.rename_comp, Nat.add_assoc]
+  change Term.subst (iterUpSubst 5 substZero)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_substZero_rename_add_succ 5 t
 
 /-- Successor substitution lifted through four inner binders preserves all
 five shifts of an ambient term. -/
@@ -8050,15 +7947,10 @@ theorem term_subst_up_up_up_up_substSuccVar_rename_five_succ (t : Term) :
           (Term.upSubst substSuccVar))))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t := by
-  have h5 :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1)).symm
-  rw [h5, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_substSuccVar_rename_four_succ]
+  change Term.subst (iterUpSubst 4 substSuccVar)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 4 t
 
 /-- Successor substitution lifted through five inner binders preserves all
 six shifts of an ambient term. -/
@@ -8068,15 +7960,10 @@ theorem term_subst_up_up_up_up_up_substSuccVar_rename_six_succ (t : Term) :
           (Term.upSubst (Term.upSubst substSuccVar)))))
         (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
       Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t := by
-  have h6 :
-      Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t =
-        Term.rename Nat.succ
-          (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1) t) := by
-    simpa [Function.comp_def, Nat.succ_eq_add_one, Nat.add_assoc] using
-      (Term.rename_comp t Nat.succ
-        (fun n : Nat => n + 1 + 1 + 1 + 1 + 1)).symm
-  rw [h6, Term.subst_rename_succ_up]
-  rw [term_subst_up_up_up_up_substSuccVar_rename_five_succ]
+  change Term.subst (iterUpSubst 5 substSuccVar)
+      (Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t) =
+    Term.rename (fun n : Nat => n + 1 + 1 + 1 + 1 + 1 + 1) t
+  exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 5 t
 
 /-- Normalized `+ 5` spelling of the depth-five zero-substitution rule. -/
 theorem term_subst_up_up_up_up_substZero_rename_add_five (t : Term) :
@@ -8085,8 +7972,10 @@ theorem term_subst_up_up_up_up_substZero_rename_add_five (t : Term) :
           (Term.upSubst substZero))))
         (Term.rename (fun n : Nat => n + 5) t) =
       Term.rename (fun n : Nat => n + 4) t := by
-  simpa [Nat.add_assoc] using
-    term_subst_up_up_up_up_substZero_rename_five_succ t
+  change Term.subst (iterUpSubst 4 substZero)
+      (Term.rename (fun n : Nat => n + 5) t) =
+    Term.rename (fun n : Nat => n + 4) t
+  exact term_subst_iterUpSubst_substZero_rename_add_succ 4 t
 
 /-- Normalized `+ 6` spelling of the depth-six zero-substitution rule. -/
 theorem term_subst_up_up_up_up_up_substZero_rename_add_six (t : Term) :
@@ -8095,8 +7984,10 @@ theorem term_subst_up_up_up_up_up_substZero_rename_add_six (t : Term) :
           (Term.upSubst (Term.upSubst substZero)))))
         (Term.rename (fun n : Nat => n + 6) t) =
       Term.rename (fun n : Nat => n + 5) t := by
-  simpa [Nat.add_assoc] using
-    term_subst_up_up_up_up_up_substZero_rename_six_succ t
+  change Term.subst (iterUpSubst 5 substZero)
+      (Term.rename (fun n : Nat => n + 6) t) =
+    Term.rename (fun n : Nat => n + 5) t
+  exact term_subst_iterUpSubst_substZero_rename_add_succ 5 t
 
 /-- Normalized `+ 5` spelling of the depth-five successor-substitution rule. -/
 theorem term_subst_up_up_up_up_substSuccVar_rename_add_five (t : Term) :
@@ -8105,8 +7996,10 @@ theorem term_subst_up_up_up_up_substSuccVar_rename_add_five (t : Term) :
           (Term.upSubst substSuccVar))))
         (Term.rename (fun n : Nat => n + 5) t) =
       Term.rename (fun n : Nat => n + 5) t := by
-  simpa [Nat.add_assoc] using
-    term_subst_up_up_up_up_substSuccVar_rename_five_succ t
+  change Term.subst (iterUpSubst 4 substSuccVar)
+      (Term.rename (fun n : Nat => n + 5) t) =
+    Term.rename (fun n : Nat => n + 5) t
+  exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 4 t
 
 /-- Normalized `+ 6` spelling of the depth-six successor-substitution rule. -/
 theorem term_subst_up_up_up_up_up_substSuccVar_rename_add_six (t : Term) :
@@ -8115,8 +8008,10 @@ theorem term_subst_up_up_up_up_up_substSuccVar_rename_add_six (t : Term) :
           (Term.upSubst (Term.upSubst substSuccVar)))))
         (Term.rename (fun n : Nat => n + 6) t) =
       Term.rename (fun n : Nat => n + 6) t := by
-  simpa [Nat.add_assoc] using
-    term_subst_up_up_up_up_up_substSuccVar_rename_six_succ t
+  change Term.subst (iterUpSubst 5 substSuccVar)
+      (Term.rename (fun n : Nat => n + 6) t) =
+    Term.rename (fun n : Nat => n + 6) t
+  exact term_subst_iterUpSubst_substSuccVar_rename_add_succ 5 t
 
 /-- PA proves that successor distributes over addition on the left. -/
 theorem BProv_Ax_s_succ_add_all (x : Term) :
@@ -49404,8 +49299,9 @@ theorem term_subst_up_six_instTerm_var_six (u : Term) :
             (Term.upSubst (instTerm u)))))))
         (Term.var 6) =
       Term.rename (fun n : Nat => n + 6) u := by
-  simp [Term.subst, Term.upSubst, instTerm, Term.rename_comp,
-    Nat.add_assoc]
+  change Term.subst (iterUpSubst 6 (instTerm u)) (Term.var 6) =
+    Term.rename (fun n : Nat => n + 6) u
+  exact term_subst_iterUpSubst_instTerm_var_depth 6 u
 
 theorem term_subst_up_seven_instTerm_rename_eight_succ
     (t u : Term) :
