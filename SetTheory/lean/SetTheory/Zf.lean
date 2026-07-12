@@ -225,13 +225,12 @@ theorem bridge_Sep_fwd (H : ∀ (phi : Form) (e : Nat → V), Sat mem e (Sep_for
 theorem bridge_Pair :
     (∀ e : Nat → V, Sat mem e Pair_form) ↔
       ∀ a b, ∃ p, ∀ x, mem x p ↔ (x = a ∨ x = b) := by
+  simp only [Pair_form, Sat, Sat_fIff, scons]
   constructor
   · intro h a b
-    obtain ⟨p, hp⟩ := h (fun _ => a) a b
-    exact ⟨p, fun x => ⟨(hp x).1, (hp x).2⟩⟩
+    simpa only using h (fun _ => a) a b
   · intro h e a b
-    obtain ⟨p, hp⟩ := h a b
-    exact ⟨p, fun x => ⟨(hp x).mp, (hp x).mpr⟩⟩
+    simpa only using h a b
 
 theorem bridge_Pair_fwd (H : ∀ e : Nat → V, Sat mem e Pair_form) :
     ∀ a b, ∃ p, ∀ x, mem x p ↔ (x = a ∨ x = b) :=
@@ -240,13 +239,12 @@ theorem bridge_Pair_fwd (H : ∀ e : Nat → V, Sat mem e Pair_form) :
 theorem bridge_Union :
     (∀ e : Nat → V, Sat mem e Union_form) ↔
       ∀ u, ∃ w, ∀ x, mem x w ↔ ∃ v, mem x v ∧ mem v u := by
+  simp only [Union_form, Sat, Sat_fIff, scons]
   constructor
   · intro h u
-    obtain ⟨w, hw⟩ := h (fun _ => u) u
-    exact ⟨w, fun x => ⟨(hw x).1, (hw x).2⟩⟩
+    simpa only using h (fun _ => u) u
   · intro h e u
-    obtain ⟨w, hw⟩ := h u
-    exact ⟨w, fun x => ⟨(hw x).mp, (hw x).mpr⟩⟩
+    simpa only using h u
 
 theorem bridge_Union_fwd (H : ∀ e : Nat → V, Sat mem e Union_form) :
     ∀ u, ∃ w, ∀ x, mem x w ↔ ∃ v, mem x v ∧ mem v u :=
@@ -259,19 +257,7 @@ theorem bridge_Inf (v : Nat → V) :
       ∃ I, (∃ e0, mem e0 I ∧ ∀ z, ¬ mem z e0) ∧
         (∀ x, mem x I →
           ∃ sx, mem sx I ∧ ∀ t, mem t sx ↔ (mem t x ∨ t = x)) := by
-  constructor
-  · intro h
-    obtain ⟨I, ⟨e0, he0, hemp⟩, hsucc⟩ := h
-    refine ⟨I, ⟨e0, he0, fun z hz => hemp z hz⟩, ?_⟩
-    intro x hx
-    obtain ⟨sx, hsx, hspec⟩ := hsucc x hx
-    exact ⟨sx, hsx, fun t => ⟨(hspec t).1, (hspec t).2⟩⟩
-  · intro h
-    obtain ⟨I, ⟨e0, he0, hemp⟩, hsucc⟩ := h
-    refine ⟨I, ⟨e0, he0, fun z hz => hemp z hz⟩, ?_⟩
-    intro x hx
-    obtain ⟨sx, hsx, hspec⟩ := hsucc x hx
-    exact ⟨sx, hsx, fun t => ⟨(hspec t).mp, (hspec t).mpr⟩⟩
+  simp only [Inf_form, Sat, Sat_fIff, scons]
 
 theorem bridge_Inf_fwd (v : Nat → V) (H : Sat mem v Inf_form) :
     ∃ I, (∃ e0, mem e0 I ∧ ∀ z, ¬ mem z e0) ∧

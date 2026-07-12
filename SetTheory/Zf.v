@@ -210,11 +210,9 @@ Lemma bridge_Pair :
     (forall e, Sat V mem e Pair_form) <->
     (forall a b, exists p, forall x, mem x p <-> (x = a \/ x = b)).
 Proof.
-  intros V mem. split.
-  - intros H a b. destruct (H (fun _ => a) a b) as [p Hp].
-    exists p. intro x. specialize (Hp x). cbn in Hp. tauto.
-  - intros H e a b. destruct (H a b) as [p Hp].
-    exists p. intro x. specialize (Hp x). cbn. tauto.
+  intros V mem. unfold Pair_form. cbn [Sat]. split.
+  - intros H a b. specialize (H (fun _ => a) a b). firstorder.
+  - intros H e a b. specialize (H a b). firstorder.
 Qed.
 
 Lemma bridge_Pair_fwd :
@@ -229,17 +227,9 @@ Lemma bridge_Union :
     (forall u, exists w, forall x,
       mem x w <-> exists v, mem x v /\ mem v u).
 Proof.
-  intros V mem. split.
-  - intros H u. destruct (H (fun _ => u) u) as [w Hw].
-    exists w. intro x. specialize (Hw x). cbn in Hw.
-    split.
-    + intro Hx. destruct (proj1 Hw Hx) as [v [Hv1 Hv2]]. exists v. tauto.
-    + intros [v [Hv1 Hv2]]. apply (proj2 Hw). exists v. tauto.
-  - intros H e u. destruct (H u) as [w Hw].
-    exists w. intro x. specialize (Hw x). cbn.
-    split.
-    + intro Hx. destruct (proj1 Hw Hx) as [v [Hv1 Hv2]]. exists v. tauto.
-    + intros [v [Hv1 Hv2]]. apply (proj2 Hw). exists v. tauto.
+  intros V mem. unfold Union_form. cbn [Sat]. split.
+  - intros H u. specialize (H (fun _ => u) u). firstorder.
+  - intros H e u. specialize (H u). firstorder.
 Qed.
 
 Lemma bridge_Union_fwd :
@@ -258,17 +248,7 @@ Lemma bridge_Inf :
       (forall x, mem x I ->
          exists sx, mem sx I /\ forall t, mem t sx <-> (mem t x \/ t = x)).
 Proof.
-  intros V mem v. split.
-  - intro H. cbn in H. destruct H as [I [[e0 [He0 Hemp]] Hsucc]].
-    exists I. split.
-    + exists e0. split; [ exact He0 | ]. intros z Hz. exact (Hemp z Hz).
-    + intros x Hx. destruct (Hsucc x Hx) as [sx [Hsx Hspec]].
-      exists sx. split; [ exact Hsx | ]. intro t. specialize (Hspec t). tauto.
-  - intros [I [[e0 [He0 Hemp]] Hsucc]]. cbn [Sat].
-    exists I. split.
-    + exists e0. split; [ exact He0 | ]. intros z Hz. exact (Hemp z Hz).
-    + intros x Hx. destruct (Hsucc x Hx) as [sx [Hsx Hspec]].
-      exists sx. split; [ exact Hsx | ]. intro t. exact (Hspec t).
+  intros V mem v. unfold Inf_form. cbn [Sat]. tauto.
 Qed.
 
 Lemma bridge_Inf_fwd :
