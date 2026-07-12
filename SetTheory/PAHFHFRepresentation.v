@@ -175,10 +175,9 @@ Proof.
         Sat V mem env g).
   {
     intros g hg.
-    apply in_app_iff in hg.
-    destruct hg as [hg | hg].
-    - apply hdomain. exact hg.
-    - simpl in hg. contradiction.
+    unfold translateContextAt in hg.
+    rewrite app_nil_r in hg.
+    exact (hdomain g hg).
   }
   assert (hAx : forall g, HFFinAx_s g -> Sat V mem env g).
   {

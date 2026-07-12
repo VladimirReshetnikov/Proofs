@@ -2387,26 +2387,19 @@ theorem ModelSetOrdinalRep_empty
         let sourceEnv : Nat → α :=
           scons elemCode
             (scons elem (scons M.empty (scons M.empty (scons relation e))))
-        let r : Nat → Nat := repPairSlotMap 0 2
-        have hrenamed :
-            rename r (HF_compositeMemAt 0 1) =
-              HF_compositeMemAt 0 2 := by
-          simpa [r, repPairSlotMap] using
-            (rename_HF_compositeMemAt r 0 1)
-        have hcoded01 : Sat M.mem (fun n => sourceEnv (r n))
-            (HF_compositeMemAt 0 1) := by
-          apply (Sat_rename (mem := M.mem)
-            (HF_compositeMemAt 0 1) r sourceEnv).mp
-          rw [hrenamed]
-          simpa [sourceEnv] using hcoded
-        have hord : OrdinalLike M.mem ((fun n => sourceEnv (r n)) 0) := by
-          change OrdinalLike M.mem elemCode
-          rw [helemCode]
-          exact FirstOrderAdjunctionModel.ordinalLike_empty M
-        have hsetZero : (fun n => sourceEnv (r n)) 1 = M.empty := by
-          rfl
-        exact False.elim
-          (hzero (fun n => sourceEnv (r n)) hord hsetZero hcoded01)
+        have hcodedModel : ModelCompositeMem M elemCode M.empty := by
+          have h := (HF_compositeMemAt_02_model M sourceEnv).mp (by
+            simpa [sourceEnv] using hcoded)
+          simpa [sourceEnv, scons] using h
+        let zeroEnv : Nat → α :=
+          scons elemCode (scons M.empty (fun _ => M.empty))
+        have hcoded01 : Sat M.mem zeroEnv (HF_compositeMemAt 0 1) :=
+          (HF_compositeMemAt_01_model M zeroEnv).mpr (by
+            simpa [zeroEnv, scons] using hcodedModel)
+        have hord : OrdinalLike M.mem (zeroEnv 0) := by
+          simpa [zeroEnv, helemCode, scons] using
+            (FirstOrderAdjunctionModel.ordinalLike_empty M)
+        exact False.elim (hzero zeroEnv hord rfl hcoded01)
     · intro elemCode helemOrd hcoded
       have hsetZero :
           (scons elemCode
