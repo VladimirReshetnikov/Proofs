@@ -8908,6 +8908,16 @@ Proof.
   exact (BProv_context_prefix B [first; second] G phi hphi).
 Qed.
 
+(** Inference-friendly specialization for three opened assumptions. *)
+Lemma BProv_context_three : forall
+    (B : formula -> Prop) G first second third phi,
+  BProv B G phi ->
+  BProv B (first :: second :: third :: G) phi.
+Proof.
+  intros B G first second third phi hphi.
+  exact (BProv_context_prefix B [first; second; third] G phi hphi).
+Qed.
+
 Lemma BProv_impI : forall (B : formula -> Prop) G a b,
   BProv B (a :: G) b -> BProv B G (pImp a b).
 Proof.
@@ -36065,13 +36075,8 @@ Proof.
           pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
             (map (rename S) (map (rename S) G)) _ h2 S) as h3.
           repeat rewrite rename_S_betaTermAtTermIdx in h3.
-          pose proof (BProv_context_cons Ax_s
-            (map (rename S) (map (rename S) (map (rename S) G)))
-            (rename S (rename S (pEx (pEx body)))) _ h3) as h4.
-          pose proof (BProv_context_cons Ax_s _
-            (rename S (pEx body)) _ h4) as h5.
-          pose proof (BProv_context_cons Ax_s _ body _ h5) as h6.
-          exact h6.
+          apply BProv_context_three.
+          exact h3.
         }
         assert (hidxC : BProv Ax_s (body :: map (rename S) G2)
             (pEq (Term.rename S (Term.rename S (Term.rename S idxTerm)))
@@ -36084,13 +36089,8 @@ Proof.
           pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
             (map (rename S) (map (rename S) G)) _ h2 S) as h3.
           simpl in h3.
-          pose proof (BProv_context_cons Ax_s
-            (map (rename S) (map (rename S) (map (rename S) G)))
-            (rename S (rename S (pEx (pEx body)))) _ h3) as h4.
-          pose proof (BProv_context_cons Ax_s _
-            (rename S (pEx body)) _ h4) as h5.
-          pose proof (BProv_context_cons Ax_s _ body _ h5) as h6.
-          exact h6.
+          apply BProv_context_three.
+          exact h3.
         }
         pose proof (BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_zero
           (body :: map (rename S) G2) code step idx
@@ -36162,13 +36162,8 @@ Proof.
             (map (rename S) (map (rename S) G)) _ h2 S) as h3.
           repeat rewrite rename_S_betaTermAtTermIdx in h3.
           repeat rewrite Term.rename_numeral in h3.
-          pose proof (BProv_context_cons Ax_s
-            (map (rename S) (map (rename S) (map (rename S) G)))
-            (rename S (rename S (pEx (pEx body)))) _ h3) as h4.
-          pose proof (BProv_context_cons Ax_s _
-            (rename S (pEx body)) _ h4) as h5.
-          pose proof (BProv_context_cons Ax_s _ body _ h5) as h6.
-          exact h6.
+          apply BProv_context_three.
+          exact h3.
         }
         assert (hidxC : BProv Ax_s (body :: map (rename S) G2)
             (pEq (Term.rename S (Term.rename S (Term.rename S idxTerm)))
@@ -36181,13 +36176,8 @@ Proof.
           pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
             (map (rename S) (map (rename S) G)) _ h2 S) as h3.
           simpl in h3.
-          pose proof (BProv_context_cons Ax_s
-            (map (rename S) (map (rename S) (map (rename S) G)))
-            (rename S (rename S (pEx (pEx body)))) _ h3) as h4.
-          pose proof (BProv_context_cons Ax_s _
-            (rename S (pEx body)) _ h4) as h5.
-          pose proof (BProv_context_cons Ax_s _ body _ h5) as h6.
-          exact h6.
+          apply BProv_context_three.
+          exact h3.
         }
         pose proof
           (BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_eqConst_div_two

@@ -2553,6 +2553,13 @@ theorem BProv_context_two {B : Formula → Prop}
     (hphi : BProv B G phi) : BProv B (first :: second :: G) phi :=
   BProv_context_prefix [first, second] hphi
 
+/-- Inference-friendly specialization for three opened assumptions. -/
+theorem BProv_context_three {B : Formula → Prop}
+    {G : List Formula} {first second third phi : Formula}
+    (hphi : BProv B G phi) :
+    BProv B (first :: second :: third :: G) phi :=
+  BProv_context_prefix [first, second, third] hphi
+
 /-- Add `n` existential binders around `body`. -/
 def iterEx : Nat → Formula → Formula
   | 0, body => body
@@ -29973,9 +29980,7 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_zero
             betaModTerm, rename, Term.rename, SetTheory.up,
             term_rename_up_succ_rename_succ, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) hzeroRen3))
+            BProv_context_three hzeroRen3
         have hidxRen1 : BProv Ax_s (G.map (rename Nat.succ))
             (rename Nat.succ (eq idxTerm (Term.var idx))) :=
           BProv_rename_of_sentences
@@ -29999,9 +30004,7 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_zero
         have hidxC : BProv Ax_s C (eq idx3 (Term.var (idx+3))) := by
           simpa [C, G2, G1, idx3, rename, Term.rename, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) hidxRen3))
+            BProv_context_three hidxRen3
         have hnext : BProv Ax_s C
             (betaTermAtTermIdx Term.zero (code+3) (step+3)
               (Term.succ idx3)) :=
@@ -30099,9 +30102,7 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_eqConst_div_two
             betaModTerm, rename, Term.rename, SetTheory.up, Term.numeral,
             term_rename_up_succ_rename_succ, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) hcurRen3))
+            BProv_context_three hcurRen3
         have hidxRen1 : BProv Ax_s (G.map (rename Nat.succ))
             (rename Nat.succ (eq idxTerm (Term.var idx))) :=
           BProv_rename_of_sentences
@@ -30125,9 +30126,7 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_eqConst_div_two
         have hidxC : BProv Ax_s C (eq idx3 (Term.var (idx+3))) := by
           simpa [C, G2, G1, idx3, rename, Term.rename, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) hidxRen3))
+            BProv_context_three hidxRen3
         have hnext : BProv Ax_s C
             (betaTermAtTermIdx (Term.numeral (cur / 2)) (code+3) (step+3)
               (Term.succ idx3)) :=

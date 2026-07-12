@@ -133,6 +133,7 @@ Check openedContext.
 Check openedExContext.
 Check BProv_context_prefix.
 Check PA.Formula.BProv_context_two.
+Check PA.Formula.BProv_context_three.
 Check BProv_iterRenameSucc_of_sentences.
 Check BProv_lift_openedContext_of_sentences.
 Check BProv_iterExE_of_sentences.
