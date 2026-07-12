@@ -77,13 +77,7 @@ Lemma soundness_BProv_FOL :
     (forall g, In g G -> Sat V mem e g) ->
     Sat V mem e phi.
 Proof.
-  intros V mem B G phi [L [hL hp]] e hB hG.
-  apply (soundness V mem (L ++ G) phi hp e).
-  intros x hx.
-  apply in_app_iff in hx.
-  destruct hx as [hx | hx].
-  - apply hB. apply hL. exact hx.
-  - apply hG. exact hx.
+  exact soundness_BProv.
 Qed.
 
 (* This is the exact remaining proof-structural obligation before the compact
