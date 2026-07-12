@@ -60,12 +60,12 @@ theorem BProv_imp_mono
     BProv_ass (B := B) (G := C) (by simp [C])
   have haC : BProv B C a :=
     BProv_mp B C a' a
-      (BProv_context_cons (BProv_context_cons ha)) ha'C
+      (PA.Formula.BProv_context_prefix [a', imp a b] ha) ha'C
   have habC : BProv B C (imp a b) :=
     BProv_ass (B := B) (G := C) (by simp [C])
   have hbC : BProv B C b := BProv_mp B C a b habC haC
   exact BProv_mp B C b b'
-    (BProv_context_cons (BProv_context_cons hb)) hbC
+    (PA.Formula.BProv_context_prefix [a', imp a b] hb) hbC
 
 /-- Conjunction is covariant in both components. -/
 theorem BProv_and_mono
@@ -94,11 +94,11 @@ theorem BProv_or_mono
   apply BProv_orE horC
   · exact BProv_orI1
       (BProv_mp B (a :: C) a a'
-        (BProv_context_cons (BProv_context_cons ha))
+        (PA.Formula.BProv_context_prefix [a, or a b] ha)
         (BProv_ass (B := B) (by simp)))
   · exact BProv_orI2
       (BProv_mp B (b :: C) b b'
-        (BProv_context_cons (BProv_context_cons hb))
+        (PA.Formula.BProv_context_prefix [b, or a b] hb)
         (BProv_ass (B := B) (by simp)))
 
 theorem BProv_iffForm_refl

@@ -23,12 +23,9 @@ Lemma BProv_context_prefix : forall
   BProv B G phi ->
   BProv B (prefix ++ G) phi.
 Proof.
-  intros B prefix.
-  induction prefix as [|head tail IH]; intros G phi hphi.
-  - exact hphi.
-  - simpl.
-    exact (BProv_context_cons B (tail ++ G) head phi
-      (IH G phi hphi)).
+  intros B prefix G phi hphi.
+  apply (BProv_mono B G (prefix ++ G) phi); [ | exact hphi ].
+  intros x hx. apply in_app_iff. right. exact hx.
 Qed.
 
 (** [iterEx n body] adds [n] existential binders around [body]. *)
@@ -322,16 +319,14 @@ Proof.
   assert (haC : BProv B C a).
   {
     exact (BProv_mp B C a' a
-      (BProv_context_cons B (pImp a b :: G) a' (pImp a' a)
-        (BProv_context_cons B G (pImp a b) (pImp a' a) ha)) ha'C).
+      (BProv_context_prefix B [a'; pImp a b] G (pImp a' a) ha) ha'C).
   }
   assert (habC : BProv B C (pImp a b)).
   { apply BProv_ass. unfold C. simpl. tauto. }
   assert (hbC : BProv B C b).
   { exact (BProv_mp B C a b habC haC). }
   exact (BProv_mp B C b b'
-    (BProv_context_cons B (pImp a b :: G) a' (pImp b b')
-      (BProv_context_cons B G (pImp a b) (pImp b b') hbb')) hbC).
+    (BProv_context_prefix B [a'; pImp a b] G (pImp b b') hbb') hbC).
 Qed.
 
 Lemma BProv_PA_and_mono : forall
@@ -379,8 +374,7 @@ Proof.
     assert (haC : BProv B (a :: C) a).
     { apply BProv_ass. simpl. now left. }
     exact (BProv_mp B (a :: C) a a'
-      (BProv_context_cons B (pOr a b :: G) a (pImp a a')
-        (BProv_context_cons B G (pOr a b) (pImp a a') haa')) haC).
+      (BProv_context_prefix B [a; pOr a b] G (pImp a a') haa') haC).
   }
   assert (hright : BProv B (b :: C) (pOr a' b')).
   {
@@ -388,8 +382,7 @@ Proof.
     assert (hbC : BProv B (b :: C) b).
     { apply BProv_ass. simpl. now left. }
     exact (BProv_mp B (b :: C) b b'
-      (BProv_context_cons B (pOr a b :: G) b (pImp b b')
-        (BProv_context_cons B G (pOr a b) (pImp b b') hbb')) hbC).
+      (BProv_context_prefix B [b; pOr a b] G (pImp b b') hbb') hbC).
   }
   exact (BProv_orE B C a b (pOr a' b') hor hleft hright).
 Qed.
