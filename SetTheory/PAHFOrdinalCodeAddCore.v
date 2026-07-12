@@ -466,8 +466,7 @@ Proof.
         (ordinalCodeGraphTermAt (tAdd leftRaw tZero) out) _ hrightEmpty)
       houtEq).
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (** The output predicate packages compatibility for every possible code of
@@ -840,8 +839,7 @@ Proof.
       hsumAdjoin
       (liftG _ haddPred)).
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 Lemma BProv_Ax_s_ordinalCodeAddPointTermAt_zero : forall

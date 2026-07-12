@@ -161,8 +161,7 @@ Proof.
     exact (BProv_impI Ax_s Q rightMem leftMem hleftC).
   }
   apply (BProv_allI_of_sentences Ax_s G _ sentence_ax_s).
-  unfold iffForm.
-  exact (BProv_andI Ax_s Q _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s Q _ _ hforward hreverse).
 Qed.
 
 Lemma BProv_Ax_s_eq_zero_of_hfEmptyTermAt_base : forall
@@ -280,8 +279,7 @@ Proof.
     unfold C in hempty.
     exact (BProv_impI Ax_s G graph empty hempty).
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -403,8 +401,7 @@ Proof.
     unfold C, targetGraph in hresult.
     exact (BProv_impI Ax_s G _ _ hresult).
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (** Constructor-level successor compatibility after the recursive operand
@@ -593,8 +590,7 @@ Proof.
     unfold C in hresult.
     exact (BProv_impI Ax_s G target composite hresult).
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (** Successor preserves the complete polymorphic term-graph property. *)

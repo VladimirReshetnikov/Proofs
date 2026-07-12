@@ -1239,7 +1239,7 @@ theorem BProv_Ax_s_hfAdjoinGraphTermAt_functional
     BProv_allI_of_sentences
       (B := Ax_s) (G := G)
       Ax_s_sentences
-      (by simpa [iffForm] using BProv_andI hforward hreverse)
+      (BProv_iffForm_intro hforward hreverse)
   exact BProv_Ax_s_eq_of_hfSameMembersTermAt
     (by simpa [leftMem, rightMem] using hsame)
 
@@ -5217,7 +5217,7 @@ theorem BProv_Ax_s_hfAdjoinGraphTermAt_iff_ordinalCodeGraphTermAt_succ
       (c := hfAdjoinGraphTermAt codedOut pred pred)
       (by simpa [hfAdjoinExistsTermAt, body] using hex)
       (by simpa [D] using hinner)
-  simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 /-- Complete ordinal-code term-graph induction property for one PA term.
 Constructor laws consume this polymorphic property, so recursive hypotheses
@@ -5305,7 +5305,7 @@ theorem OrdinalCodeTermCompatibilityProofs_zero_compatible :
     have hempty : BProv Ax_s C (hfEmptyAt codedOut) :=
       BProv_Ax_s_hfEmptyAt_of_eqConst_zero hzero
     simpa [C] using BProv_impI hempty
-  exact BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 /-- The normalized zero theorem supplies the complete induction property;
 raw-variable data are vacuous because zero has no free variables. -/
@@ -6298,7 +6298,7 @@ theorem BProv_Ax_s_ordinalCodeAddCore_zero
         houtGraph (BProv_context_cons hleft)
     exact BProv_Ax_s_hfAddGraphTermAt_zero_right
       (BProv_context_cons hrightEmpty) houtEq
-  simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 def ordinalCodeAddOutputTermAt
     (leftRaw leftCode rightRaw rightCode : Term) : Formula :=
@@ -6631,7 +6631,7 @@ theorem BProv_Ax_s_ordinalCodeAddCore_succ_of_pred
       (BProv_context_cons hrightDomain)
       (BProv_context_cons hrightAdjoin)
       houtAdjoin (BProv_context_cons haddPred)
-  simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 set_option maxHeartbeats 600000 in
 theorem BProv_Ax_s_ordinalCodeAddOutputTermAt_succ
@@ -8187,7 +8187,7 @@ theorem BProv_Ax_s_ordinalCodeMulCore_zero
       BProv_Ax_s_hfEmptyTermAt_of_eq_zero houtEq
     exact BProv_Ax_s_hfMulGraphTermAt_zero_right
       (BProv_context_cons hrightEmpty) houtEmpty
-  simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 /- The fixed-predecessor multiplication successor step consumes the concrete
 term-parametric addition bridge above. -/

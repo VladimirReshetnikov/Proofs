@@ -373,8 +373,7 @@ Proof.
     unfold C, antecedent in hresult.
     exact (BProv_impI Ax_s G _ _ hresult).
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (* --------------------------------------------------------------------- *)
@@ -658,8 +657,7 @@ Proof.
     unfold C, antecedent in hresult.
     exact hresult.
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (* --------------------------------------------------------------------- *)

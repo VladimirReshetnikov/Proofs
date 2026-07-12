@@ -153,8 +153,7 @@ Proof.
   }
   assert (hiff : BProv Ax_s G (iffForm inputEq outputGraph)).
   {
-    unfold iffForm.
-    exact (BProv_andI Ax_s G _ _ hforward hreverse).
+    exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
   }
   unfold inputEq, outputGraph in hiff.
   cbn [compositeTermGraphAt codedTermSlotMap termGraphAt

@@ -374,8 +374,7 @@ Proof.
     unfold C in hcoreEx.
     exact (BProv_impI Ax_s G target coreEx hcoreEx).
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 Definition PAOrdinalCodeMulCoreProofsCorrected_of_term

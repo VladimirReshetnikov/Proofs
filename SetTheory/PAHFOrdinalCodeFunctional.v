@@ -225,8 +225,7 @@ Proof.
       (pAll (iffForm leftMem rightMem))).
   {
     apply (BProv_allI_of_sentences Ax_s G _ sentence_ax_s).
-    unfold iffForm.
-    exact (BProv_andI Ax_s C _ _ hforward hreverse).
+    exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s C _ _ hforward hreverse).
   }
   unfold leftMem, rightMem in hsame.
   exact (BProv_Ax_s_eq_of_hfSameMembersTermAt_of_extensionality
