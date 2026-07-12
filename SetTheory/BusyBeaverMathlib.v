@@ -22,10 +22,7 @@ Theorem list_length_le_of_nodup_subset :
     NoDup xs -> (forall x, In x xs -> In x ys) ->
     length xs <= length ys.
 Proof.
-  intros A xs ys hxs hsub.
-  apply NoDup_incl_length; [exact hxs | ].
-  intros x hx.
-  exact (hsub x hx).
+  exact @NoDup_incl_length.
 Qed.
 
 Theorem tape_mem_of_read_true : forall tape pos,
@@ -76,24 +73,10 @@ Theorem rado_positions_of_nat_offsets_nodup :
 Proof.
   intros head offsets h.
   unfold rado_positions_of_nat_offsets.
-  induction offsets as [|a rest IH].
-  - constructor.
-  - inversion h as [|? ? hnot hrest]; subst.
-    simpl.
-    constructor.
-    + intro hin.
-      apply in_map_iff in hin.
-      destruct hin as [b [hb hbin]].
-      apply hnot.
-      assert (a = b).
-      {
-        apply (nat_offset_position_injective head).
-        symmetry. exact hb.
-      }
-      subst b.
-      exact hbin.
-    + apply IH.
-      exact hrest.
+  apply NoDup_map_NoDup_ForallPairs.
+  - intros a b _ _ hab.
+    exact (nat_offset_position_injective head a b hab).
+  - exact h.
 Qed.
 
 Theorem rado_positions_of_nat_offsets_length :
