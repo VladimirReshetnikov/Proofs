@@ -100,10 +100,8 @@ Proof.
   rewrite hsubst.
   rewrite subst_var_rename.
   unfold hfMulGraphAt.
-  rewrite rename_hfFormulaAt.
   rewrite <- hsource.
-  rewrite hfFormulaAt_source_rename.
-  reflexivity.
+  apply hfFormulaAt_id_rename.
 Qed.
 
 Lemma compositeMulCoreAt_normalForm_core : forall codedOut,

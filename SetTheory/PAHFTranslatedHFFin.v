@@ -8,7 +8,6 @@
 (* ===================================================================== *)
 
 From Stdlib Require Import Arith.Arith Lia List.
-From Stdlib Require Import Logic.FunctionalExtensionality.
 From SetTheory Require Import PAHF.
 
 Import ListNotations.
@@ -631,15 +630,8 @@ Proof.
   intro phi.
   unfold HF_induction_form, translatedHFInductionBody, hfHereditaryAt.
   simpl.
-  assert (hup : hfUpVarMap (fun n : nat => n) =
-      (fun n : nat => n)).
-  {
-    apply functional_extensionality.
-    intros [|n]; reflexivity.
-  }
-  repeat rewrite hup.
-  rewrite hfFormulaAt_source_rename.
-  rewrite rename_hfFormulaAt.
+  repeat rewrite hfUpVarMap_id.
+  rewrite hfFormulaAt_id_rename.
   reflexivity.
 Qed.
 
@@ -655,13 +647,7 @@ Proof.
       (pAll (hfFormulaAt (hfUpVarMap (fun n : nat => n)) phi)) =
       PA.Formula.closeN k
       (pAll (hfFormulaAt (fun n : nat => n) phi))).
-    assert (hup : hfUpVarMap (fun n : nat => n) =
-        (fun n : nat => n)).
-    {
-      apply functional_extensionality.
-      intros [|n]; reflexivity.
-    }
-    rewrite hup.
+    rewrite hfUpVarMap_id.
     reflexivity.
 Qed.
 

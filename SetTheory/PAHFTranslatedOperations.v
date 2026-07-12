@@ -9,7 +9,7 @@
 (*  finite-set recursions in the PA natural-deduction calculus.           *)
 (* ===================================================================== *)
 
-From Stdlib Require Import Arith.Arith Lia List Logic.FunctionalExtensionality.
+From Stdlib Require Import Arith.Arith Lia List.
 From SetTheory Require Import Fol Calculus Completeness PAHF
   PAHFOrdinalCode PAHFTermGraphFunctional.
 
@@ -41,13 +41,6 @@ Definition addHFOrdinalLikeAt (slot : nat) : formula :=
 
 Definition hfEmptyCodeAt (slot : nat) : formula :=
   hfFormulaAt (fun n : nat => n) (HF_emptyAt slot).
-
-Lemma hfUpVarMap_id :
-  hfUpVarMap (fun n : nat => n) = (fun n : nat => n).
-Proof.
-  apply functional_extensionality.
-  intros [|n]; reflexivity.
-Qed.
 
 (* --------------------------------------------------------------------- *)
 (*  Addition                                                             *)

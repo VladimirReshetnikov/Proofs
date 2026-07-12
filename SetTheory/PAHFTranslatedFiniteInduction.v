@@ -52,26 +52,6 @@ Lemma hfFormulaAt_HF_adjoinAt_zero_two_one :
     hfFIAdjoinGraphAt 0 2 1.
 Proof. reflexivity. Qed.
 
-Lemma hfFormulaAt_rename_rAdjStepOld : forall phi,
-  hfFormulaAt (fun n : nat => n) (Fol.rename rAdjStepOld phi) =
-  rename rAdjStepOld (hfFormulaAt (fun n : nat => n) phi).
-Proof.
-  intro phi.
-  rewrite hfFormulaAt_source_rename.
-  symmetry.
-  apply rename_hfFormulaAt.
-Qed.
-
-Lemma hfFormulaAt_rename_rAdjStepNew : forall phi,
-  hfFormulaAt (fun n : nat => n) (Fol.rename rAdjStepNew phi) =
-  rename rAdjStepNew (hfFormulaAt (fun n : nat => n) phi).
-Proof.
-  intro phi.
-  rewrite hfFormulaAt_source_rename.
-  symmetry.
-  apply rename_hfFormulaAt.
-Qed.
-
 Lemma hfFormulaAt_HF_finite_induction_form : forall phi,
   hfFormulaAt (fun n : nat => n) (HF_finite_induction_form phi) =
   translatedHFFiniteInductionBody
@@ -81,14 +61,8 @@ Proof.
   unfold HF_finite_induction_form, translatedHFFiniteInductionBody,
     hfFiniteGenerationAt.
   simpl.
-  assert (hup : hfUpVarMap (fun n : nat => n) = (fun n : nat => n)).
-  {
-    apply functional_extensionality.
-    intros [|n]; reflexivity.
-  }
-  repeat rewrite hup.
-  rewrite hfFormulaAt_rename_rAdjStepOld.
-  rewrite hfFormulaAt_rename_rAdjStepNew.
+  repeat rewrite hfUpVarMap_id.
+  repeat rewrite hfFormulaAt_id_rename.
   reflexivity.
 Qed.
 

@@ -5581,11 +5581,6 @@ def addHFOrdinalLikeAt (slot : Nat) : Formula :=
   hfFormulaAt (fun n : Nat ↦ n)
     (AckermannHF.HF_ordinalLikeAt slot)
 
-theorem hfUpVarMap_id_add :
-    hfUpVarMap (fun n : Nat ↦ n) = (fun n : Nat ↦ n) := by
-  funext n
-  cases n <;> rfl
-
 def HF_addZeroRightSentence : SetTheory.Form :=
   SetTheory.Form.fAll (SetTheory.Form.fAll (SetTheory.Form.fAll
     (SetTheory.Form.fImp
@@ -5648,7 +5643,7 @@ theorem translateHFFormula_addZeroRightSentence :
           (AckermannHF.PAInHF.addGraphAt 0 2 1)))))) = _
   have hρ : ∀ n, ρ n = n := by
     intro n
-    simp only [ρ, hfUpVarMap_id_add]
+    simp only [ρ, hfUpVarMap_id]
   rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hρ 0, hρ 2]
   rfl
@@ -5775,7 +5770,7 @@ theorem translateHFFormula_addSuccRightSentence :
               (AckermannHF.PAInHF.addGraphAt 0 4 2)))))))))) = _
   have hρ : ∀ n, ρ n = n := by
     intro n
-    simp only [ρ, hfUpVarMap_id_add]
+    simp only [ρ, hfUpVarMap_id]
   rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hfFormulaAt_ext _ hρ]
@@ -5886,7 +5881,7 @@ theorem translateHFFormula_addFunctionalSentence :
           (eq (Term.var (ρ 1)) (Term.var (ρ 0))))))))) = _
   have hρ : ∀ n, ρ n = n := by
     intro n
-    simp only [ρ, hfUpVarMap_id_add]
+    simp only [ρ, hfUpVarMap_id]
   rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hfFormulaAt_ext _ hρ, hρ 1, hρ 0]
   rfl
@@ -5948,8 +5943,9 @@ theorem hfAddGraphAt_eq_termAt
     simpa [r] using
       (AckermannHF.PAInHF.rename_addGraphAt r 2 1 0)
   simp only [hfAddGraphTermAt, hsubst, subst_var_rename,
-    hfAddGraphAt, rename_hfFormulaAt]
-  rw [← hsource, hfFormulaAt_source_rename]
+    hfAddGraphAt]
+  rw [← hsource]
+  exact hfFormulaAt_id_rename _ _
 
 theorem subst_hfAddGraphTermAt
     (sigma : Nat → Term) (out left right : Term) :
@@ -6039,8 +6035,9 @@ theorem addHFOrdinalLikeAt_eq_domainTermAt (slot : Nat) :
       AckermannHF.HF_memTotalOnAt,
       SetTheory.rename, SetTheory.up, SetTheory.inst]
   simp only [addHFOrdinalLikeAt, codedOrdinalDomain,
-    translateHFFormula, subst_instTerm_var, rename_hfFormulaAt]
-  rw [← hsource, hfFormulaAt_source_rename]
+    translateHFFormula, subst_instTerm_var]
+  rw [← hsource]
+  exact hfFormulaAt_id_rename _ _
 
 theorem subst_domainTermAt
     (sigma : Nat → Term) (coded : Term) :
@@ -7538,7 +7535,7 @@ theorem translateHFFormula_mulZeroRightSentence :
           (AckermannHF.PAInHF.mulGraphAt 0 2 1)))))) = _
   have hρ : ∀ n, ρ n = n := by
     intro n
-    simp only [ρ, hfUpVarMap_id_add]
+    simp only [ρ, hfUpVarMap_id]
   rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hfFormulaAt_ext _ hρ]
   rfl
@@ -7688,7 +7685,7 @@ theorem translateHFFormula_mulSuccRightSentence :
               (AckermannHF.PAInHF.mulGraphAt 0 4 2)))))))))) = _
   have hρ : ∀ n, ρ n = n := by
     intro n
-    simp only [ρ, hfUpVarMap_id_add]
+    simp only [ρ, hfUpVarMap_id]
   rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hfFormulaAt_ext _ hρ]
@@ -7811,7 +7808,7 @@ theorem translateHFFormula_mulFunctionalSentence :
             (eq (Term.var (ρ 1)) (Term.var (ρ 0)))))))))) = _
   have hρ : ∀ n, ρ n = n := by
     intro n
-    simp only [ρ, hfUpVarMap_id_add]
+    simp only [ρ, hfUpVarMap_id]
   rw [hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hfFormulaAt_ext _ hρ, hfFormulaAt_ext _ hρ,
     hρ 1, hρ 0]
@@ -7876,8 +7873,9 @@ theorem hfMulGraphAt_eq_termAt
     simpa [r] using
       (AckermannHF.PAInHF.rename_mulGraphAt r 2 1 0)
   simp only [hfMulGraphTermAt, hsubst, subst_var_rename,
-    hfMulGraphAt, rename_hfFormulaAt]
-  rw [← hsource, hfFormulaAt_source_rename]
+    hfMulGraphAt]
+  rw [← hsource]
+  exact hfFormulaAt_id_rename _ _
 
 theorem subst_hfMulGraphTermAt
     (sigma : Nat → Term) (out left right : Term) :

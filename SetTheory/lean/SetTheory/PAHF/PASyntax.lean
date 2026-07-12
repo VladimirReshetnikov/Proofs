@@ -6763,6 +6763,11 @@ def hfUpVarMap (ρ : Nat → Nat) : Nat → Nat
   | 0 => 0
   | n+1 => ρ n + 1
 
+@[simp] theorem hfUpVarMap_id :
+    hfUpVarMap (fun n : Nat => n) = (fun n : Nat => n) := by
+  funext n
+  cases n <;> rfl
+
 /-- Translate set-theory formulas to PA formulas using Ackermann membership.
 The HF domain is all natural numbers, so quantifiers are not relativized. -/
 def hfFormulaAt (ρ : Nat → Nat) : Form → Formula
@@ -7026,17 +7031,33 @@ theorem rename_hfFormulaAt (phi : Form) (ρ r : Nat → Nat) :
                   | zero => rfl
                   | succ n => rfl)
 
+/-- HF-to-PA translation is natural in source and target variable maps: a
+commuting square of maps induces a commuting square of formula renamings. -/
+theorem hfFormulaAt_rename_natural (phi : Form)
+    (ρ σ r s : Nat → Nat)
+    (h : ∀ n, ρ (r n) = s (σ n)) :
+    hfFormulaAt ρ (SetTheory.rename r phi) =
+      rename s (hfFormulaAt σ phi) := by
+  calc
+    hfFormulaAt ρ (SetTheory.rename r phi) =
+        hfFormulaAt (fun n => ρ (r n)) phi :=
+      hfFormulaAt_source_rename phi ρ r
+    _ = hfFormulaAt (fun n => s (σ n)) phi :=
+      hfFormulaAt_ext phi h
+    _ = rename s (hfFormulaAt σ phi) :=
+      (rename_hfFormulaAt phi σ s).symm
+
+theorem hfFormulaAt_id_rename (phi : Form) (r : Nat → Nat) :
+    hfFormulaAt (fun n : Nat => n) (SetTheory.rename r phi) =
+      rename r (hfFormulaAt (fun n => n) phi) := by
+  exact hfFormulaAt_rename_natural phi
+    (fun n => n) (fun n => n) r r (fun _ => rfl)
+
 theorem hfFormulaAt_rename_succ (phi : Form) (ρ : Nat → Nat) :
     hfFormulaAt (hfUpVarMap ρ) (SetTheory.rename Nat.succ phi) =
       rename Nat.succ (hfFormulaAt ρ phi) := by
-  calc
-    hfFormulaAt (hfUpVarMap ρ) (SetTheory.rename Nat.succ phi)
-        = hfFormulaAt (fun n => hfUpVarMap ρ (Nat.succ n)) phi := by
-            exact hfFormulaAt_source_rename phi (hfUpVarMap ρ) Nat.succ
-    _ = hfFormulaAt (fun n => Nat.succ (ρ n)) phi := by
-            exact hfFormulaAt_ext phi (fun n => by rfl)
-    _ = rename Nat.succ (hfFormulaAt ρ phi) := by
-            exact (rename_hfFormulaAt phi ρ Nat.succ).symm
+  exact hfFormulaAt_rename_natural phi
+    (hfUpVarMap ρ) ρ Nat.succ Nat.succ (fun _ => rfl)
 
 theorem hfContextAt_rename_succ (ρ : Nat → Nat) (G : List Form) :
     hfContextAt (hfUpVarMap ρ) (G.map (SetTheory.rename Nat.succ)) =
@@ -7060,20 +7081,11 @@ theorem subst_instTerm_var_hfFormulaAt (phi : Form) (ρ : Nat → Nat)
     (k : Nat) :
     subst (instTerm (Term.var (ρ k))) (hfFormulaAt (hfUpVarMap ρ) phi) =
       hfFormulaAt ρ (SetTheory.rename (SetTheory.inst k) phi) := by
-  calc
-    subst (instTerm (Term.var (ρ k))) (hfFormulaAt (hfUpVarMap ρ) phi)
-        = rename (SetTheory.inst (ρ k)) (hfFormulaAt (hfUpVarMap ρ) phi) := by
-            exact subst_instTerm_var (hfFormulaAt (hfUpVarMap ρ) phi) (ρ k)
-    _ = hfFormulaAt
-          (fun n => SetTheory.inst (ρ k) (hfUpVarMap ρ n)) phi := by
-            exact rename_hfFormulaAt phi (hfUpVarMap ρ) (SetTheory.inst (ρ k))
-    _ = hfFormulaAt (fun n => ρ (SetTheory.inst k n)) phi := by
-            exact hfFormulaAt_ext phi (fun n => by
-              cases n with
-              | zero => rfl
-              | succ n => rfl)
-    _ = hfFormulaAt ρ (SetTheory.rename (SetTheory.inst k) phi) := by
-            exact (hfFormulaAt_source_rename phi ρ (SetTheory.inst k)).symm
+  rw [subst_instTerm_var]
+  exact (hfFormulaAt_rename_natural phi
+    ρ (hfUpVarMap ρ)
+    (SetTheory.inst k) (SetTheory.inst (ρ k))
+    (fun n => by cases n <;> rfl)).symm
 
 theorem hfFormulaAt_eq_translateHFFormula_of_HF_sentence (phi : Form)
     (ρ : Nat → Nat) (hphi : SetTheory.Sentence phi) :
@@ -47766,19 +47778,10 @@ theorem hfFormulaAt_HF_induction_form (phi : Form) :
     hfFormulaAt (fun n : Nat => n) (AckermannHF.HF_induction_form phi) =
       translatedHFInductionBody
         (hfFormulaAt (fun n : Nat => n) phi) := by
-  have hup : hfUpVarMap (fun n : Nat => n) = (fun n : Nat => n) := by
-    funext n
-    cases n <;> rfl
   simp only [AckermannHF.HF_induction_form,
     translatedHFInductionBody, hfHereditaryAt,
-    hfFormulaAt, hup]
-  have hsource :=
-    hfFormulaAt_source_rename phi (fun n : Nat => n)
-      AckermannHF.rSkipParam
-  have htarget :=
-    rename_hfFormulaAt phi (fun n : Nat => n)
-      AckermannHF.rSkipParam
-  simpa using hsource.trans htarget.symm
+    hfFormulaAt, hfUpVarMap_id]
+  rw [hfFormulaAt_id_rename]
 
 theorem hfFormulaAt_closeN_id :
     ∀ (k : Nat) (phi : Form),
@@ -47791,11 +47794,7 @@ theorem hfFormulaAt_closeN_id :
       rfl
   | succ k ih =>
       intro phi
-      have hup : hfUpVarMap (fun n : Nat => n) =
-          (fun n : Nat => n) := by
-        funext n
-        cases n <;> rfl
-      simpa [SetTheory.closeN, closeN, hfFormulaAt, hup] using
+      simpa [SetTheory.closeN, closeN, hfFormulaAt, hfUpVarMap_id] using
         ih (Form.fAll phi)
 
 theorem translateHFFormula_sealed_induction (phi : Form) :
@@ -49697,49 +49696,18 @@ theorem hfFormulaAt_HF_adjoinAt_zero_two_one :
       hfAdjoinGraphAt 0 2 1 := by
   rfl
 
-theorem hfFormulaAt_rename_rAdjStepOld (phi : Form) :
-    hfFormulaAt (fun n : Nat => n)
-        (SetTheory.rename AckermannHF.rAdjStepOld phi) =
-      rename AckermannHF.rAdjStepOld
-        (hfFormulaAt (fun n : Nat => n) phi) := by
-  have hsource :=
-    hfFormulaAt_source_rename phi (fun n : Nat => n)
-      AckermannHF.rAdjStepOld
-  have htarget :=
-    rename_hfFormulaAt phi (fun n : Nat => n)
-      AckermannHF.rAdjStepOld
-  simpa using hsource.trans htarget.symm
-
-theorem hfFormulaAt_rename_rAdjStepNew (phi : Form) :
-    hfFormulaAt (fun n : Nat => n)
-        (SetTheory.rename AckermannHF.rAdjStepNew phi) =
-      rename AckermannHF.rAdjStepNew
-        (hfFormulaAt (fun n : Nat => n) phi) := by
-  have hsource :=
-    hfFormulaAt_source_rename phi (fun n : Nat => n)
-      AckermannHF.rAdjStepNew
-  have htarget :=
-    rename_hfFormulaAt phi (fun n : Nat => n)
-      AckermannHF.rAdjStepNew
-  simpa using hsource.trans htarget.symm
-
 theorem hfFormulaAt_HF_finite_induction_form (phi : Form) :
     hfFormulaAt (fun n : Nat => n)
         (AckermannHF.HF_finite_induction_form phi) =
       translatedHFFiniteInductionBody
         (hfFormulaAt (fun n : Nat => n) phi) := by
-  have hup : hfUpVarMap (fun n : Nat => n) =
-      (fun n : Nat => n) := by
-    funext n
-    cases n <;> rfl
   simp only [AckermannHF.HF_finite_induction_form,
     translatedHFFiniteInductionBody,
     hfFiniteGenerationAt,
     hfFormulaAt_HF_emptyAt_zero,
     hfFormulaAt_HF_adjoinAt_zero_two_one,
-    hfFormulaAt_rename_rAdjStepOld,
-    hfFormulaAt_rename_rAdjStepNew,
-    hfFormulaAt, hup]
+    hfFormulaAt_id_rename,
+    hfFormulaAt, hfUpVarMap_id]
 
 theorem translateHFFormula_sealed_finite_induction (phi : Form) :
     translateHFFormula

@@ -902,32 +902,16 @@ theorem hfCompositeAt_all
     hfCompositeAt codedMap (fAll a) =
       fAll (fImp PAInHF.domainForm
         (hfCompositeAt (PAInHF.upVarMap codedMap) a)) := by
-  have hinner :
-      PA.Formula.hfFormulaAt
-          (PA.Formula.hfUpVarMap (fun n => n)) a =
-        PA.Formula.hfFormulaAt (fun n => n) a := by
-    apply PA.Formula.hfFormulaAt_ext
-    intro n
-    cases n <;> rfl
   simp only [hfCompositeAt, PA.Formula.hfFormulaAt,
-    PAInHF.formulaAt]
-  rw [hinner]
+    PAInHF.formulaAt, PA.Formula.hfUpVarMap_id]
 
 theorem hfCompositeAt_ex
     (codedMap : Nat → Nat) (a : Form) :
     hfCompositeAt codedMap (fEx a) =
       fEx (fAnd PAInHF.domainForm
         (hfCompositeAt (PAInHF.upVarMap codedMap) a)) := by
-  have hinner :
-      PA.Formula.hfFormulaAt
-          (PA.Formula.hfUpVarMap (fun n => n)) a =
-        PA.Formula.hfFormulaAt (fun n => n) a := by
-    apply PA.Formula.hfFormulaAt_ext
-    intro n
-    cases n <;> rfl
   simp only [hfCompositeAt, PA.Formula.hfFormulaAt,
-    PAInHF.formulaAt]
-  rw [hinner]
+    PAInHF.formulaAt, PA.Formula.hfUpVarMap_id]
 
 /-! ### Paired slots under range and totality witnesses -/
 

@@ -70,10 +70,8 @@ Proof.
   unfold hfAddGraphTermAt, hfAddGraphAt.
   rewrite hsubst.
   rewrite subst_var_rename.
-  rewrite rename_hfFormulaAt.
   rewrite <- hsource.
-  rewrite hfFormulaAt_source_rename.
-  reflexivity.
+  apply hfFormulaAt_id_rename.
 Qed.
 
 Lemma subst_hfAddGraphTermAt : forall sigma out left right,
@@ -128,7 +126,7 @@ Proof.
   rewrite <- hsource.
   rewrite hfFormulaAt_source_rename.
   apply hfFormulaAt_ext.
-  intro n. reflexivity.
+  intro n; reflexivity.
 Qed.
 
 Lemma hfEmptyCodeAt_eq_termAt : forall slot,
@@ -156,11 +154,8 @@ Proof.
   }
   unfold addHFOrdinalLikeAt, codedOrdinalDomain, translateHFFormula.
   rewrite subst_instTerm_var.
-  rewrite rename_hfFormulaAt.
   rewrite <- hsource.
-  rewrite hfFormulaAt_source_rename.
-  apply hfFormulaAt_ext.
-  intro n. reflexivity.
+  apply hfFormulaAt_id_rename.
 Qed.
 
 Lemma subst_domainTermAt : forall sigma coded,

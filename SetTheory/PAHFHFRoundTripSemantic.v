@@ -120,11 +120,8 @@ Lemma hfCompositeAt_all : forall codedMap phi,
 Proof.
   intros codedMap phi.
   unfold hfCompositeAt. simpl.
-  rewrite (PA.Formula.hfFormulaAt_ext phi
-    (PA.Formula.hfUpVarMap (fun n : nat => n))
-    (fun n : nat => n)).
-  - reflexivity.
-  - intros [|n]; reflexivity.
+  rewrite PA.Formula.hfUpVarMap_id.
+  reflexivity.
 Qed.
 
 Lemma hfCompositeAt_ex : forall codedMap phi,
@@ -134,11 +131,8 @@ Lemma hfCompositeAt_ex : forall codedMap phi,
 Proof.
   intros codedMap phi.
   unfold hfCompositeAt. simpl.
-  rewrite (PA.Formula.hfFormulaAt_ext phi
-    (PA.Formula.hfUpVarMap (fun n : nat => n))
-    (fun n : nat => n)).
-  - reflexivity.
-  - intros [|n]; reflexivity.
+  rewrite PA.Formula.hfUpVarMap_id.
+  reflexivity.
 Qed.
 
 Lemma hfCompositeAt_mem_sat_iff_of_representations :

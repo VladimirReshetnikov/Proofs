@@ -1235,8 +1235,6 @@ open SetTheory
 #check @PA.Formula.translatedHFFiniteInductionBody
 #check @PA.Formula.hfFormulaAt_HF_emptyAt_zero
 #check @PA.Formula.hfFormulaAt_HF_adjoinAt_zero_two_one
-#check @PA.Formula.hfFormulaAt_rename_rAdjStepOld
-#check @PA.Formula.hfFormulaAt_rename_rAdjStepNew
 #check @PA.Formula.hfFormulaAt_HF_finite_induction_form
 #check @PA.Formula.translateHFFormula_sealed_finite_induction
 #check @PA.Formula.BProv_Ax_s_translated_HF_finite_induction_of_body
@@ -1971,6 +1969,9 @@ open SetTheory
 #check @PA.Formula.hfFormulaAt_ext_free
 #check @PA.Formula.hfFormulaAt_source_rename
 #check @PA.Formula.rename_hfFormulaAt
+#check @PA.Formula.hfUpVarMap_id
+#check @PA.Formula.hfFormulaAt_rename_natural
+#check @PA.Formula.hfFormulaAt_id_rename
 #check @PA.Formula.hfFormulaAt_rename_succ
 #check @PA.Formula.hfContextAt_rename_succ
 #check @PA.Formula.hfContextAt_cons_rename_succ

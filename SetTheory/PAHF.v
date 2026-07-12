@@ -34220,6 +34220,13 @@ Definition hfUpVarMap (rho : nat -> nat) : nat -> nat :=
     | S k => S (rho k)
     end.
 
+Lemma hfUpVarMap_id :
+  hfUpVarMap (fun n : nat => n) = (fun n : nat => n).
+Proof.
+  apply functional_extensionality.
+  intros [|n]; reflexivity.
+Qed.
+
 Fixpoint hfFormulaAt (rho : nat -> nat) (phi : form) : formula :=
   match phi with
   | fMem i j => hfMemAt (rho i) (rho j)
@@ -34540,17 +34547,35 @@ Proof.
     intros [|n]; reflexivity.
 Qed.
 
+(** Source and target renaming commute with HF-to-PA translation whenever
+    the corresponding square of variable maps commutes. *)
+Lemma hfFormulaAt_rename_natural : forall phi rho sigma r s,
+  (forall n, rho (r n) = s (sigma n)) ->
+  hfFormulaAt rho (Fol.rename r phi) =
+    rename s (hfFormulaAt sigma phi).
+Proof.
+  intros phi rho sigma r s h.
+  rewrite hfFormulaAt_source_rename, rename_hfFormulaAt.
+  apply hfFormulaAt_ext.
+  exact h.
+Qed.
+
+Lemma hfFormulaAt_id_rename : forall phi r,
+  hfFormulaAt (fun n : nat => n) (Fol.rename r phi) =
+    rename r (hfFormulaAt (fun n : nat => n) phi).
+Proof.
+  intros phi r.
+  apply hfFormulaAt_rename_natural.
+  intro n; reflexivity.
+Qed.
+
 Lemma hfFormulaAt_rename_succ : forall phi rho,
   hfFormulaAt (hfUpVarMap rho) (Fol.rename S phi) =
     rename S (hfFormulaAt rho phi).
 Proof.
   intros phi rho.
-  rewrite (hfFormulaAt_source_rename phi (hfUpVarMap rho) S).
-  rewrite (hfFormulaAt_ext phi
-    (fun n => hfUpVarMap rho (S n)) (fun n => S (rho n))).
-  - symmetry.
-    apply rename_hfFormulaAt.
-  - intro n. reflexivity.
+  apply hfFormulaAt_rename_natural.
+  intro n; reflexivity.
 Qed.
 
 Lemma hfContextAt_rename_succ : forall rho G,
@@ -34580,12 +34605,9 @@ Lemma subst_instTerm_var_hfFormulaAt : forall phi rho k,
 Proof.
   intros phi rho k.
   rewrite subst_instTerm_var.
-  rewrite (rename_hfFormulaAt phi (hfUpVarMap rho) (inst (rho k))).
-  transitivity (hfFormulaAt (fun n => rho (Fol.inst k n)) phi).
-  - apply hfFormulaAt_ext.
-    intros [|n]; reflexivity.
-  - symmetry.
-    apply hfFormulaAt_source_rename.
+  symmetry.
+  apply hfFormulaAt_rename_natural.
+  intros [|n]; reflexivity.
 Qed.
 
 Lemma hfFormulaAt_eq_translateHFFormula_of_HF_sentence : forall phi rho,

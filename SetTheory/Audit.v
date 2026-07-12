@@ -501,6 +501,9 @@ Check PA.Formula.hfFormulaAt_ext.
 Check PA.Formula.hfFormulaAt_ext_free.
 Check PA.Formula.hfFormulaAt_source_rename.
 Check PA.Formula.rename_hfFormulaAt.
+Check PA.Formula.hfUpVarMap_id.
+Check PA.Formula.hfFormulaAt_rename_natural.
+Check PA.Formula.hfFormulaAt_id_rename.
 Check PA.Formula.hfFormulaAt_rename_succ.
 Check PA.Formula.hfContextAt_rename_succ.
 Check PA.Formula.hfContextAt_cons_rename_succ.
