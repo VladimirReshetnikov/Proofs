@@ -367,8 +367,7 @@ Proof.
       (codeEqualityTermAt leftRaw rightRaw :: G) leftRaw rightRaw).
     apply BProv_ass. simpl. now left.
   }
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (** Normal form of a reverse-translated equality after opening its two

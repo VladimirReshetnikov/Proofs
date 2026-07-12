@@ -424,8 +424,7 @@ Proof.
     BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
       htotal hbound
       G left right leftRaw rightRaw codedMap codedOut hleft hright).
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforwardProof hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforwardProof hreverse).
 Qed.
 
 (** Structural multiplication needs two logically independent arithmetic

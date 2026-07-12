@@ -589,8 +589,7 @@ Lemma BProv_Ax_s_paCompositeAt_all_exact :
     PACompositeFormulaExact (pAll phi).
 Proof.
   intros P phi ih G rawMap codedMap hcode.
-  unfold iffForm.
-  apply BProv_andI.
+  apply PAHFProofCalculus.BProv_PA_iffForm_intro.
   - exact (BProv_Ax_s_paCompositeAt_all_forward
       P phi ih G rawMap codedMap hcode).
   - exact (BProv_Ax_s_paCompositeAt_all_reverse
@@ -928,8 +927,7 @@ Lemma BProv_Ax_s_paCompositeAt_ex_exact :
     PACompositeFormulaExact (pEx phi).
 Proof.
   intros P phi ih G rawMap codedMap hcode.
-  unfold iffForm.
-  apply BProv_andI.
+  apply PAHFProofCalculus.BProv_PA_iffForm_intro.
   - exact (BProv_Ax_s_paCompositeAt_ex_forward
       P phi ih G rawMap codedMap hcode).
   - exact (BProv_Ax_s_paCompositeAt_ex_reverse

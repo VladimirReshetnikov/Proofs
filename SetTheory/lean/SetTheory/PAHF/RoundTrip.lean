@@ -7341,7 +7341,7 @@ theorem BProv_Ax_s_term_graph_add_of_shifted_operands
   have hreverse :=
     BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
       G a b leftRaw rightRaw codedMap codedOut hleft hright
-  simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 /-- Addition preserves the complete ordinal-code term-graph property. -/
 theorem ordinalCodeTermGraphProof_add
@@ -9481,7 +9481,7 @@ theorem BProv_Ax_s_term_graph_mul_of_shifted_operands
   have hreverse :=
     BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
       G a b leftRaw rightRaw codedMap codedOut hleft hright
-  simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 /-- Multiplication preserves the complete ordinal-code term-graph property. -/
 theorem ordinalCodeTermGraphProof_mul
@@ -10595,7 +10595,7 @@ theorem BProv_eq_iff_codeEqualityTermAt
       (BProv_ass (B := Ax_s)
         (G := codeEqualityTermAt leftRaw rightRaw :: G)
         (by simp))
-  simpa [iffForm] using BProv_andI hforward hreverse
+  exact BProv_iffForm_intro hforward hreverse
 
 /-! ### Composite equality atoms -/
 
@@ -11050,7 +11050,7 @@ theorem BProv_Ax_s_paCompositeAt_all_exact
     BProv Ax_s G
       (iffForm (rename rawMap (all phi))
         (paCompositeAt codedMap (all phi))) := by
-  exact BProv_andI
+  exact BProv_iffForm_intro
     (BProv_Ax_s_paCompositeAt_all_forward
       P phi ih G rawMap codedMap hcode)
     (BProv_Ax_s_paCompositeAt_all_reverse
@@ -11337,7 +11337,7 @@ theorem BProv_Ax_s_paCompositeAt_ex_exact
     BProv Ax_s G
       (iffForm (rename rawMap (ex phi))
         (paCompositeAt codedMap (ex phi))) := by
-  exact BProv_andI
+  exact BProv_iffForm_intro
     (BProv_Ax_s_paCompositeAt_ex_forward
       P phi ih G rawMap codedMap hcode)
     (BProv_Ax_s_paCompositeAt_ex_reverse

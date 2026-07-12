@@ -390,8 +390,7 @@ Proof.
     BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
       htotal hcore G left right leftRaw rightRaw codedMap codedOut
       hleft hright).
-  unfold iffForm.
-  exact (BProv_andI Ax_s G _ _ hforward hreverse).
+  exact (PAHFProofCalculus.BProv_PA_iffForm_intro Ax_s G _ _ hforward hreverse).
 Qed.
 
 (** Addition preserves the complete term-graph property once graph
