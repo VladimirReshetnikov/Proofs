@@ -622,7 +622,7 @@ def Tinf (B : Form → Prop) (L0 : List Form) (phi : Form) : Prop :=
 
 private theorem Tinf_of_chain_in (B : Form → Prop) (L0 : List Form)
     (n : Nat) (phi : Form) (h : phi ∈ chainB B L0 n) : Tinf B L0 phi :=
-  ⟨n, [], mem_T_nil, .P_ass _ _ (by simpa using h)⟩
+  ⟨n, BProv_ass (by simpa using h)⟩
 
 theorem BProv_weaken_chain (B : Form → Prop) (L0 : List Form) (n n' : Nat)
     (phi : Form) (hle : n ≤ n') (h : BProv B (chainB B L0 n) phi) :
@@ -1036,8 +1036,7 @@ theorem model_of_BCon (B : Form → Prop) (L0 : List Form)
   refine ⟨Dom, m, v, ?_, ?_⟩
   · intro g hg
     apply (hsat g).mpr
-    refine ⟨0, [g], mem_T_cons hg mem_T_nil, ?_⟩
-    exact .P_ass _ _ (by simp)
+    exact ⟨0, BProv_ax hg⟩
   · intro g hg
     exact (hsat g).mpr (Tinf_of_chain_in B L0 0 g (by simpa [chainB] using hg))
 
@@ -1051,8 +1050,7 @@ theorem BProv_empty (G : List Form) (phi : Form) :
     match Gb, hp with
     | [], hp => exact hp
     | x :: _, _ => exact (hGb x (by simp)).elim
-  · intro h
-    exact ⟨[], mem_T_nil, h⟩
+  · exact BProv_of_Prov
 
 /-- Every consistent finite context has a model (the `B = ∅` instance of
 `model_of_BCon`). -/

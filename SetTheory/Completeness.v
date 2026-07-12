@@ -546,7 +546,7 @@ Definition Tinf (B : form -> Prop) (L0 : list form) (phi : form) : Prop :=
 
 Local Lemma Tinf_of_chain_in : forall B L0 n phi,
   In phi (chainB B L0 n) -> Tinf B L0 phi.
-Proof. intros B L0 n phi Hin. exists n, nil. split; [ intros x [] | apply P_ass; exact Hin ]. Qed.
+Proof. intros B L0 n phi Hin. exists n. apply BProv_ass. exact Hin. Qed.
 
 Lemma BProv_weaken_chain :
   forall B L0 n n' phi, n <= n' ->
@@ -1020,9 +1020,7 @@ Proof.
               (Tinf_cons B L0 HB H0) (Tinf_compl B L0) (Tinf_closed B L0)
               (Tinf_henkin_ex B L0 HB H0) (Tinf_henkin_all B L0 HB H0)) as [Dom [m [v Hsat]]].
   exists Dom, m, v. split.
-  - intros g Hg. apply (proj2 (Hsat g)). exists 0. exists (g :: nil). split.
-    + intros x [Heq | []]. subst x. exact Hg.
-    + cbn [chainB app]. apply P_ass. left. reflexivity.
+  - intros g Hg. apply (proj2 (Hsat g)). exists 0. apply BProv_ax. exact Hg.
   - intros g Hg. apply (proj2 (Hsat g)). apply (Tinf_of_chain_in B L0 0). exact Hg.
 Qed.
 
@@ -1038,7 +1036,7 @@ Proof.
   - intros [Gb [HGb Hp]]. destruct Gb as [| x Gb'].
     + exact Hp.
     + exfalso. apply (HGb x). left. reflexivity.
-  - intro H. exists nil. split; [ intros x [] | exact H ].
+  - intro H. apply BProv_of_Prov. exact H.
 Qed.
 
 (* Every consistent finite context has a model (the B = emptyset instance
