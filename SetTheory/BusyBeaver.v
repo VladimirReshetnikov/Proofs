@@ -711,10 +711,8 @@ Theorem eventuallyDominates_totalRecursiveInRadoModel :
   forall f, TotalRecursiveInRadoModel f -> EventuallyDominates Sigma f.
 Proof.
   intros Sigma hSigma f hf.
-  eapply eventuallyDominates_of_hasLinearOverheadBlankCompiler.
-  - exact hSigma.
-  - intros g hg. exact hg.
-  - exact hf.
+  exact (eventuallyDominates_of_hasLinearOverheadBlankCompiler
+    Sigma hSigma TotalRecursiveInRadoModel (fun _ h => h) f hf).
 Qed.
 
 Theorem eventuallyDominates_totalRecursiveEventuallyInRadoModel :
@@ -723,10 +721,8 @@ Theorem eventuallyDominates_totalRecursiveEventuallyInRadoModel :
     EventuallyDominates Sigma f.
 Proof.
   intros Sigma hSigma f hf.
-  eapply eventuallyDominates_of_hasEventuallyAtMostBlankCompiler.
-  - exact hSigma.
-  - intros g hg. exact hg.
-  - exact hf.
+  exact (eventuallyDominates_of_hasEventuallyAtMostBlankCompiler
+    Sigma hSigma TotalRecursiveEventuallyInRadoModel (fun _ h => h) f hf).
 Qed.
 
 Theorem eventuallyDominates_totalRecursiveEventuallyLowerBoundInRadoModel :
@@ -735,10 +731,9 @@ Theorem eventuallyDominates_totalRecursiveEventuallyLowerBoundInRadoModel :
     EventuallyDominates Sigma f.
 Proof.
   intros Sigma hSigma f hf.
-  eapply eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler.
-  - exact hSigma.
-  - intros g hg. exact hg.
-  - exact hf.
+  exact (eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
+    Sigma hSigma TotalRecursiveEventuallyLowerBoundInRadoModel
+    (fun _ h => h) f hf).
 Qed.
 
 Theorem sigma_eventually_dominates_every_total_recursive :

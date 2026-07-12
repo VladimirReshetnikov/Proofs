@@ -314,20 +314,14 @@ Proof.
 Qed.
 
 Theorem exactScore_three : BBKV.ExactScore 3 6.
-Proof.
-  split.
-  - exact BBKV.attainableScore_three_six.
-  - exact upperBound_three.
-Qed.
+Proof. exact (conj BBKV.attainableScore_three_six upperBound_three). Qed.
 
 Theorem sigma_three_eq_six : forall Sigma,
   BB.IsSigma Sigma -> Sigma 3%nat = 6%nat.
 Proof.
   intros Sigma hSigma.
-  apply BBKV.ExactScore.sigma_eq.
-  - exact hSigma.
-  - lia.
-  - exact exactScore_three.
+  exact (BBKV.ExactScore.sigma_eq Sigma hSigma 3 6
+    (Nat.lt_0_succ 2) exactScore_three).
 Qed.
 
 End BusyBeaverBB3Bridge.

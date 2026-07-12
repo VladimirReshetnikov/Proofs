@@ -301,20 +301,14 @@ Proof.
 Qed.
 
 Theorem exactScore_two : BBKV.ExactScore 2 4.
-Proof.
-  split.
-  - exact BBKV.attainableScore_two_four.
-  - exact upperBound_two.
-Qed.
+Proof. exact (conj BBKV.attainableScore_two_four upperBound_two). Qed.
 
 Theorem sigma_two_eq_four : forall Sigma,
   BB.IsSigma Sigma -> Sigma 2%nat = 4%nat.
 Proof.
   intros Sigma hSigma.
-  apply BBKV.ExactScore.sigma_eq.
-  - exact hSigma.
-  - lia.
-  - exact exactScore_two.
+  exact (BBKV.ExactScore.sigma_eq Sigma hSigma 2 4
+    (Nat.lt_0_succ 1) exactScore_two).
 Qed.
 
 End BusyBeaverBB2Bridge.

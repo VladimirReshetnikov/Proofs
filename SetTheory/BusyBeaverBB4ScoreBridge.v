@@ -362,11 +362,7 @@ Proof.
 Qed.
 
 Theorem exactScore_four : BBKV.ExactScore 4 13.
-Proof.
-  split.
-  - exact BBKV.attainableScore_four_thirteen.
-  - exact upperBound_four.
-Qed.
+Proof. exact (conj BBKV.attainableScore_four_thirteen upperBound_four). Qed.
 
 Theorem sigma_four_eq_thirteen : forall Sigma,
   BB.IsSigma Sigma -> Sigma 4 = 13.

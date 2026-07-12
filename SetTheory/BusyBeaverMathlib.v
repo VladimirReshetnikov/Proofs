@@ -772,11 +772,7 @@ Theorem totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler :
   forall TotalRecursiveMathlib,
     TotalRecursiveMathlibBridge TotalRecursiveMathlib ->
     BB.HasEventuallyAtMostLowerBoundCompiler TotalRecursiveMathlib.
-Proof.
-  intros TotalRecursiveMathlib hBridge f hf.
-  exact (totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding
-    TotalRecursiveMathlib hBridge f hf).
-Qed.
+Proof. exact totalRecursiveMathlib_init_wrapper_attainable_lowerBound_with_encoding. Qed.
 
 Theorem supportedCompilerBridge_has_lowerBoundCompiler :
   forall TotalRecursive,
@@ -785,8 +781,7 @@ Theorem supportedCompilerBridge_has_lowerBoundCompiler :
 Proof.
   intros TotalRecursive hBridge f hf.
   exists (bridge_threshold TotalRecursive hBridge f hf).
-  intros n hn.
-  exact (bridge_realizes_lower_bound TotalRecursive hBridge f hf n hn).
+  exact (bridge_realizes_lower_bound TotalRecursive hBridge f hf).
 Qed.
 
 Theorem sigma_eventually_dominates_every_supported_total_recursive :
@@ -797,12 +792,10 @@ Theorem sigma_eventually_dominates_every_supported_total_recursive :
       forall f, TotalRecursive f -> BB.EventuallyDominates Sigma f.
 Proof.
   intros Sigma hSigma TotalRecursive hBridge f hf.
-  apply BB.eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
-    with (TotalRecursive := TotalRecursive).
-  - exact hSigma.
-  - apply supportedCompilerBridge_has_lowerBoundCompiler.
-    exact hBridge.
-  - exact hf.
+  exact (BB.eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
+    Sigma hSigma TotalRecursive
+    (supportedCompilerBridge_has_lowerBoundCompiler TotalRecursive hBridge)
+    f hf).
 Qed.
 
 Theorem sigma_eventually_dominates_every_totalRecursiveMathlib :
@@ -813,12 +806,10 @@ Theorem sigma_eventually_dominates_every_totalRecursiveMathlib :
       forall f, TotalRecursiveMathlib f -> BB.EventuallyDominates Sigma f.
 Proof.
   intros Sigma hSigma TotalRecursiveMathlib hBridge f hf.
-  apply BB.eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
-    with (TotalRecursive := TotalRecursiveMathlib).
-  - exact hSigma.
-  - apply totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler.
-    exact hBridge.
-  - exact hf.
+  exact (BB.eventuallyDominates_of_hasEventuallyAtMostLowerBoundCompiler
+    Sigma hSigma TotalRecursiveMathlib
+    (totalRecursiveMathlib_hasEventuallyAtMostLowerBoundCompiler
+      TotalRecursiveMathlib hBridge) f hf).
 Qed.
 
 End BusyBeaverMathlib.
