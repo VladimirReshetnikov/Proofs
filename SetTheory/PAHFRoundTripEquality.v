@@ -99,23 +99,11 @@ Lemma subst_codeEqualityTermAt : forall sigma leftRaw rightRaw,
       (Term.subst sigma leftRaw) (Term.subst sigma rightRaw).
 Proof.
   intros sigma leftRaw rightRaw.
-  assert (hshift2 : forall t,
-    Term.subst (Term.upSubst (Term.upSubst sigma))
-        (Term.rename (fun n => n + 2) t) =
-      Term.rename (fun n => n + 2) (Term.subst sigma t)).
-  {
-    intro t.
-    change
-      (Term.subst (iterUpSubst 2 sigma)
-          (Term.rename (fun n => n + 2) t) =
-        Term.rename (fun n => n + 2) (Term.subst sigma t)).
-    apply term_subst_iterUpSubst_rename_add.
-  }
   unfold codeEqualityTermAt.
   cbn [subst].
   rewrite subst_codeEqualityBodyTermAt.
   cbn [Term.subst Term.upSubst Term.rename].
-  rewrite !hshift2.
+  rewrite !term_subst_up_up_rename_add_two.
   reflexivity.
 Qed.
 

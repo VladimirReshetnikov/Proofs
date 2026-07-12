@@ -426,9 +426,7 @@ Proof.
   unfold ordinalCodeTraceAgreementAt.
   cbn [subst].
   rewrite !subst_betaTermTermAt.
-  change (Term.upSubst (Term.upSubst sigma)) with
-    (iterUpSubst 2 sigma).
-  repeat rewrite term_subst_iterUpSubst_rename_add.
+  repeat rewrite term_subst_up_up_rename_add_two.
   reflexivity.
 Qed.
 

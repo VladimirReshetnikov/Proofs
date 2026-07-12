@@ -510,42 +510,9 @@ Qed.
 (*  Structural normalization                                               *)
 (* ===================================================================== *)
 
-Lemma term_subst_iterUpSubst_rename_add :
-  forall k (sigma : nat -> term) t,
-  Term.subst (iterUpSubst k sigma)
-      (Term.rename (fun n => n + k) t) =
-    Term.rename (fun n => n + k) (Term.subst sigma t).
-Proof.
-  induction k as [|k IH]; intros sigma t.
-  - simpl.
-    replace (Term.rename (fun n => n + 0) t) with t.
-    2: {
-      transitivity (Term.rename (fun n => n) t).
-      - symmetry. apply Term.rename_id.
-      - apply Term.rename_ext. intro n. lia.
-    }
-    replace (Term.rename (fun n => n + 0) (Term.subst sigma t))
-      with (Term.subst sigma t).
-    + reflexivity.
-    + transitivity (Term.rename (fun n => n) (Term.subst sigma t)).
-      * symmetry. apply Term.rename_id.
-      * apply Term.rename_ext. intro n. lia.
-  - simpl.
-    replace (Term.rename (fun n => n + S k) t)
-      with (Term.rename S (Term.rename (fun n => n + k) t)).
-    2: {
-      rewrite Term.rename_comp.
-      apply Term.rename_ext.
-      intro n.
-      lia.
-    }
-    rewrite Term.subst_rename_succ_up.
-    rewrite IH.
-    rewrite Term.rename_comp.
-    apply Term.rename_ext.
-    intro n.
-    lia.
-Qed.
+(* Compatibility alias: the generic transport now belongs to [PA.Formula]. *)
+Definition term_subst_iterUpSubst_rename_add :=
+  PA.Formula.term_subst_iterUpSubst_rename_add.
 
 Lemma rename_betaTermTermAt : forall r out code step index,
   rename r (betaTermTermAt out code step index) =
@@ -759,25 +726,13 @@ Lemma subst_ordinalCodeStepWitnessTermAt :
       (Term.subst sigma index).
 Proof.
   intros sigma sequenceCode sequenceStep index.
-  assert (hshift2 : forall t,
-    Term.subst (Term.upSubst (Term.upSubst sigma))
-        (Term.rename (fun n => n + 2) t) =
-      Term.rename (fun n => n + 2) (Term.subst sigma t)).
-  {
-    intro t.
-    change
-      (Term.subst (iterUpSubst 2 sigma)
-          (Term.rename (fun n => n + 2) t) =
-        Term.rename (fun n => n + 2) (Term.subst sigma t)).
-    apply term_subst_iterUpSubst_rename_add.
-  }
   unfold ordinalCodeStepWitnessTermAt.
   cbn [subst].
   rewrite !subst_betaTermTermAt.
   rewrite subst_hfAdjoinGraphTermAt.
-  rewrite !hshift2.
+  rewrite !term_subst_up_up_rename_add_two.
   simpl.
-  rewrite !hshift2.
+  rewrite !term_subst_up_up_rename_add_two.
   reflexivity.
 Qed.
 
@@ -805,23 +760,11 @@ Lemma subst_ordinalCodeGraphTermAt : forall sigma raw coded,
       (Term.subst sigma raw) (Term.subst sigma coded).
 Proof.
   intros sigma raw coded.
-  assert (hshift2 : forall t,
-    Term.subst (Term.upSubst (Term.upSubst sigma))
-        (Term.rename (fun n => n + 2) t) =
-      Term.rename (fun n => n + 2) (Term.subst sigma t)).
-  {
-    intro t.
-    change
-      (Term.subst (iterUpSubst 2 sigma)
-          (Term.rename (fun n => n + 2) t) =
-        Term.rename (fun n => n + 2) (Term.subst sigma t)).
-    apply term_subst_iterUpSubst_rename_add.
-  }
   unfold ordinalCodeGraphTermAt.
   cbn [subst].
   rewrite !subst_betaTermTermAt.
   rewrite subst_ordinalCodeStepsTermAt.
-  rewrite !hshift2.
+  rewrite !term_subst_up_up_rename_add_two.
   reflexivity.
 Qed.
 

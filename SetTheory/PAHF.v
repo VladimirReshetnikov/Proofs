@@ -7793,6 +7793,54 @@ Fixpoint iterUpSubst (k : nat) (sigma : nat -> term) : nat -> term :=
   | S k' => Term.upSubst (iterUpSubst k' sigma)
   end.
 
+(* Iterated lifted substitution commutes with the matching variable shift. *)
+Lemma term_subst_iterUpSubst_rename_add :
+  forall k (sigma : nat -> term) t,
+  Term.subst (iterUpSubst k sigma)
+      (Term.rename (fun n => n + k) t) =
+    Term.rename (fun n => n + k) (Term.subst sigma t).
+Proof.
+  induction k as [|k IH]; intros sigma t.
+  - simpl.
+    replace (Term.rename (fun n => n + 0) t) with t.
+    2: {
+      transitivity (Term.rename (fun n => n) t).
+      - symmetry. apply Term.rename_id.
+      - apply Term.rename_ext. intro n. lia.
+    }
+    replace (Term.rename (fun n => n + 0) (Term.subst sigma t))
+      with (Term.subst sigma t).
+    + reflexivity.
+    + transitivity (Term.rename (fun n => n) (Term.subst sigma t)).
+      * symmetry. apply Term.rename_id.
+      * apply Term.rename_ext. intro n. lia.
+  - simpl.
+    replace (Term.rename (fun n => n + S k) t)
+      with (Term.rename S (Term.rename (fun n => n + k) t)).
+    2: {
+      rewrite Term.rename_comp.
+      apply Term.rename_ext.
+      intro n.
+      lia.
+    }
+    rewrite Term.subst_rename_succ_up.
+    rewrite IH.
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n.
+    lia.
+Qed.
+
+(* Lean: term_subst_up_up_rename_add_two *)
+Lemma term_subst_up_up_rename_add_two :
+  forall (sigma : nat -> term) t,
+  Term.subst (Term.upSubst (Term.upSubst sigma))
+      (Term.rename (fun n => n + 2) t) =
+    Term.rename (fun n => n + 2) (Term.subst sigma t).
+Proof.
+  exact (term_subst_iterUpSubst_rename_add 2).
+Qed.
+
 (* Lean: term_subst_iterUpSubst_instTerm_var_rename_add_succ *)
 Lemma term_subst_iterUpSubst_instTerm_var_rename_add_succ :
   forall k elem t,

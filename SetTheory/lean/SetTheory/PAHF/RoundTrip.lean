@@ -1257,17 +1257,9 @@ theorem subst_ordinalCodeTraceAgreementAt
         (Term.subst sigma sequenceCode₂)
         (Term.subst sigma sequenceStep₂)
         (Term.subst sigma index) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n ↦ n+2) t) =
-        Term.rename (fun n ↦ n+2) (Term.subst sigma t) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n ↦ n+2) t) =
-      Term.rename (fun n ↦ n+2) (Term.subst sigma t)
-    exact term_subst_iterUpSubst_rename_add 2 sigma t
   simp [ordinalCodeTraceAgreementAt,
     subst_betaTermTermAt, subst, Term.subst, Term.upSubst,
-    Term.rename, hshift2]
+    Term.rename, term_subst_up_up_rename_add_two]
 
 theorem rename_ordinalCodeTraceAgreementAt
     (r : Nat → Nat)
@@ -2044,17 +2036,10 @@ theorem subst_betaPrefixAgreementTermAt
       betaPrefixAgreementTermAt
         (Term.subst sigma oldCode) (Term.subst sigma newCode)
         (Term.subst sigma step) (Term.subst sigma bound) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n => n + 2) t) =
-        Term.rename (fun n => n + 2) (Term.subst sigma t) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n => n + 2) t) =
-      Term.rename (fun n => n + 2) (Term.subst sigma t)
-    exact term_subst_iterUpSubst_rename_add 2 sigma t
   simp [betaPrefixAgreementTermAt, subst_betaTermTermAt,
     subst_ltTermAt, subst, Term.subst, Term.upSubst,
-    Term.subst_rename_succ_up, hshift2, Term.rename]
+    Term.subst_rename_succ_up, term_subst_up_up_rename_add_two,
+    Term.rename]
 
 theorem rename_betaPrefixAgreementTermAt
     (r : Nat → Nat) (oldCode newCode step bound : Term) :
@@ -2689,16 +2674,6 @@ theorem BProv_Ax_s_ordinalCodeTraceCapacityTermAt_trace_of_coding
       (betaCodingStepTermAt raw capacity step)) :
     BProv Ax_s G
       (ordinalCodeGraphBodyExistsTermAt step raw coded) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst (instTerm step)))
-          (Term.rename (fun n => n + 2) t) =
-        Term.rename (fun n => n + 2)
-          (Term.subst (instTerm step) t) := by
-    change Term.subst (iterUpSubst 2 (instTerm step))
-        (Term.rename (fun n => n + 2) t) =
-      Term.rename (fun n => n + 2)
-        (Term.subst (instTerm step) t)
-    exact term_subst_iterUpSubst_rename_add 2 (instTerm step) t
   have himpRaw := BProv_allE (B := Ax_s) (G := G)
     (t := step) hcapacity
   have himp : BProv Ax_s G
@@ -2715,7 +2690,8 @@ theorem BProv_Ax_s_ordinalCodeTraceCapacityTermAt_trace_of_coding
       term_subst_instTerm_rename_two_succ,
       term_subst_upSubst_instTerm_rename_two_succ,
       term_subst_up_up_instTerm_rename_three_succ,
-      Term.rename_comp, Function.comp_def, hshift2] using himpRaw
+      Term.rename_comp, Function.comp_def,
+      term_subst_up_up_rename_add_two] using himpRaw
   exact BProv_mp Ax_s G _ _ himp hcoding
 
 /-- The capacity-parametric trace invariant advances across one explicit
@@ -2846,17 +2822,10 @@ theorem subst_ordinalCodeTotalCapacityTermAt
     subst sigma (ordinalCodeTotalCapacityTermAt raw) =
       ordinalCodeTotalCapacityTermAt
         (Term.subst sigma raw) := by
-  have hshift2 :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n => n + 2) raw) =
-        Term.rename (fun n => n + 2) (Term.subst sigma raw) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n => n + 2) raw) =
-      Term.rename (fun n => n + 2) (Term.subst sigma raw)
-    exact term_subst_iterUpSubst_rename_add 2 sigma raw
   simp [ordinalCodeTotalCapacityTermAt,
     subst_ordinalCodeTraceCapacityTermAt,
-    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
+    subst, Term.subst, Term.upSubst, Term.rename,
+    term_subst_up_up_rename_add_two]
 
 theorem rename_ordinalCodeTotalCapacityTermAt
     (r : Nat → Nat) (raw : Term) :
@@ -4086,17 +4055,10 @@ theorem subst_codeEqualityTermAt
       codeEqualityTermAt
         (Term.subst sigma leftRaw)
         (Term.subst sigma rightRaw) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n ↦ n+2) t) =
-        Term.rename (fun n ↦ n+2) (Term.subst sigma t) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n ↦ n+2) t) =
-      Term.rename (fun n ↦ n+2) (Term.subst sigma t)
-    exact term_subst_iterUpSubst_rename_add 2 sigma t
   simp [codeEqualityTermAt,
     subst_codeEqualityBodyTermAt,
-    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
+    subst, Term.subst, Term.upSubst, Term.rename,
+    term_subst_up_up_rename_add_two]
 
 theorem rename_codeEqualityTermAt
     (r : Nat → Nat) (leftRaw rightRaw : Term) :

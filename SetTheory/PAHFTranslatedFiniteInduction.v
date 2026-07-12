@@ -155,37 +155,10 @@ Lemma subst_hfStrictPredAdjoinExistsTermAt : forall sigma code,
   hfStrictPredAdjoinExistsTermAt (Term.subst sigma code).
 Proof.
   intros sigma code.
-  assert (hcode :
-    Term.subst (Term.upSubst (Term.upSubst sigma))
-      (Term.rename (fun n => n + 2) code) =
-    Term.rename (fun n => n + 2) (Term.subst sigma code)).
-  {
-    change
-      (Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n => n + 2) code) =
-       Term.rename (fun n => n + 2) (Term.subst sigma code)).
-    apply term_subst_iterUpSubst_rename_add.
-  }
   unfold hfStrictPredAdjoinExistsTermAt.
-  change
-    (pEx (pEx
-      (pAnd
-        (subst (Term.upSubst (Term.upSubst sigma))
-          (ltTermAt (tVar 1)
-            (Term.rename (fun n => n + 2) code)))
-        (subst (Term.upSubst (Term.upSubst sigma))
-          (hfAdjoinGraphTermAt
-            (Term.rename (fun n => n + 2) code)
-            (tVar 1) (tVar 0))))) =
-     pEx (pEx
-      (pAnd
-        (ltTermAt (tVar 1)
-          (Term.rename (fun n => n + 2) (Term.subst sigma code)))
-        (hfAdjoinGraphTermAt
-          (Term.rename (fun n => n + 2) (Term.subst sigma code))
-          (tVar 1) (tVar 0))))).
+  cbn [subst].
   rewrite subst_ltTermAt, subst_hfAdjoinGraphTermAt.
-  rewrite hcode.
+  rewrite term_subst_up_up_rename_add_two.
   reflexivity.
 Qed.
 

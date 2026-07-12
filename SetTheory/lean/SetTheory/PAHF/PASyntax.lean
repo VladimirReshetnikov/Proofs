@@ -1263,6 +1263,42 @@ theorem term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ
 def iterUpSubst (k : Nat) (σ : Nat → Term) : Nat → Term :=
   Nat.rec σ (fun _ τ => Term.upSubst τ) k
 
+/-- Iterated lifted substitution commutes with the matching variable shift. -/
+theorem term_subst_iterUpSubst_rename_add
+    (k : Nat) (σ : Nat → Term) (t : Term) :
+    Term.subst (iterUpSubst k σ)
+        (Term.rename (fun n => n+k) t) =
+      Term.rename (fun n => n+k) (Term.subst σ t) := by
+  induction k with
+  | zero =>
+      change Term.subst σ (Term.rename (fun n => n) t) =
+        Term.rename (fun n => n) (Term.subst σ t)
+      rw [Term.rename_id, Term.rename_id]
+  | succ k ih =>
+      have hrename :
+          Term.rename (fun n => n+(k+1)) t =
+            Term.rename Nat.succ (Term.rename (fun n => n+k) t) := by
+        rw [Term.rename_comp]
+        exact Term.rename_ext t _ _ (fun n => by omega)
+      rw [iterUpSubst, hrename, Term.subst_rename_succ_up]
+      change Term.rename Nat.succ
+          (Term.subst (iterUpSubst k σ)
+            (Term.rename (fun n => n+k) t)) =
+        Term.rename (fun n => n+(k+1)) (Term.subst σ t)
+      rw [ih]
+      rw [Term.rename_comp]
+      exact Term.rename_ext (Term.subst σ t)
+        (fun n => Nat.succ (n+k))
+        (fun n => n+(k+1)) (fun n => by omega)
+
+/-- Two lifted substitutions commute with the matching two-variable shift. -/
+theorem term_subst_up_up_rename_add_two
+    (σ : Nat → Term) (t : Term) :
+    Term.subst (Term.upSubst (Term.upSubst σ))
+        (Term.rename (fun n => n + 2) t) =
+      Term.rename (fun n => n + 2) (Term.subst σ t) := by
+  exact term_subst_iterUpSubst_rename_add 2 σ t
+
 /-- General de Bruijn bookkeeping lemma: substituting a variable under `k`
 lifted binders through a term renamed by `k+1` successors removes exactly the
 newest shift. -/
@@ -47999,34 +48035,6 @@ theorem hfAdjoinTotalTermAt_var (elem : Nat) :
   simp [hfAdjoinTotalTermAt, hfAdjoinExistsTermAt,
     hfAdjoinTotalAt, hfAdjoinGraphAt, Term.rename]
 
-/-- Iterated lifted substitution commutes with the matching variable shift. -/
-theorem term_subst_iterUpSubst_rename_add
-    (k : Nat) (σ : Nat → Term) (t : Term) :
-    Term.subst (iterUpSubst k σ)
-        (Term.rename (fun n => n+k) t) =
-      Term.rename (fun n => n+k) (Term.subst σ t) := by
-  induction k with
-  | zero =>
-      change Term.subst σ (Term.rename (fun n => n) t) =
-        Term.rename (fun n => n) (Term.subst σ t)
-      rw [Term.rename_id, Term.rename_id]
-  | succ k ih =>
-      have hrename :
-          Term.rename (fun n => n+(k+1)) t =
-            Term.rename Nat.succ (Term.rename (fun n => n+k) t) := by
-        rw [Term.rename_comp]
-        exact Term.rename_ext t _ _ (fun n => by omega)
-      rw [iterUpSubst, hrename, Term.subst_rename_succ_up]
-      change Term.rename Nat.succ
-          (Term.subst (iterUpSubst k σ)
-            (Term.rename (fun n => n+k) t)) =
-        Term.rename (fun n => n+(k+1)) (Term.subst σ t)
-      rw [ih]
-      rw [Term.rename_comp]
-      exact Term.rename_ext (Term.subst σ t)
-        (fun n => Nat.succ (n+k))
-        (fun n => n+(k+1)) (fun n => by omega)
-
 /-- Substitution of a protected query leaves the query at zero and acts only
 on the term-valued set code. -/
 theorem subst_up_hfMemTermAt_zero_rename_succ
@@ -48230,17 +48238,10 @@ theorem subst_ordinalCodeStepWitnessTermAt
         (Term.subst sigma sequenceCode)
         (Term.subst sigma sequenceStep)
         (Term.subst sigma index) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n ↦ n+2) t) =
-        Term.rename (fun n ↦ n+2) (Term.subst sigma t) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n ↦ n+2) t) =
-      Term.rename (fun n ↦ n+2) (Term.subst sigma t)
-    exact term_subst_iterUpSubst_rename_add 2 sigma t
   simp [ordinalCodeStepWitnessTermAt,
     subst_betaTermTermAt, subst_hfAdjoinGraphTermAt,
-    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
+    subst, Term.subst, Term.upSubst, Term.rename,
+    term_subst_up_up_rename_add_two]
 
 theorem subst_ordinalCodeStepsTermAt
     (sigma : Nat → Term) (sequenceCode sequenceStep raw : Term) :
@@ -48260,18 +48261,11 @@ theorem subst_ordinalCodeGraphTermAt
     subst sigma (ordinalCodeGraphTermAt raw coded) =
       ordinalCodeGraphTermAt
         (Term.subst sigma raw) (Term.subst sigma coded) := by
-  have hshift2 (t : Term) :
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n ↦ n+2) t) =
-        Term.rename (fun n ↦ n+2) (Term.subst sigma t) := by
-    change Term.subst (iterUpSubst 2 sigma)
-        (Term.rename (fun n ↦ n+2) t) =
-      Term.rename (fun n ↦ n+2) (Term.subst sigma t)
-    exact term_subst_iterUpSubst_rename_add 2 sigma t
   simp [ordinalCodeGraphTermAt,
     subst_betaTermTermAt,
     subst_ordinalCodeStepsTermAt,
-    subst, Term.subst, Term.upSubst, Term.rename, hshift2]
+    subst, Term.subst, Term.upSubst, Term.rename,
+    term_subst_up_up_rename_add_two]
 
 theorem rename_ordinalCodeStepWitnessTermAt
     (r : Nat → Nat) (sequenceCode sequenceStep index : Term) :
@@ -49825,34 +49819,9 @@ theorem subst_hfStrictPredAdjoinExistsTermAt
     (σ : Nat → Term) (code : Term) :
     subst σ (hfStrictPredAdjoinExistsTermAt code) =
       hfStrictPredAdjoinExistsTermAt (Term.subst σ code) := by
-  have hcode :
-      Term.subst (Term.upSubst (Term.upSubst σ))
-          (Term.rename (fun n => n + 2) code) =
-        Term.rename (fun n => n + 2) (Term.subst σ code) := by
-    change Term.subst (iterUpSubst 2 σ)
-        (Term.rename (fun n => n + 2) code) =
-      Term.rename (fun n => n + 2) (Term.subst σ code)
-    exact term_subst_iterUpSubst_rename_add 2 σ code
-  have hlt :
-      subst (Term.upSubst (Term.upSubst σ))
-          (ltTermAt (Term.var 1)
-            (Term.rename (fun n => n + 2) code)) =
-        ltTermAt (Term.var 1)
-          (Term.rename (fun n => n + 2) (Term.subst σ code)) := by
-    simp [ltTermAt, subst, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up, hcode]
-  have hgraph :
-      subst (Term.upSubst (Term.upSubst σ))
-          (hfAdjoinGraphTermAt
-            (Term.rename (fun n => n + 2) code)
-            (Term.var 1) (Term.var 0)) =
-        hfAdjoinGraphTermAt
-          (Term.rename (fun n => n + 2) (Term.subst σ code))
-          (Term.var 1) (Term.var 0) := by
-    rw [subst_hfAdjoinGraphTermAt]
-    simp [Term.subst, Term.upSubst, Term.rename, hcode]
-  simp only [hfStrictPredAdjoinExistsTermAt, subst]
-  rw [hlt, hgraph]
+  simp [hfStrictPredAdjoinExistsTermAt, subst_ltTermAt,
+    subst_hfAdjoinGraphTermAt, subst, Term.subst, Term.upSubst,
+    Term.rename, term_subst_up_up_rename_add_two]
 
 theorem subst_hfEmptyOrStrictPredAdjoinTermAt
     (σ : Nat → Term) (code : Term) :

@@ -79,24 +79,12 @@ Lemma subst_betaShiftPrefixTermAt :
       (Term.subst sigma bound).
 Proof.
   intros sigma oldCode oldStep newCode newStep bound.
-  assert (hshift2 : forall t,
-      Term.subst (Term.upSubst (Term.upSubst sigma))
-          (Term.rename (fun n => n + 2) t) =
-        Term.rename (fun n => n + 2) (Term.subst sigma t)).
-  {
-    intro t.
-    change
-      (Term.subst (iterUpSubst 2 sigma)
-          (Term.rename (fun n => n + 2) t) =
-        Term.rename (fun n => n + 2) (Term.subst sigma t)).
-    apply term_subst_iterUpSubst_rename_add.
-  }
   unfold betaShiftPrefixTermAt.
   cbn [subst].
   rewrite subst_ltTermAt.
   rewrite !subst_betaTermTermAt.
   repeat rewrite Term.subst_rename_succ_up.
-  rewrite !hshift2.
+  rewrite !term_subst_up_up_rename_add_two.
   reflexivity.
 Qed.
 

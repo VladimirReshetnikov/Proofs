@@ -311,22 +311,11 @@ Lemma subst_ordinalCodeTotalCapacityTermAt : forall sigma raw,
     ordinalCodeTotalCapacityTermAt (Term.subst sigma raw).
 Proof.
   intros sigma raw.
-  assert (hshift2 :
-    Term.subst (Term.upSubst (Term.upSubst sigma))
-        (Term.rename (fun n => n + 2) raw) =
-      Term.rename (fun n => n + 2) (Term.subst sigma raw)).
-  {
-    change
-      (Term.subst (iterUpSubst 2 sigma)
-          (Term.rename (fun n => n + 2) raw) =
-        Term.rename (fun n => n + 2) (Term.subst sigma raw)).
-    apply term_subst_iterUpSubst_rename_add.
-  }
   unfold ordinalCodeTotalCapacityTermAt.
   cbn [subst].
   rewrite subst_ordinalCodeTraceCapacityTermAt.
   simpl.
-  rewrite hshift2.
+  rewrite term_subst_up_up_rename_add_two.
   reflexivity.
 Qed.
 
