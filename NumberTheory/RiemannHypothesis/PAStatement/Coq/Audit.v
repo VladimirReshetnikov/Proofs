@@ -1,0 +1,5 @@
+From RiemannHypothesis Require Import PAStatement.
+
+Check mertensRiemannHypothesisSentence.
+Check mertensRiemannHypothesisSentence_sentence.
+Print Assumptions mertensRiemannHypothesisSentence_sentence.

@@ -1,0 +1,9 @@
+name = "ZF"
+defaultTargets = ["ZF"]
+
+[[require]]
+name = "FirstOrder"
+path = "../../../Logic/FirstOrder/Lean"
+
+[[lean_lib]]
+name = "ZF"

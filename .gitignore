@@ -1,5 +1,5 @@
 # Lake/mathlib build and dependency state
-/.lake/
+.lake/
 
 # Rocq/Coq build artifacts
 *.vo
@@ -11,6 +11,9 @@
 .lia.cache
 .nia.cache
 .nra.cache
+*.cmi
+*.cmo
+*.cmx
 Makefile.coq
 Makefile.coq.conf
 

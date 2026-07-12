@@ -1,0 +1,13 @@
+From BusyBeaver Require Import BusyBeaver BusyBeaverMathlib BusyBeaverKnownValues
+  BusyBeaverBB2Bridge BusyBeaverBB3Bridge BusyBeaverBB4Bridge
+  BusyBeaverBB4Score BusyBeaverBB4ScoreComputation
+  BusyBeaverBB4ScoreCertificate BusyBeaverBB4ScoreBridge.
+
+Check BusyBeaver.IsSigma.
+Check BusyBeaver.sigma_eventually_dominates_every_total_recursive.
+Check BusyBeaverKnownValues.sigma2Champion_haltsWithScore.
+Check BusyBeaverBB2Bridge.sigma_two_eq_four.
+Check BusyBeaverBB3Bridge.sigma_three_eq_six.
+Check BusyBeaverBB4Bridge.busy_beaver_time_four_eq_107.
+Check BusyBeaverBB4ScoreBridge.sigma_four_eq_thirteen.
+Print Assumptions BusyBeaverBB4ScoreBridge.sigma_four_eq_thirteen.

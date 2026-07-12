@@ -1,0 +1,9 @@
+name = "PAHF"
+defaultTargets = ["PAHF"]
+
+[[require]]
+name = "FirstOrder"
+path = "../../../FirstOrder/Lean"
+
+[[lean_lib]]
+name = "PAHF"
