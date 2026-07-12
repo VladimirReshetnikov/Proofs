@@ -618,9 +618,8 @@ Proof.
         (doubleEqAt (S current) (S half))).
       {
         unfold Z, C.
-        apply BProv_context_cons.
-        apply BProv_context_cons.
-        exact hdouble.
+        exact (BProv_context_prefix Ax_s
+          [zeroAt 0; mem] Q _ hdouble).
       }
       assert (hmemZ : BProv Ax_s Z (hfMemAt 0 (S current))).
       {
@@ -667,9 +666,9 @@ Proof.
         assert (hraw : BProv Ax_s D (rename S mem)).
         {
           unfold D, Sctx.
-          apply BProv_context_cons.
-          apply BProv_context_cons.
-          exact hmemRenRaw.
+          exact (BProv_context_prefix Ax_s
+            [succBody; rename S (succPredAt 0)]
+            (map (rename S) C) _ hmemRenRaw).
         }
         unfold mem in hraw.
         rewrite hfMemTermAt_var in hraw.
@@ -703,10 +702,9 @@ Proof.
           (rename S (div2StepAt (S current) (S half) (S bit)))).
         {
           unfold D, Sctx, C.
-          apply BProv_context_cons.
-          apply BProv_context_cons.
-          apply BProv_context_cons.
-          exact hstepRen2Raw.
+          exact (BProv_context_prefix Ax_s
+            [succBody; rename S (succPredAt 0); rename S mem]
+            (map (rename S) Q) _ hstepRen2Raw).
         }
         rewrite rename_S_div2StepAt in hraw.
         exact hraw.
@@ -730,10 +728,9 @@ Proof.
           (rename S (hfEmptyTermAt (tVar (S half))))).
         {
           unfold D, Sctx, C.
-          apply BProv_context_cons.
-          apply BProv_context_cons.
-          apply BProv_context_cons.
-          exact htailRen2Raw.
+          exact (BProv_context_prefix Ax_s
+            [succBody; rename S (succPredAt 0); rename S mem]
+            (map (rename S) Q) _ htailRen2Raw).
         }
         rewrite rename_hfEmptyTermAt in hraw.
         exact hraw.

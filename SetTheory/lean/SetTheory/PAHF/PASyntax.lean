@@ -50381,8 +50381,7 @@ theorem BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
         simpa [zeroAt] using hraw
       have hdoubleZ : BProv Ax_s Z
           (doubleEqAt (current+1) (half+1)) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hdouble)
+        BProv_context_prefix [zeroAt 0, mem] hdouble
       have hmemZ : BProv Ax_s Z (hfMemAt 0 (current+1)) := by
         have hraw : BProv Ax_s Z mem :=
           BProv_context_cons (B := Ax_s) hmem
@@ -50413,9 +50412,8 @@ theorem BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
           (hfMemAt 1 (current+2)) := by
         have hraw : BProv Ax_s D
             (rename Nat.succ mem) :=
-          BProv_context_cons (B := Ax_s) (a := succBody)
-            (BProv_context_cons (B := Ax_s)
-              (a := rename Nat.succ (succPredAt 0)) hmemRenRaw)
+          BProv_context_prefix
+            [succBody, rename Nat.succ (succPredAt 0)] hmemRenRaw
         simpa [mem, hfMemTermAt_var, rename_hfMemAt,
           Term.rename] using hraw
       have hmemVar : BProv Ax_s D
@@ -50441,11 +50439,9 @@ theorem BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
         have hraw : BProv Ax_s D
             (rename Nat.succ
               (div2StepAt (current+1) (half+1) (bit+1))) :=
-          BProv_context_cons (B := Ax_s) (a := succBody)
-            (BProv_context_cons (B := Ax_s)
-              (a := rename Nat.succ (succPredAt 0))
-              (BProv_context_cons (B := Ax_s)
-                (a := rename Nat.succ mem) hstepRen2Raw))
+          BProv_context_prefix
+            [succBody, rename Nat.succ (succPredAt 0),
+              rename Nat.succ mem] hstepRen2Raw
         simpa [div2StepAt, boolAt, zeroAt, oneAt,
           eqConstAt, rename, Term.rename] using hraw
       have htailMem : BProv Ax_s D (hfMemAt 0 (half+2)) :=
@@ -50463,11 +50459,9 @@ theorem BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
         have hraw : BProv Ax_s D
             (rename Nat.succ
               (hfEmptyTermAt (Term.var (half+1)))) :=
-          BProv_context_cons (B := Ax_s) (a := succBody)
-            (BProv_context_cons (B := Ax_s)
-              (a := rename Nat.succ (succPredAt 0))
-              (BProv_context_cons (B := Ax_s)
-                (a := rename Nat.succ mem) htailRen2Raw))
+          BProv_context_prefix
+            [succBody, rename Nat.succ (succPredAt 0),
+              rename Nat.succ mem] htailRen2Raw
         simpa [rename_hfEmptyTermAt, Term.rename] using hraw
       have hnotTailRaw := BProv_allE
         (B := Ax_s) (G := D) (t := Term.var 0) htailD
