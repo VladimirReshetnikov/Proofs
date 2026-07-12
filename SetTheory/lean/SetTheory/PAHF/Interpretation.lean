@@ -504,13 +504,8 @@ theorem Sat_termGraphAt_shift_front {α : Type u} {mem : α → α → Prop}
     simpa [Nat.succ_eq_add_one] using
       (termGraphAt_rename t (ρ := ρ) (out := out) (r := Nat.succ))
   rw [← hrename]
-  apply (Sat_rename (mem := mem) (termGraphAt ρ out t)
-    Nat.succ (scons d e)).mpr
-  have henv : ∀ n, scons d e (Nat.succ n) = e n := by
-    intro n
-    rfl
-  exact (Sat_ext (mem := mem) (termGraphAt ρ out t)
-    (fun n => scons d e (Nat.succ n)) e henv).mpr h
+  exact (Sat_rename_ext (mem := mem) (termGraphAt ρ out t)
+    Nat.succ (scons d e) e (fun _ => rfl)).mpr h
 
 /-- Inverse form of `Sat_termGraphAt_shift_front`: if a shifted graph is
 satisfied after adding a fresh head slot, the original graph is satisfied in
@@ -527,13 +522,8 @@ theorem Sat_termGraphAt_shift_front_inv {α : Type u} {mem : α → α → Prop}
     simpa [Nat.succ_eq_add_one] using
       (termGraphAt_rename t (ρ := ρ) (out := out) (r := Nat.succ))
   rw [← hrename] at h
-  have hshift := (Sat_rename (mem := mem) (termGraphAt ρ out t)
-    Nat.succ (scons d e)).mp h
-  have henv : ∀ n, scons d e (Nat.succ n) = e n := by
-    intro n
-    rfl
-  exact (Sat_ext (mem := mem) (termGraphAt ρ out t)
-    (fun n => scons d e (Nat.succ n)) e henv).mp hshift
+  exact (Sat_rename_ext (mem := mem) (termGraphAt ρ out t)
+    Nat.succ (scons d e) e (fun _ => rfl)).mp h
 
 /-- A satisfied term graph with output in the head slot remains satisfied after
 inserting one fresh HF slot immediately behind that output. -/
@@ -551,17 +541,9 @@ theorem Sat_termGraphAt_insert_after_output {α : Type u}
     rw [termGraphAt_rename]
     simp [r, SetTheory.up]
   rw [← hrename]
-  apply (Sat_rename (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
-    r (scons outSlot (scons d e))).mpr
-  have henv : ∀ n,
-      scons outSlot (scons d e) (r n) = scons outSlot e n := by
-    intro n
-    cases n with
-    | zero => rfl
-    | succ n => rfl
-  exact (Sat_ext (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
-    (fun n => scons outSlot (scons d e) (r n)) (scons outSlot e)
-    henv).mpr h
+  exact (Sat_rename_ext (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
+    r (scons outSlot (scons d e)) (scons outSlot e)
+    (fun n => by cases n <;> rfl)).mpr h
 
 /-- Inverse form of `Sat_termGraphAt_insert_after_output`: a graph whose
 output is in the head slot does not depend on an extra slot inserted just after
@@ -580,18 +562,9 @@ theorem Sat_termGraphAt_insert_after_output_inv {α : Type u}
     rw [termGraphAt_rename]
     simp [r, SetTheory.up]
   rw [← hrename] at h
-  have hshift := (Sat_rename (mem := mem)
-    (termGraphAt (fun n => ρ n + 1) 0 t)
-    r (scons outSlot (scons d e))).mp h
-  have henv : ∀ n,
-      scons outSlot (scons d e) (r n) = scons outSlot e n := by
-    intro n
-    cases n with
-    | zero => rfl
-    | succ n => rfl
-  exact (Sat_ext (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
-    (fun n => scons outSlot (scons d e) (r n)) (scons outSlot e)
-    henv).mp hshift
+  exact (Sat_rename_ext (mem := mem) (termGraphAt (fun n => ρ n + 1) 0 t)
+    r (scons outSlot (scons d e)) (scons outSlot e)
+    (fun n => by cases n <;> rfl)).mp h
 
 /-- Every PA term whose free variables denote ordinal-like HF objects has a
 finite-HF graph witness, and that witness is again ordinal-like.

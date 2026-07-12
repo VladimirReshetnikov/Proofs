@@ -25,12 +25,8 @@ Proof.
     apply termGraphAt_rename.
   }
   rewrite <- hrename.
-  apply (proj2 (Sat_rename V mem (termGraphAt rho out t)
-    S (scons V d e))).
-  apply (proj1 (Sat_ext V mem (termGraphAt rho out t)
-    e (fun n => scons V d e (S n))
-    (fun n => eq_refl))).
-  exact h.
+  exact (proj2 (Sat_rename_ext V mem (termGraphAt rho out t)
+    S (scons V d e) e (fun n => eq_refl)) h).
 Qed.
 
 Lemma Sat_termGraphAt_shift_front_inv :
@@ -46,11 +42,8 @@ Proof.
       termGraphAt (fun n => S (rho n)) (S out) t).
   { apply termGraphAt_rename. }
   rewrite <- hrename in h.
-  apply (proj2 (Sat_ext V mem (termGraphAt rho out t)
-    e (fun n => scons V d e (S n))
-    (fun n => eq_refl))).
-  exact (proj1 (Sat_rename V mem (termGraphAt rho out t)
-    S (scons V d e)) h).
+  exact (proj1 (Sat_rename_ext V mem (termGraphAt rho out t)
+    S (scons V d e) e (fun n => eq_refl)) h).
 Qed.
 
 Definition insertAfterOutputMap (n : nat) : nat :=
@@ -78,16 +71,11 @@ Proof.
     intro n. reflexivity.
   }
   rewrite <- hrename.
-  apply (proj2 (Sat_rename V mem
+  exact (proj2 (Sat_rename_ext V mem
     (termGraphAt (fun n => S (rho n)) 0 t)
-    insertAfterOutputMap (scons V outValue (scons V d e)))).
-  apply (proj1 (Sat_ext V mem
-    (termGraphAt (fun n => S (rho n)) 0 t)
+    insertAfterOutputMap (scons V outValue (scons V d e))
     (scons V outValue e)
-    (fun n => scons V outValue (scons V d e)
-      (insertAfterOutputMap n))
-    (fun n => match n with 0 => eq_refl | S _ => eq_refl end))).
-  exact h.
+    (fun n => match n with 0 => eq_refl | S _ => eq_refl end)) h).
 Qed.
 
 Lemma Sat_termGraphAt_insert_after_output_inv :
@@ -109,13 +97,9 @@ Proof.
     intro n. reflexivity.
   }
   rewrite <- hrename in h.
-  apply (proj2 (Sat_ext V mem
+  exact (proj1 (Sat_rename_ext V mem
     (termGraphAt (fun n => S (rho n)) 0 t)
+    insertAfterOutputMap (scons V outValue (scons V d e))
     (scons V outValue e)
-    (fun n => scons V outValue (scons V d e)
-      (insertAfterOutputMap n))
-    (fun n => match n with 0 => eq_refl | S _ => eq_refl end))).
-  exact (proj1 (Sat_rename V mem
-    (termGraphAt (fun n => S (rho n)) 0 t)
-    insertAfterOutputMap (scons V outValue (scons V d e))) h).
+    (fun n => match n with 0 => eq_refl | S _ => eq_refl end)) h).
 Qed.
