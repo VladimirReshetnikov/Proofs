@@ -3825,8 +3825,9 @@ Proof.
       set (D := newMem :: C).
       assert (hqueryD : BProv Ax_s D (eqConstAt query 0)).
       {
-        exact (BProv_context_cons Ax_s C newMem _
-          (BProv_context_cons Ax_s G (zeroAt bit) _ hqueryZero)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s
+          [newMem; zeroAt bit] G _ hqueryZero).
       }
       assert (hdoubleD : BProv Ax_s D
           (doubleEqAt newHead newTail)).
@@ -3845,8 +3846,9 @@ Proof.
       set (D := oldMem :: C).
       assert (hqueryD : BProv Ax_s D (eqConstAt query 0)).
       {
-        exact (BProv_context_cons Ax_s C oldMem _
-          (BProv_context_cons Ax_s G (zeroAt bit) _ hqueryZero)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s
+          [oldMem; zeroAt bit] G _ hqueryZero).
       }
       assert (hdoubleD : BProv Ax_s D
           (doubleEqAt oldHead oldTail)).
@@ -3943,8 +3945,8 @@ Proof.
       set (D := oldMem :: C).
       assert (hsameD : BProv Ax_s D (iffForm newMem oldMem)).
       {
-        exact (BProv_context_cons Ax_s C oldMem _
-          (BProv_context_cons Ax_s G rhs _ hsame)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [oldMem; rhs] G _ hsame).
       }
       pose proof (BProv_andE2 Ax_s D _ _ hsameD) as htoNew.
       assert (hold : BProv Ax_s D oldMem).
@@ -3958,8 +3960,9 @@ Proof.
       { apply BProv_ass. unfold D. simpl. left. reflexivity. }
       assert (hzero : BProv Ax_s D (pEq (tVar query) tZero)).
       {
-        pose proof (BProv_context_cons Ax_s G rhs _ hqueryZero) as h1.
-        pose proof (BProv_context_cons Ax_s C succEq _ h1) as h2.
+        unfold D, C.
+        pose proof (BProv_context_prefix Ax_s
+          [succEq; rhs] G _ hqueryZero) as h2.
         unfold eqConstAt in h2. simpl in h2. exact h2.
       }
       assert (hbad : BProv Ax_s D
@@ -4036,8 +4039,9 @@ Proof.
       set (D := oldTailMem :: C).
       assert (holdD : BProv Ax_s D (iffForm oldSucc oldTailMem)).
       {
-        exact (BProv_context_cons Ax_s C oldTailMem _
-          (BProv_context_cons Ax_s G newSucc _ holdIff)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s
+          [oldTailMem; newSucc] G _ holdIff).
       }
       pose proof (BProv_andE2 Ax_s D _ _ holdD) as htoOld.
       assert (htailAss : BProv Ax_s D oldTailMem).
@@ -4071,8 +4075,8 @@ Proof.
       set (D := oldSucc :: C).
       assert (holdD : BProv Ax_s D (iffForm oldSucc oldTailMem)).
       {
-        exact (BProv_context_cons Ax_s C oldSucc _
-          (BProv_context_cons Ax_s G rhs _ holdIff)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [oldSucc; rhs] G _ holdIff).
       }
       assert (holdAss : BProv Ax_s D oldSucc).
       { apply BProv_ass. unfold D. simpl. left. reflexivity. }
@@ -4082,8 +4086,8 @@ Proof.
       assert (htailD : BProv Ax_s D
           (iffForm newTailMem (pOr oldTailMem tailEq))).
       {
-        exact (BProv_context_cons Ax_s C oldSucc _
-          (BProv_context_cons Ax_s G rhs _ htail)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [oldSucc; rhs] G _ htail).
       }
       pose proof (BProv_andE2 Ax_s D _ _ htailD) as htoNewTail.
       pose proof (BProv_orI1 Ax_s D oldTailMem tailEq holdTail)
@@ -4092,8 +4096,8 @@ Proof.
         newTailMem htoNewTail htailCases) as hnewTail.
       assert (hnewD : BProv Ax_s D (iffForm newSucc newTailMem)).
       {
-        exact (BProv_context_cons Ax_s C oldSucc _
-          (BProv_context_cons Ax_s G rhs _ hnewIff)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [oldSucc; rhs] G _ hnewIff).
       }
       pose proof (BProv_andE2 Ax_s D _ _ hnewD) as htoNew.
       exact (BProv_mp Ax_s D newTailMem newSucc htoNew hnewTail).
@@ -4109,8 +4113,8 @@ Proof.
       assert (htailD : BProv Ax_s D
           (iffForm newTailMem (pOr oldTailMem tailEq))).
       {
-        exact (BProv_context_cons Ax_s C headEq _
-          (BProv_context_cons Ax_s G rhs _ htail)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [headEq; rhs] G _ htail).
       }
       pose proof (BProv_andE2 Ax_s D _ _ htailD) as htoNewTail.
       pose proof (BProv_orI2 Ax_s D oldTailMem tailEq heq)
@@ -4119,8 +4123,8 @@ Proof.
         newTailMem htoNewTail htailCases) as hnewTail.
       assert (hnewD : BProv Ax_s D (iffForm newSucc newTailMem)).
       {
-        exact (BProv_context_cons Ax_s C headEq _
-          (BProv_context_cons Ax_s G rhs _ hnewIff)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [headEq; rhs] G _ hnewIff).
       }
       pose proof (BProv_andE2 Ax_s D _ _ hnewD) as htoNew.
       exact (BProv_mp Ax_s D newTailMem newSucc htoNew hnewTail).
@@ -4317,8 +4321,8 @@ Proof.
       set (D := oldSucc :: C).
       assert (holdD : BProv Ax_s D (iffForm oldSucc tailMem)).
       {
-        exact (BProv_context_cons Ax_s C oldSucc _
-          (BProv_context_cons Ax_s G rhs _ holdIff)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [oldSucc; rhs] G _ holdIff).
       }
       assert (hold : BProv Ax_s D oldSucc).
       { apply BProv_ass. unfold D. simpl. left. reflexivity. }
@@ -4326,8 +4330,8 @@ Proof.
       pose proof (BProv_mp Ax_s D oldSucc tailMem htoTail hold) as htail.
       assert (hnewD : BProv Ax_s D (iffForm newSucc tailMem)).
       {
-        exact (BProv_context_cons Ax_s C oldSucc _
-          (BProv_context_cons Ax_s G rhs _ hnewIff)).
+        unfold D, C.
+        exact (BProv_context_prefix Ax_s [oldSucc; rhs] G _ hnewIff).
       }
       pose proof (BProv_andE2 Ax_s D _ _ hnewD) as htoNew.
       exact (BProv_mp Ax_s D tailMem newSucc htoNew htail).

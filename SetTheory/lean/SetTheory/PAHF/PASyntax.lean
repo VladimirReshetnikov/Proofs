@@ -48750,8 +48750,7 @@ theorem BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
     have hforward : BProv Ax_s C (imp newMem oldMem) := by
       let D : List Formula := newMem :: C
       have hqueryZeroD : BProv Ax_s D (eqConstAt query 0) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hqueryZero)
+        BProv_context_prefix [newMem, zeroAt bit] hqueryZero
       have hnewDoubleD : BProv Ax_s D (doubleEqAt newHead newTail) :=
         BProv_context_cons (B := Ax_s) hnewDouble
       have hnewMem : BProv Ax_s D (hfMemAt query newHead) := by
@@ -48765,8 +48764,7 @@ theorem BProv_Ax_s_hfMem_zero_iff_of_same_div2_bit
     have hreverse : BProv Ax_s C (imp oldMem newMem) := by
       let D : List Formula := oldMem :: C
       have hqueryZeroD : BProv Ax_s D (eqConstAt query 0) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hqueryZero)
+        BProv_context_prefix [oldMem, zeroAt bit] hqueryZero
       have holdDoubleD : BProv Ax_s D (doubleEqAt oldHead oldTail) :=
         BProv_context_cons (B := Ax_s) holdDouble
       have holdMem : BProv Ax_s D (hfMemAt query oldHead) := by
@@ -48857,8 +48855,7 @@ theorem BProv_Ax_s_hfAdjoin_zero_head_lift
     have hleft : BProv Ax_s (oldMem :: C) newMem := by
       let D : List Formula := oldMem :: C
       have hsameD : BProv Ax_s D (iffForm newMem oldMem) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hsame)
+        BProv_context_prefix [oldMem, rhs] hsame
       have hold : BProv Ax_s D oldMem :=
         BProv_ass (B := Ax_s) (G := D) (by simp [D])
       have htoNew : BProv Ax_s D (imp oldMem newMem) := by
@@ -48871,8 +48868,7 @@ theorem BProv_Ax_s_hfAdjoin_zero_head_lift
       have hzeroD : BProv Ax_s D
           (eq (Term.var query) Term.zero) := by
         simpa [eqConstAt, Term.numeral] using
-          BProv_context_cons (B := Ax_s)
-            (BProv_context_cons (B := Ax_s) hqueryZero)
+          BProv_context_prefix [succEq, rhs] hqueryZero
       have hbad : BProv Ax_s D
           (eq (Term.succ (Term.var elem)) Term.zero) :=
         BProv_eqTrans (BProv_eqSym (by simpa [succEq] using heq)) hzeroD
@@ -48953,8 +48949,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
     have hleft : BProv Ax_s (oldTailMem :: C) rhs := by
       let D : List Formula := oldTailMem :: C
       have holdD : BProv Ax_s D (iffForm oldSucc oldTailMem) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) holdIff)
+        BProv_context_prefix [oldTailMem, newSucc] holdIff
       have htailAss : BProv Ax_s D oldTailMem :=
         BProv_ass (B := Ax_s) (G := D) (by simp [D])
       have htailToOld : BProv Ax_s D (imp oldTailMem oldSucc) := by
@@ -48977,8 +48972,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
     have hleft : BProv Ax_s (oldSucc :: C) newSucc := by
       let D : List Formula := oldSucc :: C
       have holdD : BProv Ax_s D (iffForm oldSucc oldTailMem) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) holdIff)
+        BProv_context_prefix [oldSucc, rhs] holdIff
       have holdAss : BProv Ax_s D oldSucc :=
         BProv_ass (B := Ax_s) (G := D) (by simp [D])
       have holdToTail : BProv Ax_s D (imp oldSucc oldTailMem) := by
@@ -48987,8 +48981,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
         BProv_mp Ax_s D oldSucc oldTailMem holdToTail holdAss
       have htailD : BProv Ax_s D
           (iffForm newTailMem (or oldTailMem tailEq)) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) htailIff)
+        BProv_context_prefix [oldSucc, rhs] htailIff
       have hcasesTail : BProv Ax_s D (or oldTailMem tailEq) :=
         BProv_orI1 holdTail
       have hcasesToNew : BProv Ax_s D
@@ -48998,8 +48991,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
         BProv_mp Ax_s D (or oldTailMem tailEq) newTailMem
           hcasesToNew hcasesTail
       have hnewD : BProv Ax_s D (iffForm newSucc newTailMem) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hnewIff)
+        BProv_context_prefix [oldSucc, rhs] hnewIff
       have htailToNew : BProv Ax_s D (imp newTailMem newSucc) := by
         simpa [iffForm] using BProv_andE2 hnewD
       exact BProv_mp Ax_s D newTailMem newSucc htailToNew hnewTail
@@ -49016,8 +49008,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
         BProv_mp Ax_s D headEq tailEq hinj hheadEq
       have htailD : BProv Ax_s D
           (iffForm newTailMem (or oldTailMem tailEq)) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) htailIff)
+        BProv_context_prefix [headEq, rhs] htailIff
       have hcasesTail : BProv Ax_s D (or oldTailMem tailEq) :=
         BProv_orI2 heq
       have hcasesToNew : BProv Ax_s D
@@ -49027,8 +49018,7 @@ theorem BProv_Ax_s_hfAdjoin_positive_head_lift
         BProv_mp Ax_s D (or oldTailMem tailEq) newTailMem
           hcasesToNew hcasesTail
       have hnewD : BProv Ax_s D (iffForm newSucc newTailMem) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hnewIff)
+        BProv_context_prefix [headEq, rhs] hnewIff
       have htailToNew : BProv Ax_s D (imp newTailMem newSucc) := by
         simpa [iffForm] using BProv_andE2 hnewD
       exact BProv_mp Ax_s D newTailMem newSucc htailToNew hnewTail
@@ -49495,8 +49485,7 @@ theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
           let D : List Formula := oldSucc :: C
           have holdD : BProv Ax_s D
               (iffForm oldSucc tailMem) :=
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) holdIff)
+            BProv_context_prefix [oldSucc, rhs] holdIff
           have holdAss : BProv Ax_s D oldSucc :=
             BProv_ass (B := Ax_s) (G := D) (by simp [D])
           have holdToTail : BProv Ax_s D
@@ -49506,8 +49495,7 @@ theorem BProv_Ax_s_hfAdjoinGraph_zero_of_shared_tail
             BProv_mp Ax_s D oldSucc tailMem holdToTail holdAss
           have hnewD : BProv Ax_s D
               (iffForm newSucc tailMem) :=
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hnewIff)
+            BProv_context_prefix [oldSucc, rhs] hnewIff
           have htailToNew : BProv Ax_s D
               (imp tailMem newSucc) := by
             simpa [iffForm] using BProv_andE2 hnewD
