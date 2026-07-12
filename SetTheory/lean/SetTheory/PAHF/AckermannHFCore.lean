@@ -385,8 +385,7 @@ theorem Sat_rename_rSkipParam {α : Type u} {mem : α → α → Prop}
     (phi : Form) (e : Nat → α) (x y : α) :
     Sat mem (scons y (scons x e)) (rename rSkipParam phi) ↔
       Sat mem (scons y e) phi := by
-  rw [Sat_rename]
-  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+  exact Sat_rename_ext phi rSkipParam _ _ (fun n => by cases n <;> rfl)
 
 /-- In the finite-generation induction step, read `phi` at the old set slot
 under the local binders for `a`, `b`, and `c = a ∪ {b}`. -/
@@ -404,15 +403,13 @@ theorem Sat_rename_rAdjStepOld {α : Type u} {mem : α → α → Prop}
     (phi : Form) (e : Nat → α) (a b c : α) :
     Sat mem (scons c (scons b (scons a e))) (rename rAdjStepOld phi) ↔
       Sat mem (scons a e) phi := by
-  rw [Sat_rename]
-  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+  exact Sat_rename_ext phi rAdjStepOld _ _ (fun n => by cases n <;> rfl)
 
 theorem Sat_rename_rAdjStepNew {α : Type u} {mem : α → α → Prop}
     (phi : Form) (e : Nat → α) (a b c : α) :
     Sat mem (scons c (scons b (scons a e))) (rename rAdjStepNew phi) ↔
       Sat mem (scons c e) phi := by
-  rw [Sat_rename]
-  exact Sat_ext phi _ _ (fun n => by cases n <;> rfl)
+  exact Sat_rename_ext phi rAdjStepNew _ _ (fun n => by cases n <;> rfl)
 
 /-- Under the local binders for a subset witness and its candidate element,
 read a predicate at the candidate element while preserving the old parameters. -/
@@ -424,8 +421,7 @@ theorem Sat_rename_rSepParam {α : Type u} {mem : α → α → Prop}
     (psi : Form) (e : Nat → α) (s x : α) :
     Sat mem (scons x (scons s e)) (rename rSepParam psi) ↔
       Sat mem (scons x e) psi := by
-  rw [Sat_rename]
-  exact Sat_ext psi _ _ (fun n => by cases n <;> rfl)
+  exact Sat_rename_ext psi rSepParam _ _ (fun n => by cases n <;> rfl)
 
 /-- The first-order empty-set axiom: some set has no elements. -/
 def HF_empty_form : Form :=

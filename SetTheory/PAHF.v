@@ -1097,8 +1097,7 @@ Lemma Sat_rename_rSepParam : forall (V : Type) (mem : V -> V -> Prop)
     Sat V mem (scons V x e) psi.
 Proof.
   intros V mem psi e s x.
-  rewrite Sat_rename.
-  apply Sat_ext.
+  apply Sat_rename_ext.
   intros [|n]; reflexivity.
 Qed.
 
@@ -1114,8 +1113,7 @@ Lemma Sat_rename_rSkipParam : forall (V : Type) (mem : V -> V -> Prop)
     Sat V mem (scons V y e) phi.
 Proof.
   intros V mem phi e x y.
-  rewrite Sat_rename.
-  apply Sat_ext.
+  apply Sat_rename_ext.
   intros [|n]; reflexivity.
 Qed.
 
@@ -1138,8 +1136,7 @@ Lemma Sat_rename_rAdjStepOld : forall (V : Type) (mem : V -> V -> Prop)
     Sat V mem (scons V a e) phi.
 Proof.
   intros V mem phi e a b c.
-  rewrite Sat_rename.
-  apply Sat_ext.
+  apply Sat_rename_ext.
   intros [|n]; reflexivity.
 Qed.
 
@@ -1150,8 +1147,7 @@ Lemma Sat_rename_rAdjStepNew : forall (V : Type) (mem : V -> V -> Prop)
     Sat V mem (scons V c e) phi.
 Proof.
   intros V mem phi e a b c.
-  rewrite Sat_rename.
-  apply Sat_ext.
+  apply Sat_rename_ext.
   intros [|n]; reflexivity.
 Qed.
 
