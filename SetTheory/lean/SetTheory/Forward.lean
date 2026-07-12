@@ -118,6 +118,12 @@ theorem sep_elim2 (hSep : SepAx mem) (a : V) (P : V → Prop) (x : V)
     (h : mem x (sep hSep a P)) : P x :=
   ((sep_spec hSep a P x).mp h).2
 
+private theorem sep_spec_of_bound (hSep : SepAx mem) (a : V) (P : V → Prop)
+    (hbound : ∀ x, P x → mem x a) (x : V) :
+    mem x (sep hSep a P) ↔ P x :=
+  ⟨fun h => ((sep_spec hSep a P x).mp h).2,
+    fun hp => (sep_spec hSep a P x).mpr ⟨hbound x hp, hp⟩⟩
+
 theorem Sub_refl (a : V) : Sub mem a a := fun _ h => h
 
 /- THE LINCHPIN, in its minimal form: every set has a host, a ∈ host a.
@@ -169,14 +175,11 @@ noncomputable def single_empty (witness : V) (hSep : SepAx mem) (hHost : HostAx 
 
 theorem in_single_empty (witness : V) (hSep : SepAx mem) (hHost : HostAx mem) (x : V) :
     mem x (single_empty witness hSep hHost) ↔ x = emptyset witness hSep := by
-  constructor
-  · intro H
-    exact sep_elim2 hSep _ _ x H
-  · intro H
-    apply sep_intro hSep _ _ x
-    · rw [H]
-      exact host_spec hHost _
-    · exact H
+  unfold single_empty
+  apply sep_spec_of_bound
+  intro y Hy
+  rw [Hy]
+  exact host_spec hHost _
 
 theorem empty_in_single (witness : V) (hSep : SepAx mem) (hHost : HostAx mem) :
     mem (emptyset witness hSep) (single_empty witness hSep hHost) :=
@@ -197,14 +200,11 @@ noncomputable def seed_single (witness : V) (hSep : SepAx mem) (hHost : HostAx m
 
 theorem in_seed_single (witness : V) (hSep : SepAx mem) (hHost : HostAx mem) (x : V) :
     mem x (seed_single witness hSep hHost) ↔ x = single_empty witness hSep hHost := by
-  constructor
-  · intro H
-    exact sep_elim2 hSep _ _ x H
-  · intro H
-    apply sep_intro hSep _ _ x
-    · rw [H]
-      exact host_spec hHost _
-    · exact H
+  unfold seed_single
+  apply sep_spec_of_bound
+  intro y Hy
+  rw [Hy]
+  exact host_spec hHost _
 
 /- the one-edge relation: empty is the sole predecessor of {empty} -/
 def mergeRel (witness : V) (hSep : SepAx mem) (hHost : HostAx mem) (z x : V) : Prop :=
@@ -307,16 +307,11 @@ theorem Pairing (witness : V) (hSep : SepAx mem) (hHost : HostAx mem)
     · exact Or.inr ⟨rfl, rfl⟩
     · exact Hsub _ (single_in_pair witness hSep hHost hClo)
   refine ⟨sep hSep w (fun x => x = a ∨ x = b), ?_⟩
-  intro x
-  constructor
-  · intro H
-    exact sep_elim2 hSep _ _ x H
-  · intro H
-    apply sep_intro hSep _ _ x
-    · rcases H with H | H
-      · subst H; exact Ha
-      · subst H; exact Hb
-    · exact H
+  apply sep_spec_of_bound
+  intro x H
+  rcases H with rfl | rfl
+  · exact Ha
+  · exact Hb
 
 /- =============================== UNION =============================== -/
 
@@ -331,17 +326,12 @@ theorem Union (hSep : SepAx mem) (hClo : ClosureAx mem) :
     exact Hz
   obtain ⟨w, Hsub, Hclosed⟩ := hClo (memRel mem) HSL s
   refine ⟨sep hSep w (fun x => ∃ v, mem x v ∧ mem v s), ?_⟩
-  intro x
-  constructor
-  · intro H
-    exact sep_elim2 hSep _ _ x H
-  · intro H
-    apply sep_intro hSep _ _ x
-    · obtain ⟨v, Hxv, Hvs⟩ := H
-      apply Hclosed x v
-      · exact Hxv                      -- memRel mem x v unfolds to mem x v
-      · exact Hsub v Hvs
-    · exact H
+  apply sep_spec_of_bound
+  intro x H
+  obtain ⟨v, Hxv, Hvs⟩ := H
+  apply Hclosed x v
+  · exact Hxv                          -- memRel mem x v unfolds to mem x v
+  · exact Hsub v Hvs
 
 /- ============================ REPLACEMENT =========================== -/
 
@@ -358,17 +348,12 @@ theorem Replacement (hSep : SepAx mem) (hHost : HostAx mem) (hClo : ClosureAx me
     exact host_spec hHost (F x)
   obtain ⟨w, Hsub, Hclosed⟩ := hClo (graphRel mem F a) HSL a
   refine ⟨sep hSep w (fun y => ∃ x, mem x a ∧ y = F x), ?_⟩
-  intro y
-  constructor
-  · intro H
-    exact sep_elim2 hSep _ _ y H
-  · intro H
-    apply sep_intro hSep _ _ y
-    · obtain ⟨x, Hxa, Hyf⟩ := H
-      apply Hclosed y x
-      · exact ⟨Hxa, Hyf⟩
-      · exact Hsub x Hxa
-    · exact H
+  apply sep_spec_of_bound
+  intro y H
+  obtain ⟨x, Hxa, Hyf⟩ := H
+  apply Hclosed y x
+  · exact ⟨Hxa, Hyf⟩
+  · exact Hsub x Hxa
 
 /- ============================== INFINITY ============================ -/
 

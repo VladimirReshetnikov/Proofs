@@ -435,15 +435,17 @@ theorem Iter_S (hSep : SepAx mem) (hPair : PairAx mem) (hUnion : UnionAx mem)
 
 /- --------------- map object numerals to their iterate ----------------- -/
 
+/- Non-numerals map to stage 0, so every `Ffun` value is an iteration stage. -/
 theorem Qtot (witness : V) (hSep : SepAx mem) (hPair : PairAx mem) (hUnion : UnionAx mem)
     (hRepl : ReplAx mem) (R : V → V → Prop) (HSL : SetLike mem R) (s m : V) :
     ∃ y,
       (∃ n, m = onat witness hSep hPair hUnion n ∧
         y = Iter hSep hPair hUnion hRepl R HSL s n)
-      ∨ ((∀ n, m ≠ onat witness hSep hPair hUnion n) ∧ y = emptyset witness hSep) := by
+      ∨ ((∀ n, m ≠ onat witness hSep hPair hUnion n) ∧
+        y = Iter hSep hPair hUnion hRepl R HSL s 0) := by
   rcases Classical.em (∃ n, m = onat witness hSep hPair hUnion n) with ⟨n, Hn⟩ | Hno
   · exact ⟨Iter hSep hPair hUnion hRepl R HSL s n, Or.inl ⟨n, Hn, rfl⟩⟩
-  · refine ⟨emptyset witness hSep, Or.inr ⟨?_, rfl⟩⟩
+  · refine ⟨Iter hSep hPair hUnion hRepl R HSL s 0, Or.inr ⟨?_, rfl⟩⟩
     intro n Hmn
     exact Hno ⟨n, Hmn⟩
 
@@ -458,7 +460,8 @@ theorem Ffun_spec (witness : V) (hSep : SepAx mem) (hPair : PairAx mem)
     (∃ n, m = onat witness hSep hPair hUnion n ∧
       Ffun witness hSep hPair hUnion hRepl R HSL s m = Iter hSep hPair hUnion hRepl R HSL s n)
     ∨ ((∀ n, m ≠ onat witness hSep hPair hUnion n) ∧
-      Ffun witness hSep hPair hUnion hRepl R HSL s m = emptyset witness hSep) :=
+      Ffun witness hSep hPair hUnion hRepl R HSL s m =
+        Iter hSep hPair hUnion hRepl R HSL s 0) :=
   (Qtot witness hSep hPair hUnion hRepl R HSL s m).choose_spec
 
 theorem F_onat (witness : V) (hSep : SepAx mem) (hPair : PairAx mem)
@@ -476,12 +479,11 @@ theorem F_onat (witness : V) (hSep : SepAx mem) (hPair : PairAx mem)
 theorem F_cases (witness : V) (hSep : SepAx mem) (hPair : PairAx mem)
     (hUnion : UnionAx mem) (hRepl : ReplAx mem) (R : V → V → Prop)
     (HSL : SetLike mem R) (s m : V) :
-    (∃ n, Ffun witness hSep hPair hUnion hRepl R HSL s m =
-      Iter hSep hPair hUnion hRepl R HSL s n)
-    ∨ Ffun witness hSep hPair hUnion hRepl R HSL s m = emptyset witness hSep := by
+    ∃ n, Ffun witness hSep hPair hUnion hRepl R HSL s m =
+      Iter hSep hPair hUnion hRepl R HSL s n := by
   rcases Ffun_spec witness hSep hPair hUnion hRepl R HSL s m with ⟨n, _, Hy⟩ | ⟨_, Hy⟩
-  · exact Or.inl ⟨n, Hy⟩
-  · exact Or.inr Hy
+  · exact ⟨n, Hy⟩
+  · exact ⟨0, Hy⟩
 
 /- ============================== CLOSURE ============================== -/
 
@@ -510,25 +512,23 @@ theorem Closure_holds (witness : V) (hExt : ExtAx mem) (hSep : SepAx mem)
       (imageR hRepl (Ffun witness hSep hPair hUnion hRepl R HSL s) (Inf hInf)) v).mp Hvw
     obtain ⟨m, _, Hcm⟩ := (imageR_spec hRepl
       (Ffun witness hSep hPair hUnion hRepl R HSL s) (Inf hInf) c).mp Hcr
-    rcases F_cases witness hSep hPair hUnion hRepl R HSL s m with ⟨n, Hn⟩ | He
-    · rw [Hcm, Hn] at Hvc             -- Hvc : v ∈ Iter … n
-      apply (ounion_spec hUnion
-        (imageR hRepl (Ffun witness hSep hPair hUnion hRepl R HSL s) (Inf hInf)) u).mpr
-      refine ⟨Iter hSep hPair hUnion hRepl R HSL s (n + 1), ?_, ?_⟩
-      · rw [Iter_S hSep hPair hUnion hRepl R HSL s n]
-        apply (gstep_spec hSep hPair hUnion hRepl R HSL
-          (Iter hSep hPair hUnion hRepl R HSL s n) u).mpr
-        refine Or.inr ?_
-        apply (predsf_spec hSep hUnion hRepl R HSL
-          (Iter hSep hPair hUnion hRepl R HSL s n) u).mpr
-        exact ⟨v, Hvc, Hruv⟩
-      · apply (imageR_spec hRepl (Ffun witness hSep hPair hUnion hRepl R HSL s) (Inf hInf)
-          (Iter hSep hPair hUnion hRepl R HSL s (n + 1))).mpr
-        exact ⟨onat witness hSep hPair hUnion (n + 1),
-          onat_in_Inf witness hExt hSep hPair hUnion hInf (n + 1),
-          (F_onat witness hSep hPair hUnion hRepl R HSL s (n + 1)).symm⟩
-    · rw [Hcm, He] at Hvc             -- Hvc : v ∈ emptyset
-      exact absurd Hvc (emptyset_spec witness hSep v)
+    obtain ⟨n, Hn⟩ := F_cases witness hSep hPair hUnion hRepl R HSL s m
+    rw [Hcm, Hn] at Hvc               -- Hvc : v ∈ Iter … n
+    apply (ounion_spec hUnion
+      (imageR hRepl (Ffun witness hSep hPair hUnion hRepl R HSL s) (Inf hInf)) u).mpr
+    refine ⟨Iter hSep hPair hUnion hRepl R HSL s (n + 1), ?_, ?_⟩
+    · rw [Iter_S hSep hPair hUnion hRepl R HSL s n]
+      apply (gstep_spec hSep hPair hUnion hRepl R HSL
+        (Iter hSep hPair hUnion hRepl R HSL s n) u).mpr
+      refine Or.inr ?_
+      apply (predsf_spec hSep hUnion hRepl R HSL
+        (Iter hSep hPair hUnion hRepl R HSL s n) u).mpr
+      exact ⟨v, Hvc, Hruv⟩
+    · apply (imageR_spec hRepl (Ffun witness hSep hPair hUnion hRepl R HSL s) (Inf hInf)
+        (Iter hSep hPair hUnion hRepl R HSL s (n + 1))).mpr
+      exact ⟨onat witness hSep hPair hUnion (n + 1),
+        onat_in_Inf witness hExt hSep hPair hUnion hInf (n + 1),
+        (F_onat witness hSep hPair hUnion hRepl R HSL s (n + 1)).symm⟩
 
 end
 

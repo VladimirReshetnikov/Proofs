@@ -103,6 +103,15 @@ Proof. intros a P x H. exact (proj1 (proj1 (sep_spec a P x) H)). Qed.
 Lemma sep_elim2 : forall a P x, x ∈ sep a P -> P x.
 Proof. intros a P x H. exact (proj2 (proj1 (sep_spec a P x) H)). Qed.
 
+Local Lemma sep_spec_of_bound :
+  forall a P, (forall x, P x -> x ∈ a) ->
+  forall x, x ∈ sep a P <-> P x.
+Proof.
+  intros a P Hbound x. rewrite sep_spec. split.
+  - intros [_ HP]. exact HP.
+  - intro HP. exact (conj (Hbound x HP) HP).
+Qed.
+
 Lemma Sub_refl : forall a, Sub a a.
 Proof. intros a x H. exact H. Qed.
 
@@ -153,9 +162,8 @@ Definition single_empty : V := sep (host emptyset) (fun x => x = emptyset).
 
 Lemma in_single_empty : forall x, x ∈ single_empty <-> x = emptyset.
 Proof.
-  intro x. unfold single_empty. split.
-  - intro H. exact (sep_elim2 _ _ _ H).
-  - intro H. apply sep_intro; [ rewrite H; apply host_spec | exact H ].
+  unfold single_empty. apply sep_spec_of_bound.
+  intros x H. subst x. apply host_spec.
 Qed.
 
 Lemma empty_in_single : emptyset ∈ single_empty.
@@ -173,9 +181,8 @@ Qed.
 Definition seed_single : V := sep (host single_empty) (fun x => x = single_empty).
 Lemma in_seed_single : forall x, x ∈ seed_single <-> x = single_empty.
 Proof.
-  intro x. unfold seed_single. split.
-  - intro H. exact (sep_elim2 _ _ _ H).
-  - intro H. apply sep_intro; [ rewrite H; apply host_spec | exact H ].
+  unfold seed_single. apply sep_spec_of_bound.
+  intros x H. subst x. apply host_spec.
 Qed.
 
 (* the one-edge relation: empty is the sole predecessor of {empty} *)
@@ -254,11 +261,8 @@ Proof.
     - unfold pairRel. right. split; reflexivity.
     - apply Hsub. exact single_in_pair. }
   exists (sep w (fun x => x = a \/ x = b)).
-  intro x. split.
-  - intro H. exact (sep_elim2 _ _ _ H).
-  - intro H. apply sep_intro.
-    + destruct H as [Hxa | Hxb]; [ subst x; exact Ha | subst x; exact Hb ].
-    + exact H.
+  apply sep_spec_of_bound. intros x H.
+  destruct H as [Hxa | Hxb]; [ subst x; exact Ha | subst x; exact Hb ].
 Qed.
 
 (* =============================== UNION =============================== *)
@@ -271,13 +275,10 @@ Proof.
   { intro x. exists x. intros z Hz. unfold memRel in Hz. exact Hz. }
   destruct (Closure memRel HSL s) as [w [Hsub Hclosed]].
   exists (sep w (fun x => exists v, x ∈ v /\ v ∈ s)).
-  intro x. split.
-  - intro H. exact (sep_elim2 _ _ _ H).
-  - intro H. apply sep_intro.
-    + destruct H as [v [Hxv Hvs]]. apply (Hclosed x v).
-      * unfold memRel. exact Hxv.
-      * apply Hsub. exact Hvs.
-    + exact H.
+  apply sep_spec_of_bound. intros x H.
+  destruct H as [v [Hxv Hvs]]. apply (Hclosed x v).
+  - unfold memRel. exact Hxv.
+  - apply Hsub. exact Hvs.
 Qed.
 
 (* ============================ REPLACEMENT =========================== *)
@@ -292,13 +293,10 @@ Proof.
     destruct HR as [_ Hz]. subst z. apply host_spec. }
   destruct (Closure (graphRel F a) HSL a) as [w [Hsub Hclosed]].
   exists (sep w (fun y => exists x, x ∈ a /\ y = F x)).
-  intro y. split.
-  - intro H. exact (sep_elim2 _ _ _ H).
-  - intro H. apply sep_intro.
-    + destruct H as [x [Hxa Hyf]]. apply (Hclosed y x).
-      * unfold graphRel. split; [ exact Hxa | exact Hyf ].
-      * apply Hsub. exact Hxa.
-    + exact H.
+  apply sep_spec_of_bound. intros y H.
+  destruct H as [x [Hxa Hyf]]. apply (Hclosed y x).
+  - unfold graphRel. split; [ exact Hxa | exact Hyf ].
+  - apply Hsub. exact Hxa.
 Qed.
 
 (* ============================== INFINITY ============================ *)

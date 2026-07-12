@@ -322,15 +322,16 @@ Proof. intros. unfold Iter. reflexivity. Qed.
 
 (* --------------- map object numerals to their iterate ----------------- *)
 
+(* Non-numerals map to stage 0, so every Ffun value is an iteration stage. *)
 Lemma Qtot :
   forall R HSL s m,
     exists y,
       (exists n, m = onat n /\ y = Iter R HSL s n)
-      \/ ((forall n, m <> onat n) /\ y = emptyset).
+      \/ ((forall n, m <> onat n) /\ y = Iter R HSL s 0).
 Proof.
   intros R HSL s m. destruct (classic (exists n, m = onat n)) as [[n Hn] | Hno].
   - exists (Iter R HSL s n). left. exists n. split; [ exact Hn | reflexivity ].
-  - exists emptyset. right. split.
+  - exists (Iter R HSL s 0). right. split.
     + intros n Hmn. apply Hno. exists n. exact Hmn.
     + reflexivity.
 Qed.
@@ -340,7 +341,7 @@ Definition Ffun (R : V -> V -> Prop) (HSL : SetLike R) (s : V) (m : V) : V :=
 Lemma Ffun_spec :
   forall R HSL s m,
     (exists n, m = onat n /\ Ffun R HSL s m = Iter R HSL s n)
-    \/ ((forall n, m <> onat n) /\ Ffun R HSL s m = emptyset).
+    \/ ((forall n, m <> onat n) /\ Ffun R HSL s m = Iter R HSL s 0).
 Proof.
   intros R HSL s m.
   exact (proj2_sig (constructive_indefinite_description _ (Qtot R HSL s m))).
@@ -355,11 +356,11 @@ Qed.
 
 Lemma F_cases :
   forall R HSL s m,
-    (exists n, Ffun R HSL s m = Iter R HSL s n) \/ Ffun R HSL s m = emptyset.
+    exists n, Ffun R HSL s m = Iter R HSL s n.
 Proof.
   intros R HSL s m. destruct (Ffun_spec R HSL s m) as [[n [_ Hy]] | [_ Hy]].
-  - left. exists n. exact Hy.
-  - right. exact Hy.
+  - exists n. exact Hy.
+  - exists 0. exact Hy.
 Qed.
 
 (* ============================== CLOSURE ============================== *)
@@ -386,21 +387,19 @@ Proof.
     destruct Hvw as [c [Hvc Hcr]].
     apply (proj1 (imageR_spec (Ffun R HSL s) Inf c)) in Hcr.
     destruct Hcr as [m [_ Hcm]].
-    destruct (F_cases R HSL s m) as [[n Hn] | He].
-    + rewrite Hcm in Hvc. rewrite Hn in Hvc.       (* Hvc : v ∈ Iter .. n *)
-      apply (proj2 (ounion_spec (imageR (Ffun R HSL s) Inf) u)).
-      exists (Iter R HSL s (S n)). split.
-      * rewrite (Iter_S R HSL s n).
-        apply (proj2 (gstep_spec R HSL (Iter R HSL s n) u)).
-        right.
-        apply (proj2 (predsf_spec R HSL (Iter R HSL s n) u)).
-        exists v. split; [ exact Hvc | exact Hruv ].
-      * apply (proj2 (imageR_spec (Ffun R HSL s) Inf (Iter R HSL s (S n)))).
-        exists (onat (S n)). split.
-        -- exact (onat_in_Inf (S n)).
-        -- symmetry. exact (F_onat R HSL s (S n)).
-    + rewrite Hcm in Hvc. rewrite He in Hvc.       (* Hvc : v ∈ emptyset *)
-      exfalso. exact (emptyset_spec v Hvc).
+    destruct (F_cases R HSL s m) as [n Hn].
+    rewrite Hcm in Hvc. rewrite Hn in Hvc.       (* Hvc : v ∈ Iter .. n *)
+    apply (proj2 (ounion_spec (imageR (Ffun R HSL s) Inf) u)).
+    exists (Iter R HSL s (S n)). split.
+    + rewrite (Iter_S R HSL s n).
+      apply (proj2 (gstep_spec R HSL (Iter R HSL s n) u)).
+      right.
+      apply (proj2 (predsf_spec R HSL (Iter R HSL s n) u)).
+      exists v. split; [ exact Hvc | exact Hruv ].
+    + apply (proj2 (imageR_spec (Ffun R HSL s) Inf (Iter R HSL s (S n)))).
+      exists (onat (S n)). split.
+      * exact (onat_in_Inf (S n)).
+      * symmetry. exact (F_onat R HSL s (S n)).
 Qed.
 
 End ClosureEquivalence_Reverse.
