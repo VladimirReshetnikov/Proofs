@@ -18222,9 +18222,7 @@ theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt {G : List Formula}
           have hctx : BProv Ax_s D
               (rename Nat.succ (rename Nat.succ (ltAt value modulus))) := by
             simpa [D, C, List.map_map, Function.comp_def] using
-              BProv_context_cons
-                (BProv_context_cons
-                  (BProv_context_cons (B := Ax_s) hltRen))
+              BProv_context_three hltRen
           simpa [ltAt, rename, Term.rename, SetTheory.up] using hctx
         have hbot : BProv Ax_s D bot :=
           BProv_Ax_s_ltAt_leAt_bot hltD hle
@@ -33736,9 +33734,7 @@ theorem BProv_Ax_s_betaPrependPrefixTermAt_stepWitness_succ_of_sourceWitness
             rename, Term.rename, SetTheory.up, Term.rename_comp,
             term_rename_up_succ_rename_succ, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) hprefixRen3))
+            BProv_context_three hprefixRen3
         have hleRen1 : BProv Ax_s (G.map (rename Nat.succ))
             (rename Nat.succ (leTermAt idx last)) :=
           BProv_rename_of_sentences
@@ -33763,9 +33759,7 @@ theorem BProv_Ax_s_betaPrependPrefixTermAt_stepWitness_succ_of_sourceWitness
             rename, Term.rename, SetTheory.up, Term.rename_comp,
             term_rename_up_succ_rename_succ, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) hleRen3))
+            BProv_context_three hleRen3
         have htarget : BProv Ax_s C
             (betaDiv2StepWitnessTermAt targetCode3 targetStep3
               (Term.succ idx3)) :=
@@ -34796,9 +34790,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldWitness
             ltTermAt, betaModTermTerm, leTermAt, rename, Term.rename,
             SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
             List.map_map, Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) htailRen3))
+            BProv_context_three htailRen3
         have hleRen1 : BProv Ax_s (G.map (rename Nat.succ))
             (rename Nat.succ (leTermAt idxTerm lastTerm)) :=
           BProv_rename_of_sentences
@@ -34823,9 +34815,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldWitness
           simpa [C, G2, G1, idx3, last3, leTermAt, rename, Term.rename,
             SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
             List.map_map, Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s)
-                (BProv_context_cons (B := Ax_s) hleRen3))
+            BProv_context_three hleRen3
         have hshifted : BProv Ax_s C
             (betaDiv2StepWitnessTermAt newCode3 newStep3 idx3) :=
           BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_components
@@ -43605,9 +43595,7 @@ theorem BProv_Ax_s_hfMemZeroSetAt_opened_final_current_zero
       betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt, eqConstAt,
       betaModTerm, rename, Term.rename, SetTheory.up, List.map_map,
       Function.comp_def] using
-      BProv_context_cons (B := Ax_s)
-        (BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hentryRen3))
+      BProv_context_three hentryRen3
   have hbodySteps : BProv Ax_s bodyCtx
       (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
     simpa [bitBody, tail, body, bodyCtx] using
@@ -43641,9 +43629,7 @@ theorem BProv_Ax_s_hfMemZeroSetAt_opened_final_current_zero
       betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt, zeroAt,
       oneAt, eqConstAt, betaModTerm, rename, Term.rename, SetTheory.up,
       List.map_map, Function.comp_def] using
-      BProv_context_cons (B := Ax_s)
-        (BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hstepsRen3))
+      BProv_context_three hstepsRen3
   have hleFinal : BProv Ax_s C (leAt ((elem+3)+2) ((elem+3)+2)) :=
     BProv_Ax_s_leAt_of_eq
       (G := C)

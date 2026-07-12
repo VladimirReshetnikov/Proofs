@@ -16419,19 +16419,10 @@ Proof.
         }
         assert (hltD : BProv Ax_s D (ltAt (S (S value)) (S (S modulus)))).
         {
-          pose proof (BProv_context_cons Ax_s
+          pose proof (BProv_context_three Ax_s
             (map (rename S) (map (rename S) G))
-            (rename S dvdBody)
-            (rename S (rename S (ltAt value modulus))) hltRen) as h1.
-          pose proof (BProv_context_cons Ax_s
-            (rename S dvdBody :: map (rename S) (map (rename S) G))
-            (rename S (succPredAt 0))
-            (rename S (rename S (ltAt value modulus))) h1) as h2.
-          pose proof (BProv_context_cons Ax_s
-            (rename S (succPredAt 0) :: rename S dvdBody
-              :: map (rename S) (map (rename S) G))
-            succBody
-            (rename S (rename S (ltAt value modulus))) h2) as h3.
+            succBody (rename S (succPredAt 0)) (rename S dvdBody)
+            (rename S (rename S (ltAt value modulus))) hltRen) as h3.
           unfold ltAt in h3.
           simpl in h3.
           unfold ltAt.
