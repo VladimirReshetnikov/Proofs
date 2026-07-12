@@ -325,22 +325,15 @@ Proof.
         hmul
         (BProv_context_cons Ax_s G antecedent _ hbase)).
     }
-    assert (houtGraph : BProv Ax_s C
-        (ordinalCodeGraphTermAt tZero out)).
-    {
-      exact (BProv_ordinalCodeGraphTermAt_congr_coded
-        Ax_s C tZero tZero out
-        (BProv_eqSym Ax_s C _ _ houtEq)
-        (BProv_context_cons Ax_s G antecedent _ hzeroGraph)).
-    }
     assert (hresult : BProv Ax_s C
         (ordinalCodeGraphTermAt (tMul leftRaw tZero) out)).
     {
-      exact (BProv_ordinalCodeGraphTermAt_congr_raw
-        Ax_s C tZero (tMul leftRaw tZero) out
+      exact (BProv_ordinalCodeGraphTermAt_congr
+        Ax_s C tZero (tMul leftRaw tZero) tZero out
         (BProv_eqSym Ax_s C _ _
           (BProv_context_cons Ax_s G antecedent _ hmulZero))
-        houtGraph).
+        (BProv_eqSym Ax_s C _ _ houtEq)
+        (BProv_context_cons Ax_s G antecedent _ hzeroGraph)).
     }
     unfold C in hresult.
     exact (BProv_impI Ax_s G antecedent _ hresult).
@@ -584,16 +577,6 @@ Proof.
           (Term.rename S leftCode) (Term.rename S rightSuccCode)
           hleftDomainD hrightSuccDomainD hmulOutD hmulKnown).
       }
-      assert (hsumOut : BProv Ax_s D
-          (ordinalCodeGraphTermAt
-            (Term.rename S sumRaw) (Term.rename S out))).
-      {
-        unfold graphBody in hsum.
-        exact (BProv_ordinalCodeGraphTermAt_congr_coded
-          Ax_s D (Term.rename S sumRaw) (tVar 0)
-          (Term.rename S out)
-          (BProv_eqSym Ax_s D _ _ houtEq) hsum).
-      }
       assert (hmulSuccD : BProv Ax_s D
           (pEq
             (Term.rename S targetRaw)
@@ -605,10 +588,14 @@ Proof.
           (BProv_Ax_s_mulSucc_terms
             (Term.rename S leftRaw) (Term.rename S rightRaw))).
       }
-      pose proof (BProv_ordinalCodeGraphTermAt_congr_raw
+      unfold graphBody in hsum.
+      pose proof (BProv_ordinalCodeGraphTermAt_congr
         Ax_s D (Term.rename S sumRaw) (Term.rename S targetRaw)
+        (tVar 0)
         (Term.rename S out)
-        (BProv_eqSym Ax_s D _ _ hmulSuccD) hsumOut) as hresult.
+        (BProv_eqSym Ax_s D _ _ hmulSuccD)
+        (BProv_eqSym Ax_s D _ _ houtEq)
+        hsum) as hresult.
       rewrite rename_ordinalCodeGraphTermAt.
       exact hresult.
     }

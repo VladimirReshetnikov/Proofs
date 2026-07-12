@@ -6573,14 +6573,6 @@ theorem BProv_Ax_s_ordinalCodeAddCore_succ_of_pred
             (Term.var 0)) :=
         ordinalCodeGraphSuccClosure hsumPredD
           (by simpa [body] using hadjoin)
-      have hsumOutD : BProv Ax_s D
-          (ordinalCodeGraphTermAt
-            (Term.succ
-              (Term.rename Nat.succ
-                (Term.add leftRaw rightRaw)))
-            (Term.rename Nat.succ out)) :=
-        BProv_ordinalCodeGraphTermAt_congr_coded
-          (BProv_eqSym houtEq) hsumSuccD
       have haddSuccD : BProv Ax_s D
           (eq
             (Term.rename Nat.succ
@@ -6590,8 +6582,8 @@ theorem BProv_Ax_s_ordinalCodeAddCore_succ_of_pred
                 (Term.add leftRaw rightRaw)))) := by
         simpa [rename, Term.rename] using
           (lift (BProv_context_cons haddSucc))
-      have hresult := BProv_ordinalCodeGraphTermAt_congr_raw
-        (BProv_eqSym haddSuccD) hsumOutD
+      have hresult := BProv_ordinalCodeGraphTermAt_congr
+        (BProv_eqSym haddSuccD) (BProv_eqSym houtEq) hsumSuccD
       simpa [rename_ordinalCodeGraphTermAt] using hresult
     exact BProv_exE_of_sentences
       (B := Ax_s) Ax_s_sentences
@@ -8168,12 +8160,9 @@ theorem BProv_Ax_s_ordinalCodeMulCore_zero
         (BProv_context_cons hleftDomain)
         (BProv_context_cons hrightDomain)
         hmul (BProv_context_cons hbase)
-    have houtGraph : BProv Ax_s C
-        (ordinalCodeGraphTermAt Term.zero out) :=
-      BProv_ordinalCodeGraphTermAt_congr_coded
-        (BProv_eqSym houtEq) (BProv_context_cons hzeroGraph)
-    exact BProv_ordinalCodeGraphTermAt_congr_raw
-      (BProv_eqSym (BProv_context_cons hmulZero)) houtGraph
+    exact BProv_ordinalCodeGraphTermAt_congr
+      (BProv_eqSym (BProv_context_cons hmulZero))
+      (BProv_eqSym houtEq) (BProv_context_cons hzeroGraph)
   have hreverse : BProv Ax_s G
       (imp
         (ordinalCodeGraphTermAt
@@ -8357,20 +8346,15 @@ theorem BProv_Ax_s_ordinalCodeMulCore_succ_of_pred
           (eq (Term.rename Nat.succ out) (Term.var 0)) :=
         BProv_Ax_s_hfMulGraphTermAt_functional
           hleftDomainD hrightSuccDomainD hmulOutD hmulKnown
-      have hsumOut : BProv Ax_s D
-          (ordinalCodeGraphTermAt
-            (Term.rename Nat.succ sumRaw)
-            (Term.rename Nat.succ out)) :=
-        BProv_ordinalCodeGraphTermAt_congr_coded
-          (BProv_eqSym houtEq) (by simpa [graphBody] using hsum)
       have hmulSuccD : BProv Ax_s D
           (eq
             (Term.rename Nat.succ targetRaw)
             (Term.rename Nat.succ sumRaw)) := by
         simpa [rename, Term.rename] using
           (lift (BProv_context_cons hmulSucc))
-      have hresult := BProv_ordinalCodeGraphTermAt_congr_raw
-        (BProv_eqSym hmulSuccD) hsumOut
+      have hresult := BProv_ordinalCodeGraphTermAt_congr
+        (BProv_eqSym hmulSuccD) (BProv_eqSym houtEq)
+        (by simpa [graphBody] using hsum)
       simpa [rename_ordinalCodeGraphTermAt] using hresult
     exact BProv_exE_of_sentences
       (B := Ax_s) Ax_s_sentences

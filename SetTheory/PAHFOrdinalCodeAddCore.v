@@ -773,25 +773,19 @@ Proof.
           (Term.rename S leftCode) (Term.rename S rightSuccCode)
           hrightSuccDomainD haddOutD haddKnown).
       }
-      assert (hsumOutD : BProv Ax_s D
-          (ordinalCodeGraphTermAt
-            (tSucc (Term.rename S (tAdd leftRaw rightRaw)))
-            (Term.rename S out))).
-      {
-        exact (BProv_ordinalCodeGraphTermAt_congr_coded
-          Ax_s D _ (tVar 0) (Term.rename S out)
-          (BProv_eqSym Ax_s D _ _ houtEq) hsumSuccD).
-      }
       pose proof (BProv_weaken_nil Ax_s D _
         (BProv_Ax_s_addSucc_terms
           (Term.rename S leftRaw) (Term.rename S rightRaw)))
         as haddSuccD.
-      pose proof (BProv_ordinalCodeGraphTermAt_congr_raw
+      pose proof (BProv_ordinalCodeGraphTermAt_congr
         Ax_s D
         (tSucc (tAdd (Term.rename S leftRaw) (Term.rename S rightRaw)))
         (tAdd (Term.rename S leftRaw) (tSucc (Term.rename S rightRaw)))
+        (tVar 0)
         (Term.rename S out)
-        (BProv_eqSym Ax_s D _ _ haddSuccD) hsumOutD) as hresult.
+        (BProv_eqSym Ax_s D _ _ haddSuccD)
+        (BProv_eqSym Ax_s D _ _ houtEq)
+        hsumSuccD) as hresult.
       unfold target.
       rewrite rename_ordinalCodeGraphTermAt.
       cbn [Term.rename].
