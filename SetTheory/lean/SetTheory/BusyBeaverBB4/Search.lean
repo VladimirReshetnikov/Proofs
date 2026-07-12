@@ -172,14 +172,6 @@ theorem runFrom_succ_start (machine : Machine 4) (cfg : Config 4) (t : Nat) :
   rw [show t + 1 = 1 + t by omega, Machine.runFrom_add]
   rfl
 
-theorem runFrom_of_halted (machine : Machine 4) (cfg : Config 4)
-    (hHalted : cfg.state = none) : forall t, machine.runFrom cfg t = cfg
-  | 0 => rfl
-  | t + 1 => by
-      rw [Machine.runFrom_succ]
-      rw [runFrom_of_halted machine cfg hHalted t]
-      simp [Machine.step, hHalted]
-
 theorem checkFrom_sound {leaf : PTable -> Config 4 -> Bool}
     (hLeaf : LeafSound leaf) :
     forall fuel table cfg machine,
@@ -195,7 +187,7 @@ theorem checkFrom_sound {leaf : PTable -> Config 4 -> Bool}
       intro table cfg machine hCheck hAgree hReach t hHalted
       cases hState : cfg.state with
       | none =>
-          have hRun := runFrom_of_halted machine cfg hState t
+          have hRun := Machine.runFrom_of_halted machine cfg hState t
           have hBound : cfg.tape.length ≤ 13 :=
             of_decide_eq_true (by simpa [checkFrom, hState] using hCheck)
           simpa [hRun] using hBound
@@ -214,7 +206,7 @@ theorem checkFrom_sound {leaf : PTable -> Config 4 -> Bool}
       intro table cfg machine hCheck hAgree hReach t hHalted
       cases hState : cfg.state with
       | none =>
-          have hRun := runFrom_of_halted machine cfg hState t
+          have hRun := Machine.runFrom_of_halted machine cfg hState t
           have hBound : cfg.tape.length ≤ 13 :=
             of_decide_eq_true (by simpa [checkFrom, hState] using hCheck)
           simpa [hRun] using hBound
@@ -253,7 +245,7 @@ theorem checkFrom_sound {leaf : PTable -> Config 4 -> Bool}
                           have hStepState : (machine.step cfg).state = none := by
                             simp [Machine.step, hState, bit, hTransition]
                           rw [runFrom_succ_start]
-                          rw [runFrom_of_halted machine (machine.step cfg)
+                          rw [Machine.runFrom_of_halted machine (machine.step cfg)
                             hStepState t]
                           simpa [Machine.step, hState, bit, hTransition] using
                             haltWritesSafe_sound hParts.1 write

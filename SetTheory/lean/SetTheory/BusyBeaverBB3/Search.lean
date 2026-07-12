@@ -193,14 +193,6 @@ theorem runFrom_succ_start (M : Machine 3) (cfg : Config 3) (t : Nat) :
   rw [show t + 1 = 1 + t by omega, Machine.runFrom_add]
   rfl
 
-theorem runFrom_of_halted (M : Machine 3) (cfg : Config 3)
-    (hHalted : cfg.state = none) : forall t, M.runFrom cfg t = cfg
-  | 0 => rfl
-  | t + 1 => by
-      rw [Machine.runFrom_succ]
-      rw [runFrom_of_halted M cfg hHalted t]
-      simp [Machine.step, hHalted]
-
 /-- Soundness of the lazy search, independently of the implementation of its
 nonhalting leaf checker. -/
 theorem checkFrom_sound {leaf : PTable -> Config 3 -> Bool}
@@ -218,7 +210,8 @@ theorem checkFrom_sound {leaf : PTable -> Config 3 -> Bool}
       intro table cfg M hCheck hAgree hReach t hHalted
       cases hState : cfg.state with
       | none =>
-          have hRun : M.runFrom cfg t = cfg := runFrom_of_halted M cfg hState t
+          have hRun : M.runFrom cfg t = cfg :=
+            Machine.runFrom_of_halted M cfg hState t
           have hBound : cfg.tape.length <= 6 :=
             of_decide_eq_true (by simpa [checkFrom, hState] using hCheck)
           simpa [hRun] using hBound
@@ -236,7 +229,8 @@ theorem checkFrom_sound {leaf : PTable -> Config 3 -> Bool}
       intro table cfg M hCheck hAgree hReach t hHalted
       cases hState : cfg.state with
       | none =>
-          have hRun : M.runFrom cfg t = cfg := runFrom_of_halted M cfg hState t
+          have hRun : M.runFrom cfg t = cfg :=
+            Machine.runFrom_of_halted M cfg hState t
           have hBound : cfg.tape.length <= 6 :=
             of_decide_eq_true (by simpa [checkFrom, hState] using hCheck)
           simpa [hRun] using hBound
@@ -274,7 +268,8 @@ theorem checkFrom_sound {leaf : PTable -> Config 3 -> Bool}
                           have hStepState : (M.step cfg).state = none := by
                             simp [Machine.step, hState, bit, hTransition]
                           rw [runFrom_succ_start]
-                          rw [runFrom_of_halted M (M.step cfg) hStepState t]
+                          rw [Machine.runFrom_of_halted M (M.step cfg)
+                            hStepState t]
                           simpa [Machine.step, hState, bit, hTransition] using
                             haltWritesSafe_sound hParts.1 write
                       | some next =>

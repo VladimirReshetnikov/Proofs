@@ -88,7 +88,7 @@ theorem score_le_of_root_halt {machine : Machine 4} {score : Nat}
         rw [show steps + 1 = 1 + steps by omega,
           Machine.run_add_eq_runFrom]
         simp only [Machine.run]
-        exact runFrom_of_halted machine (machine.step (initial 4))
+        exact Machine.runFrom_of_halted machine (machine.step (initial 4))
           hStepState steps
       rw [hRun] at hScore
       have hBound := haltWritesSafe_sound hSafe write

@@ -732,17 +732,6 @@ Lemma runFrom_succ_start : forall (M : BB.machine 3) cfg t,
     BB.Machine.runFrom M (BB.Machine.step M cfg) t.
 Proof. intros M cfg t; exact (BB.Machine.runFrom_add 3 M cfg 1 t). Qed.
 
-Lemma runFrom_of_halted : forall (M : BB.machine 3) cfg,
-  BB.cfg_state _ cfg = None ->
-  forall t, BB.Machine.runFrom M cfg t = cfg.
-Proof.
-  intros M cfg hhalt t.
-  induction t as [|t IH]; [reflexivity |].
-  simpl. rewrite IH.
-  apply BB.Machine.step_of_halted.
-  exact hhalt.
-Qed.
-
 Lemma checkFrom3_sound : forall fuel table cfg (M : BB.machine 3),
   checkFrom3 fuel table cfg = true ->
   partialTable3_agrees M table ->
@@ -786,7 +775,8 @@ Proof.
            rewrite runFrom_succ_start in hhalt |- *.
            rewrite <- hstep in hhalt |- *.
            eapply IH; eassumption.
-    + rewrite (runFrom_of_halted M cfg hstate t) in hhalt |- *.
+    + rewrite (BB.Machine.runFrom_of_halted 3 M cfg hstate t)
+        in hhalt |- *.
       unfold checkFrom3 in hcheck.
       rewrite hstate in hcheck.
       apply Nat.leb_le. exact hcheck.

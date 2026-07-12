@@ -334,6 +334,15 @@ theorem runFrom_add {states : Nat} (M : Machine states) (cfg : Config states) :
       rw [Nat.add_succ]
       simp [runFrom, runFrom_add M cfg i k]
 
+/-- Once a configuration has halted, every further bounded run is stationary. -/
+theorem runFrom_of_halted {states : Nat} (M : Machine states)
+    (cfg : Config states) (hHalted : cfg.state = none) :
+    ∀ t, M.runFrom cfg t = cfg
+  | 0 => rfl
+  | t + 1 => by
+      rw [runFrom_succ, runFrom_of_halted M cfg hHalted t]
+      simp [step, hHalted]
+
 theorem runFrom_ne_none_of_shift_loop {states : Nat} (M : Machine states)
     (cfg : Config states) {period : Nat} (hPeriod : 0 < period)
     {delta : Int}

@@ -367,6 +367,18 @@ Proof.
   - rewrite Nat.add_succ_r. simpl. rewrite IH. reflexivity.
 Qed.
 
+(* Once a configuration has halted, every further bounded run is stationary. *)
+Lemma runFrom_of_halted : forall states (M : machine states) cfg,
+  cfg_state _ cfg = None ->
+  forall t, runFrom M cfg t = cfg.
+Proof.
+  intros states M cfg hhalt t.
+  induction t as [|t IH]; [reflexivity |].
+  simpl. rewrite IH.
+  apply step_of_halted.
+  exact hhalt.
+Qed.
+
 (* A zero-state machine starts halted, so a preceding live state exists only
    for positive state counts. *)
 Lemma halted_has_early_event :

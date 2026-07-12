@@ -221,7 +221,7 @@ theorem checkFrom_sound {leaf : PTable -> Config 4 -> Bool}
       intro used table cfg machine hCheck hInv hAgree hReach steps hHalted
       cases hState : cfg.state with
       | none =>
-          have hRun := runFrom_of_halted machine cfg hState steps
+          have hRun := Machine.runFrom_of_halted machine cfg hState steps
           have hBound : cfg.tape.length <= 13 :=
             of_decide_eq_true (by
               simpa [checkFrom, hState] using hCheck)
@@ -243,7 +243,7 @@ theorem checkFrom_sound {leaf : PTable -> Config 4 -> Bool}
       intro used table cfg machine hCheck hInv hAgree hReach steps hHalted
       cases hState : cfg.state with
       | none =>
-          have hRun := runFrom_of_halted machine cfg hState steps
+          have hRun := Machine.runFrom_of_halted machine cfg hState steps
           have hBound : cfg.tape.length <= 13 :=
             of_decide_eq_true (by
               simpa [checkFrom, hState] using hCheck)
@@ -288,7 +288,7 @@ theorem checkFrom_sound {leaf : PTable -> Config 4 -> Bool}
                           have hStepState : (machine.step cfg).state = none := by
                             simp [Machine.step, hState, bit, hTransition]
                           rw [runFrom_succ_start]
-                          rw [runFrom_of_halted machine (machine.step cfg)
+                          rw [Machine.runFrom_of_halted machine (machine.step cfg)
                             hStepState steps]
                           simpa [Machine.step, hState, bit, hTransition] using
                             haltWritesSafe_sound hParts.1 write
