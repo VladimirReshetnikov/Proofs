@@ -15768,8 +15768,7 @@ theorem BProv_Ax_s_eq_zero_of_ltTermAt_eqConst_one {G : List Formula}
                 (Term.add (Term.rename Nat.succ a)
                   (Term.succ (Term.var 0)))
                 (Term.succ Term.zero))) := by
-          exact BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hsumRen)
+          exact BProv_context_two hsumRen
         have hsum : BProv Ax_s D
             (eq
               (Term.add
@@ -22962,8 +22961,7 @@ theorem BProv_Ax_s_remainder_zero_of_gt_quotient_at
                 (eq (Term.mul (Term.var modulus) (Term.var divQuot))
                   (Term.var value)))) := by
           simpa [C, M, List.map_map, Function.comp_def] using
-            BProv_context_cons
-              (BProv_context_cons (B := Ax_s) hren)
+            BProv_context_two hren
         simpa [rename, Term.rename] using hctx
       have hremEqC : BProv Ax_s C
           (eq (Term.var (value+1+1))
@@ -22991,8 +22989,7 @@ theorem BProv_Ax_s_remainder_zero_of_gt_quotient_at
                     (Term.mul (Term.var remQuot) (Term.var modulus))
                     (Term.var rem))))) := by
           simpa [C, M, List.map_map, Function.comp_def] using
-            BProv_context_cons
-              (BProv_context_cons (B := Ax_s) hren)
+            BProv_context_two hren
         simpa [rename, Term.rename] using hctx
       have hzeroC : BProv Ax_s C (eqConstAt (rem+1+1) 0) :=
         BProv_Ax_s_remainder_zero_of_gt_quotient_terms
@@ -25363,8 +25360,7 @@ theorem BProv_Ax_s_betaShiftTailThroughConstAt_succ_of_eqConst_entry
           (rename Nat.succ
             (betaShiftTailThroughConstAt oldCode oldStep
               newCode newStep n)) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hprevRen)
+        BProv_context_two hprevRen
       simpa [C, leHyp, betaShiftTailThroughConstAt, betaTermTermAt,
         remTermTermAt, ltTermAt, betaModTermTerm, leConstAt,
         rename, Term.rename, SetTheory.up, Term.rename_comp,
@@ -25398,23 +25394,19 @@ theorem BProv_Ax_s_betaShiftTailThroughConstAt_succ_of_eqConst_entry
     have hOldCodeR : BProv Ax_s R
         (eqConstAt (oldCode+1) oldCodeValue) := by
       simpa [R, C, leHyp, eqConstAt, rename, Term.rename] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hOldCodeRen)
+        BProv_context_two hOldCodeRen
     have hOldStepR : BProv Ax_s R
         (eqConstAt (oldStep+1) oldStepValue) := by
       simpa [R, C, leHyp, eqConstAt, rename, Term.rename] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hOldStepRen)
+        BProv_context_two hOldStepRen
     have hNewCodeR : BProv Ax_s R
         (eqConstAt (newCode+1) newCodeValue) := by
       simpa [R, C, leHyp, eqConstAt, rename, Term.rename] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hNewCodeRen)
+        BProv_context_two hNewCodeRen
     have hNewStepR : BProv Ax_s R
         (eqConstAt (newStep+1) newStepValue) := by
       simpa [R, C, leHyp, eqConstAt, rename, Term.rename] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hNewStepRen)
+        BProv_context_two hNewStepRen
     simpa [R, witness, Nat.add_assoc] using
       BProv_Ax_s_betaShiftTailThrough_inner_of_eqConst_entry
         (G := R) (oldCode := oldCode+1) (oldStep := oldStep+1)
@@ -25689,8 +25681,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
               (rename Nat.succ
                 (betaShiftTailThroughTermAt oldCode oldStep
                   newCodeTerm newStepTerm (Term.numeral n))) :=
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hprevRen)
+            BProv_context_two hprevRen
           simpa [C, leHyp, betaShiftTailThroughTermAt,
             betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
             leTermAt, rename, Term.rename, Term.rename_numeral,
@@ -25726,27 +25717,23 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
         have hOldCodeR : BProv Ax_s R
             (eqConstAt (oldCode+1) oldCodeValue) := by
           simpa [R, C, leHyp, eqConstAt, rename, Term.rename] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hOldCodeRen)
+            BProv_context_two hOldCodeRen
         have hOldStepR : BProv Ax_s R
             (eqConstAt (oldStep+1) oldStepValue) := by
           simpa [R, C, leHyp, eqConstAt, rename, Term.rename] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hOldStepRen)
+            BProv_context_two hOldStepRen
         have hNewCodeR : BProv Ax_s R
             (eq (Term.rename Nat.succ newCodeTerm)
               (Term.numeral newCodeValue)) := by
           simpa [R, C, leHyp, rename, Term.rename,
             Term.rename_numeral] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hNewCodeRen)
+            BProv_context_two hNewCodeRen
         have hNewStepR : BProv Ax_s R
             (eq (Term.rename Nat.succ newStepTerm)
               (Term.numeral newStepValue)) := by
           simpa [R, C, leHyp, rename, Term.rename,
             Term.rename_numeral] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hNewStepRen)
+            BProv_context_two hNewStepRen
         simpa [R, witness, Nat.add_assoc, Term.rename_comp,
           Function.comp_def] using
           BProv_Ax_s_betaShiftTailThroughTerm_inner_of_eqConst_entry
@@ -33911,8 +33898,7 @@ theorem BProv_Ax_s_betaPrependPrefixTermAt_bitTerm_succ_of_sourceBit
           rename, Term.rename, SetTheory.up, Term.rename_comp,
           term_rename_up_succ_rename_succ, List.map_map,
           Function.comp_def] using
-          BProv_context_cons (B := Ax_s)
-            (BProv_context_cons (B := Ax_s) hprefixRen2)
+          BProv_context_two hprefixRen2
       have hleRen1 : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ (leTermAt idx last)) :=
         BProv_rename_of_sentences
@@ -33929,8 +33915,7 @@ theorem BProv_Ax_s_betaPrependPrefixTermAt_bitTerm_succ_of_sourceBit
           rename, Term.rename, SetTheory.up, Term.rename_comp,
           term_rename_up_succ_rename_succ, List.map_map,
           Function.comp_def] using
-          BProv_context_cons (B := Ax_s)
-            (BProv_context_cons (B := Ax_s) hleRen2)
+          BProv_context_two hleRen2
       have htarget : BProv Ax_s C
           (betaDiv2BitTermAt bit2 targetCode2 targetStep2
             (Term.succ idx2)) :=
@@ -34936,8 +34921,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
           ltTermAt, betaModTermTerm, leTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
           List.map_map, Function.comp_def] using
-          BProv_context_cons (B := Ax_s)
-            (BProv_context_cons (B := Ax_s) htailRen2)
+          BProv_context_two htailRen2
       have hleRen1 : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ (leTermAt idxTerm lastTerm)) :=
         BProv_rename_of_sentences
@@ -34954,8 +34938,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
         simpa [C, G1, idx2, last2, leTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
           List.map_map, Function.comp_def] using
-          BProv_context_cons (B := Ax_s)
-            (BProv_context_cons (B := Ax_s) hleRen2)
+          BProv_context_two hleRen2
       have hleCurrent : BProv Ax_s C
           (leTermAt idx2 (Term.succ last2)) :=
         BProv_Ax_s_leTermAt_trans hleC
@@ -35484,8 +35467,7 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_zero_bot {G : List Formula}
       have hbitCtx : BProv Ax_s
           (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
           (eqConstAt (bit+2) 1) := by
-        simpa using BProv_context_cons
-          (BProv_context_cons (B := Ax_s) hbitRen2)
+        simpa using BProv_context_two hbitRen2
       exact BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
         (bit := bit) (code := code) (step := step) (idx := idx)
         (by simpa [body] using hcurZero) hbitCtx (by simpa [body] using hbody)
@@ -35550,8 +35532,7 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_double_bot {G : List Formula}
       have hbitCtx : BProv Ax_s
           (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
           (eqConstAt (bit+2) 1) := by
-        simpa using BProv_context_cons
-          (BProv_context_cons (B := Ax_s) hbitRen2)
+        simpa using BProv_context_two hbitRen2
       exact BProv_Ax_s_betaDiv2BitAt_body_double_one_bot
         (bit := bit) (code := code) (step := step) (idx := idx)
         (by simpa [body] using hcurDouble) hbitCtx (by simpa [body] using hbody)
@@ -35609,8 +35590,7 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot {G : List Formula}
       have hbitCtx : BProv Ax_s
           (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
           (eqConstAt (bit+2) 1) := by
-        simpa using BProv_context_cons
-          (BProv_context_cons (B := Ax_s) hbitRen2)
+        simpa using BProv_context_two hbitRen2
       exact BProv_Ax_s_eqConstAt_zero_one_bot
         (by simpa [body] using hbitZero) hbitCtx
     exact BProv_exE_of_sentences
@@ -35754,8 +35734,7 @@ theorem BProv_Ax_s_betaDiv2BitAt_step_zero_bot {G : List Formula}
             hstepRen1 Nat.succ)
       have hstepC : BProv Ax_s C (eqConstAt (step+2) 0) := by
         simpa [C, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hstepRen2)
+          BProv_context_two hstepRen2
       exact BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
         hcur hstepC)
     hbitAt
@@ -58129,8 +58108,7 @@ theorem
       term_rename_up_succ_rename_succ, List.map_map,
       Function.comp_def, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
       using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hentryRen2)
+        BProv_context_two hentryRen2
   have holdSteps' : BProv Ax_s G
       (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))) := by
     simpa [strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula]
@@ -58159,8 +58137,7 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hstepsRen2)
+        BProv_context_two hstepsRen2
   have holdBitEx' : BProv Ax_s G
       (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
         (Term.succ (Term.var 2))) := by
@@ -58193,8 +58170,7 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hbitRen2)
+        BProv_context_two hbitRen2
   exact
     BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_shift2_of_shift_tail
       (G := D) (lowHalf := lowHalf)
@@ -58387,8 +58363,7 @@ theorem
       term_rename_up_succ_rename_succ, List.map_map,
       Function.comp_def, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
       using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hentryRen2)
+        BProv_context_two hentryRen2
   have hstepsRen1 : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2)))) :=
@@ -58413,8 +58388,7 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hstepsRen2)
+        BProv_context_two hstepsRen2
   have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
@@ -58442,8 +58416,7 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hbitRen2)
+        BProv_context_two hbitRen2
   exact
     BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessLowHalfMem_opened_shift2_of_shift_tail
       (G := D) (codeTerm := Term.var 1) (stepTerm := Term.var 0)
