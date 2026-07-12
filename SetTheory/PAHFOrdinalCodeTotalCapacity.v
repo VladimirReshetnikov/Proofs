@@ -340,18 +340,14 @@ Proof.
       apply BProv_ass.
       unfold C, antecedent, lower1. simpl. left. reflexivity.
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hle S) as hleRen.
-    pose proof (BProv_context_cons Ax_s (map (rename S) G)
-      antecedent _ hleRen) as hleC.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hle) as hleC.
     rewrite rename_leTermAt in hleC.
     change (BProv Ax_s C (leTermAt lower1 upper1)) in hleC.
     pose proof (BProv_Ax_s_ltTermAt_of_lt_leTermAt
       C (tVar 0) lower1 upper1 hltLower hleC) as hltUpper.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hcommon S) as hcommonRen.
-    pose proof (BProv_context_cons Ax_s (map (rename S) G)
-      antecedent _ hcommonRen) as hcommonC.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G antecedent _ hcommon) as hcommonC.
     rewrite rename_commonMultipleThroughTermAt in hcommonC.
     change (BProv Ax_s C
       (commonMultipleThroughTermAt upper1 multiple1)) in hcommonC.
@@ -671,10 +667,8 @@ Proof.
     exact (BProv_eqSym Ax_s D _ _
       (BProv_eqTrans Ax_s D _ _ _ hcomm hfactor)).
   }
-  pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-    hbeta S) as hbetaRen.
-  pose proof (BProv_context_cons Ax_s (map (rename S) G)
-    factorBody _ hbetaRen) as hbetaD.
+  pose proof (BProv_rename_succ_context_cons_of_sentences
+    Ax_s sentence_ax_s G factorBody _ hbeta) as hbetaD.
   rewrite rename_betaTermTermAt in hbetaD.
   change (BProv Ax_s D
     (betaTermTermAt out1 oldCode1 step1 index1)) in hbetaD.
@@ -759,11 +753,9 @@ Proof.
       apply BProv_ass.
       unfold C, outerAntecedent, bound1. simpl. left. reflexivity.
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-      hprefix S) as hprefixRen.
-    rewrite rename_betaPrefixDividesTermAt in hprefixRen.
-    pose proof (BProv_context_cons Ax_s (map (rename S) G)
-      outerAntecedent _ hprefixRen) as hprefixC.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G outerAntecedent _ hprefix) as hprefixC.
+    rewrite rename_betaPrefixDividesTermAt in hprefixC.
     change (BProv Ax_s C
       (betaPrefixDividesTermAt step1 bound1 product1)) in hprefixC.
     pose proof
@@ -783,10 +775,8 @@ Proof.
         apply BProv_ass.
         unfold D, oldEntry, oldCode2, step2. simpl. left. reflexivity.
       }
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s C _
-        hdvd S) as hdvdRen.
-      pose proof (BProv_context_cons Ax_s (map (rename S) C)
-        oldEntry _ hdvdRen) as hdvdD.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s C oldEntry _ hdvd) as hdvdD.
       rewrite rename_dvdTermTermAt in hdvdD.
       replace
         (dvdTermTermAt

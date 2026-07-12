@@ -226,10 +226,8 @@ Proof.
         (ordinalCodeGraphTermAt
           (Term.rename (fun n => n + 2) leftRaw) (tVar 1))).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        L leftGraphBody hleftGraphL S) as hren.
-      pose proof (BProv_context_cons Ax_s (map (rename S) L)
-        rightGraphBody _ hren) as hctx.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s L rightGraphBody _ hleftGraphL) as hctx.
       unfold R, leftGraphBody in hctx.
       rewrite rename_ordinalCodeGraphTermAt in hctx.
       cbn [Term.rename] in hctx.

@@ -213,10 +213,8 @@ Proof.
       (ordinalCodeGraphTermAt
         (Term.rename (fun n => n + 2) rightRaw) (tVar 1))).
   {
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      R rightGraphBody hrightGraphR S) as hren.
-    pose proof (BProv_context_cons Ax_s (map (rename S) R)
-      leftGraphBody _ hren) as hctx.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s R leftGraphBody _ hrightGraphR) as hctx.
     unfold L, rightGraphBody in hctx.
     rewrite rename_ordinalCodeGraphTermAt in hctx.
     cbn [Term.rename] in hctx.
@@ -303,10 +301,8 @@ Proof.
         (ordinalCodeGraphTermAt
           (Term.rename (fun n => n + 3) leftRaw) (tVar 1))).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        L leftGraphBody hleftGraph S) as hren.
-      pose proof (BProv_context_cons Ax_s (map (rename S) L)
-        core _ hren) as hctx.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s L core _ hleftGraph) as hctx.
       unfold D, leftGraphBody in hctx.
       rewrite rename_ordinalCodeGraphTermAt in hctx.
       cbn [Term.rename] in hctx.
@@ -333,10 +329,8 @@ Proof.
         (ordinalCodeGraphTermAt
           (Term.rename (fun n => n + 3) rightRaw) (tVar 2))).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        L _ hrightGraph S) as hren.
-      pose proof (BProv_context_cons Ax_s (map (rename S) L)
-        core _ hren) as hctx.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s L core _ hrightGraph) as hctx.
       unfold D in hctx.
       rewrite rename_ordinalCodeGraphTermAt in hctx.
       cbn [Term.rename] in hctx.

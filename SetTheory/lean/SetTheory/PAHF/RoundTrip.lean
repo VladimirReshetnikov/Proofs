@@ -7235,15 +7235,14 @@ theorem BProv_Ax_s_term_graph_add_reverse_of_shifted_operands
         (ordinalCodeGraphTermAt
           (Term.rename (fun n ↦ n+2) leftRaw)
           (Term.var 1)) := by
-      have hren := BProv_rename_of_sentences
+      have hren := BProv_rename_succ_context_cons_of_sentences
         (B := Ax_s) Ax_s_sentences
-        hleftGraphL Nat.succ
+        (a := rightGraphBody) hleftGraphL
       simpa [R, leftGraphBody,
         rename_ordinalCodeGraphTermAt,
         Term.rename,
         Term.rename_comp, Function.comp_def,
-        Nat.add_assoc] using
-          (BProv_context_cons (a := rightGraphBody) hren)
+        Nat.add_assoc] using hren
     have htargetR : BProv Ax_s R
         (ordinalCodeGraphTermAt
           (Term.add
@@ -9349,14 +9348,13 @@ theorem BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
   have hrightGraph : BProv Ax_s L
       (ordinalCodeGraphTermAt
         (Term.rename (fun n ↦ n+2) rightRaw) (Term.var 1)) := by
-    have hren := BProv_rename_of_sentences
+    have hren := BProv_rename_succ_context_cons_of_sentences
       (B := Ax_s) Ax_s_sentences
-      hrightGraphR Nat.succ
+      (a := leftGraphBody) hrightGraphR
     simpa [L, rightGraphBody,
       rename_ordinalCodeGraphTermAt,
       Term.rename, Term.rename_comp,
-      Function.comp_def, Nat.add_assoc] using
-        (BProv_context_cons (a := leftGraphBody) hren)
+      Function.comp_def, Nat.add_assoc] using hren
   let targetL : Formula :=
     ordinalCodeGraphTermAt
       (Term.mul
@@ -9411,14 +9409,13 @@ theorem BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
     have hleftGraphD : BProv Ax_s D
         (ordinalCodeGraphTermAt
           (Term.rename (fun n ↦ n+3) leftRaw) (Term.var 1)) := by
-      have hren := BProv_rename_of_sentences
+      have hren := BProv_rename_succ_context_cons_of_sentences
         (B := Ax_s) Ax_s_sentences
-        hleftGraph Nat.succ
+        (a := core) hleftGraph
       simpa [D, leftGraphBody,
         rename_ordinalCodeGraphTermAt,
         Term.rename, Term.rename_comp,
-        Function.comp_def, Nat.add_assoc] using
-          (BProv_context_cons (a := core) hren)
+        Function.comp_def, Nat.add_assoc] using hren
     have hleftComposite : BProv Ax_s D leftComposite :=
       BProv_mp Ax_s D _ _ hleftReverse hleftGraphD
     have hrightD := liftShifted hright
@@ -9431,14 +9428,13 @@ theorem BProv_Ax_s_term_graph_mul_reverse_of_shifted_operands
     have hrightGraphD : BProv Ax_s D
         (ordinalCodeGraphTermAt
           (Term.rename (fun n ↦ n+3) rightRaw) (Term.var 2)) := by
-      have hren := BProv_rename_of_sentences
+      have hren := BProv_rename_succ_context_cons_of_sentences
         (B := Ax_s) Ax_s_sentences
-        hrightGraph Nat.succ
+        (a := core) hrightGraph
       simpa [D, L, rightGraphBody,
         rename_ordinalCodeGraphTermAt,
         Term.rename, Term.rename_comp,
-        Function.comp_def, Nat.add_assoc] using
-          (BProv_context_cons (a := core) hren)
+        Function.comp_def, Nat.add_assoc] using hren
     have hrightComposite : BProv Ax_s D rightComposite :=
       BProv_mp Ax_s D _ _ hrightReverse hrightGraphD
     have hbody : BProv Ax_s D body :=
