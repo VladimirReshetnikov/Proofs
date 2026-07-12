@@ -56,73 +56,20 @@ Lemma setOrdinalRangeAccumulator_spec :
 Proof.
   intros V M env.
   unfold setOrdinalRangeAccumulator.
-  cbn [Sat]. split.
-  - intros [raw [code [hrepSat [hcodeSat hinvariantSat]]]].
-    pose (E := scons V code (scons V raw env)).
-    assert (hrep : ModelSetOrdinalRep (fofam_base V M) raw code).
-    {
-      apply (proj1 (HF_setOrdinalRepAt_model V (fofam_base V M)
-        E 1 0)).
-      exact hrepSat.
-    }
-    assert (hcode : OrdinalLike (foam_mem V M) code).
-    {
-      apply (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M) E 0)).
-      exact hcodeSat.
-    }
-    exists raw, code. split; [exact hrep |].
-    split; [exact hcode |].
-    intros query hquery.
-    pose (Eq := scons V query E).
-    assert (hquerySat : Sat V (foam_mem V M) Eq
-        (HF_ordinalLikeAt 0)).
-    {
-      apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M) Eq 0)).
-      exact hquery.
-    }
-    pose proof (hinvariantSat query hquerySat) as hpoint.
-    cbn [Sat fIff] in hpoint.
-    change ((Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 1) ->
-      Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 4) /\
-        foam_mem V M (Eq 0) (Eq 3)) /\
-      ((Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 4) /\
-        foam_mem V M (Eq 0) (Eq 3)) ->
-       Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 1))) in hpoint.
-    rewrite (HF_compositeMemAt_model V (fofam_base V M) Eq 0 1)
-      in hpoint.
-    rewrite (HF_compositeMemAt_model V (fofam_base V M) Eq 0 4)
-      in hpoint.
-    cbn [E Eq scons] in hpoint.
-    split; [exact (proj1 hpoint) | exact (proj2 hpoint)].
-  - intros [raw [code [hrep [hcode hinvariant]]]].
-    pose (E := scons V code (scons V raw env)).
-    exists raw, code. split.
-    + apply (proj2 (HF_setOrdinalRepAt_model V (fofam_base V M)
-        E 1 0)).
-      exact hrep.
-    + split.
-      * apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M) E 0)).
-        exact hcode.
-      * intros query hquerySat.
-        pose (Eq := scons V query E).
-        assert (hquery : OrdinalLike (foam_mem V M) query).
-        {
-          apply (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M) Eq 0)).
-          exact hquerySat.
-        }
-        cbn [Sat fIff].
-        change ((Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 1) ->
-          Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 4) /\
-            foam_mem V M (Eq 0) (Eq 3)) /\
-          ((Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 4) /\
-            foam_mem V M (Eq 0) (Eq 3)) ->
-           Sat V (foam_mem V M) Eq (HF_compositeMemAt 0 1))).
-        rewrite (HF_compositeMemAt_model V (fofam_base V M) Eq 0 1).
-        rewrite (HF_compositeMemAt_model V (fofam_base V M) Eq 0 4).
-        cbn [E Eq scons].
-        split.
-        -- exact (proj1 (hinvariant query hquery)).
-        -- exact (proj2 (hinvariant query hquery)).
+  cbn [Sat fIff].
+  setoid_rewrite HF_setOrdinalRepAt_model.
+  setoid_rewrite HF_ordinalLikeAt_spec.
+  setoid_rewrite HF_compositeMemAt_model.
+  cbn [scons].
+  split.
+  - intros [raw [code [hrep [hord hinv]]]].
+    exists raw, code. split; [exact hrep |]. split; [exact hord |].
+    intros query hquery. specialize (hinv query hquery). split;
+      [exact (proj1 hinv) | exact (proj2 hinv)].
+  - intros [raw [code [hrep [hord hinv]]]].
+    exists raw, code. split; [exact hrep |]. split; [exact hord |].
+    intros query hquery. specialize (hinv query hquery). split;
+      [exact (proj1 hinv) | exact (proj2 hinv)].
 Qed.
 
 Lemma ModelSetOrdinalRepRangeLaw_of_empty_below :

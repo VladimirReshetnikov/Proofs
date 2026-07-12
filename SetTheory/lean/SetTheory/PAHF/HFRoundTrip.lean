@@ -4236,48 +4236,9 @@ theorem setOrdinalRangeAccumulator_spec
             (ModelCompositeMem M.toFirstOrderAdjunctionModel query code ↔
               ModelCompositeMem M.toFirstOrderAdjunctionModel query (env 1) ∧
                 M.mem query (env 0)) := by
-  let N := M.toFirstOrderAdjunctionModel
-  constructor
-  · rintro ⟨raw, code, hrepSat, hcodeSat, hinvariantSat⟩
-    let E : Nat → α := scons code (scons raw env)
-    have hrep : ModelSetOrdinalRep N E raw code := by
-      apply (HF_setOrdinalRepAt_model N E 1 0).mp
-      simpa [E, scons] using hrepSat
-    have hcode : OrdinalLike M.mem code := by
-      apply (HF_ordinalLikeAt_spec E 0).mp
-      simpa [E, scons] using hcodeSat
-    refine ⟨raw, code, hrep, hcode, ?_⟩
-    intro query hquery
-    let Eq : Nat → α := scons query E
-    have hquerySat : Sat M.mem Eq (HF_ordinalLikeAt 0) :=
-      (HF_ordinalLikeAt_spec Eq 0).mpr hquery
-    have hpoint := hinvariantSat query (by
-      simpa [E, Eq, scons] using hquerySat)
-    rw [Sat_fIff,
-      HF_compositeMemAt_model N Eq 0 1] at hpoint
-    change ModelCompositeMem N (Eq 0) (Eq 1) ↔
-      (Sat M.mem Eq (HF_compositeMemAt 0 4) ∧ M.mem (Eq 0) (Eq 3))
-      at hpoint
-    rw [HF_compositeMemAt_model N Eq 0 4] at hpoint
-    simpa [E, Eq, scons] using hpoint
-  · rintro ⟨raw, code, hrep, hcode, hinvariant⟩
-    let E : Nat → α := scons code (scons raw env)
-    refine ⟨raw, code, ?_, ?_, ?_⟩
-    · apply (HF_setOrdinalRepAt_model N E 1 0).mpr
-      simpa [E, scons] using hrep
-    · apply (HF_ordinalLikeAt_spec E 0).mpr
-      simpa [E, scons] using hcode
-    · intro query hquerySat
-      let Eq : Nat → α := scons query E
-      have hquery : OrdinalLike M.mem query :=
-        (HF_ordinalLikeAt_spec Eq 0).mp (by
-          simpa [E, Eq, scons] using hquerySat)
-      rw [Sat_fIff,
-        HF_compositeMemAt_model N Eq 0 1]
-      change ModelCompositeMem N (Eq 0) (Eq 1) ↔
-        (Sat M.mem Eq (HF_compositeMemAt 0 4) ∧ M.mem (Eq 0) (Eq 3))
-      rw [HF_compositeMemAt_model N Eq 0 4]
-      simpa [E, Eq, scons] using hinvariant query hquery
+  simp only [setOrdinalRangeAccumulator, Sat, Sat_fIff,
+    HF_setOrdinalRepAt_model, HF_ordinalLikeAt_spec,
+    HF_compositeMemAt_model, scons]
 
 /-- Ackermann membership between ordinal codes lies below the target ordinal
 in the ambient HF membership relation. -/

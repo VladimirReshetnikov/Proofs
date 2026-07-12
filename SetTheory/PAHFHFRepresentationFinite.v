@@ -601,17 +601,12 @@ Lemma setOrdinalRepExists_model :
   Sat V (foam_mem V M) env (fEx (HF_setOrdinalRepAt 1 0)) <->
     HasSetOrdinalRep M (env 0).
 Proof.
-  intros V M env. split.
-  - intros [code hrepSat].
-    exists code.
-    apply (proj1 (HF_setOrdinalRepAt_model V M
-      (scons V code env) 1 0)).
-    exact hrepSat.
-  - intros [code hrep].
-    exists code.
-    apply (proj2 (HF_setOrdinalRepAt_model V M
-      (scons V code env) 1 0)).
-    exact hrep.
+  intros V M env.
+  unfold HasSetOrdinalRep.
+  cbn [Sat].
+  setoid_rewrite HF_setOrdinalRepAt_model.
+  cbn [scons].
+  reflexivity.
 Qed.
 
 Definition ModelCompositeAdjoinCodeLaw {V : Type}
