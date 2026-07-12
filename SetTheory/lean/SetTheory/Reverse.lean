@@ -138,11 +138,8 @@ noncomputable def osingle (hPair : PairAx mem) (a : V) : V := opair2 hPair a a
 
 theorem osingle_spec (hPair : PairAx mem) (a x : V) :
     mem x (osingle hPair a) ↔ x = a := by
-  constructor
-  · intro H
-    rcases (opair2_spec hPair a a x).mp H with H | H <;> exact H
-  · intro H
-    exact (opair2_spec hPair a a x).mpr (Or.inl H)
+  unfold osingle
+  simpa only [or_self] using (opair2_spec hPair a a x)
 
 noncomputable def ounion (hUnion : UnionAx mem) (s : V) : V :=
   (hUnion s).choose
@@ -173,16 +170,8 @@ noncomputable def osucc (hPair : PairAx mem) (hUnion : UnionAx mem) (a : V) : V 
 
 theorem osucc_spec (hPair : PairAx mem) (hUnion : UnionAx mem) (a x : V) :
     mem x (osucc hPair hUnion a) ↔ (mem x a ∨ x = a) := by
-  constructor
-  · intro H
-    rcases (obin_spec hPair hUnion a (osingle hPair a) x).mp H with Ha | Hs
-    · exact Or.inl Ha
-    · exact Or.inr ((osingle_spec hPair a x).mp Hs)
-  · intro H
-    apply (obin_spec hPair hUnion a (osingle hPair a) x).mpr
-    rcases H with Ha | He
-    · exact Or.inl Ha
-    · exact Or.inr ((osingle_spec hPair a x).mpr He)
+  unfold osucc
+  rw [obin_spec hPair hUnion a (osingle hPair a) x, osingle_spec hPair a x]
 
 theorem osucc_super (hPair : PairAx mem) (hUnion : UnionAx mem) (a : V) :
     Sub mem a (osucc hPair hUnion a) :=

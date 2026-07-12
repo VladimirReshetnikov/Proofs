@@ -106,9 +106,7 @@ Proof. intros a b. exact (proj2_sig (constructive_indefinite_description _ (Pair
 Definition osingle (a : V) : V := opair2 a a.
 Lemma osingle_spec : forall a x, x ∈ osingle a <-> x = a.
 Proof.
-  intros a x. unfold osingle. split.
-  - intro H. apply (proj1 (opair2_spec a a x)) in H. destruct H as [H|H]; exact H.
-  - intro H. apply (proj2 (opair2_spec a a x)). left. exact H.
+  intros a x. unfold osingle. rewrite (opair2_spec a a x). tauto.
 Qed.
 
 Definition ounion (s : V) : V :=
@@ -131,13 +129,8 @@ Qed.
 Definition osucc (a : V) : V := obin a (osingle a).
 Lemma osucc_spec : forall a x, x ∈ osucc a <-> (x ∈ a \/ x = a).
 Proof.
-  intros a x. unfold osucc. split.
-  - intro H. apply (proj1 (obin_spec a (osingle a) x)) in H. destruct H as [Ha|Hs].
-    + left. exact Ha.
-    + right. apply (proj1 (osingle_spec a x)) in Hs. exact Hs.
-  - intro H. apply (proj2 (obin_spec a (osingle a) x)). destruct H as [Ha|He].
-    + left. exact Ha.
-    + right. apply (proj2 (osingle_spec a x)). exact He.
+  intros a x. unfold osucc. rewrite (obin_spec a (osingle a) x).
+  rewrite (osingle_spec a x). tauto.
 Qed.
 
 Lemma osucc_super : forall a, Sub a (osucc a).

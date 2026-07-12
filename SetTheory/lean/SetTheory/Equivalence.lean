@@ -248,12 +248,7 @@ theorem singleton_exists (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     ∀ x : V, ∃ s, ∀ t, mem t s ↔ t = x := by
   intro x
   obtain ⟨p, hp⟩ := Pairing witness hExt hSep hPow hClo x x
-  refine ⟨p, fun t => ?_⟩
-  constructor
-  · intro h
-    rcases (hp t).mp h with h | h <;> exact h
-  · intro h
-    exact (hp t).mpr (Or.inl h)
+  exact ⟨p, fun t => by simpa only [or_self] using hp t⟩
 
 theorem succ_exists (witness : V) (hExt : ExtAx mem) (hSep : SepFOAx mem)
     (hPow : PowAx mem) (hClo : ClosureFOAx mem) :

@@ -235,9 +235,8 @@ Qed.
 
 Lemma singleton_exists : forall x, exists s, forall t, t ∈ s <-> t = x.
 Proof.
-  intro x. destruct (Pairing x x) as [p Hp]. exists p. intro t. split.
-  - intro H. destruct (proj1 (Hp t) H) as [E | E]; exact E.
-  - intro H. apply (proj2 (Hp t)). left. exact H.
+  intro x. destruct (Pairing x x) as [p Hp]. exists p.
+  intro t. specialize (Hp t). tauto.
 Qed.
 
 Lemma succ_exists :
