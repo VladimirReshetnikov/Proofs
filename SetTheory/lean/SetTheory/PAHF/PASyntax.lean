@@ -2547,6 +2547,12 @@ theorem BProv_context_prefix {B : Formula → Prop}
   | cons head tail ih =>
       exact BProv_context_cons (a := head) ih
 
+/-- Inference-friendly specialization for the frequent two-assumption case. -/
+theorem BProv_context_two {B : Formula → Prop}
+    {G : List Formula} {first second phi : Formula}
+    (hphi : BProv B G phi) : BProv B (first :: second :: G) phi :=
+  BProv_context_prefix [first, second] hphi
+
 /-- Add `n` existential binders around `body`. -/
 def iterEx : Nat → Formula → Formula
   | 0, body => body
@@ -16633,8 +16639,7 @@ theorem BProv_Ax_s_commonMultipleThroughTermAt_succ
         BProv_ass (B := Ax_s) (G := D) (by simp [D])
       have hcommonD : BProv Ax_s D
           (commonMultipleThroughTermAt bound1 multiple1) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hcommonRen)
+        BProv_context_two hcommonRen
       have hdvd : BProv Ax_s D
           (dvdTermTermAt (Term.succ (Term.var 0)) multiple1) :=
         BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
@@ -17382,8 +17387,7 @@ theorem BProv_Ax_s_betaPrefixDividesTermAt_succ
         BProv_ass (B := Ax_s) (G := D) (by simp [D])
       have hprefixD : BProv Ax_s D
           (betaPrefixDividesTermAt step1 bound1 product1) :=
-        BProv_context_cons (B := Ax_s)
-          (BProv_context_cons (B := Ax_s) hprefixRen)
+        BProv_context_two hprefixRen
       have hdvd : BProv Ax_s D
           (dvdTermTermAt
             (betaModTermTerm step1 (Term.var 0)) product1) :=
@@ -21047,8 +21051,7 @@ theorem BProv_Ax_s_eq_zero_of_bounded_remainder_difference_terms
             (Term.add (Term.mul modulus' diff') highRem')) := by
         simpa [D, C, modulus', lowRem', highRem', diff', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hdiffRen)
+          BProv_context_two hdiffRen
       have hmulArg : BProv Ax_s D
           (eq (Term.mul modulus' diff')
             (Term.mul modulus' (Term.succ (Term.var 0)))) :=
@@ -21076,8 +21079,7 @@ theorem BProv_Ax_s_eq_zero_of_bounded_remainder_difference_terms
       have hltD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
         simpa [D, C, modulus', lowRem', ltTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hltRen)
+          BProv_context_two hltRen
       exact BProv_botE
         (a := rename Nat.succ (eq diff Term.zero))
         (BProv_Ax_s_ltTermAt_leTermAt_bot hltD hle)
@@ -21159,8 +21161,7 @@ theorem BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
             (Term.add (Term.mul modulus' diff') highRem')) := by
         simpa [D, C, modulus', lowRem', highRem', diff', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hdiffRen)
+          BProv_context_two hdiffRen
       have hmulArg : BProv Ax_s D
           (eq (Term.mul modulus' diff')
             (Term.mul modulus' (Term.succ (Term.var 0)))) :=
@@ -21188,8 +21189,7 @@ theorem BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
       have hltD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
         simpa [D, C, modulus', lowRem', ltTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hltRen)
+          BProv_context_two hltRen
       exact BProv_botE
         (a := rename Nat.succ (eq highRem lowRem))
         (BProv_Ax_s_ltTermAt_leTermAt_bot hltD hle)
@@ -21248,8 +21248,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
       have hlowLtD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
         simpa [D, L, lowRem', modulus', ltTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hlowLtRen)
+          BProv_context_two hlowLtRen
       have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
@@ -21261,8 +21260,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
         simpa [D, L, value', modulus', lowQuot', lowRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hlowRen)
+          BProv_context_two hlowRen
       have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
@@ -21274,8 +21272,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
         simpa [D, L, value', modulus', highQuot', highRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hhighRen)
+          BProv_context_two hhighRen
       have hdiff : BProv Ax_s D
           (eq lowRem'
             (Term.add (Term.mul modulus' (Term.var 0)) highRem')) :=
@@ -21325,8 +21322,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
       have hhighLtD : BProv Ax_s D (ltTermAt highRem' modulus') := by
         simpa [D, L, highRem', modulus', ltTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hhighLtRen)
+          BProv_context_two hhighLtRen
       have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
@@ -21338,8 +21334,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
         simpa [D, L, value', modulus', lowQuot', lowRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hlowRen)
+          BProv_context_two hlowRen
       have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
@@ -21351,8 +21346,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
         simpa [D, L, value', modulus', highQuot', highRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hhighRen)
+          BProv_context_two hhighRen
       have hdiff : BProv Ax_s D
           (eq highRem'
             (Term.add
@@ -21422,8 +21416,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
       have hlowLtD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
         simpa [D, L, lowRem', modulus', ltTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hlowLtRen)
+          BProv_context_two hlowLtRen
       have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
@@ -21435,8 +21428,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
         simpa [D, L, value', modulus', lowQuot', lowRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hlowRen)
+          BProv_context_two hlowRen
       have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
@@ -21448,8 +21440,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
         simpa [D, L, value', modulus', highQuot', highRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hhighRen)
+          BProv_context_two hhighRen
       have hdiff : BProv Ax_s D
           (eq lowRem'
             (Term.add (Term.mul modulus' (Term.var 0)) highRem')) :=
@@ -21508,8 +21499,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
       have hhighLtD : BProv Ax_s D (ltTermAt highRem' modulus') := by
         simpa [D, L, highRem', modulus', ltTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hhighLtRen)
+          BProv_context_two hhighLtRen
       have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
@@ -21521,8 +21511,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
         simpa [D, L, value', modulus', lowQuot', lowRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hlowRen)
+          BProv_context_two hlowRen
       have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ
             (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
@@ -21534,8 +21523,7 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
         simpa [D, L, value', modulus', highQuot', highRem', rename,
           Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_cons
-            (BProv_context_cons (B := Ax_s) hhighRen)
+          BProv_context_two hhighRen
       have hdiff : BProv Ax_s D
           (eq highRem'
             (Term.add
@@ -25985,8 +25973,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
             rename, Term.rename, SetTheory.up, Term.rename_comp,
             term_rename_up_succ_rename_succ, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hcurRen2)
+            BProv_context_two hcurRen2
         have hnextRen1 : BProv Ax_s (G.map (rename Nat.succ))
             (rename Nat.succ
               (betaTermTermAt next (Term.var oldCode)
@@ -26013,8 +26000,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
             rename, Term.rename, SetTheory.up, Term.rename_comp,
             term_rename_up_succ_rename_succ, List.map_map,
             Function.comp_def] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hnextRen2)
+            BProv_context_two hnextRen2
         have hleft : BProv Ax_s (leConstAt 1 0 :: D) newBeta := by
           let L : List Formula := leConstAt 1 0 :: D
           have hleZero : BProv Ax_s L (leConstAt 1 0) :=
@@ -26240,8 +26226,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
             (eq (Term.var (oldStep+2)) Term.zero) := by
           simpa [D, C, leHyp, oldBeta, eqConstAt, zeroAt, rename,
             Term.rename, Term.numeral, Nat.add_assoc] using
-            BProv_context_cons (B := Ax_s)
-              (BProv_context_cons (B := Ax_s) hstepRen2)
+            BProv_context_two hstepRen2
         have houtZero : BProv Ax_s D (eq (Term.var 0) Term.zero) :=
           BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero
             hold hstepD

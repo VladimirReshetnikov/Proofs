@@ -16,17 +16,9 @@ From SetTheory Require Import Fol Calculus PAHF.
 Import ListNotations.
 Import PA PA.Term PA.Formula.
 
-(** A derivation remains valid after prepending any finite block of local
-    assumptions.  This packages repeated chains of [BProv_context_cons]. *)
-Lemma BProv_context_prefix : forall
-    (B : formula -> Prop) prefix G phi,
-  BProv B G phi ->
-  BProv B (prefix ++ G) phi.
-Proof.
-  intros B prefix G phi hphi.
-  apply (BProv_mono B G (prefix ++ G) phi); [ | exact hphi ].
-  intros x hx. apply in_app_iff. right. exact hx.
-Qed.
+(** Preserve the original unqualified API while the implementation lives in
+    the foundational [PA.Formula] namespace. *)
+Definition BProv_context_prefix := PA.Formula.BProv_context_prefix.
 
 (** [iterEx n body] adds [n] existential binders around [body]. *)
 Fixpoint iterEx (n : nat) (body : formula) : formula :=

@@ -171,6 +171,7 @@ open SetTheory
 #check PA.Formula.openedContext
 #check PA.Formula.openedExContext
 #check @PA.Formula.BProv_context_prefix
+#check @PA.Formula.BProv_context_two
 #check @PA.Formula.BProv_iterRenameSucc_of_sentences
 #check @PA.Formula.BProv_lift_openedContext_of_sentences
 #check @PA.Formula.BProv_iterExE_of_sentences

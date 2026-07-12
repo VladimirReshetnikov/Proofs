@@ -8884,6 +8884,30 @@ Proof.
   - exact h.
 Qed.
 
+(** A derivation remains valid after prepending any finite block of local
+    assumptions.  Keeping this next to [BProv_context_cons] makes the generic
+    transport available throughout the foundational PA/HF development. *)
+Lemma BProv_context_prefix : forall
+    (B : formula -> Prop) prefix G phi,
+  BProv B G phi ->
+  BProv B (prefix ++ G) phi.
+Proof.
+  intros B prefix G phi hphi.
+  induction prefix as [|head tail ih].
+  - exact hphi.
+  - exact (BProv_context_cons B (tail ++ G) head phi ih).
+Qed.
+
+(** Inference-friendly specialization for the frequent two-assumption case. *)
+Lemma BProv_context_two : forall
+    (B : formula -> Prop) G first second phi,
+  BProv B G phi ->
+  BProv B (first :: second :: G) phi.
+Proof.
+  intros B G first second phi hphi.
+  exact (BProv_context_prefix B [first; second] G phi hphi).
+Qed.
+
 Lemma BProv_impI : forall (B : formula -> Prop) G a b,
   BProv B (a :: G) b -> BProv B G (pImp a b).
 Proof.
@@ -17405,8 +17429,7 @@ Proof.
             (tAdd (tMul (Term.rename S modulus) (Term.rename S diff))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hdiff S) as h.
         simpl in h.
@@ -17446,8 +17469,7 @@ Proof.
       assert (hltD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlowLt S) as h.
         rewrite rename_S_ltTermAt in h.
@@ -17524,8 +17546,7 @@ Proof.
             (tAdd (tMul (Term.rename S modulus) (Term.rename S diff))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hdiff S) as h.
         simpl in h.
@@ -17565,8 +17586,7 @@ Proof.
       assert (hltD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlowLt S) as h.
         rewrite rename_S_ltTermAt in h.
@@ -17608,8 +17628,7 @@ Proof.
       assert (hlowLtD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlowLt S) as h.
         rewrite rename_S_ltTermAt in h.
@@ -17620,8 +17639,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlow S) as h.
         simpl in h.
@@ -17632,8 +17650,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hhigh S) as h.
         simpl in h.
@@ -17669,8 +17686,7 @@ Proof.
       assert (hhighLtD : BProv Ax_s D
           (ltTermAt (Term.rename S highRem) (Term.rename S modulus))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hhighLt S) as h.
         rewrite rename_S_ltTermAt in h.
@@ -17681,8 +17697,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlow S) as h.
         simpl in h.
@@ -17693,8 +17708,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hhigh S) as h.
         simpl in h.
@@ -17978,8 +17992,7 @@ Proof.
       assert (hlowLtD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlowLt S) as h.
         rewrite rename_S_ltTermAt in h.
@@ -17990,8 +18003,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlow S) as h.
         simpl in h.
@@ -18002,8 +18014,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hhigh S) as h.
         simpl in h.
@@ -18059,8 +18070,7 @@ Proof.
       assert (hhighLtD : BProv Ax_s D
           (ltTermAt (Term.rename S highRem) (Term.rename S modulus))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hhighLt S) as h.
         rewrite rename_S_ltTermAt in h.
@@ -18071,8 +18081,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hlow S) as h.
         simpl in h.
@@ -18083,8 +18092,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
           hhigh S) as h.
         simpl in h.
@@ -20733,8 +20741,7 @@ Proof.
       assert (hcommonD : BProv Ax_s D
           (commonMultipleThroughTermAt bound1 multiple1)).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         exact hcommonRen.
       }
       pose proof
@@ -22636,8 +22643,7 @@ Proof.
       assert (hprefixD : BProv Ax_s D
           (betaPrefixDividesTermAt step1 bound1 product1)).
       {
-        apply BProv_context_cons.
-        apply BProv_context_cons.
+        apply BProv_context_two.
         exact hprefixRen.
       }
       pose proof
@@ -28892,8 +28898,7 @@ Proof.
             with (rename S (rename S
               (betaTermTermAt cur (tVar oldCode) (tVar oldStep)
                 (tSucc tZero)))).
-          - apply BProv_context_cons.
-            apply BProv_context_cons.
+          - apply BProv_context_two.
             exact hcurRen2.
           - unfold cur2, betaTermTermAt, remTermTermAt, ltTermAt,
               betaModTermTerm.
@@ -28934,8 +28939,7 @@ Proof.
             with (rename S (rename S
               (betaTermTermAt next (tVar oldCode) (tVar oldStep)
                 (tSucc (tSucc tZero))))).
-          - apply BProv_context_cons.
-            apply BProv_context_cons.
+          - apply BProv_context_two.
             exact hnextRen2.
           - unfold next2, betaTermTermAt, remTermTermAt, ltTermAt,
               betaModTermTerm.
@@ -29218,8 +29222,7 @@ Proof.
             (rename S (rename S (eqConstAt oldStep 0)))).
         {
           unfold D, C. simpl.
-          apply BProv_context_cons.
-          apply BProv_context_cons.
+          apply BProv_context_two.
           exact hstepRen2.
         }
         assert (hstepD : BProv Ax_s D
