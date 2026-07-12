@@ -551,34 +551,15 @@ theorem BProv_Ax_s_betaModTermTerm_numeral_eq
     {G : List Formula} (step idx : Nat) :
     BProv Ax_s G
       (eq (betaModTermTerm (Term.numeral step) (Term.numeral idx))
-        (Term.numeral (BetaModulus step idx))) := by
-  have hmul : BProv Ax_s G
-      (eq (Term.mul (Term.succ (Term.numeral idx)) (Term.numeral step))
-        (Term.numeral ((idx + 1) * step))) := by
-    simpa [Term.numeral] using
-      (BProv_weaken_nil (G := G) (BProv_Ax_s_mulNumerals (idx + 1) step))
-  have hsucc := BProv_eq_congr_succ hmul
-  have hbeta : BetaModulus step idx = ((idx + 1) * step) + 1 := by
-    simp [BetaModulus]
-    omega
-  simpa [betaModTermTerm, hbeta, Term.numeral] using hsucc
+        (Term.numeral (BetaModulus step idx))) :=
+  BProv_eqSym (BProv_Ax_s_betaModTermTerm_numeral (G := G) step idx)
 
 theorem BProv_Ax_s_betaTermTermAt_numeral_of_entry
     {G : List Formula} {out code step idx : Nat}
     (hentry : BetaEntry code step idx out) :
     BProv Ax_s G (betaTermTermAt (Term.numeral out) (Term.numeral code)
-      (Term.numeral step) (Term.numeral idx)) := by
-  rcases hentry with ⟨q, hcode, houtLt⟩
-  have hmod := BProv_Ax_s_betaModTermTerm_numeral_eq (G := G) step idx
-  have hrem : BProv Ax_s G
-      (remTermTermAt (Term.numeral out) (Term.numeral code)
-        (Term.numeral (BetaModulus step idx))) :=
-    BProv_Ax_s_remTermTermAt_numeral_of_modEq (G := G)
-      (modulus := Term.numeral (BetaModulus step idx))
-      (r := out) (v := code) (m := BetaModulus step idx) (q := q)
-      (BProv_eqRefl (B := Ax_s) (G := G) (Term.numeral (BetaModulus step idx)))
-      houtLt hcode.symm
-  exact BProv_Ax_s_betaTermTermAt_of_rem (BProv_eqSym hmod) hrem
+      (Term.numeral step) (Term.numeral idx)) :=
+  BProv_Ax_s_betaTermTermAt_numeral_entry (G := G) hentry
 
 theorem BProv_Ax_s_betaTermTermAtConstIdx_numeral_of_entry
     {G : List Formula} {out code step idx : Nat}
