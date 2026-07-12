@@ -253,181 +253,28 @@ Lemma HF_setOrdinalRepCertificateAt_model : forall (V : Type)
     ModelSetOrdinalRepCertificate M (e relation).
 Proof.
   intros V M e relation.
-  unfold ModelSetOrdinalRepCertificate.
-  unfold HF_setOrdinalRepCertificateAt.
+  unfold ModelSetOrdinalRepCertificate, HF_setOrdinalRepCertificateAt.
   cbn [Sat fIff].
+  setoid_rewrite foam_HF_pairFunctionalAt_spec.
+  setoid_rewrite foam_HF_pairMemAt_spec.
+  setoid_rewrite HF_ordinalLikeAt_spec.
+  setoid_rewrite HF_compositeMemAt_model.
+  cbn [scons].
   split.
-  - intros [hfun hcert].
-    split.
-    + exact (proj1 (foam_HF_pairFunctionalAt_spec V M e relation) hfun).
-    + intros set code hpair.
-      assert (hpairSat :
-          Sat V (foam_mem V M)
-            (scons V code (scons V set e))
-            (HF_pairMemAt 1 0 (S (S relation)))).
-      {
-        apply (proj2 (foam_HF_pairMemAt_spec V M
-          (scons V code (scons V set e)) 1 0 (S (S relation)))).
-        cbn [scons].
-        exact hpair.
-      }
-      destruct (hcert set code hpairSat) as
-        [hcode [hmembers hrange]].
-      split.
-      * exact (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
-          (scons V code (scons V set e)) 0) hcode).
-      * split.
-        -- intro elem.
-           specialize (hmembers elem).
-           split.
-           ++ intro hmem.
-              destruct (proj1 hmembers hmem) as
-                [elemCode [hchildSat hcodedSat]].
-              exists elemCode.
-              split.
-              ** pose proof (proj1 (foam_HF_pairMemAt_spec V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    1 0 (S (S (S (S relation))))) hchildSat) as hchild.
-                 cbn [scons] in hchild.
-                 exact hchild.
-              ** pose proof (proj1 (HF_compositeMemAt_model V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    0 2) hcodedSat) as hcoded.
-                 cbn [scons] in hcoded.
-                 exact hcoded.
-           ++ intros [elemCode [hchild hcoded]].
-              apply (proj2 hmembers).
-              exists elemCode.
-              split.
-              ** apply (proj2 (foam_HF_pairMemAt_spec V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    1 0 (S (S (S (S relation)))))).
-                 cbn [scons].
-                 exact hchild.
-              ** apply (proj2 (HF_compositeMemAt_model V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    0 2)).
-                 cbn [scons].
-                 exact hcoded.
-        -- intros elemCode helemOrd hcoded.
-           assert (helemOrdSat :
-               Sat V (foam_mem V M)
-                 (scons V elemCode
-                   (scons V code (scons V set e)))
-                 (HF_ordinalLikeAt 0)).
-           {
-             apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M)
-               (scons V elemCode (scons V code (scons V set e))) 0)).
-             exact helemOrd.
-           }
-           assert (hcodedSat :
-               Sat V (foam_mem V M)
-                 (scons V elemCode
-                   (scons V code (scons V set e)))
-                 (HF_compositeMemAt 0 1)).
-           {
-             apply (proj2 (HF_compositeMemAt_model V M
-               (scons V elemCode (scons V code (scons V set e))) 0 1)).
-             cbn [scons].
-             exact hcoded.
-           }
-           destruct (hrange elemCode (conj helemOrdSat hcodedSat))
-             as [elem hpairNew].
-           exists elem.
-           pose proof (proj1 (foam_HF_pairMemAt_spec V M
-             (scons V elem
-               (scons V elemCode
-                 (scons V code (scons V set e))))
-             0 1 (S (S (S (S relation))))) hpairNew) as hpairNew'.
-           cbn [scons] in hpairNew'.
-           exact hpairNew'.
-  - intros [hfun hcert].
-    split.
-    + exact (proj2 (foam_HF_pairFunctionalAt_spec V M e relation) hfun).
-    + intros set code hpairSat.
-      assert (hpair :
-          foam_mem V M (foam_kpair_obj V M set code) (e relation)).
-      {
-        pose proof (proj1 (foam_HF_pairMemAt_spec V M
-          (scons V code (scons V set e)) 1 0 (S (S relation)))
-          hpairSat) as hpair'.
-        cbn [scons] in hpair'.
-        exact hpair'.
-      }
-      destruct (hcert set code hpair) as
-        [hcode [hmembers hrange]].
-      split.
-      * apply (proj2 (HF_ordinalLikeAt_spec V (foam_mem V M)
-          (scons V code (scons V set e)) 0)).
-        exact hcode.
-      * split.
-        -- intro elem.
-           specialize (hmembers elem).
-           split.
-           ++ intro hmem.
-              destruct (proj1 hmembers hmem) as
-                [elemCode [hchild hcoded]].
-              exists elemCode.
-              split.
-              ** apply (proj2 (foam_HF_pairMemAt_spec V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    1 0 (S (S (S (S relation)))))).
-                 cbn [scons]. exact hchild.
-              ** apply (proj2 (HF_compositeMemAt_model V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    0 2)).
-                 cbn [scons]. exact hcoded.
-           ++ intros [elemCode [hchildSat hcodedSat]].
-              apply (proj2 hmembers).
-              exists elemCode.
-              split.
-              ** pose proof (proj1 (foam_HF_pairMemAt_spec V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    1 0 (S (S (S (S relation))))) hchildSat) as hchild.
-                 cbn [scons] in hchild. exact hchild.
-              ** pose proof (proj1 (HF_compositeMemAt_model V M
-                    (scons V elemCode
-                      (scons V elem
-                        (scons V code (scons V set e))))
-                    0 2) hcodedSat) as hcoded.
-                 cbn [scons] in hcoded. exact hcoded.
-        -- intros elemCode [helemOrdSat hcodedSat].
-           assert (helemOrd : OrdinalLike (foam_mem V M) elemCode).
-           {
-             exact (proj1 (HF_ordinalLikeAt_spec V (foam_mem V M)
-               (scons V elemCode (scons V code (scons V set e))) 0)
-               helemOrdSat).
-           }
-           assert (hcoded : ModelCompositeMem M elemCode code).
-           {
-             pose proof (proj1 (HF_compositeMemAt_model V M
-               (scons V elemCode (scons V code (scons V set e))) 0 1)
-               hcodedSat) as hcoded'.
-             cbn [scons] in hcoded'.
-             exact hcoded'.
-           }
-           destruct (hrange elemCode helemOrd hcoded) as [elem hpairNew].
-           exists elem.
-           apply (proj2 (foam_HF_pairMemAt_spec V M
-             (scons V elem
-               (scons V elemCode
-                 (scons V code (scons V set e))))
-             0 1 (S (S (S (S relation)))))).
-           cbn [scons]. exact hpairNew.
+  - intros [hfun hcert]. split; [exact hfun |].
+    intros set code hroot.
+    destruct (hcert set code hroot) as [hord [hmembers hrange]].
+    split; [exact hord |]. split.
+    + intro elem. specialize (hmembers elem). split;
+        [exact (proj1 hmembers) | exact (proj2 hmembers)].
+    + intros elemCode hord' hcomp. apply hrange. now split.
+  - intros [hfun hcert]. split; [exact hfun |].
+    intros set code hroot.
+    destruct (hcert set code hroot) as [hord [hmembers hrange]].
+    split; [exact hord |]. split.
+    + intro elem. specialize (hmembers elem). split;
+        [exact (proj1 hmembers) | exact (proj2 hmembers)].
+    + intros elemCode [hord' hcomp]. exact (hrange elemCode hord' hcomp).
 Qed.
 
 Local Opaque HF_setOrdinalRepCertificateAt.
@@ -440,25 +287,8 @@ Proof.
   intros V M e set code.
   unfold ModelSetOrdinalRep, HF_setOrdinalRepAt.
   cbn [Sat].
-  split.
-  - intros [relation [hrootSat hcertSat]].
-    exists relation.
-    split.
-    + pose proof (proj1 (foam_HF_pairMemAt_spec V M
-        (scons V relation e) (S set) (S code) 0) hrootSat) as hroot.
-      cbn [scons] in hroot.
-      exact hroot.
-    + pose proof (proj1 (HF_setOrdinalRepCertificateAt_model V M
-        (scons V relation e) 0) hcertSat) as hcert.
-      cbn [scons] in hcert.
-      exact hcert.
-  - intros [relation [hroot hcert]].
-    exists relation.
-    split.
-    + apply (proj2 (foam_HF_pairMemAt_spec V M
-        (scons V relation e) (S set) (S code) 0)).
-      cbn [scons]. exact hroot.
-    + apply (proj2 (HF_setOrdinalRepCertificateAt_model V M
-        (scons V relation e) 0)).
-      cbn [scons]. exact hcert.
+  setoid_rewrite foam_HF_pairMemAt_spec.
+  setoid_rewrite HF_setOrdinalRepCertificateAt_model.
+  cbn [scons].
+  reflexivity.
 Qed.

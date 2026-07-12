@@ -1703,128 +1703,11 @@ theorem HF_setOrdinalRepCertificateAt_model
     (e : Nat → α) (relation : Nat) :
     Sat M.mem e (HF_setOrdinalRepCertificateAt relation) ↔
       ModelSetOrdinalRepCertificate M e (e relation) := by
-  constructor
-  · intro h
-    refine ⟨(FirstOrderAdjunctionModel.HF_pairFunctionalAt_spec
-      M e relation).mp h.1, ?_⟩
-    intro set code hpair
-    let E : Nat → α := scons code (scons set e)
-    have hpairSat : Sat M.mem E
-        (HF_pairMemAt 1 0 (relation+2)) := by
-      apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec
-        M E 1 0 (relation+2)).mpr
-      simpa [E, scons] using hpair
-    have hlocal := h.2 set code hpairSat
-    have hcodeOrd : OrdinalLike M.mem code := by
-      have hspec := (HF_ordinalLikeAt_spec E 0).mp hlocal.1
-      simpa [E, scons] using hspec
-    refine ⟨hcodeOrd, ?_, ?_⟩
-    · intro elem
-      have hpoint := hlocal.2.1 elem
-      rw [Sat_fIff] at hpoint
-      constructor
-      · intro hmem
-        have hmemSat : Sat M.mem (scons elem E) (fMem 0 2) := by
-          change M.mem elem set
-          exact hmem
-        rcases hpoint.mp hmemSat with
-          ⟨elemCode, hchildSat, hcodedSat⟩
-        have hchild : M.mem
-            (FirstOrderAdjunctionModel.kpair M elem elemCode)
-            (e relation) := by
-          have hspec :=
-            (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-              (scons elemCode (scons elem E)) 1 0 (relation+4)).mp
-                hchildSat
-          simpa [E, scons] using hspec
-        exact ⟨elemCode, hchild, by simpa [E] using hcodedSat⟩
-      · intro hmem
-        rcases hmem with ⟨elemCode, hchild, hcoded⟩
-        have hchildSat : Sat M.mem
-            (scons elemCode (scons elem E))
-            (HF_pairMemAt 1 0 (relation+4)) := by
-          apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-            (scons elemCode (scons elem E)) 1 0 (relation+4)).mpr
-          simpa [E, scons] using hchild
-        have hrhs : Sat M.mem (scons elem E)
-            (fEx
-              (fAnd
-                (HF_pairMemAt 1 0 (relation+4))
-                (HF_compositeMemAt 0 2))) :=
-          ⟨elemCode, hchildSat, by simpa [E] using hcoded⟩
-        have hmemSat := hpoint.mpr hrhs
-        change M.mem elem set at hmemSat
-        exact hmemSat
-    · intro elemCode helemOrd hcoded
-      let EC : Nat → α := scons elemCode E
-      have helemOrdSat : Sat M.mem EC (HF_ordinalLikeAt 0) := by
-        apply (HF_ordinalLikeAt_spec EC 0).mpr
-        simpa [EC, scons] using helemOrd
-      have hcodedSat : Sat M.mem EC (HF_compositeMemAt 0 1) := by
-        simpa [EC, E] using hcoded
-      rcases hlocal.2.2 elemCode ⟨helemOrdSat, hcodedSat⟩ with
-        ⟨elem, hpairSat⟩
-      refine ⟨elem, ?_⟩
-      have hspec := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-        (scons elem EC) 0 1 (relation+4)).mp hpairSat
-      simpa [EC, E, scons] using hspec
-  · intro h
-    refine ⟨(FirstOrderAdjunctionModel.HF_pairFunctionalAt_spec
-      M e relation).mpr h.1, ?_⟩
-    intro set code hpairSat
-    let E : Nat → α := scons code (scons set e)
-    have hpair : M.mem
-        (FirstOrderAdjunctionModel.kpair M set code) (e relation) := by
-      have hspec := (FirstOrderAdjunctionModel.HF_pairMemAt_spec
-        M E 1 0 (relation+2)).mp hpairSat
-      simpa [E, scons] using hspec
-    have hlocal := h.2 set code hpair
-    refine ⟨?_, ?_, ?_⟩
-    · apply (HF_ordinalLikeAt_spec E 0).mpr
-      simpa [E, scons] using hlocal.1
-    · intro elem
-      rw [Sat_fIff]
-      constructor
-      · intro hmemSat
-        have hmem : M.mem elem set := by
-          change M.mem elem set at hmemSat
-          exact hmemSat
-        rcases (hlocal.2.1 elem).mp hmem with
-          ⟨elemCode, hchild, hcoded⟩
-        refine ⟨elemCode, ?_, ?_⟩
-        · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-            (scons elemCode (scons elem E)) 1 0 (relation+4)).mpr
-          simpa [E, scons] using hchild
-        · simpa [E] using hcoded
-      · intro hrhs
-        rcases hrhs with ⟨elemCode, hchildSat, hcodedSat⟩
-        have hchild : M.mem
-            (FirstOrderAdjunctionModel.kpair M elem elemCode)
-            (e relation) := by
-          have hspec := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-            (scons elemCode (scons elem E)) 1 0 (relation+4)).mp
-              hchildSat
-          simpa [E, scons] using hspec
-        have hcoded : Sat M.mem
-            (scons elemCode (scons elem (scons code (scons set e))))
-            (HF_compositeMemAt 0 2) := by
-          simpa [E] using hcodedSat
-        have hmem := (hlocal.2.1 elem).mpr ⟨elemCode, hchild, hcoded⟩
-        change M.mem elem set
-        exact hmem
-    · intro elemCode hant
-      have helemOrd : OrdinalLike M.mem elemCode := by
-        have hspec := (HF_ordinalLikeAt_spec (scons elemCode E) 0).mp hant.1
-        simpa [E, scons] using hspec
-      have hcoded : Sat M.mem
-          (scons elemCode (scons code (scons set e)))
-          (HF_compositeMemAt 0 1) := by
-        simpa [E] using hant.2
-      rcases hlocal.2.2 elemCode helemOrd hcoded with ⟨elem, hpair⟩
-      refine ⟨elem, ?_⟩
-      apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-        (scons elem (scons elemCode E)) 0 1 (relation+4)).mpr
-      simpa [E, scons] using hpair
+  simp only [HF_setOrdinalRepCertificateAt, ModelSetOrdinalRepCertificate, Sat,
+    Sat_fIff,
+    FirstOrderAdjunctionModel.HF_pairFunctionalAt_spec,
+    FirstOrderAdjunctionModel.HF_pairMemAt_spec,
+    HF_ordinalLikeAt_spec, scons, and_imp]
 
 /-- Arbitrary-model semantic reading of the root representation formula. -/
 def ModelSetOrdinalRep {α : Type u}
@@ -1839,25 +1722,9 @@ theorem HF_setOrdinalRepAt_model
     (e : Nat → α) (set code : Nat) :
     Sat M.mem e (HF_setOrdinalRepAt set code) ↔
       ModelSetOrdinalRep M e (e set) (e code) := by
-  constructor
-  · intro h
-    rcases h with ⟨relation, hrootSat, hcertSat⟩
-    refine ⟨relation, ?_, ?_⟩
-    · have hspec := (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-        (scons relation e) (set+1) (code+1) 0).mp hrootSat
-      simpa [scons] using hspec
-    · have hspec := HF_setOrdinalRepCertificateAt_model
-        M (scons relation e) 0
-      simpa [scons] using hspec.mp hcertSat
-  · intro h
-    rcases h with ⟨relation, hroot, hcert⟩
-    refine ⟨relation, ?_, ?_⟩
-    · apply (FirstOrderAdjunctionModel.HF_pairMemAt_spec M
-        (scons relation e) (set+1) (code+1) 0).mpr
-      simpa [scons] using hroot
-    · apply (HF_setOrdinalRepCertificateAt_model
-        M (scons relation e) 0).mpr
-      simpa [scons] using hcert
+  simp only [HF_setOrdinalRepAt, ModelSetOrdinalRep, Sat,
+    FirstOrderAdjunctionModel.HF_pairMemAt_spec,
+    HF_setOrdinalRepCertificateAt_model, scons]
 
 /-! ## Exact completeness reduction for the totality field -/
 
