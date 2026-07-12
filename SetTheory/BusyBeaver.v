@@ -96,6 +96,38 @@ Proof.
     + reflexivity.
 Qed.
 
+(* A bridge may encode tape bits in another alphabet and observe the tape
+   relative to the head after it moves.  The observed cell is the one just
+   written exactly when the translated relative offset is zero. *)
+Lemma read_write_after_move :
+  forall (A : Type) (encode : bool -> A) t head rel mv bit,
+    encode (read (write t head bit) (move_apply mv head + rel)%Z) =
+      if Z.eqb (rel + match mv with left => -1 | right => 1 end)%Z 0%Z
+      then encode bit
+      else encode (read t
+        (head + (rel + match mv with left => -1 | right => 1 end))%Z).
+Proof.
+  intros A encode t head rel [|] bit; cbn [move_apply].
+  - destruct (Z.eqb (rel + -1) 0) eqn:hEq.
+    + apply Z.eqb_eq in hEq.
+      replace (head - 1 + rel)%Z with head by lia.
+      now rewrite read_write_same.
+    + apply Z.eqb_neq in hEq.
+      rewrite read_write_of_ne.
+      * replace (head - 1 + rel)%Z with (head + (rel + -1))%Z by lia.
+        reflexivity.
+      * lia.
+  - destruct (Z.eqb (rel + 1) 0) eqn:hEq.
+    + apply Z.eqb_eq in hEq.
+      replace (head + 1 + rel)%Z with head by lia.
+      now rewrite read_write_same.
+    + apply Z.eqb_neq in hEq.
+      rewrite read_write_of_ne.
+      * replace (head + 1 + rel)%Z with (head + (rel + 1))%Z by lia.
+        reflexivity.
+      * lia.
+Qed.
+
 Lemma filter_ne_nodup : forall t pos,
   NoDup t -> NoDup (filter (fun q => negb (Z.eqb q pos)) t).
 Proof.

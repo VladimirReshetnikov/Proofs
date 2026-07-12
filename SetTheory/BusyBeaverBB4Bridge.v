@@ -126,32 +126,15 @@ Proof.
   change (BB.Tape.read (BB.cfg_tape 4 cfg) (BB.cfg_head 4 cfg)) with bit in hNext |- *.
   rewrite hNext.
   set (a := BB.transition 4 M q bit) in *.
-  destruct (BB.action_move a) eqn:hMove; cbn [dirOfMove Dir_to_Z BB.move_apply].
-  all: cbn [BB.cfg_head BB.cfg_tape].
-  - destruct (Z.eqb (rel + -1) 0) eqn:hEq.
-    + apply Z.eqb_eq in hEq.
-      replace (BB.cfg_head 4 cfg - 1 + rel)%Z with
-        (BB.cfg_head 4 cfg) by (unfold BB.move_apply; lia).
-      rewrite BB.Tape.read_write_same.
-      reflexivity.
-    + apply Z.eqb_neq in hEq.
-      rewrite BB.Tape.read_write_of_ne.
-      * replace (BB.cfg_head 4 cfg + (rel + -1))%Z with
-          (BB.cfg_head 4 cfg - 1 + rel)%Z by lia.
-        reflexivity.
-      * lia.
-  - destruct (Z.eqb (rel + 1) 0) eqn:hEq.
-    + apply Z.eqb_eq in hEq.
-      replace (BB.cfg_head 4 cfg + 1 + rel)%Z with
-        (BB.cfg_head 4 cfg) by (unfold BB.move_apply; lia).
-      rewrite BB.Tape.read_write_same.
-      reflexivity.
-    + apply Z.eqb_neq in hEq.
-      rewrite BB.Tape.read_write_of_ne.
-      * replace (BB.cfg_head 4 cfg + (rel + 1))%Z with
-          (BB.cfg_head 4 cfg + 1 + rel)%Z by lia.
-        reflexivity.
-      * lia.
+  destruct (BB.action_move a);
+    cbn [dirOfMove Dir_to_Z BB.move_apply BB.cfg_head BB.cfg_tape];
+    symmetry.
+  - exact (BB.Tape.read_write_after_move
+      Σ sigmaOfBool (BB.cfg_tape 4 cfg) (BB.cfg_head 4 cfg)
+      rel BB.left (BB.action_write a)).
+  - exact (BB.Tape.read_write_after_move
+      Σ sigmaOfBool (BB.cfg_tape 4 cfg) (BB.cfg_head 4 cfg)
+      rel BB.right (BB.action_write a)).
 Qed.
 
 Lemma step_some_bridge :
