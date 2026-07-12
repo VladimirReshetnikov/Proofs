@@ -427,22 +427,22 @@ Proof.
       exact (BProv_Ax_s_ltTermAt_succ_right_cases C
         (tVar 0) oldLimit hltNew).
     }
-    assert (hthroughRen : BProv Ax_s (map (rename S) G)
+    assert (hthroughC : BProv Ax_s C
         (hfMembersBelowThroughTermAt bound1)).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-        (hfMembersBelowThroughTermAt boundCode) hthrough S) as hren.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G antecedent _ hthrough) as hren.
       rewrite rename_hfMembersBelowThroughTermAt_succ in hren.
-      unfold bound1.
+      unfold C, bound1.
       exact hren.
     }
-    assert (hnewRen : BProv Ax_s (map (rename S) G)
+    assert (hnewC : BProv Ax_s C
         (hfMembersBelowTermAt oldLimit)).
     {
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-        (hfMembersBelowTermAt (tSucc boundCode)) hnew S) as hren.
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G antecedent _ hnew) as hren.
       rewrite rename_hfMembersBelowTermAt_succ in hren.
-      unfold oldLimit, bound1.
+      unfold C, oldLimit, bound1.
       exact hren.
     }
     assert (hstrict : BProv Ax_s
@@ -464,10 +464,9 @@ Proof.
       assert (hthroughD : BProv Ax_s D
           (hfMembersBelowThroughTermAt bound1)).
       {
-        unfold D, C.
+        unfold D.
         apply BProv_context_cons.
-        apply BProv_context_cons.
-        exact hthroughRen.
+        exact hthroughC.
       }
       unfold target.
       exact (BProv_Ax_s_hfMembersBelowAt_of_throughTermAt
@@ -486,10 +485,9 @@ Proof.
       assert (hnewD : BProv Ax_s D
           (hfMembersBelowTermAt oldLimit)).
       {
-        unfold D, C.
+        unfold D.
         apply BProv_context_cons.
-        apply BProv_context_cons.
-        exact hnewRen.
+        exact hnewC.
       }
       pose proof (BProv_hfMembersBelowTermAt_of_set_eq_term
         Ax_s D oldLimit (tVar 0) hnewD heq) as htransport.
@@ -525,15 +523,6 @@ Lemma BProv_Ax_s_hfMembersBelowAt_of_eqConst_zero :
   BProv Ax_s G (hfMembersBelowAt set).
 Proof.
   intros G set hzero.
-  assert (hzeroRen : BProv Ax_s (map (rename S) G)
-      (eqConstAt (S set) 0)).
-  {
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      (eqConstAt set 0) hzero S) as hren.
-    unfold eqConstAt in hren.
-    simpl in hren.
-    exact hren.
-  }
   set (memHyp := hfMemAt 0 (S set)).
   assert (hbody : BProv Ax_s (memHyp :: map (rename S) G)
       (ltAt 0 (S set))).
@@ -542,7 +531,13 @@ Proof.
     assert (hmem : BProv Ax_s C (hfMemAt 0 (S set))).
     { apply BProv_ass. unfold C, memHyp. simpl. left. reflexivity. }
     assert (hzeroC : BProv Ax_s C (eqConstAt (S set) 0)).
-    { unfold C. apply BProv_context_cons. exact hzeroRen. }
+    {
+      pose proof (BProv_rename_succ_context_cons_of_sentences
+        Ax_s sentence_ax_s G memHyp _ hzero) as h.
+      unfold C, eqConstAt in h.
+      simpl in h.
+      exact h.
+    }
     apply (BProv_botE Ax_s C (ltAt 0 (S set))).
     exact (BProv_Ax_s_hfMemAt_bot_of_eqConst_zero
       C 0 (S set) hzeroC hmem).

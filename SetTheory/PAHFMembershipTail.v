@@ -866,14 +866,9 @@ Proof.
         (betaTermTermAt (Term.rename S out)
           (Term.rename S code) (Term.rename S step) (tVar 0))).
     { exact (BProv_andE2 Ax_s C _ _ hbody). }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      _ hidx S) as hidxRen.
-    simpl in hidxRen.
-    assert (hidxC : BProv Ax_s C
-        (pEq (Term.rename S idxTerm) (tVar (S idx)))).
-    {
-      exact (BProv_context_cons Ax_s (map (rename S) G) body _ hidxRen).
-    }
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G body _ hidx) as hidxC.
+    simpl in hidxC.
     assert (hsuccIdx : BProv Ax_s C
         (pEq (tSucc (Term.rename S idxTerm))
           (tSucc (tVar (S idx))))).
@@ -980,25 +975,15 @@ Proof.
         { exact (BProv_andE1 Ax_s C _ _ htailBody). }
         assert (hdivRaw : BProv Ax_s C (div2StepAt 2 1 0)).
         { exact (BProv_andE2 Ax_s C _ _ htailBody). }
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-          _ hidx S) as hidxRen1.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) G) _ hidxRen1 S) as hidxRen2.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) (map (rename S) G)) _ hidxRen2 S)
-          as hidxRen3.
-        simpl in hidxRen3.
-        pose proof (BProv_context_cons Ax_s
-          (map (rename S) (map (rename S) (map (rename S) G)))
-          (rename S (rename S (pEx (pEx body)))) _ hidxRen3) as hi4.
-        pose proof (BProv_context_cons Ax_s _
-          (rename S (pEx body)) _ hi4) as hi5.
-        pose proof (BProv_context_cons Ax_s _ body _ hi5) as hi6.
+        pose proof (BProv_lift_three_contexts_of_sentences
+          Ax_s sentence_ax_s G
+          (pEx (pEx body)) (pEx body) body _ hidx) as hidxCtx.
+        simpl in hidxCtx.
         assert (hidxC : BProv Ax_s C
             (pEq idx3 (tVar (S (S (S idx)))))).
         {
           unfold C, idx3.
-          exact hi6.
+          exact hidxCtx.
         }
         assert (hcurTerm : BProv Ax_s C
             (betaTermTermAt (tVar 2)
@@ -1267,26 +1252,26 @@ Proof.
     assert (hle : BProv Ax_s C
         (leTermAt (tVar 0) (Term.rename S lastTerm))).
     { apply BProv_ass. unfold C, leHyp. simpl. left. reflexivity. }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      _ htail S) as htailRen.
-    rewrite rename_S_betaShiftTailThroughTermAt in htailRen.
-    simpl in htailRen.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G leHyp _ htail) as htailCtx.
+    rewrite rename_S_betaShiftTailThroughTermAt in htailCtx.
+    simpl in htailCtx.
     assert (htailC : BProv Ax_s C
         (betaShiftTailThroughTermAt (S oldCode) (S oldStep)
           (Term.rename S newCode) (Term.rename S newStep)
           (tSucc (Term.rename S lastTerm)))).
     {
-      exact (BProv_context_cons Ax_s (map (rename S) G) leHyp _ htailRen).
+      exact htailCtx.
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      _ hsteps S) as hstepsRen.
-    rewrite rename_S_betaDiv2StepsThroughTermAt in hstepsRen.
-    simpl in hstepsRen.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G leHyp _ hsteps) as hstepsCtx.
+    rewrite rename_S_betaDiv2StepsThroughTermAt in hstepsCtx.
+    simpl in hstepsCtx.
     assert (hstepsC : BProv Ax_s C
         (betaDiv2StepsThroughTermAt (S oldCode) (S oldStep)
           (tSucc (Term.rename S lastTerm)))).
     {
-      exact (BProv_context_cons Ax_s (map (rename S) G) leHyp _ hstepsRen).
+      exact hstepsCtx.
     }
     assert (hpoint : BProv Ax_s C
         (betaDiv2StepWitnessTermAt
@@ -1472,24 +1457,24 @@ Proof.
       simpl in *.
       exact hb.
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      _ htail S) as htailRen.
-    rewrite rename_S_betaShiftTailThroughTermAt in htailRen.
-    simpl in htailRen.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G body _ htail) as htailCtx.
+    rewrite rename_S_betaShiftTailThroughTermAt in htailCtx.
+    simpl in htailCtx.
     assert (htailC : BProv Ax_s C
         (betaShiftTailThroughTermAt (S oldCode) (S oldStep)
           newCode1 newStep1 (tSucc last1))).
     {
       unfold C, newCode1, newStep1, last1.
-      exact (BProv_context_cons Ax_s (map (rename S) G) body _ htailRen).
+      exact htailCtx.
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      _ hle S) as hleRen.
-    rewrite rename_S_leTermAt in hleRen.
+    pose proof (BProv_rename_succ_context_cons_of_sentences
+      Ax_s sentence_ax_s G body _ hle) as hleCtx.
+    rewrite rename_S_leTermAt in hleCtx.
     assert (hleC : BProv Ax_s C (leTermAt idx1 last1)).
     {
       unfold C, idx1, last1.
-      exact (BProv_context_cons Ax_s (map (rename S) G) body _ hleRen).
+      exact hleCtx.
     }
     assert (hnewBit : BProv Ax_s C
         (betaDiv2BitTermAt (tVar 0) newCode1 newStep1 idx1)).
@@ -1844,32 +1829,18 @@ Proof.
         assert (hdivHidden : BProv Ax_s C
             (div2StepTermAt (tVar 2) (tVar 1) (tVar 0))).
         { exact (BProv_andE2 Ax_s C _ _ htailBody). }
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-          _ hcurFull S) as hcurRen1.
-        rewrite rename_S_betaTermTermAt in hcurRen1.
-        simpl in hcurRen1.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) G) _ hcurRen1 S) as hcurRen2.
-        rewrite rename_S_betaTermTermAt in hcurRen2.
-        simpl in hcurRen2.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) (map (rename S) G)) _ hcurRen2 S)
-          as hcurRen3.
-        rewrite rename_S_betaTermTermAt in hcurRen3.
-        simpl in hcurRen3.
-        pose proof (BProv_context_cons Ax_s
-          (map (rename S) (map (rename S) (map (rename S) G)))
-          (rename S (rename S (pEx (pEx body)))) _ hcurRen3) as hc4.
-        pose proof (BProv_context_cons Ax_s _
-          (rename S (pEx body)) _ hc4) as hc5.
-        pose proof (BProv_context_cons Ax_s _ body _ hc5) as hc6.
+        pose proof (BProv_lift_three_contexts_of_sentences
+          Ax_s sentence_ax_s G
+          (pEx (pEx body)) (pEx body) body _ hcurFull) as hcurCtx.
+        repeat rewrite rename_S_betaTermTermAt in hcurCtx.
+        simpl in hcurCtx.
         assert (hcurKnown : BProv Ax_s C
             (betaTermTermAt (tVar (S (S (S cur))))
               (tVar (S (S (S code)))) (tVar (S (S (S step))))
               idx3)).
         {
           unfold C, idx3.
-          exact hc6.
+          exact hcurCtx.
         }
         assert (hcurEq : BProv Ax_s C
             (pEq (tVar 2) (tVar (S (S (S cur)))))).
@@ -1880,22 +1851,10 @@ Proof.
               (tVar (S (S (S code)))) (tVar (S (S (S step)))) idx3
               hcurKnown hcurHidden).
         }
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-          _ hstep S) as hstepRen1.
-        rewrite rename_S_div2StepAt in hstepRen1.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) G) _ hstepRen1 S) as hstepRen2.
-        rewrite rename_S_div2StepAt in hstepRen2.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) (map (rename S) G)) _ hstepRen2 S)
-          as hstepRen3.
-        rewrite rename_S_div2StepAt in hstepRen3.
-        pose proof (BProv_context_cons Ax_s
-          (map (rename S) (map (rename S) (map (rename S) G)))
-          (rename S (rename S (pEx (pEx body)))) _ hstepRen3) as hs4.
-        pose proof (BProv_context_cons Ax_s _
-          (rename S (pEx body)) _ hs4) as hs5.
-        pose proof (BProv_context_cons Ax_s _ body _ hs5) as hs6.
+        pose proof (BProv_lift_three_contexts_of_sentences
+          Ax_s sentence_ax_s G
+          (pEx (pEx body)) (pEx body) body _ hstep) as hstepCtx.
+        repeat rewrite rename_S_div2StepAt in hstepCtx.
         assert (hdivKnown : BProv Ax_s C
             (div2StepTermAt
               (tVar (S (S (S cur))))
@@ -1910,7 +1869,7 @@ Proof.
             with (div2StepAt (S (S (S cur)))
               (S (S (S knownHalf))) (S (S (S knownBit))))
             by reflexivity.
-          exact hs6.
+          exact hstepCtx.
         }
         assert (hnextEq : BProv Ax_s C
             (pEq (tVar 1) (tVar (S (S (S knownHalf)))))).
