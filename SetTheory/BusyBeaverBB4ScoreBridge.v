@@ -130,12 +130,7 @@ Qed.
 Lemma runFrom_succ_start_four : forall (M : BB.machine 4) cfg n,
   BB.Machine.runFrom M cfg (S n) =
   BB.Machine.runFrom M (BB.Machine.step M cfg) n.
-Proof.
-  intros M cfg n.
-  replace (S n) with (1 + n) by lia.
-  rewrite BB.Machine.runFrom_add.
-  reflexivity.
-Qed.
+Proof. intros M cfg n; exact (BB.Machine.runFrom_add 4 M cfg 1 n). Qed.
 
 Definition Sync (_M : BB.machine 4) (e : ListES) (cfg : BB.config 4) : Prop :=
   exists q,
@@ -244,11 +239,7 @@ Qed.
 
 Lemma run_eq_runFrom_initial_four : forall (M : BB.machine 4) n,
   BB.Machine.run M n = BB.Machine.runFrom M (BB.initial 4) n.
-Proof.
-  intros M n.
-  induction n as [|n ih]; [reflexivity|].
-  cbn. now rewrite ih.
-Qed.
+Proof. intros M n; exact (BB.Machine.run_add_eq_runFrom 4 M 0 n). Qed.
 
 Lemma ListES_Steps_local_score : forall M n e,
   ListES_Steps (B4.tmOfMachine M) n S.initialListES = Some e ->

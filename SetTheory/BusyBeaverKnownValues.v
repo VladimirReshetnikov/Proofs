@@ -730,12 +730,7 @@ Fixpoint checkFrom3 (fuel : nat) (table : partialTable3)
 Lemma runFrom_succ_start : forall (M : BB.machine 3) cfg t,
   BB.Machine.runFrom M cfg (S t) =
     BB.Machine.runFrom M (BB.Machine.step M cfg) t.
-Proof.
-  intros M cfg t.
-  replace (S t) with (1 + t) by lia.
-  rewrite BB.Machine.runFrom_add.
-  reflexivity.
-Qed.
+Proof. intros M cfg t; exact (BB.Machine.runFrom_add 3 M cfg 1 t). Qed.
 
 Lemma runFrom_of_halted : forall (M : BB.machine 3) cfg,
   BB.cfg_state _ cfg = None ->
@@ -807,10 +802,7 @@ Qed.
 
 Lemma run_eq_runFrom_initial_three : forall (M : BB.machine 3) t,
   BB.Machine.run M t = BB.Machine.runFrom M (BB.initial 3) t.
-Proof.
-  intros M t. induction t as [|t IH]; [reflexivity |].
-  simpl. rewrite IH. reflexivity.
-Qed.
+Proof. intros M t; exact (BB.Machine.run_add_eq_runFrom 3 M 0 t). Qed.
 
 Theorem three_state_halted_score_le_six_by_time : forall (M : BB.machine 3) t,
   t <= 21 ->
