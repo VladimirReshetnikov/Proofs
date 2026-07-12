@@ -335,6 +335,52 @@ Proof.
   - rewrite Nat.add_succ_r. simpl. rewrite IH. reflexivity.
 Qed.
 
+(* A zero-state machine starts halted, so a preceding live state exists only
+   for positive state counts. *)
+Lemma halted_has_early_event :
+  forall states (M : machine (S states)) t,
+    cfg_state _ (run M t) = None ->
+    exists n q,
+      n < t /\
+      cfg_state _ (run M n) = Some q /\
+      cfg_state _ (run M (S n)) = None.
+Proof.
+  intros states M t.
+  induction t as [|t ih]; intro hNone.
+  - cbn in hNone. discriminate hNone.
+  - destruct (cfg_state (S states) (run M t)) as [q|] eqn:hPrev.
+    + exists t, q. repeat split; try lia; assumption.
+    + destruct (ih eq_refl) as [n [q [hlt [hSome hEvent]]]].
+      exists n, q. repeat split; try lia; assumption.
+Qed.
+
+Lemma run_add_of_halted :
+  forall states (M : machine states) h k,
+    cfg_state _ (run M h) = None ->
+    run M (h + k) = run M h.
+Proof.
+  intros states M h k hHalt.
+  induction k as [|k ih].
+  - rewrite Nat.add_0_r. reflexivity.
+  - rewrite Nat.add_succ_r.
+    cbn.
+    rewrite ih.
+    apply step_of_halted.
+    exact hHalt.
+Qed.
+
+Lemma run_eq_early_halt_event :
+  forall states (M : machine states) t n,
+    n < t ->
+    cfg_state _ (run M (S n)) = None ->
+    run M t = run M (S n).
+Proof.
+  intros states M t n hlt hEvent.
+  replace t with (S n + (t - S n))%nat by lia.
+  apply run_add_of_halted.
+  exact hEvent.
+Qed.
+
 (* Lean: Machine.runFrom_ne_none_of_shift_loop *)
 Lemma runFrom_ne_none_of_shift_loop :
   forall states (M : machine states) cfg period delta,

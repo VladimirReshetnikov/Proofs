@@ -254,30 +254,13 @@ Lemma local_halted_has_early_event :
       (n < t)%nat /\
       BB.cfg_state _ (BB.Machine.run M n) = Some q /\
       BB.cfg_state _ (BB.Machine.run M (S n)) = None.
-Proof.
-  intros M t.
-  induction t as [|t ih]; intro hNone.
-  - cbn in hNone. discriminate hNone.
-  - destruct (BB.cfg_state 2 (BB.Machine.run M t)) as [q|] eqn:hPrev.
-    + exists t, q. repeat split; try lia; assumption.
-    + destruct (ih eq_refl) as [n [q [hlt [hSome hEvent]]]].
-      exists n, q. repeat split; try lia; assumption.
-Qed.
+Proof. exact (BB.Machine.halted_has_early_event 1). Qed.
 
 Lemma run_add_of_halted :
   forall (states : nat) (M : BB.machine states) h k,
     BB.cfg_state _ (BB.Machine.run M h) = None ->
     BB.Machine.run M (h + k) = BB.Machine.run M h.
-Proof.
-  intros states M h k hHalt.
-  induction k as [|k ih].
-  - rewrite Nat.add_0_r. reflexivity.
-  - rewrite Nat.add_succ_r.
-    cbn.
-    rewrite ih.
-    apply BB.Machine.step_of_halted.
-    exact hHalt.
-Qed.
+Proof. exact BB.Machine.run_add_of_halted. Qed.
 
 Lemma local_run_eq_early_halt_event :
   forall (M : BB.machine 2) t n q,
@@ -285,12 +268,8 @@ Lemma local_run_eq_early_halt_event :
     BB.cfg_state _ (BB.Machine.run M n) = Some q ->
     BB.cfg_state _ (BB.Machine.run M (S n)) = None ->
     BB.Machine.run M t = BB.Machine.run M (S n).
-Proof.
-  intros M t n q hlt _ hEvent.
-  replace t with (S n + (t - S n))%nat by lia.
-  apply run_add_of_halted.
-  exact hEvent.
-Qed.
+Proof. exact (fun M t n _ hlt _ hEvent =>
+  BB.Machine.run_eq_early_halt_event 2 M t n hlt hEvent). Qed.
 
 Theorem two_state_halting_time_bound_event :
   forall (M : BB.machine 2) t,
