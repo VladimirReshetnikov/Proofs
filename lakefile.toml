@@ -34,6 +34,10 @@ name = "FirstOrder"
 srcDir = "Logic/FirstOrder/Lean"
 
 [[lean_lib]]
+name = "QuantifierCommutation"
+srcDir = "Logic/QuantifierCommutation/Lean"
+
+[[lean_lib]]
 name = "ShefferStroke"
 srcDir = "Logic/Propositional/ShefferStroke/Lean"
 

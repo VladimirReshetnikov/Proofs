@@ -13,6 +13,7 @@ import BooleanAlgebra
 import PowerTowers
 import A158415
 import FirstOrder
+import QuantifierCommutation
 import PAHF
 import RiemannHypothesis
 import ZF

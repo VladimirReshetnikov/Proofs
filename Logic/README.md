@@ -3,6 +3,9 @@
 - [`FirstOrder/`](FirstOrder/) is a reusable one-binary-relation first-order
   syntax and semantics, natural-deduction calculus, soundness proof, Goedel
   completeness theorem, compactness lift, and deductive-transfer machinery.
+- [`QuantifierCommutation/`](QuantifierCommutation/) proves constructive
+  commutation laws for adjacent `∀` and `∃`, with finite counterexamples for
+  nested `∄` and `∃!`, in Lean and Rocq/Coq.
 - [`Propositional/ShefferStroke/`](Propositional/ShefferStroke/) formalizes
   NAND/NOR translations and Nicod's single-axiom calculus.
 - [`Propositional/NaturalDeduction/`](Propositional/NaturalDeduction/) is the

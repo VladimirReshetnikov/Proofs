@@ -4,6 +4,7 @@
 -Q Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Coq A158415
 -Q Computability/BusyBeaver/Coq BusyBeaver
 -Q Logic/FirstOrder/Coq FirstOrder
+-Q Logic/QuantifierCommutation/Coq QuantifierCommutation
 -Q Logic/Propositional/ShefferStroke/Coq ShefferStroke
 -Q Logic/Propositional/NaturalDeduction/Coq NaturalDeduction
 -Q Logic/Propositional/FiniteMatrixNoncharacterizability/Coq FiniteMatrixNoncharacterizability
@@ -26,6 +27,9 @@
 
 Logic/FirstOrder/Coq/Fol.v
 Logic/FirstOrder/Coq/Calculus.v
+Logic/QuantifierCommutation/Coq/Commutation.v
+Logic/QuantifierCommutation/Coq/Counterexamples.v
+Logic/QuantifierCommutation/Coq/Audit.v
 SetTheory/ZF/Coq/Zf.v
 SetTheory/ZF/Coq/Audit.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
