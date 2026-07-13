@@ -2999,6 +2999,24 @@ def betaPrependCodingStepTermAt
     (and (leTermAt (Term.succ sourceCode) step)
       (leTermAt (Term.succ head) step))
 
+theorem subst_betaPrependCodingStepTermAt
+    (σ : Nat → Term) (bound sourceCode head step : Term) :
+    subst σ (betaPrependCodingStepTermAt bound sourceCode head step) =
+      betaPrependCodingStepTermAt
+        (Term.subst σ bound) (Term.subst σ sourceCode)
+        (Term.subst σ head) (Term.subst σ step) := by
+  simp [betaPrependCodingStepTermAt, subst,
+    subst_commonMultipleThroughTermAt, subst_leTermAt, Term.subst]
+
+theorem rename_betaPrependCodingStepTermAt
+    (r : Nat → Nat) (bound sourceCode head step : Term) :
+    rename r (betaPrependCodingStepTermAt bound sourceCode head step) =
+      betaPrependCodingStepTermAt
+        (Term.rename r bound) (Term.rename r sourceCode)
+        (Term.rename r head) (Term.rename r step) := by
+  rw [← subst_var_rename, subst_betaPrependCodingStepTermAt]
+  simp only [term_subst_var_rename]
+
 /-- Existence of a fixed beta-prepend coding step. -/
 def betaPrependCodingStepExistsTermAt
     (bound sourceCode head : Term) : Formula :=
@@ -3016,6 +3034,25 @@ def betaPrependCodingStepExistsTermAtBody
     (Term.rename Nat.succ sourceCode)
     (Term.rename Nat.succ head)
     (Term.var 0)
+
+theorem subst_betaPrependCodingStepExistsTermAt
+    (σ : Nat → Term) (bound sourceCode head : Term) :
+    subst σ (betaPrependCodingStepExistsTermAt bound sourceCode head) =
+      betaPrependCodingStepExistsTermAt
+        (Term.subst σ bound) (Term.subst σ sourceCode)
+        (Term.subst σ head) := by
+  simp [betaPrependCodingStepExistsTermAt,
+    subst_betaPrependCodingStepTermAt,
+    subst, Term.subst, Term.upSubst, Term.subst_rename_succ_up]
+
+theorem rename_betaPrependCodingStepExistsTermAt
+    (r : Nat → Nat) (bound sourceCode head : Term) :
+    rename r (betaPrependCodingStepExistsTermAt bound sourceCode head) =
+      betaPrependCodingStepExistsTermAt
+        (Term.rename r bound) (Term.rename r sourceCode)
+        (Term.rename r head) := by
+  rw [← subst_var_rename, subst_betaPrependCodingStepExistsTermAt]
+  simp only [term_subst_var_rename]
 
 def eqConstAt (a n : Nat) : Formula :=
   eq (Term.var a) (Term.numeral n)
@@ -20294,16 +20331,8 @@ theorem BProv_Ax_s_betaPrependCodingStepExistsTermAt_of_term
       (subst (instTerm step)
         (betaPrependCodingStepExistsTermAtBody bound sourceCode head)) := by
     simpa [betaPrependCodingStepExistsTermAtBody,
-      betaPrependCodingStepTermAt, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt, leTermAt, subst, instTerm,
-      Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      Term.rename_comp, term_rename_up_succ_rename_succ,
-      Function.comp_def] using hstep
+      subst_betaPrependCodingStepTermAt, instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hstep
   exact BProv_exI (B := Ax_s) (G := G)
     (a := betaPrependCodingStepExistsTermAtBody bound sourceCode head)
     (t := step)
@@ -20365,13 +20394,8 @@ theorem BProv_Ax_s_betaPrependCodingStepExistsTermAt
   have hex : BProv Ax_s D
       (betaPrependCodingStepExistsTermAt bound1 sourceCode1 head1) :=
     BProv_Ax_s_betaPrependCodingStepExistsTermAt_of_term hstep
-  simpa [goal, D, positiveBody, bound1, sourceCode1, head1,
-    positiveCommonMultipleExistsTermAtBody,
-    betaPrependCodingStepExistsTermAt,
-    betaPrependCodingStepTermAt, commonMultipleThroughTermAt,
-    dvdTermTermAt, ltTermAt, leTermAt,
-    rename, Term.rename, SetTheory.up, Term.rename_comp,
-    Function.comp_def] using hex
+  simpa [goal, D, bound1, sourceCode1, head1,
+    rename_betaPrependCodingStepExistsTermAt] using hex
 
 /-- The generic two-entry beta term has its requested current value at index
 zero.
@@ -33334,10 +33358,7 @@ theorem BProv_Ax_s_all_betaPrependPrefixCodeExistsTermAt_of_codingStep
       have hraw := BProv_context_cons (B := Ax_s)
         (a := phi) hcodingRen
       simpa [C, sourceCode1, head1, targetStep1, finalBound1,
-        betaPrependCodingStepTermAt, commonMultipleThroughTermAt,
-        dvdTermTermAt, ltTermAt, leTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def] using hraw
+        rename_betaPrependCodingStepTermAt] using hraw
     have hcodingD := BProv_context_cons (B := Ax_s)
       (a := leSucc) hcodingC
     have hcommonFinal : BProv Ax_s D

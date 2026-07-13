@@ -528,8 +528,12 @@ open SetTheory
 #check @PA.Formula.subst_betaCodingStepExistsTermAt
 #check @PA.Formula.rename_betaCodingStepExistsTermAt
 #check @PA.Formula.betaPrependCodingStepTermAt
+#check @PA.Formula.subst_betaPrependCodingStepTermAt
+#check @PA.Formula.rename_betaPrependCodingStepTermAt
 #check @PA.Formula.betaPrependCodingStepExistsTermAt
 #check @PA.Formula.betaPrependCodingStepExistsTermAtBody
+#check @PA.Formula.subst_betaPrependCodingStepExistsTermAt
+#check @PA.Formula.rename_betaPrependCodingStepExistsTermAt
 #check @PA.Formula.crtInverseTermAt
 #check @PA.Formula.rename_crtInverseTermAt
 #check @PA.Formula.crtInverseExistsTermAt

@@ -214,10 +214,17 @@ Check PA.Formula.positiveCommonMultipleThroughTermAt.
 Check PA.Formula.betaCodingStepTermAt.
 Check PA.Formula.betaCodingStepExistsTermAt.
 Check PA.Formula.betaCodingStepExistsTermAtBody.
+Check PA.Formula.betaPrependCodingStepTermAt.
+Check PA.Formula.betaPrependCodingStepExistsTermAt.
+Check PA.Formula.betaPrependCodingStepExistsTermAtBody.
 Check PA.Formula.subst_positiveCommonMultipleThroughTermAt.
 Check PA.Formula.rename_positiveCommonMultipleThroughTermAt.
 Check PA.Formula.subst_betaCodingStepTermAt.
 Check PA.Formula.rename_betaCodingStepTermAt.
+Check PA.Formula.subst_betaPrependCodingStepTermAt.
+Check PA.Formula.rename_betaPrependCodingStepTermAt.
+Check PA.Formula.subst_betaPrependCodingStepExistsTermAt.
+Check PA.Formula.rename_betaPrependCodingStepExistsTermAt.
 Check PA.Formula.positiveCommonMultipleExistsTermAt.
 Check PA.Formula.positiveCommonMultipleExistsTermAtBody.
 Check PA.Formula.subst_positiveCommonMultipleExistsTermAt.

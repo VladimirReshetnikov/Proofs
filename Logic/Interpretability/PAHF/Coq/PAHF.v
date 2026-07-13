@@ -10284,6 +10284,32 @@ Definition betaCodingStepExistsTermAtBody
     (Term.rename S sourceCode)
     (tVar 0).
 
+(* Lean: betaPrependCodingStepTermAt *)
+Definition betaPrependCodingStepTermAt
+    (bound sourceCode head step : term) : formula :=
+  pAnd (commonMultipleThroughTermAt bound step)
+    (pAnd
+      (leTermAt (tSucc sourceCode) step)
+      (leTermAt (tSucc head) step)).
+
+(* Lean: betaPrependCodingStepExistsTermAt *)
+Definition betaPrependCodingStepExistsTermAt
+    (bound sourceCode head : term) : formula :=
+  pEx (betaPrependCodingStepTermAt
+    (Term.rename S bound)
+    (Term.rename S sourceCode)
+    (Term.rename S head)
+    (tVar 0)).
+
+(* Lean: betaPrependCodingStepExistsTermAtBody *)
+Definition betaPrependCodingStepExistsTermAtBody
+    (bound sourceCode head : term) : formula :=
+  betaPrependCodingStepTermAt
+    (Term.rename S bound)
+    (Term.rename S sourceCode)
+    (Term.rename S head)
+    (tVar 0).
+
 Lemma subst_positiveCommonMultipleThroughTermAt :
   forall sigma bound multiple,
   subst sigma (positiveCommonMultipleThroughTermAt bound multiple) =
@@ -10362,6 +10388,74 @@ Proof.
   intros r bound sourceCode.
   rewrite <- subst_var_rename.
   rewrite subst_betaCodingStepExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependCodingStepTermAt :
+  forall sigma bound sourceCode head step,
+  subst sigma
+      (betaPrependCodingStepTermAt bound sourceCode head step) =
+    betaPrependCodingStepTermAt
+      (Term.subst sigma bound)
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma head)
+      (Term.subst sigma step).
+Proof.
+  intros sigma bound sourceCode head step.
+  unfold betaPrependCodingStepTermAt.
+  cbn [subst].
+  rewrite subst_commonMultipleThroughTermAt.
+  rewrite !subst_leTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependCodingStepTermAt :
+  forall r bound sourceCode head step,
+  rename r
+      (betaPrependCodingStepTermAt bound sourceCode head step) =
+    betaPrependCodingStepTermAt
+      (Term.rename r bound)
+      (Term.rename r sourceCode)
+      (Term.rename r head)
+      (Term.rename r step).
+Proof.
+  intros r bound sourceCode head step.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependCodingStepTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependCodingStepExistsTermAt :
+  forall sigma bound sourceCode head,
+  subst sigma
+      (betaPrependCodingStepExistsTermAt bound sourceCode head) =
+    betaPrependCodingStepExistsTermAt
+      (Term.subst sigma bound)
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma head).
+Proof.
+  intros sigma bound sourceCode head.
+  unfold betaPrependCodingStepExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaPrependCodingStepTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependCodingStepExistsTermAt :
+  forall r bound sourceCode head,
+  rename r
+      (betaPrependCodingStepExistsTermAt bound sourceCode head) =
+    betaPrependCodingStepExistsTermAt
+      (Term.rename r bound)
+      (Term.rename r sourceCode)
+      (Term.rename r head).
+Proof.
+  intros r bound sourceCode head.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependCodingStepExistsTermAt.
   repeat rewrite term_subst_var_rename.
   reflexivity.
 Qed.
