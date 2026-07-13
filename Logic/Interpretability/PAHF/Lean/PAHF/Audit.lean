@@ -759,6 +759,9 @@ open SetTheory
 #check PA.Formula.betaShiftTailExistsTermAtBody
 #check PA.Formula.betaShiftTailExistsTermAtStepEx
 #check PA.Formula.betaShiftTailExistsTermAtOpenedContext
+#check @PA.Formula.subst_two_instTerm_betaShiftTailExistsTermAtBody
+#check @PA.Formula.substZero_betaShiftTailExistsTermAt_succ
+#check @PA.Formula.substSuccVar_betaShiftTailExistsTermAt_succ
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_of_through
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_one_bound_of_entries
 #check @PA.Formula.BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound

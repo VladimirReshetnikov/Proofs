@@ -450,6 +450,9 @@ Check PA.Formula.betaShiftTailExistsTermAtOpenedContext.
 Check PA.Formula.betaShiftTailExistsTermAt_nat.
 Check PA.Formula.betaShiftTailThroughConstAt.
 Check PA.Formula.betaShiftTailThroughConstAt_nat.
+Check PA.Formula.subst_two_instTerm_betaShiftTailExistsTermAtBody.
+Check PA.Formula.substZero_betaShiftTailExistsTermAt_succ.
+Check PA.Formula.substSuccVar_betaShiftTailExistsTermAt_succ.
 Check PA.Formula.rename_betaShiftTailThroughTermAt.
 Check PA.Formula.rename_betaShiftTailExistsTermAt.
 Check PA.Formula.rename_betaShiftTailThroughConstAt.

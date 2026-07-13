@@ -4222,6 +4222,24 @@ def betaShiftTailExistsTermAtBody
     (Term.var 1) (Term.var 0)
     (Term.rename (fun n => n+2) last)
 
+/-- Opening the two witnesses of `betaShiftTailExistsTermAt` recovers the
+term-parametric shifted-tail relation.  The outer witness is the fresh code;
+the inner witness is its fresh step. -/
+theorem subst_two_instTerm_betaShiftTailExistsTermAtBody
+    (oldCode oldStep : Nat) (newCode newStep last : Term) :
+    subst (instTerm newStep)
+        (subst (Term.upSubst (instTerm newCode))
+          (betaShiftTailExistsTermAtBody oldCode oldStep last)) =
+      betaShiftTailThroughTermAt
+        oldCode oldStep newCode newStep last := by
+  simp [betaShiftTailExistsTermAtBody, betaShiftTailThroughTermAt,
+    betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+    subst, instTerm, Term.subst, Term.upSubst, Term.rename,
+    Term.rename_comp,
+    term_subst_up_up_instTerm_rename_three_succ,
+    term_subst_up_up_up_instTerm_rename_four_succ,
+    term_subst_up_up_up_up_instTerm_rename_five_succ]
+
 /-- Inner existential exposed after opening the new-code witness in
 `betaShiftTailExistsTermAt`. -/
 def betaShiftTailExistsTermAtStepEx
@@ -8004,6 +8022,31 @@ theorem upSubst_substTermAt (p : Nat) (t : Term) :
 def substSuccVar : Nat → Term
   | 0 => Term.succ (Term.var 0)
   | n+1 => Term.var (n+1)
+
+/-- Zero-instantiating the induction variable removes the surrounding shift
+from the ambient code and step slots of a shifted-tail existential. -/
+theorem substZero_betaShiftTailExistsTermAt_succ
+    (oldCode oldStep : Nat) :
+    subst substZero
+        (betaShiftTailExistsTermAt
+          (oldCode+1) (oldStep+1) (Term.var 0)) =
+      betaShiftTailExistsTermAt oldCode oldStep Term.zero := by
+  simp [betaShiftTailExistsTermAt, betaShiftTailThroughTermAt,
+    betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+    substZero, subst, Term.subst, Term.upSubst, Term.rename, Nat.add_assoc]
+
+/-- Successor-instantiating the induction variable preserves the shifted
+ambient slots and replaces the tail bound by its successor. -/
+theorem substSuccVar_betaShiftTailExistsTermAt_succ
+    (oldCode oldStep : Nat) :
+    subst substSuccVar
+        (betaShiftTailExistsTermAt
+          (oldCode+1) (oldStep+1) (Term.var 0)) =
+      betaShiftTailExistsTermAt
+        (oldCode+1) (oldStep+1) (Term.succ (Term.var 0)) := by
+  simp [betaShiftTailExistsTermAt, betaShiftTailThroughTermAt,
+    betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
+    substSuccVar, subst, Term.subst, Term.upSubst, Term.rename, Nat.add_assoc]
 
 def substSuccAt (p : Nat) : Nat → Term :=
   fun n => if n = p then Term.succ (Term.var p) else Term.var n
@@ -26640,34 +26683,20 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_through
     BProv Ax_s G
       (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
   let body : Formula :=
-    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
-      (Term.var 1) (Term.var 0)
-      (Term.rename (fun n => n+2) lastTerm)
+    betaShiftTailExistsTermAtBody oldCode oldStep lastTerm
   have hbody : BProv Ax_s G
       (subst (instTerm newStep)
         (subst (Term.upSubst (instTerm newCode)) body)) := by
-    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
-      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up, Term.rename_comp,
-      term_rename_up_succ_rename_succ, Function.comp_def,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_three_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      term_subst_up_up_instTerm_rename_two_var_zero,
-      term_subst_up_up_instTerm_rename_four_succ,
-      term_subst_up_up_up_instTerm_rename_four_succ,
-      term_subst_up_up_up_instTerm_rename_five_succ,
-      term_subst_up_up_up_up_instTerm_rename_five_succ] using hthrough
+    simpa [body,
+      subst_two_instTerm_betaShiftTailExistsTermAtBody] using hthrough
   have hstepEx : BProv Ax_s G
       (subst (instTerm newCode) (ex body)) := by
     simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
       (BProv_exI (B := Ax_s) (G := G)
         (a := subst (Term.upSubst (instTerm newCode)) body)
         (t := newStep) hbody)
-  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
+  simpa [betaShiftTailExistsTermAt, body,
+    betaShiftTailExistsTermAtBody, subst, instTerm,
     Term.subst, Term.upSubst] using
     (BProv_exI (B := Ax_s) (G := G) (a := ex body)
       (t := newCode) hstepEx)
@@ -26716,43 +26745,13 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_step_zero
     (hOldStep : BProv Ax_s G (eqConstAt oldStep 0)) :
     BProv Ax_s G
       (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
-  let body : Formula :=
-    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
-      (Term.var 1) (Term.var 0)
-      (Term.rename (fun n => n+2) lastTerm)
   have hthrough : BProv Ax_s G
       (betaShiftTailThroughTermAt oldCode oldStep
         Term.zero Term.zero lastTerm) :=
     BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
       (oldCode := oldCode) (oldStep := oldStep)
       (lastTerm := lastTerm) hOldStep
-  have hbody : BProv Ax_s G
-      (subst (instTerm Term.zero)
-        (subst (Term.upSubst (instTerm Term.zero)) body)) := by
-    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
-      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up, Term.rename_comp,
-      term_rename_up_succ_rename_succ, Function.comp_def,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_three_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      term_subst_up_up_instTerm_rename_two_var_zero,
-      term_subst_up_up_instTerm_rename_four_succ,
-      term_subst_up_up_up_instTerm_rename_four_succ,
-      term_subst_up_up_up_instTerm_rename_five_succ] using hthrough
-  have hstepEx : BProv Ax_s G
-      (subst (instTerm Term.zero) (ex body)) := by
-    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
-      (BProv_exI (B := Ax_s) (G := G)
-        (a := subst (Term.upSubst (instTerm Term.zero)) body)
-        (t := Term.zero) hbody)
-  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
-    Term.subst, Term.upSubst] using
-    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
-      (t := Term.zero) hstepEx)
+  exact BProv_Ax_s_betaShiftTailExistsTermAt_of_through hthrough
 
 /-- Prove the existential shifted-tail formula from semantic finite old-tail
 data and a proved closed standard last bound. -/
@@ -26769,10 +26768,6 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
       (betaShiftTailExistsTermAt oldCode oldStep lastTerm) := by
   rcases BetaShiftTailThrough_exists oldCodeValue oldStepValue n with
     ⟨newCodeValue, newStepValue, htail⟩
-  let body : Formula :=
-    betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
-      (Term.var 1) (Term.var 0)
-      (Term.rename (fun n => n+2) lastTerm)
   have hNewCode : BProv Ax_s G
       (eq (Term.numeral newCodeValue)
         (Term.numeral newCodeValue)) :=
@@ -26796,35 +26791,7 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_of_eqConst_entries
       (newStepValue := newStepValue)
       (n := n)
       hOldCode hOldStep hNewCode hNewStep hLast htail holdEntries
-  have hbody : BProv Ax_s G
-      (subst (instTerm (Term.numeral newStepValue))
-        (subst (Term.upSubst (instTerm (Term.numeral newCodeValue)))
-          body)) := by
-    simpa [body, betaShiftTailThroughTermAt, betaTermTermAt,
-      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.rename_numeral, Term.subst_rename_succ_up,
-      Term.rename_comp, term_rename_up_succ_rename_succ,
-      Function.comp_def, term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_three_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      term_subst_up_up_instTerm_rename_two_var_zero,
-      term_subst_up_up_instTerm_rename_four_succ,
-      term_subst_up_up_up_instTerm_rename_four_succ,
-      term_subst_up_up_up_instTerm_rename_five_succ] using hthrough
-  have hstepEx : BProv Ax_s G
-      (subst (instTerm (Term.numeral newCodeValue)) (ex body)) := by
-    simpa [body, subst, instTerm, Term.subst, Term.upSubst] using
-      (BProv_exI (B := Ax_s) (G := G)
-        (a := subst (Term.upSubst
-          (instTerm (Term.numeral newCodeValue))) body)
-        (t := Term.numeral newStepValue) hbody)
-  simpa [betaShiftTailExistsTermAt, body, subst, instTerm,
-    Term.subst, Term.upSubst] using
-    (BProv_exI (B := Ax_s) (G := G) (a := ex body)
-      (t := Term.numeral newCodeValue) hstepEx)
+  exact BProv_Ax_s_betaShiftTailExistsTermAt_of_through hthrough
 
 /-- Prove the existential shifted-tail formula from a semantic membership trace
 one step longer than the requested tail bound.  The trace premise is used only
@@ -43420,23 +43387,11 @@ theorem BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor
     BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
       (G := G) (oldCode := oldCode) (oldStep := oldStep)
   have hzero : BProv Ax_s G (subst substZero phi) := by
-    simpa [phi, betaShiftTailExistsTermAt,
-      betaShiftTailThroughTermAt, betaTermTermAt,
-      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-      substZero, subst, instTerm, Term.subst, Term.upSubst,
-      Term.rename, Term.subst_rename_succ_up,
-      Term.rename_comp, term_rename_up_succ_rename_succ,
-      Function.comp_def, Nat.add_assoc] using hzeroRaw
+    simpa [phi, substZero_betaShiftTailExistsTermAt_succ] using hzeroRaw
   have hsuccBody : BProv Ax_s
       (phi :: G.map (rename Nat.succ))
       (subst substSuccVar phi) := by
-    simpa [phi, betaShiftTailExistsTermAt,
-      betaShiftTailThroughTermAt, betaTermTermAt,
-      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-      substSuccVar, subst, instTerm, Term.subst, Term.upSubst,
-      Term.rename, Term.subst_rename_succ_up,
-      Term.rename_comp, term_rename_up_succ_rename_succ,
-      Function.comp_def, Nat.add_assoc] using hsucc
+    simpa [phi, substSuccVar_betaShiftTailExistsTermAt_succ] using hsucc
   have hsuccImp : BProv Ax_s (G.map (rename Nat.succ))
       (imp phi (subst substSuccVar phi)) :=
     BProv_impI hsuccBody

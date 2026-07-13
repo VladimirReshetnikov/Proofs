@@ -25386,6 +25386,77 @@ Definition betaShiftTailThroughConstAt
         (tVar (newCode + 2)) (tVar (newStep + 2))
         (tVar 1))))).
 
+Lemma subst_two_instTerm_betaShiftTailExistsTermAtBody :
+  forall oldCode oldStep (newCode newStep last : term),
+  subst (instTerm newStep)
+      (subst (Term.upSubst (instTerm newCode))
+        (betaShiftTailExistsTermAtBody oldCode oldStep last)) =
+    betaShiftTailThroughTermAt
+      oldCode oldStep newCode newStep last.
+Proof.
+  intros oldCode oldStep newCode newStep last.
+  unfold betaShiftTailExistsTermAtBody, betaShiftTailThroughTermAt.
+  cbn [subst].
+  rewrite !subst_leTermAt.
+  rewrite !subst_betaTermTermAt.
+  simpl.
+  replace (oldCode + 2 + 2)
+    with (S (S (S (S oldCode)))) by lia.
+  replace (oldStep + 2 + 2)
+    with (S (S (S (S oldStep)))) by lia.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  repeat rewrite term_subst_instTerm_rename_succ.
+  rewrite term_subst_two_instTerm_rename_add_two.
+  repeat rewrite term_rename_add_eq_iterTermRenameSucc.
+  replace (oldCode + 2) with (S (S oldCode)) by lia.
+  replace (oldStep + 2) with (S (S oldStep)) by lia.
+  reflexivity.
+Qed.
+
+Lemma substZero_betaShiftTailExistsTermAt_succ :
+  forall oldCode oldStep,
+  subst substZero
+      (betaShiftTailExistsTermAt
+        (S oldCode) (S oldStep) (tVar 0)) =
+    betaShiftTailExistsTermAt oldCode oldStep tZero.
+Proof.
+  intros oldCode oldStep.
+  unfold betaShiftTailExistsTermAt, betaShiftTailThroughTermAt.
+  cbn [subst].
+  rewrite !subst_leTermAt.
+  rewrite !subst_betaTermTermAt.
+  simpl.
+  replace (oldCode + 2 + 2)
+    with (S (S (S (S oldCode)))) by lia.
+  replace (oldStep + 2 + 2)
+    with (S (S (S (S oldStep)))) by lia.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma substSuccVar_betaShiftTailExistsTermAt_succ :
+  forall oldCode oldStep,
+  subst substSuccVar
+      (betaShiftTailExistsTermAt
+        (S oldCode) (S oldStep) (tVar 0)) =
+    betaShiftTailExistsTermAt
+      (S oldCode) (S oldStep) (tSucc (tVar 0)).
+Proof.
+  intros oldCode oldStep.
+  unfold betaShiftTailExistsTermAt, betaShiftTailThroughTermAt.
+  cbn [subst].
+  rewrite !subst_leTermAt.
+  rewrite !subst_betaTermTermAt.
+  simpl.
+  replace (oldCode + 2 + 2)
+    with (S (S (S (S oldCode)))) by lia.
+  replace (oldStep + 2 + 2)
+    with (S (S (S (S oldStep)))) by lia.
+  simpl.
+  reflexivity.
+Qed.
+
 Lemma rename_betaShiftTailThroughTermAt :
   forall r oldCode oldStep newCode newStep last,
   rename r
@@ -30196,58 +30267,15 @@ Lemma BProv_Ax_s_betaShiftTailExistsTermAt_of_through :
     (betaShiftTailExistsTermAt oldCode oldStep lastTerm).
 Proof.
   intros G oldCode oldStep newCode newStep lastTerm hthrough.
-  set (body := betaShiftTailThroughTermAt (oldCode + 2) (oldStep + 2)
-    (tVar 1) (tVar 0) (Term.rename (fun n => n + 2) lastTerm)).
+  set (body := betaShiftTailExistsTermAtBody
+    oldCode oldStep lastTerm).
   assert (hbody : BProv Ax_s G
       (subst (instTerm newStep)
         (subst (Term.upSubst (instTerm newCode)) body))).
   {
-    replace
-      (subst (instTerm newStep)
-        (subst (Term.upSubst (instTerm newCode)) body))
-      with (betaShiftTailThroughTermAt oldCode oldStep
-        newCode newStep lastTerm).
-    - exact hthrough.
-    - unfold body, betaShiftTailThroughTermAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt.
-      assert (hcodeIndex : oldCode + 2 + 2 =
-          S (S (S (S oldCode)))) by lia.
-      assert (hstepIndex : oldStep + 2 + 2 =
-          S (S (S (S oldStep)))) by lia.
-      rewrite hcodeIndex, hstepIndex.
-      simpl.
-      repeat rewrite
-        (term_subst_two_instTerm_rename_add_two
-          lastTerm newCode newStep).
-      repeat rewrite
-        (term_subst_instTerm_rename_succ lastTerm newStep).
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite
-        (term_subst_instTerm_rename_succ lastTerm newStep).
-      simpl.
-      replace (Term.rename (fun n => S (S (S n))) newStep)
-        with (Term.rename (fun n => S (n + 2)) newStep)
-        by (apply Term.rename_ext; intro n; lia).
-      replace (Term.rename (fun n => S (S (S (S n)))) newCode)
-        with (Term.rename (fun n => S (S (n + 2))) newCode)
-        by (apply Term.rename_ext; intro n; lia).
-      replace (oldCode + 2) with (S (S oldCode)) by lia.
-      replace (oldStep + 2) with (S (S oldStep)) by lia.
-      reflexivity.
+    unfold body.
+    rewrite subst_two_instTerm_betaShiftTailExistsTermAtBody.
+    exact hthrough.
   }
   assert (hstepEx : BProv Ax_s G
       (subst (instTerm newCode) (pEx body))).
@@ -30261,7 +30289,8 @@ Proof.
     - reflexivity.
   }
   pose proof (BProv_exI Ax_s G (pEx body) newCode hstepEx) as hex.
-  unfold betaShiftTailExistsTermAt, body in *.
+  unfold betaShiftTailExistsTermAt, body,
+    betaShiftTailExistsTermAtBody in *.
   exact hex.
 Qed.
 
@@ -30327,95 +30356,24 @@ Lemma BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor :
       (tVar 0))).
 Proof.
   intros G oldCode oldStep hsucc.
+  replace (oldCode + 1) with (S oldCode) in * by lia.
+  replace (oldStep + 1) with (S oldStep) in * by lia.
   set (phi := betaShiftTailExistsTermAt
-    (oldCode + 1) (oldStep + 1) (tVar 0)).
+    (S oldCode) (S oldStep) (tVar 0)).
   pose proof (BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
     G oldCode oldStep) as hzeroRaw.
   assert (hzero : BProv Ax_s G (subst substZero phi)).
   {
-    replace (subst substZero phi)
-      with (betaShiftTailExistsTermAt oldCode oldStep tZero).
-    - exact hzeroRaw.
-    - unfold phi, betaShiftTailExistsTermAt,
-        betaShiftTailThroughTermAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-        substZero.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_rename_up_up_succ_rename_two_succ.
-      repeat rewrite Term.rename_comp.
-      replace (oldCode + 1 + 2) with (S (S (S oldCode))) by lia.
-      replace (oldStep + 1 + 2) with (S (S (S oldStep))) by lia.
-      simpl.
-      assert (hcodeSlot : Term.upSubst
-          (fun n => match n with | 0 => tZero | S k => tVar k end)
-          (oldCode + 2) =
-          tVar (S oldCode)).
-      {
-        replace (oldCode + 2) with (S (S oldCode)) by lia.
-        reflexivity.
-      }
-      assert (hstepSlot : Term.upSubst
-          (fun n => match n with | 0 => tZero | S k => tVar k end)
-          (oldStep + 2) =
-          tVar (S oldStep)).
-      {
-        replace (oldStep + 2) with (S (S oldStep)) by lia.
-        reflexivity.
-      }
-      rewrite hcodeSlot, hstepSlot.
-      replace (oldCode + 2 + 2) with (S (S (S (S oldCode)))) by lia.
-      replace (oldStep + 2 + 2) with (S (S (S (S oldStep)))) by lia.
-      simpl.
-      reflexivity.
+    unfold phi.
+    rewrite substZero_betaShiftTailExistsTermAt_succ.
+    exact hzeroRaw.
   }
   assert (hsuccBody : BProv Ax_s
       (phi :: map (rename S) G) (subst substSuccVar phi)).
   {
     unfold phi.
-    replace
-      (subst substSuccVar
-        (betaShiftTailExistsTermAt (oldCode + 1) (oldStep + 1)
-          (tVar 0)))
-      with (betaShiftTailExistsTermAt (oldCode + 1) (oldStep + 1)
-        (tSucc (tVar 0))).
-    - exact hsucc.
-    - unfold betaShiftTailExistsTermAt,
-        betaShiftTailThroughTermAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-        substSuccVar.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_rename_up_up_succ_rename_two_succ.
-      repeat rewrite Term.rename_comp.
-      assert (hcodeSlot :
-          Term.upSubst (Term.upSubst (Term.upSubst (Term.upSubst
-            (fun n => match n with
-              | 0 => tSucc (tVar 0)
-              | S k => tVar (S k)
-              end)))) (oldCode + 1 + 2 + 2) =
-          tVar (oldCode + 1 + 2 + 2)).
-      {
-        replace (oldCode + 1 + 2 + 2)
-          with (S (S (S (S (S oldCode))))) by lia.
-        reflexivity.
-      }
-      assert (hstepSlot :
-          Term.upSubst (Term.upSubst (Term.upSubst (Term.upSubst
-            (fun n => match n with
-              | 0 => tSucc (tVar 0)
-              | S k => tVar (S k)
-              end)))) (oldStep + 1 + 2 + 2) =
-          tVar (oldStep + 1 + 2 + 2)).
-      {
-        replace (oldStep + 1 + 2 + 2)
-          with (S (S (S (S (S oldStep))))) by lia.
-        reflexivity.
-      }
-      rewrite hcodeSlot, hstepSlot.
-      reflexivity.
+    rewrite substSuccVar_betaShiftTailExistsTermAt_succ.
+    exact hsucc.
   }
   assert (hsuccImp : BProv Ax_s (map (rename S) G)
       (pImp phi (subst substSuccVar phi))).
