@@ -217,6 +217,9 @@ Check PA.Formula.betaCodingStepExistsTermAtBody.
 Check PA.Formula.betaPrependCodingStepTermAt.
 Check PA.Formula.betaPrependCodingStepExistsTermAt.
 Check PA.Formula.betaPrependCodingStepExistsTermAtBody.
+Check PA.Formula.betaShiftPrefixTermAt.
+Check PA.Formula.betaShiftPrefixCodeExistsTermAt.
+Check PA.Formula.betaShiftPrefixCodeExistsTermAtBody.
 Check PA.Formula.betaUnshiftPrefixTermAt.
 Check PA.Formula.betaPrependPrefixTermAt.
 Check PA.Formula.betaPrependPrefixCodeExistsTermAt.
@@ -231,6 +234,17 @@ Check PA.Formula.subst_betaPrependCodingStepTermAt.
 Check PA.Formula.rename_betaPrependCodingStepTermAt.
 Check PA.Formula.subst_betaPrependCodingStepExistsTermAt.
 Check PA.Formula.rename_betaPrependCodingStepExistsTermAt.
+Check PA.Formula.subst_betaShiftPrefixTermAt.
+Check PA.Formula.rename_betaShiftPrefixTermAt.
+Check PA.Formula.subst_betaShiftPrefixCodeExistsTermAt.
+Check PA.Formula.rename_betaShiftPrefixCodeExistsTermAt.
+Check PAHFBetaShiftPrefix.betaShiftPrefixTermAt.
+Check PAHFBetaShiftPrefix.betaShiftPrefixCodeExistsTermAt.
+Check PAHFBetaShiftPrefix.betaShiftPrefixCodeExistsTermAtBody.
+Check PAHFBetaShiftPrefix.subst_betaShiftPrefixTermAt.
+Check PAHFBetaShiftPrefix.rename_betaShiftPrefixTermAt.
+Check PAHFBetaShiftPrefix.subst_betaShiftPrefixCodeExistsTermAt.
+Check PAHFBetaShiftPrefix.rename_betaShiftPrefixCodeExistsTermAt.
 Check PA.Formula.subst_betaUnshiftPrefixTermAt.
 Check PA.Formula.rename_betaUnshiftPrefixTermAt.
 Check PA.Formula.subst_betaPrependPrefixTermAt.

@@ -20267,6 +20267,114 @@ Proof.
   reflexivity.
 Qed.
 
+(** Strict-prefix form of shifted beta coding.  For every [i < bound],
+    every old beta entry at [S i] is copied to index [i] of the new code. *)
+Definition betaShiftPrefixTermAt
+    (oldCode oldStep newCode newStep bound : term) : formula :=
+  pAll (pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (pAll (pImp
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) oldCode)
+        (Term.rename (fun n => n + 2) oldStep)
+        (tSucc (tVar 1)))
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) newCode)
+        (Term.rename (fun n => n + 2) newStep)
+        (tVar 1))))).
+
+Definition betaShiftPrefixCodeExistsTermAt
+    (oldCode oldStep newStep bound : term) : formula :=
+  pEx (betaShiftPrefixTermAt
+    (Term.rename S oldCode)
+    (Term.rename S oldStep)
+    (tVar 0)
+    (Term.rename S newStep)
+    (Term.rename S bound)).
+
+Definition betaShiftPrefixCodeExistsTermAtBody
+    (oldCode oldStep newStep bound : term) : formula :=
+  betaShiftPrefixTermAt
+    (Term.rename S oldCode)
+    (Term.rename S oldStep)
+    (tVar 0)
+    (Term.rename S newStep)
+    (Term.rename S bound).
+
+Lemma subst_betaShiftPrefixTermAt :
+  forall sigma oldCode oldStep newCode newStep bound,
+  subst sigma
+      (betaShiftPrefixTermAt oldCode oldStep newCode newStep bound) =
+    betaShiftPrefixTermAt
+      (Term.subst sigma oldCode)
+      (Term.subst sigma oldStep)
+      (Term.subst sigma newCode)
+      (Term.subst sigma newStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma oldCode oldStep newCode newStep bound.
+  unfold betaShiftPrefixTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite !subst_betaTermTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  rewrite !term_subst_up_up_rename_add_two.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftPrefixTermAt :
+  forall r oldCode oldStep newCode newStep bound,
+  rename r
+      (betaShiftPrefixTermAt oldCode oldStep newCode newStep bound) =
+    betaShiftPrefixTermAt
+      (Term.rename r oldCode)
+      (Term.rename r oldStep)
+      (Term.rename r newCode)
+      (Term.rename r newStep)
+      (Term.rename r bound).
+Proof.
+  intros r oldCode oldStep newCode newStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaShiftPrefixTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaShiftPrefixCodeExistsTermAt :
+  forall sigma oldCode oldStep newStep bound,
+  subst sigma
+      (betaShiftPrefixCodeExistsTermAt oldCode oldStep newStep bound) =
+    betaShiftPrefixCodeExistsTermAt
+      (Term.subst sigma oldCode)
+      (Term.subst sigma oldStep)
+      (Term.subst sigma newStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma oldCode oldStep newStep bound.
+  unfold betaShiftPrefixCodeExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaShiftPrefixTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftPrefixCodeExistsTermAt :
+  forall r oldCode oldStep newStep bound,
+  rename r
+      (betaShiftPrefixCodeExistsTermAt oldCode oldStep newStep bound) =
+    betaShiftPrefixCodeExistsTermAt
+      (Term.rename r oldCode)
+      (Term.rename r oldStep)
+      (Term.rename r newStep)
+      (Term.rename r bound).
+Proof.
+  intros r oldCode oldStep newStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaShiftPrefixCodeExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (** A target beta sequence whose zero entry is [head] and whose successor
     entries copy a strict prefix of a source beta sequence. *)
 Definition betaUnshiftPrefixTermAt

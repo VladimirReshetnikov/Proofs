@@ -555,6 +555,10 @@ open SetTheory
 #check @PA.Formula.betaShiftPrefixTermAt
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAt
 #check @PA.Formula.betaShiftPrefixCodeExistsTermAtBody
+#check @PA.Formula.subst_betaShiftPrefixTermAt
+#check @PA.Formula.rename_betaShiftPrefixTermAt
+#check @PA.Formula.subst_betaShiftPrefixCodeExistsTermAt
+#check @PA.Formula.rename_betaShiftPrefixCodeExistsTermAt
 #check @PA.Formula.betaUnshiftPrefixTermAt
 #check @PA.Formula.subst_betaUnshiftPrefixTermAt
 #check @PA.Formula.rename_betaUnshiftPrefixTermAt

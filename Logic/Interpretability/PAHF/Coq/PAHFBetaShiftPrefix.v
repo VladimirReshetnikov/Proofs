@@ -16,39 +16,14 @@ From PAHF Require Import PAHF PAHFProofCalculus PAHFOrdinalCode PAHFOrdinalCodeT
 Import ListNotations.
 Import PA PA.Term PA.Formula.
 
-(** Strict-prefix form of shifted beta coding.  For every [i < bound],
-    every old beta entry at [S i] is copied to index [i] of the new code. *)
-Definition betaShiftPrefixTermAt
-    (oldCode oldStep newCode newStep bound : term) : formula :=
-  pAll (pImp
-    (ltTermAt (tVar 0) (Term.rename S bound))
-    (pAll (pImp
-      (betaTermTermAt (tVar 0)
-        (Term.rename (fun n => n + 2) oldCode)
-        (Term.rename (fun n => n + 2) oldStep)
-        (tSucc (tVar 1)))
-      (betaTermTermAt (tVar 0)
-        (Term.rename (fun n => n + 2) newCode)
-        (Term.rename (fun n => n + 2) newStep)
-        (tVar 1))))).
+(* Compatibility aliases: the canonical definitions now live in [PA.Formula]. *)
+Definition betaShiftPrefixTermAt := PA.Formula.betaShiftPrefixTermAt.
 
-Definition betaShiftPrefixCodeExistsTermAt
-    (oldCode oldStep newStep bound : term) : formula :=
-  pEx (betaShiftPrefixTermAt
-    (Term.rename S oldCode)
-    (Term.rename S oldStep)
-    (tVar 0)
-    (Term.rename S newStep)
-    (Term.rename S bound)).
+Definition betaShiftPrefixCodeExistsTermAt :=
+  PA.Formula.betaShiftPrefixCodeExistsTermAt.
 
-Definition betaShiftPrefixCodeExistsTermAtBody
-    (oldCode oldStep newStep bound : term) : formula :=
-  betaShiftPrefixTermAt
-    (Term.rename S oldCode)
-    (Term.rename S oldStep)
-    (tVar 0)
-    (Term.rename S newStep)
-    (Term.rename S bound).
+Definition betaShiftPrefixCodeExistsTermAtBody :=
+  PA.Formula.betaShiftPrefixCodeExistsTermAtBody.
 
 (** A local endpoint-output wrapper.  It is intentionally local to this
     construction so the prefix layer does not depend on membership-tail
@@ -79,13 +54,8 @@ Lemma subst_betaShiftPrefixTermAt :
       (Term.subst sigma bound).
 Proof.
   intros sigma oldCode oldStep newCode newStep bound.
-  unfold betaShiftPrefixTermAt.
-  cbn [subst].
-  rewrite subst_ltTermAt.
-  rewrite !subst_betaTermTermAt.
-  repeat rewrite Term.subst_rename_succ_up.
-  rewrite !term_subst_up_up_rename_add_two.
-  reflexivity.
+  exact (PA.Formula.subst_betaShiftPrefixTermAt
+    sigma oldCode oldStep newCode newStep bound).
 Qed.
 
 Lemma rename_betaShiftPrefixTermAt :
@@ -100,10 +70,8 @@ Lemma rename_betaShiftPrefixTermAt :
       (Term.rename r bound).
 Proof.
   intros r oldCode oldStep newCode newStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaShiftPrefixTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaShiftPrefixTermAt
+    r oldCode oldStep newCode newStep bound).
 Qed.
 
 Lemma subst_betaShiftPrefixCodeExistsTermAt :
@@ -117,11 +85,8 @@ Lemma subst_betaShiftPrefixCodeExistsTermAt :
       (Term.subst sigma bound).
 Proof.
   intros sigma oldCode oldStep newStep bound.
-  unfold betaShiftPrefixCodeExistsTermAt.
-  cbn [subst].
-  rewrite subst_betaShiftPrefixTermAt.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_betaShiftPrefixCodeExistsTermAt
+    sigma oldCode oldStep newStep bound).
 Qed.
 
 Lemma rename_betaShiftPrefixCodeExistsTermAt :
@@ -135,10 +100,8 @@ Lemma rename_betaShiftPrefixCodeExistsTermAt :
       (Term.rename r bound).
 Proof.
   intros r oldCode oldStep newStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaShiftPrefixCodeExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaShiftPrefixCodeExistsTermAt
+    r oldCode oldStep newStep bound).
 Qed.
 
 Lemma subst_betaShiftSourceEntryExistsTermAt :
@@ -1413,6 +1376,7 @@ Proof.
   {
     apply BProv_ass.
     unfold E, prefixBody, betaShiftPrefixCodeExistsTermAtBody,
+      PA.Formula.betaShiftPrefixCodeExistsTermAtBody,
       oldCode1, oldStep1, last1, last2.
     simpl.
     repeat rewrite term_rename_succ_twice_add_two.
