@@ -20267,6 +20267,169 @@ Proof.
   reflexivity.
 Qed.
 
+(** A target beta sequence whose zero entry is [head] and whose successor
+    entries copy a strict prefix of a source beta sequence. *)
+Definition betaUnshiftPrefixTermAt
+    (sourceCode sourceStep targetCode targetStep bound : term) : formula :=
+  pAll (pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (pAll (pImp
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) sourceCode)
+        (Term.rename (fun n => n + 2) sourceStep)
+        (tVar 1))
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) targetCode)
+        (Term.rename (fun n => n + 2) targetStep)
+        (tSucc (tVar 1)))))).
+
+Definition betaPrependPrefixTermAt
+    (sourceCode sourceStep head targetCode targetStep bound : term) : formula :=
+  pAnd (betaTermTermAt head targetCode targetStep tZero)
+    (betaUnshiftPrefixTermAt
+      sourceCode sourceStep targetCode targetStep bound).
+
+Definition betaPrependPrefixCodeExistsTermAt
+    (sourceCode sourceStep head targetStep bound : term) : formula :=
+  pEx (betaPrependPrefixTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S targetStep)
+    (Term.rename S bound)).
+
+Definition betaPrependPrefixCodeExistsTermAtBody
+    (sourceCode sourceStep head targetStep bound : term) : formula :=
+  betaPrependPrefixTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S targetStep)
+    (Term.rename S bound).
+
+Lemma subst_betaUnshiftPrefixTermAt :
+  forall sigma sourceCode sourceStep targetCode targetStep bound,
+  subst sigma
+      (betaUnshiftPrefixTermAt
+        sourceCode sourceStep targetCode targetStep bound) =
+    betaUnshiftPrefixTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma targetCode)
+      (Term.subst sigma targetStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep targetCode targetStep bound.
+  unfold betaUnshiftPrefixTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite !subst_betaTermTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  rewrite !term_subst_up_up_rename_add_two.
+  reflexivity.
+Qed.
+
+Lemma rename_betaUnshiftPrefixTermAt :
+  forall r sourceCode sourceStep targetCode targetStep bound,
+  rename r
+      (betaUnshiftPrefixTermAt
+        sourceCode sourceStep targetCode targetStep bound) =
+    betaUnshiftPrefixTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r targetCode)
+      (Term.rename r targetStep)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep targetCode targetStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaUnshiftPrefixTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependPrefixTermAt :
+  forall sigma sourceCode sourceStep head targetCode targetStep bound,
+  subst sigma
+      (betaPrependPrefixTermAt
+        sourceCode sourceStep head targetCode targetStep bound) =
+    betaPrependPrefixTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma head)
+      (Term.subst sigma targetCode)
+      (Term.subst sigma targetStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep head targetCode targetStep bound.
+  unfold betaPrependPrefixTermAt.
+  cbn [subst].
+  rewrite subst_betaTermTermAt.
+  rewrite subst_betaUnshiftPrefixTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependPrefixTermAt :
+  forall r sourceCode sourceStep head targetCode targetStep bound,
+  rename r
+      (betaPrependPrefixTermAt
+        sourceCode sourceStep head targetCode targetStep bound) =
+    betaPrependPrefixTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r head)
+      (Term.rename r targetCode)
+      (Term.rename r targetStep)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep head targetCode targetStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependPrefixTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependPrefixCodeExistsTermAt :
+  forall sigma sourceCode sourceStep head targetStep bound,
+  subst sigma
+      (betaPrependPrefixCodeExistsTermAt
+        sourceCode sourceStep head targetStep bound) =
+    betaPrependPrefixCodeExistsTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma head)
+      (Term.subst sigma targetStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep head targetStep bound.
+  unfold betaPrependPrefixCodeExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaPrependPrefixTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependPrefixCodeExistsTermAt :
+  forall r sourceCode sourceStep head targetStep bound,
+  rename r
+      (betaPrependPrefixCodeExistsTermAt
+        sourceCode sourceStep head targetStep bound) =
+    betaPrependPrefixCodeExistsTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r head)
+      (Term.rename r targetStep)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep head targetStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependPrefixCodeExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (* Lean: BProv_Ax_s_betaTermTermAt_of_rem *)
 Lemma BProv_Ax_s_betaTermTermAt_of_rem :
   forall G (out code step idx modulus : term),

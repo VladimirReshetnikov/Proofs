@@ -351,49 +351,19 @@ Proof.
   exact (BProv_andI Ax_s G _ _ hbool heq).
 Qed.
 
-(** A target beta sequence whose zero entry is [head] and whose successor
-    entries copy a strict prefix of a source beta sequence. *)
-Definition betaUnshiftPrefixTermAt
-    (sourceCode sourceStep targetCode targetStep bound : term) : formula :=
-  pAll (pImp
-    (ltTermAt (tVar 0) (Term.rename S bound))
-    (pAll (pImp
-      (betaTermTermAt (tVar 0)
-        (Term.rename (fun n => n + 2) sourceCode)
-        (Term.rename (fun n => n + 2) sourceStep)
-        (tVar 1))
-      (betaTermTermAt (tVar 0)
-        (Term.rename (fun n => n + 2) targetCode)
-        (Term.rename (fun n => n + 2) targetStep)
-        (tSucc (tVar 1)))))).
-
-Definition betaPrependPrefixTermAt
-    (sourceCode sourceStep head targetCode targetStep bound : term) : formula :=
-  pAnd (betaTermTermAt head targetCode targetStep tZero)
-    (betaUnshiftPrefixTermAt
-      sourceCode sourceStep targetCode targetStep bound).
-
-Definition betaPrependPrefixCodeExistsTermAt
-    (sourceCode sourceStep head targetStep bound : term) : formula :=
-  pEx (betaPrependPrefixTermAt
-    (Term.rename S sourceCode)
-    (Term.rename S sourceStep)
-    (Term.rename S head)
-    (tVar 0)
-    (Term.rename S targetStep)
-    (Term.rename S bound)).
-
-Definition betaPrependPrefixCodeExistsTermAtBody
-    (sourceCode sourceStep head targetStep bound : term) : formula :=
-  betaPrependPrefixTermAt
-    (Term.rename S sourceCode)
-    (Term.rename S sourceStep)
-    (Term.rename S head)
-    (tVar 0)
-    (Term.rename S targetStep)
-    (Term.rename S bound).
-
 (* Compatibility aliases: the canonical definitions now live in [PA.Formula]. *)
+Definition betaUnshiftPrefixTermAt :=
+  PA.Formula.betaUnshiftPrefixTermAt.
+
+Definition betaPrependPrefixTermAt :=
+  PA.Formula.betaPrependPrefixTermAt.
+
+Definition betaPrependPrefixCodeExistsTermAt :=
+  PA.Formula.betaPrependPrefixCodeExistsTermAt.
+
+Definition betaPrependPrefixCodeExistsTermAtBody :=
+  PA.Formula.betaPrependPrefixCodeExistsTermAtBody.
+
 Definition betaPrependCodingStepTermAt :=
   PA.Formula.betaPrependCodingStepTermAt.
 
@@ -416,13 +386,8 @@ Lemma subst_betaUnshiftPrefixTermAt :
       (Term.subst sigma bound).
 Proof.
   intros sigma sourceCode sourceStep targetCode targetStep bound.
-  unfold betaUnshiftPrefixTermAt.
-  cbn [subst].
-  rewrite subst_ltTermAt.
-  rewrite !subst_betaTermTermAt.
-  repeat rewrite Term.subst_rename_succ_up.
-  rewrite !term_subst_up_up_rename_add_two.
-  reflexivity.
+  exact (PA.Formula.subst_betaUnshiftPrefixTermAt
+    sigma sourceCode sourceStep targetCode targetStep bound).
 Qed.
 
 Lemma rename_betaUnshiftPrefixTermAt :
@@ -438,10 +403,8 @@ Lemma rename_betaUnshiftPrefixTermAt :
       (Term.rename r bound).
 Proof.
   intros r sourceCode sourceStep targetCode targetStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaUnshiftPrefixTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaUnshiftPrefixTermAt
+    r sourceCode sourceStep targetCode targetStep bound).
 Qed.
 
 Lemma subst_betaPrependPrefixTermAt :
@@ -458,11 +421,8 @@ Lemma subst_betaPrependPrefixTermAt :
       (Term.subst sigma bound).
 Proof.
   intros sigma sourceCode sourceStep head targetCode targetStep bound.
-  unfold betaPrependPrefixTermAt.
-  cbn [subst].
-  rewrite subst_betaTermTermAt.
-  rewrite subst_betaUnshiftPrefixTermAt.
-  reflexivity.
+  exact (PA.Formula.subst_betaPrependPrefixTermAt
+    sigma sourceCode sourceStep head targetCode targetStep bound).
 Qed.
 
 Lemma rename_betaPrependPrefixTermAt :
@@ -479,10 +439,8 @@ Lemma rename_betaPrependPrefixTermAt :
       (Term.rename r bound).
 Proof.
   intros r sourceCode sourceStep head targetCode targetStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrependPrefixTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaPrependPrefixTermAt
+    r sourceCode sourceStep head targetCode targetStep bound).
 Qed.
 
 Lemma subst_betaPrependPrefixCodeExistsTermAt :
@@ -498,11 +456,8 @@ Lemma subst_betaPrependPrefixCodeExistsTermAt :
       (Term.subst sigma bound).
 Proof.
   intros sigma sourceCode sourceStep head targetStep bound.
-  unfold betaPrependPrefixCodeExistsTermAt.
-  cbn [subst].
-  rewrite subst_betaPrependPrefixTermAt.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_betaPrependPrefixCodeExistsTermAt
+    sigma sourceCode sourceStep head targetStep bound).
 Qed.
 
 Lemma rename_betaPrependPrefixCodeExistsTermAt :
@@ -518,10 +473,8 @@ Lemma rename_betaPrependPrefixCodeExistsTermAt :
       (Term.rename r bound).
 Proof.
   intros r sourceCode sourceStep head targetStep bound.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrependPrefixCodeExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaPrependPrefixCodeExistsTermAt
+    r sourceCode sourceStep head targetStep bound).
 Qed.
 
 Lemma subst_betaPrependCodingStepTermAt :
@@ -1427,8 +1380,7 @@ Proof.
       D sourceCode1 sourceStep1 head1 (tVar 0) targetStep1
       (tSucc bound1) hnext) as hex.
   unfold goal.
-  rewrite rename_betaPrependPrefixCodeExistsTermAt.
-  exact hex.
+  now rewrite rename_betaPrependPrefixCodeExistsTermAt.
 Qed.
 
 Lemma BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ_of_not_exists :
@@ -1504,8 +1456,7 @@ Proof.
       bound1 (tVar 0) hprefixD hsource hcommonD hlargeD)
     as hnext.
   unfold goal.
-  rewrite rename_betaPrependPrefixCodeExistsTermAt.
-  exact hnext.
+  now rewrite rename_betaPrependPrefixCodeExistsTermAt.
 Qed.
 
 Lemma BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ_of_current :
@@ -1612,8 +1563,7 @@ Proof.
       D sourceCode1 sourceStep1 head1 (tVar 0) targetStep1 bound1
       hprefix hcommonD hlargeD) as hnext.
   unfold goal.
-  rewrite rename_betaPrependPrefixCodeExistsTermAt.
-  exact hnext.
+  now rewrite rename_betaPrependPrefixCodeExistsTermAt.
 Qed.
 
 Lemma BProv_Ax_s_all_betaPrependPrefixCodeExistsTermAt_of_codingStep :
