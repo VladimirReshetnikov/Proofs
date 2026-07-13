@@ -20309,6 +20309,26 @@ Definition betaPrependPrefixCodeExistsTermAtBody
     (Term.rename S targetStep)
     (Term.rename S bound).
 
+(* Lean: betaPrependExistsTermAt *)
+Definition betaPrependExistsTermAt
+    (sourceCode sourceStep head bound : term) : formula :=
+  pEx (betaPrependPrefixCodeExistsTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S bound)).
+
+(* Lean: betaPrependExistsTermAtBody *)
+Definition betaPrependExistsTermAtBody
+    (sourceCode sourceStep head bound : term) : formula :=
+  betaPrependPrefixCodeExistsTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S bound).
+
 Lemma subst_betaUnshiftPrefixTermAt :
   forall sigma sourceCode sourceStep targetCode targetStep bound,
   subst sigma
@@ -20426,6 +20446,41 @@ Proof.
   intros r sourceCode sourceStep head targetStep bound.
   rewrite <- subst_var_rename.
   rewrite subst_betaPrependPrefixCodeExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependExistsTermAt :
+  forall sigma sourceCode sourceStep head bound,
+  subst sigma
+      (betaPrependExistsTermAt sourceCode sourceStep head bound) =
+    betaPrependExistsTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma head)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep head bound.
+  unfold betaPrependExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaPrependPrefixCodeExistsTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependExistsTermAt :
+  forall r sourceCode sourceStep head bound,
+  rename r
+      (betaPrependExistsTermAt sourceCode sourceStep head bound) =
+    betaPrependExistsTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r head)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep head bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependExistsTermAt.
   repeat rewrite term_subst_var_rename.
   reflexivity.
 Qed.

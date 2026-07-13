@@ -4069,6 +4069,27 @@ def betaPrependExistsTermAt
     (Term.var 0)
     (Term.rename Nat.succ bound))
 
+theorem subst_betaPrependExistsTermAt
+    (σ : Nat → Term) (sourceCode sourceStep head bound : Term) :
+    subst σ
+        (betaPrependExistsTermAt sourceCode sourceStep head bound) =
+      betaPrependExistsTermAt
+        (Term.subst σ sourceCode) (Term.subst σ sourceStep)
+        (Term.subst σ head) (Term.subst σ bound) := by
+  simp [betaPrependExistsTermAt,
+    subst_betaPrependPrefixCodeExistsTermAt, subst, Term.subst,
+    Term.upSubst, Term.subst_rename_succ_up]
+
+theorem rename_betaPrependExistsTermAt
+    (r : Nat → Nat) (sourceCode sourceStep head bound : Term) :
+    rename r
+        (betaPrependExistsTermAt sourceCode sourceStep head bound) =
+      betaPrependExistsTermAt
+        (Term.rename r sourceCode) (Term.rename r sourceStep)
+        (Term.rename r head) (Term.rename r bound) := by
+  rw [← subst_var_rename, subst_betaPrependExistsTermAt]
+  simp only [term_subst_var_rename]
+
 /-- Body exposed after opening the target-step witness of a beta prepend. -/
 def betaPrependExistsTermAtBody
     (sourceCode sourceStep head bound : Term) : Formula :=
@@ -33495,14 +33516,8 @@ theorem BProv_Ax_s_betaPrependExistsTermAt_of_entries
       (betaPrependExistsTermAt
         sourceCode1 sourceStep1 head1 finalBound1) :=
     BProv_Ax_s_betaPrependExistsTermAt_of_step hcode
-  simpa [goal, D, codingBody, sourceCode1, sourceStep1, head1,
-    finalBound1, betaPrependCodingStepExistsTermAtBody,
-    betaPrependExistsTermAt,
-    betaPrependPrefixCodeExistsTermAt,
-    betaPrependPrefixTermAt, betaUnshiftPrefixTermAt,
-    betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-    rename, Term.rename, SetTheory.up, Term.rename_comp,
-    Function.comp_def] using hex
+  simpa [goal, D, sourceCode1, sourceStep1, head1, finalBound1,
+    rename_betaPrependExistsTermAt] using hex
 
 /-- A bounded source halving trace supplies all data needed to prepend one
 new head step, including fresh target-step and target-code witnesses. -/

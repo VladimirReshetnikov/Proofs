@@ -568,6 +568,8 @@ open SetTheory
 #check @PA.Formula.rename_betaPrependPrefixCodeExistsTermAt
 #check @PA.Formula.betaPrependPrefixCodeExistsTermAtBody
 #check @PA.Formula.betaPrependExistsTermAt
+#check @PA.Formula.subst_betaPrependExistsTermAt
+#check @PA.Formula.rename_betaPrependExistsTermAt
 #check @PA.Formula.betaPrependExistsTermAtBody
 #check @PA.Formula.betaPrefixDividesTermAt
 #check @PA.Formula.subst_betaPrefixDividesTermAt

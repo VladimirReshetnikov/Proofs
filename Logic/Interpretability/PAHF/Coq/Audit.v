@@ -221,6 +221,8 @@ Check PA.Formula.betaUnshiftPrefixTermAt.
 Check PA.Formula.betaPrependPrefixTermAt.
 Check PA.Formula.betaPrependPrefixCodeExistsTermAt.
 Check PA.Formula.betaPrependPrefixCodeExistsTermAtBody.
+Check PA.Formula.betaPrependExistsTermAt.
+Check PA.Formula.betaPrependExistsTermAtBody.
 Check PA.Formula.subst_positiveCommonMultipleThroughTermAt.
 Check PA.Formula.rename_positiveCommonMultipleThroughTermAt.
 Check PA.Formula.subst_betaCodingStepTermAt.
@@ -235,6 +237,8 @@ Check PA.Formula.subst_betaPrependPrefixTermAt.
 Check PA.Formula.rename_betaPrependPrefixTermAt.
 Check PA.Formula.subst_betaPrependPrefixCodeExistsTermAt.
 Check PA.Formula.rename_betaPrependPrefixCodeExistsTermAt.
+Check PA.Formula.subst_betaPrependExistsTermAt.
+Check PA.Formula.rename_betaPrependExistsTermAt.
 Check PA.Formula.positiveCommonMultipleExistsTermAt.
 Check PA.Formula.positiveCommonMultipleExistsTermAtBody.
 Check PA.Formula.subst_positiveCommonMultipleExistsTermAt.
