@@ -96,6 +96,7 @@ Check PA.Formula.iterUpRenaming.
 Check PA.Formula.iterTermRenameSucc.
 Check PA.Formula.term_rename_iterUpRenaming_iterTermRenameSucc.
 Check PA.Formula.term_rename_add_eq_iterTermRenameSucc.
+Check PA.Formula.term_rename_iterUpRenaming_rename_add.
 Check PA.Formula.term_rename_eq_iterTermRenameSucc.
 Check PA.Formula.iterUpRenaming_add.
 Check PA.Formula.iterUpSubst.
@@ -449,6 +450,11 @@ Check PA.Formula.betaShiftTailExistsTermAtOpenedContext.
 Check PA.Formula.betaShiftTailExistsTermAt_nat.
 Check PA.Formula.betaShiftTailThroughConstAt.
 Check PA.Formula.betaShiftTailThroughConstAt_nat.
+Check PA.Formula.rename_betaShiftTailThroughTermAt.
+Check PA.Formula.rename_betaShiftTailExistsTermAt.
+Check PA.Formula.rename_betaShiftTailThroughConstAt.
+Check PAHFBetaShiftPrefix.rename_S_betaShiftTailExistsTermAt_prefix.
+Check PAHFMembershipTail.rename_S_betaShiftTailThroughTermAt.
 Check PA.Formula.betaDiv2BitTermAt.
 Check PA.Formula.betaDiv2BitTermAt_nat.
 Check PA.Formula.betaDiv2BitOneTermExAt.

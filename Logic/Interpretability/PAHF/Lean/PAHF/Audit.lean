@@ -103,6 +103,7 @@ open SetTheory
 #check @PA.Formula.iterUpRenaming_add
 #check @PA.Formula.term_rename_iterUpRenaming_iterTermRenameSucc
 #check @PA.Formula.term_rename_add_eq_iterTermRenameSucc
+#check @PA.Formula.term_rename_iterUpRenaming_rename_add
 #check @PA.Formula.term_rename_eq_iterTermRenameSucc
 #check @PA.Formula.term_rename_up_succ_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_up_up_succ
@@ -1502,6 +1503,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_strictHighOddOpenedWitnessSuccLowMem_opened_code_step_steps
 #check @PA.Formula.strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula
 #check PA.Formula.betaShiftTailThroughTermAt
+#check @PA.Formula.rename_betaShiftTailThroughTermAt
+#check @PA.Formula.rename_betaShiftTailExistsTermAt
+#check @PA.Formula.rename_betaShiftTailThroughConstAt
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_betaAt_eq_index
 #check @PA.Formula.BProv_Ax_s_betaTermTermAt_of_subst_betaAt
 #check @PA.Formula.BProv_Ax_s_subst_betaAt_of_betaTermTermAt

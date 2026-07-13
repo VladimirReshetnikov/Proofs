@@ -1298,38 +1298,8 @@ Lemma rename_S_betaShiftTailExistsTermAt_prefix :
     (S oldCode) (S oldStep) (Term.rename S last).
 Proof.
   intros oldCode oldStep last.
-  unfold betaShiftTailExistsTermAt, betaShiftTailThroughTermAt,
-    betaTermTermAt, remTermTermAt, ltTermAt,
-    betaModTermTerm, leTermAt.
-  simpl.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  repeat rewrite Term.rename_comp.
-  assert (hup4 : forall n,
-      Fol.up (Fol.up (Fol.up (Fol.up S))) (n + 4) = S n + 4).
-  {
-    exact (iterUpRenaming_add 4 (fun n => S n)).
-  }
-  assert (hlast :
-      Term.rename
-        (fun n => Fol.up (Fol.up (Fol.up (Fol.up S)))
-          (S (S (n + 2)))) last =
-      Term.rename (fun n => S (S (S n + 2))) last).
-  {
-    apply Term.rename_ext. intro n.
-    replace (S (S (n + 2))) with (n + 4) by lia.
-    rewrite hup4. lia.
-  }
-  rewrite hlast.
-  assert (hshift : forall n,
-      Fol.up (Fol.up (Fol.up (Fol.up S))) (n + 2 + 2) =
-      S (n + 2 + 2)).
-  {
-    intro n.
-    replace (n + 2 + 2) with (n + 4) by lia.
-    rewrite hup4. lia.
-  }
-  rewrite (hshift oldStep), (hshift oldCode).
-  reflexivity.
+  exact (PA.Formula.rename_betaShiftTailExistsTermAt
+    S oldCode oldStep last).
 Qed.
 
 Theorem BProv_Ax_s_betaShiftTailExistsTermAt :

@@ -1366,6 +1366,23 @@ theorem term_rename_add_eq_iterTermRenameSucc (k : Nat) (t : Term) :
       rw [hrename, ih]
       simp [iterTermRenameSucc]
 
+/-- Renaming below `k` binders commutes with shifting a term through those
+binders. -/
+theorem term_rename_iterUpRenaming_rename_add
+    (k : Nat) (r : Nat → Nat) (t : Term) :
+    Term.rename (iterUpRenaming k r)
+        (Term.rename (fun n => n + k) t) =
+      Term.rename (fun n => n + k) (Term.rename r t) := by
+  calc
+    _ = Term.rename (iterUpRenaming k r)
+        (iterTermRenameSucc k t) :=
+      congrArg (Term.rename (iterUpRenaming k r))
+        (term_rename_add_eq_iterTermRenameSucc k t)
+    _ = iterTermRenameSucc k (Term.rename r t) :=
+      term_rename_iterUpRenaming_iterTermRenameSucc k r t
+    _ = _ :=
+      (term_rename_add_eq_iterTermRenameSucc k (Term.rename r t)).symm
+
 /-- Extensional form of `term_rename_add_eq_iterTermRenameSucc`, for the
 syntactically varied fixed shifts that arise in opened formulas. -/
 theorem term_rename_eq_iterTermRenameSucc
@@ -4240,6 +4257,81 @@ def betaShiftTailThroughConstAt
       (betaTermTermAt (Term.var 0)
         (Term.var (newCode+2)) (Term.var (newStep+2))
         (Term.var 1)))))
+
+theorem rename_betaShiftTailThroughTermAt
+    (r : Nat → Nat) (oldCode oldStep : Nat)
+    (newCode newStep last : Term) :
+    rename r
+        (betaShiftTailThroughTermAt
+          oldCode oldStep newCode newStep last) =
+      betaShiftTailThroughTermAt
+        (r oldCode) (r oldStep)
+        (Term.rename r newCode) (Term.rename r newStep)
+        (Term.rename r last) := by
+  have hslot (n : Nat) :
+      SetTheory.up (SetTheory.up r) (n + 2) = r n + 2 := by
+    change iterUpRenaming 2 r (n + 2) = r n + 2
+    exact iterUpRenaming_add 2 r n
+  have hshift (t : Term) :
+      Term.rename (SetTheory.up (SetTheory.up r))
+          (Term.rename (fun n => n + 2) t) =
+        Term.rename (fun n => n + 2) (Term.rename r t) := by
+    change Term.rename (iterUpRenaming 2 r)
+        (Term.rename (fun n => n + 2) t) =
+      Term.rename (fun n => n + 2) (Term.rename r t)
+    exact term_rename_iterUpRenaming_rename_add 2 r t
+  unfold betaShiftTailThroughTermAt
+  simp only [rename]
+  rw [rename_leTermAt]
+  rw [rename_betaTermTermAt, rename_betaTermTermAt]
+  simp only [Term.rename]
+  rw [term_rename_up_rename_succ r last]
+  rw [hslot oldCode, hslot oldStep, hshift newCode, hshift newStep]
+  simp only [SetTheory.up]
+
+theorem rename_betaShiftTailExistsTermAt
+    (r : Nat → Nat) (oldCode oldStep : Nat) (last : Term) :
+    rename r (betaShiftTailExistsTermAt oldCode oldStep last) =
+      betaShiftTailExistsTermAt
+        (r oldCode) (r oldStep) (Term.rename r last) := by
+  have hslot (n : Nat) :
+      SetTheory.up (SetTheory.up r) (n + 2) = r n + 2 := by
+    change iterUpRenaming 2 r (n + 2) = r n + 2
+    exact iterUpRenaming_add 2 r n
+  have hshift (t : Term) :
+      Term.rename (SetTheory.up (SetTheory.up r))
+          (Term.rename (fun n => n + 2) t) =
+        Term.rename (fun n => n + 2) (Term.rename r t) := by
+    change Term.rename (iterUpRenaming 2 r)
+        (Term.rename (fun n => n + 2) t) =
+      Term.rename (fun n => n + 2) (Term.rename r t)
+    exact term_rename_iterUpRenaming_rename_add 2 r t
+  unfold betaShiftTailExistsTermAt
+  simp only [rename]
+  rw [rename_betaShiftTailThroughTermAt]
+  simp only [Term.rename]
+  rw [hslot oldCode, hslot oldStep, hshift last]
+  simp only [SetTheory.up]
+
+theorem rename_betaShiftTailThroughConstAt
+    (r : Nat → Nat) (oldCode oldStep newCode newStep last : Nat) :
+    rename r
+        (betaShiftTailThroughConstAt
+          oldCode oldStep newCode newStep last) =
+      betaShiftTailThroughConstAt
+        (r oldCode) (r oldStep) (r newCode) (r newStep) last := by
+  have hslot (n : Nat) :
+      SetTheory.up (SetTheory.up r) (n + 2) = r n + 2 := by
+    change iterUpRenaming 2 r (n + 2) = r n + 2
+    exact iterUpRenaming_add 2 r n
+  unfold betaShiftTailThroughConstAt
+  simp only [rename]
+  unfold leConstAt
+  simp only [rename]
+  rw [rename_betaTermTermAt, rename_betaTermTermAt]
+  simp only [Term.rename, Term.rename_numeral]
+  rw [hslot oldCode, hslot oldStep, hslot newCode, hslot newStep]
+  simp only [SetTheory.up]
 
 /-- Closed-bound variant of `betaDiv2StepsThroughAt`: every adjacent pair up to
 the standard numeral `last` in a beta-coded sequence is one binary-halving step.
@@ -25659,10 +25751,7 @@ theorem BProv_Ax_s_betaShiftTailThroughConstAt_succ_of_eqConst_entry
             (betaShiftTailThroughConstAt oldCode oldStep
               newCode newStep n)) :=
         BProv_context_two hprevRen
-      simpa [C, leHyp, betaShiftTailThroughConstAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leConstAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        term_rename_up_succ_rename_succ, Nat.add_assoc] using hctx
+      simpa [C, leHyp, rename_betaShiftTailThroughConstAt] using hctx
     have himpRaw := BProv_allE (B := Ax_s)
       (G := leConstAt 0 n :: C) (t := Term.var 0) hprevAll
     have himp : BProv Ax_s (leConstAt 0 n :: C)
@@ -25980,11 +26069,8 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_numeral_of_eqConst_entries
                 (betaShiftTailThroughTermAt oldCode oldStep
                   newCodeTerm newStepTerm (Term.numeral n))) :=
             BProv_context_two hprevRen
-          simpa [C, leHyp, betaShiftTailThroughTermAt,
-            betaTermTermAt, remTermTermAt, ltTermAt, betaModTermTerm,
-            leTermAt, rename, Term.rename, Term.rename_numeral,
-            SetTheory.up, Term.rename_comp,
-            term_rename_up_succ_rename_succ, Nat.add_assoc] using hctx
+          simpa [C, leHyp, rename_betaShiftTailThroughTermAt,
+            Term.rename_numeral] using hctx
         have himpRaw := BProv_allE (B := Ax_s)
           (G := leConstAt 0 n :: C) (t := Term.var 0) hprevAll
         have himp : BProv Ax_s (leConstAt 0 n :: C)
@@ -26119,10 +26205,7 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_of_eq_last
           (betaShiftTailThroughTermAt oldCode oldStep
             newCode newStep oldLast)) :=
       BProv_context_cons (B := Ax_s) htailRen
-    simpa [C, leHyp, betaShiftTailThroughTermAt, betaTermTermAt,
-      remTermTermAt, ltTermAt, betaModTermTerm, leTermAt, rename,
-      Term.rename, SetTheory.up, Term.rename_comp,
-      term_rename_up_succ_rename_succ, Nat.add_assoc] using hctx
+    simpa [C, leHyp, rename_betaShiftTailThroughTermAt] using hctx
   have himpRaw := BProv_allE (B := Ax_s) (G := C)
     (t := Term.var 0) htailC
   have himp : BProv Ax_s C (imp oldLe witness) := by
@@ -34547,11 +34630,8 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt
           (betaShiftTailExistsTermAt (oldCode + 2) (oldStep + 2)
             last2) :=
         BProv_Ax_s_betaShiftTailExistsTermAt_of_through hthrough
-      simpa [goal, last2, betaShiftTailExistsTermAt,
-        betaShiftTailThroughTermAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def, Nat.add_assoc] using htailEx
+      simpa [goal, last2, rename_betaShiftTailExistsTermAt,
+        Term.rename_comp, Function.comp_def] using htailEx
     exact BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_elim_opened
       (G := D) (oldCode := oldCode1) (oldStep := oldStep1)
       (newStep := Term.var 0) (bound := Term.succ last1)
@@ -34913,10 +34993,8 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
           (betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
             newCode2 newStep2 (Term.succ last2)) := by
         simpa [C, G1, newCode2, newStep2, last2,
-          betaShiftTailThroughTermAt, betaTermTermAt, remTermTermAt,
-          ltTermAt, betaModTermTerm, leTermAt, rename, Term.rename,
-          SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
-          List.map_map, Function.comp_def] using
+          rename_betaShiftTailThroughTermAt, Term.rename, Term.rename_comp,
+          List.map_map, Function.comp_def, Nat.add_assoc] using
           BProv_context_two htailRen2
       have hleRen1 : BProv Ax_s (G.map (rename Nat.succ))
           (rename Nat.succ (leTermAt idxTerm lastTerm)) :=

@@ -7703,6 +7703,18 @@ Proof.
     intro n; lia.
 Qed.
 
+(* Lifted renaming commutes directly with an additive variable shift. *)
+Lemma term_rename_iterUpRenaming_rename_add :
+  forall k (r : nat -> nat) t,
+  Term.rename (iterUpRenaming k r)
+      (Term.rename (fun n => n + k) t) =
+    Term.rename (fun n => n + k) (Term.rename r t).
+Proof.
+  intros k r t.
+  rewrite !term_rename_add_eq_iterTermRenameSucc.
+  apply term_rename_iterUpRenaming_iterTermRenameSucc.
+Qed.
+
 (* Normalize any pointwise spelling of the same additive shift. *)
 Lemma term_rename_eq_iterTermRenameSucc :
   forall k t (r : nat -> nat),
@@ -25373,6 +25385,73 @@ Definition betaShiftTailThroughConstAt
       (betaTermTermAt (tVar 0)
         (tVar (newCode + 2)) (tVar (newStep + 2))
         (tVar 1))))).
+
+Lemma rename_betaShiftTailThroughTermAt :
+  forall r oldCode oldStep newCode newStep last,
+  rename r
+      (betaShiftTailThroughTermAt
+        oldCode oldStep newCode newStep last) =
+    betaShiftTailThroughTermAt
+      (r oldCode) (r oldStep)
+      (Term.rename r newCode)
+      (Term.rename r newStep)
+      (Term.rename r last).
+Proof.
+  intros r oldCode oldStep newCode newStep last.
+  unfold betaShiftTailThroughTermAt.
+  cbn [rename].
+  rewrite rename_leTermAt.
+  rewrite !rename_betaTermTermAt.
+  simpl.
+  rewrite term_rename_up_rename_succ.
+  fold (iterUpRenaming 2 r).
+  rewrite (iterUpRenaming_add 2 r oldCode).
+  rewrite (iterUpRenaming_add 2 r oldStep).
+  repeat rewrite term_rename_iterUpRenaming_rename_add.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftTailExistsTermAt :
+  forall r oldCode oldStep last,
+  rename r (betaShiftTailExistsTermAt oldCode oldStep last) =
+    betaShiftTailExistsTermAt
+      (r oldCode) (r oldStep) (Term.rename r last).
+Proof.
+  intros r oldCode oldStep last.
+  unfold betaShiftTailExistsTermAt.
+  cbn [rename].
+  rewrite rename_betaShiftTailThroughTermAt.
+  simpl.
+  fold (iterUpRenaming 2 r).
+  rewrite (iterUpRenaming_add 2 r oldCode).
+  rewrite (iterUpRenaming_add 2 r oldStep).
+  rewrite term_rename_iterUpRenaming_rename_add.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftTailThroughConstAt :
+  forall r oldCode oldStep newCode newStep last,
+  rename r
+      (betaShiftTailThroughConstAt
+        oldCode oldStep newCode newStep last) =
+    betaShiftTailThroughConstAt
+      (r oldCode) (r oldStep) (r newCode) (r newStep) last.
+Proof.
+  intros r oldCode oldStep newCode newStep last.
+  unfold betaShiftTailThroughConstAt.
+  cbn [rename].
+  unfold leConstAt.
+  cbn [rename].
+  rewrite !rename_betaTermTermAt.
+  simpl.
+  rewrite Term.rename_numeral.
+  fold (iterUpRenaming 2 r).
+  rewrite (iterUpRenaming_add 2 r oldCode).
+  rewrite (iterUpRenaming_add 2 r oldStep).
+  rewrite (iterUpRenaming_add 2 r newCode).
+  rewrite (iterUpRenaming_add 2 r newStep).
+  reflexivity.
+Qed.
 
 Definition betaDiv2StepsThroughConstAt
     (code step last : nat) : formula :=
