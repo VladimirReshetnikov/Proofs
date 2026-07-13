@@ -211,6 +211,11 @@ Check PA.Formula.commonMultipleThroughTermAt.
 Check PA.Formula.commonMultipleExistsTermAt.
 Check PA.Formula.commonMultipleExistsTermAtBody.
 Check PA.Formula.positiveCommonMultipleThroughTermAt.
+Check PA.Formula.betaCodingStepTermAt.
+Check PA.Formula.subst_positiveCommonMultipleThroughTermAt.
+Check PA.Formula.rename_positiveCommonMultipleThroughTermAt.
+Check PA.Formula.subst_betaCodingStepTermAt.
+Check PA.Formula.rename_betaCodingStepTermAt.
 Check PA.Formula.positiveCommonMultipleExistsTermAt.
 Check PA.Formula.positiveCommonMultipleExistsTermAtBody.
 Check PA.Formula.crtInverseTermAt.
@@ -364,6 +369,9 @@ Check PA.Formula.BProv_Ax_s_betaTermTermAt_zero_of_eq_step_zero.
 Check PA.Formula.BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero.
 Check PA.Formula.betaModTermTerm_nat.
 Check PA.Formula.betaPrefixDividesTermAt.
+Check PA.Formula.subst_betaPrefixDividesTermAt.
+Check PA.Formula.rename_betaPrefixDividesTermAt.
+Check PA.Formula.rename_succ_twice_betaPrefixDividesTermAt.
 Check PA.Formula.betaPrefixCRTAccumulatorTermAt.
 Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAt.
 Check PA.Formula.betaPrefixCRTAccumulatorExistsTermAtBody.

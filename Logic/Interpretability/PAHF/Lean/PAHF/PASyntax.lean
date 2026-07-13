@@ -2887,6 +2887,23 @@ def positiveCommonMultipleThroughTermAt
   and (ltTermAt Term.zero multiple)
     (commonMultipleThroughTermAt bound multiple)
 
+theorem subst_positiveCommonMultipleThroughTermAt
+    (σ : Nat → Term) (bound multiple : Term) :
+    subst σ (positiveCommonMultipleThroughTermAt bound multiple) =
+      positiveCommonMultipleThroughTermAt
+        (Term.subst σ bound) (Term.subst σ multiple) := by
+  simp [positiveCommonMultipleThroughTermAt, subst, subst_ltTermAt,
+    Term.subst,
+    subst_commonMultipleThroughTermAt]
+
+theorem rename_positiveCommonMultipleThroughTermAt
+    (r : Nat → Nat) (bound multiple : Term) :
+    rename r (positiveCommonMultipleThroughTermAt bound multiple) =
+      positiveCommonMultipleThroughTermAt
+        (Term.rename r bound) (Term.rename r multiple) := by
+  rw [← subst_var_rename, subst_positiveCommonMultipleThroughTermAt]
+  simp only [term_subst_var_rename]
+
 /-- Existence of a positive common multiple through a term bound. -/
 def positiveCommonMultipleExistsTermAt (bound : Term) : Formula :=
   ex (positiveCommonMultipleThroughTermAt
@@ -2904,6 +2921,25 @@ def betaCodingStepTermAt
     (bound sourceCode step : Term) : Formula :=
   and (commonMultipleThroughTermAt bound step)
     (leTermAt (Term.succ sourceCode) step)
+
+theorem subst_betaCodingStepTermAt
+    (σ : Nat → Term) (bound sourceCode step : Term) :
+    subst σ (betaCodingStepTermAt bound sourceCode step) =
+      betaCodingStepTermAt
+        (Term.subst σ bound) (Term.subst σ sourceCode)
+        (Term.subst σ step) := by
+  simp [betaCodingStepTermAt, subst, subst_commonMultipleThroughTermAt,
+    Term.subst,
+    subst_leTermAt]
+
+theorem rename_betaCodingStepTermAt
+    (r : Nat → Nat) (bound sourceCode step : Term) :
+    rename r (betaCodingStepTermAt bound sourceCode step) =
+      betaCodingStepTermAt
+        (Term.rename r bound) (Term.rename r sourceCode)
+        (Term.rename r step) := by
+  rw [← subst_var_rename, subst_betaCodingStepTermAt]
+  simp only [term_subst_var_rename]
 
 /-- Existence of a fixed beta-coding step. -/
 def betaCodingStepExistsTermAt
@@ -3125,6 +3161,36 @@ def betaPrefixDividesTermAt
     (dvdTermTermAt
       (betaModTermTerm (Term.rename Nat.succ step) (Term.var 0))
       (Term.rename Nat.succ product)))
+
+theorem subst_betaPrefixDividesTermAt
+    (σ : Nat → Term) (step bound product : Term) :
+    subst σ (betaPrefixDividesTermAt step bound product) =
+      betaPrefixDividesTermAt
+        (Term.subst σ step) (Term.subst σ bound)
+        (Term.subst σ product) := by
+  simp [betaPrefixDividesTermAt, betaModTermTerm,
+    subst_ltTermAt, subst_dvdTermTermAt, subst, Term.subst,
+    Term.upSubst, Term.subst_rename_succ_up]
+
+theorem rename_betaPrefixDividesTermAt
+    (r : Nat → Nat) (step bound product : Term) :
+    rename r (betaPrefixDividesTermAt step bound product) =
+      betaPrefixDividesTermAt
+        (Term.rename r step) (Term.rename r bound)
+        (Term.rename r product) := by
+  rw [← subst_var_rename, subst_betaPrefixDividesTermAt]
+  simp only [term_subst_var_rename]
+
+theorem rename_succ_twice_betaPrefixDividesTermAt
+    (step bound product : Term) :
+    rename Nat.succ (rename Nat.succ
+        (betaPrefixDividesTermAt step bound product)) =
+      betaPrefixDividesTermAt
+        (Term.rename (fun n => n + 2) step)
+        (Term.rename (fun n => n + 2) bound)
+        (Term.rename (fun n => n + 2) product) := by
+  rw [rename_betaPrefixDividesTermAt, rename_betaPrefixDividesTermAt]
+  simp only [Term.rename_comp]
 
 def betaAt (out code step idx : Nat) : Formula :=
   ex (and
@@ -17000,16 +17066,9 @@ theorem BProv_Ax_s_positiveCommonMultipleExistsTermAt_of_through
       (subst (instTerm multiple)
         (positiveCommonMultipleThroughTermAt
           (Term.rename Nat.succ bound) (Term.var 0))) := by
-    simpa [positiveCommonMultipleThroughTermAt,
-      commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
-      subst, instTerm, Term.subst, Term.upSubst, Term.rename,
-      Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      Term.rename_comp, term_rename_up_succ_rename_succ,
-      Function.comp_def] using hthrough
+    simpa [subst_positiveCommonMultipleThroughTermAt,
+      instTerm, Term.subst,
+      term_subst_instTerm_rename_succ] using hthrough
   exact BProv_exI (B := Ax_s) (G := G)
     (a := positiveCommonMultipleThroughTermAt
       (Term.rename Nat.succ bound) (Term.var 0))
@@ -17203,10 +17262,8 @@ theorem BProv_Ax_s_betaPrefixAgreementTermAt_crtExtend
       have hren := BProv_rename_succ_context_cons_of_sentences
         (B := Ax_s) (G := G) (a := outerAntecedent)
         Ax_s_sentences hprefix
-      simpa [C, step1, bound1, product1, betaPrefixDividesTermAt,
-        betaModTermTerm, dvdTermTermAt, ltTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def] using hren
+      simpa [C, step1, bound1, product1,
+        rename_betaPrefixDividesTermAt] using hren
     have hdvd : BProv Ax_s C
         (dvdTermTermAt
           (betaModTermTerm step1 (Term.var 0)) product1) :=
@@ -17405,10 +17462,8 @@ theorem BProv_Ax_s_betaCodeExtensionExistsTermAt_of_prefix_inverse
       (B := Ax_s) (G := G) (outer := quotEx) (inner := certBody)
       Ax_s_sentences hprefix
     simpa [D, crtInverseExistsTermAtOpenedContext,
-      step2, target2, product2, betaPrefixDividesTermAt,
-      betaModTermTerm, dvdTermTermAt, ltTermAt,
-      rename, Term.rename, SetTheory.up, Term.rename_comp,
-      Function.comp_def, Nat.add_assoc] using h
+      step2, target2, product2,
+      rename_succ_twice_betaPrefixDividesTermAt] using h
   have hboundD : BProv Ax_s D
       (ltTermAt newOut2 modulus2) := by
     have h := BProv_lift_two_contexts_of_sentences
@@ -17514,10 +17569,8 @@ theorem BProv_Ax_s_betaPrefixDividesTermAt_succ
       have hren := BProv_rename_of_sentences
         (B := Ax_s) Ax_s_sentences
         hprefix Nat.succ
-      simpa [step1, bound1, product1, betaPrefixDividesTermAt,
-        betaModTermTerm, dvdTermTermAt, ltTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def] using hren
+      simpa [step1, bound1, product1,
+        rename_betaPrefixDividesTermAt] using hren
     have hltBranch : BProv Ax_s
         (ltTermAt (Term.var 0) bound1 :: C) consequent := by
       let D : List Formula := ltTermAt (Term.var 0) bound1 :: C
@@ -20138,16 +20191,10 @@ theorem BProv_Ax_s_betaCodingStepExistsTermAt
   have hpositiveEx : BProv Ax_s G
       (positiveCommonMultipleExistsTermAt bound) := by
     simpa [positiveCommonMultipleExistsTermAt,
-      positiveCommonMultipleThroughTermAt,
-      commonMultipleThroughTermAt, dvdTermTermAt,
-      ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
-      Term.rename, Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      Term.rename_comp, term_rename_up_succ_rename_succ,
-      Function.comp_def] using hpositiveRaw
+      subst_positiveCommonMultipleThroughTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using hpositiveRaw
   let goal : Formula := betaCodingStepExistsTermAt bound sourceCode
   refine BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened
     (G := G) (bound := bound) (target := goal) ?_ hpositiveEx
@@ -20286,16 +20333,10 @@ theorem BProv_Ax_s_betaPrependCodingStepExistsTermAt
   have hpositiveEx : BProv Ax_s G
       (positiveCommonMultipleExistsTermAt bound) := by
     simpa [positiveCommonMultipleExistsTermAt,
-      positiveCommonMultipleThroughTermAt,
-      commonMultipleThroughTermAt, dvdTermTermAt,
-      ltTermAt, subst, instTerm, Term.subst, Term.upSubst,
-      Term.rename, Term.subst_rename_succ_up,
-      term_subst_instTerm_rename_succ,
-      term_subst_instTerm_rename_two_succ,
-      term_subst_upSubst_instTerm_rename_two_succ,
-      term_subst_up_up_instTerm_rename_three_succ,
-      Term.rename_comp, term_rename_up_succ_rename_succ,
-      Function.comp_def] using hpositiveRaw
+      subst_positiveCommonMultipleThroughTermAt,
+      subst, instTerm, Term.subst, Term.upSubst,
+      Term.subst_rename_succ_up,
+      term_subst_instTerm_rename_succ] using hpositiveRaw
   let goal : Formula :=
     betaPrependCodingStepExistsTermAt bound sourceCode head
   refine BProv_Ax_s_positiveCommonMultipleExistsTermAt_elim_opened
@@ -32856,10 +32897,7 @@ theorem BProv_Ax_s_all_betaShiftPrefixCodeExistsTermAt_of_codingStep
       have hraw := BProv_context_cons (B := Ax_s)
         (a := phi) hcodingRen
       simpa [C, oldCode1, newStep1, finalBound1,
-        betaCodingStepTermAt, commonMultipleThroughTermAt,
-        dvdTermTermAt, ltTermAt, leTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def] using hraw
+        rename_betaCodingStepTermAt] using hraw
     have hcodingD := BProv_context_cons (B := Ax_s)
       (a := leSucc) hcodingC
     have hcommonFinal : BProv Ax_s D
@@ -33068,10 +33106,7 @@ theorem BProv_Ax_s_all_betaUnshiftPrefixCodeExistsTermAt_of_codingStep
       have hraw := BProv_context_cons (B := Ax_s)
         (a := phi) hcodingRen
       simpa [C, sourceCode1, targetStep1, finalBound1,
-        betaCodingStepTermAt, commonMultipleThroughTermAt,
-        dvdTermTermAt, ltTermAt, leTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def] using hraw
+        rename_betaCodingStepTermAt] using hraw
     have hcodingD := BProv_context_cons (B := Ax_s)
       (a := leSucc) hcodingC
     have hcommonFinal : BProv Ax_s D

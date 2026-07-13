@@ -10260,6 +10260,69 @@ Definition positiveCommonMultipleThroughTermAt
   pAnd (ltTermAt tZero multiple)
     (commonMultipleThroughTermAt bound multiple).
 
+(* Lean: betaCodingStepTermAt *)
+Definition betaCodingStepTermAt
+    (bound sourceCode step : term) : formula :=
+  pAnd
+    (commonMultipleThroughTermAt bound step)
+    (leTermAt (tSucc sourceCode) step).
+
+Lemma subst_positiveCommonMultipleThroughTermAt :
+  forall sigma bound multiple,
+  subst sigma (positiveCommonMultipleThroughTermAt bound multiple) =
+    positiveCommonMultipleThroughTermAt
+      (Term.subst sigma bound) (Term.subst sigma multiple).
+Proof.
+  intros sigma bound multiple.
+  unfold positiveCommonMultipleThroughTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite subst_commonMultipleThroughTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_positiveCommonMultipleThroughTermAt :
+  forall r bound multiple,
+  rename r (positiveCommonMultipleThroughTermAt bound multiple) =
+    positiveCommonMultipleThroughTermAt
+      (Term.rename r bound) (Term.rename r multiple).
+Proof.
+  intros r bound multiple.
+  rewrite <- subst_var_rename.
+  rewrite subst_positiveCommonMultipleThroughTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaCodingStepTermAt : forall sigma bound sourceCode step,
+  subst sigma (betaCodingStepTermAt bound sourceCode step) =
+    betaCodingStepTermAt
+      (Term.subst sigma bound)
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma step).
+Proof.
+  intros sigma bound sourceCode step.
+  unfold betaCodingStepTermAt.
+  cbn [subst].
+  rewrite subst_commonMultipleThroughTermAt.
+  rewrite subst_leTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_betaCodingStepTermAt : forall r bound sourceCode step,
+  rename r (betaCodingStepTermAt bound sourceCode step) =
+    betaCodingStepTermAt
+      (Term.rename r bound)
+      (Term.rename r sourceCode)
+      (Term.rename r step).
+Proof.
+  intros r bound sourceCode step.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaCodingStepTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (* Lean: positiveCommonMultipleExistsTermAt *)
 Definition positiveCommonMultipleExistsTermAt (bound : term) : formula :=
   pEx (positiveCommonMultipleThroughTermAt
@@ -19904,6 +19967,56 @@ Definition betaPrefixDividesTermAt
       (betaModTermTerm (Term.rename S step) (tVar 0))
       (Term.rename S product))).
 
+Lemma subst_betaPrefixDividesTermAt : forall sigma step bound product,
+  subst sigma (betaPrefixDividesTermAt step bound product) =
+    betaPrefixDividesTermAt
+      (Term.subst sigma step)
+      (Term.subst sigma bound)
+      (Term.subst sigma product).
+Proof.
+  intros sigma step bound product.
+  unfold betaPrefixDividesTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite subst_dvdTermTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrefixDividesTermAt : forall r step bound product,
+  rename r (betaPrefixDividesTermAt step bound product) =
+    betaPrefixDividesTermAt
+      (Term.rename r step)
+      (Term.rename r bound)
+      (Term.rename r product).
+Proof.
+  intros r step bound product.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrefixDividesTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma rename_succ_twice_betaPrefixDividesTermAt :
+  forall step bound product,
+  rename S (rename S (betaPrefixDividesTermAt step bound product)) =
+    betaPrefixDividesTermAt
+      (Term.rename (fun n => n + 2) step)
+      (Term.rename (fun n => n + 2) bound)
+      (Term.rename (fun n => n + 2) product).
+Proof.
+  intros step bound product.
+  rewrite !rename_betaPrefixDividesTermAt.
+  repeat rewrite Term.rename_comp.
+  assert (hrename : forall t,
+      Term.rename (fun n => S (S n)) t =
+        Term.rename (fun n => n + 2) t).
+  { intro t. apply Term.rename_ext. intro n. lia. }
+  repeat rewrite hrename.
+  reflexivity.
+Qed.
+
 (* Lean: BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero *)
 Lemma BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero :
   forall G (step idx : term),
@@ -22922,15 +23035,9 @@ Proof.
     {
       pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
         (betaPrefixDividesTermAt step bound product) hprefix S) as hren.
-      replace (betaPrefixDividesTermAt step1 bound1 product1)
-        with (rename S (betaPrefixDividesTermAt step bound product)).
-      - exact hren.
-      - unfold betaPrefixDividesTermAt, step1, bound1, product1,
-          betaModTermTerm, dvdTermTermAt, ltTermAt.
-        simpl.
-        repeat rewrite Term.rename_comp.
-        repeat rewrite term_rename_up_succ_rename_succ.
-        reflexivity.
+      unfold step1, bound1, product1.
+      rewrite <- rename_betaPrefixDividesTermAt.
+      exact hren.
     }
     assert (hltBranch : BProv Ax_s
         (ltTermAt (tVar 0) bound1 :: C) consequent).

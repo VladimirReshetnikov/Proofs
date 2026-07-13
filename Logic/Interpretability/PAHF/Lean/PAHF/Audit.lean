@@ -514,9 +514,13 @@ open SetTheory
 #check @PA.Formula.commonMultipleExistsTermAt
 #check @PA.Formula.commonMultipleExistsTermAtBody
 #check @PA.Formula.positiveCommonMultipleThroughTermAt
+#check @PA.Formula.subst_positiveCommonMultipleThroughTermAt
+#check @PA.Formula.rename_positiveCommonMultipleThroughTermAt
 #check @PA.Formula.positiveCommonMultipleExistsTermAt
 #check @PA.Formula.positiveCommonMultipleExistsTermAtBody
 #check @PA.Formula.betaCodingStepTermAt
+#check @PA.Formula.subst_betaCodingStepTermAt
+#check @PA.Formula.rename_betaCodingStepTermAt
 #check @PA.Formula.betaCodingStepExistsTermAt
 #check @PA.Formula.betaCodingStepExistsTermAtBody
 #check @PA.Formula.betaPrependCodingStepTermAt
@@ -552,6 +556,9 @@ open SetTheory
 #check @PA.Formula.betaPrependExistsTermAt
 #check @PA.Formula.betaPrependExistsTermAtBody
 #check @PA.Formula.betaPrefixDividesTermAt
+#check @PA.Formula.subst_betaPrefixDividesTermAt
+#check @PA.Formula.rename_betaPrefixDividesTermAt
+#check @PA.Formula.rename_succ_twice_betaPrefixDividesTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAt
 #check @PA.Formula.betaPrefixCRTAccumulatorExistsTermAtBody
@@ -2555,11 +2562,9 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ordinalCodeGraphBodyTermAt_zero_at_step
 #check @PA.Formula.BProv_Ax_s_ordinalCodeTraceCapacityTermAt_zero
 #check @PA.Formula.BProv_Ax_s_ordinalCodeGraphBodyExistsTermAt_succ_of_sum_capacity
-#check @PA.Formula.rename_betaCodingStepTermAt
 #check @PA.Formula.rename_ordinalCodeTraceCapacityTermAt
 #check @PA.Formula.BProv_Ax_s_ordinalCodeTraceCapacityTermAt_trace_of_coding
 #check @PA.Formula.BProv_Ax_s_ordinalCodeTraceCapacityTermAt_succ
-#check @PA.Formula.subst_betaCodingStepTermAt
 #check @PA.Formula.subst_ordinalCodeTraceCapacityTermAt
 #check @PA.Formula.ordinalCodeTotalCapacityTermAt
 #check @PA.Formula.subst_ordinalCodeTotalCapacityTermAt
