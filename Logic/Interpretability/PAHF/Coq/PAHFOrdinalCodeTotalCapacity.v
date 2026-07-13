@@ -66,11 +66,7 @@ Lemma subst_dvdTermTermAt : forall sigma divisor value,
       (Term.subst sigma divisor) (Term.subst sigma value).
 Proof.
   intros sigma divisor value.
-  unfold dvdTermTermAt.
-  cbn [subst].
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_dvdTermTermAt sigma divisor value).
 Qed.
 
 Lemma rename_dvdTermTermAt : forall r divisor value,
@@ -79,10 +75,7 @@ Lemma rename_dvdTermTermAt : forall r divisor value,
       (Term.rename r divisor) (Term.rename r value).
 Proof.
   intros r divisor value.
-  rewrite <- subst_var_rename.
-  rewrite subst_dvdTermTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_dvdTermTermAt r divisor value).
 Qed.
 
 Lemma term_rename_betaModTermTerm : forall r step index,
@@ -90,9 +83,7 @@ Lemma term_rename_betaModTermTerm : forall r step index,
     betaModTermTerm (Term.rename r step) (Term.rename r index).
 Proof.
   intros r step index.
-  unfold betaModTermTerm.
-  simpl.
-  reflexivity.
+  exact (PA.Formula.term_rename_betaModTermTerm r step index).
 Qed.
 
 Lemma subst_commonMultipleThroughTermAt : forall sigma bound multiple,
@@ -101,13 +92,8 @@ Lemma subst_commonMultipleThroughTermAt : forall sigma bound multiple,
       (Term.subst sigma bound) (Term.subst sigma multiple).
 Proof.
   intros sigma bound multiple.
-  unfold commonMultipleThroughTermAt.
-  cbn [subst].
-  rewrite subst_ltTermAt.
-  rewrite subst_dvdTermTermAt.
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_commonMultipleThroughTermAt
+    sigma bound multiple).
 Qed.
 
 Lemma rename_commonMultipleThroughTermAt : forall r bound multiple,
@@ -116,10 +102,7 @@ Lemma rename_commonMultipleThroughTermAt : forall r bound multiple,
       (Term.rename r bound) (Term.rename r multiple).
 Proof.
   intros r bound multiple.
-  rewrite <- subst_var_rename.
-  rewrite subst_commonMultipleThroughTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_commonMultipleThroughTermAt r bound multiple).
 Qed.
 
 Lemma subst_positiveCommonMultipleThroughTermAt :

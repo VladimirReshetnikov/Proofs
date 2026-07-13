@@ -10113,6 +10113,31 @@ Definition dvdTermTermAt (divisor value : term) : formula :=
     (tMul (Term.rename S divisor) (tVar 0))
     (Term.rename S value)).
 
+Lemma subst_dvdTermTermAt : forall sigma divisor value,
+  subst sigma (dvdTermTermAt divisor value) =
+    dvdTermTermAt
+      (Term.subst sigma divisor) (Term.subst sigma value).
+Proof.
+  intros sigma divisor value.
+  unfold dvdTermTermAt.
+  cbn [subst].
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_dvdTermTermAt : forall r divisor value,
+  rename r (dvdTermTermAt divisor value) =
+    dvdTermTermAt
+      (Term.rename r divisor) (Term.rename r value).
+Proof.
+  intros r divisor value.
+  rewrite <- subst_var_rename.
+  rewrite subst_dvdTermTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 Definition eqConstAt (a n : nat) : formula :=
   pEq (tVar a) (Term.numeral n).
 
@@ -10191,6 +10216,33 @@ Definition commonMultipleThroughTermAt
     (ltTermAt (tVar 0) (Term.rename S bound))
     (dvdTermTermAt (tSucc (tVar 0))
       (Term.rename S multiple))).
+
+Lemma subst_commonMultipleThroughTermAt : forall sigma bound multiple,
+  subst sigma (commonMultipleThroughTermAt bound multiple) =
+    commonMultipleThroughTermAt
+      (Term.subst sigma bound) (Term.subst sigma multiple).
+Proof.
+  intros sigma bound multiple.
+  unfold commonMultipleThroughTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite subst_dvdTermTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_commonMultipleThroughTermAt : forall r bound multiple,
+  rename r (commonMultipleThroughTermAt bound multiple) =
+    commonMultipleThroughTermAt
+      (Term.rename r bound) (Term.rename r multiple).
+Proof.
+  intros r bound multiple.
+  rewrite <- subst_var_rename.
+  rewrite subst_commonMultipleThroughTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
 
 (* Lean: commonMultipleExistsTermAt *)
 Definition commonMultipleExistsTermAt (bound : term) : formula :=
@@ -19832,6 +19884,16 @@ Definition betaModTerm (step idx : nat) : term :=
 (* Lean: betaModTermTerm *)
 Definition betaModTermTerm (step idx : term) : term :=
   tSucc (tMul (tSucc idx) step).
+
+Lemma term_rename_betaModTermTerm : forall r step index,
+  Term.rename r (betaModTermTerm step index) =
+    betaModTermTerm (Term.rename r step) (Term.rename r index).
+Proof.
+  intros r step index.
+  unfold betaModTermTerm.
+  simpl.
+  reflexivity.
+Qed.
 
 (* Lean: betaPrefixDividesTermAt *)
 Definition betaPrefixDividesTermAt

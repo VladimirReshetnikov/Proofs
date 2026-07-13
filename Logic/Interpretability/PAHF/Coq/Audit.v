@@ -41,6 +41,11 @@ Check PA.Formula.subst_leTermAt.
 Check PA.Formula.rename_leTermAt.
 Check PA.Formula.subst_ltTermAt.
 Check PA.Formula.rename_ltTermAt.
+Check PA.Formula.subst_dvdTermTermAt.
+Check PA.Formula.rename_dvdTermTermAt.
+Check PA.Formula.term_rename_betaModTermTerm.
+Check PA.Formula.subst_commonMultipleThroughTermAt.
+Check PA.Formula.rename_commonMultipleThroughTermAt.
 Check PA.Formula.subst_remTermTermAt.
 Check PA.Formula.rename_remTermTermAt.
 Check PA.Formula.rename_remTermAt.

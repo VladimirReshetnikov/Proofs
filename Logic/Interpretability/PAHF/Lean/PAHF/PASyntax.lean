@@ -2820,6 +2820,24 @@ def dvdTermTermAt (divisor value : Term) : Formula :=
     (Term.mul (Term.rename Nat.succ divisor) (Term.var 0))
     (Term.rename Nat.succ value))
 
+theorem subst_dvdTermTermAt
+    (σ : Nat → Term) (divisor value : Term) :
+    subst σ (dvdTermTermAt divisor value) =
+      dvdTermTermAt
+        (Term.subst σ divisor)
+        (Term.subst σ value) := by
+  simp [dvdTermTermAt, subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem rename_dvdTermTermAt
+    (r : Nat → Nat) (divisor value : Term) :
+    rename r (dvdTermTermAt divisor value) =
+      dvdTermTermAt
+        (Term.rename r divisor)
+        (Term.rename r value) := by
+  rw [← subst_var_rename, subst_dvdTermTermAt]
+  simp only [term_subst_var_rename]
+
 /-- A term is divisible by every positive value through a term bound.
 
 The bound variable is represented as a predecessor: for every `q < bound`,
@@ -2831,6 +2849,25 @@ def commonMultipleThroughTermAt (bound multiple : Term) : Formula :=
     (ltTermAt (Term.var 0) (Term.rename Nat.succ bound))
     (dvdTermTermAt (Term.succ (Term.var 0))
       (Term.rename Nat.succ multiple)))
+
+theorem subst_commonMultipleThroughTermAt
+    (σ : Nat → Term) (bound multiple : Term) :
+    subst σ (commonMultipleThroughTermAt bound multiple) =
+      commonMultipleThroughTermAt
+        (Term.subst σ bound)
+        (Term.subst σ multiple) := by
+  simp [commonMultipleThroughTermAt, subst_ltTermAt,
+    subst_dvdTermTermAt, subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem rename_commonMultipleThroughTermAt
+    (r : Nat → Nat) (bound multiple : Term) :
+    rename r (commonMultipleThroughTermAt bound multiple) =
+      commonMultipleThroughTermAt
+        (Term.rename r bound)
+        (Term.rename r multiple) := by
+  rw [← subst_var_rename, subst_commonMultipleThroughTermAt]
+  simp only [term_subst_var_rename]
 
 /-- Existence of a common multiple for all positive values through a term
 bound.  The witness is explicit and the body is exactly
@@ -3071,6 +3108,12 @@ def betaModTerm (step idx : Nat) : Term :=
 /-- Fully term-parametric beta modulus term `1 + (idx + 1) * step`. -/
 def betaModTermTerm (step idx : Term) : Term :=
   Term.succ (Term.mul (Term.succ idx) step)
+
+theorem term_rename_betaModTermTerm
+    (r : Nat → Nat) (step idx : Term) :
+    Term.rename r (betaModTermTerm step idx) =
+      betaModTermTerm (Term.rename r step) (Term.rename r idx) := by
+  rfl
 
 /-- A product is divisible by every beta modulus at an index strictly below a
 term bound.  This states only the factor property; construction and inverse
@@ -16587,10 +16630,8 @@ theorem BProv_Ax_s_commonMultipleThroughTermAt_of_le
       have hraw := BProv_rename_succ_context_cons_of_sentences
         (B := Ax_s) (G := G) (a := antecedent)
         Ax_s_sentences hcommon
-      simpa [C, upper1, multiple1, commonMultipleThroughTermAt,
-        dvdTermTermAt, ltTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def] using hraw
+      simpa [C, upper1, multiple1, rename_commonMultipleThroughTermAt]
+        using hraw
     have hdvd :=
       BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
         hcommonC hltUpper
@@ -16639,10 +16680,8 @@ theorem BProv_Ax_s_commonMultipleThroughTermAt_mul_right
         (commonMultipleThroughTermAt bound1 multiple1) := by
       have hraw := BProv_context_cons (B := Ax_s)
         (a := antecedent) hcommonRen
-      simpa [C, bound1, multiple1, commonMultipleThroughTermAt,
-        dvdTermTermAt, ltTermAt,
-        rename, Term.rename, SetTheory.up, Term.rename_comp,
-        Function.comp_def] using hraw
+      simpa [C, bound1, multiple1, rename_commonMultipleThroughTermAt]
+        using hraw
     have hdvd : BProv Ax_s C
         (dvdTermTermAt (Term.succ (Term.var 0)) multiple1) :=
       BProv_Ax_s_dvdTermTermAt_of_commonMultipleThroughTermAt
@@ -16729,9 +16768,8 @@ theorem BProv_Ax_s_commonMultipleThroughTermAt_succ
       have hren := BProv_rename_of_sentences
         (B := Ax_s) Ax_s_sentences
         hcommon Nat.succ
-      simpa [bound1, multiple1, commonMultipleThroughTermAt,
-        dvdTermTermAt, ltTermAt, rename, Term.rename,
-        SetTheory.up, Term.rename_comp, Function.comp_def] using hren
+      simpa [bound1, multiple1, rename_commonMultipleThroughTermAt]
+        using hren
     have hltBranch : BProv Ax_s
         (ltTermAt (Term.var 0) bound1 :: C) consequent := by
       let D : List Formula := ltTermAt (Term.var 0) bound1 :: C
@@ -17602,9 +17640,8 @@ theorem BProv_Ax_s_betaPair_crtInverseExists_of_lt_commonMultiple
     have hren := BProv_rename_of_sentences
       (B := Ax_s) Ax_s_sentences
       hcommon Nat.succ
-    simpa [right1, step1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt, rename, Term.rename,
-      SetTheory.up, Term.rename_comp, Function.comp_def] using hren
+    simpa [right1, step1, rename_commonMultipleThroughTermAt]
+      using hren
   have hcommonD : BProv Ax_s D
       (commonMultipleThroughTermAt right1 step1) :=
     BProv_context_cons (B := Ax_s) hcommonRen
@@ -17817,9 +17854,8 @@ theorem BProv_Ax_s_betaPrefixCRTAccumulatorExistsTermAt_succ
     have hren := BProv_rename_of_sentences
       (B := Ax_s) Ax_s_sentences
       hcommon Nat.succ
-    simpa [target1, step1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt, rename, Term.rename,
-      SetTheory.up, Term.rename_comp, Function.comp_def] using hren
+    simpa [target1, step1, rename_commonMultipleThroughTermAt]
+      using hren
   have hcommonD : BProv Ax_s D
       (commonMultipleThroughTermAt target1 step1) :=
     BProv_context_cons (B := Ax_s) hcommonRen
@@ -17906,9 +17942,7 @@ theorem BProv_Ax_s_all_betaPrefixCRTAccumulatorExistsTermAt_of_common
     have hren := BProv_rename_of_sentences
       (B := Ax_s) Ax_s_sentences
       hcommon Nat.succ
-    simpa [commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
-      rename, Term.rename, SetTheory.up, Term.rename_comp,
-      Function.comp_def] using hren
+    simpa only [rename_commonMultipleThroughTermAt] using hren
   have hsuccBody : BProv Ax_s
       (phi :: G.map (rename Nat.succ))
       (subst substSuccVar phi) := by
@@ -31802,9 +31836,9 @@ theorem BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ_of_entry_exists
       (commonMultipleThroughTermAt (Term.succ bound1) targetStep1) := by
     have hraw := BProv_context_cons (B := Ax_s)
       (a := entryBody) hcommonRen
-    simpa [D, bound1, targetStep1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt, rename, Term.rename, SetTheory.up,
-      Term.rename_comp, Function.comp_def] using hraw
+    simpa [D, bound1, targetStep1, rename_commonMultipleThroughTermAt,
+      Term.rename]
+      using hraw
   have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (leTermAt (Term.succ sourceCode) targetStep)) :=
@@ -31895,9 +31929,9 @@ theorem BProv_Ax_s_betaPrependPrefixCodeExistsTermAt_succ
       (commonMultipleThroughTermAt (Term.succ bound1) targetStep1) := by
     have hraw := BProv_context_cons (B := Ax_s)
       (a := prefixBody) hcommonRen
-    simpa [D, bound1, targetStep1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt, rename, Term.rename, SetTheory.up,
-      Term.rename_comp, Function.comp_def] using hraw
+    simpa [D, bound1, targetStep1, rename_commonMultipleThroughTermAt,
+      Term.rename]
+      using hraw
   have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (leTermAt (Term.succ sourceCode) targetStep)) :=
@@ -32093,9 +32127,9 @@ theorem BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ_of_entry_exists
       (commonMultipleThroughTermAt (Term.succ bound1) targetStep1) := by
     have hraw := BProv_context_cons (B := Ax_s)
       (a := entryBody) hcommonRen
-    simpa [D, bound1, targetStep1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt, rename, Term.rename, SetTheory.up,
-      Term.rename_comp, Function.comp_def] using hraw
+    simpa [D, bound1, targetStep1, rename_commonMultipleThroughTermAt,
+      Term.rename]
+      using hraw
   have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (leTermAt (Term.succ sourceCode) targetStep)) :=
@@ -32186,10 +32220,9 @@ theorem BProv_Ax_s_betaUnshiftPrefixCodeExistsTermAt_succ
       (commonMultipleThroughTermAt (Term.succ bound1) targetStep1) := by
     have hraw := BProv_context_cons (B := Ax_s)
       (a := prefixBody) hcommonRen
-    simpa [D, bound1, targetStep1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt,
-      rename, Term.rename, SetTheory.up, Term.rename_comp,
-      Function.comp_def] using hraw
+    simpa [D, bound1, targetStep1, rename_commonMultipleThroughTermAt,
+      Term.rename]
+      using hraw
   have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (leTermAt (Term.succ sourceCode) targetStep)) :=
@@ -32589,10 +32622,8 @@ theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ_of_entry_exists
       (commonMultipleThroughTermAt bound1 newStep1) := by
     have hraw := BProv_context_cons (B := Ax_s)
       (a := entryBody) hcommonRen
-    simpa [D, bound1, newStep1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt,
-      rename, Term.rename, SetTheory.up, Term.rename_comp,
-      Function.comp_def] using hraw
+    simpa [D, bound1, newStep1, rename_commonMultipleThroughTermAt]
+      using hraw
   have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (leTermAt (Term.succ oldCode) newStep)) :=
@@ -32706,10 +32737,8 @@ theorem BProv_Ax_s_betaShiftPrefixCodeExistsTermAt_succ
       (commonMultipleThroughTermAt bound1 newStep1) := by
     have hraw := BProv_context_cons (B := Ax_s)
       (a := prefixBody) hcommonRen
-    simpa [D, bound1, newStep1, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt,
-      rename, Term.rename, SetTheory.up, Term.rename_comp,
-      Function.comp_def] using hraw
+    simpa [D, bound1, newStep1, rename_commonMultipleThroughTermAt]
+      using hraw
   have hlargeRen : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (leTermAt (Term.succ oldCode) newStep)) :=

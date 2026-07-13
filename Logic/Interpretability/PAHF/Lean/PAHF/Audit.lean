@@ -506,7 +506,11 @@ open SetTheory
 #check @PA.Formula.rename_remTermTermAt
 #check @PA.Formula.rename_remTermAt
 #check @PA.Formula.dvdTermTermAt
+#check @PA.Formula.subst_dvdTermTermAt
+#check @PA.Formula.rename_dvdTermTermAt
 #check @PA.Formula.commonMultipleThroughTermAt
+#check @PA.Formula.subst_commonMultipleThroughTermAt
+#check @PA.Formula.rename_commonMultipleThroughTermAt
 #check @PA.Formula.commonMultipleExistsTermAt
 #check @PA.Formula.commonMultipleExistsTermAtBody
 #check @PA.Formula.positiveCommonMultipleThroughTermAt
@@ -586,6 +590,7 @@ open SetTheory
 #check @PA.Formula.remTermEqAt
 #check @PA.Formula.betaTermAt
 #check @PA.Formula.betaModTermTerm
+#check @PA.Formula.term_rename_betaModTermTerm
 #check @PA.Formula.betaTermTermAt
 #check @PA.Formula.subst_betaTermTermAt
 #check @PA.Formula.rename_betaTermTermAt
