@@ -8,6 +8,9 @@
 - [`Propositional/NaturalDeduction/`](Propositional/NaturalDeduction/) is the
   shared intuitionistic/classical propositional calculus used by the structural
   theorem developments.
+- [`Propositional/FiniteMatrixNoncharacterizability/`](Propositional/FiniteMatrixNoncharacterizability/)
+  formalizes Gödel's theorem that no finite deterministic truth-functional
+  matrix—and hence no three-valued matrix—characterizes intuitionistic logic.
 - [`Propositional/MonotonicityOfEntailment/`](Propositional/MonotonicityOfEntailment/)
   proves context weakening for intuitionistic and classical natural deduction
   in Lean and Rocq/Coq.

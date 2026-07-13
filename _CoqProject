@@ -6,6 +6,7 @@
 -Q Logic/FirstOrder/Coq FirstOrder
 -Q Logic/Propositional/ShefferStroke/Coq ShefferStroke
 -Q Logic/Propositional/NaturalDeduction/Coq NaturalDeduction
+-Q Logic/Propositional/FiniteMatrixNoncharacterizability/Coq FiniteMatrixNoncharacterizability
 -Q Logic/Propositional/MonotonicityOfEntailment/Coq MonotonicityOfEntailment
 -Q Logic/Propositional/PrincipleOfExplosion/Coq PrincipleOfExplosion
 -Q Logic/Equational/Common/Coq EquationalLogic
@@ -41,6 +42,9 @@ NumberTheory/DiophantineEquations/Coq/FermatFour.v
 Logic/Propositional/ShefferStroke/Coq/Sheffer.v
 Logic/Propositional/ShefferStroke/Coq/Nicod.v
 Logic/Propositional/NaturalDeduction/Coq/Calculus.v
+Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/FiniteMatrixNoncharacterizability.v
+Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/ThreeValuedExample.v
+Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/Audit.v
 Logic/Propositional/MonotonicityOfEntailment/Coq/MonotonicityOfEntailment.v
 Logic/Propositional/PrincipleOfExplosion/Coq/PrincipleOfExplosion.v
 Logic/Propositional/PrincipleOfExplosion/Coq/Audit.v

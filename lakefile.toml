@@ -42,6 +42,10 @@ name = "NaturalDeduction"
 srcDir = "Logic/Propositional/NaturalDeduction/Lean"
 
 [[lean_lib]]
+name = "FiniteMatrixNoncharacterizability"
+srcDir = "Logic/Propositional/FiniteMatrixNoncharacterizability/Lean"
+
+[[lean_lib]]
 name = "MonotonicityOfEntailment"
 srcDir = "Logic/Propositional/MonotonicityOfEntailment/Lean"
 

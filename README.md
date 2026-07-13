@@ -77,6 +77,7 @@ The dependency-free foundations projects also have project-local Lake files:
 
 ```powershell
 lake --dir Logic/Propositional/NaturalDeduction/Lean build
+lake --dir Logic/Propositional/FiniteMatrixNoncharacterizability/Lean build
 lake --dir Logic/Propositional/MonotonicityOfEntailment/Lean build
 lake --dir Logic/Propositional/PrincipleOfExplosion/Lean build
 lake --dir Logic/FirstOrder/Lean build

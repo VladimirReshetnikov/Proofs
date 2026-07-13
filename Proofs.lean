@@ -5,6 +5,7 @@ import IntegerSums
 import RationalEnumeration
 import ShefferStroke
 import NaturalDeduction
+import FiniteMatrixNoncharacterizability
 import MonotonicityOfEntailment
 import PrincipleOfExplosion
 import EquationalLogic

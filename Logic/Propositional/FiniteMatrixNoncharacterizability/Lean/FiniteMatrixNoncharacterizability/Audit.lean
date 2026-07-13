@@ -1,0 +1,40 @@
+import FiniteMatrixNoncharacterizability
+
+/-! Kernel-assumption audit for the finite-matrix theorem. -/
+
+open LeanProofs.FiniteMatrixNoncharacterizability
+
+#check @finite_sound_matrix_validates_dugundji
+#check @dugundji_not_intuitionistically_derivable
+#check @finite_sound_matrix_not_complete
+#check @finite_rule_sound_matrix_not_complete
+#check @no_finite_characteristic_matrix
+#check @no_three_valued_characteristic_matrix
+#check @no_finite_matrix_characterizes_IPC
+#check @no_three_valued_matrix_characterizes_IPC
+#check h3Matrix
+#check h3Encoding
+#check h3_validates_prelinearity
+#check prelinearity_not_intuitionistically_derivable
+#check h3_validates_non_IPC_theorem
+
+#print axioms finite_sound_matrix_validates_dugundji
+#print axioms dugundji_not_intuitionistically_derivable
+#print axioms no_finite_characteristic_matrix
+#print axioms no_three_valued_characteristic_matrix
+#print axioms no_finite_matrix_characterizes_IPC
+#print axioms no_three_valued_matrix_characterizes_IPC
+#print axioms h3_validates_prelinearity
+#print axioms prelinearity_not_intuitionistically_derivable
+#print axioms h3_validates_non_IPC_theorem
+#print axioms fin_pigeonhole
+#print axioms intuitionistic_renamed_dugundji_of_collision
+#print axioms designated_dugundji_of_collision
+#print axioms branch_root_not_forces_dugundji
+#print axioms KripkeModel.intuitionistic_sound
+#print axioms intuitionistic_identity
+#print axioms intuitionistic_renamed_biconditional_of_eq
+#print axioms intuitionistic_renamed_pairRow_of_eq
+#print axioms valuation_identifyAtom
+#print axioms LogicalMatrix.eval_congr
+#print axioms LogicalMatrix.eval_rename
