@@ -2079,14 +2079,7 @@ Proof.
   {
     pose proof (BProv_andE1 Ax_s C _ _ hbody) as h.
     unfold body, sourceCode3, sourceStep3, idx3 in *.
-    assert (hrename3 : forall t,
-        Term.rename (fun n => n + 3) t =
-        Term.rename S (Term.rename S (Term.rename S t))).
-    {
-      intro t. repeat rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename3 in h.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 3) in h.
     exact h.
   }
   pose proof (BProv_andE2 Ax_s C _ _ hbody) as htail.
@@ -2096,14 +2089,7 @@ Proof.
   {
     pose proof (BProv_andE1 Ax_s C _ _ htail) as h.
     unfold body, sourceCode3, sourceStep3, idx3 in *.
-    assert (hrename3 : forall t,
-        Term.rename (fun n => n + 3) t =
-        Term.rename S (Term.rename S (Term.rename S t))).
-    {
-      intro t. repeat rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename3 in h.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 3) in h.
     exact h.
   }
   assert (hdiv : BProv Ax_s C
@@ -2576,19 +2562,12 @@ Proof.
   set (bit2 := Term.rename S (Term.rename S bit)).
   assert (hbody : BProv Ax_s C body).
   { apply BProv_ass. unfold C. simpl. left. reflexivity. }
-  assert (hrename2 : forall t,
-      Term.rename (fun n => n + 2) t =
-      Term.rename S (Term.rename S t)).
-  {
-    intro t. rewrite Term.rename_comp.
-    apply Term.rename_ext. intro n. lia.
-  }
   assert (hcur : BProv Ax_s C
       (betaTermTermAt (tVar 1) sourceCode2 sourceStep2 idx2)).
   {
     pose proof (BProv_andE1 Ax_s C _ _ hbody) as h.
     unfold body, sourceCode2, sourceStep2, idx2 in *.
-    repeat rewrite hrename2 in h.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 2) in h.
     exact h.
   }
   pose proof (BProv_andE2 Ax_s C _ _ hbody) as htail.
@@ -2598,7 +2577,7 @@ Proof.
   {
     pose proof (BProv_andE1 Ax_s C _ _ htail) as h.
     unfold body, sourceCode2, sourceStep2, idx2 in *.
-    repeat rewrite hrename2 in h.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 2) in h.
     exact h.
   }
   assert (hdiv : BProv Ax_s C
@@ -2606,7 +2585,7 @@ Proof.
   {
     pose proof (BProv_andE2 Ax_s C _ _ htail) as h.
     unfold body, bit2 in *.
-    rewrite hrename2 in h.
+    rewrite (term_rename_add_eq_iterTermRenameSucc 2) in h.
     exact h.
   }
   assert (hprefixC : BProv Ax_s C

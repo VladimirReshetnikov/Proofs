@@ -74,6 +74,14 @@ Check PA.Formula.term_subst_up_up_up_up_instTerm_rename_five_succ.
 Check PA.Formula.term_subst_up_up_up_up_instTerm_rename_six_succ.
 Check PA.Formula.term_subst_up_up_up_up_up_instTerm_rename_six_succ.
 Check PA.Formula.term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ.
+Check PA.Formula.term_rename_up_rename_succ.
+Check PA.Formula.term_rename_up_rename_succ_gen.
+Check PA.Formula.iterUpRenaming.
+Check PA.Formula.iterTermRenameSucc.
+Check PA.Formula.term_rename_iterUpRenaming_iterTermRenameSucc.
+Check PA.Formula.term_rename_add_eq_iterTermRenameSucc.
+Check PA.Formula.term_rename_eq_iterTermRenameSucc.
+Check PA.Formula.iterUpRenaming_add.
 Check PA.Formula.iterUpSubst.
 Check PA.Formula.term_subst_iterUpSubst_rename_add.
 Check PA.Formula.term_subst_iterUpSubst_instTerm_rename_add_succ_offset.

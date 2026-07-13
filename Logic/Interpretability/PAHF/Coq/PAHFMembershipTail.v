@@ -1107,15 +1107,7 @@ Proof.
   {
     unfold betaDiv2StepWitnessTermAt in hwitness.
     unfold body.
-    assert (hrename3 : forall t,
-        Term.rename (fun n => n + 3) t =
-        Term.rename S (Term.rename S (Term.rename S t))).
-    {
-      intro t.
-      repeat rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename3 in hwitness.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 3) in hwitness.
     exact hwitness.
   }
   apply (BProv_three_exE_of_sentences
@@ -1330,14 +1322,7 @@ Proof.
   {
     unfold betaDiv2BitTermAt in hbit.
     unfold body.
-    assert (hrename2 : forall t,
-        Term.rename (fun n => n + 2) t =
-        Term.rename S (Term.rename S t)).
-    {
-      intro t. rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename2 in hbit.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 2) in hbit.
     exact hbit.
   }
   apply (BProv_two_exE_of_sentences
@@ -1779,14 +1764,7 @@ Proof.
   {
     unfold betaDiv2StepWitnessTermAt in hwitnessFull.
     unfold body.
-    assert (hrename3 : forall t,
-        Term.rename (fun n => n + 3) t =
-        Term.rename S (Term.rename S (Term.rename S t))).
-    {
-      intro t. repeat rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename3 in hwitnessFull.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 3) in hwitnessFull.
     exact hwitnessFull.
   }
   apply (BProv_three_exE_of_sentences

@@ -1306,13 +1306,80 @@ theorem term_subst_iterUpSubst_instTerm_rename_add_succ
       Term.rename (fun n : Nat => n + k) t := by
   exact term_subst_iterUpSubst_instTerm_rename_add_succ_offset k 0 t u
 
+/-- Renaming below one binder commutes with first shifting a term through that
+binder. -/
+theorem term_rename_up_rename_succ (r : Nat → Nat) (t : Term) :
+    Term.rename (SetTheory.up r) (Term.rename Nat.succ t) =
+      Term.rename Nat.succ (Term.rename r t) := by
+  rw [Term.rename_comp, Term.rename_comp]
+  exact Term.rename_ext t _ _ (fun n => rfl)
+
+/-- Lift a variable renaming through `k` surrounding binders. -/
+def iterUpRenaming (k : Nat) (r : Nat → Nat) : Nat → Nat :=
+  Nat.rec r (fun _ s => SetTheory.up s) k
+
+/-- Shift every free variable of a term through `k` surrounding binders. -/
+def iterTermRenameSucc (k : Nat) (t : Term) : Term :=
+  Nat.rec t (fun _ u => Term.rename Nat.succ u) k
+
+/-- An iterated lifted renaming acts as the original renaming above the block
+of `k` newly bound variables, preserving the block offset. -/
+theorem iterUpRenaming_add (k : Nat) (r : Nat → Nat) (n : Nat) :
+    iterUpRenaming k r (n + k) = r n + k := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+      change SetTheory.up (iterUpRenaming k r) (n + (k + 1)) =
+        r n + (k + 1)
+      rw [show n + (k + 1) = (n + k) + 1 by omega]
+      simp only [SetTheory.up]
+      rw [ih]
+      omega
+
+/-- An iterated lifted renaming commutes with shifting a term through the same
+number of surrounding binders. -/
+theorem term_rename_iterUpRenaming_iterTermRenameSucc
+    (k : Nat) (r : Nat → Nat) (t : Term) :
+    Term.rename (iterUpRenaming k r) (iterTermRenameSucc k t) =
+      iterTermRenameSucc k (Term.rename r t) := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+      change Term.rename (SetTheory.up (iterUpRenaming k r))
+          (Term.rename Nat.succ (iterTermRenameSucc k t)) =
+        Term.rename Nat.succ (iterTermRenameSucc k (Term.rename r t))
+      rw [term_rename_up_rename_succ, ih]
+
+/-- Renaming by addition of `k` is the canonical `k`-fold successor shift. -/
+theorem term_rename_add_eq_iterTermRenameSucc (k : Nat) (t : Term) :
+    Term.rename (fun n => n + k) t = iterTermRenameSucc k t := by
+  induction k with
+  | zero =>
+      change Term.rename (fun n => n + 0) t = t
+      simpa using Term.rename_id t
+  | succ k ih =>
+      have hrename :
+          Term.rename (fun n => n + (k + 1)) t =
+            Term.rename Nat.succ (Term.rename (fun n => n + k) t) := by
+        rw [Term.rename_comp]
+        exact Term.rename_ext t _ _ (fun n => by omega)
+      rw [hrename, ih]
+      simp [iterTermRenameSucc]
+
+/-- Extensional form of `term_rename_add_eq_iterTermRenameSucc`, for the
+syntactically varied fixed shifts that arise in opened formulas. -/
+theorem term_rename_eq_iterTermRenameSucc
+    (k : Nat) (t : Term) (r : Nat → Nat) (hr : ∀ n, r n = n + k) :
+    Term.rename r t = iterTermRenameSucc k t := by
+  rw [Term.rename_ext t r (fun n => n + k) hr]
+  exact term_rename_add_eq_iterTermRenameSucc k t
+
 /-- Renaming a term already shifted through one binder by the lifted successor
 renaming is the same as shifting it through one more ordinary binder. -/
 theorem term_rename_up_succ_rename_succ (t : Term) :
     Term.rename (SetTheory.up Nat.succ) (Term.rename Nat.succ t) =
       Term.rename Nat.succ (Term.rename Nat.succ t) := by
-  rw [Term.rename_comp, Term.rename_comp]
-  exact Term.rename_ext t _ _ (fun n => rfl)
+  exact term_rename_up_rename_succ Nat.succ t
 
 /-- Instantiating the newest variable after two lifted successor renamings of
 an already shifted term removes the newest binder and leaves the double shift. -/

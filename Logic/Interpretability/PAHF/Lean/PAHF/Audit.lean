@@ -97,6 +97,13 @@ open SetTheory
 #check @PA.Formula.substZero_eq_instTerm
 #check @PA.Formula.term_subst_iterUpSubst_substZero_rename_add_succ
 #check @PA.Formula.term_subst_iterUpSubst_substSuccVar_rename_add_succ
+#check @PA.Formula.term_rename_up_rename_succ
+#check PA.Formula.iterUpRenaming
+#check PA.Formula.iterTermRenameSucc
+#check @PA.Formula.iterUpRenaming_add
+#check @PA.Formula.term_rename_iterUpRenaming_iterTermRenameSucc
+#check @PA.Formula.term_rename_add_eq_iterTermRenameSucc
+#check @PA.Formula.term_rename_eq_iterTermRenameSucc
 #check @PA.Formula.term_rename_up_succ_rename_succ
 #check @PA.Formula.term_subst_instTerm_rename_up_up_succ
 #check @PA.Formula.subst_instTerm_rename_succ

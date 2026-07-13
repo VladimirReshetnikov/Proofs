@@ -7645,6 +7645,87 @@ Proof.
   apply Term.rename_id.
 Qed.
 
+(* Renaming under one binder commutes with a successor-renamed term. *)
+Lemma term_rename_up_rename_succ : forall (r : nat -> nat) t,
+  Term.rename (up r) (Term.rename S t) = Term.rename S (Term.rename r t).
+Proof.
+  intros r t.
+  rewrite Term.rename_comp, Term.rename_comp.
+  apply Term.rename_ext.
+  intro n. reflexivity.
+Qed.
+
+(* Historical spelling retained for downstream compatibility. *)
+Lemma term_rename_up_rename_succ_gen : forall (r : nat -> nat) t,
+  Term.rename (up r) (Term.rename S t) = Term.rename S (Term.rename r t).
+Proof.
+  exact term_rename_up_rename_succ.
+Qed.
+
+(* Iterate the lifting of a variable renaming through [k] binders. *)
+Fixpoint iterUpRenaming (k : nat) (r : nat -> nat) : nat -> nat :=
+  match k with
+  | 0 => r
+  | S k' => up (iterUpRenaming k' r)
+  end.
+
+(* Shift every free variable in a term through [k] binders. *)
+Fixpoint iterTermRenameSucc (k : nat) (t : term) : term :=
+  match k with
+  | 0 => t
+  | S k' => Term.rename S (iterTermRenameSucc k' t)
+  end.
+
+(* Iterated lifting commutes with the matching iterated term shift. *)
+Lemma term_rename_iterUpRenaming_iterTermRenameSucc :
+  forall k (r : nat -> nat) t,
+  Term.rename (iterUpRenaming k r) (iterTermRenameSucc k t) =
+    iterTermRenameSucc k (Term.rename r t).
+Proof.
+  induction k as [|k IH]; intros r t; simpl.
+  - reflexivity.
+  - rewrite term_rename_up_rename_succ.
+    rewrite IH.
+    reflexivity.
+Qed.
+
+(* Repeated successor renaming is the canonical additive variable shift. *)
+Lemma term_rename_add_eq_iterTermRenameSucc : forall k t,
+  Term.rename (fun n => n + k) t = iterTermRenameSucc k t.
+Proof.
+  induction k as [|k IH]; intro t; simpl.
+  - transitivity (Term.rename (fun n => n) t).
+    + apply Term.rename_ext. intro n; lia.
+    + apply Term.rename_id.
+  - rewrite <- (IH t).
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+Qed.
+
+(* Normalize any pointwise spelling of the same additive shift. *)
+Lemma term_rename_eq_iterTermRenameSucc :
+  forall k t (r : nat -> nat),
+  (forall n, r n = n + k) ->
+  Term.rename r t = iterTermRenameSucc k t.
+Proof.
+  intros k t r hr.
+  rewrite (Term.rename_ext t r (fun n => n + k) hr).
+  apply term_rename_add_eq_iterTermRenameSucc.
+Qed.
+
+(* The lifted renaming acts additively above its [k] protected variables. *)
+Lemma iterUpRenaming_add : forall k (r : nat -> nat) n,
+  iterUpRenaming k r (n + k) = r n + k.
+Proof.
+  induction k as [|k IH]; intros r n; simpl.
+  - now rewrite Nat.add_0_r.
+  - replace (n + S k) with (S (n + k)) by lia.
+    simpl.
+    rewrite IH.
+    lia.
+Qed.
+
 (* Iterate lifting of a term substitution through [k] binders. *)
 Fixpoint iterUpSubst (k : nat) (sigma : nat -> term) : nat -> term :=
   match k with
@@ -8050,9 +8131,7 @@ Lemma term_rename_up_succ_rename_succ : forall t,
     Term.rename S (Term.rename S t).
 Proof.
   intro t.
-  rewrite Term.rename_comp, Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 1 S t).
 Qed.
 
 (* Lean: term_subst_instTerm_rename_up_up_succ *)
@@ -16992,9 +17071,7 @@ Lemma term_rename_up_up_S : forall t,
   Term.rename S (Term.rename S (Term.rename S t)).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 2 S t).
 Qed.
 
 Lemma rename_S_ltTermAt : forall a b,
@@ -17793,9 +17870,7 @@ Lemma term_rename_up_up_succ_rename_two_succ : forall t,
   Term.rename S (Term.rename S (Term.rename S t)).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 2 S t).
 Qed.
 
 (* Lean: BProv_Ax_s_eq_of_remTermTermAt_remTermTermAt_eq_modulus *)
@@ -25546,9 +25621,7 @@ Lemma term_rename_up_up_up_succ_rename_three_succ : forall t,
     Term.rename S (Term.rename S (Term.rename S (Term.rename S t))).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 3 S t).
 Qed.
 
 
@@ -26711,9 +26784,7 @@ Lemma term_rename_up2_rename_two_succ : forall t,
     Term.rename S (Term.rename S (Term.rename S t)).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 2 S t).
 Qed.
 
 Lemma term_rename_up3_rename_three_succ : forall t,
@@ -26722,9 +26793,7 @@ Lemma term_rename_up3_rename_three_succ : forall t,
     Term.rename S (Term.rename S (Term.rename S (Term.rename S t))).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 3 S t).
 Qed.
 
 Lemma term_rename_up4_rename_four_succ : forall t,
@@ -26734,9 +26803,7 @@ Lemma term_rename_up4_rename_four_succ : forall t,
       (Term.rename S (Term.rename S (Term.rename S (Term.rename S t)))).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 4 S t).
 Qed.
 
 
@@ -35083,18 +35150,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* Helper (not in Lean; the Lean proof folds this into one simp with
-   Term.rename_comp): renaming under one binder commutes with a
-   successor-renamed term argument. *)
-Lemma term_rename_up_rename_succ_gen : forall (r : nat -> nat) t,
-  Term.rename (up r) (Term.rename S t) = Term.rename S (Term.rename r t).
-Proof.
-  intros r t.
-  rewrite Term.rename_comp, Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
-Qed.
-
 (* Lean: rename_hfSomeDistinguishesTermAt_succ *)
 Lemma rename_hfSomeDistinguishesTermAt_succ : forall highCode low,
   rename S (hfSomeDistinguishesTermAt highCode low) =
@@ -40459,27 +40514,21 @@ Lemma up_add1 : forall (r : nat -> nat) n,
   up r (n + 1) = r n + 1.
 Proof.
   intros r n.
-  replace (n + 1) with (S n) by lia.
-  replace (r n + 1) with (S (r n)) by lia.
-  reflexivity.
+  exact (PA.Formula.iterUpRenaming_add 1 r n).
 Qed.
 
 Lemma up_add2 : forall (r : nat -> nat) n,
   up (up r) (n + 2) = r n + 2.
 Proof.
   intros r n.
-  replace (n + 2) with (S (S n)) by lia.
-  replace (r n + 2) with (S (S (r n))) by lia.
-  reflexivity.
+  exact (PA.Formula.iterUpRenaming_add 2 r n).
 Qed.
 
 Lemma up_add3 : forall (r : nat -> nat) n,
   up (up (up r)) (n + 3) = r n + 3.
 Proof.
   intros r n.
-  replace (n + 3) with (S (S (S n))) by lia.
-  replace (r n + 3) with (S (S (S (r n)))) by lia.
-  reflexivity.
+  exact (PA.Formula.iterUpRenaming_add 3 r n).
 Qed.
 
 (* ===================================================================== *)
