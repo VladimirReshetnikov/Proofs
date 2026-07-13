@@ -1286,7 +1286,6 @@ Proof.
   simpl in himp.
   repeat rewrite term_subst_upSubst_instTerm_rename_add_two in himp.
   repeat rewrite term_subst_instTerm_rename_succ in himp.
-  repeat rewrite Term.rename_comp in himp.
   assert (hupVar : forall n,
       Term.upSubst (instTerm (tVar 0)) (n + 1 + 2) =
       tVar (n + 2)).
@@ -1297,13 +1296,7 @@ Proof.
     simpl. reflexivity.
   }
   rewrite (hupVar oldCode), (hupVar oldStep) in himp.
-  assert (hrename2 : forall t,
-      Term.rename (fun n => S (S n)) t =
-      Term.rename (fun n => n + 2) t).
-  {
-    intro t. apply Term.rename_ext. intro n. lia.
-  }
-  rewrite (hrename2 newCode), (hrename2 newStep) in himp.
+  repeat rewrite term_rename_succ_twice_add_two in himp.
   assert (hwitness : BProv Ax_s C witness).
   {
     unfold witness, oldEntry, newEntry.
@@ -1348,6 +1341,11 @@ Proof.
   simpl.
   repeat rewrite term_rename_up_succ_rename_succ.
   repeat rewrite Term.rename_comp.
+  assert (hup4 : forall n,
+      Fol.up (Fol.up (Fol.up (Fol.up S))) (n + 4) = S n + 4).
+  {
+    exact (iterUpRenaming_add 4 (fun n => S n)).
+  }
   assert (hlast :
       Term.rename
         (fun n => Fol.up (Fol.up (Fol.up (Fol.up S)))
@@ -1355,29 +1353,19 @@ Proof.
       Term.rename (fun n => S (S (S n + 2))) last).
   {
     apply Term.rename_ext. intro n.
-    replace (n + 2) with (S (S n)) by lia.
-    replace (S n + 2) with (S (S (S n))) by lia.
-    reflexivity.
+    replace (S (S (n + 2))) with (n + 4) by lia.
+    rewrite hup4. lia.
   }
   rewrite hlast.
-  assert (hstep :
-      Fol.up (Fol.up (Fol.up (Fol.up S))) (oldStep + 2 + 2) =
-      S (oldStep + 2 + 2)).
+  assert (hshift : forall n,
+      Fol.up (Fol.up (Fol.up (Fol.up S))) (n + 2 + 2) =
+      S (n + 2 + 2)).
   {
-    replace (oldStep + 2 + 2)
-      with (S (S (S (S oldStep)))) by lia.
-    reflexivity.
+    intro n.
+    replace (n + 2 + 2) with (n + 4) by lia.
+    rewrite hup4. lia.
   }
-  rewrite hstep.
-  assert (hcode :
-      Fol.up (Fol.up (Fol.up (Fol.up S))) (oldCode + 2 + 2) =
-      S (oldCode + 2 + 2)).
-  {
-    replace (oldCode + 2 + 2)
-      with (S (S (S (S oldCode)))) by lia.
-    reflexivity.
-  }
-  rewrite hcode.
+  rewrite (hshift oldStep), (hshift oldCode).
   reflexivity.
 Qed.
 
@@ -1427,12 +1415,7 @@ Proof.
     unfold E, prefixBody, betaShiftPrefixCodeExistsTermAtBody,
       oldCode1, oldStep1, last1, last2.
     simpl.
-    repeat rewrite Term.rename_comp.
-    assert (hrename2 : forall t,
-        Term.rename (fun n => S (S n)) t =
-        Term.rename (fun n => n + 2) t).
-    { intro t. apply Term.rename_ext. intro n. lia. }
-    repeat rewrite hrename2.
+    repeat rewrite term_rename_succ_twice_add_two.
     replace (S (S oldCode)) with (oldCode + 2) by lia.
     replace (S (S oldStep)) with (oldStep + 2) by lia.
     left. reflexivity.
