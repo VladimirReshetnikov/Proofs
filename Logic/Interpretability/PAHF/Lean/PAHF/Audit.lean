@@ -495,9 +495,16 @@ open SetTheory
 #check @PA.Formula.BProv_Ax_s_ltAt_of_remAt
 #check @PA.Formula.BProv_Ax_s_remEqAt_of_remAt
 #check @PA.Formula.BProv_Ax_s_eqConstAt_zero_of_dvdAt_remAt
+#check @PA.Formula.subst_leTermAt
+#check @PA.Formula.rename_leTermAt
 #check @PA.Formula.ltTermAt
+#check @PA.Formula.subst_ltTermAt
+#check @PA.Formula.rename_ltTermAt
 #check @PA.Formula.remTermAt
 #check @PA.Formula.remTermTermAt
+#check @PA.Formula.subst_remTermTermAt
+#check @PA.Formula.rename_remTermTermAt
+#check @PA.Formula.rename_remTermAt
 #check @PA.Formula.dvdTermTermAt
 #check @PA.Formula.commonMultipleThroughTermAt
 #check @PA.Formula.commonMultipleExistsTermAt
@@ -512,7 +519,9 @@ open SetTheory
 #check @PA.Formula.betaPrependCodingStepExistsTermAt
 #check @PA.Formula.betaPrependCodingStepExistsTermAtBody
 #check @PA.Formula.crtInverseTermAt
+#check @PA.Formula.rename_crtInverseTermAt
 #check @PA.Formula.crtInverseExistsTermAt
+#check @PA.Formula.rename_crtInverseExistsTermAt
 #check @PA.Formula.crtInverseExistsTermAtQuotEx
 #check @PA.Formula.crtInverseExistsTermAtBody
 #check @PA.Formula.crtInverseExistsTermAtOpenedContext
@@ -578,6 +587,8 @@ open SetTheory
 #check @PA.Formula.betaTermAt
 #check @PA.Formula.betaModTermTerm
 #check @PA.Formula.betaTermTermAt
+#check @PA.Formula.subst_betaTermTermAt
+#check @PA.Formula.rename_betaTermTermAt
 #check @PA.Formula.betaTermAt_var
 #check @PA.Formula.betaTermAtTermIdx
 #check @PA.Formula.betaTermAtConstIdx
@@ -1144,7 +1155,6 @@ open SetTheory
 #check @PA.Formula.hfEmptyOrStrictPredAdjoinAt
 #check @PA.Formula.hfEmptyOrStrictPredAdjoinThroughTermAt
 #check @PA.Formula.hfEmptyOrStrictPredAdjoinThroughAt
-#check @PA.Formula.subst_ltTermAt
 #check @PA.Formula.subst_hfEmptyTermAt
 #check @PA.Formula.subst_hfStrictPredAdjoinExistsTermAt
 #check @PA.Formula.subst_hfEmptyOrStrictPredAdjoinTermAt
@@ -2620,7 +2630,6 @@ open SetTheory
 #check @PA.Formula.OrdinalCodeGraphFunctional_of_traceAgreement
 #check @PA.Formula.BProv_Ax_s_ordinalCodeGraphTermAt_functional
 #check @PA.Formula.ordinalCodeGraphFunctional
-#check @PA.Formula.rename_leTermAt
 #check @PA.Formula.rename_hfAdjoinGraphTermAt
 #check @PA.Formula.BProv_Ax_s_ordinalCodeStepsTermAt_of_leTerm
 #check @PA.Formula.HF_zeroDomainSentence

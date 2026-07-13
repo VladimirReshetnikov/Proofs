@@ -524,10 +524,7 @@ Lemma rename_betaTermTermAt : forall r out code step index,
       (Term.rename r index).
 Proof.
   intros r out code step index.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaTermTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaTermTermAt r out code step index).
 Qed.
 
 Lemma subst_ltTermAt : forall sigma a b,
@@ -535,10 +532,7 @@ Lemma subst_ltTermAt : forall sigma a b,
     ltTermAt (Term.subst sigma a) (Term.subst sigma b).
 Proof.
   intros sigma a b.
-  unfold ltTermAt.
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_ltTermAt sigma a b).
 Qed.
 
 Lemma rename_ltTermAt : forall r a b,
@@ -546,10 +540,7 @@ Lemma rename_ltTermAt : forall r a b,
     ltTermAt (Term.rename r a) (Term.rename r b).
 Proof.
   intros r a b.
-  rewrite <- subst_var_rename.
-  rewrite subst_ltTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_ltTermAt r a b).
 Qed.
 
 (* Substitution under the protected membership query.  This is the sole

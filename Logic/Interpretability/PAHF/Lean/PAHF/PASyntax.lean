@@ -2769,6 +2769,19 @@ def leTermAt (a b : Term) : Formula :=
   ex (eq (Term.add (Term.rename Nat.succ a) (Term.var 0))
     (Term.rename Nat.succ b))
 
+theorem subst_leTermAt (σ : Nat → Term) (a b : Term) :
+    subst σ (leTermAt a b) =
+      leTermAt (Term.subst σ a) (Term.subst σ b) := by
+  simp [leTermAt, subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem rename_leTermAt
+    (r : Nat → Nat) (a b : Term) :
+    rename r (leTermAt a b) =
+      leTermAt (Term.rename r a) (Term.rename r b) := by
+  rw [← subst_var_rename, subst_leTermAt]
+  simp only [term_subst_var_rename]
+
 /-- Bounded order against a closed standard numeral.  This is intentionally only
 the formula macro; PA proofs that relate it to `leAt` are kept as separate
 lemmas. -/
@@ -2783,6 +2796,19 @@ the compared values may be arbitrary PA terms in the ambient context. -/
 def ltTermAt (a b : Term) : Formula :=
   ex (eq (Term.add (Term.rename Nat.succ a) (Term.succ (Term.var 0)))
     (Term.rename Nat.succ b))
+
+theorem subst_ltTermAt (σ : Nat → Term) (a b : Term) :
+    subst σ (ltTermAt a b) =
+      ltTermAt (Term.subst σ a) (Term.subst σ b) := by
+  simp [ltTermAt, subst, Term.subst, Term.upSubst,
+    Term.subst_rename_succ_up]
+
+theorem rename_ltTermAt
+    (r : Nat → Nat) (a b : Term) :
+    rename r (ltTermAt a b) =
+      ltTermAt (Term.rename r a) (Term.rename r b) := by
+  rw [← subst_var_rename, subst_ltTermAt]
+  simp only [term_subst_var_rename]
 
 def dvdAt (a b : Nat) : Formula :=
   ex (eq (Term.mul (Term.var (a+1)) (Term.var 0)) (Term.var (b+1)))
@@ -2988,6 +3014,33 @@ def remTermTermAt (rem value modulus : Term) : Formula :=
       (Term.add (Term.mul (Term.var 0) (Term.rename Nat.succ modulus))
         (Term.rename Nat.succ rem))))
 
+theorem subst_remTermTermAt
+    (σ : Nat → Term) (rem value modulus : Term) :
+    subst σ (remTermTermAt rem value modulus) =
+      remTermTermAt
+        (Term.subst σ rem)
+        (Term.subst σ value)
+        (Term.subst σ modulus) := by
+  simp [remTermTermAt, subst_ltTermAt, subst, Term.subst,
+    Term.upSubst, Term.subst_rename_succ_up]
+
+theorem rename_remTermTermAt
+    (r : Nat → Nat) (rem value modulus : Term) :
+    rename r (remTermTermAt rem value modulus) =
+      remTermTermAt
+        (Term.rename r rem)
+        (Term.rename r value)
+        (Term.rename r modulus) := by
+  rw [← subst_var_rename, subst_remTermTermAt]
+  simp only [term_subst_var_rename]
+
+theorem rename_remTermAt
+    (r : Nat → Nat) (rem : Term) (value modulus : Nat) :
+    rename r (remTermAt rem value modulus) =
+      remTermAt (Term.rename r rem) (r value) (r modulus) := by
+  simp [remTermAt, rename_ltTermAt, rename, Term.rename,
+    Term.rename_comp, SetTheory.up]
+
 theorem ltTermAt_var (a b : Nat) :
     ltTermAt (Term.var a) (Term.var b) = ltAt a b := by
   simp [ltTermAt, ltAt, Term.rename]
@@ -3061,6 +3114,17 @@ theorem subst_betaTermTermAt
   simp [betaTermTermAt, betaModTermTerm, remTermTermAt,
     ltTermAt, subst, Term.subst, Term.upSubst,
     Term.subst_rename_succ_up]
+
+theorem rename_betaTermTermAt
+    (r : Nat → Nat) (out code step index : Term) :
+    rename r (betaTermTermAt out code step index) =
+      betaTermTermAt
+        (Term.rename r out)
+        (Term.rename r code)
+        (Term.rename r step)
+        (Term.rename r index) := by
+  rw [← subst_var_rename, subst_betaTermTermAt]
+  simp only [term_subst_var_rename]
 
 /-- Existence of some output for a fully term-parametric beta entry.  This is
 only the quantified relation; no division-totality theorem is built into it.
@@ -3346,6 +3410,16 @@ def crtInverseTermAt
   eq (Term.mul product inverse)
     (Term.succ (Term.mul modulus quotient))
 
+theorem rename_crtInverseTermAt
+    (r : Nat → Nat) (product modulus inverse quotient : Term) :
+    rename r (crtInverseTermAt product modulus inverse quotient) =
+      crtInverseTermAt
+        (Term.rename r product)
+        (Term.rename r modulus)
+        (Term.rename r inverse)
+        (Term.rename r quotient) := by
+  simp [crtInverseTermAt, rename, Term.rename]
+
 /-- Existence of a positive inverse certificate, with inverse and quotient as
 separate existential witnesses. -/
 def crtInverseExistsTermAt (product modulus : Term) : Formula :=
@@ -3353,6 +3427,14 @@ def crtInverseExistsTermAt (product modulus : Term) : Formula :=
     (Term.rename (fun n => n + 2) product)
     (Term.rename (fun n => n + 2) modulus)
     (Term.var 1) (Term.var 0)))
+
+theorem rename_crtInverseExistsTermAt
+    (r : Nat → Nat) (product modulus : Term) :
+    rename r (crtInverseExistsTermAt product modulus) =
+      crtInverseExistsTermAt
+        (Term.rename r product) (Term.rename r modulus) := by
+  simp [crtInverseExistsTermAt, rename_crtInverseTermAt, rename,
+    Term.rename, Term.rename_comp, SetTheory.up, Nat.add_assoc]
 
 /-- Inner quotient existential exposed after opening the inverse witness. -/
 def crtInverseExistsTermAtQuotEx
@@ -12264,9 +12346,8 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_mul
   have hrightBase : BProv Ax_s
       ((G.map (rename Nat.succ)).map (rename Nat.succ))
       (crtInverseExistsTermAt rightProduct2 modulus2) := by
-    simpa [rightProduct2, modulus2, crtInverseExistsTermAt,
-      crtInverseTermAt, rename, Term.rename, SetTheory.up,
-      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hrightRen2
+    simpa [rightProduct2, modulus2, rename_crtInverseExistsTermAt,
+      Term.rename_comp, Function.comp_def] using hrightRen2
   have hrightL : BProv Ax_s L
       (crtInverseExistsTermAt rightProduct2 modulus2) := by
     let leftQuotEx : Formula :=
@@ -12327,8 +12408,8 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_mul
       (crtInverseTermAt leftProduct4 modulus4
         (Term.var 3) (Term.var 2)) := by
     simpa [leftProduct2, modulus2, leftProduct4, modulus4,
-      crtInverseTermAt, rename, Term.rename, SetTheory.up,
-      Term.rename_comp, Function.comp_def, Nat.add_assoc] using hleftRen2
+      rename_crtInverseTermAt, Term.rename,
+      Term.rename_comp, Function.comp_def] using hleftRen2
   have hleftR : BProv Ax_s R
       (crtInverseTermAt leftProduct4 modulus4
         (Term.var 3) (Term.var 2)) := by
@@ -12373,8 +12454,7 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_mul
     BProv_Ax_s_crtInverseExistsTermAt_of_certificate hproductCert
   simpa [target, R, L, leftProduct2, rightProduct2, modulus2,
     leftProduct4, rightProduct4, modulus4,
-    crtInverseExistsTermAt, crtInverseTermAt,
-    rename, Term.rename, SetTheory.up, Term.rename_comp,
+    rename_crtInverseExistsTermAt, Term.rename, Term.rename_comp,
     Function.comp_def, Nat.add_assoc] using hproductEx
 
 /-- Multiplying a product by one more factor preserves every already exposed
@@ -48184,17 +48264,6 @@ def ordinalCodeGraphTermAt (raw coded : Term) : Formula :=
 def ordinalCodeGraphAt (raw coded : Nat) : Formula :=
   ordinalCodeGraphTermAt (Term.var raw) (Term.var coded)
 
-theorem rename_betaTermTermAt
-    (r : Nat → Nat) (out code step index : Term) :
-    rename r (betaTermTermAt out code step index) =
-      betaTermTermAt
-        (Term.rename r out)
-        (Term.rename r code)
-        (Term.rename r step)
-        (Term.rename r index) := by
-  rw [← subst_var_rename, subst_betaTermTermAt]
-  simp only [term_subst_var_rename]
-
 theorem subst_ordinalCodeStepWitnessTermAt
     (sigma : Nat → Term) (sequenceCode sequenceStep index : Term) :
     subst sigma
@@ -49737,12 +49806,6 @@ def hfEmptyOrStrictPredAdjoinThroughTermAt (bound : Term) : Formula :=
 
 def hfEmptyOrStrictPredAdjoinThroughAt (bound : Nat) : Formula :=
   hfEmptyOrStrictPredAdjoinThroughTermAt (Term.var bound)
-
-theorem subst_ltTermAt (σ : Nat → Term) (a b : Term) :
-    subst σ (ltTermAt a b) =
-      ltTermAt (Term.subst σ a) (Term.subst σ b) := by
-  simp [ltTermAt, subst, Term.subst, Term.upSubst,
-    Term.subst_rename_succ_up]
 
 theorem subst_hfEmptyTermAt
     (σ : Nat → Term) (code : Term) :

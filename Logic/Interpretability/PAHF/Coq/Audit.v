@@ -37,6 +37,17 @@ Check PA.Formula.subst_rename_succ_up.
 Check PA.Formula.subst_ext_free.
 Check PA.Formula.subst_id.
 Check PA.Formula.subst_eq_of_sentence.
+Check PA.Formula.subst_leTermAt.
+Check PA.Formula.rename_leTermAt.
+Check PA.Formula.subst_ltTermAt.
+Check PA.Formula.rename_ltTermAt.
+Check PA.Formula.subst_remTermTermAt.
+Check PA.Formula.rename_remTermTermAt.
+Check PA.Formula.rename_remTermAt.
+Check PA.Formula.subst_betaTermTermAt.
+Check PA.Formula.rename_betaTermTermAt.
+Check PA.Formula.rename_crtInverseTermAt.
+Check PA.Formula.rename_crtInverseExistsTermAt.
 Check PA.Formula.term_subst_instTerm_rename_succ.
 Check iterEx.
 Check iterRenameContextSucc.

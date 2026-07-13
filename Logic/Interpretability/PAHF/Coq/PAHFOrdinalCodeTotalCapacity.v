@@ -49,11 +49,7 @@ Lemma subst_leTermAt : forall sigma a b,
     leTermAt (Term.subst sigma a) (Term.subst sigma b).
 Proof.
   intros sigma a b.
-  unfold leTermAt.
-  cbn [subst].
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_leTermAt sigma a b).
 Qed.
 
 Lemma rename_leTermAt : forall r a b,
@@ -61,10 +57,7 @@ Lemma rename_leTermAt : forall r a b,
     leTermAt (Term.rename r a) (Term.rename r b).
 Proof.
   intros r a b.
-  rewrite <- subst_var_rename.
-  rewrite subst_leTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_leTermAt r a b).
 Qed.
 
 Lemma subst_dvdTermTermAt : forall sigma divisor value,

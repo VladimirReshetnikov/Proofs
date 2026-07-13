@@ -10140,6 +10140,50 @@ Definition leTermAt (a b : term) : formula :=
 Definition ltTermAt (a b : term) : formula :=
   pEx (pEq (tAdd (Term.rename S a) (tSucc (tVar 0))) (Term.rename S b)).
 
+Lemma subst_leTermAt : forall sigma a b,
+  subst sigma (leTermAt a b) =
+    leTermAt (Term.subst sigma a) (Term.subst sigma b).
+Proof.
+  intros sigma a b.
+  unfold leTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_leTermAt : forall r a b,
+  rename r (leTermAt a b) =
+    leTermAt (Term.rename r a) (Term.rename r b).
+Proof.
+  intros r a b.
+  rewrite <- subst_var_rename.
+  rewrite subst_leTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_ltTermAt : forall sigma a b,
+  subst sigma (ltTermAt a b) =
+    ltTermAt (Term.subst sigma a) (Term.subst sigma b).
+Proof.
+  intros sigma a b.
+  unfold ltTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_ltTermAt : forall r a b,
+  rename r (ltTermAt a b) =
+    ltTermAt (Term.rename r a) (Term.rename r b).
+Proof.
+  intros r a b.
+  rewrite <- subst_var_rename.
+  rewrite subst_ltTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (* Lean: commonMultipleThroughTermAt *)
 Definition commonMultipleThroughTermAt
     (bound multiple : term) : formula :=
@@ -15720,6 +15764,46 @@ Definition remTermTermAt (rem value modulus : term) : formula :=
       (tAdd (tMul (tVar 0) (Term.rename S modulus))
         (Term.rename S rem)))).
 
+Lemma subst_remTermTermAt : forall sigma rem value modulus,
+  subst sigma (remTermTermAt rem value modulus) =
+    remTermTermAt
+      (Term.subst sigma rem)
+      (Term.subst sigma value)
+      (Term.subst sigma modulus).
+Proof.
+  intros sigma rem value modulus.
+  unfold remTermTermAt, ltTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_remTermTermAt : forall r rem value modulus,
+  rename r (remTermTermAt rem value modulus) =
+    remTermTermAt
+      (Term.rename r rem)
+      (Term.rename r value)
+      (Term.rename r modulus).
+Proof.
+  intros r rem value modulus.
+  rewrite <- subst_var_rename.
+  rewrite subst_remTermTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma rename_remTermAt : forall r rem value modulus,
+  rename r (remTermAt rem value modulus) =
+    remTermAt (Term.rename r rem) (r value) (r modulus).
+Proof.
+  intros r rem value modulus.
+  unfold remTermAt, ltTermAt.
+  simpl.
+  repeat rewrite Term.rename_comp.
+  repeat f_equal; apply functional_extensionality; intro n;
+    destruct n; simpl; reflexivity.
+Qed.
+
 (* Lean: remTermAt_var *)
 Lemma remTermAt_var : forall rem value modulus,
   remTermAt (tVar rem) value modulus = remAt rem value modulus.
@@ -17077,33 +17161,20 @@ Qed.
 Lemma rename_S_ltTermAt : forall a b,
   rename S (ltTermAt a b) = ltTermAt (Term.rename S a) (Term.rename S b).
 Proof.
-  intros a b.
-  unfold ltTermAt.
-  simpl.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  reflexivity.
+  intros a b. apply rename_ltTermAt.
 Qed.
 
 Lemma rename_S_leTermAt : forall a b,
   rename S (leTermAt a b) = leTermAt (Term.rename S a) (Term.rename S b).
 Proof.
-  intros a b.
-  unfold leTermAt.
-  simpl.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  reflexivity.
+  intros a b. apply rename_leTermAt.
 Qed.
 
 Lemma rename_S_remTermAt : forall rem value modulus,
   rename S (remTermAt rem value modulus) =
   remTermAt (Term.rename S rem) (S value) (S modulus).
 Proof.
-  intros rem value modulus.
-  unfold remTermAt, ltTermAt.
-  simpl.
-  rewrite term_rename_up_up_S.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  reflexivity.
+  intros rem value modulus. apply rename_remTermAt.
 Qed.
 
 Lemma rename_S_remTermEqAt : forall rem value modulus,
@@ -19845,6 +19916,21 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma rename_betaTermTermAt : forall r out code step index,
+  rename r (betaTermTermAt out code step index) =
+    betaTermTermAt
+      (Term.rename r out)
+      (Term.rename r code)
+      (Term.rename r step)
+      (Term.rename r index).
+Proof.
+  intros r out code step index.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaTermTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (* Lean: BProv_Ax_s_betaTermTermAt_of_rem *)
 Lemma BProv_Ax_s_betaTermTermAt_of_rem :
   forall G (out code step idx modulus : term),
@@ -21161,6 +21247,15 @@ Definition crtInverseTermAt
   pEq (tMul product inverse)
     (tSucc (tMul modulus quotient)).
 
+Lemma rename_crtInverseTermAt : forall r product modulus inverse quotient,
+  rename r (crtInverseTermAt product modulus inverse quotient) =
+    crtInverseTermAt
+      (Term.rename r product)
+      (Term.rename r modulus)
+      (Term.rename r inverse)
+      (Term.rename r quotient).
+Proof. reflexivity. Qed.
+
 (* Lean: crtInverseExistsTermAt *)
 Definition crtInverseExistsTermAt
     (product modulus : term) : formula :=
@@ -21168,6 +21263,19 @@ Definition crtInverseExistsTermAt
     (Term.rename (fun n => n + 2) product)
     (Term.rename (fun n => n + 2) modulus)
     (tVar 1) (tVar 0))).
+
+Lemma rename_crtInverseExistsTermAt : forall r product modulus,
+  rename r (crtInverseExistsTermAt product modulus) =
+    crtInverseExistsTermAt
+      (Term.rename r product) (Term.rename r modulus).
+Proof.
+  intros r product modulus.
+  unfold crtInverseExistsTermAt, crtInverseTermAt.
+  simpl.
+  repeat rewrite Term.rename_comp.
+  repeat f_equal; apply functional_extensionality; intro n;
+    replace (n + 2) with (S (S n)) by lia; simpl; lia.
+Qed.
 
 (* Lean: crtInverseExistsTermAtQuotEx *)
 Definition crtInverseExistsTermAtQuotEx
@@ -23068,34 +23176,6 @@ Lemma BProv_Ax_s_crtInverseExistsTermAt_mul :
     (crtInverseExistsTermAt (tMul leftProduct rightProduct) modulus).
 Proof.
   intros G leftProduct rightProduct modulus hleft hright.
-  assert (hrenameExists2 : forall product0 modulus0,
-      rename S (rename S
-        (crtInverseExistsTermAt product0 modulus0)) =
-      crtInverseExistsTermAt
-        (Term.rename (fun n => n + 2) product0)
-        (Term.rename (fun n => n + 2) modulus0)).
-  {
-    intros product0 modulus0.
-    unfold crtInverseExistsTermAt, crtInverseTermAt.
-    simpl.
-    repeat rewrite Term.rename_comp.
-    repeat f_equal; apply functional_extensionality; intro n;
-      replace (n + 2) with (S (S n)) by lia; simpl; lia.
-  }
-  assert (hrenameCert2 : forall product0 modulus0,
-      rename S (rename S
-        (crtInverseTermAt product0 modulus0 (tVar 1) (tVar 0))) =
-      crtInverseTermAt
-        (Term.rename (fun n => n + 2) product0)
-        (Term.rename (fun n => n + 2) modulus0)
-        (tVar 3) (tVar 2)).
-  {
-    intros product0 modulus0.
-    unfold crtInverseTermAt.
-    simpl.
-    repeat rewrite Term.rename_comp.
-    repeat f_equal; apply functional_extensionality; intro n; lia.
-  }
   set (target :=
     crtInverseExistsTermAt (tMul leftProduct rightProduct) modulus).
   apply (BProv_Ax_s_crtInverseExistsTermAt_elim_opened
@@ -23127,8 +23207,9 @@ Proof.
         (map (rename S) (map (rename S) G))
         (crtInverseExistsTermAt rightProduct2 modulus2)).
     {
-      rewrite hrenameExists2 in hrightRen2.
+      repeat rewrite rename_crtInverseExistsTermAt in hrightRen2.
       unfold rightProduct2, modulus2.
+      repeat rewrite term_rename_add_eq_iterTermRenameSucc.
       exact hrightRen2.
     }
     assert (hrightL : BProv Ax_s L
@@ -23187,8 +23268,9 @@ Proof.
           (crtInverseTermAt leftProduct4 modulus4
             (tVar 3) (tVar 2))).
       {
-        rewrite hrenameCert2 in hleftRen2.
+        repeat rewrite rename_crtInverseTermAt in hleftRen2.
         unfold leftProduct4, modulus4.
+        repeat rewrite term_rename_add_eq_iterTermRenameSucc.
         exact hleftRen2.
       }
       assert (hleftR : BProv Ax_s R
@@ -23243,9 +23325,10 @@ Proof.
       * exact hproductEx.
       * unfold target, leftProduct4, rightProduct4, modulus4,
           leftProduct2, rightProduct2, modulus2.
-        rewrite hrenameExists2.
-        rewrite hrenameExists2.
-        simpl. reflexivity.
+        repeat rewrite rename_crtInverseExistsTermAt.
+        simpl.
+        repeat rewrite Term.rename_comp.
+        repeat f_equal; apply functional_extensionality; intro n; lia.
     + exact hrightL.
   - exact hleft.
 Qed.

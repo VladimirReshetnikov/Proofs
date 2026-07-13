@@ -4176,13 +4176,6 @@ theorem ordinalCodeGraphFunctional : OrdinalCodeGraphFunctional :=
   OrdinalCodeGraphFunctional_of_traceAgreement
     ordinalCodeTraceAgreementProof
 
-theorem rename_leTermAt
-    (r : Nat → Nat) (a b : Term) :
-    rename r (leTermAt a b) =
-      leTermAt (Term.rename r a) (Term.rename r b) := by
-  simp [leTermAt, rename, Term.rename, Term.rename_comp,
-    SetTheory.up]
-
 theorem rename_hfAdjoinGraphTermAt
     (r : Nat → Nat) (newCode oldCode elemCode : Term) :
     rename r (hfAdjoinGraphTermAt newCode oldCode elemCode) =
