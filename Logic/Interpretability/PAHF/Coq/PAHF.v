@@ -10267,6 +10267,23 @@ Definition betaCodingStepTermAt
     (commonMultipleThroughTermAt bound step)
     (leTermAt (tSucc sourceCode) step).
 
+(* Lean: betaCodingStepExistsTermAt *)
+Definition betaCodingStepExistsTermAt
+    (bound sourceCode : term) : formula :=
+  pEx
+    (betaCodingStepTermAt
+      (Term.rename S bound)
+      (Term.rename S sourceCode)
+      (tVar 0)).
+
+(* Lean: betaCodingStepExistsTermAtBody *)
+Definition betaCodingStepExistsTermAtBody
+    (bound sourceCode : term) : formula :=
+  betaCodingStepTermAt
+    (Term.rename S bound)
+    (Term.rename S sourceCode)
+    (tVar 0).
+
 Lemma subst_positiveCommonMultipleThroughTermAt :
   forall sigma bound multiple,
   subst sigma (positiveCommonMultipleThroughTermAt bound multiple) =
@@ -10323,6 +10340,32 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma subst_betaCodingStepExistsTermAt : forall sigma bound sourceCode,
+  subst sigma (betaCodingStepExistsTermAt bound sourceCode) =
+    betaCodingStepExistsTermAt
+      (Term.subst sigma bound) (Term.subst sigma sourceCode).
+Proof.
+  intros sigma bound sourceCode.
+  unfold betaCodingStepExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaCodingStepTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaCodingStepExistsTermAt : forall r bound sourceCode,
+  rename r (betaCodingStepExistsTermAt bound sourceCode) =
+    betaCodingStepExistsTermAt
+      (Term.rename r bound) (Term.rename r sourceCode).
+Proof.
+  intros r bound sourceCode.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaCodingStepExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (* Lean: positiveCommonMultipleExistsTermAt *)
 Definition positiveCommonMultipleExistsTermAt (bound : term) : formula :=
   pEx (positiveCommonMultipleThroughTermAt
@@ -10332,6 +10375,30 @@ Definition positiveCommonMultipleExistsTermAt (bound : term) : formula :=
 Definition positiveCommonMultipleExistsTermAtBody (bound : term) : formula :=
   positiveCommonMultipleThroughTermAt
     (Term.rename S bound) (tVar 0).
+
+Lemma subst_positiveCommonMultipleExistsTermAt : forall sigma bound,
+  subst sigma (positiveCommonMultipleExistsTermAt bound) =
+    positiveCommonMultipleExistsTermAt (Term.subst sigma bound).
+Proof.
+  intros sigma bound.
+  unfold positiveCommonMultipleExistsTermAt.
+  cbn [subst].
+  rewrite subst_positiveCommonMultipleThroughTermAt.
+  simpl.
+  rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_positiveCommonMultipleExistsTermAt : forall r bound,
+  rename r (positiveCommonMultipleExistsTermAt bound) =
+    positiveCommonMultipleExistsTermAt (Term.rename r bound).
+Proof.
+  intros r bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_positiveCommonMultipleExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
 
 (* Lean: ltTermAt_var *)
 Lemma ltTermAt_var : forall a b,
@@ -22771,23 +22838,10 @@ Proof.
         (positiveCommonMultipleThroughTermAt
           (Term.rename S bound) (tVar 0)))).
   {
-    replace
-      (subst (instTerm multiple)
-        (positiveCommonMultipleThroughTermAt
-          (Term.rename S bound) (tVar 0)))
-      with (positiveCommonMultipleThroughTermAt bound multiple).
-    - exact hthrough.
-    - unfold positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      reflexivity.
+    rewrite subst_positiveCommonMultipleThroughTermAt.
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hthrough.
   }
   unfold positiveCommonMultipleExistsTermAt.
   exact (BProv_exI Ax_s G
@@ -22850,12 +22904,8 @@ Proof.
     replace (rename S target)
       with (positiveCommonMultipleExistsTermAt (tSucc bound1)).
     + exact hexNext.
-    + unfold target, positiveCommonMultipleExistsTermAt,
-        positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt, bound1.
-      simpl.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
+    + unfold target, bound1.
+      rewrite rename_positiveCommonMultipleExistsTermAt.
       reflexivity.
   - exact hex.
 Qed.
@@ -22874,14 +22924,8 @@ Proof.
     replace (subst substZero phi)
       with (positiveCommonMultipleExistsTermAt tZero).
     - exact hzeroRaw.
-    - unfold phi, positiveCommonMultipleExistsTermAt,
-        positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt, substZero.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substZero_rename_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
+    - unfold phi.
+      rewrite subst_positiveCommonMultipleExistsTermAt.
       reflexivity.
   }
   assert (hsuccBody : BProv Ax_s
@@ -22899,15 +22943,8 @@ Proof.
     replace (subst substSuccVar phi)
       with (positiveCommonMultipleExistsTermAt (tSucc (tVar 0))).
     - exact hnext.
-    - unfold phi, positiveCommonMultipleExistsTermAt,
-        positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
-        substSuccVar.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substSuccVar_rename_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
+    - unfold phi.
+      rewrite subst_positiveCommonMultipleExistsTermAt.
       reflexivity.
   }
   pose proof (BProv_impI Ax_s (map (rename S) G)

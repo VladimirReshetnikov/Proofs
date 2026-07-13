@@ -518,11 +518,15 @@ open SetTheory
 #check @PA.Formula.rename_positiveCommonMultipleThroughTermAt
 #check @PA.Formula.positiveCommonMultipleExistsTermAt
 #check @PA.Formula.positiveCommonMultipleExistsTermAtBody
+#check @PA.Formula.subst_positiveCommonMultipleExistsTermAt
+#check @PA.Formula.rename_positiveCommonMultipleExistsTermAt
 #check @PA.Formula.betaCodingStepTermAt
 #check @PA.Formula.subst_betaCodingStepTermAt
 #check @PA.Formula.rename_betaCodingStepTermAt
 #check @PA.Formula.betaCodingStepExistsTermAt
 #check @PA.Formula.betaCodingStepExistsTermAtBody
+#check @PA.Formula.subst_betaCodingStepExistsTermAt
+#check @PA.Formula.rename_betaCodingStepExistsTermAt
 #check @PA.Formula.betaPrependCodingStepTermAt
 #check @PA.Formula.betaPrependCodingStepExistsTermAt
 #check @PA.Formula.betaPrependCodingStepExistsTermAtBody

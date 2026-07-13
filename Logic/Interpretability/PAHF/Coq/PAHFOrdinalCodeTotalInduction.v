@@ -694,12 +694,7 @@ Lemma subst_positiveCommonMultipleExistsTermAt : forall sigma bound,
     positiveCommonMultipleExistsTermAt (Term.subst sigma bound).
 Proof.
   intros sigma bound.
-  unfold positiveCommonMultipleExistsTermAt.
-  cbn [subst].
-  rewrite subst_positiveCommonMultipleThroughTermAt.
-  simpl.
-  rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_positiveCommonMultipleExistsTermAt sigma bound).
 Qed.
 
 Lemma subst_betaCodingStepExistsTermAt : forall sigma bound sourceCode,
@@ -708,12 +703,8 @@ Lemma subst_betaCodingStepExistsTermAt : forall sigma bound sourceCode,
       (Term.subst sigma bound) (Term.subst sigma sourceCode).
 Proof.
   intros sigma bound sourceCode.
-  unfold betaCodingStepExistsTermAt.
-  cbn [subst].
-  rewrite subst_betaCodingStepTermAt.
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_betaCodingStepExistsTermAt
+    sigma bound sourceCode).
 Qed.
 
 Lemma rename_betaCodingStepExistsTermAt : forall r bound sourceCode,
@@ -722,10 +713,8 @@ Lemma rename_betaCodingStepExistsTermAt : forall r bound sourceCode,
       (Term.rename r bound) (Term.rename r sourceCode).
 Proof.
   intros r bound sourceCode.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaCodingStepExistsTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaCodingStepExistsTermAt
+    r bound sourceCode).
 Qed.
 
 Lemma BProv_Ax_s_betaCodingStepExistsTermAt_of_term :

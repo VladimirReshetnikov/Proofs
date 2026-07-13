@@ -14,23 +14,14 @@ From PAHF Require Import PAHF PAHFProofCalculus
 Import ListNotations.
 Import PA PA.Term PA.Formula.
 
-(* Compatibility alias: the canonical definition now lives in [PA.Formula]. *)
+(* Compatibility aliases: the canonical definitions now live in [PA.Formula]. *)
 Definition betaCodingStepTermAt := PA.Formula.betaCodingStepTermAt.
 
-Definition betaCodingStepExistsTermAt
-    (bound sourceCode : term) : formula :=
-  pEx
-    (betaCodingStepTermAt
-      (Term.rename S bound)
-      (Term.rename S sourceCode)
-      (tVar 0)).
+Definition betaCodingStepExistsTermAt :=
+  PA.Formula.betaCodingStepExistsTermAt.
 
-Definition betaCodingStepExistsTermAtBody
-    (bound sourceCode : term) : formula :=
-  betaCodingStepTermAt
-    (Term.rename S bound)
-    (Term.rename S sourceCode)
-    (tVar 0).
+Definition betaCodingStepExistsTermAtBody :=
+  PA.Formula.betaCodingStepExistsTermAtBody.
 
 Definition betaCodeExtensionExistsTermAtBody
     (oldCode step target newOut : term) : formula :=
