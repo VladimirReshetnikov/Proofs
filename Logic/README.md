@@ -5,10 +5,18 @@
   completeness theorem, compactness lift, and deductive-transfer machinery.
 - [`Propositional/ShefferStroke/`](Propositional/ShefferStroke/) formalizes
   NAND/NOR translations and Nicod's single-axiom calculus.
+- [`Propositional/NaturalDeduction/`](Propositional/NaturalDeduction/) is the
+  shared intuitionistic/classical propositional calculus used by the structural
+  theorem developments.
+- [`Propositional/MonotonicityOfEntailment/`](Propositional/MonotonicityOfEntailment/)
+  proves context weakening for intuitionistic and classical natural deduction
+  in Lean and Rocq/Coq.
+- [`Propositional/PrincipleOfExplosion/`](Propositional/PrincipleOfExplosion/)
+  proves `P, ¬P ⊢ Q` and equivalent forms in both logics, in Lean and Rocq/Coq.
 - [`Equational/`](Equational/) contains the sound equational checker and the
   Wolfram/Meredith/Sheffer/Huntington Boolean-algebra certificates.
 - [`Interpretability/PAHF/`](Interpretability/PAHF/) proves the deductive
   bi-interpretation of PA with finite-generation hereditary finite set theory.
 
-The FirstOrder and PAHF Lean projects are mathlib-free and have standalone
-Lake configurations as well as root integration targets.
+The natural-deduction developments, FirstOrder, and PAHF are mathlib-free and
+have standalone Lake configurations as well as root integration targets.

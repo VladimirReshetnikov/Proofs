@@ -4,6 +4,9 @@ import DiophantineEquations
 import IntegerSums
 import RationalEnumeration
 import ShefferStroke
+import NaturalDeduction
+import MonotonicityOfEntailment
+import PrincipleOfExplosion
 import EquationalLogic
 import BooleanAlgebra
 import PowerTowers

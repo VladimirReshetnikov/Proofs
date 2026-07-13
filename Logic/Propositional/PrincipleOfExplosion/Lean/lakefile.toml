@@ -1,0 +1,10 @@
+name = "PrincipleOfExplosion"
+defaultTargets = ["PrincipleOfExplosion"]
+
+[[lean_lib]]
+name = "NaturalDeduction"
+srcDir = "../../NaturalDeduction/Lean"
+
+[[lean_lib]]
+name = "PrincipleOfExplosion"
+

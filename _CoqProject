@@ -5,6 +5,9 @@
 -Q Computability/BusyBeaver/Coq BusyBeaver
 -Q Logic/FirstOrder/Coq FirstOrder
 -Q Logic/Propositional/ShefferStroke/Coq ShefferStroke
+-Q Logic/Propositional/NaturalDeduction/Coq NaturalDeduction
+-Q Logic/Propositional/MonotonicityOfEntailment/Coq MonotonicityOfEntailment
+-Q Logic/Propositional/PrincipleOfExplosion/Coq PrincipleOfExplosion
 -Q Logic/Equational/Common/Coq EquationalLogic
 -Q Logic/Equational/BooleanAlgebra/Coq BooleanAlgebra
 -Q Logic/Interpretability/PAHF/Coq PAHF
@@ -37,6 +40,10 @@ NumberTheory/IntegerSums/Coq/FloorSqrtSum.v
 NumberTheory/DiophantineEquations/Coq/FermatFour.v
 Logic/Propositional/ShefferStroke/Coq/Sheffer.v
 Logic/Propositional/ShefferStroke/Coq/Nicod.v
+Logic/Propositional/NaturalDeduction/Coq/Calculus.v
+Logic/Propositional/MonotonicityOfEntailment/Coq/MonotonicityOfEntailment.v
+Logic/Propositional/PrincipleOfExplosion/Coq/PrincipleOfExplosion.v
+Logic/Propositional/PrincipleOfExplosion/Coq/Audit.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCode.v
 Logic/Interpretability/PAHF/Coq/PAHFInterpretations.v
 Logic/Interpretability/PAHF/Coq/PAHFTermGraphModel.v

@@ -38,6 +38,18 @@ name = "ShefferStroke"
 srcDir = "Logic/Propositional/ShefferStroke/Lean"
 
 [[lean_lib]]
+name = "NaturalDeduction"
+srcDir = "Logic/Propositional/NaturalDeduction/Lean"
+
+[[lean_lib]]
+name = "MonotonicityOfEntailment"
+srcDir = "Logic/Propositional/MonotonicityOfEntailment/Lean"
+
+[[lean_lib]]
+name = "PrincipleOfExplosion"
+srcDir = "Logic/Propositional/PrincipleOfExplosion/Lean"
+
+[[lean_lib]]
 name = "EquationalLogic"
 srcDir = "Logic/Equational/Common/Lean"
 
