@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/TNFProbe.lean
+  BusyBeaver/BB4/TNFProbe.lean
 
   Bounded structural instrumentation for `TNF.checkRoot`.  This is not used by
   any proof; it exists only to compare the normalized and raw DFS frontiers.

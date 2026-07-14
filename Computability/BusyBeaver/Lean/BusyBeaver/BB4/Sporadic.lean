@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Sporadic.lean
+  BusyBeaver/BB4/Sporadic.lean
 
   Direct macro proofs for the two four-state machines that require the
   repeated-word-list decider in the upstream CoqBB4 enumeration.

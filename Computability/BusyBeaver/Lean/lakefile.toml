@@ -3,3 +3,11 @@ defaultTargets = ["BusyBeaver"]
 
 [[lean_lib]]
 name = "BusyBeaver"
+
+[[lean_exe]]
+name = "generate_bb4_r05_a14_guided"
+root = "GenerateBB4R05A14Guided"
+
+[[lean_exe]]
+name = "generate_bb4_r13_c14_guided"
+root = "GenerateBB4R13C14Guided"

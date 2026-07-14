@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Search.lean
+  BusyBeaver/BB4/Search.lean
 
   Sound lazy exploration of four-state transition tables.  The semantic proof
   is independent of the concrete nonhalting leaf implementation.

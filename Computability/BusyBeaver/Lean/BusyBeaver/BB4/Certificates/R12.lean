@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Certificates/R12.lean
+  BusyBeaver/BB4/Certificates/R12.lean
 
   Kernel-checked TNF coverage certificate for the root action that writes a
   mark, moves right, and returns to state A.

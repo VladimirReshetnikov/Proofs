@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/TNFReflection.lean
+  BusyBeaver/BB4/TNFReflection.lean
 
   Exact left/right reflection of Rado machines.  The reflected blank run has
   the same states and score, with every tape coordinate and head negated.

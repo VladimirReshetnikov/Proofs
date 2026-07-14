@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Certificates/Common.lean
+  BusyBeaver/BB4/Certificates/Common.lean
 
   Shared action names and the first two explicit TNF search levels for the
   kernel-sharded four-state coverage certificate.

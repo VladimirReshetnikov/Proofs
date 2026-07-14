@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/TNF.lean
+  BusyBeaver/BB4/TNF.lean
 
   A sound tree-normal-form reduction for the four-state lazy search.  States
   already named by the explored prefix are `0, ..., used - 1`; a continuing

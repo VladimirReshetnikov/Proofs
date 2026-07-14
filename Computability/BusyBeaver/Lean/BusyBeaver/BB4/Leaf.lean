@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Leaf.lean
+  BusyBeaver/BB4/Leaf.lean
 
   Prototype sound leaf pipeline: complete tables, declaratively checked
   Boolean/history n-gram CPS passes, and the two explicit sporadic machines.
