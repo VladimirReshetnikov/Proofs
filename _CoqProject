@@ -223,6 +223,8 @@ Computability/CombinatoryLogic/Coq/IotaToLambda.v
 Computability/CombinatoryLogic/Coq/Audit.v
 Computability/CombinatoryLogic/Coq/RecursiveEquivalence.v
 Computability/CombinatoryLogic/Coq/RecursiveEquivalenceAudit.v
+Computability/CombinatoryLogic/Coq/TuringEquivalence.v
+Computability/CombinatoryLogic/Coq/TuringEquivalenceAudit.v
 Logic/FirstOrder/Coq/Fol.v
 Logic/FirstOrder/Coq/Calculus.v
 SetTheory/ZF/Coq/Zf.v

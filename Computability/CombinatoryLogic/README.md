@@ -83,24 +83,30 @@ and closed weak lambda calculus.  They are forward operational simulations;
 the development does not claim that the chosen compilers are mutual syntactic
 inverses, reduction-reflecting, or fully abstract.
 
-## Partial-recursive-function equivalence
+## Partial-recursive-function and Turing-machine equivalence
 
-The project now also contains two foundations for stating the textbook
-lambda-calculus/partial-recursion equivalence precisely:
+The project now also contains checked foundations for stating the textbook
+lambda-calculus/partial-recursion/Turing-machine equivalence precisely:
 
 - `StrongLambda` adds full contextual beta reduction and canonical Church
   numerals, independently in Lean and Coq.
 - Coq's `RecursiveEquivalence` derives the exact arity-indexed equivalence
   `MuRec_computable R <-> L_computable R` from the checked simulation cycle in
   the focused vendored snapshot of the Coq Library of Undecidability Proofs.
+- Coq's `TuringEquivalence` projects the same concrete cycle to obtain
+  `MuRec_computable R <-> TM_computable R` and
+  `L_computable R <-> TM_computable R`, including the corresponding closed-L
+  theorem. These are equivalences of partial functional relations, so
+  divergence/undefinedness is preserved rather than discarded.
 
 The latter theorem uses that library's unscoped weak-call-by-value calculus
 `L`, Scott numerals, and relational big-step semantics.  It is deliberately
 not identified with this project's intrinsically scoped, context-closed beta
-relation.  Connecting those two lambda models, and completing the corresponding
-exact Lean theorem, remain separate proof obligations.  In particular, the
-existing Iota simulations plus the Coq equivalence are not silently composed
-across incompatible operational semantics.
+relation. Connecting those two lambda models, completing the corresponding
+exact Lean theorems, and transferring the exact result through the local Iota
+embedding remain separate proof obligations. In particular, the existing
+Iota simulations plus the Coq equivalences are not silently composed across
+incompatible operational semantics.
 
 ## Layout
 
@@ -161,6 +167,17 @@ coqc -Q "$vendor/theories" Undecidability `
 coqc -Q "$vendor/theories" Undecidability `
   -Q Computability/CombinatoryLogic/Coq CombinatoryLogic `
   Computability/CombinatoryLogic/Coq/RecursiveEquivalenceAudit.v
+coqc -Q "$vendor/theories" Undecidability `
+  -Q Computability/CombinatoryLogic/Coq CombinatoryLogic `
+  Computability/CombinatoryLogic/Coq/TuringEquivalence.v
+coqc -Q "$vendor/theories" Undecidability `
+  -Q Computability/CombinatoryLogic/Coq CombinatoryLogic `
+  Computability/CombinatoryLogic/Coq/TuringEquivalenceAudit.v
+coqchk -silent `
+  -Q Computability/CombinatoryLogic/Coq CombinatoryLogic `
+  -Q "$vendor/theories" Undecidability `
+  CombinatoryLogic.TuringEquivalence `
+  CombinatoryLogic.TuringEquivalenceAudit
 ```
 
 The Lean `#print axioms` audit exposes only Lean's standard `propext` and
