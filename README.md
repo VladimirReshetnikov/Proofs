@@ -40,10 +40,10 @@ is the broad Lean import surface.
   A158415, A198683, and A199812.
 - Nicod's NAND axiom, Wolfram's single Boolean equation, Meredith's basis,
   and checked equational certificates.
-- A [first-order compactness development](Logic/FirstOrder/README.md): the
-  arbitrary-language theorem in Lean, plus a from-scratch independent
-  Lean/Coq proof for the repository's fixed countable relation language,
-  together with soundness, Goedel completeness, and deductive transfer.
+- A [first-order completeness and compactness development](Logic/FirstOrder/README.md):
+  from-scratch independent Lean/Coq Henkin proofs for the repository's fixed
+  countable relation language, plus arbitrary-language semantic compactness
+  in Lean.
 - Full deductive equivalence between the Closure axiomatization and ZF,
   checked independently in Lean and Coq.
 - A deductive bi-interpretation between PA and finite-generation hereditary

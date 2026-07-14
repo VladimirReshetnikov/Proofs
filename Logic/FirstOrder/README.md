@@ -1,36 +1,80 @@
-# First-order compactness
+# First-order completeness and compactness
 
-The [compactness theorem](https://en.wikipedia.org/wiki/Compactness_theorem)
-says that a set of first-order sentences has a model if and only if every
-finite subset has a model.  This directory exposes that statement at two
-complementary trust and generality boundaries.
+This directory contains independent Lean and Rocq/Coq proofs of
+[Gödel's completeness theorem](https://en.wikipedia.org/wiki/G%C3%B6del%27s_completeness_theorem)
+for classical first-order logic, plus the resulting semantic
+[compactness theorem](https://en.wikipedia.org/wiki/Compactness_theorem).
 
-## Arbitrary-language theorem in Lean
+## Gödel completeness in Lean and Coq
 
-`LeanProofs.FirstOrderCompactness.arbitrary_language_compactness` has the
-universe-polymorphic type
+The repository's from-scratch calculus uses a fixed countable language with
+equality and one binary relation (`fMem`).  The textbook consequence relation
+is exposed in both proof assistants:
 
 ```lean
-{L : FirstOrder.Language.{u, v}} {T : L.Theory} →
-  T.IsSatisfiable ↔ T.IsFinitelySatisfiable
+godel_completeness_for_theories :
+  ∀ T phi, Sentences T →
+    TheorySemanticConsequence T phi → TheorySyntacticConsequence T phi
+
+godel_soundness_and_completeness_for_theories :
+  ∀ T phi, Sentences T →
+    (TheorySyntacticConsequence T phi ↔ TheorySemanticConsequence T phi)
+
+godel_model_existence :
+  ∀ T, Sentences T → TheoryConsistent T → TheoryHasModel T
 ```
 
-Here `L` is an arbitrary first-order signature, `T` is a set of `L`-sentences,
-and finite satisfiability quantifies over actual `Finset L.Sentence` subsets.
-This is the literal general form of the theorem.  The repository theorem is a
-thin audited re-export of Mathlib's semantic ultraproduct proof in
-`Mathlib.ModelTheory.Satisfiability`; it is not presented as an independent
-reproof of that imported result.
+```coq
+godel_completeness_for_theories :
+  forall T phi, Sentences T ->
+    TheorySemanticConsequence T phi -> TheorySyntacticConsequence T phi
 
-The source is `Compactness/Lean/ArbitraryLanguageCompactness.lean`; its
-assumption audit is `Compactness/Lean/ArbitraryLanguageCompactness/Audit.lean`.
+godel_soundness_and_completeness_for_theories :
+  forall T phi, Sentences T ->
+    (TheorySyntacticConsequence T phi <-> TheorySemanticConsequence T phi)
 
-## Independent fixed-language proof in Lean and Coq
+godel_model_existence :
+  forall T, Sentences T -> TheoryConsistent T -> TheoryHasModel T
+```
 
-The repository's from-scratch first-order calculus uses the fixed countable
-language of equality and one binary relation (`fMem`).  For arbitrary
-sentence theories in that language, the exact bidirectional theorem is proved
-independently in both kernels:
+Thus the central implication is exactly
+
+```text
+T ⊨ phi  ->  T ⊢ phi.
+```
+
+`TheorySyntacticConsequence T phi` is `BProv T [] phi`: its witness includes
+the finite list of axioms of `T` actually used in the derivation.  The
+finite-context theorem is stronger still: `godel_completeness G phi` allows
+open formulas and quantifies over every assignment.  The original
+empty-context formulation is named `godel_original_completeness`.
+
+This is not merely an interface to an imported completeness theorem.  The
+proof in `Lean/FirstOrder/Completeness.lean` and `Coq/Completeness.v` carries
+out the Henkin construction in both kernels:
+
+1. Extend a consistent theory by a Lindenbaum/Henkin chain that decides every
+   formula and supplies witnesses.
+2. Form the canonical term model, quotienting variables by provable equality.
+3. Prove the truth lemma by structural induction on formulas.
+4. Obtain a model of every consistent sentence theory.
+5. If `T ⊨ phi` but `T ⊬ phi`, consistently add `not phi`; its Henkin model is
+   a countermodel, a contradiction.
+
+The public textbook facade is
+`Lean/FirstOrder/ClassicalCompleteness.lean` and
+`Coq/ClassicalCompleteness.v`.  The corresponding `Audit` files print the
+kernel assumptions of the headline results.
+
+The scope is stated deliberately: this independent Lean/Coq development is
+for the repository's fixed countable relational language.  It does not claim
+an arbitrary-signature syntactic completeness theorem.  The standard coding
+argument that reduces any countable signature to a fixed countable relational
+signature has not been formalized here.
+
+## Compactness
+
+For arbitrary sentence theories in the fixed language, both kernels prove
 
 ```lean
 SetTheory.FirstOrderCompactness.compactness :
@@ -44,59 +88,46 @@ FirstOrderCompactness.compactness :
     (TheoryHasModel T <-> FiniteSubtheoriesHaveModels T)
 ```
 
-A finite subtheory is represented by a list all of whose members belong to
-`T`.  Lists enumerate precisely the finite subcollections relevant to the
-theorem; order and repetition do not affect satisfaction.  A model packages
-an assignment `nat -> Dom`, which itself guarantees that `Dom` is nonempty.
-Because members of `T` are sentences, `Sat_sentence_inv` proves that the
-chosen assignment is semantically irrelevant.
+The nontrivial direction is a direct corollary of completeness.  A proof of
+falsity from `T` uses finitely many axioms; a model of that finite subtheory
+would satisfy falsity by soundness.  Hence `T` is consistent, and
+`godel_model_existence` supplies a model.
 
-The easy direction restricts one model of `T` to each finite subtheory.  For
-the converse, suppose the whole theory proved falsity.  Relative provability
-contains an explicit finite list of theory axioms supporting that derivation.
-Finite satisfiability supplies a model of this list, while soundness says the
-same model satisfies falsity—a contradiction.  Thus the theory is
-syntactically consistent, and the existing Henkin theorem `model_of_BCon`
-constructs a model of all its sentences.
+The separate Mathlib-backed Lean target provides arbitrary-language semantic
+compactness:
 
-The fixed-language proof is in `Lean/FirstOrder/Compactness.lean` and
-`Coq/Compactness.v`; the corresponding `Audit` files check both directions
-and print the kernel assumptions.
+```lean
+LeanProofs.FirstOrderCompactness.arbitrary_language_compactness :
+  {L : FirstOrder.Language.{u, v}} {T : L.Theory} →
+    T.IsSatisfiable ↔ T.IsFinitelySatisfiable
+```
 
-The distinction is intentional: arbitrary-signature compactness is currently
-Lean-only through Mathlib, while the independent repository-native Lean/Coq
-proof covers the fixed countable relation language.  No generic Coq parity is
-claimed.
+That target is an audited re-export of Mathlib's ultraproduct proof, not an
+independent reproof.  It is in
+`Compactness/Lean/ArbitraryLanguageCompactness.lean`.
 
 ## Verification
 
-From the repository root, the independent Lean proof and audit can be built
-without Mathlib:
+Build the independent Lean development without Mathlib:
 
 ```powershell
-lake --dir Logic/FirstOrder/Lean build FirstOrder.Compactness FirstOrder.Audit
+lake --dir Logic/FirstOrder/Lean build FirstOrder.ClassicalCompleteness `
+  FirstOrder.Compactness FirstOrder.Audit
 ```
 
-The general Lean target has its own Mathlib-backed Lake project:
-
-```powershell
-lake --dir Logic/FirstOrder/Compactness/Lean exe cache get
-lake --dir Logic/FirstOrder/Compactness/Lean build `
-  ArbitraryLanguageCompactness ArbitraryLanguageCompactness.Audit
-```
-
-With the dependencies in `_CoqProject` compiled, check the Coq proof and its
-complete imported closure with:
+Check the independent Coq development and its imported closure:
 
 ```powershell
 $q = @('-Q', 'Logic/FirstOrder/Coq', 'FirstOrder')
+coqc @q Logic/FirstOrder/Coq/ClassicalCompleteness.v
 coqc @q Logic/FirstOrder/Coq/Compactness.v
 coqc @q Logic/FirstOrder/Coq/Audit.v
-coqchk -silent @q FirstOrder.Compactness FirstOrder.Audit
+coqchk -silent @q FirstOrder.ClassicalCompleteness `
+  FirstOrder.Compactness FirstOrder.Audit
 ```
 
-The custom Lean theorem uses only Lean's standard `propext`,
-`Classical.choice`, and `Quot.sound` principles inherited from completeness.
-The Coq theorem uses only its documented standard-library classical choice,
-extensionality, and proof-irrelevance principles.  Neither proof introduces a
-project-local axiom or admission.
+The Lean completeness proof uses only Lean's standard `propext`,
+`Classical.choice`, and `Quot.sound` principles.  The Coq proof uses the
+documented standard-library classical choice, propositional and functional
+extensionality, and proof irrelevance.  Neither proof contains a project-local
+axiom or admission.

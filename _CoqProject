@@ -51,6 +51,7 @@ SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 Logic/FirstOrder/Coq/Completeness.v
 Logic/FirstOrder/Coq/Compactness.v
+Logic/FirstOrder/Coq/ClassicalCompleteness.v
 SetTheory/ClosureAxiomatization/Coq/Equivalence.v
 SetTheory/ClosureAxiomatization/Coq/Audit.v
 Logic/Interpretability/PAHF/Coq/PAHF.v
