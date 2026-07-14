@@ -23,7 +23,7 @@ project, `Lean/` and `Coq/` are siblings; `Research/`, `Support/`, and
 | [`Analysis/`](Analysis/) | Exact trigonometric, arctangent, and exponential identities. |
 | [`Combinatorics/`](Combinatorics/) | Enumeration of power towers and radical expressions, including OEIS certificates and research corpora. |
 | [`Computability/`](Computability/) | Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
-| [`Logic/`](Logic/) | First-order logic and completeness, propositional/equational axiom systems, and PA/HF interpretability. |
+| [`Logic/`](Logic/) | First-order logic and completeness, propositional/equational axiom systems, PA infinitude, and PA/HF interpretability. |
 | [`NumberTheory/`](NumberTheory/) | FLT for exponent four, floor-square-root sums, rational enumeration, and an arithmetic RH sentence. |
 | [`SetTheory/`](SetTheory/) | First-order ZF and the Closure axiomatization's equivalence with ZF. |
 | [`lib/`](lib/) | Vendored third-party code only. |
@@ -46,6 +46,9 @@ is the broad Lean import surface.
   checked independently in Lean and Coq.
 - A deductive bi-interpretation between PA and finite-generation hereditary
   finite set theory.
+- A [constructive Lean/Coq proof](Logic/PeanoArithmetic/NoFiniteModel/README.md)
+  that Peano arithmetic has no finite model, using only injectivity of
+  successor and zero's absence from its image.
 - Busy Beaver domination plus exact results `Sigma(2)=4`, `Sigma(3)=6`,
   `Sigma(4)=13` and `BB(2)=6`, `BB(3)=21`, `BB(4)=107` for the documented
   score/time conventions.
@@ -67,6 +70,7 @@ lake build +DiophantineEquations.FermatFour
 lake build +ShefferStroke.Sheffer
 lake build +FirstOrder.Fol
 lake build +ClosureAxiomatization.Forward
+lake build +NoFiniteModel
 lake build +PowerTowers.Core
 lake build +BusyBeaver.BB2
 lake build +BusyBeaver.BB3
@@ -83,6 +87,7 @@ lake --dir Logic/Propositional/PrincipleOfExplosion/Lean build
 lake --dir Logic/QuantifierCommutation/Lean build
 lake --dir Logic/FirstOrder/Lean build
 lake --dir Logic/Interpretability/PAHF/Lean build
+lake --dir Logic/PeanoArithmetic/NoFiniteModel/Lean build
 lake --dir SetTheory/ZF/Lean build
 lake --dir SetTheory/ClosureAxiomatization/Lean build
 lake --dir NumberTheory/RiemannHypothesis/PAStatement/Lean build

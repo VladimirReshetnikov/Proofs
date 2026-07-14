@@ -1,0 +1,9 @@
+name = "NoFiniteModel"
+defaultTargets = ["NoFiniteModel"]
+
+[[require]]
+name = "PAHF"
+path = "../../../Interpretability/PAHF/Lean"
+
+[[lean_lib]]
+name = "NoFiniteModel"
