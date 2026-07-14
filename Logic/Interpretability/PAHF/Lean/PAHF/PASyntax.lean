@@ -26405,58 +26405,31 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_one_bound_of_entries
         have hcases : BProv Ax_s D
             (or (leConstAt 1 0) (eqConstAt 1 1)) :=
           BProv_Ax_s_leConstAt_succ_cases hle
-        have hcurRen1 : BProv Ax_s (G.map (rename Nat.succ))
-            (rename Nat.succ
-              (betaTermTermAt cur (Term.var oldCode)
-                (Term.var oldStep) (Term.succ Term.zero))) :=
-          BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hcur Nat.succ
-        have hcurRen2 : BProv Ax_s
-            ((G.map (rename Nat.succ)).map (rename Nat.succ))
-            (rename Nat.succ (rename Nat.succ
-              (betaTermTermAt cur (Term.var oldCode)
-                (Term.var oldStep) (Term.succ Term.zero)))) :=
-          BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hcurRen1 Nat.succ
+        have lift2 {phi : Formula} (hphi : BProv Ax_s G phi) :
+            BProv Ax_s D (rename Nat.succ (rename Nat.succ phi)) := by
+          simpa [D, C] using
+            (BProv_lift_two_contexts_of_sentences
+              (B := Ax_s) (G := G)
+              (outer := leHyp) (inner := oldBeta)
+              Ax_s_sentences hphi)
         have hcurD : BProv Ax_s D
             (betaTermTermAt cur2
               (Term.var (oldCode+2)) (Term.var (oldStep+2))
               (Term.succ Term.zero)) := by
-          simpa [D, C, leHyp, cur2, betaTermTermAt,
+          simpa [cur2, betaTermTermAt,
             remTermTermAt, ltTermAt, betaModTermTerm,
             rename, Term.rename, SetTheory.up, Term.rename_comp,
-            term_rename_up_succ_rename_succ, List.map_map,
-            Function.comp_def] using
-            BProv_context_two hcurRen2
-        have hnextRen1 : BProv Ax_s (G.map (rename Nat.succ))
-            (rename Nat.succ
-              (betaTermTermAt next (Term.var oldCode)
-                (Term.var oldStep)
-                (Term.succ (Term.succ Term.zero)))) :=
-          BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hnext Nat.succ
-        have hnextRen2 : BProv Ax_s
-            ((G.map (rename Nat.succ)).map (rename Nat.succ))
-            (rename Nat.succ (rename Nat.succ
-              (betaTermTermAt next (Term.var oldCode)
-                (Term.var oldStep)
-                (Term.succ (Term.succ Term.zero))))) :=
-          BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hnextRen1 Nat.succ
+            term_rename_up_succ_rename_succ,
+            Function.comp_def] using lift2 hcur
         have hnextD : BProv Ax_s D
             (betaTermTermAt next2
               (Term.var (oldCode+2)) (Term.var (oldStep+2))
               (Term.succ (Term.succ Term.zero))) := by
-          simpa [D, C, leHyp, next2, betaTermTermAt,
+          simpa [next2, betaTermTermAt,
             remTermTermAt, ltTermAt, betaModTermTerm,
             rename, Term.rename, SetTheory.up, Term.rename_comp,
-            term_rename_up_succ_rename_succ, List.map_map,
-            Function.comp_def] using
-            BProv_context_two hnextRen2
+            term_rename_up_succ_rename_succ,
+            Function.comp_def] using lift2 hnext
         have hleft : BProv Ax_s (leConstAt 1 0 :: D) newBeta := by
           let L : List Formula := leConstAt 1 0 :: D
           have hleZero : BProv Ax_s L (leConstAt 1 0) :=
@@ -26666,23 +26639,14 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_zero_of_eqConst_step_zero
         let D : List Formula := oldBeta :: C.map (rename Nat.succ)
         have hold : BProv Ax_s D oldBeta :=
           BProv_ass (B := Ax_s) (G := D) (by simp [D])
-        have hstepRen1 : BProv Ax_s (G.map (rename Nat.succ))
-            (rename Nat.succ (eqConstAt oldStep 0)) :=
-          BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hOldStep Nat.succ
-        have hstepRen2 : BProv Ax_s
-            ((G.map (rename Nat.succ)).map (rename Nat.succ))
-            (rename Nat.succ (rename Nat.succ
-              (eqConstAt oldStep 0))) :=
-          BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hstepRen1 Nat.succ
         have hstepD : BProv Ax_s D
             (eq (Term.var (oldStep+2)) Term.zero) := by
-          simpa [D, C, leHyp, oldBeta, eqConstAt, zeroAt, rename,
-            Term.rename, Term.numeral, Nat.add_assoc] using
-            BProv_context_two hstepRen2
+          simpa [D, C, eqConstAt, rename, Term.rename,
+            Term.numeral, Nat.add_assoc] using
+            (BProv_lift_two_contexts_of_sentences
+              (B := Ax_s) (G := G)
+              (outer := leHyp) (inner := oldBeta)
+              Ax_s_sentences hOldStep)
         have houtZero : BProv Ax_s D (eq (Term.var 0) Term.zero) :=
           BProv_Ax_s_eq_zero_of_betaTermTermAt_eq_step_zero
             hold hstepD

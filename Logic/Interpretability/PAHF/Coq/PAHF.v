@@ -29792,19 +29792,19 @@ Proof.
         assert (hcases : BProv Ax_s D
             (pOr (leConstAt 1 0) (eqConstAt 1 1))).
         { exact (BProv_Ax_s_leConstAt_succ_cases D 1 0 hle). }
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-          (betaTermTermAt cur (tVar oldCode) (tVar oldStep)
-            (tSucc tZero)) hcur S) as hcurRen1.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) G)
-          (rename S (betaTermTermAt cur (tVar oldCode) (tVar oldStep)
-            (tSucc tZero))) hcurRen1 S) as hcurRen2.
         assert (hcurD : BProv Ax_s D
             (betaTermTermAt cur2
               (tVar (oldCode + 2)) (tVar (oldStep + 2))
               (tSucc tZero))).
         {
-          unfold D, C.
+          pose proof (BProv_lift_two_contexts_of_sentences
+            Ax_s sentence_ax_s G leHyp oldBeta
+            (betaTermTermAt cur (tVar oldCode) (tVar oldStep)
+              (tSucc tZero)) hcur) as h.
+          change (BProv Ax_s D
+            (rename S (rename S
+              (betaTermTermAt cur (tVar oldCode) (tVar oldStep)
+                (tSucc tZero))))) in h.
           replace
             (betaTermTermAt cur2
               (tVar (oldCode + 2)) (tVar (oldStep + 2))
@@ -29812,40 +29812,27 @@ Proof.
             with (rename S (rename S
               (betaTermTermAt cur (tVar oldCode) (tVar oldStep)
                 (tSucc tZero)))).
-          - apply BProv_context_two.
-            exact hcurRen2.
-          - unfold cur2, betaTermTermAt, remTermTermAt, ltTermAt,
-              betaModTermTerm.
+          - exact h.
+          - rewrite !rename_betaTermTermAt.
+            unfold cur2.
+            rewrite term_rename_add_eq_iterTermRenameSucc.
             replace (oldCode + 2) with (S (S oldCode)) by lia.
             replace (oldStep + 2) with (S (S oldStep)) by lia.
-            simpl.
-            repeat rewrite term_rename_up_succ_rename_succ.
-            repeat rewrite term_rename_up_up_succ_rename_two_succ.
-            repeat rewrite Term.rename_comp.
-            replace
-              (Term.rename (fun n => S (S (S (n + 2)))) cur)
-              with (Term.rename
-                (fun n => up (up (up S))
-                  (up (up (up S)) (S (S (S n))))) cur)
-              by (apply Term.rename_ext; intro n; simpl; lia).
-            replace (Term.rename (fun n => S (S (n + 2))) cur)
-              with (Term.rename (fun n => S (S (S (S n)))) cur)
-              by (apply Term.rename_ext; intro n; lia).
-            reflexivity.
+            simpl. reflexivity.
         }
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-          (betaTermTermAt next (tVar oldCode) (tVar oldStep)
-            (tSucc (tSucc tZero))) hnext S) as hnextRen1.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) G)
-          (rename S (betaTermTermAt next (tVar oldCode) (tVar oldStep)
-            (tSucc (tSucc tZero)))) hnextRen1 S) as hnextRen2.
         assert (hnextD : BProv Ax_s D
             (betaTermTermAt next2
               (tVar (oldCode + 2)) (tVar (oldStep + 2))
               (tSucc (tSucc tZero)))).
         {
-          unfold D, C.
+          pose proof (BProv_lift_two_contexts_of_sentences
+            Ax_s sentence_ax_s G leHyp oldBeta
+            (betaTermTermAt next (tVar oldCode) (tVar oldStep)
+              (tSucc (tSucc tZero))) hnext) as h.
+          change (BProv Ax_s D
+            (rename S (rename S
+              (betaTermTermAt next (tVar oldCode) (tVar oldStep)
+                (tSucc (tSucc tZero)))))) in h.
           replace
             (betaTermTermAt next2
               (tVar (oldCode + 2)) (tVar (oldStep + 2))
@@ -29853,26 +29840,13 @@ Proof.
             with (rename S (rename S
               (betaTermTermAt next (tVar oldCode) (tVar oldStep)
                 (tSucc (tSucc tZero))))).
-          - apply BProv_context_two.
-            exact hnextRen2.
-          - unfold next2, betaTermTermAt, remTermTermAt, ltTermAt,
-              betaModTermTerm.
+          - exact h.
+          - rewrite !rename_betaTermTermAt.
+            unfold next2.
+            rewrite term_rename_add_eq_iterTermRenameSucc.
             replace (oldCode + 2) with (S (S oldCode)) by lia.
             replace (oldStep + 2) with (S (S oldStep)) by lia.
-            simpl.
-            repeat rewrite term_rename_up_succ_rename_succ.
-            repeat rewrite term_rename_up_up_succ_rename_two_succ.
-            repeat rewrite Term.rename_comp.
-            replace
-              (Term.rename (fun n => S (S (S (n + 2)))) next)
-              with (Term.rename
-                (fun n => up (up (up S))
-                  (up (up (up S)) (S (S (S n))))) next)
-              by (apply Term.rename_ext; intro n; simpl; lia).
-            replace (Term.rename (fun n => S (S (n + 2))) next)
-              with (Term.rename (fun n => S (S (S (S n)))) next)
-              by (apply Term.rename_ext; intro n; lia).
-            reflexivity.
+            simpl. reflexivity.
         }
         assert (hleft : BProv Ax_s (leConstAt 1 0 :: D) newBeta).
         {
@@ -30127,25 +30101,18 @@ Proof.
         set (D := oldBeta :: map (rename S) C).
         assert (hold : BProv Ax_s D oldBeta).
         { apply BProv_ass. unfold D. simpl. left. reflexivity. }
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-          (eqConstAt oldStep 0) hOldStep S) as hstepRen1.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-          (map (rename S) G) (rename S (eqConstAt oldStep 0))
-          hstepRen1 S) as hstepRen2.
-        assert (hstepCtx : BProv Ax_s D
-            (rename S (rename S (eqConstAt oldStep 0)))).
-        {
-          unfold D, C. simpl.
-          apply BProv_context_two.
-          exact hstepRen2.
-        }
         assert (hstepD : BProv Ax_s D
             (pEq (tVar (oldStep + 2)) tZero)).
         {
-          unfold eqConstAt in hstepCtx.
-          simpl in hstepCtx.
+          pose proof (BProv_lift_two_contexts_of_sentences
+            Ax_s sentence_ax_s G leHyp oldBeta
+            (eqConstAt oldStep 0) hOldStep) as h.
+          change (BProv Ax_s D
+            (rename S (rename S (eqConstAt oldStep 0)))) in h.
+          unfold eqConstAt in h.
+          simpl in h.
           replace (oldStep + 2) with (S (S oldStep)) by lia.
-          exact hstepCtx.
+          exact h.
         }
         assert (houtZero : BProv Ax_s D (pEq (tVar 0) tZero)).
         {
