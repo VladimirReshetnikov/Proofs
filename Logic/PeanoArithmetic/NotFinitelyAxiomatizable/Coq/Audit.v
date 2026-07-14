@@ -5,7 +5,7 @@ From PAFiniteBasisReduction Require Import
   CanonicalSelector CanonicalSelectorPA SkolemProgramCode FiniteBetaCoding
   ProgramTrace TotalProgramRows EvaluatorCutContract StandardTraceRows
   CanonicalTotalRows StandardTraceFunctionality TotalTraceEvaluator
-  NonstandardHFFin TraceContractRealization.
+  NonstandardHFFin TwoNonisomorphicModels TraceContractRealization.
 
 Import PAFiniteBasisReduction PAHierarchyReduction.
 Import PAFiniteSkolemHull PACanonicalSelector.
@@ -20,6 +20,16 @@ Import PACanonicalTotalRows.
 Import PAStandardTraceFunctionality.
 Import PATotalTraceEvaluator.
 Import PATraceContractRealization.
+Import PATwoNonisomorphicModels.
+
+Check FirstOrderPAModel.
+Check RawPAIso.
+Check NumeralGenerated.
+Check standardPAModel.
+Check nonstandardPAModel_exists.
+Check peano_arithmetic_has_two_nonisomorphic_models.
+
+Print Assumptions peano_arithmetic_has_two_nonisomorphic_models.
 
 Check DeductivelyFinitelyAxiomatizable.
 Check HasFiniteFragmentBasis.

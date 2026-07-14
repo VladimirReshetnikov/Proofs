@@ -128,6 +128,8 @@ Logic/Interpretability/PAHF/Coq/PAHFRoundTripArithmeticAssembly.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemantics.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemanticsGraph.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/NonstandardHFFin.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TwoNonisomorphicModels.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TwoNonisomorphicModelsAudit.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TraceContractRealization.v
 Logic/Interpretability/PAHF/Coq/PAHFProofTranslationSemantic.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMulCorrected.v

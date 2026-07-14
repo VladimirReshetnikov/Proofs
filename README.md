@@ -51,6 +51,9 @@ is the broad Lean import surface.
 - A [constructive Lean/Coq proof](Logic/PeanoArithmetic/NoFiniteModel/README.md)
   that Peano arithmetic has no finite model, using only injectivity of
   successor and zero's absence from its image.
+- Lean/Coq proofs that first-order Peano arithmetic has two non-isomorphic
+  models, separating the numeral-generated standard model from a compactness
+  model with an element above every standard numeral.
 - Independent Lean and Rocq/Coq proofs that pure SK, SKI, and Iota simulate
   closed weak untyped lambda calculus by compositional positive-step compilers,
   and that Iota embeds faithfully back into closed lambda terms.

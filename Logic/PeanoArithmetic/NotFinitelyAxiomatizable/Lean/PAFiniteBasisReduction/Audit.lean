@@ -119,6 +119,15 @@ open LeanProofs.PAFiniteBasisReduction.FiniteSkolemCut
 -- operations are required.
 example : SetTheory.PA.PreModel Nat := SetTheory.PA.natModel
 
+#check TwoNonisomorphicModels.FirstOrderPAModel
+#check @TwoNonisomorphicModels.RawPAIso
+#check @TwoNonisomorphicModels.NumeralGenerated
+#check TwoNonisomorphicModels.standardPAModel
+#check TwoNonisomorphicModels.nonstandardPAModel_exists
+#check TwoNonisomorphicModels.peano_arithmetic_has_two_nonisomorphic_models
+
+#print axioms TwoNonisomorphicModels.peano_arithmetic_has_two_nonisomorphic_models
+
 #print axioms bound_finite_axiomatization
 #print axioms bprov_listTheory_iff_prov
 #print axioms finiteAxiomatization_to_finiteSubtheoryBasis

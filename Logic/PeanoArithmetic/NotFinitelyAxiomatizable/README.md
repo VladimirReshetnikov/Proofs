@@ -12,6 +12,17 @@ proves
 Both proofs reach the finite-basis conclusion without assuming fragment
 strictness, trace totality, or trace functionality as hypotheses.
 
+The compactness construction also yields an independently audited corollary:
+first-order PA has at least two non-isomorphic models.  The Lean theorem is
+`TwoNonisomorphicModels.peano_arithmetic_has_two_nonisomorphic_models`; its Coq
+counterpart is
+`PATwoNonisomorphicModels.peano_arithmetic_has_two_nonisomorphic_models`.
+Both compare the standard model, whose elements are all values of standard
+numerals, with a compactness model containing an element above every standard
+numeral.  They use raw first-order structures satisfying the PA schema, not
+the stronger meta-level `PA.Model` interface whose induction field ranges over
+all host-language predicates.
+
 ## Proof architecture
 
 The proof formalizes the Ryll-Nardzewski finite-Skolem-hull argument.  Its
@@ -71,6 +82,8 @@ The main layers under `Lean/PAFiniteBasisReduction/` are:
 - `Reduction.lean`, `Hierarchy.lean`, and `FiniteRankSyntax.lean`: finite-basis
   reduction, cofinal rank hierarchy, and finite syntax enumeration;
 - `NonstandardHFFin.lean`: compactness model with a named nonstandard ordinal;
+- `TwoNonisomorphicModels.lean`: the standard/nonstandard model comparison and
+  the isomorphism-invariant numeral-generation argument;
 - `FiniteSkolemCut.lean` and `CanonicalSelectors.lean`: the bounded-rank hull,
   elementarity, and PA-definable canonical selectors;
 - `FiniteBetaCoding.lean`, `ProgramBetaCoding.lean`, and
