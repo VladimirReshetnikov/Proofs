@@ -33981,47 +33981,24 @@ theorem BProv_Ax_s_betaPrependPrefixTermAt_bitTerm_succ_of_sourceBit
       have hdiv : BProv Ax_s C
           (div2StepTermAt (Term.var 1) (Term.var 0) bit2) :=
         BProv_andE2 htail
-      have hprefixRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (betaPrependPrefixTermAt sourceCode sourceStep head
-              targetCode targetStep (Term.succ (Term.succ last)))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hprefix Nat.succ
-      have hprefixRen2 : BProv Ax_s
-          ((G.map (rename Nat.succ)).map (rename Nat.succ))
-          (rename Nat.succ (rename Nat.succ
-            (betaPrependPrefixTermAt sourceCode sourceStep head
-              targetCode targetStep (Term.succ (Term.succ last))))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hprefixRen1 Nat.succ
+      have lift2 {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s C (rename Nat.succ (rename Nat.succ phi)) := by
+        simpa [C, G1] using
+          (BProv_lift_two_opened_of_sentences
+            (B := Ax_s) Ax_s_sentences (body := body) hphi)
       have hprefixC : BProv Ax_s C
           (betaPrependPrefixTermAt sourceCode2 sourceStep2 head2
             targetCode2 targetStep2 (Term.succ (Term.succ last2))) := by
-        simpa [C, G1, sourceCode2, sourceStep2, head2,
+        simpa [sourceCode2, sourceStep2, head2,
           targetCode2, targetStep2, last2,
           rename_betaPrependPrefixTermAt,
-          Term.rename, Term.rename_comp, List.map_map,
-          Function.comp_def] using
-          BProv_context_two hprefixRen2
-      have hleRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (leTermAt idx last)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hle Nat.succ
-      have hleRen2 : BProv Ax_s
-          ((G.map (rename Nat.succ)).map (rename Nat.succ))
-          (rename Nat.succ (rename Nat.succ (leTermAt idx last))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hleRen1 Nat.succ
+          Term.rename, Term.rename_comp, Function.comp_def] using
+          lift2 hprefix
       have hleC : BProv Ax_s C (leTermAt idx2 last2) := by
-        simpa [C, G1, idx2, last2, leTermAt,
+        simpa [idx2, last2, leTermAt,
           rename, Term.rename, SetTheory.up, Term.rename_comp,
-          term_rename_up_succ_rename_succ, List.map_map,
-          Function.comp_def] using
-          BProv_context_two hleRen2
+          term_rename_up_succ_rename_succ, Function.comp_def] using
+          lift2 hle
       have htarget : BProv Ax_s C
           (betaDiv2BitTermAt bit2 targetCode2 targetStep2
             (Term.succ idx2)) :=
@@ -34950,45 +34927,21 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_bitTerm_of_oldBit
       have hdiv : BProv Ax_s C
           (div2StepTermAt (Term.var 1) (Term.var 0) bit2) :=
         BProv_andE2 htailBody
-      have htailRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (betaShiftTailThroughTermAt oldCode oldStep
-              newCode newStep (Term.succ lastTerm))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          htail Nat.succ
-      have htailRen2 : BProv Ax_s
-          ((G.map (rename Nat.succ)).map (rename Nat.succ))
-          (rename Nat.succ (rename Nat.succ
-            (betaShiftTailThroughTermAt oldCode oldStep
-              newCode newStep (Term.succ lastTerm)))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          htailRen1 Nat.succ
+      have lift2 {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s C (rename Nat.succ (rename Nat.succ phi)) := by
+        simpa [C, G1] using
+          (BProv_lift_two_opened_of_sentences
+            (B := Ax_s) Ax_s_sentences (body := body) hphi)
       have htailC : BProv Ax_s C
           (betaShiftTailThroughTermAt (oldCode+2) (oldStep+2)
             newCode2 newStep2 (Term.succ last2)) := by
-        simpa [C, G1, newCode2, newStep2, last2,
+        simpa [newCode2, newStep2, last2,
           rename_betaShiftTailThroughTermAt, Term.rename, Term.rename_comp,
-          List.map_map, Function.comp_def, Nat.add_assoc] using
-          BProv_context_two htailRen2
-      have hleRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (leTermAt idxTerm lastTerm)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hle Nat.succ
-      have hleRen2 : BProv Ax_s
-          ((G.map (rename Nat.succ)).map (rename Nat.succ))
-          (rename Nat.succ (rename Nat.succ
-            (leTermAt idxTerm lastTerm))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hleRen1 Nat.succ
+          Function.comp_def, Nat.add_assoc] using lift2 htail
       have hleC : BProv Ax_s C (leTermAt idx2 last2) := by
-        simpa [C, G1, idx2, last2, leTermAt, rename, Term.rename,
+        simpa [idx2, last2, leTermAt, rename, Term.rename,
           SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
-          List.map_map, Function.comp_def] using
-          BProv_context_two hleRen2
+          Function.comp_def] using lift2 hle
       have hleCurrent : BProv Ax_s C
           (leTermAt idx2 (Term.succ last2)) :=
         BProv_Ax_s_leTermAt_trans hleC
