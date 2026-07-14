@@ -3,6 +3,7 @@
 -Q Combinatorics/ExpressionEnumeration/PowerTowers/Coq PowerTowers
 -Q Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Coq A158415
 -Q Computability/BusyBeaver/Coq BusyBeaver
+-Q Computability/CombinatoryLogic/Coq CombinatoryLogic
 -Q Logic/FirstOrder/Coq FirstOrder
 -Q Logic/Propositional/ShefferStroke/Coq ShefferStroke
 -Q Logic/Equational/Common/Coq EquationalLogic
@@ -20,6 +21,17 @@
 
 # Dependency-ordered by `coqdep -sort -f _CoqProject`.
 
+Computability/CombinatoryLogic/Coq/Reduction.v
+Computability/CombinatoryLogic/Coq/Lambda.v
+Computability/CombinatoryLogic/Coq/SKPolynomial.v
+Computability/CombinatoryLogic/Coq/SKI.v
+Computability/CombinatoryLogic/Coq/SK.v
+Computability/CombinatoryLogic/Coq/Iota.v
+Computability/CombinatoryLogic/Coq/SKIToSK.v
+Computability/CombinatoryLogic/Coq/TuringCompleteness.v
+Computability/CombinatoryLogic/Coq/LambdaToSK.v
+Computability/CombinatoryLogic/Coq/IotaToLambda.v
+Computability/CombinatoryLogic/Coq/Audit.v
 Logic/FirstOrder/Coq/Fol.v
 Logic/FirstOrder/Coq/Calculus.v
 SetTheory/ZF/Coq/Zf.v

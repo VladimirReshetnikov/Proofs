@@ -30,6 +30,10 @@ name = "BusyBeaver"
 srcDir = "Computability/BusyBeaver/Lean"
 
 [[lean_lib]]
+name = "CombinatoryLogic"
+srcDir = "Computability/CombinatoryLogic/Lean"
+
+[[lean_lib]]
 name = "FirstOrder"
 srcDir = "Logic/FirstOrder/Lean"
 

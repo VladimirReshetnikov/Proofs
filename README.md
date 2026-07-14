@@ -22,7 +22,7 @@ project, `Lean/` and `Coq/` are siblings; `Research/`, `Support/`, and
 | --- | --- |
 | [`Analysis/`](Analysis/) | Exact trigonometric, arctangent, and exponential identities. |
 | [`Combinatorics/`](Combinatorics/) | Enumeration of power towers and radical expressions, including OEIS certificates and research corpora. |
-| [`Computability/`](Computability/) | Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
+| [`Computability/`](Computability/) | Lambda/SK/SKI/Iota universality and the faithful Iota-to-lambda embedding; Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
 | [`Logic/`](Logic/) | First-order logic and completeness, propositional/equational axiom systems, and PA/HF interpretability. |
 | [`NumberTheory/`](NumberTheory/) | FLT for exponent four, floor-square-root sums, rational enumeration, and an arithmetic RH sentence. |
 | [`SetTheory/`](SetTheory/) | First-order ZF and the Closure axiomatization's equivalence with ZF. |
@@ -46,6 +46,9 @@ is the broad Lean import surface.
   checked independently in Lean and Coq.
 - A deductive bi-interpretation between PA and finite-generation hereditary
   finite set theory.
+- Independent Lean and Rocq/Coq proofs that pure SK, SKI, and Iota simulate
+  closed weak untyped lambda calculus by compositional positive-step compilers,
+  and that Iota embeds faithfully back into closed lambda terms.
 - Busy Beaver domination plus exact results `Sigma(2)=4`, `Sigma(3)=6`,
   `Sigma(4)=13` and `BB(2)=6`, `BB(3)=21`, `BB(4)=107` for the documented
   score/time conventions.
@@ -68,6 +71,7 @@ lake build +ShefferStroke.Sheffer
 lake build +FirstOrder.Fol
 lake build +ClosureAxiomatization.Forward
 lake build +PowerTowers.Core
+lake build +CombinatoryLogic
 lake build +BusyBeaver.BB2
 lake build +BusyBeaver.BB3
 lake build +BusyBeaver.Mathlib
@@ -99,8 +103,11 @@ make -f Makefile.coq
 ```
 
 Topic READMEs document focused `coqc` commands and Lean/Coq parity boundaries.
-In particular, some Coq ports check the finite certificate surface while the
-analytic or semantic bridge remains Lean-only; no blanket parity is claimed.
+The combinatory-logic development checks the same weak-lambda-to-SK-to-SKI-to-
+Iota simulation and the converse faithful Iota-to-lambda embedding independently
+in both systems. In particular, some other Coq ports check the finite
+certificate surface while the analytic or semantic bridge remains Lean-only;
+no blanket parity is claimed.
 
 ## Trust and status
 
