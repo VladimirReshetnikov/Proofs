@@ -12893,44 +12893,18 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_mul
       (BProv_ass (B := Ax_s) (G := L)
         (by simp [L, crtInverseExistsTermAtOpenedContext,
           crtInverseExistsTermAtBody]))
-  have hrightRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ
-        (crtInverseExistsTermAt rightProduct modulus)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hright Nat.succ
-  have hrightRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (crtInverseExistsTermAt rightProduct modulus))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hrightRen1 Nat.succ
-  have hrightBase : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (crtInverseExistsTermAt rightProduct2 modulus2) := by
-    simpa [rightProduct2, modulus2, rename_crtInverseExistsTermAt,
-      Term.rename_comp, Function.comp_def] using hrightRen2
   have hrightL : BProv Ax_s L
       (crtInverseExistsTermAt rightProduct2 modulus2) := by
-    let leftQuotEx : Formula :=
-      crtInverseExistsTermAtQuotEx leftProduct modulus
-    let leftBody : Formula :=
-      crtInverseExistsTermAtBody leftProduct modulus
-    have h1 : BProv Ax_s
-        (rename Nat.succ leftQuotEx ::
-          (G.map (rename Nat.succ)).map (rename Nat.succ))
-        (crtInverseExistsTermAt rightProduct2 modulus2) :=
-      BProv_context_cons (B := Ax_s)
-        (a := rename Nat.succ leftQuotEx) hrightBase
-    have h2 : BProv Ax_s
-        (leftBody :: rename Nat.succ leftQuotEx ::
-          (G.map (rename Nat.succ)).map (rename Nat.succ))
-        (crtInverseExistsTermAt rightProduct2 modulus2) :=
-      BProv_context_cons (B := Ax_s) (a := leftBody) h1
-    simpa [L, leftQuotEx, leftBody,
-      crtInverseExistsTermAtOpenedContext, List.map_map,
-      Function.comp_def] using h2
+    simpa [L, rightProduct2, modulus2,
+      crtInverseExistsTermAtOpenedContext,
+      rename_crtInverseExistsTermAt,
+      Term.rename_comp, Function.comp_def] using
+      (BProv_lift_two_contexts_of_sentences
+        (B := Ax_s) Ax_s_sentences
+        (G := G)
+        (outer := crtInverseExistsTermAtQuotEx leftProduct modulus)
+        (inner := crtInverseExistsTermAtBody leftProduct modulus)
+        hright)
   refine BProv_Ax_s_crtInverseExistsTermAt_elim_opened
     (G := L) (product := rightProduct2) (modulus := modulus2)
     (target := rename Nat.succ (rename Nat.succ target)) ?_ hrightL
@@ -12951,51 +12925,19 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_mul
     simpa [rightProduct2, modulus2, rightProduct4, modulus4,
       crtInverseExistsTermAtBody, Term.rename_comp,
       Function.comp_def, Nat.add_assoc] using hraw
-  have hleftRen1 : BProv Ax_s (L.map (rename Nat.succ))
-      (rename Nat.succ
-        (crtInverseTermAt leftProduct2 modulus2
-          (Term.var 1) (Term.var 0))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hleftCert Nat.succ
-  have hleftRen2 : BProv Ax_s
-      ((L.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (crtInverseTermAt leftProduct2 modulus2
-          (Term.var 1) (Term.var 0)))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hleftRen1 Nat.succ
-  have hleftBase : BProv Ax_s
-      ((L.map (rename Nat.succ)).map (rename Nat.succ))
-      (crtInverseTermAt leftProduct4 modulus4
-        (Term.var 3) (Term.var 2)) := by
-    simpa [leftProduct2, modulus2, leftProduct4, modulus4,
-      rename_crtInverseTermAt, Term.rename,
-      Term.rename_comp, Function.comp_def] using hleftRen2
   have hleftR : BProv Ax_s R
       (crtInverseTermAt leftProduct4 modulus4
         (Term.var 3) (Term.var 2)) := by
-    let rightQuotEx : Formula :=
-      crtInverseExistsTermAtQuotEx rightProduct2 modulus2
-    let rightBody : Formula :=
-      crtInverseExistsTermAtBody rightProduct2 modulus2
-    have h1 : BProv Ax_s
-        (rename Nat.succ rightQuotEx ::
-          (L.map (rename Nat.succ)).map (rename Nat.succ))
-        (crtInverseTermAt leftProduct4 modulus4
-          (Term.var 3) (Term.var 2)) :=
-      BProv_context_cons (B := Ax_s)
-        (a := rename Nat.succ rightQuotEx) hleftBase
-    have h2 : BProv Ax_s
-        (rightBody :: rename Nat.succ rightQuotEx ::
-          (L.map (rename Nat.succ)).map (rename Nat.succ))
-        (crtInverseTermAt leftProduct4 modulus4
-          (Term.var 3) (Term.var 2)) :=
-      BProv_context_cons (B := Ax_s) (a := rightBody) h1
-    simpa [R, rightQuotEx, rightBody,
-      crtInverseExistsTermAtOpenedContext, List.map_map,
-      Function.comp_def] using h2
+    simpa [R, leftProduct2, modulus2, leftProduct4, modulus4,
+      crtInverseExistsTermAtOpenedContext,
+      rename_crtInverseTermAt, Term.rename,
+      Term.rename_comp, Function.comp_def] using
+      (BProv_lift_two_contexts_of_sentences
+        (B := Ax_s) Ax_s_sentences
+        (G := L)
+        (outer := crtInverseExistsTermAtQuotEx rightProduct2 modulus2)
+        (inner := crtInverseExistsTermAtBody rightProduct2 modulus2)
+        hleftCert)
   have hproductCert : BProv Ax_s R
       (crtInverseTermAt
         (Term.mul leftProduct4 rightProduct4) modulus4

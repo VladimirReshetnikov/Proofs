@@ -23852,45 +23852,21 @@ Proof.
         crtInverseExistsTermAtBody, leftProduct2, modulus2.
       simpl. left. reflexivity.
     }
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      (crtInverseExistsTermAt rightProduct modulus) hright S)
-      as hrightRen1.
-    pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-      (map (rename S) G)
-      (rename S (crtInverseExistsTermAt rightProduct modulus))
-      hrightRen1 S) as hrightRen2.
-    assert (hrightBase : BProv Ax_s
-        (map (rename S) (map (rename S) G))
-        (crtInverseExistsTermAt rightProduct2 modulus2)).
-    {
-      repeat rewrite rename_crtInverseExistsTermAt in hrightRen2.
-      unfold rightProduct2, modulus2.
-      repeat rewrite term_rename_add_eq_iterTermRenameSucc.
-      exact hrightRen2.
-    }
     assert (hrightL : BProv Ax_s L
         (crtInverseExistsTermAt rightProduct2 modulus2)).
     {
-      set (leftQuotEx :=
-        crtInverseExistsTermAtQuotEx leftProduct modulus).
-      set (leftBody :=
-        crtInverseExistsTermAtBody leftProduct modulus).
-      assert (h1 : BProv Ax_s
-          (rename S leftQuotEx ::
-            map (rename S) (map (rename S) G))
-          (crtInverseExistsTermAt rightProduct2 modulus2)).
-      {
-        exact (BProv_context_cons Ax_s _
-          (rename S leftQuotEx) _ hrightBase).
-      }
-      assert (h2 : BProv Ax_s
-          (leftBody :: rename S leftQuotEx ::
-            map (rename S) (map (rename S) G))
-          (crtInverseExistsTermAt rightProduct2 modulus2)).
-      { exact (BProv_context_cons Ax_s _ leftBody _ h1). }
-      unfold L, crtInverseExistsTermAtOpenedContext,
-        leftQuotEx, leftBody.
-      simpl. exact h2.
+      pose proof (BProv_lift_two_contexts_of_sentences
+        Ax_s sentence_ax_s G
+        (crtInverseExistsTermAtQuotEx leftProduct modulus)
+        (crtInverseExistsTermAtBody leftProduct modulus)
+        (crtInverseExistsTermAt rightProduct modulus) hright) as h.
+      change (BProv Ax_s L
+        (rename S (rename S
+          (crtInverseExistsTermAt rightProduct modulus)))) in h.
+      repeat rewrite rename_crtInverseExistsTermAt in h.
+      unfold rightProduct2, modulus2.
+      repeat rewrite term_rename_add_eq_iterTermRenameSucc.
+      exact h.
     }
     apply (BProv_Ax_s_crtInverseExistsTermAt_elim_opened
       L rightProduct2 modulus2 (rename S (rename S target))).
@@ -23912,49 +23888,24 @@ Proof.
           rightProduct4, modulus4.
         simpl. left. reflexivity.
       }
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s L
-        (crtInverseTermAt leftProduct2 modulus2
-          (tVar 1) (tVar 0)) hleftCert S) as hleftRen1.
-      pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-        (map (rename S) L)
-        (rename S (crtInverseTermAt leftProduct2 modulus2
-          (tVar 1) (tVar 0))) hleftRen1 S) as hleftRen2.
-      assert (hleftBase : BProv Ax_s
-          (map (rename S) (map (rename S) L))
-          (crtInverseTermAt leftProduct4 modulus4
-            (tVar 3) (tVar 2))).
-      {
-        repeat rewrite rename_crtInverseTermAt in hleftRen2.
-        unfold leftProduct4, modulus4.
-        repeat rewrite term_rename_add_eq_iterTermRenameSucc.
-        exact hleftRen2.
-      }
       assert (hleftR : BProv Ax_s R
           (crtInverseTermAt leftProduct4 modulus4
             (tVar 3) (tVar 2))).
       {
-        set (rightQuotEx :=
-          crtInverseExistsTermAtQuotEx rightProduct2 modulus2).
-        set (rightBody :=
-          crtInverseExistsTermAtBody rightProduct2 modulus2).
-        assert (h1 : BProv Ax_s
-            (rename S rightQuotEx ::
-              map (rename S) (map (rename S) L))
-            (crtInverseTermAt leftProduct4 modulus4
-              (tVar 3) (tVar 2))).
-        {
-          exact (BProv_context_cons Ax_s _
-            (rename S rightQuotEx) _ hleftBase).
-        }
-        assert (h2 : BProv Ax_s
-            (rightBody :: rename S rightQuotEx ::
-              map (rename S) (map (rename S) L))
-            (crtInverseTermAt leftProduct4 modulus4
-              (tVar 3) (tVar 2))).
-        { exact (BProv_context_cons Ax_s _ rightBody _ h1). }
-        unfold R, crtInverseExistsTermAtOpenedContext,
-          rightQuotEx, rightBody.
-        simpl. exact h2.
+        pose proof (BProv_lift_two_contexts_of_sentences
+          Ax_s sentence_ax_s L
+          (crtInverseExistsTermAtQuotEx rightProduct2 modulus2)
+          (crtInverseExistsTermAtBody rightProduct2 modulus2)
+          (crtInverseTermAt leftProduct2 modulus2
+            (tVar 1) (tVar 0)) hleftCert) as h.
+        change (BProv Ax_s R
+          (rename S (rename S
+            (crtInverseTermAt leftProduct2 modulus2
+              (tVar 1) (tVar 0))))) in h.
+        repeat rewrite rename_crtInverseTermAt in h.
+        unfold leftProduct4, modulus4.
+        repeat rewrite term_rename_add_eq_iterTermRenameSucc.
+        exact h.
       }
       assert (hproductCert : BProv Ax_s R
           (crtInverseTermAt
