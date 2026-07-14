@@ -42,8 +42,32 @@ name = "FirstOrder"
 srcDir = "Logic/FirstOrder/Lean"
 
 [[lean_lib]]
+name = "ArbitraryLanguageCompactness"
+srcDir = "Logic/FirstOrder/Compactness/Lean"
+
+[[lean_lib]]
+name = "QuantifierCommutation"
+srcDir = "Logic/QuantifierCommutation/Lean"
+
+[[lean_lib]]
 name = "ShefferStroke"
 srcDir = "Logic/Propositional/ShefferStroke/Lean"
+
+[[lean_lib]]
+name = "NaturalDeduction"
+srcDir = "Logic/Propositional/NaturalDeduction/Lean"
+
+[[lean_lib]]
+name = "FiniteMatrixNoncharacterizability"
+srcDir = "Logic/Propositional/FiniteMatrixNoncharacterizability/Lean"
+
+[[lean_lib]]
+name = "MonotonicityOfEntailment"
+srcDir = "Logic/Propositional/MonotonicityOfEntailment/Lean"
+
+[[lean_lib]]
+name = "PrincipleOfExplosion"
+srcDir = "Logic/Propositional/PrincipleOfExplosion/Lean"
 
 [[lean_lib]]
 name = "EquationalLogic"
@@ -56,6 +80,18 @@ srcDir = "Logic/Equational/BooleanAlgebra/Lean"
 [[lean_lib]]
 name = "PAHF"
 srcDir = "Logic/Interpretability/PAHF/Lean"
+
+[[lean_lib]]
+name = "NoFiniteModel"
+srcDir = "Logic/PeanoArithmetic/NoFiniteModel/Lean"
+
+[[lean_lib]]
+name = "PAFiniteBasisReduction"
+srcDir = "Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean"
+
+[[lean_lib]]
+name = "PresburgerArithmetic"
+srcDir = "Logic/PresburgerArithmetic/Lean"
 
 [[lean_lib]]
 name = "DiophantineEquations"

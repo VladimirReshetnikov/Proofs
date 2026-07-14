@@ -24,5 +24,6 @@ import PAHF.AckermannHFCore
 import PAHF.PASyntax
 import PAHF.ProofCalculus
 import PAHF.Interpretation
+import PAHF.RawSemantics
 import PAHF.RoundTrip
 import PAHF.HFRoundTrip

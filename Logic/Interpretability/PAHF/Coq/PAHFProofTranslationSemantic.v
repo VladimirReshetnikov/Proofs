@@ -46,6 +46,59 @@ Proof.
   exact (termGraphAt_outputs_eq V M).
 Qed.
 
+(* Every sealed PA axiom is true in the raw ordinal algebra extracted from
+   an arbitrary finite-adjunction model.  This is deliberately stated for
+   [fofamPAFormulaSat], rather than by packaging the algebra as [PA.Model]:
+   the latter carries a meta-level induction field which is inappropriate
+   for the nonstandard models used by the compactness argument. *)
+Theorem fofam_PA_Ax_s_valid :
+  forall (V : Type) (M : FirstOrderFiniteAdjunctionModel V)
+    (phi : PA.formula) (e : nat -> FOFAMOrdinal M),
+  PA.Formula.Ax_s phi -> fofamPAFormulaSat M e phi.
+Proof.
+  intros V M phi e hphi.
+  apply (proj1 (formulaAt_iff_fofamPAFormulaSat
+    V M (FOFAMTermGraphFunctionalLaw_finite_model V M)
+    phi (fun n => n) (fun n => proj1_sig (e n)) e
+    (fun n _hn => eq_refl))).
+  unfold PA.Formula.Ax_s in hphi.
+  destruct hphi as
+    [hphi | [hphi | [hphi | [hphi | [hphi | [hphi | [psi hphi]]]]]]];
+    subst phi;
+    apply formulaAt_sealPA_valid;
+    intros rho env.
+  - apply formulaAt_succInj_of_irrefl.
+    apply foam_mem_irrefl.
+  - apply formulaAt_zeroNotSucc_valid.
+  - apply formulaAt_addZero_valid_model.
+  - apply formulaAt_addSucc_valid_finite_model.
+  - apply formulaAt_mulZero_valid_model.
+  - apply formulaAt_mulSucc_valid_finite_model.
+  - apply formulaAt_induction_valid_finite_model.
+Qed.
+
+(* Consequently the ordinary finite-axiom wrapper is sound directly for the
+   raw semantics.  This is the reusable form needed by later arbitrary-model
+   arguments: no [PA.Model] instance and no extra arithmetic hypotheses are
+   introduced. *)
+Theorem fofam_PA_BProv_soundness :
+  forall (V : Type) (M : FirstOrderFiniteAdjunctionModel V)
+    G phi,
+  PA.Formula.BProv PA.Formula.Ax_s G phi ->
+  forall e : nat -> FOFAMOrdinal M,
+    (forall psi, In psi G -> fofamPAFormulaSat M e psi) ->
+    fofamPAFormulaSat M e phi.
+Proof.
+  intros V M G phi [L [hL hp]] e hG.
+  apply (fofam_PA_Prov_soundness V M (L ++ G) phi hp e).
+  intros psi hpsi.
+  apply in_app_iff in hpsi.
+  destruct hpsi as [hpsi | hpsi].
+  - apply fofam_PA_Ax_s_valid.
+    exact (hL psi hpsi).
+  - exact (hG psi hpsi).
+Qed.
+
 Theorem HFFinPAProofTranslation_raw_semantic :
   HFFinPAProofTranslation.
 Proof.

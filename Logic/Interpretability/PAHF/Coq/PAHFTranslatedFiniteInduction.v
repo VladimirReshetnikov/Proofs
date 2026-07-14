@@ -527,19 +527,6 @@ Proof.
     exact (BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
       Q (S current) (S half) (S bit) hbitRen hstepRen).
   }
-  assert (htailRenRaw : BProv Ax_s Q
-    (rename S (hfEmptyTermAt (tVar half)))).
-  {
-    unfold Q.
-    exact (BProv_rename_of_sentences Ax_s sentence_ax_s G
-      (hfEmptyTermAt (tVar half)) htailEmpty S).
-  }
-  assert (htailRen : BProv Ax_s Q
-    (hfEmptyTermAt (tVar (S half)))).
-  {
-    rewrite rename_hfEmptyTermAt in htailRenRaw.
-    exact htailRenRaw.
-  }
   assert (himp : BProv Ax_s Q (pImp mem pBot)).
   {
     set (C := mem :: Q).
@@ -593,6 +580,18 @@ Proof.
       apply (BProv_exE_of_sentences Ax_s Sctx succBody pBot
         sentence_ax_s hsuccEx).
       set (D := succBody :: map (rename S) Sctx).
+      assert (lift2ToD : forall phi,
+          BProv Ax_s G phi ->
+          BProv Ax_s D (rename S (rename S phi))).
+      {
+        intros phi hphi.
+        unfold D, Sctx, C, Q.
+        cbn [map].
+        apply BProv_context_cons.
+        exact (BProv_lift_two_contexts_of_sentences
+          Ax_s sentence_ax_s G mem
+          (rename S (succPredAt 0)) phi hphi).
+      }
       assert (heq : BProv Ax_s D
         (pEq (tVar 1) (tSucc (tVar 0)))).
       {
@@ -635,25 +634,12 @@ Proof.
         exact (BProv_eqElim Ax_s D (tVar 1) (tSucc (tVar 0))
           (hfMemAt 0 (S (S (S current)))) heq hmemVar).
       }
-      assert (hstepRen2Raw : BProv Ax_s (map (rename S) Q)
-        (rename S (div2StepAt (S current) (S half) (S bit)))).
-      {
-        exact (BProv_rename_of_sentences Ax_s sentence_ax_s Q
-          (div2StepAt (S current) (S half) (S bit)) hstepRen S).
-      }
+      pose proof (lift2ToD _ hstep) as hstepDRaw.
       assert (hstepD : BProv Ax_s D
         (div2StepAt (S (S current)) (S (S half)) (S (S bit)))).
       {
-        assert (hraw : BProv Ax_s D
-          (rename S (div2StepAt (S current) (S half) (S bit)))).
-        {
-          unfold D, Sctx, C.
-          exact (BProv_context_prefix Ax_s
-            [succBody; rename S (succPredAt 0); rename S mem]
-            (map (rename S) Q) _ hstepRen2Raw).
-        }
-        rewrite rename_S_div2StepAt in hraw.
-        exact hraw.
+        repeat rewrite rename_S_div2StepAt in hstepDRaw.
+        exact hstepDRaw.
       }
       assert (htailMem : BProv Ax_s D (hfMemAt 0 (S (S half)))).
       {
@@ -661,25 +647,13 @@ Proof.
           D (S (S current)) (S (S half)) (S (S bit))
           hstepD hsuccMem).
       }
-      assert (htailRen2Raw : BProv Ax_s (map (rename S) Q)
-        (rename S (hfEmptyTermAt (tVar (S half))))).
-      {
-        exact (BProv_rename_of_sentences Ax_s sentence_ax_s Q
-          (hfEmptyTermAt (tVar (S half))) htailRen S).
-      }
+      pose proof (lift2ToD _ htailEmpty) as htailDRaw.
       assert (htailD : BProv Ax_s D
         (hfEmptyTermAt (tVar (S (S half))))).
       {
-        assert (hraw : BProv Ax_s D
-          (rename S (hfEmptyTermAt (tVar (S half))))).
-        {
-          unfold D, Sctx, C.
-          exact (BProv_context_prefix Ax_s
-            [succBody; rename S (succPredAt 0); rename S mem]
-            (map (rename S) Q) _ htailRen2Raw).
-        }
-        rewrite rename_hfEmptyTermAt in hraw.
-        exact hraw.
+        repeat rewrite rename_hfEmptyTermAt in htailDRaw.
+        cbn [Term.rename] in htailDRaw.
+        exact htailDRaw.
       }
       pose proof (BProv_allE Ax_s D
         (pImp

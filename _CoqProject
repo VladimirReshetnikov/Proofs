@@ -5,10 +5,18 @@
 -Q Computability/BusyBeaver/Coq BusyBeaver
 -Q Computability/CombinatoryLogic/Coq CombinatoryLogic
 -Q Logic/FirstOrder/Coq FirstOrder
+-Q Logic/QuantifierCommutation/Coq QuantifierCommutation
 -Q Logic/Propositional/ShefferStroke/Coq ShefferStroke
+-Q Logic/Propositional/NaturalDeduction/Coq NaturalDeduction
+-Q Logic/Propositional/FiniteMatrixNoncharacterizability/Coq FiniteMatrixNoncharacterizability
+-Q Logic/Propositional/MonotonicityOfEntailment/Coq MonotonicityOfEntailment
+-Q Logic/Propositional/PrincipleOfExplosion/Coq PrincipleOfExplosion
 -Q Logic/Equational/Common/Coq EquationalLogic
 -Q Logic/Equational/BooleanAlgebra/Coq BooleanAlgebra
 -Q Logic/Interpretability/PAHF/Coq PAHF
+-Q Logic/PeanoArithmetic/NoFiniteModel/Coq NoFinitePAModel
+-Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction
+-Q Logic/PresburgerArithmetic/Coq PresburgerArithmetic
 -Q NumberTheory/DiophantineEquations/Coq DiophantineEquations
 -Q NumberTheory/IntegerSums/Coq IntegerSums
 -Q NumberTheory/RationalEnumeration/Coq RationalEnumeration
@@ -226,15 +234,39 @@ Computability/CombinatoryLogic/Coq/RecursiveEquivalenceAudit.v
 Computability/CombinatoryLogic/Coq/TuringEquivalence.v
 Computability/CombinatoryLogic/Coq/TuringEquivalenceAudit.v
 Logic/FirstOrder/Coq/Fol.v
+Logic/FirstOrder/Coq/Relativization.v
 Logic/FirstOrder/Coq/Calculus.v
+Logic/QuantifierCommutation/Coq/Commutation.v
+Logic/QuantifierCommutation/Coq/Counterexamples.v
+Logic/QuantifierCommutation/Coq/Audit.v
 SetTheory/ZF/Coq/Zf.v
 SetTheory/ZF/Coq/Audit.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 Logic/FirstOrder/Coq/Completeness.v
+Logic/FirstOrder/Coq/Compactness.v
+Logic/FirstOrder/Coq/ClassicalCompleteness.v
 SetTheory/ClosureAxiomatization/Coq/Equivalence.v
 SetTheory/ClosureAxiomatization/Coq/Audit.v
 Logic/Interpretability/PAHF/Coq/PAHF.v
+Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
+Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
+Logic/PresburgerArithmetic/Coq/Cooper.v
+Logic/PresburgerArithmetic/Coq/Audit.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteSkolemHull.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/CanonicalSelector.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/CanonicalSelectorPA.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/SkolemProgramCode.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBetaCoding.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/ProgramTrace.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TotalProgramRows.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/EvaluatorCutContract.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/StandardTraceRows.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/CanonicalTotalRows.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/StandardTraceFunctionality.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TotalTraceEvaluator.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/PAStatement.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/Audit.v
 NumberTheory/RationalEnumeration/Coq/RationalFloorOrbit.v
@@ -242,6 +274,13 @@ NumberTheory/IntegerSums/Coq/FloorSqrtSum.v
 NumberTheory/DiophantineEquations/Coq/FermatFour.v
 Logic/Propositional/ShefferStroke/Coq/Sheffer.v
 Logic/Propositional/ShefferStroke/Coq/Nicod.v
+Logic/Propositional/NaturalDeduction/Coq/Calculus.v
+Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/FiniteMatrixNoncharacterizability.v
+Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/ThreeValuedExample.v
+Logic/Propositional/FiniteMatrixNoncharacterizability/Coq/Audit.v
+Logic/Propositional/MonotonicityOfEntailment/Coq/MonotonicityOfEntailment.v
+Logic/Propositional/PrincipleOfExplosion/Coq/PrincipleOfExplosion.v
+Logic/Propositional/PrincipleOfExplosion/Coq/Audit.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCode.v
 Logic/Interpretability/PAHF/Coq/PAHFInterpretations.v
 Logic/Interpretability/PAHF/Coq/PAHFTermGraphModel.v
@@ -284,6 +323,10 @@ Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMul.v
 Logic/Interpretability/PAHF/Coq/PAHFRoundTripArithmeticAssembly.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemantics.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemanticsGraph.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/NonstandardHFFin.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TwoNonisomorphicModels.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TwoNonisomorphicModelsAudit.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TraceContractRealization.v
 Logic/Interpretability/PAHF/Coq/PAHFProofTranslationSemantic.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMulCorrected.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeAddCore.v
@@ -293,6 +336,7 @@ Logic/Interpretability/PAHF/Coq/PAHFCompositeMemBelow.v
 Logic/Interpretability/PAHF/Coq/PAHFFinalAssembly.v
 Logic/Interpretability/PAHF/Coq/PAHFConcreteAssembly.v
 Logic/Interpretability/PAHF/Coq/Audit.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
 Logic/FirstOrder/Coq/Audit.v
 Logic/Equational/Common/Coq/Checker.v
 Logic/Equational/BooleanAlgebra/Coq/WolframBooleanCertificates.v

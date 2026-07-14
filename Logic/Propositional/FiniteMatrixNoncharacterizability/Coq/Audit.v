@@ -1,0 +1,41 @@
+(* Kernel-assumption audit for finite-matrix noncharacterizability. *)
+
+From NaturalDeduction Require Import Calculus.
+From FiniteMatrixNoncharacterizability Require Import
+  FiniteMatrixNoncharacterizability.
+From FiniteMatrixNoncharacterizability Require Import ThreeValuedExample.
+
+Import NaturalDeduction.
+Import FiniteMatrixTheorem.
+Import ThreeValuedExample.
+
+Check sound_finite_matrix_validates_goedel_formula.
+Check intuitionistic_kripke_soundness.
+Check root_refutes_goedel_formula.
+Check goedel_formula_not_intuitionistically_derivable.
+Check finite_matrix_sound_not_complete.
+Check no_finite_matrix_characterizes_IPC.
+Check no_finite_matrix_is_sound_and_complete.
+Check rule_preservation_semantic_soundness.
+Check rule_preservation_implies_theorem_soundness.
+Check no_rule_preserving_finite_matrix_characterizes_IPC.
+Check sound_three_valued_matrix_validates_obstruction.
+Check three_value_obstruction_not_in_IPC.
+Check no_three_valued_matrix_characterizes_IPC.
+Check no_rule_preserving_three_valued_matrix_characterizes_IPC.
+Check h3_values_validate_prelinearity.
+Check h3_validates_prelinearity.
+Check root_refutes_prelinearity_01.
+Check prelinearity_01_not_intuitionistically_derivable.
+Check h3_validates_non_IPC_theorem.
+
+Print Assumptions sound_finite_matrix_validates_goedel_formula.
+Print Assumptions intuitionistic_kripke_soundness.
+Print Assumptions goedel_formula_not_intuitionistically_derivable.
+Print Assumptions no_finite_matrix_characterizes_IPC.
+Print Assumptions no_finite_matrix_is_sound_and_complete.
+Print Assumptions rule_preservation_semantic_soundness.
+Print Assumptions no_three_valued_matrix_characterizes_IPC.
+Print Assumptions h3_validates_prelinearity.
+Print Assumptions prelinearity_01_not_intuitionistically_derivable.
+Print Assumptions h3_validates_non_IPC_theorem.

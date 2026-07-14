@@ -1,0 +1,6 @@
+name = "NaturalDeduction"
+defaultTargets = ["NaturalDeduction"]
+
+[[lean_lib]]
+name = "NaturalDeduction"
+
