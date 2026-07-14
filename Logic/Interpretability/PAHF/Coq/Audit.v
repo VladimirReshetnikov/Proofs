@@ -527,6 +527,9 @@ Check PA.Formula.BProv_allE.
 Check PA.Formula.BProv_exI.
 Check PA.Formula.BProv_allI_of_sentences.
 Check PA.Formula.BProv_exE_of_sentences.
+Check PA.Formula.BProv_two_exE_of_sentences.
+Check PA.Formula.BProv_lift_two_opened_of_sentences.
+Check PA.Formula.BProv_lift_two_contexts_of_sentences.
 Check PA.Formula.BProv_weaken_nil.
 Check PA.Formula.BProv_ass.
 Check PA.Formula.BProv_rename_of_sentences.
