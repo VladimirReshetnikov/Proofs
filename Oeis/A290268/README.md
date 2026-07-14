@@ -193,6 +193,30 @@ zeros, count combinatorics), (ii) states the remaining nonvanishing as an
 explicit hypothesis, and (iii) verifies the conjecture exactly on the
 published OEIS range by verified computation.
 
+## Lean formalization
+
+The Lean library lives at
+`Combinatorics/DerivativeExpansions/A290268/Lean/` (lean_lib `A290268`) and is
+organized as:
+
+| Module | Content | Status |
+| --- | --- | --- |
+| `A290268.Core` | The coefficient lattice `coeff n j k`, the term count `a n`, the closed form `closedForm n`, and the structural zero lemmas (parity, triangle `|j| ≤ n`, log-degree `2k ≤ n+j`). | unconditional |
+| `A290268.ClosedForm` | `closedForm` satisfies the OEIS order-12 linear recurrence and the generating-function recurrence, and equals the piecewise quadratic form; the several conjectured shapes are interchangeable. | unconditional |
+| `A290268.Count` | The conjectured support set `S n ⊆ ℤ × ℤ` and `card_S : (S n).card = closedForm n` (pure finite combinatorics; the hole count equals `⌊(n+1)/8⌋`). | unconditional |
+| `A290268.Structural` | `coeff_negtop_eq_zero` (negative columns vanish at the triangle top) and `mem_S_of_coeff_ne_zero`: the structural inclusion `support ⊆ S n`, modulo a single hole-line hypothesis. | unconditional (mod hole) |
+| `A290268.Hole` | `hole_vanishing`: the coefficient of `w^(k+4D+1)` in `(2+w)^k φ^D` is `0` when `k+D` is even (the `e^u−1` parity). | unconditional |
+| `A290268.DepthOne` | The complete `D = 1` stratum: `gam1 k M = 0` (for `M ≥ 1`) iff `M = k+5` with `k` odd, via the Beta integral and `t ↦ 1−t`. | unconditional |
+| `A290268.Series` | The reduction `coeff n j k = n!/(k!D!)·gam(k,D,M)`; discharges the hole hypothesis so `support ⊆ S n` becomes unconditional. | in progress |
+| `A290268.Table` | Memoized table equal to `coeff`; `native_decide` verifies `a n = closedForm n` for every published term `n ≤ 53`. | unconditional |
+| `A290268.Main` | `a_eq_closedForm_of_support`: the conjecture `a n = closedForm n` follows from `support = S n`, isolating the open content into the single nonvanishing inclusion `(j,k) ∈ S n → coeff n j k ≠ 0`. | unconditional reduction |
+
+The upshot: `a n = closedForm n` (equivalently, the OEIS linear recurrence /
+generating function, via `A290268.ClosedForm`) is proved *unconditionally for
+all `n ≤ 53`* and, for general `n`, reduced to the single nonvanishing
+statement — with the two solved strata (`D = 1`, holes) and the structural
+inclusion already discharged.
+
 ## Contents
 
 * `computations/python/explore_support.py` — lattice model, OEIS/closed-form
