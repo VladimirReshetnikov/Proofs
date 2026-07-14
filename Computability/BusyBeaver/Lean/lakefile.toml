@@ -1,0 +1,5 @@
+name = "BusyBeaver"
+defaultTargets = ["BusyBeaver"]
+
+[[lean_lib]]
+name = "BusyBeaver"

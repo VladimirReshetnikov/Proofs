@@ -1,0 +1,9 @@
+name = "RiemannHypothesis"
+defaultTargets = ["RiemannHypothesis"]
+
+[[require]]
+name = "PAHF"
+path = "../../../../Logic/Interpretability/PAHF/Lean"
+
+[[lean_lib]]
+name = "RiemannHypothesis"

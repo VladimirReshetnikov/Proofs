@@ -1,0 +1,2 @@
+import TrigonometricIdentities.ArctanSquareIdentity
+import TrigonometricIdentities.TrigGoldenRatio

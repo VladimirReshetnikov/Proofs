@@ -1,41 +1,185 @@
--Q CoqProofs LeanProofsCoq
+-Q Analysis/TrigonometricIdentities/Coq TrigonometricIdentities
+-Q Analysis/ExponentialIdentities/Coq ExponentialIdentities
+-Q Combinatorics/ExpressionEnumeration/PowerTowers/Coq PowerTowers
+-Q Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Coq A158415
+-Q Computability/BusyBeaver/Coq BusyBeaver
+-Q Logic/FirstOrder/Coq FirstOrder
+-Q Logic/Propositional/ShefferStroke/Coq ShefferStroke
+-Q Logic/Equational/Common/Coq EquationalLogic
+-Q Logic/Equational/BooleanAlgebra/Coq BooleanAlgebra
+-Q Logic/Interpretability/PAHF/Coq PAHF
+-Q NumberTheory/DiophantineEquations/Coq DiophantineEquations
+-Q NumberTheory/IntegerSums/Coq IntegerSums
+-Q NumberTheory/RationalEnumeration/Coq RationalEnumeration
+-Q NumberTheory/RiemannHypothesis/PAStatement/Coq RiemannHypothesis
+-Q SetTheory/ZF/Coq ZF
+-Q SetTheory/ClosureAxiomatization/Coq ClosureAxiomatization
+-Q lib/Coq-BB5/BB2 CoqBB2
+-Q lib/Coq-BB5/BB3 CoqBB3
+-Q lib/Coq-BB5/BB4 CoqBB4
 
-# Rocq/Coq ports of the LeanProofs modules, in dependency order.
-# Build with, e.g., `coq_makefile -f _CoqProject -o CoqMakefile && make`,
-# or compile individually with `coqc -Q CoqProofs LeanProofsCoq CoqProofs/<File>.v`.
-CoqProofs/Sheffer.v
-CoqProofs/Nicod.v
-CoqProofs/ArctanSquareIdentity.v
-CoqProofs/TrigGoldenRatio.v
-CoqProofs/TinyExponentTower.v
-CoqProofs/FermatFour.v
-CoqProofs/FloorSqrtSum.v
-CoqProofs/RationalFloorOrbit.v
-CoqProofs/PowTower.v
-CoqProofs/A198683Tower.v
-CoqProofs/A198683FiveSix.v
-CoqProofs/A198683SevenUpper.v
-CoqProofs/A198683.v
-CoqProofs/A000081.v
-CoqProofs/A158415.v
-CoqProofs/A199812.v
-CoqProofs/SparseBinary.v
-CoqProofs/A002845.v
-CoqProofs/A198683N12Magnitude.v
-CoqProofs/A198683N12Probe.v
-CoqProofs/A198683N12OverflowWitness.v
-CoqProofs/A198683N12Symbolic.v
-CoqProofs/A198683Schoenfield.v
-CoqProofs/A198683SchoenfieldRows.v
-CoqProofs/A198683EightBounds.v
-CoqProofs/EquationalLogic.v
-CoqProofs/WolframBooleanCertificates.v
-CoqProofs/WolframBooleanHuntingtonCertificates.v
-CoqProofs/WolframBoolean.v
-CoqProofs/A198683N12Bounds.v
-CoqProofs/A198683Complex.v
-CoqProofs/A198683N12ComplexTowers.v
-CoqProofs/A198683N12Certificate.v
-CoqProofs/A198683N12OverflowBound.v
-CoqProofs/A198683N12CertificateC.v
-CoqProofs/A198683N12Endpoints.v
+# Dependency-ordered by `coqdep -sort -f _CoqProject`.
+
+Logic/FirstOrder/Coq/Fol.v
+Logic/FirstOrder/Coq/Calculus.v
+SetTheory/ZF/Coq/Zf.v
+SetTheory/ZF/Coq/Audit.v
+SetTheory/ClosureAxiomatization/Coq/Reverse.v
+SetTheory/ClosureAxiomatization/Coq/Forward.v
+Logic/FirstOrder/Coq/Completeness.v
+SetTheory/ClosureAxiomatization/Coq/Equivalence.v
+SetTheory/ClosureAxiomatization/Coq/Audit.v
+Logic/Interpretability/PAHF/Coq/PAHF.v
+NumberTheory/RiemannHypothesis/PAStatement/Coq/PAStatement.v
+NumberTheory/RiemannHypothesis/PAStatement/Coq/Audit.v
+NumberTheory/RationalEnumeration/Coq/RationalFloorOrbit.v
+NumberTheory/IntegerSums/Coq/FloorSqrtSum.v
+NumberTheory/DiophantineEquations/Coq/FermatFour.v
+Logic/Propositional/ShefferStroke/Coq/Sheffer.v
+Logic/Propositional/ShefferStroke/Coq/Nicod.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCode.v
+Logic/Interpretability/PAHF/Coq/PAHFInterpretations.v
+Logic/Interpretability/PAHF/Coq/PAHFTermGraphModel.v
+Logic/Interpretability/PAHF/Coq/PAHFTermGraphTotal.v
+Logic/Interpretability/PAHF/Coq/PAHFTermGraphFunctional.v
+Logic/Interpretability/PAHF/Coq/PAHFTranslatedOperations.v
+Logic/Interpretability/PAHF/Coq/PAHFTranslatedHFFin.v
+Logic/Interpretability/PAHF/Coq/PAHFProofCalculus.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTotal.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTotalCapacity.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTotalInduction.v
+Logic/Interpretability/PAHF/Coq/PAHFDeductiveAssembly.v
+Logic/Interpretability/PAHF/Coq/PAHFRoundTripArithmetic.v
+Logic/Interpretability/PAHF/Coq/PAHFRoundTripEquality.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeInjective.v
+Logic/Interpretability/PAHF/Coq/PAHFMembershipBound.v
+Logic/Interpretability/PAHF/Coq/PAHFMembershipBoundSucc.v
+Logic/Interpretability/PAHF/Coq/PAHFBetaShiftPrefix.v
+Logic/Interpretability/PAHF/Coq/PAHFMembershipTail.v
+Logic/Interpretability/PAHF/Coq/PAHFAdjoinTotal.v
+Logic/Interpretability/PAHF/Coq/PAHFTranslatedExtensionality.v
+Logic/Interpretability/PAHF/Coq/PAHFTranslatedFiniteInduction.v
+Logic/Interpretability/PAHF/Coq/PAHFTranslatedAdjoin.v
+Logic/Interpretability/PAHF/Coq/PAHFRoundTripQuantifiers.v
+Logic/Interpretability/PAHF/Coq/PAHFHFRoundTrip.v
+Logic/Interpretability/PAHF/Coq/PAHFHFRepresentation.v
+Logic/Interpretability/PAHF/Coq/PAHFHFRepresentationMerge.v
+Logic/Interpretability/PAHF/Coq/PAHFHFRepresentationFinite.v
+Logic/Interpretability/PAHF/Coq/PAHFHFRoundTripSemantic.v
+Logic/Interpretability/PAHF/Coq/PAHFCompositeArithmetic.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermCompatibility.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeFunctional.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeRange.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeRangeArithmetic.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermOperations.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermBase.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermAdd.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeMulCore.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMul.v
+Logic/Interpretability/PAHF/Coq/PAHFRoundTripArithmeticAssembly.v
+Logic/Interpretability/PAHF/Coq/PAHFRawSemantics.v
+Logic/Interpretability/PAHF/Coq/PAHFRawSemanticsGraph.v
+Logic/Interpretability/PAHF/Coq/PAHFProofTranslationSemantic.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMulCorrected.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeAddCore.v
+Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeMulTerm.v
+Logic/Interpretability/PAHF/Coq/PAHFHFRepresentationRange.v
+Logic/Interpretability/PAHF/Coq/PAHFCompositeMemBelow.v
+Logic/Interpretability/PAHF/Coq/PAHFFinalAssembly.v
+Logic/Interpretability/PAHF/Coq/PAHFConcreteAssembly.v
+Logic/Interpretability/PAHF/Coq/Audit.v
+Logic/FirstOrder/Coq/Audit.v
+Logic/Equational/Common/Coq/Checker.v
+Logic/Equational/BooleanAlgebra/Coq/WolframBooleanCertificates.v
+Logic/Equational/BooleanAlgebra/Coq/WolframBooleanHuntingtonCertificates.v
+Logic/Equational/BooleanAlgebra/Coq/WolframBoolean.v
+Computability/BusyBeaver/Coq/BusyBeaver.v
+Computability/BusyBeaver/Coq/BusyBeaverMathlib.v
+Computability/BusyBeaver/Coq/BusyBeaverKnownValues.v
+lib/Coq-BB5/BB4/BB4_Statement.v
+lib/Coq-BB5/BB4/BB4_Deciders_Generic.v
+lib/Coq-BB5/BB4/Tactics.v
+lib/Coq-BB5/BB4/Prelims.v
+lib/Coq-BB5/BB4/BB4_Encodings.v
+lib/Coq-BB5/BB4/List_Routines.v
+lib/Coq-BB5/BB4/TM.v
+lib/Coq-BB5/BB4/BB4_Make_TM.v
+lib/Coq-BB5/BB4/Deciders/Deciders_Common.v
+lib/Coq-BB5/BB4/TNF.v
+lib/Coq-BB5/BB4/Deciders/Decider_NGramCPS.v
+lib/Coq-BB5/BB4/List_Tape.v
+lib/Coq-BB5/BB4/Deciders/Decider_Loop.v
+lib/Coq-BB5/BB4/Deciders/Decider_RepWL.v
+lib/Coq-BB5/BB4/BB4_Deciders_Pipeline.v
+lib/Coq-BB5/BB4/BB4_TNF_Enumeration.v
+Computability/BusyBeaver/Coq/BusyBeaverBB4Score.v
+Computability/BusyBeaver/Coq/BusyBeaverBB4ScoreComputation.v
+Computability/BusyBeaver/Coq/BusyBeaverBB4ScoreCertificate.v
+lib/Coq-BB5/BB4/Deciders/Verifier_Halt.v
+lib/Coq-BB5/BB4/BB4_Theorem.v
+Computability/BusyBeaver/Coq/BusyBeaverBB4Bridge.v
+Computability/BusyBeaver/Coq/BusyBeaverBB4ScoreBridge.v
+lib/Coq-BB5/BB3/BB3_Statement.v
+lib/Coq-BB5/BB3/Tactics.v
+lib/Coq-BB5/BB3/Prelims.v
+lib/Coq-BB5/BB3/BB3_Encodings.v
+lib/Coq-BB5/BB3/List_Routines.v
+lib/Coq-BB5/BB3/TM.v
+lib/Coq-BB5/BB3/BB3_Make_TM.v
+lib/Coq-BB5/BB3/BB3_Deciders_Generic.v
+lib/Coq-BB5/BB3/Deciders/Deciders_Common.v
+lib/Coq-BB5/BB3/TNF.v
+lib/Coq-BB5/BB3/Deciders/Decider_NGramCPS.v
+lib/Coq-BB5/BB3/List_Tape.v
+lib/Coq-BB5/BB3/Deciders/Decider_Loop.v
+lib/Coq-BB5/BB3/BB3_Deciders_Pipeline.v
+lib/Coq-BB5/BB3/BB3_TNF_Enumeration.v
+lib/Coq-BB5/BB3/Deciders/Verifier_Halt.v
+lib/Coq-BB5/BB3/BB3_Theorem.v
+Computability/BusyBeaver/Coq/BusyBeaverBB3Bridge.v
+lib/Coq-BB5/BB2/BB2_Statement.v
+lib/Coq-BB5/BB2/Tactics.v
+lib/Coq-BB5/BB2/Prelims.v
+lib/Coq-BB5/BB2/BB2_Encodings.v
+lib/Coq-BB5/BB2/List_Routines.v
+lib/Coq-BB5/BB2/TM.v
+lib/Coq-BB5/BB2/BB2_Make_TM.v
+lib/Coq-BB5/BB2/BB2_Deciders_Generic.v
+lib/Coq-BB5/BB2/Deciders/Deciders_Common.v
+lib/Coq-BB5/BB2/TNF.v
+lib/Coq-BB5/BB2/Deciders/Decider_NGramCPS.v
+lib/Coq-BB5/BB2/List_Tape.v
+lib/Coq-BB5/BB2/Deciders/Decider_Loop.v
+lib/Coq-BB5/BB2/BB2_Deciders_Pipeline.v
+lib/Coq-BB5/BB2/BB2_TNF_Enumeration.v
+lib/Coq-BB5/BB2/Deciders/Verifier_Halt.v
+lib/Coq-BB5/BB2/BB2_Theorem.v
+Computability/BusyBeaver/Coq/BusyBeaverBB2Bridge.v
+Computability/BusyBeaver/Coq/Audit.v
+Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Coq/A158415.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/Core.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A199812.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/Tower.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/SmallValues/SevenUpper.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/SmallValues/FiveSix.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/DataCertificates/Schoenfield.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/SmallValues/EightBounds.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12Symbolic.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12Probe.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12OverflowWitness.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/Complex.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12Bounds.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12ComplexTowers.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12OverflowBound.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12Magnitude.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12Certificate.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12CertificateC.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/N12/N12Endpoints.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683/DataCertificates/SchoenfieldRows.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A198683.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A002845/SparseBinary.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A002845.v
+Combinatorics/ExpressionEnumeration/PowerTowers/Coq/A000081.v
+Analysis/TrigonometricIdentities/Coq/TrigGoldenRatio.v
+Analysis/TrigonometricIdentities/Coq/ArctanSquareIdentity.v
+Analysis/ExponentialIdentities/Coq/TinyExponentTower.v

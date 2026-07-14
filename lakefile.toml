@@ -1,5 +1,5 @@
-name = "LeanProofs"
-defaultTargets = ["LeanProofs"]
+name = "Proofs"
+defaultTargets = ["Proofs"]
 
 [[require]]
 name = "mathlib"
@@ -7,8 +7,72 @@ scope = "leanprover-community"
 rev = "v4.31.0"
 
 [[lean_lib]]
-name = "LeanProofs"
+name = "Proofs"
 
 [[lean_lib]]
-name = "SetTheory"
-srcDir = "SetTheory/lean"
+name = "TrigonometricIdentities"
+srcDir = "Analysis/TrigonometricIdentities/Lean"
+
+[[lean_lib]]
+name = "ExponentialIdentities"
+srcDir = "Analysis/ExponentialIdentities/Lean"
+
+[[lean_lib]]
+name = "PowerTowers"
+srcDir = "Combinatorics/ExpressionEnumeration/PowerTowers/Lean"
+
+[[lean_lib]]
+name = "A158415"
+srcDir = "Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Lean"
+
+[[lean_lib]]
+name = "A290268"
+srcDir = "Combinatorics/DerivativeExpansions/A290268/Lean"
+
+[[lean_lib]]
+name = "BusyBeaver"
+srcDir = "Computability/BusyBeaver/Lean"
+
+[[lean_lib]]
+name = "FirstOrder"
+srcDir = "Logic/FirstOrder/Lean"
+
+[[lean_lib]]
+name = "ShefferStroke"
+srcDir = "Logic/Propositional/ShefferStroke/Lean"
+
+[[lean_lib]]
+name = "EquationalLogic"
+srcDir = "Logic/Equational/Common/Lean"
+
+[[lean_lib]]
+name = "BooleanAlgebra"
+srcDir = "Logic/Equational/BooleanAlgebra/Lean"
+
+[[lean_lib]]
+name = "PAHF"
+srcDir = "Logic/Interpretability/PAHF/Lean"
+
+[[lean_lib]]
+name = "DiophantineEquations"
+srcDir = "NumberTheory/DiophantineEquations/Lean"
+
+[[lean_lib]]
+name = "IntegerSums"
+srcDir = "NumberTheory/IntegerSums/Lean"
+
+[[lean_lib]]
+name = "RationalEnumeration"
+srcDir = "NumberTheory/RationalEnumeration/Lean"
+
+[[lean_lib]]
+name = "RiemannHypothesis"
+srcDir = "NumberTheory/RiemannHypothesis/PAStatement/Lean"
+
+[[lean_lib]]
+name = "ZF"
+srcDir = "SetTheory/ZF/Lean"
+
+[[lean_lib]]
+name = "ClosureAxiomatization"
+srcDir = "SetTheory/ClosureAxiomatization/Lean"

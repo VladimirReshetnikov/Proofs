@@ -1,0 +1,13 @@
+name = "ClosureAxiomatization"
+defaultTargets = ["ClosureAxiomatization"]
+
+[[require]]
+name = "FirstOrder"
+path = "../../../Logic/FirstOrder/Lean"
+
+[[require]]
+name = "ZF"
+path = "../../ZF/Lean"
+
+[[lean_lib]]
+name = "ClosureAxiomatization"
