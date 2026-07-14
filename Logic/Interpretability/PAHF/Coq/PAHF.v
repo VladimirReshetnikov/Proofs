@@ -9306,6 +9306,22 @@ Proof.
   apply (BProv_rename_of_sentences B hB G b h S).
 Qed.
 
+(* Add an ordinary assumption, then open one binder around the enlarged
+   context.  Only the binder opening shifts the transported formula. *)
+Lemma BProv_lift_context_cons_then_open_of_sentences :
+  forall (B : formula -> Prop), Sentences B ->
+  forall G outer inner phi,
+  BProv B G phi ->
+  BProv B
+    (inner :: map (rename S) (outer :: G))
+    (rename S phi).
+Proof.
+  intros B hB G outer inner phi hphi.
+  apply (BProv_rename_succ_context_cons_of_sentences B hB
+    (outer :: G) inner phi).
+  exact (BProv_context_cons B G outer phi hphi).
+Qed.
+
 (* Lift through two successively opened assumptions. *)
 Lemma BProv_lift_two_contexts_of_sentences :
   forall (B : formula -> Prop), Sentences B ->
@@ -17996,9 +18012,8 @@ Proof.
             (tAdd (tMul (Term.rename S modulus) (Term.rename S diff))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hdiff S) as h.
+        pose proof (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (pEx succBody) succBody _ hdiff) as h.
         simpl in h.
         exact h.
       }
@@ -18036,9 +18051,8 @@ Proof.
       assert (hltD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlowLt S) as h.
+        pose proof (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (pEx succBody) succBody _ hlowLt) as h.
         rewrite rename_S_ltTermAt in h.
         exact h.
       }
@@ -18113,9 +18127,8 @@ Proof.
             (tAdd (tMul (Term.rename S modulus) (Term.rename S diff))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hdiff S) as h.
+        pose proof (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (pEx succBody) succBody _ hdiff) as h.
         simpl in h.
         exact h.
       }
@@ -18153,9 +18166,8 @@ Proof.
       assert (hltD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlowLt S) as h.
+        pose proof (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (pEx succBody) succBody _ hlowLt) as h.
         rewrite rename_S_ltTermAt in h.
         exact h.
       }
@@ -18192,12 +18204,19 @@ Proof.
           (pEq (tAdd (Term.rename S lowQuot) (tVar 0))
             (Term.rename S highQuot))).
       { apply BProv_ass. left. reflexivity. }
+      assert (liftToD : forall phi,
+          BProv Ax_s G phi -> BProv Ax_s D (rename S phi)).
+      {
+        intros phi hphi.
+        exact (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (leTermAt lowQuot highQuot)
+          (pEq (tAdd (Term.rename S lowQuot) (tVar 0))
+            (Term.rename S highQuot)) phi hphi).
+      }
       assert (hlowLtD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlowLt S) as h.
+        pose proof (liftToD _ hlowLt) as h.
         rewrite rename_S_ltTermAt in h.
         exact h.
       }
@@ -18206,9 +18225,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlow S) as h.
+        pose proof (liftToD _ hlow) as h.
         simpl in h.
         exact h.
       }
@@ -18217,9 +18234,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hhigh S) as h.
+        pose proof (liftToD _ hhigh) as h.
         simpl in h.
         exact h.
       }
@@ -18250,12 +18265,19 @@ Proof.
           (pEq (tAdd (Term.rename S highQuot) (tSucc (tVar 0)))
             (Term.rename S lowQuot))).
       { apply BProv_ass. left. reflexivity. }
+      assert (liftToD : forall phi,
+          BProv Ax_s G phi -> BProv Ax_s D (rename S phi)).
+      {
+        intros phi hphi.
+        exact (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (ltTermAt highQuot lowQuot)
+          (pEq (tAdd (Term.rename S highQuot) (tSucc (tVar 0)))
+            (Term.rename S lowQuot)) phi hphi).
+      }
       assert (hhighLtD : BProv Ax_s D
           (ltTermAt (Term.rename S highRem) (Term.rename S modulus))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hhighLt S) as h.
+        pose proof (liftToD _ hhighLt) as h.
         rewrite rename_S_ltTermAt in h.
         exact h.
       }
@@ -18264,9 +18286,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlow S) as h.
+        pose proof (liftToD _ hlow) as h.
         simpl in h.
         exact h.
       }
@@ -18275,9 +18295,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hhigh S) as h.
+        pose proof (liftToD _ hhigh) as h.
         simpl in h.
         exact h.
       }
@@ -18554,12 +18572,19 @@ Proof.
           (pEq (tAdd (Term.rename S lowQuot) (tVar 0))
             (Term.rename S highQuot))).
       { apply BProv_ass. left. reflexivity. }
+      assert (liftToD : forall phi,
+          BProv Ax_s G phi -> BProv Ax_s D (rename S phi)).
+      {
+        intros phi hphi.
+        exact (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (leTermAt lowQuot highQuot)
+          (pEq (tAdd (Term.rename S lowQuot) (tVar 0))
+            (Term.rename S highQuot)) phi hphi).
+      }
       assert (hlowLtD : BProv Ax_s D
           (ltTermAt (Term.rename S lowRem) (Term.rename S modulus))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlowLt S) as h.
+        pose proof (liftToD _ hlowLt) as h.
         rewrite rename_S_ltTermAt in h.
         exact h.
       }
@@ -18568,9 +18593,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlow S) as h.
+        pose proof (liftToD _ hlow) as h.
         simpl in h.
         exact h.
       }
@@ -18579,9 +18602,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hhigh S) as h.
+        pose proof (liftToD _ hhigh) as h.
         simpl in h.
         exact h.
       }
@@ -18632,12 +18653,19 @@ Proof.
           (pEq (tAdd (Term.rename S highQuot) (tSucc (tVar 0)))
             (Term.rename S lowQuot))).
       { apply BProv_ass. left. reflexivity. }
+      assert (liftToD : forall phi,
+          BProv Ax_s G phi -> BProv Ax_s D (rename S phi)).
+      {
+        intros phi hphi.
+        exact (BProv_lift_context_cons_then_open_of_sentences
+          Ax_s sentence_ax_s G (ltTermAt highQuot lowQuot)
+          (pEq (tAdd (Term.rename S highQuot) (tSucc (tVar 0)))
+            (Term.rename S lowQuot)) phi hphi).
+      }
       assert (hhighLtD : BProv Ax_s D
           (ltTermAt (Term.rename S highRem) (Term.rename S modulus))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hhighLt S) as h.
+        pose proof (liftToD _ hhighLt) as h.
         rewrite rename_S_ltTermAt in h.
         exact h.
       }
@@ -18646,9 +18674,7 @@ Proof.
             (tAdd (tMul (Term.rename S lowQuot) (Term.rename S modulus))
               (Term.rename S lowRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hlow S) as h.
+        pose proof (liftToD _ hlow) as h.
         simpl in h.
         exact h.
       }
@@ -18657,9 +18683,7 @@ Proof.
             (tAdd (tMul (Term.rename S highQuot) (Term.rename S modulus))
               (Term.rename S highRem)))).
       {
-        apply BProv_context_two.
-        pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G _
-          hhigh S) as h.
+        pose proof (liftToD _ hhigh) as h.
         simpl in h.
         exact h.
       }
