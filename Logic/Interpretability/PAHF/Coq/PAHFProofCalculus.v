@@ -21,6 +21,10 @@ Import PA PA.Term PA.Formula.
     the foundational [PA.Formula] namespace. *)
 Definition BProv_context_prefix := PA.Formula.BProv_context_prefix.
 
+(** Preserve the proof-calculus module path for existing qualified clients. *)
+Definition BProv_two_exE_of_sentences :=
+  PA.Formula.BProv_two_exE_of_sentences.
+
 (** [iterEx n body] adds [n] existential binders around [body]. *)
 Fixpoint iterEx (n : nat) (body : formula) : formula :=
   match n with
@@ -142,22 +146,6 @@ Proof.
     apply (BProv_exE_of_sentences B G (iterEx n body) target hB hex).
     unfold C in htargetC.
     exact htargetC.
-Qed.
-
-(** Convenient two-witness specialization, retained because paired graph
-    witnesses are pervasive in arithmetic and finite-set encodings. *)
-Lemma BProv_two_exE_of_sentences : forall
-    (B : formula -> Prop), Sentences B ->
-  forall G body target,
-    BProv B G (pEx (pEx body)) ->
-    BProv B
-      (body :: map (rename S) (pEx body :: map (rename S) G))
-      (rename S (rename S target)) ->
-    BProv B G target.
-Proof.
-  intros B hB G body target hex hopened.
-  exact (BProv_iterExE_of_sentences B hB 2 G body target
-    hex hopened).
 Qed.
 
 (** Convenient three-witness specialization used by multiplication graphs. *)

@@ -9273,6 +9273,25 @@ Proof.
         exact hx.
 Qed.
 
+(* Two-witness specialization used by paired graph witnesses.  The outer
+   existential is eliminated before the inner one. *)
+Lemma BProv_two_exE_of_sentences :
+  forall (B : formula -> Prop), Sentences B ->
+  forall G body target,
+  BProv B G (pEx (pEx body)) ->
+  BProv B
+    (body :: map (rename S) (pEx body :: map (rename S) G))
+    (rename S (rename S target)) ->
+  BProv B G target.
+Proof.
+  intros B hB G body target hex hopened.
+  apply (BProv_exE_of_sentences B G (pEx body) target hB hex).
+  apply (BProv_exE_of_sentences B
+    (pEx body :: map (rename S) G) body (rename S target) hB).
+  - apply BProv_ass_head.
+  - exact hopened.
+Qed.
+
 
 (* Lean: BProv_rename_succ_context_cons_of_sentences *)
 Lemma BProv_rename_succ_context_cons_of_sentences :
@@ -22943,39 +22962,8 @@ Lemma BProv_Ax_s_crtInverseExistsTermAt_elim_opened :
   BProv Ax_s G target.
 Proof.
   intros G product modulus target hopened hex.
-  set (body := crtInverseExistsTermAtBody product modulus).
-  set (quotEx := crtInverseExistsTermAtQuotEx product modulus).
-  assert (houter : BProv Ax_s (quotEx :: map (rename S) G)
-      (rename S target)).
-  {
-    assert (hquotEx : BProv Ax_s (quotEx :: map (rename S) G) quotEx).
-    {
-      apply BProv_ass.
-      simpl. left. reflexivity.
-    }
-    assert (hinner : BProv Ax_s
-        (body :: map (rename S) (quotEx :: map (rename S) G))
-        (rename S (rename S target))).
-    {
-      unfold crtInverseExistsTermAtOpenedContext in hopened.
-      fold body quotEx in hopened.
-      exact hopened.
-    }
-    unfold quotEx, crtInverseExistsTermAtQuotEx in hquotEx.
-    fold body in hquotEx.
-    exact (BProv_exE_of_sentences Ax_s
-      (quotEx :: map (rename S) G) body (rename S target)
-      sentence_ax_s hquotEx hinner).
-  }
-  assert (houterEx : BProv Ax_s G (pEx quotEx)).
-  {
-    unfold crtInverseExistsTermAt in hex.
-    unfold quotEx, crtInverseExistsTermAtQuotEx, body,
-      crtInverseExistsTermAtBody.
-    exact hex.
-  }
-  exact (BProv_exE_of_sentences Ax_s G quotEx target
-    sentence_ax_s houterEx houter).
+  exact (BProv_two_exE_of_sentences Ax_s sentence_ax_s G
+    (crtInverseExistsTermAtBody product modulus) target hex hopened).
 Qed.
 
 (* Lean: BProv_Ax_s_ltTermAt_elim_opened *)
@@ -31839,36 +31827,9 @@ Lemma BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened :
   BProv Ax_s G target.
 Proof.
   intros G target oldCode oldStep lastTerm hopened hex.
-  set (body := betaShiftTailExistsTermAtBody
-    oldCode oldStep lastTerm).
-  set (stepEx := betaShiftTailExistsTermAtStepEx
-    oldCode oldStep lastTerm).
-  assert (houter : BProv Ax_s (stepEx :: map (rename S) G)
-      (rename S target)).
-  {
-    assert (hstepEx : BProv Ax_s (stepEx :: map (rename S) G) stepEx).
-    { apply BProv_ass. simpl. left. reflexivity. }
-    assert (hinner : BProv Ax_s
-        (body :: map (rename S) (stepEx :: map (rename S) G))
-        (rename S (rename S target))).
-    {
-      unfold betaShiftTailExistsTermAtOpenedContext in hopened.
-      unfold body, stepEx, betaShiftTailExistsTermAtStepEx,
-        betaShiftTailExistsTermAtBody in *.
-      exact hopened.
-    }
-    exact (BProv_exE_of_sentences Ax_s (stepEx :: map (rename S) G)
-      body (rename S target) sentence_ax_s hstepEx hinner).
-  }
-  assert (houterEx : BProv Ax_s G (pEx stepEx)).
-  {
-    unfold betaShiftTailExistsTermAt in hex.
-    unfold stepEx, betaShiftTailExistsTermAtStepEx, body,
-      betaShiftTailExistsTermAtBody.
-    exact hex.
-  }
-  exact (BProv_exE_of_sentences Ax_s G stepEx target
-    sentence_ax_s houterEx houter).
+  exact (BProv_two_exE_of_sentences Ax_s sentence_ax_s G
+    (betaShiftTailExistsTermAtBody oldCode oldStep lastTerm) target
+    hex hopened).
 Qed.
 
 (* Lean: BProv_Ax_s_betaShiftTailExistsTermAt_assumption_elim_opened *)
@@ -31883,12 +31844,10 @@ Lemma BProv_Ax_s_betaShiftTailExistsTermAt_assumption_elim_opened :
     target.
 Proof.
   intros G target oldCode oldStep lastTerm hopened.
-  set (C := betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G).
-  assert (hex : BProv Ax_s C
-      (betaShiftTailExistsTermAt oldCode oldStep lastTerm)).
-  { apply BProv_ass. unfold C. simpl. left. reflexivity. }
-  exact (BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
-    C target oldCode oldStep lastTerm hopened hex).
+  apply (BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
+    (betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G)
+    target oldCode oldStep lastTerm hopened).
+  apply BProv_ass_head.
 Qed.
 
 Lemma BProv_Ax_s_hfMemAt_bitOneEx_of_bit :

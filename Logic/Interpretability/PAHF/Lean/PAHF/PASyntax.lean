@@ -12769,35 +12769,14 @@ theorem BProv_Ax_s_crtInverseExistsTermAt_elim_opened
     (hex : BProv Ax_s G
       (crtInverseExistsTermAt product modulus)) :
     BProv Ax_s G target := by
-  let body : Formula := crtInverseExistsTermAtBody product modulus
-  let quotEx : Formula := crtInverseExistsTermAtQuotEx product modulus
-  have houter : BProv Ax_s (quotEx :: G.map (rename Nat.succ))
-      (rename Nat.succ target) := by
-    have hquotEx : BProv Ax_s (quotEx :: G.map (rename Nat.succ))
-        quotEx :=
-      BProv_ass (B := Ax_s)
-        (G := quotEx :: G.map (rename Nat.succ)) (by simp)
-    have hinner : BProv Ax_s
-        (body :: (quotEx :: G.map (rename Nat.succ)).map
-          (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target)) := by
-      simpa [body, quotEx, crtInverseExistsTermAtOpenedContext,
-        crtInverseExistsTermAtQuotEx,
-        crtInverseExistsTermAtBody] using hopened
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hquotEx (by
-        simpa [body, quotEx, crtInverseExistsTermAtQuotEx,
-          crtInverseExistsTermAtBody] using hinner)
-  have houterEx : BProv Ax_s G (ex quotEx) := by
-    simpa [body, quotEx, crtInverseExistsTermAt,
-      crtInverseExistsTermAtQuotEx,
-      crtInverseExistsTermAtBody] using hex
-  exact BProv_exE_of_sentences
+  exact BProv_two_exE_of_sentences
     (B := Ax_s) Ax_s_sentences
-    houterEx (by
-      simpa [body, quotEx, crtInverseExistsTermAtQuotEx,
-        crtInverseExistsTermAtBody] using houter)
+    (body := crtInverseExistsTermAtBody product modulus)
+    (by simpa [crtInverseExistsTermAt,
+      crtInverseExistsTermAtBody] using hex)
+    (by simpa [crtInverseExistsTermAtOpenedContext,
+      crtInverseExistsTermAtQuotEx,
+      crtInverseExistsTermAtBody] using hopened)
 
 /-- Package an explicit additive correction into its existential relation. -/
 theorem BProv_Ax_s_crtCorrectionExistsTermAt_of_term
@@ -26953,37 +26932,14 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
     (hex : BProv Ax_s G
       (betaShiftTailExistsTermAt oldCode oldStep lastTerm)) :
     BProv Ax_s G target := by
-  let body : Formula :=
-    betaShiftTailExistsTermAtBody oldCode oldStep lastTerm
-  let stepEx : Formula :=
-    betaShiftTailExistsTermAtStepEx oldCode oldStep lastTerm
-  have houter : BProv Ax_s (stepEx :: G.map (rename Nat.succ))
-      (rename Nat.succ target) := by
-    have hstepEx : BProv Ax_s (stepEx :: G.map (rename Nat.succ))
-        stepEx :=
-      BProv_ass (B := Ax_s)
-        (G := stepEx :: G.map (rename Nat.succ)) (by simp)
-    have hinner : BProv Ax_s
-        (body :: (stepEx :: G.map (rename Nat.succ)).map
-          (rename Nat.succ))
-        (rename Nat.succ (rename Nat.succ target)) := by
-      simpa [body, stepEx, betaShiftTailExistsTermAtOpenedContext,
-        betaShiftTailExistsTermAtStepEx,
-        betaShiftTailExistsTermAtBody] using hopened
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hstepEx (by
-        simpa [body, stepEx, betaShiftTailExistsTermAtStepEx,
-          betaShiftTailExistsTermAtBody] using hinner)
-  have houterEx : BProv Ax_s G (ex stepEx) := by
-    simpa [body, stepEx, betaShiftTailExistsTermAt,
-      betaShiftTailExistsTermAtStepEx,
-      betaShiftTailExistsTermAtBody] using hex
-  exact BProv_exE_of_sentences
+  exact BProv_two_exE_of_sentences
     (B := Ax_s) Ax_s_sentences
-    houterEx (by
-      simpa [body, stepEx, betaShiftTailExistsTermAtStepEx,
-        betaShiftTailExistsTermAtBody] using houter)
+    (body := betaShiftTailExistsTermAtBody oldCode oldStep lastTerm)
+    (by simpa [betaShiftTailExistsTermAt,
+      betaShiftTailExistsTermAtBody] using hex)
+    (by simpa [betaShiftTailExistsTermAtOpenedContext,
+      betaShiftTailExistsTermAtStepEx,
+      betaShiftTailExistsTermAtBody] using hopened)
 
 /-- Eliminate a shifted-tail existence assumption at the head of a context by
 opening its fresh code and step witnesses. -/
@@ -26997,17 +26953,9 @@ theorem BProv_Ax_s_betaShiftTailExistsTermAt_assumption_elim_opened
     BProv Ax_s
       (betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G)
       target := by
-  let C : List Formula :=
-    betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G
-  have hex : BProv Ax_s C
-      (betaShiftTailExistsTermAt oldCode oldStep lastTerm) :=
-    BProv_ass (B := Ax_s) (G := C) (by simp [C])
-  exact
-    BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
-      (G := C) (target := target)
-      (oldCode := oldCode) (oldStep := oldStep)
-      (lastTerm := lastTerm)
-      (by simpa [C] using hopened) hex
+  exact BProv_Ax_s_betaShiftTailExistsTermAt_elim_opened
+    (G := betaShiftTailExistsTermAt oldCode oldStep lastTerm :: G)
+    hopened (BProv_ass_head (B := Ax_s))
 
 /-- Repackage a numeric beta entry as a term-output beta entry when PA proves
 that the numeric output slot equals the desired term. -/
