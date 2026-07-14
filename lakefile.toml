@@ -74,6 +74,10 @@ name = "NoFiniteModel"
 srcDir = "Logic/PeanoArithmetic/NoFiniteModel/Lean"
 
 [[lean_lib]]
+name = "PAFiniteBasisReduction"
+srcDir = "Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean"
+
+[[lean_lib]]
 name = "DiophantineEquations"
 srcDir = "NumberTheory/DiophantineEquations/Lean"
 

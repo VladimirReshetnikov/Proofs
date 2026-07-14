@@ -16,6 +16,7 @@ import FirstOrder
 import QuantifierCommutation
 import PAHF
 import NoFiniteModel
+import PAFiniteBasisReduction
 import RiemannHypothesis
 import ZF
 import ClosureAxiomatization

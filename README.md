@@ -71,13 +71,14 @@ lake build +ShefferStroke.Sheffer
 lake build +FirstOrder.Fol
 lake build +ClosureAxiomatization.Forward
 lake build +NoFiniteModel
+lake build +PAFiniteBasisReduction
 lake build +PowerTowers.Core
 lake build +BusyBeaver.BB2
 lake build +BusyBeaver.BB3
 lake build +BusyBeaver.Mathlib
 ```
 
-The dependency-free foundations projects also have project-local Lake files:
+These projects also have project-local Lake files for focused builds:
 
 ```powershell
 lake --dir Logic/Propositional/NaturalDeduction/Lean build
@@ -88,6 +89,7 @@ lake --dir Logic/QuantifierCommutation/Lean build
 lake --dir Logic/FirstOrder/Lean build
 lake --dir Logic/Interpretability/PAHF/Lean build
 lake --dir Logic/PeanoArithmetic/NoFiniteModel/Lean build
+lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean build
 lake --dir SetTheory/ZF/Lean build
 lake --dir SetTheory/ClosureAxiomatization/Lean build
 lake --dir NumberTheory/RiemannHypothesis/PAStatement/Lean build

@@ -1,0 +1,22 @@
+(** Kernel-assumption audit for the finite-axiomatizability reduction. *)
+
+From PAFiniteBasisReduction Require Import FiniteBasisReduction.
+
+Import PAFiniteBasisReduction.
+
+Check DeductivelyFinitelyAxiomatizable.
+Check HasFiniteFragmentBasis.
+Check finite_axiomatization_gives_finite_fragment_basis.
+Check finite_fragment_basis_gives_finite_axiomatization.
+Check finite_axiomatizable_iff_has_finite_fragment_basis.
+Check PAInductionFragmentStrictness.
+Check PA_induction_fragment_strictness_excludes_finite_basis.
+Check peano_arithmetic_not_finitely_axiomatizable_of_induction_strictness.
+Check PA_finite_axiomatizable_iff_has_finite_fragment_basis.
+
+Print Assumptions finite_axiomatization_gives_finite_fragment_basis.
+Print Assumptions finite_fragment_basis_gives_finite_axiomatization.
+Print Assumptions finite_axiomatizable_iff_has_finite_fragment_basis.
+Print Assumptions PA_induction_fragment_strictness_excludes_finite_basis.
+Print Assumptions peano_arithmetic_not_finitely_axiomatizable_of_induction_strictness.
+Print Assumptions PA_finite_axiomatizable_iff_has_finite_fragment_basis.

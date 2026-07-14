@@ -14,6 +14,7 @@
 -Q Logic/Equational/BooleanAlgebra/Coq BooleanAlgebra
 -Q Logic/Interpretability/PAHF/Coq PAHF
 -Q Logic/PeanoArithmetic/NoFiniteModel/Coq NoFinitePAModel
+-Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction
 -Q NumberTheory/DiophantineEquations/Coq DiophantineEquations
 -Q NumberTheory/IntegerSums/Coq IntegerSums
 -Q NumberTheory/RationalEnumeration/Coq RationalEnumeration
@@ -41,6 +42,8 @@ SetTheory/ClosureAxiomatization/Coq/Audit.v
 Logic/Interpretability/PAHF/Coq/PAHF.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/PAStatement.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/Audit.v
 NumberTheory/RationalEnumeration/Coq/RationalFloorOrbit.v
