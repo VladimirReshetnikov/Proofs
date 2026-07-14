@@ -57,6 +57,18 @@ Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteSkolemHull.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/CanonicalSelector.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/CanonicalSelectorPA.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/SkolemProgramCode.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBetaCoding.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/ProgramTrace.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TotalProgramRows.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/EvaluatorCutContract.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/StandardTraceRows.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/CanonicalTotalRows.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/StandardTraceFunctionality.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TotalTraceEvaluator.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/PAStatement.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/Audit.v
 NumberTheory/RationalEnumeration/Coq/RationalFloorOrbit.v
@@ -114,6 +126,7 @@ Logic/Interpretability/PAHF/Coq/PAHFRoundTripArithmeticAssembly.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemantics.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemanticsGraph.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/NonstandardHFFin.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TraceContractRealization.v
 Logic/Interpretability/PAHF/Coq/PAHFProofTranslationSemantic.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMulCorrected.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeAddCore.v

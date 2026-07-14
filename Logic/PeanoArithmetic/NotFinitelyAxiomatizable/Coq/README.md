@@ -1,71 +1,126 @@
-# Coq status: finite-axiomatizability reduction
+# Coq proof of PA non-finite axiomatizability
 
-This folder does **not** yet contain an unconditional proof that first-order
-Peano arithmetic is not finitely axiomatizable.
+This directory contains the independent Coq development of the
+Ryll-Nardzewski finite-Skolem-hull proof.  It uses the repository's PA syntax,
+natural-deduction calculus, completeness theorem, and PA-in-HF interpretation.
+The target statement uses the deductive notion of finite axiomatization: a
+finite list of arithmetic sentences having exactly PA's sentence consequences
+in the original language.  `TraceContractRealization.v` proves the
+unconditional headline theorem
+`PATraceContractRealization.peano_arithmetic_not_finitely_axiomatizable`.
 
-[`FiniteBasisReduction.v`](FiniteBasisReduction.v) formalizes the
-standard deductive notion (a finite list of sentences with exactly PA's
-sentence consequences) and proves that any such list can be replaced by one
-finite list of genuine PA axioms. It proves standard-model consistency for
-every such fragment and reduces the requested result to the exact proposition
-`PAFiniteFragmentStrictness`: every finite PA fragment fails to derive some
-PA-provable sentence. It also proves the classical converse, so this
-separation proposition is equivalent to PA's non-finite-axiomatizability, not
-just sufficient for it. `PAInductionFragmentStrictness` is retained as the
-stronger Ryll--Nardzewski conclusion.
+## Construction
 
-[`HierarchyReduction.v`](HierarchyReduction.v) defines positive structural
-ranks for PA terms and formulas and the canonical theory `PARankFragment n`:
-the six base axioms plus induction for formulas of rank at most `n`.  It
-machine-checks that every finite list of genuine PA axioms is contained in one
-such fragment.  Consequently it is enough to prove
-`PARankFragmentStrictness`, saying that every canonical fragment misses a
-further induction instance; this proposition implies both
-`PAFiniteFragmentStrictness` and the headline non-finite-axiomatizability
-statement.  It is an explicit premise, not an axiom.
+The proof is organized around a strict separation between the ambient model
+and the eventual countermodel.
 
-The same module defines a law-free `RawPAModel` containing only a carrier and
-interpretations of `0`, successor, addition, and multiplication.  It proves
-the repository's natural-deduction calculus sound for this raw semantics,
-without constructing a `PA.Model` or assuming any arithmetic law.  Therefore
-`PA_rank_fragment_separation_of_raw_countermodel` turns any raw model of
-`PARankFragment n` that falsifies a genuine PA axiom into the corresponding
-syntactic separation.  `rank_fragment_strictness_of_raw_countermodels`
-packages a family of such models into `PARankFragmentStrictness`.
+- `HierarchyReduction.v` defines the finite, cofinal hierarchy
+  `PARankFragment n` and the law-free `RawPAModel` semantics used by the
+  countermodels.
+- `NonstandardHFFin.v` applies first-order compactness to relativized
+  hereditary-finite-set theory.  A looped marker names an ordinal above every
+  standard numeral; PA-in-HF yields an ambient raw arithmetic algebra which
+  satisfies every sealed PA axiom.
+- `FiniteSkolemHull.v`, `CanonicalSelector.v`, and `CanonicalSelectorPA.v`
+  close the distinguished nonstandard element under arithmetic and canonical
+  least/default witnesses.  They prove bounded-rank elementarity and transfer
+  the requested rank fragment.  No `PA.Model` is built for the hull: full PA
+  remains an ambient-model hypothesis only.
+- `SkolemProgramCode.v` gives finite Skolem programs injective polynomial codes
+  whose recursive child codes are strictly smaller than their parents.
+- `FiniteBetaCoding.v` proves external finite beta coding in any raw model of
+  PA and, crucially, constructs beta parameters denoted by Skolem programs, so
+  both parameters belong to the hull.
+- `ProgramTrace.v` defines one fixed first-order beta-table evaluator.  It
+  dispatches over the finite rank-bounded formula enumeration rather than
+  interpreting coded PA syntax.  Every recursive lookup carries an explicit
+  child-code bound.  Its zero default is enabled only when no genuine output
+  satisfies a constructor case.
+- `TotalProgramRows.v` gives an exhaustive total row decoder for every
+  standard natural-number code, proves round trips for genuine programs, and
+  builds the finite canonical beta table through an arbitrary target.
+- `StandardTraceRows.v` performs semantic inversion and standard-code
+  normalization for arbitrary satisfying rows.
+- `CanonicalTotalRows.v` selects the canonical genuine row, or the guarded
+  zero row, supplied by the total decoder at every standard code.
+- `StandardTraceFunctionality.v` uses strong induction on standard codes to
+  compare independently chosen beta tables, not merely two entries in one
+  table, and proves functionality of the fixed trace evaluator.
+- `TotalTraceEvaluator.v` constructs closure-preserving canonical beta tables
+  in the hull and proves evaluator totality at every standard code.
+- `EvaluatorCutContract.v` is evaluator-independent.  Once standard codes
+  enumerate the carrier functionally, it defines “not covered by codes below
+  this bound.”  A pigeonhole argument shows that this formula defines exactly
+  the standard elements.  It contains zero and is successor-closed, while the
+  distinguished nonstandard seed is outside it, so a genuine sealed PA
+  induction axiom fails.
+- `TraceContractRealization.v` combines totality and cross-table functionality
+  with the evaluator-cut contract, constructs a countermodel for every
+  `PARankFragment n`, and passes that family to the finite-basis reduction in
+  `FiniteBasisReduction.v`.
 
-The semantic interface is instantiated unconditionally at rank zero.
-`two_chain_raw_model` consists of two disjoint successor chains, with zero at
-the root of the first; its addition and multiplication satisfy the displayed
-recursion equations.  It validates all six non-induction axioms, hence all of
-`PARankFragment 0`, but falsifies induction for
-`x = 0 \/ exists y, x = S y` at the second chain's root.  Therefore
-`PA_rank_zero_fragment_misses_zero_or_successor_induction` and
-`PA_rank_zero_fragment_strict` are proved outright, not left as premises.
+The construction contains no project-local `Axiom`, `Admitted`, or admitted
+obligation.  `Audit.v` checks the public theorem surface and prints assumptions
+for the critical results; `coqchk` independently rechecks the compiled object
+and its imported dependency closure.
 
-`finite_fragment_strictness_of_mostowski` also verifies the exact fixed-base
-argument: for `T = Base ++ Delta`, local PA reflection supplies `Con(T)` and
-Goedel II prevents `T` from proving that same sentence, hence weakening rules
-out a `Delta`-proof. Reflection and instantiated Goedel II remain explicit
-premises, not axioms. Formalizing them requires metamathematics absent from the
-current repository. The existing `PA.Model` cannot fill the gap: by
-construction it already carries induction for every meta-level predicate and
-therefore cannot serve as a countermodel to a finite induction fragment.
+## Module order
 
-Build and audit from the repository root:
+The focused development is compiled in this order:
+
+```text
+FiniteBasisReduction.v
+HierarchyReduction.v
+FiniteSkolemHull.v
+CanonicalSelector.v
+CanonicalSelectorPA.v
+SkolemProgramCode.v
+FiniteBetaCoding.v
+NonstandardHFFin.v
+EvaluatorCutContract.v
+ProgramTrace.v
+TotalProgramRows.v
+StandardTraceRows.v
+CanonicalTotalRows.v
+StandardTraceFunctionality.v
+TotalTraceEvaluator.v
+TraceContractRealization.v
+Audit.v
+```
+
+Every module is registered in the repository-root `_CoqProject`;
+`coq_makefile` derives the authoritative dependency graph from those sources.
+
+## Verification
+
+From the repository root, the complete Coq workspace can be rebuilt with:
 
 ```powershell
-coqc -Q Logic/FirstOrder/Coq FirstOrder `
-  -Q Logic/Interpretability/PAHF/Coq PAHF `
-  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction `
-  Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
-
-coqc -Q Logic/FirstOrder/Coq FirstOrder `
-  -Q Logic/Interpretability/PAHF/Coq PAHF `
-  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction `
-  Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v
-
-coqc -Q Logic/FirstOrder/Coq FirstOrder `
-  -Q Logic/Interpretability/PAHF/Coq PAHF `
-  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction `
-  Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
+coq_makefile -f _CoqProject -o Makefile.coq
+make -f Makefile.coq
 ```
+
+For focused compilation, use the same logical mappings as `_CoqProject`:
+
+```powershell
+$q = @(
+  '-Q', 'Logic/FirstOrder/Coq', 'FirstOrder',
+  '-Q', 'Logic/Interpretability/PAHF/Coq', 'PAHF',
+  '-Q', 'Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq',
+        'PAFiniteBasisReduction'
+)
+
+coqc @q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
+```
+
+With the preceding dependencies compiled, the final realization can be
+recompiled and its complete imported object closure kernel-checked directly:
+
+```powershell
+coqc @q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/TraceContractRealization.v
+coqchk @q PAFiniteBasisReduction.TraceContractRealization `
+  PAFiniteBasisReduction.Audit
+```
+
+Both focused commands pass for the module containing
+`PATraceContractRealization.peano_arithmetic_not_finitely_axiomatizable`.

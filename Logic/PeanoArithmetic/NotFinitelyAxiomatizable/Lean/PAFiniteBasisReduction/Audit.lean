@@ -1,10 +1,11 @@
 import PAFiniteBasisReduction
 
-/-! Kernel audit for the completed finite-basis reduction.  The arithmetic
-finite-fragment strictness premise is deliberately visible in the type of the
-conditional headline theorem. -/
+/-! Kernel audit for the completed finite-basis reduction.  The final trace
+evaluator realizes the proper-cut contract in the compactness-produced
+nonstandard PA model, so the headline theorem is unconditional. -/
 
 open LeanProofs.PAFiniteBasisReduction
+open LeanProofs.PAFiniteBasisReduction.FiniteSkolemCut
 
 #check @ListTheory
 #check @bprov_listTheory_iff_prov
@@ -84,6 +85,35 @@ open LeanProofs.PAFiniteBasisReduction
 #check @NonstandardHFFin.Ax_BCon
 #check @NonstandardHFFin.nonstandardHFFin_translated_exists
 #check @NonstandardHFFin.nonstandardHFFin_fofam_exists
+#check @leastDefaultGraph
+#check @sat_leastDefaultGraph_iff
+#check @CanonicalSelectors
+#check @canonicalValue_eq_iff_graph
+#check @Program.eval
+#check @Program.eval_exSkolem_graph
+#check @Program.eval_allSkolem_graph
+#check @Program.code
+#check @Program.code_injective
+#check @Program.decode_code
+#check @Program.decode_eq_some_iff
+#check @Program.eval_mem_hull
+#check @Hull.exists_program
+#check @sat_iff_ambient
+#check @hull_sat_rankFragment
+#check @RawPASatisfies
+#check @definable_least_witness
+#check @canonicalSelectorsOfPA
+#check @fofamCanonicalSelectors
+#check @ProgramTrace.totalRowProgram_code
+#check @ProgramTrace.canonicalStandardRowWitness_or_zero
+#check @ProgramTrace.traceEvaluator_evaluates_program
+#check @ProgramTrace.traceEvaluator_standardCode_total
+#check @ProgramTrace.traceEvaluator_standardCode_functional
+#check @ProgramTrace.TraceEvaluatorStandardCodeFunctional
+#check @ProgramTrace.trace_contractCountermodels_of_functionality
+#check @ProgramTrace.traceEvaluator_standardCode_functionality
+#check @ProgramTrace.trace_contractCountermodels
+#check @ProgramTrace.pa_not_finitely_axiomatizable
 
 -- The standard full PA model remains usable wherever only raw arithmetic
 -- operations are required.
@@ -135,3 +165,21 @@ example : SetTheory.PA.PreModel Nat := SetTheory.PA.natModel
 #print axioms NonstandardHFFin.Ax_BCon
 #print axioms NonstandardHFFin.nonstandardHFFin_translated_exists
 #print axioms NonstandardHFFin.nonstandardHFFin_fofam_exists
+#print axioms sat_leastDefaultGraph_iff
+#print axioms canonicalValue_eq_iff_graph
+#print axioms Program.code_injective
+#print axioms Program.decode_code
+#print axioms Program.eval_mem_hull
+#print axioms Hull.exists_program
+#print axioms sat_iff_ambient
+#print axioms hull_sat_rankFragment
+#print axioms definable_least_witness
+#print axioms canonicalSelectorsOfPA
+#print axioms fofamCanonicalSelectors
+#print axioms ProgramTrace.totalRowProgram_code
+#print axioms ProgramTrace.canonicalStandardRowWitness_or_zero
+#print axioms ProgramTrace.traceEvaluator_evaluates_program
+#print axioms ProgramTrace.traceEvaluator_standardCode_total
+#print axioms ProgramTrace.traceEvaluator_standardCode_functional
+#print axioms ProgramTrace.trace_contractCountermodels
+#print axioms ProgramTrace.pa_not_finitely_axiomatizable

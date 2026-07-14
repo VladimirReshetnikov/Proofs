@@ -1,3 +1,6 @@
 import PAFiniteBasisReduction.FiniteRankSyntax
 import PAFiniteBasisReduction.RankZero
 import PAFiniteBasisReduction.NonstandardHFFin
+import PAFiniteBasisReduction.FiniteSkolemCut
+import PAFiniteBasisReduction.CanonicalSelectors
+import PAFiniteBasisReduction.TraceContractRealization

@@ -1,192 +1,130 @@
-# PA non-finite axiomatizability: a checked finite-basis reduction
+# Peano arithmetic is not finitely axiomatizable
 
-## Status
+This project gives a kernel-checked model-theoretic proof that first-order
+Peano arithmetic has no finite axiomatization in its original language.  A
+finite axiomatization means a finite list of arithmetic sentences with exactly
+the same sentence consequences as the usual PA axiom schema.
 
-An informal proof sketch from standard metatheorems is given below. This
-directory currently machine-checks the exact **finite-basis reduction**, the
-standard-model consistency of every finite PA fragment, and the fixed-base
-glue of Mostowski's argument, independently in Lean and Coq.  Both sides also
-construct an explicit two-successor-chain countermodel for the rank-zero
-fragment and thereby prove their first unconditional strictness witness. It
-does not yet contain unconditional machine proofs of
-finite-fragment reflection or the required instantiated second incompleteness
-theorem. Those two conditional boundaries are visible in the theorem types;
-there is no `axiom`, `sorry`, `Admitted`, or hidden oracle for either missing
-result.
+The Lean development proves the unconditional headline theorem
+`ProgramTrace.pa_not_finitely_axiomatizable`.  The independent Coq development
+proves
+`PATraceContractRealization.peano_arithmetic_not_finitely_axiomatizable`.
+Both proofs reach the finite-basis conclusion without assuming fragment
+strictness, trace totality, or trace functionality as hypotheses.
 
-This distinction matters. Showing that PA's displayed induction schema is an
-infinite set is not enough: a different finite set of sentences could, in
-principle, have exactly the same deductive consequences. Neither compactness
-nor the absence of finite PA models rules this out; one first-order sentence
-can force all of its models to be infinite.
+## Proof architecture
 
-## The theorem
+The proof formalizes the Ryll-Nardzewski finite-Skolem-hull argument.  Its
+central point is that the hull constructed below is deliberately only a raw
+arithmetic structure.  Full PA is used in the ambient nonstandard model, never
+silently assumed for the hull whose induction axiom will fail.
 
-Write `PA |- phi` for first-order derivability and `Con(T)` for the standard
-arithmetical sentence saying that the recursively axiomatized theory `T` has
-no proof of a contradiction. Two standard metatheorems give Mostowski's proof:
+1. **Cofinal finite fragments.**  `PARankFragment n` contains the six
+   non-induction PA axioms and every sealed induction instance whose source
+   formula has structural rank at most `n`.  Rank-bounded syntax is explicitly
+   enumerated, and every finite list of PA axioms is contained in one such
+   fragment.
+2. **A nonstandard ambient PA model.**  Compactness is applied to a
+   relativized hereditary-finite-set theory with a named ordinal above every
+   standard numeral.  The PA-in-HF interpretation turns the resulting model
+   into a raw PA algebra satisfying every sealed PA axiom, with a distinguished
+   nonstandard element `star`.
+3. **A bounded-rank canonical Skolem hull.**  For the requested fragment rank,
+   the construction closes `star` under arithmetic and canonical least/default
+   witnesses for bounded-rank formulas.  Bounded-rank formulas are elementary
+   between this hull and the ambient model, so the hull satisfies the requested
+   rank fragment.  Every hull element is denoted by a standard finite `Program`.
+4. **An arithmetized program trace.**  Programs have injective polynomial
+   natural-number codes.  Closure-preserving finite beta coding supplies table
+   parameters which are themselves denoted by programs and hence remain in the
+   hull.  One fixed first-order formula checks all program rows through a target
+   code.  Its default row is guarded by the assertion that no genuine output
+   exists, so a valid nonzero row cannot coexist with a spurious zero row.
+5. **Totality and functionality at standard codes.**  An external total
+   decoder provides a canonical row at every natural-number code and agrees
+   with every genuine program.  Strong induction on standard codes proves that
+   any two valid trace tables—even tables with unrelated beta parameters—have
+   the same output.  Thus standard codes name every hull element and the
+   evaluator is functional at each standard code.
+6. **The definable standard cut.**  A bound *covers* the hull when every element
+   has an evaluator code below it.  Standard bounds do not cover, by a finite
+   pigeonhole argument; every element above all standard numerals does cover.
+   The formula saying “not covered” therefore defines exactly the standard
+   elements of the hull.  It contains zero and is successor-closed, while
+   `star` lies outside it, so its sealed PA induction instance is false.
+7. **Finite-basis reduction.**  The hull satisfies `PARankFragment n` but
+   falsifies a genuine PA axiom.  First-order soundness separates every rank
+   fragment from PA.  Cofinality of the hierarchy then rules out any finite
+   list of sentences with all PA sentence consequences.
 
-1. **Reflexivity of PA.** For every finite fragment `Delta` of PA,
-   `PA |- Con(Delta)`. A partial satisfaction predicate of sufficiently high
-   finite complexity lets PA verify the soundness of each `Delta`-proof.
-2. **Goedel's second incompleteness theorem.** A consistent, sufficiently
-   strong recursively axiomatized arithmetic theory `T` does not prove
-   `Con(T)`.
+The compactness construction and all semantic bridges use the repository's
+own first-order calculus.  The final Lean kernel audit reports only Lean's
+standard `propext`, `Classical.choice`, and `Quot.sound` assumptions.  The Coq
+realization is accepted by both `coqc` and `coqchk`.  Neither development uses
+a project-local axiom or admission, a native decision procedure, or a
+generated proof oracle in the argument.
 
-Suppose, for contradiction, that a finite list of arithmetic sentences
-`Gamma` axiomatizes PA. Every member of `Gamma` is a PA theorem, and every
-formal proof uses only finitely many PA axioms. Taking the union of those
-finitely many proof supports gives a finite fragment `Delta` of PA such that
-`Delta |- Gamma`. Enlarge `Delta`, if necessary, by a fixed finite arithmetic
-base `Base` to which the second incompleteness theorem applies; call the
-resulting finite theory `T = Base ++ Delta`.
+## Lean modules
 
-By reflexivity, `PA |- Con(T)`. Since `Gamma` has exactly PA's sentence
-consequences, `Gamma |- Con(T)`. The finite theory `T` proves `Gamma` (it
-contains `Delta`), so cutting the two derivations yields `T |- Con(T)`. The
-standard natural-number model shows that `T` is consistent, contradicting
-Goedel's second incompleteness theorem. Therefore no such finite `Gamma`
-exists.
+The main layers under `Lean/PAFiniteBasisReduction/` are:
 
-Equivalently, every finite list of genuine PA axioms misses a further PA
-theorem. Ryll-Nardzewski's original model-theoretic proof can sharpen the
-missing theorem to a further induction instance.
+- `Reduction.lean`, `Hierarchy.lean`, and `FiniteRankSyntax.lean`: finite-basis
+  reduction, cofinal rank hierarchy, and finite syntax enumeration;
+- `NonstandardHFFin.lean`: compactness model with a named nonstandard ordinal;
+- `FiniteSkolemCut.lean` and `CanonicalSelectors.lean`: the bounded-rank hull,
+  elementarity, and PA-definable canonical selectors;
+- `FiniteBetaCoding.lean`, `ProgramBetaCoding.lean`, and
+  `HullTraceTransport.lean`: beta tables and rank-bounded transport without
+  assuming PA in the hull;
+- `ProgramTrace.lean`, `TotalProgramRows.lean`, and `TotalRowCases.lean`: the
+  fixed trace formula and exhaustive total decoder;
+- `StandardRowFunctionality.lean` and `StandardTraceFunctionality.lean`:
+  semantic inversion and cross-table strong-induction functionality;
+- `TotalTraceEvaluator.lean`: evaluator totality on all hull elements;
+- `EvaluatorCutContract.lean`: the evaluator-independent definable-cut and
+  pigeonhole argument;
+- `TraceContractAssembly.lean` and `TraceContractRealization.lean`: assembly of
+  the uniform countermodels and the unconditional headline theorem.
 
-## What is machine-checked here
-
-The Lean and Coq developments use the repository's real arithmetic syntax and
-first-order proof calculus from `PAHF`; finite axiomatizability means equality
-of all **sentence consequences in the original PA language**.
-
-They prove:
-
-- every arbitrary finite sentence axiomatization equivalent to a sentence
-  theory can be replaced by one finite list of genuine axioms of that theory;
-- the converse, so finite axiomatizability is equivalent to possessing such a
-  finite fragment basis;
-- every finite list of genuine PA axioms is consistent, by soundness in the
-  standard natural-number model;
-- structural ranks for arithmetic terms and formulas, and the canonical
-  hierarchy `PARankFragment n` containing the six base axioms plus induction
-  instances whose source formula has rank at most `n`;
-- exact recursive list enumerations of the terms, formulas, and fragment
-  axioms at each bounded rank, so the claimed finiteness of every
-  `PARankFragment n` is itself machine-checked;
-- cofinality of that hierarchy: every finite list of genuine PA axioms is
-  contained in one `PARankFragment n`;
-- exact finite-fragment sentence separation implies that PA is not finitely
-  axiomatizable;
-- conversely, in the classical metatheory, failure of finite
-  axiomatizability implies exact finite-fragment sentence separation, so this
-  remaining arithmetic proposition is an equivalent boundary rather than a
-  merely sufficient one;
-- a checked fixed-base Mostowski theorem derives that separation from local
-  reflection plus Goedel II;
-- a raw semantic bridge: a law-free arithmetic structure (`PA.PreModel` in
-  Lean, `RawPAModel` in Coq) satisfying a rank fragment and falsifying a
-  genuine PA axiom proves non-derivability by first-order soundness.  These
-  structures contain only the four arithmetic operations and assume neither
-  the PA laws nor induction;
-- explicit law-free models consisting of two disjoint successor chains, which
-  satisfy all six non-induction axioms but falsify induction for
-  `x = 0 or exists y, x = S(y)`; consequently Lean's
-  `rankZero_not_bprov_induction` and Coq's
-  `PA_rank_zero_fragment_misses_zero_or_successor_induction`
-  unconditionally separate `PARankFragment 0` from PA;
-
-The first implication is the compact proof-support argument above:
-`BProv_bound_list` unions the finite PA-axiom lists used by the candidate
-axioms, and cut/lifting transfers all sentence consequences to the resulting
-finite fragment.
-
-The weakest remaining proposition is deliberately a definition and theorem
-premise in both developments:
-
-```text
-for every finite Delta subset of PA axioms,
-there is a PA-provable sentence that Delta does not prove.
-```
-
-`PAInductionFragmentStrictness` retains Ryll-Nardzewski's stronger conclusion
-that the missed theorem can be another induction instance. The main boundary,
-`PAFiniteFragmentStrictness`, asks only for a missed sentence. In Mostowski's
-argument that sentence is `Con(Base ++ Delta)`, where `Base` is one fixed
-finite PA fragment strong enough for Goedel II. The formal theorem
-`finiteFragmentStrictness_of_mostowski` (and its Coq counterpart) checks the
-membership, consistency, and weakening steps with the same consistency
-encoding on both sides.
-
-The canonical reformulation `PARankFragmentStrictness` asks only that every
-natural-number-indexed rank fragment miss a further induction instance. The
-checked theorem `finitePAFragment_bounded_by_rank` turns this into arbitrary
-finite-fragment strictness, and
-`pa_not_finitely_axiomatizable_of_rankFragmentStrictness` reaches the same
-headline. The weaker semantic interface `PARankFragmentCountermodels`
-packages raw countermodels that satisfy each rank fragment while falsifying
-some PA axiom;
-`pa_not_finitely_axiomatizable_of_rankFragmentCountermodels` derives the
-headline through soundness. `RankZero.lean` constructs the first such
-countermodel: rank zero contains only the six base axioms because every
-formula rank is positive. Constructing the uniform family for every positive
-rank remains the substantive Ryll-Nardzewski theorem.
-
-Completing its two hypotheses requires arithmetized proof predicates, bounded
-partial truth/reflection, and an instantiated second incompleteness theorem,
-or alternatively the nonstandard-model and definable-cut construction of
-Ryll-Nardzewski. Those layers are not present in this repository. `PA.Model`
-cannot be used for a shortcut because it already assumes induction for every
-meta-level predicate. The semantics and soundness theorem now also accept the
-axiom-free `PA.PreModel`, so genuine finite-fragment countermodels can be
-represented without smuggling in full induction; their construction is the
-remaining mathematical work.
-
-The maintained Lean library
-[FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation)
-already has Goedel II, but its missing PA-reflexivity step is itself tracked as
-[open issue #701](https://github.com/FormalizedFormalLogic/Foundation/issues/701).
-Russell O'Connor's Coq development similarly proves Goedel--Rosser I, not the
-needed instantiated reflection/second-incompleteness result.
+`PAFiniteBasisReduction/Audit.lean` checks the public theorem surface and
+prints the kernel assumptions of the critical results.
 
 ## Verification
 
-Lean:
+Lean, from the repository root:
 
 ```powershell
-lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean build
-lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean env lean `
-  PAFiniteBasisReduction/Audit.lean
+Push-Location Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean
+lake build
+lake env lean PAFiniteBasisReduction/Audit.lean
+Pop-Location
 ```
 
-Coq:
+The repository-wide Coq project can be rebuilt in dependency order:
 
 ```powershell
-coqc -Q Logic/FirstOrder/Coq FirstOrder `
-  -Q Logic/Interpretability/PAHF/Coq PAHF `
-  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction `
-  Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
-
-coqc -Q Logic/FirstOrder/Coq FirstOrder `
-  -Q Logic/Interpretability/PAHF/Coq PAHF `
-  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction `
-  Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v
-
-coqc -Q Logic/FirstOrder/Coq FirstOrder `
-  -Q Logic/Interpretability/PAHF/Coq PAHF `
-  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction `
-  Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
+coq_makefile -f _CoqProject -o Makefile.coq
+make -f Makefile.coq
 ```
 
-The audit modules print/check the kernel assumptions of every reduction
-theorem. See [`Lean/`](Lean/) and [`Coq/`](Coq/) for the two developments.
+The exact focused `coqc` and `coqchk` commands for the final Coq realization
+are recorded in [`Coq/README.md`](Coq/README.md).
+
+## Why simpler arguments do not suffice
+
+PA having an infinite axiom schema does not by itself preclude an equivalent
+finite set of different sentences.  Likewise, the absence of finite PA models
+is irrelevant: a single first-order sentence can force all of its models to be
+infinite.  The construction above instead produces, for every finite fragment,
+a model of that fragment which refutes a further genuine PA induction axiom.
 
 ## References
 
 - C. Ryll-Nardzewski,
   [*The Role of the Axiom of Induction in the Elementary Arithmetic*](https://eudml.org/doc/213266),
-  Fundamenta Mathematicae 39 (1952).
+  *Fundamenta Mathematicae* 39 (1952).
 - A. Mostowski,
   [*On Models of Axiomatic Systems*](https://eudml.org/doc/213259),
-  Fundamenta Mathematicae 39 (1952), 133--158.
+  *Fundamenta Mathematicae* 39 (1952), 133–158.
 - S. Berdugo Parada,
-  [*Non-finite axiomatizability of first-order Peano Arithmetic*](https://diposit.ub.edu/bitstreams/0bda6e0f-6638-4222-b333-707b84556551/download),
-  a detailed modern exposition of the Ryll-Nardzewski proof.
+  [*Non-finite axiomatizability of first-order Peano Arithmetic*](https://diposit.ub.edu/bitstreams/0bda6e0f-6638-4222-b333-707b84556551/download).
