@@ -8,6 +8,7 @@ import EquationalLogic
 import BooleanAlgebra
 import PowerTowers
 import A158415
+import A290268
 import FirstOrder
 import PAHF
 import RiemannHypothesis

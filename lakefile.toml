@@ -26,6 +26,10 @@ name = "A158415"
 srcDir = "Combinatorics/ExpressionEnumeration/RadicalExpressions/A158415/Lean"
 
 [[lean_lib]]
+name = "A290268"
+srcDir = "Combinatorics/DerivativeExpansions/A290268/Lean"
+
+[[lean_lib]]
 name = "BusyBeaver"
 srcDir = "Computability/BusyBeaver/Lean"
 
