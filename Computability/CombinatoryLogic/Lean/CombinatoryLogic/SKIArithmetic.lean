@@ -1,11 +1,4 @@
 /-
-WIP SNAPSHOT — INTENTIONALLY DISABLED.
-
-This arithmetic development has not yet passed the repository's Lean gate.
-It is preserved verbatim below for continuation, but the entire source is
-commented out so this checkpoint does not expose unverified declarations.
-
-/-
 Copyright (c) 2025 Thomas Waring. All rights reserved.
 Copyright (c) 2026 Jesse Alama. All rights reserved.
 Released under Apache 2.0 license as described in ../LICENSE-Apache-2.0.
@@ -75,7 +68,7 @@ instance : Coe Term (Polynomial n) := ⟨term⟩
 def eval (p : Polynomial n) (xs : List Term) (hxs : xs.length = n) : Term :=
   match p with
   | .term x => x
-  | .var i => xs[i]
+  | .var index => xs[index]
   | .app p q => eval p xs hxs ⬝ eval q xs hxs
 
 /-- Interpret a variable-free polynomial as a term. -/
@@ -87,7 +80,7 @@ def elimVar : Polynomial (n + 1) → Polynomial n
   | .var index => by
       by_cases h : index < n
       · exact k ⬝' (.var <| @Fin.ofNat n ⟨Nat.ne_zero_of_lt h⟩ index)
-      · exact (i : Term)
+      · exact .term i
   | .app p q => s ⬝' elimVar p ⬝' elimVar q
 
 theorem elimVar_correct (p : Polynomial (n + 1)) {ys : List Term}
@@ -105,7 +98,8 @@ theorem elimVar_correct (p : Polynomial (n + 1)) {ys : List Term}
   | n, .var index =>
       simp only [elimVar]
       split_ifs with hi
-      · have h : (ys ++ [z])[index]'(by simp [hys]) = ys[↑index] := by
+      · have hle : (↑index : Nat) ≤ n := Nat.le_of_lt_succ index.isLt
+        have h : (ys ++ [z])[index]'(by simpa [hys] using index.isLt) = ys[↑index] := by
           grind
         simp only [eval, h, Fin.getElem_fin, Fin.val_ofNat, Nat.mod_eq_of_lt hi]
         exact steps_k _ z
@@ -117,25 +111,25 @@ theorem elimVar_correct (p : Polynomial (n + 1)) {ys : List Term}
         exact steps_i z
 
 /-- Close all variables by repeated bracket abstraction. -/
-def toTerm : Polynomial n → Term
-  | p => match n with
-    | 0 => p.varFreeToTerm
-    | _ + 1 => p.elimVar.toTerm
+def toTerm : {n : Nat} → Polynomial n → Term
+  | 0, p => p.varFreeToTerm
+  | _ + 1, p => p.elimVar.toTerm
 
 theorem toTerm_correct (p : Polynomial n) (xs : List Term)
     (hxs : xs.length = n) : applyList p.toTerm xs ↠ p.eval xs hxs := by
-  match n with
-  | 0 =>
+  induction n generalizing xs with
+  | zero =>
       rw [List.length_eq_zero_iff] at hxs
       subst xs
-      exact .refl
-  | n + 1 =>
+      simp only [toTerm, varFreeToTerm, applyList, List.foldl_nil]
+      convert (.refl : Steps (p.eval [] hxs) (p.eval [] hxs))
+  | succ n inductionHypothesis =>
       have hne : xs ≠ [] := List.ne_nil_of_length_eq_add_one hxs
       obtain ⟨ys, z, rfl⟩ := (List.eq_nil_or_concat xs).resolve_left hne
       have hys : ys.length = n := by
-        simpa using Nat.succ.inj (by simpa using hxs.symm)
-      simp only [List.concat_eq_append, applyList_concat]
-      exact (steps_head z (toTerm_correct p.elimVar ys hys)).trans
+        simpa using Nat.succ.inj (by simpa using hxs)
+      simp only [toTerm, List.concat_eq_append, applyList_concat]
+      exact (steps_head z (inductionHypothesis p.elimVar ys hys)).trans
         (elimVar_correct p hys z)
 
 end Polynomial
@@ -200,7 +194,7 @@ theorem cond_correct (a x y : Term) (value : Bool) (h : IsBool value a) :
 def Neg : Term := Cond ⬝ FF ⬝ TT
 theorem neg_correct (a : Term) (value : Bool) (h : IsBool value a) :
     IsBool (!value) (Neg ⬝ a) := by
-  apply isBool_trans (cond_correct a FF TT value h)
+  apply isBool_trans (!value) (cond_correct a FF TT value h)
   cases value <;> simp [TT_correct, FF_correct]
 
 /-- Church pair constructor. -/
@@ -328,14 +322,14 @@ theorem isZero_def (a : Term) : (IsZero ⬝ a) ↠ a ⬝ (k ⬝ FF) ⬝ TT :=
 
 theorem isZero_correct (n : Nat) (a : Term) (h : IsChurch n a) :
     IsBool (n = 0) (IsZero ⬝ a) := by
-  apply isBool_trans (isZero_def a)
+  apply isBool_trans (n = 0) (isZero_def a)
   by_cases hn : n = 0
   · subst n
-    simpa using isBool_trans (h (k ⬝ FF) TT) TT_correct
+    simpa using isBool_trans true (h (k ⬝ FF) TT) TT_correct
   · obtain ⟨q, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn
     simp only [Nat.succ_ne_zero, decide_false]
-    apply isBool_trans (h (k ⬝ FF) TT)
-    exact isBool_trans (steps_k FF (Church q (k ⬝ FF) TT)) FF_correct
+    apply isBool_trans false (h (k ⬝ FF) TT)
+    exact isBool_trans false (steps_k FF (Church q (k ⬝ FF) TT)) FF_correct
 
 /-- One unfolding layer of primitive recursion. -/
 def RecAuxPoly : Polynomial 4 :=
@@ -416,23 +410,35 @@ theorem RFindAbove_unfold (x f : Term) :
     (RFindAbove ⬝ x ⬝ f) ↠ RFindAboveAux ⬝ RFindAbove ⬝ x ⬝ f :=
   steps_head f (steps_head x (fixedPoint_correct RFindAboveAux))
 
+theorem RFindAbove_zero (f x : Term) (hfx : IsChurch 0 (f ⬝ x)) :
+    (RFindAbove ⬝ x ⬝ f) ↠ x :=
+  (RFindAbove_unfold x f).trans
+    (rfindAboveAux_base RFindAbove f x hfx)
+
+theorem RFindAbove_positive (f x : Term) {value : Nat}
+    (hfx : IsChurch (value + 1) (f ⬝ x)) :
+    (RFindAbove ⬝ x ⬝ f) ↠ RFindAbove ⬝ (Succ ⬝ x) ⬝ f :=
+  (RFindAbove_unfold x f).trans
+    (rfindAboveAux_step RFindAbove f x hfx)
+
 theorem RFindAbove_correct (f x : Term) (distance start : Nat) (hx : IsChurch start x)
     (hfRoot : ∀ y, IsChurch (start + distance) y → IsChurch 0 (f ⬝ y))
     (hfBelow : ∀ i < distance, ∀ y, IsChurch (start + i) y →
       ∃ value, IsChurch (value + 1) (f ⬝ y)) :
     IsChurch (start + distance) (RFindAbove ⬝ x ⬝ f) := by
-  induction distance generalizing start x
+  induction distance generalizing start x with
   | zero =>
-      apply isChurch_trans _ (RFindAbove_unfold x f)
-      exact isChurch_trans _ (rfindAboveAux_base _ _ _ (hfRoot x (by simpa using hx))) hx
+      exact isChurch_trans _ (RFindAbove_zero f x (hfRoot x (by simpa using hx))) hx
   | succ distance ih =>
-      apply isChurch_trans _ (RFindAbove_unfold x f)
-      apply isChurch_trans _ (rfindAboveAux_step _ _ _
+      apply isChurch_trans _ (RFindAbove_positive f x
         ((hfBelow 0 (by omega) x (by simpa using hx)).choose_spec))
       have hnext := ih (Succ ⬝ x) (start + 1) (succ_correct start x hx)
-        (fun y hy => hfRoot y (by omega))
-        (fun i hi y hy => hfBelow (i + 1) (by omega) y (by omega))
-      simpa [Nat.add_assoc] using hnext
+        (fun y hy => hfRoot y (by
+          simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hy))
+        (fun i hi y hy => hfBelow (i + 1)
+          (by simpa [Nat.succ_eq_add_one] using Nat.succ_lt_succ hi) y
+          (by simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hy))
+      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hnext
 
 /-! ## Arithmetic -/
 
@@ -445,6 +451,7 @@ theorem add_def (a b : Term) : (Add ⬝ a ⬝ b) ↠ a ⬝ Succ ⬝ b :=
 theorem add_correct (n m : Nat) (a b : Term) (ha : IsChurch n a) (hb : IsChurch m b) :
     IsChurch (n + m) (Add ⬝ a ⬝ b) := by
   apply isChurch_trans _ ((add_def a b).trans (ha Succ b))
+  clear ha a
   induction n with
   | zero => simpa using hb
   | succ n ih =>
@@ -460,6 +467,7 @@ theorem mul_def (a b : Term) : (Mul ⬝ a ⬝ b) ↠ a ⬝ (Add ⬝ b) ⬝ Zero 
 theorem mul_correct {n m : Nat} {a b : Term} (ha : IsChurch n a) (hb : IsChurch m b) :
     IsChurch (n * m) (Mul ⬝ a ⬝ b) := by
   apply isChurch_trans _ ((mul_def a b).trans (ha (Add ⬝ b) Zero))
+  clear ha a
   induction n with
   | zero => simpa using zero_correct
   | succ n ih =>
@@ -475,10 +483,14 @@ theorem sub_def (a b : Term) : (Sub ⬝ a ⬝ b) ↠ b ⬝ Pred ⬝ a :=
 theorem sub_correct (n m : Nat) (a b : Term) (ha : IsChurch n a) (hb : IsChurch m b) :
     IsChurch (n - m) (Sub ⬝ a ⬝ b) := by
   apply isChurch_trans _ ((sub_def a b).trans (hb Pred a))
+  clear hb b
   induction m with
   | zero => simpa using ha
   | succ m ih =>
-      simpa [Nat.sub_succ] using pred_correct (n - m) (Church m Pred a) ih
+      have hindex : n - (m + 1) = (n - m) - 1 := by omega
+      rw [hindex]
+      simpa only [Church, Nat.pred_eq_sub_one] using
+        pred_correct (n - m) (Church m Pred a) ih
 
 /-- Boolean less-than-or-equal comparison. -/
 def LEPoly : Polynomial 2 := IsZero ⬝' (Sub ⬝' &0 ⬝' &1)
@@ -488,12 +500,12 @@ theorem le_def (a b : Term) : (LE ⬝ a ⬝ b) ↠ IsZero ⬝ (Sub ⬝ a ⬝ b) 
 
 theorem le_correct (n m : Nat) (a b : Term) (ha : IsChurch n a) (hb : IsChurch m b) :
     IsBool (n ≤ m) (LE ⬝ a ⬝ b) := by
-  apply isBool_trans (le_def a b)
+  apply isBool_trans (n ≤ m) (le_def a b)
   rw [show decide (n ≤ m) = decide (n - m = 0) by
-    exact decide_eq_decide.mpr Nat.sub_eq_zero_iff_le]
+    exact decide_eq_decide.mpr Nat.sub_eq_zero_iff_le.symm]
   exact isZero_correct _ _ (sub_correct n m a b ha hb)
 
-/-! ## Integer square root -/
+/-! ## Search from zero -/
 
 def RFind : Term := RFindAbove ⬝ Zero
 
@@ -501,13 +513,18 @@ theorem RFind_correct (fNat : Nat → Nat) (f : Term)
     (hf : ∀ i y, IsChurch i y → IsChurch (fNat i) (f ⬝ y))
     (n : Nat) (hroot : fNat n = 0) (hpositive : ∀ i < n, fNat i ≠ 0) :
     IsChurch n (RFind ⬝ f) := by
-  apply RFindAbove_correct f Zero n 0 zero_correct
-  · intro y hy
-    simpa [hroot] using hf n y (by simpa using hy)
-  · intro i hi y hy
-    refine ⟨fNat i - 1, ?_⟩
-    have := hf i y (by simpa using hy)
-    simpa [Nat.succ_pred_eq_of_ne_zero (hpositive i hi)] using this
+  simpa [RFind] using RFindAbove_correct f Zero n 0 zero_correct
+    (fun y hy => by
+      simpa [hroot] using hf n y (by simpa using hy))
+    (fun i hi y hy => by
+      refine ⟨fNat i - 1, ?_⟩
+      have := hf i y (by simpa using hy)
+      have hne : fNat i ≠ 0 := hpositive i hi
+      have hindex : fNat i - 1 + 1 = fNat i := by omega
+      rw [hindex]
+      exact this)
+
+/-! ## Integer square root -/
 
 /-- At `(n,k)`, return zero exactly when `(k+1)^2 > n`. -/
 def SqrtCondPoly : Polynomial 2 :=
@@ -539,8 +556,9 @@ theorem sqrt_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
     split <;> simp_all [zero_correct, one_correct]
   · simp [Nat.lt_succ_sqrt]
   · intro i hi
-    simp only [ite_eq_right_iff, one_ne_zero, imp_false, not_lt]
-    exact Nat.le_of_lt_succ (Nat.lt_succ_iff.mpr (Nat.le_sqrt.mp (Nat.le_of_lt hi)))
+    have hsquare : (i + 1) * (i + 1) ≤ n :=
+      Nat.le_sqrt.mp (Nat.succ_le_of_lt hi)
+    simp [not_lt.mpr hsquare]
 
 /-! ## Mathlib-compatible natural pairing and unpairing -/
 
@@ -566,9 +584,11 @@ theorem natPair_correct (a b : Nat) (ca cb : Term)
   have hcond := neg_correct _ _ (le_correct b a cb ca hb ha)
   apply isChurch_trans _ (cond_correct _ _ _ _ hcond)
   by_cases hab : a < b
-  · simp only [hab, if_true]
+  · have hba : ¬ b ≤ a := Nat.not_le_of_lt hab
+    simp [hab, hba]
     exact add_correct _ _ _ _ (mul_correct hb hb) ha
-  · simp only [hab, if_false]
+  · have hba : b ≤ a := Nat.le_of_not_gt hab
+    simp [hab, hba]
     exact add_correct _ _ _ _ (add_correct _ _ _ _ (mul_correct ha ha) ha) hb
 
 /-- Left projection of Mathlib's `Nat.unpair`. -/
@@ -597,12 +617,21 @@ theorem natUnpairLeft_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
     IsChurch (Nat.unpair n).1 (NatUnpairLeft ⬝ cn) := by
   apply isChurch_trans _ (natUnpairLeft_def cn)
   obtain ⟨hs, hdifference⟩ := natUnpair_church n cn hcn
-  have hcondition := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+  have hcondition :
+      IsBool (decide (n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n))
+        (Neg ⬝ (LE ⬝ (Sqrt ⬝ cn) ⬝
+          (Sub ⬝ cn ⬝ (Mul ⬝ (Sqrt ⬝ cn) ⬝ (Sqrt ⬝ cn))))) := by
+    have hneg := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+    by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+    · have hnle : ¬Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.not_le_of_lt hlt
+      simpa [hlt, hnle] using hneg
+    · have hle : Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.le_of_not_gt hlt
+      simpa [hlt, hle] using hneg
   apply isChurch_trans _ (cond_correct _ _ _ _ hcondition)
   rw [Nat.unpair]
-  split_ifs with h
-  · simpa [pow_two] using hdifference
-  · simpa using hs
+  by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+  · simpa [hlt, pow_two] using hdifference
+  · simpa [hlt] using hs
 
 /-- Right projection of Mathlib's `Nat.unpair`. -/
 def NatUnpairRightPoly : Polynomial 1 :=
@@ -625,12 +654,20 @@ theorem natUnpairRight_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
     IsChurch (Nat.unpair n).2 (NatUnpairRight ⬝ cn) := by
   apply isChurch_trans _ (natUnpairRight_def cn)
   obtain ⟨hs, hdifference⟩ := natUnpair_church n cn hcn
-  have hcondition := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+  have hcondition :
+      IsBool (decide (n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n))
+        (Neg ⬝ (LE ⬝ (Sqrt ⬝ cn) ⬝
+          (Sub ⬝ cn ⬝ (Mul ⬝ (Sqrt ⬝ cn) ⬝ (Sqrt ⬝ cn))))) := by
+    have hneg := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+    by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+    · have hnle : ¬Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.not_le_of_lt hlt
+      simpa [hlt, hnle] using hneg
+    · have hle : Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.le_of_not_gt hlt
+      simpa [hlt, hle] using hneg
   apply isChurch_trans _ (cond_correct _ _ _ _ hcondition)
   rw [Nat.unpair]
-  split_ifs with h
-  · simpa using hs
-  · simpa [pow_two] using sub_correct _ _ _ _ hdifference hs
+  by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+  · simpa [hlt] using hs
+  · simpa [hlt, pow_two] using sub_correct _ _ _ _ hdifference hs
 
 end CombinatoryLogic.SKI.Term
--/

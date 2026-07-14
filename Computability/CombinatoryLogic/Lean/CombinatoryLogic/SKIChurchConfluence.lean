@@ -1,11 +1,4 @@
 /-
-WIP SNAPSHOT — INTENTIONALLY DISABLED.
-
-This Church-observation development has not yet passed the repository's Lean
-gate. It is preserved verbatim below for continuation, but the entire source
-is commented out so this checkpoint does not expose unverified declarations.
-
-/-
 Copyright (c) 2025 Thomas Waring. All rights reserved.
 Released under Apache 2.0 license as described in ../LICENSE-Apache-2.0.
 Authors: Thomas Waring
@@ -51,7 +44,7 @@ theorem churchK_redexFree : ∀ n, RedexFree (churchK n)
 @[simp] theorem churchK_size : ∀ n, (churchK n).size = 2 * n + 1
   | 0 => rfl
   | n + 1 => by
-      rw [churchK, size, churchK_size]
+      simp [churchK, size, churchK_size, Nat.mul_succ]
       omega
 
 /-- The specialized numeral probes have distinct syntax. -/
@@ -77,6 +70,15 @@ theorem ObservesChurch.of_steps {n : Nat} {source target : Term}
   unfold ObservesChurch at observation ⊢
   exact (Steps.appLeft k (Steps.appLeft k reduction)).trans observation
 
+/-- Observation is preserved forwards along ordinary reduction. -/
+theorem ObservesChurch.after_steps {n : Nat} {source target : Term}
+    (reduction : Steps source target) (observation : ObservesChurch n source) :
+    ObservesChurch n target := by
+  unfold ObservesChurch at observation ⊢
+  exact confluent_redexFree
+    (Steps.appLeft k (Steps.appLeft k reduction)) observation
+    (churchK_redexFree n)
+
 /-- A single term cannot produce two distinct Church observations. -/
 theorem observesChurch_unique {term : Term} {left right : Nat}
     (leftObservation : ObservesChurch left term)
@@ -88,6 +90,33 @@ theorem observesChurch_unique {term : Term} {left right : Nat}
 /-- The canonical arithmetic representative has its canonical observation. -/
 theorem toChurch_observes (n : Nat) : ObservesChurch n (toChurch n) :=
   observesChurch_of_isChurch (toChurch_correct n)
+
+/-- Church observation commutes with the arithmetic successor program. -/
+theorem observesChurch_succ {n : Nat} {term : Term}
+    (observation : ObservesChurch n term) :
+    ObservesChurch (n + 1) (Succ ⬝ term) := by
+  unfold ObservesChurch at observation ⊢
+  simpa [Succ, churchK] using
+    (Steps.appLeft k (Steps.single (.s B term k))).trans
+      ((B_def k (term ⬝ k) k).trans (Steps.appRight k observation))
+
+/-- A canonical closed program that has no Church observation. -/
+def ObservationDiverger : Term := fixedPoint Succ
+
+theorem observationDiverger_unfold :
+    Steps ObservationDiverger (Succ ⬝ ObservationDiverger) :=
+  fixedPoint_correct Succ
+
+/-- `ObservationDiverger` cannot return any natural number. -/
+theorem observationDiverger_does_not_observe (n : Nat) :
+    ¬ObservesChurch n ObservationDiverger := by
+  intro observation
+  have sameIndex : ObservesChurch n (Succ ⬝ ObservationDiverger) :=
+    ObservesChurch.after_steps observationDiverger_unfold observation
+  have nextIndex : ObservesChurch (n + 1) (Succ ⬝ ObservationDiverger) :=
+    observesChurch_succ observation
+  exact (Nat.ne_of_lt (Nat.lt_succ_self n))
+    (observesChurch_unique sameIndex nextIndex)
 
 /-- The index of a Church representation of one fixed term is unique. -/
 theorem isChurch_index_unique {term : Term} {left right : Nat}
@@ -124,4 +153,3 @@ theorem isChurch_injective (leftTerm rightTerm : Term) (left right : Nat)
       (churchK_redexFree left) (churchK_redexFree right))
 
 end CombinatoryLogic.SKI.Term
--/
