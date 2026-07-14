@@ -1,1 +1,2 @@
-import PAFiniteBasisReduction.Reduction
+import PAFiniteBasisReduction.FiniteRankSyntax
+import PAFiniteBasisReduction.RankZero

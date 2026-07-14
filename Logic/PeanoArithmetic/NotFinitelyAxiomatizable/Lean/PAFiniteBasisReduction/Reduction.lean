@@ -124,9 +124,9 @@ theorem finiteAxiomatization_iff_finiteSubtheoryBasis
   exact ⟨finiteAxiomatization_to_finiteSubtheoryBasis,
     finiteSubtheoryBasis_to_finiteAxiomatization hB⟩
 
-/-- The exact arithmetic separation statement still needed after the logical
-finite-basis reduction: every finite list of PA axioms misses a further sealed
-induction instance. -/
+/-- The stronger Ryll--Nardzewski separation statement: every finite list of
+PA axioms misses a further sealed induction instance.  Mostowski's proof only
+needs the weaker sentence separation statement below. -/
 def PAInductionFragmentStrictness : Prop :=
   ∀ Δ : List PA.Formula,
     (∀ δ, δ ∈ Δ → PA.Formula.Ax_s δ) →
@@ -134,16 +134,164 @@ def PAInductionFragmentStrictness : Prop :=
       ¬PA.Formula.Prov Δ
         (PA.Formula.sealPA (PA.Formula.inductionForm φ))
 
+/-- The exact separation statement required by the finite-basis reduction.
+Unlike `PAInductionFragmentStrictness`, the missing PA theorem may be any
+sentence.  In Mostowski's proof it is the canonical consistency sentence for
+a fixed strong base extended by `Δ`. -/
+def PAFiniteFragmentStrictness : Prop :=
+  ∀ Δ : List PA.Formula,
+    (∀ δ, δ ∈ Δ → PA.Formula.Ax_s δ) →
+    ∃ ψ : PA.Formula,
+      PA.Formula.Sentence ψ ∧
+      PA.Formula.BProv PA.Formula.Ax_s [] ψ ∧
+      ¬PA.Formula.Prov Δ ψ
+
+/-- Ordinary syntactic consistency for a finite PA context. -/
+def ConsistentList (Γ : List PA.Formula) : Prop :=
+  ¬PA.Formula.Prov Γ PA.Formula.bot
+
+/-- Every finite list of genuine PA axioms is consistent.  This part of the
+Mostowski argument needs no arithmetization: soundness in the standard natural
+number model rules out an ordinary derivation of falsity. -/
+theorem paFiniteFragment_consistent (Γ : List PA.Formula)
+    (hΓ : ∀ γ, γ ∈ Γ → PA.Formula.Ax_s γ) :
+    ConsistentList Γ := by
+  intro hbot
+  have hfalse : PA.Formula.Sat PA.natModel (fun _ => 0) PA.Formula.bot :=
+    PA.Formula.soundness PA.natModel hbot (fun _ => 0) (fun γ hγ =>
+      PA.Formula.sat_axiom_s PA.natModel (fun _ => 0) γ (hΓ γ hγ))
+  exact hfalse
+
+/-- Ryll--Nardzewski's stronger induction-instance theorem implies the exact
+sentence separation statement used by the finite-basis argument. -/
+theorem finiteFragmentStrictness_of_inductionFragmentStrictness
+    (hstrict : PAInductionFragmentStrictness) :
+    PAFiniteFragmentStrictness := by
+  intro Δ hΔ
+  obtain ⟨φ, hnot⟩ := hstrict Δ hΔ
+  exact ⟨PA.Formula.sealPA (PA.Formula.inductionForm φ),
+    PA.Formula.sealPA_sentence _,
+    PA.Formula.BProv_ax (PA.Formula.Ax_s_induction φ), hnot⟩
+
+/-- The small but subtle fixed-base step in Mostowski's proof.
+
+`Base` is a finite PA fragment strong enough for the chosen formalization of
+Goedel's second incompleteness theorem, and `con T` is the *same* canonical
+consistency sentence in the reflection and incompleteness hypotheses.  For an
+arbitrary finite PA fragment `Δ`, use `T = Base ++ Δ`.  If `Δ` proved
+`con T`, weakening would make `T` prove its own consistency, contradicting the
+last hypothesis.
+
+The two hard, intentionally explicit inputs are finite-fragment reflection
+(`hreflect`) and an instantiated second incompleteness theorem (`hg2`). -/
+theorem finiteFragmentStrictness_of_mostowski
+    (Base : List PA.Formula)
+    (con : List PA.Formula → PA.Formula)
+    (hBase : ∀ β, β ∈ Base → PA.Formula.Ax_s β)
+    (hconSentence : ∀ T, PA.Formula.Sentence (con T))
+    (hreflect : ∀ T,
+      (∀ θ, θ ∈ T → PA.Formula.Ax_s θ) →
+      PA.Formula.BProv PA.Formula.Ax_s [] (con T))
+    (hg2 : ∀ T,
+      (∀ θ, θ ∈ T → PA.Formula.Sentence θ) →
+      (∀ β, β ∈ Base → β ∈ T) →
+      ConsistentList T →
+      ¬PA.Formula.Prov T (con T)) :
+    PAFiniteFragmentStrictness := by
+  intro Δ hΔ
+  let T := Base ++ Δ
+  have hTpa : ∀ θ, θ ∈ T → PA.Formula.Ax_s θ := by
+    intro θ hθ
+    rcases List.mem_append.mp hθ with hθ | hθ
+    · exact hBase θ hθ
+    · exact hΔ θ hθ
+  have hTsent : ∀ θ, θ ∈ T → PA.Formula.Sentence θ := by
+    intro θ hθ
+    exact PA.Formula.Ax_s_sentences θ (hTpa θ hθ)
+  have hBaseT : ∀ β, β ∈ Base → β ∈ T := by
+    intro β hβ
+    exact List.mem_append.mpr (Or.inl hβ)
+  have hnotT : ¬PA.Formula.Prov T (con T) :=
+    hg2 T hTsent hBaseT (paFiniteFragment_consistent T hTpa)
+  refine ⟨con T, hconSentence T, hreflect T hTpa, ?_⟩
+  intro hΔcon
+  apply hnotT
+  exact PA.Formula.Prov_weaken hΔcon T (fun θ hθ =>
+    List.mem_append.mpr (Or.inr hθ))
+
+/-- Exact finite-fragment sentence separation rules out a finite basis of
+actual PA axioms. -/
+theorem no_finiteSubtheoryBasis_of_finiteFragmentStrictness
+    (hstrict : PAFiniteFragmentStrictness) :
+    ¬FiniteSubtheoryBasis PA.Formula.Ax_s := by
+  rintro ⟨Δ, hΔsub, hΔequiv⟩
+  obtain ⟨ψ, hψsent, hPAψ, hnot⟩ := hstrict Δ hΔsub
+  apply hnot
+  apply (bprov_listTheory_iff_prov Δ ψ).mp
+  exact (hΔequiv ψ hψsent).mpr hPAψ
+
+/-- Exactness of the arithmetic proof boundary.  Classically, sentence
+separation for every finite PA fragment is not just sufficient to rule out a
+finite basis: it is equivalent to that conclusion.  The reverse direction
+extracts a missing sentence from the failure of the displayed finite fragment
+to be a basis. -/
+theorem finiteFragmentStrictness_iff_no_finiteSubtheoryBasis :
+    PAFiniteFragmentStrictness ↔
+      ¬FiniteSubtheoryBasis PA.Formula.Ax_s := by
+  constructor
+  · exact no_finiteSubtheoryBasis_of_finiteFragmentStrictness
+  · intro hnobasis Δ hΔ
+    classical
+    by_cases hmissing : ∃ ψ : PA.Formula,
+        PA.Formula.Sentence ψ ∧
+        PA.Formula.BProv PA.Formula.Ax_s [] ψ ∧
+        ¬PA.Formula.Prov Δ ψ
+    · exact hmissing
+    · exfalso
+      apply hnobasis
+      refine ⟨Δ, hΔ, ?_⟩
+      intro ψ hψsent
+      constructor
+      · exact listTheory_weaker hΔ
+      · intro hPAψ
+        apply (bprov_listTheory_iff_prov Δ ψ).mpr
+        by_cases hprov : PA.Formula.Prov Δ ψ
+        · exact hprov
+        · exact (hmissing ⟨ψ, hψsent, hPAψ, hprov⟩).elim
+
 /-- Finite-fragment strictness rules out a finite basis of actual PA axioms. -/
 theorem no_finiteSubtheoryBasis_of_strict_fragments
     (hstrict : PAInductionFragmentStrictness) :
     ¬FiniteSubtheoryBasis PA.Formula.Ax_s := by
-  rintro ⟨Δ, hΔsub, hΔequiv⟩
-  obtain ⟨φ, hnot⟩ := hstrict Δ hΔsub
-  apply hnot
-  apply (bprov_listTheory_iff_prov Δ _).mp
-  apply (hΔequiv _ (PA.Formula.sealPA_sentence _)).mpr
-  exact PA.Formula.BProv_ax (PA.Formula.Ax_s_induction φ)
+  exact no_finiteSubtheoryBasis_of_finiteFragmentStrictness
+    (finiteFragmentStrictness_of_inductionFragmentStrictness hstrict)
+
+/-- Mostowski's exact final reduction: arbitrary sentence separation, rather
+than the stronger induction-instance conclusion, suffices. -/
+theorem pa_not_finitely_axiomatizable_of_finiteFragmentStrictness
+    (hstrict : PAFiniteFragmentStrictness) :
+    ¬FiniteAxiomatization PA.Formula.Ax_s := by
+  intro hfin
+  have hbasis : FiniteSubtheoryBasis PA.Formula.Ax_s :=
+    (finiteAxiomatization_iff_finiteSubtheoryBasis
+      PA.Formula.Ax_s_sentences).mp hfin
+  exact no_finiteSubtheoryBasis_of_finiteFragmentStrictness hstrict hbasis
+
+/-- The exact arithmetic separation statement is classically equivalent to
+the advertised non-finite-axiomatizability theorem.  Thus all purely logical
+compactness and finite-support bookkeeping has been discharged on both sides
+of the boundary. -/
+theorem pa_not_finitely_axiomatizable_iff_finiteFragmentStrictness :
+    (¬FiniteAxiomatization PA.Formula.Ax_s) ↔
+      PAFiniteFragmentStrictness := by
+  constructor
+  · intro hnotfinite
+    apply finiteFragmentStrictness_iff_no_finiteSubtheoryBasis.mpr
+    intro hbasis
+    exact hnotfinite
+      (finiteSubtheoryBasis_to_finiteAxiomatization
+        PA.Formula.Ax_s_sentences hbasis)
+  · exact pa_not_finitely_axiomatizable_of_finiteFragmentStrictness
 
 /-- The standard final reduction: the Ryll-Nardzewski--Mostowski
 finite-fragment theorem implies that first-order PA has no finite sentence
@@ -151,11 +299,8 @@ axiomatization in its original language. -/
 theorem pa_not_finitely_axiomatizable_of_strict_fragments
     (hstrict : PAInductionFragmentStrictness) :
     ¬FiniteAxiomatization PA.Formula.Ax_s := by
-  intro hfin
-  have hbasis : FiniteSubtheoryBasis PA.Formula.Ax_s :=
-    (finiteAxiomatization_iff_finiteSubtheoryBasis
-      PA.Formula.Ax_s_sentences).mp hfin
-  exact no_finiteSubtheoryBasis_of_strict_fragments hstrict hbasis
+  exact pa_not_finitely_axiomatizable_of_finiteFragmentStrictness
+    (finiteFragmentStrictness_of_inductionFragmentStrictness hstrict)
 
 end PAFiniteBasisReduction
 end LeanProofs

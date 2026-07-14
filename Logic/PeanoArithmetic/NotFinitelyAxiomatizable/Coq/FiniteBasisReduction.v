@@ -23,7 +23,7 @@
   theorem that a complete development must still establish.
 *)
 
-From Stdlib Require Import List.
+From Stdlib Require Import List Classical_Prop.
 From PAHF Require Import PAHF.
 
 Import ListNotations.
@@ -125,7 +125,7 @@ Proof.
     exact hSentences.
 Qed.
 
-(** The exact missing arithmetic/metamathematical theorem.
+(** The stronger Ryll--Nardzewski arithmetic theorem.
 
     It says that no finite list of genuine PA axioms proves every induction
     instance.  Standard proofs establish this via strictness of fragments of
@@ -139,19 +139,196 @@ Definition PAInductionFragmentStrictness : Prop :=
       ~ PA.Formula.Prov Delta
           (PA.Formula.sealPA (PA.Formula.inductionForm phi)).
 
+(** The exact separation statement needed by the finite-basis reduction.
+    Mostowski's witness is a canonical consistency sentence, so requiring it
+    to be an induction instance would be unnecessarily strong. *)
+Definition PAFiniteFragmentStrictness : Prop :=
+  forall Delta : list PA.formula,
+    (forall delta, In delta Delta -> PA.Formula.Ax_s delta) ->
+    exists psi : PA.formula,
+      PA.Formula.Sentence psi /\
+      PA.Formula.BProv PA.Formula.Ax_s [] psi /\
+      ~ PA.Formula.Prov Delta psi.
+
+(** Ordinary syntactic consistency for a finite PA context. *)
+Definition ConsistentList (Gamma : list PA.formula) : Prop :=
+  ~ PA.Formula.Prov Gamma PA.pBot.
+
+(** Every finite list of genuine PA axioms is consistent.  This follows
+    directly from soundness in the standard natural-number model and does not
+    require an arithmetized reflection theorem. *)
+Theorem PA_finite_fragment_consistent :
+  forall Gamma : list PA.formula,
+    (forall gamma, In gamma Gamma -> PA.Formula.Ax_s gamma) ->
+    ConsistentList Gamma.
+Proof.
+  intros Gamma hGamma hBot.
+  pose proof (PA.Formula.soundness PA.natModel Gamma PA.pBot hBot
+    (fun _ => 0)
+    (fun gamma hIn =>
+      PA.Formula.sat_axiom_s PA.natModel (fun _ => 0) gamma
+        (hGamma gamma hIn))) as hFalse.
+  exact hFalse.
+Qed.
+
+(** The induction-instance version implies exact sentence separation. *)
+Theorem finite_fragment_strictness_of_induction_fragment_strictness :
+  PAInductionFragmentStrictness -> PAFiniteFragmentStrictness.
+Proof.
+  intros hStrict Delta hDelta.
+  destruct (hStrict Delta hDelta) as [phi hNot].
+  exists (PA.Formula.sealPA (PA.Formula.inductionForm phi)).
+  split.
+  - apply PA.Formula.sealPA_sentence.
+  - split.
+    + exact (PA.Formula.BProv_ax PA.Formula.Ax_s []
+        (PA.Formula.sealPA (PA.Formula.inductionForm phi))
+        (PA.Formula.Ax_s_induction phi)).
+    + exact hNot.
+Qed.
+
+(** The fixed-base step of Mostowski's proof.
+
+    [Base] is a finite PA fragment strong enough for the chosen formalization
+    of Goedel II.  Reflection and second incompleteness must refer to exactly
+    the same sentence [con T].  For [T = Base ++ Delta], a hypothetical
+    [Delta]-proof of [con T] weakens to a [T]-proof of its own consistency. *)
+Theorem finite_fragment_strictness_of_mostowski :
+  forall (Base : list PA.formula)
+      (con : list PA.formula -> PA.formula),
+    (forall beta, In beta Base -> PA.Formula.Ax_s beta) ->
+    (forall T, PA.Formula.Sentence (con T)) ->
+    (forall T,
+      (forall theta, In theta T -> PA.Formula.Ax_s theta) ->
+      PA.Formula.BProv PA.Formula.Ax_s [] (con T)) ->
+    (forall T,
+      (forall theta, In theta T -> PA.Formula.Sentence theta) ->
+      (forall beta, In beta Base -> In beta T) ->
+      ConsistentList T ->
+      ~ PA.Formula.Prov T (con T)) ->
+    PAFiniteFragmentStrictness.
+Proof.
+  intros Base con hBase hConSentence hReflect hG2 Delta hDelta.
+  set (T := Base ++ Delta).
+  assert (hTpa : forall theta, In theta T -> PA.Formula.Ax_s theta).
+  {
+    intros theta hTheta.
+    unfold T in hTheta.
+    apply in_app_or in hTheta.
+    destruct hTheta as [hTheta | hTheta].
+    - exact (hBase theta hTheta).
+    - exact (hDelta theta hTheta).
+  }
+  assert (hTsent : forall theta, In theta T ->
+      PA.Formula.Sentence theta).
+  {
+    intros theta hTheta.
+    exact (PA.Formula.sentence_ax_s theta (hTpa theta hTheta)).
+  }
+  assert (hBaseT : forall beta, In beta Base -> In beta T).
+  {
+    intros beta hBeta.
+    unfold T.
+    apply in_or_app. left. exact hBeta.
+  }
+  assert (hNotT : ~ PA.Formula.Prov T (con T)).
+  {
+    apply hG2.
+    - exact hTsent.
+    - exact hBaseT.
+    - exact (PA_finite_fragment_consistent T hTpa).
+  }
+  exists (con T).
+  split.
+  - exact (hConSentence T).
+  - split.
+    + exact (hReflect T hTpa).
+    + intro hDeltaCon.
+      apply hNotT.
+      apply (PA.Formula.Prov_weaken Delta (con T) hDeltaCon T).
+      intros theta hTheta.
+      unfold T.
+      apply in_or_app. right. exact hTheta.
+Qed.
+
+(** Exact finite-fragment sentence separation excludes a finite basis. *)
+Theorem PA_finite_fragment_strictness_excludes_finite_basis :
+  PAFiniteFragmentStrictness ->
+  ~ HasFiniteFragmentBasis PA.Formula.Ax_s.
+Proof.
+  intros hStrict [Delta [hDelta hBasis]].
+  destruct (hStrict Delta hDelta) as
+      [psi [hSentence [hPA hNotProvable]]].
+  apply hNotProvable.
+  exact (hBasis psi hSentence hPA).
+Qed.
+
+(** Exactness of the arithmetic boundary.  In classical logic, failure of a
+    finite fragment to be a basis supplies precisely a PA sentence which that
+    fragment does not prove. *)
+Theorem PA_finite_fragment_strictness_iff_no_finite_basis :
+  PAFiniteFragmentStrictness <->
+  ~ HasFiniteFragmentBasis PA.Formula.Ax_s.
+Proof.
+  split.
+  - exact PA_finite_fragment_strictness_excludes_finite_basis.
+  - intros hNoBasis Delta hDelta.
+    destruct (classic (exists psi : PA.formula,
+      PA.Formula.Sentence psi /\
+      PA.Formula.BProv PA.Formula.Ax_s [] psi /\
+      ~ PA.Formula.Prov Delta psi)) as [hMissing | hNoMissing].
+    + exact hMissing.
+    + exfalso.
+      apply hNoBasis.
+      exists Delta.
+      split.
+      * exact hDelta.
+      * intros phi hSentence hPA.
+        apply NNPP.
+        intro hNotProvable.
+        apply hNoMissing.
+        exists phi.
+        repeat split; assumption.
+Qed.
+
 (** Strictness immediately excludes a finite fragment basis for PA. *)
 Theorem PA_induction_fragment_strictness_excludes_finite_basis :
   PAInductionFragmentStrictness ->
   ~ HasFiniteFragmentBasis PA.Formula.Ax_s.
 Proof.
-  intros hStrict [Delta [hDelta hBasis]].
-  destruct (hStrict Delta hDelta) as [phi hNotProvable].
-  apply hNotProvable.
-  apply hBasis.
-  - apply PA.Formula.sealPA_sentence.
-  - exact (PA.Formula.BProv_ax PA.Formula.Ax_s []
-      (PA.Formula.sealPA (PA.Formula.inductionForm phi))
-      (PA.Formula.Ax_s_induction phi)).
+  intro hStrict.
+  apply PA_finite_fragment_strictness_excludes_finite_basis.
+  exact (finite_fragment_strictness_of_induction_fragment_strictness
+    hStrict).
+Qed.
+
+(** Mostowski's exact final reduction: arbitrary PA sentence separation is
+    sufficient. *)
+Theorem peano_arithmetic_not_finitely_axiomatizable_of_fragment_strictness :
+  PAFiniteFragmentStrictness ->
+  ~ DeductivelyFinitelyAxiomatizable PA.Formula.Ax_s.
+Proof.
+  intros hStrict hFinite.
+  apply (PA_finite_fragment_strictness_excludes_finite_basis hStrict).
+  apply finite_axiomatization_gives_finite_fragment_basis.
+  exact hFinite.
+Qed.
+
+(** Consequently the exact finite-fragment separation statement is
+    classically equivalent to the advertised theorem. *)
+Theorem peano_arithmetic_not_finitely_axiomatizable_iff_fragment_strictness :
+  (~ DeductivelyFinitelyAxiomatizable PA.Formula.Ax_s) <->
+  PAFiniteFragmentStrictness.
+Proof.
+  split.
+  - intro hNotFinite.
+    apply (proj2 PA_finite_fragment_strictness_iff_no_finite_basis).
+    intro hBasis.
+    apply hNotFinite.
+    apply finite_fragment_basis_gives_finite_axiomatization.
+    + exact PA.Formula.sentence_ax_s.
+    + exact hBasis.
+  - exact peano_arithmetic_not_finitely_axiomatizable_of_fragment_strictness.
 Qed.
 
 (** Honest headline reduction.  Once [PAInductionFragmentStrictness] is
@@ -161,10 +338,10 @@ Theorem peano_arithmetic_not_finitely_axiomatizable_of_induction_strictness :
   PAInductionFragmentStrictness ->
   ~ DeductivelyFinitelyAxiomatizable PA.Formula.Ax_s.
 Proof.
-  intros hStrict hFinite.
-  apply (PA_induction_fragment_strictness_excludes_finite_basis hStrict).
-  apply finite_axiomatization_gives_finite_fragment_basis.
-  exact hFinite.
+  intro hStrict.
+  apply peano_arithmetic_not_finitely_axiomatizable_of_fragment_strictness.
+  exact (finite_fragment_strictness_of_induction_fragment_strictness
+    hStrict).
 Qed.
 
 (** PA is a sentence theory, so the generic equivalence specializes without

@@ -43,6 +43,7 @@ Logic/Interpretability/PAHF/Coq/PAHF.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/PAStatement.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/Audit.v

@@ -14,8 +14,20 @@ namespace PA
 
 universe u v
 
-/-- A shallow model of first-order Peano arithmetic in the language
-`0, S, +, *`, with induction represented as a schema over Lean predicates. -/
+/-- A raw first-order arithmetic structure in the language `0, S, +, *`.
+No arithmetic axioms are built in.  In particular, this is the semantic type
+needed for models of finite PA fragments, which need not satisfy every
+induction instance. -/
+structure PreModel (α : Type u) where
+  zero : α
+  succ : α → α
+  add : α → α → α
+  mul : α → α → α
+
+/-- A shallow model of full first-order Peano arithmetic.  It equips the raw
+arithmetic operations with the six displayed non-induction laws and induction
+for every Lean predicate.  The operations remain separate fields here so the
+public positional constructor keeps its original shape. -/
 structure Model (α : Type u) where
   zero : α
   succ : α → α
@@ -29,6 +41,28 @@ structure Model (α : Type u) where
   add_succ : ∀ a b, add a (succ b) = succ (add a b)
   mul_zero : ∀ a, mul a zero = zero
   mul_succ : ∀ a b, mul a (succ b) = add (mul a b) a
+
+/-- Forget the PA laws and retain only the interpreted arithmetic language. -/
+abbrev Model.toPreModel {α : Type u} (M : Model α) : PreModel α where
+  zero := M.zero
+  succ := M.succ
+  add := M.add
+  mul := M.mul
+
+@[simp] theorem Model.toPreModel_zero {α : Type u} (M : Model α) :
+    M.toPreModel.zero = M.zero := rfl
+
+@[simp] theorem Model.toPreModel_succ {α : Type u} (M : Model α) :
+    M.toPreModel.succ = M.succ := rfl
+
+@[simp] theorem Model.toPreModel_add {α : Type u} (M : Model α) :
+    M.toPreModel.add = M.add := rfl
+
+@[simp] theorem Model.toPreModel_mul {α : Type u} (M : Model α) :
+    M.toPreModel.mul = M.mul := rfl
+
+instance { α : Type u } : Coe (Model α) (PreModel α) :=
+  ⟨Model.toPreModel⟩
 
 /-- Isomorphism of shallow PA models, preserving the arithmetic operations. -/
 structure Iso {α : Type u} {β : Type v} (M : Model α) (N : Model β) where
@@ -103,7 +137,7 @@ def subst (σ : Nat → Term) : Term → Term
   | add a b => add (subst σ a) (subst σ b)
   | mul a b => mul (subst σ a) (subst σ b)
 
-def eval {α : Type u} (M : Model α) (e : Nat → α) : Term → α
+def eval {α : Type u} (M : PreModel α) (e : Nat → α) : Term → α
   | var n => e n
   | zero => M.zero
   | succ t => M.succ (eval M e t)
@@ -126,7 +160,7 @@ def mulRightNumeral (t : Term) : Nat → Term
   | 0 => zero
   | n+1 => add (mulRightNumeral t n) t
 
-def numeralValue {α : Type u} (M : Model α) : Nat → α
+def numeralValue {α : Type u} (M : PreModel α) : Nat → α
   | 0 => M.zero
   | n+1 => M.succ (numeralValue M n)
 
@@ -153,7 +187,7 @@ theorem addRightNumeral_numeral (m n : Nat) :
       rw [Nat.add_succ]
       simp [addRightNumeral, numeral, ih]
 
-theorem eval_numeral {α : Type u} (M : Model α) (e : Nat → α) :
+theorem eval_numeral {α : Type u} (M : PreModel α) (e : Nat → α) :
     ∀ n, eval M e (numeral n) = numeralValue M n
   | 0 => rfl
   | n+1 => by
@@ -215,7 +249,7 @@ theorem free_lt_bound (t : Term) : ∀ n, Free n t → n < bound t := by
         simp [bound]
         omega
 
-theorem eval_ext {α : Type u} (M : Model α) (t : Term)
+theorem eval_ext {α : Type u} (M : PreModel α) (t : Term)
     {e e' : Nat → α} (h : ∀ n, e n = e' n) :
     eval M e t = eval M e' t := by
   induction t with
@@ -225,7 +259,25 @@ theorem eval_ext {α : Type u} (M : Model α) (t : Term)
   | add a b iha ihb => simp only [eval, iha, ihb]
   | mul a b iha ihb => simp only [eval, iha, ihb]
 
-theorem eval_rename {α : Type u} (M : Model α) (t : Term)
+theorem eval_ext_free {α : Type u} (M : PreModel α) (t : Term)
+    {e e' : Nat → α} (h : ∀ n, Free n t → e n = e' n) :
+    eval M e t = eval M e' t := by
+  induction t generalizing e e' with
+  | var n => exact h n rfl
+  | zero => rfl
+  | succ t ih =>
+      simp only [eval]
+      rw [ih h]
+  | add a b iha ihb =>
+      simp only [eval]
+      rw [iha (fun n hn => h n (Or.inl hn)),
+        ihb (fun n hn => h n (Or.inr hn))]
+  | mul a b iha ihb =>
+      simp only [eval]
+      rw [iha (fun n hn => h n (Or.inl hn)),
+        ihb (fun n hn => h n (Or.inr hn))]
+
+theorem eval_rename {α : Type u} (M : PreModel α) (t : Term)
     (r : Nat → Nat) (e : Nat → α) :
     eval M e (rename r t) = eval M (fun n => e (r n)) t := by
   induction t with
@@ -282,7 +334,7 @@ theorem rename_comp (t : Term) (r r' : Nat → Nat) :
   | add a b iha ihb => simp [rename, iha, ihb]
   | mul a b iha ihb => simp [rename, iha, ihb]
 
-theorem eval_upSubst {α : Type u} (M : Model α) (σ : Nat → Term)
+theorem eval_upSubst {α : Type u} (M : PreModel α) (σ : Nat → Term)
     (e : Nat → α) (d : α) (n : Nat) :
     eval M (SetTheory.scons d e) (upSubst σ n) =
       SetTheory.scons d (fun k => eval M e (σ k)) n := by
@@ -293,7 +345,7 @@ theorem eval_upSubst {α : Type u} (M : Model α) (σ : Nat → Term)
       rw [eval_rename]
       rfl
 
-theorem eval_subst {α : Type u} (M : Model α) (t : Term)
+theorem eval_subst {α : Type u} (M : PreModel α) (t : Term)
     (σ : Nat → Term) (e : Nat → α) :
     eval M e (subst σ t) = eval M (fun n => eval M e (σ n)) t := by
   induction t with
@@ -410,7 +462,7 @@ def subst (σ : Nat → Term) : Formula → Formula
   | all a => all (subst (Term.upSubst σ) a)
   | ex a => ex (subst (Term.upSubst σ) a)
 
-def Sat {α : Type u} (M : Model α) : (Nat → α) → Formula → Prop
+def Sat {α : Type u} (M : PreModel α) : (Nat → α) → Formula → Prop
   | e, eq a b => Term.eval M e a = Term.eval M e b
   | _, bot => False
   | e, imp a b => Sat M e a → Sat M e b
@@ -419,7 +471,7 @@ def Sat {α : Type u} (M : Model α) : (Nat → α) → Formula → Prop
   | e, all a => ∀ d, Sat M (SetTheory.scons d e) a
   | e, ex a => ∃ d, Sat M (SetTheory.scons d e) a
 
-theorem Sat_iffForm {α : Type u} (M : Model α) (e : Nat → α) (a b : Formula) :
+theorem Sat_iffForm {α : Type u} (M : PreModel α) (e : Nat → α) (a b : Formula) :
     Sat M e (iffForm a b) ↔ (Sat M e a ↔ Sat M e b) := by
   constructor
   · intro h
@@ -529,7 +581,7 @@ theorem sealPA_sentence (phi : Formula) : Sentence (sealPA phi) := by
   have h2 := free_lt_bound phi _ h1
   omega
 
-theorem Sat_ext {α : Type u} (M : Model α) (phi : Formula)
+theorem Sat_ext {α : Type u} (M : PreModel α) (phi : Formula)
     {e e' : Nat → α} (h : ∀ n, e n = e' n) :
     Sat M e phi ↔ Sat M e' phi := by
   induction phi generalizing e e' with
@@ -562,7 +614,74 @@ theorem Sat_ext {α : Type u} (M : Model α) (phi : Formula)
       · intro ⟨d, hd⟩
         exact ⟨d, (ih (fun n => by cases n <;> simp [SetTheory.scons, h])).mpr hd⟩
 
-theorem Sat_subst {α : Type u} (M : Model α) (phi : Formula)
+theorem Sat_ext_free {α : Type u} (M : PreModel α) (phi : Formula)
+    {e e' : Nat → α} (h : ∀ n, Free n phi → e n = e' n) :
+    Sat M e phi ↔ Sat M e' phi := by
+  induction phi generalizing e e' with
+  | eq a b =>
+      simp only [Sat]
+      rw [Term.eval_ext_free M a (fun n hn => h n (Or.inl hn)),
+        Term.eval_ext_free M b (fun n hn => h n (Or.inr hn))]
+  | bot => exact Iff.rfl
+  | imp a b iha ihb =>
+      simp only [Sat]
+      have hleft : ∀ n, Free n a → e n = e' n :=
+        fun n hn => h n (Or.inl hn)
+      have hright : ∀ n, Free n b → e n = e' n :=
+        fun n hn => h n (Or.inr hn)
+      exact ⟨
+        fun hab ha => (ihb hright).mp (hab ((iha hleft).mpr ha)),
+        fun hab ha => (ihb hright).mpr (hab ((iha hleft).mp ha))⟩
+  | and a b iha ihb =>
+      simp only [Sat]
+      exact and_congr
+        (iha (fun n hn => h n (Or.inl hn)))
+        (ihb (fun n hn => h n (Or.inr hn)))
+  | or a b iha ihb =>
+      simp only [Sat]
+      exact or_congr
+        (iha (fun n hn => h n (Or.inl hn)))
+        (ihb (fun n hn => h n (Or.inr hn)))
+  | all a ih =>
+      simp only [Sat]
+      constructor
+      · intro hall d
+        apply (ih (e := SetTheory.scons d e) (e' := SetTheory.scons d e')
+          (fun n hn => by
+            cases n with
+            | zero => rfl
+            | succ k => exact h k hn)).mp
+        exact hall d
+      · intro hall d
+        apply (ih (e := SetTheory.scons d e) (e' := SetTheory.scons d e')
+          (fun n hn => by
+            cases n with
+            | zero => rfl
+            | succ k => exact h k hn)).mpr
+        exact hall d
+  | ex a ih =>
+      simp only [Sat]
+      constructor
+      · intro hex
+        rcases hex with ⟨d, hd⟩
+        refine ⟨d, ?_⟩
+        apply (ih (e := SetTheory.scons d e) (e' := SetTheory.scons d e')
+          (fun n hn => by
+            cases n with
+            | zero => rfl
+            | succ k => exact h k hn)).mp
+        exact hd
+      · intro hex
+        rcases hex with ⟨d, hd⟩
+        refine ⟨d, ?_⟩
+        apply (ih (e := SetTheory.scons d e) (e' := SetTheory.scons d e')
+          (fun n hn => by
+            cases n with
+            | zero => rfl
+            | succ k => exact h k hn)).mpr
+        exact hd
+
+theorem Sat_subst {α : Type u} (M : PreModel α) (phi : Formula)
     (σ : Nat → Term) (e : Nat → α) :
     Sat M e (subst σ phi) ↔
       Sat M (fun n => Term.eval M e (σ n)) phi := by
@@ -601,7 +720,7 @@ theorem Sat_subst {α : Type u} (M : Model α) (phi : Formula)
           (Sat_ext M a (Term.eval_upSubst M σ e d)).mpr hd
         exact ⟨d, (ih (Term.upSubst σ) (SetTheory.scons d e)).mpr h1⟩
 
-theorem closeN_valid {α : Type u} (M : Model α) (k : Nat) :
+theorem closeN_valid {α : Type u} (M : PreModel α) (k : Nat) :
     ∀ phi : Formula, (∀ e : Nat → α, Sat M e (closeN k phi)) ↔
       (∀ e, Sat M e phi) := by
   induction k with
@@ -621,7 +740,7 @@ theorem closeN_valid {α : Type u} (M : Model α) (k : Nat) :
       · intro h e d
         exact h _
 
-theorem seal_valid {α : Type u} (M : Model α) (phi : Formula) :
+theorem seal_valid {α : Type u} (M : PreModel α) (phi : Formula) :
     (∀ e : Nat → α, Sat M e (sealPA phi)) ↔ (∀ e, Sat M e phi) :=
   closeN_valid M (bound phi) phi
 
@@ -653,7 +772,7 @@ theorem term_subst_instTerm_var (t : Term) (k : Nat) :
   rw [← term_subst_var_rename t (SetTheory.inst k)]
   exact Term.subst_ext t _ _ (fun n => by cases n <;> rfl)
 
-theorem Sat_rename {α : Type u} (M : Model α) (phi : Formula)
+theorem Sat_rename {α : Type u} (M : PreModel α) (phi : Formula)
     (r : Nat → Nat) (e : Nat → α) :
     Sat M e (rename r phi) ↔ Sat M (fun n => e (r n)) phi := by
   induction phi generalizing r e with
@@ -692,7 +811,7 @@ theorem Sat_rename {α : Type u} (M : Model α) (phi : Formula)
           (Sat_ext M a (fun n => by cases n <;> rfl)).mpr hd
         exact ⟨d, (ih (SetTheory.up r) (SetTheory.scons d e)).mpr hbody⟩
 
-theorem Sat_rename_succ {α : Type u} (M : Model α) (phi : Formula)
+theorem Sat_rename_succ {α : Type u} (M : PreModel α) (phi : Formula)
     (e : Nat → α) (d : α) :
     Sat M (SetTheory.scons d e) (rename Nat.succ phi) ↔ Sat M e phi := by
   rw [Sat_rename]
@@ -1470,7 +1589,7 @@ theorem subst_instTerm_var_zero_up_var_one_rename_up_up_succ_twice
               rfl))
     (subst_id phi)
 
-theorem Sat_instTerm {α : Type u} (M : Model α) (phi : Formula)
+theorem Sat_instTerm {α : Type u} (M : PreModel α) (phi : Formula)
     (t : Term) (e : Nat → α) :
     Sat M e (subst (instTerm t) phi) ↔
       Sat M (SetTheory.scons (Term.eval M e t) e) phi := by
@@ -1852,7 +1971,7 @@ theorem Prov_cut {G : List Formula} {phi : Formula} (h : Prov G phi) :
       intro De hD
       exact .P_eqElim _ s t a (iheq De hD) (iha De hD)
 
-theorem soundness {α : Type u} (M : Model α) {G : List Formula} {a : Formula}
+theorem soundness {α : Type u} (M : PreModel α) {G : List Formula} {a : Formula}
     (h : Prov G a) :
     ∀ e : Nat → α, (∀ x, x ∈ G → Sat M e x) → Sat M e a := by
   induction h with
@@ -2565,7 +2684,7 @@ theorem BProv_sealPA_allE_rename {B : Formula → Prop} {G : List Formula}
   BProv_closeN_allE_rename (bound phi) phi r
     (fun n hn => free_lt_bound phi n hn) h
 
-theorem soundness_BProv {α : Type u} (M : Model α) {B : Formula → Prop}
+theorem soundness_BProv {α : Type u} (M : PreModel α) {B : Formula → Prop}
     {G : List Formula} {phi : Formula} (h : BProv B G phi) :
     ∀ e : Nat → α, (∀ b, B b → Sat M e b) →
       (∀ g, g ∈ G → Sat M e g) → Sat M e phi := by
@@ -67695,12 +67814,12 @@ theorem BProv_Ax_s_translated_HF_empty :
   BProv_Ax_s_translated_HF_empty_of_zero_member_bot
     BProv_Ax_s_HF_empty_zero_member_bot
 
-theorem sat_substZero {α : Type u} (M : Model α) (phi : Formula) (e : Nat → α) :
+theorem sat_substZero {α : Type u} (M : PreModel α) (phi : Formula) (e : Nat → α) :
     Sat M e (subst substZero phi) ↔ Sat M (SetTheory.scons M.zero e) phi := by
   rw [Sat_subst]
   exact Sat_ext M phi (fun n => by cases n <;> rfl)
 
-theorem sat_substSuccVar {α : Type u} (M : Model α) (phi : Formula)
+theorem sat_substSuccVar {α : Type u} (M : PreModel α) (phi : Formula)
     (e : Nat → α) (a : α) :
     Sat M (SetTheory.scons a e) (subst substSuccVar phi) ↔
       Sat M (SetTheory.scons (M.succ a) e) phi := by
