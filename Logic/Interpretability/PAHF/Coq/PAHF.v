@@ -19713,23 +19713,6 @@ Proof.
     rewrite rename_S_ltAt in h.
     exact h.
   }
-  assert (hdivEqM : BProv Ax_s M
-      (pEq (tMul (tVar (S modulus)) (tVar (S divQuot)))
-        (tVar (S value)))).
-  {
-    pose proof (BProv_Ax_s_shift G modBody _ hdivEq) as h.
-    simpl in h.
-    exact h.
-  }
-  assert (hremEqM : BProv Ax_s M
-      (pEq (tVar (S value))
-        (tAdd (tMul (tVar (S remQuot)) (tVar (S modulus)))
-          (tVar (S rem))))).
-  {
-    pose proof (BProv_Ax_s_shift G modBody _ hremEq) as h.
-    simpl in h.
-    exact h.
-  }
   set (gtBody := pEq
     (tAdd (tVar (S (S divQuot))) (tSucc (tVar 0)))
     (tVar (S (S remQuot)))).
@@ -19752,18 +19735,20 @@ Proof.
       (pEq (tMul (tVar (S (S modulus))) (tVar (S (S divQuot))))
         (tVar (S (S value))))).
   {
-    pose proof (BProv_Ax_s_shift M gtBody _ hdivEqM) as h.
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s G modBody gtBody _ hdivEq) as h.
     simpl in h.
-    exact h.
+    unfold C, M. exact h.
   }
   assert (hremEqC : BProv Ax_s C
       (pEq (tVar (S (S value)))
         (tAdd (tMul (tVar (S (S remQuot))) (tVar (S (S modulus))))
           (tVar (S (S rem)))))).
   {
-    pose proof (BProv_Ax_s_shift M gtBody _ hremEqM) as h.
+    pose proof (BProv_lift_two_contexts_of_sentences
+      Ax_s sentence_ax_s G modBody gtBody _ hremEq) as h.
     simpl in h.
-    exact h.
+    unfold C, M. exact h.
   }
   exact (BProv_Ax_s_remainder_zero_of_gt_quotient_terms C
     (S (S modulus)) (S (S value)) (S (S rem))
