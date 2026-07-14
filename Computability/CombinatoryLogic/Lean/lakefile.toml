@@ -1,0 +1,5 @@
+name = "CombinatoryLogic"
+defaultTargets = ["CombinatoryLogic"]
+
+[[lean_lib]]
+name = "CombinatoryLogic"

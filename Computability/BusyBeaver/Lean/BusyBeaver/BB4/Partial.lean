@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Partial.lean
+  BusyBeaver/BB4/Partial.lean
 
   Four-state specialization of the generic relative-head partial-machine
   semantics and its bridge to local finite-support Rado machines.

@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/TNFRenaming.lean
+  BusyBeaver/BB4/TNFRenaming.lean
 
   Semantic state renaming for four-state Rado machines.  This is the
   equivalence used by the tree-normal-form search when a transition first

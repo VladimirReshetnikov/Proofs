@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/TNFRoot.lean
+  BusyBeaver/BB4/TNFRoot.lean
 
   Root left/right reduction on top of canonical fresh-state introduction.
   Only right-moving continuing transitions are enumerated at `A0`; an

@@ -1,0 +1,20 @@
+import BusyBeaver.BB4.Certificates.R13.C14.Guided.Common
+
+set_option maxRecDepth 10000
+
+namespace SetTheory.BusyBeaver.BB4.Certificates.C14Guided
+
+open Certificates
+
+def work_a01_a03_a09_a12 : Guided.Work :=
+  after [a01, a03, a09, a12]
+
+def certificate_a01_a03_a09_a12 : Guided.Certificate :=
+  Guided.Certificate.history2x2
+
+set_option maxHeartbeats 1600000 in
+theorem verified_a01_a03_a09_a12 :
+    work_a01_a03_a09_a12.check certificate_a01_a03_a09_a12 = true := by
+  decide
+
+end SetTheory.BusyBeaver.BB4.Certificates.C14Guided

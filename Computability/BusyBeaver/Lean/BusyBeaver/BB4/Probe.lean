@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Probe.lean
+  BusyBeaver/BB4/Probe.lean
 
   Bounded, non-proof-facing instrumentation for the raw lazy search.  It uses
   an explicit DFS worklist, so every evaluation has a caller-selected node

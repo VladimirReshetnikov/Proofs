@@ -1,0 +1,35 @@
+import BusyBeaver.BB4.Certificates.R05.A14.Guided.Common
+
+set_option maxRecDepth 10000
+
+namespace SetTheory.BusyBeaver.BB4.Certificates.R05A14Guided
+
+open Certificates
+
+def work_a02_a08_a15_a00 : Guided.Work :=
+  after [a02, a08, a15, a00]
+
+def certificate_a02_a08_a15_a00 : Guided.Certificate :=
+  Guided.Certificate.branch16
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool2)
+    (Guided.Certificate.bool2)
+    (Guided.Certificate.bool2)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+    (Guided.Certificate.bool1)
+
+theorem verified_a02_a08_a15_a00 :
+    work_a02_a08_a15_a00.check certificate_a02_a08_a15_a00 = true := by
+  decide
+
+end SetTheory.BusyBeaver.BB4.Certificates.R05A14Guided

@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/NGramBuilder.lean
+  BusyBeaver/BB4/NGramBuilder.lean
 
   Four-state executable builder for the generic, proof-facing n-gram CPS
   certificates in BusyBeaverBB3/NGramCPS.  Generated candidates remain
@@ -140,7 +140,7 @@ theorem check_sound [DecidableEq symbol] {blank : symbol}
 structure HistorySymbol where
   bit : Bool
   history : List (Fin 4 × Bool)
-  deriving BEq, DecidableEq
+  deriving BEq, DecidableEq, Repr
 
 def historyTransition (depth : Nat) (table : PTable) :
     PTM (Fin 4) HistorySymbol :=
@@ -159,6 +159,26 @@ def boolCheck (table : PTable) (width gas : Nat) : Bool :=
 def historyCheck (table : PTable) (depth width gas : Nat) : Bool :=
   check ({ bit := false, history := [] } : HistorySymbol)
     (historyTransition depth table) width width gas
+
+/-- Check a supplied history n-gram certificate directly, without requiring
+the executable candidate builder to reconstruct it definitionally. -/
+def historyCertificateCheck (table : PTable) (depth width : Nat)
+    (certificate : AbstractState HistorySymbol) : Bool :=
+  @decide
+    (NGramCPS.Valid (historyTransition depth table) (0 : Fin 4)
+      ({ bit := false, history := [] } : HistorySymbol)
+      width width certificate)
+    (validDecidable (historyTransition depth table)
+      ({ bit := false, history := [] } : HistorySymbol)
+      width width certificate)
+
+theorem historyCertificateCheck_of_valid {table : PTable} {depth width : Nat}
+    {certificate : AbstractState HistorySymbol}
+    (hValid : NGramCPS.Valid (historyTransition depth table) (0 : Fin 4)
+      ({ bit := false, history := [] } : HistorySymbol)
+      width width certificate) :
+    historyCertificateCheck table depth width certificate = true := by
+  simpa [historyCertificateCheck] using hValid
 
 theorem boolCheck_nonhalts {table : PTable} {width gas : Nat}
     (h : boolCheck table width gas = true) :
@@ -189,6 +209,21 @@ theorem historyCheck_nonhalts {table : PTable} {depth width gas : Nat}
     (h : historyCheck table depth width gas = true) :
     table.toPTM.Nonhalts (0 : Fin 4) false := by
   rcases check_sound h with ⟨_certificate, _hBuild, hValid⟩
+  have hHistory :
+      (historyTransition depth table).Nonhalts (0 : Fin 4)
+        ({ bit := false, history := [] } : HistorySymbol) :=
+    hValid.nonhalts
+  simpa using (history_projects depth table).nonhalts hHistory
+
+theorem historyCertificateCheck_nonhalts {table : PTable} {depth width : Nat}
+    {certificate : AbstractState HistorySymbol}
+    (h : historyCertificateCheck table depth width certificate = true) :
+    table.toPTM.Nonhalts (0 : Fin 4) false := by
+  have hValid :
+      NGramCPS.Valid (historyTransition depth table) (0 : Fin 4)
+        ({ bit := false, history := [] } : HistorySymbol)
+        width width certificate := by
+    simpa [historyCertificateCheck] using h
   have hHistory :
       (historyTransition depth table).Nonhalts (0 : Fin 4)
         ({ bit := false, history := [] } : HistorySymbol) :=

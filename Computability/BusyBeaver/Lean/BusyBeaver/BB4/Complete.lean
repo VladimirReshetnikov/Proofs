@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/Complete.lean
+  BusyBeaver/BB4/Complete.lean
 
   Fast nonhalting certificate for partial tables with all eight continuing
   transitions assigned.

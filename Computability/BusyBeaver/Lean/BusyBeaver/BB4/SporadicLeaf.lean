@@ -1,5 +1,5 @@
 /-
-  BusyBeaverBB4/SporadicLeaf.lean
+  BusyBeaver/BB4/SporadicLeaf.lean
 
   Executable recognition of the two RepWL-only nonhalting partial tables.
 -/
