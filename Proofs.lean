@@ -19,6 +19,7 @@ import QuantifierCommutation
 import PAHF
 import NoFiniteModel
 import PAFiniteBasisReduction
+import PresburgerArithmetic
 import RiemannHypothesis
 import ZF
 import ClosureAxiomatization

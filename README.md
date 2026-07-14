@@ -51,6 +51,9 @@ is the broad Lean import surface.
 - A [constructive Lean/Coq proof](Logic/PeanoArithmetic/NoFiniteModel/README.md)
   that Peano arithmetic has no finite model, using only injectivity of
   successor and zero's absence from its image.
+- An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)
+  deciding every Presburger sentence in Lean, with an independent constructive
+  Coq proof and decision procedure for the normalized one-variable step.
 - Lean/Coq proofs that first-order Peano arithmetic has two non-isomorphic
   models, separating the numeral-generated standard model from a compactness
   model with an element above every standard numeral.
@@ -100,6 +103,7 @@ lake --dir Logic/FirstOrder/Compactness/Lean build
 lake --dir Logic/Interpretability/PAHF/Lean build
 lake --dir Logic/PeanoArithmetic/NoFiniteModel/Lean build
 lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean build
+lake --dir Logic/PresburgerArithmetic/Lean build
 lake --dir SetTheory/ZF/Lean build
 lake --dir SetTheory/ClosureAxiomatization/Lean build
 lake --dir NumberTheory/RiemannHypothesis/PAStatement/Lean build

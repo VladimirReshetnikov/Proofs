@@ -16,6 +16,7 @@
 -Q Logic/Interpretability/PAHF/Coq PAHF
 -Q Logic/PeanoArithmetic/NoFiniteModel/Coq NoFinitePAModel
 -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction
+-Q Logic/PresburgerArithmetic/Coq PresburgerArithmetic
 -Q NumberTheory/DiophantineEquations/Coq DiophantineEquations
 -Q NumberTheory/IntegerSums/Coq IntegerSums
 -Q NumberTheory/RationalEnumeration/Coq RationalEnumeration
@@ -251,6 +252,8 @@ Logic/Interpretability/PAHF/Coq/PAHF.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
+Logic/PresburgerArithmetic/Coq/Cooper.v
+Logic/PresburgerArithmetic/Coq/Audit.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteSkolemHull.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/CanonicalSelector.v

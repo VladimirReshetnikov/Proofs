@@ -1,0 +1,8 @@
+import PresburgerArithmetic.Decision
+
+open PresburgerArithmetic
+
+#print axioms PresburgerArithmetic.periodic_interval
+#print axioms PresburgerArithmetic.Cooper.eliminate_correct
+#print axioms PresburgerArithmetic.Formula.holds_iff_quantifierEliminate
+#print axioms PresburgerArithmetic.Formula.presburgerArithmetic_decidable

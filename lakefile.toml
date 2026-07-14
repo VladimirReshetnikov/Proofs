@@ -90,6 +90,10 @@ name = "PAFiniteBasisReduction"
 srcDir = "Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean"
 
 [[lean_lib]]
+name = "PresburgerArithmetic"
+srcDir = "Logic/PresburgerArithmetic/Lean"
+
+[[lean_lib]]
 name = "DiophantineEquations"
 srcDir = "NumberTheory/DiophantineEquations/Lean"
 
