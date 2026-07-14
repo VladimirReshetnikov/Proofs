@@ -30,8 +30,26 @@ Definition TheorySemanticConsequence (T : form -> Prop) (phi : form) : Prop :=
 Definition TheorySyntacticConsequence (T : form -> Prop) (phi : form) : Prop :=
   BProv T nil phi.
 
+(** Syntactic consistency in the theorem-pair sense: no formula and its
+    object-language negation are both derivable. *)
 Definition TheoryConsistent (T : form -> Prop) : Prop :=
-  BCon T nil.
+  ~ exists phi,
+      TheorySyntacticConsequence T phi /\
+      TheorySyntacticConsequence T (fImp phi fBot).
+
+(** The theorem-pair definition is equivalent to saying that falsity is not
+    derivable.  The two directions use modus ponens and explosion. *)
+Theorem theoryConsistent_iff_BCon :
+  forall T, TheoryConsistent T <-> BCon T nil.
+Proof.
+  intro T. split.
+  - intros Hpair Hbot. apply Hpair. exists fBot. split.
+    + exact Hbot.
+    + exact (BProv_botE T nil (fImp fBot fBot) Hbot).
+  - intros Hbottom [phi [Hphi HnotPhi]].
+    apply Hbottom.
+    exact (BProv_mp T nil phi fBot HnotPhi Hphi).
+Qed.
 
 (** **Goedel completeness, finite-context form:** semantic consequence
     implies syntactic consequence. *)
@@ -80,10 +98,26 @@ Theorem godel_model_existence :
   forall T, Sentences T -> TheoryConsistent T -> TheoryHasModel T.
 Proof.
   intros T HT Hconsistent.
-  destruct (model_of_BCon T nil HT Hconsistent)
+  destruct (model_of_BCon T nil HT
+              (proj1 (theoryConsistent_iff_BCon T) Hconsistent))
     as [Dom [m [v [Hmodel _]]]].
   exists Dom, m, v.
   exact Hmodel.
+Qed.
+
+(** **Consistency/model theorem.**  A classical first-order theory of
+    sentences is syntactically consistent--no [phi] and [not phi] are both
+    provable--if and only if it has a model. *)
+Theorem theory_consistent_iff_has_model :
+  forall T, Sentences T -> (TheoryConsistent T <-> TheoryHasModel T).
+Proof.
+  intros T HT. split.
+  - exact (godel_model_existence T HT).
+  - intros [Dom [m [v Hmodel]]].
+    apply (proj2 (theoryConsistent_iff_BCon T)).
+    intro Hbot.
+    apply (soundness_BProv Dom m T nil fBot Hbot v Hmodel).
+    intros g Hg. contradiction.
 Qed.
 
 End FirstOrderClassicalCompleteness.

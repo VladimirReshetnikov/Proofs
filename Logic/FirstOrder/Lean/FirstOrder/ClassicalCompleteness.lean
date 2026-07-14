@@ -36,9 +36,25 @@ def TheorySemanticConsequence (T : Form → Prop) (phi : Form) : Prop :=
 def TheorySyntacticConsequence (T : Form → Prop) (phi : Form) : Prop :=
   BProv T [] phi
 
-/-- Syntactic consistency of a theory: falsity is not derivable from it. -/
+/-- Syntactic consistency in the theorem-pair sense: no formula and its
+negation are both derivable from the theory.  Here `fImp phi fBot` is the
+object-language negation of `phi`. -/
 def TheoryConsistent (T : Form → Prop) : Prop :=
-  BCon T []
+  ¬ ∃ phi, TheorySyntacticConsequence T phi ∧
+    TheorySyntacticConsequence T (fImp phi fBot)
+
+/-- The theorem-pair definition of consistency is equivalent to the internal
+`BCon` formulation saying that falsity is not derivable.  One direction uses
+modus ponens; the other uses explosion. -/
+theorem theoryConsistent_iff_BCon (T : Form → Prop) :
+    TheoryConsistent T ↔ BCon T [] := by
+  constructor
+  · intro hpair hbot
+    apply hpair
+    exact ⟨fBot, hbot, BProv_botE hbot⟩
+  · intro hbottom
+    rintro ⟨phi, hphi, hnotPhi⟩
+    exact hbottom (BProv_mp T [] phi fBot hnotPhi hphi)
 
 /-- **Gödel completeness, finite-context form:** semantic consequence implies
 syntactic consequence.  This stronger open-formula formulation quantifies
@@ -82,7 +98,20 @@ consistent theory of sentences has a model. -/
 theorem godel_model_existence (T : Form → Prop) (hT : Sentences T) :
     TheoryConsistent T → TheoryHasModel T := by
   intro hcon
-  obtain ⟨Dom, m, v, hmodel, _⟩ := model_of_BCon T [] hT hcon
+  obtain ⟨Dom, m, v, hmodel, _⟩ :=
+    model_of_BCon T [] hT ((theoryConsistent_iff_BCon T).mp hcon)
   exact ⟨Dom, m, v, hmodel⟩
+
+/-- **Consistency/model theorem.**  A classical first-order theory of
+sentences is syntactically consistent—no `phi` and `not phi` are both
+provable—if and only if it has a model. -/
+theorem theory_consistent_iff_has_model (T : Form → Prop) (hT : Sentences T) :
+    TheoryConsistent T ↔ TheoryHasModel T := by
+  constructor
+  · exact godel_model_existence T hT
+  · rintro ⟨Dom, m, v, hmodel⟩
+    apply (theoryConsistent_iff_BCon T).mpr
+    intro hbot
+    exact soundness_BProv hbot v hmodel (fun g hg => nomatch hg)
 
 end SetTheory.FirstOrderClassicalCompleteness

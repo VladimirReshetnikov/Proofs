@@ -22,6 +22,9 @@ godel_soundness_and_completeness_for_theories :
 
 godel_model_existence :
   ∀ T, Sentences T → TheoryConsistent T → TheoryHasModel T
+
+theory_consistent_iff_has_model :
+  ∀ T, Sentences T → (TheoryConsistent T ↔ TheoryHasModel T)
 ```
 
 ```coq
@@ -35,6 +38,9 @@ godel_soundness_and_completeness_for_theories :
 
 godel_model_existence :
   forall T, Sentences T -> TheoryConsistent T -> TheoryHasModel T
+
+theory_consistent_iff_has_model :
+  forall T, Sentences T -> (TheoryConsistent T <-> TheoryHasModel T)
 ```
 
 Thus the central implication is exactly
@@ -48,6 +54,14 @@ the finite list of axioms of `T` actually used in the derivation.  The
 finite-context theorem is stronger still: `godel_completeness G phi` allows
 open formulas and quantifies over every assignment.  The original
 empty-context formulation is named `godel_original_completeness`.
+
+`TheoryConsistent T` means exactly that there is no formula `phi` for which
+both `T ⊢ phi` and `T ⊢ not phi`.  The proved lemma
+`theoryConsistent_iff_BCon` connects this public definition to the internal
+condition `T ⊬ false`: modus ponens turns a contradictory pair into falsity,
+and explosion turns a proof of falsity into a contradictory pair.  Soundness
+then proves that every model makes `T` consistent, while Henkin model
+existence proves the converse.
 
 This is not merely an interface to an imported completeness theorem.  The
 proof in `Lean/FirstOrder/Completeness.lean` and `Coq/Completeness.v` carries
