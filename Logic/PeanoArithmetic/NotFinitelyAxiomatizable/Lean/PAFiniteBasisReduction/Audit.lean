@@ -78,6 +78,12 @@ open LeanProofs.PAFiniteBasisReduction
 #check @rankZero_witness_is_pa_axiom
 #check @rankZero_strictness_witness
 #check @rankZero_pa_axiom_separation
+#check @NonstandardHFFin.Sat_tag_relativize
+#check @NonstandardHFFin.Sat_tag_candidateAt
+#check @NonstandardHFFin.Sat_tag_starBound_iff
+#check @NonstandardHFFin.Ax_BCon
+#check @NonstandardHFFin.nonstandardHFFin_translated_exists
+#check @NonstandardHFFin.nonstandardHFFin_fofam_exists
 
 -- The standard full PA model remains usable wherever only raw arithmetic
 -- operations are required.
@@ -125,3 +131,7 @@ example : SetTheory.PA.PreModel Nat := SetTheory.PA.natModel
 #print axioms rankZero_witness_is_pa_axiom
 #print axioms rankZero_strictness_witness
 #print axioms rankZero_pa_axiom_separation
+#print axioms NonstandardHFFin.Sat_tag_starBound_iff
+#print axioms NonstandardHFFin.Ax_BCon
+#print axioms NonstandardHFFin.nonstandardHFFin_translated_exists
+#print axioms NonstandardHFFin.nonstandardHFFin_fofam_exists

@@ -28,6 +28,7 @@
 # Dependency-ordered by `coqdep -sort -f _CoqProject`.
 
 Logic/FirstOrder/Coq/Fol.v
+Logic/FirstOrder/Coq/Relativization.v
 Logic/FirstOrder/Coq/Calculus.v
 Logic/QuantifierCommutation/Coq/Commutation.v
 Logic/QuantifierCommutation/Coq/Counterexamples.v
@@ -44,7 +45,6 @@ Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v
-Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/PAStatement.v
 NumberTheory/RiemannHypothesis/PAStatement/Coq/Audit.v
 NumberTheory/RationalEnumeration/Coq/RationalFloorOrbit.v
@@ -101,6 +101,7 @@ Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMul.v
 Logic/Interpretability/PAHF/Coq/PAHFRoundTripArithmeticAssembly.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemantics.v
 Logic/Interpretability/PAHF/Coq/PAHFRawSemanticsGraph.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/NonstandardHFFin.v
 Logic/Interpretability/PAHF/Coq/PAHFProofTranslationSemantic.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeTermMulCorrected.v
 Logic/Interpretability/PAHF/Coq/PAHFOrdinalCodeAddCore.v
@@ -110,6 +111,7 @@ Logic/Interpretability/PAHF/Coq/PAHFCompositeMemBelow.v
 Logic/Interpretability/PAHF/Coq/PAHFFinalAssembly.v
 Logic/Interpretability/PAHF/Coq/PAHFConcreteAssembly.v
 Logic/Interpretability/PAHF/Coq/Audit.v
+Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/Audit.v
 Logic/FirstOrder/Coq/Audit.v
 Logic/Equational/Common/Coq/Checker.v
 Logic/Equational/BooleanAlgebra/Coq/WolframBooleanCertificates.v

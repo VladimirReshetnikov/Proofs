@@ -1,7 +1,7 @@
 (** Kernel-assumption audit for the finite-axiomatizability reduction. *)
 
 From PAFiniteBasisReduction Require Import
-  FiniteBasisReduction HierarchyReduction.
+  FiniteBasisReduction HierarchyReduction NonstandardHFFin.
 
 Import PAFiniteBasisReduction PAHierarchyReduction.
 
@@ -62,6 +62,18 @@ Check rank_fragment_strictness_of_raw_countermodels.
 Check induction_fragment_strictness_of_rank_fragment_strictness.
 Check finite_fragment_strictness_of_rank_fragment_strictness.
 Check peano_arithmetic_not_finitely_axiomatizable_of_rank_fragment_strictness.
+Check Sat_tag_relativize.
+Check Sentence_candidateExists.
+Check Sentence_starBound.
+Check Sat_tag_candidateAt_iff.
+Check Sat_tag_starBound_iff.
+Check Sentences_NonstandardHFFinTheory.
+Check finite_NonstandardHFFinTheory_tag_model.
+Check NonstandardHFFinTheory_consistent.
+Check NonstandardHFFinTheory_model.
+Check nonstandardHFFin_fofam_exists.
+Check nonstandardHFFin_translated_bounds_exists.
+Check nonstandardHFFin_raw_bounds_exists.
 
 Print Assumptions finite_axiomatization_gives_finite_fragment_basis.
 Print Assumptions finite_fragment_basis_gives_finite_axiomatization.
@@ -99,3 +111,7 @@ Print Assumptions rank_fragment_strictness_of_raw_countermodels.
 Print Assumptions induction_fragment_strictness_of_rank_fragment_strictness.
 Print Assumptions finite_fragment_strictness_of_rank_fragment_strictness.
 Print Assumptions peano_arithmetic_not_finitely_axiomatizable_of_rank_fragment_strictness.
+Print Assumptions Sat_tag_starBound_iff.
+Print Assumptions NonstandardHFFinTheory_consistent.
+Print Assumptions nonstandardHFFin_fofam_exists.
+Print Assumptions nonstandardHFFin_raw_bounds_exists.
