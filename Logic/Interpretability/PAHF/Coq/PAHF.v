@@ -7645,6 +7645,223 @@ Proof.
   apply Term.rename_id.
 Qed.
 
+(* Renaming under one binder commutes with a successor-renamed term. *)
+Lemma term_rename_up_rename_succ : forall (r : nat -> nat) t,
+  Term.rename (up r) (Term.rename S t) = Term.rename S (Term.rename r t).
+Proof.
+  intros r t.
+  rewrite Term.rename_comp, Term.rename_comp.
+  apply Term.rename_ext.
+  intro n. reflexivity.
+Qed.
+
+(* Historical spelling retained for downstream compatibility. *)
+Lemma term_rename_up_rename_succ_gen : forall (r : nat -> nat) t,
+  Term.rename (up r) (Term.rename S t) = Term.rename S (Term.rename r t).
+Proof.
+  exact term_rename_up_rename_succ.
+Qed.
+
+(* Iterate the lifting of a variable renaming through [k] binders. *)
+Fixpoint iterUpRenaming (k : nat) (r : nat -> nat) : nat -> nat :=
+  match k with
+  | 0 => r
+  | S k' => up (iterUpRenaming k' r)
+  end.
+
+(* Shift every free variable in a term through [k] binders. *)
+Fixpoint iterTermRenameSucc (k : nat) (t : term) : term :=
+  match k with
+  | 0 => t
+  | S k' => Term.rename S (iterTermRenameSucc k' t)
+  end.
+
+(* Iterated lifting commutes with the matching iterated term shift. *)
+Lemma term_rename_iterUpRenaming_iterTermRenameSucc :
+  forall k (r : nat -> nat) t,
+  Term.rename (iterUpRenaming k r) (iterTermRenameSucc k t) =
+    iterTermRenameSucc k (Term.rename r t).
+Proof.
+  induction k as [|k IH]; intros r t; simpl.
+  - reflexivity.
+  - rewrite term_rename_up_rename_succ.
+    rewrite IH.
+    reflexivity.
+Qed.
+
+(* Repeated successor renaming is the canonical additive variable shift. *)
+Lemma term_rename_add_eq_iterTermRenameSucc : forall k t,
+  Term.rename (fun n => n + k) t = iterTermRenameSucc k t.
+Proof.
+  induction k as [|k IH]; intro t; simpl.
+  - transitivity (Term.rename (fun n => n) t).
+    + apply Term.rename_ext. intro n; lia.
+    + apply Term.rename_id.
+  - rewrite <- (IH t).
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+Qed.
+
+(* Lifted renaming commutes directly with an additive variable shift. *)
+Lemma term_rename_iterUpRenaming_rename_add :
+  forall k (r : nat -> nat) t,
+  Term.rename (iterUpRenaming k r)
+      (Term.rename (fun n => n + k) t) =
+    Term.rename (fun n => n + k) (Term.rename r t).
+Proof.
+  intros k r t.
+  rewrite !term_rename_add_eq_iterTermRenameSucc.
+  apply term_rename_iterUpRenaming_iterTermRenameSucc.
+Qed.
+
+(* Normalize any pointwise spelling of the same additive shift. *)
+Lemma term_rename_eq_iterTermRenameSucc :
+  forall k t (r : nat -> nat),
+  (forall n, r n = n + k) ->
+  Term.rename r t = iterTermRenameSucc k t.
+Proof.
+  intros k t r hr.
+  rewrite (Term.rename_ext t r (fun n => n + k) hr).
+  apply term_rename_add_eq_iterTermRenameSucc.
+Qed.
+
+(* The lifted renaming acts additively above its [k] protected variables. *)
+Lemma iterUpRenaming_add : forall k (r : nat -> nat) n,
+  iterUpRenaming k r (n + k) = r n + k.
+Proof.
+  induction k as [|k IH]; intros r n; simpl.
+  - now rewrite Nat.add_0_r.
+  - replace (n + S k) with (S (n + k)) by lia.
+    simpl.
+    rewrite IH.
+    lia.
+Qed.
+
+(* Iterate lifting of a term substitution through [k] binders. *)
+Fixpoint iterUpSubst (k : nat) (sigma : nat -> term) : nat -> term :=
+  match k with
+  | 0 => sigma
+  | S k' => Term.upSubst (iterUpSubst k' sigma)
+  end.
+
+(* Iterated lifted substitution commutes with the matching variable shift. *)
+Lemma term_subst_iterUpSubst_rename_add :
+  forall k (sigma : nat -> term) t,
+  Term.subst (iterUpSubst k sigma)
+      (Term.rename (fun n => n + k) t) =
+    Term.rename (fun n => n + k) (Term.subst sigma t).
+Proof.
+  induction k as [|k IH]; intros sigma t.
+  - simpl.
+    replace (Term.rename (fun n => n + 0) t) with t.
+    2: {
+      transitivity (Term.rename (fun n => n) t).
+      - symmetry. apply Term.rename_id.
+      - apply Term.rename_ext. intro n. lia.
+    }
+    replace (Term.rename (fun n => n + 0) (Term.subst sigma t))
+      with (Term.subst sigma t).
+    + reflexivity.
+    + transitivity (Term.rename (fun n => n) (Term.subst sigma t)).
+      * symmetry. apply Term.rename_id.
+      * apply Term.rename_ext. intro n. lia.
+  - simpl.
+    replace (Term.rename (fun n => n + S k) t)
+      with (Term.rename S (Term.rename (fun n => n + k) t)).
+    2: {
+      rewrite Term.rename_comp.
+      apply Term.rename_ext.
+      intro n.
+      lia.
+    }
+    rewrite Term.subst_rename_succ_up.
+    rewrite IH.
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n.
+    lia.
+Qed.
+
+(* Substituting an arbitrary witness below [k] binders removes the newest
+   shift; this is the common source of all fixed-depth corollaries below. *)
+Lemma term_subst_iterUpSubst_instTerm_rename_add_succ :
+  forall k t u,
+  Term.subst (iterUpSubst k (instTerm u))
+      (Term.rename (fun n => n + k + 1) t) =
+    Term.rename (fun n => n + k) t.
+Proof.
+  intros k t u.
+  replace (Term.rename (fun n => n + k + 1) t)
+    with (Term.rename (fun n => n + k) (Term.rename S t)).
+  2: {
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+  }
+  rewrite term_subst_iterUpSubst_rename_add.
+  rewrite term_subst_instTerm_rename_succ.
+  reflexivity.
+Qed.
+
+(* The same law with an additional pre-existing shift. *)
+Lemma term_subst_iterUpSubst_instTerm_rename_add_succ_offset :
+  forall k d t u,
+  Term.subst (iterUpSubst k (instTerm u))
+      (Term.rename (fun n => n + (d + k + 1)) t) =
+    Term.rename (fun n => n + (d + k)) t.
+Proof.
+  intros k d t u.
+  replace (Term.rename (fun n => n + (d + k + 1)) t)
+    with (Term.rename (fun n => n + k + 1)
+      (Term.rename (fun n => n + d) t)).
+  2: {
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+  }
+  rewrite term_subst_iterUpSubst_instTerm_rename_add_succ.
+  rewrite Term.rename_comp.
+  apply Term.rename_ext.
+  intro n; lia.
+Qed.
+
+(* Pointwise normalization lets fixed-depth compatibility lemmas keep their
+   historical spellings of successor shifts. *)
+Lemma term_subst_iterUpSubst_instTerm_rename_ext :
+  forall k d t u (r s : nat -> nat),
+  (forall n, r n = n + (d + k + 1)) ->
+  (forall n, s n = n + (d + k)) ->
+  Term.subst (iterUpSubst k (instTerm u)) (Term.rename r t) =
+    Term.rename s t.
+Proof.
+  intros k d t u r s hr hs.
+  rewrite (Term.rename_ext t r (fun n => n + (d + k + 1)) hr).
+  rewrite (Term.rename_ext t s (fun n => n + (d + k)) hs).
+  apply term_subst_iterUpSubst_instTerm_rename_add_succ_offset.
+Qed.
+
+(* Substitution at the variable exposed by [k] lifts inserts the witness
+   shifted through exactly those binders. *)
+Lemma term_subst_iterUpSubst_instTerm_var_depth : forall k u,
+  Term.subst (iterUpSubst k (instTerm u)) (tVar k) =
+    Term.rename (fun n => n + k) u.
+Proof.
+  induction k as [|k IH]; intro u.
+  - simpl.
+    symmetry.
+    transitivity (Term.rename (fun n => n) u).
+    + apply Term.rename_ext. intro n; lia.
+    + apply Term.rename_id.
+  - simpl.
+    change (Term.rename S
+      (Term.subst (iterUpSubst k (instTerm u)) (tVar k)) =
+      Term.rename (fun n => n + S k) u).
+    rewrite IH, Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+Qed.
+
 Lemma subst_instTerm_rename_succ : forall phi t,
   subst (instTerm t) (rename S phi) = phi.
 Proof.
@@ -7704,10 +7921,8 @@ Lemma term_subst_instTerm_rename_two_succ : forall t u,
     Term.rename S t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S n)) t)
-    with (Term.rename S (Term.rename S t))
-    by (rewrite Term.rename_comp; reflexivity).
-  apply term_subst_instTerm_rename_succ.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 0 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_upSubst_instTerm_rename_two_succ *)
@@ -7717,12 +7932,8 @@ Lemma term_subst_upSubst_instTerm_rename_two_succ : forall t u,
     Term.rename S t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S n)) t)
-    with (Term.rename S (Term.rename S t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_instTerm_rename_succ.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_upSubst_instTerm_rename_add_two *)
@@ -7732,10 +7943,8 @@ Lemma term_subst_upSubst_instTerm_rename_add_two : forall t u,
     Term.rename S t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => n + 2) t)
-    with (Term.rename (fun n => S (S n)) t)
-    by (apply Term.rename_ext; intro n; lia).
-  apply term_subst_upSubst_instTerm_rename_two_succ.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_upSubst_instTerm_rename_three_succ *)
@@ -7745,13 +7954,8 @@ Lemma term_subst_upSubst_instTerm_rename_three_succ : forall t u,
     Term.rename (fun n => S (S n)) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S n))) t)
-    with (Term.rename S (Term.rename (fun n => S (S n)) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_instTerm_rename_two_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_instTerm_rename_four_succ *)
@@ -7761,13 +7965,8 @@ Lemma term_subst_up_up_instTerm_rename_four_succ : forall t u,
     Term.rename (fun n => S (S (S n))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S n)))) t)
-    with (Term.rename S (Term.rename (fun n => S (S (S n))) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_upSubst_instTerm_rename_three_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 2 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_instTerm_rename_five_succ *)
@@ -7777,58 +7976,8 @@ Lemma term_subst_up_up_up_instTerm_rename_five_succ : forall t u,
     Term.rename (fun n => S (S (S (S n)))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
-    with (Term.rename S (Term.rename (fun n => S (S (S (S n)))) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_up_up_instTerm_rename_four_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
-Qed.
-
-(* Lean: iterUpSubst *)
-Fixpoint iterUpSubst (k : nat) (sigma : nat -> term) : nat -> term :=
-  match k with
-  | 0 => sigma
-  | S k' => Term.upSubst (iterUpSubst k' sigma)
-  end.
-
-(* Iterated lifted substitution commutes with the matching variable shift. *)
-Lemma term_subst_iterUpSubst_rename_add :
-  forall k (sigma : nat -> term) t,
-  Term.subst (iterUpSubst k sigma)
-      (Term.rename (fun n => n + k) t) =
-    Term.rename (fun n => n + k) (Term.subst sigma t).
-Proof.
-  induction k as [|k IH]; intros sigma t.
-  - simpl.
-    replace (Term.rename (fun n => n + 0) t) with t.
-    2: {
-      transitivity (Term.rename (fun n => n) t).
-      - symmetry. apply Term.rename_id.
-      - apply Term.rename_ext. intro n. lia.
-    }
-    replace (Term.rename (fun n => n + 0) (Term.subst sigma t))
-      with (Term.subst sigma t).
-    + reflexivity.
-    + transitivity (Term.rename (fun n => n) (Term.subst sigma t)).
-      * symmetry. apply Term.rename_id.
-      * apply Term.rename_ext. intro n. lia.
-  - simpl.
-    replace (Term.rename (fun n => n + S k) t)
-      with (Term.rename S (Term.rename (fun n => n + k) t)).
-    2: {
-      rewrite Term.rename_comp.
-      apply Term.rename_ext.
-      intro n.
-      lia.
-    }
-    rewrite Term.subst_rename_succ_up.
-    rewrite IH.
-    rewrite Term.rename_comp.
-    apply Term.rename_ext.
-    intro n.
-    lia.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_rename_add_two *)
@@ -7848,56 +7997,12 @@ Lemma term_subst_iterUpSubst_instTerm_var_rename_add_succ :
       (Term.rename (fun n => S (n + k)) t) =
     Term.rename (fun n => n + k) t.
 Proof.
-  induction k as [|k IH]; intros elem t.
-  - simpl.
-    replace (Term.rename (fun n => S (n + 0)) t)
-      with (Term.rename S t)
-      by (apply Term.rename_ext; intro n; lia).
-    replace (Term.rename (fun n => n + 0) t)
-      with (Term.rename (fun n => n) t)
-      by (apply Term.rename_ext; intro n; lia).
-    rewrite Term.rename_id.
-    apply term_subst_instTerm_rename_succ.
-  - simpl.
-    replace (Term.rename (fun n => S (n + S k)) t)
-      with (Term.rename S (Term.rename (fun n => S (n + k)) t))
-      by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
-    rewrite Term.subst_rename_succ_up.
-    rewrite IH.
-    rewrite Term.rename_comp.
-    apply Term.rename_ext.
-    intro n. lia.
-Qed.
-
-(* Lean: term_subst_iterUpSubst_instTerm_rename_add_succ *)
-Lemma term_subst_iterUpSubst_instTerm_rename_add_succ :
-  forall k t u,
-  Term.subst (iterUpSubst k (instTerm u))
-      (Term.rename (fun n => n + k + 1) t) =
-    Term.rename (fun n => n + k) t.
-Proof.
-  induction k as [|k IH]; intros t u.
-  - simpl.
-    replace (Term.rename (fun n => n + 0 + 1) t)
-      with (Term.rename S t)
-      by (apply Term.rename_ext; intro n; lia).
-    replace (Term.rename (fun n => n + 0) t)
-      with t.
-    + apply term_subst_instTerm_rename_succ.
-    + symmetry.
-      transitivity (Term.rename (fun n => n) t).
-      * apply Term.rename_ext. intro n. lia.
-      * apply Term.rename_id.
-  - simpl.
-    replace (Term.rename (fun n => n + S k + 1) t)
-      with (Term.rename S
-        (Term.rename (fun n => n + k + 1) t))
-      by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
-    rewrite Term.subst_rename_succ_up.
-    rewrite IH.
-    rewrite Term.rename_comp.
-    apply Term.rename_ext.
-    intro n. lia.
+  intros k elem t.
+  replace (Term.rename (fun n => S (n + k)) t)
+    with (Term.rename (fun n => n + k + 1) t)
+    by (apply Term.rename_ext; intro n; lia).
+  exact (term_subst_iterUpSubst_instTerm_rename_add_succ
+    k t (tVar elem)).
 Qed.
 
 (* Lean: term_subst_up_up_instTerm_rename_three_succ *)
@@ -7907,13 +8012,8 @@ Lemma term_subst_up_up_instTerm_rename_three_succ : forall t u,
     Term.rename (fun n => S (S n)) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S n))) t)
-    with (Term.rename (fun n => n + 2 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S n)) t)
-    with (Term.rename (fun n => n + 2) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 2 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 2 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_instTerm_rename_two_var_zero *)
@@ -7923,9 +8023,11 @@ Lemma term_subst_up_up_instTerm_rename_two_var_zero : forall u,
     Term.rename (fun n => S (S n)) u.
 Proof.
   intro u.
-  simpl.
-  rewrite Term.rename_comp.
-  reflexivity.
+  change (Term.subst (iterUpSubst 2 (instTerm u)) (tVar 2) =
+    Term.rename (fun n => S (S n)) u).
+  rewrite term_subst_iterUpSubst_instTerm_var_depth.
+  apply Term.rename_ext.
+  intro n; lia.
 Qed.
 
 Lemma term_subst_three_instTerm_rename_add_three :
@@ -7965,13 +8067,8 @@ Lemma term_subst_up_up_up_instTerm_rename_four_succ : forall t u,
     Term.rename (fun n => S (S (S n))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S n)))) t)
-    with (Term.rename (fun n => n + 3 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S n))) t)
-    with (Term.rename (fun n => n + 3) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 3 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 0);
+    intro n; lia.
 Qed.
 
 Lemma term_subst_up_up_up_instTerm_rename_succ_add_three : forall t u,
@@ -7981,10 +8078,8 @@ Lemma term_subst_up_up_up_instTerm_rename_succ_add_three : forall t u,
     Term.rename (fun n => n + 3) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S n + 3) t)
-    with (Term.rename (fun n => n + 3 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 3 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_instTerm_rename_five_succ *)
@@ -7996,13 +8091,8 @@ Lemma term_subst_up_up_up_up_instTerm_rename_five_succ : forall t u,
     Term.rename (fun n => S (S (S (S n)))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
-    with (Term.rename (fun n => n + 4 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S (S n)))) t)
-    with (Term.rename (fun n => n + 4) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 4 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 4 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_instTerm_rename_six_succ *)
@@ -8014,14 +8104,8 @@ Lemma term_subst_up_up_up_up_instTerm_rename_six_succ : forall t u,
     Term.rename (fun n => S (S (S (S (S n))))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
-    with (Term.rename S
-      (Term.rename (fun n => S (S (S (S (S n))))) t))
-    by (rewrite Term.rename_comp; reflexivity).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-  rewrite Term.rename_comp.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 4 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_up_instTerm_rename_six_succ *)
@@ -8034,13 +8118,8 @@ Lemma term_subst_up_up_up_up_up_instTerm_rename_six_succ : forall t u,
     Term.rename (fun n => S (S (S (S (S n))))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
-    with (Term.rename (fun n => n + 5 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S (S (S n))))) t)
-    with (Term.rename (fun n => n + 5) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 5 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 5 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ *)
@@ -8054,13 +8133,8 @@ Lemma term_subst_up_up_up_up_up_up_instTerm_rename_seven_succ : forall t u,
     Term.rename (fun n => S (S (S (S (S (S n)))))) t.
 Proof.
   intros t u.
-  replace (Term.rename (fun n => S (S (S (S (S (S (S n))))))) t)
-    with (Term.rename (fun n => n + 6 + 1) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => S (S (S (S (S (S n)))))) t)
-    with (Term.rename (fun n => n + 6) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_iterUpSubst_instTerm_rename_add_succ 6 t u).
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 6 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_rename_up_succ_rename_succ *)
@@ -8069,9 +8143,7 @@ Lemma term_rename_up_succ_rename_succ : forall t,
     Term.rename S (Term.rename S t).
 Proof.
   intro t.
-  rewrite Term.rename_comp, Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 1 S t).
 Qed.
 
 (* Lean: term_subst_instTerm_rename_up_up_succ *)
@@ -9306,6 +9378,12 @@ Definition substZero : nat -> term :=
     | S k => tVar k
     end.
 
+Lemma substZero_eq_instTerm : substZero = instTerm tZero.
+Proof.
+  apply functional_extensionality.
+  intros [|n]; reflexivity.
+Qed.
+
 Definition substZeroAt (p : nat) : nat -> term :=
   fun n =>
     if n <? p then tVar n
@@ -9382,19 +9460,59 @@ Definition substSuccVar : nat -> term :=
 Lemma term_substZero_rename_succ : forall t,
   Term.subst substZero (Term.rename S t) = t.
 Proof.
-  induction t; simpl; try reflexivity.
-  - now rewrite IHt.
-  - now rewrite IHt1, IHt2.
-  - now rewrite IHt1, IHt2.
+  intro t.
+  rewrite substZero_eq_instTerm.
+  apply term_subst_instTerm_rename_succ.
 Qed.
 
 Lemma term_substSuccVar_rename_succ : forall t,
   Term.subst substSuccVar (Term.rename S t) = Term.rename S t.
 Proof.
-  induction t; simpl; try reflexivity.
-  - now rewrite IHt.
-  - now rewrite IHt1, IHt2.
-  - now rewrite IHt1, IHt2.
+  intro t.
+  rewrite Term.subst_rename.
+  change (Term.subst (fun n => tVar (S n)) t = Term.rename S t).
+  apply term_subst_var_rename.
+Qed.
+
+Lemma term_subst_iterUpSubst_substZero_rename_add_succ :
+  forall k t,
+  Term.subst (iterUpSubst k substZero)
+      (Term.rename (fun n => n + k + 1) t) =
+    Term.rename (fun n => n + k) t.
+Proof.
+  intros k t.
+  rewrite substZero_eq_instTerm.
+  apply term_subst_iterUpSubst_instTerm_rename_add_succ.
+Qed.
+
+Lemma term_subst_iterUpSubst_substSuccVar_rename_add_succ :
+  forall k t,
+  Term.subst (iterUpSubst k substSuccVar)
+      (Term.rename (fun n => n + k + 1) t) =
+    Term.rename (fun n => n + k + 1) t.
+Proof.
+  intros k t.
+  replace (Term.rename (fun n => n + k + 1) t)
+    with (Term.rename (fun n => n + k) (Term.rename S t)).
+  2: {
+    rewrite Term.rename_comp.
+    apply Term.rename_ext.
+    intro n; lia.
+  }
+  rewrite term_subst_iterUpSubst_rename_add.
+  rewrite term_substSuccVar_rename_succ.
+  reflexivity.
+Qed.
+
+Lemma term_subst_iterUpSubst_substSuccVar_rename_ext :
+  forall k t (r : nat -> nat),
+  (forall n, r n = n + k + 1) ->
+  Term.subst (iterUpSubst k substSuccVar) (Term.rename r t) =
+    Term.rename r t.
+Proof.
+  intros k t r hr.
+  rewrite (Term.rename_ext t r (fun n => n + k + 1) hr).
+  apply term_subst_iterUpSubst_substSuccVar_rename_add_succ.
 Qed.
 
 (* Lean: term_subst_up_up_up_substZero_rename_four_succ *)
@@ -9405,19 +9523,9 @@ Lemma term_subst_up_up_up_substZero_rename_four_succ : forall t,
     Term.rename (fun n => n + 1 + 1 + 1) t.
 Proof.
   intro t.
-  assert (hzero : substZero = instTerm tZero).
-  {
-    apply functional_extensionality.
-    intros [|n]; reflexivity.
-  }
-  rewrite hzero.
-  replace (Term.rename (fun n => n + 1 + 1 + 1 + 1) t)
-    with (Term.rename (fun n => S (S (S (S n)))) t)
-    by (apply Term.rename_ext; intro n; lia).
-  replace (Term.rename (fun n => n + 1 + 1 + 1) t)
-    with (Term.rename (fun n => S (S (S n))) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_up_up_up_instTerm_rename_four_succ t tZero).
+  rewrite substZero_eq_instTerm.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 3 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_substZero_rename_two_succ *)
@@ -9427,16 +9535,9 @@ Lemma term_subst_up_substZero_rename_two_succ : forall t,
     Term.rename S t.
 Proof.
   intro t.
-  assert (hzero : substZero = instTerm tZero).
-  {
-    apply functional_extensionality.
-    intros [|n]; reflexivity.
-  }
-  rewrite hzero.
-  replace (Term.rename (fun n => n + 1 + 1) t)
-    with (Term.rename (fun n => S (S n)) t)
-    by (apply Term.rename_ext; intro n; lia).
-  exact (term_subst_upSubst_instTerm_rename_two_succ t tZero).
+  rewrite substZero_eq_instTerm.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_substSuccVar_rename_two_succ *)
@@ -9446,12 +9547,8 @@ Lemma term_subst_up_substSuccVar_rename_two_succ : forall t,
     Term.rename (fun n => n + 1 + 1) t.
 Proof.
   intro t.
-  replace (Term.rename (fun n => n + 1 + 1) t)
-    with (Term.rename S (Term.rename S t))
-    by (rewrite Term.rename_comp; apply Term.rename_ext; intro n; lia).
-  rewrite Term.subst_rename_succ_up.
-  rewrite term_substSuccVar_rename_succ.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_substSuccVar_rename_ext 1);
+    intro n; lia.
 Qed.
 
 (* Lean: term_subst_up_up_up_substSuccVar_rename_four_succ *)
@@ -9462,14 +9559,8 @@ Lemma term_subst_up_up_up_substSuccVar_rename_four_succ : forall t,
     Term.rename (fun n => n + 1 + 1 + 1 + 1) t.
 Proof.
   intro t.
-  replace (Term.rename (fun n => n + 1 + 1 + 1 + 1) t)
-    with (Term.rename S
-      (Term.rename S (Term.rename S (Term.rename S t))))
-    by (repeat rewrite Term.rename_comp;
-        apply Term.rename_ext; intro n; lia).
-  repeat rewrite Term.subst_rename_succ_up.
-  rewrite term_substSuccVar_rename_succ.
-  reflexivity.
+  eapply (term_subst_iterUpSubst_substSuccVar_rename_ext 3);
+    intro n; lia.
 Qed.
 
 Definition substSuccAt (p : nat) : nat -> term :=
@@ -10034,6 +10125,31 @@ Definition dvdTermTermAt (divisor value : term) : formula :=
     (tMul (Term.rename S divisor) (tVar 0))
     (Term.rename S value)).
 
+Lemma subst_dvdTermTermAt : forall sigma divisor value,
+  subst sigma (dvdTermTermAt divisor value) =
+    dvdTermTermAt
+      (Term.subst sigma divisor) (Term.subst sigma value).
+Proof.
+  intros sigma divisor value.
+  unfold dvdTermTermAt.
+  cbn [subst].
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_dvdTermTermAt : forall r divisor value,
+  rename r (dvdTermTermAt divisor value) =
+    dvdTermTermAt
+      (Term.rename r divisor) (Term.rename r value).
+Proof.
+  intros r divisor value.
+  rewrite <- subst_var_rename.
+  rewrite subst_dvdTermTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 Definition eqConstAt (a n : nat) : formula :=
   pEq (tVar a) (Term.numeral n).
 
@@ -10061,6 +10177,50 @@ Definition leTermAt (a b : term) : formula :=
 Definition ltTermAt (a b : term) : formula :=
   pEx (pEq (tAdd (Term.rename S a) (tSucc (tVar 0))) (Term.rename S b)).
 
+Lemma subst_leTermAt : forall sigma a b,
+  subst sigma (leTermAt a b) =
+    leTermAt (Term.subst sigma a) (Term.subst sigma b).
+Proof.
+  intros sigma a b.
+  unfold leTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_leTermAt : forall r a b,
+  rename r (leTermAt a b) =
+    leTermAt (Term.rename r a) (Term.rename r b).
+Proof.
+  intros r a b.
+  rewrite <- subst_var_rename.
+  rewrite subst_leTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_ltTermAt : forall sigma a b,
+  subst sigma (ltTermAt a b) =
+    ltTermAt (Term.subst sigma a) (Term.subst sigma b).
+Proof.
+  intros sigma a b.
+  unfold ltTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_ltTermAt : forall r a b,
+  rename r (ltTermAt a b) =
+    ltTermAt (Term.rename r a) (Term.rename r b).
+Proof.
+  intros r a b.
+  rewrite <- subst_var_rename.
+  rewrite subst_ltTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (* Lean: commonMultipleThroughTermAt *)
 Definition commonMultipleThroughTermAt
     (bound multiple : term) : formula :=
@@ -10068,6 +10228,33 @@ Definition commonMultipleThroughTermAt
     (ltTermAt (tVar 0) (Term.rename S bound))
     (dvdTermTermAt (tSucc (tVar 0))
       (Term.rename S multiple))).
+
+Lemma subst_commonMultipleThroughTermAt : forall sigma bound multiple,
+  subst sigma (commonMultipleThroughTermAt bound multiple) =
+    commonMultipleThroughTermAt
+      (Term.subst sigma bound) (Term.subst sigma multiple).
+Proof.
+  intros sigma bound multiple.
+  unfold commonMultipleThroughTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite subst_dvdTermTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_commonMultipleThroughTermAt : forall r bound multiple,
+  rename r (commonMultipleThroughTermAt bound multiple) =
+    commonMultipleThroughTermAt
+      (Term.rename r bound) (Term.rename r multiple).
+Proof.
+  intros r bound multiple.
+  rewrite <- subst_var_rename.
+  rewrite subst_commonMultipleThroughTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
 
 (* Lean: commonMultipleExistsTermAt *)
 Definition commonMultipleExistsTermAt (bound : term) : formula :=
@@ -10085,6 +10272,206 @@ Definition positiveCommonMultipleThroughTermAt
   pAnd (ltTermAt tZero multiple)
     (commonMultipleThroughTermAt bound multiple).
 
+(* Lean: betaCodingStepTermAt *)
+Definition betaCodingStepTermAt
+    (bound sourceCode step : term) : formula :=
+  pAnd
+    (commonMultipleThroughTermAt bound step)
+    (leTermAt (tSucc sourceCode) step).
+
+(* Lean: betaCodingStepExistsTermAt *)
+Definition betaCodingStepExistsTermAt
+    (bound sourceCode : term) : formula :=
+  pEx
+    (betaCodingStepTermAt
+      (Term.rename S bound)
+      (Term.rename S sourceCode)
+      (tVar 0)).
+
+(* Lean: betaCodingStepExistsTermAtBody *)
+Definition betaCodingStepExistsTermAtBody
+    (bound sourceCode : term) : formula :=
+  betaCodingStepTermAt
+    (Term.rename S bound)
+    (Term.rename S sourceCode)
+    (tVar 0).
+
+(* Lean: betaPrependCodingStepTermAt *)
+Definition betaPrependCodingStepTermAt
+    (bound sourceCode head step : term) : formula :=
+  pAnd (commonMultipleThroughTermAt bound step)
+    (pAnd
+      (leTermAt (tSucc sourceCode) step)
+      (leTermAt (tSucc head) step)).
+
+(* Lean: betaPrependCodingStepExistsTermAt *)
+Definition betaPrependCodingStepExistsTermAt
+    (bound sourceCode head : term) : formula :=
+  pEx (betaPrependCodingStepTermAt
+    (Term.rename S bound)
+    (Term.rename S sourceCode)
+    (Term.rename S head)
+    (tVar 0)).
+
+(* Lean: betaPrependCodingStepExistsTermAtBody *)
+Definition betaPrependCodingStepExistsTermAtBody
+    (bound sourceCode head : term) : formula :=
+  betaPrependCodingStepTermAt
+    (Term.rename S bound)
+    (Term.rename S sourceCode)
+    (Term.rename S head)
+    (tVar 0).
+
+Lemma subst_positiveCommonMultipleThroughTermAt :
+  forall sigma bound multiple,
+  subst sigma (positiveCommonMultipleThroughTermAt bound multiple) =
+    positiveCommonMultipleThroughTermAt
+      (Term.subst sigma bound) (Term.subst sigma multiple).
+Proof.
+  intros sigma bound multiple.
+  unfold positiveCommonMultipleThroughTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite subst_commonMultipleThroughTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_positiveCommonMultipleThroughTermAt :
+  forall r bound multiple,
+  rename r (positiveCommonMultipleThroughTermAt bound multiple) =
+    positiveCommonMultipleThroughTermAt
+      (Term.rename r bound) (Term.rename r multiple).
+Proof.
+  intros r bound multiple.
+  rewrite <- subst_var_rename.
+  rewrite subst_positiveCommonMultipleThroughTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaCodingStepTermAt : forall sigma bound sourceCode step,
+  subst sigma (betaCodingStepTermAt bound sourceCode step) =
+    betaCodingStepTermAt
+      (Term.subst sigma bound)
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma step).
+Proof.
+  intros sigma bound sourceCode step.
+  unfold betaCodingStepTermAt.
+  cbn [subst].
+  rewrite subst_commonMultipleThroughTermAt.
+  rewrite subst_leTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_betaCodingStepTermAt : forall r bound sourceCode step,
+  rename r (betaCodingStepTermAt bound sourceCode step) =
+    betaCodingStepTermAt
+      (Term.rename r bound)
+      (Term.rename r sourceCode)
+      (Term.rename r step).
+Proof.
+  intros r bound sourceCode step.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaCodingStepTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaCodingStepExistsTermAt : forall sigma bound sourceCode,
+  subst sigma (betaCodingStepExistsTermAt bound sourceCode) =
+    betaCodingStepExistsTermAt
+      (Term.subst sigma bound) (Term.subst sigma sourceCode).
+Proof.
+  intros sigma bound sourceCode.
+  unfold betaCodingStepExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaCodingStepTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaCodingStepExistsTermAt : forall r bound sourceCode,
+  rename r (betaCodingStepExistsTermAt bound sourceCode) =
+    betaCodingStepExistsTermAt
+      (Term.rename r bound) (Term.rename r sourceCode).
+Proof.
+  intros r bound sourceCode.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaCodingStepExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependCodingStepTermAt :
+  forall sigma bound sourceCode head step,
+  subst sigma
+      (betaPrependCodingStepTermAt bound sourceCode head step) =
+    betaPrependCodingStepTermAt
+      (Term.subst sigma bound)
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma head)
+      (Term.subst sigma step).
+Proof.
+  intros sigma bound sourceCode head step.
+  unfold betaPrependCodingStepTermAt.
+  cbn [subst].
+  rewrite subst_commonMultipleThroughTermAt.
+  rewrite !subst_leTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependCodingStepTermAt :
+  forall r bound sourceCode head step,
+  rename r
+      (betaPrependCodingStepTermAt bound sourceCode head step) =
+    betaPrependCodingStepTermAt
+      (Term.rename r bound)
+      (Term.rename r sourceCode)
+      (Term.rename r head)
+      (Term.rename r step).
+Proof.
+  intros r bound sourceCode head step.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependCodingStepTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependCodingStepExistsTermAt :
+  forall sigma bound sourceCode head,
+  subst sigma
+      (betaPrependCodingStepExistsTermAt bound sourceCode head) =
+    betaPrependCodingStepExistsTermAt
+      (Term.subst sigma bound)
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma head).
+Proof.
+  intros sigma bound sourceCode head.
+  unfold betaPrependCodingStepExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaPrependCodingStepTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependCodingStepExistsTermAt :
+  forall r bound sourceCode head,
+  rename r
+      (betaPrependCodingStepExistsTermAt bound sourceCode head) =
+    betaPrependCodingStepExistsTermAt
+      (Term.rename r bound)
+      (Term.rename r sourceCode)
+      (Term.rename r head).
+Proof.
+  intros r bound sourceCode head.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependCodingStepExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
 (* Lean: positiveCommonMultipleExistsTermAt *)
 Definition positiveCommonMultipleExistsTermAt (bound : term) : formula :=
   pEx (positiveCommonMultipleThroughTermAt
@@ -10094,6 +10481,30 @@ Definition positiveCommonMultipleExistsTermAt (bound : term) : formula :=
 Definition positiveCommonMultipleExistsTermAtBody (bound : term) : formula :=
   positiveCommonMultipleThroughTermAt
     (Term.rename S bound) (tVar 0).
+
+Lemma subst_positiveCommonMultipleExistsTermAt : forall sigma bound,
+  subst sigma (positiveCommonMultipleExistsTermAt bound) =
+    positiveCommonMultipleExistsTermAt (Term.subst sigma bound).
+Proof.
+  intros sigma bound.
+  unfold positiveCommonMultipleExistsTermAt.
+  cbn [subst].
+  rewrite subst_positiveCommonMultipleThroughTermAt.
+  simpl.
+  rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_positiveCommonMultipleExistsTermAt : forall r bound,
+  rename r (positiveCommonMultipleExistsTermAt bound) =
+    positiveCommonMultipleExistsTermAt (Term.rename r bound).
+Proof.
+  intros r bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_positiveCommonMultipleExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
 
 (* Lean: ltTermAt_var *)
 Lemma ltTermAt_var : forall a b,
@@ -15641,6 +16052,46 @@ Definition remTermTermAt (rem value modulus : term) : formula :=
       (tAdd (tMul (tVar 0) (Term.rename S modulus))
         (Term.rename S rem)))).
 
+Lemma subst_remTermTermAt : forall sigma rem value modulus,
+  subst sigma (remTermTermAt rem value modulus) =
+    remTermTermAt
+      (Term.subst sigma rem)
+      (Term.subst sigma value)
+      (Term.subst sigma modulus).
+Proof.
+  intros sigma rem value modulus.
+  unfold remTermTermAt, ltTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_remTermTermAt : forall r rem value modulus,
+  rename r (remTermTermAt rem value modulus) =
+    remTermTermAt
+      (Term.rename r rem)
+      (Term.rename r value)
+      (Term.rename r modulus).
+Proof.
+  intros r rem value modulus.
+  rewrite <- subst_var_rename.
+  rewrite subst_remTermTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma rename_remTermAt : forall r rem value modulus,
+  rename r (remTermAt rem value modulus) =
+    remTermAt (Term.rename r rem) (r value) (r modulus).
+Proof.
+  intros r rem value modulus.
+  unfold remTermAt, ltTermAt.
+  simpl.
+  repeat rewrite Term.rename_comp.
+  repeat f_equal; apply functional_extensionality; intro n;
+    destruct n; simpl; reflexivity.
+Qed.
+
 (* Lean: remTermAt_var *)
 Lemma remTermAt_var : forall rem value modulus,
   remTermAt (tVar rem) value modulus = remAt rem value modulus.
@@ -16992,41 +17443,26 @@ Lemma term_rename_up_up_S : forall t,
   Term.rename S (Term.rename S (Term.rename S t)).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 2 S t).
 Qed.
 
 Lemma rename_S_ltTermAt : forall a b,
   rename S (ltTermAt a b) = ltTermAt (Term.rename S a) (Term.rename S b).
 Proof.
-  intros a b.
-  unfold ltTermAt.
-  simpl.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  reflexivity.
+  intros a b. apply rename_ltTermAt.
 Qed.
 
 Lemma rename_S_leTermAt : forall a b,
   rename S (leTermAt a b) = leTermAt (Term.rename S a) (Term.rename S b).
 Proof.
-  intros a b.
-  unfold leTermAt.
-  simpl.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  reflexivity.
+  intros a b. apply rename_leTermAt.
 Qed.
 
 Lemma rename_S_remTermAt : forall rem value modulus,
   rename S (remTermAt rem value modulus) =
   remTermAt (Term.rename S rem) (S value) (S modulus).
 Proof.
-  intros rem value modulus.
-  unfold remTermAt, ltTermAt.
-  simpl.
-  rewrite term_rename_up_up_S.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  reflexivity.
+  intros rem value modulus. apply rename_remTermAt.
 Qed.
 
 Lemma rename_S_remTermEqAt : forall rem value modulus,
@@ -17793,9 +18229,7 @@ Lemma term_rename_up_up_succ_rename_two_succ : forall t,
   Term.rename S (Term.rename S (Term.rename S t)).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 2 S t).
 Qed.
 
 (* Lean: BProv_Ax_s_eq_of_remTermTermAt_remTermTermAt_eq_modulus *)
@@ -19418,10 +19852,9 @@ Lemma term_subst_upSubst_instTerm_rename_two : forall t u,
     (Term.rename S (Term.rename S t)) = Term.rename S t.
 Proof.
   intros t u.
-  repeat rewrite Term.subst_rename.
-  rewrite <- (term_subst_var_rename t S).
-  apply Term.subst_ext.
-  intro n. reflexivity.
+  rewrite Term.rename_comp.
+  eapply (term_subst_iterUpSubst_instTerm_rename_ext 1 0);
+    intro n; lia.
 Qed.
 
 (* Lean: BProv_Ax_s_remTermAt_of_remAt_eq_term *)
@@ -19688,6 +20121,16 @@ Definition betaModTerm (step idx : nat) : term :=
 Definition betaModTermTerm (step idx : term) : term :=
   tSucc (tMul (tSucc idx) step).
 
+Lemma term_rename_betaModTermTerm : forall r step index,
+  Term.rename r (betaModTermTerm step index) =
+    betaModTermTerm (Term.rename r step) (Term.rename r index).
+Proof.
+  intros r step index.
+  unfold betaModTermTerm.
+  simpl.
+  reflexivity.
+Qed.
+
 (* Lean: betaPrefixDividesTermAt *)
 Definition betaPrefixDividesTermAt
     (step bound product : term) : formula :=
@@ -19696,6 +20139,56 @@ Definition betaPrefixDividesTermAt
     (dvdTermTermAt
       (betaModTermTerm (Term.rename S step) (tVar 0))
       (Term.rename S product))).
+
+Lemma subst_betaPrefixDividesTermAt : forall sigma step bound product,
+  subst sigma (betaPrefixDividesTermAt step bound product) =
+    betaPrefixDividesTermAt
+      (Term.subst sigma step)
+      (Term.subst sigma bound)
+      (Term.subst sigma product).
+Proof.
+  intros sigma step bound product.
+  unfold betaPrefixDividesTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite subst_dvdTermTermAt.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrefixDividesTermAt : forall r step bound product,
+  rename r (betaPrefixDividesTermAt step bound product) =
+    betaPrefixDividesTermAt
+      (Term.rename r step)
+      (Term.rename r bound)
+      (Term.rename r product).
+Proof.
+  intros r step bound product.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrefixDividesTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma rename_succ_twice_betaPrefixDividesTermAt :
+  forall step bound product,
+  rename S (rename S (betaPrefixDividesTermAt step bound product)) =
+    betaPrefixDividesTermAt
+      (Term.rename (fun n => n + 2) step)
+      (Term.rename (fun n => n + 2) bound)
+      (Term.rename (fun n => n + 2) product).
+Proof.
+  intros step bound product.
+  rewrite !rename_betaPrefixDividesTermAt.
+  repeat rewrite Term.rename_comp.
+  assert (hrename : forall t,
+      Term.rename (fun n => S (S n)) t =
+        Term.rename (fun n => n + 2) t).
+  { intro t. apply Term.rename_ext. intro n. lia. }
+  repeat rewrite hrename.
+  reflexivity.
+Qed.
 
 (* Lean: BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero *)
 Lemma BProv_Ax_s_betaModTermTerm_eq_one_of_eq_step_zero :
@@ -19768,6 +20261,347 @@ Proof.
   unfold betaTermTermAt, betaModTermTerm, remTermTermAt, ltTermAt.
   simpl.
   repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaTermTermAt : forall r out code step index,
+  rename r (betaTermTermAt out code step index) =
+    betaTermTermAt
+      (Term.rename r out)
+      (Term.rename r code)
+      (Term.rename r step)
+      (Term.rename r index).
+Proof.
+  intros r out code step index.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaTermTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+(** Strict-prefix form of shifted beta coding.  For every [i < bound],
+    every old beta entry at [S i] is copied to index [i] of the new code. *)
+Definition betaShiftPrefixTermAt
+    (oldCode oldStep newCode newStep bound : term) : formula :=
+  pAll (pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (pAll (pImp
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) oldCode)
+        (Term.rename (fun n => n + 2) oldStep)
+        (tSucc (tVar 1)))
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) newCode)
+        (Term.rename (fun n => n + 2) newStep)
+        (tVar 1))))).
+
+Definition betaShiftPrefixCodeExistsTermAt
+    (oldCode oldStep newStep bound : term) : formula :=
+  pEx (betaShiftPrefixTermAt
+    (Term.rename S oldCode)
+    (Term.rename S oldStep)
+    (tVar 0)
+    (Term.rename S newStep)
+    (Term.rename S bound)).
+
+Definition betaShiftPrefixCodeExistsTermAtBody
+    (oldCode oldStep newStep bound : term) : formula :=
+  betaShiftPrefixTermAt
+    (Term.rename S oldCode)
+    (Term.rename S oldStep)
+    (tVar 0)
+    (Term.rename S newStep)
+    (Term.rename S bound).
+
+Lemma subst_betaShiftPrefixTermAt :
+  forall sigma oldCode oldStep newCode newStep bound,
+  subst sigma
+      (betaShiftPrefixTermAt oldCode oldStep newCode newStep bound) =
+    betaShiftPrefixTermAt
+      (Term.subst sigma oldCode)
+      (Term.subst sigma oldStep)
+      (Term.subst sigma newCode)
+      (Term.subst sigma newStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma oldCode oldStep newCode newStep bound.
+  unfold betaShiftPrefixTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite !subst_betaTermTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  rewrite !term_subst_up_up_rename_add_two.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftPrefixTermAt :
+  forall r oldCode oldStep newCode newStep bound,
+  rename r
+      (betaShiftPrefixTermAt oldCode oldStep newCode newStep bound) =
+    betaShiftPrefixTermAt
+      (Term.rename r oldCode)
+      (Term.rename r oldStep)
+      (Term.rename r newCode)
+      (Term.rename r newStep)
+      (Term.rename r bound).
+Proof.
+  intros r oldCode oldStep newCode newStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaShiftPrefixTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaShiftPrefixCodeExistsTermAt :
+  forall sigma oldCode oldStep newStep bound,
+  subst sigma
+      (betaShiftPrefixCodeExistsTermAt oldCode oldStep newStep bound) =
+    betaShiftPrefixCodeExistsTermAt
+      (Term.subst sigma oldCode)
+      (Term.subst sigma oldStep)
+      (Term.subst sigma newStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma oldCode oldStep newStep bound.
+  unfold betaShiftPrefixCodeExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaShiftPrefixTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftPrefixCodeExistsTermAt :
+  forall r oldCode oldStep newStep bound,
+  rename r
+      (betaShiftPrefixCodeExistsTermAt oldCode oldStep newStep bound) =
+    betaShiftPrefixCodeExistsTermAt
+      (Term.rename r oldCode)
+      (Term.rename r oldStep)
+      (Term.rename r newStep)
+      (Term.rename r bound).
+Proof.
+  intros r oldCode oldStep newStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaShiftPrefixCodeExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+(** A target beta sequence whose zero entry is [head] and whose successor
+    entries copy a strict prefix of a source beta sequence. *)
+Definition betaUnshiftPrefixTermAt
+    (sourceCode sourceStep targetCode targetStep bound : term) : formula :=
+  pAll (pImp
+    (ltTermAt (tVar 0) (Term.rename S bound))
+    (pAll (pImp
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) sourceCode)
+        (Term.rename (fun n => n + 2) sourceStep)
+        (tVar 1))
+      (betaTermTermAt (tVar 0)
+        (Term.rename (fun n => n + 2) targetCode)
+        (Term.rename (fun n => n + 2) targetStep)
+        (tSucc (tVar 1)))))).
+
+Definition betaPrependPrefixTermAt
+    (sourceCode sourceStep head targetCode targetStep bound : term) : formula :=
+  pAnd (betaTermTermAt head targetCode targetStep tZero)
+    (betaUnshiftPrefixTermAt
+      sourceCode sourceStep targetCode targetStep bound).
+
+Definition betaPrependPrefixCodeExistsTermAt
+    (sourceCode sourceStep head targetStep bound : term) : formula :=
+  pEx (betaPrependPrefixTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S targetStep)
+    (Term.rename S bound)).
+
+Definition betaPrependPrefixCodeExistsTermAtBody
+    (sourceCode sourceStep head targetStep bound : term) : formula :=
+  betaPrependPrefixTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S targetStep)
+    (Term.rename S bound).
+
+(* Lean: betaPrependExistsTermAt *)
+Definition betaPrependExistsTermAt
+    (sourceCode sourceStep head bound : term) : formula :=
+  pEx (betaPrependPrefixCodeExistsTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S bound)).
+
+(* Lean: betaPrependExistsTermAtBody *)
+Definition betaPrependExistsTermAtBody
+    (sourceCode sourceStep head bound : term) : formula :=
+  betaPrependPrefixCodeExistsTermAt
+    (Term.rename S sourceCode)
+    (Term.rename S sourceStep)
+    (Term.rename S head)
+    (tVar 0)
+    (Term.rename S bound).
+
+Lemma subst_betaUnshiftPrefixTermAt :
+  forall sigma sourceCode sourceStep targetCode targetStep bound,
+  subst sigma
+      (betaUnshiftPrefixTermAt
+        sourceCode sourceStep targetCode targetStep bound) =
+    betaUnshiftPrefixTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma targetCode)
+      (Term.subst sigma targetStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep targetCode targetStep bound.
+  unfold betaUnshiftPrefixTermAt.
+  cbn [subst].
+  rewrite subst_ltTermAt.
+  rewrite !subst_betaTermTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  rewrite !term_subst_up_up_rename_add_two.
+  reflexivity.
+Qed.
+
+Lemma rename_betaUnshiftPrefixTermAt :
+  forall r sourceCode sourceStep targetCode targetStep bound,
+  rename r
+      (betaUnshiftPrefixTermAt
+        sourceCode sourceStep targetCode targetStep bound) =
+    betaUnshiftPrefixTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r targetCode)
+      (Term.rename r targetStep)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep targetCode targetStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaUnshiftPrefixTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependPrefixTermAt :
+  forall sigma sourceCode sourceStep head targetCode targetStep bound,
+  subst sigma
+      (betaPrependPrefixTermAt
+        sourceCode sourceStep head targetCode targetStep bound) =
+    betaPrependPrefixTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma head)
+      (Term.subst sigma targetCode)
+      (Term.subst sigma targetStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep head targetCode targetStep bound.
+  unfold betaPrependPrefixTermAt.
+  cbn [subst].
+  rewrite subst_betaTermTermAt.
+  rewrite subst_betaUnshiftPrefixTermAt.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependPrefixTermAt :
+  forall r sourceCode sourceStep head targetCode targetStep bound,
+  rename r
+      (betaPrependPrefixTermAt
+        sourceCode sourceStep head targetCode targetStep bound) =
+    betaPrependPrefixTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r head)
+      (Term.rename r targetCode)
+      (Term.rename r targetStep)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep head targetCode targetStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependPrefixTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependPrefixCodeExistsTermAt :
+  forall sigma sourceCode sourceStep head targetStep bound,
+  subst sigma
+      (betaPrependPrefixCodeExistsTermAt
+        sourceCode sourceStep head targetStep bound) =
+    betaPrependPrefixCodeExistsTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma head)
+      (Term.subst sigma targetStep)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep head targetStep bound.
+  unfold betaPrependPrefixCodeExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaPrependPrefixTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependPrefixCodeExistsTermAt :
+  forall r sourceCode sourceStep head targetStep bound,
+  rename r
+      (betaPrependPrefixCodeExistsTermAt
+        sourceCode sourceStep head targetStep bound) =
+    betaPrependPrefixCodeExistsTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r head)
+      (Term.rename r targetStep)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep head targetStep bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependPrefixCodeExistsTermAt.
+  repeat rewrite term_subst_var_rename.
+  reflexivity.
+Qed.
+
+Lemma subst_betaPrependExistsTermAt :
+  forall sigma sourceCode sourceStep head bound,
+  subst sigma
+      (betaPrependExistsTermAt sourceCode sourceStep head bound) =
+    betaPrependExistsTermAt
+      (Term.subst sigma sourceCode)
+      (Term.subst sigma sourceStep)
+      (Term.subst sigma head)
+      (Term.subst sigma bound).
+Proof.
+  intros sigma sourceCode sourceStep head bound.
+  unfold betaPrependExistsTermAt.
+  cbn [subst].
+  rewrite subst_betaPrependPrefixCodeExistsTermAt.
+  repeat rewrite Term.subst_rename_succ_up.
+  reflexivity.
+Qed.
+
+Lemma rename_betaPrependExistsTermAt :
+  forall r sourceCode sourceStep head bound,
+  rename r
+      (betaPrependExistsTermAt sourceCode sourceStep head bound) =
+    betaPrependExistsTermAt
+      (Term.rename r sourceCode)
+      (Term.rename r sourceStep)
+      (Term.rename r head)
+      (Term.rename r bound).
+Proof.
+  intros r sourceCode sourceStep head bound.
+  rewrite <- subst_var_rename.
+  rewrite subst_betaPrependExistsTermAt.
+  repeat rewrite term_subst_var_rename.
   reflexivity.
 Qed.
 
@@ -21087,6 +21921,15 @@ Definition crtInverseTermAt
   pEq (tMul product inverse)
     (tSucc (tMul modulus quotient)).
 
+Lemma rename_crtInverseTermAt : forall r product modulus inverse quotient,
+  rename r (crtInverseTermAt product modulus inverse quotient) =
+    crtInverseTermAt
+      (Term.rename r product)
+      (Term.rename r modulus)
+      (Term.rename r inverse)
+      (Term.rename r quotient).
+Proof. reflexivity. Qed.
+
 (* Lean: crtInverseExistsTermAt *)
 Definition crtInverseExistsTermAt
     (product modulus : term) : formula :=
@@ -21094,6 +21937,19 @@ Definition crtInverseExistsTermAt
     (Term.rename (fun n => n + 2) product)
     (Term.rename (fun n => n + 2) modulus)
     (tVar 1) (tVar 0))).
+
+Lemma rename_crtInverseExistsTermAt : forall r product modulus,
+  rename r (crtInverseExistsTermAt product modulus) =
+    crtInverseExistsTermAt
+      (Term.rename r product) (Term.rename r modulus).
+Proof.
+  intros r product modulus.
+  unfold crtInverseExistsTermAt, crtInverseTermAt.
+  simpl.
+  repeat rewrite Term.rename_comp.
+  repeat f_equal; apply functional_extensionality; intro n;
+    replace (n + 2) with (S (S n)) by lia; simpl; lia.
+Qed.
 
 (* Lean: crtInverseExistsTermAtQuotEx *)
 Definition crtInverseExistsTermAtQuotEx
@@ -22414,23 +23270,10 @@ Proof.
         (positiveCommonMultipleThroughTermAt
           (Term.rename S bound) (tVar 0)))).
   {
-    replace
-      (subst (instTerm multiple)
-        (positiveCommonMultipleThroughTermAt
-          (Term.rename S bound) (tVar 0)))
-      with (positiveCommonMultipleThroughTermAt bound multiple).
-    - exact hthrough.
-    - unfold positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      reflexivity.
+    rewrite subst_positiveCommonMultipleThroughTermAt.
+    simpl.
+    rewrite term_subst_instTerm_rename_succ.
+    exact hthrough.
   }
   unfold positiveCommonMultipleExistsTermAt.
   exact (BProv_exI Ax_s G
@@ -22493,12 +23336,8 @@ Proof.
     replace (rename S target)
       with (positiveCommonMultipleExistsTermAt (tSucc bound1)).
     + exact hexNext.
-    + unfold target, positiveCommonMultipleExistsTermAt,
-        positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt, bound1.
-      simpl.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
+    + unfold target, bound1.
+      rewrite rename_positiveCommonMultipleExistsTermAt.
       reflexivity.
   - exact hex.
 Qed.
@@ -22517,14 +23356,8 @@ Proof.
     replace (subst substZero phi)
       with (positiveCommonMultipleExistsTermAt tZero).
     - exact hzeroRaw.
-    - unfold phi, positiveCommonMultipleExistsTermAt,
-        positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt, substZero.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substZero_rename_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
+    - unfold phi.
+      rewrite subst_positiveCommonMultipleExistsTermAt.
       reflexivity.
   }
   assert (hsuccBody : BProv Ax_s
@@ -22542,15 +23375,8 @@ Proof.
     replace (subst substSuccVar phi)
       with (positiveCommonMultipleExistsTermAt (tSucc (tVar 0))).
     - exact hnext.
-    - unfold phi, positiveCommonMultipleExistsTermAt,
-        positiveCommonMultipleThroughTermAt,
-        commonMultipleThroughTermAt, dvdTermTermAt, ltTermAt,
-        substSuccVar.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_substSuccVar_rename_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite term_rename_up_succ_rename_succ.
+    - unfold phi.
+      rewrite subst_positiveCommonMultipleExistsTermAt.
       reflexivity.
   }
   pose proof (BProv_impI Ax_s (map (rename S) G)
@@ -22678,15 +23504,9 @@ Proof.
     {
       pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
         (betaPrefixDividesTermAt step bound product) hprefix S) as hren.
-      replace (betaPrefixDividesTermAt step1 bound1 product1)
-        with (rename S (betaPrefixDividesTermAt step bound product)).
-      - exact hren.
-      - unfold betaPrefixDividesTermAt, step1, bound1, product1,
-          betaModTermTerm, dvdTermTermAt, ltTermAt.
-        simpl.
-        repeat rewrite Term.rename_comp.
-        repeat rewrite term_rename_up_succ_rename_succ.
-        reflexivity.
+      unfold step1, bound1, product1.
+      rewrite <- rename_betaPrefixDividesTermAt.
+      exact hren.
     }
     assert (hltBranch : BProv Ax_s
         (ltTermAt (tVar 0) bound1 :: C) consequent).
@@ -22994,34 +23814,6 @@ Lemma BProv_Ax_s_crtInverseExistsTermAt_mul :
     (crtInverseExistsTermAt (tMul leftProduct rightProduct) modulus).
 Proof.
   intros G leftProduct rightProduct modulus hleft hright.
-  assert (hrenameExists2 : forall product0 modulus0,
-      rename S (rename S
-        (crtInverseExistsTermAt product0 modulus0)) =
-      crtInverseExistsTermAt
-        (Term.rename (fun n => n + 2) product0)
-        (Term.rename (fun n => n + 2) modulus0)).
-  {
-    intros product0 modulus0.
-    unfold crtInverseExistsTermAt, crtInverseTermAt.
-    simpl.
-    repeat rewrite Term.rename_comp.
-    repeat f_equal; apply functional_extensionality; intro n;
-      replace (n + 2) with (S (S n)) by lia; simpl; lia.
-  }
-  assert (hrenameCert2 : forall product0 modulus0,
-      rename S (rename S
-        (crtInverseTermAt product0 modulus0 (tVar 1) (tVar 0))) =
-      crtInverseTermAt
-        (Term.rename (fun n => n + 2) product0)
-        (Term.rename (fun n => n + 2) modulus0)
-        (tVar 3) (tVar 2)).
-  {
-    intros product0 modulus0.
-    unfold crtInverseTermAt.
-    simpl.
-    repeat rewrite Term.rename_comp.
-    repeat f_equal; apply functional_extensionality; intro n; lia.
-  }
   set (target :=
     crtInverseExistsTermAt (tMul leftProduct rightProduct) modulus).
   apply (BProv_Ax_s_crtInverseExistsTermAt_elim_opened
@@ -23053,8 +23845,9 @@ Proof.
         (map (rename S) (map (rename S) G))
         (crtInverseExistsTermAt rightProduct2 modulus2)).
     {
-      rewrite hrenameExists2 in hrightRen2.
+      repeat rewrite rename_crtInverseExistsTermAt in hrightRen2.
       unfold rightProduct2, modulus2.
+      repeat rewrite term_rename_add_eq_iterTermRenameSucc.
       exact hrightRen2.
     }
     assert (hrightL : BProv Ax_s L
@@ -23113,8 +23906,9 @@ Proof.
           (crtInverseTermAt leftProduct4 modulus4
             (tVar 3) (tVar 2))).
       {
-        rewrite hrenameCert2 in hleftRen2.
+        repeat rewrite rename_crtInverseTermAt in hleftRen2.
         unfold leftProduct4, modulus4.
+        repeat rewrite term_rename_add_eq_iterTermRenameSucc.
         exact hleftRen2.
       }
       assert (hleftR : BProv Ax_s R
@@ -23169,9 +23963,10 @@ Proof.
       * exact hproductEx.
       * unfold target, leftProduct4, rightProduct4, modulus4,
           leftProduct2, rightProduct2, modulus2.
-        rewrite hrenameExists2.
-        rewrite hrenameExists2.
-        simpl. reflexivity.
+        repeat rewrite rename_crtInverseExistsTermAt.
+        simpl.
+        repeat rewrite Term.rename_comp.
+        repeat f_equal; apply functional_extensionality; intro n; lia.
     + exact hrightL.
   - exact hleft.
 Qed.
@@ -24591,6 +25386,144 @@ Definition betaShiftTailThroughConstAt
         (tVar (newCode + 2)) (tVar (newStep + 2))
         (tVar 1))))).
 
+Lemma subst_two_instTerm_betaShiftTailExistsTermAtBody :
+  forall oldCode oldStep (newCode newStep last : term),
+  subst (instTerm newStep)
+      (subst (Term.upSubst (instTerm newCode))
+        (betaShiftTailExistsTermAtBody oldCode oldStep last)) =
+    betaShiftTailThroughTermAt
+      oldCode oldStep newCode newStep last.
+Proof.
+  intros oldCode oldStep newCode newStep last.
+  unfold betaShiftTailExistsTermAtBody, betaShiftTailThroughTermAt.
+  cbn [subst].
+  rewrite !subst_leTermAt.
+  rewrite !subst_betaTermTermAt.
+  simpl.
+  replace (oldCode + 2 + 2)
+    with (S (S (S (S oldCode)))) by lia.
+  replace (oldStep + 2 + 2)
+    with (S (S (S (S oldStep)))) by lia.
+  simpl.
+  repeat rewrite Term.subst_rename_succ_up.
+  repeat rewrite term_subst_instTerm_rename_succ.
+  rewrite term_subst_two_instTerm_rename_add_two.
+  repeat rewrite term_rename_add_eq_iterTermRenameSucc.
+  replace (oldCode + 2) with (S (S oldCode)) by lia.
+  replace (oldStep + 2) with (S (S oldStep)) by lia.
+  reflexivity.
+Qed.
+
+Lemma substZero_betaShiftTailExistsTermAt_succ :
+  forall oldCode oldStep,
+  subst substZero
+      (betaShiftTailExistsTermAt
+        (S oldCode) (S oldStep) (tVar 0)) =
+    betaShiftTailExistsTermAt oldCode oldStep tZero.
+Proof.
+  intros oldCode oldStep.
+  unfold betaShiftTailExistsTermAt, betaShiftTailThroughTermAt.
+  cbn [subst].
+  rewrite !subst_leTermAt.
+  rewrite !subst_betaTermTermAt.
+  simpl.
+  replace (oldCode + 2 + 2)
+    with (S (S (S (S oldCode)))) by lia.
+  replace (oldStep + 2 + 2)
+    with (S (S (S (S oldStep)))) by lia.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma substSuccVar_betaShiftTailExistsTermAt_succ :
+  forall oldCode oldStep,
+  subst substSuccVar
+      (betaShiftTailExistsTermAt
+        (S oldCode) (S oldStep) (tVar 0)) =
+    betaShiftTailExistsTermAt
+      (S oldCode) (S oldStep) (tSucc (tVar 0)).
+Proof.
+  intros oldCode oldStep.
+  unfold betaShiftTailExistsTermAt, betaShiftTailThroughTermAt.
+  cbn [subst].
+  rewrite !subst_leTermAt.
+  rewrite !subst_betaTermTermAt.
+  simpl.
+  replace (oldCode + 2 + 2)
+    with (S (S (S (S oldCode)))) by lia.
+  replace (oldStep + 2 + 2)
+    with (S (S (S (S oldStep)))) by lia.
+  simpl.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftTailThroughTermAt :
+  forall r oldCode oldStep newCode newStep last,
+  rename r
+      (betaShiftTailThroughTermAt
+        oldCode oldStep newCode newStep last) =
+    betaShiftTailThroughTermAt
+      (r oldCode) (r oldStep)
+      (Term.rename r newCode)
+      (Term.rename r newStep)
+      (Term.rename r last).
+Proof.
+  intros r oldCode oldStep newCode newStep last.
+  unfold betaShiftTailThroughTermAt.
+  cbn [rename].
+  rewrite rename_leTermAt.
+  rewrite !rename_betaTermTermAt.
+  simpl.
+  rewrite term_rename_up_rename_succ.
+  fold (iterUpRenaming 2 r).
+  rewrite (iterUpRenaming_add 2 r oldCode).
+  rewrite (iterUpRenaming_add 2 r oldStep).
+  repeat rewrite term_rename_iterUpRenaming_rename_add.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftTailExistsTermAt :
+  forall r oldCode oldStep last,
+  rename r (betaShiftTailExistsTermAt oldCode oldStep last) =
+    betaShiftTailExistsTermAt
+      (r oldCode) (r oldStep) (Term.rename r last).
+Proof.
+  intros r oldCode oldStep last.
+  unfold betaShiftTailExistsTermAt.
+  cbn [rename].
+  rewrite rename_betaShiftTailThroughTermAt.
+  simpl.
+  fold (iterUpRenaming 2 r).
+  rewrite (iterUpRenaming_add 2 r oldCode).
+  rewrite (iterUpRenaming_add 2 r oldStep).
+  rewrite term_rename_iterUpRenaming_rename_add.
+  reflexivity.
+Qed.
+
+Lemma rename_betaShiftTailThroughConstAt :
+  forall r oldCode oldStep newCode newStep last,
+  rename r
+      (betaShiftTailThroughConstAt
+        oldCode oldStep newCode newStep last) =
+    betaShiftTailThroughConstAt
+      (r oldCode) (r oldStep) (r newCode) (r newStep) last.
+Proof.
+  intros r oldCode oldStep newCode newStep last.
+  unfold betaShiftTailThroughConstAt.
+  cbn [rename].
+  unfold leConstAt.
+  cbn [rename].
+  rewrite !rename_betaTermTermAt.
+  simpl.
+  rewrite Term.rename_numeral.
+  fold (iterUpRenaming 2 r).
+  rewrite (iterUpRenaming_add 2 r oldCode).
+  rewrite (iterUpRenaming_add 2 r oldStep).
+  rewrite (iterUpRenaming_add 2 r newCode).
+  rewrite (iterUpRenaming_add 2 r newStep).
+  reflexivity.
+Qed.
+
 Definition betaDiv2StepsThroughConstAt
     (code step last : nat) : formula :=
   pAll (pImp (leConstAt 0 last)
@@ -25547,9 +26480,7 @@ Lemma term_rename_up_up_up_succ_rename_three_succ : forall t,
     Term.rename S (Term.rename S (Term.rename S (Term.rename S t))).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 3 S t).
 Qed.
 
 
@@ -26712,9 +27643,7 @@ Lemma term_rename_up2_rename_two_succ : forall t,
     Term.rename S (Term.rename S (Term.rename S t)).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 2 S t).
 Qed.
 
 Lemma term_rename_up3_rename_three_succ : forall t,
@@ -26723,9 +27652,7 @@ Lemma term_rename_up3_rename_three_succ : forall t,
     Term.rename S (Term.rename S (Term.rename S (Term.rename S t))).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 3 S t).
 Qed.
 
 Lemma term_rename_up4_rename_four_succ : forall t,
@@ -26735,9 +27662,7 @@ Lemma term_rename_up4_rename_four_succ : forall t,
       (Term.rename S (Term.rename S (Term.rename S (Term.rename S t)))).
 Proof.
   intro t.
-  repeat rewrite Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
+  exact (term_rename_iterUpRenaming_iterTermRenameSucc 4 S t).
 Qed.
 
 
@@ -29342,58 +30267,15 @@ Lemma BProv_Ax_s_betaShiftTailExistsTermAt_of_through :
     (betaShiftTailExistsTermAt oldCode oldStep lastTerm).
 Proof.
   intros G oldCode oldStep newCode newStep lastTerm hthrough.
-  set (body := betaShiftTailThroughTermAt (oldCode + 2) (oldStep + 2)
-    (tVar 1) (tVar 0) (Term.rename (fun n => n + 2) lastTerm)).
+  set (body := betaShiftTailExistsTermAtBody
+    oldCode oldStep lastTerm).
   assert (hbody : BProv Ax_s G
       (subst (instTerm newStep)
         (subst (Term.upSubst (instTerm newCode)) body))).
   {
-    replace
-      (subst (instTerm newStep)
-        (subst (Term.upSubst (instTerm newCode)) body))
-      with (betaShiftTailThroughTermAt oldCode oldStep
-        newCode newStep lastTerm).
-    - exact hthrough.
-    - unfold body, betaShiftTailThroughTermAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt.
-      assert (hcodeIndex : oldCode + 2 + 2 =
-          S (S (S (S oldCode)))) by lia.
-      assert (hstepIndex : oldStep + 2 + 2 =
-          S (S (S (S oldStep)))) by lia.
-      rewrite hcodeIndex, hstepIndex.
-      simpl.
-      repeat rewrite
-        (term_subst_two_instTerm_rename_add_two
-          lastTerm newCode newStep).
-      repeat rewrite
-        (term_subst_instTerm_rename_succ lastTerm newStep).
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_succ.
-      repeat rewrite term_subst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_two_succ.
-      repeat rewrite term_subst_upSubst_instTerm_rename_add_two.
-      repeat rewrite term_subst_upSubst_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_three_succ.
-      repeat rewrite term_subst_up_up_instTerm_rename_two_var_zero.
-      repeat rewrite term_subst_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_four_succ.
-      repeat rewrite term_subst_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite term_subst_up_up_up_up_instTerm_rename_five_succ.
-      repeat rewrite Term.rename_comp.
-      repeat rewrite
-        (term_subst_instTerm_rename_succ lastTerm newStep).
-      simpl.
-      replace (Term.rename (fun n => S (S (S n))) newStep)
-        with (Term.rename (fun n => S (n + 2)) newStep)
-        by (apply Term.rename_ext; intro n; lia).
-      replace (Term.rename (fun n => S (S (S (S n)))) newCode)
-        with (Term.rename (fun n => S (S (n + 2))) newCode)
-        by (apply Term.rename_ext; intro n; lia).
-      replace (oldCode + 2) with (S (S oldCode)) by lia.
-      replace (oldStep + 2) with (S (S oldStep)) by lia.
-      reflexivity.
+    unfold body.
+    rewrite subst_two_instTerm_betaShiftTailExistsTermAtBody.
+    exact hthrough.
   }
   assert (hstepEx : BProv Ax_s G
       (subst (instTerm newCode) (pEx body))).
@@ -29407,7 +30289,8 @@ Proof.
     - reflexivity.
   }
   pose proof (BProv_exI Ax_s G (pEx body) newCode hstepEx) as hex.
-  unfold betaShiftTailExistsTermAt, body in *.
+  unfold betaShiftTailExistsTermAt, body,
+    betaShiftTailExistsTermAtBody in *.
   exact hex.
 Qed.
 
@@ -29473,95 +30356,24 @@ Lemma BProv_Ax_s_all_betaShiftTailExistsTermAt_of_successor :
       (tVar 0))).
 Proof.
   intros G oldCode oldStep hsucc.
+  replace (oldCode + 1) with (S oldCode) in * by lia.
+  replace (oldStep + 1) with (S oldStep) in * by lia.
   set (phi := betaShiftTailExistsTermAt
-    (oldCode + 1) (oldStep + 1) (tVar 0)).
+    (S oldCode) (S oldStep) (tVar 0)).
   pose proof (BProv_Ax_s_betaShiftTailExistsTermAt_zero_bound
     G oldCode oldStep) as hzeroRaw.
   assert (hzero : BProv Ax_s G (subst substZero phi)).
   {
-    replace (subst substZero phi)
-      with (betaShiftTailExistsTermAt oldCode oldStep tZero).
-    - exact hzeroRaw.
-    - unfold phi, betaShiftTailExistsTermAt,
-        betaShiftTailThroughTermAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-        substZero.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_rename_up_up_succ_rename_two_succ.
-      repeat rewrite Term.rename_comp.
-      replace (oldCode + 1 + 2) with (S (S (S oldCode))) by lia.
-      replace (oldStep + 1 + 2) with (S (S (S oldStep))) by lia.
-      simpl.
-      assert (hcodeSlot : Term.upSubst
-          (fun n => match n with | 0 => tZero | S k => tVar k end)
-          (oldCode + 2) =
-          tVar (S oldCode)).
-      {
-        replace (oldCode + 2) with (S (S oldCode)) by lia.
-        reflexivity.
-      }
-      assert (hstepSlot : Term.upSubst
-          (fun n => match n with | 0 => tZero | S k => tVar k end)
-          (oldStep + 2) =
-          tVar (S oldStep)).
-      {
-        replace (oldStep + 2) with (S (S oldStep)) by lia.
-        reflexivity.
-      }
-      rewrite hcodeSlot, hstepSlot.
-      replace (oldCode + 2 + 2) with (S (S (S (S oldCode)))) by lia.
-      replace (oldStep + 2 + 2) with (S (S (S (S oldStep)))) by lia.
-      simpl.
-      reflexivity.
+    unfold phi.
+    rewrite substZero_betaShiftTailExistsTermAt_succ.
+    exact hzeroRaw.
   }
   assert (hsuccBody : BProv Ax_s
       (phi :: map (rename S) G) (subst substSuccVar phi)).
   {
     unfold phi.
-    replace
-      (subst substSuccVar
-        (betaShiftTailExistsTermAt (oldCode + 1) (oldStep + 1)
-          (tVar 0)))
-      with (betaShiftTailExistsTermAt (oldCode + 1) (oldStep + 1)
-        (tSucc (tVar 0))).
-    - exact hsucc.
-    - unfold betaShiftTailExistsTermAt,
-        betaShiftTailThroughTermAt, betaTermTermAt,
-        remTermTermAt, ltTermAt, betaModTermTerm, leTermAt,
-        substSuccVar.
-      simpl.
-      repeat rewrite Term.subst_rename_succ_up.
-      repeat rewrite term_rename_up_succ_rename_succ.
-      repeat rewrite term_rename_up_up_succ_rename_two_succ.
-      repeat rewrite Term.rename_comp.
-      assert (hcodeSlot :
-          Term.upSubst (Term.upSubst (Term.upSubst (Term.upSubst
-            (fun n => match n with
-              | 0 => tSucc (tVar 0)
-              | S k => tVar (S k)
-              end)))) (oldCode + 1 + 2 + 2) =
-          tVar (oldCode + 1 + 2 + 2)).
-      {
-        replace (oldCode + 1 + 2 + 2)
-          with (S (S (S (S (S oldCode))))) by lia.
-        reflexivity.
-      }
-      assert (hstepSlot :
-          Term.upSubst (Term.upSubst (Term.upSubst (Term.upSubst
-            (fun n => match n with
-              | 0 => tSucc (tVar 0)
-              | S k => tVar (S k)
-              end)))) (oldStep + 1 + 2 + 2) =
-          tVar (oldStep + 1 + 2 + 2)).
-      {
-        replace (oldStep + 1 + 2 + 2)
-          with (S (S (S (S (S oldStep))))) by lia.
-        reflexivity.
-      }
-      rewrite hcodeSlot, hstepSlot.
-      reflexivity.
+    rewrite substSuccVar_betaShiftTailExistsTermAt_succ.
+    exact hsucc.
   }
   assert (hsuccImp : BProv Ax_s (map (rename S) G)
       (pImp phi (subst substSuccVar phi))).
@@ -35084,18 +35896,6 @@ Proof.
   reflexivity.
 Qed.
 
-(* Helper (not in Lean; the Lean proof folds this into one simp with
-   Term.rename_comp): renaming under one binder commutes with a
-   successor-renamed term argument. *)
-Lemma term_rename_up_rename_succ_gen : forall (r : nat -> nat) t,
-  Term.rename (up r) (Term.rename S t) = Term.rename S (Term.rename r t).
-Proof.
-  intros r t.
-  rewrite Term.rename_comp, Term.rename_comp.
-  apply Term.rename_ext.
-  intro n. reflexivity.
-Qed.
-
 (* Lean: rename_hfSomeDistinguishesTermAt_succ *)
 Lemma rename_hfSomeDistinguishesTermAt_succ : forall highCode low,
   rename S (hfSomeDistinguishesTermAt highCode low) =
@@ -40460,27 +41260,21 @@ Lemma up_add1 : forall (r : nat -> nat) n,
   up r (n + 1) = r n + 1.
 Proof.
   intros r n.
-  replace (n + 1) with (S n) by lia.
-  replace (r n + 1) with (S (r n)) by lia.
-  reflexivity.
+  exact (PA.Formula.iterUpRenaming_add 1 r n).
 Qed.
 
 Lemma up_add2 : forall (r : nat -> nat) n,
   up (up r) (n + 2) = r n + 2.
 Proof.
   intros r n.
-  replace (n + 2) with (S (S n)) by lia.
-  replace (r n + 2) with (S (S (r n))) by lia.
-  reflexivity.
+  exact (PA.Formula.iterUpRenaming_add 2 r n).
 Qed.
 
 Lemma up_add3 : forall (r : nat -> nat) n,
   up (up (up r)) (n + 3) = r n + 3.
 Proof.
   intros r n.
-  replace (n + 3) with (S (S (S n))) by lia.
-  replace (r n + 3) with (S (S (S (r n)))) by lia.
-  reflexivity.
+  exact (PA.Formula.iterUpRenaming_add 3 r n).
 Qed.
 
 (* ===================================================================== *)

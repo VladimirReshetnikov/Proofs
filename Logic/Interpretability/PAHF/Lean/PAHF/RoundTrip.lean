@@ -2560,10 +2560,7 @@ theorem BProv_Ax_s_ordinalCodeGraphBodyExistsTermAt_succ_of_sum_capacity
     have hraw := BProv_context_cons (B := Ax_s)
       (a := oldBody) hcodingRen
     simpa [D, step1, raw1, oldCapacity1, newCoded1,
-      betaCodingStepTermAt, commonMultipleThroughTermAt,
-      dvdTermTermAt, ltTermAt, leTermAt,
-      rename, Term.rename, SetTheory.up, Term.rename_comp,
-      Function.comp_def, Nat.add_assoc] using hraw
+      rename_betaCodingStepTermAt, Term.rename] using hraw
   have hadjoinRen : BProv Ax_s (G.map (rename Nat.succ))
       (rename Nat.succ
         (hfAdjoinGraphTermAt newCoded oldCoded oldCoded)) :=
@@ -2641,16 +2638,6 @@ theorem BProv_Ax_s_ordinalCodeGraphBodyExistsTermAt_succ_of_sum_capacity
     rename_ordinalCodeGraphBodyExistsTermAt,
     Term.rename, Term.rename_comp, Function.comp_def,
     Nat.add_assoc] using hnewExists
-
-theorem rename_betaCodingStepTermAt
-    (r : Nat → Nat) (bound sourceCode step : Term) :
-    rename r (betaCodingStepTermAt bound sourceCode step) =
-      betaCodingStepTermAt
-        (Term.rename r bound) (Term.rename r sourceCode)
-        (Term.rename r step) := by
-  simp [betaCodingStepTermAt, commonMultipleThroughTermAt,
-    dvdTermTermAt, ltTermAt, leTermAt,
-    rename, Term.rename, SetTheory.up, Term.rename_comp]
 
 theorem rename_ordinalCodeTraceCapacityTermAt
     (r : Nat → Nat) (raw coded capacity : Term) :
@@ -2784,17 +2771,6 @@ theorem BProv_Ax_s_ordinalCodeTraceCapacityTermAt_succ
       Ax_s_sentences himp
   simpa [ordinalCodeTraceCapacityTermAt,
     body, antecedent, consequent, Term.rename] using hall
-
-theorem subst_betaCodingStepTermAt
-    (sigma : Nat → Term) (bound sourceCode step : Term) :
-    subst sigma (betaCodingStepTermAt bound sourceCode step) =
-      betaCodingStepTermAt
-        (Term.subst sigma bound) (Term.subst sigma sourceCode)
-        (Term.subst sigma step) := by
-  simp [betaCodingStepTermAt, commonMultipleThroughTermAt,
-    dvdTermTermAt, ltTermAt, leTermAt,
-    subst, Term.subst, Term.upSubst,
-    Term.subst_rename_succ_up]
 
 theorem subst_ordinalCodeTraceCapacityTermAt
     (sigma : Nat → Term) (raw coded capacity : Term) :
@@ -4175,13 +4151,6 @@ term-graph induction. -/
 theorem ordinalCodeGraphFunctional : OrdinalCodeGraphFunctional :=
   OrdinalCodeGraphFunctional_of_traceAgreement
     ordinalCodeTraceAgreementProof
-
-theorem rename_leTermAt
-    (r : Nat → Nat) (a b : Term) :
-    rename r (leTermAt a b) =
-      leTermAt (Term.rename r a) (Term.rename r b) := by
-  simp [leTermAt, rename, Term.rename, Term.rename_comp,
-    SetTheory.up]
 
 theorem rename_hfAdjoinGraphTermAt
     (r : Nat → Nat) (newCode oldCode elemCode : Term) :

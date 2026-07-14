@@ -1,5 +1,13 @@
 # Computability
 
+[`CombinatoryLogic/`](CombinatoryLogic/) contains independent Lean and
+Rocq/Coq proofs that pure SK, SKI, and the one-combinator Iota calculus
+simulate closed weak untyped lambda calculus.  The checked chain includes
+scope-safe substitution, occurs-aware bracket abstraction, positive
+context-closed simulations, compiler-size bounds, and a faithful injective
+operational embedding of Iota back into closed lambda terms.  The exact
+Turing-completeness and non-full-abstraction boundaries are explicit.
+
 [`BusyBeaver/`](BusyBeaver/) contains the repository-authored Busy Beaver
 machine model, domination theorems, exact small-state score certificates, and
 bridges to the vendored time certificates under [`../lib/Coq-BB5/`](../lib/Coq-BB5/).

@@ -14,26 +14,14 @@ From PAHF Require Import PAHF PAHFProofCalculus
 Import ListNotations.
 Import PA PA.Term PA.Formula.
 
-Definition betaCodingStepTermAt
-    (bound sourceCode step : term) : formula :=
-  pAnd
-    (commonMultipleThroughTermAt bound step)
-    (leTermAt (tSucc sourceCode) step).
+(* Compatibility aliases: the canonical definitions now live in [PA.Formula]. *)
+Definition betaCodingStepTermAt := PA.Formula.betaCodingStepTermAt.
 
-Definition betaCodingStepExistsTermAt
-    (bound sourceCode : term) : formula :=
-  pEx
-    (betaCodingStepTermAt
-      (Term.rename S bound)
-      (Term.rename S sourceCode)
-      (tVar 0)).
+Definition betaCodingStepExistsTermAt :=
+  PA.Formula.betaCodingStepExistsTermAt.
 
-Definition betaCodingStepExistsTermAtBody
-    (bound sourceCode : term) : formula :=
-  betaCodingStepTermAt
-    (Term.rename S bound)
-    (Term.rename S sourceCode)
-    (tVar 0).
+Definition betaCodingStepExistsTermAtBody :=
+  PA.Formula.betaCodingStepExistsTermAtBody.
 
 Definition betaCodeExtensionExistsTermAtBody
     (oldCode step target newOut : term) : formula :=
@@ -49,11 +37,7 @@ Lemma subst_leTermAt : forall sigma a b,
     leTermAt (Term.subst sigma a) (Term.subst sigma b).
 Proof.
   intros sigma a b.
-  unfold leTermAt.
-  cbn [subst].
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_leTermAt sigma a b).
 Qed.
 
 Lemma rename_leTermAt : forall r a b,
@@ -61,10 +45,7 @@ Lemma rename_leTermAt : forall r a b,
     leTermAt (Term.rename r a) (Term.rename r b).
 Proof.
   intros r a b.
-  rewrite <- subst_var_rename.
-  rewrite subst_leTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_leTermAt r a b).
 Qed.
 
 Lemma subst_dvdTermTermAt : forall sigma divisor value,
@@ -73,11 +54,7 @@ Lemma subst_dvdTermTermAt : forall sigma divisor value,
       (Term.subst sigma divisor) (Term.subst sigma value).
 Proof.
   intros sigma divisor value.
-  unfold dvdTermTermAt.
-  cbn [subst].
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_dvdTermTermAt sigma divisor value).
 Qed.
 
 Lemma rename_dvdTermTermAt : forall r divisor value,
@@ -86,10 +63,7 @@ Lemma rename_dvdTermTermAt : forall r divisor value,
       (Term.rename r divisor) (Term.rename r value).
 Proof.
   intros r divisor value.
-  rewrite <- subst_var_rename.
-  rewrite subst_dvdTermTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_dvdTermTermAt r divisor value).
 Qed.
 
 Lemma term_rename_betaModTermTerm : forall r step index,
@@ -97,9 +71,7 @@ Lemma term_rename_betaModTermTerm : forall r step index,
     betaModTermTerm (Term.rename r step) (Term.rename r index).
 Proof.
   intros r step index.
-  unfold betaModTermTerm.
-  simpl.
-  reflexivity.
+  exact (PA.Formula.term_rename_betaModTermTerm r step index).
 Qed.
 
 Lemma subst_commonMultipleThroughTermAt : forall sigma bound multiple,
@@ -108,13 +80,8 @@ Lemma subst_commonMultipleThroughTermAt : forall sigma bound multiple,
       (Term.subst sigma bound) (Term.subst sigma multiple).
 Proof.
   intros sigma bound multiple.
-  unfold commonMultipleThroughTermAt.
-  cbn [subst].
-  rewrite subst_ltTermAt.
-  rewrite subst_dvdTermTermAt.
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_commonMultipleThroughTermAt
+    sigma bound multiple).
 Qed.
 
 Lemma rename_commonMultipleThroughTermAt : forall r bound multiple,
@@ -123,10 +90,7 @@ Lemma rename_commonMultipleThroughTermAt : forall r bound multiple,
       (Term.rename r bound) (Term.rename r multiple).
 Proof.
   intros r bound multiple.
-  rewrite <- subst_var_rename.
-  rewrite subst_commonMultipleThroughTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_commonMultipleThroughTermAt r bound multiple).
 Qed.
 
 Lemma subst_positiveCommonMultipleThroughTermAt :
@@ -136,11 +100,19 @@ Lemma subst_positiveCommonMultipleThroughTermAt :
       (Term.subst sigma bound) (Term.subst sigma multiple).
 Proof.
   intros sigma bound multiple.
-  unfold positiveCommonMultipleThroughTermAt.
-  cbn [subst].
-  rewrite subst_ltTermAt.
-  rewrite subst_commonMultipleThroughTermAt.
-  reflexivity.
+  exact (PA.Formula.subst_positiveCommonMultipleThroughTermAt
+    sigma bound multiple).
+Qed.
+
+Lemma rename_positiveCommonMultipleThroughTermAt :
+  forall r bound multiple,
+  rename r (positiveCommonMultipleThroughTermAt bound multiple) =
+    positiveCommonMultipleThroughTermAt
+      (Term.rename r bound) (Term.rename r multiple).
+Proof.
+  intros r bound multiple.
+  exact (PA.Formula.rename_positiveCommonMultipleThroughTermAt
+    r bound multiple).
 Qed.
 
 Lemma subst_betaCodingStepTermAt : forall sigma bound sourceCode step,
@@ -151,11 +123,8 @@ Lemma subst_betaCodingStepTermAt : forall sigma bound sourceCode step,
       (Term.subst sigma step).
 Proof.
   intros sigma bound sourceCode step.
-  unfold betaCodingStepTermAt.
-  cbn [subst].
-  rewrite subst_commonMultipleThroughTermAt.
-  rewrite subst_leTermAt.
-  reflexivity.
+  exact (PA.Formula.subst_betaCodingStepTermAt
+    sigma bound sourceCode step).
 Qed.
 
 Lemma rename_betaCodingStepTermAt : forall r bound sourceCode step,
@@ -166,10 +135,8 @@ Lemma rename_betaCodingStepTermAt : forall r bound sourceCode step,
       (Term.rename r step).
 Proof.
   intros r bound sourceCode step.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaCodingStepTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaCodingStepTermAt
+    r bound sourceCode step).
 Qed.
 
 Definition ordinalCodeGraphBodyExistsTermAt
@@ -695,13 +662,8 @@ Lemma subst_betaPrefixDividesTermAt : forall sigma step bound product,
       (Term.subst sigma product).
 Proof.
   intros sigma step bound product.
-  unfold betaPrefixDividesTermAt.
-  cbn [subst].
-  rewrite subst_ltTermAt.
-  rewrite subst_dvdTermTermAt.
-  simpl.
-  repeat rewrite Term.subst_rename_succ_up.
-  reflexivity.
+  exact (PA.Formula.subst_betaPrefixDividesTermAt
+    sigma step bound product).
 Qed.
 
 Lemma rename_betaPrefixDividesTermAt : forall r step bound product,
@@ -712,10 +674,8 @@ Lemma rename_betaPrefixDividesTermAt : forall r step bound product,
       (Term.rename r product).
 Proof.
   intros r step bound product.
-  rewrite <- subst_var_rename.
-  rewrite subst_betaPrefixDividesTermAt.
-  repeat rewrite term_subst_var_rename.
-  reflexivity.
+  exact (PA.Formula.rename_betaPrefixDividesTermAt
+    r step bound product).
 Qed.
 
 Lemma BProv_Ax_s_betaPrefixAgreementTermAt_crtExtend :
@@ -1166,9 +1126,8 @@ Lemma rename_succ_twice_betaPrefixDividesTermAt :
       (Term.rename (fun n => n + 2) product).
 Proof.
   intros step bound product.
-  rewrite !rename_betaPrefixDividesTermAt.
-  repeat rewrite term_rename_succ_twice_add_two.
-  reflexivity.
+  exact (PA.Formula.rename_succ_twice_betaPrefixDividesTermAt
+    step bound product).
 Qed.
 
 Lemma rename_succ_twice_betaCodeExtensionExistsTermAt :

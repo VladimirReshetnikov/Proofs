@@ -615,50 +615,8 @@ Lemma rename_S_betaShiftTailThroughTermAt :
     (Term.rename S lastTerm).
 Proof.
   intros oldCode oldStep newCode newStep lastTerm.
-  unfold betaShiftTailThroughTermAt, betaTermTermAt,
-    remTermTermAt, ltTermAt, betaModTermTerm, leTermAt.
-  simpl.
-  repeat rewrite term_rename_up_succ_rename_succ.
-  repeat rewrite Term.rename_comp.
-  assert (hup2Add2 : forall n,
-      Fol.up (Fol.up S) (n + 2) = S (n + 2)).
-  {
-    intro n.
-    replace (n + 2) with (S (S n)) by lia.
-    reflexivity.
-  }
-  repeat rewrite hup2Add2.
-  assert (hlast :
-      Term.rename (fun n => Fol.up (Fol.up S) (S (S n))) lastTerm =
-      Term.rename (fun n => S (S (S n))) lastTerm).
-  {
-    apply Term.rename_ext. intro n. reflexivity.
-  }
-  rewrite hlast.
-  assert (hstep :
-      Term.rename
-        (fun n => Fol.up (Fol.up (Fol.up S)) (S (n + 2))) newStep =
-      Term.rename (fun n => S (S n + 2)) newStep).
-  {
-    apply Term.rename_ext. intro n.
-    replace (n + 2) with (S (S n)) by lia.
-    replace (S n + 2) with (S (S (S n))) by lia.
-    reflexivity.
-  }
-  rewrite hstep.
-  assert (hcode :
-      Term.rename
-        (fun n => Fol.up (Fol.up (Fol.up (Fol.up S)))
-          (S (S (n + 2)))) newCode =
-      Term.rename (fun n => S (S (S n + 2))) newCode).
-  {
-    apply Term.rename_ext. intro n.
-    replace (n + 2) with (S (S n)) by lia.
-    replace (S n + 2) with (S (S (S n))) by lia.
-    reflexivity.
-  }
-  rewrite hcode.
-  reflexivity.
+  exact (PA.Formula.rename_betaShiftTailThroughTermAt
+    S oldCode oldStep newCode newStep lastTerm).
 Qed.
 
 Lemma rename_S_betaDiv2StepWitnessTermAt :
@@ -1107,15 +1065,7 @@ Proof.
   {
     unfold betaDiv2StepWitnessTermAt in hwitness.
     unfold body.
-    assert (hrename3 : forall t,
-        Term.rename (fun n => n + 3) t =
-        Term.rename S (Term.rename S (Term.rename S t))).
-    {
-      intro t.
-      repeat rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename3 in hwitness.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 3) in hwitness.
     exact hwitness.
   }
   apply (BProv_three_exE_of_sentences
@@ -1330,14 +1280,7 @@ Proof.
   {
     unfold betaDiv2BitTermAt in hbit.
     unfold body.
-    assert (hrename2 : forall t,
-        Term.rename (fun n => n + 2) t =
-        Term.rename S (Term.rename S t)).
-    {
-      intro t. rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename2 in hbit.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 2) in hbit.
     exact hbit.
   }
   apply (BProv_two_exE_of_sentences
@@ -1779,14 +1722,7 @@ Proof.
   {
     unfold betaDiv2StepWitnessTermAt in hwitnessFull.
     unfold body.
-    assert (hrename3 : forall t,
-        Term.rename (fun n => n + 3) t =
-        Term.rename S (Term.rename S (Term.rename S t))).
-    {
-      intro t. repeat rewrite Term.rename_comp.
-      apply Term.rename_ext. intro n. lia.
-    }
-    repeat rewrite hrename3 in hwitnessFull.
+    repeat rewrite (term_rename_add_eq_iterTermRenameSucc 3) in hwitnessFull.
     exact hwitnessFull.
   }
   apply (BProv_three_exE_of_sentences
