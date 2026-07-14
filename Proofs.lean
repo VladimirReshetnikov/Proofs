@@ -14,6 +14,7 @@ import PowerTowers
 import A158415
 import A290268
 import FirstOrder
+import ArbitraryLanguageCompactness
 import QuantifierCommutation
 import PAHF
 import NoFiniteModel

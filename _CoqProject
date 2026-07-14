@@ -50,6 +50,7 @@ SetTheory/ZF/Coq/Audit.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 Logic/FirstOrder/Coq/Completeness.v
+Logic/FirstOrder/Coq/Compactness.v
 SetTheory/ClosureAxiomatization/Coq/Equivalence.v
 SetTheory/ClosureAxiomatization/Coq/Audit.v
 Logic/Interpretability/PAHF/Coq/PAHF.v

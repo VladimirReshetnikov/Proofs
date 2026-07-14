@@ -42,6 +42,10 @@ name = "FirstOrder"
 srcDir = "Logic/FirstOrder/Lean"
 
 [[lean_lib]]
+name = "ArbitraryLanguageCompactness"
+srcDir = "Logic/FirstOrder/Compactness/Lean"
+
+[[lean_lib]]
 name = "QuantifierCommutation"
 srcDir = "Logic/QuantifierCommutation/Lean"
 
