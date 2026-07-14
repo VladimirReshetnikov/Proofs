@@ -524,8 +524,6 @@ theorem RFind_correct (fNat : Nat → Nat) (f : Term)
       rw [hindex]
       exact this)
 
-/- TEMPORARY ELABORATION BISECT: square-root/pairing
-
 /-! ## Integer square root -/
 
 /-- At `(n,k)`, return zero exactly when `(k+1)^2 > n`. -/
@@ -558,8 +556,11 @@ theorem sqrt_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
     split <;> simp_all [zero_correct, one_correct]
   · simp [Nat.lt_succ_sqrt]
   · intro i hi
-    simp only [ite_eq_right_iff, one_ne_zero, imp_false, not_lt]
-    exact Nat.le_of_lt_succ (Nat.lt_succ_iff.mpr (Nat.le_sqrt.mp (Nat.le_of_lt hi)))
+    have hsquare : (i + 1) * (i + 1) ≤ n :=
+      Nat.le_sqrt.mp (Nat.succ_le_of_lt hi)
+    simp [not_lt.mpr hsquare]
+
+/- TEMPORARY ELABORATION BISECT: pairing/unpairing
 
 /-! ## Mathlib-compatible natural pairing and unpairing -/
 
