@@ -633,8 +633,6 @@ theorem natUnpairLeft_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
   · simpa [hlt, pow_two] using hdifference
   · simpa [hlt] using hs
 
-/- TEMPORARY ELABORATION BISECT: right unpairing
-
 /-- Right projection of Mathlib's `Nat.unpair`. -/
 def NatUnpairRightPoly : Polynomial 1 :=
   let root := Sqrt ⬝' &0
@@ -671,7 +669,5 @@ theorem natUnpairRight_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
   by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
   · simpa [hlt] using hs
   · simpa [hlt, pow_two] using sub_correct _ _ _ _ hdifference hs
-
--/
 
 end CombinatoryLogic.SKI.Term
