@@ -560,8 +560,6 @@ theorem sqrt_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
       Nat.le_sqrt.mp (Nat.succ_le_of_lt hi)
     simp [not_lt.mpr hsquare]
 
-/- TEMPORARY ELABORATION BISECT: pairing/unpairing
-
 /-! ## Mathlib-compatible natural pairing and unpairing -/
 
 /-- Mathlib's square pairing function on Church numerals. -/
@@ -586,10 +584,14 @@ theorem natPair_correct (a b : Nat) (ca cb : Term)
   have hcond := neg_correct _ _ (le_correct b a cb ca hb ha)
   apply isChurch_trans _ (cond_correct _ _ _ _ hcond)
   by_cases hab : a < b
-  · simp only [hab, if_true]
+  · have hba : ¬ b ≤ a := Nat.not_le_of_lt hab
+    simp [hab, hba]
     exact add_correct _ _ _ _ (mul_correct hb hb) ha
-  · simp only [hab, if_false]
+  · have hba : b ≤ a := Nat.le_of_not_gt hab
+    simp [hab, hba]
     exact add_correct _ _ _ _ (add_correct _ _ _ _ (mul_correct ha ha) ha) hb
+
+/- TEMPORARY ELABORATION BISECT: unpairing
 
 /-- Left projection of Mathlib's `Nat.unpair`. -/
 def NatUnpairLeftPoly : Polynomial 1 :=
