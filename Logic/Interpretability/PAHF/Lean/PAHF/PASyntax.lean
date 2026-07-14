@@ -30255,24 +30255,22 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_zero
             (Term.rename Nat.succ (Term.rename Nat.succ idxTerm))
         have hbody : BProv Ax_s C body :=
           BProv_ass (B := Ax_s) (G := C) (by simp [C])
-        have hzeroRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hzeroBeta
+        have lift3 {phi : Formula} (hphi : BProv Ax_s G phi) :
+            BProv Ax_s C
+              (rename Nat.succ (rename Nat.succ (rename Nat.succ phi))) :=
+          BProv_lift_three_contexts_of_sentences
+            (B := Ax_s) (G := G) (outer := ex (ex body))
+            (middle := ex body) (inner := body) Ax_s_sentences hphi
         have hzeroC : BProv Ax_s C
             (betaTermAtTermIdx Term.zero (code+3) (step+3) idx3) := by
-          simpa [C, G2, G1, idx3, betaTermAtTermIdx, betaTermAt,
+          simpa [idx3, betaTermAtTermIdx, betaTermAt,
             remTermAt, ltTermAt, betaAt, remAt, ltAt, eqConstAt,
             betaModTerm, rename, Term.rename, SetTheory.up,
-            iterRenameContextSucc, iterRenameSucc,
-            term_rename_up_succ_rename_succ, List.map_map,
-            Function.comp_def] using
-            BProv_context_three hzeroRen3
-        have hidxRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hidxEq
+            term_rename_up_succ_rename_succ, Function.comp_def] using
+            lift3 hzeroBeta
         have hidxC : BProv Ax_s C (eq idx3 (Term.var (idx+3))) := by
-          simpa [C, G2, G1, idx3, iterRenameContextSucc, iterRenameSucc,
-            rename, Term.rename, List.map_map,
-            Function.comp_def] using
-            BProv_context_three hidxRen3
+          simpa [idx3, rename, Term.rename, Function.comp_def] using
+            lift3 hidxEq
         have hnext : BProv Ax_s C
             (betaTermAtTermIdx Term.zero (code+3) (step+3)
               (Term.succ idx3)) :=
@@ -30339,24 +30337,23 @@ theorem BProv_Ax_s_betaDiv2StepWitnessAt_next_termIdx_eqConst_div_two
             (Term.rename Nat.succ (Term.rename Nat.succ idxTerm))
         have hbody : BProv Ax_s C body :=
           BProv_ass (B := Ax_s) (G := C) (by simp [C])
-        have hcurRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hcurTerm
+        have lift3 {phi : Formula} (hphi : BProv Ax_s G phi) :
+            BProv Ax_s C
+              (rename Nat.succ (rename Nat.succ (rename Nat.succ phi))) :=
+          BProv_lift_three_contexts_of_sentences
+            (B := Ax_s) (G := G) (outer := ex (ex body))
+            (middle := ex body) (inner := body) Ax_s_sentences hphi
         have hcurC : BProv Ax_s C
             (betaTermAtTermIdx (Term.numeral cur) (code+3) (step+3) idx3) := by
-          simpa [C, G2, G1, idx3, betaTermAtTermIdx, betaTermAt,
+          simpa [idx3, betaTermAtTermIdx, betaTermAt,
             remTermAt, ltTermAt, betaAt, remAt, ltAt, eqConstAt,
-            betaModTerm, iterRenameContextSucc, iterRenameSucc,
+            betaModTerm,
             rename, Term.rename, SetTheory.up, Term.numeral,
-            term_rename_up_succ_rename_succ, List.map_map,
-            Function.comp_def] using
-            BProv_context_three hcurRen3
-        have hidxRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hidxEq
+            term_rename_up_succ_rename_succ, Function.comp_def] using
+            lift3 hcurTerm
         have hidxC : BProv Ax_s C (eq idx3 (Term.var (idx+3))) := by
-          simpa [C, G2, G1, idx3, iterRenameContextSucc, iterRenameSucc,
-            rename, Term.rename, List.map_map,
-            Function.comp_def] using
-            BProv_context_three hidxRen3
+          simpa [idx3, rename, Term.rename, Function.comp_def] using
+            lift3 hidxEq
         have hnext : BProv Ax_s C
             (betaTermAtTermIdx (Term.numeral (cur / 2)) (code+3) (step+3)
               (Term.succ idx3)) :=
@@ -33669,27 +33666,25 @@ theorem BProv_Ax_s_betaPrependPrefixTermAt_stepWitness_succ_of_sourceWitness
         have hdiv : BProv Ax_s C
             (div2StepTermAt (Term.var 2) (Term.var 1) (Term.var 0)) :=
           BProv_andE2 htail
-        have hprefixRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hprefix
+        have lift3 {phi : Formula} (hphi : BProv Ax_s G phi) :
+            BProv Ax_s C
+              (rename Nat.succ (rename Nat.succ (rename Nat.succ phi))) :=
+          BProv_lift_three_contexts_of_sentences
+            (B := Ax_s) (G := G) (outer := ex (ex body))
+            (middle := ex body) (inner := body) Ax_s_sentences hphi
         have hprefixC : BProv Ax_s C
             (betaPrependPrefixTermAt sourceCode3 sourceStep3 head3
               targetCode3 targetStep3 (Term.succ (Term.succ last3))) := by
-          simpa [C, G2, G1, sourceCode3, sourceStep3, head3,
+          simpa [sourceCode3, sourceStep3, head3,
             targetCode3, targetStep3, last3,
             rename_betaPrependPrefixTermAt,
-            iterRenameContextSucc, iterRenameSucc,
-            Term.rename, Term.rename_comp, List.map_map,
-            Function.comp_def] using
-            BProv_context_three hprefixRen3
-        have hleRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hle
+            Term.rename, Term.rename_comp, Function.comp_def] using
+            lift3 hprefix
         have hleC : BProv Ax_s C (leTermAt idx3 last3) := by
-          simpa [C, G2, G1, idx3, last3, leTermAt,
-            iterRenameContextSucc, iterRenameSucc,
+          simpa [idx3, last3, leTermAt,
             rename, Term.rename, SetTheory.up, Term.rename_comp,
-            term_rename_up_succ_rename_succ, List.map_map,
-            Function.comp_def] using
-            BProv_context_three hleRen3
+            term_rename_up_succ_rename_succ, Function.comp_def] using
+            lift3 hle
         have htarget : BProv Ax_s C
             (betaDiv2StepWitnessTermAt targetCode3 targetStep3
               (Term.succ idx3)) :=
@@ -34645,26 +34640,28 @@ theorem BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_oldWitness
         have hdiv : BProv Ax_s C
             (div2StepTermAt (Term.var 2) (Term.var 1) (Term.var 0)) :=
           BProv_andE2 htailBody
-        have htailRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 htail
+        have lift3 {phi : Formula} (hphi : BProv Ax_s G phi) :
+            BProv Ax_s C
+              (rename Nat.succ (rename Nat.succ (rename Nat.succ phi))) :=
+          BProv_lift_three_contexts_of_sentences
+            (B := Ax_s) (G := G) (outer := ex (ex body))
+            (middle := ex body) (inner := body) Ax_s_sentences hphi
         have htailC : BProv Ax_s C
             (betaShiftTailThroughTermAt (oldCode+3) (oldStep+3)
               newCode3 newStep3 (Term.succ last3)) := by
-          simpa [C, G2, G1, newCode3, newStep3, last3,
+          simpa [newCode3, newStep3, last3,
             betaShiftTailThroughTermAt, betaTermTermAt, remTermTermAt,
             ltTermAt, betaModTermTerm, leTermAt,
-            iterRenameContextSucc, iterRenameSucc, rename, Term.rename,
+            rename, Term.rename,
             SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
-            List.map_map, Function.comp_def] using
-            BProv_context_three htailRen3
-        have hleRen3 :=
-          BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hle
+            Function.comp_def] using
+            lift3 htail
         have hleC : BProv Ax_s C (leTermAt idx3 last3) := by
-          simpa [C, G2, G1, idx3, last3, leTermAt,
-            iterRenameContextSucc, iterRenameSucc, rename, Term.rename,
+          simpa [idx3, last3, leTermAt,
+            rename, Term.rename,
             SetTheory.up, Term.rename_comp, term_rename_up_succ_rename_succ,
-            List.map_map, Function.comp_def] using
-            BProv_context_three hleRen3
+            Function.comp_def] using
+            lift3 hle
         have hshifted : BProv Ax_s C
             (betaDiv2StepWitnessTermAt newCode3 newStep3 idx3) :=
           BProv_Ax_s_betaShiftTailThroughTermAt_stepWitness_of_components

@@ -9322,6 +9322,24 @@ Proof.
     G outer phi hphi).
 Qed.
 
+(* Lift through three successively opened assumptions. *)
+Lemma BProv_lift_three_contexts_of_sentences :
+  forall (B : formula -> Prop), Sentences B ->
+  forall G outer middle inner phi,
+  BProv B G phi ->
+  BProv B
+    (inner :: map (rename S)
+      (middle :: map (rename S) (outer :: map (rename S) G)))
+    (rename S (rename S (rename S phi))).
+Proof.
+  intros B hB G outer middle inner phi hphi.
+  apply (BProv_rename_succ_context_cons_of_sentences B hB
+    (middle :: map (rename S) (outer :: map (rename S) G))
+    inner (rename S (rename S phi))).
+  exact (BProv_lift_two_contexts_of_sentences
+    B hB G outer middle phi hphi).
+Qed.
+
 (* Lift through the context opened by a paired existential witness. *)
 Lemma BProv_lift_two_opened_of_sentences :
   forall (B : formula -> Prop), Sentences B ->
@@ -36807,29 +36825,21 @@ Proof.
             (betaTermAtTermIdx tZero (S (S (S code))) (S (S (S step)))
               (Term.rename S (Term.rename S (Term.rename S idxTerm))))).
         {
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-            _ hzeroBeta S) as h1.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) G) _ h1 S) as h2.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) (map (rename S) G)) _ h2 S) as h3.
-          repeat rewrite rename_S_betaTermAtTermIdx in h3.
-          apply BProv_context_three.
-          exact h3.
+          pose proof (BProv_lift_three_contexts_of_sentences
+            Ax_s sentence_ax_s G (pEx (pEx body)) (pEx body) body
+            _ hzeroBeta) as hlift.
+          repeat rewrite rename_S_betaTermAtTermIdx in hlift.
+          unfold G2, G1. exact hlift.
         }
         assert (hidxC : BProv Ax_s (body :: map (rename S) G2)
             (pEq (Term.rename S (Term.rename S (Term.rename S idxTerm)))
               (tVar (S (S (S idx)))))).
         {
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-            _ hidxEq S) as h1.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) G) _ h1 S) as h2.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) (map (rename S) G)) _ h2 S) as h3.
-          simpl in h3.
-          apply BProv_context_three.
-          exact h3.
+          pose proof (BProv_lift_three_contexts_of_sentences
+            Ax_s sentence_ax_s G (pEx (pEx body)) (pEx body) body
+            _ hidxEq) as hlift.
+          simpl in hlift.
+          unfold G2, G1. exact hlift.
         }
         pose proof (BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_zero
           (body :: map (rename S) G2) code step idx
@@ -36893,30 +36903,22 @@ Proof.
               (S (S (S step)))
               (Term.rename S (Term.rename S (Term.rename S idxTerm))))).
         {
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-            _ hcurTerm S) as h1.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) G) _ h1 S) as h2.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) (map (rename S) G)) _ h2 S) as h3.
-          repeat rewrite rename_S_betaTermAtTermIdx in h3.
-          repeat rewrite Term.rename_numeral in h3.
-          apply BProv_context_three.
-          exact h3.
+          pose proof (BProv_lift_three_contexts_of_sentences
+            Ax_s sentence_ax_s G (pEx (pEx body)) (pEx body) body
+            _ hcurTerm) as hlift.
+          repeat rewrite rename_S_betaTermAtTermIdx in hlift.
+          repeat rewrite Term.rename_numeral in hlift.
+          unfold G2, G1. exact hlift.
         }
         assert (hidxC : BProv Ax_s (body :: map (rename S) G2)
             (pEq (Term.rename S (Term.rename S (Term.rename S idxTerm)))
               (tVar (S (S (S idx)))))).
         {
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s G
-            _ hidxEq S) as h1.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) G) _ h1 S) as h2.
-          pose proof (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) (map (rename S) G)) _ h2 S) as h3.
-          simpl in h3.
-          apply BProv_context_three.
-          exact h3.
+          pose proof (BProv_lift_three_contexts_of_sentences
+            Ax_s sentence_ax_s G (pEx (pEx body)) (pEx body) body
+            _ hidxEq) as hlift.
+          simpl in hlift.
+          unfold G2, G1. exact hlift.
         }
         pose proof
           (BProv_Ax_s_betaDiv2StepWitnessAt_body_next_termIdx_eqConst_div_two
