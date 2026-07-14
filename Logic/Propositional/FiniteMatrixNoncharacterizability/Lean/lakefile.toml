@@ -1,0 +1,9 @@
+name = "FiniteMatrixNoncharacterizability"
+defaultTargets = ["FiniteMatrixNoncharacterizability"]
+
+[[lean_lib]]
+name = "NaturalDeduction"
+srcDir = "../../NaturalDeduction/Lean"
+
+[[lean_lib]]
+name = "FiniteMatrixNoncharacterizability"

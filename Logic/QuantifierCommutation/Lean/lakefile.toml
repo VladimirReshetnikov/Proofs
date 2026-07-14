@@ -1,0 +1,5 @@
+name = "QuantifierCommutation"
+defaultTargets = ["QuantifierCommutation"]
+
+[[lean_lib]]
+name = "QuantifierCommutation"

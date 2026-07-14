@@ -1,0 +1,23 @@
+From NaturalDeduction Require Import Calculus.
+From PrincipleOfExplosion Require Import PrincipleOfExplosion.
+
+Import NaturalDeduction.
+Import Explosion.
+
+Check classical_excluded_middle.
+Check intuitionistic_to_classical.
+Check derives_explosion.
+Check derives_explosion_sequent.
+Check intuitionistic_explosion.
+Check intuitionistic_explosion_sequent.
+Check intuitionistic_explosion_implication.
+Check classical_explosion.
+Check classical_explosion_sequent.
+Check classical_explosion_implication.
+
+Print Assumptions classical_excluded_middle.
+Print Assumptions intuitionistic_to_classical.
+Print Assumptions intuitionistic_explosion_sequent.
+Print Assumptions intuitionistic_explosion_implication.
+Print Assumptions classical_explosion_sequent.
+Print Assumptions classical_explosion_implication.

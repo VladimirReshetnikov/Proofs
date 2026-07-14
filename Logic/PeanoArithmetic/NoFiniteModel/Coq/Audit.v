@@ -1,0 +1,31 @@
+(* Kernel-assumption audit for the nonexistence of finite PA models. *)
+
+From NoFinitePAModel Require Import NoFiniteModel.
+
+Import NoFiniteModelTheorem.
+
+Check finite_encode_injective.
+Check finite_presentation_is_finite.
+Check finite_presentation_eq_dec.
+Check finite_presentation_decidable_eq.
+Check injective_endomap_of_finite_carrier_is_surjective.
+Check finite_carrier_cannot_have_injective_successor_missing_zero.
+Check every_PA_model_has_no_finite_presentation.
+Check no_finite_PA_model_exists.
+Check peano_arithmetic_has_no_finite_model.
+Check every_PA_Model_has_no_finite_presentation.
+Check no_finite_PA_Model_exists.
+Check PA_Model_has_no_finite_model.
+
+Print Assumptions finite_encode_injective.
+Print Assumptions finite_presentation_is_finite.
+Print Assumptions finite_presentation_eq_dec.
+Print Assumptions finite_presentation_decidable_eq.
+Print Assumptions injective_endomap_of_finite_carrier_is_surjective.
+Print Assumptions finite_carrier_cannot_have_injective_successor_missing_zero.
+Print Assumptions every_PA_model_has_no_finite_presentation.
+Print Assumptions no_finite_PA_model_exists.
+Print Assumptions peano_arithmetic_has_no_finite_model.
+Print Assumptions every_PA_Model_has_no_finite_presentation.
+Print Assumptions no_finite_PA_Model_exists.
+Print Assumptions PA_Model_has_no_finite_model.

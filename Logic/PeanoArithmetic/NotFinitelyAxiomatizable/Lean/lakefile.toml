@@ -1,0 +1,9 @@
+name = "PAFiniteBasisReduction"
+defaultTargets = ["PAFiniteBasisReduction"]
+
+[[require]]
+name = "PAHF"
+path = "../../../Interpretability/PAHF/Lean"
+
+[[lean_lib]]
+name = "PAFiniteBasisReduction"

@@ -23,7 +23,7 @@ project, `Lean/` and `Coq/` are siblings; `Research/`, `Support/`, and
 | [`Analysis/`](Analysis/) | Exact trigonometric, arctangent, and exponential identities. |
 | [`Combinatorics/`](Combinatorics/) | Enumeration of power towers and radical expressions, including OEIS certificates and research corpora. |
 | [`Computability/`](Computability/) | Lambda/SK/SKI/Iota universality and the faithful Iota-to-lambda embedding; Busy Beaver semantics, domination, exact small-state scores and times, and certificate bridges. |
-| [`Logic/`](Logic/) | First-order logic and completeness, propositional/equational axiom systems, and PA/HF interpretability. |
+| [`Logic/`](Logic/) | First-order logic and completeness, propositional/equational axiom systems, PA infinitude, and PA/HF interpretability. |
 | [`NumberTheory/`](NumberTheory/) | FLT for exponent four, floor-square-root sums, rational enumeration, and an arithmetic RH sentence. |
 | [`SetTheory/`](SetTheory/) | First-order ZF and the Closure axiomatization's equivalence with ZF. |
 | [`lib/`](lib/) | Vendored third-party code only. |
@@ -40,12 +40,20 @@ is the broad Lean import surface.
   A158415, A198683, and A199812.
 - Nicod's NAND axiom, Wolfram's single Boolean equation, Meredith's basis,
   and checked equational certificates.
-- A from-scratch first-order calculus with soundness, Goedel completeness,
-  compactness, and deductive transfer.
+- A [first-order completeness and compactness development](Logic/FirstOrder/README.md):
+  from-scratch independent Lean/Coq Henkin proofs for the repository's fixed
+  countable relation language, plus arbitrary-language semantic compactness
+  in Lean.
 - Full deductive equivalence between the Closure axiomatization and ZF,
   checked independently in Lean and Coq.
 - A deductive bi-interpretation between PA and finite-generation hereditary
   finite set theory.
+- A [constructive Lean/Coq proof](Logic/PeanoArithmetic/NoFiniteModel/README.md)
+  that Peano arithmetic has no finite model, using only injectivity of
+  successor and zero's absence from its image.
+- Lean/Coq proofs that first-order Peano arithmetic has two non-isomorphic
+  models, separating the numeral-generated standard model from a compactness
+  model with an element above every standard numeral.
 - Independent Lean and Rocq/Coq proofs that pure SK, SKI, and Iota simulate
   closed weak untyped lambda calculus by compositional positive-step compilers,
   and that Iota embeds faithfully back into closed lambda terms.
@@ -70,6 +78,8 @@ lake build +DiophantineEquations.FermatFour
 lake build +ShefferStroke.Sheffer
 lake build +FirstOrder.Fol
 lake build +ClosureAxiomatization.Forward
+lake build +NoFiniteModel
+lake build +PAFiniteBasisReduction
 lake build +PowerTowers.Core
 lake build +CombinatoryLogic
 lake build +BusyBeaver.BB2
@@ -77,11 +87,19 @@ lake build +BusyBeaver.BB3
 lake build +BusyBeaver.Mathlib
 ```
 
-The dependency-free foundations projects also have project-local Lake files:
+These projects also have project-local Lake files for focused builds:
 
 ```powershell
+lake --dir Logic/Propositional/NaturalDeduction/Lean build
+lake --dir Logic/Propositional/FiniteMatrixNoncharacterizability/Lean build
+lake --dir Logic/Propositional/MonotonicityOfEntailment/Lean build
+lake --dir Logic/Propositional/PrincipleOfExplosion/Lean build
+lake --dir Logic/QuantifierCommutation/Lean build
 lake --dir Logic/FirstOrder/Lean build
+lake --dir Logic/FirstOrder/Compactness/Lean build
 lake --dir Logic/Interpretability/PAHF/Lean build
+lake --dir Logic/PeanoArithmetic/NoFiniteModel/Lean build
+lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean build
 lake --dir SetTheory/ZF/Lean build
 lake --dir SetTheory/ClosureAxiomatization/Lean build
 lake --dir NumberTheory/RiemannHypothesis/PAStatement/Lean build

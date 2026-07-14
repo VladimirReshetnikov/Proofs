@@ -1,0 +1,26 @@
+(* Kernel-assumption audit for quantifier commutation and counterexamples. *)
+
+From QuantifierCommutation Require Import Commutation Counterexamples.
+
+Import QuantifierLaws.
+Import QuantifierCounterexamples.
+
+Check forall_forall_commute.
+Check exists_exists_commute.
+Check nested_no_exists_xy_holds.
+Check nested_no_exists_yx_fails.
+Check nested_no_exists_swap_implication_fails.
+Check nested_no_exists_not_equivalent.
+Check nested_exists_unique_xy_holds.
+Check nested_exists_unique_yx_fails.
+Check nested_exists_unique_swap_implication_fails.
+Check nested_exists_unique_not_equivalent.
+
+Print Assumptions forall_forall_commute.
+Print Assumptions exists_exists_commute.
+Print Assumptions nested_no_exists_xy_holds.
+Print Assumptions nested_no_exists_yx_fails.
+Print Assumptions nested_no_exists_not_equivalent.
+Print Assumptions nested_exists_unique_xy_holds.
+Print Assumptions nested_exists_unique_yx_fails.
+Print Assumptions nested_exists_unique_not_equivalent.
