@@ -16981,26 +16981,33 @@ Proof.
           (tMul (tVar (S (S modulus))) (tVar 0)) hleInst) as hle.
         change (BProv Ax_s D (leAt (S (S modulus)) (S (S value))))
           in hle.
-        assert (hltRen : BProv Ax_s
-            (map (rename S) (map (rename S) G))
+        assert (hltC : BProv Ax_s C
+            (rename S (ltAt value modulus))).
+        {
+          unfold C.
+          exact (BProv_rename_succ_context_cons_of_sentences
+            Ax_s sentence_ax_s G dvdBody (ltAt value modulus) hlt).
+        }
+        assert (hltBranch : BProv Ax_s (succPredAt 0 :: C)
+            (rename S (ltAt value modulus))).
+        {
+          exact (BProv_context_cons Ax_s C (succPredAt 0)
+            (rename S (ltAt value modulus)) hltC).
+        }
+        assert (hltOpened : BProv Ax_s D
             (rename S (rename S (ltAt value modulus)))).
         {
-          exact (BProv_rename_of_sentences Ax_s sentence_ax_s
-            (map (rename S) G) (rename S (ltAt value modulus))
-            (BProv_rename_of_sentences Ax_s sentence_ax_s G
-              (ltAt value modulus) hlt S)
-            S).
+          unfold D.
+          exact (BProv_rename_succ_context_cons_of_sentences
+            Ax_s sentence_ax_s (succPredAt 0 :: C) succBody
+            (rename S (ltAt value modulus)) hltBranch).
         }
         assert (hltD : BProv Ax_s D (ltAt (S (S value)) (S (S modulus)))).
         {
-          pose proof (BProv_context_three Ax_s
-            (map (rename S) (map (rename S) G))
-            succBody (rename S (succPredAt 0)) (rename S dvdBody)
-            (rename S (rename S (ltAt value modulus))) hltRen) as h3.
-          unfold ltAt in h3.
-          simpl in h3.
+          unfold ltAt in hltOpened.
+          simpl in hltOpened.
           unfold ltAt.
-          exact h3.
+          exact hltOpened.
         }
         pose proof (BProv_Ax_s_ltAt_leAt_bot D
           (S (S value)) (S (S modulus)) hltD hle) as hbot.
@@ -39870,51 +39877,25 @@ Proof.
     (pEx finalBody :: map (rename S) bitCtx)).
   pose proof (BProv_Ax_s_hfMemZeroSetAt_opened_body_entry G elem)
     as hbodyEntry.
-  assert (hentryBitCtx : BProv Ax_s bitCtx
-      (betaTermAtConstIdx tZero 2 1 0)).
-  {
-    exact (BProv_rename_succ_context_cons_of_sentences Ax_s sentence_ax_s
-      bodyCtx bitBody (betaTermAtConstIdx tZero 1 0 0) hbodyEntry).
-  }
-  assert (hentryPreFinal : BProv Ax_s
-      (pEx finalBody :: map (rename S) bitCtx)
-      (betaTermAtConstIdx tZero 3 2 0)).
-  {
-    exact (BProv_rename_succ_context_cons_of_sentences Ax_s sentence_ax_s
-      bitCtx (pEx finalBody) (betaTermAtConstIdx tZero 2 1 0)
-      hentryBitCtx).
-  }
   assert (hentryC : BProv Ax_s C
       (betaTermAtConstIdx tZero 4 3 0)).
   {
-    exact (BProv_rename_succ_context_cons_of_sentences Ax_s sentence_ax_s
-      (pEx finalBody :: map (rename S) bitCtx) finalBody
-      (betaTermAtConstIdx tZero 3 2 0) hentryPreFinal).
+    pose proof (BProv_lift_three_contexts_of_sentences
+      Ax_s sentence_ax_s bodyCtx bitBody (pEx finalBody) finalBody
+      _ hbodyEntry) as h.
+    simpl in h.
+    unfold C, bitCtx. exact h.
   }
   pose proof (BProv_Ax_s_hfMemZeroSetAt_opened_body_steps G elem)
     as hbodySteps.
-  assert (hstepsBitCtx : BProv Ax_s bitCtx
-      (betaDiv2StepsThroughAt 2 1 (S (S (S elem))))).
-  {
-    exact (BProv_rename_succ_context_cons_of_sentences Ax_s sentence_ax_s
-      bodyCtx bitBody (betaDiv2StepsThroughAt 1 0 (S (S elem)))
-      hbodySteps).
-  }
-  assert (hstepsPreFinal : BProv Ax_s
-      (pEx finalBody :: map (rename S) bitCtx)
-      (betaDiv2StepsThroughAt 3 2 (S (S (S (S elem)))))).
-  {
-    exact (BProv_rename_succ_context_cons_of_sentences Ax_s sentence_ax_s
-      bitCtx (pEx finalBody) (betaDiv2StepsThroughAt 2 1 (S (S (S elem))))
-      hstepsBitCtx).
-  }
   assert (hstepsC : BProv Ax_s C
       (betaDiv2StepsThroughAt 4 3 (S (S (S (S (S elem))))))).
   {
-    exact (BProv_rename_succ_context_cons_of_sentences Ax_s sentence_ax_s
-      (pEx finalBody :: map (rename S) bitCtx) finalBody
-      (betaDiv2StepsThroughAt 3 2 (S (S (S (S elem)))))
-      hstepsPreFinal).
+    pose proof (BProv_lift_three_contexts_of_sentences
+      Ax_s sentence_ax_s bodyCtx bitBody (pEx finalBody) finalBody
+      _ hbodySteps) as h.
+    simpl in h.
+    unfold C, bitCtx. exact h.
   }
   assert (hleFinal : BProv Ax_s C
       (leAt (S (S (S (S (S elem))))) (S (S (S (S (S elem))))))).

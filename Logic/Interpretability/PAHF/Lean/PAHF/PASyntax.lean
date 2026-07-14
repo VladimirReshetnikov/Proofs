@@ -18776,20 +18776,19 @@ theorem BProv_Ax_s_eqConstAt_zero_of_dvdAt_ltAt {G : List Formula}
                 (Term.var (value+1+1+1)))
               (t := Term.mul m q) hleInst
           simpa [leAt, m, v, q, rename, Term.rename, SetTheory.up] using hex
-        have hltRen : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
-            (rename Nat.succ (rename Nat.succ (ltAt value modulus))) :=
-          BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            (BProv_rename_of_sentences
-              (B := Ax_s) Ax_s_sentences
-              hlt Nat.succ)
-            Nat.succ
+        have hltC : BProv Ax_s C
+            (rename Nat.succ (ltAt value modulus)) :=
+          BProv_rename_succ_context_cons_of_sentences
+            (B := Ax_s) Ax_s_sentences (a := dvdBody) hlt
+        have hltBranch : BProv Ax_s (succPredAt 0 :: C)
+            (rename Nat.succ (ltAt value modulus)) :=
+          BProv_context_cons (B := Ax_s) (a := succPredAt 0) hltC
         have hltD : BProv Ax_s D (ltAt (value+2) (modulus+2)) := by
-          have hctx : BProv Ax_s D
+          have hren : BProv Ax_s D
               (rename Nat.succ (rename Nat.succ (ltAt value modulus))) := by
-            simpa [D, C, List.map_map, Function.comp_def] using
-              BProv_context_three hltRen
-          simpa [ltAt, rename, Term.rename, SetTheory.up] using hctx
+            exact BProv_rename_succ_context_cons_of_sentences
+              (B := Ax_s) Ax_s_sentences (a := succBody) hltBranch
+          simpa [ltAt, rename, Term.rename, SetTheory.up] using hren
         have hbot : BProv Ax_s D bot :=
           BProv_Ax_s_ltAt_leAt_bot hltD hle
         exact BProv_botE hbot
@@ -43218,32 +43217,30 @@ theorem BProv_Ax_s_hfMemZeroSetAt_opened_final_current_zero
     simpa [bitBody, tail, body, bodyCtx] using
       (BProv_Ax_s_hfMemZeroSetAt_opened_body_entry
         (G := G) (elem := elem))
-  have hentryRen3 :=
-    BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hbodyEntry
+  have lift3 {phi : Formula} (hphi : BProv Ax_s bodyCtx phi) :
+      BProv Ax_s C
+        (rename Nat.succ (rename Nat.succ (rename Nat.succ phi))) :=
+    BProv_lift_three_contexts_of_sentences
+      (B := Ax_s) (G := bodyCtx) (outer := bitBody)
+      (middle := ex finalBody) (inner := finalBody) Ax_s_sentences hphi
   have hentryC : BProv Ax_s C
       (betaTermAtConstIdx Term.zero (2+2) (1+2) 0) := by
-    simpa [C, bitCtx, bodyCtx, body, tail, bitBody, finalBody,
-      betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt, eqConstAt,
-      betaModTerm, iterRenameContextSucc, iterRenameSucc,
-      rename, Term.rename, SetTheory.up, List.map_map,
+    simpa [betaTermAtConstIdx, betaTermAt, remTermAt, ltTermAt, eqConstAt,
+      betaModTerm, rename, Term.rename, SetTheory.up,
       Function.comp_def] using
-      BProv_context_three hentryRen3
+      lift3 hbodyEntry
   have hbodySteps : BProv Ax_s bodyCtx
       (betaDiv2StepsThroughAt 1 0 (elem+2)) := by
     simpa [bitBody, tail, body, bodyCtx] using
       (BProv_Ax_s_hfMemZeroSetAt_opened_body_steps
         (G := G) (elem := elem))
-  have hstepsRen3 :=
-    BProv_iterRenameSucc_of_sentences Ax_s_sentences 3 hbodySteps
   have hstepsC : BProv Ax_s C
       (betaDiv2StepsThroughAt (2+2) (1+2) ((elem+3)+2)) := by
-    simpa [C, bitCtx, bodyCtx, body, tail, bitBody, finalBody,
-      betaDiv2StepsThroughAt, leAt, betaDiv2StepWitnessAt,
+    simpa [betaDiv2StepsThroughAt, leAt, betaDiv2StepWitnessAt,
       betaAtSuccIdx, betaAt, remAt, ltAt, div2StepAt, boolAt, zeroAt,
-      oneAt, eqConstAt, betaModTerm, iterRenameContextSucc, iterRenameSucc,
-      rename, Term.rename, SetTheory.up,
-      List.map_map, Function.comp_def] using
-      BProv_context_three hstepsRen3
+      oneAt, eqConstAt, betaModTerm, rename, Term.rename, SetTheory.up,
+      Function.comp_def] using
+      lift3 hbodySteps
   have hleFinal : BProv Ax_s C (leAt ((elem+3)+2) ((elem+3)+2)) :=
     BProv_Ax_s_leAt_of_eq
       (G := C)
@@ -44275,32 +44272,15 @@ theorem
     eq (Term.succ (Term.var 0)) (Term.var 1) ::
       (nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
         (rename Nat.succ)
-  have hdoubleRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ (doubleEqAt high half)) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hhighDouble Nat.succ
-  have hdoubleRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ (doubleEqAt high half))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hdoubleRen1 Nat.succ
-  have hdoubleTail : BProv Ax_s
-      ((nonzeroAt 0 :: witness :: G.map (rename Nat.succ)).map
-        (rename Nat.succ))
-      (doubleEqAt (high+2) (half+2)) := by
-    simpa [witness, doubleEqAt, rename, Term.rename, List.map_map,
-      Function.comp_def] using
+  have hdoubleC : BProv Ax_s C (doubleEqAt (high+2) (half+2)) := by
+    have h :=
       BProv_context_cons (B := Ax_s)
-        (a := rename Nat.succ (nonzeroAt 0))
-        (BProv_context_cons (B := Ax_s)
-          (a := rename Nat.succ witness)
-          hdoubleRen2)
-  have hdoubleC : BProv Ax_s C (doubleEqAt (high+2) (half+2)) :=
-    BProv_context_cons (B := Ax_s)
-      (a := eq (Term.succ (Term.var 0)) (Term.var 1))
-      hdoubleTail
+        (a := eq (Term.succ (Term.var 0)) (Term.var 1))
+        (BProv_lift_two_contexts_of_sentences
+          (B := Ax_s) (G := G) (outer := witness)
+          (inner := rename Nat.succ (nonzeroAt 0))
+          Ax_s_sentences hhighDouble)
+    simpa [C, doubleEqAt, rename, Term.rename] using h
   have hmemC : BProv Ax_s C
       (hfMemTermAt 1 (Term.succ (Term.var (high+2)))) := by
     exact BProv_cut hmemSucc (D := C) (fun f hf => by
@@ -49801,15 +49781,6 @@ theorem BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
       (doubleEqAt (current+1) (half+1)) :=
     BProv_Ax_s_doubleEqAt_of_div2StepAt_bit_zero
       hbitRen hstepRen
-  have htailRenRaw : BProv Ax_s Q
-      (rename Nat.succ (hfEmptyTermAt (Term.var half))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      htailEmpty Nat.succ
-  have htailRen : BProv Ax_s Q
-      (hfEmptyTermAt (Term.var (half+1))) := by
-    simpa [rename_hfEmptyTermAt, Term.rename]
-      using htailRenRaw
   have himp : BProv Ax_s Q (imp mem bot) := by
     let C : List Formula := mem :: Q
     have hmem : BProv Ax_s C mem :=
@@ -49843,6 +49814,15 @@ theorem BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
         (B := Ax_s) Ax_s_sentences
         (G := S) (a := succBody) (c := bot) hsuccEx ?_
       let D : List Formula := succBody :: S.map (rename Nat.succ)
+      have lift2ToD {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s D
+            (rename Nat.succ (rename Nat.succ phi)) := by
+        simpa [D, S, C, Q] using
+          (BProv_context_cons (B := Ax_s) (a := succBody)
+            (BProv_lift_two_contexts_of_sentences
+              (B := Ax_s) (G := G) (outer := mem)
+              (inner := rename Nat.succ (succPredAt 0))
+              Ax_s_sentences hphi))
       have heq : BProv Ax_s D
           (eq (Term.var 1) (Term.succ (Term.var 0))) :=
         BProv_ass (B := Ax_s) (G := D) (by simp [D, succBody])
@@ -49870,42 +49850,18 @@ theorem BProv_Ax_s_hfEmptyTermAt_of_even_step_tail_empty
         BProv_eqElim (B := Ax_s) (G := D)
           (s := Term.var 1) (t := Term.succ (Term.var 0))
           (a := hfMemAt 0 (current+3)) heq hmemVar
-      have hstepRen2Raw : BProv Ax_s
-          (Q.map (rename Nat.succ))
-          (rename Nat.succ
-            (div2StepAt (current+1) (half+1) (bit+1))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hstepRen Nat.succ
       have hstepD : BProv Ax_s D
           (div2StepAt (current+2) (half+2) (bit+2)) := by
-        have hraw : BProv Ax_s D
-            (rename Nat.succ
-              (div2StepAt (current+1) (half+1) (bit+1))) :=
-          BProv_context_prefix
-            [succBody, rename Nat.succ (succPredAt 0),
-              rename Nat.succ mem] hstepRen2Raw
         simpa [div2StepAt, boolAt, zeroAt, oneAt,
-          eqConstAt, rename, Term.rename] using hraw
+          eqConstAt, rename, Term.rename] using
+          lift2ToD hstep
       have htailMem : BProv Ax_s D (hfMemAt 0 (half+2)) :=
         BProv_Ax_s_hfMemAt_tail_of_succ_mem_and_div2StepAt
           hstepD hsuccMem
-      have htailRen2Raw : BProv Ax_s
-          (Q.map (rename Nat.succ))
-          (rename Nat.succ
-            (hfEmptyTermAt (Term.var (half+1)))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          htailRen Nat.succ
       have htailD : BProv Ax_s D
           (hfEmptyTermAt (Term.var (half+2))) := by
-        have hraw : BProv Ax_s D
-            (rename Nat.succ
-              (hfEmptyTermAt (Term.var (half+1)))) :=
-          BProv_context_prefix
-            [succBody, rename Nat.succ (succPredAt 0),
-              rename Nat.succ mem] htailRen2Raw
-        simpa [rename_hfEmptyTermAt, Term.rename] using hraw
+        simpa [rename_hfEmptyTermAt, Term.rename] using
+          lift2ToD htailEmpty
       have hnotTailRaw := BProv_allE
         (B := Ax_s) (G := D) (t := Term.var 0) htailD
       have hnotTail : BProv Ax_s D
