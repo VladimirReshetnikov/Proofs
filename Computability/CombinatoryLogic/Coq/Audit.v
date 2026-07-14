@@ -1,6 +1,13 @@
 From CombinatoryLogic Require Import
-  Reduction Lambda SKPolynomial SKI SK Iota SKIToSK
+  Reduction Lambda StrongLambda SKPolynomial SKI SK Iota SKIToSK
   TuringCompleteness LambdaToSK IotaToLambda.
+
+Check StrongUntypedLambda.strong_step.
+Check StrongUntypedLambda.step_to_strong_step.
+Check StrongUntypedLambda.strong_normal_iff_shape.
+Check StrongUntypedLambda.church.
+Check StrongUntypedLambda.church_strong_normalizes.
+Check StrongUntypedLambda.church_injective.
 
 Check UntypedLambda.map_ext.
 Check UntypedLambda.map_comp.
@@ -115,3 +122,5 @@ Print Assumptions IotaToLambda.lambdaS_correct_positive.
 Print Assumptions IotaToLambda.encodeRuntime_step_positive.
 Print Assumptions IotaToLambda.encodeRuntime_injective.
 Print Assumptions IotaToLambda.faithful_iota_lambda_embedding.
+Print Assumptions StrongUntypedLambda.strong_normal_iff_shape.
+Print Assumptions StrongUntypedLambda.church_injective.

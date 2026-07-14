@@ -1,0 +1,3 @@
+# Preserve the pinned upstream source snapshot byte-for-byte.
+LICENSE -text
+theories/** -text

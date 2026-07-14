@@ -83,16 +83,32 @@ and closed weak lambda calculus.  They are forward operational simulations;
 the development does not claim that the chosen compilers are mutual syntactic
 inverses, reduction-reflecting, or fully abstract.
 
-The exact boundary remains explicit: the repository does not separately
-formalize a Turing-machine or partial-recursive-function compiler into the
-lambda calculus, nor does forward simulation alone prove a many-one reduction
-for normalization.  No such stronger claim is hidden behind the theorem name.
+## Partial-recursive-function equivalence
+
+The project now also contains two foundations for stating the textbook
+lambda-calculus/partial-recursion equivalence precisely:
+
+- `StrongLambda` adds full contextual beta reduction and canonical Church
+  numerals, independently in Lean and Coq.
+- Coq's `RecursiveEquivalence` derives the exact arity-indexed equivalence
+  `MuRec_computable R <-> L_computable R` from the checked simulation cycle in
+  the focused vendored snapshot of the Coq Library of Undecidability Proofs.
+
+The latter theorem uses that library's unscoped weak-call-by-value calculus
+`L`, Scott numerals, and relational big-step semantics.  It is deliberately
+not identified with this project's intrinsically scoped, context-closed beta
+relation.  Connecting those two lambda models, and completing the corresponding
+exact Lean theorem, remain separate proof obligations.  In particular, the
+existing Iota simulations plus the Coq equivalence are not silently composed
+across incompatible operational semantics.
 
 ## Layout
 
 - [`Lean/`](Lean/) contains the Lean 4 definitions, simulation proof, and
   assumption audit.
 - [`Coq/`](Coq/) contains the independent Rocq/Coq development and audit.
+- [`../../lib/Coq-Library-Undecidability/`](../../lib/Coq-Library-Undecidability/)
+  is the MPL-2.0 focused source snapshot used by `RecursiveEquivalence`.
 
 The two developments intentionally share the mathematical architecture, not
 proof artifacts or generated certificates.
@@ -112,6 +128,7 @@ Check the Rocq files sequentially (GNU Make is not required):
 ```powershell
 coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/CombinatoryLogic/Coq/Reduction.v
 coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/CombinatoryLogic/Coq/Lambda.v
+coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/CombinatoryLogic/Coq/StrongLambda.v
 coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/CombinatoryLogic/Coq/SKPolynomial.v
 coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/CombinatoryLogic/Coq/SKI.v
 coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/CombinatoryLogic/Coq/SK.v
@@ -123,6 +140,27 @@ coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/Combin
 coqc -Q Computability/CombinatoryLogic/Coq CombinatoryLogic Computability/CombinatoryLogic/Coq/Audit.v
 coqchk -silent -o -Q Computability/CombinatoryLogic/Coq CombinatoryLogic CombinatoryLogic.LambdaToSK
 coqchk -silent -o -Q Computability/CombinatoryLogic/Coq CombinatoryLogic CombinatoryLogic.IotaToLambda
+```
+
+The exact recursive-function equivalence requires Rocq 9.0.x with MetaRocq.
+From a clean checkout, first compile the focused upstream closure in its
+committed dependency order, then the theorem and its assumption audit:
+
+```powershell
+$vendor = 'lib/Coq-Library-Undecidability'
+Get-Content "$vendor/SOURCE_MANIFEST.txt" |
+  Where-Object { $_ -and -not $_.StartsWith('#') } |
+  ForEach-Object {
+    coqc -Q "$vendor/theories" Undecidability "$vendor/$_"
+    if ($LASTEXITCODE -ne 0) { throw "coqc failed: $_" }
+  }
+
+coqc -Q "$vendor/theories" Undecidability `
+  -Q Computability/CombinatoryLogic/Coq CombinatoryLogic `
+  Computability/CombinatoryLogic/Coq/RecursiveEquivalence.v
+coqc -Q "$vendor/theories" Undecidability `
+  -Q Computability/CombinatoryLogic/Coq CombinatoryLogic `
+  Computability/CombinatoryLogic/Coq/RecursiveEquivalenceAudit.v
 ```
 
 The Lean `#print axioms` audit exposes only Lean's standard `propext` and

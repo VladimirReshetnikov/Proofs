@@ -3,6 +3,7 @@ import CombinatoryLogic.SKIToSK
 import CombinatoryLogic.LambdaToSK
 import CombinatoryLogic.Universality
 import CombinatoryLogic.IotaToLambda
+import CombinatoryLogic.StrongLambda
 
 /-!
 # Assumption audit for the iota compiler
@@ -17,6 +18,11 @@ open CombinatoryLogic
 #check Lambda.Term.liftSubst_succ
 #check Lambda.Term.liftSubst_one
 #check Lambda.Term.liftSubst_two
+#check Lambda.Term.StrongStep
+#check Lambda.Term.step_toStrongStep
+#check Lambda.Term.church
+#check Lambda.Term.church_strongNormalizes
+#check Lambda.Term.church_injective
 #check Compiler.compile
 #check Compiler.compile_injective
 #check Compiler.compile_size_linear
@@ -91,6 +97,8 @@ open CombinatoryLogic
 #print axioms Lambda.Term.liftSubst_succ
 #print axioms Lambda.Term.liftSubst_one
 #print axioms Lambda.Term.liftSubst_two
+#print axioms Lambda.Term.step_toStrongStep
+#print axioms Lambda.Term.church_injective
 #print axioms Compiler.compile_size_linear
 #print axioms Compiler.step_simulation
 #print axioms Compiler.steps_simulation

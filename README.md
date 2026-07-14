@@ -129,7 +129,11 @@ no blanket parity is claimed.
 Only [`lib/`](lib/) contains vendored code. `lib/Coq-BB5/BB2`, `BB3`, and
 `BB4` come from `ccz181078/Coq-BB5` commit `9142e219...`; their nested READMEs
 record provenance and repository-local kernel hardening, and their nested MIT
-licenses are retained.
+licenses are retained. The focused
+[`lib/Coq-Library-Undecidability`](lib/Coq-Library-Undecidability/) snapshot
+comes from `uds-psl/coq-library-undecidability` commit `806690d0...`; its
+nested README records the exact 186-file dependency closure and its MPL-2.0
+license is retained.
 
 ## License
 
