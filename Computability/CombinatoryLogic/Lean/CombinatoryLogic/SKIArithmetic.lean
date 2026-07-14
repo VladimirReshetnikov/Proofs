@@ -591,8 +591,6 @@ theorem natPair_correct (a b : Nat) (ca cb : Term)
     simp [hab, hba]
     exact add_correct _ _ _ _ (add_correct _ _ _ _ (mul_correct ha ha) ha) hb
 
-/- TEMPORARY ELABORATION BISECT: unpairing
-
 /-- Left projection of Mathlib's `Nat.unpair`. -/
 def NatUnpairLeftPoly : Polynomial 1 :=
   let root := Sqrt ⬝' &0
@@ -619,12 +617,23 @@ theorem natUnpairLeft_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
     IsChurch (Nat.unpair n).1 (NatUnpairLeft ⬝ cn) := by
   apply isChurch_trans _ (natUnpairLeft_def cn)
   obtain ⟨hs, hdifference⟩ := natUnpair_church n cn hcn
-  have hcondition := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+  have hcondition :
+      IsBool (decide (n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n))
+        (Neg ⬝ (LE ⬝ (Sqrt ⬝ cn) ⬝
+          (Sub ⬝ cn ⬝ (Mul ⬝ (Sqrt ⬝ cn) ⬝ (Sqrt ⬝ cn))))) := by
+    have hneg := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+    by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+    · have hnle : ¬Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.not_le_of_lt hlt
+      simpa [hlt, hnle] using hneg
+    · have hle : Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.le_of_not_gt hlt
+      simpa [hlt, hle] using hneg
   apply isChurch_trans _ (cond_correct _ _ _ _ hcondition)
   rw [Nat.unpair]
-  split_ifs with h
-  · simpa [pow_two] using hdifference
-  · simpa using hs
+  by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+  · simpa [hlt, pow_two] using hdifference
+  · simpa [hlt] using hs
+
+/- TEMPORARY ELABORATION BISECT: right unpairing
 
 /-- Right projection of Mathlib's `Nat.unpair`. -/
 def NatUnpairRightPoly : Polynomial 1 :=
@@ -647,12 +656,21 @@ theorem natUnpairRight_correct (n : Nat) (cn : Term) (hcn : IsChurch n cn) :
     IsChurch (Nat.unpair n).2 (NatUnpairRight ⬝ cn) := by
   apply isChurch_trans _ (natUnpairRight_def cn)
   obtain ⟨hs, hdifference⟩ := natUnpair_church n cn hcn
-  have hcondition := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+  have hcondition :
+      IsBool (decide (n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n))
+        (Neg ⬝ (LE ⬝ (Sqrt ⬝ cn) ⬝
+          (Sub ⬝ cn ⬝ (Mul ⬝ (Sqrt ⬝ cn) ⬝ (Sqrt ⬝ cn))))) := by
+    have hneg := neg_correct _ _ (le_correct _ _ _ _ hs hdifference)
+    by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+    · have hnle : ¬Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.not_le_of_lt hlt
+      simpa [hlt, hnle] using hneg
+    · have hle : Nat.sqrt n ≤ n - Nat.sqrt n * Nat.sqrt n := Nat.le_of_not_gt hlt
+      simpa [hlt, hle] using hneg
   apply isChurch_trans _ (cond_correct _ _ _ _ hcondition)
   rw [Nat.unpair]
-  split_ifs with h
-  · simpa using hs
-  · simpa [pow_two] using sub_correct _ _ _ _ hdifference hs
+  by_cases hlt : n - Nat.sqrt n * Nat.sqrt n < Nat.sqrt n
+  · simpa [hlt] using hs
+  · simpa [hlt, pow_two] using sub_correct _ _ _ _ hdifference hs
 
 -/
 
