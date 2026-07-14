@@ -35504,22 +35504,11 @@ theorem BProv_Ax_s_betaDiv2BitAt_bot_of_opened_final_bot
       (and
         (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
         (div2StepAt 1 0 (bit+2)))
-  have houter : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
-    have hex : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
-      BProv_ass (B := Ax_s)
-        (G := ex body :: G.map (rename Nat.succ)) (by simp)
-    have hinner : BProv Ax_s
-        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-        bot := by
-      simpa [body] using hbot
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hex (by simpa [rename] using hinner)
-  have hbitAt' : BProv Ax_s G (ex (ex body)) := by
-    simpa [betaDiv2BitAt, body] using hbitAt
-  exact BProv_exE_of_sentences
+  exact BProv_two_exE_of_sentences
     (B := Ax_s) Ax_s_sentences
-    hbitAt' (by simpa [rename] using houter)
+    (body := body) (target := bot)
+    (by simpa [betaDiv2BitAt, body] using hbitAt)
+    (by simpa [body, rename] using hbot)
 
 /-- Eliminate a final-bit formula to contradiction once the opened current
 witness can be proved to be zero.  The `hcurZero` premise is deliberately a
@@ -35546,47 +35535,22 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_zero_bot {G : List Formula}
       (and
         (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
         (div2StepAt 1 0 (bit+2)))
-  have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (eqConstAt (bit+1) 1) := by
-    simpa [eqConstAt, rename, Term.rename] using
-      (BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hbitOne Nat.succ)
-  have hbitRen2 : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+  have hbitCtx : BProv Ax_s
+      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
       (eqConstAt (bit+2) 1) := by
     simpa [eqConstAt, rename, Term.rename] using
-      (BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hbitRen1 Nat.succ)
-  have houter : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
-    have hex : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
-      BProv_ass (B := Ax_s)
-        (G := ex body :: G.map (rename Nat.succ)) (by simp)
-    have hinner : BProv Ax_s
-        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-        bot := by
-      have hbody : BProv Ax_s
-          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-          body :=
-        BProv_ass (B := Ax_s)
-          (G := body ::
-            (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-          (by simp)
-      have hbitCtx : BProv Ax_s
-          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-          (eqConstAt (bit+2) 1) := by
-        simpa using BProv_context_two hbitRen2
-      exact BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
-        (bit := bit) (code := code) (step := step) (idx := idx)
-        (by simpa [body] using hcurZero) hbitCtx (by simpa [body] using hbody)
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hex (by simpa [rename] using hinner)
-  have hbitAt' : BProv Ax_s G (ex (ex body)) := by
-    simpa [betaDiv2BitAt, body] using hbitAt
-  exact BProv_exE_of_sentences
-    (B := Ax_s) Ax_s_sentences
-    hbitAt' (by simpa [rename] using houter)
+      (BProv_lift_two_opened_of_sentences
+        (B := Ax_s) Ax_s_sentences (body := body) hbitOne)
+  have hinner : BProv Ax_s
+      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+      bot :=
+    BProv_Ax_s_betaDiv2BitAt_body_zero_one_bot
+      (bit := bit) (code := code) (step := step) (idx := idx)
+      (by simpa [body] using hcurZero) hbitCtx
+      (BProv_ass_head (B := Ax_s))
+  exact BProv_Ax_s_betaDiv2BitAt_bot_of_opened_final_bot
+    (G := G) (bit := bit) (code := code) (step := step) (idx := idx)
+    (by simpa [body] using hinner) hbitAt
 
 /-- Eliminate a final-bit formula to contradiction once the opened current
 value is proved to be twice the opened next value. -/
@@ -35611,47 +35575,22 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_double_bot {G : List Formula}
       (and
         (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
         (div2StepAt 1 0 (bit+2)))
-  have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (eqConstAt (bit+1) 1) := by
-    simpa [eqConstAt, rename, Term.rename] using
-      (BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hbitOne Nat.succ)
-  have hbitRen2 : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+  have hbitCtx : BProv Ax_s
+      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
       (eqConstAt (bit+2) 1) := by
     simpa [eqConstAt, rename, Term.rename] using
-      (BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hbitRen1 Nat.succ)
-  have houter : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
-    have hex : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
-      BProv_ass (B := Ax_s)
-        (G := ex body :: G.map (rename Nat.succ)) (by simp)
-    have hinner : BProv Ax_s
-        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-        bot := by
-      have hbody : BProv Ax_s
-          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-          body :=
-        BProv_ass (B := Ax_s)
-          (G := body ::
-            (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-          (by simp)
-      have hbitCtx : BProv Ax_s
-          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-          (eqConstAt (bit+2) 1) := by
-        simpa using BProv_context_two hbitRen2
-      exact BProv_Ax_s_betaDiv2BitAt_body_double_one_bot
-        (bit := bit) (code := code) (step := step) (idx := idx)
-        (by simpa [body] using hcurDouble) hbitCtx (by simpa [body] using hbody)
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hex (by simpa [rename] using hinner)
-  have hbitAt' : BProv Ax_s G (ex (ex body)) := by
-    simpa [betaDiv2BitAt, body] using hbitAt
-  exact BProv_exE_of_sentences
-    (B := Ax_s) Ax_s_sentences
-    hbitAt' (by simpa [rename] using houter)
+      (BProv_lift_two_opened_of_sentences
+        (B := Ax_s) Ax_s_sentences (body := body) hbitOne)
+  have hinner : BProv Ax_s
+      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+      bot :=
+    BProv_Ax_s_betaDiv2BitAt_body_double_one_bot
+      (bit := bit) (code := code) (step := step) (idx := idx)
+      (by simpa [body] using hcurDouble) hbitCtx
+      (BProv_ass_head (B := Ax_s))
+  exact BProv_Ax_s_betaDiv2BitAt_bot_of_opened_final_bot
+    (G := G) (bit := bit) (code := code) (step := step) (idx := idx)
+    (by simpa [body] using hinner) hbitAt
 
 /-- Eliminate a final-bit formula to contradiction once the opened bit slot is
 proved to be `0`. -/
@@ -35676,39 +35615,20 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_bit_zero_bot {G : List Formula}
       (and
         (betaAtSuccIdx 0 (code+2) (step+2) (idx+2))
         (div2StepAt 1 0 (bit+2)))
-  have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (eqConstAt (bit+1) 1) := by
-    simpa [eqConstAt, rename, Term.rename] using
-      (BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hbitOne Nat.succ)
-  have hbitRen2 : BProv Ax_s ((G.map (rename Nat.succ)).map (rename Nat.succ))
+  have hbitCtx : BProv Ax_s
+      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
       (eqConstAt (bit+2) 1) := by
     simpa [eqConstAt, rename, Term.rename] using
-      (BProv_rename_of_sentences
-        (B := Ax_s) Ax_s_sentences
-        hbitRen1 Nat.succ)
-  have houter : BProv Ax_s (ex body :: G.map (rename Nat.succ)) bot := by
-    have hex : BProv Ax_s (ex body :: G.map (rename Nat.succ)) (ex body) :=
-      BProv_ass (B := Ax_s)
-        (G := ex body :: G.map (rename Nat.succ)) (by simp)
-    have hinner : BProv Ax_s
-        (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-        bot := by
-      have hbitCtx : BProv Ax_s
-          (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
-          (eqConstAt (bit+2) 1) := by
-        simpa using BProv_context_two hbitRen2
-      exact BProv_Ax_s_eqConstAt_zero_one_bot
-        (by simpa [body] using hbitZero) hbitCtx
-    exact BProv_exE_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hex (by simpa [rename] using hinner)
-  have hbitAt' : BProv Ax_s G (ex (ex body)) := by
-    simpa [betaDiv2BitAt, body] using hbitAt
-  exact BProv_exE_of_sentences
-    (B := Ax_s) Ax_s_sentences
-    hbitAt' (by simpa [rename] using houter)
+      (BProv_lift_two_opened_of_sentences
+        (B := Ax_s) Ax_s_sentences (body := body) hbitOne)
+  have hinner : BProv Ax_s
+      (body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ))
+      bot :=
+    BProv_Ax_s_eqConstAt_zero_one_bot
+      (by simpa [body] using hbitZero) hbitCtx
+  exact BProv_Ax_s_betaDiv2BitAt_bot_of_opened_final_bot
+    (G := G) (bit := bit) (code := code) (step := step) (idx := idx)
+    (by simpa [body] using hinner) hbitAt
 
 /-- In an opened final-bit beta witness, a closed even current value forces the
 opened output-bit slot to be `0`. -/
@@ -35793,7 +35713,7 @@ theorem BProv_Ax_s_betaDiv2BitAt_current_eqConst_even_bot
       let C : List Formula :=
         body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
       have hbody : BProv Ax_s C body :=
-        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        BProv_ass_head (B := Ax_s)
       exact BProv_Ax_s_betaDiv2BitAt_body_bit_zero_of_current_eqConst_even
         (G := C) (bit := bit) (code := code) (step := step) (idx := idx)
         (cur := cur)
@@ -35824,25 +35744,13 @@ theorem BProv_Ax_s_betaDiv2BitAt_step_zero_bot {G : List Formula}
       let C : List Formula :=
         body :: (ex body :: G.map (rename Nat.succ)).map (rename Nat.succ)
       have hbody : BProv Ax_s C body :=
-        BProv_ass (B := Ax_s) (G := C) (by simp [C])
+        BProv_ass_head (B := Ax_s)
       have hcur : BProv Ax_s C (betaAt 1 (code+2) (step+2) (idx+2)) :=
         BProv_andE1 hbody
-      have hstepRen1 : BProv Ax_s (G.map (rename Nat.succ))
-          (eqConstAt (step+1) 0) := by
-        simpa [eqConstAt, rename, Term.rename] using
-          (BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hstepZero Nat.succ)
-      have hstepRen2 : BProv Ax_s
-          ((G.map (rename Nat.succ)).map (rename Nat.succ))
-          (eqConstAt (step+2) 0) := by
-        simpa [eqConstAt, rename, Term.rename] using
-          (BProv_rename_of_sentences
-            (B := Ax_s) Ax_s_sentences
-            hstepRen1 Nat.succ)
       have hstepC : BProv Ax_s C (eqConstAt (step+2) 0) := by
-        simpa [C, List.map_map, Function.comp_def] using
-          BProv_context_two hstepRen2
+        simpa [C, body, eqConstAt, rename, Term.rename] using
+          (BProv_lift_two_opened_of_sentences
+            (B := Ax_s) Ax_s_sentences (body := body) hstepZero)
       exact BProv_Ax_s_eqConstAt_zero_of_betaAt_eqConst_step_zero
         hcur hstepC)
     hbitAt
@@ -58007,28 +57915,12 @@ theorem
       (Term.succ (Term.var 2)) G
   have hbody : BProv Ax_s D
       (betaShiftTailExistsTermAtBody 1 0 (Term.succ (Term.var 2))) :=
-    BProv_ass (B := Ax_s) (G := D)
-      (by simp [D, betaShiftTailExistsTermAtOpenedContext])
+    BProv_ass_head (B := Ax_s)
   have htail : BProv Ax_s D
       (betaShiftTailThroughTermAt 3 2 (Term.var 1) (Term.var 0)
         (Term.succ (Term.var 4))) := by
     simpa [D, betaShiftTailExistsTermAtBody,
       betaShiftTailThroughTermAt, Term.rename] using hbody
-  have hentryRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ
-        (betaTermAtTermIdx (Term.var (lowHalf+3)) 1 0
-          (Term.succ Term.zero))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      holdEntry Nat.succ
-  have hentryRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (betaTermAtTermIdx (Term.var (lowHalf+3)) 1 0
-          (Term.succ Term.zero)))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hentryRen1 Nat.succ
   have hentry : BProv Ax_s D
       (betaTermAtTermIdx (Term.var (lowHalf+5)) 3 2
         (Term.succ Term.zero)) := by
@@ -58041,24 +57933,14 @@ theorem
       term_rename_up_succ_rename_succ, List.map_map,
       Function.comp_def, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
       using
-        BProv_context_two hentryRen2
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (body := betaShiftTailExistsTermAtBody 1 0
+            (Term.succ (Term.var 2))) holdEntry)
   have holdSteps' : BProv Ax_s G
       (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))) := by
     simpa [strictHighOddOpenedWitnessSuccLowMemOpenedStepsTermFormula]
       using holdSteps
-  have hstepsRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ
-        (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2)))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      holdSteps' Nat.succ
-  have hstepsRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hstepsRen1 Nat.succ
   have hsteps : BProv Ax_s D
       (betaDiv2StepsThroughTermAt 3 2 (Term.succ (Term.var 4))) := by
     simpa [D, betaShiftTailExistsTermAtOpenedContext,
@@ -58070,27 +57952,15 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_two hstepsRen2
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (body := betaShiftTailExistsTermAtBody 1 0
+            (Term.succ (Term.var 2))) holdSteps')
   have holdBitEx' : BProv Ax_s G
       (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
         (Term.succ (Term.var 2))) := by
     simpa [strictHighOddOpenedWitnessSuccLowMemOpenedBitTermExFormula]
       using holdBitEx
-  have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ
-        (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
-          (Term.succ (Term.var 2)))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      holdBitEx' Nat.succ
-  have hbitRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
-          (Term.succ (Term.var 2))))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hbitRen1 Nat.succ
   have hbit : BProv Ax_s D
       (betaDiv2BitOneTermExAt (Term.var 3) (Term.var 2)
         (Term.succ (Term.var 4))) := by
@@ -58103,7 +57973,10 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_two hbitRen2
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (body := betaShiftTailExistsTermAtBody 1 0
+            (Term.succ (Term.var 2))) holdBitEx')
   exact
     BProv_Ax_s_strictHighOddOpenedWitnessLowHalfMem_opened_shift2_of_shift_tail
       (G := D) (lowHalf := lowHalf)
@@ -58262,28 +58135,12 @@ theorem
       (Term.succ (Term.var 2)) G
   have hbody : BProv Ax_s D
       (betaShiftTailExistsTermAtBody 1 0 (Term.succ (Term.var 2))) :=
-    BProv_ass (B := Ax_s) (G := D)
-      (by simp [D, betaShiftTailExistsTermAtOpenedContext])
+    BProv_ass_head (B := Ax_s)
   have htail : BProv Ax_s D
       (betaShiftTailThroughTermAt 3 2 (Term.var 1) (Term.var 0)
         (Term.succ (Term.var 4))) := by
     simpa [D, betaShiftTailExistsTermAtBody,
       betaShiftTailThroughTermAt, Term.rename] using hbody
-  have hentryRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ
-        (betaTermAtTermIdx (Term.var 4) 1 0
-          (Term.succ Term.zero))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      holdEntry Nat.succ
-  have hentryRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (betaTermAtTermIdx (Term.var 4) 1 0
-          (Term.succ Term.zero)))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hentryRen1 Nat.succ
   have hentry : BProv Ax_s D
       (betaTermAtTermIdx (Term.var 6) 3 2
         (Term.succ Term.zero)) := by
@@ -58296,20 +58153,10 @@ theorem
       term_rename_up_succ_rename_succ, List.map_map,
       Function.comp_def, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
       using
-        BProv_context_two hentryRen2
-  have hstepsRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ
-        (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2)))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      holdSteps Nat.succ
-  have hstepsRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (betaDiv2StepsThroughTermAt 1 0 (Term.succ (Term.var 2))))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hstepsRen1 Nat.succ
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (body := betaShiftTailExistsTermAtBody 1 0
+            (Term.succ (Term.var 2))) holdEntry)
   have hsteps : BProv Ax_s D
       (betaDiv2StepsThroughTermAt 3 2 (Term.succ (Term.var 4))) := by
     simpa [D, betaShiftTailExistsTermAtOpenedContext,
@@ -58321,22 +58168,10 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_two hstepsRen2
-  have hbitRen1 : BProv Ax_s (G.map (rename Nat.succ))
-      (rename Nat.succ
-        (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
-          (Term.succ (Term.var 2)))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      holdBitEx Nat.succ
-  have hbitRen2 : BProv Ax_s
-      ((G.map (rename Nat.succ)).map (rename Nat.succ))
-      (rename Nat.succ (rename Nat.succ
-        (betaDiv2BitOneTermExAt (Term.var 1) (Term.var 0)
-          (Term.succ (Term.var 2))))) :=
-    BProv_rename_of_sentences
-      (B := Ax_s) Ax_s_sentences
-      hbitRen1 Nat.succ
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (body := betaShiftTailExistsTermAtBody 1 0
+            (Term.succ (Term.var 2))) holdSteps)
   have hbit : BProv Ax_s D
       (betaDiv2BitOneTermExAt (Term.var 3) (Term.var 2)
         (Term.succ (Term.var 4))) := by
@@ -58349,7 +58184,10 @@ theorem
       Term.rename_comp, term_rename_up_succ_rename_succ,
       List.map_map, Function.comp_def, Nat.add_assoc, Nat.add_comm,
       Nat.add_left_comm] using
-        BProv_context_two hbitRen2
+        (BProv_lift_two_opened_of_sentences
+          (B := Ax_s) Ax_s_sentences
+          (body := betaShiftTailExistsTermAtBody 1 0
+            (Term.succ (Term.var 2))) holdBitEx)
   exact
     BProv_Ax_s_strictSuccOpenedHighOddOpenedWitnessLowHalfMem_opened_shift2_of_shift_tail
       (G := D) (codeTerm := Term.var 1) (stepTerm := Term.var 0)

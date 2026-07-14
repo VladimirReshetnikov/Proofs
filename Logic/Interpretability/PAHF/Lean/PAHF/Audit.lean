@@ -71,6 +71,8 @@ open SetTheory
 #check @PA.Formula.BProv_lift_openedContext_of_sentences
 #check @PA.Formula.BProv_iterExE_of_sentences
 #check @PA.Formula.BProv_two_exE_of_sentences
+#check @PA.Formula.BProv_lift_two_opened_of_sentences
+#check @PA.Formula.BProv_lift_two_contexts_of_sentences
 #check @PA.Formula.subst_three_witnesses_rename_three_succ
 #print axioms PA.Formula.BProv_iterExE_of_sentences
 #print axioms PA.Formula.BProv_iterRenameSucc_of_sentences

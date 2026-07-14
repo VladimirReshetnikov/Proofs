@@ -25,6 +25,12 @@ Definition BProv_context_prefix := PA.Formula.BProv_context_prefix.
 Definition BProv_two_exE_of_sentences :=
   PA.Formula.BProv_two_exE_of_sentences.
 
+Definition BProv_lift_two_opened_of_sentences :=
+  PA.Formula.BProv_lift_two_opened_of_sentences.
+
+Definition BProv_lift_two_contexts_of_sentences :=
+  PA.Formula.BProv_lift_two_contexts_of_sentences.
+
 (** [iterEx n body] adds [n] existential binders around [body]. *)
 Fixpoint iterEx (n : nat) (body : formula) : formula :=
   match n with
@@ -163,34 +169,6 @@ Proof.
   intros B hB G body target hex hopened.
   exact (BProv_iterExE_of_sentences B hB 3 G body target
     hex hopened).
-Qed.
-
-(** Paired-witness specialization of the generic lifting theorem. *)
-Lemma BProv_lift_two_opened_of_sentences : forall
-    (B : formula -> Prop), Sentences B ->
-  forall G body phi,
-    BProv B G phi ->
-    BProv B
-      (body :: map (rename S) (pEx body :: map (rename S) G))
-      (rename S (rename S phi)).
-Proof.
-  intros B hB G body phi hphi.
-  exact (BProv_lift_openedContext_of_sentences
-    B hB [pEx body; body] G phi hphi).
-Qed.
-
-(** Two-step specialization for distinct outer and inner witness bodies. *)
-Lemma BProv_lift_two_contexts_of_sentences : forall
-    (B : formula -> Prop), Sentences B ->
-  forall G outer inner phi,
-    BProv B G phi ->
-    BProv B
-      (inner :: map (rename S) (outer :: map (rename S) G))
-      (rename S (rename S phi)).
-Proof.
-  intros B hB G outer inner phi hphi.
-  exact (BProv_lift_openedContext_of_sentences
-    B hB [outer; inner] G phi hphi).
 Qed.
 
 (** Three-step specialization for distinct witness bodies. *)
