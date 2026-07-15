@@ -1,0 +1,14 @@
+opam-version: "2.0"
+version: "9.2.0"
+synopsis: "Compatibility package name for Rocq 9.2 core"
+description: """
+Empty compatibility package for libraries whose opam metadata still depends on
+the historical coq-core package name.  The implementation is supplied by the
+matching rocq-core package.
+"""
+maintainer: "Vladimir Reshetnikov"
+authors: ["Vladimir Reshetnikov"]
+homepage: "https://github.com/VladimirReshetnikov/Proofs"
+bug-reports: "https://github.com/VladimirReshetnikov/Proofs/issues"
+license: "MIT"
+depends: ["rocq-core" {= "9.2.0"}]

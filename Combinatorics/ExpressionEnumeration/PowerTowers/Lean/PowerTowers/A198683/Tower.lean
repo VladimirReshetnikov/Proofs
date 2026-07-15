@@ -1216,7 +1216,7 @@ theorem sin_theta_gt_seven_div_thirty :
     (7 : ℝ) / 30 < Real.sin theta := by
   have hquarter : (7 : ℝ) / 30 < Real.sin ((1 : ℝ) / 4) := by
     have h := Real.sin_gt_sub_cube
-      (x := (1 : ℝ) / 4) (by norm_num) (by norm_num)
+      (x := (1 : ℝ) / 4) (by norm_num)
     norm_num at h ⊢
     linarith
   have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
@@ -1228,7 +1228,7 @@ theorem sin_theta_gt_twenty_nine_div_hundred :
     (29 : ℝ) / 100 < Real.sin theta := by
   have hthree_tenths : (29 : ℝ) / 100 < Real.sin ((3 : ℝ) / 10) := by
     have h := Real.sin_gt_sub_cube
-      (x := (3 : ℝ) / 10) (by norm_num) (by norm_num)
+      (x := (3 : ℝ) / 10) (by norm_num)
     norm_num at h ⊢
     linarith
   have hmono := Real.sin_lt_sin_of_lt_of_le_pi_div_two
@@ -2473,7 +2473,7 @@ theorem p6A_im_gt_one_div_three :
     nlinarith [h, hu_lt]
   have hsin_pi_eighth_gt : (10 : ℝ) / 27 < Real.sin (Real.pi / 8) := by
     have h := Real.sin_gt_sub_cube
-      (x := Real.pi / 8) (by positivity) (by linarith [Real.pi_lt_d2])
+      (x := Real.pi / 8) (by positivity)
     have harg_nonneg : 0 ≤ Real.pi / 8 := by positivity
     have harg_gt : (157 : ℝ) / 400 < Real.pi / 8 := by
       linarith [Real.pi_gt_d2]

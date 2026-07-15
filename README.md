@@ -9,7 +9,7 @@ or complementary checks. Generated data and exploratory computations are not
 part of the trusted theorem boundary unless a proved checker connects them to
 the formal semantics.
 
-**Toolchains:** Lean `4.31.0` · mathlib `v4.31.0` · Rocq `>= 9.0`
+**Toolchains:** Lean `4.32.0` · mathlib `v4.32.0` · Rocq `>= 9.2`
 (developed against `9.0.1`) · [MIT-0](LICENSE)
 
 ## Repository map
@@ -54,6 +54,9 @@ is the broad Lean import surface.
 - An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)
   deciding every Presburger sentence in Lean, with an independent constructive
   Coq proof and decision procedure for the normalized one-variable step.
+- Lean/Coq proofs that [first-order Peano-arithmetic theoremhood is
+  undecidable](Logic/PeanoArithmetic/Undecidable/README.md), by reductions from
+  the halting problem and Hilbert's tenth problem respectively.
 - Lean/Coq proofs that first-order Peano arithmetic has two non-isomorphic
   models, separating the numeral-generated standard model from a compactness
   model with an element above every standard numeral.
@@ -120,11 +123,11 @@ dependency-ordered source list, including the vendored certificates under
 `lib/Coq-BB5`:
 
 ```powershell
-coq_makefile -f _CoqProject -o Makefile.coq
+rocq makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq
 ```
 
-Topic READMEs document focused `coqc` commands and Lean/Coq parity boundaries.
+Topic READMEs document focused `rocq c` commands and Lean/Rocq parity boundaries.
 The combinatory-logic development checks the same weak-lambda-to-SK-to-SKI-to-
 Iota simulation and the converse faithful Iota-to-lambda embedding independently
 in both systems. In particular, some other Coq ports check the finite

@@ -1352,7 +1352,7 @@ private theorem exp_pi_div_two_lt_twenty_nine_div_six :
 private theorem sin_pi_div_twelve_gt_one_div_four :
     (1 : ℝ) / 4 < Real.sin (Real.pi / 12) := by
   have h := Real.sin_gt_sub_cube
-    (x := Real.pi / 12) (by positivity) (by linarith [Real.pi_lt_d2])
+    (x := Real.pi / 12) (by positivity)
   have harg_gt : (157 : ℝ) / 600 < Real.pi / 12 := by
     linarith [Real.pi_gt_d2]
   have harg_lt : Real.pi / 12 < (21 : ℝ) / 80 := by

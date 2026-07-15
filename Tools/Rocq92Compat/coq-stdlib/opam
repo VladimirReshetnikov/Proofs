@@ -1,0 +1,17 @@
+opam-version: "2.0"
+version: "9.2.0"
+synopsis: "Compatibility package name for the Rocq 9.2 standard library"
+description: """
+Empty compatibility package for libraries whose opam metadata still depends on
+the historical coq-stdlib package name.  The implementation is supplied by the
+latest standalone rocq-stdlib package compatible with Rocq 9.2.
+"""
+maintainer: "Vladimir Reshetnikov"
+authors: ["Vladimir Reshetnikov"]
+homepage: "https://github.com/VladimirReshetnikov/Proofs"
+bug-reports: "https://github.com/VladimirReshetnikov/Proofs/issues"
+license: "MIT"
+depends: [
+  "coq-core" {= "9.2.0"}
+  "rocq-stdlib" {>= "9.1.0"}
+]

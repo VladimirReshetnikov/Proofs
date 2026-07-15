@@ -1,0 +1,7 @@
+Require Import PAUndecidable.
+
+Check H10p_reduces_to_PA_theoremhood.
+Check peano_arithmetic_theoremhood_not_decidable.
+
+Print Assumptions H10p_reduces_to_PA_theoremhood.
+Print Assumptions peano_arithmetic_theoremhood_not_decidable.
