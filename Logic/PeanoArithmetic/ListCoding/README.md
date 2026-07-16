@@ -1,7 +1,7 @@
 # Coding finite lists in Peano arithmetic
 
 This project gives independent Lean 4 and Rocq/Coq proofs that finite lists of
-natural numbers can be coded by single natural numbers and that fourteen
+natural numbers can be coded by single natural numbers and that twenty
 standard predicates on those codes are definable by genuine first-order
 formulae in the language of Peano arithmetic.
 
@@ -73,6 +73,24 @@ For the following descriptions, `decode(v) = xs` includes the assertion that
 14. **All permutations**: `v` decodes to the canonical lexicographically
     sorted list of codes of all distinct permutations of the list decoded by
     `w`.
+15. **Sum**: `p` is the left-to-right sum of the entries decoded from `v`;
+    the empty list has sum zero.
+16. **Product**: `p` is the left-to-right product of the entries decoded from
+    `v`; the empty list has product one.
+17. **Greatest element**: `m` occurs in the list decoded from `v` and every
+    entry is at most `m`.  This is false for the empty list.
+18. **Least element**: `m` occurs in the list decoded from `v` and every entry
+    is at least `m`.  This is false for the empty list.
+19. **Twice the median**: after sorting the nonempty decoded list, `m` is twice
+    its central entry at odd length, or the sum of its two central entries at
+    even length.
+20. **Unique mode**: `m` occurs in the decoded list and its multiplicity is
+    strictly greater than the multiplicity of every different entry.
+
+The six scalar relations use the result-first parameter order shown above:
+`(p, v)` for sum and product and `(m, v)` for the four statistics.  A scalar
+result is an arbitrary natural number, not another list code; only `v` is
+subject to the validity guard.
 
 Every predicate is strict about malformed inputs. If any argument that is
 supposed to code a list is invalid, the predicate is false. Flattening and the
@@ -80,6 +98,31 @@ two predicates about lists of list codes additionally require every inner code
 to be valid. In particular, two invalid numbers are not permutations, an
 invalid number is not vacuously sorted, and an invalid inner code cannot be
 hidden in a flattening witness.
+
+## Aggregate and statistical conventions
+
+Sum and product are certified by sequences of partial results.  Their initial
+values, zero and one respectively, make the empty-list conventions part of
+the arithmetic definitions rather than exceptional metalevel cases.
+
+The median relation uses a nondecreasing permutation of the input.  At length
+`2k+1` its result is twice entry `k`; at length `2k+2` its result is the sum of
+entries `k` and `k+1`.  This is exactly twice the conventional median while
+remaining a natural number and avoiding division in the PA formula.  Sorted
+permutations have the same order statistics, so the witness cannot change the
+result.
+
+For the mode, only values that occur in the list can be competitors.  The
+candidate must occur and must have a strictly larger count than every
+different occurring value.  Thus the relation is false for the empty list
+and for every tie at the maximal frequency.
+
+Both formalizations prove the corresponding natural properties: sum and
+product exist uniquely for every valid list code; greatest, least, and twice
+the median exist for every valid nonempty code and are functional; and a
+unique mode, whenever it exists, is functional.  Named checked regressions
+record both empty folds, the four empty-list failures, a tied-mode failure,
+and odd- and even-length median examples.
 
 ## The all-permutations convention
 
@@ -136,14 +179,16 @@ results.
   round-trip/functionality results. `PAListCoding.Predicates` defines the
   guarded relations, constructs their arithmetic formulae through
   Foundation's definability infrastructure, and proves the formula-evaluation
-  correctness theorems. `PAListCoding.Standard` connects those internal
-  relations to ordinary Lean lists. `PAListCoding.lean` is the public facade,
-  and `PAListCoding.Audit` checks the theorem surface and its assumptions.
+  correctness theorems. `PAListCoding.Standard` connects the original
+  relations to ordinary Lean lists, while `PAListCoding.Aggregates` proves the
+  six scalar bridges, determinacy and existence properties, and edge cases.
+  `PAListCoding.lean` is the public facade, and `PAListCoding.Audit` checks the
+  theorem surface and its assumptions.
 - Coq's `ListCode.v` supplies the independent executable nested code and the
-  metalevel meanings of the fourteen predicates. `Representability.v`
+  metalevel meanings of the twenty predicates. `Representability.v`
   provides compositional representation machinery over the repository's PA
   formula syntax. `ListFormulas.v` constructs the actual PA formulae and
-  proves all fourteen standard-model equivalences. `Audit.v` checks the
+  proves all twenty standard-model equivalences. `Audit.v` checks the
   complete public surface and prints its assumptions.
 
 The Lean development depends on the vendored
@@ -185,8 +230,10 @@ rocqchk -silent -Q Logic/FirstOrder/Coq FirstOrder `
   PAListCoding.ListFormulas PAListCoding.Audit
 ```
 
-The audit modules check all fourteen formula/correctness results together with
-the coding existence, decoding functionality, round-trip, and injectivity
-theorems. No generated enumeration is part of the trusted theorem boundary:
+The audit modules check all twenty formula/correctness results together with
+the ordinary-list bridges, aggregate functionality and existence properties,
+edge cases, and the coding existence, decoding functionality, round-trip, and
+injectivity theorems. No generated enumeration is part of the trusted theorem
+boundary:
 the all-permutations result is checked against its soundness, completeness,
 exact-once, and lexicographic specification.

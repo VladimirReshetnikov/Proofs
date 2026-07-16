@@ -54,8 +54,9 @@ is the broad Lean import surface.
 - Independent Lean/Coq [natural-number codings of finite lists](Logic/PeanoArithmetic/ListCoding/README.md),
   with genuine PA formulae defining validity, access, concatenation,
   flattening, multiplicity, permutations, substrings, subsequences,
-  duplicate-freedom, numeric and lexicographic sorting, and the canonical
-  lexicographic enumeration of every distinct permutation.
+  duplicate-freedom, numeric and lexicographic sorting, sum, product, extrema,
+  twice-median and unique-mode statistics, and the canonical lexicographic
+  enumeration of every distinct permutation.
 - An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)
   deciding every Presburger sentence in Lean, with an independent constructive
   Coq proof and decision procedure for the normalized one-variable step.
