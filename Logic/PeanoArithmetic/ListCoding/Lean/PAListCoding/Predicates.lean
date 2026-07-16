@@ -11,6 +11,7 @@ The existential witnesses are themselves coded sequences:
 
 * `ConcatAll` uses a trace of successive partial concatenations;
 * `Occurrences` uses a trace of running counts;
+* `SumElements` and `ProductElements` use traces of partial aggregates;
 * `Permutation` and `Subsequence` use lists of source indices.
 
 These choices are important: every quantifier in the definitions is an
@@ -67,6 +68,41 @@ def Occurrences (v n m : V) : Prop :=
       (znth v i ≠ m ∧ znth trace (i + 1) = znth trace i)) ∧
     znth trace (lh v) = n
 
+/--
+`p` is the sum of the entries of `v`.
+
+The trace contains one more entry than `v`: entry `i` is the sum of the first
+`i` inputs.  In particular, the empty code has the one-entry trace `[0]` and
+therefore has sum zero.
+-/
+def SumElements (p v : V) : Prop :=
+  Seq v ∧ ∃ trace, Seq trace ∧ lh trace = lh v + 1 ∧ znth trace 0 = 0 ∧
+    (∀ i < lh v,
+      znth trace (i + 1) = znth trace i + znth v i) ∧
+    znth trace (lh v) = p
+
+/--
+`p` is the product of the entries of `v`.
+
+This is the multiplicative analogue of `SumElements`; starting the trace at
+one makes the empty product equal to one.
+-/
+def ProductElements (p v : V) : Prop :=
+  Seq v ∧ ∃ trace, Seq trace ∧ lh trace = lh v + 1 ∧ znth trace 0 = 1 ∧
+    (∀ i < lh v,
+      znth trace (i + 1) = znth trace i * znth v i) ∧
+    znth trace (lh v) = p
+
+/-- `m` occurs in nonempty `v` and bounds every entry from above. -/
+def Greatest (m v : V) : Prop :=
+  Seq v ∧ ∃ i < lh v, znth v i = m ∧
+    ∀ j < lh v, znth v j ≤ m
+
+/-- `m` occurs in nonempty `v` and bounds every entry from below. -/
+def Least (m v : V) : Prop :=
+  Seq v ∧ ∃ i < lh v, znth v i = m ∧
+    ∀ j < lh v, m ≤ znth v j
+
 /-- A valid coded list whose entries at distinct positions are distinct. -/
 def NoDuplicates (v : V) : Prop :=
   Seq v ∧ ∀ i < lh v, ∀ j < lh v, i < j → znth v i ≠ znth v j
@@ -110,6 +146,34 @@ def Subsequence (v w : V) : Prop :=
 def Nondecreasing (v : V) : Prop :=
   Seq v ∧ ∀ i < lh v,
     i + 1 < lh v → znth v i ≤ znth v (i + 1)
+
+/--
+`m` is twice the median of the entries of nonempty `v`.
+
+The witness `sorted` is a non-decreasing permutation.  If the length is
+`2k+1`, twice the median is twice entry `k`; if it is `2(k+1)`, it is the sum
+of entries `k` and `k+1`.  Writing the definition this way avoids division
+and parity predicates and is well behaved in every model of PA.
+-/
+def TwiceMedian (m v : V) : Prop :=
+  Seq v ∧ ∃ sorted,
+    Permutation sorted v ∧ Nondecreasing sorted ∧
+      ((∃ k, lh v = k + k + 1 ∧
+          m = znth sorted k + znth sorted k) ∨
+       ∃ k, lh v = (k + 1) + (k + 1) ∧
+          m = znth sorted k + znth sorted (k + 1))
+
+/--
+`m` occurs in `v` and has strictly larger multiplicity than every different
+entry.  Quantifying over positions rather than arbitrary numbers keeps the
+comparison bounded; every possible competitor necessarily occurs at one of
+those positions.
+-/
+def UniqueMode (m v : V) : Prop :=
+  Seq v ∧ ∃ i < lh v, znth v i = m ∧
+    ∀ j < lh v, znth v j ≠ m →
+      ∃ cm cx,
+        Occurrences v cm m ∧ Occurrences v cx (znth v j) ∧ cx < cm
 
 /-- The usual lexicographic non-strict order on two valid coded lists. -/
 def LexLE (a b : V) : Prop :=
@@ -186,6 +250,18 @@ existential witnesses.
 @[simp, definability] instance occurrences_definable :
     𝚺-[2]-Relation₃ (Occurrences : V → V → V → Prop) := by definability
 
+@[simp, definability] instance sumElements_definable :
+    𝚺-[2]-Relation (SumElements : V → V → Prop) := by definability
+
+@[simp, definability] instance productElements_definable :
+    𝚺-[2]-Relation (ProductElements : V → V → Prop) := by definability
+
+@[simp, definability] instance greatest_definable :
+    𝚺-[2]-Relation (Greatest : V → V → Prop) := by definability
+
+@[simp, definability] instance least_definable :
+    𝚺-[2]-Relation (Least : V → V → Prop) := by definability
+
 @[simp, definability] instance noDuplicates_definable :
     𝚺-[2]-Predicate (NoDuplicates : V → Prop) := by definability
 
@@ -203,6 +279,12 @@ existential witnesses.
 
 @[simp, definability] instance nondecreasing_definable :
     𝚺-[2]-Predicate (Nondecreasing : V → Prop) := by definability
+
+@[simp, definability] instance twiceMedian_definable :
+    𝚺-[2]-Relation (TwiceMedian : V → V → Prop) := by definability
+
+@[simp, definability] instance uniqueMode_definable :
+    𝚺-[2]-Relation (UniqueMode : V → V → Prop) := by definability
 
 @[simp, definability] instance lexLE_definable :
     𝚺-[2]-Relation (LexLE : V → V → Prop) := by definability
@@ -325,6 +407,48 @@ noncomputable def permutationFormula : PAFormula 2 :=
 @[simp] theorem permutationFormula_spec (v w : ℕ) :
     permutationFormula.Eval ![v, w] id ↔ Permutation v w := by
   exact formulaOf_spec (permutation_definable (V := ℕ)) ![v, w]
+
+noncomputable def sumElementsFormula : PAFormula 2 :=
+  formulaOf (sumElements_definable (V := ℕ))
+
+@[simp] theorem sumElementsFormula_spec (p v : ℕ) :
+    sumElementsFormula.Eval ![p, v] id ↔ SumElements p v := by
+  exact formulaOf_spec (sumElements_definable (V := ℕ)) ![p, v]
+
+noncomputable def productElementsFormula : PAFormula 2 :=
+  formulaOf (productElements_definable (V := ℕ))
+
+@[simp] theorem productElementsFormula_spec (p v : ℕ) :
+    productElementsFormula.Eval ![p, v] id ↔ ProductElements p v := by
+  exact formulaOf_spec (productElements_definable (V := ℕ)) ![p, v]
+
+noncomputable def greatestFormula : PAFormula 2 :=
+  formulaOf (greatest_definable (V := ℕ))
+
+@[simp] theorem greatestFormula_spec (m v : ℕ) :
+    greatestFormula.Eval ![m, v] id ↔ Greatest m v := by
+  exact formulaOf_spec (greatest_definable (V := ℕ)) ![m, v]
+
+noncomputable def leastFormula : PAFormula 2 :=
+  formulaOf (least_definable (V := ℕ))
+
+@[simp] theorem leastFormula_spec (m v : ℕ) :
+    leastFormula.Eval ![m, v] id ↔ Least m v := by
+  exact formulaOf_spec (least_definable (V := ℕ)) ![m, v]
+
+noncomputable def twiceMedianFormula : PAFormula 2 :=
+  formulaOf (twiceMedian_definable (V := ℕ))
+
+@[simp] theorem twiceMedianFormula_spec (m v : ℕ) :
+    twiceMedianFormula.Eval ![m, v] id ↔ TwiceMedian m v := by
+  exact formulaOf_spec (twiceMedian_definable (V := ℕ)) ![m, v]
+
+noncomputable def uniqueModeFormula : PAFormula 2 :=
+  formulaOf (uniqueMode_definable (V := ℕ))
+
+@[simp] theorem uniqueModeFormula_spec (m v : ℕ) :
+    uniqueModeFormula.Eval ![m, v] id ↔ UniqueMode m v := by
+  exact formulaOf_spec (uniqueMode_definable (V := ℕ)) ![m, v]
 
 noncomputable def substringFormula : PAFormula 2 :=
   formulaOf (substring_definable (V := ℕ))
