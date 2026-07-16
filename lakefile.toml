@@ -1,5 +1,5 @@
 name = "Proofs"
-defaultTargets = ["Proofs"]
+defaultTargets = ["Proofs", "PAUndecidable", "PAUndecidable.Audit"]
 
 [[require]]
 name = "mathlib"
@@ -88,6 +88,14 @@ srcDir = "Logic/PeanoArithmetic/NoFiniteModel/Lean"
 [[lean_lib]]
 name = "PAFiniteBasisReduction"
 srcDir = "Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean"
+
+[[lean_lib]]
+name = "Foundation"
+srcDir = "lib/FormalizedFormalLogic-Foundation"
+
+[[lean_lib]]
+name = "PAUndecidable"
+srcDir = "Logic/PeanoArithmetic/Undecidable/Lean"
 
 [[lean_lib]]
 name = "PresburgerArithmetic"

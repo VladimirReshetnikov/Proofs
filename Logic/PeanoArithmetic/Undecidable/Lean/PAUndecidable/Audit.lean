@@ -4,10 +4,16 @@ import PAUndecidable
 #check PAUndecidable.haltingCode_not_computable
 #check PAUndecidable.haltingCode_iff_pa_provable
 #check PAUndecidable.peano_arithmetic_instance_theoremhood_not_computable
+#check PAUndecidable.exists_undecidable_instance_theoremhood
+#check PAUndecidable.haltingSentenceCode_computable
+#check PAUndecidable.haltingCode_iff_encoded_pa_theoremhood
 #check PAUndecidable.peano_arithmetic_theoremhood_not_decidable
 
 #print axioms PAUndecidable.haltingCode_re
 #print axioms PAUndecidable.haltingCode_not_computable
 #print axioms PAUndecidable.haltingCode_iff_pa_provable
 #print axioms PAUndecidable.peano_arithmetic_instance_theoremhood_not_computable
+#print axioms PAUndecidable.exists_undecidable_instance_theoremhood
+#print axioms PAUndecidable.haltingSentenceCode_computable
+#print axioms PAUndecidable.haltingCode_iff_encoded_pa_theoremhood
 #print axioms PAUndecidable.peano_arithmetic_theoremhood_not_decidable

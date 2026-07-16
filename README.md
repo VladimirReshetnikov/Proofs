@@ -86,6 +86,7 @@ lake build +FirstOrder.Fol
 lake build +ClosureAxiomatization.Forward
 lake build +NoFiniteModel
 lake build +PAFiniteBasisReduction
+lake build +PAUndecidable +PAUndecidable.Audit
 lake build +PowerTowers.Core
 lake build +CombinatoryLogic
 lake build +BusyBeaver.BB2
@@ -106,6 +107,7 @@ lake --dir Logic/FirstOrder/Compactness/Lean build
 lake --dir Logic/Interpretability/PAHF/Lean build
 lake --dir Logic/PeanoArithmetic/NoFiniteModel/Lean build
 lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean build
+lake --dir Logic/PeanoArithmetic/Undecidable/Lean build
 lake --dir Logic/PresburgerArithmetic/Lean build
 lake --dir SetTheory/ZF/Lean build
 lake --dir SetTheory/ClosureAxiomatization/Lean build
