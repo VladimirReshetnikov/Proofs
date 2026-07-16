@@ -2140,6 +2140,624 @@ Proof.
   apply AllPermutationsPosition_iff.
 Qed.
 
+(** * Aggregate traces
+
+    A scalar aggregate is certified by a canonically coded list of partial
+    values.  The trace has one more entry than the input, starts at [base],
+    and applies [combine] at every input position.  In particular, scalar
+    results are never (incorrectly) required to be valid list codes. *)
+Definition AggregatePosition
+    (combine : nat -> nat -> nat) (base p v : nat) : Prop :=
+  exists len trace,
+    HasLength v len /\
+    HasLength trace (S len) /\
+    NthElement trace 0 base /\
+    NthElement trace len p /\
+    forall i x cur next,
+      i < len ->
+      NthElement v i x ->
+      NthElement trace i cur ->
+      NthElement trace (S i) next ->
+      next = combine cur x.
+
+Definition SumElementsPosition (p v : nat) : Prop :=
+  AggregatePosition Nat.add 0 p v.
+
+Definition ProductElementsPosition (p v : nat) : Prop :=
+  AggregatePosition Nat.mul 1 p v.
+
+Definition sumElementsTermAt (p v : term) : formula :=
+  pEx (pEx
+    (pAnd5
+      (hasLengthTermAt (liftTerm 2 v) (tVar 1))
+      (hasLengthTermAt (tVar 0) (tSucc (tVar 1)))
+      (nthElementTermAt (tVar 0) tZero tZero)
+      (nthElementTermAt (tVar 0) (tVar 1) (liftTerm 2 p))
+      (pAll
+        (pImp (Formula.ltTermAt (tVar 0) (tVar 2))
+          (pAll (pAll (pAll
+            (pImp
+              (nthElementTermAt (liftTerm 6 v) (tVar 3) (tVar 2))
+              (pImp
+                (nthElementTermAt (tVar 4) (tVar 3) (tVar 1))
+                (pImp
+                  (nthElementTermAt (tVar 4)
+                    (tSucc (tVar 3)) (tVar 0))
+                  (pEq (tVar 0) (tAdd (tVar 1) (tVar 2))))))))))))).
+
+Definition productElementsTermAt (p v : term) : formula :=
+  pEx (pEx
+    (pAnd5
+      (hasLengthTermAt (liftTerm 2 v) (tVar 1))
+      (hasLengthTermAt (tVar 0) (tSucc (tVar 1)))
+      (nthElementTermAt (tVar 0) tZero (tSucc tZero))
+      (nthElementTermAt (tVar 0) (tVar 1) (liftTerm 2 p))
+      (pAll
+        (pImp (Formula.ltTermAt (tVar 0) (tVar 2))
+          (pAll (pAll (pAll
+            (pImp
+              (nthElementTermAt (liftTerm 6 v) (tVar 3) (tVar 2))
+              (pImp
+                (nthElementTermAt (tVar 4) (tVar 3) (tVar 1))
+                (pImp
+                  (nthElementTermAt (tVar 4)
+                    (tSucc (tVar 3)) (tVar 0))
+                  (pEq (tVar 0) (tMul (tVar 1) (tVar 2))))))))))))).
+
+Lemma sumElementsTermAt_position : forall e p v,
+  Formula.Sat natModel e (sumElementsTermAt p v) <->
+  SumElementsPosition
+    (Term.eval natModel e p) (Term.eval natModel e v).
+Proof.
+  intros e p v.
+  unfold sumElementsTermAt, SumElementsPosition, AggregatePosition, pAnd5.
+  cbn [Formula.Sat].
+  setoid_rewrite hasLengthTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons2.
+  setoid_rewrite eval_liftTerm_scons6.
+  split.
+  - intros [len [trace [hv [ht [hbase [hfinal hstep]]]]]].
+    exists len, trace. repeat split; try assumption.
+    intros i x cur next hi hvi hti htn.
+    exact (hstep i hi x cur next hvi hti htn).
+  - intros [len [trace [hv [ht [hbase [hfinal hstep]]]]]].
+    exists len, trace. repeat split; try assumption.
+    intros i hi x cur next hvi hti htn.
+    exact (hstep i x cur next hi hvi hti htn).
+Qed.
+
+Lemma productElementsTermAt_position : forall e p v,
+  Formula.Sat natModel e (productElementsTermAt p v) <->
+  ProductElementsPosition
+    (Term.eval natModel e p) (Term.eval natModel e v).
+Proof.
+  intros e p v.
+  unfold productElementsTermAt, ProductElementsPosition,
+    AggregatePosition, pAnd5.
+  cbn [Formula.Sat].
+  setoid_rewrite hasLengthTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons2.
+  setoid_rewrite eval_liftTerm_scons6.
+  split.
+  - intros [len [trace [hv [ht [hbase [hfinal hstep]]]]]].
+    exists len, trace. repeat split; try assumption.
+    intros i x cur next hi hvi hti htn.
+    exact (hstep i hi x cur next hvi hti htn).
+  - intros [len [trace [hv [ht [hbase [hfinal hstep]]]]]].
+    exists len, trace. repeat split; try assumption.
+    intros i hi x cur next hvi hti htn.
+    exact (hstep i x cur next hi hvi hti htn).
+Qed.
+
+Definition prefixFolds
+    (combine : nat -> nat -> nat) (base : nat) (xs : list nat) : list nat :=
+  map (fun i => fold_left combine (firstn i xs) base)
+    (seq 0 (S (length xs))).
+
+Lemma prefixFolds_length : forall combine base xs,
+  length (prefixFolds combine base xs) = S (length xs).
+Proof.
+  intros. unfold prefixFolds. rewrite map_length, seq_length. reflexivity.
+Qed.
+
+Lemma prefixFolds_nth : forall combine base xs i,
+  i <= length xs ->
+  nth_error (prefixFolds combine base xs) i =
+    Some (fold_left combine (firstn i xs) base).
+Proof.
+  intros combine base xs i hi. unfold prefixFolds.
+  rewrite nth_error_map, nth_error_seq.
+  destruct (i <? S (length xs)) eqn:h.
+  - simpl. now replace (0 + i) with i by lia.
+  - apply Nat.ltb_ge in h. lia.
+Qed.
+
+Lemma firstn_step_nth : forall (A : Type) (xs : list A) i x,
+  i < length xs -> nth_error xs i = Some x ->
+  firstn (S i) xs = firstn i xs ++ [x].
+Proof.
+  intros A xs. induction xs as [|y ys IH]; intros i x hi hnth;
+    [simpl in hi; lia |].
+  destruct i as [|i].
+  - simpl in hnth. inversion hnth; subst x. reflexivity.
+  - simpl in hnth |- *. f_equal.
+    apply IH; [simpl in hi; lia | exact hnth].
+Qed.
+
+Lemma fold_left_firstn_step : forall
+    (combine : nat -> nat -> nat) (base : nat) (xs : list nat) i x,
+  i < length xs -> nth_error xs i = Some x ->
+  fold_left combine (firstn (S i) xs) base =
+    combine (fold_left combine (firstn i xs) base) x.
+Proof.
+  intros. rewrite (firstn_step_nth _ xs i x H H0), fold_left_app.
+  reflexivity.
+Qed.
+
+Lemma AggregatePosition_iff : forall combine base p v,
+  AggregatePosition combine base p v <->
+  exists xs,
+    decode v = Some xs /\ fold_left combine xs base = p.
+Proof.
+  intros combine base p v. split.
+  - intros [len [trace
+      [[xs [hv hlen]] [[ts [ht htlen]] [hbase [hfinal hstep]]]]]].
+    exists xs. split; [exact hv |].
+    assert (hinv : forall i, i <= length xs ->
+      nth_error ts i = Some (fold_left combine (firstn i xs) base)).
+    {
+      intros i hi. induction i as [|i IHi].
+      - apply (NthElement_decode trace 0 base ts ht) in hbase.
+        simpl. exact hbase.
+      - assert (hil : i < length xs) by lia.
+        specialize (IHi ltac:(lia)).
+        destruct (nth_error_exists_of_lt xs i hil) as [x hx].
+        destruct (nth_error_exists_of_lt ts (S i) ltac:(lia)) as [next hn].
+        assert (hvi : NthElement v i x).
+        { apply (NthElement_decode v i x xs hv). exact hx. }
+        assert (hti : NthElement trace i
+          (fold_left combine (firstn i xs) base)).
+        { apply (NthElement_decode trace i _ ts ht). exact IHi. }
+        assert (htn : NthElement trace (S i) next).
+        { apply (NthElement_decode trace (S i) next ts ht). exact hn. }
+        pose proof (hstep i x _ next ltac:(lia) hvi hti htn) as hs.
+        rewrite (fold_left_firstn_step combine base xs i x hil hx).
+        now subst next.
+    }
+    apply (NthElement_decode trace len p ts ht) in hfinal.
+    specialize (hinv (length xs) ltac:(lia)).
+    rewrite firstn_all in hinv. rewrite hlen in hinv.
+    rewrite hfinal in hinv. inversion hinv. reflexivity.
+  - intros [xs [hv hfold]].
+    set (ts := prefixFolds combine base xs).
+    set (trace := listCode ts).
+    exists (length xs), trace. repeat split.
+    + exists xs. now split.
+    + exists ts. split.
+      * unfold trace. apply decode_listCode.
+      * unfold ts. apply prefixFolds_length.
+    + exists ts. split.
+      * unfold trace. apply decode_listCode.
+      * unfold ts. rewrite prefixFolds_nth by lia. reflexivity.
+    + exists ts. split.
+      * unfold trace. apply decode_listCode.
+      * unfold ts. rewrite prefixFolds_nth by lia.
+        rewrite firstn_all, hfold. reflexivity.
+    + intros i x cur next hi hvi hti htn.
+      apply (NthElement_decode v i x xs hv) in hvi.
+      apply (NthElement_decode trace i cur ts
+        ltac:(unfold trace; apply decode_listCode)) in hti.
+      apply (NthElement_decode trace (S i) next ts
+        ltac:(unfold trace; apply decode_listCode)) in htn.
+      unfold ts in hti, htn.
+      rewrite prefixFolds_nth in hti by lia.
+      rewrite prefixFolds_nth in htn by lia.
+      inversion hti; inversion htn; subst cur next.
+      apply fold_left_firstn_step; assumption.
+Qed.
+
+Lemma fold_left_add_list_sum : forall xs base,
+  fold_left Nat.add xs base = base + list_sum xs.
+Proof.
+  induction xs as [|x xs IH]; intro base; simpl.
+  - lia.
+  - rewrite IH. simpl. lia.
+Qed.
+
+Lemma fold_left_mul_natListProduct : forall xs base,
+  fold_left Nat.mul xs base = base * natListProduct xs.
+Proof.
+  induction xs as [|x xs IH]; intro base; simpl.
+  - lia.
+  - rewrite IH. simpl. nia.
+Qed.
+
+Lemma SumElementsPosition_iff : forall p v,
+  SumElementsPosition p v <-> SumElementsCode p v.
+Proof.
+  intros p v. unfold SumElementsPosition, SumElementsCode.
+  rewrite AggregatePosition_iff. split.
+  - intros [xs [hv h]]. exists xs. split; [exact hv |].
+    rewrite fold_left_add_list_sum in h. simpl in h. exact h.
+  - intros [xs [hv h]]. exists xs. split; [exact hv |].
+    rewrite fold_left_add_list_sum. simpl. exact h.
+Qed.
+
+Lemma ProductElementsPosition_iff : forall p v,
+  ProductElementsPosition p v <-> ProductElementsCode p v.
+Proof.
+  intros p v. unfold ProductElementsPosition, ProductElementsCode.
+  rewrite AggregatePosition_iff. split.
+  - intros [xs [hv h]]. exists xs. split; [exact hv |].
+    rewrite fold_left_mul_natListProduct in h. simpl in h. lia.
+  - intros [xs [hv h]]. exists xs. split; [exact hv |].
+    rewrite fold_left_mul_natListProduct. simpl. lia.
+Qed.
+
+Lemma sumElementsTermAt_nat : forall e p v,
+  Formula.Sat natModel e (sumElementsTermAt p v) <->
+  SumElementsCode (Term.eval natModel e p) (Term.eval natModel e v).
+Proof.
+  intros. rewrite sumElementsTermAt_position. apply SumElementsPosition_iff.
+Qed.
+
+Lemma productElementsTermAt_nat : forall e p v,
+  Formula.Sat natModel e (productElementsTermAt p v) <->
+  ProductElementsCode (Term.eval natModel e p) (Term.eval natModel e v).
+Proof.
+  intros. rewrite productElementsTermAt_position.
+  apply ProductElementsPosition_iff.
+Qed.
+
+(** Extrema are required to occur in the list.  The existential indexed
+    occurrence is what makes both predicates false on the empty list. *)
+Definition GreatestPosition (m v : nat) : Prop :=
+  exists i,
+    NthElement v i m /\
+    forall j x, NthElement v j x -> x <= m.
+
+Definition LeastPosition (m v : nat) : Prop :=
+  exists i,
+    NthElement v i m /\
+    forall j x, NthElement v j x -> m <= x.
+
+Definition greatestTermAt (m v : term) : formula :=
+  pEx
+    (pAnd
+      (nthElementTermAt (liftTerm 1 v) (tVar 0) (liftTerm 1 m))
+      (pAll (pAll
+        (pImp
+          (nthElementTermAt (liftTerm 3 v) (tVar 1) (tVar 0))
+          (Formula.ltTermAt (tVar 0) (tSucc (liftTerm 3 m))))))).
+
+Definition leastTermAt (m v : term) : formula :=
+  pEx
+    (pAnd
+      (nthElementTermAt (liftTerm 1 v) (tVar 0) (liftTerm 1 m))
+      (pAll (pAll
+        (pImp
+          (nthElementTermAt (liftTerm 3 v) (tVar 1) (tVar 0))
+          (Formula.ltTermAt (liftTerm 3 m) (tSucc (tVar 0))))))).
+
+Lemma greatestTermAt_position : forall e m v,
+  Formula.Sat natModel e (greatestTermAt m v) <->
+  GreatestPosition (Term.eval natModel e m) (Term.eval natModel e v).
+Proof.
+  intros e m v. unfold greatestTermAt, GreatestPosition.
+  cbn [Formula.Sat].
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons.
+  setoid_rewrite eval_liftTerm_scons3.
+  split.
+  - intros [i [hi hbound]]. exists i. split; [exact hi |].
+    intros j x hj. pose proof (hbound j x hj). lia.
+  - intros [i [hi hbound]]. exists i. split; [exact hi |].
+    intros j x hj. pose proof (hbound j x hj). lia.
+Qed.
+
+Lemma leastTermAt_position : forall e m v,
+  Formula.Sat natModel e (leastTermAt m v) <->
+  LeastPosition (Term.eval natModel e m) (Term.eval natModel e v).
+Proof.
+  intros e m v. unfold leastTermAt, LeastPosition.
+  cbn [Formula.Sat].
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons.
+  setoid_rewrite eval_liftTerm_scons3.
+  split.
+  - intros [i [hi hbound]]. exists i. split; [exact hi |].
+    intros j x hj. pose proof (hbound j x hj). lia.
+  - intros [i [hi hbound]]. exists i. split; [exact hi |].
+    intros j x hj. pose proof (hbound j x hj). lia.
+Qed.
+
+Lemma GreatestPosition_iff : forall m v,
+  GreatestPosition m v <-> GreatestCode m v.
+Proof.
+  intros m v. split.
+  - intros [i [[xs [hv hmi]] hbound]].
+    exists xs. split; [exact hv |]. split.
+    + apply nth_error_In in hmi. exact hmi.
+    + apply Forall_forall. intros x hx.
+      apply In_nth_error in hx. destruct hx as [j hx].
+      apply hbound with (j := j).
+      apply (NthElement_decode v j x xs hv). exact hx.
+  - intros [xs [hv [hmin hbound]]].
+    apply In_nth_error in hmin. destruct hmin as [i hmi].
+    exists i. split.
+    + apply (NthElement_decode v i m xs hv). exact hmi.
+    + intros j x hj.
+      apply (NthElement_decode v j x xs hv) in hj.
+      apply Forall_forall with (x := x) in hbound.
+      * exact hbound.
+      * apply nth_error_In in hj. exact hj.
+Qed.
+
+Lemma LeastPosition_iff : forall m v,
+  LeastPosition m v <-> LeastCode m v.
+Proof.
+  intros m v. split.
+  - intros [i [[xs [hv hmi]] hbound]].
+    exists xs. split; [exact hv |]. split.
+    + apply nth_error_In in hmi. exact hmi.
+    + apply Forall_forall. intros x hx.
+      apply In_nth_error in hx. destruct hx as [j hx].
+      apply hbound with (j := j).
+      apply (NthElement_decode v j x xs hv). exact hx.
+  - intros [xs [hv [hmin hbound]]].
+    apply In_nth_error in hmin. destruct hmin as [i hmi].
+    exists i. split.
+    + apply (NthElement_decode v i m xs hv). exact hmi.
+    + intros j x hj.
+      apply (NthElement_decode v j x xs hv) in hj.
+      apply Forall_forall with (x := x) in hbound.
+      * exact hbound.
+      * apply nth_error_In in hj. exact hj.
+Qed.
+
+Lemma greatestTermAt_nat : forall e m v,
+  Formula.Sat natModel e (greatestTermAt m v) <->
+  GreatestCode (Term.eval natModel e m) (Term.eval natModel e v).
+Proof. intros. rewrite greatestTermAt_position. apply GreatestPosition_iff. Qed.
+
+Lemma leastTermAt_nat : forall e m v,
+  Formula.Sat natModel e (leastTermAt m v) <->
+  LeastCode (Term.eval natModel e m) (Term.eval natModel e v).
+Proof. intros. rewrite leastTermAt_position. apply LeastPosition_iff. Qed.
+
+(** A median certificate is a coded nondecreasing permutation plus one of
+    the two division-free length/index cases.  Actual [NthElement] witnesses
+    ensure that no out-of-range totalized projection can satisfy a case. *)
+Definition TwiceMedianPosition (m v : nat) : Prop :=
+  exists sorted,
+    PermutationCode sorted v /\
+    SortedCode sorted /\
+    ((exists k a,
+        HasLength v (k + k + 1) /\
+        NthElement sorted k a /\
+        m = a + a) \/
+     exists k a b,
+        HasLength v (S k + S k) /\
+        NthElement sorted k a /\
+        NthElement sorted (S k) b /\
+        m = a + b).
+
+Definition twiceMedianTermAt (m v : term) : formula :=
+  pEx
+    (pAnd3
+      (permutationTermAt (tVar 0) (liftTerm 1 v))
+      (sortedTermAt (tVar 0))
+      (pOr
+        (pEx (pEx
+          (pAnd3
+            (hasLengthTermAt (liftTerm 3 v)
+              (tSucc (tAdd (tVar 1) (tVar 1))))
+            (nthElementTermAt (tVar 2) (tVar 1) (tVar 0))
+            (pEq (liftTerm 3 m) (tAdd (tVar 0) (tVar 0))))))
+        (pEx (pEx (pEx
+          (pAnd4
+            (hasLengthTermAt (liftTerm 4 v)
+              (tAdd (tSucc (tVar 2)) (tSucc (tVar 2))))
+            (nthElementTermAt (tVar 3) (tVar 2) (tVar 1))
+            (nthElementTermAt (tVar 3) (tSucc (tVar 2)) (tVar 0))
+            (pEq (liftTerm 4 m) (tAdd (tVar 1) (tVar 0))))))))).
+
+Lemma twiceMedianTermAt_position : forall e m v,
+  Formula.Sat natModel e (twiceMedianTermAt m v) <->
+  TwiceMedianPosition (Term.eval natModel e m) (Term.eval natModel e v).
+Proof.
+  intros e m v. unfold twiceMedianTermAt, TwiceMedianPosition, pAnd3, pAnd4.
+  cbn [Formula.Sat].
+  setoid_rewrite permutationTermAt_nat.
+  setoid_rewrite sortedTermAt_nat.
+  setoid_rewrite hasLengthTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons.
+  setoid_rewrite eval_liftTerm_scons3.
+  setoid_rewrite eval_liftTerm_scons4.
+  split.
+  - intros [sorted [hperm [hsorted hcase]]].
+    exists sorted. split; [exact hperm |]. split; [exact hsorted |].
+    destruct hcase as [[k [a [hlen [hnth heq]]]] |
+      [k [a [b [hlen [ha [hb heq]]]]]]].
+    + left. exists k, a. split.
+      * replace (k + k + 1) with (S (k + k)) by lia. exact hlen.
+      * split; [exact hnth | lia].
+    + right. exists k, a, b. split.
+      * exact hlen.
+      * split; [exact ha |]. split; [exact hb | lia].
+  - intros [sorted [hperm [hsorted hcase]]].
+    exists sorted. split; [exact hperm |]. split; [exact hsorted |].
+    destruct hcase as [[k [a [hlen [hnth heq]]]] |
+      [k [a [b [hlen [ha [hb heq]]]]]]].
+    + left. exists k, a. split.
+      * replace (S (k + k)) with (k + k + 1) by lia. exact hlen.
+      * split; [exact hnth | lia].
+    + right. exists k, a, b. split.
+      * exact hlen.
+      * split; [exact ha |]. split; [exact hb | lia].
+Qed.
+
+Lemma TwiceMedianPosition_iff : forall m v,
+  TwiceMedianPosition m v <-> TwiceMedianCode m v.
+Proof.
+  intros m v. split.
+  - intros [sorted [hperm [hsorted hcase]]].
+    destruct hperm as [ss [xs [hs [hv hp]]]].
+    destruct hsorted as [ss' [hs' hsort]].
+    pose proof (decode_functional sorted ss ss' hs hs') as hss. subst ss'.
+    exists xs. split; [exact hv |].
+    exists ss. split; [exact hp |]. split; [exact hsort |].
+    destruct hcase as [[k [a [[xs' [hv' hlen]] [hnth heq]]]] |
+      [k [a [b [[xs' [hv' hlen]] [ha [hb heq]]]]]]].
+    + pose proof (decode_functional v xs xs' hv hv') as hx. subst xs'.
+      left. exists k, a. repeat split; try assumption.
+      apply (NthElement_decode sorted k a ss hs) in hnth. exact hnth.
+    + pose proof (decode_functional v xs xs' hv hv') as hx. subst xs'.
+      right. exists k, a, b. repeat split; try assumption.
+      * apply (NthElement_decode sorted k a ss hs) in ha. exact ha.
+      * apply (NthElement_decode sorted (S k) b ss hs) in hb. exact hb.
+  - intros [xs [hv [ss [hp [hsort hcase]]]]].
+    set (sorted := listCode ss).
+    exists sorted. split.
+    + exists ss, xs. repeat split; try assumption.
+      unfold sorted. apply decode_listCode.
+    + split.
+      * exists ss. split; [unfold sorted; apply decode_listCode | exact hsort].
+      * destruct hcase as [[k [a [hlen [ha heq]]]] |
+          [k [a [b [hlen [ha [hb heq]]]]]]].
+        -- left. exists k, a. repeat split; try assumption.
+           ++ exists xs. now split.
+           ++ apply (NthElement_decode sorted k a ss
+                ltac:(unfold sorted; apply decode_listCode)). exact ha.
+        -- right. exists k, a, b. repeat split; try assumption.
+           ++ exists xs. now split.
+           ++ apply (NthElement_decode sorted k a ss
+                ltac:(unfold sorted; apply decode_listCode)). exact ha.
+           ++ apply (NthElement_decode sorted (S k) b ss
+                ltac:(unfold sorted; apply decode_listCode)). exact hb.
+Qed.
+
+Lemma twiceMedianTermAt_nat : forall e m v,
+  Formula.Sat natModel e (twiceMedianTermAt m v) <->
+  TwiceMedianCode (Term.eval natModel e m) (Term.eval natModel e v).
+Proof.
+  intros. rewrite twiceMedianTermAt_position. apply TwiceMedianPosition_iff.
+Qed.
+
+(** The mode certificate fixes the positive count of the candidate once,
+    then checks only values occurring at bounded positions.  Every possible
+    rival occurs at such a position, while absent naturals have count zero. *)
+Definition UniqueModePosition (m v : nat) : Prop :=
+  exists len cm,
+    HasLength v len /\
+    OccurrencesCode v cm m /\
+    0 < cm /\
+    (exists i, i < len /\ NthElement v i m) /\
+    forall j x,
+      j < len -> NthElement v j x -> x <> m ->
+      exists cx, OccurrencesCode v cx x /\ cx < cm.
+
+Definition uniqueModeTermAt (m v : term) : formula :=
+  pEx (pEx
+    (pAnd5
+      (hasLengthTermAt (liftTerm 2 v) (tVar 1))
+      (occurrencesTermAt (liftTerm 2 v) (tVar 0) (liftTerm 2 m))
+      (Formula.ltTermAt tZero (tVar 0))
+      (pEx
+        (pAnd
+          (Formula.ltTermAt (tVar 0) (tVar 2))
+          (nthElementTermAt (liftTerm 3 v) (tVar 0) (liftTerm 3 m))))
+      (pAll
+        (pImp (Formula.ltTermAt (tVar 0) (tVar 2))
+          (pAll
+            (pImp
+              (nthElementTermAt (liftTerm 4 v) (tVar 1) (tVar 0))
+              (pImp
+                (pNot (pEq (tVar 0) (liftTerm 4 m)))
+                (pEx
+                  (pAnd
+                    (occurrencesTermAt
+                      (liftTerm 5 v) (tVar 0) (tVar 1))
+                    (Formula.ltTermAt (tVar 0) (tVar 3))))))))))).
+
+Lemma uniqueModeTermAt_position : forall e m v,
+  Formula.Sat natModel e (uniqueModeTermAt m v) <->
+  UniqueModePosition (Term.eval natModel e m) (Term.eval natModel e v).
+Proof.
+  intros e m v.
+  unfold uniqueModeTermAt, UniqueModePosition, pAnd5, pNot.
+  cbn [Formula.Sat].
+  setoid_rewrite hasLengthTermAt_nat.
+  setoid_rewrite occurrencesTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons2.
+  setoid_rewrite eval_liftTerm_scons3.
+  setoid_rewrite eval_liftTerm_scons4.
+  setoid_rewrite eval_liftTerm_scons5.
+  split.
+  - intros [len [cm [hlen [hcm [hpos [hcandidate hdom]]]]]].
+    exists len, cm. repeat split; try assumption.
+    intros j x hj hjx hneq. exact (hdom j hj x hjx hneq).
+  - intros [len [cm [hlen [hcm [hpos [hcandidate hdom]]]]]].
+    exists len, cm. repeat split; try assumption.
+    intros j hj x hjx hneq. exact (hdom j x hj hjx hneq).
+Qed.
+
+Lemma UniqueModePosition_iff : forall m v,
+  UniqueModePosition m v <-> UniqueModeCode m v.
+Proof.
+  intros m v. split.
+  - intros [len [cm
+      [[xs [hv hlen]] [hcm [hpos [[i [hi hmi]] hdom]]]]]].
+    destruct hcm as [xs' [hv' hcountm]].
+    pose proof (decode_functional v xs xs' hv hv') as hxs. subst xs'.
+    exists xs. split; [exact hv |]. split.
+    + apply nth_error_In with (n := i).
+      apply (NthElement_decode v i m xs hv) in hmi. exact hmi.
+    + intros x hx hneq.
+      apply In_nth_error in hx. destruct hx as [j hx].
+      assert (hj : j < len).
+      { rewrite <- hlen. apply nth_error_Some. rewrite hx. discriminate. }
+      assert (hjx : NthElement v j x).
+      { apply (NthElement_decode v j x xs hv). exact hx. }
+      destruct (hdom j x hj hjx hneq) as [cx [hcx hlt]].
+      destruct hcx as [ys [hvy hcountx]].
+      pose proof (decode_functional v xs ys hv hvy) as hxy. subst ys.
+      rewrite hcountx, hcountm. exact hlt.
+  - intros [xs [hv [hmin hdom]]].
+    set (cm := count_occ Nat.eq_dec xs m).
+    exists (length xs), cm. repeat split.
+    + exists xs. now split.
+    + exists xs. split; [exact hv | reflexivity].
+    + unfold cm. apply (proj1 (count_occ_In Nat.eq_dec xs m)). exact hmin.
+    + apply In_nth_error in hmin. destruct hmin as [i hi].
+      exists i. split.
+      * apply nth_error_Some. rewrite hi. discriminate.
+      * apply (NthElement_decode v i m xs hv). exact hi.
+    + intros j x hj hjx hneq.
+      apply (NthElement_decode v j x xs hv) in hjx.
+      exists (count_occ Nat.eq_dec xs x). split.
+      * exists xs. split; [exact hv | reflexivity].
+      * unfold cm. apply hdom.
+        -- apply nth_error_In in hjx. exact hjx.
+        -- exact hneq.
+Qed.
+
+Lemma uniqueModeTermAt_nat : forall e m v,
+  Formula.Sat natModel e (uniqueModeTermAt m v) <->
+  UniqueModeCode (Term.eval natModel e m) (Term.eval natModel e v).
+Proof.
+  intros. rewrite uniqueModeTermAt_position. apply UniqueModePosition_iff.
+Qed.
+
 Definition validCodeFormula : formula := validCodeTermAt (tVar 0).
 Definition hasLengthFormula : formula :=
   hasLengthTermAt (tVar 0) (tVar 1).
@@ -2168,6 +2786,18 @@ Definition lexSortedFormula : formula :=
   lexSortedTermAt (tVar 0).
 Definition allPermutationsFormula : formula :=
   allPermutationsTermAt (tVar 0) (tVar 1).
+Definition sumElementsFormula : formula :=
+  sumElementsTermAt (tVar 0) (tVar 1).
+Definition productElementsFormula : formula :=
+  productElementsTermAt (tVar 0) (tVar 1).
+Definition greatestFormula : formula :=
+  greatestTermAt (tVar 0) (tVar 1).
+Definition leastFormula : formula :=
+  leastTermAt (tVar 0) (tVar 1).
+Definition twiceMedianFormula : formula :=
+  twiceMedianTermAt (tVar 0) (tVar 1).
+Definition uniqueModeFormula : formula :=
+  uniqueModeTermAt (tVar 0) (tVar 1).
 
 Theorem validCodeFormula_correct : forall e,
   Formula.Sat natModel e validCodeFormula <-> ValidCode (e 0).
@@ -2234,5 +2864,34 @@ Theorem allPermutationsFormula_correct : forall e,
 Proof.
   intro e. unfold allPermutationsFormula. apply allPermutationsTermAt_nat.
 Qed.
+
+Theorem sumElementsFormula_correct : forall e,
+  Formula.Sat natModel e sumElementsFormula <->
+  SumElementsCode (e 0) (e 1).
+Proof. intro e. unfold sumElementsFormula. apply sumElementsTermAt_nat. Qed.
+
+Theorem productElementsFormula_correct : forall e,
+  Formula.Sat natModel e productElementsFormula <->
+  ProductElementsCode (e 0) (e 1).
+Proof.
+  intro e. unfold productElementsFormula. apply productElementsTermAt_nat.
+Qed.
+
+Theorem greatestFormula_correct : forall e,
+  Formula.Sat natModel e greatestFormula <-> GreatestCode (e 0) (e 1).
+Proof. intro e. unfold greatestFormula. apply greatestTermAt_nat. Qed.
+
+Theorem leastFormula_correct : forall e,
+  Formula.Sat natModel e leastFormula <-> LeastCode (e 0) (e 1).
+Proof. intro e. unfold leastFormula. apply leastTermAt_nat. Qed.
+
+Theorem twiceMedianFormula_correct : forall e,
+  Formula.Sat natModel e twiceMedianFormula <->
+  TwiceMedianCode (e 0) (e 1).
+Proof. intro e. unfold twiceMedianFormula. apply twiceMedianTermAt_nat. Qed.
+
+Theorem uniqueModeFormula_correct : forall e,
+  Formula.Sat natModel e uniqueModeFormula <-> UniqueModeCode (e 0) (e 1).
+Proof. intro e. unfold uniqueModeFormula. apply uniqueModeTermAt_nat. Qed.
 
 End PAListFormulas.

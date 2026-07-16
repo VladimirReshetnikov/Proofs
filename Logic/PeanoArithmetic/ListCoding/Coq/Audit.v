@@ -31,6 +31,12 @@ Check PAListFormulas.noDuplicatesFormula.
 Check PAListFormulas.sortedFormula.
 Check PAListFormulas.lexSortedFormula.
 Check PAListFormulas.allPermutationsFormula.
+Check PAListFormulas.sumElementsFormula.
+Check PAListFormulas.productElementsFormula.
+Check PAListFormulas.greatestFormula.
+Check PAListFormulas.leastFormula.
+Check PAListFormulas.twiceMedianFormula.
+Check PAListFormulas.uniqueModeFormula.
 
 Check PAListFormulas.validCodeFormula_correct.
 Check PAListFormulas.hasLengthFormula_correct.
@@ -46,6 +52,40 @@ Check PAListFormulas.noDuplicatesFormula_correct.
 Check PAListFormulas.sortedFormula_correct.
 Check PAListFormulas.lexSortedFormula_correct.
 Check PAListFormulas.allPermutationsFormula_correct.
+Check PAListFormulas.sumElementsFormula_correct.
+Check PAListFormulas.productElementsFormula_correct.
+Check PAListFormulas.greatestFormula_correct.
+Check PAListFormulas.leastFormula_correct.
+Check PAListFormulas.twiceMedianFormula_correct.
+Check PAListFormulas.uniqueModeFormula_correct.
+
+Check PAListCode.SumElementsCode_functional.
+Check PAListCode.ProductElementsCode_functional.
+Check PAListCode.GreatestCode_functional.
+Check PAListCode.LeastCode_functional.
+Check PAListCode.TwiceMedianCode_functional.
+Check PAListCode.UniqueModeCode_functional.
+Check PAListCode.SumElementsCode_exists.
+Check PAListCode.ProductElementsCode_exists.
+Check PAListCode.GreatestCode_exists_nonempty.
+Check PAListCode.LeastCode_exists_nonempty.
+Check PAListCode.TwiceMedianCode_exists_nonempty.
+Check PAListCode.SumElementsCode_listCode.
+Check PAListCode.ProductElementsCode_listCode.
+Check PAListCode.GreatestCode_listCode.
+Check PAListCode.LeastCode_listCode.
+Check PAListCode.TwiceMedianCode_listCode.
+Check PAListCode.UniqueModeCode_listCode.
+
+Check PAListCode.SumElementsCode_empty.
+Check PAListCode.ProductElementsCode_empty.
+Check PAListCode.GreatestCode_empty_false.
+Check PAListCode.LeastCode_empty_false.
+Check PAListCode.TwiceMedianCode_empty_false.
+Check PAListCode.UniqueModeCode_empty_false.
+Check PAListCode.UniqueModeCode_tie_1_2_false.
+Check PAListCode.TwiceMedianCode_odd_example.
+Check PAListCode.TwiceMedianCode_even_example.
 
 Print Assumptions PAListCode.decode_listCode.
 Print Assumptions PAListCode.listCode_decode.
@@ -67,6 +107,40 @@ Print Assumptions PAListFormulas.noDuplicatesFormula_correct.
 Print Assumptions PAListFormulas.sortedFormula_correct.
 Print Assumptions PAListFormulas.lexSortedFormula_correct.
 Print Assumptions PAListFormulas.allPermutationsFormula_correct.
+Print Assumptions PAListFormulas.sumElementsFormula_correct.
+Print Assumptions PAListFormulas.productElementsFormula_correct.
+Print Assumptions PAListFormulas.greatestFormula_correct.
+Print Assumptions PAListFormulas.leastFormula_correct.
+Print Assumptions PAListFormulas.twiceMedianFormula_correct.
+Print Assumptions PAListFormulas.uniqueModeFormula_correct.
+
+Print Assumptions PAListCode.SumElementsCode_functional.
+Print Assumptions PAListCode.ProductElementsCode_functional.
+Print Assumptions PAListCode.GreatestCode_functional.
+Print Assumptions PAListCode.LeastCode_functional.
+Print Assumptions PAListCode.TwiceMedianCode_functional.
+Print Assumptions PAListCode.UniqueModeCode_functional.
+Print Assumptions PAListCode.SumElementsCode_exists.
+Print Assumptions PAListCode.ProductElementsCode_exists.
+Print Assumptions PAListCode.GreatestCode_exists_nonempty.
+Print Assumptions PAListCode.LeastCode_exists_nonempty.
+Print Assumptions PAListCode.TwiceMedianCode_exists_nonempty.
+Print Assumptions PAListCode.SumElementsCode_listCode.
+Print Assumptions PAListCode.ProductElementsCode_listCode.
+Print Assumptions PAListCode.GreatestCode_listCode.
+Print Assumptions PAListCode.LeastCode_listCode.
+Print Assumptions PAListCode.TwiceMedianCode_listCode.
+Print Assumptions PAListCode.UniqueModeCode_listCode.
+
+Print Assumptions PAListCode.SumElementsCode_empty.
+Print Assumptions PAListCode.ProductElementsCode_empty.
+Print Assumptions PAListCode.GreatestCode_empty_false.
+Print Assumptions PAListCode.LeastCode_empty_false.
+Print Assumptions PAListCode.TwiceMedianCode_empty_false.
+Print Assumptions PAListCode.UniqueModeCode_empty_false.
+Print Assumptions PAListCode.UniqueModeCode_tie_1_2_false.
+Print Assumptions PAListCode.TwiceMedianCode_odd_example.
+Print Assumptions PAListCode.TwiceMedianCode_even_example.
 
 (* Audit the non-obvious semantic bridges separately from their wrappers. *)
 Print Assumptions PAListFormulas.ListTrace_complete.
@@ -74,3 +148,10 @@ Print Assumptions PAListFormulas.FlattenPosition_iff.
 Print Assumptions PAListFormulas.SubsequenceByChunks_iff.
 Print Assumptions PAListFormulas.LexSortedPosition_iff.
 Print Assumptions PAListFormulas.AllPermutationsPosition_iff.
+Print Assumptions PAListFormulas.AggregatePosition_iff.
+Print Assumptions PAListFormulas.SumElementsPosition_iff.
+Print Assumptions PAListFormulas.ProductElementsPosition_iff.
+Print Assumptions PAListFormulas.GreatestPosition_iff.
+Print Assumptions PAListFormulas.LeastPosition_iff.
+Print Assumptions PAListFormulas.TwiceMedianPosition_iff.
+Print Assumptions PAListFormulas.UniqueModePosition_iff.

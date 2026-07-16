@@ -1017,4 +1017,71 @@ Proof.
   - intro hmode. exists xs. split; [apply decode_listCode | exact hmode].
 Qed.
 
+(** Named edge regressions make the empty-list and tie conventions visible
+    to the kernel audit rather than leaving them only implicit in the general
+    specifications. *)
+Lemma SumElementsCode_empty : SumElementsCode 0 (listCode []).
+Proof. apply (proj2 (SumElementsCode_listCode 0 [])). reflexivity. Qed.
+
+Lemma ProductElementsCode_empty : ProductElementsCode 1 (listCode []).
+Proof. apply (proj2 (ProductElementsCode_listCode 1 [])). reflexivity. Qed.
+
+Lemma GreatestCode_empty_false : forall m,
+  ~ GreatestCode m (listCode []).
+Proof.
+  intros m h. apply GreatestCode_listCode in h. destruct h as [h _].
+  contradiction.
+Qed.
+
+Lemma LeastCode_empty_false : forall m,
+  ~ LeastCode m (listCode []).
+Proof.
+  intros m h. apply LeastCode_listCode in h. destruct h as [h _].
+  contradiction.
+Qed.
+
+Lemma TwiceMedianCode_empty_false : forall m,
+  ~ TwiceMedianCode m (listCode []).
+Proof.
+  intros m h. apply TwiceMedianCode_listCode in h.
+  destruct h as [sorted [hp [hs
+    [[k [a [hlen _]]] | [k [a [b [hlen _]]]]]]]].
+  all: simpl in hlen; lia.
+Qed.
+
+Lemma UniqueModeCode_empty_false : forall m,
+  ~ UniqueModeCode m (listCode []).
+Proof.
+  intros m h. apply UniqueModeCode_listCode in h. destruct h as [h _].
+  contradiction.
+Qed.
+
+Lemma UniqueModeCode_tie_1_2_false : forall m,
+  ~ UniqueModeCode m (listCode [1; 2]).
+Proof.
+  intros m h. apply UniqueModeCode_listCode in h.
+  destruct h as [hin hdom]. simpl in hin.
+  destruct hin as [hm | [hm | []]]; subst m.
+  - specialize (hdom 2 ltac:(simpl; auto) ltac:(lia)). simpl in hdom. lia.
+  - specialize (hdom 1 ltac:(simpl; auto) ltac:(lia)). simpl in hdom. lia.
+Qed.
+
+Lemma TwiceMedianCode_odd_example :
+  TwiceMedianCode 2 (listCode [1]).
+Proof.
+  apply (proj2 (TwiceMedianCode_listCode 2 [1])).
+  exists [1]. split; [apply Permutation_refl |]. split.
+  - unfold Nondecreasing. repeat constructor.
+  - left. exists 0, 1. repeat split; reflexivity.
+Qed.
+
+Lemma TwiceMedianCode_even_example :
+  TwiceMedianCode 4 (listCode [1; 3]).
+Proof.
+  apply (proj2 (TwiceMedianCode_listCode 4 [1; 3])).
+  exists [1; 3]. split; [apply Permutation_refl |]. split.
+  - unfold Nondecreasing. repeat constructor; lia.
+  - right. exists 0, 1, 3. repeat split; reflexivity.
+Qed.
+
 End PAListCode.
