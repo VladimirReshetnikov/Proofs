@@ -160,8 +160,9 @@ end AllPermutations
 /-!
 ## Definability
 
-We use `𝚺-[2]` uniformly for the first thirteen relations.  This is a
-convenient common upper bound; several of them are in fact bounded (`𝚺₀`).
+We use `𝚺-[2]` uniformly for all relations above except
+`AllPermutations`.  This is a convenient common upper bound; several of them
+are in fact bounded (`𝚺₀`).
 The proofs below synthesize formulas from the closure of representable
 relations under Boolean operations, bounded quantification, and coded
 existential witnesses.
