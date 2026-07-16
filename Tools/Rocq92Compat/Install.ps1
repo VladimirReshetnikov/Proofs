@@ -63,7 +63,26 @@ $opamRoot = (& $Opam var root).Trim()
 if ($LASTEXITCODE -ne 0) {
     throw "opam var root failed with exit code $LASTEXITCODE"
 }
+$cygwinSetup = Join-Path $opamRoot ".cygwin\setup-x86_64.exe"
+$cygwinRoot = Join-Path $opamRoot ".cygwin\root"
+$cygwinCache = Join-Path $opamRoot ".cygwin\cache"
 $cygwinBin = Join-Path $opamRoot ".cygwin\root\bin"
+$cygwinPatch = Join-Path $cygwinBin "patch.exe"
+
+# MetaRocq's generated-plugin refresh applies two bundled extraction patches.
+# Opam's minimal internal Cygwin installation does not include GNU patch, and
+# the upstream script historically continued after `patch` was not found,
+# leaving a misleading OCaml weak-type error much later in the build.
+& $cygwinSetup -q -B -R $cygwinRoot -l $cygwinCache `
+    -s "https://cygwin.mirror.constant.com/" -P patch
+if (-not (Test-Path -LiteralPath $cygwinPatch)) {
+    throw "Cygwin patch installation did not produce $cygwinPatch"
+}
+& $cygwinPatch --version | Out-Null
+if ($LASTEXITCODE -ne 0) {
+    throw "Cygwin patch validation failed with exit code $LASTEXITCODE"
+}
+
 $compiler = Join-Path $cygwinBin "x86_64-w64-mingw32-gcc.exe"
 $env:PATH = "$cygwinBin;$env:PATH"
 

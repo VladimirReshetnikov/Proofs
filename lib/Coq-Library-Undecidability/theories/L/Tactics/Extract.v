@@ -6,7 +6,7 @@ From MetaRocq.Utils Require Import bytestring.
 
 Open Scope bs.
 
-Import MRMonadNotation.
+Import MonadNotation.
 
 Fixpoint name_after_dot' (s : String.string) (r : String.string) :=
   match s with
@@ -622,4 +622,3 @@ Opaque extracted.
 (* End extract. *)
 
 Global Obligation Tactic := idtac.
-

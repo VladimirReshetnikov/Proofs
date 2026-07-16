@@ -21,8 +21,9 @@ pwsh -File Tools/Rocq92Compat/Install.ps1
 ```
 
 The adapters contain no binaries or theories.  The `coq-core` adapter also
-publishes findlib aliases for the legacy `coq-core.engine` and
-`coq-core.plugins.ltac` names; both delegate to `rocq-runtime`.  Rocq's own
+publishes findlib aliases for the legacy core-library and plugin names used by
+released OCaml extensions, including `coq-core.clib`, `coq-core.engine`, and
+`coq-core.plugins.ltac`; every alias delegates to `rocq-runtime`.  Rocq's own
 packages remain the sole providers of the implementation and standard library.
 
 On Windows, the installer also compiles a tiny launcher and exposes native
@@ -30,14 +31,16 @@ On Windows, the installer also compiles a tiny launcher and exposes native
 appropriate Rocq 9.2 subcommand and prevents Dune from resolving an older Rocq
 Platform executable before a `.cmd` shim.
 
-Finally, the bundled local opam repository applies the audited Coquelicot
-3.4.4/Rocq 9.2 proof-order patch.  Coquelicot is built with Rocq's generated
-makefile because its native Windows `remake.exe` writes a CRLF dependency
-database that it later fails to parse.  The Flocq and Interval recipes adjust
-their Windows-only build commands from `./remake` to the generated
-`./remake.exe`.  Upstream versions, dependency constraints, and release
-checksums are unchanged.  The installer provides unprefixed aliases to opam's
-matching MinGW compiler, so
+Finally, the bundled local opam repository applies audited Rocq 9.2 proof-order
+patches to Coquelicot 3.4.4 and Interval 4.11.4.  Coquelicot is built with
+Rocq's generated makefile because its native Windows `remake.exe` writes a
+CRLF dependency database that it later fails to parse.  The Flocq and Interval
+recipes adjust their Windows-only build commands from `./remake` to the
+generated `./remake.exe`.  Upstream versions, dependency constraints, and
+release checksums are unchanged.  The installer also adds GNU `patch` to
+opam's internal Cygwin environment so MetaRocq can apply its own bundled
+extraction fixes before compiling the generated OCaml plugin.  It provides
+unprefixed aliases to opam's matching MinGW compiler, so
 `configure` cannot mix a WinLibs compiler with opam's runtime DLLs.
 It also discards stale `.remake` dependency caches before Windows retries,
 because a loader-level interruption can leave those derived files truncated.

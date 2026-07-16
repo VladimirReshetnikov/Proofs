@@ -1,0 +1,1899 @@
+--- a/src/Eval/Eval.v
++++ b/src/Eval/Eval.v
+@@ -210,10 +210,10 @@
+ intros T U d' n f l d.
+ destruct le_lt_dec as [H|H].
+ - apply nth_overflow.
+-  now rewrite map_length.
+-- rewrite (nth_indep _ d (f d')).
++  now rewrite length_map.
++- have Hmap : (n < length (map f l))%nat by now rewrite length_map.
++  rewrite (nth_indep _ d (f d') Hmap).
+   apply map_nth.
+-  now rewrite map_length.
+ Qed.
+ 
+ Lemma nth_map_lt :
+@@ -222,9 +222,9 @@
+   nth n (map f l) d = f (nth n l d').
+ Proof.
+ intros T U d' n f l d H.
+-rewrite (nth_indep _ d (f d')).
++have Hmap : (n < length (map f l))%nat by now rewrite length_map.
++rewrite (nth_indep _ d (f d') Hmap).
+ apply map_nth.
+-now rewrite map_length.
+ Qed.
+ 
+ Lemma xreal_to_real :
+@@ -1001,9 +1001,11 @@
+ simpl.
+ rewrite (nth_map 0).
+ destruct le_lt_dec as [H|H].
+-  rewrite nth_overflow.
++  have Hmap :
++      (length (map (fun _ : R => Xmask (Xreal 0) x) terms) <= n)%nat
++      by now rewrite length_map.
++  rewrite (nth_overflow _ Xnan Hmap).
+   now case x.
+-  now rewrite map_length.
+ rewrite -> (nth_map_lt 0) by easy.
+ apply Xderive_pt_constant.
+ Qed.
+@@ -1048,17 +1050,15 @@
+ specialize (H _ Hf).
+ rewrite (proj1 H).
+ simpl.
+-rewrite Rcompare_Lt.
++rewrite (Rcompare_Lt _ _ (proj2 H)).
+ apply I.neg_correct.
+ now apply Hf'.
+-apply H.
+ intros H.
+ specialize (H _ Hf).
+ rewrite (proj1 H).
+ simpl.
+-rewrite Rcompare_Gt.
++rewrite (Rcompare_Gt _ _ (proj2 H)).
+ now apply Hf'.
+-apply H.
+ (* ln *)
+ specialize (Hf _ Hx).
+ generalize (I.sign_strict_correct yi).
+@@ -1067,11 +1067,10 @@
+ specialize (H _ Hf).
+ rewrite {1}(proj1 H).
+ simpl.
+-rewrite Rcompare_Gt.
++rewrite (Rcompare_Gt _ _ (proj2 H)).
+ apply I.div_correct.
+ now apply Hf'.
+ exact Hf.
+-apply H.
+ Qed.
+ 
+ Lemma binary_diff_bnd_correct :
+@@ -1195,16 +1194,18 @@
+ rewrite 2!map_map /=.
+ rewrite (nth_map I.nai).
+ destruct le_lt_dec as [H|H].
+-  rewrite nth_overflow.
++  have Hmap :
++      (length (map (fun _ : R => Xmask (Xreal 0) x) vars) <= n)%nat.
++    rewrite length_map -(proj1 Hv).
++    exact H.
++  rewrite (nth_overflow _ Xnan Hmap).
+   now rewrite I.nai_correct.
+-  rewrite map_length.
+-  now rewrite <- (proj1 Hv).
+-rewrite (nth_map_lt 0).
++have Hvars : (n < length vars)%nat by now rewrite -(proj1 Hv).
++rewrite (nth_map_lt 0 n (fun _ : R => Xmask (Xreal 0) x) vars Xnan Hvars).
+ apply I.mask_correct.
+ rewrite I.zero_correct.
+ split ; apply Rle_refl.
+ exact Hx.
+-now rewrite <- (proj1 Hv).
+ Qed.
+ 
+ Definition diff_refining_points prec xi di yi yi' ym yl yu :=
+@@ -1321,9 +1322,9 @@
+ case_eq (I.convert yi').
+ (* - yi' is NaI *)
+ intro Hyn'.
+-rewrite I.add_propagate_r.
++have Hmul := I.mul_propagate_r prec (I.sub prec xi mi) yi' Hyn'.
++rewrite (I.add_propagate_r prec ymi _ Hmul).
+ easy.
+-now apply I.mul_propagate_r.
+ (* - yi' is real ... *)
+ intros yl' yu' Hyi'.
+ destruct x as [|x].
+@@ -1427,10 +1428,10 @@
+ apply J.subset_midpoint with (1 := Hnexi).
+ now apply J.contains_midpoint.
+ now destruct (I.midpoint_correct xi Hnexi) as [<- _].
+-intros.
+-rewrite (Hs2 (f' x0)).
++intros x0 Hx0.
++have Hz : f' x0 = Xreal 0 := Hs2 _ (Hyi' _ Hx0).
++rewrite Hz.
+ split ; apply Rle_refl.
+-now apply Hyi'.
+ (* - sign is Xlt *)
+ assert (I.sign_large yi' <> Xund).
+ now rewrite Hs1.
+@@ -1637,14 +1638,13 @@
+   contains (I.convert (I.bnd v v)) (I.F.convert v).
+ Proof.
+ intros l u v H.
+-rewrite I.bnd_correct.
+-destruct (I.F.convert v).
+-elim H.
+-split ; apply Rle_refl.
+-- apply I.valid_lb_real.
+-  now revert H; case I.F.convert.
+-- apply I.valid_ub_real.
+-  now revert H; case I.F.convert.
++case Ev : (I.F.convert v) => [|r].
++  rewrite Ev in H; elim H.
++have Hreal : I.F.convert v = Xreal (proj_val (I.F.convert v)) by rewrite Ev.
++have Hlb : I.valid_lb v := I.valid_lb_real _ Hreal.
++have Hub : I.valid_ub v := I.valid_ub_real _ Hreal.
++rewrite (I.bnd_correct _ _ Hlb Hub) Ev /=.
++split; apply Rle_refl.
+ Qed.
+ 
+ Theorem diff_refining_correct :
+@@ -2015,18 +2015,19 @@
+   + simpl.
+     rewrite (nth_map I.nai).
+     destruct le_lt_dec as [H|H].
+-      rewrite nth_overflow.
++      have Hvars : (length (map Xreal vars) <= n)%nat.
++        rewrite length_map -(proj1 Hv).
++        exact H.
++      rewrite (nth_overflow _ Xnan Hvars).
+       eapply TM.approximates_ext.
+       easy.
+       now apply TM.dummy_correct.
+-      rewrite map_length.
+-      now rewrite <- (proj1 Hv).
+-    rewrite (nth_map_lt 0).
++    have Hvars : (n < length vars)%nat by now rewrite -(proj1 Hv).
++    rewrite (nth_map_lt 0 n Xreal vars Xnan Hvars).
+     eapply TM.approximates_ext.
+     easy.
+     apply TM.const_correct.
+     apply Hv.
+-    now rewrite <- (proj1 Hv).
+ - intros [|n].
+   2: apply IHl.
+   simpl.
+--- a/src/Integral/Bertrand.v
++++ b/src/Integral/Bertrand.v
+@@ -425,27 +425,28 @@
+           (-((INR beta.+1) / IZR (alpha + 1)) * ln (X x)) / (X x).
+     field.
+     by split; lra.
+-  rewrite -ln_Rpower ?Rpow_mult_distr => // .
+-  + have -> : Rpower (X x) (-(INR beta.+1 / IZR (alpha + 1))) =
+-          x.
+-      rewrite Rpower_mult.
+-      rewrite opp_IZR.
+-      have -> : (- IZR ((alpha + 1)) / INR beta.+1 * -(INR beta.+1 / IZR (alpha + 1))) = 1 by field; lra.
+-      exact: Rpower_1.
+-  + rewrite Rmult_comm.
+-    congr (_ * _).
+-    have Hpow_pos :  Rpower x (IZR (- (alpha + 1)) / INR beta.+1) > 0.
+-      by apply: Rpower_pos => // ; lra.
+-    rewrite -Rinv_pow /X; try lra.
+-    rewrite -Rpower_pow ?Rpower_mult -?Rpower_Ropp // .
+-    have -> : (- (IZR (- (alpha + 1)) / INR beta.+1 * INR beta.+1)) = IZR (alpha + 1)%Z.
+-      by rewrite opp_IZR; field; lra.
+-    by rewrite powerRZ_Rpower.
+-  apply: Ropp_0_ge_le_contravar.
+-  apply: Rle_ge.
+-  rewrite /Rdiv.
+-  apply: Rmult_le_pos_neg => // ; try lra.
+-  by apply: Rlt_le; apply: Rinv_lt_0_compat.
++  have Hy : 0 <= -(INR beta.+1 / IZR (alpha + 1)).
++    apply: Ropp_0_ge_le_contravar.
++    apply: Rle_ge.
++    rewrite /Rdiv.
++    apply: Rmult_le_pos_neg => // ; try lra.
++    by apply: Rlt_le; apply: Rinv_lt_0_compat.
++  rewrite -(ln_Rpower (X x) _ HXgt0 Hy) ?Rpow_mult_distr.
++  have Hxp : Rpower (X x) (-(INR beta.+1 / IZR (alpha + 1))) = x.
++    rewrite Rpower_mult opp_IZR.
++    have -> : (- IZR ((alpha + 1)) / INR beta.+1 *
++        -(INR beta.+1 / IZR (alpha + 1))) = 1 by field; lra.
++    exact: Rpower_1.
++  rewrite Hxp Rmult_comm.
++  congr (_ * _).
++  have Hpow_pos : Rpower x (IZR (- (alpha + 1)) / INR beta.+1) > 0.
++    by apply: Rpower_pos => // ; lra.
++  rewrite -Rinv_pow /X; try lra.
++  rewrite -Rpower_pow ?Rpower_mult -?Rpower_Ropp // .
++  have -> : (- (IZR (- (alpha + 1)) / INR beta.+1 * INR beta.+1)) =
++      IZR (alpha + 1)%Z.
++    by rewrite opp_IZR; field; lra.
++  by rewrite powerRZ_Rpower.
+ (* now we can show its limit *)
+ apply: (is_lim_ext_loc (fun x => (- (INR beta.+1 / IZR (alpha + 1)) * (ln (X x) * / X x))
+                ^ beta.+1) ).
+@@ -601,7 +602,8 @@
+   now apply Rlt_le_trans with a.
+ apply: (is_RInt_derive (fun x => f_neg x beta) _).
+   by move => x Hx; apply: Hder; rewrite Rmin_left in Hx; try lra.
+-move => x. (rewrite Rmin_left; last by lra); move => Hx.
++have Hab : a <= b by lra.
++move => x; rewrite (Rmin_left _ _ Hab); move => Hx.
+ apply: continuous_comp.
+   apply: continuous_mult; first exact: continuous_id.
+   apply: (continuous_comp ln (fun x => pow x beta.+1)).
+@@ -836,8 +838,54 @@
+     by rewrite /g; field; lra.
+   have {1}-> : 1 / epsilon = (g epsilon).
+     by rewrite /g; field; lra.
+-  rewrite -(RInt_comp _ _ dg).
+-  rewrite -opp_RInt_swap ; first congr (opp _) ; last by apply: ex_RInt_swap.
++  have Hcont : forall x : R,
++      Rmin epsilon eta <= x <= Rmax epsilon eta ->
++      continuous
++        (fun x0 : R => - (-1) ^ beta * powerRZ x0 (-2 - alpha) *
++          ln x0 ^ beta) (g x).
++    move => x Hx.
++    rewrite Rmin_right in Hx; try lra.
++    rewrite Rmax_left in Hx; try lra.
++    apply: continuous_mult.
++      apply: continuous_mult.
++        exact: continuous_const.
++      apply: ex_derive_continuous.
++      apply: ex_derive_powerRZ.
++      by rewrite /g; right; apply: Rinv_neq_0_compat; lra.
++    rewrite /g.
++    apply: continuous_ext.
++      move => x0.
++      by rewrite pow_powerRZ.
++    apply: (continuous_comp ln (fun x => powerRZ x (Z.of_nat beta))).
++      by apply: continuous_ln; apply: Rinv_0_lt_compat; lra.
++    apply: ex_derive_continuous.
++    by apply: ex_derive_powerRZ; left; apply: Zle_0_nat.
++  have Hdg : forall x : R,
++      Rmin epsilon eta <= x <= Rmax epsilon eta ->
++      is_derive g x (dg x) /\ continuous dg x.
++    move => x Hx.
++    rewrite Rmin_right in Hx; try lra.
++    rewrite Rmax_left in Hx; try lra.
++    split.
++      rewrite /g /dg.
++      apply: (is_derive_inv (fun x => x) x 1); last by lra.
++      exact: is_derive_id.
++    rewrite /dg.
++    apply: continuous_mult; first exact: continuous_const.
++    apply: continuous_Rinv_comp.
++      apply: (continuous_ext (fun t => t * t)) => [t|].
++        by rewrite pow_powerRZ /=; ring.
++      by apply: continuous_mult; exact: continuous_id.
++    by apply: pow_nonzero; lra.
++  have Hcomp := RInt_comp
++    (fun x : R => - (-1) ^ beta * powerRZ x (-2 - alpha) * ln x ^ beta)
++    g dg epsilon eta Hcont Hdg.
++  rewrite -Hcomp.
++  have HintSwap :
++      ex_RInt (fun x : R => powerRZ x alpha * ln x ^ beta) epsilon eta :=
++    ex_RInt_swap _ _ _ Hint.
++  rewrite -(opp_RInt_swap _ _ _ HintSwap).
++  congr (opp _).
+   symmetry; apply: RInt_ext.
+   move => x Hx.
+   rewrite Rmin_right in Hx; try lra.
+@@ -856,37 +904,6 @@
+   now field.
+   rewrite -Rpow_mult_distr.
+   have -> : -1 * -1 = 1 by ring. by rewrite pow1 Rmult_1_l.
+-  move => x Hx.
+-  rewrite Rmin_right in Hx; try lra.
+-  rewrite Rmax_left in Hx; try lra.
+-  apply: continuous_mult.
+-    apply: continuous_mult.
+-      exact: continuous_const.
+-    apply: ex_derive_continuous.
+-    apply: ex_derive_powerRZ.
+-    by rewrite /g; right; apply: Rinv_neq_0_compat; lra.
+-  rewrite /g.
+-  apply: continuous_ext.
+-    move => x0.
+-    by rewrite pow_powerRZ.
+-  apply: (continuous_comp ln (fun x => powerRZ x (Z.of_nat beta))).
+-    by apply: continuous_ln; apply: Rinv_0_lt_compat; lra.
+-  apply: ex_derive_continuous.
+-    by apply: ex_derive_powerRZ; left; apply: Zle_0_nat.
+-  move => x Hx.
+-  rewrite Rmin_right in Hx; try lra.
+-  rewrite Rmax_left in Hx; try lra.
+-  split.
+-    rewrite /g /dg.
+-    apply: (is_derive_inv (fun x => x) x 1); last by lra.
+-    exact: is_derive_id.
+-  rewrite /dg.
+-  apply: continuous_mult; first exact: continuous_const.
+-  apply: continuous_Rinv_comp.
+-    apply: (continuous_ext (fun t => t * t)) => [t|].
+-      by rewrite pow_powerRZ /=; ring.
+-    by apply: continuous_mult; exact: continuous_id.
+-  by apply: pow_nonzero; lra.
+ Qed.
+ 
+ Lemma f0eps_correct alpha beta epsilon (B : R) (Heps : 0 < / B <= epsilon) (HB : 0 < B) (Halpha : (-1 < alpha)%Z) :
+@@ -903,17 +920,28 @@
+   rewrite is_RInt_gen_at_point.
+   suff: f0eps alpha beta epsilon B = RInt (fun x : R => powerRZ x alpha * ln x ^ beta) (/B) epsilon.
+     by move ->; apply: RInt_correct.
+-  rewrite -RInt_gen_at_point; last first.
+-  + eexists. apply: f_correct; try lra; try lia.
+-  + rewrite subst_lemma ; try lra. 2: now apply IZR_lt.
++  rewrite -(RInt_gen_at_point _ _ _ Hint).
++  have Hepsilon : 0 < epsilon by lra.
++  have HalphaR : -1 < IZR alpha by apply: IZR_lt.
++  rewrite (subst_lemma alpha beta epsilon (/ B) Hepsilon Heps HalphaR).
+     symmetry.
+     rewrite /f0eps. rewrite f_correct_RInt; try lra; try lia.
+-    rewrite (RInt_ext _ (fun x : R => scal (- (-1) ^ beta) (powerRZ x (-2 - alpha) * ln x ^ beta))); last first.
++    have Hext : forall x : R,
++        Rmin (1 / epsilon) (1 / / B) < x /\ x < Rmax (1 / epsilon) (1 / / B) ->
++        - (-1) ^ beta * powerRZ x (-2 - alpha) * ln x ^ beta =
++        scal (- (-1) ^ beta) (powerRZ x (-2 - alpha) * ln x ^ beta).
+       by move => x Hx; rewrite /scal [in RHS]/= /mult /=; rewrite Rmult_assoc.
+-    set e1 := (-2 - alpha)%Z; rewrite RInt_scal /scal /= /mult /= .
+-    ring_simplify; congr(_ * RInt _ _ _) => // ; field; lra.
+-    rewrite /e1.
+-    by eexists; apply: f_correct;  first (split; field_simplify; lra); lia.
++    rewrite (RInt_ext _ _ _ _ Hext).
++    have Hepsdiv : 1 / epsilon = / epsilon by rewrite /Rdiv Rmult_1_l.
++    have HBinv : 1 / / B = B by field; lra.
++    rewrite Hepsdiv HBinv.
++    set e1 := (-2 - alpha)%Z.
++    have HintBase : ex_RInt (fun x : R => powerRZ x e1 * ln x ^ beta) (/ epsilon) B.
++      eexists; apply: f_correct.
++      + exact: HinvepsinvB.
++      + by rewrite /e1; lia.
++    rewrite (RInt_scal _ _ _ _ HintBase) /scal /= /mult /=.
++    ring.
+ Qed.
+ 
+ Lemma f0eps_correct_sing alpha beta epsilon sing (B : R) (Heps : 0 < / B <= epsilon) (HB : 0 < B) (Halpha : (-1 < alpha)%Z) :
+--- a/src/Integral/Integral.v
++++ b/src/Integral/Integral.v
+@@ -244,12 +244,12 @@
+       rewrite -{2}[If]opp_opp -opp_plus norm_opp plus_comm.
+       exact: Rlt_le.
+       rewrite /pos_div_2 /=; lra.
++      have Hua : ex_RInt f u a by exact: ex_RInt_swap Hau.
+       rewrite -opp_minus -[minus (RInt f a v) If]opp_minus. rewrite -opp_plus.
+-      rewrite -minus_trans /minus -opp_RInt_swap. rewrite opp_plus !opp_opp.
+-      rewrite RInt_Chasles. symmetry; apply: is_RInt_unique => // .
+-      apply: ex_RInt_swap; eexists; exact: Hfau.
+-      eexists; exact: Hfav.
+-      apply: ex_RInt_swap; eexists; exact: Hfau.
++      rewrite -minus_trans /minus -(opp_RInt_swap f u a Hua).
++      rewrite opp_plus !opp_opp.
++      rewrite (RInt_Chasles f u a v Hua Hvu).
++      by symmetry; apply: is_RInt_unique.
+       apply: RInt_correct => // .
+       apply: RInt_correct => // .
+ - intros [Hab Hb].
+@@ -458,11 +458,12 @@
+ - have Habs : forall x , Rmin a b < x < Rmax a b -> - (f x) = Rabs (f x).
+     by move => x Hx; rewrite Rabs_left1 //; apply: f_neg; lra.
+   apply: (is_RInt_ext _ _ _ _ _ Habs).
+-  rewrite Rabs_left1.
+-  apply: is_RInt_opp => // .
+-  apply: (is_RInt_le_0 _ a b _ le_ab) => // .
+-    exact: fint.
+-    move => x Hx. apply: f_neg. rewrite Rmin_left ?Rmax_right; lra.
++  have HIfneg : If <= 0.
++    apply: (is_RInt_le_0 _ a b _ le_ab) => // .
++    + exact: fint.
++    + move => x Hx. apply: f_neg. rewrite Rmin_left ?Rmax_right; lra.
++  rewrite Rabs_left1 //.
++  exact: is_RInt_opp fint.
+ Qed.
+ 
+ Lemma integral_interval_mul_sing :
+@@ -548,8 +549,9 @@
+ split.
+ - apply: filter_prod_at_point_l; first exact: (at_right_open_interval a).
+   move => y Hxay; apply: ex_RInt_continuous => z Hz.
+-  rewrite Rmin_left in Hz; last by lra.
+-  rewrite Rmax_right in Hz; last by lra.
++  have Hya : y <= a by lra.
++  rewrite (Rmin_left y a Hya) in Hz.
++  rewrite (Rmax_right y a Hya) in Hz.
+   apply: continuous_mult.
+     by apply: Cf; lra.
+     by apply: Cg; lra.
+@@ -702,8 +704,9 @@
+ split.
+ - apply: filter_prod_at_point_infty.
+   move => x y Hxay; apply: ex_RInt_continuous => z Hz.
+-  rewrite Rmin_left in Hz; last by lra.
+-  rewrite Rmax_right in Hz; last by lra.
++  have Hxy : x <= y by lra.
++  rewrite (Rmin_left x y Hxy) in Hz.
++  rewrite (Rmax_right x y Hxy) in Hz.
+   apply: continuous_mult.
+     by apply: Cf; lra.
+     by apply: Cg; lra.
+@@ -758,12 +761,13 @@
+   eapply Rle_trans.
+     exact: norm_scal.
+   rewrite /norm /= /abs /= .
+-  rewrite (Rabs_pos_eq (g x)).
+-  apply: Rmult_le_compat_r; first by (apply: Hg; lra).
++  have Hgx : 0 <= g x by apply: Hg; lra.
++  rewrite (Rabs_pos_eq (g x) Hgx).
++  apply: Rmult_le_compat_r.
++    exact: Hgx.
+   have Hax : a <= x by lra.
+   suff: Rabs (f x) <= Rmax (Rabs l) (Rabs u) by lra.
+     by apply: RmaxAbs; move: (Hgoodorder_bis x Hax) ;lra.
+-  by apply: Hg; lra.
+ Qed.
+ 
+ End IntegralTactic.
+--- a/src/Interval/Interval_compl.v
++++ b/src/Interval/Interval_compl.v
+@@ -298,9 +298,10 @@
+   contains (I.convert (I.power_int prec X n)) (Xreal 0).
+ Proof.
+ move=> Hn HX.
+-rewrite (_: (Xreal 0) = (Xpower_int (Xreal 0) n)); first exact: I.power_int_correct.
++rewrite (_: (Xreal 0) = (Xpower_int (Xreal 0) n)).
+ case: n Hn =>//= p Hp; rewrite pow_ne_zero //.
+ by zify; auto with zarith.
++exact: I.power_int_correct.
+ Qed.
+ 
+ Lemma subset_sub_contains_0 x0 (X0 X : I.type) :
+--- a/src/Missing/Coquelicot.v
++++ b/src/Missing/Coquelicot.v
+@@ -201,8 +201,9 @@
+   (\big[Rmult/1%R]_(i < n) - INR (m + i) / x ^ (m + n))%R.
+ Proof.
+ move=> m Hm; help_is_derive_n n x.
+-- move=> x Hx; rewrite big1 /= ?addn0; first by field; apply: pow_nonzero.
++- move=> x Hx; rewrite big1 /= ?addn0.
+   by case.
++  by field; apply: pow_nonzero.
+ - move=> Hx; auto_derive; first by apply: pow_nonzero.
+   rewrite big_ord_recl big_ord0 /= addn0 addn1 /= Rmult_1_l Rmult_1_r.
+   apply: Rdiv_eq_reg.
+@@ -268,7 +269,7 @@
+ apply is_derive_n_scal_l.
+ rewrite S_INR.
+ replace (a - (INR n + 1)) with (a - 1 - INR n) by ring.
+-rewrite (eq_bigr (P := xpredT) (fun i2 : 'I_n => a - 1 - INR i2)); last first.
++rewrite (eq_bigr (P := xpredT) (fun i2 : 'I_n => a - 1 - INR i2)).
+ move=> [i Hi] _; rewrite plus_INR /=; ring.
+ exact: IHn.
+ Qed.
+--- a/src/Poly/Basic_rec.v
++++ b/src/Poly/Basic_rec.v
+@@ -187,9 +187,9 @@
+   nth d1 (rec1up m1) n = nth d2 (rec1up m2) n.
+ Proof.
+ move=> h1 h2.
+-rewrite !nth_rev; first last.
+-- by rewrite size_loop1 /=; move: h1 h2; iomega_le.
+-- by rewrite size_loop1 /=; move: h1 h2; iomega_le.
++have Hm1 : n < size (rec1down m1) by rewrite size_loop1 /= addn1 ltnS.
++have Hm2 : n < size (rec1down m2) by rewrite size_loop1 /= addn1 ltnS.
++rewrite (nth_rev d1 Hm1) (nth_rev d2 Hm2).
+ rewrite !size_loop1 /= !addn1 !subSS.
+ exact: nth_rec1down_indep.
+ Qed.
+@@ -522,9 +522,9 @@
+   nth d1 (rec2up m1) n = nth d2 (rec2up m2) n.
+ Proof.
+ move=> h1 h2.
+-rewrite !nth_rev; first last.
+-- by rewrite size_rec2down /=; move: h1 h2; iomega_le.
+-- by rewrite size_rec2down /=; move: h1 h2; iomega_le.
++have Hm1 : n < size (rec2down m1) by rewrite size_rec2down ltnS.
++have Hm2 : n < size (rec2down m2) by rewrite size_rec2down ltnS.
++rewrite (nth_rev d1 Hm1) (nth_rev d2 Hm2).
+ rewrite !size_rec2down /= !subSS.
+ exact: nth_rec2down_indep.
+ Qed.
+--- a/src/Poly/Bound_quad.v
++++ b/src/Poly/Bound_quad.v
+@@ -100,6 +100,9 @@
+     [exact: J.power_int_correct|exact: Pol.horner_correct]].
+ rewrite 2!PolR.hornerE.
+ rewrite (@big_nat_leq_idx _ _ _ (3 + (PolR.size p - 3))).
++by rewrite addnC leq_subnK.
++move=> i /andP [Hi _].
++by rewrite PolR.nth_default ?Rmult_0_l.
+ rewrite big_mkord.
+ rewrite 3?big_ord_recl -/a0 -/a1 -/a2 ![[the Monoid.law _ of Rplus] _]/= /q3 PolR.size_tail.
+ (* simpl Z.of_nat. *)
+@@ -147,9 +150,6 @@
+ rewrite /= !Rmult_assoc.
+ apply f_equal. change (0 + i) with i.
+ ring.
+-by rewrite addnC leq_subnK.
+-move=> i /andP [Hi _].
+-by rewrite PolR.nth_default ?Rmult_0_l.
+ Qed.
+ 
+ Lemma ComputeBound_propagate :
+--- a/src/Poly/Datatypes.v
++++ b/src/Poly/Datatypes.v
+@@ -427,11 +427,11 @@
+ Proof.
+ move: a b p n; elim=> [|a0 a1 IH] [|b0 b1] [|p0 p1] =>//.
+ move=> /= n Hp Ha Hb /=.
+-rewrite (IH _ _ n.-1) //.
+-by rewrite -Hp.
++rewrite (IH _ _ n.-1).
+ by rewrite -Hp.
+ by rewrite -Ha.
+ by rewrite -Hb.
++by rewrite -Hp.
+ Qed.
+ 
+ Lemma size_tail p k : size (tail k p) = size p - k.
+@@ -587,7 +587,8 @@
+   \big[Rplus/R0]_(0 <= i < n) ((nth p i.+1) * (INR i.+1) * (x ^ i))%R.
+ Proof.
+ move=> H.
+-rewrite (@hornerE_wide n); last by rewrite size_deriv.
++rewrite (@hornerE_wide n).
++by rewrite size_deriv.
+ apply: eq_bigr => i _.
+ congr Rmult.
+ exact: coef_deriv.
+@@ -689,7 +690,9 @@
+   horner tt (opp p) x = Ropp (horner tt p x).
+ Proof.
+ rewrite !hornerE size_opp.
+-rewrite big_endo ?Ropp_0 //; last exact: Ropp_plus_distr.
++have Hopp : {morph Ropp : x y / Rplus x y} by exact: Ropp_plus_distr.
++have Hzero : Ropp R0 = R0 by rewrite Ropp_0.
++rewrite (big_endo Ropp Hopp Hzero).
+ apply: eq_bigr => i _ /=.
+ by rewrite nth_opp Ropp_mult_distr_l_reverse.
+ Qed.
+@@ -698,26 +701,26 @@
+   horner tt (add tt p q) x = (horner tt p x + horner tt q x)%R.
+ Proof.
+ rewrite !(@hornerE_wide (maxn (size p) (size q))).
++by rewrite size_add.
++exact: leq_maxl.
++exact: leq_maxr.
+ rewrite -big_split; apply: eq_bigr => i _ /=.
+ by rewrite nth_add Rmult_plus_distr_r.
+-exact: leq_maxr.
+-exact: leq_maxl.
+-by rewrite size_add.
+ Qed.
+ 
+ Lemma horner_sub p q x :
+   horner tt (sub tt p q) x = (horner tt p x - horner tt q x)%R.
+ Proof.
+ rewrite !(@hornerE_wide (maxn (size p) (size q))).
++by rewrite size_sub.
++exact: leq_maxl.
++exact: leq_maxr.
+ rewrite /Rminus.
+-rewrite (big_endo Ropp); first last.
+-  by rewrite Ropp_0.
+-  exact: Ropp_plus_distr.
++have Hopp : {morph Ropp : x y / Rplus x y} by exact: Ropp_plus_distr.
++have Hzero : Ropp R0 = R0 by rewrite Ropp_0.
++rewrite (big_endo Ropp Hopp Hzero).
+ rewrite -big_split; apply: eq_bigr => i _ /=.
+ by rewrite -/(Rminus _ _) nth_sub Rmult_minus_distr_r.
+-exact: leq_maxr.
+-exact: leq_maxl.
+-by rewrite size_sub.
+ Qed.
+ 
+ Lemma horner0 p x : (forall n, nth p n = 0%R) -> p.[x] = 0%R.
+@@ -738,24 +741,26 @@
+ Lemma horner_mulCl c p q x :
+   ((mul tt (c :: p) q).[x] = (mul tt p q).[x] * x + c * q.[x])%R.
+ Proof.
+-rewrite (@hornerE_wide (size p + size q).+1);
+-  last by rewrite size_mul leq_pred.
++rewrite (@hornerE_wide (size p + size q).+1).
++by rewrite size_mul leq_pred.
+ have HF : forall i, predT i -> (nth (mul tt (c :: p) q) i.+1 * x ^ i.+1 =
+   (c * nth q i.+1) * x ^ i.+1 + nth (mul tt p q) i * x ^ i.+1)%R.
+   by move=> i; rewrite nth_mulCl Rmult_plus_distr_r.
+ rewrite big_nat_recl // (eq_bigr _ HF).
+ rewrite nth_mul' big_nat1 subn0 [nth _ 0]/= pow_O Rmult_1_r.
+-rewrite (@hornerE_wide (size p + size q));
+-  last by rewrite size_mul leq_pred.
++rewrite (@hornerE_wide (size p + size q)).
++by rewrite size_mul leq_pred.
+ set q0 := nth q 0.
+-rewrite (big_endo (fun y => y * x)%R);
+-  last 1 [by red=> *; rewrite Rmult_plus_distr_r|by rewrite Rmult_0_l].
+-rewrite (@hornerE_wide (size p + size q).+1);
+-  last by rewrite leqW // leq_addl.
++rewrite (big_endo (fun y => y * x)%R).
++by red=> *; rewrite Rmult_plus_distr_r.
++by rewrite Rmult_0_l.
++rewrite (@hornerE_wide (size p + size q).+1).
++by rewrite leqW // leq_addl.
+ rewrite big_nat_recl // pow_O Rmult_1_r; fold q0.
+ rewrite Rmult_plus_distr_l.
+-rewrite (big_endo (fun y => c * y)%R);
+-  last 1 [by red=> *; rewrite Rmult_plus_distr_l|by rewrite Rmult_0_r].
++rewrite (big_endo (fun y => c * y)%R).
++by red=> *; rewrite Rmult_plus_distr_l.
++by rewrite Rmult_0_r.
+ rewrite [RHS]Rplus_comm !Rplus_assoc; congr Rplus.
+ rewrite -big_split; apply: eq_bigr => i _.
+ simpl; ring.
+@@ -776,14 +781,14 @@
+   horner tt (lift n p) x = (horner tt p x * x ^ n)%R.
+ Proof.
+ rewrite !hornerE (*(@hornerE_wide (size (lift n p))) *).
+-rewrite (big_endo (fun y => y * x ^ n)%R); first last.
+-  by rewrite Rmult_0_l.
+-  by red=> *; rewrite Rmult_plus_distr_r.
++rewrite (big_endo (fun y => y * x ^ n)%R).
++by red=> *; rewrite Rmult_plus_distr_r.
++by rewrite Rmult_0_l.
+ rewrite size_lift.
+ rewrite (@big_cat_nat _ _ _ n) ?leq_addr //=.
+-rewrite big1_seq; first last.
+-  move=> i /andP [_ Hi]; rewrite nth_lift ifT ?Rmult_0_l //.
+-  by move: Hi; rewrite mem_index_iota; case/andP.
++rewrite big1_seq.
++move=> i /andP [_ Hi]; rewrite nth_lift ifT ?Rmult_0_l //.
++by move: Hi; rewrite mem_index_iota; case/andP.
+ rewrite Rplus_0_l -{1}(add0n n) big_addn addKn.
+ apply: eq_bigr => i _ /=.
+ rewrite nth_lift ifF ?(ltnNge, leq_addl) //.
+@@ -795,9 +800,9 @@
+   horner tt (mul_mixed tt a p) x = (a * horner tt p x)%R.
+ Proof.
+ rewrite !hornerE size_mul_mixed.
+-rewrite big_endo; first last.
+-  by rewrite Rmult_0_r.
+-  by move=> *; rewrite Rmult_plus_distr_l.
++rewrite big_endo.
++by move=> *; rewrite Rmult_plus_distr_l.
++by rewrite Rmult_0_r.
+ apply: eq_bigr => i _.
+ by rewrite nth_mul_mixed Rmult_assoc.
+ Qed.
+@@ -806,9 +811,9 @@
+   horner tt (div_mixed_r tt p b) x = (horner tt p x / b)%R.
+ Proof.
+ rewrite !hornerE size_div_mixed_r /Rdiv Rmult_comm.
+-rewrite big_endo; first last.
+-  by rewrite Rmult_0_r.
+-  by move=> *; rewrite Rmult_plus_distr_l.
++rewrite big_endo.
++by move=> *; rewrite Rmult_plus_distr_l.
++by rewrite Rmult_0_r.
+ apply: eq_bigr => i _.
+ by rewrite nth_div_mixed_r -Rmult_assoc; congr Rmult; rewrite Rmult_comm.
+ Qed.
+@@ -823,8 +828,9 @@
+ have HSiota : m < seq.size (iota 0 (size p)).
+   by rewrite size_iota; rewrite ltnNge in Hm; move/negbFE in Hm.
+ rewrite /nth /toSeq /primitive /= .
+-rewrite (nth_map 0) // nth_iota; first by rewrite add0n.
++rewrite (nth_map 0) // nth_iota.
+ by rewrite ltnNge in Hm; move/negbFE in Hm.
++by rewrite add0n.
+ Qed.
+ 
+ End PolR.
+@@ -1362,9 +1368,9 @@
+ move=> Ha Hb Hp; red => k Hk.
+ rewrite (@size_dotmuldiv (size p)) // in Hk.
+ rewrite nth_dotmuldiv Ha Hb !orbb ifF.
+-  rewrite I.mul_propagate_r //.
+-  exact: Hp.
+ by rewrite leqNgt Hk.
++rewrite I.mul_propagate_r //.
++exact: Hp.
+ Qed.
+ 
+ Lemma polyCons_propagate xi pi :
+--- a/src/Poly/Taylor_model_sharp.v
++++ b/src/Poly/Taylor_model_sharp.v
+@@ -253,17 +253,16 @@
+ Proof.
+ move => f x Hf.
+ elim: s => [ | a b Hrec] => /= .
+-- rewrite (Derive_ext _ (fun x0 => 0)) => [|t].
+-    by rewrite big_nil Derive_const.
+-  by rewrite big_nil.
++- rewrite (Derive_ext _ (fun x0 => 0)).
++  by move=> t; rewrite big_nil.
++  by rewrite big_nil Derive_const.
+ - rewrite (Derive_ext _ (fun t => f a t + \big[Rplus/0]_(j <- b) f j t)).
+-  + rewrite Derive_plus ?big_cons.
+-     * congr Rplus.
+-       by rewrite Hrec.
+-     * by apply: Hf.
+-     * by apply: ex_derive_big.
+-  + move => t.
+-    by rewrite big_cons.
++  by move => t; rewrite big_cons.
++  rewrite Derive_plus ?big_cons.
++  by apply: Hf.
++  by apply: ex_derive_big.
++  congr Rplus.
++  by rewrite Hrec.
+ Qed.
+ 
+ Lemma horner_primitive (c : R) (p : PolR.T) (t : R):
+@@ -294,29 +293,31 @@
+ (* visibily there lack some implicit parameters *)
+ set X := RHS.
+ have -> : X = 0 + X by rewrite Rplus_0_l.
+-rewrite Derive_plus; [ |by apply: ex_derive_const |].
+-- congr (_ + _); first by apply: Derive_const.
++rewrite Derive_plus.
++by apply: ex_derive_const.
++by apply: ex_derive_big.
++congr (_ + _); first by apply: Derive_const.
+ rewrite derive_big.
++by [].
+ rewrite [LHS]big_nat_cond /X [RHS]big_nat_cond.
+ apply: eq_bigr => i; rewrite andbT => Hi.
+ rewrite Derive_mult.
++apply: ex_derive_const.
++apply: (ex_derive_ext (fun x => x ^ (i.+1))).
++  by move => t; rewrite -pow_powerRZ.
++apply: ex_derive_pow; apply: ex_derive_id.
+ have -> :
+   Derive (fun _ : R => PolR.nth (PolR.primitive tt c p) i.+1) x = 0.
+   by apply: Derive_const.
+ ring_simplify.
+-rewrite (Derive_ext _ (fun x => x ^ (i.+1))); last first.
+- by move => t; rewrite -pow_powerRZ.
++rewrite (Derive_ext _ (fun x => x ^ (i.+1))).
++by move => t; rewrite -pow_powerRZ.
+ rewrite PolR.nth_primitive ifF /PolR.int_coeff => //.
+-rewrite Derive_pow ?Derive_id -?pred_Sn. field.
+-apply: not_0_INR => // .
+-exact: ex_derive_id.
+ by apply/negbTE; rewrite -leqNgt; case/andP: Hi.
+-apply: ex_derive_const.
+-apply: (ex_derive_ext (fun x => x ^ (i.+1))).
+-  by move => t; rewrite -pow_powerRZ.
+-apply: ex_derive_pow; apply: ex_derive_id.
+-by [].
+-by apply: ex_derive_big.
++rewrite Derive_pow ?Derive_id -?pred_Sn.
++exact: ex_derive_id.
++field.
++apply: not_0_INR => // .
+ Qed.
+ 
+ Lemma Rpol_integral_0 (x1 x2 : R) (p : PolR.T) :
+@@ -403,6 +404,10 @@
+   by rewrite -[minus _ _]/(Rplus _ (Ropp _)) Rplus_comm Rplus_assoc Rplus_opp_l Rplus_0_r.
+ apply: J.add_correct.
+   rewrite RInt_translation_sub.
++  eapply ex_RInt_ext.
++  2: apply: ex_RInt_translation_add HI.
++  intros t.
++  by rewrite /= /Rminus Rplus_assoc Rplus_opp_r Rplus_0_r.
+   rewrite Rpol_integral_0.
+   have H: forall x xi, xi >: x -> Pol.horner prec TM_integral_poly (Isub xi X0) >: (PolR.primitive tt 0 q).[x - x0].
+     move => x xi Hx.
+@@ -410,10 +415,6 @@
+     exact: Pol.primitive_correct J.zero_correct HMfq.
+     exact: J.sub_correct.
+   apply: J.sub_correct ; exact: H.
+-  eapply ex_RInt_ext.
+-  2: apply: ex_RInt_translation_add HI.
+-  intros t.
+-  by rewrite /= /Rminus Rplus_assoc Rplus_opp_r Rplus_0_r.
+ apply: J.contains_RInt => //.
+   exact: ex_RInt_minus.
+ move => x Hx.
+@@ -465,6 +466,7 @@
+   have -> : (PolR.primitive tt 0 p).[x - x0] =
+             RInt (fun t => p.[t - x0]) x0 x.
+   + rewrite RInt_translation_sub.
++    exact: Rpol_integrable.
+       have -> : (PolR.primitive tt 0 p).[x - x0] =
+             (PolR.primitive tt 0 p).[x - x0] -
+             (PolR.primitive tt 0 p).[x0 - x0].
+@@ -475,9 +477,8 @@
+         rewrite PolR.nth_primitive.
+         case: ifP; first by rewrite Rmult_0_l.
+         rewrite /PolR.int_coeff; case: i; first by rewrite Rmult_0_l.
+-        by move=> *; rewrite /= Rmult_0_l Rmult_0_r.
++         by move=> *; rewrite /= Rmult_0_l Rmult_0_r.
+     by rewrite Rpol_integral_0.
+-    exact: Rpol_integrable.
+ set i1 := (X in (X - _)).
+ set i2 := (X in (_ - X)).
+ have -> : i1 - i2 = RInt (fun t => f t - p.[t - x0]) x0 x.
+@@ -646,8 +647,9 @@
+ move=> [k Hk] Hneg.
+ rewrite pow_Rabs_sign; case: Rle_bool_spec =>[Hr|Hr].
+   have->: r = R0 by psatzl R.
+-  rewrite Rabs_R0 pow_ne_zero ?Rmult_0_r; first by auto with real.
++  rewrite Rabs_R0 pow_ne_zero ?Rmult_0_r.
+   by lia. (* odd => nonzero *)
++  by auto with real.
+ rewrite Hk.
+ apply: Rmult_le_neg_pos; last by apply: pow_le; exact: Rabs_pos.
+ rewrite powerRZ_add; discrR.
+@@ -766,7 +768,8 @@
+ move=> H0 Hx0 Hmn; rewrite !big_mkord.
+ case: m Hmn =>[|m] Hmn; first by rewrite !big_ord0.
+ elim/big_ind2: _ =>[//|x1 x2 y1 y2 -> ->//|i _].
+-rewrite Poly_nth //; last by case: i => [i Hi] /=; exact: leq_trans Hi Hmn.
++rewrite Poly_nth //.
++by case: i => [i Hi] /=; exact: leq_trans Hi Hmn.
+ rewrite fact_simpl mult_INR.
+ field.
+ split; by [apply: INR_fact_neq_0 | apply: not_0_INR ].
+@@ -793,8 +796,8 @@
+     auto_derive.
+       exact: PolR.ex_derive_horner.
+     rewrite Rmult_1_l (Derive_ext _ (fun r => PolR.nth (P x0 0) 0)).
+-      by rewrite Derive_const.
+     by move=> r; rewrite PolR.hornerE Poly_size big_nat1 pow_O Rmult_1_r.
++    by rewrite Derive_const.
+   - case: Hsign => Hsign; [left|right]; move: Hsign; rewrite /Rpos_over /Rneg_over.
+     + move=> Htop x [Hx1 Hx2]; exact: Htop.
+     + move=> Htop x [Hx1 Hx2]; exact: Htop.
+@@ -808,8 +811,8 @@
+     auto_derive.
+       exact: PolR.ex_derive_horner.
+     rewrite Rmult_1_l (Derive_ext _ (fun r => PolR.nth (P x0 0) 0)).
+-      by rewrite Derive_const.
+     by move=> r; rewrite PolR.hornerE Poly_size big_nat1 pow_O Rmult_1_r.
++    by rewrite Derive_const.
+   case: Hsign => Hsign; [left|right]; move: Hsign; rewrite /Rpos_over /Rneg_over.
+   + move=> Htop x [Hx1 Hx2]; exact: Htop.
+   + move=> Htop x [Hx1 Hx2]; exact: Htop.
+@@ -830,7 +833,8 @@
+           case: k => [//|k]; rewrite -ex_derive_nSS.
+           exact: (Hder_n k.+2).
+         rewrite /Rdelta' PolR.horner_derivE Poly_size.
+-        rewrite bigXadd'_P //; last exact/Hder_n.
++        rewrite bigXadd'_P //.
++        exact/Hder_n.
+         set b := \big[Rplus/R0]_(_ <= i < _) _.
+         set b2 := \big[Rplus/R0]_(_ <= i < _) _ in H2.
+         have->: b = b2 by apply: eq_bigr => i _; rewrite -Derive_nS.
+@@ -844,7 +848,8 @@
+           case: k => [//|k]; rewrite -ex_derive_nSS.
+           exact: (Hder_n k.+2).
+         rewrite /Rdelta' PolR.horner_derivE Poly_size.
+-        rewrite bigXadd'_P //; last exact/Hder_n.
++        rewrite bigXadd'_P //.
++        exact/Hder_n.
+         set b := \big[Rplus/R0]_(_ <= i < _) _.
+         set b2 := \big[Rplus/R0]_(_ <= i < _) _ in H2.
+         have->: b = b2 by apply: eq_bigr => i _; rewrite -Derive_nS.
+@@ -865,7 +870,8 @@
+     case: k => [//|k]; rewrite -ex_derive_nSS.
+     exact: (Hder_n k.+2).
+   rewrite /Rdelta' PolR.horner_derivE Poly_size.
+-  rewrite bigXadd'_P //; last exact/Hder_n.
++  rewrite bigXadd'_P //.
++  exact/Hder_n.
+   set b := \big[Rplus/R0]_(_ <= i < _) _.
+   set b2 := \big[Rplus/R0]_(_ <= i < _) _ in H2.
+   have->: b = b2 by apply: eq_bigr => i _; rewrite -Derive_nS.
+@@ -888,7 +894,8 @@
+       case: k => [//|k]; rewrite -ex_derive_nSS.
+       exact: (Hder_n k.+2).
+     rewrite /Rdelta' PolR.horner_derivE Poly_size.
+-    rewrite bigXadd'_P //; last exact/Hder_n.
++    rewrite bigXadd'_P //.
++    exact/Hder_n.
+     set b := \big[Rplus/R0]_(_ <= i < _) _.
+     set b2 := \big[Rplus/R0]_(_ <= i < _) _ in H2.
+     have->: b = b2 by apply: eq_bigr => i _; rewrite -Derive_nS.
+@@ -902,7 +909,8 @@
+       case: k => [//|k]; rewrite -ex_derive_nSS.
+       exact: (Hder_n k.+2).
+     rewrite /Rdelta' PolR.horner_derivE Poly_size.
+-    rewrite bigXadd'_P //; last exact/Hder_n.
++    rewrite bigXadd'_P //.
++    exact/Hder_n.
+     set b := \big[Rplus/R0]_(_ <= i < _) _.
+     set b2 := \big[Rplus/R0]_(_ <= i < _) _ in H2.
+     have->: b = b2 by apply: eq_bigr => i _; rewrite -Derive_nS.
+@@ -923,7 +931,8 @@
+   case: k => [//|k]; rewrite -ex_derive_nSS.
+   exact: (Hder_n k.+2).
+ rewrite /Rdelta' PolR.horner_derivE Poly_size.
+-rewrite bigXadd'_P //; last exact/Hder_n.
++rewrite bigXadd'_P //.
++exact/Hder_n.
+ set b := \big[Rplus/R0]_(_ <= i < _) _.
+ set b2 := \big[Rplus/R0]_(_ <= i < _) _ in H2.
+ have->: b = b2 by apply: eq_bigr => i _; rewrite -Derive_nS.
+@@ -1106,11 +1115,11 @@
+ have {Hcl Hbl} Hlower : Delta >: Rdelta0 l.
+   apply: I.join_correct; left; apply: I.join_correct; left.
+   have Hlower : contains (I.convert (I.bnd (I.lower X) (I.lower X))) (Xreal l).
+-  rewrite I.bnd_correct; first last.
+-- apply: I.valid_ub_real.
+-  by rewrite Hcl.
++  rewrite I.bnd_correct.
+ - apply: I.valid_lb_real.
+   by rewrite Hcl.
++- apply: I.valid_ub_real.
++  by rewrite Hcl.
+ - rewrite Hcl; split; apply Rle_refl.
+   apply: J.sub_correct.
+   - exact: F_Rcontains.
+@@ -1120,11 +1129,11 @@
+ have {Hcu Hbu} Hupper : Delta >: Rdelta0 u.
+   apply: I.join_correct; left; apply: I.join_correct; right.
+   have Hupper : contains (I.convert (I.bnd (I.upper X) (I.upper X))) (Xreal u).
+-  rewrite I.bnd_correct; first last.
+-- apply: I.valid_ub_real.
+-  by rewrite Hcu.
++  rewrite I.bnd_correct.
+ - apply: I.valid_lb_real.
+   by rewrite Hcu.
++- apply: I.valid_ub_real.
++  by rewrite Hcu.
+ - rewrite Hcu; split; apply Rle_refl.
+   apply: J.sub_correct.
+   - exact: F_Rcontains.
+@@ -1272,13 +1281,13 @@
+   by rewrite PolR.horner_polyC.
+   rewrite PolR.hornerE !sizes maxnSS maxn0.
+   step_r (pol0.[x - x0])%R.
+-  by rewrite PolR.horner_polyC.
+   rewrite /pol0 (@PolR.hornerE_wide n.+1) ?sizes //.
+   apply: eq_bigr => i _.
+   congr Rmult.
+   rewrite PolR.polyCE !(PolR.nth_polyCons, PolR.nth_set_nth).
+   case: i => [//|i]; first by rewrite eq_sym H.
+   by rewrite PolR.nth_polyNil if_same.
++  by rewrite PolR.horner_polyC.
+ Qed.
+ 
+ Lemma size_TM_var (X X0 : I.type) : Pol.size (approx (TM_var X X0)) = 2.
+@@ -1334,9 +1343,11 @@
+ - { move=> {X0 n Hsubset Hex} x n k Hx Hk; rewrite /PolR.nth.
+     elim: k Hk => [|k IHk] Hk.
+     - by rewrite (nth_rec1up_indep _ _ _ 0%R (m2 := 0)) //= Rdiv_1.
+-      rewrite (nth_rec1up_indep _ _ _ 0%R (m2 := k)) // in IHk; last exact: ltnW.
++      rewrite (nth_rec1up_indep _ _ _ 0%R (m2 := k)) // in IHk.
++      exact: ltnW.
+       rewrite (nth_rec1up_indep _ _ _ 0%R (m2 := k.+1)) // nth_rec1upS.
+-      rewrite {}IHk /TR.exp_rec; last exact: ltnW.
++      rewrite {}IHk /TR.exp_rec.
++      exact: ltnW.
+       rewrite !(is_derive_n_unique _ _ _ _ (is_derive_n_exp _ _)).
+       rewrite fact_simpl mult_INR.
+       change eq with (@eq R); field; split.
+@@ -1397,10 +1408,10 @@
+       move/(_ Hkm) in Hk0.
+       rewrite (nth_rec2up_indep _ _ _ _ 0%R (m2 := k)) // in Hk0.
+       rewrite Hk0 !Derive_nS; clear.
+-      rewrite [in RHS](Derive_n_ext _ (fun x => - sin x)); last first.
+-        move=> t; change (Derive _ t) with (Derive_n sin 2 t).
+-        rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_sin _ _)) /= Rmult_1_r.
+-        by rewrite Ropp_mult_distr_l_reverse Rmult_1_l.
++      rewrite [in RHS](Derive_n_ext _ (fun x => - sin x)).
++      move=> t; change (Derive _ t) with (Derive_n sin 2 t).
++      rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_sin _ _)) /= Rmult_1_r.
++      by rewrite Ropp_mult_distr_l_reverse Rmult_1_l.
+       rewrite Derive_n_opp 2!fact_simpl 2!mult_INR.
+       change (Derive_n (fun x => _)) with (Derive_n sin).
+       simpl (k.+2.-1).
+@@ -1451,10 +1462,10 @@
+       move/(_ Hkm) in Hk0.
+       rewrite (nth_rec2up_indep _ _ _ _ 0%R (m2 := k)) // in Hk0.
+       rewrite Hk0 !Derive_nS; clear.
+-      rewrite [in RHS](Derive_n_ext _ (fun x => - cos x)); last first.
+-        move=> t; change (Derive _ t) with (Derive_n cos 2 t).
+-        rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_cos _ _)) /= Rmult_1_r.
+-        by rewrite Ropp_mult_distr_l_reverse Rmult_1_l.
++      rewrite [in RHS](Derive_n_ext _ (fun x => - cos x)).
++      move=> t; change (Derive _ t) with (Derive_n cos 2 t).
++      rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_cos _ _)) /= Rmult_1_r.
++      by rewrite Ropp_mult_distr_l_reverse Rmult_1_l.
+       rewrite Derive_n_opp 2!fact_simpl 2!mult_INR.
+       change (Derive_n (fun x => _)) with (Derive_n cos).
+       simpl (k.+2.-1).
+@@ -1511,7 +1522,8 @@
+     set A := (((q n)^`()).[x] * Q - INR (n.+1).*2 * ((q n).[x] * x))%R.
+     have->: (A * / INR n.+2 * (/ Q * (/ Q * / Q ^ n)) * (INR n.+2 * INR (fact n.+1)) =
+       A * (/ INR n.+2 * INR n.+2) * (/ Q * (/ Q * / Q ^ n)) * INR (fact n.+1))%R by ring.
+-    rewrite Rinv_l; last exact: not_0_INR.
++    rewrite Rinv_l.
++    exact: not_0_INR.
+     rewrite /A !Rsimpl. rewrite -mul2n [INR (2 * _)%N]mult_INR; simpl (INR 2).
+     field; by split.
+ Qed.
+@@ -1547,18 +1559,17 @@
+       set qk := iteri k
+         (fun i c => PolR.div_mixed_r tt _ (INR (i + 1).+1)) PolR.one in IHk *.
+       rewrite (@Derive_ext _
+-        (fun x => qk.[x] / (1+x*x) ^ (k+1) * INR (fact k.+1))%R);
+-        first last.
+-        move=> t; move/(_ t) in IHk; rewrite -pow_powerRZ in IHk.
+-        rewrite IHk /Rdiv Rmult_assoc Rinv_l ?Rmult_1_r //.
+-        exact: INR_fact_neq_0.
++        (fun x => qk.[x] / (1+x*x) ^ (k+1) * INR (fact k.+1))%R).
++      move=> t; move/(_ t) in IHk; rewrite -pow_powerRZ in IHk.
++      rewrite IHk /Rdiv Rmult_assoc Rinv_l ?Rmult_1_r //.
++      exact: INR_fact_neq_0.
+       clear IHk.
+       rewrite PolR.horner_div_mixed_r PolR.horner_sub PolR.horner_add.
+       rewrite PolR.horner_mul_mixed !PolR.horner_lift Derive_scal_l.
+-      rewrite Derive_div; first last.
+-      * by apply: pow_nonzero; apply: Rsqr_plus1_neq0.
+-      * by auto_derive.
+-      * exact: PolR.ex_derive_horner.
++      rewrite Derive_div.
++      exact: PolR.ex_derive_horner.
++      by auto_derive.
++      by apply: pow_nonzero; apply: Rsqr_plus1_neq0.
+       rewrite Derive_pow; try by auto_derive.
+       rewrite Derive_plus; try by auto_derive.
+       rewrite Derive_const ?Rplus_0_l.
+@@ -1643,7 +1654,8 @@
+     rewrite /Rdiv.
+     have->: (A * / INR n1.+1 * (INR n1.+1 * INR (fact n1)) =
+              A * INR (fact n1) * (/ INR n1.+1 * INR n1.+1))%R by ring.
+-    rewrite Rinv_l; last exact: not_0_INR.
++    rewrite Rinv_l.
++    exact: not_0_INR.
+     rewrite /A; ring.
+ Qed.
+ 
+@@ -1692,28 +1704,27 @@
+       rewrite [INR]lock [PolR.lift]lock [fact]lock /= -!lock.
+       set qk := iteri k
+         (fun i c => PolR.div_mixed_r tt _ (INR (i + 0).+1)) (PolR.lift 1 PolR.one) in IHk *.
+-      rewrite (@Derive_ext_loc _ (fun x => qk.[tan x] * INR (fact k))%R);
+-        first last.
+-        eapply locally_open with
+-          (1 := open_comp cos (fun y => y <> 0%R)
+-            (fun y _ => continuous_cos y)
+-          (open_neq 0%R)) (3 := Hdef).
+-        move=> t Hdef'; move/(_ t Hdef') in IHk.
+-        rewrite IHk /Rdiv Rmult_assoc Rinv_l ?Rmult_1_r //.
+-        exact: INR_fact_neq_0.
++      rewrite (@Derive_ext_loc _ (fun x => qk.[tan x] * INR (fact k))%R).
++      eapply locally_open with
++        (1 := open_comp cos (fun y => y <> 0%R)
++          (fun y _ => continuous_cos y)
++        (open_neq 0%R)) (3 := Hdef).
++      move=> t Hdef'; move/(_ t Hdef') in IHk.
++      rewrite IHk /Rdiv Rmult_assoc Rinv_l ?Rmult_1_r //.
++      exact: INR_fact_neq_0.
+       clear IHk.
+       rewrite PolR.horner_div_mixed_r.
+       rewrite PolR.horner_add addn0.
+       rewrite !PolR.horner_lift Derive_scal_l.
+-      rewrite Derive_comp; first last.
+-      * by eexists; apply: is_derive_tan.
+-      * exact: PolR.ex_derive_horner.
++      rewrite Derive_comp.
++      exact: PolR.ex_derive_horner.
++      by eexists; apply: is_derive_tan.
+       rewrite !PolR.Derive_horner.
+       rewrite (is_derive_unique _ _ _ (is_derive_tan _ Hdef)).
+       rewrite /Rdiv Rmult_assoc.
+       rewrite -simpl_fact Rinv_involutive.
+-      change eq with (@eq R); ring.
+       exact: INR_fact_neq_0.
++      change eq with (@eq R); ring.
+     }
+ constructor.
+ - by move=> *; rewrite PolR.size_grec1 Pol.size_grec1.
+@@ -1822,15 +1833,17 @@
+ constructor.
+ - by move=> *; rewrite PolR.size_rec1.
+ - { move=> {X0 n Hsubset Hex} x n k Hx Hkn.
+-    rewrite (Derive_n_ext_loc _ sqrt); last first.
+-      apply: (locally_open (fun t => 0 < t)%R);
+-        [exact: open_gt| |exact: gt0_correct E1].
+-      by move=> y Hy; rewrite /Xsqrt' //; apply: Rlt_le.
+-      rewrite /PolR.nth; elim: k Hkn => [|k IHk] Hkn.
++    rewrite (Derive_n_ext_loc _ sqrt).
++    apply: (locally_open (fun t => 0 < t)%R);
++      [exact: open_gt| |exact: gt0_correct E1].
++    by move=> y Hy; rewrite /Xsqrt' //; apply: Rlt_le.
++    rewrite /PolR.nth; elim: k Hkn => [|k IHk] Hkn.
+         by rewrite rec1up_co0 /= Rdiv_1.
+-      rewrite nth_rec1up ifF; last by apply: negbTE; rewrite ltnNge Hkn.
++      rewrite nth_rec1up ifF.
++      by apply: negbTE; rewrite ltnNge Hkn.
+       move/(_ (ltnW Hkn)) in IHk.
+-      rewrite nth_rec1up ifF in IHk; last by apply: negbTE; rewrite ltnNge ltnW.
++      rewrite nth_rec1up ifF in IHk.
++      by apply: negbTE; rewrite ltnNge ltnW.
+       rewrite iteriS IHk /TR.sqrt_rec.
+       have gt0_x : (0 < x)%R by move/(gt0_correct Hx) in E1.
+       rewrite !(is_derive_n_unique _ _ _ _ (is_derive_n_sqrt _ _ gt0_x)).
+@@ -1929,17 +1942,19 @@
+ constructor.
+ - by move=> *; rewrite PolR.size_rec1.
+ - { move=> {X0 n Hsubset Hex} x n k Hx Hkn.
+-    rewrite (Derive_n_ext_loc _ (fun t => / sqrt t)); last first.
+-      apply: (locally_open (fun t => 0 < t)%R);
+-        [exact: open_gt| |exact: gt0_correct E1].
+-      move=> y Hy.
+-      rewrite /Xinv' /Xsqrt' /= ?is_zero_false //.
+-      now apply Rgt_not_eq, sqrt_lt_R0.
+-      rewrite /PolR.nth; elim: k Hkn => [|k IHk] Hkn.
++    rewrite (Derive_n_ext_loc _ (fun t => / sqrt t)).
++    apply: (locally_open (fun t => 0 < t)%R);
++      [exact: open_gt| |exact: gt0_correct E1].
++    move=> y Hy.
++    rewrite /Xinv' /Xsqrt' /= ?is_zero_false //.
++    now apply Rgt_not_eq, sqrt_lt_R0.
++    rewrite /PolR.nth; elim: k Hkn => [|k IHk] Hkn.
+         by rewrite rec1up_co0 /= Rdiv_1.
+-      rewrite nth_rec1up ifF; last by apply: negbTE; rewrite ltnNge Hkn.
++      rewrite nth_rec1up ifF.
++      by apply: negbTE; rewrite ltnNge Hkn.
+       move/(_ (ltnW Hkn)) in IHk.
+-      rewrite nth_rec1up ifF in IHk; last by apply: negbTE; rewrite ltnNge ltnW.
++      rewrite nth_rec1up ifF in IHk.
++      by apply: negbTE; rewrite ltnNge ltnW.
+       rewrite iteriS IHk /TR.invsqrt_rec.
+       have gt0_x : (0 < x)%R by move/(gt0_correct Hx) in E1.
+       rewrite !(is_derive_n_unique _ _ _ _ (is_derive_n_invsqrt _ _ gt0_x)).
+@@ -2073,10 +2088,10 @@
+     rewrite ?(@PolR.size_dotmuldiv n.+1, @Pol.size_dotmuldiv n.+1,
+     Pol.size_rec1, size_rec1up, PolR.size_rec1) //.
+ - { move=> x m k Hx Hk.
+-    rewrite /TR.T_power_int PolR.nth_dotmuldiv ifF; last first.
+-      rewrite PolR.size_rec1.
+-      rewrite size_falling_seq size_fact_seq.
+-      by rewrite !orbb ltnNge Hk.
++    rewrite /TR.T_power_int PolR.nth_dotmuldiv ifF.
++    rewrite PolR.size_rec1.
++    rewrite size_falling_seq size_fact_seq.
++    by rewrite !orbb ltnNge Hk.
+     case: k Hk => [|k] Hk.
+       simpl Derive_n; simpl INR; rewrite Rdiv_1.
+       rewrite falling_seq_correct // fact_seq_correct //.
+@@ -2084,20 +2099,22 @@
+       rewrite [PolR.nth _ _]nth_rec1up /= Rdiv_1 Rmult_1_l.
+       rewrite toR_power_int //.
+       by case: Hyp => [Hyp|Hyp]; by [left|right; exact: apart0_correct Hyp].
+-    rewrite -(Derive_n_ext_loc _ _ k.+1 x (toR_power_int_loc _));
+-      last by case: Hyp => [Hyp|Hyp]; by [left|right; exact: apart0_correct Hyp].
+-    symmetry; apply: (Rmult_eq_reg_r (INR (fact k.+1))); last exact: INR_fact_neq_0.
+-    rewrite {1}/Rdiv Rmult_assoc Rinv_l ?Rmult_1_r; last exact: INR_fact_neq_0.
++    rewrite -(Derive_n_ext_loc _ _ k.+1 x (toR_power_int_loc _)).
++    by case: Hyp => [Hyp|Hyp]; by [left|right; exact: apart0_correct Hyp].
++    symmetry; apply: (Rmult_eq_reg_r (INR (fact k.+1))).
++    2: exact: INR_fact_neq_0.
++    rewrite {1}/Rdiv Rmult_assoc Rinv_l ?Rmult_1_r.
++    exact: INR_fact_neq_0.
+     clear - Hyp Hk Hx.
+     rewrite /powerRZ.
+     case: p Hyp Hx =>[|p|p] Hyp Hx.
+     - rewrite Derive_n_const.
+-      rewrite /PolR.nth /PolR.rec1 nth_rec1up ifF; last first.
++      rewrite /PolR.nth /PolR.rec1 nth_rec1up ifF.
+         by apply: negbTE; rewrite ltnNge Hk.
+       rewrite iteriS /TR.pow_aux_rec ifF ?(Rmult_0_r, Rmult_0_l) //.
+       apply: negbTE; rewrite negb_or /=; apply/negP; move/Z.geb_le.
+       by change Z0 with (Z.of_nat O); move/Nat2Z.inj_le/leP; rewrite addn1.
+-    - rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_pow _ _ _ _)); last first.
++    - rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_pow _ _ _ _)).
+         exact/ltP/Pos2Nat.is_pos.
+       rewrite falling_seq_correct // fact_seq_correct //.
+       have Hpow: PolR.nth (PolR.rec1
+@@ -2105,7 +2122,7 @@
+         if (Z.of_nat (k + 1) <=? Z.pos p)%Z then (x ^ (Pos.to_nat p - k.+1))%R
+         else 0%R.
+         rewrite /PolR.nth /PolR.rec1 nth_rec1up.
+-        rewrite ifF; last first.
++        rewrite ifF.
+           by apply: negbTE; rewrite ltnNge Hk.
+         case: Z.leb_spec.
+           move=> /Zle_is_le_bool Hpk; rewrite iteriS /TR.pow_aux_rec Z.geb_leb Hpk.
+@@ -2120,9 +2137,11 @@
+         move/Zle_is_le_bool in Hpk.
+         rewrite Hpow Hpk.
+         rewrite /Rdiv; ring_simplify (*!*).
+-        rewrite -INR_IZR_INZ Rmult_assoc Rinv_l; last exact: INR_fact_neq_0.
++        rewrite -INR_IZR_INZ Rmult_assoc Rinv_l.
++          exact: INR_fact_neq_0.
+         rewrite Rmult_1_r Rmult_comm; congr Rmult.
+-        rewrite (big_morph IZR (id1 := 1%R) (op1 := Rmult)) //; last exact: mult_IZR.
++        rewrite (big_morph IZR (id1 := 1%R) (op1 := Rmult)) //.
++          exact: mult_IZR.
+         rewrite big_mkord; apply: eq_bigr => [[i Hi] _].
+         rewrite INR_IZR_INZ.
+         rewrite Nat2Z.inj_sub ?(positive_nat_Z, addn1) //=.
+@@ -2140,24 +2159,26 @@
+       rewrite Hpow ifF /= ?Rmult_0_l ?Rmult_0_r ?Rmult_0_l//.
+       apply: negbTE.
+       by move/Zlt_is_lt_bool: Hpk; rewrite Z.ltb_antisym =>->.
+-    - rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_inv_pow _ _ _ _ _)); first last.
++    - rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_inv_pow _ _ _ _ _)).
++        exact/ltP/Pos2Nat.is_pos.
+         case: Hyp; first case =>//.
+         by move/apart0_correct; apply.
+-        exact/ltP/Pos2Nat.is_pos.
+       rewrite falling_seq_correct // fact_seq_correct //.
+       have Hpow: PolR.nth (PolR.rec1
+         (TR.pow_aux_rec tt (Z.neg p) x) (/ x ^ Pos.to_nat p) m)%R k.+1 =
+         (/ x ^ (Pos.to_nat p + k.+1))%R.
+         rewrite /PolR.nth /PolR.rec1 nth_rec1up.
+-        rewrite ifF; last first.
++        rewrite ifF.
+           by apply: negbTE; rewrite ltnNge Hk.
+         rewrite iteriS /TR.pow_aux_rec addn1 /= Pos.of_nat_succ.
+         by rewrite Pos2Nat.inj_add Nat2Pos.id.
+       rewrite Hpow.
+       rewrite /Rdiv; ring_simplify (*!*).
+-      rewrite -INR_IZR_INZ Rmult_assoc Rinv_l; last exact: INR_fact_neq_0.
++      rewrite -INR_IZR_INZ Rmult_assoc Rinv_l.
++        exact: INR_fact_neq_0.
+       rewrite Rmult_1_r Rmult_comm; congr Rmult.
+-      rewrite (big_morph IZR (id1 := 1%R) (op1 := Rmult)) //; last exact: mult_IZR.
++      rewrite (big_morph IZR (id1 := 1%R) (op1 := Rmult)) //.
++        exact: mult_IZR.
+       rewrite big_mkord; apply: eq_bigr => [[i Hi] _].
+       rewrite INR_IZR_INZ -opp_IZR; congr IZR.
+       rewrite Nat2Z.inj_add positive_nat_Z.
+@@ -2180,25 +2201,27 @@
+   }
+ - { move=> {X0 n Hsubset Hex} Y x Hx Dx n k Hk.
+     rewrite /T_power_int.
+-    apply: Pol.dotmuldiv_propagate; last 1 first.
+-    rewrite (@Pol.size_dotmuldiv n.+1) //.
+-    by rewrite Pol.size_rec1.
+-    by rewrite size_falling_seq.
+-    by rewrite size_fact_seq.
++    apply: Pol.dotmuldiv_propagate.
++    4: {
++      rewrite (@Pol.size_dotmuldiv n.+1) //.
++      by rewrite Pol.size_rec1.
++      by rewrite size_falling_seq.
++      by rewrite size_fact_seq.
++    }
+     by rewrite Pol.size_rec1 size_falling_seq.
+     by rewrite Pol.size_rec1 size_fact_seq.
+     apply: Pol.rec1_propagate.
+     move=> y m _.
+     rewrite /pow_aux_rec ifT.
++    match goal with |- is_true ?a => rewrite -(negbK a) negb_or end.
++    apply/negP; case/andP => /negbTE H0 /negbTE Hm.
++    move: Dx; rewrite /Xpower_int.
++    by case: {Hyp} p H0 Hm.
+     apply/contains_Xnan.
+     have->: Xnan = Xpower_int^~ (p - Z.of_nat m)%Z (Xreal x).
+     move: Dx; rewrite /Xpower_int /Xpower_int' /Xbind.
+     by case Ep: p =>//; case: is_zero =>//; case: m.
+     exact: I.power_int_correct.
+-    match goal with |- is_true ?a => rewrite -(negbK a) negb_or end.
+-    apply/negP; case/andP => /negbTE H0 /negbTE Hm.
+-    move: Dx; rewrite /Xpower_int.
+-    by case: {Hyp} p H0 Hm.
+     apply/contains_Xnan.
+     rewrite -Dx.
+     exact: I.power_int_correct Hx.
+@@ -2270,15 +2293,17 @@
+ constructor.
+ - by move=> {n} ? n; rewrite PolR.size_rec1.
+ - { move=> {X0 n Hsubset Hex} x n k Hx Hkn.
+-    rewrite (Derive_n_ext_loc _ Rinv); last first.
+-      apply: (locally_open (fun t => t <> 0)%R);
+-        [exact: open_neq| |exact: apart0_correct E0].
+-      by move=> y Hy; rewrite /Xinv' is_zero_false.
+-      rewrite /PolR.nth; elim: k Hkn => [|k IHk] Hkn.
++    rewrite (Derive_n_ext_loc _ Rinv).
++    apply: (locally_open (fun t => t <> 0)%R);
++      [exact: open_neq| |exact: apart0_correct E0].
++    by move=> y Hy; rewrite /Xinv' is_zero_false.
++    rewrite /PolR.nth; elim: k Hkn => [|k IHk] Hkn.
+         by rewrite rec1up_co0 /= Rdiv_1.
+-      rewrite nth_rec1up ifF; last by apply: negbTE; rewrite ltnNge Hkn.
++      rewrite nth_rec1up ifF.
++      by apply: negbTE; rewrite ltnNge Hkn.
+       move/(_ (ltnW Hkn)) in IHk.
+-      rewrite nth_rec1up ifF in IHk; last by apply: negbTE; rewrite ltnNge ltnW.
++      rewrite nth_rec1up ifF in IHk.
++      by apply: negbTE; rewrite ltnNge ltnW.
+       rewrite iteriS IHk /TR.inv_rec.
+       have neq0_x : (x <> 0)%R by move/(apart0_correct Hx) in E0.
+       rewrite !(is_derive_n_unique _ _ _ _ (is_derive_n_inv _ _ neq0_x)).
+@@ -2291,12 +2316,14 @@
+       set Xk1 := (x ^ k.+1)%R.
+       set k_ := INR (fact k).
+       set k1 := INR k.+1.
+-      rewrite Rinv_mult_distr //; last exact: pow_nonzero.
++      rewrite Rinv_mult_distr //.
++        exact: pow_nonzero.
+       rewrite Rinv_mult_distr; try solve [exact: INR_fact_neq_0|exact: not_0_INR].
+       rewrite !Rmult_assoc -Ropp_inv_permute //.
+       have->: (- k1 * (/ x * (/ Xk1 * (/ k1 * / k_))))%R =
+         ((k1 * / k1) * - (/ x * (/ Xk1 * (/ k_))))%R by ring.
+-      rewrite Rinv_r; last exact: not_0_INR.
++      rewrite Rinv_r.
++        exact: not_0_INR.
+       ring.
+   }
+ constructor.
+@@ -2377,13 +2404,13 @@
+ - by move=> {n} x [|n]; rewrite /TR.T_ln // !sizes
+     ?(@PolR.size_dotmuldiv n.+1, PolR.size_rec1, size_rec1up, size_behead).
+ - { move=> {X0 n Hsubset Hex} x n k Hx Hkn.
+-    rewrite (Derive_n_ext_loc _ ln); last first.
+-      apply: (locally_open (fun t => 0 < t)%R);
+-        [exact: open_gt| |exact: gt0_correct E0].
+-      by move=> y Hy; rewrite /Xln' is_positive_true.
+-      rewrite /PolR.nth; case: k Hkn => [|k] Hkn; first by rewrite Rdiv_1.
++    rewrite (Derive_n_ext_loc _ ln).
++    apply: (locally_open (fun t => 0 < t)%R);
++      [exact: open_gt| |exact: gt0_correct E0].
++    by move=> y Hy; rewrite /Xln' is_positive_true.
++    rewrite /PolR.nth; case: k Hkn => [|k] Hkn; first by rewrite Rdiv_1.
+       case: n Hkn => [|n] Hkn //.
+-      rewrite [nth _ _ _]PolR.nth_dotmuldiv ifF; last first.
++      rewrite [nth _ _ _]PolR.nth_dotmuldiv ifF.
+       rewrite PolR.size_rec1.
+       rewrite size_falling_seq size_behead size_fact_seq.
+       by rewrite !orbb ltnNge -ltnS Hkn.
+@@ -2395,29 +2422,33 @@
+       rewrite [PolR.nth _ _]nth_rec1up /= Rdiv_1 Rmult_1_l.
+       by rewrite (is_derive_unique _ _ _ (is_derive_ln _ E0)) Rmult_1_r.
+     symmetry; apply: (Rmult_eq_reg_r (INR (fact k.+2))); last exact: INR_fact_neq_0.
+-    rewrite {1}/Rdiv Rmult_assoc Rinv_l ?Rmult_1_r; last exact: INR_fact_neq_0.
++    rewrite {1}/Rdiv Rmult_assoc Rinv_l ?Rmult_1_r.
++      exact: INR_fact_neq_0.
+     rewrite (is_derive_n_unique _ _ _ _ (is_derive_n_ln _ _ _)) //.
+     rewrite falling_seq_correct // nth_behead fact_seq_correct //.
+     have Hpow: (PolR.nth (PolR.rec1
+       (TR.pow_aux_rec tt (-1) x) (powerRZ x (-1)) n)%R k.+1 =
+       / x ^ (1 + k.+1))%R.
+       rewrite /PolR.nth /PolR.rec1 nth_rec1up.
+-      rewrite ifF; last first.
++      rewrite ifF.
+         by apply: negbTE; rewrite ltnNge -ltnS Hkn.
+       rewrite iteriS /TR.pow_aux_rec.
+       suff->: powerRZ x (-1 - Z.of_nat (k + 1))%Z = / (x ^ (1 + k.+1))%R by done.
+-        rewrite pow_powerRZ -powerRZ_opp; last exact: Rgt_not_eq.
++        rewrite pow_powerRZ -powerRZ_opp.
++          exact: Rgt_not_eq.
+         congr powerRZ; change (-1)%Z with (- Z.of_nat 1)%Z.
+         rewrite -Z.add_opp_r -Z.opp_sub_distr -Z.add_opp_r Z.opp_involutive.
+         by f_equal; rewrite -Nat2Z.inj_add; f_equal; rewrite plusE addn1.
+     rewrite Hpow big_mkord.
+     rewrite -INR_IZR_INZ /Rdiv Rmult_assoc.
+-    rewrite (big_morph IZR (id1 := 1%R) (op1 := Rmult)) //; last exact: mult_IZR.
++    rewrite (big_morph IZR (id1 := 1%R) (op1 := Rmult)) //.
++      exact: mult_IZR.
+     set bigRhs := \big[Rmult/1%R]_i IZR _.
+     set fk2 := INR (fact k.+2).
+     have->: (bigRhs * / fk2 * (/ x ^ (1 + k.+1) * fk2) =
+       (/ fk2 * fk2) * bigRhs * / (x ^ (1 + k.+1)))%R by ring.
+-    rewrite Rinv_l ?Rmult_1_l; last exact: INR_fact_neq_0.
++    rewrite Rinv_l ?Rmult_1_l.
++      exact: INR_fact_neq_0.
+     congr Rmult; rewrite {}/bigRhs.
+     apply: eq_bigr => [[i Hi] _].
+     rewrite INR_IZR_INZ.
+@@ -2802,7 +2833,8 @@
+   by rewrite I.mul_propagate_l // Fnai.
+ - have [qf Hf1 Hf2] := Fmain.
+   have [qg Hg1 Hg2] := Gmain.
+-  step_xr (Xreal 0 + Xreal 0)%XR; last by rewrite /= Rplus_0_l.
++  step_xr (Xreal 0 + Xreal 0)%XR.
++  by rewrite /= Rplus_0_l.
+   apply: J.add_correct.
+     apply: (mul_0_contains_0_r _
+       (y := (Xreal (PolR.mul_tail tt n qf qg).[x0 - x0])));
+@@ -2813,13 +2845,15 @@
+     apply: Bnd.ComputeBound_correct.
+       exact: Pol.mul_tail_correct.
+     exact: J.sub_correct.
+-  step_xr (Xreal 0 + Xreal 0)%XR; last by rewrite /= Rplus_0_l.
++  step_xr (Xreal 0 + Xreal 0)%XR.
++  by rewrite /= Rplus_0_l.
+   apply: J.add_correct.
+     apply: (mul_0_contains_0_l _
+       (y := (Xreal qg.[x0 - x0]))) =>//.
+     apply: Bnd.ComputeBound_correct=>//.
+     exact: J.sub_correct.
+-  step_xr (Xreal 0 + Xreal 0)%XR; last by rewrite /= Rplus_0_l.
++  step_xr (Xreal 0 + Xreal 0)%XR.
++  by rewrite /= Rplus_0_l.
+   apply: J.add_correct.
+     apply: (mul_0_contains_0_l _
+       (y := (Xreal qf.[x0 - x0]))) =>//.
+@@ -2843,6 +2877,7 @@
+   (((proj_val (f x) - pf.[x - x0]) * pg.[x - x0] +
+   ((proj_val (g x) - pg.[x - x0]) * pf.[x - x0] +
+   (proj_val (f x) - pf.[x - x0]) * (proj_val (g x) - pg.[x - x0])))))%R.
++2: {
+   apply: J.add_correct.
+     apply: J.mul_correct.
+       apply: Bnd.ComputeBound_correct.
+@@ -2859,6 +2894,7 @@
+     apply: Bnd.ComputeBound_correct =>//.
+     by apply: J.sub_correct =>//; exact: HinX0.
+   exact: J.mul_correct.
++}
+ clear - Fdef Gdef Dx Hx.
+ have Hdfx := Fdef x Hx.
+ have Hdgx := Gdef x Hx.
+@@ -2866,15 +2902,17 @@
+ set sg := pg.[x - x0]%R.
+ 
+ rewrite !PolR.hornerE PolR.size_mul_trunc PolR.size_mul_tail.
+-rewrite (big_endo (fun r => r * (x-x0) ^ n.+1)%R); first last.
+-  by rewrite Rmult_0_l.
++rewrite (big_endo (fun r => r * (x-x0) ^ n.+1)%R).
+   by move=> a b /=; rewrite Rmult_plus_distr_r.
++  by rewrite Rmult_0_l.
+ rewrite (eq_big_nat _ _ (F2 := fun i =>
+-  PolR.mul_coeff tt pf pg (i + n.+1) * (x - x0) ^ (i + n.+1))%R);
+-  last first.
+-  move=> i Hi; rewrite Rmult_assoc; congr Rmult; last by rewrite pow_add.
+-  rewrite PolR.nth_mul_tail ifF; first by rewrite addnC.
+-  by case/andP: Hi; case: leqP.
++  PolR.mul_coeff tt pf pg (i + n.+1) * (x - x0) ^ (i + n.+1))%R).
++  move=> i Hi; rewrite Rmult_assoc; congr Rmult.
++  rewrite PolR.nth_mul_tail.
++  have Hni : ((PolR.size pf + PolR.size pg).-1 - n.+1 <= i) = false.
++    by case/andP: Hi; case: leqP.
++  by rewrite ifF // addnC.
++  by rewrite pow_add.
+ rewrite -(big_addn 0 _ n.+1 predT (fun i =>
+   PolR.mul_coeff tt pf pg i * (x - x0) ^ i)%R).
+ set e := ((proj_val _ - sf) * sg + ((_ - sg) * sf + (_ - sf) * (_ - sg)))%R.
+@@ -2905,31 +2943,40 @@
+   rewrite [RHS](big_cat_nat _ _ (n := n.+1)) //=.
+   rewrite Rplus_comm; congr Rplus.
+   rewrite !big_mkord; apply: eq_bigr.
+-    move=> [i Hi] _ /=; rewrite PolR.nth_mul_trunc ifF;
+-      last by apply: negbTE; rewrite -leqNgt.
+-    rewrite PolR.nth_mul ifF //.
+-    apply: negbTE; rewrite -ltnNge; rewrite ltnS in Hi.
+-    exact: leq_ltn_trans Hi Hn.
++    move=> [i Hi] _ /=.
++    have Htrunc : (n < i) = false.
++      apply: negbTE; by rewrite -leqNgt -ltnS.
++    have Hmul : ((PolR.size pf + PolR.size pg).-1 <= i) = false.
++      apply: negbTE; rewrite -ltnNge; rewrite ltnS in Hi.
++      exact: leq_ltn_trans Hi Hn.
++    by rewrite PolR.nth_mul_trunc Htrunc PolR.nth_mul Hmul.
+   rewrite -(add0n n.+1) !big_addn !big_mkord; apply: eq_bigr.
+   move=> [i Hi] _ /=; rewrite PolR.nth_mul ifF //.
+   apply: negbTE; rewrite -ltnNge.
+   by rewrite -addSn leq_addLR.
+-rewrite -{1}(add0n n.+1) big_addn big_mkord big1; last first.
+-  move=> [i Hi] _ /=.
++rewrite -{1}(add0n n.+1) big_addn big_mkord.
++have Htail :
++    \big[Rplus/0%R]_(i < (PolR.size pf + PolR.size pg).-1 - n.+1)
++      (PolR.mul_coeff tt pf pg (i + n.+1) *
++       (x - x0) ^ (i + n.+1))%R = 0%R.
++  apply: big1 => [[i Hi] _] /=.
+   rewrite -subn_eq0 in Hn.
+   by rewrite -subn_gt0 subnS (eqP Hn) in Hi.
+-rewrite Rplus_0_l.
++rewrite Htail Rplus_0_l.
+ set np := (PolR.size pf + PolR.size pg).-1.
+-rewrite [in LHS](big_cat_nat _ _ (n := np)) //=;
+-  last exact: leqW.
++have Hnp : np <= n.+1 by exact: leqW.
++rewrite [in LHS](big_cat_nat (n := np) (leq0n np) Hnp) /=.
+ set big0 := \big[Rplus/0%R]_(_.-1 <= i < n.+1) _.
+ have->: big0 = 0%R.
+ rewrite /big0.
+   rewrite /big0 -/np -(add0n np) big_addn big_mkord.
+   rewrite big1 // => [[i Hi] _] /=.
+-  rewrite PolR.nth_mul_trunc ifF; last first.
++  rewrite PolR.nth_mul_trunc.
+   rewrite ltn_subRL addnC in Hi.
+-  by rewrite -ltnS ltnNge Hi.
++  have Hle : i + np <= n by rewrite -ltnS.
++  have Htrunc : (n < i + np)%N = false.
++    apply: negbTE; by rewrite -leqNgt.
++  rewrite Htrunc /=.
+   rewrite PolR.mul_coeffE PolR.mul_coeff_eq0 ?Rmult_0_l //.
+   move=> k Hk.
+   case: (leqP (PolR.size pf) k) => Hk0.
+@@ -2999,8 +3046,11 @@
+ rewrite /PolR.nth nth_take_dflt.
+ case: ifP => Hk.
+ rewrite Pol.nth_default //; exact: J.zero_correct.
+-rewrite nth_set_nth /= ifF; first exact: Hp.
+-by apply/negP => /eqP K; rewrite K leqnn in Hk.
++rewrite nth_set_nth /=.
++have Hneq : (k == Pol.size pi) = false.
++  by apply/negP => /eqP K; rewrite K leqnn in Hk.
++rewrite Hneq.
++exact: Hp.
+ Qed.
+ 
+ Lemma horner_pad pi pr x : pi >:: pr -> pr.[x] = (pad pi pr).[x].
+@@ -3138,13 +3188,11 @@
+     apply/contains_Xnan; rewrite I.add_propagate_r //.
+     rewrite /A0 in Hv.
+     apply/contains_Xnan.
+-    rewrite J.midpoint_correct in Hv.
++    rewrite (J.midpoint_correct _ ne_A0) in Hv.
+     easy.
+-    have [Q HQ1 _] := Fmain.
+-    move/(_ 0) in HQ1.
+-    by exists (PolR.nth Q O).
+   rewrite /Bf.
+-  step_xr (Xadd (Xreal v) (Xreal 0)); last by rewrite Xadd_0_r.
++  step_xr (Xadd (Xreal v) (Xreal 0)).
++  by rewrite Xadd_0_r.
+   apply: I.add_correct =>//.
+   have [qf hq1 hq2] := Fmain.
+   apply: (@ComputeBound_nth0 _ _ qf) =>//.
+@@ -3156,14 +3204,14 @@
+   move=> x Hx; rewrite /BfMf /Bf.
+   have [qf hq1 hq2] := Fmain.
+   move/(_ x Hx) in hq2.
+-  step_xr (Xreal (qf.[x - x0]) + (f x - Xreal (qf.[x - x0])))%XR =>//.
++  step_xr (Xreal (qf.[x - x0]) + (f x - Xreal (qf.[x - x0])))%XR.
++  case: (f) =>// r; simpl; congr Xreal; ring.
+   apply: I.add_correct.
+   apply: Bnd.ComputeBound_correct =>//.
+   exact: J.sub_correct.
+   case Df: (f x) => [|fx].
+   by rewrite (Fdef x Hx Df).
+   by rewrite Df in hq2.
+-  case: (f) =>// r; simpl; congr Xreal; ring.
+ have HM1 : i_validTM x0 (I.convert X) M1 (fun x => f x - Xreal (alpha0)).
+   exact: TMset0_correct.
+ 
+@@ -3186,7 +3234,8 @@
+ 
+ (* Zero *)
+ rewrite /M0 /Mg /Bf.
+-step_xr (Xreal 0 + Xreal 0)%XR; last by rewrite /= Rplus_0_l.
++step_xr (Xreal 0 + Xreal 0)%XR.
++by rewrite /= Rplus_0_l.
+ have [Q HQ1 HQ2] := Gmain.
+ have [F HF1 HF2] := Fmain.
+ apply: I.add_correct =>//.
+--- a/src/Poly/Taylor_model.v
++++ b/src/Poly/Taylor_model.v
+@@ -599,15 +599,15 @@
+ have {H1} := I.subset_correct _ _ _ H2 H1.
+ specialize (F2 (not_empty_contains _ _ H2)).
+ rewrite F2 /=.
+-rewrite I.bnd_correct.
++have Hlb : I.valid_lb (I.lower i) := I.valid_lb_real _ F1.
++have Hub : I.valid_ub (I.lower i) := I.valid_ub_real _ F1.
++rewrite (I.bnd_correct _ _ Hlb Hub).
+ case E3 : x => [|r] //.
+ elim.
+ rewrite F1.
+ intros H3 H4.
+ apply f_equal.
+ now apply Rle_antisym.
+-exact: I.valid_lb_real.
+-exact: I.valid_ub_real.
+ Qed.
+ 
+ Definition nearbyint (m : rounding_mode)
+@@ -663,11 +663,20 @@
+ Proof.
+ move=> z1N z2P.
+ apply: I.mask_correct'.
+-rewrite I.bnd_correct.
++have Hlb : I.valid_lb (I.lower (I.fromZ_small z1)).
++  apply: I.valid_lb_lower; exists (IZR z1).
++  by apply I.fromZ_small_correct; lia.
++have Hub : I.valid_ub (I.upper (I.fromZ_small z2)).
++  apply: I.valid_ub_upper; exists (IZR z2).
++  by apply I.fromZ_small_correct; lia.
++rewrite (I.bnd_correct _ _ Hlb Hub).
+ refine (_ (I.fromZ_small_correct z1 _) (I.fromZ_small_correct z2 _)) ; [|lia..].
+ move=> Hz2 Hz1.
+-rewrite I.lower_correct; [|now exists (IZR z1)].
+-rewrite I.upper_correct; [|now exists (IZR z2)].
++have Hne1 : not_empty (I.convert (I.fromZ_small z1)).
++  by exists (IZR z1).
++have Hne2 : not_empty (I.convert (I.fromZ_small z2)).
++  by exists (IZR z2).
++rewrite (I.lower_correct _ Hne1) (I.upper_correct _ Hne2).
+ move: Hz2 Hz1.
+ set i1 := I.convert _.
+ set i2 := I.convert _.
+@@ -675,8 +684,6 @@
+ assert (H2 := IZR_le _ _ (proj1 z2P)).
+ case: i1 => [|[|x1] [|x2]] /=;
+     case: i2 => [|[|x3] [|x4]] //=; lra.
+-apply: I.valid_lb_lower; exists (IZR z1); apply I.fromZ_small_correct; lia.
+-apply: I.valid_ub_upper; exists (IZR z2); apply I.fromZ_small_correct; lia.
+ Qed.
+ 
+ Lemma contains_fromZ_lower_upper_div prec z1 z2 z3 i :
+@@ -691,16 +698,29 @@
+ Proof.
+ move=> z1N z2P z3P.
+ apply: I.mask_correct'.
+-rewrite (_ : Xreal _ = Xdiv (Xreal 0) (Xreal (IZR z3))); last first.
++have Hzero : Xreal 0 = Xdiv (Xreal 0) (Xreal (IZR z3)).
+   rewrite /= /Xdiv'.
+   case: is_zero_spec => [/eq_IZR| _]; first by lia.
+   by congr (Xreal); rewrite /Rdiv; ring.
+-apply I.div_correct; last by apply: I.fromZ_small_correct; lia.
+-rewrite I.bnd_correct.
++rewrite Hzero.
++have Hz3 : contains (I.convert (I.fromZ_small z3)) (Xreal (IZR z3)).
++  by apply: I.fromZ_small_correct; lia.
++apply I.div_correct.
++2: exact Hz3.
++have Hlb : I.valid_lb (I.lower (I.fromZ_small z1)).
++  apply: I.valid_lb_lower; exists (IZR z1).
++  by apply I.fromZ_small_correct; lia.
++have Hub : I.valid_ub (I.upper (I.fromZ_small z2)).
++  apply: I.valid_ub_upper; exists (IZR z2).
++  by apply I.fromZ_small_correct; lia.
++rewrite (I.bnd_correct _ _ Hlb Hub).
+ refine (_ (I.fromZ_small_correct z1 _) (I.fromZ_small_correct z2 _)) ; [|lia..].
+ move=> Hz2 Hz1.
+-rewrite I.lower_correct; [|now exists (IZR z1)].
+-rewrite I.upper_correct; [|now exists (IZR z2)].
++have Hne1 : not_empty (I.convert (I.fromZ_small z1)).
++  by exists (IZR z1).
++have Hne2 : not_empty (I.convert (I.fromZ_small z2)).
++  by exists (IZR z2).
++rewrite (I.lower_correct _ Hne1) (I.upper_correct _ Hne2).
+ move: Hz2 Hz1.
+ set i1 := I.convert _.
+ set i2 := I.convert _.
+@@ -708,8 +728,6 @@
+ assert (H2 := IZR_le _ _ (proj1 z2P)).
+ case: i1 => [|[|x1] [|x2]] /=;
+     case: i2 => [|[|x3] [|x4]] //=; lra.
+-apply: I.valid_lb_lower; exists (IZR z1); apply I.fromZ_small_correct; lia.
+-apply: I.valid_ub_upper; exists (IZR z2); apply I.fromZ_small_correct; lia.
+ Qed.
+ 
+ Theorem nearbyint_correct m u (Y : I.type) tf f :
+@@ -737,12 +755,14 @@
+     apply (not_empty_contains _ (Xlift (Rnearbyint m) (Xbind f (Xreal y)))).
+     apply: I.nearbyint_correct.
+     exact: eval_correct. }
+-  rewrite I.bnd_correct /=.
+-  - rewrite -I.lower_correct //.
+-    case/andP: E1 => /I.bounded_correct [/I.lower_bounded_correct [-> _] _] _; lra.
+-  - exact: I.valid_lb_lower.
+-  - apply: I.valid_ub_real.
+-    by case/andP: E1 => /I.bounded_correct [/I.lower_bounded_correct [-> _] _] _. }
++  have Hlb : I.valid_lb (I.lower i) := I.valid_lb_lower _ Hi.
++  have Hlower : I.F.convert (I.lower i) =
++      Xreal (proj_val (I.F.convert (I.lower i))).
++    by case/andP: E1 => /I.bounded_correct
++      [/I.lower_bounded_correct [-> _] _] _.
++  have Hub : I.valid_ub (I.lower i) := I.valid_ub_real _ Hlower.
++  rewrite (I.bnd_correct _ _ Hlb Hub) /= -(I.lower_correct _ Hi).
++  case/andP: E1 => /I.bounded_correct [/I.lower_bounded_correct [-> _] _] _; lra. }
+ apply: (@approximates_ext
+           (fun x : R =>
+              Xadd (f x)
+@@ -774,12 +794,16 @@
+   by apply: contains_fromZ_lower_upper; lia.
+ - exact: contains_midpoint.
+ move: E1.
+-have F1 : Pol.contains_pointwise (Pol.polyC i3) (PolR.polyC (1/2)).
+-  apply: Pol.polyC_correct.
+-  rewrite (_ : Xreal _ =  Xdiv (Xreal 1) (Xreal 2)).
+-    apply: I.div_correct; exact: I.fromZ_small_correct.
++have HhalfXR : Xreal (1/2) = Xdiv (Xreal 1) (Xreal 2).
+   rewrite /= /Xdiv'.
+   now rewrite is_zero_false.
++have HnegHalfXR : Xreal (-(1/2)) = Xdiv (Xreal (-1)) (Xreal 2).
++  rewrite /= /Xdiv'.
++  by case: is_zero_spec; try lra; move=> _; congr Xreal; lra.
++have F1 : Pol.contains_pointwise (Pol.polyC i3) (PolR.polyC (1/2)).
++  apply: Pol.polyC_correct.
++  rewrite HhalfXR.
++  by apply: I.div_correct; exact: I.fromZ_small_correct.
+ have Him1 : not_empty (I.convert im1).
+ { rewrite /im1.
+   by exists (IZR (-1)); apply: I.fromZ_small_correct. }
+@@ -788,14 +812,15 @@
+   by exists (IZR 1); apply: I.fromZ_small_correct. }
+ have Hlim1 : I.valid_lb (I.lower im1) by exact: I.valid_lb_lower.
+ have Hui1 :  I.valid_ub (I.upper TM.i1) by exact: I.valid_ub_upper.
++have Hlowerim1 := I.lower_correct _ Him1.
++have Hupperi1 := I.upper_correct _ Hi1.
++have Hbndm1p1 := I.bnd_correct _ _ Hlim1 Hui1.
+ have F2 : contains (I.convert (I.mask i4 i)) (Xreal (- (1/2))).
+ { apply: I.mask_correct'.
+-  rewrite (_ :  Xreal (- (1 / 2)) =
+-                Xdiv (Xreal (-1)) (Xreal 2)); last first.
+-    rewrite /= /Xdiv'.
+-    by case: is_zero_spec; try lra; move=> _; congr Xreal; lra.
+-  apply: I.div_correct; last by exact: I.fromZ_small_correct.
+-  rewrite I.bnd_correct // I.lower_correct // I.upper_correct //.
++  rewrite HnegHalfXR.
++  apply: I.div_correct.
++  2: exact: I.fromZ_small_correct.
++  rewrite Hbndm1p1 Hlowerim1 Hupperi1.
+   refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy..].
+   by ((do 2 case: I.convert) => //= [] [|x1] [|y1] //; try lra) =>
+        [] [|x2] [|y2] //; lra. }
+@@ -804,15 +829,17 @@
+   (Xreal (Rnearbyint rnd_UP r - r - 1 / 2)).
+ { apply: I.mask_correct' => /=.
+   set ir := IZR _.
+-  rewrite (_ : Xreal _ =
+-            Xdiv (Xreal (2 * (ir - r - 1/2))) (Xreal 2)); last first.
+-      rewrite /= /Xdiv'.
+-      case: is_zero_spec; try lra; move=> _.
+-      by congr Xreal; lra.
+-  apply: I.div_correct; last by exact: I.fromZ_small_correct.
+-  rewrite I.bnd_correct // /contains.
++  have Hexpr : Xreal (Rnearbyint rnd_UP r - r - 1 / 2) =
++      Xdiv (Xreal (2 * (ir - r - 1/2))) (Xreal 2).
++    have Htwo : (2%R <> 0%R) by lra.
++    rewrite /= /Xdiv' (is_zero_false _ Htwo).
++    apply f_equal; unfold ir; field.
++  rewrite Hexpr.
++  apply: I.div_correct.
++  2: exact: I.fromZ_small_correct.
++  rewrite Hbndm1p1 /contains.
+   refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy ..].
+-  rewrite I.lower_correct // I.upper_correct //.
++  rewrite Hlowerim1 Hupperi1.
+   set iv1 := I.convert _.
+   set iv2 := I.convert _.
+   have HR := Rnearbyint_error_UP r.
+@@ -821,18 +848,14 @@
+     case: iv2 => [|[|x3] [|x4]] //=; try lra. }
+ have F4 : Pol.contains_pointwise (Pol.polyC i5) (PolR.polyC (- (1/2))).
+   apply: Pol.polyC_correct.
+-  rewrite (_ : Xreal _ =  Xdiv (Xreal (-1)) (Xreal 2)).
+-    by apply: I.div_correct; exact: I.fromZ_small_correct.
+-{ rewrite /= /Xdiv'.
+-  by case: is_zero_spec; try lra; move=> _; congr Xreal; lra. }
++  rewrite HnegHalfXR.
++  by apply: I.div_correct; exact: I.fromZ_small_correct.
+ have F5 : contains (I.convert (I.mask i4 i)) (Xreal (1/2)).
+ { apply: I.mask_correct'.
+-  rewrite (_ :  Xreal (1 / 2) =
+-                Xdiv (Xreal 1) (Xreal 2)); last first.
+-    rewrite /= /Xdiv'.
+-    by case: is_zero_spec; try lra; move=> _; congr Xreal; lra.
+-  apply: I.div_correct; last by exact: I.fromZ_small_correct.
+-  rewrite I.bnd_correct // I.lower_correct // I.upper_correct //.
++  rewrite HhalfXR.
++  apply: I.div_correct.
++  2: exact: I.fromZ_small_correct.
++  rewrite Hbndm1p1 Hlowerim1 Hupperi1.
+   refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy..].
+   by ((do 2 case: I.convert) => //= [] [|x1] [|y1] //; try lra) =>
+        [] [|x2] [|y2] //; lra. }
+@@ -841,16 +864,18 @@
+   (Xreal (Rnearbyint rnd_DN r - r + 1 / 2)).
+ { apply: I.mask_correct' => /=.
+   set ir := IZR _.
+-  rewrite (_ : Xreal _ =
+-            Xdiv (Xreal (2 * (ir - r + 1/2))) (Xreal 2)); last first.
+-      rewrite /= /Xdiv'.
+-      case: is_zero_spec; try lra; move=> _.
+-      by congr Xreal; lra.
+-  apply: I.div_correct; last by exact: I.fromZ_small_correct.
+-  rewrite I.bnd_correct //.
++  have Hexpr : Xreal (Rnearbyint rnd_DN r - r + 1 / 2) =
++      Xdiv (Xreal (2 * (ir - r + 1/2))) (Xreal 2).
++    have Htwo : (2%R <> 0%R) by lra.
++    rewrite /= /Xdiv' (is_zero_false _ Htwo).
++    apply f_equal; unfold ir; field.
++  rewrite Hexpr.
++  apply: I.div_correct.
++  2: exact: I.fromZ_small_correct.
++  rewrite Hbndm1p1.
+   rewrite /contains.
+   refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy..].
+-  rewrite I.lower_correct // I.upper_correct //.
++  rewrite Hlowerim1 Hupperi1.
+   set iv1 := I.convert _.
+   set iv2 := I.convert _.
+   have  HR := Rnearbyint_error_DN r.
+@@ -891,11 +916,11 @@
+     rewrite Rmult_0_l Rplus_0_l.
+     case Er : (f y) => [|r] /=.
+       by rewrite Rminus_0_l Ropp_involutive.
+-    rewrite Raux.Ztrunc_floor //.
+-      rewrite /Rminus Ropp_involutive.
+-      by apply F6.
+-    have [_ /=] := Hsign _ (eval_correct u Hf Cy).
+-    by rewrite Er.
++    have Hr : (0 <= r)%R.
++      have [_ /=] := Hsign _ (eval_correct u Hf Cy).
++      by rewrite Er.
++    rewrite (Raux.Ztrunc_floor r Hr) /Rminus Ropp_involutive.
++    by apply F6.
+   - exists (PolR.polyC 0) => //= [|y _].
+       apply: Pol.polyC_correct.
+       by apply: J.zero_correct.
+@@ -903,15 +928,15 @@
+     case Er : (f y) => [|r] /=.
+       rewrite Rminus_0_l.
+       apply: I.mask_correct'.
+-      rewrite I.bnd_correct // I.lower_correct // I.upper_correct //.
++      rewrite Hbndm1p1 Hlowerim1 Hupperi1.
+       refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy..].
+       by ((do 2 case: I.convert) => //= [] [|x1] [|y1] //; try lra) =>
+          [] [|x2] [|y2] //; lra.
+     apply: I.mask_correct'.
+-    rewrite I.bnd_correct //.
++    rewrite Hbndm1p1.
+     rewrite /contains.
+     refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy..].
+-    rewrite I.lower_correct // I.upper_correct //.
++    rewrite Hlowerim1 Hupperi1.
+     set iv1 := I.convert _.
+     set iv2 := I.convert _.
+     have  HR := Rnearbyint_error_ZR r.
+@@ -923,28 +948,32 @@
+ rewrite Rmult_0_l Rplus_0_r Rminus_0_r.
+ case: (f y) => /=.
+   apply: I.mask_correct'.
+-  rewrite (_ :  Xreal _ =
+-                Xdiv (Xreal 0) (Xreal 2)); last first.
+-    rewrite /= /Xdiv'.
+-    by case: is_zero_spec; try lra; move=> _; congr Xreal; lra.
+-  apply: I.div_correct; last by exact: I.fromZ_small_correct.
+-  rewrite I.bnd_correct // I.lower_correct // I.upper_correct //.
++  have HzeroDiv : Xreal 0 = Xdiv (Xreal 0) (Xreal 2).
++    have Htwo : (2%R <> 0%R) by lra.
++    rewrite /= /Xdiv' (is_zero_false _ Htwo).
++    apply f_equal; field.
++  rewrite HzeroDiv.
++  apply: I.div_correct.
++  2: exact: I.fromZ_small_correct.
++  rewrite Hbndm1p1 Hlowerim1 Hupperi1.
+   refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy..].
+   by ((do 2 case: I.convert) => //= [] [|x1] [|y1] //; try lra) =>
+        [] [|x2] [|y2] //; lra.
+ move=> r.
+ apply: I.mask_correct'.
+ set ir := IZR _.
+-rewrite (_ : Xreal _ =
+-          Xdiv (Xreal (2 * (ir - r))) (Xreal 2)); last first.
+-  rewrite /= /Xdiv'.
+-  case: is_zero_spec; try lra; move=> _.
+-  by congr Xreal; lra.
+-apply: I.div_correct; last by exact: I.fromZ_small_correct.
+-rewrite I.bnd_correct //.
++have Hexpr : Xreal (Rnearbyint rnd_NE r - r) =
++    Xdiv (Xreal (2 * (ir - r))) (Xreal 2).
++  have Htwo : (2%R <> 0%R) by lra.
++  rewrite /= /Xdiv' (is_zero_false _ Htwo).
++  apply f_equal; unfold ir; field.
++rewrite Hexpr.
++apply: I.div_correct.
++2: exact: I.fromZ_small_correct.
++rewrite Hbndm1p1.
+ rewrite /contains.
+ refine (_ (I.fromZ_small_correct (-1) _) (I.fromZ_small_correct 1 _)) ; [|easy..].
+-rewrite I.lower_correct // I.upper_correct //.
++rewrite Hlowerim1 Hupperi1.
+ set iv1 := I.convert _.
+ set iv2 := I.convert _.
+ have  HR := Rnearbyint_error_NE r.
+

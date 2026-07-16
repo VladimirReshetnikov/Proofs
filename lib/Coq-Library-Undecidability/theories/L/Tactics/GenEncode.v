@@ -3,7 +3,7 @@ From MetaRocq Require Import Template.All TemplateMonad.Core Template.Ast.
 From Stdlib Require Import List.
 Require Export MetaRocq.Utils.bytestring.
 
-Import MRMonadNotation.
+Import MonadNotation.
 Local Open Scope bs.
 
 (* *** Generation of encoding functions *)

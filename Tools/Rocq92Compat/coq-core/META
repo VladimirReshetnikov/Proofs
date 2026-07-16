@@ -1,10 +1,82 @@
 version = "9.2.0"
 directory = "../rocq-runtime"
 
+package "clib" (
+  directory = "clib"
+  version = "9.2.0"
+  requires = "rocq-runtime.clib"
+)
+
 package "engine" (
   directory = "engine"
   version = "9.2.0"
   requires = "rocq-runtime.engine"
+)
+
+package "interp" (
+  directory = "interp"
+  version = "9.2.0"
+  requires = "rocq-runtime.interp"
+)
+
+package "kernel" (
+  directory = "kernel"
+  version = "9.2.0"
+  requires = "rocq-runtime.kernel"
+)
+
+package "lib" (
+  directory = "lib"
+  version = "9.2.0"
+  requires = "rocq-runtime.lib"
+)
+
+package "library" (
+  directory = "library"
+  version = "9.2.0"
+  requires = "rocq-runtime.library"
+)
+
+package "parsing" (
+  directory = "parsing"
+  version = "9.2.0"
+  requires = "rocq-runtime.parsing"
+)
+
+package "pretyping" (
+  directory = "pretyping"
+  version = "9.2.0"
+  requires = "rocq-runtime.pretyping"
+)
+
+package "printing" (
+  directory = "printing"
+  version = "9.2.0"
+  requires = "rocq-runtime.printing"
+)
+
+package "proofs" (
+  directory = "proofs"
+  version = "9.2.0"
+  requires = "rocq-runtime.proofs"
+)
+
+package "tactics" (
+  directory = "tactics"
+  version = "9.2.0"
+  requires = "rocq-runtime.tactics"
+)
+
+package "toplevel" (
+  directory = "toplevel"
+  version = "9.2.0"
+  requires = "rocq-runtime.toplevel"
+)
+
+package "vernac" (
+  directory = "vernac"
+  version = "9.2.0"
+  requires = "rocq-runtime.vernac"
 )
 
 package "plugins" (

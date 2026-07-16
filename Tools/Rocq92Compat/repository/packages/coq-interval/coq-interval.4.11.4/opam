@@ -4,6 +4,13 @@ homepage: "https://coqinterval.gitlabpages.inria.fr/"
 dev-repo: "git+https://gitlab.inria.fr/coqinterval/interval.git"
 bug-reports: "https://gitlab.inria.fr/coqinterval/interval/issues"
 license: "CeCILL-C"
+patches: ["interval-4.11.4-rocq-9.2.patch"]
+extra-files: [
+  [
+    "interval-4.11.4-rocq-9.2.patch"
+    "sha256=6da937450d1f48032e15a12abe0235ed39b964f382ea76e97e81f96bd81dd0cc"
+  ]
+]
 build: [
   ["autoconf"] {dev}
   ["./configure"]
