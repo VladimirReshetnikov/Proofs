@@ -69,6 +69,7 @@ lib/Coq-Library-Undecidability-current/theories/L/Util/NaryApp.v
 lib/Coq-Library-Undecidability-current/theories/L/Util/ClosedLAdmissible.v
 lib/Coq-Library-Undecidability-current/theories/Shared/Libs/PSL/FiniteTypes/FinTypesDef.v
 lib/Coq-Library-Undecidability-current/theories/TM/TM.v
+lib/Coq-Library-Undecidability-current/theories/TM/SBTM.v
 lib/Coq-Library-Undecidability-current/theories/Shared/Libs/DLW/Utils/focus.v
 lib/Coq-Library-Undecidability-current/theories/Shared/Libs/DLW/Utils/utils_tac.v
 lib/Coq-Library-Undecidability-current/theories/Shared/Libs/DLW/Utils/list_focus.v
@@ -120,6 +121,7 @@ lib/Coq-Library-Undecidability-current/theories/Shared/Libs/PSL/Inhabited.v
 lib/Coq-Library-Undecidability-current/theories/TM/Util/Prelim.v
 lib/Coq-Library-Undecidability-current/theories/TM/Util/Relations.v
 lib/Coq-Library-Undecidability-current/theories/TM/Util/TM_facts.v
+lib/Coq-Library-Undecidability-current/theories/TM/Util/SBTM_facts.v
 lib/Coq-Library-Undecidability-current/theories/TM/Util/TM_computable.v
 lib/Coq-Library-Undecidability-current/theories/TM/Compound/TMTac.v
 lib/Coq-Library-Undecidability-current/theories/TM/Basic/Mono.v
@@ -142,6 +144,8 @@ lib/Coq-Library-Undecidability-current/theories/TM/Compound/Shift.v
 lib/Coq-Library-Undecidability-current/theories/TM/Single/StepTM.v
 lib/Coq-Library-Undecidability-current/theories/TM/Reductions/mTM_to_TM.v
 lib/Coq-Library-Undecidability-current/theories/Synthetic/ReducibilityFacts.v
+lib/Coq-Library-Undecidability-current/theories/TM/Reductions/HaltTM_1_to_SBTM_HALT.v
+lib/Coq-Library-Undecidability-current/theories/StackMachines/Reductions/SBTM_HALT_to_HaltBSM.v
 lib/Coq-Library-Undecidability-current/theories/StackMachines/BSM/tiles_solvable.v
 lib/Coq-Library-Undecidability-current/theories/StackMachines/BSM/bsm_utils.v
 lib/Coq-Library-Undecidability-current/theories/StackMachines/Reductions/TM_computable_to_BSM_computable.v

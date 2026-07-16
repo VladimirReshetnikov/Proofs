@@ -1,6 +1,6 @@
 [submodule "lib/Coq-Library-Undecidability-current"]
 	path = lib/Coq-Library-Undecidability-current
-	url = https://github.com/uds-psl/coq-library-undecidability.git
+	url = https://github.com/VladimirReshetnikov/coq-library-undecidability.git
 [submodule "lib/FormalizedFormalLogic-Foundation"]
 	path = lib/FormalizedFormalLogic-Foundation
 	url = https://github.com/VladimirReshetnikov/Foundation.git
