@@ -51,6 +51,11 @@ is the broad Lean import surface.
 - A [constructive Lean/Coq proof](Logic/PeanoArithmetic/NoFiniteModel/README.md)
   that Peano arithmetic has no finite model, using only injectivity of
   successor and zero's absence from its image.
+- Independent Lean/Coq [natural-number codings of finite lists](Logic/PeanoArithmetic/ListCoding/README.md),
+  with genuine PA formulae defining validity, access, concatenation,
+  flattening, multiplicity, permutations, substrings, subsequences,
+  duplicate-freedom, numeric and lexicographic sorting, and the canonical
+  lexicographic enumeration of every distinct permutation.
 - An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)
   deciding every Presburger sentence in Lean, with an independent constructive
   Coq proof and decision procedure for the normalized one-variable step.
@@ -85,6 +90,7 @@ lake build +ShefferStroke.Sheffer
 lake build +FirstOrder.Fol
 lake build +ClosureAxiomatization.Forward
 lake build +NoFiniteModel
+lake build +PAListCoding +PAListCoding.Audit
 lake build +PAFiniteBasisReduction
 lake build +PAUndecidable +PAUndecidable.Audit
 lake build +PowerTowers.Core
@@ -106,6 +112,7 @@ lake --dir Logic/FirstOrder/Lean build
 lake --dir Logic/FirstOrder/Compactness/Lean build
 lake --dir Logic/Interpretability/PAHF/Lean build
 lake --dir Logic/PeanoArithmetic/NoFiniteModel/Lean build
+lake --dir Logic/PeanoArithmetic/ListCoding/Lean build
 lake --dir Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Lean build
 lake --dir Logic/PeanoArithmetic/Undecidable/Lean build
 lake --dir Logic/PresburgerArithmetic/Lean build

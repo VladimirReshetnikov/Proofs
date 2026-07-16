@@ -98,8 +98,10 @@ over decoded list values, rather than relying on the behavior of a particular
 permutation-generating program. If the input contains repeated numbers, two
 index rearrangements that produce the same list value count as the same
 permutation here. Each distinct resulting list occurs exactly once. Together
-with the total lexicographic order, this characterizes the canonical output
-independently of an enumeration algorithm.
+with the total lexicographic order, these clauses specify the intended
+canonical output independently of an enumeration algorithm. This development
+represents that exact relation; a separate existence-and-uniqueness theorem for
+the output of every input code is not part of the exported theorem surface.
 
 ## What “represented by a PA formula” means
 
@@ -133,15 +135,16 @@ results.
 - Lean's `PAListCoding.Basic` supplies encoding, decoding, validity, and the
   round-trip/functionality results. `PAListCoding.Predicates` defines the
   guarded relations, constructs their arithmetic formulae through
-  Foundation's definability infrastructure, and proves the standard-model
-  correctness theorems. `PAListCoding.lean` is the public facade and
-  `PAListCoding.Audit` checks the theorem surface and its assumptions.
+  Foundation's definability infrastructure, and proves the formula-evaluation
+  correctness theorems. `PAListCoding.Standard` connects those internal
+  relations to ordinary Lean lists. `PAListCoding.lean` is the public facade,
+  and `PAListCoding.Audit` checks the theorem surface and its assumptions.
 - Coq's `ListCode.v` supplies the independent executable nested code and the
   metalevel meanings of the fourteen predicates. `Representability.v`
   provides compositional representation machinery over the repository's PA
-  formula syntax. The remaining formula and audit modules connect those
-  meanings to actual PA formulae and print the assumptions of the public
-  results.
+  formula syntax. `ListFormulas.v` constructs the actual PA formulae and
+  proves all fourteen standard-model equivalences. `Audit.v` checks the
+  complete public surface and prints its assumptions.
 
 The Lean development depends on the vendored
 `lib/FormalizedFormalLogic-Foundation` project and its pinned mathlib version.
@@ -171,12 +174,15 @@ For a focused Coq audit, first build the PAHF dependency and the preceding
 ListCoding modules, then run:
 
 ```powershell
-rocq c -Q Logic/Interpretability/PAHF/Coq PAHF `
+rocq compile -Q Logic/FirstOrder/Coq FirstOrder `
+  -Q Logic/Interpretability/PAHF/Coq PAHF `
   -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding `
   Logic/PeanoArithmetic/ListCoding/Coq/Audit.v
-rocq check -silent -Q Logic/Interpretability/PAHF/Coq PAHF `
+rocqchk -silent -Q Logic/FirstOrder/Coq FirstOrder `
+  -Q Logic/Interpretability/PAHF/Coq PAHF `
   -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding `
-  PAListCoding.ListCode PAListCoding.Representability PAListCoding.Audit
+  PAListCoding.ListCode PAListCoding.Representability `
+  PAListCoding.ListFormulas PAListCoding.Audit
 ```
 
 The audit modules check all fourteen formula/correctness results together with

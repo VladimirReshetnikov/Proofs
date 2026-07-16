@@ -23,6 +23,11 @@
   Wolfram/Meredith/Sheffer/Huntington Boolean-algebra certificates.
 - [`Interpretability/PAHF/`](Interpretability/PAHF/) proves the deductive
   bi-interpretation of PA with finite-generation hereditary finite set theory.
+- [`PeanoArithmetic/ListCoding/`](PeanoArithmetic/ListCoding/) gives independent
+  Lean and Rocq/Coq natural-number codings of finite lists and genuine PA
+  formulae for fourteen guarded list predicates, including flattening,
+  subsequences, lexicographic order, and the exact canonical list of distinct
+  permutations.
 
 The natural-deduction developments, FirstOrder, and PAHF are mathlib-free and
 have standalone Lake configurations as well as root integration targets.
