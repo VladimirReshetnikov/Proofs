@@ -48,6 +48,9 @@ Definition pAnd4 (a b c d : formula) : formula :=
 Definition pAnd5 (a b c d f : formula) : formula :=
   pAnd a (pAnd b (pAnd c (pAnd d f))).
 
+Definition pAnd6 (a b c d f g : formula) : formula :=
+  pAnd a (pAnd b (pAnd c (pAnd d (pAnd f g)))).
+
 Definition pEx3 (body : formula) : formula := pEx (pEx (pEx body)).
 Definition pEx4 (body : formula) : formula := pEx (pEx (pEx (pEx body))).
 
@@ -124,6 +127,16 @@ Proof.
   replace (i + 4) with (S (S (S (S i)))) by lia. reflexivity.
 Qed.
 
+Lemma eval_liftTerm_scons5 : forall a b c d f e t,
+  Term.eval natModel
+    (scons nat a (scons nat b (scons nat c (scons nat d (scons nat f e)))))
+    (liftTerm 5 t) = Term.eval natModel e t.
+Proof.
+  intros a b c d f e t. unfold liftTerm. rewrite Term.eval_rename.
+  apply Term.eval_ext. intro i.
+  replace (i + 5) with (S (S (S (S (S i))))) by lia. reflexivity.
+Qed.
+
 Lemma eval_liftTerm_scons6 : forall a b c d f g e t,
   Term.eval natModel
     (scons nat a (scons nat b (scons nat c
@@ -133,6 +146,17 @@ Proof.
   intros a b c d f g e t. unfold liftTerm. rewrite Term.eval_rename.
   apply Term.eval_ext. intro i.
   replace (i + 6) with (S (S (S (S (S (S i)))))) by lia. reflexivity.
+Qed.
+
+Lemma eval_liftTerm_scons7 : forall a b c d f g h e t,
+  Term.eval natModel
+    (scons nat a (scons nat b (scons nat c (scons nat d
+      (scons nat f (scons nat g (scons nat h e)))))))
+    (liftTerm 7 t) = Term.eval natModel e t.
+Proof.
+  intros a b c d f g h e t. unfold liftTerm. rewrite Term.eval_rename.
+  apply Term.eval_ext. intro i.
+  replace (i + 7) with (S (S (S (S (S (S (S i))))))) by lia. reflexivity.
 Qed.
 
 Lemma listStepTermAt_nat : forall e cur next head code step index,
@@ -1403,10 +1427,812 @@ Proof.
   intros. rewrite flattenTermAt_position. apply FlattenPosition_iff.
 Qed.
 
+(** A subsequence certificate alternates arbitrary gap lists with singleton
+    lists containing the selected elements.  Flattening the certificate
+    reconstructs the ambient list. *)
+Definition SubsequenceByChunks (v w : nat) : Prop :=
+  exists len chunks,
+    HasLength v len /\
+    HasLength chunks (2 * len + 1) /\
+    FlattenCode w chunks /\
+    forall i m c,
+      i < len ->
+      NthElement v i m ->
+      NthElement chunks (2 * i + 1) c ->
+      SingletonCode c m.
+
+Definition subsequenceTermAt (v w : term) : formula :=
+  pEx (pEx
+    (pAnd4
+      (hasLengthTermAt (liftTerm 2 v) (tVar 1))
+      (hasLengthTermAt (tVar 0)
+        (tSucc (tAdd (tVar 1) (tVar 1))))
+      (flattenTermAt (liftTerm 2 w) (tVar 0))
+      (pAll
+        (pImp (Formula.ltTermAt (tVar 0) (tVar 2))
+          (pAll (pAll
+            (pImp
+              (nthElementTermAt (liftTerm 5 v) (tVar 2) (tVar 1))
+              (pImp
+                (nthElementTermAt (tVar 3)
+                  (tSucc (tAdd (tVar 2) (tVar 2))) (tVar 0))
+                (singletonTermAt (tVar 0) (tVar 1)))))))))).
+
+Lemma subsequenceTermAt_chunks : forall e v w,
+  Formula.Sat natModel e (subsequenceTermAt v w) <->
+  SubsequenceByChunks (Term.eval natModel e v) (Term.eval natModel e w).
+Proof.
+  intros e v w. unfold subsequenceTermAt, SubsequenceByChunks, pAnd4.
+  cbn [Formula.Sat].
+  setoid_rewrite hasLengthTermAt_nat.
+  setoid_rewrite flattenTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite singletonTermAt_nat.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons2.
+  setoid_rewrite eval_liftTerm_scons5.
+  split.
+  - intros [len [chunks [hv [hc [hf h]]]]].
+    exists len, chunks. split; [exact hv |]. split.
+    + replace (len + (len + 0) + 1) with (S (len + len)) by lia. exact hc.
+    + split; [exact hf |].
+    intros i m c hi hvi hci.
+    replace (i + (i + 0) + 1) with (S (i + i)) in hci by lia.
+    exact (h i hi m c hvi hci).
+  - intros [len [chunks [hv [hc [hf h]]]]].
+    exists len, chunks. split; [exact hv |]. split.
+    + replace (S (len + len)) with (len + (len + 0) + 1) by lia. exact hc.
+    + split; [exact hf |].
+    intros i hi m c hvi hci.
+    apply (h i m c hi hvi).
+    replace (i + (i + 0) + 1) with (S (i + i)) by lia. exact hci.
+Qed.
+
+Fixpoint weaveChunks (gaps : list (list nat)) (xs : list nat)
+    : list (list nat) :=
+  match gaps, xs with
+  | gap :: gaps', x :: xs' => gap :: [x] :: weaveChunks gaps' xs'
+  | gap :: _, [] => [gap]
+  | _, _ => []
+  end.
+
+Lemma weaveChunks_length : forall gaps xs,
+  length gaps = S (length xs) ->
+  length (weaveChunks gaps xs) = 2 * length xs + 1.
+Proof.
+  intros gaps xs. revert gaps. induction xs as [|x xs IH]; intros gaps hlen.
+  - destruct gaps as [|g gaps]; simpl in hlen; try lia.
+    destruct gaps; simpl in hlen; try lia. reflexivity.
+  - destruct gaps as [|g gaps]; simpl in hlen; try lia.
+    simpl. rewrite (IH gaps ltac:(simpl in hlen; lia)). lia.
+Qed.
+
+Lemma weaveChunks_odd : forall gaps xs i x,
+  length gaps = S (length xs) ->
+  nth_error xs i = Some x ->
+  nth_error (weaveChunks gaps xs) (2 * i + 1) = Some [x].
+Proof.
+  intros gaps xs. revert gaps. induction xs as [|y ys IH]; intros gaps i x hlen hnth;
+    [destruct i; discriminate |].
+  destruct gaps as [|g gaps]; simpl in hlen; try lia.
+  destruct i as [|i].
+  - simpl in hnth. inversion hnth; subst x. reflexivity.
+  - simpl in hnth. simpl weaveChunks.
+    replace (2 * S i + 1) with (S (S (2 * i + 1))) by lia.
+    simpl nth_error. apply (IH gaps i x ltac:(lia) hnth).
+Qed.
+
+Lemma Subsequence_weave_decomposition : forall xs ys,
+  Subsequence xs ys ->
+  exists gaps,
+    length gaps = S (length xs) /\
+    ys = concat (weaveChunks gaps xs).
+Proof.
+  intros xs ys h. induction h as
+    [ys | x xs ys hsub IH | y xs ys hsub IH].
+  - exists [ys]. split; [reflexivity |]. simpl. now rewrite app_nil_r.
+  - destruct IH as [gaps [hlen heq]].
+    exists ([] :: gaps). split.
+    + simpl. lia.
+    + simpl weaveChunks. simpl concat. now rewrite <- heq.
+  - destruct IH as [gaps [hlen heq]].
+    destruct gaps as [|gap gaps]; simpl in hlen; try lia.
+    exists ((y :: gap) :: gaps). split.
+    + simpl. exact hlen.
+    + destruct xs as [|x xs].
+      * assert (hg0 : length gaps = 0) by (simpl in hlen; lia).
+        apply length_zero_iff_nil in hg0. subst gaps.
+        simpl in *. now rewrite <- heq.
+      * simpl in *. now rewrite <- heq.
+Qed.
+
+Lemma Subsequence_prefix : forall prefix xs ys,
+  Subsequence xs ys -> Subsequence xs (prefix ++ ys).
+Proof.
+  induction prefix as [|x prefix IH]; intros xs ys h; simpl.
+  - exact h.
+  - apply subsequence_skip. apply IH. exact h.
+Qed.
+
+Lemma Subsequence_of_odd_chunks : forall xs xss,
+  length xss = 2 * length xs + 1 ->
+  (forall i x, nth_error xs i = Some x ->
+    nth_error xss (2 * i + 1) = Some [x]) ->
+  Subsequence xs (concat xss).
+Proof.
+  induction xs as [|x xs IH]; intros xss hlen hodd.
+  - constructor.
+  - destruct xss as [|gap xss]; simpl in hlen; try lia.
+    destruct xss as [|one rest]; simpl in hlen; try lia.
+    assert (hone : one = [x]).
+    { specialize (hodd 0 x eq_refl). simpl in hodd. inversion hodd. reflexivity. }
+    subst one.
+    assert (hrestLen : length rest = 2 * length xs + 1) by (simpl in hlen; lia).
+    assert (hrestOdd : forall i y, nth_error xs i = Some y ->
+      nth_error rest (2 * i + 1) = Some [y]).
+    {
+      intros i y hy. specialize (hodd (S i) y hy).
+      replace (2 * S i + 1) with (S (S (2 * i + 1))) in hodd by lia.
+      simpl in hodd. exact hodd.
+    }
+    pose proof (IH rest hrestLen hrestOdd) as hsub.
+    simpl concat. apply Subsequence_prefix.
+    apply subsequence_keep. exact hsub.
+Qed.
+
+Lemma SubsequenceByChunks_iff : forall v w,
+  SubsequenceByChunks v w <-> SubsequenceCode v w.
+Proof.
+  intros v w. split.
+  - intros [len [chunks
+      [[xs [hv hlen]] [[codes [hc hcodesLen]]
+        [[ys [codes' [xss [hw [hc' [hxss hflat]]]]]] hodd]]]]].
+    pose proof (decode_functional chunks codes codes' hc hc') as hcodes.
+    subst codes'.
+    exists xs, ys. repeat split; try assumption.
+    rewrite hflat.
+    apply Subsequence_of_odd_chunks with (xss := xss).
+    + rewrite <- (decodeCodes_length codes xss hxss), hcodesLen, hlen. lia.
+    + intros i x hxi.
+      destruct (nth_error_exists_of_lt xss (2 * i + 1)) as [piece hpiece].
+      * assert (hix : i < length xs).
+        { apply nth_error_Some. rewrite hxi. discriminate. }
+        rewrite <- (decodeCodes_length codes xss hxss), hcodesLen. lia.
+      * destruct (decodeCodes_nth codes xss (2 * i + 1) piece hxss hpiece)
+          as [c0 [hc0 hdc0]].
+        assert (hvi : NthElement v i x).
+        { apply (NthElement_decode v i x xs hv). exact hxi. }
+        assert (hci0 : NthElement chunks (2 * i + 1) c0).
+        { apply (NthElement_decode chunks _ c0 codes hc). exact hc0. }
+        assert (hilt : i < len).
+        {
+          assert (i < length xs).
+          { apply nth_error_Some. rewrite hxi. discriminate. }
+          lia.
+        }
+        pose proof (hodd i x c0 hilt hvi hci0) as hs.
+        pose proof (decode_functional c0 piece [x] hdc0 hs) as hp.
+        subst piece. exact hpiece.
+  - intros [xs [ys [hv [hw hsub]]]].
+    destruct (Subsequence_weave_decomposition xs ys hsub) as
+      [gaps [hgaps hweave]].
+    set (xss := weaveChunks gaps xs).
+    set (codes := map listCode xss).
+    set (chunks := listCode codes).
+    exists (length xs), chunks. repeat split.
+    + exists xs. now split.
+    + exists codes. split.
+      * unfold chunks. apply decode_listCode.
+      * unfold codes. rewrite map_length. unfold xss.
+        apply weaveChunks_length. exact hgaps.
+    + exists ys, codes, xss. repeat split.
+      * exact hw.
+      * unfold chunks. apply decode_listCode.
+      * unfold codes. apply decodeCodes_map_listCode.
+      * unfold xss. exact hweave.
+    + intros i m c hi hvi hci.
+      apply (NthElement_decode v i m xs hv) in hvi.
+      apply (NthElement_decode chunks (2 * i + 1) c codes
+        ltac:(unfold chunks; apply decode_listCode)) in hci.
+      unfold codes in hci. rewrite nth_error_map in hci.
+      unfold xss in hci.
+      rewrite (weaveChunks_odd gaps xs i m hgaps hvi) in hci.
+      simpl in hci. inversion hci; subst c.
+      change (decode (listCode [m]) = Some [m]). apply decode_listCode.
+Qed.
+
+Lemma subsequenceTermAt_nat : forall e v w,
+  Formula.Sat natModel e (subsequenceTermAt v w) <->
+  SubsequenceCode (Term.eval natModel e v) (Term.eval natModel e w).
+Proof.
+  intros. rewrite subsequenceTermAt_chunks. apply SubsequenceByChunks_iff.
+Qed.
+
+(** Lexicographic comparison of two individually coded lists. *)
+Definition LexPosition (a b : nat) : Prop :=
+  exists na nb,
+    HasLength a na /\ HasLength b nb /\
+    ((na <= nb /\
+      forall i m, i < na -> NthElement a i m -> NthElement b i m) \/
+     exists k x y,
+       k < na /\ k < nb /\
+       NthElement a k x /\ NthElement b k y /\ x < y /\
+       forall i m, i < k -> NthElement a i m -> NthElement b i m).
+
+Definition lexLeTermAt (a b : term) : formula :=
+  pEx (pEx
+    (pAnd3
+      (hasLengthTermAt (liftTerm 2 a) (tVar 1))
+      (hasLengthTermAt (liftTerm 2 b) (tVar 0))
+      (pOr
+        (pAnd
+          (Formula.ltTermAt (tVar 1) (tSucc (tVar 0)))
+          (pAll
+            (pImp (Formula.ltTermAt (tVar 0) (tVar 2))
+              (pAll
+                (pImp
+                  (nthElementTermAt (liftTerm 4 a) (tVar 1) (tVar 0))
+                  (nthElementTermAt (liftTerm 4 b)
+                    (tVar 1) (tVar 0)))))))
+        (pEx (pEx (pEx
+          (pAnd6
+            (Formula.ltTermAt (tVar 2) (tVar 4))
+            (Formula.ltTermAt (tVar 2) (tVar 3))
+            (nthElementTermAt (liftTerm 5 a) (tVar 2) (tVar 1))
+            (nthElementTermAt (liftTerm 5 b) (tVar 2) (tVar 0))
+            (Formula.ltTermAt (tVar 1) (tVar 0))
+            (pAll
+              (pImp (Formula.ltTermAt (tVar 0) (tVar 3))
+                (pAll
+                  (pImp
+                    (nthElementTermAt (liftTerm 7 a)
+                      (tVar 1) (tVar 0))
+                    (nthElementTermAt (liftTerm 7 b)
+                      (tVar 1) (tVar 0))))))))))))).
+
+Lemma lexLeTermAt_position : forall e a b,
+  Formula.Sat natModel e (lexLeTermAt a b) <->
+  LexPosition (Term.eval natModel e a) (Term.eval natModel e b).
+Proof.
+  intros e a b. unfold lexLeTermAt, LexPosition, pAnd3, pAnd6.
+  cbn [Formula.Sat].
+  setoid_rewrite hasLengthTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons2.
+  setoid_rewrite eval_liftTerm_scons4.
+  setoid_rewrite eval_liftTerm_scons5.
+  setoid_rewrite eval_liftTerm_scons7.
+  split.
+  - intros [na [nb [ha [hb h]]]]. exists na, nb. repeat split; try assumption.
+    destruct h as [[hle hp] | [k [x [y [hka [hkb [hax [hby [hxy hp]]]]]]]]].
+    + left. split; [lia |]. intros i m hi hai. exact (hp i hi m hai).
+    + right. exists k, x, y. repeat split; try assumption.
+      intros i m hi hai. exact (hp i hi m hai).
+  - intros [na [nb [ha [hb h]]]]. exists na, nb. repeat split; try assumption.
+    destruct h as [[hle hp] | [k [x [y [hka [hkb [hax [hby [hxy hp]]]]]]]]].
+    + left. split; [lia |]. intros i hi m hai. exact (hp i m hi hai).
+    + right. exists k, x, y. repeat split; try assumption.
+      intros i hi m hai. exact (hp i m hi hai).
+Qed.
+
+Definition LexIndex (xs ys : list nat) : Prop :=
+  (length xs <= length ys /\
+    forall i x, i < length xs ->
+      nth_error xs i = Some x -> nth_error ys i = Some x) \/
+  exists k x y,
+    k < length xs /\ k < length ys /\
+    nth_error xs k = Some x /\ nth_error ys k = Some y /\ x < y /\
+    forall i z, i < k ->
+      nth_error xs i = Some z -> nth_error ys i = Some z.
+
+Lemma LexIndex_iff_LexLe : forall xs ys,
+  LexIndex xs ys <-> LexLe xs ys.
+Proof.
+  induction xs as [|x xs IH]; intros ys.
+  - split.
+    + intros hignore. constructor.
+    + intros hignore. left. split.
+      * simpl. lia.
+      * intros i z hi. simpl in hi. lia.
+  - destruct ys as [|y ys].
+    + split.
+      * intros [[hlen _] | [k [a [b [hkx [hky _]]]]]]; simpl in *; lia.
+      * intro h. inversion h.
+    + split.
+      * intros [[hlen hp] | [k [a [b [hkx [hky [hxa [hyb [hab hp]]]]]]]]].
+        -- assert (hxy : x = y).
+           { specialize (hp 0 x ltac:(simpl; lia) eq_refl).
+             simpl in hp. inversion hp. reflexivity. }
+           subst y. apply lexLe_head_eq. apply (proj1 (IH ys)).
+           left. split; [simpl in hlen; lia |].
+           intros i z hi hz. specialize (hp (S i) z ltac:(simpl; lia) hz).
+           simpl in hp. exact hp.
+        -- destruct k as [|k].
+           ++ simpl in hxa, hyb. inversion hxa; inversion hyb; subst a b.
+              apply lexLe_head_lt. exact hab.
+           ++ assert (hxy : x = y).
+              { specialize (hp 0 x ltac:(lia) eq_refl).
+                simpl in hp. inversion hp. reflexivity. }
+              subst y. apply lexLe_head_eq. apply (proj1 (IH ys)).
+              right. exists k, a, b. split; [simpl in hkx; lia |].
+              split; [simpl in hky; lia |]. split.
+              ** simpl in hxa. exact hxa.
+              ** split.
+                 --- simpl in hyb. exact hyb.
+                 --- split; [exact hab |]. intros i z hi hz.
+                     specialize (hp (S i) z ltac:(lia) hz).
+                     simpl in hp. exact hp.
+      * intro h. inversion h as [| |x0 xs0 ys0 htail]; subst.
+        -- right. exists 0, x, y. simpl. repeat split; try lia; reflexivity.
+        -- apply (proj2 (IH ys)) in htail.
+           destruct htail as [[hlen hp] |
+             [k [a [b [hkx [hky [hxa [hyb [hab hp]]]]]]]]].
+           ++ left. split; [simpl; lia |].
+              intros i z hi hz. destruct i as [|i].
+              ** simpl in hz. inversion hz; subst z. reflexivity.
+              ** simpl in hz. simpl. apply hp; simpl in hi; try lia. exact hz.
+           ++ right. exists (S k), a, b.
+              split; [simpl; lia |]. split; [simpl; lia |]. split.
+              ** simpl. exact hxa.
+              ** split.
+                 --- simpl. exact hyb.
+                 --- split; [exact hab |].
+                     intros i z hi hz. destruct i as [|i].
+                     +++ simpl in hz. inversion hz; subst z. reflexivity.
+                     +++ simpl in hz. simpl. apply hp; try lia. exact hz.
+Qed.
+
+Lemma LexPosition_iff : forall a b,
+  LexPosition a b <->
+  exists xs ys, decode a = Some xs /\ decode b = Some ys /\ LexLe xs ys.
+Proof.
+  intros a b. split.
+  - intros [na [nb [[xs [ha hna]] [[ys [hb hnb]] h]]]].
+    exists xs, ys. repeat split; try assumption.
+    apply (proj1 (LexIndex_iff_LexLe xs ys)).
+    destruct h as [[hle hp] | [k [x [y [hka [hkb [hax [hby [hxy hp]]]]]]]]].
+    + left. split; [lia |]. intros i x hi hxi.
+      assert (hai : NthElement a i x).
+      { apply (NthElement_decode a i x xs ha). exact hxi. }
+      apply (NthElement_decode b i x ys hb). apply hp; try lia. exact hai.
+    + right. exists k, x, y. repeat split; try lia; try assumption.
+      * apply (NthElement_decode a k x xs ha) in hax. exact hax.
+      * apply (NthElement_decode b k y ys hb) in hby. exact hby.
+      * intros i z hi hzi.
+        assert (hai : NthElement a i z).
+        { apply (NthElement_decode a i z xs ha). exact hzi. }
+        apply (NthElement_decode b i z ys hb). apply hp; try lia. exact hai.
+  - intros [xs [ys [ha [hb hlex]]]].
+    exists (length xs), (length ys). repeat split.
+    + exists xs. now split.
+    + exists ys. now split.
+    + apply (proj2 (LexIndex_iff_LexLe xs ys)) in hlex.
+      destruct hlex as [[hlen hp] |
+        [k [x [y [hkx [hky [hax [hby [hxy hp]]]]]]]]].
+      * left. split; [exact hlen |]. intros i m hi hai.
+        apply (NthElement_decode a i m xs ha) in hai.
+        apply (NthElement_decode b i m ys hb). apply hp; assumption.
+      * right. exists k, x, y. repeat split; try assumption.
+        -- apply (NthElement_decode a k x xs ha). exact hax.
+        -- apply (NthElement_decode b k y ys hb). exact hby.
+        -- intros i m hi hai.
+           apply (NthElement_decode a i m xs ha) in hai.
+           apply (NthElement_decode b i m ys hb). apply hp; assumption.
+Qed.
+
+Lemma lexLeTermAt_nat : forall e a b,
+  Formula.Sat natModel e (lexLeTermAt a b) <->
+  exists xs ys,
+    decode (Term.eval natModel e a) = Some xs /\
+    decode (Term.eval natModel e b) = Some ys /\ LexLe xs ys.
+Proof.
+  intros. rewrite lexLeTermAt_position. apply LexPosition_iff.
+Qed.
+
+(** An outer list is lexicographically sorted when every entry is itself a
+    valid list code and each adjacent decoded pair is in [LexLe]. *)
+Definition LexSortedPosition (v : nat) : Prop :=
+  exists n,
+    HasLength v n /\
+    (forall i c,
+      i < n -> NthElement v i c -> ValidCode c) /\
+    (forall i a b,
+      S i < n ->
+      NthElement v i a -> NthElement v (S i) b -> LexPosition a b).
+
+Definition lexSortedTermAt (v : term) : formula :=
+  pEx
+    (pAnd3
+      (hasLengthTermAt (liftTerm 1 v) (tVar 0))
+      (pAll
+        (pImp (Formula.ltTermAt (tVar 0) (tVar 1))
+          (pAll
+            (pImp
+              (nthElementTermAt (liftTerm 3 v) (tVar 1) (tVar 0))
+              (validCodeTermAt (tVar 0))))))
+      (pAll
+        (pImp (Formula.ltTermAt (tSucc (tVar 0)) (tVar 1))
+          (pAll (pAll
+            (pImp
+              (nthElementTermAt (liftTerm 4 v) (tVar 2) (tVar 1))
+              (pImp
+                (nthElementTermAt (liftTerm 4 v)
+                  (tSucc (tVar 2)) (tVar 0))
+                (lexLeTermAt (tVar 1) (tVar 0))))))))).
+
+Lemma lexSortedTermAt_position : forall e v,
+  Formula.Sat natModel e (lexSortedTermAt v) <->
+  LexSortedPosition (Term.eval natModel e v).
+Proof.
+  intros e v. unfold lexSortedTermAt, LexSortedPosition, pAnd3.
+  cbn [Formula.Sat].
+  setoid_rewrite hasLengthTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite validCodeTermAt_nat.
+  setoid_rewrite lexLeTermAt_position.
+  setoid_rewrite Formula.ltTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons.
+  setoid_rewrite eval_liftTerm_scons3.
+  setoid_rewrite eval_liftTerm_scons4.
+  split.
+  - intros [n [hlen [hvalid hadj]]].
+    exists n. split; [exact hlen |]. split.
+    + intros i c hi hci. exact (hvalid i hi c hci).
+    + intros i a b hi hia hib. exact (hadj i hi a b hia hib).
+  - intros [n [hlen [hvalid hadj]]].
+    exists n. split; [exact hlen |]. split.
+    + intros i hi c hci. exact (hvalid i c hi hci).
+    + intros i hi a b hia hib. exact (hadj i a b hi hia hib).
+Qed.
+
+Lemma locallySorted_nth_error_gen : forall (A : Type) (R : A -> A -> Prop)
+    (xs : list A),
+  LocallySorted R xs <->
+  forall i a b,
+    nth_error xs i = Some a ->
+    nth_error xs (S i) = Some b -> R a b.
+Proof.
+  intros A R xs. induction xs as [|x xs IH].
+  - split.
+    + intros _ i a b h. destruct i; discriminate.
+    + intros _. constructor.
+  - destruct xs as [|y ys].
+    + split.
+      * intros _ i a b h1 h2. destruct i; discriminate.
+      * intros _. constructor.
+    + split.
+      * intros h i a b h1 h2.
+        inversion h as [| |a0 b0 l htail hxy]; subst.
+        destruct i as [|i].
+        -- simpl in h1, h2. inversion h1; inversion h2; subst. exact hxy.
+        -- simpl in h1, h2. apply (proj1 IH htail i a b h1 h2).
+      * intro h. constructor.
+        -- apply (proj2 IH). intros i a b h1 h2.
+           apply (h (S i) a b); simpl; assumption.
+        -- exact (h 0 x y eq_refl eq_refl).
+Qed.
+
+Lemma decodeCodes_nth_code : forall codes xss i c,
+  decodeCodes codes = Some xss ->
+  nth_error codes i = Some c ->
+  exists xs, nth_error xss i = Some xs /\ decode c = Some xs.
+Proof.
+  induction codes as [|d codes IH]; intros xss i c hdecode hnth.
+  - destruct i; discriminate.
+  - simpl in hdecode.
+    destruct (decode d) as [ys|] eqn:hd; try discriminate.
+    destruct (decodeCodes codes) as [yss|] eqn:hcodes; try discriminate.
+    inversion hdecode; subst xss. destruct i as [|i].
+    + simpl in hnth. inversion hnth; subst c. exists ys. now split.
+    + simpl in hnth. destruct (IH yss i c eq_refl hnth) as [zs [hzs hc]].
+      exists zs. split; [exact hzs | exact hc].
+Qed.
+
+Lemma LexSortedPosition_iff : forall v,
+  LexSortedPosition v <-> LexSortedCode v.
+Proof.
+  intro v. split.
+  - intros [n [[codes [hv hlen]] [hvalid hadj]]].
+    assert (hvalidCodes : Forall ValidCode codes).
+    {
+      apply Forall_forall. intros c hc.
+      apply In_nth_error in hc. destruct hc as [i hci].
+      apply (hvalid i c).
+      - rewrite <- hlen. apply nth_error_Some. rewrite hci. discriminate.
+      - apply (NthElement_decode v i c codes hv). exact hci.
+    }
+    destruct (decodeCodes_exists_of_valid codes hvalidCodes) as [xss hxss].
+    exists codes, xss. repeat split; try assumption.
+    unfold LexSortedLists.
+    apply (proj2 (Sorted_LocallySorted_iff LexLe xss)).
+    apply (proj2 (locallySorted_nth_error_gen _ LexLe xss)).
+    intros i xs ys hxi hyi.
+    destruct (decodeCodes_nth codes xss i xs hxss hxi)
+      as [a [hai hda]].
+    destruct (decodeCodes_nth codes xss (S i) ys hxss hyi)
+      as [b [hbi hdb]].
+    assert (hi : S i < n).
+    {
+      rewrite <- hlen, (decodeCodes_length codes xss hxss).
+      apply nth_error_Some. rewrite hyi. discriminate.
+    }
+    assert (hpa : NthElement v i a).
+    { apply (NthElement_decode v i a codes hv). exact hai. }
+    assert (hpb : NthElement v (S i) b).
+    { apply (NthElement_decode v (S i) b codes hv). exact hbi. }
+    pose proof (hadj i a b hi hpa hpb) as hlex.
+    apply (proj1 (LexPosition_iff a b)) in hlex.
+    destruct hlex as [xs' [ys' [hda' [hdb' hle]]]].
+    pose proof (decode_functional a xs xs' hda hda') as hxs. subst xs'.
+    pose proof (decode_functional b ys ys' hdb hdb') as hys. subst ys'.
+    exact hle.
+  - intros [codes [xss [hv [hxss hsorted]]]].
+    exists (length codes). split.
+    + exists codes. now split.
+    + split.
+      * intros i c hi hci.
+        apply (NthElement_decode v i c codes hv) in hci.
+        pose proof (decodeCodes_entries_valid codes xss hxss) as hall.
+        apply Forall_forall with (x := c) in hall.
+        -- exact hall.
+        -- apply nth_error_In with (n := i). exact hci.
+      * intros i a b hi hia hib.
+        apply (NthElement_decode v i a codes hv) in hia.
+        apply (NthElement_decode v (S i) b codes hv) in hib.
+        destruct (decodeCodes_nth_code codes xss i a hxss hia)
+          as [xs [hxi hda]].
+        destruct (decodeCodes_nth_code codes xss (S i) b hxss hib)
+          as [ys [hyi hdb]].
+        apply (proj2 (LexPosition_iff a b)).
+        exists xs, ys. repeat split; try assumption.
+        pose proof (proj1 (Sorted_LocallySorted_iff LexLe xss) hsorted)
+          as hlocal.
+        exact (proj1 (locallySorted_nth_error_gen _ LexLe xss)
+          hlocal i xs ys hxi hyi).
+Qed.
+
+Lemma lexSortedTermAt_nat : forall e v,
+  Formula.Sat natModel e (lexSortedTermAt v) <->
+  LexSortedCode (Term.eval natModel e v).
+Proof.
+  intros. rewrite lexSortedTermAt_position. apply LexSortedPosition_iff.
+Qed.
+
+(** Exact lexicographic enumeration of the distinct permutations of a coded
+    base list.  The final universal quantifier is deliberately unbounded:
+    every valid coded permutation must occur in the outer list. *)
+Definition AllPermutationsPosition (v w : nat) : Prop :=
+  ValidCode v /\
+  ValidCode w /\
+  NoDuplicatesCode v /\
+  LexSortedCode v /\
+  (forall i p, NthElement v i p -> PermutationCode p w) /\
+  (forall p,
+    ValidCode p -> PermutationCode p w ->
+    exists i, NthElement v i p).
+
+Definition allPermutationsTermAt (v w : term) : formula :=
+  pAnd6
+    (validCodeTermAt v)
+    (validCodeTermAt w)
+    (noDuplicatesTermAt v)
+    (lexSortedTermAt v)
+    (pAll (pAll
+      (pImp
+        (nthElementTermAt (liftTerm 2 v) (tVar 1) (tVar 0))
+        (permutationTermAt (tVar 0) (liftTerm 2 w)))))
+    (pAll
+      (pImp (validCodeTermAt (tVar 0))
+        (pImp
+          (permutationTermAt (tVar 0) (liftTerm 1 w))
+          (pEx
+            (nthElementTermAt (liftTerm 2 v) (tVar 0) (tVar 1)))))).
+
+Lemma allPermutationsTermAt_position : forall e v w,
+  Formula.Sat natModel e (allPermutationsTermAt v w) <->
+  AllPermutationsPosition
+    (Term.eval natModel e v) (Term.eval natModel e w).
+Proof.
+  intros e v w.
+  unfold allPermutationsTermAt, AllPermutationsPosition, pAnd6.
+  cbn [Formula.Sat].
+  setoid_rewrite validCodeTermAt_nat.
+  setoid_rewrite noDuplicatesTermAt_nat.
+  setoid_rewrite lexSortedTermAt_nat.
+  setoid_rewrite nthElementTermAt_nat.
+  setoid_rewrite permutationTermAt_nat.
+  cbn. setoid_rewrite eval_liftTerm_scons.
+  setoid_rewrite eval_liftTerm_scons2.
+  reflexivity.
+Qed.
+
+Lemma NoDup_map_listCode : forall xss,
+  NoDup xss -> NoDup (map listCode xss).
+Proof.
+  intros xss h. induction h as [|xs xss hnotin hnodup IH].
+  - constructor.
+  - simpl. constructor.
+    + intro hin. apply in_map_iff in hin.
+      destruct hin as [ys [hcode hin]].
+      apply hnotin. apply listCode_injective in hcode. now subst ys.
+    + exact IH.
+Qed.
+
+Lemma AllPermutationsPosition_iff : forall v w,
+  AllPermutationsPosition v w <-> AllPermutationsCode v w.
+Proof.
+  intros v w. split.
+  - intros [[codes hv] [[base hw]
+      [hndup [hlex [hsound hcomplete]]]]].
+    destruct hndup as [codes' [hv' hcodesNoDup]].
+    destruct hlex as [codes'' [xss [hv'' [hxss hsorted]]]].
+    pose proof (decode_functional v codes codes' hv hv') as hc'. subst codes'.
+    pose proof (decode_functional v codes codes'' hv hv'') as hc''. subst codes''.
+    exists codes, xss, base. split; [exact hv |].
+    split; [exact hxss |]. split; [exact hw |].
+    unfold CanonicalPermutations. split; [exact hsorted |]. split.
+    + apply NoDup_map_inv with (f := listCode).
+      rewrite (decodeCodes_sound codes xss hxss). exact hcodesNoDup.
+    + intro ys. split.
+      * intro hin.
+        assert (hcodeIn : In (listCode ys) codes).
+        {
+          rewrite <- (decodeCodes_sound codes xss hxss).
+          apply in_map. exact hin.
+        }
+        apply In_nth_error in hcodeIn. destruct hcodeIn as [i hcode].
+        assert (hnth : NthElement v i (listCode ys)).
+        { apply (NthElement_decode v i (listCode ys) codes hv). exact hcode. }
+        destruct (hsound i (listCode ys) hnth) as
+          [ys' [base' [hys' [hbase' hperm]]]].
+        pose proof (decode_functional (listCode ys) ys ys'
+          (decode_listCode ys) hys') as hys. subst ys'.
+        pose proof (decode_functional w base base' hw hbase') as hb.
+        subst base'. exact hperm.
+      * intro hperm.
+        assert (hpvalid : ValidCode (listCode ys)).
+        { exists ys. apply decode_listCode. }
+        assert (hpperm : PermutationCode (listCode ys) w).
+        { exists ys, base. repeat split; try assumption. apply decode_listCode. }
+        destruct (hcomplete (listCode ys) hpvalid hpperm) as [i hi].
+        apply (NthElement_decode v i (listCode ys) codes hv) in hi.
+        apply nth_error_In in hi.
+        rewrite <- (decodeCodes_sound codes xss hxss) in hi.
+        apply in_map_iff in hi. destruct hi as [ys' [hcode hin]].
+        apply listCode_injective in hcode. now subst ys'.
+  - intros [codes [xss [base [hv [hxss [hw hcanonical]]]]]].
+    destruct hcanonical as [hsorted [hxssNoDup hiff]].
+    repeat split.
+    + now exists codes.
+    + now exists base.
+    + exists codes. split; [exact hv |].
+      rewrite <- (decodeCodes_sound codes xss hxss).
+      apply NoDup_map_listCode. exact hxssNoDup.
+    + exists codes, xss. repeat split; assumption.
+    + intros i p hip.
+      apply (NthElement_decode v i p codes hv) in hip.
+      destruct (decodeCodes_nth_code codes xss i p hxss hip)
+        as [ys [hys hp]].
+      exists ys, base. repeat split; try assumption.
+      apply (proj1 (hiff ys)). apply nth_error_In in hys. exact hys.
+    + intros p [ys hp] [ys' [base' [hp' [hw' hperm]]]].
+      pose proof (decode_functional p ys ys' hp hp') as hys. subst ys'.
+      pose proof (decode_functional w base base' hw hw') as hb. subst base'.
+      assert (hin : In ys xss).
+      { apply (proj2 (hiff ys)). exact hperm. }
+      assert (hcodeIn : In (listCode ys) codes).
+      {
+        rewrite <- (decodeCodes_sound codes xss hxss).
+        apply in_map. exact hin.
+      }
+      apply In_nth_error in hcodeIn. destruct hcodeIn as [i hi].
+      exists i. apply (NthElement_decode v i p codes hv).
+      apply listCode_decode in hp. now rewrite <- hp.
+Qed.
+
+Lemma allPermutationsTermAt_nat : forall e v w,
+  Formula.Sat natModel e (allPermutationsTermAt v w) <->
+  AllPermutationsCode
+    (Term.eval natModel e v) (Term.eval natModel e w).
+Proof.
+  intros. rewrite allPermutationsTermAt_position.
+  apply AllPermutationsPosition_iff.
+Qed.
+
 Definition validCodeFormula : formula := validCodeTermAt (tVar 0).
 Definition hasLengthFormula : formula :=
   hasLengthTermAt (tVar 0) (tVar 1).
 Definition nthElementFormula : formula :=
   nthElementTermAt (tVar 0) (tVar 1) (tVar 2).
+
+Definition singletonFormula : formula :=
+  singletonTermAt (tVar 0) (tVar 1).
+Definition concatenationFormula : formula :=
+  concatTermAt (tVar 0) (tVar 1) (tVar 2).
+Definition flattenFormula : formula :=
+  flattenTermAt (tVar 0) (tVar 1).
+Definition occurrencesFormula : formula :=
+  occurrencesTermAt (tVar 0) (tVar 1) (tVar 2).
+Definition permutationFormula : formula :=
+  permutationTermAt (tVar 0) (tVar 1).
+Definition contiguousSubstringFormula : formula :=
+  contiguousSubstringTermAt (tVar 0) (tVar 1).
+Definition subsequenceFormula : formula :=
+  subsequenceTermAt (tVar 0) (tVar 1).
+Definition noDuplicatesFormula : formula :=
+  noDuplicatesTermAt (tVar 0).
+Definition sortedFormula : formula :=
+  sortedTermAt (tVar 0).
+Definition lexSortedFormula : formula :=
+  lexSortedTermAt (tVar 0).
+Definition allPermutationsFormula : formula :=
+  allPermutationsTermAt (tVar 0) (tVar 1).
+
+Theorem validCodeFormula_correct : forall e,
+  Formula.Sat natModel e validCodeFormula <-> ValidCode (e 0).
+Proof. intro e. unfold validCodeFormula. apply validCodeTermAt_nat. Qed.
+
+Theorem hasLengthFormula_correct : forall e,
+  Formula.Sat natModel e hasLengthFormula <-> HasLength (e 0) (e 1).
+Proof. intro e. unfold hasLengthFormula. apply hasLengthTermAt_nat. Qed.
+
+Theorem nthElementFormula_correct : forall e,
+  Formula.Sat natModel e nthElementFormula <->
+  NthElement (e 0) (e 1) (e 2).
+Proof. intro e. unfold nthElementFormula. apply nthElementTermAt_nat. Qed.
+
+Theorem singletonFormula_correct : forall e,
+  Formula.Sat natModel e singletonFormula <-> SingletonCode (e 0) (e 1).
+Proof. intro e. unfold singletonFormula. apply singletonTermAt_nat. Qed.
+
+Theorem concatenationFormula_correct : forall e,
+  Formula.Sat natModel e concatenationFormula <->
+  ConcatenationCode (e 0) (e 1) (e 2).
+Proof. intro e. unfold concatenationFormula. apply concatTermAt_nat. Qed.
+
+Theorem flattenFormula_correct : forall e,
+  Formula.Sat natModel e flattenFormula <-> FlattenCode (e 0) (e 1).
+Proof. intro e. unfold flattenFormula. apply flattenTermAt_nat. Qed.
+
+Theorem occurrencesFormula_correct : forall e,
+  Formula.Sat natModel e occurrencesFormula <->
+  OccurrencesCode (e 0) (e 1) (e 2).
+Proof. intro e. unfold occurrencesFormula. apply occurrencesTermAt_nat. Qed.
+
+Theorem permutationFormula_correct : forall e,
+  Formula.Sat natModel e permutationFormula <-> PermutationCode (e 0) (e 1).
+Proof. intro e. unfold permutationFormula. apply permutationTermAt_nat. Qed.
+
+Theorem contiguousSubstringFormula_correct : forall e,
+  Formula.Sat natModel e contiguousSubstringFormula <->
+  ContiguousSubstringCode (e 0) (e 1).
+Proof.
+  intro e. unfold contiguousSubstringFormula.
+  apply contiguousSubstringTermAt_nat.
+Qed.
+
+Theorem subsequenceFormula_correct : forall e,
+  Formula.Sat natModel e subsequenceFormula <-> SubsequenceCode (e 0) (e 1).
+Proof. intro e. unfold subsequenceFormula. apply subsequenceTermAt_nat. Qed.
+
+Theorem noDuplicatesFormula_correct : forall e,
+  Formula.Sat natModel e noDuplicatesFormula <-> NoDuplicatesCode (e 0).
+Proof. intro e. unfold noDuplicatesFormula. apply noDuplicatesTermAt_nat. Qed.
+
+Theorem sortedFormula_correct : forall e,
+  Formula.Sat natModel e sortedFormula <-> SortedCode (e 0).
+Proof. intro e. unfold sortedFormula. apply sortedTermAt_nat. Qed.
+
+Theorem lexSortedFormula_correct : forall e,
+  Formula.Sat natModel e lexSortedFormula <-> LexSortedCode (e 0).
+Proof. intro e. unfold lexSortedFormula. apply lexSortedTermAt_nat. Qed.
+
+Theorem allPermutationsFormula_correct : forall e,
+  Formula.Sat natModel e allPermutationsFormula <->
+  AllPermutationsCode (e 0) (e 1).
+Proof.
+  intro e. unfold allPermutationsFormula. apply allPermutationsTermAt_nat.
+Qed.
 
 End PAListFormulas.
