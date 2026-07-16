@@ -19,7 +19,7 @@
 
 From Stdlib Require Import
   List Arith Lia Bool PeanoNat
-  Sorting.Permutation Sorting.Sorted.
+  Sorting.Permutation Sorting.Sorted Sorting.Mergesort.
 
 Import ListNotations.
 
@@ -504,6 +504,66 @@ Definition AllPermutationsCode (v w : nat) : Prop :=
     decode w = Some base /\
     CanonicalPermutations xss base.
 
+(** * Aggregate and order-statistic predicates
+
+    The scalar result is the first argument.  It is an ordinary natural
+    number, not another list code.  Every predicate still guards its list
+    argument by successful decoding of the same canonical code used above. *)
+
+Fixpoint natListProduct (xs : list nat) : nat :=
+  match xs with
+  | [] => 1
+  | x :: xs' => x * natListProduct xs'
+  end.
+
+Definition SumElementsCode (p v : nat) : Prop :=
+  exists xs, decode v = Some xs /\ list_sum xs = p.
+
+Definition ProductElementsCode (p v : nat) : Prop :=
+  exists xs, decode v = Some xs /\ natListProduct xs = p.
+
+Definition GreatestCode (m v : nat) : Prop :=
+  exists xs,
+    decode v = Some xs /\
+    In m xs /\ Forall (fun x => x <= m) xs.
+
+Definition LeastCode (m v : nat) : Prop :=
+  exists xs,
+    decode v = Some xs /\
+    In m xs /\ Forall (fun x => m <= x) xs.
+
+(** [TwiceMedianList m xs] avoids division.  Its witness is a sorted
+    permutation.  At odd length [2*k+1] the result is twice entry [k]; at
+    even positive length [2*(k+1)] it is the sum of entries [k] and [k+1]. *)
+Definition TwiceMedianList (m : nat) (xs : list nat) : Prop :=
+  exists sorted,
+    Permutation sorted xs /\
+    Nondecreasing sorted /\
+    ((exists k a,
+        length xs = k + k + 1 /\
+        nth_error sorted k = Some a /\
+        m = a + a) \/
+     exists k a b,
+        length xs = S k + S k /\
+        nth_error sorted k = Some a /\
+        nth_error sorted (S k) = Some b /\
+        m = a + b).
+
+Definition TwiceMedianCode (m v : nat) : Prop :=
+  exists xs, decode v = Some xs /\ TwiceMedianList m xs.
+
+(** A unique mode must occur, and every different value that occurs has a
+    strictly smaller multiplicity.  Restricting rivals to values in the list
+    is equivalent to quantifying over all naturals, since absent values have
+    multiplicity zero. *)
+Definition UniqueMostFrequent (m : nat) (xs : list nat) : Prop :=
+  In m xs /\
+  forall x, In x xs -> x <> m ->
+    count_occ Nat.eq_dec xs x < count_occ Nat.eq_dec xs m.
+
+Definition UniqueModeCode (m v : nat) : Prop :=
+  exists xs, decode v = Some xs /\ UniqueMostFrequent m xs.
+
 (** * Guard and projection lemmas *)
 
 Lemma HasLength_valid : forall v n,
@@ -598,6 +658,232 @@ Proof.
   split; [now exists codes | now exists base].
 Qed.
 
+Lemma SumElementsCode_valid : forall p v,
+  SumElementsCode p v -> ValidCode v.
+Proof. intros p v [xs [h _]]. now exists xs. Qed.
+
+Lemma ProductElementsCode_valid : forall p v,
+  ProductElementsCode p v -> ValidCode v.
+Proof. intros p v [xs [h _]]. now exists xs. Qed.
+
+Lemma GreatestCode_valid : forall m v,
+  GreatestCode m v -> ValidCode v.
+Proof. intros m v [xs [h _]]. now exists xs. Qed.
+
+Lemma LeastCode_valid : forall m v,
+  LeastCode m v -> ValidCode v.
+Proof. intros m v [xs [h _]]. now exists xs. Qed.
+
+Lemma TwiceMedianCode_valid : forall m v,
+  TwiceMedianCode m v -> ValidCode v.
+Proof. intros m v [xs [h _]]. now exists xs. Qed.
+
+Lemma UniqueModeCode_valid : forall m v,
+  UniqueModeCode m v -> ValidCode v.
+Proof. intros m v [xs [h _]]. now exists xs. Qed.
+
+Lemma SumElementsCode_functional : forall p q v,
+  SumElementsCode p v -> SumElementsCode q v -> p = q.
+Proof.
+  intros p q v [xs [hv hp]] [ys [hv' hq]].
+  pose proof (decode_functional v xs ys hv hv') as hxy. subst ys.
+  now rewrite <- hp, <- hq.
+Qed.
+
+Lemma ProductElementsCode_functional : forall p q v,
+  ProductElementsCode p v -> ProductElementsCode q v -> p = q.
+Proof.
+  intros p q v [xs [hv hp]] [ys [hv' hq]].
+  pose proof (decode_functional v xs ys hv hv') as hxy. subst ys.
+  now rewrite <- hp, <- hq.
+Qed.
+
+Lemma SumElementsCode_exists : forall v,
+  ValidCode v -> exists p, SumElementsCode p v.
+Proof. intros v [xs hv]. exists (list_sum xs), xs. now split. Qed.
+
+Lemma ProductElementsCode_exists : forall v,
+  ValidCode v -> exists p, ProductElementsCode p v.
+Proof. intros v [xs hv]. exists (natListProduct xs), xs. now split. Qed.
+
+Lemma GreatestCode_functional : forall m n v,
+  GreatestCode m v -> GreatestCode n v -> m = n.
+Proof.
+  intros m n v [xs [hv [hm hboundm]]] [ys [hv' [hn hboundn]]].
+  pose proof (decode_functional v xs ys hv hv') as hxy. subst ys.
+  apply Forall_forall with (x := n) in hboundm; [|exact hn].
+  apply Forall_forall with (x := m) in hboundn; [|exact hm]. lia.
+Qed.
+
+Lemma LeastCode_functional : forall m n v,
+  LeastCode m v -> LeastCode n v -> m = n.
+Proof.
+  intros m n v [xs [hv [hm hboundm]]] [ys [hv' [hn hboundn]]].
+  pose proof (decode_functional v xs ys hv hv') as hxy. subst ys.
+  apply Forall_forall with (x := n) in hboundm; [|exact hn].
+  apply Forall_forall with (x := m) in hboundn; [|exact hm]. lia.
+Qed.
+
+Lemma UniqueModeCode_functional : forall m n v,
+  UniqueModeCode m v -> UniqueModeCode n v -> m = n.
+Proof.
+  intros m n v [xs [hv [hm hdomm]]] [ys [hv' [hn hdomn]]].
+  pose proof (decode_functional v xs ys hv hv') as hxy. subst ys.
+  destruct (Nat.eq_dec m n) as [heq | hneq]; [exact heq |].
+  pose proof (hdomm n hn ltac:(congruence)) as hnm.
+  pose proof (hdomn m hm hneq) as hmn. lia.
+Qed.
+
+Lemma sorted_permutation_unique : forall xs ys,
+  Sorted le xs -> Sorted le ys -> Permutation xs ys -> xs = ys.
+Proof.
+  induction xs as [|x xs IH]; intros ys hsx hsy hp.
+  - apply Permutation_length in hp. destruct ys; simpl in hp; try lia.
+    reflexivity.
+  - destruct ys as [|y ys].
+    + apply Permutation_length in hp. simpl in hp. lia.
+    + assert (hxin : In x (y :: ys)).
+      { eapply Permutation_in; [exact hp | now left]. }
+      assert (hyin : In y (x :: xs)).
+      { eapply Permutation_in; [apply Permutation_sym; exact hp | now left]. }
+      assert (hxy : x <= y).
+      {
+        destruct hyin as [heq | hyin]; [lia |].
+        pose proof (Sorted_extends Nat.le_trans hsx) as hall.
+        apply Forall_forall with (x := y) in hall; assumption.
+      }
+      assert (hyx : y <= x).
+      {
+        destruct hxin as [heq | hxin]; [lia |].
+        pose proof (Sorted_extends Nat.le_trans hsy) as hall.
+        apply Forall_forall with (x := x) in hall; assumption.
+      }
+      assert (hhead : x = y) by lia. subst y. f_equal.
+      apply IH.
+      * inversion hsx. assumption.
+      * inversion hsy. assumption.
+      * now apply Permutation_cons_inv in hp.
+Qed.
+
+Lemma TwiceMedianList_functional : forall m n xs,
+  TwiceMedianList m xs -> TwiceMedianList n xs -> m = n.
+Proof.
+  intros m n xs [ss [hps [hss hcaseM]]] [tt [hpt [htt hcaseN]]].
+  assert (hst : ss = tt).
+  {
+    apply sorted_permutation_unique; try assumption.
+    exact (Permutation_trans hps (Permutation_sym hpt)).
+  }
+  subst tt.
+  destruct hcaseM as
+      [[k [a [hlenM [ha hm]]]] |
+       [k [a [b [hlenM [ha [hb hm]]]]]]];
+    destruct hcaseN as
+      [[q [c [hlenN [hc hn]]]] |
+       [q [c [d [hlenN [hc [hd hn]]]]]]].
+  - assert (hkq : k = q) by lia. subst q.
+    rewrite ha in hc. inversion hc. lia.
+  - lia.
+  - lia.
+  - assert (hkq : k = q) by lia. subst q.
+    rewrite ha in hc. inversion hc. rewrite hb in hd. inversion hd. lia.
+Qed.
+
+Lemma TwiceMedianCode_functional : forall m n v,
+  TwiceMedianCode m v -> TwiceMedianCode n v -> m = n.
+Proof.
+  intros m n v [xs [hv hm]] [ys [hv' hn]].
+  pose proof (decode_functional v xs ys hv hv') as hxy. subst ys.
+  now apply (TwiceMedianList_functional m n xs).
+Qed.
+
+Lemma list_greatest_exists : forall x xs,
+  exists m, In m (x :: xs) /\ Forall (fun z => z <= m) (x :: xs).
+Proof.
+  intros x xs. revert x. induction xs as [|y ys IH]; intro x.
+  - exists x. split; [now left |]. repeat constructor.
+  - destruct (IH y) as [m [hmin hmBound]].
+    destruct (le_dec x m) as [hxm | hmx].
+    + exists m. split; [now right |]. constructor; assumption.
+    + exists x. split; [now left |]. constructor; [lia |].
+      apply Forall_forall. intros z hz.
+      apply Forall_forall with (x := z) in hmBound; [lia | exact hz].
+Qed.
+
+Lemma list_least_exists : forall x xs,
+  exists m, In m (x :: xs) /\ Forall (fun z => m <= z) (x :: xs).
+Proof.
+  intros x xs. revert x. induction xs as [|y ys IH]; intro x.
+  - exists x. split; [now left |]. repeat constructor.
+  - destruct (IH y) as [m [hmin hmBound]].
+    destruct (le_dec m x) as [hmx | hxm].
+    + exists m. split; [now right |]. constructor; assumption.
+    + exists x. split; [now left |]. constructor; [lia |].
+      apply Forall_forall. intros z hz.
+      apply Forall_forall with (x := z) in hmBound; [lia | exact hz].
+Qed.
+
+Lemma GreatestCode_exists_nonempty : forall v x xs,
+  decode v = Some (x :: xs) -> exists m, GreatestCode m v.
+Proof.
+  intros v x xs hv. destruct (list_greatest_exists x xs) as [m hspec].
+  exists m, (x :: xs). now split.
+Qed.
+
+Lemma LeastCode_exists_nonempty : forall v x xs,
+  decode v = Some (x :: xs) -> exists m, LeastCode m v.
+Proof.
+  intros v x xs hv. destruct (list_least_exists x xs) as [m hspec].
+  exists m, (x :: xs). now split.
+Qed.
+
+Lemma NatSort_sorted_le : forall xs,
+  Sorted le (NatSort.sort xs).
+Proof.
+  intro xs. pose proof (NatSort.Sorted_sort xs) as hsort.
+  induction hsort as [|a l hsorted IH hhead].
+  - constructor.
+  - constructor; [exact IH |].
+    inversion hhead as [|b l' hab]; subst.
+    + constructor.
+    + constructor. apply Nat.leb_le. exact hab.
+Qed.
+
+Lemma TwiceMedianCode_exists_nonempty : forall v x xs,
+  decode v = Some (x :: xs) -> exists m, TwiceMedianCode m v.
+Proof.
+  intros v x xs hv.
+  set (sorted := NatSort.sort (x :: xs)).
+  assert (hperm : Permutation sorted (x :: xs)).
+  { unfold sorted. apply Permutation_sym. apply NatSort.Permuted_sort. }
+  assert (hsorted : Nondecreasing sorted).
+  { unfold Nondecreasing, sorted. apply NatSort_sorted_le. }
+  assert (hlen : length sorted = length (x :: xs)).
+  { apply Permutation_length. exact hperm. }
+  destruct (Nat.Even_or_Odd (length (x :: xs))) as
+      [[q hq] | [q hq]].
+  - assert (hqpos : 0 < q) by (simpl in hq; nia).
+    destruct q as [|k]; [lia |].
+    assert (hk : k < length sorted) by (rewrite hlen; nia).
+    assert (hsk : S k < length sorted) by (rewrite hlen; nia).
+    assert (hak : nth_error sorted k <> None).
+    { apply (proj2 (nth_error_Some sorted k)). exact hk. }
+    destruct (nth_error sorted k) as [a|] eqn:ha; [|contradiction].
+    assert (hbk : nth_error sorted (S k) <> None).
+    { apply (proj2 (nth_error_Some sorted (S k))). exact hsk. }
+    destruct (nth_error sorted (S k)) as [b|] eqn:hb; [|contradiction].
+    exists (a + b), (x :: xs). split; [exact hv |].
+    exists sorted. split; [exact hperm |]. split; [exact hsorted |].
+    right. exists k, a, b. repeat split; try assumption; nia.
+  - assert (hk : q < length sorted) by (rewrite hlen; nia).
+    assert (haq : nth_error sorted q <> None).
+    { apply (proj2 (nth_error_Some sorted q)). exact hk. }
+    destruct (nth_error sorted q) as [a|] eqn:ha; [|contradiction].
+    exists (a + a), (x :: xs). split; [exact hv |].
+    exists sorted. split; [exact hperm |]. split; [exact hsorted |].
+    left. exists q, a. repeat split; try assumption; nia.
+Qed.
+
 Lemma AllPermutationsCode_inner_valid : forall v w codes xss base,
   decode v = Some codes ->
   decodeCodes codes = Some xss ->
@@ -673,6 +959,62 @@ Proof.
   exists (concat xss), (map listCode xss), xss.
   repeat split; try apply decode_listCode;
     try apply decodeCodes_map_listCode; reflexivity.
+Qed.
+
+Lemma SumElementsCode_listCode : forall p xs,
+  SumElementsCode p (listCode xs) <-> list_sum xs = p.
+Proof.
+  intros p xs. split.
+  - intros [ys [h hsum]]. rewrite decode_listCode in h.
+    inversion h. exact hsum.
+  - intro hsum. exists xs. split; [apply decode_listCode | exact hsum].
+Qed.
+
+Lemma ProductElementsCode_listCode : forall p xs,
+  ProductElementsCode p (listCode xs) <-> natListProduct xs = p.
+Proof.
+  intros p xs. split.
+  - intros [ys [h hprod]]. rewrite decode_listCode in h.
+    inversion h. exact hprod.
+  - intro hprod. exists xs. split; [apply decode_listCode | exact hprod].
+Qed.
+
+Lemma GreatestCode_listCode : forall m xs,
+  GreatestCode m (listCode xs) <->
+  In m xs /\ Forall (fun x => x <= m) xs.
+Proof.
+  intros m xs. split.
+  - intros [ys [h hspec]]. rewrite decode_listCode in h.
+    inversion h. exact hspec.
+  - intros hspec. exists xs. split; [apply decode_listCode | exact hspec].
+Qed.
+
+Lemma LeastCode_listCode : forall m xs,
+  LeastCode m (listCode xs) <->
+  In m xs /\ Forall (fun x => m <= x) xs.
+Proof.
+  intros m xs. split.
+  - intros [ys [h hspec]]. rewrite decode_listCode in h.
+    inversion h. exact hspec.
+  - intros hspec. exists xs. split; [apply decode_listCode | exact hspec].
+Qed.
+
+Lemma TwiceMedianCode_listCode : forall m xs,
+  TwiceMedianCode m (listCode xs) <-> TwiceMedianList m xs.
+Proof.
+  intros m xs. split.
+  - intros [ys [h hmedian]]. rewrite decode_listCode in h.
+    inversion h. exact hmedian.
+  - intro hmedian. exists xs. split; [apply decode_listCode | exact hmedian].
+Qed.
+
+Lemma UniqueModeCode_listCode : forall m xs,
+  UniqueModeCode m (listCode xs) <-> UniqueMostFrequent m xs.
+Proof.
+  intros m xs. split.
+  - intros [ys [h hmode]]. rewrite decode_listCode in h.
+    inversion h. exact hmode.
+  - intro hmode. exists xs. split; [apply decode_listCode | exact hmode].
 Qed.
 
 End PAListCode.
