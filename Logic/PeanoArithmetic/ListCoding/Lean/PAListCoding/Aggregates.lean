@@ -233,6 +233,76 @@ theorem productElements_existsUnique_of_valid {v : ℕ} (hv : Seq v) :
         LO.FirstOrder.Arithmetic.le_def]
       exact (Nat.lt_or_eq_of_le hle).elim Or.inr Or.inl
 
+/-- Every nonempty ordinary list has an entry which realizes `Greatest`. -/
+private theorem greatest_exists_cons (x : ℕ) (xs : List ℕ) :
+    ∃ m, Greatest m (encode (x :: xs)) := by
+  induction xs generalizing x with
+  | nil =>
+      exact ⟨x, (greatest_encode_iff x [x]).mpr (by simp)⟩
+  | cons y ys ih =>
+      rcases ih y with ⟨m, hm⟩
+      have hm' := (greatest_encode_iff m (y :: ys)).mp hm
+      by_cases hxm : x ≤ m
+      · refine ⟨m, (greatest_encode_iff m (x :: y :: ys)).mpr ⟨by simp [hm'.1], ?_⟩⟩
+        intro z hz
+        simp only [List.mem_cons] at hz
+        rcases hz with rfl | hz
+        · exact hxm
+        · exact hm'.2 z (by simpa only [List.mem_cons] using hz)
+      · have hmx : m ≤ x := Nat.le_of_lt (Nat.lt_of_not_ge hxm)
+        refine ⟨x, (greatest_encode_iff x (x :: y :: ys)).mpr ⟨by simp, ?_⟩⟩
+        intro z hz
+        simp only [List.mem_cons] at hz
+        rcases hz with rfl | hz
+        · exact Nat.le_refl _
+        · exact Nat.le_trans (hm'.2 z (by simpa only [List.mem_cons] using hz)) hmx
+
+/-- Every nonempty ordinary list has an entry which realizes `Least`. -/
+private theorem least_exists_cons (x : ℕ) (xs : List ℕ) :
+    ∃ m, Least m (encode (x :: xs)) := by
+  induction xs generalizing x with
+  | nil =>
+      exact ⟨x, (least_encode_iff x [x]).mpr (by simp)⟩
+  | cons y ys ih =>
+      rcases ih y with ⟨m, hm⟩
+      have hm' := (least_encode_iff m (y :: ys)).mp hm
+      by_cases hmx : m ≤ x
+      · refine ⟨m, (least_encode_iff m (x :: y :: ys)).mpr ⟨by simp [hm'.1], ?_⟩⟩
+        intro z hz
+        simp only [List.mem_cons] at hz
+        rcases hz with rfl | hz
+        · exact hmx
+        · exact hm'.2 z (by simpa only [List.mem_cons] using hz)
+      · have hxm : x ≤ m := Nat.le_of_lt (Nat.lt_of_not_ge hmx)
+        refine ⟨x, (least_encode_iff x (x :: y :: ys)).mpr ⟨by simp, ?_⟩⟩
+        intro z hz
+        simp only [List.mem_cons] at hz
+        rcases hz with rfl | hz
+        · exact Nat.le_refl _
+        · exact Nat.le_trans hxm (hm'.2 z (by simpa only [List.mem_cons] using hz))
+
+/-- `Greatest` exists on every valid code whose decoded list is nonempty. -/
+theorem greatest_exists_of_valid_of_decode_ne_nil {v : ℕ} (hv : Seq v)
+    (hne : decode v ≠ []) : ∃ m, Greatest m v := by
+  cases hdec : decode v with
+  | nil => exact (hne hdec).elim
+  | cons x xs =>
+      have hcode : encode (x :: xs) = v := by
+        simpa only [hdec] using encode_decode hv
+      rcases greatest_exists_cons x xs with ⟨m, hm⟩
+      exact ⟨m, by simpa only [hcode] using hm⟩
+
+/-- `Least` exists on every valid code whose decoded list is nonempty. -/
+theorem least_exists_of_valid_of_decode_ne_nil {v : ℕ} (hv : Seq v)
+    (hne : decode v ≠ []) : ∃ m, Least m v := by
+  cases hdec : decode v with
+  | nil => exact (hne hdec).elim
+  | cons x xs =>
+      have hcode : encode (x :: xs) = v := by
+        simpa only [hdec] using encode_decode hv
+      rcases least_exists_cons x xs with ⟨m, hm⟩
+      exact ⟨m, by simpa only [hcode] using hm⟩
+
 theorem greatest_functional {m n : ℕ} {xs : List ℕ}
     (hm : Greatest m (encode xs)) (hn : Greatest n (encode xs)) : m = n := by
   have hm' := (greatest_encode_iff m xs).mp hm
@@ -340,6 +410,35 @@ theorem listTwiceMedian_iff_insertionSort (xs : List ℕ) (m : ℕ) :
     exact ⟨xs.insertionSort (· ≤ ·),
       List.perm_insertionSort (· ≤ ·) xs,
       List.sortedLE_insertionSort, hvalue⟩
+
+/-- Every nonempty ordinary list has a (necessarily unique) twice-median. -/
+private theorem twiceMedian_exists_encode_of_ne_nil (xs : List ℕ)
+    (hne : xs ≠ []) : ∃ m, TwiceMedian m (encode xs) := by
+  obtain ⟨k, heven | hodd⟩ := Nat.even_or_odd' xs.length
+  · cases k with
+    | zero =>
+        have : xs.length = 0 := by omega
+        exact (hne (List.length_eq_zero_iff.mp this)).elim
+    | succ q =>
+        let sorted := xs.insertionSort (· ≤ ·)
+        refine ⟨sorted.getD q 0 + sorted.getD (q + 1) 0, ?_⟩
+        apply (twiceMedian_encode_iff _ xs).mpr
+        apply (listTwiceMedian_iff_insertionSort xs _).mpr
+        dsimp only [sorted]
+        exact Or.inr ⟨q, by omega, rfl⟩
+  · let sorted := xs.insertionSort (· ≤ ·)
+    refine ⟨sorted.getD k 0 + sorted.getD k 0, ?_⟩
+    apply (twiceMedian_encode_iff _ xs).mpr
+    apply (listTwiceMedian_iff_insertionSort xs _).mpr
+    dsimp only [sorted]
+    exact Or.inl ⟨k, by omega, rfl⟩
+
+/-- `TwiceMedian` exists on every valid code with a nonempty decoded list. -/
+theorem twiceMedian_exists_of_valid_of_decode_ne_nil {v : ℕ} (hv : Seq v)
+    (hne : decode v ≠ []) : ∃ m, TwiceMedian m v := by
+  have hcode : encode (decode v) = v := encode_decode hv
+  rcases twiceMedian_exists_encode_of_ne_nil (decode v) hne with ⟨m, hm⟩
+  exact ⟨m, by simpa only [hcode] using hm⟩
 
 theorem twiceMedian_functional {m n : ℕ} {xs : List ℕ}
     (hm : TwiceMedian m (encode xs)) (hn : TwiceMedian n (encode xs)) : m = n := by

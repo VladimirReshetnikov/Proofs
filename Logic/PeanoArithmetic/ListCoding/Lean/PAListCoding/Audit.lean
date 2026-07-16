@@ -66,6 +66,9 @@ named here.
 #check PAListCoding.productElements_existsUnique
 #check PAListCoding.sumElements_existsUnique_of_valid
 #check PAListCoding.productElements_existsUnique_of_valid
+#check PAListCoding.greatest_exists_of_valid_of_decode_ne_nil
+#check PAListCoding.least_exists_of_valid_of_decode_ne_nil
+#check PAListCoding.twiceMedian_exists_of_valid_of_decode_ne_nil
 #check PAListCoding.greatest_functional
 #check PAListCoding.least_functional
 #check PAListCoding.twiceMedian_functional
@@ -90,6 +93,9 @@ named here.
 #print axioms PAListCoding.uniqueMode_encode_iff
 #print axioms PAListCoding.twiceMedian_functional
 #print axioms PAListCoding.uniqueMode_functional
+#print axioms PAListCoding.greatest_exists_of_valid_of_decode_ne_nil
+#print axioms PAListCoding.least_exists_of_valid_of_decode_ne_nil
+#print axioms PAListCoding.twiceMedian_exists_of_valid_of_decode_ne_nil
 
 -- Print the precise trusted assumptions of the coding boundary.
 #print axioms PAListCoding.valid_iff_existsUnique_encode
