@@ -1,0 +1,25 @@
+-R theories Coquelicot
+theories/AutoDerive.v
+theories/Compactness.v
+theories/Complex.v
+theories/Continuity.v
+theories/Coquelicot.v
+theories/Derive.v
+theories/Derive_2d.v
+theories/ElemFct.v
+theories/Equiv.v
+theories/Hierarchy.v
+theories/Iter.v
+theories/KHInt.v
+theories/Lim_seq.v
+theories/Lub.v
+theories/Markov.v
+theories/PSeries.v
+theories/RInt.v
+theories/RInt_analysis.v
+theories/RInt_gen.v
+theories/Rbar.v
+theories/Rcomplements.v
+theories/SF_seq.v
+theories/Seq_fct.v
+theories/Series.v

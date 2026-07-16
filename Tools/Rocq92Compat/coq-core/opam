@@ -2,13 +2,17 @@ opam-version: "2.0"
 version: "9.2.0"
 synopsis: "Compatibility package name for Rocq 9.2 core"
 description: """
-Empty compatibility package for libraries whose opam metadata still depends on
-the historical coq-core package name.  The implementation is supplied by the
-matching rocq-core package.
+Compatibility package for libraries whose opam metadata or findlib metadata
+still names coq-core.  Rocq 9.2 supplies the implementation through rocq-core
+and rocq-runtime; this package exposes legacy findlib aliases for the engine
+and Ltac plugin surfaces required by the pinned ecosystem packages.
 """
 maintainer: "Vladimir Reshetnikov"
 authors: ["Vladimir Reshetnikov"]
 homepage: "https://github.com/VladimirReshetnikov/Proofs"
 bug-reports: "https://github.com/VladimirReshetnikov/Proofs/issues"
 license: "MIT"
-depends: ["rocq-core" {= "9.2.0"}]
+depends: [
+  "rocq-core" {= "9.2.0"}
+  "rocq-runtime" {= "9.2.0"}
+]

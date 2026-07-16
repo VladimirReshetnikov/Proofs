@@ -97,10 +97,11 @@ foreach ($name in @(
 
 $env:PATH = "$bin;$cygwinBin;$env:PATH"
 
-# Released Coquelicot, Flocq, and Interval recipes invoke their generated
-# Windows executable as `./remake`, which native opam cannot resolve.  Give the
-# local repository highest priority; it changes only those invocations to
-# `./remake.exe` on win32 and retains the official sources and checksums.
+# Give the compatibility repository highest priority.  It applies the audited
+# Coquelicot proof patch and builds that package with Rocq's generated makefile;
+# its native Windows remake database is not self-readable.  The Flocq and
+# Interval recipes use `./remake.exe` on win32.  Official release archives and
+# checksums remain unchanged.
 $localRepository = Join-Path $compatRoot "repository"
 $repositories = @(& $Opam repository list --switch=$Switch --short)
 if ($repositories -contains "proofs-rocq92") {

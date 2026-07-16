@@ -1,0 +1,17 @@
+version = "9.2.0"
+directory = "../rocq-runtime"
+
+package "engine" (
+  directory = "engine"
+  version = "9.2.0"
+  requires = "rocq-runtime.engine"
+)
+
+package "plugins" (
+  directory = "plugins"
+  package "ltac" (
+    directory = "ltac"
+    version = "9.2.0"
+    requires = "rocq-runtime.plugins.ltac"
+  )
+)

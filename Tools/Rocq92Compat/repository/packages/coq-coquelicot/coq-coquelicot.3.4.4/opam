@@ -5,15 +5,25 @@ dev-repo: "git+https://gitlab.inria.fr/coquelicot/coquelicot.git"
 bug-reports: "https://gitlab.inria.fr/coquelicot/coquelicot/issues"
 license: "LGPL-3.0-or-later"
 build: [
-  ["autoconf"] {dev}
-  ["./configure"]
-  ["rm" "-f" ".remake"] {os = "win32"}
-  ["./remake.exe" "-j1"] {os = "win32"}
-  ["./remake" "-j%{jobs}%"] {os != "win32"}
+  ["rocq" "makefile" "-f" "CoqProject.rocq92" "-o" "Makefile.coq"]
+  ["%{make}%" "-f" "Makefile.coq" "-j1"] {os = "win32"}
+  ["%{make}%" "-f" "Makefile.coq" "-j%{jobs}%"] {os != "win32"}
+]
+patches: [
+  "coquelicot-3.4.4-rocq-9.2.patch"
+]
+extra-files: [
+  [
+    "coquelicot-3.4.4-rocq-9.2.patch"
+    "sha256=5d38855d8816b54359c56915b435deeaa05a59f2603a5c9289cccf472efcc3ea"
+  ]
+  [
+    "CoqProject.rocq92"
+    "sha256=f41da32f699086d6bd88ca5633de5892d1202807275c80aaa0894d39abc7229e"
+  ]
 ]
 install: [
-  ["./remake.exe" "install"] {os = "win32"}
-  ["./remake" "install"] {os != "win32"}
+  ["%{make}%" "-f" "Makefile.coq" "install"]
 ]
 depends: [
   ("coq" {>= "8.12" & < "8.17~"} | ("coq-core" & "coq-stdlib"))
