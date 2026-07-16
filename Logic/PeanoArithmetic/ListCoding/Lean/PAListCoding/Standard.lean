@@ -641,15 +641,19 @@ def ListLexLE (xs ys : List ℕ) : Prop :=
   constructor
   · rintro ⟨-, -, hpref | hdiff⟩
     · left
+      have hlenCode := hpref.1
+      rw [LO.FirstOrder.Arithmetic.le_def] at hlenCode
       have hlenOr : xs.length = ys.length ∨ xs.length < ys.length := by
-        simpa [LO.FirstOrder.Arithmetic.le_def] using hpref.1
-      refine ⟨by omega, ?_⟩
+        simpa only [encode_length] using hlenCode
+      refine ⟨hlenOr.elim Nat.le_of_eq Nat.le_of_lt, ?_⟩
       intro i hi
       have he := hpref.2 i (by simpa using hi)
       calc
         xs.getD i 0 = znth (encode xs) i := (znth_encode_eq_getD xs hi).symm
         _ = znth (encode ys) i := he
-        _ = ys.getD i 0 := znth_encode_eq_getD ys (by omega)
+        _ = ys.getD i 0 :=
+          znth_encode_eq_getD ys
+            (Nat.lt_of_lt_of_le hi (hlenOr.elim Nat.le_of_eq Nat.le_of_lt))
     · right
       rcases hdiff with ⟨i, hix, hiy, hbefore, hlt⟩
       have hix' : i < xs.length := by simpa using hix
@@ -675,7 +679,7 @@ def ListLexLE (xs ys : List ℕ) : Prop :=
         simpa only [encode_length] using hor
       · intro i hi
         have hix : i < xs.length := by simpa using hi
-        have hiy : i < ys.length := by omega
+        have hiy : i < ys.length := Nat.lt_of_lt_of_le hix hpref.1
         calc
           znth (encode xs) i = xs.getD i 0 := znth_encode_eq_getD xs hix
           _ = ys.getD i 0 := hpref.2 i hix
@@ -703,7 +707,8 @@ def ListLexSorted (xss : List (List ℕ)) : Prop :=
   rw [ListLexSorted, List.isChain_iff_getElem]
   constructor
   · rintro ⟨-, -, hsorted⟩ i hi
-    have hi0 : i < lh (encode (xss.map encode)) := by simpa; omega
+    have hi' : i < xss.length := Nat.lt_trans (Nat.lt_succ_self i) hi
+    have hi0 : i < lh (encode (xss.map encode)) := by simpa using hi'
     have hi1 : i + 1 < lh (encode (xss.map encode)) := by simpa using hi
     have hs := hsorted i hi0 hi1
     have hc : znth (encode (xss.map encode)) i = encode xss[i] := by
@@ -719,7 +724,7 @@ def ListLexSorted (xss : List (List ℕ)) : Prop :=
           encode_nth (xss.map encode) ⟨i + 1, by simpa using hi⟩
         _ = encode xss[i + 1] := by simp
     rw [hc, hn] at hs
-    exact lexLE_encode_iff.mp hs
+    exact (lexLE_encode_iff xss[i] xss[i + 1]).mp hs
   · intro hsorted
     refine ⟨encode_valid (xss.map encode), ?_, ?_⟩
     · intro i hi
@@ -749,7 +754,7 @@ def ListLexSorted (xss : List (List ℕ)) : Prop :=
             encode_nth (xss.map encode) ⟨i + 1, by simpa using hi1'⟩
           _ = encode xss[i + 1] := by simp
       rw [hc, hn]
-      exact lexLE_encode_iff.mpr hs
+      exact (lexLE_encode_iff xss[i] xss[i + 1]).mpr hs
 
 /--
 An exact ordinary-list characterization of the requested final predicate:
@@ -770,12 +775,14 @@ def CompletePermutationList (xss : List (List ℕ)) (base : List ℕ) : Prop :=
     · have hn := noDuplicates_encode_iff (xss.map encode) |>.mp
         h.noDuplicates
       exact (List.nodup_map_iff encode_injective).mp hn
-    · exact lexSorted_encode_iff.mp h.lexSorted
+    · exact (lexSorted_encode_iff xss).mp h.lexSorted
     · intro ys
       constructor
       · intro hmem
-        rcases List.mem_iff_get.mp hmem with ⟨i, rfl⟩
-        have hs := h.sound (by simpa using i.isLt)
+        rcases List.mem_iff_get.mp hmem with ⟨i, hiGet⟩
+        have hiCode : (i : ℕ) < lh (encode (xss.map encode)) := by
+          simpa using i.isLt
+        have hs := h.sound hiCode
         have hc : znth (encode (xss.map encode)) i = encode (xss.get i) := by
           calc
             znth (encode (xss.map encode)) i =
@@ -783,10 +790,11 @@ def CompletePermutationList (xss : List (List ℕ)) (base : List ℕ) : Prop :=
               encode_nth (xss.map encode) ⟨i, by simpa using i.isLt⟩
             _ = encode (xss.get i) := by simp
         rw [hc] at hs
-        exact permutation_encode_iff.mp hs
+        have hp := (permutation_encode_iff (xss.get i) base).mp hs
+        simpa only [hiGet] using hp
       · intro hperm
         have hpCode : PAListCoding.Permutation (encode ys) (encode base) :=
-          permutation_encode_iff.mpr hperm
+          (permutation_encode_iff ys base).mpr hperm
         rcases h.complete (encode_valid ys) hpCode with ⟨i, hi, heq⟩
         have hi' : i < xss.length := by simpa using hi
         have hc : znth (encode (xss.map encode)) i = encode xss[i] := by
@@ -803,7 +811,7 @@ def CompletePermutationList (xss : List (List ℕ)) (base : List ℕ) : Prop :=
     refine ⟨encode_valid (xss.map encode), encode_valid base, ?_, ?_, ?_, ?_⟩
     · rw [noDuplicates_encode_iff, List.nodup_map_iff encode_injective]
       exact hnodup
-    · exact lexSorted_encode_iff.mpr hsorted
+    · exact (lexSorted_encode_iff xss).mpr hsorted
     · intro i hi
       have hi' : i < xss.length := by simpa using hi
       have hc : znth (encode (xss.map encode)) i = encode xss[i] := by
@@ -813,12 +821,12 @@ def CompletePermutationList (xss : List (List ℕ)) (base : List ℕ) : Prop :=
             encode_nth (xss.map encode) ⟨i, by simpa using hi'⟩
           _ = encode xss[i] := by simp
       rw [hc]
-      apply permutation_encode_iff.mpr
+      apply (permutation_encode_iff xss[i] base).mpr
       exact (hall xss[i]).mp (List.getElem_mem hi')
     · intro p hp hperm
       have hpCode : encode (decode p) = p := encode_decode hp
       have hdecoded : List.Perm (decode p) base := by
-        apply permutation_encode_iff.mp
+        apply (permutation_encode_iff (decode p) base).mp
         simpa only [hpCode] using hperm
       have hmem := (hall (decode p)).mpr hdecoded
       rcases List.mem_iff_get.mp hmem with ⟨i, hi⟩
