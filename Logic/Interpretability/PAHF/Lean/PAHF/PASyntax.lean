@@ -2403,6 +2403,19 @@ theorem BProv_rename_succ_context_cons_of_sentences
   BProv_context_cons (B := B)
     (BProv_rename_of_sentences hB h Nat.succ)
 
+/-- Add an ordinary assumption, then open one binder around the enlarged
+context.  Only the binder opening shifts the transported formula. -/
+theorem BProv_lift_context_cons_then_open_of_sentences
+    {B : Formula → Prop} (hB : Sentences B)
+    {G : List Formula} {outer inner phi : Formula}
+    (hphi : BProv B G phi) :
+    BProv B
+      (inner :: (outer :: G).map (rename Nat.succ))
+      (rename Nat.succ phi) :=
+  BProv_rename_succ_context_cons_of_sentences
+    (B := B) hB (a := inner)
+    (BProv_context_cons (B := B) (a := outer) hphi)
+
 /-- Relative PA provability is closed under implication introduction. -/
 theorem BProv_impI {B : Formula → Prop} {G : List Formula}
     {a b : Formula} (h : BProv B (a :: G) b) :
@@ -21567,18 +21580,17 @@ theorem BProv_Ax_s_eq_zero_of_bounded_remainder_difference_terms
         have hraw : BProv Ax_s D succBody :=
           BProv_ass (B := Ax_s) (G := D) (by simp [D, C, succBody])
         simpa [succBody, diff'] using hraw
-      have hdiffRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq lowRem (Term.add (Term.mul modulus diff) highRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hdiff Nat.succ
+      have liftToD {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s D (rename Nat.succ phi) := by
+        simpa [D, C] using
+          BProv_lift_context_cons_then_open_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (outer := ex succBody) (inner := succBody) hphi
       have hdiffD : BProv Ax_s D
           (eq lowRem'
             (Term.add (Term.mul modulus' diff') highRem')) := by
-        simpa [D, C, modulus', lowRem', highRem', diff', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hdiffRen
+        simpa [modulus', lowRem', highRem', diff', rename,
+          Term.rename] using liftToD hdiff
       have hmulArg : BProv Ax_s D
           (eq (Term.mul modulus' diff')
             (Term.mul modulus' (Term.succ (Term.var 0)))) :=
@@ -21598,15 +21610,8 @@ theorem BProv_Ax_s_eq_zero_of_bounded_remainder_difference_terms
         BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
           (modulus := modulus') (value := lowRem')
           (diff := Term.var 0) (rem := highRem') hdiffSucc
-      have hltRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt lowRem modulus)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlowLt Nat.succ
       have hltD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
-        simpa [D, C, modulus', lowRem', ltTermAt, rename, Term.rename,
-          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_two hltRen
+        simpa only [rename_ltTermAt, lowRem', modulus'] using liftToD hlowLt
       exact BProv_botE
         (a := rename Nat.succ (eq diff Term.zero))
         (BProv_Ax_s_ltTermAt_leTermAt_bot hltD hle)
@@ -21677,18 +21682,17 @@ theorem BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
         have hraw : BProv Ax_s D succBody :=
           BProv_ass (B := Ax_s) (G := D) (by simp [D, C, succBody])
         simpa [succBody, diff'] using hraw
-      have hdiffRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq lowRem (Term.add (Term.mul modulus diff) highRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hdiff Nat.succ
+      have liftToD {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s D (rename Nat.succ phi) := by
+        simpa [D, C] using
+          BProv_lift_context_cons_then_open_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (outer := ex succBody) (inner := succBody) hphi
       have hdiffD : BProv Ax_s D
           (eq lowRem'
             (Term.add (Term.mul modulus' diff') highRem')) := by
-        simpa [D, C, modulus', lowRem', highRem', diff', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hdiffRen
+        simpa [modulus', lowRem', highRem', diff', rename,
+          Term.rename] using liftToD hdiff
       have hmulArg : BProv Ax_s D
           (eq (Term.mul modulus' diff')
             (Term.mul modulus' (Term.succ (Term.var 0)))) :=
@@ -21708,15 +21712,8 @@ theorem BProv_Ax_s_eq_highRem_of_bounded_remainder_difference_terms
         BProv_Ax_s_leTermAt_modulus_of_eq_mul_succ_add
           (modulus := modulus') (value := lowRem')
           (diff := Term.var 0) (rem := highRem') hdiffSucc
-      have hltRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt lowRem modulus)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlowLt Nat.succ
       have hltD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
-        simpa [D, C, modulus', lowRem', ltTermAt, rename, Term.rename,
-          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_two hltRen
+        simpa only [rename_ltTermAt, lowRem', modulus'] using liftToD hlowLt
       exact BProv_botE
         (a := rename Nat.succ (eq highRem lowRem))
         (BProv_Ax_s_ltTermAt_leTermAt_bot hltD hle)
@@ -21767,39 +21764,24 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
         have hraw : BProv Ax_s D leBody :=
           BProv_ass (B := Ax_s) (G := D) (by simp [D, L, leBody])
         simpa [leBody, lowQuot', highQuot'] using hraw
-      have hlowLtRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt lowRem modulus)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlowLt Nat.succ
+      have liftToD {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s D (rename Nat.succ phi) := by
+        simpa [D, L] using
+          BProv_lift_context_cons_then_open_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (outer := leTermAt lowQuot highQuot) (inner := leBody) hphi
       have hlowLtD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
-        simpa [D, L, lowRem', modulus', ltTermAt, rename, Term.rename,
-          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_two hlowLtRen
-      have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlow Nat.succ
+        simpa only [rename_ltTermAt, lowRem', modulus'] using liftToD hlowLt
       have hlowD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
-        simpa [D, L, value', modulus', lowQuot', lowRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hlowRen
-      have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hhigh Nat.succ
+        simpa [value', modulus', lowQuot', lowRem', rename,
+          Term.rename] using liftToD hlow
       have hhighD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
-        simpa [D, L, value', modulus', highQuot', highRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hhighRen
+        simpa [value', modulus', highQuot', highRem', rename,
+          Term.rename] using liftToD hhigh
       have hdiff : BProv Ax_s D
           (eq lowRem'
             (Term.add (Term.mul modulus' (Term.var 0)) highRem')) :=
@@ -21841,39 +21823,24 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decompositions_terms
         have hraw : BProv Ax_s D ltBody :=
           BProv_ass (B := Ax_s) (G := D) (by simp [D, L, ltBody])
         simpa [ltBody, lowQuot', highQuot'] using hraw
-      have hhighLtRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt highRem modulus)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hhighLt Nat.succ
+      have liftToD {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s D (rename Nat.succ phi) := by
+        simpa [D, L] using
+          BProv_lift_context_cons_then_open_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (outer := ltTermAt highQuot lowQuot) (inner := ltBody) hphi
       have hhighLtD : BProv Ax_s D (ltTermAt highRem' modulus') := by
-        simpa [D, L, highRem', modulus', ltTermAt, rename, Term.rename,
-          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_two hhighLtRen
-      have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlow Nat.succ
+        simpa only [rename_ltTermAt, highRem', modulus'] using liftToD hhighLt
       have hlowD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
-        simpa [D, L, value', modulus', lowQuot', lowRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hlowRen
-      have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hhigh Nat.succ
+        simpa [value', modulus', lowQuot', lowRem', rename,
+          Term.rename] using liftToD hlow
       have hhighD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
-        simpa [D, L, value', modulus', highQuot', highRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hhighRen
+        simpa [value', modulus', highQuot', highRem', rename,
+          Term.rename] using liftToD hhigh
       have hdiff : BProv Ax_s D
           (eq highRem'
             (Term.add
@@ -21935,39 +21902,24 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
         have hraw : BProv Ax_s D leBody :=
           BProv_ass (B := Ax_s) (G := D) (by simp [D, L, leBody])
         simpa [leBody, lowQuot', highQuot'] using hraw
-      have hlowLtRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt lowRem modulus)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlowLt Nat.succ
+      have liftToD {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s D (rename Nat.succ phi) := by
+        simpa [D, L] using
+          BProv_lift_context_cons_then_open_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (outer := leTermAt lowQuot highQuot) (inner := leBody) hphi
       have hlowLtD : BProv Ax_s D (ltTermAt lowRem' modulus') := by
-        simpa [D, L, lowRem', modulus', ltTermAt, rename, Term.rename,
-          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_two hlowLtRen
-      have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlow Nat.succ
+        simpa only [rename_ltTermAt, lowRem', modulus'] using liftToD hlowLt
       have hlowD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
-        simpa [D, L, value', modulus', lowQuot', lowRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hlowRen
-      have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hhigh Nat.succ
+        simpa [value', modulus', lowQuot', lowRem', rename,
+          Term.rename] using liftToD hlow
       have hhighD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
-        simpa [D, L, value', modulus', highQuot', highRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hhighRen
+        simpa [value', modulus', highQuot', highRem', rename,
+          Term.rename] using liftToD hhigh
       have hdiff : BProv Ax_s D
           (eq lowRem'
             (Term.add (Term.mul modulus' (Term.var 0)) highRem')) :=
@@ -22018,39 +21970,24 @@ theorem BProv_Ax_s_eq_of_bounded_remainder_decomposition_quotients_terms
         have hraw : BProv Ax_s D ltBody :=
           BProv_ass (B := Ax_s) (G := D) (by simp [D, L, ltBody])
         simpa [ltBody, lowQuot', highQuot'] using hraw
-      have hhighLtRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ (ltTermAt highRem modulus)) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hhighLt Nat.succ
+      have liftToD {phi : Formula} (hphi : BProv Ax_s G phi) :
+          BProv Ax_s D (rename Nat.succ phi) := by
+        simpa [D, L] using
+          BProv_lift_context_cons_then_open_of_sentences
+            (B := Ax_s) Ax_s_sentences
+            (outer := ltTermAt highQuot lowQuot) (inner := ltBody) hphi
       have hhighLtD : BProv Ax_s D (ltTermAt highRem' modulus') := by
-        simpa [D, L, highRem', modulus', ltTermAt, rename, Term.rename,
-          SetTheory.up, Term.rename_comp, List.map_map, Function.comp_def] using
-          BProv_context_two hhighLtRen
-      have hlowRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul lowQuot modulus) lowRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hlow Nat.succ
+        simpa only [rename_ltTermAt, highRem', modulus'] using liftToD hhighLt
       have hlowD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul lowQuot' modulus') lowRem')) := by
-        simpa [D, L, value', modulus', lowQuot', lowRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hlowRen
-      have hhighRen : BProv Ax_s (G.map (rename Nat.succ))
-          (rename Nat.succ
-            (eq value (Term.add (Term.mul highQuot modulus) highRem))) :=
-        BProv_rename_of_sentences
-          (B := Ax_s) Ax_s_sentences
-          hhigh Nat.succ
+        simpa [value', modulus', lowQuot', lowRem', rename,
+          Term.rename] using liftToD hlow
       have hhighD : BProv Ax_s D
           (eq value'
             (Term.add (Term.mul highQuot' modulus') highRem')) := by
-        simpa [D, L, value', modulus', highQuot', highRem', rename,
-          Term.rename, List.map_map, Function.comp_def] using
-          BProv_context_two hhighRen
+        simpa [value', modulus', highQuot', highRem', rename,
+          Term.rename] using liftToD hhigh
       have hdiff : BProv Ax_s D
           (eq highRem'
             (Term.add

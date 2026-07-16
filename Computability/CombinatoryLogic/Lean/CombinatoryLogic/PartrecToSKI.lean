@@ -1,12 +1,4 @@
 /-
-WIP SNAPSHOT — INTENTIONALLY DISABLED.
-
-This compiler currently establishes only defined-case realization, not the
-exact divergence/undefinedness direction required for Turing completeness.
-It is preserved verbatim below for continuation, but the entire source is
-commented out so this checkpoint does not overstate the result.
-
-/-
 Copyright (c) 2026 Jesse Alama. All rights reserved.
 Released under Apache 2.0 license as described in ../LICENSE-Apache-2.0.
 Authors: Jesse Alama
@@ -252,4 +244,3 @@ theorem natPartrec_skiComputable (f : Nat →. Nat) (hf : Nat.Partrec f) : Compu
   exact ⟨codeToSKI code, codeToSKI_correct code⟩
 
 end CombinatoryLogic.SKI.Term
--/
