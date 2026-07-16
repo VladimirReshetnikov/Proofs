@@ -31,6 +31,12 @@ named here.
 #check PAListCoding.nondecreasingFormula_spec
 #check PAListCoding.lexSortedFormula_spec
 #check PAListCoding.allPermutationsFormula_spec
+#check PAListCoding.sumElementsFormula_spec
+#check PAListCoding.productElementsFormula_spec
+#check PAListCoding.greatestFormula_spec
+#check PAListCoding.leastFormula_spec
+#check PAListCoding.twiceMedianFormula_spec
+#check PAListCoding.uniqueModeFormula_spec
 
 -- Agreement of the arithmetic predicates with familiar external lists.
 #check PAListCoding.valid_encode_iff
@@ -47,12 +53,43 @@ named here.
 #check PAListCoding.nondecreasing_encode_iff
 #check PAListCoding.lexSorted_encode_iff
 #check PAListCoding.allPermutations_encode_iff
+#check PAListCoding.sumElements_encode_iff_sum
+#check PAListCoding.productElements_encode_iff_prod
+#check PAListCoding.greatest_encode_iff
+#check PAListCoding.least_encode_iff
+#check PAListCoding.twiceMedian_encode_iff
+#check PAListCoding.uniqueMode_encode_iff
+
+-- The result relations are functional whenever they hold; sum and product
+-- additionally exist on every valid standard code.
+#check PAListCoding.sumElements_existsUnique
+#check PAListCoding.productElements_existsUnique
+#check PAListCoding.sumElements_existsUnique_of_valid
+#check PAListCoding.productElements_existsUnique_of_valid
+#check PAListCoding.greatest_functional
+#check PAListCoding.least_functional
+#check PAListCoding.twiceMedian_functional
+#check PAListCoding.uniqueMode_functional
+
+-- Boundary and parity regressions make the intended conventions explicit.
+#check PAListCoding.greatest_empty_false
+#check PAListCoding.least_empty_false
+#check PAListCoding.twiceMedian_empty_false
+#check PAListCoding.uniqueMode_empty_false
+#check PAListCoding.uniqueMode_tie_false
+#check PAListCoding.twiceMedian_odd_example
+#check PAListCoding.twiceMedian_even_example
 
 -- The less immediate external-list bridges are also audited explicitly.
 #print axioms PAListCoding.concatAll_encode_iff_flatten
 #print axioms PAListCoding.occurrences_encode_iff_count
 #print axioms PAListCoding.lexSorted_encode_iff
 #print axioms PAListCoding.allPermutations_encode_iff
+#print axioms PAListCoding.productElements_encode_iff_prod
+#print axioms PAListCoding.twiceMedian_encode_iff
+#print axioms PAListCoding.uniqueMode_encode_iff
+#print axioms PAListCoding.twiceMedian_functional
+#print axioms PAListCoding.uniqueMode_functional
 
 -- Print the precise trusted assumptions of the coding boundary.
 #print axioms PAListCoding.valid_iff_existsUnique_encode
@@ -76,3 +113,9 @@ named here.
 #print axioms PAListCoding.nondecreasingFormula_spec
 #print axioms PAListCoding.lexSortedFormula_spec
 #print axioms PAListCoding.allPermutationsFormula_spec
+#print axioms PAListCoding.sumElementsFormula_spec
+#print axioms PAListCoding.productElementsFormula_spec
+#print axioms PAListCoding.greatestFormula_spec
+#print axioms PAListCoding.leastFormula_spec
+#print axioms PAListCoding.twiceMedianFormula_spec
+#print axioms PAListCoding.uniqueModeFormula_spec
