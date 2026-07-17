@@ -819,4 +819,418 @@ Proof.
     + exact hbase.
 Qed.
 
+(** * The omega quotient split *)
+
+(** Left addition of one cancels the truncated subtraction used by
+    [onoteSplit'] on every positive normal exponent.  Infinite exponents are
+    unchanged by subtraction and absorb the finite prefix; finite exponents
+    reduce to ordinary predecessor/successor arithmetic. *)
+Lemma onoteAdd_one_sub_one_nf : forall e,
+  NF e -> e <> ozero ->
+  onoteAdd onoteOne (onoteSub e onoteOne) = e.
+Proof.
+  intros [|e c r] he he0; [contradiction |].
+  pose proof he as heFull.
+  destruct he as [heNF [hr htop]].
+  destruct e as [|ee ec er].
+  - assert (hr0 : r = ozero).
+    { now apply NF_zero_exponent_tail with (c := c). }
+    subst r. destruct c as [|c].
+    + reflexivity.
+    + cbn [onoteSub onoteOne onoteAdd onoteAddAux].
+      rewrite onoteCompare_refl, Nat.sub_0_r.
+      cbn [onoteAddAux]. rewrite onoteCompare_refl. reflexivity.
+  - cbn [onoteSub onoteOne].
+    apply onoteAdd_below_node.
+    + exact NF_one.
+    + reflexivity.
+Qed.
+
+(** The two split functions carry the same finite remainder.  The first
+    component of [onoteSplit] is obtained by multiplying the quotient from
+    [onoteSplit'] by omega, represented here by [onoteScale onoteOne]. *)
+Lemma onoteSplit_eq_scale_split' : forall o q n,
+  NF o -> onoteSplit' o = (q, n) ->
+  onoteSplit o = (onoteScale onoteOne q, n).
+Proof.
+  induction o as [|e IHe c r IHr]; intros q n ho hsplit.
+  - cbn [onoteSplit'] in hsplit. inversion hsplit; subst q n.
+    reflexivity.
+  - destruct ho as [he [hr htop]].
+    destruct e as [|ee ec er].
+    + cbn [onoteSplit'] in hsplit. inversion hsplit; subst q n.
+      reflexivity.
+    + cbn [onoteSplit'] in hsplit.
+      destruct (onoteSplit' r) as [r' k] eqn:hsplitR.
+      inversion hsplit; subst q n.
+      change ((oadd (oadd ee ec er) c (fst (onoteSplit r)),
+        snd (onoteSplit r)) =
+        (oadd
+          (onoteAdd onoteOne
+            (onoteSub (oadd ee ec er) onoteOne)) c
+          (onoteScale onoteOne r'), k)).
+      rewrite (IHr r' k hr eq_refl).
+      rewrite (onoteAdd_one_sub_one_nf (oadd ee ec er) he
+        ltac:(discriminate)).
+      reflexivity.
+Qed.
+
+(** Scaling is injective on normal forms.  Equality of node exponents is
+    reflected through [onoteCompare_add_left], and the tails follow by the
+    structural induction hypothesis. *)
+Lemma onoteScale_injective_nf : forall x a b,
+  NF x -> NF a -> NF b ->
+  onoteScale x a = onoteScale x b -> a = b.
+Proof.
+  intros x a. revert x.
+  induction a as [|ae IHe ac ar IHr]; intros x [|be bc br] hx ha hb hscale;
+    try discriminate; [reflexivity |].
+  destruct ha as [hae [har htopA]].
+  destruct hb as [hbe [hbr htopB]].
+  cbn [onoteScale] in hscale. inversion hscale as [[hexp hcoeff htail]].
+  assert (hcmp :
+    onoteCompare (onoteAdd x ae) (onoteAdd x be) = Eq).
+  { rewrite hexp. apply onoteCompare_refl. }
+  rewrite (onoteCompare_add_left x ae be hx hae hbe) in hcmp.
+  apply onoteCompare_eq in hcmp. subst be bc.
+  f_equal. now apply IHr with (x := x).
+Qed.
+
+(** A monomial [omega^x] acts on a normal notation exactly as [onoteScale]. *)
+Lemma onoteMul_monomial_nf : forall x o,
+  NF x -> NF o ->
+  onoteMul (oadd x 0 ozero) o = onoteScale x o.
+Proof.
+  intros x o hx. induction o as [|e IHe c r IHr]; intro ho;
+    [reflexivity |].
+  destruct ho as [he [hr htop]]. destruct e as [|ee ec er].
+  - assert (hr0 : r = ozero).
+    { now apply NF_zero_exponent_tail with (c := c). }
+    subst r. cbn [onoteMul onoteScale].
+    rewrite coefficientProductPred_zero_l,
+      onoteAdd_zero_r_nf by exact hx.
+    reflexivity.
+  - cbn [onoteMul onoteScale]. rewrite IHr by exact hr. reflexivity.
+Qed.
+
+Lemma onoteScale_add_nf : forall x a b,
+  NF x -> NF a -> NF b ->
+  onoteScale x (onoteAdd a b) =
+  onoteAdd (onoteScale x a) (onoteScale x b).
+Proof.
+  intros x a b hx ha hb.
+  rewrite <- (onoteMul_monomial_nf x (onoteAdd a b) hx
+    ltac:(now apply onoteAdd_nf)).
+  rewrite <- (onoteMul_monomial_nf x a hx ha),
+    <- (onoteMul_monomial_nf x b hx hb).
+  apply onoteMul_add.
+  - exact (conj hx (conj NF_zero I)).
+  - exact ha.
+  - exact hb.
+Qed.
+
+(** Complete addition law for the quotient/remainder split. *)
+Lemma onoteSplit'_add : forall a b aq an bq bn,
+  NF a -> NF b ->
+  onoteSplit' a = (aq, an) -> onoteSplit' b = (bq, bn) ->
+  onoteSplit' (onoteAdd a b) =
+  match bq with
+  | ozero => (aq, an + bn)
+  | oadd _ _ _ => (onoteAdd aq bq, bn)
+  end.
+Proof.
+  intros a b aq an bq bn ha hb hsplitA' hsplitB'.
+  pose proof (onoteSplit'_nf a aq an ha hsplitA') as haq.
+  pose proof (onoteSplit'_nf b bq bn hb hsplitB') as hbq.
+  pose proof (onoteSplit_eq_scale_split' a aq an ha hsplitA')
+    as hsplitA.
+  pose proof (onoteSplit_eq_scale_split' b bq bn hb hsplitB')
+    as hsplitB.
+  assert (hsumNF : NF (onoteAdd a b)).
+  { now apply onoteAdd_nf. }
+  remember (onoteSplit' (onoteAdd a b)) as result eqn:hresult.
+  destruct result as [rq rn]. symmetry in hresult.
+  pose proof (onoteSplit'_nf (onoteAdd a b) rq rn hsumNF hresult)
+    as hrq.
+  pose proof (onoteSplit_eq_scale_split' (onoteAdd a b) rq rn
+    hsumNF hresult) as hresultScale.
+  pose proof (onoteSplit_add a b
+    (onoteScale onoteOne aq) an
+    (onoteScale onoteOne bq) bn
+    ha hb hsplitA hsplitB) as hsumSplit.
+  destruct bq as [|be bc br].
+  - cbn [onoteScale] in hsumSplit.
+    rewrite hresultScale in hsumSplit. inversion hsumSplit; subst rn.
+    assert (hrqEq : rq = aq).
+    {
+      apply onoteScale_injective_nf with (x := onoteOne).
+      - exact NF_one.
+      - exact hrq.
+      - exact haq.
+      - assumption.
+    }
+    subst rq. reflexivity.
+  - assert (hscaleSum :
+      onoteAdd (onoteScale onoteOne aq)
+        (onoteScale onoteOne (oadd be bc br)) =
+      onoteScale onoteOne (onoteAdd aq (oadd be bc br))).
+    {
+      symmetry. apply onoteScale_add_nf.
+      - exact NF_one.
+      - exact haq.
+      - exact hbq.
+    }
+    rewrite hscaleSum in hsumSplit.
+    rewrite hresultScale in hsumSplit. inversion hsumSplit; subst rn.
+    assert (hrqEq : rq = onoteAdd aq (oadd be bc br)).
+    {
+      apply onoteScale_injective_nf with (x := onoteOne).
+      - exact NF_one.
+      - exact hrq.
+      - now apply onoteAdd_nf.
+      - assumption.
+    }
+    subst rq. reflexivity.
+Qed.
+
+(** * Power at omega-divisible exponents *)
+
+Lemma onoteScale_nonzero : forall x o,
+  o <> ozero -> onoteScale x o <> ozero.
+Proof. intros x [|e c r] h; [contradiction | discriminate]. Qed.
+
+Lemma onoteMul_nonzero_split_fixed : forall p q,
+  p <> ozero -> q <> ozero -> onoteSplit q = (q, 0) ->
+  onoteMul p q <> ozero.
+Proof.
+  intros p q hp hq hfixed.
+  rewrite (onoteMul_split_fixed p q hp hfixed).
+  now apply onoteScale_nonzero.
+Qed.
+
+Lemma onoteAdd_nonzero_right_nf : forall a b,
+  NF a -> b <> ozero -> onoteAdd a b <> ozero.
+Proof.
+  intros a b ha hb hzero.
+  pose proof (onoteCompare_add_nonzero_right a b ha hb) as hstrict.
+  rewrite hzero in hstrict. destruct a; discriminate.
+Qed.
+
+(** For an infinite base, every power has leading exponent `a0*exponent`.
+    The zero exponent gives the monomial one; a positive finite remainder is
+    exactly the branch characterized by [onotePow_branch_head]. *)
+Lemma onotePow_infinite_head_nf :
+  forall base exponent a0 ac ar m,
+    NF base -> NF exponent ->
+    onoteSplit base = (oadd a0 ac ar, m) ->
+    exists c r,
+      onotePow base exponent =
+      oadd (onoteMul a0 exponent) c r.
+Proof.
+  intros base exponent a0 ac ar m hbase hexponent hbaseSplit.
+  pose proof (onoteSplit_nf base (oadd a0 ac ar) m
+    hbase hbaseSplit) as homega.
+  pose proof (onoteSplit_output_fixed base (oadd a0 ac ar) m
+    hbaseSplit) as hfixed.
+  assert (ha0 : a0 <> ozero).
+  {
+    intro ha0. subst a0. cbn [onoteSplit] in hfixed. discriminate.
+  }
+  remember (onoteSplit exponent) as exponentSplit eqn:hexponentSplit.
+  destruct exponentSplit as [b k]. symmetry in hexponentSplit.
+  pose proof (onoteSplit_nf exponent b k hexponent
+    hexponentSplit) as hb.
+  pose proof (onoteSplit_reconstruct exponent b k
+    hexponent hexponentSplit) as hexponentReconstruct.
+  unfold onotePow. rewrite hbaseSplit.
+  cbn [onotePowAux2]. rewrite hexponentSplit.
+  destruct k as [|k].
+  - cbn.
+    cbn [onoteNat] in hexponentReconstruct.
+    rewrite onoteAdd_zero_r_nf in hexponentReconstruct by exact hb.
+    subst exponent. now exists 0, ozero.
+  - assert (hmulExponent :
+      onoteMul a0 exponent =
+      onoteAdd (onoteMul a0 b) (onoteMulNat a0 (S k))).
+    {
+      rewrite hexponentReconstruct.
+      rewrite (onoteMul_add a0 b (onoteNat (S k))
+        (proj1 homega) hb (onoteNat_nf (S k))).
+      now rewrite onoteMul_onoteNat.
+    }
+    destruct (onotePow_branch_head (onoteMul a0 b)
+      a0 ac ar k m
+      ltac:(apply onoteMul_nf;
+        [exact (proj1 homega) | exact hb])
+      homega ha0) as [c [r hbranch]].
+    cbn [fst snd].
+    rewrite hbranch, hmulExponent. now exists c, r.
+Qed.
+
+Lemma onotePow_infinite_fixed :
+  forall base exponent a0 ac ar m,
+    onoteSplit base = (oadd a0 ac ar, m) ->
+    onoteSplit exponent = (exponent, 0) ->
+    onotePow base exponent =
+    oadd (onoteMul a0 exponent) 0 ozero.
+Proof.
+  intros base exponent a0 ac ar m hbase hexponent.
+  unfold onotePow. rewrite hbase.
+  cbn [onotePowAux2]. rewrite hexponent. reflexivity.
+Qed.
+
+(** Adding a nonzero omega-divisible exponent is the limit step of ordinal
+    exponentiation.  The finite-base branch uses the omega quotient split;
+    the infinite-base branch compares leading exponents and invokes right
+    distributivity of ordinal multiplication. *)
+Theorem onotePow_add_omegaPart_nf : forall base left omega,
+  NF base -> NF left -> NF omega ->
+  omega <> ozero -> onoteSplit omega = (omega, 0) ->
+  onotePow base (onoteAdd left omega) =
+  onoteMul (onotePow base left) (onotePow base omega).
+Proof.
+  intros base left [|oe oc or] hbase hleft homega homega0 hfixedOmega;
+    [contradiction |].
+  set (omega := oadd oe oc or) in *.
+  assert (hsumNF : NF (onoteAdd left omega)).
+  { now apply onoteAdd_nf. }
+  assert (hsum0 : onoteAdd left omega <> ozero).
+  { now apply onoteAdd_nonzero_right_nf. }
+
+  remember (onoteSplit left) as leftSplit eqn:hleftSplit.
+  destruct leftSplit as [lq ln]. symmetry in hleftSplit.
+  pose proof (onoteSplit_nf left lq ln hleft hleftSplit) as hlq.
+  pose proof (onoteSplit_add left omega lq ln omega 0
+    hleft homega hleftSplit hfixedOmega) as hsumSplit.
+  change (onoteSplit (onoteAdd left omega) =
+    (onoteAdd lq omega, 0)) in hsumSplit.
+  pose proof (onoteSplit_reconstruct (onoteAdd left omega)
+    (onoteAdd lq omega) 0 hsumNF hsumSplit) as hsumReconstruct.
+  cbn [onoteNat] in hsumReconstruct.
+  rewrite onoteAdd_zero_r_nf in hsumReconstruct.
+  2: { now apply onoteAdd_nf. }
+  assert (hsumFixed :
+    onoteSplit (onoteAdd left omega) =
+    (onoteAdd left omega, 0)).
+  {
+    rewrite hsumSplit. f_equal.
+    symmetry. exact hsumReconstruct.
+  }
+
+  remember (onoteSplit' left) as leftSplit' eqn:hleftSplit'.
+  destruct leftSplit' as [lp lk]. symmetry in hleftSplit'.
+  pose proof (onoteSplit'_nf left lp lk hleft hleftSplit') as hlp.
+  remember (onoteSplit' omega) as omegaSplit' eqn:homegaSplit'.
+  destruct omegaSplit' as [op ok]. symmetry in homegaSplit'.
+  pose proof (onoteSplit'_nf omega op ok homega homegaSplit') as hop.
+  pose proof (onoteSplit_eq_scale_split' omega op ok
+    homega homegaSplit') as homegaScale.
+  rewrite hfixedOmega in homegaScale.
+  inversion homegaScale; subst ok.
+  assert (hop0 : op <> ozero).
+  {
+    intro hop0. subst op. cbn [onoteScale] in H0.
+    unfold omega in H0. discriminate.
+  }
+  destruct op as [|ope opc opr]; [contradiction |].
+  pose proof (onoteSplit'_add left omega lp lk
+    (oadd ope opc opr) 0 hleft homega hleftSplit' homegaSplit')
+    as hsumSplit'.
+  change (onoteSplit' (onoteAdd left omega) =
+    (onoteAdd lp (oadd ope opc opr), 0)) in hsumSplit'.
+
+  remember (onoteSplit base) as baseSplit eqn:hbaseSplit.
+  destruct baseSplit as [basePart finitePart]. symmetry in hbaseSplit.
+  pose proof (onoteSplit_reconstruct base basePart finitePart
+    hbase hbaseSplit) as hbaseReconstruct.
+  destruct basePart as [|a0 ac ar].
+  - rewrite onoteAdd_zero_l in hbaseReconstruct. subst base.
+    destruct finitePart as [|[|finitePart]].
+    + change (onotePow ozero (onoteAdd left omega) =
+        onoteMul (onotePow ozero left) (onotePow ozero omega)).
+      rewrite (onotePow_zero_base_nonzero (onoteAdd left omega) hsum0),
+        (onotePow_zero_base_nonzero omega homega0), onoteMul_zero_r.
+      reflexivity.
+    + change (onotePow onoteOne (onoteAdd left omega) =
+        onoteMul (onotePow onoteOne left) (onotePow onoteOne omega)).
+      rewrite !onotePow_one_base, onoteMul_one_r. reflexivity.
+    + unfold onotePow.
+      rewrite !onoteSplit_onoteNat.
+      cbn [onotePowAux2].
+      rewrite hsumSplit', hleftSplit', homegaSplit'.
+      cbn [fst snd onoteMul Nat.pow Nat.pred]. reflexivity.
+  - pose proof (onoteSplit_nf base (oadd a0 ac ar) finitePart
+      hbase hbaseSplit) as hbasePart.
+    pose proof (onoteSplit_output_fixed base (oadd a0 ac ar)
+      finitePart hbaseSplit) as hfixedBasePart.
+    assert (ha0 : a0 <> ozero).
+    {
+      intro ha0. subst a0.
+      cbn [onoteSplit] in hfixedBasePart. discriminate.
+    }
+    assert (ha0Omega : onoteMul a0 omega <> ozero).
+    {
+      apply onoteMul_nonzero_split_fixed;
+        [exact ha0 | exact homega0 | exact hfixedOmega].
+    }
+    pose proof (onotePow_infinite_fixed base omega a0 ac ar
+      finitePart hbaseSplit hfixedOmega) as hpowOmega.
+    pose proof (onotePow_infinite_fixed base (onoteAdd left omega)
+      a0 ac ar finitePart hbaseSplit hsumFixed) as hpowSum.
+    destruct (onotePow_infinite_head_nf base left a0 ac ar finitePart
+      hbase hleft hbaseSplit) as [pc [pr hpowLeft]].
+    rewrite hpowSum, hpowLeft, hpowOmega.
+    destruct (onoteMul a0 omega) as [|me mc mr] eqn:hmulOmega;
+      [contradiction |].
+    cbn [onoteMul].
+    rewrite (onoteMul_add a0 left omega
+      (proj1 hbasePart) hleft homega).
+    rewrite hmulOmega.
+    reflexivity.
+Qed.
+
+(** Every normal right exponent is an omega-divisible part followed by a
+    finite tail.  The limit theorem handles the former, finite induction the
+    latter, and multiplication associativity joins the two results. *)
+Theorem onotePow_add_nf : forall base left right,
+  NF base -> NF left -> NF right ->
+  onotePow base (onoteAdd left right) =
+  onoteMul (onotePow base left) (onotePow base right).
+Proof.
+  intros base left right hbase hleft hright.
+  remember (onoteSplit right) as rightSplit eqn:hrightSplit.
+  destruct rightSplit as [q n]. symmetry in hrightSplit.
+  pose proof (onoteSplit_nf right q n hright hrightSplit) as hq.
+  pose proof (onoteSplit_output_fixed right q n hrightSplit) as hqFixed.
+  pose proof (onoteSplit_reconstruct right q n hright hrightSplit)
+    as hrightReconstruct.
+  destruct q as [|qe qc qr].
+  - rewrite onoteAdd_zero_l in hrightReconstruct. subst right.
+    now apply onotePow_add_nat_nf.
+  - rewrite hrightReconstruct, <- onoteAdd_assoc.
+    assert (hsum : NF (onoteAdd left (oadd qe qc qr))).
+    { now apply onoteAdd_nf. }
+    rewrite (onotePow_add_nat_nf base
+      (onoteAdd left (oadd qe qc qr)) n hbase hsum).
+    rewrite (onotePow_add_omegaPart_nf base left (oadd qe qc qr)
+      hbase hleft hq ltac:(discriminate) hqFixed).
+    rewrite (onotePow_add_nat_nf base (oadd qe qc qr) n
+      hbase hq).
+    apply onoteMul_assoc.
+    + now apply onotePow_nf.
+    + now apply onotePow_nf.
+    + apply onotePow_nf; [exact hbase | apply onoteNat_nf].
+Qed.
+
+Theorem powCode_addCode : forall a b c,
+  ValidOrdinalCode a -> ValidOrdinalCode b -> ValidOrdinalCode c ->
+  powCode a (addCode b c) =
+  mulCode (powCode a b) (powCode a c).
+Proof.
+  intros a b c ha hb hc. apply decode_injective.
+  rewrite decode_powCode, decode_addCode, decode_mulCode,
+    !decode_powCode.
+  apply onotePow_add_nf; assumption.
+Qed.
+
 End PAEpsilonZeroPowerLaws.
