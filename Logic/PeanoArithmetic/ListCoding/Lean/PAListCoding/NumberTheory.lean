@@ -447,6 +447,200 @@ theorem divisorList_existsUnique (m : ℕ) (hm : m ≠ 0) :
   rw [← h]
   exact divisorList_canonical 1 (by omega)
 
+/-! ### Canonical prime factorizations -/
+
+/-- Encode an external list of `(prime, exponent)` pairs using nested PA lists. -/
+noncomputable def encodeFactorPairs (fs : List (ℕ × ℕ)) : ℕ :=
+  encode (fs.map fun pe ↦ encode [pe.1, pe.2])
+
+@[simp] theorem encodeFactorPairs_valid (fs : List (ℕ × ℕ)) :
+    Seq (encodeFactorPairs fs) := encode_valid _
+
+@[simp] theorem encodeFactorPairs_length (fs : List (ℕ × ℕ)) :
+    lh (encodeFactorPairs fs) = fs.length := by
+  simp [encodeFactorPairs]
+
+private theorem encodeFactorPairs_nth (fs : List (ℕ × ℕ))
+    (i : Fin fs.length) :
+    znth (encodeFactorPairs fs) i = encode [(fs.get i).1, (fs.get i).2] := by
+  rw [encodeFactorPairs]
+  have hi : (i : ℕ) < (fs.map fun pe ↦ encode [pe.1, pe.2]).length := by
+    simpa using i.isLt
+  rw [encode_nth _ ⟨i, hi⟩]
+  simp
+
+@[simp] theorem pairCode_encode_pair_iff (a b p e : ℕ) :
+    PairCode (encode [a, b]) p e ↔ p = a ∧ e = b := by
+  constructor
+  · rintro ⟨-, -, hp, he⟩
+    have ha := encode_nth [a, b] ⟨0, by simp⟩
+    have hb := encode_nth [a, b] ⟨1, by simp⟩
+    exact ⟨hp.symm.trans ha, he.symm.trans hb⟩
+  · rintro ⟨hp, he⟩
+    subst p
+    subst e
+    exact pairCode_encode_pair _ _
+
+/-- Transparent ordinary-list semantics for a canonical factor-pair list. -/
+def CanonicalFactorization (fs : List (ℕ × ℕ)) (m : ℕ) : Prop :=
+  m ≠ 0 ∧
+    (∀ pe ∈ fs, Nat.Prime pe.1 ∧ 0 < pe.2) ∧
+    (fs.map Prod.fst).SortedLT ∧
+    (fs.map fun pe ↦ pe.1 ^ pe.2).prod = m
+
+private theorem factor_values_nth (fs : List (ℕ × ℕ))
+    (i : Fin fs.length) :
+    znth (encode (fs.map fun pe ↦ pe.1 ^ pe.2)) i =
+      (fs.get i).1 ^ (fs.get i).2 := by
+  have hi : (i : ℕ) < (fs.map fun pe ↦ pe.1 ^ pe.2).length := by
+    simpa using i.isLt
+  rw [encode_nth _ ⟨i, hi⟩]
+  simp
+
+/--
+The nested PA relation is exactly prime/positive/strict factor data whose
+prime powers multiply to `m`.  Product equality plus primality is the usual
+FTA completeness condition, not merely soundness of a subset of factors.
+-/
+@[simp] theorem primeFactorization_encode_iff (fs : List (ℕ × ℕ)) (m : ℕ) :
+    PrimeFactorization (encodeFactorPairs fs) m ↔ CanonicalFactorization fs m := by
+  let values := fs.map fun pe ↦ pe.1 ^ pe.2
+  constructor
+  · rintro ⟨hm, -, hall, horder, trace, htrace, htlen, htzero,
+      htstep, htlast⟩
+    have hgood : ∀ pe ∈ fs, Nat.Prime pe.1 ∧ 0 < pe.2 := by
+      intro pe hpe
+      rcases List.mem_iff_get.mp hpe with ⟨i, rfl⟩
+      rcases hall (i : ℕ) (by simpa using i.isLt) with
+        ⟨p, e, hpair, hp, he⟩
+      rw [encodeFactorPairs_nth fs i, pairCode_encode_pair_iff] at hpair
+      rcases hpair with ⟨rfl, rfl⟩
+      exact ⟨(isPrime_iff_natPrime _).1 hp, he⟩
+    have hsorted : (fs.map Prod.fst).SortedLT := by
+      rw [List.sortedLT_iff_pairwise, List.pairwise_iff_get]
+      intro i j hij
+      let ii : Fin fs.length := ⟨i, by simpa using i.isLt⟩
+      let jj : Fin fs.length := ⟨j, by simpa using j.isLt⟩
+      have hij' := horder (ii : ℕ) (by simpa using ii.isLt)
+        (jj : ℕ) (by simpa using jj.isLt) (by simpa [ii, jj] using hij)
+      rw [encodeFactorPairs_nth fs ii, encodeFactorPairs_nth fs jj,
+        encode_nth [(fs.get ii).1, (fs.get ii).2] ⟨0, by simp⟩,
+        encode_nth [(fs.get jj).1, (fs.get jj).2] ⟨0, by simp⟩] at hij'
+      simpa using hij'
+    have hproductRel : ProductElements m (encode values) := by
+      refine ⟨encode_valid values, trace, htrace, ?_, htzero, ?_, ?_⟩
+      · simpa [values] using htlen
+      · intro i hi
+        have hi' : i < fs.length := by simpa [values] using hi
+        rcases htstep i (by simpa using hi') with ⟨p, e, pe, hpair, hpow, hacc⟩
+        let ii : Fin fs.length := ⟨i, hi'⟩
+        rw [encodeFactorPairs_nth fs ii, pairCode_encode_pair_iff] at hpair
+        rcases hpair with ⟨rfl, rfl⟩
+        have hpe : pe = (fs.get ii).1 ^ (fs.get ii).2 :=
+          (pow_iff pe (fs.get ii).1 (fs.get ii).2).1 hpow
+        calc
+          znth trace (i + 1) = znth trace i * pe := hacc
+          _ = znth trace i * znth (encode values) i := by
+            rw [hpe]
+            congr 1
+            simpa [values] using (factor_values_nth fs ii).symm
+      · simpa [values] using htlast
+    have hprod : values.prod = m :=
+      (productElements_encode_iff_prod m values).1 hproductRel
+    exact ⟨hm, hgood, hsorted, by simpa [values] using hprod⟩
+  · rintro ⟨hm, hgood, hsorted, hprod⟩
+    have hproductRel : ProductElements m (encode values) :=
+      (productElements_encode_iff_prod m values).2 (by simpa [values] using hprod)
+    rcases hproductRel with ⟨-, trace, htrace, htlen, htzero, htstep, htlast⟩
+    refine ⟨hm, encodeFactorPairs_valid fs, ?_, ?_, trace, htrace, ?_, htzero, ?_, ?_⟩
+    · intro i hi
+      have hi' : i < fs.length := by simpa using hi
+      let ii : Fin fs.length := ⟨i, hi'⟩
+      have hg := hgood (fs.get ii) (List.get_mem fs ii)
+      refine ⟨(fs.get ii).1, (fs.get ii).2, ?_,
+        (isPrime_iff_natPrime _).2 hg.1, hg.2⟩
+      rw [encodeFactorPairs_nth fs ii]
+      exact pairCode_encode_pair _ _
+    · intro i hi j hj hij
+      have hi' : i < fs.length := by simpa using hi
+      have hj' : j < fs.length := by simpa using hj
+      let ii : Fin fs.length := ⟨i, hi'⟩
+      let jj : Fin fs.length := ⟨j, hj'⟩
+      have hs : (fs.get ii).1 < (fs.get jj).1 := by
+        rw [List.sortedLT_iff_pairwise, List.pairwise_iff_get] at hsorted
+        let iii : Fin (fs.map Prod.fst).length := ⟨i, by simpa using hi'⟩
+        let jjj : Fin (fs.map Prod.fst).length := ⟨j, by simpa using hj'⟩
+        have hs' := hsorted iii jjj (by simpa [iii, jjj] using hij)
+        simpa [iii, jjj, ii, jj] using hs'
+      rw [encodeFactorPairs_nth fs ii, encodeFactorPairs_nth fs jj,
+        encode_nth [(fs.get ii).1, (fs.get ii).2] ⟨0, by simp⟩,
+        encode_nth [(fs.get jj).1, (fs.get jj).2] ⟨0, by simp⟩]
+      exact hs
+    · simpa [values] using htlen
+    · intro i hi
+      have hi' : i < fs.length := by simpa using hi
+      let ii : Fin fs.length := ⟨i, hi'⟩
+      refine ⟨(fs.get ii).1, (fs.get ii).2,
+        (fs.get ii).1 ^ (fs.get ii).2, ?_, ?_, ?_⟩
+      · rw [encodeFactorPairs_nth fs ii]
+        exact pairCode_encode_pair _ _
+      · exact (pow_iff _ _ _).2 rfl
+      · have hs := htstep i (by simpa [values] using hi')
+        calc
+          znth trace (i + 1) =
+              znth trace i * znth (encode values) i := hs
+          _ = znth trace i * ((fs.get ii).1 ^ (fs.get ii).2) := by
+            congr 1
+            simpa [values] using factor_values_nth fs ii
+    · simpa [values] using htlast
+
+/-- Expand factor pairs back to the conventional multiset-style prime list. -/
+def expandFactorPairs (fs : List (ℕ × ℕ)) : List ℕ :=
+  fs.flatMap fun pe ↦ List.replicate pe.2 pe.1
+
+@[simp] theorem prod_expandFactorPairs (fs : List (ℕ × ℕ)) :
+    (expandFactorPairs fs).prod = (fs.map fun pe ↦ pe.1 ^ pe.2).prod := by
+  induction fs with
+  | nil => simp [expandFactorPairs]
+  | cons pe fs ih =>
+      simp only [expandFactorPairs, List.flatMap_cons, List.prod_append,
+        List.prod_replicate, List.map_cons, List.prod_cons]
+      change pe.1 ^ pe.2 * (expandFactorPairs fs).prod =
+        pe.1 ^ pe.2 * (fs.map fun pe ↦ pe.1 ^ pe.2).prod
+      rw [ih]
+
+/-- FTA certifies that the represented pairs contain the complete factorization. -/
+theorem canonicalFactorization_expanded_perm {fs : List (ℕ × ℕ)} {m : ℕ}
+    (h : CanonicalFactorization fs m) :
+    List.Perm (expandFactorPairs fs) m.primeFactorsList := by
+  apply Nat.primeFactorsList_unique
+  · rw [prod_expandFactorPairs]
+    exact h.2.2.2
+  · intro p hp
+    simp only [expandFactorPairs, List.mem_flatMap, List.mem_replicate] at hp
+    rcases hp with ⟨pe, hpe, -, rfl⟩
+    exact (h.2.1 pe hpe).1
+
+@[simp] theorem primeFactorization_zero_false (f : ℕ) :
+    ¬PrimeFactorization f 0 := by intro h; exact h.1 rfl
+
+@[simp] theorem primeFactorization_one_empty :
+    PrimeFactorization (encodeFactorPairs []) 1 := by
+  rw [primeFactorization_encode_iff, CanonicalFactorization]
+  refine ⟨by omega, by simp, ?_, by simp⟩
+  simp [List.sortedLT_iff_pairwise]
+
+@[simp] theorem primeFactorization_360_example :
+    PrimeFactorization (encodeFactorPairs [(2, 3), (3, 2), (5, 1)]) 360 := by
+  rw [primeFactorization_encode_iff, CanonicalFactorization]
+  refine ⟨by omega, ?_, by decide, by norm_num⟩
+  intro pe hpe
+  simp at hpe
+  rcases hpe with rfl | rfl | rfl
+  · exact ⟨Nat.prime_two, by omega⟩
+  · exact ⟨Nat.prime_three, by omega⟩
+  · exact ⟨Nat.prime_five, by omega⟩
+
 /-! ### Most-significant-digit-first base expansions -/
 
 /-- Evaluate an MSD-first digit list by Horner's rule. -/
