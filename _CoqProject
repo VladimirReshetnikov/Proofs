@@ -503,6 +503,7 @@ lib/Coq-Library-Undecidability-current/theories/L/Util/ClosedLAdmissible.v
 Logic/PeanoArithmetic/ListCoding/Coq/DiophantineFormula.v
 Logic/PeanoArithmetic/ListCoding/Coq/ComputableFormula.v
 Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZeroFormulas.v
+Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZeroAudit.v
 Computability/CombinatoryLogic/Coq/RecursiveEquivalence.v
 Computability/CombinatoryLogic/Coq/TuringEquivalence.v
 Computability/CombinatoryLogic/Coq/TuringEquivalenceAudit.v
