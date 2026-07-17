@@ -57,7 +57,10 @@ is the broad Lean import surface.
   duplicate-freedom, numeric and lexicographic sorting, sum, product, extrema,
   twice-median and unique-mode statistics, one-based nth primes, powers, prime
   factorizations, canonical base digits and divisor lists, and the canonical
-  lexicographic enumeration of every distinct permutation.
+  lexicographic enumeration of every distinct permutation.  The same project
+  also gives a shared natural coding of hereditary Cantor normal forms below
+  epsilon zero, PA formulae for validity, order, addition, multiplication, and
+  exponentiation, and checked natural laws for those operations.
 - An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)
   deciding every Presburger sentence in Lean, with an independent constructive
   Coq proof and decision procedure for the normalized one-variable step.

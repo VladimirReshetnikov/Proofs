@@ -9,7 +9,8 @@
 
 From PAListCoding Require Import
   ListCode ListFormulas NumberTheory NumberTheoryFormulas
-  NumberTheoryFactorization EpsilonZero EpsilonZeroLaws.
+  NumberTheoryFactorization EpsilonZero EpsilonZeroLaws
+  ComputableFormula EpsilonZeroFormulas.
 
 Check PAListCode.listCode.
 Check PAListCode.decode.
@@ -299,6 +300,40 @@ Check PAEpsilonZeroLaws.ordinalAdd_result_valid.
 Check PAEpsilonZeroLaws.ordinalMul_result_valid.
 Check PAEpsilonZeroLaws.ordinalPow_result_valid.
 
+(** The executable-to-formula bridge first proves formula existence in
+    [Prop], then uses classical epsilon solely to expose a formula value. *)
+Check computable_unary_graph_has_PA_formula.
+Check computable_binary_graph_has_PA_formula.
+Check chosenGraphFormula.
+Check chosenGraphFormula_correct.
+Check unaryGraphFormula.
+Check binaryGraphFormula.
+Check unaryGraphFormula_correct.
+Check binaryGraphFormula_correct.
+
+(** Actual output-first PA formulae for epsilon-zero codes. *)
+Check PAEpsilonZeroFormulas.ValidOrdinalCodeFormula.
+Check PAEpsilonZeroFormulas.OrdinalLTFormula.
+Check PAEpsilonZeroFormulas.OrdinalAddFormula.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula.
+
+Check PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalLTFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalAddFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula_spec.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula_spec.
+
+Check PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalLTFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalAddFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula_standard.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula_standard.
+
+Check PAEpsilonZeroFormulas.OrdinalAddFormula_result_valid.
+Check PAEpsilonZeroFormulas.OrdinalMulFormula_result_valid.
+Check PAEpsilonZeroFormulas.OrdinalPowFormula_result_valid.
+
 Print Assumptions PAEpsilonZero.squareUnpair_pair.
 Print Assumptions PAEpsilonZero.squarePair_unpair.
 Print Assumptions PAEpsilonZero.decode_encode.
@@ -322,3 +357,36 @@ Print Assumptions PAEpsilonZeroLaws.powCode_valid.
 Print Assumptions PAEpsilonZeroLaws.ordinalAdd_result_valid.
 Print Assumptions PAEpsilonZeroLaws.ordinalMul_result_valid.
 Print Assumptions PAEpsilonZeroLaws.ordinalPow_result_valid.
+
+(* Keep the constructive existence results and the classical selector visible
+   separately, so the audit records the exact choice boundary. *)
+Print Assumptions computable_unary_graph_has_PA_formula.
+Print Assumptions computable_binary_graph_has_PA_formula.
+Print Assumptions chosenGraphFormula.
+Print Assumptions chosenGraphFormula_correct.
+Print Assumptions unaryGraphFormula.
+Print Assumptions binaryGraphFormula.
+Print Assumptions unaryGraphFormula_correct.
+Print Assumptions binaryGraphFormula_correct.
+
+Print Assumptions PAEpsilonZeroFormulas.ValidOrdinalCodeFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalLTFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula.
+
+Print Assumptions PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalLTFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula_spec.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula_spec.
+
+Print Assumptions PAEpsilonZeroFormulas.ValidOrdinalCodeFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalLTFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula_standard.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula_standard.
+
+Print Assumptions PAEpsilonZeroFormulas.OrdinalAddFormula_result_valid.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalMulFormula_result_valid.
+Print Assumptions PAEpsilonZeroFormulas.OrdinalPowFormula_result_valid.
