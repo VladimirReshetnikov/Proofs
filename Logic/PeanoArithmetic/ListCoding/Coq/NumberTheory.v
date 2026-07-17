@@ -11,7 +11,7 @@
 
 From Stdlib Require Import
   List Arith Lia Bool PeanoNat
-  Sorting.Permutation Sorting.Sorted.
+  Sorting.Permutation Sorting.Sorted Sorting.Mergesort.
 From PAListCoding Require Import ListCode ListFormulas.
 
 Import ListNotations.
@@ -469,5 +469,179 @@ Qed.
 
 Lemma power_zero_zero : PowerNat 1 0 0.
 Proof. reflexivity. Qed.
+
+(** * Existence and uniqueness of the positive-divisor list *)
+
+Lemma locallySorted_nth_error_lt : forall xs,
+  LocallySorted lt xs <->
+  forall i a b,
+    nth_error xs i = Some a ->
+    nth_error xs (S i) = Some b -> a < b.
+Proof.
+  induction xs as [|x xs IH].
+  - split.
+    + intros _ i a b h. destruct i; discriminate.
+    + intros _. constructor.
+  - destruct xs as [|y ys].
+    + split.
+      * intros _ i a b h1 h2. destruct i; discriminate.
+      * intros _. constructor.
+    + split.
+      * intros h i a b h1 h2.
+        inversion h as [| |a0 b0 l htail hxy]; subst.
+        destruct i as [|i].
+        -- simpl in h1, h2. inversion h1; inversion h2; subst. exact hxy.
+        -- simpl in h1, h2. apply (proj1 IH htail i a b h1 h2).
+      * intro h. constructor.
+        -- apply (proj2 IH). intros i a b h1 h2.
+           apply (h (S i) a b); simpl; assumption.
+        -- exact (h 0 x y eq_refl eq_refl).
+Qed.
+
+Lemma StrictlyIncreasing_sorted_lt : forall xs,
+  StrictlyIncreasing xs <-> Sorted lt xs.
+Proof.
+  intro xs. unfold StrictlyIncreasing.
+  rewrite Sorted_LocallySorted_iff.
+  symmetry. apply locallySorted_nth_error_lt.
+Qed.
+
+Lemma sorted_lt_sorted_le : forall xs,
+  Sorted lt xs -> Sorted le xs.
+Proof.
+  intros xs h. induction h as [|x xs hs IH hhead].
+  - constructor.
+  - constructor; [exact IH |].
+    inversion hhead; subst; constructor; lia.
+Qed.
+
+Lemma sorted_lt_nodup : forall xs,
+  Sorted lt xs -> NoDup xs.
+Proof.
+  intros xs hsorted. induction hsorted as [|x xs hs IH hhead].
+  - constructor.
+  - constructor.
+    + intro hin.
+      pose proof (Sorted_extends Nat.lt_trans
+        (Sorted_cons hs hhead)) as hall.
+      apply Forall_forall with (x := x) in hall; [lia | exact hin].
+    + exact IH.
+Qed.
+
+Lemma sorted_le_nodup_strict : forall xs,
+  Sorted le xs -> NoDup xs -> StrictlyIncreasing xs.
+Proof.
+  intros xs hsorted hnodup. unfold StrictlyIncreasing.
+  intros i a b hia hib.
+  pose proof (proj1 (Sorted_LocallySorted_iff le xs) hsorted) as hlocal.
+  pose proof (proj1 (locallySorted_nth_error xs) hlocal i a b hia hib) as hab.
+  assert (a <> b).
+  {
+    intro heq. subst b.
+    assert (hi : i < length xs).
+    { apply nth_error_Some. rewrite hia. discriminate. }
+    pose proof (proj1 (NoDup_nth_error xs) hnodup i (S i) hi) as hindex.
+    assert (i = S i) by (apply hindex; now rewrite hia, hib).
+    lia.
+  }
+  lia.
+Qed.
+
+Definition divisorCandidates (n : nat) : list nat :=
+  filter (fun d => Nat.eqb (n mod d) 0) (seq 1 n).
+
+Definition canonicalDivisorList (n : nat) : list nat :=
+  NatSort.sort (divisorCandidates n).
+
+Lemma divisorCandidates_spec : forall n d,
+  In d (divisorCandidates n) <->
+  0 < d /\ d <= n /\ Divides d n.
+Proof.
+  intros n d. unfold divisorCandidates.
+  rewrite filter_In, in_seq. split.
+  - intros [[hlo hhi] hmod].
+    apply Nat.eqb_eq in hmod. repeat split; try lia.
+    unfold Divides. apply (proj1 (Nat.mod_divide n d ltac:(lia))). exact hmod.
+  - intros [hd [hdn hdiv]]. split.
+    + split; lia.
+    + apply Nat.eqb_eq.
+      apply (proj2 (Nat.mod_divide n d ltac:(lia))). exact hdiv.
+Qed.
+
+Lemma canonicalDivisorList_permutation : forall n,
+  Permutation (divisorCandidates n) (canonicalDivisorList n).
+Proof. intro n. unfold canonicalDivisorList. apply NatSort.Permuted_sort. Qed.
+
+Lemma canonicalDivisorList_strict : forall n,
+  StrictlyIncreasing (canonicalDivisorList n).
+Proof.
+  intro n. apply sorted_le_nodup_strict.
+  - unfold canonicalDivisorList. apply NatSort_sorted_le.
+  - apply (Permutation_NoDup (canonicalDivisorList_permutation n)).
+    apply NoDup_filter. apply seq_NoDup.
+Qed.
+
+Lemma canonicalDivisorList_spec : forall n,
+  0 < n -> CanonicalDivisors (canonicalDivisorList n) n.
+Proof.
+  intros n hn. unfold CanonicalDivisors.
+  split; [exact hn |]. split; [apply canonicalDivisorList_strict |].
+  intro d.
+  assert (hperm : In d (canonicalDivisorList n) <->
+      In d (divisorCandidates n)).
+  {
+    split; intro hin.
+    - eapply Permutation_in; [apply Permutation_sym;
+        apply canonicalDivisorList_permutation | exact hin].
+    - eapply Permutation_in; [apply canonicalDivisorList_permutation | exact hin].
+  }
+  rewrite hperm.
+  rewrite divisorCandidates_spec. split.
+  - intros [hd [_ hdiv]]. now split.
+  - intros [hd hdiv]. repeat split; try assumption.
+    apply Nat.divide_pos_le; assumption.
+Qed.
+
+Theorem divisorListCode_exists : forall n,
+  0 < n -> exists v, DivisorListCode v n.
+Proof.
+  intros n hn. exists (listCode (canonicalDivisorList n)).
+  apply divisorListCode_listCode. apply canonicalDivisorList_spec. exact hn.
+Qed.
+
+Lemma CanonicalDivisors_unique : forall xs ys n,
+  CanonicalDivisors xs n -> CanonicalDivisors ys n -> xs = ys.
+Proof.
+  intros xs ys n [_ [hxs hspecx]] [_ [hys hspecy]].
+  apply sorted_permutation_unique.
+  - apply sorted_lt_sorted_le. apply StrictlyIncreasing_sorted_lt. exact hxs.
+  - apply sorted_lt_sorted_le. apply StrictlyIncreasing_sorted_lt. exact hys.
+  - apply NoDup_Permutation.
+    + apply sorted_lt_nodup. apply StrictlyIncreasing_sorted_lt. exact hxs.
+    + apply sorted_lt_nodup. apply StrictlyIncreasing_sorted_lt. exact hys.
+    + intro d. rewrite hspecx, hspecy. reflexivity.
+Qed.
+
+Theorem divisorListCode_functional : forall v w n,
+  DivisorListCode v n -> DivisorListCode w n -> v = w.
+Proof.
+  intros v w n hv hw.
+  destruct (divisorListCode_valid v n hv) as [xs hdx].
+  destruct (divisorListCode_valid w n hw) as [ys hdy].
+  assert (hcv : listCode xs = v) by now apply listCode_decode.
+  assert (hcw : listCode ys = w) by now apply listCode_decode.
+  rewrite <- hcv in hv. rewrite <- hcw in hw.
+  apply divisorListCode_listCode in hv.
+  apply divisorListCode_listCode in hw.
+  subst v w. f_equal. exact (CanonicalDivisors_unique xs ys n hv hw).
+Qed.
+
+Theorem positiveDivisorsCode_exists : forall n,
+  0 < n -> exists v, PositiveDivisorsCode v n.
+Proof. exact divisorListCode_exists. Qed.
+
+Theorem positiveDivisorsCode_functional : forall v w n,
+  PositiveDivisorsCode v n -> PositiveDivisorsCode w n -> v = w.
+Proof. exact divisorListCode_functional. Qed.
 
 End PAListNumberTheory.

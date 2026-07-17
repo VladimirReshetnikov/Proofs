@@ -101,6 +101,10 @@ Check PAListNumberTheory.divisorListCode_listCode.
 Check PAListNumberTheory.positiveDivisorsCode_listCode.
 Check PAListNumberTheory.divisorList_zero_false.
 Check PAListNumberTheory.divisorList_one.
+Check PAListNumberTheory.divisorListCode_exists.
+Check PAListNumberTheory.divisorListCode_functional.
+Check PAListNumberTheory.positiveDivisorsCode_exists.
+Check PAListNumberTheory.positiveDivisorsCode_functional.
 
 Check PAListCode.SumElementsCode_functional.
 Check PAListCode.ProductElementsCode_functional.
@@ -173,6 +177,10 @@ Print Assumptions PAListNumberTheory.baseDigitsCode_listCode.
 Print Assumptions PAListNumberTheory.baseDigits_decimal_123.
 Print Assumptions PAListNumberTheory.divisorListCode_listCode.
 Print Assumptions PAListNumberTheory.divisorList_one.
+Print Assumptions PAListNumberTheory.divisorListCode_exists.
+Print Assumptions PAListNumberTheory.divisorListCode_functional.
+Print Assumptions PAListNumberTheory.positiveDivisorsCode_exists.
+Print Assumptions PAListNumberTheory.positiveDivisorsCode_functional.
 
 Print Assumptions PAListCode.SumElementsCode_functional.
 Print Assumptions PAListCode.ProductElementsCode_functional.
