@@ -364,7 +364,7 @@ private theorem nf_decide_primrec :
   cases o with
   | zero =>
       have : ONote.NF (0 : ONote) := inferInstance
-      simp [nfStep, children, this]
+      simp [nfStep, this]
   | oadd e n a =>
       simp [nfStep, children, nf_oadd_iff, Bool.and_assoc]
 
@@ -458,7 +458,7 @@ private def addStep (p : ONote × ONote) (rs : List ONote) : Option ONote :=
 private theorem addStep_primrec : Primrec₂ addStep := by
   let source : Primrec (fun x : (ONote × ONote) × List ONote => x.1.1) :=
     Primrec.fst.comp Primrec.fst
-  let right : Primrec (fun x : (ONote × ONote) × List ONote => x.1.2) :=
+  let rightInput : Primrec (fun x : (ONote × ONote) × List ONote => x.1.2) :=
     Primrec.snd.comp Primrec.fst
   let answer : Primrec (fun x : (ONote × ONote) × List ONote => x.2.getD 0 0) :=
     (Primrec.list_getD 0).comp Primrec.snd (Primrec.const 0)
@@ -493,7 +493,7 @@ private theorem addStep_primrec : Primrec₂ addStep := by
     mkNode_primrec.comp sourceExp (Primrec.pair sourceCoeff answer)
   exact Primrec.ite
     (Primrec.eq.comp source (Primrec.const (0 : ONote)))
-    (Primrec.option_some.comp right)
+    (Primrec.option_some.comp rightInput)
     (Primrec.ite
       (Primrec.eq.comp answer (Primrec.const (0 : ONote)))
       (Primrec.option_some.comp originalNode)
@@ -523,15 +523,14 @@ private theorem onoteAdd_primrec :
     (fun _ _ h => add_child_measure h)
   rintro ⟨o, b⟩
   cases o with
-  | zero => simp [addStep, addChildren]
+  | zero => simp [addStep]
   | oadd e n a =>
-      simp only [addChildren, if_false, List.map_cons, List.map_nil,
-        addStep, ONote.oadd_add]
+      simp only [addChildren, addStep, ONote.oadd_add]
       cases hsum : a + b with
       | zero => simp [hsum, mkNode, ONote.addAux]
       | oadd e' n' a' =>
           cases hcmp : ONote.cmp e e' <;>
-            simp [hsum, hcmp, ONote.addAux, mkNode, natPred_add]
+            simp [hsum, hcmp, ONote.addAux, mkNode]
 
 private theorem onoteAdd₂_primrec : Primrec₂ (fun a b : ONote => a + b) := by
   exact onoteAdd_primrec
@@ -585,22 +584,22 @@ private def mulStep (p : ONote × ONote) (rs : List ONote) : Option ONote :=
       (coefficientPred p.2, rs.getD 0 0))
 
 private theorem mulStep_primrec : Primrec₂ mulStep := by
-  let left : Primrec (fun x : (ONote × ONote) × List ONote => x.1.1) :=
+  let leftInput : Primrec (fun x : (ONote × ONote) × List ONote => x.1.1) :=
     Primrec.fst.comp Primrec.fst
-  let right : Primrec (fun x : (ONote × ONote) × List ONote => x.1.2) :=
+  let rightInput : Primrec (fun x : (ONote × ONote) × List ONote => x.1.2) :=
     Primrec.snd.comp Primrec.fst
   let answer : Primrec (fun x : (ONote × ONote) × List ONote => x.2.getD 0 0) :=
     (Primrec.list_getD 0).comp Primrec.snd (Primrec.const 0)
   let leftExp : Primrec (fun x : (ONote × ONote) × List ONote =>
-      exponentPart x.1.1) := exponentPart_primrec.comp left
+      exponentPart x.1.1) := exponentPart_primrec.comp leftInput
   let rightExp : Primrec (fun x : (ONote × ONote) × List ONote =>
-      exponentPart x.1.2) := exponentPart_primrec.comp right
+      exponentPart x.1.2) := exponentPart_primrec.comp rightInput
   let leftCoeff : Primrec (fun x : (ONote × ONote) × List ONote =>
-      coefficientPred x.1.1) := coefficientPred_primrec.comp left
+      coefficientPred x.1.1) := coefficientPred_primrec.comp leftInput
   let rightCoeff : Primrec (fun x : (ONote × ONote) × List ONote =>
-      coefficientPred x.1.2) := coefficientPred_primrec.comp right
+      coefficientPred x.1.2) := coefficientPred_primrec.comp rightInput
   let leftTail : Primrec (fun x : (ONote × ONote) × List ONote =>
-      tailPart x.1.1) := tailPart_primrec.comp left
+      tailPart x.1.1) := tailPart_primrec.comp leftInput
   let coeffProduct : Primrec (fun x : (ONote × ONote) × List ONote =>
       coefficientPred x.1.1 * coefficientPred x.1.2 +
         coefficientPred x.1.1 + coefficientPred x.1.2) :=
@@ -622,10 +621,10 @@ private theorem mulStep_primrec : Primrec₂ mulStep := by
         (coefficientPred x.1.2, x.2.getD 0 0)) :=
     mkNode_primrec.comp exponentSum (Primrec.pair rightCoeff answer)
   exact Primrec.ite
-    (Primrec.eq.comp left (Primrec.const (0 : ONote)))
+    (Primrec.eq.comp leftInput (Primrec.const (0 : ONote)))
     (Primrec.const (some (0 : ONote)))
     (Primrec.ite
-      (Primrec.eq.comp right (Primrec.const (0 : ONote)))
+      (Primrec.eq.comp rightInput (Primrec.const (0 : ONote)))
       (Primrec.const (some (0 : ONote)))
       (Primrec.ite
         (Primrec.eq.comp rightExp (Primrec.const (0 : ONote)))
@@ -653,13 +652,13 @@ private theorem onoteMul_primrec :
     (fun _ _ h => mul_child_measure h)
   rintro ⟨a, b⟩
   cases a with
-  | zero => simp [mulStep, mulChildren]
+  | zero => simp [mulStep]
   | oadd e₁ n₁ a₁ =>
       cases b with
-      | zero => simp [mulStep, mulChildren]
+      | zero => simp [mulStep]
       | oadd e₂ n₂ a₂ =>
           by_cases he : e₂ = 0
-          · simp [mulChildren, mulStep, ONote.oadd_mul, he, mkNode]
+          · simp [mulStep, ONote.oadd_mul, he, mkNode]
           · simp [mulChildren, mulStep, ONote.oadd_mul, he, mkNode]
 
 private theorem onoteMul₂_primrec : Primrec₂ (fun a b : ONote => a * b) := by
@@ -713,11 +712,11 @@ private theorem split_primrec : Primrec ONote.split := by
   apply onote_rec_primrec ONote.split splitStep splitStep_primrec
   intro o
   cases o with
-  | zero => simp [splitStep, children, ONote.split]
+  | zero => simp [splitStep, ONote.split]
   | oadd e n a =>
       by_cases he : e = 0
       · subst e
-        simp [splitStep, children, ONote.split, PNat.natPred_add_one]
+        simp [splitStep, ONote.split, PNat.natPred_add_one]
       · rcases hsplit : ONote.split a with ⟨a', m⟩
         simp [splitStep, children, ONote.split, he, hsplit, mkNode]
 
@@ -866,7 +865,7 @@ private theorem subOne_eq (o : ONote) : subOne o = o - 1 := by
           cases hn : n.natPred with
           | zero =>
               cases a <;>
-                simp [subOne, ONote.sub, ONote.cmp, mkNode,
+                simp [subOne, ONote.sub, ONote.cmp,
                   Nat.succPNat, PNat.natPred]
           | succ k =>
               simp [subOne, ONote.sub, ONote.cmp, mkNode,
@@ -915,11 +914,11 @@ private theorem split'_primrec : Primrec ONote.split' := by
   apply onote_rec_primrec ONote.split' splitPrimeStep splitPrimeStep_primrec
   intro o
   cases o with
-  | zero => simp [splitPrimeStep, children, ONote.split']
+  | zero => simp [splitPrimeStep, ONote.split']
   | oadd e n a =>
       by_cases he : e = 0
       · subst e
-        simp [splitPrimeStep, children, ONote.split', PNat.natPred_add_one]
+        simp [splitPrimeStep, ONote.split', PNat.natPred_add_one]
       · rcases hsplit : ONote.split' a with ⟨a', m⟩
         simp [splitPrimeStep, children, ONote.split', he, hsplit, mkNode, subOne_eq]
 
@@ -1041,13 +1040,14 @@ private theorem opowAux_packed_primrec :
   cases k with
   | zero =>
       cases m with
-      | zero => simp [opowAuxChildren, opowAuxStep, opowBase, ONote.opowAux]
+      | zero => simp [opowAuxStep, opowBase, ONote.opowAux]
       | succ m =>
-          simp [opowAuxChildren, opowAuxStep, opowBase, ONote.opowAux, mkNode]
+          simp [opowAuxStep, opowBase, ONote.opowAux, mkNode]
   | succ k =>
       cases m with
-      | zero => simp [opowAuxChildren, opowAuxStep, opowSucc, ONote.opowAux]
-      | succ m => simp [opowAuxChildren, opowAuxStep, opowSucc, ONote.opowAux]
+      | zero => simp [opowAuxStep, opowSucc, ONote.opowAux]
+      | succ m =>
+          simp [opowAuxChildren, opowAuxStep, opowSucc, ONote.opowAux]
 
 @[simp] private theorem succPNat_pow_natPred (m k : ℕ) :
     (m.succPNat ^ k).natPred = (m + 1) ^ k - 1 := by
@@ -1188,7 +1188,7 @@ private theorem opowAux2_primrec₂ : Primrec₂ ONote.opowAux2 := by
               have h0 : m + 1 + 1 ≠ 0 := by omega
               have h1 : m + 1 + 1 ≠ 1 := by omega
               unfold opowAux2Calc ONote.opowAux2
-              simp only [if_pos, if_false, h0, h1, hsplit]
+              simp only [if_false, h0, h1, hsplit]
               change mkNode b ((m + 2) ^ k - 1, 0) =
                 .oadd b ((m + 1).succPNat ^ k) 0
               have hm : m + 2 = (m + 1) + 1 := by omega

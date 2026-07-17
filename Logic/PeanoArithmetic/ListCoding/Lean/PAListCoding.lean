@@ -6,6 +6,7 @@ import PAListCoding.NumberTheory
 import PAListCoding.EpsilonZero
 import PAListCoding.EpsilonZeroCompleteness
 import PAListCoding.EpsilonZeroLaws
+import PAListCoding.EpsilonZeroFormulas
 
 /-!
 # Coding finite lists in Peano arithmetic

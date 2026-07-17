@@ -238,6 +238,19 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #check PAListCoding.EpsilonZero.powCode_addCode
 #check PAListCoding.EpsilonZero.powCode_mulCode
 
+-- Genuine PA formula witnesses.  Arithmetic graphs use the documented
+-- result-first order `(z, a, b)`; comparison uses `(a, b)`.
+#check PAListCoding.EpsilonZero.validOrdinalCodeFormula
+#check PAListCoding.EpsilonZero.ordinalLTFormula
+#check PAListCoding.EpsilonZero.ordinalAddFormula
+#check PAListCoding.EpsilonZero.ordinalMulFormula
+#check PAListCoding.EpsilonZero.ordinalPowFormula
+#check PAListCoding.EpsilonZero.validOrdinalCodeFormula_spec
+#check PAListCoding.EpsilonZero.ordinalLTFormula_spec
+#check PAListCoding.EpsilonZero.ordinalAddFormula_spec
+#check PAListCoding.EpsilonZero.ordinalMulFormula_spec
+#check PAListCoding.EpsilonZero.ordinalPowFormula_spec
+
 #print axioms PAListCoding.EpsilonZero.codeEquiv
 #print axioms PAListCoding.EpsilonZero.validCodeEquiv
 #print axioms PAListCoding.EpsilonZero.valid_denote_lt_epsilonZero
@@ -253,3 +266,8 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #print axioms PAListCoding.EpsilonZero.mulCode_addCode
 #print axioms PAListCoding.EpsilonZero.powCode_addCode
 #print axioms PAListCoding.EpsilonZero.powCode_mulCode
+#print axioms PAListCoding.EpsilonZero.validOrdinalCodeFormula_spec
+#print axioms PAListCoding.EpsilonZero.ordinalLTFormula_spec
+#print axioms PAListCoding.EpsilonZero.ordinalAddFormula_spec
+#print axioms PAListCoding.EpsilonZero.ordinalMulFormula_spec
+#print axioms PAListCoding.EpsilonZero.ordinalPowFormula_spec
