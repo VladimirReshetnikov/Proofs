@@ -363,6 +363,16 @@ theorem nthPrime_existsUnique (n : ℕ) (hn : 0 < n) :
   intro p hp
   exact nthPrime_functional_prime hp hcanonical
 
+/-- Every ordinary prime occurs at exactly one one-based index. -/
+theorem nthPrime_index_existsUnique (p : ℕ) (hp : Nat.Prime p) :
+    ∃! n, NthPrime p n := by
+  let n := Nat.count Nat.Prime p + 1
+  have hcanonical : NthPrime p n :=
+    (nthPrime_iff_count p n).2 ⟨hp, rfl⟩
+  refine ⟨n, hcanonical, ?_⟩
+  intro k hk
+  exact nthPrime_functional_index hk hcanonical
+
 @[simp] theorem nthPrime_zero_false (p : ℕ) : ¬NthPrime p 0 := by
   rw [nthPrime_iff_nth]
   omega

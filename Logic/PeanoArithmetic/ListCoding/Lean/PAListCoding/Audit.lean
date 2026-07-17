@@ -165,6 +165,7 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #check PAListCoding.nthPrime_functional_index
 #check PAListCoding.nthPrime_functional_prime
 #check PAListCoding.nthPrime_existsUnique
+#check PAListCoding.nthPrime_index_existsUnique
 #check PAListCoding.divisorList_functional
 #check PAListCoding.divisorList_existsUnique
 #check PAListCoding.primeFactorization_functional
@@ -196,6 +197,7 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #print axioms PAListCoding.baseDigitsFormula_spec
 #print axioms PAListCoding.positiveDivisorsFormula_spec
 #print axioms PAListCoding.nthPrime_iff_nth
+#print axioms PAListCoding.nthPrime_index_existsUnique
 #print axioms PAListCoding.divisorList_encode_iff
 #print axioms PAListCoding.divisorList_existsUnique
 #print axioms PAListCoding.primeFactorization_encode_iff
