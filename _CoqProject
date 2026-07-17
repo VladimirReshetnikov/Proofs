@@ -327,6 +327,8 @@ Logic/PeanoArithmetic/ListCoding/Coq/NumberTheoryFormulas.v
 Logic/PeanoArithmetic/ListCoding/Coq/NumberTheoryFactorization.v
 Logic/PeanoArithmetic/ListCoding/Coq/ExponentiationDiophantine.v
 Logic/PeanoArithmetic/ListCoding/Coq/ExponentiationDiophantineAudit.v
+Logic/PeanoArithmetic/ListCoding/Coq/TetrationDiophantine.v
+Logic/PeanoArithmetic/ListCoding/Coq/TetrationDiophantineAudit.v
 Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZero.v
 Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZeroLaws.v
 Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZeroPowerLaws.v

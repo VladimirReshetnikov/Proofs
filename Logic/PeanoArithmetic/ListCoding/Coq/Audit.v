@@ -10,6 +10,7 @@
 From PAListCoding Require Import
   ListCode ListFormulas NumberTheory NumberTheoryFormulas
   NumberTheoryFactorization ExponentiationDiophantine
+  TetrationDiophantine
   EpsilonZero EpsilonZeroLaws EpsilonZeroPowerLaws
   ComputableFormula EpsilonZeroFormulas.
 
@@ -88,6 +89,19 @@ Check PAListExponentiationDiophantine.powerNatDiophantineFormula.
 Check PAListExponentiationDiophantine.powerNatDiophantineFormula_spec.
 Check PAListExponentiationDiophantine.powerNatDiophantineEquation.
 Check PAListExponentiationDiophantine.PowerNat_Diophantine.
+Check PAListTetrationDiophantine.tetration.
+Check PAListTetrationDiophantine.stateCode.
+Check PAListTetrationDiophantine.stateCode_injective.
+Check PAListTetrationDiophantine.TetrationStep.
+Check PAListTetrationDiophantine.TetrationStep_dio_rel.
+Check PAListTetrationDiophantine.rel_iter_TetrationStep.
+Check PAListTetrationDiophantine.tetration_rel_iter.
+Check PAListTetrationDiophantine.Tetration_dio_rel.
+Check PAListTetrationDiophantine.tetrationDiophantineFormula.
+Check PAListTetrationDiophantine.tetrationDiophantineFormula_spec.
+Check PAListTetrationDiophantine.tetrationDiophantineEquation.
+Check PAListTetrationDiophantine.TetrationVector.
+Check PAListTetrationDiophantine.Tetration_Diophantine.
 Check PAListNumberTheory.PrimeFactorizationCode.
 Check PAListNumberTheory.BaseDigitsCode.
 Check PAListNumberTheory.DivisorListCode.
@@ -213,6 +227,13 @@ Print Assumptions PAListExponentiationDiophantine.nat_pow_dio_fun.
 Print Assumptions PAListExponentiationDiophantine.PowerNat_dio_rel.
 Print Assumptions PAListExponentiationDiophantine.powerNatDiophantineFormula_spec.
 Print Assumptions PAListExponentiationDiophantine.PowerNat_Diophantine.
+Print Assumptions PAListTetrationDiophantine.stateCode_injective.
+Print Assumptions PAListTetrationDiophantine.TetrationStep_dio_rel.
+Print Assumptions PAListTetrationDiophantine.rel_iter_TetrationStep.
+Print Assumptions PAListTetrationDiophantine.tetration_rel_iter.
+Print Assumptions PAListTetrationDiophantine.Tetration_dio_rel.
+Print Assumptions PAListTetrationDiophantine.tetrationDiophantineFormula_spec.
+Print Assumptions PAListTetrationDiophantine.Tetration_Diophantine.
 Print Assumptions PAListNumberTheory.primeFactorizationCode_listCode.
 Print Assumptions PAListNumberTheory.primeFactorization_one_empty.
 Print Assumptions PAListNumberTheoryFactorization.primeFactorizationCode_typed.
