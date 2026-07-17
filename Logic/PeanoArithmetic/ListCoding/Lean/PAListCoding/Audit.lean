@@ -214,6 +214,8 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #check PAListCoding.EpsilonZero.validCodeEquiv
 #check PAListCoding.EpsilonZero.denote_injective_on_valid
 #check PAListCoding.EpsilonZero.valid_denote_lt_epsilonZero
+#check PAListCoding.EpsilonZero.exists_nonote_repr_of_lt_epsilonZero
+#check PAListCoding.EpsilonZero.exists_valid_code_denote_iff
 
 -- The public result-first graphs are total and functional on valid inputs and
 -- agree with set-theoretic ordinal arithmetic.
@@ -239,6 +241,8 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #print axioms PAListCoding.EpsilonZero.codeEquiv
 #print axioms PAListCoding.EpsilonZero.validCodeEquiv
 #print axioms PAListCoding.EpsilonZero.valid_denote_lt_epsilonZero
+#print axioms PAListCoding.EpsilonZero.exists_nonote_repr_of_lt_epsilonZero
+#print axioms PAListCoding.EpsilonZero.exists_valid_code_denote_iff
 #print axioms PAListCoding.EpsilonZero.ordinalLT_iff
 #print axioms PAListCoding.EpsilonZero.ordinalAdd_iff
 #print axioms PAListCoding.EpsilonZero.ordinalMul_iff

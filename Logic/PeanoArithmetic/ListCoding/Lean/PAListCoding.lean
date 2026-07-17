@@ -4,6 +4,7 @@ import PAListCoding.Standard
 import PAListCoding.Aggregates
 import PAListCoding.NumberTheory
 import PAListCoding.EpsilonZero
+import PAListCoding.EpsilonZeroCompleteness
 import PAListCoding.EpsilonZeroLaws
 
 /-!
