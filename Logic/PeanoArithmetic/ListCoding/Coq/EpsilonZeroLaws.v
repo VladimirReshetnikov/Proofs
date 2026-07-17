@@ -1039,4 +1039,122 @@ Proof.
   apply onoteMul_assoc; assumption.
 Qed.
 
+(** * Exponentiation identities *)
+
+(** Canonical finite CNFs, using the same predecessor coefficient convention
+    as every other notation node. *)
+Definition onoteNat (n : nat) : ONote :=
+  match n with
+  | 0 => ozero
+  | S k => oadd ozero k ozero
+  end.
+
+Lemma onoteNat_nf : forall n, NF (onoteNat n).
+Proof. intros [|n]; simpl; tauto. Qed.
+
+Lemma onotePowAux_k_zero : forall e a0 a m,
+  onotePowAux e a0 a 0 m =
+  match m with
+  | 0 => ozero
+  | S k => oadd e k ozero
+  end.
+Proof. intros e a0 a [|m]; reflexivity. Qed.
+
+Lemma onoteMulNat_zero_r : forall o, onoteMulNat o 0 = ozero.
+Proof. intros [|e c r]; reflexivity. Qed.
+
+Lemma onoteScale_zero : forall o, onoteScale ozero o = o.
+Proof.
+  induction o as [|e IHe c r IHr]; [reflexivity |].
+  cbn [onoteScale onoteAdd]. now rewrite IHr.
+Qed.
+
+(** [onoteSplit] is not merely shape preserving: on a normal notation its
+    two outputs reconstruct the original ordinal as the omega-divisible part
+    followed by its canonical finite remainder. *)
+Lemma onoteSplit_reconstruct : forall o q n,
+  NF o -> onoteSplit o = (q, n) ->
+  o = onoteAdd q (onoteNat n).
+Proof.
+  induction o as [|e IHe c r IHr]; intros q n ho hsplit.
+  - cbn [onoteSplit] in hsplit. inversion hsplit. reflexivity.
+  - pose proof ho as hoFull.
+    destruct ho as [he [hr htop]].
+    destruct e as [|ee ec er].
+    + assert (hr0 : r = ozero).
+      { now apply NF_zero_exponent_tail with (c := c). }
+      subst r. cbn [onoteSplit] in hsplit.
+      inversion hsplit; subst q n. reflexivity.
+    + cbn [onoteSplit] in hsplit.
+      destruct (onoteSplit r) as [r' k] eqn:hrsplit.
+      inversion hsplit; subst q n.
+      cbn [onoteAdd].
+      rewrite <- (IHr r' k hr eq_refl).
+      symmetry. apply onoteAddAux_reconstruct_nf. exact hoFull.
+Qed.
+
+Theorem onotePow_zero : forall base,
+  onotePow base ozero = onoteOne.
+Proof.
+  intros [|e c r]; [reflexivity |].
+  destruct e as [|ee ec er].
+  - destruct c as [|c]; cbn [onotePow onoteSplit onotePowAux2 onoteSplit'];
+      reflexivity.
+  - unfold onotePow.
+    cbn [onoteSplit].
+    destruct (onoteSplit r) as [q n].
+    cbn [onotePowAux2 onoteSplit onoteMul onoteOne].
+    reflexivity.
+Qed.
+
+Theorem onotePow_one_nf : forall base,
+  NF base -> onotePow base onoteOne = base.
+Proof.
+  intros base hbase.
+  unfold onotePow.
+  destruct (onoteSplit base) as [q n] eqn:hsplit.
+  pose proof (onoteSplit_reconstruct base q n hbase hsplit) as hreconstruct.
+  destruct q as [|a0 ac ar].
+  - destruct n as [|n].
+    + cbn [onotePowAux2 onoteOne].
+      symmetry. exact hreconstruct.
+    + destruct n as [|n].
+      * cbn [onotePowAux2 onoteOne onoteNat] in hreconstruct |-.
+        symmetry. exact hreconstruct.
+      * cbn [onotePowAux2 onoteOne onoteSplit' onoteNat].
+        rewrite Nat.pow_1_r, Nat.pred_succ.
+        symmetry. exact hreconstruct.
+  - cbn [onotePowAux2 onoteOne onoteSplit onoteMul onoteMulNat].
+    change (onoteAdd
+      (onoteScale
+        (onoteAdd (onoteMul a0 ozero) (onoteMulNat a0 0))
+        (oadd a0 ac ar))
+      (onotePowAux (onoteMul a0 ozero) a0
+        (onoteMulNat (oadd a0 ac ar) n) 0 n) = base).
+    rewrite !onoteMul_zero_r.
+    rewrite onoteMulNat_zero_r, !onoteAdd_zero_l.
+    rewrite onoteScale_zero, onotePowAux_k_zero.
+    symmetry. exact hreconstruct.
+Qed.
+
+Theorem pow_zeroCode : forall a,
+  ValidOrdinalCode a -> powCode a zeroCode = oneCode.
+Proof.
+  intros a _. apply decode_injective.
+  rewrite decode_powCode, decode_zeroCode, decode_oneCode.
+  apply onotePow_zero.
+Qed.
+
+Theorem pow_oneCode : forall a,
+  ValidOrdinalCode a -> powCode a oneCode = a.
+Proof.
+  intros a ha. apply decode_injective.
+  rewrite decode_powCode, decode_oneCode.
+  apply onotePow_one_nf. exact ha.
+Qed.
+
+Corollary zeroCode_pow_zeroCode :
+  powCode zeroCode zeroCode = oneCode.
+Proof. apply pow_zeroCode. exact zeroCode_valid. Qed.
+
 End PAEpsilonZeroLaws.
