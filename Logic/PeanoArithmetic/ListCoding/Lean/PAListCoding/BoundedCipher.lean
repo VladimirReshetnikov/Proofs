@@ -38,6 +38,29 @@ def Atom {α β : Type u} (params : Option α → ℕ) :
       ConstCode len q (params (some a)) code
   | .inr _, len, q, code => Code len q code
 
+/-- A valuation-independent atom relation used by the Diophantine compiler.
+Public parameter columns are merely required to be codes here; the separate
+finite `ParameterConstraints` tree below ties them to their varying values. -/
+def StaticAtom {α β : Type u} : AtomRelation (Coordinate α β)
+  | .inl none, len, q, code => IndexCode len q code
+  | _, len, q, code => Code len q code
+
+/-- The fixed expression mentions only finitely many public parameters.  This
+tree records a constant-column constraint at each such projection occurrence
+and no constraint at private witness or row-index projections. -/
+def ParameterConstraints {α β : Type u} (params : Option α → ℕ) :
+    Expr (Coordinate α β) → ℕ → ℕ → (Coordinate α β → ℕ) → Prop
+  | .proj (.inl (some a)), len, q, columns =>
+      ConstCode len q (params (some a)) (columns (.inl (some a)))
+  | .proj _, _, _, _ => True
+  | .const _, _, _, _ => True
+  | .sub e f, len, q, columns =>
+      ParameterConstraints params e len q columns ∧
+        ParameterConstraints params f len q columns
+  | .mul e f, len, q, columns =>
+      ParameterConstraints params e len q columns ∧
+        ParameterConstraints params f len q columns
+
 /-- `CipherCircuit` takes operands first and output last, whereas the Rocq
 `MulCodes` convention takes output first. -/
 def MulRel (len q left right output : ℕ) : Prop :=
@@ -58,6 +81,100 @@ def Certificate {α β : Type u} (p : Poly (Coordinate α β))
   ∃ q columns positive negative,
     Circuit (Atom params) MulRel e (params none) q columns positive negative ∧
       positive = negative
+
+/-- Compiler-facing certificate with a fixed atom relation. -/
+def StaticCertificate {α β : Type u} (p : Poly (Coordinate α β))
+    (params : Option α → ℕ) : Prop :=
+  let e := Expr.ofPoly p
+  ∃ q columns positive negative,
+    Circuit StaticAtom MulRel e (params none) q columns positive negative ∧
+      ParameterConstraints params e (params none) q columns ∧
+      positive = negative
+
+theorem constCode_code {len q k code : ℕ}
+    (h : ConstCode len q k code) : Code len q code :=
+  ⟨fun _ => k, h⟩
+
+/-- Moving the varying public values out of the atom relation does not change
+the circuit semantics.  The proof is structural and therefore introduces no
+input-dependent conjunction. -/
+theorem circuit_atom_iff {α β : Type u} (params : Option α → ℕ) :
+    ∀ (e : Expr (Coordinate α β)) (len q : ℕ)
+      (columns : Coordinate α β → ℕ) (positive negative : ℕ),
+      Circuit (Atom params) MulRel e len q columns positive negative ↔
+        Circuit StaticAtom MulRel e len q columns positive negative ∧
+          ParameterConstraints params e len q columns := by
+  intro e
+  induction e with
+  | proj x =>
+      intro len q columns positive negative
+      rcases x with (_ | a) | b
+      · simp [Circuit, Atom, StaticAtom, ParameterConstraints]
+      · constructor
+        · rintro ⟨hconst, hpositive, hnegative⟩
+          exact ⟨⟨constCode_code hconst, hpositive, hnegative⟩, hconst⟩
+        · rintro ⟨⟨_hcode, hpositive, hnegative⟩, hconst⟩
+          exact ⟨hconst, hpositive, hnegative⟩
+      · simp [Circuit, Atom, StaticAtom, ParameterConstraints]
+  | const z =>
+      intro len q columns positive negative
+      simp [Circuit, ParameterConstraints]
+  | sub e f ihe ihf =>
+      intro len q columns positive negative
+      constructor
+      · rintro ⟨ep, en, fp, fn, he, hf, hp, hn, hpos, hneg⟩
+        obtain ⟨heStatic, heParams⟩ :=
+          (ihe len q columns ep en).mp he
+        obtain ⟨hfStatic, hfParams⟩ :=
+          (ihf len q columns fp fn).mp hf
+        exact
+          ⟨⟨ep, en, fp, fn, heStatic, hfStatic, hp, hn, hpos, hneg⟩,
+            heParams, hfParams⟩
+      · rintro ⟨⟨ep, en, fp, fn, he, hf, hp, hn, hpos, hneg⟩,
+          heParams, hfParams⟩
+        exact ⟨ep, en, fp, fn,
+          (ihe len q columns ep en).mpr ⟨he, heParams⟩,
+          (ihf len q columns fp fn).mpr ⟨hf, hfParams⟩,
+          hp, hn, hpos, hneg⟩
+  | mul e f ihe ihf =>
+      intro len q columns positive negative
+      constructor
+      · rintro ⟨ep, en, fp, fn, pp, nn, pn, np, he, hf,
+          hpp, hnn, hpn, hnp, hmpp, hmnn, hmpn, hmnp,
+          hp, hn, hpos, hneg⟩
+        obtain ⟨heStatic, heParams⟩ :=
+          (ihe len q columns ep en).mp he
+        obtain ⟨hfStatic, hfParams⟩ :=
+          (ihf len q columns fp fn).mp hf
+        exact
+          ⟨⟨ep, en, fp, fn, pp, nn, pn, np, heStatic, hfStatic,
+            hpp, hnn, hpn, hnp, hmpp, hmnn, hmpn, hmnp,
+            hp, hn, hpos, hneg⟩,
+            heParams, hfParams⟩
+      · rintro ⟨⟨ep, en, fp, fn, pp, nn, pn, np, he, hf,
+          hpp, hnn, hpn, hnp, hmpp, hmnn, hmpn, hmnp,
+          hp, hn, hpos, hneg⟩, heParams, hfParams⟩
+        exact ⟨ep, en, fp, fn, pp, nn, pn, np,
+          (ihe len q columns ep en).mpr ⟨he, heParams⟩,
+          (ihf len q columns fp fn).mpr ⟨hf, hfParams⟩,
+          hpp, hnn, hpn, hnp, hmpp, hmnn, hmpn, hmnp,
+          hp, hn, hpos, hneg⟩
+
+theorem staticCertificate_iff_certificate {α β : Type u}
+    (p : Poly (Coordinate α β)) (params : Option α → ℕ) :
+    StaticCertificate p params ↔ Certificate p params := by
+  let e := Expr.ofPoly p
+  constructor
+  · rintro ⟨q, columns, positive, negative, hcircuit, hparams, heq⟩
+    exact ⟨q, columns, positive, negative,
+      (circuit_atom_iff params e (params none) q columns positive negative).mpr
+        ⟨hcircuit, hparams⟩,
+      heq⟩
+  · rintro ⟨q, columns, positive, negative, hcircuit, heq⟩
+    obtain ⟨hstatic, hparams⟩ :=
+      (circuit_atom_iff params e (params none) q columns positive negative).mp
+        hcircuit
+    exact ⟨q, columns, positive, negative, hstatic, hparams, heq⟩
 
 /-! ## Canonical rows and source-column correctness -/
 
@@ -196,6 +313,16 @@ theorem certificate_iff_bounded_witnesses {α β : Type u}
     change (e.evalPN (rows i)).1 * radix q ^ place i =
       (e.evalPN (rows i)).2 * radix q ^ place i
     rw [hpneq]
+
+/-- Static compiler-facing form of the exact semantic certificate theorem. -/
+theorem staticCertificate_iff_bounded_witnesses {α β : Type u}
+    (p : Poly (Coordinate α β)) (params : Option α → ℕ) :
+    StaticCertificate p params ↔
+      ∀ i, i < params none →
+        ∃ witnesses : β → ℕ,
+          p (Sum.elim (BoundedDioph.consValue i (params ∘ some)) witnesses) = 0 :=
+  (staticCertificate_iff_certificate p params).trans
+    (certificate_iff_bounded_witnesses p params)
 
 end BoundedCipher
 
