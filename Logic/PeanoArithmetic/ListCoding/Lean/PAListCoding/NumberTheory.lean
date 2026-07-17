@@ -2,6 +2,7 @@ import PAListCoding.Aggregates
 import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.Data.Nat.PrimeFin
 import Mathlib.Data.Nat.Factors
+import Mathlib.Data.Nat.Factorization.Basic
 import Mathlib.Data.Nat.Digits.Defs
 import Mathlib.NumberTheory.Divisors
 
@@ -98,6 +99,12 @@ def DivisorList (v m : V) : Prop :=
     (∀ i < lh v, 0 < znth v i ∧ znth v i ∣ m) ∧
     ∀ d < m + 1, 0 < d → d ∣ m → ∃ i < lh v, znth v i = d
 
+/-- Public spelling matching the mathematical statement of exponentiation. -/
+abbrev Power (m n k : V) : Prop := Pow m n k
+
+/-- Public spelling emphasizing that zero is deliberately not included. -/
+abbrev PositiveDivisors (v m : V) : Prop := DivisorList v m
+
 /-! ### Definability and concrete formula witnesses -/
 
 @[simp, definability] instance pairCode_definable :
@@ -141,6 +148,13 @@ noncomputable def powFormula : PAFormula 3 := formulaOf (pow_definable (V := ℕ
     powFormula.Eval ![m, n, k] id ↔ Pow m n k :=
   formulaOf_spec (pow_definable (V := ℕ)) ![m, n, k]
 
+/-- Compatibility name for the concrete PA formula defining `Power`. -/
+noncomputable abbrev powerFormula : PAFormula 3 := powFormula
+
+@[simp] theorem powerFormula_spec (m n k : ℕ) :
+    powerFormula.Eval ![m, n, k] id ↔ Power m n k :=
+  powFormula_spec m n k
+
 noncomputable def nthPrimeFormula : PAFormula 2 :=
   formulaOf (nthPrime_definable (V := ℕ))
 
@@ -168,6 +182,14 @@ noncomputable def divisorListFormula : PAFormula 2 :=
 @[simp] theorem divisorListFormula_spec (v m : ℕ) :
     divisorListFormula.Eval ![v, m] id ↔ DivisorList v m :=
   formulaOf_spec (divisorList_definable (V := ℕ)) ![v, m]
+
+/-- Compatibility name for the PA formula listing all positive divisors. -/
+noncomputable abbrev positiveDivisorsFormula : PAFormula 2 :=
+  divisorListFormula
+
+@[simp] theorem positiveDivisorsFormula_spec (v m : ℕ) :
+    positiveDivisorsFormula.Eval ![v, m] id ↔ PositiveDivisors v m :=
+  divisorListFormula_spec v m
 
 /-! ## Standard-model bridges -/
 
@@ -481,6 +503,21 @@ private theorem encodeFactorPairs_nth (fs : List (ℕ × ℕ))
     subst e
     exact pairCode_encode_pair _ _
 
+/-- A valid two-entry PA code is the canonical code of its two entries. -/
+theorem pairCode_eq_encode_pair {c p e : ℕ} (h : PairCode c p e) :
+    c = encode [p, e] := by
+  let xs := decode c
+  have hcode : encode xs = c := encode_decode h.1
+  have hpair : PairCode (encode xs) p e := by simpa only [hcode] using h
+  have hlen : xs.length = Nat.succ (Nat.succ Nat.zero) :=
+    (encode_length xs).symm.trans hpair.2.1
+  rcases List.length_eq_two.mp hlen with ⟨a, b, hab⟩
+  have hp := (pairCode_encode_pair_iff a b p e).1 (by simpa [hab] using hpair)
+  calc
+    c = encode xs := hcode.symm
+    _ = encode [a, b] := congrArg encode hab
+    _ = encode [p, e] := by rw [hp.1, hp.2]
+
 /-- Transparent ordinary-list semantics for a canonical factor-pair list. -/
 def CanonicalFactorization (fs : List (ℕ × ℕ)) (m : ℕ) : Prop :=
   m ≠ 0 ∧
@@ -620,6 +657,187 @@ theorem canonicalFactorization_expanded_perm {fs : List (ℕ × ℕ)} {m : ℕ}
     simp only [expandFactorPairs, List.mem_flatMap, List.mem_replicate] at hp
     rcases hp with ⟨pe, hpe, -, rfl⟩
     exact (h.2.1 pe hpe).1
+
+private theorem mem_fst_of_mem_expandFactorPairs {p : ℕ} {fs : List (ℕ × ℕ)}
+    (hp : p ∈ expandFactorPairs fs) : p ∈ fs.map Prod.fst := by
+  simp only [expandFactorPairs, List.mem_flatMap, List.mem_replicate] at hp
+  rcases hp with ⟨pe, hpe, -, rfl⟩
+  exact List.mem_map.mpr ⟨pe, hpe, rfl⟩
+
+private theorem mem_expandFactorPairs_iff_fst {p : ℕ} {fs : List (ℕ × ℕ)}
+    (hpos : ∀ pe ∈ fs, 0 < pe.2) :
+    p ∈ expandFactorPairs fs ↔ p ∈ fs.map Prod.fst := by
+  constructor
+  · exact mem_fst_of_mem_expandFactorPairs
+  · intro hp
+    rcases List.mem_map.mp hp with ⟨pe, hpe, rfl⟩
+    simp only [expandFactorPairs, List.mem_flatMap, List.mem_replicate]
+    exact ⟨pe, hpe, (hpos pe hpe).ne', rfl⟩
+
+private theorem count_expandFactorPairs_of_mem {fs : List (ℕ × ℕ)}
+    (hnodup : (fs.map Prod.fst).Nodup) {p e : ℕ} (hpe : (p, e) ∈ fs) :
+    (expandFactorPairs fs).count p = e := by
+  induction fs with
+  | nil => simp at hpe
+  | cons qe fs ih =>
+      simp only [List.map_cons, List.nodup_cons] at hnodup
+      rcases hnodup with ⟨hq, hnodup⟩
+      simp only [List.mem_cons] at hpe
+      rcases hpe with hhead | htail
+      · cases hhead
+        rw [expandFactorPairs, List.flatMap_cons, List.count_append]
+        have hzero : (expandFactorPairs fs).count p = 0 := by
+          apply List.count_eq_zero.mpr
+          intro hp
+          exact hq (mem_fst_of_mem_expandFactorPairs hp)
+        change (List.replicate e p).count p + (expandFactorPairs fs).count p = e
+        rw [hzero]
+        simp
+      · have hpkey : p ∈ fs.map Prod.fst := by
+          exact List.mem_map.mpr ⟨(p, e), htail, rfl⟩
+        have hpq : p ≠ qe.1 := by
+          intro hpq
+          exact hq (hpq ▸ hpkey)
+        rw [expandFactorPairs, List.flatMap_cons, List.count_append]
+        have hi := ih hnodup htail
+        change (List.replicate qe.2 qe.1).count p +
+          (expandFactorPairs fs).count p = e
+        rw [hi]
+        have hzero : (List.replicate qe.2 qe.1).count p = 0 := by
+          apply List.count_eq_zero.mpr
+          simp [hpq]
+        rw [hzero, Nat.zero_add]
+
+/-- The canonical sorted support of Mathlib's factorization finsupp. -/
+noncomputable def canonicalFactorPairs (m : ℕ) : List (ℕ × ℕ) :=
+  m.factorization.support.sort.map fun p ↦ (p, m.factorization p)
+
+private theorem canonicalFactorPairs_fst (m : ℕ) :
+    (canonicalFactorPairs m).map Prod.fst = m.factorization.support.sort := by
+  let ps := m.factorization.support.sort
+  change (ps.map fun p ↦ (p, m.factorization p)).map Prod.fst = ps
+  induction ps with
+  | nil => rfl
+  | cons p ps ih => simp [ih]
+
+private theorem canonicalFactorPairs_values (m : ℕ) :
+    (canonicalFactorPairs m).map (fun pe ↦ pe.1 ^ pe.2) =
+      m.factorization.support.sort.map (fun p ↦ p ^ m.factorization p) := by
+  let ps := m.factorization.support.sort
+  change (ps.map fun p ↦ (p, m.factorization p)).map
+      (fun pe ↦ pe.1 ^ pe.2) = ps.map (fun p ↦ p ^ m.factorization p)
+  induction ps with
+  | nil => rfl
+  | cons p ps ih => simp [ih]
+
+theorem canonicalFactorPairs_conditions (m : ℕ) (hm : m ≠ 0) :
+    CanonicalFactorization (canonicalFactorPairs m) m := by
+  refine ⟨hm, ?_, ?_, ?_⟩
+  · intro pe hpe
+    simp only [canonicalFactorPairs, List.mem_map] at hpe
+    rcases hpe with ⟨p, hp, rfl⟩
+    have hps : p ∈ m.factorization.support :=
+      (Finset.mem_sort (r := (· ≤ ·))).1 hp
+    refine ⟨?_, Finsupp.mem_support_iff.mp hps |>.bot_lt⟩
+    exact Nat.prime_of_mem_primeFactors
+      (by simpa only [Nat.support_factorization] using hps)
+  · rw [canonicalFactorPairs_fst]
+    exact Finset.sortedLT_sort m.factorization.support
+  · have hperm := (Finset.sort_perm_toList m.factorization.support (· ≤ ·)).map
+        (fun p ↦ p ^ m.factorization p)
+    calc
+      ((canonicalFactorPairs m).map fun pe ↦ pe.1 ^ pe.2).prod =
+          ((m.factorization.support.sort).map
+            fun p ↦ p ^ m.factorization p).prod := by
+              rw [canonicalFactorPairs_values]
+      _ = (m.factorization.support.toList.map
+            fun p ↦ p ^ m.factorization p).prod := hperm.prod_eq
+      _ = m.factorization.support.prod (fun p ↦ p ^ m.factorization p) :=
+        Finset.prod_map_toList _ _
+      _ = m.factorization.prod (· ^ ·) := rfl
+      _ = m := Nat.prod_factorization_pow_eq_self hm
+
+theorem canonicalFactorization_unique {fs : List (ℕ × ℕ)} {m : ℕ}
+    (h : CanonicalFactorization fs m) : fs = canonicalFactorPairs m := by
+  have hperm := canonicalFactorization_expanded_perm h
+  have hkeys : fs.map Prod.fst = m.factorization.support.sort := by
+    apply sortedLT_eq_of_mem_iff h.2.2.1 (Finset.sortedLT_sort _)
+    intro p
+    rw [Finset.mem_sort]
+    calc
+      p ∈ fs.map Prod.fst ↔ p ∈ expandFactorPairs fs :=
+        (mem_expandFactorPairs_iff_fst (fun pe hpe ↦ (h.2.1 pe hpe).2)).symm
+      _ ↔ p ∈ m.primeFactorsList := hperm.mem_iff
+      _ ↔ p ∈ m.factorization.support := by
+        simpa only [Nat.support_factorization] using
+          (Nat.mem_primeFactors_iff_mem_primeFactorsList (n := m) (p := p)).symm
+  have hnormalize : fs.map (fun pe ↦ (pe.1, m.factorization pe.1)) = fs := by
+    simpa only [List.map_id] using List.map_congr_left (l := fs)
+      (f := fun pe ↦ (pe.1, m.factorization pe.1)) (g := id) (by
+        intro pe hpe
+        apply Prod.ext
+        · rfl
+        · have hc := count_expandFactorPairs_of_mem h.2.2.1.nodup hpe
+          have hpcount := hperm.count_eq pe.1
+          change m.factorization pe.1 = pe.2
+          exact (by
+            simpa only [Nat.primeFactorsList_count_eq] using
+              (hc.symm.trans hpcount).symm))
+  calc
+    fs = fs.map (fun pe ↦ (pe.1, m.factorization pe.1)) := hnormalize.symm
+    _ = (fs.map Prod.fst).map (fun p ↦ (p, m.factorization p)) := by
+      simp [List.map_map]
+    _ = canonicalFactorPairs m := by rw [hkeys]; rfl
+
+/-- Every internal factorization code can be re-expressed as nested pair codes. -/
+theorem primeFactorization_exists_factorPairs {f m : ℕ}
+    (h : PrimeFactorization f m) :
+    ∃ fs : List (ℕ × ℕ), encodeFactorPairs fs = f := by
+  let cs := decode f
+  let fs := cs.map fun c ↦ (znth c 0, znth c 1)
+  have hfcode : encode cs = f := encode_decode h.2.1
+  have hmap : fs.map (fun pe ↦ encode [pe.1, pe.2]) = cs := by
+    have hmapped : cs.map (fun c ↦ encode [znth c 0, znth c 1]) = cs.map id := by
+      apply List.map_congr_left
+      intro c hc
+      rcases List.mem_iff_get.mp hc with ⟨i, rfl⟩
+      have hiF : (i : ℕ) < lh f := by
+        rw [← hfcode]
+        simpa using i.isLt
+      rcases h.2.2.1 (i : ℕ) hiF with ⟨p, e, hpair, -, -⟩
+      have hnth : znth f (i : ℕ) = cs.get i := by
+        rw [← hfcode]
+        exact encode_nth cs i
+      rw [hnth] at hpair
+      calc
+        encode [znth (cs.get i) 0, znth (cs.get i) 1] = encode [p, e] := by
+          rw [hpair.2.2.1, hpair.2.2.2]
+        _ = cs.get i := (pairCode_eq_encode_pair hpair).symm
+    change (cs.map fun c ↦ (znth c 0, znth c 1)).map
+        (fun pe ↦ encode [pe.1, pe.2]) = cs
+    rw [List.map_map]
+    change cs.map (fun c ↦ encode [znth c 0, znth c 1]) = cs
+    simpa only [List.map_id] using hmapped
+  refine ⟨fs, ?_⟩
+  rw [encodeFactorPairs, hmap]
+  exact hfcode
+
+theorem primeFactorization_functional {f g m : ℕ}
+    (hf : PrimeFactorization f m) (hg : PrimeFactorization g m) : f = g := by
+  rcases primeFactorization_exists_factorPairs hf with ⟨fs, rfl⟩
+  rcases primeFactorization_exists_factorPairs hg with ⟨gs, rfl⟩
+  have hfs := (primeFactorization_encode_iff fs m).1 hf
+  have hgs := (primeFactorization_encode_iff gs m).1 hg
+  have hfg : fs = gs :=
+    (canonicalFactorization_unique hfs).trans (canonicalFactorization_unique hgs).symm
+  rw [hfg]
+
+theorem primeFactorization_existsUnique (m : ℕ) (hm : m ≠ 0) :
+    ∃! f, PrimeFactorization f m := by
+  let f := encodeFactorPairs (canonicalFactorPairs m)
+  have hf : PrimeFactorization f m :=
+    (primeFactorization_encode_iff _ _).2 (canonicalFactorPairs_conditions m hm)
+  exact ⟨f, hf, fun g hg ↦ primeFactorization_functional hg hf⟩
 
 @[simp] theorem primeFactorization_zero_false (f : ℕ) :
     ¬PrimeFactorization f 0 := by intro h; exact h.1 rfl

@@ -2,6 +2,7 @@ import PAListCoding.Basic
 import PAListCoding.Predicates
 import PAListCoding.Standard
 import PAListCoding.Aggregates
+import PAListCoding.NumberTheory
 
 /-!
 # Coding finite lists in Peano arithmetic

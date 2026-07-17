@@ -125,3 +125,81 @@ named here.
 #print axioms PAListCoding.leastFormula_spec
 #print axioms PAListCoding.twiceMedianFormula_spec
 #print axioms PAListCoding.uniqueModeFormula_spec
+
+/-! ## Number-theoretic list data
+
+The public aliases below retain the vocabulary of the theorem statement while
+the shorter internal names remain available to existing clients.  Prime
+indices are one-based, factor pairs are nested two-element list codes, digits
+are most-significant-first, and divisor lists contain positive divisors only.
+-/
+
+-- Uniform relations and their concrete PA formula witnesses.
+#check PAListCoding.Power
+#check PAListCoding.NthPrime
+#check PAListCoding.PrimeFactorization
+#check PAListCoding.BaseDigits
+#check PAListCoding.PositiveDivisors
+#check PAListCoding.pairCodeFormula_spec
+#check PAListCoding.strictlyIncreasingFormula_spec
+#check PAListCoding.powerFormula_spec
+#check PAListCoding.nthPrimeFormula_spec
+#check PAListCoding.primeFactorizationFormula_spec
+#check PAListCoding.baseDigitsFormula_spec
+#check PAListCoding.positiveDivisorsFormula_spec
+
+-- Standard-model interpretations of each coded relation.
+#check PAListCoding.pairCode_encode_pair_iff
+#check PAListCoding.strictlyIncreasing_encode_iff
+#check PAListCoding.pow_iff
+#check PAListCoding.nthPrime_iff_count
+#check PAListCoding.nthPrime_iff_nth
+#check PAListCoding.divisorList_encode_iff
+#check PAListCoding.primeFactorization_encode_iff
+#check PAListCoding.baseDigits_encode_iff_conditions
+#check PAListCoding.baseDigits_encode_iff
+
+-- Canonical results exist uniquely whenever their mathematical inputs permit
+-- a result, and arbitrary valid codes are covered by the functionality proofs.
+#check PAListCoding.pow_existsUnique
+#check PAListCoding.nthPrime_functional_index
+#check PAListCoding.nthPrime_functional_prime
+#check PAListCoding.nthPrime_existsUnique
+#check PAListCoding.divisorList_functional
+#check PAListCoding.divisorList_existsUnique
+#check PAListCoding.primeFactorization_functional
+#check PAListCoding.primeFactorization_existsUnique
+#check PAListCoding.baseDigits_functional
+#check PAListCoding.baseDigits_existsUnique
+
+-- Boundary cases and small computations pin down all representation choices.
+#check PAListCoding.pow_zero_exponent
+#check PAListCoding.pow_zero_base_succ
+#check PAListCoding.nthPrime_zero_false
+#check PAListCoding.nthPrime_two_one
+#check PAListCoding.divisorList_zero_false
+#check PAListCoding.divisorList_one_example
+#check PAListCoding.divisorList_twelve_example
+#check PAListCoding.primeFactorization_zero_false
+#check PAListCoding.primeFactorization_one_empty
+#check PAListCoding.primeFactorization_360_example
+#check PAListCoding.baseDigits_invalid_base_zero
+#check PAListCoding.baseDigits_invalid_base_one
+#check PAListCoding.baseDigits_zero
+#check PAListCoding.baseDigits_13_binary
+
+-- Audit the trusted assumptions of the less immediate semantic bridges and
+-- arbitrary-code uniqueness arguments.
+#print axioms PAListCoding.powerFormula_spec
+#print axioms PAListCoding.nthPrimeFormula_spec
+#print axioms PAListCoding.primeFactorizationFormula_spec
+#print axioms PAListCoding.baseDigitsFormula_spec
+#print axioms PAListCoding.positiveDivisorsFormula_spec
+#print axioms PAListCoding.nthPrime_iff_nth
+#print axioms PAListCoding.divisorList_encode_iff
+#print axioms PAListCoding.divisorList_existsUnique
+#print axioms PAListCoding.primeFactorization_encode_iff
+#print axioms PAListCoding.canonicalFactorization_unique
+#print axioms PAListCoding.primeFactorization_existsUnique
+#print axioms PAListCoding.baseDigits_encode_iff
+#print axioms PAListCoding.baseDigits_existsUnique
