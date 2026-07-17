@@ -74,4 +74,465 @@ Theorem onoteCompare_lt_irrefl : forall a,
   onoteCompare a a <> Lt.
 Proof. intros a h. rewrite onoteCompare_refl in h. discriminate. Qed.
 
+(** * Normal-form closure of arithmetic helpers *)
+
+Definition TopBelow (bound o : ONote) : Prop :=
+  match o with
+  | ozero => True
+  | oadd e _ _ => onoteCompare e bound = Lt
+  end.
+
+Lemma NF_oadd_iff : forall e c r,
+  NF (oadd e c r) <-> NF e /\ NF r /\ TopBelow e r.
+Proof. reflexivity. Qed.
+
+Lemma TopBelow_zero : forall bound, TopBelow bound ozero.
+Proof. exact (fun _ => I). Qed.
+
+Lemma TopBelow_oadd : forall bound e c r,
+  TopBelow bound (oadd e c r) <-> onoteCompare e bound = Lt.
+Proof. reflexivity. Qed.
+
+Theorem onoteSub_nf : forall a b,
+  NF a -> NF b -> NF (onoteSub a b).
+Proof.
+  induction a as [|ae IHe ac ar IHr]; intros b ha hb.
+  - destruct b; exact NF_zero.
+  - destruct b as [|be bc br].
+    + exact ha.
+    + destruct ha as [hae [har hbelowA]].
+      destruct hb as [hbe [hbr hbelowB]].
+      cbn [onoteSub].
+      destruct (onoteCompare ae be) eqn:hcmp.
+      * destruct (ac - bc) eqn:hdiff.
+        (* Equal coefficients expose the recursive subtraction of tails;
+           unequal coefficients truncate to zero. *)
+        ++ destruct (Nat.eqb ac bc) eqn:hc.
+           ** apply IHr; assumption.
+           ** exact NF_zero.
+        ++ repeat split; assumption.
+      * exact NF_zero.
+      * exact (conj hae (conj har hbelowA)).
+Qed.
+
+(** Removing the finite remainder does not change the leading exponent of a
+    nonzero omega-divisible part. *)
+Lemma onoteSplit_shape : forall o q n,
+  onoteSplit o = (q, n) ->
+  q = ozero \/
+  exists e c r r', o = oadd e c r /\ q = oadd e c r'.
+Proof.
+  intros [|e c r] q n hsplit.
+  - cbn [onoteSplit] in hsplit. inversion hsplit. now left.
+  - destruct e as [|ee ec er].
+    + cbn [onoteSplit] in hsplit. inversion hsplit. now left.
+    + cbn [onoteSplit] in hsplit.
+      destruct (onoteSplit r) as [r' k] eqn:hr.
+      inversion hsplit; subst q n.
+      right. exists (oadd ee ec er), c, r, r'. now split.
+Qed.
+
+Lemma onoteSplit_topBelow : forall bound o q n,
+  TopBelow bound o -> onoteSplit o = (q, n) -> TopBelow bound q.
+Proof.
+  intros bound o q n htop hsplit.
+  destruct (onoteSplit_shape o q n hsplit) as [hz | hshape].
+  - subst q. exact I.
+  - destruct hshape as [e [c [r [r' [ho hq]]]]].
+    subst o q. exact htop.
+Qed.
+
+Theorem onoteSplit_nf : forall o q n,
+  NF o -> onoteSplit o = (q, n) -> NF q.
+Proof.
+  induction o as [|e IHe c r IHr]; intros q n ho hsplit.
+  - cbn [onoteSplit] in hsplit. inversion hsplit. exact NF_zero.
+  - destruct ho as [he [hr htop]].
+    destruct e as [|ee ec er].
+    + cbn [onoteSplit] in hsplit. inversion hsplit. exact NF_zero.
+    + cbn [onoteSplit] in hsplit.
+      destruct (onoteSplit r) as [r' k] eqn:hsr.
+      inversion hsplit; subst q n.
+      apply (proj2 (NF_oadd_iff (oadd ee ec er) c r')).
+      exact (conj he (conj
+        (IHr r' k hr eq_refl)
+        (onoteSplit_topBelow (oadd ee ec er) r r' k htop hsr))).
+Qed.
+
+(** Prefixing both sides by the same left ordinal is strictly monotone in the
+    right argument.  The auxiliary lemma makes the threshold/merge behavior
+    of one CNF term explicit. *)
+Lemma onoteAddAux_strict : forall e c a b,
+  onoteCompare a b = Lt ->
+  onoteCompare (onoteAddAux e c a) (onoteAddAux e c b) = Lt.
+Proof.
+  intros e c [|ae ac ar] [|be bc br] hab; simpl in hab;
+    try discriminate.
+  - unfold onoteAddAux.
+    destruct (onoteCompare e be) eqn:heb.
+    + apply onoteCompare_eq in heb. subst be.
+      simpl. rewrite onoteCompare_refl.
+      assert (hc : Nat.compare c (S (c + bc)) = Lt).
+      { apply Nat.compare_lt_iff. lia. }
+      now rewrite hc.
+    + simpl. now rewrite heb.
+    + simpl. rewrite onoteCompare_refl, Nat.compare_refl. reflexivity.
+  - unfold onoteAddAux.
+    destruct (onoteCompare e ae) eqn:hea.
+    + apply onoteCompare_eq in hea. subst ae.
+      destruct (onoteCompare e be) eqn:heb.
+      * apply onoteCompare_eq in heb. subst be.
+        simpl in hab |-.
+        destruct (Nat.compare ac bc) eqn:hcoeff.
+        (* Equal coefficients leave the original tail comparison; unequal
+           coefficients remain unequal after adding the common prefix. *)
+        ++ apply Nat.compare_eq in hcoeff. subst bc.
+           cbn [onoteCompare].
+           rewrite onoteCompare_refl, Nat.compare_refl.
+           exact hab.
+        ++ apply Nat.compare_lt_iff in hcoeff.
+           assert (hshift :
+             Nat.compare (S (c + ac)) (S (c + bc)) = Lt).
+           { apply Nat.compare_lt_iff. lia. }
+           cbn [onoteCompare]. rewrite onoteCompare_refl.
+           now rewrite hshift.
+        ++ discriminate.
+      * simpl. now rewrite heb.
+      * simpl in hab. discriminate.
+    + assert (heb : onoteCompare e be = Lt).
+      {
+        destruct (onoteCompare ae be) eqn:haeb.
+        - apply onoteCompare_eq in haeb. subst be. exact hea.
+        - exact (onoteCompare_lt_trans e ae be hea haeb).
+        - simpl in hab. discriminate.
+      }
+      rewrite heb. exact hab.
+    + destruct (onoteCompare e be) eqn:heb.
+      * apply onoteCompare_eq in heb. subst be.
+        simpl. rewrite onoteCompare_refl.
+        assert (hc : Nat.compare c (S (c + bc)) = Lt).
+        { apply Nat.compare_lt_iff. lia. }
+        now rewrite hc.
+      * simpl. now rewrite heb.
+      * simpl. rewrite onoteCompare_refl, Nat.compare_refl.
+        exact hab.
+Qed.
+
+Theorem onoteAdd_strict_right : forall prefix a b,
+  onoteCompare a b = Lt ->
+  onoteCompare (onoteAdd prefix a) (onoteAdd prefix b) = Lt.
+Proof.
+  induction prefix as [|e IHe c r IHr]; intros a b hab; simpl.
+  - exact hab.
+  - apply onoteAddAux_strict. exact (IHr a b hab).
+Qed.
+
+Lemma onoteMulNat_nf : forall o n,
+  NF o -> NF (onoteMulNat o n).
+Proof.
+  intros [|e c r] [|n] ho; simpl; try exact NF_zero.
+  exact ho.
+Qed.
+
+Theorem onoteScale_nf : forall x o,
+  NF x -> NF o -> NF (onoteScale x o).
+Proof.
+  intros x o hx.
+  induction o as [|e IHe c r IHr]; intro ho; simpl.
+  - exact NF_zero.
+  - destruct ho as [he [hr htop]].
+    apply (proj2 (NF_oadd_iff (onoteAdd x e) c (onoteScale x r))).
+    split.
+    + now apply onoteAdd_nf.
+    + split.
+      * exact (IHr hr).
+      * destruct r as [|re rc rr]; [exact I |].
+        simpl in htop |-.
+        exact (onoteAdd_strict_right x re e htop).
+Qed.
+
+Lemma onoteAdd_zero_r_nf : forall a,
+  NF a -> onoteAdd a ozero = a.
+Proof.
+  induction a as [|e IHe c r IHr]; intro ha; [reflexivity |].
+  destruct ha as [he [hr htop]].
+  cbn [onoteAdd]. rewrite (IHr hr).
+  destruct r as [|re rc rr].
+  - reflexivity.
+  - unfold onoteAddAux.
+    assert (hrev : onoteCompare e re = Gt).
+    {
+      apply onoteCompare_lt_reverse in htop.
+      exact htop.
+    }
+    now rewrite hrev.
+Qed.
+
+Lemma onoteCompare_add_nonzero_right : forall a b,
+  NF a -> b <> ozero ->
+  onoteCompare a (onoteAdd a b) = Lt.
+Proof.
+  intros a b ha hb.
+  rewrite <- (onoteAdd_zero_r_nf a ha) at 1.
+  apply onoteAdd_strict_right.
+  destruct b; [contradiction | reflexivity].
+Qed.
+
+Theorem onoteMul_nf : forall a b,
+  NF a -> NF b -> NF (onoteMul a b).
+Proof.
+  intros a b.
+  revert a.
+  induction b as [|be IHe bc br IHr]; intros a ha hb.
+  - rewrite onoteMul_zero_r. exact NF_zero.
+  - destruct a as [|ae ac ar].
+    + rewrite onoteMul_zero_l. exact NF_zero.
+    + destruct ha as [hae [har htopA]].
+      destruct hb as [hbe [hbr htopB]].
+      destruct be as [|bee bec ber].
+      * cbn [onoteMul]. exact (conj hae (conj har htopA)).
+      * cbn [onoteMul].
+        apply (proj2 (NF_oadd_iff
+          (onoteAdd ae (oadd bee bec ber)) bc
+          (onoteMul (oadd ae ac ar) br))).
+        constructor.
+        { (* The new leading exponent is the ordinal sum of the old ones. *)
+          apply onoteAdd_nf; assumption. }
+        constructor.
+        { (* Recursion is on the strictly shorter right-hand CNF tail. *)
+          apply IHr; [exact (conj hae (conj har htopA)) | exact hbr]. }
+        { destruct br as [|re rc rr].
+          - exact I.
+          - cbn [onoteMul].
+            destruct re as [|ree rec rer].
+            + apply onoteCompare_add_nonzero_right.
+              exact hae. discriminate.
+            + apply onoteAdd_strict_right.
+              exact htopB. }
+Qed.
+
+Lemma NF_one : NF onoteOne.
+Proof. unfold onoteOne. simpl. tauto. Qed.
+
+Lemma NF_zero_exponent_tail : forall c r,
+  NF (oadd ozero c r) -> r = ozero.
+Proof.
+  intros c [|e ec er] h; [reflexivity |].
+  destruct h as [_ [_ htop]].
+  destruct e; simpl in htop; discriminate.
+Qed.
+
+(** Left subtraction by one leaves every infinite notation unchanged and
+    decrements only a genuinely finite coefficient.  Consequently it is
+    strictly monotone on positive normal exponents. *)
+Lemma onoteSub_one_strict_positive : forall a b,
+  NF a -> NF b -> a <> ozero -> b <> ozero ->
+  onoteCompare a b = Lt ->
+  onoteCompare (onoteSub a onoteOne) (onoteSub b onoteOne) = Lt.
+Proof.
+  intros [|ae ac ar] [|be bc br] ha hb hapos hbpos hab;
+    try contradiction.
+  destruct ae as [|aee aec aer].
+  - assert (har : ar = ozero).
+    { apply (NF_zero_exponent_tail ac ar). exact ha. }
+    subst ar.
+    destruct be as [|bee bec ber].
+    + assert (hbr : br = ozero).
+      { apply (NF_zero_exponent_tail bc br). exact hb. }
+      subst br.
+      cbn [onoteCompare] in hab.
+      destruct ac as [|ac']; destruct bc as [|bc'];
+        cbn [onoteSub onoteOne onoteCompare] in hab |-;
+        try discriminate.
+      * reflexivity.
+      * assert (hcoeff : Nat.compare (S ac') (S bc') = Lt).
+        {
+          destruct (Nat.compare (S ac') (S bc')) eqn:hc;
+            simpl in hab; try discriminate; reflexivity.
+        }
+        apply Nat.compare_lt_iff in hcoeff.
+        assert (hc : Nat.compare ac' bc' = Lt).
+        { apply Nat.compare_lt_iff. lia. }
+        change (onoteCompare (oadd ozero ac' ozero)
+          (oadd ozero bc' ozero) = Lt).
+        cbn [onoteCompare].
+        now rewrite hc.
+    + destruct ac as [|ac'];
+        cbn [onoteSub onoteOne onoteCompare] in hab |-;
+        reflexivity.
+  - destruct be as [|bee bec ber].
+    + cbn [onoteCompare] in hab. discriminate.
+    + cbn [onoteSub onoteOne]. exact hab.
+Qed.
+
+Lemma onoteSplit'_shape : forall o q n,
+  onoteSplit' o = (q, n) ->
+  q = ozero \/
+  exists e c r r',
+    e <> ozero /\ o = oadd e c r /\
+    q = oadd (onoteSub e onoteOne) c r'.
+Proof.
+  intros [|e c r] q n hsplit.
+  - cbn [onoteSplit'] in hsplit. inversion hsplit. now left.
+  - destruct e as [|ee ec er].
+    + cbn [onoteSplit'] in hsplit. inversion hsplit. now left.
+    + cbn [onoteSplit'] in hsplit.
+      destruct (onoteSplit' r) as [r' k] eqn:hr.
+      inversion hsplit; subst q n.
+      right. exists (oadd ee ec er), c, r, r'.
+      repeat split; discriminate || reflexivity.
+Qed.
+
+Theorem onoteSplit'_nf : forall o q n,
+  NF o -> onoteSplit' o = (q, n) -> NF q.
+Proof.
+  induction o as [|e IHe c r IHr]; intros q n ho hsplit.
+  - cbn [onoteSplit'] in hsplit. inversion hsplit. exact NF_zero.
+  - destruct ho as [he [hr htop]].
+    destruct e as [|ee ec er].
+    + cbn [onoteSplit'] in hsplit. inversion hsplit. exact NF_zero.
+    + cbn [onoteSplit'] in hsplit.
+      destruct (onoteSplit' r) as [r' k] eqn:hsr.
+      inversion hsplit; subst q n.
+      apply (proj2 (NF_oadd_iff
+        (onoteSub (oadd ee ec er) onoteOne) c r')).
+      constructor.
+      { apply onoteSub_nf; [exact he | exact NF_one]. }
+      constructor.
+      { apply IHr with (n := k); [exact hr | reflexivity]. }
+      { destruct (onoteSplit'_shape r r' k hsr) as [hz | hshape].
+        - subst r'. exact I.
+        - destruct hshape as
+            [re [rc [rr [rr' [hrepos [hrEq hr'Eq]]]]]].
+          subst r r'.
+          destruct hr as [hre [_ _]].
+          cbn [TopBelow] in htop |-.
+          apply onoteSub_one_strict_positive; try assumption.
+          discriminate. }
+Qed.
+
+Theorem onotePowAux_nf : forall e a0 a k m,
+  NF e -> NF a0 -> NF a ->
+  NF (onotePowAux e a0 a k m).
+Proof.
+  intros e a0 a k.
+  induction k as [|k IH]; intros m he ha0 ha.
+  - destruct m as [|m]; simpl.
+    + exact NF_zero.
+    + apply (proj2 (NF_oadd_iff e m ozero)).
+      exact (conj he (conj NF_zero I)).
+  - destruct m as [|m]; simpl.
+    + exact NF_zero.
+    + apply onoteAdd_nf.
+      * apply onoteScale_nf.
+        (* Its exponent is a sum of two normal notations. *)
+        ** apply onoteAdd_nf.
+           exact he. now apply onoteMulNat_nf.
+        ** exact ha.
+      * apply IH; assumption.
+Qed.
+
+Theorem onotePowAux2_nf : forall exponent basePart finitePart,
+  NF exponent -> NF basePart ->
+  NF (onotePowAux2 exponent (basePart, finitePart)).
+Proof.
+  intros exponent [|a0 ac ar] finitePart hexponent hbase.
+  - destruct finitePart as [|m].
+    + destruct exponent; simpl; [exact NF_one | exact NF_zero].
+    + destruct m as [|m].
+      * exact NF_one.
+      * cbn [onotePowAux2].
+        destruct (onoteSplit' exponent) as [q k] eqn:hsplit'.
+        apply (proj2 (NF_oadd_iff q
+          (Nat.pred (Nat.pow (S (S m)) k)) ozero)).
+        exact (conj (onoteSplit'_nf exponent q k hexponent hsplit')
+          (conj NF_zero I)).
+  - destruct hbase as [ha0 [har htopBase]].
+    cbn [onotePowAux2].
+    destruct (onoteSplit exponent) as [b k] eqn:hsplit.
+    assert (hb : NF b).
+    { exact (onoteSplit_nf exponent b k hexponent hsplit). }
+    destruct k as [|k].
+    + apply (proj2 (NF_oadd_iff (onoteMul a0 b) 0 ozero)).
+      exact (conj (onoteMul_nf a0 b ha0 hb) (conj NF_zero I)).
+    + apply onoteAdd_nf.
+      * apply onoteScale_nf.
+        (* The scale exponent is [a0*b + a0*k]. *)
+        ** apply onoteAdd_nf.
+           apply onoteMul_nf; assumption.
+           now apply onoteMulNat_nf.
+        ** exact (conj ha0 (conj har htopBase)).
+      * apply onotePowAux_nf.
+        ** apply onoteMul_nf; assumption.
+        ** exact ha0.
+        ** apply onoteMulNat_nf.
+           exact (conj ha0 (conj har htopBase)).
+Qed.
+
+Theorem onotePow_nf : forall base exponent,
+  NF base -> NF exponent -> NF (onotePow base exponent).
+Proof.
+  intros base exponent hbase hexponent.
+  unfold onotePow.
+  destruct (onoteSplit base) as [basePart finitePart] eqn:hsplit.
+  apply onotePowAux2_nf.
+  - exact hexponent.
+  - exact (onoteSplit_nf base basePart finitePart hbase hsplit).
+Qed.
+
+(** The executable operations therefore map valid codes to valid codes.  These
+    are the semantic closure facts used by the corresponding PA graph
+    formulae: once their two inputs denote normal forms, so does the uniquely
+    determined output. *)
+Theorem addCode_valid : forall a b,
+  ValidOrdinalCode a -> ValidOrdinalCode b ->
+  ValidOrdinalCode (addCode a b).
+Proof.
+  intros a b ha hb.
+  unfold ValidOrdinalCode in *.
+  rewrite decode_addCode.
+  now apply onoteAdd_nf.
+Qed.
+
+Theorem mulCode_valid : forall a b,
+  ValidOrdinalCode a -> ValidOrdinalCode b ->
+  ValidOrdinalCode (mulCode a b).
+Proof.
+  intros a b ha hb.
+  unfold ValidOrdinalCode in *.
+  rewrite decode_mulCode.
+  now apply onoteMul_nf.
+Qed.
+
+Theorem powCode_valid : forall a b,
+  ValidOrdinalCode a -> ValidOrdinalCode b ->
+  ValidOrdinalCode (powCode a b).
+Proof.
+  intros a b ha hb.
+  unfold ValidOrdinalCode in *.
+  rewrite decode_powCode.
+  now apply onotePow_nf.
+Qed.
+
+Corollary ordinalAdd_result_valid : forall z a b,
+  OrdinalAdd z a b -> ValidOrdinalCode z.
+Proof.
+  intros z a b [ha [hb hz]]. subst z.
+  now apply addCode_valid.
+Qed.
+
+Corollary ordinalMul_result_valid : forall z a b,
+  OrdinalMul z a b -> ValidOrdinalCode z.
+Proof.
+  intros z a b [ha [hb hz]]. subst z.
+  now apply mulCode_valid.
+Qed.
+
+Corollary ordinalPow_result_valid : forall z a b,
+  OrdinalPow z a b -> ValidOrdinalCode z.
+Proof.
+  intros z a b [ha [hb hz]]. subst z.
+  now apply powCode_valid.
+Qed.
+
 End PAEpsilonZeroLaws.

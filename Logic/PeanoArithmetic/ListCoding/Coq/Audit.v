@@ -286,6 +286,18 @@ Check PAEpsilonZero.ordinalPow_exists_unique.
 Check PAEpsilonZeroLaws.onoteCompare_lt_irrefl.
 Check PAEpsilonZeroLaws.onoteCompare_lt_trans.
 Check PAEpsilonZeroLaws.onoteCompare_trichotomy.
+Check PAEpsilonZeroLaws.onoteSub_nf.
+Check PAEpsilonZeroLaws.onoteSplit_nf.
+Check PAEpsilonZeroLaws.onoteScale_nf.
+Check PAEpsilonZeroLaws.onoteMul_nf.
+Check PAEpsilonZeroLaws.onoteSplit'_nf.
+Check PAEpsilonZeroLaws.onotePow_nf.
+Check PAEpsilonZeroLaws.addCode_valid.
+Check PAEpsilonZeroLaws.mulCode_valid.
+Check PAEpsilonZeroLaws.powCode_valid.
+Check PAEpsilonZeroLaws.ordinalAdd_result_valid.
+Check PAEpsilonZeroLaws.ordinalMul_result_valid.
+Check PAEpsilonZeroLaws.ordinalPow_result_valid.
 
 Print Assumptions PAEpsilonZero.squareUnpair_pair.
 Print Assumptions PAEpsilonZero.squarePair_unpair.
@@ -298,3 +310,15 @@ Print Assumptions PAEpsilonZero.ordinalPow_exists_unique.
 Print Assumptions PAEpsilonZeroLaws.onoteCompare_lt_irrefl.
 Print Assumptions PAEpsilonZeroLaws.onoteCompare_lt_trans.
 Print Assumptions PAEpsilonZeroLaws.onoteCompare_trichotomy.
+Print Assumptions PAEpsilonZeroLaws.onoteSub_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteSplit_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteScale_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteMul_nf.
+Print Assumptions PAEpsilonZeroLaws.onoteSplit'_nf.
+Print Assumptions PAEpsilonZeroLaws.onotePow_nf.
+Print Assumptions PAEpsilonZeroLaws.addCode_valid.
+Print Assumptions PAEpsilonZeroLaws.mulCode_valid.
+Print Assumptions PAEpsilonZeroLaws.powCode_valid.
+Print Assumptions PAEpsilonZeroLaws.ordinalAdd_result_valid.
+Print Assumptions PAEpsilonZeroLaws.ordinalMul_result_valid.
+Print Assumptions PAEpsilonZeroLaws.ordinalPow_result_valid.
