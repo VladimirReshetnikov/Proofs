@@ -5,11 +5,12 @@ import PAListCoding.CipherRelations
 /-!
 # Final Lean assembly for tetration
 
-The mathematical work is now modular: one encoded tower step is
-Diophantine, exact variable-length iteration follows from bounded universals,
-and the state code is injective.  This file combines those ingredients into
-the public result-first tetration graph, parameterized only by the five
-arithmetic cipher primitive closures.
+The mathematical work is modular: one encoded tower step is Diophantine,
+exact variable-length iteration follows from bounded universals, and the
+state code is injective.  This file first combines those ingredients under
+five arithmetic-cipher closure contracts, then discharges the contracts
+through `CipherOnes` and `CipherRelations` and exposes the unconditional
+public result-first tetration graph.
 -/
 
 namespace PAListCoding
@@ -130,9 +131,12 @@ substitution contract as the bounded-cipher compiler. -/
 private theorem tetrationConstSubstitutionClosed :
     BoundedCipherDioph.QuaternarySubstitutionClosed
       SparseCipher.ConstCode := by
-  intro alpha len q k code dlen dq dk dcode
-  exact CipherRelations.constCode_dioph_of_ones
-    tetrationOnesSubstitutionClosed dlen dq dk dcode
+  -- The relation layer deliberately defines this contract without importing
+  -- the downstream bounded compiler; unfolding by `change` identifies the
+  -- two definitionally equal interfaces without fragile metavariable search.
+  change CipherRelations.QuaternarySubstitutionClosed SparseCipher.ConstCode
+  exact CipherRelations.constCode_closed_of_ones
+    tetrationOnesSubstitutionClosed
 
 private theorem tetrationIndexSubstitutionClosed :
     CircuitDioph.TernarySubstitutionClosed SparseCipher.IndexCode :=

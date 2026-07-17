@@ -58,8 +58,9 @@ is the broad Lean import surface.
   twice-median and unique-mode statistics, one-based nth primes, powers, prime
   factorizations, canonical base digits and divisor lists, and the canonical
   lexicographic enumeration of every distinct permutation.  The same project
-  proves in both Lean and Rocq that natural exponentiation is Diophantine via
-  formalized Matiyasevich constructions.  It also gives a shared natural
+  proves in both Lean and Rocq that natural exponentiation and tetration are
+  Diophantine via formalized Matiyasevich constructions and exact finite
+  traces.  It also gives a shared natural
   coding of hereditary Cantor normal forms below
   epsilon zero, PA formulae for validity, order, addition, multiplication, and
   exponentiation, and checked natural laws for those operations.

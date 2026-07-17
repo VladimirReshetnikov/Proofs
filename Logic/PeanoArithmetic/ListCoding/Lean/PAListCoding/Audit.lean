@@ -224,6 +224,31 @@ one integer polynomial. -/
 #print axioms PAListCoding.power_diophantine
 #print axioms PAListCoding.power_polynomial_exists
 
+/-! ### Diophantine tetration
+
+These declarations use height zero for the empty tower, whose value is one.
+The graph coordinates are result, base, and height, in that order.  The
+one-column checks audit the non-elementary sparse-cipher boundary separately
+from the final finite-iteration assembly.
+-/
+
+#check PAListCoding.tetration
+#check PAListCoding.NaturalTetrationFunction
+#check PAListCoding.NaturalTetrationGraph
+#check PAListCoding.CipherOnes.onesCodes_iff_certificate
+#check PAListCoding.CipherOnes.onesCertificate_dioph
+#check PAListCoding.CipherOnes.onesCodes_dioph
+#check PAListCoding.naturalTetrationGraph_diophantine
+#check PAListCoding.naturalTetration_diophantineFunction
+#check PAListCoding.naturalTetration_polynomial_exists
+
+#print axioms PAListCoding.CipherOnes.onesCodes_iff_certificate
+#print axioms PAListCoding.CipherOnes.onesCertificate_dioph
+#print axioms PAListCoding.CipherOnes.onesCodes_dioph
+#print axioms PAListCoding.naturalTetrationGraph_diophantine
+#print axioms PAListCoding.naturalTetration_diophantineFunction
+#print axioms PAListCoding.naturalTetration_polynomial_exists
+
 /-! ## Ordinal notations below epsilon zero -/
 
 -- The concrete square-shell code is a bijection on raw hereditary CNF syntax;
