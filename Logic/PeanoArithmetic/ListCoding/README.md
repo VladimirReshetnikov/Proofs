@@ -285,8 +285,10 @@ normal-form invariants, preservation of normal form by its executable
 arithmetic, and validity and uniqueness properties of the result-first graphs.
 Its direct syntactic laws include code-level strict-order laws, zero/one
 identities, associativity of addition and multiplication, the correctly
-oriented distributive law `a*(b+c)=a*b+a*c`, and the exponent identities
-`a^0=1`, `a^1=a`, and `0^0=1`.  These are proofs about hereditary normal forms.
+oriented distributive law `a*(b+c)=a*b+a*c`, and the exponent laws
+`a^(b+c)=a^b*a^c` and `(a^b)^c=a^(b*c)`, together with `a^0=1`, `a^1=a`, and
+`0^0=1`.  The proofs explicitly handle successor exponents, omega-divisible
+limit parts, and finite tails.  These are proofs about hereditary normal forms.
 The present Rocq ordinal modules do not define a set-theoretic ordinal
 denotation and therefore do not claim the Lean theorem characterizing the
 exact denotation range below `ε₀`.
@@ -379,7 +381,10 @@ results.
   prints its assumptions.
 - Coq's `EpsilonZero.v` implements the same square-shell/raw-notation code and
   executable structural operations. `EpsilonZeroLaws.v` gives independent
-  syntactic proofs for normal forms, comparison, closure, and arithmetic laws.
+  syntactic proofs for normal forms, comparison, closure, and the core
+  arithmetic laws. `EpsilonZeroPowerLaws.v` proves the full successor, sum,
+  and power-of-power identities for transfinite exponentiation, including the
+  fixed-limit and finite-tail decompositions used by the public code laws.
   `DiophantineFormula.v` is the explicit polynomial-to-PA translator,
   `ComputableFormula.v` connects extracted total functions to that translator,
   and `EpsilonZeroFormulas.v` exposes the five guarded public formulae.
@@ -412,9 +417,9 @@ lake --dir Logic/PeanoArithmetic/ListCoding/Lean env lean `
   PAListCoding/Audit.lean
 ```
 
-The root Rocq project records the authoritative dependency order and logical
-paths for the Coq port. Build and kernel-check the complete registered
-workspace with:
+The root Rocq project records the authoritative source list and logical paths
+for the Coq port; `rocq makefile` resolves the dependency graph. Build and
+kernel-check the complete registered workspace with:
 
 ```powershell
 rocq makefile -f _CoqProject -o Makefile.coq

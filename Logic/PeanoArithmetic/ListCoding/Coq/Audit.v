@@ -9,7 +9,7 @@
 
 From PAListCoding Require Import
   ListCode ListFormulas NumberTheory NumberTheoryFormulas
-  NumberTheoryFactorization EpsilonZero EpsilonZeroLaws
+  NumberTheoryFactorization EpsilonZero EpsilonZeroLaws EpsilonZeroPowerLaws
   ComputableFormula EpsilonZeroFormulas.
 
 Check PAListCode.listCode.
@@ -299,6 +299,12 @@ Check PAEpsilonZeroLaws.powCode_valid.
 Check PAEpsilonZeroLaws.ordinalAdd_result_valid.
 Check PAEpsilonZeroLaws.ordinalMul_result_valid.
 Check PAEpsilonZeroLaws.ordinalPow_result_valid.
+Check PAEpsilonZeroPowerLaws.onotePow_succ_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_add_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_pow_nf.
+Check PAEpsilonZeroPowerLaws.powCode_succCode.
+Check PAEpsilonZeroPowerLaws.powCode_addCode.
+Check PAEpsilonZeroPowerLaws.powCode_mulCode.
 
 (** The executable-to-formula bridge first proves formula existence in
     [Prop], then uses classical epsilon solely to expose a formula value. *)
@@ -357,6 +363,12 @@ Print Assumptions PAEpsilonZeroLaws.powCode_valid.
 Print Assumptions PAEpsilonZeroLaws.ordinalAdd_result_valid.
 Print Assumptions PAEpsilonZeroLaws.ordinalMul_result_valid.
 Print Assumptions PAEpsilonZeroLaws.ordinalPow_result_valid.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_succ_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_add_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_pow_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_succCode.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_addCode.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_mulCode.
 
 (* Keep the constructive existence results and the classical selector visible
    separately, so the audit records the exact choice boundary. *)

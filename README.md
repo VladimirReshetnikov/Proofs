@@ -133,7 +133,8 @@ mathlib compiler bridge; request those modules explicitly.
 ## Rocq/Coq workspace
 
 The root [`_CoqProject`](_CoqProject) contains all logical `-Q` mappings and a
-dependency-ordered source list, including the vendored certificates under
+registered source list whose dependency graph is resolved by `rocq makefile`,
+including the vendored certificates under
 `lib/Coq-BB5`:
 
 ```powershell

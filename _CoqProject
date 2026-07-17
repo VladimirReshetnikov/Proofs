@@ -30,7 +30,7 @@
 -Q lib/Coq-BB5/BB4 CoqBB4
 -Q lib/Coq-Library-Undecidability-current/theories Undecidability
 
-# Dependency-ordered by `rocq dep -sort -f _CoqProject`.
+# Registered source list; `rocq makefile` resolves its dependency graph.
 
 lib/Coq-Library-Undecidability-current/theories/Synthetic/Definitions.v
 lib/Coq-Library-Undecidability-current/theories/Shared/Dec.v

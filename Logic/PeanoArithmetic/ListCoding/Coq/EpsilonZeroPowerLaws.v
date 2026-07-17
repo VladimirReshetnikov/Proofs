@@ -1233,4 +1233,422 @@ Proof.
   apply onotePow_add_nf; assumption.
 Qed.
 
+(** * The omega quotient of a product *)
+
+(** Even before imposing normality, adding to a nonzero left notation cannot
+    produce zero.  This small raw fact is useful for showing that scaling by
+    [omega] really produces an operationally omega-divisible notation. *)
+Lemma onoteAdd_nonzero_left_raw : forall a b,
+  a <> ozero -> onoteAdd a b <> ozero.
+Proof.
+  induction a as [|e IHe c r IHr]; intros b ha; [contradiction |].
+  cbn [onoteAdd]. unfold onoteAddAux.
+  destruct (onoteAdd r b) as [|te tc tr] eqn:hsum;
+    [discriminate |].
+  destruct (onoteCompare e te); discriminate.
+Qed.
+
+(** Multiplication by [omega] on the left removes every finite tail.  Here
+    this is stated directly for [onoteScale onoteOne], the executable form of
+    that multiplication. *)
+Lemma onoteSplit_scale_one : forall q,
+  onoteSplit (onoteScale onoteOne q) =
+  (onoteScale onoteOne q, 0).
+Proof.
+  intro q. apply omegaDivisible_split_fixed.
+  induction q as [|e IHe c r IHr].
+  - exact I.
+  - cbn [onoteScale OmegaDivisible]. split.
+    + apply onoteAdd_nonzero_left_raw. discriminate.
+    + exact IHr.
+Qed.
+
+(** The quotient-oriented split is the inverse of scaling by [omega] on
+    normal forms.  We obtain the result from the already-proved bridge
+    between the two split functions; injectivity of scaling then recovers
+    the quotient itself. *)
+Lemma onoteSplit'_scale_one_nf : forall q,
+  NF q -> onoteSplit' (onoteScale onoteOne q) = (q, 0).
+Proof.
+  intros q hq.
+  remember (onoteSplit' (onoteScale onoteOne q)) as qr eqn:hsplit'.
+  destruct qr as [r n]. symmetry in hsplit'.
+  assert (hscaleNF : NF (onoteScale onoteOne q)).
+  { now apply onoteScale_nf. }
+  pose proof (onoteSplit'_nf (onoteScale onoteOne q) r n
+    hscaleNF hsplit') as hr.
+  pose proof (onoteSplit_eq_scale_split' (onoteScale onoteOne q)
+    r n hscaleNF hsplit') as hbridge.
+  rewrite onoteSplit_scale_one in hbridge.
+  pose proof (f_equal (@fst ONote nat) hbridge) as hscale.
+  pose proof (f_equal (@snd ONote nat) hbridge) as hn.
+  cbn in hscale, hn. subst n.
+  assert (hqr : q = r).
+  {
+    apply onoteScale_injective_nf with (x := onoteOne).
+    - exact NF_one.
+    - exact hq.
+    - exact hr.
+    - exact hscale.
+  }
+  subst r. reflexivity.
+Qed.
+
+(** Removing a finite tail preserves the leading exponent whenever the
+    omega-divisible part is nonzero. *)
+Lemma onoteHead_split_nonzero : forall o q n,
+  onoteSplit o = (q, n) -> q <> ozero ->
+  onoteHead o = onoteHead q.
+Proof.
+  intros o q n hsplit hq.
+  destruct (onoteSplit_shape o q n hsplit) as [hzero | hshape].
+  - contradiction.
+  - destruct hshape as [e [c [r [r' [ho hq']]]]].
+    subst o q. reflexivity.
+Qed.
+
+(** A scaled left factor can be pulled through multiplication.  The proof
+    deliberately factors [onoteScale] through its monomial characterization,
+    so that ordinary multiplication associativity does all the work. *)
+Lemma onoteMul_scale_one_nf : forall q c,
+  NF q -> NF c ->
+  onoteMul (onoteScale onoteOne q) c =
+  onoteScale onoteOne (onoteMul q c).
+Proof.
+  intros q c hq hc.
+  rewrite <- (onoteMul_monomial_nf onoteOne q NF_one hq).
+  rewrite (onoteMul_assoc (oadd onoteOne 0 ozero) q c
+    ltac:(exact (conj NF_one (conj NF_zero I))) hq hc).
+  apply onoteMul_monomial_nf.
+  - exact NF_one.
+  - now apply onoteMul_nf.
+Qed.
+
+(** Let [b = omega*bq + k] and let [c] have no finite tail.  Right
+    multiplication by [c] ignores the finite tail of [b]; after replacing
+    [b] by [omega*bq], associativity exposes one outer factor of [omega].
+    Thus the quotient split of [b*c] is exactly [bq*c]. *)
+Lemma onoteSplit'_mul_omegaPart_nf : forall b c bq k,
+  NF b -> NF c -> b <> ozero -> bq <> ozero ->
+  onoteSplit' b = (bq, k) -> onoteSplit c = (c, 0) ->
+  onoteSplit' (onoteMul b c) = (onoteMul bq c, 0).
+Proof.
+  intros b c bq k hb hc hb0 hbq0 hsplitB' hfixedC.
+  pose proof (onoteSplit'_nf b bq k hb hsplitB') as hbq.
+  pose proof (onoteSplit_eq_scale_split' b bq k hb hsplitB')
+    as hsplitB.
+  assert (hscale0 : onoteScale onoteOne bq <> ozero).
+  { now apply onoteScale_nonzero. }
+  pose proof (onoteHead_split_nonzero b
+    (onoteScale onoteOne bq) k hsplitB hscale0) as hhead.
+  assert (hmul :
+    onoteMul b c = onoteMul (onoteScale onoteOne bq) c).
+  {
+    rewrite (onoteMul_split_fixed b c hb0 hfixedC),
+      (onoteMul_split_fixed (onoteScale onoteOne bq) c
+        hscale0 hfixedC).
+    now rewrite hhead.
+  }
+  rewrite hmul, onoteMul_scale_one_nf by assumption.
+  apply onoteSplit'_scale_one_nf.
+  now apply onoteMul_nf.
+Qed.
+
+(** Nonzero raw inputs always select a node-producing branch of
+    [onoteMul].  No normality is needed for this shape observation. *)
+Lemma onoteMul_nonzero_raw : forall a b,
+  a <> ozero -> b <> ozero -> onoteMul a b <> ozero.
+Proof.
+  intros a b ha hb.
+  destruct a as [|ae ac ar]; [contradiction |].
+  destruct b as [|be bc br]; [contradiction |].
+  destruct be; discriminate.
+Qed.
+
+(** Scaling preserves the structural absence of finite terms. *)
+Lemma omegaDivisible_scale : forall x o,
+  OmegaDivisible o -> OmegaDivisible (onoteScale x o).
+Proof.
+  intros x o. induction o as [|e IHe c r IHr]; intro ho.
+  - exact I.
+  - destruct ho as [he hr]. cbn [onoteScale OmegaDivisible]. split.
+    + destruct x as [|xe xc xr].
+      * cbn [onoteAdd]. exact he.
+      * apply onoteAdd_nonzero_left_raw. discriminate.
+    + now apply IHr.
+Qed.
+
+(** A split-fixed right factor remains split-fixed after arbitrary left
+    multiplication.  The zero left factor is immediate; otherwise the
+    multiplication algorithm is a scale of the right factor. *)
+Lemma onoteSplit_mul_omegaPart : forall b c,
+  onoteSplit c = (c, 0) ->
+  onoteSplit (onoteMul b c) = (onoteMul b c, 0).
+Proof.
+  intros [|be bc br] c hfixed.
+  - now rewrite onoteMul_zero_l.
+  - set (b := oadd be bc br).
+    rewrite (onoteMul_split_fixed b c ltac:(discriminate) hfixed).
+    apply omegaDivisible_split_fixed, omegaDivisible_scale.
+    now apply split_fixed_omegaDivisible.
+Qed.
+
+(** The closed form of exponentiation by a genuinely finite base at least
+    two.  Stating it separately avoids repeatedly unfolding the four-way
+    base split in the limit proof. *)
+Lemma onotePow_onoteNat_ge_two : forall m exponent q k,
+  onoteSplit' exponent = (q, k) ->
+  onotePow (onoteNat (S (S m))) exponent =
+  oadd q (Nat.pred (Nat.pow (S (S m)) k)) ozero.
+Proof.
+  intros m exponent q k hsplit.
+  unfold onotePow. rewrite onoteSplit_onoteNat.
+  cbn [onotePowAux2]. now rewrite hsplit.
+Qed.
+
+(** At a nonzero omega-divisible exponent, all finite bases at least two
+    reduce to the same leading monomial: the natural coefficient is raised
+    only to finite remainder zero, and hence becomes one. *)
+Lemma onotePow_finite_limit_independent_nf : forall m n exponent,
+  NF exponent -> exponent <> ozero ->
+  onoteSplit exponent = (exponent, 0) ->
+  onotePow (onoteNat (S (S m))) exponent =
+  onotePow (onoteNat (S (S n))) exponent.
+Proof.
+  intros m n exponent hexponent hexponent0 hfixed.
+  remember (onoteSplit' exponent) as quotient eqn:hsplit'.
+  destruct quotient as [q k]. symmetry in hsplit'.
+  pose proof (onoteSplit_eq_scale_split' exponent q k
+    hexponent hsplit') as hbridge.
+  rewrite hfixed in hbridge.
+  pose proof (f_equal (@snd ONote nat) hbridge) as hk.
+  cbn in hk. subst k.
+  rewrite (onotePow_onoteNat_ge_two m exponent q 0 hsplit'),
+    (onotePow_onoteNat_ge_two n exponent q 0 hsplit').
+  reflexivity.
+Qed.
+
+(** Every positive finite left factor disappears in front of a nonzero
+    omega-divisible right factor.  Operationally its head exponent is zero,
+    so [onoteMul_split_fixed] reduces the product to scaling by zero. *)
+Lemma onoteMul_onoteNat_omegaPart : forall n c,
+  n <> 0 -> onoteSplit c = (c, 0) ->
+  onoteMul (onoteNat n) c = c.
+Proof.
+  intros [|n] c hn hfixed; [contradiction |].
+  rewrite (onoteMul_split_fixed (onoteNat (S n)) c
+    ltac:(discriminate) hfixed).
+  cbn [onoteNat onoteHead]. apply onoteScale_zero.
+Qed.
+
+(** Power-of-power at a nonzero limit exponent for finite bases at least
+    two.  A finite [b] makes [base^b] another finite base and satisfies
+    [b*c=c].  If [b] has a nonzero omega quotient, both sides are the same
+    monomial, identified by [onoteSplit'_mul_omegaPart_nf]. *)
+Lemma onotePow_pow_omegaPart_finite_nf : forall m b c,
+  NF b -> NF c -> b <> ozero -> c <> ozero ->
+  onoteSplit c = (c, 0) ->
+  onotePow (onotePow (onoteNat (S (S m))) b) c =
+  onotePow (onoteNat (S (S m))) (onoteMul b c).
+Proof.
+  intros m b c hb hc hb0 hc0 hfixedC.
+  remember (onoteSplit' b) as quotient eqn:hsplitB'.
+  destruct quotient as [bq k]. symmetry in hsplitB'.
+  destruct bq as [|bqe bqc bqr].
+  - pose proof (onoteSplit_eq_scale_split' b ozero k hb hsplitB')
+      as hsplitB.
+    cbn [onoteScale] in hsplitB.
+    pose proof (onoteSplit_reconstruct b ozero k hb hsplitB)
+      as hreconstructB.
+    rewrite onoteAdd_zero_l in hreconstructB. subst b.
+    destruct k as [|k]; [contradiction |].
+    pose proof (Nat.pow_gt_1 (S (S m)) (S k)
+      ltac:(lia) ltac:(discriminate)) as hpowLarge.
+    remember (Nat.pow (S (S m)) (S k)) as powered eqn:hpowered.
+    destruct powered as [|[|powered]]; try lia.
+    assert (hpowB :
+      onotePow (onoteNat (S (S m))) (onoteNat (S k)) =
+      onoteNat (S (S powered))).
+    {
+      rewrite (onotePow_onoteNat_ge_two m (onoteNat (S k))
+        ozero (S k) hsplitB').
+      rewrite <- hpowered. reflexivity.
+    }
+    rewrite hpowB.
+    rewrite (onoteMul_onoteNat_omegaPart (S k) c
+      ltac:(discriminate) hfixedC).
+    now apply onotePow_finite_limit_independent_nf.
+  - set (bq := oadd bqe bqc bqr) in *.
+    pose proof (onotePow_onoteNat_ge_two m b bq k hsplitB')
+      as hpowB.
+    pose proof (onoteSplit'_mul_omegaPart_nf b c bq k
+      hb hc hb0 ltac:(discriminate) hsplitB' hfixedC)
+      as hsplitProduct'.
+    rewrite hpowB.
+    rewrite (onotePow_infinite_fixed
+      (oadd bq (Nat.pred (Nat.pow (S (S m)) k)) ozero)
+      c bq (Nat.pred (Nat.pow (S (S m)) k)) ozero 0
+      eq_refl hfixedC).
+    symmetry.
+    exact (onotePow_onoteNat_ge_two m (onoteMul b c)
+      (onoteMul bq c) 0 hsplitProduct').
+Qed.
+
+(** Power-of-power at a nonzero limit exponent for an infinite base.  The
+    leading exponent of [a^b] is [a0*b].  Raising that notation to [c]
+    therefore produces [(a0*b)*c], while the right side produces
+    [a0*(b*c)]; multiplication associativity makes the monomials identical. *)
+Lemma onotePow_pow_omegaPart_infinite_nf :
+  forall a b c a0 ac ar n,
+    NF a -> NF b -> NF c -> b <> ozero -> c <> ozero ->
+    onoteSplit a = (oadd a0 ac ar, n) ->
+    onoteSplit c = (c, 0) ->
+    onotePow (onotePow a b) c = onotePow a (onoteMul b c).
+Proof.
+  intros a b c a0 ac ar n ha hb hc hb0 hc0 hsplitA hfixedC.
+  pose proof (onoteSplit_nf a (oadd a0 ac ar) n ha hsplitA)
+    as hbasePart.
+  pose proof (onoteSplit_output_fixed a (oadd a0 ac ar) n hsplitA)
+    as hfixedBasePart.
+  assert (ha0 : a0 <> ozero).
+  {
+    intro hzero. subst a0.
+    cbn [onoteSplit] in hfixedBasePart. discriminate.
+  }
+  destruct (onotePow_infinite_head_nf a b a0 ac ar n
+    ha hb hsplitA) as [pc [pr hpowHead]].
+  assert (ha0b0 : onoteMul a0 b <> ozero).
+  { now apply onoteMul_nonzero_raw. }
+  remember (onoteMul a0 b) as a0b eqn:ha0b.
+  destruct a0b as [|pe pc' pr']; [contradiction |].
+  remember (onoteSplit pr) as tailSplit eqn:htailSplit.
+  destruct tailSplit as [pq pn]. symmetry in htailSplit.
+  assert (hpowSplit :
+    onoteSplit (onotePow a b) =
+    (oadd (oadd pe pc' pr') pc pq, pn)).
+  {
+    rewrite hpowHead.
+    cbn [onoteSplit]. now rewrite htailSplit.
+  }
+  pose proof (onotePow_infinite_fixed (onotePow a b) c
+    (oadd pe pc' pr') pc pq pn hpowSplit hfixedC) as hleft.
+  pose proof (onoteSplit_mul_omegaPart b c hfixedC) as hproductFixed.
+  pose proof (onotePow_infinite_fixed a (onoteMul b c)
+    a0 ac ar n hsplitA hproductFixed) as hright.
+  rewrite hleft, hright, ha0b.
+  f_equal.
+  apply onoteMul_assoc.
+  - exact (proj1 hbasePart).
+  - exact hb.
+  - exact hc.
+Qed.
+
+(** The complete nonzero split-fixed exponent case.  The split of [a]
+    exposes exactly the four operational base classes: zero, one, larger
+    finite, and infinite. *)
+Theorem onotePow_pow_omegaPart_nf : forall a b c,
+  NF a -> NF b -> NF c -> c <> ozero ->
+  onoteSplit c = (c, 0) ->
+  onotePow (onotePow a b) c = onotePow a (onoteMul b c).
+Proof.
+  intros a b c ha hb hc hc0 hfixedC.
+  destruct b as [|be bc br].
+  - rewrite onotePow_zero, onotePow_one_base,
+      onoteMul_zero_l, onotePow_zero.
+    reflexivity.
+  - set (b := oadd be bc br) in *.
+    assert (hb0 : b <> ozero) by discriminate.
+    remember (onoteSplit a) as baseSplit eqn:hsplitA.
+    destruct baseSplit as [basePart n]. symmetry in hsplitA.
+    pose proof (onoteSplit_reconstruct a basePart n ha hsplitA)
+      as hreconstructA.
+    destruct basePart as [|a0 ac ar].
+    + rewrite onoteAdd_zero_l in hreconstructA. subst a.
+      destruct n as [|[|m]].
+      * assert (hbc0 : onoteMul b c <> ozero).
+        { now apply onoteMul_nonzero_split_fixed. }
+        change (onotePow (onotePow ozero b) c =
+          onotePow ozero (onoteMul b c)).
+        rewrite (onotePow_zero_base_nonzero b hb0),
+          (onotePow_zero_base_nonzero c hc0),
+          (onotePow_zero_base_nonzero (onoteMul b c) hbc0).
+        reflexivity.
+      * change (onotePow (onotePow onoteOne b) c =
+          onotePow onoteOne (onoteMul b c)).
+        rewrite !onotePow_one_base. reflexivity.
+      * change (onotePow
+          (onotePow (onoteNat (S (S m))) b) c =
+          onotePow (onoteNat (S (S m))) (onoteMul b c)).
+        now apply onotePow_pow_omegaPart_finite_nf.
+    + now apply onotePow_pow_omegaPart_infinite_nf with
+        (a0 := a0) (ac := ac) (ar := ar) (n := n).
+Qed.
+
+(** Finite outer exponents are the successor part of power-of-power.  The
+    induction step expands both the outer power and [b*(n+1)], then uses the
+    already-established power-add law in the reverse direction. *)
+Lemma onotePow_pow_nat_nf : forall a b n,
+  NF a -> NF b ->
+  onotePow (onotePow a b) (onoteNat n) =
+  onotePow a (onoteMul b (onoteNat n)).
+Proof.
+  intros a b n ha hb. induction n as [|n IH].
+  - cbn [onoteNat]. rewrite onotePow_zero, onoteMul_zero_r,
+      onotePow_zero. reflexivity.
+  - rewrite onoteNat_add_one.
+    rewrite (onotePow_succ_nf (onotePow a b) (onoteNat n)
+      ltac:(now apply onotePow_nf) (onoteNat_nf n)).
+    rewrite IH.
+    rewrite (onoteMul_add b (onoteNat n) onoteOne
+      hb (onoteNat_nf n) NF_one), onoteMul_one_r.
+    symmetry. apply onotePow_add_nf.
+    + exact ha.
+    + apply onoteMul_nf; [exact hb | apply onoteNat_nf].
+    + exact hb.
+Qed.
+
+(** Every normal outer exponent is its split-fixed omega part followed by a
+    canonical natural.  The two preceding theorems handle those pieces, and
+    power-add plus right distributivity of multiplication reassemble them. *)
+Theorem onotePow_pow_nf : forall a b c,
+  NF a -> NF b -> NF c ->
+  onotePow (onotePow a b) c = onotePow a (onoteMul b c).
+Proof.
+  intros a b c ha hb hc.
+  remember (onoteSplit c) as outerSplit eqn:hsplitC.
+  destruct outerSplit as [q n]. symmetry in hsplitC.
+  pose proof (onoteSplit_nf c q n hc hsplitC) as hq.
+  pose proof (onoteSplit_output_fixed c q n hsplitC) as hfixedQ.
+  pose proof (onoteSplit_reconstruct c q n hc hsplitC)
+    as hreconstructC.
+  destruct q as [|qe qc qr].
+  - rewrite onoteAdd_zero_l in hreconstructC. subst c.
+    now apply onotePow_pow_nat_nf.
+  - set (q := oadd qe qc qr) in *.
+    rewrite hreconstructC.
+    rewrite (onotePow_add_nf (onotePow a b) q (onoteNat n)
+      ltac:(now apply onotePow_nf) hq (onoteNat_nf n)).
+    rewrite (onotePow_pow_omegaPart_nf a b q ha hb hq
+      ltac:(discriminate) hfixedQ).
+    rewrite (onotePow_pow_nat_nf a b n ha hb).
+    rewrite (onoteMul_add b q (onoteNat n)
+      hb hq (onoteNat_nf n)).
+    symmetry. apply onotePow_add_nf.
+    + exact ha.
+    + exact (onoteMul_nf b q hb hq).
+    + exact (onoteMul_nf b (onoteNat n) hb (onoteNat_nf n)).
+Qed.
+
+(** Code-level power-of-power, in the same result-free functional style as
+    [powCode_addCode].  The validity hypotheses are precisely the normality
+    assumptions required by the raw theorem. *)
+Theorem powCode_mulCode : forall a b c,
+  ValidOrdinalCode a -> ValidOrdinalCode b -> ValidOrdinalCode c ->
+  powCode (powCode a b) c = powCode a (mulCode b c).
+Proof.
+  intros a b c ha hb hc. apply decode_injective.
+  rewrite !decode_powCode, decode_mulCode.
+  apply onotePow_pow_nf; assumption.
+Qed.
+
 End PAEpsilonZeroPowerLaws.

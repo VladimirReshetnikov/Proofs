@@ -2,14 +2,16 @@
   Focused kernel audit for the epsilon-zero ordinal coding development.
 
   This file deliberately imports only the executable coding layer, its
-  semantic laws, the general computable-function-to-formula bridge, and the
-  five public ordinal formulae.  Keeping the audit independent of the larger
-  list-coding audit makes accidental dependencies (in particular MathComp)
-  visible in the focused build.
+  semantic laws (including the transfinite exponent laws), the general
+  computable-function-to-formula bridge, and the five public ordinal formulae.
+  Keeping the audit independent of the larger list-coding audit makes
+  accidental dependencies (in particular MathComp) visible in the focused
+  build.
 *)
 
 From PAListCoding Require Import
-  EpsilonZero EpsilonZeroLaws ComputableFormula EpsilonZeroFormulas.
+  EpsilonZero EpsilonZeroLaws EpsilonZeroPowerLaws
+  ComputableFormula EpsilonZeroFormulas.
 
 (** * Pairing and ordinal-code bijections *)
 
@@ -95,6 +97,22 @@ Check PAEpsilonZeroLaws.ordinalMul_one_r.
 Check PAEpsilonZeroLaws.ordinalPow_zero_exponent.
 Check PAEpsilonZeroLaws.ordinalPow_one_exponent.
 
+(** * Transfinite exponent laws
+
+    The intermediate fixed-limit theorem is included because it is the
+    technically delicate branch: an arbitrary normal exponent is later split
+    into this omega-divisible part followed by a finite tail. *)
+
+Check PAEpsilonZeroPowerLaws.onotePow_succ_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_add_omegaPart_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_add_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_pow_omegaPart_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_pow_nat_nf.
+Check PAEpsilonZeroPowerLaws.onotePow_pow_nf.
+Check PAEpsilonZeroPowerLaws.powCode_succCode.
+Check PAEpsilonZeroPowerLaws.powCode_addCode.
+Check PAEpsilonZeroPowerLaws.powCode_mulCode.
+
 (** * Formula-selection boundary *)
 
 Check computable_unary_graph_has_PA_formula.
@@ -160,6 +178,16 @@ Print Assumptions PAEpsilonZeroLaws.mulCode_assoc.
 Print Assumptions PAEpsilonZeroLaws.onoteSplit_reconstruct.
 Print Assumptions PAEpsilonZeroLaws.onotePow_zero.
 Print Assumptions PAEpsilonZeroLaws.onotePow_one_nf.
+
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_succ_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_add_omegaPart_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_add_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_pow_omegaPart_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_pow_nat_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.onotePow_pow_nf.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_succCode.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_addCode.
+Print Assumptions PAEpsilonZeroPowerLaws.powCode_mulCode.
 
 Print Assumptions computable_unary_graph_has_PA_formula.
 Print Assumptions computable_binary_graph_has_PA_formula.
