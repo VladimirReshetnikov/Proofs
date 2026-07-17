@@ -9,7 +9,7 @@
 
 From PAListCoding Require Import
   ListCode ListFormulas NumberTheory NumberTheoryFormulas
-  NumberTheoryFactorization EpsilonZero.
+  NumberTheoryFactorization EpsilonZero EpsilonZeroLaws.
 
 Check PAListCode.listCode.
 Check PAListCode.decode.
@@ -283,6 +283,9 @@ Check PAEpsilonZero.onoteAdd_nf.
 Check PAEpsilonZero.ordinalAdd_exists_unique.
 Check PAEpsilonZero.ordinalMul_exists_unique.
 Check PAEpsilonZero.ordinalPow_exists_unique.
+Check PAEpsilonZeroLaws.onoteCompare_lt_irrefl.
+Check PAEpsilonZeroLaws.onoteCompare_lt_trans.
+Check PAEpsilonZeroLaws.onoteCompare_trichotomy.
 
 Print Assumptions PAEpsilonZero.squareUnpair_pair.
 Print Assumptions PAEpsilonZero.squarePair_unpair.
@@ -292,3 +295,6 @@ Print Assumptions PAEpsilonZero.onoteAdd_nf.
 Print Assumptions PAEpsilonZero.ordinalAdd_exists_unique.
 Print Assumptions PAEpsilonZero.ordinalMul_exists_unique.
 Print Assumptions PAEpsilonZero.ordinalPow_exists_unique.
+Print Assumptions PAEpsilonZeroLaws.onoteCompare_lt_irrefl.
+Print Assumptions PAEpsilonZeroLaws.onoteCompare_lt_trans.
+Print Assumptions PAEpsilonZeroLaws.onoteCompare_trichotomy.
