@@ -1157,4 +1157,110 @@ Corollary zeroCode_pow_zeroCode :
   powCode zeroCode zeroCode = oneCode.
 Proof. apply pow_zeroCode. exact zeroCode_valid. Qed.
 
+(** * Code-level strict order *)
+
+Theorem ordinalLT_irrefl : forall a, ~ OrdinalLT a a.
+Proof.
+  intros a [_ [_ haa]].
+  exact (onoteCompare_lt_irrefl (decode a) haa).
+Qed.
+
+Theorem ordinalLT_trans : forall a b c,
+  OrdinalLT a b -> OrdinalLT b c -> OrdinalLT a c.
+Proof.
+  intros a b c [ha [hb hab]] [_ [hc hbc]].
+  repeat split; try assumption.
+  now apply onoteCompare_lt_trans with (b := decode b).
+Qed.
+
+(** Equality in the middle case is equality of codes, not merely equality of
+    decoded syntax: [decode_injective] uses the total encode/decode inverse. *)
+Theorem ordinalLT_trichotomy : forall a b,
+  ValidOrdinalCode a -> ValidOrdinalCode b ->
+  OrdinalLT a b \/ a = b \/ OrdinalLT b a.
+Proof.
+  intros a b ha hb.
+  destruct (onoteCompare_trichotomy (decode a) (decode b))
+    as [hab | [heq | hba]].
+  - left. exact (conj ha (conj hb hab)).
+  - right. left. now apply decode_injective.
+  - right. right. exact (conj hb (conj ha hba)).
+Qed.
+
+(** * Graph witnesses for the distinguished identities
+
+    The graph predicates are result-first, so each corollary states the
+    canonical result explicitly and records validity of both operands. *)
+Corollary ordinalAdd_zero_l : forall a,
+  ValidOrdinalCode a -> OrdinalAdd a zeroCode a.
+Proof.
+  intros a ha. unfold OrdinalAdd.
+  split; [exact zeroCode_valid |].
+  split; [exact ha |].
+  symmetry. apply zeroCode_add.
+Qed.
+
+Corollary ordinalAdd_zero_r : forall a,
+  ValidOrdinalCode a -> OrdinalAdd a a zeroCode.
+Proof.
+  intros a ha. unfold OrdinalAdd.
+  split; [exact ha |].
+  split; [exact zeroCode_valid |].
+  symmetry. now apply add_zeroCode.
+Qed.
+
+Corollary ordinalMul_zero_l : forall a,
+  ValidOrdinalCode a -> OrdinalMul zeroCode zeroCode a.
+Proof.
+  intros a ha. unfold OrdinalMul.
+  split; [exact zeroCode_valid |].
+  split; [exact ha |].
+  symmetry. apply zeroCode_mul.
+Qed.
+
+Corollary ordinalMul_zero_r : forall a,
+  ValidOrdinalCode a -> OrdinalMul zeroCode a zeroCode.
+Proof.
+  intros a ha. unfold OrdinalMul.
+  split; [exact ha |].
+  split; [exact zeroCode_valid |].
+  symmetry. apply mul_zeroCode.
+Qed.
+
+Corollary ordinalMul_one_l : forall a,
+  ValidOrdinalCode a -> OrdinalMul a oneCode a.
+Proof.
+  intros a ha. unfold OrdinalMul.
+  split; [exact oneCode_valid |].
+  split; [exact ha |].
+  symmetry. now apply oneCode_mul.
+Qed.
+
+Corollary ordinalMul_one_r : forall a,
+  ValidOrdinalCode a -> OrdinalMul a a oneCode.
+Proof.
+  intros a ha. unfold OrdinalMul.
+  split; [exact ha |].
+  split; [exact oneCode_valid |].
+  symmetry. now apply mul_oneCode.
+Qed.
+
+Corollary ordinalPow_zero_exponent : forall a,
+  ValidOrdinalCode a -> OrdinalPow oneCode a zeroCode.
+Proof.
+  intros a ha. unfold OrdinalPow.
+  split; [exact ha |].
+  split; [exact zeroCode_valid |].
+  symmetry. now apply pow_zeroCode.
+Qed.
+
+Corollary ordinalPow_one_exponent : forall a,
+  ValidOrdinalCode a -> OrdinalPow a a oneCode.
+Proof.
+  intros a ha. unfold OrdinalPow.
+  split; [exact ha |].
+  split; [exact oneCode_valid |].
+  symmetry. now apply pow_oneCode.
+Qed.
+
 End PAEpsilonZeroLaws.
