@@ -180,6 +180,30 @@ closures of every functionality and existence statement; the precise
 distinction is spelled out under “What ‘represented by a PA formula’ means”
 below.
 
+## Diophantine exponentiation
+
+In addition to the multiplication-trace PA formula in item 22, both ports
+prove Matiyasevich's stronger result that the standard-natural-number graph
+
+```text
+(m, n, k) such that m = n^k
+```
+
+is Diophantine.  Here “Diophantine” has its usual single-equation meaning:
+there is one integer polynomial (equivalently, an equality of two natural
+polynomials) whose existential natural-number solutions are exactly the
+triples in the graph.  The parameter order is result, base, exponent, and the
+conventions `a^0 = 1` and `0^0 = 1` are included.
+
+Lean specializes Mathlib's formalized Pell-equation proof of
+`Dioph.pow_dioph`, exposes the binary function as a `DiophFn`, and then moves
+its output to coordinate zero to obtain the three-variable graph.  Rocq uses
+the independent constructive theorem `dio_fun_expo`, retains its explicit
+`dio_formula`, and compiles that syntax to the official finite-vector H10
+`Diophantine` interface through a single polynomial equation.  Neither port
+uses the existing PA trace formula as a shortcut, and the Rocq proof does not
+appeal to the generic computable-function-to-DPRM conversion.
+
 ## Ordinal codes below ε₀
 
 The two ports use the same raw `ONote` hereditary-Cantor-normal-form syntax and
@@ -357,7 +381,9 @@ results.
   six scalar bridges, determinacy and existence properties, and edge cases.
   `PAListCoding.NumberTheory` defines the five number-theoretic relations and
   their formulae, then proves their standard interpretations and canonicality
-  properties. `PAListCoding.lean` is the public facade, and
+  properties. `PAListCoding.ExponentiationDiophantine` specializes Mathlib's
+  Matiyasevich theorem to the result-first `Power` graph.
+  `PAListCoding.lean` is the public facade, and
   `PAListCoding.Audit` checks the theorem surface and its assumptions.
 - Lean's `PAListCoding.EpsilonZero` supplies the shared raw notation code,
   validity, set-theoretic denotation, arithmetic graphs, and semantic
@@ -377,8 +403,11 @@ results.
   formulae. The isolated `NumberTheoryFactorization.v` module uses MathComp's
   unbounded-primes theorem and verified fundamental theorem of arithmetic to
   provide positive-index nth-prime totality and canonical prime-factorization
-  existence and uniqueness. `Audit.v` checks the complete public surface and
-  prints its assumptions.
+  existence and uniqueness. `ExponentiationDiophantine.v` connects
+  `PowerNat` to the constructive Matiyasevich formula and to the official H10
+  single-equation definition; `ExponentiationDiophantineAudit.v` checks that
+  result without the unrelated MathComp dependency. `Audit.v` checks the
+  complete public surface and prints its assumptions.
 - Coq's `EpsilonZero.v` implements the same square-shell/raw-notation code and
   executable structural operations. `EpsilonZeroLaws.v` gives independent
   syntactic proofs for normal forms, comparison, closure, and the core
@@ -399,8 +428,8 @@ and finite-list reasoning use only the Rocq standard library.  The isolated
 nth-prime totality and prime-factorization canonicality bridge additionally
 requires `rocq-mathcomp-boot` version `2.5.0`; the PA formulae and their
 correctness theorems do not depend on MathComp.  MathComp 2.5's released source
-and opam bound target Rocq before 9.2, so the focused Rocq 9.2 ordinal build and
-audit deliberately exclude that unrelated bridge.
+and opam bound target Rocq before 9.2, so the focused Rocq 9.2 ordinal and
+Diophantine-exponentiation audits deliberately exclude that unrelated bridge.
 
 In a compatible Rocq switch, that additional package can be installed with
 `opam install rocq-mathcomp-boot.2.5.0`.
@@ -412,6 +441,7 @@ From the repository root, build the complete Lean project and run its audit:
 ```powershell
 lake --dir Logic/PeanoArithmetic/ListCoding/Lean build
 lake --dir Logic/PeanoArithmetic/ListCoding/Lean build `
+  PAListCoding.ExponentiationDiophantine `
   PAListCoding.EpsilonZeroFormulas
 lake --dir Logic/PeanoArithmetic/ListCoding/Lean env lean `
   PAListCoding/Audit.lean
@@ -426,14 +456,20 @@ rocq makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq
 ```
 
-For the focused Rocq 9.2 ordinal audit, build its registered target and then
-run the kernel checker.  Its dependency closure deliberately excludes the
-separate MathComp factorization bridge:
+For the focused Rocq 9.2 exponentiation and ordinal audits, build their
+registered targets and then run the kernel checker.  Their dependency closures
+deliberately exclude the separate MathComp factorization bridge:
 
 ```powershell
 rocq makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq `
+  Logic/PeanoArithmetic/ListCoding/Coq/ExponentiationDiophantineAudit.vo `
   Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZeroAudit.vo
+rocqchk -silent -Q Logic/FirstOrder/Coq FirstOrder `
+  -Q Logic/Interpretability/PAHF/Coq PAHF `
+  -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding `
+  -Q lib/Coq-Library-Undecidability-current/theories Undecidability `
+  PAListCoding.ExponentiationDiophantineAudit
 rocqchk -silent -Q Logic/FirstOrder/Coq FirstOrder `
   -Q Logic/Interpretability/PAHF/Coq PAHF `
   -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding `
@@ -447,7 +483,9 @@ functionality and existence properties, edge cases, and the coding existence,
 decoding functionality, round-trip, and injectivity theorems.  Both ordinal
 audits check the five ordinal formula specifications, guarded functionality,
 and algebra laws; Lean additionally checks the exact denotation range below
-`ε₀`, while Rocq independently checks its raw and syntactic surface.  No
+`ε₀`, while Rocq independently checks its raw and syntactic surface.  The
+exponentiation audits check both the direct function-graph certificate and the
+single-polynomial-equation theorem.  No
 generated enumeration is part of the trusted theorem boundary: the
 all-permutations result is checked against its soundness, completeness,
 exact-once, and lexicographic specification.

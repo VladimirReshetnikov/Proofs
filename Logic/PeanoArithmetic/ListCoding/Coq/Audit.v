@@ -9,7 +9,8 @@
 
 From PAListCoding Require Import
   ListCode ListFormulas NumberTheory NumberTheoryFormulas
-  NumberTheoryFactorization EpsilonZero EpsilonZeroLaws EpsilonZeroPowerLaws
+  NumberTheoryFactorization ExponentiationDiophantine
+  EpsilonZero EpsilonZeroLaws EpsilonZeroPowerLaws
   ComputableFormula EpsilonZeroFormulas.
 
 Check PAListCode.listCode.
@@ -79,6 +80,14 @@ Check PAListNumberTheoryFormulas.positiveDivisorsFormula_correct.
 Check PAListNumberTheory.PrimeNat.
 Check PAListNumberTheory.NthPrime.
 Check PAListNumberTheory.PowerNat.
+Check PAListExponentiationDiophantine.NatPowFunction.
+Check PAListExponentiationDiophantine.PowerNatVector.
+Check PAListExponentiationDiophantine.nat_pow_dio_fun.
+Check PAListExponentiationDiophantine.PowerNat_dio_rel.
+Check PAListExponentiationDiophantine.powerNatDiophantineFormula.
+Check PAListExponentiationDiophantine.powerNatDiophantineFormula_spec.
+Check PAListExponentiationDiophantine.powerNatDiophantineEquation.
+Check PAListExponentiationDiophantine.PowerNat_Diophantine.
 Check PAListNumberTheory.PrimeFactorizationCode.
 Check PAListNumberTheory.BaseDigitsCode.
 Check PAListNumberTheory.DivisorListCode.
@@ -198,6 +207,12 @@ Print Assumptions PAListNumberTheoryFactorization.nthPrime_positive_exists.
 Print Assumptions PAListNumberTheoryFactorization.nthPrime_exists_unique.
 Print Assumptions PAListNumberTheoryFactorization.nthPrime_index_exists_unique.
 Print Assumptions PAListNumberTheory.power_exists_unique.
+Print Assumptions PAListExponentiationDiophantine.nat_pow_eq_mscal.
+Print Assumptions PAListExponentiationDiophantine.dio_rel_Diophantine.
+Print Assumptions PAListExponentiationDiophantine.nat_pow_dio_fun.
+Print Assumptions PAListExponentiationDiophantine.PowerNat_dio_rel.
+Print Assumptions PAListExponentiationDiophantine.powerNatDiophantineFormula_spec.
+Print Assumptions PAListExponentiationDiophantine.PowerNat_Diophantine.
 Print Assumptions PAListNumberTheory.primeFactorizationCode_listCode.
 Print Assumptions PAListNumberTheory.primeFactorization_one_empty.
 Print Assumptions PAListNumberTheoryFactorization.primeFactorizationCode_typed.

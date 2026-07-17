@@ -206,6 +206,24 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #print axioms PAListCoding.baseDigits_encode_iff
 #print axioms PAListCoding.baseDigits_existsUnique
 
+/-! ### Diophantine exponentiation
+
+These declarations are distinct from the preceding PA multiplication-trace
+formula: they state that the result-first graph is the existential zero set of
+one integer polynomial. -/
+
+#check PAListCoding.NaturalPowFunction
+#check PAListCoding.NaturalPowGraph
+#check PAListCoding.naturalPow_diophantineFunction
+#check PAListCoding.naturalPowGraph_diophantine
+#check PAListCoding.power_diophantine
+#check PAListCoding.power_polynomial_exists
+
+#print axioms PAListCoding.naturalPow_diophantineFunction
+#print axioms PAListCoding.naturalPowGraph_diophantine
+#print axioms PAListCoding.power_diophantine
+#print axioms PAListCoding.power_polynomial_exists
+
 /-! ## Ordinal notations below epsilon zero -/
 
 -- The concrete square-shell code is a bijection on raw hereditary CNF syntax;
