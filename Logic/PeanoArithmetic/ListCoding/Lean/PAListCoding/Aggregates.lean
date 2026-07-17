@@ -74,7 +74,7 @@ theorem exists_runningAggregateTrace_iff_foldl (unit : ℕ)
         hget xs.length (Nat.lt_succ_self _)
 
 /-- Convert a coded aggregate witness into its ordinary-list trace and back. -/
-private theorem coded_runningAggregate_iff (unit : ℕ)
+theorem coded_runningAggregate_iff (unit : ℕ)
     (op : ℕ → ℕ → ℕ) (xs : List ℕ) (p : ℕ) :
     (∃ traceCode, Seq traceCode ∧
         lh traceCode = lh (encode xs) + 1 ∧ znth traceCode 0 = unit ∧

@@ -442,4 +442,264 @@ theorem divisorList_existsUnique (m : ℕ) (hm : m ≠ 0) :
   rw [← h]
   exact divisorList_canonical 12 (by omega)
 
+@[simp] theorem divisorList_one_example : DivisorList (encode [1]) 1 := by
+  have h : canonicalDivisors 1 = [1] := by decide
+  rw [← h]
+  exact divisorList_canonical 1 (by omega)
+
+/-! ### Most-significant-digit-first base expansions -/
+
+/-- Evaluate an MSD-first digit list by Horner's rule. -/
+def msdValue (b : ℕ) (xs : List ℕ) : ℕ :=
+  xs.foldl (fun acc d ↦ acc * b + d) 0
+
+/-- Mathlib's `ofDigits` reads in the opposite (least-significant-first) order. -/
+theorem msdValue_eq_ofDigits_reverse (b : ℕ) (xs : List ℕ) :
+    msdValue b xs = Nat.ofDigits b xs.reverse := by
+  have haux : ∀ acc : ℕ,
+      xs.foldl (fun a d ↦ a * b + d) acc =
+        acc * b ^ xs.length + Nat.ofDigits b xs.reverse := by
+    induction xs with
+    | nil => simp
+    | cons d ds ih =>
+        intro acc
+        rw [List.foldl_cons, ih]
+        simp only [List.length_cons, List.reverse_cons, Nat.ofDigits_append,
+          Nat.ofDigits_singleton, pow_succ, List.length_reverse]
+        ring
+  simpa [msdValue] using haux 0
+
+/-- External, transparent semantics of the PA digit relation. -/
+def CanonicalDigitConditions (xs : List ℕ) (m b : ℕ) : Prop :=
+  Nat.le 2 b ∧ xs ≠ [] ∧ (∀ d ∈ xs, d < b) ∧
+    ((m = 0 ∧ xs = [0]) ∨ (0 < m ∧ xs.getD 0 0 ≠ 0)) ∧
+    msdValue b xs = m
+
+private theorem digit_bounds_iff (xs : List ℕ) (b : ℕ) :
+    (∀ i < xs.length, znth (encode xs) i < b) ↔
+      ∀ d ∈ xs, d < b := by
+  constructor
+  · intro h d hd
+    rcases List.mem_iff_get.mp hd with ⟨i, rfl⟩
+    simpa only [encode_nth xs i] using h (i : ℕ) (by simpa using i.isLt)
+  · intro h i hi
+    have hentry := h xs[i] (List.getElem_mem hi)
+    change xs.get ⟨i, hi⟩ < b at hentry
+    simpa only [encode_nth xs ⟨i, hi⟩] using hentry
+
+private theorem digit_zero_shape_iff (xs : List ℕ) (m : ℕ) :
+    (m = 0 ∧ xs.length = 1 ∧ znth (encode xs) 0 = 0) ↔
+      m = 0 ∧ xs = [0] := by
+  constructor
+  · rintro ⟨rfl, hlen, hzero⟩
+    have hlen' : xs.length = 1 := hlen
+    have hindex : 0 < xs.length := by omega
+    have hfirst : xs.get ⟨0, hindex⟩ = 0 := by
+      exact (encode_nth xs ⟨0, hindex⟩).symm.trans hzero
+    refine ⟨rfl, ?_⟩
+    calc
+      xs = [xs.get ⟨0, by omega⟩] := List.eq_cons_of_length_one hlen'
+      _ = [0] := by simp only [hfirst]
+  · rintro ⟨rfl, rfl⟩
+    exact ⟨rfl, by simp, by
+      simpa using (encode_nth [0] ⟨0, by simp⟩)⟩
+
+private theorem digit_positive_shape_iff (xs : List ℕ) (m : ℕ)
+    (hxs : 0 < xs.length) :
+    (0 < m ∧ znth (encode xs) 0 ≠ 0) ↔
+      0 < m ∧ xs.getD 0 0 ≠ 0 := by
+  have hfirst : znth (encode xs) 0 = xs.getD 0 0 := by
+    rw [List.getD_eq_getElem xs 0 hxs]
+    exact encode_nth xs ⟨0, hxs⟩
+  simp only [hfirst]
+
+@[simp] theorem baseDigits_encode_iff_conditions (xs : List ℕ) (m b : ℕ) :
+    BaseDigits (encode xs) m b ↔ CanonicalDigitConditions xs m b := by
+  rw [BaseDigits, CanonicalDigitConditions]
+  simp only [encode_valid, true_and, encode_length]
+  constructor
+  · rintro ⟨hb, hlen, hbounds, hshape, traceCode, htrace, htlen,
+      htzero, htstep, htlast⟩
+    have hfold : msdValue b xs = m := by
+      rw [msdValue]
+      rw [← exists_runningAggregateTrace_iff_foldl 0
+        (fun a d : ℕ ↦ a * b + d) xs m]
+      rw [← coded_runningAggregate_iff 0
+        (fun a d : ℕ ↦ a * b + d) xs m]
+      simpa only [encode_length] using
+        (show ∃ traceCode, Seq traceCode ∧
+            lh traceCode = xs.length + 1 ∧ znth traceCode 0 = 0 ∧
+            (∀ i < xs.length, znth traceCode (i + 1) =
+              znth traceCode i * b + znth (encode xs) i) ∧
+            znth traceCode xs.length = m from
+          ⟨traceCode, htrace, htlen, htzero, htstep, htlast⟩)
+    have hb' : Nat.le 2 b := by
+      rw [LO.FirstOrder.Arithmetic.le_def] at hb
+      exact hb.elim Nat.le_of_eq Nat.le_of_lt
+    refine ⟨hb', List.ne_nil_of_length_pos hlen,
+      (digit_bounds_iff xs b).1 hbounds, ?_, hfold⟩
+    rcases hshape with hzero | hpos
+    · exact Or.inl ((digit_zero_shape_iff xs m).1 hzero)
+    · exact Or.inr ((digit_positive_shape_iff xs m hlen).1 hpos)
+  · rintro ⟨hb, hne, hbounds, hshape, hfold⟩
+    have hlen : 0 < xs.length := by
+      have : xs.length ≠ 0 := fun h ↦ hne (List.length_eq_zero_iff.mp h)
+      omega
+    have htrace : ∃ traceCode, Seq traceCode ∧
+        lh traceCode = lh (encode xs) + 1 ∧ znth traceCode 0 = 0 ∧
+        (∀ i < lh (encode xs),
+          znth traceCode (i + 1) =
+            znth traceCode i * b + znth (encode xs) i) ∧
+        znth traceCode (lh (encode xs)) = m := by
+      rw [coded_runningAggregate_iff 0
+        (fun a d : ℕ ↦ a * b + d) xs m,
+        exists_runningAggregateTrace_iff_foldl]
+      rw [msdValue] at hfold
+      exact hfold
+    refine ⟨?_, hlen, (digit_bounds_iff xs b).2 hbounds, ?_, ?_⟩
+    · rw [LO.FirstOrder.Arithmetic.le_def]
+      exact (Nat.lt_or_eq_of_le hb).elim Or.inr Or.inl
+    rcases hshape with hzero | hpos
+    · exact Or.inl ((digit_zero_shape_iff xs m).2 hzero)
+    · exact Or.inr ((digit_positive_shape_iff xs m hlen).2 hpos)
+    · simpa only [encode_length] using htrace
+
+/-- The canonical external MSD-first list, including the stipulated zero digit. -/
+def canonicalBaseDigits (m b : ℕ) : List ℕ :=
+  if m = 0 then [0] else (Nat.digits b m).reverse
+
+private theorem conditions_eq_canonical {xs : List ℕ} {m b : ℕ}
+    (h : CanonicalDigitConditions xs m b) : xs = canonicalBaseDigits m b := by
+  rcases h with ⟨hb, hne, hbounds, hshape, hvalue⟩
+  rcases hshape with ⟨rfl, rfl⟩ | ⟨hmpos, hfirst⟩
+  · simp [canonicalBaseDigits]
+  · have hof : Nat.ofDigits b xs.reverse = m := by
+      rw [← msdValue_eq_ofDigits_reverse, hvalue]
+    have hlast : ∀ hne' : xs.reverse ≠ [], (xs.reverse).getLast hne' ≠ 0 := by
+      intro hne'
+      cases xs with
+      | nil => exact (hne rfl).elim
+      | cons d ds => simpa [List.reverse_cons] using hfirst
+    have hdigits : Nat.digits b m = xs.reverse := by
+      rw [← hof]
+      apply Nat.digits_ofDigits b (Nat.lt_of_succ_le hb) xs.reverse
+      · intro d hd
+        exact hbounds d (by simpa using hd)
+      · exact hlast
+    have hrev : xs = (Nat.digits b m).reverse := by
+      simpa using congrArg List.reverse hdigits.symm
+    simpa [canonicalBaseDigits, hmpos.ne'] using hrev
+
+private theorem digits_getLast?_ne_zero {b m : ℕ} (hb : 1 < b) (hm : m ≠ 0) :
+    (Nat.digits b m).getLast? ≠ some 0 := by
+  induction m using Nat.strongRecOn with
+  | ind m ih =>
+      rw [Nat.digits_eq_cons_digits_div hb hm]
+      by_cases hq : m / b = 0
+      · simp [hq]
+        intro hmod
+        apply hm
+        have hdecomp := Nat.mod_add_div m b
+        simpa [hmod, hq] using hdecomp.symm
+      · have htail : Nat.digits b (m / b) ≠ [] :=
+          Nat.digits_ne_nil_iff_ne_zero.mpr hq
+        rcases List.exists_cons_of_ne_nil htail with ⟨d, ds, htailEq⟩
+        rw [htailEq, List.getLast?_cons_cons]
+        have hrec :=
+          ih (m / b) (Nat.div_lt_self (Nat.pos_of_ne_zero hm) hb) hq
+        rw [htailEq] at hrec
+        exact hrec
+
+private theorem digits_getLast_ne_zero {b m : ℕ} (hb : 1 < b) (hm : m ≠ 0)
+    (hne : Nat.digits b m ≠ []) : (Nat.digits b m).getLast hne ≠ 0 := by
+  intro hzero
+  apply digits_getLast?_ne_zero hb hm
+  rw [List.getLast?_eq_getLast_of_ne_nil hne, hzero]
+
+private theorem reverse_getD_zero_eq_getLast {xs : List ℕ} (hne : xs ≠ []) :
+    xs.reverse.getD 0 0 = xs.getLast hne := by
+  have hopt := List.getLast?_eq_getLast_of_ne_nil hne
+  rw [← List.head?_reverse] at hopt
+  have hgetD := congrArg (fun o : Option ℕ ↦ o.getD 0) hopt
+  simpa [List.getD, List.head?_eq_getElem?] using hgetD
+
+private theorem canonical_conditions (m b : ℕ) (hb : Nat.le 2 b) :
+    CanonicalDigitConditions (canonicalBaseDigits m b) m b := by
+  by_cases hm : m = 0
+  · subst m
+    refine ⟨hb, by simp [canonicalBaseDigits], ?_, Or.inl ⟨rfl, by
+      simp [canonicalBaseDigits]⟩, by simp [canonicalBaseDigits, msdValue]⟩
+    intro d hd
+    have hd0 : d = 0 := by simpa [canonicalBaseDigits] using hd
+    subst d
+    exact Nat.lt_of_lt_of_le (by decide : 0 < 2) hb
+  · have hmpos : 0 < m := Nat.pos_of_ne_zero hm
+    have hb1 : 1 < b := Nat.lt_of_succ_le hb
+    have hneDigits : Nat.digits b m ≠ [] :=
+      Nat.digits_ne_nil_iff_ne_zero.mpr hm
+    have hbounds : ∀ d ∈ Nat.digits b m, d < b := by
+      intro d hd
+      exact Nat.digits_lt_base hb1 hd
+    refine ⟨hb, by simp [canonicalBaseDigits, hm, hneDigits], ?_, ?_, ?_⟩
+    · intro d hd
+      exact hbounds d (by simpa [canonicalBaseDigits, hm] using hd)
+    · right
+      refine ⟨hmpos, ?_⟩
+      have hlast := digits_getLast_ne_zero (b := b) (m := m) hb1 hm hneDigits
+      rw [canonicalBaseDigits, if_neg hm, reverse_getD_zero_eq_getLast hneDigits]
+      exact hlast
+    · rw [msdValue_eq_ofDigits_reverse]
+      simp [canonicalBaseDigits, hm, Nat.ofDigits_digits]
+
+@[simp] theorem baseDigits_encode_iff (xs : List ℕ) (m b : ℕ) :
+    BaseDigits (encode xs) m b ↔
+      Nat.le 2 b ∧ xs = canonicalBaseDigits m b := by
+  constructor
+  · intro h
+    have hc := (baseDigits_encode_iff_conditions xs m b).1 h
+    exact ⟨hc.1, conditions_eq_canonical hc⟩
+  · rintro ⟨hb, rfl⟩
+    exact (baseDigits_encode_iff_conditions _ _ _).2
+      (canonical_conditions m b hb)
+
+theorem baseDigits_functional {v w m b : ℕ}
+    (hv : BaseDigits v m b) (hw : BaseDigits w m b) : v = w := by
+  let xs := decode v
+  let ys := decode w
+  have hvcode : encode xs = v := encode_decode hv.1
+  have hwcode : encode ys = w := encode_decode hw.1
+  have hx := (baseDigits_encode_iff xs m b).1 (by simpa only [hvcode] using hv)
+  have hy := (baseDigits_encode_iff ys m b).1 (by simpa only [hwcode] using hw)
+  rw [← hvcode, ← hwcode, hx.2, hy.2]
+
+theorem baseDigits_existsUnique (m b : ℕ) (hb : Nat.le 2 b) :
+    ∃! v, BaseDigits v m b := by
+  have hcanonical : BaseDigits (encode (canonicalBaseDigits m b)) m b :=
+    (baseDigits_encode_iff _ _ _).2 ⟨hb, rfl⟩
+  exact ⟨_, hcanonical, fun v hv ↦ baseDigits_functional hv hcanonical⟩
+
+@[simp] theorem baseDigits_invalid_base_zero (v m : ℕ) :
+    ¬BaseDigits v m 0 := by
+  intro h
+  have hb := h.2.1
+  rw [LO.FirstOrder.Arithmetic.le_def] at hb
+  omega
+
+@[simp] theorem baseDigits_invalid_base_one (v m : ℕ) :
+    ¬BaseDigits v m 1 := by
+  intro h
+  have hb := h.2.1
+  rw [LO.FirstOrder.Arithmetic.le_def] at hb
+  omega
+
+@[simp] theorem baseDigits_zero (b : ℕ) (hb : Nat.le 2 b) :
+    BaseDigits (encode [0]) 0 b := by
+  rw [baseDigits_encode_iff]
+  exact ⟨hb, by simp [canonicalBaseDigits]⟩
+
+@[simp] theorem baseDigits_13_binary :
+    BaseDigits (encode [1, 1, 0, 1]) 13 2 := by
+  rw [baseDigits_encode_iff_conditions]
+  norm_num [CanonicalDigitConditions, msdValue] <;> simp
+
 end PAListCoding
