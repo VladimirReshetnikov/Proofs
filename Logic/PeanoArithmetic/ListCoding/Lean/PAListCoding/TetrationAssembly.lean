@@ -1,4 +1,6 @@
 import PAListCoding.IterationDioph
+import PAListCoding.CipherOnes
+import PAListCoding.CipherRelations
 
 /-!
 # Final Lean assembly for tetration
@@ -94,5 +96,84 @@ theorem naturalTetration_polynomial_exists_of_cipherClosures
     hcode hconstFixed hconst hindex hmul
 
 end TetrationAssembly
+
+open Fin2
+open scoped Dioph
+
+/-! ## Discharging the primitive closure contracts
+
+The sparse one-columns are the only non-elementary arithmetic ingredient in
+the cipher compiler.  `CipherOnes.onesCodes_dioph` constructs them from one
+finite arithmetic certificate; `CipherRelations` then derives all five
+primitive closures used by the bounded iteration theorem.  Keeping these
+bridges here makes the public theorem unconditional while preserving the
+modular conditional assembly above.
+-/
+
+private theorem tetrationOnesSubstitutionClosed :
+    CipherRelations.OnesSubstitutionClosed := by
+  intro alpha len q ones shifted dlen dq dones dshifted
+  exact CipherOnes.onesCodes_dioph dlen dq dones dshifted
+
+private theorem tetrationCodeSubstitutionClosed :
+    CircuitDioph.TernarySubstitutionClosed SparseCipher.Code :=
+  CipherRelations.code_closed_of_ones tetrationOnesSubstitutionClosed
+
+private theorem tetrationFixedConstSubstitutionClosed :
+    ∀ k, CircuitDioph.TernarySubstitutionClosed
+      (fun len q code ↦ SparseCipher.ConstCode len q k code) :=
+  CipherRelations.constCode_fixed_closed_of_ones
+    tetrationOnesSubstitutionClosed
+
+/-- The parameter-valued constant column uses the same four-function
+substitution contract as the bounded-cipher compiler. -/
+private theorem tetrationConstSubstitutionClosed :
+    BoundedCipherDioph.QuaternarySubstitutionClosed
+      SparseCipher.ConstCode := by
+  intro alpha len q k code dlen dq dk dcode
+  exact CipherRelations.constCode_dioph_of_ones
+    tetrationOnesSubstitutionClosed dlen dq dk dcode
+
+private theorem tetrationIndexSubstitutionClosed :
+    CircuitDioph.TernarySubstitutionClosed SparseCipher.IndexCode :=
+  CipherRelations.indexCode_closed_of_ones tetrationOnesSubstitutionClosed
+
+private theorem tetrationMulSubstitutionClosed :
+    CircuitDioph.QuinarySubstitutionClosed BoundedCipher.MulRel :=
+  CipherRelations.mulRel_closed_of_ones tetrationOnesSubstitutionClosed
+
+/-- The result-first graph `(result, base, height)` of natural tetration is
+Diophantine.  Our convention is `tetration base 0 = 1` and
+`tetration base (height + 1) = base ^ tetration base height`. -/
+theorem naturalTetrationGraph_diophantine : Dioph NaturalTetrationGraph :=
+  TetrationAssembly.naturalTetrationGraph_diophantine_of_cipherClosures
+    tetrationCodeSubstitutionClosed
+    tetrationFixedConstSubstitutionClosed
+    tetrationConstSubstitutionClosed
+    tetrationIndexSubstitutionClosed
+    tetrationMulSubstitutionClosed
+
+/-- Natural tetration is a Diophantine function of `(base, height)`. -/
+theorem naturalTetration_diophantineFunction :
+    Dioph.DiophFn NaturalTetrationFunction :=
+  TetrationAssembly.naturalTetration_diophantineFunction_of_cipherClosures
+    tetrationCodeSubstitutionClosed
+    tetrationFixedConstSubstitutionClosed
+    tetrationConstSubstitutionClosed
+    tetrationIndexSubstitutionClosed
+    tetrationMulSubstitutionClosed
+
+/-- Unfolded polynomial witness for the result-first tetration graph. -/
+theorem naturalTetration_polynomial_exists :
+    ∃ (β : Type) (p : Poly (Fin2 3 ⊕ β)),
+      ∀ v : Vector3 ℕ 3,
+        v &0 = tetration (v &1) (v &2) ↔
+          ∃ t : β → ℕ, p (Sum.elim v t) = 0 :=
+  TetrationAssembly.naturalTetration_polynomial_exists_of_cipherClosures
+    tetrationCodeSubstitutionClosed
+    tetrationFixedConstSubstitutionClosed
+    tetrationConstSubstitutionClosed
+    tetrationIndexSubstitutionClosed
+    tetrationMulSubstitutionClosed
 
 end PAListCoding
