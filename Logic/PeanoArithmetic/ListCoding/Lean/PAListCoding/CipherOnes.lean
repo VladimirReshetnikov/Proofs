@@ -1285,5 +1285,192 @@ theorem onesCodes_iff_certificate (len q ones shifted : Nat) :
       exact positive_certificate_implies_onesCodes hlen hspacing hgeom hland
         honesLt hshifted hboundary hdvd
 
+/-! ## Diophantine compilation -/
+
+private theorem and_dioph {ι : Type} {P Q : (ι → Nat) → Prop}
+    (dP : Dioph {v | P v}) (dQ : Dioph {v | Q v}) :
+    Dioph {v | P v ∧ Q v} := by
+  apply Dioph.ext (Dioph.inter dP dQ)
+  intro v
+  rfl
+
+private theorem or_dioph {ι : Type} {P Q : (ι → Nat) → Prop}
+    (dP : Dioph {v | P v}) (dQ : Dioph {v | Q v}) :
+    Dioph {v | P v ∨ Q v} := by
+  apply Dioph.ext (Dioph.union dP dQ)
+  intro v
+  rfl
+
+private def maskWitnessValue (mask : Nat) : Unit → Nat :=
+  fun _ ↦ mask
+
+/-- The arithmetic certificate is stable under substitution of arbitrary
+Diophantine functions.  Its positive branch allocates exactly one fresh
+coordinate, the dense mask. -/
+theorem onesCertificate_dioph {ι : Type}
+    {len q ones shifted : (ι → Nat) → Nat}
+    (dlen : Dioph.DiophFn len) (dq : Dioph.DiophFn q)
+    (dones : Dioph.DiophFn ones) (dshifted : Dioph.DiophFn shifted) :
+    Dioph {v : ι → Nat |
+      OnesCertificate (len v) (q v) (ones v) (shifted v)} := by
+  have dzero : Dioph.DiophFn (fun _ : ι → Nat => 0) :=
+    Dioph.const_dioph 0
+  have done : Dioph.DiophFn (fun _ : ι → Nat => 1) :=
+    Dioph.const_dioph 1
+  have dtwo : Dioph.DiophFn (fun _ : ι → Nat => 2) :=
+    Dioph.const_dioph 2
+  have dleft : Dioph {v : ι → Nat |
+      len v = 0 ∧ ones v = 0 ∧ shifted v = 0 ∧ 2 ≤ q v} :=
+    and_dioph (Dioph.eq_dioph dlen dzero) <|
+      and_dioph (Dioph.eq_dioph dones dzero) <|
+        and_dioph (Dioph.eq_dioph dshifted dzero)
+          (Dioph.le_dioph dtwo dq)
+
+  have dlen' : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => len (v ∘ Sum.inl)) :=
+    Dioph.reindex_diophFn Sum.inl dlen
+  have dq' : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => q (v ∘ Sum.inl)) :=
+    Dioph.reindex_diophFn Sum.inl dq
+  have dones' : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => ones (v ∘ Sum.inl)) :=
+    Dioph.reindex_diophFn Sum.inl dones
+  have dshifted' : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => shifted (v ∘ Sum.inl)) :=
+    Dioph.reindex_diophFn Sum.inl dshifted
+  have dzero' : Dioph.DiophFn
+      (fun _ : (ι ⊕ Unit) → Nat => 0) := Dioph.const_dioph 0
+  have done' : Dioph.DiophFn
+      (fun _ : (ι ⊕ Unit) → Nat => 1) := Dioph.const_dioph 1
+  have dtwo' : Dioph.DiophFn
+      (fun _ : (ι ⊕ Unit) → Nat => 2) := Dioph.const_dioph 2
+  have dfour' : Dioph.DiophFn
+      (fun _ : (ι ⊕ Unit) → Nat => 4) := Dioph.const_dioph 4
+  have dmask : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => v (Sum.inr ())) :=
+    Dioph.proj_dioph (Sum.inr ())
+  have dlenOne : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => len (v ∘ Sum.inl) + 1) :=
+    Dioph.add_dioph dlen' done'
+  have dwidth : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => 4 * q (v ∘ Sum.inl)) :=
+    Dioph.mul_dioph dfour' dq'
+  have dradix : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => radix (q (v ∘ Sum.inl))) := by
+    unfold radix
+    exact Dioph.pow_dioph dtwo' dwidth
+  have dplace : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => place (len (v ∘ Sum.inl))) := by
+    unfold place
+    exact Dioph.pow_dioph dtwo' dlenOne
+  have dtop : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat =>
+        radix (q (v ∘ Sum.inl)) ^ place (len (v ∘ Sum.inl))) :=
+    Dioph.pow_dioph dradix dplace
+  have dpredRadix : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => radix (q (v ∘ Sum.inl)) - 1) :=
+    Dioph.sub_dioph dradix done'
+  have donesSq : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat =>
+        ones (v ∘ Sum.inl) * ones (v ∘ Sum.inl)) :=
+    Dioph.mul_dioph dones' dones'
+  have dmaskedOnes : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat =>
+        Nat.land (ones (v ∘ Sum.inl)) (v (Sum.inr ()))) :=
+    BinaryDioph.land_diophFn dones' dmask
+  have dmaskedSquare : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat =>
+        Nat.land (ones (v ∘ Sum.inl) * ones (v ∘ Sum.inl))
+          (v (Sum.inr ()))) :=
+    BinaryDioph.land_diophFn donesSq dmask
+  have dradixSq : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => radix (q (v ∘ Sum.inl)) ^ 2) :=
+    Dioph.pow_dioph dradix dtwo'
+  have dradixFourth : Dioph.DiophFn
+      (fun v : (ι ⊕ Unit) → Nat => radix (q (v ∘ Sum.inl)) ^ 4) :=
+    Dioph.pow_dioph dradix dfour'
+
+  have dbody : Dioph {v : (ι ⊕ Unit) → Nat |
+      0 < len (v ∘ Sum.inl) ∧
+      len (v ∘ Sum.inl) + 1 < q (v ∘ Sum.inl) ∧
+      1 + (radix (q (v ∘ Sum.inl)) - 1) * v (Sum.inr ()) =
+        radix (q (v ∘ Sum.inl)) *
+          radix (q (v ∘ Sum.inl)) ^ place (len (v ∘ Sum.inl)) ∧
+      Nat.land (ones (v ∘ Sum.inl)) (v (Sum.inr ())) =
+        ones (v ∘ Sum.inl) ∧
+      ones (v ∘ Sum.inl) <
+        radix (q (v ∘ Sum.inl)) ^ place (len (v ∘ Sum.inl)) ∧
+      shifted (v ∘ Sum.inl) = Nat.land
+        (ones (v ∘ Sum.inl) * ones (v ∘ Sum.inl)) (v (Sum.inr ())) ∧
+      radix (q (v ∘ Sum.inl)) ^ 2 + shifted (v ∘ Sum.inl) =
+        ones (v ∘ Sum.inl) +
+          radix (q (v ∘ Sum.inl)) ^ place (len (v ∘ Sum.inl)) ∧
+      radix (q (v ∘ Sum.inl)) ^ 4 ∣ shifted (v ∘ Sum.inl)} := by
+    exact and_dioph (Dioph.lt_dioph dzero' dlen') <|
+      and_dioph (Dioph.lt_dioph dlenOne dq') <|
+      and_dioph
+        (Dioph.eq_dioph
+          (Dioph.add_dioph done'
+            (Dioph.mul_dioph dpredRadix dmask))
+          (Dioph.mul_dioph dradix dtop)) <|
+      and_dioph (Dioph.eq_dioph dmaskedOnes dones') <|
+      and_dioph (Dioph.lt_dioph dones' dtop) <|
+      and_dioph (Dioph.eq_dioph dshifted' dmaskedSquare) <|
+      and_dioph
+        (Dioph.eq_dioph (Dioph.add_dioph dradixSq dshifted')
+          (Dioph.add_dioph dones' dtop))
+        (Dioph.dvd_dioph dradixFourth dshifted')
+
+  have drightWithFunction : Dioph {v : ι → Nat |
+      ∃ ws : Unit → Nat,
+        0 < len v ∧ len v + 1 < q v ∧
+        1 + (radix (q v) - 1) * ws () =
+          radix (q v) * radix (q v) ^ place (len v) ∧
+        Nat.land (ones v) (ws ()) = ones v ∧
+        ones v < radix (q v) ^ place (len v) ∧
+        shifted v = Nat.land (ones v * ones v) (ws ()) ∧
+        radix (q v) ^ 2 + shifted v =
+          ones v + radix (q v) ^ place (len v) ∧
+        radix (q v) ^ 4 ∣ shifted v} := by
+    apply Dioph.ext (Dioph.ex_dioph dbody)
+    intro v
+    rfl
+  have dright : Dioph {v : ι → Nat |
+      0 < len v ∧ len v + 1 < q v ∧ ∃ mask : Nat,
+        1 + (radix (q v) - 1) * mask =
+          radix (q v) * radix (q v) ^ place (len v) ∧
+        Nat.land (ones v) mask = ones v ∧
+        ones v < radix (q v) ^ place (len v) ∧
+        shifted v = Nat.land (ones v * ones v) mask ∧
+        radix (q v) ^ 2 + shifted v =
+          ones v + radix (q v) ^ place (len v) ∧
+        radix (q v) ^ 4 ∣ shifted v} := by
+    apply Dioph.ext drightWithFunction
+    intro v
+    constructor
+    · rintro ⟨ws, hlen, hq, hgeom, hland, hlt, hshifted,
+          hboundary, hdvd⟩
+      exact ⟨hlen, hq, ws (), hgeom, hland, hlt, hshifted,
+        hboundary, hdvd⟩
+    · rintro ⟨hlen, hq, mask, hgeom, hland, hlt, hshifted,
+          hboundary, hdvd⟩
+      exact ⟨maskWitnessValue mask, hlen, hq, hgeom, hland, hlt,
+        hshifted, hboundary, hdvd⟩
+  apply Dioph.ext (or_dioph dleft dright)
+  intro v
+  rfl
+
+/-- The semantic one-column relation itself is Diophantine under arbitrary
+substitution of four Diophantine functions. -/
+theorem onesCodes_dioph {ι : Type}
+    {len q ones shifted : (ι → Nat) → Nat}
+    (dlen : Dioph.DiophFn len) (dq : Dioph.DiophFn q)
+    (dones : Dioph.DiophFn ones) (dshifted : Dioph.DiophFn shifted) :
+    Dioph {v : ι → Nat |
+      OnesCodes (len v) (q v) (ones v) (shifted v)} := by
+  apply Dioph.ext (onesCertificate_dioph dlen dq dones dshifted)
+  intro v
+  exact (onesCodes_iff_certificate (len v) (q v) (ones v) (shifted v)).symm
+
 end CipherOnes
 end PAListCoding
