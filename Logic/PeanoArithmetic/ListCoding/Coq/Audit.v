@@ -7,7 +7,8 @@
   visible in build output.
 *)
 
-From PAListCoding Require Import ListCode ListFormulas.
+From PAListCoding Require Import
+  ListCode ListFormulas NumberTheory NumberTheoryFormulas.
 
 Check PAListCode.listCode.
 Check PAListCode.decode.
@@ -38,6 +39,13 @@ Check PAListFormulas.leastFormula.
 Check PAListFormulas.twiceMedianFormula.
 Check PAListFormulas.uniqueModeFormula.
 
+Check PAListNumberTheoryFormulas.nthPrimeFormula.
+Check PAListNumberTheoryFormulas.powerFormula.
+Check PAListNumberTheoryFormulas.primeFactorizationFormula.
+Check PAListNumberTheoryFormulas.baseDigitsFormula.
+Check PAListNumberTheoryFormulas.divisorListFormula.
+Check PAListNumberTheoryFormulas.positiveDivisorsFormula.
+
 Check PAListFormulas.validCodeFormula_correct.
 Check PAListFormulas.hasLengthFormula_correct.
 Check PAListFormulas.nthElementFormula_correct.
@@ -58,6 +66,41 @@ Check PAListFormulas.greatestFormula_correct.
 Check PAListFormulas.leastFormula_correct.
 Check PAListFormulas.twiceMedianFormula_correct.
 Check PAListFormulas.uniqueModeFormula_correct.
+
+Check PAListNumberTheoryFormulas.nthPrimeFormula_correct.
+Check PAListNumberTheoryFormulas.powerFormula_correct.
+Check PAListNumberTheoryFormulas.primeFactorizationFormula_correct.
+Check PAListNumberTheoryFormulas.baseDigitsFormula_correct.
+Check PAListNumberTheoryFormulas.divisorListFormula_correct.
+Check PAListNumberTheoryFormulas.positiveDivisorsFormula_correct.
+
+Check PAListNumberTheory.PrimeNat.
+Check PAListNumberTheory.NthPrime.
+Check PAListNumberTheory.PowerNat.
+Check PAListNumberTheory.PrimeFactorizationCode.
+Check PAListNumberTheory.BaseDigitsCode.
+Check PAListNumberTheory.DivisorListCode.
+Check PAListNumberTheory.PositiveDivisorsCode.
+
+Check PAListNumberTheory.nthPrime_two_one.
+Check PAListNumberTheory.nthPrime_index_zero_false.
+Check PAListNumberTheory.power_exists_unique.
+Check PAListNumberTheory.power_zero_zero.
+Check PAListNumberTheory.primeFactorizationCode_valid.
+Check PAListNumberTheory.primeFactorizationCode_listCode.
+Check PAListNumberTheory.primeFactorization_zero_false.
+Check PAListNumberTheory.primeFactorization_one_empty.
+Check PAListNumberTheory.baseDigitsCode_valid.
+Check PAListNumberTheory.baseDigitsCode_listCode.
+Check PAListNumberTheory.baseDigits_invalid_base_zero.
+Check PAListNumberTheory.baseDigits_invalid_base_one.
+Check PAListNumberTheory.baseDigits_zero.
+Check PAListNumberTheory.baseDigits_decimal_123.
+Check PAListNumberTheory.divisorListCode_valid.
+Check PAListNumberTheory.divisorListCode_listCode.
+Check PAListNumberTheory.positiveDivisorsCode_listCode.
+Check PAListNumberTheory.divisorList_zero_false.
+Check PAListNumberTheory.divisorList_one.
 
 Check PAListCode.SumElementsCode_functional.
 Check PAListCode.ProductElementsCode_functional.
@@ -114,6 +157,23 @@ Print Assumptions PAListFormulas.leastFormula_correct.
 Print Assumptions PAListFormulas.twiceMedianFormula_correct.
 Print Assumptions PAListFormulas.uniqueModeFormula_correct.
 
+Print Assumptions PAListNumberTheoryFormulas.nthPrimeFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.powerFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.primeFactorizationFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.baseDigitsFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.divisorListFormula_correct.
+Print Assumptions PAListNumberTheoryFormulas.positiveDivisorsFormula_correct.
+
+Print Assumptions PAListNumberTheory.nthPrime_two_one.
+Print Assumptions PAListNumberTheory.nthPrime_index_zero_false.
+Print Assumptions PAListNumberTheory.power_exists_unique.
+Print Assumptions PAListNumberTheory.primeFactorizationCode_listCode.
+Print Assumptions PAListNumberTheory.primeFactorization_one_empty.
+Print Assumptions PAListNumberTheory.baseDigitsCode_listCode.
+Print Assumptions PAListNumberTheory.baseDigits_decimal_123.
+Print Assumptions PAListNumberTheory.divisorListCode_listCode.
+Print Assumptions PAListNumberTheory.divisorList_one.
+
 Print Assumptions PAListCode.SumElementsCode_functional.
 Print Assumptions PAListCode.ProductElementsCode_functional.
 Print Assumptions PAListCode.GreatestCode_functional.
@@ -155,3 +215,18 @@ Print Assumptions PAListFormulas.GreatestPosition_iff.
 Print Assumptions PAListFormulas.LeastPosition_iff.
 Print Assumptions PAListFormulas.TwiceMedianPosition_iff.
 Print Assumptions PAListFormulas.UniqueModePosition_iff.
+
+(* Audit the hard number-theory syntax/certificate bridges rather than only
+   their public wrappers. *)
+Print Assumptions PAListNumberTheoryFormulas.dividesTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.primeTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.strictlyIncreasingTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.nthPrimeTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.powerTermAt_position.
+Print Assumptions PAListNumberTheory.PowerPosition_iff.
+Print Assumptions PAListNumberTheoryFormulas.factorPairTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.primeFactorizationTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.digitEvaluationTermAt_nat.
+Print Assumptions PAListNumberTheory.DigitEvaluationPosition_iff.
+Print Assumptions PAListNumberTheoryFormulas.baseDigitsTermAt_nat.
+Print Assumptions PAListNumberTheoryFormulas.divisorListTermAt_nat.

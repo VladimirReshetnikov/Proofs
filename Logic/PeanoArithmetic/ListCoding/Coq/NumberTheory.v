@@ -391,6 +391,10 @@ Definition DivisorListCode (v n : nat) : Prop :=
   (forall d, 0 < d -> d <= n -> Divides d n ->
     exists i, NthElement v i d).
 
+(** Public vocabulary alias: the list contains exactly the positive
+    divisors, so [PositiveDivisorsCode] and [DivisorListCode] coincide. *)
+Definition PositiveDivisorsCode := DivisorListCode.
+
 Definition CanonicalDivisors (ds : list nat) (n : nat) : Prop :=
   0 < n /\
   StrictlyIncreasing ds /\
@@ -449,5 +453,21 @@ Proof.
     + intros [hd hdiv]. left.
       assert (d <= 1) by (apply Nat.divide_pos_le; [lia | exact hdiv]). lia.
 Qed.
+
+Lemma positiveDivisorsCode_listCode : forall ds n,
+  PositiveDivisorsCode (listCode ds) n <-> CanonicalDivisors ds n.
+Proof. exact divisorListCode_listCode. Qed.
+
+Lemma baseDigits_decimal_123 :
+  BaseDigitsCode (listCode [1; 2; 3]) 123 10.
+Proof.
+  apply baseDigitsCode_listCode. unfold CanonicalDigits, evalDigits.
+  split; [lia |]. split; [reflexivity |]. split.
+  - repeat constructor; lia.
+  - right. split; [lia |]. exists 1, [2; 3]. split; [reflexivity | lia].
+Qed.
+
+Lemma power_zero_zero : PowerNat 1 0 0.
+Proof. reflexivity. Qed.
 
 End PAListNumberTheory.
