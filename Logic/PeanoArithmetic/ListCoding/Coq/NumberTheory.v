@@ -818,4 +818,119 @@ Proof.
   subst v w. f_equal. exact (CanonicalDigits_unique xs ys n b hv hw).
 Qed.
 
+(** * Functionality of the one-based prime enumeration *)
+
+Definition PrimeBelowList (p : nat) (xs : list nat) : Prop :=
+  StrictlyIncreasing xs /\
+  forall q, In q xs <-> PrimeNat q /\ q < p.
+
+Lemma NthPrime_list_certificate : forall p n,
+  NthPrime p n <->
+  PrimeNat p /\
+  exists xs,
+    n = S (length xs) /\ PrimeBelowList p xs.
+Proof.
+  intros p n. split.
+  - intros [hp [k [below
+      [hindex [hlen [hstrict [hsound hcomplete]]]]]]].
+    destruct hlen as [xs [hdecode hlength]].
+    split; [exact hp |]. exists xs. split.
+    + now rewrite hlength.
+    + split.
+      * apply (proj1 (StrictlyIncreasingCode_decode below xs hdecode)).
+        exact hstrict.
+      * intro q. split.
+        -- intro hin. apply In_nth_error in hin. destruct hin as [i hi].
+           apply (hsound i q). exists xs. now split.
+        -- intro hq. destruct (hcomplete q hq) as [i hi].
+           apply (NthElement_decode below i q xs hdecode) in hi.
+           now apply nth_error_In in hi.
+  - intros [hp [xs [hindex [hstrict hexact]]]].
+    split; [exact hp |]. exists (length xs), (listCode xs).
+    split; [exact hindex |]. split.
+    + exists xs. split; [apply decode_listCode | reflexivity].
+    + split.
+      * apply StrictlyIncreasingCode_listCode. exact hstrict.
+      * split.
+        -- intros i q hi. apply hexact.
+           apply (NthElement_decode (listCode xs) i q xs
+             (decode_listCode xs)) in hi.
+           now apply nth_error_In in hi.
+        -- intros q hq. apply hexact in hq.
+           apply In_nth_error in hq. destruct hq as [i hi].
+           exists i, xs. split; [apply decode_listCode | exact hi].
+Qed.
+
+Lemma PrimeBelowList_nodup : forall p xs,
+  PrimeBelowList p xs -> NoDup xs.
+Proof.
+  intros p xs [hstrict _].
+  apply sorted_lt_nodup. apply StrictlyIncreasing_sorted_lt. exact hstrict.
+Qed.
+
+Theorem nthPrime_index_functional : forall p n m,
+  NthPrime p n -> NthPrime p m -> n = m.
+Proof.
+  intros p n m hn hm.
+  apply NthPrime_list_certificate in hn.
+  apply NthPrime_list_certificate in hm.
+  destruct hn as [_ [xs [hn hxs]]].
+  destruct hm as [_ [ys [hm hys]]].
+  assert (hxy : incl xs ys).
+  {
+    intros q hq. apply (proj2 (proj2 hys q)).
+    apply (proj1 (proj2 hxs q)). exact hq.
+  }
+  assert (hyx : incl ys xs).
+  {
+    intros q hq. apply (proj2 (proj2 hxs q)).
+    apply (proj1 (proj2 hys q)). exact hq.
+  }
+  pose proof (NoDup_incl_length (PrimeBelowList_nodup p xs hxs)
+    hxy) as hle.
+  pose proof (NoDup_incl_length (PrimeBelowList_nodup p ys hys)
+    hyx) as hge.
+  lia.
+Qed.
+
+Theorem nthPrime_prime_functional : forall p q n,
+  NthPrime p n -> NthPrime q n -> p = q.
+Proof.
+  intros p q n hp hq.
+  apply NthPrime_list_certificate in hp.
+  apply NthPrime_list_certificate in hq.
+  destruct hp as [hpp [xs [hindexp hxs]]].
+  destruct hq as [hqp [ys [hindexq hys]]].
+  destruct (Nat.lt_trichotomy p q) as [hpq | [hpq | hqp']];
+    [|exact hpq|].
+  - assert (hxy : incl xs ys).
+    {
+      intros r hr. apply (proj2 (proj2 hys r)).
+      apply (proj1 (proj2 hxs r)) in hr. destruct hr as [hpr hr].
+      split; [exact hpr | lia].
+    }
+    assert (hyx : incl ys xs).
+    {
+      apply (NoDup_length_incl (PrimeBelowList_nodup p xs hxs));
+        [lia | exact hxy].
+    }
+    assert (hpin : In p ys).
+    { apply (proj2 (proj2 hys p)). now split. }
+    apply hyx in hpin. apply (proj1 (proj2 hxs p)) in hpin. lia.
+  - assert (hyx : incl ys xs).
+    {
+      intros r hr. apply (proj2 (proj2 hxs r)).
+      apply (proj1 (proj2 hys r)) in hr. destruct hr as [hpr hr].
+      split; [exact hpr | lia].
+    }
+    assert (hxy : incl xs ys).
+    {
+      apply (NoDup_length_incl (PrimeBelowList_nodup q ys hys));
+        [lia | exact hyx].
+    }
+    assert (hqin : In q xs).
+    { apply (proj2 (proj2 hxs q)). now split. }
+    apply hxy in hqin. apply (proj1 (proj2 hys q)) in hqin. lia.
+Qed.
+
 End PAListNumberTheory.

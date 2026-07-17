@@ -84,6 +84,9 @@ Check PAListNumberTheory.PositiveDivisorsCode.
 
 Check PAListNumberTheory.nthPrime_two_one.
 Check PAListNumberTheory.nthPrime_index_zero_false.
+Check PAListNumberTheory.NthPrime_list_certificate.
+Check PAListNumberTheory.nthPrime_index_functional.
+Check PAListNumberTheory.nthPrime_prime_functional.
 Check PAListNumberTheory.power_exists_unique.
 Check PAListNumberTheory.power_zero_zero.
 Check PAListNumberTheory.primeFactorizationCode_valid.
@@ -172,6 +175,9 @@ Print Assumptions PAListNumberTheoryFormulas.positiveDivisorsFormula_correct.
 
 Print Assumptions PAListNumberTheory.nthPrime_two_one.
 Print Assumptions PAListNumberTheory.nthPrime_index_zero_false.
+Print Assumptions PAListNumberTheory.NthPrime_list_certificate.
+Print Assumptions PAListNumberTheory.nthPrime_index_functional.
+Print Assumptions PAListNumberTheory.nthPrime_prime_functional.
 Print Assumptions PAListNumberTheory.power_exists_unique.
 Print Assumptions PAListNumberTheory.primeFactorizationCode_listCode.
 Print Assumptions PAListNumberTheory.primeFactorization_one_empty.
