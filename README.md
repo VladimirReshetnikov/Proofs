@@ -10,7 +10,7 @@ part of the trusted theorem boundary unless a proved checker connects them to
 the formal semantics.
 
 **Toolchains:** Lean `4.32.0` · mathlib `v4.32.0` · Rocq `>= 9.2`
-(developed against `9.0.1`) · [MIT-0](LICENSE)
+(developed against `9.0.1`) · MathComp boot `2.5.0` · [MIT-0](LICENSE)
 
 ## Repository map
 
@@ -55,8 +55,9 @@ is the broad Lean import surface.
   with genuine PA formulae defining validity, access, concatenation,
   flattening, multiplicity, permutations, substrings, subsequences,
   duplicate-freedom, numeric and lexicographic sorting, sum, product, extrema,
-  twice-median and unique-mode statistics, and the canonical lexicographic
-  enumeration of every distinct permutation.
+  twice-median and unique-mode statistics, one-based nth primes, powers, prime
+  factorizations, canonical base digits and divisor lists, and the canonical
+  lexicographic enumeration of every distinct permutation.
 - An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)
   deciding every Presburger sentence in Lean, with an independent constructive
   Coq proof and decision procedure for the normalized one-variable step.

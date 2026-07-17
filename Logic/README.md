@@ -25,9 +25,12 @@
   bi-interpretation of PA with finite-generation hereditary finite set theory.
 - [`PeanoArithmetic/ListCoding/`](PeanoArithmetic/ListCoding/) gives independent
   Lean and Rocq/Coq natural-number codings of finite lists and genuine PA
-  formulae for twenty guarded list predicates, including flattening,
+  formulae for twenty-five list and number-theoretic predicates,
+  including flattening,
   subsequences, aggregate folds, extrema, median and unique-mode statistics,
-  lexicographic order, and the exact canonical list of distinct permutations.
+  lexicographic order, one-based nth primes, natural powers and prime
+  factorizations, canonical base digits and divisor lists, and the exact
+  canonical list of distinct permutations.
 
 The natural-deduction developments, FirstOrder, and PAHF are mathlib-free and
 have standalone Lake configurations as well as root integration targets.
