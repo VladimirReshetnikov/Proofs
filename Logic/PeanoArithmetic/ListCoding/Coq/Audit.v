@@ -96,6 +96,8 @@ Check PAListNumberTheory.baseDigits_invalid_base_zero.
 Check PAListNumberTheory.baseDigits_invalid_base_one.
 Check PAListNumberTheory.baseDigits_zero.
 Check PAListNumberTheory.baseDigits_decimal_123.
+Check PAListNumberTheory.baseDigitsCode_exists.
+Check PAListNumberTheory.baseDigitsCode_functional.
 Check PAListNumberTheory.divisorListCode_valid.
 Check PAListNumberTheory.divisorListCode_listCode.
 Check PAListNumberTheory.positiveDivisorsCode_listCode.
@@ -175,6 +177,8 @@ Print Assumptions PAListNumberTheory.primeFactorizationCode_listCode.
 Print Assumptions PAListNumberTheory.primeFactorization_one_empty.
 Print Assumptions PAListNumberTheory.baseDigitsCode_listCode.
 Print Assumptions PAListNumberTheory.baseDigits_decimal_123.
+Print Assumptions PAListNumberTheory.baseDigitsCode_exists.
+Print Assumptions PAListNumberTheory.baseDigitsCode_functional.
 Print Assumptions PAListNumberTheory.divisorListCode_listCode.
 Print Assumptions PAListNumberTheory.divisorList_one.
 Print Assumptions PAListNumberTheory.divisorListCode_exists.

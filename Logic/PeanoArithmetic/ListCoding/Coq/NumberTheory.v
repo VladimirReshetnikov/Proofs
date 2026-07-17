@@ -644,4 +644,178 @@ Theorem positiveDivisorsCode_functional : forall v w n,
   PositiveDivisorsCode v n -> PositiveDivisorsCode w n -> v = w.
 Proof. exact divisorListCode_functional. Qed.
 
+(** * Existence and uniqueness of canonical base digits *)
+
+Lemma fold_left_digitStep_decompose : forall b ds acc,
+  fold_left (digitStep b) ds acc =
+  acc * Nat.pow b (length ds) + evalDigits b ds.
+Proof.
+  intros b ds. induction ds as [|d ds IH]; intro acc.
+  - simpl. unfold evalDigits. simpl. lia.
+  - change (fold_left (digitStep b) ds (acc * b + d) =
+      acc * b ^ S (length ds) +
+      fold_left (digitStep b) ds d).
+    rewrite (IH (acc * b + d)), (IH d), Nat.pow_succ_r by lia.
+    nia.
+Qed.
+
+Lemma evalDigits_cons : forall b d ds,
+  evalDigits b (d :: ds) =
+  d * Nat.pow b (length ds) + evalDigits b ds.
+Proof.
+  intros b d ds. unfold evalDigits at 1. simpl.
+  unfold digitStep. simpl.
+  apply fold_left_digitStep_decompose.
+Qed.
+
+Lemma evalDigits_app_singleton : forall b ds d,
+  evalDigits b (ds ++ [d]) = evalDigits b ds * b + d.
+Proof.
+  intros b ds d. unfold evalDigits. rewrite fold_left_app. simpl.
+  unfold digitStep. reflexivity.
+Qed.
+
+Lemma evalDigits_upper_bound : forall b ds,
+  0 < b -> Forall (fun d => d < b) ds ->
+  evalDigits b ds < Nat.pow b (length ds).
+Proof.
+  intros b ds hb hdigits. induction hdigits as [|d ds hd hds IH].
+  - simpl. unfold evalDigits. simpl. lia.
+  - rewrite evalDigits_cons. simpl length.
+    rewrite Nat.pow_succ_r by lia.
+    assert (0 < b ^ length ds).
+    { pose proof (Nat.pow_nonzero b (length ds) ltac:(lia)). lia. }
+    nia.
+Qed.
+
+Lemma evalDigits_lower_head : forall b d ds,
+  0 < b -> 0 < d ->
+  Nat.pow b (length ds) <= evalDigits b (d :: ds).
+Proof.
+  intros b d ds hb hd. rewrite evalDigits_cons.
+  assert (0 < b ^ length ds).
+  { pose proof (Nat.pow_nonzero b (length ds) ltac:(lia)). lia. }
+  nia.
+Qed.
+
+Lemma evalDigits_injective_same_length : forall b xs ys,
+  0 < b ->
+  length xs = length ys ->
+  Forall (fun d => d < b) xs ->
+  Forall (fun d => d < b) ys ->
+  evalDigits b xs = evalDigits b ys -> xs = ys.
+Proof.
+  intros b xs. induction xs as [|x xs IH];
+    intros ys hb hlen hxs hys heval.
+  - destruct ys; [reflexivity | discriminate].
+  - destruct ys as [|y ys]; [discriminate |].
+    inversion hxs as [|? ? hx hxt]; subst.
+    inversion hys as [|? ? hy hyt]; subst.
+    simpl in hlen. injection hlen as htail.
+    rewrite !evalDigits_cons in heval.
+    rewrite <- htail in heval.
+    assert (hrx : evalDigits b xs < b ^ length xs).
+    { apply evalDigits_upper_bound; assumption. }
+    assert (hry : evalDigits b ys < b ^ length xs).
+    { rewrite htail. apply evalDigits_upper_bound; assumption. }
+    assert (hq : 0 < b ^ length xs).
+    { pose proof (Nat.pow_nonzero b (length xs) ltac:(lia)). lia. }
+    assert (hxy : x = y) by nia. subst y. f_equal.
+    apply (IH ys hb htail hxt hyt). nia.
+Qed.
+
+Lemma CanonicalDigits_unique : forall xs ys n b,
+  CanonicalDigits xs n b -> CanonicalDigits ys n b -> xs = ys.
+Proof.
+  intros xs ys n b
+    [hb [hevalx [hboundx hcanonx]]]
+    [_ [hevaly [hboundy hcanony]]].
+  destruct hcanonx as [[hn hx] | [hn [x [xt [hx hxp]]]]];
+    destruct hcanony as [[hn' hy] | [hn' [y [yt [hy hyp]]]]].
+  - now rewrite hx, hy.
+  - lia.
+  - lia.
+  - subst xs ys.
+    assert (hlen : length (x :: xt) = length (y :: yt)).
+    {
+      destruct (Nat.lt_trichotomy (length xt) (length yt))
+        as [hlt | [heq | hgt]].
+      - assert (hupper : evalDigits b (x :: xt) < b ^ S (length xt)).
+        { apply evalDigits_upper_bound; [lia | exact hboundx]. }
+        assert (hlower : b ^ length yt <= evalDigits b (y :: yt)).
+        { apply evalDigits_lower_head; [lia | exact hyp]. }
+        assert (hpow : b ^ S (length xt) <= b ^ length yt).
+        { apply Nat.pow_le_mono_r; lia. }
+        lia.
+      - simpl. lia.
+      - assert (hupper : evalDigits b (y :: yt) < b ^ S (length yt)).
+        { apply evalDigits_upper_bound; [lia | exact hboundy]. }
+        assert (hlower : b ^ length xt <= evalDigits b (x :: xt)).
+        { apply evalDigits_lower_head; [lia | exact hxp]. }
+        assert (hpow : b ^ S (length yt) <= b ^ length xt).
+        { apply Nat.pow_le_mono_r; lia. }
+        lia.
+    }
+    apply (evalDigits_injective_same_length b (x :: xt) (y :: yt));
+      try assumption; lia.
+Qed.
+
+Theorem canonicalDigits_exists : forall b n,
+  2 <= b -> exists ds, CanonicalDigits ds n b.
+Proof.
+  intros b n hb. pattern n. apply lt_wf_ind.
+  intros x IH. destruct x as [|x].
+  - exists [0]. unfold CanonicalDigits, evalDigits.
+    split; [exact hb |]. split; [reflexivity |]. split.
+    + repeat constructor; lia.
+    + left. now split.
+  - set (q := S x / b).
+    destruct (Nat.eq_dec q 0) as [hq0 | hqpos].
+    + assert (hsmall : S x < b).
+      { apply (proj1 (Nat.div_small_iff (S x) b ltac:(lia))). exact hq0. }
+      exists [S x]. unfold CanonicalDigits, evalDigits.
+      split; [exact hb |]. split; [reflexivity |]. split.
+      * repeat constructor; lia.
+      * right. split; [lia |]. exists (S x), [].
+        split; [reflexivity | lia].
+    + assert (hq_lt : q < S x).
+      { unfold q. apply Nat.div_lt; lia. }
+      destruct (IH q hq_lt) as [ds
+        [hb' [heval [hbound hcanon]]]].
+      assert (hq : 0 < q) by lia.
+      destruct hcanon as [[hqzero hds] |
+          [hqpositive [d [rest [hds hd]]]]]; [lia |].
+      exists (ds ++ [S x mod b]). unfold CanonicalDigits.
+      split; [exact hb |]. split.
+      * rewrite evalDigits_app_singleton, heval.
+        pose proof (Nat.div_mod (S x) b ltac:(lia)). unfold q in *. nia.
+      * split.
+        -- apply Forall_app. split; [exact hbound |]. constructor.
+           ++ apply Nat.mod_upper_bound. lia.
+           ++ constructor.
+        -- right. split; [lia |]. exists d, (rest ++ [S x mod b]).
+           subst ds. rewrite <- app_comm_cons. now split.
+Qed.
+
+Theorem baseDigitsCode_exists : forall n b,
+  2 <= b -> exists v, BaseDigitsCode v n b.
+Proof.
+  intros n b hb. destruct (canonicalDigits_exists b n hb) as [ds hds].
+  exists (listCode ds). apply baseDigitsCode_listCode. exact hds.
+Qed.
+
+Theorem baseDigitsCode_functional : forall v w n b,
+  BaseDigitsCode v n b -> BaseDigitsCode w n b -> v = w.
+Proof.
+  intros v w n b hv hw.
+  destruct (baseDigitsCode_valid v n b hv) as [xs hdx].
+  destruct (baseDigitsCode_valid w n b hw) as [ys hdy].
+  assert (hcv : listCode xs = v) by now apply listCode_decode.
+  assert (hcw : listCode ys = w) by now apply listCode_decode.
+  rewrite <- hcv in hv. rewrite <- hcw in hw.
+  apply baseDigitsCode_listCode in hv.
+  apply baseDigitsCode_listCode in hw.
+  subst v w. f_equal. exact (CanonicalDigits_unique xs ys n b hv hw).
+Qed.
+
 End PAListNumberTheory.
