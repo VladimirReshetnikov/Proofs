@@ -325,6 +325,7 @@ Logic/PeanoArithmetic/ListCoding/Coq/ListFormulas.v
 Logic/PeanoArithmetic/ListCoding/Coq/NumberTheory.v
 Logic/PeanoArithmetic/ListCoding/Coq/NumberTheoryFormulas.v
 Logic/PeanoArithmetic/ListCoding/Coq/NumberTheoryFactorization.v
+Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZero.v
 Logic/PeanoArithmetic/ListCoding/Coq/Audit.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/FiniteBasisReduction.v
 Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq/HierarchyReduction.v

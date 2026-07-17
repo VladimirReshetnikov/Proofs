@@ -9,7 +9,7 @@
 
 From PAListCoding Require Import
   ListCode ListFormulas NumberTheory NumberTheoryFormulas
-  NumberTheoryFactorization.
+  NumberTheoryFactorization EpsilonZero.
 
 Check PAListCode.listCode.
 Check PAListCode.decode.
@@ -271,3 +271,24 @@ Print Assumptions PAListNumberTheoryFormulas.digitEvaluationTermAt_nat.
 Print Assumptions PAListNumberTheory.DigitEvaluationPosition_iff.
 Print Assumptions PAListNumberTheoryFormulas.baseDigitsTermAt_nat.
 Print Assumptions PAListNumberTheoryFormulas.divisorListTermAt_nat.
+
+(** The independent Rocq coding of hereditary Cantor normal forms uses the
+    same concrete natural representation as the Lean development. *)
+Check PAEpsilonZero.squareUnpair_pair.
+Check PAEpsilonZero.squarePair_unpair.
+Check PAEpsilonZero.decode_encode.
+Check PAEpsilonZero.encode_decode.
+Check PAEpsilonZero.valid_encode_iff.
+Check PAEpsilonZero.onoteAdd_nf.
+Check PAEpsilonZero.ordinalAdd_exists_unique.
+Check PAEpsilonZero.ordinalMul_exists_unique.
+Check PAEpsilonZero.ordinalPow_exists_unique.
+
+Print Assumptions PAEpsilonZero.squareUnpair_pair.
+Print Assumptions PAEpsilonZero.squarePair_unpair.
+Print Assumptions PAEpsilonZero.decode_encode.
+Print Assumptions PAEpsilonZero.encode_decode.
+Print Assumptions PAEpsilonZero.onoteAdd_nf.
+Print Assumptions PAEpsilonZero.ordinalAdd_exists_unique.
+Print Assumptions PAEpsilonZero.ordinalMul_exists_unique.
+Print Assumptions PAEpsilonZero.ordinalPow_exists_unique.

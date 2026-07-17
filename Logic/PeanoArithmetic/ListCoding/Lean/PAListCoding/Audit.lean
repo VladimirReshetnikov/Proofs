@@ -205,3 +205,47 @@ are most-significant-first, and divisor lists contain positive divisors only.
 #print axioms PAListCoding.primeFactorization_existsUnique
 #print axioms PAListCoding.baseDigits_encode_iff
 #print axioms PAListCoding.baseDigits_existsUnique
+
+/-! ## Ordinal notations below epsilon zero -/
+
+-- The concrete square-shell code is a bijection on raw hereditary CNF syntax;
+-- validity selects precisely Mathlib's normal ordinal notations.
+#check PAListCoding.EpsilonZero.codeEquiv
+#check PAListCoding.EpsilonZero.validCodeEquiv
+#check PAListCoding.EpsilonZero.denote_injective_on_valid
+#check PAListCoding.EpsilonZero.valid_denote_lt_epsilonZero
+
+-- The public result-first graphs are total and functional on valid inputs and
+-- agree with set-theoretic ordinal arithmetic.
+#check PAListCoding.EpsilonZero.ordinalLT_iff
+#check PAListCoding.EpsilonZero.ordinalAdd_existsUnique
+#check PAListCoding.EpsilonZero.ordinalMul_existsUnique
+#check PAListCoding.EpsilonZero.ordinalPow_existsUnique
+#check PAListCoding.EpsilonZero.ordinalAdd_iff
+#check PAListCoding.EpsilonZero.ordinalMul_iff
+#check PAListCoding.EpsilonZero.ordinalPow_iff
+
+-- Natural code-level laws, with the noncommutative orientation appropriate to
+-- ordinal multiplication and exponentiation.
+#check PAListCoding.EpsilonZero.ordinalLT_irrefl
+#check PAListCoding.EpsilonZero.ordinalLT_trans
+#check PAListCoding.EpsilonZero.ordinalLT_trichotomy
+#check PAListCoding.EpsilonZero.addCode_assoc
+#check PAListCoding.EpsilonZero.mulCode_assoc
+#check PAListCoding.EpsilonZero.mulCode_addCode
+#check PAListCoding.EpsilonZero.powCode_addCode
+#check PAListCoding.EpsilonZero.powCode_mulCode
+
+#print axioms PAListCoding.EpsilonZero.codeEquiv
+#print axioms PAListCoding.EpsilonZero.validCodeEquiv
+#print axioms PAListCoding.EpsilonZero.valid_denote_lt_epsilonZero
+#print axioms PAListCoding.EpsilonZero.ordinalLT_iff
+#print axioms PAListCoding.EpsilonZero.ordinalAdd_iff
+#print axioms PAListCoding.EpsilonZero.ordinalMul_iff
+#print axioms PAListCoding.EpsilonZero.ordinalPow_iff
+#print axioms PAListCoding.EpsilonZero.ordinalLT_trichotomy
+#print axioms PAListCoding.EpsilonZero.addCode_assoc
+#print axioms PAListCoding.EpsilonZero.mulCode_assoc
+#print axioms PAListCoding.EpsilonZero.mulCode_addCode
+#print axioms PAListCoding.EpsilonZero.powCode_addCode
+#print axioms PAListCoding.EpsilonZero.powCode_mulCode
