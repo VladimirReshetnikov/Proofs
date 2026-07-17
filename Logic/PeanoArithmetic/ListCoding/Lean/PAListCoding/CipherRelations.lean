@@ -633,3 +633,377 @@ private theorem index_increment_identity (len q : ℕ) :
   · simp [hil]
   · have : i = len := by omega
     simp [this]
+
+/-! ## A finite certificate for the zero-based index column -/
+
+/-- Rocq's `CodeNat_dio` certificate, adapted to the sparse-cipher names in
+this development.  The first meet equation shifts the auxiliary successor
+column one sparse position; the second equation says that this auxiliary
+column is pointwise one greater than the candidate index column. -/
+def IndexMask (len q y : ℕ) : Prop :=
+  ∃ z ones shifted actualRadix topPlace topPower predRadix,
+    actualRadix = radix q ∧
+    actualRadix = predRadix + 1 ∧
+    topPlace = 2 ^ (1 + len) ∧
+    topPower = actualRadix ^ topPlace ∧
+    OnesCodes len q ones shifted ∧
+    Code len q y ∧
+    Code len q z ∧
+    y + len * topPower =
+      (z * ones) &&& (predRadix * shifted) ∧
+    y + shifted + actualRadix * actualRadix = z + topPower
+
+/-- The finite successor/shift certificate defines exactly the index
+column. -/
+theorem indexMask_iff (len q y : ℕ) :
+    IndexMask len q y ↔ IndexCode len q y := by
+  constructor
+  · rintro ⟨z, ones, shifted, actualRadix, topPlace, topPower,
+      predRadix, hactual, hpredSucc, htopPlace, htopPower,
+      hones, hyCode, hzCode, hshiftEq, hincEq⟩
+    rcases hones with ⟨hlen, honesValue, hshiftedValue⟩
+    rcases hyCode with ⟨f, hf⟩
+    rcases hzCode with ⟨g, hg⟩
+    rcases hf with ⟨_hlenf, hfBound, hyValue⟩
+    rcases hg with ⟨_hleng, hgBound, hzValue⟩
+    have hq : 0 < q := by omega
+    have honeBound : ∀ i, i < len → (1 : ℕ) < 2 ^ q := by
+      intro _i _hi
+      exact Nat.one_lt_two_pow (by omega)
+    have hpredValue : predRadix = radix q - 1 := by
+      have hradixPos : 0 < radix q := Nat.two_pow_pos _
+      omega
+    have htopPlaceValue : topPlace = place len := by
+      rw [htopPlace]
+      simp only [place]
+      congr 1
+      omega
+    have htopPowerValue : topPower = radix q ^ place len := by
+      rw [htopPower, hactual, htopPlaceValue]
+    have hshiftEq' :
+        encode len q f + len * radix q ^ place len = shiftedEncode len q g := by
+      rw [hyValue, hzValue, honesValue, hshiftedValue,
+        htopPowerValue, hpredValue] at hshiftEq
+      rw [← diagonalMask_eq] at hshiftEq
+      have hland := land_product_diagonalMask hlen hgBound honeBound
+      rw [hland] at hshiftEq
+      simpa only [Nat.mul_one] using hshiftEq
+    have hencShift :
+        encode (len + 1) q (appendValue len f len) =
+          encode (len + 1) q (shiftValue g) := by
+      rw [encode_appendValue]
+      rw [← shiftedEncode_eq_encode_shiftValue]
+      exact hshiftEq'
+    have hlenRadix : len < radix q := by
+      exact (show len < q by omega).trans
+        ((Nat.lt_pow_self (a := 2) (by omega)).trans (two_pow_lt_radix hq))
+    have happendBound : ∀ i, i < len + 1 →
+        appendValue len f len i < radix q := by
+      intro i hi
+      unfold appendValue
+      split
+      · rename_i hil
+        exact (hfBound i hil).trans (two_pow_lt_radix hq)
+      · exact hlenRadix
+    have hshiftBound : ∀ i, i < len + 1 →
+        shiftValue g i < radix q := by
+      intro i hi
+      rcases i with _ | i
+      · exact Nat.zero_lt_of_lt (radix_one_lt hq)
+      · exact (hgBound i (by omega)).trans (two_pow_lt_radix hq)
+    have hshiftPoint : ∀ i, i < len + 1 →
+        appendValue len f len i = shiftValue g i :=
+      encode_injective_of_lt_radix hq happendBound hshiftBound hencShift
+    have hfZero : len ≠ 0 → f 0 = 0 := by
+      intro hne
+      have h := hshiftPoint 0 (by omega)
+      simpa [appendValue, shiftValue, Nat.pos_of_ne_zero hne] using h
+    have hfShift : ∀ i, i + 1 < len → f (i + 1) = g i := by
+      intro i hi
+      have h := hshiftPoint (i + 1) (by omega)
+      simpa [appendValue, shiftValue, hi] using h
+    have hincEq' :
+        encode len q f + shiftedEncode len q (fun _ ↦ 1) +
+            radix q * radix q =
+          encode len q g + radix q ^ place len := by
+      simpa only [hyValue, hzValue, hshiftedValue, hactual,
+        htopPowerValue] using hincEq
+    have hencInc :
+        encode (len + 1) q (fun i ↦ appendValue len f 0 i + 1) =
+          encode (len + 1) q (appendValue len g 1) := by
+      rw [encode_append_add_one]
+      rw [encode_appendValue]
+      simpa only [one_mul] using hincEq'
+    have hleftBound : ∀ i, i < len + 1 →
+        appendValue len f 0 i + 1 < radix q := by
+      intro i hi
+      unfold appendValue
+      split
+      · rename_i hil
+        have hle : f i + 1 ≤ 2 ^ q := Nat.add_one_le_iff.mpr (hfBound i hil)
+        exact hle.trans_lt (two_pow_lt_radix hq)
+      · simpa using radix_one_lt hq
+    have hrightBound : ∀ i, i < len + 1 →
+        appendValue len g 1 i < radix q := by
+      intro i hi
+      unfold appendValue
+      split
+      · rename_i hil
+        exact (hgBound i hil).trans (two_pow_lt_radix hq)
+      · simpa using radix_one_lt hq
+    have hincPoint : ∀ i, i < len + 1 →
+        appendValue len f 0 i + 1 = appendValue len g 1 i :=
+      encode_injective_of_lt_radix hq hleftBound hrightBound hencInc
+    have hsucc : ∀ i, i < len → f i + 1 = g i := by
+      intro i hi
+      have h := hincPoint i (by omega)
+      simpa [appendValue, hi] using h
+    have hfId : ∀ i, i < len → f i = i := by
+      intro i
+      induction i with
+      | zero =>
+          intro hi
+          exact hfZero (by omega)
+      | succ i ih =>
+          intro hi
+          calc
+            f (i + 1) = g i := hfShift i hi
+            _ = f i + 1 := (hsucc i (by omega)).symm
+            _ = i + 1 := by rw [ih (by omega)]
+    exact CipherCircuit.isCipher_congr
+      ⟨hlen, hfBound, hyValue⟩ hfId
+  · intro hy
+    rcases hy with ⟨hlen, hyBound, hyValue⟩
+    let successor : ℕ → ℕ := fun i ↦ i + 1
+    let z := encode len q successor
+    have hsuccessorBound : ∀ i, i < len → successor i < 2 ^ q := by
+      intro i hi
+      exact (show i + 1 < q by omega).trans
+        (Nat.lt_pow_self (a := 2) (by omega))
+    have hz : IsCipher len q successor z :=
+      ⟨hlen, hsuccessorBound, rfl⟩
+    have honeBound : ∀ i, i < len → (1 : ℕ) < 2 ^ q := by
+      intro _i _hi
+      exact Nat.one_lt_two_pow (by omega)
+    refine ⟨z, encode len q (fun _ ↦ 1),
+      shiftedEncode len q (fun _ ↦ 1), radix q,
+      2 ^ (1 + len), radix q ^ place len, radix q - 1,
+      rfl, ?_, ?_, ?_, ⟨hlen, rfl, rfl⟩,
+      ⟨id, hlen, hyBound, hyValue⟩, ⟨successor, hz⟩, ?_, ?_⟩
+    · exact (Nat.sub_add_cancel
+        (Nat.one_le_iff_ne_zero.mpr (Nat.ne_of_gt (Nat.two_pow_pos _)))).symm
+    · rfl
+    · congr 1
+      simp only [place]
+      congr 1
+      omega
+    · rw [hyValue]
+      change encode len q id + len * (radix q ^ place len) =
+        (encode len q successor * encode len q (fun _ ↦ 1)) &&&
+          ((radix q - 1) * shiftedEncode len q (fun _ ↦ 1))
+      rw [← diagonalMask_eq]
+      rw [land_product_diagonalMask hlen hsuccessorBound honeBound]
+      simpa only [successor, Nat.mul_one] using index_shift_identity len q
+    · rw [hyValue]
+      change encode len q id + shiftedEncode len q (fun _ ↦ 1) +
+          radix q * radix q = encode len q successor + radix q ^ place len
+      simpa only [successor] using index_increment_identity len q
+
+/-! ## Diophantine closure of the index column -/
+
+private abbrev IndexWire := Fin 7
+
+private def indexValues
+    (z ones shifted actualRadix topPlace topPower predRadix : ℕ) :
+    IndexWire → ℕ :=
+  ![z, ones, shifted, actualRadix, topPlace, topPower, predRadix]
+
+/-- Generic substitution theorem for the zero-based index column. -/
+theorem indexCode_dioph_of_ones (hones : OnesSubstitutionClosed)
+    {alpha : Type} {len q y : (alpha → ℕ) → ℕ}
+    (dlen : Dioph.DiophFn len) (dq : Dioph.DiophFn q)
+    (dy : Dioph.DiophFn y) :
+    Dioph {v : alpha → ℕ | IndexCode (len v) (q v) (y v)} := by
+  have dlen' : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ len (v ∘ Sum.inl)) :=
+    Dioph.reindex_diophFn Sum.inl dlen
+  have dq' : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ q (v ∘ Sum.inl)) :=
+    Dioph.reindex_diophFn Sum.inl dq
+  have dy' : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ y (v ∘ Sum.inl)) :=
+    Dioph.reindex_diophFn Sum.inl dy
+  have dwire (i : IndexWire) : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ v (Sum.inr i)) :=
+    Dioph.proj_dioph (Sum.inr i)
+  have done : Dioph.DiophFn
+      (fun _v : (alpha ⊕ IndexWire) → ℕ ↦ 1) :=
+    Dioph.const_dioph 1
+  have dtwo : Dioph.DiophFn
+      (fun _v : (alpha ⊕ IndexWire) → ℕ ↦ 2) :=
+    Dioph.const_dioph 2
+  have dfour : Dioph.DiophFn
+      (fun _v : (alpha ⊕ IndexWire) → ℕ ↦ 4) :=
+    Dioph.const_dioph 4
+  have dfourq : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ 4 * q (v ∘ Sum.inl)) :=
+    Dioph.mul_dioph dfour dq'
+  have dradix : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ radix (q (v ∘ Sum.inl))) := by
+    simpa only [radix] using Dioph.pow_dioph dtwo dfourq
+  have dpredSucc : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ v (Sum.inr 6) + 1) :=
+    Dioph.add_dioph (dwire 6) done
+  have dlenSucc : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ 1 + len (v ∘ Sum.inl)) :=
+    Dioph.add_dioph done dlen'
+  have dtopPlace : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦ 2 ^ (1 + len (v ∘ Sum.inl))) :=
+    Dioph.pow_dioph dtwo dlenSucc
+  have dtopPower : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        v (Sum.inr 3) ^ v (Sum.inr 4)) :=
+    Dioph.pow_dioph (dwire 3) (dwire 4)
+  have dlenTop : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        len (v ∘ Sum.inl) * v (Sum.inr 5)) :=
+    Dioph.mul_dioph dlen' (dwire 5)
+  have dshiftLeft : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        y (v ∘ Sum.inl) + len (v ∘ Sum.inl) * v (Sum.inr 5)) :=
+    Dioph.add_dioph dy' dlenTop
+  have dzOnes : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        v (Sum.inr 0) * v (Sum.inr 1)) :=
+    Dioph.mul_dioph (dwire 0) (dwire 1)
+  have dpredShifted : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        v (Sum.inr 6) * v (Sum.inr 2)) :=
+    Dioph.mul_dioph (dwire 6) (dwire 2)
+  have dmeet : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        (v (Sum.inr 0) * v (Sum.inr 1)) &&&
+          (v (Sum.inr 6) * v (Sum.inr 2))) :=
+    land_diophFn dzOnes dpredShifted
+  have dyShifted : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        y (v ∘ Sum.inl) + v (Sum.inr 2)) :=
+    Dioph.add_dioph dy' (dwire 2)
+  have dactualSq : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        v (Sum.inr 3) * v (Sum.inr 3)) :=
+    Dioph.mul_dioph (dwire 3) (dwire 3)
+  have dincLeft : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        y (v ∘ Sum.inl) + v (Sum.inr 2) +
+          v (Sum.inr 3) * v (Sum.inr 3)) :=
+    Dioph.add_dioph dyShifted dactualSq
+  have dincRight : Dioph.DiophFn
+      (fun v : (alpha ⊕ IndexWire) → ℕ ↦
+        v (Sum.inr 0) + v (Sum.inr 5)) :=
+    Dioph.add_dioph (dwire 0) (dwire 5)
+  have dbody : Dioph {v : (alpha ⊕ IndexWire) → ℕ |
+      v (Sum.inr 3) = radix (q (v ∘ Sum.inl)) ∧
+      v (Sum.inr 3) = v (Sum.inr 6) + 1 ∧
+      v (Sum.inr 4) = 2 ^ (1 + len (v ∘ Sum.inl)) ∧
+      v (Sum.inr 5) = v (Sum.inr 3) ^ v (Sum.inr 4) ∧
+      OnesCodes (len (v ∘ Sum.inl)) (q (v ∘ Sum.inl))
+        (v (Sum.inr 1)) (v (Sum.inr 2)) ∧
+      Code (len (v ∘ Sum.inl)) (q (v ∘ Sum.inl))
+        (y (v ∘ Sum.inl)) ∧
+      Code (len (v ∘ Sum.inl)) (q (v ∘ Sum.inl))
+        (v (Sum.inr 0)) ∧
+      y (v ∘ Sum.inl) + len (v ∘ Sum.inl) * v (Sum.inr 5) =
+        (v (Sum.inr 0) * v (Sum.inr 1)) &&&
+          (v (Sum.inr 6) * v (Sum.inr 2)) ∧
+      y (v ∘ Sum.inl) + v (Sum.inr 2) +
+          v (Sum.inr 3) * v (Sum.inr 3) =
+        v (Sum.inr 0) + v (Sum.inr 5)} :=
+    and_dioph (Dioph.eq_dioph (dwire 3) dradix) <|
+      and_dioph (Dioph.eq_dioph (dwire 3) dpredSucc) <|
+      and_dioph (Dioph.eq_dioph (dwire 4) dtopPlace) <|
+      and_dioph (Dioph.eq_dioph (dwire 5) dtopPower) <|
+      and_dioph (hones dlen' dq' (dwire 1) (dwire 2)) <|
+      and_dioph (code_dioph_of_ones hones dlen' dq' dy') <|
+      and_dioph (code_dioph_of_ones hones dlen' dq' (dwire 0)) <|
+      and_dioph (Dioph.eq_dioph dshiftLeft dmeet)
+        (Dioph.eq_dioph dincLeft dincRight)
+  apply Dioph.ext (Dioph.ex_dioph dbody)
+  intro v
+  simp only [Set.mem_setOf_eq, Sum.elim_inr]
+  constructor
+  · rintro ⟨w, hactual, hpredSucc, htopPlace, htopPower,
+      honesw, hyCode, hzCode, hshift, hinc⟩
+    exact (indexMask_iff (len v) (q v) (y v)).mp
+      ⟨w 0, w 1, w 2, w 3, w 4, w 5, w 6,
+        hactual, hpredSucc, htopPlace, htopPower,
+        honesw, hyCode, hzCode, hshift, hinc⟩
+  · intro hy
+    rcases (indexMask_iff (len v) (q v) (y v)).mpr hy with
+      ⟨z, ones, shifted, actualRadix, topPlace, topPower, predRadix,
+        hactual, hpredSucc, htopPlace, htopPower,
+        honesw, hyCode, hzCode, hshift, hinc⟩
+    refine ⟨indexValues z ones shifted actualRadix topPlace topPower predRadix, ?_⟩
+    simpa [indexValues] using
+      (show actualRadix = radix (q v) ∧
+          actualRadix = predRadix + 1 ∧
+          topPlace = 2 ^ (1 + len v) ∧
+          topPower = actualRadix ^ topPlace ∧
+          OnesCodes (len v) (q v) ones shifted ∧
+          Code (len v) (q v) (y v) ∧
+          Code (len v) (q v) z ∧
+          y v + len v * topPower =
+            (z * ones) &&& (predRadix * shifted) ∧
+          y v + shifted + actualRadix * actualRadix = z + topPower
+        from ⟨hactual, hpredSucc, htopPlace, htopPower,
+          honesw, hyCode, hzCode, hshift, hinc⟩)
+
+/-! ## Primitive closure contracts for the circuit compilers -/
+
+/-- The four-place analogue of `CircuitDioph.TernarySubstitutionClosed`.
+This unfolds to the same contract used by `BoundedCipherDioph`; keeping the
+definition here avoids making the arithmetic relation layer depend on the
+downstream bounded-certificate compiler. -/
+def QuaternarySubstitutionClosed
+    (R : ℕ → ℕ → ℕ → ℕ → Prop) : Prop :=
+  ∀ {alpha : Type} {a b c d : (alpha → ℕ) → ℕ},
+    Dioph.DiophFn a → Dioph.DiophFn b →
+    Dioph.DiophFn c → Dioph.DiophFn d →
+      Dioph {v : alpha → ℕ | R (a v) (b v) (c v) (d v)}
+
+/-- Closure contract consumed by `CircuitDioph` for arbitrary codes. -/
+theorem code_closed_of_ones (hones : OnesSubstitutionClosed) :
+    CircuitDioph.TernarySubstitutionClosed Code := by
+  intro alpha len q c dlen dq dc
+  exact code_dioph_of_ones hones dlen dq dc
+
+/-- Closure contract consumed by fixed expression constants in
+`CircuitDioph`. -/
+theorem constCode_fixed_closed_of_ones (hones : OnesSubstitutionClosed) :
+    ∀ k, CircuitDioph.TernarySubstitutionClosed
+      (fun len q c ↦ ConstCode len q k c) := by
+  intro k alpha len q c dlen dq dc
+  exact constCode_dioph_of_ones hones dlen dq (Dioph.const_dioph k) dc
+
+/-- Four-place substitution closure for parameter-valued constant columns. -/
+theorem constCode_closed_of_ones (hones : OnesSubstitutionClosed) :
+    QuaternarySubstitutionClosed ConstCode := by
+  intro alpha len q k c dlen dq dk dc
+  exact constCode_dioph_of_ones hones dlen dq dk dc
+
+/-- Closure contract for the distinguished zero-based row-index column. -/
+theorem indexCode_closed_of_ones (hones : OnesSubstitutionClosed) :
+    CircuitDioph.TernarySubstitutionClosed IndexCode := by
+  intro alpha len q c dlen dq dc
+  exact indexCode_dioph_of_ones hones dlen dq dc
+
+/-- Closure contract for pointwise circuit multiplication, in the operand
+ordering expected by `BoundedCipher.MulRel`. -/
+theorem mulRel_closed_of_ones (hones : OnesSubstitutionClosed) :
+    CircuitDioph.QuinarySubstitutionClosed BoundedCipher.MulRel := by
+  intro alpha len q left right output dlen dq dleft dright doutput
+  exact mulRel_dioph_of_ones hones dlen dq dleft dright doutput
+
+end CipherRelations
+
+end PAListCoding
