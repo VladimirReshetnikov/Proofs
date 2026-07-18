@@ -1,0 +1,34 @@
+(** Assumption audit for pointwise shifting of nonstandard coded contexts. *)
+
+From BoundedPAConsistency Require Import RawCodedContextShift.
+
+Import PABoundedRawCodedContextShift.
+
+Check RawContextShiftRows.
+Check contextShiftRowsTermAt.
+Check raw_sat_contextShiftRowsTermAt_iff.
+
+Check RawContextShiftWithTables.
+Check contextShiftWithTablesTermAt.
+Check raw_sat_contextShiftWithTablesTermAt_iff.
+
+Check RawContextShift.
+Check contextShiftTermAt.
+Check raw_sat_contextShiftTermAt_iff.
+
+Check raw_contextShift_source_realizable.
+Check raw_contextShift_target_realizable.
+Check raw_contextShift_source_member.
+Check raw_contextShift_target_member.
+Check raw_contextShift_empty.
+Check raw_contextShift_cons.
+
+Print Assumptions raw_sat_contextShiftRowsTermAt_iff.
+Print Assumptions raw_sat_contextShiftWithTablesTermAt_iff.
+Print Assumptions raw_sat_contextShiftTermAt_iff.
+Print Assumptions raw_contextShift_source_realizable.
+Print Assumptions raw_contextShift_target_realizable.
+Print Assumptions raw_contextShift_source_member.
+Print Assumptions raw_contextShift_target_member.
+Print Assumptions raw_contextShift_empty.
+Print Assumptions raw_contextShift_cons.
