@@ -1,0 +1,17 @@
+(** Assumption audit for nonstandard term-shift target syntax realization. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedTermShiftSyntaxRealization.
+
+Import PABoundedRawCodedTermShiftSyntaxRealization.
+
+Check RawTermShiftTargetOccurrence.
+Check RawTermShiftTargetSupportPrefix.
+Check raw_termShiftTargetSupportPrefix_succ.
+Check raw_termShiftTargetSupportPrefix_exists.
+Check raw_codedTermShiftTrace_target_syntax_realizable.
+Check raw_codedTermShift_target_syntax_realizable.
+
+Print Assumptions raw_termShiftTargetSupportPrefix_exists.
+Print Assumptions raw_codedTermShiftTrace_target_syntax_realizable.
+Print Assumptions raw_codedTermShift_target_syntax_realizable.
