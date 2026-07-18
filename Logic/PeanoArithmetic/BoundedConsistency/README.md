@@ -38,7 +38,12 @@ details.
 > is now proved equivalent to rejection of accepting canonical traces in
 > every raw PA model.  The finite transition formula and every internally
 > indexed adjacent pair in its beta-coded trace are now reflected exactly to
-> raw-carrier steps of the concrete Minsky program.  Nonstandard trace
+> raw-carrier steps of the concrete Minsky program.  Beta functionality now
+> makes those local descriptions agree on every live counter, while the
+> canonical initial state, accepting output, and final program-counter
+> boundary are decoded exactly from one graph witness.  A PA
+> zero-or-successor argument further identifies them with one genuine full
+> state at the possibly nonstandard final index.  Nonstandard trace
 > rejection itself remains open.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
@@ -434,9 +439,22 @@ exact semantics for increment, decrement, program-counter, and unchanged
 register conditions, and beta-decodes a related current/next state at every
 model-internal index below the trace length.  Thus every complete canonical
 graph witness contains an internally stepwise trace, even when its length is
-nonstandard.  This remains a local reflection theorem: an object-definable
-machine invariant and PA induction are still needed to chain the decoded
-states and exclude an accepting endpoint.
+nonstandard.
+
+`CanonicalCheckerRawTraceCoherence.v` uses beta functionality in a raw PA
+model to prove that all descriptions of one trace position agree on the
+program counter and every one of the nine live registers.  Consecutive local
+steps therefore share the same finite middle state.  From a single complete
+graph witness it also reflects the exact initial checker state (including the
+fixed bound and certificate inputs), the accepting output entry, and the
+final program counter lying outside the compiled program.  PA's
+zero-or-successor theorem obtains either the initial state at a zero-length
+trace or the endpoint of the single preceding reflected step; beta
+functionality then joins the output and program-counter entries into that one
+genuine full final state.  This closes the local coherence and boundary
+bookkeeping, but deliberately does not perform an external induction across a
+possibly nonstandard trace length.  An object-definable invariant and PA
+induction are still needed to exclude the accepting endpoint.
 
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
