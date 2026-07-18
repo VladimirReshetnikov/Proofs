@@ -58,10 +58,11 @@ is the broad Lean import surface.
   twice-median and unique-mode statistics, one-based nth primes, powers, prime
   factorizations, canonical base digits and divisor lists, and the canonical
   lexicographic enumeration of every distinct permutation.  The same project
-  proves in both Lean and Rocq that natural exponentiation and tetration are
-  Diophantine via formalized Matiyasevich constructions and exact finite
-  traces.  It also gives a shared natural
-  coding of hereditary Cantor normal forms below
+  proves in both Lean and Rocq that the full three-argument natural
+  hyperoperator—simultaneously covering exponentiation, tetration,
+  pentation, and every higher rank—is Diophantine via formalized
+  Matiyasevich constructions and finite evaluator traces.  It also gives a
+  shared natural coding of hereditary Cantor normal forms below
   epsilon zero, PA formulae for validity, order, addition, multiplication, and
   exponentiation, and checked natural laws for those operations.
 - An [executable Cooper quantifier eliminator](Logic/PresburgerArithmetic/README.md)

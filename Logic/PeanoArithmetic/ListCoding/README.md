@@ -180,7 +180,7 @@ closures of every functionality and existence statement; the precise
 distinction is spelled out under “What ‘represented by a PA formula’ means”
 below.
 
-## Diophantine exponentiation and tetration
+## Diophantine exponentiation, tetration, and hyperoperators
 
 In addition to the multiplication-trace PA formula in item 22, both ports
 prove Matiyasevich's stronger result that the standard-natural-number graph
@@ -226,6 +226,24 @@ polynomial circuits and sparse radix ciphers, whose code, constant, index,
 and pointwise-product certificates are themselves proved Diophantine.  The
 two implementations expose both a graph theorem and an unfolded
 single-equation polynomial witness contract.
+
+Finally, both ports prove one theorem for the complete conventional
+three-argument hierarchy
+
+```text
+H(0, a, b) = b + 1        H(3, a, b) = a^b
+H(1, a, b) = a + b        H(4, a, b) = tet(a, b)
+H(2, a, b) = a * b        H(5, a, b) = pent(a, b), ...
+```
+
+For every rank at least three, a uniform core starts with exponentiation and
+obtains the next level by iteration from one.  A fixed deterministic machine
+stores pending lower-rank calls in an injective polynomial stack code.  Its
+four transition branches are Diophantine, its terminating run is proved to
+compute the recursive hierarchy, and arbitrary finite reachability is
+compiled into one existential polynomial equation.  Thus the result-first
+four-variable graph `(result, rank, base, argument)` is Diophantine without
+fixing the rank in advance.
 
 ## Ordinal codes below ε₀
 
@@ -408,7 +426,9 @@ results.
   Matiyasevich theorem to the result-first `Power` graph.  The tetration
   modules build exact Goedel-beta traces, prove bounded-universal elimination
   with sparse arithmetic ciphers, and assemble the unconditional result-first
-  tetration graph and its single-polynomial witness.
+  tetration graph and its single-polynomial witness.  The hyperoperation
+  modules verify a polynomial stack evaluator for all ranks at once and
+  compile its finite reachability relation to the public four-variable graph.
   `PAListCoding.lean` is the public facade, and
   `PAListCoding.Audit` checks the theorem surface and its assumptions.
 - Lean's `PAListCoding.EpsilonZero` supplies the shared raw notation code,
@@ -436,7 +456,10 @@ results.
   `TetrationDiophantine.v` proves the encoded-step and exact-iteration
   characterization, then compiles it to both the formula and official H10
   single-equation interfaces; `TetrationDiophantineAudit.v` is its focused
-  kernel and assumption audit. `Audit.v` checks the
+  kernel and assumption audit. `HyperoperationDiophantine.v` extends the same
+  constructive method to a deterministic variable-rank evaluator;
+  `HyperoperationDiophantineAudit.v` checks its graph and single-equation
+  theorem. `Audit.v` checks the
   complete public surface and prints its assumptions.
 - Coq's `EpsilonZero.v` implements the same square-shell/raw-notation code and
   executable structural operations. `EpsilonZeroLaws.v` gives independent
@@ -459,7 +482,8 @@ nth-prime totality and prime-factorization canonicality bridge additionally
 requires `rocq-mathcomp-boot` version `2.5.0`; the PA formulae and their
 correctness theorems do not depend on MathComp.  MathComp 2.5's released source
 and opam bound target Rocq before 9.2, so the focused Rocq 9.2 ordinal and
-Diophantine exponentiation and tetration audits deliberately exclude that
+Diophantine exponentiation, tetration, and hyperoperation audits deliberately
+exclude that
 unrelated bridge.
 
 In a compatible Rocq switch, that additional package can be installed with
@@ -474,6 +498,7 @@ lake --dir Logic/PeanoArithmetic/ListCoding/Lean build
 lake --dir Logic/PeanoArithmetic/ListCoding/Lean build `
   PAListCoding.ExponentiationDiophantine `
   PAListCoding.TetrationAssembly `
+  PAListCoding.HyperoperationDiophantine `
   PAListCoding.EpsilonZeroFormulas
 lake --dir Logic/PeanoArithmetic/ListCoding/Lean env lean `
   PAListCoding/Audit.lean
@@ -497,6 +522,7 @@ rocq makefile -f _CoqProject -o Makefile.coq
 make -f Makefile.coq `
   Logic/PeanoArithmetic/ListCoding/Coq/ExponentiationDiophantineAudit.vo `
   Logic/PeanoArithmetic/ListCoding/Coq/TetrationDiophantineAudit.vo `
+  Logic/PeanoArithmetic/ListCoding/Coq/HyperoperationDiophantineAudit.vo `
   Logic/PeanoArithmetic/ListCoding/Coq/EpsilonZeroAudit.vo
 rocqchk -silent -Q Logic/FirstOrder/Coq FirstOrder `
   -Q Logic/Interpretability/PAHF/Coq PAHF `
@@ -512,6 +538,11 @@ rocqchk -silent -Q Logic/FirstOrder/Coq FirstOrder `
   -Q Logic/Interpretability/PAHF/Coq PAHF `
   -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding `
   -Q lib/Coq-Library-Undecidability-current/theories Undecidability `
+  PAListCoding.HyperoperationDiophantineAudit
+rocqchk -silent -Q Logic/FirstOrder/Coq FirstOrder `
+  -Q Logic/Interpretability/PAHF/Coq PAHF `
+  -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding `
+  -Q lib/Coq-Library-Undecidability-current/theories Undecidability `
   PAListCoding.EpsilonZeroAudit
 ```
 
@@ -522,8 +553,9 @@ decoding functionality, round-trip, and injectivity theorems.  Both ordinal
 audits check the five ordinal formula specifications, guarded functionality,
 and algebra laws; Lean additionally checks the exact denotation range below
 `ε₀`, while Rocq independently checks its raw and syntactic surface.  The
-Diophantine audits check the exponentiation and tetration function-graph
-certificates and their single-polynomial-equation theorems.  No
+Diophantine audits check the exponentiation, tetration, and variable-rank
+hyperoperator function-graph certificates and their single-polynomial-equation
+theorems.  No
 generated enumeration is part of the trusted theorem boundary: the
 all-permutations result is checked against its soundness, completeness,
 exact-once, and lexicographic specification.

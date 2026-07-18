@@ -5,6 +5,7 @@ import PAListCoding.Aggregates
 import PAListCoding.NumberTheory
 import PAListCoding.ExponentiationDiophantine
 import PAListCoding.TetrationAssembly
+import PAListCoding.HyperoperationDiophantine
 import PAListCoding.EpsilonZero
 import PAListCoding.EpsilonZeroCompleteness
 import PAListCoding.EpsilonZeroLaws
@@ -22,8 +23,8 @@ epsilon zero.  Their order and arithmetic are computed on canonical natural
 codes; the companion formula module supplies the primitive-recursive bridge
 used to arithmetize those graphs.
 
-The standard-natural-number graphs of exponentiation and tetration are
-additionally exposed as Diophantine relations.  The variable-height tetration
-proof compiles a finite iteration trace through an arithmetic sparse-cipher
-certificate.
+The standard-natural-number graphs of exponentiation, tetration, and the
+full conventional three-argument hyperoperator are additionally exposed as
+Diophantine relations.  Variable-length computations are compiled through
+arithmetic sparse-cipher certificates for finite evaluator traces.
 -/

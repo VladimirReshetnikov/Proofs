@@ -249,6 +249,46 @@ from the final finite-iteration assembly.
 #print axioms PAListCoding.naturalTetration_diophantineFunction
 #print axioms PAListCoding.naturalTetration_polynomial_exists
 
+/-! ### A Diophantine variable-rank hyperoperator
+
+Ranks zero through five are successor, addition, multiplication,
+exponentiation, tetration, and pentation.  The public result-first graph has
+coordinates `(result, rank, base, argument)`; one fixed polynomially coded
+machine handles every exponentiation-or-higher rank.
+-/
+
+#check PAListCoding.iterateFromOne
+#check PAListCoding.hyperoperationCore
+#check PAListCoding.hyperoperator
+#check PAListCoding.hyperoperator_rank_three
+#check PAListCoding.hyperoperator_rank_four
+#check PAListCoding.hyperoperator_rank_five
+#check PAListCoding.hyperPair_injective
+#check PAListCoding.hyperEvalCode_injective
+#check PAListCoding.hyperReturnCode_injective
+#check PAListCoding.HyperStep
+#check PAListCoding.hyperStep_deterministic
+#check PAListCoding.hyperoperationCore_exactIter
+#check PAListCoding.hyperoperationCore_eq_iff_exists_exactIter
+#check PAListCoding.hyperStep_diophantine
+#check PAListCoding.NaturalHyperoperationCoreGraph
+#check PAListCoding.naturalHyperoperationCoreGraph_diophantine
+#check PAListCoding.NaturalHyperoperatorFunction
+#check PAListCoding.NaturalHyperoperatorGraph
+#check PAListCoding.naturalHyperoperatorGraph_diophantine
+#check PAListCoding.naturalHyperoperator_diophantineFunction
+#check PAListCoding.naturalHyperoperator_polynomial_exists
+
+#print axioms PAListCoding.hyperPair_injective
+#print axioms PAListCoding.hyperStep_deterministic
+#print axioms PAListCoding.hyperoperationCore_exactIter
+#print axioms PAListCoding.hyperoperationCore_eq_iff_exists_exactIter
+#print axioms PAListCoding.hyperStep_diophantine
+#print axioms PAListCoding.naturalHyperoperationCoreGraph_diophantine
+#print axioms PAListCoding.naturalHyperoperatorGraph_diophantine
+#print axioms PAListCoding.naturalHyperoperator_diophantineFunction
+#print axioms PAListCoding.naturalHyperoperator_polynomial_exists
+
 /-! ## Ordinal notations below epsilon zero -/
 
 -- The concrete square-shell code is a bijection on raw hereditary CNF syntax;
