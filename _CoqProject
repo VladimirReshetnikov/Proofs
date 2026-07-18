@@ -15,6 +15,7 @@
 -Q Logic/Equational/BooleanAlgebra/Coq BooleanAlgebra
 -Q Logic/Interpretability/PAHF/Coq PAHF
 -Q Logic/PeanoArithmetic/NoFiniteModel/Coq NoFinitePAModel
+-Q Logic/PeanoArithmetic/BoundedConsistency/Coq BoundedPAConsistency
 -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding
 -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction
 -Q Logic/PeanoArithmetic/Undecidable/Coq ""
@@ -422,6 +423,8 @@ Logic/PresburgerArithmetic/Coq/Cooper.v
 Logic/PresburgerArithmetic/Coq/Audit.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/BoundedConsistency.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/Audit.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ZF/Coq/Zf.v
