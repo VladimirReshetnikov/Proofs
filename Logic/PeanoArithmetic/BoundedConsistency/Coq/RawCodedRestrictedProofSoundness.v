@@ -363,7 +363,7 @@ Theorem raw_codedRestrictedPAProof_excluded : forall
 Proof.
   intros M hPA level hlocal hinputs hbottom certificate
     (witnessList & proof & context & _ & hwitnessed &
-      hrestricted & hvalid).
+      hrestricted & _ & _ & _ & hvalid).
   destruct (hinputs witnessList context hwitnessed)
     as (assignmentCode & assignmentStep & hadmissible & hcontext).
   exact (raw_restrictedProof_bottom_exclusion M hPA level

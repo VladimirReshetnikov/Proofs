@@ -79,10 +79,13 @@ Definition RawRestrictedProofCoveredRecursiveChildrenSigmaSound
     In child children ->
   forall childContext childConclusion,
     RawProofEndpoint M child childContext childConclusion ->
+  forall childAssignmentCode childAssignmentStep,
+    RawCodedAssignmentDefinedThrough M
+      childAssignmentCode childAssignmentStep coverageBound ->
     RawContextAllSigmaTrue M (S level)
-      childContext assignmentCode assignmentStep ->
+      childContext childAssignmentCode childAssignmentStep ->
     RawFixedLevelSigmaTruthCertificate M (S level)
-      childConclusion assignmentCode assignmentStep.
+      childConclusion childAssignmentCode childAssignmentStep.
 
 Arguments RawRestrictedProofCoveredRecursiveChildrenSigmaSound
   M level root coverageBound assignmentCode assignmentStep
@@ -253,7 +256,8 @@ Proof.
       hruleCoverage hdefined hvalid hadmissible hcontext).
     intros nodeContext a b c t child1 child2 child3 hconstructor
       fields children hentry hfields child hchild
-      childContext childConclusion hchildEndpoint hchildContext.
+      childContext childConclusion hchildEndpoint
+      childAssignmentCode childAssignmentStep hchildDefined hchildContext.
     destruct (raw_restrictedProofAtomicallyAdequate_recursive_child M hPA
       level current hrestricted hatomic
       nodeContext a b c t child1 child2 child3 hconstructor
@@ -273,8 +277,9 @@ Proof.
       child hchildRuleCoverage childContext childConclusion
       hchildEndpoint) as hchildValid.
     exact (hbelow child coverageBound childContext childConclusion
-      assignmentCode assignmentStep hchildBelow
-      hchildRestricted hchildAtomic hchildCoverage hchildRuleCoverage hdefined
+      childAssignmentCode childAssignmentStep hchildBelow
+      hchildRestricted hchildAtomic hchildCoverage hchildRuleCoverage
+      hchildDefined
       hchildValid hchildContext).
 Qed.
 
