@@ -1,5 +1,6 @@
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.TermEvaluation
 
 /-!
 # Kernel audit for bounded PA consistency, phase one
@@ -33,6 +34,13 @@ open LeanProofs.BoundedPAConsistency
 #check restrictedPA_consistent_standard
 #check LeanProofs.BoundedPAConsistency.Internal.inductionAtHierarchy
 #check LeanProofs.BoundedPAConsistency.Internal.inductionInPeanoModel
+#check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue
+#check LeanProofs.BoundedPAConsistency.TermEvaluation.termValues
+#check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue.defined
+#check LeanProofs.BoundedPAConsistency.TermEvaluation.termValues.defined
+#check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_bvar_zero_seqCons
+#check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_add
+#check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_mul
 
 #print axioms hierarchyRanks_rename
 #print axioms hierarchyRanks_subst
@@ -43,3 +51,8 @@ open LeanProofs.BoundedPAConsistency
 #print axioms restrictedPA_consistent_standard
 #print axioms LeanProofs.BoundedPAConsistency.Internal.inductionAtHierarchy
 #print axioms LeanProofs.BoundedPAConsistency.Internal.inductionInPeanoModel
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue.defined
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValues.defined
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_bvar_zero_seqCons
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_add
+#print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_mul

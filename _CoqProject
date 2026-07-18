@@ -425,6 +425,10 @@ Logic/PeanoArithmetic/NoFiniteModel/Coq/NoFiniteModel.v
 Logic/PeanoArithmetic/NoFiniteModel/Coq/Audit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/BoundedConsistency.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/Audit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntax.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntaxAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProof.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProofAudit.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ZF/Coq/Zf.v

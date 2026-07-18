@@ -14,11 +14,15 @@ details.
 > consistency consequences for the repository's PA/HF natural-deduction
 > calculus.  They compute mutually recursive syntactic `Sigma` and `Pi`
 > polarity ranks in the host logic and use faithful, data-carrying proof-tree
-> mirrors to inspect every occurrence.  They
-> do **not** yet arithmetize that hierarchy test or proof predicate, construct
-> partial truth inside PA, or prove an object sentence in the PA calculus.  In
-> particular, the requested theorem `PA ⊢ Con_n(PA)` for each external `n` is
-> **not yet implemented**.
+> mirrors to inspect every occurrence.  Rocq additionally has canonical
+> natural-number codes, total decoders, and an executable checker for those
+> restricted proof trees, with exact quotation and soundness theorems.  Lean
+> has a Sigma-one represented evaluator for Foundation's nonstandard coded
+> arithmetic terms.  These pieces do **not** yet constitute a PA formula for
+> the complete restricted proof predicate, construct partial truth inside PA,
+> or prove an object sentence in the PA calculus.  In particular, the
+> requested theorem `PA ⊢ Con_n(PA)` for each external `n` is **not yet
+> implemented**.
 
 ## The intended theorem
 
@@ -209,6 +213,35 @@ reflection theorem.
 
 The current Rocq/Coq foundation has no corresponding arithmetized syntax and
 fixed-point derivation library, so this bridge presently has no Rocq analogue.
+
+### Lean coded-term evaluation
+
+`BoundedPAConsistency.TermEvaluation` evaluates Foundation codes of
+arithmetic terms under HFS-coded bound- and free-variable environments.  It
+uses Foundation's term recursor, so its value and vector-value graphs are
+Sigma-one represented functions in every model of `I Sigma 1`, including on
+nonstandard term codes.  The checked equations cover de Bruijn and free
+variables, binder extension, argument vectors, and the arithmetic constants,
+addition, and multiplication.  This is the term-semantic input to partial
+truth; it does not yet evaluate formula codes.
+
+### Rocq natural codes and executable checker
+
+`CodedSyntax.v` gives canonical natural-number codes for the phase-one PA
+terms and formulae, total fuelled decoders, round trips and injectivity, coded
+renaming and instantiation, and exact agreement of the coded hierarchy rank
+with the typed rank.  `CodedProof.v` gives an unindexed mirror of all 17 proof
+rules, an executable endpoint checker, canonical proof codes and total
+decoding, and exact preservation of `proofOccurrenceRank` when a typed
+`ProvTree` is quoted.
+
+The PA wrapper records explicit witnesses for the six fixed axiom schemes and
+for induction instances.  Every phase-one restricted PA derivation has an
+accepted code, and every accepted code erases to an ordinary PA derivation.
+This is still a computation performed by Rocq on standard `nat` values.  The
+checker has not yet been represented by a formula of PA or proved correct for
+nonstandard codes in arbitrary PA models; that distinction is exactly the
+remaining internalization boundary.
 
 ## The standard partial-truth argument
 
