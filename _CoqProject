@@ -496,6 +496,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStandardAdequa
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStandardAdequacyAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFixedLevelTruth.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFixedLevelTruthAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedContextBounds.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedContextBoundsAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormula.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormulaAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompleteness.v

@@ -801,6 +801,15 @@ exact raw semantics for these genuine PA formulae.  This module intentionally
 claims only local rows and their introduction/domain laws: assembling a
 globally closed table and proving semantic soundness remain separate steps.
 
+`RawCodedContextBounds.v` turns the polarity domains into the actual
+all-occurrences restriction on a proof-node context.  At a fixed external
+level, every value read from every live head slot of one complete context
+traversal must lie in either the Sigma or the Pi domain.  The table-relative
+and existentially closed forms have exact arbitrary-model semantics, share
+the terminating traversal with the head condition, and therefore do not
+accept a malformed context vacuously.  A shared-table membership lemma exposes
+the boundedness of each indexed assumption.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -958,6 +967,8 @@ obligations rather than implementation guesses.
 - [x] In Rocq/Coq, define externally indexed local Sigma-truth and Pi-falsity
   formulae with exact arbitrary-model Boolean and quantifier rows, including
   correctly scoped opposite-polarity binder complements.
+- [x] In Rocq/Coq, express the all-occurrences quantifier-group restriction
+  over every head of an arbitrary nonstandard context traversal.
 - [ ] Assemble the Rocq/Coq fixed-level rows into globally closed nonstandard
   truth tables and prove their Tarski soundness interface.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
