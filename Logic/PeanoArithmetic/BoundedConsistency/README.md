@@ -81,6 +81,10 @@ details.
 > standard quantifier-free quotation, finite beta realization now constructs a
 > certificate whose unique output is one exactly when the raw formula is true
 > and zero exactly when it is false.
+> Rocq now also exposes every one of the seventeen raw-proof constructor codes
+> as a transparent PA term.  Their common constructor formula has exact
+> semantics in every law-free raw arithmetic structure, and quotation agrees
+> with the executable natural-number proof code in every raw PA model.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -440,6 +444,15 @@ rules, an executable endpoint checker, canonical proof codes and total
 decoding, and exact preservation of `proofOccurrenceRank` when a typed
 `ProvTree` is quoted.
 
+`RawCodedProofConstructors.v` gives a separate, model-internal bridge for the
+same syntax.  It writes the polynomial list code of each of the 17 proof
+constructors as an ordinary PA term, combines them into one transparent local
+constructor relation, and proves exact evaluation without assuming any
+arithmetic laws.  In every raw PA model, recursively quoting a standard proof
+tree through these terms agrees with the executable `rawProofCode`.  A global
+proof traversal and rule validator for arbitrary nonstandard codes remains a
+separate obligation.
+
 The PA wrapper records explicit witnesses for the six fixed axiom schemes and
 for induction instances.  Every phase-one restricted PA derivation has an
 accepted code, and every accepted code erases to an ordinary PA derivation.
@@ -789,6 +802,11 @@ obligations rather than implementation guesses.
   restricted provability and Pi-one restricted consistency.
 - [ ] Build the corresponding arbitrary-model restricted derivation predicate
   in Rocq/Coq.
+- [x] In Rocq/Coq, expose all 17 proof-code constructors as transparent PA
+  terms, prove their exact arbitrary-model semantics, and prove standard
+  quotation agreement.
+- [ ] Assemble those local proof constructors into a global proof traversal
+  and validate every inference rule on arbitrary nonstandard proof codes.
 - [ ] Formalize coded environments and term evaluation, including totality and
   substitution lemmas in PA.
 - [x] In Rocq/Coq, formalize beta-coded environments with functional lookup and

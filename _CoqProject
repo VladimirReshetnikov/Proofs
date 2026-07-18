@@ -429,6 +429,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntax.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntaxAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProof.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProofAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofConstructors.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofConstructorsAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerComputability.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerStructuralComputability.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerDecisionComputability.v
