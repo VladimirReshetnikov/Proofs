@@ -2,6 +2,7 @@ import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.FixedLevelTruthCertificate
 import BoundedPAConsistency.FixedLevelTruthDefinability
+import BoundedPAConsistency.FixedLevelTruthTarski
 import BoundedPAConsistency.Internal
 import BoundedPAConsistency.ModelFormulaInduction
 import BoundedPAConsistency.OrientedHierarchy
@@ -28,9 +29,10 @@ rank-zero logical rules are sound for every nonstandard restricted derivation.
 The PA axiom recognizer is discharged internally at rank zero, yielding the
 checked object theorem `PA ⊢ Con₀(PA)`.
 Externally indexed positive-level Sigma/Pi truth predicates are represented at
-the expected arithmetical-hierarchy levels, and their internally finite HFS
-certificates satisfy the positive Boolean and existential clauses.  The
-remaining work is to prove the polarity-changing clauses and the higher-level
-PA axiom/rule soundness needed for arbitrary positive external bounds.  See
-the project README for the exact boundary and roadmap.
+the expected arithmetical-hierarchy levels.  Their internally finite HFS
+certificates satisfy the Boolean and quantified oriented Tarski clauses,
+including the polarity switches at universal and existential heads.  The
+remaining work is coherence on polarity overlap, semantic transport, and the
+higher-level PA axiom/rule soundness needed for arbitrary positive external
+bounds.  See the project README for the exact boundary and roadmap.
 -/

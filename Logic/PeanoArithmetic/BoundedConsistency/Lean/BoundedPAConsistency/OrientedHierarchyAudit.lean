@@ -23,6 +23,9 @@ variable {L : Language} [L.Encodable] [L.LORDefinable]
 #check IsSigmaCode.definable
 #check IsPiCode.definable
 #check quantifierBoundedCode_iff_sigma_or_pi
+#check rankCode_balanced
+#check QuantifierBoundedCode.toSigmaSucc
+#check QuantifierBoundedCode.toPiSucc
 #check isSigmaCode_and_iff
 #check isPiCode_or_iff
 #check isSigmaCode_exs_succ_iff
@@ -54,6 +57,8 @@ example {b p : V} (hp : IsSemiformula L 1 p) :
   isPiCode_free_iff hp
 
 #print axioms quantifierBoundedCode_iff_sigma_or_pi
+#print axioms rankCode_balanced
+#print axioms QuantifierBoundedCode.toSigmaSucc
 #print axioms isSigmaCode_and_iff
 #print axioms isSigmaCode_exs_succ_iff
 #print axioms isSigmaCode_all_add_two_iff

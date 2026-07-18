@@ -1,5 +1,6 @@
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
+import BoundedPAConsistency.FixedLevelTruthTarski
 import BoundedPAConsistency.Internal
 import BoundedPAConsistency.ModelFormulaInduction
 import BoundedPAConsistency.OrientedHierarchy
@@ -63,6 +64,8 @@ open LeanProofs.BoundedPAConsistency
 #check LeanProofs.BoundedPAConsistency.OrientedHierarchy.IsSigmaCode
 #check LeanProofs.BoundedPAConsistency.OrientedHierarchy.IsPiCode
 #check LeanProofs.BoundedPAConsistency.OrientedHierarchy.quantifierBoundedCode_iff_sigma_or_pi
+#check LeanProofs.BoundedPAConsistency.OrientedHierarchy.rankCode_balanced
+#check LeanProofs.BoundedPAConsistency.OrientedHierarchy.QuantifierBoundedCode.toSigmaSucc
 #check LeanProofs.BoundedPAConsistency.OrientedHierarchy.isSigmaCode_neg_iff
 #check LeanProofs.BoundedPAConsistency.OrientedHierarchy.isPiCode_neg_iff
 #check LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue
@@ -78,6 +81,10 @@ open LeanProofs.BoundedPAConsistency
 #check LeanProofs.BoundedPAConsistency.QuantifierFreePAAxioms.qfTrue_of_mem_pa_delta1Class
 #check LeanProofs.BoundedPAConsistency.QuantifierFreePAAxioms.restrictedConsistent_pa_zero
 #check LeanProofs.BoundedPAConsistency.QuantifierFreePAAxioms.pa_proves_restrictedConsistency_zero
+#check LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.sigmaTrue_and_iff
+#check LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.piTrue_all_iff
+#check LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.sigmaTrue_succ_all_iff
+#check LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.piTrue_succ_exs_iff
 #check LeanProofs.BoundedPAConsistency.RestrictedDerivation
 #check LeanProofs.BoundedPAConsistency.RestrictedProof
 #check LeanProofs.BoundedPAConsistency.RestrictedConsistent
@@ -107,6 +114,8 @@ open LeanProofs.BoundedPAConsistency
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_shift
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_subst
 #print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.quantifierBoundedCode_iff_sigma_or_pi
+#print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.rankCode_balanced
+#print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.QuantifierBoundedCode.toSigmaSucc
 #print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.isSigmaCode_neg_iff
 #print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.isPiCode_neg_iff
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue_isBit
@@ -121,6 +130,10 @@ open LeanProofs.BoundedPAConsistency
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreePAAxioms.qfTrue_of_mem_pa_delta1Class
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreePAAxioms.restrictedConsistent_pa_zero
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreePAAxioms.pa_proves_restrictedConsistency_zero
+#print axioms LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.sigmaTrue_and_iff
+#print axioms LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.piTrue_all_iff
+#print axioms LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.sigmaTrue_succ_all_iff
+#print axioms LeanProofs.BoundedPAConsistency.FixedLevelTruthTarski.piTrue_succ_exs_iff
 #print axioms LeanProofs.BoundedPAConsistency.RestrictedDerivation.defined
 #print axioms LeanProofs.BoundedPAConsistency.RestrictedProof.defined
 #print axioms LeanProofs.BoundedPAConsistency.eval_paRestrictedConsistencySentence_iff

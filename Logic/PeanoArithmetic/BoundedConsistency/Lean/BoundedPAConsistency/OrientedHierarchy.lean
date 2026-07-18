@@ -61,6 +61,70 @@ lemma IsSigmaCode.rank_le {n p : V} (h : IsSigmaCode L n p) :
 lemma IsPiCode.rank_le {n p : V} (h : IsPiCode L n p) :
     piRankCode L p ≤ n := h.2
 
+/-! ## Balance of the two oriented ranks -/
+
+private lemma add_one_le_add_one {a b : V} (h : a ≤ b) :
+    a + 1 ≤ b + 1 := by
+  simpa [add_comm] using add_le_add_right h 1
+
+/-- The Sigma- and Pi-oriented ranks of every internally well-formed formula
+differ by at most one.  This is proved by structural induction on the coded
+formula fixed point, so it also applies to nonstandard formula codes.
+
+The balance lemma is the bridge from the minimum-based user bound to a single
+truth predicate one level higher: a `Pi_n` formula is automatically
+`Sigma_(n+1)`, and conversely.
+-/
+theorem rankCode_balanced {p : V} (hp : IsUFormula L p) :
+    sigmaRankCode L p ≤ piRankCode L p + 1 ∧
+      piRankCode L p ≤ sigmaRankCode L p + 1 := by
+  apply IsUFormula.ISigma1.sigma1_succ_induction
+      (P := fun p : V ↦
+        sigmaRankCode L p ≤ piRankCode L p + 1 ∧
+          piRankCode L p ≤ sigmaRankCode L p + 1)
+      (L := L) ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ p hp
+  · definability
+  · intro k R terms hR hterms
+    simp [hR, hterms, sigmaRankCode, piRankCode]
+  · intro k R terms hR hterms
+    simp [hR, hterms, sigmaRankCode, piRankCode]
+  · simp [sigmaRankCode, piRankCode]
+  · simp [sigmaRankCode, piRankCode]
+  · intro p q hp hq ihp ihq
+    simp only [sigmaRankCode_and hp hq, piRankCode_and hp hq]
+    rcases ihp with ⟨hsp, hps⟩
+    rcases ihq with ⟨hsq, hqs⟩
+    constructor
+    · apply max_le
+      · exact le_trans hsp (add_one_le_add_one (le_max_left _ _))
+      · exact le_trans hsq (add_one_le_add_one (le_max_right _ _))
+    · apply max_le
+      · exact le_trans hps (add_one_le_add_one (le_max_left _ _))
+      · exact le_trans hqs (add_one_le_add_one (le_max_right _ _))
+  · intro p q hp hq ihp ihq
+    simp only [sigmaRankCode_or hp hq, piRankCode_or hp hq]
+    rcases ihp with ⟨hsp, hps⟩
+    rcases ihq with ⟨hsq, hqs⟩
+    constructor
+    · apply max_le
+      · exact le_trans hsp (add_one_le_add_one (le_max_left _ _))
+      · exact le_trans hsq (add_one_le_add_one (le_max_right _ _))
+    · apply max_le
+      · exact le_trans hps (add_one_le_add_one (le_max_left _ _))
+      · exact le_trans hqs (add_one_le_add_one (le_max_right _ _))
+  · intro p hp ih
+    simp [hp]
+  · intro p hp ih
+    simp [hp]
+
+lemma IsSigmaCode.toPiSucc {n p : V} (h : IsSigmaCode L n p) :
+    IsPiCode L (n + 1) p := by
+  exact ⟨h.1, le_trans (rankCode_balanced h.1).2 (add_one_le_add_one h.2)⟩
+
+lemma IsPiCode.toSigmaSucc {n p : V} (h : IsPiCode L n p) :
+    IsSigmaCode L (n + 1) p := by
+  exact ⟨h.1, le_trans (rankCode_balanced h.1).1 (add_one_le_add_one h.2)⟩
+
 /-- Resolving the minimum in `QuantifierBoundedCode` gives exactly one of the
 two oriented domains (and possibly both). -/
 @[simp] theorem quantifierBoundedCode_iff_sigma_or_pi {n p : V} :
@@ -85,6 +149,21 @@ lemma IsSigmaCode.mono {m n p : V} (hmn : m ≤ n)
 lemma IsPiCode.mono {m n p : V} (hmn : m ≤ n)
     (h : IsPiCode L m p) : IsPiCode L n p :=
   ⟨h.1, le_trans h.2 hmn⟩
+
+/-- Every minimum-bounded formula belongs to either chosen polarity one level
+higher.  The Sigma version is used to give the final bounded-truth predicate
+one uniform represented definition. -/
+lemma QuantifierBoundedCode.toSigmaSucc {n p : V}
+    (h : QuantifierBoundedCode L n p) : IsSigmaCode L (n + 1) p := by
+  rcases quantifierBoundedCode_iff_sigma_or_pi.mp h with hs | hp
+  · exact hs.mono (by simp)
+  · exact hp.toSigmaSucc
+
+lemma QuantifierBoundedCode.toPiSucc {n p : V}
+    (h : QuantifierBoundedCode L n p) : IsPiCode L (n + 1) p := by
+  rcases quantifierBoundedCode_iff_sigma_or_pi.mp h with hs | hp
+  · exact hs.toPiSucc
+  · exact hp.mono (by simp)
 
 /-! ## Formula constructors -/
 

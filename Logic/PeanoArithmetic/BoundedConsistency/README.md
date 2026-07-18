@@ -26,8 +26,9 @@ details.
 > axiom recognizer at rank zero, and obtains the actual object theorem
 > `PA ⊢ Con_0(PA)`.  It now also defines externally indexed Sigma/Pi partial
 > truth predicates over nonstandard codes, proves their fixed-level
-> definability, and establishes the positive Boolean/existential certificate
-> clauses.  Rocq now represents its executable checker by an arithmetic
+> definability, and establishes oriented Boolean/quantifier Tarski clauses,
+> including both polarity switches.  Rocq now represents its executable
+> checker by an arithmetic
 > formula on the standard natural-number model and has a generic route from
 > arbitrary raw-model validity to an object-level PA proof; these are separate
 > endpoints, and nonstandard checker validity does not yet connect them.  The
@@ -334,8 +335,13 @@ witnesses, and stop at quantifier-free or lower opposite-polarity leaves.
 `FixedLevelTruthCertificate` proves certificate enlargement and the positive
 conjunction, disjunction, and existential Tarski clauses.
 `FixedLevelTruthDefinability` represents `SigmaTrue n` by a `Sigma_(n+1)`
-formula and `PiTrue n` by a `Pi_(n+1)` formula.  Coherence on polarity overlap,
-negation, universal quantification, semantic transport, and higher-level
+formula and `PiTrue n` by a `Pi_(n+1)` formula.
+`FixedLevelTruthTarski` supplies the uniform Sigma clauses, their Pi Boolean
+duals, Pi universal truth over every model element, and the two level-changing
+universal/existential polarity clauses.  `OrientedHierarchy.rankCode_balanced`
+proves internally that the two ranks differ by at most one, so every formula
+with minimum rank at most `n` lies in either chosen polarity at level `n+1`.
+Coherence on polarity overlap, negation, semantic transport, and higher-level
 derivation soundness are the remaining Lean obligations.
 
 ### Rocq natural codes and executable checker
@@ -463,10 +469,11 @@ obligations rather than implementation guesses.
 - [x] In Lean, prove internal term shift/substitution transport and the
   structural/Boolean rank-zero Tarski interface on nonstandard codes.
 - [x] In Lean, construct externally indexed fixed-level Sigma/Pi satisfaction
-  predicates over nonstandard codes and prove their hierarchy definability
-  plus the positive Boolean/existential certificate clauses.
-- [ ] Complete polarity coherence, negation, universal, and transport Tarski
-  clauses for Lean fixed-level truth.
+  predicates over nonstandard codes and prove hierarchy definability,
+  oriented Boolean/quantifier clauses, and polarity changes at quantifier
+  heads.
+- [ ] Complete polarity coherence, negation, and semantic transport for Lean
+  fixed-level truth.
 - [x] In Lean, generalize arithmetized fixed-point induction from level-one
   invariants to every externally fixed positive hierarchy level and specialize
   it to models of full PA.
