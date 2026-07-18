@@ -27,13 +27,17 @@ details.
 > `PA ⊢ Con_0(PA)`.  It now also defines externally indexed Sigma/Pi partial
 > truth predicates over nonstandard codes, proves their fixed-level
 > definability, and establishes oriented Boolean/quantifier Tarski clauses,
-> including both polarity switches.  Rocq now represents its executable
-> checker by an arithmetic
-> formula on the standard natural-number model and has a generic route from
-> arbitrary raw-model validity to an object-level PA proof; these are separate
-> endpoints, and nonstandard checker validity does not yet connect them.  The
-> higher-level polarity-changing truth clauses and rule/axiom soundness remain
-> incomplete.  Consequently the full requested scheme `PA ⊢ Con_n(PA)` for
+> including both polarity switches.  Rocq now has both the earlier
+> standard-model representing formula and a transparent canonical arithmetic
+> formula describing accepting traces of the concrete compiled checker.  The
+> compiler theorem proves that the canonical machine accepts exactly when the
+> executable restricted-proof checker returns true on standard naturals, and
+> the trace certificate shell has been unfolded in arbitrary raw PA models.
+> Rocq also has a generic route from arbitrary raw-model validity to an
+> object-level PA proof; nonstandard trace rejection does not yet connect
+> these endpoints.  Lean's higher-level coherence, semantic transport, and
+> PA-axiom instantiation remain incomplete.  Consequently the full requested
+> scheme `PA ⊢ Con_n(PA)` for
 > every external `n` is **not yet implemented** in either kernel; Lean's
 > externally indexed family is complete at `n = 0`.
 
@@ -358,18 +362,31 @@ The PA wrapper records explicit witnesses for the six fixed axiom schemes and
 for induction instances.  Every phase-one restricted PA derivation has an
 accepted code, and every accepted code erases to an ordinary PA derivation.
 This is still a computation performed by Rocq on standard `nat` values.  The
-checker now has an extracted computability witness and a representing PA
-formula whose correctness theorem is exact in the standard `nat` model.  It
-has not been proved correct for nonstandard codes in arbitrary PA models;
-that distinction is exactly the remaining internalization boundary.
+checker has an extracted computability witness and a representing PA formula
+whose correctness theorem is exact in the standard `nat` model.  It has not
+been proved correct for nonstandard codes in arbitrary PA models; that
+distinction is exactly the remaining internalization boundary.
 
 There is an additional reason this particular representing formula is only a
 checkpoint: the generic computability bridge selects, by classical choice,
 an arbitrary formula with the right `natModel` extension.  That contract does
 not determine its behavior in nonstandard models or provide a PA-provable
-graph theorem.  A final Coq proof must therefore use a transparent canonical
-trace formula (or strengthen the representation API), rather than silently
-treating the selected graph as an internal checker.
+graph theorem.
+
+`CanonicalCheckerTrace.v` removes that opacity.  It constructively extracts
+the checker to a closed lambda term, compiles that term to a fixed nine-counter
+Minsky program, and builds a fully transparent PA formula asserting the
+existence of beta-coded initial, transition, final-state, and output traces.
+Its arbitrary-raw-model theorem unfolds the outer certificate into the exact
+finite list of trace conditions.  `CanonicalCheckerStandardAgreement.v`
+uses deterministic machine semantics to prove, on ordinary naturals, that
+the concrete machine accepts exactly when `checkRestrictedPAProofCode`
+returns true.  The audits show that the compiler and standard-agreement
+theorems are closed; only the generic environment extensionality lemma used
+by the raw certificate shell assumes functional extensionality.  The missing
+step is now mathematical rather than representational: prove in every raw PA
+model that an accepting nonstandard trace would yield a sound bounded proof,
+and hence cannot end in falsity.
 
 `RawModelCompleteness.v` supplies the other endpoint: a sentence valid under
 every valuation in every raw model of the PA axioms has an object-level
@@ -494,6 +511,10 @@ obligations rather than implementation guesses.
   it to models of full PA.
 - [ ] Build or port the corresponding coded-derivation induction machinery in
   Rocq/Coq.
+- [x] In Rocq/Coq, construct a transparent canonical Minsky-trace formula for
+  the executable checker and prove exact standard-natural compiler agreement.
+- [ ] Prove the canonical trace checker's bounded-proof soundness in every raw
+  PA model, including nonstandard trace lengths and formula/proof codes.
 - [x] In Lean, prove soundness of every rank-zero logical inference for
   arbitrary nonstandard restricted-derivation codes, conditional on the exact
   theory-axiom truth premise.
