@@ -36,7 +36,10 @@ details.
 > Rocq also has a generic route from arbitrary raw-model validity to an
 > object-level PA proof, and the canonical fixed-bound consistency sentence
 > is now proved equivalent to rejection of accepting canonical traces in
-> every raw PA model.  Nonstandard trace rejection itself remains open.
+> every raw PA model.  The finite transition formula and every internally
+> indexed adjacent pair in its beta-coded trace are now reflected exactly to
+> raw-carrier steps of the concrete Minsky program.  Nonstandard trace
+> rejection itself remains open.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -418,6 +421,16 @@ proves this canonical fixed-bound sentence exactly when every raw PA model
 rejects every (including nonstandard) accepting trace.  This is a reduction,
 not a proof of rejection; its statement deliberately exposes the remaining
 nonstandard soundness obligation.
+
+`CanonicalCheckerRawTraceReflection.v` unfolds the finite transition
+disjunction into an explicit raw-carrier Minsky step relation.  It proves
+exact semantics for increment, decrement, program-counter, and unchanged
+register conditions, and beta-decodes a related current/next state at every
+model-internal index below the trace length.  Thus every complete canonical
+graph witness contains an internally stepwise trace, even when its length is
+nonstandard.  This remains a local reflection theorem: an object-definable
+machine invariant and PA induction are still needed to chain the decoded
+states and exclude an accepting endpoint.
 
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
