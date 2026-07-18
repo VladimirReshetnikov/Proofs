@@ -43,8 +43,9 @@ details.
 > canonical initial state, accepting output, and final program-counter
 > boundary are decoded exactly from one graph witness.  A PA
 > zero-or-successor argument further identifies them with one genuine full
-> state at the possibly nonstandard final index.  Nonstandard trace
-> rejection itself remains open.
+> state at the possibly nonstandard final index.  A PA-definable invariant
+> can now be propagated across the entire trace by internal PA induction;
+> constructing the concrete checker safety invariant remains open.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -470,9 +471,21 @@ zero-or-successor theorem obtains either the initial state at a zero-length
 trace or the endpoint of the single preceding reflected step; beta
 functionality then joins the output and program-counter entries into that one
 genuine full final state.  This closes the local coherence and boundary
-bookkeeping, but deliberately does not perform an external induction across a
-possibly nonstandard trace length.  An object-definable invariant and PA
-induction are still needed to exclude the accepting endpoint.
+bookkeeping without externally iterating across a possibly nonstandard trace
+length.
+
+`CanonicalCheckerDefinableInvariant.v` supplies the missing internal
+iteration principle.  It turns any fixed PA formula on the ten machine-state
+components into a beta-trace point predicate, proves exact raw semantics, and
+uses PA's own induction axiom to propagate that predicate to the model-valued
+final time.  Its `RawCanonicalDefinableSafetyCertificate` isolates exactly
+three checker-specific obligations: the invariant holds in the initial
+bound/certificate state, every concrete compiled-program step preserves it,
+and it excludes the accepting final state.  Such a certificate now implies
+both rejection in every raw PA model and the existing object-level canonical
+consistency theorem.  The remaining Rocq task is to construct and verify that
+concrete safety invariant; the nonstandard-time induction mechanism itself is
+complete.
 
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
