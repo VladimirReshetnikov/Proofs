@@ -76,9 +76,11 @@ details.
 > standard quoted term, including pairs of terms over one shared assignment.
 > A model-internal syntax/support certificate now characterizes arbitrary
 > nonstandard term codes, and genuine PA induction constructs their value
-> tables from an explicitly stated fixed-step beta-capacity premise.  This
-> separates the completed nonstandard induction from the still-open proof that
-> every admissible traversal has a sufficiently large common modulus.
+> tables.  A step-parametric capacity trace removes the apparent circularity
+> in choosing one beta modulus before the nonstandard value table is known:
+> PA induction builds a bound valid for every sufficiently large common step,
+> and hence proves unconditional existence and uniqueness on the honest
+> syntax/assignment domain.
 > Equality, falsity, implication, conjunction, and disjunction also now have
 > transparent rank-zero truth-bit rows with exact arbitrary-model semantics,
 > and the unified rank-zero row is proved single-valued.  A global supported
@@ -679,8 +681,18 @@ through a CRT extension, and `raw_definable_induction` iterates this argument
 through a possibly nonstandard bound.  The resulting certificate exists and
 has a unique value provided one fixed beta step is a common multiple through
 the traversal and every newly computed value fits its target modulus.  That
-capacity condition is transparent and unassumed, but proving its existence is
-still required before arbitrary nonstandard term totality is unconditional.
+capacity condition is transparent and unassumed, and is kept separate so that
+the source of the common-modulus obligation is explicit.
+
+`RawCodedTermEvaluationCapacity.v` discharges that obligation internally.  A
+PA-definable trace assigns each prefix a capacity that works parametrically
+for every sufficiently large common beta step.  At a successor, a probe step
+discovers the next value; cross-traversal functionality shows that all larger
+steps discover the same value, and finite beta coding appends it.  PA induction
+iterates this through an arbitrary model-valued bound.  Restricting one
+complete traversal then bounds every admissible local output, yielding the
+required fixed-step capacity and unconditional existence and uniqueness of
+term-evaluation certificates for arbitrary nonstandard syntax codes.
 
 `RawCodedTermEvaluationStandardAdequacy.v` separately realizes the global
 certificate on every externally quoted typed term.  A checked decoder marks
@@ -689,8 +701,8 @@ support, and value vectors, and structural term induction verifies every live
 row.  A fixed-assignment interface can reuse one assignment pair across
 independently generated term tables; in particular, the two sides of an
 equality receive certificates over literally identical assignment parameters.
-This is standard-quotation adequacy and does not assert the still-missing
-realization theorem for arbitrary nonstandard term codes.
+This independently checks standard-quotation adequacy; the preceding capacity
+module supplies the stronger arbitrary-nonstandard realization theorem.
 
 `RawCodedRankZeroTruthStep.v` supplies the next local Tarski layer.  Equality
 rows read evaluated arithmetic values from a term table; Boolean rows read
@@ -871,9 +883,9 @@ obligations rather than implementation guesses.
 - [x] In Rocq/Coq, characterize model-internal term syntax and carry out the
   full PA-inductive construction of its value table from an explicit
   fixed-step beta-capacity premise.
-- [ ] Prove model-internal realization/totality of term-evaluation certificates
-  for arbitrary nonstandard well-formed term codes by discharging that
-  beta-capacity premise.
+- [x] Prove model-internal realization/totality of term-evaluation certificates
+  for arbitrary nonstandard well-formed term codes by a step-parametric
+  capacity trace and PA induction, discharging the beta-capacity premise.
 - [x] In Rocq/Coq, define transparent local rank-zero truth rows for atoms and
   every Boolean constructor, with exact arbitrary-model truth tables.
 - [x] In Rocq/Coq, prove the unified local rank-zero truth row functional.
