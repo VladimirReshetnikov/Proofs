@@ -54,7 +54,9 @@ details.
 > model; the model-internal global rank traversal remains under construction.
 > A beta-coded assignment formula now additionally has exact arbitrary-model
 > lookup semantics, functional values, and PA-provable de Bruijn binder
-> extension through every possibly nonstandard model-internal prefix.
+> extension through every possibly nonstandard model-internal prefix.  The
+> five coded-term constructors now have transparent local evaluation rows,
+> with recursive values read from beta tables and exact raw-model semantics.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -550,6 +552,15 @@ arbitrary model element, not merely through a standard numeral.  The module
 proves the expected zero/successor lookup equations and transports prefix
 definedness from `bound` to `succ bound`.
 
+`RawCodedTermEvaluationStep.v` connects that environment to the transparent
+term constructors.  It defines exact local evaluator rows for variables, zero,
+successor, addition, and multiplication.  Variable values come from the coded
+assignment; recursive child values come from a separate beta-coded evaluation
+table.  Both the witness-exposing rows and their four-witness existential
+closure are genuine PA formulae with exact arbitrary-model semantics.  The
+global theorem that constructs and validates a complete table over a possibly
+nonstandard term code remains separate.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -656,6 +667,8 @@ obligations rather than implementation guesses.
   substitution lemmas in PA.
 - [x] In Rocq/Coq, formalize beta-coded environments with functional lookup and
   PA-provable binder extension through arbitrary nonstandard prefixes.
+- [x] In Rocq/Coq, define exact local coded-term evaluation rows for every
+  arithmetic term constructor over arbitrary raw-model elements.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the

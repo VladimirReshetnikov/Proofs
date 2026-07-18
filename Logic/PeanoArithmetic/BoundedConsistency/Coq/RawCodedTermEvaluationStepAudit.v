@@ -1,0 +1,39 @@
+(** Public-surface and assumption audit for local coded-term evaluation. *)
+
+From BoundedPAConsistency Require Import RawCodedTermEvaluationStep.
+
+Import PABoundedRawCodedTermEvaluationStep.
+
+Check RawTermVarEvaluationRow.
+Check RawTermZeroEvaluationRow.
+Check RawTermSuccEvaluationRow.
+Check RawTermAddEvaluationRow.
+Check RawTermMulEvaluationRow.
+Check RawTermEvaluationStep.
+
+Check termVarEvaluationRowTermAt.
+Check termZeroEvaluationRowTermAt.
+Check termSuccEvaluationRowTermAt.
+Check termAddEvaluationRowTermAt.
+Check termMulEvaluationRowTermAt.
+Check termEvaluationStepTermAt.
+
+Check raw_sat_termVarEvaluationRowTermAt_iff.
+Check raw_sat_termZeroEvaluationRowTermAt_iff.
+Check raw_sat_termSuccEvaluationRowTermAt_iff.
+Check raw_sat_termAddEvaluationRowTermAt_iff.
+Check raw_sat_termMulEvaluationRowTermAt_iff.
+Check raw_sat_termEvaluationStepTermAt_iff.
+
+Check raw_termVarEvaluationRow_value_functional.
+Check raw_termZeroEvaluationRow_value_functional.
+Check raw_termSuccEvaluationRow_value_functional.
+Check raw_termAddEvaluationRow_value_functional.
+Check raw_termMulEvaluationRow_value_functional.
+
+Print Assumptions raw_sat_termVarEvaluationRowTermAt_iff.
+Print Assumptions raw_sat_termSuccEvaluationRowTermAt_iff.
+Print Assumptions raw_sat_termAddEvaluationRowTermAt_iff.
+Print Assumptions raw_sat_termEvaluationStepTermAt_iff.
+Print Assumptions raw_termVarEvaluationRow_value_functional.
+Print Assumptions raw_termAddEvaluationRow_value_functional.
