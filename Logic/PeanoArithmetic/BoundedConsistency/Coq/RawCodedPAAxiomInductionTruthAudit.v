@@ -1,0 +1,25 @@
+(** Assumption audit for arbitrary model-internal PA induction truth. *)
+
+From BoundedPAConsistency Require Import RawCodedPAAxiomInductionTruth.
+
+Import PABoundedRawCodedPAAxiomInductionTruth.
+
+Check raw_fixedLevelAll_sigma_of_all_binders.
+Check raw_inductionTruth_unitShift_nested_prepend_relation.
+Check raw_inductionTruth_zeroTermEvaluation.
+Check raw_inductionTruth_successorVariableTermEvaluation.
+Check raw_universalClosure_sigma_sound_all.
+Check raw_inductionSourceProgressAt_all.
+Check raw_inductionBody_sigma_of_progress.
+Check raw_fixedLevelInductionProgressTransport_of_operation_facts.
+Check raw_codedPAAxiomInduction_sigma_of_progress_transport.
+
+Print Assumptions raw_fixedLevelAll_sigma_of_all_binders.
+Print Assumptions raw_inductionTruth_unitShift_nested_prepend_relation.
+Print Assumptions raw_inductionTruth_zeroTermEvaluation.
+Print Assumptions raw_inductionTruth_successorVariableTermEvaluation.
+Print Assumptions raw_universalClosure_sigma_sound_all.
+Print Assumptions raw_inductionSourceProgressAt_all.
+Print Assumptions raw_inductionBody_sigma_of_progress.
+Print Assumptions raw_fixedLevelInductionProgressTransport_of_operation_facts.
+Print Assumptions raw_codedPAAxiomInduction_sigma_of_progress_transport.
