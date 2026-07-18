@@ -1,0 +1,12 @@
+(** Assumption audit for the concrete operation-theorem specialization. *)
+
+From BoundedPAConsistency Require Import RawCodedPAAxiomInductionTruthConcrete.
+
+Import PABoundedRawCodedPAAxiomInductionTruthConcrete.
+
+Check RawInductionShiftAtomicAdequacy.
+Check raw_fixedLevelInductionProgressTransport_of_shift_atomic.
+Check raw_fixedLevelPAAxiomInductionSigmaSound_of_shift_atomic.
+
+Print Assumptions raw_fixedLevelInductionProgressTransport_of_shift_atomic.
+Print Assumptions raw_fixedLevelPAAxiomInductionSigmaSound_of_shift_atomic.
