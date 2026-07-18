@@ -98,6 +98,11 @@ details.
 > Thus every realizable nonstandard rank-zero syntax code has a unique truth
 > certificate, and this totality is itself closed into an object-level PA
 > derivation.
+> Rocq also now has externally indexed local Sigma-truth and Pi-falsity rows
+> at every fixed level.  Their exact raw-model semantics cover all Boolean and
+> quantifier constructors; opposite-polarity quantifiers correctly recurse on
+> the quantified child under a freshly prepended coded assignment.  Global
+> table assembly and the resulting fixed-level soundness theorem remain open.
 > Rocq now also exposes every one of the seventeen raw-proof constructor codes
 > as a transparent PA term.  Their common constructor formula has exact
 > semantics in every law-free raw arithmetic structure, and quotation agrees
@@ -775,6 +780,18 @@ iff raw satisfaction holds and uniquely zero iff it fails.  This theorem is a
 standard-quotation realization audit, not a substitute for nonstandard-root
 totality.
 
+`RawCodedFixedLevelTruth.v` defines the next, externally indexed local layer.
+Sigma evidence denotes truth and Pi evidence denotes falsity; synchronized
+state tables carry polarity, formula code, and both coded-assignment
+parameters.  The successor rows implement every Boolean constructor and the
+preferred existential/universal clauses through strictly earlier states.  For
+the polarity-switching clauses, a scoped counterexample formula quantifies a
+binder value and a freshly prepended assignment, then recursively evaluates
+the quantified child at the preceding external level.  Mutual recursion gives
+exact raw semantics for these genuine PA formulae.  This module intentionally
+claims only local rows and their introduction/domain laws: assembling a
+globally closed table and proving semantic soundness remain separate steps.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -927,6 +944,11 @@ obligations rather than implementation guesses.
   for arbitrary nonstandard admissible formula codes and assignments, discharge
   equality-atom term capacity, and close totality into an object-level PA
   theorem.
+- [x] In Rocq/Coq, define externally indexed local Sigma-truth and Pi-falsity
+  formulae with exact arbitrary-model Boolean and quantifier rows, including
+  correctly scoped opposite-polarity binder complements.
+- [ ] Assemble the Rocq/Coq fixed-level rows into globally closed nonstandard
+  truth tables and prove their Tarski soundness interface.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
