@@ -81,6 +81,36 @@ theorem exists_isFreeHead (fresh : V) {free : V} (hfree : Seq free) :
       right
       simpa [hlen] using not_lt.mp hx
 
+/-- Every genuine free-variable environment has a genuine semantic tail.
+
+This is the converse orientation needed by the proof calculus's shift rule:
+starting with an arbitrary assignment for the shifted conclusion, it produces
+an assignment for the unshifted premise.  The exact length statement also
+covers the empty input, whose total `znth` lookups are all zero. -/
+theorem exists_isFreeTail {shifted : V} (_hshifted : Seq shifted) :
+    ∃ free, Seq free ∧ lh free = lh shifted - 1 ∧ IsFreeTail shifted free := by
+  let R : V → V → Prop := fun i y ↦ y = znth shifted (i + 1)
+  have hR : 𝚺₁-Relation R := by
+    dsimp [R]
+    definability
+  have htotal : ∀ i < lh shifted - 1, ∃ y, R i y := by
+    intro i hi
+    exact ⟨znth shifted (i + 1), rfl⟩
+  rcases sigmaOne_skolem_seq hR htotal with ⟨free, hfree, hlen, hmem⟩
+  refine ⟨free, hfree, hlen, ?_⟩
+  intro x
+  by_cases hx : x < lh free
+  · have hy := hmem x (znth free x) (hfree.znth hx)
+    simpa [R] using hy.symm
+  · have hxshift : lh shifted ≤ x + 1 := by
+      rcases zero_or_succ (lh shifted) with hzero | ⟨l, hsucc⟩
+      · simp [hzero]
+      · have hlen' : lh free = l := by simp [hlen, hsucc]
+        have hlx : l ≤ x := by simpa [hlen'] using not_lt.mp hx
+        simpa [hsucc] using add_le_add_right hlx 1
+    rw [znth_prop_not (Or.inr hxshift),
+      znth_prop_not (Or.inr (not_lt.mp hx))]
+
 /-- Evaluation commutes with free-variable shift for every internally coded
 well-formed term, including nonstandard codes in a nonstandard model.
 

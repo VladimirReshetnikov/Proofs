@@ -20,12 +20,15 @@ details.
 > fixed-external-bound consistency sentence.  It also has represented coded
 > term evaluation, nonstandard-code shift/substitution transport, and a
 > rank-zero formula truth predicate with structural and Boolean Tarski
-> clauses.  Rocq now represents its executable checker by an arithmetic
+> clauses and semantic transport under negation, shift, and substitution.
+> Lean also proves every rank-zero logical inference sound for arbitrary
+> nonstandard restricted-derivation codes, with the PA-axiom case isolated as
+> an explicit premise.  Rocq now represents its executable checker by an arithmetic
 > formula on the standard natural-number model and has a generic route from
 > arbitrary raw-model validity to an object-level PA proof; these are separate
 > endpoints, and nonstandard checker validity does not yet connect them.  The
-> higher-level partial truth predicates and internal rule/axiom soundness proof
-> are still missing.
+> higher-level partial truth predicates, the PA-specific rank-zero axiom
+> argument, and higher-level rule/axiom soundness are still missing.
 > Consequently the requested object theorem `PA ⊢ Con_n(PA)` for each
 > external `n` is **not yet implemented** in either kernel.
 
@@ -276,8 +279,19 @@ forces *both* polarity ranks to vanish, a fact not immediate from the
 minimum-based definition on nonstandard codes.  It derives exact domain
 inversion at conjunction/disjunction, exclusion of quantifier constructors,
 and positive/negative Tarski clauses for arithmetic atoms and Boolean
-connectives.  Formula-level negation, shift, and substitution transport and
-higher fixed levels remain inputs to the proof-rule soundness argument.
+connectives.  `BoundedPAConsistency.QuantifierFreeTransport` proves formula
+evaluation invariant under coded free-variable shift and simultaneous term
+substitution, and complementary under coded negation, for arbitrary model
+elements satisfying the internal syntax predicates.
+
+`BoundedPAConsistency.QuantifierFreeSoundness` then performs internal
+fixed-point induction over arbitrary rank-zero restricted derivations.  It
+checks the initial, Boolean, weakening, shift, cut, and axiom rules; the
+quantifier rules are excluded by the rank-zero domain theorem.  The result is
+parameterized by one deliberately explicit theory premise saying that every
+internally recognized rank-zero axiom is rank-zero true.  Thus the logical
+soundness layer is complete at level zero, while discharging that premise for
+PA (including its nonstandard induction recognizer) remains separate.
 
 ### Rocq natural codes and executable checker
 
@@ -408,7 +422,10 @@ obligations rather than implementation guesses.
   it to models of full PA.
 - [ ] Build or port the corresponding coded-derivation induction machinery in
   Rocq/Coq.
-- [ ] Prove soundness of every logical inference for partial satisfaction.
+- [x] In Lean, prove soundness of every rank-zero logical inference for
+  arbitrary nonstandard restricted-derivation codes, conditional on the exact
+  theory-axiom truth premise.
+- [ ] Extend logical-inference soundness to every fixed external level.
 - [ ] Prove partial truth of all PA-minus axioms.
 - [ ] Prove partial truth of every internally recognized induction axiom,
   including nonstandard instances in nonstandard PA models.
@@ -433,6 +450,8 @@ lake build BoundedPAConsistency.Basic BoundedPAConsistency.Internal \
   BoundedPAConsistency.CodedHierarchyAudit \
   BoundedPAConsistency.QuantifierFreeTruthAudit \
   BoundedPAConsistency.QuantifierFreeTarskiAudit \
+  BoundedPAConsistency.QuantifierFreeTransportAudit \
+  BoundedPAConsistency.QuantifierFreeSoundnessAudit \
   BoundedPAConsistency.TermEvaluationTransportAudit \
   BoundedPAConsistency.RestrictedDerivationAudit \
   BoundedPAConsistency.RestrictedConsistencyAudit \

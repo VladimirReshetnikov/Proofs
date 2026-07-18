@@ -18,6 +18,7 @@ open LeanProofs.BoundedPAConsistency.TermEvaluationTransport
 variable {V : Type*} [ORingStructure V] [V↓[ℒₒᵣ] ⊧* ISigma 1]
 
 #check exists_isFreeHead
+#check exists_isFreeTail
 #check termValue_termShift_of_isFreeTail
 #check termValue_termShift_of_isFreeHead
 #check termValues_termShiftVec_of_isFreeTail
@@ -35,6 +36,12 @@ example {bound shifted free t : V}
       termValue bound free t :=
   termValue_termShift_of_isFreeTail hfree ht
 
+-- This is the assignment orientation used when validating a shift rule: an
+-- arbitrary genuine target assignment supplies an unshifted premise tail.
+example {shifted : V} (hshifted : Seq shifted) :
+    ∃ free, Seq free ∧ lh free = lh shifted - 1 ∧ IsFreeTail shifted free :=
+  exists_isFreeTail hshifted
+
 example {bound free n w subBound t : V}
     (hw : IsUTermVec ℒₒᵣ n w)
     (hsub : IsSubstitutionBound bound free n w subBound)
@@ -44,6 +51,7 @@ example {bound free n w subBound t : V}
   termValue_termSubst_of_isSubstitutionBound hw hsub ht
 
 #print axioms exists_isFreeHead
+#print axioms exists_isFreeTail
 #print axioms termValue_termShift_of_isFreeTail
 #print axioms termValues_termShiftVec_of_isFreeTail
 #print axioms exists_isSubstitutionEnvironment
