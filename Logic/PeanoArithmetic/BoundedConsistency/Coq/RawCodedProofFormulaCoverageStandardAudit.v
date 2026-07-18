@@ -1,0 +1,20 @@
+(** Assumption audit for standard proof-wide formula coverage. *)
+From BoundedPAConsistency Require Import
+  RawCodedProofFormulaCoverageStandard.
+
+Import PABoundedRawCodedProofFormulaCoverageStandard.
+
+Check rawProofEndpointFormulaCodes.
+Check rawProofFormulaCodesBelow.
+Check rawProofFormulaCoverageNatBound.
+Check rawProofFormulaCoverageNatBound_covers.
+Check raw_quotedContext_member_inv.
+Check raw_quotedContext_all_codes_below.
+Check raw_quotedProof_endpoint_functional.
+Check raw_quotedProof_endpoint_formula_coverage.
+Check raw_quotedProof_formula_coverage.
+
+Print Assumptions rawProofFormulaCoverageNatBound_covers.
+Print Assumptions raw_quotedContext_all_codes_below.
+Print Assumptions raw_quotedProof_endpoint_functional.
+Print Assumptions raw_quotedProof_formula_coverage.
