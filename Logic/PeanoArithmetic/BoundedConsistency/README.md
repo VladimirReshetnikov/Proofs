@@ -43,7 +43,9 @@ details.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
-> Positive-level PA-axiom instantiation remains incomplete.  Consequently the full requested
+> Its quotation-adequacy theorem now discharges every code recognized by the
+> finite `PeanoMinus` branch at arbitrary positive levels.  The nonstandard
+> induction-axiom branch remains incomplete.  Consequently the full requested
 > scheme `PA ⊢ Con_n(PA)` for
 > every external `n` is **not yet implemented** in either kernel; Lean's
 > externally indexed family is complete at `n = 0`.
@@ -362,8 +364,12 @@ Boolean, quantifier, opening, and substitution clauses for the unified
 predicate `SigmaTrue (n+1)` on codes bounded by `n`.  Together with
 `AbstractSoundness` and `FixedLevelSequentDefinability`, this proves the whole
 logical calculus sound at every fixed external level once the recognized PA
-axioms are shown true.  Positive-level PA-axiom truth is the remaining Lean
-obligation.
+axioms are shown true.  `FixedLevelPAMinusAxioms` proves term-quotation and
+formula-quotation adequacy for every standard arithmetic formula within the
+fixed coded bound, then uses standardness of the finite `PeanoMinus`
+recognizer to show that all of its accepted axioms are `SigmaTrue (n+1)`.
+Only the recognizer's genuinely nonstandard induction-axiom branch remains
+before the final fixed-level Lean consistency theorem can be assembled.
 
 ### Rocq natural codes and executable checker
 

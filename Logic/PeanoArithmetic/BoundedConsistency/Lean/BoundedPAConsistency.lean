@@ -2,6 +2,7 @@ import BoundedPAConsistency.AbstractSoundness
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.FixedLevelPAInduction
+import BoundedPAConsistency.FixedLevelPAMinusAxioms
 import BoundedPAConsistency.FixedLevelSequentDefinability
 import BoundedPAConsistency.FixedLevelSoundness
 import BoundedPAConsistency.FixedLevelTruthCertificate
@@ -42,8 +43,9 @@ including the polarity switches at universal and existential heads.  They are
 coherent on overlapping polarity domains and commute with nonstandard coded
 shift and simultaneous substitution.  At each fixed external bound,
 `SigmaTrue (n + 1)` therefore supplies the complete semantic-law interface for
-the already proved soundness of every coded logical inference.  The remaining
-Lean work is truth of all internally recognized positive-level PA axioms and
-the final object-theory assembly.  See the project README for the exact
-boundary and roadmap.
+the already proved soundness of every coded logical inference.  Standard
+quotation adequacy discharges every axiom recognized by the finite
+`PeanoMinus` branch at every level.  The remaining Lean work is truth of the
+possibly nonstandard induction-axiom branch and the final object-theory
+assembly.  See the project README for the exact boundary and roadmap.
 -/
