@@ -109,6 +109,9 @@ details.
 > with the executable natural-number proof code in every raw PA model.  PA now
 > also proves that every recursive premise field is strictly smaller than its
 > enclosing proof code, uniformly for all fourteen recursive constructors.
+> An honest beta-supported proof-syntax traversal now closes every constructor
+> occurrence and every recursive premise through arbitrary nonstandard bounds;
+> its constructor-occurrence totality is itself an object-level PA theorem.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -485,6 +488,18 @@ the premise fields of all fourteen recursive proof constructors and has exact
 raw semantics.  Consequently every locally recognized recursive premise code
 is smaller than its parent, and raw-model completeness closes the uniform
 descent assertion into `PA_proves_rawProofConstructorDescentFormula`.
+
+`RawCodedProofTraversal.v` assembles those local constructors on an honest
+nonstandard syntax domain.  A beta support table marks proof codes, every live
+code exposes a constructor occurrence, and a universal local clause closes
+every constructor tuple denoting that same code.  Consequently all recursive
+premises are supported and strictly smaller, certificates restrict to child
+proofs, and unrelated certificates close the same arithmetic occurrence.
+The public realizability predicate hides the support parameters without
+claiming that arbitrary carrier elements are proof codes.  Exact raw semantics
+and raw-model completeness yield the object theorem
+`PA_proves_proofSyntaxOccurrenceTotalityFormula`; inference-rule endpoint
+validation and soundness remain the next layers.
 
 The PA wrapper records explicit witnesses for the six fixed axiom schemes and
 for induction instances.  Every phase-one restricted PA derivation has an
@@ -935,8 +950,11 @@ obligations rather than implementation guesses.
 - [x] In Rocq/Coq, prove that every premise field of all 14 recursive proof
   constructors is strictly smaller than its parent code, and close the
   uniform descent formula into an object-level PA theorem.
-- [ ] Assemble those local proof constructors into a global proof traversal
-  and validate every inference rule on arbitrary nonstandard proof codes.
+- [x] Assemble the local proof constructors into an honest beta-supported
+  traversal, prove child-certificate extraction and cross-certificate closure,
+  and close constructor-occurrence totality into PA.
+- [ ] Validate every inference rule and its context/conclusion endpoints on
+  arbitrary nonstandard proof codes.
 - [ ] Formalize coded environments and term evaluation, including totality and
   substitution lemmas in PA.
 - [x] In Rocq/Coq, formalize beta-coded environments with functional lookup and

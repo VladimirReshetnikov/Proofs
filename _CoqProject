@@ -433,6 +433,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofConstructors.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofConstructorsAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofDescent.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofDescentAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofTraversal.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedProofTraversalAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerComputability.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerStructuralComputability.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerDecisionComputability.v
