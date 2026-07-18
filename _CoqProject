@@ -429,6 +429,11 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntax.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedSyntaxAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProof.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedProofAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerComputability.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerStructuralComputability.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerDecisionComputability.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormula.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormulaAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompleteness.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompletenessAudit.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
@@ -509,6 +514,7 @@ lib/Coq-Library-Undecidability-current/theories/L/Datatypes/LTerm.v
 lib/Coq-Library-Undecidability-current/theories/L/Functions/Subst.v
 lib/Coq-Library-Undecidability-current/theories/L/Computability/Seval.v
 lib/Coq-Library-Undecidability-current/theories/L/Datatypes/List/List_enc.v
+lib/Coq-Library-Undecidability-current/theories/L/Datatypes/List/List_basics.v
 lib/Coq-Library-Undecidability-current/theories/L/Datatypes/LOptions.v
 lib/Coq-Library-Undecidability-current/theories/L/Functions/Encoding.v
 lib/Coq-Library-Undecidability-current/theories/L/Computability/Computability.v
