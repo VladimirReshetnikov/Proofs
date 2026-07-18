@@ -89,6 +89,10 @@ details.
 > standard quantifier-free quotation, finite beta realization now constructs a
 > certificate whose unique output is one exactly when the raw formula is true
 > and zero exactly when it is false.
+> An independently arithmetized quantifier-free syntax certificate now also
+> drives the truth-table construction through arbitrary nonstandard bounds.
+> PA supplies the required truth-bit CRT capacity internally; only the
+> separately exposed term-evaluation capacity for equality operands remains.
 > Rocq now also exposes every one of the seventeen raw-proof constructor codes
 > as a transparent PA term.  Their common constructor formula has exact
 > semantics in every law-free raw arithmetic structure, and quotation agrees
@@ -714,6 +718,19 @@ checked object theorem `PA_proves_rankZeroTruthCertificateFunctionalFormula`.
 The module also isolates simultaneous CRT table extension and names the
 remaining admissible-root totality obligation without assuming it.
 
+`RawCodedRankZeroTruthRealization.v` carries out that nonstandard construction
+on an independently arithmetized quantifier-free syntax domain.  The support
+certificate requires every Boolean child to be supported at a strictly
+smaller code and supplies term-syntax certificates for both operands of every
+equality under one assignment.  Local truth rows are realized, preserved by
+beta extension, and assembled through a possibly nonstandard bound by
+`raw_definable_induction`.  Since every output is zero or one, PA's own
+beta-coding theorem supplies a common truth-table step with sufficient
+moduli.  Existence and uniqueness therefore remain conditional only on the
+explicit `RawRankZeroAtomicTermCapacity`, which is precisely the outstanding
+fixed-step capacity for evaluating the equality operands—not an assumed truth
+table or an external decoder.
+
 `RawCodedRankZeroTruthStandardAdequacy.v` validates that global graph on every
 externally typed quantifier-free formula.  A checked decoder and classical
 zero/one semantic vector generate finite support and truth tables, while the
@@ -865,8 +882,12 @@ obligations rather than implementation guesses.
   into an object-level PA theorem.
 - [x] In Rocq/Coq, realize that certificate on every standard
   quantifier-free quotation and prove exact one/zero semantic adequacy.
+- [x] In Rocq/Coq, construct rank-zero truth tables by PA induction through
+  arbitrary nonstandard quantifier-free syntax bounds and discharge their
+  truth-bit beta capacity internally.
 - [ ] Prove model-internal realization/totality of rank-zero truth certificates
-  for arbitrary nonstandard admissible formula codes and assignments.
+  for arbitrary nonstandard admissible formula codes and assignments by
+  discharging the inherited term-evaluation capacity for equality atoms.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
