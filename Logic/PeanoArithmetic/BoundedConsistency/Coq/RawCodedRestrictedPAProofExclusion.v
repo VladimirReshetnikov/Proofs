@@ -16,7 +16,10 @@ From PAFiniteBasisReduction Require Import
   HierarchyReduction CanonicalSelectorPA FiniteBetaCoding.
 From BoundedPAConsistency Require Import
   RawCodedSyntaxConstructors RawCodedAssignmentTotality
-  RawCodedFixedLevelContextTruth RawCodedFixedLevelBottomLaws
+  RawCodedContextBounds RawCodedFixedLevelContextTruth
+  RawCodedFixedLevelBottomLaws
+  RawCodedProofRules RawCodedRestrictedProofTraversal
+  RawCodedProofAtomicAdequacy
   RawCodedRestrictedProofCoveredSoundness RawCodedRestrictedPAProof
   RawCodedRestrictedPAConsistency.
 
@@ -30,8 +33,12 @@ Import PACanonicalSelectorPA.
 Import PAFiniteBetaCoding.
 Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedAssignmentTotality.
+Import PABoundedRawCodedContextBounds.
 Import PABoundedRawCodedFixedLevelContextTruth.
 Import PABoundedRawCodedFixedLevelBottomLaws.
+Import PABoundedRawCodedProofRules.
+Import PABoundedRawCodedRestrictedProofTraversal.
+Import PABoundedRawCodedProofAtomicAdequacy.
 Import PABoundedRawCodedRestrictedProofCoveredSoundness.
 Import PABoundedRawCodedRestrictedPAProof.
 Import PABoundedRawCodedRestrictedPAConsistency.
@@ -40,6 +47,8 @@ Definition RawCodedPAAxiomWitnessContextsSigmaTrue
     (M : RawPAModel) (level : nat) : Prop :=
   forall witnessList context : M,
     RawCodedPAAxiomWitnessContext M witnessList context ->
+    RawContextAllBounded M level context ->
+    RawContextAllAtomicallyAdequate M context ->
     RawContextAllSigmaTrue M (S level) context
       (raw_zero M) (raw_zero M).
 
@@ -56,13 +65,27 @@ Proof.
   intros M hPA level hlocal haxioms certificate
     (witnessList & proof & context & _ & hwitnessed & hrestricted &
       hatomic & (coverageBound & hcoverage) & hruleCoverage & hvalid).
+  pose proof (raw_proofRuleValid_endpoint M proof context
+    (rawFormulaBotCode M) hvalid) as hendpoint.
+  pose proof hrestricted as hrestrictedFull.
+  destruct hrestricted as
+    (supportCode & supportStep & hrestrictedCertificate).
+  pose proof (raw_restrictedProofCertificate_root_node M hPA
+    level proof supportCode supportStep hrestrictedCertificate) as hrootNode.
+  pose proof (raw_restrictedProofNode_endpoint_occurrence M level
+    proof supportCode supportStep hrootNode context
+    (rawFormulaBotCode M) hendpoint) as [hcontextBounded _].
+  pose proof (raw_proofAtomicallyAdequate_root_endpoint M hPA
+    proof hatomic context (rawFormulaBotCode M) hendpoint)
+    as [hcontextAtomic _].
   apply (raw_restrictedProofCovered_bottom_exclusion M hPA level
     hlocal (raw_fixedLevelSigmaBottomFalse_successor M hPA level)
     proof coverageBound context (raw_zero M) (raw_zero M)
-    hrestricted hatomic hcoverage hruleCoverage).
+    hrestrictedFull hatomic hcoverage hruleCoverage).
   - exact (raw_codedZeroAssignment_defined_all M hPA coverageBound).
   - exact hvalid.
-  - exact (haxioms witnessList context hwitnessed).
+  - exact (haxioms witnessList context hwitnessed
+      hcontextBounded hcontextAtomic).
 Qed.
 
 Definition RawRestrictedProofCoveredRuleTruthSoundInAllModels
