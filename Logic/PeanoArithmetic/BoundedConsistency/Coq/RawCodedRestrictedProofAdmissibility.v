@@ -25,6 +25,7 @@ From BoundedPAConsistency Require Import
   RawCodedSyntaxConstructors
   RawCodedProofConstructors
   RawCodedProofDescent
+  RawCodedProofEndpoints
   RawCodedProofRules
   RawCodedRestrictedProofTraversal
   RawCodedProofAtomicAdequacy
@@ -46,6 +47,7 @@ Import PABoundedRawCodedContextBounds.
 Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedProofConstructors.
 Import PABoundedRawCodedProofDescent.
+Import PABoundedRawCodedProofEndpoints.
 Import PABoundedRawCodedProofRules.
 Import PABoundedRawCodedRestrictedProofTraversal.
 Import PABoundedRawCodedProofAtomicAdequacy.
@@ -74,6 +76,35 @@ Qed.
     this statement quantifies over *every* valid endpoint witness; it does not
     merely use the existential endpoint packaged by the restricted proof
     certificate. *)
+Theorem raw_restrictedProof_endpoint_admissible : forall
+    (M : RawPAModel), RawPASatisfies M -> forall level root,
+  RawRestrictedProof M level root ->
+  RawProofAtomicallyAdequate M root ->
+  forall context conclusion,
+  RawProofEndpoint M root context conclusion ->
+  forall assignmentCode assignmentStep,
+  RawCodedAssignmentDefinedThrough M
+    assignmentCode assignmentStep conclusion ->
+  RawFixedLevelTruthAdmissible M level conclusion
+    assignmentCode assignmentStep.
+Proof.
+  intros M hPA level root hrestricted hatomicallyAdequate
+    context conclusion hendpoint assignmentCode assignmentStep hdefined.
+  pose proof (raw_proofAtomicallyAdequate_root_endpoint M hPA
+    root hatomicallyAdequate context conclusion hendpoint)
+    as [_ hconclusionAtomic].
+  destruct hrestricted as
+    (supportCode & supportStep & hcertificate).
+  pose proof (raw_restrictedProofCertificate_root_node M hPA
+    level root supportCode supportStep hcertificate) as hrootNode.
+  pose proof (raw_restrictedProofNode_endpoint_occurrence M level
+    root supportCode supportStep hrootNode
+    context conclusion hendpoint) as [_ hconclusionBounded].
+  exact (raw_fixedLevelTruthAdmissible_of_bounded_atomic_assignment
+    M level conclusion assignmentCode assignmentStep
+    hconclusionBounded hconclusionAtomic hdefined).
+Qed.
+
 Theorem raw_restrictedProof_rule_endpoint_admissible : forall
     (M : RawPAModel), RawPASatisfies M -> forall level root,
   RawRestrictedProof M level root ->
@@ -90,19 +121,9 @@ Proof.
     context conclusion hrule assignmentCode assignmentStep hdefined.
   pose proof (raw_proofRuleValid_endpoint M
     root context conclusion hrule) as hendpoint.
-  pose proof (raw_proofAtomicallyAdequate_root_endpoint M hPA
-    root hatomicallyAdequate context conclusion hendpoint)
-    as [_ hconclusionAtomic].
-  destruct hrestricted as
-    (supportCode & supportStep & hcertificate).
-  pose proof (raw_restrictedProofCertificate_root_node M hPA
-    level root supportCode supportStep hcertificate) as hrootNode.
-  pose proof (raw_restrictedProofNode_endpoint_occurrence M level
-    root supportCode supportStep hrootNode
-    context conclusion hendpoint) as [_ hconclusionBounded].
-  exact (raw_fixedLevelTruthAdmissible_of_bounded_atomic_assignment
-    M level conclusion assignmentCode assignmentStep
-    hconclusionBounded hconclusionAtomic hdefined).
+  exact (raw_restrictedProof_endpoint_admissible M hPA
+    level root hrestricted hatomicallyAdequate context conclusion
+    hendpoint assignmentCode assignmentStep hdefined).
 Qed.
 
 (** The canonical zero assignment is defined through every model element, so
@@ -193,6 +214,43 @@ Qed.
 (** Consequently every valid endpoint of a named recursive child is already
     in the truth domain at the same external hierarchy level whenever the
     caller's assignment covers the child's conclusion. *)
+Corollary raw_restrictedProof_recursive_child_endpoint_admissible :
+    forall (M : RawPAModel), RawPASatisfies M -> forall level root,
+  RawRestrictedProof M level root ->
+  RawProofAtomicallyAdequate M root ->
+  forall nodeContext a b c t child1 child2 child3,
+  RawProofConstructorCode M
+    root nodeContext a b c t child1 child2 child3 ->
+  forall fields children,
+  In (fields, children)
+    (rawProofRecursiveCases M
+      nodeContext a b c t child1 child2 child3) ->
+  root = rawListCode M fields ->
+  forall child, In child children ->
+  forall childContext childConclusion,
+  RawProofEndpoint M child childContext childConclusion ->
+  forall assignmentCode assignmentStep,
+  RawCodedAssignmentDefinedThrough M
+    assignmentCode assignmentStep childConclusion ->
+  RawFixedLevelTruthAdmissible M level childConclusion
+    assignmentCode assignmentStep.
+Proof.
+  intros M hPA level root hrestricted hatomicallyAdequate
+    nodeContext a b c t child1 child2 child3 hconstructor
+    fields children hcase hroot child hchild
+    childContext childConclusion hchildEndpoint
+    assignmentCode assignmentStep hdefined.
+  destruct (raw_restrictedProofAtomicallyAdequate_recursive_child M hPA
+    level root hrestricted hatomicallyAdequate
+    nodeContext a b c t child1 child2 child3 hconstructor
+    fields children hcase hroot child hchild)
+    as [hchildRestricted [hchildAtomic _]].
+  exact (raw_restrictedProof_endpoint_admissible M hPA
+    level child hchildRestricted hchildAtomic
+    childContext childConclusion hchildEndpoint
+    assignmentCode assignmentStep hdefined).
+Qed.
+
 Corollary raw_restrictedProof_recursive_child_rule_endpoint_admissible :
     forall (M : RawPAModel), RawPASatisfies M -> forall level root,
   RawRestrictedProof M level root ->
@@ -219,14 +277,13 @@ Proof.
     fields children hcase hroot child hchild
     childContext childConclusion hchildRule
     assignmentCode assignmentStep hdefined.
-  destruct (raw_restrictedProofAtomicallyAdequate_recursive_child M hPA
-    level root hrestricted hatomicallyAdequate
+  exact (raw_restrictedProof_recursive_child_endpoint_admissible
+    M hPA level root hrestricted hatomicallyAdequate
     nodeContext a b c t child1 child2 child3 hconstructor
-    fields children hcase hroot child hchild)
-    as [hchildRestricted [hchildAtomic _]].
-  exact (raw_restrictedProof_rule_endpoint_admissible M hPA
-    level child hchildRestricted hchildAtomic
-    childContext childConclusion hchildRule
+    fields children hcase hroot child hchild
+    childContext childConclusion
+    (raw_proofRuleValid_endpoint M child childContext childConclusion
+      hchildRule)
     assignmentCode assignmentStep hdefined).
 Qed.
 
