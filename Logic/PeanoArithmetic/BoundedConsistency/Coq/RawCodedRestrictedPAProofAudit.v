@@ -1,0 +1,40 @@
+(** Assumption audit for transparent restricted-PA proof wrappers. *)
+
+From BoundedPAConsistency Require Import RawCodedRestrictedPAProof.
+
+Import PABoundedRawCodedRestrictedPAProof.
+
+Check codedPAAxiomWitnessContextRowsTermAt.
+Check RawCodedPAAxiomWitnessContextRows.
+Check raw_sat_codedPAAxiomWitnessContextRowsTermAt_iff.
+
+Check codedPAAxiomWitnessContextWithTablesTermAt.
+Check RawCodedPAAxiomWitnessContextWithTables.
+Check raw_sat_codedPAAxiomWitnessContextWithTablesTermAt_iff.
+Check codedPAAxiomWitnessContextTermAt.
+Check RawCodedPAAxiomWitnessContext.
+Check raw_sat_codedPAAxiomWitnessContextTermAt_iff.
+
+Check codedRestrictedPAProofTermAt.
+Check RawCodedRestrictedPAProof.
+Check raw_sat_codedRestrictedPAProofTermAt_iff.
+
+Check raw_standardListTraversal_exists.
+Check rawQuotedPAAxiomWitnessList.
+Check rawQuotedPAAxiomWitnessList_standard.
+Check raw_codedPAAxiomWitnessContext_standard.
+Check raw_codedRestrictedPAProof_standard.
+Check raw_sat_codedRestrictedPAProofTermAt_standard.
+Check raw_codedRestrictedPAProvTree_standard.
+Check raw_sat_codedRestrictedPAProvTreeTermAt_standard.
+
+Print Assumptions raw_sat_codedPAAxiomWitnessContextRowsTermAt_iff.
+Print Assumptions raw_sat_codedPAAxiomWitnessContextWithTablesTermAt_iff.
+Print Assumptions raw_sat_codedPAAxiomWitnessContextTermAt_iff.
+Print Assumptions raw_sat_codedRestrictedPAProofTermAt_iff.
+Print Assumptions raw_standardListTraversal_exists.
+Print Assumptions raw_codedPAAxiomWitnessContext_standard.
+Print Assumptions raw_codedRestrictedPAProof_standard.
+Print Assumptions raw_sat_codedRestrictedPAProofTermAt_standard.
+Print Assumptions raw_codedRestrictedPAProvTree_standard.
+Print Assumptions raw_sat_codedRestrictedPAProvTreeTermAt_standard.
