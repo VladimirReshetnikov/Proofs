@@ -1,6 +1,8 @@
 import BoundedPAConsistency.Basic
+import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.Internal
-import BoundedPAConsistency.TermEvaluation
+import BoundedPAConsistency.QuantifierFreeTruth
+import BoundedPAConsistency.RestrictedConsistency
 
 /-!
 # Kernel audit for bounded PA consistency, phase one
@@ -41,6 +43,18 @@ open LeanProofs.BoundedPAConsistency
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_bvar_zero_seqCons
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_add
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_mul
+#check LeanProofs.BoundedPAConsistency.CodedHierarchy.quantifierGroupsCode
+#check LeanProofs.BoundedPAConsistency.CodedHierarchy.QuantifierBoundedCode
+#check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_neg
+#check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_shift
+#check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_subst
+#check LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue
+#check LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue_isBit
+#check LeanProofs.BoundedPAConsistency.RestrictedDerivation
+#check LeanProofs.BoundedPAConsistency.RestrictedProof
+#check LeanProofs.BoundedPAConsistency.RestrictedConsistent
+#check LeanProofs.BoundedPAConsistency.paRestrictedConsistencySentence
+#check LeanProofs.BoundedPAConsistency.eval_paRestrictedConsistencySentence_iff
 
 #print axioms hierarchyRanks_rename
 #print axioms hierarchyRanks_subst
@@ -56,3 +70,10 @@ open LeanProofs.BoundedPAConsistency
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_bvar_zero_seqCons
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_add
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_mul
+#print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_neg
+#print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_shift
+#print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_subst
+#print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue_isBit
+#print axioms LeanProofs.BoundedPAConsistency.RestrictedDerivation.defined
+#print axioms LeanProofs.BoundedPAConsistency.RestrictedProof.defined
+#print axioms LeanProofs.BoundedPAConsistency.eval_paRestrictedConsistencySentence_iff

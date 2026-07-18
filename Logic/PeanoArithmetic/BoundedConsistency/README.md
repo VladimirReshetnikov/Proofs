@@ -12,17 +12,16 @@ details.
 > **Current status.**  The Lean and Rocq/Coq phase-one developments
 > machine-check a metatheoretic restricted-proof construction and its semantic
 > consistency consequences for the repository's PA/HF natural-deduction
-> calculus.  They compute mutually recursive syntactic `Sigma` and `Pi`
-> polarity ranks in the host logic and use faithful, data-carrying proof-tree
-> mirrors to inspect every occurrence.  Rocq additionally has canonical
-> natural-number codes, total decoders, and an executable checker for those
-> restricted proof trees, with exact quotation and soundness theorems.  Lean
-> has a Sigma-one represented evaluator for Foundation's nonstandard coded
-> arithmetic terms.  These pieces do **not** yet constitute a PA formula for
-> the complete restricted proof predicate, construct partial truth inside PA,
-> or prove an object sentence in the PA calculus.  In particular, the
-> requested theorem `PA ⊢ Con_n(PA)` for each external `n` is **not yet
-> implemented**.
+> calculus.  Rocq additionally has canonical natural-number codes, total
+> decoders, and an executable checker for those restricted proof trees, with
+> exact quotation and soundness theorems.  Lean now goes beyond standard
+> codes: in every possibly nonstandard model of `I Sigma 1` it represents the
+> coded polarity rank, all-occurrences restricted derivation predicate, and
+> fixed-external-bound consistency sentence.  It also has represented coded
+> term evaluation and rank-zero formula truth.  The higher-level partial truth
+> predicates and internal rule/axiom soundness proof are still missing.
+> Consequently the requested object theorem `PA ⊢ Con_n(PA)` for each
+> external `n` is **not yet implemented** in either kernel.
 
 ## The intended theorem
 
@@ -80,7 +79,7 @@ It is not enough to observe externally that each standard proof is finite and
 therefore has a maximum formula complexity.  An internal PA theorem quantifies
 over nonstandard proof codes in nonstandard PA models as well.
 
-## Phase-one hierarchy measure and the representation gap
+## Phase-one hierarchy measure and the coded bridge
 
 The phase-one ports compute two polarity-sensitive syntactic ranks
 simultaneously, one `Sigma`-oriented and one `Pi`-oriented.  Atoms have level
@@ -102,11 +101,13 @@ have opposite polarities.  The mutually computed ranks place their conjunction
 at the next level; they do not incorrectly call the whole formula a one-group
 formula merely because each individual branch has one group.
 
-This is the intended **external, metatheoretic** hierarchy measurement for the
-phase-one syntax.  The remaining gap is representational: its recursive host
-function is not yet a predicate on Gödel numbers expressed by a formula of PA.
-Nor has its correspondence with the concrete coded syntax used by PA's proof
-predicate yet been established.
+This remains the **external, metatheoretic** hierarchy measurement for the
+phase-one PA/HF syntax.  Lean's `CodedHierarchy` module independently performs
+the corresponding recursion on Foundation's actual Gödel codes in arbitrary
+models and proves agreement on every standard quotation.  Rocq's
+`CodedSyntax` proves the analogous agreement for its canonical natural-number
+codes, but that computation has not yet been internalized for arbitrary
+nonstandard PA models.
 
 The Lean foundation library supplies the closely related typed predicate
 `LO.FirstOrder.Arithmetic.Hierarchy`.  Its constructors preserve level across
@@ -118,12 +119,12 @@ predicate on Gödel codes corresponds to
 Hierarchy Sigma n phi or Hierarchy Pi n phi.
 ```
 
-Because the restricted-proof predicate must itself live inside arithmetic,
-the project still needs code-level `IsSigma n` and `IsPi n` recognizers and
-proofs that they agree both with the phase-one rank computation and with this
-typed hierarchy on standard quoted formulae.  Bounded quantifiers must be
-ignored at this final correspondence boundary even if the small phase-one
-syntax represents only primitive unbounded quantifiers.
+Bounded quantifiers must still be addressed at the final correspondence
+boundary: the small phase-one syntax represents only primitive unbounded
+quantifiers, while Foundation's typed hierarchy treats genuine bounded
+quantifiers as level-preserving abbreviations.  No theorem currently equates
+the PA/HF host rank with Foundation's implication-free NNF rank across that
+change of syntax.
 
 ## What phase one checks
 
@@ -225,6 +226,39 @@ variables, binder extension, argument vectors, and the arithmetic constants,
 addition, and multiplication.  This is the term-semantic input to partial
 truth; it does not yet evaluate formula codes.
 
+### Lean coded hierarchy and restricted proof sentence
+
+`BoundedPAConsistency.CodedHierarchy` uses Foundation's formula fixed-point
+recursor to compute the pair of `Sigma`- and `Pi`-oriented ranks on actual
+formula codes.  Its graph is Sigma-one represented and its
+`QuantifierBoundedCode` predicate has a dual Sigma/Pi Delta-one presentation.
+The constructor equations, negation swap, and invariance under shift and term
+substitution are proved by internal structural induction, so they cover
+nonstandard codes in arbitrary models of `I Sigma 1`.  The module also proves
+exact agreement with its external rank on standard quoted NNF formulae.
+
+`BoundedPAConsistency.RestrictedDerivation` conjoins that bound with every
+node of Foundation's coded derivation fixed point.  Its erasure theorem is an
+internal induction over the fixed point, not a decoder argument on standard
+naturals.  `BoundedPAConsistency.RestrictedConsistency` packages the result as
+a Delta-one restricted-proof predicate, Sigma-one restricted provability,
+and a Pi-one sentence `paRestrictedConsistencySentence n` for each external
+Lean natural number `n`.  Evaluation of that sentence in every arithmetic
+model is proved equivalent to absence of all model-internal restricted proof
+codes.  This defines the exact target sentence; it does not yet prove it in
+PA.
+
+### Lean rank-zero partial truth
+
+`BoundedPAConsistency.QuantifierFreeTruth` is the base case of partial
+satisfaction.  It evaluates nonstandard coded arithmetic atoms and Boolean
+combinations using a represented finite HFS certificate, supplies exact
+positive and negative equality/order clauses, conjunction/disjunction
+clauses, Boolean-valuedness, and complementary truth/falsity predicates on
+the Delta-one level-zero domain.  Quantifier constructors are deliberately
+totalized to zero and carry no semantic claim.  Higher fixed levels and the
+transport laws needed by sequent rules remain to be constructed.
+
 ### Rocq natural codes and executable checker
 
 `CodedSyntax.v` gives canonical natural-number codes for the phase-one PA
@@ -317,17 +351,25 @@ obligations rather than implementation guesses.
 - [ ] Prove and audit the exact relationship between the phase-one rank pair
   and the foundation library's typed `Sigma_n`/`Pi_n` hierarchy, including the
   treatment of bounded quantifiers.
-- [ ] Define code-level hierarchy recognizers in Lean and Coq and prove their
-  correspondence with the typed/meta-level hierarchy.
+- [x] In Lean, define a Delta-one code-level hierarchy bound over Foundation
+  codes and prove exact quotation correctness for its NNF syntax.
+- [ ] Internalize the Rocq code-level hierarchy computation in arbitrary PA
+  models and complete the cross-syntax/typed-hierarchy correspondence.
 - [ ] Prove closure of the code-level bound under every syntactic operation
   used by the proof calculus: negation, shift, bound-variable opening,
   substitution, universal closure, and formation/inversion of principal
   formulae.
-- [ ] Define the all-occurrences restricted derivation predicate over the
-  repository's actual Gödel coding, and prove it delta-one (with restricted
-  provability sigma-one and restricted consistency pi-one).
+- [x] In Lean, prove nonstandard-code negation, shift, substitution, and
+  free-variable-opening preservation for the coded hierarchy rank.
+- [x] In Lean, define the all-occurrences restricted derivation predicate over
+  Foundation's actual Gödel coding and prove it Delta-one, with Sigma-one
+  restricted provability and Pi-one restricted consistency.
+- [ ] Build the corresponding arbitrary-model restricted derivation predicate
+  in Rocq/Coq.
 - [ ] Formalize coded environments and term evaluation, including totality and
   substitution lemmas in PA.
+- [x] In Lean, construct represented coded term evaluation and the rank-zero
+  partial-truth evaluator with atomic and Boolean clauses.
 - [ ] Construct fixed-level partial satisfaction and prove all Tarski clauses
   in PA.
 - [x] In Lean, generalize arithmetized fixed-point induction from level-one
@@ -339,8 +381,9 @@ obligations rather than implementation guesses.
 - [ ] Prove partial truth of all PA-minus axioms.
 - [ ] Prove partial truth of every internally recognized induction axiom,
   including nonstandard instances in nonstandard PA models.
-- [ ] Define the object sentence `Con_n(PA)` and prove its representation
-  theorem in both ports.
+- [x] In Lean, define the fixed-external-`n` object sentence `Con_n(PA)` and
+  prove its arbitrary-model representation theorem.
+- [ ] Define and represent the matching object sentence in Rocq/Coq.
 - [ ] Construct, for each external `n`, a checked object-level derivation
   `PA |- Con_n(PA)` in Lean and Coq.
 - [ ] Add audits that print/check the assumptions of the final theorem and
@@ -356,6 +399,10 @@ From the repository root, the Lean library is registered as
 
 ```bash
 lake build BoundedPAConsistency.Basic BoundedPAConsistency.Internal \
+  BoundedPAConsistency.CodedHierarchyAudit \
+  BoundedPAConsistency.QuantifierFreeTruthAudit \
+  BoundedPAConsistency.RestrictedDerivationAudit \
+  BoundedPAConsistency.RestrictedConsistencyAudit \
   BoundedPAConsistency.Audit \
   BoundedPAConsistency
 ```
