@@ -332,4 +332,33 @@ Proof.
         (raw_assignment_lt_self_succ M hPA root)).
 Qed.
 
+Corollary raw_proofFormulaCoverage_public_recursive_child : forall
+    (M : RawPAModel), RawPASatisfies M -> forall root coverageBound,
+  RawProofFormulaCoverage M root coverageBound ->
+  forall context a b c t child1 child2 child3,
+  RawProofConstructorCode M
+    root context a b c t child1 child2 child3 ->
+  forall fields children,
+  In (fields, children)
+    (rawProofRecursiveCases M
+      context a b c t child1 child2 child3) ->
+  root = rawListCode M fields ->
+  forall child, In child children ->
+  RawProofFormulaCoverage M child coverageBound /\
+  rawLt M child root.
+Proof.
+  intros M hPA root coverageBound
+    (supportCode & supportStep & hcoverage)
+    context a b c t child1 child2 child3 hconstructor
+    fields children hentry hfields child hchild.
+  destruct (raw_proofFormulaCoverage_recursive_child M hPA
+    root coverageBound supportCode supportStep hcoverage
+    context a b c t child1 child2 child3 hconstructor
+    fields children hentry hfields child hchild)
+    as [hchildCoverage hchildBelow].
+  split.
+  - exists supportCode, supportStep. exact hchildCoverage.
+  - exact hchildBelow.
+Qed.
+
 End PABoundedRawCodedProofFormulaCoverage.
