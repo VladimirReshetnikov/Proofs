@@ -52,11 +52,11 @@ details.
 > finite `PeanoMinus` branch at arbitrary positive levels.  A represented
 > induction argument also discharges the genuinely nonstandard induction
 > branch, including nonstandard formula codes and universal-closure lengths.
-> The final Lean recognizer split and object-theory assembly are pending.
-> Consequently the full requested
-> scheme `PA ⊢ Con_n(PA)` for
-> every external `n` is **not yet implemented** in either kernel; Lean's
-> externally indexed family is complete at `n = 0`.
+> Splitting the complete recognizer, applying nonstandard derivation
+> soundness, and then first-order arithmetic completeness now gives the full
+> Lean object theorem `PA ⊢ Con_n(PA)` for every external `n`.  The requested
+> scheme is therefore complete in Lean.  Rocq/Coq still lacks the final
+> nonstandard trace-rejection proof and object theorem.
 
 ## The intended theorem
 
@@ -300,8 +300,8 @@ a Delta-one restricted-proof predicate, Sigma-one restricted provability,
 and a Pi-one sentence `paRestrictedConsistencySentence n` for each external
 Lean natural number `n`.  Evaluation of that sentence in every arithmetic
 model is proved equivalent to absence of all model-internal restricted proof
-codes.  The rank-zero instance of this exact target is now proved in PA;
-arbitrary positive external levels remain open.
+codes.  Every externally fixed instance of this exact target is now proved in
+PA by `FixedLevelPAAxioms.pa_proves_restrictedConsistency`.
 
 ### Lean rank-zero partial truth
 
@@ -381,8 +381,18 @@ branch.  It proves the recovered induction body true, reverses arbitrary
 model-coded bound assignments through `fvarVec`, transfers truth back to the
 raw closure body, and performs represented induction over a possibly
 nonstandard number of leading universal quantifiers.  Thus every bounded
-`InductionUnivR` code is `SigmaTrue (n+1)`; only combining the two recognizer
-branches and applying arithmetic completeness remains.
+`InductionUnivR` code is `SigmaTrue (n+1)`.  `FixedLevelPAAxioms` combines the
+two recognizer branches, invokes fixed-level soundness for all nonstandard
+restricted derivations, and applies arithmetic completeness.  Its headline
+theorem is the externally indexed family
+
+```lean
+theorem pa_proves_restrictedConsistency (n : ℕ) :
+    Peano ⊢ (paRestrictedConsistencySentence n : ArithmeticSentence)
+```
+
+The parameter remains metatheoretic; this is not a PA proof of one universal
+closure over all levels.
 
 ### Rocq natural codes and executable checker
 
@@ -591,8 +601,8 @@ obligations rather than implementation guesses.
   conditional on the exact internally recognized theory-axiom truth premise.
 - [x] In Lean at rank zero, prove truth of all internally recognized PA-minus
   axioms and structurally exclude every induction-axiom code.
-- [ ] Generalize PA-minus and internally recognized induction-axiom truth to
-  every fixed positive level, including nonstandard instances.
+- [x] In Lean, generalize PA-minus and internally recognized induction-axiom
+  truth to every fixed positive level, including nonstandard instances.
 - [x] In Lean, define the fixed-external-`n` object sentence `Con_n(PA)` and
   prove its arbitrary-model representation theorem.
 - [x] Define and represent the matching canonical object sentence in
@@ -600,11 +610,14 @@ obligations rather than implementation guesses.
   completeness reduction.
 - [x] In Lean, construct and audit the checked rank-zero object derivation
   `PA |- Con_0(PA)`.
-- [ ] Construct, for each positive external `n`, a checked object-level
-  derivation `PA |- Con_n(PA)` in Lean and Coq.
-- [ ] Add audits that print/check the assumptions of the final theorem and
-  reject admissions, project-local axioms, or semantic soundness hypotheses at
-  the headline boundary.
+- [x] In Lean, construct for every external `n` a checked object-level
+  derivation `PA |- Con_n(PA)`.
+- [ ] Construct the corresponding externally indexed object-level derivations
+  in Rocq/Coq.
+- [x] In Lean, add audits that print/check the assumptions of the final theorem
+  and reject admissions, project-local axioms, or semantic soundness hypotheses
+  at the headline boundary.
+- [ ] Add the corresponding final-theorem audit in Rocq/Coq.
 - [ ] Record parity explicitly: theorem statements and mathematical coding
   contracts must coincide even when the concrete Gödel encodings differ.
 
@@ -624,6 +637,7 @@ lake build BoundedPAConsistency.Basic BoundedPAConsistency.Internal \
   BoundedPAConsistency.TermEvaluationTransportAudit \
   BoundedPAConsistency.RestrictedDerivationAudit \
   BoundedPAConsistency.RestrictedConsistencyAudit \
+  BoundedPAConsistency.FixedLevelPAAxiomsAudit \
   BoundedPAConsistency.Audit \
   BoundedPAConsistency
 ```

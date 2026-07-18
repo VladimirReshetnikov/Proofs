@@ -3,6 +3,7 @@ import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.FixedLevelPAInduction
 import BoundedPAConsistency.FixedLevelPAInductionAxioms
+import BoundedPAConsistency.FixedLevelPAAxioms
 import BoundedPAConsistency.FixedLevelPAMinusAxioms
 import BoundedPAConsistency.FixedLevelSequentDefinability
 import BoundedPAConsistency.FixedLevelSoundness
@@ -48,7 +49,8 @@ the already proved soundness of every coded logical inference.  Standard
 quotation adequacy discharges every axiom recognized by the finite
 `PeanoMinus` branch at every level.  A separate represented induction
 argument proves truth of every possibly nonstandard induction-axiom code,
-including a nonstandard number of leading universal quantifiers.  Only the
-final recognizer split and object-theory assembly remain.  See the project
-README for the exact boundary and roadmap.
+including a nonstandard number of leading universal quantifiers.  Splitting
+the complete PA recognizer and applying arithmetic completeness yields the
+object theorem `PA ⊢ Con_n(PA)` for every external natural number `n`.  See
+the project README for the exact statement and the remaining Rocq work.
 -/
