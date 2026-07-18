@@ -46,7 +46,11 @@ details.
 > state at the possibly nonstandard final index.  A PA-definable invariant
 > can now be propagated across the entire trace by internal PA induction;
 > the explicit no-accepting-exit invariant has verified initial and final
-> clauses, leaving its concrete one-step preservation theorem open.
+> clauses, leaving its concrete one-step preservation theorem open.  Rocq now
+> also has transparent polynomial formula/term-code constructors and exact
+> one-constructor Sigma/Pi rank equations over arbitrary raw-model elements.
+> The remaining global rank traversal is explicitly separated from the
+> still-open PA proof that the polynomial pairing constructor is injective.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -502,6 +506,29 @@ object-level PA corollaries consume this premise, but it is deliberately a
 Discharging it is exactly where the missing raw-model fixed-level partial
 truth/compiler-soundness argument must enter.
 
+`RawCodedSyntaxConstructors.v` starts that internal argument independently of
+the compiled-machine presentation.  It writes the repository's actual
+polynomial list node, term-code constructors, and formula-code constructors as
+transparent PA terms and formulae, and proves their exact semantics in every
+law-free raw arithmetic structure.  Standard quotation theorems then identify
+the raw folds with `termCode` and `formulaCode`.  This matters because a graph
+formula selected only from its standard-natural extension cannot justify a
+recursive computation on a nonstandard code.
+
+`RawCodedFormulaRankStep.v` combines those constructors with transparent
+maximum and polarity-rank equations.  Each local row simultaneously recognizes
+one of the seven formula constructors and computes its Sigma/Pi rank from
+already certified child rows, including the two quantifier polarity switches.
+These are exact arbitrary-model one-step laws; a later beta-coded postorder
+traversal must still connect them into a total rank computation.
+
+`RawCodedSyntaxConstructorSeparation.v` proves the list-arity separation and
+constructor consequences needed by that traversal, conditional on one sharply
+named arithmetic obligation: an object-level PA derivation of injectivity for
+the concrete polynomial pairing function.  The condition is a `Prop`
+abbreviation, not an axiom or an admitted theorem.  Its audit therefore keeps
+the remaining arithmetic proof boundary visible.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -587,6 +614,10 @@ obligations rather than implementation guesses.
   codes and prove exact quotation correctness for its NNF syntax.
 - [ ] Internalize the Rocq code-level hierarchy computation in arbitrary PA
   models and complete the cross-syntax/typed-hierarchy correspondence.
+- [x] In Rocq/Coq, define transparent term/formula-code constructors and prove
+  exact local Sigma/Pi rank-step semantics over arbitrary raw-model elements.
+- [ ] In Rocq/Coq, prove PA injectivity of the polynomial pairing constructor
+  and assemble the local rank rows into a model-internal global traversal.
 - [ ] Prove closure of the code-level bound under every syntactic operation
   used by the proof calculus: negation, shift, bound-variable opening,
   substitution, universal closure, and formation/inversion of principal
