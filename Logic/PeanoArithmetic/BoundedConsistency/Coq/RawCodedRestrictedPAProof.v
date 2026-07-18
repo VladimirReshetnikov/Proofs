@@ -25,7 +25,10 @@ From BoundedPAConsistency Require Import
   BoundedConsistency CodedProof RawCodedSyntaxConstructors RawCodedAssignment
   RawCodedFormulaOperations RawCodedContextLists RawCodedProofConstructors
   RawCodedProofRules RawCodedRestrictedProofTraversal
-  RawCodedPAAxiomWitness RawCodedRestrictedProofStandardAdequacy.
+  RawCodedPAAxiomWitness RawCodedRestrictedProofStandardAdequacy
+  RawCodedProofAtomicAdequacy RawCodedProofAtomicAdequacyStandard
+  RawCodedProofFormulaCoverage RawCodedProofFormulaCoverageStandard
+  RawCodedProofRuleCoverage RawCodedProofRuleCoverageStandard.
 
 Import ListNotations.
 
@@ -49,6 +52,12 @@ Import PABoundedRawCodedProofRules.
 Import PABoundedRawCodedRestrictedProofTraversal.
 Import PABoundedRawCodedPAAxiomWitness.
 Import PABoundedRawCodedRestrictedProofStandardAdequacy.
+Import PABoundedRawCodedProofAtomicAdequacy.
+Import PABoundedRawCodedProofAtomicAdequacyStandard.
+Import PABoundedRawCodedProofFormulaCoverage.
+Import PABoundedRawCodedProofFormulaCoverageStandard.
+Import PABoundedRawCodedProofRuleCoverage.
+Import PABoundedRawCodedProofRuleCoverageStandard.
 
 (** ------------------------------------------------------------------
     Binder bookkeeping and small propositional combinators. *)
@@ -58,6 +67,10 @@ Definition restrictedPAAnd3 (a b c : formula) : formula :=
 
 Definition restrictedPAAnd4 (a b c d : formula) : formula :=
   pAnd a (pAnd b (pAnd c d)).
+
+Definition restrictedPAAnd7
+    (a b c d f g h : formula) : formula :=
+  pAnd a (pAnd b (pAnd c (pAnd d (pAnd f (pAnd g h))))).
 
 Definition restrictedPAEx3 (body : formula) : formula :=
   pEx (pEx (pEx body)).
@@ -76,6 +89,16 @@ Proof.
   intros M a b c e t. unfold liftTerm.
   rewrite raw_term_eval_rename. apply raw_term_eval_ext. intro index.
   replace (index + 3) with (S (S (S index))) by lia. reflexivity.
+Qed.
+
+Lemma raw_restrictedPA_eval_liftTerm_one : forall
+    (M : RawPAModel) value (e : nat -> M) t,
+  raw_term_eval M (scons M value e) (liftTerm 1 t) =
+  raw_term_eval M e t.
+Proof.
+  intros M value e t. unfold liftTerm.
+  rewrite raw_term_eval_rename. apply raw_term_eval_ext. intro index.
+  replace (index + 1) with (S index) by lia. reflexivity.
 Qed.
 
 Lemma raw_restrictedPA_eval_liftTerm_nine : forall
@@ -249,6 +272,35 @@ Qed.
 (** ------------------------------------------------------------------
     The complete restricted-PA proof wrapper. *)
 
+(** A common assignment bound is existential certificate data.  Keeping it
+    hidden in the represented predicate avoids changing the public three-
+    field executable proof code while still making the bound available to
+    nonstandard soundness. *)
+Definition RawProofHasFormulaCoverage (M : RawPAModel)
+    (proof : M) : Prop :=
+  exists coverageBound : M,
+    RawProofFormulaCoverage M proof coverageBound.
+
+Arguments RawProofHasFormulaCoverage M proof : clear implicits.
+
+Definition proofHasFormulaCoverageTermAt (proof : term) : formula :=
+  pEx
+    (proofFormulaCoverageTermAt
+      (liftTerm 1 proof) (tVar 0)).
+
+Lemma raw_sat_proofHasFormulaCoverageTermAt_iff : forall
+    (M : RawPAModel) e proof,
+  raw_formula_sat M e (proofHasFormulaCoverageTermAt proof) <->
+  RawProofHasFormulaCoverage M (raw_term_eval M e proof).
+Proof.
+  intros M e proof.
+  unfold proofHasFormulaCoverageTermAt, RawProofHasFormulaCoverage.
+  cbn [raw_formula_sat].
+  setoid_rewrite raw_sat_proofFormulaCoverageTermAt_iff.
+  setoid_rewrite raw_restrictedPA_eval_liftTerm_one.
+  cbn [raw_term_eval scons]. reflexivity.
+Qed.
+
 Definition RawCodedRestrictedPAProof (M : RawPAModel)
     (level : nat) (certificate : M) : Prop :=
   exists witnessList proof context : M,
@@ -256,6 +308,9 @@ Definition RawCodedRestrictedPAProof (M : RawPAModel)
       (rawNumeralValue M 0) witnessList proof /\
     RawCodedPAAxiomWitnessContext M witnessList context /\
     RawRestrictedProof M level proof /\
+    RawProofAtomicallyAdequate M proof /\
+    RawProofHasFormulaCoverage M proof /\
+    RawProofRuleCoverage M proof /\
     RawProofRuleValid M proof context (rawFormulaBotCode M).
 
 Arguments RawCodedRestrictedPAProof M level certificate : clear implicits.
@@ -263,11 +318,14 @@ Arguments RawCodedRestrictedPAProof M level certificate : clear implicits.
 Definition codedRestrictedPAProofTermAt
     (level : nat) (certificate : term) : formula :=
   restrictedPAEx3
-    (restrictedPAAnd4
+    (restrictedPAAnd7
       (codeList3TermAt (liftTerm 3 certificate)
         (Term.numeral 0) (tVar 2) (tVar 1))
       (codedPAAxiomWitnessContextTermAt (tVar 2) (tVar 0))
       (restrictedProofTermAt level (tVar 1))
+      (proofAtomicallyAdequateTermAt (tVar 1))
+      (proofHasFormulaCoverageTermAt (tVar 1))
+      (proofRuleCoverageTermAt (tVar 1))
       (proofRuleValidTermAt (tVar 1) (tVar 0)
         rawFormulaBotCodeTerm)).
 
@@ -280,11 +338,14 @@ Lemma raw_sat_codedRestrictedPAProofTermAt_iff : forall
 Proof.
   intros M e level certificate.
   unfold codedRestrictedPAProofTermAt, restrictedPAEx3,
-    restrictedPAAnd4, RawCodedRestrictedPAProof.
+    restrictedPAAnd7, RawCodedRestrictedPAProof.
   cbn [raw_formula_sat].
   setoid_rewrite raw_sat_codeList3TermAt_iff.
   setoid_rewrite raw_sat_codedPAAxiomWitnessContextTermAt_iff.
   setoid_rewrite raw_sat_restrictedProofTermAt_iff.
+  setoid_rewrite raw_sat_proofAtomicallyAdequateTermAt_iff.
+  setoid_rewrite raw_sat_proofHasFormulaCoverageTermAt_iff.
+  setoid_rewrite raw_sat_proofRuleCoverageTermAt_iff.
   setoid_rewrite raw_sat_proofRuleValidTermAt_iff.
   repeat setoid_rewrite raw_restrictedPA_eval_liftTerm_three.
   repeat setoid_rewrite raw_term_eval_numeral.
@@ -548,15 +609,21 @@ Proof.
         (listCode
           [0; axiomWitnessListCode witnesses; rawProofCode derivation])).
     apply rawListCode_standard. exact hPA.
-  - split.
+  - repeat split.
     + apply raw_codedPAAxiomWitnessContext_standard. exact hPA.
-    + split.
-      * apply (raw_restrictedProof_of_quoted_rawProof M hPA
-          level derivation hvalid hbounded).
-      * pose proof (raw_quotedProof_rule_valid M hPA derivation hvalid)
-          as hrule.
-        rewrite hcontext, hconclusion in hrule.
-        exact hrule.
+    + apply (raw_restrictedProof_of_quoted_rawProof M hPA
+        level derivation hvalid hbounded).
+    + exact (raw_proofAtomicallyAdequate_quoted M hPA
+        derivation hvalid).
+    + exists (rawNumeralValue M
+        (rawProofFormulaCoverageNatBound derivation)).
+      exact (raw_quotedProof_formula_coverage M hPA derivation).
+    + exact (raw_quotedValidProof_rule_coverage M hPA
+        derivation hvalid).
+    + pose proof (raw_quotedProof_rule_valid M hPA derivation hvalid)
+        as hrule.
+      rewrite hcontext, hconclusion in hrule.
+      exact hrule.
 Qed.
 
 Corollary raw_sat_codedRestrictedPAProofTermAt_standard : forall

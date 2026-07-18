@@ -15,6 +15,10 @@ Check codedPAAxiomWitnessContextTermAt.
 Check RawCodedPAAxiomWitnessContext.
 Check raw_sat_codedPAAxiomWitnessContextTermAt_iff.
 
+Check proofHasFormulaCoverageTermAt.
+Check RawProofHasFormulaCoverage.
+Check raw_sat_proofHasFormulaCoverageTermAt_iff.
+
 Check codedRestrictedPAProofTermAt.
 Check RawCodedRestrictedPAProof.
 Check raw_sat_codedRestrictedPAProofTermAt_iff.
@@ -31,6 +35,7 @@ Check raw_sat_codedRestrictedPAProvTreeTermAt_standard.
 Print Assumptions raw_sat_codedPAAxiomWitnessContextRowsTermAt_iff.
 Print Assumptions raw_sat_codedPAAxiomWitnessContextWithTablesTermAt_iff.
 Print Assumptions raw_sat_codedPAAxiomWitnessContextTermAt_iff.
+Print Assumptions raw_sat_proofHasFormulaCoverageTermAt_iff.
 Print Assumptions raw_sat_codedRestrictedPAProofTermAt_iff.
 Print Assumptions raw_standardListTraversal_exists.
 Print Assumptions raw_codedPAAxiomWitnessContext_standard.
