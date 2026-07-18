@@ -1,5 +1,7 @@
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
+import BoundedPAConsistency.FixedLevelTruthCertificate
+import BoundedPAConsistency.FixedLevelTruthDefinability
 import BoundedPAConsistency.Internal
 import BoundedPAConsistency.OrientedHierarchy
 import BoundedPAConsistency.QuantifierFreeTruth
@@ -22,8 +24,11 @@ structural domain inversion, atomic/Boolean Tarski clauses, and internal
 transport under negation, shift, and substitution on nonstandard codes.  The
 rank-zero logical rules are sound for every nonstandard restricted derivation,
 conditional only on the explicitly displayed rank-zero theory-axiom premise.
-The remaining work includes discharging that premise for PA and constructing
-higher-level partial truth.  In particular, this module does not yet claim an
-object-level PA derivation; see the project README for the exact boundary and
-roadmap.
+Externally indexed positive-level Sigma/Pi truth predicates are represented at
+the expected arithmetical-hierarchy levels, and their internally finite HFS
+certificates satisfy the positive Boolean and existential clauses.  The
+remaining work includes discharging the PA axiom premise and proving the
+polarity-changing clauses needed by higher-level logical soundness.  In
+particular, this module does not yet claim an object-level PA derivation; see
+the project README for the exact boundary and roadmap.
 -/
