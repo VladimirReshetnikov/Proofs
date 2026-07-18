@@ -101,7 +101,9 @@ details.
 > Rocq now also exposes every one of the seventeen raw-proof constructor codes
 > as a transparent PA term.  Their common constructor formula has exact
 > semantics in every law-free raw arithmetic structure, and quotation agrees
-> with the executable natural-number proof code in every raw PA model.
+> with the executable natural-number proof code in every raw PA model.  PA now
+> also proves that every recursive premise field is strictly smaller than its
+> enclosing proof code, uniformly for all fourteen recursive constructors.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -469,6 +471,15 @@ arithmetic laws.  In every raw PA model, recursively quoting a standard proof
 tree through these terms agrees with the executable `rawProofCode`.  A global
 proof traversal and rule validator for arbitrary nonstandard codes remains a
 separate obligation.
+
+`RawCodedProofDescent.v` establishes the order-theoretic fact needed by that
+global traversal.  It proves inside arbitrary PA models that each coordinate
+is below the polynomial pair code and hence that every member of a coded list
+is strictly below the enclosing list node.  One transparent formula enumerates
+the premise fields of all fourteen recursive proof constructors and has exact
+raw semantics.  Consequently every locally recognized recursive premise code
+is smaller than its parent, and raw-model completeness closes the uniform
+descent assertion into `PA_proves_rawProofConstructorDescentFormula`.
 
 The PA wrapper records explicit witnesses for the six fixed axiom schemes and
 for induction instances.  Every phase-one restricted PA derivation has an
@@ -878,6 +889,9 @@ obligations rather than implementation guesses.
 - [x] In Rocq/Coq, expose all 17 proof-code constructors as transparent PA
   terms, prove their exact arbitrary-model semantics, and prove standard
   quotation agreement.
+- [x] In Rocq/Coq, prove that every premise field of all 14 recursive proof
+  constructors is strictly smaller than its parent code, and close the
+  uniform descent formula into an object-level PA theorem.
 - [ ] Assemble those local proof constructors into a global proof traversal
   and validate every inference rule on arbitrary nonstandard proof codes.
 - [ ] Formalize coded environments and term evaluation, including totality and
