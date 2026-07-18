@@ -629,6 +629,15 @@ arbitrary model element, not merely through a standard numeral.  The module
 proves the expected zero/successor lookup equations and transports prefix
 definedness from `bound` to `succ bound`.
 
+`RawCodedContextLists.v` gives proof contexts their own honest model-internal
+list interface.  Synchronized beta tables follow successive canonical
+polynomial tail codes from the public context code down to zero and record the
+head formula at every live position.  The row, complete traversal, realizable
+domain, indexed membership, and public membership predicates are all genuine
+PA formulae with exact semantics in arbitrary raw arithmetic structures.  In
+particular, later assumption and sequent clauses need not apply the external
+list decoder to a possibly nonstandard context code.
+
 `RawCodedFormulaRankTraversal.v` packages the seven local rank rows into three
 synchronized beta tables: formula codes, Sigma ranks, and Pi ranks.  Child
 rows must occur at strictly smaller indices, and the existentially closed root
@@ -915,6 +924,8 @@ obligations rather than implementation guesses.
   substitution lemmas in PA.
 - [x] In Rocq/Coq, formalize beta-coded environments with functional lookup and
   PA-provable binder extension through arbitrary nonstandard prefixes.
+- [x] In Rocq/Coq, arithmetize canonical context-list traversal and membership
+  with exact arbitrary-model semantics and no external decoding.
 - [x] In Rocq/Coq, define exact local coded-term evaluation rows for every
   arithmetic term constructor over arbitrary raw-model elements.
 - [x] In Rocq/Coq, prove full functionality of the unified local term row,

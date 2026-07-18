@@ -1,0 +1,33 @@
+(** Assumption audit for model-internal coded contexts. *)
+
+From BoundedPAConsistency Require Import RawCodedContextLists.
+
+Import PABoundedRawCodedContextLists.
+
+Check contextListRowTermAt.
+Check RawContextListRow.
+Check raw_sat_contextListRowTermAt_iff.
+
+Check contextListTraversalTermAt.
+Check RawContextListTraversal.
+Check raw_sat_contextListTraversalTermAt_iff.
+
+Check contextListMemberWithTablesTermAt.
+Check RawContextListMemberWithTables.
+Check raw_sat_contextListMemberWithTablesTermAt_iff.
+
+Check contextListRealizableTermAt.
+Check RawContextListRealizable.
+Check raw_sat_contextListRealizableTermAt_iff.
+
+Check contextListMemberTermAt.
+Check RawContextListMember.
+Check raw_sat_contextListMemberTermAt_iff.
+Check raw_contextListMember_realizable.
+
+Print Assumptions raw_sat_contextListRowTermAt_iff.
+Print Assumptions raw_sat_contextListTraversalTermAt_iff.
+Print Assumptions raw_sat_contextListMemberWithTablesTermAt_iff.
+Print Assumptions raw_sat_contextListRealizableTermAt_iff.
+Print Assumptions raw_sat_contextListMemberTermAt_iff.
+Print Assumptions raw_contextListMember_realizable.
