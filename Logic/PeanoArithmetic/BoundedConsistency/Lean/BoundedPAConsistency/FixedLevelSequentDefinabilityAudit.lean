@@ -1,0 +1,15 @@
+import BoundedPAConsistency.FixedLevelSequentDefinability
+
+/-! Axiom and interface audit for the represented sequent invariant. -/
+
+namespace LeanProofs.BoundedPAConsistency.FixedLevelSequentDefinabilityAudit
+
+open LeanProofs.BoundedPAConsistency.FixedLevelSequentDefinability
+
+#check sequentTrue_sigmaTrue_definable
+#check derivationSequentTrue_sigmaTrue_definable
+
+#print axioms sequentTrue_sigmaTrue_definable
+#print axioms derivationSequentTrue_sigmaTrue_definable
+
+end LeanProofs.BoundedPAConsistency.FixedLevelSequentDefinabilityAudit
