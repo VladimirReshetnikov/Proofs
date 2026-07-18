@@ -810,6 +810,14 @@ the terminating traversal with the head condition, and therefore do not
 accept a malformed context vacuously.  A shared-table membership lemma exposes
 the boundedness of each indexed assumption.
 
+`RawCodedContextStructure.v` proves that this context representation supports
+the structural operations used by natural deduction even at nonstandard
+lengths.  A complete spine defines its terminal tail slot; two applications
+of PA's beta-prepend theorem then add the new public list node and head formula
+without external recursion.  Empty and cons contexts are realizable, the new
+head and every old member belong to the extended context, and all-occurrences
+boundedness is preserved by adjoining a bounded formula.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -969,6 +977,8 @@ obligations rather than implementation guesses.
   correctly scoped opposite-polarity binder complements.
 - [x] In Rocq/Coq, express the all-occurrences quantifier-group restriction
   over every head of an arbitrary nonstandard context traversal.
+- [x] In Rocq/Coq, prove model-internal empty/cons context realization,
+  membership introduction, and preservation of all-occurrences boundedness.
 - [ ] Assemble the Rocq/Coq fixed-level rows into globally closed nonstandard
   truth tables and prove their Tarski soundness interface.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
