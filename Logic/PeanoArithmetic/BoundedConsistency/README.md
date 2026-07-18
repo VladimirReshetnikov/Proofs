@@ -52,8 +52,11 @@ details.
 > PA now proves that the concrete polynomial pairing constructor is injective,
 > which makes its list nodes and code constructors unambiguous in every raw PA
 > model.  PA-order antisymmetry also makes every local maximum and constructor
-> rank equation functional; the model-internal global rank traversal remains
-> under construction.
+> rank equation functional.  A synchronized model-internal beta traversal now
+> stores formula codes and both ranks, has exact arbitrary-model semantics,
+> and computes the external Sigma/Pi ranks uniquely on every standard
+> quotation.  Totality and cross-certificate functionality for arbitrary
+> nonstandard root codes remain explicitly named obligations.
 > A beta-coded assignment formula now additionally has exact arbitrary-model
 > lookup semantics, functional values, and PA-provable de Bruijn binder
 > extension through every possibly nonstandard model-internal prefix.  The
@@ -569,6 +572,18 @@ arbitrary model element, not merely through a standard numeral.  The module
 proves the expected zero/successor lookup equations and transports prefix
 definedness from `bound` to `succ bound`.
 
+`RawCodedFormulaRankTraversal.v` packages the seven local rank rows into three
+synchronized beta tables: formula codes, Sigma ranks, and Pi ranks.  Child
+rows must occur at strictly smaller indices, and the existentially closed root
+graph is a genuine PA formula with exact semantics in every raw arithmetic
+structure.  Prefix restriction exposes any earlier row as its own certificate.
+Constructor injectivity and induction on an externally given formula prove
+that every certificate rooted at a standard quotation returns exactly the
+metatheoretic `sigmaRank` and `piRank`, so independent certificates agree on
+standard codes.  The module deliberately names, but does not assume, the two
+stronger obligations needed for arbitrary nonstandard roots: existence of a
+traversal and agreement between different traversals.
+
 `RawCodedTermEvaluationStep.v` connects that environment to the transparent
 term constructors.  It defines exact local evaluator rows for variables, zero,
 successor, addition, and multiplication.  Variable values come from the coded
@@ -701,7 +716,12 @@ obligations rather than implementation guesses.
   exact local Sigma/Pi rank-step semantics over arbitrary raw-model elements.
 - [x] In Rocq/Coq, prove every local Sigma/Pi rank equation functional.
 - [x] In Rocq/Coq, prove PA injectivity of the polynomial pairing constructor.
-- [ ] Assemble the local rank rows into a model-internal global traversal.
+- [x] Assemble the local rank rows into a synchronized model-internal global
+  traversal, prove exact raw-model semantics, and prove soundness and
+  functionality on standard quotations.
+- [ ] Prove model-internal realization/totality and cross-certificate
+  functionality of the rank traversal for arbitrary nonstandard formula
+  codes.
 - [ ] Prove closure of the code-level bound under every syntactic operation
   used by the proof calculus: negation, shift, bound-variable opening,
   substitution, universal closure, and formation/inversion of principal
