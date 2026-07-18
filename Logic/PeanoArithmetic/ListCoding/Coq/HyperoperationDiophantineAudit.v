@@ -1,0 +1,48 @@
+(**
+  Focused kernel and assumption audit for the variable-rank hyperoperator.
+
+  This target deliberately stays within the constructive H10 dependency
+  closure used by the exponentiation and tetration audits.  It therefore
+  excludes the unrelated MathComp prime-factorization bridge.
+*)
+
+From PAListCoding Require Import
+  ExponentiationDiophantine TetrationDiophantine
+  HyperoperationDiophantine.
+
+Check PAListHyperoperationDiophantine.iterateFromOne.
+Check PAListHyperoperationDiophantine.hyperoperationCore.
+Check PAListHyperoperationDiophantine.hyperoperator.
+Check PAListHyperoperationDiophantine.hyperoperator_rank_three.
+Check PAListHyperoperationDiophantine.hyperoperator_rank_four.
+Check PAListHyperoperationDiophantine.hyperoperator_rank_five.
+Check PAListHyperoperationDiophantine.hyperPair_injective.
+Check PAListHyperoperationDiophantine.hyperEvalCode_injective.
+Check PAListHyperoperationDiophantine.hyperReturnCode_injective.
+Check PAListHyperoperationDiophantine.HyperStep.
+Check PAListHyperoperationDiophantine.HyperStep_deterministic.
+Check PAListHyperoperationDiophantine.HyperStep_dio_rel.
+Check PAListHyperoperationDiophantine.rel_iter_terminal_unique.
+Check PAListHyperoperationDiophantine.hyperoperationCore_rel_iter.
+Check PAListHyperoperationDiophantine.hyperoperationCore_rel_iter_iff.
+Check PAListHyperoperationDiophantine.HyperoperationCore_dio_rel.
+Check PAListHyperoperationDiophantine.hyperoperator_cases_iff.
+Check PAListHyperoperationDiophantine.Hyperoperator_dio_rel.
+Check PAListHyperoperationDiophantine.hyperoperatorDiophantineFormula.
+Check PAListHyperoperationDiophantine.hyperoperatorDiophantineFormula_spec.
+Check PAListHyperoperationDiophantine.hyperoperatorDiophantineEquation.
+Check PAListHyperoperationDiophantine.HyperoperatorVector.
+Check PAListHyperoperationDiophantine.Hyperoperator_Diophantine.
+
+Print Assumptions PAListHyperoperationDiophantine.hyperPair_injective.
+Print Assumptions PAListHyperoperationDiophantine.HyperStep_deterministic.
+Print Assumptions PAListHyperoperationDiophantine.HyperStep_dio_rel.
+Print Assumptions PAListHyperoperationDiophantine.rel_iter_terminal_unique.
+Print Assumptions PAListHyperoperationDiophantine.hyperoperationCore_rel_iter.
+Print Assumptions
+  PAListHyperoperationDiophantine.hyperoperationCore_rel_iter_iff.
+Print Assumptions PAListHyperoperationDiophantine.HyperoperationCore_dio_rel.
+Print Assumptions PAListHyperoperationDiophantine.Hyperoperator_dio_rel.
+Print Assumptions
+  PAListHyperoperationDiophantine.hyperoperatorDiophantineFormula_spec.
+Print Assumptions PAListHyperoperationDiophantine.Hyperoperator_Diophantine.
