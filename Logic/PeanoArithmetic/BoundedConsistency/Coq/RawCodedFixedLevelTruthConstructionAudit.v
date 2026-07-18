@@ -1,0 +1,17 @@
+(** Assumption audit for positive fixed-level truth construction helpers. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelTruthConstruction.
+
+Import PABoundedRawCodedFixedLevelTruthConstruction.
+
+Check raw_fixedLevelClosedSuccessorRow_singleton_traversal.
+Check raw_fixedLevelSigmaTruthCertificate_successor_of_rankZero.
+Check raw_fixedLevelPiFalsityCertificate_successor_of_rankZero.
+Check raw_fixedLevelSuccessorTruthTraversal_append_sigma.
+Check raw_fixedLevelSuccessorTruthTraversal_append_pi.
+
+Print Assumptions raw_fixedLevelClosedSuccessorRow_singleton_traversal.
+Print Assumptions raw_fixedLevelSigmaTruthCertificate_successor_of_rankZero.
+Print Assumptions raw_fixedLevelPiFalsityCertificate_successor_of_rankZero.
+Print Assumptions raw_fixedLevelSuccessorTruthTraversal_append_sigma.
+Print Assumptions raw_fixedLevelSuccessorTruthTraversal_append_pi.
