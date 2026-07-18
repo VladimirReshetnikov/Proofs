@@ -60,7 +60,8 @@ details.
 > pairing injectivity and beta functionality make the unified local evaluator
 > single-valued even when its constructor witnesses are chosen independently.
 > Equality, falsity, implication, conjunction, and disjunction also now have
-> transparent rank-zero truth-bit rows with exact arbitrary-model semantics.
+> transparent rank-zero truth-bit rows with exact arbitrary-model semantics,
+> and the unified rank-zero row is proved single-valued.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -580,6 +581,13 @@ quantifier constructors have no rank-zero row.  The witness-exposing and
 existentially closed forms again have exact semantics for arbitrary raw-model
 elements; construction of their global tables remains pending.
 
+`RawCodedRankZeroTruthStepFunctionality.v` proves determinism of that local
+truth evaluator.  PA distinguishes zero from one, making each explicit Boolean
+truth table functional.  Formula-constructor tags recover identical child
+codes, and beta functionality recovers identical term values or child truth
+bits.  Thus two independently witnessed rows for the same code and tables
+necessarily return the same truth bit.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -692,6 +700,7 @@ obligations rather than implementation guesses.
   including constructor disjointness and independently chosen witnesses.
 - [x] In Rocq/Coq, define transparent local rank-zero truth rows for atoms and
   every Boolean constructor, with exact arbitrary-model truth tables.
+- [x] In Rocq/Coq, prove the unified local rank-zero truth row functional.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
