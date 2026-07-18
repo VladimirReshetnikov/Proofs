@@ -22,15 +22,19 @@ details.
 > rank-zero formula truth predicate with structural and Boolean Tarski
 > clauses and semantic transport under negation, shift, and substitution.
 > Lean also proves every rank-zero logical inference sound for arbitrary
-> nonstandard restricted-derivation codes, with the PA-axiom case isolated as
-> an explicit premise.  Rocq now represents its executable checker by an arithmetic
+> nonstandard restricted-derivation codes, discharges the full internal PA
+> axiom recognizer at rank zero, and obtains the actual object theorem
+> `PA ⊢ Con_0(PA)`.  It now also defines externally indexed Sigma/Pi partial
+> truth predicates over nonstandard codes, proves their fixed-level
+> definability, and establishes the positive Boolean/existential certificate
+> clauses.  Rocq now represents its executable checker by an arithmetic
 > formula on the standard natural-number model and has a generic route from
 > arbitrary raw-model validity to an object-level PA proof; these are separate
 > endpoints, and nonstandard checker validity does not yet connect them.  The
-> higher-level partial truth predicates, the PA-specific rank-zero axiom
-> argument, and higher-level rule/axiom soundness are still missing.
-> Consequently the requested object theorem `PA ⊢ Con_n(PA)` for each
-> external `n` is **not yet implemented** in either kernel.
+> higher-level polarity-changing truth clauses and rule/axiom soundness remain
+> incomplete.  Consequently the full requested scheme `PA ⊢ Con_n(PA)` for
+> every external `n` is **not yet implemented** in either kernel; Lean's
+> externally indexed family is complete at `n = 0`.
 
 ## The intended theorem
 
@@ -268,8 +272,8 @@ a Delta-one restricted-proof predicate, Sigma-one restricted provability,
 and a Pi-one sentence `paRestrictedConsistencySentence n` for each external
 Lean natural number `n`.  Evaluation of that sentence in every arithmetic
 model is proved equivalent to absence of all model-internal restricted proof
-codes.  This defines the exact target sentence; it does not yet prove it in
-PA.
+codes.  The rank-zero instance of this exact target is now proved in PA;
+arbitrary positive external levels remain open.
 
 ### Lean rank-zero partial truth
 
@@ -297,8 +301,36 @@ checks the initial, Boolean, weakening, shift, cut, and axiom rules; the
 quantifier rules are excluded by the rank-zero domain theorem.  The result is
 parameterized by one deliberately explicit theory premise saying that every
 internally recognized rank-zero axiom is rank-zero true.  Thus the logical
-soundness layer is complete at level zero, while discharging that premise for
-PA (including its nonstandard induction recognizer) remains separate.
+soundness layer is complete at level zero.
+
+`BoundedPAConsistency.QuantifierFreePAAxioms` discharges that final premise
+for the repository's actual Delta-one PA recognizer.  Its finite PA-minus
+branch is shown to contain only standard quoted axioms, whose surviving
+rank-zero cases evaluate true.  The possibly nonstandard induction branch is
+excluded structurally because every recognized induction formula contains a
+genuine universal quantifier.  Completeness then turns arbitrary-model
+rank-zero consistency into the audited object theorem
+
+```lean
+theorem pa_proves_restrictedConsistency_zero :
+    Peano ⊢ (paRestrictedConsistencySentence 0 : ArithmeticSentence)
+```
+
+### Lean fixed-level partial truth
+
+`BoundedPAConsistency.FixedLevelTruth` defines an externally indexed family
+`SigmaTrue n`/`PiTrue n` over arbitrary model elements.  Positive-level truth
+uses internally finite HFS certificates rather than host-language recursion
+on a formula code, so nonstandard codes are included.  Certificate records
+traverse both children of conjunctions, choose one disjunct, store existential
+witnesses, and stop at quantifier-free or lower opposite-polarity leaves.
+
+`FixedLevelTruthCertificate` proves certificate enlargement and the positive
+conjunction, disjunction, and existential Tarski clauses.
+`FixedLevelTruthDefinability` represents `SigmaTrue n` by a `Sigma_(n+1)`
+formula and `PiTrue n` by a `Pi_(n+1)` formula.  Coherence on polarity overlap,
+negation, universal quantification, semantic transport, and higher-level
+derivation soundness are the remaining Lean obligations.
 
 ### Rocq natural codes and executable checker
 
@@ -424,8 +456,11 @@ obligations rather than implementation guesses.
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
   structural/Boolean rank-zero Tarski interface on nonstandard codes.
-- [ ] Construct fixed-level partial satisfaction and prove all Tarski clauses
-  in PA.
+- [x] In Lean, construct externally indexed fixed-level Sigma/Pi satisfaction
+  predicates over nonstandard codes and prove their hierarchy definability
+  plus the positive Boolean/existential certificate clauses.
+- [ ] Complete polarity coherence, negation, universal, and transport Tarski
+  clauses for Lean fixed-level truth.
 - [x] In Lean, generalize arithmetized fixed-point induction from level-one
   invariants to every externally fixed positive hierarchy level and specialize
   it to models of full PA.
@@ -435,14 +470,17 @@ obligations rather than implementation guesses.
   arbitrary nonstandard restricted-derivation codes, conditional on the exact
   theory-axiom truth premise.
 - [ ] Extend logical-inference soundness to every fixed external level.
-- [ ] Prove partial truth of all PA-minus axioms.
-- [ ] Prove partial truth of every internally recognized induction axiom,
-  including nonstandard instances in nonstandard PA models.
+- [x] In Lean at rank zero, prove truth of all internally recognized PA-minus
+  axioms and structurally exclude every induction-axiom code.
+- [ ] Generalize PA-minus and internally recognized induction-axiom truth to
+  every fixed positive level, including nonstandard instances.
 - [x] In Lean, define the fixed-external-`n` object sentence `Con_n(PA)` and
   prove its arbitrary-model representation theorem.
 - [ ] Define and represent the matching object sentence in Rocq/Coq.
-- [ ] Construct, for each external `n`, a checked object-level derivation
-  `PA |- Con_n(PA)` in Lean and Coq.
+- [x] In Lean, construct and audit the checked rank-zero object derivation
+  `PA |- Con_0(PA)`.
+- [ ] Construct, for each positive external `n`, a checked object-level
+  derivation `PA |- Con_n(PA)` in Lean and Coq.
 - [ ] Add audits that print/check the assumptions of the final theorem and
   reject admissions, project-local axioms, or semantic soundness hypotheses at
   the headline boundary.
