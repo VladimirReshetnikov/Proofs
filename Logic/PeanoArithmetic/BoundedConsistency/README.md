@@ -49,8 +49,11 @@ details.
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
 > Its quotation-adequacy theorem now discharges every code recognized by the
-> finite `PeanoMinus` branch at arbitrary positive levels.  The nonstandard
-> induction-axiom branch remains incomplete.  Consequently the full requested
+> finite `PeanoMinus` branch at arbitrary positive levels.  A represented
+> induction argument also discharges the genuinely nonstandard induction
+> branch, including nonstandard formula codes and universal-closure lengths.
+> The final Lean recognizer split and object-theory assembly are pending.
+> Consequently the full requested
 > scheme `PA ⊢ Con_n(PA)` for
 > every external `n` is **not yet implemented** in either kernel; Lean's
 > externally indexed family is complete at `n = 0`.
@@ -373,8 +376,13 @@ axioms are shown true.  `FixedLevelPAMinusAxioms` proves term-quotation and
 formula-quotation adequacy for every standard arithmetic formula within the
 fixed coded bound, then uses standardness of the finite `PeanoMinus`
 recognizer to show that all of its accepted axioms are `SigmaTrue (n+1)`.
-Only the recognizer's genuinely nonstandard induction-axiom branch remains
-before the final fixed-level Lean consistency theorem can be assembled.
+`FixedLevelPAInductionAxioms` handles the recognizer's genuinely nonstandard
+branch.  It proves the recovered induction body true, reverses arbitrary
+model-coded bound assignments through `fvarVec`, transfers truth back to the
+raw closure body, and performs represented induction over a possibly
+nonstandard number of leading universal quantifiers.  Thus every bounded
+`InductionUnivR` code is `SigmaTrue (n+1)`; only combining the two recognizer
+branches and applying arithmetic completeness remains.
 
 ### Rocq natural codes and executable checker
 

@@ -2,6 +2,7 @@ import BoundedPAConsistency.AbstractSoundness
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.FixedLevelPAInduction
+import BoundedPAConsistency.FixedLevelPAInductionAxioms
 import BoundedPAConsistency.FixedLevelPAMinusAxioms
 import BoundedPAConsistency.FixedLevelSequentDefinability
 import BoundedPAConsistency.FixedLevelSoundness
@@ -45,7 +46,9 @@ shift and simultaneous substitution.  At each fixed external bound,
 `SigmaTrue (n + 1)` therefore supplies the complete semantic-law interface for
 the already proved soundness of every coded logical inference.  Standard
 quotation adequacy discharges every axiom recognized by the finite
-`PeanoMinus` branch at every level.  The remaining Lean work is truth of the
-possibly nonstandard induction-axiom branch and the final object-theory
-assembly.  See the project README for the exact boundary and roadmap.
+`PeanoMinus` branch at every level.  A separate represented induction
+argument proves truth of every possibly nonstandard induction-axiom code,
+including a nonstandard number of leading universal quantifiers.  Only the
+final recognizer split and object-theory assembly remain.  See the project
+README for the exact boundary and roadmap.
 -/
