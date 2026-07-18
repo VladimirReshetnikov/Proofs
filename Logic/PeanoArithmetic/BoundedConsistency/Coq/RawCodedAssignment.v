@@ -483,6 +483,29 @@ Proof.
   exact hsat.
 Qed.
 
+(** A prepend certificate through a large proof-wide carrier bound can be
+    restricted to any smaller formula bound.  The head row is unchanged;
+    only the tail prefix is weakened. *)
+Theorem raw_codedAssignmentPrepend_restrict :
+  forall (M : RawPAModel), RawPASatisfies M ->
+  forall sourceCode sourceStep head smallBound largeBound
+      targetCode targetStep,
+  rawLt M smallBound largeBound ->
+  RawCodedAssignmentPrepend M
+    sourceCode sourceStep head largeBound targetCode targetStep ->
+  RawCodedAssignmentPrepend M
+    sourceCode sourceStep head smallBound targetCode targetStep.
+Proof.
+  intros M hPA sourceCode sourceStep head smallBound largeBound
+    targetCode targetStep hsmall hprepend.
+  split; [exact (proj1 hprepend) |].
+  intros index hindex value hlookup.
+  exact ((proj2 hprepend) index
+    (raw_assignment_lt_trans M hPA index smallBound largeBound
+      hindex hsmall)
+    value hlookup).
+Qed.
+
 Theorem raw_codedAssignmentPrepend_definedThrough :
   forall (M : RawPAModel), RawPASatisfies M ->
   forall sourceCode sourceStep head bound targetCode targetStep,
@@ -511,6 +534,26 @@ Proof.
     destruct (hdefined predecessor hpredBound) as [value hvalue].
     exists value.
     exact ((proj2 hprepend) predecessor hpredBound value hvalue).
+Qed.
+
+(** Binder extension through [bound] supplies one extra row, hence in
+    particular remains defined through the original common bound. *)
+Corollary raw_codedAssignmentPrepend_target_definedThrough_bound :
+  forall (M : RawPAModel), RawPASatisfies M ->
+  forall sourceCode sourceStep head bound targetCode targetStep,
+  RawCodedAssignmentDefinedThrough M sourceCode sourceStep bound ->
+  RawCodedAssignmentPrepend M
+    sourceCode sourceStep head bound targetCode targetStep ->
+  RawCodedAssignmentDefinedThrough M targetCode targetStep bound.
+Proof.
+  intros M hPA sourceCode sourceStep head bound targetCode targetStep
+    hdefined hprepend index hindex.
+  pose proof (raw_codedAssignmentPrepend_definedThrough M hPA
+    sourceCode sourceStep head bound targetCode targetStep
+    hdefined hprepend) as htarget.
+  exact (htarget index
+    (raw_assignment_lt_trans M hPA index bound (raw_succ M bound)
+      hindex (raw_assignment_lt_self_succ M hPA bound))).
 Qed.
 
 Theorem raw_codedAssignmentPrepend_defined_exists :

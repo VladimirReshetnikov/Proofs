@@ -28,7 +28,9 @@ Check raw_codedAssignmentPrepend_lookup_succ_iff.
 
 Check BProv_Ax_s_codedAssignmentPrependExistsTermAt.
 Check raw_codedAssignmentPrepend_exists.
+Check raw_codedAssignmentPrepend_restrict.
 Check raw_codedAssignmentPrepend_definedThrough.
+Check raw_codedAssignmentPrepend_target_definedThrough_bound.
 Check raw_codedAssignmentPrepend_defined_exists.
 Check raw_codedAssignment_empty_defined.
 
@@ -40,5 +42,7 @@ Print Assumptions raw_codedAssignmentLookup_functional.
 Print Assumptions raw_codedAssignmentPrepend_lookup_succ_iff.
 Print Assumptions BProv_Ax_s_codedAssignmentPrependExistsTermAt.
 Print Assumptions raw_codedAssignmentPrepend_exists.
+Print Assumptions raw_codedAssignmentPrepend_restrict.
 Print Assumptions raw_codedAssignmentPrepend_definedThrough.
+Print Assumptions raw_codedAssignmentPrepend_target_definedThrough_bound.
 Print Assumptions raw_codedAssignmentPrepend_defined_exists.
