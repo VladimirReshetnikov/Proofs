@@ -1,0 +1,15 @@
+(** Audit the exact special-rule seam and the completed propositional layer. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedProofPropositionalSoundness.
+
+Import PABoundedRawCodedRestrictedProofPropositionalSoundness.
+
+Check RawProofSpecialRuleValidCases.
+Check RawRestrictedProofCoveredSpecialRuleTruthSound.
+Check raw_restrictedProofCovered_recursive_child_endpoint_admissible.
+Check raw_restrictedProofCovered_ruleTruthSound_of_special.
+
+Print Assumptions
+  raw_restrictedProofCovered_recursive_child_endpoint_admissible.
+Print Assumptions raw_restrictedProofCovered_ruleTruthSound_of_special.
