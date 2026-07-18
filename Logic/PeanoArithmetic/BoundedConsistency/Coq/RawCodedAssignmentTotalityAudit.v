@@ -8,6 +8,10 @@ Check RawCodedAssignmentExistsThrough.
 Check codedAssignmentExistsThroughTermAt.
 Check raw_sat_codedAssignmentExistsThroughTermAt_iff.
 Check raw_codedAssignmentExistsThrough_zero.
+Check raw_assignmentTotality_mul_zero_right.
+Check raw_assignmentTotality_add_zero_right.
+Check raw_codedZeroAssignment_lookup.
+Check raw_codedZeroAssignment_defined_all.
 Check raw_codedAssignmentExistsThrough_succ.
 Check raw_codedAssignmentExistsThrough_all.
 Check codedAssignmentTotalityFormula.
@@ -17,6 +21,8 @@ Check codedAssignmentTotalityFormula_raw_valid.
 Check PA_proves_codedAssignmentTotalityFormula.
 
 Print Assumptions raw_codedAssignmentExistsThrough_all.
+Print Assumptions raw_codedZeroAssignment_lookup.
+Print Assumptions raw_codedZeroAssignment_defined_all.
 Print Assumptions codedAssignmentTotalityFormula_sentence.
 Print Assumptions codedAssignmentTotalityFormula_raw_valid.
 Print Assumptions PA_proves_codedAssignmentTotalityFormula.

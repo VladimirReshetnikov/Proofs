@@ -80,6 +80,66 @@ Proof.
   exact (raw_codedAssignment_empty_defined M hPA).
 Qed.
 
+(** The canonical pair [(code, step) = (0, 0)] is stronger than a merely
+    finite empty assignment: its beta remainder is zero at every carrier
+    index.  This observation is useful for proof soundness, where one fixed
+    environment must cover formula codes which need not admit a common
+    externally decoded maximum. *)
+Lemma raw_assignmentTotality_mul_zero_right : forall
+    (M : RawPAModel), RawPASatisfies M -> forall value,
+  raw_mul M value (raw_zero M) = raw_zero M.
+Proof.
+  intros M hPA value.
+  set (e := scons M value (fun _ : nat => raw_zero M)).
+  pose proof (raw_sat_of_BProv_axs M _ hPA
+    (Formula.BProv_Ax_s_mulZero_term (tVar 0)) e) as hmul.
+  unfold e in hmul.
+  cbn [raw_formula_sat raw_term_eval scons] in hmul.
+  exact hmul.
+Qed.
+
+Lemma raw_assignmentTotality_add_zero_right : forall
+    (M : RawPAModel), RawPASatisfies M -> forall value,
+  raw_add M value (raw_zero M) = value.
+Proof.
+  intros M hPA value.
+  set (e := scons M value (fun _ : nat => raw_zero M)).
+  pose proof (raw_sat_of_BProv_axs M _ hPA
+    (Formula.BProv_Ax_s_addZero_term (tVar 0)) e) as hadd.
+  unfold e in hadd.
+  cbn [raw_formula_sat raw_term_eval scons] in hadd.
+  exact hadd.
+Qed.
+
+Theorem raw_codedZeroAssignment_lookup : forall
+    (M : RawPAModel), RawPASatisfies M -> forall index,
+  RawCodedAssignmentLookup M
+    (raw_zero M) (raw_zero M) index (raw_zero M).
+Proof.
+  intros M hPA index.
+  unfold RawCodedAssignmentLookup, RawBetaEntry.
+  exists (raw_succ M
+    (raw_mul M (raw_succ M index) (raw_zero M))).
+  split; [reflexivity |].
+  exists (raw_zero M). split.
+  - rewrite raw_assignmentTotality_mul_zero_right by exact hPA.
+    exact (raw_assignment_lt_self_succ M hPA (raw_zero M)).
+  - rewrite (raw_mul_comm M hPA (raw_zero M)).
+    rewrite raw_assignmentTotality_mul_zero_right by exact hPA.
+    rewrite raw_assignmentTotality_add_zero_right by exact hPA.
+    reflexivity.
+Qed.
+
+Corollary raw_codedZeroAssignment_defined_all : forall
+    (M : RawPAModel), RawPASatisfies M -> forall bound,
+  RawCodedAssignmentDefinedThrough M
+    (raw_zero M) (raw_zero M) bound.
+Proof.
+  intros M hPA bound index _.
+  exists (raw_zero M).
+  exact (raw_codedZeroAssignment_lookup M hPA index).
+Qed.
+
 Lemma raw_codedAssignmentExistsThrough_succ : forall
     (M : RawPAModel), RawPASatisfies M -> forall bound,
   RawCodedAssignmentExistsThrough M bound ->
