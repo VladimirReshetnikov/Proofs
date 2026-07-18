@@ -1,0 +1,16 @@
+(** Assumption audit for public rank-zero Boolean certificate views. *)
+From BoundedPAConsistency Require Import
+  RawCodedRankZeroTruthElimination.
+
+Import PABoundedRawCodedRankZeroTruthElimination.
+
+Check RawRankZeroImpCertificateView.
+Check RawRankZeroAndCertificateView.
+Check RawRankZeroOrCertificateView.
+Check raw_rankZeroTruthCertificate_imp_view.
+Check raw_rankZeroTruthCertificate_and_view.
+Check raw_rankZeroTruthCertificate_or_view.
+
+Print Assumptions raw_rankZeroTruthCertificate_imp_view.
+Print Assumptions raw_rankZeroTruthCertificate_and_view.
+Print Assumptions raw_rankZeroTruthCertificate_or_view.
