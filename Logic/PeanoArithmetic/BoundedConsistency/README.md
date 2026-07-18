@@ -51,6 +51,9 @@ details.
 > one-constructor Sigma/Pi rank equations over arbitrary raw-model elements.
 > The remaining global rank traversal is explicitly separated from the
 > still-open PA proof that the polynomial pairing constructor is injective.
+> A beta-coded assignment formula now additionally has exact arbitrary-model
+> lookup semantics, functional values, and PA-provable de Bruijn binder
+> extension through every possibly nonstandard model-internal prefix.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -529,6 +532,16 @@ the concrete polynomial pairing function.  The condition is a `Prop`
 abbreviation, not an axiom or an admitted theorem.  Its audit therefore keeps
 the remaining arithmetic proof boundary visible.
 
+`RawCodedAssignment.v` provides the environment interface needed by coded term
+evaluation and quantified partial truth.  An assignment is a pair of
+Goedel-beta parameters; lookup, defined-prefix, and prepend are genuine PA
+formulae with exact raw-model semantics.  Beta functionality makes lookup
+unique.  More importantly, the PAHF Chinese-remainder development yields an
+object-level PA proof that prepending a binder value is possible through an
+arbitrary model element, not merely through a standard numeral.  The module
+proves the expected zero/successor lookup equations and transports prefix
+definedness from `bound` to `succ bound`.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -633,6 +646,8 @@ obligations rather than implementation guesses.
   in Rocq/Coq.
 - [ ] Formalize coded environments and term evaluation, including totality and
   substitution lemmas in PA.
+- [x] In Rocq/Coq, formalize beta-coded environments with functional lookup and
+  PA-provable binder extension through arbitrary nonstandard prefixes.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
