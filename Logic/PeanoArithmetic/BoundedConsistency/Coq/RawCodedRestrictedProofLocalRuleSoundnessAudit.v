@@ -1,0 +1,14 @@
+(** Audit the unconditional local soundness package for all proof rules. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedProofLocalRuleSoundness.
+
+Import PABoundedRawCodedRestrictedProofLocalRuleSoundness.
+
+Check raw_restrictedProofCovered_specialRuleTruthSound_of_exE.
+Check raw_restrictedProofCovered_ruleTruthSound_of_exE.
+Check raw_restrictedProofCovered_specialRuleTruthSound.
+Check raw_restrictedProofCovered_ruleTruthSound.
+
+Print Assumptions raw_restrictedProofCovered_specialRuleTruthSound.
+Print Assumptions raw_restrictedProofCovered_ruleTruthSound.
