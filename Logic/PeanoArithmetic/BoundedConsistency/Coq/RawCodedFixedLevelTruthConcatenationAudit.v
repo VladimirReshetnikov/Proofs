@@ -1,0 +1,12 @@
+(** Assumption audit for fixed-truth traversal concatenation primitives. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelTruthConcatenation.
+
+Import PABoundedRawCodedFixedLevelTruthConcatenation.
+
+Check RawFixedLevelPositiveTraversalBundle.
+Check raw_fixedLevelPositiveTraversalBundle_of_traversal.
+Check raw_fixedLevelPositiveTraversalBundle_append.
+
+Print Assumptions raw_fixedLevelPositiveTraversalBundle_of_traversal.
+Print Assumptions raw_fixedLevelPositiveTraversalBundle_append.
