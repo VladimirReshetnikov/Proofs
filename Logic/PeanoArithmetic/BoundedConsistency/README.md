@@ -58,7 +58,10 @@ details.
 > quotation.  PA induction on a traversal index now proves that completely
 > unrelated certificates also agree at every arbitrary nonstandard root, and
 > this functionality is itself closed into an object-level PA derivation.
-> Realization for arbitrary nonstandard well-formed roots remains open.
+> A separate postorder syntax certificate now characterizes well-formed roots
+> inside each model.  PA-definable induction and internally derived CRT
+> capacity construct their synchronized rank tables even through nonstandard
+> bounds; PA itself proves totality of the rank graph on that honest domain.
 > A beta-coded assignment formula now additionally has exact arbitrary-model
 > lookup semantics, functional values, and PA-provable de Bruijn binder
 > extension through every possibly nonstandard model-internal prefix.  The
@@ -623,6 +626,18 @@ that semantic result into `PA_proves_codedFormulaRankFunctionalFormula`.  A
 separate realizability formula honestly names the graph domain: malformed
 carrier elements are not incorrectly claimed to possess a constructor row.
 
+`RawCodedFormulaRankTotality.v` discharges the existence obligation on an
+independently characterized domain.  A beta-coded postorder syntax traversal
+allows arbitrary equality-term payloads and requires every recursive formula
+child to occur at a strictly earlier row.  Its definitions are genuine PA
+formulae with exact arbitrary-model semantics.  The construction derives a
+single sufficiently large CRT step from PA's beta-coding theorem, maintains
+the sharp row bound `sigma, pi <= S(index)`, and extends both rank tables by
+PA-definable induction through the possibly nonstandard traversal bound.
+Together with cross-certificate functionality this gives unique ranks, and
+raw-model completeness closes the result into the checked object theorem
+`PA_proves_codedWellFormedFormulaRankTotalFormula`.
+
 `RawCodedTermEvaluationStep.v` connects that environment to the transparent
 term constructors.  It defines exact local evaluator rows for variables, zero,
 successor, addition, and multiplication.  Variable values come from the coded
@@ -803,7 +818,7 @@ obligations rather than implementation guesses.
 - [x] Prove cross-certificate functionality of the rank traversal for
   arbitrary nonstandard roots by PA induction and close it into an
   object-level PA theorem.
-- [ ] Prove model-internal realization/totality of the rank traversal on an
+- [x] Prove model-internal realization/totality of the rank traversal on an
   independently characterized domain of arbitrary nonstandard well-formed
   formula codes.
 - [ ] Prove closure of the code-level bound under every syntactic operation
