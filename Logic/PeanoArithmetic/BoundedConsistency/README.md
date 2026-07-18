@@ -55,8 +55,10 @@ details.
 > rank equation functional.  A synchronized model-internal beta traversal now
 > stores formula codes and both ranks, has exact arbitrary-model semantics,
 > and computes the external Sigma/Pi ranks uniquely on every standard
-> quotation.  Totality and cross-certificate functionality for arbitrary
-> nonstandard root codes remain explicitly named obligations.
+> quotation.  PA induction on a traversal index now proves that completely
+> unrelated certificates also agree at every arbitrary nonstandard root, and
+> this functionality is itself closed into an object-level PA derivation.
+> Realization for arbitrary nonstandard well-formed roots remains open.
 > A beta-coded assignment formula now additionally has exact arbitrary-model
 > lookup semantics, functional values, and PA-provable de Bruijn binder
 > extension through every possibly nonstandard model-internal prefix.  The
@@ -590,6 +592,16 @@ standard codes.  The module deliberately names, but does not assume, the two
 stronger obligations needed for arbitrary nonstandard roots: existence of a
 traversal and agreement between different traversals.
 
+`RawCodedFormulaRankRealization.v` discharges the latter obligation in full.
+An actual PA formula expresses agreement below a model-valued traversal index;
+its successor proof decodes the seven constructor shapes, restricts unrelated
+certificates to matching child rows, and invokes the already functional local
+rank equations.  PA induction therefore proves cross-certificate Sigma/Pi
+agreement for every possibly nonstandard root.  Raw-model completeness turns
+that semantic result into `PA_proves_codedFormulaRankFunctionalFormula`.  A
+separate realizability formula honestly names the graph domain: malformed
+carrier elements are not incorrectly claimed to possess a constructor row.
+
 `RawCodedTermEvaluationStep.v` connects that environment to the transparent
 term constructors.  It defines exact local evaluator rows for variables, zero,
 successor, addition, and multiplication.  Variable values come from the coded
@@ -746,9 +758,12 @@ obligations rather than implementation guesses.
 - [x] Assemble the local rank rows into a synchronized model-internal global
   traversal, prove exact raw-model semantics, and prove soundness and
   functionality on standard quotations.
-- [ ] Prove model-internal realization/totality and cross-certificate
-  functionality of the rank traversal for arbitrary nonstandard formula
-  codes.
+- [x] Prove cross-certificate functionality of the rank traversal for
+  arbitrary nonstandard roots by PA induction and close it into an
+  object-level PA theorem.
+- [ ] Prove model-internal realization/totality of the rank traversal on an
+  independently characterized domain of arbitrary nonstandard well-formed
+  formula codes.
 - [ ] Prove closure of the code-level bound under every syntactic operation
   used by the proof calculus: negation, shift, bound-variable opening,
   substitution, universal closure, and formation/inversion of principal
