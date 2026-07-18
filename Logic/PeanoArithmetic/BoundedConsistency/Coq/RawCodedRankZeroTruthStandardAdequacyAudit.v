@@ -1,0 +1,64 @@
+(** Assumption audit for standard-quotation rank-zero truth adequacy.
+
+    All realization theorems below are externally indexed by an ordinary
+    quantifier-free formula and build beta tables only through its standard
+    code.  In particular, none is a totality theorem for arbitrary
+    nonstandard formula codes. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRankZeroTruthStandardAdequacy.
+
+Import PABoundedRawCodedRankZeroTruthStandardAdequacy.
+
+Check rankZeroFormulab.
+Check RankZeroFormula.
+Check checkedDecodeRankZeroFormula.
+Check checkedDecodeRankZeroFormula_formulaCode.
+Check checkedDecodeRankZeroFormula_sound.
+
+Check rawStandardFormulaTruthValue.
+Check rawStandardFormulaTruthValue_bit.
+Check rawStandardFormulaTruthValue_one_iff.
+Check rawStandardFormulaTruthValue_zero_iff.
+Check rawStandardRankZeroSupportAt.
+Check rawStandardRankZeroTruthAt.
+Check rawStandardRankZeroSupportAt_one_has_formula.
+
+Check raw_standardFormulaEqualityTruth.
+Check raw_standardFormulaBotTruth.
+Check raw_standardFormulaImpTruth.
+Check raw_standardFormulaAndTruth.
+Check raw_standardFormulaOrTruth.
+Check raw_standardRankZeroTruth_closed_step.
+
+Check raw_rankZeroTruthCertificateWithTables_standard_of_assignment.
+Check raw_rankZeroTruthCertificate_standard_of_assignment.
+Check raw_rankZeroTruthCertificate_standard_output_of_assignment.
+Check raw_rankZeroTruthCertificate_standard_one_iff.
+Check raw_rankZeroTruthCertificate_standard_zero_iff.
+Check raw_rankZeroTruthCertificateWithTables_standard_exists.
+Check raw_rankZeroTruthCertificate_standard_exists.
+Check rawStandardRankZeroCertificateEnv.
+Check raw_sat_rankZeroTruthCertificateTermAt_standard_exists.
+
+Print Assumptions checkedDecodeRankZeroFormula_formulaCode.
+Print Assumptions checkedDecodeRankZeroFormula_sound.
+Print Assumptions rawStandardFormulaTruthValue_one_iff.
+Print Assumptions rawStandardFormulaTruthValue_zero_iff.
+Print Assumptions rawStandardRankZeroSupportAt_one_has_formula.
+Print Assumptions raw_standardFormulaEqualityTruth.
+Print Assumptions raw_standardFormulaImpTruth.
+Print Assumptions raw_standardFormulaAndTruth.
+Print Assumptions raw_standardFormulaOrTruth.
+Print Assumptions raw_standardRankZeroTruth_closed_step.
+Print Assumptions
+  raw_rankZeroTruthCertificateWithTables_standard_of_assignment.
+Print Assumptions raw_rankZeroTruthCertificate_standard_of_assignment.
+Print Assumptions
+  raw_rankZeroTruthCertificate_standard_output_of_assignment.
+Print Assumptions raw_rankZeroTruthCertificate_standard_one_iff.
+Print Assumptions raw_rankZeroTruthCertificate_standard_zero_iff.
+Print Assumptions
+  raw_rankZeroTruthCertificateWithTables_standard_exists.
+Print Assumptions raw_rankZeroTruthCertificate_standard_exists.
+Print Assumptions raw_sat_rankZeroTruthCertificateTermAt_standard_exists.

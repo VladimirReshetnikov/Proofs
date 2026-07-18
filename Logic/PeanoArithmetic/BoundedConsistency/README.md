@@ -77,7 +77,10 @@ details.
 > truth certificate ties equality atoms to genuine term certificates on one
 > assignment and Boolean rows to smaller supported children.  PA induction
 > proves cross-certificate functionality at nonstandard bounds, and raw-model
-> completeness closes that fact into an object-level PA derivation.
+> completeness closes that fact into an object-level PA derivation.  On every
+> standard quantifier-free quotation, finite beta realization now constructs a
+> certificate whose unique output is one exactly when the raw formula is true
+> and zero exactly when it is false.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -666,6 +669,15 @@ checked object theorem `PA_proves_rankZeroTruthCertificateFunctionalFormula`.
 The module also isolates simultaneous CRT table extension and names the
 remaining admissible-root totality obligation without assuming it.
 
+`RawCodedRankZeroTruthStandardAdequacy.v` validates that global graph on every
+externally typed quantifier-free formula.  A checked decoder and classical
+zero/one semantic vector generate finite support and truth tables, while the
+fixed-assignment term interface ensures that both operands of every equality
+use the same environment.  The resulting certificate output is uniquely one
+iff raw satisfaction holds and uniquely zero iff it fails.  This theorem is a
+standard-quotation realization audit, not a substitute for nonstandard-root
+totality.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -797,6 +809,8 @@ obligations rather than implementation guesses.
 - [x] In Rocq/Coq, build a global supported rank-zero truth certificate, prove
   cross-certificate functionality by PA induction, and close functionality
   into an object-level PA theorem.
+- [x] In Rocq/Coq, realize that certificate on every standard
+  quantifier-free quotation and prove exact one/zero semantic adequacy.
 - [ ] Prove model-internal realization/totality of rank-zero truth certificates
   for arbitrary nonstandard admissible formula codes and assignments.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
