@@ -182,6 +182,28 @@ Proof.
   exact (hall index hindex member hlookup).
 Qed.
 
+(** Public membership may arrive with independently chosen traversal tables.
+    Context-traversal functionality transports it to the tables hidden by
+    [RawContextAllSigmaTrue], after which the preceding one-line elimination
+    applies. *)
+Theorem raw_contextAllSigmaTrue_member : forall
+    (M : RawPAModel), RawPASatisfies M -> forall
+      level root assignmentCode assignmentStep member,
+  RawContextAllSigmaTrue M level root assignmentCode assignmentStep ->
+  RawContextListMember M root member ->
+  RawFixedLevelSigmaTruthCertificate M level
+    member assignmentCode assignmentStep.
+Proof.
+  intros M hPA level root assignmentCode assignmentStep member
+    (bound & tailCode & tailStep & headCode & headStep &
+      htraversal & hall) hmember.
+  apply (raw_contextAllSigmaTrueWithTables_member M level
+    bound headCode headStep assignmentCode assignmentStep member hall).
+  apply (proj1 (raw_contextListMember_iff_with_traversal M hPA
+    root member bound tailCode tailStep headCode headStep htraversal)).
+  exact hmember.
+Qed.
+
 (** The empty list uses the already constructed honest zero-length context
     traversal; its pointwise truth condition has no live index. *)
 Theorem raw_contextAllSigmaTrue_empty : forall

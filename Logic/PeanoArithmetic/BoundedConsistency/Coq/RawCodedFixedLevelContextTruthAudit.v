@@ -13,6 +13,7 @@ Check contextAllSigmaTrueTermAt.
 Check raw_sat_contextAllSigmaTrueTermAt_iff.
 Check raw_contextAllSigmaTrue_realizable.
 Check raw_contextAllSigmaTrueWithTables_member.
+Check raw_contextAllSigmaTrue_member.
 Check raw_contextAllSigmaTrue_empty.
 Check raw_contextAllSigmaTrue_cons.
 
@@ -20,5 +21,6 @@ Print Assumptions raw_sat_contextAllSigmaTrueWithTablesTermAt_iff.
 Print Assumptions raw_sat_contextAllSigmaTrueTermAt_iff.
 Print Assumptions raw_contextAllSigmaTrue_realizable.
 Print Assumptions raw_contextAllSigmaTrueWithTables_member.
+Print Assumptions raw_contextAllSigmaTrue_member.
 Print Assumptions raw_contextAllSigmaTrue_empty.
 Print Assumptions raw_contextAllSigmaTrue_cons.

@@ -1,0 +1,17 @@
+(** Assumption audit for level-zero fixed-truth laws. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelTruthBaseLaws.
+
+Import PABoundedRawCodedFixedLevelTruthBaseLaws.
+
+Check raw_fixedLevelSigmaTruthCertificate_zero_rankZero.
+Check raw_fixedLevelPiFalsityCertificate_zero_rankZero.
+Check raw_fixedLevelSigmaTruthCertificate_zero_iff.
+Check raw_fixedLevelPiFalsityCertificate_zero_iff.
+Check raw_fixedLevelTruthCertificate_zero_exclusive.
+
+Print Assumptions raw_fixedLevelSigmaTruthCertificate_zero_rankZero.
+Print Assumptions raw_fixedLevelPiFalsityCertificate_zero_rankZero.
+Print Assumptions raw_fixedLevelSigmaTruthCertificate_zero_iff.
+Print Assumptions raw_fixedLevelPiFalsityCertificate_zero_iff.
+Print Assumptions raw_fixedLevelTruthCertificate_zero_exclusive.
