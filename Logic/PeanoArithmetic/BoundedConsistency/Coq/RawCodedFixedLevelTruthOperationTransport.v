@@ -483,13 +483,13 @@ Qed.
     syntax/rank/admissibility data already present in the development. *)
 
 Definition fixedLevelFormulaShiftTransportReadyTermAt (level : nat)
-    (cutoff amount bound source target
+    (cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep : term) : formula :=
   operationTransportAnd5
     (codedFormulaShiftTermAt cutoff amount source target)
     (codedFormulaShiftAssignmentRelationTermAt
-      cutoff amount bound sourceAssignmentCode sourceAssignmentStep
+      cutoff amount source sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep)
     (fixedLevelTruthAdmissibleTermAt level
       source sourceAssignmentCode sourceAssignmentStep)
@@ -499,11 +499,11 @@ Definition fixedLevelFormulaShiftTransportReadyTermAt (level : nat)
 
 Definition RawFixedLevelFormulaShiftTransportReady (M : RawPAModel)
     (level : nat)
-    (cutoff amount bound source target
+    (cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep : M) : Prop :=
   RawCodedFormulaShift M cutoff amount source target /\
-  RawCodedFormulaShiftAssignmentRelation M cutoff amount bound
+  RawCodedFormulaShiftAssignmentRelation M cutoff amount source
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep /\
   RawFixedLevelTruthAdmissible M level
@@ -513,22 +513,21 @@ Definition RawFixedLevelFormulaShiftTransportReady (M : RawPAModel)
   RawCodedFormulaRankAgreement M source target.
 
 Arguments RawFixedLevelFormulaShiftTransportReady
-  M level cutoff amount bound source target
+  M level cutoff amount source target
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep : clear implicits.
 
 Lemma raw_sat_fixedLevelFormulaShiftTransportReadyTermAt_iff : forall
-    (M : RawPAModel) e level cutoff amount bound source target
+    (M : RawPAModel) e level cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep,
   raw_formula_sat M e
     (fixedLevelFormulaShiftTransportReadyTermAt level
-      cutoff amount bound source target
+      cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep) <->
   RawFixedLevelFormulaShiftTransportReady M level
     (raw_term_eval M e cutoff) (raw_term_eval M e amount)
-    (raw_term_eval M e bound)
     (raw_term_eval M e source) (raw_term_eval M e target)
     (raw_term_eval M e sourceAssignmentCode)
     (raw_term_eval M e sourceAssignmentStep)
@@ -548,17 +547,17 @@ Qed.
 
 Theorem raw_fixedLevelFormulaShiftTransportReady_target_admissible : forall
     (M : RawPAModel), RawPASatisfies M -> forall level
-      cutoff amount bound source target
+      cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep,
   RawFixedLevelFormulaShiftTransportReady M level
-    cutoff amount bound source target
+    cutoff amount source target
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep ->
   RawFixedLevelTruthAdmissible M level
     target targetAssignmentCode targetAssignmentStep.
 Proof.
-  intros M hPA level cutoff amount bound source target
+  intros M hPA level cutoff amount source target
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep
     [_ [_ [hsource [htarget hagreement]]]].
@@ -571,11 +570,11 @@ Qed.
 
 Theorem raw_fixedLevelFormulaShiftTransportReady_of_rankPreservation : forall
     (M : RawPAModel), RawCodedFormulaShiftRankPreserving M -> forall level
-      cutoff amount bound source target
+      cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep,
   RawCodedFormulaShift M cutoff amount source target ->
-  RawCodedFormulaShiftAssignmentRelation M cutoff amount bound
+  RawCodedFormulaShiftAssignmentRelation M cutoff amount source
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep ->
   RawFixedLevelTruthAdmissible M level
@@ -583,11 +582,11 @@ Theorem raw_fixedLevelFormulaShiftTransportReady_of_rankPreservation : forall
   RawCodedFormulaTargetAdmissibilityData M
     target targetAssignmentCode targetAssignmentStep ->
   RawFixedLevelFormulaShiftTransportReady M level
-    cutoff amount bound source target
+    cutoff amount source target
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep.
 Proof.
-  intros M hpreserving level cutoff amount bound source target
+  intros M hpreserving level cutoff amount source target
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep
     hoperation hassignments hsource htarget.
@@ -724,12 +723,12 @@ Qed.
     instance at its current formula and assignments. *)
 
 Definition fixedLevelFormulaShiftTarskiStepTermAt (level : nat)
-    (cutoff amount bound source target
+    (cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep : term) : formula :=
   pImp
     (fixedLevelFormulaShiftTransportReadyTermAt level
-      cutoff amount bound source target
+      cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep)
     (fixedLevelTruthCertificateTransportTermAt level
@@ -738,11 +737,11 @@ Definition fixedLevelFormulaShiftTarskiStepTermAt (level : nat)
 
 Definition RawFixedLevelFormulaShiftTarskiStep (M : RawPAModel)
     (level : nat)
-    (cutoff amount bound source target
+    (cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep : M) : Prop :=
   RawFixedLevelFormulaShiftTransportReady M level
-    cutoff amount bound source target
+    cutoff amount source target
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep ->
   RawFixedLevelTruthCertificateTransport M level
@@ -750,22 +749,21 @@ Definition RawFixedLevelFormulaShiftTarskiStep (M : RawPAModel)
     targetAssignmentCode targetAssignmentStep.
 
 Arguments RawFixedLevelFormulaShiftTarskiStep
-  M level cutoff amount bound source target
+  M level cutoff amount source target
     sourceAssignmentCode sourceAssignmentStep
     targetAssignmentCode targetAssignmentStep : clear implicits.
 
 Lemma raw_sat_fixedLevelFormulaShiftTarskiStepTermAt_iff : forall
-    (M : RawPAModel) e level cutoff amount bound source target
+    (M : RawPAModel) e level cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep,
   raw_formula_sat M e
     (fixedLevelFormulaShiftTarskiStepTermAt level
-      cutoff amount bound source target
+      cutoff amount source target
       sourceAssignmentCode sourceAssignmentStep
       targetAssignmentCode targetAssignmentStep) <->
   RawFixedLevelFormulaShiftTarskiStep M level
     (raw_term_eval M e cutoff) (raw_term_eval M e amount)
-    (raw_term_eval M e bound)
     (raw_term_eval M e source) (raw_term_eval M e target)
     (raw_term_eval M e sourceAssignmentCode)
     (raw_term_eval M e sourceAssignmentStep)
