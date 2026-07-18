@@ -444,6 +444,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/CanonicalCheckerRawTraceCoherence.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CanonicalCheckerRawTraceCoherenceAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CanonicalCheckerDefinableInvariant.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CanonicalCheckerDefinableInvariantAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CanonicalCheckerConcreteInvariant.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CanonicalCheckerConcreteInvariantAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormula.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormulaAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompleteness.v

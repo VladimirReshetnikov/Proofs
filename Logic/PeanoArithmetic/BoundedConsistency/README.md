@@ -45,7 +45,8 @@ details.
 > zero-or-successor argument further identifies them with one genuine full
 > state at the possibly nonstandard final index.  A PA-definable invariant
 > can now be propagated across the entire trace by internal PA induction;
-> constructing the concrete checker safety invariant remains open.
+> the explicit no-accepting-exit invariant has verified initial and final
+> clauses, leaving its concrete one-step preservation theorem open.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -486,6 +487,20 @@ both rejection in every raw PA model and the existing object-level canonical
 consistency theorem.  The remaining Rocq task is to construct and verify that
 concrete safety invariant; the nonstandard-time induction mechanism itself is
 complete.
+
+`CanonicalCheckerConcreteInvariant.v` chooses the explicit formula saying
+that a state outside the compiled program cannot have output register zero
+equal to one.  Its raw semantic equivalence, canonical initial-state truth,
+and contradiction with an accepting final state are fully proved.  Every
+purported accepting trace is also shown to have nonzero length and a genuine
+last transition whose current program counter names an instruction of the
+concrete compiled program.  The remaining premise is named
+`CanonicalCheckerNoAcceptingExitPreservation n`: the checker-specific theorem
+that this formula survives every such step.  Conditional rejection and
+object-level PA corollaries consume this premise, but it is deliberately a
+`Prop` parameter to those theorems rather than an axiom or a completed proof.
+Discharging it is exactly where the missing raw-model fixed-level partial
+truth/compiler-soundness argument must enter.
 
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
