@@ -1,0 +1,20 @@
+(** Assumption audit for the represented positive-truth induction invariant. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthScheduleInvariant.
+
+Import PABoundedRawCodedFixedLevelTruthScheduleInvariant.
+
+Check fixedLevelSuccessorTruthDecisionTermAt.
+Check raw_sat_fixedLevelSuccessorTruthDecisionTermAt_iff.
+Check fixedLevelPositiveTruthBelowTermAt.
+Check RawFixedLevelPositiveTruthBelow.
+Check raw_sat_fixedLevelPositiveTruthBelowTermAt_iff.
+Check raw_fixedLevelPositiveTruthBelow_zero.
+Check fixedLevelInputTruthCertificateTotalityFormula.
+Check RawFixedLevelInputTruthCertificateTotalityAt.
+Check raw_sat_fixedLevelInputTruthCertificateTotalityFormula_iff.
+
+Print Assumptions raw_sat_fixedLevelPositiveTruthBelowTermAt_iff.
+Print Assumptions raw_fixedLevelPositiveTruthBelow_zero.
+Print Assumptions raw_sat_fixedLevelInputTruthCertificateTotalityFormula_iff.
