@@ -363,6 +363,14 @@ formula whose correctness theorem is exact in the standard `nat` model.  It
 has not been proved correct for nonstandard codes in arbitrary PA models;
 that distinction is exactly the remaining internalization boundary.
 
+There is an additional reason this particular representing formula is only a
+checkpoint: the generic computability bridge selects, by classical choice,
+an arbitrary formula with the right `natModel` extension.  That contract does
+not determine its behavior in nonstandard models or provide a PA-provable
+graph theorem.  A final Coq proof must therefore use a transparent canonical
+trace formula (or strengthen the representation API), rather than silently
+treating the selected graph as an internal checker.
+
 `RawModelCompleteness.v` supplies the other endpoint: a sentence valid under
 every valuation in every raw model of the PA axioms has an object-level
 `Formula.BProv Formula.Ax_s []` proof.  This theorem is intentionally
@@ -370,6 +378,13 @@ conditional on arbitrary-model validity.  Combining it with the standard
 checker-formula correctness theorem would be unsound; the missing fixed-level
 partial-truth argument is precisely what must establish that validity for
 nonstandard model elements.
+
+`CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
+checker assertion is a sentence, unfolds its semantics in every raw PA model,
+and shows that its object-level PA provability is equivalent to rejection of
+the graph formula at every (including nonstandard) model element.  It does not
+assert that rejection; the opaque formula's standard-model specification is
+insufficient to prove it.
 
 ## The standard partial-truth argument
 

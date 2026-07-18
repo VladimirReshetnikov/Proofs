@@ -436,6 +436,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormula.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormulaAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompleteness.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompletenessAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerRawReduction.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerRawReductionAudit.v
 SetTheory/ClosureAxiomatization/Coq/Forward.v
 SetTheory/ClosureAxiomatization/Coq/Reverse.v
 SetTheory/ZF/Coq/Zf.v

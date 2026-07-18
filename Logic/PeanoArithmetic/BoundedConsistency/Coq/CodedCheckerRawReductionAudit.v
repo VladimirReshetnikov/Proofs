@@ -1,0 +1,20 @@
+(** Kernel-assumption audit for the raw-model checker reduction. *)
+
+From BoundedPAConsistency Require Import CodedCheckerRawReduction.
+
+Import PABoundedCodedCheckerRawReduction.
+
+Check SubstitutionFreeBelow.
+Check formula_free_subst_below.
+Check NoRestrictedPAProofFormula_sentence.
+Check rawRestrictedCheckerEnv.
+Check raw_NoRestrictedPAProofFormula_iff.
+Check RawRestrictedCheckerRejection.
+Check PA_BProv_NoRestrictedPAProofFormula_of_raw_rejection.
+Check PA_BProv_NoRestrictedPAProofFormula_iff_raw_rejection.
+
+Print Assumptions formula_free_subst_below.
+Print Assumptions NoRestrictedPAProofFormula_sentence.
+Print Assumptions raw_NoRestrictedPAProofFormula_iff.
+Print Assumptions PA_BProv_NoRestrictedPAProofFormula_of_raw_rejection.
+Print Assumptions PA_BProv_NoRestrictedPAProofFormula_iff_raw_rejection.
