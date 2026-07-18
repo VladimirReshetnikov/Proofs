@@ -49,8 +49,9 @@ details.
 > clauses, leaving its concrete one-step preservation theorem open.  Rocq now
 > also has transparent polynomial formula/term-code constructors and exact
 > one-constructor Sigma/Pi rank equations over arbitrary raw-model elements.
-> The remaining global rank traversal is explicitly separated from the
-> still-open PA proof that the polynomial pairing constructor is injective.
+> PA now proves that the concrete polynomial pairing constructor is injective,
+> which makes its list nodes and code constructors unambiguous in every raw PA
+> model; the model-internal global rank traversal remains under construction.
 > A beta-coded assignment formula now additionally has exact arbitrary-model
 > lookup semantics, functional values, and PA-provable de Bruijn binder
 > extension through every possibly nonstandard model-internal prefix.
@@ -532,6 +533,13 @@ the concrete polynomial pairing function.  The condition is a `Prop`
 abbreviation, not an axiom or an admitted theorem.  Its audit therefore keeps
 the remaining arithmetic proof boundary visible.
 
+`PolynomialPairInjectivity.v` closes that boundary.  It places
+`(a+b)^2+a` between the consecutive diagonal squares `(a+b)^2` and
+`(a+b+1)^2`, proves that different diagonal sums give strictly ordered pair
+codes in every raw PA model, and then uses additive cancellation on a common
+diagonal.  Raw-model completeness converts this semantic argument into the
+actual checked derivation `PA_proves_polynomialPairInjectiveFormula`.
+
 `RawCodedAssignment.v` provides the environment interface needed by coded term
 evaluation and quantified partial truth.  An assignment is a pair of
 Goedel-beta parameters; lookup, defined-prefix, and prepend are genuine PA
@@ -629,8 +637,8 @@ obligations rather than implementation guesses.
   models and complete the cross-syntax/typed-hierarchy correspondence.
 - [x] In Rocq/Coq, define transparent term/formula-code constructors and prove
   exact local Sigma/Pi rank-step semantics over arbitrary raw-model elements.
-- [ ] In Rocq/Coq, prove PA injectivity of the polynomial pairing constructor
-  and assemble the local rank rows into a model-internal global traversal.
+- [x] In Rocq/Coq, prove PA injectivity of the polynomial pairing constructor.
+- [ ] Assemble the local rank rows into a model-internal global traversal.
 - [ ] Prove closure of the code-level bound under every syntactic operation
   used by the proof calculus: negation, shift, bound-variable opening,
   substitution, universal closure, and formation/inversion of principal

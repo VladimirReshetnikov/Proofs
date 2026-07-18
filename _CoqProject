@@ -450,6 +450,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedSyntaxConstructors.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedSyntaxConstructorsAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedSyntaxConstructorSeparation.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedSyntaxConstructorSeparationAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/PolynomialPairInjectivity.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/PolynomialPairInjectivityAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFormulaRankStep.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedFormulaRankStepAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedAssignment.v

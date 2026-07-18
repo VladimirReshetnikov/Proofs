@@ -1,0 +1,25 @@
+(** Assumption audit for the internal polynomial-pair injectivity proof. *)
+
+From BoundedPAConsistency Require Import PolynomialPairInjectivity.
+
+Import PABoundedPolynomialPairInjectivity.
+
+Check rawPolynomialPair_lower_square.
+Check rawPolynomialPair_upper_square.
+Check rawPolynomialPair_strict_of_sum_lt.
+Check rawPolynomialPair_injective.
+Check polynomialPairInjectiveFormula_sentence.
+Check polynomialPairInjectiveFormula_raw_valid.
+Check PA_proves_polynomialPairInjectiveFormula.
+Check polynomialPairInjectivityProof.
+Check rawListNode_injective.
+
+Print Assumptions rawPolynomialPair_lower_square.
+Print Assumptions rawPolynomialPair_upper_square.
+Print Assumptions rawPolynomialPair_strict_of_sum_lt.
+Print Assumptions rawPolynomialPair_injective.
+Print Assumptions polynomialPairInjectiveFormula_sentence.
+Print Assumptions polynomialPairInjectiveFormula_raw_valid.
+Print Assumptions PA_proves_polynomialPairInjectiveFormula.
+Print Assumptions polynomialPairInjectivityProof.
+Print Assumptions rawListNode_injective.
