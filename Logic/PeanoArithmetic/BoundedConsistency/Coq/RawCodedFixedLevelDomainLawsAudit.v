@@ -1,0 +1,44 @@
+(** Assumption audit for constructor inversion of fixed-level domains. *)
+
+From BoundedPAConsistency Require Import RawCodedFixedLevelDomainLaws.
+
+Import PABoundedRawCodedFixedLevelDomainLaws.
+
+Check raw_fixedLevel_max_left_le.
+Check raw_fixedLevel_max_right_le.
+Check raw_fixedLevel_succ_le_cancel.
+Check raw_codedFormulaRank_shape_view.
+Check raw_codedFormulaRank_shape_at.
+Check raw_codedFormulaRank_imp_view.
+Check raw_codedFormulaRank_and_view.
+Check raw_codedFormulaRank_or_view.
+Check raw_codedFormulaRank_all_view.
+Check raw_codedFormulaRank_ex_view.
+Check raw_fixedLevelSigmaDomain_imp.
+Check raw_fixedLevelPiDomain_imp.
+Check raw_fixedLevelSigmaDomain_and.
+Check raw_fixedLevelPiDomain_and.
+Check raw_fixedLevelSigmaDomain_or.
+Check raw_fixedLevelPiDomain_or.
+Check raw_fixedLevelSigmaDomain_all_successor.
+Check raw_fixedLevelPiDomain_all.
+Check raw_fixedLevelSigmaDomain_ex.
+Check raw_fixedLevelPiDomain_ex_successor.
+
+Print Assumptions raw_fixedLevel_succ_le_cancel.
+Print Assumptions raw_codedFormulaRank_shape_at.
+Print Assumptions raw_codedFormulaRank_imp_view.
+Print Assumptions raw_codedFormulaRank_and_view.
+Print Assumptions raw_codedFormulaRank_or_view.
+Print Assumptions raw_codedFormulaRank_all_view.
+Print Assumptions raw_codedFormulaRank_ex_view.
+Print Assumptions raw_fixedLevelSigmaDomain_imp.
+Print Assumptions raw_fixedLevelPiDomain_imp.
+Print Assumptions raw_fixedLevelSigmaDomain_and.
+Print Assumptions raw_fixedLevelPiDomain_and.
+Print Assumptions raw_fixedLevelSigmaDomain_or.
+Print Assumptions raw_fixedLevelPiDomain_or.
+Print Assumptions raw_fixedLevelSigmaDomain_all_successor.
+Print Assumptions raw_fixedLevelPiDomain_all.
+Print Assumptions raw_fixedLevelSigmaDomain_ex.
+Print Assumptions raw_fixedLevelPiDomain_ex_successor.
