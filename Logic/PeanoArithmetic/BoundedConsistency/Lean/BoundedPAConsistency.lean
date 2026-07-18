@@ -1,6 +1,7 @@
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.OrientedHierarchy
 import BoundedPAConsistency.QuantifierFreeTruth
 import BoundedPAConsistency.QuantifierFreeTarski
 import BoundedPAConsistency.QuantifierFreeTransport

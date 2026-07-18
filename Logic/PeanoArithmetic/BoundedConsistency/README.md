@@ -253,6 +253,13 @@ substitution are proved by internal structural induction, so they cover
 nonstandard codes in arbitrary models of `I Sigma 1`.  The module also proves
 exact agreement with its external rank on standard quoted NNF formulae.
 
+`BoundedPAConsistency.OrientedHierarchy` resolves the minimum-based bound
+into separate internal `IsSigmaCode` and `IsPiCode` domains.  It proves the
+Boolean and quantifier constructor inversions, polarity exchange under coded
+negation, monotonicity, and shift/substitution/free-opening transport needed
+by an externally recursive partial-truth family.  These results also range
+over arbitrary nonstandard codes and model bounds.
+
 `BoundedPAConsistency.RestrictedDerivation` conjoins that bound with every
 node of Foundation's coded derivation fixed point.  Its erasure theorem is an
 internal induction over the fixed point, not a decoder argument on standard
@@ -404,6 +411,8 @@ obligations rather than implementation guesses.
   formulae.
 - [x] In Lean, prove nonstandard-code negation, shift, substitution, and
   free-variable-opening preservation for the coded hierarchy rank.
+- [x] In Lean, split the minimum-based bound into nonstandard-code Sigma- and
+  Pi-oriented domains with exact constructor and polarity-switching laws.
 - [x] In Lean, define the all-occurrences restricted derivation predicate over
   Foundation's actual Gödel coding and prove it Delta-one, with Sigma-one
   restricted provability and Pi-one restricted consistency.
@@ -448,6 +457,7 @@ From the repository root, the Lean library is registered as
 ```bash
 lake build BoundedPAConsistency.Basic BoundedPAConsistency.Internal \
   BoundedPAConsistency.CodedHierarchyAudit \
+  BoundedPAConsistency.OrientedHierarchyAudit \
   BoundedPAConsistency.QuantifierFreeTruthAudit \
   BoundedPAConsistency.QuantifierFreeTarskiAudit \
   BoundedPAConsistency.QuantifierFreeTransportAudit \

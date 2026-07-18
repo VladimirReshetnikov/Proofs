@@ -1,6 +1,7 @@
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.OrientedHierarchy
 import BoundedPAConsistency.QuantifierFreeTarski
 import BoundedPAConsistency.QuantifierFreeTransport
 import BoundedPAConsistency.QuantifierFreeSoundness
@@ -56,6 +57,11 @@ open LeanProofs.BoundedPAConsistency
 #check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_neg
 #check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_shift
 #check LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_subst
+#check LeanProofs.BoundedPAConsistency.OrientedHierarchy.IsSigmaCode
+#check LeanProofs.BoundedPAConsistency.OrientedHierarchy.IsPiCode
+#check LeanProofs.BoundedPAConsistency.OrientedHierarchy.quantifierBoundedCode_iff_sigma_or_pi
+#check LeanProofs.BoundedPAConsistency.OrientedHierarchy.isSigmaCode_neg_iff
+#check LeanProofs.BoundedPAConsistency.OrientedHierarchy.isPiCode_neg_iff
 #check LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue
 #check LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue_isBit
 #check LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.quantifierGroupsCode_eq_zero_iff
@@ -93,6 +99,9 @@ open LeanProofs.BoundedPAConsistency
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_neg
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_shift
 #print axioms LeanProofs.BoundedPAConsistency.CodedHierarchy.rankPair_subst
+#print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.quantifierBoundedCode_iff_sigma_or_pi
+#print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.isSigmaCode_neg_iff
+#print axioms LeanProofs.BoundedPAConsistency.OrientedHierarchy.isPiCode_neg_iff
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTruth.qfValue_isBit
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.quantifierGroupsCode_eq_zero_iff
 #print axioms LeanProofs.BoundedPAConsistency.QuantifierFreeTarski.qfTrue_and_iff
