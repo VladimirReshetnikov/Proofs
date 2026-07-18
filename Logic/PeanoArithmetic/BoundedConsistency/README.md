@@ -61,6 +61,9 @@ details.
 > with recursive values read from beta tables and exact raw-model semantics;
 > pairing injectivity and beta functionality make the unified local evaluator
 > single-valued even when its constructor witnesses are chosen independently.
+> A global support/value beta certificate now has exact raw semantics and is
+> proved cross-certificate functional by genuine PA induction, with that
+> functionality itself closed into an object-level PA derivation.
 > Equality, falsity, implication, conjunction, and disjunction also now have
 > transparent rank-zero truth-bit rows with exact arbitrary-model semantics,
 > and the unified rank-zero row is proved single-valued.
@@ -582,6 +585,18 @@ constructor, list-node injectivity recovers identical child codes and beta
 functionality recovers identical child values.  Consequently independently
 chosen existential row witnesses cannot change the proposed term value.
 
+`RawCodedTermEvaluationTraversal.v` packages those rows into transparent
+support and value beta tables.  Every supported recursive child is explicitly
+smaller than its parent and supported in the same certificate.  A PA-definable
+prefix-agreement predicate compares two possibly nonstandard tables by PA's
+own induction, proving their root values equal; raw-model completeness then
+produces the checked theorem
+`PA_proves_termEvaluationCertificateFunctionalFormula`.  The module also
+isolates the CRT append capacity used by a later realization proof.  What is
+not yet proved is totality: an arbitrary nonstandard well-formed term code
+still needs a model-internal topological support trace from which the complete
+tables can be constructed.
+
 `RawCodedRankZeroTruthStep.v` supplies the next local Tarski layer.  Equality
 rows read evaluated arithmetic values from a term table; Boolean rows read
 child truth bits from a formula table and enforce the usual truth tables.
@@ -708,6 +723,10 @@ obligations rather than implementation guesses.
   arithmetic term constructor over arbitrary raw-model elements.
 - [x] In Rocq/Coq, prove full functionality of the unified local term row,
   including constructor disjointness and independently chosen witnesses.
+- [x] In Rocq/Coq, define a global supported beta-table term-evaluation
+  certificate and prove cross-certificate value functionality by PA induction.
+- [ ] Prove model-internal realization/totality of term-evaluation certificates
+  for arbitrary nonstandard well-formed term codes.
 - [x] In Rocq/Coq, define transparent local rank-zero truth rows for atoms and
   every Boolean constructor, with exact arbitrary-model truth tables.
 - [x] In Rocq/Coq, prove the unified local rank-zero truth row functional.
