@@ -1,0 +1,40 @@
+(** Assumption audit for the quantified/equality local-rule checkpoint. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedProofSpecialSoundness.
+
+Import PABoundedRawCodedRestrictedProofSpecialSoundness.
+
+Check raw_proofPayload_listCode_tag.
+Check raw_proofPayload_allE.
+Check raw_proofPayload_exI.
+Check raw_proofPayload_eqRefl.
+Check raw_proofPayload_eqElim.
+Check raw_termUniversallyAdequate_evaluation_exists.
+Check raw_codedFormulaRankAgreement_sym.
+Check raw_fixedLevelEq_sigma_evaluations_equal.
+Check RawFixedLevelFormulaSubstitutionScheduledTarski.
+
+Check RawProofAllIRuleValidCase.
+Check RawProofAllERuleValidCase.
+Check RawProofExIRuleValidCase.
+Check RawProofExERuleValidCase.
+Check RawProofEqReflRuleValidCase.
+Check RawProofEqElimRuleValidCase.
+Check RawRestrictedProofCoveredSelectedSpecialCaseTruthSound.
+
+Check raw_restrictedProofCovered_allE_sound.
+Check raw_restrictedProofCovered_exI_sound.
+Check raw_restrictedProofCovered_eqRefl_sound.
+Check raw_restrictedProofCovered_eqElim_sound.
+Check raw_restrictedProofCovered_specialRuleTruthSound_of_eigen.
+Check raw_restrictedProofCovered_specialRuleTruthSound_of_rank_and_eigen.
+
+Print Assumptions raw_termUniversallyAdequate_evaluation_exists.
+Print Assumptions raw_fixedLevelEq_sigma_evaluations_equal.
+Print Assumptions raw_restrictedProofCovered_allE_sound.
+Print Assumptions raw_restrictedProofCovered_exI_sound.
+Print Assumptions raw_restrictedProofCovered_eqRefl_sound.
+Print Assumptions raw_restrictedProofCovered_eqElim_sound.
+Print Assumptions
+  raw_restrictedProofCovered_specialRuleTruthSound_of_rank_and_eigen.
