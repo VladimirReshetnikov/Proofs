@@ -71,6 +71,11 @@ details.
 > functionality itself closed into an object-level PA derivation.  Finite beta
 > realization additionally constructs the expected certificate for every
 > standard quoted term, including pairs of terms over one shared assignment.
+> A model-internal syntax/support certificate now characterizes arbitrary
+> nonstandard term codes, and genuine PA induction constructs their value
+> tables from an explicitly stated fixed-step beta-capacity premise.  This
+> separates the completed nonstandard induction from the still-open proof that
+> every admissible traversal has a sufficiently large common modulus.
 > Equality, falsity, implication, conjunction, and disjunction also now have
 > transparent rank-zero truth-bit rows with exact arbitrary-model semantics,
 > and the unified rank-zero row is proved single-valued.  A global supported
@@ -641,10 +646,22 @@ prefix-agreement predicate compares two possibly nonstandard tables by PA's
 own induction, proving their root values equal; raw-model completeness then
 produces the checked theorem
 `PA_proves_termEvaluationCertificateFunctionalFormula`.  The module also
-isolates the CRT append capacity used by a later realization proof.  What is
-not yet proved is totality: an arbitrary nonstandard well-formed term code
-still needs a model-internal topological support trace from which the complete
-tables can be constructed.
+isolates the CRT append capacity used by a later realization proof.  At this
+layer, an arbitrary nonstandard well-formed term code still needs a
+model-internal topological support trace from which the complete tables can be
+constructed.
+
+`RawCodedTermEvaluationRealization.v` supplies that topological interface and
+the nonstandard construction itself.  A genuine PA formula describes a
+supported term-syntax traversal and assignment adequacy; its raw semantics
+requires recursive term children to be supported at smaller codes.  At each
+successor stage a local value is computed, the old beta table is transported
+through a CRT extension, and `raw_definable_induction` iterates this argument
+through a possibly nonstandard bound.  The resulting certificate exists and
+has a unique value provided one fixed beta step is a common multiple through
+the traversal and every newly computed value fits its target modulus.  That
+capacity condition is transparent and unassumed, but proving its existence is
+still required before arbitrary nonstandard term totality is unconditional.
 
 `RawCodedTermEvaluationStandardAdequacy.v` separately realizes the global
 certificate on every externally quoted typed term.  A checked decoder marks
@@ -819,8 +836,12 @@ obligations rather than implementation guesses.
   certificate and prove cross-certificate value functionality by PA induction.
 - [x] In Rocq/Coq, realize term-evaluation certificates for every standard
   quoted term, including two-term certificates over one shared assignment.
+- [x] In Rocq/Coq, characterize model-internal term syntax and carry out the
+  full PA-inductive construction of its value table from an explicit
+  fixed-step beta-capacity premise.
 - [ ] Prove model-internal realization/totality of term-evaluation certificates
-  for arbitrary nonstandard well-formed term codes.
+  for arbitrary nonstandard well-formed term codes by discharging that
+  beta-capacity premise.
 - [x] In Rocq/Coq, define transparent local rank-zero truth rows for atoms and
   every Boolean constructor, with exact arbitrary-model truth tables.
 - [x] In Rocq/Coq, prove the unified local rank-zero truth row functional.
