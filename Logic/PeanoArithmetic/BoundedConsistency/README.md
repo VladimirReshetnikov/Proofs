@@ -66,7 +66,9 @@ details.
 > single-valued even when its constructor witnesses are chosen independently.
 > A global support/value beta certificate now has exact raw semantics and is
 > proved cross-certificate functional by genuine PA induction, with that
-> functionality itself closed into an object-level PA derivation.
+> functionality itself closed into an object-level PA derivation.  Finite beta
+> realization additionally constructs the expected certificate for every
+> standard quoted term, including pairs of terms over one shared assignment.
 > Equality, falsity, implication, conjunction, and disjunction also now have
 > transparent rank-zero truth-bit rows with exact arbitrary-model semantics,
 > and the unified rank-zero row is proved single-valued.  A global supported
@@ -616,6 +618,16 @@ not yet proved is totality: an arbitrary nonstandard well-formed term code
 still needs a model-internal topological support trace from which the complete
 tables can be constructed.
 
+`RawCodedTermEvaluationStandardAdequacy.v` separately realizes the global
+certificate on every externally quoted typed term.  A checked decoder marks
+canonical standard codes, finite beta coding constructs the assignment,
+support, and value vectors, and structural term induction verifies every live
+row.  A fixed-assignment interface can reuse one assignment pair across
+independently generated term tables; in particular, the two sides of an
+equality receive certificates over literally identical assignment parameters.
+This is standard-quotation adequacy and does not assert the still-missing
+realization theorem for arbitrary nonstandard term codes.
+
 `RawCodedRankZeroTruthStep.v` supplies the next local Tarski layer.  Equality
 rows read evaluated arithmetic values from a term table; Boolean rows read
 child truth bits from a formula table and enforce the usual truth tables.
@@ -760,6 +772,8 @@ obligations rather than implementation guesses.
   including constructor disjointness and independently chosen witnesses.
 - [x] In Rocq/Coq, define a global supported beta-table term-evaluation
   certificate and prove cross-certificate value functionality by PA induction.
+- [x] In Rocq/Coq, realize term-evaluation certificates for every standard
+  quoted term, including two-term certificates over one shared assignment.
 - [ ] Prove model-internal realization/totality of term-evaluation certificates
   for arbitrary nonstandard well-formed term codes.
 - [x] In Rocq/Coq, define transparent local rank-zero truth rows for atoms and

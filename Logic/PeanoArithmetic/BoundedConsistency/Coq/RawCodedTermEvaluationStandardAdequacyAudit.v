@@ -1,0 +1,41 @@
+(** Assumption audit for standard-quotation term-evaluation adequacy.
+
+    These results construct finite external beta tables only through the
+    standard bound [S (termCode t)].  They make no totality claim for an
+    arbitrary, possibly nonstandard, model-internal term code. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedTermEvaluationStandardAdequacy.
+
+Import PABoundedRawCodedTermEvaluationStandardAdequacy.
+
+Check checkedDecodeTerm.
+Check checkedDecodeTerm_termCode.
+Check checkedDecodeTerm_sound.
+Check rawStandardTermSupportAt.
+Check rawStandardTermValueAt.
+Check rawStandardTermSupportAt_one_has_term.
+Check termCode_var_index_lt.
+
+Check raw_standardTermEvaluation_closed_step.
+Check raw_termEvaluationCertificateWithTables_standard_of_assignment.
+Check raw_termEvaluationCertificate_standard_of_assignment.
+Check raw_termEvaluationCertificateWithTables_standard_exists.
+Check raw_termEvaluationCertificate_standard_exists.
+Check raw_termEvaluationCertificates_pair_standard_exists_same_assignment.
+Check rawStandardTermCertificateEnv.
+Check raw_sat_termEvaluationCertificateTermAt_standard_exists.
+
+Print Assumptions checkedDecodeTerm_termCode.
+Print Assumptions checkedDecodeTerm_sound.
+Print Assumptions rawStandardTermSupportAt_one_has_term.
+Print Assumptions termCode_var_index_lt.
+Print Assumptions raw_standardTermEvaluation_closed_step.
+Print Assumptions
+  raw_termEvaluationCertificateWithTables_standard_of_assignment.
+Print Assumptions raw_termEvaluationCertificate_standard_of_assignment.
+Print Assumptions raw_termEvaluationCertificateWithTables_standard_exists.
+Print Assumptions raw_termEvaluationCertificate_standard_exists.
+Print Assumptions
+  raw_termEvaluationCertificates_pair_standard_exists_same_assignment.
+Print Assumptions raw_sat_termEvaluationCertificateTermAt_standard_exists.
