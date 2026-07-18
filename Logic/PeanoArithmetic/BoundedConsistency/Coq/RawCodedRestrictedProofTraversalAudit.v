@@ -1,0 +1,125 @@
+(** Assumption and API audit for global restricted-proof certificates. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedProofTraversal.
+
+Import PABoundedRawCodedRestrictedProofTraversal.
+
+(** Exact constructor-to-formula-field bookkeeping. *)
+Check proofFormulaFieldsBoundedTermAt.
+Check raw_sat_proofFormulaFieldsBoundedTermAt_iff.
+Check proofOccurrenceCasesTerms.
+Check rawProofOccurrenceCases.
+Check raw_eval_proofOccurrenceCasesTerms.
+Check RawProofOccurrenceCaseBounded.
+Check proofOccurrenceCasesBoundedTermAt.
+Check raw_sat_proofOccurrenceCasesBoundedTermAt_iff.
+
+(** Universal bounds for every constructor and endpoint occurrence. *)
+Check proofConstructorOccurrencesBoundedTermAt.
+Check RawProofConstructorOccurrencesBounded.
+Check raw_sat_proofConstructorOccurrencesBoundedTermAt_iff.
+Check proofEndpointOccurrencesBoundedTermAt.
+Check RawProofEndpointOccurrencesBounded.
+Check raw_sat_proofEndpointOccurrencesBoundedTermAt_iff.
+
+(** Local supported-node certificate. *)
+Check proofRuleEndpointExistsTermAt.
+Check RawProofRuleEndpointExists.
+Check raw_sat_proofRuleEndpointExistsTermAt_iff.
+Check restrictedProofNodeTermAt.
+Check RawRestrictedProofNode.
+Check raw_sat_restrictedProofNodeTermAt_iff.
+Check raw_restrictedProofNode_syntax.
+Check raw_restrictedProofNode_rule_endpoint.
+Check raw_restrictedProofNode_constructor_occurrence.
+Check raw_restrictedProofNode_endpoint_occurrence.
+Check raw_restrictedProofNode_recursive_child.
+
+(** Global traversal, root certificate, and child restriction. *)
+Check restrictedProofTraversalTermAt.
+Check RawRestrictedProofTraversal.
+Check raw_sat_restrictedProofTraversalTermAt_iff.
+Check raw_restrictedProofTraversal_syntax.
+Check raw_restrictedProofTraversal_supported_node.
+Check raw_restrictedProofTraversal_supported_rule_endpoint.
+Check raw_restrictedProofTraversal_weaken.
+
+Check restrictedProofCertificateWithSupportTermAt.
+Check RawRestrictedProofCertificateWithSupport.
+Check raw_sat_restrictedProofCertificateWithSupportTermAt_iff.
+Check restrictedProofTermAt.
+Check RawRestrictedProof.
+Check raw_sat_restrictedProofTermAt_iff.
+Check raw_restrictedProofCertificate_syntax.
+Check raw_restrictedProofCertificate_root_node.
+Check raw_restrictedProofCertificate_root_rule_endpoint.
+Check raw_restrictedProof_root_rule_endpoint.
+Check raw_restrictedProofCertificate_recursive_child.
+Check raw_restrictedProof_recursive_child.
+Check raw_restrictedProof_syntax_realizable.
+
+(** Closed arithmetic consequences and genuine PA derivations. *)
+Check RawRestrictedProofSupportedNodeLaw.
+Check restrictedProofSupportedNodeBodyFormula.
+Check raw_sat_restrictedProofSupportedNodeBodyFormula_iff.
+Check restrictedProofSupportedNodeFormula.
+Check restrictedProofSupportedNodeFormula_sentence.
+Check restrictedProofSupportedNodeFormula_raw_valid.
+Check PA_proves_restrictedProofSupportedNodeFormula.
+
+Check RawRestrictedProofRootEndpointBoundedLaw.
+Check restrictedProofRootEndpointBoundedBodyFormula.
+Check raw_sat_restrictedProofRootEndpointBoundedBodyFormula_iff.
+Check restrictedProofRootEndpointBoundedFormula.
+Check restrictedProofRootEndpointBoundedFormula_sentence.
+Check restrictedProofRootEndpointBoundedFormula_raw_valid.
+Check PA_proves_restrictedProofRootEndpointBoundedFormula.
+
+Check restrictedProofImpliesSyntaxBodyFormula.
+Check raw_sat_restrictedProofImpliesSyntaxBodyFormula_iff.
+Check restrictedProofImpliesSyntaxFormula.
+Check restrictedProofImpliesSyntaxFormula_sentence.
+Check restrictedProofImpliesSyntaxFormula_raw_valid.
+Check PA_proves_restrictedProofImpliesSyntaxFormula.
+
+(** Precisely named, intentionally uninhabited quotation-realization seam. *)
+Check RawRestrictedProvTreeQuotationAdequacy.
+Check raw_restrictedProof_of_quoted_provTree_under_adequacy.
+
+Print Assumptions raw_sat_proofFormulaFieldsBoundedTermAt_iff.
+Print Assumptions raw_eval_proofOccurrenceCasesTerms.
+Print Assumptions raw_sat_proofOccurrenceCasesBoundedTermAt_iff.
+Print Assumptions raw_sat_proofConstructorOccurrencesBoundedTermAt_iff.
+Print Assumptions raw_sat_proofEndpointOccurrencesBoundedTermAt_iff.
+
+Print Assumptions raw_sat_restrictedProofNodeTermAt_iff.
+Print Assumptions raw_restrictedProofNode_rule_endpoint.
+Print Assumptions raw_restrictedProofNode_recursive_child.
+
+Print Assumptions raw_sat_restrictedProofTraversalTermAt_iff.
+Print Assumptions raw_restrictedProofTraversal_weaken.
+Print Assumptions raw_restrictedProofTraversal_supported_rule_endpoint.
+Print Assumptions raw_sat_restrictedProofCertificateWithSupportTermAt_iff.
+Print Assumptions raw_sat_restrictedProofTermAt_iff.
+Print Assumptions raw_restrictedProofCertificate_root_rule_endpoint.
+Print Assumptions raw_restrictedProof_root_rule_endpoint.
+Print Assumptions raw_restrictedProofCertificate_recursive_child.
+Print Assumptions raw_restrictedProof_recursive_child.
+
+Print Assumptions raw_sat_restrictedProofSupportedNodeBodyFormula_iff.
+Print Assumptions restrictedProofSupportedNodeFormula_sentence.
+Print Assumptions restrictedProofSupportedNodeFormula_raw_valid.
+Print Assumptions PA_proves_restrictedProofSupportedNodeFormula.
+
+Print Assumptions raw_sat_restrictedProofRootEndpointBoundedBodyFormula_iff.
+Print Assumptions restrictedProofRootEndpointBoundedFormula_sentence.
+Print Assumptions restrictedProofRootEndpointBoundedFormula_raw_valid.
+Print Assumptions PA_proves_restrictedProofRootEndpointBoundedFormula.
+
+Print Assumptions raw_sat_restrictedProofImpliesSyntaxBodyFormula_iff.
+Print Assumptions restrictedProofImpliesSyntaxFormula_sentence.
+Print Assumptions restrictedProofImpliesSyntaxFormula_raw_valid.
+Print Assumptions PA_proves_restrictedProofImpliesSyntaxFormula.
+
+Print Assumptions raw_restrictedProof_of_quoted_provTree_under_adequacy.
