@@ -1768,7 +1768,7 @@ Proof.
 Qed.
 
 (** ------------------------------------------------------------------
-    The independent adjacent-level coherence boundary.
+    The insufficient domain-only agreement candidate.
 
     Arbitrary-value append is now proved above, but it is not the only issue
     in a positive-level truth induction.  A Sigma-All row says that there is
@@ -1777,11 +1777,15 @@ Qed.
     child is decided at the current level, those negative clauses require the
     certificate predicates to agree on the lower domain at adjacent levels.
 
-    The following formula states exactly that simultaneous coherence
-    at one external level.  We prove its raw semantics, but deliberately do
-    not postulate or claim its PA proof in this checkpoint. *)
+    The tempting domain-only statement below is retained only as a diagnostic
+    formula with exact semantics.  It is generally false: at level one a
+    Boolean certificate may short-circuit around a malformed equality atom,
+    while the level-zero whole-formula evaluator must inspect that atom.
+    [RawCodedFixedLevelTruthCoherence] therefore replaces it with a guarded
+    statement requiring formula, atomic-term, and assignment admissibility.
+    Nothing in this module asserts the candidate. *)
 
-Definition RawFixedLevelTruthCertificateCoherenceAt
+Definition RawFixedLevelDomainOnlyTruthCertificateAgreementAt
     (M : RawPAModel) (lower : nat) : Prop :=
   (forall root assignmentCode assignmentStep : M,
     RawFixedLevelSigmaDomain M lower root ->
@@ -1796,10 +1800,10 @@ Definition RawFixedLevelTruthCertificateCoherenceAt
      RawFixedLevelPiFalsityCertificate M (S lower)
         root assignmentCode assignmentStep)).
 
-Arguments RawFixedLevelTruthCertificateCoherenceAt M lower
+Arguments RawFixedLevelDomainOnlyTruthCertificateAgreementAt M lower
   : clear implicits.
 
-Definition fixedLevelTruthCertificateCoherenceFormula
+Definition fixedLevelDomainOnlyTruthCertificateAgreementFormula
     (lower : nat) : formula :=
   pAll (pAll (pAll
     (pAnd
@@ -1830,14 +1834,14 @@ Definition fixedLevelTruthCertificateCoherenceFormula
             (fixedLevelPiFalsityCertificateTermAt lower
               (tVar 2) (tVar 1) (tVar 0)))))))).
 
-Lemma raw_sat_fixedLevelTruthCertificateCoherenceFormula_iff : forall
+Lemma raw_sat_fixedLevelDomainOnlyTruthCertificateAgreementFormula_iff : forall
     (M : RawPAModel) e lower,
   raw_formula_sat M e
-    (fixedLevelTruthCertificateCoherenceFormula lower) <->
-  RawFixedLevelTruthCertificateCoherenceAt M lower.
+    (fixedLevelDomainOnlyTruthCertificateAgreementFormula lower) <->
+  RawFixedLevelDomainOnlyTruthCertificateAgreementAt M lower.
 Proof.
-  intros. unfold fixedLevelTruthCertificateCoherenceFormula,
-    RawFixedLevelTruthCertificateCoherenceAt.
+  intros. unfold fixedLevelDomainOnlyTruthCertificateAgreementFormula,
+    RawFixedLevelDomainOnlyTruthCertificateAgreementAt.
   cbn [raw_formula_sat].
   setoid_rewrite raw_sat_fixedLevelSigmaDomainTermAt_iff.
   setoid_rewrite raw_sat_fixedLevelPiDomainTermAt_iff.
@@ -1864,11 +1868,12 @@ Proof.
       tauto.
 Qed.
 
-Definition RawFixedLevelTruthCertificateCoherence
+Definition RawFixedLevelDomainOnlyTruthCertificateAgreement
     (M : RawPAModel) : Prop :=
-  forall lower, RawFixedLevelTruthCertificateCoherenceAt M lower.
+  forall lower, RawFixedLevelDomainOnlyTruthCertificateAgreementAt M lower.
 
-Arguments RawFixedLevelTruthCertificateCoherence M : clear implicits.
+Arguments RawFixedLevelDomainOnlyTruthCertificateAgreement M
+  : clear implicits.
 
 (** The bounded-proof application starts with the union domain at [n] and
     runs truth at [S n].  Making that shift explicit avoids the false claim

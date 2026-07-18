@@ -66,11 +66,12 @@ Check raw_fixedLevelStateLookup_prefix_reflect.
 Check raw_fixedLevelClosedSuccessorRow_prefix_extend.
 Check raw_fixedLevelClosedSuccessorRow_append_traversal.
 
-(** Checking the coherence proposition does not assert it. *)
-Check RawFixedLevelTruthCertificateCoherenceAt.
-Check fixedLevelTruthCertificateCoherenceFormula.
-Check raw_sat_fixedLevelTruthCertificateCoherenceFormula_iff.
-Check RawFixedLevelTruthCertificateCoherence.
+(** This deliberately checks only the false-in-general diagnostic candidate;
+    guarded coherence lives in [RawCodedFixedLevelTruthCoherence]. *)
+Check RawFixedLevelDomainOnlyTruthCertificateAgreementAt.
+Check fixedLevelDomainOnlyTruthCertificateAgreementFormula.
+Check raw_sat_fixedLevelDomainOnlyTruthCertificateAgreementFormula_iff.
+Check RawFixedLevelDomainOnlyTruthCertificateAgreement.
 Check RawFixedLevelShiftedTruthAdmissible.
 Check RawFixedLevelInputTruthCertificateTotalityFor.
 Check raw_fixedLevelInputTruthCertificate_totality_from_schedule.
@@ -105,6 +106,7 @@ Print Assumptions raw_fixedLevelStateLookup_prefix_reflect.
 Print Assumptions raw_fixedLevelClosedSuccessorRow_prefix_extend.
 Print Assumptions raw_fixedLevelClosedSuccessorRow_append_traversal.
 
-Print Assumptions raw_sat_fixedLevelTruthCertificateCoherenceFormula_iff.
+Print Assumptions
+  raw_sat_fixedLevelDomainOnlyTruthCertificateAgreementFormula_iff.
 Print Assumptions
   raw_fixedLevelInputTruthCertificate_totality_from_schedule.
