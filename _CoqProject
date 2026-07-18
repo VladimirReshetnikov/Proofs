@@ -460,6 +460,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedTermEvaluationStep.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedTermEvaluationStepAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedTermEvaluationStepFunctionality.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedTermEvaluationStepFunctionalityAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStep.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStepAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormula.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormulaAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompleteness.v

@@ -59,6 +59,8 @@ details.
 > with recursive values read from beta tables and exact raw-model semantics;
 > pairing injectivity and beta functionality make the unified local evaluator
 > single-valued even when its constructor witnesses are chosen independently.
+> Equality, falsity, implication, conjunction, and disjunction also now have
+> transparent rank-zero truth-bit rows with exact arbitrary-model semantics.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -570,6 +572,14 @@ constructor, list-node injectivity recovers identical child codes and beta
 functionality recovers identical child values.  Consequently independently
 chosen existential row witnesses cannot change the proposed term value.
 
+`RawCodedRankZeroTruthStep.v` supplies the next local Tarski layer.  Equality
+rows read evaluated arithmetic values from a term table; Boolean rows read
+child truth bits from a formula table and enforce the usual truth tables.
+Falsity always returns zero, successful rows always return a zero/one bit, and
+quantifier constructors have no rank-zero row.  The witness-exposing and
+existentially closed forms again have exact semantics for arbitrary raw-model
+elements; construction of their global tables remains pending.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -680,6 +690,8 @@ obligations rather than implementation guesses.
   arithmetic term constructor over arbitrary raw-model elements.
 - [x] In Rocq/Coq, prove full functionality of the unified local term row,
   including constructor disjointness and independently chosen witnesses.
+- [x] In Rocq/Coq, define transparent local rank-zero truth rows for atoms and
+  every Boolean constructor, with exact arbitrary-model truth tables.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
