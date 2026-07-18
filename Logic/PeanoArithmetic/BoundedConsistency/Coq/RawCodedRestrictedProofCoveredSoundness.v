@@ -24,9 +24,11 @@ From PAFiniteBasisReduction Require Import
   HierarchyReduction CanonicalSelector CanonicalSelectorPA FiniteBetaCoding.
 From BoundedPAConsistency Require Import
   RawModelCompleteness RawCodedSyntaxConstructors RawCodedAssignment
-  RawCodedProofConstructors RawCodedProofDescent RawCodedProofRules
+  RawCodedProofConstructors RawCodedProofDescent RawCodedProofEndpoints
+  RawCodedProofRules
   RawCodedRestrictedProofTraversal RawCodedProofAtomicAdequacy
-  RawCodedProofFormulaCoverage RawCodedRestrictedProofAdmissibility
+  RawCodedProofFormulaCoverage RawCodedProofRuleCoverage
+  RawCodedRestrictedProofAdmissibility
   RawCodedFixedLevelTruthTraversal RawCodedFixedLevelTruthTotality
   RawCodedFixedLevelTruthAdmissibleLowering
   RawCodedFixedLevelContextTruth RawCodedRestrictedProofSoundness.
@@ -46,10 +48,12 @@ Import PABoundedRawCodedSyntaxConstructors.
 Import PABoundedRawCodedAssignment.
 Import PABoundedRawCodedProofConstructors.
 Import PABoundedRawCodedProofDescent.
+Import PABoundedRawCodedProofEndpoints.
 Import PABoundedRawCodedProofRules.
 Import PABoundedRawCodedRestrictedProofTraversal.
 Import PABoundedRawCodedProofAtomicAdequacy.
 Import PABoundedRawCodedProofFormulaCoverage.
+Import PABoundedRawCodedProofRuleCoverage.
 Import PABoundedRawCodedRestrictedProofAdmissibility.
 Import PABoundedRawCodedFixedLevelTruthTraversal.
 Import PABoundedRawCodedFixedLevelTruthTotality.
@@ -74,7 +78,7 @@ Definition RawRestrictedProofCoveredRecursiveChildrenSigmaSound
   forall child,
     In child children ->
   forall childContext childConclusion,
-    RawProofRuleValid M child childContext childConclusion ->
+    RawProofEndpoint M child childContext childConclusion ->
     RawContextAllSigmaTrue M (S level)
       childContext assignmentCode assignmentStep ->
     RawFixedLevelSigmaTruthCertificate M (S level)
@@ -93,6 +97,7 @@ Definition RawRestrictedProofCoveredRuleTruthSound
     RawRestrictedProof M level root ->
     RawProofAtomicallyAdequate M root ->
     RawProofFormulaCoverage M root coverageBound ->
+    RawProofRuleCoverage M root ->
     RawCodedAssignmentDefinedThrough M
       assignmentCode assignmentStep coverageBound ->
     RawProofRuleValid M root context conclusion ->
@@ -132,14 +137,24 @@ Definition coveredSoundnessImp7
     (a b c d f g h conclusion : formula) : formula :=
   pImp a (pImp b (pImp c (pImp d (pImp f (pImp g (pImp h conclusion)))))).
 
+Definition coveredSoundnessImp8
+    (a b c d f g h i conclusion : formula) : formula :=
+  pImp a
+    (pImp b
+      (pImp c
+        (pImp d
+          (pImp f
+            (pImp g (pImp h (pImp i conclusion))))))).
+
 Definition restrictedProofCoveredSigmaSoundBelowTermAt
     (level : nat) (current : term) : formula :=
   coveredSoundnessAll6
-    (coveredSoundnessImp7
+    (coveredSoundnessImp8
       (Formula.ltTermAt (tVar 5) (liftTerm 6 current))
       (restrictedProofTermAt level (tVar 5))
       (proofAtomicallyAdequateTermAt (tVar 5))
       (proofFormulaCoverageTermAt (tVar 5) (tVar 4))
+      (proofRuleCoverageTermAt (tVar 5))
       (codedAssignmentDefinedThroughTermAt
         (tVar 1) (tVar 0) (tVar 4))
       (proofRuleValidTermAt (tVar 5) (tVar 3) (tVar 2))
@@ -156,6 +171,7 @@ Definition RawRestrictedProofCoveredSigmaSoundBelow
     RawRestrictedProof M level proof ->
     RawProofAtomicallyAdequate M proof ->
     RawProofFormulaCoverage M proof coverageBound ->
+    RawProofRuleCoverage M proof ->
     RawCodedAssignmentDefinedThrough M
       assignmentCode assignmentStep coverageBound ->
     RawProofRuleValid M proof context conclusion ->
@@ -176,13 +192,14 @@ Lemma raw_sat_restrictedProofCoveredSigmaSoundBelowTermAt_iff : forall
 Proof.
   intros M e level current.
   unfold restrictedProofCoveredSigmaSoundBelowTermAt,
-    coveredSoundnessAll6, coveredSoundnessImp7,
+    coveredSoundnessAll6, coveredSoundnessImp8,
     RawRestrictedProofCoveredSigmaSoundBelow.
   cbn [raw_formula_sat].
   setoid_rewrite raw_sat_ltTermAt_iff.
   setoid_rewrite raw_sat_restrictedProofTermAt_iff.
   setoid_rewrite raw_sat_proofAtomicallyAdequateTermAt_iff.
   setoid_rewrite raw_sat_proofFormulaCoverageTermAt_iff.
+  setoid_rewrite raw_sat_proofRuleCoverageTermAt_iff.
   setoid_rewrite raw_sat_codedAssignmentDefinedThroughTermAt_iff.
   setoid_rewrite raw_sat_proofRuleValidTermAt_iff.
   setoid_rewrite raw_sat_contextAllSigmaTrueTermAt_iff.
@@ -209,12 +226,13 @@ Theorem raw_restrictedProofCoveredSigmaSoundBelow_succ : forall
 Proof.
   intros M hPA level hlocal current hbelow
     root coverageBound context conclusion assignmentCode assignmentStep
-    hrootBelow hrestricted hatomic hcoverage hdefined hvalid hcontext.
+    hrootBelow hrestricted hatomic hcoverage hruleCoverage
+    hdefined hvalid hcontext.
   destruct (raw_lt_succ_cases M hPA root current hrootBelow)
     as [hrootCurrent | hrootCurrent].
   - exact (hbelow root coverageBound context conclusion
       assignmentCode assignmentStep hrootCurrent hrestricted hatomic
-      hcoverage hdefined hvalid hcontext).
+      hcoverage hruleCoverage hdefined hvalid hcontext).
   - subst root.
     pose proof (raw_proofFormulaCoverage_public_root_endpoint M hPA
       current coverageBound hcoverage context conclusion
@@ -232,10 +250,10 @@ Proof.
       assignmentCode assignmentStep hconclusionDefined) as hadmissible.
     apply (hlocal current coverageBound context conclusion
       assignmentCode assignmentStep hrestricted hatomic hcoverage
-      hdefined hvalid hadmissible hcontext).
+      hruleCoverage hdefined hvalid hadmissible hcontext).
     intros nodeContext a b c t child1 child2 child3 hconstructor
       fields children hentry hfields child hchild
-      childContext childConclusion hchildValid hchildContext.
+      childContext childConclusion hchildEndpoint hchildContext.
     destruct (raw_restrictedProofAtomicallyAdequate_recursive_child M hPA
       level current hrestricted hatomic
       nodeContext a b c t child1 child2 child3 hconstructor
@@ -246,9 +264,17 @@ Proof.
       nodeContext a b c t child1 child2 child3 hconstructor
       fields children hentry hfields child hchild)
       as [hchildCoverage _].
+    destruct (raw_proofRuleCoverage_public_recursive_child M hPA
+      current hruleCoverage
+      nodeContext a b c t child1 child2 child3 hconstructor
+      fields children hentry hfields child hchild)
+      as [hchildRuleCoverage _].
+    pose proof (raw_proofRuleCoverage_public_root_complete M hPA
+      child hchildRuleCoverage childContext childConclusion
+      hchildEndpoint) as hchildValid.
     exact (hbelow child coverageBound childContext childConclusion
       assignmentCode assignmentStep hchildBelow
-      hchildRestricted hchildAtomic hchildCoverage hdefined
+      hchildRestricted hchildAtomic hchildCoverage hchildRuleCoverage hdefined
       hchildValid hchildContext).
 Qed.
 
@@ -301,6 +327,7 @@ Theorem raw_restrictedProofCovered_root_sigma_sound : forall
   RawRestrictedProof M level root ->
   RawProofAtomicallyAdequate M root ->
   RawProofFormulaCoverage M root coverageBound ->
+  RawProofRuleCoverage M root ->
   RawCodedAssignmentDefinedThrough M
     assignmentCode assignmentStep coverageBound ->
   RawProofRuleValid M root context conclusion ->
@@ -311,12 +338,12 @@ Theorem raw_restrictedProofCovered_root_sigma_sound : forall
 Proof.
   intros M hPA level hlocal root coverageBound context conclusion
     assignmentCode assignmentStep hrestricted hatomic hcoverage
-    hdefined hvalid hcontext.
+    hruleCoverage hdefined hvalid hcontext.
   exact (raw_restrictedProofCoveredSigmaSoundBelow_all M hPA level hlocal
     (raw_succ M root) root coverageBound context conclusion
     assignmentCode assignmentStep
     (raw_assignment_lt_self_succ M hPA root)
-    hrestricted hatomic hcoverage hdefined hvalid hcontext).
+    hrestricted hatomic hcoverage hruleCoverage hdefined hvalid hcontext).
 Qed.
 
 Theorem raw_restrictedProofCovered_bottom_exclusion : forall
@@ -327,6 +354,7 @@ Theorem raw_restrictedProofCovered_bottom_exclusion : forall
   RawRestrictedProof M level root ->
   RawProofAtomicallyAdequate M root ->
   RawProofFormulaCoverage M root coverageBound ->
+  RawProofRuleCoverage M root ->
   RawCodedAssignmentDefinedThrough M
     assignmentCode assignmentStep coverageBound ->
   RawProofRuleValid M root context (rawFormulaBotCode M) ->
@@ -336,12 +364,12 @@ Theorem raw_restrictedProofCovered_bottom_exclusion : forall
 Proof.
   intros M hPA level hlocal hbottom root coverageBound context
     assignmentCode assignmentStep hrestricted hatomic hcoverage
-    hdefined hvalid hcontext.
+    hruleCoverage hdefined hvalid hcontext.
   apply (hbottom assignmentCode assignmentStep).
   exact (raw_restrictedProofCovered_root_sigma_sound M hPA level hlocal
     root coverageBound context (rawFormulaBotCode M)
     assignmentCode assignmentStep hrestricted hatomic hcoverage
-    hdefined hvalid hcontext).
+    hruleCoverage hdefined hvalid hcontext).
 Qed.
 
 End PABoundedRawCodedRestrictedProofCoveredSoundness.
