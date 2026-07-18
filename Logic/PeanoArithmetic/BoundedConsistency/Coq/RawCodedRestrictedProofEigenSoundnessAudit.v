@@ -1,0 +1,17 @@
+(** Audit the proof-endpoint and assignment helpers for eigenvariable rules. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedRestrictedProofEigenSoundness.
+
+Import PABoundedRawCodedRestrictedProofEigenSoundness.
+
+Check raw_restrictedProofCovered_endpoint_context_data.
+Check raw_restrictedProofCovered_recursive_child_endpoint_context_data.
+Check raw_fixedLevelSigmaTruthCertificate_unit_shift_back.
+Check raw_proofEndpoint_allI_case.
+Check raw_proofEndpoint_exE_case.
+
+Print Assumptions raw_restrictedProofCovered_endpoint_context_data.
+Print Assumptions
+  raw_restrictedProofCovered_recursive_child_endpoint_context_data.
+Print Assumptions raw_fixedLevelSigmaTruthCertificate_unit_shift_back.
