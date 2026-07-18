@@ -1,0 +1,64 @@
+(** Assumption audit for the nonstandard formula-rank gap theorem. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFormulaRankGap.
+
+Import PABoundedRawCodedFormulaRankGap.
+
+Check formulaRankGapTermAt.
+Check RawFormulaRankGap.
+Check raw_sat_formulaRankGapTermAt_iff.
+
+Check codedFormulaRankGapBelowTermAt.
+Check RawCodedFormulaRankGapBelow.
+Check raw_sat_codedFormulaRankGapBelowTermAt_iff.
+Check codedFormulaRankGapThroughTermAt.
+Check RawCodedFormulaRankGapThrough.
+Check raw_sat_codedFormulaRankGapThroughTermAt_iff.
+
+Check raw_codedFormulaRankTraversalRow_gap.
+Check raw_codedFormulaRankGapBelow_zero.
+Check raw_codedFormulaRankGapBelow_succ.
+Check raw_codedFormulaRankGapThrough_all.
+Check raw_codedFormulaRankTraversal_gap.
+Check raw_codedFormulaRank_gap.
+
+Check raw_formulaQuantifierBounded_fixedLevel_both.
+Check raw_formulaQuantifierBounded_fixedLevel_sigma.
+Check raw_formulaQuantifierBounded_fixedLevel_pi.
+
+Check codedFormulaRankGapFormula.
+Check raw_sat_codedFormulaRankGapFormula_iff.
+Check codedFormulaRankGapFormula_sentence.
+Check codedFormulaRankGapFormula_raw_valid.
+Check PA_proves_codedFormulaRankGapFormula.
+
+Check fixedLevelRankLiftFormula.
+Check raw_sat_fixedLevelRankLiftFormula_iff.
+Check fixedLevelRankLiftFormula_sentence.
+Check fixedLevelRankLiftFormula_raw_valid.
+Check PA_proves_fixedLevelRankLiftFormula.
+
+Print Assumptions raw_sat_formulaRankGapTermAt_iff.
+Print Assumptions raw_sat_codedFormulaRankGapBelowTermAt_iff.
+Print Assumptions raw_sat_codedFormulaRankGapThroughTermAt_iff.
+
+Print Assumptions raw_codedFormulaRankTraversalRow_gap.
+Print Assumptions raw_codedFormulaRankGapBelow_succ.
+Print Assumptions raw_codedFormulaRankGapThrough_all.
+Print Assumptions raw_codedFormulaRankTraversal_gap.
+Print Assumptions raw_codedFormulaRank_gap.
+
+Print Assumptions raw_formulaQuantifierBounded_fixedLevel_both.
+Print Assumptions raw_formulaQuantifierBounded_fixedLevel_sigma.
+Print Assumptions raw_formulaQuantifierBounded_fixedLevel_pi.
+
+Print Assumptions raw_sat_codedFormulaRankGapFormula_iff.
+Print Assumptions codedFormulaRankGapFormula_sentence.
+Print Assumptions codedFormulaRankGapFormula_raw_valid.
+Print Assumptions PA_proves_codedFormulaRankGapFormula.
+
+Print Assumptions raw_sat_fixedLevelRankLiftFormula_iff.
+Print Assumptions fixedLevelRankLiftFormula_sentence.
+Print Assumptions fixedLevelRankLiftFormula_raw_valid.
+Print Assumptions PA_proves_fixedLevelRankLiftFormula.
