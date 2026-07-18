@@ -16,6 +16,7 @@
 From Stdlib Require Import Arith Lia.
 From FirstOrder Require Import Fol.
 From PAHF Require Import PAHF.
+From PAListCoding Require Import Representability.
 From PAFiniteBasisReduction Require Import
   HierarchyReduction CanonicalSelector CanonicalSelectorPA FiniteBetaCoding.
 From BoundedPAConsistency Require Import
@@ -24,6 +25,7 @@ From BoundedPAConsistency Require Import
 Module PABoundedRawCodedFixedLevelTruthReindexing.
 
 Import PA.
+Import PAListRepresentability.
 Import PAHierarchyReduction.
 Import PACanonicalSelector.
 Import PACanonicalSelectorPA.
@@ -74,6 +76,93 @@ Arguments RawFixedLevelStateOffsetEmbedding M
   targetModeCode targetModeStep targetFormulaCode targetFormulaStep
   targetAssignmentCodeCode targetAssignmentCodeStep
   targetAssignmentStepCode targetAssignmentStepStep : clear implicits.
+
+(** Five universal variables hold index, mode, formula, assignment code, and
+    assignment step.  This represented form is what permits PA induction to
+    copy a traversal through a nonstandard source bound. *)
+Definition fixedLevelStateOffsetEmbeddingTermAt
+    (offset current
+      sourceModeCode sourceModeStep sourceFormulaCode sourceFormulaStep
+      sourceAssignmentCodeCode sourceAssignmentCodeStep
+      sourceAssignmentStepCode sourceAssignmentStepStep
+      targetModeCode targetModeStep targetFormulaCode targetFormulaStep
+      targetAssignmentCodeCode targetAssignmentCodeStep
+      targetAssignmentStepCode targetAssignmentStepStep : term) : formula :=
+  fixedTruthTraversalAll5
+    (pImp
+      (Formula.ltTermAt (tVar 4) (liftTerm 5 current))
+      (pImp
+        (fixedLevelStateLookupTermAt
+          (liftTerm 5 sourceModeCode) (liftTerm 5 sourceModeStep)
+          (liftTerm 5 sourceFormulaCode) (liftTerm 5 sourceFormulaStep)
+          (liftTerm 5 sourceAssignmentCodeCode)
+          (liftTerm 5 sourceAssignmentCodeStep)
+          (liftTerm 5 sourceAssignmentStepCode)
+          (liftTerm 5 sourceAssignmentStepStep)
+          (tVar 4) (tVar 3) (tVar 2) (tVar 1) (tVar 0))
+        (fixedLevelStateLookupTermAt
+          (liftTerm 5 targetModeCode) (liftTerm 5 targetModeStep)
+          (liftTerm 5 targetFormulaCode) (liftTerm 5 targetFormulaStep)
+          (liftTerm 5 targetAssignmentCodeCode)
+          (liftTerm 5 targetAssignmentCodeStep)
+          (liftTerm 5 targetAssignmentStepCode)
+          (liftTerm 5 targetAssignmentStepStep)
+          (tAdd (liftTerm 5 offset) (tVar 4))
+          (tVar 3) (tVar 2) (tVar 1) (tVar 0)))).
+
+Lemma raw_sat_fixedLevelStateOffsetEmbeddingTermAt_iff : forall
+    (M : RawPAModel) e
+      offset current
+      sourceModeCode sourceModeStep sourceFormulaCode sourceFormulaStep
+      sourceAssignmentCodeCode sourceAssignmentCodeStep
+      sourceAssignmentStepCode sourceAssignmentStepStep
+      targetModeCode targetModeStep targetFormulaCode targetFormulaStep
+      targetAssignmentCodeCode targetAssignmentCodeStep
+      targetAssignmentStepCode targetAssignmentStepStep,
+  raw_formula_sat M e
+    (fixedLevelStateOffsetEmbeddingTermAt
+      offset current
+      sourceModeCode sourceModeStep sourceFormulaCode sourceFormulaStep
+      sourceAssignmentCodeCode sourceAssignmentCodeStep
+      sourceAssignmentStepCode sourceAssignmentStepStep
+      targetModeCode targetModeStep targetFormulaCode targetFormulaStep
+      targetAssignmentCodeCode targetAssignmentCodeStep
+      targetAssignmentStepCode targetAssignmentStepStep) <->
+  RawFixedLevelStateOffsetEmbedding M
+    (raw_term_eval M e offset) (raw_term_eval M e current)
+    (raw_term_eval M e sourceModeCode)
+    (raw_term_eval M e sourceModeStep)
+    (raw_term_eval M e sourceFormulaCode)
+    (raw_term_eval M e sourceFormulaStep)
+    (raw_term_eval M e sourceAssignmentCodeCode)
+    (raw_term_eval M e sourceAssignmentCodeStep)
+    (raw_term_eval M e sourceAssignmentStepCode)
+    (raw_term_eval M e sourceAssignmentStepStep)
+    (raw_term_eval M e targetModeCode)
+    (raw_term_eval M e targetModeStep)
+    (raw_term_eval M e targetFormulaCode)
+    (raw_term_eval M e targetFormulaStep)
+    (raw_term_eval M e targetAssignmentCodeCode)
+    (raw_term_eval M e targetAssignmentCodeStep)
+    (raw_term_eval M e targetAssignmentStepCode)
+    (raw_term_eval M e targetAssignmentStepStep).
+Proof.
+  intros. unfold fixedLevelStateOffsetEmbeddingTermAt,
+    fixedTruthTraversalAll5, RawFixedLevelStateOffsetEmbedding.
+  cbn [raw_formula_sat].
+  setoid_rewrite raw_sat_ltTermAt_iff.
+  repeat setoid_rewrite raw_sat_fixedLevelStateLookupTermAt_iff.
+  repeat setoid_rewrite raw_fixedTruthTraversal_eval_liftTerm_five.
+  cbn [raw_term_eval scons].
+  split; intros hall index mode code assignmentCode assignmentStep
+      hindex hlookup;
+    specialize (hall index mode code assignmentCode assignmentStep
+      hindex hlookup).
+  - rewrite raw_fixedTruthTraversal_eval_liftTerm_five in hall.
+    exact hall.
+  - rewrite raw_fixedTruthTraversal_eval_liftTerm_five.
+    exact hall.
+Qed.
 
 Lemma raw_fixedLevelEarlierState_offset : forall
     (M : RawPAModel), RawPASatisfies M -> forall
