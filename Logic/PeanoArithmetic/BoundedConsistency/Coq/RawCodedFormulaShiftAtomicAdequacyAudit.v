@@ -1,0 +1,16 @@
+(** Assumption audit for arbitrary coded formula-shift atomic adequacy. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFormulaShiftAtomicAdequacy.
+
+Import PABoundedRawCodedFormulaShiftAtomicAdequacy.
+
+Check raw_formulaShift_eq_row_of_target.
+Check raw_codedFormulaShift_target_atomically_adequate.
+Check raw_inductionShiftAtomicAdequacy_all.
+Check raw_fixedLevelPAAxiomInductionSigmaSound_all.
+
+Print Assumptions raw_formulaShift_eq_row_of_target.
+Print Assumptions raw_codedFormulaShift_target_atomically_adequate.
+Print Assumptions raw_inductionShiftAtomicAdequacy_all.
+Print Assumptions raw_fixedLevelPAAxiomInductionSigmaSound_all.
