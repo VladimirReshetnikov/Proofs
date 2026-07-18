@@ -1,0 +1,20 @@
+(** Assumption audit for quantifier fixed-truth certificate construction. *)
+
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthQuantifierConstruction.
+
+Import PABoundedRawCodedFixedLevelTruthQuantifierConstruction.
+
+Check raw_fixedLevelAll_sigma_of_no_lower_pi.
+Check raw_fixedLevelEx_pi_of_no_lower_sigma.
+Check raw_fixedLevelEx_sigma_of_witness.
+Check raw_fixedLevelAll_pi_of_witness.
+Check raw_fixedLevelAll_decides_from_lower.
+Check raw_fixedLevelEx_decides_from_lower.
+
+Print Assumptions raw_fixedLevelAll_sigma_of_no_lower_pi.
+Print Assumptions raw_fixedLevelEx_pi_of_no_lower_sigma.
+Print Assumptions raw_fixedLevelEx_sigma_of_witness.
+Print Assumptions raw_fixedLevelAll_pi_of_witness.
+Print Assumptions raw_fixedLevelAll_decides_from_lower.
+Print Assumptions raw_fixedLevelEx_decides_from_lower.
