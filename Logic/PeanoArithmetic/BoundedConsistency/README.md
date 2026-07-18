@@ -37,8 +37,10 @@ details.
 > object-level PA proof, and the canonical fixed-bound consistency sentence
 > is now proved equivalent to rejection of accepting canonical traces in
 > every raw PA model.  Nonstandard trace rejection itself remains open.
-> Lean's higher-level coherence, semantic transport, and
-> PA-axiom instantiation remain incomplete.  Consequently the full requested
+> Lean now has full fixed-level polarity coherence, shift/substitution
+> transport, a unified bounded truth interface, and soundness of every coded
+> logical inference conditional only on truth of the recognized PA axiom.
+> Positive-level PA-axiom instantiation remains incomplete.  Consequently the full requested
 > scheme `PA ⊢ Con_n(PA)` for
 > every external `n` is **not yet implemented** in either kernel; Lean's
 > externally indexed family is complete at `n = 0`.
@@ -347,8 +349,18 @@ duals, Pi universal truth over every model element, and the two level-changing
 universal/existential polarity clauses.  `OrientedHierarchy.rankCode_balanced`
 proves internally that the two ranks differ by at most one, so every formula
 with minimum rank at most `n` lies in either chosen polarity at level `n+1`.
-Coherence on polarity overlap, negation, semantic transport, and higher-level
-derivation soundness are the remaining Lean obligations.
+`FixedLevelTruthCoherence` proves conservativity between adjacent levels and
+agreement of Sigma/Pi truth wherever both oriented domains apply, using
+model-internal structural induction for nonstandard codes.
+`FixedLevelTruthSubstitution` proves free-variable shift and simultaneous
+bound-variable substitution transport under nonstandard environments.
+`FixedLevelTruthLaws` combines these results into ordinary complement,
+Boolean, quantifier, opening, and substitution clauses for the unified
+predicate `SigmaTrue (n+1)` on codes bounded by `n`.  Together with
+`AbstractSoundness` and `FixedLevelSequentDefinability`, this proves the whole
+logical calculus sound at every fixed external level once the recognized PA
+axioms are shown true.  Positive-level PA-axiom truth is the remaining Lean
+obligation.
 
 ### Rocq natural codes and executable checker
 
@@ -515,8 +527,9 @@ obligations rather than implementation guesses.
   predicates over nonstandard codes and prove hierarchy definability,
   oriented Boolean/quantifier clauses, and polarity changes at quantifier
   heads.
-- [ ] Complete polarity coherence, negation, and semantic transport for Lean
-  fixed-level truth.
+- [x] Complete polarity coherence, negation, and semantic transport for Lean
+  fixed-level truth, including nonstandard shift and simultaneous
+  substitution environments.
 - [x] In Lean, generalize arithmetized fixed-point induction from level-one
   invariants to every externally fixed positive hierarchy level and specialize
   it to models of full PA.
@@ -529,7 +542,8 @@ obligations rather than implementation guesses.
 - [x] In Lean, prove soundness of every rank-zero logical inference for
   arbitrary nonstandard restricted-derivation codes, conditional on the exact
   theory-axiom truth premise.
-- [ ] Extend logical-inference soundness to every fixed external level.
+- [x] Extend logical-inference soundness to every fixed external level,
+  conditional on the exact internally recognized theory-axiom truth premise.
 - [x] In Lean at rank zero, prove truth of all internally recognized PA-minus
   axioms and structurally exclude every induction-axiom code.
 - [ ] Generalize PA-minus and internally recognized induction-axiom truth to

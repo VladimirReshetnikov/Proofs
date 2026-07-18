@@ -1,0 +1,37 @@
+import BoundedPAConsistency.FixedLevelTruthLaws
+
+/-!
+# Kernel audit for the unified bounded truth laws
+
+The exported adapters below are the concrete semantic input to abstract
+restricted-derivation soundness.  Their axiom reports must contain only
+Lean's standard logical quotient/choice principles; in particular, this
+layer introduces no soundness axiom for PA and no assumption about standard
+formula codes.
+-/
+
+namespace LeanProofs.BoundedPAConsistency.FixedLevelTruthLaws
+
+#check sigmaTrue_succ_neg_iff_of_quantifierBoundedCode
+#check sigmaTrue_succ_and_iff_of_quantifierBoundedCode
+#check sigmaTrue_succ_or_iff_of_quantifierBoundedCode
+#check sigmaTrue_succ_all_iff_of_quantifierBoundedCode
+#check sigmaTrue_succ_exs_iff_of_quantifierBoundedCode
+#check sigmaTrue_succ_shift_iff_of_quantifierBoundedCode
+#check sigmaTrue_substs1_iff_of_isSigmaCode
+#check sigmaTrue_succ_substs1_iff_of_quantifierBoundedCode
+#check sigmaTrue_succ_free_iff_of_quantifierBoundedCode
+#check sigmaTrue_succ_laws
+
+#print axioms sigmaTrue_succ_neg_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_succ_and_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_succ_or_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_succ_all_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_succ_exs_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_succ_shift_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_substs1_iff_of_isSigmaCode
+#print axioms sigmaTrue_succ_substs1_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_succ_free_iff_of_quantifierBoundedCode
+#print axioms sigmaTrue_succ_laws
+
+end LeanProofs.BoundedPAConsistency.FixedLevelTruthLaws

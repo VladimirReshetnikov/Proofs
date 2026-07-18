@@ -1,7 +1,13 @@
+import BoundedPAConsistency.AbstractSoundness
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
+import BoundedPAConsistency.FixedLevelPAInduction
+import BoundedPAConsistency.FixedLevelSequentDefinability
 import BoundedPAConsistency.FixedLevelTruthCertificate
+import BoundedPAConsistency.FixedLevelTruthCoherence
 import BoundedPAConsistency.FixedLevelTruthDefinability
+import BoundedPAConsistency.FixedLevelTruthLaws
+import BoundedPAConsistency.FixedLevelTruthSubstitution
 import BoundedPAConsistency.FixedLevelTruthTarski
 import BoundedPAConsistency.Internal
 import BoundedPAConsistency.ModelFormulaInduction
@@ -31,8 +37,12 @@ checked object theorem `PA ⊢ Con₀(PA)`.
 Externally indexed positive-level Sigma/Pi truth predicates are represented at
 the expected arithmetical-hierarchy levels.  Their internally finite HFS
 certificates satisfy the Boolean and quantified oriented Tarski clauses,
-including the polarity switches at universal and existential heads.  The
-remaining work is coherence on polarity overlap, semantic transport, and the
-higher-level PA axiom/rule soundness needed for arbitrary positive external
-bounds.  See the project README for the exact boundary and roadmap.
+including the polarity switches at universal and existential heads.  They are
+coherent on overlapping polarity domains and commute with nonstandard coded
+shift and simultaneous substitution.  At each fixed external bound,
+`SigmaTrue (n + 1)` therefore supplies the complete semantic-law interface for
+the already proved soundness of every coded logical inference.  The remaining
+Lean work is truth of all internally recognized positive-level PA axioms and
+the final object-theory assembly.  See the project README for the exact
+boundary and roadmap.
 -/
