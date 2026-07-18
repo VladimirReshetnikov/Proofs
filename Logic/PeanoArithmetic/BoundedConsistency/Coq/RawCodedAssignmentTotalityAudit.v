@@ -1,0 +1,22 @@
+(** Assumption audit for arbitrary-bound coded assignment totality. *)
+
+From BoundedPAConsistency Require Import RawCodedAssignmentTotality.
+
+Import PABoundedRawCodedAssignmentTotality.
+
+Check RawCodedAssignmentExistsThrough.
+Check codedAssignmentExistsThroughTermAt.
+Check raw_sat_codedAssignmentExistsThroughTermAt_iff.
+Check raw_codedAssignmentExistsThrough_zero.
+Check raw_codedAssignmentExistsThrough_succ.
+Check raw_codedAssignmentExistsThrough_all.
+Check codedAssignmentTotalityFormula.
+Check raw_sat_codedAssignmentTotalityFormula_iff.
+Check codedAssignmentTotalityFormula_sentence.
+Check codedAssignmentTotalityFormula_raw_valid.
+Check PA_proves_codedAssignmentTotalityFormula.
+
+Print Assumptions raw_codedAssignmentExistsThrough_all.
+Print Assumptions codedAssignmentTotalityFormula_sentence.
+Print Assumptions codedAssignmentTotalityFormula_raw_valid.
+Print Assumptions PA_proves_codedAssignmentTotalityFormula.
