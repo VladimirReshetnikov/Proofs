@@ -3,6 +3,7 @@ import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.FixedLevelTruthCertificate
 import BoundedPAConsistency.FixedLevelTruthDefinability
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.ModelFormulaInduction
 import BoundedPAConsistency.OrientedHierarchy
 import BoundedPAConsistency.QuantifierFreeTruth
 import BoundedPAConsistency.QuantifierFreeTarski

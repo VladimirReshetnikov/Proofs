@@ -1,6 +1,7 @@
 import BoundedPAConsistency.Basic
 import BoundedPAConsistency.CodedHierarchy
 import BoundedPAConsistency.Internal
+import BoundedPAConsistency.ModelFormulaInduction
 import BoundedPAConsistency.OrientedHierarchy
 import BoundedPAConsistency.QuantifierFreeTarski
 import BoundedPAConsistency.QuantifierFreeTransport
@@ -42,6 +43,7 @@ open LeanProofs.BoundedPAConsistency
 #check restrictedPA_consistent_standard
 #check LeanProofs.BoundedPAConsistency.Internal.inductionAtHierarchy
 #check LeanProofs.BoundedPAConsistency.Internal.inductionInPeanoModel
+#check LeanProofs.BoundedPAConsistency.ModelFormulaInduction.uformula_inductionInPeanoModel
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValues
 #check LeanProofs.BoundedPAConsistency.TermEvaluation.termValue.defined
@@ -91,6 +93,7 @@ open LeanProofs.BoundedPAConsistency
 #print axioms restrictedPA_consistent_standard
 #print axioms LeanProofs.BoundedPAConsistency.Internal.inductionAtHierarchy
 #print axioms LeanProofs.BoundedPAConsistency.Internal.inductionInPeanoModel
+#print axioms LeanProofs.BoundedPAConsistency.ModelFormulaInduction.uformula_inductionInPeanoModel
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue.defined
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValues.defined
 #print axioms LeanProofs.BoundedPAConsistency.TermEvaluation.termValue_bvar_zero_seqCons

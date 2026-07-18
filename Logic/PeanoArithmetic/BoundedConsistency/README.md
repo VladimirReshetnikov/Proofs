@@ -225,6 +225,12 @@ PA.  This is infrastructure for pushing a future partial-truth invariant
 through coded derivations; it is neither a partial truth predicate nor a
 reflection theorem.
 
+`BoundedPAConsistency.ModelFormulaInduction` specializes the same bridge to
+Foundation's formula-code fixed point and exposes all eight syntax cases.  It
+allows fixed higher-level invariants to be proved for every internally
+well-formed formula code, including nonstandard codes, without host-language
+decoding.
+
 The current Rocq/Coq foundation has no corresponding arithmetized syntax and
 fixed-point derivation library, so this bridge presently has no Rocq analogue.
 
