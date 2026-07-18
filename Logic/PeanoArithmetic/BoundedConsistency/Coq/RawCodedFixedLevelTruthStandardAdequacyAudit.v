@@ -1,0 +1,16 @@
+From BoundedPAConsistency Require Import
+  RawCodedFixedLevelTruthStandardAdequacy.
+
+Import PABoundedRawCodedFixedLevelTruthStandardAdequacy.
+
+Check RawStandardAssignmentRepresents.
+Check raw_standardAssignmentRepresents_restrict.
+Check raw_standardAssignmentRepresents_prepend_all.
+Check raw_standardAssignmentRepresents_prepend_ex.
+Check raw_fixedLevelTruthCertificate_standard_adequacy.
+Check raw_fixedLevelSigmaTruthCertificate_standard_of_sat.
+
+Print Assumptions raw_standardAssignmentRepresents_prepend_all.
+Print Assumptions raw_standardAssignmentRepresents_prepend_ex.
+Print Assumptions raw_fixedLevelTruthCertificate_standard_adequacy.
+Print Assumptions raw_fixedLevelSigmaTruthCertificate_standard_of_sat.
