@@ -9,7 +9,13 @@ The phrase “every formula occurrence” and the metatheoretic status of `n` ar
 essential.  They are part of the formal specification, not presentational
 details.
 
-> **Current status.**  The Lean and Rocq/Coq phase-one developments
+> **Current status.**  The requested numeralwise scheme is complete in both
+> Lean and Rocq/Coq.  Each port exports, for every metatheoretic natural
+> `n`, an actual object-level PA derivation of its represented sentence
+> `Con_n(PA)`.  Both represented proof predicates inspect every formula
+> occurrence in arbitrary, possibly nonstandard, coded PA derivations.
+>
+> **Development details.**  The Lean and Rocq/Coq phase-one developments
 > machine-check a metatheoretic restricted-proof construction and its semantic
 > consistency consequences for the repository's PA/HF natural-deduction
 > calculus.  Rocq additionally has canonical natural-number codes, total
@@ -102,7 +108,8 @@ details.
 > at every fixed level.  Their exact raw-model semantics cover all Boolean and
 > quantifier constructors; opposite-polarity quantifiers correctly recurse on
 > the quantified child under a freshly prepended coded assignment.  Global
-> table assembly and the resulting fixed-level soundness theorem remain open.
+> certificate assembly, coherence, assignment transport, and the fixed-level
+> Tarski interface are all proved over arbitrary raw PA models.
 > Rocq now also exposes every one of the seventeen raw-proof constructor codes
 > as a transparent PA term.  Their common constructor formula has exact
 > semantics in every law-free raw arithmetic structure, and quotation agrees
@@ -120,10 +127,12 @@ details.
 > induction argument also discharges the genuinely nonstandard induction
 > branch, including nonstandard formula codes and universal-closure lengths.
 > Splitting the complete recognizer, applying nonstandard derivation
-> soundness, and then first-order arithmetic completeness now gives the full
-> Lean object theorem `PA ⊢ Con_n(PA)` for every external `n`.  The requested
-> scheme is therefore complete in Lean.  Rocq/Coq still lacks the final
-> nonstandard trace-rejection proof and object theorem.
+> soundness, and then first-order arithmetic completeness gives the full Lean
+> object theorem `PA ⊢ Con_n(PA)` for every external `n`.  Rocq/Coq now proves
+> the parallel theorem by an independent raw-model development: it validates
+> all seventeen proof constructors, proves every witnessed PA-axiom context
+> true (including nonstandard induction instances), excludes restricted
+> proofs of falsity in every PA model, and applies first-order completeness.
 
 ## The intended theorem
 
@@ -302,6 +311,19 @@ Theorem restrictedPA_consistent_standard : forall n,
 Both occurrence ranks explicitly cover each formula-valued inference-rule
 parameter.  Term parameters cannot change formula rank.
 
+The raw coded development then represents the all-occurrences restriction,
+fixed-level partial truth, proof-rule validation, and PA-axiom truth inside
+arbitrary raw PA models.  Its final premise-free object theorem is:
+
+```coq
+Theorem PA_BProv_restrictedPAConsistencyFormula : forall level : nat,
+  Formula.BProv Formula.Ax_s []
+    (restrictedPAConsistencyFormula level).
+```
+
+As in Lean, `level` is a host-language parameter.  This is a numeralwise
+family of PA derivations, not a derivation of `forall level, Con_level(PA)`.
+
 ### Lean coded-induction bridge
 
 `BoundedPAConsistency.Internal` reuses Foundation's nonstandard-model coding
@@ -310,9 +332,9 @@ generalizes the library's coded fixed-point induction from a hard-coded
 level-one invariant to an invariant at any externally fixed positive
 arithmetical-hierarchy level, assuming the matching induction fragment.
 `inductionInPeanoModel` discharges that fragment in an arbitrary model of full
-PA.  This is infrastructure for pushing a future partial-truth invariant
-through coded derivations; it is neither a partial truth predicate nor a
-reflection theorem.
+PA.  The fixed-level development uses this infrastructure to push its
+partial-truth invariant through coded derivations; the bridge itself is not a
+truth predicate or reflection theorem.
 
 `BoundedPAConsistency.ModelFormulaInduction` specializes the same bridge to
 Foundation's formula-code fixed point and exposes all eight syntax cases.  It
@@ -320,8 +342,9 @@ allows fixed higher-level invariants to be proved for every internally
 well-formed formula code, including nonstandard codes, without host-language
 decoding.
 
-The current Rocq/Coq foundation has no corresponding arithmetized syntax and
-fixed-point derivation library, so this bridge presently has no Rocq analogue.
+Rocq/Coq reaches the same arbitrary-model boundary through explicit
+beta-supported raw syntax, rank, assignment, truth, and proof traversals rather
+than through Lean's fixed-point derivation library.
 
 ### Lean coded-term evaluation
 
@@ -897,10 +920,11 @@ formula-complexity bound.  Therefore a single PA proof of
 uniform truth predicate covering all levels would cross Tarski's
 undefinability boundary.  The numeralwise family avoids both uniformizations.
 
-## Roadmap to the requested theorem
+## Implementation checklist
 
-The following work remains; items are intentionally phrased as proof
-obligations rather than implementation guesses.
+The requested theorem is complete.  Unchecked items below are additional
+cross-library correspondence results or an alternate executable-checker route;
+they are not premises of either headline theorem.
 
 - [x] Instantiate the existing Lean and Coq PA/HF formula and proof datatypes
   with independent restricted-proof wrappers.
@@ -942,7 +966,7 @@ obligations rather than implementation guesses.
 - [x] In Lean, define the all-occurrences restricted derivation predicate over
   Foundation's actual Gödel coding and prove it Delta-one, with Sigma-one
   restricted provability and Pi-one restricted consistency.
-- [ ] Build the corresponding arbitrary-model restricted derivation predicate
+- [x] Build the corresponding arbitrary-model restricted derivation predicate
   in Rocq/Coq.
 - [x] In Rocq/Coq, expose all 17 proof-code constructors as transparent PA
   terms, prove their exact arbitrary-model semantics, and prove standard
@@ -953,9 +977,9 @@ obligations rather than implementation guesses.
 - [x] Assemble the local proof constructors into an honest beta-supported
   traversal, prove child-certificate extraction and cross-certificate closure,
   and close constructor-occurrence totality into PA.
-- [ ] Validate every inference rule and its context/conclusion endpoints on
+- [x] Validate every inference rule and its context/conclusion endpoints on
   arbitrary nonstandard proof codes.
-- [ ] Formalize coded environments and term evaluation, including totality and
+- [x] Formalize coded environments and term evaluation, including totality and
   substitution lemmas in PA.
 - [x] In Rocq/Coq, formalize beta-coded environments with functional lookup and
   PA-provable binder extension through arbitrary nonstandard prefixes.
@@ -997,7 +1021,7 @@ obligations rather than implementation guesses.
   over every head of an arbitrary nonstandard context traversal.
 - [x] In Rocq/Coq, prove model-internal empty/cons context realization,
   membership introduction, and preservation of all-occurrences boundedness.
-- [ ] Assemble the Rocq/Coq fixed-level rows into globally closed nonstandard
+- [x] Assemble the Rocq/Coq fixed-level rows into globally closed nonstandard
   truth tables and prove their Tarski soundness interface.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
@@ -1013,7 +1037,7 @@ obligations rather than implementation guesses.
 - [x] In Lean, generalize arithmetized fixed-point induction from level-one
   invariants to every externally fixed positive hierarchy level and specialize
   it to models of full PA.
-- [ ] Build or port the corresponding coded-derivation induction machinery in
+- [x] Build or port the corresponding coded-derivation induction machinery in
   Rocq/Coq.
 - [x] In Rocq/Coq, construct a transparent canonical Minsky-trace formula for
   the executable checker and prove exact standard-natural compiler agreement.
@@ -1037,16 +1061,16 @@ obligations rather than implementation guesses.
   `PA |- Con_0(PA)`.
 - [x] In Lean, construct for every external `n` a checked object-level
   derivation `PA |- Con_n(PA)`.
-- [ ] Construct the corresponding externally indexed object-level derivations
+- [x] Construct the corresponding externally indexed object-level derivations
   in Rocq/Coq.
 - [x] In Lean, add audits that print/check the assumptions of the final theorem
   and reject admissions, project-local axioms, or semantic soundness hypotheses
   at the headline boundary.
-- [ ] Add the corresponding final-theorem audit in Rocq/Coq.
-- [ ] Record parity explicitly: theorem statements and mathematical coding
+- [x] Add the corresponding final-theorem audit in Rocq/Coq.
+- [x] Record parity explicitly: theorem statements and mathematical coding
   contracts must coincide even when the concrete Gödel encodings differ.
 
-## Building phase one
+## Building the final theorem
 
 From the repository root, the Lean library is registered as
 `BoundedPAConsistency`:
@@ -1075,14 +1099,20 @@ against the already-built dependencies with:
 opam exec --switch=proofs-rocq92 -- rocq compile \
   -Q Logic/FirstOrder/Coq FirstOrder \
   -Q Logic/Interpretability/PAHF/Coq PAHF \
+  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction \
+  -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding \
   -Q Logic/PeanoArithmetic/BoundedConsistency/Coq BoundedPAConsistency \
-  Logic/PeanoArithmetic/BoundedConsistency/Coq/BoundedConsistency.v
+  -Q lib/Coq-Library-Undecidability-current/theories Undecidability \
+  Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRestrictedPAConsistencyTheorem.v
 
 opam exec --switch=proofs-rocq92 -- rocq compile \
   -Q Logic/FirstOrder/Coq FirstOrder \
   -Q Logic/Interpretability/PAHF/Coq PAHF \
+  -Q Logic/PeanoArithmetic/NotFinitelyAxiomatizable/Coq PAFiniteBasisReduction \
+  -Q Logic/PeanoArithmetic/ListCoding/Coq PAListCoding \
   -Q Logic/PeanoArithmetic/BoundedConsistency/Coq BoundedPAConsistency \
-  Logic/PeanoArithmetic/BoundedConsistency/Coq/Audit.v
+  -Q lib/Coq-Library-Undecidability-current/theories Undecidability \
+  Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRestrictedPAConsistencyTheoremAudit.v
 ```
 
 The audit modules, rather than this README, are the authority for the exact
