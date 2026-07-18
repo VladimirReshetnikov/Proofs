@@ -1,0 +1,110 @@
+(** Audit surface for transparent operations on raw term and formula codes.
+
+    Every computational relation checked below is a genuine PA formula with
+    an exact arbitrary-raw-model semantics theorem.  The functionality audit
+    distinguishes same-trace beta lookup, which is proved unconditionally,
+    from arbitrary cross-trace rank preservation, which is intentionally
+    exposed as a named premise rather than assumed as an axiom. *)
+
+From BoundedPAConsistency Require Import RawCodedFormulaOperations.
+
+Import PABoundedRawCodedFormulaOperations.
+
+(** Negation and its polarity effect on hierarchy rank. *)
+Check codedFormulaNegationTermAt.
+Check RawCodedFormulaNegation.
+Check raw_sat_codedFormulaNegationTermAt_iff.
+Check raw_codedFormulaNegation_functional.
+Check raw_codedFormulaNegation_constructor_inversion.
+Check raw_codedFormulaNegation_rank_switch.
+
+(** Iterated universal closure, including nonstandard iteration counts. *)
+Check codedUniversalClosureRowsTermAt.
+Check codedUniversalClosureTraceTermAt.
+Check codedUniversalClosureTermAt.
+Check RawCodedUniversalClosure.
+Check raw_sat_codedUniversalClosureRowsTermAt_iff.
+Check raw_sat_codedUniversalClosureTraceTermAt_iff.
+Check raw_sat_codedUniversalClosureTermAt_iff.
+Check raw_codedUniversalClosure_zero.
+Check raw_codedUniversalClosure_succ_inversion.
+Check codedUniversalClosureFunctionalAtTermAt.
+Check raw_sat_codedUniversalClosureFunctionalAtTermAt_iff.
+Check raw_codedUniversalClosure_functional_at_all.
+Check raw_codedUniversalClosure_functional.
+Check codedUniversalClosureFunctionalFormula.
+Check codedUniversalClosureFunctionalFormula_sentence.
+Check codedUniversalClosureFunctionalFormula_raw_valid.
+Check PA_proves_codedUniversalClosureFunctionalFormula.
+
+(** Term-level de Bruijn shift and capture-avoiding opening. *)
+Check codedShiftedIndexTermAt.
+Check codedTermShiftVariableRowTermAt.
+Check codedTermOpeningVariableRowTermAt.
+Check codedTermShiftTraversalRowTermAt.
+Check codedTermOpeningTraversalRowTermAt.
+Check codedTermShiftTraceTermAt.
+Check codedTermOpeningTraceTermAt.
+Check codedTermShiftTermAt.
+Check codedTermOpeningTermAt.
+Check RawCodedTermShift.
+Check RawCodedTermOpening.
+Check raw_sat_codedShiftedIndexTermAt_iff.
+Check raw_sat_codedTermShiftVariableRowTermAt_iff.
+Check raw_sat_codedTermOpeningVariableRowTermAt_iff.
+Check raw_sat_codedTermShiftTraversalRowTermAt_iff.
+Check raw_sat_codedTermOpeningTraversalRowTermAt_iff.
+Check raw_sat_codedTermShiftTraceTermAt_iff.
+Check raw_sat_codedTermOpeningTraceTermAt_iff.
+Check raw_sat_codedTermShiftTermAt_iff.
+Check raw_sat_codedTermOpeningTermAt_iff.
+Check raw_codedTermShift_same_trace_root_functional.
+Check raw_codedTermOpening_same_trace_root_functional.
+
+(** Formula traversal, renaming, and one-variable substitution. *)
+Check codedFormulaOperationTripleLookupTermAt.
+Check codedFormulaOperationTraversalRowTermAt.
+Check codedFormulaOperationRowsTermAt.
+Check codedFormulaOperationTraceTermAt.
+Check codedFormulaOperationTermAt.
+Check RawCodedFormulaOperation.
+Check raw_sat_codedFormulaOperationTripleLookupTermAt_iff.
+Check raw_sat_codedFormulaOperationTraversalRowTermAt_iff.
+Check raw_sat_codedFormulaOperationRowsTermAt_iff.
+Check raw_sat_codedFormulaOperationTraceTermAt_iff.
+Check raw_sat_codedFormulaOperationTermAt_iff.
+Check raw_codedFormulaOperation_same_trace_root_functional.
+
+Check codedFormulaShiftAtomTermAt.
+Check codedFormulaShiftTermAt.
+Check RawCodedFormulaShift.
+Check raw_sat_codedFormulaShiftAtomTermAt_iff.
+Check raw_sat_codedFormulaShiftTermAt_iff.
+
+Check codedFormulaSubstitutionAtomTermAt.
+Check codedFormulaSingleSubstitutionTermAt.
+Check RawCodedFormulaSingleSubstitution.
+Check raw_sat_codedFormulaSubstitutionAtomTermAt_iff.
+Check raw_sat_codedFormulaSingleSubstitutionTermAt_iff.
+
+(** Exact, non-axiomatic names for the outstanding arbitrary-nonstandard
+    cross-trace rank-preservation premise. *)
+Check RawCodedFormulaOperationRankPreserving.
+Check RawCodedFormulaShiftRankPreserving.
+Check RawCodedFormulaSingleSubstitutionRankPreserving.
+Check raw_codedFormulaShift_rank_preserving_of_generic.
+Check raw_codedFormulaSingleSubstitution_rank_preserving_of_generic.
+
+Print Assumptions raw_sat_codedFormulaNegationTermAt_iff.
+Print Assumptions raw_codedFormulaNegation_rank_switch.
+Print Assumptions raw_sat_codedUniversalClosureTermAt_iff.
+Print Assumptions raw_codedUniversalClosure_functional_at_all.
+Print Assumptions PA_proves_codedUniversalClosureFunctionalFormula.
+Print Assumptions raw_sat_codedTermShiftTermAt_iff.
+Print Assumptions raw_sat_codedTermOpeningTermAt_iff.
+Print Assumptions raw_codedTermShift_same_trace_root_functional.
+Print Assumptions raw_codedTermOpening_same_trace_root_functional.
+Print Assumptions raw_sat_codedFormulaOperationTermAt_iff.
+Print Assumptions raw_codedFormulaOperation_same_trace_root_functional.
+Print Assumptions raw_sat_codedFormulaShiftTermAt_iff.
+Print Assumptions raw_sat_codedFormulaSingleSubstitutionTermAt_iff.
