@@ -34,8 +34,10 @@ details.
 > executable restricted-proof checker returns true on standard naturals, and
 > the trace certificate shell has been unfolded in arbitrary raw PA models.
 > Rocq also has a generic route from arbitrary raw-model validity to an
-> object-level PA proof; nonstandard trace rejection does not yet connect
-> these endpoints.  Lean's higher-level coherence, semantic transport, and
+> object-level PA proof, and the canonical fixed-bound consistency sentence
+> is now proved equivalent to rejection of accepting canonical traces in
+> every raw PA model.  Nonstandard trace rejection itself remains open.
+> Lean's higher-level coherence, semantic transport, and
 > PA-axiom instantiation remain incomplete.  Consequently the full requested
 > scheme `PA ⊢ Con_n(PA)` for
 > every external `n` is **not yet implemented** in either kernel; Lean's
@@ -396,6 +398,15 @@ checker-formula correctness theorem would be unsound; the missing fixed-level
 partial-truth argument is precisely what must establish that validity for
 nonstandard model elements.
 
+`CanonicalCheckerRawReduction.v` fixes the hierarchy bound in the transparent
+canonical trace formula, universally closes the candidate-certificate input,
+and proves exact satisfaction in every raw arithmetic structure.  Combining
+that semantics with raw-model completeness and soundness yields an iff: PA
+proves this canonical fixed-bound sentence exactly when every raw PA model
+rejects every (including nonstandard) accepting trace.  This is a reduction,
+not a proof of rejection; its statement deliberately exposes the remaining
+nonstandard soundness obligation.
+
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
 and shows that its object-level PA provability is equivalent to rejection of
@@ -525,7 +536,9 @@ obligations rather than implementation guesses.
   every fixed positive level, including nonstandard instances.
 - [x] In Lean, define the fixed-external-`n` object sentence `Con_n(PA)` and
   prove its arbitrary-model representation theorem.
-- [ ] Define and represent the matching object sentence in Rocq/Coq.
+- [x] Define and represent the matching canonical object sentence in
+  Rocq/Coq, with exact arbitrary-raw-model semantics and a conditional
+  completeness reduction.
 - [x] In Lean, construct and audit the checked rank-zero object derivation
   `PA |- Con_0(PA)`.
 - [ ] Construct, for each positive external `n`, a checked object-level

@@ -1,0 +1,22 @@
+(** Kernel-assumption audit for the canonical raw-model reduction. *)
+
+From BoundedPAConsistency Require Import CanonicalCheckerRawReduction.
+
+Import PABoundedCanonicalCheckerRawReduction.
+
+Check NoCanonicalRestrictedPAProofFormula.
+Check NoCanonicalRestrictedPAProofFormula_sentence.
+Check rawCanonicalRestrictedCheckerEnv.
+Check raw_fixedBoundSubstitution_canonical_env.
+Check raw_NoCanonicalRestrictedPAProofFormula_iff.
+Check RawCanonicalRestrictedCheckerRejection.
+Check PA_BProv_NoCanonicalRestrictedPAProofFormula_of_raw_rejection.
+Check PA_BProv_NoCanonicalRestrictedPAProofFormula_iff_raw_rejection.
+
+Print Assumptions NoCanonicalRestrictedPAProofFormula_sentence.
+Print Assumptions raw_fixedBoundSubstitution_canonical_env.
+Print Assumptions raw_NoCanonicalRestrictedPAProofFormula_iff.
+Print Assumptions
+  PA_BProv_NoCanonicalRestrictedPAProofFormula_of_raw_rejection.
+Print Assumptions
+  PA_BProv_NoCanonicalRestrictedPAProofFormula_iff_raw_rejection.
