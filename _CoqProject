@@ -470,6 +470,8 @@ Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStep.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStepAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStepFunctionality.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthStepFunctionalityAudit.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthTraversal.v
+Logic/PeanoArithmetic/BoundedConsistency/Coq/RawCodedRankZeroTruthTraversalAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormula.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/CodedCheckerFormulaAudit.v
 Logic/PeanoArithmetic/BoundedConsistency/Coq/RawModelCompleteness.v

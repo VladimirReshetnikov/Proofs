@@ -69,7 +69,11 @@ details.
 > functionality itself closed into an object-level PA derivation.
 > Equality, falsity, implication, conjunction, and disjunction also now have
 > transparent rank-zero truth-bit rows with exact arbitrary-model semantics,
-> and the unified rank-zero row is proved single-valued.
+> and the unified rank-zero row is proved single-valued.  A global supported
+> truth certificate ties equality atoms to genuine term certificates on one
+> assignment and Boolean rows to smaller supported children.  PA induction
+> proves cross-certificate functionality at nonstandard bounds, and raw-model
+> completeness closes that fact into an object-level PA derivation.
 > Lean now has full fixed-level polarity coherence, shift/substitution
 > transport, a unified bounded truth interface, and soundness of every coded
 > logical inference conditional only on truth of the recognized PA axiom.
@@ -618,7 +622,7 @@ child truth bits from a formula table and enforce the usual truth tables.
 Falsity always returns zero, successful rows always return a zero/one bit, and
 quantifier constructors have no rank-zero row.  The witness-exposing and
 existentially closed forms again have exact semantics for arbitrary raw-model
-elements; construction of their global tables remains pending.
+elements and form the local interface consumed by the global traversal.
 
 `RawCodedRankZeroTruthStepFunctionality.v` proves determinism of that local
 truth evaluator.  PA distinguishes zero from one, making each explicit Boolean
@@ -626,6 +630,17 @@ truth table functional.  Formula-constructor tags recover identical child
 codes, and beta functionality recovers identical term values or child truth
 bits.  Thus two independently witnessed rows for the same code and tables
 necessarily return the same truth bit.
+
+`RawCodedRankZeroTruthTraversal.v` packages the local rows into synchronized
+support and truth beta tables.  Equality atoms must supply two complete term
+evaluation certificates over the same coded assignment; recursive Boolean
+rows must support both children and place their codes strictly below the
+parent.  A PA-definable prefix-agreement predicate and PA induction prove that
+two arbitrary, possibly nonstandard traversals agree wherever both tables are
+supported.  This yields unconditional root-output functionality and the
+checked object theorem `PA_proves_rankZeroTruthCertificateFunctionalFormula`.
+The module also isolates simultaneous CRT table extension and names the
+remaining admissible-root totality obligation without assuming it.
 
 `CodedCheckerRawReduction.v` makes this boundary exact.  It proves the chosen
 checker assertion is a sentence, unfolds its semantics in every raw PA model,
@@ -750,6 +765,11 @@ obligations rather than implementation guesses.
 - [x] In Rocq/Coq, define transparent local rank-zero truth rows for atoms and
   every Boolean constructor, with exact arbitrary-model truth tables.
 - [x] In Rocq/Coq, prove the unified local rank-zero truth row functional.
+- [x] In Rocq/Coq, build a global supported rank-zero truth certificate, prove
+  cross-certificate functionality by PA induction, and close functionality
+  into an object-level PA theorem.
+- [ ] Prove model-internal realization/totality of rank-zero truth certificates
+  for arbitrary nonstandard admissible formula codes and assignments.
 - [x] In Lean, construct represented coded term evaluation and the rank-zero
   partial-truth evaluator with atomic and Boolean clauses.
 - [x] In Lean, prove internal term shift/substitution transport and the
